@@ -163,7 +163,8 @@ void DotDisplay::drawDisplay( float te, float ate, float tealt, float temp, floa
 	tebak = ite;
 	u8g2_ClearBuffer(&u8g2);
 	u8g2_SetDrawColor( &u8g2, 1);
-	u8g2_DrawVLine(&u8g2, dmid, bw, 6);
+	// Zero Line
+	u8g2_DrawVLine(&u8g2, dmid, bw, 38);
 	u8g2_DrawVLine(&u8g2, dmid+(5*pixpm), bw, 3);
 	u8g2_DrawVLine(&u8g2, dmid-(5*pixpm), bw, 3);
 

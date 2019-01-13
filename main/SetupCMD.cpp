@@ -21,6 +21,8 @@
 #include <math.h>
 #include "ESPAudio.h"
 #include "BMPVario.h"
+#include <rom/miniz.h>
+
 
 char cb[128];
 
@@ -54,7 +56,16 @@ void SetupCMD::factorySetting()
 		_setup._contrast_adj = 70.0;
 
 		memset( _setup._bt_name, 0, sizeof( _setup._bt_name) );
-		memcpy( _setup._bt_name, "iVario", 7 );
+		uint8_t mac[6];
+		char bt_name[12] = "iVario";
+		unsigned long  crc = 0;
+		if ( esp_efuse_mac_get_default(mac) == ESP_OK ){
+			crc = mz_crc32(0L, mac, 6);
+			printf("CRC %ld\n", crc );
+			sprintf( bt_name, "iVario-%d", int(crc % 1000));
+			printf("BT-Name: %s\n", bt_name );
+		}
+		memcpy( _setup._bt_name, bt_name, strlen( bt_name)  );
 		commit();
 }
 

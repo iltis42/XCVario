@@ -129,7 +129,7 @@ void BTSender::begin( bool *enable, char * bt_name ){
 	_enable = enable;
 	// hci_dump_enable_log_level( LOG_LEVEL_INFO, 0 );
 	// hci_dump_enable_log_level( LOG_LEVEL_ERROR, 0 );
-	hci_dump_enable_log_level( LOG_LEVEL_DEBUG, 0 );
+	// hci_dump_enable_log_level( LOG_LEVEL_DEBUG, 0 );
 	l2cap_init();
 	rfcomm_init();
 	one_shot_timer_setup();

@@ -180,9 +180,6 @@ void DotDisplay::drawDisplay( float te, float ate, float tealt, float temp, floa
 			sprintf( buf,"-");
 		u8g2_DrawStr(&u8g2, dmid-(smfh/2)+(i*pixpm), 5,buf);
 	}
-	// u8g2_SetFont(&u8g2,  u8g2_font_helvB08_tf );
-	// u8g2_DrawStr(&u8g2, dmid-(smfh/2)+(max*pixpm)-1, bwide+4,"m/s");
-
 	// average TE value headline, seconds
 
 	u8g2_SetFont(&u8g2, u8g2_font_5x7_tr );
@@ -206,6 +203,16 @@ void DotDisplay::drawDisplay( float te, float ate, float tealt, float temp, floa
 	sprintf( buf,"%d", (int)(s2f+0.5) );
 	u8g2_DrawStr(&u8g2, 128-39,32,buf);
 
+    // S2F Delta
+	if( abs (s2fd) > 10 ) {
+		if( s2fd < 0 ) {
+			sprintf( buf,"%d", (int)(s2fd+0.5) );
+			u8g2_DrawStr(&u8g2, dmid-9,32,buf);
+		}else {
+			sprintf( buf,"+%d", (int)(s2fd+0.5) );
+			u8g2_DrawStr(&u8g2, dmid+1,32,buf);
+		}
+	}
 	// TE alt
 	u8g2_SetFont(&u8g2, u8g2_font_5x7_tr );
 	sprintf( buf,"Alti m");
@@ -255,15 +262,36 @@ void DotDisplay::drawDisplay( float te, float ate, float tealt, float temp, floa
 			dmid+(int)(te*_pixpmd+0.5)-8,bw+8 );
 	int tri_head;
 
-	// S2F command trend triangle
-	int tri_len = int((trisize/2)* s2fd/40.0 );
-	if( tri_len > trisize )
+	// S2F command trend bar and triangle
+	int tri_len = int((trisize/2)* s2fd/20.0 );
+    if( tri_len > trisize )
 		tri_len = trisize;
-    tri_head = dmid - tri_len;
+    if( tri_len < -trisize )
+    		tri_len = -trisize;
 
-    u8g2_DrawTriangle(&u8g2, dmid,bw+8,
-			dmid,bw+8+trisize,
-			tri_head,bw+8+trisize/2 );
+    int box_len = 0;
+    if( tri_len > 8 ) {
+    	box_len = tri_len - 8;
+        tri_len = 8;
+    }
+    else if( tri_len < -8 ) {
+        	box_len = tri_len + 8;
+            tri_len = -8;
+    }
+
+    tri_head = dmid - tri_len;
+    if( tri_len > 0 ) {
+    	u8g2_DrawBox(&u8g2, dmid-box_len,bw+8, box_len, trisize   );
+    	u8g2_DrawTriangle(&u8g2, dmid-box_len,bw+8,
+					         dmid-box_len,bw+8+trisize,
+							 tri_head-box_len,bw+8+trisize/2 );
+    }
+    else    {  // negative values
+    	u8g2_DrawBox(&u8g2, dmid,bw+8, -box_len, trisize   );
+    	u8g2_DrawTriangle(&u8g2, dmid-box_len,bw+8,
+    						         dmid-box_len,bw+8+trisize,
+    								 tri_head-box_len,bw+8+trisize/2 );
+    }
 
 	u8g2_SendBuffer(&u8g2);
 }

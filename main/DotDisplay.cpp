@@ -260,26 +260,23 @@ void DotDisplay::drawDisplay( float te, float ate, float tealt, float temp, floa
 	u8g2_DrawTriangle(&u8g2, dmid+(int)(te*_pixpmd+0.5),bw,
 			dmid+(int)(te*_pixpmd+0.5)+8,bw+8,
 			dmid+(int)(te*_pixpmd+0.5)-8,bw+8 );
-	int tri_head;
 
 	// S2F command trend bar and triangle
 	int tri_len = int((trisize/2)* s2fd/20.0 );
     if( tri_len > trisize )
 		tri_len = trisize;
-    if( tri_len < -trisize )
-    		tri_len = -trisize;
-
+    else if( tri_len < -trisize )
+    	tri_len = -trisize;
     int box_len = 0;
     if( tri_len > 8 ) {
     	box_len = tri_len - 8;
         tri_len = 8;
     }
     else if( tri_len < -8 ) {
-        	box_len = tri_len + 8;
-            tri_len = -8;
+        box_len = tri_len + 8;
+        tri_len = -8;
     }
-
-    tri_head = dmid - tri_len;
+    int tri_head = dmid - tri_len;
     if( tri_len > 0 ) {
     	u8g2_DrawBox(&u8g2, dmid-box_len,bw+8, box_len, trisize   );
     	u8g2_DrawTriangle(&u8g2, dmid-box_len,bw+8,

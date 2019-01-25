@@ -98,6 +98,8 @@ void DotDisplay::begin( SetupCMD* asetup ) {
 	}
 
 	u8g2_InitDisplay(&u8g2); // send init sequence to the display, display is in sleep mode after this,
+	//sleep( 2 );
+	// u8g2_InitDisplay(&u8g2);
 	u8g2_SetPowerSave(&u8g2, 0); // deactivate power save
 	u8g2_ClearBuffer(&u8g2);
 	u8g2_SetFontDirection(&u8g2,1);
@@ -157,10 +159,10 @@ void DotDisplay::setData( float te, float ate, float tealt, float temp, float vo
 int tebak=0;
 
 void DotDisplay::drawDisplay( float te, float ate, float tealt, float temp, float s2fd, float s2f ){
-	int ite = (int)(te*50);
-	if( tebak == ite )
-		return;
-	tebak = ite;
+	// int ite = (int)(te*50);
+	// if( tebak == ite )
+	//	return;
+	// tebak = ite;
 	u8g2_ClearBuffer(&u8g2);
 	u8g2_SetDrawColor( &u8g2, 1);
 	// Zero Line
@@ -185,8 +187,10 @@ void DotDisplay::drawDisplay( float te, float ate, float tealt, float temp, floa
 	u8g2_SetFont(&u8g2, u8g2_font_5x7_tr );
 	sprintf( buf,"Var m/s");
 	u8g2_DrawStr(&u8g2, 128-8,28,buf);
+    // return;  // TBR
 
 	u8g2_SetFont(&u8g2, u8g2_font_helvB12_tn );
+	// printf( " dis aTE: %0.1f \n", ate );
 	sprintf( buf,"%0.1f", ate);
 	u8g2_SetFontMode(&u8g2,0);
 	int x=32;

@@ -55,7 +55,7 @@ uint8_t u8g2_esp32_spi_byte_cb(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void 
 		}
 
 		_Spi.begin(u8g2_esp32_hal.clk, u8g2_esp32_hal.miso, u8g2_esp32_hal.mosi );
-		_Spi.setDataMode( 0, u8g2_esp32_hal.cs, 2000000, 10 ); // 10
+		_Spi.setDataMode( 0, u8g2_esp32_hal.cs, 2000000, 10 );   // 10
 		handle_spi=_Spi._handle[u8g2_esp32_hal.cs];
 
 		break;
@@ -119,7 +119,7 @@ uint8_t u8g2_esp32_gpio_and_delay_cb(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int,
 	// Set the GPIO reset pin to the value passed in through arg_int.
 	case U8X8_MSG_GPIO_RESET:
 		if (u8g2_esp32_hal.reset != U8G2_ESP32_HAL_UNDEFINED) {
-			// printf("Set level RESET: %d\n", arg_int );
+			printf("Set level RESET: %d\n", arg_int );
 			gpio_set_level(u8g2_esp32_hal.reset, arg_int);
 		}
 		break;

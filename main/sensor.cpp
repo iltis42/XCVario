@@ -145,6 +145,7 @@ void readBMP(void *pvParameters){
 			float as2f = s2f.speed( aTE );
 			float s2f_delta = as2f - speed;
 			// printf("V %f, S2F %f delta: %f\n", speed, as2f, s2f_delta );
+			// printf("TE %0.1f avTE %0.1f\n", TE, aTE );
 			display.setData( TE, aTE, alt, temperature, battery, s2f_delta, as2f );
 #endif
 			setup.tick();
@@ -166,7 +167,7 @@ void readTemp(void *pvParameters){
 			xSemaphoreGive(xMutex);
 		}
 		esp_task_wdt_reset();
-		vTaskDelayUntil(&xLastWakeTime, 500/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&xLastWakeTime, 2000/portTICK_PERIOD_MS);
 	}
 }
 
@@ -208,7 +209,7 @@ void sensor(void *args){
     s2f.change_polar();
 	s2f.change_mc_bal();
 	// vTaskDelay(40000 / portTICK_PERIOD_MS);   // tbr
-	xTaskCreatePinnedToCore(&readBMP, "readBMP", 8192, NULL, 5, NULL, 0);
+	xTaskCreatePinnedToCore(&readBMP, "readBMP", 16000, NULL, 5, NULL, 0);
 	// vTaskDelay(2000 / portTICK_PERIOD_MS);
 	printf("Mute end..\n");
 	Audio.mute( false );
@@ -225,7 +226,7 @@ void sensor(void *args){
 	// vTaskDelay(20000 / portTICK_PERIOD_MS);
 	ds18b20.begin();
 #ifndef VARIO
-	xTaskCreatePinnedToCore(&readTemp, "readTemp", 4096, NULL, 5, NULL, 0);
+	xTaskCreatePinnedToCore(&readTemp, "readTemp", 2048, NULL, 5, NULL, 0);
 	Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
 	Menu.begin( &display, &Rotary, &setup, &bmpBA );
 #endif

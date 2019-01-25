@@ -27,6 +27,7 @@ double BMPVario::readTE() {
 	bmpTemp = _bmpTE->readTemperature();
 	// printf("BMP temp=%0.1f", bmpTemp );
 	_currentAlt = _bmpTE->readAltitude(_qnh);
+	// printf( "TE-Alt %0.1f  NM:", _currentAlt );
 	if( _init  ){
 		vTaskDelay(100 / portTICK_PERIOD_MS);
 		_currentAlt = _bmpTE->readAltitude(_qnh) * 1.03; // we want have some beep when powerd on
@@ -35,7 +36,7 @@ double BMPVario::readTE() {
 		Altitude = _currentAlt;
 		averageAlt = _currentAlt;
 		printf("Initial Alt=%0.1f\n",Altitude);
-		analogOut();  // set defaults
+		// analogOut();  // set defaults
 		_init = false;
 	}
 	averageAlt += (_currentAlt - averageAlt) * 0.1;
@@ -62,7 +63,7 @@ double BMPVario::readTE() {
 
 	predictAlt = Altitude + (TEFR / SPS);
 	_TEF = _TEF + (TEFR - _TEF)* SPS/(_damping*SPS);
-	calcAnalogOut();
+	// calcAnalogOut();
 	_avgTE = (_TEF - _avgTE)*0.02 +_avgTE;
 	return _TEF;
 }

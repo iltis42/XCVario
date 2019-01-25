@@ -77,7 +77,7 @@ uint8_t SPI::send( gpio_num_t cs, uint8_t *txdata, uint8_t txlen, uint8_t *rxdat
 	// 	printf("TX:%02x TXlen:%d\n", txdata[0], txlen);
 	if( trans_desc.rxlength == 0 ) {
 		printf( "SPI send overrun waiter\n" );
-		vTaskDelay( 1000 / portTICK_PERIOD_MS);
+		vTaskDelay( 1000 / portTICK_PERIOD_MS);  // 1000
 	}
 	return trans_desc.rxlength;
 };

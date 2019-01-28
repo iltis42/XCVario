@@ -278,6 +278,7 @@ void ESPAudio::dactask(void* arg )
 			// Audio.dac_cosine_enable(Audio.getCh(), false );
 			// Audio.dac_scale_set(Audio.getCh(), 3 );
 			step = int( (5/freq_step ) + 0.5);
+			// printf("Audio dead");
 		}
 		else{
 			// Audio.dac_cosine_enable(Audio.getCh(), true );

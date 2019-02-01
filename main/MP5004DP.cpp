@@ -46,8 +46,10 @@ bool MP5004DP::doOffset( bool force ){
 	printf("MP5004DP doOffset()\n");
 	if ( !MCP.haveDevice() ){
 		printf("Dont see a device, skip offset\n");
+		_haveDevice=false;
 		return true;
 	}
+	_haveDevice=true;
 	printf("MP5004DP looks like have device\n");
 	std::string _offset_nvs_key( "OFFSET4" );
 	printf("MP5004DP key initialized\n");
@@ -102,7 +104,11 @@ bool MP5004DP::doOffset( bool force ){
 
 float MP5004DP::readPascal( float minimum ){
 	// printf( "MP5004DP _speedcal %0.1f\n", _speedcal );
-	float _pascal = (MCP.readAVG( _alpha ) - *_offset) * correction * ((100.0 +_speedcal) / 100.0);
+	if( !_haveDevice ) {
+		return 0.0;
+	}
+	float val = MCP.readAVG( _alpha );
+	float _pascal = (val - *_offset) * correction * ((100.0 +_speedcal) / 100.0);
     if ( (_pascal < minimum) && (minimum != 0) ) {
 	  _pascal = 0.0;
 	};

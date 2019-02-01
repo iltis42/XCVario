@@ -48,6 +48,7 @@ public:
 	    _alpha = alpha;
 	    _speedcal = 0.0;
 	    _setup = 0;
+	    _haveDevice = false;
 	}
 	bool    begin(gpio_num_t sda, gpio_num_t scl, float speedcal, SetupCMD *setup );
 	bool    doOffset( bool force=false );
@@ -59,6 +60,7 @@ private:
 	float *_offset;
 	float _speedcal;
 	float _alpha;
+	bool _haveDevice;
 	SetupCMD * _setup;
 };
 

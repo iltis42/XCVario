@@ -119,9 +119,7 @@ void readBMP(void *pvParameters){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		if( Audio.getDisable() != true )
 		{
-
 			TE = bmpVario.readTE();
-#ifndef VARIO
 			baroP = bmpBA.readPressure();
 			speedP = MP5004DP.readPascal(30);
 			float alt;
@@ -129,7 +127,6 @@ void readBMP(void *pvParameters){
 			   alt = bmpVario.readAVGalt();
 			else
 			   alt = bmpBA.calcAVGAltitude( setup.get()->_QNH, baroP );
-#endif
 			xSemaphoreTake(xMutex,portMAX_DELAY );
 			char lb[100];
 			if( enableBtTx ) {
@@ -138,7 +135,6 @@ void readBMP(void *pvParameters){
 			}
 			xSemaphoreGive(xMutex);
 			Audio.setTE( TE );
-#ifndef VARIO
 			battery = ADC.getBatVoltage();
 			float speed = MP5004DP.pascal2km( speedP, temperature );
 			float aTE = bmpVario.readAVGTE();
@@ -147,7 +143,6 @@ void readBMP(void *pvParameters){
 			// printf("V %f, S2F %f delta: %f\n", speed, as2f, s2f_delta );
 			// printf("TE %0.1f avTE %0.1f\n", TE, aTE );
 			display.setData( TE, aTE, alt, temperature, battery, s2f_delta, as2f );
-#endif
 			setup.tick();
 		}
 		esp_task_wdt_reset();
@@ -176,13 +171,11 @@ void sensor(void *args){
 	esp_wifi_set_mode(WIFI_MODE_NULL);
 	esp_log_level_set("*", ESP_LOG_INFO);
 	NVS.begin();
+
 	setup.begin( &btsender );
-#ifndef VARIO
 	display.begin( &setup );
 	Audio.begin( DAC_CHANNEL_1, GPIO_NUM_0, &setup );
-#else
-	Audio.begin( DAC_CHANNEL_1, GPIO_NUM_21, &setup );  // vario with mute switch
-#endif
+
 	xMutex=xSemaphoreCreateMutex();
 	uint8_t t_sb = 0;   //stanby 0: 0,5 mS 1: 62,5 mS 2: 125 mS
 	uint8_t filter = 0; //filter O = off
@@ -191,27 +184,24 @@ void sensor(void *args){
 	uint8_t osrs_h = 0; //OverSampling Humidity x4
 	uint8_t Mode = 3;   //Normal mode
 	printf("BMP280 sensors init..\n");
-	bmpTE.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
-	// vTaskDelay(4000 / portTICK_PERIOD_MS);
-#ifndef VARIO
+
+    bmpTE.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
 	bmpBA.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
-#endif
 	bmpVario.begin( &bmpTE, &setup );
 	bmpVario.setup();
-#ifndef VARIO
+
 	printf("Speed sensors init..\n");
 	MP5004DP.begin( GPIO_NUM_21, GPIO_NUM_22, setup.get()->_speedcal, &setup);  // sda, scl
 	MP5004DP.doOffset();
 	ADC.begin();
-#endif
+
 	pwm1.init( GPIO_NUM_18 );
     pwm1.setContrast( setup.get()->_contrast_adj );
     s2f.change_polar();
 	s2f.change_mc_bal();
-	// vTaskDelay(40000 / portTICK_PERIOD_MS);   // tbr
 	xTaskCreatePinnedToCore(&readBMP, "readBMP", 16000, NULL, 5, NULL, 0);
-	// vTaskDelay(2000 / portTICK_PERIOD_MS);
 	printf("Mute end..\n");
+
 	Audio.mute( false );
 	gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);  // blue LED, maybe use for BT connection
 	if( setup.get()->_blue_enable ) {
@@ -221,15 +211,11 @@ void sensor(void *args){
 	}
 	else
 		printf("Bluetooth disabled\n");
-
-
 	// vTaskDelay(20000 / portTICK_PERIOD_MS);
 	ds18b20.begin();
-#ifndef VARIO
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 2048, NULL, 5, NULL, 0);
 	Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
 	Menu.begin( &display, &Rotary, &setup, &bmpBA );
-#endif
 
 	vTaskDelete( NULL );
 

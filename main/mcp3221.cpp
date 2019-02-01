@@ -17,7 +17,6 @@ bool MCP3221::begin(gpio_num_t sda, gpio_num_t scl)
 	return true;
 }
 
-
 //destroy instance
 MCP3221::~MCP3221()
 {
@@ -32,7 +31,6 @@ float MCP3221::readAVG( float alpha ) {
 		if ( exponential_average == 0 ){
 			exponential_average = newval;
 		}
-
 		exponential_average = exponential_average + alpha*(newval - exponential_average);
 		return exponential_average;
 	}

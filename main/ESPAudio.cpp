@@ -273,16 +273,12 @@ void ESPAudio::dactask(void* arg )
 		float f = (float)Audio.getCenter() + ( (te/_range ) * max );
 
 		int step = int( (f/freq_step ) + 0.5);
-        // Audio.dac_scale_set(Audio.getCh(), 0 );
-		if( ( Audio.inDeadBand(te) && Audio.getDeadMute() && Audio.getMute() ) || hightone  ){
-			// Audio.dac_cosine_enable(Audio.getCh(), false );
-			// Audio.dac_scale_set(Audio.getCh(), 3 );
+		if( Audio.inDeadBand(te) || Audio.getMute() || hightone  ){
 			step = int( (5/freq_step ) + 0.5);
-			// printf("Audio dead");
+			// printf("Audio OFF\n");
 		}
 		else{
-			// Audio.dac_cosine_enable(Audio.getCh(), true );
-			// Audio.dac_scale_set(Audio.getCh(), 0 );
+			// printf("Audio ON\n");
 		}
 
 		Audio.dac_frequency_set(clk_8m_div, step);
@@ -293,12 +289,14 @@ void ESPAudio::dactask(void* arg )
 
 bool ESPAudio::inDeadBand( float te )
 {
-   if( te > 0 )
+   if( te > 0 ) {
 	   if( te < _deadband )
 		   return true;
-   if( te < 0 )
+   }
+   else {
   	   if( te > _deadband_neg )
   		   return true;
+   }
    return false;
 }
 

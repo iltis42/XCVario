@@ -6,14 +6,16 @@
 #include "esp_system.h"
 #include "ESPRotary.h"
 #include <rom/ets_sys.h>
+#include <sys/time.h>
 
 gpio_num_t ESPRotary::clk, ESPRotary::dt, ESPRotary::sw;
 std::vector<RotaryObserver *> ESPRotary::observers;
 uint8_t ESPRotary::_switch;
 QueueHandle_t ESPRotary::q1;
 TickType_t ESPRotary::xLastWakeTime;
-ring_buffer ESPRotary::rb(4);
+ring_buffer ESPRotary::rb(2);
 int ESPRotary::dir=0;
+int ESPRotary::last_dir=0;
 int ESPRotary::last=0;
 int ESPRotary::_switch_state=1;
 
@@ -29,11 +31,6 @@ void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
 	clk = aclk;
 	dt = adt;
 	sw = asw;
-
-	// gpio_set_direction(dt, GPIO_MODE_INPUT);
-	// gpio_set_pull_mode(dt, GPIO_PULLUP_ONLY);
-	// gpio_set_direction(clk, GPIO_MODE_INPUT);
-	// gpio_set_pull_mode(clk, GPIO_PULLUP_ONLY);
 	gpio_set_direction(sw, GPIO_MODE_INPUT);
 	gpio_set_pull_mode(sw, GPIO_PULLUP_ONLY);
 
@@ -87,6 +84,7 @@ void ESPRotary::readSwitch(void * args) {
 
 
 // receiving from Interrupt the rotary direction
+int n=0;
 
 void ESPRotary::readPos(void * args) {
 	while( 1 ){
@@ -94,45 +92,57 @@ void ESPRotary::readPos(void * args) {
 		xQueueReceive(q1, &rotary, portMAX_DELAY);
 
 		rb.push( rotary );
-		if( (rb[3] == 3 && rb[2] == 0) || (rb[3] == 0 && rb[2] == 3) ){
-			if( dir < 0 )
-				dir = 0;
-			dir++;
+		n++;
+		if(  (rb[1] == 3 && rb[0] == 0) /* ||  (rb[1] == 0 && rb[0] == 3) */ ){
+				dir++;
 		}
-		else if ( (rb[3] == 1 && rb[2] == 2) || (rb[3] == 2 && rb[2] == 1) ){
-			if( dir > 0 )
-				dir = 0;
-			dir--;
+		else if (  (rb[1] == 1 && rb[0] == 2) /* ||  (rb[1] == 2 && rb[0] == 1) */ ){
+				dir--;
 		}
+        int delta = dir - last_dir;
+		printf("%d: delta: %d  rs: <%d %d>  \n", n, delta, rb[0], rb[1] );
 
-		if( dir >= 2 ) {
-			dir = 0;
+		if( delta > 0 ) {
 			// printf("Inform %d Observers up\n", observers.size());
 			for (int i = 0; i < observers.size(); i++)
 				observers[i]->up();
+			last_dir = dir;
 		}
-		if( dir <= -2 ) {
-			dir = 0;
+		if( delta  < 0 ) {
 			// printf("Inform %d Observers down\n", observers.size());
 			for (int i = 0; i < observers.size(); i++)
 				observers[i]->down();
+			last_dir = dir;
 		}
-		// fflush(stdout);
+		else
+			printf("no change\n");
 	}
 }
 
+long gettime() {
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return ( tv.tv_sec*1000 + tv.tv_usec );
+}
 
-// interrupt routine for position
 void ESPRotary::readPosInt(void * args) {
-	ets_delay_us(200); // wait until rotary switch has debounced
 	int encoded = 0;
-	if (gpio_get_level(dt))
-		encoded |= 1;
-	if (gpio_get_level(clk))
+	int dtv=0;
+	int clkv=0;
+	for( int i=0; i<10; i++ ) {
+		ets_delay_us(200);
+		if (gpio_get_level(dt))
+			dtv++;
+		if (gpio_get_level(clk))
+			clkv++;
+	}
+	if( dtv > 8 )
 		encoded |= 2;
+	if( clkv > 8 )
+		encoded |= 1;
 	if( last != encoded ) {  // do not sent flows of same signals, useless
-		last = encoded;
 		xQueueSendToBackFromISR(q1, &encoded, NULL);
+		last = encoded;
 	}
 }
 

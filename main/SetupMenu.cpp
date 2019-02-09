@@ -237,7 +237,7 @@ void SetupMenu::setup( )
 	MenuEntry* mm = root->addMenu( root );
 
 	SetupMenuValFloat * mc = new SetupMenuValFloat(
-			"MC", &_setup->get()->_MC, "MC",	0.0, 10, 0.1,  mc_bal_adj );
+			"MC", &_setup->get()->_MC, "MC",	0.01, 10, 0.1,  mc_bal_adj );
 	mm->addMenu( mc );
 
 	SetupMenuValFloat * qnh = new SetupMenuValFloat(

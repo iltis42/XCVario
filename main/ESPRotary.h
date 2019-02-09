@@ -73,6 +73,7 @@ private:
     static uint8_t state;
     static uint8_t _switch;
     static int dir;
+    static int last_dir;
     static ring_buffer rb;
     static int last;
     static int _switch_state;

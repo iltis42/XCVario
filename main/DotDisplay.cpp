@@ -138,7 +138,7 @@ float   DotDisplay::_range_clip;
 int     DotDisplay::_divisons = 5;
 int     DotDisplay::_pixpmd = 12;
 
-void DotDisplay::setData( float te, float ate, float tealt, float temp, float volt, float s2fd, float s2f ) {
+void DotDisplay::setData( float te, float ate, float tealt, float temp, float volt, float s2fd, float s2f, float acl ) {
 	if( _menu )
 		return;
 	// printf("DotDisplay setTE( %f %f )\n", te, ate);
@@ -152,13 +152,13 @@ void DotDisplay::setData( float te, float ate, float tealt, float temp, float vo
 	_ate = ate;
 	_temp = temp;
 	_battery = volt;
-	drawDisplay( _te, _ate, tealt, temp, s2fd, s2f );
+	drawDisplay( _te, _ate, tealt, temp, s2fd, s2f, acl );
 }
 
 
 int tebak=0;
 
-void DotDisplay::drawDisplay( float te, float ate, float tealt, float temp, float s2fd, float s2f ){
+void DotDisplay::drawDisplay( float te, float ate, float tealt, float temp, float s2fd, float s2f, float acl ){
 	// int ite = (int)(te*50);
 	// if( tebak == ite )
 	//	return;
@@ -245,6 +245,14 @@ void DotDisplay::drawDisplay( float te, float ate, float tealt, float temp, floa
 	u8g2_DrawStr(&u8g2, 1,32,buf);
 
 	}
+	else if( tick < 150 ){
+		// Average climb headline, val
+		u8g2_SetFont(&u8g2, u8g2_font_5x7_tr );
+		sprintf( buf,"Climb MC");
+		u8g2_DrawStr(&u8g2, 10,26,buf);
+		sprintf( buf,"%0.1f m/s",acl);
+		u8g2_DrawStr(&u8g2, 1,32,buf);
+	}
 	else
 		tick = 0;
 
@@ -312,7 +320,7 @@ void DotDisplay::test( void * arg ) {
 				forward = true;
 		}
 		_ate = (_te - _ate )*(1.0/_atesec) +_ate;
-		drawDisplay( _te, _ate, 300.0, 20.0, 0.0, 120.0 );
+		drawDisplay( _te, _ate, 300.0, 20.0, 0.0, 120.0, 0.0 );
 		printf("display test: %f avg: %f %d\n", _te, _ate, forward );
 		vTaskDelay(400 / portTICK_PERIOD_MS);
 	}

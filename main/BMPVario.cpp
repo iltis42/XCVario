@@ -65,6 +65,10 @@ double BMPVario::readTE() {
 	_TEF = _TEF + (TEFR - _TEF)* SPS/(_damping*SPS);
 	// calcAnalogOut();
 	_avgTE = (_TEF - _avgTE)*0.02 +_avgTE;
+	if( _avgTE > 0 )
+	{
+		averageClimb += (_avgTE-averageClimb) * 0.0002;  // 500 sec
+	}
 	return _TEF;
 }
 

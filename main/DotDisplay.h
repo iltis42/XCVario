@@ -27,12 +27,12 @@ public:
 	void begin( SetupCMD* setup );
 	void setup();
 	static void test(void *arg);
-	void setData( float te, float average_te, float te_altitude=0.0, float temp=0.0, float volt = 0.0, float s2fd = 0.0, float s2f = 0.0 );
+	void setData( float te, float average_te, float te_altitude, float temp, float volt, float s2fd, float s2f, float acl );
 	void doMenu( bool menu=true ) { _menu = menu; };
 	u8g2_t * getBuffer() { return &u8g2; };
 private:
 	static void drawDisplayPartial( float te, float ate );
-	static void drawDisplay( float te, float ate, float tealt, float temperature, float s2fd, float s2f );
+	static void drawDisplay( float te, float ate, float tealt, float temperature, float s2fd, float s2f, float acl );
 	static void drawConstant();
 	static u8g2_t u8g2;
 	// static u8g2_t u8g2c;

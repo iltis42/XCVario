@@ -237,7 +237,7 @@ void SetupMenu::setup( )
 	MenuEntry* mm = root->addMenu( root );
 
 	SetupMenuValFloat * mc = new SetupMenuValFloat(
-			"MC", &_setup->get()->_MC, "MC",	0.01, 10, 0.1,  mc_bal_adj );
+			"MC", &_setup->get()->_MC, "m/s",	0.01, 10, 0.1,  mc_bal_adj );
 	mm->addMenu( mc );
 
 	SetupMenuValFloat * qnh = new SetupMenuValFloat(
@@ -251,8 +251,6 @@ void SetupMenu::setup( )
 
 	SetupMenu * ad = new SetupMenu( "Audio" );
 	MenuEntry* ade = mm->addMenu( ad );
-
-
 
 	SetupMenu * va = new SetupMenu( "Vario" );
 	MenuEntry* vae = mm->addMenu( va );

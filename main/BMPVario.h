@@ -53,6 +53,7 @@ public:
 	void setup();
 
 	double   readTE();   // get TE value im m/s
+	float    readAvgClimb() { return averageClimb; };   //
 	double   readAVGTE();   // get TE value im m/s
 	double   readAVGalt() { return averageAlt; };   // get average Altitude
 	double   readCuralt() { return _currentAlt; };   // get average Altitude
@@ -86,6 +87,7 @@ private:
 	SetupCMD *_setup;
 	float _damping;
 	double _currentAlt;
+	float averageClimb;
 };
 
 extern BMPVario bmpVario;

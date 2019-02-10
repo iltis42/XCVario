@@ -32,6 +32,7 @@
 #include "sensor.h"
 #include "PWMOut.h"
 #include "S2F.h"
+#include "Version.h"
 
 /*
 
@@ -88,6 +89,7 @@ SetupCMD setup( &enableBtTx );
 BatVoltage ADC ( &setup );
 PWMOut pwm1;
 S2F  s2f( &setup );
+
 
 //                     mosi,    miso,         scl,           dc,       reset,        cs
 DotDisplay display( MOSI_bme280, MISO_bme280, SCLK_bme280, GPIO_NUM_15, GPIO_NUM_5, GPIO_NUM_13 );
@@ -184,6 +186,7 @@ void sensor(void *args){
 	uint8_t osrs_p = 5; //OverSampling Pressure (5:x16 4:x8, 3:x4 2:x2 )
 	uint8_t osrs_h = 0; //OverSampling Humidity x4
 	uint8_t Mode = 3;   //Normal mode
+
 	printf("BMP280 sensors init..\n");
 
     bmpTE.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
@@ -201,7 +204,8 @@ void sensor(void *args){
     s2f.change_polar();
 	s2f.change_mc_bal();
 	xTaskCreatePinnedToCore(&readBMP, "readBMP", 16000, NULL, 5, NULL, 0);
-	printf("Mute end..\n");
+	Version myVersion;
+	printf("Program Version %s\n", myVersion.version() );
 
 	Audio.mute( false );
 	gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);  // blue LED, maybe use for BT connection

@@ -13,6 +13,7 @@
 #include "BMPVario.h"
 #include "PWMOut.h"
 #include "S2F.h"
+#include "Version.h"
 
 
 DotDisplay* MenuEntry::_display = 0;
@@ -361,6 +362,13 @@ void SetupMenu::setup( )
 		            "%",
 					0,100,1, contrast );
 	sye->addMenu( con );
+
+	Version V;
+	uint8_t select_dummy = 0;
+	SetupMenuSelect * ver = new SetupMenuSelect( 	"Version",
+					&select_dummy, false );
+	ver->addEntry( V.version() );
+	sye->addMenu( ver );
 
 	SetupMenu::display();
 }

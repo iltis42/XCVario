@@ -44,6 +44,8 @@ public:
 		_setup = 0;
 		_damping = 1.0;
 		_currentAlt = 0;
+		samples = 0;
+		averageClimb = 0.0;
 	}
 
 	void begin( BME280_ESP32_SPI *bmp,
@@ -53,10 +55,14 @@ public:
 	void setup();
 
 	double   readTE();   // get TE value im m/s
-	float    readAvgClimb() { return averageClimb; };   //
+	inline float    readAvgClimb() { if( samples == 0 )
+										return 0.0;
+									else
+										return (averageClimb / samples);
+	};
 	double   readAVGTE();   // get TE value im m/s
-	double   readAVGalt() { return averageAlt; };   // get average Altitude
-	double   readCuralt() { return _currentAlt; };   // get average Altitude
+	inline double   readAVGalt() { return averageAlt; };   // get average Altitude
+	inline double   readCuralt() { return _currentAlt; };   // get average Altitude
 
 	// Analog Display
 	void analogOut( gpio_num_t negative=GPIO_NUM_18, gpio_num_t positive=GPIO_NUM_19 );
@@ -87,7 +93,8 @@ private:
 	SetupCMD *_setup;
 	float _damping;
 	double _currentAlt;
-	float averageClimb;
+	double averageClimb;
+	long   samples;
 };
 
 extern BMPVario bmpVario;

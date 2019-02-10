@@ -67,7 +67,8 @@ double BMPVario::readTE() {
 	_avgTE = (_TEF - _avgTE)*0.02 +_avgTE;
 	if( _avgTE > 0 )
 	{
-		averageClimb += (_avgTE-averageClimb) * 0.0002;  // 500 sec
+		averageClimb += _avgTE;
+		samples++;
 	}
 	return _TEF;
 }

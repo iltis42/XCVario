@@ -219,10 +219,10 @@ void DotDisplay::drawDisplay( float te, float ate, float tealt, float temp, floa
 	}
 	// TE alt
 	u8g2_SetFont(&u8g2, u8g2_font_5x7_tr );
-	sprintf( buf,"Alti m");
+	sprintf( buf,"Altitude");
 	u8g2_DrawStr(&u8g2, 28,26,buf);
 	u8g2_SetFont(&u8g2, u8g2_font_helvB08_tr );
-	sprintf( buf,"%d", (int)tealt );
+	sprintf( buf,"%d m", (int)tealt );
 	u8g2_DrawStr(&u8g2, 18,32,buf);
 
 	tick++;
@@ -290,16 +290,16 @@ void DotDisplay::drawDisplay( float te, float ate, float tealt, float temp, floa
     }
     int tri_head = dmid - tri_len;
     if( tri_len > 0 ) {
-    	u8g2_DrawBox(&u8g2, dmid-box_len,bw+8, box_len, trisize   );
-    	u8g2_DrawTriangle(&u8g2, dmid-box_len,bw+8,
-					         dmid-box_len,bw+8+trisize,
-							 tri_head-box_len,bw+8+trisize/2 );
+    	u8g2_DrawBox(&u8g2, dmid-box_len,bw+9, box_len, trisize   );
+    	u8g2_DrawTriangle(&u8g2, dmid-box_len,bw+9,
+					         dmid-box_len,bw+9+trisize,
+							 tri_head-box_len,bw+9+trisize/2 );
     }
     else    {  // negative values
-    	u8g2_DrawBox(&u8g2, dmid,bw+8, -box_len, trisize   );
-    	u8g2_DrawTriangle(&u8g2, dmid-box_len,bw+8,
-    						         dmid-box_len,bw+8+trisize,
-    								 tri_head-box_len,bw+8+trisize/2 );
+    	u8g2_DrawBox(&u8g2, dmid,bw+9, -box_len, trisize   );
+    	u8g2_DrawTriangle(&u8g2, dmid-box_len,bw+9,
+    						         dmid-box_len,bw+9+trisize,
+    								 tri_head-box_len,bw+9+trisize/2 );
     }
 
 	u8g2_SendBuffer(&u8g2);

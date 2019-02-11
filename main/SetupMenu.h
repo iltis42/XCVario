@@ -18,7 +18,7 @@
 
 class MenuEntry: public RotaryObserver{
 public:
-	MenuEntry(){ _parent = 0; highlight = 0; pressed = false; };
+	MenuEntry(){ _parent = 0; highlight = 0; pressed = false; y=0; u8g2=0;};
 	virtual void display( int mode=0 ) = 0;
 	virtual void release() { display(); };
 	virtual void longP() {};

@@ -6,7 +6,7 @@
 
 class BTSender {
 public:
-  BTSender( void (* cb)(char * rx, uint16_t len)) {
+  BTSender( void (* cb)(char * rx, uint16_t len)  ) {
 	   _callback = cb;
   };
   void begin( bool *enable, char* bt_name );

@@ -110,11 +110,13 @@ SetupMenu  Menu;
 
 void handleRfcommRx( char * rx, uint16_t len ){
 	printf("RFCOMM packet, %s, len %d %d\n", rx, len, strlen( rx ));
-	setup.doSetup( rx );
 
 }
 
-BTSender btsender( handleRfcommRx );
+
+BTSender btsender( handleRfcommRx  );
+// BTSender btsender( handleRfcommRx, 2, 1 );
+
 
 void readBMP(void *pvParameters){
 	while (1) {
@@ -146,7 +148,7 @@ void readBMP(void *pvParameters){
 			// printf("V %f, S2F %f delta: %f\n", speed, as2f, s2f_delta );
 			// printf("TE %0.1f avTE %0.1f\n", TE, aTE );
 			display.setData( TE, aTE, alt, temperature, battery, s2f_delta, as2f, aCl );
-			setup.tick();
+
 		}
 		esp_task_wdt_reset();
 		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);

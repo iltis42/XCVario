@@ -57,11 +57,9 @@ public:
 	// SetupCMD( bool &operationMode, float &speedcal );
 	virtual ~SetupCMD() {};
 	void factorySetting();
-	void doSetup( char *cmd );
 	setup_t *get() { return &_setup; };
 	void begin(BTSender *btsender);
 	void commit();
-	void  tick();
 	void  help();
 	bool checkSum( bool set=false );
 	bool  operationMode() { return _operationMode; }
@@ -69,10 +67,7 @@ public:
 	float getVarioDelay() { return _setup._vario_delay; }
 private:
 	bool thisCmd( std::string cmd, const char* c_prefix );
-	void setFloat( std::string cmd, const char* prefix, float *val,
-			       float min, float max, const char *errtxt, const char * oktxt,
-				   const char * showtxt, bool store=true );
-	void btprintf();
+
 	bool *_operationMode;
 	uint64_t _ticker;
 	uint8_t _input[128];

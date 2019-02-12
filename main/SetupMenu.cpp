@@ -360,7 +360,7 @@ void SetupMenu::setup( )
 	SetupMenuValFloat * con = new SetupMenuValFloat( 	"Contrast",
 					&_setup->get()->_contrast_adj,
 		            "%",
-					0,100,1, contrast );
+					20,100,1, contrast );
 	sye->addMenu( con );
 
 	Version V;

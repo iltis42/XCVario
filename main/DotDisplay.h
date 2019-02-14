@@ -26,13 +26,12 @@ public:
 	virtual ~DotDisplay();
 	void begin( SetupCMD* setup );
 	void setup();
+	static void drawDisplay( float te, float ate, float tealt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode );
 	static void test(void *arg);
-	void setData( float te, float average_te, float te_altitude, float temp, float volt, float s2fd, float s2f, float acl );
 	void doMenu( bool menu=true ) { _menu = menu; };
 	u8g2_t * getBuffer() { return &u8g2; };
 private:
 	static void drawDisplayPartial( float te, float ate );
-	static void drawDisplay( float te, float ate, float tealt, float temperature, float s2fd, float s2f, float acl );
 	static void drawConstant();
 	static u8g2_t u8g2;
 	// static u8g2_t u8g2c;
@@ -56,7 +55,7 @@ private:
 	static int _divisons;
 	static int _pixpmd;
 	static float _range_clip;
-	bool _menu;
+	static bool _menu;
 	enum display _dtype;
 	static int tick;
 };

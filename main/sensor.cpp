@@ -138,7 +138,7 @@ void readBMP(void *pvParameters){
 				btsender.send( lb );
 			}
 			xSemaphoreGive(xMutex);
-			Audio.setTE( TE );
+
 			battery = ADC.getBatVoltage();
 			float speed = MP5004DP.pascal2km( speedP, temperature );
 			float aTE = bmpVario.readAVGTE();
@@ -147,7 +147,13 @@ void readBMP(void *pvParameters){
 			float s2f_delta = as2f - speed;
 			// printf("V %f, S2F %f delta: %f\n", speed, as2f, s2f_delta );
 			// printf("TE %0.1f avTE %0.1f\n", TE, aTE );
-			display.setData( TE, aTE, alt, temperature, battery, s2f_delta, as2f, aCl );
+			bool s2fmode = false;
+			if( speed > 120.0 )
+				s2fmode = true;
+			Audio.setS2FMode( s2fmode );
+			display.drawDisplay( TE, aTE, alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode );
+
+			Audio.setValues( TE, s2f_delta );
 
 		}
 		esp_task_wdt_reset();

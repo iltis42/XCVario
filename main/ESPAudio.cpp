@@ -32,6 +32,7 @@ ESPAudio::ESPAudio( ) {
 	_ch = DAC_CHANNEL_1;
 	_center = 440;
 	_te = 0.0;
+	_s2fd = 0.0;
 	_variation = 3.0;
 	_testmode = false;
 	_button = GPIO_NUM_0;
@@ -45,6 +46,7 @@ ESPAudio::ESPAudio( ) {
 	_disable = false;
 	_old_ms = 0;
 	_range = 5.0;
+	_s2f_mode = false;
 }
 
 ESPAudio::~ESPAudio() {
@@ -254,14 +256,7 @@ void ESPAudio::dactask(void* arg )
 {
 	while(1){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
-#ifdef MUTE_SWITCH
-		int button = gpio_get_level(Audio.getButton());
-		// printf("Audio Button %d\n", button);
-		if( button == 1 )
-			Audio.setMute( true );
-		else
-			Audio.setMute( false );
-#endif
+
 		tick++;
 		float te = Audio.getTE();
 
@@ -300,12 +295,14 @@ bool ESPAudio::inDeadBand( float te )
    return false;
 }
 
-void ESPAudio::setTE( float te, bool fromtest )
+void ESPAudio::setValues( float te, float s2fd, bool fromtest )
 {
 	if ( !fromtest ){
 		if ( _testmode )
 			return;
 	}
+	if( _s2f_mode )
+		te = -s2fd/10.0;
 	if( te > _range )
 		_te = _range;
 	else if( te < -_range )
@@ -384,13 +381,13 @@ void ESPAudio::test( float to, float from )
 	Audio.setTestmode( true );
 	if( to > from){
 		for( float tef=from; tef < to; tef=tef+0.05 ){
-			Audio.setTE( tef, true );
+			Audio.setValues( tef, 0, true );
 			vTaskDelay(50 / portTICK_PERIOD_MS);
 		}
 	}
 	else{
 		for( float tef=from; tef > to; tef=tef-0.05 ){
-			Audio.setTE( tef, true );
+			Audio.setValues( tef, 0, true );
 			vTaskDelay(50 / portTICK_PERIOD_MS);
 		}
 	}

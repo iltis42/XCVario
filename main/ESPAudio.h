@@ -17,12 +17,14 @@ public:
 	ESPAudio();
 	virtual ~ESPAudio();
 	void begin( dac_channel_t ch=DAC_CHANNEL_1, gpio_num_t button=GPIO_NUM_0, SetupCMD *setup=0 );
-	void setTE( float te, bool fromtest=false );
+	void setValues( float te, float s2fd, bool fromtest=false );
 	void test( float to, float from );
 	void mute( bool mt=true ) { _mute = mt; };
 	void disable( bool disable=true );
 	bool getDisable() { return _disable; }
 	void setup();
+	void setS2FMode( bool s2f ) { _s2f_mode = s2f; };  // True = S2F, False = Vario
+	bool getS2FMode() { return _s2f_mode; }
 
 private:
 	void dac_cosine_enable(dac_channel_t channel, bool enable=true);
@@ -35,6 +37,7 @@ private:
 	dac_channel_t _ch;
 	dac_channel_t getCh() { return _ch; };
 	float getTE() { return _te; };
+	float getS2Fd() { return _te; };
 	float getCenter() { return _center; };
 	float getVariation() { return _variation; };
 	float getDeadBand() { return _deadband; };
@@ -48,6 +51,8 @@ private:
 		_dead_mute = mt; }
 	void setMute( bool mt ) { _mute = mt; };
 	float _te;
+	float _s2f_mode;
+	float _s2fd;
 	float _center;
 	float _deadband;
 	float _deadband_neg;

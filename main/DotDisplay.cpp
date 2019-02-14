@@ -137,10 +137,13 @@ int     DotDisplay::_range;
 float   DotDisplay::_range_clip;
 int     DotDisplay::_divisons = 5;
 int     DotDisplay::_pixpmd = 12;
+bool    DotDisplay::_menu = false;
 
-void DotDisplay::setData( float te, float ate, float tealt, float temp, float volt, float s2fd, float s2f, float acl ) {
+int tebak=0;
+
+void DotDisplay::drawDisplay( float te, float ate, float tealt, float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode ){
 	if( _menu )
-		return;
+			return;
 	// printf("DotDisplay setTE( %f %f )\n", te, ate);
 	_te = te;
 	_clipte = te;
@@ -152,17 +155,6 @@ void DotDisplay::setData( float te, float ate, float tealt, float temp, float vo
 	_ate = ate;
 	_temp = temp;
 	_battery = volt;
-	drawDisplay( _te, _ate, tealt, temp, s2fd, s2f, acl );
-}
-
-
-int tebak=0;
-
-void DotDisplay::drawDisplay( float te, float ate, float tealt, float temp, float s2fd, float s2f, float acl ){
-	// int ite = (int)(te*50);
-	// if( tebak == ite )
-	//	return;
-	// tebak = ite;
 	u8g2_ClearBuffer(&u8g2);
 	u8g2_SetDrawColor( &u8g2, 1);
 	// Zero Line
@@ -269,12 +261,11 @@ void DotDisplay::drawDisplay( float te, float ate, float tealt, float temp, floa
 	// u8g2_DrawFrame( &u8g2, 0,0,127,bw );
 	u8g2_DrawHLine( &u8g2, 0, 0, 127 );
 	u8g2_DrawHLine( &u8g2, 0, bw, 127 );
-	u8g2_DrawTriangle(&u8g2, dmid+(int)(te*_pixpmd+0.5),bw,
-			dmid+(int)(te*_pixpmd+0.5)+8,bw+8,
-			dmid+(int)(te*_pixpmd+0.5)-8,bw+8 );
+
+
 
 	// S2F command trend bar and triangle
-	int tri_len = int((trisize/2)* s2fd/20.0 );
+    int tri_len = int((trisize/2)* s2fd/20.0 );
     if( tri_len > trisize )
 		tri_len = trisize;
     else if( tri_len < -trisize )
@@ -302,6 +293,17 @@ void DotDisplay::drawDisplay( float te, float ate, float tealt, float temp, floa
     								 tri_head-box_len,bw+9+trisize/2 );
     }
 
+    // Small triangle pointing to Vario or S2F
+    if( s2fmode )
+    		u8g2_DrawTriangle(&u8g2, dmid-(int)(tri_len+box_len),bw+8,
+    			dmid-(int)(tri_len+box_len)+8,bw,
+    			dmid-(int)(tri_len+box_len)-8,bw );
+    	else
+    		u8g2_DrawTriangle(&u8g2, dmid+(int)(te*_pixpmd+0.5),bw,
+    					dmid+(int)(te*_pixpmd+0.5)+8,bw+8,
+    					dmid+(int)(te*_pixpmd+0.5)-8,bw+8 );
+
+
 	u8g2_SendBuffer(&u8g2);
 }
 
@@ -320,7 +322,7 @@ void DotDisplay::test( void * arg ) {
 				forward = true;
 		}
 		_ate = (_te - _ate )*(1.0/_atesec) +_ate;
-		drawDisplay( _te, _ate, 300.0, 20.0, 0.0, 120.0, 0.0 );
+		drawDisplay( _te, _ate, 300.0, 20.0, 12.5, 0.0, 120.0, 0.0, false );
 		printf("display test: %f avg: %f %d\n", _te, _ate, forward );
 		vTaskDelay(400 / portTICK_PERIOD_MS);
 	}

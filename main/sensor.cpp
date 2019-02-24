@@ -33,6 +33,8 @@
 #include "PWMOut.h"
 #include "S2F.h"
 #include "Version.h"
+#include "Switch.h"
+
 
 /*
 
@@ -89,8 +91,7 @@ SetupCMD setup( &enableBtTx );
 BatVoltage ADC ( &setup );
 PWMOut pwm1;
 S2F  s2f( &setup );
-
-
+Switch VaSoSW;
 //                     mosi,    miso,         scl,           dc,       reset,        cs
 DotDisplay display( MOSI_bme280, MISO_bme280, SCLK_bme280, GPIO_NUM_15, GPIO_NUM_5, GPIO_NUM_13 );
 /*
@@ -148,9 +149,10 @@ void readBMP(void *pvParameters){
 			// printf("V %f, S2F %f delta: %f\n", speed, as2f, s2f_delta );
 			// printf("TE %0.1f avTE %0.1f\n", TE, aTE );
 			bool s2fmode = false;
-			if( speed > 120.0 )
+			if( (speed > 120.0)  or VaSoSW.isClosed())
 				s2fmode = true;
 			Audio.setS2FMode( s2fmode );
+  		    printf("SWITCH %d\n", VaSoSW.isClosed() );
 			display.drawDisplay( TE, aTE, alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode );
 
 			Audio.setValues( TE, s2f_delta );
@@ -201,6 +203,7 @@ void sensor(void *args){
 	bmpBA.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
 	bmpVario.begin( &bmpTE, &setup );
 	bmpVario.setup();
+	VaSoSW.begin( GPIO_NUM_3 );
 
 	printf("Speed sensors init..\n");
 	MP5004DP.begin( GPIO_NUM_21, GPIO_NUM_22, setup.get()->_speedcal, &setup);  // sda, scl
@@ -216,6 +219,7 @@ void sensor(void *args){
 	printf("Program Version %s\n", myVersion.version() );
 
 	Audio.mute( false );
+
 	gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);  // blue LED, maybe use for BT connection
 	if( setup.get()->_blue_enable ) {
 		hci_power_control(HCI_POWER_ON);

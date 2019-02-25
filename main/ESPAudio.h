@@ -42,10 +42,10 @@ private:
 	float getVariation() { return _variation; };
 	float getDeadBand() { return _deadband; };
 	int getMute() { return _mute; };
-	void setTestmode( bool mode ) { _testmode = mode; }
-	gpio_num_t getButton() { return _button; }
+	inline void setTestmode( bool mode ) { _testmode = mode; }
+	inline gpio_num_t getButton() { return _button; }
 	bool inDeadBand( float te );
-	bool getDeadMute() { return _dead_mute; }
+	inline bool getDeadMute() { return _dead_mute; }
 	void setDeadMute( bool mt ) {
 		printf("sdm %d\n", mt );
 		_dead_mute = mt; }

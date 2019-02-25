@@ -44,7 +44,7 @@ public:
   //         0.1  means 10 samples until full value
 
   float readAVG( float alpha );
-  bool haveDevice() {
+  inline bool haveDevice() {
 	  uint16_t val;
 	  if( readRaw( val ) == ESP_OK )
 	     return true;

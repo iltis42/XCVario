@@ -92,7 +92,7 @@ public:
 	SetupMenuSelect(  std::string title, uint8_t *select, bool restart=false );
 	void display(int mode=0);
 
-	void addEntry( std::string ent ) { _values.push_back( ent );
+	void addEntry( std::string ent ) {  _values.push_back( ent );
 										_numval++; };
 	void up();  // step up to parent
 	void down();

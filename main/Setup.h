@@ -59,14 +59,14 @@ public:
 	// Setup( bool &operationMode, float &speedcal );
 	virtual ~Setup() {};
 	void factorySetting();
-	setup_t *get() { return &_setup; };
+	inline setup_t *get() { return &_setup; };
 	void begin(BTSender *btsender);
 	void commit();
 	void  help();
 	bool checkSum( bool set=false );
-	bool  operationMode() { return _operationMode; }
-	char  *getBtName() { return _setup._bt_name; }
-	float getVarioDelay() { return _setup._vario_delay; }
+	inline bool  operationMode() { return _operationMode; }
+	inline char  *getBtName() { return _setup._bt_name; }
+	inline float getVarioDelay() { return _setup._vario_delay; }
 
 private:
 	bool *_operationMode;

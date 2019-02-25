@@ -8,7 +8,7 @@
 #include "S2F.h"
 #include "math.h"
 
-S2F::S2F( SetupCMD* setup ) {
+S2F::S2F( Setup* setup ) {
     _setup = setup;
     a0=a1=a2=0;
     w0=w1=w2=0;

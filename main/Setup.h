@@ -1,12 +1,12 @@
 /*
- * SetupCMD.h
+ * Setup.h
  *
  *  Created on: Dec 23, 2017
  *      Author: iltis
  */
 
-#ifndef MAIN_SETUPCMD_H_
-#define MAIN_SETUPCMD_H_
+#ifndef MAIN_SETUP_H_
+#define MAIN_SETUP_H_
 #include <string>
 #include "esp_system.h"
 #include "stdio.h"
@@ -36,6 +36,8 @@ typedef struct {
 	float _w3;
 	float _ballast;
 	float _MC;
+	float _s2f_speed;
+	uint8_t _audio_mode;
 	char  _bt_name[32];
 	uint8_t _blue_enable;
 	uint8_t _factory_reset;   // 0 = no,  1= yes
@@ -45,17 +47,17 @@ typedef struct {
 	uint32_t _checksum;
 } setup_t;
 
-class SetupCMD {
+class Setup {
 public:
-	SetupCMD(bool *operationMode): _operationMode( operationMode ) {
+	Setup(bool *operationMode): _operationMode( operationMode ) {
 		_ticker = 0;
 		_index = 0;
 		_menucount=0;
 		_btsender = 0;
 		memset(_input,0,sizeof(_input));
 	}
-	// SetupCMD( bool &operationMode, float &speedcal );
-	virtual ~SetupCMD() {};
+	// Setup( bool &operationMode, float &speedcal );
+	virtual ~Setup() {};
 	void factorySetting();
 	setup_t *get() { return &_setup; };
 	void begin(BTSender *btsender);
@@ -65,9 +67,8 @@ public:
 	bool  operationMode() { return _operationMode; }
 	char  *getBtName() { return _setup._bt_name; }
 	float getVarioDelay() { return _setup._vario_delay; }
-private:
-	bool thisCmd( std::string cmd, const char* c_prefix );
 
+private:
 	bool *_operationMode;
 	uint64_t _ticker;
 	uint8_t _input[128];
@@ -79,4 +80,4 @@ private:
 };
 
 
-#endif /* MAIN_SETUPCMD_H_ */
+#endif /* MAIN_SETUP_H_ */

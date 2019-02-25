@@ -21,7 +21,7 @@
 #include "BTSender.h"
 #include "OpenVario.h"
 #include "DS18B20.h"
-#include "SetupCMD.h"
+#include "Setup.h"
 #include "esp_sleep.h"
 #include "ESPAudio.h"
 #include <esp_wifi.h>
@@ -87,7 +87,7 @@ DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 worked before
 MP5004DP MP5004DP;
 OpenVario OV;
 xSemaphoreHandle xMutex=NULL;
-SetupCMD setup( &enableBtTx );
+Setup setup( &enableBtTx );
 BatVoltage ADC ( &setup );
 PWMOut pwm1;
 S2F  s2f( &setup );
@@ -149,10 +149,22 @@ void readBMP(void *pvParameters){
 			// printf("V %f, S2F %f delta: %f\n", speed, as2f, s2f_delta );
 			// printf("TE %0.1f avTE %0.1f\n", TE, aTE );
 			bool s2fmode = false;
-			if( (speed > 120.0)  or VaSoSW.isClosed())
-				s2fmode = true;
+			switch( setup.get()->_audio_mode ) {
+				case 0: // Vario
+					s2fmode = false;
+					break;
+				case 1: // S2F
+					s2fmode = true;
+					break;
+				case 2: // Switch
+					s2fmode = VaSoSW.isClosed();
+					break;
+				case 3: // Auto
+					if( (speed > setup.get()->_s2f_speed)  or VaSoSW.isClosed())
+					s2fmode = true;
+					break;
+			}
 			Audio.setS2FMode( s2fmode );
-  		    printf("SWITCH %d\n", VaSoSW.isClosed() );
 			display.drawDisplay( TE, aTE, alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode );
 
 			Audio.setValues( TE, s2f_delta );

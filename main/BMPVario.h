@@ -6,7 +6,7 @@
 extern "C" {
 #include <driver/sigmadelta.h>
 }
-#include "SetupCMD.h"
+#include "Setup.h"
 /*
      Implementation of a stable Vario with flight optimized Iltis-Kalman filter
 
@@ -49,7 +49,7 @@ public:
 	}
 
 	void begin( BME280_ESP32_SPI *bmp,
-			    SetupCMD* setup=0 );
+			    Setup* setup=0 );
 
 	void setQNH( float qnh ) { _qnh = qnh; };
 	void setup();
@@ -90,7 +90,7 @@ private:
 	double bmpTemp;
 	bool _test;
 	bool _init;
-	SetupCMD *_setup;
+	Setup *_setup;
 	float _damping;
 	double _currentAlt;
 	double averageClimb;

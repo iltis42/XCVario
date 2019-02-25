@@ -1,11 +1,11 @@
 /*
- * SetupCMD.cpp
+ * Setup.cpp
  *
  *  Created on: Dec 23, 2017
  *      Author: iltis
  */
 
-#include "SetupCMD.h"
+#include "Setup.h"
 #include <string>
 #include <stdio.h>
 #include "esp_system.h"
@@ -28,7 +28,7 @@ char cb[128];
 
 #include "esp_task_wdt.h"
 
-void SetupCMD::factorySetting()
+void Setup::factorySetting()
 {
 		_setup._speedcal = 0.0;
 		_setup._deadband = 0.3;
@@ -54,6 +54,8 @@ void SetupCMD::factorySetting()
 		_setup._alt_select = 1;
 		_setup._offset = 0;
 		_setup._contrast_adj = 85.0;
+		_setup._s2f_speed = 100.0;
+		_setup._audio_mode = 3;
 
 		memset( _setup._bt_name, 0, sizeof( _setup._bt_name) );
 		uint8_t mac[6];
@@ -69,7 +71,7 @@ void SetupCMD::factorySetting()
 		commit();
 }
 
-void SetupCMD::begin( BTSender *btsender ) {
+void Setup::begin( BTSender *btsender ) {
 	printf( "Setup CMD begin()\n");
 	_btsender = btsender;
 	esp_err_t success;
@@ -84,17 +86,17 @@ void SetupCMD::begin( BTSender *btsender ) {
 		if( checkSum() == false )
 			factorySetting();
 		else {
-			printf( "SetupCMD: NVS data ok\n");
+			printf( "Setup: NVS data ok\n");
 		}
 		if( _setup._factory_reset == 1 ){
-			printf( "SetupCMD: Factory Setting requested\n");
+			printf( "Setup: Factory Setting requested\n");
 			factorySetting();
 		}
 	}
 	_test_ms=0.0;
 }
 
-bool SetupCMD::checkSum( bool set ) {
+bool Setup::checkSum( bool set ) {
 	uint32_t cs=0;
 	uint8_t * p=(uint8_t *)&_setup;
 	for( int i=0; i< sizeof(_setup)-4; i++ )
@@ -105,17 +107,17 @@ bool SetupCMD::checkSum( bool set ) {
 	}
 	else {
 		if (_setup._checksum == cs ) {
-		   printf( "SetupCMD: NVS checksum ok %d\n", cs );
+		   printf( "Setup: NVS checksum ok %d\n", cs );
 		   return( true );
 		}
 		else {
-			printf( "SetupCMD: NVS checksum NOT ok !\n");
+			printf( "Setup: NVS checksum NOT ok !\n");
 			return( false );
 		}
 	}
 }
 
-void SetupCMD::commit( ) {
+void Setup::commit( ) {
 
 	bool success;
 	checkSum( true );
@@ -128,15 +130,6 @@ void SetupCMD::commit( ) {
 }
 
 
-bool SetupCMD::thisCmd( std::string cmd, const char* c_prefix )
-{
-	std::string prefix( c_prefix );
-	if(cmd.substr(0, prefix.size()) == prefix)
-		return true;
-	else
-		return false;
-
-}
 
 
 

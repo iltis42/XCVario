@@ -7,7 +7,7 @@
 //
 // }
 
-bool MP5004DP::begin(gpio_num_t sda, gpio_num_t scl, float speedcal, SetupCMD* setup){
+bool MP5004DP::begin(gpio_num_t sda, gpio_num_t scl, float speedcal, Setup* setup){
 	printf("MP5004DP::begin\n");
 	_setup = setup;
 	_speedcal = speedcal;

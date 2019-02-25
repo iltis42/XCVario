@@ -4,7 +4,7 @@
 
 const double sigmaAdjust = 255 * 2.0/33;  // 2 Vss
 
-void BMPVario::begin( BME280_ESP32_SPI *bmp, SetupCMD* setup ) {
+void BMPVario::begin( BME280_ESP32_SPI *bmp, Setup* setup ) {
 	_bmpTE = bmp;
 	_init = true;
 	_setup = setup;
@@ -95,7 +95,7 @@ double BMPVario::readTE() {
 void BMPVario::setTE( double te ) {
 	_test = true;
 	_TEF = te;
-	calcAnalogOut();
+   // calcAnalogOut();
 }  // for testing purposes
 
 void BMPVario::calcAnalogOut()
@@ -103,7 +103,7 @@ void BMPVario::calcAnalogOut()
 	double aTE = _TEF;
 	if (aTE > 5.0) {aTE = 5.0; } // hardware limit
 	if (aTE < -5.0) { aTE = -5.0; } // hardware limit
-	int8_t sigma = (int8_t)(aTE*sigmaAdjust) * ((_analog_adj+100.0)/100.0);
+	// int8_t sigma = (int8_t)(aTE*sigmaAdjust) * ((_analog_adj+100.0)/100.0);
 	// sigmadelta_set_duty( SIGMADELTA_CHANNEL_0, -sigma );
 	// sigmadelta_set_duty( SIGMADELTA_CHANNEL_1, +sigma );
 }

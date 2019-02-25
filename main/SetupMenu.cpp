@@ -20,7 +20,7 @@ DotDisplay* MenuEntry::_display = 0;
 MenuEntry* MenuEntry::root = 0;
 MenuEntry* MenuEntry::selected = 0;
 ESPRotary* MenuEntry::_rotary = 0;
-SetupCMD* MenuEntry::_setup = 0;
+Setup* MenuEntry::_setup = 0;
 BME280_ESP32_SPI *MenuEntry::_bmp = 0;
 bool      MenuEntry::_menu_enabled = false;
 extern PWMOut pwm1;
@@ -76,7 +76,7 @@ SetupMenu::SetupMenu( std::string title ) {
 }
 
 
-void SetupMenu::begin( DotDisplay* display, ESPRotary * rotary, SetupCMD* my_setup, BME280_ESP32_SPI * bmp ){
+void SetupMenu::begin( DotDisplay* display, ESPRotary * rotary, Setup* my_setup, BME280_ESP32_SPI * bmp ){
 	printf("SetupMenu() begin\n");
 	_rotary = rotary;
 	_setup = my_setup;
@@ -249,10 +249,7 @@ void SetupMenu::setup( )
 				"Ballast", &_setup->get()->_ballast, "%", 0.0, 100, 1, mc_bal_adj  );
 	mm->addMenu( bal );
 
-
-	SetupMenu * ad = new SetupMenu( "Audio" );
-	MenuEntry* ade = mm->addMenu( ad );
-
+// Vario
 	SetupMenu * va = new SetupMenu( "Vario" );
 	MenuEntry* vae = mm->addMenu( va );
 	SetupMenuValFloat * vda = new SetupMenuValFloat( 	"Damping",
@@ -267,12 +264,29 @@ void SetupMenu::setup( )
 			1.0, 30.0,
 			1 );
 	vae->addMenu( vga );
-
+// Bluetooth
 	SetupMenuSelect * bt = new SetupMenuSelect( 	"Bluetooth",
 			&_setup->get()->_blue_enable, true );
 	bt->addEntry( "OFF");
 	bt->addEntry( "ON");
 	mm->addMenu( bt );
+// Audio
+	SetupMenu * ad = new SetupMenu( "Audio" );
+	MenuEntry* ade = mm->addMenu( ad );
+	SetupMenuSelect * am = new SetupMenuSelect( 	"Mode",
+				&_setup->get()->_audio_mode, false );
+		am->addEntry( "Vario");
+		am->addEntry( "S2F");
+		am->addEntry( "Switch");
+		am->addEntry( "AutoSpeed");
+		ad->addMenu( am );
+
+	SetupMenuValFloat * ts = new SetupMenuValFloat( 	"AutoSpeed",
+					&_setup->get()->_s2f_speed,
+					"km/h",
+					50.0, 200.0,
+					1.0 );
+		ade->addMenu( ts );
 
 	SetupMenuValFloat * cf = new SetupMenuValFloat( 	"CenterFreq",
 			&_setup->get()->_center_freq,
@@ -280,23 +294,26 @@ void SetupMenu::setup( )
 			200.0, 2000.0,
 			10.0 );
 	ade->addMenu( cf );
-
-	SetupMenu * db = new SetupMenu( "Deadband" );
-	MenuEntry* dbe = ade->addMenu( db );
-
-	SetupMenuValFloat * dbminlv = new SetupMenuValFloat( 	"Lower Val",
-			&_setup->get()->_deadband_neg,
-			"m/s",
-			-5.0, 5.0,
-			0.1 );
-	dbe->addMenu( dbminlv );
-
 	SetupMenuValFloat * oc = new SetupMenuValFloat( 	"Octaves",
 			&_setup->get()->_tone_var,
 			"fold",
 			1.5, 4,
 			0.1 );
+	SetupMenuSelect * ar = new SetupMenuSelect( 	"Range",
+						&_setup->get()->_audio_range );
+		ar->addEntry( "Fix 5 m/s");
+		ar->addEntry( "Variable");
+		ade->addMenu( ar );
 
+	SetupMenu * db = new SetupMenu( "Deadband" );
+	MenuEntry* dbe = ade->addMenu( db );
+
+	SetupMenuValFloat * dbminlv = new SetupMenuValFloat( 	"Lower Val",
+		&_setup->get()->_deadband_neg,
+					"m/s",
+					-5.0, 5.0,
+					0.1 );
+	dbe->addMenu( dbminlv );
 	ade->addMenu( oc );
 	SetupMenuValFloat * dbmaxlv = new SetupMenuValFloat( 	"Upper Val",
 			&_setup->get()->_deadband,
@@ -305,13 +322,7 @@ void SetupMenu::setup( )
 			0.1 );
 	dbe->addMenu( dbmaxlv );
 
-	SetupMenuSelect * ar = new SetupMenuSelect( 	"Range",
-					&_setup->get()->_audio_range );
-	ar->addEntry( "Fix 5 m/s");
-	ar->addEntry( "Variable");
-	ade->addMenu( ar );
-
-
+// Altimeter
 	SetupMenuSelect * al = new SetupMenuSelect( 	"Altimeter",
 					&_setup->get()->_alt_select );
 	mm->addMenu( al );

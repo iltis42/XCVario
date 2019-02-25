@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include "DotDisplay.h"
 #include "ESPRotary.h"
-#include "SetupCMD.h"
+#include "Setup.h"
 #include "BME280_ESP32_SPI.h"
 
 class MenuEntry: public RotaryObserver{
@@ -39,7 +39,7 @@ public:
 
 	static DotDisplay* _display;
 	static ESPRotary* _rotary;
-	static SetupCMD *_setup;
+	static Setup *_setup;
 	static BME280_ESP32_SPI *_bmp;
 	static bool _menu_enabled;
 	int    highlight;
@@ -55,7 +55,7 @@ class SetupMenu:  public MenuEntry {
 public:
 	SetupMenu();
 	SetupMenu(  std::string title );
-	void begin( DotDisplay* display, ESPRotary * rotary, SetupCMD * setup, BME280_ESP32_SPI * bmp );
+	void begin( DotDisplay* display, ESPRotary * rotary, Setup * setup, BME280_ESP32_SPI * bmp );
 	void setup();
 	void display( int mode=0 );
 

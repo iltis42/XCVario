@@ -10,13 +10,13 @@
 
 
 #include "driver/dac.h"
-#include "SetupCMD.h"
+#include "Setup.h"
 
 class ESPAudio {
 public:
 	ESPAudio();
 	virtual ~ESPAudio();
-	void begin( dac_channel_t ch=DAC_CHANNEL_1, gpio_num_t button=GPIO_NUM_0, SetupCMD *setup=0 );
+	void begin( dac_channel_t ch=DAC_CHANNEL_1, gpio_num_t button=GPIO_NUM_0, Setup *setup=0 );
 	void setValues( float te, float s2fd, bool fromtest=false );
 	void test( float to, float from );
 	void mute( bool mt=true ) { _mute = mt; };
@@ -65,7 +65,7 @@ private:
 	bool _dead_mute;
 	float _test_ms;
 	float _old_ms;
-	SetupCMD *_setup;
+	Setup *_setup;
 };
 
 

@@ -54,7 +54,7 @@ DotDisplay::~DotDisplay() {
 }
 
 
-void DotDisplay::begin( SetupCMD* asetup ) {
+void DotDisplay::begin( Setup* asetup ) {
 	u8g2_esp32_hal = U8G2_ESP32_HAL_DEFAULT;
 	u8g2_esp32_hal.clk   = _scl;   // SCLK_bme280;
 	u8g2_esp32_hal.mosi  = _mosi;  // MOSI_bme280;
@@ -211,8 +211,8 @@ void DotDisplay::drawDisplay( float te, float ate, float tealt, float temp, floa
 	}
 	// TE alt
 	u8g2_SetFont(&u8g2, u8g2_font_5x7_tr );
-	sprintf( buf,"Altitude");
-	u8g2_DrawStr(&u8g2, 28,26,buf);
+	sprintf( buf,"Alt");
+	u8g2_DrawStr(&u8g2, 28,32,buf);
 	u8g2_SetFont(&u8g2, u8g2_font_helvB08_tr );
 	sprintf( buf,"%d m", (int)tealt );
 	u8g2_DrawStr(&u8g2, 18,32,buf);

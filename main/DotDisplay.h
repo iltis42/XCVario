@@ -11,7 +11,7 @@
 #include "esp_system.h"
 #include <u8g2.h>
 #include "u8g2_esp32_hal.h"
-#include "SetupCMD.h"
+#include "Setup.h"
 
 enum display { SSD1306, ST7565, UC1701 };
 
@@ -24,7 +24,7 @@ public:
 			 gpio_num_t reset,
 			 gpio_num_t cs  );
 	virtual ~DotDisplay();
-	void begin( SetupCMD* setup );
+	void begin( Setup* setup );
 	void setup();
 	static void drawDisplay( float te, float ate, float tealt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode );
 	static void test(void *arg);
@@ -51,7 +51,7 @@ private:
 	static int _lastTE;
 	static int _lastATE;
 	static int _range;
-	SetupCMD *_setup;
+	Setup *_setup;
 	static int _divisons;
 	static int _pixpmd;
 	static float _range_clip;

@@ -3,7 +3,7 @@
 
 #include "ESP32NVS.h"
 #include "mcp3221.h"
-#include "SetupCMD.h"
+#include "Setup.h"
 
 
 /*
@@ -50,7 +50,7 @@ public:
 	    _setup = 0;
 	    _haveDevice = false;
 	}
-	bool    begin(gpio_num_t sda, gpio_num_t scl, float speedcal, SetupCMD *setup );
+	bool    begin(gpio_num_t sda, gpio_num_t scl, float speedcal, Setup *setup );
 	bool    doOffset( bool force=false );
 	float   readPascal( float minimum=min_pascal );
 	float   pascal2km( float pascal, float temp );
@@ -61,7 +61,7 @@ private:
 	float _speedcal;
 	float _alpha;
 	bool _haveDevice;
-	SetupCMD * _setup;
+	Setup * _setup;
 };
 
 #endif

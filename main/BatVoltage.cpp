@@ -21,7 +21,7 @@
 
 
 
-BatVoltage::BatVoltage( SetupCMD *setup ) {
+BatVoltage::BatVoltage( Setup *setup ) {
   _battery = 0;
   _battery_ch = ADC1_CHANNEL_MAX;
   _reference_ch = ADC1_CHANNEL_MAX;

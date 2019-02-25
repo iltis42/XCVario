@@ -338,7 +338,7 @@ void ESPAudio::setup()
 	_range = _setup->get()->_range;
 }
 
-void ESPAudio::begin( dac_channel_t ch, gpio_num_t button, SetupCMD *asetup )
+void ESPAudio::begin( dac_channel_t ch, gpio_num_t button, Setup *asetup )
 {
 	_setup = asetup;
 	setup();

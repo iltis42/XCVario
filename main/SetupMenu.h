@@ -18,16 +18,17 @@
 
 class MenuEntry: public RotaryObserver{
 public:
-	MenuEntry(){ _parent = 0; highlight = 0; pressed = false; y=0; u8g2=0;};
+	MenuEntry(){ _parent = 0;
+				 highlight = 0;
+				 pressed = false;
+				 y=0;
+				 u8g2=0;
+				 helptext=0;
+	};
 	virtual void display( int mode=0 ) = 0;
 	virtual void release() { display(); };
 	virtual void longP() {};
 	virtual ~MenuEntry() {};
-	std::vector<MenuEntry*>  _childs;
-	MenuEntry *_parent;
-	std::string _title;
-	static MenuEntry *root;
-	static MenuEntry *selected;
 	MenuEntry* addMenu( MenuEntry * item);
 	MenuEntry* findMenu( std::string title, MenuEntry* start=root  );
 	void togglePressed() {
@@ -36,7 +37,15 @@ public:
 		else
 			pressed = true;
 	}
+	void setHelp( const char *txt ) { helptext = (char*)txt; };
 
+public:
+
+	std::vector<MenuEntry*>  _childs;
+	MenuEntry *_parent;
+	std::string _title;
+	static MenuEntry *root;
+	static MenuEntry *selected;
 	static DotDisplay* _display;
 	static ESPRotary* _rotary;
 	static Setup *_setup;
@@ -45,7 +54,9 @@ public:
 	int    highlight;
 	bool   pressed;
 	u8g2_t *u8g2;
+	char   *helptext;
 	unsigned char y;
+
 
 private:
 };

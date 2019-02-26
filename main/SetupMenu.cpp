@@ -42,7 +42,7 @@ int qnh_adj( SetupMenuValFloat * p )
 	float alt = p->_bmp->readAltitude( *(p->_value) );
 	sprintf( j,"%4d %s", (int)(alt+0.5), "m"  );
 	printf( "%4d %s", (int)(alt+0.5), "m"  );
-	u8g2_DrawStr( p->u8g2, 110-40,1, j );
+	u8g2_DrawStr( p->u8g2, 110-32,1, j );
 	return 0;
 }
 
@@ -239,10 +239,12 @@ void SetupMenu::setup( )
 
 	SetupMenuValFloat * mc = new SetupMenuValFloat(
 			"MC", &_setup->get()->_MC, "m/s",	0.01, 10, 0.1,  mc_bal_adj );
+			 mc->setHelp("Mac Cready value for optimum cruise speed");
 	mm->addMenu( mc );
 
 	SetupMenuValFloat * qnh = new SetupMenuValFloat(
 			"QNH", &_setup->get()->_QNH, "hPa",	900.0, 1100.0, 0.2, qnh_adj );
+			qnh->setHelp("QNH pressure value from next ATC");
 	mm->addMenu( qnh );
 
 	SetupMenuValFloat * bal = new SetupMenuValFloat(
@@ -406,23 +408,43 @@ void SetupMenuValFloat::display( int mode ){
 	u8g2_ClearBuffer( u8g2 );
 	u8g2_SetFont( u8g2,  u8g2_font_ncenR08_tf /* u8g2_font_helvB08_tf */ );
 	u8g2_DrawStr( u8g2, 110,1, selected->_title.c_str() );
-	int y=20;
+	int y=16;
     char val[14];
 	sprintf( val,"%0.2f %s", *_value, _unit.c_str() );
 	u8g2_DrawStr( u8g2, 110-y,1, val );
 
 	if( _action != 0 )
 		(*_action)( this );
-    y+=40;
 	if(mode == 1){
-		u8g2_DrawStr( u8g2, 110-y,1, "Saved" );
+		y+=24;
+		u8g2_DrawStr( u8g2, 1,1, "Saved" );
 	}
-
 	u8g2_SetDrawColor( u8g2, 2);
-	y=10;
-	if( pressed )
-		y=0;
-	u8g2_DrawBox( u8g2, 110-y, 0 , 10, 64 );
+	// y=10;
+	// if( pressed )
+	// 	y=0;
+	// u8g2_DrawBox( u8g2, 110-y, 0 , 10, 64 );
+	y=0;
+	// u8g2_GetStrWidth(u8g2_t *u8g2, const char *s);
+	if( helptext != 0 ){
+		char buf[32];
+		for( int i=0,j=0; i < strlen( helptext ); i++,j++ )
+		{
+			if( j == 0 && helptext[i] == ' ' ){
+				j=-1;
+				continue;
+			}
+			buf[j] = helptext[i];
+			buf[j+1] = '\0';
+			if( u8g2_GetStrWidth( u8g2, buf ) > 60 ) {
+				u8g2_DrawStr( u8g2, 64-y,1, buf );
+				j=-1;
+				i--;
+				y+=11;
+			}
+		}
+		u8g2_DrawStr( u8g2, 64-y,1, buf );
+	}
 	u8g2_SendBuffer(u8g2);
 	if( mode == 1 )
 	    vTaskDelay(1000 / portTICK_PERIOD_MS);

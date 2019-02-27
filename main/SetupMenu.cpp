@@ -239,16 +239,17 @@ void SetupMenu::setup( )
 
 	SetupMenuValFloat * mc = new SetupMenuValFloat(
 			"MC", &_setup->get()->_MC, "m/s",	0.01, 10, 0.1,  mc_bal_adj );
-			 mc->setHelp("Mac Cready value for optimum cruise speed");
+	mc->setHelp("Mac Cready value for optimum cruise speed");
 	mm->addMenu( mc );
 
 	SetupMenuValFloat * qnh = new SetupMenuValFloat(
 			"QNH", &_setup->get()->_QNH, "hPa",	900.0, 1100.0, 0.2, qnh_adj );
-			qnh->setHelp("QNH pressure value from next ATC");
+	qnh->setHelp("QNH pressure value from next ATC");
 	mm->addMenu( qnh );
 
 	SetupMenuValFloat * bal = new SetupMenuValFloat(
 				"Ballast", &_setup->get()->_ballast, "%", 0.0, 100, 1, mc_bal_adj  );
+	bal->setHelp("Percent wing load increase by ballast");
 	mm->addMenu( bal );
 
 // Vario
@@ -259,12 +260,14 @@ void SetupMenu::setup( )
 			"sec",
 			0.5, 10.0,
 			0.1 );
+	vda->setHelp("Response time, time constant of vario low pass filter");
 	vae->addMenu( vda );
 	SetupMenuValFloat * vga = new SetupMenuValFloat( 	"Range",
 			&_setup->get()->_range,
 			"m/s",
 			1.0, 30.0,
 			1 );
+	vga->setHelp("Upper and lower value for graphic display region");
 	vae->addMenu( vga );
 // Bluetooth
 	SetupMenuSelect * bt = new SetupMenuSelect( 	"Bluetooth",
@@ -289,18 +292,21 @@ void SetupMenu::setup( )
 					50.0, 200.0,
 					1.0 );
 		ade->addMenu( ts );
+	ts->setHelp("Transition speed when audio changes to S2F mode in AutoSpeed mode");
 
 	SetupMenuValFloat * cf = new SetupMenuValFloat( 	"CenterFreq",
 			&_setup->get()->_center_freq,
 			"Hz",
 			200.0, 2000.0,
 			10.0 );
+	cf->setHelp("Center frequency for tone indication at zero lift or S2F delta");
 	ade->addMenu( cf );
 	SetupMenuValFloat * oc = new SetupMenuValFloat( 	"Octaves",
 			&_setup->get()->_tone_var,
 			"fold",
 			1.5, 4,
 			0.1 );
+	oc->setHelp("Maximum tone frequency variation");
 	SetupMenuSelect * ar = new SetupMenuSelect( 	"Range",
 						&_setup->get()->_audio_range );
 		ar->addEntry( "Fix 5 m/s");
@@ -315,6 +321,7 @@ void SetupMenu::setup( )
 					"m/s",
 					-5.0, 5.0,
 					0.1 );
+	dbminlv->setHelp("Lower limit for audio mute function");
 	dbe->addMenu( dbminlv );
 	ade->addMenu( oc );
 	SetupMenuValFloat * dbmaxlv = new SetupMenuValFloat( 	"Upper Val",
@@ -322,6 +329,7 @@ void SetupMenu::setup( )
 			"m/s",
 			-5.0, 5.0,
 			0.1 );
+	dbmaxlv->setHelp("Upper limit for audio mute function");
 	dbe->addMenu( dbmaxlv );
 
 // Altimeter
@@ -336,21 +344,27 @@ void SetupMenu::setup( )
 
 	SetupMenuValFloat * pov1 = new SetupMenuValFloat(
 			"Speed 1", &_setup->get()->_v1, "km/h", 50.0, 120.0, 1, polar_adj );
+	pov1->setHelp("Speed 1, usually near to minimum decend from polar e.g. 80 km/h");
 	poe->addMenu( pov1 );
 	SetupMenuValFloat * pos1 = new SetupMenuValFloat(
 			"Sink  1", &_setup->get()->_w1, "m/s", -3.0, 0.0, 0.01, polar_adj );
+	pos1->setHelp("Descent indication at Speed 1 from polar");
 	poe->addMenu( pos1 );
 	SetupMenuValFloat * pov2 = new SetupMenuValFloat(
 			"Speed 2", &_setup->get()->_v2, "km/h", 100.0, 180.0, 1, polar_adj );
+	pov2->setHelp("Speed 2 for a moderate cruise from polar e.g. 120 km/h");
 	poe->addMenu( pov2 );
 	SetupMenuValFloat * pos2 = new SetupMenuValFloat(
 			"Sink  2", &_setup->get()->_w2, "m/s", -5.0, 0.0, 0.01, polar_adj );
+	pos2->setHelp("Descent indication at Speed 2 from polar");
 	poe->addMenu( pos2 );
 	SetupMenuValFloat * pov3 = new SetupMenuValFloat(
 			"Speed 3", &_setup->get()->_v3, "km/h", 120.0, 250.0, 1, polar_adj );
+	pov3->setHelp("Speed 3 for a fast cruise from polar e.g. 170 km/h");
 	poe->addMenu( pov3 );
 	SetupMenuValFloat * pos3 = new SetupMenuValFloat(
 			"Sink  3", &_setup->get()->_w3, "m/s", -6.0, 0.0, 0.01, polar_adj );
+	pos3->setHelp("Descent indication at Speed 3 from polar");
 	poe->addMenu( pos3 );
 
 	SetupMenu * sy = new SetupMenu( "System" );
@@ -361,6 +375,7 @@ void SetupMenu::setup( )
 				"Volt",
 				-1.2, 1.2,
 				0.1 );
+	voltadj->setHelp("Option to adjust voltmeter to compensate drop on line");
 
 	sye->addMenu( voltadj );
 
@@ -374,6 +389,7 @@ void SetupMenu::setup( )
 					&_setup->get()->_contrast_adj,
 		            "%",
 					20,100,1, contrast );
+	con->setHelp("LCD display contrast in percent");
 	sye->addMenu( con );
 
 	Version V;
@@ -436,7 +452,8 @@ void SetupMenuValFloat::display( int mode ){
 			}
 			buf[j] = helptext[i];
 			buf[j+1] = '\0';
-			if( u8g2_GetStrWidth( u8g2, buf ) > 60 ) {
+			if( u8g2_GetStrWidth( u8g2, buf ) > 62 ) {
+				buf[j] = '\0';
 				u8g2_DrawStr( u8g2, 64-y,1, buf );
 				j=-1;
 				i--;

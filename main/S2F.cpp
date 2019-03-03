@@ -9,8 +9,6 @@
 #include "math.h"
 #include "Polars.h"
 
-extern Polars polars;
-
 
 S2F::S2F( Setup* setup ) {
     _setup = setup;
@@ -47,7 +45,7 @@ void S2F::select_polar()
 	printf("S2F::select_polar()\n");
 	int n = _setup->get()->_glider_type;
 	printf("Selected Polar N %d\n", n );
-	_setup->get()->_polar = polars.getPolar(n);
+	_setup->get()->_polar = Polars::getPolar(n);
 	printf("now change\n");
     change_polar();
     printf("now test\n");

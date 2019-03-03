@@ -16,7 +16,6 @@
 #include "Version.h"
 #include "Polars.h"
 
-
 DotDisplay* MenuEntry::_display = 0;
 MenuEntry* MenuEntry::root = 0;
 MenuEntry* MenuEntry::selected = 0;
@@ -26,7 +25,6 @@ BME280_ESP32_SPI *MenuEntry::_bmp = 0;
 bool      MenuEntry::_menu_enabled = false;
 extern PWMOut pwm1;
 extern S2F s2f;
-extern Polars polars;
 
 // Action Routines
 int contrast( SetupMenuValFloat * p )
@@ -386,17 +384,19 @@ void SetupMenu::setup( )
 
 	SetupMenu * po = new SetupMenu( "Polar" );
 	MenuEntry* poe = mm->addMenu( po );
+	poe->setHelp( "Setup polar to fit your glider type performance");
 
 	SetupMenuSelect * glt = new SetupMenuSelect( 	"Glider-Type",
 						&_setup->get()->_glider_type, false, polar_select );
 	poe->addMenu( glt );
 
-	printf( "Num Polars: %d", polars.numPolars() );
-	for( int x=0; x< polars.numPolars(); x++ ){
-		glt->addEntry( polars.getPolar(x).type );
+	printf( "Num Polars: %d", Polars::numPolars() );
+	for( int x=0; x< Polars::numPolars(); x++ ){
+		glt->addEntry( Polars::getPolar(x).type );
 	}
 
 	SetupMenu * pa = new SetupMenu( "PolarAdjust" );
+	pa->setHelp( "Adjust seletced polar");
 	poe->addMenu( pa );
 
 	SetupMenuValFloat * wil = new SetupMenuValFloat(

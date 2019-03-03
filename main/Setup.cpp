@@ -22,9 +22,7 @@
 #include "ESPAudio.h"
 #include "BMPVario.h"
 #include <rom/miniz.h>
-
-
-extern Polars polars;
+#include "Polars.h"
 
 char cb[128];
 
@@ -32,7 +30,7 @@ char cb[128];
 
 void Setup::factorySetting()
 {
-		printf("Setup::factorySetting()");
+		printf("Setup::factorySetting()\n");
 		_setup._speedcal = 0.0;
 		_setup._deadband = 0.3;
 		_setup._deadband_neg = -0.3;
@@ -54,8 +52,8 @@ void Setup::factorySetting()
 		_setup._s2f_speed = 100.0;
 		_setup._audio_mode = 3;
 		_setup._glider_type = 0;
-		_setup._polar = polars.getPolar(0); // default user polar
-
+		printf("sefault _polar %d\n", Polars::numPolars() );
+		_setup._polar = Polars::getPolar(0); // default user polar
 		memset( _setup._bt_name, 0, sizeof( _setup._bt_name) );
 		uint8_t mac[6];
 		char bt_name[12] = "iVario";
@@ -68,7 +66,7 @@ void Setup::factorySetting()
 		}
 		memcpy( _setup._bt_name, bt_name, strlen( bt_name)  );
 		commit();
-		printf("end Setup::factorySetting()");
+		printf("end Setup::factorySetting()\n");
 }
 
 void Setup::begin( BTSender *btsender ) {

@@ -34,6 +34,7 @@
 #include "S2F.h"
 #include "Version.h"
 #include "Switch.h"
+#include "Polars.h"
 
 
 /*
@@ -92,6 +93,7 @@ BatVoltage ADC ( &setup );
 PWMOut pwm1;
 S2F  s2f( &setup );
 Switch VaSoSW;
+
 //                     mosi,    miso,         scl,           dc,       reset,        cs
 DotDisplay display( MOSI_bme280, MISO_bme280, SCLK_bme280, GPIO_NUM_15, GPIO_NUM_5, GPIO_NUM_13 );
 /*

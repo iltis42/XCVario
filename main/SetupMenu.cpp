@@ -43,7 +43,7 @@ int qnh_adj( SetupMenuValFloat * p )
 	float alt = p->_bmp->readAltitude( *(p->_value) );
 	sprintf( j,"%4d %s", (int)(alt+0.5), "m"  );
 	printf( "%4d %s", (int)(alt+0.5), "m"  );
-	u8g2_DrawStr( p->u8g2, 110-32,1, j );
+	u8g2_DrawStr( p->u8g2, 110-30,1, j );
 	return 0;
 }
 
@@ -59,7 +59,7 @@ int polar_select( SetupMenuSelect * p )
     return 0;
 }
 
-int mc_bal_adj( SetupMenuValFloat * p )
+int bal_adj( SetupMenuValFloat * p )
 {
     s2f.change_mc_bal();
     u8g2_t *u8g2 = p->_display->getBuffer();
@@ -68,7 +68,11 @@ int mc_bal_adj( SetupMenuValFloat * p )
     char val[14];
     sprintf( val,"%0.2f kg/m2", newwl );
     u8g2_DrawStr( u8g2, 110-30,1, val );
-
+    return 0;
+}
+int mc_adj( SetupMenuValFloat * p )
+{
+    s2f.change_mc_bal();
     return 0;
 }
 
@@ -88,7 +92,6 @@ SetupMenu::SetupMenu( std::string title ) {
 	_title = title;
 	highlight = -1;
 }
-
 
 void SetupMenu::begin( DotDisplay* display, ESPRotary * rotary, Setup* my_setup, BME280_ESP32_SPI * bmp ){
 	printf("SetupMenu() begin\n");
@@ -160,7 +163,32 @@ void SetupMenu::display( int mode ){
 			u8g2_DrawBox( u8g2, 110-y, 0 , 10, 64 );
 		y+=10;
 	}
+	y+=14;
+	showhelp( y );
 	u8g2_SendBuffer(u8g2);
+}
+
+void MenuEntry::showhelp( int y ){
+	if( helptext != 0 ){
+		char buf[32];
+		for( int i=0,j=0; i < strlen( helptext ); i++,j++ )
+		{
+			if( j == 0 && helptext[i] == ' ' ){
+				j=-1;
+				continue;
+			}
+			buf[j] = helptext[i];
+			buf[j+1] = '\0';
+			if( u8g2_GetStrWidth( u8g2, buf ) > 62 ) {
+				buf[j] = '\0';
+				u8g2_DrawStr( u8g2, 110-y,1, buf );
+				j=-1;
+				i--;
+				y+=11;
+			}
+		}
+		u8g2_DrawStr( u8g2, 110-y,1, buf );
+	}
 }
 
 void SetupMenu::down(){
@@ -252,7 +280,7 @@ void SetupMenu::setup( )
 	MenuEntry* mm = root->addMenu( root );
 
 	SetupMenuValFloat * mc = new SetupMenuValFloat(
-			"MC", &_setup->get()->_MC, "m/s",	0.01, 10, 0.1,  mc_bal_adj );
+			"MC", &_setup->get()->_MC, "m/s",	0.01, 10, 0.1,  mc_adj );
 	mc->setHelp("Mac Cready value for optimum cruise speed");
 	mm->addMenu( mc );
 
@@ -262,7 +290,7 @@ void SetupMenu::setup( )
 	mm->addMenu( qnh );
 
 	SetupMenuValFloat * bal = new SetupMenuValFloat(
-				"Ballast", &_setup->get()->_ballast, "%", 0.0, 100, 1, mc_bal_adj  );
+				"Ballast", &_setup->get()->_ballast, "%", 0.0, 100, 1, bal_adj  );
 	bal->setHelp("Percent wing load increase by ballast");
 	mm->addMenu( bal );
 
@@ -292,8 +320,9 @@ void SetupMenu::setup( )
 // Audio
 	SetupMenu * ad = new SetupMenu( "Audio" );
 	MenuEntry* ade = mm->addMenu( ad );
-	SetupMenuSelect * am = new SetupMenuSelect( 	"Mode",
+	SetupMenuSelect * am = new SetupMenuSelect( 	"Audio Mode",
 				&_setup->get()->_audio_mode, false );
+	am->setHelp( "Controls audio source selection" );
 		am->addEntry( "Vario");
 		am->addEntry( "S2F");
 		am->addEntry( "Switch");
@@ -325,10 +354,12 @@ void SetupMenu::setup( )
 						&_setup->get()->_audio_range );
 		ar->addEntry( "Fix 5 m/s");
 		ar->addEntry( "Variable");
+		ar->setHelp("Either fix audio or variable with current vario display range");
 		ade->addMenu( ar );
 
 	SetupMenu * db = new SetupMenu( "Deadband" );
 	MenuEntry* dbe = ade->addMenu( db );
+	dbe->setHelp("Audio deadband limits within audio remains silent");
 
 	SetupMenuValFloat * dbminlv = new SetupMenuValFloat( 	"Lower Val",
 		&_setup->get()->_deadband_neg,
@@ -460,32 +491,16 @@ void SetupMenuValFloat::display( int mode ){
 
 	if( _action != 0 )
 		(*_action)( this );
+
+	y+=28;
+	showhelp( y );
 	if(mode == 1){
 		y+=24;
 		u8g2_DrawStr( u8g2, 1,1, "Saved" );
 	}
 	u8g2_SetDrawColor( u8g2, 2);
 	y=0;
-	if( helptext != 0 ){
-		char buf[32];
-		for( int i=0,j=0; i < strlen( helptext ); i++,j++ )
-		{
-			if( j == 0 && helptext[i] == ' ' ){
-				j=-1;
-				continue;
-			}
-			buf[j] = helptext[i];
-			buf[j+1] = '\0';
-			if( u8g2_GetStrWidth( u8g2, buf ) > 62 ) {
-				buf[j] = '\0';
-				u8g2_DrawStr( u8g2, 64-y,1, buf );
-				j=-1;
-				i--;
-				y+=11;
-			}
-		}
-		u8g2_DrawStr( u8g2, 64-y,1, buf );
-	}
+
 	u8g2_SendBuffer(u8g2);
 	if( mode == 1 )
 	    vTaskDelay(1000 / portTICK_PERIOD_MS);
@@ -564,8 +579,10 @@ void SetupMenuSelect::display( int mode ){
 		}
 		y+=10;
 	}
+	y+=14;
+	showhelp( y );
 	if(mode == 1){
-		u8g2_DrawStr( u8g2, 110-(y+10),1, "Saved" );
+		u8g2_DrawStr( u8g2, 1,1, "Saved" );
 		if( _select_save != *_select )
 			if( _restart ) {
 				u8g2_DrawStr( u8g2, 110-(y+30),1, "Now Restart" );

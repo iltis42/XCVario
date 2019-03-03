@@ -38,6 +38,7 @@ public:
 			pressed = true;
 	}
 	void setHelp( const char *txt ) { helptext = (char*)txt; };
+	void showhelp( int y );
 
 public:
 
@@ -57,10 +58,8 @@ public:
 	char   *helptext;
 	unsigned char y;
 
-
 private:
 };
-
 
 class SetupMenu:  public MenuEntry {
 public:
@@ -75,7 +74,6 @@ public:
 	void press();
 
 	virtual ~SetupMenu() {};
-
 };
 
 

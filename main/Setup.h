@@ -14,6 +14,7 @@
 #include <string>
 #include "string.h"
 #include "BTSender.h"
+#include "Polars.h"
 
 
 typedef struct {
@@ -28,12 +29,6 @@ typedef struct {
 	float _contrast_adj;
 	float _voltmeter_adj;
 	float _range;
-	float _v1;
-	float _w1;
-	float _v2;
-	float _w2;
-	float _v3;
-	float _w3;
 	float _ballast;
 	float _MC;
 	float _s2f_speed;
@@ -43,6 +38,8 @@ typedef struct {
 	uint8_t _factory_reset;   // 0 = no,  1= yes
 	uint8_t _audio_range;     // 0 = fix, 1=variable
 	uint8_t _alt_select;      // 0 = TE, 1=Baro
+	uint8_t _glider_type;     // 0 = Custom Polar
+	t_polar _polar;
 	float   _offset;
 	uint32_t _checksum;
 } setup_t;
@@ -67,6 +64,7 @@ public:
 	inline bool  operationMode() { return _operationMode; }
 	inline char  *getBtName() { return _setup._bt_name; }
 	inline float getVarioDelay() { return _setup._vario_delay; }
+	inline const t_polar getPolar() {  return _setup._polar;  };
 
 private:
 	bool *_operationMode;

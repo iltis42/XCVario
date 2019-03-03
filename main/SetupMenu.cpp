@@ -14,6 +14,7 @@
 #include "PWMOut.h"
 #include "S2F.h"
 #include "Version.h"
+#include "Polars.h"
 
 
 DotDisplay* MenuEntry::_display = 0;
@@ -25,7 +26,7 @@ BME280_ESP32_SPI *MenuEntry::_bmp = 0;
 bool      MenuEntry::_menu_enabled = false;
 extern PWMOut pwm1;
 extern S2F s2f;
-
+extern Polars polars;
 
 // Action Routines
 int contrast( SetupMenuValFloat * p )
@@ -52,9 +53,22 @@ int polar_adj( SetupMenuValFloat * p )
     return 0;
 }
 
+int polar_select( SetupMenuSelect * p )
+{
+    s2f.select_polar();
+    return 0;
+}
+
 int mc_bal_adj( SetupMenuValFloat * p )
 {
     s2f.change_mc_bal();
+    u8g2_t *u8g2 = p->_display->getBuffer();
+    float loadinc = (p->_setup->get()->_ballast +100.0)/100.0;
+    float newwl = p->_setup->get()->_polar.wingload * loadinc;
+    char val[14];
+    sprintf( val,"%0.2f kg/m2", newwl );
+    u8g2_DrawStr( u8g2, 110-30,1, val );
+
     return 0;
 }
 
@@ -342,30 +356,45 @@ void SetupMenu::setup( )
 	SetupMenu * po = new SetupMenu( "Polar" );
 	MenuEntry* poe = mm->addMenu( po );
 
+	SetupMenuSelect * glt = new SetupMenuSelect( 	"Glider-Type",
+						&_setup->get()->_glider_type, false, polar_select );
+	poe->addMenu( glt );
+
+	printf( "Num Polars: %d", polars.numPolars() );
+	for( int x=0; x< polars.numPolars(); x++ ){
+		glt->addEntry( polars.getPolar(x).type );
+	}
+
+	SetupMenu * pa = new SetupMenu( "PolarAdjust" );
+	poe->addMenu( pa );
+
+	SetupMenuValFloat * wil = new SetupMenuValFloat(
+				"Wingload", &_setup->get()->_polar.wingload, "kg/m2", 10.0, 100.0, 1, polar_adj );
+	pa->addMenu( wil );
 	SetupMenuValFloat * pov1 = new SetupMenuValFloat(
-			"Speed 1", &_setup->get()->_v1, "km/h", 50.0, 120.0, 1, polar_adj );
-	pov1->setHelp("Speed 1, usually near to minimum decend from polar e.g. 80 km/h");
-	poe->addMenu( pov1 );
+			"Speed 1", &_setup->get()->_polar.speed1, "km/h", 50.0, 120.0, 1, polar_adj );
+	pov1->setHelp("Speed 1, usually near to minimum sink from polar e.g. 80 km/h");
+	pa->addMenu( pov1 );
 	SetupMenuValFloat * pos1 = new SetupMenuValFloat(
-			"Sink  1", &_setup->get()->_w1, "m/s", -3.0, 0.0, 0.01, polar_adj );
-	pos1->setHelp("Descent indication at Speed 1 from polar");
-	poe->addMenu( pos1 );
+			"Sink  1", &_setup->get()->_polar.sink1, "m/s", -3.0, 0.0, 0.01, polar_adj );
+	pos1->setHelp("Sink indication at Speed 1 from polar");
+	pa->addMenu( pos1 );
 	SetupMenuValFloat * pov2 = new SetupMenuValFloat(
-			"Speed 2", &_setup->get()->_v2, "km/h", 100.0, 180.0, 1, polar_adj );
+			"Speed 2", &_setup->get()->_polar.speed2, "km/h", 100.0, 180.0, 1, polar_adj );
 	pov2->setHelp("Speed 2 for a moderate cruise from polar e.g. 120 km/h");
-	poe->addMenu( pov2 );
+	pa->addMenu( pov2 );
 	SetupMenuValFloat * pos2 = new SetupMenuValFloat(
-			"Sink  2", &_setup->get()->_w2, "m/s", -5.0, 0.0, 0.01, polar_adj );
-	pos2->setHelp("Descent indication at Speed 2 from polar");
-	poe->addMenu( pos2 );
+			"Sink  2", &_setup->get()->_polar.sink2, "m/s", -5.0, 0.0, 0.01, polar_adj );
+	pos2->setHelp("Sink indication at Speed 2 from polar");
+	pa->addMenu( pos2 );
 	SetupMenuValFloat * pov3 = new SetupMenuValFloat(
-			"Speed 3", &_setup->get()->_v3, "km/h", 120.0, 250.0, 1, polar_adj );
+			"Speed 3", &_setup->get()->_polar.speed3, "km/h", 120.0, 250.0, 1, polar_adj );
 	pov3->setHelp("Speed 3 for a fast cruise from polar e.g. 170 km/h");
-	poe->addMenu( pov3 );
+	pa->addMenu( pov3 );
 	SetupMenuValFloat * pos3 = new SetupMenuValFloat(
-			"Sink  3", &_setup->get()->_w3, "m/s", -6.0, 0.0, 0.01, polar_adj );
-	pos3->setHelp("Descent indication at Speed 3 from polar");
-	poe->addMenu( pos3 );
+			"Sink  3", &_setup->get()->_polar.sink3, "m/s", -6.0, 0.0, 0.01, polar_adj );
+	pos3->setHelp("Sink indication at Speed 3 from polar");
+	pa->addMenu( pos3 );
 
 	SetupMenu * sy = new SetupMenu( "System" );
 	MenuEntry* sye = mm->addMenu( sy );
@@ -436,12 +465,7 @@ void SetupMenuValFloat::display( int mode ){
 		u8g2_DrawStr( u8g2, 1,1, "Saved" );
 	}
 	u8g2_SetDrawColor( u8g2, 2);
-	// y=10;
-	// if( pressed )
-	// 	y=0;
-	// u8g2_DrawBox( u8g2, 110-y, 0 , 10, 64 );
 	y=0;
-	// u8g2_GetStrWidth(u8g2_t *u8g2, const char *s);
 	if( helptext != 0 ){
 		char buf[32];
 		for( int i=0,j=0; i < strlen( helptext ); i++,j++ )
@@ -507,7 +531,7 @@ void SetupMenuValFloat::press(){
 }
 
 
-SetupMenuSelect::SetupMenuSelect( std::string title, uint8_t *select, bool restart ) {
+SetupMenuSelect::SetupMenuSelect( std::string title, uint8_t *select, bool restart, int (*action)(SetupMenuSelect *p) ) {
 	printf("SetupMenuSelect( %s ) \n", title.c_str() );
 	_rotary->attach(this);
 	_title = title;
@@ -516,6 +540,7 @@ SetupMenuSelect::SetupMenuSelect( std::string title, uint8_t *select, bool resta
 	_select_save = *select;
 	_numval = 0;
 	_restart = restart;
+	_action = action;
 }
 
 void SetupMenuSelect::display( int mode ){
@@ -527,8 +552,12 @@ void SetupMenuSelect::display( int mode ){
 	u8g2_SetFont( u8g2,  u8g2_font_ncenR08_tf  );
 	u8g2_DrawStr( u8g2, 110,1, selected->_title.c_str() );
 	u8g2_SetDrawColor( u8g2, 2);
+
 	int y=10;
-	for( int i=0; i<_numval; i++ )	{
+	int start=0;
+	if( *_select > 10 )
+		start = *_select-9;
+	for( int i=start; i<_numval && i<(start+10); i++ )	{
 		u8g2_DrawStr( u8g2, 110-y,1, _values[i].c_str() );
 		if( i == *_select ){
 			u8g2_DrawBox( u8g2, 110-y, 0 , 10, 64 );
@@ -545,6 +574,7 @@ void SetupMenuSelect::display( int mode ){
 	u8g2_SendBuffer(u8g2);
 	if( mode == 1 )
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
+
 }
 
 void SetupMenuSelect::down(){
@@ -571,6 +601,7 @@ void SetupMenuSelect::press(){
 		return;
 	printf("SetupMenuSelect press\n");
 	if ( pressed ){
+
 		display( 1 );
 		if( _parent != 0)
 			selected = _parent;
@@ -578,6 +609,8 @@ void SetupMenuSelect::press(){
 		selected->pressed = true;
 		_setup->commit();
 		pressed = false;
+		if( _action != 0 )
+			(*_action)( this );
 		if( _select_save != *_select )
 			if( _restart ) {
 				sleep( 2 );

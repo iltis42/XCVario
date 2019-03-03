@@ -24,12 +24,15 @@
 #include <rom/miniz.h>
 
 
+extern Polars polars;
+
 char cb[128];
 
 #include "esp_task_wdt.h"
 
 void Setup::factorySetting()
 {
+		printf("Setup::factorySetting()");
 		_setup._speedcal = 0.0;
 		_setup._deadband = 0.3;
 		_setup._deadband_neg = -0.3;
@@ -40,12 +43,6 @@ void Setup::factorySetting()
 		_setup._QNH = 1013.25;
 		_setup._blue_enable = 1;
 		_setup._range = 5.0;
-		_setup._v1 = 100.0;
-		_setup._w1 = -0.7;
-		_setup._v2 = 150.0;
-		_setup._w2 = -1.2;
-		_setup._v3 = 200.0;
-		_setup._w3 = -2.2;
 		_setup._ballast = 0.0;
 		_setup._MC = 0.0;
 		_setup._voltmeter_adj = 0;
@@ -56,6 +53,8 @@ void Setup::factorySetting()
 		_setup._contrast_adj = 85.0;
 		_setup._s2f_speed = 100.0;
 		_setup._audio_mode = 3;
+		_setup._glider_type = 0;
+		_setup._polar = polars.getPolar(0); // default user polar
 
 		memset( _setup._bt_name, 0, sizeof( _setup._bt_name) );
 		uint8_t mac[6];
@@ -69,6 +68,7 @@ void Setup::factorySetting()
 		}
 		memcpy( _setup._bt_name, bt_name, strlen( bt_name)  );
 		commit();
+		printf("end Setup::factorySetting()");
 }
 
 void Setup::begin( BTSender *btsender ) {

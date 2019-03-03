@@ -14,18 +14,18 @@ public:
 	S2F( Setup* setup );
 	virtual ~S2F();
 	void change_polar();
+	void select_polar();
 	void change_mc_bal();
-	float speed( float st );
-	float sink( float v );
-	float minsink();
+	double speed( double st );
+	double sink( double v );
+	double minsink();
 	void test( void );
 private:
-	setup_t *s;
 	Setup * _setup;
 	double a0,a1,a2;
 	double w0,w1,w2;
-	float MC;
-	float _minsink;
+	double MC;
+	double _minsink;
 };
 
 #endif /* MAIN_S2F_H_ */

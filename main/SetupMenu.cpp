@@ -384,7 +384,7 @@ void SetupMenu::setup( )
 
 	SetupMenu * po = new SetupMenu( "Polar" );
 	MenuEntry* poe = mm->addMenu( po );
-	poe->setHelp( "Setup polar to fit your glider type performance");
+	poe->setHelp( "Polar setup to match performance of glider");
 
 	SetupMenuSelect * glt = new SetupMenuSelect( 	"Glider-Type",
 						&_setup->get()->_glider_type, false, polar_select );
@@ -396,7 +396,7 @@ void SetupMenu::setup( )
 	}
 
 	SetupMenu * pa = new SetupMenu( "PolarAdjust" );
-	pa->setHelp( "Adjust seletced polar");
+	pa->setHelp( "Adjust selected polar");
 	poe->addMenu( pa );
 
 	SetupMenuValFloat * wil = new SetupMenuValFloat(
@@ -404,7 +404,7 @@ void SetupMenu::setup( )
 	pa->addMenu( wil );
 	SetupMenuValFloat * pov1 = new SetupMenuValFloat(
 			"Speed 1", &_setup->get()->_polar.speed1, "km/h", 50.0, 120.0, 1, polar_adj );
-	pov1->setHelp("Speed 1, usually near to minimum sink from polar e.g. 80 km/h");
+	pov1->setHelp("Speed 1, near to minimum sink from polar e.g. 80 km/h");
 	pa->addMenu( pov1 );
 	SetupMenuValFloat * pos1 = new SetupMenuValFloat(
 			"Sink  1", &_setup->get()->_polar.sink1, "m/s", -3.0, 0.0, 0.01, polar_adj );

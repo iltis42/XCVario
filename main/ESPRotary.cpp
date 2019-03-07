@@ -45,7 +45,6 @@ void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
 	gpio_config(&gpioConfig);
 	gpio_install_isr_service(0);
 	q1 = xQueueCreate(40, sizeof(int));
-
 	gpio_isr_handler_add(clk, ESPRotary::readPosInt, NULL);
 	xTaskCreatePinnedToCore(&ESPRotary::readSwitch, "readSwitch", 4096, NULL, 5, NULL, 0);
 	xTaskCreatePinnedToCore(&ESPRotary::readPos, "readPos", 4096, NULL, 5, NULL, 0);
@@ -129,16 +128,16 @@ void ESPRotary::readPosInt(void * args) {
 	int encoded = 0;
 	int dtv=0;
 	int clkv=0;
-	for( int i=0; i<10; i++ ) {
-		ets_delay_us(200);
+	for( int i=0; i<4; i++ ) {
+		ets_delay_us(20);
 		if (gpio_get_level(dt))
 			dtv++;
 		if (gpio_get_level(clk))
 			clkv++;
 	}
-	if( dtv > 8 )
+	if( dtv > 2 )
 		encoded |= 2;
-	if( clkv > 8 )
+	if( clkv > 2 )
 		encoded |= 1;
 	if( last != encoded ) {  // do not sent flows of same signals, useless
 		xQueueSendToBackFromISR(q1, &encoded, NULL);

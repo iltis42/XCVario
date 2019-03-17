@@ -31,13 +31,12 @@ void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
 	clk = aclk;
 	dt = adt;
 	sw = asw;
-	gpio_set_direction(sw, GPIO_MODE_INPUT);
-	gpio_set_pull_mode(sw, GPIO_PULLUP_ONLY);
 
 	gpio_config_t gpioConfig;
 	memset(&gpioConfig, 0, sizeof(gpioConfig));
 	gpioConfig.pin_bit_mask |= (1 << clk);
 	gpioConfig.pin_bit_mask |= (1 << dt);
+	gpioConfig.pin_bit_mask |= (1 << sw);
 	gpioConfig.mode = GPIO_MODE_INPUT;
 	gpioConfig.pull_up_en = GPIO_PULLUP_ENABLE;
 	gpioConfig.pull_down_en = GPIO_PULLDOWN_DISABLE;
@@ -46,51 +45,19 @@ void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
 	gpio_install_isr_service(0);
 	q1 = xQueueCreate(40, sizeof(int));
 	gpio_isr_handler_add(clk, ESPRotary::readPosInt, NULL);
-	xTaskCreatePinnedToCore(&ESPRotary::readSwitch, "readSwitch", 4096, NULL, 5, NULL, 0);
+	gpio_isr_handler_add(sw, ESPRotary::readPosInt, NULL);
 	xTaskCreatePinnedToCore(&ESPRotary::readPos, "readPos", 4096, NULL, 5, NULL, 0);
 }
 
-
-// we poll the switch
-void ESPRotary::readSwitch(void * args) {
-	while (1) {
-		TickType_t xLastWakeTime = xTaskGetTickCount();
-		int _sw = 0;
-		if (gpio_get_level(sw))
-			_sw = 1;
-		else
-			_sw = 0;
-
-		if (_switch != _sw) {
-			_switch_state = _sw;
-			// printf("sw=%d\n", _sw);
-			if (_sw == 0) // we assume that switch pressed pulls down
-			{
-
-				// printf("Inform %d Observers press\n", observers.size());
-				for (int i = 0; i < observers.size(); i++)
-					observers[i]->press();
-			} else {
-				// printf("Inform %d Observers release \n", observers.size());
-				for (int i = 0; i < observers.size(); i++)
-					observers[i]->release();
-			}
-			_switch = _sw;
-		}
-		vTaskDelayUntil(&xLastWakeTime, 50 / portTICK_PERIOD_MS);
-	}
-}
-
-
-// receiving from Interrupt the rotary direction
+// receiving from Interrupt the rotary direction and switch
 int n=0;
 
 void ESPRotary::readPos(void * args) {
-	while( 1 ){
-		int rotary;
-		xQueueReceive(q1, &rotary, portMAX_DELAY);
-
-		rb.push( rotary );
+	int rotary = 0;
+	int num = xQueueReceive(q1, &rotary, portMAX_DELAY);
+	while( num > 0 ){
+        // printf("rotary byte: %x num msg: %d\n", rotary, num );
+		rb.push( rotary & 0x03 );
 		n++;
 		if(  (rb[1] == 3 && rb[0] == 0) /* ||  (rb[1] == 0 && rb[0] == 3) */ ){
 				dir++;
@@ -114,31 +81,49 @@ void ESPRotary::readPos(void * args) {
 			last_dir = dir;
 		}
 		else
-			printf("no change\n");
-	}
-}
+			printf("no rotary change\n");
+		int newsw = (rotary & 0x04);
 
-long gettime() {
-	struct timeval tv;
-	gettimeofday(&tv, NULL);
-	return ( tv.tv_sec*1000 + tv.tv_usec );
+		if( _switch_state != newsw ){
+			_switch_state = newsw;
+			if( newsw ){      // pullup, so not pressed is 1
+					// printf("sw high");
+					for (int i = 0; i < observers.size(); i++)
+						observers[i]->release();
+				}
+				else{
+					// printf("sw low");
+					for (int i = 0; i < observers.size(); i++)
+						observers[i]->press();
+				}
+		}
+		else{
+				printf("no sw change\n");
+		}
+		num = xQueueReceive(q1, &rotary, portMAX_DELAY);
+	}
 }
 
 void ESPRotary::readPosInt(void * args) {
 	int encoded = 0;
 	int dtv=0;
 	int clkv=0;
-	for( int i=0; i<4; i++ ) {
+	int swv=0;
+	for( int i=0; i<8; i++ ) {
 		ets_delay_us(20);
 		if (gpio_get_level(dt))
 			dtv++;
 		if (gpio_get_level(clk))
 			clkv++;
+		if (gpio_get_level(sw))
+			swv++;
 	}
-	if( dtv > 2 )
-		encoded |= 2;
-	if( clkv > 2 )
+	if( clkv > 4 )
 		encoded |= 1;
+	if( dtv > 4 )
+		encoded |= 2;
+	if( swv > 4 )
+		encoded |= 4;
 	if( last != encoded ) {  // do not sent flows of same signals, useless
 		xQueueSendToBackFromISR(q1, &encoded, NULL);
 		last = encoded;

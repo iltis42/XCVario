@@ -35,6 +35,7 @@
 #include "Version.h"
 #include "Switch.h"
 #include "Polars.h"
+#include "SetupVolt.h"
 
 
 /*
@@ -88,8 +89,9 @@ DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 worked before
 MP5004DP MP5004DP;
 OpenVario OV;
 xSemaphoreHandle xMutex=NULL;
-Setup setup( &enableBtTx );
-BatVoltage ADC ( &setup );
+Setup setup;
+SetupVolt setupv;
+BatVoltage ADC ( &setup, &setupv );
 PWMOut pwm1;
 S2F  s2f( &setup );
 Switch VaSoSW;
@@ -199,7 +201,8 @@ void sensor(void *args){
 	esp_log_level_set("*", ESP_LOG_INFO);
 	NVS.begin();
 
-	setup.begin( &btsender );
+	setup.begin();
+	setupv.begin();
 	display.begin( &setup );
 	Audio.begin( DAC_CHANNEL_1, GPIO_NUM_0, &setup );
 
@@ -246,7 +249,7 @@ void sensor(void *args){
 	ds18b20.begin();
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 2048, NULL, 5, NULL, 0);
 	Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
-	Menu.begin( &display, &Rotary, &setup, &bmpBA );
+	Menu.begin( &display, &Rotary, &setup, &setupv, &bmpBA, &ADC );
 
 	vTaskDelete( NULL );
 

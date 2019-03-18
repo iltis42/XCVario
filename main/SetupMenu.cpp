@@ -16,11 +16,14 @@
 #include "Version.h"
 #include "Polars.h"
 
+
 DotDisplay* MenuEntry::_display = 0;
 MenuEntry* MenuEntry::root = 0;
 MenuEntry* MenuEntry::selected = 0;
 ESPRotary* MenuEntry::_rotary = 0;
 Setup* MenuEntry::_setup = 0;
+SetupVolt* MenuEntry::_setupv = 0;
+BatVoltage* MenuEntry::_adc = 0;
 BME280_ESP32_SPI *MenuEntry::_bmp = 0;
 bool      MenuEntry::_menu_enabled = false;
 extern PWMOut pwm1;
@@ -40,7 +43,17 @@ int qnh_adj( SetupMenuValFloat * p )
 	char j[14];
 	float alt = p->_bmp->readAltitude( *(p->_value) );
 	sprintf( j,"%4d %s", (int)(alt+0.5), "m"  );
-	printf( "%4d %s", (int)(alt+0.5), "m"  );
+	//  printf( "%4d %s", (int)(alt+0.5), "m"  );
+	u8g2_DrawStr( p->u8g2, 110-30,1, j );
+	return 0;
+}
+
+int factv_adj( SetupMenuValFloat * p )
+{
+	printf("factv_adj");
+	char j[14];
+	float adj = p->_adc->getBatVoltage(true);
+	sprintf( j,"%0.3f %s", adj, "V"  );
 	u8g2_DrawStr( p->u8g2, 110-30,1, j );
 	return 0;
 }
@@ -91,12 +104,14 @@ SetupMenu::SetupMenu( std::string title ) {
 	highlight = -1;
 }
 
-void SetupMenu::begin( DotDisplay* display, ESPRotary * rotary, Setup* my_setup, BME280_ESP32_SPI * bmp ){
+void SetupMenu::begin( DotDisplay* display, ESPRotary * rotary, Setup* my_setup, SetupVolt* my_setupv, BME280_ESP32_SPI * bmp, BatVoltage *adc ){
 	printf("SetupMenu() begin\n");
 	_rotary = rotary;
 	_setup = my_setup;
+	_setupv = my_setupv;
 	_bmp = bmp;
 	_display = display;
+	_adc = adc;
 	setup();
 }
 
@@ -436,8 +451,21 @@ void SetupMenu::setup( )
 				-1.2, 1.2,
 				0.1 );
 	voltadj->setHelp("Option to adjust voltmeter to compensate drop on line");
-
 	sye->addMenu( voltadj );
+
+	printf("Factory adjust: %0.5f\n", _setupv->get()->_factory_volt_adjust );
+	float fva = _setupv->get()->_factory_volt_adjust;
+	if( abs(fva - 0.00815) < 0.00001 ) {
+	printf("Now Factory adjust ADC\n");
+	SetupMenuValFloat * fvoltadj = new SetupMenuValFloat( 	"Factory VAdj",
+					&_setupv->get()->_factory_volt_adjust,
+					"%",
+					-25.0, 25.0,
+					0.01,
+					factv_adj);
+	fvoltadj->setHelp("Option to fine factory adjust voltmeter");
+	sye->addMenu( fvoltadj );
+	}
 
 	SetupMenuSelect * fa = new SetupMenuSelect( 	"Factory",
 				&_setup->get()->_factory_reset, true );
@@ -536,6 +564,7 @@ void SetupMenuValFloat::press(){
 		_parent->highlight = -1;  // to topmost selection when back
 		selected->pressed = true;
 		_setup->commit();
+		_setupv->commit();
 		pressed = false;
 	}
 	else
@@ -625,6 +654,7 @@ void SetupMenuSelect::press(){
 		_parent->highlight = -1;  // to topmost selection when back
 		selected->pressed = true;
 		_setup->commit();
+
 		pressed = false;
 		if( _action != 0 )
 			(*_action)( this );

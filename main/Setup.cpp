@@ -24,8 +24,6 @@
 #include <rom/miniz.h>
 #include "Polars.h"
 
-char cb[128];
-
 #include "esp_task_wdt.h"
 
 void Setup::factorySetting()
@@ -44,6 +42,7 @@ void Setup::factorySetting()
 		_setup._ballast = 0.0;
 		_setup._MC = 0.0;
 		_setup._voltmeter_adj = 0;
+		_setup._voltmeter_factory_adj = 0.0;
 		_setup._factory_reset = 0;
 		_setup._audio_range = 0;
 		_setup._alt_select = 1;
@@ -69,9 +68,8 @@ void Setup::factorySetting()
 		printf("end Setup::factorySetting()\n");
 }
 
-void Setup::begin( BTSender *btsender ) {
+void Setup::begin() {
 	printf( "Setup CMD begin()\n");
-	_btsender = btsender;
 	esp_err_t success;
 	void * obj = NVS.getObject("SetupXC", &success);
 
@@ -91,7 +89,6 @@ void Setup::begin( BTSender *btsender ) {
 			factorySetting();
 		}
 	}
-	_test_ms=0.0;
 }
 
 bool Setup::checkSum( bool set ) {
@@ -121,10 +118,10 @@ void Setup::commit( ) {
 	checkSum( true );
 	success = NVS.setObject("SetupXC", &_setup, sizeof(_setup) );
 	if ( success != true ){
-		sprintf( cb, "Error storing data NVS, maybe HW defect");
+		printf( "Error storing data NVS, maybe HW defect\n");
 	}
 	else
-		sprintf( cb,"Store data in NVS success\n");
+		printf( "Store data in NVS success\n");
 }
 
 

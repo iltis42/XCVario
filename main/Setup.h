@@ -28,6 +28,7 @@ typedef struct {
 	float _analog_adj;
 	float _contrast_adj;
 	float _voltmeter_adj;
+	float _voltmeter_factory_adj;
 	float _range;
 	float _ballast;
 	float _MC;
@@ -44,37 +45,25 @@ typedef struct {
 	uint32_t _checksum;
 } setup_t;
 
+
 class Setup {
 public:
-	Setup(bool *operationMode): _operationMode( operationMode ) {
-		_ticker = 0;
-		_index = 0;
-		_menucount=0;
-		_btsender = 0;
-		memset(_input,0,sizeof(_input));
+	Setup() {
 	}
 	// Setup( bool &operationMode, float &speedcal );
 	virtual ~Setup() {};
 	void factorySetting();
 	inline setup_t *get() { return &_setup; };
-	void begin(BTSender *btsender);
+	void begin();
 	void commit();
 	void  help();
 	bool checkSum( bool set=false );
-	inline bool  operationMode() { return _operationMode; }
 	inline char  *getBtName() { return _setup._bt_name; }
 	inline float getVarioDelay() { return _setup._vario_delay; }
 	inline const t_polar getPolar() {  return _setup._polar;  };
 
 private:
-	bool *_operationMode;
-	uint64_t _ticker;
-	uint8_t _input[128];
-	int  _index;
-	int  _menucount;
 	setup_t _setup;
-	BTSender *_btsender;
-    float _test_ms = 1.0;
 };
 
 

@@ -48,12 +48,17 @@ int qnh_adj( SetupMenuValFloat * p )
 	return 0;
 }
 
+// Battery Voltage Meter Calibration
 int factv_adj( SetupMenuValFloat * p )
 {
 	printf("factv_adj");
 	char j[14];
-	float adj = p->_adc->getBatVoltage(true);
-	sprintf( j,"%0.3f %s", adj, "V"  );
+	float adj = 0.0;
+	for( int i=0; i<10; i++ )
+		adj += p->_adc->getBatVoltage(true);
+		sleep( 0.01 );
+	adj = adj/10.0;
+	sprintf( j,"%0.2f %s", adj, "V"  );
 	u8g2_DrawStr( p->u8g2, 110-30,1, j );
 	return 0;
 }
@@ -445,6 +450,7 @@ void SetupMenu::setup( )
 	SetupMenu * sy = new SetupMenu( "System" );
 	MenuEntry* sye = mm->addMenu( sy );
 
+	/*  Since its acurate after Factory adj, can be removed.
 	SetupMenuValFloat * voltadj = new SetupMenuValFloat( 	"BatV Adj",
 				&_setup->get()->_voltmeter_adj,
 				"Volt",
@@ -452,7 +458,7 @@ void SetupMenu::setup( )
 				0.1 );
 	voltadj->setHelp("Option to adjust voltmeter to compensate drop on line");
 	sye->addMenu( voltadj );
-
+	*/
 	printf("Factory adjust: %0.5f\n", _setupv->get()->_factory_volt_adjust );
 	float fva = _setupv->get()->_factory_volt_adjust;
 	if( abs(fva - 0.00815) < 0.00001 ) {

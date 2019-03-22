@@ -19,7 +19,6 @@
 
 typedef struct {
 	float _factory_volt_adjust;
-	bool  _dummy;
 	uint32_t _checksum;
 } setup_volt_t;
 

@@ -75,8 +75,8 @@ const gpio_num_t MOSI_bme280 = GPIO_NUM_32; //  SDO Master Output Slave Input ES
 
 const gpio_num_t CS_bme280BA = GPIO_NUM_33; //CS pin
 
-BME280_ESP32_SPI bmpTE(SCLK_bme280, MOSI_bme280, MISO_bme280, CS_bme280TE, 2000000);
-BME280_ESP32_SPI bmpBA(SCLK_bme280, MOSI_bme280, MISO_bme280, CS_bme280BA, 2000000);
+BME280_ESP32_SPI bmpTE(SCLK_bme280, MOSI_bme280, MISO_bme280, CS_bme280TE, 9314159);
+BME280_ESP32_SPI bmpBA(SCLK_bme280, MOSI_bme280, MISO_bme280, CS_bme280BA, 9314159);
 
 float baroP=0;
 float temperature=15.0;
@@ -220,7 +220,7 @@ void sensor(void *args){
 	bmpBA.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
 	bmpVario.begin( &bmpTE, &setup );
 	bmpVario.setup();
-	VaSoSW.begin( GPIO_NUM_3 );
+	VaSoSW.begin( GPIO_NUM_12 );
 
 	printf("Speed sensors init..\n");
 	MP5004DP.begin( GPIO_NUM_21, GPIO_NUM_22, setup.get()->_speedcal, &setup);  // sda, scl

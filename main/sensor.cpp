@@ -64,11 +64,7 @@ BMP:
 
 const gpio_num_t SCLK_bme280 = GPIO_NUM_14; //
 const gpio_num_t MISO_bme280 = GPIO_NUM_27; // SDA Master Input Slave Output
-#ifdef VARIO
-const gpio_num_t CS_bme280TE = GPIO_NUM_33; // CS pin
-#else
 const gpio_num_t CS_bme280TE = GPIO_NUM_26; // CS pin 26
-#endif
 
 
 const gpio_num_t MOSI_bme280 = GPIO_NUM_32; //  SDO Master Output Slave Input ESP32=Master,BME280=slave
@@ -134,8 +130,10 @@ void readBMP(void *pvParameters){
 			float alt;
 			if( setup.get()->_alt_select == 0 ) // TE
 			   alt = bmpVario.readAVGalt();
-			else
+			else {
 			   alt = bmpBA.calcAVGAltitude( setup.get()->_QNH, baroP );
+			   // printf("BA p=%f alt=%f QNH=%f\n", baroP, alt, setup.get()->_QNH );
+			}
 			xSemaphoreTake(xMutex,portMAX_DELAY );
 			char lb[100];
 			if( enableBtTx ) {
@@ -195,6 +193,9 @@ void readTemp(void *pvParameters){
 	}
 }
 
+// void sleepS( const TickType_t delay ) {
+//	vTaskDelay(delay / portTICK_PERIOD_MS);
+// };
 
 void sensor(void *args){
 	esp_wifi_set_mode(WIFI_MODE_NULL);
@@ -204,12 +205,13 @@ void sensor(void *args){
 	setup.begin();
 	setupv.begin();
 	display.begin( &setup );
+	sleep( 1 );
 	Audio.begin( DAC_CHANNEL_1, GPIO_NUM_0, &setup );
 
 	xMutex=xSemaphoreCreateMutex();
 	uint8_t t_sb = 0;   //stanby 0: 0,5 mS 1: 62,5 mS 2: 125 mS
 	uint8_t filter = 0; //filter O = off
-	uint8_t osrs_t = 2; //OverSampling Temperature
+	uint8_t osrs_t = 5; //OverSampling Temperature
 	uint8_t osrs_p = 5; //OverSampling Pressure (5:x16 4:x8, 3:x4 2:x2 )
 	uint8_t osrs_h = 0; //OverSampling Humidity x4
 	uint8_t Mode = 3;   //Normal mode
@@ -217,6 +219,7 @@ void sensor(void *args){
 	printf("BMP280 sensors init..\n");
 
     bmpTE.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
+    sleep( 1 );
 	bmpBA.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
 	bmpVario.begin( &bmpTE, &setup );
 	bmpVario.setup();

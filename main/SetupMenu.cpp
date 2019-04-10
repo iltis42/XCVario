@@ -44,6 +44,7 @@ int qnh_adj( SetupMenuValFloat * p )
 	float alt = p->_bmp->readAltitude( *(p->_value) );
 	sprintf( j,"%4d %s", (int)(alt+0.5), "m"  );
 	//  printf( "%4d %s", (int)(alt+0.5), "m"  );
+	printf("Setup BA alt=%f QNH=%f\n", alt, *(p->_value)  );
 	u8g2_DrawStr( p->u8g2, 110-30,1, j );
 	return 0;
 }

@@ -67,6 +67,7 @@ void BME280_ESP32_SPI::begin(uint8_t Stanby_t, uint8_t filter, uint8_t overS_T, 
 	_Spi.begin(_sclk, _miso, _mosi );
 	_Spi.setDataMode(3, _cs, _freq, 200, false, 16 );  // we handle cs here, maybe limit in SPI
 	digitalWrite(_cs, HIGH);
+	delay( 20 );
 
 	uint8_t spi3or4 = 0; //SPI 3wire or 4wire, 0=4wire, 1=3wire
 	uint8_t ctrl_meas = (overS_T << 5) | (overS_P << 2) | mode;
@@ -74,12 +75,30 @@ void BME280_ESP32_SPI::begin(uint8_t Stanby_t, uint8_t filter, uint8_t overS_T, 
 	uint8_t ctrl_hum  = overS_H;
 
 	WriteRegister(0xE0, 0xB6); //reset
-	delay(2000);
+	int id = readID();
+	int count = 0;
+	while( (id != 0x58) && (count < 500) ) {
+		id = readID();
+		delay( 20 );
+		count++;
+	}
+	if( count == 500 )
+		printf("Error init BMP280 CS=%d", _cs );
+	else
+		printf("BMP280 ID = %02x\n", id );
+
 	WriteRegister(0xF2, ctrl_hum);
 	WriteRegister(0xF4, ctrl_meas);
 	WriteRegister(0xF5, config);
-
+	delay( 20 );
 	readCalibration();
+	if( _dig_T2 == 0 && _dig_T2 == 0 ) {
+		delay( 20 );
+		readCalibration();
+		printf("BMP280 Calibration Data read retry CS: %d \n", _cs);
+	}
+	if( _dig_T2 == 0 && _dig_T2 == 0 )
+		printf("BMP280 Calibration Data Error  CS: %d !\n", _cs);
 }
 
 //***************BME280 ****************************
@@ -92,11 +111,13 @@ void BME280_ESP32_SPI::WriteRegister(uint8_t reg_address, uint8_t data) {
 
 //*******************************************************
 void BME280_ESP32_SPI::readCalibration(void) {
-	printf("BME280_ESP32_SPI::readCalibration");
+	// printf("BME280_ESP32_SPI::readCalibration");
 	_dig_T1 = read16bit(0x88);
 
 	_dig_T2 = (int16_t)read16bit(0x8A);
 	_dig_T3 = (int16_t)read16bit(0x8C);
+
+	printf("BME280_ESP32_SPI::readCalibration  CS %d  T1 %d T2 %02x T3 %02x\n", _cs, _dig_T1, _dig_T2, _dig_T3);
 
 	_dig_P1 = read16bit(0x8E);
 	_dig_P2 = (int16_t)read16bit(0x90);
@@ -131,25 +152,37 @@ double BME280_ESP32_SPI::readTemperature(){
 
     // TODO: Here, better in the lib add some more checking here, e.g. rx length, cs ?
 	uint8_t l =  _Spi.send( _cs, tx, 1, 0 );
+
 	tx[0] = 0;
 	l = _Spi.send( _cs, tx, 3, rx );
-	// printf( "read Temp rx length %d\n", l);
-
+	// printf( "read Temp rx length %d bytes\n", l/8);
 	digitalWrite(_cs, HIGH);
-	// for(uint8_t i=0; i<3; i++)
-	//   	printf( "%02x", rx[i]);
+
+	// for(uint8_t i=0; i<l/8; i++)
+	//  	printf( "%02x ", rx[i]);
 	// printf( "\n");
 	uint32_t adc_T = (rx[0] << 12) | (rx[1] << 4) | (rx[2] >> 4); //0xFA, msb+lsb+xlsb=19bit
+
+	// printf( "--BMP280 raw adc_T=%d  CS=%d\n", adc_T, _cs );
 	double t=compensate_T((int32_t)adc_T) / 100.0;
-	// printf( "\n--BMP280 read Temp=%0.1f  instance=%04x\n", t, (uint32_t)this);
+	// printf( "--BMP280 read Temp=%0.1f  CS=%d\n", t, _cs );
+	// printf("   Calibration  CS %d  T1 %d T2 %02x T3 %02x\n", _cs, _dig_T1, _dig_T2, _dig_T3);
+
 	return t;
 }
 
 //***************BME280 ****************************
 double BME280_ESP32_SPI::readPressure(){
 	// printf("++BMP280 readPressure cs:%d\n", _cs);
-	readTemperature(); //_t_fine
-	readTemperature(); // workaround as first read after others access SPI reads zero
+	double t = readTemperature();
+	int loop = 0;
+	while( t < -140.0 && loop < 10) {  // workaround as first read after others access SPI reads zero
+		delay(1);
+		t = readTemperature();
+		loop++;
+	}
+	if( loop == 10 )
+		printf("Error reading temp BMP280 CS: %d !\n", _cs );
 	uint8_t tx[4];
 	uint8_t rx[4];
 	memset(tx, 0, 4);

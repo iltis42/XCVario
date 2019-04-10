@@ -26,6 +26,8 @@
 
 #include "esp_task_wdt.h"
 
+char Setup::_ID[14];
+
 void Setup::factorySetting()
 {
 		printf("Setup::factorySetting()\n");
@@ -54,16 +56,8 @@ void Setup::factorySetting()
 		printf("sefault _polar %d\n", Polars::numPolars() );
 		_setup._polar = Polars::getPolar(0); // default user polar
 		memset( _setup._bt_name, 0, sizeof( _setup._bt_name) );
-		uint8_t mac[6];
-		char bt_name[12] = "iVario";
-		unsigned long  crc = 0;
-		if ( esp_efuse_mac_get_default(mac) == ESP_OK ){
-			crc = mz_crc32(0L, mac, 6);
-			printf("CRC %ld\n", crc );
-			sprintf( bt_name, "iVario-%d", int(crc % 1000));
-			printf("BT-Name: %s\n", bt_name );
-		}
-		memcpy( _setup._bt_name, bt_name, strlen( bt_name)  );
+		printf("BT-Name: %s\n", _ID );
+		memcpy( _setup._bt_name, _ID, strlen( _ID )  );
 		commit();
 		printf("end Setup::factorySetting()\n");
 }
@@ -124,6 +118,18 @@ void Setup::commit( ) {
 		printf( "Store data in NVS success\n");
 }
 
+char * Setup::getID() {
+	if( strlen( _ID ) == 0 ) {
+	uint8_t mac[6];
+	unsigned long  crc = 0;
+	if ( esp_efuse_mac_get_default(mac) == ESP_OK ){
+		crc = mz_crc32(0L, mac, 6);
+		}
+	int id = int(crc % 1000);
+	sprintf( _ID, "iVario-%d", id );
+	}
+	return _ID;
+}
 
 
 

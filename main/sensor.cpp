@@ -71,8 +71,8 @@ const gpio_num_t MOSI_bme280 = GPIO_NUM_32; //  SDO Master Output Slave Input ES
 
 const gpio_num_t CS_bme280BA = GPIO_NUM_33; //CS pin
 
-BME280_ESP32_SPI bmpTE(SCLK_bme280, MOSI_bme280, MISO_bme280, CS_bme280TE, 9314159);
-BME280_ESP32_SPI bmpBA(SCLK_bme280, MOSI_bme280, MISO_bme280, CS_bme280BA, 9314159);
+BME280_ESP32_SPI bmpTE(SCLK_bme280, MOSI_bme280, MISO_bme280, CS_bme280TE, 13111111/2);
+BME280_ESP32_SPI bmpBA(SCLK_bme280, MOSI_bme280, MISO_bme280, CS_bme280BA, 13111111/2);
 
 float baroP=0;
 float temperature=15.0;
@@ -250,7 +250,7 @@ void sensor(void *args){
 		printf("Bluetooth disabled\n");
 	// vTaskDelay(20000 / portTICK_PERIOD_MS);
 	ds18b20.begin();
-	xTaskCreatePinnedToCore(&readTemp, "readTemp", 2048, NULL, 5, NULL, 0);
+	xTaskCreatePinnedToCore(&readTemp, "readTemp", 4096, NULL, 5, NULL, 0);
 	Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
 	Menu.begin( &display, &Rotary, &setup, &setupv, &bmpBA, &ADC );
 
@@ -259,6 +259,6 @@ void sensor(void *args){
 }
 
 extern "C" int btstack_main(int argc, const char * argv[]){
-	xTaskCreatePinnedToCore(&sensor, "sensor", 8096, NULL, 5, NULL, 0);
+	xTaskCreatePinnedToCore(&sensor, "sensor", 30000, NULL, 5, NULL, 0);
 	return 0;
 }

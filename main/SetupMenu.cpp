@@ -488,11 +488,19 @@ void SetupMenu::setup( )
 	sye->addMenu( con );
 
 	Version V;
-	uint8_t select_dummy = 0;
+	static uint8_t select_dummy = 0;
 	SetupMenuSelect * ver = new SetupMenuSelect( 	"Version",
 					&select_dummy, false );
 	ver->addEntry( V.version() );
 	sye->addMenu( ver );
+
+	static uint8_t select_dummy2 = 0;
+	char * ids = _setup->getID();
+	printf( "Setup id=%s", ids );
+	SetupMenuSelect * idm = new SetupMenuSelect( 	"BT Name",
+						&select_dummy2, false );
+	idm->addEntry( ids );
+	sye->addMenu( idm );
 
 	SetupMenu::display();
 }
@@ -604,10 +612,12 @@ void SetupMenuSelect::display( int mode ){
 	u8g2_DrawStr( u8g2, 110,1, selected->_title.c_str() );
 	u8g2_SetDrawColor( u8g2, 2);
 
+	printf("select=%d numval=%d\n", *_select, _numval );
 	int y=10;
 	int start=0;
 	if( *_select > 10 )
 		start = *_select-9;
+	printf("start=%d \n", start );
 	for( int i=start; i<_numval && i<(start+10); i++ )	{
 		u8g2_DrawStr( u8g2, 110-y,1, _values[i].c_str() );
 		if( i == *_select ){

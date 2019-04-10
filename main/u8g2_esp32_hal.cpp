@@ -55,7 +55,7 @@ uint8_t u8g2_esp32_spi_byte_cb(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void 
 		}
 
 		_Spi.begin(u8g2_esp32_hal.clk, u8g2_esp32_hal.miso, u8g2_esp32_hal.mosi );
-		_Spi.setDataMode( 0, u8g2_esp32_hal.cs, 13111111, 10 );   // 2000000
+		_Spi.setDataMode( 0, u8g2_esp32_hal.cs, 13111111/2, 10 );   // 2000000
 		handle_spi=_Spi._handle[u8g2_esp32_hal.cs];
 
 		break;

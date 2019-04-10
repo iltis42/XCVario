@@ -49,6 +49,7 @@ typedef struct {
 class Setup {
 public:
 	Setup() {
+		memset( _ID, 0, sizeof( _ID ) );
 	}
 	// Setup( bool &operationMode, float &speedcal );
 	virtual ~Setup() {};
@@ -61,9 +62,11 @@ public:
 	inline char  *getBtName() { return _setup._bt_name; }
 	inline float getVarioDelay() { return _setup._vario_delay; }
 	inline const t_polar getPolar() {  return _setup._polar;  };
+	char* getID();
 
 private:
 	setup_t _setup;
+	static char _ID[14];
 };
 
 

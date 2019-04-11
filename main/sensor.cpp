@@ -91,6 +91,9 @@ BatVoltage ADC ( &setup, &setupv );
 PWMOut pwm1;
 S2F  s2f( &setup );
 Switch VaSoSW;
+TaskHandle_t *bpid;
+TaskHandle_t *spid;
+TaskHandle_t *tpid;
 
 //                     mosi,    miso,         scl,           dc,       reset,        cs
 DotDisplay display( MOSI_bme280, MISO_bme280, SCLK_bme280, GPIO_NUM_15, GPIO_NUM_5, GPIO_NUM_13 );
@@ -170,10 +173,12 @@ void readBMP(void *pvParameters){
 			display.drawDisplay( TE, aTE, alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode );
 
 			Audio.setValues( TE, s2f_delta );
-
+			if( uxTaskGetStackHighWaterMark( bpid ) < 1000 )
+				printf("Warning Stack low: %d bytes\n", uxTaskGetStackHighWaterMark( bpid ) );
 		}
 		esp_task_wdt_reset();
 		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
+
 	}
 }
 
@@ -234,7 +239,7 @@ void sensor(void *args){
     pwm1.setContrast( setup.get()->_contrast_adj );
     s2f.change_polar();
 	s2f.change_mc_bal();
-	xTaskCreatePinnedToCore(&readBMP, "readBMP", 16000, NULL, 5, NULL, 0);
+	xTaskCreatePinnedToCore(&readBMP, "readBMP", 8000, NULL, 6, bpid, 0);
 	Version myVersion;
 	printf("Program Version %s\n", myVersion.version() );
 
@@ -250,15 +255,15 @@ void sensor(void *args){
 		printf("Bluetooth disabled\n");
 	// vTaskDelay(20000 / portTICK_PERIOD_MS);
 	ds18b20.begin();
-	xTaskCreatePinnedToCore(&readTemp, "readTemp", 4096, NULL, 5, NULL, 0);
+	xTaskCreatePinnedToCore(&readTemp, "readTemp", 8000, NULL, 3, tpid, 0);
 	Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
 	Menu.begin( &display, &Rotary, &setup, &setupv, &bmpBA, &ADC );
-
+	printf("Free Stack: S:%d \n", uxTaskGetStackHighWaterMark( spid ) );
 	vTaskDelete( NULL );
 
 }
 
 extern "C" int btstack_main(int argc, const char * argv[]){
-	xTaskCreatePinnedToCore(&sensor, "sensor", 30000, NULL, 5, NULL, 0);
+	xTaskCreatePinnedToCore(&sensor, "sensor", 8000, NULL, 5, spid, 0);
 	return 0;
 }

@@ -496,7 +496,7 @@ void SetupMenu::setup( )
 
 	static uint8_t select_dummy2 = 0;
 	char * ids = _setup->getID();
-	printf( "Setup id=%s", ids );
+	printf( "Setup id=%s\n", ids );
 	SetupMenuSelect * idm = new SetupMenuSelect( 	"BT Name",
 						&select_dummy2, false );
 	idm->addEntry( ids );

@@ -34,34 +34,7 @@ altitude calculation by open source community on github.
 class BME280_ESP32_SPI
 {
 public:
-	BME280_ESP32_SPI() {
-		// _sclk = 0;
-		// _mosi = 0;
-		// _miso = 0;
-		// _cs = 0;
-		_freq = 0;
-		_t_fine = 0;
-		_dig_T1 = 0;
-		_dig_T2 = 0;
-		_dig_T3 = 0;
-		_dig_P1 = 0;
-		_dig_P2 = 0;
-		_dig_P3 = 0;
-		_dig_P4 = 0;
-		_dig_P5 = 0;
-		_dig_P6 = 0;
-		_dig_P7 = 0;
-		_dig_P8 = 0;
-		_dig_P9 = 0;
-		_dig_H1 = 0;
-		_dig_H2 = 0;
-		_dig_H3 = 0;
-		_dig_H4 = 0;
-		_dig_H5 = 0;
-		_dig_H6 = 0;
-		_freq = 0;
-		exponential_average = 0;
-	};
+	BME280_ESP32_SPI();
 	BME280_ESP32_SPI(gpio_num_t sclk, gpio_num_t mosi, gpio_num_t miso, gpio_num_t cs, uint32_t freq);
 	void begin(uint8_t Stanby_t, uint8_t filter, uint8_t overS_T, uint8_t overS_P, uint8_t overS_H, uint8_t mode);
 
@@ -109,6 +82,7 @@ private:
 	int16_t _dig_H5;
 	int8_t  _dig_H6;
 	double exponential_average;
+	bool init_err;
 };
 
 #endif

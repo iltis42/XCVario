@@ -331,11 +331,24 @@ void SetupMenu::setup( )
 	vga->setHelp("Upper and lower value for graphic display region");
 	vae->addMenu( vga );
 // Bluetooth
-	SetupMenuSelect * bt = new SetupMenuSelect( 	"Bluetooth",
-			&_setup->get()->_blue_enable, true );
-	bt->addEntry( "OFF");
-	bt->addEntry( "ON");
+	SetupMenu * bt = new SetupMenu( 	"Bluetooth"  );
+
+	SetupMenuSelect * btm = new SetupMenuSelect( 	"BT Sender",
+				&_setup->get()->_blue_enable, true );
+	btm->addEntry( "OFF");
+	btm->addEntry( "ON");
+	bt->addMenu( btm );
+
+	static uint8_t select_dummy2 = 0;
+	char * ids = _setup->getID();
+	printf( "Setup id=%s\n", ids );
+	SetupMenuSelect * idm = new SetupMenuSelect( 	"BT Name",
+								&select_dummy2, false );
+	idm->addEntry( ids );
+	bt->addMenu( idm );
 	mm->addMenu( bt );
+
+
 // Audio
 	SetupMenu * ad = new SetupMenu( "Audio" );
 	MenuEntry* ade = mm->addMenu( ad );
@@ -494,13 +507,7 @@ void SetupMenu::setup( )
 	ver->addEntry( V.version() );
 	sye->addMenu( ver );
 
-	static uint8_t select_dummy2 = 0;
-	char * ids = _setup->getID();
-	printf( "Setup id=%s\n", ids );
-	SetupMenuSelect * idm = new SetupMenuSelect( 	"BT Name",
-						&select_dummy2, false );
-	idm->addEntry( ids );
-	sye->addMenu( idm );
+
 
 	SetupMenu::display();
 }

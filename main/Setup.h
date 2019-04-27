@@ -59,7 +59,7 @@ public:
 	void commit();
 	void  help();
 	bool checkSum( bool set=false );
-	inline char  *getBtName() { return _setup._bt_name; }
+	inline char  *getBtName() { return getID(); }
 	inline float getVarioDelay() { return _setup._vario_delay; }
 	inline const t_polar getPolar() {  return _setup._polar;  };
 	char* getID();

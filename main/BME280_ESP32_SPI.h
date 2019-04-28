@@ -38,7 +38,7 @@ public:
 	BME280_ESP32_SPI(gpio_num_t sclk, gpio_num_t mosi, gpio_num_t miso, gpio_num_t cs, uint32_t freq);
 	void begin(uint8_t Stanby_t, uint8_t filter, uint8_t overS_T, uint8_t overS_P, uint8_t overS_H, uint8_t mode);
 
-	double readTemperature();
+	double readTemperature( bool& success );
 	double readPressure();
 	double readPressureAVG( float alpha=0.1 );
 	double readHumidity();

@@ -24,7 +24,8 @@ void BMPVario::setup() {
 double BMPVario::readTE() {
 	if ( _test )     // we are in testmode, just return what has been set
 		return _TEF;
-	bmpTemp = _bmpTE->readTemperature();
+	bool success;
+	bmpTemp = _bmpTE->readTemperature( success );
 	// printf("BMP temp=%0.1f", bmpTemp );
 	_currentAlt = _bmpTE->readAltitude(_qnh);
 	// printf( "TE-Alt %0.1f  NM:", _currentAlt );

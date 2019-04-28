@@ -146,7 +146,7 @@ void BME280_ESP32_SPI::readCalibration(void) {
 }
 
 //***************BME280 ****************************
-double BME280_ESP32_SPI::readTemperature(){
+double BME280_ESP32_SPI::readTemperature( bool& success ){
 	// printf( "++BPM280 read Temp cs:%d ", _cs);
 	uint8_t tx[4];
 	uint8_t rx[4];
@@ -161,7 +161,7 @@ double BME280_ESP32_SPI::readTemperature(){
     _Spi.send( _cs, tx, 1, 0 );
 
 	tx[0] = 0;
-	// l = _Spi.send( _cs, tx, 3, rx );
+	// int _l = _Spi.send( _cs, tx, 3, rx );
 	_Spi.send( _cs, tx, 3, rx );
 
 	// printf( "read Temp rx length %d bytes\n", l/8);
@@ -169,6 +169,10 @@ double BME280_ESP32_SPI::readTemperature(){
 
 	// for(uint8_t i=0; i<l/8; i++)
 	//  	printf( "%02x ", rx[i]);
+	if ( rx[0] == 0 && rx[1] == 0 && rx[3] == 0 )
+		success = false;
+	else
+		success = true;
 	// printf( "\n");
 	uint32_t adc_T = (rx[0] << 12) | (rx[1] << 4) | (rx[2] >> 4); //0xFA, msb+lsb+xlsb=19bit
 
@@ -181,15 +185,16 @@ double BME280_ESP32_SPI::readTemperature(){
 }
 
 //***************BME280 ****************************
-double BME280_ESP32_SPI::readPressure(){
+double BME280_ESP32_SPI::readPressure(  ){
 	if( init_err )
 			return 0.0;
 	// printf("++BMP280 readPressure cs:%d\n", _cs);
-	double t = readTemperature();
+	bool success;
+	readTemperature( success );
 	int loop = 0;
-	while( t < -140.0 && loop < 10) {  // workaround as first read after others access SPI reads zero
+	while( !success && loop < 10) {  // workaround as first read after others access SPI reads zero
 		delay(1);
-		t = readTemperature();
+		readTemperature( success );
 		loop++;
 	}
 	if( loop == 10 )
@@ -219,7 +224,8 @@ double BME280_ESP32_SPI::readPressure(){
 double BME280_ESP32_SPI::readHumidity(){
 	// printf("++BMP280 readHumidity\n");
 	uint32_t data[2];
-	readTemperature();
+	bool success;
+	readTemperature( success );
 	digitalWrite(_cs, LOW);
 	_Spi.transfer(_cs,0xFD | 0x80); //0xFD Humidity msb read, bit 7 high
 	data[0] = _Spi.transfer(_cs,0x00);
@@ -294,19 +300,21 @@ uint32_t BME280_ESP32_SPI::compensate_H(int32_t adc_H) {
 double BME280_ESP32_SPI::readAltitude(double SeaLevel_Pres) {
 	if( init_err )
 		return 0.0;
-	// printf("++BMP280 readAltitude=%0.1f %04x\n", SeaLevel_Pres, (uint32_t)this);
+	// printf("++BMP280 readAltitude QNH=%0.1f CS:%d\n", SeaLevel_Pres, _cs);
 	double pressure = readPressure();
 	// printf("press=%0.1f\n", pressure);
 	double altitude = 44330.0 * (1.0 - pow(pressure / SeaLevel_Pres, (1.0/5.255)));
-	// printf("--BME280 readAltitude=%0.1f\n",altitude);
+	// printf("--BME280 readAltitude p=%0.1f alt=%0.1f\n", pressure, altitude);
 	return altitude;
 }
 
 double BME280_ESP32_SPI::calcAVGAltitude(double SeaLevel_Pres, double p ) {
 	if( init_err )
 			return 0.0;
+	// printf("++BMP280 readAVGAltitude QNH=%0.1f CS:%d\n", SeaLevel_Pres, _cs);
 	double alt = 44330.0 * (1.0 - pow(p / SeaLevel_Pres, (1.0/5.255)));
 	_avg_alt = (alt - _avg_alt )*0.1 + _avg_alt;
+	// printf("--BME280 readAVGAltitude p=%0.1f alt=%0.1f\n", p, _avg_alt);
 	return _avg_alt;
 }
 

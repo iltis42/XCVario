@@ -12,20 +12,30 @@
 #include "esp_system.h"
 #include "nvs_flash.h"
 
+#include "BME280_ESP32_SPI.h"
+#include <driver/adc.h>
+#include "mcp3221.h"
 #include "ESP32NVS.h"
+#include "MP5004DP.h"
+#include "BMPVario.h"
 #include "BTSender.h"
+#include "OpenVario.h"
+#include "DS18B20.h"
 #include "Setup.h"
 #include "esp_sleep.h"
+#include "ESPAudio.h"
 #include <esp_wifi.h>
+#include "SetupMenu.h"
+#include "ESPRotary.h"
+#include "BatVoltage.h"
+#include "DotDisplay.h"
 #include "sensor.h"
+#include "PWMOut.h"
+#include "S2F.h"
 #include "Version.h"
-#include "rom/uart.h"
-
-#include "nvs_flash.h"
-#include "driver/uart.h"
-#include "freertos/queue.h"
-#include "esp_log.h"
-#include "soc/uart_struct.h"
+#include "Switch.h"
+#include "Polars.h"
+#include "SetupVolt.h"
 
 
 /*
@@ -52,91 +62,202 @@ BMP:
 
  */
 
+const gpio_num_t SCLK_bme280 = GPIO_NUM_14; //
+const gpio_num_t MISO_bme280 = GPIO_NUM_27; // SDA Master Input Slave Output
+const gpio_num_t CS_bme280TE = GPIO_NUM_26; // CS pin 26
 
-static uint8_t* data;
+
+const gpio_num_t MOSI_bme280 = GPIO_NUM_32; //  SDO Master Output Slave Input ESP32=Master,BME280=slave
+
+const gpio_num_t CS_bme280BA = GPIO_NUM_33; //CS pin
+
+BME280_ESP32_SPI bmpTE(SCLK_bme280, MOSI_bme280, MISO_bme280, CS_bme280TE, 13111111/2);
+BME280_ESP32_SPI bmpBA(SCLK_bme280, MOSI_bme280, MISO_bme280, CS_bme280BA, 13111111/2);
+
+float baroP=0;
+float temperature=15.0;
+float battery=0.0;
+float TE=0;
+float speedP;
 bool  enableBtTx=true;
-static const uart_port_t uart_num = UART_NUM_0;
 
+DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 worked before
+MP5004DP MP5004DP;
+OpenVario OV;
 xSemaphoreHandle xMutex=NULL;
 Setup setup;
+SetupVolt setupv;
+BatVoltage ADC ( &setup, &setupv );
+PWMOut pwm1;
+S2F  s2f( &setup );
+Switch VaSoSW;
 TaskHandle_t *bpid;
 TaskHandle_t *spid;
 TaskHandle_t *tpid;
 
 //                     mosi,    miso,         scl,           dc,       reset,        cs
+DotDisplay display( MOSI_bme280, MISO_bme280, SCLK_bme280, GPIO_NUM_15, GPIO_NUM_5, GPIO_NUM_13 );
+/*
+
+u8g2_esp32_hal.mosi  = mosi; // MOSI_bme280;
+u8g2_esp32_hal.clk   = scl; // SCLK_bme280;
+u8g2_esp32_hal.dc    = dc; // GPIO_NUM_15;
+u8g2_esp32_hal.reset = reset; // GPIO_NUM_5;
+u8g2_esp32_hal.cs    = cs; // GPIO_NUM_26;
 
 
+ */
+
+
+ESPRotary Rotary;
+SetupMenu  Menu;
 
 void handleRfcommRx( char * rx, uint16_t len ){
 	printf("RFCOMM packet, %s, len %d %d\n", rx, len, strlen( rx ));
-	int l = uart_write_bytes(uart_num, (const char*) rx, len);
-	if( l < 0) {
-		printf("Error sending BT -> serial TX %s %d\n", rx, len);
-	}
+
 }
 
 
 BTSender btsender( handleRfcommRx  );
+// BTSender btsender( handleRfcommRx, 2, 1 );
 
-#define BUF_SIZE 2048
 
-void readData(void *pvParameters){
+void readBMP(void *pvParameters){
 	while (1) {
-//		TickType_t xLastWakeTime = xTaskGetTickCount();
-		int len = uart_read_bytes(uart_num, data, 10, 200 / portTICK_RATE_MS);
-		// data[len+1] = 0;
-		//Write data back to BT
-		if( len > 0 ) {
-//			printf( "UART RX: %d %s\n", len, (char *)data);
-			btsender.send( (char *)data, len );
+		TickType_t xLastWakeTime = xTaskGetTickCount();
+		if( Audio.getDisable() != true )
+		{
+			TE = bmpVario.readTE();
+			baroP = bmpBA.readPressure();
+			speedP = MP5004DP.readPascal(30);
+			float alt;
+			if( setup.get()->_alt_select == 0 ) // TE
+			   alt = bmpVario.readAVGalt();
+			else {
+			   alt = bmpBA.calcAVGAltitude( setup.get()->_QNH, baroP );
+			   // printf("BA p=%f alt=%f QNH=%f\n", baroP, alt, setup.get()->_QNH );
+			}
+			xSemaphoreTake(xMutex,portMAX_DELAY );
+			char lb[100];
+			if( enableBtTx ) {
+				OV.makeNMEA( lb, baroP, speedP, TE, temperature );
+				btsender.send( lb );
+			}
+			xSemaphoreGive(xMutex);
+
+			battery = ADC.getBatVoltage();
+			float speed = MP5004DP.pascal2km( speedP, temperature );
+			float aTE = bmpVario.readAVGTE();
+			float aCl = bmpVario.readAvgClimb();
+			float as2f = s2f.speed( aTE );
+			float s2f_delta = as2f - speed;
+			// printf("V %f, S2F %f delta: %f\n", speed, as2f, s2f_delta );
+			// printf("TE %0.1f avTE %0.1f\n", TE, aTE );
+			bool s2fmode = false;
+			switch( setup.get()->_audio_mode ) {
+				case 0: // Vario
+					s2fmode = false;
+					break;
+				case 1: // S2F
+					s2fmode = true;
+					break;
+				case 2: // Switch
+					s2fmode = VaSoSW.isClosed();
+					break;
+				case 3: // Auto
+					if( (speed > setup.get()->_s2f_speed)  or VaSoSW.isClosed())
+					s2fmode = true;
+					break;
+			}
+			Audio.setS2FMode( s2fmode );
+			display.drawDisplay( TE, aTE, alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode );
+
+			Audio.setValues( TE, s2f_delta );
+			if( uxTaskGetStackHighWaterMark( bpid ) < 1000 )
+				printf("Warning Stack low: %d bytes\n", uxTaskGetStackHighWaterMark( bpid ) );
 		}
 		esp_task_wdt_reset();
-		// vTaskDelayUntil(&xLastWakeTime, 500/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
+
 	}
 }
 
+void readTemp(void *pvParameters){
+	while (1) {
+		TickType_t xLastWakeTime = xTaskGetTickCount();
+		if( Audio.getDisable() != true )
+		{
+			float t = ds18b20.getTemp();
 
-#define UART0_TXD  (1)
-#define UART0_RXD  (3)
+			xSemaphoreTake(xMutex,portMAX_DELAY );
+			temperature = t;
+			xSemaphoreGive(xMutex);
+		}
+		esp_task_wdt_reset();
+		vTaskDelayUntil(&xLastWakeTime, 2000/portTICK_PERIOD_MS);
+	}
+}
 
-
-
+// void sleepS( const TickType_t delay ) {
+//	vTaskDelay(delay / portTICK_PERIOD_MS);
+// };
 
 void sensor(void *args){
 	esp_wifi_set_mode(WIFI_MODE_NULL);
 	esp_log_level_set("*", ESP_LOG_INFO);
 	NVS.begin();
 
-	uart_config_t uart_config = {
-	    .baud_rate = 19200,
-	    .data_bits = UART_DATA_8_BITS,
-	    .parity = UART_PARITY_DISABLE,
-	    .stop_bits = UART_STOP_BITS_1,
-	    .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-	    .rx_flow_ctrl_thresh = 0,
-		.use_ref_tick = false
-	};
-	// Configure UART parameters
-	ESP_ERROR_CHECK(uart_param_config(uart_num, &uart_config));
-	uart_set_pin(uart_num, UART0_TXD, UART0_RXD, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-	data = (uint8_t*) malloc(BUF_SIZE);
-	//Install UART driver (we don't need an event queue here)
-	uart_driver_install(uart_num, BUF_SIZE, 0, 0, NULL, 0);
-
 	setup.begin();
+	setupv.begin();
+	display.begin( &setup );
 	sleep( 1 );
+	Audio.begin( DAC_CHANNEL_1, GPIO_NUM_0, &setup );
 
 	xMutex=xSemaphoreCreateMutex();
-	xTaskCreatePinnedToCore(&readData, "readData", 8000, NULL, 6, bpid, 0);
+	uint8_t t_sb = 0;   //stanby 0: 0,5 mS 1: 62,5 mS 2: 125 mS
+	uint8_t filter = 0; //filter O = off
+	uint8_t osrs_t = 5; //OverSampling Temperature
+	uint8_t osrs_p = 5; //OverSampling Pressure (5:x16 4:x8, 3:x4 2:x2 )
+	uint8_t osrs_h = 0; //OverSampling Humidity x4
+	uint8_t Mode = 3;   //Normal mode
+
+	printf("BMP280 sensors init..\n");
+
+    bmpTE.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
+    sleep( 1 );
+	bmpBA.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
+	bmpVario.begin( &bmpTE, &setup );
+	bmpVario.setup();
+	VaSoSW.begin( GPIO_NUM_12 );
+
+	printf("Speed sensors init..\n");
+	MP5004DP.begin( GPIO_NUM_21, GPIO_NUM_22, setup.get()->_speedcal, &setup);  // sda, scl
+	MP5004DP.doOffset();
+	ADC.begin();
+
+	pwm1.init( GPIO_NUM_18 );
+    pwm1.setContrast( setup.get()->_contrast_adj );
+    s2f.change_polar();
+	s2f.change_mc_bal();
+	xTaskCreatePinnedToCore(&readBMP, "readBMP", 8000, NULL, 6, bpid, 0);
 	Version myVersion;
 	printf("Program Version %s\n", myVersion.version() );
 
+	Audio.mute( false );
 
 	gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);  // blue LED, maybe use for BT connection
-	hci_power_control(HCI_POWER_ON);
-	printf("BT Sender init, device name: %s\n", setup.getBtName() );
-	btsender.begin( &enableBtTx, setup.getBtName() );
-
+	if( setup.get()->_blue_enable ) {
+		hci_power_control(HCI_POWER_ON);
+		printf("BT Sender init, device name: %s\n", setup.getBtName() );
+		btsender.begin( &enableBtTx, setup.getBtName() );
+	}
+	else
+		printf("Bluetooth disabled\n");
+	// vTaskDelay(20000 / portTICK_PERIOD_MS);
+	ds18b20.begin();
+	xTaskCreatePinnedToCore(&readTemp, "readTemp", 8000, NULL, 3, tpid, 0);
+	Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
+	Menu.begin( &display, &Rotary, &setup, &setupv, &bmpBA, &ADC );
 	printf("Free Stack: S:%d \n", uxTaskGetStackHighWaterMark( spid ) );
 	vTaskDelete( NULL );
 

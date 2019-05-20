@@ -10,7 +10,7 @@ public:
 	   _callback = cb;
   };
   void begin( bool *enable, char* bt_name );
-  void send( char * s, int len );
+  void send( char * s );
 
 private:
    static bool *_enable;

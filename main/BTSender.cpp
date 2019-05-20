@@ -22,21 +22,14 @@ btstack_timer_source_t BTSender::heartbeat;
 btstack_packet_callback_registration_t BTSender::hci_event_callback_registration;
 void ( * BTSender::_callback)(char * rx, uint16_t len);
 
-typedef struct _msg {
-	char buf[100];
-	int len;
-} t_msg;
-
-std::queue<t_msg> queue;
+std::queue<std::string> queue;
 
 
-void BTSender::send(char * s, int len){
-	// printf("%s",s);
-	t_msg msg;
-	memcpy( msg.buf, s, len );
-	msg.len = len;
+void BTSender::send(char * s){
+	printf("%s",s);
+	std::string str( s );
 	if (queue.size() < 100) {
-		queue.push( msg );
+		queue.push( str );
 	}
 }
 
@@ -46,7 +39,7 @@ void BTSender::heartbeat_handler(struct btstack_timer_source *ts){
 		gpio_set_level(GPIO_NUM_2, 1);
 		if ( queue.size() ){
 			if (rfcomm_can_send_packet_now(rfcomm_channel_id)){
-				int err = rfcomm_send(rfcomm_channel_id, (uint8_t*) queue.front().buf, queue.front().len );
+				int err = rfcomm_send(rfcomm_channel_id, (uint8_t*) queue.front().c_str(), queue.front().length() );
 				queue.pop();
 				if (err) {
 					printf("rfcomm_send -> error %d", err);

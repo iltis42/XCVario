@@ -39,7 +39,6 @@
 
 #include "U8x8lib.h"
 #ifdef U8X8_HAVE_HW_SPI
-#include "../../main/SPI.h"
 #endif 
 // #ifdef U8X8_HAVE_HW_I2C
 // #include <Wire.h>

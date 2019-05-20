@@ -19,10 +19,7 @@
 #include <iostream>
 #include <map>
 #include <math.h>
-#include "ESPAudio.h"
-#include "BMPVario.h"
 #include <rom/miniz.h>
-#include "Polars.h"
 
 #include "esp_task_wdt.h"
 
@@ -31,30 +28,6 @@ char Setup::_ID[14];
 void Setup::factorySetting()
 {
 		printf("Setup::factorySetting()\n");
-		_setup._speedcal = 0.0;
-		_setup._deadband = 0.3;
-		_setup._deadband_neg = -0.3;
-		_setup._center_freq = 500.0;
-		_setup._tone_var = 2.0;
-		_setup._vario_delay = 3.0; // seconds
-		_setup._analog_adj = 0.0;
-		_setup._QNH = 1013.25;
-		_setup._blue_enable = 1;
-		_setup._range = 5.0;
-		_setup._ballast = 0.0;
-		_setup._MC = 0.0;
-		_setup._voltmeter_adj = 0;
-		_setup._voltmeter_factory_adj = 0.0;
-		_setup._factory_reset = 0;
-		_setup._audio_range = 0;
-		_setup._alt_select = 1;
-		_setup._offset = 0;
-		_setup._contrast_adj = 85.0;
-		_setup._s2f_speed = 100.0;
-		_setup._audio_mode = 3;
-		_setup._glider_type = 0;
-		printf("sefault _polar %d\n", Polars::numPolars() );
-		_setup._polar = Polars::getPolar(0); // default user polar
 		memset( _setup._bt_name, 0, sizeof( _setup._bt_name) );
 		printf("BT-Name: %s\n", _ID );
 		memcpy( _setup._bt_name, _ID, strlen( _ID )  );
@@ -126,7 +99,7 @@ char * Setup::getID() {
 		crc = mz_crc32(0L, mac, 6);
 		}
 	int id = int(crc % 1000);
-	sprintf( _ID, "iVario-%d", id );
+	sprintf( _ID, "Flarm-%d", id );
 	}
 	return _ID;
 }

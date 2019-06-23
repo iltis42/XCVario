@@ -152,7 +152,7 @@ void readBMP(void *pvParameters){
 			float netto = aTE - s2f.sink( speed );
 			float as2f = s2f.speed( netto );
 			float s2f_delta = as2f - speed;
-			printf("Cur Speed %f, S2F %f delta: %f netto: %f\n", speed, as2f, s2f_delta, netto );
+			// printf("Cur Speed %f, S2F %f delta: %f netto: %f\n", speed, as2f, s2f_delta, netto );
 			// printf("TE %0.1f avTE %0.1f\n", TE, aTE );
 			bool s2fmode = false;
 			switch( setup.get()->_audio_mode ) {

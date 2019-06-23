@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cdtprojectproperties>
+<section name="org.eclipse.cdt.internal.ui.wizards.settingswizards.IncludePaths">
+<language name="holder for library settings">
+
+</language>
+<language name="Assembly">
+<includepath>/home/iltis/esp/esp-idf/components/newlib/include</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/btstack/src</includepath>
+<includepath>/home/iltis/esp/esp-idf/components</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/log/include</includepath>
+<includepath>/home/iltis/esp/xtensa-esp32-elf.binary/xtensa-esp32-elf/include/c++/5.2.0</includepath>
+<includepath>/home/iltis/esp/workspace/sensor/build/include</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/esp32/include</includepath>
+<includepath>/home/iltis/esp/xtensa-esp32-elf.binary/lib/gcc/xtensa-esp32-elf/5.2.0/include</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/freertos/include</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/nvs_flash/include</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/driver/include</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/esp_adc_cal/include</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/spi_flash/include</includepath>
+<includepath>/home/iltis/esp/workspace/u8g2/csrc</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/soc/esp32/include</includepath>
+<includepath>/home/iltis/esp/xtensa-esp32-elf.binary/xtensa-esp32-elf/include/c++/5.2.0/xtensa-esp32-elf</includepath>
+
+</language>
+<language name="GNU C++">
+<includepath>/home/iltis/esp/esp-idf/components</includepath>
+<includepath>/home/iltis/esp/crosstool-NG/builds/xtensa-esp32-elf/include</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/newlib/include</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/btstack/src</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/log/include</includepath>
+<includepath>/home/iltis/esp/xtensa-esp32-elf.binary/xtensa-esp32-elf/include/c++/5.2.0</includepath>
+<includepath>/home/iltis/esp/workspace/sensor/build/include</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/esp32/include</includepath>
+<includepath>/home/iltis/esp/xtensa-esp32-elf.binary/lib/gcc/xtensa-esp32-elf/5.2.0/include</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/freertos/include/freertos</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/freertos/include</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/nvs_flash/include</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/driver/include</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/esp_adc_cal/include</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/spi_flash/include</includepath>
+<includepath>/home/iltis/esp/workspace/u8g2/csrc</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/soc/include</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/soc/esp32/include/soc</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/soc/esp32/include</includepath>
+<includepath>/home/iltis/esp/xtensa-esp32-elf.binary/xtensa-esp32-elf/include/c++/5.2.0/xtensa-esp32-elf</includepath>
+
+</language>
+<language name="GNU C">
+<includepath>/home/iltis/esp/esp-idf/components</includepath>
+<includepath>/home/iltis/esp/crosstool-NG/builds/xtensa-esp32-elf/include</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/newlib/include</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/btstack/src</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/log/include</includepath>
+<includepath>/home/iltis/esp/xtensa-esp32-elf.binary/xtensa-esp32-elf/include/c++/5.2.0</includepath>
+<includepath>/home/iltis/esp/workspace/sensor/build/include</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/esp32/include</includepath>
+<includepath>/home/iltis/esp/xtensa-esp32-elf.binary/lib/gcc/xtensa-esp32-elf/5.2.0/include</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/freertos/include/freertos</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/freertos/include</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/nvs_flash/include</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/driver/include</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/esp_adc_cal/include</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/spi_flash/include</includepath>
+<includepath>/home/iltis/esp/workspace/u8g2/csrc</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/soc/include</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/soc/esp32/include/soc</includepath>
+<includepath>/home/iltis/esp/esp-idf/components/soc/esp32/include</includepath>
+<includepath>/home/iltis/esp/xtensa-esp32-elf.binary/xtensa-esp32-elf/include/c++/5.2.0/xtensa-esp32-elf</includepath>
+
+</language>
+</section>
+<section name="org.eclipse.cdt.internal.ui.wizards.settingswizards.Macros">
+<language name="holder for library settings">
+
+</language>
+<language name="Assembly">
+
+</language>
+<language name="GNU C++">
+
+</language>
+<language name="GNU C">
+
+</language>
+</section>
+</cdtprojectproperties>

@@ -30,7 +30,7 @@ private:
 
 struct ring_buffer
 {
-	ring_buffer( std::size_t cap ) : buffer(cap) {}
+	ring_buffer( size_t cap ) : buffer(cap) {}
 	bool empty() const { return sz == 0 ; }
 	bool full() const { return sz == buffer.size() ; }
 
@@ -42,7 +42,7 @@ struct ring_buffer
 		if( full() ) first = (first+1) %  buffer.size() ;
 		else ++sz ;
 	}
-	int& operator[] ( std::size_t pos )
+	int& operator[] ( size_t pos )
 	{
 		auto p = ( first + pos ) % buffer.size() ;
 		return buffer[p] ;
@@ -50,9 +50,9 @@ struct ring_buffer
 
 private:
 	std::vector<int> buffer ;
-	std::size_t first = 0 ;
-	std::size_t last = 0 ;
-	std::size_t sz = 0 ;
+	size_t first = 0 ;
+	size_t last = 0 ;
+	size_t sz = 0 ;
 };
 
 class ESPRotary {

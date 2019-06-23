@@ -1,6 +1,7 @@
 #include "MP5004DP.h"
 #include "sdkconfig.h"
 #include "math.h"
+#include "string"
 
 
 // MP5004DP::MP5004DP(){

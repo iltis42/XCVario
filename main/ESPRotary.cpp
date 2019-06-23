@@ -8,6 +8,8 @@
 #include <rom/ets_sys.h>
 #include <sys/time.h>
 
+
+
 gpio_num_t ESPRotary::clk, ESPRotary::dt, ESPRotary::sw;
 std::vector<RotaryObserver *> ESPRotary::observers;
 uint8_t ESPRotary::_switch;

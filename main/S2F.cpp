@@ -91,6 +91,9 @@ double S2F::minsink()
 void S2F::test( void )
 {
 	printf( "Minimal Sink %f km/h\n", minsink());
+	printf( "Sink %f @ %s km/h \n", sink( 0.0 ), "0");
+	printf( "Sink %f @ %s km/h \n", sink( 20.0 ), "20");
+	printf( "Sink %f @ %s km/h \n", sink( 40.0 ), "40");
 	printf( "Sink %f @ %s km/h \n", sink( 80.0 ), "80");
 	printf( "Sink %f @ %s km/h \n", sink( 100.0 ), "100");
 	printf( "Sink %f @ %s km/h \n", sink( 120.0 ), "120");

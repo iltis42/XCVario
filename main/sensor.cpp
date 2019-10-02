@@ -37,6 +37,9 @@
 #include "Polars.h"
 #include "SetupVolt.h"
 
+#include <SPI.h>
+#include <Ucglib.h>
+
 
 /*
 
@@ -63,11 +66,11 @@ BMP:
  */
 
 const gpio_num_t SCLK_bme280 = GPIO_NUM_14; //
-const gpio_num_t MISO_bme280 = GPIO_NUM_27; // SDA Master Input Slave Output
+const gpio_num_t MOSI_bme280 = GPIO_NUM_27; // SDO Master Out Slave In
 const gpio_num_t CS_bme280TE = GPIO_NUM_26; // CS pin 26
 
 
-const gpio_num_t MOSI_bme280 = GPIO_NUM_32; //  SDO Master Output Slave Input ESP32=Master,BME280=slave
+const gpio_num_t MISO_bme280 = GPIO_NUM_32; //  SDI Master In Slave Out ESP32=Master,BME280=slave
 
 const gpio_num_t CS_bme280BA = GPIO_NUM_33; //CS pin
 
@@ -85,11 +88,11 @@ DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 worked before
 MP5004DP MP5004DP;
 OpenVario OV;
 xSemaphoreHandle xMutex=NULL;
-Setup setup;
+Setup mysetup;
 SetupVolt setupv;
-BatVoltage ADC ( &setup, &setupv );
+BatVoltage ADC ( &mysetup, &setupv );
 PWMOut pwm1;
-S2F  s2f( &setup );
+S2F  s2f( &mysetup );
 Switch VaSoSW;
 TaskHandle_t *bpid;
 TaskHandle_t *spid;
@@ -131,11 +134,11 @@ void readBMP(void *pvParameters){
 			baroP = bmpBA.readPressure();
 			speedP = MP5004DP.readPascal(30);
 			float alt;
-			if( setup.get()->_alt_select == 0 ) // TE
+			if( mysetup.get()->_alt_select == 0 ) // TE
 			   alt = bmpVario.readAVGalt();
 			else {
-			   alt = bmpBA.calcAVGAltitude( setup.get()->_QNH, baroP );
-			   // printf("BA p=%f alt=%f QNH=%f\n", baroP, alt, setup.get()->_QNH );
+			   alt = bmpBA.calcAVGAltitude( mysetup.get()->_QNH, baroP );
+			   // printf("BA p=%f alt=%f QNH=%f\n", baroP, alt, mysetup.get()->_QNH );
 			}
 			xSemaphoreTake(xMutex,portMAX_DELAY );
 			char lb[100];
@@ -155,7 +158,7 @@ void readBMP(void *pvParameters){
 			// printf("Cur Speed %f, S2F %f delta: %f netto: %f\n", speed, as2f, s2f_delta, netto );
 			// printf("TE %0.1f avTE %0.1f\n", TE, aTE );
 			bool s2fmode = false;
-			switch( setup.get()->_audio_mode ) {
+			switch( mysetup.get()->_audio_mode ) {
 				case 0: // Vario
 					s2fmode = false;
 					break;
@@ -166,7 +169,7 @@ void readBMP(void *pvParameters){
 					s2fmode = VaSoSW.isClosed();
 					break;
 				case 3: // Auto
-					if( (speed > setup.get()->_s2f_speed)  or VaSoSW.isClosed())
+					if( (speed > mysetup.get()->_s2f_speed)  or VaSoSW.isClosed())
 					s2fmode = true;
 					break;
 			}
@@ -208,11 +211,11 @@ void sensor(void *args){
 	esp_log_level_set("*", ESP_LOG_INFO);
 	NVS.begin();
 
-	setup.begin();
+	mysetup.begin();
 	setupv.begin();
-	display.begin( &setup );
+	display.begin( &mysetup );
 	sleep( 1 );
-	Audio.begin( DAC_CHANNEL_1, GPIO_NUM_0, &setup );
+	Audio.begin( DAC_CHANNEL_1, GPIO_NUM_0, &mysetup );
 
 	xMutex=xSemaphoreCreateMutex();
 	uint8_t t_sb = 0;   //stanby 0: 0,5 mS 1: 62,5 mS 2: 125 mS
@@ -227,17 +230,17 @@ void sensor(void *args){
     bmpTE.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
     sleep( 1 );
 	bmpBA.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
-	bmpVario.begin( &bmpTE, &setup );
+	bmpVario.begin( &bmpTE, &mysetup );
 	bmpVario.setup();
 	VaSoSW.begin( GPIO_NUM_12 );
 
 	printf("Speed sensors init..\n");
-	MP5004DP.begin( GPIO_NUM_21, GPIO_NUM_22, setup.get()->_speedcal, &setup);  // sda, scl
+	MP5004DP.begin( GPIO_NUM_21, GPIO_NUM_22, mysetup.get()->_speedcal, &mysetup);  // sda, scl
 	MP5004DP.doOffset();
 	ADC.begin();
 
 	pwm1.init( GPIO_NUM_18 );
-    pwm1.setContrast( setup.get()->_contrast_adj );
+    pwm1.setContrast( mysetup.get()->_contrast_adj );
     s2f.change_polar();
 	s2f.change_mc_bal();
 	xTaskCreatePinnedToCore(&readBMP, "readBMP", 8000, NULL, 6, bpid, 0);
@@ -247,19 +250,43 @@ void sensor(void *args){
 	Audio.mute( false );
 
 	gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);  // blue LED, maybe use for BT connection
-	if( setup.get()->_blue_enable ) {
-		hci_power_control(HCI_POWER_ON);
-		printf("BT Sender init, device name: %s\n", setup.getBtName() );
-		btsender.begin( &enableBtTx, setup.getBtName() );
+
+	if( mysetup.get()->_blue_enable ) {
+		// hci_power_control(HCI_POWER_ON);
+		printf("BT Sender init, device name: %s\n", mysetup.getBtName() );
+		btsender.begin( &enableBtTx, mysetup.getBtName() );
 	}
 	else
 		printf("Bluetooth disabled\n");
 	// vTaskDelay(20000 / portTICK_PERIOD_MS);
+
 	ds18b20.begin();
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 8000, NULL, 3, tpid, 0);
 	Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
-	Menu.begin( &display, &Rotary, &setup, &setupv, &bmpBA, &ADC );
+	Menu.begin( &display, &Rotary, &mysetup, &setupv, &bmpBA, &ADC );
 	printf("Free Stack: S:%d \n", uxTaskGetStackHighWaterMark( spid ) );
+
+	// Ucglib_ILI9341_18x240x320_HWSPI ucg(/*cd=*/ 15, /*cs=*/ 13, /*reset=*/ 5);
+
+	// Ucglib_ILI9341_18x240x320_SWSPI ucg(/*sclk=*/ SCLK_bme280, /*data=*/ MOSI_bme280, /*cd=*/ GPIO_NUM_15, /*cs=*/ GPIO_NUM_13, /*reset=*/ GPIO_NUM_5);
+	//                     mosi sdi,    miso,         scl,           dc,       reset,        cs
+	// DotDisplay display( MOSI_bme280, MISO_bme280, SCLK_bme280, GPIO_NUM_15, GPIO_NUM_5, GPIO_NUM_13 );
+
+	// ucg.begin(UCG_FONT_MODE_TRANSPARENT);
+	/*
+	ucg.begin(UCG_FONT_MODE_SOLID);
+	ucg.clearScreen();
+	ucg.setRotate90();
+	ucg.setFont(ucg_font_ncenR12_tr);
+	ucg.setColor(255, 255, 255);
+	ucg.setColor(0, 255, 0);
+	ucg.setColor(1, 255, 0,0);
+
+	ucg.setPrintPos(0,25);
+	ucg.print("Hello Iltis!");
+*/
+	// vTaskDelay(20000 / portTICK_PERIOD_MS);
+
 	vTaskDelete( NULL );
 
 }

@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 
-char Version::_version[12];
+char Version::_version[32];
 
 Version::Version() {
 	const char data[]=__DATE__;

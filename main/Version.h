@@ -12,7 +12,7 @@ class Version {
 public:
 	Version();
 	virtual ~Version();
-	static char _version[12];
+	static char _version[32];
 	char *version()  { return _version; };
 };
 

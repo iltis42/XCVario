@@ -55,9 +55,10 @@ int factv_adj( SetupMenuValFloat * p )
 	printf("factv_adj");
 	char j[14];
 	float adj = 0.0;
-	for( int i=0; i<10; i++ )
-		adj += p->_adc->getBatVoltage(true);
-		sleep( 0.01 );
+	for( int i=0; i<10; i++ ) {
+           adj += p->_adc->getBatVoltage(true);
+	   sleep( 0.01 );
+	}
 	adj = adj/10.0;
 	sprintf( j,"%0.2f %s", adj, "V"  );
 	u8g2_DrawStr( p->u8g2, 110-30,1, j );

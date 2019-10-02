@@ -127,16 +127,18 @@ void BTSender::one_shot_timer_setup(void){
 
 void BTSender::begin( bool *enable, char * bt_name ){
 	_enable = enable;
-	// hci_dump_enable_log_level( LOG_LEVEL_INFO, 0 );
-	// hci_dump_enable_log_level( LOG_LEVEL_ERROR, 0 );
-	// hci_dump_enable_log_level( LOG_LEVEL_DEBUG, 0 );
+	hci_dump_enable_log_level( ESP_LOG_INFO, 1 );
+	hci_dump_enable_log_level( ESP_LOG_ERROR, 1 );
+	hci_dump_enable_log_level( ESP_LOG_DEBUG, 1 );
+
 	l2cap_init();
+	le_device_db_init();   // new try 28-09
 	rfcomm_init();
 	one_shot_timer_setup();
 	// register for HCI events
 	hci_event_callback_registration.callback = &packet_handler;
 	hci_add_event_handler(&hci_event_callback_registration);
-	rfcomm_register_service(packet_handler, rfcomm_channel_nr, 100); // reserved channel, mtu=100
+	rfcomm_register_service(packet_handler, rfcomm_channel_nr, 500); // reserved channel, mtu=100
 	memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
 	spp_create_sdp_record(spp_service_buffer, 0x10001, RFCOMM_SERVER_CHANNEL, "SPP Counter");
 	sdp_register_service(spp_service_buffer);

@@ -6,6 +6,7 @@
 #ifndef ESPRotary_h
 #define ESPRotary_h
 
+#include "driver/gpio.h"
 #include "sdkconfig.h"
 #include <inttypes.h>
 #include "esp_system.h"

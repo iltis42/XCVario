@@ -1,4 +1,5 @@
 #include <btstack.h>
+#include "driver/gpio.h"
 #include <esp_log.h>
 #include <string>
 #ifndef __BTSENDER_H__

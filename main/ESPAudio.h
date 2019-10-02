@@ -9,6 +9,7 @@
 #define MAIN_ESPAUDIO_H_
 
 
+#include "driver/gpio.h"
 #include "driver/dac.h"
 #include "Setup.h"
 

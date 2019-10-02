@@ -1,6 +1,7 @@
 #include "BMPVario.h"
-
-
+#include "sdkconfig.h"
+#include "freertos/FreeRTOS.h"
+#include <freertos/task.h>
 
 const double sigmaAdjust = 255 * 2.0/33;  // 2 Vss
 

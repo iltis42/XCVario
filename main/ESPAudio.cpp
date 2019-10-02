@@ -21,8 +21,8 @@
 #include "soc/rtc.h"
 #include <string>
 
-#include "driver/dac.h"
 #include "ESPAudio.h"
+#include "driver/dac.h"
 #include "sensor.h"
 
 

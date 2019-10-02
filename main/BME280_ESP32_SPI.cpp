@@ -1,22 +1,22 @@
 /*
-  BME280_ESP32_SPI.cpp Bosch BME280 for ESP32
+  BME280_ESP32__SPI->cpp Bosch BME280 for ESP32
 
  */
 
-#include "BME280_ESP32_SPI.h"
-#include <esp_system.h>
-#include <math.h>
-#include "driver/spi_master.h"
+#include <freertos/portmacro.h>
+#include "freertos/FreeRTOS.h"
+#include <freertos/task.h>
 #include <string.h>
-#include "sdkconfig.h"
-#include "freertos/task.h"
-#include "esp_system.h"
-#include <rom/ets_sys.h>
+#include <cstdint>
+#include <cstdio>
+#include <sdkconfig.h>
+#include <math.h>
+#include "BME280_ESP32_SPI.h"
 
 #define HIGH 1
 #define LOW  0
 
-
+// typedef unsinged char uint8_t;
 
 void pinMode( gpio_num_t pin, gpio_mode_t mode )
 {
@@ -59,17 +59,20 @@ BME280_ESP32_SPI::BME280_ESP32_SPI(gpio_num_t sclk, gpio_num_t mosi, gpio_num_t 
 	exponential_average = 0;
 	init_err = false;
 	_avg_alt = 0;
+
 }
 
 
 //****************BME280_ESP32_SPI*************************************************
 void BME280_ESP32_SPI::begin(uint8_t Stanby_t, uint8_t filter, uint8_t overS_T, uint8_t overS_P, uint8_t overS_H, uint8_t mode){
-
+	_SPI = new SPIClass(HSPI);
 	pinMode(_cs, GPIO_MODE_OUTPUT);
-	_Spi.begin(_sclk, _miso, _mosi );
-	_Spi.setDataMode(3, _cs, _freq, 200, false, 16 );  // we handle cs here, maybe limit in SPI
 	digitalWrite(_cs, HIGH);
-	delay( 20 );
+	spis = SPISettings( _freq, SPI_MSBFIRST, SPI_MODE3 );
+	_SPI->setHwCs( false );
+	_SPI->begin( _sclk, _miso, _mosi, _cs );
+	printf("freq=%d\n", _freq );
+	_SPI->setFrequency(_freq);
 
 	uint8_t spi3or4 = 0; //SPI 3wire or 4wire, 0=4wire, 1=3wire
 	uint8_t ctrl_meas = (overS_T << 5) | (overS_P << 2) | mode;
@@ -79,7 +82,7 @@ void BME280_ESP32_SPI::begin(uint8_t Stanby_t, uint8_t filter, uint8_t overS_T, 
 	WriteRegister(0xE0, 0xB6); //reset
 	int id = readID();
 	int count = 0;
-	while( (id != 0x58) && (count < 500) ) {
+	while( (id != 0x58) && (count < 20) ) {
 		id = readID();
 		delay( 20 );
 		count++;
@@ -94,6 +97,7 @@ void BME280_ESP32_SPI::begin(uint8_t Stanby_t, uint8_t filter, uint8_t overS_T, 
 	WriteRegister(0xF2, ctrl_hum);
 	WriteRegister(0xF4, ctrl_meas);
 	WriteRegister(0xF5, config);
+
 	delay( 20 );
 	readCalibration();
 	if( _dig_T2 == 0 && _dig_T2 == 0 ) {
@@ -109,10 +113,14 @@ void BME280_ESP32_SPI::begin(uint8_t Stanby_t, uint8_t filter, uint8_t overS_T, 
 
 //***************BME280 ****************************
 void BME280_ESP32_SPI::WriteRegister(uint8_t reg_address, uint8_t data) {
+
+	_SPI->beginTransaction( spis );
 	digitalWrite(_cs, LOW);
-	_Spi.transfer(_cs, reg_address & 0x7F); // write, bit 7 low
-	_Spi.transfer(_cs,data);
+	_SPI->transfer( reg_address & 0x7F); // write, bit 7 low
+	_SPI->transfer( data);
 	digitalWrite(_cs, HIGH);
+	_SPI->endTransaction();
+
 }
 
 //*******************************************************
@@ -153,19 +161,21 @@ double BME280_ESP32_SPI::readTemperature( bool& success ){
 	memset(tx, 0, 4);
 	memset(rx, 0, 4);
     tx[0] = 0xFA;
-    digitalWrite(_cs, LOW);
-	// _Spi.transfer(_cs,0xFA | 0x80); //0xFA temperature msb read, bit 7 high
 
-    // TODO: Here, better in the lib add some more checking here, e.g. rx length, cs ?
-	// uint8_t l =  _Spi.send( _cs, tx, 1, 0 );
-    _Spi.send( _cs, tx, 1, 0 );
+    _SPI->beginTransaction( spis );
+    digitalWrite(_cs, LOW);
+	// _SPI->transfer(_cs,0xFA | 0x80); //0xFA temperature msb read, bit 7 high
+
+	// uint8_t l =  _SPI->transferBytes( _cs, tx, 1, 0 );
+    _SPI->transferBytes( tx, 0, 1 );
 
 	tx[0] = 0;
-	// int _l = _Spi.send( _cs, tx, 3, rx );
-	_Spi.send( _cs, tx, 3, rx );
+	// int _l = _SPI->transferBytes( _cs, tx, 3, rx );
+	_SPI->transferBytes( tx, rx, 3 );
 
 	// printf( "read Temp rx length %d bytes\n", l/8);
 	digitalWrite(_cs, HIGH);
+	_SPI->endTransaction();
 
 	// for(uint8_t i=0; i<l/8; i++)
 	//  	printf( "%02x ", rx[i]);
@@ -204,17 +214,20 @@ double BME280_ESP32_SPI::readPressure(  ){
 	memset(tx, 0, 4);
 	memset(rx, 0, 4);
     tx[0] = 0xF7;  // 0xF7 puressure msb read, bit 7 high
+
+    _SPI->beginTransaction( spis );
     digitalWrite(_cs, LOW);
-	// uint8_t l = _Spi.send( _cs, tx, 1, 0 );
-	_Spi.send( _cs, tx, 1, 0 );
+	// uint8_t l = _SPI->transferBytes( _cs, tx, 1, 0 );
+	_SPI->transferBytes( tx, 0, 1 );
 	tx[0] = 0;
-	// l = _Spi.send( _cs, tx, 3, rx );
-	_Spi.send( _cs, tx, 3, rx );
+	// l = _SPI->transferBytes( _cs, tx, 3, rx );
+	_SPI->transferBytes( tx, rx, 1 );
 	// printf( "read P rx length %d\n", l);
 	// for(uint8_t i=0; i<3; i++)
 	//		printf( "%02x", rx[i]);
 	// printf( "\n");
 	digitalWrite(_cs, HIGH);
+	_SPI->endTransaction();
 	uint32_t adc_P = (rx[0] << 12) | (rx[1] << 4) | (rx[2] >> 4); //0xF7, msb+lsb+xlsb=19bit
     // printf("--BMP280 readPressure\n");
 	return compensate_P((int32_t)adc_P) / 100.0;
@@ -226,11 +239,13 @@ double BME280_ESP32_SPI::readHumidity(){
 	uint32_t data[2];
 	bool success;
 	readTemperature( success );
+	_SPI->beginTransaction( spis );
 	digitalWrite(_cs, LOW);
-	_Spi.transfer(_cs,0xFD | 0x80); //0xFD Humidity msb read, bit 7 high
-	data[0] = _Spi.transfer(_cs,0x00);
-	data[1] = _Spi.transfer(_cs,0x00);
+	_SPI->transfer( 0xFD | 0x80); //0xFD Humidity msb read, bit 7 high
+	data[0] = _SPI->transfer( 0x00 );
+	data[1] = _SPI->transfer( 0x00 );
 	digitalWrite(_cs, HIGH);
+	_SPI->endTransaction();
 
 	uint32_t adc_H = (data[0] << 8) | data[1];  //0xFD, msb+lsb=19bit(16:0)
 	return compensate_H((int32_t)adc_H) / 1024.0;
@@ -320,11 +335,14 @@ double BME280_ESP32_SPI::calcAVGAltitude(double SeaLevel_Pres, double p ) {
 
 uint8_t BME280_ESP32_SPI::readID()
 {
+	_SPI->beginTransaction( spis );
 	digitalWrite(_cs, LOW);
-	_Spi.transfer(_cs,0xD0 | 0x80); //0xDO Chip ID
+	_SPI->transfer( 0xD0 | 0x80); //0xDO Chip ID
 	uint8_t id;
-	id = _Spi.transfer(_cs,0);
+	id = _SPI->transfer( 0 );
 	digitalWrite(_cs, HIGH);
+	_SPI->endTransaction();
+	printf("BMP280 Chip ID: %02x, cs=%d\n", id, _cs );
 	return id;
 }
 
@@ -332,24 +350,29 @@ uint8_t BME280_ESP32_SPI::readID()
 uint16_t BME280_ESP32_SPI::read16bit(uint8_t reg) {
 	uint16_t data;   //0xFD Humidity msb read =bit 7 high
 	uint8_t d1,d2;
+	_SPI->beginTransaction( spis );
 	digitalWrite(_cs, LOW);
-	_Spi.transfer(_cs,reg | 0x80);
-	d1 = _Spi.transfer(_cs,0);
-	d2 = _Spi.transfer(_cs,0);
+	_SPI->transfer( reg | 0x80);
+	d1 = _SPI->transfer( 0);
+	d2 = _SPI->transfer( 0);
 	data = (d2 << 8) | d1;
 	digitalWrite(_cs, HIGH);
-	// printf("read 16bit: %04x\n", data );
+	_SPI->endTransaction();
+	printf("read 16bit: %04x\n", data );
 	return data;
 }
 
 //***************BME280****************************
 uint8_t BME280_ESP32_SPI::read8bit(uint8_t reg) {
 	uint8_t data;
+
+	_SPI->beginTransaction( spis );
 	digitalWrite(_cs, LOW);
-	_Spi.transfer(_cs,reg | 0x80); // read = bit 7 high
-	data = _Spi.transfer(_cs,0);
+	_SPI->transfer( reg | 0x80); // read = bit 7 high
+	data = _SPI->transfer( 0 );
 	digitalWrite(_cs, HIGH);
-	// printf("read 8bit: %02x\n", data );
+	_SPI->endTransaction();
+	printf("read 8bit: %02x\n", data );
 	return data;
 }
 

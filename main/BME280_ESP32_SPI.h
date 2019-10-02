@@ -29,7 +29,8 @@ altitude calculation by open source community on github.
 #define BME280_ESP32_SPI_h_
 #include <esp_system.h>
 #include "driver/gpio.h"
-#include "SPI.h"
+#include <SPI.h>
+#include <esp32-hal-spi.h>
 
 class BME280_ESP32_SPI
 {
@@ -83,6 +84,8 @@ private:
 	int8_t  _dig_H6;
 	double exponential_average;
 	bool init_err;
+	SPIClass *_SPI;
+	SPISettings spis;
 };
 
 #endif

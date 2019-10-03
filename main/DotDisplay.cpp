@@ -57,8 +57,8 @@ DotDisplay::~DotDisplay() {
 void DotDisplay::begin( Setup* asetup ) {
 	u8g2_esp32_hal = U8G2_ESP32_HAL_DEFAULT;
 	u8g2_esp32_hal.clk   = _scl;   // SCLK_bme280;
-	u8g2_esp32_hal.mosi  = _miso;  // MOSI_bme280;
-	u8g2_esp32_hal.miso  = _mosi;
+	u8g2_esp32_hal.mosi  = _mosi;  // MOSI_bme280;
+	u8g2_esp32_hal.miso  = _miso;
 	u8g2_esp32_hal.cs    = _cs;    // GPIO_NUM_13;
 	u8g2_esp32_hal.dc    = _dc;    // GPIO_NUM_15;
 	u8g2_esp32_hal.reset = _reset; // GPIO_NUM_5;

@@ -58,7 +58,8 @@ private:
 	double _avg_alt;
 
 private:
-	gpio_num_t _sclk, _mosi, _miso, _cs;
+	gpio_num_t _sclk, _mosi, _miso;
+	uint8_t _cs;
 	uint32_t _freq;
 	int32_t  _t_fine;
 

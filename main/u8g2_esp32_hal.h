@@ -28,8 +28,8 @@ typedef struct {
 	gpio_num_t miso;
 	gpio_num_t sda; // data for I²C
 	gpio_num_t scl; // clock for I²C
-	gpio_num_t cs;
-	gpio_num_t reset;
+	uint8_t cs;
+	uint8_t reset;
 	gpio_num_t dc;
 } u8g2_esp32_hal_t;
 

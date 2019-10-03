@@ -12,25 +12,7 @@
 #include <sdkconfig.h>
 #include <math.h>
 #include "BME280_ESP32_SPI.h"
-
-#define HIGH 1
-#define LOW  0
-
-// typedef unsinged char uint8_t;
-
-void pinMode( gpio_num_t pin, gpio_mode_t mode )
-{
-	gpio_set_direction(pin, mode);
-};
-
-void digitalWrite( gpio_num_t pin, uint32_t state )
-{
-	gpio_set_level( pin, state );
-};
-
-void delay( const TickType_t delay ){
-	vTaskDelay(delay / portTICK_PERIOD_MS);
-};
+#include <Arduino.h>
 
 BME280_ESP32_SPI::BME280_ESP32_SPI(gpio_num_t sclk, gpio_num_t mosi, gpio_num_t miso, gpio_num_t cs, uint32_t freq)
 : _sclk(sclk), _mosi(mosi), _miso(miso), _cs(cs), _freq(freq)
@@ -69,10 +51,10 @@ void BME280_ESP32_SPI::begin(uint8_t Stanby_t, uint8_t filter, uint8_t overS_T, 
 	pinMode(_cs, GPIO_MODE_OUTPUT);
 	digitalWrite(_cs, HIGH);
 	spis = SPISettings( _freq, SPI_MSBFIRST, SPI_MODE3 );
-	_SPI->setHwCs( false );
 	_SPI->begin( _sclk, _miso, _mosi, _cs );
 	printf("freq=%d\n", _freq );
 	_SPI->setFrequency(_freq);
+	_SPI->setHwCs( false );
 
 	uint8_t spi3or4 = 0; //SPI 3wire or 4wire, 0=4wire, 1=3wire
 	uint8_t ctrl_meas = (overS_T << 5) | (overS_P << 2) | mode;
@@ -159,20 +141,13 @@ double BME280_ESP32_SPI::readTemperature( bool& success ){
 	uint8_t tx[4];
 	uint8_t rx[4];
 	memset(tx, 0, 4);
-	memset(rx, 0, 4);
     tx[0] = 0xFA;
 
     _SPI->beginTransaction( spis );
     digitalWrite(_cs, LOW);
-	// _SPI->transfer(_cs,0xFA | 0x80); //0xFA temperature msb read, bit 7 high
-
-	// uint8_t l =  _SPI->transferBytes( _cs, tx, 1, 0 );
-    _SPI->transferBytes( tx, 0, 1 );
-
+    _SPI->transfer( tx[0] );
 	tx[0] = 0;
-	// int _l = _SPI->transferBytes( _cs, tx, 3, rx );
 	_SPI->transferBytes( tx, rx, 3 );
-
 	// printf( "read Temp rx length %d bytes\n", l/8);
 	digitalWrite(_cs, HIGH);
 	_SPI->endTransaction();
@@ -212,16 +187,13 @@ double BME280_ESP32_SPI::readPressure(  ){
 	uint8_t tx[4];
 	uint8_t rx[4];
 	memset(tx, 0, 4);
-	memset(rx, 0, 4);
     tx[0] = 0xF7;  // 0xF7 puressure msb read, bit 7 high
 
     _SPI->beginTransaction( spis );
     digitalWrite(_cs, LOW);
-	// uint8_t l = _SPI->transferBytes( _cs, tx, 1, 0 );
-	_SPI->transferBytes( tx, 0, 1 );
+	_SPI->transfer( tx[0] );
 	tx[0] = 0;
-	// l = _SPI->transferBytes( _cs, tx, 3, rx );
-	_SPI->transferBytes( tx, rx, 1 );
+	_SPI->transferBytes( tx, rx, 3 );
 	// printf( "read P rx length %d\n", l);
 	// for(uint8_t i=0; i<3; i++)
 	//		printf( "%02x", rx[i]);

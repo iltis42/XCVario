@@ -65,17 +65,17 @@ BMP:
 
  */
 
-const gpio_num_t SCLK_bme280 = GPIO_NUM_14; //
-const gpio_num_t MOSI_bme280 = GPIO_NUM_27; // SDO Master Out Slave In
-const gpio_num_t CS_bme280TE = GPIO_NUM_26; // CS pin 26
+#define SPI_SCLK GPIO_NUM_14  // SPI Clock pin 14
+#define SPI_DC   GPIO_NUM_15  // SPI Data/Command pin 15
+#define SPI_MOSI GPIO_NUM_27  // SPI SDO Master Out Slave In pin
+#define SPI_MISO GPIO_NUM_32  // SPI SDI Master In Slave Out ESP32=Master,BME280=slave pin
 
+#define CS_bme280BA GPIO_NUM_33   // CS pin 33
+#define CS_bme280TE GPIO_NUM_26   // CS pin 26
 
-const gpio_num_t MISO_bme280 = GPIO_NUM_32; //  SDI Master In Slave Out ESP32=Master,BME280=slave
-
-const gpio_num_t CS_bme280BA = GPIO_NUM_33; //CS pin
-
-BME280_ESP32_SPI bmpTE(SCLK_bme280, MOSI_bme280, MISO_bme280, CS_bme280TE, 13111111/2);
-BME280_ESP32_SPI bmpBA(SCLK_bme280, MOSI_bme280, MISO_bme280, CS_bme280BA, 13111111/2);
+#define CS_Display GPIO_NUM_13    // CS pin 13 for Display
+#define RESET_Display GPIO_NUM_5  // Reset pin for Display
+#define FREQ_BMP_SPI 13111111/2
 
 float baroP=0;
 float temperature=15.0;
@@ -98,18 +98,9 @@ TaskHandle_t *bpid;
 TaskHandle_t *spid;
 TaskHandle_t *tpid;
 
-//                     mosi,    miso,         scl,           dc,       reset,        cs
-DotDisplay display( MOSI_bme280, MISO_bme280, SCLK_bme280, GPIO_NUM_15, GPIO_NUM_5, GPIO_NUM_13 );
-/*
-
-u8g2_esp32_hal.mosi  = mosi; // MOSI_bme280;
-u8g2_esp32_hal.clk   = scl; // SCLK_bme280;
-u8g2_esp32_hal.dc    = dc; // GPIO_NUM_15;
-u8g2_esp32_hal.reset = reset; // GPIO_NUM_5;
-u8g2_esp32_hal.cs    = cs; // GPIO_NUM_26;
-
-
- */
+BME280_ESP32_SPI bmpTE(SPI_SCLK, SPI_MOSI, SPI_MISO, CS_bme280TE, FREQ_BMP_SPI);
+BME280_ESP32_SPI bmpBA(SPI_SCLK, SPI_MOSI, SPI_MISO, CS_bme280BA, FREQ_BMP_SPI);
+DotDisplay display( SPI_MOSI, SPI_MISO, SPI_SCLK, SPI_DC, RESET_Display, CS_Display );
 
 
 ESPRotary Rotary;
@@ -124,8 +115,32 @@ void handleRfcommRx( char * rx, uint16_t len ){
 BTSender btsender( handleRfcommRx  );
 // BTSender btsender( handleRfcommRx, 2, 1 );
 
+Ucglib_ILI9341_18x240x320_HWSPI ucg( SPI_DC, CS_Display, RESET_Display );
+
+
+void initIltis(){
+	ucg.begin(UCG_FONT_MODE_SOLID);
+	ucg.clearScreen();
+	// ucg.setRotate90();
+	ucg.setFont(ucg_font_fub42_hn);
+	ucg.setColor(255, 255, 255);
+	ucg.drawBox( 0,0,240,320 );
+}
+
+int pos=10;
+void helloIltis( float val ){
+	ucg.setPrintPos(30,50);
+	ucg.setFont(ucg_font_fub42_hn);
+	ucg.setColor(1, 255, 255, 255);
+	ucg.setColor(0, 0, 0, 0);
+	char s[10];
+	sprintf( s,"%0.1f", val );
+	ucg.printf(s);
+}
+
 
 void readBMP(void *pvParameters){
+	initIltis();
 	while (1) {
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		if( Audio.getDisable() != true )
@@ -174,7 +189,8 @@ void readBMP(void *pvParameters){
 					break;
 			}
 			Audio.setS2FMode( s2fmode );
-			display.drawDisplay( TE, aTE, alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode );
+			helloIltis( alt );
+			// display.drawDisplay( TE, aTE, alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode );
 
 			Audio.setValues( TE, s2f_delta );
 			if( uxTaskGetStackHighWaterMark( bpid ) < 1000 )
@@ -202,6 +218,9 @@ void readTemp(void *pvParameters){
 	}
 }
 
+
+
+
 // void sleepS( const TickType_t delay ) {
 //	vTaskDelay(delay / portTICK_PERIOD_MS);
 // };
@@ -210,7 +229,7 @@ void sensor(void *args){
 	esp_wifi_set_mode(WIFI_MODE_NULL);
 	esp_log_level_set("*", ESP_LOG_INFO);
 	NVS.begin();
-
+	// SPI.begin( SPI_SCLK, SPI_MISO, SPI_MOSI, CS_bme280TE );
 	mysetup.begin();
 	setupv.begin();
 	display.begin( &mysetup );
@@ -226,7 +245,7 @@ void sensor(void *args){
 	uint8_t Mode = 3;   //Normal mode
 
 	printf("BMP280 sensors init..\n");
-
+	SPI.begin( SPI_SCLK, SPI_MISO, SPI_MOSI, CS_bme280TE );
     bmpTE.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
     sleep( 1 );
 	bmpBA.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
@@ -262,31 +281,29 @@ void sensor(void *args){
 
 	ds18b20.begin();
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 8000, NULL, 3, tpid, 0);
+
 	Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
 	Menu.begin( &display, &Rotary, &mysetup, &setupv, &bmpBA, &ADC );
 	printf("Free Stack: S:%d \n", uxTaskGetStackHighWaterMark( spid ) );
+	delay( 2000 );
+	uint64_t bitmask = 0;
+	// bitmask = bitmask | (1<<SPI_DC);
+	bitmask = bitmask | (1<<RESET_Display);
+	bitmask = bitmask | (1<<CS_Display);
+	bitmask = bitmask | (1<<CS_bme280BA);
+	bitmask = bitmask | (1<<CS_bme280TE);
 
-	// Ucglib_ILI9341_18x240x320_HWSPI ucg(/*cd=*/ 15, /*cs=*/ 13, /*reset=*/ 5);
+	gpio_config_t gpioConfig;
+	gpioConfig.pin_bit_mask = bitmask;
+	gpioConfig.mode         = GPIO_MODE_OUTPUT;
+	gpioConfig.pull_up_en   = GPIO_PULLUP_ENABLE;
+	gpioConfig.pull_down_en = GPIO_PULLDOWN_DISABLE;
+	gpioConfig.intr_type    = GPIO_INTR_DISABLE;
+	gpio_config(&gpioConfig);
 
-	// Ucglib_ILI9341_18x240x320_SWSPI ucg(/*sclk=*/ SCLK_bme280, /*data=*/ MOSI_bme280, /*cd=*/ GPIO_NUM_15, /*cs=*/ GPIO_NUM_13, /*reset=*/ GPIO_NUM_5);
-	//                     mosi sdi,    miso,         scl,           dc,       reset,        cs
-	// DotDisplay display( MOSI_bme280, MISO_bme280, SCLK_bme280, GPIO_NUM_15, GPIO_NUM_5, GPIO_NUM_13 );
+	// xTaskCreatePinnedToCore(&helloIltis, "helloIltis", 8000, NULL, 3, tpid, 0);
 
-	// ucg.begin(UCG_FONT_MODE_TRANSPARENT);
-	/*
-	ucg.begin(UCG_FONT_MODE_SOLID);
-	ucg.clearScreen();
-	ucg.setRotate90();
-	ucg.setFont(ucg_font_ncenR12_tr);
-	ucg.setColor(255, 255, 255);
-	ucg.setColor(0, 255, 0);
-	ucg.setColor(1, 255, 0,0);
-
-	ucg.setPrintPos(0,25);
-	ucg.print("Hello Iltis!");
-*/
-	// vTaskDelay(20000 / portTICK_PERIOD_MS);
-
+    delay( 10000 );
 	vTaskDelete( NULL );
 
 }

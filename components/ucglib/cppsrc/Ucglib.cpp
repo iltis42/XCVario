@@ -1185,6 +1185,7 @@ static int16_t ucg_com_arduino_4wire_HW_SPI(ucg_t *ucg, int16_t msg, uint16_t ar
   switch(msg)
   {
     case UCG_COM_MSG_POWER_UP:
+    	printf("UCG_COM_MSG_POWER_UP\n");
       /* "data" is a pointer to ucg_com_info_t structure with the following information: */
       /*	((ucg_com_info_t *)data)->serial_clk_speed value in nanoseconds */
       /*	((ucg_com_info_t *)data)->parallel_clk_speed value in nanoseconds */
@@ -1192,20 +1193,20 @@ static int16_t ucg_com_arduino_4wire_HW_SPI(ucg_t *ucg, int16_t msg, uint16_t ar
       /* setup pins */
     
       if ( ucg->pin_list[UCG_PIN_RST] != UCG_PIN_VAL_NONE )
-	pinMode(ucg->pin_list[UCG_PIN_RST], OUTPUT);
-      pinMode(ucg->pin_list[UCG_PIN_CD], OUTPUT);
+	     pinMode(ucg->pin_list[UCG_PIN_RST], OUTPUT);
+         pinMode(ucg->pin_list[UCG_PIN_CD], OUTPUT);
       
       if ( ucg->pin_list[UCG_PIN_CS] != UCG_PIN_VAL_NONE )
-	pinMode(ucg->pin_list[UCG_PIN_CS], OUTPUT);
+	     pinMode(ucg->pin_list[UCG_PIN_CS], OUTPUT);
       
       /* setup Arduino SPI */
 
-#if ARDUINO >= 10600
-      SPI.begin();
-      SPI.beginTransaction(SPISettings(1000000000UL/((ucg_com_info_t *)data)->serial_clk_speed, MSBFIRST, SPI_MODE0));
+#if 1 // ARDUINO // >= 10600
+      // SPI.begin();
+      // SPI.beginTransaction(SPISettings( 13111111/2, MSBFIRST, SPI_MODE3));
 #else
       SPI.begin();
-      
+
       if ( ((ucg_com_info_t *)data)->serial_clk_speed/2 < 70 )
 	SPI.setClockDivider( SPI_CLOCK_DIV2 );
       else if ( ((ucg_com_info_t *)data)->serial_clk_speed/2 < 140 )
@@ -1219,7 +1220,7 @@ static int16_t ucg_com_arduino_4wire_HW_SPI(ucg_t *ucg, int16_t msg, uint16_t ar
       
       break;
     case UCG_COM_MSG_POWER_DOWN:
-#if ARDUINO >= 10600
+#if 1 // ARDUINO >= 10600
       SPI.endTransaction();
       SPI.end();
 #else
@@ -1231,17 +1232,24 @@ static int16_t ucg_com_arduino_4wire_HW_SPI(ucg_t *ucg, int16_t msg, uint16_t ar
       break;
     case UCG_COM_MSG_CHANGE_RESET_LINE:
       if ( ucg->pin_list[UCG_PIN_RST] != UCG_PIN_VAL_NONE )
-	digitalWrite(ucg->pin_list[UCG_PIN_RST], arg);
+	      digitalWrite(ucg->pin_list[UCG_PIN_RST], arg);
       break;
     case UCG_COM_MSG_CHANGE_CS_LINE:
+     if( arg == 0 )
+    	 SPI.beginTransaction(SPISettings( 131111110, MSBFIRST, SPI_MODE3));
+         // SPI.beginTransaction(SPISettings( 2000000, MSBFIRST, SPI_MODE0));
+     else
+    	 SPI.endTransaction();
+      // printf("UCG_COM_MSG_CHANGE_CS_LINE %d\n", arg);
       if ( ucg->pin_list[UCG_PIN_CS] != UCG_PIN_VAL_NONE )
-	digitalWrite(ucg->pin_list[UCG_PIN_CS], arg);
+	     digitalWrite(ucg->pin_list[UCG_PIN_CS], arg);
       break;
     case UCG_COM_MSG_CHANGE_CD_LINE:
       digitalWrite(ucg->pin_list[UCG_PIN_CD], arg);
       break;
     case UCG_COM_MSG_SEND_BYTE:
-      SPI.transfer(arg); 
+    	//printf("UCG_COM_MSG_SEND_BYTE %02x\n", arg);
+      SPI.transfer(arg);
       break;
     case UCG_COM_MSG_REPEAT_1_BYTE:
       while( arg > 0 ) {

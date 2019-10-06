@@ -85,7 +85,6 @@ private:
 	int8_t  _dig_H6;
 	double exponential_average;
 	bool init_err;
-	SPIClass *_SPI;
 	SPISettings spis;
 };
 

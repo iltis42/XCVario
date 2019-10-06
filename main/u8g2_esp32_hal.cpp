@@ -13,17 +13,15 @@
 #include <Arduino.h>
 
 static SPIClass *_Spi; // (HSPI);
-static int _freq = 2000000;
-static SPISettings spis( _freq, SPI_MSBFIRST, SPI_MODE0 );
+#define FREQUENCY 2000000
 
-// static unsigned char buffer[200];
+static SPISettings spis( FREQUENCY, SPI_MSBFIRST, SPI_MODE0 );
 
 
 static u8g2_esp32_hal_t    u8g2_esp32_hal;  // HAL state data.
 
 #undef ESP_ERROR_CHECK
 #define ESP_ERROR_CHECK(x)   do { esp_err_t rc = (x); if (rc != ESP_OK) { ESP_LOGE("err", "esp_err_t = %d", rc); assert(0 && #x);} } while(0);
-
 
 /*
  * Initialze the ESP32 HAL.
@@ -60,7 +58,7 @@ uint8_t u8g2_esp32_spi_byte_cb(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void 
 		_Spi = new SPIClass(HSPI);
 		_Spi->begin(u8g2_esp32_hal.clk, u8g2_esp32_hal.miso, u8g2_esp32_hal.mosi, u8g2_esp32_hal.cs );
 		_Spi->setHwCs( true );
-		_Spi->setFrequency(_freq);
+		_Spi->setFrequency(FREQUENCY);
 		pinMode( u8g2_esp32_hal.cs, GPIO_MODE_OUTPUT);
 		pinMode( u8g2_esp32_hal.reset, GPIO_MODE_OUTPUT);
 		pinMode( u8g2_esp32_hal.dc, GPIO_MODE_OUTPUT);
@@ -84,10 +82,6 @@ uint8_t u8g2_esp32_spi_byte_cb(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void 
 		// printf("U8X8_MSG_BYTE_SEND len:%d CS:%d\n", arg_int, u8g2_esp32_hal.cs);
 		_Spi->beginTransaction( spis );
 		digitalWrite(u8g2_esp32_hal.cs, LOW);
-//		if( arg_int == 1 )
-//			_Spi->transfer( *(char*)arg_ptr );
-//		else
-		// memcpy( buffer, arg_ptr, arg_int );
 		_Spi->transferBytes( (uint8_t *)arg_ptr, 0, arg_int );
 		digitalWrite(u8g2_esp32_hal.cs, HIGH);
 		_Spi->endTransaction();
@@ -121,21 +115,15 @@ uint8_t u8g2_esp32_gpio_and_delay_cb(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int,
 		printf("HAL: Init GPIO dc:%d res:%d cs:%d\n", u8g2_esp32_hal.dc,u8g2_esp32_hal.reset,u8g2_esp32_hal.cs );
 		break;
 	}
-
 	// Set the GPIO reset pin to the value passed in through arg_int.
 	case U8X8_MSG_GPIO_RESET:
-//		if (u8g2_esp32_hal.reset != U8G2_ESP32_HAL_UNDEFINED) {
-			printf("HAL: Set level RESET: %d\n", arg_int );
-			digitalWrite(u8g2_esp32_hal.reset, arg_int);
-//		}
+		printf("HAL: Set level RESET: %d\n", arg_int );
+		digitalWrite(u8g2_esp32_hal.reset, arg_int);
 		break;
 		// Set the GPIO client select pin to the value passed in through arg_int.
 	case U8X8_MSG_GPIO_CS:
-		// printf("Set level CS: %d=%d\n",  u8g2_esp32_hal.cs, arg_int);
-//		if (u8g2_esp32_hal.cs != U8G2_ESP32_HAL_UNDEFINED) {
-			printf("HAL: Set level CS: %d\n", arg_int );
-			digitalWrite(u8g2_esp32_hal.cs, arg_int);
-//		}
+		printf("HAL: Set level CS: %d\n", arg_int );
+		digitalWrite(u8g2_esp32_hal.cs, arg_int);
 		break;
 		// Set the Software I²C pin to the value passed in through arg_int.
 	case U8X8_MSG_GPIO_I2C_CLOCK:

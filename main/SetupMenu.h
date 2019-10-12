@@ -11,7 +11,7 @@
 #include <vector>
 #include <list>
 #include <stdio.h>
-#include "DotDisplay.h"
+#include "IpsDisplay.h"
 #include "ESPRotary.h"
 #include "Setup.h"
 #include "SetupVolt.h"
@@ -24,7 +24,6 @@ public:
 				 highlight = 0;
 				 pressed = false;
 				 y=0;
-				 u8g2=0;
 				 helptext=0;
 	};
 	virtual void display( int mode=0 ) = 0;
@@ -32,7 +31,7 @@ public:
 	virtual void longP() {};
 	virtual ~MenuEntry() {};
 	MenuEntry* addMenu( MenuEntry * item);
-	MenuEntry* findMenu( std::string title, MenuEntry* start=root  );
+	MenuEntry* findMenu( String title, MenuEntry* start=root  );
 	void togglePressed() {
 		if( pressed )
 			pressed = false;
@@ -41,15 +40,16 @@ public:
 	}
 	void setHelp( const char *txt ) { helptext = (char*)txt; };
 	void showhelp( int y );
+	void clear();
 
 public:
 
 	std::vector<MenuEntry*>  _childs;
 	MenuEntry *_parent;
-	std::string _title;
+	String _title;
 	static MenuEntry *root;
 	static MenuEntry *selected;
-	static DotDisplay* _display;
+	static IpsDisplay* _display;
 	static ESPRotary* _rotary;
 	static Setup *_setup;
 	static SetupVolt *_setupv;
@@ -58,7 +58,6 @@ public:
 	static bool _menu_enabled;
 	int    highlight;
 	bool   pressed;
-	u8g2_t *u8g2;
 	char   *helptext;
 	unsigned char y;
 
@@ -68,8 +67,8 @@ private:
 class SetupMenu:  public MenuEntry {
 public:
 	SetupMenu();
-	SetupMenu(  std::string title );
-	void begin( DotDisplay* display, ESPRotary * rotary, Setup * setup, SetupVolt * setupv, BME280_ESP32_SPI * bmp, BatVoltage *adc );
+	SetupMenu(  String title );
+	void begin( IpsDisplay* display, ESPRotary * rotary, Setup * setup, SetupVolt * setupv, BME280_ESP32_SPI * bmp, BatVoltage *adc );
 	void setup();
 	void display( int mode=0 );
 
@@ -84,7 +83,7 @@ public:
 class SetupMenuValFloat:  public MenuEntry {
 public:
 	SetupMenuValFloat();
-	SetupMenuValFloat(  std::string title, float *value, std::string unit, float min, float max, float step, int (*action)(SetupMenuValFloat *p) = 0 );
+	SetupMenuValFloat(  String title, float *value, String unit, float min, float max, float step, int (*action)(SetupMenuValFloat *p) = 0 );
 	void display(int mode=0);
 
 	void up();  // step up to parent
@@ -95,17 +94,17 @@ public:
 
 private:
 	float _min, _max, _step;
-	std::string _unit;
+	String _unit;
 	int (*_action)( SetupMenuValFloat *p );
 };
 
 class SetupMenuSelect:  public MenuEntry {
 public:
 	SetupMenuSelect();
-	SetupMenuSelect(  std::string title, uint8_t *select, bool restart=false, int (*action)(SetupMenuSelect *p) = 0 );
+	SetupMenuSelect(  String title, uint8_t *select, bool restart=false, int (*action)(SetupMenuSelect *p) = 0 );
 	void display(int mode=0);
 
-	void addEntry( std::string ent ) {  _values.push_back( ent );
+	void addEntry( String ent ) {  _values.push_back( ent );
 										_numval++; };
 	void up();  // step up to parent
 	void down();
@@ -117,7 +116,7 @@ private:
 	uint8_t _select_save;
 	uint8_t _numval;
 	bool    _restart;
-	std::vector<std::string> _values;
+	std::vector<String> _values;
 	int (*_action)( SetupMenuSelect *p );
 };
 

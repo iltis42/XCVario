@@ -62,7 +62,8 @@ void DotDisplay::begin( Setup* asetup ) {
 	u8g2_esp32_hal.cs    = _cs;    // GPIO_NUM_13;
 	u8g2_esp32_hal.dc    = _dc;    // GPIO_NUM_15;
 	u8g2_esp32_hal.reset = _reset; // GPIO_NUM_5;
-	u8g2_esp32_hal_init(u8g2_esp32_hal);
+	// u8g2_esp32_hal_init(u8g2_esp32_hal);
+	return;
 
 	// a structure which will contain all the data for one display
 	switch( _dtype ) {
@@ -142,6 +143,7 @@ bool    DotDisplay::_menu = false;
 int tebak=0;
 
 void DotDisplay::drawDisplay( float te, float ate, float tealt, float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode ){
+	return;
 	if( _menu )
 			return;
 	// printf("DotDisplay setTE( %f %f )\n", te, ate);
@@ -308,6 +310,7 @@ void DotDisplay::drawDisplay( float te, float ate, float tealt, float temp, floa
 }
 
 void DotDisplay::test( void * arg ) {
+	return;
 	bool forward=true;
 	while( 1 )
 	{

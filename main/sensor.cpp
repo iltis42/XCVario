@@ -28,7 +28,8 @@
 #include "SetupMenu.h"
 #include "ESPRotary.h"
 #include "BatVoltage.h"
-#include "DotDisplay.h"
+// #include "DotDisplay.h"
+#include "IpsDisplay.h"
 #include "sensor.h"
 #include "PWMOut.h"
 #include "S2F.h"
@@ -100,7 +101,8 @@ TaskHandle_t *tpid;
 
 BME280_ESP32_SPI bmpTE(SPI_SCLK, SPI_MOSI, SPI_MISO, CS_bme280TE, FREQ_BMP_SPI);
 BME280_ESP32_SPI bmpBA(SPI_SCLK, SPI_MOSI, SPI_MISO, CS_bme280BA, FREQ_BMP_SPI);
-DotDisplay display( SPI_MOSI, SPI_MISO, SPI_SCLK, SPI_DC, RESET_Display, CS_Display );
+Ucglib_ILI9341_18x240x320_HWSPI myucg( SPI_DC, CS_Display, RESET_Display );
+IpsDisplay display( &myucg );
 
 
 ESPRotary Rotary;
@@ -113,34 +115,9 @@ void handleRfcommRx( char * rx, uint16_t len ){
 
 
 BTSender btsender( handleRfcommRx  );
-// BTSender btsender( handleRfcommRx, 2, 1 );
-
-Ucglib_ILI9341_18x240x320_HWSPI ucg( SPI_DC, CS_Display, RESET_Display );
-
-
-void initIltis(){
-	ucg.begin(UCG_FONT_MODE_SOLID);
-	ucg.clearScreen();
-	// ucg.setRotate90();
-	ucg.setFont(ucg_font_fub42_hn);
-	ucg.setColor(255, 255, 255);
-	ucg.drawBox( 0,0,240,320 );
-}
-
-int pos=10;
-void helloIltis( float val ){
-	ucg.setPrintPos(30,50);
-	ucg.setFont(ucg_font_fub42_hn);
-	ucg.setColor(1, 255, 255, 255);
-	ucg.setColor(0, 0, 0, 0);
-	char s[10];
-	sprintf( s,"%0.1f", val );
-	ucg.printf(s);
-}
-
 
 void readBMP(void *pvParameters){
-	initIltis();
+	display.begin( &mysetup );
 	while (1) {
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		if( Audio.getDisable() != true )
@@ -189,16 +166,14 @@ void readBMP(void *pvParameters){
 					break;
 			}
 			Audio.setS2FMode( s2fmode );
-			helloIltis( alt );
-			// display.drawDisplay( TE, aTE, alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode );
-
+			display.drawDisplay( TE, aTE, alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode );
+            // helloIltis(alt);
 			Audio.setValues( TE, s2f_delta );
 			if( uxTaskGetStackHighWaterMark( bpid ) < 1000 )
 				printf("Warning Stack low: %d bytes\n", uxTaskGetStackHighWaterMark( bpid ) );
 		}
 		esp_task_wdt_reset();
 		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
-
 	}
 }
 
@@ -219,22 +194,16 @@ void readTemp(void *pvParameters){
 }
 
 
-
-
-// void sleepS( const TickType_t delay ) {
-//	vTaskDelay(delay / portTICK_PERIOD_MS);
-// };
-
 void sensor(void *args){
 	esp_wifi_set_mode(WIFI_MODE_NULL);
 	esp_log_level_set("*", ESP_LOG_INFO);
 	NVS.begin();
-	// SPI.begin( SPI_SCLK, SPI_MISO, SPI_MOSI, CS_bme280TE );
 	mysetup.begin();
 	setupv.begin();
-	display.begin( &mysetup );
 	sleep( 1 );
 	Audio.begin( DAC_CHANNEL_1, GPIO_NUM_0, &mysetup );
+	// printf("Display init..\n");
+	// display.begin( &mysetup );
 
 	xMutex=xSemaphoreCreateMutex();
 	uint8_t t_sb = 0;   //stanby 0: 0,5 mS 1: 62,5 mS 2: 125 mS
@@ -244,8 +213,10 @@ void sensor(void *args){
 	uint8_t osrs_h = 0; //OverSampling Humidity x4
 	uint8_t Mode = 3;   //Normal mode
 
-	printf("BMP280 sensors init..\n");
 	SPI.begin( SPI_SCLK, SPI_MISO, SPI_MOSI, CS_bme280TE );
+
+	printf("BMP280 sensors init..\n");
+
     bmpTE.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
     sleep( 1 );
 	bmpBA.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
@@ -262,6 +233,7 @@ void sensor(void *args){
     pwm1.setContrast( mysetup.get()->_contrast_adj );
     s2f.change_polar();
 	s2f.change_mc_bal();
+
 	xTaskCreatePinnedToCore(&readBMP, "readBMP", 8000, NULL, 6, bpid, 0);
 	Version myVersion;
 	printf("Program Version %s\n", myVersion.version() );
@@ -277,7 +249,6 @@ void sensor(void *args){
 	}
 	else
 		printf("Bluetooth disabled\n");
-	// vTaskDelay(20000 / portTICK_PERIOD_MS);
 
 	ds18b20.begin();
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 8000, NULL, 3, tpid, 0);
@@ -285,9 +256,8 @@ void sensor(void *args){
 	Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
 	Menu.begin( &display, &Rotary, &mysetup, &setupv, &bmpBA, &ADC );
 	printf("Free Stack: S:%d \n", uxTaskGetStackHighWaterMark( spid ) );
-	delay( 2000 );
+
 	uint64_t bitmask = 0;
-	// bitmask = bitmask | (1<<SPI_DC);
 	bitmask = bitmask | (1<<RESET_Display);
 	bitmask = bitmask | (1<<CS_Display);
 	bitmask = bitmask | (1<<CS_bme280BA);
@@ -299,10 +269,8 @@ void sensor(void *args){
 	gpioConfig.pull_up_en   = GPIO_PULLUP_ENABLE;
 	gpioConfig.pull_down_en = GPIO_PULLDOWN_DISABLE;
 	gpioConfig.intr_type    = GPIO_INTR_DISABLE;
+
 	gpio_config(&gpioConfig);
-
-	// xTaskCreatePinnedToCore(&helloIltis, "helloIltis", 8000, NULL, 3, tpid, 0);
-
     delay( 10000 );
 	vTaskDelete( NULL );
 

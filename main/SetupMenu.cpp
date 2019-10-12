@@ -6,7 +6,7 @@
  */
 
 #include "SetupMenu.h"
-#include "DotDisplay.h"
+#include "IpsDisplay.h"
 #include <inttypes.h>
 #include <iterator>
 #include "ESPAudio.h"
@@ -16,8 +16,8 @@
 #include "Version.h"
 #include "Polars.h"
 
-
-DotDisplay* MenuEntry::_display = 0;
+Ucglib_ILI9341_18x240x320_HWSPI *ucg = 0;
+IpsDisplay* MenuEntry::_display = 0;
 MenuEntry* MenuEntry::root = 0;
 MenuEntry* MenuEntry::selected = 0;
 ESPRotary* MenuEntry::_rotary = 0;
@@ -40,12 +40,10 @@ int contrast( SetupMenuValFloat * p )
 int qnh_adj( SetupMenuValFloat * p )
 {
 	printf("qnh_adj");
-	char j[14];
 	float alt = p->_bmp->readAltitude( *(p->_value) );
-	sprintf( j,"%4d %s", (int)(alt+0.5), "m"  );
-	//  printf( "%4d %s", (int)(alt+0.5), "m"  );
 	printf("Setup BA alt=%f QNH=%f\n", alt, *(p->_value)  );
-	u8g2_DrawStr( p->u8g2, 110-30,1, j );
+	ucg->setPrintPos(2,160);
+	ucg->printf("%4d %s", (int)(alt+0.5), "m" );
 	return 0;
 }
 
@@ -61,7 +59,8 @@ int factv_adj( SetupMenuValFloat * p )
 	}
 	adj = adj/10.0;
 	sprintf( j,"%0.2f %s", adj, "V"  );
-	u8g2_DrawStr( p->u8g2, 110-30,1, j );
+	ucg->setPrintPos(2,160);
+	ucg->printf("%0.2f %s", adj, "V");
 	return 0;
 }
 
@@ -80,12 +79,10 @@ int polar_select( SetupMenuSelect * p )
 int bal_adj( SetupMenuValFloat * p )
 {
     s2f.change_mc_bal();
-    u8g2_t *u8g2 = p->_display->getBuffer();
     float loadinc = (p->_setup->get()->_ballast +100.0)/100.0;
     float newwl = p->_setup->get()->_polar.wingload * loadinc;
-    char val[14];
-    sprintf( val,"%0.2f kg/m2", newwl );
-    u8g2_DrawStr( u8g2, 110-30,1, val );
+    ucg->setPrintPos(2,160);
+    ucg->printf("%0.2f kg/m2", newwl);
     return 0;
 }
 int mc_adj( SetupMenuValFloat * p )
@@ -103,7 +100,7 @@ SetupMenu::SetupMenu(){
 }
 
 
-SetupMenu::SetupMenu( std::string title ) {
+SetupMenu::SetupMenu( String title ) {
 	printf("SetupMenu::SetupMenu( %s ) \n", title.c_str() );
 	printf("this:%x\n", (int)this);
 	_rotary->attach(this);
@@ -111,13 +108,14 @@ SetupMenu::SetupMenu( std::string title ) {
 	highlight = -1;
 }
 
-void SetupMenu::begin( DotDisplay* display, ESPRotary * rotary, Setup* my_setup, SetupVolt* my_setupv, BME280_ESP32_SPI * bmp, BatVoltage *adc ){
+void SetupMenu::begin( IpsDisplay* display, ESPRotary * rotary, Setup* my_setup, SetupVolt* my_setupv, BME280_ESP32_SPI * bmp, BatVoltage *adc ){
 	printf("SetupMenu() begin\n");
 	_rotary = rotary;
 	_setup = my_setup;
 	_setupv = my_setupv;
 	_bmp = bmp;
 	_display = display;
+	ucg = display->getDisplay();
 	_adc = adc;
 	setup();
 }
@@ -139,7 +137,7 @@ MenuEntry* MenuEntry::addMenu( MenuEntry * item ) {
 	}
 }
 
-MenuEntry* MenuEntry::findMenu( std::string title, MenuEntry* start )
+MenuEntry* MenuEntry::findMenu( String title, MenuEntry* start )
 {
 	printf("MenuEntry findMenu() %s %x\n", title.c_str(), (uint32_t)start );
 	if( start->_title == title ) {
@@ -164,28 +162,31 @@ void SetupMenu::display( int mode ){
 	if( (selected != this) || !_menu_enabled )
 		return;
 	printf("SetupMenu display( %s)\n", _title.c_str() );
-	u8g2 = _display->getBuffer();
-	u8g2_ClearBuffer( u8g2 );
-	u8g2_SetFont( u8g2,  u8g2_font_ncenR08_tf /* u8g2_font_helvB08_tf */ );
-	std::string tit = "<"+selected->_title;
-	u8g2_DrawStr( u8g2, 110,1, tit.c_str() );
-
-	u8g2_SetDrawColor( u8g2, 2);
-	y=0;
+	// ucg->clearScreen();
+	// clear();
+	y=25;
+	ucg->setPrintPos(5,y);
+	printf("Title: %s y=%d\n", selected->_title.c_str(),y );
+	ucg->setColor(0, 0, 0);
+	ucg->printf("<< %s",selected->_title.c_str());
 	for (int i=0; i<_childs.size(); i++ ) {
+		y += 25;
 		MenuEntry * child = _childs[i];
-		y+=10;
-		u8g2_DrawStr( u8g2, 110-y,1, child->_title.c_str() );
+		if (i == highlight) {
+			ucg->drawFrame( 1,y-25,238,30 );
+		}
+		else {
+			ucg->setColor(255, 255, 255);
+			ucg->drawFrame( 1,y-25,238,30 );
+			ucg->setColor(0, 0, 0);
+		}
+		ucg->setPrintPos(5,y);
+		ucg->printf("%s",child->_title.c_str());
+		printf("Child: %s y=%d\n",child->_title.c_str() ,y );
+		ucg->setColor(0, 0, 0);
 	}
-	y=0;
-	for (int i=-1; i<(int)(_childs.size()); i++ ) {
-		if (i == highlight)
-			u8g2_DrawBox( u8g2, 110-y, 0 , 10, 64 );
-		y+=10;
-	}
-	y+=14;
+	y+=30;
 	showhelp( y );
-	u8g2_SendBuffer(u8g2);
 }
 
 void MenuEntry::showhelp( int y ){
@@ -199,15 +200,17 @@ void MenuEntry::showhelp( int y ){
 			}
 			buf[j] = helptext[i];
 			buf[j+1] = '\0';
-			if( u8g2_GetStrWidth( u8g2, buf ) > 62 ) {
+			if( ucg->getStrWidth( buf ) > 230 ) {
 				buf[j] = '\0';
-				u8g2_DrawStr( u8g2, 110-y,1, buf );
+				ucg->setPrintPos(2, 30+y);
+				ucg->print( buf );
 				j=-1;
 				i--;
-				y+=11;
+				y+=33;
 			}
 		}
-		u8g2_DrawStr( u8g2, 110-y,1, buf );
+		ucg->setPrintPos(2, 30+y);
+		ucg->print( buf );
 	}
 }
 
@@ -253,6 +256,7 @@ void SetupMenu::press(){
 			_display->doMenu();
 			Audio.disable();
 			_menu_enabled = true;
+			clear();
 		}
 		else
 		{
@@ -262,6 +266,7 @@ void SetupMenu::press(){
 			Audio.setup();
 			bmpVario.setup();
 			_menu_enabled = false;
+			clear();
 		}
 	}
 	display();
@@ -513,7 +518,7 @@ void SetupMenu::setup( )
 	SetupMenu::display();
 }
 
-SetupMenuValFloat::SetupMenuValFloat( std::string title, float *value, std::string unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ) ) {
+SetupMenuValFloat::SetupMenuValFloat( String title, float *value, String unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ) ) {
 	printf("SetupMenuValFloat( %s ) \n", title.c_str() );
 	_rotary->attach(this);
 	_title = title;
@@ -526,19 +531,28 @@ SetupMenuValFloat::SetupMenuValFloat( std::string title, float *value, std::stri
 	_action = action;
 }
 
+void MenuEntry::clear()
+{
+	// ucg->clearScreen();
+	// ucg->begin(UCG_FONT_MODE_SOLID);
+	ucg->setColor(255, 255, 255);
+	ucg->drawBox( 0,0,240,320 );
+	ucg->setFont(ucg_font_ncenR14_hr);
+	ucg->setPrintPos( 20, 30 );
+	ucg->setColor(0, 0, 0);
+}
 
 void SetupMenuValFloat::display( int mode ){
 	if( (selected != this) || !_menu_enabled )
 		return;
 	printf("SetupMenuValFloat display() %d %x\n", pressed, (int)this);
-	u8g2 = _display->getBuffer();
-	u8g2_ClearBuffer( u8g2 );
-	u8g2_SetFont( u8g2,  u8g2_font_ncenR08_tf /* u8g2_font_helvB08_tf */ );
-	u8g2_DrawStr( u8g2, 110,1, selected->_title.c_str() );
-	int y=16;
+	// clear();
+	ucg->print( selected->_title.c_str() );
+	int y=33;
     char val[14];
 	sprintf( val,"%0.2f %s", *_value, _unit.c_str() );
-	u8g2_DrawStr( u8g2, 110-y,1, val );
+	ucg->setPrintPos( 2, 30+y );
+	ucg->print(val);
 
 	if( _action != 0 )
 		(*_action)( this );
@@ -547,12 +561,11 @@ void SetupMenuValFloat::display( int mode ){
 	showhelp( y );
 	if(mode == 1){
 		y+=24;
-		u8g2_DrawStr( u8g2, 1,1, "Saved" );
+		ucg->setPrintPos( 2, 30 );
+		ucg->print("Saved");
 	}
-	u8g2_SetDrawColor( u8g2, 2);
 	y=0;
 
-	u8g2_SendBuffer(u8g2);
 	if( mode == 1 )
 	    vTaskDelay(1000 / portTICK_PERIOD_MS);
 	printf("~SetupMenuValFloat display\n");
@@ -593,12 +606,13 @@ void SetupMenuValFloat::press(){
 	else
 	{
 		pressed = true;
+		clear();
 		display();
 	}
 }
 
 
-SetupMenuSelect::SetupMenuSelect( std::string title, uint8_t *select, bool restart, int (*action)(SetupMenuSelect *p) ) {
+SetupMenuSelect::SetupMenuSelect( String title, uint8_t *select, bool restart, int (*action)(SetupMenuSelect *p) ) {
 	printf("SetupMenuSelect( %s ) \n", title.c_str() );
 	_rotary->attach(this);
 	_title = title;
@@ -614,11 +628,7 @@ void SetupMenuSelect::display( int mode ){
 	if( (selected != this) || !_menu_enabled )
 		return;
 	printf("SetupMenuSelect display() %d %x\n", pressed, (int)this);
-	u8g2= _display->getBuffer();
-	u8g2_ClearBuffer( u8g2 );
-	u8g2_SetFont( u8g2,  u8g2_font_ncenR08_tf  );
-	u8g2_DrawStr( u8g2, 110,1, selected->_title.c_str() );
-	u8g2_SetDrawColor( u8g2, 2);
+	// clear();
 
 	printf("select=%d numval=%d\n", *_select, _numval );
 	int y=10;
@@ -627,22 +637,24 @@ void SetupMenuSelect::display( int mode ){
 		start = *_select-9;
 	printf("start=%d \n", start );
 	for( int i=start; i<_numval && i<(start+10); i++ )	{
-		u8g2_DrawStr( u8g2, 110-y,1, _values[i].c_str() );
+		ucg->setPrintPos( 2, 30+y );
+		ucg->print( _values[i].c_str() );
 		if( i == *_select ){
-			u8g2_DrawBox( u8g2, 110-y, 0 , 10, 64 );
+			ucg->drawBox( 0, 0+y, 30, 210 );
 		}
-		y+=10;
+		y+=33;
 	}
-	y+=14;
+	y+=36;
 	showhelp( y );
 	if(mode == 1){
-		u8g2_DrawStr( u8g2, 1,1, "Saved" );
+		ucg->setPrintPos( 30, 30 );
+		ucg->print("Saved" );
 		if( _select_save != *_select )
 			if( _restart ) {
-				u8g2_DrawStr( u8g2, 110-(y+30),1, "Now Restart" );
+				ucg->setPrintPos( 30, 30+y+30 );
+				ucg->print("Now Restart" );
 			}
 	}
-	u8g2_SendBuffer(u8g2);
 	if( mode == 1 )
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
 

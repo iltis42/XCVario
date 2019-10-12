@@ -1236,7 +1236,7 @@ static int16_t ucg_com_arduino_4wire_HW_SPI(ucg_t *ucg, int16_t msg, uint16_t ar
       break;
     case UCG_COM_MSG_CHANGE_CS_LINE:
      if( arg == 0 )
-    	 SPI.beginTransaction(SPISettings( 131111110, MSBFIRST, SPI_MODE3));
+    	 SPI.beginTransaction(SPISettings( 1311111*3, MSBFIRST, SPI_MODE3));
          // SPI.beginTransaction(SPISettings( 2000000, MSBFIRST, SPI_MODE0));
      else
     	 SPI.endTransaction();

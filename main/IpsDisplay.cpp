@@ -72,14 +72,14 @@ void IpsDisplay::begin( Setup* asetup ) {
 
 	ucg->setColor(1, 255, 255, 255);
 	ucg->setColor(0, 0, 0, 0);
-	ucg->setFont(ucg_font_ncenR14_hr);
+	ucg->setFont(ucg_font_ncenR10_hr);
 	ucg->setPrintPos(130,20);
 	ucg->print("Vario");
-	ucg->setPrintPos(210,40);
+	ucg->setPrintPos(210,42);
 	ucg->print("m");
 	ucg->setPrintPos(210,55);
 	ucg->print("--");
-	ucg->setPrintPos(210,67);
+	ucg->setPrintPos(210,65);
 	ucg->print("s");
 
 	// print scale
@@ -94,11 +94,11 @@ void IpsDisplay::begin( Setup* asetup ) {
 	// Sollfahrt
 	ucg->setPrintPos(130,100);
 	ucg->print("Sollfahrt");
-	ucg->setPrintPos(210,120);
+	ucg->setPrintPos(210,122);
 	ucg->print("km");
 	ucg->setPrintPos(210,135);
 	ucg->print("--");
-	ucg->setPrintPos(210,150);
+	ucg->setPrintPos(210,148);
 	ucg->print("h");
 
 	// delay(1000);
@@ -165,7 +165,7 @@ void IpsDisplay::drawDisplay( float te, float ate, float tealt, float temp, floa
 	if( _s2f != s2falt ) {
 		ucg->setPrintPos(120,140);
 		ucg->setFont(ucg_font_fub25_hn);
-		ucg->printf("%3d", (int)(s2f+0.5)  );
+		ucg->printf("%3d ", (int)(s2f+0.5)  );
 		s2falt = _s2f;
 	}
 
@@ -225,7 +225,7 @@ void IpsDisplay::drawDisplay( float te, float ate, float tealt, float temp, floa
 	*/
 	// Now we draw the current TE value bar
 	int y = int(_clipte*_pixpmd+0.5);
-	printf("Y=%d te=%f ppm%d\n", y, _clipte, _pixpmd );
+	// printf("Y=%d te=%f ppm%d\n", y, _clipte, _pixpmd );
  	if( y != yalt ) {
 		// if TE value has changed
 		int y = int(_clipte*_pixpmd+0.5);

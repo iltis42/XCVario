@@ -26,7 +26,7 @@ void ESPRotary::attach(RotaryObserver *obs) {
 }
 
 ESPRotary::ESPRotary() {
-	xMutex = xSemaphoreCreateMutex();
+	swMutex = xSemaphoreCreateMutex();
 }
 
 void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
@@ -45,10 +45,10 @@ void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
 	gpioConfig.intr_type = GPIO_INTR_ANYEDGE;
 	gpio_config(&gpioConfig);
 	gpio_install_isr_service(0);
-	q1 = xQueueCreate(40, sizeof(int));
+	q1 = xQueueCreate(4, sizeof(int));
 	gpio_isr_handler_add(clk, ESPRotary::readPosInt, NULL);
 	gpio_isr_handler_add(sw, ESPRotary::readPosInt, NULL);
-	xTaskCreatePinnedToCore(&ESPRotary::readPos, "readPos", 4096, NULL, 5, NULL, 0);
+	xTaskCreatePinnedToCore(&ESPRotary::readPos, "readPos", 8192, NULL, 10, NULL, 0);
 }
 
 // receiving from Interrupt the rotary direction and switch

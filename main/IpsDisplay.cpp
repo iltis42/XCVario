@@ -48,25 +48,14 @@ IpsDisplay::~IpsDisplay() {
 }
 
 float IpsDisplay::_range_clip = 0;
+int   IpsDisplay::_divisons = 5;
+Setup *IpsDisplay::_setup = 0;
+float IpsDisplay::_range = 5;
 
-void IpsDisplay::begin( Setup* asetup ) {
-	printf("IpsDisplay::begin\n");
-	/*
-	switch( _dtype ) {
-
-	case ILI9341:
-		printf("IpsDisplay::new ILI9341\n");
-		ucg = new Ucglib_ILI9341_18x240x320_HWSPI( _dc, _cs, _reset );
-		break;
-
-	default:
-		printf("Error, unknown display type %d", _dtype );
-	}
-	*/
-	_pixpmd = (int)(( DISPLAY_H/2 -40) /_range);
-	ucg->begin(UCG_FONT_MODE_SOLID);
-	ucg->clearScreen();
-	ucg->setFont(ucg_font_fub35_hn);
+void IpsDisplay::initDisplay() {
+	setup();
+	// ucg->clearScreen();
+	// ucg->setFont(ucg_font_fub35_hn);
 	ucg->setColor(255, 255, 255);
 	ucg->drawBox( 0,0,240,320 );
 
@@ -82,7 +71,7 @@ void IpsDisplay::begin( Setup* asetup ) {
 	ucg->setPrintPos(210,65);
 	ucg->print("s");
 
-	// print scale
+	// print TE scale
 	for( int i=_divisons; i >=-_divisons; i-- )
 	{
 		float legend = ((float)i/(float)_divisons)*_range;  // only print the integers
@@ -91,7 +80,7 @@ void IpsDisplay::begin( Setup* asetup ) {
 		if( abs( legend  - int( legend )) < 0.01 )
 			ucg->printf("%+d",(int)legend);
 	}
-	// Sollfahrt
+	// Sollfahrt Text
 	ucg->setPrintPos(130,100);
 	ucg->print("Sollfahrt");
 	ucg->setPrintPos(210,122);
@@ -99,10 +88,13 @@ void IpsDisplay::begin( Setup* asetup ) {
 	ucg->setPrintPos(210,135);
 	ucg->print("--");
 	ucg->setPrintPos(210,148);
-	ucg->print("h");
+	ucg->print("	h");
 
-	// delay(1000);
+}
 
+void IpsDisplay::begin( Setup* asetup ) {
+	// printf("IpsDisplay::begin\n");
+	ucg->begin(UCG_FONT_MODE_SOLID);
 	_setup = asetup;
 	setup();
 }
@@ -114,7 +106,7 @@ void IpsDisplay::setup()
 		_divisons = 4;
 	else
 		_divisons = 5;
-	_pixpmd = (int)((DISPLAY_H-40)/2 /_range);
+	_pixpmd = (int)(( DISPLAY_H/2 -40) /_range);
 	_range_clip = _range*1.1;
 }
 
@@ -122,12 +114,11 @@ void IpsDisplay::setup()
 int _te=0;
 int yalt;
 int s2falt=0;
-
+extern xSemaphoreHandle spiMutex;
 
 void IpsDisplay::drawDisplay( float te, float ate, float tealt, float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode ){
 	if( _menu )
 			return;
-
 	// printf("IpsDisplay::drawDisplay\n");
 
 	ucg->setFont(ucg_font_fub35_hn);
@@ -136,12 +127,19 @@ void IpsDisplay::drawDisplay( float te, float ate, float tealt, float temp, floa
 
 	if( int(_te*10) != (int)(te*10) ) {
 		ucg->setPrintPos(90,70);
-		if( te < 0 )
+		if( te < 0 ) {
+			xSemaphoreTake(spiMutex,portMAX_DELAY );
 			ucg->print("-");
-		else
+			xSemaphoreGive(spiMutex); }
+		else {
+			xSemaphoreTake(spiMutex,portMAX_DELAY );
 			ucg->print(" ");
+			xSemaphoreGive(spiMutex);
+		}
 		ucg->setPrintPos(120,70);
+		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		ucg->printf("%0.1f", abs(te) );
+		xSemaphoreGive(spiMutex);
 		_te = te;
 	}
 
@@ -165,7 +163,9 @@ void IpsDisplay::drawDisplay( float te, float ate, float tealt, float temp, floa
 	if( _s2f != s2falt ) {
 		ucg->setPrintPos(120,140);
 		ucg->setFont(ucg_font_fub25_hn);
+		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		ucg->printf("%3d ", (int)(s2f+0.5)  );
+		xSemaphoreGive(spiMutex);
 		s2falt = _s2f;
 	}
 
@@ -233,18 +233,24 @@ void IpsDisplay::drawDisplay( float te, float ate, float tealt, float temp, floa
 		// we draw here the positive TE value bar
 		if ( y > 0 ) {
 		  if( y > yalt ) {
+			xSemaphoreTake(spiMutex,portMAX_DELAY );
 			ucg->drawBox( 40, dmid-y, bw, abs(y-yalt) );
+			xSemaphoreGive(spiMutex);
 		  }
 		  if( y < yalt  )
 		  {
 			ucg->setColor( 255,255,255 );
+			xSemaphoreTake(spiMutex,portMAX_DELAY );
 			ucg->drawBox( 40, dmid-yalt, bw, abs(yalt-y) );
+			xSemaphoreGive(spiMutex);
 			ucg->setColor( 0,0,0 );
 		  }
 		  if( yalt < 0 )
 		  {
 			ucg->setColor( 255,255,255 );
+			xSemaphoreTake(spiMutex,portMAX_DELAY );
 			ucg->drawBox( 40, dmid, bw, abs(yalt) );
+			xSemaphoreGive(spiMutex);
 			ucg->setColor( 0,0,0 );
 		  }
 		}
@@ -252,18 +258,24 @@ void IpsDisplay::drawDisplay( float te, float ate, float tealt, float temp, floa
 		else  // y < 0
 		{   // we have a bigger negative value so fill the delta
 			if( y < yalt ) {
+			   xSemaphoreTake(spiMutex,portMAX_DELAY );
 			   ucg->drawBox( 40, dmid-yalt, bw, abs(yalt-y) );
+			   xSemaphoreGive(spiMutex);
 			}
 			if( y > yalt )
 			{  // a smaller negative value, blank the delta
 				ucg->setColor( 255,255,255 );
+				xSemaphoreTake(spiMutex,portMAX_DELAY );
 				ucg->drawBox( 40, dmid-y, bw, abs(yalt-y) );
+				xSemaphoreGive(spiMutex);
 				ucg->setColor( 0,0,0 );
 			}
 			if( yalt > 0 )
 			{  // blank the overshoot across zero
 				ucg->setColor( 255,255,255 );
+				xSemaphoreTake(spiMutex,portMAX_DELAY );
 				ucg->drawBox( 40, dmid-yalt, bw, yalt );
+				xSemaphoreGive(spiMutex);
 				ucg->setColor( 0,0,0 );
 			}
 

@@ -98,23 +98,42 @@ Switch VaSoSW;
 TaskHandle_t *bpid;
 TaskHandle_t *spid;
 TaskHandle_t *tpid;
+TaskHandle_t *dpid;
+
+xSemaphoreHandle spiMutex=NULL;
 
 BME280_ESP32_SPI bmpTE(SPI_SCLK, SPI_MOSI, SPI_MISO, CS_bme280TE, FREQ_BMP_SPI);
 BME280_ESP32_SPI bmpBA(SPI_SCLK, SPI_MOSI, SPI_MISO, CS_bme280BA, FREQ_BMP_SPI);
 Ucglib_ILI9341_18x240x320_HWSPI myucg( SPI_DC, CS_Display, RESET_Display );
 IpsDisplay display( &myucg );
 
-
 ESPRotary Rotary;
 SetupMenu  Menu;
 
+static float speed = 0;
+static float aTE = 0;
+static float alt;
+static float aCl = 0;
+static float netto = 0;
+static float as2f = 0;
+static float s2f_delta = 0;
+static bool s2fmode = false;
+
 void handleRfcommRx( char * rx, uint16_t len ){
 	printf("RFCOMM packet, %s, len %d %d\n", rx, len, strlen( rx ));
-
 }
 
 
 BTSender btsender( handleRfcommRx  );
+
+void drawDisplay(void *pvParameters){
+	display.initDisplay();
+	while (1) {
+		TickType_t dLastWakeTime = xTaskGetTickCount();
+		display.drawDisplay( TE, aTE, alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode );
+		vTaskDelayUntil(&dLastWakeTime, 100/portTICK_PERIOD_MS);
+	}
+}
 
 void readBMP(void *pvParameters){
 	display.begin( &mysetup );
@@ -125,7 +144,7 @@ void readBMP(void *pvParameters){
 			TE = bmpVario.readTE();
 			baroP = bmpBA.readPressure();
 			speedP = MP5004DP.readPascal(30);
-			float alt;
+
 			if( mysetup.get()->_alt_select == 0 ) // TE
 			   alt = bmpVario.readAVGalt();
 			else {
@@ -141,15 +160,13 @@ void readBMP(void *pvParameters){
 			xSemaphoreGive(xMutex);
 
 			battery = ADC.getBatVoltage();
-			float speed = MP5004DP.pascal2km( speedP, temperature );
-			float aTE = bmpVario.readAVGTE();
-			float aCl = bmpVario.readAvgClimb();
-			float netto = aTE - s2f.sink( speed );
-			float as2f = s2f.speed( netto );
-			float s2f_delta = as2f - speed;
-			// printf("Cur Speed %f, S2F %f delta: %f netto: %f\n", speed, as2f, s2f_delta, netto );
-			// printf("TE %0.1f avTE %0.1f\n", TE, aTE );
-			bool s2fmode = false;
+			speed = MP5004DP.pascal2km( speedP, temperature );
+			aTE = bmpVario.readAVGTE();
+			aCl = bmpVario.readAvgClimb();
+			netto = aTE - s2f.sink( speed );
+			as2f = s2f.speed( netto );
+			s2f_delta = as2f - speed;
+
 			switch( mysetup.get()->_audio_mode ) {
 				case 0: // Vario
 					s2fmode = false;
@@ -166,8 +183,6 @@ void readBMP(void *pvParameters){
 					break;
 			}
 			Audio.setS2FMode( s2fmode );
-			display.drawDisplay( TE, aTE, alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode );
-            // helloIltis(alt);
 			Audio.setValues( TE, s2f_delta );
 			if( uxTaskGetStackHighWaterMark( bpid ) < 1000 )
 				printf("Warning Stack low: %d bytes\n", uxTaskGetStackHighWaterMark( bpid ) );
@@ -196,14 +211,13 @@ void readTemp(void *pvParameters){
 
 void sensor(void *args){
 	esp_wifi_set_mode(WIFI_MODE_NULL);
+	spiMutex = xSemaphoreCreateMutex();
 	esp_log_level_set("*", ESP_LOG_INFO);
 	NVS.begin();
 	mysetup.begin();
 	setupv.begin();
 	sleep( 1 );
 	Audio.begin( DAC_CHANNEL_1, GPIO_NUM_0, &mysetup );
-	// printf("Display init..\n");
-	// display.begin( &mysetup );
 
 	xMutex=xSemaphoreCreateMutex();
 	uint8_t t_sb = 0;   //stanby 0: 0,5 mS 1: 62,5 mS 2: 125 mS
@@ -234,7 +248,7 @@ void sensor(void *args){
     s2f.change_polar();
 	s2f.change_mc_bal();
 
-	xTaskCreatePinnedToCore(&readBMP, "readBMP", 8000, NULL, 6, bpid, 0);
+	xTaskCreatePinnedToCore(&readBMP, "readBMP", 8000, NULL, 25, bpid, 0);
 	Version myVersion;
 	printf("Program Version %s\n", myVersion.version() );
 
@@ -255,23 +269,16 @@ void sensor(void *args){
 
 	Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
 	Menu.begin( &display, &Rotary, &mysetup, &setupv, &bmpBA, &ADC );
+
+	gpio_set_pull_mode(RESET_Display, GPIO_PULLUP_ONLY );
+	gpio_set_pull_mode(CS_Display, GPIO_PULLUP_ONLY );
+	gpio_set_pull_mode(CS_bme280BA, GPIO_PULLUP_ONLY );
+	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
+
+	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 2, dpid, 0);
+
 	printf("Free Stack: S:%d \n", uxTaskGetStackHighWaterMark( spid ) );
-
-	uint64_t bitmask = 0;
-	bitmask = bitmask | (1<<RESET_Display);
-	bitmask = bitmask | (1<<CS_Display);
-	bitmask = bitmask | (1<<CS_bme280BA);
-	bitmask = bitmask | (1<<CS_bme280TE);
-
-	gpio_config_t gpioConfig;
-	gpioConfig.pin_bit_mask = bitmask;
-	gpioConfig.mode         = GPIO_MODE_OUTPUT;
-	gpioConfig.pull_up_en   = GPIO_PULLUP_ENABLE;
-	gpioConfig.pull_down_en = GPIO_PULLDOWN_DISABLE;
-	gpioConfig.intr_type    = GPIO_INTR_DISABLE;
-
-	gpio_config(&gpioConfig);
-    delay( 10000 );
+    delay( 2000 );
 	vTaskDelete( NULL );
 
 }

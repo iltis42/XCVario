@@ -16,7 +16,7 @@
 #include "Version.h"
 #include "Polars.h"
 
-Ucglib_ILI9341_18x240x320_HWSPI *ucg = 0;
+
 IpsDisplay* MenuEntry::_display = 0;
 MenuEntry* MenuEntry::root = 0;
 MenuEntry* MenuEntry::selected = 0;
@@ -28,6 +28,9 @@ BME280_ESP32_SPI *MenuEntry::_bmp = 0;
 bool      MenuEntry::_menu_enabled = false;
 extern PWMOut pwm1;
 extern S2F s2f;
+extern xSemaphoreHandle spiMutex;
+Ucglib_ILI9341_18x240x320_HWSPI *MenuEntry::ucg = 0;
+
 
 // Action Routines
 int contrast( SetupMenuValFloat * p )
@@ -42,8 +45,10 @@ int qnh_adj( SetupMenuValFloat * p )
 	printf("qnh_adj");
 	float alt = p->_bmp->readAltitude( *(p->_value) );
 	printf("Setup BA alt=%f QNH=%f\n", alt, *(p->_value)  );
-	ucg->setPrintPos(2,160);
-	ucg->printf("%4d %s", (int)(alt+0.5), "m" );
+	p->ucg->setPrintPos(150,75);
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
+	p->ucg->printf("%4d %s", (int)(alt+0.5), "m" );
+	xSemaphoreGive(spiMutex);
 	return 0;
 }
 
@@ -59,8 +64,10 @@ int factv_adj( SetupMenuValFloat * p )
 	}
 	adj = adj/10.0;
 	sprintf( j,"%0.2f %s", adj, "V"  );
-	ucg->setPrintPos(2,160);
-	ucg->printf("%0.2f %s", adj, "V");
+	p->ucg->setPrintPos(2,160);
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
+	p->ucg->printf("%0.2f %s", adj, "V");
+	xSemaphoreGive(spiMutex);
 	return 0;
 }
 
@@ -81,8 +88,10 @@ int bal_adj( SetupMenuValFloat * p )
     s2f.change_mc_bal();
     float loadinc = (p->_setup->get()->_ballast +100.0)/100.0;
     float newwl = p->_setup->get()->_polar.wingload * loadinc;
-    ucg->setPrintPos(2,160);
-    ucg->printf("%0.2f kg/m2", newwl);
+    p->ucg->setPrintPos(110,75);
+    xSemaphoreTake(spiMutex,portMAX_DELAY );
+    p->ucg->printf("%0.2f kg/m2", newwl);
+    xSemaphoreGive(spiMutex);
     return 0;
 }
 int mc_adj( SetupMenuValFloat * p )
@@ -98,6 +107,7 @@ SetupMenu::SetupMenu(){
 	_parent = 0;
 	y = 0;
 }
+
 
 
 SetupMenu::SetupMenu( String title ) {
@@ -119,6 +129,32 @@ void SetupMenu::begin( IpsDisplay* display, ESPRotary * rotary, Setup* my_setup,
 	_adc = adc;
 	setup();
 }
+
+void MenuEntry::uprintf( int x, int y, const char* format, ...) {
+	if( ucg == 0 ) {
+		printf("Error UCG not initialized !");
+		return;
+	}
+	va_list argptr;
+	va_start(argptr, format);
+	ucg->setPrintPos(x,y);
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
+	ucg->printf( format, argptr );
+	xSemaphoreGive(spiMutex);
+	va_end(argptr);
+}
+
+void MenuEntry::uprint( int x, int y, const char* str ) {
+	if( ucg == 0 ) {
+		printf("Error UCG not initialized !");
+		return;
+	}
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
+	ucg->setPrintPos(x,y);
+	ucg->print( str );
+	xSemaphoreGive(spiMutex);
+}
+
 
 MenuEntry* MenuEntry::addMenu( MenuEntry * item ) {
 	printf("MenuEntry addMenu() title %s\n", item->_title.c_str() );
@@ -162,55 +198,59 @@ void SetupMenu::display( int mode ){
 	if( (selected != this) || !_menu_enabled )
 		return;
 	printf("SetupMenu display( %s)\n", _title.c_str() );
-	// ucg->clearScreen();
-	// clear();
+	clear();
 	y=25;
 	ucg->setPrintPos(5,y);
 	printf("Title: %s y=%d\n", selected->_title.c_str(),y );
-	ucg->setColor(0, 0, 0);
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->printf("<< %s",selected->_title.c_str());
+	xSemaphoreGive(spiMutex);
+	// uprint(5,y, selected->_title.c_str());
+	ucg->drawFrame( 1,2,238,25 );
+
 	for (int i=0; i<_childs.size(); i++ ) {
-		y += 25;
 		MenuEntry * child = _childs[i];
-		if (i == highlight) {
-			ucg->drawFrame( 1,y-25,238,30 );
-		}
-		else {
-			ucg->setColor(255, 255, 255);
-			ucg->drawFrame( 1,y-25,238,30 );
-			ucg->setColor(0, 0, 0);
-		}
-		ucg->setPrintPos(5,y);
+		ucg->setPrintPos(5,(i+1)*25+25);
+		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		ucg->printf("%s",child->_title.c_str());
+		xSemaphoreGive(spiMutex);
 		printf("Child: %s y=%d\n",child->_title.c_str() ,y );
-		ucg->setColor(0, 0, 0);
 	}
-	y+=30;
+	y+=50;
 	showhelp( y );
 }
 
 void MenuEntry::showhelp( int y ){
 	if( helptext != 0 ){
-		char buf[32];
-		for( int i=0,j=0; i < strlen( helptext ); i++,j++ )
+		int w=0;
+		char buf[512];
+		memset(buf, 0, 512);
+		memcpy( buf, helptext, strlen(helptext));
+		char *p = strtok (buf, " ");
+		char *words[100];
+		while (p != NULL)
 		{
-			if( j == 0 && helptext[i] == ' ' ){
-				j=-1;
-				continue;
-			}
-			buf[j] = helptext[i];
-			buf[j+1] = '\0';
-			if( ucg->getStrWidth( buf ) > 230 ) {
-				buf[j] = '\0';
-				ucg->setPrintPos(2, 30+y);
-				ucg->print( buf );
-				j=-1;
-				i--;
-				y+=33;
-			}
+		   words[w++] = p;
+		   p = strtok (NULL, " ");
 		}
-		ucg->setPrintPos(2, 30+y);
-		ucg->print( buf );
+
+		// delay(5000);
+		printf("showhelp number of words: %d\n", w);
+		int x=1;
+		for( int p=0; p<w; p++ )
+		{
+			int len = ucg->getStrWidth( words[p] );
+			printf("showhelp pix len word #%d = %d, %s \n", p, len, words[p]);
+			if( x+len > 239 ) {   // does still fit on line
+				y+=25;
+				x=1;
+			}
+			ucg->setPrintPos(x, 50+y);
+			xSemaphoreTake(spiMutex,portMAX_DELAY );
+			ucg->print( words[p] );
+			xSemaphoreGive(spiMutex);
+			x+=len+5;
+		}
 	}
 }
 
@@ -218,26 +258,34 @@ void SetupMenu::down(){
 	if( (selected != this) || !_menu_enabled )
 		return;
 	printf("down %d %d\n", highlight, _childs.size() );
+	ucg->setColor(255, 255, 255);
+	ucg->drawFrame( 1,(highlight+1)*25+3,238,25 );
+	ucg->setColor(0, 0, 0);
 	if( highlight  > -1 ){
 		highlight --;
 	}
 	else
 		highlight = (int)(_childs.size() -1 );
+	ucg->drawFrame( 1,(highlight+1)*25+3,238,25 );
 	pressed = true;
-	display();
+	// display();
 }
 
 void SetupMenu::up(){
 	if( (selected != this) || !_menu_enabled )
 		return;
 	printf("up %d %d\n", highlight, _childs.size() );
+	ucg->setColor(255, 255, 255);
+	ucg->drawFrame( 1,(highlight+1)*25+3,238,25 );
+	ucg->setColor(0, 0, 0);
 	if( highlight < (int)(_childs.size()-1) ){
 		highlight ++;
 	}
 	else
 		highlight = -1;
+	ucg->drawFrame( 1,(highlight+1)*25+3,238,25 );
 	pressed = true;
-	display();
+	// display();
 }
 
 void SetupMenu::press(){
@@ -254,7 +302,7 @@ void SetupMenu::press(){
 		if( !pressed )
 		{
 			_display->doMenu();
-			Audio.disable();
+			// Audio.disable();
 			_menu_enabled = true;
 			clear();
 		}
@@ -262,14 +310,15 @@ void SetupMenu::press(){
 		{
 			_display->setup();
 			_display->doMenu(false);
-			Audio.disable(false);
+			// Audio.disable(false);
 			Audio.setup();
 			bmpVario.setup();
 			_menu_enabled = false;
-			clear();
+			// clear();
+			_display->initDisplay();
 		}
 	}
-	display();
+	// display();
 	// default is not pressed, so just display, but we toogle pressed state at the end
 	// so next time we either step up to parent,
 	if( pressed )
@@ -327,7 +376,7 @@ void SetupMenu::setup( )
 			"sec",
 			0.5, 10.0,
 			0.1 );
-	vda->setHelp("Response time, time constant of vario low pass filter");
+	vda->setHelp("Response time, time constant of Vario low pass filter");
 	vae->addMenu( vda );
 	SetupMenuValFloat * vga = new SetupMenuValFloat( 	"Range",
 			&_setup->get()->_range,
@@ -392,7 +441,7 @@ void SetupMenu::setup( )
 						&_setup->get()->_audio_range );
 		ar->addEntry( "Fix 5 m/s");
 		ar->addEntry( "Variable");
-		ar->setHelp("Either fix audio or variable with current vario display range");
+		ar->setHelp("Select either fix (5m/s) or variable Audio range according to current vario setting");
 		ade->addMenu( ar );
 
 	SetupMenu * db = new SetupMenu( "Deadband" );
@@ -536,7 +585,9 @@ void MenuEntry::clear()
 	// ucg->clearScreen();
 	// ucg->begin(UCG_FONT_MODE_SOLID);
 	ucg->setColor(255, 255, 255);
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->drawBox( 0,0,240,320 );
+	xSemaphoreGive(spiMutex);
 	ucg->setFont(ucg_font_ncenR14_hr);
 	ucg->setPrintPos( 20, 30 );
 	ucg->setColor(0, 0, 0);
@@ -547,21 +598,21 @@ void SetupMenuValFloat::display( int mode ){
 		return;
 	printf("SetupMenuValFloat display() %d %x\n", pressed, (int)this);
 	// clear();
-	ucg->print( selected->_title.c_str() );
-	int y=33;
-    char val[14];
-	sprintf( val,"%0.2f %s", *_value, _unit.c_str() );
-	ucg->setPrintPos( 2, 30+y );
-	ucg->print(val);
+	// ucg->setPrintPos( 5, 25 );
+	uprintf( 5,25, selected->_title.c_str() );
+	ucg->setPrintPos( 5, 75 );
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
+	ucg->printf("%0.2f %s", *_value, _unit.c_str());
+	xSemaphoreGive(spiMutex);
+	y= 75;
 
 	if( _action != 0 )
 		(*_action)( this );
 
-	y+=28;
 	showhelp( y );
 	if(mode == 1){
 		y+=24;
-		ucg->setPrintPos( 2, 30 );
+		ucg->setPrintPos( 5, 225 );
 		ucg->print("Saved");
 	}
 	y=0;
@@ -624,34 +675,36 @@ SetupMenuSelect::SetupMenuSelect( String title, uint8_t *select, bool restart, i
 	_action = action;
 }
 
+
+
 void SetupMenuSelect::display( int mode ){
 	if( (selected != this) || !_menu_enabled )
 		return;
 	printf("SetupMenuSelect display() %d %x\n", pressed, (int)this);
-	// clear();
+	clear();
+	ucg->setPrintPos(5,25);
+	printf("Title: %s y=%d\n", _title.c_str(),y );
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
+	ucg->printf("<< %s",_title.c_str());
+	xSemaphoreGive(spiMutex);
 
 	printf("select=%d numval=%d\n", *_select, _numval );
-	int y=10;
 	int start=0;
 	if( *_select > 10 )
 		start = *_select-9;
 	printf("start=%d \n", start );
 	for( int i=start; i<_numval && i<(start+10); i++ )	{
-		ucg->setPrintPos( 2, 30+y );
+		ucg->setPrintPos( 5, 50+25*i );
 		ucg->print( _values[i].c_str() );
-		if( i == *_select ){
-			ucg->drawBox( 0, 0+y, 30, 210 );
-		}
-		y+=33;
 	}
-	y+=36;
+	y=_numval*25+50;
 	showhelp( y );
 	if(mode == 1){
-		ucg->setPrintPos( 30, 30 );
-		ucg->print("Saved" );
+		ucg->setPrintPos( 5, 225 );
+		ucg->print("Saved !" );
 		if( _select_save != *_select )
 			if( _restart ) {
-				ucg->setPrintPos( 30, 30+y+30 );
+				ucg->setPrintPos( 5, 250  );
 				ucg->print("Now Restart" );
 			}
 	}
@@ -663,20 +716,27 @@ void SetupMenuSelect::display( int mode ){
 void SetupMenuSelect::down(){
 	if( (selected != this) || !_menu_enabled )
 		return;
-
+	ucg->setColor(255, 255, 255);
+	ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );
+	ucg->setColor(0, 0, 0);
 	if( (*_select) >  0 )
 		(*_select)--;
 	printf("val down %d\n", *_select );
-	display();
+	ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );
+
 }
 
 void SetupMenuSelect::up(){
 	if( (selected != this) || !_menu_enabled )
 		return;
+	ucg->setColor(255, 255, 255);
+	ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );
+	ucg->setColor(0, 0, 0);
 	if ( (*_select) < _numval-1 )
 		(*_select)++;
 	printf("val up %d\n", *_select );
-	display();
+	ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );
+
 }
 
 void SetupMenuSelect::press(){
@@ -684,14 +744,12 @@ void SetupMenuSelect::press(){
 		return;
 	printf("SetupMenuSelect press\n");
 	if ( pressed ){
-
 		display( 1 );
 		if( _parent != 0)
 			selected = _parent;
 		_parent->highlight = -1;  // to topmost selection when back
 		selected->pressed = true;
 		_setup->commit();
-
 		pressed = false;
 		if( _action != 0 )
 			(*_action)( this );
@@ -704,6 +762,6 @@ void SetupMenuSelect::press(){
 	else
 	{
 		pressed = true;
-		display();
+		// display();
 	}
 }

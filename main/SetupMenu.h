@@ -41,6 +41,8 @@ public:
 	void setHelp( const char *txt ) { helptext = (char*)txt; };
 	void showhelp( int y );
 	void clear();
+	void uprintf( int x, int y, const char* format, ...);
+	void uprint( int x, int y, const char* str );
 
 public:
 
@@ -60,6 +62,7 @@ public:
 	bool   pressed;
 	char   *helptext;
 	unsigned char y;
+	static Ucglib_ILI9341_18x240x320_HWSPI *ucg;
 
 private:
 };

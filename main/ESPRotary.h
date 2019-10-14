@@ -66,7 +66,7 @@ public:
     static void readSwitch( void * args );
 
 private:
-    xSemaphoreHandle xMutex;
+    xSemaphoreHandle swMutex;
     static QueueHandle_t q1;
     static TickType_t xLastWakeTime;
 	static std::vector<RotaryObserver *> observers;

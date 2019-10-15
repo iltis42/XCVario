@@ -118,6 +118,7 @@ static float netto = 0;
 static float as2f = 0;
 static float s2f_delta = 0;
 static bool s2fmode = false;
+long millisec = millis();
 
 void handleRfcommRx( char * rx, uint16_t len ){
 	printf("RFCOMM packet, %s, len %d %d\n", rx, len, strlen( rx ));
@@ -135,10 +136,16 @@ void drawDisplay(void *pvParameters){
 	}
 }
 
+
+
 void readBMP(void *pvParameters){
 	display.begin( &mysetup );
 	while (1) {
 		TickType_t xLastWakeTime = xTaskGetTickCount();
+		long newmsec = millis();
+		if( abs (newmsec - millisec - 100 ) > 2 )
+			printf("Unsharp != 100: %d ms\n", int( newmsec - millisec ) );
+		millisec = newmsec;
 		if( Audio.getDisable() != true )
 		{
 			TE = bmpVario.readTE();

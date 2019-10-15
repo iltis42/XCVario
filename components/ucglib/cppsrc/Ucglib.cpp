@@ -1236,11 +1236,9 @@ static int16_t ucg_com_arduino_4wire_HW_SPI(ucg_t *ucg, int16_t msg, uint16_t ar
       break;
     case UCG_COM_MSG_CHANGE_CS_LINE:
      if( arg == 0 )
-    	 SPI.beginTransaction(SPISettings( 1311111*3, MSBFIRST, SPI_MODE3));
-         // SPI.beginTransaction(SPISettings( 2000000, MSBFIRST, SPI_MODE0));
+    	 SPI.beginTransaction(SPISettings( 13111111*3, MSBFIRST, SPI_MODE3));
      else
     	 SPI.endTransaction();
-      // printf("UCG_COM_MSG_CHANGE_CS_LINE %d\n", arg);
       if ( ucg->pin_list[UCG_PIN_CS] != UCG_PIN_VAL_NONE )
 	     digitalWrite(ucg->pin_list[UCG_PIN_CS], arg);
       break;

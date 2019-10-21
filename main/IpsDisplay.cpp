@@ -51,6 +51,10 @@ const int   trisize = 120; // triangle size quality up/down
 
 #define YALT YS2F+S2FFONTH+HEADFONTH+GAP+2*MAXS2FTRI
 
+#define LOWBAT  11.6    // 20%  -> 0%
+#define FULLBAT 12.8    // 100%
+
+
 Ucglib_ILI9341_18x240x320_HWSPI *IpsDisplay::ucg = 0;
 
 IpsDisplay::IpsDisplay( Ucglib_ILI9341_18x240x320_HWSPI *aucg ) {
@@ -129,6 +133,15 @@ void IpsDisplay::initDisplay() {
 	ucg->setPrintPos(DISPLAY_W-mslen,YALT);
 	ucg->print("m");
 
+	ucg->drawDisc( FIELD_START, DISPLAY_H-4,  4, UCG_DRAW_ALL );
+	ucg->setColor(0, 255, 255);
+	ucg->drawDisc( FIELD_START, DISPLAY_H-4,  2, UCG_DRAW_ALL );
+	ucg->setColor(0, 0, 0);
+	ucg->drawVLine( FIELD_START-1, DISPLAY_H-20, 14 );
+	ucg->setColor(0, 255, 255);
+	ucg->drawVLine( FIELD_START,  DISPLAY_H-20, 14 );
+	ucg->setColor(0, 0, 0);
+	ucg->drawVLine( FIELD_START+1, DISPLAY_H-20, 14 );
 }
 
 void IpsDisplay::begin( Setup* asetup ) {
@@ -179,6 +192,7 @@ int s2falt=0;
 int s2fdalt=0;
 int prefalt=0;
 int tevlalt=0;
+int chargealt=0;
 
 extern xSemaphoreHandle spiMutex;
 
@@ -275,27 +289,37 @@ void IpsDisplay::drawDisplay( float te, float ate, float altitude, float temp, f
 		prefalt = alt;
 	}
 
+    // Temp
+	ucg->setFont(ucg_font_fur14_hf);
+	ucg->setPrintPos(FIELD_START+12,DISPLAY_H);
+	char T[10];
+	sprintf( T, "%0.1f\xb0", temp );
+	int tlen = ucg->getStrWidth( T );
+	ucg->printf(T);
 
-/*
-    // S2F Delta
-	if( abs (s2fd) > 10 ) {
-		if( s2fd < 0 ) {
-			sprintf( buf,"%d", (int)(s2fd+0.5) );
-			u8g2_DrawStr(&u8g2, dmid-9,32,buf);
-		}else {
-			sprintf( buf,"+%d", (int)(s2fd+0.5) );
-			u8g2_DrawStr(&u8g2, dmid+1,32,buf);
-		}
+	// Battery
+
+	int charge = (int)(( volt - LOWBAT )*32)/( FULLBAT - LOWBAT );
+	if(charge < 0)
+		charge = 1;
+	charge = 25;
+	if ( chargealt != charge ) {
+		ucg->drawBox( DISPLAY_W-40,DISPLAY_H-12, 36, 12  );
+		ucg->drawBox( DISPLAY_W-4,DISPLAY_H-9, 3, 6  );
+		if ( charge > 16 )
+			ucg->setColor( 255, 30, 255 ); // green
+		else if ( charge < 16 && charge > 8 )
+			ucg->setColor( 0, 0, 255 ); //  yellow
+		else if ( charge < 4 )
+			ucg->setColor( 0, 255, 255 ); // red
+		ucg->drawBox( DISPLAY_W-40+2,DISPLAY_H-10, charge, 8  );
+		ucg->setColor( 230, 230, 230 );
+		ucg->drawBox( DISPLAY_W-40+2+charge,DISPLAY_H-10, 32-charge, 8  );
+		ucg->setColor( 0, 0, 0 );
+		chargealt = charge;
 	}
 
-	// Temperature headline, val
-	u8g2_SetFont(&u8g2, u8g2_font_5x7_tr );
-	sprintf( buf,"Temp C");
-	u8g2_DrawStr(&u8g2, 10,26,buf);
-
-	u8g2_SetFont(&u8g2, u8g2_font_helvB08_tf );
-	sprintf( buf,"%0.1f\xb0", temp );
-	u8g2_DrawStr(&u8g2, 1,32,buf);
+/*
 
 	// Battery headline, val
 	u8g2_SetFont(&u8g2, u8g2_font_5x7_tr );

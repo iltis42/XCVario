@@ -12,6 +12,7 @@
 #include <string.h>
 #include <Ucglib.h>
 #include "IpsDisplay.h"
+#include "BTSender.h"
 
 int   IpsDisplay::tick = 0;
 bool  IpsDisplay::_menu = false;
@@ -46,13 +47,17 @@ const int   trisize = 120; // triangle size quality up/down
 #define S2FFONTH 31
 #define YS2F YVAR+S2FFONTH+HEADFONTH+GAP
 
-#define VARBARGAP HEADFONTH
+#define VARBARGAP (HEADFONTH+(HEADFONTH/2))
 #define MAXS2FTRI 50
 
-#define YALT YS2F+S2FFONTH+HEADFONTH+GAP+2*MAXS2FTRI
+#define YALT (YS2F+S2FFONTH+HEADFONTH+GAP+2*MAXS2FTRI +10 )
 
 #define LOWBAT  11.6    // 20%  -> 0%
 #define FULLBAT 12.8    // 100%
+
+#define BTSIZE  5
+#define BTW    15
+#define BTH    24
 
 
 Ucglib_ILI9341_18x240x320_HWSPI *IpsDisplay::ucg = 0;
@@ -104,21 +109,23 @@ void IpsDisplay::initDisplay() {
 	{
 		float legend = ((float)i*_range)/_divisons;  // only print the integers
 		int hc = ucg->getFontAscent()/2;
-		int y = dmid - (legend*_pixpmd);
+		int y = (int)(dmid - int(legend*_pixpmd));
 
 		if( abs( legend  - int( legend )) < 0.1 ) {
 			ucg->setPrintPos(0, y+hc  );
-			ucg->printf("%+d",(int)legend);
+			ucg->printf("%+d",(int)legend );
 		}
 		ucg->drawHLine( DISPLAY_LEFT, y , 4 );
 	}
 	ucg->drawVLine( DISPLAY_LEFT+5,      VARBARGAP , DISPLAY_H-(VARBARGAP*2) );
+	ucg->drawHLine( DISPLAY_LEFT+5, VARBARGAP , bw );
 	ucg->drawVLine( DISPLAY_LEFT+5+bw+1, VARBARGAP, DISPLAY_H-(VARBARGAP*2) );
+	ucg->drawHLine( DISPLAY_LEFT+5, DISPLAY_H-(VARBARGAP), bw );
 
 	// Sollfahrt Text
 	ucg->setFont(ucg_font_fub11_tr);
 	ucg->setPrintPos(FIELD_START,YS2F-S2FFONTH);
-	ucg->print("Speed2Fly");
+	ucg->print("Speed To Fly");
 	ucg->setFont(ucg_font_fub11_hr);
 	int mslen = ucg->getStrWidth("km/h");
 	ucg->setPrintPos(DISPLAY_W-mslen,YS2F);
@@ -178,9 +185,9 @@ void IpsDisplay::setup()
 	else
 		_divisons = 5;
 
-	_pixpmd = (int)(((DISPLAY_H-(2*VARBARGAP))/2) /_range);
+	_pixpmd = (int)((  (DISPLAY_H-(2*VARBARGAP) )/2) /_range);
 	printf("Pixel per m/s %d", _pixpmd );
-	_range_clip = _range*1.1;
+	_range_clip = _range;
 
 
 }
@@ -192,7 +199,8 @@ int s2falt=0;
 int s2fdalt=0;
 int prefalt=0;
 int tevlalt=0;
-int chargealt=0;
+int chargealt=-1;
+int btqueue=-1;
 
 extern xSemaphoreHandle spiMutex;
 
@@ -240,17 +248,11 @@ void IpsDisplay::drawDisplay( float te, float ate, float altitude, float temp, f
 		_te = te;
 	}
 
-	// printf("IpsDisplay setTE( %f %f )\n", te, ate);
 	float _clipte = te;
 	if ( te > _range_clip )
 		_clipte = _range_clip;
 	if ( te < -_range_clip )
 		_clipte = -_range_clip;
-
-	// Zero Line fat
-	// ucg->drawHLine( 40, dmid, 120 );
-	// ucg->drawHLine( 40, dmid-1, 120 );
-	// ucg->drawHLine( 40, dmid+1, 120 );
 
 	int y = int(_clipte*_pixpmd+0.5);
 
@@ -266,9 +268,6 @@ void IpsDisplay::drawDisplay( float te, float ate, float altitude, float temp, f
 			ucg->drawLine( 30+abs(i), dmid-y+i, 90, dmid+i );
 	}
 	*/
-
-	// ucg->drawLine( 40, yalt, dmid-1, 120 );
-	// ucg->drawLine( 40, yalt, dmid+1, 120 );
 
 	// S2F
 	int _s2f = (int)(s2f+0.5);
@@ -299,10 +298,11 @@ void IpsDisplay::drawDisplay( float te, float ate, float altitude, float temp, f
 
 	// Battery
 
-	int charge = (int)(( volt - LOWBAT )*32)/( FULLBAT - LOWBAT );
+	int charge = (int)(( volt - LOWBAT )*100)/( FULLBAT - LOWBAT );
 	if(charge < 0)
-		charge = 1;
-	charge = 25;
+		charge = 0;
+	if( charge > 100 )
+		charge = 100;
 	if ( chargealt != charge ) {
 		ucg->drawBox( DISPLAY_W-40,DISPLAY_H-12, 36, 12  );
 		ucg->drawBox( DISPLAY_W-4,DISPLAY_H-9, 3, 6  );
@@ -312,38 +312,42 @@ void IpsDisplay::drawDisplay( float te, float ate, float altitude, float temp, f
 			ucg->setColor( 0, 0, 255 ); //  yellow
 		else if ( charge < 4 )
 			ucg->setColor( 0, 255, 255 ); // red
-		ucg->drawBox( DISPLAY_W-40+2,DISPLAY_H-10, charge, 8  );
+		int chgpos=(charge*36)/100;
+		if(chgpos <= 4)
+			chgpos = 4;
+		ucg->drawBox( DISPLAY_W-40+2,DISPLAY_H-10, chgpos, 8  );
 		ucg->setColor( 230, 230, 230 );
-		ucg->drawBox( DISPLAY_W-40+2+charge,DISPLAY_H-10, 32-charge, 8  );
+		ucg->drawBox( DISPLAY_W-40+2+chgpos,DISPLAY_H-10, 32-chgpos, 8  );
 		ucg->setColor( 0, 0, 0 );
+		ucg->setPrintPos(DISPLAY_W-80,DISPLAY_H);
+		ucg->printf("%d%%", charge);
 		chargealt = charge;
 	}
 
-/*
+	// 16x10 Bluetooth Symbol
 
-	// Battery headline, val
-	u8g2_SetFont(&u8g2, u8g2_font_5x7_tr );
-	sprintf( buf,"Battery");
-	u8g2_DrawStr(&u8g2, 10,26,buf);
-	sprintf( buf,"%0.1f V",_battery);
-	u8g2_DrawStr(&u8g2, 1,32,buf);
-		// Average climb headline, val
-		u8g2_SetFont(&u8g2, u8g2_font_5x7_tr );
-		sprintf( buf,"Climb MC");
-		u8g2_DrawStr(&u8g2, 10,26,buf);
-		sprintf( buf,"%0.1f m/s",acl);
-		u8g2_DrawStr(&u8g2, 1,32,buf);
+	int btq=BTSender::queueFull();
+	if( btq != btqueue )
+	{
+		if( _setup->get()->_blue_enable ) {
+			ucg_int_t btx=DISPLAY_W-100;
+			ucg_int_t bty=DISPLAY_H-BTH/2;
+			if( btq )
+				ucg->setColor( 180, 180, 180 );  // dark grey
+			else
+				ucg->setColor( 255, 255, 0 );  // blue
 
-	else
-		tick = 0;
+			ucg->drawRBox( btx-BTW/2, bty-BTH/2, BTW, BTH, BTW/2-1);
 
-	u8g2_SetFont(&u8g2, u8g2_font_5x7_tr );
-	u8g2_SetDrawColor( &u8g2, 2);
-
-	*/
-	// Now we draw the current TE value bar
-
-	// printf("Y=%d te=%f ppm%d\n", y, _clipte, _pixpmd );
+			// inner symbol
+			ucg->setColor( 0, 0, 0 );
+			ucg->drawTriangle( btx, bty, btx+BTSIZE, bty-BTSIZE, btx, bty-2*BTSIZE );
+			ucg->drawTriangle( btx, bty, btx+BTSIZE, bty+BTSIZE, btx, bty+2*BTSIZE );
+			ucg->drawLine( btx, bty, btx-BTSIZE, bty-BTSIZE );
+			ucg->drawLine( btx, bty, btx-BTSIZE, bty+BTSIZE );
+		}
+		btqueue = btq;
+	}
 
  	if( y != yalt ) {
 		// if TE value has changed
@@ -400,6 +404,8 @@ void IpsDisplay::drawDisplay( float te, float ate, float altitude, float temp, f
 			}
 
 		}
+		ucg->drawHLine( DISPLAY_LEFT+6, dmid, bw );
+
 		// Small triangle pointing to actual value
 		// First blank the old one
 		ucg->setColor( 255,255,255 );
@@ -429,7 +435,6 @@ void IpsDisplay::drawDisplay( float te, float ate, float altitude, float temp, f
  			if ( (int)s2fd > s2fdalt || (int)s2fdalt > 0  )
  		 		clear = true;
  		}
-
  		if( clear ) {
 			ucg->setColor( 255,255,255 );
 			ucg->drawTriangle( FIELD_START, dmid,
@@ -446,50 +451,8 @@ void IpsDisplay::drawDisplay( float te, float ate, float altitude, float temp, f
 							   FIELD_START+(trisize/2), dmid+(int)s2fd );
  		}
  		ucg->undoClipRange();
-
  		s2fdalt = (int)s2fd;
  	}
-
-
-	/*
-	u8g2_DrawHLine( &u8g2, 0, 0, 127 );
-	u8g2_DrawHLine( &u8g2, 0, bw, 127 );
-
-	// S2F command trend bar and triangle
-    int tri_len = int((trisize/2)* s2fd/20.0 );
-    if( tri_len > trisize )
-		tri_len = trisize;
-    else if( tri_len < -trisize )
-    	tri_len = -trisize;
-    int box_len = 0;
-    if( tri_len > 8 ) {
-    	box_len = tri_len - 8;
-        tri_len = 8;
-    }
-    else if( tri_len < -8 ) {
-        box_len = tri_len + 8;
-        tri_len = -8;
-    }
-    int tri_head = dmid - tri_len;
-    if( tri_len > 0 ) {
-    	u8g2_DrawBox(&u8g2, dmid-box_len,bw+9, box_len, trisize   );
-    	u8g2_DrawTriangle(&u8g2, dmid-box_len,bw+9,
-					         dmid-box_len,bw+9+trisize,
-							 tri_head-box_len,bw+9+trisize/2 );
-    }
-    else    {  // negative values
-    	u8g2_DrawBox(&u8g2, dmid,bw+9, -box_len, trisize   );
-    	u8g2_DrawTriangle(&u8g2, dmid-box_len,bw+9,
-    						         dmid-box_len,bw+9+trisize,
-    								 tri_head-box_len,bw+9+trisize/2 );
-    }
-
-
-
-
-	u8g2_SendBuffer(&u8g2);
-	*/
-
  	xSemaphoreGive(spiMutex);
 }
 

@@ -12,6 +12,7 @@ public:
   };
   void begin( bool *enable, char* bt_name );
   void send( char * s );
+  static int queueFull();
 
 private:
    static bool *_enable;

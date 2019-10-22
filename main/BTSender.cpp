@@ -11,6 +11,7 @@
 char rxBuffer[100];
 int BTSender::i=0;
 
+
 #define RFCOMM_SERVER_CHANNEL 1
 #define HEARTBEAT_PERIOD_MS 40
 
@@ -25,11 +26,19 @@ void ( * BTSender::_callback)(char * rx, uint16_t len);
 std::queue<std::string> queue;
 
 
+int BTSender::queueFull() {
+	if(queue.size() == 100)
+		return 1;
+	else
+		return 0;
+}
+
 void BTSender::send(char * s){
 	printf("%s",s);
 	std::string str( s );
 	if (queue.size() < 100) {
 		queue.push( str );
+
 	}
 }
 

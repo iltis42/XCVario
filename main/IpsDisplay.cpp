@@ -28,7 +28,7 @@ const int   bwide = 64;   // total width of bargraph
 const int   smfh  = 12;   // small font heigth
 const int   hbw   = 12;   // horizontal bar width for unit of bargraph
 const int   bw    = 32;   // bar width
-const int   trisize = 120; // triangle size quality up/down
+const int   trisize = 100; // triangle size quality up/down
 
 #define DISPLAY_LEFT 20
 
@@ -149,6 +149,7 @@ void IpsDisplay::initDisplay() {
 	ucg->drawVLine( FIELD_START,  DISPLAY_H-20, 14 );
 	ucg->setColor(0, 0, 0);
 	ucg->drawVLine( FIELD_START+1, DISPLAY_H-20, 14 );
+	redrawValues();
 }
 
 void IpsDisplay::begin( Setup* asetup ) {
@@ -201,10 +202,21 @@ int prefalt=0;
 int tevlalt=0;
 int chargealt=-1;
 int btqueue=-1;
+int tempalt = -2000;
 
 extern xSemaphoreHandle spiMutex;
 
 #define PMLEN 24
+
+void IpsDisplay::redrawValues()
+{
+	chargealt = 101;
+	tempalt = -2000;
+	s2falt = -1;
+	s2fdalt = -1;
+	btqueue = -1;
+	_te=-200;
+}
 
 void IpsDisplay::drawDisplay( float te, float ate, float altitude, float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode ){
 	if( _menu )
@@ -288,16 +300,18 @@ void IpsDisplay::drawDisplay( float te, float ate, float altitude, float temp, f
 		prefalt = alt;
 	}
 
-    // Temp
-	ucg->setFont(ucg_font_fur14_hf);
-	ucg->setPrintPos(FIELD_START+12,DISPLAY_H);
-	char T[10];
-	sprintf( T, "%0.1f\xb0", temp );
-	int tlen = ucg->getStrWidth( T );
-	ucg->printf(T);
+    // Temperature Value
+	if( (int)temp*10 != tempalt ) {
+		ucg->setFont(ucg_font_fur14_hf);
+		ucg->setPrintPos(FIELD_START+12,DISPLAY_H);
+		char T[10];
+		sprintf( T, "%0.1f\xb0", temp );
+		int tlen = ucg->getStrWidth( T );
+		ucg->printf(T);
+		tempalt=(int)temp*10;
+	}
 
-	// Battery
-
+	// Battery Symbol
 	int charge = (int)(( volt - LOWBAT )*100)/( FULLBAT - LOWBAT );
 	if(charge < 0)
 		charge = 0;
@@ -324,8 +338,7 @@ void IpsDisplay::drawDisplay( float te, float ate, float altitude, float temp, f
 		chargealt = charge;
 	}
 
-	// 16x10 Bluetooth Symbol
-
+	// Bluetooth Symbol
 	int btq=BTSender::queueFull();
 	if( btq != btqueue )
 	{
@@ -356,24 +369,18 @@ void IpsDisplay::drawDisplay( float te, float ate, float altitude, float temp, f
 		if ( y > 0 ) {
 		  ucg->setColor( 127,0,255 );
 		  if( y > yalt ) {
-			// xSemaphoreTake(spiMutex,portMAX_DELAY );
 			ucg->drawBox( DISPLAY_LEFT+6, dmid-y, bw, abs(y-yalt) );
-			// xSemaphoreGive(spiMutex);
 		  }
 		  if( y < yalt  )
 		  {
 			ucg->setColor( 255,255,255 );
-			// xSemaphoreTake(spiMutex,portMAX_DELAY );
 			ucg->drawBox( DISPLAY_LEFT+6, dmid-yalt, bw, abs(yalt-y) );
-			// xSemaphoreGive(spiMutex);
 			ucg->setColor( 0,0,0 );
 		  }
 		  if( yalt < 0 )
 		  {
 			ucg->setColor( 255,255,255 );
-			// xSemaphoreTake(spiMutex,portMAX_DELAY );
 			ucg->drawBox( DISPLAY_LEFT+6, dmid, bw, abs(yalt) );
-			// xSemaphoreGive(spiMutex);
 			ucg->setColor( 0,0,0 );
 		  }
 		}
@@ -382,27 +389,20 @@ void IpsDisplay::drawDisplay( float te, float ate, float altitude, float temp, f
 		{   // we have a bigger negative value so fill the delta
 			ucg->setColor( 0, 180, 180 );
 			if( y < yalt ) {
-			   // xSemaphoreTake(spiMutex,portMAX_DELAY );
 			   ucg->drawBox( DISPLAY_LEFT+6, dmid-yalt, bw, abs(yalt-y) );
-			   // xSemaphoreGive(spiMutex);
 			}
 			if( y > yalt )
 			{  // a smaller negative value, blank the delta
 				ucg->setColor( 255,255,255 );
-				// xSemaphoreTake(spiMutex,portMAX_DELAY );
-				ucg->drawBox( DISPLAY_LEFT+6, dmid-y, bw, abs(yalt-y) );
-				// xSemaphoreGive(spiMutex);
+				ucg->drawBox( DISPLAY_LEFT+6, dmid-y, bw, abs(y-yalt) );
 				ucg->setColor( 0,0,0 );
 			}
 			if( yalt > 0 )
 			{  // blank the overshoot across zero
 				ucg->setColor( 255,255,255 );
-				// xSemaphoreTake(spiMutex,portMAX_DELAY );
 				ucg->drawBox( DISPLAY_LEFT+6, dmid-yalt, bw, yalt );
-				// xSemaphoreGive(spiMutex);
 				ucg->setColor( 0,0,0 );
 			}
-
 		}
 		ucg->drawHLine( DISPLAY_LEFT+6, dmid, bw );
 
@@ -422,9 +422,24 @@ void IpsDisplay::drawDisplay( float te, float ate, float altitude, float temp, f
 	}
 
  	// S2F command trend triangle
-
-
  	if( (int)s2fd != s2fdalt ) {
+ 		ucg->setFont(ucg_font_fub25_hn);
+ 		int s2fds = ucg->getFontAscent();
+ 		if( s2fd > 0 ) {
+ 			if( s2fdalt < 0 ) {
+ 				ucg->setPrintPos( FIELD_START+10, dmid+s2fds+2);
+ 				ucg->print("    ");
+ 			}
+ 			ucg->setPrintPos( FIELD_START+10, dmid-4 );
+ 		}
+ 		else {
+ 			if( s2fdalt > 0 ) {
+ 			 	ucg->setPrintPos( FIELD_START+10, dmid-4);
+ 			 	ucg->print("    ");
+ 			}
+ 			ucg->setPrintPos( FIELD_START+10, dmid+s2fds+2);
+ 		}
+ 		ucg->printf("%+d  ", (int)(s2fd + 0.5));
  		ucg->setClipRange( FIELD_START, dmid-MAXS2FTRI, trisize, MAXS2FTRI*2 );
  		bool clear = false;
  		if( s2fd > 0 ) {

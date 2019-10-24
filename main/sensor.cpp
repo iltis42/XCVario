@@ -186,7 +186,9 @@ void readBMP(void *pvParameters){
 					break;
 				case 3: // Auto
 					if( (speed > mysetup.get()->_s2f_speed)  or VaSoSW.isClosed())
-					s2fmode = true;
+						s2fmode = true;
+					else
+						s2fmode = false;
 					break;
 			}
 			Audio.setS2FMode( s2fmode );

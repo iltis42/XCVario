@@ -84,11 +84,6 @@ int   IpsDisplay::_divisons = 5;
 Setup *IpsDisplay::_setup = 0;
 float IpsDisplay::_range = 5;
 
-
-
-
-
-
 // draw all that does not need refresh when values change
 void IpsDisplay::initDisplay() {
 	setup();
@@ -118,9 +113,9 @@ void IpsDisplay::initDisplay() {
 		ucg->drawHLine( DISPLAY_LEFT, y , 4 );
 	}
 	ucg->drawVLine( DISPLAY_LEFT+5,      VARBARGAP , DISPLAY_H-(VARBARGAP*2) );
-	ucg->drawHLine( DISPLAY_LEFT+5, VARBARGAP , bw );
+	ucg->drawHLine( DISPLAY_LEFT+5, VARBARGAP , bw+1 );
 	ucg->drawVLine( DISPLAY_LEFT+5+bw+1, VARBARGAP, DISPLAY_H-(VARBARGAP*2) );
-	ucg->drawHLine( DISPLAY_LEFT+5, DISPLAY_H-(VARBARGAP), bw );
+	ucg->drawHLine( DISPLAY_LEFT+5, DISPLAY_H-(VARBARGAP), bw+1 );
 
 	// Sollfahrt Text
 	ucg->setFont(ucg_font_fub11_tr);
@@ -189,8 +184,6 @@ void IpsDisplay::setup()
 	_pixpmd = (int)((  (DISPLAY_H-(2*VARBARGAP) )/2) /_range);
 	printf("Pixel per m/s %d", _pixpmd );
 	_range_clip = _range;
-
-
 }
 
 
@@ -203,6 +196,7 @@ int tevlalt=0;
 int chargealt=-1;
 int btqueue=-1;
 int tempalt = -2000;
+bool s2fmodealt = false;
 
 extern xSemaphoreHandle spiMutex;
 
@@ -286,17 +280,17 @@ void IpsDisplay::drawDisplay( float te, float ate, float altitude, float temp, f
 	if( _s2f != s2falt ) {
 		ucg->setPrintPos(FIELD_START,YS2F);
 		ucg->setFont(ucg_font_fub25_hn);
-		ucg->printf("  %3d ", (int)(s2f+0.5)  );
+		ucg->printf("   %3d ", (int)(s2f+0.5)  );
 		s2falt = _s2f;
 
 	}
 
-	// S2F
+	// Altitude
 	int alt = (int)(altitude+0.5);
 	if( alt != prefalt ) {
 		ucg->setPrintPos(FIELD_START,YALT);
 		ucg->setFont(ucg_font_fub25_hn);
-		ucg->printf(" %4d ", (int)(alt+0.5)  );
+		ucg->printf("  %4d ", (int)(alt+0.5)  );
 		prefalt = alt;
 	}
 
@@ -305,7 +299,7 @@ void IpsDisplay::drawDisplay( float te, float ate, float altitude, float temp, f
 		ucg->setFont(ucg_font_fur14_hf);
 		ucg->setPrintPos(FIELD_START+12,DISPLAY_H);
 		char T[10];
-		sprintf( T, "%0.1f\xb0", temp );
+		sprintf( T, "%d\xb0", (int)temp );
 		int tlen = ucg->getStrWidth( T );
 		ucg->printf(T);
 		tempalt=(int)temp*10;
@@ -387,7 +381,7 @@ void IpsDisplay::drawDisplay( float te, float ate, float altitude, float temp, f
 		// and now the negative TE value bar
 		else  // y < 0
 		{   // we have a bigger negative value so fill the delta
-			ucg->setColor( 0, 180, 180 );
+			ucg->setColor( 0, 255, 255 );
 			if( y < yalt ) {
 			   ucg->drawBox( DISPLAY_LEFT+6, dmid-yalt, bw, abs(yalt-y) );
 			}
@@ -404,43 +398,73 @@ void IpsDisplay::drawDisplay( float te, float ate, float altitude, float temp, f
 				ucg->setColor( 0,0,0 );
 			}
 		}
-		ucg->drawHLine( DISPLAY_LEFT+6, dmid, bw );
-
-		// Small triangle pointing to actual value
-		// First blank the old one
-		ucg->setColor( 255,255,255 );
-		ucg->drawTriangle( DISPLAY_LEFT+4+bw+3,         dmid-yalt,
-						   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-yalt+TRISIZE,
-						   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-yalt-TRISIZE );
-		// Draw a new one at current position
-		ucg->setColor( 0,0,0 );
-		ucg->drawTriangle( DISPLAY_LEFT+4+bw+3,         dmid-y,
-						   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-y+TRISIZE,
-						   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-y-TRISIZE );
-
+		// Small triangle pointing to actual vario value
+		if( !s2fmode ){
+			// First blank the old one
+			ucg->setColor( 255,255,255 );
+			ucg->drawTriangle( DISPLAY_LEFT+4+bw+3,         dmid-yalt,
+							   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-yalt+TRISIZE,
+							   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-yalt-TRISIZE );
+			ucg->setColor( 0,0,0 );
+			ucg->drawTriangle( DISPLAY_LEFT+4+bw+3,         dmid-y,
+							   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-y+TRISIZE,
+							   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-y-TRISIZE );
+		}
 	    yalt = y;
 	}
+ 	if( s2fmode !=  s2fmodealt ){
+ 		ucg->setColor( 255,255,255 );
+ 		// clear whole area
+ 		ucg->drawBox( DISPLAY_LEFT+4+bw+3, dmid-MAXS2FTRI, TRISIZE, 2*MAXS2FTRI  );
+ 		s2fmodealt = s2fmode;
+ 	}
 
  	// S2F command trend triangle
  	if( (int)s2fd != s2fdalt ) {
+        // Clip S2F delta value
+ 		int s2fclip = s2fd;
+		if( s2fclip > MAXS2FTRI )
+			s2fclip = MAXS2FTRI;
+		if( s2fclip < -MAXS2FTRI )
+			s2fclip = -MAXS2FTRI;
+		int s2fclipalt = s2fdalt;
+		if( s2fclipalt > MAXS2FTRI )
+				s2fclipalt = MAXS2FTRI;
+			if( s2fclipalt < -MAXS2FTRI )
+				s2fclipalt = -MAXS2FTRI;
+        // Arrow pointing there
+		if( s2fmode ){
+			// erase old
+			ucg->setColor( 255,255,255 );
+			ucg->drawTriangle( DISPLAY_LEFT+4+bw+3+TRISIZE,  dmid+s2fclipalt,
+							   DISPLAY_LEFT+4+bw+3, dmid+s2fclipalt+TRISIZE,
+							   DISPLAY_LEFT+4+bw+3, dmid+s2fclipalt-TRISIZE );
+			ucg->setColor( 0,0,0 );
+			// Draw a new one at current position
+			ucg->drawTriangle( DISPLAY_LEFT+4+bw+3+TRISIZE, dmid+(int)s2fclip,
+							   DISPLAY_LEFT+4+bw+3, dmid+(int)s2fclip+TRISIZE,
+							   DISPLAY_LEFT+4+bw+3, dmid+(int)s2fclip-TRISIZE );
+		}
+
  		ucg->setFont(ucg_font_fub25_hn);
  		int s2fds = ucg->getFontAscent();
  		if( s2fd > 0 ) {
  			if( s2fdalt < 0 ) {
- 				ucg->setPrintPos( FIELD_START+10, dmid+s2fds+2);
- 				ucg->print("    ");
+ 				ucg->setColor( 255,255,255 );
+ 				ucg->drawBox( FIELD_START+20, dmid, 100, 39 );
  			}
- 			ucg->setPrintPos( FIELD_START+10, dmid-4 );
+ 			ucg->setPrintPos( FIELD_START+20, dmid-4 );
  		}
  		else {
  			if( s2fdalt > 0 ) {
- 			 	ucg->setPrintPos( FIELD_START+10, dmid-4);
- 			 	ucg->print("    ");
+ 				ucg->setColor( 255,255,255 );
+ 				ucg->drawBox( FIELD_START+20, dmid-40, 100, 39 );
  			}
- 			ucg->setPrintPos( FIELD_START+10, dmid+s2fds+2);
+ 			ucg->setPrintPos( FIELD_START+20, dmid+s2fds+2);
  		}
+ 		ucg->setColor( 0,0,0 );
  		ucg->printf("%+d  ", (int)(s2fd + 0.5));
- 		ucg->setClipRange( FIELD_START, dmid-MAXS2FTRI, trisize, MAXS2FTRI*2 );
+ 		ucg->setClipRange( FIELD_START+20, dmid-MAXS2FTRI, trisize, MAXS2FTRI*2 );
  		bool clear = false;
  		if( s2fd > 0 ) {
  			if ( (int)s2fd < s2fdalt || (int)s2fdalt < 0 )
@@ -452,22 +476,28 @@ void IpsDisplay::drawDisplay( float te, float ate, float altitude, float temp, f
  		}
  		if( clear ) {
 			ucg->setColor( 255,255,255 );
-			ucg->drawTriangle( FIELD_START, dmid,
-							   FIELD_START+(trisize/2), dmid+(int)s2fd,
-							   FIELD_START+(trisize/2), dmid+(int)s2fdalt );
-			ucg->drawTriangle( FIELD_START+trisize, dmid,
-							   FIELD_START+(trisize/2), dmid+(int)s2fd,
-							   FIELD_START+(trisize/2), dmid+(int)s2fdalt );
+			ucg->drawTriangle( FIELD_START+20, dmid,
+							   FIELD_START+20+(trisize/2), dmid+(int)s2fd,
+							   FIELD_START+20+(trisize/2), dmid+(int)s2fdalt );
+			ucg->drawTriangle( FIELD_START+20+trisize, dmid,
+							   FIELD_START+20+(trisize/2), dmid+(int)s2fd,
+							   FIELD_START+20+(trisize/2), dmid+(int)s2fdalt );
  		}
  		else{
-			ucg->setColor( 0,0,0 );
-			ucg->drawTriangle( FIELD_START, dmid,
-							   FIELD_START+trisize, dmid,
-							   FIELD_START+(trisize/2), dmid+(int)s2fd );
+ 			if( s2fd < 0 )
+ 				ucg->setColor( 127,0,255 );
+ 			else
+ 				ucg->setColor( 0,255,255 );
+			ucg->drawTriangle( FIELD_START+20, dmid,
+							   FIELD_START+20+trisize, dmid,
+							   FIELD_START+20+(trisize/2), dmid+(int)s2fd );
  		}
  		ucg->undoClipRange();
+
  		s2fdalt = (int)s2fd;
  	}
+ 	ucg->setColor( 0,0,0 );
+ 	ucg->drawHLine( DISPLAY_LEFT+6, dmid, 200 );
  	xSemaphoreGive(spiMutex);
 }
 

@@ -7,7 +7,7 @@
 #include "ESPRotary.h"
 #include <rom/ets_sys.h>
 #include <sys/time.h>
-
+#include <Arduino.h>
 
 
 gpio_num_t ESPRotary::clk, ESPRotary::dt, ESPRotary::sw;
@@ -45,7 +45,9 @@ void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
 	gpioConfig.intr_type = GPIO_INTR_ANYEDGE;
 	gpio_config(&gpioConfig);
 	gpio_install_isr_service(0);
-	q1 = xQueueCreate(4, sizeof(int));
+	q1 = xQueueCreate(10, sizeof(int));
+	rb.push( 0 );
+	rb.push( 0 );
 	gpio_isr_handler_add(clk, ESPRotary::readPosInt, NULL);
 	gpio_isr_handler_add(sw, ESPRotary::readPosInt, NULL);
 	xTaskCreatePinnedToCore(&ESPRotary::readPos, "readPos", 8192, NULL, 10, NULL, 0);
@@ -53,37 +55,41 @@ void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
 
 // receiving from Interrupt the rotary direction and switch
 int n=0;
+long lastmilli=0;
+
 
 void ESPRotary::readPos(void * args) {
 	int rotary = 0;
 	int num = xQueueReceive(q1, &rotary, portMAX_DELAY);
 	while( num > 0 ){
-        // printf("rotary byte: %x num msg: %d\n", rotary, num );
-		rb.push( rotary & 0x03 );
 		n++;
-		if(  (rb[1] == 3 && rb[0] == 0) /* ||  (rb[1] == 0 && rb[0] == 3) */ ){
-				dir++;
-		}
-		else if (  (rb[1] == 1 && rb[0] == 2) /* ||  (rb[1] == 2 && rb[0] == 1) */ ){
+		int millidelta = millis() - lastmilli;
+		lastmilli = millis();
+        printf("rotary byte: %02x num msg: %d time: %d\n", rotary & 1, n, millidelta );
+        rb.push( rotary & 1 );
+		if( millidelta < 10 ){
+			if( (rb[0] == 0) && (rb[1] == 1) ) {
 				dir--;
+			}
+			else if ( (rb[0] == 1) && (rb[1] == 0) ) {
+				dir++;
+			}
 		}
-        int delta = dir - last_dir;
-		printf("%d: delta: %d  rs: <%d %d>  \n", n, delta, rb[0], rb[1] );
+		int delta = dir - last_dir;
+		printf("%d: delta: %d  rs: <%d>  \n", n, delta, rotary & 1);
 
-		if( delta > 0 ) {
-			// printf("Inform %d Observers up\n", observers.size());
+		if( delta < 0 ) {
+			printf("Inform %d Observers up\n", observers.size());
 			for (int i = 0; i < observers.size(); i++)
 				observers[i]->up();
 			last_dir = dir;
 		}
-		if( delta  < 0 ) {
-			// printf("Inform %d Observers down\n", observers.size());
+		if( delta  > 0 ) {
+			printf("Inform %d Observers down\n", observers.size());
 			for (int i = 0; i < observers.size(); i++)
 				observers[i]->down();
 			last_dir = dir;
 		}
-		else
-			printf("no rotary change\n");
 		int newsw = (rotary & 0x04);
 
 		if( _switch_state != newsw ){
@@ -94,13 +100,14 @@ void ESPRotary::readPos(void * args) {
 						observers[i]->release();
 				}
 				else{
-					// printf("sw low");
+					printf("sw pressed action\n");
 					for (int i = 0; i < observers.size(); i++)
 						observers[i]->press();
+					printf("end sw pressed action\n");
 				}
 		}
 		else{
-				printf("no sw change\n");
+				// printf("no sw change\n");
 		}
 		num = xQueueReceive(q1, &rotary, portMAX_DELAY);
 	}
@@ -109,27 +116,23 @@ void ESPRotary::readPos(void * args) {
 void ESPRotary::readPosInt(void * args) {
 	int encoded = 0;
 	int dtv=0;
-	int clkv=0;
 	int swv=0;
-	for( int i=0; i<8; i++ ) {
-		ets_delay_us(20);
+	// debounce
+	for( int i=0; i<10; i++ ) {
+		ets_delay_us(10);
 		if (gpio_get_level(dt))
 			dtv++;
-		if (gpio_get_level(clk))
-			clkv++;
 		if (gpio_get_level(sw))
 			swv++;
 	}
-	if( clkv > 4 )
+	if( dtv > 5 )
 		encoded |= 1;
-	if( dtv > 4 )
-		encoded |= 2;
-	if( swv > 4 )
+	if( swv > 5 )
 		encoded |= 4;
-	if( last != encoded ) {  // do not sent flows of same signals, useless
-		xQueueSendToBackFromISR(q1, &encoded, NULL);
-		last = encoded;
-	}
+	// if( last != encoded ) {  // do not sent flows of same signals, useless
+		xQueueSendToBackFromISR(q1, &encoded, NULL );
+//		last = encoded;
+	//}
 }
 
 /////////////////////////////////////////////////////////////////

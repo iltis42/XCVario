@@ -312,21 +312,22 @@ void IpsDisplay::drawDisplay( float te, float ate, float altitude, float temp, f
 	if( charge > 100 )
 		charge = 100;
 	if ( chargealt != charge ) {
-		ucg->drawBox( DISPLAY_W-40,DISPLAY_H-12, 36, 12  );
-		ucg->drawBox( DISPLAY_W-4,DISPLAY_H-9, 3, 6  );
-		if ( charge > 16 )
+		ucg->drawBox( DISPLAY_W-40,DISPLAY_H-12, 36, 12  );  // Bat body square
+		ucg->drawBox( DISPLAY_W-4,DISPLAY_H-9, 3, 6  );      // Bat pluspole pimple
+		if ( charge > 25 )  // >25% grün
 			ucg->setColor( 255, 30, 255 ); // green
-		else if ( charge < 16 && charge > 8 )
+		else if ( charge < 25 && charge > 10 )
 			ucg->setColor( 0, 0, 255 ); //  yellow
-		else if ( charge < 4 )
+		else if ( charge < 10 )
 			ucg->setColor( 0, 255, 255 ); // red
-		int chgpos=(charge*36)/100;
+		int chgpos=(charge*32)/100;
 		if(chgpos <= 4)
 			chgpos = 4;
-		ucg->drawBox( DISPLAY_W-40+2,DISPLAY_H-10, chgpos, 8  );
+		ucg->drawBox( DISPLAY_W-40+2,DISPLAY_H-10, chgpos, 8  );  // Bat charge state
 		ucg->setColor( 230, 230, 230 );
-		ucg->drawBox( DISPLAY_W-40+2+chgpos,DISPLAY_H-10, 32-chgpos, 8  );
+		ucg->drawBox( DISPLAY_W-40+2+chgpos,DISPLAY_H-10, 32-chgpos, 8  );  // Empty bat bar
 		ucg->setColor( 0, 0, 0 );
+		ucg->setFont(ucg_font_fur14_hf);
 		ucg->setPrintPos(DISPLAY_W-80,DISPLAY_H);
 		ucg->printf("%d%%", charge);
 		chargealt = charge;

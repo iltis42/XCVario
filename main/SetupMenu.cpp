@@ -64,7 +64,7 @@ int factv_adj( SetupMenuValFloat * p )
 	}
 	adj = adj/10.0;
 	sprintf( j,"%0.2f %s", adj, "V"  );
-	p->ucg->setPrintPos(2,160);
+	p->ucg->setPrintPos(2,200);
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->printf("%0.2f %s", adj, "V");
 	xSemaphoreGive(spiMutex);
@@ -206,7 +206,7 @@ void SetupMenu::display( int mode ){
 	ucg->printf("<< %s",selected->_title.c_str());
 	xSemaphoreGive(spiMutex);
 	// uprint(5,y, selected->_title.c_str());
-	ucg->drawFrame( 1,2,238,25 );
+	ucg->drawFrame( 1,3,238,25 );
 
 	for (int i=0; i<_childs.size(); i++ ) {
 		MenuEntry * child = _childs[i];
@@ -302,7 +302,7 @@ void SetupMenu::press(){
 		if( !pressed )
 		{
 			_display->doMenu();
-			// Audio.disable();
+			Audio.disable();
 			_menu_enabled = true;
 			clear();
 		}
@@ -310,7 +310,7 @@ void SetupMenu::press(){
 		{
 			_display->setup();
 			_display->doMenu(false);
-			// Audio.disable(false);
+			Audio.disable(false);
 			Audio.setup();
 			bmpVario.setup();
 			_menu_enabled = false;

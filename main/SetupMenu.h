@@ -88,6 +88,7 @@ public:
 	SetupMenuValFloat();
 	SetupMenuValFloat(  String title, float *value, String unit, float min, float max, float step, int (*action)(SetupMenuValFloat *p) = 0 );
 	void display(int mode=0);
+	void displayVal();
 
 	void up();  // step up to parent
 	void down();

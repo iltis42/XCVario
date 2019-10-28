@@ -56,18 +56,21 @@ private:
 	size_t sz = 0 ;
 };
 
+enum _event { PRESS, RELEASE, UP, DOWN, ERROR };
+
 class ESPRotary {
 public:
     ESPRotary();
     void begin(gpio_num_t clk, gpio_num_t dt, gpio_num_t sw );
     void attach( RotaryObserver *obs);
     static void readPos( void * args );
+    static void informObservers( void * args );
     static void readPosInt( void * args );
     static void readSwitch( void * args );
 
 private:
     xSemaphoreHandle swMutex;
-    static QueueHandle_t q1;
+    static QueueHandle_t q1,q2;
     static TickType_t xLastWakeTime;
 	static std::vector<RotaryObserver *> observers;
     static gpio_num_t clk, dt, sw;
@@ -78,6 +81,7 @@ private:
     static ring_buffer rb;
     static int last;
     static int _switch_state;
+    static SemaphoreHandle_t xBinarySemaphore;
 };
 
 #endif

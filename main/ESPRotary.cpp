@@ -5,21 +5,28 @@
 #include "string.h"
 #include "esp_system.h"
 #include "ESPRotary.h"
-#include <rom/ets_sys.h>
+#include <esp32/rom/ets_sys.h>
 #include <sys/time.h>
 #include <Arduino.h>
 
+
+struct _rotbyte {
+	uint64_t time;
+	int rot;
+};
 
 gpio_num_t ESPRotary::clk, ESPRotary::dt, ESPRotary::sw;
 std::vector<RotaryObserver *> ESPRotary::observers;
 uint8_t ESPRotary::_switch;
 QueueHandle_t ESPRotary::q1;
+QueueHandle_t ESPRotary::q2;
 TickType_t ESPRotary::xLastWakeTime;
 ring_buffer ESPRotary::rb(2);
 int ESPRotary::dir=0;
 int ESPRotary::last_dir=0;
 int ESPRotary::last=0;
 int ESPRotary::_switch_state=1;
+SemaphoreHandle_t ESPRotary::xBinarySemaphore;
 
 void ESPRotary::attach(RotaryObserver *obs) {
 	observers.push_back(obs);
@@ -28,6 +35,8 @@ void ESPRotary::attach(RotaryObserver *obs) {
 ESPRotary::ESPRotary() {
 	swMutex = xSemaphoreCreateMutex();
 }
+
+
 
 void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
 	clk = aclk;
@@ -45,94 +54,151 @@ void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
 	gpioConfig.intr_type = GPIO_INTR_ANYEDGE;
 	gpio_config(&gpioConfig);
 	gpio_install_isr_service(0);
-	q1 = xQueueCreate(10, sizeof(int));
+	q1 = xQueueCreate(20, sizeof(struct _rotbyte) );
+	q2 = xQueueCreate(20, sizeof(enum _event));
 	rb.push( 0 );
 	rb.push( 0 );
 	gpio_isr_handler_add(clk, ESPRotary::readPosInt, NULL);
 	gpio_isr_handler_add(sw, ESPRotary::readPosInt, NULL);
-	xTaskCreatePinnedToCore(&ESPRotary::readPos, "readPos", 8192, NULL, 10, NULL, 0);
+	xTaskCreatePinnedToCore(&ESPRotary::readPos, "readPos", 4096, NULL, 10, NULL, 0);
+	xTaskCreatePinnedToCore(&ESPRotary::informObservers, "informObservers", 8192, NULL, 5, NULL, 0);
+	xBinarySemaphore = xSemaphoreCreateBinary();
 }
 
 // receiving from Interrupt the rotary direction and switch
 int n=0;
 long lastmilli=0;
+int errors=0;
 
 
-void ESPRotary::readPos(void * args) {
-	int rotary = 0;
-	int num = xQueueReceive(q1, &rotary, portMAX_DELAY);
+
+void ESPRotary::informObservers( void * args )
+{
+	enum _event info;
+	int num = xQueueReceive(q2, &info, portMAX_DELAY);
 	while( num > 0 ){
-		n++;
-		int millidelta = millis() - lastmilli;
-		lastmilli = millis();
-        printf("rotary byte: %02x num msg: %d time: %d\n", rotary & 1, n, millidelta );
-        rb.push( rotary & 1 );
-		if( millidelta < 10 ){
-			if( (rb[0] == 0) && (rb[1] == 1) ) {
-				dir--;
-			}
-			else if ( (rb[0] == 1) && (rb[1] == 0) ) {
-				dir++;
-			}
-		}
-		int delta = dir - last_dir;
-		printf("%d: delta: %d  rs: <%d>  \n", n, delta, rotary & 1);
-
-		if( delta < 0 ) {
-			printf("Inform %d Observers up\n", observers.size());
+		if( info == UP ) {
+			// printf("Rotary up\n");
 			for (int i = 0; i < observers.size(); i++)
 				observers[i]->up();
-			last_dir = dir;
 		}
-		if( delta  > 0 ) {
-			printf("Inform %d Observers down\n", observers.size());
+		else if( info == DOWN ) {
+			// printf("Rotary down\n");
 			for (int i = 0; i < observers.size(); i++)
 				observers[i]->down();
+		}
+		else if( info == RELEASE ){      // pullup, so not pressed is 1
+			printf("Switch released action");
+			for (int i = 0; i < observers.size(); i++)
+				observers[i]->release();
+			printf("End Switch released action\n");
+		}
+		else if ( info == PRESS ){
+			printf("Switch pressed action\n");
+			for (int i = 0; i < observers.size(); i++)
+				observers[i]->press();
+			printf("End Switch pressed action\n");
+		}
+		else if ( info == ERROR ){
+					printf("ERROR ROTARY SEQ %d\n", errors++ );
+		}
+		num = xQueueReceive(q2, &info, portMAX_DELAY);
+	}
+}
+
+
+uint64_t lastus = 0;
+
+void ESPRotary::readPos(void * args) {
+    struct _rotbyte rotary;
+	int num = xQueueReceive(q1, &rotary, portMAX_DELAY);
+	enum _event var;
+	while( num > 0 ){
+		n++;
+		int deltaus = rotary.time - lastus;
+		lastus = rotary.time;
+        printf("+++ ROTARY: %d num: %d dtime: %ld us\n", rotary.rot & 3, n, (unsigned long)deltaus );
+        rb.push( rotary.rot & 3 );
+		if( 1 /* deltaus < 10000 && deltaus > 1000 */ ){
+
+			if( (rb[0] == 0) && (rb[1] == 3) ) {
+				dir--;
+			}
+			else if ( (rb[0] == 1) && (rb[1] == 2) ) {
+				dir++;
+			}
+			else if( (rb[0] == 3) && (rb[1] == 0) ) {
+				 printf("Rotary 30\n");
+			}
+			else if ( (rb[0] == 2) && (rb[1] == 1) ) {
+				 printf("Rotary 21\n");
+			}
+			else {
+				var = ERROR;
+				xQueueSend(q2, &var, portMAX_DELAY );
+			}
+			// 	printf("rotary seq err %d%d num:%d\n", rb[0], rb[1], errors++ );
+			int delta = dir - last_dir;
+			// printf("%d: delta: %d  rs: <%d>  \n", n, delta, rotary & 1);
+
+			if( delta < 0 ) {
+				// printf("Rotary up\n");
+				var = UP;
+				xQueueSend(q2, &var, portMAX_DELAY );
+			}
+			if( delta  > 0 ) {
+				// printf("Rotary down\n");
+				var = DOWN;
+				xQueueSend(q2, &var, portMAX_DELAY );
+			}
 			last_dir = dir;
 		}
-		int newsw = (rotary & 0x04);
 
+
+		int newsw = (rotary.rot & 0x04);
 		if( _switch_state != newsw ){
 			_switch_state = newsw;
 			if( newsw ){      // pullup, so not pressed is 1
-					// printf("sw high");
-					for (int i = 0; i < observers.size(); i++)
-						observers[i]->release();
+				var = RELEASE;
+				xQueueSend(q2, &var, portMAX_DELAY );
 				}
 				else{
-					printf("sw pressed action\n");
-					for (int i = 0; i < observers.size(); i++)
-						observers[i]->press();
-					printf("end sw pressed action\n");
+					var = PRESS;
+					xQueueSend(q2, &var, portMAX_DELAY );
 				}
-		}
-		else{
-				// printf("no sw change\n");
 		}
 		num = xQueueReceive(q1, &rotary, portMAX_DELAY);
 	}
 }
 
+#define NUM_LOOPS 100
+
+
 void ESPRotary::readPosInt(void * args) {
-	int encoded = 0;
+	struct _rotbyte var;
+	var.rot = 0;
+	var.time = esp_timer_get_time();
 	int dtv=0;
 	int swv=0;
-	// debounce
-	for( int i=0; i<10; i++ ) {
+	int clkv=0;
+	// debounce//
+	for( int i=0; i<NUM_LOOPS; i++ ) {
 		ets_delay_us(10);
 		if (gpio_get_level(dt))
 			dtv++;
 		if (gpio_get_level(sw))
 			swv++;
+		if (gpio_get_level(clk))
+			clkv++;
 	}
-	if( dtv > 5 )
-		encoded |= 1;
-	if( swv > 5 )
-		encoded |= 4;
-	// if( last != encoded ) {  // do not sent flows of same signals, useless
-		xQueueSendToBackFromISR(q1, &encoded, NULL );
-//		last = encoded;
-	//}
+	if( dtv > NUM_LOOPS/2 )
+		var.rot |= 1;
+	if( clkv > NUM_LOOPS/2 )
+			var.rot |= 2;
+	if( swv > NUM_LOOPS/2 )
+		var.rot |= 4;
+
+	xQueueSendToBackFromISR(q1, &var, NULL );
 }
 
 /////////////////////////////////////////////////////////////////

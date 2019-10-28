@@ -48,8 +48,8 @@ void S2F::select_polar()
 	_setup->get()->_polar = Polars::getPolar(n);
 	printf("now change\n");
     change_polar();
-    printf("now test\n");
-    test();
+    // printf("now test\n");
+    // test();
 }
 
 void S2F::change_mc_bal()
@@ -57,7 +57,7 @@ void S2F::change_mc_bal()
 	printf("S2F::change_mc_bal()\n");
 	MC = _setup->get()->_MC;
 	change_polar();
-	test();
+	// test();
 }
 
 double S2F::sink( double v_in ) {

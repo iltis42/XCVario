@@ -42,12 +42,12 @@ int contrast( SetupMenuValFloat * p )
 
 int qnh_adj( SetupMenuValFloat * p )
 {
-	printf("qnh_adj");
+	// printf("qnh_adj");
 	float alt = p->_bmp->readAltitude( *(p->_value) );
-	printf("Setup BA alt=%f QNH=%f\n", alt, *(p->_value)  );
-	p->ucg->setPrintPos(150,75);
+	// printf("Setup BA alt=%f QNH=%f\n", alt, *(p->_value)  );
+	p->ucg->setPrintPos(1,100);
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	p->ucg->printf("%4d %s", (int)(alt+0.5), "m" );
+	p->ucg->printf("%4d m", (int)(alt+0.5) );
 	xSemaphoreGive(spiMutex);
 	return 0;
 }
@@ -56,17 +56,15 @@ int qnh_adj( SetupMenuValFloat * p )
 int factv_adj( SetupMenuValFloat * p )
 {
 	printf("factv_adj");
-	char j[14];
 	float adj = 0.0;
 	for( int i=0; i<10; i++ ) {
            adj += p->_adc->getBatVoltage(true);
-	   sleep( 0.01 );
+	   sleep( 0.02 );
 	}
 	adj = adj/10.0;
-	sprintf( j,"%0.2f %s", adj, "V"  );
-	p->ucg->setPrintPos(2,200);
+	p->ucg->setPrintPos(1,100);
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	p->ucg->printf("%0.2f %s", adj, "V");
+	p->ucg->printf("%0.2f Volt", adj);
 	xSemaphoreGive(spiMutex);
 	return 0;
 }
@@ -88,7 +86,7 @@ int bal_adj( SetupMenuValFloat * p )
     s2f.change_mc_bal();
     float loadinc = (p->_setup->get()->_ballast +100.0)/100.0;
     float newwl = p->_setup->get()->_polar.wingload * loadinc;
-    p->ucg->setPrintPos(110,75);
+    p->ucg->setPrintPos(1,100);
     xSemaphoreTake(spiMutex,portMAX_DELAY );
     p->ucg->printf("%0.2f kg/m2", newwl);
     xSemaphoreGive(spiMutex);
@@ -107,8 +105,6 @@ SetupMenu::SetupMenu(){
 	_parent = 0;
 	y = 0;
 }
-
-
 
 SetupMenu::SetupMenu( String title ) {
 	printf("SetupMenu::SetupMenu( %s ) \n", title.c_str() );
@@ -200,7 +196,7 @@ void SetupMenu::display( int mode ){
 	printf("SetupMenu display( %s)\n", _title.c_str() );
 	clear();
 	y=25;
-	ucg->setPrintPos(5,y);
+	ucg->setPrintPos(1,y);
 	printf("Title: %s y=%d\n", selected->_title.c_str(),y );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->printf("<< %s",selected->_title.c_str());
@@ -210,7 +206,7 @@ void SetupMenu::display( int mode ){
 
 	for (int i=0; i<_childs.size(); i++ ) {
 		MenuEntry * child = _childs[i];
-		ucg->setPrintPos(5,(i+1)*25+25);
+		ucg->setPrintPos(1,(i+1)*25+25);
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		ucg->printf("%s",child->_title.c_str());
 		xSemaphoreGive(spiMutex);
@@ -233,14 +229,12 @@ void MenuEntry::showhelp( int y ){
 		   words[w++] = p;
 		   p = strtok (NULL, " ");
 		}
-
-		// delay(5000);
-		printf("showhelp number of words: %d\n", w);
+		// printf("showhelp number of words: %d\n", w);
 		int x=1;
 		for( int p=0; p<w; p++ )
 		{
 			int len = ucg->getStrWidth( words[p] );
-			printf("showhelp pix len word #%d = %d, %s \n", p, len, words[p]);
+			// printf("showhelp pix len word #%d = %d, %s \n", p, len, words[p]);
 			if( x+len > 239 ) {   // does still fit on line
 				y+=25;
 				x=1;
@@ -589,7 +583,7 @@ void MenuEntry::clear()
 	ucg->drawBox( 0,0,240,320 );
 	xSemaphoreGive(spiMutex);
 	ucg->setFont(ucg_font_ncenR14_hr);
-	ucg->setPrintPos( 20, 30 );
+	ucg->setPrintPos( 1, 30 );
 	ucg->setColor(0, 0, 0);
 }
 
@@ -600,7 +594,7 @@ void SetupMenuValFloat::display( int mode ){
 	// clear();
 	// ucg->setPrintPos( 5, 25 );
 	uprintf( 5,25, selected->_title.c_str() );
-	ucg->setPrintPos( 5, 75 );
+	ucg->setPrintPos( 1, 75 );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->printf("%0.2f %s", *_value, _unit.c_str());
 	xSemaphoreGive(spiMutex);
@@ -612,7 +606,7 @@ void SetupMenuValFloat::display( int mode ){
 	showhelp( y );
 	if(mode == 1){
 		y+=24;
-		ucg->setPrintPos( 5, 225 );
+		ucg->setPrintPos( 1, 225 );
 		ucg->print("Saved");
 	}
 	y=0;
@@ -622,22 +616,34 @@ void SetupMenuValFloat::display( int mode ){
 	printf("~SetupMenuValFloat display\n");
 }
 
+void SetupMenuValFloat::displayVal()
+{
+	ucg->setPrintPos( 1, 75 );
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
+	ucg->printf("%0.2f %s", *_value, _unit.c_str());
+	xSemaphoreGive(spiMutex);
+}
+
 void SetupMenuValFloat::down(){
 	if( (selected != this) || !_menu_enabled )
 		return;
-	printf("val down\n");
+	// printf("val down\n");
 	if( *_value > _min )
 		*_value-=_step;
-	display();
+	displayVal();
+	if( _action != 0 )
+		(*_action)( this );
 }
 
 void SetupMenuValFloat::up(){
 	if( (selected != this) || !_menu_enabled )
 		return;
-	printf("val up\n" );
+	// printf("val up\n" );
 	if ( *_value < _max )
 		*_value+=_step;
-	display();
+    displayVal();
+	if( _action != 0 )
+		(*_action)( this );
 }
 
 void SetupMenuValFloat::press(){
@@ -682,7 +688,7 @@ void SetupMenuSelect::display( int mode ){
 		return;
 	printf("SetupMenuSelect display() %d %x\n", pressed, (int)this);
 	clear();
-	ucg->setPrintPos(5,25);
+	ucg->setPrintPos(1,25);
 	printf("Title: %s y=%d\n", _title.c_str(),y );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->printf("<< %s",_title.c_str());
@@ -694,17 +700,17 @@ void SetupMenuSelect::display( int mode ){
 		start = *_select-9;
 	printf("start=%d \n", start );
 	for( int i=start; i<_numval && i<(start+10); i++ )	{
-		ucg->setPrintPos( 5, 50+25*i );
+		ucg->setPrintPos( 1, 50+25*i );
 		ucg->print( _values[i].c_str() );
 	}
 	y=_numval*25+50;
 	showhelp( y );
 	if(mode == 1){
-		ucg->setPrintPos( 5, 225 );
+		ucg->setPrintPos( 1, 225 );
 		ucg->print("Saved !" );
 		if( _select_save != *_select )
 			if( _restart ) {
-				ucg->setPrintPos( 5, 250  );
+				ucg->setPrintPos( 1, 250  );
 				ucg->print("Now Restart" );
 			}
 	}

@@ -105,7 +105,7 @@ private:
 class SetupMenuSelect:  public MenuEntry {
 public:
 	SetupMenuSelect();
-	SetupMenuSelect(  String title, uint8_t *select, bool restart=false, int (*action)(SetupMenuSelect *p) = 0 );
+	SetupMenuSelect(  String title, uint8_t *select, bool restart=false, int (*action)(SetupMenuSelect *p) = 0, bool save=true );
 	void display(int mode=0);
 
 	void addEntry( String ent ) {  _values.push_back( ent );
@@ -120,6 +120,7 @@ private:
 	uint8_t _select_save;
 	uint8_t _numval;
 	bool    _restart;
+	bool    _save;
 	std::vector<String> _values;
 	int (*_action)( SetupMenuSelect *p );
 };

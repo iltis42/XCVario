@@ -127,11 +127,22 @@ void handleRfcommRx( char * rx, uint16_t len ){
 
 BTSender btsender( handleRfcommRx  );
 
+bool lastAudioDisable = false;
+
 void drawDisplay(void *pvParameters){
 	display.initDisplay();
 	while (1) {
 		TickType_t dLastWakeTime = xTaskGetTickCount();
-		display.drawDisplay( TE, aTE, alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode );
+		bool dis = Audio.getDisable();
+		if( lastAudioDisable !=  dis )
+		{
+			lastAudioDisable = dis;
+			display.initDisplay();
+			delay( 500 );
+		}
+		if( dis != true ) {
+			display.drawDisplay( TE, aTE, alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode );
+		}
 		vTaskDelayUntil(&dLastWakeTime, 100/portTICK_PERIOD_MS);
 	}
 }
@@ -160,8 +171,8 @@ void readBMP(void *pvParameters){
 			   // printf("BA p=%f alt=%f QNH=%f\n", baroP, alt, mysetup.get()->_QNH );
 			}
 			xSemaphoreTake(xMutex,portMAX_DELAY );
-			char lb[100];
 			if( enableBtTx ) {
+				char lb[120];
 				OV.makeNMEA( lb, baroP, speedP, TE, temperature );
 				btsender.send( lb );
 			}
@@ -286,10 +297,10 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280BA, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
-	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 2, dpid, 0);
+	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 6, dpid, 0);
 
 	printf("Free Stack: S:%d \n", uxTaskGetStackHighWaterMark( spid ) );
-    delay( 2000 );
+    // delay( 2000 );
 	vTaskDelete( NULL );
 
 }

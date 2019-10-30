@@ -20,6 +20,8 @@ int   IpsDisplay::_pixpmd = 10;
 
 #define DISPLAY_H 320
 #define DISPLAY_W 240
+#define COLOR_HEADER 255-65,255-105,255-225  // royal blue
+
 
 // u8g2_t IpsDisplay::u8g2c;
 
@@ -30,12 +32,12 @@ const int   hbw   = 12;   // horizontal bar width for unit of bargraph
 const int   bw    = 32;   // bar width
 const int   trisize = 100; // triangle size quality up/down
 
-#define DISPLAY_LEFT 20
+#define DISPLAY_LEFT 25
 
 #define TRISIZE 15
 #define abs(x)  (x < 0.0 ? -x : x)
 
-#define FIELD_START 80
+#define FIELD_START 85
 #define SIGNLEN 24+4
 #define GAP 6
 
@@ -94,9 +96,12 @@ void IpsDisplay::initDisplay() {
 	ucg->setColor(0, 0, 0, 0);
 	ucg->setFont(ucg_font_fub11_tr);
 	ucg->setPrintPos(0,YVAR-VARFONTH);
+	ucg->setColor(0, COLOR_HEADER );
 	ucg->print("Var m/s");
 	ucg->setPrintPos(FIELD_START,YVAR-VARFONTH);    // 65 -52 = 13
+
 	ucg->print("Average Vario");
+	ucg->setColor(0, 0, 0, 0);
 
 	// print TE scale
 	ucg->setFont(ucg_font_9x15B_mf);
@@ -120,7 +125,9 @@ void IpsDisplay::initDisplay() {
 	// Sollfahrt Text
 	ucg->setFont(ucg_font_fub11_tr);
 	ucg->setPrintPos(FIELD_START,YS2F-S2FFONTH);
+	ucg->setColor(0, COLOR_HEADER );
 	ucg->print("Speed To Fly");
+	ucg->setColor(0, 0, 0, 0);
 	ucg->setFont(ucg_font_fub11_hr);
 	int mslen = ucg->getStrWidth("km/h");
 	ucg->setPrintPos(DISPLAY_W-mslen,YS2F);
@@ -129,21 +136,24 @@ void IpsDisplay::initDisplay() {
 	// Altitude
 	ucg->setFont(ucg_font_fub11_tr);
 	ucg->setPrintPos(FIELD_START,YALT-S2FFONTH);
+	ucg->setColor(0, COLOR_HEADER );
 	ucg->printf("Altitude QNH %d", (int)(_setup->get()->_QNH +0.5 ) );
-
+	ucg->setColor(0, 0, 0, 0);
 	mslen = ucg->getStrWidth("m");
 	ucg->setPrintPos(DISPLAY_W-mslen,YALT);
 	ucg->print("m");
 
-	ucg->drawDisc( FIELD_START, DISPLAY_H-4,  4, UCG_DRAW_ALL );
+	// Thermometer
+	ucg->drawDisc( FIELD_START+10, DISPLAY_H-4,  4, UCG_DRAW_ALL ); // white disk
 	ucg->setColor(0, 255, 255);
-	ucg->drawDisc( FIELD_START, DISPLAY_H-4,  2, UCG_DRAW_ALL );
+	ucg->drawDisc( FIELD_START+10, DISPLAY_H-4,  2, UCG_DRAW_ALL );  // red disk
 	ucg->setColor(0, 0, 0);
-	ucg->drawVLine( FIELD_START-1, DISPLAY_H-20, 14 );
+	ucg->drawVLine( FIELD_START-1+10, DISPLAY_H-20, 14 );
 	ucg->setColor(0, 255, 255);
-	ucg->drawVLine( FIELD_START,  DISPLAY_H-20, 14 );
+	ucg->drawVLine( FIELD_START+10,  DISPLAY_H-20, 14 );  // red color
 	ucg->setColor(0, 0, 0);
-	ucg->drawVLine( FIELD_START+1, DISPLAY_H-20, 14 );
+	ucg->drawPixel( FIELD_START+10,  DISPLAY_H-21 );  // upper point
+	ucg->drawVLine( FIELD_START+1+10, DISPLAY_H-20, 14 );
 	redrawValues();
 }
 
@@ -196,6 +206,7 @@ int tevlalt=0;
 int chargealt=-1;
 int btqueue=-1;
 int tempalt = -2000;
+int mcalt = -100;
 bool s2fmodealt = false;
 
 extern xSemaphoreHandle spiMutex;
@@ -210,6 +221,7 @@ void IpsDisplay::redrawValues()
 	s2fdalt = -1;
 	btqueue = -1;
 	_te=-200;
+	mcalt = -100;
 }
 
 void IpsDisplay::drawDisplay( float te, float ate, float altitude, float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode ){
@@ -294,14 +306,20 @@ void IpsDisplay::drawDisplay( float te, float ate, float altitude, float temp, f
 		prefalt = alt;
 	}
 
+	// MC Value
+	float MC = _setup->get()->_MC;
+	if( (int)(MC)*10 != mcalt ) {
+			ucg->setFont(ucg_font_fur14_hf);
+			ucg->setPrintPos(0,DISPLAY_H);
+			ucg->printf("MC:%0.1f", MC );
+			mcalt=(int)MC;
+		}
+
     // Temperature Value
 	if( (int)temp*10 != tempalt ) {
 		ucg->setFont(ucg_font_fur14_hf);
-		ucg->setPrintPos(FIELD_START+12,DISPLAY_H);
-		char T[10];
-		sprintf( T, "%d\xb0", (int)temp );
-		int tlen = ucg->getStrWidth( T );
-		ucg->printf(T);
+		ucg->setPrintPos(FIELD_START+20,DISPLAY_H);
+		ucg->printf("%d\xb0"" ", (int)temp );
 		tempalt=(int)temp*10;
 	}
 
@@ -338,8 +356,8 @@ void IpsDisplay::drawDisplay( float te, float ate, float altitude, float temp, f
 	if( btq != btqueue )
 	{
 		if( _setup->get()->_blue_enable ) {
-			ucg_int_t btx=DISPLAY_W-100;
-			ucg_int_t bty=DISPLAY_H-BTH/2;
+			ucg_int_t btx=DISPLAY_W-16;
+			ucg_int_t bty=BTH/2;
 			if( btq )
 				ucg->setColor( 180, 180, 180 );  // dark grey
 			else

@@ -46,9 +46,7 @@ int qnh_adj( SetupMenuValFloat * p )
 	float alt = p->_bmp->readAltitude( *(p->_value) );
 	// printf("Setup BA alt=%f QNH=%f\n", alt, *(p->_value)  );
 	p->ucg->setPrintPos(1,100);
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->printf("%4d m", (int)(alt+0.5) );
-	xSemaphoreGive(spiMutex);
 	return 0;
 }
 
@@ -63,9 +61,7 @@ int factv_adj( SetupMenuValFloat * p )
 	}
 	adj = adj/10.0;
 	p->ucg->setPrintPos(1,100);
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->printf("%0.2f Volt", adj);
-	xSemaphoreGive(spiMutex);
 	return 0;
 }
 
@@ -87,9 +83,7 @@ int bal_adj( SetupMenuValFloat * p )
     float loadinc = (p->_setup->get()->_ballast +100.0)/100.0;
     float newwl = p->_setup->get()->_polar.wingload * loadinc;
     p->ucg->setPrintPos(1,100);
-    xSemaphoreTake(spiMutex,portMAX_DELAY );
     p->ucg->printf("%0.2f kg/m2", newwl);
-    xSemaphoreGive(spiMutex);
     return 0;
 }
 int mc_adj( SetupMenuValFloat * p )
@@ -134,9 +128,7 @@ void MenuEntry::uprintf( int x, int y, const char* format, ...) {
 	va_list argptr;
 	va_start(argptr, format);
 	ucg->setPrintPos(x,y);
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->printf( format, argptr );
-	xSemaphoreGive(spiMutex);
 	va_end(argptr);
 }
 
@@ -145,10 +137,8 @@ void MenuEntry::uprint( int x, int y, const char* str ) {
 		printf("Error UCG not initialized !");
 		return;
 	}
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setPrintPos(x,y);
 	ucg->print( str );
-	xSemaphoreGive(spiMutex);
 }
 
 
@@ -198,18 +188,13 @@ void SetupMenu::display( int mode ){
 	y=25;
 	ucg->setPrintPos(1,y);
 	printf("Title: %s y=%d\n", selected->_title.c_str(),y );
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->printf("<< %s",selected->_title.c_str());
-	xSemaphoreGive(spiMutex);
-	// uprint(5,y, selected->_title.c_str());
 	ucg->drawFrame( 1,3,238,25 );
 
 	for (int i=0; i<_childs.size(); i++ ) {
 		MenuEntry * child = _childs[i];
 		ucg->setPrintPos(1,(i+1)*25+25);
-		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		ucg->printf("%s",child->_title.c_str());
-		xSemaphoreGive(spiMutex);
 		printf("Child: %s y=%d\n",child->_title.c_str() ,y );
 	}
 	y+=50;
@@ -240,9 +225,7 @@ void MenuEntry::showhelp( int y ){
 				x=1;
 			}
 			ucg->setPrintPos(x, 50+y);
-			xSemaphoreTake(spiMutex,portMAX_DELAY );
 			ucg->print( words[p] );
-			xSemaphoreGive(spiMutex);
 			x+=len+5;
 		}
 	}
@@ -304,15 +287,13 @@ void SetupMenu::press(){
 		{
 			_display->setup();
 			_display->doMenu(false);
-			Audio.disable(false);
+
 			Audio.setup();
 			bmpVario.setup();
 			_menu_enabled = false;
-			// clear();
-			_display->initDisplay();
+			Audio.disable(false);
 		}
 	}
-	// display();
 	// default is not pressed, so just display, but we toogle pressed state at the end
 	// so next time we either step up to parent,
 	if( pressed )
@@ -349,7 +330,7 @@ void SetupMenu::setup( )
 
 	SetupMenuValFloat * mc = new SetupMenuValFloat(
 			"MC", &_setup->get()->_MC, "m/s",	0.01, 10, 0.1,  mc_adj );
-	mc->setHelp("Mac Cready value for optimum cruise speed");
+	mc->setHelp("Mac Cready value for optimum cruise speed, or average climb rate");
 	mm->addMenu( mc );
 
 	SetupMenuValFloat * qnh = new SetupMenuValFloat(
@@ -365,6 +346,15 @@ void SetupMenu::setup( )
 // Vario
 	SetupMenu * va = new SetupMenu( "Vario" );
 	MenuEntry* vae = mm->addMenu( va );
+
+	SetupMenuValFloat * vga = new SetupMenuValFloat( 	"Range",
+			&_setup->get()->_range,
+			"m/s",
+			1.0, 30.0,
+			1 );
+	vga->setHelp("Upper and lower value for Vario graphic display region");
+	vae->addMenu( vga );
+
 	SetupMenuValFloat * vda = new SetupMenuValFloat( 	"Damping",
 			&_setup->get()->_vario_delay,
 			"sec",
@@ -372,13 +362,7 @@ void SetupMenu::setup( )
 			0.1 );
 	vda->setHelp("Response time, time constant of Vario low pass filter");
 	vae->addMenu( vda );
-	SetupMenuValFloat * vga = new SetupMenuValFloat( 	"Range",
-			&_setup->get()->_range,
-			"m/s",
-			1.0, 30.0,
-			1 );
-	vga->setHelp("Upper and lower value for graphic display region");
-	vae->addMenu( vga );
+
 // Bluetooth
 	SetupMenu * bt = new SetupMenu( 	"Bluetooth"  );
 
@@ -392,7 +376,7 @@ void SetupMenu::setup( )
 	char * ids = _setup->getID();
 	printf( "Setup id=%s\n", ids );
 	SetupMenuSelect * idm = new SetupMenuSelect( 	"BT Name",
-								&select_dummy2, false );
+								&select_dummy2, false, 0, false );
 	idm->addEntry( ids );
 	bt->addMenu( idm );
 	mm->addMenu( bt );
@@ -440,14 +424,14 @@ void SetupMenu::setup( )
 
 	SetupMenu * db = new SetupMenu( "Deadband" );
 	MenuEntry* dbe = ade->addMenu( db );
-	dbe->setHelp("Audio deadband limits within audio remains silent");
+	dbe->setHelp("Audio dead band limits within Audio remains silent");
 
 	SetupMenuValFloat * dbminlv = new SetupMenuValFloat( 	"Lower Val",
 		&_setup->get()->_deadband_neg,
 					"m/s",
 					-5.0, 5.0,
 					0.1 );
-	dbminlv->setHelp("Lower limit for audio mute function");
+	dbminlv->setHelp("Lower limit for Audio mute function");
 	dbe->addMenu( dbminlv );
 	ade->addMenu( oc );
 	SetupMenuValFloat * dbmaxlv = new SetupMenuValFloat( 	"Upper Val",
@@ -455,7 +439,7 @@ void SetupMenu::setup( )
 			"m/s",
 			-5.0, 5.0,
 			0.1 );
-	dbmaxlv->setHelp("Upper limit for audio mute function");
+	dbmaxlv->setHelp("Upper limit for Audio mute function");
 	dbe->addMenu( dbmaxlv );
 
 // Altimeter
@@ -542,21 +526,12 @@ void SetupMenu::setup( )
 	fa->addEntry( "ResetAll");
 	sye->addMenu( fa );
 
-	SetupMenuValFloat * con = new SetupMenuValFloat( 	"Contrast",
-					&_setup->get()->_contrast_adj,
-		            "%",
-					20,100,1, contrast );
-	con->setHelp("LCD display contrast in percent");
-	sye->addMenu( con );
-
 	Version V;
 	static uint8_t select_dummy = 0;
 	SetupMenuSelect * ver = new SetupMenuSelect( 	"Version",
-					&select_dummy, false );
+					&select_dummy, false, 0, false );
 	ver->addEntry( V.version() );
 	sye->addMenu( ver );
-
-
 
 	SetupMenu::display();
 }
@@ -576,12 +551,8 @@ SetupMenuValFloat::SetupMenuValFloat( String title, float *value, String unit, f
 
 void MenuEntry::clear()
 {
-	// ucg->clearScreen();
-	// ucg->begin(UCG_FONT_MODE_SOLID);
 	ucg->setColor(255, 255, 255);
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->drawBox( 0,0,240,320 );
-	xSemaphoreGive(spiMutex);
 	ucg->setFont(ucg_font_ncenR14_hr);
 	ucg->setPrintPos( 1, 30 );
 	ucg->setColor(0, 0, 0);
@@ -595,9 +566,7 @@ void SetupMenuValFloat::display( int mode ){
 	// ucg->setPrintPos( 5, 25 );
 	uprintf( 5,25, selected->_title.c_str() );
 	ucg->setPrintPos( 1, 75 );
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->printf("%0.2f %s", *_value, _unit.c_str());
-	xSemaphoreGive(spiMutex);
 	y= 75;
 
 	if( _action != 0 )
@@ -619,9 +588,7 @@ void SetupMenuValFloat::display( int mode ){
 void SetupMenuValFloat::displayVal()
 {
 	ucg->setPrintPos( 1, 75 );
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->printf("%0.2f %s", *_value, _unit.c_str());
-	xSemaphoreGive(spiMutex);
 }
 
 void SetupMenuValFloat::down(){
@@ -669,7 +636,7 @@ void SetupMenuValFloat::press(){
 }
 
 
-SetupMenuSelect::SetupMenuSelect( String title, uint8_t *select, bool restart, int (*action)(SetupMenuSelect *p) ) {
+SetupMenuSelect::SetupMenuSelect( String title, uint8_t *select, bool restart, int (*action)(SetupMenuSelect *p), bool save ) {
 	printf("SetupMenuSelect( %s ) \n", title.c_str() );
 	_rotary->attach(this);
 	_title = title;
@@ -679,6 +646,7 @@ SetupMenuSelect::SetupMenuSelect( String title, uint8_t *select, bool restart, i
 	_numval = 0;
 	_restart = restart;
 	_action = action;
+	_save = save;
 }
 
 
@@ -690,9 +658,7 @@ void SetupMenuSelect::display( int mode ){
 	clear();
 	ucg->setPrintPos(1,25);
 	printf("Title: %s y=%d\n", _title.c_str(),y );
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->printf("<< %s",_title.c_str());
-	xSemaphoreGive(spiMutex);
 
 	printf("select=%d numval=%d\n", *_select, _numval );
 	int start=0;
@@ -703,10 +669,11 @@ void SetupMenuSelect::display( int mode ){
 		ucg->setPrintPos( 1, 50+25*i );
 		ucg->print( _values[i].c_str() );
 	}
+	ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );
 	y=_numval*25+50;
 	showhelp( y );
-	if(mode == 1){
-		ucg->setPrintPos( 1, 225 );
+	if(mode == 1 && _save == true ){
+		ucg->setPrintPos( 1, 275 );
 		ucg->print("Saved !" );
 		if( _select_save != *_select )
 			if( _restart ) {
@@ -715,7 +682,7 @@ void SetupMenuSelect::display( int mode ){
 			}
 	}
 	if( mode == 1 )
-		vTaskDelay(1000 / portTICK_PERIOD_MS);
+		delay(1000);
 
 }
 
@@ -723,12 +690,12 @@ void SetupMenuSelect::down(){
 	if( (selected != this) || !_menu_enabled )
 		return;
 	ucg->setColor(255, 255, 255);
-	ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );
+	ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // blank old frame
 	ucg->setColor(0, 0, 0);
 	if( (*_select) >  0 )
 		(*_select)--;
 	printf("val down %d\n", *_select );
-	ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );
+	ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // draw new frame
 
 }
 
@@ -736,12 +703,12 @@ void SetupMenuSelect::up(){
 	if( (selected != this) || !_menu_enabled )
 		return;
 	ucg->setColor(255, 255, 255);
-	ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );
+	ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // blank old frame
 	ucg->setColor(0, 0, 0);
 	if ( (*_select) < _numval-1 )
 		(*_select)++;
 	printf("val up %d\n", *_select );
-	ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );
+	ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // draw new frame
 
 }
 
@@ -768,6 +735,5 @@ void SetupMenuSelect::press(){
 	else
 	{
 		pressed = true;
-		// display();
 	}
 }

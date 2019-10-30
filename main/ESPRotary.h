@@ -29,6 +29,11 @@ public:
 private:
 };
 
+struct _rotbyte {
+	uint64_t time;
+	int rot;
+};
+
 struct ring_buffer
 {
 	ring_buffer( size_t cap ) : buffer(cap) {}
@@ -82,6 +87,9 @@ private:
     static int last;
     static int _switch_state;
     static SemaphoreHandle_t xBinarySemaphore;
+    static int n;
+    static long lastmilli;
+    static int errors;
 };
 
 #endif

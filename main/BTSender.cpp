@@ -13,7 +13,7 @@ int BTSender::i=0;
 
 
 #define RFCOMM_SERVER_CHANNEL 1
-#define HEARTBEAT_PERIOD_MS 40
+#define HEARTBEAT_PERIOD_MS 20
 
 bool     *BTSender::_enable;
 uint8_t   BTSender::rfcomm_channel_nr = 1;
@@ -38,14 +38,14 @@ void BTSender::send(char * s){
 	std::string str( s );
 	if (queue.size() < 100) {
 		queue.push( str );
-
 	}
+	// else
+	// 	printf("BTSender queue full\n");
 }
 
 
 void BTSender::heartbeat_handler(struct btstack_timer_source *ts){
 	if (rfcomm_channel_id ){
-		gpio_set_level(GPIO_NUM_2, 1);
 		if ( queue.size() ){
 			if (rfcomm_can_send_packet_now(rfcomm_channel_id)){
 				int err = rfcomm_send(rfcomm_channel_id, (uint8_t*) queue.front().c_str(), queue.front().length() );
@@ -55,10 +55,6 @@ void BTSender::heartbeat_handler(struct btstack_timer_source *ts){
 				}
 			}
 		}
-	}
-	else{
-		int n=i++/5;
-		gpio_set_level(GPIO_NUM_2, n&1);
 	}
 	btstack_run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
 	btstack_run_loop_add_timer(ts);

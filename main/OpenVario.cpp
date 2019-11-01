@@ -18,7 +18,6 @@ OpenVario::~OpenVario() {
 
 }
 
-
 void OpenVario::makeNMEA(char* str, float baro, float dp, float te, float temp ){
 #ifdef VARIO
 		sprintf(str,"$POV,E,%0.1f",te);

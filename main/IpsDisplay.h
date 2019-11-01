@@ -22,7 +22,7 @@ public:
 	virtual ~IpsDisplay();
 	static void begin( Setup* setup );
 	static void setup();
-	static void drawDisplay( float te, float ate, float tealt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode );
+	static void drawDisplay( int ias, float te, float ate, float tealt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode );
 	static void initDisplay();
 	void doMenu( bool menu=true ) { _menu = menu; };
 	static void redrawValues();

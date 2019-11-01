@@ -118,6 +118,7 @@ static float netto = 0;
 static float as2f = 0;
 static float s2f_delta = 0;
 static bool s2fmode = false;
+static int ias = 0;
 long millisec = millis();
 
 void handleRfcommRx( char * rx, uint16_t len ){
@@ -141,7 +142,7 @@ void drawDisplay(void *pvParameters){
 			delay( 500 );
 		}
 		if( dis != true ) {
-			display.drawDisplay( TE, aTE, alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode );
+			display.drawDisplay( ias, TE, aTE, alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode );
 		}
 		vTaskDelayUntil(&dLastWakeTime, 100/portTICK_PERIOD_MS);
 	}
@@ -184,6 +185,7 @@ void readBMP(void *pvParameters){
 			netto = aTE - s2f.sink( speed );
 			as2f = s2f.speed( netto );
 			s2f_delta = as2f - speed;
+			ias = (int)(speed+0.5);
 
 			switch( mysetup.get()->_audio_mode ) {
 				case 0: // Vario
@@ -269,7 +271,7 @@ void sensor(void *args){
     s2f.change_polar();
 	s2f.change_mc_bal();
 
-	xTaskCreatePinnedToCore(&readBMP, "readBMP", 8000, NULL, 23, bpid, 0);
+	xTaskCreatePinnedToCore(&readBMP, "readBMP", 8000, NULL, 7, bpid, 0);
 	Version myVersion;
 	printf("Program Version %s\n", myVersion.version() );
 
@@ -296,7 +298,7 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280BA, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
-	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 6, dpid, 0);
+	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 1, dpid, 0);
 
 	printf("Free Stack: S:%d \n", uxTaskGetStackHighWaterMark( spid ) );
     // delay( 2000 );

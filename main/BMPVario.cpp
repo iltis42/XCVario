@@ -15,12 +15,15 @@ double BMPVario::readAVGTE() {
 	return _avgTE;
 }
 
+uint64_t lastrts = 0;
 void BMPVario::setup() {
 	_qnh = _setup->get()->_QNH;
 	_analog_adj = _setup->get()->_analog_adj;
 	_damping = _setup->getVarioDelay();
 	_filter_len = 10;
+	lastrts = esp_timer_get_time();
 }
+
 
 double BMPVario::readTE() {
 	if ( _test )     // we are in testmode, just return what has been set
@@ -29,6 +32,9 @@ double BMPVario::readTE() {
 	bmpTemp = _bmpTE->readTemperature( success );
 	// printf("BMP temp=%0.1f", bmpTemp );
 	_currentAlt = _bmpTE->readAltitude(_qnh);
+	uint64_t rts = esp_timer_get_time();
+	float delta = (float)(rts - lastrts)/1000000.0;
+	lastrts = rts;
 	// printf( "TE-Alt %0.1f  NM:", _currentAlt );
 	if( _init  ){
 		vTaskDelay(100 / portTICK_PERIOD_MS);
@@ -53,7 +59,9 @@ double BMPVario::readTE() {
 	// printf(" TE %0.1f diff %0.1f\n", TE, diff);
 	lastAltitude = Altitude;
 
-	TEarr[index++] = TE * SPS;
+	// printf("++++++ DELTA %0.4f\n", delta );
+
+	TEarr[index++] = TE / delta;
 	if (index >= _filter_len ) {
 		index = 0;
 	}
@@ -63,8 +71,8 @@ double BMPVario::readTE() {
 	}
 	TEFR = TEFR / _filter_len;
 
-	predictAlt = Altitude + (TEFR / SPS);
-	_TEF = _TEF + (TEFR - _TEF)* SPS/(_damping*SPS);
+	predictAlt = Altitude + (TEFR * delta);
+	_TEF = _TEF + ((TEFR - _TEF)/ delta ) /(_damping/delta);
 	// calcAnalogOut();
 	_avgTE = (_TEF - _avgTE)*0.02 +_avgTE;
 	if( _avgTE > 0 )

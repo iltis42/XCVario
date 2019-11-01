@@ -15,13 +15,13 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "ESP32NVS.h"
-#include "rom/uart.h"
+#include "esp32/rom/uart.h"
 #include <iostream>
 #include <map>
 #include <math.h>
 #include "ESPAudio.h"
 #include "BMPVario.h"
-#include <rom/miniz.h>
+#include <esp32/rom/miniz.h>
 #include "Polars.h"
 
 #include "esp_task_wdt.h"

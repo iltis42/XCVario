@@ -291,8 +291,8 @@ void IpsDisplay::drawDisplay( float te, float ate, float altitude, float temp, f
 	int _s2f = (int)(s2f+0.5);
 	if( _s2f != s2falt ) {
 		ucg->setPrintPos(FIELD_START,YS2F);
-		ucg->setFont(ucg_font_fub25_hn);
-		ucg->printf("   %3d ", (int)(s2f+0.5)  );
+		ucg->setFont(ucg_font_fub14_hr);
+		ucg->printf("  %-3d ", (int)(s2f+0.5)  );
 		s2falt = _s2f;
 
 	}
@@ -301,8 +301,9 @@ void IpsDisplay::drawDisplay( float te, float ate, float altitude, float temp, f
 	int alt = (int)(altitude+0.5);
 	if( alt != prefalt ) {
 		ucg->setPrintPos(FIELD_START,YALT);
-		ucg->setFont(ucg_font_fub25_hn);
-		ucg->printf("  %4d ", (int)(alt+0.5)  );
+		// ucg->setFont(ucg_font_fub25_hn);
+		ucg->setFont(ucg_font_fub14_hr);    // 18x21
+		ucg->printf("  %-4d ", (int)(alt+0.5)  );
 		prefalt = alt;
 	}
 
@@ -319,7 +320,7 @@ void IpsDisplay::drawDisplay( float te, float ate, float altitude, float temp, f
 	if( (int)temp*10 != tempalt ) {
 		ucg->setFont(ucg_font_fur14_hf);
 		ucg->setPrintPos(FIELD_START+20,DISPLAY_H);
-		ucg->printf("%d\xb0"" ", (int)temp );
+		ucg->printf("%-2d\xb0"" ", (int)temp );
 		tempalt=(int)temp*10;
 	}
 
@@ -347,7 +348,7 @@ void IpsDisplay::drawDisplay( float te, float ate, float altitude, float temp, f
 		ucg->setColor( 0, 0, 0 );
 		ucg->setFont(ucg_font_fur14_hf);
 		ucg->setPrintPos(DISPLAY_W-80,DISPLAY_H);
-		ucg->printf("%d%%", charge);
+		ucg->printf("%3d%%", charge);
 		chargealt = charge;
 	}
 

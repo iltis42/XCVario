@@ -148,18 +148,17 @@ void drawDisplay(void *pvParameters){
 }
 
 
-
 void readBMP(void *pvParameters){
 	display.begin( &mysetup );
 	while (1)
 	{
-		TickType_t xLastWakeTime = xTaskGetTickCount();
+		// TickType_t xLastWakeTime = xTaskGetTickCount();
 		if( Audio.getDisable() != true )
 		{
-			long newmsec = millis();
-			if( abs (newmsec - millisec - 100 ) > 2 )
-				printf("Unsharp != 100: %d ms\n", int( newmsec - millisec ) );
-			millisec = newmsec;
+			// long newmsec = millis();
+			// if( abs (newmsec - millisec - 100 ) > 2 )
+			// 	printf("Unsharp != 100: %d ms\n", int( newmsec - millisec ) );
+			// millisec = newmsec;
 			TE = bmpVario.readTE();
 			baroP = bmpBA.readPressure();
 			speedP = MP5004DP.readPascal(30);
@@ -205,12 +204,12 @@ void readBMP(void *pvParameters){
 			}
 			Audio.setS2FMode( s2fmode );
 			Audio.setValues( TE, s2f_delta );
-			if( uxTaskGetStackHighWaterMark( bpid ) < 1000 )
-				printf("Warning Stack low: %d bytes\n", uxTaskGetStackHighWaterMark( bpid ) );
-
+// 			if( uxTaskGetStackHighWaterMark( bpid ) < 1000 )
+//				printf("Warning Stack low: %d bytes\n", uxTaskGetStackHighWaterMark( bpid ) );
 		}
 		esp_task_wdt_reset();
-		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
+		delay(95);
+		// vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
 	}
 }
 

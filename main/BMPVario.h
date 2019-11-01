@@ -16,7 +16,7 @@ extern "C" {
 #define SPS 10                   // samples per second
 #define FILTER_LEN 51            // Max Filter length
 #define ALPHA 0.2   			 // Kalman Gain alpha
-#define ERRORVAL 1.4             // damping Factor for values off the weeds
+#define ERRORVAL 1.6             // damping Factor for values off the weeds
 #define STANDARD 1013.25         // ICAO standard pressure
 #define abs(x)  (x < 0.0 ? -x : x)
 

@@ -25,7 +25,6 @@ void ( * BTSender::_callback)(char * rx, uint16_t len);
 
 std::queue<std::string> queue;
 
-
 int BTSender::queueFull() {
 	if(queue.size() == 100)
 		return 1;

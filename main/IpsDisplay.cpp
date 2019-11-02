@@ -90,8 +90,20 @@ int   IpsDisplay::_divisons = 5;
 Setup *IpsDisplay::_setup = 0;
 float IpsDisplay::_range = 5;
 
+void IpsDisplay::drawArrowBox( int x, int y, bool are  ){
+	int fh = ucg->getFontAscent();
+	int fl = ucg->getStrWidth("123");
+	S2FST = fl+fh/2+4;
+	ucg->drawFrame( x,y-(fh/2)-3,fl+4, fh+6 );
+	if( are )
+		ucg->drawTriangle( x+fl+4,y-(fh/2)-3,x+fl+4,y+(fh/2)+3,x+fl+4+fh/2,y );
+	else
+		ucg->drawTriangle( x,y-(fh/2)-3,   x,y+(fh/2)+3,   x-fh/2,y );
+}
+
 // draw all that does not need refresh when values change
 void IpsDisplay::initDisplay() {
+	printf("IpsDisplay::initDisplay()\n");
 	setup();
 	ucg->setColor(255, 255, 255);
 	ucg->drawBox( 0,0,240,320 );
@@ -140,11 +152,22 @@ void IpsDisplay::initDisplay() {
 	int fh = ucg->getFontAscent();
 	int fl = ucg->getStrWidth("123");
 	S2FST = fl+fh/2+4;
+
 	ucg->setPrintPos(FIELD_START,dmid-(fh+3));
 	ucg->print("IAS");
-	ucg->drawFrame( FIELD_START,dmid-(fh/2)-3,fl+4, fh+6 );
-	ucg->drawTriangle( FIELD_START+fl+4,dmid-(fh/2)-3,FIELD_START+fl+4,dmid+(fh/2)+3,FIELD_START+fl+4+fh/2,dmid );
-	ucg->drawHLine( FIELD_START+fl+4+fh/2 ,dmid, S2F_TRISIZE );
+	drawArrowBox( FIELD_START, dmid );
+    // IAS Legend
+	ucg->setFont(ucg_font_9x15B_mf);
+	fh = ucg->getFontAscent();
+	ucg->setPrintPos(FIELD_START,dmid+(fh/2)+20);
+	ucg->print("-20 -");
+	ucg->setPrintPos(FIELD_START,dmid+(fh/2)+40);
+	ucg->print("-40 -");
+	ucg->setPrintPos(FIELD_START,dmid+(fh/2)-20);
+	ucg->print("+20 -");
+	ucg->setPrintPos(FIELD_START,dmid+(fh/2)-40);
+	ucg->print("+40 -");
+
 
 	// Altitude
 	ucg->setFont(ucg_font_fub11_tr);
@@ -171,7 +194,7 @@ void IpsDisplay::initDisplay() {
 }
 
 void IpsDisplay::begin( Setup* asetup ) {
-	// printf("IpsDisplay::begin\n");
+	printf("IpsDisplay::begin\n");
 	ucg->begin(UCG_FONT_MODE_SOLID);
 	_setup = asetup;
 	setup();
@@ -179,6 +202,7 @@ void IpsDisplay::begin( Setup* asetup ) {
 
 void IpsDisplay::setup()
 {
+	printf("IpsDisplay::setup\n");
 	_range = _setup->get()->_range;
 
 	if( (int)_range <= 5 )
@@ -205,7 +229,7 @@ void IpsDisplay::setup()
 		_divisons = 5;
 
 	_pixpmd = (int)((  (DISPLAY_H-(2*VARBARGAP) )/2) /_range);
-	printf("Pixel per m/s %d", _pixpmd );
+	printf("Pixel per m/s %d\n", _pixpmd );
 	_range_clip = _range;
 }
 
@@ -230,6 +254,7 @@ extern xSemaphoreHandle spiMutex;
 
 void IpsDisplay::redrawValues()
 {
+	printf("IpsDisplay::redrawValues()\n");
 	chargealt = 101;
 	tempalt = -2000;
 	s2falt = -1;
@@ -243,7 +268,7 @@ void IpsDisplay::redrawValues()
 void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode ){
 	if( _menu )
 			return;
-	// printf("IpsDisplay::drawDisplay\n");
+	// printf("IpsDisplay::drawDisplay  TE=%0.1f\n", te);
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setFont(ucg_font_fub35_hn);  // 52 height
 	ucg->setColor( 0,0,0 );
@@ -472,14 +497,20 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
 		int fa=ucg->getFontAscent();
 		// erase old one
 		ucg->setColor( 255,255,255 );
-		ucg->setPrintPos(DISPLAY_W - ucg->getStrWidth("123"),dmid+s2fclipalt+fa/2 );
+		ucg->setPrintPos(DISPLAY_W - ucg->getStrWidth("123")-1,dmid+s2fclipalt+fa/2 );
+		drawArrowBox( DISPLAY_W - ucg->getStrWidth("123")-4, dmid+s2fclipalt, false );
 		ucg->printf("%3d  ", (int)(s2falt+0.5)  );
+		ucg->drawHLine( FIELD_START+S2FST+(S2F_TRISIZE/2), dmid+s2fclipalt,
+						(DISPLAY_W - ucg->getStrWidth("123")-4) - (FIELD_START+S2FST+(S2F_TRISIZE/2)) );
 		// draw new one
  		ucg->setColor( 0,0,0 );
-		ucg->setPrintPos(DISPLAY_W - ucg->getStrWidth("123"),dmid+s2fclip+fa/2 );
+		ucg->setPrintPos(DISPLAY_W - ucg->getStrWidth("123")-1,dmid+s2fclip+fa/2 );
 		ucg->printf("%3d  ", (int)(s2f+0.5)  );
+		drawArrowBox( DISPLAY_W - ucg->getStrWidth("123")-4, dmid+s2fclip, false );
+		ucg->drawHLine( FIELD_START+S2FST+(S2F_TRISIZE/2), dmid+s2fclip,
+				(DISPLAY_W - ucg->getStrWidth("123")-4) - (FIELD_START+S2FST+(S2F_TRISIZE/2)) );
 
- 		ucg->setClipRange( FIELD_START+S2FST, dmid-MAXS2FTRI, S2F_TRISIZE, MAXS2FTRI*2 );
+ 		ucg->setClipRange( FIELD_START+S2FST, dmid-MAXS2FTRI, S2F_TRISIZE, (MAXS2FTRI*2)+1 );
  		bool clear = false;
  		if( s2fd > 0 ) {
  			if ( (int)s2fd < s2fdalt || (int)s2fdalt < 0 )

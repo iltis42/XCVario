@@ -135,16 +135,10 @@ void drawDisplay(void *pvParameters){
 	while (1) {
 		TickType_t dLastWakeTime = xTaskGetTickCount();
 		bool dis = Audio.getDisable();
-		if( lastAudioDisable !=  dis )
-		{
-			lastAudioDisable = dis;
-			display.initDisplay();
-			delay( 500 );
-		}
 		if( dis != true ) {
 			display.drawDisplay( ias, TE, aTE, alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode );
 		}
-		vTaskDelayUntil(&dLastWakeTime, 100/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&dLastWakeTime, 200/portTICK_PERIOD_MS);
 	}
 }
 

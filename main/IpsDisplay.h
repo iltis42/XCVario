@@ -25,6 +25,7 @@ public:
 	static void drawDisplay( int ias, float te, float ate, float tealt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode );
 	static void initDisplay();
 	void doMenu( bool menu=true ) { _menu = menu; };
+	static void drawArrowBox( int x, int y, bool are=true );
 	static void redrawValues();
 	static inline Ucglib_ILI9341_18x240x320_HWSPI *getDisplay() { return ucg; };
 private:

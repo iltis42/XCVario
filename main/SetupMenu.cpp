@@ -196,9 +196,9 @@ void SetupMenu::display( int mode ){
 	printf("SetupMenu display( %s)\n", _title.c_str() );
 	clear();
 	y=25;
+	printf("Title: %s y=%d\n", selected->_title.c_str(),y );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setPrintPos(1,y);
-	printf("Title: %s y=%d\n", selected->_title.c_str(),y );
 	ucg->printf("<< %s",selected->_title.c_str());
 	ucg->drawFrame( 1,3,238,25 );
 
@@ -267,7 +267,7 @@ void SetupMenu::down(){
 void SetupMenu::up(){
 	if( (selected != this) || !_menu_enabled )
 		return;
-	printf("up %d %d\n", highlight, _childs.size() );
+	printf("SetupMenu::up %d %d\n", highlight, _childs.size() );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setColor(255, 255, 255);
 	ucg->drawFrame( 1,(highlight+1)*25+3,238,25 );
@@ -296,18 +296,20 @@ void SetupMenu::press(){
 	{
 		if( !pressed )
 		{
-			_display->doMenu();
+			printf("!pressed\n");
+			// _display->doMenu();
 			Audio.disable();
 			delay( 500 );
 			_menu_enabled = true;
-			clear();
+			// clear();
 
 		}
 		else
 		{
+			printf("pressed\n");
 			_display->setup();
-			_display->doMenu(false);
-
+			_display->initDisplay();
+			// _display->doMenu(false);
 			Audio.setup();
 			bmpVario.setup();
 			_menu_enabled = false;
@@ -340,6 +342,7 @@ void SetupMenu::press(){
 	{
 		pressed = true;
 	}
+	printf("~SetupMenu press()\n");
 }
 
 void SetupMenu::setup( )
@@ -571,6 +574,7 @@ SetupMenuValFloat::SetupMenuValFloat( String title, float *value, String unit, f
 
 void MenuEntry::clear()
 {
+	printf("MenuEntry::clear\n");
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setColor(255, 255, 255);
 	ucg->drawBox( 0,0,240,320 );
@@ -584,8 +588,6 @@ void SetupMenuValFloat::display( int mode ){
 	if( (selected != this) || !_menu_enabled )
 		return;
 	printf("SetupMenuValFloat display() %d %x\n", pressed, (int)this);
-	// clear();
-	// ucg->setPrintPos( 5, 25 );
 	uprintf( 5,25, selected->_title.c_str() );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setPrintPos( 1, 75 );
@@ -724,13 +726,14 @@ void SetupMenuSelect::down(){
 	if( (selected != this) || !_menu_enabled )
 		return;
 	ucg->setColor(255, 255, 255);
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // blank old frame
 	ucg->setColor(0, 0, 0);
 	if( (*_select) >  0 )
 		(*_select)--;
 	printf("val down %d\n", *_select );
 	ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // draw new frame
-
+	xSemaphoreGive(spiMutex );
 }
 
 void SetupMenuSelect::up(){

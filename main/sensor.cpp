@@ -173,12 +173,13 @@ void readBMP(void *pvParameters){
 			xSemaphoreGive(xMutex);
 
 			battery = ADC.getBatVoltage();
-			speed = MP5004DP.pascal2km( speedP, temperature );
+			speed = speed + (MP5004DP.pascal2km( speedP, temperature ) - speed)*0.1;
 			aTE = bmpVario.readAVGTE();
 			aCl = bmpVario.readAvgClimb();
 			netto = aTE - s2f.sink( speed );
 			as2f = s2f.speed( netto );
 			s2f_delta = as2f - speed;
+
 			ias = (int)(speed+0.5);
 
 			switch( mysetup.get()->_audio_mode ) {
@@ -292,7 +293,7 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280BA, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
-	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 1, dpid, 0);
+	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 6, dpid, 0);
 
 	printf("Free Stack: S:%d \n", uxTaskGetStackHighWaterMark( spid ) );
     // delay( 2000 );

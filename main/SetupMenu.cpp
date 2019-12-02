@@ -250,9 +250,9 @@ void SetupMenu::down(){
 		return;
 	printf("down %d %d\n", highlight, _childs.size() );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	ucg->setColor(255, 255, 255);
+	ucg->setColor(COLOR_BLACK);
 	ucg->drawFrame( 1,(highlight+1)*25+3,238,25 );
-	ucg->setColor(0, 0, 0);
+	ucg->setColor(COLOR_WHITE);
 	if( highlight  > -1 ){
 		highlight --;
 	}
@@ -269,9 +269,9 @@ void SetupMenu::up(){
 		return;
 	printf("SetupMenu::up %d %d\n", highlight, _childs.size() );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	ucg->setColor(255, 255, 255);
+	ucg->setColor(COLOR_BLACK);
 	ucg->drawFrame( 1,(highlight+1)*25+3,238,25 );
-	ucg->setColor(0, 0, 0);
+	ucg->setColor(COLOR_WHITE);
 	if( highlight < (int)(_childs.size()-1) ){
 		highlight ++;
 	}
@@ -576,11 +576,11 @@ void MenuEntry::clear()
 {
 	printf("MenuEntry::clear\n");
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	ucg->setColor(255, 255, 255);
+	ucg->setColor(COLOR_BLACK);
 	ucg->drawBox( 0,0,240,320 );
 	ucg->setFont(ucg_font_ncenR14_hr);
 	ucg->setPrintPos( 1, 30 );
-	ucg->setColor(0, 0, 0);
+	ucg->setColor(COLOR_WHITE);
 	xSemaphoreGive(spiMutex );
 }
 
@@ -725,10 +725,10 @@ void SetupMenuSelect::display( int mode ){
 void SetupMenuSelect::down(){
 	if( (selected != this) || !_menu_enabled )
 		return;
-	ucg->setColor(255, 255, 255);
+	ucg->setColor(COLOR_BLACK);
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // blank old frame
-	ucg->setColor(0, 0, 0);
+	ucg->setColor(COLOR_WHITE);
 	if( (*_select) >  0 )
 		(*_select)--;
 	printf("val down %d\n", *_select );
@@ -740,9 +740,9 @@ void SetupMenuSelect::up(){
 	if( (selected != this) || !_menu_enabled )
 		return;
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	ucg->setColor(255, 255, 255);
+	ucg->setColor(COLOR_BLACK);
 	ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // blank old frame
-	ucg->setColor(0, 0, 0);
+	ucg->setColor(COLOR_WHITE);
 	if ( (*_select) < _numval-1 )
 		(*_select)++;
 	printf("val up %d\n", *_select );

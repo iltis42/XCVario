@@ -253,6 +253,7 @@ int mcalt = -100;
 bool s2fmodealt = false;
 int s2fclipalt = 0;
 int iasalt = -1;
+int yposalt = 0;
 
 extern xSemaphoreHandle spiMutex;
 
@@ -516,25 +517,34 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
 		int fl=ucg->getStrWidth("123");
 		ucg->setPrintPos(DISPLAY_W-fl-4, YS2F-fh+4);
 		ucg->printf("%3d  ", (int)(s2falt+0.5)  );
-		ucg->setFont(ucg_font_fub14_tn);
+
+		// ucg->setFont(ucg_font_fub14_hn);
 
 		// erase old S2F value
-		ucg->setColor( COLOR_BLACK );
-		ucg->drawBox( DISPLAY_W - fl-4,dmid+s2fclipalt-(fa/2)-4, fl+8, fa+6);
-		// try with black write font
-		// ucg->setPrintPos(DISPLAY_W - ucg->getStrWidth("-123")-2,dmid+s2fclipalt+fa/2 );
-		// ucg->printf("%3d  ", (int)(s2fdalt+0.5)  );
-		ucg->drawHLine( FIELD_START+S2FST+(S2F_TRISIZE/2), dmid+s2fclipalt,
-						(DISPLAY_W - ucg->getStrWidth("-123")-4) - (FIELD_START+S2FST+(S2F_TRISIZE/2)) );
+		// ucg->setColor( COLOR_BLACK );
+		// ucg->drawBox( DISPLAY_W - fl-4,dmid+s2fclipalt-(fa/2)-4, fl+8, fa+6);
+
+		// ucg->drawHLine( FIELD_START+S2FST+(S2F_TRISIZE/2), dmid+s2fclipalt,
+		// 				(DISPLAY_W - ucg->getStrWidth("-123")-4) - (FIELD_START+S2FST+(S2F_TRISIZE/2)) );
 		// draw new one
- 		ucg->setColor(  COLOR_WHITE  );
-		ucg->setPrintPos(DISPLAY_W - ucg->getStrWidth("123"),dmid+s2fclip+fa/2 );
-		ucg->printf("%3d  ", (int)(s2fd+0.5)  );
-		// drawArrowBox( DISPLAY_W - ucg->getStrWidth("123")-4, dmid+s2fclip, false );
-		ucg->drawHLine( FIELD_START+S2FST+(S2F_TRISIZE/2), dmid+s2fclip,
-				(DISPLAY_W - ucg->getStrWidth("-123")-4) - (FIELD_START+S2FST+(S2F_TRISIZE/2)) );
+ 		if( 1 /* abs(s2fd) > 5 */ ) {
+ 			ucg->setColor(  COLOR_BLACK  );
+ 			ucg->setPrintPos( FIELD_START+S2FST+(S2F_TRISIZE/2)-fl,yposalt );
+ 			ucg->printf("+%3d  ", (int)(s2fdalt+0.5)  );
+ 			int ypos;
+ 			if( s2fd < 0 )
+ 				ypos = dmid+s2fclip-2;  // slower, up
+ 			else
+ 				ypos = dmid+s2fclip+2+fa;
 
-
+ 			ucg->setColor(  COLOR_WHITE  );
+			ucg->setPrintPos( FIELD_START+S2FST+(S2F_TRISIZE/2)-fl/2,ypos );
+			yposalt = ypos;
+			ucg->printf("%+3d  ", (int)(s2fd+0.5)  );
+			// drawArrowBox( DISPLAY_W - ucg->getStrWidth("123")-4, dmid+s2fclip, false );
+			// ucg->drawHLine( FIELD_START+S2FST+(S2F_TRISIZE/2), dmid+s2fclip,
+			// 		(DISPLAY_W - ucg->getStrWidth("-123")-4) - (FIELD_START+S2FST+(S2F_TRISIZE/2)) );
+ 		}
  		ucg->setClipRange( FIELD_START+S2FST, dmid-MAXS2FTRI, S2F_TRISIZE, (MAXS2FTRI*2)+1 );
  		bool clear = false;
  		if( s2fd > 0 ) {

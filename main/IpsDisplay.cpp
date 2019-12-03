@@ -52,7 +52,7 @@ const int   S2F_TRISIZE = 70; // triangle size quality up/down
 #define VARBARGAP (HEADFONTH+(HEADFONTH/2)+2)
 #define MAXS2FTRI 43
 
-#define YALT (YS2F+S2FFONTH+HEADFONTH+GAP+2*MAXS2FTRI +10 )
+#define YALT (YS2F+S2FFONTH+HEADFONTH+GAP+2*MAXS2FTRI +16 )
 
 #define LOWBAT  11.6    // 20%  -> 0%
 #define FULLBAT 12.8    // 100%
@@ -518,33 +518,21 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
 		ucg->setPrintPos(DISPLAY_W-fl-4, YS2F-fh+4);
 		ucg->printf("%3d  ", (int)(s2falt+0.5)  );
 
-		// ucg->setFont(ucg_font_fub14_hn);
-
-		// erase old S2F value
-		// ucg->setColor( COLOR_BLACK );
-		// ucg->drawBox( DISPLAY_W - fl-4,dmid+s2fclipalt-(fa/2)-4, fl+8, fa+6);
-
-		// ucg->drawHLine( FIELD_START+S2FST+(S2F_TRISIZE/2), dmid+s2fclipalt,
-		// 				(DISPLAY_W - ucg->getStrWidth("-123")-4) - (FIELD_START+S2FST+(S2F_TRISIZE/2)) );
-		// draw new one
- 		if( 1 /* abs(s2fd) > 5 */ ) {
- 			ucg->setColor(  COLOR_BLACK  );
- 			ucg->setPrintPos( FIELD_START+S2FST+(S2F_TRISIZE/2)-fl,yposalt );
- 			ucg->printf("+%3d  ", (int)(s2fdalt+0.5)  );
- 			int ypos;
- 			if( s2fd < 0 )
- 				ypos = dmid+s2fclip-2;  // slower, up
- 			else
- 				ypos = dmid+s2fclip+2+fa;
-
- 			ucg->setColor(  COLOR_WHITE  );
-			ucg->setPrintPos( FIELD_START+S2FST+(S2F_TRISIZE/2)-fl/2,ypos );
-			yposalt = ypos;
-			ucg->printf("%+3d  ", (int)(s2fd+0.5)  );
-			// drawArrowBox( DISPLAY_W - ucg->getStrWidth("123")-4, dmid+s2fclip, false );
-			// ucg->drawHLine( FIELD_START+S2FST+(S2F_TRISIZE/2), dmid+s2fclip,
-			// 		(DISPLAY_W - ucg->getStrWidth("-123")-4) - (FIELD_START+S2FST+(S2F_TRISIZE/2)) );
- 		}
+		// draw S2F Delta
+		// erase old
+		ucg->setColor(  COLOR_BLACK  );
+		ucg->setPrintPos( FIELD_START+S2FST+(S2F_TRISIZE/2)-fl,yposalt );
+		ucg->printf("+%3d  ", (int)(s2fdalt+0.5)  );
+		int ypos;
+		if( s2fd < 0 )
+			ypos = dmid+s2fclip-2;  // slower, up
+		else
+			ypos = dmid+s2fclip+2+fa;
+        // new S2F Delta val
+		ucg->setColor(  COLOR_WHITE  );
+		ucg->setPrintPos( FIELD_START+S2FST+(S2F_TRISIZE/2)-fl/2,ypos );
+		yposalt = ypos;
+		ucg->printf("%+3d  ", (int)(s2fd+0.5)  );
  		ucg->setClipRange( FIELD_START+S2FST, dmid-MAXS2FTRI, S2F_TRISIZE, (MAXS2FTRI*2)+1 );
  		bool clear = false;
  		if( s2fd > 0 ) {

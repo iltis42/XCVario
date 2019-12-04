@@ -245,7 +245,9 @@ void sensor(void *args){
 	uint8_t osrs_h = 0; //OverSampling Humidity x4
 	uint8_t Mode = 3;   //Normal mode
 
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	SPI.begin( SPI_SCLK, SPI_MISO, SPI_MOSI, CS_bme280TE );
+	xSemaphoreGive(spiMutex);
 
 	printf("BMP280 sensors init..\n");
 
@@ -266,7 +268,7 @@ void sensor(void *args){
     s2f.change_polar();
 	s2f.change_mc_bal();
 
-	xTaskCreatePinnedToCore(&readBMP, "readBMP", 8000, NULL, 7, bpid, 0);
+	xTaskCreatePinnedToCore(&readBMP, "readBMP", 8000, NULL, 12, bpid, 0);
 	Version myVersion;
 	printf("Program Version %s\n", myVersion.version() );
 
@@ -283,7 +285,7 @@ void sensor(void *args){
 		printf("Bluetooth disabled\n");
 
 	ds18b20.begin();
-	xTaskCreatePinnedToCore(&readTemp, "readTemp", 8000, NULL, 3, tpid, 0);
+	xTaskCreatePinnedToCore(&readTemp, "readTemp", 8000, NULL, 1, tpid, 0);
 
 	Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
 	Menu.begin( &display, &Rotary, &mysetup, &setupv, &bmpBA, &ADC );
@@ -293,7 +295,7 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280BA, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
-	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 6, dpid, 0);
+	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 10, dpid, 0);
 
 	printf("Free Stack: S:%d \n", uxTaskGetStackHighWaterMark( spid ) );
     // delay( 2000 );

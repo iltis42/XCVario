@@ -15,7 +15,7 @@
 
 // For display with invers Color
 
-#define COLOR_HEADER 255-153,255-209,255-255  // Azureish gray
+#define COLOR_HEADER 255-101,255-108,255-255  // Azureish gray
 #define COLOR_WHITE 0,0,0
 #define COLOR_BLACK 255,255,255
 #define COLOR_GREEN 255, 30, 255

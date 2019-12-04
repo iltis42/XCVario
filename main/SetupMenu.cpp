@@ -104,6 +104,7 @@ SetupMenu::SetupMenu(){
 	highlight = -1;
 	_parent = 0;
 	y = 0;
+	helptext = 0;
 }
 
 SetupMenu::SetupMenu( String title ) {
@@ -208,9 +209,10 @@ void SetupMenu::display( int mode ){
 		ucg->printf("%s",child->_title.c_str());
 		printf("Child: %s y=%d\n",child->_title.c_str() ,y );
 	}
-	y+=50;
-	showhelp( y );
+	y+=170;
 	xSemaphoreGive(spiMutex );
+	showhelp( y );
+
 }
 
 void MenuEntry::showhelp( int y ){
@@ -472,9 +474,11 @@ void SetupMenu::setup( )
 	al->addEntry( "TE Alt");
 	al->addEntry( "Baro Alt");
 
+// Polar Setup
 	SetupMenu * po = new SetupMenu( "Polar" );
+	po->setHelp( "Polar setup to match performance of glider");
 	MenuEntry* poe = mm->addMenu( po );
-	poe->setHelp( "Polar setup to match performance of glider");
+
 
 	SetupMenuSelect * glt = new SetupMenuSelect( 	"Glider-Type",
 						&_setup->get()->_glider_type, false, polar_select );
@@ -486,7 +490,7 @@ void SetupMenu::setup( )
 	}
 
 	SetupMenu * pa = new SetupMenu( "PolarAdjust" );
-	pa->setHelp( "Adjust selected polar");
+	pa->setHelp( "Adjust speed/sink at representative points of selected polar");
 	poe->addMenu( pa );
 
 	SetupMenuValFloat * wil = new SetupMenuValFloat(

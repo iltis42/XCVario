@@ -56,7 +56,7 @@ void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
 	rb.push( 0 );
 	gpio_isr_handler_add(clk, ESPRotary::readPosInt, NULL);
 	gpio_isr_handler_add(sw, ESPRotary::readPosInt, NULL);
-	xTaskCreatePinnedToCore(&ESPRotary::readPos, "readPos", 4096, NULL, 10, NULL, 0);
+	xTaskCreatePinnedToCore(&ESPRotary::readPos, "readPos", 4096, NULL, 20, NULL, 0);
 	xTaskCreatePinnedToCore(&ESPRotary::informObservers, "informObservers", 8192, NULL, 5, NULL, 0);
 	xBinarySemaphore = xSemaphoreCreateBinary();
 }

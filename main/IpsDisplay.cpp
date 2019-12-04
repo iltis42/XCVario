@@ -52,7 +52,7 @@ const int   S2F_TRISIZE = 70; // triangle size quality up/down
 #define VARBARGAP (HEADFONTH+(HEADFONTH/2)+2)
 #define MAXS2FTRI 43
 
-#define YALT (YS2F+S2FFONTH+HEADFONTH+GAP+2*MAXS2FTRI +16 )
+#define YALT (YS2F+S2FFONTH+HEADFONTH+GAP+2*MAXS2FTRI +25 )
 
 #define LOWBAT  11.6    // 20%  -> 0%
 #define FULLBAT 12.8    // 100%
@@ -142,10 +142,10 @@ void IpsDisplay::initDisplay() {
 	// Sollfahrt Text
 	ucg->setFont(ucg_font_fub11_tr);
 	fh = ucg->getFontAscent();
-	ucg->setPrintPos(FIELD_START+6,YS2F-(2*fh)-4);
+	ucg->setPrintPos(FIELD_START+6,YS2F-(2*fh)-8);
 	ucg->setColor(0, COLOR_HEADER );
 	ucg->print("IAS    km/h");
-	ucg->setPrintPos((DISPLAY_W - ucg->getStrWidth("S2F")-4),YS2F-(2*fh)-4);
+	ucg->setPrintPos((DISPLAY_W - ucg->getStrWidth("S2F")-4),YS2F-(2*fh)-8);
 	ucg->print("S2F");
 
 	ucg->setColor(0, COLOR_WHITE );
@@ -270,7 +270,9 @@ void IpsDisplay::redrawValues()
 	_te=-200;
 	mcalt = -100;
 	iasalt = -1;
+	prefalt = -1;
 }
+
 
 void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode ){
 	if( _menu )
@@ -337,7 +339,10 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
 	if( (int)(MC)*10 != mcalt ) {
 			ucg->setFont(ucg_font_fur14_hf);
 			ucg->setPrintPos(0,DISPLAY_H);
-			ucg->printf("MC:%0.1f", MC );
+			ucg->setColor(COLOR_HEADER);
+			ucg->printf("MC:");
+			ucg->setColor(COLOR_WHITE);
+			ucg->printf("%0.1f", MC );
 			mcalt=(int)MC;
 		}
 
@@ -345,7 +350,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
 	if( (int)temp*10 != tempalt ) {
 		ucg->setFont(ucg_font_fur14_hf);
 		ucg->setPrintPos(FIELD_START+20,DISPLAY_H);
-		ucg->printf("%-2d\xb0"" ", (int)temp );
+		ucg->printf("%-2.1f\xb0""  ", temp );
 		tempalt=(int)temp*10;
 	}
 
@@ -468,7 +473,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
  	if( iasalt != ias ) {
  		// draw new
  		ucg->setColor(  COLOR_WHITE  );
- 		// print speed values
+ 		// print speed values bar
  		ucg->setFont(ucg_font_fub11_hn);
  		ucg->setClipRange( FIELD_START, dmid-(MAXS2FTRI), IASLEN+6, (MAXS2FTRI*2) );
  		for( int speed = ias-MAXS2FTRI-(fh); speed<ias+MAXS2FTRI+(fh); speed++ )
@@ -482,9 +487,9 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
 			}
  		}
  		ucg->undoClipRange();
+ 		// IAS cleartext
  		ucg->setFont(ucg_font_fub14_hn);
- 		// int fhi=ucg->getFontAscent();
- 		ucg->setPrintPos(FIELD_START+8, YS2F-fh+4 );
+ 		ucg->setPrintPos(FIELD_START+8, YS2F-fh );
 		ucg->printf("%3d ", ias);
 		iasalt = ias;
  	}
@@ -514,15 +519,18 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
 		// S2F value
  		ucg->setFont(ucg_font_fub14_hn);
 		int fa=ucg->getFontAscent();
-		int fl=ucg->getStrWidth("123");
-		ucg->setPrintPos(DISPLAY_W-fl-4, YS2F-fh+4);
+		int fl=ucg->getStrWidth("100");
+		ucg->setPrintPos(DISPLAY_W-fl-4, YS2F-fh);
 		ucg->printf("%3d  ", (int)(s2falt+0.5)  );
 
 		// draw S2F Delta
 		// erase old
 		ucg->setColor(  COLOR_BLACK  );
-		ucg->setPrintPos( FIELD_START+S2FST+(S2F_TRISIZE/2)-fl,yposalt );
-		ucg->printf("+%3d  ", (int)(s2fdalt+0.5)  );
+		char s[10];
+		sprintf(s,"%+3d  ",(int)(s2fdalt+0.5));
+		fl=ucg->getStrWidth(s);
+		ucg->setPrintPos( FIELD_START+S2FST+(S2F_TRISIZE/2)-fl/2,yposalt );
+		ucg->printf(s);
 		int ypos;
 		if( s2fd < 0 )
 			ypos = dmid+s2fclip-2;  // slower, up
@@ -530,9 +538,12 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
 			ypos = dmid+s2fclip+2+fa;
         // new S2F Delta val
 		ucg->setColor(  COLOR_WHITE  );
+
+		sprintf(s,"%+3d  ",(int)(s2fd+0.5));
+		fl=ucg->getStrWidth(s);
 		ucg->setPrintPos( FIELD_START+S2FST+(S2F_TRISIZE/2)-fl/2,ypos );
+		ucg->printf(s);
 		yposalt = ypos;
-		ucg->printf("%+3d  ", (int)(s2fd+0.5)  );
  		ucg->setClipRange( FIELD_START+S2FST, dmid-MAXS2FTRI, S2F_TRISIZE, (MAXS2FTRI*2)+1 );
  		bool clear = false;
  		if( s2fd > 0 ) {
@@ -554,7 +565,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
 							   FIELD_START+S2FST+(S2F_TRISIZE/2), dmid+(int)s2fdalt );
  		}
  		// draw new S2F command triangle
- 		else{
+ 		if( 1 ){
  			if( s2fd < 0 )
  				ucg->setColor( LIGHT_GREEN );
  			else

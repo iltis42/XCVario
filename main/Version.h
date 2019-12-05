@@ -16,4 +16,5 @@ public:
 	char *version()  { return _version; };
 };
 
+
 #endif /* MAIN_VERSION_H_ */

@@ -684,7 +684,6 @@ SetupMenuSelect::SetupMenuSelect( String title, uint8_t *select, bool restart, i
 }
 
 
-
 void SetupMenuSelect::display( int mode ){
 	if( (selected != this) || !_menu_enabled )
 		return;
@@ -696,19 +695,22 @@ void SetupMenuSelect::display( int mode ){
 	ucg->printf("<< %s",_title.c_str());
 	xSemaphoreGive(spiMutex );
 	printf("select=%d numval=%d\n", *_select, _numval );
-	int start=0;
-	if( *_select > 10 )
-		start = *_select-9;
-	printf("start=%d \n", start );
-	for( int i=start; i<_numval && i<(start+10); i++ )	{
+	if( _numval > 9 ){
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
-		ucg->setPrintPos( 1, 50+25*i );
-		ucg->print( _values[i].c_str() );
+		ucg->setPrintPos( 1, 50 );
+		ucg->printf( "%s                ", _values[*_select].c_str() );
+		xSemaphoreGive(spiMutex );
+	}else
+	{
+		xSemaphoreTake(spiMutex,portMAX_DELAY );
+		for( int i=0; i<_numval && i<+10; i++ )	{
+			ucg->setPrintPos( 1, 50+25*i );
+			ucg->print( _values[i].c_str() );
+		}
+		ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );
 		xSemaphoreGive(spiMutex );
 	}
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );
-	xSemaphoreGive(spiMutex );
+
 	y=_numval*25+50;
 	showhelp( y );
 	if(mode == 1 && _save == true ){
@@ -729,29 +731,49 @@ void SetupMenuSelect::display( int mode ){
 void SetupMenuSelect::down(){
 	if( (selected != this) || !_menu_enabled )
 		return;
-	ucg->setColor(COLOR_BLACK);
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // blank old frame
-	ucg->setColor(COLOR_WHITE);
-	if( (*_select) >  0 )
-		(*_select)--;
-	printf("val down %d\n", *_select );
-	ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // draw new frame
-	xSemaphoreGive(spiMutex );
+
+	if( _numval > 9 ){
+		    xSemaphoreTake(spiMutex,portMAX_DELAY );
+			if( (*_select) >  0 )
+				(*_select)--;
+			ucg->setPrintPos( 1, 50 );
+			ucg->printf("%s                ",_values[*_select].c_str());
+			xSemaphoreGive(spiMutex );
+	}else {
+		ucg->setColor(COLOR_BLACK);
+		xSemaphoreTake(spiMutex,portMAX_DELAY );
+		ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // blank old frame
+		ucg->setColor(COLOR_WHITE);
+		if( (*_select) >  0 )
+			(*_select)--;
+		printf("val down %d\n", *_select );
+		ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // draw new frame
+		xSemaphoreGive(spiMutex );
+	}
 }
 
 void SetupMenuSelect::up(){
 	if( (selected != this) || !_menu_enabled )
 		return;
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	ucg->setColor(COLOR_BLACK);
-	ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // blank old frame
-	ucg->setColor(COLOR_WHITE);
-	if ( (*_select) < _numval-1 )
-		(*_select)++;
-	printf("val up %d\n", *_select );
-	ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // draw new frame
-	xSemaphoreGive(spiMutex );
+	if( _numval > 9 )
+	{
+		xSemaphoreTake(spiMutex,portMAX_DELAY );
+		if( (*_select) <  _numval-1 )
+			(*_select)++;
+		ucg->setPrintPos( 1, 50 );
+		ucg->printf("%s                ", _values[*_select].c_str());
+		xSemaphoreGive(spiMutex );
+	}else {
+		xSemaphoreTake(spiMutex,portMAX_DELAY );
+		ucg->setColor(COLOR_BLACK);
+		ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // blank old frame
+		ucg->setColor(COLOR_WHITE);
+		if ( (*_select) < _numval-1 )
+			(*_select)++;
+		printf("val up %d\n", *_select );
+		ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // draw new frame
+		xSemaphoreGive(spiMutex );
+	}
 }
 
 void SetupMenuSelect::press(){

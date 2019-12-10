@@ -47,7 +47,7 @@ void ucg_Draw90Line(ucg_t *ucg, ucg_int_t x, ucg_int_t y, ucg_int_t len, ucg_int
   ucg->arg.dir = dir;
   ucg_DrawL90FXWithArg(ucg);
 }
-
+/*
 void ucg_DrawHLine(ucg_t *ucg, ucg_int_t x, ucg_int_t y, ucg_int_t len)
 {
   ucg_Draw90Line(ucg, x, y, len, 0, 0);
@@ -57,7 +57,7 @@ void ucg_DrawVLine(ucg_t *ucg, ucg_int_t x, ucg_int_t y, ucg_int_t len)
 {
   ucg_Draw90Line(ucg, x, y, len, 1, 0);
 }
-
+*/
 void ucg_DrawHRLine(ucg_t *ucg, ucg_int_t x, ucg_int_t y, ucg_int_t len)
 {
   ucg_Draw90Line(ucg, x, y, len, 2, 0);

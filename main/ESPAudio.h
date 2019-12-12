@@ -52,7 +52,7 @@ private:
 		_dead_mute = mt; }
 	void setMute( bool mt ) { _mute = mt; };
 	float _te;
-	float _s2f_mode;
+	static bool _s2f_mode;
 	float _s2fd;
 	float _center;
 	float _deadband;

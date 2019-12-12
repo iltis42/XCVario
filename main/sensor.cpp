@@ -155,6 +155,7 @@ void readBMP(void *pvParameters){
 			// 	printf("Unsharp != 100: %d ms\n", int( newmsec - millisec ) );
 			// millisec = newmsec;
 			TE = bmpVario.readTE();
+			vTaskDelay(1);
 			baroP = bmpBA.readPressure();
 			speedP = MP5004DP.readPascal(30);
 
@@ -169,6 +170,7 @@ void readBMP(void *pvParameters){
 				char lb[120];
 				OV.makeNMEA( lb, baroP, speedP, TE, temperature );
 				btsender.send( lb );
+				vTaskDelay(1);
 			}
 			xSemaphoreGive(xMutex);
 
@@ -179,7 +181,7 @@ void readBMP(void *pvParameters){
 			netto = aTE - s2f.sink( speed );
 			as2f = s2f.speed( netto );
 			s2f_delta = as2f - speed;
-
+			vTaskDelay(1);
 			ias = (int)(speed+0.5);
 
 			switch( mysetup.get()->_audio_mode ) {
@@ -200,7 +202,6 @@ void readBMP(void *pvParameters){
 					break;
 			}
 			Audio.setS2FMode( s2fmode );
-			Audio.setValues( TE, s2f_delta );
 // 			if( uxTaskGetStackHighWaterMark( bpid ) < 1000 )
 //				printf("Warning Stack low: %d bytes\n", uxTaskGetStackHighWaterMark( bpid ) );
 		}
@@ -208,6 +209,17 @@ void readBMP(void *pvParameters){
 		delay(95);
 		// vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
 	}
+}
+
+void audioTask(void *pvParameters){
+	while (1) {
+			TickType_t xLastWakeTime = xTaskGetTickCount();
+			if( Audio.getDisable() != true )
+			{
+				Audio.setValues( TE, s2f_delta );
+			}
+			vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
+		}
 }
 
 void readTemp(void *pvParameters){
@@ -269,6 +281,7 @@ void sensor(void *args){
 	s2f.change_mc_bal();
 
 	xTaskCreatePinnedToCore(&readBMP, "readBMP", 8000, NULL, 12, bpid, 0);
+	xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 30, 0, 0);
 	Version myVersion;
 	printf("Program Version %s\n", myVersion.version() );
 
@@ -295,7 +308,7 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280BA, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
-	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 10, dpid, 0);
+	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 5, dpid, 0);
 
 	printf("Free Stack: S:%d \n", uxTaskGetStackHighWaterMark( spid ) );
     // delay( 2000 );

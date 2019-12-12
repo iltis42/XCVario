@@ -13,7 +13,7 @@
 #include <Arduino.h>
 
 static SPIClass *_Spi; // (HSPI);
-#define FREQUENCY 2000000
+#define FREQUENCY 40000000
 
 static SPISettings spis( FREQUENCY, SPI_MSBFIRST, SPI_MODE0 );
 

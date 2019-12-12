@@ -27,6 +27,7 @@
 
 
 float ESPAudio::_range = 5.0;
+bool ESPAudio::_s2f_mode = false;
 
 ESPAudio::ESPAudio( ) {
 	_ch = DAC_CHANNEL_1;
@@ -234,8 +235,6 @@ void ESPAudio::modtask(void* arg )
 		tickmod++;
 		hightone = false;
 		float te = Audio.getTE();
-
-
 		if ( te > 0 )
 			if ( (tickmod & 1) == 1 )
 				hightone = true;
@@ -243,8 +242,12 @@ void ESPAudio::modtask(void* arg )
 		if ( !hightone )
 		{
 			int delaydelta = 0;
-			if (te > 0.05 )
-				delaydelta = del * 0.8 *(te/_range);
+			if (te > 0.05 ){
+				if( _s2f_mode )
+					delaydelta = del * 0.8 *(te/5.0);
+				else
+					delaydelta = del * 0.8 *(te/_range);
+			}
 			delay = int( del - delaydelta + 0.5 );
 		}
 		vTaskDelayUntil(&xLastWakeTime, delay/portTICK_PERIOD_MS);
@@ -259,17 +262,20 @@ void ESPAudio::dactask(void* arg )
 
 		tick++;
 		float te = Audio.getTE();
-
 		float max;
 		if ( te > 0 )
 			max = Audio.getCenter() * Audio.getVariation();
 		else
 			max = Audio.getCenter() / Audio.getVariation();
-		float f = (float)Audio.getCenter() + ( (te/_range ) * max );
+		float f;
+		if( _s2f_mode )
+			f = (float)Audio.getCenter() + ( (te/5.0 ) * max );
+		else
+			f = (float)Audio.getCenter() + ( (te/_range ) * max );
 
 		int step = int( (f/freq_step ) + 0.5);
 		if( Audio.inDeadBand(te) || Audio.getMute() || hightone  ){
-			step = int( (5/freq_step ) + 0.5);
+			step = int( (200000/freq_step ) + 0.5);
 			// printf("Audio OFF\n");
 		}
 		else{
@@ -301,12 +307,15 @@ void ESPAudio::setValues( float te, float s2fd, bool fromtest )
 		if ( _testmode )
 			return;
 	}
-	if( _s2f_mode )
+	float max = _range;
+	if( _s2f_mode ) {
 		te = -s2fd/10.0;
-	if( te > _range )
-		_te = _range;
-	else if( te < -_range )
-		_te = -_range;
+		max = 5.0;
+	}
+	if( te > max )
+		_te = max;
+	else if( te < -max )
+		_te = -max;
 	else
 		_te = te;
 }
@@ -355,8 +364,8 @@ void ESPAudio::begin( dac_channel_t ch, gpio_num_t button, Setup *asetup )
 	gpio_set_direction(_button, GPIO_MODE_INPUT);
 	gpio_set_pull_mode(_button, GPIO_PULLUP_ONLY);
 
-	xTaskCreate(modtask, "modtask", 1024*4, NULL, 10, NULL);
-	xTaskCreate(dactask, "dactask", 1024*4, NULL, 10, NULL);
+	xTaskCreate(modtask, "modtask", 1024*2, NULL, 31, NULL);
+	xTaskCreate(dactask, "dactask", 1024*2, NULL, 31, NULL);
 	dac_scale_set(_ch, 0 );
 }
 

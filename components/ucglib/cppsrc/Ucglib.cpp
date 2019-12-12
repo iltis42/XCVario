@@ -1191,14 +1191,14 @@ static int16_t ucg_com_arduino_4wire_HW_SPI(ucg_t *ucg, int16_t msg, uint16_t ar
       /*	((ucg_com_info_t *)data)->parallel_clk_speed value in nanoseconds */
       
       /* setup pins */
-    
+
       if ( ucg->pin_list[UCG_PIN_RST] != UCG_PIN_VAL_NONE )
 	     pinMode(ucg->pin_list[UCG_PIN_RST], OUTPUT);
          pinMode(ucg->pin_list[UCG_PIN_CD], OUTPUT);
       
       if ( ucg->pin_list[UCG_PIN_CS] != UCG_PIN_VAL_NONE )
 	     pinMode(ucg->pin_list[UCG_PIN_CS], OUTPUT);
-      
+
       /* setup Arduino SPI */
 
 #if 1 // ARDUINO // >= 10600
@@ -1236,7 +1236,7 @@ static int16_t ucg_com_arduino_4wire_HW_SPI(ucg_t *ucg, int16_t msg, uint16_t ar
       break;
     case UCG_COM_MSG_CHANGE_CS_LINE:
      if( arg == 0 )
-    	 SPI.beginTransaction(SPISettings( 13111111*3, MSBFIRST, SPI_MODE3));  // *3
+    	 SPI.beginTransaction(SPISettings( 13111111*3, MSBFIRST, SPI_MODE0));  // *3
      else
     	 SPI.endTransaction();
       if ( ucg->pin_list[UCG_PIN_CS] != UCG_PIN_VAL_NONE )
@@ -1257,44 +1257,44 @@ static int16_t ucg_com_arduino_4wire_HW_SPI(ucg_t *ucg, int16_t msg, uint16_t ar
       break;
     case UCG_COM_MSG_REPEAT_2_BYTES:
       while( arg > 0 ) {
-	SPI.transfer(data[0]);
-	SPI.transfer(data[1]);
-	arg--;
-      }
+		SPI.transfer(data[0]);
+		SPI.transfer(data[1]);
+		arg--;
+		  }
       break;
     case UCG_COM_MSG_REPEAT_3_BYTES:
       while( arg > 0 ) {
-	SPI.transfer(data[0]);
-	SPI.transfer(data[1]);
-	SPI.transfer(data[2]);
-	arg--;
-      }
+		SPI.transfer(data[0]);
+		SPI.transfer(data[1]);
+		SPI.transfer(data[2]);
+		arg--;
+		  }
       break;
     case UCG_COM_MSG_SEND_STR:
       while( arg > 0 ) {
-	SPI.transfer(*data++);
-	arg--;
+		SPI.transfer(*data++);
+		arg--;
       }
       break;
     case UCG_COM_MSG_SEND_CD_DATA_SEQUENCE:
       while(arg > 0)
       {
-	if ( *data != 0 )
-	{
-	  /* set the data line directly, ignore the setting from UCG_CFG_CD */
-	  if ( *data == 1 )
-	  {
-	    digitalWrite(ucg->pin_list[UCG_PIN_CD], 0);
-	  }
-	  else
-	  {
-	    digitalWrite(ucg->pin_list[UCG_PIN_CD], 1);
-	  }
-	}
-	data++;
-	SPI.transfer(*data);
-	data++;
-	arg--;
+		if ( *data != 0 )
+		{
+			  /* set the data line directly, ignore the setting from UCG_CFG_CD */
+			  if ( *data == 1 )
+			  {
+				digitalWrite(ucg->pin_list[UCG_PIN_CD], 0);
+			  }
+			  else
+			  {
+				digitalWrite(ucg->pin_list[UCG_PIN_CD], 1);
+			  }
+		}
+		data++;
+		SPI.transfer(*data);
+		data++;
+		arg--;
       }
       break;
   }

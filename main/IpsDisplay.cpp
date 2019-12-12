@@ -294,7 +294,6 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
 			ucg->drawHLine( FIELD_START, YVARMID-1, PMLEN );
 			ucg->drawHLine( FIELD_START, YVARMID, PMLEN );
 			ucg->drawHLine( FIELD_START, YVARMID+1, PMLEN );
-
 		}
 		else {
 			// draw just plus
@@ -305,6 +304,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
 			ucg->drawVLine( FIELD_START+PMLEN/2, YVARMID-PMLEN/2, PMLEN );
 			ucg->drawVLine( FIELD_START+PMLEN/2+1, YVARMID-PMLEN/2, PMLEN );
 		}
+		vTaskDelay(1);
 		char tev[10];
 		sprintf( tev, "%0.1f  ", abs(te) );
 		ucg->setPrintPos(FIELD_START+SIGNLEN,YVAR);
@@ -332,8 +332,8 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
 		ucg->setFont(ucg_font_fub25_hn);
 		ucg->printf("  %-4d ", (int)(alt+0.5)  );
 		prefalt = alt;
+		vTaskDelay(1);
 	}
-
 	// MC Value
 	float MC = _setup->get()->_MC;
 	if( (int)(MC)*10 != mcalt ) {
@@ -344,6 +344,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
 			ucg->setColor(COLOR_WHITE);
 			ucg->printf("%0.1f", MC );
 			mcalt=(int)MC;
+			vTaskDelay(1);
 		}
 
     // Temperature Value
@@ -352,8 +353,8 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
 		ucg->setPrintPos(FIELD_START+20,DISPLAY_H);
 		ucg->printf("%-2.1f\xb0""  ", temp );
 		tempalt=(int)temp*10;
+		vTaskDelay(1);
 	}
-
 	// Battery Symbol
 	int charge = (int)(( volt - LOWBAT )*100)/( FULLBAT - LOWBAT );
 	if(charge < 0)
@@ -380,8 +381,8 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
 		ucg->setPrintPos(DISPLAY_W-80,DISPLAY_H);
 		ucg->printf("%3d%%", charge);
 		chargealt = charge;
+		vTaskDelay(1);
 	}
-
 	// Bluetooth Symbol
 	int btq=BTSender::queueFull();
 	if( btq != btqueue )
@@ -404,6 +405,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
 			ucg->drawLine( btx, bty, btx-BTSIZE, bty+BTSIZE );
 		}
 		btqueue = btq;
+		vTaskDelay(1);
 	}
 
  	if( y != yalt ) {
@@ -427,6 +429,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
 			ucg->drawBox( DISPLAY_LEFT+6, dmid, bw, abs(yalt) );
 			ucg->setColor(  COLOR_WHITE  );
 		  }
+		  vTaskDelay(1);
 		}
 		// and now the negative TE value bar
 		else  // y < 0
@@ -447,6 +450,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
 				ucg->drawBox( DISPLAY_LEFT+6, dmid-yalt, bw, yalt );
 				ucg->setColor(  COLOR_WHITE  );
 			}
+			vTaskDelay(1);
 		}
 		// Small triangle pointing to actual vario value
 		if( !s2fmode ){
@@ -461,12 +465,14 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
 							   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-y-TRISIZE );
 		}
 	    yalt = y;
+	    vTaskDelay(1);
 	}
  	if( s2fmode !=  s2fmodealt ){
  		ucg->setColor( COLOR_BLACK );
  		// clear whole area
  		ucg->drawBox( DISPLAY_LEFT+4+bw+3, dmid-MAXS2FTRI, TRISIZE, 2*MAXS2FTRI  );
  		s2fmodealt = s2fmode;
+ 		vTaskDelay(1);
  	}
 
     // IAS
@@ -492,6 +498,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
  		ucg->setPrintPos(FIELD_START+8, YS2F-fh );
 		ucg->printf("%3d ", ias);
 		iasalt = ias;
+		vTaskDelay(1);
  	}
  	// S2F command trend triangle
  	if( (int)s2fd != s2fdalt ) {
@@ -515,14 +522,14 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
 							   DISPLAY_LEFT+4+bw+3, dmid+(int)s2fclip+TRISIZE,
 							   DISPLAY_LEFT+4+bw+3, dmid+(int)s2fclip-TRISIZE );
 		}
-
+		vTaskDelay(1);
 		// S2F value
  		ucg->setFont(ucg_font_fub14_hn);
 		int fa=ucg->getFontAscent();
 		int fl=ucg->getStrWidth("100");
 		ucg->setPrintPos(DISPLAY_W-fl-4, YS2F-fh);
 		ucg->printf("%3d  ", (int)(s2falt+0.5)  );
-
+		vTaskDelay(1);
 		// draw S2F Delta
 		// erase old
 		ucg->setColor(  COLOR_BLACK  );
@@ -543,6 +550,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
 		fl=ucg->getStrWidth(s);
 		ucg->setPrintPos( FIELD_START+S2FST+(S2F_TRISIZE/2)-fl/2,ypos );
 		ucg->printf(s);
+		vTaskDelay(1);
 		yposalt = ypos;
  		ucg->setClipRange( FIELD_START+S2FST, dmid-MAXS2FTRI, S2F_TRISIZE, (MAXS2FTRI*2)+1 );
  		bool clear = false;
@@ -564,6 +572,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
 							   FIELD_START+S2FST+(S2F_TRISIZE/2), dmid+(int)s2fd,
 							   FIELD_START+S2FST+(S2F_TRISIZE/2), dmid+(int)s2fdalt );
  		}
+ 		vTaskDelay(1);
  		// draw new S2F command triangle
  		if( 1 ){
  			if( s2fd < 0 )
@@ -574,6 +583,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
 							   FIELD_START+S2FST+S2F_TRISIZE, dmid,
 							   FIELD_START+S2FST+(S2F_TRISIZE/2), dmid+(int)s2fd );
  		}
+ 		vTaskDelay(1);
  		ucg->undoClipRange();
 
  		s2fdalt = (int)s2fd;

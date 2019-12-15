@@ -15,12 +15,14 @@
 #include "BTSender.h"
 #include "freertos/task.h"
 
+
 int   IpsDisplay::tick = 0;
 bool  IpsDisplay::_menu = false;
 int   IpsDisplay::_pixpmd = 10;
 
 #define DISPLAY_H 320
 #define DISPLAY_W 240
+
 
 // u8g2_t IpsDisplay::u8g2c;
 
@@ -254,6 +256,8 @@ bool s2fmodealt = false;
 int s2fclipalt = 0;
 int iasalt = -1;
 int yposalt = 0;
+int ctealt = 0;
+int originalt = 0;
 
 extern xSemaphoreHandle spiMutex;
 
@@ -271,10 +275,12 @@ void IpsDisplay::redrawValues()
 	mcalt = -100;
 	iasalt = -1;
 	prefalt = -1;
+	ctealt = 0;
+	originalt = 0;
 }
 
 
-void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode ){
+void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, float altitude, float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode ){
 	if( _menu )
 			return;
 	// printf("IpsDisplay::drawDisplay  TE=%0.1f\n", te);
@@ -316,13 +322,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
 		_te = te;
 	}
 
-	float _clipte = te;
-	if ( te > _range_clip )
-		_clipte = _range_clip;
-	if ( te < -_range_clip )
-		_clipte = -_range_clip;
 
-	int y = int(_clipte*_pixpmd+0.5);
 
 	// Altitude
 	int alt = (int)(altitude+0.5);
@@ -408,25 +408,75 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
 		vTaskDelay(1);
 	}
 
- 	if( y != yalt ) {
+	int _clipte = (int)(te*100);
+	if ( te > _range_clip )
+		_clipte = _range_clip*100;
+	if ( te < -_range_clip )
+		_clipte = -_range_clip*100;
+
+	int origin = polar_sink*_pixpmd;
+
+ 	if( (_clipte != ctealt) || (origin != originalt)  ) {
 		// if TE value has changed
-		int y = int(_clipte*_pixpmd+0.5);
+		int y = _clipte*_pixpmd/100;
+		int yalt = ctealt*_pixpmd/100;
+		// int psinky = psink*_pixpmd/100;
+		// int origin = psinky;
+		// int origin = 0;
+
+		// int dorig = psinky;
+		int dorig = dmid;
+        // printf("Polar Sink %f\d", polar_sink );
+		// printf("OR %d ORALT %d  D %d\n", origin, originalt, abs(origin-originalt) );
 		// we draw here the positive TE value bar
-		if ( y > 0 ) {
+		if( origin != originalt )
+		{
+			if( y > origin )
+			{
+				if( origin > originalt ){
+					// erase
+					ucg->setColor( COLOR_BLACK );
+					// printf("LU %d D %d\n", dorig-originalt, abs(origin - originalt) );
+					ucg->drawBox( DISPLAY_LEFT+6, dorig-origin, bw, abs(origin-originalt) );
+				}
+				else{
+					// extend bar
+					ucg->setColor( LIGHT_GREEN );
+					ucg->drawBox( DISPLAY_LEFT+6, dorig-originalt, bw, abs(originalt-origin) );
+				}
+			}
+			else
+			{
+				if( origin > originalt ){
+					// extend bar
+					ucg->setColor( COLOR_RED );
+					ucg->drawBox( DISPLAY_LEFT+6, dorig-origin, bw, abs(origin-originalt) );
+				}
+				else{
+					// erase
+					ucg->setColor( COLOR_BLACK );
+					// printf("LU %d D %d\n", dorig-originalt, abs(originalt - origin) );
+					ucg->drawBox( DISPLAY_LEFT+6, dorig-originalt, bw, abs(originalt-origin) );
+			}
+			}
+			originalt = origin;
+		}
+		if ( y > origin ) {
+		  // just draw the positive values
 		  ucg->setColor( LIGHT_GREEN );
 		  if( y > yalt ) {
-			ucg->drawBox( DISPLAY_LEFT+6, dmid-y, bw, abs(y-yalt) );
+			ucg->drawBox( DISPLAY_LEFT+6, dorig-y, bw, abs(y-yalt) );
 		  }
 		  if( y < yalt  )
 		  {
 			ucg->setColor( COLOR_BLACK );
-			ucg->drawBox( DISPLAY_LEFT+6, dmid-yalt, bw, abs(yalt-y) );
+			ucg->drawBox( DISPLAY_LEFT+6, dorig-yalt, bw, abs(yalt-y) );
 			ucg->setColor(  COLOR_WHITE  );
 		  }
-		  if( yalt < 0 )
+		  if( yalt < originalt )
 		  {
 			ucg->setColor( COLOR_BLACK );
-			ucg->drawBox( DISPLAY_LEFT+6, dmid, bw, abs(yalt) );
+			ucg->drawBox( DISPLAY_LEFT+6, dorig, bw, abs(yalt) );
 			ucg->setColor(  COLOR_WHITE  );
 		  }
 		  vTaskDelay(1);
@@ -436,18 +486,18 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
 		{   // we have a bigger negative value so fill the delta
 			ucg->setColor( COLOR_RED );
 			if( y < yalt ) {
-			   ucg->drawBox( DISPLAY_LEFT+6, dmid-yalt, bw, abs(yalt-y) );
+			   ucg->drawBox( DISPLAY_LEFT+6, dorig-yalt, bw, abs(yalt-y) );
 			}
 			if( y > yalt )
 			{  // a smaller negative value, blank the delta
 				ucg->setColor( COLOR_BLACK );
-				ucg->drawBox( DISPLAY_LEFT+6, dmid-y, bw, abs(y-yalt) );
+				ucg->drawBox( DISPLAY_LEFT+6, dorig-y, bw, abs(y-yalt) );
 				ucg->setColor(  COLOR_WHITE  );
 			}
-			if( yalt > 0 )
+			if( yalt > originalt )
 			{  // blank the overshoot across zero
 				ucg->setColor( COLOR_BLACK );
-				ucg->drawBox( DISPLAY_LEFT+6, dmid-yalt, bw, yalt );
+				ucg->drawBox( DISPLAY_LEFT+6, dorig-yalt, bw, yalt );
 				ucg->setColor(  COLOR_WHITE  );
 			}
 			vTaskDelay(1);
@@ -464,7 +514,8 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float altitude, floa
 							   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-y+TRISIZE,
 							   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-y-TRISIZE );
 		}
-	    yalt = y;
+	    ctealt = _clipte;
+
 	    vTaskDelay(1);
 	}
  	if( s2fmode !=  s2fmodealt ){

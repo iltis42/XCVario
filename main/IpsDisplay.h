@@ -50,7 +50,8 @@ public:
 	virtual ~IpsDisplay();
 	static void begin( Setup* setup );
 	static void setup();
-	static void drawDisplay( int ias, float te, float ate, float tealt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode );
+	                          // ias,       TE,       aTE,       polar_sink,       alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode
+	static void drawDisplay( int ias, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode );
 	static void initDisplay();
 	void doMenu( bool menu=true ) { _menu = menu; };
 	static void drawArrowBox( int x, int y, bool are=true );

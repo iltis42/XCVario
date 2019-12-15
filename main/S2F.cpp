@@ -61,8 +61,11 @@ void S2F::change_mc_bal()
 }
 
 double S2F::sink( double v_in ) {
-	double v=v_in/3.6;
-	double s = a0+a1*v+a2*pow(v,2);
+	double s=0;
+	if ( v_in > 50 ){
+		double v=v_in/3.6;
+		s = a0+a1*v+a2*pow(v,2);
+	}
 	return s;
 }
 

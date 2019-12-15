@@ -34,14 +34,21 @@
 */
 
 #include "ucg.h"
+#include <stdlib.h>
 
 void ucg_DrawBox(ucg_t *ucg, ucg_int_t x, ucg_int_t y, ucg_int_t w, ucg_int_t h)
 {
-  while( h > 0 )
+  while( abs(h) > 0 )
   {
     ucg_DrawHLine(ucg, x, y, w);
-    h--;
-    y++;
+    if( h<0 ) {
+    	h++;
+    	y--;
+    }
+    else{
+    	h--;
+    	y++;
+    }
   }  
 }
 

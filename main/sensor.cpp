@@ -119,6 +119,7 @@ static float as2f = 0;
 static float s2f_delta = 0;
 static bool s2fmode = false;
 static int ias = 0;
+static float polar_sink = 0;
 long millisec = millis();
 
 void handleRfcommRx( char * rx, uint16_t len ){
@@ -136,9 +137,9 @@ void drawDisplay(void *pvParameters){
 		TickType_t dLastWakeTime = xTaskGetTickCount();
 		bool dis = Audio.getDisable();
 		if( dis != true ) {
-			display.drawDisplay( ias, TE, aTE, alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode );
+			display.drawDisplay( ias, TE, aTE, polar_sink, alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode );
 		}
-		vTaskDelayUntil(&dLastWakeTime, 200/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&dLastWakeTime, 50/portTICK_PERIOD_MS);
 	}
 }
 
@@ -147,7 +148,7 @@ void readBMP(void *pvParameters){
 	display.begin( &mysetup );
 	while (1)
 	{
-		// TickType_t xLastWakeTime = xTaskGetTickCount();
+		TickType_t xLastWakeTime = xTaskGetTickCount();
 		if( Audio.getDisable() != true )
 		{
 			// long newmsec = millis();
@@ -178,7 +179,8 @@ void readBMP(void *pvParameters){
 			speed = speed + (MP5004DP.pascal2km( speedP, temperature ) - speed)*0.1;
 			aTE = bmpVario.readAVGTE();
 			aCl = bmpVario.readAvgClimb();
-			netto = aTE - s2f.sink( speed );
+			polar_sink = s2f.sink( speed );
+			netto = aTE - polar_sink;
 			as2f = s2f.speed( netto );
 			s2f_delta = as2f - speed;
 			vTaskDelay(1);
@@ -206,8 +208,8 @@ void readBMP(void *pvParameters){
 //				printf("Warning Stack low: %d bytes\n", uxTaskGetStackHighWaterMark( bpid ) );
 		}
 		esp_task_wdt_reset();
-		delay(95);
-		// vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
+		// delay(95);
+		vTaskDelayUntil(&xLastWakeTime, 50/portTICK_PERIOD_MS);
 	}
 }
 

@@ -43,6 +43,9 @@
 
 enum ips_display { ILI9341 };
 
+typedef enum bars { TEBAR, S2FBAR } t_bar;
+
+
 
 class IpsDisplay {
 public:
@@ -72,6 +75,8 @@ private:
 	static bool _menu;
 	enum ips_display _dtype;
 	static int tick;
+	static void drawBar( t_bar bar, short int origin, short int y, uint8_t r, uint8_t g, uint8_t b );
+	static void drawClipBox( short int ori, short int y );
 };
 
 

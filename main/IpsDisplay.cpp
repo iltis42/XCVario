@@ -159,24 +159,10 @@ void IpsDisplay::initDisplay() {
 	IASLEN = fl;
 	S2FST = IASLEN+16;
 
-	// drawArrowBox( FIELD_START, dmid );
-
     // S2F Zero
 	ucg->drawTriangle( FIELD_START, dmid+5, FIELD_START, dmid-5, FIELD_START+5, dmid);
 	ucg->drawTriangle( FIELD_START+IASLEN, dmid, FIELD_START+IASLEN+5, dmid-5, FIELD_START+IASLEN+5, dmid+5);
-/*
-	ucg->setFont(ucg_font_9x15B_mf);
-	ucg->setFontPosCenter();
-	ucg->setPrintPos(FIELD_START,dmid+20);
-	ucg->print("+20 -");
-	ucg->setPrintPos(FIELD_START,dmid+40);
-	ucg->print("+40 -");
-	ucg->setPrintPos(FIELD_START,dmid-20);
-	ucg->print("-20 -");
-	ucg->setPrintPos(FIELD_START,dmid-40);
-	ucg->print("-40 -");
-	ucg->setFontPosBaseline();
-*/
+
 	// Altitude
 	ucg->setFont(ucg_font_fub11_tr);
 	ucg->setPrintPos(FIELD_START,YALT-S2FFONTH);
@@ -242,8 +228,9 @@ void IpsDisplay::setup()
 }
 
 
+// TODO  move to class
 int _te=0;
-int yalt;
+
 int s2falt=-1;
 int s2fdalt=0;
 int prefalt=0;
@@ -257,7 +244,9 @@ int s2fclipalt = 0;
 int iasalt = -1;
 int yposalt = 0;
 int ctealt = 0;
-int originalt = 0;
+int yalt[2] = { dmid, dmid };
+int originalt[2] = { dmid, dmid };
+
 
 extern xSemaphoreHandle spiMutex;
 
@@ -276,7 +265,46 @@ void IpsDisplay::redrawValues()
 	iasalt = -1;
 	prefalt = -1;
 	ctealt = 0;
-	originalt = 0;
+	originalt[0] = dmid;
+	originalt[1] = dmid;
+	yalt[0] = 0;
+	yalt[1] = 0;
+}
+
+void IpsDisplay::drawClipBox( short int ori, short int y ){
+	if( y > _range_clip * _pixpmd )
+		y = _range_clip * _pixpmd;
+	if( y < -_range_clip * _pixpmd )
+		y = -_range_clip * _pixpmd;
+	if( ori-dmid > _range_clip * _pixpmd )
+		ori = _range_clip * _pixpmd;
+	if( ori-dmid < -_range_clip * _pixpmd )
+		ori = -_range_clip * _pixpmd;
+	ucg->drawBox( DISPLAY_LEFT+6, ori, bw, y );
+}
+
+
+void IpsDisplay::drawBar( t_bar bar, short int ori, short int y, uint8_t r=0, uint8_t g=0, uint8_t b=0 ){
+	// clip values
+	if( ori == y )
+		return;
+	if( y == yalt[bar] )
+		return;
+
+	if( abs(y) < abs(yalt[bar])  ) {
+		// erase
+		    printf("erase start:%d len:%d  ya:%d\n", ori-yalt[bar], yalt[bar]-y, yalt[bar] );
+		    ucg->setColor( COLOR_BLACK );
+		    drawClipBox( ori-y, -(yalt[bar]-y)  );
+	}
+	else{
+		// extend
+		   ucg->setColor( r,g,b );
+		   printf("draw start:%d len:%d  ya:%d\n", ori-yalt[bar], y-yalt[bar], yalt[bar]  );
+		   drawClipBox( ori-yalt[bar], -(y-yalt[bar]) );
+	}
+	yalt[bar] = y;
+	originalt[bar] = ori;
 }
 
 
@@ -335,15 +363,15 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		vTaskDelay(1);
 	}
 	// MC Value
-	float MC = _setup->get()->_MC;
-	if( (int)(MC)*10 != mcalt ) {
+	int MC = _setup->get()->_MC * 10;
+	if( MC != mcalt ) {
 			ucg->setFont(ucg_font_fur14_hf);
 			ucg->setPrintPos(0,DISPLAY_H);
 			ucg->setColor(COLOR_HEADER);
 			ucg->printf("MC:");
 			ucg->setColor(COLOR_WHITE);
-			ucg->printf("%0.1f", MC );
-			mcalt=(int)MC;
+			ucg->printf("%0.1f", (float)(MC/10) );
+			mcalt=MC;
 			vTaskDelay(1);
 		}
 
@@ -414,94 +442,67 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 	if ( te < -_range_clip )
 		_clipte = -_range_clip*100;
 
-	int origin = polar_sink*_pixpmd;
+	if( polar_sink > _range_clip )
+		polar_sink = _range_clip;
+	if( polar_sink < -_range_clip )
+		polar_sink = -_range_clip;
 
- 	if( (_clipte != ctealt) || (origin != originalt)  ) {
+
+	drawBar( S2FBAR, dmid, polar_sink*_pixpmd, COLOR_BLUE );
+
+ 	if( (_clipte != ctealt) ) {
 		// if TE value has changed
 		int y = _clipte*_pixpmd/100;
 		int yalt = ctealt*_pixpmd/100;
-		// int psinky = psink*_pixpmd/100;
-		// int origin = psinky;
-		// int origin = 0;
 
-		// int dorig = psinky;
-		int dorig = dmid;
-        // printf("Polar Sink %f\d", polar_sink );
-		// printf("OR %d ORALT %d  D %d\n", origin, originalt, abs(origin-originalt) );
-		// we draw here the positive TE value bar
-		if( origin != originalt )
-		{
-			if( y > origin )
-			{
-				if( origin > originalt ){
-					// erase
-					ucg->setColor( COLOR_BLACK );
-					// printf("LU %d D %d\n", dorig-originalt, abs(origin - originalt) );
-					ucg->drawBox( DISPLAY_LEFT+6, dorig-origin, bw, abs(origin-originalt) );
-				}
-				else{
-					// extend bar
-					ucg->setColor( LIGHT_GREEN );
-					ucg->drawBox( DISPLAY_LEFT+6, dorig-originalt, bw, abs(originalt-origin) );
-				}
-			}
-			else
-			{
-				if( origin > originalt ){
-					// extend bar
-					ucg->setColor( COLOR_RED );
-					ucg->drawBox( DISPLAY_LEFT+6, dorig-origin, bw, abs(origin-originalt) );
-				}
-				else{
-					// erase
-					ucg->setColor( COLOR_BLACK );
-					// printf("LU %d D %d\n", dorig-originalt, abs(originalt - origin) );
-					ucg->drawBox( DISPLAY_LEFT+6, dorig-originalt, bw, abs(originalt-origin) );
-			}
-			}
-			originalt = origin;
-		}
-		if ( y > origin ) {
+
+/*
+		if( te != 0 )
+			drawBar( dmid, dmid+(te*_pixpmd), LIGHT_GREEN );
+			*/
+		/*
+
+		int mid=dmid-origin;
+		if ( y > mid ) {
 		  // just draw the positive values
-		  ucg->setColor( LIGHT_GREEN );
 		  if( y > yalt ) {
-			ucg->drawBox( DISPLAY_LEFT+6, dorig-y, bw, abs(y-yalt) );
+			ucg->setColor( LIGHT_GREEN );
+			ucg->drawBox( DISPLAY_LEFT+6, mid-y, bw, abs(y-yalt) );
 		  }
 		  if( y < yalt  )
 		  {
 			ucg->setColor( COLOR_BLACK );
-			ucg->drawBox( DISPLAY_LEFT+6, dorig-yalt, bw, abs(yalt-y) );
-			ucg->setColor(  COLOR_WHITE  );
+			ucg->drawBox( DISPLAY_LEFT+6, mid-yalt, bw, abs(yalt-y) );
 		  }
-		  if( yalt < originalt )
+		  if( yalt < mid )
 		  {
 			ucg->setColor( COLOR_BLACK );
-			ucg->drawBox( DISPLAY_LEFT+6, dorig, bw, abs(yalt) );
-			ucg->setColor(  COLOR_WHITE  );
+			ucg->drawBox( DISPLAY_LEFT+6, mid, bw, abs( yalt ) );
 		  }
 		  vTaskDelay(1);
 		}
 		// and now the negative TE value bar
 		else  // y < 0
 		{   // we have a bigger negative value so fill the delta
-			ucg->setColor( COLOR_RED );
 			if( y < yalt ) {
-			   ucg->drawBox( DISPLAY_LEFT+6, dorig-yalt, bw, abs(yalt-y) );
+			   ucg->setColor( COLOR_RED );
+			   ucg->drawBox( DISPLAY_LEFT+6, mid-yalt, bw, abs(yalt-y) );
 			}
 			if( y > yalt )
 			{  // a smaller negative value, blank the delta
 				ucg->setColor( COLOR_BLACK );
-				ucg->drawBox( DISPLAY_LEFT+6, dorig-y, bw, abs(y-yalt) );
-				ucg->setColor(  COLOR_WHITE  );
+				ucg->drawBox( DISPLAY_LEFT+6, mid-y, bw, abs(y-yalt) );
 			}
-			if( yalt > originalt )
+			if( yalt > mid )
 			{  // blank the overshoot across zero
 				ucg->setColor( COLOR_BLACK );
-				ucg->drawBox( DISPLAY_LEFT+6, dorig-yalt, bw, yalt );
-				ucg->setColor(  COLOR_WHITE  );
+				ucg->drawBox( DISPLAY_LEFT+6, mid-yalt, bw, abs( yalt ) );
 			}
 			vTaskDelay(1);
+			originalt = origin;
 		}
+
+		*/
 		// Small triangle pointing to actual vario value
 		if( !s2fmode ){
 			// First blank the old one
@@ -515,7 +516,6 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 							   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-y-TRISIZE );
 		}
 	    ctealt = _clipte;
-
 	    vTaskDelay(1);
 	}
  	if( s2fmode !=  s2fmodealt ){

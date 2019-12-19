@@ -53,6 +53,7 @@ const int   S2F_TRISIZE = 70; // triangle size quality up/down
 
 #define VARBARGAP (HEADFONTH+(HEADFONTH/2)+2)
 #define MAXS2FTRI 43
+#define MAXTEBAR ((DISPLAY_H/2)-VARBARGAP-4)
 
 #define YALT (YS2F+S2FFONTH+HEADFONTH+GAP+2*MAXS2FTRI +25 )
 
@@ -77,7 +78,6 @@ IpsDisplay::IpsDisplay( Ucglib_ILI9341_18x240x320_HWSPI *aucg ) {
 	_divisons = 5;
 	_range_clip = 0;
 	_range = 5;
-	_clipte = 5;
 	tick = 0;
 	_dc = GPIO_NUM_MAX;
 	_reset = GPIO_NUM_MAX;
@@ -246,6 +246,7 @@ int yposalt = 0;
 int ctealt = 0;
 int yalt[2] = { dmid, dmid };
 int originalt[2] = { dmid, dmid };
+int yold = 0;
 
 
 extern xSemaphoreHandle spiMutex;
@@ -271,37 +272,48 @@ void IpsDisplay::redrawValues()
 	yalt[1] = 0;
 }
 
-void IpsDisplay::drawClipBox( short int ori, short int y ){
-	if( y > _range_clip * _pixpmd )
-		y = _range_clip * _pixpmd;
-	if( y < -_range_clip * _pixpmd )
-		y = -_range_clip * _pixpmd;
-	if( ori-dmid > _range_clip * _pixpmd )
-		ori = _range_clip * _pixpmd;
-	if( ori-dmid < -_range_clip * _pixpmd )
-		ori = -_range_clip * _pixpmd;
-	ucg->drawBox( DISPLAY_LEFT+6, ori, bw, y );
+#define TEGAP 28
+#define TEMIN TEGAP
+#define TEMAX DISPLAY_H-30
+
+void IpsDisplay::drawTeBar( int y1, int h, int r, int g, int b ){
+	if( h == 0 )
+		return;
+	// clip values for max TE bar
+	if( y1 > TEMAX )
+		y1 = TEMAX;
+	if( y1+h > TEMAX )
+		h = TEMAX - y1 ;
+	if( y1 < TEMIN )
+		y1 = TEMIN;
+	if( y1+h < TEMIN )
+		h = TEMIN + y1;
+	ucg->setColor( r,g,b );
+	printf("drawTeBar y1: %d  h:%d  c: %d %d %d\n", y1, h, r,g,b );
+	ucg->drawBox( DISPLAY_LEFT+6, y1, bw, -h );
 }
 
 
-void IpsDisplay::drawBar( t_bar bar, short int ori, short int y, uint8_t r=0, uint8_t g=0, uint8_t b=0 ){
-	// clip values
-	if( ori == y )
-		return;
-	if( y == yalt[bar] )
-		return;
-
+void IpsDisplay::deltaDrawBar( t_bar bar, int ori, int y, int r, int g, int b ){
 	if( abs(y) < abs(yalt[bar])  ) {
 		// erase
-		    printf("erase start:%d len:%d  ya:%d\n", ori-yalt[bar], yalt[bar]-y, yalt[bar] );
-		    ucg->setColor( COLOR_BLACK );
-		    drawClipBox( ori-y, -(yalt[bar]-y)  );
+	    // printf("erase: %d len:%d  ya:%d\n", ori-y, -yalt[bar]-y, yalt[bar] );
+	    drawTeBar( ori-y, (yalt[bar]-y), COLOR_BLACK  );
 	}
 	else{
 		// extend
-		   ucg->setColor( r,g,b );
-		   printf("draw start:%d len:%d  ya:%d\n", ori-yalt[bar], y-yalt[bar], yalt[bar]  );
-		   drawClipBox( ori-yalt[bar], -(y-yalt[bar]) );
+	   // printf("draw: %d len:%d  ya:%d\n", ori-yalt[bar], -(y-yalt[bar]), yalt[bar]  );
+	   drawTeBar( ori-yalt[bar], (y-yalt[bar]), r,g,b );
+	}
+	if( (y < 0 && yalt[bar] > 0) || ( y > 0 && yalt[bar] < 0 )  )
+	{
+		printf("erase overshoot:%d len:%d  y:%d\n", ori, yalt[bar], y );
+		int ya;
+		if( yalt[bar] < 0 )
+			ya = yalt[bar]-1;
+		else
+			ya = yalt[bar]+1;
+		drawTeBar( ori, ya, COLOR_BLACK );
 	}
 	yalt[bar] = y;
 	originalt[bar] = ori;
@@ -436,87 +448,56 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		vTaskDelay(1);
 	}
 
-	int _clipte = (int)(te*100);
-	if ( te > _range_clip )
-		_clipte = _range_clip*100;
-	if ( te < -_range_clip )
-		_clipte = -_range_clip*100;
+	// TE Stuff
+	if (te > _range)
+ 		te = _range;
+ 	if (te < - _range)
+ 	 	te = -_range;
 
-	if( polar_sink > _range_clip )
-		polar_sink = _range_clip;
-	if( polar_sink < -_range_clip )
-		polar_sink = -_range_clip;
+ 	int y = (int)(te*_pixpmd);
 
+ 	if (polar_sink < - _range)
+ 		polar_sink = -_range;
 
-	drawBar( S2FBAR, dmid, polar_sink*_pixpmd, COLOR_BLUE );
+ 	int py = (int)(polar_sink*_pixpmd);
 
- 	if( (_clipte != ctealt) ) {
+ 	if( (y != ctealt) ) {
 		// if TE value has changed
-		int y = _clipte*_pixpmd/100;
-		int yalt = ctealt*_pixpmd/100;
 
-
-/*
-		if( te != 0 )
-			drawBar( dmid, dmid+(te*_pixpmd), LIGHT_GREEN );
-			*/
-		/*
-
-		int mid=dmid-origin;
-		if ( y > mid ) {
-		  // just draw the positive values
-		  if( y > yalt ) {
-			ucg->setColor( LIGHT_GREEN );
-			ucg->drawBox( DISPLAY_LEFT+6, mid-y, bw, abs(y-yalt) );
-		  }
-		  if( y < yalt  )
-		  {
-			ucg->setColor( COLOR_BLACK );
-			ucg->drawBox( DISPLAY_LEFT+6, mid-yalt, bw, abs(yalt-y) );
-		  }
-		  if( yalt < mid )
-		  {
-			ucg->setColor( COLOR_BLACK );
-			ucg->drawBox( DISPLAY_LEFT+6, mid, bw, abs( yalt ) );
-		  }
-		  vTaskDelay(1);
-		}
-		// and now the negative TE value bar
-		else  // y < 0
-		{   // we have a bigger negative value so fill the delta
-			if( y < yalt ) {
-			   ucg->setColor( COLOR_RED );
-			   ucg->drawBox( DISPLAY_LEFT+6, mid-yalt, bw, abs(yalt-y) );
-			}
-			if( y > yalt )
-			{  // a smaller negative value, blank the delta
-				ucg->setColor( COLOR_BLACK );
-				ucg->drawBox( DISPLAY_LEFT+6, mid-y, bw, abs(y-yalt) );
-			}
-			if( yalt > mid )
-			{  // blank the overshoot across zero
-				ucg->setColor( COLOR_BLACK );
-				ucg->drawBox( DISPLAY_LEFT+6, mid-yalt, bw, abs( yalt ) );
-			}
-			vTaskDelay(1);
-			originalt = origin;
+		if( te>0 ) {
+			deltaDrawBar( TEBAR, dmid, y, COLOR_GREEN );
+	 		deltaDrawBar( S2FBAR, dmid, py, COLOR_GREEN );
 		}
 
-		*/
+		else{
+			if( te > polar_sink ) {
+				drawTeBar(  dmid,      y, COLOR_BLUE );
+				drawTeBar(  dmid+y,    py, COLOR_GREEN );
+				drawTeBar(  dmid+y+py, (_range*_pixpmd +(py+y)) , COLOR_BLACK );
+			}else{
+				drawTeBar( dmid,     py, COLOR_BLUE );
+				drawTeBar( dmid-py,  y, COLOR_RED );
+				drawTeBar( dmid-py-y, -(_range*_pixpmd +py+y),  COLOR_BLACK );
+			}
+		}
+
+
 		// Small triangle pointing to actual vario value
 		if( !s2fmode ){
 			// First blank the old one
 			ucg->setColor( COLOR_BLACK );
-			ucg->drawTriangle( DISPLAY_LEFT+4+bw+3,         dmid-yalt,
-							   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-yalt+TRISIZE,
-							   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-yalt-TRISIZE );
+			ucg->drawTriangle( DISPLAY_LEFT+4+bw+3,         dmid-yold,
+							   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-yold+TRISIZE,
+							   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-yold-TRISIZE );
 			ucg->setColor(  COLOR_WHITE  );
 			ucg->drawTriangle( DISPLAY_LEFT+4+bw+3,         dmid-y,
 							   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-y+TRISIZE,
 							   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-y-TRISIZE );
 		}
-	    ctealt = _clipte;
+	    ctealt = y;
+	    yold = y;
 	    vTaskDelay(1);
+
 	}
  	if( s2fmode !=  s2fmodealt ){
  		ucg->setColor( COLOR_BLACK );
@@ -575,6 +556,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		}
 		vTaskDelay(1);
 		// S2F value
+		ucg->setColor(  COLOR_WHITE  );
  		ucg->setFont(ucg_font_fub14_hn);
 		int fa=ucg->getFontAscent();
 		int fl=ucg->getStrWidth("100");

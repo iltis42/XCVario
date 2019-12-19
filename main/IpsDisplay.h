@@ -69,14 +69,13 @@ private:
 	static int _divisons;
 	static float _range_clip;
 	static int _pixpmd;
-	float _clipte;
 
 	static Setup *_setup;
 	static bool _menu;
 	enum ips_display _dtype;
 	static int tick;
-	static void drawBar( t_bar bar, short int origin, short int y, uint8_t r, uint8_t g, uint8_t b );
-	static void drawClipBox( short int ori, short int y );
+	static void deltaDrawBar( t_bar bar, int origin, int y, int r, int g, int b );
+	static void drawTeBar( int y1, int y2, int r, int g, int b );
 };
 
 

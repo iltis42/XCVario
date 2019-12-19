@@ -75,7 +75,7 @@ double BMPVario::readTE() {
 	_TEF = _TEF + ((TEFR - _TEF)/ delta ) /(_damping/delta);
 	// calcAnalogOut();
 	_avgTE = (_TEF - _avgTE)*0.02 +_avgTE;
-	if( _avgTE > 0 )
+	if( _avgTE > 0.1 )  // add core climb here
 	{
 		averageClimb += _avgTE;
 		samples++;

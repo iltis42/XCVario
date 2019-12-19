@@ -209,7 +209,7 @@ void readBMP(void *pvParameters){
 		}
 		esp_task_wdt_reset();
 		// delay(95);
-		vTaskDelayUntil(&xLastWakeTime, 50/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
 	}
 }
 

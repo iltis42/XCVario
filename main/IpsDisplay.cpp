@@ -68,6 +68,13 @@ int S2FST = 45;
 int IASLEN = 0;
 static int fh;
 
+#define TEGAP 28
+#define TEMIN TEGAP
+#define TEMAX DISPLAY_H-TEGAP
+
+ucg_color_t colors[TEMAX+1];
+ucg_color_t colorsalt[TEMAX+1];
+
 
 Ucglib_ILI9341_18x240x320_HWSPI *IpsDisplay::ucg = 0;
 
@@ -243,10 +250,11 @@ bool s2fmodealt = false;
 int s2fclipalt = 0;
 int iasalt = -1;
 int yposalt = 0;
-int ctealt = 0;
+int tyalt = 0;
 int yalt[2] = { dmid, dmid };
 int originalt[2] = { dmid, dmid };
 int yold = 0;
+int pyalt = 0;
 
 
 extern xSemaphoreHandle spiMutex;
@@ -265,32 +273,82 @@ void IpsDisplay::redrawValues()
 	mcalt = -100;
 	iasalt = -1;
 	prefalt = -1;
-	ctealt = 0;
+	tyalt = 0;
 	originalt[0] = dmid;
 	originalt[1] = dmid;
 	yalt[0] = 0;
 	yalt[1] = 0;
+	for( int l=TEMIN; l<TEMAX; l++){
+		colors[l].color[0] = 0;
+		colors[l].color[1] = 0;
+		colors[l].color[2] = 0;
+		colorsalt[l].color[0] = 0;
+		colorsalt[l].color[1] = 0;
+		colorsalt[l].color[2] = 0;
+	}
 }
 
-#define TEGAP 28
-#define TEMIN TEGAP
-#define TEMAX DISPLAY_H-30
 
+
+
+// y1 is base of bar, usually the mid. h is height of bar, where positive values h or y1 go up and negative values go down
 void IpsDisplay::drawTeBar( int y1, int h, int r, int g, int b ){
 	if( h == 0 )
 		return;
 	// clip values for max TE bar
 	if( y1 > TEMAX )
 		y1 = TEMAX;
-	if( y1+h > TEMAX )
-		h = TEMAX - y1 ;
 	if( y1 < TEMIN )
 		y1 = TEMIN;
+	if( y1+h > TEMAX )
+		h = TEMAX-y1;
+	if( y1-h > TEMAX )
+		h = TEMAX-y1;
 	if( y1+h < TEMIN )
-		h = TEMIN + y1;
+		h = TEMIN-y1;
+	if( y1-h < TEMIN )
+		h = TEMIN-y1;
+
 	ucg->setColor( r,g,b );
-	printf("drawTeBar y1: %d  h:%d  c: %d %d %d\n", y1, h, r,g,b );
-	ucg->drawBox( DISPLAY_LEFT+6, y1, bw, -h );
+	// printf("drawTeBar y1: %d  h:%d  c: %d %d %d\n", y1, h, r,g,b );
+	ucg->drawBox( DISPLAY_LEFT+6, dmid+(dmid-y1), bw, -h );
+}
+
+void IpsDisplay::drawTeBuf(){
+	for( int l=TEMIN; l<TEMAX; l++){
+		if( colorsalt[l].color[0] != colors[l].color[0]  || colorsalt[l].color[1] != colors[l].color[1] || colorsalt[l].color[2] != colors[l].color[2])
+		{
+			ucg->setColor( colors[l].color[0], colors[l].color[1], colors[l].color[2] );
+			ucg->drawHLine( DISPLAY_LEFT+6, l, bw );
+			colorsalt[l] = colors[l];
+		}
+	}
+}
+
+void IpsDisplay::setTeBuf( int y1, int h, int r, int g, int b ){
+	if( h == 0 )
+		return;
+		// clip values for max TE bar
+	y1 = dmid+(dmid-y1);
+	if( y1-h > TEMAX )
+		h = -(TEMAX-y1);
+	if( y1-h < TEMIN )
+        h = TEMIN+y1;
+
+	if( h>0 ) {
+		while( h--) {
+			colors[y1-h].color[0] = r;
+			colors[y1-h].color[1] = g;
+			colors[y1-h].color[2] = b;
+		}
+	}
+	else {
+		while( h++) {
+		colors[y1-h].color[0] = r;
+		colors[y1-h].color[1] = g;
+		colors[y1-h].color[2] = b;
+		}
+	}
 }
 
 
@@ -449,53 +507,58 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 	}
 
 	// TE Stuff
+
+	// range maybe can drop, done in drawRoutine
 	if (te > _range)
  		te = _range;
  	if (te < - _range)
  	 	te = -_range;
 
- 	int y = (int)(te*_pixpmd);
+ 	int ty = (int)(te*_pixpmd);
 
  	if (polar_sink < - _range)
  		polar_sink = -_range;
 
  	int py = (int)(polar_sink*_pixpmd);
 
- 	if( (y != ctealt) ) {
-		// if TE value has changed
+ 	if( ty != tyalt )
+ 	{
+ 		setTeBuf(  dmid, _range*_pixpmd, COLOR_BLACK );
+ 		setTeBuf(  dmid, -_range*_pixpmd, COLOR_BLACK );
 
-		if( te>0 ) {
-			deltaDrawBar( TEBAR, dmid, y, COLOR_GREEN );
-	 		deltaDrawBar( S2FBAR, dmid, py, COLOR_GREEN );
-		}
+ 		setTeBuf(  dmid, py, COLOR_BLUE );
+ 		if( ty > 0 ){
+ 			setTeBuf(  dmid, ty, COLOR_GREEN );
+ 			setTeBuf(  dmid, py, COLOR_GREEN );
+ 		}
+ 		else {
+ 			if( ty > py ){
+ 			    setTeBuf(  dmid, ty, COLOR_BLUE );
+ 				setTeBuf(  dmid+ty, py-ty, COLOR_GREEN );
+ 			}
+ 			else
+ 			{
+ 				 setTeBuf(  dmid, py, COLOR_BLUE );
+  				 setTeBuf(  dmid+py, ty-py, COLOR_RED );
+ 			}
+ 		}
 
-		else{
-			if( te > polar_sink ) {
-				drawTeBar(  dmid,      y, COLOR_BLUE );
-				drawTeBar(  dmid+y,    py, COLOR_GREEN );
-				drawTeBar(  dmid+y+py, (_range*_pixpmd +(py+y)) , COLOR_BLACK );
-			}else{
-				drawTeBar( dmid,     py, COLOR_BLUE );
-				drawTeBar( dmid-py,  y, COLOR_RED );
-				drawTeBar( dmid-py-y, -(_range*_pixpmd +py+y),  COLOR_BLACK );
-			}
-		}
-
+ 		drawTeBuf();
 
 		// Small triangle pointing to actual vario value
 		if( !s2fmode ){
 			// First blank the old one
 			ucg->setColor( COLOR_BLACK );
-			ucg->drawTriangle( DISPLAY_LEFT+4+bw+3,         dmid-yold,
-							   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-yold+TRISIZE,
-							   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-yold-TRISIZE );
+			ucg->drawTriangle( DISPLAY_LEFT+4+bw+3,         dmid-tyalt,
+							   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-tyalt+TRISIZE,
+							   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-tyalt-TRISIZE );
 			ucg->setColor(  COLOR_WHITE  );
-			ucg->drawTriangle( DISPLAY_LEFT+4+bw+3,         dmid-y,
-							   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-y+TRISIZE,
-							   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-y-TRISIZE );
+			ucg->drawTriangle( DISPLAY_LEFT+4+bw+3,         dmid-ty,
+							   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-ty+TRISIZE,
+							   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-ty-TRISIZE );
 		}
-	    ctealt = y;
-	    yold = y;
+	    tyalt = ty;
+	    pyalt = py;
 	    vTaskDelay(1);
 
 	}

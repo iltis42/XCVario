@@ -457,24 +457,13 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 
 	// TE Stuff
 
-	// range maybe can drop, done in drawRoutine
-	/*
-	if (te > _range)
- 		te = _range;
- 	if (te < - _range)
- 	 	te = -_range;
-*/
  	int ty = (int)(te*_pixpmd);
-/*
- 	if (polar_sink < - _range)
- 		polar_sink = -_range;
-*/
  	int py = (int)(polar_sink*_pixpmd);
 
  	if( ty != tyalt )
  	{
- 		setTeBuf(  dmid, _range*_pixpmd, COLOR_BLACK );
- 		setTeBuf(  dmid, -_range*_pixpmd, COLOR_BLACK );
+ 		setTeBuf(  dmid, _range*_pixpmd+1, COLOR_BLACK );
+ 		setTeBuf(  dmid, -(_range*_pixpmd+1), COLOR_BLACK );
 
  		setTeBuf(  dmid, py, COLOR_BLUE );
  		if( ty > 0 ){

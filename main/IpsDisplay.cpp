@@ -68,7 +68,7 @@ int S2FST = 45;
 int IASLEN = 0;
 static int fh;
 
-#define TEGAP 28
+#define TEGAP 26
 #define TEMIN TEGAP
 #define TEMAX DISPLAY_H-TEGAP
 
@@ -278,7 +278,7 @@ void IpsDisplay::redrawValues()
 	originalt[1] = dmid;
 	yalt[0] = 0;
 	yalt[1] = 0;
-	for( int l=TEMIN; l<TEMAX; l++){
+	for( int l=TEMIN-1; l<=TEMAX; l++){
 		colors[l].color[0] = 0;
 		colors[l].color[1] = 0;
 		colors[l].color[2] = 0;
@@ -288,34 +288,8 @@ void IpsDisplay::redrawValues()
 	}
 }
 
-
-
-
-// y1 is base of bar, usually the mid. h is height of bar, where positive values h or y1 go up and negative values go down
-void IpsDisplay::drawTeBar( int y1, int h, int r, int g, int b ){
-	if( h == 0 )
-		return;
-	// clip values for max TE bar
-	if( y1 > TEMAX )
-		y1 = TEMAX;
-	if( y1 < TEMIN )
-		y1 = TEMIN;
-	if( y1+h > TEMAX )
-		h = TEMAX-y1;
-	if( y1-h > TEMAX )
-		h = TEMAX-y1;
-	if( y1+h < TEMIN )
-		h = TEMIN-y1;
-	if( y1-h < TEMIN )
-		h = TEMIN-y1;
-
-	ucg->setColor( r,g,b );
-	// printf("drawTeBar y1: %d  h:%d  c: %d %d %d\n", y1, h, r,g,b );
-	ucg->drawBox( DISPLAY_LEFT+6, dmid+(dmid-y1), bw, -h );
-}
-
 void IpsDisplay::drawTeBuf(){
-	for( int l=TEMIN; l<TEMAX; l++){
+	for( int l=TEMIN+1; l<TEMAX; l++){
 		if( colorsalt[l].color[0] != colors[l].color[0]  || colorsalt[l].color[1] != colors[l].color[1] || colorsalt[l].color[2] != colors[l].color[2])
 		{
 			ucg->setColor( colors[l].color[0], colors[l].color[1], colors[l].color[2] );
@@ -326,55 +300,31 @@ void IpsDisplay::drawTeBuf(){
 }
 
 void IpsDisplay::setTeBuf( int y1, int h, int r, int g, int b ){
-	if( h == 0 )
-		return;
+	// if( h == 0 )
+	// 	return;
 		// clip values for max TE bar
 	y1 = dmid+(dmid-y1);
-	if( y1-h > TEMAX )
+	if( y1-h >= TEMAX )
 		h = -(TEMAX-y1);
 	if( y1-h < TEMIN )
         h = TEMIN+y1;
 
-	if( h>0 ) {
-		while( h--) {
+	if( h>=0 ) {
+		while( h >=0 ) {
 			colors[y1-h].color[0] = r;
 			colors[y1-h].color[1] = g;
 			colors[y1-h].color[2] = b;
+			h--;
 		}
 	}
 	else {
-		while( h++) {
-		colors[y1-h].color[0] = r;
-		colors[y1-h].color[1] = g;
-		colors[y1-h].color[2] = b;
+		while( h < 0 ) {
+			colors[y1-h].color[0] = r;
+			colors[y1-h].color[1] = g;
+			colors[y1-h].color[2] = b;
+			h++;
 		}
 	}
-}
-
-
-void IpsDisplay::deltaDrawBar( t_bar bar, int ori, int y, int r, int g, int b ){
-	if( abs(y) < abs(yalt[bar])  ) {
-		// erase
-	    // printf("erase: %d len:%d  ya:%d\n", ori-y, -yalt[bar]-y, yalt[bar] );
-	    drawTeBar( ori-y, (yalt[bar]-y), COLOR_BLACK  );
-	}
-	else{
-		// extend
-	   // printf("draw: %d len:%d  ya:%d\n", ori-yalt[bar], -(y-yalt[bar]), yalt[bar]  );
-	   drawTeBar( ori-yalt[bar], (y-yalt[bar]), r,g,b );
-	}
-	if( (y < 0 && yalt[bar] > 0) || ( y > 0 && yalt[bar] < 0 )  )
-	{
-		printf("erase overshoot:%d len:%d  y:%d\n", ori, yalt[bar], y );
-		int ya;
-		if( yalt[bar] < 0 )
-			ya = yalt[bar]-1;
-		else
-			ya = yalt[bar]+1;
-		drawTeBar( ori, ya, COLOR_BLACK );
-	}
-	yalt[bar] = y;
-	originalt[bar] = ori;
 }
 
 
@@ -385,7 +335,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setFont(ucg_font_fub35_hn);  // 52 height
 	ucg->setColor(  COLOR_WHITE  );
-	// ucg->setColor(1, 127, 127, 127);
+
 	if( int(_te*10) != (int)(te*10) ) {
 		if( te < 0 ) {
 			// erase V line from +
@@ -419,8 +369,6 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		ucg->print(" m/s");
 		_te = te;
 	}
-
-
 
 	// Altitude
 	int alt = (int)(altitude+0.5);
@@ -481,6 +429,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		chargealt = charge;
 		vTaskDelay(1);
 	}
+
 	// Bluetooth Symbol
 	int btq=BTSender::queueFull();
 	if( btq != btqueue )
@@ -509,16 +458,17 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 	// TE Stuff
 
 	// range maybe can drop, done in drawRoutine
+	/*
 	if (te > _range)
  		te = _range;
  	if (te < - _range)
  	 	te = -_range;
-
+*/
  	int ty = (int)(te*_pixpmd);
-
+/*
  	if (polar_sink < - _range)
  		polar_sink = -_range;
-
+*/
  	int py = (int)(polar_sink*_pixpmd);
 
  	if( ty != tyalt )

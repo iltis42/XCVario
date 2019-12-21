@@ -74,8 +74,7 @@ private:
 	static bool _menu;
 	enum ips_display _dtype;
 	static int tick;
-	static void deltaDrawBar( t_bar bar, int origin, int y, int r, int g, int b );
-	static void drawTeBar( int y1, int y2, int r, int g, int b );
+
 	static void setTeBuf( int y1, int y2, int r, int g, int b );
 	static void drawTeBuf();
 

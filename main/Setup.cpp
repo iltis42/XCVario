@@ -53,6 +53,11 @@ void Setup::factorySetting()
 		_setup._s2f_speed = 100.0;
 		_setup._audio_mode = 3;
 		_setup._glider_type = 0;
+		_setup._ps_display = 1;
+		_setup._bat_low_volt = 11.5;
+		_setup._bat_red_volt = 11.75;
+		_setup._bat_yellow_volt = 12.0;
+		_setup._bat_full_volt = 12.8;
 		printf("sefault _polar %d\n", Polars::numPolars() );
 		_setup._polar = Polars::getPolar(0); // default user polar
 		memset( _setup._bt_name, 0, sizeof( _setup._bt_name) );

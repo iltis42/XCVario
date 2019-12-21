@@ -53,7 +53,7 @@ const int   S2F_TRISIZE = 70; // triangle size quality up/down
 
 #define VARBARGAP (HEADFONTH+(HEADFONTH/2)+2)
 #define MAXS2FTRI 43
-#define MAXTEBAR ((DISPLAY_H/2)-VARBARGAP-4)
+#define MAXTEBAR ((DISPLAY_H-(VARBARGAP*2))/2)
 
 #define YALT (YS2F+S2FFONTH+HEADFONTH+GAP+2*MAXS2FTRI +25 )
 
@@ -402,19 +402,23 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		vTaskDelay(1);
 	}
 	// Battery Symbol
-	int charge = (int)(( volt - LOWBAT )*100)/( FULLBAT - LOWBAT );
-	if(charge < 0)
-		charge = 0;
-	if( charge > 100 )
-		charge = 100;
-	if ( chargealt != charge ) {
+	int chargev = (int)( volt *10 );
+	if ( chargealt != chargev ) {
+		int charge = (int)(( volt - _setup->get()->_bat_low_volt )*100)/( _setup->get()->_bat_full_volt - _setup->get()->_bat_low_volt );
+		if(charge < 0)
+			charge = 0;
+		if( charge > 100 )
+			charge = 100;
+		int yellow =  (int)(( _setup->get()->_bat_yellow_volt - _setup->get()->_bat_low_volt )*100)/( _setup->get()->_bat_full_volt - _setup->get()->_bat_low_volt );
+		int red =  (int)(( _setup->get()->_bat_red_volt - _setup->get()->_bat_low_volt )*100)/( _setup->get()->_bat_full_volt - _setup->get()->_bat_low_volt );
+
 		ucg->drawBox( DISPLAY_W-40,DISPLAY_H-12, 36, 12  );  // Bat body square
 		ucg->drawBox( DISPLAY_W-4,DISPLAY_H-9, 3, 6  );      // Bat pluspole pimple
-		if ( charge > 25 )  // >25% grün
+		if ( charge > yellow )  // >25% grün
 			ucg->setColor( COLOR_GREEN ); // green
-		else if ( charge < 25 && charge > 10 )
+		else if ( charge < yellow && charge > red )
 			ucg->setColor( COLOR_YELLOW ); //  yellow
-		else if ( charge < 10 )
+		else if ( charge < red )
 			ucg->setColor( COLOR_RED ); // red
 		int chgpos=(charge*32)/100;
 		if(chgpos <= 4)
@@ -424,9 +428,9 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		ucg->drawBox( DISPLAY_W-40+2+chgpos,DISPLAY_H-10, 32-chgpos, 8  );  // Empty bat bar
 		ucg->setColor( COLOR_WHITE );
 		ucg->setFont(ucg_font_fur14_hf);
-		ucg->setPrintPos(DISPLAY_W-80,DISPLAY_H);
+		ucg->setPrintPos(DISPLAY_W-88,DISPLAY_H);
 		ucg->printf("%3d%%", charge);
-		chargealt = charge;
+		chargealt = chargev;
 		vTaskDelay(1);
 	}
 
@@ -462,26 +466,32 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 
  	if( ty != tyalt )
  	{
- 		setTeBuf(  dmid, _range*_pixpmd+1, COLOR_BLACK );
- 		setTeBuf(  dmid, -(_range*_pixpmd+1), COLOR_BLACK );
+ 		// setTeBuf(  dmid, _range*_pixpmd+1, COLOR_BLACK );
+ 		// setTeBuf(  dmid, -(_range*_pixpmd+1), COLOR_BLACK );
+ 		setTeBuf(  dmid, MAXTEBAR, COLOR_BLACK );
+ 		setTeBuf(  dmid, -MAXTEBAR, COLOR_BLACK );
 
- 		setTeBuf(  dmid, py, COLOR_BLUE );
+ 		if( _setup->get()->_ps_display )
+ 			setTeBuf(  dmid, py, COLOR_BLUE );
  		if( ty > 0 ){
  			setTeBuf(  dmid, ty, COLOR_GREEN );
- 			setTeBuf(  dmid, py, COLOR_GREEN );
+ 			if( _setup->get()->_ps_display )
+ 				setTeBuf(  dmid, py, COLOR_GREEN );
  		}
  		else {
- 			if( ty > py ){
- 			    setTeBuf(  dmid, ty, COLOR_BLUE );
- 				setTeBuf(  dmid+ty, py-ty, COLOR_GREEN );
- 			}
- 			else
- 			{
- 				 setTeBuf(  dmid, py, COLOR_BLUE );
-  				 setTeBuf(  dmid+py, ty-py, COLOR_RED );
- 			}
+ 			if( _setup->get()->_ps_display ) {
+				if( ty > py ){
+					setTeBuf(  dmid, ty, COLOR_BLUE );
+					setTeBuf(  dmid+ty, py-ty, COLOR_GREEN );
+				}
+				else
+				{
+					 setTeBuf(  dmid, py, COLOR_BLUE );
+					 setTeBuf(  dmid+py, ty-py, COLOR_RED );
+				}
+ 			}else
+ 				setTeBuf(  dmid, ty, COLOR_RED );
  		}
-
  		drawTeBuf();
 
 		// Small triangle pointing to actual vario value
@@ -520,7 +530,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
  		{
 			if( (speed%20) == 0 && (speed >= 0) ) {
 				ucg->setColor( COLOR_BLACK );
-				ucg->drawBox( FIELD_START+6,dmid+(speed-ias)-(fh/2)-6, IASLEN-6, fh+12 );
+				ucg->drawBox( FIELD_START+6,dmid+(speed-ias)-(fh/2)-6, IASLEN-6, fh+14 );
 				ucg->setColor(  COLOR_WHITE  );
 				ucg->setPrintPos(FIELD_START+8,dmid+(speed-ias)+(fh/2));
 				ucg->printf("%3d ""-", speed);

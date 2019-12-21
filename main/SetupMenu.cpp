@@ -386,7 +386,14 @@ void SetupMenu::setup( )
 			0.5, 10.0,
 			0.1 );
 	vda->setHelp("Response time, time constant of Vario low pass filter");
-	vae->addMenu( vda );
+    vae->addMenu( vda );
+
+	SetupMenuSelect * sink = new SetupMenuSelect( 	"Polar Sink",
+					&_setup->get()->_ps_display );
+	sink->setHelp("Show polar sink rate together with TE in Vario bar");
+	sink->addEntry( "DISABLE");
+	sink->addEntry( "ENABLE");
+	vae->addMenu( sink );
 
 // Bluetooth
 	SetupMenu * bt = new SetupMenu( 	"Bluetooth"  );
@@ -524,15 +531,6 @@ void SetupMenu::setup( )
 	SetupMenu * sy = new SetupMenu( "System" );
 	MenuEntry* sye = mm->addMenu( sy );
 
-	/*  Since its acurate after Factory adj, can be removed.
-	SetupMenuValFloat * voltadj = new SetupMenuValFloat( 	"BatV Adj",
-				&_setup->get()->_voltmeter_adj,
-				"Volt",
-				-1.2, 1.2,
-				0.1 );
-	voltadj->setHelp("Option to adjust voltmeter to compensate drop on line");
-	sye->addMenu( voltadj );
-	*/
 	printf("Factory adjust: %0.5f\n", _setupv->get()->_factory_volt_adjust );
 	float fva = _setupv->get()->_factory_volt_adjust;
 	if( abs(fva - 0.00815) < 0.00001 ) {
@@ -547,15 +545,34 @@ void SetupMenu::setup( )
 	sye->addMenu( fvoltadj );
 	}
 
-	SetupMenuSelect * fa = new SetupMenuSelect( 	"Factory",
+	SetupMenuSelect * fa = new SetupMenuSelect( 	"Factory Reset",
 				&_setup->get()->_factory_reset, true );
 	fa->addEntry( "Cancel");
 	fa->addEntry( "ResetAll");
 	sye->addMenu( fa );
 
+	SetupMenu * bat = new SetupMenu( "Battery Limits" );
+	bat->setHelp( "Adjust corresponding voltage for battery symbol display low,red,yellow and full");
+    sye->addMenu( bat );
+
+	SetupMenuValFloat * blow = new SetupMenuValFloat(
+				"Battery Low", &_setup->get()->_bat_low_volt, "Volt ", 0.0, 28.0, 0.1 );
+	SetupMenuValFloat * bred = new SetupMenuValFloat(
+				"Battery Red", &_setup->get()->_bat_red_volt, "Volt ", 0.0, 28.0, 0.1  );
+	SetupMenuValFloat * byellow = new SetupMenuValFloat(
+				"Battery Yellow", &_setup->get()->_bat_yellow_volt, "Volt ", 0.0, 28.0, 0.1 );
+	SetupMenuValFloat * bfull = new SetupMenuValFloat(
+				"Battery Full", &_setup->get()->_bat_full_volt, "Volt ", 0.0, 28.0, 0.1  );
+
+	bat->addMenu(blow);
+	bat->addMenu(bred);
+	bat->addMenu(byellow);
+	bat->addMenu(bfull);
+
+
 	Version V;
 	static uint8_t select_dummy = 0;
-	SetupMenuSelect * ver = new SetupMenuSelect( 	"Version",
+	SetupMenuSelect * ver = new SetupMenuSelect( 	"Software Version",
 					&select_dummy, false, 0, false );
 	ver->addEntry( V.version() );
 	sye->addMenu( ver );

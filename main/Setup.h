@@ -42,6 +42,11 @@ typedef struct {
 	uint8_t _glider_type;     // 0 = Custom Polar
 	t_polar _polar;
 	float   _offset;
+	uint8_t _ps_display;
+	float   _bat_low_volt;
+	float   _bat_red_volt;
+	float   _bat_yellow_volt;
+	float   _bat_full_volt;
 	uint32_t _checksum;
 } setup_t;
 

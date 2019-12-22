@@ -39,6 +39,12 @@
 #define COLOR_BLUE    0,0,255
 
 */
+#define DISPLAY_H 320
+#define DISPLAY_W 240
+
+#define TEGAP 26
+#define TEMIN TEGAP
+#define TEMAX DISPLAY_H-TEGAP
 
 
 enum ips_display { ILI9341 };
@@ -74,6 +80,24 @@ private:
 	static bool _menu;
 	enum ips_display _dtype;
 	static int tick;
+	static ucg_color_t colors[TEMAX+1];
+	static ucg_color_t colorsalt[TEMAX+1];
+
+	// local variabls for dynamic display
+	static int _te;
+	static int s2falt;
+	static int s2fdalt;
+	static int prefalt;
+	static int chargealt;
+	static int btqueue;
+	static int tempalt;
+	static int mcalt;
+	static bool s2fmodealt;
+	static int s2fclipalt;
+	static int iasalt;
+	static int yposalt;
+	static int tyalt;
+	static int pyalt;
 
 	static void setTeBuf( int y1, int y2, int r, int g, int b );
 	static void drawTeBuf();

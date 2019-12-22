@@ -68,15 +68,37 @@ int S2FST = 45;
 int IASLEN = 0;
 static int fh;
 
-#define TEGAP 26
-#define TEMIN TEGAP
-#define TEMAX DISPLAY_H-TEGAP
+extern xSemaphoreHandle spiMutex;
 
-ucg_color_t colors[TEMAX+1];
-ucg_color_t colorsalt[TEMAX+1];
+#define PMLEN 24
+
+ucg_color_t IpsDisplay::colors[TEMAX+1];
+ucg_color_t IpsDisplay::colorsalt[TEMAX+1];
 
 
 Ucglib_ILI9341_18x240x320_HWSPI *IpsDisplay::ucg = 0;
+
+int IpsDisplay::_te=0;
+int IpsDisplay::s2falt=-1;
+int IpsDisplay::s2fdalt=0;
+int IpsDisplay::prefalt=0;
+int IpsDisplay::chargealt=-1;
+int IpsDisplay::btqueue=-1;
+int IpsDisplay::tempalt = -2000;
+int IpsDisplay::mcalt = -100;
+bool IpsDisplay::s2fmodealt = false;
+int IpsDisplay::s2fclipalt = 0;
+int IpsDisplay::iasalt = -1;
+int IpsDisplay::yposalt = 0;
+int IpsDisplay::tyalt = 0;
+int IpsDisplay::pyalt = 0;
+
+float IpsDisplay::_range_clip = 0;
+int   IpsDisplay::_divisons = 5;
+Setup *IpsDisplay::_setup = 0;
+float IpsDisplay::_range = 5;
+
+
 
 IpsDisplay::IpsDisplay( Ucglib_ILI9341_18x240x320_HWSPI *aucg ) {
     ucg = aucg;
@@ -94,16 +116,10 @@ IpsDisplay::IpsDisplay( Ucglib_ILI9341_18x240x320_HWSPI *aucg ) {
 IpsDisplay::~IpsDisplay() {
 }
 
-float IpsDisplay::_range_clip = 0;
-int   IpsDisplay::_divisons = 5;
-Setup *IpsDisplay::_setup = 0;
-float IpsDisplay::_range = 5;
 
 void IpsDisplay::drawArrowBox( int x, int y, bool arightside ){
 	int fh = ucg->getFontAscent();
 	int fl = ucg->getStrWidth("123");
-	// S2FST = fl+fh/2+4;
-	// ucg->drawFrame( x,y-(fh/2)-3,fl+4, fh+6 );
 	if( arightside )
 		ucg->drawTriangle( x+fl+4,y-(fh/2)-3,x+fl+4,y+(fh/2)+3,x+fl+4+fh/2,y );
 	else
@@ -235,31 +251,8 @@ void IpsDisplay::setup()
 }
 
 
-// TODO  move to class
-int _te=0;
-
-int s2falt=-1;
-int s2fdalt=0;
-int prefalt=0;
-int tevlalt=0;
-int chargealt=-1;
-int btqueue=-1;
-int tempalt = -2000;
-int mcalt = -100;
-bool s2fmodealt = false;
-int s2fclipalt = 0;
-int iasalt = -1;
-int yposalt = 0;
-int tyalt = 0;
-int yalt[2] = { dmid, dmid };
-int originalt[2] = { dmid, dmid };
-int yold = 0;
-int pyalt = 0;
 
 
-extern xSemaphoreHandle spiMutex;
-
-#define PMLEN 24
 
 void IpsDisplay::redrawValues()
 {
@@ -274,10 +267,6 @@ void IpsDisplay::redrawValues()
 	iasalt = -1;
 	prefalt = -1;
 	tyalt = 0;
-	originalt[0] = dmid;
-	originalt[1] = dmid;
-	yalt[0] = 0;
-	yalt[1] = 0;
 	for( int l=TEMIN-1; l<=TEMAX; l++){
 		colors[l].color[0] = 0;
 		colors[l].color[1] = 0;

@@ -101,6 +101,7 @@ private:
 
 	static void setTeBuf( int y1, int y2, int r, int g, int b );
 	static void drawTeBuf();
+	static void drawGaugeTriangle( int y, int r, int g, int b, bool s2f=false );
 
 };
 

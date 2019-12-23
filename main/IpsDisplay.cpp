@@ -250,7 +250,17 @@ void IpsDisplay::setup()
 	_range_clip = _range;
 }
 
-
+void IpsDisplay::drawGaugeTriangle( int y, int r, int g, int b, bool s2f ) {
+	ucg->setColor( r,g,b );
+	if( s2f )
+		ucg->drawTriangle( DISPLAY_LEFT+4+bw+3+TRISIZE,  dmid+y,
+						   DISPLAY_LEFT+4+bw+3, dmid+y+TRISIZE,
+						   DISPLAY_LEFT+4+bw+3, dmid+y-TRISIZE );
+	else
+		ucg->drawTriangle( DISPLAY_LEFT+4+bw+3,         dmid-y,
+						   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-y+TRISIZE,
+						   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-y-TRISIZE );
+}
 
 
 
@@ -448,11 +458,26 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		vTaskDelay(1);
 	}
 
-	// TE Stuff
+ 	int s2fclip = s2fd;
+	if( s2fclip > MAXS2FTRI )
+		s2fclip = MAXS2FTRI;
+	if( s2fclip < -MAXS2FTRI )
+		s2fclip = -MAXS2FTRI;
 
  	int ty = (int)(te*_pixpmd);
  	int py = (int)(polar_sink*_pixpmd);
+    // Gauge Triangle
+	if( s2fmode !=  s2fmodealt ){
+ 		drawGaugeTriangle( tyalt, COLOR_BLACK );
+ 		drawGaugeTriangle( s2fclipalt, COLOR_BLACK, true );
+ 		drawGaugeTriangle( ty, COLOR_BLACK );
+ 		drawGaugeTriangle( s2fclip, COLOR_BLACK, true );
+ 		s2fmodealt = s2fmode;
+ 		vTaskDelay(1);
+ 	}
 
+
+ 	// TE Stuff
  	if( ty != tyalt )
  	{
  		// setTeBuf(  dmid, _range*_pixpmd+1, COLOR_BLACK );
@@ -486,27 +511,15 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		// Small triangle pointing to actual vario value
 		if( !s2fmode ){
 			// First blank the old one
-			ucg->setColor( COLOR_BLACK );
-			ucg->drawTriangle( DISPLAY_LEFT+4+bw+3,         dmid-tyalt,
-							   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-tyalt+TRISIZE,
-							   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-tyalt-TRISIZE );
-			ucg->setColor(  COLOR_WHITE  );
-			ucg->drawTriangle( DISPLAY_LEFT+4+bw+3,         dmid-ty,
-							   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-ty+TRISIZE,
-							   DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-ty-TRISIZE );
+			drawGaugeTriangle( tyalt, COLOR_BLACK );
+			drawGaugeTriangle( ty, COLOR_WHITE );
 		}
 	    tyalt = ty;
 	    pyalt = py;
 	    vTaskDelay(1);
 
 	}
- 	if( s2fmode !=  s2fmodealt ){
- 		ucg->setColor( COLOR_BLACK );
- 		// clear whole area
- 		ucg->drawBox( DISPLAY_LEFT+4+bw+3, dmid-MAXS2FTRI, TRISIZE, 2*MAXS2FTRI  );
- 		s2fmodealt = s2fmode;
- 		vTaskDelay(1);
- 	}
+
 
     // IAS
  	if( iasalt != ias ) {
@@ -535,25 +548,14 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
  	}
  	// S2F command trend triangle
  	if( (int)s2fd != s2fdalt ) {
-        // Clip S2F delta value
- 		int s2fclip = s2fd;
-		if( s2fclip > MAXS2FTRI )
-			s2fclip = MAXS2FTRI;
-		if( s2fclip < -MAXS2FTRI )
-			s2fclip = -MAXS2FTRI;
 
         // Arrow pointing there
 		if( s2fmode ){
 			// erase old
-			ucg->setColor( COLOR_BLACK );
-			ucg->drawTriangle( DISPLAY_LEFT+4+bw+3+TRISIZE,  dmid+s2fclipalt,
-							   DISPLAY_LEFT+4+bw+3, dmid+s2fclipalt+TRISIZE,
-							   DISPLAY_LEFT+4+bw+3, dmid+s2fclipalt-TRISIZE );
-			ucg->setColor(  COLOR_WHITE  );
+			drawGaugeTriangle( s2fclipalt, COLOR_BLACK, true );
 			// Draw a new one at current position
-			ucg->drawTriangle( DISPLAY_LEFT+4+bw+3+TRISIZE, dmid+(int)s2fclip,
-							   DISPLAY_LEFT+4+bw+3, dmid+(int)s2fclip+TRISIZE,
-							   DISPLAY_LEFT+4+bw+3, dmid+(int)s2fclip-TRISIZE );
+			drawGaugeTriangle( s2fclip, COLOR_WHITE, true );
+			ucg->setColor(  COLOR_WHITE  );
 		}
 		vTaskDelay(1);
 		// S2F value

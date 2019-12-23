@@ -30,7 +30,18 @@ extern PWMOut pwm1;
 extern S2F s2f;
 extern xSemaphoreHandle spiMutex;
 Ucglib_ILI9341_18x240x320_HWSPI *MenuEntry::ucg = 0;
+static char rentry[25];
+SetupMenuSelect * audio_range_sm = 0;
 
+
+
+int update_rentry(SetupMenuValFloat * p)
+{
+	char rentry[25];
+    sprintf( rentry, "Variable (%d m/s)", (int)(p->_setup->get()->_range) );
+    audio_range_sm->updateEntry( rentry, 1 );
+    return 0;
+}
 
 // Action Routines
 int contrast( SetupMenuValFloat * p )
@@ -69,6 +80,7 @@ int factv_adj( SetupMenuValFloat * p )
 	return 0;
 }
 
+
 int polar_adj( SetupMenuValFloat * p )
 {
     s2f.change_polar();
@@ -80,6 +92,7 @@ int polar_select( SetupMenuSelect * p )
     s2f.select_polar();
     return 0;
 }
+
 
 int bal_adj( SetupMenuValFloat * p )
 {
@@ -376,7 +389,7 @@ void SetupMenu::setup( )
 			&_setup->get()->_range,
 			"m/s",
 			1.0, 30.0,
-			1 );
+			1, update_rentry );
 	vga->setHelp("Upper and lower value for Vario graphic display region");
 	vae->addMenu( vga );
 
@@ -449,10 +462,13 @@ void SetupMenu::setup( )
 	oc->setHelp("Maximum tone frequency variation");
 	SetupMenuSelect * ar = new SetupMenuSelect( 	"Range",
 						&_setup->get()->_audio_range );
-		ar->addEntry( "Fix 5 m/s");
-		ar->addEntry( "Variable");
-		ar->setHelp("Select either fix (5m/s) or variable Audio range according to current vario setting");
-		ade->addMenu( ar );
+
+	audio_range_sm = ar;
+	sprintf( rentry, "Variable (%d m/s)", (int)(_setup->get()->_range) );
+	ar->addEntry( "Fix 5 m/s");
+	ar->addEntry( rentry );
+	ar->setHelp("Select either fix (5m/s) or variable Audio range according to current vario setting");
+	ade->addMenu( ar );
 
 	SetupMenu * db = new SetupMenu( "Deadband" );
 	MenuEntry* dbe = ade->addMenu( db );

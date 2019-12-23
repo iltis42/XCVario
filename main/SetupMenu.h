@@ -110,6 +110,7 @@ public:
 
 	void addEntry( String ent ) {  _values.push_back( ent );
 										_numval++; };
+	void updateEntry( String ent, int num ) {  _values[ num ] = ent; };
 	void up();  // step up to parent
 	void down();
 	void press();

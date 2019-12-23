@@ -570,7 +570,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		char s[10];
 		sprintf(s,"%+3d  ",(int)(s2fdalt+0.5));
 		fl=ucg->getStrWidth(s);
-		ucg->setPrintPos( FIELD_START+S2FST+(S2F_TRISIZE/2)-fl/2,yposalt );
+		ucg->setPrintPos( FIELD_START+S2FST+(S2F_TRISIZE/2)-fl/2-5,yposalt );
 		ucg->printf(s);
 		int ypos;
 		if( s2fd < 0 )
@@ -578,12 +578,13 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		else
 			ypos = dmid+s2fclip+2+fa;
         // new S2F Delta val
-		ucg->setColor(  COLOR_WHITE  );
-
-		sprintf(s,"%+3d  ",(int)(s2fd+0.5));
-		fl=ucg->getStrWidth(s);
-		ucg->setPrintPos( FIELD_START+S2FST+(S2F_TRISIZE/2)-fl/2,ypos );
-		ucg->printf(s);
+		if( abs(s2fd) > 10 ) {
+			ucg->setColor(  COLOR_WHITE  );
+			sprintf(s," %+3d  ",(int)(s2fd+0.5));
+			fl=ucg->getStrWidth(s);
+			ucg->setPrintPos( FIELD_START+S2FST+(S2F_TRISIZE/2)-fl/2,ypos );
+			ucg->printf(s);
+		}
 		vTaskDelay(1);
 		yposalt = ypos;
  		ucg->setClipRange( FIELD_START+S2FST, dmid-MAXS2FTRI, S2F_TRISIZE, (MAXS2FTRI*2)+1 );
@@ -608,15 +609,14 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
  		}
  		vTaskDelay(1);
  		// draw new S2F command triangle
- 		if( 1 ){
- 			if( s2fd < 0 )
- 				ucg->setColor( LIGHT_GREEN );
- 			else
- 				ucg->setColor( COLOR_RED );
-			ucg->drawTriangle( FIELD_START+S2FST, dmid,
-							   FIELD_START+S2FST+S2F_TRISIZE, dmid,
-							   FIELD_START+S2FST+(S2F_TRISIZE/2), dmid+(int)s2fd );
- 		}
+		if( s2fd < 0 )
+			ucg->setColor( LIGHT_GREEN );
+		else
+			ucg->setColor( COLOR_RED );
+		ucg->drawTriangle( FIELD_START+S2FST, dmid,
+						   FIELD_START+S2FST+S2F_TRISIZE, dmid,
+						   FIELD_START+S2FST+(S2F_TRISIZE/2), dmid+(int)s2fd );
+
  		vTaskDelay(1);
  		ucg->undoClipRange();
 

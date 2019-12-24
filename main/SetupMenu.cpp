@@ -770,7 +770,7 @@ void SetupMenuSelect::down(){
 			if( (*_select) >  0 )
 				(*_select)--;
 			ucg->setPrintPos( 1, 50 );
-			ucg->printf("%s                ",_values[*_select].c_str());
+			ucg->printf("%s                  ",_values[*_select].c_str());
 			xSemaphoreGive(spiMutex );
 	}else {
 		ucg->setColor(COLOR_BLACK);
@@ -794,7 +794,7 @@ void SetupMenuSelect::up(){
 		if( (*_select) <  _numval-1 )
 			(*_select)++;
 		ucg->setPrintPos( 1, 50 );
-		ucg->printf("%s                ", _values[*_select].c_str());
+		ucg->printf("%s                   ", _values[*_select].c_str());
 		xSemaphoreGive(spiMutex );
 	}else {
 		xSemaphoreTake(spiMutex,portMAX_DELAY );

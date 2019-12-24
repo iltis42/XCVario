@@ -424,10 +424,10 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 			chgpos = 4;
 		ucg->drawBox( DISPLAY_W-40+2,DISPLAY_H-10, chgpos, 8  );  // Bat charge state
 		ucg->setColor( DARK_GREY );
-		ucg->drawBox( DISPLAY_W-40+2+chgpos,DISPLAY_H-10, 32-chgpos, 8  );  // Empty bat bar
+		ucg->drawBox( DISPLAY_W-40+2+chgpos,DISPLAY_H-10, 32-chgpos, 8 );  // Empty bat bar
 		ucg->setColor( COLOR_WHITE );
 		ucg->setFont(ucg_font_fur14_hf);
-		ucg->setPrintPos(DISPLAY_W-88,DISPLAY_H);
+		ucg->setPrintPos(DISPLAY_W-86,DISPLAY_H);
 		ucg->printf("%3d%%", charge);
 		chargealt = chargev;
 		vTaskDelay(1);

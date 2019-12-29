@@ -17,6 +17,8 @@
 #include "Polars.h"
 
 
+typedef enum display_type { UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P } display_t;
+
 typedef struct {
 	float _speedcal;
 	float _vario_delay;
@@ -47,6 +49,7 @@ typedef struct {
 	float   _bat_red_volt;
 	float   _bat_yellow_volt;
 	float   _bat_full_volt;
+	uint8_t _display_type;
 	uint32_t _checksum;
 } setup_t;
 

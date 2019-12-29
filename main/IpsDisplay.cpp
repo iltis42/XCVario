@@ -67,6 +67,7 @@ const int   S2F_TRISIZE = 70; // triangle size quality up/down
 int S2FST = 45;
 int IASLEN = 0;
 static int fh;
+display_t IpsDisplay::display_type = UNIVERSAL;
 
 extern xSemaphoreHandle spiMutex;
 
@@ -130,6 +131,10 @@ void IpsDisplay::drawArrowBox( int x, int y, bool arightside ){
 void IpsDisplay::initDisplay() {
 	printf("IpsDisplay::initDisplay()\n");
 	setup();
+	if( _setup->get()->_display_type == ST7789_2INCH_12P )
+		ucg->setRedBlueTwist( true );
+	if( _setup->get()->_display_type == ILI9341_TFT_18P )
+		ucg->invertDisplay( true );
 	ucg->setColor( COLOR_BLACK );
 	ucg->drawBox( 0,0,240,320 );
 
@@ -214,6 +219,7 @@ void IpsDisplay::begin( Setup* asetup ) {
 	printf("IpsDisplay::begin\n");
 	ucg->begin(UCG_FONT_MODE_SOLID);
 	_setup = asetup;
+	display_type = (display_t)(_setup->get()->_display_type);
 	setup();
 }
 

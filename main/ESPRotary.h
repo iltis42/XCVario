@@ -24,7 +24,7 @@ public:
 	virtual void down() = 0;
 	virtual void press() = 0;
 	virtual void release() = 0;
-	virtual void longP() = 0;
+	virtual void longPress() = 0;
 	virtual ~RotaryObserver() {};
 private:
 };
@@ -61,7 +61,7 @@ private:
 	size_t sz = 0 ;
 };
 
-enum _event { PRESS, RELEASE, UP, DOWN, ERROR };
+enum _event { PRESS, LONG_PRESS, RELEASE, UP, DOWN, ERROR };
 
 class ESPRotary {
 public:
@@ -90,6 +90,7 @@ private:
     static int n;
     static long lastmilli;
     static int errors;
+    static uint64_t swtime;
 };
 
 #endif

@@ -28,7 +28,7 @@ public:
 	};
 	virtual void display( int mode=0 ) = 0;
 	virtual void release() { display(); };
-	virtual void longP() {};
+	virtual void longPress() {};
 	virtual ~MenuEntry() {};
 	MenuEntry* addMenu( MenuEntry * item);
 	MenuEntry* findMenu( String title, MenuEntry* start=root  );
@@ -60,6 +60,7 @@ public:
 	static bool _menu_enabled;
 	int    highlight;
 	bool   pressed;
+	bool   long_pressed;
 	char   *helptext;
 	unsigned char y;
 	static Ucglib_ILI9341_18x240x320_HWSPI *ucg;
@@ -78,6 +79,7 @@ public:
 	void up();  // step up to parent
 	void down();
 	void press();
+	void longPress();
 
 	virtual ~SetupMenu() {};
 };

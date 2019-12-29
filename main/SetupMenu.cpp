@@ -112,12 +112,11 @@ int mc_adj( SetupMenuValFloat * p )
 }
 
 SetupMenu::SetupMenu(){
-
-	// _rotary->attach(this);
 	highlight = -1;
 	_parent = 0;
 	y = 0;
 	helptext = 0;
+	long_pressed = false;
 }
 
 SetupMenu::SetupMenu( String title ) {
@@ -296,6 +295,10 @@ void SetupMenu::up(){
 	pressed = true;
 	xSemaphoreGive(spiMutex );
 	// display();
+}
+
+void SetupMenu::longPress(){
+	long_pressed = true;
 }
 
 void SetupMenu::press(){
@@ -550,15 +553,15 @@ void SetupMenu::setup( )
 	printf("Factory adjust: %0.5f\n", _setupv->get()->_factory_volt_adjust );
 	float fva = _setupv->get()->_factory_volt_adjust;
 	if( abs(fva - 0.00815) < 0.00001 ) {
-	printf("Now Factory adjust ADC\n");
-	SetupMenuValFloat * fvoltadj = new SetupMenuValFloat( 	"Factory VAdj",
-					&_setupv->get()->_factory_volt_adjust,
-					"%",
-					-25.0, 25.0,
-					0.01,
-					factv_adj);
-	fvoltadj->setHelp("Option to fine factory adjust voltmeter");
-	sye->addMenu( fvoltadj );
+		printf("Now Factory adjust ADC\n");
+		SetupMenuValFloat * fvoltadj = new SetupMenuValFloat( 	"Factory VAdj",
+						&_setupv->get()->_factory_volt_adjust,
+						"%",
+						-25.0, 25.0,
+						0.01,
+						factv_adj);
+		fvoltadj->setHelp("Option to fine factory adjust voltmeter");
+		sye->addMenu( fvoltadj );
 	}
 
 	SetupMenuSelect * fa = new SetupMenuSelect( 	"Factory Reset",
@@ -585,6 +588,17 @@ void SetupMenu::setup( )
 	bat->addMenu(byellow);
 	bat->addMenu(bfull);
 
+	 // UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P
+	if( _setup->get()->_display_type == UNIVERSAL )
+	{
+		SetupMenuSelect * dtype = new SetupMenuSelect( 	"Display Type", &_setup->get()->_display_type );
+		dtype->setHelp( "Factory setup for corresponding display type used");
+		dtype->addEntry( "UNIVERSAL");
+		dtype->addEntry( "RAYSTAR_RFJ240L_40P");
+		dtype->addEntry( "ST7789_2INCH_12P");
+		dtype->addEntry( "ILI9341_TFT_18P");
+		sye->addMenu( dtype );
+	}
 
 	Version V;
 	static uint8_t select_dummy = 0;

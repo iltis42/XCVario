@@ -111,6 +111,12 @@ class Ucglib : public Print
     inline ucg_int_t getStrWidth(const char *s)
       { return ucg_GetStrWidth(&ucg, s); }
     
+    static inline void setRedBlueTwist( bool tw )
+    { ucg_TwistRedBlue( tw ); }
+
+    inline void invertDisplay( bool inv )
+      { ucg_InvertDisplay(&ucg, inv ); }
+
     inline void setColor(uint8_t idx, uint8_t r, uint8_t g, uint8_t b)
       { ucg_SetColor(&ucg, idx, r, g, b); }
     inline void setColor(uint8_t r, uint8_t g, uint8_t b)
@@ -127,7 +133,6 @@ class Ucglib : public Print
     
     inline void powerDown(void) { ucg_PowerDown(&ucg); }
     inline void powerUp(void) { ucg_PowerUp(&ucg); }
-    
     
     
     // Procedures, which are always available as part of the BASIC drawing procedure set

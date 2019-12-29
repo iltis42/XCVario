@@ -98,6 +98,7 @@ private:
 	static int yposalt;
 	static int tyalt;
 	static int pyalt;
+	static display_t display_type;
 
 	static void setTeBuf( int y1, int y2, int r, int g, int b );
 	static void drawTeBuf();

@@ -83,6 +83,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 
 #ifdef __cplusplus
@@ -452,6 +453,8 @@ struct _ucg_t
 /* draw  bit pattern with foreground (idx 1) and background (idx 0) color */
 //#define UCG_MSG_DRAW_L90BF 25	 /* can be commented, used by ucg_DrawBitmapLine */
 
+#define UCG_COM_MSG_INVERT_DISPLAY 50
+#define UCG_COM_MSG_NORMAL_DISPLAY 51
 
 #define UCG_COM_STATUS_MASK_POWER 8
 #define UCG_COM_STATUS_MASK_RESET 4
@@ -577,8 +580,12 @@ ucg_int_t ucg_sdl_dev_cb(ucg_t *ucg, ucg_int_t msg, void *data);
 
 /*================================================*/
 /* ucg_pixel.c */
+
+
 void ucg_SetColor(ucg_t *ucg, uint8_t idx, uint8_t r, uint8_t g, uint8_t b);
 void ucg_DrawPixel(ucg_t *ucg, ucg_int_t x, ucg_int_t y);
+void ucg_TwistRedBlue( bool twist );
+void ucg_InvertDisplay(ucg_t *ucg, bool invert );
 
 /*================================================*/
 /* ucg_line.c */

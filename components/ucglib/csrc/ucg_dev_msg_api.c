@@ -45,6 +45,8 @@ void ucg_PowerDown(ucg_t *ucg)
   }
 }
 
+
+
 ucg_int_t ucg_PowerUp(ucg_t *ucg)
 {
   ucg_int_t r;
@@ -58,6 +60,15 @@ ucg_int_t ucg_PowerUp(ucg_t *ucg)
   }
   return r;
 }
+
+void ucg_InvertDisplay(ucg_t *ucg, bool inv)
+{
+	if( inv )
+		ucg->device_cb(ucg, UCG_COM_MSG_INVERT_DISPLAY, NULL);
+	else
+		ucg->device_cb(ucg, UCG_COM_MSG_NORMAL_DISPLAY, NULL);
+}
+
 
 void ucg_SetClipBox(ucg_t *ucg, ucg_box_t *clip_box)
 {

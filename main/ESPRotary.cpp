@@ -24,6 +24,7 @@ int ESPRotary::_switch_state=1;
 int ESPRotary::n=0;
 long ESPRotary::lastmilli=0;
 int ESPRotary::errors=0;
+uint64_t ESPRotary::swtime=0;
 SemaphoreHandle_t ESPRotary::xBinarySemaphore;
 
 
@@ -88,6 +89,12 @@ void ESPRotary::informObservers( void * args )
 				observers[i]->press();
 			printf("End Switch pressed action\n");
 		}
+		else if ( info == LONG_PRESS ){
+					printf("Switch long pressed action\n");
+					for (int i = 0; i < observers.size(); i++)
+						observers[i]->longPress();
+					printf("End Switch long pressed action\n");
+				}
 		else if ( info == ERROR ){
 					printf("ERROR ROTARY SEQ %d\n", errors++ );
 		}
@@ -138,12 +145,19 @@ void ESPRotary::readPos(void * args) {
 		if( _switch_state != newsw ){
 			_switch_state = newsw;
 			if( newsw ){      // pullup, so not pressed is 1
+				if( (swtime != 0) && (rotary.time - swtime) > 3000 ){
+					var = LONG_PRESS;
+					xQueueSend(q2, &var, portMAX_DELAY );
+					swtime = 0;
+					}
 				var = RELEASE;
 				xQueueSend(q2, &var, portMAX_DELAY );
+
 				}
 				else{
 					var = PRESS;
 					xQueueSend(q2, &var, portMAX_DELAY );
+					swtime = rotary.time;
 				}
 		}
 		num = xQueueReceive(q1, &rotary, portMAX_DELAY);
@@ -156,7 +170,7 @@ void ESPRotary::readPos(void * args) {
 void ESPRotary::readPosInt(void * args) {
 	struct _rotbyte var;
 	var.rot = 0;
-	var.time = esp_timer_get_time();
+	var.time = esp_timer_get_time()/1000;
 	int dtv=0;
 	int swv=0;
 	int clkv=0;

@@ -63,6 +63,10 @@ int16_t ucg_com_template_cb(ucg_t *ucg, int16_t msg, uint32_t arg, uint8_t *data
       break;
     case UCG_COM_MSG_SEND_CD_DATA_SEQUENCE:
       break;
+    case UCG_COM_MSG_INVERT_DISPLAY:
+      break;
+    case UCG_COM_MSG_NORMAL_DISPLAY:
+      break;
   }
   return 1;
 }
@@ -73,6 +77,16 @@ void ucg_com_PowerDown(ucg_t *ucg)
   if ( (ucg->com_status & UCG_COM_STATUS_MASK_POWER) != 0 )
     ucg->com_cb(ucg, UCG_COM_MSG_POWER_DOWN, 0, NULL);
   ucg->com_status &= ~UCG_COM_STATUS_MASK_POWER;
+}
+
+void ucg_com_ImvertDisplay(ucg_t *ucg)
+{
+	ucg->com_cb(ucg, UCG_COM_MSG_INVERT_DISPLAY, 0, NULL);
+}
+
+void ucg_com_NormalDisplay(ucg_t *ucg)
+{
+	ucg->com_cb(ucg, UCG_COM_MSG_NORMAL_DISPLAY, 0, NULL);
 }
 
 /*

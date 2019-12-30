@@ -313,8 +313,8 @@ void sensor(void *args){
 
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 5, dpid, 0);
 	sleep( 2 );
-
-	SetupMenuValFloat::showQnhMenu();
+	if( speed < 50.0 )
+		SetupMenuValFloat::showQnhMenu();
 
 	printf("Free Stack: S:%d \n", uxTaskGetStackHighWaterMark( spid ) );
     // delay( 2000 );

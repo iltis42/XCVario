@@ -264,6 +264,13 @@ void MenuEntry::showhelp( int y ){
 }
 
 void SetupMenu::down(){
+	if( selected == this && !_menu_enabled ) {
+		printf("root: down\n");
+		if( _setup->get()->_MC > 0.1 ) {
+			_setup->get()->_MC -= 0.1;
+		    s2f.change_mc_bal();
+		}
+	}
 	if( (selected != this) || !_menu_enabled )
 		return;
 	printf("down %d %d\n", highlight, _childs.size() );
@@ -283,6 +290,14 @@ void SetupMenu::down(){
 }
 
 void SetupMenu::up(){
+	if( selected == this && !_menu_enabled ) {
+		printf("root: up\n");
+		if( _setup->get()->_MC < 9.9 ) {
+			_setup->get()->_MC += 0.1;
+		    s2f.change_mc_bal();
+		}
+	}
+
 	if( (selected != this) || !_menu_enabled )
 		return;
 	printf("SetupMenu::up %d %d\n", highlight, _childs.size() );

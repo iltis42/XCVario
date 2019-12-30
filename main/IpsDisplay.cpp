@@ -393,7 +393,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 			ucg->setColor(COLOR_HEADER);
 			ucg->printf("MC:");
 			ucg->setColor(COLOR_WHITE);
-			ucg->printf("%0.1f", (float)(MC/10) );
+			ucg->printf("%0.1f", ((float)MC)/10 );
 			mcalt=MC;
 			vTaskDelay(1);
 		}

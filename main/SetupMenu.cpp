@@ -95,18 +95,20 @@ int polar_select( SetupMenuSelect * p )
     return 0;
 }
 
-
 int bal_adj( SetupMenuValFloat * p )
 {
     s2f.change_mc_bal();
     float loadinc = (p->_setup->get()->_ballast +100.0)/100.0;
     float newwl = p->_setup->get()->_polar.wingload * loadinc;
+    p->ucg->setFont(ucg_font_fub25_hr);
     xSemaphoreTake(spiMutex,portMAX_DELAY );
-    p->ucg->setPrintPos(1,100);
+    p->ucg->setPrintPos(1,110);
     p->ucg->printf("%0.2f kg/m2", newwl);
 	xSemaphoreGive(spiMutex );
+	p->ucg->setFont(ucg_font_ncenR14_hr);
     return 0;
 }
+
 int mc_adj( SetupMenuValFloat * p )
 {
     s2f.change_mc_bal();
@@ -375,11 +377,11 @@ void SetupMenu::setup( )
 	MenuEntry* mm = root->addMenu( root );
 
 	SetupMenuValFloat * mc = new SetupMenuValFloat(
-			"MC", &_setup->get()->_MC, "m/s",	0.01, 10, 0.1,  mc_adj );
+			"MC", &_setup->get()->_MC, "m/s",	0.01, 9.9, 0.1,  mc_adj );
 	mc->setHelp("Mac Cready value for optimum cruise speed, or average climb rate");
 	mm->addMenu( mc );
 
-	SetupMenuValFloat::qnh_menu = new SetupMenuValFloat( "QNH Setup", &_setup->get()->_QNH, "hPa", 900.0, 1100.0, 0.2, qnh_adj );
+	SetupMenuValFloat::qnh_menu = new SetupMenuValFloat( "QNH Setup", &_setup->get()->_QNH, "hPa", 900.0, 1100.0, 0.250, qnh_adj );
 	SetupMenuValFloat::qnh_menu->setHelp("Setup QNH pressure value from next ATC. On ground you may adjust to airfield altitude.");
 	mm->addMenu( SetupMenuValFloat::qnh_menu );
 
@@ -633,7 +635,7 @@ void MenuEntry::clear()
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setColor(COLOR_BLACK);
 	ucg->drawBox( 0,0,240,320 );
-	ucg->begin(UCG_FONT_MODE_SOLID);
+	// ucg->begin(UCG_FONT_MODE_SOLID);
 	ucg->setFont(ucg_font_ncenR14_hr);
 	ucg->setPrintPos( 1, 30 );
 	ucg->setColor(COLOR_WHITE);
@@ -659,12 +661,8 @@ void SetupMenuValFloat::display( int mode ){
 		return;
 	printf("SetupMenuValFloat display() %d %x\n", pressed, (int)this);
 	uprintf( 5,25, selected->_title.c_str() );
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	ucg->setPrintPos( 1, 75 );
-	ucg->printf("%0.2f %s", *_value, _unit.c_str());
-	xSemaphoreGive(spiMutex );
+	displayVal();
 	y= 75;
-
 	if( _action != 0 )
 		(*_action)( this );
 
@@ -672,7 +670,7 @@ void SetupMenuValFloat::display( int mode ){
 	if(mode == 1){
 		y+=24;
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
-		ucg->setPrintPos( 1, 225 );
+		ucg->setPrintPos( 1, 250 );
 		ucg->print("Saved");
 		xSemaphoreGive(spiMutex );
 	}
@@ -685,10 +683,12 @@ void SetupMenuValFloat::display( int mode ){
 
 void SetupMenuValFloat::displayVal()
 {
+	ucg->setFont(ucg_font_fub25_hr);
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	ucg->setPrintPos( 1, 75 );
-	ucg->printf("%0.2f %s", *_value, _unit.c_str());
+	ucg->setPrintPos( 1, 70 );
+	ucg->printf("%0.2f %s ", *_value, _unit.c_str());
 	xSemaphoreGive(spiMutex );
+	ucg->setFont(ucg_font_ncenR14_hr);
 }
 
 void SetupMenuValFloat::down(){

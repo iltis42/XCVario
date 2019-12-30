@@ -51,8 +51,8 @@ void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
 	gpioConfig.intr_type = GPIO_INTR_ANYEDGE;
 	gpio_config(&gpioConfig);
 	gpio_install_isr_service(0);
-	q1 = xQueueCreate(20, sizeof(struct _rotbyte) );
-	q2 = xQueueCreate(20, sizeof(enum _event));
+	q1 = xQueueCreate(8, sizeof(struct _rotbyte) );
+	q2 = xQueueCreate(8, sizeof(enum _event));
 	rb.push( 0 );
 	rb.push( 0 );
 	gpio_isr_handler_add(clk, ESPRotary::readPosInt, NULL);
@@ -118,10 +118,10 @@ void ESPRotary::readPos(void * args) {
 			dir++;
 		}
 		else if( (rb[0] == 3) && (rb[1] == 0) ) {
-			 printf("Rotary 30\n");
+			 // printf("Rotary 30\n");
 		}
 		else if ( (rb[0] == 2) && (rb[1] == 1) ) {
-			 printf("Rotary 21\n");
+			 // printf("Rotary 21\n");
 		}
 		else {
 			var = ERROR;

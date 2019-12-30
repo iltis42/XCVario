@@ -59,7 +59,7 @@ int qnh_adj( SetupMenuValFloat * p )
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->setFont(ucg_font_fub25_hr);
 	p->ucg->setPrintPos(1,120);
-	p->ucg->printf("%4d m MSL", (int)(alt+0.5) );
+	p->ucg->printf("%4d m ", (int)(alt+0.5) );
 	p->ucg->setFont(ucg_font_ncenR14_hr);
 	xSemaphoreGive(spiMutex );
 	return 0;
@@ -175,7 +175,7 @@ MenuEntry* MenuEntry::addMenu( MenuEntry * item ) {
 		printf("Init root menu\n");
 		root = item;
 		item->_parent = 0;
-		// selected = item;
+		selected = item;
 		return item;
 	}
 	else{
@@ -393,11 +393,11 @@ void SetupMenu::setup( )
 
 	SetupMenuValFloat * mc = new SetupMenuValFloat(
 			"MC", &_setup->get()->_MC, "m/s",	0.01, 9.9, 0.1,  mc_adj );
-	mc->setHelp("Mac Cready value for optimum cruise speed, or average climb rate");
+	mc->setHelp("Default Mac Cready value for optimum cruise speed, or average climb rate");
 	mm->addMenu( mc );
 
 	SetupMenuValFloat::qnh_menu = new SetupMenuValFloat( "QNH Setup", &_setup->get()->_QNH, "hPa", 900.0, 1100.0, 0.250, qnh_adj );
-	SetupMenuValFloat::qnh_menu->setHelp("Setup QNH pressure value from next ATC. On ground you may adjust to airfield altitude.");
+	SetupMenuValFloat::qnh_menu->setHelp("Setup QNH pressure value from next ATC. On ground you may adjust to airfield altitude above MSL.");
 	mm->addMenu( SetupMenuValFloat::qnh_menu );
 
 	SetupMenuValFloat * bal = new SetupMenuValFloat(

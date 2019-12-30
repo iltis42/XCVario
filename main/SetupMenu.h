@@ -25,6 +25,7 @@ public:
 				 pressed = false;
 				 y=0;
 				 helptext=0;
+				 long_pressed = false;
 	};
 	virtual void display( int mode=0 ) = 0;
 	virtual void release() { display(); };
@@ -43,9 +44,9 @@ public:
 	void clear();
 	void uprintf( int x, int y, const char* format, ...);
 	void uprint( int x, int y, const char* str );
+	bool menuEnabled() { return _menu_enabled; };
 
 public:
-
 	std::vector<MenuEntry*>  _childs;
 	MenuEntry *_parent;
 	String _title;
@@ -91,12 +92,14 @@ public:
 	SetupMenuValFloat(  String title, float *value, String unit, float min, float max, float step, int (*action)(SetupMenuValFloat *p) = 0 );
 	void display(int mode=0);
 	void displayVal();
+	static void showQnhMenu();
 
 	void up();  // step up to parent
 	void down();
 	void press();
 	virtual ~SetupMenuValFloat() {};
     float *_value;
+    static SetupMenuValFloat * qnh_menu;
 
 private:
 	float _min, _max, _step;

@@ -145,7 +145,6 @@ void drawDisplay(void *pvParameters){
 
 
 void readBMP(void *pvParameters){
-	display.begin( &mysetup );
 	while (1)
 	{
 		TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -262,6 +261,7 @@ void sensor(void *args){
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	SPI.begin( SPI_SCLK, SPI_MISO, SPI_MOSI, CS_bme280TE );
 	xSemaphoreGive(spiMutex);
+	display.begin( &mysetup );
 
 	printf("BMP280 sensors init..\n");
 
@@ -287,8 +287,9 @@ void sensor(void *args){
 	Version myVersion;
 	printf("Program Version %s\n", myVersion.version() );
 
-	Audio.mute( false );
+	SetupMenuValFloat::showQnhMenu();
 
+	// Audio.mute( false );
 	gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);  // blue LED, maybe use for BT connection
 
 	if( mysetup.get()->_blue_enable ) {
@@ -311,6 +312,9 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 5, dpid, 0);
+	sleep( 2 );
+
+	SetupMenuValFloat::showQnhMenu();
 
 	printf("Free Stack: S:%d \n", uxTaskGetStackHighWaterMark( spid ) );
     // delay( 2000 );

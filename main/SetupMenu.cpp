@@ -57,8 +57,10 @@ int qnh_adj( SetupMenuValFloat * p )
 	float alt = p->_bmp->readAltitude( *(p->_value) );
 	// printf("Setup BA alt=%f QNH=%f\n", alt, *(p->_value)  );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	p->ucg->setPrintPos(1,100);
-	p->ucg->printf("%4d m", (int)(alt+0.5) );
+	p->ucg->setFont(ucg_font_fub25_hr);
+	p->ucg->setPrintPos(1,120);
+	p->ucg->printf("%4d m MSL", (int)(alt+0.5) );
+	p->ucg->setFont(ucg_font_ncenR14_hr);
 	xSemaphoreGive(spiMutex );
 	return 0;
 }
@@ -251,7 +253,7 @@ void MenuEntry::showhelp( int y ){
 				x=1;
 			}
 			xSemaphoreTake(spiMutex,portMAX_DELAY );
-			ucg->setPrintPos(x, 50+y);
+			ucg->setPrintPos(x, 100+y);
 			ucg->print( words[p] );
 			xSemaphoreGive(spiMutex );
 			x+=len+5;
@@ -363,6 +365,9 @@ void SetupMenu::press(){
 	printf("~SetupMenu press()\n");
 }
 
+
+
+
 void SetupMenu::setup( )
 {
 	printf("SetupMenu setup()\n");
@@ -374,10 +379,9 @@ void SetupMenu::setup( )
 	mc->setHelp("Mac Cready value for optimum cruise speed, or average climb rate");
 	mm->addMenu( mc );
 
-	SetupMenuValFloat * qnh = new SetupMenuValFloat(
-			"QNH", &_setup->get()->_QNH, "hPa",	900.0, 1100.0, 0.2, qnh_adj );
-	qnh->setHelp("QNH pressure value from next ATC");
-	mm->addMenu( qnh );
+	SetupMenuValFloat::qnh_menu = new SetupMenuValFloat( "QNH Setup", &_setup->get()->_QNH, "hPa", 900.0, 1100.0, 0.2, qnh_adj );
+	SetupMenuValFloat::qnh_menu->setHelp("Setup QNH pressure value from next ATC. On ground you may adjust to airfield altitude.");
+	mm->addMenu( SetupMenuValFloat::qnh_menu );
 
 	SetupMenuValFloat * bal = new SetupMenuValFloat(
 				"Ballast", &_setup->get()->_ballast, "%", 0.0, 100, 1, bal_adj  );
@@ -629,10 +633,25 @@ void MenuEntry::clear()
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setColor(COLOR_BLACK);
 	ucg->drawBox( 0,0,240,320 );
+	ucg->begin(UCG_FONT_MODE_SOLID);
 	ucg->setFont(ucg_font_ncenR14_hr);
 	ucg->setPrintPos( 1, 30 );
 	ucg->setColor(COLOR_WHITE);
 	xSemaphoreGive(spiMutex );
+}
+
+
+SetupMenuValFloat * SetupMenuValFloat::qnh_menu = 0;
+
+void SetupMenuValFloat::showQnhMenu(){
+	if( qnh_menu ) {
+		_menu_enabled = true;
+		selected = qnh_menu;
+		Audio.disable();
+		qnh_menu->clear();
+		qnh_menu->display();
+		qnh_menu->pressed = true;
+	}
 }
 
 void SetupMenuValFloat::display( int mode ){

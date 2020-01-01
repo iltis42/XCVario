@@ -99,11 +99,13 @@ private:
 	static int tyalt;
 	static int pyalt;
 	static display_t display_type;
+	static int average_climb;
 
 	static void setTeBuf( int y1, int y2, int r, int g, int b );
 	static void drawTeBuf();
 	static void drawGaugeTriangle( int y, int r, int g, int b, bool s2f=false );
-
+	static void drawAvgSymbol( int y, int r, int g, int b );
+	static void drawLegend( bool onlyLines=false );
 };
 
 

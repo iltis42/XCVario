@@ -28,7 +28,6 @@
 #include "SetupMenu.h"
 #include "ESPRotary.h"
 #include "BatVoltage.h"
-// #include "DotDisplay.h"
 #include "IpsDisplay.h"
 #include "sensor.h"
 #include "PWMOut.h"
@@ -303,7 +302,6 @@ void sensor(void *args){
 	ds18b20.begin();
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 8000, NULL, 1, tpid, 0);
 
-	Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
 	Menu.begin( &display, &Rotary, &mysetup, &setupv, &bmpBA, &ADC );
 
 	gpio_set_pull_mode(RESET_Display, GPIO_PULLUP_ONLY );
@@ -315,7 +313,7 @@ void sensor(void *args){
 	sleep( 2 );
 	if( speed < 50.0 )
 		SetupMenuValFloat::showQnhMenu();
-
+	Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
 	printf("Free Stack: S:%d \n", uxTaskGetStackHighWaterMark( spid ) );
     // delay( 2000 );
 	vTaskDelete( NULL );

@@ -98,7 +98,7 @@ float IpsDisplay::_range_clip = 0;
 int   IpsDisplay::_divisons = 5;
 Setup *IpsDisplay::_setup = 0;
 float IpsDisplay::_range = 5;
-
+int IpsDisplay::average_climb = -100;
 
 
 IpsDisplay::IpsDisplay( Ucglib_ILI9341_18x240x320_HWSPI *aucg ) {
@@ -127,6 +127,27 @@ void IpsDisplay::drawArrowBox( int x, int y, bool arightside ){
 		ucg->drawTriangle( x,y-(fh/2)-3,   x,y+(fh/2)+3,   x-fh/2,y );
 }
 
+void IpsDisplay::drawLegend( bool onlyLines ) {
+	int hc=0;
+	if( onlyLines == false ){
+		ucg->setFont(ucg_font_9x15B_mf);
+		hc = ucg->getFontAscent()/2;
+	}
+	ucg->setColor(COLOR_WHITE);
+	for( int i=_divisons; i >=-_divisons; i-- )
+	{
+		float legend = ((float)i*_range)/_divisons;  // only print the integers
+		int y = (int)(dmid - int(legend*_pixpmd));
+		if( onlyLines == false ){
+			if( abs( legend  - int( legend )) < 0.1 ) {
+				ucg->setPrintPos(0, y+hc  );
+				ucg->printf("%+d",(int)legend );
+			}
+		}
+		ucg->drawHLine( DISPLAY_LEFT, y , 4 );
+	}
+}
+
 // draw all that does not need refresh when values change
 void IpsDisplay::initDisplay() {
 	printf("IpsDisplay::initDisplay()\n");
@@ -150,19 +171,7 @@ void IpsDisplay::initDisplay() {
 	ucg->setColor(0, COLOR_WHITE );
 
 	// print TE scale
-	ucg->setFont(ucg_font_9x15B_mf);
-	for( int i=_divisons; i >=-_divisons; i-- )
-	{
-		float legend = ((float)i*_range)/_divisons;  // only print the integers
-		int hc = ucg->getFontAscent()/2;
-		int y = (int)(dmid - int(legend*_pixpmd));
-
-		if( abs( legend  - int( legend )) < 0.1 ) {
-			ucg->setPrintPos(0, y+hc  );
-			ucg->printf("%+d",(int)legend );
-		}
-		ucg->drawHLine( DISPLAY_LEFT, y , 4 );
-	}
+	drawLegend();
 
 	ucg->drawVLine( DISPLAY_LEFT+5,      VARBARGAP , DISPLAY_H-(VARBARGAP*2) );
 	ucg->drawHLine( DISPLAY_LEFT+5, VARBARGAP , bw+1 );
@@ -269,6 +278,17 @@ void IpsDisplay::drawGaugeTriangle( int y, int r, int g, int b, bool s2f ) {
 }
 
 
+void IpsDisplay::drawAvgSymbol( int y, int r, int g, int b ) {
+	int size = 6;
+	ucg->setColor( r,g,b );
+	ucg->drawTetragon( DISPLAY_LEFT+size, dmid+y,
+					   DISPLAY_LEFT,      dmid+y+size,
+					   DISPLAY_LEFT-size, dmid+y,
+					   DISPLAY_LEFT,      dmid+y-size
+					 );
+}
+
+
 
 void IpsDisplay::redrawValues()
 {
@@ -291,6 +311,7 @@ void IpsDisplay::redrawValues()
 		colorsalt[l].color[1] = 0;
 		colorsalt[l].color[2] = 0;
 	}
+	average_climb = -1000;
 }
 
 void IpsDisplay::drawTeBuf(){
@@ -482,6 +503,12 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
  		vTaskDelay(1);
  	}
 
+	if ( average_climb !=  (int)(acl*10)){
+		drawAvgSymbol(  (average_climb*_pixpmd)/10, COLOR_BLACK );
+		drawLegend( true );
+		average_climb = (int)(acl*10);
+		drawAvgSymbol(  (average_climb*_pixpmd)/10, COLOR_RED );
+	}
 
  	// TE Stuff
  	if( ty != tyalt )

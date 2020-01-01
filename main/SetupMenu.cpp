@@ -685,7 +685,7 @@ void SetupMenuValFloat::display( int mode ){
 	if(mode == 1){
 		y+=24;
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
-		ucg->setPrintPos( 1, 250 );
+		ucg->setPrintPos( 1, 275 );
 		ucg->print("Saved");
 		xSemaphoreGive(spiMutex );
 	}

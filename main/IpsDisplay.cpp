@@ -281,10 +281,10 @@ void IpsDisplay::drawGaugeTriangle( int y, int r, int g, int b, bool s2f ) {
 void IpsDisplay::drawAvgSymbol( int y, int r, int g, int b ) {
 	int size = 6;
 	ucg->setColor( r,g,b );
-	ucg->drawTetragon( DISPLAY_LEFT+size, dmid+y,
-					   DISPLAY_LEFT,      dmid+y+size,
-					   DISPLAY_LEFT-size, dmid+y,
-					   DISPLAY_LEFT,      dmid+y-size
+	ucg->drawTetragon( DISPLAY_LEFT+size-1, dmid+y,
+					   DISPLAY_LEFT,        dmid+y+size,
+					   DISPLAY_LEFT-size,   dmid+y,
+					   DISPLAY_LEFT,        dmid+y-size
 					 );
 }
 

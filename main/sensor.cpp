@@ -206,7 +206,7 @@ void readBMP(void *pvParameters){
 //				printf("Warning Stack low: %d bytes\n", uxTaskGetStackHighWaterMark( bpid ) );
 		}
 		esp_task_wdt_reset();
-		// delay(95);
+		// delay(85);
 		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
 	}
 }

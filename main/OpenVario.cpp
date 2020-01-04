@@ -23,7 +23,7 @@ void OpenVario::makeNMEA(char* str, float baro, float dp, float te, float temp )
 		sprintf(str,"$POV,E,%0.1f",te);
 #else
 		sprintf(str,"$POV,P,%0.1f,Q,%0.1f,E,%0.1f,T,%0.1f",baro,dp,te,temp);
-		printf("%s\n", str);
+		// printf("%s\n", str);
 #endif
 	int cs = getCheckSum(&str[1]);
 	int i = strlen(str);

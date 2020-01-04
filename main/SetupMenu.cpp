@@ -741,6 +741,7 @@ void SetupMenuValFloat::press(){
 		_setup->commit();
 		_setupv->commit();
 		pressed = false;
+		BMPVario::setHolddown( 150 );  // so seconds stop average
 	}
 	else
 	{

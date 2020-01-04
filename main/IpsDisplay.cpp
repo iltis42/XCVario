@@ -281,10 +281,10 @@ void IpsDisplay::drawGaugeTriangle( int y, int r, int g, int b, bool s2f ) {
 void IpsDisplay::drawAvgSymbol( int y, int r, int g, int b ) {
 	int size = 6;
 	ucg->setColor( r,g,b );
-	ucg->drawTetragon( DISPLAY_LEFT+size-1, dmid+y,
-					   DISPLAY_LEFT,        dmid+y+size,
-					   DISPLAY_LEFT-size,   dmid+y,
-					   DISPLAY_LEFT,        dmid+y-size
+	ucg->drawTetragon( DISPLAY_LEFT+size-1, dmid-y,
+					   DISPLAY_LEFT,        dmid-y+size,
+					   DISPLAY_LEFT-size,   dmid-y,
+					   DISPLAY_LEFT,        dmid-y-size
 					 );
 }
 
@@ -359,6 +359,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 			return;
 	// printf("IpsDisplay::drawDisplay  TE=%0.1f\n", te);
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
+	tick++;
 	ucg->setFont(ucg_font_fub35_hn);  // 52 height
 	ucg->setColor(  COLOR_WHITE  );
 
@@ -385,14 +386,12 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 			ucg->drawVLine( FIELD_START+PMLEN/2+1, YVARMID-PMLEN/2, PMLEN );
 		}
 		vTaskDelay(1);
-		char tev[10];
-		sprintf( tev, "%0.1f  ", abs(te) );
 		ucg->setPrintPos(FIELD_START+SIGNLEN,YVAR);
-		ucg->print(tev);
+		ucg->printf("%0.1f  ", abs(te));
 		ucg->setFont(ucg_font_fub11_hr);
-		int mslen = ucg->getStrWidth(" m/s");
+		int mslen = ucg->getStrWidth("m/s");
 		ucg->setPrintPos(DISPLAY_W-mslen,YVAR);
-		ucg->print(" m/s");
+		ucg->print("m/s");
 		_te = te;
 	}
 
@@ -508,6 +507,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		drawLegend( true );
 		average_climb = (int)(acl*10);
 		drawAvgSymbol(  (average_climb*_pixpmd)/10, COLOR_RED );
+		vTaskDelay(1);
 	}
 
  	// TE Stuff

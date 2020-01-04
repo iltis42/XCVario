@@ -5,6 +5,8 @@
 
 const double sigmaAdjust = 255 * 2.0/33;  // 2 Vss
 
+int BMPVario::holddown = 0;
+
 void BMPVario::begin( BME280_ESP32_SPI *bmp, Setup* setup ) {
 	_bmpTE = bmp;
 	_init = true;
@@ -33,7 +35,8 @@ double BMPVario::readTE() {
 	// printf("BMP temp=%0.1f", bmpTemp );
 	_currentAlt = _bmpTE->readAltitude(_qnh);
 	uint64_t rts = esp_timer_get_time();
-	float delta = (float)(rts - lastrts)/1000000.0;
+	float delta = (float)(rts - lastrts)/1000000.0;   // in seconds
+	// printf("Vario delta=%f\n", delta );
 	lastrts = rts;
 	// printf( "TE-Alt %0.1f  NM:", _currentAlt );
 	if( _init  ){
@@ -75,10 +78,16 @@ double BMPVario::readTE() {
 	_TEF = _TEF + ((TEFR - _TEF)/ delta ) /(_damping/delta);
 	// calcAnalogOut();
 	_avgTE = (_TEF - _avgTE)*0.02 +_avgTE;
-	if( _avgTE > 0.1 )  // add core climb here
+	if( holddown > 0 ) {
+		holddown--;
+	}
+	else
 	{
-		averageClimb += _avgTE;
-		samples++;
+		if( _avgTE > 0.1 )  // add core climb here
+		{
+			averageClimb += _avgTE;
+			samples++;
+		}
 	}
 	return _TEF;
 }

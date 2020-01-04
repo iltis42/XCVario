@@ -47,11 +47,13 @@ public:
 		_currentAlt = 0;
 		samples = 0;
 		averageClimb = 0.0;
+		holddown = 0;
 	}
 
 	void begin( BME280_ESP32_SPI *bmp,
 			    Setup* setup=0 );
 
+	static void setHolddown( int hold ) { holddown = hold; }
 	void setQNH( float qnh ) { _qnh = qnh; };
 	void setup();
 
@@ -96,6 +98,7 @@ private:
 	double _currentAlt;
 	double averageClimb;
 	long   samples;
+	static int   holddown;
 };
 
 extern BMPVario bmpVario;

@@ -87,7 +87,7 @@ double BMPVario::readTE() {
 	}
 	else
 	{
-		if( _avgTE > 0.1 )  // add core climb here
+		if( _avgTE >  _setup->get()->_core_climb_min )
 		{
 			averageClimb += _avgTE;
 			samples++;

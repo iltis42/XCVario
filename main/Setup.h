@@ -50,6 +50,7 @@ typedef struct {
 	float   _bat_yellow_volt;
 	float   _bat_full_volt;
 	uint8_t _display_type;
+	float   _core_climb_min;
 	uint32_t _checksum;
 } setup_t;
 

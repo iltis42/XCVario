@@ -423,7 +423,13 @@ void SetupMenu::setup( )
 			0.5, 10.0,
 			0.1 );
 	vda->setHelp("Response time, time constant of Vario low pass filter");
-    vae->addMenu( vda );
+	SetupMenuValFloat * vccm = new SetupMenuValFloat( "Core Climb Minimum",
+				&_setup->get()->_core_climb_min,
+				"m/s",
+				0.0, 2.0,
+				0.1 );
+	vccm->setHelp("Minimum climb rate that counts for medium climb value (red rhombus left of TE bar)");
+    vae->addMenu( vccm );
 
 	SetupMenuSelect * sink = new SetupMenuSelect( 	"Polar Sink",
 					&_setup->get()->_ps_display );

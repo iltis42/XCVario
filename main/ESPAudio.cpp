@@ -274,11 +274,14 @@ void ESPAudio::dactask(void* arg )
 			f = (float)Audio.getCenter() + ( (te/_range ) * max );
 
 		int step = int( (f/freq_step ) + 0.5);
-		if( Audio.inDeadBand(te) || Audio.getMute() || hightone  ){
+		if( Audio.inDeadBand(te) || Audio.getMute()  ){
 			step = int( (200000/freq_step ) + 0.5);
 			// printf("Audio OFF\n");
 		}
 		else{
+			if( hightone  ){
+				step = int( (f/(freq_step*1.329) ) + 0.5);
+			}
 			// printf("Audio ON\n");
 		}
 

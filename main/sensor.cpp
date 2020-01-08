@@ -157,7 +157,7 @@ void readBMP(void *pvParameters){
 			vTaskDelay(1);
 			baroP = bmpBA.readPressure();
 			speedP = MP5004DP.readPascal(30);
-
+			vTaskDelay(1);
 			if( mysetup.get()->_alt_select == 0 ) // TE
 			   alt = bmpVario.readAVGalt();
 			else {
@@ -177,6 +177,7 @@ void readBMP(void *pvParameters){
 			speed = speed + (MP5004DP.pascal2km( speedP, temperature ) - speed)*0.1;
 			aTE = bmpVario.readAVGTE();
 			aCl = bmpVario.readAvgClimb();
+			vTaskDelay(1);
 			polar_sink = s2f.sink( speed );
 			netto = aTE - polar_sink;
 			as2f = s2f.speed( netto );
@@ -281,7 +282,7 @@ void sensor(void *args){
     s2f.change_polar();
 	s2f.change_mc_bal();
 
-	xTaskCreatePinnedToCore(&readBMP, "readBMP", 8000, NULL, 12, bpid, 0);
+	xTaskCreatePinnedToCore(&readBMP, "readBMP", 8000, NULL, 15, bpid, 0);
 	xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 30, 0, 0);
 	Version myVersion;
 	printf("Program Version %s\n", myVersion.version() );

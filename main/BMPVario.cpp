@@ -2,6 +2,7 @@
 #include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include <freertos/task.h>
+#include <atomic>
 
 const double sigmaAdjust = 255 * 2.0/33;  // 2 Vss
 
@@ -36,6 +37,9 @@ double BMPVario::readTE() {
 	_currentAlt = _bmpTE->readAltitude(_qnh);
 	uint64_t rts = esp_timer_get_time();
 	float delta = (float)(rts - lastrts)/1000000.0;   // in seconds
+	if( delta < 0.1 )
+		return _TEF;
+
 	// printf("Vario delta=%f\n", delta );
 	lastrts = rts;
 	// printf( "TE-Alt %0.1f  NM:", _currentAlt );

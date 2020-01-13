@@ -25,6 +25,7 @@ typedef struct {
 	float _center_freq;
 	float _QNH;
 	float _tone_var;
+	uint8_t _dual_tone;
 	float _deadband;
 	float _deadband_neg;
 	float _analog_adj;
@@ -51,6 +52,7 @@ typedef struct {
 	float   _bat_full_volt;
 	uint8_t _display_type;
 	float   _core_climb_min;
+	float   _core_climb_history;
 	uint32_t _checksum;
 } setup_t;
 

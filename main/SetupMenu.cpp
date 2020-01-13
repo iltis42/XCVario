@@ -423,13 +423,23 @@ void SetupMenu::setup( )
 			0.5, 10.0,
 			0.1 );
 	vda->setHelp("Response time, time constant of Vario low pass filter");
-	SetupMenuValFloat * vccm = new SetupMenuValFloat( "Core Climb Minimum",
+
+	SetupMenuValFloat * vccm = new SetupMenuValFloat( "Mean Climb Minimum",
 				&_setup->get()->_core_climb_min,
 				"m/s",
 				0.0, 2.0,
 				0.1 );
-	vccm->setHelp("Minimum climb rate that counts for medium climb value (red rhombus left of TE bar)");
+	vccm->setHelp("Minimum climb rate that counts for arithmetic mean climb value (red rhombus left of TE bar)");
     vae->addMenu( vccm );
+
+    SetupMenuValFloat * vcch = new SetupMenuValFloat( "Mean Climb Period",
+    				&_setup->get()->_core_climb_history,
+    				"min",
+    				1, 300,
+    				1 );
+    vcch->setHelp("Number of minutes where samples for mean climb value are regarded, default is last 3 thermals a 15 min");
+    vae->addMenu( vcch );
+
 
 	SetupMenuSelect * sink = new SetupMenuSelect( 	"Polar Sink",
 					&_setup->get()->_ps_display );
@@ -460,6 +470,13 @@ void SetupMenu::setup( )
 // Audio
 	SetupMenu * ad = new SetupMenu( "Audio" );
 	MenuEntry* ade = mm->addMenu( ad );
+
+	SetupMenuSelect * dt = new SetupMenuSelect( 	"Tone Style", &_setup->get()->_dual_tone );
+	dt->setHelp("Select dual tone aka ilec sound, (di/da/di) or single tone with breaks (di-di-di) mode");
+	dt->addEntry( "Single Tone");      // 0
+	dt->addEntry( "Dual Tone");        // 1
+	ade->addMenu( dt );
+
 	SetupMenuSelect * am = new SetupMenuSelect( 	"Audio Mode",
 				&_setup->get()->_audio_mode, false );
 	am->setHelp( "Controls audio source selection" );
@@ -490,6 +507,9 @@ void SetupMenu::setup( )
 			1.5, 4,
 			0.1 );
 	oc->setHelp("Maximum tone frequency variation");
+
+
+
 	SetupMenuSelect * ar = new SetupMenuSelect( 	"Range",
 						&_setup->get()->_audio_range );
 

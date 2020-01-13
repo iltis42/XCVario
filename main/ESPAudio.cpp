@@ -28,6 +28,7 @@
 
 float ESPAudio::_range = 5.0;
 bool ESPAudio::_s2f_mode = false;
+uint8_t ESPAudio::_tonemode;
 
 ESPAudio::ESPAudio( ) {
 	_ch = DAC_CHANNEL_1;
@@ -275,12 +276,15 @@ void ESPAudio::dactask(void* arg )
 
 		int step = int( (f/freq_step ) + 0.5);
 		if( Audio.inDeadBand(te) || Audio.getMute()  ){
-			step = int( (200000/freq_step ) + 0.5);
+			step = int( (300000/freq_step ) + 0.5);
 			// printf("Audio OFF\n");
 		}
 		else{
-			if( hightone  ){
-				step = int( (f/(freq_step*1.329) ) + 0.5);
+			if( hightone && (_tonemode == 1)  ){
+				step = int( (f*1.329/freq_step) + 0.5);
+			}
+			else if( hightone && (_tonemode == 0) ){
+				step = int( (300000/freq_step ) + 0.5);
 			}
 			// printf("Audio ON\n");
 		}
@@ -348,6 +352,7 @@ void ESPAudio::setup()
 		_range = 5.0;
 	else
 	_range = _setup->get()->_range;
+	_tonemode = _setup->get()->_dual_tone;
 }
 
 void ESPAudio::begin( dac_channel_t ch, gpio_num_t button, Setup *asetup )

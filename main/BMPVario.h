@@ -8,6 +8,7 @@ extern "C" {
 #include <driver/sigmadelta.h>
 }
 #include "Setup.h"
+#include <stdio.h>
 /*
      Implementation of a stable Vario with flight optimized Iltis-Kalman filter
 
@@ -58,11 +59,21 @@ public:
 	void setup();
 
 	double   readTE();   // get TE value im m/s
-	inline float    readAvgClimb() { if( samples == 0 )
-										return 0.0;
-									else
-										return (averageClimb / samples);
-	};
+	inline float readAvgClimb() {
+		float ac = 0;
+		int ns=0;
+		for( int i=avindexMin, j=_setup->get()->_core_climb_history; i>=0 && j>=0; i--, j-- ) {
+			if( avClimbMin[i] > _setup->get()->_core_climb_min ) {
+				ac += avClimbMin[i];
+				ns++;
+			}
+		}
+		if( ns ) {
+			return ac/ns;
+		}
+		else
+			return 0;
+	}
 	double   readAVGTE();   // get TE value im m/s
 	inline double   readAVGalt() { return averageAlt; };   // get average Altitude
 	inline double   readCuralt() { return _currentAlt; };   // get average Altitude
@@ -72,6 +83,7 @@ public:
 	void calcAnalogOut();
 	void setTE( double te ); // for testing purposes
 	void setAdj( double adj ) { _analog_adj = adj; calcAnalogOut(); };
+	void history( int idx );
 
 private:
 	gpio_num_t _negative;
@@ -97,7 +109,11 @@ private:
 	float _damping;
 	double _currentAlt;
 	double averageClimb;
-	long   samples;
+	float avClimbSec[60];
+	float avClimbMin[300];
+	int avindexSec;
+	int avindexMin;
+	int    samples;
 	static int   holddown;
 };
 

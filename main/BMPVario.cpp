@@ -12,6 +12,12 @@ void BMPVario::begin( BME280_ESP32_SPI *bmp, Setup* setup ) {
 	_bmpTE = bmp;
 	_init = true;
 	_setup = setup;
+	for( int i=0; i<300; i++ )
+		avClimbMin[i] = 0.0;
+	for( int i=0; i<60; i++ )
+		avClimbSec[i] = 0.0;
+	avindexSec = 0;
+	avindexMin = 0;
 }
 
 double BMPVario::readAVGTE() {
@@ -27,6 +33,11 @@ void BMPVario::setup() {
 	lastrts = esp_timer_get_time();
 }
 
+
+void BMPVario::history( int idx )
+{
+
+}
 
 double BMPVario::readTE() {
 	if ( _test )     // we are in testmode, just return what has been set
@@ -87,11 +98,39 @@ double BMPVario::readTE() {
 	}
 	else
 	{
-		if( _avgTE >  _setup->get()->_core_climb_min )
-		{
-			averageClimb += _avgTE;
 			samples++;
-		}
+			averageClimb =  averageClimb + ((_TEF - averageClimb))*0.1;
+			// every second
+			if( (samples % 10) == 0 ) {
+				if( averageClimb > _setup->get()->_core_climb_min ) {
+					avClimbSec[avindexSec] = averageClimb;
+					// printf("- MST pSEC= %2.2f \n", averageClimb );
+					avindexSec++;
+					if( avindexSec > 60 )
+						avindexSec = 0;
+				}
+			}
+			if( (samples % 600) == 0 ) {  // every 60 second
+				float ac=0;
+				int ns=0;
+				for( int i=0; i<60; i++ ) {
+					if(avClimbSec[i] > _setup->get()->_core_climb_min ){
+						ac +=  avClimbSec[i];
+						ns++;
+					}
+				}
+				if( ns ) {
+					avClimbMin[avindexMin] = ac/ns;
+					printf("MST pM= %2.2f  %d\n", ac/ns, ns );
+					avindexMin++;
+					if( avindexMin >= 300 ) { // drop last h
+						for( int i=60; i<300; i++ ) {
+							avClimbMin[i-60] = avClimbMin[i];
+						}
+						avindexMin = 240;
+					}
+				}
+			}
 	}
 	return _TEF;
 }

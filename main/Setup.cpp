@@ -36,6 +36,7 @@ void Setup::factorySetting()
 		_setup._deadband_neg = -0.3;
 		_setup._center_freq = 500.0;
 		_setup._tone_var = 2.0;
+		_setup._dual_tone = 1;
 		_setup._vario_delay = 3.0; // seconds
 		_setup._analog_adj = 0.0;
 		_setup._QNH = 1013.25;
@@ -60,6 +61,7 @@ void Setup::factorySetting()
 		_setup._bat_full_volt = 12.8;
 		_setup._display_type = UNIVERSAL;
 		_setup._core_climb_min = 0.5;
+		_setup._core_climb_history = 45;
 		printf("sefault _polar %d\n", Polars::numPolars() );
 		_setup._polar = Polars::getPolar(0); // default user polar
 		memset( _setup._bt_name, 0, sizeof( _setup._bt_name) );

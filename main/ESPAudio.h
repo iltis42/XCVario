@@ -53,6 +53,7 @@ private:
 	void setMute( bool mt ) { _mute = mt; };
 	float _te;
 	static bool _s2f_mode;
+	static uint8_t _tonemode;
 	float _s2fd;
 	float _center;
 	float _deadband;

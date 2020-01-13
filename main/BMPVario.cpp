@@ -98,39 +98,39 @@ double BMPVario::readTE() {
 	}
 	else
 	{
-			samples++;
-			averageClimb =  averageClimb + ((_TEF - averageClimb))*0.1;
-			// every second
-			if( (samples % 10) == 0 ) {
-				if( averageClimb > _setup->get()->_core_climb_min ) {
-					avClimbSec[avindexSec] = averageClimb;
-					// printf("- MST pSEC= %2.2f \n", averageClimb );
-					avindexSec++;
-					if( avindexSec > 60 )
-						avindexSec = 0;
+		samples++;
+		averageClimb =  averageClimb + ((_TEF - averageClimb))*0.1;
+		// every second
+		if( (samples % 10) == 0 ) {
+			if( averageClimb > _setup->get()->_core_climb_min ) {
+				avClimbSec[avindexSec] = averageClimb;
+				// printf("- MST pSEC= %2.2f \n", averageClimb );
+				avindexSec++;
+				if( avindexSec > 60 )
+					avindexSec = 0;
+			}
+		}
+		if( (samples % 600) == 0 ) {  // every 60 second
+			float ac=0;
+			int ns=0;
+			for( int i=0; i<60; i++ ) {
+				if(avClimbSec[i] > _setup->get()->_core_climb_min ){
+					ac +=  avClimbSec[i];
+					ns++;
 				}
 			}
-			if( (samples % 600) == 0 ) {  // every 60 second
-				float ac=0;
-				int ns=0;
-				for( int i=0; i<60; i++ ) {
-					if(avClimbSec[i] > _setup->get()->_core_climb_min ){
-						ac +=  avClimbSec[i];
-						ns++;
+			if( ns ) {
+				avClimbMin[avindexMin] = ac/ns;
+				printf("MST pM= %2.2f  %d\n", ac/ns, ns );
+				avindexMin++;
+				if( avindexMin >= 300 ) { // drop last h
+					for( int i=60; i<300; i++ ) {
+						avClimbMin[i-60] = avClimbMin[i];
 					}
-				}
-				if( ns ) {
-					avClimbMin[avindexMin] = ac/ns;
-					printf("MST pM= %2.2f  %d\n", ac/ns, ns );
-					avindexMin++;
-					if( avindexMin >= 300 ) { // drop last h
-						for( int i=60; i<300; i++ ) {
-							avClimbMin[i-60] = avClimbMin[i];
-						}
-						avindexMin = 240;
-					}
+					avindexMin = 240;
 				}
 			}
+		}
 	}
 	return _TEF;
 }

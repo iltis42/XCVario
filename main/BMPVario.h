@@ -59,10 +59,11 @@ public:
 	void setup();
 
 	double   readTE();   // get TE value im m/s
-	inline float readAvgClimb() {
+	float readAvgClimb() {
 		float ac = 0;
 		int ns=0;
-		for( int i=avindexMin, j=_setup->get()->_core_climb_history; i>=0 && j>=0; i--, j-- ) {
+		for( int i=avindexMin, j=(int)(_setup->get()->_core_climb_history); i>=0 && j>=0; i--, j-- ) {
+			// printf("MST pM= %2.2f  %d\n", avClimbMin[i], i  );
 			if( avClimbMin[i] > _setup->get()->_core_climb_min ) {
 				ac += avClimbMin[i];
 				ns++;

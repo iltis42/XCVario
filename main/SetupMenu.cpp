@@ -477,6 +477,15 @@ void SetupMenu::setup( )
 	dt->addEntry( "Dual Tone");        // 1
 	ade->addMenu( dt );
 
+	SetupMenuValFloat * htv = new SetupMenuValFloat( 	"Dual Tone Pich",
+						&_setup->get()->_high_tone_var,
+						"%",
+						0, 50,
+						1.0 );
+	htv->setHelp("Tone variation in Dual Tone mode, percent of frequency pitch up for second tone");
+	ade->addMenu( htv );
+
+
 	SetupMenuSelect * am = new SetupMenuSelect( 	"Audio Mode",
 				&_setup->get()->_audio_mode, false );
 	am->setHelp( "Controls audio source selection" );
@@ -484,14 +493,14 @@ void SetupMenu::setup( )
 		am->addEntry( "S2F");
 		am->addEntry( "Switch");
 		am->addEntry( "AutoSpeed");
-		ad->addMenu( am );
+	ade->addMenu( am );
 
 	SetupMenuValFloat * ts = new SetupMenuValFloat( 	"AutoSpeed",
 					&_setup->get()->_s2f_speed,
 					"km/h",
 					50.0, 200.0,
 					1.0 );
-		ade->addMenu( ts );
+	ade->addMenu( ts );
 	ts->setHelp("Transition speed when audio changes to S2F mode in AutoSpeed mode");
 
 	SetupMenuValFloat * cf = new SetupMenuValFloat( 	"CenterFreq",

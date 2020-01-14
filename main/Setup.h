@@ -26,6 +26,7 @@ typedef struct {
 	float _QNH;
 	float _tone_var;
 	uint8_t _dual_tone;
+	float   _high_tone_var;
 	float _deadband;
 	float _deadband_neg;
 	float _analog_adj;

@@ -29,6 +29,7 @@
 float ESPAudio::_range = 5.0;
 bool ESPAudio::_s2f_mode = false;
 uint8_t ESPAudio::_tonemode;
+float ESPAudio::_high_tone_var;
 
 ESPAudio::ESPAudio( ) {
 	_ch = DAC_CHANNEL_1;
@@ -281,7 +282,7 @@ void ESPAudio::dactask(void* arg )
 		}
 		else{
 			if( hightone && (_tonemode == 1)  ){
-				step = int( (f*1.329/freq_step) + 0.5);
+				step = int( (f*_high_tone_var/freq_step) + 0.5);
 			}
 			else if( hightone && (_tonemode == 0) ){
 				step = int( (300000/freq_step ) + 0.5);
@@ -353,6 +354,7 @@ void ESPAudio::setup()
 	else
 	_range = _setup->get()->_range;
 	_tonemode = _setup->get()->_dual_tone;
+	_high_tone_var = ((_setup->get()->_high_tone_var + 100.0)/100);
 }
 
 void ESPAudio::begin( dac_channel_t ch, gpio_num_t button, Setup *asetup )

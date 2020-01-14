@@ -37,6 +37,7 @@ void Setup::factorySetting()
 		_setup._center_freq = 500.0;
 		_setup._tone_var = 2.0;
 		_setup._dual_tone = 1;
+		_setup._high_tone_var = 25.0;
 		_setup._vario_delay = 3.0; // seconds
 		_setup._analog_adj = 0.0;
 		_setup._QNH = 1013.25;

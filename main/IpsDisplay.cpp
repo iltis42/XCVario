@@ -19,6 +19,9 @@
 int   IpsDisplay::tick = 0;
 bool  IpsDisplay::_menu = false;
 int   IpsDisplay::_pixpmd = 10;
+int   IpsDisplay::charge = 100;
+int   IpsDisplay::red = 10;
+int   IpsDisplay::yellow = 25;
 
 #define DISPLAY_H 320
 #define DISPLAY_W 240
@@ -429,14 +432,16 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 	// Battery Symbol
 	int chargev = (int)( volt *10 );
 	if ( chargealt != chargev ) {
-		int charge = (int)(( volt - _setup->get()->_bat_low_volt )*100)/( _setup->get()->_bat_full_volt - _setup->get()->_bat_low_volt );
+		charge = (int)(( volt - _setup->get()->_bat_low_volt )*100)/( _setup->get()->_bat_full_volt - _setup->get()->_bat_low_volt );
 		if(charge < 0)
 			charge = 0;
 		if( charge > 100 )
 			charge = 100;
-		int yellow =  (int)(( _setup->get()->_bat_yellow_volt - _setup->get()->_bat_low_volt )*100)/( _setup->get()->_bat_full_volt - _setup->get()->_bat_low_volt );
-		int red =  (int)(( _setup->get()->_bat_red_volt - _setup->get()->_bat_low_volt )*100)/( _setup->get()->_bat_full_volt - _setup->get()->_bat_low_volt );
-
+		if( (tick%100) == 0 )  // check setup changes all 10 sec
+		{
+			yellow =  (int)(( _setup->get()->_bat_yellow_volt - _setup->get()->_bat_low_volt )*100)/( _setup->get()->_bat_full_volt - _setup->get()->_bat_low_volt );
+			red = (int)(( _setup->get()->_bat_red_volt - _setup->get()->_bat_low_volt )*100)/( _setup->get()->_bat_full_volt - _setup->get()->_bat_low_volt );
+		}
 		ucg->drawBox( DISPLAY_W-40,DISPLAY_H-12, 36, 12  );  // Bat body square
 		ucg->drawBox( DISPLAY_W-4,DISPLAY_H-9, 3, 6  );      // Bat pluspole pimple
 		if ( charge > yellow )  // >25% grün
@@ -457,6 +462,16 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		ucg->printf("%3d%%", charge);
 		chargealt = chargev;
 		vTaskDelay(1);
+	}
+	if( charge < red ) {  // blank battery for blinking
+		if( (tick%10) == 0 ) {
+			ucg->setColor( COLOR_BLACK );
+			ucg->drawBox( DISPLAY_W-40,DISPLAY_H-12, 40, 12  );
+		}
+		if( ((tick+5)%10) == 0 )  // trigger redraw
+		{
+			chargealt++;
+		}
 	}
 
 	// Bluetooth Symbol

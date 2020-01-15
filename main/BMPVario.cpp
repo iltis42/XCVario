@@ -39,6 +39,22 @@ void BMPVario::history( int idx )
 
 }
 
+void BMPVario::recalcAvgClimb() {
+		float ac = 0;
+		int ns=0;
+		for( int i=avindexMin, j=(int)(_setup->get()->_core_climb_history); i>=0 && j>=0; i--, j-- ) {
+			// printf("MST pM= %2.2f  %d\n", avClimbMin[i], i  );
+			if( avClimbMin[i] > _setup->get()->_core_climb_min ) {
+				ac += avClimbMin[i];
+				ns++;
+			}
+		}
+		if( ns ) {
+			averageClimb = ac/ns;
+		}
+}
+
+
 double BMPVario::readTE() {
 	if ( _test )     // we are in testmode, just return what has been set
 		return _TEF;
@@ -99,30 +115,37 @@ double BMPVario::readTE() {
 	else
 	{
 		samples++;
-		averageClimb =  averageClimb + ((_TEF - averageClimb))*0.1;
-		// every second
-		if( (samples % 10) == 0 ) {
-			if( averageClimb > 0 )
-				avClimbSec[avindexSec] = averageClimb;
-			else
-				avClimbSec[avindexSec] = 0;
-				// printf("- MST pSEC= %2.2f \n", averageClimb );
-			avindexSec++;
-			if( avindexSec > 60 )
-				avindexSec = 0;
-		}
-		if( (samples % 600) == 0 ) {  // every 60 second
+		if( _TEF > 0 )
+			avClimb100MSec[avindex100MSec] = _TEF;
+		else
+			avClimb100MSec[avindex100MSec] = 0;
+		avindex100MSec++;
+		if( avindex100MSec > 10 ) {
+			// every second
+			avindex100MSec = 0;
 			float ac=0;
-			for( int i=0; i<60; i++ )
-				ac +=  avClimbSec[i];
-			avClimbMin[avindexMin] = ac/60;
-			// printf("new MST pM= %2.2f\n", avClimbMin[avindexMin] );
-			avindexMin++;
-			if( avindexMin >= 300 ) { // drop last h
-				for( int i=60; i<300; i++ ) {
-					avClimbMin[i-60] = avClimbMin[i];
+			for( int i=0; i<10; i++ )
+			if( avClimb100MSec[i] > 0 )
+				ac += avClimb100MSec[i];
+			avClimbSec[avindexSec] = ac/10;
+			// printf("- MST pSEC= %2.2f %d\n", avClimbSec[avindexSec], avindexSec );
+			avindexSec++;
+			// every minute
+			if( avindexSec > 60 ) {
+				avindexSec = 0;
+				ac=0;
+				for( int i=0; i<60; i++ )
+					ac +=  avClimbSec[i];
+				avClimbMin[avindexMin] = ac/60;
+				// printf("new MST pM= %2.2f\n", avClimbMin[avindexMin] );
+				avindexMin++;
+				if( avindexMin >= 300 ) { // drop last h
+					for( int i=60; i<300; i++ ) {
+						avClimbMin[i-60] = avClimbMin[i];
+					}
+					avindexMin = 240;
 				}
-				avindexMin = 240;
+				recalcAvgClimb();
 			}
 		}
 	}

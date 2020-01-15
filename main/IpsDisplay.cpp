@@ -517,7 +517,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
  		vTaskDelay(1);
  	}
 
-	if ( average_climb !=  (int)(acl*10)){
+	if ( average_climb !=  (int)(acl*10) ){
 		drawAvgSymbol(  (average_climb*_pixpmd)/10, COLOR_BLACK );
 		drawLegend( true );
 		average_climb = (int)(acl*10);

@@ -48,7 +48,11 @@ public:
 		_currentAlt = 0;
 		samples = 0;
 		averageClimb = 0.0;
+		averageClimbSec = 0.0;
 		holddown = 0;
+		avindexSec = 0;
+		avindexMin = 0;
+		avindex100MSec = 0;
 	}
 
 	void begin( BME280_ESP32_SPI *bmp,
@@ -59,22 +63,8 @@ public:
 	void setup();
 
 	double   readTE();   // get TE value im m/s
-	float readAvgClimb() {
-		float ac = 0;
-		int ns=0;
-		for( int i=avindexMin, j=(int)(_setup->get()->_core_climb_history); i>=0 && j>=0; i--, j-- ) {
-			// printf("MST pM= %2.2f  %d\n", avClimbMin[i], i  );
-			if( avClimbMin[i] > _setup->get()->_core_climb_min ) {
-				ac += avClimbMin[i];
-				ns++;
-			}
-		}
-		if( ns ) {
-			return ac/ns;
-		}
-		else
-			return 0;
-	}
+	float readAvgClimb() { return averageClimb; }
+
 	double   readAVGTE();   // get TE value im m/s
 	inline double   readAVGalt() { return averageAlt; };   // get average Altitude
 	inline double   readCuralt() { return _currentAlt; };   // get average Altitude
@@ -85,6 +75,7 @@ public:
 	void setTE( double te ); // for testing purposes
 	void setAdj( double adj ) { _analog_adj = adj; calcAnalogOut(); };
 	void history( int idx );
+	void recalcAvgClimb();
 
 private:
 	gpio_num_t _negative;
@@ -109,9 +100,13 @@ private:
 	Setup *_setup;
 	float _damping;
 	double _currentAlt;
-	double averageClimb;
+
+	float averageClimbSec;
+	float averageClimb;
+	float avClimb100MSec[10];
 	float avClimbSec[60];
 	float avClimbMin[300];
+	int avindex100MSec;
 	int avindexSec;
 	int avindexMin;
 	int    samples;

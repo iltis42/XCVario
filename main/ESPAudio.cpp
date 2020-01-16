@@ -30,6 +30,7 @@ float ESPAudio::_range = 5.0;
 bool ESPAudio::_s2f_mode = false;
 uint8_t ESPAudio::_tonemode;
 float ESPAudio::_high_tone_var;
+dac_channel_t ESPAudio::_ch;
 
 ESPAudio::ESPAudio( ) {
 	_ch = DAC_CHANNEL_1;
@@ -277,12 +278,15 @@ void ESPAudio::dactask(void* arg )
 
 		int step = int( (f/freq_step ) + 0.5);
 		if( Audio.inDeadBand(te) || Audio.getMute()  ){
-			step = int( (300000/freq_step ) + 0.5);
+			step = 0;
 			// printf("Audio OFF\n");
+			Audio.dac_scale_set(_ch, 3 );
 		}
 		else{
+			Audio.dac_scale_set(_ch, 0 );
 			if( hightone && (_tonemode == 1)  ){
 				step = int( (f*_high_tone_var/freq_step) + 0.5);
+
 			}
 			else if( hightone && (_tonemode == 0) ){
 				step = int( (300000/freq_step ) + 0.5);

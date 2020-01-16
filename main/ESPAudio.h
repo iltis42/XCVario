@@ -35,7 +35,7 @@ private:
 	void dac_invert_set(dac_channel_t channel, int invert);
 	static void dactask(void* arg);
 	static void modtask(void* arg );
-	dac_channel_t _ch;
+	static dac_channel_t _ch;
 	dac_channel_t getCh() { return _ch; };
 	float getTE() { return _te; };
 	float getS2Fd() { return _te; };

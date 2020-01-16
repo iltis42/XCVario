@@ -89,7 +89,7 @@ public:
 class SetupMenuValFloat:  public MenuEntry {
 public:
 	SetupMenuValFloat();
-	SetupMenuValFloat(  String title, float *value, String unit, float min, float max, float step, int (*action)(SetupMenuValFloat *p) = 0 );
+	SetupMenuValFloat(  String title, float *value, String unit, float min, float max, float step, int (*action)(SetupMenuValFloat *p) = 0, bool end_menu=false  );
 	void display(int mode=0);
 	void displayVal();
 	static void showQnhMenu();
@@ -103,6 +103,7 @@ public:
 
 private:
 	float _min, _max, _step;
+	bool _end_menu;
 	String _unit;
 	int (*_action)( SetupMenuValFloat *p );
 };

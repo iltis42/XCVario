@@ -325,7 +325,7 @@ void SetupMenu::press(){
 		selected = root;
 	if( (selected != this) )
 		return;
-	printf("SetupMenu press p:%d h:%d\n", pressed, highlight );
+	printf("SetupMenu press p:%d h:%d parent:%x\n", pressed, highlight, (int)_parent );
 	// main menue behavior, extra class maybe
 	// for now here we catch this
 	// this is just for the main menu,
@@ -391,17 +391,15 @@ void SetupMenu::setup( )
 	SetupMenu * root = new SetupMenu( "Setup" );
 	MenuEntry* mm = root->addMenu( root );
 
-	SetupMenuValFloat * mc = new SetupMenuValFloat(
-			"MC", &_setup->get()->_MC, "m/s",	0.01, 9.9, 0.1,  mc_adj );
+	SetupMenuValFloat * mc = new SetupMenuValFloat( "MC", &_setup->get()->_MC, "m/s",	0.01, 9.9, 0.1,  mc_adj, true );
 	mc->setHelp("Default Mac Cready value for optimum cruise speed, or average climb rate");
 	mm->addMenu( mc );
 
-	SetupMenuValFloat::qnh_menu = new SetupMenuValFloat( "QNH Setup", &_setup->get()->_QNH, "hPa", 900.0, 1100.0, 0.250, qnh_adj );
+	SetupMenuValFloat::qnh_menu = new SetupMenuValFloat( "QNH Setup", &_setup->get()->_QNH, "hPa", 900.0, 1100.0, 0.250, qnh_adj, true );
 	SetupMenuValFloat::qnh_menu->setHelp("Setup QNH pressure value from next ATC. On ground you may adjust to airfield altitude above MSL.");
 	mm->addMenu( SetupMenuValFloat::qnh_menu );
 
-	SetupMenuValFloat * bal = new SetupMenuValFloat(
-				"Ballast", &_setup->get()->_ballast, "%", 0.0, 100, 1, bal_adj  );
+	SetupMenuValFloat * bal = new SetupMenuValFloat( "Ballast", &_setup->get()->_ballast, "%", 0.0, 100, 1, bal_adj, true  );
 	bal->setHelp("Percent wing load increase by ballast");
 	mm->addMenu( bal );
 
@@ -620,8 +618,7 @@ void SetupMenu::setup( )
 		sye->addMenu( fvoltadj );
 	}
 
-	SetupMenuSelect * fa = new SetupMenuSelect( 	"Factory Reset",
-				&_setup->get()->_factory_reset, true );
+	SetupMenuSelect * fa = new SetupMenuSelect( "Factory Reset", &_setup->get()->_factory_reset, true );
 	fa->addEntry( "Cancel");
 	fa->addEntry( "ResetAll");
 	sye->addMenu( fa );
@@ -666,7 +663,7 @@ void SetupMenu::setup( )
 	SetupMenu::display();
 }
 
-SetupMenuValFloat::SetupMenuValFloat( String title, float *value, String unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ) ) {
+SetupMenuValFloat::SetupMenuValFloat( String title, float *value, String unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu ) {
 	printf("SetupMenuValFloat( %s ) \n", title.c_str() );
 	_rotary->attach(this);
 	_title = title;
@@ -677,6 +674,7 @@ SetupMenuValFloat::SetupMenuValFloat( String title, float *value, String unit, f
 	_max = max;
 	_step = step;
 	_action = action;
+	_end_menu = end_menu;
 }
 
 void MenuEntry::clear()
@@ -769,14 +767,18 @@ void SetupMenuValFloat::press(){
 	printf("SetupMenuValFloat press\n");
 	if ( pressed ){
 		display( 1 );
-		if( _parent != 0)
+		if( _end_menu )
+			selected = root;
+		else if( _parent != 0 )
 			selected = _parent;
-		_parent->highlight = -1;  // to topmost selection when back
+		selected->highlight = -1;  // to topmost selection when back
 		selected->pressed = true;
 		_setup->commit();
 		_setupv->commit();
 		pressed = false;
 		BMPVario::setHolddown( 150 );  // so seconds stop average
+		if( _end_menu )
+			selected->press();
 	}
 	else
 	{

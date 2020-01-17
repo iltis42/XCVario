@@ -191,7 +191,7 @@ void IpsDisplay::initDisplay() {
 	ucg->print("S2F");
 
 	ucg->setColor(0, COLOR_WHITE );
-	int mslen = ucg->getStrWidth("km/h");
+	// int mslen = ucg->getStrWidth("km/h");
 
 	// IAS Box
 	int fl = 45; // ucg->getStrWidth("200-");
@@ -208,10 +208,10 @@ void IpsDisplay::initDisplay() {
 	ucg->setPrintPos(FIELD_START,YALT-S2FFONTH);
 	ucg->setColor(0, COLOR_HEADER );
 	ucg->printf("Altitude QNH %d", (int)(_setup->get()->_QNH +0.5 ) );
-	ucg->setColor(0, COLOR_WHITE );
-	mslen = ucg->getStrWidth("m");
-	ucg->setPrintPos(DISPLAY_W-mslen,YALT);
-	ucg->print("m");
+	// ucg->setColor(0, COLOR_WHITE );
+	// mslen = ucg->getStrWidth("m");
+	// ucg->setPrintPos(DISPLAY_W-mslen,YALT);
+	// ucg->print("m");
 
 	// Thermometer
 	ucg->drawDisc( FIELD_START+10, DISPLAY_H-4,  4, UCG_DRAW_ALL ); // white disk
@@ -393,7 +393,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		ucg->printf("%0.1f  ", abs(te));
 		ucg->setFont(ucg_font_fub11_hr);
 		int mslen = ucg->getStrWidth("m/s");
-		ucg->setPrintPos(DISPLAY_W-mslen,YVAR);
+		ucg->setPrintPos(DISPLAY_W-mslen,YVAR-12);
 		ucg->print("m/s");
 		_te = te;
 	}
@@ -403,8 +403,8 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 	if( alt != prefalt ) {
 
 		ucg->setPrintPos(FIELD_START,YALT);
-		ucg->setFont(ucg_font_fub25_hn);
-		ucg->printf("  %-4d ", (int)(alt+0.5)  );
+		ucg->setFont(ucg_font_fub25_hr);
+		ucg->printf("  %-4d m ", alt  );
 		prefalt = alt;
 		vTaskDelay(1);
 	}
@@ -575,13 +575,18 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
  		ucg->setColor(  COLOR_WHITE  );
  		// print speed values bar
  		ucg->setFont(ucg_font_fub11_hn);
+ 		ucg->drawFrame( FIELD_START, dmid-(MAXS2FTRI)-4, IASLEN+6, (MAXS2FTRI*2)+8 );
  		ucg->setClipRange( FIELD_START, dmid-(MAXS2FTRI), IASLEN+6, (MAXS2FTRI*2) );
  		for( int speed = ias-MAXS2FTRI-(fh); speed<ias+MAXS2FTRI+(fh); speed++ )
  		{
 			if( (speed%20) == 0 && (speed >= 0) ) {
+				// blank old values
 				ucg->setColor( COLOR_BLACK );
-				ucg->drawBox( FIELD_START+6,dmid+(speed-ias)-(fh/2)-6, IASLEN-6, fh+14 );
-				ucg->setColor(  COLOR_WHITE  );
+				ucg->drawBox( FIELD_START+6,dmid+(speed-ias)-(fh/2)-8, IASLEN-6, fh+14 );
+				int col = (speed-ias)*3;
+				if(col < 0)
+					col = -col;
+				ucg->setColor(  col,col,col  );
 				ucg->setPrintPos(FIELD_START+8,dmid+(speed-ias)+(fh/2));
 				ucg->printf("%3d ""-", speed);
 			}
@@ -590,6 +595,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
  		// IAS cleartext
  		ucg->setFont(ucg_font_fub14_hn);
  		ucg->setPrintPos(FIELD_START+8, YS2F-fh );
+ 		ucg->setColor(  COLOR_WHITE  );
 		ucg->printf("%3d ", ias);
 		iasalt = ias;
 		vTaskDelay(1);

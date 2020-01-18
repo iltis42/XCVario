@@ -51,7 +51,7 @@ const int   S2F_TRISIZE = 70; // triangle size quality up/down
 #define YVARMID (YVAR - (VARFONTH/2))
 
 #define S2FFONTH 31
-#define YS2F YVAR+S2FFONTH+HEADFONTH+GAP-6
+#define YS2F YVAR+S2FFONTH+HEADFONTH+GAP-8
 
 
 #define VARBARGAP (HEADFONTH+(HEADFONTH/2)+2)
@@ -66,8 +66,11 @@ const int   S2F_TRISIZE = 70; // triangle size quality up/down
 #define BTSIZE  5
 #define BTW    15
 #define BTH    24
+#define IASVALX 165
 
 int S2FST = 45;
+
+
 int IASLEN = 0;
 static int fh;
 display_t IpsDisplay::display_type = UNIVERSAL;
@@ -186,9 +189,9 @@ void IpsDisplay::initDisplay() {
 	fh = ucg->getFontAscent();
 	ucg->setPrintPos(FIELD_START+6,YS2F-(2*fh)-8);
 	ucg->setColor(0, COLOR_HEADER );
-	ucg->print("IAS    km/h");
-	ucg->setPrintPos((DISPLAY_W - ucg->getStrWidth("S2F")-4),YS2F-(2*fh)-8);
-	ucg->print("S2F");
+	ucg->print("IAS");
+	ucg->setPrintPos(IASVALX,YS2F-(2*fh)-8);
+	ucg->print("S2F km/h");
 
 	ucg->setColor(0, COLOR_WHITE );
 	// int mslen = ucg->getStrWidth("km/h");
@@ -617,7 +620,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
  		ucg->setFont(ucg_font_fub14_hn);
 		int fa=ucg->getFontAscent();
 		int fl=ucg->getStrWidth("100");
-		ucg->setPrintPos(DISPLAY_W-fl-4, YS2F-fh);
+		ucg->setPrintPos(IASVALX, YS2F-fh);
 		ucg->printf("%3d  ", (int)(s2falt+0.5)  );
 		vTaskDelay(1);
 		// draw S2F Delta

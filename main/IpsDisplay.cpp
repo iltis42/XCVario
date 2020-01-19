@@ -529,7 +529,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 	}
 
  	// TE Stuff
- 	if( ty != tyalt )
+ 	if( ty != tyalt || py != pyalt )
  	{
  		// setTeBuf(  dmid, _range*_pixpmd+1, COLOR_BLACK );
  		// setTeBuf(  dmid, -(_range*_pixpmd+1), COLOR_BLACK );
@@ -592,6 +592,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 				ucg->setColor(  col,col,col  );
 				ucg->setPrintPos(FIELD_START+8,dmid+(speed-ias)+(fh/2));
 				ucg->printf("%3d ""-", speed);
+				vTaskDelay(1);
 			}
  		}
  		ucg->undoClipRange();

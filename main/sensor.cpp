@@ -144,6 +144,7 @@ void drawDisplay(void *pvParameters){
 
 
 void readBMP(void *pvParameters){
+
 	while (1)
 	{
 		TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -311,6 +312,16 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 5, dpid, 0);
+	// QNH autosetup
+	float ae = mysetup.get()->_elevation;
+	baroP = bmpBA.readPressure();
+	if( ae > 0 ) {
+		for( float qnh = 900; qnh< 1080; qnh+=0.25 ) {
+			float alt = bmpBA.readAltitude( qnh );
+			if( abs( alt - ae ) < 0.5 )
+				mysetup.get()->_QNH = qnh;
+		}
+	}
 	sleep( 2 );
 	if( speed < 50.0 )
 		SetupMenuValFloat::showQnhMenu();

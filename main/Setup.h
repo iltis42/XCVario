@@ -54,6 +54,7 @@ typedef struct {
 	uint8_t _display_type;
 	float   _core_climb_min;
 	float   _core_climb_history;
+	float   _elevation;
 	uint32_t _checksum;
 } setup_t;
 

@@ -403,6 +403,11 @@ void SetupMenu::setup( )
 	bal->setHelp("Percent wing load increase by ballast");
 	mm->addMenu( bal );
 
+	SetupMenuValFloat * afe = new SetupMenuValFloat( "Airfield Elevation", &_setup->get()->_elevation, "m", -1, 3000, 1, 0, true  );
+	afe->setHelp("Set airfield elevation in meters for QNH auto adjust on ground according to this setting");
+	mm->addMenu( afe );
+
+
 // Vario
 	SetupMenu * va = new SetupMenu( "Vario" );
 	MenuEntry* vae = mm->addMenu( va );
@@ -547,12 +552,7 @@ void SetupMenu::setup( )
 	dbmaxlv->setHelp("Upper limit for Audio mute function");
 	dbe->addMenu( dbmaxlv );
 
-// Altimeter
-	SetupMenuSelect * al = new SetupMenuSelect( 	"Altimeter",
-					&_setup->get()->_alt_select );
-	mm->addMenu( al );
-	al->addEntry( "TE Alt");
-	al->addEntry( "Baro Alt");
+
 
 // Polar Setup
 	SetupMenu * po = new SetupMenu( "Polar" );
@@ -652,6 +652,12 @@ void SetupMenu::setup( )
 		dtype->addEntry( "ILI9341_TFT_18P");
 		sye->addMenu( dtype );
 	}
+
+	// Altimeter
+	SetupMenuSelect * al = new SetupMenuSelect( 	"Altimeter Source",	&_setup->get()->_alt_select );
+	sye->addMenu( al );
+	al->addEntry( "TE   Sensor");
+	al->addEntry( "Baro Sensor");
 
 	Version V;
 	static uint8_t select_dummy = 0;

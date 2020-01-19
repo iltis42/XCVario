@@ -63,6 +63,7 @@ void Setup::factorySetting()
 		_setup._display_type = UNIVERSAL;
 		_setup._core_climb_min = 0.5;
 		_setup._core_climb_history = 45;
+		_setup._elevation = -1;
 		printf("sefault _polar %d\n", Polars::numPolars() );
 		_setup._polar = Polars::getPolar(0); // default user polar
 		memset( _setup._bt_name, 0, sizeof( _setup._bt_name) );

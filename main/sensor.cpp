@@ -131,7 +131,6 @@ BTSender btsender( handleRfcommRx  );
 bool lastAudioDisable = false;
 
 void drawDisplay(void *pvParameters){
-	display.initDisplay();
 	while (1) {
 		TickType_t dLastWakeTime = xTaskGetTickCount();
 		bool dis = Audio.getDisable();
@@ -141,7 +140,6 @@ void drawDisplay(void *pvParameters){
 		vTaskDelayUntil(&dLastWakeTime, 50/portTICK_PERIOD_MS);
 	}
 }
-
 
 void readBMP(void *pvParameters){
 
@@ -209,7 +207,7 @@ void readBMP(void *pvParameters){
 		}
 		esp_task_wdt_reset();
 		// delay(85);
-		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&xLastWakeTime, 80/portTICK_PERIOD_MS);
 	}
 }
 
@@ -310,24 +308,45 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_Display, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_bme280BA, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
-
+    display.initDisplay();
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 5, dpid, 0);
-	// QNH autosetup
-	float ae = mysetup.get()->_elevation;
-	baroP = bmpBA.readPressure();
-	if( ae > 0 ) {
-		for( float qnh = 900; qnh< 1080; qnh+=0.25 ) {
-			float alt = bmpBA.readAltitude( qnh );
-			if( abs( alt - ae ) < 0.5 )
-				mysetup.get()->_QNH = qnh;
+
+	if( speed < 50.0 ){
+		xSemaphoreTake(xMutex,portMAX_DELAY );
+		printf("QNH Autosetup, speed=%3f (<50 km/h)\n", speed );
+		// QNH autosetup
+		float ae = mysetup.get()->_elevation;
+		baroP = bmpBA.readPressure();
+		if( ae > 0 ) {
+			float step=10.0; // 80 m
+			float min=1000.0;
+			float qnh_best = 1013.2;
+			for( float qnh = 900; qnh< 1080; qnh+=step ) {
+				float alt = bmpBA.readAltitude( qnh );
+				float diff = alt - ae;
+				printf("Alt diff=%4.2f  abs=%4.2f\n", diff, abs(diff) );
+				if( abs( diff ) < 100 )
+					step=1.0;  // 8m
+				if( abs( diff ) < 10 )
+					step=0.05;  // 0.4 m
+				if( abs( diff ) < abs(min) ) {
+					min = diff;
+					qnh_best = qnh;
+					printf("New min=%4.2f\n", min);
+				}
+				if( diff > 1.0 ) // we are ready, values get already positive
+					break;
+			}
+			printf("qnh=%4.2f\n\n\n", qnh_best);
+			mysetup.get()->_QNH = qnh_best;
 		}
-	}
-	sleep( 2 );
-	if( speed < 50.0 )
+
 		SetupMenuValFloat::showQnhMenu();
+		xSemaphoreGive(xMutex);
+	}
+
 	Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
 	printf("Free Stack: S:%d \n", uxTaskGetStackHighWaterMark( spid ) );
-    // delay( 2000 );
 	vTaskDelete( NULL );
 
 }

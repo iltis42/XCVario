@@ -44,7 +44,7 @@ void Setup::factorySetting()
 		_setup._blue_enable = 1;
 		_setup._range = 5.0;
 		_setup._ballast = 0.0;
-		_setup._MC = 0.0;
+		_setup._MC = 0.5;
 		_setup._voltmeter_adj = 0;
 		_setup._voltmeter_factory_adj = 0.0;
 		_setup._factory_reset = 0;

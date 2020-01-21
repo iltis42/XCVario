@@ -189,7 +189,7 @@ void IpsDisplay::initDisplay() {
 	fh = ucg->getFontAscent();
 	ucg->setPrintPos(FIELD_START+6,YS2F-(2*fh)-8);
 	ucg->setColor(0, COLOR_HEADER );
-	ucg->print("IAS");
+	ucg->print(" IAS");
 	ucg->setPrintPos(IASVALX,YS2F-(2*fh)-8);
 	ucg->print("S2F km/h");
 

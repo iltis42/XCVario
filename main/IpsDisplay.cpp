@@ -592,7 +592,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 				ucg->setColor(  col,col,col  );
 				ucg->setPrintPos(FIELD_START+8,dmid+(speed-ias)+(fh/2));
 				ucg->printf("%3d ""-", speed);
-				vTaskDelay(1);
+				// vTaskDelay(1);
 			}
  		}
  		ucg->undoClipRange();
@@ -679,7 +679,13 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 
  		vTaskDelay(1);
  		ucg->undoClipRange();
-
+ 		// green bar for optimum speed within tacho
+ 		ucg->setClipRange( FIELD_START, dmid-(MAXS2FTRI), IASLEN+6, (MAXS2FTRI*2) );
+ 		ucg->setColor( COLOR_BLACK );
+ 	 	ucg->drawBox( FIELD_START+1,dmid+s2fdalt-16, 6, 32 );
+ 	 	ucg->setColor( COLOR_GREEN );
+ 	 	ucg->drawBox( FIELD_START+1,dmid+s2fd-15, 6, 30 );
+ 	 	ucg->undoClipRange();
  		s2fdalt = (int)s2fd;
  		s2falt = (int)(s2f+0.5);
 		s2fclipalt = s2fdalt;

@@ -203,8 +203,8 @@ void IpsDisplay::initDisplay() {
 	S2FST = IASLEN+16;
 
     // S2F Zero
-	ucg->drawTriangle( FIELD_START, dmid+5, FIELD_START, dmid-5, FIELD_START+5, dmid);
-	ucg->drawTriangle( FIELD_START+IASLEN, dmid, FIELD_START+IASLEN+5, dmid-5, FIELD_START+IASLEN+5, dmid+5);
+	// ucg->drawTriangle( FIELD_START, dmid+5, FIELD_START, dmid-5, FIELD_START+5, dmid);
+	ucg->drawTriangle( FIELD_START+IASLEN-1, dmid, FIELD_START+IASLEN+5, dmid-6, FIELD_START+IASLEN+5, dmid+6);
 
 	// Altitude
 	ucg->setFont(ucg_font_fub11_tr);

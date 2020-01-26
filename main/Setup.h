@@ -32,7 +32,6 @@ typedef struct {
 	float _analog_adj;
 	float _contrast_adj;
 	float _voltmeter_adj;
-	float _voltmeter_factory_adj;
 	float _range;
 	float _ballast;
 	float _MC;
@@ -55,6 +54,7 @@ typedef struct {
 	float   _core_climb_min;
 	float   _core_climb_history;
 	float   _elevation;
+	uint8_t _display_orientation;  // 0 = normal, 1 = upside down
 	uint32_t _checksum;
 } setup_t;
 

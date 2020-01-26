@@ -228,7 +228,6 @@ void SetupMenu::display( int mode ){
 	y+=170;
 	xSemaphoreGive(spiMutex );
 	showhelp( y );
-
 }
 
 void MenuEntry::showhelp( int y ){
@@ -652,6 +651,12 @@ void SetupMenu::setup( )
 		dtype->addEntry( "ILI9341_TFT_18P");
 		sye->addMenu( dtype );
 	}
+    // Orientation   _display_orientation
+	SetupMenuSelect * diso = new SetupMenuSelect( "Display Orientation",	&_setup->get()->_display_orientation, true );
+	sye->addMenu( diso );
+	diso->setHelp( "Display Orientation either NORMAL means control panel is right, or TOPDOWN means control panel is left");
+	diso->addEntry( "NORMAL, keys right");
+	diso->addEntry( "TOPDOWN, keys left");
 
 	// Altimeter
 	SetupMenuSelect * al = new SetupMenuSelect( 	"Altimeter Source",	&_setup->get()->_alt_select );
@@ -844,7 +849,10 @@ void SetupMenuSelect::display( int mode ){
 		ucg->print("Saved !" );
 		if( _select_save != *_select )
 			if( _restart ) {
+				ucg->setColor(COLOR_BLACK);
+				ucg->drawBox( 0,160,240,160 );
 				ucg->setPrintPos( 1, 250  );
+				ucg->setColor(COLOR_WHITE);
 				ucg->print("Now Restart" );
 			}
 		xSemaphoreGive(spiMutex );

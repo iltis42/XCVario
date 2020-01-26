@@ -165,6 +165,9 @@ void IpsDisplay::initDisplay() {
 	ucg->setColor( COLOR_BLACK );
 	ucg->drawBox( 0,0,240,320 );
 
+	if( _setup->get()->_display_orientation == 1 )
+		ucg->setRotate180();
+
 	ucg->setColor(1, COLOR_BLACK );
 	ucg->setColor(0, COLOR_WHITE );
 	ucg->setFont(ucg_font_fub11_tr);
@@ -211,10 +214,6 @@ void IpsDisplay::initDisplay() {
 	ucg->setPrintPos(FIELD_START,YALT-S2FFONTH);
 	ucg->setColor(0, COLOR_HEADER );
 	ucg->printf("Altitude QNH %d", (int)(_setup->get()->_QNH +0.5 ) );
-	// ucg->setColor(0, COLOR_WHITE );
-	// mslen = ucg->getStrWidth("m");
-	// ucg->setPrintPos(DISPLAY_W-mslen,YALT);
-	// ucg->print("m");
 
 	// Thermometer
 	ucg->drawDisc( FIELD_START+10, DISPLAY_H-4,  4, UCG_DRAW_ALL ); // white disk

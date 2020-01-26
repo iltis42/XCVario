@@ -28,15 +28,15 @@ public:
 	SetupVolt() {   }
 	// SetupVolt( bool &operationMode, float &speedcal );
 	virtual ~SetupVolt() {};
-	void factorySetting();
+	static void factorySetting();
 	inline setup_volt_t *get() { return &_setup; };
 	void begin();
-	void commit();
+	static void commit();
 	void  help();
-	bool checkSum( bool set=false );
+	static bool checkSum( bool set=false );
 
 private:
-	 setup_volt_t _setup;  // factory adjust voltmeter
+	 static setup_volt_t _setup;  // factory adjust voltmeter
 };
 
 

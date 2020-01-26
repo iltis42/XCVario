@@ -23,6 +23,7 @@
 #include "BMPVario.h"
 #include <esp32/rom/miniz.h>
 #include "Polars.h"
+#include "SetupVolt.h"
 
 #include "esp_task_wdt.h"
 
@@ -46,7 +47,6 @@ void Setup::factorySetting()
 		_setup._ballast = 0.0;
 		_setup._MC = 0.5;
 		_setup._voltmeter_adj = 0;
-		_setup._voltmeter_factory_adj = 0.0;
 		_setup._factory_reset = 0;
 		_setup._audio_range = 0;
 		_setup._alt_select = 1;
@@ -64,12 +64,14 @@ void Setup::factorySetting()
 		_setup._core_climb_min = 0.5;
 		_setup._core_climb_history = 45;
 		_setup._elevation = -1;
+		_setup._display_orientation = 0; // NORMAL
 		printf("sefault _polar %d\n", Polars::numPolars() );
 		_setup._polar = Polars::getPolar(0); // default user polar
 		memset( _setup._bt_name, 0, sizeof( _setup._bt_name) );
 		printf("BT-Name: %s\n", _ID );
 		memcpy( _setup._bt_name, _ID, strlen( _ID )  );
 		commit();
+		SetupVolt::factorySetting();
 		printf("end Setup::factorySetting()\n");
 }
 

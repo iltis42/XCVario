@@ -26,6 +26,8 @@
 
 #include "esp_task_wdt.h"
 
+setup_volt_t SetupVolt::_setup;
+
 void SetupVolt::factorySetting()
 {
 		printf("SetupVolt::factorySetting()\n");

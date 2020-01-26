@@ -55,6 +55,11 @@ typedef struct {
 	float   _core_climb_history;
 	float   _elevation;
 	uint8_t _display_orientation;  // 0 = normal, 1 = upside down
+	uint8_t _flap_enable;
+	float    _flap_minus_2;  // -1 -2  165
+	float    _flap_minus_1;  // 0 -1  105
+	float    _flap_0;        // 1-0   88
+	float    _flap_plus_1;   // 2-1   78
 	uint32_t _checksum;
 } setup_t;
 

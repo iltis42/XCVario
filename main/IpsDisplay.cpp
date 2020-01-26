@@ -192,9 +192,12 @@ void IpsDisplay::initDisplay() {
 	fh = ucg->getFontAscent();
 	ucg->setPrintPos(FIELD_START+6,YS2F-(2*fh)-8);
 	ucg->setColor(0, COLOR_HEADER );
-	ucg->print(" IAS");
+	ucg->print(" IAS kph");
 	ucg->setPrintPos(IASVALX,YS2F-(2*fh)-8);
-	ucg->print("S2F km/h");
+	if( _setup->get()->_flap_enable )
+		ucg->print("S2F    FL");
+	else
+		ucg->print("S2F");
 
 	ucg->setColor(0, COLOR_WHITE );
 	// int mslen = ucg->getStrWidth("km/h");
@@ -365,6 +368,28 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 	// printf("IpsDisplay::drawDisplay  TE=%0.1f\n", te);
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	tick++;
+
+	// WK-Indicator
+	if( _setup->get()->_flap_enable && ias != iasalt )
+	{
+		char wk[5];
+		float wkspeed = ias * sqrt( ( _setup->get()->_ballast +100.0)/100.0 );
+		sprintf(wk," +2");
+		if( wkspeed > _setup->get()->_flap_plus_1 )
+			sprintf(wk," +1");
+		if( wkspeed > _setup->get()->_flap_0 )
+			sprintf(wk," 0  ");
+		if( wkspeed > _setup->get()->_flap_minus_1 )
+			sprintf(wk,"  -1");
+		if( wkspeed > _setup->get()->_flap_minus_2 )
+			sprintf(wk,"  -2");
+
+		ucg->setFont(ucg_font_fub14_hn);
+		ucg->setPrintPos(DISPLAY_W-ucg->getStrWidth(wk), YS2F-fh );
+		ucg->setColor(  COLOR_WHITE  );
+		ucg->printf(wk);
+	}
+
 	ucg->setFont(ucg_font_fub35_hn);  // 52 height
 	ucg->setColor(  COLOR_WHITE  );
 

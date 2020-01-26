@@ -600,6 +600,29 @@ void SetupMenu::setup( )
 	pos3->setHelp("Sink indication at Speed 3 from polar");
 	pa->addMenu( pos3 );
 
+	SetupMenu * wk = new SetupMenu( "Flap (WK) Indicator" );
+	MenuEntry* wkm = mm->addMenu( wk );
+	SetupMenuSelect * wke = new SetupMenuSelect( "Flap Indicator Option", &_setup->get()->_flap_enable, true );
+	wke->addEntry( "Disable");
+	wke->addEntry( "Enable");
+	wke->setHelp("Option to enable Flap (WK) Indicator to assist optimum flap setting depending on speed and ballast");
+	wkm->addMenu( wke );
+
+	SetupMenuValFloat * plus1 = new SetupMenuValFloat("Speed +2 to +1", &_setup->get()->_flap_plus_1, "km/h",  50, 150, 1 );
+	plus1->setHelp("Speed for transition from +2 to +1 flap setting");
+	wkm->addMenu( plus1 );
+	SetupMenuValFloat * zero = new SetupMenuValFloat("Speed +1 to 0", &_setup->get()->_flap_0, "km/h",  50, 150, 1 );
+	zero->setHelp("Speed for transition from +1 to 0 flap setting");
+	wkm->addMenu( zero );
+	SetupMenuValFloat * min1 = new SetupMenuValFloat("Speed 0 to -1", &_setup->get()->_flap_minus_1, "km/h",  80, 180, 1 );
+	min1->setHelp("Speed for transition from 0 to -1 flap setting");
+	wkm->addMenu( min1 );
+	SetupMenuValFloat * min2 = new SetupMenuValFloat("Speed -1 to -2", &_setup->get()->_flap_minus_2, "km/h",  100, 280, 1 );
+	min2->setHelp("Speed for transition from -1 to -2 flap setting");
+	wkm->addMenu( min2 );
+
+
+
 	SetupMenu * sy = new SetupMenu( "System" );
 	MenuEntry* sye = mm->addMenu( sy );
 

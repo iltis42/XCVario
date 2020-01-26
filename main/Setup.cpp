@@ -65,6 +65,11 @@ void Setup::factorySetting()
 		_setup._core_climb_history = 45;
 		_setup._elevation = -1;
 		_setup._display_orientation = 0; // NORMAL
+		_setup._flap_enable = 0;  // disable
+		_setup._flap_minus_2 = 165;
+		_setup._flap_minus_1 = 105;
+		_setup._flap_0 = 88;
+		_setup._flap_plus_1 = 78;
 		printf("sefault _polar %d\n", Polars::numPolars() );
 		_setup._polar = Polars::getPolar(0); // default user polar
 		memset( _setup._bt_name, 0, sizeof( _setup._bt_name) );

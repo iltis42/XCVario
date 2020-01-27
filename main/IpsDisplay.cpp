@@ -104,6 +104,7 @@ int IpsDisplay::wkalt = -3;
 int IpsDisplay::wkspeeds[6];
 ucg_color_t IpsDisplay::wkcolor;
 char IpsDisplay::wkss[6];
+int IpsDisplay::wkposalt;
 
 float IpsDisplay::_range_clip = 0;
 int   IpsDisplay::_divisons = 5;
@@ -334,6 +335,7 @@ void IpsDisplay::redrawValues()
     wkspeeds[4] = _setup->get()->_flap_plus_1;
     wkspeeds[5] = 0;
     wkbox = false;
+    wkposalt = -100;
 }
 
 void IpsDisplay::drawTeBuf(){
@@ -425,10 +427,13 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		float wkspeed = ias * sqrt( 100.0/( _setup->get()->_ballast +100.0) );
 		int wki = getWk( wkspeed );
 	    float wkpos=wkRelPos( wkspeed, wkspeeds[wki+3], wkspeeds[wki+2] );
-	    float wk = wki - wkpos;
-	    printf("ias:%d wksp:%f wki:%d wk:%f wkpos%f\n", ias, wkspeed, wki, wk, wkpos );
-		ucg->setColor(  COLOR_WHITE  );
-		drawWkBar( YS2F-fh, wk );
+	    int wk = (int)((wki - wkpos)*10);
+	    if( wkposalt != wk ) {
+	    	// printf("ias:%d wksp:%f wki:%d wk:%d wkpos%f\n", ias, wkspeed, wki, wk, wkpos );
+	    	ucg->setColor(  COLOR_WHITE  );
+	    	drawWkBar( YS2F-fh, (float)(wk)/10 );
+	    	wkposalt = wk;
+	    }
 	}
 
 	ucg->setFont(ucg_font_fub35_hn);  // 52 height
@@ -657,7 +662,6 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 				ucg->setColor(  col,col,col  );
 				ucg->setPrintPos(FIELD_START+8,dmid+(speed-ias)+(fh/2));
 				ucg->printf("%3d ""-", speed);
-				// vTaskDelay(1);
 			}
  		}
  		ucg->undoClipRange();
@@ -680,7 +684,6 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 			drawGaugeTriangle( s2fclip, COLOR_WHITE, true );
 			ucg->setColor(  COLOR_WHITE  );
 		}
-		vTaskDelay(1);
 		// S2F value
 		ucg->setColor(  COLOR_WHITE  );
  		ucg->setFont(ucg_font_fub14_hn);
@@ -732,7 +735,6 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 							   FIELD_START+S2FST+(S2F_TRISIZE/2), dmid+(int)s2fd,
 							   FIELD_START+S2FST+(S2F_TRISIZE/2), dmid+(int)s2fdalt );
  		}
- 		vTaskDelay(1);
  		// draw new S2F command triangle
 		if( s2fd < 0 )
 			ucg->setColor( LIGHT_GREEN );

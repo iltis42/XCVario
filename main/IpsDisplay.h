@@ -100,6 +100,7 @@ private:
 	static char wkss[6];
 	static int  wkspeeds[6];
 	static bool wkbox;
+	static int wkposalt;
 
 	static int yposalt;
 	static int tyalt;

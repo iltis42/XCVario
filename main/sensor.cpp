@@ -137,7 +137,7 @@ void drawDisplay(void *pvParameters){
 		if( dis != true ) {
 			display.drawDisplay( ias, TE, aTE, polar_sink, alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode );
 		}
-		vTaskDelayUntil(&dLastWakeTime, 50/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&dLastWakeTime, 100/portTICK_PERIOD_MS);
 	}
 }
 
@@ -153,10 +153,10 @@ void readBMP(void *pvParameters){
 			// 	printf("Unsharp != 100: %d ms\n", int( newmsec - millisec ) );
 			// millisec = newmsec;
 			TE = bmpVario.readTE();
-			vTaskDelay(1);
+			// vTaskDelay(1);
 			baroP = bmpBA.readPressure();
 			speedP = MP5004DP.readPascal(30);
-			vTaskDelay(1);
+			// vTaskDelay(1);
 			if( mysetup.get()->_alt_select == 0 ) // TE
 			   alt = bmpVario.readAVGalt();
 			else {
@@ -168,7 +168,7 @@ void readBMP(void *pvParameters){
 				char lb[120];
 				OV.makeNMEA( lb, baroP, speedP, TE, temperature );
 				btsender.send( lb );
-				vTaskDelay(1);
+				// vTaskDelay(1);
 			}
 			xSemaphoreGive(xMutex);
 
@@ -181,7 +181,7 @@ void readBMP(void *pvParameters){
 			netto = aTE - polar_sink;
 			as2f = s2f.speed( netto );
 			s2f_delta = as2f - speed;
-			vTaskDelay(1);
+			// vTaskDelay(1);
 			ias = (int)(speed+0.5);
 
 			switch( mysetup.get()->_audio_mode ) {
@@ -207,7 +207,7 @@ void readBMP(void *pvParameters){
 		}
 		esp_task_wdt_reset();
 		// delay(85);
-		vTaskDelayUntil(&xLastWakeTime, 80/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
 	}
 }
 

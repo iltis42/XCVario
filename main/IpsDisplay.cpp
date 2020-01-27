@@ -23,6 +23,7 @@ int   IpsDisplay::charge = 100;
 int   IpsDisplay::red = 10;
 int   IpsDisplay::yellow = 25;
 
+
 #define DISPLAY_H 320
 #define DISPLAY_W 240
 
@@ -34,7 +35,7 @@ const int   bwide = 64;   // total width of bargraph
 const int   smfh  = 12;   // small font heigth
 const int   hbw   = 12;   // horizontal bar width for unit of bargraph
 const int   bw    = 32;   // bar width
-const int   S2F_TRISIZE = 70; // triangle size quality up/down
+const int   S2F_TRISIZE = 60; // triangle size quality up/down
 
 #define DISPLAY_LEFT 25
 
@@ -99,12 +100,17 @@ int IpsDisplay::iasalt = -1;
 int IpsDisplay::yposalt = 0;
 int IpsDisplay::tyalt = 0;
 int IpsDisplay::pyalt = 0;
+int IpsDisplay::wkalt = -3;
+int IpsDisplay::wkspeeds[6];
+ucg_color_t IpsDisplay::wkcolor;
+char IpsDisplay::wkss[6];
 
 float IpsDisplay::_range_clip = 0;
 int   IpsDisplay::_divisons = 5;
 Setup *IpsDisplay::_setup = 0;
 float IpsDisplay::_range = 5;
 int IpsDisplay::average_climb = -100;
+bool IpsDisplay::wkbox = false;
 
 
 IpsDisplay::IpsDisplay( Ucglib_ILI9341_18x240x320_HWSPI *aucg ) {
@@ -195,7 +201,7 @@ void IpsDisplay::initDisplay() {
 	ucg->print(" IAS kph");
 	ucg->setPrintPos(IASVALX,YS2F-(2*fh)-8);
 	if( _setup->get()->_flap_enable )
-		ucg->print("S2F    FL");
+		ucg->print("S2F    FLP");
 	else
 		ucg->print("S2F");
 
@@ -320,6 +326,14 @@ void IpsDisplay::redrawValues()
 		colorsalt[l].color[2] = 0;
 	}
 	average_climb = -1000;
+	wkalt = -3;
+	wkspeeds[0] = 280;
+    wkspeeds[1] = _setup->get()->_flap_minus_2;
+    wkspeeds[2] = _setup->get()->_flap_minus_1;
+    wkspeeds[3] = _setup->get()->_flap_0;
+    wkspeeds[4] = _setup->get()->_flap_plus_1;
+    wkspeeds[5] = 0;
+    wkbox = false;
 }
 
 void IpsDisplay::drawTeBuf(){
@@ -361,6 +375,42 @@ void IpsDisplay::setTeBuf( int y1, int h, int r, int g, int b ){
 	}
 }
 
+float wkRelPos( float wks, float minv, float maxv ){
+	printf("wks:%f min:%f max:%f\n", wks, minv, maxv );
+	return ((wks-minv)/(maxv-minv));
+}
+
+int IpsDisplay::getWk( int wks )
+{
+	for( int wk=-2; wk<=2; wk++ ){
+		if( wks <= wkspeeds[wk+2] && wks >=  wkspeeds[wk+3] )
+			return wk;
+	}
+	return 2;
+}
+
+void IpsDisplay::drawWkBar( int ypos, float wkf ){
+	ucg->setFont(ucg_font_profont22_mr );
+	int lfh = ucg->getFontAscent()+4;
+	int lfw = ucg->getStrWidth( "+2" );
+	if( !wkbox ) {
+		ucg->drawFrame(DISPLAY_W-lfw-5, ypos-lfh/2-3, lfw+4, 2*lfh);
+		ucg->drawTriangle( DISPLAY_W-lfw-10, ypos-3+lfh/2-5,  DISPLAY_W-lfw-10, ypos-3+lfh/2+5, DISPLAY_W-lfw-5, ypos-3+lfh/2 );
+		wkbox = true;
+	}
+	ucg->setClipRange( DISPLAY_W-lfw-2, ypos-lfh/2-2, lfw, 2*lfh-2 );
+	for( int wk=-2; wk<=2; wk++ ){
+		if( wk == 0 )
+			sprintf( wkss,"% d", wk);
+		else
+			sprintf( wkss,"%+d", wk);
+		ucg->setPrintPos(DISPLAY_W-lfw-2, ypos-3+lfh*(5-(wk+2))+(int)((wkf-2)*(fh+4)) );
+		ucg->printf(wkss);
+	}
+	ucg->undoClipRange();
+}
+
+
 
 void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, float altitude, float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode ){
 	if( _menu )
@@ -372,22 +422,13 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 	// WK-Indicator
 	if( _setup->get()->_flap_enable && ias != iasalt )
 	{
-		char wk[5];
-		float wkspeed = ias * sqrt( ( _setup->get()->_ballast +100.0)/100.0 );
-		sprintf(wk," +2");
-		if( wkspeed > _setup->get()->_flap_plus_1 )
-			sprintf(wk," +1");
-		if( wkspeed > _setup->get()->_flap_0 )
-			sprintf(wk," 0  ");
-		if( wkspeed > _setup->get()->_flap_minus_1 )
-			sprintf(wk,"  -1");
-		if( wkspeed > _setup->get()->_flap_minus_2 )
-			sprintf(wk,"  -2");
-
-		ucg->setFont(ucg_font_fub14_hn);
-		ucg->setPrintPos(DISPLAY_W-ucg->getStrWidth(wk), YS2F-fh );
+		float wkspeed = ias * sqrt( 100.0/( _setup->get()->_ballast +100.0) );
+		int wki = getWk( wkspeed );
+	    float wkpos=wkRelPos( wkspeed, wkspeeds[wki+3], wkspeeds[wki+2] );
+	    float wk = wki - wkpos;
+	    printf("ias:%d wksp:%f wki:%d wk:%f wkpos%f\n", ias, wkspeed, wki, wk, wkpos );
 		ucg->setColor(  COLOR_WHITE  );
-		ucg->printf(wk);
+		drawWkBar( YS2F-fh, wk );
 	}
 
 	ucg->setFont(ucg_font_fub35_hn);  // 52 height

@@ -95,6 +95,12 @@ private:
 	static bool s2fmodealt;
 	static int s2fclipalt;
 	static int iasalt;
+
+	static int wkalt;
+	static char wkss[6];
+	static int  wkspeeds[6];
+	static bool wkbox;
+
 	static int yposalt;
 	static int tyalt;
 	static int pyalt;
@@ -104,12 +110,16 @@ private:
 	static int charge;
 	static int red;
 	static int yellow;
+	static ucg_color_t wkcolor;
+
 
 	static void setTeBuf( int y1, int y2, int r, int g, int b );
 	static void drawTeBuf();
 	static void drawGaugeTriangle( int y, int r, int g, int b, bool s2f=false );
 	static void drawAvgSymbol( int y, int r, int g, int b );
 	static void drawLegend( bool onlyLines=false );
+	static void drawWkBar( int ypos, float wk );
+	static int getWk( int wks );
 };
 
 

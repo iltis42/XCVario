@@ -328,12 +328,12 @@ void IpsDisplay::redrawValues()
 	}
 	average_climb = -1000;
 	wkalt = -3;
-	wkspeeds[0] = 280;
+	wkspeeds[0] = 220;
     wkspeeds[1] = _setup->get()->_flap_minus_2;
     wkspeeds[2] = _setup->get()->_flap_minus_1;
     wkspeeds[3] = _setup->get()->_flap_0;
     wkspeeds[4] = _setup->get()->_flap_plus_1;
-    wkspeeds[5] = 0;
+    wkspeeds[5] = 60;
     wkbox = false;
     wkposalt = -100;
 }
@@ -378,8 +378,14 @@ void IpsDisplay::setTeBuf( int y1, int h, int r, int g, int b ){
 }
 
 float wkRelPos( float wks, float minv, float maxv ){
-	printf("wks:%f min:%f max:%f\n", wks, minv, maxv );
-	return ((wks-minv)/(maxv-minv));
+	// printf("wks:%f min:%f max:%f\n", wks, minv, maxv );
+	if( wks <= maxv && wks >= minv )
+		return ((wks-minv)/(maxv-minv));
+	else if( wks > maxv )
+		return 1;
+	else if( wks < minv )
+		return 0.5;
+	return 0.5;
 }
 
 int IpsDisplay::getWk( int wks )
@@ -388,7 +394,12 @@ int IpsDisplay::getWk( int wks )
 		if( wks <= wkspeeds[wk+2] && wks >=  wkspeeds[wk+3] )
 			return wk;
 	}
-	return 2;
+	if( wks < wkspeeds[5] )
+		return 1;
+	else if( wks > wkspeeds[0] )
+		return -2;
+	else
+		return 1;
 }
 
 void IpsDisplay::drawWkBar( int ypos, float wkf ){
@@ -406,7 +417,7 @@ void IpsDisplay::drawWkBar( int ypos, float wkf ){
 			sprintf( wkss,"% d", wk);
 		else
 			sprintf( wkss,"%+d", wk);
-		ucg->setPrintPos(DISPLAY_W-lfw-2, ypos-3+lfh*(5-(wk+2))+(int)((wkf-2)*(fh+4)) );
+		ucg->setPrintPos(DISPLAY_W-lfw-2, ypos-(lfh/2)+(lfh+4)*(5-(wk+2))+(int)((wkf-2)*(lfh+4)) );
 		ucg->printf(wkss);
 	}
 	ucg->undoClipRange();
@@ -427,7 +438,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		float wkspeed = ias * sqrt( 100.0/( _setup->get()->_ballast +100.0) );
 		int wki = getWk( wkspeed );
 	    float wkpos=wkRelPos( wkspeed, wkspeeds[wki+3], wkspeeds[wki+2] );
-	    int wk = (int)((wki - wkpos)*10);
+	    int wk = (int)((wki - wkpos + 0.5)*10);
 	    if( wkposalt != wk ) {
 	    	// printf("ias:%d wksp:%f wki:%d wk:%d wkpos%f\n", ias, wkspeed, wki, wk, wkpos );
 	    	ucg->setColor(  COLOR_WHITE  );

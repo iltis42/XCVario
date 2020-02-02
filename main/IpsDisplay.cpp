@@ -406,18 +406,20 @@ void IpsDisplay::drawWkBar( int ypos, float wkf ){
 	ucg->setFont(ucg_font_profont22_mr );
 	int lfh = ucg->getFontAscent()+4;
 	int lfw = ucg->getStrWidth( "+2" );
+	int top = ypos-lfh/2;
 	if( !wkbox ) {
-		ucg->drawFrame(DISPLAY_W-lfw-5, ypos-lfh/2-3, lfw+4, 2*lfh);
-		ucg->drawTriangle( DISPLAY_W-lfw-10, ypos-3+lfh/2-5,  DISPLAY_W-lfw-10, ypos-3+lfh/2+5, DISPLAY_W-lfw-5, ypos-3+lfh/2 );
+		ucg->drawFrame(DISPLAY_W-lfw-5, top-3, lfw+4, 2*lfh);
+		int tri = ypos+lfh/2-3;
+		ucg->drawTriangle( DISPLAY_W-lfw-10, tri-5,  DISPLAY_W-lfw-10,tri+5, DISPLAY_W-lfw-5, tri );
 		wkbox = true;
 	}
-	ucg->setClipRange( DISPLAY_W-lfw-2, ypos-lfh/2-2, lfw, 2*lfh-2 );
+	ucg->setClipRange( DISPLAY_W-lfw-2, top-2, lfw, 2*lfh-2 );
 	for( int wk=-2; wk<=2; wk++ ){
 		if( wk == 0 )
 			sprintf( wkss,"% d", wk);
 		else
 			sprintf( wkss,"%+d", wk);
-		ucg->setPrintPos(DISPLAY_W-lfw-2, ypos-(lfh/2)+(lfh+4)*(5-(wk+2))+(int)((wkf-2)*(lfh+4)) );
+		ucg->setPrintPos(DISPLAY_W-lfw-2, top+(lfh+4)*(5-(wk+2))+(int)((wkf-2)*(lfh+4)) );
 		ucg->printf(wkss);
 	}
 	ucg->undoClipRange();

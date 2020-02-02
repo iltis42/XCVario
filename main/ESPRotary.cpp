@@ -74,15 +74,15 @@ void ESPRotary::informObservers( void * args )
 	int ialt = NONE;
 	while( 1 ) {
 		int queue = xQueueGenericReceive(q2, &info, portMAX_DELAY, false );
-		printf("Queue Poll: %d  info:%d\n", queue, info );
-		printf("Queue: %d \n", queue );
+		// printf("Queue Poll: %d  info:%d\n", queue, info );
+		// printf("Queue: %d \n", queue );
 		ialt = info;
 		events[info]++;
 		int runs = 8;
 		int mq = uxQueueMessagesWaiting(q2);
 		while( mq && runs ) {
 			xQueueGenericReceive(q2, &info, portMAX_DELAY, false);
-			printf("Messages in the Queue: %d  info:%d  run:%d\n", mq, info, runs );
+			// printf("Messages in the Queue: %d  info:%d  run:%d\n", mq, info, runs );
 			if( queue )
 				events[info]++;
 			if( ialt != info ){
@@ -100,14 +100,14 @@ void ESPRotary::informObservers( void * args )
 			if(  events[i] == 0 )
 				continue;
 			num = events[i];
-			printf("Event i:%d number events:%d \n", i, events[i] );
+			// printf("Event i:%d number events:%d \n", i, events[i] );
 			if( i == UP ) {
-				printf("Rotary up\n");
+				printf("Rotary up %d times\n", num );
 				for (int i = 0; i < observers.size(); i++)
 					observers[i]->up( num );
 			}
 			else if( i == DOWN ) {
-				printf("Rotary down\n");
+				printf("Rotary down %d times\n", num);
 				for (int i = 0; i < observers.size(); i++)
 					observers[i]->down( num );
 			}
@@ -141,10 +141,10 @@ void ESPRotary::informObservers( void * args )
 // receiving from Interrupt the rotary direction and switch
 void ESPRotary::readPos(void * args) {
     struct _rotbyte rotary;
-	int num;
+	// int num;
 	enum _event var;
 	while( 1 ){
-		num = xQueueReceive(q1, &rotary, portMAX_DELAY);
+		xQueueReceive(q1, &rotary, portMAX_DELAY);
 		n++;
         rb.push( rotary.rot & 3 );
 

@@ -228,13 +228,13 @@ void readTemp(void *pvParameters){
 		if( Audio.getDisable() != true )
 		{
 			float t = ds18b20.getTemp();
-
-			xSemaphoreTake(xMutex,portMAX_DELAY );
-			temperature = t;
-			xSemaphoreGive(xMutex);
+			// xSemaphoreTake(xMutex,portMAX_DELAY );
+			temperature = temperature + (t-temperature)*0.1 ;
+			// printf("temperature=%f\n", temperature );
+			// xSemaphoreGive(xMutex);
 		}
 		esp_task_wdt_reset();
-		vTaskDelayUntil(&xLastWakeTime, 2000/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS);
 	}
 }
 

@@ -506,11 +506,11 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		}
 
     // Temperature Value
-	if( (int)temp*10 != tempalt ) {
+	if( (int)(temp*10) != tempalt ) {
 		ucg->setFont(ucg_font_fur14_hf);
 		ucg->setPrintPos(FIELD_START+20,DISPLAY_H);
 		ucg->printf("%-2.1f\xb0""  ", temp );
-		tempalt=(int)temp*10;
+		tempalt=(int)(temp*10);
 		vTaskDelay(1);
 	}
 	// Battery Symbol

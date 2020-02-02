@@ -787,7 +787,7 @@ void SetupMenuValFloat::down( int count ){
 void SetupMenuValFloat::up( int count ){
 	if( (selected != this) || !_menu_enabled )
 		return;
-	printf("val up %d times \n", count );
+	// printf("val up %d times \n", count );
 	if ( *_value < _max )
 		*_value+=(_step * count);
     displayVal();

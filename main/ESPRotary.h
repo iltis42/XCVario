@@ -20,8 +20,8 @@
 class RotaryObserver{
 public:
 	RotaryObserver(){};
-	virtual void up() = 0;
-	virtual void down() = 0;
+	virtual void up( int count ) = 0;
+	virtual void down( int count ) = 0;
 	virtual void press() = 0;
 	virtual void release() = 0;
 	virtual void longPress() = 0;
@@ -61,7 +61,7 @@ private:
 	size_t sz = 0 ;
 };
 
-enum _event { PRESS, LONG_PRESS, RELEASE, UP, DOWN, ERROR };
+enum _event { NONE, PRESS, LONG_PRESS, RELEASE, UP, DOWN, ERROR, MAX_EVENT };
 
 class ESPRotary {
 public:

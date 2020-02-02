@@ -262,7 +262,7 @@ void MenuEntry::showhelp( int y ){
 	}
 }
 
-void SetupMenu::down(){
+void SetupMenu::down(int count){
 	if( selected == this && !_menu_enabled ) {
 		printf("root: down\n");
 		if( _setup->get()->_MC > 0.1 ) {
@@ -288,7 +288,7 @@ void SetupMenu::down(){
 	// display();
 }
 
-void SetupMenu::up(){
+void SetupMenu::up(int count){
 	if( selected == this && !_menu_enabled ) {
 		printf("root: up\n");
 		if( _setup->get()->_MC < 9.9 ) {
@@ -773,23 +773,23 @@ void SetupMenuValFloat::displayVal()
 	ucg->setFont(ucg_font_ncenR14_hr);
 }
 
-void SetupMenuValFloat::down(){
+void SetupMenuValFloat::down( int count ){
 	if( (selected != this) || !_menu_enabled )
 		return;
 	// printf("val down\n");
 	if( *_value > _min )
-		*_value-=_step;
+		*_value-=(_step * count);
 	displayVal();
 	if( _action != 0 )
 		(*_action)( this );
 }
 
-void SetupMenuValFloat::up(){
+void SetupMenuValFloat::up( int count ){
 	if( (selected != this) || !_menu_enabled )
 		return;
-	// printf("val up\n" );
+	printf("val up %d times \n", count );
 	if ( *_value < _max )
-		*_value+=_step;
+		*_value+=(_step * count);
     displayVal();
 	if( _action != 0 )
 		(*_action)( this );
@@ -884,14 +884,17 @@ void SetupMenuSelect::display( int mode ){
 		delay(1000);
 }
 
-void SetupMenuSelect::down(){
+void SetupMenuSelect::down(int count){
 	if( (selected != this) || !_menu_enabled )
 		return;
 
 	if( _numval > 9 ){
 		    xSemaphoreTake(spiMutex,portMAX_DELAY );
-			if( (*_select) >  0 )
-				(*_select)--;
+			while( count ) {
+				if( (*_select) > 0 )
+					(*_select)--;
+				count--;
+			}
 			ucg->setPrintPos( 1, 50 );
 			ucg->printf("%s                  ",_values[*_select].c_str());
 			xSemaphoreGive(spiMutex );
@@ -908,14 +911,17 @@ void SetupMenuSelect::down(){
 	}
 }
 
-void SetupMenuSelect::up(){
+void SetupMenuSelect::up(int count){
 	if( (selected != this) || !_menu_enabled )
 		return;
 	if( _numval > 9 )
 	{
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
-		if( (*_select) <  _numval-1 )
-			(*_select)++;
+		while( count ) {
+			if( (*_select) <  _numval-1 )
+				(*_select)++;
+			count--;
+			}
 		ucg->setPrintPos( 1, 50 );
 		ucg->printf("%s                   ", _values[*_select].c_str());
 		xSemaphoreGive(spiMutex );

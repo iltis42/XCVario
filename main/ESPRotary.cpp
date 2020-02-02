@@ -58,56 +58,93 @@ void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
 	gpio_isr_handler_add(clk, ESPRotary::readPosInt, NULL);
 	gpio_isr_handler_add(sw, ESPRotary::readPosInt, NULL);
 	xTaskCreatePinnedToCore(&ESPRotary::readPos, "readPos", 4096, NULL, 20, NULL, 0);
-	xTaskCreatePinnedToCore(&ESPRotary::informObservers, "informObservers", 8192, NULL, 5, NULL, 0);
+	xTaskCreatePinnedToCore(&ESPRotary::informObservers, "informObservers", 8192, NULL, 10, NULL, 0);
 	xBinarySemaphore = xSemaphoreCreateBinary();
 }
+
+enum _event infoalt = NONE;
+
+int events[ MAX_EVENT ];
 
 void ESPRotary::informObservers( void * args )
 {
 	enum _event info;
-	int num = xQueueReceive(q2, &info, portMAX_DELAY);
-	while( num > 0 ){
-		if( info == UP ) {
-			printf("Rotary up\n");
-			for (int i = 0; i < observers.size(); i++)
-				observers[i]->up();
+	for( int i=0; i < MAX_EVENT; i++ )
+		events[i] = 0;
+	int ialt = NONE;
+	while( 1 ) {
+		int queue = xQueueGenericReceive(q2, &info, portMAX_DELAY, false );
+		printf("Queue Poll: %d  info:%d\n", queue, info );
+		printf("Queue: %d \n", queue );
+		ialt = info;
+		events[info]++;
+		int runs = 8;
+		int mq = uxQueueMessagesWaiting(q2);
+		while( mq && runs ) {
+			xQueueGenericReceive(q2, &info, portMAX_DELAY, false);
+			printf("Messages in the Queue: %d  info:%d  run:%d\n", mq, info, runs );
+			if( queue )
+				events[info]++;
+			if( ialt != info ){
+				ialt = info;
+				break;
+			}
+			sleep(0.05);
+			runs --;
+			mq = uxQueueMessagesWaiting(q2);
 		}
-		else if( info == DOWN ) {
-			printf("Rotary down\n");
-			for (int i = 0; i < observers.size(); i++)
-				observers[i]->down();
+
+		for( int i=0; i < MAX_EVENT; i++ )
+		{
+			int num;
+			if(  events[i] == 0 )
+				continue;
+			num = events[i];
+			printf("Event i:%d number events:%d \n", i, events[i] );
+			if( i == UP ) {
+				printf("Rotary up\n");
+				for (int i = 0; i < observers.size(); i++)
+					observers[i]->up( num );
+			}
+			else if( i == DOWN ) {
+				printf("Rotary down\n");
+				for (int i = 0; i < observers.size(); i++)
+					observers[i]->down( num );
+			}
+			else if( i == RELEASE ){      // pullup, so not pressed is 1
+				printf("Switch released action\n");
+				for (int i = 0; i < observers.size(); i++)
+					observers[i]->release();
+				printf("End Switch released action\n");
+			}
+			else if ( i == PRESS ){
+				printf("Switch pressed action\n");
+				for (int i = 0; i < observers.size(); i++)
+					observers[i]->press();
+				printf("End Switch pressed action\n");
+			}
+			else if ( i == LONG_PRESS ){
+						printf("Switch long pressed action\n");
+						for (int i = 0; i < observers.size(); i++)
+							observers[i]->longPress();
+						printf("End Switch long pressed action\n");
+					}
+			else if ( i == ERROR ){
+						printf("ERROR ROTARY SEQ %d\n", errors++ );
+			}
 		}
-		else if( info == RELEASE ){      // pullup, so not pressed is 1
-			printf("Switch released action\n");
-			for (int i = 0; i < observers.size(); i++)
-				observers[i]->release();
-			printf("End Switch released action\n");
-		}
-		else if ( info == PRESS ){
-			printf("Switch pressed action\n");
-			for (int i = 0; i < observers.size(); i++)
-				observers[i]->press();
-			printf("End Switch pressed action\n");
-		}
-		else if ( info == LONG_PRESS ){
-					printf("Switch long pressed action\n");
-					for (int i = 0; i < observers.size(); i++)
-						observers[i]->longPress();
-					printf("End Switch long pressed action\n");
-				}
-		else if ( info == ERROR ){
-					printf("ERROR ROTARY SEQ %d\n", errors++ );
-		}
-		num = xQueueReceive(q2, &info, portMAX_DELAY);
+		for( int i=0; i < MAX_EVENT; i++ )
+			events[i] = 0;
 	}
 }
 
 // receiving from Interrupt the rotary direction and switch
 void ESPRotary::readPos(void * args) {
     struct _rotbyte rotary;
-	int num = xQueueReceive(q1, &rotary, portMAX_DELAY);
+	int num;
 	enum _event var;
-	while( num > 0 ){
+	while( 1 ){
+		num = xQueueReceive(q1, &rotary, portMAX_DELAY);
 		n++;
         rb.push( rotary.rot & 3 );
 
@@ -119,12 +156,23 @@ void ESPRotary::readPos(void * args) {
 		}
 		else if( (rb[0] == 3) && (rb[1] == 0) ) {
 			 // printf("Rotary 30\n");
+			// ignore
 		}
 		else if ( (rb[0] == 2) && (rb[1] == 1) ) {
 			 // printf("Rotary 21\n");
+			// ignore
 		}
+		else if ( (rb[0] == 3) && (rb[1] == 1) ) {
+					 // printf("Rotary 31\n");
+					// ignore
+				}
+		else if ( (rb[0] == 2) && (rb[1] == 0) ) {
+					 // printf("Rotary 21\n");
+					// ignore
+				}
 		else {
 			var = ERROR;
+			printf( "Rot 0:%d 1:%d\n", rb[0], rb[1] );
 			xQueueSend(q2, &var, portMAX_DELAY );
 		}
 		int delta = dir - last_dir;
@@ -160,7 +208,7 @@ void ESPRotary::readPos(void * args) {
 					swtime = rotary.time;
 				}
 		}
-		num = xQueueReceive(q1, &rotary, portMAX_DELAY);
+		// num = xQueueReceive(q1, &rotary, portMAX_DELAY);
 	}
 }
 

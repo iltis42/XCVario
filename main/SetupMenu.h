@@ -77,8 +77,8 @@ public:
 	void setup();
 	void display( int mode=0 );
 
-	void up();  // step up to parent
-	void down();
+	void up( int count );  // step up to parent
+	void down( int count );
 	void press();
 	void longPress();
 
@@ -94,8 +94,8 @@ public:
 	void displayVal();
 	static void showQnhMenu();
 
-	void up();  // step up to parent
-	void down();
+	void up( int count );  // step up to parent
+	void down( int count );
 	void press();
 	virtual ~SetupMenuValFloat() {};
     float *_value;
@@ -117,8 +117,8 @@ public:
 	void addEntry( String ent ) {  _values.push_back( ent );
 										_numval++; };
 	void updateEntry( String ent, int num ) {  _values[ num ] = ent; };
-	void up();  // step up to parent
-	void down();
+	void up( int count );  // step up to parent
+	void down( int count );
 	void press();
 	virtual ~SetupMenuSelect() {};
 

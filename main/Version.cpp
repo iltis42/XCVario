@@ -2,7 +2,7 @@
  * Version.cpp
  *
  *  Created on: Feb 10, 2019
- *      Author: iltis
+ *      Author: iltis 
  */
 
 #include "Version.h"

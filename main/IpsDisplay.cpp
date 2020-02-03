@@ -105,6 +105,7 @@ int IpsDisplay::wkspeeds[6];
 ucg_color_t IpsDisplay::wkcolor;
 char IpsDisplay::wkss[6];
 int IpsDisplay::wkposalt;
+int IpsDisplay::wkialt;
 
 float IpsDisplay::_range_clip = 0;
 int   IpsDisplay::_divisons = 5;
@@ -201,10 +202,10 @@ void IpsDisplay::initDisplay() {
 	ucg->setColor(0, COLOR_HEADER );
 	ucg->print(" IAS kph");
 	ucg->setPrintPos(IASVALX,YS2F-(2*fh)-8);
-	if( _setup->get()->_flap_enable )
-		ucg->print("S2F    FLP");
-	else
-		ucg->print("S2F");
+	// if( _setup->get()->_flap_enable )
+	// 	ucg->print("S2F    FLP");
+	// else
+	ucg->print("S2F");
 
 	ucg->setColor(0, COLOR_WHITE );
 	// int mslen = ucg->getStrWidth("km/h");
@@ -336,6 +337,7 @@ void IpsDisplay::redrawValues()
     wkspeeds[5] = 60;
     wkbox = false;
     wkposalt = -100;
+    wkialt = -3;
 }
 
 void IpsDisplay::drawTeBuf(){
@@ -414,17 +416,46 @@ void IpsDisplay::drawWkBar( int ypos, float wkf ){
 		wkbox = true;
 	}
 	ucg->setClipRange( DISPLAY_W-lfw-2, top-2, lfw, 2*lfh-2 );
-	for( int wk=-2; wk<=2; wk++ ){
+	for( int wk=int(wkf-1); wk<=int(wkf+1) && wk<=2; wk++ ){
+		if(wk<-2)
+			continue;
 		if( wk == 0 )
 			sprintf( wkss,"% d", wk);
 		else
 			sprintf( wkss,"%+d", wk);
-		ucg->setPrintPos(DISPLAY_W-lfw-2, top+(lfh+4)*(5-(wk+2))+(int)((wkf-2)*(lfh+4)) );
+		int y=top+(lfh+4)*(5-(wk+2))+(int)((wkf-2)*(lfh+4));
+		ucg->setPrintPos(DISPLAY_W-lfw-2, y );
+		if( wk == 0 )
+			ucg->setColor(COLOR_WHITE);
+		else
+			ucg->setColor(COLOR_WHITE);
 		ucg->printf(wkss);
+		if( wk != -2 ) {
+			ucg->setColor(COLOR_WHITE);
+			ucg->drawHLine(DISPLAY_W-lfw-5, y+3, lfw+4 );
+		}
 	}
 	ucg->undoClipRange();
 }
 
+#define DISCRAD 3
+#define BOXLEN  12
+#define FLAPLEN 14
+#define WKSYMST DISPLAY_W-28
+
+void IpsDisplay::drawWkSymbol( int ypos, int wk, int wkalt ){
+	ucg->setColor( COLOR_WHITE );
+	ucg->drawDisc( WKSYMST, ypos, DISCRAD, UCG_DRAW_ALL );
+	ucg->drawBox( WKSYMST, ypos-DISCRAD, BOXLEN, DISCRAD*2+1  );
+	ucg->setColor( COLOR_BLACK );
+	ucg->drawTriangle( WKSYMST+DISCRAD+BOXLEN-2, ypos-DISCRAD,
+					   WKSYMST+DISCRAD+BOXLEN-2, ypos+DISCRAD+1,
+					   WKSYMST+DISCRAD+BOXLEN-2+FLAPLEN, ypos+wkalt*4 );
+	ucg->setColor( COLOR_RED );
+	ucg->drawTriangle( WKSYMST+DISCRAD+BOXLEN-2, ypos-DISCRAD,
+					   WKSYMST+DISCRAD+BOXLEN-2, ypos+DISCRAD+1,
+					   WKSYMST+DISCRAD+BOXLEN-2+FLAPLEN, ypos+wk*4 );
+}
 
 
 void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, float altitude, float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode ){
@@ -446,6 +477,10 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 	    	ucg->setColor(  COLOR_WHITE  );
 	    	drawWkBar( YS2F-fh, (float)(wk)/10 );
 	    	wkposalt = wk;
+	    }
+	    if( wki != wkialt ) {
+	    	drawWkSymbol( YS2F-fh-25, wki, wkialt );
+	    	wkialt=wki;
 	    }
 	}
 
@@ -521,8 +556,8 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		charge = (int)(( volt - _setup->get()->_bat_low_volt )*100)/( _setup->get()->_bat_full_volt - _setup->get()->_bat_low_volt );
 		if(charge < 0)
 			charge = 0;
-		if( charge > 100 )
-			charge = 100;
+		if( charge > 99 )
+			charge = 99;
 		if( (tick%100) == 0 )  // check setup changes all 10 sec
 		{
 			yellow =  (int)(( _setup->get()->_bat_yellow_volt - _setup->get()->_bat_low_volt )*100)/( _setup->get()->_bat_full_volt - _setup->get()->_bat_low_volt );

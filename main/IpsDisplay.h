@@ -25,6 +25,7 @@
 #define DARK_GREY    230, 230, 230
 #define COLOR_MGREY  180, 180, 180
 #define COLOR_BLUE   255, 255, 0
+#define COLOR_LBLUE  200, 200, 0
 
 /*
 #define COLOR_HEADER 65,105,225  // royal blue
@@ -101,6 +102,7 @@ private:
 	static int  wkspeeds[6];
 	static bool wkbox;
 	static int wkposalt;
+	static int wkialt;
 
 	static int yposalt;
 	static int tyalt;
@@ -120,6 +122,7 @@ private:
 	static void drawAvgSymbol( int y, int r, int g, int b );
 	static void drawLegend( bool onlyLines=false );
 	static void drawWkBar( int ypos, float wk );
+	static void drawWkSymbol( int ypos, int wk, int wkalt );
 	static int getWk( int wks );
 };
 

@@ -32,7 +32,6 @@ bool DS18B20::begin(){
 	dallas->setOneWire(ow);
 	dallas->begin();
 	numDevices = dallas->getDeviceCount();
-
 	printf("Found %d Dallas temperature devices\n", numDevices);
 	if( numDevices )
 		return true;
@@ -42,30 +41,21 @@ bool DS18B20::begin(){
 
 float DS18B20::getTemp(){
 	 float temp = 0;
-	 if (0 == numDevices) {
-	        printf("DS18B20 No device found\n");
+	 uint8_t a;
+	 dallas->getAddress( &a, 0 );
+	 bool c = dallas->isConnected( &a );
+	 // printf("Address: %d  Connected: %d\n", a, c );
+	 if ( !c ) {
+	        printf("DS18B20 not connected\n");
+	        dallas->setOneWire(ow);
+	        dallas->begin();
 	        return 0;
 	    }
-	    dallas->getWaitForConversion();
-	    dallas->requestTemperatures();
-	    // ESP_LOGW("DS18B20", "wait=%d, conversionTime=%0.2f ms", wait, 0.0);
-
-	    // uint8_t deviceAddress[8];
-	    for (int i = 0; i < 1; i++) {
-	        temp = dallas->getTempCByIndex(i);
-	        // dallas->getAddress(deviceAddress, i);
-
-	        /*
-	        char buf[17];
-	        char*p = buf;
-	        for (int i = 0; i < 8; ++i) {
-	            p += snprintf(p, sizeof (buf) - 2 * i, "%02x", deviceAddress[i]);
-	        }
-	        */
-	        // ESP_LOGW("DS18B20", "index=%d, address=%s, temp=%.2f", i, buf, temp);
-	    }
-	    // printf("Temp=%f\n", temp);
-	    return temp;
+	dallas->requestTemperaturesByAddress(&a);
+	dallas->getWaitForConversion();
+	temp = dallas->getTempC( &a );
+	// printf("Temperatur: %f\n", temp);
+	return temp;
 }
 
 

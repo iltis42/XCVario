@@ -84,7 +84,7 @@ float TE=0;
 float speedP;
 bool  enableBtTx=true;
 
-DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 worked before
+DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 worked before   19 if pin 23 defect
 MP5004DP MP5004DP;
 OpenVario OV;
 xSemaphoreHandle xMutex=NULL;
@@ -229,7 +229,7 @@ void readTemp(void *pvParameters){
 		{
 			float t = ds18b20.getTemp();
 			// xSemaphoreTake(xMutex,portMAX_DELAY );
-			temperature = temperature + (t-temperature)*0.1 ;
+			temperature = temperature + (t-temperature)*0.2 ;
 			// printf("temperature=%f\n", temperature );
 			// xSemaphoreGive(xMutex);
 		}

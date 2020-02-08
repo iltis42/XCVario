@@ -33,7 +33,7 @@ int BTSender::queueFull() {
 }
 
 void BTSender::send(char * s){
-	// printf("%s",s);
+	printf("%s",s);
 	std::string str( s );
 	if (queue.size() < 100) {
 		queue.push( str );

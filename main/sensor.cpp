@@ -84,7 +84,7 @@ float TE=0;
 float speedP;
 bool  enableBtTx=true;
 
-DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 worked before   19 if pin 23 defect
+DS18B20  ds18b20( GPIO_NUM_17 );  // GPIO_NUM_23 standard, alternative  GPIO_NUM_17
 MP5004DP MP5004DP;
 OpenVario OV;
 xSemaphoreHandle xMutex=NULL;

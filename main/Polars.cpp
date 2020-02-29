@@ -9,6 +9,8 @@
 
 #include "Polars.h"
 
+// Format per glider:  { GliderType, Wingload (kg/m2), speed1 (km/h), sink1 (m/s), speed2, sink2, speed3, sink3 },
+
 static const t_polar polars_default_arr[] = {
 	{"User Polar",34.40,80,-0.66,125,-0.97,175,-2.24},
 	{"ASK 21",31.30,80,-0.76,125,-1.21,175,-2.75},

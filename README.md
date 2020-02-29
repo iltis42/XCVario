@@ -1,7 +1,7 @@
 # OpenIVario
 ESP32 based lean Variometer system with OpenVario Interface
 
-At the begin i want to show a short Demo of the variometer, including sensitivity and full sunlight test, followed by an explanation of various setup options and how to use.
+At the begin i want to show a short Demo of the variometer, including sensitivity and full sunlight test, followed by an explanation of various setup options and how to use. Its now the third year of this project, moving now to a colored display this winter we built a low number (one digit) of devices with a 3D printed housing, but depending on followers demands, we may do a bigger lot in near future.
 
 * [Quick Demo on YouTube](https://www.youtube.com/watch?v=Piu5SiNPaRg)
 * [Vario Sensitivity Test](https://www.youtube.com/watch?v=RqFLOQ9wvgY)
@@ -25,7 +25,7 @@ The design supports the follwing sensors:
 
 The ESP32 module contains a bluetooth sender module, so we are able to transmit all data to XCSoar in [OpenVario format](https://github.com/iltis42/OpenIVario/blob/master/putty.log), so XCSoar can operate as full glide computer with TE-Vario, Barometric Altitude, Speed and more.
 
-Prototype with 500 nits 2.4 inch IPS Technology LCD Display:
+The Vario Prototype with 500 nits 2.4 inch IPS Technology LCD Display features a low power consumation of less that 1W, that equals to 70mA at 12.5V operating voltage.
 
 ![IPS Display 2.4 inch](https://raw.githubusercontent.com/iltis42/OpenIVario/master/images/IMG_20200207_000831_resized_20200207_120901714.jpg)
 ![Sensor Board PCB](https://github.com/iltis42/OpenIVario/blob/master/images/Sensorboard.jpg?raw=true)

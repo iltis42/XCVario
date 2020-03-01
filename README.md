@@ -25,7 +25,7 @@ The design supports the follwing sensors:
 
 The ESP32 module contains a bluetooth sender module, so we are able to transmit all data to XCSoar in [OpenVario format](https://github.com/iltis42/OpenIVario/blob/master/putty.log), so XCSoar can operate as full glide computer with TE-Vario, Barometric Altitude, Speed and more.
 
-The Vario Prototype with 500 nits 2.4 inch IPS Technology LCD Display features a low power consumation of less that 1W, that equals to 70mA at 12.5V operating voltage.
+The Vario Prototype with 500 nits 2.4 inch IPS Technology LCD Display features a low power consumation of less that 1W, that equals to 70mA at 12.5V operating voltage. The Size is *68x68x15 mm* at the front, the body is *56mm* in diameter and about *12 cm* long behind the panel. Weigt is about *185 gramm*.
 
 ![IPS Display 2.4 inch](https://raw.githubusercontent.com/iltis42/OpenIVario/master/images/IMG_20200207_000831_resized_20200207_120901714.jpg)
 ![Sensor Board PCB](https://github.com/iltis42/OpenIVario/blob/master/images/Sensorboard.jpg?raw=true)

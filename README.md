@@ -27,14 +27,11 @@ The ESP32 module contains a bluetooth sender module, so we are able to transmit 
 
 The Vario Prototype with 500 nits 2.4 inch IPS Technology LCD Display features a low power consumation of less that 1W, that equals to 70mA at 12.5V operating voltage. The Size is *68x68x15 mm* at the front, the body is *56mm* in diameter and about *12 cm* long behind the panel. Weigt is about *185 gramm*.
 
-![IPS Display 2.4 inch](https://raw.githubusercontent.com/iltis42/OpenIVario/master/images/IMG_20200207_000831_resized_20200207_120901714.jpg)
-![Sensor Board PCB](https://github.com/iltis42/OpenIVario/blob/master/images/Sensorboard.jpg?raw=true)
-
-The current Soft- and Hardware features:
+The Soft- and Hardware features:
 
 - Easy QNH and McCready Adjustment
-- Audio-Generator with adjustable Volume and Deadband plus setup option for frequency and range
-- Loudspeaker integrated
+- Audio-Generator with adjustable Volume and Deadband plus setup option for frequency tone style and range
+- Integrated loudspeaker 
 - Option for Flap Position Indicator
 - S2F (Speed2Fly) indicator with configurable MC and Ballast based on customizable Polar
 - More that 80 Polars are already included ( list in https://github.com/iltis42/OpenIVario/blob/master/main/Polars.cpp )
@@ -53,3 +50,6 @@ The current Soft- and Hardware features:
 - 3D Printed Housing Available 
 - Schematic Sensor Board: [Sensor Board Schematic](https://github.com/iltis42/OpenIVario/blob/master/images/sensor.pdf)
 - Schematic Display Board: [Display Schematic](https://github.com/iltis42/OpenIVario/blob/master/images/ivario-display.pdf)
+
+![IPS Display 2.4 inch](https://raw.githubusercontent.com/iltis42/OpenIVario/master/images/IMG_20200207_000831_resized_20200207_120901714.jpg)
+![Sensor Board PCB](https://github.com/iltis42/OpenIVario/blob/master/images/Sensorboard.jpg?raw=true)

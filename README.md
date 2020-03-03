@@ -7,12 +7,14 @@ At the begin i want to show a short Demo of the variometer, including sensitivit
 * [Vario Sensitivity Test](https://www.youtube.com/watch?v=RqFLOQ9wvgY)
 * [Basic Function Demo](https://www.youtube.com/watch?v=zGldyS57ZgQ)
 * [Full Sunlight test](https://www.youtube.com/watch?v=TFL9i2DBNpA)
+* [Audio Demo (Single Tone) in Flight] (https://www.youtube.com/watch?v=6Vc6OHcO_T4)
 * [Basic Vario Setup MC, QNH, Ballast](https://www.youtube.com/watch?v=DvqhuaVlfEI)
 * [Airfield Elevation and Vario Setup](https://www.youtube.com/watch?v=x3UIpL9qGec)
 * [Bluetooth, Audio and Polar Setup](https://www.youtube.com/watch?v=9HcsfyLX-wE)
 * [Flap (WK) Indicator Setup](https://www.youtube.com/watch?v=tP2a2aDoOsg)
 * [Vario System Setup](https://www.youtube.com/watch?v=BCR16WUTwJY)
 * [Setup XCSoar to connect with Vario](https://www.youtube.com/watch?v=LDgnvLoTekU&t=95s)
+
 
 The project is dedicated to my new flight computer development using ESP32 WROOM development board plus modern sensors such as BMP280, DS1820b, MP5004DP, and colored sunlight readable display display.
 It delivers data in the well known and documented OperVario format to any flight computer running XC-Soar.

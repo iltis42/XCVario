@@ -7,7 +7,7 @@ At the begin i want to show a short Demo of the variometer, including sensitivit
 * [Vario Sensitivity Test](https://www.youtube.com/watch?v=RqFLOQ9wvgY)
 * [Basic Function Demo](https://www.youtube.com/watch?v=zGldyS57ZgQ)
 * [Full Sunlight test](https://www.youtube.com/watch?v=TFL9i2DBNpA)
-* [Audio Demo (Single Tone) in Flight] (https://www.youtube.com/watch?v=6Vc6OHcO_T4)
+* [Audio Demo in Flight](https://www.youtube.com/watch?v=6Vc6OHcO_T4)  ("Single Tone" Modus)
 * [Basic Vario Setup MC, QNH, Ballast](https://www.youtube.com/watch?v=DvqhuaVlfEI)
 * [Airfield Elevation and Vario Setup](https://www.youtube.com/watch?v=x3UIpL9qGec)
 * [Bluetooth, Audio and Polar Setup](https://www.youtube.com/watch?v=9HcsfyLX-wE)

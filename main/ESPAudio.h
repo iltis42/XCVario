@@ -13,6 +13,9 @@
 #include "driver/dac.h"
 #include "Setup.h"
 
+#define SOUND_ON 1
+#define SOUND_OFF 0
+
 class ESPAudio {
 public:
 	ESPAudio();

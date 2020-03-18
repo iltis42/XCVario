@@ -1,6 +1,5 @@
 #include <btstack.h> 
 
-#include <esp_log.h>
 #include <string>
 #include "sdkconfig.h"
 #include <stdio.h>
@@ -14,6 +13,7 @@
 
 #include "BME280_ESP32_SPI.h"
 #include <driver/adc.h>
+#include "driver/gpio.h"
 #include "mcp3221.h"
 #include "ESP32NVS.h"
 #include "MP5004DP.h"
@@ -76,6 +76,7 @@ BMP:
 #define CS_Display GPIO_NUM_13    // CS pin 13 for Display
 #define RESET_Display GPIO_NUM_5  // Reset pin for Display
 #define FREQ_BMP_SPI 13111111/2
+
 
 float baroP=0;
 float temperature=15.0;
@@ -247,7 +248,6 @@ void sensor(void *args){
 	mysetup.begin();
 	setupv.begin();
 	sleep( 1 );
-	Audio.begin( DAC_CHANNEL_1, GPIO_NUM_0, &mysetup );
 
 	xMutex=xSemaphoreCreateMutex();
 	uint8_t t_sb = 0;   //stanby 0: 0,5 mS 1: 62,5 mS 2: 125 mS
@@ -276,8 +276,8 @@ void sensor(void *args){
 	MP5004DP.doOffset();
 	ADC.begin();
 
-	pwm1.init( GPIO_NUM_18 );
-    pwm1.setContrast( mysetup.get()->_contrast_adj );
+	// pwm1.init( GPIO_NUM_18 );
+    // pwm1.setContrast( mysetup.get()->_contrast_adj );
     s2f.change_polar();
 	s2f.change_mc_bal();
 
@@ -308,8 +308,10 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_Display, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_bme280BA, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
+
     display.initDisplay();
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 10, dpid, 0);
+	Audio.begin( DAC_CHANNEL_1, GPIO_NUM_0, &mysetup );
 
 	if( speed < 50.0 ){
 		xSemaphoreTake(xMutex,portMAX_DELAY );

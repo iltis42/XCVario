@@ -11,7 +11,6 @@
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "esp_system.h"
-#include <esp_log.h>
 #include "sdkconfig.h"
 #include "esp_task_wdt.h"
 
@@ -257,6 +256,7 @@ void ESPAudio::modtask(void* arg )
 	}
 }
 
+int audio=0;
 
 void ESPAudio::dactask(void* arg )
 {
@@ -278,11 +278,26 @@ void ESPAudio::dactask(void* arg )
 
 		int step = int( (f/freq_step ) + 0.5);
 		if( Audio.inDeadBand(te) || Audio.getMute()  ){
-			step = 0;
+			// step = 0;
 			// printf("Audio OFF\n");
-			Audio.dac_scale_set(_ch, 3 );
+			// Audio.dac_scale_set(_ch, 3 );
+			// gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );
+			if( audio == 1 ) {
+				gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );
+				gpio_set_level(GPIO_NUM_19, 0);
+				audio = 0;
+			}
 		}
 		else{
+			// gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );
+			if( audio == 0 ) {
+				// gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );
+			    // gpio_set_level(GPIO_NUM_19, 1);
+			    gpio_set_direction(GPIO_NUM_19, GPIO_MODE_INPUT );   // use pullup
+			    gpio_set_pull_mode(GPIO_NUM_19, GPIO_FLOATING);
+			    audio = 1;
+			}
+
 			Audio.dac_scale_set(_ch, 0 );
 			if( hightone && (_tonemode == 1)  ){
 				step = int( (f*_high_tone_var/freq_step) + 0.5);
@@ -297,6 +312,7 @@ void ESPAudio::dactask(void* arg )
 		Audio.dac_frequency_set(clk_8m_div, step);
 		// printf("TE %f  frequency: %.0f Hz\n", te, f );
 		vTaskDelayUntil(&xLastWakeTime, 20/portTICK_PERIOD_MS);
+
 	}
 }
 
@@ -359,6 +375,8 @@ void ESPAudio::setup()
 	_range = _setup->get()->_range;
 	_tonemode = _setup->get()->_dual_tone;
 	_high_tone_var = ((_setup->get()->_high_tone_var + 100.0)/100);
+	// gpio_set_pull_mode(GPIO_NUM_19, GPIO_PULLUP_ONLY );
+
 }
 
 void ESPAudio::begin( dac_channel_t ch, gpio_num_t button, Setup *asetup )
@@ -373,10 +391,18 @@ void ESPAudio::begin( dac_channel_t ch, gpio_num_t button, Setup *asetup )
 	dac_offset_set(_ch, offset);
 	dac_invert_set(_ch, 2 );
 	_testmode = false;
-
 	_dead_mute = true;
+
 	gpio_set_direction(_button, GPIO_MODE_INPUT);
 	gpio_set_pull_mode(_button, GPIO_PULLUP_ONLY);
+
+	gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );
+	gpio_set_level(GPIO_NUM_19, 0);
+
+	gpio_set_direction(GPIO_NUM_16, GPIO_MODE_INPUT );   // CS  4, (DP-INC), 16
+	gpio_set_pull_mode(GPIO_NUM_16, GPIO_PULLUP_ONLY);
+	gpio_set_direction(GPIO_NUM_17, GPIO_MODE_OUTPUT );   // UD  3, (DP-UD),  17
+	gpio_set_pull_mode(GPIO_NUM_17, GPIO_PULLUP_ONLY);
 
 	xTaskCreate(modtask, "modtask", 1024*2, NULL, 31, NULL);
 	xTaskCreate(dactask, "dactask", 1024*2, NULL, 31, NULL);

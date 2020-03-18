@@ -41,7 +41,7 @@
 #include "Ucglib.h"
 
 
-class SdSpi SPI;
+class SdSpi _SPI;
 
 /*=========================================================================*/
 /* 8 Bit SW SPI */
@@ -1020,7 +1020,7 @@ static int16_t ucg_com_arduino_4wire_HW_SPI(ucg_t *ucg, int16_t msg, uint16_t ar
       pinMode(ucg->pin_list[UCG_PIN_CS], OUTPUT);
       
       /* setup Arduino SPI */
-      SPI.begin();
+      _SPI.begin();
 #if defined(__AVR__)
       // SPI.setClockDivider( SPI_CLOCK_DIV2 );
       SPI.init(SPI_CLOCK_DIV2);
@@ -1047,18 +1047,18 @@ static int16_t ucg_com_arduino_4wire_HW_SPI(ucg_t *ucg, int16_t msg, uint16_t ar
       digitalWrite(ucg->pin_list[UCG_PIN_CD], arg);
       break;
     case UCG_COM_MSG_SEND_BYTE:
-      SPI.send(arg); 
+      _SPI.send(arg);
       break;
     case UCG_COM_MSG_REPEAT_1_BYTE:
       while( arg > 0 ) {
-	SPI.send(data[0]);
+	_SPI.send(data[0]);
 	arg--;
       }
       break;
     case UCG_COM_MSG_REPEAT_2_BYTES:
       while( arg > 0 ) {
-	SPI.send(data[0]);
-	SPI.send(data[1]);
+	_SPI.send(data[0]);
+	_SPI.send(data[1]);
 	arg--;
       }
       break;
@@ -1066,9 +1066,9 @@ static int16_t ucg_com_arduino_4wire_HW_SPI(ucg_t *ucg, int16_t msg, uint16_t ar
       if ( arg <= 3 )
       {
 	while( arg > 0 ) {
-	  SPI.send(data[0]);
-	  SPI.send(data[1]);
-	  SPI.send(data[2]);
+	  _SPI.send(data[0]);
+	  _SPI.send(data[1]);
+	  _SPI.send(data[2]);
 	  arg--;
 	}
       }
@@ -1085,7 +1085,7 @@ static int16_t ucg_com_arduino_4wire_HW_SPI(ucg_t *ucg, int16_t msg, uint16_t ar
 	  }
 	  if ( i == 0 )
 	    break;
-	  SPI.send(ucg_spi_buf, i);
+	  _SPI.send(ucg_spi_buf, i);
 	}
       }
       
@@ -1093,7 +1093,7 @@ static int16_t ucg_com_arduino_4wire_HW_SPI(ucg_t *ucg, int16_t msg, uint16_t ar
     case UCG_COM_MSG_SEND_STR:
       // SPI.send(data, arg);
       while( arg > 0 ) {
-	SPI.send(*data++);
+	_SPI.send(*data++);
 	arg--;
       }
       break;
@@ -1112,7 +1112,7 @@ static int16_t ucg_com_arduino_4wire_HW_SPI(ucg_t *ucg, int16_t msg, uint16_t ar
 	  }
 	}
 	data++;
-	SPI.send(*data);
+	_SPI.send(*data);
 	data++;
 	arg--;
       }

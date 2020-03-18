@@ -70,7 +70,7 @@ public:
 	inline double   readCuralt() { return _currentAlt; };   // get average Altitude
 
 	// Analog Display
-	void analogOut( gpio_num_t negative=GPIO_NUM_18, gpio_num_t positive=GPIO_NUM_19 );
+	void analogOut( gpio_num_t negative=GPIO_NUM_0, gpio_num_t positive=GPIO_NUM_0 );
 	void calcAnalogOut();
 	void setTE( double te ); // for testing purposes
 	void setAdj( double adj ) { _analog_adj = adj; calcAnalogOut(); };

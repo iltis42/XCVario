@@ -173,7 +173,7 @@ double BME280_ESP32_SPI::readTemperature( bool& success ){
 }
 
 //***************BME280 ****************************
-double BME280_ESP32_SPI::readPressure(  ){
+double BME280_ESP32_SPI::readPressure(){
 	if( init_err )
 			return 0.0;
 	// printf("++BMP280 readPressure cs:%d\n", _cs);
@@ -301,6 +301,33 @@ double BME280_ESP32_SPI::readAltitude(double SeaLevel_Pres) {
 	double altitude = 44330.0 * (1.0 - pow(pressure / SeaLevel_Pres, (1.0/5.255)));
 	// printf("--BME280 readAltitude p=%0.1f alt=%0.1f\n", pressure, altitude);
 	return altitude;
+}
+
+
+bool BME280_ESP32_SPI::selfTest( float& t, float &p ) {
+	uint8_t id = readID();
+	if( id != 0x58 ) {
+		printf("BMP280 Error, Chip ID reading failed BMP280 chip select pin %d read 0x%.2X (instead 0x58) \n", _cs, id  );
+		return( false );
+	}
+	bool success = false;
+	double temp=readTemperature(success);
+	t = (float)temp;
+	if( success == false ) {
+		printf("BMP280 Error, Temperatur reading BMP280 failed, invalid readout\n");
+		return( false );
+	}
+	if( (t < 0) || (t  > 40.0) ) {
+		printf("HW Error, Temperatur value reading BMP280 at normal condition (20 °C +-10) out of bounds readout T=%f\n", (float)t );
+		return( false );
+	}
+	if( init_err ) {
+		printf("BMP280 Error, initialisation invalid response from device\n");
+		return( false );
+	}
+	p = (float)readPressure();
+
+    return( true );
 }
 
 double BME280_ESP32_SPI::calcAVGAltitude(double SeaLevel_Pres, double p ) {

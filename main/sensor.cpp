@@ -40,6 +40,7 @@
 #include <SPI.h>
 #include <Ucglib.h>
 
+#define abs(x)  ( (x) < 0.0 ? -(x) : (x))
 
 /*
 
@@ -80,6 +81,7 @@ BMP:
 
 float baroP=0;
 float temperature=15.0;
+bool  validTemperature=false;
 float battery=0.0;
 float TE=0;
 float speedP;
@@ -228,9 +230,10 @@ void readTemp(void *pvParameters){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		if( Audio.getDisable() != true )
 		{
-			float t = ds18b20.getTemp();
+			float t = ds18b20.getTemp( validTemperature );
 			// xSemaphoreTake(xMutex,portMAX_DELAY );
-			temperature = temperature + (t-temperature)*0.2 ;
+			if( validTemperature )
+				temperature = temperature + (t-temperature)*0.2;
 			// printf("temperature=%f\n", temperature );
 			// xSemaphoreGive(xMutex);
 		}
@@ -241,6 +244,7 @@ void readTemp(void *pvParameters){
 
 
 void sensor(void *args){
+	bool selftestPassed=true;
 	esp_wifi_set_mode(WIFI_MODE_NULL);
 	spiMutex = xSemaphoreCreateMutex();
 	esp_log_level_set("*", ESP_LOG_INFO);
@@ -265,8 +269,44 @@ void sensor(void *args){
 	printf("BMP280 sensors init..\n");
 
     bmpTE.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
-    sleep( 1 );
+    // sleep( 1 );
 	bmpBA.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
+	sleep( 1 );
+	float ba_t, ba_p, te_t, te_p;
+	// bmpBA.selfTest( ba_t, ba_p);
+	if( ! bmpBA.selfTest( ba_t, ba_p) ) {
+	    printf("HW Error: Self test Barometric Pressure Sensor failed!\n");
+	    selftestPassed = false;
+	}
+	else
+		printf("Barometric Sensor T=%f P=%f\n", ba_t, ba_p);
+
+	// bmpTE.selfTest(te_t, te_p);
+	if( ! bmpTE.selfTest(te_t, te_p) ) {
+	    printf("HW Error: Self test TE Pressure Sensor failed!\n");
+	    selftestPassed = false;
+	}
+	else
+		printf("TE Sensor         T=%f P=%f\n", te_t, te_p);
+
+    if( selftestPassed ) {
+		if( abs(ba_t - te_t) >2.0 ) {
+			selftestPassed = false;
+			printf("Severe Temperature deviation delta > 2 °C between Baro and TE sensor: °C %f\n", abs(ba_t - te_t) );
+		}
+		else
+			printf("BMP 280 Temperature deviation test PASSED, dev: %f\n",  abs(ba_t - te_t));
+
+		if( abs(ba_p - te_p) >2.0 ) {
+			selftestPassed = false;
+			printf("Severe Pressure deviation delta > 2 hPa between Baro and TE sensor: %f\m", abs(ba_p - te_p) );
+		}
+		else
+			printf("BMP 280 Pressure deviation test PASSED, dev: %f\n", abs(ba_p - te_p) );
+    }
+
+
+
 	bmpVario.begin( &bmpTE, &mysetup );
 	bmpVario.setup();
 	VaSoSW.begin( GPIO_NUM_12 );
@@ -281,8 +321,7 @@ void sensor(void *args){
     s2f.change_polar();
 	s2f.change_mc_bal();
 
-	xTaskCreatePinnedToCore(&readBMP, "readBMP", 8000, NULL, 15, bpid, 0);
-	xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 30, 0, 0);
+
 	Version myVersion;
 	printf("Program Version %s\n", myVersion.version() );
 
@@ -300,18 +339,29 @@ void sensor(void *args){
 		printf("Bluetooth disabled\n");
 
 	ds18b20.begin();
-	xTaskCreatePinnedToCore(&readTemp, "readTemp", 8000, NULL, 1, tpid, 0);
+	float t = ds18b20.getTemp( validTemperature );
+	if( !validTemperature ) {
+		// selftestPassed = false;
+		printf("HW Error: Self test Temperatur Sensor failed; returned T=%2.2f\n", t );
+	}
 
-	Menu.begin( &display, &Rotary, &mysetup, &setupv, &bmpBA, &ADC );
+	// xTaskCreatePinnedToCore(&readTemp, "readTemp", 8000, NULL, 1, tpid, 0);
 
 	gpio_set_pull_mode(RESET_Display, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_Display, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_bme280BA, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
-    display.initDisplay();
-	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 10, dpid, 0);
 	Audio.begin( DAC_CHANNEL_1, GPIO_NUM_0, &mysetup );
+
+	xTaskCreatePinnedToCore(&readBMP, "readBMP", 8000, NULL, 15, bpid, 0);
+	xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 30, 0, 0);
+	display.initDisplay();
+	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 10, dpid, 0);
+	xTaskCreatePinnedToCore(&readTemp, "readTemp", 8000, NULL, 1, tpid, 0);
+
+
+	Menu.begin( &display, &Rotary, &mysetup, &setupv, &bmpBA, &ADC );
 
 	if( speed < 50.0 ){
 		xSemaphoreTake(xMutex,portMAX_DELAY );
@@ -349,6 +399,12 @@ void sensor(void *args){
 
 	Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
 	printf("Free Stack: S:%d \n", uxTaskGetStackHighWaterMark( spid ) );
+	if( !selftestPassed ) {
+			printf("\n\n\nSelftest failed, see above LOG for Problems\n\n\n");
+			sleep(5);
+		}
+		else
+			printf("\n\n\n*****  Selftest PASSED  ********\n\n\n");
 	vTaskDelete( NULL );
 
 }

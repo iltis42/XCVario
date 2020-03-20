@@ -124,8 +124,7 @@ SetupMenu::SetupMenu(){
 }
 
 SetupMenu::SetupMenu( String title ) {
-	printf("SetupMenu::SetupMenu( %s ) \n", title.c_str() );
-	printf("this:%x\n", (int)this);
+	// printf("SetupMenu::SetupMenu( %s ) \n", title.c_str() );
 	_rotary->attach(this);
 	_title = title;
 	highlight = -1;
@@ -170,7 +169,7 @@ void MenuEntry::uprint( int x, int y, const char* str ) {
 
 
 MenuEntry* MenuEntry::addMenu( MenuEntry * item ) {
-	printf("MenuEntry addMenu() title %s\n", item->_title.c_str() );
+	// printf("MenuEntry addMenu() title %s\n", item->_title.c_str() );
 	if( root == 0 ){
 		printf("Init root menu\n");
 		root = item;
@@ -179,7 +178,7 @@ MenuEntry* MenuEntry::addMenu( MenuEntry * item ) {
 		return item;
 	}
 	else{
-		printf("add to childs\n");
+		// printf("add to childs\n");
 		item->_parent = this;
 		_childs.push_back( item );
 		return item;
@@ -734,7 +733,7 @@ void SetupMenu::setup( )
 }
 
 SetupMenuValFloat::SetupMenuValFloat( String title, float *value, String unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu ) {
-	printf("SetupMenuValFloat( %s ) \n", title.c_str() );
+	// printf("SetupMenuValFloat( %s ) \n", title.c_str() );
 	_rotary->attach(this);
 	_title = title;
 	highlight = -1;
@@ -777,7 +776,7 @@ void SetupMenuValFloat::showQnhMenu(){
 void SetupMenuValFloat::display( int mode ){
 	if( (selected != this) || !_menu_enabled )
 		return;
-	printf("SetupMenuValFloat display() %d %x\n", pressed, (int)this);
+	// printf("SetupMenuValFloat display() %d %x\n", pressed, (int)this);
 	uprintf( 5,25, selected->_title.c_str() );
 	displayVal();
 	y= 75;
@@ -860,7 +859,7 @@ void SetupMenuValFloat::press(){
 
 
 SetupMenuSelect::SetupMenuSelect( String title, uint8_t *select, bool restart, int (*action)(SetupMenuSelect *p), bool save ) {
-	printf("SetupMenuSelect( %s ) \n", title.c_str() );
+	// printf("SetupMenuSelect( %s ) \n", title.c_str() );
 	_rotary->attach(this);
 	_title = title;
 	highlight = -1;

@@ -115,6 +115,7 @@ bool DallasRmt::validFamily(const uint8_t* deviceAddress)
             ret = true;
             break;
         default:
+        	// printf("Error: Invalid Temperature Sensor family %x\n", deviceAddress[0] );
             ret = false;
     }
     return ret;

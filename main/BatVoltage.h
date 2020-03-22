@@ -24,6 +24,7 @@ public:
 	//  ADC1_CHANNEL_6,     /*!< ADC1 channel 6 is GPIO34 */
 	void begin(   adc1_channel_t battery=ADC1_CHANNEL_7, adc1_channel_t reference=ADC1_CHANNEL_6 );
 	float getBatVoltage( bool init=false );
+
 private:
 	float _battery;
 	const float _correct = (22.0+1.2)/1200;   // reverse mV after voltage divider 22K/1.2K to Volt

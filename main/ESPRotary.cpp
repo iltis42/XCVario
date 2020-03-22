@@ -149,10 +149,10 @@ void ESPRotary::readPos(void * args) {
         rb.push( rotary.rot & 3 );
 
 		if( (rb[0] == 0) && (rb[1] == 3) ) {
-			dir--;
+			dir++;
 		}
 		else if ( (rb[0] == 1) && (rb[1] == 2) ) {
-			dir++;
+			dir--;
 		}
 		else if( (rb[0] == 3) && (rb[1] == 0) ) {
 			 // printf("Rotary 30\n");

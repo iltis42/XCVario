@@ -27,6 +27,14 @@ bool MP5004DP::begin(gpio_num_t sda, gpio_num_t scl, float speedcal, Setup* setu
 	return true;
 }
 
+bool MP5004DP::selfTest(uint16_t& val)
+{
+	if( MCP.readRaw(val) == ESP_OK )
+		return( true);
+	else
+		return(false);
+}
+
 /*
  * Offset Voltage according to datasheet:
  *  0.45 0.6 0.75  V  @ 3V Vs

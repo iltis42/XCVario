@@ -163,8 +163,17 @@ void IpsDisplay::drawLegend( bool onlyLines ) {
 }
 
 // draw all that does not need refresh when values change
-void IpsDisplay::initDisplay() {
-	printf("IpsDisplay::initDisplay()\n");
+
+
+void IpsDisplay::writeText( int line, String text ){
+	ucg->setFont(ucg_font_ncenR14_hr);
+	ucg->setPrintPos( 1, 26*line );
+	ucg->setColor(COLOR_WHITE);
+	ucg->printf("%s",text.c_str());
+}
+
+void IpsDisplay::bootDisplay() {
+	printf("IpsDisplay::bootDisplay()\n");
 	setup();
 	if( _setup->get()->_display_type == ST7789_2INCH_12P )
 		ucg->setRedBlueTwist( true );
@@ -179,6 +188,12 @@ void IpsDisplay::initDisplay() {
 	ucg->setColor(1, COLOR_BLACK );
 	ucg->setColor(0, COLOR_WHITE );
 	ucg->setFont(ucg_font_fub11_tr);
+}
+
+
+void IpsDisplay::initDisplay() {
+	printf("IpsDisplay::initDisplay()\n");
+	bootDisplay();
 	ucg->setPrintPos(0,YVAR-VARFONTH);
 	ucg->setColor(0, COLOR_HEADER );
 	ucg->print("Var m/s");

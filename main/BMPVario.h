@@ -19,7 +19,7 @@ extern "C" {
 #define ALPHA 0.2   			 // Kalman Gain alpha
 #define ERRORVAL 1.6             // damping Factor for values off the weeds
 #define STANDARD 1013.25         // ICAO standard pressure
-#define abs(x)  (x < 0.0 ? -x : x)
+#define abs(x)  ((x) < 0.0 ? -(x) : (x))
 
 class BMPVario {
 public:

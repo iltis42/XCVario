@@ -763,7 +763,9 @@ void MenuEntry::clear()
 SetupMenuValFloat * SetupMenuValFloat::qnh_menu = 0;
 
 void SetupMenuValFloat::showQnhMenu(){
+	printf("SetupMenuValFloat::showQnhMenu()\n");
 	if( qnh_menu ) {
+		printf("qnh_menu = true\n");
 		_menu_enabled = true;
 		selected = qnh_menu;
 		Audio.disable();

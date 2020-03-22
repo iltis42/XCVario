@@ -40,7 +40,6 @@
 #include <SPI.h>
 #include <Ucglib.h>
 
-#define abs(x)  ( (x) < 0.0 ? -(x) : (x))
 
 /*
 
@@ -175,7 +174,6 @@ void readBMP(void *pvParameters){
 			}
 			xSemaphoreGive(xMutex);
 
-			battery = ADC.getBatVoltage();
 			speed = speed + (MP5004DP.pascal2km( speedP, temperature ) - speed)*0.1;
 			aTE = bmpVario.readAVGTE();
 			aCl = bmpVario.readAvgClimb();
@@ -230,6 +228,8 @@ void readTemp(void *pvParameters){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		if( Audio.getDisable() != true )
 		{
+			battery = ADC.getBatVoltage();
+			// printf("Battery=%f V\n", battery );
 			float t = ds18b20.getTemp( validTemperature );
 			// xSemaphoreTake(xMutex,portMAX_DELAY );
 			if( validTemperature )
@@ -245,12 +245,14 @@ void readTemp(void *pvParameters){
 
 void sensor(void *args){
 	bool selftestPassed=true;
+	int line = 1;
 	esp_wifi_set_mode(WIFI_MODE_NULL);
 	spiMutex = xSemaphoreCreateMutex();
-	esp_log_level_set("*", ESP_LOG_INFO);
+	esp_log_level_set("*", ESP_LOG_ERROR);
 	NVS.begin();
 	mysetup.begin();
 	setupv.begin();
+	ADC.begin();  // for battery voltage
 	sleep( 1 );
 
 	xMutex=xSemaphoreCreateMutex();
@@ -265,6 +267,7 @@ void sensor(void *args){
 	SPI.begin( SPI_SCLK, SPI_MISO, SPI_MOSI, CS_bme280TE );
 	xSemaphoreGive(spiMutex);
 	display.begin( &mysetup );
+	display.bootDisplay();
 
 	printf("BMP280 sensors init..\n");
 
@@ -276,35 +279,47 @@ void sensor(void *args){
 	// bmpBA.selfTest( ba_t, ba_p);
 	if( ! bmpBA.selfTest( ba_t, ba_p) ) {
 	    printf("HW Error: Self test Barometric Pressure Sensor failed!\n");
+		display.writeText( line++, "Baro Sensor: Not found");
 	    selftestPassed = false;
 	}
-	else
+	else {
 		printf("Barometric Sensor T=%f P=%f\n", ba_t, ba_p);
+	    display.writeText( line++, "Baro Sensor: OK");
+	}
+
 
 	// bmpTE.selfTest(te_t, te_p);
 	if( ! bmpTE.selfTest(te_t, te_p) ) {
 	    printf("HW Error: Self test TE Pressure Sensor failed!\n");
+	    display.writeText( line++, "TE Sensor: Not found");
 	    selftestPassed = false;
 	}
-	else
+	else {
 		printf("TE Sensor         T=%f P=%f\n", te_t, te_p);
+	    display.writeText( line++, "TE Sensor: OK");
+	}
 
     if( selftestPassed ) {
 		if( abs(ba_t - te_t) >2.0 ) {
 			selftestPassed = false;
 			printf("Severe Temperature deviation delta > 2 °C between Baro and TE sensor: °C %f\n", abs(ba_t - te_t) );
+			display.writeText( line++, "TE/Baro Temp: Unequal");
 		}
-		else
+		else{
 			printf("BMP 280 Temperature deviation test PASSED, dev: %f\n",  abs(ba_t - te_t));
+		    display.writeText( line++, "TE/Baro Temp: OK");
+		}
 
 		if( abs(ba_p - te_p) >2.0 ) {
 			selftestPassed = false;
-			printf("Severe Pressure deviation delta > 2 hPa between Baro and TE sensor: %f\m", abs(ba_p - te_p) );
+			printf("Severe Pressure deviation delta > 2 hPa between Baro and TE sensor: %f\n", abs(ba_p - te_p) );
+			display.writeText( line++, "TE/Baro P: Unequal");
 		}
 		else
 			printf("BMP 280 Pressure deviation test PASSED, dev: %f\n", abs(ba_p - te_p) );
-    }
+		    display.writeText( line++, "TE/Baro P: OK");
 
+    }
 
 
 	bmpVario.begin( &bmpTE, &mysetup );
@@ -313,12 +328,38 @@ void sensor(void *args){
 
 	printf("Speed sensors init..\n");
 	MP5004DP.begin( GPIO_NUM_21, GPIO_NUM_22, mysetup.get()->_speedcal, &mysetup);  // sda, scl
-	MP5004DP.doOffset();
-	ADC.begin();
+	uint16_t val;
+	bool works=MP5004DP.selfTest( val );
 
-	// pwm1.init( GPIO_NUM_18 );
-    // pwm1.setContrast( mysetup.get()->_contrast_adj );
-    s2f.change_polar();
+	if( !works ){
+		printf("Error reading air speed pressure sensor MP5004DP->MCP3321 I2C returned error\n");
+		display.writeText( line++, "IAS Sensor: Not found");
+		selftestPassed = false;
+	}
+	if( !MP5004DP.offsetPlausible( val )  ){
+		printf("Error: IAS P sensor offset MP5004DP->MCP3321 out of bounds (608-1034), act value=%d\n", val );
+		display.writeText( line++, "IAS Sensor: Offset Error");
+		selftestPassed = false;
+	}
+	else {
+		printf("MP5004->MCP3321 test PASSED, readout value in bounds (608-1034)=%d\n", val );
+		display.writeText( line++, "IAS Sensor: OK");
+	}
+
+	MP5004DP.doOffset();
+
+	float bat = ADC.getBatVoltage(true);
+	if( bat < 1 || bat > 28.0 ){
+		printf("Error: Battery voltage metering out of bounds, act value=%f\n", bat );
+		display.writeText( line++, "Bat Sensor: Failure");
+		selftestPassed = false;
+	}
+	else{
+		printf("Battery voltage metering test PASSED, act value=%f\n", bat );
+		display.writeText( line++, "Bat Sensor: OK");
+	}
+
+	s2f.change_polar();
 	s2f.change_mc_bal();
 
 
@@ -339,30 +380,40 @@ void sensor(void *args){
 		printf("Bluetooth disabled\n");
 
 	ds18b20.begin();
-	float t = ds18b20.getTemp( validTemperature );
+	temperature = ds18b20.getTemp( validTemperature );
 	if( !validTemperature ) {
 		// selftestPassed = false;
-		printf("HW Error: Self test Temperatur Sensor failed; returned T=%2.2f\n", t );
+		printf("Error: Self test Temperatur Sensor failed; returned T=%2.2f\n", temperature );
+		display.writeText( line++, "Temp Sensor: Not found");
+		selftestPassed = false;
+	}else
+	{
+		printf("Self test Temperatur Sensor PASSED; returned T=%2.2f\n", temperature );
+		display.writeText( line++, "Temp Sensor: OK");
 	}
+
 
 	// xTaskCreatePinnedToCore(&readTemp, "readTemp", 8000, NULL, 1, tpid, 0);
 
-	gpio_set_pull_mode(RESET_Display, GPIO_PULLUP_ONLY );
-	gpio_set_pull_mode(CS_Display, GPIO_PULLUP_ONLY );
-	gpio_set_pull_mode(CS_bme280BA, GPIO_PULLUP_ONLY );
-	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
+
+
+	if( !selftestPassed )
+	{
+		printf("\n\n\nSelftest failed, see above LOG for Problems\n\n\n");
+		sleep(5);
+	}
+	else{
+		printf("\n\n\n*****  Selftest PASSED  ********\n\n\n");
+		display.writeText( line++, "Selftest PASSED");
+		sleep(1);
+	}
 
 	Audio.begin( DAC_CHANNEL_1, GPIO_NUM_0, &mysetup );
-
-	xTaskCreatePinnedToCore(&readBMP, "readBMP", 8000, NULL, 15, bpid, 0);
-	xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 30, 0, 0);
+	speedP=MP5004DP.readPascal(30);
+	speed = MP5004DP.pascal2km( speedP, temperature );
+	printf("Speed=%f\n", speed);
 	display.initDisplay();
-	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 10, dpid, 0);
-	xTaskCreatePinnedToCore(&readTemp, "readTemp", 8000, NULL, 1, tpid, 0);
-
-
 	Menu.begin( &display, &Rotary, &mysetup, &setupv, &bmpBA, &ADC );
-
 	if( speed < 50.0 ){
 		xSemaphoreTake(xMutex,portMAX_DELAY );
 		printf("QNH Autosetup, speed=%3f (<50 km/h)\n", speed );
@@ -398,13 +449,22 @@ void sensor(void *args){
 	}
 
 	Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
+
+	gpio_set_pull_mode(RESET_Display, GPIO_PULLUP_ONLY );
+	gpio_set_pull_mode(CS_Display, GPIO_PULLUP_ONLY );
+	gpio_set_pull_mode(CS_bme280BA, GPIO_PULLUP_ONLY );
+	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
+
+	xTaskCreatePinnedToCore(&readBMP, "readBMP", 8000, NULL, 15, bpid, 0);
+	xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 30, 0, 0);
+
+	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 10, dpid, 0);
+	xTaskCreatePinnedToCore(&readTemp, "readTemp", 8000, NULL, 1, tpid, 0);
+
+
+
 	printf("Free Stack: S:%d \n", uxTaskGetStackHighWaterMark( spid ) );
-	if( !selftestPassed ) {
-			printf("\n\n\nSelftest failed, see above LOG for Problems\n\n\n");
-			sleep(5);
-		}
-		else
-			printf("\n\n\n*****  Selftest PASSED  ********\n\n\n");
+
 	vTaskDelete( NULL );
 
 }

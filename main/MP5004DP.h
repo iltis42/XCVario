@@ -54,9 +54,10 @@ public:
 	bool    doOffset( bool force=false );
 	float   readPascal( float minimum=min_pascal );
 	float   pascal2km( float pascal, float temp );
+	bool    selfTest(uint16_t& adval );
+	bool offsetPlausible( uint16_t offset );
 
 private:
-	bool offsetPlausible( uint16_t offset );
 	float *_offset;
 	float _speedcal;
 	float _alpha;

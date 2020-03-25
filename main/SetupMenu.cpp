@@ -269,13 +269,14 @@ void inc_volume( int count ) {
 	Audio.incVolume(count);
 }
 
+
 void SetupMenu::down(int count){
 	if( selected == this && !_menu_enabled ) {
 		printf("root: down\n");
-		if( _setup->get()->_MC > 0.1 ) {
-			_setup->get()->_MC -= 0.1;
-		    s2f.change_mc_bal();
-		}
+//		if( _setup->get()->_MC > 0.1 ) {
+//			_setup->get()->_MC -= 0.1;
+//		    s2f.change_mc_bal();
+//		}
 		dec_volume( count );
 	}
 	if( (selected != this) || !_menu_enabled )
@@ -299,10 +300,10 @@ void SetupMenu::down(int count){
 void SetupMenu::up(int count){
 	if( selected == this && !_menu_enabled ) {
 		printf("root: up\n");
-		if( _setup->get()->_MC < 9.9 ) {
-			_setup->get()->_MC += 0.1;
-		    s2f.change_mc_bal();
-		}
+//		if( _setup->get()->_MC < 9.9 ) {
+//			_setup->get()->_MC += 0.1;
+//		    s2f.change_mc_bal();
+//		}
 		inc_volume( count );
 	}
 
@@ -326,7 +327,9 @@ void SetupMenu::up(int count){
 
 void SetupMenu::longPress(){
 	long_pressed = true;
+	printf("SetupMenue: longPress\n");
 }
+
 
 void SetupMenu::press(){
 	if( selected == 0 )

@@ -355,7 +355,8 @@ void ESPAudio::dactask(void* arg )
 		}
 		else{
 			if( sound_on ) {
-				Poti.writeWiper( 0 );
+				if( wiper > 0 )
+					Poti.writeWiper( 0 );
 				sound_on = false;
 			}
 			// step = int( (200000.0/freq_step ) + 0.5);

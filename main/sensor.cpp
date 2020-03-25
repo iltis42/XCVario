@@ -251,6 +251,7 @@ void readTemp(void *pvParameters){
 
 void sensor(void *args){
 	bool selftestPassed=true;
+	bool tempSensorDetected=true;
 	int line = 1;
 	esp_wifi_set_mode(WIFI_MODE_NULL);
 	spiMutex = xSemaphoreCreateMutex();
@@ -259,6 +260,7 @@ void sensor(void *args){
 	mysetup.begin();
 	setupv.begin();
 	ADC.begin();  // for battery voltage
+	ds18b20.begin();
 	sleep( 1 );
 
 	xMutex=xSemaphoreCreateMutex();
@@ -369,6 +371,17 @@ void sensor(void *args){
 		display.writeText( line++, "Bat Sensor: OK");
 	}
 
+	temperature = ds18b20.getTemp( validTemperature );
+	if( !validTemperature ) {
+		printf("Error: Self test Temperatur Sensor failed; returned T=%2.2f\n", temperature );
+		display.writeText( line++, "Temp Sensor: Not found");
+		tempSensorDetected = false;
+	}else
+	{
+		printf("Self test Temperatur Sensor PASSED; returned T=%2.2f\n", temperature );
+		display.writeText( line++, "Temp Sensor: OK");
+	}
+
 	s2f.change_polar();
 	s2f.change_mc_bal();
 
@@ -381,31 +394,6 @@ void sensor(void *args){
 	// Audio.mute( false );
 	gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);  // blue LED, maybe use for BT connection
 
-	if( mysetup.get()->_blue_enable ) {
-		// hci_power_control(HCI_POWER_ON);
-		printf("BT Sender init, device name: %s\n", mysetup.getBtName() );
-		btsender.begin( &enableBtTx, mysetup.getBtName() );
-	}
-	else
-		printf("Bluetooth disabled\n");
-
-	ds18b20.begin();
-	temperature = ds18b20.getTemp( validTemperature );
-	if( !validTemperature ) {
-		// selftestPassed = false;
-		printf("Error: Self test Temperatur Sensor failed; returned T=%2.2f\n", temperature );
-		display.writeText( line++, "Temp Sensor: Not found");
-		selftestPassed = false;
-	}else
-	{
-		printf("Self test Temperatur Sensor PASSED; returned T=%2.2f\n", temperature );
-		display.writeText( line++, "Temp Sensor: OK");
-	}
-
-
-	// xTaskCreatePinnedToCore(&readTemp, "readTemp", 8000, NULL, 1, tpid, 0);
-
-
 
 	if( !selftestPassed )
 	{
@@ -415,10 +403,13 @@ void sensor(void *args){
 	else{
 		printf("\n\n\n*****  Selftest PASSED  ********\n\n\n");
 		display.writeText( line++, "Selftest PASSED");
-		sleep(1);
+		sleep(10);
+	}
+	if( !tempSensorDetected ) {
+		printf("NO Temperature Sensor found\n");
 	}
 
-
+	sleep(1);
 	speedP=MP5004DP.readPascal(30);
 	speed = MP5004DP.pascal2km( speedP, temperature );
 	printf("Speed=%f\n", speed);
@@ -471,6 +462,13 @@ void sensor(void *args){
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 10, dpid, 0);
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 8000, NULL, 1, tpid, 0);
 
+	if( mysetup.get()->_blue_enable ) {
+			// hci_power_control(HCI_POWER_ON);
+			printf("BT Sender init, device name: %s\n", mysetup.getBtName() );
+			btsender.begin( &enableBtTx, mysetup.getBtName() );
+		}
+		else
+			printf("Bluetooth disabled\n");
 
 
 	printf("Free Stack: S:%d \n", uxTaskGetStackHighWaterMark( spid ) );

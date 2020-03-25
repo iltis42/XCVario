@@ -45,13 +45,13 @@ float DS18B20::getTemp( bool& success ){
 	 uint8_t a;
 	 dallas->getAddress( &a, 0 );
 
-	 if( !dallas->validAddress( &a ) ){
-		   // printf("DS18B20 reports invalid crc for address\n");
-		   return 0;
-	 }
+//	 if( !dallas->validAddress( &a ) ){
+//		   // printf("DS18B20 reports invalid crc for address\n");
+//		   return 0;
+//	 }
 
 	 bool c = dallas->isConnected( &a );
-	 // printf("Address: %d  Connected: %d\n", a, c );
+	 printf("Address: %d  Connected: %d\n", a, c );
 	 if ( !c ) {
 	        printf("DS18B20 not connected\n");
 	        dallas->setOneWire(ow);

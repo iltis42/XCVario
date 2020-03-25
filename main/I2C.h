@@ -5,9 +5,9 @@
 #ifndef I2C_h
 #define I2C_h
 
-#define I2C_MASTER_FREQ_HZ    100000   /*!< I2C master clock frequency 100000 */
-#define I2C_MASTER_TX_BUF_DISABLE    0   /*!< I2C master do not need buffer */
-#define I2C_MASTER_RX_BUF_DISABLE    0   /*!< I2C master do not need buffer */
+#define I2C_MASTER_FREQ_HZ         100000   /*!< I2C master clock frequency 100000 */
+#define I2C_MASTER_TX_BUF_DISABLE    0      /*!< I2C master do not need buffer */
+#define I2C_MASTER_RX_BUF_DISABLE    0      /*!< I2C master do not need buffer */
 
 class I2C
 {
@@ -17,6 +17,8 @@ class I2C
     esp_err_t write( uint8_t address, int ack=0, i2c_rw_t rw=I2C_MASTER_READ);
     esp_err_t read( uint8_t *byte, int ack=1);
     esp_err_t read16bit( uint8_t addr, uint16_t *word );
+    esp_err_t write16bit( uint8_t addr, uint16_t word );
+    esp_err_t write8bit( uint8_t addr, uint16_t word );  // write only lower byte from word
     void start();
     void stop();
     esp_err_t scan();

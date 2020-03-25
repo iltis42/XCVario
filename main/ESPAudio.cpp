@@ -23,6 +23,7 @@
 #include "ESPAudio.h"
 #include "driver/dac.h"
 #include "sensor.h"
+#include "mcp4018.h"
 
 
 float ESPAudio::_range = 5.0;
@@ -30,6 +31,11 @@ bool ESPAudio::_s2f_mode = false;
 uint8_t ESPAudio::_tonemode;
 float ESPAudio::_high_tone_var;
 dac_channel_t ESPAudio::_ch;
+uint16_t ESPAudio::wiper;
+uint16_t ESPAudio::cur_wiper;
+
+MCP4018 Poti;
+
 
 ESPAudio::ESPAudio( ) {
 	_ch = DAC_CHANNEL_1;
@@ -50,6 +56,8 @@ ESPAudio::ESPAudio( ) {
 	_old_ms = 0;
 	_range = 5.0;
 	_s2f_mode = false;
+	wiper = 63;
+	cur_wiper = 63;
 }
 
 ESPAudio::~ESPAudio() {
@@ -213,6 +221,11 @@ void ESPAudio::dac_invert_set(dac_channel_t channel, int invert)
 
    RTC_FAST_CLK_FREQ_APPROX / (65536  * 8 )
 
+   GPIO_NUM_19 as input programmed will enable the PAM amplifier.
+   We do not use enable/disable from amplifier as this creates some pop noise
+   Mute will be realized by putting down the wiper from digital poti to zero what works like a charm.
+
+
  */
 
 /*
@@ -256,13 +269,58 @@ void ESPAudio::modtask(void* arg )
 	}
 }
 
-int audio=0;
+void ESPAudio::incVolume( int steps ) {
+	steps = int( 1+ ( (float)wiper/8.0 ))*steps;
+	printf("steps %d wiper %d\n\n", steps, wiper );
+	while( steps && (wiper > 0) ){
+		wiper--;
+		steps--;
+	}
+};
+void ESPAudio::decVolume( int steps ) {
+	steps = int( 1+ ( (float)wiper/8.0 ))*steps;
+	while( steps && (wiper < 63) ){
+		wiper++;
+		steps--;
+	}
+};
+
+bool output_enable = false;
+
+void  ESPAudio::adjustVolume(){
+	if( cur_wiper != wiper ) {
+		// printf("*****  SET WIPER=%d\n", wiper );
+		Poti.writeWiper( wiper );
+		cur_wiper = wiper;
+		if( wiper == 0 ) {
+			if( output_enable ) {
+				dac_output_disable(_ch);
+				output_enable = false;
+			}
+		}else{
+			if( !output_enable ) {
+				dac_output_enable(_ch);
+				output_enable = true;
+			}
+		}
+	}
+}
+
+void ESPAudio::voltask(void* arg )
+{
+	while(1){
+		TickType_t xLastWakeTime = xTaskGetTickCount();
+		adjustVolume();
+		vTaskDelayUntil(&xLastWakeTime, 50/portTICK_PERIOD_MS);
+	}
+}
+
+bool sound_on=false;
 
 void ESPAudio::dactask(void* arg )
 {
 	while(1){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
-
 		tick++;
 		float te = Audio.getTE();
 		float max;
@@ -275,49 +333,41 @@ void ESPAudio::dactask(void* arg )
 			f = (float)Audio.getCenter() + ( (te/5.0 ) * max );
 		else
 			f = (float)Audio.getCenter() + ( (te/_range ) * max );
-
+		bool sound=true;
 		int step = int( (f/freq_step ) + 0.5);
 		if( Audio.inDeadBand(te) || Audio.getMute()  ){
-			// step = 0;
-			// printf("Audio OFF\n");
-			// Audio.dac_scale_set(_ch, 3 );
-			// gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );
-			if( audio == 1 ) {
-				gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );
-				gpio_set_level(GPIO_NUM_19, 0);
-				audio = 0;
+			sound = false;
+		}
+		else{
+			if( hightone && (_tonemode == 1)  ){
+				step = int( (f*_high_tone_var/freq_step) + 0.5);
+			}
+			else if( hightone && (_tonemode == 0) ){
+				sound = false;
+			}
+		}
+
+		if( sound ){
+			if( !sound_on ) {
+				Poti.writeWiper( wiper );
+				sound_on = true;
 			}
 		}
 		else{
-			// gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );
-			if( audio == 0 ) {
-				// gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );
-			    // gpio_set_level(GPIO_NUM_19, 1);
-			    gpio_set_direction(GPIO_NUM_19, GPIO_MODE_INPUT );   // use pullup
-			    gpio_set_pull_mode(GPIO_NUM_19, GPIO_FLOATING);
-			    audio = 1;
+			if( sound_on ) {
+				Poti.writeWiper( 0 );
+				sound_on = false;
 			}
-
-			Audio.dac_scale_set(_ch, 0 );
-			if( hightone && (_tonemode == 1)  ){
-				step = int( (f*_high_tone_var/freq_step) + 0.5);
-
-			}
-			else if( hightone && (_tonemode == 0) ){
-				step = int( (300000/freq_step ) + 0.5);
-			}
-			// printf("Audio ON\n");
+			// step = int( (200000.0/freq_step ) + 0.5);
 		}
-
 		Audio.dac_frequency_set(clk_8m_div, step);
-		// printf("TE %f  frequency: %.0f Hz\n", te, f );
 		vTaskDelayUntil(&xLastWakeTime, 20/portTICK_PERIOD_MS);
-
 	}
 }
 
 bool ESPAudio::inDeadBand( float te )
 {
+   return false;  // debug ******************************
    if( te > 0 ) {
 	   if( te < _deadband )
 		   return true;
@@ -373,9 +423,8 @@ void ESPAudio::setup()
 		_range = 5.0;
 	else
 	_range = _setup->get()->_range;
-	_tonemode = _setup->get()->_dual_tone;
+	_tonemode = 0; // _setup->get()->_dual_tone;
 	_high_tone_var = ((_setup->get()->_high_tone_var + 100.0)/100);
-	// gpio_set_pull_mode(GPIO_NUM_19, GPIO_PULLUP_ONLY );
 
 }
 
@@ -390,23 +439,21 @@ void ESPAudio::begin( dac_channel_t ch, gpio_num_t button, Setup *asetup )
 	dac_output_enable(_ch);
 	dac_offset_set(_ch, offset);
 	dac_invert_set(_ch, 2 );
+	dac_scale_set(_ch, 0 );
 	_testmode = false;
 	_dead_mute = true;
 
 	gpio_set_direction(_button, GPIO_MODE_INPUT);
 	gpio_set_pull_mode(_button, GPIO_PULLUP_ONLY);
 
-	gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );
-	gpio_set_level(GPIO_NUM_19, 0);
-
-	gpio_set_direction(GPIO_NUM_16, GPIO_MODE_INPUT );   // CS  4, (DP-INC), 16
-	gpio_set_pull_mode(GPIO_NUM_16, GPIO_PULLUP_ONLY);
-	gpio_set_direction(GPIO_NUM_17, GPIO_MODE_OUTPUT );   // UD  3, (DP-UD),  17
-	gpio_set_pull_mode(GPIO_NUM_17, GPIO_PULLUP_ONLY);
-
 	xTaskCreate(modtask, "modtask", 1024*2, NULL, 31, NULL);
 	xTaskCreate(dactask, "dactask", 1024*2, NULL, 31, NULL);
-	dac_scale_set(_ch, 0 );
+	xTaskCreate(voltask, "voltask", 1024*2, NULL, 21, NULL);
+
+	Poti.begin(GPIO_NUM_21, GPIO_NUM_22);
+	// Enable Audio Amplifiler
+	gpio_set_direction(GPIO_NUM_19, GPIO_MODE_INPUT );   // use pullup 1 == SOUND 0 == SILENCE
+	gpio_set_pull_mode(GPIO_NUM_19, GPIO_FLOATING);      // ESP32 level too low from PAM enable
 }
 
 void ESPAudio::disable( bool disable ) {

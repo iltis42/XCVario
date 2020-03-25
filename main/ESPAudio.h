@@ -25,10 +25,12 @@ public:
 	void test( float to, float from );
 	void mute( bool mt=true ) { _mute = mt; };
 	void disable( bool disable=true );
-	bool getDisable() { return _disable; }
+	bool getDisable() { return _disable; };
 	void setup();
 	void setS2FMode( bool s2f ) { _s2f_mode = s2f; };  // True = S2F, False = Vario
 	bool getS2FMode() { return _s2f_mode; }
+	void incVolume( int steps );
+	void decVolume( int steps );
 
 private:
 	void dac_cosine_enable(dac_channel_t channel, bool enable=true);
@@ -38,8 +40,10 @@ private:
 	void dac_invert_set(dac_channel_t channel, int invert);
 	static void dactask(void* arg);
 	static void modtask(void* arg );
+	static void voltask(void* arg );
 	static dac_channel_t _ch;
 	dac_channel_t getCh() { return _ch; };
+	static void adjustVolume();
 	float getTE() { return _te; };
 	float getS2Fd() { return _te; };
 	float getCenter() { return _center; };
@@ -71,7 +75,8 @@ private:
 	bool _dead_mute;
 	float _test_ms;
 	float _old_ms;
-
+    static uint16_t wiper;
+    static uint16_t cur_wiper;
 	Setup *_setup;
 };
 

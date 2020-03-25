@@ -261,38 +261,12 @@ void MenuEntry::showhelp( int y ){
 	}
 }
 
-#define VOLDEL 10
-
-
-
 void dec_volume( int count ) {
-	gpio_set_direction(GPIO_NUM_16, GPIO_MODE_OUTPUT );   // CS  4, (DP-INC), 16
-	gpio_set_level(GPIO_NUM_17, 0);    //  UD 0
-	delayMicroseconds(VOLDEL);
-	gpio_set_level(GPIO_NUM_16, 0);    //  CS 0
-	delayMicroseconds(VOLDEL);
-	gpio_set_level(GPIO_NUM_17, 1);     // UD 1
-	delayMicroseconds(VOLDEL);
-	gpio_set_level(GPIO_NUM_17, 0);    // UD 0
-	delayMicroseconds(VOLDEL);
-	gpio_set_level(GPIO_NUM_16, 1);    //  CS 1
-	gpio_set_direction(GPIO_NUM_16, GPIO_MODE_INPUT );
-	delayMicroseconds(VOLDEL);
+	Audio.decVolume(count);
 }
 
 void inc_volume( int count ) {
-	gpio_set_direction(GPIO_NUM_16, GPIO_MODE_OUTPUT );
-	gpio_set_level(GPIO_NUM_17, 1);    //  UD 1
-	delayMicroseconds(VOLDEL);
-	gpio_set_level(GPIO_NUM_16, 0);    //  CS 0
-	delayMicroseconds(VOLDEL);
-	gpio_set_level(GPIO_NUM_17, 0);     // UD 0
-	delayMicroseconds(VOLDEL);
-	gpio_set_level(GPIO_NUM_17, 1);    // UD 1
-	delayMicroseconds(VOLDEL);
-	gpio_set_level(GPIO_NUM_16, 1);    //  CS 1
-	gpio_set_direction(GPIO_NUM_16, GPIO_MODE_INPUT );
-	delayMicroseconds(VOLDEL);
+	Audio.incVolume(count);
 }
 
 void SetupMenu::down(int count){

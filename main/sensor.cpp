@@ -15,6 +15,7 @@
 #include <driver/adc.h>
 #include "driver/gpio.h"
 #include "mcp3221.h"
+#include "mcp4018.h"
 #include "ESP32NVS.h"
 #include "MP5004DP.h"
 #include "BMPVario.h"
@@ -230,8 +231,13 @@ void readTemp(void *pvParameters){
 		{
 			battery = ADC.getBatVoltage();
 			// printf("Battery=%f V\n", battery );
-			float t = ds18b20.getTemp( validTemperature );
+			bool valid;
+			float t = ds18b20.getTemp( valid );
 			// xSemaphoreTake(xMutex,portMAX_DELAY );
+			if( validTemperature != valid ) {
+				printf("Warning: No Temperatur Sensor found, please plug Temperature Sensor\n");
+				validTemperature = valid;
+			}
 			if( validTemperature )
 				temperature = temperature + (t-temperature)*0.2;
 			// printf("temperature=%f\n", temperature );
@@ -348,6 +354,10 @@ void sensor(void *args){
 
 	MP5004DP.doOffset();
 
+	Audio.begin( DAC_CHANNEL_1, GPIO_NUM_0, &mysetup );
+
+	// TBD audio Poti test here.
+
 	float bat = ADC.getBatVoltage(true);
 	if( bat < 1 || bat > 28.0 ){
 		printf("Error: Battery voltage metering out of bounds, act value=%f\n", bat );
@@ -408,7 +418,7 @@ void sensor(void *args){
 		sleep(1);
 	}
 
-	Audio.begin( DAC_CHANNEL_1, GPIO_NUM_0, &mysetup );
+
 	speedP=MP5004DP.readPascal(30);
 	speed = MP5004DP.pascal2km( speedP, temperature );
 	printf("Speed=%f\n", speed);

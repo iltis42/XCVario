@@ -46,6 +46,43 @@ esp_err_t I2C::write(uint8_t byte, int ack, i2c_rw_t rw)
 	return ret;
 }
 
+esp_err_t I2C::write16bit( uint8_t addr, uint16_t word )
+{
+	cmd = i2c_cmd_link_create();
+	uint8_t datah=(uint8_t(word>>8));
+	uint8_t datal=(uint8_t(word & 0xFF));
+	start();
+	write(addr, true, I2C_MASTER_WRITE);
+    write(datal, 0);
+	write(datah, 1);
+	stop();
+	esp_err_t ret = i2c_master_cmd_begin(_num, cmd, 100 / portTICK_RATE_MS);
+    if( ret == ESP_FAIL){
+		printf("I2C ERROR write 16 bit: %x\n", ret);
+		;
+	}
+    i2c_cmd_link_delete(cmd);
+    return ret;
+}
+
+esp_err_t I2C::write8bit( uint8_t addr, uint16_t word )
+{
+	cmd = i2c_cmd_link_create();
+	uint8_t datal=(uint8_t(word & 0xFF));
+	start();
+	write(addr, true, I2C_MASTER_WRITE);
+    write(datal, 1);
+	stop();
+	esp_err_t ret = i2c_master_cmd_begin(_num, cmd, 100 / portTICK_RATE_MS);
+    if( ret == ESP_FAIL){
+		printf("I2C ERROR write 8 bit: %x\n", ret);
+		;
+	}
+    i2c_cmd_link_delete(cmd);
+    return ret;
+}
+
+
 esp_err_t I2C::read16bit( uint8_t addr, uint16_t *word )
 {
 	cmd = i2c_cmd_link_create();
@@ -57,7 +94,7 @@ esp_err_t I2C::read16bit( uint8_t addr, uint16_t *word )
 	stop();
 	esp_err_t ret = i2c_master_cmd_begin(_num, cmd, 100 / portTICK_RATE_MS);
     if( ret == ESP_FAIL){
-		// printf("I2C ERROR read 16 bit: %x\n", ret);
+		printf("I2C ERROR read 16 bit: %x\n", ret);
     	;
 	}
     *word = (datah << 8) | datal;

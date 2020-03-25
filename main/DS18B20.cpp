@@ -46,7 +46,7 @@ float DS18B20::getTemp( bool& success ){
 	 dallas->getAddress( &a, 0 );
 
 	 if( !dallas->validAddress( &a ) ){
-		   printf("DS18B20 reports invalid crc for address\n");
+		   // printf("DS18B20 reports invalid crc for address\n");
 		   return 0;
 	 }
 

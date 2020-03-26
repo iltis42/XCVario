@@ -277,7 +277,7 @@ void SetupMenu::down(int count){
 //			_setup->get()->_MC -= 0.1;
 //		    s2f.change_mc_bal();
 //		}
-		dec_volume( count );
+		inc_volume( count );
 	}
 	if( (selected != this) || !_menu_enabled )
 		return;
@@ -304,7 +304,7 @@ void SetupMenu::up(int count){
 //			_setup->get()->_MC += 0.1;
 //		    s2f.change_mc_bal();
 //		}
-		inc_volume( count );
+		dec_volume( count );
 	}
 
 	if( (selected != this) || !_menu_enabled )
@@ -485,6 +485,14 @@ void SetupMenu::setup( )
 	SetupMenu * ad = new SetupMenu( "Audio" );
 	MenuEntry* ade = mm->addMenu( ad );
 
+	SetupMenuValFloat * dv = new SetupMenuValFloat( "Default Volume",
+						&_setup->get()->_default_volume,
+						"%",
+						0, 100,
+						1.0 );
+	ade->addMenu( dv );
+	dv->setHelp("Default volume for Audio when device is switched on");
+
 	SetupMenuSelect * dt = new SetupMenuSelect( 	"Tone Style", &_setup->get()->_dual_tone );
 	dt->setHelp("Select dual tone aka ilec sound, (di/da/di) or single tone with breaks (di-di-di) mode");
 	dt->addEntry( "Single Tone");      // 0
@@ -632,8 +640,6 @@ void SetupMenu::setup( )
 	SetupMenuValFloat * min2 = new SetupMenuValFloat("Speed -1 to -2", &_setup->get()->_flap_minus_2, "km/h",  100, 280, 1 );
 	min2->setHelp("Speed for transition from -1 to -2 flap setting");
 	wkm->addMenu( min2 );
-
-
 
 	SetupMenu * sy = new SetupMenu( "System" );
 	MenuEntry* sye = mm->addMenu( sy );

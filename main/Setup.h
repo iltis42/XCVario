@@ -60,6 +60,7 @@ typedef struct {
 	float    _flap_minus_1;  // 0 -1  105
 	float    _flap_0;        // 1-0   88
 	float    _flap_plus_1;   // 2-1   78
+	float    _default_volume;
 	uint32_t _checksum;
 } setup_t;
 

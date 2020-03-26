@@ -70,6 +70,7 @@ void Setup::factorySetting()
 		_setup._flap_minus_1 = 105;
 		_setup._flap_0 = 88;
 		_setup._flap_plus_1 = 78;
+		_setup._default_volume = 40.0;
 		printf("sefault _polar %d\n", Polars::numPolars() );
 		_setup._polar = Polars::getPolar(0); // default user polar
 		memset( _setup._bt_name, 0, sizeof( _setup._bt_name) );

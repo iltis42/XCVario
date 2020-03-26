@@ -452,6 +452,10 @@ void ESPAudio::begin( dac_channel_t ch, gpio_num_t button, Setup *asetup )
 	xTaskCreate(voltask, "voltask", 1024*2, NULL, 21, NULL);
 
 	Poti.begin(GPIO_NUM_21, GPIO_NUM_22);
+
+	cur_wiper = (uint16_t)( ( (_setup->get()->_default_volume * 100.0) / 64) -1 );
+	wiper = cur_wiper;
+	Poti.writeWiper( cur_wiper );
 	// Enable Audio Amplifiler
 	gpio_set_direction(GPIO_NUM_19, GPIO_MODE_INPUT );   // use pullup 1 == SOUND 0 == SILENCE
 	gpio_set_pull_mode(GPIO_NUM_19, GPIO_FLOATING);      // ESP32 level too low from PAM enable

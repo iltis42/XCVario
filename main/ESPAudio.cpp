@@ -359,7 +359,6 @@ void ESPAudio::dactask(void* arg )
 					Poti.writeWiper( 0 );
 				sound_on = false;
 			}
-			// step = int( (200000.0/freq_step ) + 0.5);
 		}
 		Audio.dac_frequency_set(clk_8m_div, step);
 		vTaskDelayUntil(&xLastWakeTime, 20/portTICK_PERIOD_MS);
@@ -368,7 +367,6 @@ void ESPAudio::dactask(void* arg )
 
 bool ESPAudio::inDeadBand( float te )
 {
-   return false;  // debug ******************************
    if( te > 0 ) {
 	   if( te < _deadband )
 		   return true;

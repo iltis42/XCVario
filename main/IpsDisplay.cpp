@@ -13,6 +13,7 @@
 #include <Ucglib.h>
 #include "IpsDisplay.h"
 #include "BTSender.h"
+#include "DallasRmt.h"
 #include "freertos/task.h"
 
 
@@ -561,7 +562,10 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 	if( (int)(temp*10) != tempalt ) {
 		ucg->setFont(ucg_font_fur14_hf);
 		ucg->setPrintPos(FIELD_START+20,DISPLAY_H);
-		ucg->printf("%-2.1f\xb0""  ", temp );
+		if( temp != DEVICE_DISCONNECTED_C )
+			ucg->printf("%-2.1f\xb0""  ", temp );
+		else
+			ucg->printf(" ---   ");
 		tempalt=(int)(temp*10);
 		vTaskDelay(1);
 	}

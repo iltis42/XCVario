@@ -233,16 +233,21 @@ void readTemp(void *pvParameters){
 			// printf("Battery=%f V\n", battery );
 			float t = ds18b20.getTemp();
 			// xSemaphoreTake(xMutex,portMAX_DELAY );
-			if( t < -60.0 ) {
+			if( t ==  DEVICE_DISCONNECTED_C ) {
+				validTemperature = false;
+				temperature = DEVICE_DISCONNECTED_C;
 				printf("Warning: No Temperatur Sensor found, please plug Temperature Sensor\n");
 			}
 			else
+			{
+				validTemperature = true;
 				temperature = temperature + (t-temperature)*0.2;
+			}
 			// printf("temperature=%f\n", temperature );
 			// xSemaphoreGive(xMutex);
 		}
 		esp_task_wdt_reset();
-		vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&xLastWakeTime, 200/portTICK_PERIOD_MS);
 	}
 }
 
@@ -275,16 +280,17 @@ void sensor(void *args){
     // int valid;
 	temperature = ds18b20.getTemp();
 
-	if( temperature < -60.0 ) {
+	if( temperature == DEVICE_DISCONNECTED_C ) {
 		printf("Error: Self test Temperatur Sensor failed; returned T=%2.2f\n", temperature );
 		display.writeText( line++, "Temp Sensor: Not found");
 		tempSensorDetected = false;
+		validTemperature = true;
 	}else
 	{
 		printf("Self test Temperatur Sensor PASSED; returned T=%2.2f\n", temperature );
 		display.writeText( line++, "Temp Sensor: OK");
+		validTemperature = false;
 	}
-
 
 	SPI.begin( SPI_SCLK, SPI_MISO, SPI_MOSI, CS_bme280TE );
 	xSemaphoreGive(spiMutex);

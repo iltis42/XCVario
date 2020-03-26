@@ -18,7 +18,7 @@ class DS18B20 {
 public:
 	DS18B20( gpio_num_t pin, uint8_t res=10, int max_dev=10 );
 	bool begin();
-	float getTemp( bool &success );
+	float getTemp();
 	bool haveDevice() { return (bool)numDevices; }
 	virtual ~DS18B20();
 private:

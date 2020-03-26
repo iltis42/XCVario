@@ -231,14 +231,12 @@ void readTemp(void *pvParameters){
 		{
 			battery = ADC.getBatVoltage();
 			// printf("Battery=%f V\n", battery );
-			bool valid;
-			float t = ds18b20.getTemp( valid );
+			float t = ds18b20.getTemp();
 			// xSemaphoreTake(xMutex,portMAX_DELAY );
-			if( validTemperature != valid ) {
+			if( t < -60.0 ) {
 				printf("Warning: No Temperatur Sensor found, please plug Temperature Sensor\n");
-				validTemperature = valid;
 			}
-			if( validTemperature )
+			else
 				temperature = temperature + (t-temperature)*0.2;
 			// printf("temperature=%f\n", temperature );
 			// xSemaphoreGive(xMutex);
@@ -260,7 +258,7 @@ void sensor(void *args){
 	mysetup.begin();
 	setupv.begin();
 	ADC.begin();  // for battery voltage
-	ds18b20.begin();
+
 	sleep( 1 );
 
 	xMutex=xSemaphoreCreateMutex();
@@ -272,6 +270,22 @@ void sensor(void *args){
 	uint8_t Mode = 3;   //Normal mode
 
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
+
+	ds18b20.begin();
+    // int valid;
+	temperature = ds18b20.getTemp();
+
+	if( temperature < -60.0 ) {
+		printf("Error: Self test Temperatur Sensor failed; returned T=%2.2f\n", temperature );
+		display.writeText( line++, "Temp Sensor: Not found");
+		tempSensorDetected = false;
+	}else
+	{
+		printf("Self test Temperatur Sensor PASSED; returned T=%2.2f\n", temperature );
+		display.writeText( line++, "Temp Sensor: OK");
+	}
+
+
 	SPI.begin( SPI_SCLK, SPI_MISO, SPI_MOSI, CS_bme280TE );
 	xSemaphoreGive(spiMutex);
 	display.begin( &mysetup );
@@ -371,16 +385,6 @@ void sensor(void *args){
 		display.writeText( line++, "Bat Sensor: OK");
 	}
 
-	temperature = ds18b20.getTemp( validTemperature );
-	if( !validTemperature ) {
-		printf("Error: Self test Temperatur Sensor failed; returned T=%2.2f\n", temperature );
-		display.writeText( line++, "Temp Sensor: Not found");
-		tempSensorDetected = false;
-	}else
-	{
-		printf("Self test Temperatur Sensor PASSED; returned T=%2.2f\n", temperature );
-		display.writeText( line++, "Temp Sensor: OK");
-	}
 
 	s2f.change_polar();
 	s2f.change_mc_bal();
@@ -403,7 +407,7 @@ void sensor(void *args){
 	else{
 		printf("\n\n\n*****  Selftest PASSED  ********\n\n\n");
 		display.writeText( line++, "Selftest PASSED");
-		sleep(10);
+		sleep(3);
 	}
 	if( !tempSensorDetected ) {
 		printf("NO Temperature Sensor found\n");
@@ -460,7 +464,7 @@ void sensor(void *args){
 	xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 30, 0, 0);
 
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 10, dpid, 0);
-	xTaskCreatePinnedToCore(&readTemp, "readTemp", 8000, NULL, 1, tpid, 0);
+	xTaskCreatePinnedToCore(&readTemp, "readTemp", 8000, NULL, 3, tpid, 0);
 
 	if( mysetup.get()->_blue_enable ) {
 			// hci_power_control(HCI_POWER_ON);

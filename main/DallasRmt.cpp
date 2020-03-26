@@ -115,7 +115,6 @@ bool DallasRmt::validFamily(const uint8_t* deviceAddress)
             ret = true;
             break;
         default:
-        	// printf("Error: Invalid Temperature Sensor family %x\n", deviceAddress[0] );
             ret = false;
     }
     return ret;
@@ -157,10 +156,10 @@ bool DallasRmt::isConnected(const uint8_t* deviceAddress, uint8_t* scratchPad)
 
 bool DallasRmt::readScratchPad(const uint8_t* deviceAddress, uint8_t* scratchPad)
 {
+
     // send the reset command and fail fast
     int b = _ow->reset();
-    if (b == 0)
-    	return false;
+    if (b == 0) return false;
 
     _ow->select(deviceAddress);
     _ow->write(READSCRATCH);

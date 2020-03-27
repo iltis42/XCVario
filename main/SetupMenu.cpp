@@ -328,6 +328,9 @@ void SetupMenu::up(int count){
 void SetupMenu::longPress(){
 	long_pressed = true;
 	printf("SetupMenue: longPress\n");
+	Audio.disable();
+	delay(1000);
+	esp_restart();
 }
 
 

@@ -10,6 +10,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
+#include "sdkconfig.h"
 #include "esp_system.h"
 #include "sdkconfig.h"
 #include "esp_task_wdt.h"
@@ -300,6 +301,7 @@ void ESPAudio::decVolume( int steps ) {
 
 bool output_enable = false;
 
+
 void  ESPAudio::adjustVolume(){
 	if( cur_wiper != wiper ) {
 		printf("*****  SET WIPER=%d\n", wiper );
@@ -371,8 +373,8 @@ void ESPAudio::dactask(void* arg )
 		}
 		else{
 			if( sound_on ) {
-				if( wiper > 0 )
-					Poti.writeWiper( 0 );
+				// if( wiper > 0 )
+				Poti.writeWiper( 0 );
 				sound_on = false;
 			}
 		}
@@ -481,11 +483,13 @@ void ESPAudio::disable( bool disable ) {
 	{
 		mute( true );
 		vTaskDelay(100 / portTICK_PERIOD_MS);
-		Audio.dac_cosine_enable(Audio.getCh(), false);
+		// Audio.dac_cosine_enable(Audio.getCh(), false);
+		dac_output_disable(_ch);
 	}
 	else
 	{
-		Audio.dac_cosine_enable(Audio.getCh(), true );
+		// Audio.dac_cosine_enable(Audio.getCh(), true );
+		dac_output_enable(_ch);
 		vTaskDelay(100 / portTICK_PERIOD_MS);
 		mute( false );
 	}

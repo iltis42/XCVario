@@ -13,9 +13,11 @@ public:
   void begin( bool *enable, char* bt_name );
   void send( char * s );
   static int queueFull();
+  bool selfTest() { return bluetooth_up; };  // call 3 seconds after begin
 
 private:
    static bool *_enable;
+   static bool bluetooth_up;
    static void ( * _callback)(char * rx, uint16_t len);
    static int i;
    static uint8_t   rfcomm_channel_nr;

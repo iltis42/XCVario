@@ -254,7 +254,6 @@ void readTemp(void *pvParameters){
 
 void sensor(void *args){
 	bool selftestPassed=true;
-	bool tempSensorDetected=true;
 	int line = 1;
 	esp_wifi_set_mode(WIFI_MODE_NULL);
 	spiMutex = xSemaphoreCreateMutex();
@@ -263,6 +262,13 @@ void sensor(void *args){
 	mysetup.begin();
 	setupv.begin();
 	ADC.begin();  // for battery voltage
+	if( mysetup.get()->_blue_enable ) {
+		// hci_power_control(HCI_POWER_ON);
+		printf("BT Sender init, device name: %s\n", mysetup.getBtName() );
+		btsender.begin( &enableBtTx, mysetup.getBtName() );
+	}
+	else
+		printf("Bluetooth disabled\n");
 
 	sleep( 1 );
 
@@ -277,42 +283,46 @@ void sensor(void *args){
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 
 	ds18b20.begin();
-    // int valid;
-	temperature = ds18b20.getTemp();
-
-	if( temperature == DEVICE_DISCONNECTED_C ) {
-		printf("Error: Self test Temperatur Sensor failed; returned T=%2.2f\n", temperature );
-		display.writeText( line++, "Temp Sensor: Not found");
-		tempSensorDetected = false;
-		validTemperature = true;
-	}else
-	{
-		printf("Self test Temperatur Sensor PASSED; returned T=%2.2f\n", temperature );
-		display.writeText( line++, "Temp Sensor: OK");
-		validTemperature = false;
-	}
-
 	SPI.begin( SPI_SCLK, SPI_MISO, SPI_MOSI, CS_bme280TE );
 	xSemaphoreGive(spiMutex);
 	display.begin( &mysetup );
 	display.bootDisplay();
 
+    // int valid;
+	temperature = ds18b20.getTemp();
+	String failed_tests;
+	failed_tests += "\n\n\n";
+	if( temperature == DEVICE_DISCONNECTED_C ) {
+		printf("Error: Self test Temperatur Sensor failed; returned T=%2.2f\n", temperature );
+		display.writeText( line++, "Temp Sensor: Not found");
+		validTemperature = true;
+		failed_tests += "External Temperature Sensor: NOT FOUND\n";
+	}else
+	{
+		printf("Self test Temperatur Sensor PASSED; returned T=%2.2f\n", temperature );
+		display.writeText( line++, "Temp Sensor:PASSED");
+		validTemperature = false;
+		failed_tests += "External Temperature Sensor:PASSED\n";
+
+	}
 	printf("BMP280 sensors init..\n");
 
     bmpTE.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
-    // sleep( 1 );
 	bmpBA.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
 	sleep( 1 );
+
 	float ba_t, ba_p, te_t, te_p;
-	// bmpBA.selfTest( ba_t, ba_p);
+
 	if( ! bmpBA.selfTest( ba_t, ba_p) ) {
 	    printf("HW Error: Self test Barometric Pressure Sensor failed!\n");
 		display.writeText( line++, "Baro Sensor: Not found");
 	    selftestPassed = false;
+	    failed_tests += "Baro Sensor Test: NOT FOUND\n";
 	}
 	else {
 		printf("Barometric Sensor T=%f P=%f\n", ba_t, ba_p);
 	    display.writeText( line++, "Baro Sensor: OK");
+	    failed_tests += "Baro Sensor Test: PASSED\n";
 	}
 
 
@@ -321,10 +331,12 @@ void sensor(void *args){
 	    printf("HW Error: Self test TE Pressure Sensor failed!\n");
 	    display.writeText( line++, "TE Sensor: Not found");
 	    selftestPassed = false;
+	    failed_tests += "TE Sensor Test: NOT FOUND\n";
 	}
 	else {
 		printf("TE Sensor         T=%f P=%f\n", te_t, te_p);
 	    display.writeText( line++, "TE Sensor: OK");
+	    failed_tests += "TE Sensor Test: PASSED\n";
 	}
 
     if( selftestPassed ) {
@@ -332,20 +344,24 @@ void sensor(void *args){
 			selftestPassed = false;
 			printf("Severe Temperature deviation delta > 2 °C between Baro and TE sensor: °C %f\n", abs(ba_t - te_t) );
 			display.writeText( line++, "TE/Baro Temp: Unequal");
+			failed_tests += "TE/Baro Sensor T diff. <2°C: FAILED\n";
 		}
 		else{
 			printf("BMP 280 Temperature deviation test PASSED, dev: %f\n",  abs(ba_t - te_t));
 		    display.writeText( line++, "TE/Baro Temp: OK");
+		    failed_tests += "TE/Baro Sensor T diff. <2°C: PASSED\n";
 		}
 
 		if( abs(ba_p - te_p) >2.0 ) {
 			selftestPassed = false;
 			printf("Severe Pressure deviation delta > 2 hPa between Baro and TE sensor: %f\n", abs(ba_p - te_p) );
 			display.writeText( line++, "TE/Baro P: Unequal");
+			failed_tests += "TE/Baro Sensor P diff. <2hPa: FAILED\n";
 		}
 		else
 			printf("BMP 280 Pressure deviation test PASSED, dev: %f\n", abs(ba_p - te_p) );
 		    display.writeText( line++, "TE/Baro P: OK");
+		    failed_tests += "TE/Baro Sensor P diff. <2hPa: PASSED\n";
 
     }
 
@@ -362,16 +378,20 @@ void sensor(void *args){
 	if( !works ){
 		printf("Error reading air speed pressure sensor MP5004DP->MCP3321 I2C returned error\n");
 		display.writeText( line++, "IAS Sensor: Not found");
+		failed_tests += "IAS Sensor: NOT FOUND\n";
 		selftestPassed = false;
 	}
+
 	if( !MP5004DP.offsetPlausible( val )  ){
 		printf("Error: IAS P sensor offset MP5004DP->MCP3321 out of bounds (608-1034), act value=%d\n", val );
 		display.writeText( line++, "IAS Sensor: Offset Error");
+		failed_tests += "IAS Sensor offset test: FAILED\n";
 		selftestPassed = false;
 	}
 	else {
 		printf("MP5004->MCP3321 test PASSED, readout value in bounds (608-1034)=%d\n", val );
 		display.writeText( line++, "IAS Sensor: OK");
+		failed_tests += "IAS Sensor offset test: PASSED\n";
 	}
 
 	MP5004DP.doOffset();
@@ -383,9 +403,11 @@ void sensor(void *args){
 		printf("Error: Digital potentiomenter selftest failed\n");
 		display.writeText( line++, "Digital Poti: Failure");
 		selftestPassed = false;
+		failed_tests += "Digital Audio Poti test: FAILED\n";
 	}
 	else{
 		printf("Digital potentiometer test PASSED\n");
+		failed_tests += "Digital Audio Poti test: PASSED\n";
 		display.writeText( line++, "Digital Poti: OK");
 	}
 
@@ -394,12 +416,28 @@ void sensor(void *args){
 	if( bat < 1 || bat > 28.0 ){
 		printf("Error: Battery voltage metering out of bounds, act value=%f\n", bat );
 		display.writeText( line++, "Bat Sensor: Failure");
+		failed_tests += "Battery Voltage Sensor: FAILED\n";
 		selftestPassed = false;
 	}
 	else{
 		printf("Battery voltage metering test PASSED, act value=%f\n", bat );
 		display.writeText( line++, "Bat Sensor: OK");
+		failed_tests += "Battery Voltage Sensor: PASSED\n";
 	}
+
+	sleep( 0.1 );
+	if( mysetup.get()->_blue_enable ) {
+		if( btsender.selfTest() ){
+			display.writeText( line++, "Bluetooth: OK");
+			failed_tests += "Bluetooth test: PASSED\n";
+		}
+		else{
+			display.writeText( line++, "Bluetooth: FAILED");
+			failed_tests += "Bluetooth test: FAILED\n";
+		}
+	}
+
+
 
 
 	s2f.change_polar();
@@ -409,25 +447,23 @@ void sensor(void *args){
 	Version myVersion;
 	printf("Program Version %s\n", myVersion.version() );
 
-	SetupMenuValFloat::showQnhMenu();
+
 
 	// Audio.mute( false );
 	gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);  // blue LED, maybe use for BT connection
 
-
+	printf("%s", failed_tests.c_str());
 	if( !selftestPassed )
 	{
 		printf("\n\n\nSelftest failed, see above LOG for Problems\n\n\n");
-		sleep(5);
+		sleep(6);
 	}
 	else{
 		printf("\n\n\n*****  Selftest PASSED  ********\n\n\n");
 		display.writeText( line++, "Selftest PASSED");
 		sleep(3);
 	}
-	if( !tempSensorDetected ) {
-		printf("NO Temperature Sensor found\n");
-	}
+
 
 	sleep(1);
 	speedP=MP5004DP.readPascal(30);
@@ -482,13 +518,7 @@ void sensor(void *args){
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 10, dpid, 0);
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 8000, NULL, 3, tpid, 0);
 
-	if( mysetup.get()->_blue_enable ) {
-			// hci_power_control(HCI_POWER_ON);
-			printf("BT Sender init, device name: %s\n", mysetup.getBtName() );
-			btsender.begin( &enableBtTx, mysetup.getBtName() );
-		}
-		else
-			printf("Bluetooth disabled\n");
+
 
 
 	printf("Free Stack: S:%d \n", uxTaskGetStackHighWaterMark( spid ) );

@@ -193,7 +193,7 @@ void ESPRotary::readPos(void * args) {
 		if( _switch_state != newsw ){
 			_switch_state = newsw;
 			if( newsw ){      // pullup, so not pressed is 1
-				if( (swtime != 0) && (rotary.time - swtime) > 3000 ){
+				if( (swtime != 0) && (rotary.time - swtime) > 5000 ){
 					var = LONG_PRESS;
 					xQueueSend(q2, &var, portMAX_DELAY );
 					swtime = 0;

@@ -16,6 +16,7 @@ int BTSender::i=0;
 #define HEARTBEAT_PERIOD_MS 20
 
 bool     *BTSender::_enable;
+bool      BTSender::bluetooth_up = false;
 uint8_t   BTSender::rfcomm_channel_nr = 1;
 uint16_t  BTSender::rfcomm_channel_id = 0;
 uint8_t   BTSender::spp_service_buffer[100];
@@ -79,6 +80,7 @@ void BTSender::packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *p
 		case BTSTACK_EVENT_STATE:
 			if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
 				printf("BTstack is up and running\n");
+				bluetooth_up = true;
 			}
 			break;
 

@@ -15,6 +15,7 @@ class I2C
 	I2C() { _scl = GPIO_NUM_0; _sda = GPIO_NUM_0; cmd = 0; _num=I2C_NUM_0; };
     void init(gpio_num_t sda, gpio_num_t scl, uint32_t frequeny=I2C_MASTER_FREQ_HZ, i2c_port_t num=I2C_NUM_0);
     esp_err_t write( uint8_t address, int ack=0, i2c_rw_t rw=I2C_MASTER_READ);
+    esp_err_t write_byte( uint8_t address, int ack=0);
     esp_err_t read( uint8_t *byte, int ack=1);
     esp_err_t read16bit( uint8_t addr, uint16_t *word );
     esp_err_t read8bit( uint8_t addr, uint16_t *word );

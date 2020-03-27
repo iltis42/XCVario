@@ -54,7 +54,7 @@ bool MCP4018::decWiper(){
 
 bool MCP4018::readWiper( uint16_t & val ) {
 	esp_err_t ret = read8bit( MPC4018_I2C_ADDR, &val );
-	val = val>>1;  // somehow the read value is one bit shift left and a one came in in lsbit
+	// val = val>>1;  // issue found, fixed
 	if( ret == ESP_OK ){
 		printf("MCP4018 read wiper %d\n", val);
 		return true;

@@ -224,6 +224,9 @@ void audioTask(void *pvParameters){
 		}
 }
 
+
+bool no_t_sensor=false;
+
 void readTemp(void *pvParameters){
 	while (1) {
 		TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -236,7 +239,10 @@ void readTemp(void *pvParameters){
 			if( t ==  DEVICE_DISCONNECTED_C ) {
 				validTemperature = false;
 				temperature = DEVICE_DISCONNECTED_C;
-				printf("Warning: No Temperatur Sensor found, please plug Temperature Sensor\n");
+				if( no_t_sensor == false ) {
+					printf("Warning: No Temperatur Sensor found, please plug Temperature Sensor\n");
+					no_t_sensor = true;
+				}
 			}
 			else
 			{

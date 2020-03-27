@@ -25,6 +25,7 @@
 #include "driver/dac.h"
 #include "sensor.h"
 #include "mcp4018.h"
+#include <Arduino.h>
 
 
 float ESPAudio::_range = 5.0;
@@ -254,7 +255,6 @@ long int tickmod  = 0;
 //  modulation frequency
 
 bool hightone = false;
-
 const int del = 500;
 
 void ESPAudio::modtask(void* arg )
@@ -368,13 +368,14 @@ void ESPAudio::dactask(void* arg )
 		if( sound ){
 			if( !sound_on ) {
 				Poti.writeWiper( wiper );
+				dac_output_enable(_ch);
 				sound_on = true;
 			}
 		}
 		else{
 			if( sound_on ) {
-				// if( wiper > 0 )
 				Poti.writeWiper( 0 );
+				dac_output_disable(_ch);
 				sound_on = false;
 			}
 		}
@@ -477,20 +478,20 @@ void ESPAudio::begin( dac_channel_t ch, gpio_num_t button, Setup *asetup )
 	gpio_set_pull_mode(GPIO_NUM_19, GPIO_FLOATING);      // ESP32 level too low from PAM enable
 }
 
+
+
 void ESPAudio::disable( bool disable ) {
 	_disable = disable;
 	if( _disable )
 	{
 		mute( true );
-		vTaskDelay(100 / portTICK_PERIOD_MS);
-		// Audio.dac_cosine_enable(Audio.getCh(), false);
+		delay(100);
 		dac_output_disable(_ch);
 	}
 	else
 	{
-		// Audio.dac_cosine_enable(Audio.getCh(), true );
 		dac_output_enable(_ch);
-		vTaskDelay(100 / portTICK_PERIOD_MS);
+		delay(100);
 		mute( false );
 	}
 };
@@ -501,13 +502,13 @@ void ESPAudio::test( float to, float from )
 	if( to > from){
 		for( float tef=from; tef < to; tef=tef+0.05 ){
 			Audio.setValues( tef, 0, true );
-			vTaskDelay(50 / portTICK_PERIOD_MS);
+			delay(50);
 		}
 	}
 	else{
 		for( float tef=from; tef > to; tef=tef-0.05 ){
 			Audio.setValues( tef, 0, true );
-			vTaskDelay(50 / portTICK_PERIOD_MS);
+			delay(50);
 		}
 	}
 }

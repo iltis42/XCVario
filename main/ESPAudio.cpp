@@ -64,6 +64,19 @@ ESPAudio::~ESPAudio() {
 
 }
 
+bool ESPAudio::selfTest(){
+	printf("ESPAudio::selfTest\n");
+	uint16_t awiper;
+	bool ret = Poti.readWiper( awiper );
+	printf("readWiper val=%d ret=%d cur=%d\n", awiper, ret, cur_wiper );
+	if( ret == false )
+		return false;
+	if( awiper != cur_wiper )  // begin sets already cur_wiper
+		return false;
+	else
+		return true;
+}
+
 /* Declare global sine waveform parameters
  * so they may be then accessed and changed from debugger
  * over an JTAG interface
@@ -289,8 +302,11 @@ bool output_enable = false;
 
 void  ESPAudio::adjustVolume(){
 	if( cur_wiper != wiper ) {
-		// printf("*****  SET WIPER=%d\n", wiper );
+		printf("*****  SET WIPER=%d\n", wiper );
 		Poti.writeWiper( wiper );
+		uint16_t awiper;
+		Poti.readWiper( awiper );
+		printf("read back wiper=%d\n", awiper );
 		cur_wiper = wiper;
 		if( wiper == 0 ) {
 			if( output_enable ) {
@@ -315,7 +331,7 @@ void ESPAudio::voltask(void* arg )
 	}
 }
 
-bool sound_on=false;
+bool sound_on=true;
 
 void ESPAudio::dactask(void* arg )
 {

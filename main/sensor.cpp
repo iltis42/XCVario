@@ -377,8 +377,18 @@ void sensor(void *args){
 	MP5004DP.doOffset();
 
 	Audio.begin( DAC_CHANNEL_1, GPIO_NUM_0, &mysetup );
-
+    sleep( 0.1 );
 	// TBD audio Poti test here.
+	if( !Audio.selfTest() ) {
+		printf("Error: Digital potentiomenter selftest failed\n");
+		display.writeText( line++, "Digital Poti: Failure");
+		selftestPassed = false;
+	}
+	else{
+		printf("Digital potentiometer test PASSED\n");
+		display.writeText( line++, "Digital Poti: OK");
+	}
+
 
 	float bat = ADC.getBatVoltage(true);
 	if( bat < 1 || bat > 28.0 ){

@@ -71,7 +71,7 @@ esp_err_t I2C::write8bit( uint8_t addr, uint16_t word )
 	uint8_t datal=(uint8_t(word & 0xFF));
 	start();
 	write(addr, true, I2C_MASTER_WRITE);
-    write(datal, 1);
+    write(datal, 0);
 	stop();
 	esp_err_t ret = i2c_master_cmd_begin(_num, cmd, 100 / portTICK_RATE_MS);
     if( ret == ESP_FAIL){
@@ -101,6 +101,25 @@ esp_err_t I2C::read16bit( uint8_t addr, uint16_t *word )
     i2c_cmd_link_delete(cmd);
     return ret;
 }
+
+esp_err_t I2C::read8bit( uint8_t addr, uint16_t *word )
+{
+	cmd = i2c_cmd_link_create();
+	uint8_t datal;
+	start();
+	write(addr, true, I2C_MASTER_READ);
+	read(&datal, 2);
+	stop();
+	esp_err_t ret = i2c_master_cmd_begin(_num, cmd, 100 / portTICK_RATE_MS);
+    if( ret == ESP_FAIL){
+		printf("I2C ERROR read 8 bit: %x\n", ret);
+    	;
+	}
+    *word = (uint16_t)datal;
+    i2c_cmd_link_delete(cmd);
+    return ret;
+}
+
 
 esp_err_t I2C::scan()
 {

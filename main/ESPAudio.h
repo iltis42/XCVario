@@ -31,6 +31,7 @@ public:
 	bool getS2FMode() { return _s2f_mode; }
 	void incVolume( int steps );
 	void decVolume( int steps );
+	bool selfTest();
 
 private:
 	void dac_cosine_enable(dac_channel_t channel, bool enable=true);

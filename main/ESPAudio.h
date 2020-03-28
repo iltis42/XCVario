@@ -12,9 +12,12 @@
 #include "driver/gpio.h"
 #include "driver/dac.h"
 #include "Setup.h"
+#include "soc/rtc.h"
 
 #define SOUND_ON 1
 #define SOUND_OFF 0
+
+const float freq_step = RTC_FAST_CLK_FREQ_APPROX / (65536 * 8 );  // div = 0x07
 
 class ESPAudio {
 public:
@@ -68,7 +71,8 @@ private:
 	float _deadband;
 	float _deadband_neg;
 	float _variation;  // max = center * variation,  min = center / variation
-	bool _testmode;
+	static bool _testmode;
+	static bool sound_on;
     static float _range;
 	gpio_num_t _button;
 	bool _mute;

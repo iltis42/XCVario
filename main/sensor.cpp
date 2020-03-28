@@ -71,8 +71,8 @@ BMP:
 #define SPI_MOSI GPIO_NUM_27  // SPI SDO Master Out Slave In pin
 #define SPI_MISO GPIO_NUM_32  // SPI SDI Master In Slave Out ESP32=Master,BME280=slave pin
 
-#define CS_bme280BA GPIO_NUM_33   // CS pin 33
-#define CS_bme280TE GPIO_NUM_26   // CS pin 26
+#define CS_bme280BA GPIO_NUM_26   // before CS pin 33
+#define CS_bme280TE GPIO_NUM_33   // before CS pin 26
 
 #define CS_Display GPIO_NUM_13    // CS pin 13 for Display
 #define RESET_Display GPIO_NUM_5  // Reset pin for Display
@@ -104,8 +104,8 @@ TaskHandle_t *dpid;
 
 xSemaphoreHandle spiMutex=NULL;
 
-BME280_ESP32_SPI bmpTE(SPI_SCLK, SPI_MOSI, SPI_MISO, CS_bme280TE, FREQ_BMP_SPI);
 BME280_ESP32_SPI bmpBA(SPI_SCLK, SPI_MOSI, SPI_MISO, CS_bme280BA, FREQ_BMP_SPI);
+BME280_ESP32_SPI bmpTE(SPI_SCLK, SPI_MOSI, SPI_MISO, CS_bme280TE, FREQ_BMP_SPI);
 Ucglib_ILI9341_18x240x320_HWSPI myucg( SPI_DC, CS_Display, RESET_Display );
 IpsDisplay display( &myucg );
 
@@ -289,7 +289,7 @@ void sensor(void *args){
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 
 	ds18b20.begin();
-	SPI.begin( SPI_SCLK, SPI_MISO, SPI_MOSI, CS_bme280TE );
+	SPI.begin( SPI_SCLK, SPI_MISO, SPI_MOSI, CS_bme280BA );
 	xSemaphoreGive(spiMutex);
 	display.begin( &mysetup );
 	display.bootDisplay();
@@ -313,8 +313,9 @@ void sensor(void *args){
 	}
 	printf("BMP280 sensors init..\n");
 
-    bmpTE.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
+
 	bmpBA.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
+	bmpTE.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
 	sleep( 1 );
 
 	float ba_t, ba_p, te_t, te_p;

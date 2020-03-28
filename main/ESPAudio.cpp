@@ -12,7 +12,6 @@
 #include "freertos/queue.h"
 #include "sdkconfig.h"
 #include "esp_system.h"
-#include "sdkconfig.h"
 #include "esp_task_wdt.h"
 
 #include "soc/rtc_io_reg.h"
@@ -35,6 +34,8 @@ float ESPAudio::_high_tone_var;
 dac_channel_t ESPAudio::_ch;
 uint16_t ESPAudio::wiper;
 uint16_t ESPAudio::cur_wiper;
+bool ESPAudio::sound_on;
+bool ESPAudio::_testmode;
 
 MCP4018 Poti;
 
@@ -60,33 +61,22 @@ ESPAudio::ESPAudio( ) {
 	_s2f_mode = false;
 	wiper = 63;
 	cur_wiper = 63;
+	sound_on = false;
 }
 
 ESPAudio::~ESPAudio() {
 
 }
 
-bool ESPAudio::selfTest(){
-	printf("ESPAudio::selfTest\n");
-	uint16_t awiper;
-	bool ret = Poti.readWiper( awiper );
-	printf("readWiper val=%d ret=%d cur=%d\n", awiper, ret, cur_wiper );
-	if( ret == false )
-		return false;
-	if( awiper != cur_wiper )  // begin sets already cur_wiper
-		return false;
-	else
-		return true;
-}
+
 
 /* Declare global sine waveform parameters
  * so they may be then accessed and changed from debugger
  * over an JTAG interface
  */
 const int clk_8m_div = 7;    // RTC 8M clock divider (division is by clk_8m_div+1, i.e. 0 means 8MHz frequency)
-const int offset = 0;              // leave it default / 0 = no any offset
-const int invert = 2;          // invert MSB to get sine waveform
-
+const int offset = 0;        // leave it default / 0 = no any offset
+const int invert = 2;        // invert MSB to get sine waveform
 
 /*
  * Enable cosine waveform generator on a DAC channel
@@ -115,6 +105,27 @@ void ESPAudio::dac_cosine_enable(dac_channel_t channel, bool enable)
 	default :
 		printf("Channel %d\n", channel);
 	}
+}
+
+bool ESPAudio::selfTest(){
+	printf("ESPAudio::selfTest\n");
+	uint16_t awiper;
+	bool ret = Poti.readWiper( awiper );
+	printf("readWiper val=%d ret=%d cur=%d\n", awiper, ret, cur_wiper );
+	if( ret == false )
+		return false;
+	if( awiper != cur_wiper )  // begin sets already cur_wiper
+		ret = false;
+	else
+		ret = true;
+	// Tone test, beep 440 Hz 1 second
+	Audio.dac_frequency_set(clk_8m_div, int(440/freq_step) );
+	Poti.writeWiper( 64 );
+	dac_output_enable(_ch);
+	delay(1000);
+	Poti.writeWiper( 0 );
+	dac_output_disable(_ch);
+	return ret;
 }
 
 
@@ -248,7 +259,7 @@ const float delta = 1.05946309436;
 sounds strange, better chop tone
  */
 
-const float freq_step = RTC_FAST_CLK_FREQ_APPROX / (65536 * 8 );  // div = 0x07
+
 long int tick = 0;
 long int tickmod  = 0;
 
@@ -305,11 +316,13 @@ bool output_enable = false;
 void  ESPAudio::adjustVolume(){
 	if( cur_wiper != wiper ) {
 		printf("*****  SET WIPER=%d\n", wiper );
-		Poti.writeWiper( wiper );
-		uint16_t awiper;
-		Poti.readWiper( awiper );
-		printf("read back wiper=%d\n", awiper );
+		if( sound_on )
+			Poti.writeWiper( wiper );
+		// uint16_t awiper;
+		// Poti.readWiper( awiper );
+		// printf("read back wiper=%d\n", awiper );
 		cur_wiper = wiper;
+		/*
 		if( wiper == 0 ) {
 			if( output_enable ) {
 				dac_output_disable(_ch);
@@ -321,6 +334,7 @@ void  ESPAudio::adjustVolume(){
 				output_enable = true;
 			}
 		}
+		*/
 	}
 }
 
@@ -333,7 +347,7 @@ void ESPAudio::voltask(void* arg )
 	}
 }
 
-bool sound_on=true;
+
 
 void ESPAudio::dactask(void* arg )
 {
@@ -374,7 +388,8 @@ void ESPAudio::dactask(void* arg )
 		}
 		else{
 			if( sound_on ) {
-				Poti.writeWiper( 0 );
+				if( cur_wiper != 0 )
+					Poti.writeWiper( 0 );
 				dac_output_disable(_ch);
 				sound_on = false;
 			}

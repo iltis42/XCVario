@@ -306,7 +306,7 @@ void sensor(void *args){
 	}else
 	{
 		printf("Self test Temperatur Sensor PASSED; returned T=%2.2f\n", temperature );
-		display.writeText( line++, "Temp Sensor:PASSED");
+		display.writeText( line++, "Temp Sensor: OK");
 		validTemperature = false;
 		failed_tests += "External Temperature Sensor:PASSED\n";
 

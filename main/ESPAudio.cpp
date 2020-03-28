@@ -119,12 +119,18 @@ bool ESPAudio::selfTest(){
 	else
 		ret = true;
 	// Tone test, beep 440 Hz 1 second
-	Audio.dac_frequency_set(clk_8m_div, int(440/freq_step) );
+	_testmode=true;  // disable task for modulation
 	Poti.writeWiper( 64 );
 	dac_output_enable(_ch);
-	delay(1000);
+	for( float f=261.62; f<1046.51; f=f*1.03){
+		printf("f=%f\n",f);
+		Audio.dac_frequency_set(clk_8m_div, int(f/freq_step) );
+		delay(30);
+	}
+	delay(200);
 	Poti.writeWiper( 0 );
 	dac_output_disable(_ch);
+	_testmode=false;
 	return ret;
 }
 
@@ -316,25 +322,10 @@ bool output_enable = false;
 void  ESPAudio::adjustVolume(){
 	if( cur_wiper != wiper ) {
 		printf("*****  SET WIPER=%d\n", wiper );
-		if( sound_on )
+		if( sound_on ) {
 			Poti.writeWiper( wiper );
-		// uint16_t awiper;
-		// Poti.readWiper( awiper );
-		// printf("read back wiper=%d\n", awiper );
-		cur_wiper = wiper;
-		/*
-		if( wiper == 0 ) {
-			if( output_enable ) {
-				dac_output_disable(_ch);
-				output_enable = false;
-			}
-		}else{
-			if( !output_enable ) {
-				dac_output_enable(_ch);
-				output_enable = true;
-			}
 		}
-		*/
+		cur_wiper = wiper;
 	}
 }
 
@@ -354,47 +345,49 @@ void ESPAudio::dactask(void* arg )
 	while(1){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		tick++;
-		float te = Audio.getTE();
-		float max;
-		if ( te > 0 )
-			max = Audio.getCenter() * Audio.getVariation();
-		else
-			max = Audio.getCenter() / Audio.getVariation();
-		float f;
-		if( _s2f_mode )
-			f = (float)Audio.getCenter() + ( (te/5.0 ) * max );
-		else
-			f = (float)Audio.getCenter() + ( (te/_range ) * max );
-		bool sound=true;
-		int step = int( (f/freq_step ) + 0.5);
-		if( Audio.inDeadBand(te) || Audio.getMute()  ){
-			sound = false;
-		}
-		else{
-			if( hightone && (_tonemode == 1)  ){
-				step = int( (f*_high_tone_var/freq_step) + 0.5);
-			}
-			else if( hightone && (_tonemode == 0) ){
+		if( !_testmode ) {
+			float te = Audio.getTE();
+			float max;
+			if ( te > 0 )
+				max = Audio.getCenter() * Audio.getVariation();
+			else
+				max = Audio.getCenter() / Audio.getVariation();
+			float f;
+			if( _s2f_mode )
+				f = (float)Audio.getCenter() + ( (te/5.0 ) * max );
+			else
+				f = (float)Audio.getCenter() + ( (te/_range ) * max );
+			bool sound=true;
+			int step = int( (f/freq_step ) + 0.5);
+			if( Audio.inDeadBand(te) || Audio.getMute()  ){
 				sound = false;
 			}
-		}
+			else{
+				if( hightone && (_tonemode == 1)  ){
+					step = int( (f*_high_tone_var/freq_step) + 0.5);
+				}
+				else if( hightone && (_tonemode == 0) ){
+					sound = false;
+				}
+			}
 
-		if( sound ){
-			if( !sound_on ) {
-				Poti.writeWiper( wiper );
-				dac_output_enable(_ch);
-				sound_on = true;
+			if( sound ){
+				if( !sound_on ) {
+					Poti.writeWiper( wiper );
+					dac_output_enable(_ch);
+					sound_on = true;
+				}
 			}
-		}
-		else{
-			if( sound_on ) {
-				if( cur_wiper != 0 )
-					Poti.writeWiper( 0 );
-				dac_output_disable(_ch);
-				sound_on = false;
+			else{
+				if( sound_on ) {
+					if( cur_wiper != 0 )
+						Poti.writeWiper( 0 );
+					dac_output_disable(_ch);
+					sound_on = false;
+				}
 			}
+			Audio.dac_frequency_set(clk_8m_div, step);
 		}
-		Audio.dac_frequency_set(clk_8m_div, step);
 		vTaskDelayUntil(&xLastWakeTime, 20/portTICK_PERIOD_MS);
 	}
 }

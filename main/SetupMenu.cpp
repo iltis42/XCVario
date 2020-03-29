@@ -725,19 +725,19 @@ void SetupMenu::setup( )
 	SetupMenu * un = new SetupMenu( "Units" );
 	un->setHelp( "Setup altimeter, airspeed indicatir or variometer with metric, american, british or australian units");
 	SetupMenuSelect * alu = new SetupMenuSelect( 	"Altimeter",	&_setup->get()->_alt_unit, true );
-	alu->addEntry( "Meter");
-	alu->addEntry( "Foot");
-	alu->addEntry( "FlightLevel");
+	alu->addEntry( "Meter       (m)");
+	alu->addEntry( "Foot        (ft)");
+	alu->addEntry( "FlightLevel (FL)");
 	un->addMenu( alu );
 	SetupMenuSelect * iau = new SetupMenuSelect( 	"Indicated Airspeed",	&_setup->get()->_ias_unit, true );
-	iau->addEntry( "km/h");
-	iau->addEntry( "mph");
-	iau->addEntry( "Knots");
+	iau->addEntry( "Km per hour     (Km/h)");
+	iau->addEntry( "Miles  per hour (mph)");
+	iau->addEntry( "Knots               (kn)");
 	un->addMenu( iau );
 	SetupMenuSelect * vau = new SetupMenuSelect( 	"Vario",	&_setup->get()->_vario_unit );
-	vau->addEntry( "m/s");
-	vau->addEntry( "ft/min");
-	vau->addEntry( "Knots");
+	vau->addEntry( "Meters/sec   (m/s)");
+	vau->addEntry( "Foot per min (ft/min)");
+	vau->addEntry( "Knots        (knots)");
 	un->addMenu( vau );
 	sye->addMenu( un );
 

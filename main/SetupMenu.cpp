@@ -727,7 +727,7 @@ void SetupMenu::setup( )
 	SetupMenuSelect * alu = new SetupMenuSelect( 	"Altimeter",	&_setup->get()->_alt_unit, true );
 	alu->addEntry( "Meter");
 	alu->addEntry( "Foot");
-	alu->addEntry( "FL (=QNH 1013.25)");
+	alu->addEntry( "FlightLevel");
 	un->addMenu( alu );
 	SetupMenuSelect * iau = new SetupMenuSelect( 	"Indicated Airspeed",	&_setup->get()->_ias_unit, true );
 	iau->addEntry( "km/h");

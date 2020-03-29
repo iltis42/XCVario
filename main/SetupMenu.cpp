@@ -419,7 +419,7 @@ void SetupMenu::setup( )
 	MenuEntry* mm = root->addMenu( root );
 
 	SetupMenuValFloat * mc = new SetupMenuValFloat( "MC", &_setup->get()->_MC, "m/s",	0.01, 9.9, 0.1,  mc_adj, true );
-	mc->setHelp("Default Mac Cready value for optimum cruise speed, or average climb rate");
+	mc->setHelp("Default Mac Cready value for optimum cruise speed, or average climb rate, MC is provided in usual metric system means");
 	mm->addMenu( mc );
 
 	SetupMenuValFloat::qnh_menu = new SetupMenuValFloat( "QNH Setup", &_setup->get()->_QNH, "hPa", 900.0, 1100.0, 0.250, qnh_adj, true );
@@ -452,7 +452,7 @@ void SetupMenu::setup( )
 	else if( _setup->get()->_vario_unit == 1 )
 		vunit = "x 100ft/m";
 	else if( _setup->get()->_vario_unit == 2 )
-		vunit = "kn";
+		vunit = "kt";
 	SetupMenuValFloat * vga = new SetupMenuValFloat( 	"Range",
 			&_setup->get()->_range,
 			vunit.c_str(),
@@ -493,23 +493,6 @@ void SetupMenu::setup( )
 	sink->addEntry( "ENABLE");
 	vae->addMenu( sink );
 
-// Bluetooth
-	SetupMenu * bt = new SetupMenu( 	"Bluetooth"  );
-
-	SetupMenuSelect * btm = new SetupMenuSelect( 	"BT Sender",
-				&_setup->get()->_blue_enable, true );
-	btm->addEntry( "OFF");
-	btm->addEntry( "ON");
-	bt->addMenu( btm );
-
-	static uint8_t select_dummy2 = 0;
-	char * ids = _setup->getID();
-	printf( "Setup id=%s\n", ids );
-	SetupMenuSelect * idm = new SetupMenuSelect( 	"BT Name",
-								&select_dummy2, false, 0, false );
-	idm->addEntry( ids );
-	bt->addMenu( idm );
-	mm->addMenu( bt );
 
 
 // Audio
@@ -584,7 +567,7 @@ void SetupMenu::setup( )
 
 	SetupMenu * db = new SetupMenu( "Deadband" );
 	MenuEntry* dbe = ade->addMenu( db );
-	dbe->setHelp("Audio dead band limits within Audio remains silent");
+	dbe->setHelp("Audio dead band limits within Audio remains silent in metric scale. 0,1 m/s equals roughtly 20 ft/min or 0.2 knots");
 
 	SetupMenuValFloat * dbminlv = new SetupMenuValFloat( 	"Lower Val",
 		&_setup->get()->_deadband_neg,
@@ -620,7 +603,7 @@ void SetupMenu::setup( )
 	}
 
 	SetupMenu * pa = new SetupMenu( "PolarAdjust" );
-	pa->setHelp( "Adjust speed/sink at representative points of selected polar");
+	pa->setHelp( "Adjust speed/sink at representative points of selected polar in commonly used metric system for polars");
 	poe->addMenu( pa );
 
 	SetupMenuValFloat * wil = new SetupMenuValFloat(
@@ -674,6 +657,28 @@ void SetupMenu::setup( )
 
 	SetupMenu * sy = new SetupMenu( "System" );
 	MenuEntry* sye = mm->addMenu( sy );
+
+	// Bluetooth
+	String btname="Bluetooth   ";
+	btname += _setup->getID();
+
+	SetupMenuSelect * btm = new SetupMenuSelect(  btname, &_setup->get()->_blue_enable, true );
+	btm->addEntry( "Sender OFF");
+	btm->addEntry( "Sender ON");
+    /*
+	static uint8_t select_dummy2 = 0;
+	char * ids = _setup->getID();
+	printf( "Setup id=%s\n", ids );
+	SetupMenuSelect * idm = new SetupMenuSelect( 	"BT Name",
+			&select_dummy2, false, 0, false );
+	idm->addEntry( ids );
+
+	bt->addMenu( idm );
+	*/
+	sye->addMenu( btm );
+
+
+
 
 	printf("Factory adjust: %0.5f\n", _setupv->get()->_factory_volt_adjust );
 	float fva = _setupv->get()->_factory_volt_adjust;
@@ -747,7 +752,7 @@ void SetupMenu::setup( )
 	SetupMenuSelect * iau = new SetupMenuSelect( 	"Indicated Airspeed",	&_setup->get()->_ias_unit, true );
 	iau->addEntry( "Km per hour     (Km/h)");
 	iau->addEntry( "Miles  per hour (mph)");
-	iau->addEntry( "Knots               (kn)");
+	iau->addEntry( "Knots               (kt)");
 	un->addMenu( iau );
 	SetupMenuSelect * vau = new SetupMenuSelect( 	"Vario",	&_setup->get()->_vario_unit );
 	vau->addEntry( "Meters/sec   (m/s)");

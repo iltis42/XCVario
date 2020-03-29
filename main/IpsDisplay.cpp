@@ -231,7 +231,7 @@ void IpsDisplay::initDisplay() {
  	if( UNITIAS == 1 ) // mph
  		iasu = "mph";
  	if( UNITIAS == 2 ) // knots
- 		iasu = "kn";
+ 		iasu = "kt";
  	ucg->printf(" IAS %s", iasu.c_str());
 	ucg->setPrintPos(IASVALX,YS2F-(2*fh)-8);
 	// if( _setup->get()->_flap_enable )
@@ -581,7 +581,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		else if(  UNITVAR == 1 )
 			units="ft/m";
 		else if(  UNITVAR == 2 )
-			units="kn ";
+			units="kt ";
 		int mslen = ucg->getStrWidth(units.c_str());
 		ucg->setPrintPos(DISPLAY_W-mslen,YVAR-12);
 		ucg->print(units.c_str());
@@ -712,7 +712,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
  	else if( UNITVAR == 1 )
  		ty = (int)(te*_pixpmd*1.9685);  // 1 unit = 100 ft/min
  	else if( UNITVAR == 2 )
- 		ty = (int)(te*_pixpmd*1.94384); // 1 unit = 1 kn
+ 		ty = (int)(te*_pixpmd*1.94384); // 1 unit = 1 kt
 
  	int py = (int)(polar_sink*_pixpmd);
     // Gauge Triangle

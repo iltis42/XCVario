@@ -57,8 +57,8 @@ void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
 	rb.push( 0 );
 	gpio_isr_handler_add(clk, ESPRotary::readPosInt, NULL);
 	gpio_isr_handler_add(sw, ESPRotary::readPosInt, NULL);
-	xTaskCreatePinnedToCore(&ESPRotary::readPos, "readPos", 4096, NULL, 20, NULL, 0);
-	xTaskCreatePinnedToCore(&ESPRotary::informObservers, "informObservers", 8192, NULL, 10, NULL, 0);
+	xTaskCreatePinnedToCore(&ESPRotary::readPos, "readPos", 1024*4, NULL, 20, NULL, 0);
+	xTaskCreatePinnedToCore(&ESPRotary::informObservers, "informObservers", 1024*8, NULL, 10, NULL, 0);
 	xBinarySemaphore = xSemaphoreCreateBinary();
 }
 
@@ -149,48 +149,46 @@ void ESPRotary::readPos(void * args) {
         rb.push( rotary.rot & 3 );
         int r0=rb[0]&3;
         int r1=rb[1]&3;
-        // printf( "Rotaty dt/clk cur:%d last:%d\n", r0, r1 );
 
-		if( (r0 == 0) && (r1 == 3) ) {
-			dir--;
-		}
-		else if ( (r0 == 1) && (r1 == 2) ) {
-			dir++;
-		}
-		else if( (r0 == 3) && (r1 == 0) ) {
-			 // printf("Rotary 30\n");
-			// ignore
-		}
-		else if ( (r0 == 2) && (r1 == 1) ) {
-			 // printf("Rotary 21\n");
-			// ignore
-		}
-		else if ( (r0 == 3) && (r1 == 1) ) {
-					 // printf("Rotary 31\n");
-					// ignore
-				}
-		else if ( r0 == r1 ) {
-					 // printf("No change ignore\n");
-					// ignore
-				}
-		else {
-			var = ERROR;
-			printf( "Rot 0:%d 1:%d\n", r0, r1 );
-			xQueueSend(q2, &var, portMAX_DELAY );
-		}
-		int delta = dir - last_dir;
+        if( r1 != r0 )
+        {
+        	// printf( "Rotaty dt/clk cur:%d last:%d\n", r0, r1 );
+        	if( (r0 == 0) && (r1 == 3) ) {
+        		dir--;
+        	}
+        	else if ( (r0 == 1) && (r1 == 2) ) {
+        		dir++;
+        	}
+        	else if( (r0 == 3) && (r1 == 0) ) {
+        		// printf("Rotary 30\n");
+        		// ignore
+        	}
+        	else if ( (r0 == 2) && (r1 == 1) ) {
+        		// printf("Rotary 21\n");
+        		// ignore
+        	}
+        	else if ( (r0 == 3) && (r1 == 1) ) {
+        		// printf("Rotary 31\n");
+        		// ignore
+        	}
+        	else {
+        		var = ERROR;
+        		printf( "Rotary seq incorrect cur:%d last:%d\n", r0, r1 );
+        	}
+        	int delta = dir - last_dir;
 
-		if( delta < 0 ) {
-			// printf("Rotary up\n");
-			var = UP;
-			xQueueSend(q2, &var, portMAX_DELAY );
-		}
-		if( delta  > 0 ) {
-			// printf("Rotary down\n");
-			var = DOWN;
-			xQueueSend(q2, &var, portMAX_DELAY );
-		}
-		last_dir = dir;
+        	if( delta < 0 ) {
+        		// printf("Rotary up\n");
+        		var = UP;
+        		xQueueSend(q2, &var, portMAX_DELAY );
+        	}
+        	if( delta  > 0 ) {
+        		// printf("Rotary down\n");
+        		var = DOWN;
+        		xQueueSend(q2, &var, portMAX_DELAY );
+        	}
+        	last_dir = dir;
+        }
 
 		int newsw = 0;
 		if( rotary.rot & 0x04 )

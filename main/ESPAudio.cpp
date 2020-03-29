@@ -120,7 +120,7 @@ bool ESPAudio::selfTest(){
 		ret = true;
 	// Tone test, beep 440 Hz 1 second
 	_testmode=true;  // disable task for modulation
-	Poti.writeWiper( 64 );
+	Poti.writeWiper( 20 );
 	dac_output_enable(_ch);
 	for( float f=261.62; f<1046.51; f=f*1.03){
 		printf("f=%f\n",f);

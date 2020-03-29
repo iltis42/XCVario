@@ -503,7 +503,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 	ucg->setFont(ucg_font_fub35_hn);  // 52 height
 	ucg->setColor(  COLOR_WHITE  );
 
-	if( int(_te*10) != (int)(te*10) ) {
+	if( int(_te*100) != (int)(te*100) ) {
 		if( te < 0 ) {
 			// erase V line from +
 			ucg->setColor( COLOR_BLACK );
@@ -527,7 +527,10 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		}
 		vTaskDelay(1);
 		ucg->setPrintPos(FIELD_START+SIGNLEN,YVAR);
-		ucg->printf("%0.1f  ", abs(te));
+		float tep=te;
+		if( tep < 0 )
+			tep=-te;
+		ucg->printf("%0.1f  ", tep);
 		ucg->setFont(ucg_font_fub11_hr);
 		int mslen = ucg->getStrWidth("m/s");
 		ucg->setPrintPos(DISPLAY_W-mslen,YVAR-12);

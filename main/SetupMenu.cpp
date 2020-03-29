@@ -418,7 +418,11 @@ void SetupMenu::setup( )
 	bal->setHelp("Percent wing load increase by ballast");
 	mm->addMenu( bal );
 
-	SetupMenuValFloat * afe = new SetupMenuValFloat( "Airfield Elevation", &_setup->get()->_elevation, "m", -1, 3000, 1, 0, true  );
+	String elev_unit = "m";
+	if( _setup->get()->_alt_unit == 1 ) // ft
+		elev_unit = "ft";
+
+	SetupMenuValFloat * afe = new SetupMenuValFloat( "Airfield Elevation", &_setup->get()->_elevation, elev_unit.c_str(), -1, 3000, 1, 0, true  );
 	afe->setHelp("Set airfield elevation in meters for QNH auto adjust on ground according to this setting");
 	mm->addMenu( afe );
 
@@ -427,12 +431,20 @@ void SetupMenu::setup( )
 	SetupMenu * va = new SetupMenu( "Vario" );
 	MenuEntry* vae = mm->addMenu( va );
 
+	String vunit;
+	if( _setup->get()->_vario_unit == 0 )
+		vunit = "m/s";
+	else if( _setup->get()->_vario_unit == 1 )
+		vunit = "x 100ft/m";
+	else if( _setup->get()->_vario_unit == 2 )
+		vunit = "kn";
 	SetupMenuValFloat * vga = new SetupMenuValFloat( 	"Range",
 			&_setup->get()->_range,
-			"m/s",
+			vunit.c_str(),
 			1.0, 30.0,
 			1, update_rentry );
 	vga->setHelp("Upper and lower value for Vario graphic display region");
+	vga->setPrecision( 0 );
 	vae->addMenu( vga );
 
 	SetupMenuValFloat * vda = new SetupMenuValFloat( 	"Damping",
@@ -550,7 +562,7 @@ void SetupMenu::setup( )
 
 	audio_range_sm = ar;
 	sprintf( rentry, "Variable (%d m/s)", (int)(_setup->get()->_range) );
-	ar->addEntry( "Fix 5 m/s");
+	ar->addEntry( "Max eq. 5 m/s");
 	ar->addEntry( rentry );
 	ar->setHelp("Select either fix (5m/s) or variable Audio range according to current vario setting");
 	ade->addMenu( ar );
@@ -712,19 +724,20 @@ void SetupMenu::setup( )
 	// Units
 	SetupMenu * un = new SetupMenu( "Units" );
 	un->setHelp( "Setup altimeter, airspeed indicatir or variometer with metric, american, british or australian units");
-	SetupMenuSelect * alu = new SetupMenuSelect( 	"Altimeter",	&_setup->get()->_alt_unit );
-	alu->addEntry( "m");
-	alu->addEntry( "ft");
+	SetupMenuSelect * alu = new SetupMenuSelect( 	"Altimeter",	&_setup->get()->_alt_unit, true );
+	alu->addEntry( "Meter");
+	alu->addEntry( "Foot");
+	alu->addEntry( "FL (=QNH 1013.25)");
 	un->addMenu( alu );
-	SetupMenuSelect * iau = new SetupMenuSelect( 	"Indicated Airspeed",	&_setup->get()->_ias_unit );
+	SetupMenuSelect * iau = new SetupMenuSelect( 	"Indicated Airspeed",	&_setup->get()->_ias_unit, true );
 	iau->addEntry( "km/h");
 	iau->addEntry( "mph");
-	iau->addEntry( "knots");
+	iau->addEntry( "Knots");
 	un->addMenu( iau );
 	SetupMenuSelect * vau = new SetupMenuSelect( 	"Vario",	&_setup->get()->_vario_unit );
 	vau->addEntry( "m/s");
 	vau->addEntry( "ft/min");
-	vau->addEntry( "knots");
+	vau->addEntry( "Knots");
 	un->addMenu( vau );
 	sye->addMenu( un );
 
@@ -750,7 +763,13 @@ SetupMenuValFloat::SetupMenuValFloat( String title, float *value, String unit, f
 	_step = step;
 	_action = action;
 	_end_menu = end_menu;
+	_precision = 2;
 }
+
+void SetupMenuValFloat::setPrecision( int prec ){
+	_precision = prec;
+}
+
 
 void MenuEntry::clear()
 {
@@ -811,7 +830,8 @@ void SetupMenuValFloat::displayVal()
 	ucg->setFont(ucg_font_fub25_hr);
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setPrintPos( 1, 70 );
-	ucg->printf("%0.2f %s ", *_value, _unit.c_str());
+
+	ucg->printf("%0.*f %s   ", _precision, *_value, _unit.c_str());
 	xSemaphoreGive(spiMutex );
 	ucg->setFont(ucg_font_ncenR14_hr);
 }

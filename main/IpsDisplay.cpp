@@ -72,6 +72,10 @@ const int   S2F_TRISIZE = 60; // triangle size quality up/down
 
 int S2FST = 45;
 
+#define UNITVAR (_setup->get()->_vario_unit)
+#define UNITIAS (_setup->get()->_ias_unit)
+#define UNITALT (_setup->get()->_alt_unit)
+
 
 int IASLEN = 0;
 static int fh;
@@ -197,7 +201,12 @@ void IpsDisplay::initDisplay() {
 	bootDisplay();
 	ucg->setPrintPos(0,YVAR-VARFONTH);
 	ucg->setColor(0, COLOR_HEADER );
-	ucg->print("Var m/s");
+	if( UNITVAR == 0 ) // m/s
+		ucg->print("   m/s ");
+	if( UNITVAR == 1 ) // ft/min
+		ucg->print("100 ft/m");
+	if( UNITVAR == 2 ) // knots
+		ucg->print("  Knots");
 	ucg->setPrintPos(FIELD_START,YVAR-VARFONTH);    // 65 -52 = 13
 
 	ucg->print("Average Vario");
@@ -216,7 +225,14 @@ void IpsDisplay::initDisplay() {
 	fh = ucg->getFontAscent();
 	ucg->setPrintPos(FIELD_START+6,YS2F-(2*fh)-8);
 	ucg->setColor(0, COLOR_HEADER );
-	ucg->print(" IAS kph");
+	String iasu;
+	if( UNITIAS == 0 ) // km/h
+ 		iasu = "km/h";
+ 	if( UNITIAS == 1 ) // mph
+ 		iasu = "mph";
+ 	if( UNITIAS == 2 ) // knots
+ 		iasu = "kn";
+ 	ucg->printf(" IAS %s", iasu.c_str());
 	ucg->setPrintPos(IASVALX,YS2F-(2*fh)-8);
 	// if( _setup->get()->_flap_enable )
 	// 	ucg->print("S2F    FLP");
@@ -240,6 +256,7 @@ void IpsDisplay::initDisplay() {
 	ucg->setFont(ucg_font_fub11_tr);
 	ucg->setPrintPos(FIELD_START,YALT-S2FFONTH);
 	ucg->setColor(0, COLOR_HEADER );
+
 	ucg->printf("Altitude QNH %d", (int)(_setup->get()->_QNH +0.5 ) );
 
 	// Thermometer
@@ -474,12 +491,24 @@ void IpsDisplay::drawWkSymbol( int ypos, int wk, int wkalt ){
 }
 
 
-void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, float altitude, float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode ){
+void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, float altitude,
+		                      float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode ){
 	if( _menu )
 			return;
 	// printf("IpsDisplay::drawDisplay  TE=%0.1f\n", te);
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	tick++;
+
+	// S2F given im km/h: Unit adaption for mph and knots
+ 	if( UNITVAR == 1 ){  // mph
+ 		s2f = s2f*0.621371;
+ 		s2fd = s2fd*0.621371;
+ 	}
+ 	if( UNITVAR == 2 ){ // knots
+ 		s2f = s2f*0.539957;
+ 		s2fd = s2fd*0.539957;
+ 	}
+
 
 	// WK-Indicator
 	if( _setup->get()->_flap_enable && ias != iasalt )
@@ -503,7 +532,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 	ucg->setFont(ucg_font_fub35_hn);  // 52 height
 	ucg->setColor(  COLOR_WHITE  );
 
-
+    // Average Vario
 	if( int(_te*25) != (int)(te*25) ) {
 		if( te < 0 ) {
 			// erase V line from +
@@ -531,21 +560,49 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		float tep=te;
 		if( tep < 0 )
 			tep=-te;
-		ucg->printf("%0.1f  ", tep);
+
+		if     ( UNITVAR == 0 )
+			ucg->printf("%0.1f  ", tep);
+		else if(  UNITVAR == 1 ){
+			int fpm = (int((tep*196.85)+0.5)/10)*10;
+			if( abs(fpm) > 999 ) {
+				ucg->setPrintPos(FIELD_START+SIGNLEN,YVAR-8);
+				ucg->setFont(ucg_font_fub25_hr);
+			}
+			ucg->printf("%d   ", fpm );  // ft/min
+		}
+		else if(  UNITVAR == 2 )
+			ucg->printf("%0.1f  ", tep*1.94384 );         // knots
+
+		String units;
 		ucg->setFont(ucg_font_fub11_hr);
-		int mslen = ucg->getStrWidth("m/s");
+		if     ( UNITVAR == 0 )
+			units = "m/s";
+		else if(  UNITVAR == 1 )
+			units="ft/m";
+		else if(  UNITVAR == 2 )
+			units="kn ";
+		int mslen = ucg->getStrWidth(units.c_str());
 		ucg->setPrintPos(DISPLAY_W-mslen,YVAR-12);
-		ucg->print("m/s");
+		ucg->print(units.c_str());
 		_te = te;
 	}
 
 	// Altitude
 	int alt = (int)(altitude+0.5);
 	if( alt != prefalt ) {
-
 		ucg->setPrintPos(FIELD_START,YALT);
 		ucg->setFont(ucg_font_fub25_hr);
-		ucg->printf("  %-4d m ", alt  );
+		if( UNITALT == 0 ) { //m
+			ucg->printf("  %-4d m ", alt  );
+		}
+		if( UNITALT == 1 ){ //feet
+			ucg->printf("  %-4d ft ", int((altitude*3.28084) + 0.5)  );
+		}
+		if( UNITALT == 2 ){ //FL
+			ucg->printf("FL %-4d  ", int((altitude*0.0328084) + 0.5)  );
+		}
+
 		prefalt = alt;
 		vTaskDelay(1);
 	}
@@ -649,7 +706,14 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 	if( s2fclip < -MAXS2FTRI )
 		s2fclip = -MAXS2FTRI;
 
- 	int ty = (int)(te*_pixpmd);
+ 	int ty = 0;
+ 	if( UNITVAR == 0 )  // m/s
+ 		ty = (int)(te*_pixpmd);         // 1 unit = 1 m/s
+ 	else if( UNITVAR == 1 )
+ 		ty = (int)(te*_pixpmd*1.9685);  // 1 unit = 100 ft/min
+ 	else if( UNITVAR == 2 )
+ 		ty = (int)(te*_pixpmd*1.94384); // 1 unit = 1 kn
+
  	int py = (int)(polar_sink*_pixpmd);
     // Gauge Triangle
 	if( s2fmode !=  s2fmodealt ){
@@ -716,22 +780,28 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
     // IAS
  	if( iasalt != ias ) {
  		// draw new
+ 		int iasp=0;
+ 		if( UNITVAR == 0 ) // km/h
+ 			iasp = ias;
+ 		if( UNITVAR == 1 ) // mph
+ 			iasp = ias*0.621371;
+ 		if( UNITVAR == 2 ) // knots
+ 			iasp = ias*0.539957;
+
  		ucg->setColor(  COLOR_WHITE  );
  		// print speed values bar
  		ucg->setFont(ucg_font_fub11_hn);
  		ucg->drawFrame( FIELD_START, dmid-(MAXS2FTRI)-4, IASLEN+6, (MAXS2FTRI*2)+8 );
  		ucg->setClipRange( FIELD_START, dmid-(MAXS2FTRI), IASLEN+6, (MAXS2FTRI*2) );
- 		for( int speed = ias-MAXS2FTRI-(fh); speed<ias+MAXS2FTRI+(fh); speed++ )
+ 		for( int speed = iasp-MAXS2FTRI-(fh); speed<iasp+MAXS2FTRI+(fh); speed++ )
  		{
 			if( (speed%20) == 0 && (speed >= 0) ) {
 				// blank old values
 				ucg->setColor( COLOR_BLACK );
-				ucg->drawBox( FIELD_START+6,dmid+(speed-ias)-(fh/2)-8, IASLEN-6, fh+14 );
-				int col = (speed-ias)*3;
-				if(col < 0)
-					col = -col;
+				ucg->drawBox( FIELD_START+6,dmid+(speed-iasp)-(fh/2)-8, IASLEN-6, fh+14 );
+				int col = abs(((speed-iasp)*2));
 				ucg->setColor(  col,col,col  );
-				ucg->setPrintPos(FIELD_START+8,dmid+(speed-ias)+(fh/2));
+				ucg->setPrintPos(FIELD_START+8,dmid+(speed-iasp)+(fh/2));
 				ucg->printf("%3d ""-", speed);
 			}
  		}
@@ -740,7 +810,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
  		ucg->setFont(ucg_font_fub14_hn);
  		ucg->setPrintPos(FIELD_START+8, YS2F-fh );
  		ucg->setColor(  COLOR_WHITE  );
-		ucg->printf("%3d ", ias);
+		ucg->printf("%3d ", iasp);
 		iasalt = ias;
 		vTaskDelay(1);
  	}

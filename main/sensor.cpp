@@ -162,8 +162,11 @@ void readBMP(void *pvParameters){
 			// vTaskDelay(1);
 			if( mysetup.get()->_alt_select == 0 ) // TE
 			   alt = bmpVario.readAVGalt();
-			else {
-			   alt = bmpBA.calcAVGAltitude( mysetup.get()->_QNH, baroP );
+			else { // Baro
+				if(  mysetup.get()->_alt_unit == 2 )  // FL
+					alt = bmpBA.calcAVGAltitude( 1013.25, baroP );
+				else
+					alt = bmpBA.calcAVGAltitude( mysetup.get()->_QNH, baroP );
 			   // printf("BA p=%f alt=%f QNH=%f\n", baroP, alt, mysetup.get()->_QNH );
 			}
 			xSemaphoreTake(xMutex,portMAX_DELAY );

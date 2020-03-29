@@ -92,6 +92,7 @@ public:
 	SetupMenuValFloat(  String title, float *value, String unit, float min, float max, float step, int (*action)(SetupMenuValFloat *p) = 0, bool end_menu=false  );
 	void display(int mode=0);
 	void displayVal();
+	void setPrecision( int prec );
 	static void showQnhMenu();
 
 	void up( int count );  // step up to parent
@@ -106,6 +107,7 @@ private:
 	bool _end_menu;
 	String _unit;
 	int (*_action)( SetupMenuValFloat *p );
+	int _precision;
 };
 
 class SetupMenuSelect:  public MenuEntry {

@@ -76,6 +76,28 @@ int qnh_adj( SetupMenuValFloat * p )
 	return 0;
 }
 
+int elev_adj( SetupMenuValFloat * p )
+{
+	// printf("elev_adj");
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
+	p->ucg->setFont(ucg_font_fub25_hr);
+	p->ucg->setPrintPos(1,120);
+	String u;
+	float elevp = p->_setup->get()->_elevation;
+	if( p->_setup->get()->_alt_unit == 0 ){ // m
+		u = "m";
+	}
+	else {
+		u = "ft";
+		elevp = elevp*3.28084;
+	}
+	p->ucg->printf("%4d %s ", (int)(elevp+0.5), u.c_str() );
+	p->ucg->setFont(ucg_font_ncenR14_hr);
+	xSemaphoreGive(spiMutex );
+	return 0;
+}
+
+
 // Battery Voltage Meter Calibration
 int factv_adj( SetupMenuValFloat * p )
 {
@@ -433,11 +455,10 @@ void SetupMenu::setup( )
 	String elev_unit = "m";
 	int step = 1;
 	if( _setup->get()->_alt_unit == 1 ){ // ft
-		elev_unit = "ft";
 		step = 5;
 	}
 
-	SetupMenuValFloat * afe = new SetupMenuValFloat( "Airfield Elevation", &_setup->get()->_elevation, elev_unit.c_str(), -1, 3000, step, 0, true  );
+	SetupMenuValFloat * afe = new SetupMenuValFloat( "Airfield Elevation", &_setup->get()->_elevation, "m", -1, 3000, step, elev_adj, true  );
 	afe->setHelp("Set airfield elevation in meters for QNH auto adjust on ground according to this setting");
 	mm->addMenu( afe );
 
@@ -534,10 +555,10 @@ void SetupMenu::setup( )
 	SetupMenuValFloat * ts = new SetupMenuValFloat( 	"AutoSpeed",
 					&_setup->get()->_s2f_speed,
 					"km/h",
-					50.0, 200.0,
+					30.0, 200.0,
 					1.0 );
 	ade->addMenu( ts );
-	ts->setHelp("Transition speed when audio changes to S2F mode in AutoSpeed mode");
+	ts->setHelp("Transition speed when audio changes to S2F mode in AutoSpeed mode in metric system. 100 km/h equals rounfd 62 mph or 54 knots");
 
 	SetupMenuValFloat * cf = new SetupMenuValFloat( 	"CenterFreq",
 			&_setup->get()->_center_freq,

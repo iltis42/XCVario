@@ -59,7 +59,18 @@ int qnh_adj( SetupMenuValFloat * p )
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->setFont(ucg_font_fub25_hr);
 	p->ucg->setPrintPos(1,120);
-	p->ucg->printf("%4d m ", (int)(alt+0.5) );
+	String u;
+	float altp;
+	if( p->_setup->get()->_alt_unit == 0 ){ // m
+		u = "m";
+	    altp = alt;
+	}
+	else {
+		u = "ft";
+		altp = alt*3.28084;
+	}
+
+	p->ucg->printf("%4d %s ", (int)(altp+0.5), u.c_str() );
 	p->ucg->setFont(ucg_font_ncenR14_hr);
 	xSemaphoreGive(spiMutex );
 	return 0;
@@ -245,6 +256,7 @@ void MenuEntry::showhelp( int y ){
 		// printf("showhelp number of words: %d\n", w);
 		int x=1;
 		int y=180;
+		ucg->setFont(ucg_font_ncenR14_hr);
 		for( int p=0; p<w; p++ )
 		{
 			int len = ucg->getStrWidth( words[p] );
@@ -419,10 +431,13 @@ void SetupMenu::setup( )
 	mm->addMenu( bal );
 
 	String elev_unit = "m";
-	if( _setup->get()->_alt_unit == 1 ) // ft
+	int step = 1;
+	if( _setup->get()->_alt_unit == 1 ){ // ft
 		elev_unit = "ft";
+		step = 5;
+	}
 
-	SetupMenuValFloat * afe = new SetupMenuValFloat( "Airfield Elevation", &_setup->get()->_elevation, elev_unit.c_str(), -1, 3000, 1, 0, true  );
+	SetupMenuValFloat * afe = new SetupMenuValFloat( "Airfield Elevation", &_setup->get()->_elevation, elev_unit.c_str(), -1, 3000, step, 0, true  );
 	afe->setHelp("Set airfield elevation in meters for QNH auto adjust on ground according to this setting");
 	mm->addMenu( afe );
 

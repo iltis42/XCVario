@@ -834,7 +834,7 @@ void SetupMenuValFloat::display( int mode ){
 	if(mode == 1){
 		y+=24;
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
-		ucg->setPrintPos( 1, 275 );
+		ucg->setPrintPos( 1, 300 );
 		ucg->print("Saved");
 		xSemaphoreGive(spiMutex );
 	}
@@ -951,7 +951,7 @@ void SetupMenuSelect::display( int mode ){
 	showhelp( y );
 	if(mode == 1 && _save == true ){
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
-		ucg->setPrintPos( 1, 275 );
+		ucg->setPrintPos( 1, 300 );
 		ucg->print("Saved !" );
 		if( _select_save != *_select )
 			if( _restart ) {

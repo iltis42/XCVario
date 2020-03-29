@@ -61,6 +61,9 @@ typedef struct {
 	float    _flap_0;        // 1-0   88
 	float    _flap_plus_1;   // 2-1   78
 	float    _default_volume;
+	uint8_t  _alt_unit;
+	uint8_t  _ias_unit;
+	uint8_t  _vario_unit;
 	uint32_t _checksum;
 } setup_t;
 

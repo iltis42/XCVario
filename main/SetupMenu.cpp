@@ -244,6 +244,7 @@ void MenuEntry::showhelp( int y ){
 		}
 		// printf("showhelp number of words: %d\n", w);
 		int x=1;
+		int y=180;
 		for( int p=0; p<w; p++ )
 		{
 			int len = ucg->getStrWidth( words[p] );
@@ -253,7 +254,7 @@ void MenuEntry::showhelp( int y ){
 				x=1;
 			}
 			xSemaphoreTake(spiMutex,portMAX_DELAY );
-			ucg->setPrintPos(x, 100+y);
+			ucg->setPrintPos(x, y);
 			ucg->print( words[p] );
 			xSemaphoreGive(spiMutex );
 			x+=len+5;
@@ -651,7 +652,7 @@ void SetupMenu::setup( )
 	float fva = _setupv->get()->_factory_volt_adjust;
 	if( abs(fva - 0.00815) < 0.00001 ) {
 		printf("Now Factory adjust ADC\n");
-		SetupMenuValFloat * fvoltadj = new SetupMenuValFloat( 	"Factory VAdj",
+		SetupMenuValFloat * fvoltadj = new SetupMenuValFloat( 	"Factory Voltmeter Adj",
 						&_setupv->get()->_factory_volt_adjust,
 						"%",
 						-25.0, 25.0,
@@ -707,6 +708,25 @@ void SetupMenu::setup( )
 	sye->addMenu( al );
 	al->addEntry( "TE   Sensor");
 	al->addEntry( "Baro Sensor");
+
+	// Units
+	SetupMenu * un = new SetupMenu( "Units" );
+	un->setHelp( "Setup altimeter, airspeed indicatir or variometer with metric, american, british or australian units");
+	SetupMenuSelect * alu = new SetupMenuSelect( 	"Altimeter",	&_setup->get()->_alt_unit );
+	alu->addEntry( "m");
+	alu->addEntry( "ft");
+	un->addMenu( alu );
+	SetupMenuSelect * iau = new SetupMenuSelect( 	"Indicated Airspeed",	&_setup->get()->_ias_unit );
+	iau->addEntry( "km/h");
+	iau->addEntry( "mph");
+	iau->addEntry( "knots");
+	un->addMenu( iau );
+	SetupMenuSelect * vau = new SetupMenuSelect( 	"Vario",	&_setup->get()->_vario_unit );
+	vau->addEntry( "m/s");
+	vau->addEntry( "ft/min");
+	vau->addEntry( "knots");
+	un->addMenu( vau );
+	sye->addMenu( un );
 
 	Version V;
 	static uint8_t select_dummy = 0;

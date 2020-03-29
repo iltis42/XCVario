@@ -123,7 +123,7 @@ bool ESPAudio::selfTest(){
 	Poti.writeWiper( 20 );
 	dac_output_enable(_ch);
 	for( float f=261.62; f<1046.51; f=f*1.03){
-		printf("f=%f\n",f);
+		// printf("f=%f\n",f);
 		Audio.dac_frequency_set(clk_8m_div, int(f/freq_step) );
 		delay(30);
 	}

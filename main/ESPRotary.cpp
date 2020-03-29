@@ -147,32 +147,35 @@ void ESPRotary::readPos(void * args) {
 		xQueueReceive(q1, &rotary, portMAX_DELAY);
 		n++;
         rb.push( rotary.rot & 3 );
+        int r0=rb[0]&3;
+        int r1=rb[1]&3;
+        // printf( "Rotaty dt/clk cur:%d last:%d\n", r0, r1 );
 
-		if( (rb[0] == 0) && (rb[1] == 3) ) {
+		if( (r0 == 0) && (r1 == 3) ) {
 			dir--;
 		}
-		else if ( (rb[0] == 1) && (rb[1] == 2) ) {
+		else if ( (r0 == 1) && (r1 == 2) ) {
 			dir++;
 		}
-		else if( (rb[0] == 3) && (rb[1] == 0) ) {
+		else if( (r0 == 3) && (r1 == 0) ) {
 			 // printf("Rotary 30\n");
 			// ignore
 		}
-		else if ( (rb[0] == 2) && (rb[1] == 1) ) {
+		else if ( (r0 == 2) && (r1 == 1) ) {
 			 // printf("Rotary 21\n");
 			// ignore
 		}
-		else if ( (rb[0] == 3) && (rb[1] == 1) ) {
+		else if ( (r0 == 3) && (r1 == 1) ) {
 					 // printf("Rotary 31\n");
 					// ignore
 				}
-		else if ( (rb[0] == 2) && (rb[1] == 0) ) {
-					 // printf("Rotary 21\n");
+		else if ( r0 == r1 ) {
+					 // printf("No change ignore\n");
 					// ignore
 				}
 		else {
 			var = ERROR;
-			printf( "Rot 0:%d 1:%d\n", rb[0], rb[1] );
+			printf( "Rot 0:%d 1:%d\n", r0, r1 );
 			xQueueSend(q2, &var, portMAX_DELAY );
 		}
 		int delta = dir - last_dir;
@@ -189,26 +192,37 @@ void ESPRotary::readPos(void * args) {
 		}
 		last_dir = dir;
 
-		int newsw = (rotary.rot & 0x04);
-		if( _switch_state != newsw ){
-			_switch_state = newsw;
-			if( newsw ){      // pullup, so not pressed is 1
-				if( (swtime != 0) && (rotary.time - swtime) > 5000 ){
+		int newsw = 0;
+		if( rotary.rot & 0x04 )
+			newsw = 1;
+		if( newsw != _switch_state ){
+			printf("Switch state changed\n");
+			// Switch changed
+			if( newsw == 1 ){
+			    int duration = rotary.time - swtime;
+				printf("Switch released time since press=%d\n",duration);
+				// switch now 1 == RELEASED
+				if( (swtime != 0) && (duration > 5000) ){
+					printf("Switch timeout for long press\n");
+					// okay, last stored time is longer than long press timeout, we also
+					// trigger now long press
 					var = LONG_PRESS;
 					xQueueSend(q2, &var, portMAX_DELAY );
 					swtime = 0;
-					}
+				}
+				// In any case, switch has been released, send release
 				var = RELEASE;
 				xQueueSend(q2, &var, portMAX_DELAY );
-
-				}
-				else{
-					var = PRESS;
-					xQueueSend(q2, &var, portMAX_DELAY );
-					swtime = rotary.time;
-				}
+			}
+			else{
+				printf("Switch pressed\n");
+				// switch now 0 == PRESSED
+				swtime = rotary.time;
+				var = PRESS;
+				xQueueSend(q2, &var, portMAX_DELAY );
+			}
+			_switch_state = newsw;
 		}
-		// num = xQueueReceive(q1, &rotary, portMAX_DELAY);
 	}
 }
 
@@ -235,7 +249,7 @@ void ESPRotary::readPosInt(void * args) {
 	if( dtv > NUM_LOOPS/2 )
 		var.rot |= 1;
 	if( clkv > NUM_LOOPS/2 )
-			var.rot |= 2;
+		var.rot |= 2;
 	if( swv > NUM_LOOPS/2 )
 		var.rot |= 4;
 

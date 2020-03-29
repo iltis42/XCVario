@@ -503,6 +503,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 	ucg->setFont(ucg_font_fub35_hn);  // 52 height
 	ucg->setColor(  COLOR_WHITE  );
 
+
 	if( int(_te*25) != (int)(te*25) ) {
 		if( te < 0 ) {
 			// erase V line from +

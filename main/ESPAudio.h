@@ -34,6 +34,7 @@ public:
 	bool getS2FMode() { return _s2f_mode; }
 	void incVolume( int steps );
 	void decVolume( int steps );
+	void setVolume( int vol );
 	bool selfTest();
 
 private:

@@ -74,6 +74,7 @@ void Setup::factorySetting()
 		_setup._alt_unit = 0;  // m
 		_setup._ias_unit = 0;  // km/h
 		_setup._vario_unit = 0; // m/s
+		_setup._rot_default = 0; // Volume
 		printf("sefault _polar %d\n", Polars::numPolars() );
 		_setup._polar = Polars::getPolar(0); // default user polar
 		memset( _setup._bt_name, 0, sizeof( _setup._bt_name) );

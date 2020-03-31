@@ -25,6 +25,7 @@ Setup* MenuEntry::_setup = 0;
 SetupVolt* MenuEntry::_setupv = 0;
 BatVoltage* MenuEntry::_adc = 0;
 BME280_ESP32_SPI *MenuEntry::_bmp = 0;
+float MenuEntry::volume;
 bool      MenuEntry::_menu_enabled = false;
 extern PWMOut pwm1;
 extern S2F s2f;
@@ -148,6 +149,11 @@ int mc_adj( SetupMenuValFloat * p )
     return 0;
 }
 
+int vol_adj( SetupMenuValFloat * p ){
+	Audio.setVolume(p->volume);
+	return 0;
+}
+
 SetupMenu::SetupMenu(){
 	highlight = -1;
 	_parent = 0;
@@ -173,6 +179,7 @@ void SetupMenu::begin( IpsDisplay* display, ESPRotary * rotary, Setup* my_setup,
 	ucg = display->getDisplay();
 	_adc = adc;
 	setup();
+	volume = _setup->get()->_default_volume;
 }
 
 void MenuEntry::uprintf( int x, int y, const char* format, ...) {
@@ -308,11 +315,14 @@ void inc_volume( int count ) {
 void SetupMenu::down(int count){
 	if( selected == this && !_menu_enabled ) {
 		printf("root: down\n");
-//		if( _setup->get()->_MC > 0.1 ) {
-//			_setup->get()->_MC -= 0.1;
-//		    s2f.change_mc_bal();
-//		}
-		inc_volume( count );
+		if(_setup->get()->_rot_default == 1) {	 // MC Value
+			if( _setup->get()->_MC > 0.1 ) {
+				_setup->get()->_MC -= 0.1;
+				s2f.change_mc_bal();
+			}
+		}
+		else
+			inc_volume( count );
 	}
 	if( (selected != this) || !_menu_enabled )
 		return;
@@ -329,17 +339,19 @@ void SetupMenu::down(int count){
 	ucg->drawFrame( 1,(highlight+1)*25+3,238,25 );
 	xSemaphoreGive(spiMutex );
 	pressed = true;
-	// display();
 }
 
 void SetupMenu::up(int count){
 	if( selected == this && !_menu_enabled ) {
 		printf("root: up\n");
-//		if( _setup->get()->_MC < 9.9 ) {
-//			_setup->get()->_MC += 0.1;
-//		    s2f.change_mc_bal();
-//		}
-		dec_volume( count );
+		if(_setup->get()->_rot_default == 1) {	 // MC Value
+			if( _setup->get()->_MC < 9.9 ) {
+				_setup->get()->_MC += 0.1;
+				s2f.change_mc_bal();
+			}
+		}
+		else
+			dec_volume( count );
 	}
 
 	if( (selected != this) || !_menu_enabled )
@@ -357,7 +369,6 @@ void SetupMenu::up(int count){
 	ucg->drawFrame( 1,(highlight+1)*25+3,238,25 );
 	pressed = true;
 	xSemaphoreGive(spiMutex );
-	// display();
 }
 
 void SetupMenu::longPress(){
@@ -383,19 +394,15 @@ void SetupMenu::press(){
 		if( !pressed )
 		{
 			printf("!pressed\n");
-			// _display->doMenu();
 			Audio.disable();
 			delay( 500 );
 			_menu_enabled = true;
-			// clear();
-
 		}
 		else
 		{
 			printf("pressed\n");
 			_display->setup();
 			_display->initDisplay();
-			// _display->doMenu(false);
 			Audio.setup();
 			bmpVario.setup();
 			_menu_enabled = false;
@@ -418,7 +425,6 @@ void SetupMenu::press(){
 			printf("SetupMenu to child\n");
 			if( (highlight >=0) && (highlight < (int)(_childs.size()) ) ){
 				selected = _childs[highlight];
-				// selected->highlight = -1;
 				selected->pressed = false;
 			}
 		}
@@ -443,6 +449,10 @@ void SetupMenu::setup( )
 	SetupMenuValFloat * mc = new SetupMenuValFloat( "MC", &_setup->get()->_MC, "m/s",	0.01, 9.9, 0.1,  mc_adj, true );
 	mc->setHelp("Default Mac Cready value for optimum cruise speed, or average climb rate, MC is provided in usual metric system means");
 	mm->addMenu( mc );
+
+	SetupMenuValFloat * vol = new SetupMenuValFloat( "Audio Volume", &volume, "%", 0, 100, 1, vol_adj, true  );
+	vol->setHelp("Set audio volume");
+	mm->addMenu( vol );
 
 	SetupMenuValFloat::qnh_menu = new SetupMenuValFloat( "QNH Setup", &_setup->get()->_QNH, "hPa", 900.0, 1100.0, 0.250, qnh_adj, true );
 	SetupMenuValFloat::qnh_menu->setHelp("Setup QNH pressure value from next ATC. On ground you may adjust to airfield altitude above MSL.");
@@ -545,7 +555,7 @@ void SetupMenu::setup( )
 
 	SetupMenuSelect * am = new SetupMenuSelect( 	"Audio Mode",
 				&_setup->get()->_audio_mode, false );
-	am->setHelp( "Controls audio source selection" );
+	am->setHelp( "Selects audio source. Audio either follows Vario, or S2F exclusively, controlled by external switch or automatically by speed" );
 		am->addEntry( "Vario");
 		am->addEntry( "S2F");
 		am->addEntry( "Switch");
@@ -565,7 +575,7 @@ void SetupMenu::setup( )
 			"Hz",
 			200.0, 2000.0,
 			10.0 );
-	cf->setHelp("Center frequency for tone indication at zero lift or S2F delta");
+	cf->setHelp("Center frequency for Audio at zero Vario or zero S2F delta");
 	ade->addMenu( cf );
 	SetupMenuValFloat * oc = new SetupMenuValFloat( 	"Octaves",
 			&_setup->get()->_tone_var,
@@ -686,25 +696,12 @@ void SetupMenu::setup( )
 	SetupMenuSelect * btm = new SetupMenuSelect(  btname, &_setup->get()->_blue_enable, true );
 	btm->addEntry( "Sender OFF");
 	btm->addEntry( "Sender ON");
-    /*
-	static uint8_t select_dummy2 = 0;
-	char * ids = _setup->getID();
-	printf( "Setup id=%s\n", ids );
-	SetupMenuSelect * idm = new SetupMenuSelect( 	"BT Name",
-			&select_dummy2, false, 0, false );
-	idm->addEntry( ids );
-
-	bt->addMenu( idm );
-	*/
 	sye->addMenu( btm );
 
-
-
-
-	printf("Factory adjust: %0.5f\n", _setupv->get()->_factory_volt_adjust );
+	// printf("Factory adjust: %0.5f\n", _setupv->get()->_factory_volt_adjust );
 	float fva = _setupv->get()->_factory_volt_adjust;
 	if( abs(fva - 0.00815) < 0.00001 ) {
-		printf("Now Factory adjust ADC\n");
+		printf("Add option to Factory adjust ADC; not yet done\n");
 		SetupMenuValFloat * fvoltadj = new SetupMenuValFloat( 	"Factory Voltmeter Adj",
 						&_setupv->get()->_factory_volt_adjust,
 						"%",
@@ -716,6 +713,7 @@ void SetupMenu::setup( )
 	}
 
 	SetupMenuSelect * fa = new SetupMenuSelect( "Factory Reset", &_setup->get()->_factory_reset, true );
+	fa->setHelp("Option to reset all settings to factory defaults, means metric system, 5m/s vario range and more");
 	fa->addEntry( "Cancel");
 	fa->addEntry( "ResetAll");
 	sye->addMenu( fa );
@@ -759,12 +757,13 @@ void SetupMenu::setup( )
 	// Altimeter
 	SetupMenuSelect * al = new SetupMenuSelect( 	"Altimeter Source",	&_setup->get()->_alt_select );
 	sye->addMenu( al );
+	al->setHelp("Select Source of altimeter to either barometric or static pressure sensor (default), or TE sensor what results in an 'energy' altitude");
 	al->addEntry( "TE   Sensor");
 	al->addEntry( "Baro Sensor");
 
 	// Units
 	SetupMenu * un = new SetupMenu( "Units" );
-	un->setHelp( "Setup altimeter, airspeed indicatir or variometer with metric, american, british or australian units");
+	un->setHelp( "Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units");
 	SetupMenuSelect * alu = new SetupMenuSelect( 	"Altimeter",	&_setup->get()->_alt_unit, true );
 	alu->addEntry( "Meter       (m)");
 	alu->addEntry( "Foot        (ft)");
@@ -775,12 +774,19 @@ void SetupMenu::setup( )
 	iau->addEntry( "Miles  per hour (mph)");
 	iau->addEntry( "Knots               (kt)");
 	un->addMenu( iau );
-	SetupMenuSelect * vau = new SetupMenuSelect( 	"Vario",	&_setup->get()->_vario_unit );
+	SetupMenuSelect * vau = new SetupMenuSelect( 	"Vario",	&_setup->get()->_vario_unit, true );
 	vau->addEntry( "Meters/sec   (m/s)");
 	vau->addEntry( "Foot per min (ft/min)");
 	vau->addEntry( "Knots        (knots)");
 	un->addMenu( vau );
 	sye->addMenu( un );
+
+	// Rotary Default
+	SetupMenuSelect * rd = new SetupMenuSelect( 	"Rotary Default",	&_setup->get()->_rot_default );
+	sye->addMenu( rd );
+	rd->setHelp("Select value to be altered at rotary movement outside of setup menu");
+	rd->addEntry( "Volume");
+	rd->addEntry( "MC Value");
 
 	Version V;
 	static uint8_t select_dummy = 0;

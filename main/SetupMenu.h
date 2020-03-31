@@ -65,6 +65,7 @@ public:
 	char   *helptext;
 	unsigned char y;
 	static Ucglib_ILI9341_18x240x320_HWSPI *ucg;
+	static float volume;
 
 private:
 };

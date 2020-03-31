@@ -64,6 +64,7 @@ typedef struct {
 	uint8_t  _alt_unit;
 	uint8_t  _ias_unit;
 	uint8_t  _vario_unit;
+	uint8_t  _rot_default;
 	uint32_t _checksum;
 } setup_t;
 

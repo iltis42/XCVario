@@ -237,7 +237,7 @@ void IpsDisplay::initDisplay() {
 	// if( _setup->get()->_flap_enable )
 	// 	ucg->print("S2F    FLP");
 	// else
-	ucg->print("S2F");
+	ucg->print(" S2F");
 
 	ucg->setColor(0, COLOR_WHITE );
 	// int mslen = ucg->getStrWidth("km/h");

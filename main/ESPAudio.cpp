@@ -310,11 +310,16 @@ void ESPAudio::incVolume( int steps ) {
 };
 void ESPAudio::decVolume( int steps ) {
 	steps = int( 1+ ( (float)wiper/8.0 ))*steps;
-	while( steps && (wiper < 63) ){
+	while( steps && (wiper < 127) ){
 		wiper++;
 		steps--;
 	}
 };
+
+void ESPAudio::setVolume( int vol ) {
+	wiper = vol;
+};
+
 
 bool output_enable = false;
 

@@ -150,7 +150,7 @@ int mc_adj( SetupMenuValFloat * p )
 }
 
 int vol_adj( SetupMenuValFloat * p ){
-	Audio.setVolume(p->volume);
+	Audio.setVolume( (int(p->volume*1.270)));
 	return 0;
 }
 
@@ -603,7 +603,7 @@ void SetupMenu::setup( )
 	SetupMenuValFloat * dbminlv = new SetupMenuValFloat( 	"Lower Val",
 		&_setup->get()->_deadband_neg,
 					"m/s",
-					-5.0, 5.0,
+					-5.0, 0,
 					0.1 );
 	dbminlv->setHelp("Lower limit for Audio mute function");
 	dbe->addMenu( dbminlv );
@@ -611,7 +611,7 @@ void SetupMenu::setup( )
 	SetupMenuValFloat * dbmaxlv = new SetupMenuValFloat( 	"Upper Val",
 			&_setup->get()->_deadband,
 			"m/s",
-			-5.0, 5.0,
+			0, 5.0,
 			0.1 );
 	dbmaxlv->setHelp("Upper limit for Audio mute function");
 	dbe->addMenu( dbmaxlv );
@@ -886,9 +886,11 @@ void SetupMenuValFloat::displayVal()
 void SetupMenuValFloat::down( int count ){
 	if( (selected != this) || !_menu_enabled )
 		return;
-	// printf("val down\n");
-	if( *_value > _min )
-		*_value-=(_step * count);
+	printf("val down %d times \n", count );
+	while( (*_value > _min) && count ) {
+		*_value -= _step;
+		count --;
+	}
 	displayVal();
 	if( _action != 0 )
 		(*_action)( this );
@@ -897,9 +899,11 @@ void SetupMenuValFloat::down( int count ){
 void SetupMenuValFloat::up( int count ){
 	if( (selected != this) || !_menu_enabled )
 		return;
-	// printf("val up %d times \n", count );
-	if ( *_value < _max )
-		*_value+=(_step * count);
+	printf("val up %d times \n", count );
+	while( (*_value < _max) && count ) {
+		*_value += _step;
+		count--;
+	}
     displayVal();
 	if( _action != 0 )
 		(*_action)( this );

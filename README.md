@@ -42,7 +42,7 @@ The Soft- and Hardware features:
 - Battery Charge Indicator
 - Variometer display with adjustable range (1 m/s - 30 m/s), and damping ( 1s - 10s )
 - Classic Bluetooth for OpenVario Interface for Android devices running XC Soar
-- High precision barometric Altimeter 1 hPa (8 meter) absolute acuracy
+- High precision barometric Altimeter 1 hPa (8 meter) absolute accuracy
 - Sunlight readable 500 nits 2.4 inch IPS Technology Display
 - Battery Voltage Indicator
 - Audio Switch for Vario/S2F Audio

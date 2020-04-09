@@ -26,7 +26,6 @@ public:
   */
   ~MCP4018();
 
-
   bool readWiper( uint16_t& val );
   bool writeWiper( uint16_t val );
   bool incWiper();

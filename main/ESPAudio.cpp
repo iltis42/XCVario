@@ -25,6 +25,7 @@
 #include "sensor.h"
 #include "mcp4018.h"
 #include <Arduino.h>
+#include "sound.h"
 
 
 float ESPAudio::_range = 5.0;
@@ -84,6 +85,7 @@ const int invert = 2;        // invert MSB to get sine waveform
 void ESPAudio::dac_cosine_enable(dac_channel_t channel, bool enable)
 {
 	// Enable tone generator common to both channels
+	printf("ESPAudio::dac_cosine_enable ch: %d\n", channel);
 	SET_PERI_REG_MASK(SENS_SAR_DAC_CTRL1_REG, SENS_SW_TONE_EN);
 	switch(channel) {
 	case DAC_CHANNEL_1:
@@ -459,6 +461,20 @@ void ESPAudio::setup()
 
 }
 
+void ESPAudio::restart()
+{
+	dac_output_disable(_ch);
+	dac_cosine_enable(_ch);
+	dac_offset_set(_ch, offset);
+	dac_invert_set(_ch, 2 );
+	dac_scale_set(_ch, 0 );
+	dac_output_enable(_ch);
+	_testmode = false;
+	_dead_mute = true;
+	Poti.writeWiper( cur_wiper );
+}
+
+
 void ESPAudio::begin( dac_channel_t ch, gpio_num_t button, Setup *asetup )
 {
 	_setup = asetup;
@@ -466,13 +482,7 @@ void ESPAudio::begin( dac_channel_t ch, gpio_num_t button, Setup *asetup )
     mute();
 	_ch = ch;
 	_button = button;
-	dac_cosine_enable(_ch);
-	dac_output_enable(_ch);
-	dac_offset_set(_ch, offset);
-	dac_invert_set(_ch, 2 );
-	dac_scale_set(_ch, 0 );
-	_testmode = false;
-	_dead_mute = true;
+	restart();
 
 	gpio_set_direction(_button, GPIO_MODE_INPUT);
 	gpio_set_pull_mode(_button, GPIO_PULLUP_ONLY);
@@ -489,6 +499,7 @@ void ESPAudio::begin( dac_channel_t ch, gpio_num_t button, Setup *asetup )
 	// Enable Audio Amplifiler
 	gpio_set_direction(GPIO_NUM_19, GPIO_MODE_INPUT );   // use pullup 1 == SOUND 0 == SILENCE
 	gpio_set_pull_mode(GPIO_NUM_19, GPIO_FLOATING);      // ESP32 level too low from PAM enable
+	Sound::setPoti( &Poti );
 }
 
 

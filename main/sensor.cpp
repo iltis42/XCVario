@@ -40,6 +40,7 @@
 
 #include <SPI.h>
 #include <Ucglib.h>
+#include "sound.h"
 
 
 /*
@@ -407,7 +408,6 @@ void sensor(void *args){
 	MP5004DP.doOffset();
 
 	Audio.begin( DAC_CHANNEL_1, GPIO_NUM_0, &mysetup );
-    sleep( 0.1 );
 	// TBD audio Poti test here.
 	if( !Audio.selfTest() ) {
 		printf("Error: Digital potentiomenter selftest failed\n");
@@ -473,8 +473,11 @@ void sensor(void *args){
 		display.writeText( line++, "Selftest PASSED");
 		sleep(3);
 	}
-
-
+/*
+   Sound::playSound( DING );
+   Sound::playSound( HI );
+   Sound::playSound( DING, true );
+*/
 	sleep(1);
 	speedP=MP5004DP.readPascal(30);
 	speed = MP5004DP.pascal2km( speedP, temperature );

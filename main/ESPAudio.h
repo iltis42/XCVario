@@ -24,6 +24,7 @@ public:
 	ESPAudio();
 	virtual ~ESPAudio();
 	void begin( dac_channel_t ch=DAC_CHANNEL_1, gpio_num_t button=GPIO_NUM_0, Setup *setup=0 );
+	void restart();
 	void setValues( float te, float s2fd, bool fromtest=false );
 	void test( float to, float from );
 	void mute( bool mt=true ) { _mute = mt; };
@@ -35,7 +36,9 @@ public:
 	void incVolume( int steps );
 	void decVolume( int steps );
 	void setVolume( int vol );
+	int  getVolume() { return wiper; };
 	bool selfTest();
+	inline void setTestmode( bool mode ) { _testmode = mode; }
 
 private:
 	void dac_cosine_enable(dac_channel_t channel, bool enable=true);
@@ -55,7 +58,7 @@ private:
 	float getVariation() { return _variation; };
 	float getDeadBand() { return _deadband; };
 	int getMute() { return _mute; };
-	inline void setTestmode( bool mode ) { _testmode = mode; }
+
 	inline gpio_num_t getButton() { return _button; }
 	bool inDeadBand( float te );
 	inline bool getDeadMute() { return _dead_mute; }

@@ -56,7 +56,7 @@ bool MCP4018::readWiper( uint16_t & val ) {
 	esp_err_t ret = read8bit( MPC4018_I2C_ADDR, &val );
 	// val = val>>1;  // issue found, fixed
 	if( ret == ESP_OK ){
-		printf("MCP4018 read wiper %d\n", val);
+		// printf("MCP4018 read wiper %d\n", val);
 		return true;
 	}
 	else
@@ -70,7 +70,7 @@ bool MCP4018::readWiper( uint16_t & val ) {
 bool MCP4018::writeWiper( uint16_t val ) {
 	esp_err_t ret = write8bit( MPC4018_I2C_ADDR, val );
 	if( ret == ESP_OK ){
-		printf("MCP4018 write wiper %d\n", val);
+		// printf("MCP4018 write wiper %d\n", val);
 		return true;
 	}
 	else

@@ -628,7 +628,7 @@ void SetupMenu::setup( )
 						&_setup->get()->_glider_type, false, polar_select );
 	poe->addMenu( glt );
 
-	printf( "Num Polars: %d", Polars::numPolars() );
+	printf( "Number of Polars installed: %d\n", Polars::numPolars() );
 	for( int x=0; x< Polars::numPolars(); x++ ){
 		glt->addEntry( Polars::getPolar(x).type );
 	}

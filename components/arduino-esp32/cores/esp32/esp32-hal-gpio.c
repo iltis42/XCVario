@@ -172,9 +172,6 @@ extern void IRAM_ATTR __pinMode(uint8_t pin, uint8_t mode)
 
 extern void IRAM_ATTR __digitalWrite(uint8_t pin, uint8_t val)
 {
-	if( pin == 5 ) {
-		printf("+++++++++++++++++++   digitalWrite pin=%d  val=%d\n", pin, val );
-	}
     if(val) {
         if(pin < 32) {
             GPIO.out_w1ts = ((uint32_t)1 << pin);

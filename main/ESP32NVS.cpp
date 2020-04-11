@@ -161,10 +161,10 @@ char* ESP32NVS::getCharArray(std::string key) {
 }
 
 void* ESP32NVS::getObject(std::string key, esp_err_t *err){
-  printf("ESP32NVS::getObject(%s)", key.c_str());
+  printf("ESP32NVS::getObject(%s)\n", key.c_str());
   size_t required_size;
   *err = nvs_get_blob(_nvs_handle, key.c_str(), NULL, &required_size);
-  printf("required_size: %d", required_size );
+  printf("required_size: %d\n", required_size );
   void* blob = (void*) malloc(required_size);
   // printf("blob %d", blob );
   *err = nvs_get_blob(_nvs_handle, key.c_str(), blob, &required_size);
@@ -177,7 +177,7 @@ bool ESP32NVS::setFloat(std::string key, float value){
 }
 
 float ESP32NVS::getFloat(std::string key, esp_err_t *err){
-  printf("ESP32NVS::getFloat(%s)", key.c_str());
+  printf("ESP32NVS::getFloat(%s)\n", key.c_str());
   float *pFloat = (float*) getObject(key, err);
   return *pFloat;
 }
@@ -191,7 +191,7 @@ float ESP32NVS::getFloat(std::string key, esp_err_t *err){
 //   return *pDouble;
 // }
 
-nvs_handle ESP32NVS::get_nvs_handle(){
+nvs_handle_t ESP32NVS::get_nvs_handle(){
   return _nvs_handle;
 }
 

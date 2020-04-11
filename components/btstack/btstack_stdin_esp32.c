@@ -72,11 +72,11 @@ static void btstack_stdin_task(void *arg){
 	UNUSED(arg);
 
     //Install UART driver, and get the queue.
-    uart_driver_install(CONFIG_CONSOLE_UART_NUM, UART_FIFO_LEN * 2, UART_FIFO_LEN * 2, 0, NULL, 0);
+    uart_driver_install(CONFIG_ESP_CONSOLE_UART_NUM, UART_FIFO_LEN * 2, UART_FIFO_LEN * 2, 0, NULL, 0);
 
     do {
     	// read single byte
-        uart_read_bytes(CONFIG_CONSOLE_UART_NUM, (uint8_t*) &stdin_character, 1, portMAX_DELAY);
+        uart_read_bytes(CONFIG_ESP_CONSOLE_UART_NUM, (uint8_t*) &stdin_character, 1, portMAX_DELAY);
 		stdin_character_received = 1;
 
 		// request poll

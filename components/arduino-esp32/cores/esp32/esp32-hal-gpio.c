@@ -23,6 +23,7 @@
 #include "soc/io_mux_reg.h"
 #include "soc/gpio_struct.h"
 #include "soc/rtc_io_reg.h"
+#include "soc/rtc_periph.h"
 
 const int8_t esp32_adc2gpio[20] = {36, 37, 38, 39, 32, 33, 34, 35, -1, -1, 4, 0, 2, 15, 13, 12, 14, 27, 25, 26};
 
@@ -68,7 +69,6 @@ const DRAM_ATTR esp32_gpioMux_t esp32_gpioMux[GPIO_PIN_COUNT]={
     {0x0c, 2, 2, -1},
     {0x10, 3, 3, -1}
 };
-
 typedef void (*voidFuncPtr)(void);
 typedef void (*voidFuncPtrArg)(void*);
 typedef struct {
@@ -82,7 +82,6 @@ static InterruptHandle_t __pinInterruptHandlers[GPIO_PIN_COUNT] = {0,};
 
 extern void IRAM_ATTR __pinMode(uint8_t pin, uint8_t mode)
 {
-
     if(!digitalPinIsValid(pin)) {
         return;
     }
@@ -170,8 +169,12 @@ extern void IRAM_ATTR __pinMode(uint8_t pin, uint8_t mode)
     //unlock gpio
 }
 
+
 extern void IRAM_ATTR __digitalWrite(uint8_t pin, uint8_t val)
 {
+	if( pin == 5 ) {
+		printf("+++++++++++++++++++   digitalWrite pin=%d  val=%d\n", pin, val );
+	}
     if(val) {
         if(pin < 32) {
             GPIO.out_w1ts = ((uint32_t)1 << pin);
@@ -186,6 +189,7 @@ extern void IRAM_ATTR __digitalWrite(uint8_t pin, uint8_t val)
         }
     }
 }
+
 
 extern int IRAM_ATTR __digitalRead(uint8_t pin)
 {

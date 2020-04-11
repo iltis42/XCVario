@@ -11,7 +11,6 @@
 #include <iterator>
 #include "ESPAudio.h"
 #include "BMPVario.h"
-#include "PWMOut.h"
 #include "S2F.h"
 #include "Version.h"
 #include "Polars.h"
@@ -27,7 +26,6 @@ BatVoltage* MenuEntry::_adc = 0;
 BME280_ESP32_SPI *MenuEntry::_bmp = 0;
 float MenuEntry::volume;
 bool      MenuEntry::_menu_enabled = false;
-extern PWMOut pwm1;
 extern S2F s2f;
 extern xSemaphoreHandle spiMutex;
 Ucglib_ILI9341_18x240x320_HWSPI *MenuEntry::ucg = 0;
@@ -48,7 +46,6 @@ int update_rentry(SetupMenuValFloat * p)
 int contrast( SetupMenuValFloat * p )
 {
 	printf("contrast( %f ) \n", *p->_value );
-	pwm1.setContrast( *p->_value );
 	return 0;
 }
 

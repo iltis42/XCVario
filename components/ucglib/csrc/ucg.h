@@ -91,6 +91,8 @@ extern "C"
 {
 #endif
 
+#define ARDUINO 10600
+
 #if defined(ARDUINO)
 #ifndef USE_PIN_LIST
 #define USE_PIN_LIST

@@ -41,7 +41,7 @@
 
 #include <string.h>
 
-static nvs_handle the_nvs_handle;
+static nvs_handle_t the_nvs_handle;
 static int nvs_active;
 
 // @param buffer char array of size 9

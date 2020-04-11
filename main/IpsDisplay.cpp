@@ -177,6 +177,9 @@ void IpsDisplay::writeText( int line, String text ){
 	ucg->printf("%s",text.c_str());
 }
 
+
+
+
 void IpsDisplay::bootDisplay() {
 	printf("IpsDisplay::bootDisplay()\n");
 	setup();
@@ -186,7 +189,6 @@ void IpsDisplay::bootDisplay() {
 		ucg->invertDisplay( true );
 	ucg->setColor( COLOR_BLACK );
 	ucg->drawBox( 0,0,240,320 );
-
 	if( _setup->get()->_display_orientation == 1 )
 		ucg->setRotate180();
 

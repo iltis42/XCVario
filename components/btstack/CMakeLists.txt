@@ -1,0 +1,32 @@
+set( incl "3rd-party/bluedroid/decoder/include" 
+          "3rd-party/bluedroid/encoder/include" 
+          "3rd-party/hxcmod-player"
+          "3rd-party/hxcmod-player/mods"
+          "3rd-party/lwip/dhcp-server"
+          "3rd-party/md5"
+          "3rd-party/yxml"
+          "src/classic"
+          "src"
+          "platform/embedded"
+          "platform/freertos"
+          "include" 
+          "3rd-party/micro-ecc"
+)
+
+set( src  "3rd-party/bluedroid/decoder/srce"
+        "3rd-party/hxcmod-player"
+        "3rd-party/hxcmod-player/mods"
+        "3rd-party/lwip/dhcp-server"
+        "3rd-party/micro-ecc"
+        "3rd-party/md5"
+        "src/ble/gatt-service"
+        "src/ble"
+        "src/classic"
+        "src/mesh"
+        "src"
+        "platform/freertos"
+        "platform/lwip"
+        "."
+)
+
+idf_component_register(SRC_DIRS ${src}  INCLUDE_DIRS ${incl} REQUIRES "bt" )

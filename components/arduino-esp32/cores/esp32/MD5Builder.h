@@ -21,7 +21,7 @@
 
 #include <WString.h>
 #include <Stream.h>
-#include "rom/md5_hash.h"
+#include "esp32/rom/md5_hash.h"
 
 class MD5Builder
 {

@@ -140,7 +140,6 @@ const ucg_pgm_uint8_t ucg_hx8352c_set_pos_dir3_seq[] =
 ucg_int_t ucg_handle_hx8352c_l90fx(ucg_t *ucg)
 {
   uint8_t c[3];
-  ucg_int_t tmp;
   if (ucg_clip_l90fx(ucg) != 0)
   {
     switch (ucg->arg.dir)
@@ -303,7 +302,7 @@ ucg_int_t ucg_handle_hx8352c_l90se(ucg_t *ucg)
 
   if (ucg_clip_l90se(ucg) != 0)
   {
-    ucg_int_t i, j;
+    ucg_int_t i;
     switch (ucg->arg.dir)
     {
     case 0:
@@ -327,7 +326,6 @@ ucg_int_t ucg_handle_hx8352c_l90se(ucg_t *ucg)
       break;
     }
 
-    j = 0;
     for (i = 0; i < ucg->arg.len; i++)
     {
       c[0] = ucg->arg.ccs_line[0].current;

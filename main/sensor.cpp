@@ -31,7 +31,6 @@
 #include "BatVoltage.h"
 #include "IpsDisplay.h"
 #include "sensor.h"
-#include "PWMOut.h"
 #include "S2F.h"
 #include "Version.h"
 #include "Switch.h"
@@ -95,7 +94,6 @@ xSemaphoreHandle xMutex=NULL;
 Setup mysetup;
 SetupVolt setupv;
 BatVoltage ADC ( &mysetup, &setupv );
-PWMOut pwm1;
 S2F  s2f( &mysetup );
 Switch VaSoSW;
 TaskHandle_t *bpid;

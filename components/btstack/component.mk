@@ -25,6 +25,7 @@ COMPONENT_ADD_INCLUDEDIRS := \
 	platform/freertos \
 	platform/lwip \
 	include \
+	. \
 
 COMPONENT_PRIV_INCLUDEDIRS := \
 	3rd-party/micro-ecc \

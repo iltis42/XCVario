@@ -7,6 +7,8 @@
 #define I2C_MASTER_TX_BUF_DISABLE    0   /*!< I2C master do not need buffer */
 #define I2C_MASTER_RX_BUF_DISABLE    0   /*!< I2C master do not need buffer */
 
+xSemaphoreHandle I2C::mutex = 0;
+
 void I2C::init(gpio_num_t sda, gpio_num_t scl, uint32_t frequency, i2c_port_t num)
 {
 	printf("I2C(sda=%02x  scl=%02x)\n", sda, scl);
@@ -23,6 +25,11 @@ void I2C::init(gpio_num_t sda, gpio_num_t scl, uint32_t frequency, i2c_port_t nu
 	conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
 	conf.master.clk_speed = frequency;
 	esp_err_t ret = i2c_param_config(_num, &conf);
+	mutex = xSemaphoreCreateMutex();
+	if( mutex == 0 )
+		printf("Error creating I2C Semaphore\n");
+	else
+		printf("I2C Semaphore successfully created\n");
 	if( ret == ESP_FAIL){
 				printf("I2C ERROR param config: %x\n", ret);
 				error=true;
@@ -57,6 +64,7 @@ esp_err_t I2C::write_byte(uint8_t byte, int ack)
 
 esp_err_t I2C::write16bit( uint8_t addr, uint16_t word )
 {
+	xSemaphoreTake(mutex,portMAX_DELAY );
 	cmd = i2c_cmd_link_create();
 	uint8_t datah=(uint8_t(word>>8));
 	uint8_t datal=(uint8_t(word & 0xFF));
@@ -68,14 +76,15 @@ esp_err_t I2C::write16bit( uint8_t addr, uint16_t word )
 	esp_err_t ret = i2c_master_cmd_begin(_num, cmd, 100 / portTICK_RATE_MS);
     if( ret == ESP_FAIL){
 		printf("I2C ERROR write 16 bit: %x\n", ret);
-		;
 	}
     i2c_cmd_link_delete(cmd);
+    xSemaphoreGive(mutex);
     return ret;
 }
 
 esp_err_t I2C::write8bit( uint8_t addr, uint16_t word )
 {
+	xSemaphoreTake(mutex,portMAX_DELAY );
 	cmd = i2c_cmd_link_create();
 	uint8_t datal=(uint8_t(word & 0xFF));
 	start();
@@ -88,12 +97,14 @@ esp_err_t I2C::write8bit( uint8_t addr, uint16_t word )
 		;
 	}
     i2c_cmd_link_delete(cmd);
+    xSemaphoreGive(mutex);
     return ret;
 }
 
 
 esp_err_t I2C::read16bit( uint8_t addr, uint16_t *word )
 {
+	xSemaphoreTake(mutex,portMAX_DELAY );
 	cmd = i2c_cmd_link_create();
 	uint8_t datah, datal;
 	start();
@@ -104,20 +115,21 @@ esp_err_t I2C::read16bit( uint8_t addr, uint16_t *word )
 	esp_err_t ret = i2c_master_cmd_begin(_num, cmd, 100 / portTICK_RATE_MS);
     if( ret == ESP_FAIL){
 		printf("I2C ERROR read 16 bit: %x\n", ret);
-    	;
 	}
     *word = (datah << 8) | datal;
     i2c_cmd_link_delete(cmd);
+    xSemaphoreGive(mutex);
     return ret;
 }
 
 esp_err_t I2C::read8bit( uint8_t addr, uint16_t *word )
 {
+	xSemaphoreTake(mutex,portMAX_DELAY );
 	cmd = i2c_cmd_link_create();
 	uint8_t datal;
 	start();
 	write(addr, true, I2C_MASTER_READ);
-	read(&datal, 2);
+	read(&datal, 1);
 	stop();
 	esp_err_t ret = i2c_master_cmd_begin(_num, cmd, 100 / portTICK_RATE_MS);
     if( ret == ESP_FAIL){
@@ -126,6 +138,7 @@ esp_err_t I2C::read8bit( uint8_t addr, uint16_t *word )
 	}
     *word = (uint16_t)datal;
     i2c_cmd_link_delete(cmd);
+    xSemaphoreGive(mutex);
     return ret;
 }
 
@@ -146,6 +159,7 @@ esp_err_t I2C::scan()
 			found = true;
 			vTaskDelay(1000 / portTICK_PERIOD_MS);
 		}
+
 	}
 	i2c_cmd_link_delete(cmd);
 	if( !found )

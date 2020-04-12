@@ -15,8 +15,8 @@
 #include <stdio.h>
 
 #include "ESPAudio.h"
-// #include "ding.h"
-// #include "hi.h"
+#include "ding.h"
+#include "hi.h"
 #include "sound.h"
 #include "driver/timer.h"
 

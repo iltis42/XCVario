@@ -59,7 +59,6 @@ private:
   int  errorcount;
   float exponential_average;
   bool  _noDevice;
-
 };
 
 #endif

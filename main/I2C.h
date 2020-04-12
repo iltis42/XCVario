@@ -30,6 +30,7 @@ class I2C
     gpio_num_t _scl;
     i2c_port_t _num;
     i2c_cmd_handle_t cmd;
+    static xSemaphoreHandle mutex;
 };
 
 

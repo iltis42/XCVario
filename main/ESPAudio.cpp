@@ -25,7 +25,7 @@
 #include "sensor.h"
 #include "mcp4018.h"
 #include <Arduino.h>
-#include "sound.h"
+// #include "sound.h"
 
 
 float ESPAudio::_range = 5.0;
@@ -499,7 +499,7 @@ void ESPAudio::begin( dac_channel_t ch, gpio_num_t button, Setup *asetup )
 	// Enable Audio Amplifiler
 	gpio_set_direction(GPIO_NUM_19, GPIO_MODE_INPUT );   // use pullup 1 == SOUND 0 == SILENCE
 	gpio_set_pull_mode(GPIO_NUM_19, GPIO_FLOATING);      // ESP32 level too low from PAM enable
-	Sound::setPoti( &Poti );
+	// Sound::setPoti( &Poti );
 }
 
 

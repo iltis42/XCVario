@@ -46,7 +46,7 @@ float DS18B20::getTemp(){
 		  return DEVICE_DISCONNECTED_C;
 	 }
 	 if( !dallas->validAddress( &a ) ){
-	 // printf("DS18B20 reports invalid crc for address\n");
+	    printf("DS18B20 reports invalid crc for address\n");
 	    return DEVICE_DISCONNECTED_C;
 	 }
 

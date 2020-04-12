@@ -39,7 +39,7 @@
 
 #include <SPI.h>
 #include <Ucglib.h>
-#include "sound.h"
+// #include "sound.h"
 
 
 /*
@@ -140,11 +140,13 @@ void drawDisplay(void *pvParameters){
 			display.drawDisplay( ias, TE, aTE, polar_sink, alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode );
 		}
 		vTaskDelayUntil(&dLastWakeTime, 100/portTICK_PERIOD_MS);
+		if( uxTaskGetStackHighWaterMark( dpid ) < 1000 )
+			printf("Warning display task stack low: %d bytes\n", uxTaskGetStackHighWaterMark( bpid ) );
+
 	}
 }
 
 void readBMP(void *pvParameters){
-
 	while (1)
 	{
 		TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -206,8 +208,8 @@ void readBMP(void *pvParameters){
 					break;
 			}
 			Audio.setS2FMode( s2fmode );
-// 			if( uxTaskGetStackHighWaterMark( bpid ) < 1000 )
-//				printf("Warning Stack low: %d bytes\n", uxTaskGetStackHighWaterMark( bpid ) );
+ 			if( uxTaskGetStackHighWaterMark( bpid ) < 2000 )
+				printf("Warning sensor task stack low: %d bytes\n", uxTaskGetStackHighWaterMark( bpid ) );
 		}
 		esp_task_wdt_reset();
 		// delay(85);
@@ -228,6 +230,7 @@ void audioTask(void *pvParameters){
 
 
 bool no_t_sensor=false;
+int ttick = 0;
 
 void readTemp(void *pvParameters){
 	while (1) {
@@ -256,6 +259,9 @@ void readTemp(void *pvParameters){
 		}
 		esp_task_wdt_reset();
 		vTaskDelayUntil(&xLastWakeTime, 200/portTICK_PERIOD_MS);
+        if( (ttick++ % 10) == 0) {
+		  printf("+++++++++++++  heap_caps_get_free_size: %d\n", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+        }
 	}
 }
 
@@ -523,14 +529,11 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280BA, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
-	xTaskCreatePinnedToCore(&readBMP, "readBMP", 8000, NULL, 15, bpid, 0);
+	xTaskCreatePinnedToCore(&readBMP, "readBMP", 12000, NULL, 20, bpid, 0);
 	xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 30, 0, 0);
 
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 10, dpid, 0);
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 8000, NULL, 3, tpid, 0);
-
-
-
 
 	printf("Free Stack: S:%d \n", uxTaskGetStackHighWaterMark( spid ) );
 

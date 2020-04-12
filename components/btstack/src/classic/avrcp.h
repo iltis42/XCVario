@@ -436,7 +436,7 @@ typedef struct {
     uint16_t notifications_enabled;
     uint16_t notifications_to_register;
     uint16_t notifications_to_deregister; 
-    uint8_t  notifications_transaction_label[AVRCP_NOTIFICATION_EVENT_COUNT];
+    uint8_t  notifications_transaction_label[AVRCP_NOTIFICATION_EVENT_COUNT+1];
 
     avrcp_subunit_type_t unit_type;
     uint32_t company_id;

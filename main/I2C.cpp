@@ -133,6 +133,7 @@ esp_err_t I2C::read8bit( uint8_t addr, uint16_t *word )
 esp_err_t I2C::scan()
 {
 	bool found=false;
+	cmd = i2c_cmd_link_create();
 	for( uint8_t addr=3; addr<0x78; addr++ )
 	{
 		printf("scan a %02x sca %02x scl %02x\n", addr, _sda, _scl );
@@ -146,6 +147,7 @@ esp_err_t I2C::scan()
 			vTaskDelay(1000 / portTICK_PERIOD_MS);
 		}
 	}
+	i2c_cmd_link_delete(cmd);
 	if( !found )
 	{
 		printf("I2C scan found nothing");

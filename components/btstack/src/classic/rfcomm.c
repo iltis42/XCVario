@@ -1413,6 +1413,8 @@ static void rfcomm_channel_opened(rfcomm_channel_t *rfChannel){
     }
 }
 
+int last_credit = 0;
+
 static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer, uint8_t * packet, uint16_t size){
     const uint8_t frame_dlci = packet[0] >> 2;
     const uint8_t length_offset = (packet[2] & 1) ^ 1;  // to be used for pos >= 3
@@ -1429,7 +1431,10 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
         // add them
         uint16_t new_credits = packet[3+length_offset];
         channel->credits_outgoing += new_credits;
-        log_info( "RFCOMM data UIH_PF, new credits channel 0x%02x: %u, now %u", channel->rfcomm_cid, new_credits, channel->credits_outgoing);
+	if( last_credit != channel->credits_outgoing ) {
+           log_info( "RFCOMM data UIH_PF, new credits channel 0x%02x: %u, now %u", channel->rfcomm_cid, new_credits, channel->credits_outgoing);
+	   last_credit = channel->credits_outgoing;
+	}
 
         // notify channel statemachine 
         rfcomm_channel_event_t channel_event = { CH_EVT_RCVD_CREDITS, 0 };

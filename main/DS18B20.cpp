@@ -13,10 +13,8 @@
 #include <stdio.h>
 
 
-static DallasRmt* dallas = NULL;
-static OnewireRmt* ow = NULL;
-
-// static uint32_t readings = 0;
+OnewireRmt owInst( GPIO_NUM_23, 0, 1);
+DallasRmt dallasInst;
 
 DS18B20::DS18B20(gpio_num_t pin, uint8_t res, int max_dev ) {
 	_pin = pin;
@@ -27,8 +25,8 @@ DS18B20::DS18B20(gpio_num_t pin, uint8_t res, int max_dev ) {
 
 bool DS18B20::begin(){
 	gpio_set_pull_mode(_pin, GPIO_PULLUP_ONLY);
-	dallas = new DallasRmt();
-	ow = new OnewireRmt( _pin /*pin*/, 0 /*rmt_rx*/, 1 /*rmt_tx*/);
+	dallas = &dallasInst;
+	ow = &owInst;
 	dallas->setOneWire(ow);
 	dallas->begin();
 	numDevices = dallas->getDeviceCount();
@@ -42,18 +40,12 @@ bool DS18B20::begin(){
 float DS18B20::getTemp(){
 	 float temp = 0;
 	 uint8_t a;
-	 if( !dallas->getAddress( &a, 0 ) ){
-		  return DEVICE_DISCONNECTED_C;
-	 }
-	 if( !dallas->validAddress( &a ) ){
-	    printf("DS18B20 reports invalid crc for address\n");
-	    return DEVICE_DISCONNECTED_C;
-	 }
-
-	if( !dallas->requestTemperaturesByAddress(&a) )
-		return DEVICE_DISCONNECTED_C;
-	// dallas->getWaitForConversion();
-	temp = dallas->getTempC( &a );
+	 dallas->requestTemperatures();
+	 temp = dallas->getTempCByIndex(0);
+     if( temp == DEVICE_DISCONNECTED_C ) {
+    	 printf("T sensor disconnected\n");
+    	 numDevices = dallas->getDeviceCount();
+     }
 
 	// printf("Temperatur: %f\n", temp);
 	return temp;

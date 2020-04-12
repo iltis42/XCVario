@@ -48,7 +48,6 @@ DallasRmt::DallasRmt(OnewireRmt* ow): _ownOnewire(false)
 }
 
 DallasRmt::DallasRmt(uint8_t pin, uint8_t rmt_rx, uint8_t rmt_tx)
-: _ow(new OnewireRmt(pin, rmt_rx, rmt_tx)), _ownOnewire(true)
 {
     _devices = 0;
     _parasite = false;

@@ -208,7 +208,7 @@ void readBMP(void *pvParameters){
 					break;
 			}
 			Audio.setS2FMode( s2fmode );
- 			if( uxTaskGetStackHighWaterMark( bpid ) < 2000 )
+ 			if( uxTaskGetStackHighWaterMark( bpid ) < 2000  )
 				printf("Warning sensor task stack low: %d bytes\n", uxTaskGetStackHighWaterMark( bpid ) );
 		}
 		esp_task_wdt_reset();
@@ -258,7 +258,7 @@ void readTemp(void *pvParameters){
 			// xSemaphoreGive(xMutex);
 		}
 		esp_task_wdt_reset();
-		vTaskDelayUntil(&xLastWakeTime, 200/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS);
         if( (ttick++ % 10) == 0) {
 		  printf("+++++++++++++  heap_caps_get_free_size: %d\n", heap_caps_get_free_size(MALLOC_CAP_8BIT));
         }
@@ -309,13 +309,13 @@ void sensor(void *args){
 	if( temperature == DEVICE_DISCONNECTED_C ) {
 		printf("Error: Self test Temperatur Sensor failed; returned T=%2.2f\n", temperature );
 		display.writeText( line++, "Temp Sensor: Not found");
-		validTemperature = true;
+		validTemperature = false;
 		failed_tests += "External Temperature Sensor: NOT FOUND\n";
 	}else
 	{
 		printf("Self test Temperatur Sensor PASSED; returned T=%2.2f\n", temperature );
 		display.writeText( line++, "Temp Sensor: OK");
-		validTemperature = false;
+		validTemperature = true;
 		failed_tests += "External Temperature Sensor:PASSED\n";
 
 	}

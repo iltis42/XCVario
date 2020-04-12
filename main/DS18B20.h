@@ -26,6 +26,8 @@ private:
 	uint8_t _res;
 	int _max_dev;
 	int numDevices;
+	DallasRmt* dallas;
+	OnewireRmt* ow;
 };
 
 #endif /* MAIN_DS18B20_H_ */

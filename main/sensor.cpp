@@ -146,6 +146,8 @@ void drawDisplay(void *pvParameters){
 	}
 }
 
+char lb[160];
+
 void readBMP(void *pvParameters){
 	while (1)
 	{
@@ -157,7 +159,7 @@ void readBMP(void *pvParameters){
 			// 	printf("Unsharp != 100: %d ms\n", int( newmsec - millisec ) );
 			// millisec = newmsec;
 			TE = bmpVario.readTE();
-			// vTaskDelay(1);
+			vTaskDelay(1);
 			baroP = bmpBA.readPressure();
 			speedP = MP5004DP.readPascal(30);
 			// vTaskDelay(1);
@@ -172,10 +174,10 @@ void readBMP(void *pvParameters){
 			}
 			xSemaphoreTake(xMutex,portMAX_DELAY );
 			if( enableBtTx ) {
-				char lb[120];
+				// char lb[120];
 				OV.makeNMEA( lb, baroP, speedP, TE, temperature );
 				btsender.send( lb );
-				// vTaskDelay(1);
+				vTaskDelay(1);
 			}
 			xSemaphoreGive(xMutex);
 
@@ -187,7 +189,7 @@ void readBMP(void *pvParameters){
 			netto = aTE - polar_sink;
 			as2f = s2f.speed( netto );
 			s2f_delta = as2f - speed;
-			// vTaskDelay(1);
+			vTaskDelay(1);
 			ias = (int)(speed+0.5);
 
 			switch( mysetup.get()->_audio_mode ) {
@@ -208,9 +210,11 @@ void readBMP(void *pvParameters){
 					break;
 			}
 			Audio.setS2FMode( s2fmode );
- 			if( uxTaskGetStackHighWaterMark( bpid ) < 2000  )
+ 			if( uxTaskGetStackHighWaterMark( bpid ) < 1024  )
 				printf("Warning sensor task stack low: %d bytes\n", uxTaskGetStackHighWaterMark( bpid ) );
+
 		}
+		// printf("bmpTask stack=%d\n", uxTaskGetStackHighWaterMark( bpid ) );
 		esp_task_wdt_reset();
 		// delay(85);
 		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
@@ -529,7 +533,7 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280BA, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
-	xTaskCreatePinnedToCore(&readBMP, "readBMP", 12000, NULL, 20, bpid, 0);
+	xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096, NULL, 20, bpid, 0);
 	xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 30, 0, 0);
 
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 10, dpid, 0);

@@ -8,12 +8,13 @@
 #include <queue>
 #include <algorithm>
 
-char rxBuffer[100];
+char rxBuffer[120];
 int BTSender::i=0;
 
 
 #define RFCOMM_SERVER_CHANNEL 1
 #define HEARTBEAT_PERIOD_MS 20
+#define QUEUE_SIZE 20
 
 bool     *BTSender::_enable;
 bool      BTSender::bluetooth_up = false;
@@ -25,20 +26,25 @@ btstack_packet_callback_registration_t BTSender::hci_event_callback_registration
 void ( * BTSender::_callback)(char * rx, uint16_t len);
 
 std::queue<std::string> queue;
+portMUX_TYPE btmux = portMUX_INITIALIZER_UNLOCKED;
 
 int BTSender::queueFull() {
-	if(queue.size() == 100)
-		return 1;
-	else
-		return 0;
+	portENTER_CRITICAL(&btmux);
+	int ret = 0;
+	if(queue.size() >= QUEUE_SIZE)
+		ret=1;
+	portEXIT_CRITICAL(&btmux);
+	return ret;
 }
 
 void BTSender::send(char * s){
 	printf("%s",s);
+	portENTER_CRITICAL_ISR(&btmux);
 	std::string str( s );
-	if (queue.size() < 100) {
+	if ( queue.size() < QUEUE_SIZE ) {
 		queue.push( str );
 	}
+	portEXIT_CRITICAL_ISR(&btmux);
 	// else
 	// 	printf("BTSender queue full\n");
 }
@@ -46,6 +52,7 @@ void BTSender::send(char * s){
 
 void BTSender::heartbeat_handler(struct btstack_timer_source *ts){
 	if (rfcomm_channel_id ){
+		portENTER_CRITICAL_ISR(&btmux);
 		if ( queue.size() ){
 			if (rfcomm_can_send_packet_now(rfcomm_channel_id)){
 				int err = rfcomm_send(rfcomm_channel_id, (uint8_t*) queue.front().c_str(), queue.front().length() );
@@ -55,6 +62,7 @@ void BTSender::heartbeat_handler(struct btstack_timer_source *ts){
 				}
 			}
 		}
+		portEXIT_CRITICAL_ISR(&btmux);
 	}
 	btstack_run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
 	btstack_run_loop_add_timer(ts);

@@ -29,24 +29,21 @@ std::queue<std::string> queue;
 portMUX_TYPE btmux = portMUX_INITIALIZER_UNLOCKED;
 
 int BTSender::queueFull() {
-	portENTER_CRITICAL(&btmux);
+	portENTER_CRITICAL_ISR(&btmux);
 	int ret = 0;
 	if(queue.size() >= QUEUE_SIZE)
 		ret=1;
-	portEXIT_CRITICAL(&btmux);
+	portEXIT_CRITICAL_ISR(&btmux);
 	return ret;
 }
 
 void BTSender::send(char * s){
 	printf("%s",s);
 	portENTER_CRITICAL_ISR(&btmux);
-	std::string str( s );
 	if ( queue.size() < QUEUE_SIZE ) {
-		queue.push( str );
+		queue.push( s );
 	}
 	portEXIT_CRITICAL_ISR(&btmux);
-	// else
-	// 	printf("BTSender queue full\n");
 }
 
 

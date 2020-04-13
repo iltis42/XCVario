@@ -785,10 +785,29 @@ void SetupMenu::setup( )
 	rd->addEntry( "Volume");
 	rd->addEntry( "MC Value");
 
+	// _serial2_speed
+	SetupMenu * rs232 = new SetupMenu( "RS232 Serial Interface" );
+	sye->addMenu( rs232 );
+	SetupMenuSelect * s2sp = new SetupMenuSelect( "Serial RS232 Speed",	&_setup->get()->_serial2_speed, true );
+	rs232->addMenu( s2sp );
+	// s2sp->setHelp( "Serial RS232 (TTL) speed, pins RX:2, TX:3 on external RJ45 connector");
+	s2sp->addEntry( "Serial OFF");
+	s2sp->addEntry( "4800 baud");
+	s2sp->addEntry( "9600 baud");
+	s2sp->addEntry( "19200 baud");
+	s2sp->addEntry( "38400 baud");
+	s2sp->addEntry( "57600 baud");
+	s2sp->addEntry( "115200 baud");
+	SetupMenuSelect * s2lo = new SetupMenuSelect( "Serial BT Bridge",	&_setup->get()->_serial2_rxloop, true );
+	rs232->addMenu( s2lo );
+	s2lo->setHelp( "Serial RS232 (TTL) option to retransmit data on serial RX (pin2 RJ45), to bluetooth sender to connect e.g. FLARM");
+	s2lo->addEntry( "Disable");
+	s2lo->addEntry( "Enable");
+
 	Version V;
 	static uint8_t select_dummy = 0;
 	SetupMenuSelect * ver = new SetupMenuSelect( 	"Software Version",
-					&select_dummy, false, 0, false );
+			&select_dummy, false, 0, false );
 	ver->addEntry( V.version() );
 	sye->addMenu( ver );
 

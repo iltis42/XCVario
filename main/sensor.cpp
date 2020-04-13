@@ -41,27 +41,12 @@
 #include <Ucglib.h>
 // #include "sound.h"
 
-
 /*
-
-BMP280:
-
-  BMP  ESP   col  ESP32 GPIO_NUM optimized
-                  TE-bmp280      Baro-bmp280
-# VCC  GPIO13     13             13
-# GND  GND    sw  GND            GND
-# SCL  SCK    br  12             12
-# SDA  MISO   rt  14             14
-# CSB  CS     or  27             25    (diff)
-# SDO  MOSI   ge  26             26
 
 BMP:
     SCK - This is the SPI Clock pin, its an input to the chip
-
     SDO - this is the Serial Data Out / Master In Slave Out pin (MISO), for data sent from the BMP183 to your processor
-
     SDI - this is the Serial Data In / Master Out Slave In pin (MOSI), for data sent from your processor to the BME280
-
     CS - this is the Chip Select pin, drop it low to start an SPI transaction. Its an input to the chip
 
  */
@@ -97,7 +82,7 @@ BatVoltage ADC ( &mysetup, &setupv );
 S2F  s2f( &mysetup );
 Switch VaSoSW;
 TaskHandle_t *bpid;
-TaskHandle_t *spid;
+TaskHandle_t *apid;
 TaskHandle_t *tpid;
 TaskHandle_t *dpid;
 
@@ -140,13 +125,9 @@ void drawDisplay(void *pvParameters){
 			display.drawDisplay( ias, TE, aTE, polar_sink, alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode );
 		}
 		vTaskDelayUntil(&dLastWakeTime, 100/portTICK_PERIOD_MS);
-		if( uxTaskGetStackHighWaterMark( dpid ) < 1000 )
-			printf("Warning display task stack low: %d bytes\n", uxTaskGetStackHighWaterMark( bpid ) );
-
 	}
 }
 
-char lb[160];
 
 void readBMP(void *pvParameters){
 	while (1)
@@ -154,10 +135,6 @@ void readBMP(void *pvParameters){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		if( Audio.getDisable() != true )
 		{
-			// long newmsec = millis();
-			// if( abs (newmsec - millisec - 100 ) > 2 )
-			// 	printf("Unsharp != 100: %d ms\n", int( newmsec - millisec ) );
-			// millisec = newmsec;
 			TE = bmpVario.readTE();
 			vTaskDelay(1);
 			baroP = bmpBA.readPressure();
@@ -174,7 +151,7 @@ void readBMP(void *pvParameters){
 			}
 			xSemaphoreTake(xMutex,portMAX_DELAY );
 			if( enableBtTx ) {
-				// char lb[120];
+				char lb[120];
 				OV.makeNMEA( lb, baroP, speedP, TE, temperature );
 				btsender.send( lb );
 				vTaskDelay(1);
@@ -210,9 +187,6 @@ void readBMP(void *pvParameters){
 					break;
 			}
 			Audio.setS2FMode( s2fmode );
- 			if( uxTaskGetStackHighWaterMark( bpid ) < 1024  )
-				printf("Warning sensor task stack low: %d bytes\n", uxTaskGetStackHighWaterMark( bpid ) );
-
 		}
 		// printf("bmpTask stack=%d\n", uxTaskGetStackHighWaterMark( bpid ) );
 		esp_task_wdt_reset();
@@ -244,7 +218,6 @@ void readTemp(void *pvParameters){
 			battery = ADC.getBatVoltage();
 			// printf("Battery=%f V\n", battery );
 			float t = ds18b20.getTemp();
-			// xSemaphoreTake(xMutex,portMAX_DELAY );
 			if( t ==  DEVICE_DISCONNECTED_C ) {
 				validTemperature = false;
 				temperature = DEVICE_DISCONNECTED_C;
@@ -259,12 +232,19 @@ void readTemp(void *pvParameters){
 				temperature = temperature + (t-temperature)*0.2;
 			}
 			// printf("temperature=%f\n", temperature );
-			// xSemaphoreGive(xMutex);
 		}
 		esp_task_wdt_reset();
 		vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS);
-        if( (ttick++ % 10) == 0) {
-		  printf("+++++++++++++  heap_caps_get_free_size: %d\n", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+		if( (ttick++ % 10) == 0) {
+			if( uxTaskGetStackHighWaterMark( bpid ) < 1024  )
+				printf("Warning sensor task stack low: %d bytes\n", uxTaskGetStackHighWaterMark( bpid ) );
+			if( uxTaskGetStackHighWaterMark( dpid ) < 1024  )
+				printf("Warning display task stack low: %d bytes\n", uxTaskGetStackHighWaterMark( dpid ) );
+			if( uxTaskGetStackHighWaterMark( dpid ) < 1024 )
+				printf("Warning display task stack low: %d bytes\n", uxTaskGetStackHighWaterMark( bpid ) );
+			if( uxTaskGetStackHighWaterMark( tpid ) < 1024 )
+				printf("Warning temperature task stack low: %d bytes\n", uxTaskGetStackHighWaterMark( tpid ) );
+		    printf("+++++++++++++  heap_caps_get_free_size: %d\n", heap_caps_get_free_size(MALLOC_CAP_8BIT));
         }
 	}
 }
@@ -283,7 +263,9 @@ void sensor(void *args){
 	if( mysetup.get()->_blue_enable ) {
 		// hci_power_control(HCI_POWER_ON);
 		printf("BT Sender init, device name: %s\n", mysetup.getBtName() );
-		btsender.begin( &enableBtTx, mysetup.getBtName() );
+		btsender.begin( &enableBtTx, mysetup.getBtName(),
+				        mysetup.get()->_serial2_speed,
+				        mysetup.get()->_serial2_rxloop );
 	}
 	else
 		printf("Bluetooth disabled\n");
@@ -384,7 +366,6 @@ void sensor(void *args){
 
     }
 
-
 	bmpVario.begin( &bmpTE, &mysetup );
 	bmpVario.setup();
 	VaSoSW.begin( GPIO_NUM_12 );
@@ -416,7 +397,7 @@ void sensor(void *args){
 	MP5004DP.doOffset();
 
 	Audio.begin( DAC_CHANNEL_1, GPIO_NUM_0, &mysetup );
-	// TBD audio Poti test here.
+	// Poti and Audio test here.
 	if( !Audio.selfTest() ) {
 		printf("Error: Digital potentiomenter selftest failed\n");
 		display.writeText( line++, "Digital Poti: Failure");
@@ -455,17 +436,10 @@ void sensor(void *args){
 		}
 	}
 
-
-
-
 	s2f.change_polar();
 	s2f.change_mc_bal();
-
-
 	Version myVersion;
 	printf("Program Version %s\n", myVersion.version() );
-
-
 
 	// Audio.mute( false );
 	gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);  // blue LED, maybe use for BT connection
@@ -534,18 +508,15 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
 	xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096, NULL, 20, bpid, 0);
-	xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 30, 0, 0);
-
+	xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 30, apid, 0);
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 10, dpid, 0);
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 8000, NULL, 3, tpid, 0);
-
-	printf("Free Stack: S:%d \n", uxTaskGetStackHighWaterMark( spid ) );
 
 	vTaskDelete( NULL );
 
 }
 
 extern "C" int btstack_main(int argc, const char * argv[]){
-	xTaskCreatePinnedToCore(&sensor, "sensor", 8000, NULL, 5, spid, 0);
+	xTaskCreatePinnedToCore(&sensor, "sensor", 8000, NULL, 5, 0, 0);
 	return 0;
 }

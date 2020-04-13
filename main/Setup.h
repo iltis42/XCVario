@@ -65,6 +65,8 @@ typedef struct {
 	uint8_t  _ias_unit;
 	uint8_t  _vario_unit;
 	uint8_t  _rot_default;
+	uint8_t  _serial2_speed;
+	uint8_t  _serial2_rxloop;
 	uint32_t _checksum;
 } setup_t;
 

@@ -7,10 +7,14 @@
 #include "freertos/task.h"
 #include <queue>
 #include <algorithm>
+#include <HardwareSerial.h>
+
+
+const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
 
 char rxBuffer[120];
 int BTSender::i=0;
-
+bool BTSender::serial_enable=false;
 
 #define RFCOMM_SERVER_CHANNEL 1
 #define HEARTBEAT_PERIOD_MS 20
@@ -29,6 +33,8 @@ std::queue<std::string> queue;
 portMUX_TYPE btmux = portMUX_INITIALIZER_UNLOCKED;
 
 int BTSender::queueFull() {
+	if( !_enable )
+		return 1;
 	portENTER_CRITICAL_ISR(&btmux);
 	int ret = 0;
 	if(queue.size() >= QUEUE_SIZE)
@@ -40,10 +46,12 @@ int BTSender::queueFull() {
 void BTSender::send(char * s){
 	printf("%s",s);
 	portENTER_CRITICAL_ISR(&btmux);
-	if ( queue.size() < QUEUE_SIZE ) {
+	if ( (queue.size() < QUEUE_SIZE) && _enable ) {
 		queue.push( s );
 	}
 	portEXIT_CRITICAL_ISR(&btmux);
+	if( serial_enable )
+			Serial2.write(s);
 }
 
 
@@ -136,28 +144,58 @@ void BTSender::one_shot_timer_setup(void){
 	btstack_run_loop_add_timer(&heartbeat);
 };
 
-void BTSender::begin( bool *enable, char * bt_name ){
+void btBridge(void *pvParameters){
+	std::string readString;
+	while(1) {
+		TickType_t xLastWakeTime = xTaskGetTickCount();
+		while (Serial2.available()) {
+			char c = Serial2.read();
+			readString += c;
+		}
+		if (readString.length() > 0) {
+			printf("Serial RX: %s\n", readString.c_str() );
+			portENTER_CRITICAL_ISR(&btmux);
+			queue.push( readString );
+			portEXIT_CRITICAL_ISR(&btmux);
+			readString.clear();
+		}
+		vTaskDelayUntil(&xLastWakeTime, 50/portTICK_PERIOD_MS);
+	}
+}
+
+
+void BTSender::begin( bool *enable, char * bt_name, int speed, bool bridge ){
 	_enable = enable;
 	hci_dump_enable_log_level( ESP_LOG_INFO, 1 );
 	hci_dump_enable_log_level( ESP_LOG_ERROR, 1 );
 	hci_dump_enable_log_level( ESP_LOG_DEBUG, 1 );
-
-	l2cap_init();
-	le_device_db_init();   // new try 28-09
-	rfcomm_init();
-	one_shot_timer_setup();
-	// register for HCI events
-	hci_event_callback_registration.callback = &packet_handler;
-	hci_add_event_handler(&hci_event_callback_registration);
-	rfcomm_register_service(packet_handler, rfcomm_channel_nr, 500); // reserved channel, mtu=100
-	memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
-	spp_create_sdp_record(spp_service_buffer, 0x10001, RFCOMM_SERVER_CHANNEL, "SPP Counter");
-	sdp_register_service(spp_service_buffer);
-	printf("SDP service record size: %u\n", de_get_len(spp_service_buffer));
-	gap_discoverable_control(1);
-	gap_set_local_name(bt_name);
-	sdp_init();
-	hci_power_control(HCI_POWER_ON);
+	if( enable ) {
+		l2cap_init();
+		le_device_db_init();   // new try 28-09
+		rfcomm_init();
+		one_shot_timer_setup();
+		// register for HCI events
+		hci_event_callback_registration.callback = &packet_handler;
+		hci_add_event_handler(&hci_event_callback_registration);
+		rfcomm_register_service(packet_handler, rfcomm_channel_nr, 500); // reserved channel, mtu=100
+		memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
+		spp_create_sdp_record(spp_service_buffer, 0x10001, RFCOMM_SERVER_CHANNEL, "SPP Counter");
+		sdp_register_service(spp_service_buffer);
+		printf("SDP service record size: %u\n", de_get_len(spp_service_buffer));
+		gap_discoverable_control(1);
+		gap_set_local_name(bt_name);
+		sdp_init();
+		hci_power_control(HCI_POWER_ON);
+	}
+	if( speed != 0 ){
+    	serial_enable = true;
+    	Serial2.begin(baud[speed],SERIAL_8N1,16,17);   //  IO16: RXD2,  IO17: TXD2
+    }else
+    {
+    	serial_enable = false;
+    }
+	if( bridge )
+		xTaskCreatePinnedToCore(&btBridge, "btBridge", 2048, NULL, 3, 0, 0);
 };
 
 

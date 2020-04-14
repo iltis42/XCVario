@@ -4,7 +4,7 @@
 #include "sdkconfig.h"
 #include <esp_log.h>
 #include <time.h>
-
+#include <string.h>
 
 
 // OneWire commands
@@ -54,6 +54,7 @@ DallasRmt::DallasRmt(uint8_t pin, uint8_t rmt_rx, uint8_t rmt_tx)
     _bitResolution = 9;
     _waitForConversion = true;
     _checkForConversion = true;
+    _is_connected = false;
 }
 
 DallasRmt::~DallasRmt()
@@ -150,7 +151,19 @@ bool DallasRmt::isConnected(const uint8_t* deviceAddress)
 bool DallasRmt::isConnected(const uint8_t* deviceAddress, uint8_t* scratchPad)
 {
     bool b = readScratchPad(deviceAddress, scratchPad);
-    return b && (_ow->crc8(scratchPad, 8) == scratchPad[SCRATCHPAD_CRC]);
+    bool crc = (_ow->crc8(scratchPad, 8) == scratchPad[SCRATCHPAD_CRC]);
+    if( crc && b ){
+    	if( _is_connected )   // suppress the first power value of 85 deg
+    		return true;
+    	else{
+    		_is_connected = true;
+    		return false;
+    	}
+    }
+    else{
+    	_is_connected = false;
+    	return false;
+    }
 }
 
 bool DallasRmt::readScratchPad(const uint8_t* deviceAddress, uint8_t* scratchPad)
@@ -368,6 +381,7 @@ bool DallasRmt::requestTemperaturesByIndex(uint8_t deviceIndex)
 int16_t DallasRmt::getTemp(const uint8_t* deviceAddress)
 {
     ScratchPad scratchPad;
+    memset( scratchPad,0,9 );
     if (isConnected(deviceAddress, scratchPad)) {
         return calculateTemperature(deviceAddress, scratchPad);
     }
@@ -400,6 +414,7 @@ float DallasRmt::getTempCByIndex(uint8_t deviceIndex)
 {
     DeviceAddress deviceAddress;
     if (!getAddress(deviceAddress, deviceIndex)) {
+    	_is_connected = false;
         return DEVICE_DISCONNECTED_C;
     }
 
@@ -469,7 +484,6 @@ void DallasRmt::blockTillConversionComplete(uint8_t bitResolution)
         uint64_t now = xTaskGetTickCount(); // get_time_since_boot(); //millis();
         while (!isConversionComplete() && (xTaskGetTickCount() - delms < now));
     } else {
-        // mgos_usleep(delms);
     	 vTaskDelay( delms/1000 / portTICK_PERIOD_MS);
     }
 }
@@ -493,10 +507,10 @@ int16_t DallasRmt::millisToWaitForConversion(uint8_t bitResolution)
 
 float DallasRmt::rawToCelsius(int16_t raw)
 {
-    if (raw <= DEVICE_DISCONNECTED_RAW) {
+    if ( raw <= DEVICE_DISCONNECTED_RAW /* || (raw == 0x2a80) */) {   // after plugin 85C default temp gets reported
+    	                                                              // we supress this in isConnected for the fist readout
         return DEVICE_DISCONNECTED_C;
     }
-    // C = RAW/128
     return (float) raw * 0.0078125;
 }
 

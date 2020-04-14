@@ -122,7 +122,10 @@ void drawDisplay(void *pvParameters){
 		TickType_t dLastWakeTime = xTaskGetTickCount();
 		bool dis = Audio.getDisable();
 		if( dis != true ) {
-			display.drawDisplay( ias, TE, aTE, polar_sink, alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode );
+			float t=temperature;
+			if( validTemperature == false )
+				t = DEVICE_DISCONNECTED_C;
+			display.drawDisplay( ias, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, aCl, s2fmode );
 		}
 		vTaskDelayUntil(&dLastWakeTime, 100/portTICK_PERIOD_MS);
 	}
@@ -219,17 +222,22 @@ void readTemp(void *pvParameters){
 			// printf("Battery=%f V\n", battery );
 			float t = ds18b20.getTemp();
 			if( t ==  DEVICE_DISCONNECTED_C ) {
+				printf("T sensor disconnected\n");
 				validTemperature = false;
-				temperature = DEVICE_DISCONNECTED_C;
 				if( no_t_sensor == false ) {
-					printf("Warning: No Temperatur Sensor found, please plug Temperature Sensor\n");
+					printf("Warning: Temperatur Sensor disconnected, please plug Temperature Sensor\n");
 					no_t_sensor = true;
 				}
 			}
 			else
 			{
+				printf("T sensor valid\n");
 				validTemperature = true;
 				temperature = temperature + (t-temperature)*0.2;
+				if( no_t_sensor == true ) {
+						printf("Temperatur Sensor found, signal valid\n");
+						no_t_sensor = false;
+				}
 			}
 			// printf("temperature=%f\n", temperature );
 		}

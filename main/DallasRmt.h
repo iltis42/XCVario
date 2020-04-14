@@ -159,6 +159,9 @@ private:
 
     // parasite power on or off
     bool _parasite;
+
+    // store current status
+    bool _is_connected;
     // used to determine the delay amount needed to allow for the
     // temperature conversion to take place
     uint8_t _bitResolution;

@@ -43,7 +43,7 @@ float DS18B20::getTemp(){
 	 dallas->requestTemperatures();
 	 temp = dallas->getTempCByIndex(0);
      if( temp == DEVICE_DISCONNECTED_C ) {
-    	 printf("T sensor disconnected\n");
+    	 // printf("T sensor disconnected\n");
     	 numDevices = dallas->getDeviceCount();
      }
 

@@ -231,7 +231,6 @@ void readTemp(void *pvParameters){
 			}
 			else
 			{
-				printf("T sensor valid\n");
 				validTemperature = true;
 				temperature = temperature + (t-temperature)*0.2;
 				if( no_t_sensor == true ) {

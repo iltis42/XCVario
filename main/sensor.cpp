@@ -39,6 +39,10 @@
 
 #include <SPI.h>
 #include <Ucglib.h>
+#ifdef OTA
+#include <esp_https_ota.h>
+#endif
+
 // #include "sound.h"
 
 /*
@@ -256,6 +260,27 @@ void readTemp(void *pvParameters){
 	}
 }
 
+// OTA
+#ifdef OTA
+#define CONFIG_FIRMWARE_UPGRADE_URL "http://10.10.10.2:8080/image.bin"
+extern const uint8_t server_cert_pem_start[] asm("_binary_ca_cert_pem_start");
+extern const uint8_t server_cert_pem_end[] asm("_binary_ca_cert_pem_end");
+
+esp_err_t do_firmware_upgrade()
+{
+    esp_http_client_config_t config = {
+        .url = CONFIG_FIRMWARE_UPGRADE_URL,
+        .cert_pem = (char *)server_cert_pem_start,
+    };
+    esp_err_t ret = esp_https_ota(&config);
+    if (ret == ESP_OK) {
+        esp_restart();
+    } else {
+        return ESP_FAIL;
+    }
+    return ESP_OK;
+}
+#endif
 
 void sensor(void *args){
 	bool selftestPassed=true;
@@ -518,6 +543,15 @@ void sensor(void *args){
 	xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 30, apid, 0);
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 10, dpid, 0);
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 8000, NULL, 3, tpid, 0);
+
+#ifdef OTA
+	printf("Launch Firmware upgrade thread\n");
+	if( do_firmware_upgrade() == ESP_OK )
+		printf("Firmware upgrade SUCCESSFUL\n");
+	else
+		printf("Firmware upgrade FAILED\n");
+	sleep( 4 );
+#endif
 
 	vTaskDelete( NULL );
 

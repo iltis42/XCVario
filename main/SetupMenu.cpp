@@ -53,7 +53,7 @@ int qnh_adj( SetupMenuValFloat * p )
 {
 	// printf("qnh_adj");
 	float alt=0;
-	for( int i=1; i<6; i++ ) {
+	for( int i=0; i<6; i++ ) {
 		alt += p->_bmp->readAltitude( *(p->_value) );
 		sleep(0.01);
 	}

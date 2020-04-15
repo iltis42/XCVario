@@ -52,7 +52,13 @@ int contrast( SetupMenuValFloat * p )
 int qnh_adj( SetupMenuValFloat * p )
 {
 	// printf("qnh_adj");
-	float alt = p->_bmp->readAltitude( *(p->_value) );
+	float alt=0;
+	for( int i=1; i<6; i++ ) {
+		alt += p->_bmp->readAltitude( *(p->_value) );
+		sleep(0.01);
+	}
+	alt = alt/6;
+
 	// printf("Setup BA alt=%f QNH=%f\n", alt, *(p->_value)  );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->setFont(ucg_font_fub25_hr);

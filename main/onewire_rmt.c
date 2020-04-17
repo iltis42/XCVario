@@ -345,12 +345,14 @@ typedef struct {
     unsigned char ROM_NO[8];
 } platform_onewire_bus_t;
 
-struct mgos_rmt_onewire {
+typedef struct mgos_rmt_onewire {
     int pin;
     uint8_t *res_rom;
     //struct onewire_search_state sst;
     platform_onewire_bus_t sst;
-};
+} mgos_ro_t;
+
+mgos_ro_t pins[32];
 
 struct mgos_rmt_onewire* onewire_rmt_create(int pin,int rmt_rx,int rmt_tx) {
     int rx = rmt_rx; //mgos_sys_config_get_onewire_rmt_rx_channel();
@@ -364,15 +366,17 @@ struct mgos_rmt_onewire* onewire_rmt_create(int pin,int rmt_rx,int rmt_tx) {
         ESP_LOGW("ow", "onewire_rmt could not start - rmt device could not be configured.");
         return NULL;
     }
-    struct mgos_rmt_onewire* ow = (struct mgos_rmt_onewire*) calloc(1, sizeof (struct mgos_rmt_onewire));
+    struct mgos_rmt_onewire* ow = (struct mgos_rmt_onewire*)&pins[pin];
     ow->pin = pin;
     return ow;
 }
 
 void onewire_rmt_close(struct mgos_rmt_onewire *ow) {
+	/*
     if (NULL != ow) {
         free((void*) ow);
     }
+    */
 }
 
 bool onewire_rmt_reset(struct mgos_rmt_onewire *ow) {

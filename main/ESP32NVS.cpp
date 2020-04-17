@@ -145,6 +145,7 @@ int64_t ESP32NVS::getInt(std::string key){
 }
 
 std::string ESP32NVS::getString(std::string key){
+  printf("ESP32NVS::getString(%s)\n", key.c_str());
   size_t required_size;
   nvs_get_str(_nvs_handle, key.c_str(), NULL, &required_size);
   char* value = (char*) malloc(required_size);
@@ -153,6 +154,7 @@ std::string ESP32NVS::getString(std::string key){
 }
 
 char* ESP32NVS::getCharArray(std::string key) {
+  printf("ESP32NVS::getCharArray(%s)\n", key.c_str());
   size_t required_size;
   nvs_get_str(_nvs_handle, key.c_str(), NULL, &required_size);
   char* value = (char*) malloc(required_size);

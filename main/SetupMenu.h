@@ -124,6 +124,7 @@ public:
 	void down( int count );
 	void press();
 	virtual ~SetupMenuSelect() {};
+	int getSelect() { return *_select; };
 
 private:
 	uint8_t *_select;

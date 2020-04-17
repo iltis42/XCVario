@@ -12,7 +12,6 @@
 #include "sdkconfig.h"
 #include <stdio.h>
 
-
 OnewireRmt owInst( GPIO_NUM_23, 0, 1);
 DallasRmt dallasInst;
 
@@ -39,18 +38,15 @@ bool DS18B20::begin(){
 
 float DS18B20::getTemp(){
 	 float temp = 0;
-	 uint8_t a;
 	 dallas->requestTemperatures();
 	 temp = dallas->getTempCByIndex(0);
      if( temp == DEVICE_DISCONNECTED_C ) {
     	 // printf("T sensor disconnected\n");
     	 numDevices = dallas->getDeviceCount();
      }
-
 	// printf("Temperatur: %f\n", temp);
 	return temp;
 }
-
 
 DS18B20::~DS18B20() {
 

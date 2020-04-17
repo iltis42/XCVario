@@ -387,12 +387,14 @@ void ESPAudio::dactask(void* arg )
 			}
 			else{
 				if( sound_on ) {
-					if( cur_wiper != 0 )
-						Poti.writeWiper( 0 );
+					if( cur_wiper != 0 ) {
+					Poti.writeWiper( 0 );
+					}
 					dac_output_disable(_ch);
 					sound_on = false;
 				}
 			}
+			// assert( heap_caps_check_integrity_all(true) == true );
 			Audio.dac_frequency_set(clk_8m_div, step);
 		}
 		vTaskDelayUntil(&xLastWakeTime, 20/portTICK_PERIOD_MS);
@@ -536,4 +538,6 @@ void ESPAudio::test( float to, float from )
 		}
 	}
 }
+
+
 ESPAudio Audio;

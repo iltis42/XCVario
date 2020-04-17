@@ -60,7 +60,7 @@ bool MP5004DP::doOffset( bool force ){
 	}
 	_haveDevice=true;
 	printf("MP5004DP looks like have device\n");
-	std::string _offset_nvs_key( "OFFSET4" );
+	// std::string _offset_nvs_key( "OFFSET4" );
 	printf("MP5004DP key initialized\n");
 	_offset = &_setup->get()->_offset;
 

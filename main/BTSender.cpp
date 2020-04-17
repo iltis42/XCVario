@@ -5,12 +5,43 @@
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include <queue>
 #include <algorithm>
 #include <HardwareSerial.h>
+#include "RingBufCPP.h"
+
 
 
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
+
+class SString {
+public:
+	SString() { clear();
+				idx = 0;
+	}
+	SString( SString& os) {
+		memcpy(str,os.c_str(),strlen(os.c_str()));
+	}
+
+	SString( char * s ) {
+		size_t len = 100;
+		if( strlen(s) < 100)
+			len = strlen(s);
+		memcpy(str,s,len);
+	};
+	void add( char c ) {
+		str[idx++] = c;
+	}
+	void clear() {
+		 memset(str,0,100);
+	}
+	char *c_str() { return str; };
+	size_t length() { return strlen(str); }
+private:
+	char str[100];
+	int idx;
+};
+
+RingBufCPP<SString, 20> mybuf;
 
 char rxBuffer[120];
 int BTSender::i=0;
@@ -20,7 +51,7 @@ bool BTSender::serial_enable=false;
 #define HEARTBEAT_PERIOD_MS 20
 #define QUEUE_SIZE 20
 
-bool     *BTSender::_enable;
+bool      BTSender::_enable;
 bool      BTSender::bluetooth_up = false;
 uint8_t   BTSender::rfcomm_channel_nr = 1;
 uint16_t  BTSender::rfcomm_channel_id = 0;
@@ -29,7 +60,6 @@ btstack_timer_source_t BTSender::heartbeat;
 btstack_packet_callback_registration_t BTSender::hci_event_callback_registration;
 void ( * BTSender::_callback)(char * rx, uint16_t len);
 
-std::queue<std::string> queue;
 portMUX_TYPE btmux = portMUX_INITIALIZER_UNLOCKED;
 
 int BTSender::queueFull() {
@@ -37,7 +67,7 @@ int BTSender::queueFull() {
 		return 1;
 	portENTER_CRITICAL_ISR(&btmux);
 	int ret = 0;
-	if(queue.size() >= QUEUE_SIZE)
+	if(mybuf.isFull())
 		ret=1;
 	portEXIT_CRITICAL_ISR(&btmux);
 	return ret;
@@ -46,8 +76,8 @@ int BTSender::queueFull() {
 void BTSender::send(char * s){
 	printf("%s",s);
 	portENTER_CRITICAL_ISR(&btmux);
-	if ( (queue.size() < QUEUE_SIZE) && _enable ) {
-		queue.push( s );
+	if ( !mybuf.isFull() && _enable ) {
+		mybuf.add( s );
 	}
 	portEXIT_CRITICAL_ISR(&btmux);
 	if( serial_enable )
@@ -58,10 +88,11 @@ void BTSender::send(char * s){
 void BTSender::heartbeat_handler(struct btstack_timer_source *ts){
 	if (rfcomm_channel_id ){
 		portENTER_CRITICAL_ISR(&btmux);
-		if ( queue.size() ){
+		if ( !mybuf.isEmpty() ){
 			if (rfcomm_can_send_packet_now(rfcomm_channel_id)){
-				int err = rfcomm_send(rfcomm_channel_id, (uint8_t*) queue.front().c_str(), queue.front().length() );
-				queue.pop();
+				SString s;
+			    mybuf.pull(&s);
+				int err = rfcomm_send(rfcomm_channel_id, (uint8_t*) s.c_str(), s.length() );
 				if (err) {
 					printf("rfcomm_send -> error %d", err);
 				}
@@ -145,17 +176,17 @@ void BTSender::one_shot_timer_setup(void){
 };
 
 void btBridge(void *pvParameters){
-	std::string readString;
+	SString readString;
 	while(1) {
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		while (Serial2.available()) {
 			char c = Serial2.read();
-			readString += c;
+			readString.add(c);
 		}
 		if (readString.length() > 0) {
 			printf("Serial RX: %s\n", readString.c_str() );
 			portENTER_CRITICAL_ISR(&btmux);
-			queue.push( readString );
+			mybuf.add( readString );
 			portEXIT_CRITICAL_ISR(&btmux);
 			readString.clear();
 		}
@@ -164,12 +195,13 @@ void btBridge(void *pvParameters){
 }
 
 
-void BTSender::begin( bool *enable, char * bt_name, int speed, bool bridge ){
-	_enable = enable;
+void BTSender::begin( bool enable_bt, char * bt_name, int speed, bool bridge ){
+	enable_bt = false;
+	_enable = enable_bt;
 	hci_dump_enable_log_level( ESP_LOG_INFO, 1 );
 	hci_dump_enable_log_level( ESP_LOG_ERROR, 1 );
 	hci_dump_enable_log_level( ESP_LOG_DEBUG, 1 );
-	if( enable ) {
+	if( _enable ) {
 		l2cap_init();
 		le_device_db_init();   // new try 28-09
 		rfcomm_init();

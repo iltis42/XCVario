@@ -178,7 +178,10 @@ void IpsDisplay::writeText( int line, String text ){
 }
 
 
-
+void IpsDisplay::clear(){
+	ucg->setColor( COLOR_BLACK );
+	ucg->drawBox( 0,0,240,320 );
+}
 
 void IpsDisplay::bootDisplay() {
 	printf("IpsDisplay::bootDisplay()\n");
@@ -187,8 +190,7 @@ void IpsDisplay::bootDisplay() {
 		ucg->setRedBlueTwist( true );
 	if( _setup->get()->_display_type == ILI9341_TFT_18P )
 		ucg->invertDisplay( true );
-	ucg->setColor( COLOR_BLACK );
-	ucg->drawBox( 0,0,240,320 );
+	clear();
 	if( _setup->get()->_display_orientation == 1 )
 		ucg->setRotate180();
 

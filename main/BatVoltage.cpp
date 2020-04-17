@@ -27,13 +27,15 @@ BatVoltage::BatVoltage( Setup *setup, SetupVolt *setupv ) {
   _setupv = setupv;
 }
 
+esp_adc_cal_characteristics_t adc_cal;
+
 void BatVoltage::begin( adc1_channel_t battery, adc1_channel_t reference ) {
 	_battery_ch = battery;
 	_reference_ch = reference;
 	adc1_config_width(ADC_WIDTH_BIT_12);
 	adc1_config_channel_atten(battery,ADC_ATTEN_DB_0);
 
-	adc_chars = (esp_adc_cal_characteristics_t *)calloc(1, sizeof(esp_adc_cal_characteristics_t));
+	adc_chars = (esp_adc_cal_characteristics_t *) &adc_cal;
 	esp_adc_cal_value_t val_type = esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_0, ADC_WIDTH_BIT_12, DEFAULT_VREF, adc_chars);
 	//Check type of calibration value used to characterize ADC
 	printf("\n");

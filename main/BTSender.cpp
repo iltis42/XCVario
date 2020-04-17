@@ -196,7 +196,6 @@ void btBridge(void *pvParameters){
 
 
 void BTSender::begin( bool enable_bt, char * bt_name, int speed, bool bridge ){
-	enable_bt = false;
 	_enable = enable_bt;
 	hci_dump_enable_log_level( ESP_LOG_INFO, 1 );
 	hci_dump_enable_log_level( ESP_LOG_ERROR, 1 );

@@ -29,10 +29,10 @@ public:
 private:
 };
 
-struct _rotbyte {
+typedef struct _rotbyte {
 	uint64_t time;
 	int rot;
-};
+} t_rot;
 
 struct ring_buffer
 {

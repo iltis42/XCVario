@@ -9,37 +9,7 @@
 #include <HardwareSerial.h>
 #include "RingBufCPP.h"
 
-
-
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
-
-class SString {
-public:
-	SString() { clear();
-				idx = 0;
-	}
-	SString( SString& os) {
-		memcpy(str,os.c_str(),strlen(os.c_str()));
-	}
-
-	SString( char * s ) {
-		size_t len = 100;
-		if( strlen(s) < 100)
-			len = strlen(s);
-		memcpy(str,s,len);
-	};
-	void add( char c ) {
-		str[idx++] = c;
-	}
-	void clear() {
-		 memset(str,0,100);
-	}
-	char *c_str() { return str; };
-	size_t length() { return strlen(str); }
-private:
-	char str[100];
-	int idx;
-};
 
 RingBufCPP<SString, 20> mybuf;
 

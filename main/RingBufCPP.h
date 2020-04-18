@@ -3,6 +3,35 @@
 
 #include "RingBufHelpers.h"
 
+class SString {
+public:
+	SString() { clear();
+				idx = 0;
+	}
+	SString( SString& os) {
+		memcpy(str,os.c_str(),strlen(os.c_str()));
+	}
+
+	SString( char * s ) {
+		size_t len = 100;
+		if( strlen(s) < 100)
+			len = strlen(s);
+		memcpy(str,s,len);
+	};
+	void add( char c ) {
+		str[idx++] = c;
+	}
+	void clear() {
+		 memset(str,0,100);
+	}
+	char *c_str() { return str; };
+	size_t length() { return strlen(str); }
+private:
+	char str[100];
+	int idx;
+};
+
+
 template <typename Type, size_t MaxElements>
 class RingBufCPP
 {

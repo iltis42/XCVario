@@ -14,7 +14,6 @@
 gpio_num_t ESPRotary::clk, ESPRotary::dt, ESPRotary::sw;
 std::vector<RotaryObserver *> ESPRotary::observers;
 uint8_t ESPRotary::_switch;
-// QueueHandle_t ESPRotary::q1;
 QueueHandle_t ESPRotary::q2;
 TickType_t ESPRotary::xLastWakeTime;
 ring_buffer ESPRotary::rb(2);
@@ -28,10 +27,7 @@ int ESPRotary::errors=0;
 uint64_t ESPRotary::swtime=0;
 SemaphoreHandle_t ESPRotary::xBinarySemaphore;
 TaskHandle_t xHandle;
-
-
 RingBufCPP<t_rot, 10> rb1;
-
 
 void ESPRotary::attach(RotaryObserver *obs) {
 	observers.push_back(obs);
@@ -68,7 +64,6 @@ void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
 }
 
 enum _event infoalt = NONE;
-
 int events[ MAX_EVENT ];
 
 void ESPRotary::informObservers( void * args )
@@ -149,7 +144,6 @@ void ESPRotary::readPos(void * args) {
 	while( 1 ){
 		while( !rb1.isEmpty() )
 		{
-			// xQueueReceive(q1, &rotary, portMAX_DELAY);
 			t_rot rotary;
 			enum _event var;
 			n++;
@@ -230,11 +224,12 @@ void ESPRotary::readPos(void * args) {
 				_switch_state = newsw;
 			}
 		}
+		delay(5);
 		vTaskSuspend( NULL );
 	}
 }
 
-#define NUM_LOOPS 100
+#define NUM_LOOPS 50
 
 
 void ESPRotary::readPosInt(void * args) {
@@ -267,8 +262,6 @@ void ESPRotary::readPosInt(void * args) {
 	BaseType_t xYieldRequired = xTaskResumeFromISR( xHandle );
 	if( xYieldRequired == pdTRUE )
 		portYIELD_FROM_ISR();
-
-	// xQueueSendToBackFromISR(q1, &var, NULL );
 }
 
 /////////////////////////////////////////////////////////////////

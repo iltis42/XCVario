@@ -39,6 +39,7 @@
 
 #include <SPI.h>
 #include <Ucglib.h>
+#include <OTA.h>
 
 // #include "sound.h"
 
@@ -92,6 +93,7 @@ BME280_ESP32_SPI bmpBA(SPI_SCLK, SPI_MOSI, SPI_MISO, CS_bme280BA, FREQ_BMP_SPI);
 BME280_ESP32_SPI bmpTE(SPI_SCLK, SPI_MOSI, SPI_MISO, CS_bme280TE, FREQ_BMP_SPI);
 Ucglib_ILI9341_18x240x320_HWSPI myucg( SPI_DC, CS_Display, RESET_Display );
 IpsDisplay display( &myucg );
+OTA ota;
 
 ESPRotary Rotary;
 SetupMenu  Menu;
@@ -264,14 +266,10 @@ void sensor(void *args){
 	esp_log_level_set("*", ESP_LOG_ERROR);
 	NVS.begin();
 	mysetup.begin();
+
 	setupv.begin();
 	ADC.begin();  // for battery voltage
 
-	printf("BT Sender init, device name: %s\n", mysetup.getBtName() );
-	btsender.begin( mysetup.get()->_blue_enable,
-			        mysetup.getBtName(),
-				    mysetup.get()->_serial2_speed,
-				    mysetup.get()->_serial2_rxloop );
 
 	sleep( 1 );
 
@@ -291,10 +289,27 @@ void sensor(void *args){
 	display.begin( &mysetup );
 	display.bootDisplay();
 
+	if( mysetup.get()->_software_update ) {
+		Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
+		ota.begin( &Rotary );
+		ota.doSoftwareUpdate( &display, &mysetup );
+	}
+	printf("BT Sender init, device name: %s\n", mysetup.getBtName() );
+	btsender.begin( mysetup.get()->_blue_enable,
+			        mysetup.getBtName(),
+				    mysetup.get()->_serial2_speed,
+				    mysetup.get()->_serial2_rxloop );
+
+
     // int valid;
 	temperature = ds18b20.getTemp();
 	String failed_tests;
 	failed_tests += "\n\n\n";
+
+	Version V;
+	std::string ver( "Version: " );
+	ver += V.version();
+	display.writeText(line++, ver.c_str() );
 	if( temperature == DEVICE_DISCONNECTED_C ) {
 		printf("Error: Self test Temperatur Sensor failed; returned T=%2.2f\n", temperature );
 		display.writeText( line++, "Temp Sensor: Not found");
@@ -352,7 +367,7 @@ void sensor(void *args){
 		}
 		else{
 			printf("BMP 280 Temperature deviation test PASSED, dev: %f\n",  abs(ba_t - te_t));
-		    display.writeText( line++, "TE/Baro Temp: OK");
+		    // display.writeText( line++, "TE/Baro Temp: OK");
 		    failed_tests += "TE/Baro Sensor T diff. <2°C: PASSED\n";
 		}
 
@@ -364,7 +379,7 @@ void sensor(void *args){
 		}
 		else
 			printf("BMP 280 Pressure deviation test PASSED, dev: %f\n", abs(ba_p - te_p) );
-		    display.writeText( line++, "TE/Baro P: OK");
+		    // display.writeText( line++, "TE/Baro P: OK");
 		    failed_tests += "TE/Baro Sensor P diff. <2hPa: PASSED\n";
 
     }

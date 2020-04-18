@@ -15,14 +15,6 @@
 #include "Version.h"
 #include "Polars.h"
 
-#include "esp_ota_ops.h"
-#include "freertos/event_groups.h"
-extern "C" {
-#include "OTAServer.h"
-#include "MyWiFi.h"
-}
-
-
 IpsDisplay* MenuEntry::_display = 0;
 MenuEntry* MenuEntry::root = 0;
 MenuEntry* MenuEntry::selected = 0;
@@ -38,41 +30,6 @@ extern xSemaphoreHandle spiMutex;
 Ucglib_ILI9341_18x240x320_HWSPI *MenuEntry::ucg = 0;
 static char rentry[25];
 SetupMenuSelect * audio_range_sm = 0;
-
-
-
-// OTA
-int OTA(SetupMenuSelect * p){
-	printf("OTA select %d\n",  p->getSelect() );
-	if( p->getSelect() == 0 )  // Start Wifi OTA
-	{
-		printf("Now start Wifi OTA\n");
-		btStop();
-		hci_power_control(HCI_POWER_OFF);
-		hci_close();
-		xTaskCreate(&systemRebootTask, "rebootTask", 2048, NULL, 5, NULL);
-		init_wifi_softap(&OTA_server);
-		p->ucg->setColor( COLOR_BLACK );
-		p->ucg->drawBox( 0,0,240,320 );
-		p->ucg->setColor( COLOR_WHITE );
-		p->ucg->setFont(ucg_font_ncenR14_hr);
-		p->ucg->setPrintPos(1,60);
-		p->ucg->printf("Now connect 'ESP32 OTA'");
-		p->ucg->setPrintPos(1,80);
-		p->ucg->printf("Open: http://192.168.0.1");
-		p->ucg->setPrintPos(1,100);
-		p->ucg->printf("And follow the dialoge");
-		p->ucg->setPrintPos(1,130);
-		p->ucg->printf("Timeout in:");
-		for( int i=900; i>0; i-- ) {
-			p->ucg->setPrintPos(120,130);
-			p->ucg->printf("%d sec  ", i);
-			sleep(1);
-		}
-		esp_restart();
-	}
-	return 0;
-}
 
 
 int update_rentry(SetupMenuValFloat * p)
@@ -742,12 +699,11 @@ void SetupMenu::setup( )
 	ver->addEntry( V.version() );
 	soft->addMenu( ver );
 
-	SetupMenuSelect * upd = new SetupMenuSelect( 	"Software Update", &select_dummy, false, OTA, true );
+	SetupMenuSelect * upd = new SetupMenuSelect( "Software Update", &_setup->get()->_software_update, true, 0, true );
 	soft->addMenu( upd );
 	upd->setHelp("Software Update over the air (OTA). Start Wifi AP, then connect to Wifi 'ESP32 OTA' and open http://192.161.0.1 to upload firmware");
-	upd->addEntry( "Start Wifi AP");
 	upd->addEntry( "Cancel");
-
+	upd->addEntry( "Start Wifi AP");
 
 	// Bluetooth
 	String btname="Bluetooth   ";

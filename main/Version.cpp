@@ -21,7 +21,7 @@ Version::Version() {
 	sscanf(tempo, "%d:%d:%d", &hora, &min, &seg);
 	mes=(strstr(nomes, omes)-nomes)/3+1;
 
-	sprintf(_version,"%02d.%02d%02d", ano%100, mes, dia );
+	sprintf(_version,"%02d.%02d%02d-%02d", ano%100, mes, dia, hora );
 }
 
 Version::~Version() {

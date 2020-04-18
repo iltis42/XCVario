@@ -537,6 +537,6 @@ void sensor(void *args){
 }
 
 extern "C" int btstack_main(int argc, const char * argv[]){
-	xTaskCreatePinnedToCore(&sensor, "sensor", 8000, NULL, 5, 0, 0);
+	xTaskCreatePinnedToCore(&sensor, "sensor", 12000, NULL, 5, 0, 0);
 	return 0;
 }

@@ -57,14 +57,17 @@ void OTA::doSoftwareUpdate(IpsDisplay * p, Setup * setup){
 		char txt[40];
 		sprintf(txt,"Timeout in %d sec  ", i);
 		p->writeText(line+2,txt);
+		std::string pro( "Progress: ");
+		pro += std::to_string( getProgress() );
+		p->writeText(line+3,pro.c_str());
 		sleep(1);
 		if( getFlashStatus() == 1 ){
-			p->writeText(line+4,"Download SUCCESS !");
+			p->writeText(line+5,"Download SUCCESS !");
 			sleep(3);
 			break;
 		}
 		if( pressed ) {
-			p->writeText(line+4,"Abort, Now Restart");
+			p->writeText(line+5,"Abort, Now Restart");
 			sleep(3);
 			break;
 		}

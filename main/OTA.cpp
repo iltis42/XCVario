@@ -58,7 +58,7 @@ void OTA::doSoftwareUpdate(IpsDisplay * p, Setup * setup){
 		sprintf(txt,"Timeout in %d sec  ", i);
 		p->writeText(line+2,txt);
 		std::string pro( "Progress: ");
-		pro += std::to_string( getProgress() );
+		pro += std::to_string( getProgress() ) + " %";
 		p->writeText(line+3,pro.c_str());
 		sleep(1);
 		if( getFlashStatus() == 1 ){

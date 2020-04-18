@@ -27,7 +27,7 @@ int ESPRotary::errors=0;
 uint64_t ESPRotary::swtime=0;
 SemaphoreHandle_t ESPRotary::xBinarySemaphore;
 TaskHandle_t xHandle;
-RingBufCPP<t_rot, 10> rb1;
+RingBufCPP<t_rot, 20> rb1;
 
 void ESPRotary::attach(RotaryObserver *obs) {
 	observers.push_back(obs);
@@ -224,13 +224,11 @@ void ESPRotary::readPos(void * args) {
 				_switch_state = newsw;
 			}
 		}
-		delay(5);
-		vTaskSuspend( NULL );
+		vTaskDelay( 20 );
 	}
 }
 
 #define NUM_LOOPS 50
-
 
 void ESPRotary::readPosInt(void * args) {
 	struct _rotbyte var;
@@ -257,11 +255,6 @@ void ESPRotary::readPosInt(void * args) {
 		var.rot |= 4;
 
 	rb1.add( var );
-
-	// Resume the suspended task.
-	BaseType_t xYieldRequired = xTaskResumeFromISR( xHandle );
-	if( xYieldRequired == pdTRUE )
-		portYIELD_FROM_ISR();
 }
 
 /////////////////////////////////////////////////////////////////

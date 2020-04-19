@@ -3,31 +3,38 @@
 
 #include "RingBufHelpers.h"
 
+
+#define SSTRLEN 100
 class SString {
 public:
 	SString() { clear();
-				idx = 0;
 	}
 	SString( SString& os) {
+		size_t len = SSTRLEN-1;
+		if( os.length() < len)
+			len = os.length();
 		memcpy(str,os.c_str(),strlen(os.c_str()));
+		str[len] = 0;
 	}
-
 	SString( char * s ) {
-		size_t len = 100;
-		if( strlen(s) < 100)
+		size_t len = SSTRLEN-1;
+		if( strlen(s) < len)
 			len = strlen(s);
 		memcpy(str,s,len);
-	};
+		str[len] = 0;
+	}
 	void add( char c ) {
-		str[idx++] = c;
+		if( idx < SSTRLEN-1 )
+			str[idx++] = c;
 	}
 	void clear() {
-		 memset(str,0,100);
+		memset(str,0,SSTRLEN);
+		idx = 0;
 	}
 	char *c_str() { return str; };
 	size_t length() { return strlen(str); }
 private:
-	char str[100];
+	char str[SSTRLEN];
 	int idx;
 };
 

@@ -27,6 +27,13 @@ public:
 		if( idx < SSTRLEN-1 )
 			str[idx++] = c;
 	}
+	void add( char *s ) {
+		size_t len = SSTRLEN-1;
+		if( strlen(s) < len)
+			len = strlen(s);
+		memcpy(str,s,len);
+		str[len] = 0;
+	}
 	void clear() {
 		memset(str,0,SSTRLEN);
 		idx = 0;

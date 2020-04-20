@@ -32,6 +32,9 @@ void ( * BTSender::_callback)(char * rx, uint16_t len);
 
 portMUX_TYPE btmux = portMUX_INITIALIZER_UNLOCKED;
 
+
+
+
 int BTSender::queueFull() {
 	if( !_enable )
 		return 1;
@@ -138,6 +141,8 @@ void BTSender::packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *p
 	}
 };
 
+
+
 void BTSender::one_shot_timer_setup(void){
 	// set one-shot timer
 	heartbeat.process = &heartbeat_handler;
@@ -145,14 +150,53 @@ void BTSender::one_shot_timer_setup(void){
 	btstack_run_loop_add_timer(&heartbeat);
 };
 
+
+#ifdef FLARM_SIM
+char *flarm[] = {
+"$PFLAA,0,11461,-9272,1436,1,AFFFFF,51,0,257,0.0,0*7A",
+"$PFLAA,0,2784,3437,216,1,AFFFFE,141,0,77,0.0,0*56",
+"$PFLAA,1,-1375,1113,64,1,AFFFFD,231,0,30,0.0,0*43",
+"$PFLAA,0,-3158,3839,1390,1,A858F3,302,0,123,-12.4,0*6B",
+"$GPRMC,084854.40,A,44xx.xxx38,N,093xx.xxx15,W,0.0,0.0,300116,,,D*43",
+"$PFLAA,0,11621,-9071,1437,1,AFFFFF,52,0,257,0.0,0*7F",
+"$PFLAA,0,2724,3485,218,1,AFFFFE,142,0,77,0.0,0*58",
+"$PFLAA,1,-1394,1089,65,1,AFFFFD,232,0,30,0.0,0*4C",
+"$PFLAA,0,-3158,3839,1384,1,A858F3,302,0,123,-12.4,0*6E",
+"$GPRMC,084855.40,A,44xx.xxx38,N,093xx.xxx15,W,0.0,0.0,300116,,,D*42"
+};
+#endif
+
+
+/* Note that the standard NMEA 0183 baud rate is only 4.8 kBaud.
+Nevertheless, a lot of NMEA-compatible devices can properly work with
+higher transmission speeds, especially at 9.6 and 19.2 kBaud.
+As any sentence can consist of 82 characters maximum with 10 bit each (including start and stop bit),
+any sentence might take up to 171 ms (at 4.8k Baud), 85 ms (at 9.6 kBaud) or 43 ms (at 19.2 kBaud).
+This limits the overall channel capacity to 5 sentences per second (at 4.8k Baud), 11 msg/s (at 9.6 kBaud) or 23 msg/s (at 19.2 kBaud).
+If  too  many  sentences  are  produced  with  regard  to  the  available  transmission  speed,
+some sentences might be lost or truncated.
+
+*/
 void btBridge(void *pvParameters){
 	SString readString;
+#ifdef FLARM_SIM
+	int i=0;
+#endif
 	while(1) {
 		TickType_t xLastWakeTime = xTaskGetTickCount();
-		while (Serial2.available()) {
+#ifndef FLARM_SIM
+		bool end=false;
+		while (Serial2.available() && (readString.length() <100) && !end ) {
 			char c = Serial2.read();
 			readString.add(c);
+			if( c == '\n' )
+				end = true;
 		}
+#else
+		readString.add( flarm[i++] );
+		if(i>9)
+			i=0;
+#endif
 		if (readString.length() > 0) {
 			printf("Serial RX: %s\n", readString.c_str() );
 			portENTER_CRITICAL_ISR(&btmux);
@@ -160,7 +204,7 @@ void btBridge(void *pvParameters){
 			portEXIT_CRITICAL_ISR(&btmux);
 			readString.clear();
 		}
-		vTaskDelayUntil(&xLastWakeTime, 50/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&xLastWakeTime, 20/portTICK_PERIOD_MS); // at max 50 msg per second allowed
 	}
 }
 

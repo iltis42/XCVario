@@ -15,6 +15,7 @@
 #include <freertos/semphr.h>
 #include "freertos/FreeRTOS.h"
 #include "esp_system.h"
+#include "driver/pcnt.h"
 
 
 class RotaryObserver{
@@ -29,43 +30,12 @@ public:
 private:
 };
 
-typedef struct _rotbyte {
-	uint64_t time;
-	int rot;
-} t_rot;
-
-struct ring_buffer
-{
-	ring_buffer( size_t cap ) : buffer(cap) {}
-	bool empty() const { return sz == 0 ; }
-	bool full() const { return sz == buffer.size() ; }
-
-	void push( int i )
-	{
-		if( last >= buffer.size() ) last = 0 ;
-		buffer[last] = i ;
-		++last ;
-		if( full() ) first = (first+1) %  buffer.size() ;
-		else ++sz ;
-	}
-	int& operator[] ( size_t pos )
-	{
-		auto p = ( first + pos ) % buffer.size() ;
-		return buffer[p] ;
-	}
-
-private:
-	std::vector<int> buffer ;
-	size_t first = 0 ;
-	size_t last = 0 ;
-	size_t sz = 0 ;
-};
 
 enum _event { NONE, PRESS, LONG_PRESS, RELEASE, UP, DOWN, ERROR, MAX_EVENT };
 
 class ESPRotary {
 public:
-    ESPRotary();
+    ESPRotary() {};
     void begin(gpio_num_t clk, gpio_num_t dt, gpio_num_t sw );
     void attach( RotaryObserver *obs);
     static void readPos( void * args );
@@ -75,22 +45,11 @@ public:
 
 private:
     xSemaphoreHandle swMutex;
-    static QueueHandle_t q1,q2;
-    static TickType_t xLastWakeTime;
+
 	static std::vector<RotaryObserver *> observers;
     static gpio_num_t clk, dt, sw;
-    static uint8_t state;
-    static uint8_t _switch;
-    static int dir;
-    static int last_dir;
-    static ring_buffer rb;
-    static int last;
-    static int _switch_state;
-    static SemaphoreHandle_t xBinarySemaphore;
-    static int n;
-    static long lastmilli;
-    static int errors;
-    static uint64_t swtime;
+    static pcnt_config_t enc;
+    static int16_t r_enc_count;
 };
 
 #endif

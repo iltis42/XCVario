@@ -606,21 +606,19 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		if( UNITALT == 2 ){ //FL
 			ucg->printf("FL %-4d  ", int((altitude*0.0328084) + 0.5)  );
 		}
-
 		prefalt = alt;
-		vTaskDelay(1);
 	}
 	// MC Value
 	int MC = _setup->get()->_MC * 10;
 	if( MC != mcalt ) {
-			ucg->setFont(ucg_font_fur14_hf);
-			ucg->setPrintPos(0,DISPLAY_H);
+			ucg->setFont(ucg_font_fub11_hr);
+			ucg->setPrintPos(5,DISPLAY_H-5);
 			ucg->setColor(COLOR_HEADER);
 			ucg->printf("MC:");
 			ucg->setColor(COLOR_WHITE);
+			ucg->setFont(ucg_font_fur14_hf);
 			ucg->printf("%0.1f", ((float)MC)/10 );
 			mcalt=MC;
-			vTaskDelay(1);
 		}
 
     // Temperature Value
@@ -632,23 +630,24 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		else
 			ucg->printf(" ---   ");
 		tempalt=(int)(temp*10);
-		vTaskDelay(1);
 	}
 	// Battery Symbol
+#define BATX (DISPLAY_W-10)
+#define BATY (DISPLAY_H-12)
 	int chargev = (int)( volt *10 );
 	if ( chargealt != chargev ) {
 		charge = (int)(( volt - _setup->get()->_bat_low_volt )*100)/( _setup->get()->_bat_full_volt - _setup->get()->_bat_low_volt );
 		if(charge < 0)
 			charge = 0;
-		if( charge > 99 )
-			charge = 99;
+		if( charge > 100 )
+			charge = 100;
 		if( (tick%100) == 0 )  // check setup changes all 10 sec
 		{
 			yellow =  (int)(( _setup->get()->_bat_yellow_volt - _setup->get()->_bat_low_volt )*100)/( _setup->get()->_bat_full_volt - _setup->get()->_bat_low_volt );
 			red = (int)(( _setup->get()->_bat_red_volt - _setup->get()->_bat_low_volt )*100)/( _setup->get()->_bat_full_volt - _setup->get()->_bat_low_volt );
 		}
-		ucg->drawBox( DISPLAY_W-40,DISPLAY_H-12, 36, 12  );  // Bat body square
-		ucg->drawBox( DISPLAY_W-4,DISPLAY_H-9, 3, 6  );      // Bat pluspole pimple
+		ucg->drawBox( BATX-40,BATY-2, 36, 12  );  // Bat body square
+		ucg->drawBox( BATX-4, BATY+1, 3, 6  );      // Bat pluspole pimple
 		if ( charge > yellow )  // >25% grün
 			ucg->setColor( COLOR_GREEN ); // green
 		else if ( charge < yellow && charge > red )
@@ -658,20 +657,20 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		int chgpos=(charge*32)/100;
 		if(chgpos <= 4)
 			chgpos = 4;
-		ucg->drawBox( DISPLAY_W-40+2,DISPLAY_H-10, chgpos, 8  );  // Bat charge state
+		ucg->drawBox( BATX-40+2,BATY, chgpos, 8  );  // Bat charge state
 		ucg->setColor( DARK_GREY );
-		ucg->drawBox( DISPLAY_W-40+2+chgpos,DISPLAY_H-10, 32-chgpos, 8 );  // Empty bat bar
+		ucg->drawBox( BATX-40+2+chgpos,BATY, 32-chgpos, 8 );  // Empty bat bar
 		ucg->setColor( COLOR_WHITE );
-		ucg->setFont(ucg_font_fur14_hf);
-		ucg->setPrintPos(DISPLAY_W-86,DISPLAY_H);
-		ucg->printf("%3d%%", charge);
+		ucg->setFont(ucg_font_fub11_hr);
+		ucg->setPrintPos(BATX-40,BATY-8);
+		ucg->printf("%3d%%  ", charge);
 		chargealt = chargev;
-		vTaskDelay(1);
+		vTaskDelay(2);
 	}
 	if( charge < red ) {  // blank battery for blinking
 		if( (tick%10) == 0 ) {
 			ucg->setColor( COLOR_BLACK );
-			ucg->drawBox( DISPLAY_W-40,DISPLAY_H-12, 40, 12  );
+			ucg->drawBox( BATX-40,BATY-2, 40, 12  );
 		}
 		if( ((tick+5)%10) == 0 )  // trigger redraw
 		{

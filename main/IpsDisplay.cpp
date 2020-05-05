@@ -559,7 +559,6 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 			ucg->drawVLine( FIELD_START+PMLEN/2, YVARMID-PMLEN/2, PMLEN );
 			ucg->drawVLine( FIELD_START+PMLEN/2+1, YVARMID-PMLEN/2, PMLEN );
 		}
-		vTaskDelay(1);
 		ucg->setPrintPos(FIELD_START+SIGNLEN,YVAR);
 		float tep=te;
 		if( tep < 0 )
@@ -665,7 +664,6 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		ucg->setPrintPos(BATX-40,BATY-8);
 		ucg->printf("%3d%%  ", charge);
 		chargealt = chargev;
-		vTaskDelay(2);
 	}
 	if( charge < red ) {  // blank battery for blinking
 		if( (tick%10) == 0 ) {
@@ -700,7 +698,6 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 			ucg->drawLine( btx, bty, btx-BTSIZE, bty+BTSIZE );
 		}
 		btqueue = btq;
-		vTaskDelay(1);
 	}
 
  	int s2fclip = s2fd;
@@ -725,7 +722,6 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
  		drawGaugeTriangle( ty, COLOR_BLACK );
  		drawGaugeTriangle( s2fclip, COLOR_BLACK, true );
  		s2fmodealt = s2fmode;
- 		vTaskDelay(1);
  	}
 
 	if ( average_climb !=  (int)(acl*10) ){
@@ -733,7 +729,6 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		drawLegend( true );
 		average_climb = (int)(acl*10);
 		drawAvgSymbol(  (average_climb*_pixpmd)/10, COLOR_RED );
-		vTaskDelay(1);
 	}
 
  	// TE Stuff
@@ -775,7 +770,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		}
 	    tyalt = ty;
 	    pyalt = py;
-	    vTaskDelay(1);
+	    // vTaskDelay(3);
 
 	}
 
@@ -815,7 +810,6 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
  		ucg->setColor(  COLOR_WHITE  );
 		ucg->printf("%3d ", iasp);
 		iasalt = ias;
-		vTaskDelay(1);
  	}
  	// S2F command trend triangle
  	if( (int)s2fd != s2fdalt ) {
@@ -835,7 +829,6 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		int fl=ucg->getStrWidth("100");
 		ucg->setPrintPos(IASVALX, YS2F-fh);
 		ucg->printf("%3d  ", (int)(s2falt+0.5)  );
-		vTaskDelay(1);
 		// draw S2F Delta
 		// erase old
 		ucg->setColor(  COLOR_BLACK  );
@@ -857,7 +850,6 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 			ucg->setPrintPos( FIELD_START+S2FST+(S2F_TRISIZE/2)-fl/2,ypos );
 			ucg->printf(s);
 		}
-		vTaskDelay(1);
 		yposalt = ypos;
  		ucg->setClipRange( FIELD_START+S2FST, dmid-MAXS2FTRI, S2F_TRISIZE, (MAXS2FTRI*2)+1 );
  		bool clear = false;
@@ -888,7 +880,6 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 						   FIELD_START+S2FST+S2F_TRISIZE, dmid,
 						   FIELD_START+S2FST+(S2F_TRISIZE/2), dmid+(int)s2fd );
 
- 		vTaskDelay(1);
  		ucg->undoClipRange();
  		// green bar for optimum speed within tacho
  		ucg->setClipRange( FIELD_START, dmid-(MAXS2FTRI), IASLEN+6, (MAXS2FTRI*2) );

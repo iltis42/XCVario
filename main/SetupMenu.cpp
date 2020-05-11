@@ -285,7 +285,7 @@ void MenuEntry::showhelp( int y ){
 		}
 		// printf("showhelp number of words: %d\n", w);
 		int x=1;
-		int y=180;
+		int y=hypos;
 		ucg->setFont(ucg_font_ncenR14_hr);
 		for( int p=0; p<w; p++ )
 		{
@@ -497,9 +497,10 @@ void SetupMenu::setup( )
 	SetupMenuValFloat * vda = new SetupMenuValFloat( 	"Damping",
 			&_setup->get()->_vario_delay,
 			"sec",
-			0.5, 10.0,
+			2.0, 10.0,
 			0.1 );
-	vda->setHelp("Response time, time constant of Vario low pass filter");
+	vda->setHelp("Response time, time constant of Vario low pass kalman filter");
+	vae->addMenu( vda );
 
 	SetupMenuValFloat * vccm = new SetupMenuValFloat( "Mean Climb Minimum",
 				&_setup->get()->_core_climb_min,
@@ -635,7 +636,7 @@ void SetupMenu::setup( )
 	}
 
 	SetupMenu * pa = new SetupMenu( "PolarAdjust" );
-	pa->setHelp( "Adjust speed/sink at representative points of selected polar in commonly used metric system for polars");
+	pa->setHelp( "Adjust Polar at 3 points of selected polar in commonly used metric system for Polars", 230 );
 	poe->addMenu( pa );
 
 	SetupMenuValFloat * wil = new SetupMenuValFloat(
@@ -767,8 +768,8 @@ void SetupMenu::setup( )
 	SetupMenuSelect * diso = new SetupMenuSelect( "Display Orientation",	&_setup->get()->_display_orientation, true );
 	sye->addMenu( diso );
 	diso->setHelp( "Display Orientation either NORMAL means control panel is right, or TOPDOWN means control panel is left");
-	diso->addEntry( "NORMAL, keys right");
-	diso->addEntry( "TOPDOWN, keys left");
+	diso->addEntry( "NORMAL (Rotary left)");
+	diso->addEntry( "TOPDOWN (Rotary right)");
 
 	// Altimeter
 	SetupMenuSelect * al = new SetupMenuSelect( 	"Altimeter Source",	&_setup->get()->_alt_select );

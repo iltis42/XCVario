@@ -39,7 +39,7 @@ public:
 		else
 			pressed = true;
 	}
-	void setHelp( const char *txt ) { helptext = (char*)txt; };
+	void setHelp( const char *txt, int y=180 ) { helptext = (char*)txt; hypos = y; };
 	void showhelp( int y );
 	void clear();
 	void uprintf( int x, int y, const char* format, ...);
@@ -63,6 +63,7 @@ public:
 	bool   pressed;
 	bool   long_pressed;
 	char   *helptext;
+	int    hypos;
 	unsigned char y;
 	static Ucglib_ILI9341_18x240x320_HWSPI *ucg;
 	static float volume;

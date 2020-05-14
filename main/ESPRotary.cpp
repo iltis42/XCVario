@@ -32,7 +32,7 @@ void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
 	enc.unit = PCNT_UNIT_0;
 	enc.channel = PCNT_CHANNEL_0;
 
-	enc.pos_mode = PCNT_COUNT_DEC; //Count Only On Rising-Edges
+	enc.pos_mode = PCNT_COUNT_INC; //Count Only On Rising-Edges
 	enc.neg_mode = PCNT_COUNT_DIS;	// Discard Falling-Edge
 
 	enc.lctrl_mode = PCNT_MODE_KEEP;    // Rising A on HIGH B = CW Step

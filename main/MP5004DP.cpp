@@ -74,7 +74,7 @@ bool MP5004DP::doOffset( bool force ){
        printf("Offset is plausible\n");
 	   p = readPascal();
 	   printf("Pressure offset (Pascal): %0.1f\n",p);
-       if( p > 30.0 ){
+       if( p > 124.0 ){   // or 50 km/h
     	  flying = true;
     	  printf("Flying state: P > 30\n");
        }

@@ -24,6 +24,7 @@ The design supports the follwing sensors:
 * Airspeed
 * Variometer
 * Barometric Altitude
+* Battery Voltage
 
 The ESP32 module contains a bluetooth sender module, so we are able to transmit all data to XCSoar in [OpenVario format](https://github.com/iltis42/OpenIVario/blob/master/putty.log), so XCSoar can operate as full glide computer with TE-Vario, Barometric Altitude, Speed and more.
 

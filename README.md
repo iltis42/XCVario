@@ -55,4 +55,5 @@ The Soft- and Hardware features:
 - Detailed Setup Menu
 - Serial to Bluetooth Bridge e.g. for FLARM
 - Serial Output of OpenVarion Format NMEA data
+- Software Update OverTheAir (OTA) via WiFi Access Point
 

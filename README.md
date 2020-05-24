@@ -4,9 +4,8 @@ ESP32 based lean Variometer system with OpenVario Interface
 ![Vario]( https://raw.githubusercontent.com/iltis42/OpenIVario/master/images/Vario3D/vario-perspectiv.png )
 ![Vario Back]( https://github.com/iltis42/OpenIVario/blob/master/images/Vario3D/vario-perspectiv-back.png )
 
-
-
-At the begin i want to show a short Demo of the variometer, including sensitivity and full sunlight test, followed by an explanation of various setup options and how to use. Its now the third year of this project, moving now to a colored display this winter we had built a low number of devices with a 3D printed housing. Demo vidoes with prototypes based on that see below. The second generation vario with some more features uses a smaller CNC fabricated aluminium housing and there is a bigger lot of devices now planned.
+At the begin i want to show a short Demo of the variometer, including sensitivity and full sunlight test, followed by an explanation of various setup options and how to use. Its now year four of this project, moving now to a colored display this winter we had built a hand full of devices with a 3D printed housing. Demo videos with prototypes based on that initial hardware see below. 
+The second generation Variometer comes with some more features like software update over the air, serial output and bridge and uses a smaller CNC fabricated aluminium housing. There is a bigger lot of devices now planned based on this hardware to be available in near future.
 
 * [Quick Demo on YouTube](https://www.youtube.com/watch?v=Piu5SiNPaRg)
 * [Vario Sensitivity Test](https://www.youtube.com/watch?v=RqFLOQ9wvgY)

@@ -54,5 +54,5 @@ The Soft- and Hardware features:
 - Schematic Display Board: [Display Schematic](https://github.com/iltis42/OpenIVario/blob/master/images/ivario-display.pdf)
 - Connector Pinout: [Sub-D Connector](https://github.com/iltis42/OpenIVario/blob/master/images/subd.pdf)
 
-![IPS Display 2.4 inch](https://raw.githubusercontent.com/iltis42/OpenIVario/master/images/IMG_20200207_000831_resized_20200207_120901714.jpg)
-![Sensor Board PCB](https://github.com/iltis42/OpenIVario/blob/master/images/Sensorboard.jpg?raw=true)
+![IPS Display 2.4 inch]( https://raw.githubusercontent.com/iltis42/OpenIVario/master/images/Vario3D/vario-perspectiv.png )
+

@@ -20,10 +20,10 @@ The project is dedicated to my new flight computer development using ESP32 WROOM
 It delivers data in the well known and documented OperVario format to any flight computer running XC-Soar.
 
 The design supports the follwing sensors:
-* Outside Temperature
+* TE Variometer
 * Airspeed
-* Variometer
 * Barometric Altitude
+* Outside Temperature
 * Battery Voltage
 
 The ESP32 module contains a bluetooth sender module, so we are able to transmit all data to XCSoar in [OpenVario format](https://github.com/iltis42/OpenIVario/blob/master/putty.log), so XCSoar can operate as full glide computer with TE-Vario, Barometric Altitude, Speed and more.

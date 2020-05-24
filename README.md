@@ -1,6 +1,11 @@
 # OpenIVario
 ESP32 based lean Variometer system with OpenVario Interface
 
+![Vario]( https://raw.githubusercontent.com/iltis42/OpenIVario/master/images/Vario3D/vario-perspectiv.png )
+![Vario Back]( https://github.com/iltis42/OpenIVario/blob/master/images/Vario3D/vario-perspectiv-back.png )
+
+
+
 At the begin i want to show a short Demo of the variometer, including sensitivity and full sunlight test, followed by an explanation of various setup options and how to use. Its now the third year of this project, moving now to a colored display this winter we had built a low number of devices with a 3D printed housing. Demo vidoes with prototypes based on that see below. The second generation vario with some more features uses a smaller CNC fabricated aluminium housing and there is a bigger lot of devices now planned.
 
 * [Quick Demo on YouTube](https://www.youtube.com/watch?v=Piu5SiNPaRg)
@@ -50,8 +55,4 @@ The Soft- and Hardware features:
 - Detailed Setup Menu
 - Serial to Bluetooth Bridge e.g. for FLARM
 - Serial Output of OpenVarion Format NMEA data
-
-
-
-![IPS Display 2.4 inch]( https://raw.githubusercontent.com/iltis42/OpenIVario/master/images/Vario3D/vario-perspectiv.png )
 

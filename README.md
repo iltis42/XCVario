@@ -9,10 +9,10 @@ The project is dedicated to my open source and open hardware flight computer dev
 * Evolution
 The history of the poject features branches that can be selected in github with the Branch: dropdown. Default is the master branch where ongoing development takes place. Follwing is a overview over existing branches.
 
-1. DM-R1
+1. [DM-R1](https://github.com/iltis42/OpenIVario/tree/DM-R1)
 The inital 'Dot Matrix' release 1 features a 128x64 pixel monocrome LCD display. It delivers already all data in the well known and documented OperVario format to any flight computer running XC-Soar, but had limitation's in grafical resolution. Beside vario, speed to fly command arrow, and altitude, further informations like battery voltage, temperature and MC value are mapped to a single field that changes every 3 seconds. A handful of prototypes has been build and tested in air with several flight computers. The sensor board with 47x102mm dimesions hosts several modules and is mounted horizontal in a cyclindric housing through the I-Panel, while the display keeps in front.
 
-2. LV-R2
+2. [LV-R2](https://github.com/iltis42/OpenIVario/tree/LV-R2)
 The 'Long Vario' release 2 features a new technology 320x240 pixel IPS LCS display, readable from almost any angle (80/80/80) with 500 nits brightness. The sensor board and mostly the housing the same as in the DM-R1 type, but diplay is wider and features color so the arrangement of data on the display has been reworked, more things are added like a moving gauge for IAS, permanant display of MC, temperature and battery charge state and bluetooth connection indication, and color is used to visualize positive and netative values. A low number of prototypes has been made by use of a 3D printed ABS housing, shielded by copper foil and mounted from front of I-Panel. 
 
 3. master  

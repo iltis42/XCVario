@@ -4,8 +4,24 @@ Software for ESP32 based lean Variometer system with OpenVario Interface running
 ![Vario]( https://raw.githubusercontent.com/iltis42/OpenIVario/master/images/Vario3D/vario-perspectiv.png )
 ![Vario Back]( https://github.com/iltis42/OpenIVario/blob/master/images/Vario3D/vario-perspectiv-back.png )
 
+The project is dedicated to my open source and open hardware flight computer development using ESP32 WROOM development board plus modern sensors such as BMP280, DS1820b, MP5004DP. 
+
+* Evolution
+The history of the poject features branches that can be selected in github with the Branch: dropdown. Default is the master branch where ongoing development takes place. Follwing is a overview over existing branches.
+
+1. DM-R1
+The inital 'Dot Matrix' release 1 features a 128x64 pixel monocrome LCD display. It delivers already all data in the well known and documented OperVario format to any flight computer running XC-Soar, but has limitation's in grafical resolution, beside vario, speed to fly command arrow, and altitude, further informations like battery voltage, temperature and MC value are mapped to a single field that changes every 3 seconds. A handful of prototypes has been build and tested in air with several flight computers. The sensor board with 47x102mm dimesions hosts several modules and is mounted horizontal in a cyclindric housing through the I-Panel, while the display keeps in front.
+
+2. LV-R2
+The 'Long Vario' release 2, features a new technology 320x240 pixel IPS LCS display, readable from almost any angle (80/80/80) with 500 nits brightness. The sensor board and mostly the housing the same as in the DM-R1 type, but diplay is wider and features color so the arrangement of data on the display has been reworked, more things are added like a moving gauge for IAS, permanant display of MC, temperature and battery charge state and bluetooth connection indication, and color is used to visualize positive and netative values. A low number of prototypes has been made by use of a 3D printed ABS housing, shielded by copper foil and mounted from front of I-Panel. 
+
+3. master  
+The third generation Variometer uses the same display, but comes with a new sensor board 61x64 mm, vertically mounted and
+some more features like software update over the air, serial output and serial to bluetooth bridge and uses a smaller CNC fabricated aluminium housing that is mounted from back of the I-Panel as any other standard instrument. There is a bigger lot of devices now planned based on this hardware to be available in near future.
+
+
 At the begin i want to show a short Demo of the variometer, including sensitivity and full sunlight test, followed by an explanation of various setup options and how to use. Its now year four of this project, moving now to a colored display this winter we had built a hand full of devices with a 3D printed housing. Demo videos with prototypes based on that initial hardware see below. 
-The second generation Variometer comes with some more features like software update over the air, serial output and bridge and uses a smaller CNC fabricated aluminium housing. There is a bigger lot of devices now planned based on this hardware to be available in near future.
+
 
 * [Quick Demo on YouTube](https://www.youtube.com/watch?v=Piu5SiNPaRg)
 * [Vario Sensitivity Test](https://www.youtube.com/watch?v=RqFLOQ9wvgY)
@@ -20,8 +36,6 @@ The second generation Variometer comes with some more features like software upd
 * [Setup XCSoar to connect with Vario](https://www.youtube.com/watch?v=LDgnvLoTekU&t=95s)
 
 
-The project is dedicated to my new flight computer development using ESP32 WROOM development board plus modern sensors such as BMP280, DS1820b, MP5004DP, and colored sunlight readable display display.
-It delivers data in the well known and documented OperVario format to any flight computer running XC-Soar.
 
 The design supports the follwing sensors:
 * TE Variometer

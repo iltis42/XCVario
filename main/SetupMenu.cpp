@@ -824,6 +824,11 @@ void SetupMenu::setup( )
 	s2lo->addEntry( "Disable");
 	s2lo->addEntry( "Enable");
 
+	SetupMenuSelect * sout = new SetupMenuSelect( "Serial TX",	&_setup->get()->_serial2_tx, true );
+	rs232->addMenu( sout );
+	sout->setHelp( "Serial RS232 (TTL) option to transmit OpenVario data on serial RX (pin3 RJ45) to connect serial devices");
+	sout->addEntry( "Disable");
+	sout->addEntry( "Enable");
 
 
 	SetupMenu::display();

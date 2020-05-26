@@ -298,8 +298,8 @@ void sensor(void *args){
 	btsender.begin( mysetup.get()->_blue_enable,
 			        mysetup.getBtName(),
 				    mysetup.get()->_serial2_speed,
-				    mysetup.get()->_serial2_rxloop );
-
+				    mysetup.get()->_serial2_rxloop,
+					mysetup.get()->_serial2_tx );
 
     // int valid;
 	temperature = ds18b20.getTemp();
@@ -525,7 +525,7 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280BA, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
-	xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096, NULL, 20, bpid, 0);
+	xTaskCreatePinnedToCore(&readBMP, "readBMP", 8192, NULL, 20, bpid, 0);
 	xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 30, apid, 0);
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 10, dpid, 0);
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 8000, NULL, 3, tpid, 0);

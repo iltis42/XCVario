@@ -266,12 +266,17 @@ void sensor(void *args){
 	esp_log_level_set("*", ESP_LOG_ERROR);
 	NVS.begin();
 	mysetup.begin();
+	btsender.begin( mysetup.get()->_blue_enable,
+			        mysetup.getBtName(),
+				    mysetup.get()->_serial2_speed,
+				    mysetup.get()->_serial2_rxloop,
+					mysetup.get()->_serial2_tx );
+
 
 	setupv.begin();
 	ADC.begin();  // for battery voltage
 
-
-	sleep( 1 );
+	sleep( 2 );
 
 	xMutex=xSemaphoreCreateMutex();
 	uint8_t t_sb = 0;   //stanby 0: 0,5 mS 1: 62,5 mS 2: 125 mS
@@ -294,12 +299,6 @@ void sensor(void *args){
 		ota.begin( &Rotary );
 		ota.doSoftwareUpdate( &display, &mysetup );
 	}
-	printf("BT Sender init, device name: %s\n", mysetup.getBtName() );
-	btsender.begin( mysetup.get()->_blue_enable,
-			        mysetup.getBtName(),
-				    mysetup.get()->_serial2_speed,
-				    mysetup.get()->_serial2_rxloop,
-					mysetup.get()->_serial2_tx );
 
     // int valid;
 	temperature = ds18b20.getTemp();
@@ -343,7 +342,7 @@ void sensor(void *args){
 	    display.writeText( line++, "Baro Sensor: OK");
 	    failed_tests += "Baro Sensor Test: PASSED\n";
 	}
-
+	esp_task_wdt_reset();
 
 	// bmpTE.selfTest(te_t, te_p);
 	if( ! bmpTE.selfTest(te_t, te_p) ) {
@@ -387,7 +386,7 @@ void sensor(void *args){
 	bmpVario.begin( &bmpTE, &mysetup );
 	bmpVario.setup();
 	VaSoSW.begin( GPIO_NUM_12 );
-
+	esp_task_wdt_reset();
 	printf("Speed sensors init..\n");
 	MP5004DP.begin( GPIO_NUM_21, GPIO_NUM_22, mysetup.get()->_speedcal, &mysetup);  // sda, scl
 	uint16_t val;
@@ -413,9 +412,9 @@ void sensor(void *args){
 	}
 
 	MP5004DP.doOffset();
-
+	printf("Audio begin\n");
 	Audio.begin( DAC_CHANNEL_1, GPIO_NUM_0, &mysetup );
-	// Poti and Audio test here.
+	printf("Poti and Audio test\n");
 	if( !Audio.selfTest() ) {
 		printf("Error: Digital potentiomenter selftest failed\n");
 		display.writeText( line++, "Digital Poti: Failure");
@@ -442,7 +441,12 @@ void sensor(void *args){
 		failed_tests += "Battery Voltage Sensor: PASSED\n";
 	}
 
-	sleep( 0.1 );
+	printf("BT Sender init, device name: %s\n", mysetup.getBtName() );
+    esp_task_wdt_reset();
+
+
+
+	sleep( 0.5 );
 	if( mysetup.get()->_blue_enable ) {
 		if( btsender.selfTest() ){
 			display.writeText( line++, "Bluetooth: OK");
@@ -458,7 +462,7 @@ void sensor(void *args){
 	s2f.change_mc_bal();
 	Version myVersion;
 	printf("Program Version %s\n", myVersion.version() );
-
+	esp_task_wdt_reset();
 	// Audio.mute( false );
 	gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);  // blue LED, maybe use for BT connection
 
@@ -517,7 +521,7 @@ void sensor(void *args){
 		SetupMenuValFloat::showQnhMenu();
 		xSemaphoreGive(xMutex);
 	}
-
+	esp_task_wdt_reset();
 	Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
 
 	gpio_set_pull_mode(RESET_Display, GPIO_PULLUP_ONLY );

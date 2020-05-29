@@ -25,7 +25,7 @@ bool      BTSender::_enable;
 bool      BTSender::bluetooth_up = false;
 uint8_t   BTSender::rfcomm_channel_nr = 1;
 uint16_t  BTSender::rfcomm_channel_id = 0;
-uint8_t   BTSender::spp_service_buffer[100];
+uint8_t   BTSender::spp_service_buffer[200]; // 100
 btstack_timer_source_t BTSender::heartbeat;
 btstack_packet_callback_registration_t BTSender::hci_event_callback_registration;
 void ( * BTSender::_callback)(char * rx, uint16_t len);
@@ -220,9 +220,9 @@ void BTSender::begin( bool enable_bt, char * bt_name, int speed, bool bridge, bo
 	_enable = enable_bt;
 	if( speed && serial_tx )
 		_serial_tx = true;
-	hci_dump_enable_log_level( ESP_LOG_INFO, 1 );
+	hci_dump_enable_log_level( ESP_LOG_INFO, 0 );
 	hci_dump_enable_log_level( ESP_LOG_ERROR, 1 );
-	hci_dump_enable_log_level( ESP_LOG_DEBUG, 1 );
+	hci_dump_enable_log_level( ESP_LOG_DEBUG, 0 );
 	if( _enable ) {
 		l2cap_init();
 		le_device_db_init();   // new try 28-09
@@ -241,8 +241,8 @@ void BTSender::begin( bool enable_bt, char * bt_name, int speed, bool bridge, bo
 		sdp_init();
 		hci_power_control(HCI_POWER_ON);
 	}
-	if( speed != 0 ){
-    	printf("Serial enabled with speed: %d baud: %d\n",  speed, baud[speed] );
+	if( (speed != 0) && (bridge || _serial_tx)){
+    	printf("Serial TX or Bridge enabled with speed: %d baud: %d\n",  speed, baud[speed] );
     	Serial2.begin(baud[speed],SERIAL_8N1,16,17);   //  IO16: RXD2,  IO17: TXD2
     }
 	if( bridge && speed ) {

@@ -2,7 +2,7 @@
 #include "sdkconfig.h"
 #include "math.h"
 #include "string"
-
+#include "esp_task_wdt.h"
 
 // MP5004DP::MP5004DP(){
 //
@@ -43,9 +43,9 @@ bool MP5004DP::selfTest(uint16_t& val)
  *  614   812   1024 + add +-1% for ADC
  */
 
-bool MP5004DP::offsetPlausible(uint16_t offset )
+bool MP5004DP::offsetPlausible(uint16_t aoffset )
 {
-	if( (offset > 608 ) && (offset < 1034 )  )
+	if( (aoffset > 608 ) && (aoffset < 1034 )  )
 		return true;
 	else
 		return false;
@@ -62,14 +62,14 @@ bool MP5004DP::doOffset( bool force ){
 	printf("MP5004DP looks like have device\n");
 	// std::string _offset_nvs_key( "OFFSET4" );
 	printf("MP5004DP key initialized\n");
-	_offset = &_setup->get()->_offset;
+	offset = _setup->get()->_offset;
 
-	printf("MP5004DP got offset from NVS: %0.1f\n", *_offset );
+	printf("MP5004DP got offset from NVS: %0.1f\n", offset );
     // return true; // ####
-	printf("Current _offset: %0.1f\n",*_offset);
+	printf("Current _offset: %0.1f\n",offset);
 	bool flying = false;
 	float p;
-	bool plausible = offsetPlausible( *_offset );
+	bool plausible = offsetPlausible( offset );
     if( plausible ){
        printf("Offset is plausible\n");
 	   p = readPascal();
@@ -92,11 +92,14 @@ bool MP5004DP::doOffset( bool force ){
 	 		MCP.readRaw(raw);
 	 		rawOffset += raw;
 	 		vTaskDelay(10 / portTICK_PERIOD_MS);
+	 		esp_task_wdt_reset();
 	 	}
-   	    *_offset = rawOffset / 100;
-	   	if( offsetPlausible( *_offset ) )
+   	    offset = rawOffset / 100;
+	   	if( offsetPlausible( offset ) )
 	   	{
-	   	   printf("Offset retrival ok, new offset: %f\n", *_offset);
+	   	   printf("Offset retrival ok, new offset: %f\n", offset);
+	       _setup->get()->_offset = offset;
+	       printf("Offset taken over\n");
 	   	   _setup->commit();
   		   printf("Stored new offset in NVS\n");
 	    }
@@ -117,7 +120,7 @@ float MP5004DP::readPascal( float minimum ){
 		return 0.0;
 	}
 	float val = MCP.readAVG( _alpha );
-	float _pascal = (val - *_offset) * correction * ((100.0 +_speedcal) / 100.0);
+	float _pascal = (val - offset) * correction * ((100.0 +_speedcal) / 100.0);
     if ( (_pascal < minimum) && (minimum != 0) ) {
 	  _pascal = 0.0;
 	};

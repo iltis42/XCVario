@@ -115,7 +115,7 @@ void Setup::begin() {
 bool Setup::checkSum( bool set ) {
 	uint32_t cs=0;
 	uint8_t * p=(uint8_t *)&_setup;
-	for( int i=0; i< sizeof(_setup)-4; i++ )
+	for( int i=0; i< sizeof(_setup)-4; i+=4 )
 		cs += *p++;
 	if( set == true ) {
 	   _setup._checksum = cs;
@@ -137,6 +137,7 @@ void Setup::commit( ) {
 
 	bool success;
 	checkSum( true );
+    printf("New NVS checksum %04X\n", _setup._checksum );
 	success = NVS.setObject("SetupXC", &_setup, sizeof(_setup) );
 	if ( success != true ){
 		printf( "Error storing data NVS, maybe HW defect\n");

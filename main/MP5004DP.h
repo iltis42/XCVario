@@ -44,7 +44,7 @@ const float min_pascal = 10.0;
 class MP5004DP {
 public:
 	MP5004DP() {
-		_offset = 0;
+		offset = 0;
 	    _alpha = alpha;
 	    _speedcal = 0.0;
 	    _setup = 0;
@@ -58,7 +58,7 @@ public:
 	bool offsetPlausible( uint16_t offset );
 
 private:
-	float *_offset;
+	float offset;
 	float _speedcal;
 	float _alpha;
 	bool _haveDevice;

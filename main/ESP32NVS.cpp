@@ -44,7 +44,11 @@ bool ESP32NVS::erase(std::string key){
 
 bool ESP32NVS::commit(){
   _err = nvs_commit(_nvs_handle);
-  if(_err != ESP_OK) return false;
+  if(_err != ESP_OK)  {
+	  printf("ESP32NVS::commit() error\n");
+	  return false;
+  }
+  printf("ESP32NVS::commit() OK\n");
   return true;
 }
 
@@ -106,7 +110,11 @@ bool ESP32NVS::setString(std::string key, std::string value){
 
 bool ESP32NVS::setObject(std::string key, void* value, size_t length){
   _err = nvs_set_blob(_nvs_handle, (char*)key.c_str(), value, length);
-  if(_err != ESP_OK) return false;
+  if(_err != ESP_OK) {
+	  printf("ESP32NVS::setObject() error\n");
+	  return false;
+  }
+  printf("ESP32NVS::setObject() OK\n");
   return commit();
 }
 

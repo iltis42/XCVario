@@ -92,16 +92,19 @@ bool MP5004DP::doOffset( bool force ){
 	 		MCP.readRaw(raw);
 	 		rawOffset += raw;
 	 		vTaskDelay(10 / portTICK_PERIOD_MS);
-	 		esp_task_wdt_reset();
 	 	}
    	    offset = rawOffset / 100;
 	   	if( offsetPlausible( offset ) )
 	   	{
-	   	   printf("Offset retrival ok, new offset: %f\n", offset);
-	       _setup->get()->_offset = offset;
-	       printf("Offset taken over\n");
-	   	   _setup->commit();
-  		   printf("Stored new offset in NVS\n");
+	   	   printf("Offset procedure finished, offset: %f\n", offset);
+	   	   if( _setup->get()->_offset != offset ){
+	          _setup->get()->_offset = offset;
+	          printf("New Offset to take over in NVS\n");
+	   	      _setup->commit();
+  		      printf("Stored new offset in NVS\n");
+	   	   }
+	   	   else
+	   		   printf("New offset equal old value\n");
 	    }
 	   	else{
 	   		printf("Offset out of tolerance, ignore odd offset value\n");

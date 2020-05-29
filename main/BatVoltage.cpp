@@ -17,14 +17,13 @@
 #define DIODE_VOLTAGE_DROP 0        // New Vario now measures behind Diode
 
 
-BatVoltage::BatVoltage( Setup *setup, SetupVolt *setupv ) {
+BatVoltage::BatVoltage( Setup *setup ) {
   _battery = 0;
   _battery_ch = ADC1_CHANNEL_MAX;
   _reference_ch = ADC1_CHANNEL_MAX;
   _adc_reference = 0;
   adc_chars = 0;
   _setup = setup;
-  _setupv = setupv;
 }
 
 esp_adc_cal_characteristics_t adc_cal;
@@ -54,7 +53,7 @@ float BatVoltage::getBatVoltage( bool init ){
 	uint32_t voltage = esp_adc_cal_raw_to_voltage( adc, adc_chars);
     // printf("Voltage %d\n", voltage);
 
-	float bat = (float)voltage * _correct * ( (100.0 + _setupv->get()->_factory_volt_adjust) / 100.0 ) +  DIODE_VOLTAGE_DROP + _setup->get()->_voltmeter_adj;
+	float bat = (float)voltage * _correct * ( (100.0 + _setup->get()->_factory_volt_adjust) / 100.0 ) +  DIODE_VOLTAGE_DROP + _setup->get()->_voltmeter_adj;
 	if( init )
 		_battery = bat;
 	else

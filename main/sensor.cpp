@@ -78,8 +78,7 @@ MP5004DP MP5004DP;
 OpenVario OV;
 xSemaphoreHandle xMutex=NULL;
 Setup mysetup;
-SetupVolt setupv;
-BatVoltage ADC ( &mysetup, &setupv );
+BatVoltage ADC ( &mysetup );
 S2F  s2f( &mysetup );
 Switch VaSoSW;
 TaskHandle_t *bpid;
@@ -273,7 +272,6 @@ void sensor(void *args){
 					mysetup.get()->_serial2_tx );
 
 
-	setupv.begin();
 	ADC.begin();  // for battery voltage
 
 	sleep( 2 );
@@ -487,7 +485,7 @@ void sensor(void *args){
 	speed = MP5004DP.pascal2km( speedP, temperature );
 	printf("Speed=%f\n", speed);
 	display.initDisplay();
-	Menu.begin( &display, &Rotary, &mysetup, &setupv, &bmpBA, &ADC );
+	Menu.begin( &display, &Rotary, &mysetup, &bmpBA, &ADC );
 	if( speed < 50.0 ){
 		xSemaphoreTake(xMutex,portMAX_DELAY );
 		printf("QNH Autosetup, speed=%3f (<50 km/h)\n", speed );
@@ -541,6 +539,6 @@ void sensor(void *args){
 }
 
 extern "C" int btstack_main(int argc, const char * argv[]){
-	xTaskCreatePinnedToCore(&sensor, "sensor", 12000, NULL, 5, 0, 0);
+	xTaskCreatePinnedToCore(&sensor, "sensor", 4096, NULL, 16, 0, 0);
 	return 0;
 }

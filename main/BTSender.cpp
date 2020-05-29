@@ -5,9 +5,12 @@
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include <freertos/semphr.h>
 #include <algorithm>
 #include <HardwareSerial.h>
 #include "RingBufCPP.h"
+
+extern xSemaphoreHandle nvMutex;
 
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
 
@@ -53,8 +56,11 @@ void BTSender::send(char * s){
 		mybuf.add( s );
 	}
 	portEXIT_CRITICAL_ISR(&btmux);
-	if( _serial_tx )
+	if( _serial_tx ) {
+		    xSemaphoreTake(nvMutex,portMAX_DELAY );
 			Serial2.print(s);
+			xSemaphoreGive(nvMutex);
+	}
 }
 
 
@@ -195,6 +201,7 @@ void btBridge(void *pvParameters){
 #endif
 		bool end=false;
 		int timeout=0;
+		xSemaphoreTake(nvMutex,portMAX_DELAY );
 		while (Serial2.available() && (readString.length() <100) && !end && (timeout<100) ) {
 			char c = Serial2.read();
 			timeout++;
@@ -203,6 +210,7 @@ void btBridge(void *pvParameters){
 			if( c == '\n' )
 				end = true;
 		}
+		xSemaphoreGive(nvMutex);
 		if (readString.length() > 0) {
 			printf("Serial RX: %s\n", readString.c_str() );
 			portENTER_CRITICAL_ISR(&btmux);

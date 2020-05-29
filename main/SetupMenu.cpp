@@ -20,7 +20,6 @@ MenuEntry* MenuEntry::root = 0;
 MenuEntry* MenuEntry::selected = 0;
 ESPRotary* MenuEntry::_rotary = 0;
 Setup* MenuEntry::_setup = 0;
-SetupVolt* MenuEntry::_setupv = 0;
 BatVoltage* MenuEntry::_adc = 0;
 BME280_ESP32_SPI *MenuEntry::_bmp = 0;
 float MenuEntry::volume;
@@ -170,11 +169,10 @@ SetupMenu::SetupMenu( String title ) {
 	highlight = -1;
 }
 
-void SetupMenu::begin( IpsDisplay* display, ESPRotary * rotary, Setup* my_setup, SetupVolt* my_setupv, BME280_ESP32_SPI * bmp, BatVoltage *adc ){
+void SetupMenu::begin( IpsDisplay* display, ESPRotary * rotary, Setup* my_setup, BME280_ESP32_SPI * bmp, BatVoltage *adc ){
 	printf("SetupMenu() begin\n");
 	_rotary = rotary;
 	_setup = my_setup;
-	_setupv = my_setupv;
 	_bmp = bmp;
 	_display = display;
 	ucg = display->getDisplay();
@@ -715,12 +713,11 @@ void SetupMenu::setup( )
 	btm->addEntry( "Sender ON");
 	sye->addMenu( btm );
 
-	// printf("Factory adjust: %0.5f\n", _setupv->get()->_factory_volt_adjust );
-	float fva = _setupv->get()->_factory_volt_adjust;
+	float fva = _setup->get()->_factory_volt_adjust;
 	if( abs(fva - 0.00815) < 0.00001 ) {
 		printf("Add option to Factory adjust ADC; not yet done\n");
 		SetupMenuValFloat * fvoltadj = new SetupMenuValFloat( 	"Factory Voltmeter Adj",
-						&_setupv->get()->_factory_volt_adjust,
+						&_setup->get()->_factory_volt_adjust,
 						"%",
 						-25.0, 25.0,
 						0.01,
@@ -958,7 +955,6 @@ void SetupMenuValFloat::press(){
 		selected->highlight = -1;  // to topmost selection when back
 		selected->pressed = true;
 		_setup->commit();
-		_setupv->commit();
 		pressed = false;
 		BMPVario::setHolddown( 150 );  // so seconds stop average
 		if( _end_menu )

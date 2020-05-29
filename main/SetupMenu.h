@@ -55,7 +55,6 @@ public:
 	static IpsDisplay* _display;
 	static ESPRotary* _rotary;
 	static Setup *_setup;
-	static SetupVolt *_setupv;
 	static BatVoltage* _adc;
 	static BME280_ESP32_SPI *_bmp;
 	static bool _menu_enabled;
@@ -75,7 +74,7 @@ class SetupMenu:  public MenuEntry {
 public:
 	SetupMenu();
 	SetupMenu(  String title );
-	void begin( IpsDisplay* display, ESPRotary * rotary, Setup * setup, SetupVolt * setupv, BME280_ESP32_SPI * bmp, BatVoltage *adc );
+	void begin( IpsDisplay* display, ESPRotary * rotary, Setup * setup, BME280_ESP32_SPI * bmp, BatVoltage *adc );
 	void setup();
 	void display( int mode=0 );
 

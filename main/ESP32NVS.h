@@ -31,6 +31,7 @@ public:
   }
   bool    begin();
   void    close();
+  bool    open();
 
   bool    eraseAll();
   bool    erase(std::string key);

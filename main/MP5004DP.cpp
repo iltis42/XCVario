@@ -38,7 +38,7 @@ bool MP5004DP::selfTest(uint16_t& val)
 /*
  * Offset Voltage according to datasheet:
  *  0.45 0.6 0.75  V  @ 3V Vs
- *  15%   min 20% (typ) 25% (max)
+ *  15% min 20% (typ) 25% (max)
  *  @ 4096 full swing Vs adc val:
  *  614   812   1024 + add +-1% for ADC
  */
@@ -132,7 +132,7 @@ float MP5004DP::readPascal( float minimum ){
 float   MP5004DP::pascal2km( float pascal, float temp )
 {
     // p = 1/2 * rho * v^2
-	// float rho = 101325.0 / (287.058 * (273.15 + temp));
+    // v = sqrt( 2*p / rho )
     float v = sqrt( 2*pascal / 1.225 );
 	return v*3.6;
 }

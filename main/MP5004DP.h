@@ -37,7 +37,8 @@ P = 5000/4096 * adc
 */
 
 
-const float correction = 5000.0/4096.0 * 1000.0/1026;  // we measured 2.6 % plus in first sample.
+const float correction = 5000.0/4096.0;  // according to above formula, this is the relation between adc readout and Pascal
+														 // 1000/1026 is a factory correction.
 const float alpha = 0.2;
 const float min_pascal = 10.0;
 
@@ -46,11 +47,10 @@ public:
 	MP5004DP() {
 		offset = 0;
 	    _alpha = alpha;
-	    _speedcal = 0.0;
 	    _setup = 0;
 	    _haveDevice = false;
 	}
-	bool    begin(gpio_num_t sda, gpio_num_t scl, float speedcal, Setup *setup );
+	bool    begin(gpio_num_t sda, gpio_num_t scl, Setup *setup );
 	bool    doOffset( bool force=false );
 	float   readPascal( float minimum=min_pascal );
 	float   pascal2km( float pascal, float temp );
@@ -59,7 +59,6 @@ public:
 
 private:
 	float offset;
-	float _speedcal;
 	float _alpha;
 	bool _haveDevice;
 	Setup * _setup;

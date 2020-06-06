@@ -3,15 +3,15 @@
 #include "math.h"
 #include "string"
 #include "esp_task_wdt.h"
+#include "DallasRmt.h"
 
 // MP5004DP::MP5004DP(){
 //
 // }
 
-bool MP5004DP::begin(gpio_num_t sda, gpio_num_t scl, float speedcal, Setup* setup){
+bool MP5004DP::begin(gpio_num_t sda, gpio_num_t scl, Setup* setup){
 	printf("MP5004DP::begin\n");
 	_setup = setup;
-	_speedcal = speedcal;
 	bool ret = NVS.begin();
 	if ( ret == false ){
 		printf("MP5004DP: Error NVS init\n");
@@ -118,12 +118,11 @@ bool MP5004DP::doOffset( bool force ){
 }
 
 float MP5004DP::readPascal( float minimum ){
-	// printf( "MP5004DP _speedcal %0.1f\n", _speedcal );
 	if( !_haveDevice ) {
 		return 0.0;
 	}
 	float val = MCP.readAVG( _alpha );
-	float _pascal = (val - offset) * correction * ((100.0 +_speedcal) / 100.0);
+	float _pascal = (val - offset) * correction * ((100.0 + _setup->get()->_speedcal) / 100.0);
     if ( (_pascal < minimum) && (minimum != 0) ) {
 	  _pascal = 0.0;
 	};
@@ -133,8 +132,8 @@ float MP5004DP::readPascal( float minimum ){
 float   MP5004DP::pascal2km( float pascal, float temp )
 {
     // p = 1/2 * rho * v^2
-	float rho = 101325.0 / (287.058 * (273.15 + temp));
-    float v = sqrt( 2*pascal / rho );
+	// float rho = 101325.0 / (287.058 * (273.15 + temp));
+    float v = sqrt( 2*pascal / 1.225 );
 	return v*3.6;
 }
 

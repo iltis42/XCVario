@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <HardwareSerial.h>
 #include "RingBufCPP.h"
+#include <driver/uart.h>
 
 extern xSemaphoreHandle nvMutex;
 
@@ -252,6 +253,7 @@ void BTSender::begin( bool enable_bt, char * bt_name, int speed, bool bridge, bo
 	if( (speed != 0) && (bridge || _serial_tx)){
     	printf("Serial TX or Bridge enabled with speed: %d baud: %d\n",  speed, baud[speed] );
     	Serial2.begin(baud[speed],SERIAL_8N1,16,17);   //  IO16: RXD2,  IO17: TXD2
+    	uart_set_line_inverse(2, UART_SIGNAL_RXD_INV);
     }
 	if( bridge && speed ) {
 		printf("Serial Bluetooth bridge enabled \n");

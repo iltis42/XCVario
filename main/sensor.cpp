@@ -386,7 +386,7 @@ void sensor(void *args){
 	VaSoSW.begin( GPIO_NUM_12 );
 	esp_task_wdt_reset();
 	printf("Speed sensors init..\n");
-	MP5004DP.begin( GPIO_NUM_21, GPIO_NUM_22, mysetup.get()->_speedcal, &mysetup);  // sda, scl
+	MP5004DP.begin( GPIO_NUM_21, GPIO_NUM_22, &mysetup);  // sda, scl
 	uint16_t val;
 	bool works=MP5004DP.selfTest( val );
 
@@ -482,7 +482,10 @@ void sensor(void *args){
 */
 	sleep(1);
 	speedP=MP5004DP.readPascal(30);
-	speed = MP5004DP.pascal2km( speedP, temperature );
+	float t = temperature;
+	if( temperature == DEVICE_DISCONNECTED_C )
+		t = 15.0;
+	speed = MP5004DP.pascal2km( speedP, t );
 	printf("Speed=%f\n", speed);
 	display.initDisplay();
 	Menu.begin( &display, &Rotary, &mysetup, &bmpBA, &ADC );

@@ -77,24 +77,25 @@ void Setup::factorySetting()
 		_setup._rot_default = 0; // Volume
 		_setup._serial2_speed = 0;   // 0: OFF 1:4800 2:9600 3:19200 4: 38400..
 		_setup._serial2_rxloop = 0;  // 0: dont loop, 1: loop
+		_setup._serial2_tx = 0;      // 0: dont TX, 1: TX
 		_setup._software_update = 0;
+		_setup._factory_volt_adjust = 0.00815;
 		printf("sefault _polar %d\n", Polars::numPolars() );
 		_setup._polar = Polars::getPolar(0); // default user polar
 		memset( _setup._bt_name, 0, sizeof( _setup._bt_name) );
 		printf("BT-Name: %s\n", _ID );
 		memcpy( _setup._bt_name, _ID, strlen( _ID )  );
 		commit();
-		SetupVolt::factorySetting();
 		printf("end Setup::factorySetting()\n");
 }
 
 void Setup::begin() {
 	printf( "Setup CMD begin()\n");
 	esp_err_t success;
-	void * obj = NVS.getObject("SetupXC", &success);
+	void * obj = NVS.getObject("SetupXC2", &success);
 
 	if ( success != ESP_OK ){
-		printf( "Setup data not yet in NVS: Init\n");
+		printf( "Setup data not yet in NVS: Init ret=%d\n", success );
 	    factorySetting();
 	}
 	else{
@@ -114,7 +115,7 @@ void Setup::begin() {
 bool Setup::checkSum( bool set ) {
 	uint32_t cs=0;
 	uint8_t * p=(uint8_t *)&_setup;
-	for( int i=0; i< sizeof(_setup)-4; i++ )
+	for( int i=0; i< sizeof(_setup)-4; i+=4 )
 		cs += *p++;
 	if( set == true ) {
 	   _setup._checksum = cs;
@@ -136,7 +137,8 @@ void Setup::commit( ) {
 
 	bool success;
 	checkSum( true );
-	success = NVS.setObject("SetupXC", &_setup, sizeof(_setup) );
+    printf("New NVS checksum %04X\n", _setup._checksum );
+	success = NVS.setObject("SetupXC2", &_setup, sizeof(_setup) );
 	if ( success != true ){
 		printf( "Error storing data NVS, maybe HW defect\n");
 	}

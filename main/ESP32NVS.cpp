@@ -1,6 +1,11 @@
 #include "ESP32NVS.h"
 #include <stdlib.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include <freertos/portmacro.h>
+#include <freertos/semphr.h>
 
+xSemaphoreHandle nvMutex=NULL;
 
 ESP32NVS * ESP32NVS::Instance = 0;
 
@@ -11,23 +16,40 @@ ESP32NVS::ESP32NVS(){
 
 
 bool ESP32NVS::begin(){
+  _nvs_handle = 0;
+  nvMutex=xSemaphoreCreateMutex();
   _err = nvs_flash_init();
   if (_err == ESP_ERR_NVS_NO_FREE_PAGES) {
     const esp_partition_t* nvs_partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_NVS, NULL);
     _err = (esp_partition_erase_range(nvs_partition, 0, nvs_partition->size));
   }
-  _err = nvs_open("storage", NVS_READWRITE, &_nvs_handle);
-
-  if(_err != ESP_OK){
-	  printf("ESP32NVS open storage error\n");
-	  return false;
-  }
-  printf("ESP32NVS open storage OK\n");
+  open();
   return true;
 }
 
 void ESP32NVS::close(){
-   nvs_close(_nvs_handle);
+  printf("ESP32NVS::close() %04X\n", _nvs_handle );
+  if( _nvs_handle ) {
+     nvs_close(_nvs_handle);
+     _nvs_handle = 0;
+  }
+  else
+	  printf("ESP32NVS handle already closed\n");
+}
+
+bool ESP32NVS::open(){
+	printf("ESP32NVS::open()");
+	if( _nvs_handle != 0 ) {
+		printf("ESP32NVS handle already open\n");
+		return true;
+	}
+	esp_err_t _err = nvs_open("Setup", NVS_READWRITE, &_nvs_handle);
+	if(_err != ESP_OK){
+		printf("ESP32NVS open storage error\n");
+		return false;
+	}
+	printf(" handle: %04X  OK\n", _nvs_handle );
+	return true;
 }
 
 bool ESP32NVS::eraseAll(){
@@ -43,8 +65,13 @@ bool ESP32NVS::erase(std::string key){
 }
 
 bool ESP32NVS::commit(){
+  printf("ESP32NVS::commit() %04X\n", _nvs_handle );
   _err = nvs_commit(_nvs_handle);
-  if(_err != ESP_OK) return false;
+  if(_err != ESP_OK)  {
+	  printf("ESP32NVS::commit() error\n");
+	  return false;
+  }
+  printf("ESP32NVS::commit() OK\n");
   return true;
 }
 
@@ -105,9 +132,20 @@ bool ESP32NVS::setString(std::string key, std::string value){
 }
 
 bool ESP32NVS::setObject(std::string key, void* value, size_t length){
-  _err = nvs_set_blob(_nvs_handle, (char*)key.c_str(), value, length);
-  if(_err != ESP_OK) return false;
-  return commit();
+  printf("ESP32NVS::setObject(%s , %08x, %d, handle: %04x)\n", key.c_str(), (uint32_t)value, length, _nvs_handle);
+  xSemaphoreTake(nvMutex,portMAX_DELAY );
+  esp_err_t _err = nvs_set_blob(_nvs_handle, (char*)key.c_str(), value, length);
+  if(_err != ESP_OK) {
+	  printf("set blob error %d\n", _err );
+	  xSemaphoreGive(nvMutex);
+	  return false;
+  }
+  printf("set blob OK\n");
+  bool cret = commit();
+  if( !cret )
+	  printf("commit error\n");
+  xSemaphoreGive(nvMutex);
+  return cret;
 }
 
 
@@ -162,15 +200,20 @@ char* ESP32NVS::getCharArray(std::string key) {
   return value;
 }
 
+char blob[300];
+
 void* ESP32NVS::getObject(std::string key, esp_err_t *err){
   printf("ESP32NVS::getObject(%s)\n", key.c_str());
   size_t required_size;
   *err = nvs_get_blob(_nvs_handle, key.c_str(), NULL, &required_size);
-  printf("required_size: %d\n", required_size );
-  void* blob = (void*) malloc(required_size);
+  printf("Object size: %d\n", required_size );
+  // void* blob = (void*) malloc(required_size);
   // printf("blob %d", blob );
+  if( required_size > sizeof(blob) ){
+	  printf("ESP32NVS::getObject() ERROR, size overflow\n");
+  }
   *err = nvs_get_blob(_nvs_handle, key.c_str(), blob, &required_size);
-  printf("*blob: %d", *err );
+  printf("*blob: %d\n", *err );
   return blob;
 }
 

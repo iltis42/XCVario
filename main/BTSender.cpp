@@ -5,9 +5,13 @@
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include <freertos/semphr.h>
 #include <algorithm>
 #include <HardwareSerial.h>
 #include "RingBufCPP.h"
+#include <driver/uart.h>
+
+extern xSemaphoreHandle nvMutex;
 
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
 
@@ -15,7 +19,7 @@ RingBufCPP<SString, 20> mybuf;
 
 char rxBuffer[120];
 int BTSender::i=0;
-bool BTSender::serial_enable=false;
+bool BTSender::_serial_tx=false;
 
 #define RFCOMM_SERVER_CHANNEL 1
 #define HEARTBEAT_PERIOD_MS 20
@@ -25,7 +29,7 @@ bool      BTSender::_enable;
 bool      BTSender::bluetooth_up = false;
 uint8_t   BTSender::rfcomm_channel_nr = 1;
 uint16_t  BTSender::rfcomm_channel_id = 0;
-uint8_t   BTSender::spp_service_buffer[100];
+uint8_t   BTSender::spp_service_buffer[200]; // 100
 btstack_timer_source_t BTSender::heartbeat;
 btstack_packet_callback_registration_t BTSender::hci_event_callback_registration;
 void ( * BTSender::_callback)(char * rx, uint16_t len);
@@ -53,8 +57,11 @@ void BTSender::send(char * s){
 		mybuf.add( s );
 	}
 	portEXIT_CRITICAL_ISR(&btmux);
-	if( serial_enable )
-			Serial2.write(s);
+	if( _serial_tx ) {
+		    xSemaphoreTake(nvMutex,portMAX_DELAY );
+			Serial2.print(s);
+			xSemaphoreGive(nvMutex);
+	}
 }
 
 
@@ -150,6 +157,8 @@ void BTSender::one_shot_timer_setup(void){
 	btstack_run_loop_add_timer(&heartbeat);
 };
 
+// #define FLARM_SIM
+
 
 #ifdef FLARM_SIM
 char *flarm[] = {
@@ -184,19 +193,25 @@ void btBridge(void *pvParameters){
 #endif
 	while(1) {
 		TickType_t xLastWakeTime = xTaskGetTickCount();
-#ifndef FLARM_SIM
-		bool end=false;
-		while (Serial2.available() && (readString.length() <100) && !end ) {
-			char c = Serial2.read();
-			readString.add(c);
-			if( c == '\n' )
-				end = true;
-		}
-#else
-		readString.add( flarm[i++] );
+#ifdef FLARM_SIM
+		Serial2.print( flarm[i++] );
+		printf("Serial TX: %s\n",  flarm[i++] );
+		Serial2.print( '\n' );
 		if(i>9)
 			i=0;
 #endif
+		bool end=false;
+		int timeout=0;
+		xSemaphoreTake(nvMutex,portMAX_DELAY );
+		while (Serial2.available() && (readString.length() <100) && !end && (timeout<100) ) {
+			char c = Serial2.read();
+			timeout++;
+			if( c > 0 && c < 127 )
+				readString.add(c);
+			if( c == '\n' )
+				end = true;
+		}
+		xSemaphoreGive(nvMutex);
 		if (readString.length() > 0) {
 			printf("Serial RX: %s\n", readString.c_str() );
 			portENTER_CRITICAL_ISR(&btmux);
@@ -204,17 +219,19 @@ void btBridge(void *pvParameters){
 			portEXIT_CRITICAL_ISR(&btmux);
 			readString.clear();
 		}
-		vTaskDelayUntil(&xLastWakeTime, 20/portTICK_PERIOD_MS); // at max 50 msg per second allowed
+		vTaskDelayUntil(&xLastWakeTime, 200/portTICK_PERIOD_MS); // at max 50 msg per second allowed
 	}
 }
 
 
-void BTSender::begin( bool enable_bt, char * bt_name, int speed, bool bridge ){
+void BTSender::begin( bool enable_bt, char * bt_name, int speed, bool bridge, bool serial_tx ){
 	printf("BTSender::begin() bt:%d s-bridge:%d\n", enable_bt, bridge );
 	_enable = enable_bt;
-	hci_dump_enable_log_level( ESP_LOG_INFO, 1 );
+	if( speed && serial_tx )
+		_serial_tx = true;
+	hci_dump_enable_log_level( ESP_LOG_INFO, 0 );
 	hci_dump_enable_log_level( ESP_LOG_ERROR, 1 );
-	hci_dump_enable_log_level( ESP_LOG_DEBUG, 1 );
+	hci_dump_enable_log_level( ESP_LOG_DEBUG, 0 );
 	if( _enable ) {
 		l2cap_init();
 		le_device_db_init();   // new try 28-09
@@ -233,15 +250,15 @@ void BTSender::begin( bool enable_bt, char * bt_name, int speed, bool bridge ){
 		sdp_init();
 		hci_power_control(HCI_POWER_ON);
 	}
-	if( speed != 0 ){
-    	serial_enable = true;
+	if( (speed != 0) && (bridge || _serial_tx)){
+    	printf("Serial TX or Bridge enabled with speed: %d baud: %d\n",  speed, baud[speed] );
     	Serial2.begin(baud[speed],SERIAL_8N1,16,17);   //  IO16: RXD2,  IO17: TXD2
-    }else
-    {
-    	serial_enable = false;
+    	uart_set_line_inverse(2, UART_SIGNAL_RXD_INV);
     }
-	if( bridge )
-		xTaskCreatePinnedToCore(&btBridge, "btBridge", 2048, NULL, 3, 0, 0);
+	if( bridge && speed ) {
+		printf("Serial Bluetooth bridge enabled \n");
+		xTaskCreatePinnedToCore(&btBridge, "btBridge", 4096, NULL, 3, 0, 0);
+	}
 };
 
 

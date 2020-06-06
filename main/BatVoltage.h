@@ -10,14 +10,13 @@
 
 #include "esp_adc_cal.h"
 #include "Setup.h"
-#include "SetupVolt.h"
 
 //Use adc2_vref_to_gpio() to obtain a better estimate
 #define DEFAULT_VREF    1100
 
 class BatVoltage {
 public:
-	BatVoltage( Setup *setup, SetupVolt *setupv );
+	BatVoltage( Setup *setup );
 	virtual ~BatVoltage();
 
 	//  ADC1_CHANNEL_7,     /*!< ADC1 channel 7 is GPIO35 */
@@ -33,7 +32,6 @@ private:
     long _adc_reference;
     esp_adc_cal_characteristics_t *adc_chars;
     Setup *_setup;
-    SetupVolt *_setupv;
 };
 
 

@@ -1,0 +1,18 @@
+# Name,   Type, SubType, Offset,  Size
+bootld,   app,  boot,     0x1000    32K       bootloader.bin
+reserved, data, 0xfe,     0x9000,   16K
+otadata,  data, ota,      0xd000,   8K        ota_data_initial.bin
+phy_init, data, phy,      0xf000,   4K 
+ota_0,    app,  ota_0,    0x10000,  1920K     sensor-20.0606-13.bin
+ota_1,    app,  ota_1,    ,         1920K
+coredump, data, coredump, ,         64K 
+nvs,      data, nvs,      ,         128K
+
+/home/nextpcb/.espressif/python_env/idf4.2_py2.7_env/bin/python ../../components/esptool_py/esptool/esptool.py -p (PORT) -b 460800 --before default_reset --after hard_reset --chip esp32  write_flash --flash_mode dio --flash_size detect --flash_freq 40m 
+
+0x1000 build/bootloader/bootloader.bin 
+0x8000 build/partition_table/partition-table.bin 
+0xd000 build/ota_data_initial.bin 
+0x10000 build/sensor.bin
+
+

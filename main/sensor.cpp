@@ -269,7 +269,9 @@ void sensor(void *args){
 			        mysetup.getBtName(),
 				    mysetup.get()->_serial2_speed,
 				    mysetup.get()->_serial2_rxloop,
-					mysetup.get()->_serial2_tx );
+					mysetup.get()->_serial2_tx,
+					mysetup.get()->_serial2_tx_inverted,
+					mysetup.get()->_serial2_rx_inverted );
 
 
 	ADC.begin();  // for battery voltage

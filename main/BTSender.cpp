@@ -224,7 +224,7 @@ void btBridge(void *pvParameters){
 }
 
 
-void BTSender::begin( bool enable_bt, char * bt_name, int speed, bool bridge, bool serial_tx ){
+void BTSender::begin( bool enable_bt, char * bt_name, int speed, bool bridge, bool serial_tx, bool tx_inv, bool rx_inv ){
 	printf("BTSender::begin() bt:%d s-bridge:%d\n", enable_bt, bridge );
 	_enable = enable_bt;
 	if( speed && serial_tx )
@@ -251,15 +251,17 @@ void BTSender::begin( bool enable_bt, char * bt_name, int speed, bool bridge, bo
 		hci_power_control(HCI_POWER_ON);
 	}
 	if( (speed != 0) && (bridge || _serial_tx)){
-    	printf("Serial TX or Bridge enabled with speed: %d baud: %d\n",  speed, baud[speed] );
+    	printf("Serial TX or Bridge enabled with speed: %d baud: %d tx_inv: %d rx_inv: %d\n",  speed, baud[speed], tx_inv, rx_inv );
     	Serial2.begin(baud[speed],SERIAL_8N1,16,17);   //  IO16: RXD2,  IO17: TXD2
-    	uart_set_line_inverse(2, UART_SIGNAL_RXD_INV);
+    	if( rx_inv )
+    		uart_set_line_inverse(2, UART_SIGNAL_RXD_INV);
+    	if( tx_inv )
+    		uart_set_line_inverse(2, UART_SIGNAL_TXD_INV);
     }
 	if( bridge && speed ) {
 		printf("Serial Bluetooth bridge enabled \n");
 		xTaskCreatePinnedToCore(&btBridge, "btBridge", 4096, NULL, 3, 0, 0);
 	}
 };
-
 
 

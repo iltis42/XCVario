@@ -10,7 +10,7 @@ public:
   BTSender( void (* cb)(char * rx, uint16_t len )  ) {
 	   _callback = cb;
   };
-  void begin( bool enable_bt, char* bt_name, int speed, bool bridge, bool serial_tx );
+  void begin( bool enable_bt, char* bt_name, int speed, bool bridge, bool serial_tx, bool tx_inv, bool rx_inv );
   void send( char * s );
   static int queueFull();
   bool selfTest() { return bluetooth_up; };  // call 3 seconds after begin

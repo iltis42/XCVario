@@ -834,6 +834,17 @@ void SetupMenu::setup( )
 	sout->addEntry( "Disable");
 	sout->addEntry( "Enable");
 
+	SetupMenuSelect * stxi = new SetupMenuSelect( PROGMEM "Serial TX Inversion",	&_setup->get()->_serial2_tx_inverted, true );
+	rs232->addMenu( stxi );
+	stxi->setHelp( "Serial RS232 (TTL) option for negative logic, means a '1' will be sent at zero level (RS232 standard and default) and vice versa");
+	stxi->addEntry( "Normal");
+	stxi->addEntry( "Inverted");
+
+	SetupMenuSelect * srxi = new SetupMenuSelect( PROGMEM "Serial RX Inversion",	&_setup->get()->_serial2_rx_inverted, true );
+	rs232->addMenu( srxi );
+	srxi->setHelp( "Serial RS232 (TTL) option for negative logic, means a '1' will be received at zero level (RS232 standard and default) and vice versa");
+	srxi->addEntry( "Normal");
+	srxi->addEntry( "Inverted");
 
 	SetupMenu::display();
 }

@@ -31,6 +31,7 @@
 float ESPAudio::_range = 5.0;
 bool ESPAudio::_s2f_mode = false;
 uint8_t ESPAudio::_tonemode;
+uint8_t ESPAudio::_chopping_mode;
 float ESPAudio::_high_tone_var;
 dac_channel_t ESPAudio::_ch;
 uint16_t ESPAudio::wiper;
@@ -388,11 +389,16 @@ void ESPAudio::dactask(void* arg )
 			}
 			else{
 				if( sound_on ) {
-					if( cur_wiper != 0 ) {
-					Poti.writeWiper( 0 );
+					if( (_chopping_mode == BOTH_CHOP) ||
+						(_s2f_mode && (_chopping_mode == S2F_CHOP)) ||
+						(!_s2f_mode && (_chopping_mode == VARIO_CHOP)) )
+					{
+						if( cur_wiper != 0 ) {
+							Poti.writeWiper( 0 );
+						}
+						dac_output_disable(_ch);
+						sound_on = false;
 					}
-					dac_output_disable(_ch);
-					sound_on = false;
 				}
 			}
 			// assert( heap_caps_check_integrity_all(true) == true );
@@ -461,6 +467,7 @@ void ESPAudio::setup()
 	_range = _setup->get()->_range;
 	_tonemode = 0; // _setup->get()->_dual_tone;
 	_high_tone_var = ((_setup->get()->_high_tone_var + 100.0)/100);
+	_chopping_mode = _setup->get()->_chopping_mode;
 
 }
 

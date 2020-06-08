@@ -18,8 +18,10 @@
 
 
 typedef enum display_type { UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P } display_t;
+typedef enum chopping_mode { NO_CHOP, VARIO_CHOP, S2F_CHOP, BOTH_CHOP } chopping_mode_t;
 
 typedef struct {
+	uint32_t _config_version;
 	float _speedcal;
 	float _vario_delay;
 	float _center_freq;
@@ -37,6 +39,7 @@ typedef struct {
 	float _MC;
 	float _s2f_speed;
 	uint8_t _audio_mode;
+	uint8_t _chopping_mode;
 	char  _bt_name[32];
 	uint8_t _blue_enable;
 	uint8_t _factory_reset;   // 0 = no,  1= yes

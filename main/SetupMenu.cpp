@@ -539,10 +539,18 @@ void SetupMenu::setup( )
 	dv->setHelp(PROGMEM"Default volume for Audio when device is switched on");
 
 	SetupMenuSelect * dt = new SetupMenuSelect( 	"Tone Style", &_setup->get()->_dual_tone );
-	dt->setHelp(PROGMEM"Select dual tone aka ilec sound, (di/da/di) or single tone with breaks (di-di-di) mode");
+	dt->setHelp(PROGMEM"Select dual tone aka ilec sound, (di/da/di) or single tone (di-di-di) mode");
 	dt->addEntry( "Single Tone");      // 0
 	dt->addEntry( "Dual Tone");        // 1
 	ade->addMenu( dt );
+
+	SetupMenuSelect * tch = new SetupMenuSelect( 	"Tone Chopping", &_setup->get()->_chopping_mode );
+	tch->setHelp(PROGMEM"Select tone chopping option for Vario and or S2F");
+	tch->addEntry( "Disabled");             // 0
+	tch->addEntry( "Vario only");           // 1
+	tch->addEntry( "S2F only");             // 2
+	tch->addEntry( "Vario and S2F");        // 3  default
+	ade->addMenu( tch );
 
 	SetupMenuValFloat * htv = new SetupMenuValFloat( 	"Dual Tone Pich",
 						&_setup->get()->_high_tone_var,

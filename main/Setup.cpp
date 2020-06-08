@@ -32,6 +32,7 @@ char Setup::_ID[14];
 void Setup::factorySetting()
 {
 		printf("Setup::factorySetting()\n");
+		_setup._config_version = 200608;             // force factory setting when new software loaded.
 		_setup._speedcal = 0.0;
 		_setup._deadband = 0.3;
 		_setup._deadband_neg = -0.3;
@@ -54,6 +55,7 @@ void Setup::factorySetting()
 		_setup._contrast_adj = 85.0;
 		_setup._s2f_speed = 100.0;
 		_setup._audio_mode = 3;
+		_setup._chopping_mode = BOTH_CHOP;
 		_setup._glider_type = 0;
 		_setup._ps_display = 1;
 		_setup._bat_low_volt = 11.5;

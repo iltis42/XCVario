@@ -69,6 +69,7 @@ private:
 	float _te;
 	static bool _s2f_mode;
 	static uint8_t _tonemode;
+	static uint8_t _chopping_mode;
 	static float _high_tone_var;
 	float _s2fd;
 	float _center;

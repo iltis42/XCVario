@@ -57,7 +57,7 @@ void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
 }
 
 int16_t old_cnt = 0;
-int old_button;
+int old_button = RELEASE;
 
 void ESPRotary::informObservers( void * args )
 {

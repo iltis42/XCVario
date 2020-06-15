@@ -217,11 +217,12 @@ int ttick = 0;
 void readTemp(void *pvParameters){
 	while (1) {
 		TickType_t xLastWakeTime = xTaskGetTickCount();
+		float t=15.0;
 		if( Audio.getDisable() != true )
 		{
 			battery = ADC.getBatVoltage();
 			// printf("Battery=%f V\n", battery );
-			float t = ds18b20.getTemp();
+			t = ds18b20.getTemp();
 			if( t ==  DEVICE_DISCONNECTED_C ) {
 				printf("T sensor disconnected\n");
 				validTemperature = false;
@@ -239,7 +240,7 @@ void readTemp(void *pvParameters){
 						no_t_sensor = false;
 				}
 			}
-			// printf("temperature=%f\n", temperature );
+			printf("temperature=%f\n", temperature );
 		}
 		esp_task_wdt_reset();
 		vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS);
@@ -523,6 +524,10 @@ void sensor(void *args){
 
 		SetupMenuValFloat::showQnhMenu();
 		xSemaphoreGive(xMutex);
+	}
+	else
+	{
+		Audio.disable(false);
 	}
 	esp_task_wdt_reset();
 	Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);

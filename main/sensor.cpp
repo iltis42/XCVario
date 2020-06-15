@@ -240,7 +240,7 @@ void readTemp(void *pvParameters){
 						no_t_sensor = false;
 				}
 			}
-			printf("temperature=%f\n", temperature );
+			// printf("temperature=%f\n", temperature );
 		}
 		esp_task_wdt_reset();
 		vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS);

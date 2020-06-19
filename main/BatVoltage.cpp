@@ -57,7 +57,7 @@ float BatVoltage::getBatVoltage( bool init ){
 	if( init )
 		_battery = bat;
 	else
-		_battery = _battery + ( bat - _battery ) * 0.1;
+		_battery = _battery + ( bat - _battery ) * 0.2;
 	return _battery;
 }
 

@@ -104,11 +104,10 @@ int factv_adj( SetupMenuValFloat * p )
 {
 	printf("factv_adj");
 	float adj = 0.0;
-	for( int i=0; i<10; i++ ) {
-           adj += p->_adc->getBatVoltage(true);
-	   sleep( 0.02 );
+	for( int i=0; i<1000; i++ ) {
+       adj += p->_adc->getBatVoltage(true);
 	}
-	adj = adj/10.0;
+	adj = adj/1000;
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->setPrintPos(1,100);
 	p->ucg->printf("%0.2f Volt", adj);

@@ -103,14 +103,10 @@ int elev_adj( SetupMenuValFloat * p )
 int factv_adj( SetupMenuValFloat * p )
 {
 	printf("factv_adj");
-	float adj = 0.0;
-	for( int i=0; i<1000; i++ ) {
-       adj += p->_adc->getBatVoltage(true);
-	}
-	adj = adj/1000;
+	float bat = p->_adc->getBatVoltage(true);
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->setPrintPos(1,100);
-	p->ucg->printf("%0.2f Volt", adj);
+	p->ucg->printf("%0.2f Volt", bat);
 	xSemaphoreGive(spiMutex );
 	return 0;
 }

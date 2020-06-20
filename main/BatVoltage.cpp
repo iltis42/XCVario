@@ -49,8 +49,12 @@ void BatVoltage::begin( adc1_channel_t battery, adc1_channel_t reference ) {
 }
 
 float BatVoltage::getBatVoltage( bool init ){
-	int adc = adc1_get_raw( _battery_ch );
-	uint32_t voltage = esp_adc_cal_raw_to_voltage( adc, adc_chars);
+	float adc = 0.0;
+	for( int i=0; i<1000; i++ ) {
+	   adc += adc1_get_raw( _battery_ch );
+	}
+	adc = adc/1000.0;
+	uint32_t voltage = esp_adc_cal_raw_to_voltage( (int)(adc+0.5), adc_chars);
     // printf("Voltage %d\n", voltage);
 
 	float bat = (float)voltage * _correct * ( (100.0 + _setup->get()->_factory_volt_adjust) / 100.0 ) +  DIODE_VOLTAGE_DROP + _setup->get()->_voltmeter_adj;

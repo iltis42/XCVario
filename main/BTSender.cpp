@@ -253,10 +253,16 @@ void BTSender::begin( bool enable_bt, char * bt_name, int speed, bool bridge, bo
 	if( (speed != 0) && (bridge || _serial_tx)){
     	printf("Serial TX or Bridge enabled with speed: %d baud: %d tx_inv: %d rx_inv: %d\n",  speed, baud[speed], tx_inv, rx_inv );
     	Serial2.begin(baud[speed],SERIAL_8N1,16,17);   //  IO16: RXD2,  IO17: TXD2
-    	if( rx_inv )
-    		uart_set_line_inverse(2, UART_SIGNAL_RXD_INV);
-    	if( tx_inv )
-    		uart_set_line_inverse(2, UART_SIGNAL_TXD_INV);
+    	if( rx_inv || tx_inv ) {
+    		uart_signal_inv_t sigrx=UART_SIGNAL_INV_DISABLE;
+    		uart_signal_inv_t sigtx=UART_SIGNAL_INV_DISABLE;
+    		if( rx_inv )
+    			sigrx = UART_SIGNAL_RXD_INV;
+    		if( tx_inv )
+    			sigtx = UART_SIGNAL_TXD_INV;
+    		printf("Set UART Inversion Mask %d\n", sigrx | sigtx  );
+    		uart_set_line_inverse(2, sigrx | sigtx );
+    	}
     }
 	if( bridge && speed ) {
 		printf("Serial Bluetooth bridge enabled \n");

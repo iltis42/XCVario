@@ -80,8 +80,8 @@ void Setup::factorySetting()
 		_setup._serial2_speed = 0;   // 0: OFF 1:4800 2:9600 3:19200 4: 38400..
 		_setup._serial2_rxloop = 0;  // 0: dont loop, 1: loop
 		_setup._serial2_tx = 0;      // 0: dont TX, 1: TX
-		_setup._serial2_tx_inverted = 1;      // 0: normal, 1: inverted signal
-		_setup._serial2_rx_inverted = 1;      // 0: normal, 1: inverted signal
+		_setup._serial2_tx_inverted = RS232_INVERTED;      // 0: normal, 1: inverted signal
+		_setup._serial2_rx_inverted = RS232_INVERTED;      // 0: normal, 1: inverted signal
 		_setup._software_update = 0;
 		_setup._factory_volt_adjust = 0.00815;
 		printf("sefault _polar %d\n", Polars::numPolars() );

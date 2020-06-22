@@ -128,10 +128,12 @@ void drawDisplay(void *pvParameters){
 				t = DEVICE_DISCONNECTED_C;
 			display.drawDisplay( ias, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, aCl, s2fmode );
 		}
-		vTaskDelayUntil(&dLastWakeTime, 100/portTICK_PERIOD_MS);
+		// vTaskDelayUntil(&dLastWakeTime, 200/portTICK_PERIOD_MS);
+		vTaskDelay(30);
 	}
 }
 
+int count=0;
 
 void readBMP(void *pvParameters){
 	while (1)
@@ -153,15 +155,16 @@ void readBMP(void *pvParameters){
 					alt = bmpBA.calcAVGAltitude( mysetup.get()->_QNH, baroP );
 			   // printf("BA p=%f alt=%f QNH=%f\n", baroP, alt, mysetup.get()->_QNH );
 			}
-			xSemaphoreTake(xMutex,portMAX_DELAY );
-			if( mysetup.get()->_blue_enable ) {
-				char lb[120];
-				OV.makeNMEA( lb, baroP, speedP, TE, temperature );
-				btsender.send( lb );
-				vTaskDelay(1);
+			if( (count++ % 2) == 0 ) {  // reduce messages from 10 per second to 5 per second to reduce load in XCSoar
+				xSemaphoreTake(xMutex,portMAX_DELAY );
+				if( mysetup.get()->_blue_enable ) {
+					char lb[120];
+					OV.makeNMEA( lb, baroP, speedP, TE, temperature );
+					btsender.send( lb );
+					vTaskDelay(1);
+				}
+				xSemaphoreGive(xMutex);
 			}
-			xSemaphoreGive(xMutex);
-
 			speed = speed + (MP5004DP.pascal2km( speedP, temperature ) - speed)*0.1;
 			aTE = bmpVario.readAVGTE();
 			aCl = bmpVario.readAvgClimb();
@@ -537,9 +540,9 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280BA, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
-	xTaskCreatePinnedToCore(&readBMP, "readBMP", 8192, NULL, 20, bpid, 0);
-	xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 30, apid, 0);
-	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 10, dpid, 0);
+	xTaskCreatePinnedToCore(&readBMP, "readBMP", 8192, NULL, 5, bpid, 0);  // 20
+	xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 6, apid, 0);  // 30
+	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 4, dpid, 0);  // 10
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 8000, NULL, 3, tpid, 0);
 
 

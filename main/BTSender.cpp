@@ -15,15 +15,17 @@ extern xSemaphoreHandle nvMutex;
 
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
 
-RingBufCPP<SString, 20> mybuf;
+
+#define QUEUE_SIZE 40
+RingBufCPP<SString, QUEUE_SIZE> mybuf;
 
 char rxBuffer[120];
 int BTSender::i=0;
 bool BTSender::_serial_tx=false;
 
 #define RFCOMM_SERVER_CHANNEL 1
-#define HEARTBEAT_PERIOD_MS 20
-#define QUEUE_SIZE 20
+#define HEARTBEAT_PERIOD_MS 50
+
 
 bool      BTSender::_enable;
 bool      BTSender::bluetooth_up = false;
@@ -42,21 +44,23 @@ portMUX_TYPE btmux = portMUX_INITIALIZER_UNLOCKED;
 int BTSender::queueFull() {
 	if( !_enable )
 		return 1;
-	portENTER_CRITICAL_ISR(&btmux);
+	// portENTER_CRITICAL_ISR(&btmux);
 	int ret = 0;
 	if(mybuf.isFull())
 		ret=1;
-	portEXIT_CRITICAL_ISR(&btmux);
+	// portEXIT_CRITICAL_ISR(&btmux);
 	return ret;
 }
 
 void BTSender::send(char * s){
 	printf("%s",s);
-	portENTER_CRITICAL_ISR(&btmux);
+	// portENTER_CRITICAL_ISR(&btmux);
 	if ( !mybuf.isFull() && _enable ) {
+		portENTER_CRITICAL_ISR(&btmux);
 		mybuf.add( s );
+		portEXIT_CRITICAL_ISR(&btmux);
 	}
-	portEXIT_CRITICAL_ISR(&btmux);
+	// portEXIT_CRITICAL_ISR(&btmux);
 	if( _serial_tx ) {
 		    xSemaphoreTake(nvMutex,portMAX_DELAY );
 			Serial2.print(s);
@@ -67,18 +71,22 @@ void BTSender::send(char * s){
 
 void BTSender::heartbeat_handler(struct btstack_timer_source *ts){
 	if (rfcomm_channel_id ){
-		portENTER_CRITICAL_ISR(&btmux);
+        // printf("HBH..\n");
 		if ( !mybuf.isEmpty() ){
+			// printf("HBH..not empty\n");
 			if (rfcomm_can_send_packet_now(rfcomm_channel_id)){
+				// printf("HBH..can send now\n");
 				SString s;
+				portENTER_CRITICAL_ISR(&btmux);
 			    mybuf.pull(&s);
+			    portEXIT_CRITICAL_ISR(&btmux);
 				int err = rfcomm_send(rfcomm_channel_id, (uint8_t*) s.c_str(), s.length() );
 				if (err) {
 					printf("rfcomm_send -> error %d", err);
 				}
 			}
 		}
-		portEXIT_CRITICAL_ISR(&btmux);
+
 	}
 	btstack_run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
 	btstack_run_loop_add_timer(ts);
@@ -162,16 +170,20 @@ void BTSender::one_shot_timer_setup(void){
 
 #ifdef FLARM_SIM
 char *flarm[] = {
-"$PFLAA,0,11461,-9272,1436,1,AFFFFF,51,0,257,0.0,0*7A",
-"$PFLAA,0,2784,3437,216,1,AFFFFE,141,0,77,0.0,0*56",
-"$PFLAA,1,-1375,1113,64,1,AFFFFD,231,0,30,0.0,0*43",
-"$PFLAA,0,-3158,3839,1390,1,A858F3,302,0,123,-12.4,0*6B",
-"$GPRMC,084854.40,A,44xx.xxx38,N,093xx.xxx15,W,0.0,0.0,300116,,,D*43",
-"$PFLAA,0,11621,-9071,1437,1,AFFFFF,52,0,257,0.0,0*7F",
-"$PFLAA,0,2724,3485,218,1,AFFFFE,142,0,77,0.0,0*58",
-"$PFLAA,1,-1394,1089,65,1,AFFFFD,232,0,30,0.0,0*4C",
-"$PFLAA,0,-3158,3839,1384,1,A858F3,302,0,123,-12.4,0*6E",
-"$GPRMC,084855.40,A,44xx.xxx38,N,093xx.xxx15,W,0.0,0.0,300116,,,D*42"
+"$PFLAA,0,11461,-9272,1436,1,AFFFFF,51,0,257,0.0,0*7A\n",
+"$PFLAA,0,2784,3437,216,1,AFFFFE,141,0,77,0.0,0*56\n",
+"$PFLAA,1,-1375,1113,64,1,AFFFFD,231,0,30,0.0,0*43\n",
+"$PFLAA,0,-3158,3839,1390,1,A858F3,302,0,123,-12.4,0*6B\n",
+"$GPRMC,084854.40,A,44xx.xxx38,N,093xx.xxx15,W,0.0,0.0,300116,,,D*43\n",
+"$PFLAA,0,11621,-9071,1437,1,AFFFFF,52,0,257,0.0,0*7F\n",
+"$PFLAA,0,2724,3485,218,1,AFFFFE,142,0,77,0.0,0*58\n",
+"$PFLAA,1,-1394,1089,65,1,AFFFFD,232,0,30,0.0,0*4C\n",
+"$PFLAA,0,-3158,3839,1384,1,A858F3,302,0,123,-12.4,0*6E\n",
+"$GPRMC,084855.40,A,44xx.xxx38,N,093xx.xxx15,W,0.0,0.0,300116,,,D*42\n",
+"$GPGGA,152011.934,4850.555,N,00839.186,E,1,12,1.0,0.0,M,0.0,M,,*67\n",
+"$GPGSA,A,3,01,02,03,04,05,06,07,08,09,10,11,12,1.0,1.0,1.0*30\n",
+"$GPRMC,152949.571,A,4846.973,N,00843.677,E,,,220620,000.0,W*75\n"
+
 };
 #endif
 
@@ -194,10 +206,11 @@ void btBridge(void *pvParameters){
 	while(1) {
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 #ifdef FLARM_SIM
-		Serial2.print( flarm[i++] );
-		printf("Serial TX: %s\n",  flarm[i++] );
-		Serial2.print( '\n' );
-		if(i>9)
+		portENTER_CRITICAL_ISR(&btmux);
+		mybuf.add( flarm[i++] );
+		portEXIT_CRITICAL_ISR(&btmux);
+		// printf("Serial TX: %s\n",  flarm[i-1] );
+		if(i>12)
 			i=0;
 #endif
 		bool end=false;
@@ -213,7 +226,7 @@ void btBridge(void *pvParameters){
 		}
 		xSemaphoreGive(nvMutex);
 		if (readString.length() > 0) {
-			printf("Serial RX: %s\n", readString.c_str() );
+			// printf("Serial RX: %s\n", readString.c_str() );
 			portENTER_CRITICAL_ISR(&btmux);
 			mybuf.add( readString );
 			portEXIT_CRITICAL_ISR(&btmux);
@@ -260,13 +273,13 @@ void BTSender::begin( bool enable_bt, char * bt_name, int speed, bool bridge, bo
     			sigrx = UART_SIGNAL_RXD_INV;
     		if( tx_inv )
     			sigtx = UART_SIGNAL_TXD_INV;
-    		printf("Set UART Inversion Mask %d\n", sigrx | sigtx  );
+    		printf("Set UART Inversion Mask (4=RX | 32=TX): %d\n", sigrx | sigtx  );
     		uart_set_line_inverse(2, sigrx | sigtx );
     	}
     }
 	if( bridge && speed ) {
 		printf("Serial Bluetooth bridge enabled \n");
-		xTaskCreatePinnedToCore(&btBridge, "btBridge", 4096, NULL, 3, 0, 0);
+		xTaskCreatePinnedToCore(&btBridge, "btBridge", 4096, NULL, 30, 0, 0);
 	}
 };
 

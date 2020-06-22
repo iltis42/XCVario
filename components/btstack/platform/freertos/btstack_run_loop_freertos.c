@@ -295,6 +295,7 @@ static void btstack_run_loop_freertos_init(void){
 
     // task to handle to optimize 'run on main thread'
     btstack_run_loop_task = xTaskGetCurrentTaskHandle();
+    vTaskPrioritySet( btstack_run_loop_task, 20 );
 
     log_info("run loop init, task %p, queue item size %u", btstack_run_loop_task, (int) sizeof(function_call_t));
 }

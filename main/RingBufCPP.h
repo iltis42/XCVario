@@ -4,7 +4,7 @@
 #include "RingBufHelpers.h"
 
 
-#define SSTRLEN 100
+#define SSTRLEN 150
 class SString {
 public:
 	SString() { clear();

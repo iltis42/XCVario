@@ -165,7 +165,7 @@ void readBMP(void *pvParameters){
 				}
 				xSemaphoreGive(xMutex);
 			}
-			speed = speed + (MP5004DP.pascal2km( speedP, temperature ) - speed)*0.1;
+			speed = speed + (MP5004DP.pascal2km( speedP ) - speed)*0.1;
 			aTE = bmpVario.readAVGTE();
 			aCl = bmpVario.readAvgClimb();
 			vTaskDelay(1);
@@ -305,7 +305,7 @@ void sensor(void *args){
 	}
 
     // int valid;
-	temperature = ds18b20.getTemp();
+
 	String failed_tests;
 	failed_tests += "\n\n\n";
 
@@ -313,6 +313,45 @@ void sensor(void *args){
 	std::string ver( "Version: " );
 	ver += V.version();
 	display.writeText(line++, ver.c_str() );
+
+	printf("Speed sensors init..\n");
+	MP5004DP.begin( GPIO_NUM_21, GPIO_NUM_22, &mysetup);  // sda, scl
+	uint16_t val;
+	bool works=MP5004DP.selfTest( val );
+
+	MP5004DP.doOffset();
+	speedP=MP5004DP.readPascal(30);
+	speed = MP5004DP.pascal2km( speedP );
+	printf("Speed=%f\n", speed );
+
+	if( !works ){
+		printf("Error reading air speed pressure sensor MP5004DP->MCP3321 I2C returned error\n");
+		display.writeText( line++, "IAS Sensor: Not found");
+		failed_tests += "IAS Sensor: NOT FOUND\n";
+		selftestPassed = false;
+	}else {
+		if( !MP5004DP.offsetPlausible( val )  && ( speed < 50 ) ){
+			printf("Error: IAS P sensor offset MP5004DP->MCP3321 out of bounds (608-1034), act value=%d\n", val );
+			display.writeText( line++, "IAS Sensor: FAILED" );
+			failed_tests += "IAS Sensor offset test: FAILED\n";
+			selftestPassed = false;
+		}
+		else {
+			printf("MP5004->MCP3321 test PASSED, readout value in bounds (608-1034)=%d\n", val );
+			char s[40];
+			if( speed > 50 ) {
+				sprintf(s, "IAS Sensor: %d km/h", (int)(speed+0.5) );
+				display.writeText( line++, s );
+			}
+			else
+				display.writeText( line++, "IAS Sensor: OK" );
+
+			failed_tests += "IAS Sensor offset test: PASSED\n";
+		}
+	}
+
+	// Temp Sensor test
+	temperature = ds18b20.getTemp();
 	if( temperature == DEVICE_DISCONNECTED_C ) {
 		printf("Error: Self test Temperatur Sensor failed; returned T=%2.2f\n", temperature );
 		display.writeText( line++, "Temp Sensor: Not found");
@@ -334,8 +373,7 @@ void sensor(void *args){
 	sleep( 1 );
 
 	float ba_t, ba_p, te_t, te_p;
-
-	if( ! bmpBA.selfTest( ba_t, ba_p) ) {
+	if( ! bmpBA.selfTest( ba_t, ba_p)  ) {
 	    printf("HW Error: Self test Barometric Pressure Sensor failed!\n");
 		display.writeText( line++, "Baro Sensor: Not found");
 	    selftestPassed = false;
@@ -362,7 +400,7 @@ void sensor(void *args){
 	}
 
     if( selftestPassed ) {
-		if( abs(ba_t - te_t) >2.0 ) {
+		if( (abs(ba_t - te_t) >2.0)  && ( speed < 50 ) ) {
 			selftestPassed = false;
 			printf("Severe Temperature deviation delta > 2 °C between Baro and TE sensor: °C %f\n", abs(ba_t - te_t) );
 			display.writeText( line++, "TE/Baro Temp: Unequal");
@@ -374,7 +412,7 @@ void sensor(void *args){
 		    failed_tests += "TE/Baro Sensor T diff. <2°C: PASSED\n";
 		}
 
-		if( abs(ba_p - te_p) >2.0 ) {
+		if( (abs(ba_p - te_p) >2.0)  && ( speed < 50 ) ) {
 			selftestPassed = false;
 			printf("Severe Pressure deviation delta > 2 hPa between Baro and TE sensor: %f\n", abs(ba_p - te_p) );
 			display.writeText( line++, "TE/Baro P: Unequal");
@@ -391,31 +429,7 @@ void sensor(void *args){
 	bmpVario.setup();
 	VaSoSW.begin( GPIO_NUM_12 );
 	esp_task_wdt_reset();
-	printf("Speed sensors init..\n");
-	MP5004DP.begin( GPIO_NUM_21, GPIO_NUM_22, &mysetup);  // sda, scl
-	uint16_t val;
-	bool works=MP5004DP.selfTest( val );
 
-	if( !works ){
-		printf("Error reading air speed pressure sensor MP5004DP->MCP3321 I2C returned error\n");
-		display.writeText( line++, "IAS Sensor: Not found");
-		failed_tests += "IAS Sensor: NOT FOUND\n";
-		selftestPassed = false;
-	}
-
-	if( !MP5004DP.offsetPlausible( val )  ){
-		printf("Error: IAS P sensor offset MP5004DP->MCP3321 out of bounds (608-1034), act value=%d\n", val );
-		display.writeText( line++, "IAS Sensor: Offset Error");
-		failed_tests += "IAS Sensor offset test: FAILED\n";
-		selftestPassed = false;
-	}
-	else {
-		printf("MP5004->MCP3321 test PASSED, readout value in bounds (608-1034)=%d\n", val );
-		display.writeText( line++, "IAS Sensor: OK");
-		failed_tests += "IAS Sensor offset test: PASSED\n";
-	}
-
-	MP5004DP.doOffset();
 	printf("Audio begin\n");
 	Audio.begin( DAC_CHANNEL_1, GPIO_NUM_0, &mysetup );
 	printf("Poti and Audio test\n");
@@ -487,12 +501,7 @@ void sensor(void *args){
    Sound::playSound( DING, true );
 */
 	sleep(1);
-	speedP=MP5004DP.readPascal(30);
-	float t = temperature;
-	if( temperature == DEVICE_DISCONNECTED_C )
-		t = 15.0;
-	speed = MP5004DP.pascal2km( speedP, t );
-	printf("Speed=%f\n", speed);
+
 	display.initDisplay();
 	Menu.begin( &display, &Rotary, &mysetup, &bmpBA, &ADC );
 	if( speed < 50.0 ){

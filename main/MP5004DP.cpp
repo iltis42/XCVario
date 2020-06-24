@@ -45,6 +45,7 @@ bool MP5004DP::selfTest(uint16_t& val)
 
 bool MP5004DP::offsetPlausible(uint16_t aoffset )
 {
+	printf("MP5004DP offsetPlausible( %d )\n", aoffset );
 	if( (aoffset > 608 ) && (aoffset < 1034 )  )
 		return true;
 	else
@@ -129,7 +130,7 @@ float MP5004DP::readPascal( float minimum ){
 	return _pascal;
 }
 
-float   MP5004DP::pascal2km( float pascal, float temp )
+float   MP5004DP::pascal2km( float pascal )
 {
     // p = 1/2 * rho * v^2
     // v = sqrt( 2*p / rho )

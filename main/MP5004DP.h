@@ -53,7 +53,7 @@ public:
 	bool    begin(gpio_num_t sda, gpio_num_t scl, Setup *setup );
 	bool    doOffset( bool force=false );
 	float   readPascal( float minimum=min_pascal );
-	float   pascal2km( float pascal, float temp );
+	float   pascal2km( float pascal );
 	bool    selfTest(uint16_t& adval );
 	bool offsetPlausible( uint16_t offset );
 

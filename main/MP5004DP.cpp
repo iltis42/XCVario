@@ -46,7 +46,7 @@ bool MP5004DP::selfTest(uint16_t& val)
 bool MP5004DP::offsetPlausible(uint16_t aoffset )
 {
 	printf("MP5004DP offsetPlausible( %d )\n", aoffset );
-	if( (aoffset > 608 ) && (aoffset < 1034 )  )
+	if( (aoffset > 608 ) && (aoffset < 1067 )  )
 		return true;
 	else
 		return false;

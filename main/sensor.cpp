@@ -147,13 +147,13 @@ void readBMP(void *pvParameters){
 			speedP = MP5004DP.readPascal(30);
 			// vTaskDelay(1);
 			if( mysetup.get()->_alt_select == 0 ) // TE
-			   alt = bmpVario.readAVGalt();
+				alt = bmpVario.readAVGalt();
 			else { // Baro
 				if(  mysetup.get()->_alt_unit == 2 )  // FL
 					alt = bmpBA.calcAVGAltitude( 1013.25, baroP );
 				else
 					alt = bmpBA.calcAVGAltitude( mysetup.get()->_QNH, baroP );
-			   // printf("BA p=%f alt=%f QNH=%f\n", baroP, alt, mysetup.get()->_QNH );
+				// printf("BA p=%f alt=%f QNH=%f\n", baroP, alt, mysetup.get()->_QNH );
 			}
 			if( (count++ % 2) == 0 ) {  // reduce messages from 10 per second to 5 per second to reduce load in XCSoar
 				xSemaphoreTake(xMutex,portMAX_DELAY );
@@ -176,24 +176,7 @@ void readBMP(void *pvParameters){
 			vTaskDelay(1);
 			ias = (int)(speed+0.5);
 
-			switch( mysetup.get()->_audio_mode ) {
-				case 0: // Vario
-					s2fmode = false;
-					break;
-				case 1: // S2F
-					s2fmode = true;
-					break;
-				case 2: // Switch
-					s2fmode = VaSoSW.isClosed();
-					break;
-				case 3: // Auto
-					if( (speed > mysetup.get()->_s2f_speed)  or VaSoSW.isClosed())
-						s2fmode = true;
-					else
-						s2fmode = false;
-					break;
-			}
-			Audio.setS2FMode( s2fmode );
+
 		}
 		// printf("bmpTask stack=%d\n", uxTaskGetStackHighWaterMark( bpid ) );
 		esp_task_wdt_reset();
@@ -204,13 +187,31 @@ void readBMP(void *pvParameters){
 
 void audioTask(void *pvParameters){
 	while (1) {
-			TickType_t xLastWakeTime = xTaskGetTickCount();
-			if( Audio.getDisable() != true )
-			{
-				Audio.setValues( TE, s2f_delta );
-			}
-			vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
+		TickType_t xLastWakeTime = xTaskGetTickCount();
+		switch( mysetup.get()->_audio_mode ) {
+		case 0: // Vario
+			s2fmode = false;
+			break;
+		case 1: // S2F
+			s2fmode = true;
+			break;
+		case 2: // Switch
+			s2fmode = VaSoSW.isClosed();
+			break;
+		case 3: // Auto
+			if( (speed > mysetup.get()->_s2f_speed)  or VaSoSW.isClosed())
+				s2fmode = true;
+			else
+				s2fmode = false;
+			break;
 		}
+		Audio.setS2FMode( s2fmode );
+		if( Audio.getDisable() != true )
+		{
+			Audio.setValues( TE, s2f_delta );
+		}
+		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
+	}
 }
 
 
@@ -239,8 +240,8 @@ void readTemp(void *pvParameters){
 				validTemperature = true;
 				temperature = temperature + (t-temperature)*0.2;
 				if( no_t_sensor == true ) {
-						printf("Temperatur Sensor found, signal valid\n");
-						no_t_sensor = false;
+					printf("Temperatur Sensor found, signal valid\n");
+					no_t_sensor = false;
 				}
 			}
 			// printf("temperature=%f\n", temperature );
@@ -256,8 +257,8 @@ void readTemp(void *pvParameters){
 				printf("Warning display task stack low: %d bytes\n", uxTaskGetStackHighWaterMark( bpid ) );
 			if( uxTaskGetStackHighWaterMark( tpid ) < 1024 )
 				printf("Warning temperature task stack low: %d bytes\n", uxTaskGetStackHighWaterMark( tpid ) );
-		    printf("+++++++++++++  heap_caps_get_free_size: %d\n", heap_caps_get_free_size(MALLOC_CAP_8BIT));
-        }
+			printf("+++++++++++++  heap_caps_get_free_size: %d\n", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+		}
 	}
 }
 
@@ -270,12 +271,12 @@ void sensor(void *args){
 	NVS.begin();
 	mysetup.begin();
 	btsender.begin( mysetup.get()->_blue_enable,
-			        mysetup.getBtName(),
-				    mysetup.get()->_serial2_speed,
-				    mysetup.get()->_serial2_rxloop,
-					mysetup.get()->_serial2_tx,
-					(bool)(mysetup.get()->_serial2_tx_inverted),
-					(bool)(mysetup.get()->_serial2_rx_inverted) );
+			mysetup.getBtName(),
+			mysetup.get()->_serial2_speed,
+			mysetup.get()->_serial2_rxloop,
+			mysetup.get()->_serial2_tx,
+			(bool)(mysetup.get()->_serial2_tx_inverted),
+			(bool)(mysetup.get()->_serial2_rx_inverted) );
 
 
 	ADC.begin();  // for battery voltage
@@ -304,7 +305,7 @@ void sensor(void *args){
 		ota.doSoftwareUpdate( &display, &mysetup );
 	}
 
-    // int valid;
+	// int valid;
 
 	String failed_tests;
 	failed_tests += "\n\n\n";
@@ -374,32 +375,32 @@ void sensor(void *args){
 
 	float ba_t, ba_p, te_t, te_p;
 	if( ! bmpBA.selfTest( ba_t, ba_p)  ) {
-	    printf("HW Error: Self test Barometric Pressure Sensor failed!\n");
+		printf("HW Error: Self test Barometric Pressure Sensor failed!\n");
 		display.writeText( line++, "Baro Sensor: Not found");
-	    selftestPassed = false;
-	    failed_tests += "Baro Sensor Test: NOT FOUND\n";
+		selftestPassed = false;
+		failed_tests += "Baro Sensor Test: NOT FOUND\n";
 	}
 	else {
 		printf("Barometric Sensor T=%f P=%f\n", ba_t, ba_p);
-	    display.writeText( line++, "Baro Sensor: OK");
-	    failed_tests += "Baro Sensor Test: PASSED\n";
+		display.writeText( line++, "Baro Sensor: OK");
+		failed_tests += "Baro Sensor Test: PASSED\n";
 	}
 	esp_task_wdt_reset();
 
 	// bmpTE.selfTest(te_t, te_p);
 	if( ! bmpTE.selfTest(te_t, te_p) ) {
-	    printf("HW Error: Self test TE Pressure Sensor failed!\n");
-	    display.writeText( line++, "TE Sensor: Not found");
-	    selftestPassed = false;
-	    failed_tests += "TE Sensor Test: NOT FOUND\n";
+		printf("HW Error: Self test TE Pressure Sensor failed!\n");
+		display.writeText( line++, "TE Sensor: Not found");
+		selftestPassed = false;
+		failed_tests += "TE Sensor Test: NOT FOUND\n";
 	}
 	else {
 		printf("TE Sensor         T=%f P=%f\n", te_t, te_p);
-	    display.writeText( line++, "TE Sensor: OK");
-	    failed_tests += "TE Sensor Test: PASSED\n";
+		display.writeText( line++, "TE Sensor: OK");
+		failed_tests += "TE Sensor Test: PASSED\n";
 	}
 
-    if( selftestPassed ) {
+	if( selftestPassed ) {
 		if( (abs(ba_t - te_t) >2.0)  && ( speed < 50 ) ) {
 			selftestPassed = false;
 			printf("Severe Temperature deviation delta > 2 °C between Baro and TE sensor: °C %f\n", abs(ba_t - te_t) );
@@ -408,8 +409,8 @@ void sensor(void *args){
 		}
 		else{
 			printf("BMP 280 Temperature deviation test PASSED, dev: %f\n",  abs(ba_t - te_t));
-		    // display.writeText( line++, "TE/Baro Temp: OK");
-		    failed_tests += "TE/Baro Sensor T diff. <2°C: PASSED\n";
+			// display.writeText( line++, "TE/Baro Temp: OK");
+			failed_tests += "TE/Baro Sensor T diff. <2°C: PASSED\n";
 		}
 
 		if( (abs(ba_p - te_p) >2.0)  && ( speed < 50 ) ) {
@@ -420,10 +421,10 @@ void sensor(void *args){
 		}
 		else
 			printf("BMP 280 Pressure deviation test PASSED, dev: %f\n", abs(ba_p - te_p) );
-		    // display.writeText( line++, "TE/Baro P: OK");
-		    failed_tests += "TE/Baro Sensor P diff. <2hPa: PASSED\n";
+		// display.writeText( line++, "TE/Baro P: OK");
+		failed_tests += "TE/Baro Sensor P diff. <2hPa: PASSED\n";
 
-    }
+	}
 
 	bmpVario.begin( &bmpTE, &mysetup );
 	bmpVario.setup();
@@ -460,7 +461,7 @@ void sensor(void *args){
 	}
 
 	printf("BT Sender init, device name: %s\n", mysetup.getBtName() );
-    esp_task_wdt_reset();
+	esp_task_wdt_reset();
 
 
 
@@ -495,11 +496,11 @@ void sensor(void *args){
 		display.writeText( line++, "Selftest PASSED");
 		sleep(3);
 	}
-/*
+	/*
    Sound::playSound( DING );
    Sound::playSound( HI );
    Sound::playSound( DING, true );
-*/
+	 */
 	sleep(1);
 
 	display.initDisplay();

@@ -50,7 +50,7 @@ ESPAudio::ESPAudio( ) {
 	_variation = 3.0;
 	_testmode = false;
 	_button = GPIO_NUM_0;
-	_deadband = 0;
+	_s2f_deadband = 0;
 	_mute = false;
 	_test_ms = 0;
 	_dead_mute = true;
@@ -390,8 +390,8 @@ void ESPAudio::dactask(void* arg )
 			else{
 				if( sound_on ) {
 					if( (_chopping_mode == BOTH_CHOP) ||
-						(_s2f_mode && (_chopping_mode == S2F_CHOP)) ||
-						(!_s2f_mode && (_chopping_mode == VARIO_CHOP)) )
+							(_s2f_mode && (_chopping_mode == S2F_CHOP)) ||
+							(!_s2f_mode && (_chopping_mode == VARIO_CHOP)) )
 					{
 						if( cur_wiper != 0 ) {
 							Poti.writeWiper( 0 );
@@ -410,15 +410,21 @@ void ESPAudio::dactask(void* arg )
 
 bool ESPAudio::inDeadBand( float te )
 {
-   if( te > 0 ) {
-	   if( te < _deadband )
-		   return true;
-   }
-   else {
-  	   if( te > _deadband_neg )
-  		   return true;
-   }
-   return false;
+	float dbp = _deadband;
+	float dbn = _deadband_neg;
+	if( _s2f_mode ) {
+		dbp = _s2f_deadband;
+		dbn = -_s2f_deadband;
+	}
+	if( te > 0 ) {
+		if( te < dbp )
+			return true;
+	}
+	else {
+		if( te > dbn )
+			return true;
+	}
+	return false;
 }
 
 void ESPAudio::setValues( float te, float s2fd, bool fromtest )
@@ -429,15 +435,16 @@ void ESPAudio::setValues( float te, float s2fd, bool fromtest )
 	}
 	float max = _range;
 	if( _s2f_mode ) {
-		te = -s2fd/10.0;
+		_te = -s2fd/10.0;
 		max = 5.0;
 	}
-	if( te > max )
-		_te = max;
-	else if( te < -max )
-		_te = -max;
-	else
+	else {
 		_te = te;
+	}
+	if( _te > max )
+		_te = max;
+	else if( _te < -max )
+		_te = -max;
 }
 
 /*
@@ -459,12 +466,13 @@ void ESPAudio::setup()
 	_testmode = false;
 	_deadband = _setup->get()->_deadband;
 	_deadband_neg = _setup->get()->_deadband_neg;
+	_s2f_deadband = _setup->get()->_s2f_deadband/10.0;
 	_dead_mute = true;
 	_mute = false;
 	if( _setup->get()->_audio_range == 0 )
 		_range = 5.0;
 	else
-	_range = _setup->get()->_range;
+		_range = _setup->get()->_range;
 	_tonemode = 0; // _setup->get()->_dual_tone;
 	_high_tone_var = ((_setup->get()->_high_tone_var + 100.0)/100);
 	_chopping_mode = _setup->get()->_chopping_mode;
@@ -489,7 +497,7 @@ void ESPAudio::begin( dac_channel_t ch, gpio_num_t button, Setup *asetup )
 {
 	_setup = asetup;
 	setup();
-    mute();
+	mute();
 	_ch = ch;
 	_button = button;
 	restart();

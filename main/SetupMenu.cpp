@@ -586,7 +586,7 @@ void SetupMenu::setup( )
 			1.5, 4,
 			0.1 );
 	oc->setHelp(PROGMEM"Maximum tone frequency variation");
-
+	ade->addMenu( oc );
 
 
 	SetupMenuSelect * ar = new SetupMenuSelect( 	"Range",
@@ -603,21 +603,29 @@ void SetupMenu::setup( )
 	MenuEntry* dbe = ade->addMenu( db );
 	dbe->setHelp(PROGMEM"Audio dead band limits within Audio remains silent in metric scale. 0,1 m/s equals roughtly 20 ft/min or 0.2 knots");
 
-	SetupMenuValFloat * dbminlv = new SetupMenuValFloat( 	"Lower Val",
+	SetupMenuValFloat * dbminlv = new SetupMenuValFloat( 	"Lower Value Vario",
 		&_setup->get()->_deadband_neg,
 					"m/s",
 					-5.0, 0,
 					0.1 );
 	dbminlv->setHelp(PROGMEM"Lower limit for Audio mute function");
 	dbe->addMenu( dbminlv );
-	ade->addMenu( oc );
-	SetupMenuValFloat * dbmaxlv = new SetupMenuValFloat( 	"Upper Val",
+
+	SetupMenuValFloat * dbmaxlv = new SetupMenuValFloat( 	"Upper Value Vario",
 			&_setup->get()->_deadband,
 			"m/s",
 			0, 5.0,
 			0.1 );
 	dbmaxlv->setHelp(PROGMEM"Upper limit for Audio mute function");
 	dbe->addMenu( dbmaxlv );
+
+	SetupMenuValFloat * dbmaxls2f = new SetupMenuValFloat( 	"S2F Deadband",
+			&_setup->get()->_s2f_deadband,
+			"+-km/h",
+			0, 25.0,
+			1 );
+	dbmaxls2f->setHelp(PROGMEM"Positive and negative limit in speed deviation for S2F mute function");
+	dbe->addMenu( dbmaxls2f );
 
 
 

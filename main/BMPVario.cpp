@@ -18,11 +18,18 @@ void BMPVario::begin( BME280_ESP32_SPI *bmp, Setup* setup ) {
 		avClimbSec[i] = 0.0;
 	avindexSec = 0;
 	avindexMin = 0;
+	_S2FTE = 0.0;
 }
 
 double BMPVario::readAVGTE() {
 	return _avgTE;
 }
+
+float BMPVario::readS2FTE() {
+	_S2FTE += ( (float)_TEF - _S2FTE ) * ( 1/(_setup->get()->_s2f_delay * 10) );
+	return _S2FTE;
+}
+
 
 uint64_t lastrts = 0;
 void BMPVario::setup() {

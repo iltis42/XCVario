@@ -76,6 +76,7 @@ typedef struct {
 	uint8_t  _serial2_rx_inverted;
 	uint8_t  _software_update;
 	float    _s2f_deadband;
+	float    _s2f_delay;
 	float    _factory_volt_adjust;
 	uint32_t _checksum;
 } setup_t;

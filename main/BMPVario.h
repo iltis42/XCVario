@@ -63,6 +63,7 @@ public:
 	float readAvgClimb() { return averageClimb; }
 
 	double   readAVGTE();   // get TE value im m/s
+	float    readS2FTE();   // get TE value im m/s for S2F
 	inline double   readAVGalt() { return averageAlt; };   // get average Altitude
 	inline double   readCuralt() { return _currentAlt; };   // get average Altitude
 
@@ -96,6 +97,7 @@ private:
 	bool _init;
 	Setup *_setup;
 	float _damping;
+	float _S2FTE;
 	double _currentAlt;
 
 	float averageClimbSec;

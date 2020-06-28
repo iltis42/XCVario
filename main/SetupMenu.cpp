@@ -487,13 +487,21 @@ void SetupMenu::setup( )
 	vga->setPrecision( 0 );
 	vae->addMenu( vga );
 
-	SetupMenuValFloat * vda = new SetupMenuValFloat( 	"Damping",
+	SetupMenuValFloat * vda = new SetupMenuValFloat( 	"Vario Damping",
 			&_setup->get()->_vario_delay,
 			"sec",
 			2.0, 10.0,
 			0.1 );
 	vda->setHelp(PROGMEM"Response time, time constant of Vario low pass kalman filter");
 	vae->addMenu( vda );
+
+	SetupMenuValFloat * vds2 = new SetupMenuValFloat( 	"S2F Damping",
+			&_setup->get()->_s2f_delay,
+			"sec",
+			0.10001, 10.0,
+			0.1 );
+	vds2->setHelp(PROGMEM"Time constant of S2F low pass filter");
+	vae->addMenu( vds2 );
 
 	SetupMenuValFloat * vccm = new SetupMenuValFloat( "Mean Climb Minimum",
 				&_setup->get()->_core_climb_min,

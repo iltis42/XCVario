@@ -166,7 +166,7 @@ void readBMP(void *pvParameters){
 				xSemaphoreGive(xMutex);
 			}
 			speed = speed + (MP5004DP.pascal2km( speedP ) - speed)*0.1;
-			aTE = bmpVario.readAVGTE();
+			aTE = bmpVario.readS2FTE();
 			aCl = bmpVario.readAvgClimb();
 			vTaskDelay(1);
 			polar_sink = s2f.sink( speed );
@@ -175,8 +175,6 @@ void readBMP(void *pvParameters){
 			s2f_delta = as2f - speed;
 			vTaskDelay(1);
 			ias = (int)(speed+0.5);
-
-
 		}
 		// printf("bmpTask stack=%d\n", uxTaskGetStackHighWaterMark( bpid ) );
 		esp_task_wdt_reset();

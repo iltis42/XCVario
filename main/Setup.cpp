@@ -85,6 +85,7 @@ void Setup::factorySetting()
 		_setup._software_update = 0;
 		_setup._factory_volt_adjust = 0.00815;
 		_setup._s2f_deadband = 10.0;   // +-10 km/h per default S2F deadband
+		_setup._s2f_delay = 1.0;
 		printf("sefault _polar %d\n", Polars::numPolars() );
 		_setup._polar = Polars::getPolar(0); // default user polar
 		memset( _setup._bt_name, 0, sizeof( _setup._bt_name) );

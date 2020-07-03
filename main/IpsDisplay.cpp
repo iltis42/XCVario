@@ -92,6 +92,7 @@ ucg_color_t IpsDisplay::colorsalt[TEMAX+1];
 Ucglib_ILI9341_18x240x320_HWSPI *IpsDisplay::ucg = 0;
 
 int IpsDisplay::_te=0;
+int IpsDisplay::_ate=0;
 int IpsDisplay::s2falt=-1;
 int IpsDisplay::s2fdalt=0;
 int IpsDisplay::prefalt=0;
@@ -537,8 +538,8 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 	ucg->setColor(  COLOR_WHITE  );
 
     // Average Vario
-	if( int(_te*25) != (int)(te*25) ) {
-		if( te < 0 ) {
+	if( int(_ate*25) != (int)(ate*25) ) {
+		if( ate < 0 ) {
 			// erase V line from +
 			ucg->setColor( COLOR_BLACK );
 			ucg->drawVLine( FIELD_START+PMLEN/2-1, YVARMID-PMLEN/2, PMLEN );
@@ -560,9 +561,9 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 			ucg->drawVLine( FIELD_START+PMLEN/2+1, YVARMID-PMLEN/2, PMLEN );
 		}
 		ucg->setPrintPos(FIELD_START+SIGNLEN,YVAR);
-		float tep=te;
+		float tep=ate;
 		if( tep < 0 )
-			tep=-te;
+			tep=-ate;
 
 		if     ( UNITVAR == 0 )
 			ucg->printf("%0.1f  ", tep);
@@ -588,7 +589,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		int mslen = ucg->getStrWidth(units.c_str());
 		ucg->setPrintPos(DISPLAY_W-mslen,YVAR-12);
 		ucg->print(units.c_str());
-		_te = te;
+		_ate = ate;
 	}
 
 	// Altitude

@@ -99,6 +99,7 @@ SetupMenu  Menu;
 
 static float speed = 0;
 static float aTE = 0;
+static float aTES2F = 0;
 static float alt;
 static float aCl = 0;
 static float netto = 0;
@@ -166,11 +167,12 @@ void readBMP(void *pvParameters){
 				xSemaphoreGive(xMutex);
 			}
 			speed = speed + (MP5004DP.pascal2km( speedP ) - speed)*0.1;
-			aTE = bmpVario.readS2FTE();
+			aTE = bmpVario.readAVGTE();
+			aTES2F = bmpVario.readS2FTE();
 			aCl = bmpVario.readAvgClimb();
 			vTaskDelay(1);
 			polar_sink = s2f.sink( speed );
-			netto = aTE - polar_sink;
+			netto = aTES2F - polar_sink;
 			as2f = s2f.speed( netto );
 			s2f_delta = as2f - speed;
 			vTaskDelay(1);

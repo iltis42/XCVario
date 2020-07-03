@@ -38,9 +38,10 @@ void Setup::factorySetting()
 		_setup._deadband_neg = -0.3;
 		_setup._center_freq = 500.0;
 		_setup._tone_var = 2.0;
-		_setup._dual_tone = 1;
+		_setup._dual_tone = 0;    // single tone, 1 dual tone
 		_setup._high_tone_var = 12.0;
 		_setup._vario_delay = 3.0; // seconds
+		_setup._vario_av_delay = 5.0; // seconds
 		_setup._analog_adj = 0.0;
 		_setup._QNH = 1013.25;
 		_setup._blue_enable = 1;
@@ -55,7 +56,7 @@ void Setup::factorySetting()
 		_setup._contrast_adj = 85.0;
 		_setup._s2f_speed = 100.0;
 		_setup._audio_mode = 3;
-		_setup._chopping_mode = BOTH_CHOP;
+		_setup._chopping_mode = VARIO_CHOP;
 		_setup._glider_type = 0;
 		_setup._ps_display = 1;
 		_setup._bat_low_volt = 11.5;
@@ -77,8 +78,8 @@ void Setup::factorySetting()
 		_setup._ias_unit = 0;  // km/h
 		_setup._vario_unit = 0; // m/s
 		_setup._rot_default = 0; // Volume
-		_setup._serial2_speed = 0;   // 0: OFF 1:4800 2:9600 3:19200 4: 38400..
-		_setup._serial2_rxloop = 0;  // 0: dont loop, 1: loop
+		_setup._serial2_speed = 3;   // 0: OFF 1:4800 2:9600 3:19200 4: 38400..
+		_setup._serial2_rxloop = 1;  // 0: dont loop, 1: loop
 		_setup._serial2_tx = 0;      // 0: dont TX, 1: TX
 		_setup._serial2_tx_inverted = RS232_INVERTED;      // 0: normal, 1: inverted signal
 		_setup._serial2_rx_inverted = RS232_INVERTED;      // 0: normal, 1: inverted signal

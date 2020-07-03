@@ -25,6 +25,7 @@ typedef struct {
 	uint32_t _config_version;
 	float _speedcal;
 	float _vario_delay;
+	float _vario_av_delay;
 	float _center_freq;
 	float _QNH;
 	float _tone_var;

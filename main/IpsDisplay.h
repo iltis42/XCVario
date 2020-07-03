@@ -89,6 +89,7 @@ private:
 
 	// local variabls for dynamic display
 	static int _te;
+	static int _ate;
 	static int s2falt;
 	static int s2fdalt;
 	static int prefalt;

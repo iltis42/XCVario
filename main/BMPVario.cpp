@@ -115,7 +115,7 @@ double BMPVario::readTE() {
 	predictAlt = Altitude + (TEFR * delta);
 	_TEF = _TEF + ((TEFR - _TEF)/ delta ) /(_damping/delta);
 	// calcAnalogOut();
-	_avgTE = (_TEF - _avgTE)*0.02 +_avgTE;
+	_avgTE += (_TEF - _avgTE)* (1/(10*_setup->get()->_vario_av_delay));   // _av_damping in seconds, we have 10 samples per second.
 	if( holddown > 0 ) {
 		holddown--;
 	}

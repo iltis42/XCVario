@@ -487,13 +487,15 @@ void SetupMenu::setup( )
 	vga->setPrecision( 0 );
 	vae->addMenu( vga );
 
-	SetupMenuValFloat * vda = new SetupMenuValFloat( 	"Vario Damping",
+	SetupMenuValFloat * vda = new SetupMenuValFloat( 	"Vario Bar Damping",
 			&_setup->get()->_vario_delay,
 			"sec",
 			2.0, 10.0,
 			0.1 );
 	vda->setHelp(PROGMEM"Response time, time constant of Vario low pass kalman filter");
 	vae->addMenu( vda );
+
+
 
 	SetupMenuValFloat * vds2 = new SetupMenuValFloat( 	"S2F Damping",
 			&_setup->get()->_s2f_delay,
@@ -502,6 +504,15 @@ void SetupMenu::setup( )
 			0.1 );
 	vds2->setHelp(PROGMEM"Time constant of S2F low pass filter");
 	vae->addMenu( vds2 );
+
+	SetupMenuValFloat * vdav = new SetupMenuValFloat( 	"Average Vario Damping",
+				&_setup->get()->_vario_av_delay,
+				"sec",
+				2.0, 60.0,
+				0.1 );
+	vdav->setHelp(PROGMEM"Response time, time constant of digital Average Vario Display");
+	vae->addMenu( vdav );
+
 
 	SetupMenuValFloat * vccm = new SetupMenuValFloat( "Mean Climb Minimum",
 				&_setup->get()->_core_climb_min,
@@ -520,7 +531,7 @@ void SetupMenu::setup( )
     vae->addMenu( vcch );
 
 
-	SetupMenuSelect * sink = new SetupMenuSelect( 	"Polar Sink",
+	SetupMenuSelect * sink = new SetupMenuSelect( 	"Polar Sink Display",
 					&_setup->get()->_ps_display );
 	sink->setHelp(PROGMEM"Show polar sink rate together with TE in Vario bar");
 	sink->addEntry( "DISABLE");

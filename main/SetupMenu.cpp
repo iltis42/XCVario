@@ -797,7 +797,7 @@ void SetupMenu::setup( )
 	al->addEntry( "Baro Sensor");
 
 	SetupMenuValFloat * spc = new SetupMenuValFloat( "IAS Calibration", &_setup->get()->_speedcal, "%", -10, 10, 1, 0, false  );
-	bal->setHelp(PROGMEM"Calibration of indicated airspeed (IAS). Normally not needed, hence pressure probes may have systematic error");
+	aia->setHelp(PROGMEM"Calibration of indicated airspeed (IAS). Normally not needed, hence pressure probes may have systematic error");
 	aia->addMenu( spc );
 
 

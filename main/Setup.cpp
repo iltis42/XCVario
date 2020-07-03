@@ -29,6 +29,7 @@
 
 char Setup::_ID[14];
 
+
 void Setup::factorySetting()
 {
 		printf("Setup::factorySetting()\n");

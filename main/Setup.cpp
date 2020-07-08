@@ -33,7 +33,7 @@ char Setup::_ID[14];
 void Setup::factorySetting()
 {
 		printf("Setup::factorySetting()\n");
-		_setup._config_version = 200608;             // force factory setting when new software loaded.
+		_setup._config_version = 200705;             // force factory setting when new software loaded.
 		_setup._speedcal = 0.0;
 		_setup._deadband = 0.3;
 		_setup._deadband_neg = -0.3;

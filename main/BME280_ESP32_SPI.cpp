@@ -316,7 +316,7 @@ bool BME280_ESP32_SPI::selfTest( float& t, float &p ) {
 		printf("BMP280 Error, Temperatur reading BMP280 failed, invalid readout\n");
 		return( false );
 	}
-	if( (t < 0) || (t  > 70.0) ) {
+	if( (t < -32.0) || (t  > 70.0) ) {
 		printf("HW Error, Temperatur value reading BMP280 at normal condition (20 °C +-10) out of bounds readout T=%f\n", (float)t );
 		return( false );
 	}

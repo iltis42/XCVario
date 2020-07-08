@@ -26,6 +26,7 @@ float MCP3221::readAVG( float alpha ) {
 
 	uint16_t newval;
 	esp_err_t ret = readRaw(newval);
+	// printf("%d\n", newval );
 	if( ret == ESP_OK ){
 		// printf( "%d\n", newval );
 		if ( exponential_average == 0 ){

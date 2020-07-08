@@ -25,7 +25,7 @@
 #define ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
 #define ENABLE_SCO_OVER_HCI
 #define ENABLE_LOG_ERROR
-#define ENABLE_LOG_INFO
+// #define ENABLE_LOG_INFO
 // #define ENABLE_LOG_DEBUG
 
 // BTstack configuration. buffers, sizes, ...

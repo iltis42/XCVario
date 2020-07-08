@@ -243,7 +243,8 @@ void BTSender::begin( bool enable_bt, char * bt_name, int speed, bool bridge, bo
 	if( speed && serial_tx )
 		_serial_tx = true;
 	hci_dump_enable_log_level( ESP_LOG_INFO, 0 );
-	hci_dump_enable_log_level( ESP_LOG_ERROR, 1 );
+	hci_dump_enable_log_level( ESP_LOG_ERROR, 0 );
+	hci_dump_enable_log_level( ESP_LOG_WARN, 0 );
 	hci_dump_enable_log_level( ESP_LOG_DEBUG, 0 );
 	if( _enable ) {
 		l2cap_init();

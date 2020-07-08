@@ -41,7 +41,7 @@ public:
     static void readPos( void * args );
     static void informObservers( void * args );
     static void readPosInt( void * args );
-    static void readSwitch( void * args );
+    bool readSwitch();  // returns true if pressed
 
 private:
     xSemaphoreHandle swMutex;

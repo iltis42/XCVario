@@ -307,6 +307,7 @@ void sensor(void *args){
 
 	// int valid;
 
+
 	String failed_tests;
 	failed_tests += "\n\n\n";
 
@@ -489,12 +490,15 @@ void sensor(void *args){
 	if( !selftestPassed )
 	{
 		printf("\n\n\nSelftest failed, see above LOG for Problems\n\n\n");
+		esp_task_wdt_reset();
 		sleep(6);
 	}
 	else{
 		printf("\n\n\n*****  Selftest PASSED  ********\n\n\n");
 		display.writeText( line++, "Selftest PASSED");
+		esp_task_wdt_reset();
 		sleep(3);
+		esp_task_wdt_reset();
 	}
 	/*
    Sound::playSound( DING );
@@ -502,6 +506,78 @@ void sensor(void *args){
    Sound::playSound( DING, true );
 	 */
 	sleep(1);
+
+	if( Rotary.readSwitch() )
+	{
+		printf("Starting Leak test\n");
+        display.clear();
+        display.writeText( 1, "** Leak Test **");
+        float sba=0;
+        float ste=0;
+        float sspeed = 0;
+       	float bad=0;
+        float ted=0;
+        float speedd=0;
+        for( int i=0; i<24; i++ ){  // 180
+        	char bas[40];
+        	char tes[40];
+        	char pis[40];
+        	float ba=0;
+        	float te=0;
+        	float speed=0;
+#define LOOPS 150
+        	for( int j=0; j< LOOPS; j++ ) {
+          	  speed += MP5004DP.readPascal(5);
+        	  ba += bmpBA.readPressure();
+        	  te += bmpTE.readPressure();
+        	  delay( 33 );
+        	}
+        	ba = ba/LOOPS;
+        	te = te/LOOPS;
+        	speed = speed/LOOPS;
+        	if( i==0 ) {
+        		sba = ba;
+        		ste = te;
+        		sspeed = speed;
+        	}
+        	esp_task_wdt_reset();
+        	sprintf(bas, "ST P: %3.2f hPa   ", ba);
+        	sprintf(tes, "TE P: %3.2f hPa   ", te);
+        	sprintf(pis, "PI P: %3.2f Pa    ", speed);
+        	display.writeText( 2, bas);
+        	display.writeText( 3, tes);
+        	display.writeText( 4, pis);
+        	if( i==0 ) {
+        		printf("%s  %s  %s\n", bas,tes,pis);
+        	}
+        	if( i>=1 ) {
+        		bad = 100*(ba-sba)/sba;
+        		ted = 100*(te-ste)/ste;
+        		speedd = 100*(speed-sspeed)/sspeed;
+        		sprintf(bas, "ST delta: %2.3f %%   ", bad );
+        		sprintf(tes, "TE delta: %2.3f %%   ", ted );
+        		sprintf(pis, "PI delta: %2.2f %%   ", speedd );
+        		display.writeText( 5, bas);
+        	    display.writeText( 6, tes);
+        	    display.writeText( 7, pis);
+        	    printf("%s%s%s\n", bas,tes,pis);
+
+        	}
+        	char sec[40];
+        	sprintf(sec, "Seconds: %d", i*5);
+        	display.writeText( 8, sec );
+        }
+        if( (abs(bad) > 0.1) || (abs(ted) > 0.1) || ( (sspeed > 10.0) && (abs(speedd) > (1.0) ) ) ) {
+        	display.writeText( 9, "Test FAILED" );
+        	printf("FAILED\n");
+        }
+        else {
+        	display.writeText( 9, "Test PASSED" );
+        	printf("PASSED\n");
+        }
+        delay(5000);
+	}
+
 
 	display.initDisplay();
 	Menu.begin( &display, &Rotary, &mysetup, &bmpBA, &ADC );
@@ -562,6 +638,6 @@ void sensor(void *args){
 }
 
 extern "C" int btstack_main(int argc, const char * argv[]){
-	xTaskCreatePinnedToCore(&sensor, "sensor", 4096, NULL, 16, 0, 0);
+	xTaskCreatePinnedToCore(&sensor, "sensor", 12000, NULL, 16, 0, 0);
 	return 0;
 }

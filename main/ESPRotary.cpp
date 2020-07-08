@@ -21,6 +21,13 @@ void ESPRotary::attach(RotaryObserver *obs) {
 	observers.push_back(obs);
 }
 
+bool ESPRotary::readSwitch() {
+	if( gpio_get_level((gpio_num_t)sw) )
+		return false;
+	else
+		return true;
+}
+
 void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
 	clk = aclk;
 	dt = adt;

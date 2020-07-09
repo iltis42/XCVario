@@ -44,6 +44,7 @@ float DS18B20::getTemp(){
     	 // printf("T sensor disconnected\n");
     	 numDevices = dallas->getDeviceCount();
      }
+    ESP_LOGI("temp", "Temperatur: %f\n", temp );
 	// printf("Temperatur: %f\n", temp);
 	return temp;
 }

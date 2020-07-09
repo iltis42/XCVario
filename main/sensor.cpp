@@ -131,6 +131,7 @@ void drawDisplay(void *pvParameters){
 		}
 		// vTaskDelayUntil(&dLastWakeTime, 200/portTICK_PERIOD_MS);
 		vTaskDelay(30);
+		// esp_task_wdt_reset();
 	}
 }
 
@@ -143,7 +144,6 @@ void readBMP(void *pvParameters){
 		if( Audio.getDisable() != true )
 		{
 			TE = bmpVario.readTE();
-			vTaskDelay(1);
 			baroP = bmpBA.readPressure();
 			speedP = MP5004DP.readPascal(30);
 			// vTaskDelay(1);
@@ -179,7 +179,7 @@ void readBMP(void *pvParameters){
 			ias = (int)(speed+0.5);
 		}
 		// printf("bmpTask stack=%d\n", uxTaskGetStackHighWaterMark( bpid ) );
-		esp_task_wdt_reset();
+		// esp_task_wdt_reset();
 		// delay(85);
 		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
 	}
@@ -226,6 +226,7 @@ void readTemp(void *pvParameters){
 		{
 			battery = ADC.getBatVoltage();
 			// printf("Battery=%f V\n", battery );
+			delay(20);
 			t = ds18b20.getTemp();
 			if( t ==  DEVICE_DISCONNECTED_C ) {
 				printf("T sensor disconnected\n");
@@ -246,8 +247,9 @@ void readTemp(void *pvParameters){
 			}
 			// printf("temperature=%f\n", temperature );
 		}
-		esp_task_wdt_reset();
+		// // esp_task_wdt_reset();
 		vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS);
+
 		if( (ttick++ % 10) == 0) {
 			if( uxTaskGetStackHighWaterMark( bpid ) < 1024  )
 				printf("Warning sensor task stack low: %d bytes\n", uxTaskGetStackHighWaterMark( bpid ) );
@@ -259,6 +261,7 @@ void readTemp(void *pvParameters){
 				printf("Warning temperature task stack low: %d bytes\n", uxTaskGetStackHighWaterMark( tpid ) );
 			printf("+++++++++++++  heap_caps_get_free_size: %d\n", heap_caps_get_free_size(MALLOC_CAP_8BIT));
 		}
+
 	}
 }
 
@@ -386,7 +389,7 @@ void sensor(void *args){
 		display.writeText( line++, "Baro Sensor: OK");
 		failed_tests += "Baro Sensor Test: PASSED\n";
 	}
-	esp_task_wdt_reset();
+	// // esp_task_wdt_reset();
 
 	// bmpTE.selfTest(te_t, te_p);
 	if( ! bmpTE.selfTest(te_t, te_p) ) {
@@ -430,7 +433,7 @@ void sensor(void *args){
 	bmpVario.begin( &bmpTE, &mysetup );
 	bmpVario.setup();
 	VaSoSW.begin( GPIO_NUM_12 );
-	esp_task_wdt_reset();
+	// esp_task_wdt_reset();
 
 	printf("Audio begin\n");
 	Audio.begin( DAC_CHANNEL_1, GPIO_NUM_0, &mysetup );
@@ -462,7 +465,7 @@ void sensor(void *args){
 	}
 
 	printf("BT Sender init, device name: %s\n", mysetup.getBtName() );
-	esp_task_wdt_reset();
+	// esp_task_wdt_reset();
 
 
 
@@ -482,7 +485,7 @@ void sensor(void *args){
 	s2f.change_mc_bal();
 	Version myVersion;
 	printf("Program Version %s\n", myVersion.version() );
-	esp_task_wdt_reset();
+	// esp_task_wdt_reset();
 	// Audio.mute( false );
 	gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);  // blue LED, maybe use for BT connection
 
@@ -490,15 +493,16 @@ void sensor(void *args){
 	if( !selftestPassed )
 	{
 		printf("\n\n\nSelftest failed, see above LOG for Problems\n\n\n");
-		esp_task_wdt_reset();
-		sleep(6);
+		// esp_task_wdt_reset();
+		if( !Rotary.readSwitch() )
+			sleep(6);
 	}
 	else{
 		printf("\n\n\n*****  Selftest PASSED  ********\n\n\n");
 		display.writeText( line++, "Selftest PASSED");
-		esp_task_wdt_reset();
-		sleep(3);
-		esp_task_wdt_reset();
+		// esp_task_wdt_reset();
+		if( !Rotary.readSwitch() )
+			sleep(3);
 	}
 	/*
    Sound::playSound( DING );
@@ -540,7 +544,7 @@ void sensor(void *args){
         		ste = te;
         		sspeed = speed;
         	}
-        	esp_task_wdt_reset();
+        	// esp_task_wdt_reset();
         	sprintf(bas, "ST P: %3.2f hPa   ", ba);
         	sprintf(tes, "TE P: %3.2f hPa   ", te);
         	sprintf(pis, "PI P: %3.2f Pa    ", speed);
@@ -564,7 +568,7 @@ void sensor(void *args){
 
         	}
         	char sec[40];
-        	sprintf(sec, "Seconds: %d", i*5);
+        	sprintf(sec, "Seconds: %d", (i*5)+5 );
         	display.writeText( 8, sec );
         }
         if( (abs(bad) > 0.1) || (abs(ted) > 0.1) || ( (sspeed > 10.0) && (abs(speedd) > (1.0) ) ) ) {
@@ -577,11 +581,13 @@ void sensor(void *args){
         }
         while(1) {
         	delay(5000);
+        	// esp_task_wdt_reset();
         }
 	}
 
 
 	display.initDisplay();
+	// esp_task_wdt_reset();
 	Menu.begin( &display, &Rotary, &mysetup, &bmpBA, &ADC );
 	if( speed < 50.0 ){
 		xSemaphoreTake(xMutex,portMAX_DELAY );
@@ -608,19 +614,21 @@ void sensor(void *args){
 				}
 				if( diff > 1.0 ) // we are ready, values get already positive
 					break;
+				// esp_task_wdt_reset();
 			}
 			printf("qnh=%4.2f\n\n\n", qnh_best);
 			mysetup.get()->_QNH = qnh_best;
 		}
 
 		SetupMenuValFloat::showQnhMenu();
+		// esp_task_wdt_reset();
 		xSemaphoreGive(xMutex);
 	}
 	else
 	{
 		Audio.disable(false);
 	}
-	esp_task_wdt_reset();
+	// esp_task_wdt_reset();
 	Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
 
 	gpio_set_pull_mode(RESET_Display, GPIO_PULLUP_ONLY );
@@ -628,18 +636,22 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280BA, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
-	xTaskCreatePinnedToCore(&readBMP, "readBMP", 8192, NULL, 5, bpid, 0);  // 20
+	xTaskCreatePinnedToCore(&readBMP, "readBMP", 12000, NULL, 5, bpid, 0);  // 20
+	// esp_task_wdt_reset();
 	xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 6, apid, 0);  // 30
+	// esp_task_wdt_reset();
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 4, dpid, 0);  // 10
+	// esp_task_wdt_reset();
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 8000, NULL, 3, tpid, 0);
-
-
-
 	vTaskDelete( NULL );
 
 }
 
 extern "C" int btstack_main(int argc, const char * argv[]){
+	esp_log_level_set("*", ESP_LOG_ERROR);     // set all components to ERROR
+	esp_log_level_set("*", ESP_LOG_WARN);      // enable WARN logs
+	esp_log_level_set("*", ESP_LOG_INFO);      // enable INFO logs
+
 	xTaskCreatePinnedToCore(&sensor, "sensor", 12000, NULL, 16, 0, 0);
 	return 0;
 }

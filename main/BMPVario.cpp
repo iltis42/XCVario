@@ -84,7 +84,9 @@ double BMPVario::readTE() {
 		predictAlt = _currentAlt;
 		Altitude = _currentAlt;
 		averageAlt = _currentAlt;
-		printf("Initial Alt=%0.1f\n",Altitude);
+		// printf("Initial Alt=%0.1f\n",Altitude);
+		ESP_LOGI("bmp", "Initial Alt=%0.1f\n",Altitude );
+
 		// analogOut();  // set defaults
 		_init = false;
 	}

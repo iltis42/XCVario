@@ -575,7 +575,9 @@ void sensor(void *args){
         	display.writeText( 9, "Test PASSED" );
         	printf("PASSED\n");
         }
-        delay(5000);
+        while(1) {
+        	delay(5000);
+        }
 	}
 
 

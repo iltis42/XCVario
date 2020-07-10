@@ -15,7 +15,9 @@ gpio_num_t ESPRotary::clk, ESPRotary::dt, ESPRotary::sw;
 std::vector<RotaryObserver *> ESPRotary::observers;
 
 pcnt_config_t ESPRotary::enc;
-int16_t ESPRotary::r_enc_count = 0;
+pcnt_config_t ESPRotary::enc2;
+int16_t ESPRotary::r_enc_count  = 0;
+int16_t ESPRotary::r_enc2_count = 0;
 
 void ESPRotary::attach(RotaryObserver *obs) {
 	observers.push_back(obs);
@@ -33,7 +35,6 @@ void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
 	dt = adt;
 	sw = asw;
 
-
 	enc.pulse_gpio_num = clk; //Rotary Encoder Chan A
 	enc.ctrl_gpio_num = dt;	 //Rotary Encoder Chan B
 	enc.unit = PCNT_UNIT_0;
@@ -45,12 +46,31 @@ void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
 	enc.lctrl_mode = PCNT_MODE_KEEP;    // Rising A on HIGH B = CW Step
 	enc.hctrl_mode = PCNT_MODE_REVERSE; // Rising A on LOW B = CCW Step
 
-	enc.counter_h_lim = 100;
-	enc.counter_l_lim = -100;
+	enc.counter_h_lim = 32000;
+	enc.counter_l_lim = -32000;
 
 	pcnt_unit_config(&enc);
 	pcnt_set_filter_value(PCNT_UNIT_0, 250);  // Filter Runt Pulses
 	pcnt_filter_enable(PCNT_UNIT_0);
+
+// second encoder for incrementin on each rotary step:
+	enc2.pulse_gpio_num = clk; //Rotary Encoder Chan A
+	enc2.ctrl_gpio_num = dt;	 //Rotary Encoder Chan B
+	enc2.unit = PCNT_UNIT_1;
+	enc2.channel = PCNT_CHANNEL_1;
+
+	enc2.pos_mode = PCNT_COUNT_DIS; //Count Only On Rising-Edges
+	enc2.neg_mode = PCNT_COUNT_INC;	// Discard Falling-Edge
+
+	enc2.lctrl_mode = PCNT_MODE_REVERSE;    // Rising A on HIGH B = CW Step
+	enc2.hctrl_mode = PCNT_MODE_KEEP; // Rising A on LOW B = CCW Step
+
+	enc2.counter_h_lim = 32000;
+	enc2.counter_l_lim = -32000;
+
+	pcnt_unit_config(&enc2);
+	pcnt_set_filter_value(PCNT_UNIT_1, 250);  // Filter Runt Pulses
+	pcnt_filter_enable(PCNT_UNIT_1);
 
 	gpio_set_direction(sw,GPIO_MODE_INPUT);
 	gpio_pullup_en(sw); // Rotary Encoder Button
@@ -60,6 +80,11 @@ void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
 	pcnt_counter_pause(PCNT_UNIT_0); // Initial PCNT init
 	pcnt_counter_clear(PCNT_UNIT_0);
 	pcnt_counter_resume(PCNT_UNIT_0);
+
+	pcnt_counter_pause(PCNT_UNIT_1); // Initial PCNT init
+	pcnt_counter_clear(PCNT_UNIT_1);
+	pcnt_counter_resume(PCNT_UNIT_1);
+
 	xTaskCreatePinnedToCore(&ESPRotary::informObservers, "informObservers", 1024*8, NULL, 29, NULL, 0);
 }
 
@@ -100,18 +125,22 @@ void ESPRotary::informObservers( void * args )
 		}
 		if( pcnt_get_counter_value(PCNT_UNIT_0, &r_enc_count) != ESP_OK )
 				printf("Error get counter\n");
-		if( r_enc_count != old_cnt )
+		if( pcnt_get_counter_value(PCNT_UNIT_1, &r_enc2_count) != ESP_OK )
+					printf("Error get counter\n");
+
+		if( r_enc_count+r_enc2_count != old_cnt )
 		{
-			// printf("Rotary counter %d\n", r_enc_count );
-			int diff = r_enc_count - old_cnt;
-			pcnt_counter_clear(PCNT_UNIT_0);
+			// pcnt_counter_clear(PCNT_UNIT_0);
+			// printf("Rotary counter %d %d\n", r_enc_count,  r_enc2_count);
+			int diff = (r_enc_count+r_enc2_count) - old_cnt;
+			old_cnt = r_enc_count+r_enc2_count;
 			if( diff < 0 ) {
-				printf("Rotary up %d times\n",abs(diff) );
+				// printf("Rotary up %d times\n",abs(diff) );
 				for (int i = 0; i < observers.size(); i++)
 					observers[i]->up( abs(diff) );
 			}
 			else if( diff > 0 ) {
-				printf("Rotary down %d times\n", abs(diff) );
+				// printf("Rotary down %d times\n", abs(diff) );
 				for (int i = 0; i < observers.size(); i++)
 					observers[i]->down( abs(diff) );
 			}

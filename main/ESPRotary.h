@@ -49,7 +49,9 @@ private:
 	static std::vector<RotaryObserver *> observers;
     static gpio_num_t clk, dt, sw;
     static pcnt_config_t enc;
+    static pcnt_config_t enc2;
     static int16_t r_enc_count;
+    static int16_t r_enc2_count;
 };
 
 #endif

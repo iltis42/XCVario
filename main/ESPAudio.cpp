@@ -123,7 +123,7 @@ bool ESPAudio::selfTest(){
 		ret = true;
 	// Tone test, beep 440 Hz 1 second
 	_testmode=true;  // disable task for modulation
-	Poti.writeWiper( 12 );
+	Poti.writeWiper( ((_setup->get()->_default_volume * 100.0) / 128) -1 );
 	dac_output_enable(_ch);
 	for( float f=261.62; f<1046.51; f=f*1.03){
 		// printf("f=%f\n",f);
@@ -510,7 +510,7 @@ void ESPAudio::begin( dac_channel_t ch, gpio_num_t button, Setup *asetup )
 
 	Poti.begin(GPIO_NUM_21, GPIO_NUM_22);
 
-	cur_wiper = (uint16_t)( ( (_setup->get()->_default_volume * 100.0) / 64) -1 );
+	cur_wiper = (uint16_t)( ( (_setup->get()->_default_volume * 100.0) / 128) -1 );
 	wiper = cur_wiper;
 	Poti.writeWiper( cur_wiper );
 	// Enable Audio Amplifiler

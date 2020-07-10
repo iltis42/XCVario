@@ -74,7 +74,7 @@ void Setup::factorySetting()
 		_setup._flap_minus_1 = 105;
 		_setup._flap_0 = 88;
 		_setup._flap_plus_1 = 78;
-		_setup._default_volume = 40.0;
+		_setup._default_volume = 20.0;  // 40 % is too loud
 		_setup._alt_unit = 0;  // m
 		_setup._ias_unit = 0;  // km/h
 		_setup._vario_unit = 0; // m/s

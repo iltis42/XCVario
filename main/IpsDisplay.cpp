@@ -612,7 +612,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 	int MC = _setup->get()->_MC * 10;
 	if( MC != mcalt ) {
 			ucg->setFont(ucg_font_fub11_hr);
-			ucg->setPrintPos(5,DISPLAY_H-5);
+			ucg->setPrintPos(5,DISPLAY_H);
 			ucg->setColor(COLOR_HEADER);
 			ucg->printf("MC:");
 			ucg->setColor(COLOR_WHITE);

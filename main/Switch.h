@@ -13,8 +13,8 @@ public:
 	Switch( );
 	virtual ~Switch();
 	void begin( gpio_num_t sw );
-	inline bool isClosed() {  return( !(bool)( gpio_get_level(_sw) ) ); }
-	inline bool isOpen() {  return( (bool)( gpio_get_level(_sw) ) ); }
+	bool isClosed();
+	bool isOpen();
 private:
 	gpio_num_t _sw;
 };

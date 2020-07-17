@@ -1,6 +1,7 @@
+
+#include <esp_log.h>
 #include "BTSender.h"
 #include <string>
-#include <esp_log.h>
 #include "sdkconfig.h"
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
@@ -10,6 +11,8 @@
 #include <HardwareSerial.h>
 #include "RingBufCPP.h"
 #include <driver/uart.h>
+
+static const char *TAG = "bts";
 
 extern xSemaphoreHandle nvMutex;
 
@@ -44,23 +47,22 @@ portMUX_TYPE btmux = portMUX_INITIALIZER_UNLOCKED;
 int BTSender::queueFull() {
 	if( !_enable )
 		return 1;
-	// portENTER_CRITICAL_ISR(&btmux);
 	int ret = 0;
 	if(mybuf.isFull())
 		ret=1;
-	// portEXIT_CRITICAL_ISR(&btmux);
 	return ret;
 }
 
 void BTSender::send(char * s){
-	printf("%s",s);
-	// portENTER_CRITICAL_ISR(&btmux);
+	// printf("%s",s);
+	ESP_LOGI( TAG,"I %s",s);
+	// ESP_LOGW( TAG,"W %s",s);
+	// ESP_LOGE( TAG,"E %s",s);
 	if ( !mybuf.isFull() && _enable ) {
 		portENTER_CRITICAL_ISR(&btmux);
 		mybuf.add( s );
 		portEXIT_CRITICAL_ISR(&btmux);
 	}
-	// portEXIT_CRITICAL_ISR(&btmux);
 	if( _serial_tx ) {
 		    xSemaphoreTake(nvMutex,portMAX_DELAY );
 			Serial2.print(s);

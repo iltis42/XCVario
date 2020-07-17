@@ -801,14 +801,14 @@ void SetupMenu::setup( )
 	// Altimeter, IAS
 	SetupMenu * aia = new SetupMenu( "Altimeter, IAS" );
 	sye->addMenu( aia );
-	SetupMenuSelect * al = new SetupMenuSelect( 	"Altimeter Source",	&_setup->get()->_alt_select );
-	aia->addMenu( al );
-	al->setHelp( PROGMEM "Select Source of altimeter to either barometric or static pressure sensor (default), or TE sensor what results in an 'energy' altitude");
-	al->addEntry( "TE   Sensor");
-	al->addEntry( "Baro Sensor");
+	SetupMenuSelect * als = new SetupMenuSelect( 	"Altimeter Source",	&_setup->get()->_alt_select );
+	aia->addMenu( als );
+	als->setHelp( PROGMEM "Select Source of altimeter to either barometric or static pressure sensor (default), or TE sensor what results in an 'energy' altitude");
+	als->addEntry( "TE   Sensor");
+	als->addEntry( "Baro Sensor");
 
 	SetupMenuValFloat * spc = new SetupMenuValFloat( "IAS Calibration", &_setup->get()->_speedcal, "%", -10, 10, 1, 0, false  );
-	aia->setHelp(PROGMEM"Calibration of indicated airspeed (IAS). Normally not needed, hence pressure probes may have systematic error");
+	spc->setHelp(PROGMEM"Calibration of indicated airspeed (IAS). Normally not needed, hence pressure probes may have systematic error");
 	aia->addMenu( spc );
 
 

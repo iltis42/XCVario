@@ -762,7 +762,7 @@ void SetupMenu::setup( )
 	fa->addEntry( "ResetAll");
 	sye->addMenu( fa );
 
-	SetupMenu * bat = new SetupMenu( "Battery Limits" );
+	SetupMenu * bat = new SetupMenu( "Battery Setup" );
 	bat->setHelp( PROGMEM "Adjust corresponding voltage for battery symbol display low,red,yellow and full");
     sye->addMenu( bat );
 
@@ -775,10 +775,16 @@ void SetupMenu::setup( )
 	SetupMenuValFloat * bfull = new SetupMenuValFloat(
 				"Battery Full", &_setup->get()->_bat_full_volt, "Volt ", 0.0, 28.0, 0.1  );
 
+	SetupMenuSelect * batv = new SetupMenuSelect( "Battery Display", &_setup->get()->_battery_display );
+	batv->setHelp(PROGMEM "Option to display battery charge state either in Percentage e.g. 75% or Voltage e.g. 12.5V");
+	batv->addEntry( "Percentage");
+	batv->addEntry( "Voltage");
+
 	bat->addMenu(blow);
 	bat->addMenu(bred);
 	bat->addMenu(byellow);
 	bat->addMenu(bfull);
+	bat->addMenu( batv );
 
 	 // UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P
 	if( _setup->get()->_display_type == UNIVERSAL )

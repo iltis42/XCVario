@@ -663,7 +663,12 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		ucg->setColor( COLOR_WHITE );
 		ucg->setFont(ucg_font_fub11_hr);
 		ucg->setPrintPos(BATX-40,BATY-8);
-		ucg->printf("%3d%%  ", charge);
+		if( _setup->get()->_battery_display == 0 )
+			ucg->printf("%3d%%  ", charge);
+		else {
+			ucg->setPrintPos(BATX-50,BATY-8);
+			ucg->printf("%2.1f V", volt);
+		}
 		chargealt = chargev;
 	}
 	if( charge < red ) {  // blank battery for blinking

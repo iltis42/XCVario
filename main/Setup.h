@@ -79,6 +79,7 @@ typedef struct {
 	float    _s2f_deadband;
 	float    _s2f_delay;
 	float    _factory_volt_adjust;
+	uint8_t  _battery_display;
 	uint32_t _checksum;
 } setup_t;
 

@@ -331,8 +331,17 @@ bool output_enable = false;
 void  ESPAudio::adjustVolume(){
 	if( cur_wiper != wiper ) {
 		printf("*****  SET WIPER=%d\n", wiper );
+		uint16_t w;
+		if( wiper == 0 ) {
+			w=0;
+			enableAmplifier( false );
+		}
+		else {
+			w=wiper-1;
+			enableAmplifier( true );
+		}
 		if( sound_on ) {
-			Poti.writeWiper( wiper );
+			Poti.writeWiper( w );
 		}
 		cur_wiper = wiper;
 	}
@@ -370,8 +379,11 @@ void ESPAudio::dactask(void* arg )
 			int step = int( (f/freq_step ) + 0.5);
 			if( Audio.inDeadBand(te) || Audio.getMute()  ){
 				sound = false;
+				enableAmplifier(false);
 			}
 			else{
+				if( wiper != 0 )
+					enableAmplifier(true);
 				if( hightone && (_tonemode == 1)  ){
 					step = int( (f*_high_tone_var/freq_step) + 0.5);
 				}
@@ -514,12 +526,23 @@ void ESPAudio::begin( dac_channel_t ch, gpio_num_t button, Setup *asetup )
 	wiper = cur_wiper;
 	Poti.writeWiper( cur_wiper );
 	// Enable Audio Amplifiler
-	gpio_set_direction(GPIO_NUM_19, GPIO_MODE_INPUT );   // use pullup 1 == SOUND 0 == SILENCE
-	gpio_set_pull_mode(GPIO_NUM_19, GPIO_FLOATING);      // ESP32 level too low from PAM enable
+	enableAmplifier( true );
 	// Sound::setPoti( &Poti );
 }
 
 
+void ESPAudio::enableAmplifier( bool enable )
+{
+	// enable Audio
+    if( enable )
+    {
+    	gpio_set_direction(GPIO_NUM_19, GPIO_MODE_INPUT );   // use pullup 1 == SOUND 0 == SILENCE
+    }
+    else {
+    	gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );   // use pullup 1 == SOUND 0 == SILENCE
+        gpio_set_level(GPIO_NUM_19, 0 );
+    }
+}
 
 void ESPAudio::disable( bool disable ) {
 	_disable = disable;

@@ -668,7 +668,7 @@ void SetupMenu::setup( )
 	poe->addMenu( pa );
 
 	SetupMenuValFloat * wil = new SetupMenuValFloat(
-				"Wingload", &_setup->get()->_polar.wingload, "kg/m2", 10.0, 100.0, 1, polar_adj );
+				"Wingload", &_setup->get()->_polar.wingload, "kg/m2", 10.0, 100.0, 0.1, polar_adj );
 	pa->addMenu( wil );
 	SetupMenuValFloat * pov1 = new SetupMenuValFloat(
 			"Speed 1", &_setup->get()->_polar.speed1, "km/h", 50.0, 120.0, 1, polar_adj );

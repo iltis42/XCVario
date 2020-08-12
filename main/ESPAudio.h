@@ -58,6 +58,7 @@ private:
 	float getVariation() { return _variation; };
 	float getDeadBand() { return _deadband; };
 	int getMute() { return _mute; };
+    static void enableAmplifier( bool enable );  // frue ON, false OFF
 
 	inline gpio_num_t getButton() { return _button; }
 	bool inDeadBand( float te );

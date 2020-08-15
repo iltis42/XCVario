@@ -132,7 +132,12 @@ int bal_adj( SetupMenuValFloat * p )
     p->ucg->setFont(ucg_font_fub25_hr);
     xSemaphoreTake(spiMutex,portMAX_DELAY );
     p->ucg->setPrintPos(1,110);
-    p->ucg->printf("%0.2f kg/m2", newwl);
+    p->ucg->printf("%0.2f kg/m2  ", newwl);
+    p->ucg->setPrintPos(1,150);
+    float refw=p->_setup->get()->_polar.wingload * p->_setup->get()->_polar.wingarea;
+    float curw=newwl * p->_setup->get()->_polar.wingarea;
+    unsigned int liter=(curw-refw) + 0.5;
+    p->ucg->printf("%u liter  ", liter);
 	xSemaphoreGive(spiMutex );
 	p->ucg->setFont(ucg_font_ncenR14_hr);
     return 0;
@@ -455,11 +460,11 @@ void SetupMenu::setup( )
 	SetupMenu * root = new SetupMenu( "Setup" );
 	MenuEntry* mm = root->addMenu( root );
 
-	SetupMenuValFloat * mc = new SetupMenuValFloat( "MC", &_setup->get()->_MC, "m/s",	0.01, 9.9, 0.1,  mc_adj, true );
+	SetupMenuValFloat * mc = new SetupMenuValFloat( "MC", &_setup->get()->_MC, "m/s",	0.0, 9.9, 0.1,  mc_adj, true );
 	mc->setHelp(PROGMEM"Default Mac Cready value for optimum cruise speed, or average climb rate, MC is provided in usual metric system means");
 	mm->addMenu( mc );
 
-	SetupMenuValFloat * vol = new SetupMenuValFloat( "Audio Volume", &volume, "%", 0, 100, 1, vol_adj, true  );
+	SetupMenuValFloat * vol = new SetupMenuValFloat( "Audio Volume", &volume, "%", 0.0, 100, 1, vol_adj, true  );
 	vol->setHelp(PROGMEM"Set audio volume");
 	mm->addMenu( vol );
 
@@ -467,7 +472,7 @@ void SetupMenu::setup( )
 	SetupMenuValFloat::qnh_menu->setHelp(PROGMEM"Setup QNH pressure value from next ATC. On ground you may adjust to airfield altitude above MSL.");
 	mm->addMenu( SetupMenuValFloat::qnh_menu );
 
-	SetupMenuValFloat * bal = new SetupMenuValFloat( "Ballast", &_setup->get()->_ballast, "%", 0.0, 100, 1, bal_adj, true  );
+	SetupMenuValFloat * bal = new SetupMenuValFloat( "Ballast", &_setup->get()->_ballast, "%", 0.0, 100, 0.2, bal_adj, true  );
 	bal->setHelp(PROGMEM"Percent wing load increase by ballast");
 	mm->addMenu( bal );
 
@@ -689,6 +694,7 @@ void SetupMenu::setup( )
 
 	SetupMenuValFloat * wil = new SetupMenuValFloat(
 				"Wingload", &_setup->get()->_polar.wingload, "kg/m2", 10.0, 100.0, 0.1, polar_adj );
+	wil->setHelp(PROGMEM"Wingload that corresponds to the 3 value pairs for speed/sink of polar");
 	pa->addMenu( wil );
 	SetupMenuValFloat * pov1 = new SetupMenuValFloat(
 			"Speed 1", &_setup->get()->_polar.speed1, "km/h", 50.0, 120.0, 1, polar_adj );
@@ -719,6 +725,11 @@ void SetupMenu::setup( )
 				"Max Ballast", &_setup->get()->_polar.max_ballast, "liters", 0, 500, 1 );
 	maxbal->setHelp(PROGMEM"Maximum water ballast for selected glider to allow sync from XCSoar using fraction of max ballast");
 	poe->addMenu( maxbal );
+
+	SetupMenuValFloat * wingarea = new SetupMenuValFloat(
+				"Wing Area", &_setup->get()->_polar.wingarea, "m2", 0, 50, 0.1 );
+	wingarea->setHelp(PROGMEM"Wingarea for the selected glider, to allow adjustments to support wing extensions or new types in square meters");
+	poe->addMenu( wingarea );
 
 
 
@@ -1021,6 +1032,8 @@ void SetupMenuValFloat::down( int count ){
 		*_value -= _step;
 		count --;
 	}
+	if( *_value < _min )
+		*_value = _min;
 	displayVal();
 	if( _action != 0 )
 		(*_action)( this );
@@ -1034,6 +1047,8 @@ void SetupMenuValFloat::up( int count ){
 		*_value += _step;
 		count--;
 	}
+	if( *_value > _max )
+			*_value = _max;
     displayVal();
 	if( _action != 0 )
 		(*_action)( this );

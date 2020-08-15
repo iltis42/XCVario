@@ -622,7 +622,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 			ucg->printf("MC:");
 			ucg->setColor(COLOR_WHITE);
 			ucg->setFont(ucg_font_fur14_hf);
-			ucg->printf("%0.1f", ((float)MC)/10 );
+			ucg->printf("%1.1f", _setup->get()->_MC );
 			mcalt=MC;
 		}
 

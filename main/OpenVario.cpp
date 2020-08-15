@@ -70,7 +70,13 @@ void OpenVario::parseNMEA( char *str ){
 			sscanf(str, "!g,b%f", &ballast);
 			ballast = ballast * 10; // There is a bug in XCSoar sending only 10% of the fraction (issue: 464)
 			printf("New Ballast: %f %% of max \n", ballast);
-			_setup->get()->_ballast = ballast;
+			float liters = (ballast/100.0) * _setup->get()->_polar.max_ballast;
+			printf("New Ballast in liters: %f \n", liters);
+			float refw = _setup->get()->_polar.wingload * _setup->get()->_polar.wingarea;
+			printf("Reference weight: %f \n", refw);
+			float bal = (100.0*(liters+refw)/refw) - 100;
+			printf("Final new ballast: %f \n", bal);
+			_setup->get()->_ballast = bal;
 			_s2f->change_mc_bal();
 		}
 		if (str[3] == 'm') {

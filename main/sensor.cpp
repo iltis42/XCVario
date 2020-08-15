@@ -71,15 +71,15 @@ float temperature=15.0;
 bool  validTemperature=false;
 float battery=0.0;
 float TE=0;
-float speedP;
+float dynamicP;
 
 DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 standard, alternative  GPIO_NUM_17
 MP5004DP MP5004DP;
-OpenVario OV;
 xSemaphoreHandle xMutex=NULL;
 Setup mysetup;
-BatVoltage ADC ( &mysetup );
 S2F  s2f( &mysetup );
+OpenVario OV( &mysetup, &s2f );
+BatVoltage ADC ( &mysetup );
 Switch VaSoSW;
 TaskHandle_t *bpid;
 TaskHandle_t *apid;
@@ -97,7 +97,8 @@ OTA ota;
 ESPRotary Rotary;
 SetupMenu  Menu;
 
-static float speed = 0;
+static float ias = 0;
+static float tas = 0;
 static float aTE = 0;
 static float aTES2F = 0;
 static float alt;
@@ -106,7 +107,6 @@ static float netto = 0;
 static float as2f = 0;
 static float s2f_delta = 0;
 static bool s2fmode = false;
-static int ias = 0;
 static float polar_sink = 0;
 long millisec = millis();
 
@@ -121,13 +121,18 @@ bool lastAudioDisable = false;
 
 void drawDisplay(void *pvParameters){
 	while (1) {
-		TickType_t dLastWakeTime = xTaskGetTickCount();
+		// TickType_t dLastWakeTime = xTaskGetTickCount();
 		bool dis = Audio.getDisable();
 		if( dis != true ) {
 			float t=temperature;
 			if( validTemperature == false )
 				t = DEVICE_DISCONNECTED_C;
-			display.drawDisplay( ias, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, aCl, s2fmode );
+			float airspeed = 0;
+			if( mysetup.get()->_airspeed_mode == MODE_IAS )
+				airspeed = ias;
+			else if( mysetup.get()->_airspeed_mode == MODE_TAS )
+				airspeed = tas;
+			display.drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, aCl, s2fmode );
 		}
 		vTaskDelay(30);
 		if( uxTaskGetStackHighWaterMark( dpid ) < 1024  )
@@ -146,7 +151,7 @@ void readBMP(void *pvParameters){
 			xSemaphoreTake(xMutex,portMAX_DELAY );
 			TE = bmpVario.readTE();
 			baroP = bmpBA.readPressure();
-			speedP = MP5004DP.readPascal(30);
+			dynamicP = MP5004DP.readPascal(30);
 			// vTaskDelay(1);
 			if( mysetup.get()->_alt_select == 0 ) // TE
 				alt = bmpVario.readAVGalt();
@@ -157,23 +162,22 @@ void readBMP(void *pvParameters){
 					alt = bmpBA.calcAVGAltitude( mysetup.get()->_QNH, baroP );
 				// printf("BA p=%f alt=%f QNH=%f\n", baroP, alt, mysetup.get()->_QNH );
 			}
+			ias = ias + (MP5004DP.pascal2km( dynamicP ) - ias)*0.1;
+			tas = ias * sqrt( 1.225 / ( baroP*100.0 / (287.058 * (273.15+temperature) ) ) );  // True airspeed
+
 			if( (count++ % 2) == 0 ) {  // reduce messages from 10 per second to 5 per second to reduce load in XCSoar
-				if( mysetup.get()->_blue_enable ) {
-					char lb[120];
-					OV.makeNMEA( lb, baroP, speedP, TE, temperature );
-					btsender.send( lb );
-					vTaskDelay(2);
-				}
+				char lb[120];
+				OV.makeNMEA( lb, baroP, dynamicP, TE, temperature, ias, tas, mysetup.get()->_MC, mysetup.get()->_bugs, mysetup.get()->_ballast, s2fmode  );
+				btsender.send( lb );
+				vTaskDelay(2);
 			}
-			speed = speed + (MP5004DP.pascal2km( speedP ) - speed)*0.1;
 			aTE = bmpVario.readAVGTE();
 			aTES2F = bmpVario.readS2FTE();
 			aCl = bmpVario.readAvgClimb();
-			polar_sink = s2f.sink( speed );
+			polar_sink = s2f.sink( ias );
 			netto = aTES2F - polar_sink;
 			as2f = s2f.speed( netto );
-			s2f_delta = as2f - speed;
-			ias = (int)(speed+0.5);
+			s2f_delta = as2f - ias;
 			xSemaphoreGive(xMutex);
 		}
 
@@ -199,7 +203,7 @@ void audioTask(void *pvParameters){
 			s2fmode = VaSoSW.isClosed();
 			break;
 		case 3: // Auto
-			if( (speed > mysetup.get()->_s2f_speed)  or VaSoSW.isClosed())
+			if( (ias > mysetup.get()->_s2f_speed)  or VaSoSW.isClosed())
 				s2fmode = true;
 			else
 				s2fmode = false;
@@ -315,9 +319,9 @@ void sensor(void *args){
 	bool works=MP5004DP.selfTest( val );
 
 	MP5004DP.doOffset();
-	speedP=MP5004DP.readPascal(30);
-	speed = MP5004DP.pascal2km( speedP );
-	printf("Speed=%f\n", speed );
+	dynamicP=MP5004DP.readPascal(30);
+	ias = MP5004DP.pascal2km( dynamicP );
+	printf("Speed=%f\n", ias );
 
 	if( !works ){
 		printf("Error reading air speed pressure sensor MP5004DP->MCP3321 I2C returned error\n");
@@ -325,7 +329,7 @@ void sensor(void *args){
 		failed_tests += "IAS Sensor: NOT FOUND\n";
 		selftestPassed = false;
 	}else {
-		if( !MP5004DP.offsetPlausible( val )  && ( speed < 50 ) ){
+		if( !MP5004DP.offsetPlausible( val )  && ( ias < 50 ) ){
 			printf("Error: IAS P sensor offset MP5004DP->MCP3321 out of bounds (608-1034), act value=%d\n", val );
 			display.writeText( line++, "IAS Sensor: FAILED" );
 			failed_tests += "IAS Sensor offset test: FAILED\n";
@@ -334,8 +338,8 @@ void sensor(void *args){
 		else {
 			printf("MP5004->MCP3321 test PASSED, readout value in bounds (608-1034)=%d\n", val );
 			char s[40];
-			if( speed > 50 ) {
-				sprintf(s, "IAS Sensor: %d km/h", (int)(speed+0.5) );
+			if( ias > 50 ) {
+				sprintf(s, "IAS Sensor: %d km/h", (int)(ias+0.5) );
 				display.writeText( line++, s );
 			}
 			else
@@ -393,7 +397,7 @@ void sensor(void *args){
 	}
 
 	if( selftestPassed ) {
-		if( (abs(ba_t - te_t) >2.0)  && ( speed < 50 ) ) {
+		if( (abs(ba_t - te_t) >2.0)  && ( ias < 50 ) ) {
 			selftestPassed = false;
 			printf("Severe Temperature deviation delta > 2 °C between Baro and TE sensor: °C %f\n", abs(ba_t - te_t) );
 			display.writeText( line++, "TE/Baro Temp: Unequal");
@@ -405,7 +409,7 @@ void sensor(void *args){
 			failed_tests += "TE/Baro Sensor T diff. <2°C: PASSED\n";
 		}
 
-		if( (abs(ba_p - te_p) >2.0)  && ( speed < 50 ) ) {
+		if( (abs(ba_p - te_p) >2.0)  && ( ias < 50 ) ) {
 			selftestPassed = false;
 			printf("Severe Pressure deviation delta > 2 hPa between Baro and TE sensor: %f\n", abs(ba_p - te_p) );
 			display.writeText( line++, "TE/Baro P: Unequal");
@@ -567,9 +571,9 @@ void sensor(void *args){
 
 	display.initDisplay();
 	Menu.begin( &display, &Rotary, &mysetup, &bmpBA, &ADC );
-	if( speed < 50.0 ){
+	if( ias < 50.0 ){
 		xSemaphoreTake(xMutex,portMAX_DELAY );
-		printf("QNH Autosetup, speed=%3f (<50 km/h)\n", speed );
+		printf("QNH Autosetup, IAS=%3f (<50 km/h)\n", ias );
 		// QNH autosetup
 		float ae = mysetup.get()->_elevation;
 		baroP = bmpBA.readPressure();

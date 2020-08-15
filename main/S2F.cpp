@@ -23,7 +23,7 @@ S2F::~S2F() {
 
 void S2F::change_polar()
 {
-	printf("S2F::change_polar()\n");
+	printf("S2F::change_polar() bugs: %f \n", _setup->get()->_bugs );
 	t_polar p = _setup->get()->_polar;
     double v1=p.speed1 / 3.6;
     double v2=p.speed2 / 3.6;
@@ -37,6 +37,10 @@ void S2F::change_polar()
 	a1= (w2-w3-a2*(pow(v2,2)-pow(v3,2))) / (v2-v3);
 	a0= w3 -a2*pow(v3,2) - a1*v3;
     a2 = a2/sqrt( ( _setup->get()->_ballast +100.0)/100.0 );   // wingload  e.g. 100l @ 500 kg = 1.2
+    a0 = a0 * ((_setup->get()->_bugs + 100.0) / 100.0);
+    a1 = a1 * ((_setup->get()->_bugs + 100.0) / 100.0);
+    a2 = a2 * ((_setup->get()->_bugs + 100.0) / 100.0);
+    printf("a0=%f a1=%f  a2=%f s(80)=%f, s(160)=%f\n", a0, a1, a2, sink(80), sink(160) );
     minsink();
 }
 
@@ -85,8 +89,8 @@ double S2F::minsink()
 {
 	printf("minsink()\n");
    // 2*a2*v + a1 = 0
-	printf("a1=%f  a2=%f \n", a1, a2);
    _minsink = (3.6*-a1)/(2*a2);
+   printf("minsink=%f\n", _minsink );
    return _minsink;
 }
 

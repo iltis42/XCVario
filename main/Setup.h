@@ -20,6 +20,8 @@
 typedef enum display_type { UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P } display_t;
 typedef enum chopping_mode { NO_CHOP, VARIO_CHOP, S2F_CHOP, BOTH_CHOP } chopping_mode_t;
 typedef enum rs232linemode { RS232_NORMAL, RS232_INVERTED } rs232lm_t;
+typedef enum nmea_protocol  { OPENVARIO, BORGELT } nmea_proto_t;
+typedef enum airspeed_mode  { MODE_IAS, MODE_TAS } airspeed_mode_t;
 
 typedef struct {
 	uint32_t _config_version;
@@ -80,6 +82,9 @@ typedef struct {
 	float    _s2f_delay;
 	float    _factory_volt_adjust;
 	uint8_t  _battery_display;
+	uint8_t  _nmea_protocol;
+	float    _bugs;
+	uint8_t  _airspeed_mode;
 	uint32_t _checksum;
 } setup_t;
 

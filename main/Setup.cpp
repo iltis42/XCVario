@@ -82,7 +82,7 @@ void Setup::factorySetting()
 		_setup._serial2_speed = 3;   // 0: OFF 1:4800 2:9600 3:19200 4: 38400..
 		_setup._serial2_rxloop = 1;  // 0: dont loop, 1: loop
 		_setup._serial2_tx = 0;      // 0: dont TX, 1: TX
-		_setup._serial2_tx_inverted = RS232_INVERTED;      // 0: normal, 1: inverted signal
+		_setup._serial2_tx_inverted = RS232_NORMAL;      // 0: normal, 1: inverted signal
 		_setup._serial2_rx_inverted = RS232_INVERTED;      // 0: normal, 1: inverted signal
 		_setup._software_update = 0;
 		_setup._factory_volt_adjust = 0.00815;
@@ -94,6 +94,9 @@ void Setup::factorySetting()
 		memset( _setup._bt_name, 0, sizeof( _setup._bt_name) );
 		printf("BT-Name: %s\n", _ID );
 		memcpy( _setup._bt_name, _ID, strlen( _ID )  );
+		_setup._nmea_protocol = OPENVARIO;
+		_setup._bugs = 0;
+		_setup._airspeed_mode = MODE_IAS;  // 0=IAS, 1=TAS
 		commit();
 		printf("end Setup::factorySetting()\n");
 }

@@ -68,16 +68,16 @@ const int   S2F_TRISIZE = 60; // triangle size quality up/down
 #define BTSIZE  5
 #define BTW    15
 #define BTH    24
-#define IASVALX 165
+#define ASVALX 165
 
 int S2FST = 45;
 
 #define UNITVAR (_setup->get()->_vario_unit)
-#define UNITIAS (_setup->get()->_ias_unit)
+#define UNITAS (_setup->get()->_ias_unit)
 #define UNITALT (_setup->get()->_alt_unit)
 
 
-int IASLEN = 0;
+int ASLEN = 0;
 static int fh;
 display_t IpsDisplay::display_type = UNIVERSAL;
 
@@ -231,14 +231,19 @@ void IpsDisplay::initDisplay() {
 	ucg->setPrintPos(FIELD_START+6,YS2F-(2*fh)-8);
 	ucg->setColor(0, COLOR_HEADER );
 	String iasu;
-	if( UNITIAS == 0 ) // km/h
+	if( UNITAS == 0 ) // km/h
  		iasu = "km/h";
- 	if( UNITIAS == 1 ) // mph
+ 	if( UNITAS == 1 ) // mph
  		iasu = "mph";
- 	if( UNITIAS == 2 ) // knots
+ 	if( UNITAS == 2 ) // knots
  		iasu = "kt";
- 	ucg->printf(" IAS %s", iasu.c_str());
-	ucg->setPrintPos(IASVALX,YS2F-(2*fh)-8);
+
+ 	if( _setup->get()->_airspeed_mode == MODE_IAS )
+ 		ucg->printf("IAS %s", iasu.c_str());
+ 	else if( _setup->get()->_airspeed_mode == MODE_TAS )
+ 		ucg->printf("TAS %s", iasu.c_str());
+
+	ucg->setPrintPos(ASVALX,YS2F-(2*fh)-8);
 	// if( _setup->get()->_flap_enable )
 	// 	ucg->print("S2F    FLP");
 	// else
@@ -247,15 +252,15 @@ void IpsDisplay::initDisplay() {
 	ucg->setColor(0, COLOR_WHITE );
 	// int mslen = ucg->getStrWidth("km/h");
 
-	// IAS Box
+	// AS Box
 	int fl = 45; // ucg->getStrWidth("200-");
 
-	IASLEN = fl;
-	S2FST = IASLEN+16;
+	ASLEN = fl;
+	S2FST = ASLEN+16;
 
     // S2F Zero
 	// ucg->drawTriangle( FIELD_START, dmid+5, FIELD_START, dmid-5, FIELD_START+5, dmid);
-	ucg->drawTriangle( FIELD_START+IASLEN-1, dmid, FIELD_START+IASLEN+5, dmid-6, FIELD_START+IASLEN+5, dmid+6);
+	ucg->drawTriangle( FIELD_START+ASLEN-1, dmid, FIELD_START+ASLEN+5, dmid-6, FIELD_START+ASLEN+5, dmid+6);
 
 	// Altitude
 	ucg->setFont(ucg_font_fub11_tr);
@@ -781,7 +786,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 	}
 
 
-    // IAS
+    // AS
  	if( iasalt != ias ) {
  		// draw new
  		int iasp=0;
@@ -795,14 +800,14 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
  		ucg->setColor(  COLOR_WHITE  );
  		// print speed values bar
  		ucg->setFont(ucg_font_fub11_hn);
- 		ucg->drawFrame( FIELD_START, dmid-(MAXS2FTRI)-4, IASLEN+6, (MAXS2FTRI*2)+8 );
- 		ucg->setClipRange( FIELD_START, dmid-(MAXS2FTRI), IASLEN+6, (MAXS2FTRI*2) );
+ 		ucg->drawFrame( FIELD_START, dmid-(MAXS2FTRI)-4, ASLEN+6, (MAXS2FTRI*2)+8 );
+ 		ucg->setClipRange( FIELD_START, dmid-(MAXS2FTRI), ASLEN+6, (MAXS2FTRI*2) );
  		for( int speed = iasp-MAXS2FTRI-(fh); speed<iasp+MAXS2FTRI+(fh); speed++ )
  		{
 			if( (speed%20) == 0 && (speed >= 0) ) {
 				// blank old values
 				ucg->setColor( COLOR_BLACK );
-				ucg->drawBox( FIELD_START+6,dmid+(speed-iasp)-(fh/2)-8, IASLEN-6, fh+14 );
+				ucg->drawBox( FIELD_START+6,dmid+(speed-iasp)-(fh/2)-8, ASLEN-6, fh+14 );
 				int col = abs(((speed-iasp)*2));
 				ucg->setColor(  col,col,col  );
 				ucg->setPrintPos(FIELD_START+8,dmid+(speed-iasp)+(fh/2));
@@ -810,7 +815,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 			}
  		}
  		ucg->undoClipRange();
- 		// IAS cleartext
+ 		// AS cleartext
  		ucg->setFont(ucg_font_fub14_hn);
  		ucg->setPrintPos(FIELD_START+8, YS2F-fh );
  		ucg->setColor(  COLOR_WHITE  );
@@ -833,7 +838,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
  		ucg->setFont(ucg_font_fub14_hn);
 		int fa=ucg->getFontAscent();
 		int fl=ucg->getStrWidth("100");
-		ucg->setPrintPos(IASVALX, YS2F-fh);
+		ucg->setPrintPos(ASVALX, YS2F-fh);
 		ucg->printf("%3d  ", (int)(s2falt+0.5)  );
 		// draw S2F Delta
 		// erase old
@@ -888,7 +893,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 
  		ucg->undoClipRange();
  		// green bar for optimum speed within tacho
- 		ucg->setClipRange( FIELD_START, dmid-(MAXS2FTRI), IASLEN+6, (MAXS2FTRI*2) );
+ 		ucg->setClipRange( FIELD_START, dmid-(MAXS2FTRI), ASLEN+6, (MAXS2FTRI*2) );
  		ucg->setColor( COLOR_BLACK );
  	 	ucg->drawBox( FIELD_START+1,dmid+s2fdalt-16, 6, 32 );
  	 	ucg->setColor( COLOR_GREEN );

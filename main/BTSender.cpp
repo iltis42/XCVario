@@ -11,6 +11,7 @@
 #include <HardwareSerial.h>
 #include "RingBufCPP.h"
 #include <driver/uart.h>
+#include "OpenVario.h"
 
 static const char *TAG = "bts";
 
@@ -22,9 +23,11 @@ const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
 #define QUEUE_SIZE 40
 RingBufCPP<SString, QUEUE_SIZE> mybuf;
 
-char rxBuffer[120];
+#define RXBUFLEN 250
+char rxBuffer[RXBUFLEN];
 int BTSender::i=0;
-bool BTSender::_serial_tx=false;
+bool BTSender::_serial_nmea_tx=false;
+bool BTSender::_serial_bt_tx=false;
 
 #define RFCOMM_SERVER_CHANNEL 1
 #define HEARTBEAT_PERIOD_MS 50
@@ -63,7 +66,7 @@ void BTSender::send(char * s){
 		mybuf.add( s );
 		portEXIT_CRITICAL_ISR(&btmux);
 	}
-	if( _serial_tx ) {
+	if( _serial_nmea_tx ) {
 		    xSemaphoreTake(nvMutex,portMAX_DELAY );
 			Serial2.print(s);
 			xSemaphoreGive(nvMutex);
@@ -98,14 +101,40 @@ void BTSender::heartbeat_handler(struct btstack_timer_source *ts){
 void BTSender::packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	bd_addr_t event_addr;
 	uint16_t  mtu;
+	int pos;
 	// printf("BTstack packet type %02x size %d\n", packet_type, size);
 	switch (packet_type) {
 	case RFCOMM_DATA_PACKET:
-		printf("Received RFCOMM data on channel id %u, size %u %s\n", channel, size, packet);
+		// printf("Received RFCOMM data on channel id %u, size %u %s\n", channel, size, packet);
+		if( size > RXBUFLEN ) {
+			printf("Warning, RX data packet truncated len=%d, max=%d\n", size, RXBUFLEN );
+			size = RXBUFLEN;
+		}
 		memcpy( rxBuffer, packet, size );
 		rxBuffer[size] = 0;
-		printf("Received RFCOMM data on channel id %u, size %u %s\n", channel, size, rxBuffer);
-		_callback( rxBuffer, size );
+		printf("Received RFCOMM data packet on channel id %u, size %u %s\n", channel, size, rxBuffer);
+		for( int i=0; i<size; i++ )
+			printf("%02x ", rxBuffer[i] );
+		delay(100);
+		printf(" : ");
+		for( int i=0; i<size; i++ )
+			printf(" %c ", rxBuffer[i] );
+		// _callback( rxBuffer, size );
+		printf("\n");
+	    if( strncmp( rxBuffer, "!g,", 3 )  == 0 ) {
+	    	printf("Matched a Borgelt command\n");
+	    	OpenVario::parseNMEA( rxBuffer );
+	    }
+	    else {
+	    	printf("No command matched\n");
+	    	pos=0;
+	    	if( _serial_bt_tx  ){
+	    		while(pos < size) {
+	    			Serial2.print( rxBuffer[pos]);
+	    			pos++;
+	    		}
+	    	}
+	    }
 		break;
 
 	case HCI_EVENT_PACKET:
@@ -239,11 +268,25 @@ void btBridge(void *pvParameters){
 }
 
 
-void BTSender::begin( bool enable_bt, char * bt_name, int speed, bool bridge, bool serial_tx, bool tx_inv, bool rx_inv ){
+void BTSender::begin( bool enable_bt, char * bt_name, int speed, bool bridge, int serial_tx, bool tx_inv, bool rx_inv ){
 	printf("BTSender::begin() bt:%d s-bridge:%d\n", enable_bt, bridge );
 	_enable = enable_bt;
 	if( speed && serial_tx )
-		_serial_tx = true;
+	{
+		if( serial_tx == 1)
+			_serial_nmea_tx = true;
+		if( serial_tx == 2)
+			_serial_bt_tx = true;
+		if( serial_tx == 3 ) {
+			_serial_nmea_tx = true;
+			_serial_bt_tx = true;
+		}
+	}
+	else
+	{
+		_serial_nmea_tx = false;
+		_serial_bt_tx = false;
+	}
 	hci_dump_enable_log_level( ESP_LOG_INFO, 0 );
 	hci_dump_enable_log_level( ESP_LOG_ERROR, 0 );
 	hci_dump_enable_log_level( ESP_LOG_WARN, 0 );
@@ -266,7 +309,7 @@ void BTSender::begin( bool enable_bt, char * bt_name, int speed, bool bridge, bo
 		sdp_init();
 		hci_power_control(HCI_POWER_ON);
 	}
-	if( (speed != 0) && (bridge || _serial_tx)){
+	if( (speed != 0) && (bridge || _serial_nmea_tx)){
     	printf("Serial TX or Bridge enabled with speed: %d baud: %d tx_inv: %d rx_inv: %d\n",  speed, baud[speed], tx_inv, rx_inv );
     	Serial2.begin(baud[speed],SERIAL_8N1,16,17);   //  IO16: RXD2,  IO17: TXD2
     	if( rx_inv || tx_inv ) {

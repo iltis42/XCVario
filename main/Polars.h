@@ -17,6 +17,7 @@ typedef struct s_polars {
 	float    sink2;
 	float    speed3;
 	float    sink3;
+	float    max_ballast;   // in liters or kg
 } t_polar;
 
 

@@ -138,9 +138,24 @@ int bal_adj( SetupMenuValFloat * p )
     return 0;
 }
 
+int bug_adj( SetupMenuValFloat * p ){
+	 s2f.change_mc_bal();
+	 return 0;
+}
+
+
 int mc_adj( SetupMenuValFloat * p )
 {
     s2f.change_mc_bal();
+#ifdef MC_FROM_XC
+    char mc[30];
+    sprintf(mc, "$POV,?,MC");
+    // sprintf(mc, "$POV,C,MC,%0.2f", p->_setup->get()->_MC );
+	int cs = OpenVario::getCheckSum(&mc[1]);
+	int i = strlen(mc);
+	sprintf( &mc[i], "*%02X\n", cs );
+    btsender.send(mc);
+#endif
     return 0;
 }
 
@@ -456,6 +471,11 @@ void SetupMenu::setup( )
 	bal->setHelp(PROGMEM"Percent wing load increase by ballast");
 	mm->addMenu( bal );
 
+	SetupMenuValFloat * bugs = new SetupMenuValFloat( "Bugs", &_setup->get()->_bugs, "% bugs", 0.0, 50, 1, bug_adj, true  );
+	bugs->setHelp(PROGMEM"Percent of bugs contamination to indicate degradation of gliding performance");
+	mm->addMenu( bugs );
+
+
 	String elev_unit = "m";
 	int step = 1;
 	if( _setup->get()->_alt_unit == 1 ){ // ft
@@ -695,6 +715,13 @@ void SetupMenu::setup( )
 	pos3->setHelp(PROGMEM"Sink indication at Speed 3 from polar");
 	pa->addMenu( pos3 );
 
+	SetupMenuValFloat * maxbal = new SetupMenuValFloat(
+				"Max Ballast", &_setup->get()->_polar.max_ballast, "liters", 0, 500, 1 );
+	maxbal->setHelp(PROGMEM"Maximum water ballast for selected glider to allow sync from XCSoar using fraction of max ballast");
+	poe->addMenu( maxbal );
+
+
+
 	SetupMenu * wk = new SetupMenu( "Flap (WK) Indicator" );
 	MenuEntry* wkm = mm->addMenu( wk );
 	SetupMenuSelect * wke = new SetupMenuSelect( "Flap Indicator Option", &_setup->get()->_flap_enable, true );
@@ -786,6 +813,8 @@ void SetupMenu::setup( )
 	bat->addMenu(bfull);
 	bat->addMenu( batv );
 
+	SetupMenu * display = new SetupMenu( "DISPLAY Setup" );
+	sye->addMenu( display );
 	 // UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P
 	if( _setup->get()->_display_type == UNIVERSAL )
 	{
@@ -795,17 +824,17 @@ void SetupMenu::setup( )
 		dtype->addEntry( "RAYSTAR_RFJ240L_40P");
 		dtype->addEntry( "ST7789_2INCH_12P");
 		dtype->addEntry( "ILI9341_TFT_18P");
-		sye->addMenu( dtype );
+		display->addMenu( dtype );
 	}
     // Orientation   _display_orientation
 	SetupMenuSelect * diso = new SetupMenuSelect( "Display Orientation",	&_setup->get()->_display_orientation, true );
-	sye->addMenu( diso );
+	display->addMenu( diso );
 	diso->setHelp( PROGMEM "Display Orientation either NORMAL means control panel is right, or TOPDOWN means control panel is left");
 	diso->addEntry( "NORMAL (Rotary left)");
 	diso->addEntry( "TOPDOWN (Rotary right)");
 
 	// Altimeter, IAS
-	SetupMenu * aia = new SetupMenu( "Altimeter, IAS" );
+	SetupMenu * aia = new SetupMenu( "Altimeter, Airspeed" );
 	sye->addMenu( aia );
 	SetupMenuSelect * als = new SetupMenuSelect( 	"Altimeter Source",	&_setup->get()->_alt_select );
 	aia->addMenu( als );
@@ -816,6 +845,12 @@ void SetupMenu::setup( )
 	SetupMenuValFloat * spc = new SetupMenuValFloat( "IAS Calibration", &_setup->get()->_speedcal, "%", -10, 10, 1, 0, false  );
 	spc->setHelp(PROGMEM"Calibration of indicated airspeed (IAS). Normally not needed, hence pressure probes may have systematic error");
 	aia->addMenu( spc );
+
+	SetupMenuSelect * amode = new SetupMenuSelect( 	"Airspeed Mode",	&_setup->get()->_airspeed_mode );
+	aia->addMenu( amode );
+	amode->setHelp( PROGMEM "Select mode of Airspeed indicator to display IAS (Indicated AirSpeed, default) or TAS (True AirSpeed) considering air density");
+	amode->addEntry( "IAS");
+	amode->addEntry( "TAS");
 
 
 	// Units
@@ -866,9 +901,11 @@ void SetupMenu::setup( )
 
 	SetupMenuSelect * sout = new SetupMenuSelect( PROGMEM "Serial TX",	&_setup->get()->_serial2_tx, true );
 	rs232->addMenu( sout );
-	sout->setHelp( "Serial RS232 (TTL) option to transmit OpenVario data on serial RX (pin3 RJ45) to connect serial devices");
-	sout->addEntry( "Disable");
-	sout->addEntry( "Enable");
+	sout->setHelp( "Serial RS232 (TTL) option to transmit OpenVario NMEA and or data from BT on serial TX (pin3 RJ45) to connect serial devices");
+	sout->addEntry( "Disable all");
+	sout->addEntry( "Enable OpenVario");
+	sout->addEntry( "Enable BT Bridge");
+	sout->addEntry( "Enable all");
 
 	SetupMenuSelect * stxi = new SetupMenuSelect( PROGMEM "Serial TX Inversion",	&_setup->get()->_serial2_tx_inverted, true );
 	rs232->addMenu( stxi );
@@ -881,6 +918,12 @@ void SetupMenu::setup( )
 	srxi->setHelp( "Serial RS232 (TTL) option for negative logic, means a '1' will be received at zero level (RS232 standard and default) and vice versa");
 	srxi->addEntry( "Normal");
 	srxi->addEntry( "Inverted");
+
+	SetupMenuSelect * nmea = new SetupMenuSelect( PROGMEM "NMEA Protocol",	&_setup->get()->_nmea_protocol, false );
+	sye->addMenu( nmea );
+	nmea->setHelp( "Setup protocol used for NMEA sending what corresponds to the driver used in OpenVario");
+	nmea->addEntry( "OpenVario");
+	nmea->addEntry( "Borgelt");
 
 	SetupMenu::display();
 }

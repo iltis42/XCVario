@@ -29,9 +29,11 @@ OpenVario::~OpenVario() {
 
 void OpenVario::makeNMEA(char* str, float baro, float dp, float te, float temp, float ias, float tas, float mc, int bugs, float ballast, bool cruise ){
 	if( _setup->get()->_nmea_protocol == OPENVARIO ) {
-		sprintf(str,"$PB50,P,%0.1f,Q,%0.1f,E,%0.1f,T,%0.1f",baro,dp,te,temp);
+		printf("OpenVario\n");
+		sprintf(str,"$POV,P,%0.1f,Q,%0.1f,E,%0.1f,T,%0.1f",baro,dp,te,temp);
 	}
 	else if ( _setup->get()->_nmea_protocol == BORGELT ) {
+		printf("Borgelt\n");
 		/*
 		Sentence has following format:
 		$PBB50,AAA,BBB.B,C.C,DDDDD,EE,F.FF,G,HH*CHK crlf

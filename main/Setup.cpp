@@ -74,7 +74,7 @@ void Setup::factorySetting()
 		_setup._flap_minus_1 = 105;
 		_setup._flap_0 = 88;
 		_setup._flap_plus_1 = 78;
-		_setup._default_volume = 20.0;  // 40 % is too loud
+		_setup._default_volume = 10.0;  // 40 % or 20 % is too loud
 		_setup._alt_unit = 0;  // m
 		_setup._ias_unit = 0;  // km/h
 		_setup._vario_unit = 0; // m/s
@@ -82,7 +82,7 @@ void Setup::factorySetting()
 		_setup._serial2_speed = 3;   // 0: OFF 1:4800 2:9600 3:19200 4: 38400..
 		_setup._serial2_rxloop = 1;  // 0: dont loop, 1: loop
 		_setup._serial2_tx = 0;      // 0: dont TX, 1: TX
-		_setup._serial2_tx_inverted = RS232_NORMAL;      // 0: normal, 1: inverted signal
+		_setup._serial2_tx_inverted = RS232_INVERTED;      // 0: normal, 1: inverted signal; if talking to FLARM both needs inverted
 		_setup._serial2_rx_inverted = RS232_INVERTED;      // 0: normal, 1: inverted signal
 		_setup._software_update = 0;
 		_setup._factory_volt_adjust = 0.00815;

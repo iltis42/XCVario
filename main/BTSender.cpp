@@ -57,7 +57,7 @@ int BTSender::queueFull() {
 }
 
 void BTSender::send(char * s){
-	// printf("%s",s);
+	// printf("RFCOM TX %s",s);
 	ESP_LOGI( TAG,"I %s",s);
 	// ESP_LOGW( TAG,"W %s",s);
 	// ESP_LOGE( TAG,"E %s",s);
@@ -112,7 +112,7 @@ void BTSender::packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *p
 		}
 		memcpy( rxBuffer, packet, size );
 		rxBuffer[size] = 0;
-		printf("Received RFCOMM data packet on channel id %u, size %u %s\n", channel, size, rxBuffer);
+		printf("RFCOMM RX CH %u, size %u: %s\n", channel, size, rxBuffer);
 		for( int i=0; i<size; i++ )
 			printf("%02x ", rxBuffer[i] );
 		delay(100);
@@ -126,9 +126,9 @@ void BTSender::packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *p
 	    	OpenVario::parseNMEA( rxBuffer );
 	    }
 	    else {
-	    	printf("No command matched\n");
 	    	pos=0;
 	    	if( _serial_bt_tx  ){
+	    		printf("Serial TX: %s\n", rxBuffer);
 	    		while(pos < size) {
 	    			Serial2.print( rxBuffer[pos]);
 	    			pos++;
@@ -257,7 +257,7 @@ void btBridge(void *pvParameters){
 		}
 		xSemaphoreGive(nvMutex);
 		if (readString.length() > 0) {
-			// printf("Serial RX: %s\n", readString.c_str() );
+			printf("Serial RX: %s\n", readString.c_str() );
 			portENTER_CRITICAL_ISR(&btmux);
 			mybuf.add( readString );
 			portEXIT_CRITICAL_ISR(&btmux);

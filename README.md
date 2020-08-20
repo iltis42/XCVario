@@ -58,13 +58,13 @@ The Soft- and Hardware features:
 - Audio-Generator with adjustable Volume and Deadband plus setup option for frequency tone style and range
 - Integrated Loudspeaker 
 - Flap Position Indicator Option
-- S2F (Speed2Fly) Indicator with configurable MC and Ballast based on customizable Polar
+- S2F (Speed2Fly) Indicator with configurable MC Ballast and Bugs based on customizable Polar
 - More that 80 Polars are already included ( list in https://github.com/iltis42/OpenIVario/blob/master/main/Polars.cpp )
 - IAS (Indicated Airspeed) Indicator
 - Temperatur Indicator
 - Battery Charge Indicator
 - Variometer display with adjustable range (1 m/s - 30 m/s), and damping ( 1s - 10s )
-- Bluetooth Interface for Android devices running XC Soar (OpenVario)
+- Bluetooth Interface for Android devices running XC Soar (OpenVario or Borgelt protocol to sync from or to the device)
 - High precision barometric Altimeter 1 hPa (8 meter) absolute accuracy
 - Sunlight readable 500 nits 2.4 inch IPS Technology Display
 - Battery Voltage Indicator

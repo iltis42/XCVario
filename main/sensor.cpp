@@ -53,6 +53,8 @@ BMP:
 
  */
 
+
+
 #define SPI_SCLK GPIO_NUM_14  // SPI Clock pin 14
 #define SPI_DC   GPIO_NUM_15  // SPI Data/Command pin 15
 #define SPI_MOSI GPIO_NUM_27  // SPI SDO Master Out Slave In pin
@@ -267,6 +269,8 @@ void sensor(void *args){
 	esp_wifi_set_mode(WIFI_MODE_NULL);
 	spiMutex = xSemaphoreCreateMutex();
 	esp_log_level_set("*", ESP_LOG_ERROR);
+	for( int i=0; i<36; i++ )
+		gpio_set_drive_capability((gpio_num_t)i, GPIO_DRIVE_CAP_1);
 	NVS.begin();
 	mysetup.begin();
 	btsender.begin( mysetup.get()->_blue_enable,
@@ -620,6 +624,9 @@ void sensor(void *args){
 	xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 6, apid, 0);  // 30
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 4096*2, NULL, 4, dpid, 0);  // 10
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 4096, NULL, 3, tpid, 0);
+
+	for( int i=0; i<36; i++ )
+			gpio_set_drive_capability((gpio_num_t)i, GPIO_DRIVE_CAP_1);
 	vTaskDelete( NULL );
 
 }

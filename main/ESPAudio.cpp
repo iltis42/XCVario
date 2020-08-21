@@ -399,16 +399,14 @@ void ESPAudio::dactask(void* arg )
 			if( sound ){
 				if( !sound_on ) {
 					Poti.writeWiper( wiper );
-					dac_output_enable(_ch);
 					sound_on = true;
 				}
 			}
 			else{
 				if( sound_on ) {
 						if( cur_wiper != 0 ) {
-							Poti.writeWiper( 0 );
+						 	Poti.writeWiper( 1 );
 						}
-						dac_output_disable(_ch);
 						sound_on = false;
 				}
 			}

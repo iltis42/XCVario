@@ -639,6 +639,7 @@ void SetupMenu::setup( )
 	audio_range_sm = ar;
 	sprintf( rentry, "Variable (%d m/s)", (int)(_setup->get()->_range) );
 	ar->addEntry( "Max eq. 5 m/s");
+	ar->addEntry( "Max eq. 10 m/s");
 	ar->addEntry( rentry );
 	ar->setHelp(PROGMEM"Select either fix (5m/s) or variable Audio range according to current vario setting");
 	ade->addMenu( ar );

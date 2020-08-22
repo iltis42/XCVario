@@ -480,6 +480,8 @@ void ESPAudio::setup()
 	_mute = false;
 	if( _setup->get()->_audio_range == 0 )
 		_range = 5.0;
+	else if( _setup->get()->_audio_range == 1 )
+			_range = 10.0;
 	else
 		_range = _setup->get()->_range;
 	_tonemode = _setup->get()->_dual_tone;

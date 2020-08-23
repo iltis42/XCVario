@@ -369,12 +369,13 @@ void ESPAudio::dactask(void* arg )
 			if ( te > 0 )
 				max = Audio.getCenter() * Audio.getVariation();
 			else
-				max = Audio.getCenter() / Audio.getVariation();
+				max = Audio.getCenter() - (Audio.getCenter() / Audio.getVariation());
 			float f;
 			if( _s2f_mode )
 				f = (float)Audio.getCenter() + ( (te/5.0 ) * max );
 			else
 				f = (float)Audio.getCenter() + ( (te/_range ) * max );
+			// printf("te: %f; f=%f\n", te, f);
 			bool sound=true;
 			int step = int( (f/freq_step ) + 0.5);
 			if( Audio.inDeadBand(te) || Audio.getMute()  ){

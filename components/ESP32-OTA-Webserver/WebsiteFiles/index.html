@@ -1,0 +1,136 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>ESP32 OTA</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1' />
+    <script src="jquery-3.4.1.min.js"></script>
+
+</head>
+
+<<body onload="getstatus()">
+
+    <h2>ESP32 Firmware Update Page</h2>
+    <h4 id="latest_firmware"></h4>
+
+    <input type="file" id="selectedFile" accept=".bin" style="display: none;" onchange="myFunction()" />
+    <input type="button" value="Browse..." onclick="document.getElementById('selectedFile').click();" />
+    <h3 id="file_info"></h3>
+    <input type='submit' id="upload_button" value='Update Firmware' onclick="updateFirmware()">
+
+    <h4 id="status"></h4>
+    <h4 id="status1"></h4>
+
+    <script type="text/javascript">
+        var seconds = 10;
+        var theTimer;
+
+        function myFunction() {
+            var x = document.getElementById("selectedFile");
+            var file = x.files[0];
+
+            document.getElementById("file_info").innerHTML = "<h4>File: " + file.name + "<br>" + "Size: " + file.size + " bytes</h4>";
+        }
+
+        function updateFirmware() {
+            // Form Data
+            var formData = new FormData();
+
+            var fileSelect = document.getElementById("selectedFile");
+
+            if (fileSelect.files && fileSelect.files.length == 1) {
+                var file = fileSelect.files[0];
+                formData.set("file", file, file.name);
+
+                // Http Request
+                var xhr = new XMLHttpRequest();
+
+                //Upload progress
+                xhr.upload.addEventListener("progress", function(evt) {
+                    if (evt.lengthComputable) {
+                        var percentComplete = (evt.loaded / evt.total) * 100;
+                        var x = Math.floor(percentComplete);
+                        //Do something with upload progress
+                        //console.log(x);
+
+                        document.getElementById("status").innerHTML = "Progress:" + x + "%.";
+
+                        // After we send it all, lets ask the board if it went well. 
+                        if (x == 100) {
+                            // Lets ask the board for the upload resilt 
+                            getstatus();
+                        }
+
+                    } else {
+                        window.alert('total size is unknown')
+                    }
+                }, false);
+
+                xhr.open('POST', "/update");
+                xhr.responseType = "blob";
+                xhr.send(formData);
+            } else {
+                window.alert('Select A File First')
+            }
+        }
+
+        // https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/send
+        function getstatus() {
+
+            var xhr = new XMLHttpRequest();
+            var requestURL = "/status";
+            xhr.open('POST', requestURL, true);
+
+            //Send the proper header information along with the request
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+            xhr.onreadystatechange = function() { // Call a function when the state changes.
+                if (this.readyState === XMLHttpRequest.DONE && this.status === 200) {
+                    var response = JSON.parse(xhr.responseText);
+
+                    document.getElementById("latest_firmware").innerHTML = "Latest Firmware:  " + response.compile_date + " - " + response.compile_time
+                        // If flashing was complete it will return a 1, else -1
+                        // A return of 0 is just for information on the Latest Firmware request
+                    if (response.status == 1) {
+                        // Start the countdown timer
+                        console.log("Status Request Returned ok");
+
+                        // Set the delay time in seconds 
+                        seconds = 10;
+
+                        // Start the countdown timer
+                        console.log("starting the timer");
+
+                        // Since ESP32 reported ok, lets set a tier to reload this web page 
+                        // Lets give it 10 seconds to reboot and re-connect to the router. 
+                        theTimer = setInterval(function() {
+                            startMyTimer();
+                        }, 1000);
+
+                    } else if (response.status == -1) {
+                        document.getElementById("status").innerHTML = "!!! Upload Error !!!";
+                    }
+                }
+            }
+
+            console.log("Requestiing Upgrade Status");
+
+            xhr.send('status');
+        }
+
+        function startMyTimer() {
+            console.log("timer" + seconds);
+
+            if (--seconds == 0) {
+                clearInterval(theTimer);
+
+                location.reload();
+            } else {
+                document.getElementById("status").innerHTML = "Upgrade Complete, Rebooting in " + seconds + " Seconds.";
+            }
+        }
+    </script>
+    </body>
+
+</html>

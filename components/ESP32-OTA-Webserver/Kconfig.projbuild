@@ -1,0 +1,31 @@
+menu "OTA WiFi Configuration"
+
+config STATION_SSID
+    string "Station SSID"
+	default ""
+	help
+		SSID (network name) for the example to connect to.
+
+config STATION_PASSPHRASE
+    string "Station Passphrase"
+	default ""
+	help
+		WiFi password (WPA or WPA2) for the example to use.
+
+		Can be left blank if the network has no security set.
+
+config AP_SSID
+    string "AP SSID"
+	default "ESP32 OTA"
+	help
+		AP SSID (network name) for the ESP32 to act as a AP
+
+config AP_PASSPHARSE
+    string "AP Passphrase"
+	default "12345678"
+	help
+		AP password (WPA or WPA2) to use.
+
+		Can be left blank if the network has no security set.
+
+endmenu

@@ -58,7 +58,7 @@ class IpsDisplay {
 public:
 	IpsDisplay( Ucglib_ILI9341_18x240x320_HWSPI *aucg );
 	virtual ~IpsDisplay();
-	static void begin( Setup* setup );
+	static void begin();
 	static void setup();
 	static void bootDisplay();
 	static void writeText( int line, String text );
@@ -80,7 +80,6 @@ private:
 	static float _range_clip;
 	static int _pixpmd;
 
-	static Setup *_setup;
 	static bool _menu;
 	enum ips_display _dtype;
 	static int tick;
@@ -111,7 +110,6 @@ private:
 	static int yposalt;
 	static int tyalt;
 	static int pyalt;
-	static display_t display_type;
 	static int average_climb;
 	// Battery Indicator related
 	static int charge;

@@ -23,7 +23,7 @@ class ESPAudio {
 public:
 	ESPAudio();
 	virtual ~ESPAudio();
-	void begin( dac_channel_t ch=DAC_CHANNEL_1, gpio_num_t button=GPIO_NUM_0, Setup *setup=0 );
+	void begin( dac_channel_t ch=DAC_CHANNEL_1, gpio_num_t button=GPIO_NUM_0 );
 	void restart();
 	void setValues( float te, float s2fd, bool fromtest=false );
 	void test( float to, float from );
@@ -89,7 +89,6 @@ private:
 	float _old_ms;
     static uint16_t wiper;
     static uint16_t cur_wiper;
-	Setup *_setup;
 };
 
 

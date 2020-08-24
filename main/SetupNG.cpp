@@ -24,13 +24,127 @@
 #include <esp32/rom/miniz.h>
 #include "Polars.h"
 #include "SetupVolt.h"
-
 #include "esp_task_wdt.h"
 
+std::vector<SetupCommon *> SetupCommon::entries;
+char SetupCommon::_ID[14];
 
-// nvs_handle_t  SetupNG::_nvs_handle = 0;
+SetupNG<float>  		QNH( "QNH", 1013.25 );
+SetupNG<float> 			polar_wingload( "POLAR_WINGLOAD", 34.40 );
+SetupNG<float> 			polar_speed1( "POLAR_SPEED1",   80 );
+SetupNG<float> 			polar_sink1( "POLAR_SINK1",    -0.66 );
+SetupNG<float> 			polar_speed2( "POLAR_SPEED2",   125 );
+SetupNG<float> 			polar_sink2( "POLAR_SINK2",    -0.97 );
+SetupNG<float> 			polar_speed3( "POLAR_SPEED3",   175 );
+SetupNG<float> 			polar_sink3( "POLAR_SINK3",    -2.24 );
+SetupNG<float> 			polar_max_ballast( "POLAR_MAX_BAL",  160 );
+SetupNG<float> 			polar_wingarea( "POLAR_WINGAREA", 10.5 );
+
+SetupNG<std::string> 	bt_name( "BT NAME", "empty" );
+SetupNG<float>  		speedcal( "SPEEDCAL", 0.0 );
+SetupNG<float>  		vario_delay( "VARIO_DELAY", 3.0 );
+SetupNG<float>  		vario_av_delay( "VARIO_AV_DELAY", 5.0 );
+SetupNG<float>  		center_freq( "AUDIO_CENTER_F", 500.0 );
+SetupNG<float>  		tone_var( "OCTAVES", 2.0);
+SetupNG<int>  			dual_tone( "DUAL_TONE" , 0 );
+SetupNG<float>  		high_tone_var( "HIGH_TONE_VAR", 12.0 );
+SetupNG<float>  		deadband( "DEADBAND", 0.3 );
+SetupNG<float>  		deadband_neg("DEADBAND_NEG" , -0.3 );
+SetupNG<float>  		range( "VARIO_RANGE", 5.0 );
+SetupNG<float>  		ballast( "BALLAST" , 0.0 );
+SetupNG<float>  		MC( "MacCready", 0.5 );
+SetupNG<float>  		s2f_speed( "S2F_SPEED", 100.0 );
+
+SetupNG<int>  			audio_mode( "AUDIO_MODE" ,  3 );
+SetupNG<int>  			chopping_mode( "CHOPPING_MODE",  VARIO_CHOP );
+
+SetupNG<int>  			blue_enable( "BT_ENABLE" ,  1);
+SetupNG<int>  			factory_reset( "FACTORY_RES" , 0 );
+SetupNG<int>  			audio_range( "AUDIO_RANGE" , 0 );
+SetupNG<int>  			alt_select( "ALT_SELECT" , 1 );
+SetupNG<int>  			glider_type( "GLIDER_TYPE", 0 );
+SetupNG<int>  			ps_display( "PS_DISPLAY", 1 );
+
+SetupNG<float>  		as_offset( "AS_OFFSET" , 0 );
+SetupNG<float>  		bat_low_volt( "BAT_LOW_VOLT" , 11.5 );
+SetupNG<float>  		bat_red_volt( "BAT_RED_VOLT", 11.75 );
+SetupNG<float>  		bat_yellow_volt( "BAT_YELLOW_VOLT" , 12.0 );
+SetupNG<float>  		bat_full_volt( "BAT_FULL_VOLT", 12.8 );
+SetupNG<float>  		core_climb_min( "CORE_CLIMB_MIN" , 0.5 );
+SetupNG<float>  		core_climb_history( "CORE_CLIMB_HIST" , 45 );
+SetupNG<float>  		elevation( "ELEVATION", -1 );
+SetupNG<float>  		default_volume( "DEFAULT_VOL", 10.0 );
+SetupNG<float>  		s2f_deadband( "DEADBAND_S2F", 10.0 );
+SetupNG<float>  		s2f_delay( "S2F_DELAY", 1.0 );
+SetupNG<float>  		factory_volt_adjust("FACT_VOLT_ADJ" , 0.00815 );
+SetupNG<float>  		bugs( "BUGS", 0.0 );
+
+SetupNG<int>  			display_type( "DISPLAY_TYPE",  UNIVERSAL );
+SetupNG<int>  			display_orientation("DISPLAY_ORIENT" , 0 );
+SetupNG<int>  			flap_enable( "FLAP_ENABLE", 0 );
+SetupNG<float>  		flap_minus_2( "FLAP_MINUS_2", 165 );
+SetupNG<float>  		flap_minus_1( "FLAP_MINUS_1", 105);
+SetupNG<float>  		flap_0( "FLAP_0", 88 );
+SetupNG<float>  		flap_plus_1( "FLAP_PLUS_1", 78 );
+SetupNG<int>  			alt_unit( "ALT_UNIT", 0 );
+SetupNG<int>  			ias_unit( "IAS_UNIT", 0 );
+SetupNG<int>  			vario_unit( "VARIO_UNIT", 0 );
+SetupNG<int>  			rot_default( "ROTARY_DEFAULT", 0 );
+SetupNG<int>  			serial2_speed( "SERIAL2_SPEED", 3 );
+SetupNG<int>  			serial2_rxloop( "SERIAL2_RXLOOP", 1 );
+SetupNG<int>  			serial2_tx( "SERIAL2_TX", 0 );
+SetupNG<int>  			serial2_tx_inverted( "SERIAL2_TX_INV", RS232_INVERTED );
+SetupNG<int>  			serial2_rx_inverted( "SERIAL2_RX_INV", RS232_INVERTED );
+SetupNG<int>  			software_update( "SOFTWARE_UPDATE", 0 );
+SetupNG<int>  			battery_display( "BAT_DISPLAY", 0 );
+SetupNG<int>  			airspeed_mode( "AIRSPEED_MODE", MODE_IAS );
+SetupNG<int>  	    	nmea_protocol( "NMEA_PROTOCOL", OPENVARIO );
 
 
+void SetupCommon::initSetup() {
+	printf("SetupCommon::initSetup()\n");
+	esp_err_t _err = nvs_flash_init();
+	if (_err == ESP_ERR_NVS_NO_FREE_PAGES) {
+		printf("Error no more space in NVS: erase partition\n");
+		const esp_partition_t* nvs_partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_NVS, NULL);
+		_err = (esp_partition_erase_range(nvs_partition, 0, nvs_partition->size));
+		if ( _err != ESP_OK ){
+			printf( "partition erase returned error ret=%d\n", _err );
+		}
+	}
+	for(int i = 0; i < entries.size(); i++ ) {
+			bool ret = entries[i]->init();
+			if( ret != true )
+				printf("Error init with default NVS: %s\n", entries[i]->key() );
+	}
 
-// SetupNG<uint8_t>  airspeed_mode( "AIRSPEED_MODE", MODE_IAS );
+	if( factory_reset.get() ) {
+		printf("\n\n******  FACTORY RESET ******\n\n");
+		for(int i = 0; i < entries.size(); i++ ) {
+			printf("i=%d %s erase", i, entries[i]->key() );
+			bool ret = entries[i]->erase();
+			if( ret != true )
+				printf("Error erasing %s\n", entries[i]->key() );
+			ret = entries[i]->init();
+			if( ret != true )
+				printf("Error init with default %s\n", entries[i]->key() );
+			else
+				printf("%s successfully initialized with default\n", entries[i]->key() );
+		}
+	}
+};
+
+char * SetupCommon::getID() {
+	if( strlen( _ID ) == 0 ) {
+	uint8_t mac[6];
+	unsigned long  crc = 0;
+	if ( esp_efuse_mac_get_default(mac) == ESP_OK ){
+		crc = mz_crc32(0L, mac, 6);
+		}
+	int id = int(crc % 1000);
+	sprintf( _ID, "iVario-%d", id );
+	}
+	return _ID;
+}
+
 

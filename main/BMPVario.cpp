@@ -8,10 +8,9 @@ const double sigmaAdjust = 255 * 2.0/33;  // 2 Vss
 
 int BMPVario::holddown = 0;
 
-void BMPVario::begin( BME280_ESP32_SPI *bmp, Setup* setup ) {
+void BMPVario::begin( BME280_ESP32_SPI *bmp  ) {
 	_bmpTE = bmp;
 	_init = true;
-	_setup = setup;
 	for( int i=0; i<300; i++ )
 		avClimbMin[i] = 0.0;
 	for( int i=0; i<60; i++ )
@@ -26,16 +25,16 @@ double BMPVario::readAVGTE() {
 }
 
 float BMPVario::readS2FTE() {
-	_S2FTE += ( (float)_TEF - _S2FTE ) * ( 1/(_setup->get()->_s2f_delay * 10) );
+	_S2FTE += ( (float)_TEF - _S2FTE ) * ( 1/(s2f_delay.get() * 10) );
 	return _S2FTE;
 }
 
 
 uint64_t lastrts = 0;
 void BMPVario::setup() {
-	_qnh = _setup->get()->_QNH;
-	_analog_adj = _setup->get()->_analog_adj;
-	_damping = _setup->getVarioDelay();
+	_qnh = QNH.get();
+	// _analog_adj = analog_adj.get();
+	_damping = vario_delay.get();
 	_filter_len = 10;
 	lastrts = esp_timer_get_time();
 }
@@ -49,9 +48,9 @@ void BMPVario::history( int idx )
 void BMPVario::recalcAvgClimb() {
 		float ac = 0;
 		int ns=0;
-		for( int i=avindexMin, j=(int)(_setup->get()->_core_climb_history); i>=0 && j>=0; i--, j-- ) {
+		for( int i=avindexMin, j=(int)(core_climb_history.get()); i>=0 && j>=0; i--, j-- ) {
 			// printf("MST pM= %2.2f  %d\n", avClimbMin[i], i  );
-			if( avClimbMin[i] > _setup->get()->_core_climb_min ) {
+			if( avClimbMin[i] > core_climb_min.get() ) {
 				ac += avClimbMin[i];
 				ns++;
 			}
@@ -117,7 +116,7 @@ double BMPVario::readTE() {
 	predictAlt = Altitude + (TEFR * delta);
 	_TEF = _TEF + ((TEFR - _TEF)/ delta ) /(_damping/delta);
 	// calcAnalogOut();
-	_avgTE += (_TEF - _avgTE)* (1/(10*_setup->get()->_vario_av_delay));   // _av_damping in seconds, we have 10 samples per second.
+	_avgTE += (_TEF - _avgTE)* (1/(10*vario_av_delay.get()));   // _av_damping in seconds, we have 10 samples per second.
 	if( holddown > 0 ) {
 		holddown--;
 	}

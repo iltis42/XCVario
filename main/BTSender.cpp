@@ -268,7 +268,7 @@ void btBridge(void *pvParameters){
 }
 
 
-void BTSender::begin( bool enable_bt, char * bt_name, int speed, bool bridge, int serial_tx, bool tx_inv, bool rx_inv ){
+void BTSender::begin( bool enable_bt, const char * bt_name, int speed, bool bridge, int serial_tx, bool tx_inv, bool rx_inv ){
 	printf("BTSender::begin() bt:%d s-bridge:%d\n", enable_bt, bridge );
 	_enable = enable_bt;
 	if( speed && serial_tx )

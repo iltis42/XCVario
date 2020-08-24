@@ -43,7 +43,7 @@ void OTA::release() {
 }
 
 // OTA
-void OTA::doSoftwareUpdate(IpsDisplay * p, Setup * setup){
+void OTA::doSoftwareUpdate(IpsDisplay * p ){
 	printf("Now start Wifi OTA\n");
 	// xTaskCreate(&systemRebootTask, "rebootTask", 2048, NULL, 5, NULL);
 	p->clear();
@@ -72,7 +72,6 @@ void OTA::doSoftwareUpdate(IpsDisplay * p, Setup * setup){
 			break;
 		}
 	}
-	setup->get()->_software_update = 0,
-	setup->commit();
+	software_update.set( 0 );
 	esp_restart();
 }

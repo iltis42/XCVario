@@ -43,10 +43,7 @@ DotDisplay::DotDisplay( gpio_num_t mosi,
 	_te = 0;
 	_menu = 0;
 	_clipte = 0;
-	_setup = 0;
-	// _dtype = ST7565;
 	_dtype = UC1701;
-	// _dtype = SSD1306;
 	tick = 0;
 }
 
@@ -54,7 +51,7 @@ DotDisplay::~DotDisplay() {
 }
 
 
-void DotDisplay::begin( Setup* asetup ) {
+void DotDisplay::begin() {
 	u8g2_esp32_hal = U8G2_ESP32_HAL_DEFAULT;
 	u8g2_esp32_hal.clk   = _scl;   // SCLK_bme280;
 	u8g2_esp32_hal.mosi  = _mosi;  // MOSI_bme280;
@@ -108,7 +105,6 @@ void DotDisplay::begin( Setup* asetup ) {
 	u8g2_ClearBuffer(&u8g2);
 	u8g2_SetFont(&u8g2,  u8g2_font_helvB08_tf );
 	u8g2_SendBuffer(&u8g2);
-	_setup = asetup;
 	setup();
 	// u8g2_enableUTF8Print();
 	// drawConstant();
@@ -116,7 +112,7 @@ void DotDisplay::begin( Setup* asetup ) {
 
 void DotDisplay::setup()
 {
-	_range = _setup->get()->_range;
+	_range = range.get();
 	if( (int)_range %2 == 0 )
 		_divisons = 4;
 	else

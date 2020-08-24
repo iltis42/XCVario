@@ -72,14 +72,13 @@ const int   S2F_TRISIZE = 60; // triangle size quality up/down
 
 int S2FST = 45;
 
-#define UNITVAR (_setup->get()->_vario_unit)
-#define UNITAS (_setup->get()->_ias_unit)
-#define UNITALT (_setup->get()->_alt_unit)
+#define UNITVAR (vario_unit.get())
+#define UNITAS (ias_unit.get())
+#define UNITALT (alt_unit.get())
 
 
 int ASLEN = 0;
 static int fh;
-display_t IpsDisplay::display_type = UNIVERSAL;
 
 extern xSemaphoreHandle spiMutex;
 
@@ -115,7 +114,6 @@ int IpsDisplay::wkialt;
 
 float IpsDisplay::_range_clip = 0;
 int   IpsDisplay::_divisons = 5;
-Setup *IpsDisplay::_setup = 0;
 float IpsDisplay::_range = 5;
 int IpsDisplay::average_climb = -100;
 bool IpsDisplay::wkbox = false;
@@ -123,7 +121,6 @@ bool IpsDisplay::wkbox = false;
 
 IpsDisplay::IpsDisplay( Ucglib_ILI9341_18x240x320_HWSPI *aucg ) {
     ucg = aucg;
-	_setup = 0;
 	_dtype = ILI9341;
 	_divisons = 5;
 	_range_clip = 0;
@@ -187,12 +184,12 @@ void IpsDisplay::clear(){
 void IpsDisplay::bootDisplay() {
 	printf("IpsDisplay::bootDisplay()\n");
 	setup();
-	if( _setup->get()->_display_type == ST7789_2INCH_12P )
+	if( display_type.get() == ST7789_2INCH_12P )
 		ucg->setRedBlueTwist( true );
-	if( _setup->get()->_display_type == ILI9341_TFT_18P )
+	if( display_type.get() == ILI9341_TFT_18P )
 		ucg->invertDisplay( true );
 	clear();
-	if( _setup->get()->_display_orientation == 1 )
+	if( display_orientation.get() == 1 )
 		ucg->setRotate180();
 
 	ucg->setColor(1, COLOR_BLACK );
@@ -238,20 +235,15 @@ void IpsDisplay::initDisplay() {
  	if( UNITAS == 2 ) // knots
  		iasu = "kt";
 
- 	if( _setup->get()->_airspeed_mode == MODE_IAS )
+ 	if( airspeed_mode.get() == MODE_IAS )
  		ucg->printf("IAS %s", iasu.c_str());
- 	else if( _setup->get()->_airspeed_mode == MODE_TAS )
+ 	else if( airspeed_mode.get() == MODE_TAS )
  		ucg->printf("TAS %s", iasu.c_str());
 
 	ucg->setPrintPos(ASVALX,YS2F-(2*fh)-8);
-	// if( _setup->get()->_flap_enable )
-	// 	ucg->print("S2F    FLP");
-	// else
 	ucg->print(" S2F");
 
 	ucg->setColor(0, COLOR_WHITE );
-	// int mslen = ucg->getStrWidth("km/h");
-
 	// AS Box
 	int fl = 45; // ucg->getStrWidth("200-");
 
@@ -267,7 +259,7 @@ void IpsDisplay::initDisplay() {
 	ucg->setPrintPos(FIELD_START,YALT-S2FFONTH);
 	ucg->setColor(0, COLOR_HEADER );
 
-	ucg->printf("Altitude QNH %d", (int)(_setup->get()->_QNH +0.5 ) );
+	ucg->printf("Altitude QNH %d", (int)(QNH.get() +0.5 ) );
 
 	// Thermometer
 	ucg->drawDisc( FIELD_START+10, DISPLAY_H-4,  4, UCG_DRAW_ALL ); // white disk
@@ -283,18 +275,16 @@ void IpsDisplay::initDisplay() {
 	redrawValues();
 }
 
-void IpsDisplay::begin( Setup* asetup ) {
+void IpsDisplay::begin() {
 	printf("IpsDisplay::begin\n");
 	ucg->begin(UCG_FONT_MODE_SOLID);
-	_setup = asetup;
-	display_type = (display_t)(_setup->get()->_display_type);
 	setup();
 }
 
 void IpsDisplay::setup()
 {
 	printf("IpsDisplay::setup\n");
-	_range = _setup->get()->_range;
+	_range = range.get();
 
 	if( (int)_range <= 5 )
 		_divisons = (int)_range*2;
@@ -373,10 +363,10 @@ void IpsDisplay::redrawValues()
 	average_climb = -1000;
 	wkalt = -3;
 	wkspeeds[0] = 220;
-    wkspeeds[1] = _setup->get()->_flap_minus_2;
-    wkspeeds[2] = _setup->get()->_flap_minus_1;
-    wkspeeds[3] = _setup->get()->_flap_0;
-    wkspeeds[4] = _setup->get()->_flap_plus_1;
+    wkspeeds[1] = flap_minus_2.get();
+    wkspeeds[2] = flap_minus_1.get();
+    wkspeeds[3] = flap_0.get();
+    wkspeeds[4] = flap_plus_1.get();
     wkspeeds[5] = 60;
     wkbox = false;
     wkposalt = -100;
@@ -521,9 +511,9 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 
 
 	// WK-Indicator
-	if( _setup->get()->_flap_enable && ias != iasalt )
+	if( flap_enable.get() && ias != iasalt )
 	{
-		float wkspeed = ias * sqrt( 100.0/( _setup->get()->_ballast +100.0) );
+		float wkspeed = ias * sqrt( 100.0/( ballast.get() +100.0) );
 		int wki = getWk( wkspeed );
 	    float wkpos=wkRelPos( wkspeed, wkspeeds[wki+3], wkspeeds[wki+2] );
 	    int wk = (int)((wki - wkpos + 0.5)*10);
@@ -614,16 +604,16 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		prefalt = alt;
 	}
 	// MC Value
-	int MC = _setup->get()->_MC * 10;
-	if( MC != mcalt ) {
+	int aMC = MC.get() * 10;
+	if( aMC != mcalt ) {
 			ucg->setFont(ucg_font_fub11_hr);
 			ucg->setPrintPos(5,DISPLAY_H);
 			ucg->setColor(COLOR_HEADER);
 			ucg->printf("MC:");
 			ucg->setColor(COLOR_WHITE);
 			ucg->setFont(ucg_font_fur14_hf);
-			ucg->printf("%1.1f", _setup->get()->_MC );
-			mcalt=MC;
+			ucg->printf("%1.1f", MC.get() );
+			mcalt=aMC;
 		}
 
     // Temperature Value
@@ -641,15 +631,15 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 #define BATY (DISPLAY_H-12)
 	int chargev = (int)( volt *10 );
 	if ( chargealt != chargev ) {
-		charge = (int)(( volt - _setup->get()->_bat_low_volt )*100)/( _setup->get()->_bat_full_volt - _setup->get()->_bat_low_volt );
+		charge = (int)(( volt -  bat_low_volt.get() )*100)/( bat_full_volt.get() - bat_low_volt.get() );
 		if(charge < 0)
 			charge = 0;
 		if( charge > 100 )
 			charge = 100;
 		if( (tick%100) == 0 )  // check setup changes all 10 sec
 		{
-			yellow =  (int)(( _setup->get()->_bat_yellow_volt - _setup->get()->_bat_low_volt )*100)/( _setup->get()->_bat_full_volt - _setup->get()->_bat_low_volt );
-			red = (int)(( _setup->get()->_bat_red_volt - _setup->get()->_bat_low_volt )*100)/( _setup->get()->_bat_full_volt - _setup->get()->_bat_low_volt );
+			yellow =  (int)(( bat_yellow_volt.get() - bat_low_volt.get() )*100)/( bat_full_volt.get() - bat_low_volt.get() );
+			red = (int)(( bat_red_volt.get() - bat_low_volt.get() )*100)/( bat_full_volt.get() - bat_low_volt.get() );
 		}
 		ucg->drawBox( BATX-40,BATY-2, 36, 12  );  // Bat body square
 		ucg->drawBox( BATX-4, BATY+1, 3, 6  );      // Bat pluspole pimple
@@ -668,7 +658,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		ucg->setColor( COLOR_WHITE );
 		ucg->setFont(ucg_font_fub11_hr);
 		ucg->setPrintPos(BATX-40,BATY-8);
-		if( _setup->get()->_battery_display == 0 )
+		if( battery_display.get() == 0 )
 			ucg->printf("%3d%%  ", charge);
 		else {
 			ucg->setPrintPos(BATX-50,BATY-8);
@@ -691,7 +681,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 	int btq=BTSender::queueFull();
 	if( btq != btqueue )
 	{
-		if( _setup->get()->_blue_enable ) {
+		if( blue_enable.get() ) {
 			ucg_int_t btx=DISPLAY_W-16;
 			ucg_int_t bty=BTH/2;
 			if( btq )
@@ -750,15 +740,15 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
  		setTeBuf(  dmid, MAXTEBAR, COLOR_BLACK );
  		setTeBuf(  dmid, -MAXTEBAR, COLOR_BLACK );
 
- 		if( _setup->get()->_ps_display )
+ 		if( ps_display.get() )
  			setTeBuf(  dmid, py, COLOR_BLUE );
  		if( ty > 0 ){
  			setTeBuf(  dmid, ty, COLOR_GREEN );
- 			if( _setup->get()->_ps_display )
+ 			if( ps_display.get() )
  				setTeBuf(  dmid, py, COLOR_GREEN );
  		}
  		else {
- 			if( _setup->get()->_ps_display ) {
+ 			if( ps_display.get() ) {
 				if( ty > py ){
 					setTeBuf(  dmid, ty, COLOR_BLUE );
 					setTeBuf(  dmid+ty, py-ty, COLOR_GREEN );

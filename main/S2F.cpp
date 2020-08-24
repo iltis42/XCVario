@@ -10,11 +10,10 @@
 #include "Polars.h"
 
 
-S2F::S2F( Setup* setup ) {
-    _setup = setup;
+S2F::S2F() {
     a0=a1=a2=0;
     w0=w1=w2=0;
-    MC = 0;
+    _MC = 0;
     _minsink = 0;
 }
 
@@ -23,23 +22,22 @@ S2F::~S2F() {
 
 void S2F::change_polar()
 {
-	printf("S2F::change_polar() bugs: %f \n", _setup->get()->_bugs );
-	t_polar p = _setup->get()->_polar;
-    double v1=p.speed1 / 3.6;
-    double v2=p.speed2 / 3.6;
-    double v3=p.speed3 / 3.6;
-    double w1=p.sink1;
-    double w2=p.sink2;
-    double w3=p.sink3;
+	printf("S2F::change_polar() bugs: %f \n", bugs.get() );
+    double v1=polar_speed1.get() / 3.6;
+    double v2=polar_speed2.get() / 3.6;
+    double v3=polar_speed3.get() / 3.6;
+    double w1=polar_sink1.get();
+    double w2=polar_sink2.get();
+    double w3=polar_sink3.get();
     // w= a0 + a1*v + a2*v^2   from ilec
     // w=  c +  b*v +  a*v^2   from wiki
 	a2= ((v2-v3)*(w1-w3)+(v3-v1)*(w2-w3)) / (pow(v1,2)*(v2-v3)+pow(v2,2)*(v3-v1)+ pow(v3,2)*(v1-v2));
 	a1= (w2-w3-a2*(pow(v2,2)-pow(v3,2))) / (v2-v3);
 	a0= w3 -a2*pow(v3,2) - a1*v3;
-    a2 = a2/sqrt( ( _setup->get()->_ballast +100.0)/100.0 );   // wingload  e.g. 100l @ 500 kg = 1.2
-    a0 = a0 * ((_setup->get()->_bugs + 100.0) / 100.0);
-    a1 = a1 * ((_setup->get()->_bugs + 100.0) / 100.0);
-    a2 = a2 * ((_setup->get()->_bugs + 100.0) / 100.0);
+    a2 = a2/sqrt( ( ballast.get() +100.0)/100.0 );   // wingload  e.g. 100l @ 500 kg = 1.2
+    a0 = a0 * ((bugs.get() + 100.0) / 100.0);
+    a1 = a1 * ((bugs.get() + 100.0) / 100.0);
+    a2 = a2 * ((bugs.get() + 100.0) / 100.0);
     printf("a0=%f a1=%f  a2=%f s(80)=%f, s(160)=%f\n", a0, a1, a2, sink(80), sink(160) );
     minsink();
 }
@@ -47,10 +45,19 @@ void S2F::change_polar()
 void S2F::select_polar()
 {
 	printf("S2F::select_polar()\n");
-	int n = _setup->get()->_glider_type;
+	int n = glider_type.get();
 	printf("Selected Polar N %d\n", n );
-	_setup->get()->_polar = Polars::getPolar(n);
-	printf("now change\n");
+	t_polar p = Polars::getPolar(n);
+	polar_speed1.set( p.speed1 );
+	polar_speed2.set( p.speed2 );
+	polar_speed3.set( p.speed3 );
+	polar_sink1.set( p.sink1 );
+	polar_sink2.set( p.sink2 );
+	polar_sink3.set( p.sink3 );
+	polar_wingload.set( p.wingload );
+	polar_max_ballast.set( p.max_ballast );
+	polar_wingarea.set( p.wingarea );
+	printf("now change polar\n");
     change_polar();
     // printf("now test\n");
     // test();
@@ -59,7 +66,7 @@ void S2F::select_polar()
 void S2F::change_mc_bal()
 {
 	printf("S2F::change_mc_bal()\n");
-	MC = _setup->get()->_MC;
+	_MC = MC.get();
 	change_polar();
 	// test();
 }
@@ -75,7 +82,7 @@ double S2F::sink( double v_in ) {
 
 double S2F::speed( double st )
 {
-   double stf = 3.6*sqrt( (a0-MC+st) / a2 );
+   double stf = 3.6*sqrt( (a0-_MC+st) / a2 );
    // printf("speed()  %f\n", stf );
    if( (stf < _minsink) or isnan(stf) )
 	   return _minsink;
@@ -87,10 +94,9 @@ double S2F::speed( double st )
 
 double S2F::minsink()
 {
-	printf("minsink()\n");
    // 2*a2*v + a1 = 0
    _minsink = (3.6*-a1)/(2*a2);
-   printf("minsink=%f\n", _minsink );
+   printf("Airspeed @ minsink=%f\n", _minsink );
    return _minsink;
 }
 
@@ -107,7 +113,7 @@ void S2F::test( void )
 	printf( "Sink %f @ %s km/h \n", sink( 150.0 ), "150");
 	printf( "Sink %f @ %s km/h \n", sink( 180.0 ), "180");
 	printf( "Sink %f @ %s km/h \n", sink( 220.0 ), "220");
-    printf("MC %f  Ballast %f\n", MC, _setup->get()->_ballast );
+    printf("MC %f  Ballast %f\n", _MC, ballast.get() );
 	for( int st=20; st >= -20; st-=5 )
 	{
 		printf( "S2F %g km/h vario %g m/s\n", speed( (double)st/10 ), (double)st/10 );

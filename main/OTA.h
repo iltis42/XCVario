@@ -21,7 +21,7 @@ public:
 	void up( int count ) {};
 	void down( int count ) {};
 	void longPress() {};
-	void doSoftwareUpdate( IpsDisplay *p, Setup *setup );
+	void doSoftwareUpdate( IpsDisplay *p );
 private:
     bool pressed;
     ESPRotary * _rotary;

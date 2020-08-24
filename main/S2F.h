@@ -7,11 +7,12 @@
 
 #ifndef MAIN_S2F_H_
 #define MAIN_S2F_H_
+
 #include "Setup.h"
 
 class S2F {
 public:
-	S2F( Setup* setup );
+	S2F( );
 	virtual ~S2F();
 	void change_polar();
 	void select_polar();
@@ -21,10 +22,9 @@ public:
 	double minsink();
 	void test( void );
 private:
-	Setup * _setup;
 	double a0,a1,a2;
 	double w0,w1,w2;
-	double MC;
+	double _MC;
 	double _minsink;
 };
 

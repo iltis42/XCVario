@@ -1,7 +1,7 @@
 /*
  * Setup.h
  *
- *  Created on: Dec 23, 2017
+ *  Created on: August 23, 2020
  *      Author: iltis
  */
 
@@ -29,120 +29,59 @@ extern "C" {
 
 
 /*
+ *
+ * NEW Simplified and distributed non volatile config data API with template classes:
+ * SetupNG<int>  airspeed_mode( "AIRSPEED_MODE", MODE_IAS );
+ *
+ *  int as = airspeed_mode.get();
+ *  airspeed_mode.set( MODE_TAS );
+ *
+ */
+
+
 typedef enum display_type { UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P } display_t;
 typedef enum chopping_mode { NO_CHOP, VARIO_CHOP, S2F_CHOP, BOTH_CHOP } chopping_mode_t;
 typedef enum rs232linemode { RS232_NORMAL, RS232_INVERTED } rs232lm_t;
 typedef enum nmea_protocol  { OPENVARIO, BORGELT } nmea_proto_t;
 typedef enum airspeed_mode  { MODE_IAS, MODE_TAS } airspeed_mode_t;
 
- */
-
-/*
-typedef struct {
-	uint32_t _config_version;
-	float _speedcal;
-	float _vario_delay;
-	float _vario_av_delay;
-	float _center_freq;
-	float _QNH;
-	float _tone_var;
-	uint8_t _dual_tone;
-	float   _high_tone_var;
-	float _deadband;
-	float _deadband_neg;
-	float _analog_adj;
-	float _contrast_adj;
-	float _voltmeter_adj;
-	float _range;
-	float _ballast;
-	float _MC;
-	float _s2f_speed;
-	uint8_t _audio_mode;
-	uint8_t _chopping_mode;
-	char  _bt_name[32];
-	uint8_t _blue_enable;
-	uint8_t _factory_reset;   // 0 = no,  1= yes
-	uint8_t _audio_range;     // 0 = fix, 1=variable
-	uint8_t _alt_select;      // 0 = TE, 1=Baro
-	uint8_t _glider_type;     // 0 = Custom Polar
-	t_polar _polar;
-	float   _offset;
-	uint8_t _ps_display;
-	float   _bat_low_volt;
-	float   _bat_red_volt;
-	float   _bat_yellow_volt;
-	float   _bat_full_volt;
-	uint8_t _display_type;
-	float   _core_climb_min;
-	float   _core_climb_history;
-	float   _elevation;
-	uint8_t _display_orientation;  // 0 = normal, 1 = upside down
-	uint8_t _flap_enable;
-	float    _flap_minus_2;  // -1 -2  165
-	float    _flap_minus_1;  // 0 -1  105
-	float    _flap_0;        // 1-0   88
-	float    _flap_plus_1;   // 2-1   78
-	float    _default_volume;
-	uint8_t  _alt_unit;
-	uint8_t  _ias_unit;
-	uint8_t  _vario_unit;
-	uint8_t  _rot_default;
-	uint8_t  _serial2_speed;
-	uint8_t  _serial2_rxloop;
-	uint8_t  _serial2_tx;
-	uint8_t  _serial2_tx_inverted;
-	uint8_t  _serial2_rx_inverted;
-	uint8_t  _software_update;
-	float    _s2f_deadband;
-	float    _s2f_delay;
-	float    _factory_volt_adjust;
-	uint8_t  _battery_display;
-	uint8_t  _nmea_protocol;
-	float    _bugs;
-	uint8_t  _airspeed_mode;
-	uint32_t _checksum;
-} setup_t;
-
-
-
- */
-
-/*
- *
- * NEW API:
- * SetupNG<uint_8>  airspeed_mode( "AIRSPEED_MODE", MODE_IAS );
- *
- *
- * uint8_t as = airspeed_mode.get();
-   airspeed_mode.set( MODE_TAS );
- *
- *
- *
- *
- *
- */
-
+class SetupCommon {
+public:
+	SetupCommon() {};
+	~SetupCommon() {};
+	virtual bool init() = 0;
+	virtual bool erase() = 0;
+	virtual const char* key() = 0;
+	static std::vector<SetupCommon *> entries;
+	static void initSetup();
+	static char *getID();
+private:
+	static char _ID[14];
+};
 
 template<typename T>
 
-
-class SetupNG {
+class SetupNG: public SetupCommon
+{
 public:
-	T* getPtr() {
-			return &_value;
+	inline T* getPtr() {
+		return &_value;
 	};
-	T& getRef() {
-			return _value;
-	};
-	T get() {
+	inline T& getRef() {
 		return _value;
 	};
+	inline T get() {
+		return _value;
+	};
+	const char * key() {
+		return _key;
+	}
 	bool set( T aval ) {
-		printf("set: ");
-		std::cout << aval << "\n";
-		_value = aval;
+		std::cout << "set( "<< aval << " )\n";
+		_value = T(aval);
+		std::cout << "_value: "<< aval << "\n";
 		if( !open() ) {
-			printf("Error open nvs handle !\n");
+			printf("NVS Error open nvs handle !\n");
 			return( false );
 		}
 		bool ret = commit();
@@ -154,16 +93,16 @@ public:
 			printf("NVS error\n");
 			return false;
 		}
-		printf("set(key:%s , addr:%08x, len:%d, nvs_handle: %04x)\n", _key, (unsigned int)(&_value), sizeof( _value ), _nvs_handle);
+		printf("NVS commit(key:%s , addr:%08x, len:%d, nvs_handle: %04x)\n", _key, (unsigned int)(&_value), sizeof( _value ), _nvs_handle);
 		esp_err_t _err = nvs_set_blob(_nvs_handle, _key, (void *)(&_value), sizeof( _value ));
 		if(_err != ESP_OK) {
-			printf("set blob error %d\n", _err );
+			printf("NVS set blob error %d\n", _err );
 			close();
 			return( false );
 		}
 		_err = nvs_commit(_nvs_handle);
 		if(_err != ESP_OK)  {
-			printf("NVS error\n");
+			printf("NVS nvs_commit error\n");
 			close();
 			return false;
 		}
@@ -171,82 +110,79 @@ public:
 		close();
 		return true;
 	};
-	SetupNG( const char * akey, T adefault ) {
-		_nvs_handle = 0;
-		printf("SetupNG(%s)\n", akey );
-		esp_err_t _err = nvs_flash_init();
-		if (_err == ESP_ERR_NVS_NO_FREE_PAGES) {
-			printf("Error no more space in NVS: erase partition\n");
-						   const esp_partition_t* nvs_partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_NVS, NULL);
-			_err = (esp_partition_erase_range(nvs_partition, 0, nvs_partition->size));
-			if ( _err != ESP_OK ){
-				printf( "partition erase returned error ret=%d\n", _err );
-			}
-		}
+	bool init() {
 		if( !open() ) {
 			printf("Error open nvs handle !\n");
-			return;
+			return false;
 		}
-		_key = akey;
-		_default = adefault;
 		size_t required_size;
-		printf("get_blob(key:%s, nvs_handle: %04x)\n", _key, _nvs_handle );
-		_err = nvs_get_blob(_nvs_handle, _key, NULL, &required_size);
+		esp_err_t _err = nvs_get_blob(_nvs_handle, _key, NULL, &required_size);
 		if ( _err != ESP_OK ){
-			printf( "nvs_get_blob returned error ret=%d\n", _err );
+			printf( "NVS nvs_get_blob error: returned error ret=%d\n", _err );
 			set( _default );  // try to init
 		}
 		else {
-			printf("Object size: %d\n", required_size );
 			if( required_size > sizeof( T ) ) {
-				printf("NVS size too big: %d > %d\n", required_size , sizeof( T ) );
+				printf("NVS error: size too big: %d > %d\n", required_size , sizeof( T ) );
 				erase();
 				set( _default );  // try to init
+				close();
+				return false;
 			}
 			else {
 				printf("NVS size okay: %d\n", required_size );
 				_err = nvs_get_blob(_nvs_handle, _key, &_value, &required_size);
 				if ( _err != ESP_OK ){
-					printf( "nvs_get_blob returned error ret=%d\n", _err );
+					printf( "NVS nvs_get_blob returned error ret=%d\n", _err );
 					erase();
 					set( _default );  // try to init
 				}
 				else {
-					printf("key %s already in Storage, value: ", _key );
+					printf("NVS key %s exists len: %d value: ",_key, required_size);
 					std::cout << _value << "\n";
 				}
 			}
 		}
 		close();
+		return true;
+	};
+	SetupNG() {};
+	SetupNG( const char * akey, T adefault ) {
+		// printf("SetupNG(%s)\n", akey );
+		entries.push_back( this );  // an into vector
+		_nvs_handle = 0;
+		_key = akey;
+		_default = adefault;
+
 	};
 
-    bool erase_all() {
+	bool erase_all() {
 		open();
 		esp_err_t _err = nvs_erase_all(_nvs_handle);
 		if(_err != ESP_OK)
 			return false;
 		else
-			printf("erased all by handle %d\n", _nvs_handle );
+			printf("NVS erased all by handle %d\n", _nvs_handle );
 		if( commit() )
 			return true;
 		else
 			return false;
 
-    };
+	};
 
-    bool erase() {
-    	open();
-    	esp_err_t _err = nvs_erase_key(_nvs_handle, _key);
-    	if(_err != ESP_OK)
-    		return false;
-    	else {
-    		printf("erased %s by handle %d\n", _key, _nvs_handle );
-    		if( set( _default ) )
-    			return true;
-    		else
-    			return false;
-    	}
-    };
+	bool erase() {
+		open();
+		esp_err_t _err = nvs_erase_key(_nvs_handle, _key);
+		if(_err != ESP_OK)
+			return false;
+		else {
+			printf("NVS erased %s by handle %d\n", _key, _nvs_handle );
+			if( set( _default ) )
+				return true;
+			else
+				return false;
+		}
+	};
 
 
 private:
@@ -264,7 +200,7 @@ private:
 				return( false );
 			}
 			else {
-				printf("ESP32NVS handle: %04X  OK\n", _nvs_handle );
+				// printf("ESP32NVS handle: %04X  OK\n", _nvs_handle );
 				return( true );
 			}
 		}
@@ -279,7 +215,77 @@ private:
 };
 
 
+extern SetupNG<float>  		QNH;
+extern SetupNG<float> 		polar_wingload;
+extern SetupNG<float> 		polar_speed1;
+extern SetupNG<float> 		polar_sink1;
+extern SetupNG<float> 		polar_speed2;
+extern SetupNG<float> 		polar_sink2;
+extern SetupNG<float> 		polar_speed3;
+extern SetupNG<float> 		polar_sink3;
+extern SetupNG<float> 		polar_max_ballast;
+extern SetupNG<float> 		polar_wingarea;
 
+extern SetupNG<std::string> bt_name;
+extern SetupNG<float>  		speedcal;
+extern SetupNG<float>  		vario_delay;
+extern SetupNG<float>  		vario_av_delay;
+extern SetupNG<float>  		center_freq;
+extern SetupNG<float>  		tone_var;
+extern SetupNG<int>  		dual_tone;
+extern SetupNG<float>  		high_tone_var;
+extern SetupNG<float>  		deadband;
+extern SetupNG<float>  		deadband_neg;
+extern SetupNG<float>  		range;
+extern SetupNG<float>  		ballast;
+extern SetupNG<float>  		MC;
+extern SetupNG<float>  		s2f_speed;
+
+extern SetupNG<int>  		audio_mode;
+extern SetupNG<int>  		chopping_mode;
+
+extern SetupNG<int>  		blue_enable;
+extern SetupNG<int>  		factory_reset;
+extern SetupNG<int>  		audio_range;
+extern SetupNG<int>  		alt_select;
+extern SetupNG<int>  		glider_type;
+extern SetupNG<int>  		ps_display;
+
+extern SetupNG<float>  		as_offset;
+extern SetupNG<float>  		bat_low_volt;
+extern SetupNG<float>  		bat_red_volt;
+extern SetupNG<float>  		bat_yellow_volt;
+extern SetupNG<float>  		bat_full_volt;
+extern SetupNG<float>  		core_climb_min;
+extern SetupNG<float>  		core_climb_history;
+extern SetupNG<float>  		elevation;
+extern SetupNG<float>  		default_volume;
+extern SetupNG<float>  		s2f_deadband;
+extern SetupNG<float>  		s2f_delay;
+extern SetupNG<float>  		factory_volt_adjust;
+extern SetupNG<float>  		bugs;
+
+extern SetupNG<int>  		display_type;
+extern SetupNG<int>  		display_orientation;
+extern SetupNG<int>  		flap_enable;
+extern SetupNG<float>  		flap_minus_2;
+extern SetupNG<float>  		flap_minus_1;
+extern SetupNG<float>  		flap_0;
+extern SetupNG<float>  		flap_plus_1;
+extern SetupNG<int>  		alt_unit;
+extern SetupNG<int>  		ias_unit;
+extern SetupNG<int>  		vario_unit;
+extern SetupNG<int>  		rot_default;
+
+extern SetupNG<int>  		serial2_speed;
+extern SetupNG<int>  		serial2_rxloop;
+extern SetupNG<int>  		serial2_tx;
+extern SetupNG<int>  		serial2_tx_inverted;
+extern SetupNG<int>  		serial2_rx_inverted;
+extern SetupNG<int>  		software_update;
+extern SetupNG<int>  		battery_display;
+extern SetupNG<int>  		airspeed_mode;
+extern SetupNG<int>  		nmea_protocol;
 
 
 #endif /* MAIN_SETUP_NG_H_ */

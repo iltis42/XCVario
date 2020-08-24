@@ -54,7 +54,6 @@ public:
 	static MenuEntry *selected;
 	static IpsDisplay* _display;
 	static ESPRotary* _rotary;
-	static Setup *_setup;
 	static BatVoltage* _adc;
 	static BME280_ESP32_SPI *_bmp;
 	static bool _menu_enabled;
@@ -74,15 +73,13 @@ class SetupMenu:  public MenuEntry {
 public:
 	SetupMenu();
 	SetupMenu(  String title );
-	void begin( IpsDisplay* display, ESPRotary * rotary, Setup * setup, BME280_ESP32_SPI * bmp, BatVoltage *adc );
+	void begin( IpsDisplay* display, ESPRotary * rotary, BME280_ESP32_SPI * bmp, BatVoltage *adc );
 	void setup();
 	void display( int mode=0 );
-
 	void up( int count );  // step up to parent
 	void down( int count );
 	void press();
 	void longPress();
-
 	virtual ~SetupMenu() {};
 };
 
@@ -90,12 +87,11 @@ public:
 class SetupMenuValFloat:  public MenuEntry {
 public:
 	SetupMenuValFloat();
-	SetupMenuValFloat(  String title, float *value, String unit, float min, float max, float step, int (*action)(SetupMenuValFloat *p) = 0, bool end_menu=false  );
+	SetupMenuValFloat(  String title, float *value, String unit, float min, float max, float step, int (*action)(SetupMenuValFloat *p) = 0, bool end_menu=false, SetupNG<float> *anvs = 0 );
 	void display(int mode=0);
 	void displayVal();
 	void setPrecision( int prec );
 	static void showQnhMenu();
-
 	void up( int count );  // step up to parent
 	void down( int count );
 	void press();
@@ -109,12 +105,13 @@ private:
 	String _unit;
 	int (*_action)( SetupMenuValFloat *p );
 	int _precision;
+	SetupNG<float> * _nvs;
 };
 
 class SetupMenuSelect:  public MenuEntry {
 public:
 	SetupMenuSelect();
-	SetupMenuSelect(  String title, uint8_t *select, bool restart=false, int (*action)(SetupMenuSelect *p) = 0, bool save=true );
+	SetupMenuSelect(  String title, int *select, bool restart=false, int (*action)(SetupMenuSelect *p) = 0, bool save=true, SetupNG<int> *anvs=0 );
 	void display(int mode=0);
 
 	void addEntry( String ent ) {  _values.push_back( ent );
@@ -127,15 +124,15 @@ public:
 	int getSelect() { return *_select; };
 
 private:
-	uint8_t *_select;
-	uint8_t _select_save;
-	uint8_t _numval;
-	bool    _restart;
-	bool    _save;
+	int  *_select;
+	int  _select_save;
+	int  _numval;
+	bool _restart;
+	bool _save;
 	std::vector<String> _values;
 	int (*_action)( SetupMenuSelect *p );
+	SetupNG<int> * _nvs;
 };
-
 
 
 #endif /* MAIN_SetupMenu_H_ */

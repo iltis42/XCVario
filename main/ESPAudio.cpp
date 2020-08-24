@@ -54,7 +54,6 @@ ESPAudio::ESPAudio( ) {
 	_mute = false;
 	_test_ms = 0;
 	_dead_mute = true;
-	_setup = 0;
 	_deadband = 0;
 	_deadband_neg = 0;
 	_disable = false;
@@ -123,7 +122,7 @@ bool ESPAudio::selfTest(){
 		ret = true;
 	// Tone test, beep 440 Hz 1 second
 	_testmode=true;  // disable task for modulation
-	Poti.writeWiper( ((_setup->get()->_default_volume * 100.0) / 128) -1 );
+	Poti.writeWiper( ((default_volume.get() * 100.0) / 128) -1 );
 	dac_output_enable(_ch);
 	for( float f=261.62; f<1046.51; f=f*1.03){
 		// printf("f=%f\n",f);
@@ -470,24 +469,24 @@ void ESPAudio::setValues( float te, float s2fd, bool fromtest )
 
 void ESPAudio::setup()
 {
-	_center = _setup->get()->_center_freq;
+	_center = center_freq.get();
 	_te = 0.0;
-	_variation = _setup->get()->_tone_var;
+	_variation = tone_var.get();
 	_testmode = false;
-	_deadband = _setup->get()->_deadband;
-	_deadband_neg = _setup->get()->_deadband_neg;
-	_s2f_deadband = _setup->get()->_s2f_deadband/10.0;
+	_deadband = deadband.get();
+	_deadband_neg = deadband_neg.get();
+	_s2f_deadband = s2f_deadband.get()/10.0;
 	_dead_mute = true;
 	_mute = false;
-	if( _setup->get()->_audio_range == 0 )
+	if( audio_range.get() == 0 )
 		_range = 5.0;
-	else if( _setup->get()->_audio_range == 1 )
+	else if( audio_range.get() == 1 )
 			_range = 10.0;
 	else
-		_range = _setup->get()->_range;
-	_tonemode = _setup->get()->_dual_tone;
-	_high_tone_var = ((_setup->get()->_high_tone_var + 100.0)/100);
-	_chopping_mode = _setup->get()->_chopping_mode;
+		_range = range.get();
+	_tonemode = dual_tone.get();
+	_high_tone_var = ((high_tone_var.get() + 100.0)/100);
+	_chopping_mode = chopping_mode.get();
 
 }
 
@@ -505,9 +504,8 @@ void ESPAudio::restart()
 }
 
 
-void ESPAudio::begin( dac_channel_t ch, gpio_num_t button, Setup *asetup )
+void ESPAudio::begin( dac_channel_t ch, gpio_num_t button  )
 {
-	_setup = asetup;
 	setup();
 	mute();
 	_ch = ch;
@@ -523,7 +521,7 @@ void ESPAudio::begin( dac_channel_t ch, gpio_num_t button, Setup *asetup )
 
 	Poti.begin(GPIO_NUM_21, GPIO_NUM_22);
 
-	cur_wiper = (uint16_t)( ( (_setup->get()->_default_volume * 100.0) / 128) -1 );
+	cur_wiper = (uint16_t)( ( (default_volume.get() * 100.0) / 128) -1 );
 	wiper = cur_wiper;
 	Poti.writeWiper( cur_wiper );
 	// Enable Audio Amplifiler

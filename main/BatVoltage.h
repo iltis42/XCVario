@@ -16,7 +16,7 @@
 
 class BatVoltage {
 public:
-	BatVoltage( Setup *setup );
+	BatVoltage();
 	virtual ~BatVoltage();
 
 	//  ADC1_CHANNEL_7,     /*!< ADC1 channel 7 is GPIO35 */
@@ -31,7 +31,6 @@ private:
 	adc1_channel_t _reference_ch;
     long _adc_reference;
     esp_adc_cal_characteristics_t *adc_chars;
-    Setup *_setup;
 };
 
 

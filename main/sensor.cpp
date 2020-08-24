@@ -40,6 +40,9 @@
 #include <SPI.h>
 #include <Ucglib.h>
 #include <OTA.h>
+#include "SetupNG.h"
+
+
 
 // #include "sound.h"
 
@@ -78,10 +81,11 @@ float dynamicP;
 DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 standard, alternative  GPIO_NUM_17
 MP5004DP MP5004DP;
 xSemaphoreHandle xMutex=NULL;
-Setup mysetup;
-S2F  s2f( &mysetup );
-OpenVario OV( &mysetup, &s2f );
-BatVoltage ADC ( &mysetup );
+
+S2F Speed2Fly;
+OpenVario OV( &Speed2Fly );
+
+BatVoltage ADC;
 Switch VaSoSW;
 TaskHandle_t *bpid;
 TaskHandle_t *apid;
@@ -130,9 +134,9 @@ void drawDisplay(void *pvParameters){
 			if( validTemperature == false )
 				t = DEVICE_DISCONNECTED_C;
 			float airspeed = 0;
-			if( mysetup.get()->_airspeed_mode == MODE_IAS )
+			if( airspeed_mode.get() == MODE_IAS )
 				airspeed = ias;
-			else if( mysetup.get()->_airspeed_mode == MODE_TAS )
+			else if( airspeed_mode.get() == MODE_TAS )
 				airspeed = tas;
 			display.drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, aCl, s2fmode );
 		}
@@ -155,30 +159,30 @@ void readBMP(void *pvParameters){
 			baroP = bmpBA.readPressure();
 			dynamicP = MP5004DP.readPascal(30);
 			// vTaskDelay(1);
-			if( mysetup.get()->_alt_select == 0 ) // TE
+			if( alt_select.get() == 0 ) // TE
 				alt = bmpVario.readAVGalt();
 			else { // Baro
-				if(  mysetup.get()->_alt_unit == 2 )  // FL
+				if(  alt_unit.get() == 2 )  // FL
 					alt = bmpBA.calcAVGAltitude( 1013.25, baroP );
 				else
-					alt = bmpBA.calcAVGAltitude( mysetup.get()->_QNH, baroP );
-				// printf("BA p=%f alt=%f QNH=%f\n", baroP, alt, mysetup.get()->_QNH );
+					alt = bmpBA.calcAVGAltitude( QNH.get(), baroP );
+
 			}
 			ias = ias + (MP5004DP.pascal2km( dynamicP ) - ias)*0.1;
 			tas = ias * sqrt( 1.225 / ( baroP*100.0 / (287.058 * (273.15+temperature) ) ) );  // True airspeed
 
 			if( (count++ % 2) == 0 ) {  // reduce messages from 10 per second to 5 per second to reduce load in XCSoar
 				char lb[120];
-				OV.makeNMEA( lb, baroP, dynamicP, TE, temperature, ias, tas, mysetup.get()->_MC, mysetup.get()->_bugs, mysetup.get()->_ballast, s2fmode  );
+				OV.makeNMEA( lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), s2fmode  );
 				btsender.send( lb );
 				vTaskDelay(2);
 			}
 			aTE = bmpVario.readAVGTE();
 			aTES2F = bmpVario.readS2FTE();
 			aCl = bmpVario.readAvgClimb();
-			polar_sink = s2f.sink( ias );
+			polar_sink = Speed2Fly.sink( ias );
 			netto = aTES2F - polar_sink;
-			as2f = s2f.speed( netto );
+			as2f = Speed2Fly.speed( netto );
 			s2f_delta = as2f - ias;
 			xSemaphoreGive(xMutex);
 		}
@@ -194,7 +198,7 @@ void readBMP(void *pvParameters){
 void audioTask(void *pvParameters){
 	while (1) {
 		TickType_t xLastWakeTime = xTaskGetTickCount();
-		switch( mysetup.get()->_audio_mode ) {
+		switch( audio_mode.get() ) {
 		case 0: // Vario
 			s2fmode = false;
 			break;
@@ -205,7 +209,7 @@ void audioTask(void *pvParameters){
 			s2fmode = VaSoSW.isClosed();
 			break;
 		case 3: // Auto
-			if( (ias > mysetup.get()->_s2f_speed)  or VaSoSW.isClosed())
+			if( (ias > s2f_speed.get())  or VaSoSW.isClosed())
 				s2fmode = true;
 			else
 				s2fmode = false;
@@ -263,23 +267,28 @@ void readTemp(void *pvParameters){
 	}
 }
 
+
 void sensor(void *args){
 	bool selftestPassed=true;
 	int line = 1;
 	esp_wifi_set_mode(WIFI_MODE_NULL);
 	spiMutex = xSemaphoreCreateMutex();
 	esp_log_level_set("*", ESP_LOG_ERROR);
-	for( int i=0; i<36; i++ )
-		gpio_set_drive_capability((gpio_num_t)i, GPIO_DRIVE_CAP_1);
+
+	printf("Now init all Setup elements\n");
+	SetupCommon::initSetup();
+
+	printf( "QNH->get() %f\n", QNH.get() );
+
 	NVS.begin();
-	mysetup.begin();
-	btsender.begin( mysetup.get()->_blue_enable,
-			mysetup.getBtName(),
-			mysetup.get()->_serial2_speed,
-			mysetup.get()->_serial2_rxloop,
-			mysetup.get()->_serial2_tx,
-			(bool)(mysetup.get()->_serial2_tx_inverted),
-			(bool)(mysetup.get()->_serial2_rx_inverted) );
+
+	btsender.begin( blue_enable.get(),
+			bt_name.getPtr()->c_str(),
+			serial2_speed.get(),
+			serial2_rxloop.get(),
+			serial2_tx.get(),
+			(bool)(serial2_tx_inverted.get()),
+			(bool)(serial2_rx_inverted.get()) );
 
 
 	ADC.begin();  // for battery voltage
@@ -299,13 +308,13 @@ void sensor(void *args){
 	ds18b20.begin();
 	SPI.begin( SPI_SCLK, SPI_MISO, SPI_MOSI, CS_bme280BA );
 	xSemaphoreGive(spiMutex);
-	display.begin( &mysetup );
+	display.begin();
 	display.bootDisplay();
 
-	if( mysetup.get()->_software_update ) {
+	if( software_update.get() ) {
 		Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
 		ota.begin( &Rotary );
-		ota.doSoftwareUpdate( &display, &mysetup );
+		ota.doSoftwareUpdate( &display );
 	}
 
 	// int valid;
@@ -318,7 +327,7 @@ void sensor(void *args){
 	display.writeText(line++, ver.c_str() );
 
 	printf("Speed sensors init..\n");
-	MP5004DP.begin( GPIO_NUM_21, GPIO_NUM_22, &mysetup);  // sda, scl
+	MP5004DP.begin( GPIO_NUM_21, GPIO_NUM_22);  // sda, scl
 	uint16_t val;
 	bool works=MP5004DP.selfTest( val );
 
@@ -426,13 +435,13 @@ void sensor(void *args){
 
 	}
 
-	bmpVario.begin( &bmpTE, &mysetup );
+	bmpVario.begin( &bmpTE );
 	bmpVario.setup();
 	VaSoSW.begin( GPIO_NUM_12 );
 	esp_task_wdt_reset();
 
 	printf("Audio begin\n");
-	Audio.begin( DAC_CHANNEL_1, GPIO_NUM_0, &mysetup );
+	Audio.begin( DAC_CHANNEL_1, GPIO_NUM_0);
 	printf("Poti and Audio test\n");
 	if( !Audio.selfTest() ) {
 		printf("Error: Digital potentiomenter selftest failed\n");
@@ -460,13 +469,13 @@ void sensor(void *args){
 		failed_tests += "Battery Voltage Sensor: PASSED\n";
 	}
 
-	printf("BT Sender init, device name: %s\n", mysetup.getBtName() );
+	printf("BT Sender init, device name: %s\n", bt_name.get().c_str() );
 	// esp_task_wdt_reset();
 
 
 
 	sleep( 0.5 );
-	if( mysetup.get()->_blue_enable ) {
+	if( blue_enable.get() ) {
 		if( btsender.selfTest() ){
 			display.writeText( line++, "Bluetooth: OK");
 			failed_tests += "Bluetooth test: PASSED\n";
@@ -477,8 +486,8 @@ void sensor(void *args){
 		}
 	}
 
-	s2f.change_polar();
-	s2f.change_mc_bal();
+	Speed2Fly.change_polar();
+	Speed2Fly.change_mc_bal();
 	Version myVersion;
 	printf("Program Version %s\n", myVersion.version() );
 	gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);  // blue LED, maybe use for BT connection
@@ -574,12 +583,12 @@ void sensor(void *args){
 
 
 	display.initDisplay();
-	Menu.begin( &display, &Rotary, &mysetup, &bmpBA, &ADC );
+	Menu.begin( &display, &Rotary, &bmpBA, &ADC );
 	if( ias < 50.0 ){
 		xSemaphoreTake(xMutex,portMAX_DELAY );
 		printf("QNH Autosetup, IAS=%3f (<50 km/h)\n", ias );
 		// QNH autosetup
-		float ae = mysetup.get()->_elevation;
+		float ae = elevation.get();
 		baroP = bmpBA.readPressure();
 		if( ae > 0 ) {
 			float step=10.0; // 80 m
@@ -603,7 +612,8 @@ void sensor(void *args){
 				// esp_task_wdt_reset();
 			}
 			printf("qnh=%4.2f\n\n\n", qnh_best);
-			mysetup.get()->_QNH = qnh_best;
+			float &qnh = QNH.getRef();
+			qnh = qnh_best;
 		}
 
 		SetupMenuValFloat::showQnhMenu();
@@ -625,8 +635,12 @@ void sensor(void *args){
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 4096*2, NULL, 4, dpid, 0);  // 10
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 4096, NULL, 3, tpid, 0);
 
-	for( int i=0; i<36; i++ )
-			gpio_set_drive_capability((gpio_num_t)i, GPIO_DRIVE_CAP_1);
+	for( int i=0; i<36; i++ ) {
+			if( i != 23 && i < 6 && i > 12  )
+				gpio_set_drive_capability((gpio_num_t)i, GPIO_DRIVE_CAP_1);
+	}
+
+
 	vTaskDelete( NULL );
 
 }
@@ -637,6 +651,6 @@ extern "C" int btstack_main(int argc, const char * argv[]){
 	esp_log_level_set("*", ESP_LOG_INFO);      // enable INFO logs
 	// esp_log_level_set("bts", ESP_LOG_INFO);      // enable INFO logs
 
-	xTaskCreatePinnedToCore(&sensor, "sensor", 8192, NULL, 16, 0, 0);
+	xTaskCreatePinnedToCore(&sensor, "sensor", 12000, NULL, 5, 0, 0);
 	return 0;
 }

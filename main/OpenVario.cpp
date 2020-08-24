@@ -13,12 +13,9 @@
 #include "math.h"
 #include "S2F.h"
 
-Setup * OpenVario::_setup = 0;
-S2F   * OpenVario::_s2f = 0;
+S2F * OpenVario::_s2f = 0;
 
-
-OpenVario::OpenVario(Setup * setup, S2F * s2f) {
-	_setup = setup;
+OpenVario::OpenVario(S2F * s2f) {
 	_s2f = s2f;
 }
 
@@ -27,11 +24,11 @@ OpenVario::~OpenVario() {
 }
 
 
-void OpenVario::makeNMEA(char* str, float baro, float dp, float te, float temp, float ias, float tas, float mc, int bugs, float ballast, bool cruise ){
-	if( _setup->get()->_nmea_protocol == OPENVARIO ) {
+void OpenVario::makeNMEA(char* str, float baro, float dp, float te, float temp, float ias, float tas, float mc, int bugs, float aballast, bool cruise ){
+	if( nmea_protocol.get() == OPENVARIO ) {
 		sprintf(str,"$POV,P,%0.1f,Q,%0.1f,E,%0.1f,T,%0.1f",baro,dp,te,temp);
 	}
-	else if ( _setup->get()->_nmea_protocol == BORGELT ) {
+	else if ( nmea_protocol.get() == BORGELT ) {
 		/*
 		Sentence has following format:
 		$PBB50,AAA,BBB.B,C.C,DDDDD,EE,F.FF,G,HH*CHK crlf
@@ -50,10 +47,10 @@ void OpenVario::makeNMEA(char* str, float baro, float dp, float te, float temp, 
 
 		*/
 		float iaskn = ias*0.539957;
-	    sprintf(str,"$PBB50,%03d,%3.1f,%1.1f,%d,%d,%1.2f,%1d,%2d", (int)(tas*0.539957+0.5), te*1.94384, mc*1.94384, (int)((iaskn*iaskn)+0.5), bugs, (ballast+100)/100.0, cruise, (int)(temp+0.5) );
+	    sprintf(str,"$PBB50,%03d,%3.1f,%1.1f,%d,%d,%1.2f,%1d,%2d", (int)(tas*0.539957+0.5), te*1.94384, mc*1.94384, (int)((iaskn*iaskn)+0.5), bugs, (aballast+100)/100.0, cruise, (int)(temp+0.5) );
 	}
 	else {
-		printf("Not supported protocol %d", _setup->get()->_nmea_protocol );
+		printf("Not supported protocol %d", nmea_protocol.get() );
 	}
 	int cs = getCheckSum(&str[1]);
 	int i = strlen(str);
@@ -62,21 +59,21 @@ void OpenVario::makeNMEA(char* str, float baro, float dp, float te, float temp, 
 
 void OpenVario::parseNMEA( char *str ){
     printf("parseNMEA %s\n", str);
-    if ( _setup->get()->_nmea_protocol == BORGELT ) {
+    if ( nmea_protocol.get() == BORGELT ) {
 		printf("parseNMEA, BORGELT\n");
 		if (str[3] == 'b') {
 			printf("parseNMEA, BORGELT, ballast modification\n");
-			float ballast;
-			sscanf(str, "!g,b%f", &ballast);
-			ballast = ballast * 10; // There is a bug in XCSoar sending only 10% of the fraction (issue: 464)
-			printf("New Ballast: %f %% of max \n", ballast);
-			float liters = (ballast/100.0) * _setup->get()->_polar.max_ballast;
+			float aballast;
+			sscanf(str, "!g,b%f", &aballast);
+			aballast = aballast * 10; // Its obviously only possible to change in fraction's by 10% in CA302 (issue: 464)
+			printf("New Ballast: %f %% of max \n", aballast);
+			float liters = (aballast/100.0) * polar_max_ballast.get();
 			printf("New Ballast in liters: %f \n", liters);
-			float refw = _setup->get()->_polar.wingload * _setup->get()->_polar.wingarea;
+			float refw = polar_wingload.get() * polar_wingarea.get();
 			printf("Reference weight: %f \n", refw);
 			float bal = (100.0*(liters+refw)/refw) - 100;
 			printf("Final new ballast: %f \n", bal);
-			_setup->get()->_ballast = bal;
+			ballast.set( bal );
 			_s2f->change_mc_bal();
 		}
 		if (str[3] == 'm') {
@@ -85,16 +82,16 @@ void OpenVario::parseNMEA( char *str ){
 			sscanf(str, "!g,m%f", &mc);
 			mc = mc*0.1 / 1.94384;
 			printf("New MC: %1.1f m/s\n", mc);
-			_setup->get()->_MC = mc;
+			MC.set( mc );
 			_s2f->change_mc_bal();
 		}
 		if (str[3] == 'u') {
 			printf("parseNMEA, BORGELT, Bugs modification\n");
-			int bugs;
-			sscanf(str, "!g,u%d", &bugs);
-			bugs = 100-bugs;
-			printf("New Bugs: %d %%\n", bugs);
-			_setup->get()->_bugs = bugs;
+			int mybugs;
+			sscanf(str, "!g,u%d", &mybugs);
+			mybugs = 100-mybugs;
+			printf("New Bugs: %d %%\n", mybugs);
+			bugs.set( mybugs );
 			_s2f->change_mc_bal();
 		}
     }

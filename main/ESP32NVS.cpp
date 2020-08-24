@@ -38,7 +38,7 @@ void ESP32NVS::close(){
 }
 
 bool ESP32NVS::open(){
-	printf("ESP32NVS::open()");
+	// printf("ESP32NVS::open()");
 	if( _nvs_handle != 0 ) {
 		printf("ESP32NVS handle already open\n");
 		return true;
@@ -48,7 +48,7 @@ bool ESP32NVS::open(){
 		printf("ESP32NVS open storage error\n");
 		return false;
 	}
-	printf(" handle: %04X  OK\n", _nvs_handle );
+	// printf(" handle: %04X  OK\n", _nvs_handle );
 	return true;
 }
 

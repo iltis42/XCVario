@@ -45,23 +45,21 @@ const float min_pascal = 10.0;
 class MP5004DP {
 public:
 	MP5004DP() {
-		offset = 0;
+		_offset = 0;
 	    _alpha = alpha;
-	    _setup = 0;
 	    _haveDevice = false;
 	}
-	bool    begin(gpio_num_t sda, gpio_num_t scl, Setup *setup );
+	bool    begin(gpio_num_t sda, gpio_num_t scl );
 	bool    doOffset( bool force=false );
 	float   readPascal( float minimum=min_pascal );
 	float   pascal2km( float pascal );
 	bool    selfTest(uint16_t& adval );
-	bool offsetPlausible( uint16_t offset );
+	bool    offsetPlausible( uint16_t offset );
 
 private:
-	float offset;
+	float _offset;
 	float _alpha;
 	bool _haveDevice;
-	Setup * _setup;
 };
 
 #endif

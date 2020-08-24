@@ -40,7 +40,6 @@ public:
 		_avgTE = 0;
 		averageAlt = 0;
 		bmpTemp = 0;
-		_setup = 0;
 		_damping = 1.0;
 		_currentAlt = 0;
 		samples = 0;
@@ -52,8 +51,7 @@ public:
 		avindex100MSec = 0;
 	}
 
-	void begin( BME280_ESP32_SPI *bmp,
-			    Setup* setup=0 );
+	void begin( BME280_ESP32_SPI *bmp );
 
 	static void setHolddown( int hold ) { holddown = hold; }
 	void setQNH( float qnh ) { _qnh = qnh; };
@@ -95,7 +93,6 @@ private:
 	double bmpTemp;
 	bool _test;
 	bool _init;
-	Setup *_setup;
 	float _damping;
 	float _S2FTE;
 	double _currentAlt;

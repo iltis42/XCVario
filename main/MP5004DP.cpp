@@ -9,9 +9,8 @@
 //
 // }
 
-bool MP5004DP::begin(gpio_num_t sda, gpio_num_t scl, Setup* setup){
+bool MP5004DP::begin(gpio_num_t sda, gpio_num_t scl ){
 	printf("MP5004DP::begin\n");
-	_setup = setup;
 	bool ret = NVS.begin();
 	if ( ret == false ){
 		printf("MP5004DP: Error NVS init\n");
@@ -61,16 +60,13 @@ bool MP5004DP::doOffset( bool force ){
 	}
 	_haveDevice=true;
 	printf("MP5004DP looks like have device\n");
-	// std::string _offset_nvs_key( "OFFSET4" );
 	printf("MP5004DP key initialized\n");
-	offset = _setup->get()->_offset;
+	_offset = as_offset.get();
 
-	printf("MP5004DP got offset from NVS: %0.1f\n", offset );
-    // return true; // ####
-	printf("Current _offset: %0.1f\n",offset);
+	printf("MP5004DP got offset from NVS: %0.1f\n", _offset );
 	bool flying = false;
 	float p;
-	bool plausible = offsetPlausible( offset );
+	bool plausible = offsetPlausible( _offset );
     if( plausible ){
        printf("Offset is plausible\n");
 	   p = readPascal();
@@ -94,14 +90,12 @@ bool MP5004DP::doOffset( bool force ){
 	 		rawOffset += raw;
 	 		vTaskDelay(10 / portTICK_PERIOD_MS);
 	 	}
-   	    offset = rawOffset / 100;
-	   	if( offsetPlausible( offset ) )
+   	    _offset = rawOffset / 100;
+	   	if( offsetPlausible( _offset ) )
 	   	{
-	   	   printf("Offset procedure finished, offset: %f\n", offset);
-	   	   if( _setup->get()->_offset != offset ){
-	          _setup->get()->_offset = offset;
-	          printf("New Offset to take over in NVS\n");
-	   	      _setup->commit();
+	   	   printf("Offset procedure finished, offset: %f\n", _offset);
+	   	   if( as_offset.get() != _offset ){
+	          as_offset.set( _offset );
   		      printf("Stored new offset in NVS\n");
 	   	   }
 	   	   else
@@ -123,7 +117,7 @@ float MP5004DP::readPascal( float minimum ){
 		return 0.0;
 	}
 	float val = MCP.readAVG( _alpha );
-	float _pascal = (val - offset) * correction * ((100.0 + _setup->get()->_speedcal) / 100.0);
+	float _pascal = (val - _offset) * correction * ((100.0 + speedcal.get()) / 100.0);
     if ( (_pascal < minimum) && (minimum != 0) ) {
 	  _pascal = 0.0;
 	};

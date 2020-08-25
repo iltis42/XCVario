@@ -651,6 +651,6 @@ extern "C" int btstack_main(int argc, const char * argv[]){
 	esp_log_level_set("*", ESP_LOG_INFO);      // enable INFO logs
 	// esp_log_level_set("bts", ESP_LOG_INFO);      // enable INFO logs
 
-	xTaskCreatePinnedToCore(&sensor, "sensor", 12000, NULL, 16, 0, 0);
+	xTaskCreatePinnedToCore(&sensor, "sensor", 8192, NULL, 16, 0, 0);
 	return 0;
 }

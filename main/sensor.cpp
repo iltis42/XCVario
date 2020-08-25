@@ -185,9 +185,8 @@ void readBMP(void *pvParameters){
 				netto = aTES2F - polar_sink;
 				as2f = Speed2Fly.speed( netto );
 				s2f_delta = as2f - ias;
-			}
 
-			if( (count++ % 2) == 0 ) {  // reduce messages from 10 per second to 5 per second to reduce load in XCSoar
+			    // reduce also messages from 10 per second to 5 per second to reduce load in XCSoar
 				char lb[120];
 				OV.makeNMEA( lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), s2fmode  );
 				btsender.send( lb );

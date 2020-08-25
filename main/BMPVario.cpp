@@ -70,7 +70,7 @@ double BMPVario::readTE() {
 	_currentAlt = _bmpTE->readAltitude(_qnh);
 	uint64_t rts = esp_timer_get_time();
 	float delta = (float)(rts - lastrts)/1000000.0;   // in seconds
-	if( delta < 0.1 )
+	if( delta < 0.075 )  // ensure every 100 mS one calculation
 		return _TEF;
 
 	// printf("Vario delta=%f\n", delta );

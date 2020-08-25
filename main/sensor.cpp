@@ -156,9 +156,9 @@ void readBMP(void *pvParameters){
 		if( Audio.getDisable() != true )
 		{
 			xSemaphoreTake(xMutex,portMAX_DELAY );
-			TE = bmpVario.readTE();
+			TE = bmpVario.readTE();  // 10x per second
 			if( (count++ % 2) == 0 ) {
-				baroP = bmpBA.readPressure();
+				baroP = bmpBA.readPressure();   // 5x per second
 				dynamicP = MP5004DP.readPascal(30);
 				float alt_standard = bmpBA.calcAVGAltitude( 1013.25, baroP );
 				// vTaskDelay(1);
@@ -187,7 +187,7 @@ void readBMP(void *pvParameters){
 				s2f_delta = as2f - ias;
 			}
 
-			if( (count++ % 4) == 0 ) {  // reduce messages from 10 per second to 5 per second to reduce load in XCSoar
+			if( (count++ % 2) == 0 ) {  // reduce messages from 10 per second to 5 per second to reduce load in XCSoar
 				char lb[120];
 				OV.makeNMEA( lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), s2fmode  );
 				btsender.send( lb );
@@ -200,7 +200,7 @@ void readBMP(void *pvParameters){
 			printf("Warning bmpTask stack low: %d\n", uxTaskGetStackHighWaterMark( bpid ) );
 
 		esp_task_wdt_reset();
-		vTaskDelayUntil(&xLastWakeTime, 50/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
 	}
 }
 
@@ -229,7 +229,7 @@ void audioTask(void *pvParameters){
 		{
 			Audio.setValues( TE, s2f_delta );
 		}
-		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&xLastWakeTime, 50/portTICK_PERIOD_MS);
 	}
 }
 

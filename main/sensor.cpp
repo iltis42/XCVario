@@ -283,7 +283,7 @@ void sensor(void *args){
 	NVS.begin();
 
 	btsender.begin( blue_enable.get(),
-			bt_name.getPtr()->c_str(),
+			SetupCommon::getID(),
 			serial2_speed.get(),
 			serial2_rxloop.get(),
 			serial2_tx.get(),
@@ -468,11 +468,6 @@ void sensor(void *args){
 		display.writeText( line++, "Bat Sensor: OK");
 		failed_tests += "Battery Voltage Sensor: PASSED\n";
 	}
-
-	printf("BT Sender init, device name: %s\n", bt_name.get().c_str() );
-	// esp_task_wdt_reset();
-
-
 
 	sleep( 0.5 );
 	if( blue_enable.get() ) {

@@ -47,7 +47,7 @@ typedef enum airspeed_mode  { MODE_IAS, MODE_TAS } airspeed_mode_t;
 
 class SetupCommon {
 public:
-	SetupCommon() {};
+	SetupCommon() {  memset( _ID, 0, sizeof( _ID )); };
 	~SetupCommon() {};
 	virtual bool init() = 0;
 	virtual bool erase() = 0;
@@ -130,7 +130,7 @@ public:
 				return false;
 			}
 			else {
-				printf("NVS size okay: %d\n", required_size );
+				// printf("NVS size okay: %d\n", required_size );
 				_err = nvs_get_blob(_nvs_handle, _key, &_value, &required_size);
 				if ( _err != ESP_OK ){
 					printf( "NVS nvs_get_blob returned error ret=%d\n", _err );
@@ -226,7 +226,6 @@ extern SetupNG<float> 		polar_sink3;
 extern SetupNG<float> 		polar_max_ballast;
 extern SetupNG<float> 		polar_wingarea;
 
-extern SetupNG<std::string> bt_name;
 extern SetupNG<float>  		speedcal;
 extern SetupNG<float>  		vario_delay;
 extern SetupNG<float>  		vario_av_delay;

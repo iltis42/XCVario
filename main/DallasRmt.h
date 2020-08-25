@@ -20,13 +20,8 @@ typedef uint8_t DeviceAddress[8];
 class DallasRmt
 {
 public:
-    DallasRmt();
     DallasRmt(OnewireRmt* ow);
-    DallasRmt(uint8_t pin,uint8_t rmt_rx,uint8_t rmt_tx);
-
     ~DallasRmt();
-
-    void setOneWire(OnewireRmt* ow);
 
     // initialise bus
     void begin(void);
@@ -168,7 +163,6 @@ private:
 
     bool _waitForConversion;
     bool _checkForConversion;
-    bool _ownOnewire; // set to true if we created _ow
 
     // reads scratchpad and returns the raw temperature
     int16_t calculateTemperature(const uint8_t*, uint8_t*);

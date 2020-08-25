@@ -37,48 +37,21 @@
 #define MAX(a,b) (((a)>(b))?(a):(b))
 #endif
 
-DallasRmt::DallasRmt() : _ow(nullptr), _ownOnewire(false)
-{
-
-}
-
-DallasRmt::DallasRmt(OnewireRmt* ow): _ownOnewire(false)
-{
-    setOneWire(ow);
-}
-
-DallasRmt::DallasRmt(uint8_t pin, uint8_t rmt_rx, uint8_t rmt_tx)
-{
-    _devices = 0;
-    _parasite = false;
-    _bitResolution = 9;
-    _waitForConversion = true;
-    _checkForConversion = true;
-    _is_connected = false;
-    _ow = 0;
+DallasRmt::DallasRmt( OnewireRmt* ow )
+{	  _ow = ow;
+	  _parasite = false;
+	  _bitResolution = 9;
+	  _waitForConversion = true;
+	  _checkForConversion = true;
 }
 
 DallasRmt::~DallasRmt()
 {
-    if (_ownOnewire) {
+    if (_ow) {
         delete _ow;
     }
 }
 
-void DallasRmt::setOneWire(OnewireRmt* ow)
-{
-    if (_ownOnewire) {
-        delete _ow;
-        _ow = nullptr;
-    }
-    _ow = ow;
-
-    _devices = 0;
-    _parasite = false;
-    _bitResolution = 9;
-    _waitForConversion = true;
-    _checkForConversion = true;
-}
 // initialise the bus
 
 void DallasRmt::begin(void)
@@ -128,13 +101,11 @@ bool DallasRmt::validFamily(const uint8_t* deviceAddress)
 bool DallasRmt::getAddress(uint8_t* deviceAddress, uint8_t index)
 {
     uint8_t depth = 0;
-    if( _ow )
-    	_ow->reset_search();
-    else
-    	return false;
+   	_ow->reset_search();
 
     while (depth <= index && _ow->search(deviceAddress)) {
-        if (depth == index && validAddress(deviceAddress)) return true;
+        if (depth == index && validAddress(deviceAddress))
+        	return true;
         depth++;
     }
 
@@ -154,8 +125,6 @@ bool DallasRmt::isConnected(const uint8_t* deviceAddress)
 
 bool DallasRmt::isConnected(const uint8_t* deviceAddress, uint8_t* scratchPad)
 {
-	if( _ow == 0 )
-		return false;
     bool b = readScratchPad(deviceAddress, scratchPad);
     bool crc = (_ow->crc8(scratchPad, 8) == scratchPad[SCRATCHPAD_CRC]);
     if( crc && b ){
@@ -176,8 +145,6 @@ bool DallasRmt::readScratchPad(const uint8_t* deviceAddress, uint8_t* scratchPad
 {
 
     // send the reset command and fail fast
-	if( _ow == 0 )
-		return false;
     int b = _ow->reset();
     if (b == 0) return false;
 
@@ -205,8 +172,6 @@ bool DallasRmt::readScratchPad(const uint8_t* deviceAddress, uint8_t* scratchPad
 
 void DallasRmt::writeScratchPad(const uint8_t* deviceAddress, const uint8_t* scratchPad)
 {
-	if( _ow == 0 )
-		return;
     _ow->reset();
     _ow->select(deviceAddress);
     _ow->write(WRITESCRATCH);
@@ -232,8 +197,6 @@ void DallasRmt::writeScratchPad(const uint8_t* deviceAddress, const uint8_t* scr
 bool DallasRmt::readPowerSupply(const uint8_t* deviceAddress)
 {
     bool ret = false;
-    if( _ow == 0 )
-    	return false;
     _ow->reset();
     _ow->select(deviceAddress);
     _ow->write(READPOWERSUPPLY);
@@ -338,8 +301,6 @@ bool DallasRmt::setResolution(const uint8_t* deviceAddress, uint8_t newResolutio
 
 void DallasRmt::requestTemperatures()
 {
-	if( _ow == 0 )
-		return;
     _ow->reset();
     _ow->skip();
     _ow->write(STARTCONVO, _parasite);
@@ -357,8 +318,6 @@ void DallasRmt::requestTemperatures()
 
 bool DallasRmt::requestTemperaturesByAddress(const uint8_t* deviceAddress)
 {
-	if( _ow == 0 )
-		return false;
     uint8_t bitResolution = getResolution(deviceAddress);
     if (bitResolution == 0) {
         return false; //Device disconnected

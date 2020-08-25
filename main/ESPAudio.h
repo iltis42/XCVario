@@ -67,6 +67,8 @@ private:
 		printf("sdm %d\n", mt );
 		_dead_mute = mt; }
 	void setMute( bool mt ) { _mute = mt; };
+	static bool lookup( float f, int& div, int &step );
+
 	float _te;
 	static bool _s2f_mode;
 	static uint8_t _tonemode;
@@ -91,6 +93,7 @@ private:
     static uint16_t cur_wiper;
 };
 
+typedef struct lookup {  uint16_t f; uint8_t div; uint8_t step; } t_lookup_entry;
 
 
 extern ESPAudio Audio;

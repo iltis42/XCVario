@@ -25,7 +25,7 @@
 #include "sensor.h"
 #include "mcp4018.h"
 #include <Arduino.h>
-// #include "sound.h"
+#include <vector>
 
 
 float ESPAudio::_range = 5.0;
@@ -68,6 +68,149 @@ ESPAudio::ESPAudio( ) {
 ESPAudio::~ESPAudio() {
 
 }
+
+
+PROGMEM std::vector<t_lookup_entry> lftab{
+	{ 18,6,1 },
+	{ 21,5,1 },
+	{ 25,4,1 },
+	{ 32,3,1 },
+	{ 37,6,2 },
+	{ 43,5,2 },
+	{ 51,4,2 },
+	{ 55,6,3 },
+	{ 64,5,3 },
+	{ 74,6,4 },
+	{ 77,4,3 },
+	{ 86,5,4 },
+	{ 92,6,5 },
+	{ 97,3,3 },
+	{ 103,4,4 },
+	{ 108,5,5 },
+	{ 111,6,6 },
+	{ 129,6,7 },
+	{ 148,6,8 },
+	{ 151,5,7 },
+	{ 155,4,6 },
+	{ 162,3,5 },
+	{ 166,6,9 },
+	{ 172,5,8 },
+	{ 181,4,7 },
+	{ 185,6,10 },
+	{ 194,5,9 },
+	{ 203,6,11 },
+	{ 207,4,8 },
+	{ 216,5,10 },
+	{ 222,6,12 },
+	{ 226,3,7 },
+	{ 233,4,9 },
+	{ 237,5,11 },
+	{ 240,6,13 },
+	{ 259,6,14 },
+	{ 277,6,15 },
+	{ 281,5,13 },
+	{ 285,4,11 },
+	{ 291,3,9 },
+	{ 296,6,16 },
+	{ 302,5,14 },
+	{ 311,4,12 },
+	{ 314,6,17 },
+	{ 324,5,15 },
+	{ 333,6,18 },
+	{ 337,4,13 },
+	{ 345,5,16 },
+	{ 352,6,19 },
+	{ 356,3,11 },
+	{ 363,4,14 },
+	{ 367,5,17 },
+	{ 370,6,20 },
+	{ 389,6,21 },
+	{ 407,6,22 },
+	{ 410,5,19 },
+	{ 415,4,16 },
+	{ 421,3,13 },
+	{ 426,6,23 },
+	{ 432,5,20 },
+	{ 440,4,17 },
+	{ 444,6,24 },
+	{ 453,5,21 },
+	{ 463,6,25 },
+	{ 466,4,18 },
+	{ 475,5,22 },
+	{ 481,6,26 },
+	{ 486,3,15 },
+	{ 492,4,19 },
+	{ 497,5,23 },
+	{ 500,6,27 },
+	{ 518,6,28 },
+	{ 537,6,29 },
+	{ 540,5,25 },
+	{ 544,4,21 },
+	{ 551,3,17 },
+	{ 555,6,30 },
+	{ 562,5,26 },
+	{ 570,4,22 },
+	{ 574,6,31 },
+	{ 583,5,27 },
+	{ 592,6,32 },
+	{ 596,4,23 },
+	{ 605,5,28 },
+	{ 611,6,33 },
+	{ 616,3,19 },
+	{ 622,4,24 },
+	{ 626,5,29 },
+	{ 629,6,34 },
+	{ 648,6,35 },
+	{ 667,6,36 },
+	{ 670,5,31 },
+	{ 674,4,26 },
+	{ 680,3,21 },
+	{ 685,6,37 },
+	{ 691,5,32 },
+	{ 700,4,27 },
+	{ 704,6,38 },
+	{ 713,5,33 },
+	{ 722,6,39 },
+	{ 726,4,28 },
+	{ 734,5,34 },
+	{ 741,6,40 },
+	{ 745,3,23 },
+	{ 752,4,29 },
+	{ 756,5,35 },
+	{ 759,6,41 },
+	{ 778,6,42 },
+	{ 796,6,43 },
+	{ 799,5,37 },
+	{ 804,4,31 },
+	{ 810,3,25 },
+	{ 815,6,44 },
+	{ 821,5,38 },
+	{ 830,4,32 },
+	{ 833,6,45 },
+	{ 843,5,39 },
+	{ 852,6,46 },
+	{ 856,4,33 },
+	{ 864,5,40 },
+	{ 870,6,47 },
+	{ 875,3,27 },
+	{ 881,4,34 },
+	{ 886,5,41 },
+	{ 889,6,48 },
+	{ 907,6,49 },
+	{ 926,6,50 },
+	{ 929,5,43 },
+	{ 933,4,36 },
+	{ 940,3,29 },
+	{ 944,6,51 },
+	{ 951,5,44 },
+	{ 959,4,37 },
+	{ 963,6,52 },
+	{ 972,5,45 },
+	{ 982,6,53 },
+	{ 985,4,38 },
+	{ 994,5,46 },
+	{ 1000,6,54 }
+};
 
 
 
@@ -145,9 +288,9 @@ bool ESPAudio::selfTest(){
  * frequency_step: range 0x0001 - 0xFFFF
  *
  */
-void ESPAudio::dac_frequency_set(int clk_8m_div, int frequency_step)
+void ESPAudio::dac_frequency_set(int adiv, int frequency_step)
 {
-	REG_SET_FIELD(RTC_CNTL_CLK_CONF_REG, RTC_CNTL_CK8M_DIV_SEL, clk_8m_div);
+	REG_SET_FIELD(RTC_CNTL_CLK_CONF_REG, RTC_CNTL_CK8M_DIV_SEL, adiv);
 	SET_PERI_REG_BITS(SENS_SAR_DAC_CTRL1_REG, SENS_SW_FSTEP, frequency_step, SENS_SW_FSTEP_S);
 }
 
@@ -376,7 +519,15 @@ void ESPAudio::dactask(void* arg )
 				f = (float)Audio.getCenter() + ( (te/_range ) * max );
 			// printf("te: %f; f=%f\n", te, f);
 			bool sound=true;
-			int step = int( (f/freq_step ) + 0.5);
+			int step;
+			int div;
+			if( f < 800.0 ) {
+				lookup( f, div, step );
+			}
+			else {
+				step = int( (f/freq_step ) + 0.5);
+				div = clk_8m_div;
+			}
 			if( Audio.inDeadBand(te) || Audio.getMute()  ){
 				sound = false;
 				enableAmplifier(false);
@@ -385,7 +536,13 @@ void ESPAudio::dactask(void* arg )
 				if( wiper != 0 )
 					enableAmplifier(true);
 				if( hightone && (_tonemode == 1)  ){
-					step = int( (f*_high_tone_var/freq_step) + 0.5);
+					if( f < 800.0 ) {
+						lookup( f*_high_tone_var, div, step );
+					}
+					else {
+						step = int( (f*_high_tone_var/freq_step) + 0.5);
+						div = clk_8m_div;
+					}
 				}
 				else if( hightone && (_tonemode == 0) ){
 					if( (_chopping_mode == BOTH_CHOP) ||
@@ -411,7 +568,7 @@ void ESPAudio::dactask(void* arg )
 				}
 			}
 			// assert( heap_caps_check_integrity_all(true) == true );
-			Audio.dac_frequency_set(clk_8m_div, step);
+			Audio.dac_frequency_set(div, step);
 		}
 		vTaskDelayUntil(&xLastWakeTime, 20/portTICK_PERIOD_MS);
 	}
@@ -577,4 +734,38 @@ void ESPAudio::test( float to, float from )
 }
 
 
+bool ESPAudio::lookup( float f, int& div, int &step ){
+	int fi = (int)(f + 0.5);
+	if( fi < 19  || fi > 1000 ) {
+		printf("f out of bounds\n");
+		return false;
+	}
+	int i = (fi-19)/8;
+	if( i >= lftab.size() ) {
+		printf("i out of bounds i:%d tab:%d\n", i, lftab.size() );
+		return false;
+	}
+	if( f  > lftab[i].f ) {
+		while( f > lftab[i].f ){
+			i++;
+		}
+	}
+	else{
+		while( f < lftab[i].f ){
+				i--;
+			}
+	}
+	if( abs( fi - lftab[i-1].f ) < abs( fi - lftab[i].f )) {
+		div =  lftab[i-1].div;
+    	step = lftab[i-1].step;
+	}
+    else {
+    	div =  lftab[i].div;
+        step = lftab[i].step;
+    }
+    // printf( "found at %d d:%d s:%d with f:%d for f%d\n", i, div, step, lftab[i-1].f, fi );
+	return true;
+}
+
 ESPAudio Audio;
+

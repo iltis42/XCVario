@@ -12,8 +12,8 @@
 #include "sdkconfig.h"
 #include <stdio.h>
 
-OnewireRmt owInst( GPIO_NUM_23, 0, 1);
-DallasRmt dallasInst;
+// OnewireRmt owInst( GPIO_NUM_23, 0, 1);
+// DallasRmt dallasInst;
 
 DS18B20::DS18B20(gpio_num_t pin, uint8_t res, int max_dev ) {
 	_pin = pin;
@@ -24,9 +24,8 @@ DS18B20::DS18B20(gpio_num_t pin, uint8_t res, int max_dev ) {
 
 bool DS18B20::begin(){
 	gpio_set_pull_mode(_pin, GPIO_PULLUP_ONLY);
-	dallas = &dallasInst;
-	ow = &owInst;
-	dallas->setOneWire(ow);
+	ow = new OnewireRmt( GPIO_NUM_23, 0, 1);
+	dallas = new DallasRmt( ow );
 	dallas->begin();
 	numDevices = dallas->getDeviceCount();
 	printf("Found %d Dallas temperature devices\n", numDevices);

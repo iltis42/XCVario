@@ -157,40 +157,42 @@ void readBMP(void *pvParameters){
 		{
 			xSemaphoreTake(xMutex,portMAX_DELAY );
 			TE = bmpVario.readTE();
-			baroP = bmpBA.readPressure();
-			dynamicP = MP5004DP.readPascal(30);
-			float alt_standard = bmpBA.calcAVGAltitude( 1013.25, baroP );
-			// vTaskDelay(1);
-			if( alt_select.get() == 0 ) // TE
-				alt = bmpVario.readAVGalt();
-			else { // Baro
-				if(  alt_unit.get() == 2 || (
-					(fl_auto_transition.get() == 1) && ((int)alt_standard*0.0328084 + (int)(standard_setting) > transition_alt.get() ) ) ) // FL or auto transition
-				{
-					alt = alt_standard;
-					standard_setting = true;
+			if( (count++ % 2) == 0 ) {
+				baroP = bmpBA.readPressure();
+				dynamicP = MP5004DP.readPascal(30);
+				float alt_standard = bmpBA.calcAVGAltitude( 1013.25, baroP );
+				// vTaskDelay(1);
+				if( alt_select.get() == 0 ) // TE
+					alt = bmpVario.readAVGalt();
+				else { // Baro
+					if(  alt_unit.get() == 2 || (
+							(fl_auto_transition.get() == 1) && ((int)alt_standard*0.0328084 + (int)(standard_setting) > transition_alt.get() ) ) ) // FL or auto transition
+					{
+						alt = alt_standard;
+						standard_setting = true;
+					}
+					else {
+						alt = bmpBA.calcAVGAltitude( QNH.get(), baroP );
+						standard_setting = false;
+					}
 				}
-				else {
-					alt = bmpBA.calcAVGAltitude( QNH.get(), baroP );
-					standard_setting = false;
-				}
+				ias = ias + (MP5004DP.pascal2km( dynamicP ) - ias)*0.1;
+				tas = ias * sqrt( 1.225 / ( baroP*100.0 / (287.058 * (273.15+temperature) ) ) );  // True airspeed
+				aTE = bmpVario.readAVGTE();
+				aTES2F = bmpVario.readS2FTE();
+				aCl = bmpVario.readAvgClimb();
+				polar_sink = Speed2Fly.sink( ias );
+				netto = aTES2F - polar_sink;
+				as2f = Speed2Fly.speed( netto );
+				s2f_delta = as2f - ias;
 			}
-			ias = ias + (MP5004DP.pascal2km( dynamicP ) - ias)*0.1;
-			tas = ias * sqrt( 1.225 / ( baroP*100.0 / (287.058 * (273.15+temperature) ) ) );  // True airspeed
 
-			if( (count++ % 2) == 0 ) {  // reduce messages from 10 per second to 5 per second to reduce load in XCSoar
+			if( (count++ % 4) == 0 ) {  // reduce messages from 10 per second to 5 per second to reduce load in XCSoar
 				char lb[120];
 				OV.makeNMEA( lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), s2fmode  );
 				btsender.send( lb );
 				vTaskDelay(2);
 			}
-			aTE = bmpVario.readAVGTE();
-			aTES2F = bmpVario.readS2FTE();
-			aCl = bmpVario.readAvgClimb();
-			polar_sink = Speed2Fly.sink( ias );
-			netto = aTES2F - polar_sink;
-			as2f = Speed2Fly.speed( netto );
-			s2f_delta = as2f - ias;
 			xSemaphoreGive(xMutex);
 		}
 
@@ -198,7 +200,7 @@ void readBMP(void *pvParameters){
 			printf("Warning bmpTask stack low: %d\n", uxTaskGetStackHighWaterMark( bpid ) );
 
 		esp_task_wdt_reset();
-		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&xLastWakeTime, 50/portTICK_PERIOD_MS);
 	}
 }
 
@@ -231,8 +233,6 @@ void audioTask(void *pvParameters){
 	}
 }
 
-
-bool no_t_sensor=false;
 int ttick = 0;
 
 void readTemp(void *pvParameters){
@@ -245,21 +245,18 @@ void readTemp(void *pvParameters){
 			// printf("Battery=%f V\n", battery );
 			t = ds18b20.getTemp();
 			if( t ==  DEVICE_DISCONNECTED_C ) {
-				printf("T sensor disconnected\n");
-				validTemperature = false;
-				if( no_t_sensor == false ) {
-					printf("Warning: Temperatur Sensor disconnected, please plug Temperature Sensor\n");
-					no_t_sensor = true;
+				if( validTemperature == true ) {
+					printf("Temperatur Sensor disconnected, please plug Temperature Sensor\n");
+					validTemperature = false;
 				}
 			}
 			else
 			{
-				validTemperature = true;
-				temperature = temperature + (t-temperature)*0.2;
-				if( no_t_sensor == true ) {
-					printf("Temperatur Sensor found, signal valid\n");
-					no_t_sensor = false;
+				if( validTemperature == false ) {
+					printf("Temperatur Sensor connected, temperature valid\n");
+					validTemperature = true;
 				}
+				temperature = t;
 			}
 			// printf("temperature=%f\n", temperature );
 		}
@@ -278,6 +275,9 @@ void readTemp(void *pvParameters){
 void sensor(void *args){
 	bool selftestPassed=true;
 	int line = 1;
+	gpio_set_drive_capability(GPIO_NUM_23, GPIO_DRIVE_CAP_0);
+	ds18b20.begin();
+
 	esp_wifi_set_mode(WIFI_MODE_NULL);
 	spiMutex = xSemaphoreCreateMutex();
 	esp_log_level_set("*", ESP_LOG_ERROR);
@@ -312,7 +312,7 @@ void sensor(void *args){
 
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 
-	ds18b20.begin();
+
 	SPI.begin( SPI_SCLK, SPI_MISO, SPI_MOSI, CS_bme280BA );
 	xSemaphoreGive(spiMutex);
 	display.begin();

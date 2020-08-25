@@ -40,7 +40,6 @@ SetupNG<float> 			polar_sink3( "POLAR_SINK3",    -2.24 );
 SetupNG<float> 			polar_max_ballast( "POLAR_MAX_BAL",  160 );
 SetupNG<float> 			polar_wingarea( "POLAR_WINGAREA", 10.5 );
 
-SetupNG<std::string> 	bt_name( "BT NAME", "empty" );
 SetupNG<float>  		speedcal( "SPEEDCAL", 0.0 );
 SetupNG<float>  		vario_delay( "VARIO_DELAY", 3.0 );
 SetupNG<float>  		vario_av_delay( "VARIO_AV_DELAY", 5.0 );
@@ -62,6 +61,8 @@ SetupNG<int>  			blue_enable( "BT_ENABLE" ,  1);
 SetupNG<int>  			factory_reset( "FACTORY_RES" , 0 );
 SetupNG<int>  			audio_range( "AUDIO_RANGE" , 0 );
 SetupNG<int>  			alt_select( "ALT_SELECT" , 1 );
+SetupNG<int>  			fl_auto_transition( "FL_AUTO" , 0 );
+SetupNG<float>  		transition_alt( "TRANS_ALT", 50 );   // Transition Altitude
 SetupNG<int>  			glider_type( "GLIDER_TYPE", 0 );
 SetupNG<int>  			ps_display( "PS_DISPLAY", 1 );
 

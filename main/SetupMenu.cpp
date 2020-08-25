@@ -769,11 +769,27 @@ void SetupMenu::setup( )
 	// Altimeter, IAS
 	SetupMenu * aia = new SetupMenu( "Altimeter, Airspeed" );
 	sye->addMenu( aia );
-	SetupMenuSelect * als = new SetupMenuSelect( 	"Altimeter Source",	0, false, 0, true, &alt_select );
+	SetupMenuSelect * als = new SetupMenuSelect( "Altimeter Source",	0, false, 0, true, &alt_select );
 	aia->addMenu( als );
 	als->setHelp( PROGMEM "Select Source of altimeter to either barometric or static pressure sensor (default), or TE sensor what results in an 'energy' altitude");
 	als->addEntry( "TE   Sensor");
 	als->addEntry( "Baro Sensor");
+
+	SetupMenuSelect * atl = new SetupMenuSelect( "Automatic Transition",	0, false, 0, true, &fl_auto_transition );
+	aia->addMenu( atl );
+	atl->setHelp( PROGMEM "Option to enable automatic altitude transition to QNH Standard (1013.25) above 'Transition Altitude'");
+	atl->addEntry( "Disable");
+	atl->addEntry( "Enable");
+
+	SetupMenuValFloat * tral = new SetupMenuValFloat( "Transition Altitude", 0, "FL", 0, 400, 10, 0, false, &transition_alt  );
+	tral->setHelp(PROGMEM"Transition altitude (or transition height, when using QFE) is the altitude/height above which standard pressure (QNE) is set (1013.2 mb/hPa)");
+	aia->addMenu( tral );
+
+	SetupMenuSelect * atr = new SetupMenuSelect( "Transition Level",	0, false, 0, true, &alt_select );
+	aia->addMenu( atr );
+	atr->setHelp( PROGMEM "Option to enable automatic transition to QNH Standard (1013.25) above an altitude of 5000 ft");
+	atr->addEntry( "Disable");
+	atr->addEntry( "Enable");
 
 	SetupMenuValFloat * spc = new SetupMenuValFloat( "IAS Calibration", 0, "%", -10, 10, 1, 0, false, &speedcal  );
 	spc->setHelp(PROGMEM"Calibration of indicated airspeed (IAS). Normally not needed, hence pressure probes may have systematic error");

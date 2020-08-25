@@ -114,6 +114,7 @@ static float as2f = 0;
 static float s2f_delta = 0;
 static bool s2fmode = false;
 static float polar_sink = 0;
+static bool  standard_setting = false;
 long millisec = millis();
 
 void handleRfcommRx( char * rx, uint16_t len ){
@@ -138,7 +139,7 @@ void drawDisplay(void *pvParameters){
 				airspeed = ias;
 			else if( airspeed_mode.get() == MODE_TAS )
 				airspeed = tas;
-			display.drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, aCl, s2fmode );
+			display.drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, aCl, s2fmode, standard_setting );
 		}
 		vTaskDelay(30);
 		if( uxTaskGetStackHighWaterMark( dpid ) < 1024  )
@@ -158,15 +159,21 @@ void readBMP(void *pvParameters){
 			TE = bmpVario.readTE();
 			baroP = bmpBA.readPressure();
 			dynamicP = MP5004DP.readPascal(30);
+			float alt_standard = bmpBA.calcAVGAltitude( 1013.25, baroP );
 			// vTaskDelay(1);
 			if( alt_select.get() == 0 ) // TE
 				alt = bmpVario.readAVGalt();
 			else { // Baro
-				if(  alt_unit.get() == 2 )  // FL
-					alt = bmpBA.calcAVGAltitude( 1013.25, baroP );
-				else
+				if(  alt_unit.get() == 2 || (
+					(fl_auto_transition.get() == 1) && ((int)alt_standard*0.0328084 + (int)(standard_setting) > transition_alt.get() ) ) ) // FL or auto transition
+				{
+					alt = alt_standard;
+					standard_setting = true;
+				}
+				else {
 					alt = bmpBA.calcAVGAltitude( QNH.get(), baroP );
-
+					standard_setting = false;
+				}
 			}
 			ias = ias + (MP5004DP.pascal2km( dynamicP ) - ias)*0.1;
 			tas = ias * sqrt( 1.225 / ( baroP*100.0 / (287.058 * (273.15+temperature) ) ) );  // True airspeed

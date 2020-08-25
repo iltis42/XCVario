@@ -117,6 +117,7 @@ int   IpsDisplay::_divisons = 5;
 float IpsDisplay::_range = 5;
 int IpsDisplay::average_climb = -100;
 bool IpsDisplay::wkbox = false;
+int  IpsDisplay::pref_qnh = 0;
 
 
 IpsDisplay::IpsDisplay( Ucglib_ILI9341_18x240x320_HWSPI *aucg ) {
@@ -254,12 +255,7 @@ void IpsDisplay::initDisplay() {
 	// ucg->drawTriangle( FIELD_START, dmid+5, FIELD_START, dmid-5, FIELD_START+5, dmid);
 	ucg->drawTriangle( FIELD_START+ASLEN-1, dmid, FIELD_START+ASLEN+5, dmid-6, FIELD_START+ASLEN+5, dmid+6);
 
-	// Altitude
-	ucg->setFont(ucg_font_fub11_tr);
-	ucg->setPrintPos(FIELD_START,YALT-S2FFONTH);
-	ucg->setColor(0, COLOR_HEADER );
 
-	ucg->printf("Altitude QNH %d", (int)(QNH.get() +0.5 ) );
 
 	// Thermometer
 	ucg->drawDisc( FIELD_START+10, DISPLAY_H-4,  4, UCG_DRAW_ALL ); // white disk
@@ -351,6 +347,7 @@ void IpsDisplay::redrawValues()
 	mcalt = -100;
 	iasalt = -1;
 	prefalt = -1;
+	pref_qnh = -1;
 	tyalt = 0;
 	for( int l=TEMIN-1; l<=TEMAX; l++){
 		colors[l].color[0] = 0;
@@ -492,7 +489,7 @@ void IpsDisplay::drawWkSymbol( int ypos, int wk, int wkalt ){
 
 
 void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, float altitude,
-		                      float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode ){
+		                      float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt ){
 	if( _menu )
 			return;
 	// printf("IpsDisplay::drawDisplay  TE=%0.1f\n", te);
@@ -587,9 +584,25 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		_ate = ate;
 	}
 
+	// Altitude Header
+	int qnh = (int)(QNH.get() +0.5 );
+	if( standard_alt )
+		qnh = 1013;
+
+	if( qnh != pref_qnh ){
+		ucg->setFont(ucg_font_fub11_tr);
+		ucg->setPrintPos(FIELD_START,YALT-S2FFONTH);
+		ucg->setColor(0, COLOR_HEADER );
+		if( standard_alt )
+			ucg->printf("Altitude QNE %d", qnh );
+		else
+			ucg->printf("Altitude QNH %d", qnh );
+		pref_qnh = qnh;
+	}
 	// Altitude
 	int alt = (int)(altitude+0.5);
 	if( alt != prefalt ) {
+		ucg->setColor(  COLOR_WHITE  );
 		ucg->setPrintPos(FIELD_START,YALT);
 		ucg->setFont(ucg_font_fub25_hr);
 		if( UNITALT == 0 ) { //m

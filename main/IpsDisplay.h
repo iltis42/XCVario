@@ -63,7 +63,7 @@ public:
 	static void bootDisplay();
 	static void writeText( int line, String text );
 	                          // ias,       TE,       aTE,       polar_sink,       alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode
-	static void drawDisplay( int ias, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode );
+	static void drawDisplay( int ias, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt );
 	static void initDisplay();
 	static void clear();   // erase whole display
 	void doMenu( bool menu=true ) { _menu = menu; };
@@ -92,6 +92,7 @@ private:
 	static int s2falt;
 	static int s2fdalt;
 	static int prefalt;
+	static int pref_qnh;
 	static int chargealt;
 	static int btqueue;
 	static int tempalt;

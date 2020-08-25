@@ -247,6 +247,8 @@ extern SetupNG<int>  		blue_enable;
 extern SetupNG<int>  		factory_reset;
 extern SetupNG<int>  		audio_range;
 extern SetupNG<int>  		alt_select;
+extern SetupNG<int>  		fl_auto_transition;
+extern SetupNG<float>  		transition_alt;
 extern SetupNG<int>  		glider_type;
 extern SetupNG<int>  		ps_display;
 

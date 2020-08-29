@@ -160,7 +160,7 @@ void readBMP(void *pvParameters){
 			if( (count++ % 2) == 0 ) {
 				baroP = bmpBA.readPressure();   // 5x per second
 				dynamicP = MP5004DP.readPascal(30);
-				float alt_standard = bmpBA.calcAVGAltitude( 1013.25, baroP );
+				float alt_standard = bmpBA.calcAVGAltitudeSTD( baroP );
 				// vTaskDelay(1);
 				if( alt_select.get() == 0 ) // TE
 					alt = bmpVario.readAVGalt();
@@ -173,6 +173,7 @@ void readBMP(void *pvParameters){
 					}
 					else {
 						alt = bmpBA.calcAVGAltitude( QNH.get(), baroP );
+						// printf("rbmp QNH %f baro: %f alt: %f\n", QNH.get(), baroP, alt  );
 						standard_setting = false;
 					}
 				}

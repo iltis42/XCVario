@@ -43,6 +43,7 @@ BME280_ESP32_SPI::BME280_ESP32_SPI(gpio_num_t sclk, gpio_num_t mosi, gpio_num_t 
 	exponential_average = 0;
 	init_err = false;
 	_avg_alt = 0;
+	_avg_alt_std = 0;
 
 }
 
@@ -297,11 +298,30 @@ double BME280_ESP32_SPI::readAltitude(double SeaLevel_Pres) {
 	// printf("++BMP280 readAltitude QNH=%0.1f CS:%d\n", SeaLevel_Pres, _cs);
 	double pressure = readPressure();
 	// printf("press=%0.1f\n", pressure);
-	double altitude = 44330.0 * (1.0 - pow(pressure / SeaLevel_Pres, (1.0/5.255)));
-	// printf("--BME280 readAltitude p=%0.1f alt=%0.1f\n", pressure, altitude);
+	double altitude = calcAltitude( SeaLevel_Pres, pressure );
+	// printf("--BME280 readAltitude  qnh: %0.1f p=%0.1f alt=%0.1f\n", SeaLevel_Pres, pressure, altitude);
 	return altitude;
 }
 
+double BME280_ESP32_SPI::calcAVGAltitude(double SeaLevel_Pres, double pressure ) {
+	if( init_err )
+			return 0.0;
+	// printf("++BMP280 readAVGAltitude QNH=%0.1f CS:%d\n", SeaLevel_Pres, _cs);
+	double alt = calcAltitude( SeaLevel_Pres, pressure );
+	_avg_alt = (alt - _avg_alt )*0.2 + _avg_alt;
+	// printf("--BME280 readAVGAltitude qnh: %0.1f p=%0.1f avlt=%0.1f alt=%0.1f\n", SeaLevel_Pres, pressure, _avg_alt, alt );
+	return _avg_alt;
+}
+
+double BME280_ESP32_SPI::calcAVGAltitudeSTD( double pressure ) {
+	if( init_err )
+			return 0.0;
+	// printf("++BMP280 readAVGAltitude QNH=%0.1f CS:%d\n", SeaLevel_Pres, _cs);
+	double alt = calcAltitude( 1013.25, pressure );
+	_avg_alt_std = (alt - _avg_alt_std )*0.2 + _avg_alt_std;
+	// printf("--BME280 readAVGAltitudeSTD qnh: %0.1f p=%0.1f avlt=%0.1f alt=%0.1f\n", 1013.25, pressure, _avg_alt_std, alt );
+	return _avg_alt_std;
+}
 
 bool BME280_ESP32_SPI::selfTest( float& t, float &p ) {
 	uint8_t id = readID();
@@ -329,15 +349,7 @@ bool BME280_ESP32_SPI::selfTest( float& t, float &p ) {
     return( true );
 }
 
-double BME280_ESP32_SPI::calcAVGAltitude(double SeaLevel_Pres, double p ) {
-	if( init_err )
-			return 0.0;
-	// printf("++BMP280 readAVGAltitude QNH=%0.1f CS:%d\n", SeaLevel_Pres, _cs);
-	double alt = 44330.0 * (1.0 - pow(p / SeaLevel_Pres, (1.0/5.255)));
-	_avg_alt = (alt - _avg_alt )*0.1 + _avg_alt;
-	// printf("--BME280 readAVGAltitude p=%0.1f alt=%0.1f\n", p, _avg_alt);
-	return _avg_alt;
-}
+
 
 uint8_t BME280_ESP32_SPI::readID()
 {

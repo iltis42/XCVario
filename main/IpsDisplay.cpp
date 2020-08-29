@@ -592,11 +592,20 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 	if( qnh != pref_qnh ){
 		ucg->setFont(ucg_font_fub11_tr);
 		ucg->setPrintPos(FIELD_START,YALT-S2FFONTH);
-		ucg->setColor(0, COLOR_HEADER );
-		if( standard_alt )
-			ucg->printf("Altitude QNE %d", qnh );
-		else
-			ucg->printf("Altitude QNH %d", qnh );
+		if( standard_alt ) {
+			ucg->setColor(0, COLOR_BLACK );
+			ucg->printf("Altitude QNH %d ", pref_qnh );
+			ucg->setPrintPos(FIELD_START,YALT-S2FFONTH);
+			ucg->setColor(0, COLOR_HEADER );
+			ucg->printf("Altitude QNE %d ", qnh );
+		}
+		else {
+			ucg->setColor(0, COLOR_BLACK );
+			ucg->printf("Altitude QNE %d ", pref_qnh );
+			ucg->setPrintPos(FIELD_START,YALT-S2FFONTH);
+			ucg->setColor(0, COLOR_HEADER );
+			ucg->printf("Altitude QNH %d ", qnh );
+		}
 		pref_qnh = qnh;
 	}
 	// Altitude

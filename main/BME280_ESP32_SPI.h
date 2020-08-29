@@ -31,6 +31,7 @@ altitude calculation by open source community on github.
 #include "driver/gpio.h"
 #include <SPI.h>
 #include <esp32-hal-spi.h>
+#include <math.h>
 
 class BME280_ESP32_SPI
 {
@@ -45,7 +46,11 @@ public:
 	double readPressureAVG( float alpha=0.1 );
 	double readHumidity();
 	double readAltitude(double SeaLevel_Pres=1013.25);
+	inline double calcAltitude(double SeaLevel_Pres, double pressure) {
+		return ( 44330.0 * (1.0 - pow(pressure / SeaLevel_Pres, (1.0/5.255))) );
+	}
 	double calcAVGAltitude(double SeaLevel_Pres, double p );
+	double calcAVGAltitudeSTD( double p );
 	uint8_t readID();
 
 private:
@@ -57,6 +62,8 @@ private:
 	uint16_t read16bit(uint8_t reg);
 	uint8_t read8bit(uint8_t reg);
 	double _avg_alt;
+	double _avg_alt_std;
+
 
 private:
 	gpio_num_t _sclk, _mosi, _miso;

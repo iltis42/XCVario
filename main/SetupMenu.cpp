@@ -55,7 +55,7 @@ int qnh_adj( SetupMenuValFloat * p )
 	}
 	alt = alt/6;
 
-	// printf("Setup BA alt=%f QNH=%f\n", alt, *(p->_value)  );
+	printf("Setup BA alt=%f QNH=%f\n", alt, *(p->_value)  );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->setFont(ucg_font_fub25_hr);
 	p->ucg->setPrintPos(1,120);

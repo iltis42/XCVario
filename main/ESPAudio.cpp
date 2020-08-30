@@ -26,6 +26,7 @@
 #include "mcp4018.h"
 #include <Arduino.h>
 #include <vector>
+#include <logdef.h>
 
 
 float ESPAudio::_range = 5.0;
@@ -228,7 +229,7 @@ const int invert = 2;        // invert MSB to get sine waveform
 void ESPAudio::dac_cosine_enable(dac_channel_t channel, bool enable)
 {
 	// Enable tone generator common to both channels
-	printf("ESPAudio::dac_cosine_enable ch: %d\n", channel);
+	ESP_LOGI(FNAME,"ESPAudio::dac_cosine_enable ch: %d", channel);
 	SET_PERI_REG_MASK(SENS_SAR_DAC_CTRL1_REG, SENS_SW_TONE_EN);
 	switch(channel) {
 	case DAC_CHANNEL_1:
@@ -248,15 +249,15 @@ void ESPAudio::dac_cosine_enable(dac_channel_t channel, bool enable)
 		SET_PERI_REG_BITS(SENS_SAR_DAC_CTRL2_REG, SENS_DAC_INV2, 2, SENS_DAC_INV2_S);
 		break;
 	default :
-		printf("Channel %d\n", channel);
+		ESP_LOGI(FNAME,"Channel %d", channel);
 	}
 }
 
 bool ESPAudio::selfTest(){
-	printf("ESPAudio::selfTest\n");
+	ESP_LOGI(FNAME,"ESPAudio::selfTest");
 	uint16_t awiper;
 	bool ret = Poti.readWiper( awiper );
-	printf("readWiper val=%d ret=%d cur=%d\n", awiper, ret, cur_wiper );
+	ESP_LOGI(FNAME,"readWiper val=%d ret=%d cur=%d", awiper, ret, cur_wiper );
 	if( ret == false )
 		return false;
 	if( awiper != cur_wiper )  // begin sets already cur_wiper
@@ -268,7 +269,7 @@ bool ESPAudio::selfTest(){
 	Poti.writeWiper( ((default_volume.get() * 100.0) / 128) -1 );
 	dac_output_enable(_ch);
 	for( float f=261.62; f<1046.51; f=f*1.03){
-		// printf("f=%f\n",f);
+		// ESP_LOGI(FNAME,"f=%f",f);
 		Audio.dac_frequency_set(clk_8m_div, int(f/freq_step) );
 		delay(30);
 		esp_task_wdt_reset();
@@ -314,7 +315,7 @@ void ESPAudio::dac_scale_set(dac_channel_t channel, int scale)
 		SET_PERI_REG_BITS(SENS_SAR_DAC_CTRL2_REG, SENS_DAC_SCALE2, scale, SENS_DAC_SCALE2_S);
 		break;
 	default :
-		printf("Channel %d\n", channel);
+		ESP_LOGI(FNAME,"Channel %d", channel);
 	}
 }
 
@@ -335,7 +336,7 @@ void ESPAudio::dac_offset_set(dac_channel_t channel, int offset)
 		SET_PERI_REG_BITS(SENS_SAR_DAC_CTRL2_REG, SENS_DAC_DC2, offset, SENS_DAC_DC2_S);
 		break;
 	default :
-		printf("Channel %d\n", channel);
+		ESP_LOGI(FNAME,"Channel %d", channel);
 	}
 }
 
@@ -351,7 +352,7 @@ void ESPAudio::dac_offset_set(dac_channel_t channel, int offset)
  */
 void ESPAudio::dac_invert_set(dac_channel_t channel, int invert)
 {
-	printf("DAC invert: channel %d, invert: %d\n", channel, invert);
+	ESP_LOGI(FNAME,"DAC invert: channel %d, invert: %d", channel, invert);
 	switch(channel) {
 	case DAC_CHANNEL_1:
 		SET_PERI_REG_BITS(SENS_SAR_DAC_CTRL2_REG, SENS_DAC_INV1, invert, SENS_DAC_INV1_S);
@@ -360,7 +361,7 @@ void ESPAudio::dac_invert_set(dac_channel_t channel, int invert)
 		SET_PERI_REG_BITS(SENS_SAR_DAC_CTRL2_REG, SENS_DAC_INV2, invert, SENS_DAC_INV2_S);
 		break;
 	default :
-		printf("Channel %d\n", channel);
+		ESP_LOGI(FNAME,"Channel %d", channel);
 	}
 }
 
@@ -448,7 +449,7 @@ void ESPAudio::modtask(void* arg )
 
 void ESPAudio::incVolume( int steps ) {
 	steps = int( 1+ ( (float)wiper/8.0 ))*steps;
-	printf("steps %d wiper %d\n\n", steps, wiper );
+	ESP_LOGI(FNAME,"steps %d wiper %d", steps, wiper );
 	while( steps && (wiper > 0) ){
 		wiper--;
 		steps--;
@@ -472,7 +473,7 @@ bool output_enable = false;
 
 void  ESPAudio::adjustVolume(){
 	if( cur_wiper != wiper ) {
-		printf("*****  SET WIPER=%d\n", wiper );
+		ESP_LOGI(FNAME,"*****  SET WIPER=%d", wiper );
 		uint16_t w;
 		if( wiper == 0 ) {
 			w=0;
@@ -517,7 +518,7 @@ void ESPAudio::dactask(void* arg )
 				f = (float)Audio.getCenter() + ( (te/5.0 ) * max );
 			else
 				f = (float)Audio.getCenter() + ( (te/_range ) * max );
-			// printf("te: %f; f=%f\n", te, f);
+			// ESP_LOGI(FNAME,"te: %f; f=%f", te, f);
 			bool sound=true;
 			int step;
 			int div;
@@ -737,12 +738,12 @@ void ESPAudio::test( float to, float from )
 bool ESPAudio::lookup( float f, int& div, int &step ){
 	int fi = (int)(f + 0.5);
 	if( fi < 19  || fi > 1000 ) {
-		printf("f out of bounds\n");
+		ESP_LOGW(FNAME,"f out of bounds");
 		return false;
 	}
 	int i = (fi-19)/8;
 	if( i >= lftab.size() ) {
-		printf("i out of bounds i:%d tab:%d\n", i, lftab.size() );
+		ESP_LOGW(FNAME,"i out of bounds i:%d tab:%d", i, lftab.size() );
 		return false;
 	}
 	if( f  > lftab[i].f ) {
@@ -763,7 +764,7 @@ bool ESPAudio::lookup( float f, int& div, int &step ){
     	div =  lftab[i].div;
         step = lftab[i].step;
     }
-    // printf( "found at %d d:%d s:%d with f:%d for f%d\n", i, div, step, lftab[i-1].f, fi );
+    // ESP_LOGI(FNAME, "found at %d d:%d s:%d with f:%d for f%d", i, div, step, lftab[i-1].f, fi );
 	return true;
 }
 

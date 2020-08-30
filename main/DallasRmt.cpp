@@ -5,6 +5,7 @@
 #include <esp_log.h>
 #include <time.h>
 #include <string.h>
+#include <logdef.h>
 
 
 // OneWire commands
@@ -56,13 +57,14 @@ DallasRmt::~DallasRmt()
 
 void DallasRmt::begin(void)
 {
+	ESP_LOGI(FNAME, "begin");
     DeviceAddress deviceAddress;
-
     _ow->reset_search();
     _devices = 0; // Reset the number of devices when we enumerate wire devices
 
     while (_ow->search(deviceAddress)) {
         if (validAddress(deviceAddress)) {
+        	ESP_LOGI(FNAME, "new device found on OW bus");
             if (!_parasite && readPowerSupply(deviceAddress)) {
                 _parasite = true;
             }
@@ -301,6 +303,7 @@ bool DallasRmt::setResolution(const uint8_t* deviceAddress, uint8_t newResolutio
 
 void DallasRmt::requestTemperatures()
 {
+	ESP_LOGD(FNAME,"requestTemperatures()");
     _ow->reset();
     _ow->skip();
     _ow->write(STARTCONVO, _parasite);

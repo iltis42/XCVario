@@ -35,13 +35,12 @@
 #include "Version.h"
 #include "Switch.h"
 #include "Polars.h"
-#include "SetupVolt.h"
 
 #include <SPI.h>
 #include <Ucglib.h>
 #include <OTA.h>
 #include "SetupNG.h"
-
+#include <logdef.h>
 
 
 // #include "sound.h"
@@ -118,7 +117,7 @@ static bool  standard_setting = false;
 long millisec = millis();
 
 void handleRfcommRx( char * rx, uint16_t len ){
-	printf("RFCOMM packet, %s, len %d %d\n", rx, len, strlen( rx ));
+	ESP_LOGI(FNAME,"RFCOMM packet, %s, len %d %d", rx, len, strlen( rx ));
 }
 
 
@@ -143,7 +142,7 @@ void drawDisplay(void *pvParameters){
 		}
 		vTaskDelay(30);
 		if( uxTaskGetStackHighWaterMark( dpid ) < 1024  )
-			printf("Warning drawDisplay stack low: %d bytes\n", uxTaskGetStackHighWaterMark( dpid ) );
+			ESP_LOGW(FNAME,"Warning drawDisplay stack low: %d bytes", uxTaskGetStackHighWaterMark( dpid ) );
 	}
 }
 
@@ -173,7 +172,7 @@ void readBMP(void *pvParameters){
 					}
 					else {
 						alt = bmpBA.calcAVGAltitude( QNH.get(), baroP );
-						// printf("rbmp QNH %f baro: %f alt: %f\n", QNH.get(), baroP, alt  );
+						// ESP_LOGI(FNAME,"rbmp QNH %f baro: %f alt: %f", QNH.get(), baroP, alt  );
 						standard_setting = false;
 					}
 				}
@@ -197,7 +196,7 @@ void readBMP(void *pvParameters){
 		}
 
 		if( uxTaskGetStackHighWaterMark( bpid )  < 1024 )
-			printf("Warning bmpTask stack low: %d\n", uxTaskGetStackHighWaterMark( bpid ) );
+			ESP_LOGW(FNAME,"Warning bmpTask stack low: %d", uxTaskGetStackHighWaterMark( bpid ) );
 
 		esp_task_wdt_reset();
 		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
@@ -242,31 +241,31 @@ void readTemp(void *pvParameters){
 		if( Audio.getDisable() != true )
 		{
 			battery = ADC.getBatVoltage();
-			// printf("Battery=%f V\n", battery );
+			// ESP_LOGI(FNAME,"Battery=%f V", battery );
 			t = ds18b20.getTemp();
 			if( t ==  DEVICE_DISCONNECTED_C ) {
 				if( validTemperature == true ) {
-					printf("Temperatur Sensor disconnected, please plug Temperature Sensor\n");
+					ESP_LOGI(FNAME,"Temperatur Sensor disconnected, please plug Temperature Sensor");
 					validTemperature = false;
 				}
 			}
 			else
 			{
 				if( validTemperature == false ) {
-					printf("Temperatur Sensor connected, temperature valid\n");
+					ESP_LOGI(FNAME,"Temperatur Sensor connected, temperature valid");
 					validTemperature = true;
 				}
 				temperature = t;
 			}
-			// printf("temperature=%f\n", temperature );
+			// ESP_LOGI(FNAME,"temperature=%f", temperature );
 		}
 		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
 
 		if( (ttick++ % 100) == 0) {
 			if( uxTaskGetStackHighWaterMark( tpid ) < 1024 )
-				printf("Warning temperature task stack low: %d bytes\n", uxTaskGetStackHighWaterMark( tpid ) );
+				ESP_LOGW(FNAME,"Warning temperature task stack low: %d bytes", uxTaskGetStackHighWaterMark( tpid ) );
 			if( heap_caps_get_free_size(MALLOC_CAP_8BIT) < 10000 )
-				printf("Warning heap_caps_get_free_size getting low: %d\n", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+				ESP_LOGW(FNAME,"Warning heap_caps_get_free_size getting low: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
 		}
 	}
 }
@@ -275,19 +274,22 @@ void readTemp(void *pvParameters){
 void sensor(void *args){
 	bool selftestPassed=true;
 	int line = 1;
-	gpio_set_drive_capability(GPIO_NUM_23, GPIO_DRIVE_CAP_0);
-	ds18b20.begin();
-
+	gpio_set_drive_capability(GPIO_NUM_23, GPIO_DRIVE_CAP_1);
 	esp_wifi_set_mode(WIFI_MODE_NULL);
 	spiMutex = xSemaphoreCreateMutex();
-	esp_log_level_set("*", ESP_LOG_ERROR);
+	esp_log_level_set("*", ESP_LOG_INFO);
 
-	printf("Now init all Setup elements\n");
+
+	ESP_LOGI( FNAME, "Log level set globally to INFO %d",  ESP_LOG_INFO);
+
+
+	ESP_LOGI(FNAME,"Now init all Setup elements");
 	SetupCommon::initSetup();
 
-	printf( "QNH->get() %f\n", QNH.get() );
+	ESP_LOGI(FNAME, "QNH->get() %f", QNH.get() );
 
 	NVS.begin();
+
 
 	btsender.begin( blue_enable.get(),
 			SetupCommon::getID(),
@@ -333,7 +335,7 @@ void sensor(void *args){
 	ver += V.version();
 	display.writeText(line++, ver.c_str() );
 
-	printf("Speed sensors init..\n");
+	ESP_LOGI(FNAME,"Speed sensors init..");
 	MP5004DP.begin( GPIO_NUM_21, GPIO_NUM_22);  // sda, scl
 	uint16_t val;
 	bool works=MP5004DP.selfTest( val );
@@ -341,22 +343,22 @@ void sensor(void *args){
 	MP5004DP.doOffset();
 	dynamicP=MP5004DP.readPascal(30);
 	ias = MP5004DP.pascal2km( dynamicP );
-	printf("Speed=%f\n", ias );
+	ESP_LOGI(FNAME,"Speed=%f", ias );
 
 	if( !works ){
-		printf("Error reading air speed pressure sensor MP5004DP->MCP3321 I2C returned error\n");
+		ESP_LOGE(FNAME,"Error reading air speed pressure sensor MP5004DP->MCP3321 I2C returned error");
 		display.writeText( line++, "IAS Sensor: Not found");
 		failed_tests += "IAS Sensor: NOT FOUND\n";
 		selftestPassed = false;
 	}else {
 		if( !MP5004DP.offsetPlausible( val )  && ( ias < 50 ) ){
-			printf("Error: IAS P sensor offset MP5004DP->MCP3321 out of bounds (608-1034), act value=%d\n", val );
+			ESP_LOGE(FNAME,"Error: IAS P sensor offset MP5004DP->MCP3321 out of bounds (608-1034), act value=%d", val );
 			display.writeText( line++, "IAS Sensor: FAILED" );
 			failed_tests += "IAS Sensor offset test: FAILED\n";
 			selftestPassed = false;
 		}
 		else {
-			printf("MP5004->MCP3321 test PASSED, readout value in bounds (608-1034)=%d\n", val );
+			ESP_LOGI(FNAME,"MP5004->MCP3321 test PASSED, readout value in bounds (608-1034)=%d", val );
 			char s[40];
 			if( ias > 50 ) {
 				sprintf(s, "IAS Sensor: %d km/h", (int)(ias+0.5) );
@@ -370,21 +372,22 @@ void sensor(void *args){
 	}
 
 	// Temp Sensor test
+	ds18b20.begin();
 	temperature = ds18b20.getTemp();
 	if( temperature == DEVICE_DISCONNECTED_C ) {
-		printf("Error: Self test Temperatur Sensor failed; returned T=%2.2f\n", temperature );
+		ESP_LOGE(FNAME,"Error: Self test Temperatur Sensor failed; returned T=%2.2f", temperature );
 		display.writeText( line++, "Temp Sensor: Not found");
 		validTemperature = false;
 		failed_tests += "External Temperature Sensor: NOT FOUND\n";
 	}else
 	{
-		printf("Self test Temperatur Sensor PASSED; returned T=%2.2f\n", temperature );
+		ESP_LOGI(FNAME,"Self test Temperatur Sensor PASSED; returned T=%2.2f", temperature );
 		display.writeText( line++, "Temp Sensor: OK");
 		validTemperature = true;
 		failed_tests += "External Temperature Sensor:PASSED\n";
 
 	}
-	printf("BMP280 sensors init..\n");
+	ESP_LOGI(FNAME,"BMP280 sensors init..");
 
 
 	bmpBA.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
@@ -393,25 +396,25 @@ void sensor(void *args){
 
 	float ba_t, ba_p, te_t, te_p;
 	if( ! bmpBA.selfTest( ba_t, ba_p)  ) {
-		printf("HW Error: Self test Barometric Pressure Sensor failed!\n");
+		ESP_LOGE(FNAME,"HW Error: Self test Barometric Pressure Sensor failed!");
 		display.writeText( line++, "Baro Sensor: Not found");
 		selftestPassed = false;
 		failed_tests += "Baro Sensor Test: NOT FOUND\n";
 	}
 	else {
-		printf("Barometric Sensor T=%f P=%f\n", ba_t, ba_p);
+		ESP_LOGI(FNAME,"Barometric Sensor T=%f P=%f", ba_t, ba_p);
 		display.writeText( line++, "Baro Sensor: OK");
 		failed_tests += "Baro Sensor Test: PASSED\n";
 	}
 
 	if( ! bmpTE.selfTest(te_t, te_p) ) {
-		printf("HW Error: Self test TE Pressure Sensor failed!\n");
+		ESP_LOGE(FNAME,"HW Error: Self test TE Pressure Sensor failed!");
 		display.writeText( line++, "TE Sensor: Not found");
 		selftestPassed = false;
 		failed_tests += "TE Sensor Test: NOT FOUND\n";
 	}
 	else {
-		printf("TE Sensor         T=%f P=%f\n", te_t, te_p);
+		ESP_LOGI(FNAME,"TE Sensor         T=%f P=%f", te_t, te_p);
 		display.writeText( line++, "TE Sensor: OK");
 		failed_tests += "TE Sensor Test: PASSED\n";
 	}
@@ -419,24 +422,24 @@ void sensor(void *args){
 	if( selftestPassed ) {
 		if( (abs(ba_t - te_t) >2.0)  && ( ias < 50 ) ) {
 			selftestPassed = false;
-			printf("Severe Temperature deviation delta > 2 °C between Baro and TE sensor: °C %f\n", abs(ba_t - te_t) );
+			ESP_LOGI(FNAME,"Severe Temperature deviation delta > 2 °C between Baro and TE sensor: °C %f", abs(ba_t - te_t) );
 			display.writeText( line++, "TE/Baro Temp: Unequal");
 			failed_tests += "TE/Baro Sensor T diff. <2°C: FAILED\n";
 		}
 		else{
-			printf("BMP 280 Temperature deviation test PASSED, dev: %f\n",  abs(ba_t - te_t));
+			ESP_LOGI(FNAME,"BMP 280 Temperature deviation test PASSED, dev: %f",  abs(ba_t - te_t));
 			// display.writeText( line++, "TE/Baro Temp: OK");
 			failed_tests += "TE/Baro Sensor T diff. <2°C: PASSED\n";
 		}
 
 		if( (abs(ba_p - te_p) >2.0)  && ( ias < 50 ) ) {
 			selftestPassed = false;
-			printf("Severe Pressure deviation delta > 2 hPa between Baro and TE sensor: %f\n", abs(ba_p - te_p) );
+			ESP_LOGI(FNAME,"Severe Pressure deviation delta > 2 hPa between Baro and TE sensor: %f", abs(ba_p - te_p) );
 			display.writeText( line++, "TE/Baro P: Unequal");
 			failed_tests += "TE/Baro Sensor P diff. <2hPa: FAILED\n";
 		}
 		else
-			printf("BMP 280 Pressure deviation test PASSED, dev: %f\n", abs(ba_p - te_p) );
+			ESP_LOGI(FNAME,"BMP 280 Pressure deviation test PASSED, dev: %f", abs(ba_p - te_p) );
 		// display.writeText( line++, "TE/Baro P: OK");
 		failed_tests += "TE/Baro Sensor P diff. <2hPa: PASSED\n";
 
@@ -447,17 +450,17 @@ void sensor(void *args){
 	VaSoSW.begin( GPIO_NUM_12 );
 	esp_task_wdt_reset();
 
-	printf("Audio begin\n");
+	ESP_LOGI(FNAME,"Audio begin");
 	Audio.begin( DAC_CHANNEL_1, GPIO_NUM_0);
-	printf("Poti and Audio test\n");
+	ESP_LOGI(FNAME,"Poti and Audio test");
 	if( !Audio.selfTest() ) {
-		printf("Error: Digital potentiomenter selftest failed\n");
+		ESP_LOGE(FNAME,"Error: Digital potentiomenter selftest failed");
 		display.writeText( line++, "Digital Poti: Failure");
 		selftestPassed = false;
 		failed_tests += "Digital Audio Poti test: FAILED\n";
 	}
 	else{
-		printf("Digital potentiometer test PASSED\n");
+		ESP_LOGI(FNAME,"Digital potentiometer test PASSED");
 		failed_tests += "Digital Audio Poti test: PASSED\n";
 		display.writeText( line++, "Digital Poti: OK");
 	}
@@ -465,13 +468,13 @@ void sensor(void *args){
 
 	float bat = ADC.getBatVoltage(true);
 	if( bat < 1 || bat > 28.0 ){
-		printf("Error: Battery voltage metering out of bounds, act value=%f\n", bat );
+		ESP_LOGE(FNAME,"Error: Battery voltage metering out of bounds, act value=%f", bat );
 		display.writeText( line++, "Bat Sensor: Failure");
 		failed_tests += "Battery Voltage Sensor: FAILED\n";
 		selftestPassed = false;
 	}
 	else{
-		printf("Battery voltage metering test PASSED, act value=%f\n", bat );
+		ESP_LOGI(FNAME,"Battery voltage metering test PASSED, act value=%f", bat );
 		display.writeText( line++, "Bat Sensor: OK");
 		failed_tests += "Battery Voltage Sensor: PASSED\n";
 	}
@@ -491,28 +494,27 @@ void sensor(void *args){
 	Speed2Fly.change_polar();
 	Speed2Fly.change_mc_bal();
 	Version myVersion;
-	printf("Program Version %s\n", myVersion.version() );
+	ESP_LOGI(FNAME,"Program Version %s", myVersion.version() );
 	gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);  // blue LED, maybe use for BT connection
 
-	printf("%s", failed_tests.c_str());
+	ESP_LOGI(FNAME,"%s", failed_tests.c_str());
 	if( !selftestPassed )
 	{
-		printf("\n\n\nSelftest failed, see above LOG for Problems\n\n\n");
+		ESP_LOGI(FNAME,"\n\n\nSelftest failed, see above LOG for Problems\n\n\n");
 		if( !Rotary.readSwitch() )
 			sleep(6);
 	}
 	else{
-		printf("\n\n\n*****  Selftest PASSED  ********\n\n\n");
+		ESP_LOGI(FNAME,"\n\n\n*****  Selftest PASSED  ********\n\n\n");
 		display.writeText( line++, "Selftest PASSED");
 		if( !Rotary.readSwitch() )
 			sleep(3);
 	}
-
 	sleep(1);
 
 	if( Rotary.readSwitch() )
 	{
-		printf("Starting Leak test\n");
+		ESP_LOGI(FNAME,"Starting Leak test");
 		display.clear();
 		display.writeText( 1, "** Leak Test **");
 		float sba=0;
@@ -551,7 +553,7 @@ void sensor(void *args){
 			display.writeText( 3, tes);
 			display.writeText( 4, pis);
 			if( i==0 ) {
-				printf("%s  %s  %s\n", bas,tes,pis);
+				ESP_LOGI(FNAME,"%s  %s  %s", bas,tes,pis);
 			}
 			if( i>=1 ) {
 				bad = 100*(ba-sba)/sba;
@@ -563,7 +565,7 @@ void sensor(void *args){
 				display.writeText( 5, bas);
 				display.writeText( 6, tes);
 				display.writeText( 7, pis);
-				printf("%s%s%s\n", bas,tes,pis);
+				ESP_LOGI(FNAME,"%s%s%s", bas,tes,pis);
 
 			}
 			char sec[40];
@@ -572,11 +574,11 @@ void sensor(void *args){
 		}
 		if( (abs(bad) > 0.1) || (abs(ted) > 0.1) || ( (sspeed > 10.0) && (abs(speedd) > (1.0) ) ) ) {
 			display.writeText( 9, "Test FAILED" );
-			printf("FAILED\n");
+			ESP_LOGI(FNAME,"FAILED");
 		}
 		else {
 			display.writeText( 9, "Test PASSED" );
-			printf("PASSED\n");
+			ESP_LOGI(FNAME,"PASSED");
 		}
 		while(1) {
 			delay(5000);
@@ -588,7 +590,7 @@ void sensor(void *args){
 	Menu.begin( &display, &Rotary, &bmpBA, &ADC );
 	if( ias < 50.0 ){
 		xSemaphoreTake(xMutex,portMAX_DELAY );
-		printf("QNH Autosetup, IAS=%3f (<50 km/h)\n", ias );
+		ESP_LOGI(FNAME,"QNH Autosetup, IAS=%3f (<50 km/h)", ias );
 		// QNH autosetup
 		float ae = elevation.get();
 		baroP = bmpBA.readPressure();
@@ -599,7 +601,7 @@ void sensor(void *args){
 			for( float qnh = 900; qnh< 1080; qnh+=step ) {
 				float alt = bmpBA.readAltitude( qnh );
 				float diff = alt - ae;
-				printf("Alt diff=%4.2f  abs=%4.2f\n", diff, abs(diff) );
+				ESP_LOGI(FNAME,"Alt diff=%4.2f  abs=%4.2f", diff, abs(diff) );
 				if( abs( diff ) < 100 )
 					step=1.0;  // 8m
 				if( abs( diff ) < 10 )
@@ -607,13 +609,13 @@ void sensor(void *args){
 				if( abs( diff ) < abs(min) ) {
 					min = diff;
 					qnh_best = qnh;
-					printf("New min=%4.2f\n", min);
+					ESP_LOGI(FNAME,"New min=%4.2f", min);
 				}
 				if( diff > 1.0 ) // we are ready, values get already positive
 					break;
 				// esp_task_wdt_reset();
 			}
-			printf("qnh=%4.2f\n\n\n", qnh_best);
+			ESP_LOGI(FNAME,"qnh=%4.2f\n", qnh_best);
 			float &qnh = QNH.getRef();
 			qnh = qnh_best;
 		}
@@ -648,11 +650,6 @@ void sensor(void *args){
 }
 
 extern "C" int btstack_main(int argc, const char * argv[]){
-	// esp_log_level_set("*", ESP_LOG_ERROR);     // set all components to ERROR
-	// esp_log_level_set("*", ESP_LOG_WARN);      // enable WARN logs
-	esp_log_level_set("*", ESP_LOG_INFO);      // enable INFO logs
-	// esp_log_level_set("bts", ESP_LOG_INFO);      // enable INFO logs
-
 	xTaskCreatePinnedToCore(&sensor, "sensor", 8192, NULL, 16, 0, 0);
 	return 0;
 }

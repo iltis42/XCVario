@@ -1,6 +1,8 @@
 #pragma once
 #include <stdbool.h>
 #include <stdint.h>
+#include "driver/gpio.h"
+#include "driver/rmt.h"
 
 #ifdef select
 #undef select
@@ -11,7 +13,7 @@ struct mgos_rmt_onewire;
 class OnewireRmt
 {
 public:
-    OnewireRmt(uint8_t pin,uint8_t rmt_rx,uint8_t rmt_tx);
+    OnewireRmt(gpio_num_t pin, rmt_channel_t rmt_rx,rmt_channel_t rmt_tx);
     ~OnewireRmt();
 
     // Perform a 1-Wire reset cycle. Returns 1 if a device responds

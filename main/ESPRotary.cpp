@@ -9,6 +9,7 @@
 #include <sys/time.h>
 #include <Arduino.h>
 #include "RingBufCPP.h"
+#include <logdef.h>
 
 
 gpio_num_t ESPRotary::clk, ESPRotary::dt, ESPRotary::sw;
@@ -97,7 +98,7 @@ void ESPRotary::informObservers( void * args )
 		int button = gpio_get_level((gpio_num_t)sw);
 		if( button != old_button )
 		{
-//			printf("Rotary button:%d\n", button);
+//			ESP_LOGI(FNAME,"Rotary button:%d", button);
 			int event = NONE;
 			if( button==0 )
 				event = PRESS;
@@ -105,42 +106,44 @@ void ESPRotary::informObservers( void * args )
 				event = RELEASE;
 			old_button=button;
 			if( event == RELEASE ){
-				printf("Switch released action\n");
+				ESP_LOGI(FNAME,"Switch released action");
 				for (int i = 0; i < observers.size(); i++)
 					observers[i]->release();
-				printf("End Switch released action\n");
+				ESP_LOGI(FNAME,"End Switch released action");
 			}
 			else if ( event == PRESS ){
-				printf("Switch pressed action\n");
+				ESP_LOGI(FNAME,"Switch pressed action");
 				for (int i = 0; i < observers.size(); i++)
 					observers[i]->press();
-				printf("End Switch pressed action\n");
+				ESP_LOGI(FNAME,"End Switch pressed action");
 			}
 			else if ( event == LONG_PRESS ){   // tbd
-				printf("Switch long pressed action\n");
+				ESP_LOGI(FNAME,"Switch long pressed action");
 				for (int i = 0; i < observers.size(); i++)
 					observers[i]->longPress();
-				printf("End Switch long pressed action\n");
+				ESP_LOGI(FNAME,"End Switch long pressed action");
 			}
 		}
-		if( pcnt_get_counter_value(PCNT_UNIT_0, &r_enc_count) != ESP_OK )
-				printf("Error get counter\n");
-		if( pcnt_get_counter_value(PCNT_UNIT_1, &r_enc2_count) != ESP_OK )
-					printf("Error get counter\n");
+		if( pcnt_get_counter_value(PCNT_UNIT_0, &r_enc_count) != ESP_OK ) {
+				ESP_LOGE(FNAME,"Error get counter");
+		}
+		if( pcnt_get_counter_value(PCNT_UNIT_1, &r_enc2_count) != ESP_OK ) {
+				ESP_LOGE(FNAME,"Error get counter");
+		}
 
 		if( r_enc_count+r_enc2_count != old_cnt )
 		{
 			// pcnt_counter_clear(PCNT_UNIT_0);
-			// printf("Rotary counter %d %d\n", r_enc_count,  r_enc2_count);
+			// ESP_LOGI(FNAME,"Rotary counter %d %d", r_enc_count,  r_enc2_count);
 			int diff = (r_enc_count+r_enc2_count) - old_cnt;
 			old_cnt = r_enc_count+r_enc2_count;
 			if( diff < 0 ) {
-				// printf("Rotary up %d times\n",abs(diff) );
+				// ESP_LOGI(FNAME,"Rotary up %d times",abs(diff) );
 				for (int i = 0; i < observers.size(); i++)
 					observers[i]->up( abs(diff) );
 			}
 			else if( diff > 0 ) {
-				// printf("Rotary down %d times\n", abs(diff) );
+				// ESP_LOGI(FNAME,"Rotary down %d times", abs(diff) );
 				for (int i = 0; i < observers.size(); i++)
 					observers[i]->down( abs(diff) );
 			}

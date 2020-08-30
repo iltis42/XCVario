@@ -13,6 +13,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_adc_cal.h"
+#include <logdef.h>
 
 #define DIODE_VOLTAGE_DROP 0        // New Vario now measures behind Diode
 
@@ -36,13 +37,12 @@ void BatVoltage::begin( adc1_channel_t battery, adc1_channel_t reference ) {
 	adc_chars = (esp_adc_cal_characteristics_t *) &adc_cal;
 	esp_adc_cal_value_t val_type = esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_0, ADC_WIDTH_BIT_12, DEFAULT_VREF, adc_chars);
 	//Check type of calibration value used to characterize ADC
-	printf("\n");
 	if (val_type == ESP_ADC_CAL_VAL_EFUSE_VREF) {
-		printf("eFuse Vref\n");
+		ESP_LOGI(FNAME,"eFuse Vref");
 	} else if (val_type == ESP_ADC_CAL_VAL_EFUSE_TP) {
-		printf("Two Point\n");
+		ESP_LOGI(FNAME,"Two Point");
 	} else {
-		printf("Default\n");
+		ESP_LOGI(FNAME,"Default");
 	}
 	getBatVoltage( true );
 }
@@ -54,7 +54,7 @@ float BatVoltage::getBatVoltage( bool init ){
 	}
 	adc = adc/1000.0;
 	uint32_t voltage = esp_adc_cal_raw_to_voltage( (int)(adc+0.5), adc_chars);
-    // printf("Voltage %d\n", voltage);
+    // ESP_LOGI(FNAME,"Voltage %d", voltage);
 
 	float bat = (float)voltage * _correct * ( (100.0 + factory_volt_adjust.get()) / 100.0 ) +  DIODE_VOLTAGE_DROP;
 	if( init )

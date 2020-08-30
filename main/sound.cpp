@@ -19,6 +19,7 @@
 #include "hi.h"
 #include "sound.h"
 #include "driver/timer.h"
+#include <logdef.h>
 
 int Sound::pos = 40;
 bool Sound::ready=false;
@@ -74,7 +75,7 @@ void Sound::playSound( e_sound a_sound, bool end ){
 	pos = 40;
 	ready = false;
 	sound = a_sound;
-	printf("Start play sound\n");
+	ESP_LOGI(FNAME,"Start play sound");
 	Audio.setTestmode(true);
 	uint16_t volume;
 	_poti->readWiper( volume );
@@ -85,15 +86,15 @@ void Sound::playSound( e_sound a_sound, bool end ){
 	timerInitialise(15);
 	while( !ready ) {
 		sleep(0.5);
-		// printf("playing %d\n", pos);
+		// ESP_LOGI(FNAME,"playing %d", pos);
 	}
 	timer_disable_intr(TIMER_GROUP_0, TIMER_0);
-	printf("play Sound end\n");
+	ESP_LOGI(FNAME,"play Sound end");
 	if( end ) {
 		_poti->writeWiper( volume );
 	   Audio.restart();
 	}
-	printf("play Sound task end\n");
+	ESP_LOGI(FNAME,"play Sound task end");
 }
 
 

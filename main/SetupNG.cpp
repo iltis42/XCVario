@@ -23,8 +23,8 @@
 #include "BMPVario.h"
 #include <esp32/rom/miniz.h>
 #include "Polars.h"
-#include "SetupVolt.h"
 #include "esp_task_wdt.h"
+#include <logdef.h>
 
 std::vector<SetupCommon *> SetupCommon::entries;
 char SetupCommon::_ID[14];
@@ -100,37 +100,38 @@ SetupNG<int>  			software_update( "SOFTWARE_UPDATE", 0 );
 SetupNG<int>  			battery_display( "BAT_DISPLAY", 0 );
 SetupNG<int>  			airspeed_mode( "AIRSPEED_MODE", MODE_IAS );
 SetupNG<int>  	    	nmea_protocol( "NMEA_PROTOCOL", OPENVARIO );
+SetupNG<int>		    log_level( "LOG_LEVEL", 3 );
 
 
 void SetupCommon::initSetup() {
-	printf("SetupCommon::initSetup()\n");
+	ESP_LOGI(FNAME,"SetupCommon::initSetup()");
 	esp_err_t _err = nvs_flash_init();
 	if (_err == ESP_ERR_NVS_NO_FREE_PAGES) {
-		printf("Error no more space in NVS: erase partition\n");
+		ESP_LOGE(FNAME,"Error no more space in NVS: erase partition");
 		const esp_partition_t* nvs_partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_NVS, NULL);
 		_err = (esp_partition_erase_range(nvs_partition, 0, nvs_partition->size));
 		if ( _err != ESP_OK ){
-			printf( "partition erase returned error ret=%d\n", _err );
+			ESP_LOGE(FNAME, "partition erase returned error ret=%d", _err );
 		}
 	}
 	for(int i = 0; i < entries.size(); i++ ) {
 			bool ret = entries[i]->init();
 			if( ret != true )
-				printf("Error init with default NVS: %s\n", entries[i]->key() );
+				ESP_LOGE(FNAME,"Error init with default NVS: %s", entries[i]->key() );
 	}
 
 	if( factory_reset.get() ) {
-		printf("\n\n******  FACTORY RESET ******\n\n");
+		ESP_LOGI(FNAME,"\n\n******  FACTORY RESET ******");
 		for(int i = 0; i < entries.size(); i++ ) {
-			printf("i=%d %s erase", i, entries[i]->key() );
+			ESP_LOGI(FNAME,"i=%d %s erase", i, entries[i]->key() );
 			bool ret = entries[i]->erase();
 			if( ret != true )
-				printf("Error erasing %s\n", entries[i]->key() );
+				ESP_LOGE(FNAME,"Error erasing %s", entries[i]->key() );
 			ret = entries[i]->init();
 			if( ret != true )
-				printf("Error init with default %s\n", entries[i]->key() );
+				ESP_LOGE(FNAME,"Error init with default %s", entries[i]->key() );
 			else
-				printf("%s successfully initialized with default\n", entries[i]->key() );
+				ESP_LOGI(FNAME,"%s successfully initialized with default", entries[i]->key() );
 		}
 	}
 };

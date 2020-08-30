@@ -4,23 +4,24 @@
 #include "string"
 #include "esp_task_wdt.h"
 #include "DallasRmt.h"
+#include <logdef.h>
 
 // MP5004DP::MP5004DP(){
 //
 // }
 
 bool MP5004DP::begin(gpio_num_t sda, gpio_num_t scl ){
-	printf("MP5004DP::begin\n");
+	ESP_LOGI(FNAME,"MP5004DP::begin");
 	bool ret = NVS.begin();
 	if ( ret == false ){
-		printf("MP5004DP: Error NVS init\n");
+		ESP_LOGE(FNAME,"MP5004DP: Error NVS init");
 		return ret;
 	}
 	 else
-	 	printf("MP5004DP: NVS init ok\n");
+	 	ESP_LOGI(FNAME,"MP5004DP: NVS init ok");
 	ret = MCP.begin( sda, scl);
 		if ( ret == false ){
-			printf("MP5004DP: Error MCP init\n");
+			ESP_LOGE(FNAME,"MP5004DP: Error MCP init");
 			return ret;
 		}
 	return true;
@@ -44,7 +45,7 @@ bool MP5004DP::selfTest(uint16_t& val)
 
 bool MP5004DP::offsetPlausible(uint16_t aoffset )
 {
-	printf("MP5004DP offsetPlausible( %d )\n", aoffset );
+	ESP_LOGI(FNAME,"MP5004DP offsetPlausible( %d )", aoffset );
 	if( (aoffset > 608 ) && (aoffset < 1067 )  )
 		return true;
 	else
@@ -52,37 +53,37 @@ bool MP5004DP::offsetPlausible(uint16_t aoffset )
 }
 
 bool MP5004DP::doOffset( bool force ){
-	printf("MP5004DP doOffset()\n");
+	ESP_LOGI(FNAME,"MP5004DP doOffset()");
 	if ( !MCP.haveDevice() ){
-		printf("Dont see a device, skip offset\n");
+		ESP_LOGI(FNAME,"Dont see a device, skip offset");
 		_haveDevice=false;
 		return true;
 	}
 	_haveDevice=true;
-	printf("MP5004DP looks like have device\n");
-	printf("MP5004DP key initialized\n");
+	ESP_LOGI(FNAME,"MP5004DP looks like have device");
+	ESP_LOGI(FNAME,"MP5004DP key initialized");
 	_offset = as_offset.get();
 
-	printf("MP5004DP got offset from NVS: %0.1f\n", _offset );
+	ESP_LOGI(FNAME,"MP5004DP got offset from NVS: %0.1f", _offset );
 	bool flying = false;
 	float p;
 	bool plausible = offsetPlausible( _offset );
     if( plausible ){
-       printf("Offset is plausible\n");
+       ESP_LOGI(FNAME,"Offset is plausible");
 	   p = readPascal();
-	   printf("Pressure offset (Pascal): %0.1f\n",p);
+	   ESP_LOGI(FNAME,"Pressure offset (Pascal): %0.1f",p);
        if( p > 124.0 ){   // or 50 km/h
     	  flying = true;
-    	  printf("Flying state: P > 30\n");
+    	  ESP_LOGI(FNAME,"Flying state: P > 30");
        }
        else{
-    	   printf("Not flying\n");
+    	   ESP_LOGI(FNAME,"Not flying");
        }
     }
 
 	if( force || (plausible && !flying) || !plausible )
 	{
-	 	printf("DP OFFSET correction ongoing, set new _offset...\n");
+	 	ESP_LOGI(FNAME,"DP OFFSET correction ongoing, set new _offset...");
 	 	uint32_t rawOffset=0;
 	 	for( int i=0; i<100; i++){
 	 		uint16_t raw;
@@ -93,21 +94,21 @@ bool MP5004DP::doOffset( bool force ){
    	    _offset = rawOffset / 100;
 	   	if( offsetPlausible( _offset ) )
 	   	{
-	   	   printf("Offset procedure finished, offset: %f\n", _offset);
+	   	   ESP_LOGI(FNAME,"Offset procedure finished, offset: %f", _offset);
 	   	   if( as_offset.get() != _offset ){
 	          as_offset.set( _offset );
-  		      printf("Stored new offset in NVS\n");
+  		      ESP_LOGI(FNAME,"Stored new offset in NVS");
 	   	   }
 	   	   else
-	   		   printf("New offset equal old value\n");
+	   		   ESP_LOGI(FNAME,"New offset equal old value");
 	    }
 	   	else{
-	   		printf("Offset out of tolerance, ignore odd offset value\n");
+	   		ESP_LOGW(FNAME,"Offset out of tolerance, ignore odd offset value");
 	   	}
 	}
 	else
 	{
-		printf("No new Calibration: flying with plausible pressure\n");
+		ESP_LOGI(FNAME,"No new Calibration: flying with plausible pressure");
 	}
 	return true;
 }

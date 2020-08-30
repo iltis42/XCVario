@@ -15,6 +15,7 @@
 #include "BTSender.h"
 #include "DallasRmt.h"
 #include "freertos/task.h"
+#include <logdef.h>
 
 
 int   IpsDisplay::tick = 0;
@@ -183,7 +184,7 @@ void IpsDisplay::clear(){
 }
 
 void IpsDisplay::bootDisplay() {
-	printf("IpsDisplay::bootDisplay()\n");
+	ESP_LOGI(FNAME,"IpsDisplay::bootDisplay()");
 	setup();
 	if( display_type.get() == ST7789_2INCH_12P )
 		ucg->setRedBlueTwist( true );
@@ -200,7 +201,7 @@ void IpsDisplay::bootDisplay() {
 
 
 void IpsDisplay::initDisplay() {
-	printf("IpsDisplay::initDisplay()\n");
+	ESP_LOGI(FNAME,"IpsDisplay::initDisplay()");
 	bootDisplay();
 	ucg->setPrintPos(0,YVAR-VARFONTH);
 	ucg->setColor(0, COLOR_HEADER );
@@ -272,14 +273,14 @@ void IpsDisplay::initDisplay() {
 }
 
 void IpsDisplay::begin() {
-	printf("IpsDisplay::begin\n");
+	ESP_LOGI(FNAME,"IpsDisplay::begin");
 	ucg->begin(UCG_FONT_MODE_SOLID);
 	setup();
 }
 
 void IpsDisplay::setup()
 {
-	printf("IpsDisplay::setup\n");
+	ESP_LOGI(FNAME,"IpsDisplay::setup");
 	_range = range.get();
 
 	if( (int)_range <= 5 )
@@ -306,7 +307,7 @@ void IpsDisplay::setup()
 		_divisons = 5;
 
 	_pixpmd = (int)((  (DISPLAY_H-(2*VARBARGAP) )/2) /_range);
-	printf("Pixel per m/s %d\n", _pixpmd );
+	ESP_LOGI(FNAME,"Pixel per m/s %d", _pixpmd );
 	_range_clip = _range;
 }
 
@@ -337,7 +338,7 @@ void IpsDisplay::drawAvgSymbol( int y, int r, int g, int b ) {
 
 void IpsDisplay::redrawValues()
 {
-	printf("IpsDisplay::redrawValues()\n");
+	ESP_LOGI(FNAME,"IpsDisplay::redrawValues()");
 	chargealt = 101;
 	tempalt = -2000;
 	s2falt = -1;
@@ -410,7 +411,7 @@ void IpsDisplay::setTeBuf( int y1, int h, int r, int g, int b ){
 }
 
 float wkRelPos( float wks, float minv, float maxv ){
-	// printf("wks:%f min:%f max:%f\n", wks, minv, maxv );
+	// ESP_LOGI(FNAME,"wks:%f min:%f max:%f", wks, minv, maxv );
 	if( wks <= maxv && wks >= minv )
 		return ((wks-minv)/(maxv-minv));
 	else if( wks > maxv )
@@ -492,7 +493,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		                      float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt ){
 	if( _menu )
 			return;
-	// printf("IpsDisplay::drawDisplay  TE=%0.1f\n", te);
+	// ESP_LOGI(FNAME,"IpsDisplay::drawDisplay  TE=%0.1f", te);
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	tick++;
 
@@ -515,7 +516,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 	    float wkpos=wkRelPos( wkspeed, wkspeeds[wki+3], wkspeeds[wki+2] );
 	    int wk = (int)((wki - wkpos + 0.5)*10);
 	    if( wkposalt != wk ) {
-	    	// printf("ias:%d wksp:%f wki:%d wk:%d wkpos%f\n", ias, wkspeed, wki, wk, wkpos );
+	    	// ESP_LOGI(FNAME,"ias:%d wksp:%f wki:%d wk:%d wkpos%f", ias, wkspeed, wki, wk, wkpos );
 	    	ucg->setColor(  COLOR_WHITE  );
 	    	drawWkBar( YS2F-fh, (float)(wk)/10 );
 	    	wkposalt = wk;

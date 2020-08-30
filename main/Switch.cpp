@@ -8,13 +8,14 @@
  *      sw = Switch();
  *      sw.begin( GPIO_NUM_1 );
  *      if( sw.state() )
- *         printf("Open");
+ *         ESP_LOGI(FNAME,"Open");
  *
  */
 
 #include "esp32-hal.h"
 #include "driver/gpio.h"
 #include "Switch.h"
+#include <logdef.h>
 
 
 Switch::Switch() {

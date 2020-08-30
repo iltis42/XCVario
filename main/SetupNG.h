@@ -25,6 +25,7 @@ extern "C" {
 #include "Polars.h"
 #include <iostream>
 #include <vector>
+#include <logdef.h>
 
 
 
@@ -79,67 +80,66 @@ public:
 	bool set( T aval ) {
 		std::cout << "set( "<< aval << " )\n";
 		_value = T(aval);
-		std::cout << "_value: "<< aval << "\n";
 		if( !open() ) {
-			printf("NVS Error open nvs handle !\n");
+			ESP_LOGE(FNAME,"NVS Error open nvs handle !");
 			return( false );
 		}
 		bool ret = commit();
 		return ret;
 	};
 	bool commit() {
-		printf("NVS commit(): ");
+		ESP_LOGI(FNAME,"NVS commit(): ");
 		if( !open() ) {
-			printf("NVS error\n");
+			ESP_LOGE(FNAME,"NVS error");
 			return false;
 		}
-		printf("NVS commit(key:%s , addr:%08x, len:%d, nvs_handle: %04x)\n", _key, (unsigned int)(&_value), sizeof( _value ), _nvs_handle);
+		ESP_LOGI(FNAME,"NVS commit(key:%s , addr:%08x, len:%d, nvs_handle: %04x)", _key, (unsigned int)(&_value), sizeof( _value ), _nvs_handle);
 		esp_err_t _err = nvs_set_blob(_nvs_handle, _key, (void *)(&_value), sizeof( _value ));
 		if(_err != ESP_OK) {
-			printf("NVS set blob error %d\n", _err );
+			ESP_LOGE(FNAME,"NVS set blob error %d", _err );
 			close();
 			return( false );
 		}
 		_err = nvs_commit(_nvs_handle);
 		if(_err != ESP_OK)  {
-			printf("NVS nvs_commit error\n");
+			ESP_LOGE(FNAME,"NVS nvs_commit error");
 			close();
 			return false;
 		}
-		printf("success\n");
+		ESP_LOGI(FNAME,"success");
 		close();
 		return true;
 	};
 	bool init() {
 		if( !open() ) {
-			printf("Error open nvs handle !\n");
+			ESP_LOGE(FNAME,"Error open nvs handle !");
 			return false;
 		}
 		size_t required_size;
 		esp_err_t _err = nvs_get_blob(_nvs_handle, _key, NULL, &required_size);
 		if ( _err != ESP_OK ){
-			printf( "NVS nvs_get_blob error: returned error ret=%d\n", _err );
+			ESP_LOGE(FNAME, "NVS nvs_get_blob error: returned error ret=%d", _err );
 			set( _default );  // try to init
 		}
 		else {
 			if( required_size > sizeof( T ) ) {
-				printf("NVS error: size too big: %d > %d\n", required_size , sizeof( T ) );
+				ESP_LOGE(FNAME,"NVS error: size too big: %d > %d", required_size , sizeof( T ) );
 				erase();
 				set( _default );  // try to init
 				close();
 				return false;
 			}
 			else {
-				// printf("NVS size okay: %d\n", required_size );
+				// ESP_LOGI(FNAME,"NVS size okay: %d", required_size );
 				_err = nvs_get_blob(_nvs_handle, _key, &_value, &required_size);
 				if ( _err != ESP_OK ){
-					printf( "NVS nvs_get_blob returned error ret=%d\n", _err );
+					ESP_LOGE(FNAME, "NVS nvs_get_blob returned error ret=%d", _err );
 					erase();
 					set( _default );  // try to init
 				}
 				else {
-					printf("NVS key %s exists len: %d value: ",_key, required_size);
-					std::cout << _value << "\n";
+					ESP_LOGI(FNAME,"NVS key %s exists len: %d value: %f0.1",_key, required_size, (float)_value );
+					// std::cout << _value << "\n";
 				}
 			}
 		}
@@ -148,7 +148,7 @@ public:
 	};
 	SetupNG() {};
 	SetupNG( const char * akey, T adefault ) {
-		// printf("SetupNG(%s)\n", akey );
+		// ESP_LOGI(FNAME,"SetupNG(%s)", akey );
 		entries.push_back( this );  // an into vector
 		_nvs_handle = 0;
 		_key = akey;
@@ -162,7 +162,7 @@ public:
 		if(_err != ESP_OK)
 			return false;
 		else
-			printf("NVS erased all by handle %d\n", _nvs_handle );
+			ESP_LOGI(FNAME,"NVS erased all by handle %d", _nvs_handle );
 		if( commit() )
 			return true;
 		else
@@ -176,7 +176,7 @@ public:
 		if(_err != ESP_OK)
 			return false;
 		else {
-			printf("NVS erased %s by handle %d\n", _key, _nvs_handle );
+			ESP_LOGI(FNAME,"NVS erased %s by handle %d", _key, _nvs_handle );
 			if( set( _default ) )
 				return true;
 			else
@@ -195,12 +195,12 @@ private:
 		if( _nvs_handle == 0) {
 			esp_err_t _err = nvs_open("SetupNG", NVS_READWRITE, &_nvs_handle);
 			if(_err != ESP_OK){
-				printf("ESP32NVS open storage error %d\n", _err );
+				ESP_LOGE(FNAME,"ESP32NVS open storage error %d", _err );
 				_nvs_handle = 0;
 				return( false );
 			}
 			else {
-				// printf("ESP32NVS handle: %04X  OK\n", _nvs_handle );
+				// ESP_LOGI(FNAME,"ESP32NVS handle: %04X  OK", _nvs_handle );
 				return( true );
 			}
 		}
@@ -287,6 +287,7 @@ extern SetupNG<int>  		software_update;
 extern SetupNG<int>  		battery_display;
 extern SetupNG<int>  		airspeed_mode;
 extern SetupNG<int>  		nmea_protocol;
+extern SetupNG<int>		    log_level;
 
 
 #endif /* MAIN_SETUP_NG_H_ */

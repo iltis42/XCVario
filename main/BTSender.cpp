@@ -12,8 +12,8 @@
 #include "RingBufCPP.h"
 #include <driver/uart.h>
 #include "OpenVario.h"
+#include <logdef.h>
 
-static const char *TAG = "bts";
 
 extern xSemaphoreHandle nvMutex;
 
@@ -57,10 +57,7 @@ int BTSender::queueFull() {
 }
 
 void BTSender::send(char * s){
-	// printf("RFCOM TX %s",s);
-	ESP_LOGI( TAG,"I %s",s);
-	// ESP_LOGW( TAG,"W %s",s);
-	// ESP_LOGE( TAG,"E %s",s);
+	ESP_LOGD( FNAME,"I %s",s);
 	if ( !mybuf.isFull() && _enable ) {
 		portENTER_CRITICAL_ISR(&btmux);
 		mybuf.add( s );
@@ -76,18 +73,18 @@ void BTSender::send(char * s){
 
 void BTSender::heartbeat_handler(struct btstack_timer_source *ts){
 	if (rfcomm_channel_id ){
-        // printf("HBH..\n");
+        // ESP_LOGI(FNAME,"HBH..");
 		if ( !mybuf.isEmpty() ){
-			// printf("HBH..not empty\n");
+			// ESP_LOGI(FNAME,"HBH..not empty");
 			if (rfcomm_can_send_packet_now(rfcomm_channel_id)){
-				// printf("HBH..can send now\n");
+				// ESP_LOGI(FNAME,"HBH..can send now");
 				SString s;
 				portENTER_CRITICAL_ISR(&btmux);
 			    mybuf.pull(&s);
 			    portEXIT_CRITICAL_ISR(&btmux);
 				int err = rfcomm_send(rfcomm_channel_id, (uint8_t*) s.c_str(), s.length() );
 				if (err) {
-					printf("rfcomm_send -> error %d", err);
+					ESP_LOGE(FNAME,"rfcomm_send -> error %d", err);
 				}
 			}
 		}
@@ -102,33 +99,32 @@ void BTSender::packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *p
 	bd_addr_t event_addr;
 	uint16_t  mtu;
 	int pos;
-	// printf("BTstack packet type %02x size %d\n", packet_type, size);
+	// ESP_LOGI(FNAME,"BTstack packet type %02x size %d", packet_type, size);
 	switch (packet_type) {
 	case RFCOMM_DATA_PACKET:
-		// printf("Received RFCOMM data on channel id %u, size %u %s\n", channel, size, packet);
+		// ESP_LOGI(FNAME,"Received RFCOMM data on channel id %u, size %u %s", channel, size, packet);
 		if( size > RXBUFLEN ) {
-			printf("Warning, RX data packet truncated len=%d, max=%d\n", size, RXBUFLEN );
+			ESP_LOGW(FNAME,"Warning, RX data packet truncated len=%d, max=%d", size, RXBUFLEN );
 			size = RXBUFLEN;
 		}
 		memcpy( rxBuffer, packet, size );
 		rxBuffer[size] = 0;
-		printf("RFCOMM RX CH %u, size %u: %s\n", channel, size, rxBuffer);
+		ESP_LOGI(FNAME,"RFCOMM RX CH %u, size %u: %s", channel, size, rxBuffer);
 		for( int i=0; i<size; i++ )
-			printf("%02x ", rxBuffer[i] );
+			ESP_LOGD(FNAME,"%02x ", rxBuffer[i] );
 		delay(100);
-		printf(" : ");
+		ESP_LOGI(FNAME," : ");
 		for( int i=0; i<size; i++ )
-			printf(" %c ", rxBuffer[i] );
+			ESP_LOGD(FNAME,"%c ", rxBuffer[i] );
 		// _callback( rxBuffer, size );
-		printf("\n");
 	    if( strncmp( rxBuffer, "!g,", 3 )  == 0 ) {
-	    	printf("Matched a Borgelt command\n");
+	    	ESP_LOGI(FNAME,"Matched a Borgelt command");
 	    	OpenVario::parseNMEA( rxBuffer );
 	    }
 	    else {
 	    	pos=0;
 	    	if( _serial_bt_tx  ){
-	    		printf("Serial TX: %s\n", rxBuffer);
+	    		ESP_LOGI(FNAME,"Serial TX: %s", rxBuffer);
 	    		while(pos < size) {
 	    			Serial2.print( rxBuffer[pos]);
 	    			pos++;
@@ -142,14 +138,14 @@ void BTSender::packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *p
 
 		case BTSTACK_EVENT_STATE:
 			if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
-				printf("BTstack is up and running\n");
+				ESP_LOGI(FNAME,"BTstack is up and running");
 				bluetooth_up = true;
 			}
 			break;
 
 		case HCI_EVENT_PIN_CODE_REQUEST:
 			// inform about pin code request
-			printf("Pin code request - using '0000'\n\r");
+			ESP_LOGI(FNAME,"Pin code request - using '0000'\n\r");
 			reverse_bd_addr(&packet[2], event_addr);
 			hci_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
 			break;
@@ -159,18 +155,18 @@ void BTSender::packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *p
 			rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr);
 			rfcomm_channel_nr = rfcomm_event_incoming_connection_get_server_channel(packet);
 			rfcomm_channel_id = rfcomm_event_incoming_connection_get_rfcomm_cid(packet);
-			printf("RFCOMM channel %u requested for %s\n", rfcomm_channel_nr, bd_addr_to_str(event_addr));
+			ESP_LOGI(FNAME,"RFCOMM channel %u requested for %s", rfcomm_channel_nr, bd_addr_to_str(event_addr));
 			rfcomm_accept_connection(rfcomm_channel_id);
 			break;
 
 		case RFCOMM_EVENT_CHANNEL_OPENED:
 			// data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
 			if (rfcomm_event_channel_opened_get_status(packet)) {
-				printf("RFCOMM channel open failed, status %u\n", rfcomm_event_channel_opened_get_status(packet));
+				ESP_LOGE(FNAME,"RFCOMM channel open failed, status %u", rfcomm_event_channel_opened_get_status(packet));
 			} else {
 				rfcomm_channel_id = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
 				mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
-				printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_channel_id, mtu);
+				ESP_LOGI(FNAME,"RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u", rfcomm_channel_id, mtu);
 			}
 			break;
 
@@ -180,7 +176,7 @@ void BTSender::packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *p
 
 
 		default:
-			// printf("RFCOMM ignored packet event %u size: %d\n", hci_event_packet_get_type(packet), size );
+			// ESP_LOGI(FNAME,"RFCOMM ignored packet event %u size: %d", hci_event_packet_get_type(packet), size );
 			break;
 		}
 
@@ -240,7 +236,7 @@ void btBridge(void *pvParameters){
 		portENTER_CRITICAL_ISR(&btmux);
 		mybuf.add( flarm[i++] );
 		portEXIT_CRITICAL_ISR(&btmux);
-		// printf("Serial TX: %s\n",  flarm[i-1] );
+		// ESP_LOGI(FNAME,"Serial TX: %s",  flarm[i-1] );
 		if(i>12)
 			i=0;
 #endif
@@ -257,7 +253,7 @@ void btBridge(void *pvParameters){
 		}
 		xSemaphoreGive(nvMutex);
 		if (readString.length() > 0) {
-			printf("Serial RX: %s\n", readString.c_str() );
+			ESP_LOGI(FNAME,"Serial RX: %s", readString.c_str() );
 			portENTER_CRITICAL_ISR(&btmux);
 			mybuf.add( readString );
 			portEXIT_CRITICAL_ISR(&btmux);
@@ -269,7 +265,7 @@ void btBridge(void *pvParameters){
 
 
 void BTSender::begin( bool enable_bt, const char * bt_name, int speed, bool bridge, int serial_tx, bool tx_inv, bool rx_inv ){
-	printf("BTSender::begin() bt:%d s-bridge:%d\n", enable_bt, bridge );
+	ESP_LOGI(FNAME,"BTSender::begin() bt:%d s-bridge:%d", enable_bt, bridge );
 	_enable = enable_bt;
 	if( speed && serial_tx )
 	{
@@ -303,14 +299,14 @@ void BTSender::begin( bool enable_bt, const char * bt_name, int speed, bool brid
 		memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
 		spp_create_sdp_record(spp_service_buffer, 0x10001, RFCOMM_SERVER_CHANNEL, "SPP Counter");
 		sdp_register_service(spp_service_buffer);
-		printf("SDP service record size: %u\n", de_get_len(spp_service_buffer));
+		ESP_LOGI(FNAME,"SDP service record size: %u", de_get_len(spp_service_buffer));
 		gap_discoverable_control(1);
 		gap_set_local_name(bt_name);
 		sdp_init();
 		hci_power_control(HCI_POWER_ON);
 	}
 	if( (speed != 0) && (bridge || _serial_nmea_tx)){
-    	printf("Serial TX or Bridge enabled with speed: %d baud: %d tx_inv: %d rx_inv: %d\n",  speed, baud[speed], tx_inv, rx_inv );
+    	ESP_LOGI(FNAME,"Serial TX or Bridge enabled with speed: %d baud: %d tx_inv: %d rx_inv: %d",  speed, baud[speed], tx_inv, rx_inv );
     	Serial2.begin(baud[speed],SERIAL_8N1,16,17);   //  IO16: RXD2,  IO17: TXD2
     	if( rx_inv || tx_inv ) {
     		uart_signal_inv_t sigrx=UART_SIGNAL_INV_DISABLE;
@@ -319,12 +315,12 @@ void BTSender::begin( bool enable_bt, const char * bt_name, int speed, bool brid
     			sigrx = UART_SIGNAL_RXD_INV;
     		if( tx_inv )
     			sigtx = UART_SIGNAL_TXD_INV;
-    		printf("Set UART Inversion Mask (4=RX | 32=TX): %d\n", sigrx | sigtx  );
+    		ESP_LOGI(FNAME,"Set UART Inversion Mask (4=RX | 32=TX): %d", sigrx | sigtx  );
     		uart_set_line_inverse(2, sigrx | sigtx );
     	}
     }
 	if( bridge && speed ) {
-		printf("Serial Bluetooth bridge enabled \n");
+		ESP_LOGI(FNAME,"Serial Bluetooth bridge enabled ");
 		xTaskCreatePinnedToCore(&btBridge, "btBridge", 4096, NULL, 30, 0, 0);
 	}
 };

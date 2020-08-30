@@ -1,8 +1,10 @@
 #include "OnewireRmt.h"
+#include "driver/rmt.h"
 #include "onewire_rmt.h"
+#include <logdef.h>
 
 
-OnewireRmt::OnewireRmt(uint8_t pin,uint8_t rmt_rx,uint8_t rmt_tx)
+OnewireRmt::OnewireRmt(gpio_num_t pin, rmt_channel_t rmt_rx, rmt_channel_t rmt_tx)
 {
     _ow = onewire_rmt_create(pin,rmt_rx,rmt_tx);
 }
@@ -14,6 +16,7 @@ OnewireRmt::~OnewireRmt()
 
 uint8_t OnewireRmt::reset(void)
 {
+	ESP_LOGD(FNAME,"OnewireRmt::reset()");
     return onewire_rmt_reset(_ow);
 }
 
@@ -76,7 +79,10 @@ void OnewireRmt::target_search(uint8_t family_code)
 
 uint8_t OnewireRmt::search(uint8_t *newAddr, bool search_mode)
 {
-    return (uint8_t) onewire_rmt_next(_ow, newAddr, !search_mode);
+	ESP_LOGD(FNAME,"search( %08x, %d )", (unsigned int)newAddr, search_mode );
+	uint8_t searchret = onewire_rmt_next(_ow, newAddr, !search_mode);
+	ESP_LOGD(FNAME,"search returned %d", searchret);
+    return searchret;
 }
 
 uint8_t OnewireRmt::crc8(const uint8_t *addr, uint8_t len)

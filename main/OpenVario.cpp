@@ -12,6 +12,7 @@
 #include "Setup.h"
 #include "math.h"
 #include "S2F.h"
+#include <logdef.h>
 
 S2F * OpenVario::_s2f = 0;
 
@@ -50,7 +51,7 @@ void OpenVario::makeNMEA(char* str, float baro, float dp, float te, float temp, 
 	    sprintf(str,"$PBB50,%03d,%3.1f,%1.1f,%d,%d,%1.2f,%1d,%2d", (int)(tas*0.539957+0.5), te*1.94384, mc*1.94384, (int)((iaskn*iaskn)+0.5), bugs, (aballast+100)/100.0, cruise, (int)(temp+0.5) );
 	}
 	else {
-		printf("Not supported protocol %d", nmea_protocol.get() );
+		ESP_LOGW(FNAME,"Not supported protocol %d", nmea_protocol.get() );
 	}
 	int cs = getCheckSum(&str[1]);
 	int i = strlen(str);
@@ -58,39 +59,39 @@ void OpenVario::makeNMEA(char* str, float baro, float dp, float te, float temp, 
 }
 
 void OpenVario::parseNMEA( char *str ){
-    printf("parseNMEA %s\n", str);
+    ESP_LOGI(FNAME,"parseNMEA %s", str);
     if ( nmea_protocol.get() == BORGELT ) {
-		printf("parseNMEA, BORGELT\n");
+		ESP_LOGI(FNAME,"parseNMEA, BORGELT");
 		if (str[3] == 'b') {
-			printf("parseNMEA, BORGELT, ballast modification\n");
+			ESP_LOGI(FNAME,"parseNMEA, BORGELT, ballast modification");
 			float aballast;
 			sscanf(str, "!g,b%f", &aballast);
 			aballast = aballast * 10; // Its obviously only possible to change in fraction's by 10% in CA302 (issue: 464)
-			printf("New Ballast: %f %% of max \n", aballast);
+			ESP_LOGI(FNAME,"New Ballast: %f %% of max ", aballast);
 			float liters = (aballast/100.0) * polar_max_ballast.get();
-			printf("New Ballast in liters: %f \n", liters);
+			ESP_LOGI(FNAME,"New Ballast in liters: %f ", liters);
 			float refw = polar_wingload.get() * polar_wingarea.get();
-			printf("Reference weight: %f \n", refw);
+			ESP_LOGI(FNAME,"Reference weight: %f ", refw);
 			float bal = (100.0*(liters+refw)/refw) - 100;
-			printf("Final new ballast: %f \n", bal);
+			ESP_LOGI(FNAME,"Final new ballast: %f ", bal);
 			ballast.set( bal );
 			_s2f->change_mc_bal();
 		}
 		if (str[3] == 'm') {
-			printf("parseNMEA, BORGELT, MC modification\n");
+			ESP_LOGI(FNAME,"parseNMEA, BORGELT, MC modification");
 			float mc;
 			sscanf(str, "!g,m%f", &mc);
 			mc = mc*0.1 / 1.94384;
-			printf("New MC: %1.1f m/s\n", mc);
+			ESP_LOGI(FNAME,"New MC: %1.1f m/s", mc);
 			MC.set( mc );
 			_s2f->change_mc_bal();
 		}
 		if (str[3] == 'u') {
-			printf("parseNMEA, BORGELT, Bugs modification\n");
+			ESP_LOGI(FNAME,"parseNMEA, BORGELT, Bugs modification");
 			int mybugs;
 			sscanf(str, "!g,u%d", &mybugs);
 			mybugs = 100-mybugs;
-			printf("New Bugs: %d %%\n", mybugs);
+			ESP_LOGI(FNAME,"New Bugs: %d %%", mybugs);
 			bugs.set( mybugs );
 			_s2f->change_mc_bal();
 		}

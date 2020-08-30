@@ -14,7 +14,6 @@
 #include "IpsDisplay.h"
 #include "ESPRotary.h"
 #include "Setup.h"
-#include "SetupVolt.h"
 #include "BatVoltage.h"
 #include "BME280_ESP32_SPI.h"
 

@@ -3,6 +3,7 @@
 #include "freertos/FreeRTOS.h"
 #include <freertos/task.h>
 #include <atomic>
+#include <logdef.h>
 
 const double sigmaAdjust = 255 * 2.0/33;  // 2 Vss
 
@@ -49,7 +50,7 @@ void BMPVario::recalcAvgClimb() {
 		float ac = 0;
 		int ns=0;
 		for( int i=avindexMin, j=(int)(core_climb_history.get()); i>=0 && j>=0; i--, j-- ) {
-			// printf("MST pM= %2.2f  %d\n", avClimbMin[i], i  );
+			// ESP_LOGI(FNAME,"MST pM= %2.2f  %d", avClimbMin[i], i  );
 			if( avClimbMin[i] > core_climb_min.get() ) {
 				ac += avClimbMin[i];
 				ns++;
@@ -66,16 +67,16 @@ double BMPVario::readTE() {
 		return _TEF;
 	bool success;
 	bmpTemp = _bmpTE->readTemperature( success );
-	// printf("BMP temp=%0.1f", bmpTemp );
+	// ESP_LOGI(FNAME,"BMP temp=%0.1f", bmpTemp );
 	_currentAlt = _bmpTE->readAltitude(_qnh);
 	uint64_t rts = esp_timer_get_time();
 	float delta = (float)(rts - lastrts)/1000000.0;   // in seconds
 	if( delta < 0.075 )  // ensure every 100 mS one calculation
 		return _TEF;
 
-	// printf("Vario delta=%f\n", delta );
+	// ESP_LOGI(FNAME,"Vario delta=%f", delta );
 	lastrts = rts;
-	// printf( "TE-Alt %0.1f  NM:", _currentAlt );
+	// ESP_LOGI(FNAME, "TE-Alt %0.1f  NM:", _currentAlt );
 	if( _init  ){
 		vTaskDelay(100 / portTICK_PERIOD_MS);
 		_currentAlt = _bmpTE->readAltitude(_qnh) * 1.03; // we want have some beep when powerd on
@@ -83,25 +84,25 @@ double BMPVario::readTE() {
 		predictAlt = _currentAlt;
 		Altitude = _currentAlt;
 		averageAlt = _currentAlt;
-		// printf("Initial Alt=%0.1f\n",Altitude);
-		ESP_LOGI("bmp", "Initial Alt=%0.1f\n",Altitude );
+		// ESP_LOGI(FNAME,"Initial Alt=%0.1f",Altitude);
+		ESP_LOGI(FNAME, "Initial Alt=%0.1f",Altitude );
 
 		// analogOut();  // set defaults
 		_init = false;
 	}
 	averageAlt += (_currentAlt - averageAlt) * 0.1;
 	double err = (abs(_currentAlt - predictAlt) * 1000) + 1;
-	// printf("BMPVario new alt %0.1f err %0.1f\n", _currentAlt, err);
+	// ESP_LOGI(FNAME,"BMPVario new alt %0.1f err %0.1f", _currentAlt, err);
 	double diff = (abs(_currentAlt - Altitude) * 1000) + 1;
 	// if(diff > 1000000)  // more than 10 m alt diff in 0.1 second not plausible ( > 400 km/h vertical )
 	// 	return _TEF;  // fancy errored value ignored, return last TE
 	double kg = (diff / (err*_errorval + diff)) * _alpha;
 	Altitude += (_currentAlt - Altitude) * kg;
 	double TE = Altitude - lastAltitude;
-	// printf(" TE %0.1f diff %0.1f\n", TE, diff);
+	// ESP_LOGI(FNAME," TE %0.1f diff %0.1f", TE, diff);
 	lastAltitude = Altitude;
 
-	// printf("++++++ DELTA %0.4f\n", delta );
+	// ESP_LOGI(FNAME,"++++++ DELTA %0.4f", delta );
 
 	TEarr[index++] = TE / delta;
 	if (index >= _filter_len ) {
@@ -136,7 +137,7 @@ double BMPVario::readTE() {
 			if( avClimb100MSec[i] > 0 )
 				ac += avClimb100MSec[i];
 			avClimbSec[avindexSec] = ac/10;
-			// printf("- MST pSEC= %2.2f %d\n", avClimbSec[avindexSec], avindexSec );
+			// ESP_LOGI(FNAME,"- MST pSEC= %2.2f %d", avClimbSec[avindexSec], avindexSec );
 			avindexSec++;
 			// every minute
 			if( avindexSec > 60 ) {
@@ -145,7 +146,7 @@ double BMPVario::readTE() {
 				for( int i=0; i<60; i++ )
 					ac +=  avClimbSec[i];
 				avClimbMin[avindexMin] = ac/60;
-				// printf("new MST pM= %2.2f\n", avClimbMin[avindexMin] );
+				// ESP_LOGI(FNAME,"new MST pM= %2.2f", avClimbMin[avindexMin] );
 				avindexMin++;
 				if( avindexMin >= 300 ) { // drop last h
 					for( int i=60; i<300; i++ ) {

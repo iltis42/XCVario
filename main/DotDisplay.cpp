@@ -13,6 +13,7 @@
 #include "sdkconfig.h"
 #include <stdio.h>
 #include <string.h>
+#include <logdef.h>
 
 u8g2_t DotDisplay::u8g2;
 int DotDisplay::tick = 0;
@@ -92,7 +93,7 @@ void DotDisplay::begin() {
 				u8g2_esp32_gpio_and_delay_cb);  // init u8g2 structure
 		break;
 	default:
-		printf("Error, unknown display type %d", _dtype );
+		ESP_LOGE(FNAME,"Error, unknown display type %d", _dtype );
 	}
 
 	u8g2_InitDisplay(&u8g2); // send init sequence to the display, display is in sleep mode after this,
@@ -142,7 +143,7 @@ void DotDisplay::drawDisplay( float te, float ate, float tealt, float temp, floa
 	return;
 	if( _menu )
 			return;
-	// printf("DotDisplay setTE( %f %f )\n", te, ate);
+	// ESP_LOGI(FNAME,"DotDisplay setTE( %f %f )", te, ate);
 	_te = te;
 	_clipte = te;
 	if ( te > _range_clip )
@@ -180,7 +181,7 @@ void DotDisplay::drawDisplay( float te, float ate, float tealt, float temp, floa
     // return;  // TBR
 
 	u8g2_SetFont(&u8g2, u8g2_font_helvB12_tn );
-	// printf( " dis aTE: %0.1f \n", ate );
+	// ESP_LOGI(FNAME, " dis aTE: %0.1f ", ate );
 	sprintf( buf,"%0.1f", ate);
 	u8g2_SetFontMode(&u8g2,0);
 	int x=32;
@@ -322,7 +323,7 @@ void DotDisplay::test( void * arg ) {
 		}
 		_ate = (_te - _ate )*(1.0/_atesec) +_ate;
 		drawDisplay( _te, _ate, 300.0, 20.0, 12.5, 0.0, 120.0, 0.0, false );
-		printf("display test: %f avg: %f %d\n", _te, _ate, forward );
+		ESP_LOGI(FNAME,"display test: %f avg: %f %d", _te, _ate, forward );
 		vTaskDelay(400 / portTICK_PERIOD_MS);
 	}
 }

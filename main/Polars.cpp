@@ -8,6 +8,7 @@
  */
 
 #include "Polars.h"
+#include <logdef.h>
 
 // Format per glider:  { GliderType, Reference Wingload (kg/m2), speed1 (km/h), sink1 (m/s), speed2, sink2, speed3, sink3 , max ballast [liters or kg], wing area [m2] },
 

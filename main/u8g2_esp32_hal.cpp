@@ -11,6 +11,7 @@
 #include <SPI.h>
 #include <esp32-hal-spi.h>
 #include <Arduino.h>
+#include <logdef.h>
 
 static SPIClass *_Spi; // (HSPI);
 #define FREQUENCY 40000000
@@ -27,7 +28,7 @@ static u8g2_esp32_hal_t    u8g2_esp32_hal;  // HAL state data.
  * Initialze the ESP32 HAL.
  */
 void u8g2_esp32_hal_init(u8g2_esp32_hal_t u8g2_esp32_hal_param) {
-	printf("HAL init  ******************\n");
+	ESP_LOGI(FNAME,"HAL init  ******************");
 	u8g2_esp32_hal = u8g2_esp32_hal_param;
 } // u8g2_esp32_hal_init
 
@@ -36,25 +37,25 @@ void u8g2_esp32_hal_init(u8g2_esp32_hal_t u8g2_esp32_hal_param) {
  * to handle SPI communications.
  */
 uint8_t u8g2_esp32_spi_byte_cb(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr) {
-	// printf("HAL: spi_byte_cb: Received a msg: %d\n", msg ); // arg_int: %d, arg_ptr: %p\n", msg, arg_int, arg_ptr);
+	// ESP_LOGI(FNAME,"HAL: spi_byte_cb: Received a msg: %d", msg ); // arg_int: %d, arg_ptr: %p\n", msg, arg_int, arg_ptr);
 	switch(msg) {
 
 	case U8X8_MSG_CAD_END_TRANSFER:
 	{
-		// printf("U8X8_MSG_CAD_END_TRANSFER\n");
+		// ESP_LOGI(FNAME,"U8X8_MSG_CAD_END_TRANSFER");
 	}
 	break;
 
 	case U8X8_MSG_BYTE_SET_DC:
 	{
-		// printf("HAL: Set level D/C: %d\n", arg_int );
+		// ESP_LOGI(FNAME,"HAL: Set level D/C: %d", arg_int );
 		digitalWrite(u8g2_esp32_hal.dc, arg_int);
 	}
 	break;
 
 	case U8X8_MSG_BYTE_INIT:
 	{
-		printf("U8X8_MSG_BYTE_INIT: Init SPI\n");
+		ESP_LOGI(FNAME,"U8X8_MSG_BYTE_INIT: Init SPI");
 		_Spi = new SPIClass(HSPI);
 		_Spi->begin(u8g2_esp32_hal.clk, u8g2_esp32_hal.miso, u8g2_esp32_hal.mosi, u8g2_esp32_hal.cs );
 		_Spi->setHwCs( true );
@@ -79,7 +80,7 @@ uint8_t u8g2_esp32_spi_byte_cb(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void 
 
 	case U8X8_MSG_BYTE_SEND:
 	{
-		// printf("U8X8_MSG_BYTE_SEND len:%d CS:%d\n", arg_int, u8g2_esp32_hal.cs);
+		// ESP_LOGI(FNAME,"U8X8_MSG_BYTE_SEND len:%d CS:%d", arg_int, u8g2_esp32_hal.cs);
 		_Spi->beginTransaction( spis );
 		digitalWrite(u8g2_esp32_hal.cs, LOW);
 		_Spi->transferBytes( (uint8_t *)arg_ptr, 0, arg_int );
@@ -106,43 +107,43 @@ uint8_t u8g2_esp32_i2c_byte_cb(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void 
  * to handle callbacks for GPIO and delay functions.
  */
 uint8_t u8g2_esp32_gpio_and_delay_cb(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr) {
-	// printf("gpio_and_delay_cb: Received a msg  %d\n", msg );
+	// ESP_LOGI(FNAME,"gpio_and_delay_cb: Received a msg  %d", msg );
 
 	switch(msg) {
 	// Initialize the GPIO and DELAY HAL functions.  If the pins for DC and RESET have been
 	// specified then we define those pins as GPIO outputs.
 	case U8X8_MSG_GPIO_AND_DELAY_INIT: {
-		printf("HAL: Init GPIO dc:%d res:%d cs:%d\n", u8g2_esp32_hal.dc,u8g2_esp32_hal.reset,u8g2_esp32_hal.cs );
+		ESP_LOGI(FNAME,"HAL: Init GPIO dc:%d res:%d cs:%d", u8g2_esp32_hal.dc,u8g2_esp32_hal.reset,u8g2_esp32_hal.cs );
 		break;
 	}
 	// Set the GPIO reset pin to the value passed in through arg_int.
 	case U8X8_MSG_GPIO_RESET:
-		printf("HAL: Set level RESET: %d\n", arg_int );
+		ESP_LOGI(FNAME,"HAL: Set level RESET: %d", arg_int );
 		digitalWrite(u8g2_esp32_hal.reset, arg_int);
 		break;
 		// Set the GPIO client select pin to the value passed in through arg_int.
 	case U8X8_MSG_GPIO_CS:
-		printf("HAL: Set level CS: %d\n", arg_int );
+		ESP_LOGI(FNAME,"HAL: Set level CS: %d", arg_int );
 		digitalWrite(u8g2_esp32_hal.cs, arg_int);
 		break;
 		// Set the Software I²C pin to the value passed in through arg_int.
 	case U8X8_MSG_GPIO_I2C_CLOCK:
 		if (u8g2_esp32_hal.scl != U8G2_ESP32_HAL_UNDEFINED) {
-			// printf("Set level I2C SCL: %d\n", arg_int );
+			// ESP_LOGI(FNAME,"Set level I2C SCL: %d", arg_int );
 			// gpio_set_level(u8g2_esp32_hal.scl, arg_int);
 		}
 		break;
 		// Set the Software I²C pin to the value passed in through arg_int.
 	case U8X8_MSG_GPIO_I2C_DATA:
 		if (u8g2_esp32_hal.sda != U8G2_ESP32_HAL_UNDEFINED) {
-			// printf("Set level I2C SCL: %d\n", arg_int );
+			// ESP_LOGI(FNAME,"Set level I2C SCL: %d", arg_int );
 			// gpio_set_level(u8g2_esp32_hal.sda, arg_int);
 		}
 		break;
 
 		// Delay for the number of milliseconds passed in through arg_int.
 	case U8X8_MSG_DELAY_MILLI:
-		printf("HAL: Delay: %d\n", arg_int );
+		ESP_LOGI(FNAME,"HAL: Delay: %d", arg_int );
 		vTaskDelay(arg_int/portTICK_PERIOD_MS);
 		break;
 	}

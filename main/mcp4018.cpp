@@ -1,5 +1,6 @@
 #include "mcp4018.h"
 #include "I2C.h"
+#include <logdef.h>
 
 //Create instance  MCP4018(gpio_num_t sda, gpio_num_t scl);
 MCP4018::MCP4018(): I2C()
@@ -16,11 +17,11 @@ bool MCP4018::begin(gpio_num_t sda, gpio_num_t scl)
 	// init( sda, scl );
 	// return true;
 	if( readWiper( wiper ) ) {
-		printf("MCP4018 wiper=%d\n", wiper );
+		ESP_LOGI(FNAME,"MCP4018 wiper=%d", wiper );
 		return(true);
 	}
 	else {
-		printf("MCP4018 Error reading wiper!\n");
+		ESP_LOGE(FNAME,"MCP4018 Error reading wiper!");
 	    return( false );
 	}
 
@@ -56,12 +57,12 @@ bool MCP4018::readWiper( uint16_t & val ) {
 	esp_err_t ret = read8bit( MPC4018_I2C_ADDR, &val );
 	// val = val>>1;  // issue found, fixed
 	if( ret == ESP_OK ){
-		// printf("MCP4018 read wiper %d\n", val);
+		// ESP_LOGI(FNAME,"MCP4018 read wiper %d", val);
 		return true;
 	}
 	else
 	{
-		printf("MCP4018 Error reading wiper, error count %d\n", errorcount);
+		ESP_LOGE(FNAME,"MCP4018 Error reading wiper, error count %d", errorcount);
 		errorcount++;
 	    return false;
 	}
@@ -70,12 +71,12 @@ bool MCP4018::readWiper( uint16_t & val ) {
 bool MCP4018::writeWiper( uint16_t val ) {
 	esp_err_t ret = write8bit( MPC4018_I2C_ADDR, val );
 	if( ret == ESP_OK ){
-		// printf("MCP4018 write wiper %d\n", val);
+		// ESP_LOGI(FNAME,"MCP4018 write wiper %d", val);
 		return true;
 	}
 	else
 	{
-		printf("MCP4018 Error writing wiper, error count %d\n", errorcount);
+		ESP_LOGE(FNAME,"MCP4018 Error writing wiper, error count %d", errorcount);
 		errorcount++;
 	    return false;
 	}

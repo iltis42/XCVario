@@ -1,5 +1,6 @@
 #include "mcp3221.h"
 #include "I2C.h"
+#include <logdef.h>
 
 //Create instance  MCP3221(gpio_num_t sda, gpio_num_t scl);
 MCP3221::MCP3221(): I2C()
@@ -26,9 +27,9 @@ float MCP3221::readAVG( float alpha ) {
 
 	uint16_t newval;
 	esp_err_t ret = readRaw(newval);
-	// printf("%d\n", newval );
+	// ESP_LOGI(FNAME,"%d", newval );
 	if( ret == ESP_OK ){
-		// printf( "%d\n", newval );
+		// ESP_LOGI(FNAME, "%d", newval );
 		if ( exponential_average == 0 ){
 			exponential_average = newval;
 		}

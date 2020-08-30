@@ -3,6 +3,7 @@
 #include "I2C.h"
 #include <string.h>
 #include "sdkconfig.h"
+#include <logdef.h>
 
 #define I2C_MASTER_TX_BUF_DISABLE    0   /*!< I2C master do not need buffer */
 #define I2C_MASTER_RX_BUF_DISABLE    0   /*!< I2C master do not need buffer */
@@ -11,7 +12,7 @@ xSemaphoreHandle I2C::mutex = 0;
 
 void I2C::init(gpio_num_t sda, gpio_num_t scl, uint32_t frequency, i2c_port_t num)
 {
-	printf("I2C(sda=%02x  scl=%02x)\n", sda, scl);
+	ESP_LOGI(FNAME,"I2C(sda=%02x  scl=%02x)", sda, scl);
 	bool error=false;
 	_sda=sda;
 	_scl=scl;
@@ -27,20 +28,20 @@ void I2C::init(gpio_num_t sda, gpio_num_t scl, uint32_t frequency, i2c_port_t nu
 	esp_err_t ret = i2c_param_config(_num, &conf);
 	mutex = xSemaphoreCreateMutex();
 	if( mutex == 0 )
-		printf("Error creating I2C Semaphore\n");
+		ESP_LOGE(FNAME,"Error creating I2C Semaphore");
 	else
-		printf("I2C Semaphore successfully created\n");
+		ESP_LOGI(FNAME,"I2C Semaphore successfully created");
 	if( ret == ESP_FAIL){
-				printf("I2C ERROR param config: %x\n", ret);
+				ESP_LOGE(FNAME,"I2C ERROR param config: %x", ret);
 				error=true;
 			}
 	ret = i2c_driver_install(_num, conf.mode, I2C_MASTER_RX_BUF_DISABLE, I2C_MASTER_TX_BUF_DISABLE, 0);
 	if( ret == ESP_FAIL){
-			printf("I2C ERROR driver install: %x\n", ret);
+			ESP_LOGE(FNAME,"I2C ERROR driver install: %x", ret);
 			error=true;
 		}
 	if(!error){
-		printf("I2C init SUCCESS\n");
+		ESP_LOGI(FNAME,"I2C init SUCCESS");
 	}
 }
 
@@ -48,7 +49,7 @@ esp_err_t I2C::write(uint8_t byte, int ack, i2c_rw_t rw)
 {
 	esp_err_t ret = i2c_master_write_byte(cmd, (byte<<1)| rw , ack);
 	if( ret == ESP_FAIL){
-		printf("I2C ERROR write byte: %x\n", ret);
+		ESP_LOGE(FNAME,"I2C ERROR write byte: %x", ret);
 	}
 	return ret;
 }
@@ -57,7 +58,7 @@ esp_err_t I2C::write_byte(uint8_t byte, int ack)
 {
 	esp_err_t ret = i2c_master_write_byte(cmd, byte , ack);
 	if( ret == ESP_FAIL){
-		printf("I2C ERROR write data byte: %x\n", ret);
+		ESP_LOGE(FNAME,"I2C ERROR write data byte: %x", ret);
 	}
 	return ret;
 }
@@ -75,7 +76,7 @@ esp_err_t I2C::write16bit( uint8_t addr, uint16_t word )
 	stop();
 	esp_err_t ret = i2c_master_cmd_begin(_num, cmd, 100 / portTICK_RATE_MS);
     if( ret == ESP_FAIL){
-		printf("I2C ERROR write 16 bit: %x\n", ret);
+		ESP_LOGE(FNAME,"I2C ERROR write 16 bit: %x", ret);
 	}
     i2c_cmd_link_delete(cmd);
     xSemaphoreGive(mutex);
@@ -93,7 +94,7 @@ esp_err_t I2C::write8bit( uint8_t addr, uint16_t word )
 	stop();
 	esp_err_t ret = i2c_master_cmd_begin(_num, cmd, 100 / portTICK_RATE_MS);
     if( ret == ESP_FAIL){
-		printf("I2C ERROR write 8 bit: %x\n", ret);
+		ESP_LOGE(FNAME,"I2C ERROR write 8 bit: %x", ret);
 		;
 	}
     i2c_cmd_link_delete(cmd);
@@ -114,7 +115,7 @@ esp_err_t I2C::read16bit( uint8_t addr, uint16_t *word )
 	stop();
 	esp_err_t ret = i2c_master_cmd_begin(_num, cmd, 100 / portTICK_RATE_MS);
     if( ret == ESP_FAIL){
-		printf("I2C ERROR read 16 bit: %x\n", ret);
+		ESP_LOGE(FNAME,"I2C ERROR read 16 bit: %x", ret);
 	}
     *word = (datah << 8) | datal;
     i2c_cmd_link_delete(cmd);
@@ -133,7 +134,7 @@ esp_err_t I2C::read8bit( uint8_t addr, uint16_t *word )
 	stop();
 	esp_err_t ret = i2c_master_cmd_begin(_num, cmd, 100 / portTICK_RATE_MS);
     if( ret == ESP_FAIL){
-		printf("I2C ERROR read 8 bit: %x\n", ret);
+		ESP_LOGE(FNAME,"I2C ERROR read 8 bit: %x", ret);
     	;
 	}
     *word = (uint16_t)datal;
@@ -149,13 +150,13 @@ esp_err_t I2C::scan()
 	cmd = i2c_cmd_link_create();
 	for( uint8_t addr=3; addr<0x78; addr++ )
 	{
-		printf("scan a %02x sca %02x scl %02x\n", addr, _sda, _scl );
+		ESP_LOGI(FNAME,"scan a %02x sca %02x scl %02x", addr, _sda, _scl );
 		start();
 		esp_err_t ret = write( addr, true );
 		stop();
 		if( ret == ESP_OK )
 		{
-			printf("Found I2C address: %02x\n", addr);
+			ESP_LOGI(FNAME,"Found I2C address: %02x", addr);
 			found = true;
 			vTaskDelay(1000 / portTICK_PERIOD_MS);
 		}
@@ -164,7 +165,7 @@ esp_err_t I2C::scan()
 	i2c_cmd_link_delete(cmd);
 	if( !found )
 	{
-		printf("I2C scan found nothing");
+		ESP_LOGI(FNAME,"I2C scan found nothing");
 	}
 	vTaskDelay(5000 / portTICK_PERIOD_MS);
 	return ESP_OK;
@@ -174,7 +175,7 @@ esp_err_t I2C::read(uint8_t *byte, int ack) //(i2c_ack_type_t)
 {
 	esp_err_t ret = i2c_master_read_byte(cmd, byte, (i2c_ack_type_t)ack); //Read data back on B
 	if (ret == ESP_FAIL) {
-		printf("ERROR master read byte I2C link: %x\n", ret);
+		ESP_LOGE(FNAME,"ERROR master read byte I2C link: %x", ret);
 	}
 	return ret;
 }

@@ -21,7 +21,7 @@ extern "C" {
 #include "IpsDisplay.h"
 #include "Setup.h"
 #include "OTA.h"
-
+#include <logdef.h>
 
 OTA::OTA(){
 	pressed = false;
@@ -33,18 +33,18 @@ void OTA::begin(ESPRotary * aRotary){
 }
 
 void OTA::press() {
-	printf("OTA::press()\n");
+	ESP_LOGI(FNAME,"OTA::press()");
 	pressed = true;
 }
 
 void OTA::release() {
-	printf("OTA::release()\n");
+	ESP_LOGI(FNAME,"OTA::release()");
 	// pressed = false;
 }
 
 // OTA
 void OTA::doSoftwareUpdate(IpsDisplay * p ){
-	printf("Now start Wifi OTA\n");
+	ESP_LOGI(FNAME,"Now start Wifi OTA");
 	// xTaskCreate(&systemRebootTask, "rebootTask", 2048, NULL, 5, NULL);
 	p->clear();
 	int line=1;

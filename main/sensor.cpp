@@ -33,7 +33,6 @@
 #include "sensor.h"
 #include "S2F.h"
 #include "Version.h"
-#include "Switch.h"
 #include "Polars.h"
 
 #include <SPI.h>
@@ -85,7 +84,7 @@ S2F Speed2Fly;
 OpenVario OV( &Speed2Fly );
 
 BatVoltage ADC;
-Switch VaSoSW;
+
 TaskHandle_t *bpid;
 TaskHandle_t *apid;
 TaskHandle_t *tpid;
@@ -111,7 +110,6 @@ static float aCl = 0;
 static float netto = 0;
 static float as2f = 0;
 static float s2f_delta = 0;
-static bool s2fmode = false;
 static float polar_sink = 0;
 static bool  standard_setting = false;
 long millisec = millis();
@@ -138,7 +136,7 @@ void drawDisplay(void *pvParameters){
 				airspeed = ias;
 			else if( airspeed_mode.get() == MODE_TAS )
 				airspeed = tas;
-			display.drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, aCl, s2fmode, standard_setting );
+			display.drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, aCl, Audio.getS2FMode(), standard_setting );
 		}
 		vTaskDelay(30);
 		if( uxTaskGetStackHighWaterMark( dpid ) < 1024  )
@@ -152,11 +150,14 @@ void readBMP(void *pvParameters){
 	while (1)
 	{
 		TickType_t xLastWakeTime = xTaskGetTickCount();
+		xSemaphoreTake(xMutex,portMAX_DELAY );
+		TE = bmpVario.readTE();  // 10x per second
+		Audio.setValues( TE, s2f_delta, ias );
+		xSemaphoreGive(xMutex);
 		if( Audio.getDisable() != true )
 		{
-			xSemaphoreTake(xMutex,portMAX_DELAY );
-			TE = bmpVario.readTE();  // 10x per second
 			if( (count++ % 2) == 0 ) {
+				xSemaphoreTake(xMutex,portMAX_DELAY );
 				baroP = bmpBA.readPressure();   // 5x per second
 				dynamicP = MP5004DP.readPascal(30);
 				float alt_standard = bmpBA.calcAVGAltitudeSTD( baroP );
@@ -188,11 +189,11 @@ void readBMP(void *pvParameters){
 
 			    // reduce also messages from 10 per second to 5 per second to reduce load in XCSoar
 				char lb[120];
-				OV.makeNMEA( lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), s2fmode  );
+				OV.makeNMEA( lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Audio.getS2FMode()  );
 				btsender.send( lb );
 				vTaskDelay(2);
+				xSemaphoreGive(xMutex);
 			}
-			xSemaphoreGive(xMutex);
 		}
 
 		if( uxTaskGetStackHighWaterMark( bpid )  < 1024 )
@@ -200,35 +201,6 @@ void readBMP(void *pvParameters){
 
 		esp_task_wdt_reset();
 		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
-	}
-}
-
-void audioTask(void *pvParameters){
-	while (1) {
-		TickType_t xLastWakeTime = xTaskGetTickCount();
-		switch( audio_mode.get() ) {
-		case 0: // Vario
-			s2fmode = false;
-			break;
-		case 1: // S2F
-			s2fmode = true;
-			break;
-		case 2: // Switch
-			s2fmode = VaSoSW.isClosed();
-			break;
-		case 3: // Auto
-			if( (ias > s2f_speed.get())  or VaSoSW.isClosed())
-				s2fmode = true;
-			else
-				s2fmode = false;
-			break;
-		}
-		Audio.setS2FMode( s2fmode );
-		if( Audio.getDisable() != true )
-		{
-			Audio.setValues( TE, s2f_delta );
-		}
-		vTaskDelayUntil(&xLastWakeTime, 50/portTICK_PERIOD_MS);
 	}
 }
 
@@ -447,7 +419,7 @@ void sensor(void *args){
 
 	bmpVario.begin( &bmpTE );
 	bmpVario.setup();
-	VaSoSW.begin( GPIO_NUM_12 );
+
 	esp_task_wdt_reset();
 
 	ESP_LOGI(FNAME,"Audio begin");
@@ -635,9 +607,10 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
 	xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096*2, NULL, 5, bpid, 0);  // 20
-	xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 6, apid, 0);  // 30
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 4096*2, NULL, 4, dpid, 0);  // 10
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 4096, NULL, 3, tpid, 0);
+
+	Audio.startAudio();
 
 	for( int i=0; i<36; i++ ) {
 			if( i != 23 && i < 6 && i > 12  )

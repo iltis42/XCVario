@@ -555,7 +555,7 @@ void SetupMenu::setup( )
 	ade->addMenu( dt );
 
 	SetupMenuSelect * tch = new SetupMenuSelect( 	"Tone Chopping", 0, false, 0 , true, &chopping_mode );
-	tch->setHelp(PROGMEM"Select tone chopping option for Vario and or S2F");
+	tch->setHelp(PROGMEM"Select tone chopping option on positive values for Vario and or S2F");
 	tch->addEntry( "Disabled");             // 0
 	tch->addEntry( "Vario only");           // 1
 	tch->addEntry( "S2F only");             // 2

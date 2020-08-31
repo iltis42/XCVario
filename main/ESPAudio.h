@@ -25,51 +25,37 @@ public:
 	virtual ~ESPAudio();
 	void begin( dac_channel_t ch=DAC_CHANNEL_1, gpio_num_t button=GPIO_NUM_0 );
 	void restart();
-	void setValues( float te, float s2fd, bool fromtest=false );
+	void startAudio();
+	void setValues( float te, float s2fd, float ias, bool fromtest=false );
 	void test( float to, float from );
-	void mute( bool mt=true ) { _mute = mt; };
+	inline void mute( bool mt=true ) { _mute = mt; };
 	void disable( bool disable=true );
-	bool getDisable() { return _disable; };
+	inline bool getDisable() { return _disable; };  // Just store the disable state and return on demand, Audio itself now can play in setup mode
 	void setup();
-	void setS2FMode( bool s2f ) { _s2f_mode = s2f; };  // True = S2F, False = Vario
-	bool getS2FMode() { return _s2f_mode; }
+	inline bool getS2FMode() { return _s2f_mode; }
 	void incVolume( int steps );
 	void decVolume( int steps );
 	void setVolume( int vol );
-	int  getVolume() { return wiper; };
+	inline int  getVolume() { return wiper; };
 	bool selfTest();
 	inline void setTestmode( bool mode ) { _testmode = mode; }
 
 private:
 	void dac_cosine_enable(dac_channel_t channel, bool enable=true);
-	void dac_frequency_set(int clk_8m_div, int frequency_step);
+	inline void dac_frequency_set(int clk_8m_div, int frequency_step);
 	void dac_scale_set(dac_channel_t channel, int scale);
 	void dac_offset_set(dac_channel_t channel, int offset);
 	void dac_invert_set(dac_channel_t channel, int invert);
 	static void dactask(void* arg);
 	static void modtask(void* arg );
-	static void voltask(void* arg );
-	static dac_channel_t _ch;
-	dac_channel_t getCh() { return _ch; };
 	static void adjustVolume();
-	float getTE() { return _te; };
-	float getS2Fd() { return _te; };
-	float getCenter() { return _center; };
-	float getVariation() { return _variation; };
-	float getDeadBand() { return _deadband; };
-	int getMute() { return _mute; };
     static void enableAmplifier( bool enable );  // frue ON, false OFF
-
-	inline gpio_num_t getButton() { return _button; }
+    static void calcS2Fmode();
 	bool inDeadBand( float te );
-	inline bool getDeadMute() { return _dead_mute; }
-	void setDeadMute( bool mt ) {
-		printf("sdm %d\n", mt );
-		_dead_mute = mt; }
-	void setMute( bool mt ) { _mute = mt; };
 	static bool lookup( float f, int& div, int &step );
 
-	float _te;
+	static dac_channel_t _ch;
+	static float _te;
 	static bool _s2f_mode;
 	static uint8_t _tonemode;
 	static uint8_t _chopping_mode;
@@ -89,8 +75,15 @@ private:
 	bool _dead_mute;
 	float _test_ms;
 	float _old_ms;
+	static float _ias;
     static uint16_t wiper;
     static uint16_t cur_wiper;
+    static float maxf;
+    static float minf;
+    static int prev_div;
+    static int prev_step;
+    static bool deadband_active;
+
 };
 
 typedef struct lookup {  uint16_t f; uint8_t div; uint8_t step; } t_lookup_entry;

@@ -27,6 +27,7 @@
 #include <Arduino.h>
 #include <vector>
 #include <logdef.h>
+#include "Switch.h"
 
 
 float ESPAudio::_range = 5.0;
@@ -39,8 +40,17 @@ uint16_t ESPAudio::wiper;
 uint16_t ESPAudio::cur_wiper;
 bool ESPAudio::sound_on;
 bool ESPAudio::_testmode;
+float ESPAudio::maxf = 2000;
+float ESPAudio::minf = 250;
+float ESPAudio::_te = 0;
+float ESPAudio::_ias = 0;
+int ESPAudio::prev_div = 0;
+int ESPAudio::prev_step = 0;
+bool ESPAudio::deadband_active = false;
+
 
 MCP4018 Poti;
+Switch VaSoSW;
 
 
 ESPAudio::ESPAudio( ) {
@@ -229,7 +239,7 @@ const int invert = 2;        // invert MSB to get sine waveform
 void ESPAudio::dac_cosine_enable(dac_channel_t channel, bool enable)
 {
 	// Enable tone generator common to both channels
-	ESP_LOGI(FNAME,"ESPAudio::dac_cosine_enable ch: %d", channel);
+	ESP_LOGD(FNAME,"ESPAudio::dac_cosine_enable ch: %d", channel);
 	SET_PERI_REG_MASK(SENS_SAR_DAC_CTRL1_REG, SENS_SW_TONE_EN);
 	switch(channel) {
 	case DAC_CHANNEL_1:
@@ -249,35 +259,40 @@ void ESPAudio::dac_cosine_enable(dac_channel_t channel, bool enable)
 		SET_PERI_REG_BITS(SENS_SAR_DAC_CTRL2_REG, SENS_DAC_INV2, 2, SENS_DAC_INV2_S);
 		break;
 	default :
-		ESP_LOGI(FNAME,"Channel %d", channel);
+		ESP_LOGD(FNAME,"Channel %d", channel);
 	}
 }
 
 bool ESPAudio::selfTest(){
-	ESP_LOGI(FNAME,"ESPAudio::selfTest");
-	uint16_t awiper;
-	bool ret = Poti.readWiper( awiper );
-	ESP_LOGI(FNAME,"readWiper val=%d ret=%d cur=%d", awiper, ret, cur_wiper );
-	if( ret == false )
+	ESP_LOGD(FNAME,"ESPAudio::selfTest");
+	uint16_t getwiper;
+	uint16_t setwiper = ((default_volume.get() * 100.0) / 128) -1 ;
+	Poti.writeWiper( setwiper );
+	bool ret = Poti.readWiper( getwiper );
+	if( ret == false ) {
+		ESP_LOGD(FNAME,"readWiper returned error");
 		return false;
-	if( awiper != cur_wiper )  // begin sets already cur_wiper
+	}
+	if( getwiper != setwiper )  // begin sets already cur_wiperw
+	{
+		ESP_LOGD(FNAME,"readWiper returned wrong setting set=%d get=%d", setwiper, getwiper );
 		ret = false;
+	}
 	else
 		ret = true;
-	// Tone test, beep 440 Hz 1 second
-	_testmode=true;  // disable task for modulation
-	Poti.writeWiper( ((default_volume.get() * 100.0) / 128) -1 );
+
 	dac_output_enable(_ch);
 	for( float f=261.62; f<1046.51; f=f*1.03){
-		// ESP_LOGI(FNAME,"f=%f",f);
+		ESP_LOGD(FNAME,"f=%f",f);
 		Audio.dac_frequency_set(clk_8m_div, int(f/freq_step) );
 		delay(30);
 		esp_task_wdt_reset();
 	}
+
 	delay(200);
 	Poti.writeWiper( 0 );
-	dac_output_disable(_ch);
-	_testmode=false;
+	Audio.dac_frequency_set(clk_8m_div, int(_center/freq_step) );
+	_testmode=true;
 	return ret;
 }
 
@@ -291,6 +306,7 @@ bool ESPAudio::selfTest(){
  */
 void ESPAudio::dac_frequency_set(int adiv, int frequency_step)
 {
+	ESP_LOGD(FNAME,"ESPAudio::dac_frequency_set( div:%d step:%d )", adiv, frequency_step );
 	REG_SET_FIELD(RTC_CNTL_CLK_CONF_REG, RTC_CNTL_CK8M_DIV_SEL, adiv);
 	SET_PERI_REG_BITS(SENS_SAR_DAC_CTRL1_REG, SENS_SW_FSTEP, frequency_step, SENS_SW_FSTEP_S);
 }
@@ -315,7 +331,7 @@ void ESPAudio::dac_scale_set(dac_channel_t channel, int scale)
 		SET_PERI_REG_BITS(SENS_SAR_DAC_CTRL2_REG, SENS_DAC_SCALE2, scale, SENS_DAC_SCALE2_S);
 		break;
 	default :
-		ESP_LOGI(FNAME,"Channel %d", channel);
+		ESP_LOGD(FNAME,"Channel %d", channel);
 	}
 }
 
@@ -336,7 +352,7 @@ void ESPAudio::dac_offset_set(dac_channel_t channel, int offset)
 		SET_PERI_REG_BITS(SENS_SAR_DAC_CTRL2_REG, SENS_DAC_DC2, offset, SENS_DAC_DC2_S);
 		break;
 	default :
-		ESP_LOGI(FNAME,"Channel %d", channel);
+		ESP_LOGD(FNAME,"Channel %d", channel);
 	}
 }
 
@@ -352,7 +368,7 @@ void ESPAudio::dac_offset_set(dac_channel_t channel, int offset)
  */
 void ESPAudio::dac_invert_set(dac_channel_t channel, int invert)
 {
-	ESP_LOGI(FNAME,"DAC invert: channel %d, invert: %d", channel, invert);
+	ESP_LOGD(FNAME,"DAC invert: channel %d, invert: %d", channel, invert);
 	switch(channel) {
 	case DAC_CHANNEL_1:
 		SET_PERI_REG_BITS(SENS_SAR_DAC_CTRL2_REG, SENS_DAC_INV1, invert, SENS_DAC_INV1_S);
@@ -361,7 +377,7 @@ void ESPAudio::dac_invert_set(dac_channel_t channel, int invert)
 		SET_PERI_REG_BITS(SENS_SAR_DAC_CTRL2_REG, SENS_DAC_INV2, invert, SENS_DAC_INV2_S);
 		break;
 	default :
-		ESP_LOGI(FNAME,"Channel %d", channel);
+		ESP_LOGD(FNAME,"Channel %d", channel);
 	}
 }
 
@@ -427,19 +443,18 @@ void ESPAudio::modtask(void* arg )
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		tickmod++;
 		hightone = false;
-		float te = Audio.getTE();
-		if ( te > 0 )
+		if ( _te > 0 )
 			if ( (tickmod & 1) == 1 )
 				hightone = true;
 		int delay = 100;
 		if ( !hightone )
 		{
 			int delaydelta = 0;
-			if (te > 0.05 ){
+			if (_te > 0.05 ){
 				if( _s2f_mode )
-					delaydelta = del * 0.8 *(te/5.0);
+					delaydelta = del * 0.8 *(_te/5.0);
 				else
-					delaydelta = del * 0.8 *(te/_range);
+					delaydelta = del * 0.8 *(_te/_range);
 			}
 			delay = int( del - delaydelta + 0.5 );
 		}
@@ -449,7 +464,7 @@ void ESPAudio::modtask(void* arg )
 
 void ESPAudio::incVolume( int steps ) {
 	steps = int( 1+ ( (float)wiper/8.0 ))*steps;
-	ESP_LOGI(FNAME,"steps %d wiper %d", steps, wiper );
+	// ESP_LOGD(FNAME,"steps %d wiper %d", steps, wiper );
 	while( steps && (wiper > 0) ){
 		wiper--;
 		steps--;
@@ -473,7 +488,7 @@ bool output_enable = false;
 
 void  ESPAudio::adjustVolume(){
 	if( cur_wiper != wiper ) {
-		ESP_LOGI(FNAME,"*****  SET WIPER=%d", wiper );
+		ESP_LOGD(FNAME,"ESPAudio::adjustVolume( %d )", wiper );
 		uint16_t w;
 		if( wiper == 0 ) {
 			w=0;
@@ -483,23 +498,39 @@ void  ESPAudio::adjustVolume(){
 			w=wiper-1;
 			enableAmplifier( true );
 		}
-		if( sound_on ) {
-			Poti.writeWiper( w );
-		}
+		Poti.writeWiper( w );
 		cur_wiper = wiper;
 	}
 }
 
-void ESPAudio::voltask(void* arg )
-{
-	while(1){
-		TickType_t xLastWakeTime = xTaskGetTickCount();
-		adjustVolume();
-		vTaskDelayUntil(&xLastWakeTime, 50/portTICK_PERIOD_MS);
-	}
+
+
+void ESPAudio::startAudio(){
+	_testmode = false;
+	xTaskCreate(modtask, "modtask", 1024*2, NULL, 31, NULL);
+	xTaskCreate(dactask, "dactask", 1024*2, NULL, 31, NULL);
 }
 
 
+void ESPAudio::calcS2Fmode(){
+	switch( audio_mode.get() ) {
+			case 0: // Vario
+				_s2f_mode = false;
+				break;
+			case 1: // S2F
+				_s2f_mode = true;
+				break;
+			case 2: // Switch
+				_s2f_mode = VaSoSW.isClosed();
+				break;
+			case 3: // Auto
+				if( (_ias > s2f_speed.get())  or VaSoSW.isClosed())
+					_s2f_mode = true;
+				else
+					_s2f_mode = false;
+				break;
+			}
+}
 
 void ESPAudio::dactask(void* arg )
 {
@@ -507,71 +538,82 @@ void ESPAudio::dactask(void* arg )
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		tick++;
 		if( !_testmode ) {
-			float te = Audio.getTE();
-			float max;
-			if ( te > 0 )
-				max = Audio.getCenter() * Audio.getVariation();
-			else
-				max = Audio.getCenter() - (Audio.getCenter() / Audio.getVariation());
-			float f;
-			if( _s2f_mode )
-				f = (float)Audio.getCenter() + ( (te/5.0 ) * max );
-			else
-				f = (float)Audio.getCenter() + ( (te/_range ) * max );
-			// ESP_LOGI(FNAME,"te: %f; f=%f", te, f);
+			if( (tick % 5) == 0 )
+				calcS2Fmode();
 			bool sound=true;
+			float f;
 			int step;
 			int div;
-			if( f < 800.0 ) {
-				lookup( f, div, step );
-			}
-			else {
-				step = int( (f/freq_step ) + 0.5);
-				div = clk_8m_div;
-			}
-			if( Audio.inDeadBand(te) || Audio.getMute()  ){
-				sound = false;
-				enableAmplifier(false);
-			}
-			else{
-				if( wiper != 0 )
-					enableAmplifier(true);
-				if( hightone && (_tonemode == 1)  ){
-					if( f < 800.0 ) {
-						lookup( f*_high_tone_var, div, step );
-					}
-					else {
-						step = int( (f*_high_tone_var/freq_step) + 0.5);
-						div = clk_8m_div;
-					}
+			if( (Audio.inDeadBand(_te) || (wiper == 0 ) ) && !_testmode ){
+				if( !deadband_active ) {
+					ESP_LOGD(FNAME,"Audio in DeadBand true");
+					enableAmplifier(false);
+					deadband_active = true;
 				}
-				else if( hightone && (_tonemode == 0) ){
+				sound = false;
+			}
+			else if( !Audio.inDeadBand(_te) || wiper > 0 ){
+				if( deadband_active ) {
+					ESP_LOGD(FNAME,"Audio in DeadBand false");
+					enableAmplifier(true);
+					deadband_active = false;
+				}
+				if( hightone && (_tonemode == 0) ){
 					if( (_chopping_mode == BOTH_CHOP) ||
-						(_s2f_mode && (_chopping_mode == S2F_CHOP)) ||
-						(!_s2f_mode && (_chopping_mode == VARIO_CHOP)) ) {
+						(_s2f_mode && (_chopping_mode == S2F_CHOP)) ||	(!_s2f_mode && (_chopping_mode == VARIO_CHOP)) ) {
 						sound = false;
 					}
 				}
 			}
 
 			if( sound ){
-				if( !sound_on ) {
+				if( !sound_on  && (cur_wiper != wiper) ) {
+					ESP_LOGD(FNAME, "sound on wiper: %d", wiper );
 					Poti.writeWiper( wiper );
+					cur_wiper = wiper;
 					sound_on = true;
 				}
-			}
-			else{
+				float max;
+				if ( _te > 0 )
+					max = maxf;
+				else
+					max = minf;
+
+				float range = _range;
+				if( _s2f_mode )
+					range = 5.0;
+				f = center_freq.get() + ( (_te/range ) * max );
+
+				float var = 1.0;
+				if( hightone && (_tonemode == 1)  )
+					var = _high_tone_var;
+
+				if( f < 800.0 ) {
+					lookup( f*var, div, step );
+				}
+				else {
+					step = int( (f*var/freq_step) + 0.5);
+					div = clk_8m_div;
+				}
+
+				if ( prev_div != div || prev_step != step ) {
+					prev_div = div;
+					prev_step = step;
+					Audio.dac_frequency_set(div, step);
+				}
+			}else{
 				if( sound_on ) {
-						if( cur_wiper != 0 ) {
-						 	Poti.writeWiper( 1 );
-						}
-						sound_on = false;
+					if( cur_wiper != 0 ) {
+						ESP_LOGD(FNAME, "sound off set wiper: %d", 1 );
+						Poti.writeWiper( 1 );
+						cur_wiper = 1;
+					}
+					sound_on = false;
 				}
 			}
 			// assert( heap_caps_check_integrity_all(true) == true );
-			Audio.dac_frequency_set(div, step);
 		}
-		vTaskDelayUntil(&xLastWakeTime, 20/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
 	}
 }
 
@@ -594,12 +636,8 @@ bool ESPAudio::inDeadBand( float te )
 	return false;
 }
 
-void ESPAudio::setValues( float te, float s2fd, bool fromtest )
+void ESPAudio::setValues( float te, float s2fd, float ias, bool fromtest )
 {
-	if ( !fromtest ){
-		if ( _testmode )
-			return;
-	}
 	float max = _range;
 	if( _s2f_mode ) {
 		_te = -s2fd/10.0;
@@ -612,6 +650,7 @@ void ESPAudio::setValues( float te, float s2fd, bool fromtest )
 		_te = max;
 	else if( _te < -max )
 		_te = -max;
+	_ias = ias;
 }
 
 /*
@@ -627,6 +666,7 @@ void ESPAudio::setValues( float te, float s2fd, bool fromtest )
 
 void ESPAudio::setup()
 {
+	ESP_LOGD(FNAME,"ESPAudio::setup");
 	_center = center_freq.get();
 	_te = 0.0;
 	_variation = tone_var.get();
@@ -639,87 +679,79 @@ void ESPAudio::setup()
 	if( audio_range.get() == 0 )
 		_range = 5.0;
 	else if( audio_range.get() == 1 )
-			_range = 10.0;
+		_range = 10.0;
 	else
 		_range = range.get();
 	_tonemode = dual_tone.get();
 	_high_tone_var = ((high_tone_var.get() + 100.0)/100);
 	_chopping_mode = chopping_mode.get();
 
+	maxf = center_freq.get() * tone_var.get();
+	minf = center_freq.get() - ( center_freq.get() / tone_var.get() );
+
+
 }
 
 void ESPAudio::restart()
 {
+	ESP_LOGD(FNAME,"ESPAudio::restart");
 	dac_output_disable(_ch);
 	dac_cosine_enable(_ch);
 	dac_offset_set(_ch, offset);
 	dac_invert_set(_ch, 2 );
 	dac_scale_set(_ch, 0 );
+	enableAmplifier( true );
+	Poti.writeWiper( wiper );
+	delay( 10 );
 	dac_output_enable(_ch);
-	_testmode = false;
-	_dead_mute = true;
-	Poti.writeWiper( cur_wiper );
+	_dead_mute = false;
+	_mute = false;
 }
 
 
 void ESPAudio::begin( dac_channel_t ch, gpio_num_t button  )
 {
+	ESP_LOGD(FNAME,"ESPAudio::begin");
+	VaSoSW.begin( GPIO_NUM_12 );
 	setup();
 	mute();
 	_ch = ch;
 	_button = button;
+	Poti.begin(GPIO_NUM_21, GPIO_NUM_22);
+
+	wiper = (uint16_t)( ( (default_volume.get() * 100.0) / 128) -1 );
 	restart();
+	_testmode = true;
 
 	gpio_set_direction(_button, GPIO_MODE_INPUT);
 	gpio_set_pull_mode(_button, GPIO_PULLUP_ONLY);
 
-	xTaskCreate(modtask, "modtask", 1024*2, NULL, 31, NULL);
-	xTaskCreate(dactask, "dactask", 1024*2, NULL, 31, NULL);
-	xTaskCreate(voltask, "voltask", 1024*2, NULL, 21, NULL);
-
-	Poti.begin(GPIO_NUM_21, GPIO_NUM_22);
-
-	cur_wiper = (uint16_t)( ( (default_volume.get() * 100.0) / 128) -1 );
-	wiper = cur_wiper;
-	Poti.writeWiper( cur_wiper );
-	// Enable Audio Amplifiler
-	enableAmplifier( true );
-	// Sound::setPoti( &Poti );
+	delay(100);
 }
 
 
 void ESPAudio::enableAmplifier( bool enable )
 {
+	ESP_LOGD(FNAME,"ESPAudio::enableAmplifier( %d )", (int)enable );
 	// enable Audio
-    if( enable )
-    {
-    	gpio_set_direction(GPIO_NUM_19, GPIO_MODE_INPUT );   // use pullup 1 == SOUND 0 == SILENCE
-    }
-    else {
-    	gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );   // use pullup 1 == SOUND 0 == SILENCE
-        gpio_set_level(GPIO_NUM_19, 0 );
-    }
+	if( enable )
+	{
+		gpio_set_direction(GPIO_NUM_19, GPIO_MODE_INPUT );   // use pullup 1 == SOUND 0 == SILENCE
+	}
+	else {
+		gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );   // use pullup 1 == SOUND 0 == SILENCE
+		gpio_set_level(GPIO_NUM_19, 0 );
+	}
 }
 
 void ESPAudio::disable( bool disable ) {
+	ESP_LOGD(FNAME,"ESPAudio::disable( %d )", disable );
 	_disable = disable;
-	if( _disable )
-	{
-		mute( true );
-		delay(100);
-		dac_output_disable(_ch);
-	}
-	else
-	{
-		dac_output_enable(_ch);
-		delay(100);
-		mute( false );
-	}
 };
 
 void ESPAudio::test( float to, float from )
 {
-	Audio.setTestmode( true );
+	// Audio.setTestmode( true );
 	if( to > from){
 		for( float tef=from; tef < to; tef=tef+0.05 ){
 			Audio.setValues( tef, 0, true );
@@ -732,6 +764,7 @@ void ESPAudio::test( float to, float from )
 			delay(50);
 		}
 	}
+	// Audio.setTestmode( false );
 }
 
 
@@ -753,18 +786,18 @@ bool ESPAudio::lookup( float f, int& div, int &step ){
 	}
 	else{
 		while( f < lftab[i].f ){
-				i--;
-			}
+			i--;
+		}
 	}
 	if( abs( fi - lftab[i-1].f ) < abs( fi - lftab[i].f )) {
 		div =  lftab[i-1].div;
-    	step = lftab[i-1].step;
+		step = lftab[i-1].step;
 	}
-    else {
-    	div =  lftab[i].div;
-        step = lftab[i].step;
-    }
-    // ESP_LOGI(FNAME, "found at %d d:%d s:%d with f:%d for f%d", i, div, step, lftab[i-1].f, fi );
+	else {
+		div =  lftab[i].div;
+		step = lftab[i].step;
+	}
+	// ESP_LOGD(FNAME, "found at %d d:%d s:%d with f:%d for f%d", i, div, step, lftab[i-1].f, fi );
 	return true;
 }
 

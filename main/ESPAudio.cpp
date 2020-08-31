@@ -47,7 +47,8 @@ float ESPAudio::_ias = 0;
 int ESPAudio::prev_div = 0;
 int ESPAudio::prev_step = 0;
 bool ESPAudio::deadband_active = false;
-
+float  ESPAudio::exponent_max = 2;
+float  ESPAudio::prev_aud_fact = 0;
 
 MCP4018 Poti;
 Switch VaSoSW;
@@ -583,15 +584,14 @@ void ESPAudio::dactask(void* arg )
 				if( _s2f_mode )
 					range = 5.0;
 
-				if( audio_factor.get() != 1 ) {
-					float maxmult = std::pow( 2, audio_factor.get());
-					// max = max / endscale;
-					float mult = ( (std::pow( 1+(abs(_te)/range) , audio_factor.get()))+1) / (maxmult +1);
-					f = center_freq.get() + ((mult*_te)/range )  * max;
-					ESP_LOGV(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f multi:%0.3f", f, _te, audio_factor.get(), mult );
+				float mult = std::pow( (abs(_te)/range)+1, audio_factor.get());
+				if( audio_factor.get() != prev_aud_fact ) {
+					exponent_max  = std::pow( 2, audio_factor.get());
+					prev_aud_fact = audio_factor.get();
 				}
-				else
-					f = center_freq.get() + ( (_te/range ) * max );
+				f = center_freq.get() + ((mult*_te)/range )  * (max/exponent_max);
+				ESP_LOGV(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f multi:%0.3f", f, _te, audio_factor.get(), mult );
+				//	f = center_freq.get() + ( (_te/range ) * max );
 
 
 				float var = 1.0;

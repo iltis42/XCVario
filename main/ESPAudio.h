@@ -83,7 +83,8 @@ private:
     static int prev_div;
     static int prev_step;
     static bool deadband_active;
-
+    static float exponent_max;
+    static float prev_aud_fact;
 };
 
 typedef struct lookup {  uint16_t f; uint8_t div; uint8_t step; } t_lookup_entry;

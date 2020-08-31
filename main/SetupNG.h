@@ -288,6 +288,7 @@ extern SetupNG<int>  		battery_display;
 extern SetupNG<int>  		airspeed_mode;
 extern SetupNG<int>  		nmea_protocol;
 extern SetupNG<int>		    log_level;
+extern SetupNG<float>		audio_factor;
 
 
 #endif /* MAIN_SETUP_NG_H_ */

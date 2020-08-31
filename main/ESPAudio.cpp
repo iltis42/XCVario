@@ -582,7 +582,17 @@ void ESPAudio::dactask(void* arg )
 				float range = _range;
 				if( _s2f_mode )
 					range = 5.0;
-				f = center_freq.get() + ( (_te/range ) * max );
+
+				if( audio_factor.get() != 1 ) {
+					float maxmult = std::pow( 2, audio_factor.get());
+					// max = max / endscale;
+					float mult = ( (std::pow( 1+(abs(_te)/range) , audio_factor.get()))+1) / (maxmult +1);
+					f = center_freq.get() + ((mult*_te)/range )  * max;
+					ESP_LOGV(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f multi:%0.3f", f, _te, audio_factor.get(), mult );
+				}
+				else
+					f = center_freq.get() + ( (_te/range ) * max );
+
 
 				float var = 1.0;
 				if( hightone && (_tonemode == 1)  )

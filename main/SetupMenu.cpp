@@ -613,6 +613,10 @@ void SetupMenu::setup( )
 	dbmaxls2f->setHelp(PROGMEM"Positive and negative limit in speed deviation for S2F mute function");
 	dbe->addMenu( dbmaxls2f );
 
+	SetupMenuValFloat * afac = new SetupMenuValFloat( 	"Audio Exponent", 	0, "", 0.5, 2, 0.1, 0 , false, &audio_factor );
+	afac->setHelp(PROGMEM"Exponential factor < 1 gives a logarithmic, and > 1 exponential characteristic for frequency of audio signal");
+	ade->addMenu( afac);
+
 
 
 // Polar Setup

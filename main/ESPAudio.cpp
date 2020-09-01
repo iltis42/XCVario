@@ -268,6 +268,7 @@ bool ESPAudio::selfTest(){
 	ESP_LOGD(FNAME,"ESPAudio::selfTest");
 	uint16_t getwiper;
 	uint16_t setwiper = ((default_volume.get() * 100.0) / 128) -1 ;
+	ESP_LOGV(FNAME, "selfTest wiper: %d", wiper );
 	Poti.writeWiper( setwiper );
 	bool ret = Poti.readWiper( getwiper );
 	if( ret == false ) {
@@ -291,6 +292,7 @@ bool ESPAudio::selfTest(){
 	}
 
 	delay(200);
+	ESP_LOGV(FNAME, "selfTest wiper: %d", 0 );
 	Poti.writeWiper( 0 );
 	Audio.dac_frequency_set(clk_8m_div, int(_center/freq_step) );
 	_testmode=true;
@@ -430,8 +432,8 @@ sounds strange, better chop tone
  */
 
 
-long int tick = 0;
-long int tickmod  = 0;
+int tick = 0;
+int tickmod  = 0;
 
 //  modulation frequency
 
@@ -566,10 +568,11 @@ void ESPAudio::dactask(void* arg )
 					}
 				}
 			}
-
+			ESP_LOGV(FNAME, "sound dactask %d", tick );
 			if( sound ){
-				if( !sound_on  && (cur_wiper != wiper) ) {
-					ESP_LOGD(FNAME, "sound on wiper: %d", wiper );
+				ESP_LOGV(FNAME, "have sound");
+				if( !sound_on  || (cur_wiper != wiper) ) {
+					ESP_LOGV(FNAME, "sound on wiper: %d", wiper );
 					Poti.writeWiper( wiper );
 					cur_wiper = wiper;
 					sound_on = true;
@@ -614,7 +617,7 @@ void ESPAudio::dactask(void* arg )
 			}else{
 				if( sound_on ) {
 					if( cur_wiper != 0 ) {
-						ESP_LOGD(FNAME, "sound off set wiper: %d", 1 );
+						ESP_LOGV(FNAME, "wiper != 0 sound set wiper: %d", 1 );
 						Poti.writeWiper( 1 );
 						cur_wiper = 1;
 					}
@@ -711,6 +714,7 @@ void ESPAudio::restart()
 	dac_invert_set(_ch, 2 );
 	dac_scale_set(_ch, 0 );
 	enableAmplifier( true );
+	ESP_LOGV(FNAME, "restart wiper: %d", wiper );
 	Poti.writeWiper( wiper );
 	delay( 10 );
 	dac_output_enable(_ch);

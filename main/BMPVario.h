@@ -57,7 +57,7 @@ public:
 	void setQNH( float qnh ) { _qnh = qnh; };
 	void setup();
 
-	double   readTE();   // get TE value im m/s
+	double   readTE( float tas );   // get TE value im m/s
 	float readAvgClimb() { return averageClimb; }
 
 	double   readAVGTE();   // get TE value im m/s

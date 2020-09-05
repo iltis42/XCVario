@@ -62,13 +62,19 @@ void BMPVario::recalcAvgClimb() {
 }
 
 
-double BMPVario::readTE() {
+double BMPVario::readTE( float tas ) {
 	if ( _test )     // we are in testmode, just return what has been set
 		return _TEF;
 	bool success;
 	bmpTemp = _bmpTE->readTemperature( success );
 	// ESP_LOGI(FNAME,"BMP temp=%0.1f", bmpTemp );
 	_currentAlt = _bmpTE->readAltitude(_qnh);
+	if( te_comp_enable.get() ) {
+		float mps = tas * 0.277778;
+		float ealt = (((  (mps*mps)/19.62) * (1+(te_comp_adjust.get()/100.0) )));  // h = v²/2g
+		_currentAlt += ealt;
+		ESP_LOGV(FNAME,"Energiehöhe @%0.1f km/h:  %0.1f", tas, ealt );
+	}
 	uint64_t rts = esp_timer_get_time();
 	float delta = (float)(rts - lastrts)/1000000.0;   // in seconds
 	if( delta < 0.075 )  // ensure every 100 mS one calculation

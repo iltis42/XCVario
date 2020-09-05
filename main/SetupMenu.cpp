@@ -538,9 +538,21 @@ void SetupMenu::setup( )
 	sink->addEntry( "ENABLE");
 	vae->addMenu( sink );
 
+	SetupMenu * elco = new SetupMenu( "Electronic Compensation" );
+	vae->addMenu( elco );
+	SetupMenuSelect * enac = new SetupMenuSelect(  "Enable/Disable", 0, false, 0 , false, &te_comp_enable );
+	enac->setHelp(PROGMEM"Enable/Disable electronic TE compensation option; Enable only when TE pressure is connected to ST (static) pressure");
+	enac->addEntry( "DISABLE");
+	enac->addEntry( "ENABLE");
+	elco->addMenu( enac );
+
+	SetupMenuValFloat * elca = new SetupMenuValFloat( "Adjustment Factor", 0, "%",	-100, 100, 0.1, 0, false, &te_comp_adjust );
+	elca->setHelp(PROGMEM"Adjustment option for electronic compensation in %. This affects in % the enegry altitude calculated from airspeed");
+	elco->addMenu( elca );
 
 
-// Audio
+
+	// Audio
 	SetupMenu * ad = new SetupMenu( "Audio" );
 	MenuEntry* ade = mm->addMenu( ad );
 

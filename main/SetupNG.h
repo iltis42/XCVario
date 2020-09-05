@@ -289,6 +289,9 @@ extern SetupNG<int>  		airspeed_mode;
 extern SetupNG<int>  		nmea_protocol;
 extern SetupNG<int>		    log_level;
 extern SetupNG<float>		audio_factor;
+extern SetupNG<float>		te_comp_adjust;
+extern SetupNG<int>		    te_comp_enable;
+
 
 
 #endif /* MAIN_SETUP_NG_H_ */

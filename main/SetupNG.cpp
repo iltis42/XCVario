@@ -102,6 +102,8 @@ SetupNG<int>  			airspeed_mode( "AIRSPEED_MODE", MODE_IAS );
 SetupNG<int>  	    	nmea_protocol( "NMEA_PROTOCOL", OPENVARIO );
 SetupNG<int>		    log_level( "LOG_LEVEL", 3 );
 SetupNG<float>		    audio_factor( "AUDIO_FACTOR", 1 );
+SetupNG<float>		    te_comp_adjust ( "TECOMP_ADJ", 0);
+SetupNG<int>		    te_comp_enable( "TECOMP_ENA", 0 );
 
 
 void SetupCommon::initSetup() {

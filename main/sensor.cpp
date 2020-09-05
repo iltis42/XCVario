@@ -151,7 +151,7 @@ void readBMP(void *pvParameters){
 	{
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		xSemaphoreTake(xMutex,portMAX_DELAY );
-		TE = bmpVario.readTE();  // 10x per second
+		TE = bmpVario.readTE( tas );  // 10x per second
 		Audio.setValues( TE, s2f_delta, ias );
 		xSemaphoreGive(xMutex);
 		if( Audio.getDisable() != true )

@@ -1,3 +1,4 @@
+git pull
 VER=`date +"%y.%m%d-%H"`
 comment=$1
 cd /home/nextpcb/sensor

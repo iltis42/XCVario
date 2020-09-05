@@ -48,11 +48,11 @@ private:
 	void dac_invert_set(dac_channel_t channel, int invert);
 	static void dactask(void* arg);
 	static void modtask(void* arg );
-	static void adjustVolume();
     static void enableAmplifier( bool enable );  // frue ON, false OFF
     static void calcS2Fmode();
 	bool inDeadBand( float te );
 	static bool lookup( float f, int& div, int &step );
+	static bool volumeScale( int vol, int& scale, int &wiper );
 
 	static dac_channel_t _ch;
 	static float _te;
@@ -85,9 +85,13 @@ private:
     static bool deadband_active;
     static float exponent_max;
     static float prev_aud_fact;
+    static int scale;
 };
 
 typedef struct lookup {  uint16_t f; uint8_t div; uint8_t step; } t_lookup_entry;
+typedef struct volume {  uint16_t vol; uint8_t scale; uint8_t wiper; } t_scale_wip;
+
+
 
 
 extern ESPAudio Audio;

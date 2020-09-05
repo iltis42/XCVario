@@ -49,6 +49,7 @@ int ESPAudio::prev_step = 0;
 bool ESPAudio::deadband_active = false;
 float  ESPAudio::exponent_max = 2;
 float  ESPAudio::prev_aud_fact = 0;
+int    ESPAudio::scale = 0;
 
 MCP4018 Poti;
 Switch VaSoSW;
@@ -80,6 +81,138 @@ ESPAudio::ESPAudio( ) {
 ESPAudio::~ESPAudio() {
 
 }
+
+PROGMEM std::vector<t_scale_wip> scaletab{
+	{ 0,2,0 },
+	{ 1,2,1 },
+	{ 2,2,4 },
+	{ 3,2,7 },
+	{ 4,2,10 },
+	{ 5,2,13 },
+	{ 6,2,16 },
+	{ 7,2,19 },
+	{ 8,2,22 },
+	{ 9,2,25 },
+	{ 10,2,28 },
+	{ 11,2,31 },
+	{ 12,2,34 },
+	{ 13,2,37 },
+	{ 14,2,40 },
+	{ 15,2,43 },
+	{ 16,2,46 },
+	{ 17,2,49 },
+	{ 18,2,52 },
+	{ 19,2,55 },
+	{ 20,2,58 },
+	{ 21,2,61 },
+	{ 22,2,64 },
+	{ 23,2,67 },
+	{ 24,2,70 },
+	{ 25,2,73 },
+	{ 26,2,76 },
+	{ 27,2,79 },
+	{ 28,2,82 },
+	{ 29,2,85 },
+	{ 30,2,88 },
+	{ 31,2,91 },
+	{ 32,2,94 },
+	{ 33,2,97 },
+	{ 34,2,100 },
+	{ 35,2,103 },
+	{ 36,2,106 },
+	{ 37,2,109 },
+	{ 38,2,112 },
+	{ 39,2,115 },
+	{ 40,2,118 },
+	{ 41,2,121 },
+	{ 42,2,124 },
+	{ 43,2,127 },
+	{ 44,1,86 },
+	{ 45,1,88 },
+	{ 46,1,90 },
+	{ 47,1,92 },
+	{ 48,1,94 },
+	{ 49,1,96 },
+	{ 50,1,98 },
+	{ 51,1,100 },
+	{ 52,1,102 },
+	{ 53,1,104 },
+	{ 54,1,106 },
+	{ 55,1,108 },
+	{ 56,1,110 },
+	{ 57,1,112 },
+	{ 58,1,114 },
+	{ 59,1,116 },
+	{ 60,1,118 },
+	{ 61,1,120 },
+	{ 62,1,122 },
+	{ 63,1,124 },
+	{ 64,1,126 },
+	{ 65,1,127 },
+	{ 66,0,65 },
+	{ 67,0,66 },
+	{ 68,0,67 },
+	{ 69,0,68 },
+	{ 70,0,69 },
+	{ 71,0,70 },
+	{ 72,0,71 },
+	{ 73,0,72 },
+	{ 74,0,73 },
+	{ 75,0,74 },
+	{ 76,0,75 },
+	{ 77,0,76 },
+	{ 78,0,77 },
+	{ 79,0,78 },
+	{ 80,0,79 },
+	{ 81,0,80 },
+	{ 82,0,81 },
+	{ 83,0,82 },
+	{ 84,0,83 },
+	{ 85,0,84 },
+	{ 86,0,85 },
+	{ 87,0,86 },
+	{ 88,0,87 },
+	{ 89,0,88 },
+	{ 90,0,89 },
+	{ 91,0,90 },
+	{ 92,0,91 },
+	{ 93,0,92 },
+	{ 94,0,93 },
+	{ 95,0,94 },
+	{ 96,0,95 },
+	{ 97,0,96 },
+	{ 98,0,97 },
+	{ 99,0,98 },
+	{ 100,0,99 },
+	{ 101,0,100 },
+	{ 102,0,101 },
+	{ 103,0,102 },
+	{ 104,0,103 },
+	{ 105,0,104 },
+	{ 106,0,105 },
+	{ 107,0,106 },
+	{ 108,0,107 },
+	{ 109,0,108 },
+	{ 110,0,109 },
+	{ 111,0,110 },
+	{ 112,0,111 },
+	{ 113,0,112 },
+	{ 114,0,113 },
+	{ 115,0,114 },
+	{ 116,0,115 },
+	{ 117,0,116 },
+	{ 118,0,117 },
+	{ 119,0,118 },
+	{ 120,0,119 },
+	{ 121,0,120 },
+	{ 122,0,121 },
+	{ 123,0,122 },
+	{ 124,0,123 },
+	{ 125,0,124 },
+	{ 126,0,125 },
+	{ 127,0,126 },
+	{ 128,0,127 }
+};
 
 
 PROGMEM std::vector<t_lookup_entry> lftab{
@@ -466,7 +599,7 @@ void ESPAudio::modtask(void* arg )
 }
 
 void ESPAudio::incVolume( int steps ) {
-	steps = int( 1+ ( (float)wiper/8.0 ))*steps;
+	steps = int( 1+ ( (float)wiper/16.0 ))*steps;
 	// ESP_LOGD(FNAME,"steps %d wiper %d", steps, wiper );
 	while( steps && (wiper > 0) ){
 		wiper--;
@@ -474,7 +607,7 @@ void ESPAudio::incVolume( int steps ) {
 	}
 };
 void ESPAudio::decVolume( int steps ) {
-	steps = int( 1+ ( (float)wiper/8.0 ))*steps;
+	steps = int( 1+ ( (float)wiper/16.0 ))*steps;
 	while( steps && (wiper < 127) ){
 		wiper++;
 		steps--;
@@ -487,25 +620,6 @@ void ESPAudio::setVolume( int vol ) {
 
 
 bool output_enable = false;
-
-
-void  ESPAudio::adjustVolume(){
-	if( cur_wiper != wiper ) {
-		ESP_LOGD(FNAME,"ESPAudio::adjustVolume( %d )", wiper );
-		uint16_t w;
-		if( wiper == 0 ) {
-			w=0;
-			enableAmplifier( false );
-		}
-		else {
-			w=wiper-1;
-			enableAmplifier( true );
-		}
-		Poti.writeWiper( w );
-		cur_wiper = wiper;
-	}
-}
-
 
 
 void ESPAudio::startAudio(){
@@ -573,7 +687,18 @@ void ESPAudio::dactask(void* arg )
 				ESP_LOGV(FNAME, "have sound");
 				if( !sound_on  || (cur_wiper != wiper) ) {
 					ESP_LOGV(FNAME, "sound on wiper: %d", wiper );
-					Poti.writeWiper( wiper );
+					/*
+					if( wiper < 64 )
+						dac_scale_set(_ch, 1 );
+						*/
+					int wip;
+					int sca;
+					if( volumeScale( wiper, sca, wip ) ) {
+						Poti.writeWiper( wip );
+						Audio.dac_scale_set(_ch, sca );
+					}
+					else
+						ESP_LOGE(FNAME, "wiper out of bounds: %d", wiper );
 					cur_wiper = wiper;
 					sound_on = true;
 				}
@@ -705,6 +830,8 @@ void ESPAudio::setup()
 
 }
 
+
+
 void ESPAudio::restart()
 {
 	ESP_LOGD(FNAME,"ESPAudio::restart");
@@ -712,7 +839,7 @@ void ESPAudio::restart()
 	dac_cosine_enable(_ch);
 	dac_offset_set(_ch, offset);
 	dac_invert_set(_ch, 2 );
-	dac_scale_set(_ch, 0 );
+	dac_scale_set(_ch, 2 );
 	enableAmplifier( true );
 	ESP_LOGV(FNAME, "restart wiper: %d", wiper );
 	Poti.writeWiper( wiper );
@@ -779,6 +906,16 @@ void ESPAudio::test( float to, float from )
 		}
 	}
 	// Audio.setTestmode( false );
+}
+
+bool ESPAudio::volumeScale( int volume, int& scale, int &wiper ) {
+	if( volume < 128 ){
+		scale = scaletab[ volume ].scale;
+		wiper   = scaletab[ volume ].wiper;
+		ESP_LOGI(FNAME,"volumeScale v:%d s:%d w:%d", volume, scale, wiper );
+		return true;
+	}
+	return false;
 }
 
 

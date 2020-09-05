@@ -347,6 +347,7 @@ void IpsDisplay::redrawValues()
 	_te=-200;
 	mcalt = -100;
 	iasalt = -1;
+	_ate = -200;
 	prefalt = -1;
 	pref_qnh = -1;
 	tyalt = 0;
@@ -369,6 +370,7 @@ void IpsDisplay::redrawValues()
     wkbox = false;
     wkposalt = -100;
     wkialt = -3;
+    tyalt = -1000;
 }
 
 void IpsDisplay::drawTeBuf(){
@@ -531,7 +533,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 	ucg->setColor(  COLOR_WHITE  );
 
     // Average Vario
-	if( int(_ate*25) != (int)(ate*25) ) {
+	if( _ate != (int)(ate*10) ) {
 		if( ate < 0 ) {
 			// erase V line from +
 			ucg->setColor( COLOR_BLACK );
@@ -582,7 +584,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		int mslen = ucg->getStrWidth(units.c_str());
 		ucg->setPrintPos(DISPLAY_W-mslen,YVAR-12);
 		ucg->print(units.c_str());
-		_ate = ate;
+		_ate = (int)(ate)*10;
 	}
 
 	// Altitude Header

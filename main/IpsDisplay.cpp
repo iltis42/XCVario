@@ -632,9 +632,10 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 	int aMC = MC.get() * 10;
 	if( aMC != mcalt ) {
 			ucg->setFont(ucg_font_fub11_hr);
-			ucg->setPrintPos(5,DISPLAY_H);
+			ucg->setPrintPos(5,DISPLAY_H-8);
 			ucg->setColor(COLOR_HEADER);
 			ucg->printf("MC:");
+			ucg->setPrintPos(5+ucg->getStrWidth("MC:"),DISPLAY_H-4);
 			ucg->setColor(COLOR_WHITE);
 			ucg->setFont(ucg_font_fur14_hf);
 			ucg->printf("%1.1f", MC.get() );
@@ -652,7 +653,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		tempalt=(int)(temp*10);
 	}
 	// Battery Symbol
-#define BATX (DISPLAY_W-10)
+#define BATX (DISPLAY_W-15)
 #define BATY (DISPLAY_H-12)
 	int chargev = (int)( volt *10 );
 	if ( chargealt != chargev ) {
@@ -707,7 +708,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 	if( btq != btqueue )
 	{
 		if( blue_enable.get() ) {
-			ucg_int_t btx=DISPLAY_W-16;
+			ucg_int_t btx=DISPLAY_W-22;
 			ucg_int_t bty=BTH/2;
 			if( btq )
 				ucg->setColor( COLOR_MGREY );

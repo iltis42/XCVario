@@ -18,7 +18,8 @@ The 'Long Vario' release 2 features a new technology 320x240 pixel IPS LCS displ
 3. master branch (default, what you see here)
 The third generation 'XC Vario' uses the same display as the long vario, but comes with a new sensor board 61x64 mm, vertically mounted behind the display board. The new sensor board has a RJ45 connector for electrical connections, digital potentiomenter, and some more features like software update over the air, serial output and serial to bluetooth bridge and connector for external audio. It still has an and efficient loudspeaker on board, and uses a just 34 mm long CNC fabricated aluminium housing that is mounted from back of the I-Panel as any other standard instrument. Prototypes under test performed well, and three digit number of boards have been fabricated and can be purchased now via http://xcvario.de webshop that is selling the hardware for an interresting price.
 
-[List of Software Releases](https://github.com/iltis42/OpenIVario/tree/master/images), latest release is the file with the highest revision number.
+[List of Software Releases] (https://github.com/iltis42/OpenIVario/releases/), latest release on the top
+[Ongoing Development] (https://github.com/iltis42/OpenIVario/tree/master/images), latest beta software is the one with the highest revision number or newest date
 
 At the begin i want to show a short Demo of the variometer, including sensitivity and full sunlight test, followed by an explanation of various setup options and how to use. Its now year four of this project, demo videos with prototypes based on the hardware from LV-R2 branch see here below:
 

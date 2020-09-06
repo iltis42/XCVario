@@ -152,42 +152,44 @@ void readBMP(void *pvParameters){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		xSemaphoreTake(xMutex,portMAX_DELAY );
 		TE = bmpVario.readTE( tas );  // 10x per second
+		float iasraw = (MP5004DP.pascal2km( MP5004DP.readPascal(30) ));
+		float tasraw = iasraw * sqrt( 1.225 / ( baroP*100.0 / (287.058 * (273.15+temperature) ) ) );  // True airspeed
+		ias = ias + (iasraw - ias)*0.25;  // low pass filter
+		tas += (tasraw-tas)*0.25;       // low pass filter
 		Audio.setValues( TE, s2f_delta, ias );
+		TE = bmpVario.readTE( tasraw );  // 10x per second
 		xSemaphoreGive(xMutex);
-		if( Audio.getDisable() != true )
-		{
-			if( (count++ % 2) == 0 ) {
-				xSemaphoreTake(xMutex,portMAX_DELAY );
-				baroP = bmpBA.readPressure();   // 5x per second
-				dynamicP = MP5004DP.readPascal(30);
-				float alt_standard = bmpBA.calcAVGAltitudeSTD( baroP );
-				// vTaskDelay(1);
-				if( alt_select.get() == 0 ) // TE
-					alt = bmpVario.readAVGalt();
-				else { // Baro
-					if(  alt_unit.get() == 2 || (
-							(fl_auto_transition.get() == 1) && ((int)alt_standard*0.0328084 + (int)(standard_setting) > transition_alt.get() ) ) ) // FL or auto transition
-					{
-						alt = alt_standard;
-						standard_setting = true;
-					}
-					else {
-						alt = bmpBA.calcAVGAltitude( QNH.get(), baroP );
-						// ESP_LOGI(FNAME,"rbmp QNH %f baro: %f alt: %f", QNH.get(), baroP, alt  );
-						standard_setting = false;
-					}
-				}
-				ias = ias + (MP5004DP.pascal2km( dynamicP ) - ias)*0.1;
-				tas = ias * sqrt( 1.225 / ( baroP*100.0 / (287.058 * (273.15+temperature) ) ) );  // True airspeed
-				aTE = bmpVario.readAVGTE();
-				aTES2F = bmpVario.readS2FTE();
-				aCl = bmpVario.readAvgClimb();
-				polar_sink = Speed2Fly.sink( ias );
-				netto = aTES2F - polar_sink;
-				as2f = Speed2Fly.speed( netto );
-				s2f_delta = as2f - ias;
 
-			    // reduce also messages from 10 per second to 5 per second to reduce load in XCSoar
+		if( (count++ % 2) == 0 ) {
+			xSemaphoreTake(xMutex,portMAX_DELAY );
+			baroP = bmpBA.readPressure();   // 5x per second
+			float alt_standard = bmpBA.calcAVGAltitudeSTD( baroP );
+			if( alt_select.get() == 0 ) // TE
+				alt = bmpVario.readAVGalt();
+			else { // Baro
+				if(  alt_unit.get() == 2 || (
+						(fl_auto_transition.get() == 1) && ((int)alt_standard*0.0328084 + (int)(standard_setting) > transition_alt.get() ) ) ) // FL or auto transition
+				{
+					alt = alt_standard;
+					standard_setting = true;
+				}
+				else {
+					alt = bmpBA.calcAVGAltitude( QNH.get(), baroP );
+					// ESP_LOGI(FNAME,"rbmp QNH %f baro: %f alt: %f", QNH.get(), baroP, alt  );
+					standard_setting = false;
+				}
+			}
+			aTE = bmpVario.readAVGTE();
+			aTES2F = bmpVario.readS2FTE();
+			aCl = bmpVario.readAvgClimb();
+			polar_sink = Speed2Fly.sink( ias );
+			netto = aTES2F - polar_sink;
+			as2f = Speed2Fly.speed( netto );
+			s2f_delta = as2f - ias;
+			xSemaphoreGive(xMutex);
+			if( Audio.getDisable() != true ){
+				xSemaphoreTake(xMutex,portMAX_DELAY );
+				// reduce also messages from 10 per second to 5 per second to reduce load in XCSoar
 				char lb[120];
 				OV.makeNMEA( lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Audio.getS2FMode()  );
 				btsender.send( lb );
@@ -195,7 +197,6 @@ void readBMP(void *pvParameters){
 				xSemaphoreGive(xMutex);
 			}
 		}
-
 		if( uxTaskGetStackHighWaterMark( bpid )  < 1024 )
 			ESP_LOGW(FNAME,"Warning bmpTask stack low: %d", uxTaskGetStackHighWaterMark( bpid ) );
 
@@ -251,9 +252,7 @@ void sensor(void *args){
 	spiMutex = xSemaphoreCreateMutex();
 	esp_log_level_set("*", ESP_LOG_INFO);
 
-
 	ESP_LOGI( FNAME, "Log level set globally to INFO %d",  ESP_LOG_INFO);
-
 
 	ESP_LOGI(FNAME,"Now init all Setup elements");
 	SetupCommon::initSetup();
@@ -417,7 +416,7 @@ void sensor(void *args){
 
 	}
 
-	bmpVario.begin( &bmpTE );
+	bmpVario.begin( &bmpTE, &Speed2Fly );
 	bmpVario.setup();
 
 	esp_task_wdt_reset();
@@ -613,8 +612,8 @@ void sensor(void *args){
 	Audio.startAudio();
 
 	for( int i=0; i<36; i++ ) {
-			if( i != 23 && i < 6 && i > 12  )
-				gpio_set_drive_capability((gpio_num_t)i, GPIO_DRIVE_CAP_1);
+		if( i != 23 && i < 6 && i > 12  )
+			gpio_set_drive_capability((gpio_num_t)i, GPIO_DRIVE_CAP_1);
 	}
 
 

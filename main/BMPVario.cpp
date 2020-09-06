@@ -4,12 +4,12 @@
 #include <freertos/task.h>
 #include <atomic>
 #include <logdef.h>
+#include "S2F.h"
 
 const double sigmaAdjust = 255 * 2.0/33;  // 2 Vss
-
 int BMPVario::holddown = 0;
 
-void BMPVario::begin( BME280_ESP32_SPI *bmp  ) {
+void BMPVario::begin( BME280_ESP32_SPI *bmp, S2F *aS2F  ) {
 	_bmpTE = bmp;
 	_init = true;
 	for( int i=0; i<300; i++ )
@@ -19,6 +19,7 @@ void BMPVario::begin( BME280_ESP32_SPI *bmp  ) {
 	avindexSec = 0;
 	avindexMin = 0;
 	_S2FTE = 0.0;
+	myS2F = aS2F;
 }
 
 double BMPVario::readAVGTE() {
@@ -40,11 +41,6 @@ void BMPVario::setup() {
 	lastrts = esp_timer_get_time();
 }
 
-
-void BMPVario::history( int idx )
-{
-
-}
 
 void BMPVario::recalcAvgClimb() {
 		float ac = 0;
@@ -70,10 +66,11 @@ double BMPVario::readTE( float tas ) {
 	// ESP_LOGI(FNAME,"BMP temp=%0.1f", bmpTemp );
 	_currentAlt = _bmpTE->readAltitude(_qnh);
 	if( te_comp_enable.get() ) {
-		float mps = tas * 0.277778;
-		float ealt = (((  (mps*mps)/19.62) * (1+(te_comp_adjust.get()/100.0) )));  // h = v²/2g
+		float mps = tas / 3.6;  // m/s
+		float cw  = myS2F->cw( mps );
+		float ealt = (((  (mps*mps)/19.62) * (1+(te_comp_adjust.get()/100.0) ))) * ( 1 - cw );  // Ekin ~ h = v²/2g  * adjust * (1-cw)
 		_currentAlt += ealt;
-		ESP_LOGV(FNAME,"Energiehöhe @%0.1f km/h:  %0.1f", tas, ealt );
+		ESP_LOGD(FNAME,"Energiehöhe @%0.1f km/h: %0.1f cw: %f", tas, ealt, cw );
 	}
 	uint64_t rts = esp_timer_get_time();
 	float delta = (float)(rts - lastrts)/1000000.0;   // in seconds

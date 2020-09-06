@@ -20,6 +20,7 @@ public:
 	double speed( double st );
 	double sink( double v );
 	double minsink();
+	float cw( float v );
 	void test( void );
 private:
 	double a0,a1,a2;

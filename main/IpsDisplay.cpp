@@ -822,7 +822,10 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 			if( (speed%20) == 0 && (speed >= 0) ) {
 				// blank old values
 				ucg->setColor( COLOR_BLACK );
-				ucg->drawBox( FIELD_START+6,dmid+(speed-iasp)-(fh/2)-8, ASLEN-6, fh+14 );
+				if( speed == 0 )
+					ucg->drawBox( FIELD_START+6,dmid+(speed-iasp)-(fh/2)-19, ASLEN-6, fh+25 );
+				else
+					ucg->drawBox( FIELD_START+6,dmid+(speed-iasp)-(fh/2)-9, ASLEN-6, fh+15 );
 				int col = abs(((speed-iasp)*2));
 				ucg->setColor(  col,col,col  );
 				ucg->setPrintPos(FIELD_START+8,dmid+(speed-iasp)+(fh/2));

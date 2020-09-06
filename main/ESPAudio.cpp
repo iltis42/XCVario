@@ -50,6 +50,8 @@ bool ESPAudio::deadband_active = false;
 float  ESPAudio::exponent_max = 2;
 float  ESPAudio::prev_aud_fact = 0;
 int    ESPAudio::scale = 0;
+int    ESPAudio::prev_scale = -1;
+int    ESPAudio::scaled_wip = 0;
 
 MCP4018 Poti;
 Switch VaSoSW;
@@ -82,6 +84,7 @@ ESPAudio::~ESPAudio() {
 
 }
 
+// Table to lookup settings audio generator setting divider and step covering frequencies up to 800 Hz
 PROGMEM std::vector<t_scale_wip> scaletab{
 	{ 0,2,0 },
 	{ 1,2,1 },
@@ -459,15 +462,18 @@ void ESPAudio::dac_frequency_set(int adiv, int frequency_step)
  */
 void ESPAudio::dac_scale_set(dac_channel_t channel, int scale)
 {
-	switch(channel) {
-	case DAC_CHANNEL_1:
-		SET_PERI_REG_BITS(SENS_SAR_DAC_CTRL2_REG, SENS_DAC_SCALE1, scale, SENS_DAC_SCALE1_S);
-		break;
-	case DAC_CHANNEL_2:
-		SET_PERI_REG_BITS(SENS_SAR_DAC_CTRL2_REG, SENS_DAC_SCALE2, scale, SENS_DAC_SCALE2_S);
-		break;
-	default :
-		ESP_LOGD(FNAME,"Channel %d", channel);
+	if( scale != prev_scale ) {
+		switch(channel) {
+		case DAC_CHANNEL_1:
+			SET_PERI_REG_BITS(SENS_SAR_DAC_CTRL2_REG, SENS_DAC_SCALE1, scale, SENS_DAC_SCALE1_S);
+			break;
+		case DAC_CHANNEL_2:
+			SET_PERI_REG_BITS(SENS_SAR_DAC_CTRL2_REG, SENS_DAC_SCALE2, scale, SENS_DAC_SCALE2_S);
+			break;
+		default :
+			ESP_LOGD(FNAME,"Channel %d", channel);
+		}
+		prev_scale = scale;
 	}
 }
 
@@ -649,6 +655,9 @@ void ESPAudio::calcS2Fmode(){
 			}
 }
 
+
+
+
 void ESPAudio::dactask(void* arg )
 {
 	while(1){
@@ -686,15 +695,18 @@ void ESPAudio::dactask(void* arg )
 			if( sound ){
 				ESP_LOGV(FNAME, "have sound");
 				if( !sound_on  || (cur_wiper != wiper) ) {
-					ESP_LOGV(FNAME, "sound on wiper: %d", wiper );
-					/*
-					if( wiper < 64 )
-						dac_scale_set(_ch, 1 );
-						*/
-					int wip;
+					ESP_LOGI(FNAME, "sound on wiper: %d", wiper );
 					int sca;
-					if( volumeScale( wiper, sca, wip ) ) {
-						Poti.writeWiper( wip );
+					if( volumeScale( wiper, sca, scaled_wip ) ) {
+						if( ! sound_on ) {
+							for( int i=1; i<=4; i++ ) {
+								int nw=(scaled_wip/4) * i;
+								Poti.writeWiper( nw );
+								delayMicroseconds( 20 );
+								// ESP_LOGI(FNAME, "sound off & wiper != 0 sound set wiper: %d", nw );
+							}
+						}
+						Poti.writeWiper( scaled_wip );
 						Audio.dac_scale_set(_ch, sca );
 					}
 					else
@@ -741,8 +753,12 @@ void ESPAudio::dactask(void* arg )
 				}
 			}else{
 				if( sound_on ) {
-					if( cur_wiper != 0 ) {
-						ESP_LOGV(FNAME, "wiper != 0 sound set wiper: %d", 1 );
+					if( cur_wiper != 0 ) {  // turn off gracefully sound
+						for( int i=4; i>=1; i-- ) {
+							Poti.writeWiper( (scaled_wip/4) * i );  // fade out volume
+							delayMicroseconds( 20 );
+							// ESP_LOGI(FNAME, "sound off & wiper != 0 sound set wiper: %d", scaled_wip / i );
+						}
 						Poti.writeWiper( 1 );
 						cur_wiper = 1;
 					}
@@ -870,10 +886,9 @@ void ESPAudio::begin( dac_channel_t ch, gpio_num_t button  )
 	delay(100);
 }
 
-
 void ESPAudio::enableAmplifier( bool enable )
 {
-	ESP_LOGD(FNAME,"ESPAudio::enableAmplifier( %d )", (int)enable );
+	ESP_LOGI(FNAME,"ESPAudio::enableAmplifier( %d )", (int)enable );
 	// enable Audio
 	if( enable )
 	{

@@ -86,6 +86,8 @@ private:
     static float exponent_max;
     static float prev_aud_fact;
     static int scale;
+    static int prev_scale;
+    static int scaled_wip;
 };
 
 typedef struct lookup {  uint16_t f; uint8_t div; uint8_t step; } t_lookup_entry;

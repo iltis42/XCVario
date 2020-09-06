@@ -5,6 +5,7 @@
 #include "BME280_ESP32_SPI.h"
 
 #include "Setup.h"
+#include "S2F.h"
 #include <stdio.h>
 /*
      Implementation of a stable Vario with flight optimized Iltis-Kalman filter
@@ -51,7 +52,7 @@ public:
 		avindex100MSec = 0;
 	}
 
-	void begin( BME280_ESP32_SPI *bmp );
+	void begin( BME280_ESP32_SPI *bmp, S2F* s2f );
 
 	static void setHolddown( int hold ) { holddown = hold; }
 	void setQNH( float qnh ) { _qnh = qnh; };
@@ -70,7 +71,6 @@ public:
 	void calcAnalogOut();
 	void setTE( double te ); // for testing purposes
 	void setAdj( double adj ) { _analog_adj = adj; calcAnalogOut(); };
-	void history( int idx );
 	void recalcAvgClimb();
 
 private:
@@ -107,6 +107,7 @@ private:
 	int avindexMin;
 	int    samples;
 	static int   holddown;
+	S2F * myS2F;
 };
 
 extern BMPVario bmpVario;

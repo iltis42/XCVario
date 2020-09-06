@@ -39,7 +39,7 @@ P = 5000/4096 * adc
 
 const float correction = 5000.0/4096.0;  // according to above formula, this is the relation between adc readout and Pascal
 														 // 1000/1026 is a factory correction.
-const float alpha = 0.2;
+const float alpha = 0.4;
 const float min_pascal = 10.0;
 
 class MP5004DP {

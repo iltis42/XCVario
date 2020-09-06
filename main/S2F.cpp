@@ -81,6 +81,16 @@ double S2F::sink( double v_in ) {
 	return s;
 }
 
+float S2F::cw( float v ){  // in m/s
+	float cw = 0;
+	if( v > 14.0 ){  // > 50 km/h we got valit polar data
+		float sink = a0+a1*v+a2*pow(v,2);
+		ESP_LOGI(FNAME,"S2F::cw( %0.1f ) sink: %f cw. %f", v, sink, cw );
+		cw = sink / v;
+	}
+	return cw;
+}
+
 double S2F::speed( double st )
 {
    double stf = 3.6*sqrt( (a0-_MC+st) / a2 );

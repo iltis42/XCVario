@@ -152,7 +152,8 @@ void readBMP(void *pvParameters){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		xSemaphoreTake(xMutex,portMAX_DELAY );
 		TE = bmpVario.readTE( tas );  // 10x per second
-		float iasraw = (MP5004DP.pascal2km( MP5004DP.readPascal(30) ));
+		dynamicP = MP5004DP.readPascal(30);
+		float iasraw = ( MP5004DP.pascal2km( dynamicP ) );
 		float tasraw = iasraw * sqrt( 1.225 / ( baroP*100.0 / (287.058 * (273.15+temperature) ) ) );  // True airspeed
 		ias = ias + (iasraw - ias)*0.25;  // low pass filter
 		tas += (tasraw-tas)*0.25;       // low pass filter

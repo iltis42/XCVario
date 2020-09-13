@@ -83,8 +83,8 @@ private:
 	static bool _menu;
 	enum ips_display _dtype;
 	static int tick;
-	static ucg_color_t colors[TEMAX+1];
-	static ucg_color_t colorsalt[TEMAX+1];
+	static ucg_color_t colors[TEMAX+1+TEGAP];
+	static ucg_color_t colorsalt[TEMAX+1+TEGAP];
 
 	// local variabls for dynamic display
 	static int _te;

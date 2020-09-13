@@ -85,8 +85,8 @@ extern xSemaphoreHandle spiMutex;
 
 #define PMLEN 24
 
-ucg_color_t IpsDisplay::colors[TEMAX+1];
-ucg_color_t IpsDisplay::colorsalt[TEMAX+1];
+ucg_color_t IpsDisplay::colors[TEMAX+1+TEGAP];
+ucg_color_t IpsDisplay::colorsalt[TEMAX+1+TEGAP];
 
 
 Ucglib_ILI9341_18x240x320_HWSPI *IpsDisplay::ucg = 0;
@@ -395,18 +395,24 @@ void IpsDisplay::setTeBuf( int y1, int h, int r, int g, int b ){
         h = TEMIN+y1;
 
 	if( h>=0 ) {
-		while( h >=0 ) {
-			colors[y1-h].color[0] = r;
-			colors[y1-h].color[1] = g;
-			colors[y1-h].color[2] = b;
+		while( h >=0  ) {
+			if( y1-h < TEMAX+1+TEGAP )
+			{
+				colors[y1-h].color[0] = r;
+				colors[y1-h].color[1] = g;
+				colors[y1-h].color[2] = b;
+			}
 			h--;
 		}
 	}
 	else {
-		while( h < 0 ) {
-			colors[y1-h].color[0] = r;
-			colors[y1-h].color[1] = g;
-			colors[y1-h].color[2] = b;
+		while( h < 0  ) {
+			if( y1-h < TEMAX+1+TEGAP )
+			{
+				colors[y1-h].color[0] = r;
+				colors[y1-h].color[1] = g;
+				colors[y1-h].color[2] = b;
+			}
 			h++;
 		}
 	}

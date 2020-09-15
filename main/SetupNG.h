@@ -291,6 +291,8 @@ extern SetupNG<int>		    log_level;
 extern SetupNG<float>		audio_factor;
 extern SetupNG<float>		te_comp_adjust;
 extern SetupNG<int>		    te_comp_enable;
+extern SetupNG<int>		    rotary_dir;
+extern SetupNG<int>		    rotary_inc;
 
 
 

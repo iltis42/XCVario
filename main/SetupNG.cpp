@@ -104,6 +104,9 @@ SetupNG<int>		    log_level( "LOG_LEVEL", 3 );
 SetupNG<float>		    audio_factor( "AUDIO_FACTOR", 1 );
 SetupNG<float>		    te_comp_adjust ( "TECOMP_ADJ", 0);
 SetupNG<int>		    te_comp_enable( "TECOMP_ENA", 0 );
+SetupNG<int>		    rotary_dir( "ROTARY_DIR", 0 );
+SetupNG<int>		    rotary_inc( "ROTARY_INC", 0 );
+
 
 
 void SetupCommon::initSetup() {

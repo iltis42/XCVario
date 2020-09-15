@@ -763,8 +763,12 @@ void SetupMenu::setup( )
 	bat->addMenu(bfull);
 	bat->addMenu( batv );
 
+	SetupMenu * hardware = new SetupMenu( "Hardware Setup" );
+	hardware->setHelp( PROGMEM "Setup variometer hardware like display, rotary");
+	sye->addMenu( hardware );
+
 	SetupMenu * display = new SetupMenu( "DISPLAY Setup" );
-	sye->addMenu( display );
+	hardware->addMenu( display );
 	 // UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P
 	if( display_type.get() == UNIVERSAL )
 	{
@@ -782,6 +786,22 @@ void SetupMenu::setup( )
 	diso->setHelp( PROGMEM "Display Orientation either NORMAL means control panel is right, or TOPDOWN means control panel is left");
 	diso->addEntry( "NORMAL (Rotary left)");
 	diso->addEntry( "TOPDOWN (Rotary right)");
+
+	SetupMenu * rotary = new SetupMenu( "Rotary Setup" );
+	hardware->addMenu( rotary );
+
+	SetupMenuSelect * rotype = new SetupMenuSelect( "Rotary Direction", 0, false , 0, false, &rotary_dir );
+	rotary->addMenu( rotype );
+	rotype->setHelp( PROGMEM "Select type of rotary switch, different brands may need adjustment");
+	rotype->addEntry( "Clockwise");
+	rotype->addEntry( "Counterclockwise");
+
+	SetupMenuSelect * roinc = new SetupMenuSelect( "Rotary Increment", 0, false , 0, false, &rotary_inc );
+	rotary->addMenu( roinc );
+	roinc->setHelp( PROGMEM "Select type of rotary increment per detent, different brands may need adjustmet");
+	roinc->addEntry( "Single Increment");
+	roinc->addEntry( "Double Increment");
+
 
 	// Altimeter, IAS
 	SetupMenu * aia = new SetupMenu( "Altimeter, Airspeed" );

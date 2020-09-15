@@ -106,6 +106,8 @@ SetupNG<float>		    te_comp_adjust ( "TECOMP_ADJ", 0);
 SetupNG<int>		    te_comp_enable( "TECOMP_ENA", 0 );
 SetupNG<int>		    rotary_dir( "ROTARY_DIR", 0 );
 SetupNG<int>		    rotary_inc( "ROTARY_INC", 0 );
+SetupNG<int>		    student_mode( "STUD_MOD", 0 );
+SetupNG<float>		    password( "PASSWORD", 0 );
 
 
 

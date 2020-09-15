@@ -34,9 +34,9 @@ SetupMenuSelect * audio_range_sm = 0;
 int update_rentry(SetupMenuValFloat * p)
 {
 	char rentry[25];
-    sprintf( rentry, "Variable (%d m/s)", (int)(range.get()) );
-    audio_range_sm->updateEntry( rentry, 1 );
-    return 0;
+	sprintf( rentry, "Variable (%d m/s)", (int)(range.get()) );
+	audio_range_sm->updateEntry( rentry, 1 );
+	return 0;
 }
 
 // Action Routines
@@ -64,7 +64,7 @@ int qnh_adj( SetupMenuValFloat * p )
 	float altp;
 	if( alt_unit.get() == 0 ){ // m
 		u = "m";
-	    altp = alt;
+		altp = alt;
 	}
 	else {
 		u = "ft";
@@ -114,53 +114,53 @@ int factv_adj( SetupMenuValFloat * p )
 
 int polar_adj( SetupMenuValFloat * p )
 {
-    Speed2Fly.change_polar();
-    return 0;
+	Speed2Fly.change_polar();
+	return 0;
 }
 
 int polar_select( SetupMenuSelect * p )
 {
-    Speed2Fly.select_polar();
-    return 0;
+	Speed2Fly.select_polar();
+	return 0;
 }
 
 int bal_adj( SetupMenuValFloat * p )
 {
-    Speed2Fly.change_mc_bal();
-    float loadinc = (ballast.get() +100.0)/100.0;
-    float newwl = polar_wingload.get() * loadinc;
-    p->ucg->setFont(ucg_font_fub25_hr);
-    xSemaphoreTake(spiMutex,portMAX_DELAY );
-    p->ucg->setPrintPos(1,110);
-    p->ucg->printf("%0.2f kg/m2  ", newwl);
-    p->ucg->setPrintPos(1,150);
-    float refw=polar_wingload.get() * polar_wingarea.get();
-    float curw=newwl * polar_wingarea.get();
-    unsigned int liter=(curw-refw) + 0.5;
-    p->ucg->printf("%u liter  ", liter);
+	Speed2Fly.change_mc_bal();
+	float loadinc = (ballast.get() +100.0)/100.0;
+	float newwl = polar_wingload.get() * loadinc;
+	p->ucg->setFont(ucg_font_fub25_hr);
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
+	p->ucg->setPrintPos(1,110);
+	p->ucg->printf("%0.2f kg/m2  ", newwl);
+	p->ucg->setPrintPos(1,150);
+	float refw=polar_wingload.get() * polar_wingarea.get();
+	float curw=newwl * polar_wingarea.get();
+	unsigned int liter=(curw-refw) + 0.5;
+	p->ucg->printf("%u liter  ", liter);
 	xSemaphoreGive(spiMutex );
 	p->ucg->setFont(ucg_font_ncenR14_hr);
-    return 0;
+	return 0;
 }
 
 int bug_adj( SetupMenuValFloat * p ){
-	 Speed2Fly.change_mc_bal();
-	 return 0;
+	Speed2Fly.change_mc_bal();
+	return 0;
 }
 
 
 int mc_adj( SetupMenuValFloat * p )
 {
-    Speed2Fly.change_mc_bal();
+	Speed2Fly.change_mc_bal();
 #ifdef MC_FROM_XC
-    char mc[30];
-    sprintf(mc, "$POV,?,MC");
+	char mc[30];
+	sprintf(mc, "$POV,?,MC");
 	int cs = OpenVario::getCheckSum(&mc[1]);
 	int i = strlen(mc);
 	sprintf( &mc[i], "*%02X\n", cs );
-    btsender.send(mc);
+	btsender.send(mc);
 #endif
-    return 0;
+	return 0;
 }
 
 int vol_adj( SetupMenuValFloat * p ){
@@ -291,8 +291,8 @@ void MenuEntry::showhelp( int y ){
 		char *words[100];
 		while (p != NULL)
 		{
-		   words[w++] = p;
-		   p = strtok (NULL, " ");
+			words[w++] = p;
+			p = strtok (NULL, " ");
 		}
 		// ESP_LOGI(FNAME,"showhelp number of words: %d", w);
 		int x=1;
@@ -492,425 +492,445 @@ void SetupMenu::setup( )
 	mm->addMenu( afe );
 
 
-// Vario
-	SetupMenu * va = new SetupMenu( "Vario" );
-	MenuEntry* vae = mm->addMenu( va );
+	if( (int)(password.get()) == 271 ) {
+		student_mode.set( 0 );
+		password.set( 0 );
+	}
 
-	String vunit;
-	if( vario_unit.get() == 0 )
-		vunit = "m/s";
-	else if( vario_unit.get() == 1 )
-		vunit = "x 100ft/m";
-	else if( vario_unit.get() == 2 )
-		vunit = "kt";
-	SetupMenuValFloat * vga = new SetupMenuValFloat( 	"Range", 0, vunit.c_str(),	1.0, 30.0, 1, update_rentry, true, &range );
-	vga->setHelp(PROGMEM"Upper and lower value for Vario graphic display region");
-	vga->setPrecision( 0 );
-	vae->addMenu( vga );
+	if( student_mode.get() )
+	{
+		SetupMenuValFloat * passw = new SetupMenuValFloat( "Expert Password", 0, "", 0, 1000, 1, 0, false, &password  );
+		mm->addMenu( passw );
+	}
+	else
+	{
+		// Vario
+		SetupMenu * va = new SetupMenu( "Vario" );
+		MenuEntry* vae = mm->addMenu( va );
 
-	SetupMenuValFloat * vda = new SetupMenuValFloat( 	"Vario Bar Damping", 0, "sec", 2.0, 10.0, 0.1, 0, false, &vario_delay );
-	vda->setHelp(PROGMEM"Response time, time constant of Vario low pass kalman filter");
-	vae->addMenu( vda );
+		String vunit;
+		if( vario_unit.get() == 0 )
+			vunit = "m/s";
+		else if( vario_unit.get() == 1 )
+			vunit = "x 100ft/m";
+		else if( vario_unit.get() == 2 )
+			vunit = "kt";
+		SetupMenuValFloat * vga = new SetupMenuValFloat( 	"Range", 0, vunit.c_str(),	1.0, 30.0, 1, update_rentry, true, &range );
+		vga->setHelp(PROGMEM"Upper and lower value for Vario graphic display region");
+		vga->setPrecision( 0 );
+		vae->addMenu( vga );
 
-
-
-	SetupMenuValFloat * vds2 = new SetupMenuValFloat( 	"S2F Damping", 0, "sec", 0.10001, 10.0, 0.1, 0, false, &s2f_delay );
-	vds2->setHelp(PROGMEM"Time constant of S2F low pass filter");
-	vae->addMenu( vds2 );
-
-	SetupMenuValFloat * vdav = new SetupMenuValFloat( 	"Average Vario Damping", 0, "sec", 2.0, 60.0,	0.1, 0, false, &vario_av_delay );
-	vdav->setHelp(PROGMEM"Response time, time constant of digital Average Vario Display");
-	vae->addMenu( vdav );
-
-
-	SetupMenuValFloat * vccm = new SetupMenuValFloat( "Mean Climb Minimum", 0, "m/s",	0.0, 2.0, 0.1, 0, false, &core_climb_min );
-	vccm->setHelp(PROGMEM"Minimum climb rate that counts for arithmetic mean climb value (red rhombus left of TE bar)");
-    vae->addMenu( vccm );
-
-    SetupMenuValFloat * vcch = new SetupMenuValFloat( "Mean Climb Period", 0,	"min", 1, 300, 1, 0, false, &core_climb_history );
-    vcch->setHelp(PROGMEM"Number of minutes where samples for mean climb value are regarded, default is last 3 thermals a 15 min");
-    vae->addMenu( vcch );
-
-
-	SetupMenuSelect * sink = new SetupMenuSelect( 	"Polar Sink Display", 0, false, 0 , true, &ps_display );
-	sink->setHelp(PROGMEM"Show polar sink rate together with TE in Vario bar");
-	sink->addEntry( "DISABLE");
-	sink->addEntry( "ENABLE");
-	vae->addMenu( sink );
-
-	SetupMenu * elco = new SetupMenu( "Electronic Compensation" );
-	vae->addMenu( elco );
-	SetupMenuSelect * enac = new SetupMenuSelect(  "Enable/Disable", 0, false, 0 , false, &te_comp_enable );
-	enac->setHelp(PROGMEM"Enable/Disable electronic TE compensation option; Enable only when TE pressure is connected to ST (static) pressure");
-	enac->addEntry( "DISABLE");
-	enac->addEntry( "ENABLE");
-	elco->addMenu( enac );
-
-	SetupMenuValFloat * elca = new SetupMenuValFloat( "Adjustment Factor", 0, "%",	-100, 100, 0.1, 0, false, &te_comp_adjust );
-	elca->setHelp(PROGMEM"Adjustment option for electronic compensation in %. This affects in % the enegry altitude calculated from airspeed");
-	elco->addMenu( elca );
+		SetupMenuValFloat * vda = new SetupMenuValFloat( 	"Vario Bar Damping", 0, "sec", 2.0, 10.0, 0.1, 0, false, &vario_delay );
+		vda->setHelp(PROGMEM"Response time, time constant of Vario low pass kalman filter");
+		vae->addMenu( vda );
 
 
 
-	// Audio
-	SetupMenu * ad = new SetupMenu( "Audio" );
-	MenuEntry* ade = mm->addMenu( ad );
+		SetupMenuValFloat * vds2 = new SetupMenuValFloat( 	"S2F Damping", 0, "sec", 0.10001, 10.0, 0.1, 0, false, &s2f_delay );
+		vds2->setHelp(PROGMEM"Time constant of S2F low pass filter");
+		vae->addMenu( vds2 );
 
-	SetupMenuValFloat * dv = new SetupMenuValFloat( "Default Volume", 0, "%", 0, 100, 1.0, 0, false, &default_volume );
-	ade->addMenu( dv );
-	dv->setHelp(PROGMEM"Default volume for Audio when device is switched on");
-
-	SetupMenuSelect * dt = new SetupMenuSelect( 	"Tone Style", 0, false, 0 , true, &dual_tone );
-	dt->setHelp(PROGMEM"Select dual tone aka ilec sound, (di/da/di) or single tone (di-di-di) mode");
-	dt->addEntry( "Single Tone");      // 0
-	dt->addEntry( "Dual Tone");        // 1
-	ade->addMenu( dt );
-
-	SetupMenuSelect * tch = new SetupMenuSelect( 	"Tone Chopping", 0, false, 0 , true, &chopping_mode );
-	tch->setHelp(PROGMEM"Select tone chopping option on positive values for Vario and or S2F");
-	tch->addEntry( "Disabled");             // 0
-	tch->addEntry( "Vario only");           // 1
-	tch->addEntry( "S2F only");             // 2
-	tch->addEntry( "Vario and S2F");        // 3  default
-	ade->addMenu( tch );
-
-	SetupMenuValFloat * htv = new SetupMenuValFloat( 	"Dual Tone Pich", 0, "%", 0, 50, 1.0, 0, false, &high_tone_var );
-	htv->setHelp(PROGMEM"Tone variation in Dual Tone mode, percent of frequency pitch up for second tone");
-	ade->addMenu( htv );
+		SetupMenuValFloat * vdav = new SetupMenuValFloat( 	"Average Vario Damping", 0, "sec", 2.0, 60.0,	0.1, 0, false, &vario_av_delay );
+		vdav->setHelp(PROGMEM"Response time, time constant of digital Average Vario Display");
+		vae->addMenu( vdav );
 
 
-	SetupMenuSelect * am = new SetupMenuSelect( 	"Audio Mode", 0, false, 0 , true, &audio_mode );
-	am->setHelp( PROGMEM"Selects audio source. Audio either follows Vario, or S2F exclusively, controlled by external switch or automatically by speed" );
+		SetupMenuValFloat * vccm = new SetupMenuValFloat( "Mean Climb Minimum", 0, "m/s",	0.0, 2.0, 0.1, 0, false, &core_climb_min );
+		vccm->setHelp(PROGMEM"Minimum climb rate that counts for arithmetic mean climb value (red rhombus left of TE bar)");
+		vae->addMenu( vccm );
+
+		SetupMenuValFloat * vcch = new SetupMenuValFloat( "Mean Climb Period", 0,	"min", 1, 300, 1, 0, false, &core_climb_history );
+		vcch->setHelp(PROGMEM"Number of minutes where samples for mean climb value are regarded, default is last 3 thermals a 15 min");
+		vae->addMenu( vcch );
+
+
+		SetupMenuSelect * sink = new SetupMenuSelect( 	"Polar Sink Display", 0, false, 0 , true, &ps_display );
+		sink->setHelp(PROGMEM"Show polar sink rate together with TE in Vario bar");
+		sink->addEntry( "DISABLE");
+		sink->addEntry( "ENABLE");
+		vae->addMenu( sink );
+
+		SetupMenu * elco = new SetupMenu( "Electronic Compensation" );
+		vae->addMenu( elco );
+		SetupMenuSelect * enac = new SetupMenuSelect(  "Enable/Disable", 0, false, 0 , false, &te_comp_enable );
+		enac->setHelp(PROGMEM"Enable/Disable electronic TE compensation option; Enable only when TE pressure is connected to ST (static) pressure");
+		enac->addEntry( "DISABLE");
+		enac->addEntry( "ENABLE");
+		elco->addMenu( enac );
+
+		SetupMenuValFloat * elca = new SetupMenuValFloat( "Adjustment Factor", 0, "%",	-100, 100, 0.1, 0, false, &te_comp_adjust );
+		elca->setHelp(PROGMEM"Adjustment option for electronic compensation in %. This affects in % the enegry altitude calculated from airspeed");
+		elco->addMenu( elca );
+
+
+
+		// Audio
+		SetupMenu * ad = new SetupMenu( "Audio" );
+		MenuEntry* ade = mm->addMenu( ad );
+
+		SetupMenuValFloat * dv = new SetupMenuValFloat( "Default Volume", 0, "%", 0, 100, 1.0, 0, false, &default_volume );
+		ade->addMenu( dv );
+		dv->setHelp(PROGMEM"Default volume for Audio when device is switched on");
+
+		SetupMenuSelect * dt = new SetupMenuSelect( 	"Tone Style", 0, false, 0 , true, &dual_tone );
+		dt->setHelp(PROGMEM"Select dual tone aka ilec sound, (di/da/di) or single tone (di-di-di) mode");
+		dt->addEntry( "Single Tone");      // 0
+		dt->addEntry( "Dual Tone");        // 1
+		ade->addMenu( dt );
+
+		SetupMenuSelect * tch = new SetupMenuSelect( 	"Tone Chopping", 0, false, 0 , true, &chopping_mode );
+		tch->setHelp(PROGMEM"Select tone chopping option on positive values for Vario and or S2F");
+		tch->addEntry( "Disabled");             // 0
+		tch->addEntry( "Vario only");           // 1
+		tch->addEntry( "S2F only");             // 2
+		tch->addEntry( "Vario and S2F");        // 3  default
+		ade->addMenu( tch );
+
+		SetupMenuValFloat * htv = new SetupMenuValFloat( 	"Dual Tone Pich", 0, "%", 0, 50, 1.0, 0, false, &high_tone_var );
+		htv->setHelp(PROGMEM"Tone variation in Dual Tone mode, percent of frequency pitch up for second tone");
+		ade->addMenu( htv );
+
+
+		SetupMenuSelect * am = new SetupMenuSelect( 	"Audio Mode", 0, false, 0 , true, &audio_mode );
+		am->setHelp( PROGMEM"Selects audio source. Audio either follows Vario, or S2F exclusively, controlled by external switch or automatically by speed" );
 		am->addEntry( "Vario");
 		am->addEntry( "S2F");
 		am->addEntry( "Switch");
 		am->addEntry( "AutoSpeed");
-	ade->addMenu( am );
+		ade->addMenu( am );
 
-	SetupMenuValFloat * ts = new SetupMenuValFloat( 	"AutoSpeed", 0, "km/h", 30.0, 200.0, 1.0, 0, false, &s2f_speed );
-	ade->addMenu( ts );
-	ts->setHelp(PROGMEM"Transition speed when audio changes to S2F mode in AutoSpeed mode in metric system. 100 km/h equals rounfd 62 mph or 54 knots");
+		SetupMenuValFloat * ts = new SetupMenuValFloat( 	"AutoSpeed", 0, "km/h", 30.0, 200.0, 1.0, 0, false, &s2f_speed );
+		ade->addMenu( ts );
+		ts->setHelp(PROGMEM"Transition speed when audio changes to S2F mode in AutoSpeed mode in metric system. 100 km/h equals rounfd 62 mph or 54 knots");
 
-	SetupMenuValFloat * cf = new SetupMenuValFloat( 	"CenterFreq", 0,	"Hz", 200.0, 2000.0, 10.0, 0, false, &center_freq );
-	cf->setHelp(PROGMEM"Center frequency for Audio at zero Vario or zero S2F delta");
-	ade->addMenu( cf );
-	SetupMenuValFloat * oc = new SetupMenuValFloat( 	"Octaves", 0, "fold", 1.5, 4, 0.1, 0, false, &tone_var );
-	oc->setHelp(PROGMEM"Maximum tone frequency variation");
-	ade->addMenu( oc );
-
-
-	SetupMenuSelect * ar = new SetupMenuSelect( 	"Range", 0, false, 0 , true, &audio_range  );
-
-	audio_range_sm = ar;
-	sprintf( rentry, "Variable (%d m/s)", (int)(range.get()) );
-	ar->addEntry( "Max eq. 5 m/s");
-	ar->addEntry( "Max eq. 10 m/s");
-	ar->addEntry( rentry );
-	ar->setHelp(PROGMEM"Select either fix (5m/s) or variable Audio range according to current vario setting");
-	ade->addMenu( ar );
-
-	SetupMenu * db = new SetupMenu( "Deadband" );
-	MenuEntry* dbe = ade->addMenu( db );
-	dbe->setHelp(PROGMEM"Audio dead band limits within Audio remains silent in metric scale. 0,1 m/s equals roughtly 20 ft/min or 0.2 knots");
-
-	SetupMenuValFloat * dbminlv = new SetupMenuValFloat( 	"Lower Value Vario", 0,	"m/s", -5.0, 0, 0.1, 0 , false, &deadband_neg  );
-	dbminlv->setHelp(PROGMEM"Lower limit for Audio mute function");
-	dbe->addMenu( dbminlv );
-
-	SetupMenuValFloat * dbmaxlv = new SetupMenuValFloat( 	"Upper Value Vario", 0,	"m/s", 0, 5.0, 0.1, 0 , false, &deadband );
-	dbmaxlv->setHelp(PROGMEM"Upper limit for Audio mute function");
-	dbe->addMenu( dbmaxlv );
-
-	SetupMenuValFloat * dbmaxls2f = new SetupMenuValFloat( 	"S2F Deadband", 	0, "+-km/h", 0, 25.0, 1, 0 , false, &s2f_deadband );
-	dbmaxls2f->setHelp(PROGMEM"Positive and negative limit in speed deviation for S2F mute function");
-	dbe->addMenu( dbmaxls2f );
-
-	SetupMenuValFloat * afac = new SetupMenuValFloat( 	"Audio Exponent", 	0, "", 0.1, 2, 0.025, 0 , false, &audio_factor );
-	afac->setHelp(PROGMEM"Exponential factor < 1 gives a logarithmic, and > 1 exponential characteristic for frequency of audio signal");
-	ade->addMenu( afac);
+		SetupMenuValFloat * cf = new SetupMenuValFloat( 	"CenterFreq", 0,	"Hz", 200.0, 2000.0, 10.0, 0, false, &center_freq );
+		cf->setHelp(PROGMEM"Center frequency for Audio at zero Vario or zero S2F delta");
+		ade->addMenu( cf );
+		SetupMenuValFloat * oc = new SetupMenuValFloat( 	"Octaves", 0, "fold", 1.5, 4, 0.1, 0, false, &tone_var );
+		oc->setHelp(PROGMEM"Maximum tone frequency variation");
+		ade->addMenu( oc );
 
 
+		SetupMenuSelect * ar = new SetupMenuSelect( 	"Range", 0, false, 0 , true, &audio_range  );
 
-// Polar Setup
-	SetupMenu * po = new SetupMenu( "Polar" );
-	po->setHelp( PROGMEM"Polar setup to match performance of glider");
-	MenuEntry* poe = mm->addMenu( po );
+		audio_range_sm = ar;
+		sprintf( rentry, "Variable (%d m/s)", (int)(range.get()) );
+		ar->addEntry( "Max eq. 5 m/s");
+		ar->addEntry( "Max eq. 10 m/s");
+		ar->addEntry( rentry );
+		ar->setHelp(PROGMEM"Select either fix (5m/s) or variable Audio range according to current vario setting");
+		ade->addMenu( ar );
+
+		SetupMenu * db = new SetupMenu( "Deadband" );
+		MenuEntry* dbe = ade->addMenu( db );
+		dbe->setHelp(PROGMEM"Audio dead band limits within Audio remains silent in metric scale. 0,1 m/s equals roughtly 20 ft/min or 0.2 knots");
+
+		SetupMenuValFloat * dbminlv = new SetupMenuValFloat( 	"Lower Value Vario", 0,	"m/s", -5.0, 0, 0.1, 0 , false, &deadband_neg  );
+		dbminlv->setHelp(PROGMEM"Lower limit for Audio mute function");
+		dbe->addMenu( dbminlv );
+
+		SetupMenuValFloat * dbmaxlv = new SetupMenuValFloat( 	"Upper Value Vario", 0,	"m/s", 0, 5.0, 0.1, 0 , false, &deadband );
+		dbmaxlv->setHelp(PROGMEM"Upper limit for Audio mute function");
+		dbe->addMenu( dbmaxlv );
+
+		SetupMenuValFloat * dbmaxls2f = new SetupMenuValFloat( 	"S2F Deadband", 	0, "+-km/h", 0, 25.0, 1, 0 , false, &s2f_deadband );
+		dbmaxls2f->setHelp(PROGMEM"Positive and negative limit in speed deviation for S2F mute function");
+		dbe->addMenu( dbmaxls2f );
+
+		SetupMenuValFloat * afac = new SetupMenuValFloat( 	"Audio Exponent", 	0, "", 0.1, 2, 0.025, 0 , false, &audio_factor );
+		afac->setHelp(PROGMEM"Exponential factor < 1 gives a logarithmic, and > 1 exponential characteristic for frequency of audio signal");
+		ade->addMenu( afac);
 
 
-	SetupMenuSelect * glt = new SetupMenuSelect( 	"Glider-Type",	0, false, polar_select, true, &glider_type );
-	poe->addMenu( glt );
 
-	ESP_LOGI(FNAME, "Number of Polars installed: %d", Polars::numPolars() );
-	for( int x=0; x< Polars::numPolars(); x++ ){
-		glt->addEntry( Polars::getPolar(x).type );
+		// Polar Setup
+		SetupMenu * po = new SetupMenu( "Polar" );
+		po->setHelp( PROGMEM"Polar setup to match performance of glider");
+		MenuEntry* poe = mm->addMenu( po );
+
+
+		SetupMenuSelect * glt = new SetupMenuSelect( 	"Glider-Type",	0, false, polar_select, true, &glider_type );
+		poe->addMenu( glt );
+
+		ESP_LOGI(FNAME, "Number of Polars installed: %d", Polars::numPolars() );
+		for( int x=0; x< Polars::numPolars(); x++ ){
+			glt->addEntry( Polars::getPolar(x).type );
+		}
+
+		SetupMenu * pa = new SetupMenu( "PolarAdjust" );
+		pa->setHelp(PROGMEM "Adjust Polar at 3 points of selected polar in commonly used metric system for Polars", 230 );
+		poe->addMenu( pa );
+
+		SetupMenuValFloat * wil = new SetupMenuValFloat( "Wingload", 0, "kg/m2", 10.0, 100.0, 0.1, polar_adj, false, &polar_wingload );
+		wil->setHelp(PROGMEM"Wingload that corresponds to the 3 value pairs for speed/sink of polar");
+		pa->addMenu( wil );
+		SetupMenuValFloat * pov1 = new SetupMenuValFloat( "Speed 1", 0, "km/h", 50.0, 120.0, 1, polar_adj, false, &polar_speed1);
+		pov1->setHelp(PROGMEM"Speed 1, near to minimum sink from polar e.g. 80 km/h");
+		pa->addMenu( pov1 );
+		SetupMenuValFloat * pos1 = new SetupMenuValFloat( "Sink  1", 0, "m/s", -3.0, 0.0, 0.01, polar_adj, false, &polar_sink1 );
+		pos1->setHelp(PROGMEM"Sink indication at Speed 1 from polar");
+		pa->addMenu( pos1 );
+		SetupMenuValFloat * pov2 = new SetupMenuValFloat( "Speed 2", 0, "km/h", 100.0, 180.0, 1, polar_adj, false, &polar_speed2 );
+		pov2->setHelp(PROGMEM"Speed 2 for a moderate cruise from polar e.g. 120 km/h");
+		pa->addMenu( pov2 );
+		SetupMenuValFloat * pos2 = new SetupMenuValFloat( "Sink  2", 0, "m/s", -5.0, 0.0, 0.01, polar_adj, false, &polar_sink2 );
+		pos2->setHelp(PROGMEM"Sink indication at Speed 2 from polar");
+		pa->addMenu( pos2 );
+		SetupMenuValFloat * pov3 = new SetupMenuValFloat( "Speed 3", 0, "km/h", 120.0, 250.0, 1, polar_adj, false, &polar_speed3 );
+		pov3->setHelp(PROGMEM"Speed 3 for a fast cruise from polar e.g. 170 km/h");
+		pa->addMenu( pov3 );
+		SetupMenuValFloat * pos3 = new SetupMenuValFloat( "Sink  3", 0, "m/s", -6.0, 0.0, 0.01, polar_adj, false, &polar_sink3 );
+		pos3->setHelp(PROGMEM"Sink indication at Speed 3 from polar");
+		pa->addMenu( pos3 );
+
+		SetupMenuValFloat * maxbal = new SetupMenuValFloat(	"Max Ballast", 0, "liters", 0, 500, 1, 0, false, &polar_max_ballast );
+		maxbal->setHelp(PROGMEM"Maximum water ballast for selected glider to allow sync from XCSoar using fraction of max ballast");
+		poe->addMenu( maxbal );
+
+		SetupMenuValFloat * wingarea = new SetupMenuValFloat( "Wing Area", 0, "m2", 0, 50, 0.1, 0, false, &polar_wingarea );
+		wingarea->setHelp(PROGMEM"Wingarea for the selected glider, to allow adjustments to support wing extensions or new types in square meters");
+		poe->addMenu( wingarea );
+
+		SetupMenu * opt = new SetupMenu( "Options" );
+		mm->addMenu( opt );
+		if( student_mode.get() == 0 ) {
+			SetupMenuSelect *stumo  = new SetupMenuSelect( "Student Mode", 0, true, 0, true, &student_mode );
+			opt->addMenu( stumo );
+			stumo->setHelp( PROGMEM "Student mode, disables all sophisticated setup to just basic pre-flight related items like MC, ballast or bugs");
+			stumo->addEntry( "Disable");
+			stumo->addEntry( "Enable");
+		}
+
+		SetupMenu * wk = new SetupMenu( "Flap (WK) Indicator" );
+		MenuEntry* wkm = opt->addMenu( wk );
+		SetupMenuSelect * wke = new SetupMenuSelect( "Flap Indicator Option", 0, true, 0, true, &flap_enable );
+		wke->addEntry( "Disable");
+		wke->addEntry( "Enable");
+		wke->setHelp(PROGMEM"Option to enable Flap (WK) Indicator to assist optimum flap setting depending on speed and ballast");
+		wkm->addMenu( wke );
+
+		SetupMenuValFloat * plus1 = new SetupMenuValFloat("Speed +2 to +1", 0, "km/h",  50, 150, 1, 0, false, &flap_plus_1  );
+		plus1->setHelp(PROGMEM"Speed for transition from +2 to +1 flap setting");
+		wkm->addMenu( plus1 );
+		SetupMenuValFloat * zero = new SetupMenuValFloat("Speed +1 to 0", 0, "km/h",  50, 150, 1, 0, false, &flap_0  );
+		zero->setHelp(PROGMEM"Speed for transition from +1 to 0 flap setting");
+		wkm->addMenu( zero );
+		SetupMenuValFloat * min1 = new SetupMenuValFloat("Speed 0 to -1", 0, "km/h",  80, 180, 1, 0, false, &flap_minus_1  );
+		min1->setHelp(PROGMEM"Speed for transition from 0 to -1 flap setting");
+		wkm->addMenu( min1 );
+		SetupMenuValFloat * min2 = new SetupMenuValFloat("Speed -1 to -2", 0, "km/h",  100, 280, 1, 0, false, &flap_minus_2  );
+		min2->setHelp(PROGMEM"Speed for transition from -1 to -2 flap setting");
+		wkm->addMenu( min2 );
+
+
+		// Units
+		SetupMenu * un = new SetupMenu( "Units" );
+		un->setHelp( PROGMEM "Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units");
+		SetupMenuSelect * alu = new SetupMenuSelect( 	"Altimeter",	0, true,  0, true, &alt_unit );
+		alu->addEntry( "Meter       (m)");
+		alu->addEntry( "Foot        (ft)");
+		alu->addEntry( "FlightLevel (FL)");
+		un->addMenu( alu );
+		SetupMenuSelect * iau = new SetupMenuSelect( "Indicated Airspeed", 0, true , 0, true, &ias_unit );
+		iau->addEntry( "Km per hour     (Km/h)");
+		iau->addEntry( "Miles  per hour (mph)");
+		iau->addEntry( "Knots               (kt)");
+		un->addMenu( iau );
+		SetupMenuSelect * vau = new SetupMenuSelect( "Vario", 0, true , 0, true, &vario_unit );
+		vau->addEntry( "Meters/sec   (m/s)");
+		vau->addEntry( "Foot per min (ft/min)");
+		vau->addEntry( "Knots        (knots)");
+		un->addMenu( vau );
+		opt->addMenu( un );
+
+
+
+		SetupMenuSelect * amode = new SetupMenuSelect( "Airspeed Mode",	0, false, 0, true, &airspeed_mode );
+		opt->addMenu( amode );
+		amode->setHelp( PROGMEM "Select mode of Airspeed indicator to display IAS (Indicated AirSpeed, default) or TAS (True AirSpeed) considering air density");
+		amode->addEntry( "IAS");
+		amode->addEntry( "TAS");
+
+
+
+		SetupMenuSelect * atl = new SetupMenuSelect( "Automatic Transition",	0, false, 0, true, &fl_auto_transition );
+		opt->addMenu( atl );
+		atl->setHelp( PROGMEM "Option to enable automatic altitude transition to QNH Standard (1013.25) above 'Transition Altitude'");
+		atl->addEntry( "Disable");
+		atl->addEntry( "Enable");
+
+		SetupMenuValFloat * tral = new SetupMenuValFloat( "Transition Altitude", 0, "FL", 0, 400, 10, 0, false, &transition_alt  );
+		tral->setHelp(PROGMEM"Transition altitude (or transition height, when using QFE) is the altitude/height above which standard pressure (QNE) is set (1013.2 mb/hPa)");
+		opt->addMenu( tral );
+
+		SetupMenu * sy = new SetupMenu( "System" );
+		MenuEntry* sye = mm->addMenu( sy );
+
+		SetupMenu * soft = new SetupMenu( "Software Update" );
+		sye->addMenu( soft );
+
+		Version V;
+		static int select_dummy = 0;
+		SetupMenuSelect * ver = new SetupMenuSelect( "Software Version", &select_dummy, false, 0, false );
+		ver->addEntry( V.version() );
+		soft->addMenu( ver );
+
+		SetupMenuSelect * upd = new SetupMenuSelect( "Software Update", 0, true, 0, true, &software_update );
+		soft->addMenu( upd );
+		upd->setHelp(PROGMEM "Software Update over the air (OTA). Start Wifi AP, then connect to Wifi 'ESP32 OTA' and open http://192.161.0.1 to upload firmware");
+		upd->addEntry( "Cancel");
+		upd->addEntry( "Start Wifi AP");
+
+		SetupMenuSelect * fa = new SetupMenuSelect( "Factory Reset", 0, true, 0, false, &factory_reset );
+		fa->setHelp(PROGMEM "Option to reset all settings to factory defaults, means metric system, 5m/s vario range and more");
+		fa->addEntry( "Cancel");
+		fa->addEntry( "ResetAll");
+		sye->addMenu( fa );
+
+		SetupMenu * bat = new SetupMenu( "Battery Setup" );
+		bat->setHelp( PROGMEM "Adjust corresponding voltage for battery symbol display low,red,yellow and full");
+		sye->addMenu( bat );
+
+		SetupMenuValFloat * blow = new SetupMenuValFloat( "Battery Low", 0, "Volt ", 0.0, 28.0, 0.1, 0, false, &bat_low_volt );
+		SetupMenuValFloat * bred = new SetupMenuValFloat( "Battery Red", 0, "Volt ", 0.0, 28.0, 0.1, 0, false, &bat_red_volt  );
+		SetupMenuValFloat * byellow = new SetupMenuValFloat( "Battery Yellow", 0, "Volt ", 0.0, 28.0, 0.1, 0, false, &bat_yellow_volt );
+		SetupMenuValFloat * bfull = new SetupMenuValFloat( "Battery Full", 0, "Volt ", 0.0, 28.0, 0.1, 0, false, &bat_full_volt  );
+
+		SetupMenuSelect * batv = new SetupMenuSelect( "Battery Display", 0, false, 0, true, &battery_display  );
+		batv->setHelp(PROGMEM "Option to display battery charge state either in Percentage e.g. 75% or Voltage e.g. 12.5V");
+		batv->addEntry( "Percentage");
+		batv->addEntry( "Voltage");
+
+		bat->addMenu(blow);
+		bat->addMenu(bred);
+		bat->addMenu(byellow);
+		bat->addMenu(bfull);
+		bat->addMenu( batv );
+
+		SetupMenu * hardware = new SetupMenu( "Hardware Setup" );
+		hardware->setHelp( PROGMEM "Setup variometer hardware like display, rotary");
+		sye->addMenu( hardware );
+
+		SetupMenu * display = new SetupMenu( "DISPLAY Setup" );
+		hardware->addMenu( display );
+		// UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P
+		if( display_type.get() == UNIVERSAL )
+		{
+			SetupMenuSelect * dtype = new SetupMenuSelect( 	"Display Type", 0, false, 0, true, &display_type );
+			dtype->setHelp( PROGMEM "Factory setup for corresponding display type used");
+			dtype->addEntry( "UNIVERSAL");
+			dtype->addEntry( "RAYSTAR_RFJ240L_40P");
+			dtype->addEntry( "ST7789_2INCH_12P");
+			dtype->addEntry( "ILI9341_TFT_18P");
+			display->addMenu( dtype );
+		}
+		// Orientation   _display_orientation
+		SetupMenuSelect * diso = new SetupMenuSelect( "Display Orientation", 0, true , 0, true, &display_orientation );
+		display->addMenu( diso );
+		diso->setHelp( PROGMEM "Display Orientation either NORMAL means control panel is right, or TOPDOWN means control panel is left");
+		diso->addEntry( "NORMAL (Rotary left)");
+		diso->addEntry( "TOPDOWN (Rotary right)");
+
+		SetupMenu * rotary = new SetupMenu( "Rotary Setup" );
+		hardware->addMenu( rotary );
+
+		SetupMenuSelect * rotype = new SetupMenuSelect( "Rotary Direction", 0, false , 0, false, &rotary_dir );
+		rotary->addMenu( rotype );
+		rotype->setHelp( PROGMEM "Select type of rotary switch, different brands may need adjustment");
+		rotype->addEntry( "Clockwise");
+		rotype->addEntry( "Counterclockwise");
+
+		SetupMenuSelect * roinc = new SetupMenuSelect( "Rotary Increment", 0, false , 0, false, &rotary_inc );
+		rotary->addMenu( roinc );
+		roinc->setHelp( PROGMEM "Select type of rotary increment per detent, different brands may need adjustmet");
+		roinc->addEntry( "Single Increment");
+		roinc->addEntry( "Double Increment");
+
+		float fva = factory_volt_adjust.get();
+		if( abs(fva - 0.00815) < 0.00001 ) {
+			ESP_LOGI(FNAME,"Add option to Factory adjust ADC; not yet done");
+			SetupMenuValFloat * fvoltadj = new SetupMenuValFloat( 	"Factory Voltmeter Adj", 0, "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust );
+			fvoltadj->setHelp(PROGMEM "Option to fine factory adjust voltmeter");
+			sye->addMenu( fvoltadj );
+		}
+
+
+		// Altimeter, IAS
+		SetupMenu * aia = new SetupMenu( "Altimeter, Airspeed" );
+		sye->addMenu( aia );
+		SetupMenuSelect * als = new SetupMenuSelect( "Altimeter Source",	0, false, 0, true, &alt_select );
+		aia->addMenu( als );
+		als->setHelp( PROGMEM "Select Source of altimeter to either barometric or static pressure sensor (default), or TE sensor what results in an 'energy' altitude");
+		als->addEntry( "TE   Sensor");
+		als->addEntry( "Baro Sensor");
+
+		SetupMenuValFloat * spc = new SetupMenuValFloat( "IAS Calibration", 0, "%", -10, 10, 1, 0, false, &speedcal  );
+		spc->setHelp(PROGMEM"Calibration of indicated airspeed (IAS). Normally not needed, hence pressure probes may have systematic error");
+		aia->addMenu( spc );
+
+
+		// Bluetooth
+		String btname="Bluetooth   ";
+		btname += SetupCommon::getID();
+
+		SetupMenuSelect * btm = new SetupMenuSelect(  btname, 0, true, 0, true, &blue_enable );
+		btm->addEntry( "Sender OFF");
+		btm->addEntry( "Sender ON");
+		opt->addMenu( btm );
+
+		// Rotary Default
+		SetupMenuSelect * rd = new SetupMenuSelect( "Rotary Default", 0, false, 0, true, &rot_default );
+		sye->addMenu( rd );
+		rd->setHelp(PROGMEM "Select value to be altered at rotary movement outside of setup menu");
+		rd->addEntry( "Volume");
+		rd->addEntry( "MC Value");
+
+		// _serial2_speed
+		SetupMenu * rs232 = new SetupMenu( "RS232 Serial Interface" );
+		sye->addMenu( rs232 );
+		SetupMenuSelect * s2sp = new SetupMenuSelect( PROGMEM "Serial RS232 Speed",	0, false, 0, true, &serial2_speed );
+		rs232->addMenu( s2sp );
+		// s2sp->setHelp( "Serial RS232 (TTL) speed, pins RX:2, TX:3 on external RJ45 connector");
+		s2sp->addEntry( "Serial OFF");
+		s2sp->addEntry( "4800 baud");
+		s2sp->addEntry( "9600 baud");
+		s2sp->addEntry( "19200 baud");
+		s2sp->addEntry( "38400 baud");
+		s2sp->addEntry( "57600 baud");
+		s2sp->addEntry( "115200 baud");
+		SetupMenuSelect * s2lo = new SetupMenuSelect( PROGMEM "Serial BT Bridge", 0, false, 0, true, &serial2_rxloop );
+		rs232->addMenu( s2lo );
+		s2lo->setHelp( "Serial RS232 (TTL) option to retransmit data on serial RX (pin2 RJ45), to bluetooth sender to connect e.g. FLARM");
+		s2lo->addEntry( "Disable");
+		s2lo->addEntry( "Enable");
+
+		SetupMenuSelect * sout = new SetupMenuSelect( PROGMEM "Serial TX", 0, false, 0, true, &serial2_tx );
+		rs232->addMenu( sout );
+		sout->setHelp( "Serial RS232 (TTL) option to transmit OpenVario NMEA and or data from BT on serial TX (pin3 RJ45) to connect serial devices");
+		sout->addEntry( "Disable all");
+		sout->addEntry( "Enable OpenVario");
+		sout->addEntry( "Enable BT Bridge");
+		sout->addEntry( "Enable all");
+
+		SetupMenuSelect * stxi = new SetupMenuSelect( PROGMEM "Serial TX Inversion", 0, true , 0, true, &serial2_tx_inverted );
+		rs232->addMenu( stxi );
+		stxi->setHelp( "Serial RS232 (TTL) option for negative logic, means a '1' will be sent at zero level (RS232 standard and default) and vice versa");
+		stxi->addEntry( "Normal");
+		stxi->addEntry( "Inverted");
+
+		SetupMenuSelect * srxi = new SetupMenuSelect( PROGMEM "Serial RX Inversion", 0, true, 0, true, &serial2_rx_inverted );
+		rs232->addMenu( srxi );
+		srxi->setHelp( "Serial RS232 (TTL) option for negative logic, means a '1' will be received at zero level (RS232 standard and default) and vice versa");
+		srxi->addEntry( "Normal");
+		srxi->addEntry( "Inverted");
+
+		SetupMenuSelect * nmea = new SetupMenuSelect( PROGMEM "NMEA Protocol", 0, false , 0, true, &nmea_protocol );
+		sye->addMenu( nmea );
+		nmea->setHelp( "Setup protocol used for NMEA sending what corresponds to the driver used in OpenVario");
+		nmea->addEntry( "OpenVario");
+		nmea->addEntry( "Borgelt");
+
 	}
-
-	SetupMenu * pa = new SetupMenu( "PolarAdjust" );
-	pa->setHelp(PROGMEM "Adjust Polar at 3 points of selected polar in commonly used metric system for Polars", 230 );
-	poe->addMenu( pa );
-
-	SetupMenuValFloat * wil = new SetupMenuValFloat( "Wingload", 0, "kg/m2", 10.0, 100.0, 0.1, polar_adj, false, &polar_wingload );
-	wil->setHelp(PROGMEM"Wingload that corresponds to the 3 value pairs for speed/sink of polar");
-	pa->addMenu( wil );
-	SetupMenuValFloat * pov1 = new SetupMenuValFloat( "Speed 1", 0, "km/h", 50.0, 120.0, 1, polar_adj, false, &polar_speed1);
-	pov1->setHelp(PROGMEM"Speed 1, near to minimum sink from polar e.g. 80 km/h");
-	pa->addMenu( pov1 );
-	SetupMenuValFloat * pos1 = new SetupMenuValFloat( "Sink  1", 0, "m/s", -3.0, 0.0, 0.01, polar_adj, false, &polar_sink1 );
-	pos1->setHelp(PROGMEM"Sink indication at Speed 1 from polar");
-	pa->addMenu( pos1 );
-	SetupMenuValFloat * pov2 = new SetupMenuValFloat( "Speed 2", 0, "km/h", 100.0, 180.0, 1, polar_adj, false, &polar_speed2 );
-	pov2->setHelp(PROGMEM"Speed 2 for a moderate cruise from polar e.g. 120 km/h");
-	pa->addMenu( pov2 );
-	SetupMenuValFloat * pos2 = new SetupMenuValFloat( "Sink  2", 0, "m/s", -5.0, 0.0, 0.01, polar_adj, false, &polar_sink2 );
-	pos2->setHelp(PROGMEM"Sink indication at Speed 2 from polar");
-	pa->addMenu( pos2 );
-	SetupMenuValFloat * pov3 = new SetupMenuValFloat( "Speed 3", 0, "km/h", 120.0, 250.0, 1, polar_adj, false, &polar_speed3 );
-	pov3->setHelp(PROGMEM"Speed 3 for a fast cruise from polar e.g. 170 km/h");
-	pa->addMenu( pov3 );
-	SetupMenuValFloat * pos3 = new SetupMenuValFloat( "Sink  3", 0, "m/s", -6.0, 0.0, 0.01, polar_adj, false, &polar_sink3 );
-	pos3->setHelp(PROGMEM"Sink indication at Speed 3 from polar");
-	pa->addMenu( pos3 );
-
-	SetupMenuValFloat * maxbal = new SetupMenuValFloat(	"Max Ballast", 0, "liters", 0, 500, 1, 0, false, &polar_max_ballast );
-	maxbal->setHelp(PROGMEM"Maximum water ballast for selected glider to allow sync from XCSoar using fraction of max ballast");
-	poe->addMenu( maxbal );
-
-	SetupMenuValFloat * wingarea = new SetupMenuValFloat( "Wing Area", 0, "m2", 0, 50, 0.1, 0, false, &polar_wingarea );
-	wingarea->setHelp(PROGMEM"Wingarea for the selected glider, to allow adjustments to support wing extensions or new types in square meters");
-	poe->addMenu( wingarea );
-
-
-
-	SetupMenu * wk = new SetupMenu( "Flap (WK) Indicator" );
-	MenuEntry* wkm = mm->addMenu( wk );
-	SetupMenuSelect * wke = new SetupMenuSelect( "Flap Indicator Option", 0, true, 0, true, &flap_enable );
-	wke->addEntry( "Disable");
-	wke->addEntry( "Enable");
-	wke->setHelp(PROGMEM"Option to enable Flap (WK) Indicator to assist optimum flap setting depending on speed and ballast");
-	wkm->addMenu( wke );
-
-	SetupMenuValFloat * plus1 = new SetupMenuValFloat("Speed +2 to +1", 0, "km/h",  50, 150, 1, 0, false, &flap_plus_1  );
-	plus1->setHelp(PROGMEM"Speed for transition from +2 to +1 flap setting");
-	wkm->addMenu( plus1 );
-	SetupMenuValFloat * zero = new SetupMenuValFloat("Speed +1 to 0", 0, "km/h",  50, 150, 1, 0, false, &flap_0  );
-	zero->setHelp(PROGMEM"Speed for transition from +1 to 0 flap setting");
-	wkm->addMenu( zero );
-	SetupMenuValFloat * min1 = new SetupMenuValFloat("Speed 0 to -1", 0, "km/h",  80, 180, 1, 0, false, &flap_minus_1  );
-	min1->setHelp(PROGMEM"Speed for transition from 0 to -1 flap setting");
-	wkm->addMenu( min1 );
-	SetupMenuValFloat * min2 = new SetupMenuValFloat("Speed -1 to -2", 0, "km/h",  100, 280, 1, 0, false, &flap_minus_2  );
-	min2->setHelp(PROGMEM"Speed for transition from -1 to -2 flap setting");
-	wkm->addMenu( min2 );
-
-	SetupMenu * sy = new SetupMenu( "System" );
-	MenuEntry* sye = mm->addMenu( sy );
-
-	SetupMenu * soft = new SetupMenu( "Software Update" );
-	sye->addMenu( soft );
-
-	Version V;
-	static int select_dummy = 0;
-	SetupMenuSelect * ver = new SetupMenuSelect( "Software Version", &select_dummy, false, 0, false );
-	ver->addEntry( V.version() );
-	soft->addMenu( ver );
-
-	SetupMenuSelect * upd = new SetupMenuSelect( "Software Update", 0, true, 0, true, &software_update );
-	soft->addMenu( upd );
-	upd->setHelp(PROGMEM "Software Update over the air (OTA). Start Wifi AP, then connect to Wifi 'ESP32 OTA' and open http://192.161.0.1 to upload firmware");
-	upd->addEntry( "Cancel");
-	upd->addEntry( "Start Wifi AP");
-
-	// Bluetooth
-	String btname="Bluetooth   ";
-	btname += SetupCommon::getID();
-
-	SetupMenuSelect * btm = new SetupMenuSelect(  btname, 0, true, 0, true, &blue_enable );
-	btm->addEntry( "Sender OFF");
-	btm->addEntry( "Sender ON");
-	sye->addMenu( btm );
-
-	float fva = factory_volt_adjust.get();
-	if( abs(fva - 0.00815) < 0.00001 ) {
-		ESP_LOGI(FNAME,"Add option to Factory adjust ADC; not yet done");
-		SetupMenuValFloat * fvoltadj = new SetupMenuValFloat( 	"Factory Voltmeter Adj", 0, "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust );
-		fvoltadj->setHelp(PROGMEM "Option to fine factory adjust voltmeter");
-		sye->addMenu( fvoltadj );
-	}
-
-	SetupMenuSelect * fa = new SetupMenuSelect( "Factory Reset", 0, true, 0, false, &factory_reset );
-	fa->setHelp(PROGMEM "Option to reset all settings to factory defaults, means metric system, 5m/s vario range and more");
-	fa->addEntry( "Cancel");
-	fa->addEntry( "ResetAll");
-	sye->addMenu( fa );
-
-	SetupMenu * bat = new SetupMenu( "Battery Setup" );
-	bat->setHelp( PROGMEM "Adjust corresponding voltage for battery symbol display low,red,yellow and full");
-    sye->addMenu( bat );
-
-	SetupMenuValFloat * blow = new SetupMenuValFloat( "Battery Low", 0, "Volt ", 0.0, 28.0, 0.1, 0, false, &bat_low_volt );
-	SetupMenuValFloat * bred = new SetupMenuValFloat( "Battery Red", 0, "Volt ", 0.0, 28.0, 0.1, 0, false, &bat_red_volt  );
-	SetupMenuValFloat * byellow = new SetupMenuValFloat( "Battery Yellow", 0, "Volt ", 0.0, 28.0, 0.1, 0, false, &bat_yellow_volt );
-	SetupMenuValFloat * bfull = new SetupMenuValFloat( "Battery Full", 0, "Volt ", 0.0, 28.0, 0.1, 0, false, &bat_full_volt  );
-
-	SetupMenuSelect * batv = new SetupMenuSelect( "Battery Display", 0, false, 0, true, &battery_display  );
-	batv->setHelp(PROGMEM "Option to display battery charge state either in Percentage e.g. 75% or Voltage e.g. 12.5V");
-	batv->addEntry( "Percentage");
-	batv->addEntry( "Voltage");
-
-	bat->addMenu(blow);
-	bat->addMenu(bred);
-	bat->addMenu(byellow);
-	bat->addMenu(bfull);
-	bat->addMenu( batv );
-
-	SetupMenu * hardware = new SetupMenu( "Hardware Setup" );
-	hardware->setHelp( PROGMEM "Setup variometer hardware like display, rotary");
-	sye->addMenu( hardware );
-
-	SetupMenu * display = new SetupMenu( "DISPLAY Setup" );
-	hardware->addMenu( display );
-	 // UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P
-	if( display_type.get() == UNIVERSAL )
-	{
-		SetupMenuSelect * dtype = new SetupMenuSelect( 	"Display Type", 0, false, 0, true, &display_type );
-		dtype->setHelp( PROGMEM "Factory setup for corresponding display type used");
-		dtype->addEntry( "UNIVERSAL");
-		dtype->addEntry( "RAYSTAR_RFJ240L_40P");
-		dtype->addEntry( "ST7789_2INCH_12P");
-		dtype->addEntry( "ILI9341_TFT_18P");
-		display->addMenu( dtype );
-	}
-    // Orientation   _display_orientation
-	SetupMenuSelect * diso = new SetupMenuSelect( "Display Orientation", 0, true , 0, true, &display_orientation );
-	display->addMenu( diso );
-	diso->setHelp( PROGMEM "Display Orientation either NORMAL means control panel is right, or TOPDOWN means control panel is left");
-	diso->addEntry( "NORMAL (Rotary left)");
-	diso->addEntry( "TOPDOWN (Rotary right)");
-
-	SetupMenu * rotary = new SetupMenu( "Rotary Setup" );
-	hardware->addMenu( rotary );
-
-	SetupMenuSelect * rotype = new SetupMenuSelect( "Rotary Direction", 0, false , 0, false, &rotary_dir );
-	rotary->addMenu( rotype );
-	rotype->setHelp( PROGMEM "Select type of rotary switch, different brands may need adjustment");
-	rotype->addEntry( "Clockwise");
-	rotype->addEntry( "Counterclockwise");
-
-	SetupMenuSelect * roinc = new SetupMenuSelect( "Rotary Increment", 0, false , 0, false, &rotary_inc );
-	rotary->addMenu( roinc );
-	roinc->setHelp( PROGMEM "Select type of rotary increment per detent, different brands may need adjustmet");
-	roinc->addEntry( "Single Increment");
-	roinc->addEntry( "Double Increment");
-
-
-	// Altimeter, IAS
-	SetupMenu * aia = new SetupMenu( "Altimeter, Airspeed" );
-	sye->addMenu( aia );
-	SetupMenuSelect * als = new SetupMenuSelect( "Altimeter Source",	0, false, 0, true, &alt_select );
-	aia->addMenu( als );
-	als->setHelp( PROGMEM "Select Source of altimeter to either barometric or static pressure sensor (default), or TE sensor what results in an 'energy' altitude");
-	als->addEntry( "TE   Sensor");
-	als->addEntry( "Baro Sensor");
-
-	SetupMenuSelect * atl = new SetupMenuSelect( "Automatic Transition",	0, false, 0, true, &fl_auto_transition );
-	aia->addMenu( atl );
-	atl->setHelp( PROGMEM "Option to enable automatic altitude transition to QNH Standard (1013.25) above 'Transition Altitude'");
-	atl->addEntry( "Disable");
-	atl->addEntry( "Enable");
-
-	SetupMenuValFloat * tral = new SetupMenuValFloat( "Transition Altitude", 0, "FL", 0, 400, 10, 0, false, &transition_alt  );
-	tral->setHelp(PROGMEM"Transition altitude (or transition height, when using QFE) is the altitude/height above which standard pressure (QNE) is set (1013.2 mb/hPa)");
-	aia->addMenu( tral );
-
-	SetupMenuSelect * atr = new SetupMenuSelect( "Transition Level",	0, false, 0, true, &alt_select );
-	aia->addMenu( atr );
-	atr->setHelp( PROGMEM "Option to enable automatic transition to QNH Standard (1013.25) above an altitude of 5000 ft");
-	atr->addEntry( "Disable");
-	atr->addEntry( "Enable");
-
-	SetupMenuValFloat * spc = new SetupMenuValFloat( "IAS Calibration", 0, "%", -10, 10, 1, 0, false, &speedcal  );
-	spc->setHelp(PROGMEM"Calibration of indicated airspeed (IAS). Normally not needed, hence pressure probes may have systematic error");
-	aia->addMenu( spc );
-
-	SetupMenuSelect * amode = new SetupMenuSelect( "Airspeed Mode",	0, false, 0, true, &airspeed_mode );
-	aia->addMenu( amode );
-	amode->setHelp( PROGMEM "Select mode of Airspeed indicator to display IAS (Indicated AirSpeed, default) or TAS (True AirSpeed) considering air density");
-	amode->addEntry( "IAS");
-	amode->addEntry( "TAS");
-
-
-	// Units
-	SetupMenu * un = new SetupMenu( "Units" );
-	un->setHelp( PROGMEM "Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units");
-	SetupMenuSelect * alu = new SetupMenuSelect( 	"Altimeter",	0, true,  0, true, &alt_unit );
-	alu->addEntry( "Meter       (m)");
-	alu->addEntry( "Foot        (ft)");
-	alu->addEntry( "FlightLevel (FL)");
-	un->addMenu( alu );
-	SetupMenuSelect * iau = new SetupMenuSelect( "Indicated Airspeed", 0, true , 0, true, &ias_unit );
-	iau->addEntry( "Km per hour     (Km/h)");
-	iau->addEntry( "Miles  per hour (mph)");
-	iau->addEntry( "Knots               (kt)");
-	un->addMenu( iau );
-	SetupMenuSelect * vau = new SetupMenuSelect( "Vario", 0, true , 0, true, &vario_unit );
-	vau->addEntry( "Meters/sec   (m/s)");
-	vau->addEntry( "Foot per min (ft/min)");
-	vau->addEntry( "Knots        (knots)");
-	un->addMenu( vau );
-	sye->addMenu( un );
-
-	// Rotary Default
-	SetupMenuSelect * rd = new SetupMenuSelect( "Rotary Default", 0, false, 0, true, &rot_default );
-	sye->addMenu( rd );
-	rd->setHelp(PROGMEM "Select value to be altered at rotary movement outside of setup menu");
-	rd->addEntry( "Volume");
-	rd->addEntry( "MC Value");
-
-	// _serial2_speed
-	SetupMenu * rs232 = new SetupMenu( "RS232 Serial Interface" );
-	sye->addMenu( rs232 );
-	SetupMenuSelect * s2sp = new SetupMenuSelect( PROGMEM "Serial RS232 Speed",	0, false, 0, true, &serial2_speed );
-	rs232->addMenu( s2sp );
-	// s2sp->setHelp( "Serial RS232 (TTL) speed, pins RX:2, TX:3 on external RJ45 connector");
-	s2sp->addEntry( "Serial OFF");
-	s2sp->addEntry( "4800 baud");
-	s2sp->addEntry( "9600 baud");
-	s2sp->addEntry( "19200 baud");
-	s2sp->addEntry( "38400 baud");
-	s2sp->addEntry( "57600 baud");
-	s2sp->addEntry( "115200 baud");
-	SetupMenuSelect * s2lo = new SetupMenuSelect( PROGMEM "Serial BT Bridge", 0, false, 0, true, &serial2_rxloop );
-	rs232->addMenu( s2lo );
-	s2lo->setHelp( "Serial RS232 (TTL) option to retransmit data on serial RX (pin2 RJ45), to bluetooth sender to connect e.g. FLARM");
-	s2lo->addEntry( "Disable");
-	s2lo->addEntry( "Enable");
-
-	SetupMenuSelect * sout = new SetupMenuSelect( PROGMEM "Serial TX", 0, false, 0, true, &serial2_tx );
-	rs232->addMenu( sout );
-	sout->setHelp( "Serial RS232 (TTL) option to transmit OpenVario NMEA and or data from BT on serial TX (pin3 RJ45) to connect serial devices");
-	sout->addEntry( "Disable all");
-	sout->addEntry( "Enable OpenVario");
-	sout->addEntry( "Enable BT Bridge");
-	sout->addEntry( "Enable all");
-
-	SetupMenuSelect * stxi = new SetupMenuSelect( PROGMEM "Serial TX Inversion", 0, true , 0, true, &serial2_tx_inverted );
-	rs232->addMenu( stxi );
-	stxi->setHelp( "Serial RS232 (TTL) option for negative logic, means a '1' will be sent at zero level (RS232 standard and default) and vice versa");
-	stxi->addEntry( "Normal");
-	stxi->addEntry( "Inverted");
-
-	SetupMenuSelect * srxi = new SetupMenuSelect( PROGMEM "Serial RX Inversion", 0, true, 0, true, &serial2_rx_inverted );
-	rs232->addMenu( srxi );
-	srxi->setHelp( "Serial RS232 (TTL) option for negative logic, means a '1' will be received at zero level (RS232 standard and default) and vice versa");
-	srxi->addEntry( "Normal");
-	srxi->addEntry( "Inverted");
-
-	SetupMenuSelect * nmea = new SetupMenuSelect( PROGMEM "NMEA Protocol", 0, false , 0, true, &nmea_protocol );
-	sye->addMenu( nmea );
-	nmea->setHelp( "Setup protocol used for NMEA sending what corresponds to the driver used in OpenVario");
-	nmea->addEntry( "OpenVario");
-	nmea->addEntry( "Borgelt");
-
 	SetupMenu::display();
 }
 
@@ -991,7 +1011,7 @@ void SetupMenuValFloat::display( int mode ){
 	y=0;
 
 	if( mode == 1 )
-	    vTaskDelay(1000 / portTICK_PERIOD_MS);
+		vTaskDelay(1000 / portTICK_PERIOD_MS);
 	ESP_LOGI(FNAME,"~SetupMenuValFloat display");
 }
 
@@ -1030,8 +1050,8 @@ void SetupMenuValFloat::up( int count ){
 		count--;
 	}
 	if( *_value > _max )
-			*_value = _max;
-    displayVal();
+		*_value = _max;
+	displayVal();
 	if( _action != 0 )
 		(*_action)( this );
 }
@@ -1139,15 +1159,15 @@ void SetupMenuSelect::down(int count){
 		return;
 
 	if( _numval > 9 ){
-		    xSemaphoreTake(spiMutex,portMAX_DELAY );
-			while( count ) {
-				if( (*_select) > 0 )
-					(*_select)--;
-				count--;
-			}
-			ucg->setPrintPos( 1, 50 );
-			ucg->printf("%s                  ",_values[*_select].c_str());
-			xSemaphoreGive(spiMutex );
+		xSemaphoreTake(spiMutex,portMAX_DELAY );
+		while( count ) {
+			if( (*_select) > 0 )
+				(*_select)--;
+			count--;
+		}
+		ucg->setPrintPos( 1, 50 );
+		ucg->printf("%s                  ",_values[*_select].c_str());
+		xSemaphoreGive(spiMutex );
 	}else {
 		ucg->setColor(COLOR_BLACK);
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
@@ -1171,7 +1191,7 @@ void SetupMenuSelect::up(int count){
 			if( (*_select) <  _numval-1 )
 				(*_select)++;
 			count--;
-			}
+		}
 		ucg->setPrintPos( 1, 50 );
 		ucg->printf("%s                   ", _values[*_select].c_str());
 		xSemaphoreGive(spiMutex );

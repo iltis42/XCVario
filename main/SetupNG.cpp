@@ -66,7 +66,7 @@ SetupNG<float>  		transition_alt( "TRANS_ALT", 50 );   // Transition Altitude
 SetupNG<int>  			glider_type( "GLIDER_TYPE", 0 );
 SetupNG<int>  			ps_display( "PS_DISPLAY", 1 );
 
-SetupNG<float>  		as_offset( "AS_OFFSET" , 0 );
+SetupNG<float>  		as_offset( "AS_OFFSET" , -1 );
 SetupNG<float>  		bat_low_volt( "BAT_LOW_VOLT" , 11.5 );
 SetupNG<float>  		bat_red_volt( "BAT_RED_VOLT", 11.75 );
 SetupNG<float>  		bat_yellow_volt( "BAT_YELLOW_VOLT" , 12.0 );

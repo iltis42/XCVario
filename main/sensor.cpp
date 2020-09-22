@@ -319,27 +319,27 @@ void sensor(void *args){
 
 	if( !works ){
 		ESP_LOGE(FNAME,"Error reading air speed pressure sensor MP5004DP->MCP3321 I2C returned error");
-		display.writeText( line++, "IAS Sensor: Not found");
-		failed_tests += "IAS Sensor: NOT FOUND\n";
+		display.writeText( line++, "AS Sensor: Not found");
+		failed_tests += "AS Sensor: NOT FOUND\n";
 		selftestPassed = false;
 	}else {
 		if( !MP5004DP.offsetPlausible( val )  && ( ias < 50 ) ){
-			ESP_LOGE(FNAME,"Error: IAS P sensor offset MP5004DP->MCP3321 out of bounds (608-1034), act value=%d", val );
-			display.writeText( line++, "IAS Sensor: FAILED" );
-			failed_tests += "IAS Sensor offset test: FAILED\n";
+			ESP_LOGE(FNAME,"Error: AS P sensor offset MP5004DP->MCP3321 out of bounds (608-1034), act value=%d", val );
+			display.writeText( line++, "AS Sensor: FAILED" );
+			failed_tests += "AS Sensor offset test: FAILED\n";
 			selftestPassed = false;
 		}
 		else {
 			ESP_LOGI(FNAME,"MP5004->MCP3321 test PASSED, readout value in bounds (608-1034)=%d", val );
 			char s[40];
 			if( ias > 50 ) {
-				sprintf(s, "IAS Sensor: %d km/h", (int)(ias+0.5) );
+				sprintf(s, "AS Sensor: %d km/h", (int)(ias+0.5) );
 				display.writeText( line++, s );
 			}
 			else
-				display.writeText( line++, "IAS Sensor: OK" );
+				display.writeText( line++, "AS Sensor: OK" );
 
-			failed_tests += "IAS Sensor offset test: PASSED\n";
+			failed_tests += "AS Sensor offset test: PASSED\n";
 		}
 	}
 

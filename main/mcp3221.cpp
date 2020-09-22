@@ -27,7 +27,7 @@ float MCP3221::readAVG( float alpha ) {
 
 	uint16_t newval;
 	esp_err_t ret = readRaw(newval);
-	// ESP_LOGI(FNAME,"%d", newval );
+	// ESP_LOGI(FNAME,"Airspeed AD1: %d", newval );
 	if( ret == ESP_OK ){
 		// ESP_LOGI(FNAME, "%d", newval );
 		if ( exponential_average == 0 ){
@@ -51,6 +51,17 @@ float MCP3221::readAVG( float alpha ) {
 //read a byte (with NAK)
 //I2C.STOP
 
+int  MCP3221::readVal(){
+	int retval = 0;
+	for( int i=0; i<32; i++ ){
+		uint16_t as;
+		readRaw( as );
+		retval += as;
+	}
+	retval = retval / 32;
+	// ESP_LOGI(FNAME,"Airspeed AD1 readVal: %d", retval );
+	return retval;
+}
 
 
 esp_err_t MCP3221::readRaw(uint16_t &val)

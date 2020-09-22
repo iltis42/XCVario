@@ -60,30 +60,32 @@ bool MP5004DP::doOffset( bool force ){
 		return true;
 	}
 	_haveDevice=true;
-	ESP_LOGI(FNAME,"MP5004DP looks like have device");
-	ESP_LOGI(FNAME,"MP5004DP key initialized");
+	ESP_LOGI(FNAME,"looks like have device");
 	_offset = as_offset.get();
+	if( _offset < 0 )
+		ESP_LOGI(FNAME,"offset not yet done: need to recalibrate" );
+	else
+		ESP_LOGI(FNAME,"offset from NVS: %0.1f", _offset );
 
-	ESP_LOGI(FNAME,"MP5004DP got offset from NVS: %0.1f", _offset );
-	bool flying = false;
-	float p;
-	bool plausible = offsetPlausible( _offset );
-    if( plausible ){
-       ESP_LOGI(FNAME,"Offset is plausible");
-	   p = readPascal();
-	   ESP_LOGI(FNAME,"Pressure offset (Pascal): %0.1f",p);
-       if( p > 124.0 ){   // or 50 km/h
-    	  flying = true;
-    	  ESP_LOGI(FNAME,"Flying state: P > 30");
-       }
-       else{
-    	   ESP_LOGI(FNAME,"Not flying");
-       }
-    }
+	int adcval = MCP.readVal();
+	ESP_LOGI(FNAME,"offset from ADC %d", adcval );
 
-	if( force || (plausible && !flying) || !plausible )
+	bool plausible = offsetPlausible( adcval );
+	if( plausible )
+		ESP_LOGI(FNAME,"offset from ADC is plausible");
+	else
+		ESP_LOGI(FNAME,"offset from ADC is NOT plausible");
+
+	int deviation = abs( _offset - adcval );
+	if( deviation < 20 )
+		ESP_LOGI(FNAME,"Deviation in bounds");
+	else
+		ESP_LOGI(FNAME,"Deviation out of bounds");
+
+	// Long term stability of Sensor as from datasheet 0.5% per year -> 4000 * 0.005 = 20
+	if( (_offset < 0 ) || ( plausible && (deviation < 20 ) )  )
 	{
-	 	ESP_LOGI(FNAME,"DP OFFSET correction ongoing, set new _offset...");
+	 	ESP_LOGI(FNAME,"Airspeed OFFSET correction ongoing, calculate new _offset...");
 	 	uint32_t rawOffset=0;
 	 	for( int i=0; i<100; i++){
 	 		uint16_t raw;
@@ -100,7 +102,7 @@ bool MP5004DP::doOffset( bool force ){
   		      ESP_LOGI(FNAME,"Stored new offset in NVS");
 	   	   }
 	   	   else
-	   		   ESP_LOGI(FNAME,"New offset equal old value");
+	   		   ESP_LOGI(FNAME,"New offset equal to value from NVS");
 	    }
 	   	else{
 	   		ESP_LOGW(FNAME,"Offset out of tolerance, ignore odd offset value");
@@ -117,7 +119,7 @@ float MP5004DP::readPascal( float minimum ){
 	if( !_haveDevice ) {
 		return 0.0;
 	}
-	float val = MCP.readAVG( _alpha );
+	float val = MCP.readVal();
 	float _pascal = (val - _offset) * correction * ((100.0 + speedcal.get()) / 100.0);
     if ( (_pascal < minimum) && (minimum != 0) ) {
 	  _pascal = 0.0;

@@ -35,6 +35,9 @@ public:
   */
   ~MCP3221();
 
+  // raw read value of airspeed sensor
+  int readVal();
+
   /*
   Reads the analog register of the MCP3221 and converts it to a useable value. (a voltage)
   */

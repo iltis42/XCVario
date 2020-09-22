@@ -65,7 +65,7 @@ void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
 	pcnt_counter_resume(PCNT_UNIT_0);
 
 
-	if( (hardware_revision.get() >= 1) && (rotary_inc.get() == 0) ) {   // Single step type, need both counters
+	if( rotary_inc.get() == 0 ) {   // Single step type, need both counters
 		// second encoder for incrementing on each rotary step:
 		enc2.pulse_gpio_num = clk; //Rotary Encoder Chan A
 		enc2.ctrl_gpio_num = dt;	 //Rotary Encoder Chan B

@@ -811,12 +811,6 @@ void SetupMenu::setup( )
 		hardware->setHelp( PROGMEM "Setup variometer hardware like display, rotary");
 		sye->addMenu( hardware );
 
-		SetupMenuSelect * hwv = new SetupMenuSelect( "Hardware Revision", 0, true , 0, true, &hardware_revision );
-		hardware->addMenu( hwv );
-		hwv->setHelp( PROGMEM "Setup hardware revision, software supports backward compatible older hardware versions if accordingly is setup here");
-		hwv->addEntry( "ABS Long Vario");
-		hwv->addEntry( "Alu 57 mm Standard");
-
 		SetupMenu * display = new SetupMenu( "DISPLAY Setup" );
 		hardware->addMenu( display );
 		// UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P

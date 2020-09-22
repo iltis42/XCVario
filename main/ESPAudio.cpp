@@ -865,6 +865,13 @@ void ESPAudio::restart()
 	_mute = false;
 }
 
+void ESPAudio::mute( bool mt ) {
+	if( mt ) {
+		dac_output_enable(DAC_CHANNEL_1);
+		dac_scale_set( DAC_CHANNEL_1, 3 );  // 1/8
+		Audio.dac_frequency_set(8, 20000);  // below 20 Hz
+	}
+}
 
 void ESPAudio::begin( dac_channel_t ch, gpio_num_t button  )
 {
@@ -873,6 +880,7 @@ void ESPAudio::begin( dac_channel_t ch, gpio_num_t button  )
 	setup();
 	mute();
 	_ch = ch;
+	dac_output_disable(_ch);
 	_button = button;
 	Poti.begin(GPIO_NUM_21, GPIO_NUM_22);
 
@@ -890,13 +898,21 @@ void ESPAudio::enableAmplifier( bool enable )
 {
 	ESP_LOGI(FNAME,"ESPAudio::enableAmplifier( %d )", (int)enable );
 	// enable Audio
-	if( enable )
-	{
-		gpio_set_direction(GPIO_NUM_19, GPIO_MODE_INPUT );   // use pullup 1 == SOUND 0 == SILENCE
+	if( hardware_revision.get() < 1 ){
+		if( enable )
+			mute( false );
+		else
+			mute( true );
 	}
 	else {
-		gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );   // use pullup 1 == SOUND 0 == SILENCE
-		gpio_set_level(GPIO_NUM_19, 0 );
+		if( enable )
+		{
+			gpio_set_direction(GPIO_NUM_19, GPIO_MODE_INPUT );   // use pullup 1 == SOUND 0 == SILENCE
+		}
+		else {
+			gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );   // use pullup 1 == SOUND 0 == SILENCE
+			gpio_set_level(GPIO_NUM_19, 0 );
+		}
 	}
 }
 

@@ -28,7 +28,7 @@ public:
 	void startAudio();
 	void setValues( float te, float s2fd, float ias, bool fromtest=false );
 	void test( float to, float from );
-	inline void mute( bool mt=true ) { _mute = mt; };
+	static void mute( bool mt=true );
 	void disable( bool disable=true );
 	inline bool getDisable() { return _disable; };  // Just store the disable state and return on demand, Audio itself now can play in setup mode
 	void setup();
@@ -39,16 +39,17 @@ public:
 	inline int  getVolume() { return wiper; };
 	bool selfTest();
 	inline void setTestmode( bool mode ) { _testmode = mode; }
+    static void enableAmplifier( bool enable );  // frue ON, false OFF
+
 
 private:
 	void dac_cosine_enable(dac_channel_t channel, bool enable=true);
 	inline void dac_frequency_set(int clk_8m_div, int frequency_step);
-	void dac_scale_set(dac_channel_t channel, int scale);
+	static void dac_scale_set(dac_channel_t channel, int scale);
 	void dac_offset_set(dac_channel_t channel, int offset);
 	void dac_invert_set(dac_channel_t channel, int invert);
 	static void dactask(void* arg);
 	static void modtask(void* arg );
-    static void enableAmplifier( bool enable );  // frue ON, false OFF
     static void calcS2Fmode();
 	bool inDeadBand( float te );
 	static bool lookup( float f, int& div, int &step );

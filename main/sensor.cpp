@@ -248,6 +248,7 @@ void readTemp(void *pvParameters){
 void sensor(void *args){
 	bool selftestPassed=true;
 	int line = 1;
+	Audio.mute();
 	gpio_set_drive_capability(GPIO_NUM_23, GPIO_DRIVE_CAP_1);
 	esp_wifi_set_mode(WIFI_MODE_NULL);
 	spiMutex = xSemaphoreCreateMutex();
@@ -361,13 +362,30 @@ void sensor(void *args){
 	}
 	ESP_LOGI(FNAME,"BMP280 sensors init..");
 
-
-	bmpBA.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
-	bmpTE.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
-	sleep( 1 );
-
 	float ba_t, ba_p, te_t, te_p;
-	if( ! bmpBA.selfTest( ba_t, ba_p)  ) {
+	if( hardware_revision.get() > 1 ) {
+		bmpTE.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode, CS_bme280TE );
+		bmpBA.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode, CS_bme280BA );
+	}
+	else {
+		bmpTE.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode, CS_bme280BA );
+		bmpBA.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode, CS_bme280TE );
+	}
+
+	sleep( 1 );
+	if( !bmpTE.selfTest(te_t, te_p) ) {
+		ESP_LOGE(FNAME,"HW Error: Self test TE Pressure Sensor failed!");
+		display.writeText( line++, "TE Sensor: Not found");
+		selftestPassed = false;
+		failed_tests += "TE Sensor Test: NOT FOUND\n";
+	}
+	else {
+		ESP_LOGI(FNAME,"TE Sensor         T=%f P=%f", te_t, te_p);
+		display.writeText( line++, "TE Sensor: OK");
+		failed_tests += "TE Sensor Test: PASSED\n";
+	}
+
+	if( !bmpBA.selfTest( ba_t, ba_p)  ) {
 		ESP_LOGE(FNAME,"HW Error: Self test Barometric Pressure Sensor failed!");
 		display.writeText( line++, "Baro Sensor: Not found");
 		selftestPassed = false;
@@ -379,17 +397,7 @@ void sensor(void *args){
 		failed_tests += "Baro Sensor Test: PASSED\n";
 	}
 
-	if( ! bmpTE.selfTest(te_t, te_p) ) {
-		ESP_LOGE(FNAME,"HW Error: Self test TE Pressure Sensor failed!");
-		display.writeText( line++, "TE Sensor: Not found");
-		selftestPassed = false;
-		failed_tests += "TE Sensor Test: NOT FOUND\n";
-	}
-	else {
-		ESP_LOGI(FNAME,"TE Sensor         T=%f P=%f", te_t, te_p);
-		display.writeText( line++, "TE Sensor: OK");
-		failed_tests += "TE Sensor Test: PASSED\n";
-	}
+
 
 	if( selftestPassed ) {
 		if( (abs(ba_t - te_t) >2.0)  && ( ias < 50 ) ) {
@@ -424,19 +432,21 @@ void sensor(void *args){
 
 	ESP_LOGI(FNAME,"Audio begin");
 	Audio.begin( DAC_CHANNEL_1, GPIO_NUM_0);
-	ESP_LOGI(FNAME,"Poti and Audio test");
-	if( !Audio.selfTest() ) {
-		ESP_LOGE(FNAME,"Error: Digital potentiomenter selftest failed");
-		display.writeText( line++, "Digital Poti: Failure");
-		selftestPassed = false;
-		failed_tests += "Digital Audio Poti test: FAILED\n";
-	}
-	else{
-		ESP_LOGI(FNAME,"Digital potentiometer test PASSED");
-		failed_tests += "Digital Audio Poti test: PASSED\n";
-		display.writeText( line++, "Digital Poti: OK");
-	}
 
+	if( hardware_revision.get() > 0 ) {  // Long Vario has analog Poti
+		ESP_LOGI(FNAME,"Poti and Audio test");
+		if( !Audio.selfTest() ) {
+			ESP_LOGE(FNAME,"Error: Digital potentiomenter selftest failed");
+			display.writeText( line++, "Digital Poti: Failure");
+			selftestPassed = false;
+			failed_tests += "Digital Audio Poti test: FAILED\n";
+		}
+		else{
+			ESP_LOGI(FNAME,"Digital potentiometer test PASSED");
+			failed_tests += "Digital Audio Poti test: PASSED\n";
+			display.writeText( line++, "Digital Poti: OK");
+		}
+	}
 
 	float bat = ADC.getBatVoltage(true);
 	if( bat < 1 || bat > 28.0 ){
@@ -556,7 +566,6 @@ void sensor(void *args){
 			delay(5000);
 		}
 	}
-
 
 	display.initDisplay();
 	Menu.begin( &display, &Rotary, &bmpBA, &ADC );

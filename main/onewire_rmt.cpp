@@ -428,7 +428,7 @@ bool onewire_rmt_reset(struct mgos_rmt_onewire *ow) {
     						ESP_LOGW(FNAME,"OW level 0 not reached");
     				}
     				else
-    					ESP_LOGW(FNAME,"OW level 1 not reached");
+    					ESP_LOGD(FNAME,"OW level 1 not reached");
     			}
     			else
     				ESP_LOGW(FNAME,"OW reset duration out of bounds");
@@ -546,7 +546,7 @@ bool onewire_rmt_next(struct mgos_rmt_onewire *ow, uint8_t *rom, int mode) {
     	ESP_LOGD(FNAME,"Nope, now do the one wire reset");
         //uint8_t presence;
         if (onewire_rmt_reset(ow) != true) {
-        	ESP_LOGE(FNAME,"The one wire reset returned false, abort");
+        	ESP_LOGD(FNAME,"The one wire reset returned false, abort");  // may happen when there is no sensor
             // reset the search
             ow->sst.LastDiscrepancy = 0;
             ow->sst.LastDeviceFlag = false;

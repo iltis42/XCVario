@@ -83,9 +83,11 @@ bool MP5004DP::doOffset( bool force ){
 		ESP_LOGI(FNAME,"Deviation out of bounds");
 
 	// Long term stability of Sensor as from datasheet 0.5% per year -> 4000 * 0.005 = 20
-	if( (_offset < 0 ) || ( plausible && (deviation < 20 ) )  )
+	if( (_offset < 0 ) || ( plausible && (deviation < 20 ) ) || autozero.get() )
 	{
 	 	ESP_LOGI(FNAME,"Airspeed OFFSET correction ongoing, calculate new _offset...");
+	 	if( autozero.get() )
+	 		autozero.set(0);
 	 	uint32_t rawOffset=0;
 	 	for( int i=0; i<100; i++){
 	 		uint16_t raw;

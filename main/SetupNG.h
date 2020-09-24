@@ -295,6 +295,6 @@ extern SetupNG<int>		    rotary_dir;
 extern SetupNG<int>		    rotary_inc;
 extern SetupNG<int>		    student_mode;
 extern SetupNG<float>		password;
-
+extern SetupNG<int>		    autozero;
 
 #endif /* MAIN_SETUP_NG_H_ */

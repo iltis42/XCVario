@@ -868,6 +868,12 @@ void SetupMenu::setup( )
 		spc->setHelp(PROGMEM"Calibration of indicated airspeed (IAS). Normally not needed, hence pressure probes may have systematic error");
 		aia->addMenu( spc );
 
+		SetupMenuSelect * auze = new SetupMenuSelect( "AutoZero AS Sensor",	0, true, 0, true, &autozero );
+		aia->addMenu( auze );
+		auze->setHelp( PROGMEM "Recalculate zero point for airspeed sensor on next power on");
+		auze->addEntry( "Cancel");
+		auze->addEntry( "Start Autozero");
+
 
 		// Bluetooth
 		String btname="Bluetooth   ";

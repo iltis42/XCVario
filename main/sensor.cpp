@@ -309,7 +309,7 @@ void sensor(void *args){
 
 	ESP_LOGI(FNAME,"Speed sensors init..");
 	MP5004DP.begin( GPIO_NUM_21, GPIO_NUM_22);  // sda, scl
-	uint16_t val;
+	int val;
 	bool works=MP5004DP.selfTest( val );
 
 	MP5004DP.doOffset();
@@ -324,13 +324,13 @@ void sensor(void *args){
 		selftestPassed = false;
 	}else {
 		if( !MP5004DP.offsetPlausible( val )  && ( ias < 50 ) ){
-			ESP_LOGE(FNAME,"Error: AS P sensor offset MP5004DP->MCP3321 out of bounds (608-1034), act value=%d", val );
-			display.writeText( line++, "AS Sensor: FAILED" );
+			ESP_LOGE(FNAME,"Error: AS P sensor offset MP5004DP->MCP3321 out of bounds (608-1067), act value=%d", val );
+			display.writeText( line++, "AS Sensor: NEED ZERO" );
 			failed_tests += "AS Sensor offset test: FAILED\n";
 			selftestPassed = false;
 		}
 		else {
-			ESP_LOGI(FNAME,"MP5004->MCP3321 test PASSED, readout value in bounds (608-1034)=%d", val );
+			ESP_LOGI(FNAME,"MP5004->MCP3321 test PASSED, readout value in bounds (608-1067)=%d", val );
 			char s[40];
 			if( ias > 50 ) {
 				sprintf(s, "AS Sensor: %d km/h", (int)(ias+0.5) );

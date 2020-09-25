@@ -27,10 +27,12 @@ bool MP5004DP::begin(gpio_num_t sda, gpio_num_t scl ){
 	return true;
 }
 
-bool MP5004DP::selfTest(uint16_t& val)
+bool MP5004DP::selfTest(int& val)
 {
-	if( MCP.readRaw(val) == ESP_OK )
+	val = MCP.readVal();
+	if( MCP.readVal() >= 0 ) {
 		return( true);
+	}
 	else
 		return(false);
 }

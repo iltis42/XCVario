@@ -55,8 +55,10 @@ int  MCP3221::readVal(){
 	int retval = 0;
 	for( int i=0; i<32; i++ ){
 		uint16_t as;
-		readRaw( as );
-		retval += as;
+		if( readRaw( as ) == ESP_OK )
+			retval += as;
+		else
+			return -1;
 	}
 	retval = retval / 32;
 	// ESP_LOGI(FNAME,"Airspeed AD1 readVal: %d", retval );

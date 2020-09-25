@@ -82,6 +82,8 @@ void BTSender::heartbeat_handler(struct btstack_timer_source *ts){
 				portENTER_CRITICAL_ISR(&btmux);
 			    mybuf.pull(&s);
 			    portEXIT_CRITICAL_ISR(&btmux);
+			    ESP_LOGD(FNAME,"RFCOMM TX (CH %u), size %u", rfcomm_channel_id, s.length() );
+			    ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
 				int err = rfcomm_send(rfcomm_channel_id, (uint8_t*) s.c_str(), s.length() );
 				if (err) {
 					ESP_LOGE(FNAME,"rfcomm_send -> error %d", err);
@@ -109,14 +111,9 @@ void BTSender::packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *p
 		}
 		memcpy( rxBuffer, packet, size );
 		rxBuffer[size] = 0;
-		ESP_LOGI(FNAME,"RFCOMM RX CH %u, size %u: %s", channel, size, rxBuffer);
-		for( int i=0; i<size; i++ )
-			ESP_LOGD(FNAME,"%02x ", rxBuffer[i] );
-		delay(100);
-		ESP_LOGI(FNAME," : ");
-		for( int i=0; i<size; i++ )
-			ESP_LOGD(FNAME,"%c ", rxBuffer[i] );
-		// _callback( rxBuffer, size );
+		ESP_LOGD(FNAME,"RFCOMM RX (CH %u), size %u", channel, size );
+		ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuffer,size, ESP_LOG_INFO);
+		// delay(100);
 	    if( strncmp( rxBuffer, "!g,", 3 )  == 0 ) {
 	    	ESP_LOGI(FNAME,"Matched a Borgelt command");
 	    	OpenVario::parseNMEA( rxBuffer );
@@ -124,7 +121,8 @@ void BTSender::packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *p
 	    else {
 	    	pos=0;
 	    	if( _serial_bt_tx  ){
-	    		ESP_LOGI(FNAME,"Serial TX: %s", rxBuffer);
+	    		ESP_LOGD(FNAME,"Serial TX len: %d", size);
+	    		ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuffer,size, ESP_LOG_DEBUG);
 	    		while(pos < size) {
 	    			Serial2.print( rxBuffer[pos]);
 	    			pos++;
@@ -225,6 +223,10 @@ If  too  many  sentences  are  produced  with  regard  to  the  available  trans
 some sentences might be lost or truncated.
 
 */
+
+
+int btick = 0;
+
 void btBridge(void *pvParameters){
 	SString readString;
 #ifdef FLARM_SIM
@@ -240,26 +242,39 @@ void btBridge(void *pvParameters){
 		if(i>12)
 			i=0;
 #endif
-		bool end=false;
 		int timeout=0;
-		xSemaphoreTake(nvMutex,portMAX_DELAY );
-		while (Serial2.available() && (readString.length() <100) && !end && (timeout<100) ) {
-			char c = Serial2.read();
-			timeout++;
-			if( c > 0 && c < 127 )
+
+		while( (readString.length() < SSTRLEN) && (timeout<3) ) {
+			xSemaphoreTake(nvMutex,portMAX_DELAY );
+			bool avail = Serial2.available();
+			xSemaphoreGive(nvMutex);
+			if(  avail ) {
+				xSemaphoreTake(nvMutex,portMAX_DELAY );
+				char c = Serial2.read();
+				xSemaphoreGive(nvMutex);
 				readString.add(c);
-			if( c == '\n' )
-				end = true;
+				if( c == '\n' )
+					timeout = 100;
+			}
+			else
+			{
+				timeout++;
+				vTaskDelay( 2/portTICK_PERIOD_MS );
+			}
 		}
-		xSemaphoreGive(nvMutex);
+
 		if (readString.length() > 0) {
-			ESP_LOGI(FNAME,"Serial RX: %s", readString.c_str() );
-			portENTER_CRITICAL_ISR(&btmux);
-			mybuf.add( readString );
-			portEXIT_CRITICAL_ISR(&btmux);
+			ESP_LOGD(FNAME,"Serial RX len: %d bytes", readString.length() );
+			// ESP_LOG_BUFFER_HEXDUMP(FNAME,readString.c_str(),readString.length(), ESP_LOG_INFO);
+			if( !mybuf.isFull() ) {
+				portENTER_CRITICAL_ISR(&btmux);
+				mybuf.add( readString );
+				portEXIT_CRITICAL_ISR(&btmux);
+			}
 			readString.clear();
 		}
-		vTaskDelayUntil(&xLastWakeTime, 200/portTICK_PERIOD_MS); // at max 50 msg per second allowed
+		if( (btick++ % 10) == 0)
+			vTaskDelay( 10/portTICK_PERIOD_MS );
 	}
 }
 

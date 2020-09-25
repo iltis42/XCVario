@@ -10,39 +10,46 @@ public:
 	SString() { clear();
 	}
 	SString( SString& os) {
-		size_t len = SSTRLEN-1;
+		len = SSTRLEN-1;
 		if( os.length() < len)
 			len = os.length();
 		memcpy(str,os.c_str(),strlen(os.c_str()));
 		str[len] = 0;
 	}
 	SString( char * s ) {
-		size_t len = SSTRLEN-1;
+		len = SSTRLEN-1;
 		if( strlen(s) < len)
 			len = strlen(s);
 		memcpy(str,s,len);
 		str[len] = 0;
 	}
 	void add( char c ) {
-		if( idx < SSTRLEN-1 )
-			str[idx++] = c;
+		if( len < SSTRLEN-1 )
+			str[len++] = c;
 	}
-	void add( char *s ) {
-		size_t len = SSTRLEN-1;
+	void add( char *s ) {   // add pure strings
+		len = SSTRLEN-1;
 		if( strlen(s) < len)
 			len = strlen(s);
 		memcpy(str,s,len);
 		str[len] = 0;
 	}
+	void addl( char *s, int alen ) {
+			len = SSTRLEN-1;
+			if( alen < len)
+				len = alen;
+			memcpy(str,s,len);
+			str[len] = 0;
+	}
 	void clear() {
 		memset(str,0,SSTRLEN);
-		idx = 0;
+		len = 0;
 	}
 	char *c_str() { return str; };
-	size_t length() { return strlen(str); }
+	size_t length() { return len; }
 private:
 	char str[SSTRLEN];
-	int idx;
+	int  len;
 };
 
 

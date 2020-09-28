@@ -261,19 +261,8 @@ void sensor(void *args){
 	ESP_LOGI(FNAME, "QNH->get() %f", QNH.get() );
 
 	NVS.begin();
-
-
-	btsender.begin( blue_enable.get(),
-			SetupCommon::getID(),
-			serial2_speed.get(),
-			serial2_rxloop.get(),
-			serial2_tx.get(),
-			(bool)(serial2_tx_inverted.get()),
-			(bool)(serial2_rx_inverted.get()) );
-
-
+	btsender.begin();
 	ADC.begin();  // for battery voltage
-
 	sleep( 2 );
 
 	xMutex=xSemaphoreCreateMutex();

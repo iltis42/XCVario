@@ -912,11 +912,11 @@ void SetupMenu::setup( )
 
 		SetupMenuSelect * sout = new SetupMenuSelect( PROGMEM "Serial TX", 0, false, 0, true, &serial2_tx );
 		rs232->addMenu( sout );
-		sout->setHelp( "Serial RS232 (TTL) option to transmit OpenVario NMEA and or data from BT on serial TX (pin3 RJ45) to connect serial devices");
+		sout->setHelp( "Serial RS232 (TTL) option to transmit Vario,Flarm NMEA data and or data from Bluetooth device (e.g. XCSoar) on serial TX");
 		sout->addEntry( "Disable all");
-		sout->addEntry( "Enable OpenVario");
-		sout->addEntry( "Enable BT Bridge");
-		sout->addEntry( "Enable all");
+		sout->addEntry( "Enable Vario,Flarm");   // 1
+		sout->addEntry( "Enable BT Bridge");     // 2
+		sout->addEntry( "Enable all");           // 3
 
 		SetupMenuSelect * stxi = new SetupMenuSelect( PROGMEM "Serial TX Inversion", 0, true , 0, true, &serial2_tx_inverted );
 		rs232->addMenu( stxi );

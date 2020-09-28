@@ -21,19 +21,16 @@ const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
 
 
 #define QUEUE_SIZE 40
-RingBufCPP<SString, QUEUE_SIZE> mybuf;
+RingBufCPP<SString, QUEUE_SIZE> btbuf;
 
 #define RXBUFLEN 250
 char rxBuffer[RXBUFLEN];
 int BTSender::i=0;
-bool BTSender::_serial_nmea_tx=false;
-bool BTSender::_serial_bt_tx=false;
 
 #define RFCOMM_SERVER_CHANNEL 1
 #define HEARTBEAT_PERIOD_MS 50
 
 
-bool      BTSender::_enable;
 bool      BTSender::bluetooth_up = false;
 uint8_t   BTSender::rfcomm_channel_nr = 1;
 uint16_t  BTSender::rfcomm_channel_id = 0;
@@ -45,45 +42,41 @@ void ( * BTSender::_callback)(char * rx, uint16_t len);
 portMUX_TYPE btmux = portMUX_INITIALIZER_UNLOCKED;
 
 
-
-
 int BTSender::queueFull() {
-	if( !_enable )
+	if( !blue_enable.get() )
 		return 1;
 	int ret = 0;
-	if(mybuf.isFull())
+	if(btbuf.isFull())
 		ret=1;
 	return ret;
 }
 
 void BTSender::send(char * s){
-	ESP_LOGD( FNAME,"I %s",s);
-	if ( !mybuf.isFull() && _enable ) {
+	ESP_LOGD( FNAME,"Vario NMEA %s",s);
+	if ( !btbuf.isFull() && blue_enable.get() ) {
 		portENTER_CRITICAL_ISR(&btmux);
-		mybuf.add( s );
+		btbuf.add( s );
 		portEXIT_CRITICAL_ISR(&btmux);
 	}
-	if( _serial_nmea_tx ) {
-		    xSemaphoreTake(nvMutex,portMAX_DELAY );
-			Serial2.print(s);
-			xSemaphoreGive(nvMutex);
+	if( serial2_tx.get() & 1 ) {  // send OpenVario Data on serial interface TX
+		ESP_LOGI(FNAME,"Serial TX (CH %u), size %u", rfcomm_channel_id, strlen(s) );
+		xSemaphoreTake(nvMutex,portMAX_DELAY );
+		Serial2.print(s);
+		xSemaphoreGive(nvMutex);
 	}
 }
-
 
 void BTSender::heartbeat_handler(struct btstack_timer_source *ts){
 	if (rfcomm_channel_id ){
         // ESP_LOGI(FNAME,"HBH..");
-		if ( !mybuf.isEmpty() ){
+		if ( !btbuf.isEmpty() ){
 			// ESP_LOGI(FNAME,"HBH..not empty");
 			if (rfcomm_can_send_packet_now(rfcomm_channel_id)){
 				// ESP_LOGI(FNAME,"HBH..can send now");
 				SString s;
 				portENTER_CRITICAL_ISR(&btmux);
-			    mybuf.pull(&s);
+			    btbuf.pull(&s);
 			    portEXIT_CRITICAL_ISR(&btmux);
-			    ESP_LOGD(FNAME,"RFCOMM TX (CH %u), size %u", rfcomm_channel_id, s.length() );
-			    ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
 				int err = rfcomm_send(rfcomm_channel_id, (uint8_t*) s.c_str(), s.length() );
 				if (err) {
 					ESP_LOGE(FNAME,"rfcomm_send -> error %d", err);
@@ -120,13 +113,14 @@ void BTSender::packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *p
 	    }
 	    else {
 	    	pos=0;
-	    	if( _serial_bt_tx  ){
-	    		ESP_LOGD(FNAME,"Serial TX len: %d", size);
+	    	if( serial2_tx.get() & 2 ){  // Serial TX data from bluetooth
+	    		ESP_LOGI(FNAME,"Serial TX len: %d", size);
 	    		ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuffer,size, ESP_LOG_DEBUG);
-	    		while(pos < size) {
-	    			Serial2.print( rxBuffer[pos]);
-	    			pos++;
-	    		}
+	    		//while(pos < size) {
+	    		rxBuffer[size] = 0;
+	    		Serial2.print( rxBuffer );
+	    		//	pos++;
+	    		//}
 	    	}
 	    }
 		break;
@@ -236,7 +230,7 @@ void btBridge(void *pvParameters){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 #ifdef FLARM_SIM
 		portENTER_CRITICAL_ISR(&btmux);
-		mybuf.add( flarm[i++] );
+		btbuf.add( flarm[i++] );
 		portEXIT_CRITICAL_ISR(&btmux);
 		// ESP_LOGI(FNAME,"Serial TX: %s",  flarm[i-1] );
 		if(i>12)
@@ -266,10 +260,16 @@ void btBridge(void *pvParameters){
 		if (readString.length() > 0) {
 			ESP_LOGD(FNAME,"Serial RX len: %d bytes", readString.length() );
 			// ESP_LOG_BUFFER_HEXDUMP(FNAME,readString.c_str(),readString.length(), ESP_LOG_INFO);
-			if( !mybuf.isFull() ) {
+			if( !btbuf.isFull() ) {
 				portENTER_CRITICAL_ISR(&btmux);
-				mybuf.add( readString );
+				btbuf.add( readString );
 				portEXIT_CRITICAL_ISR(&btmux);
+			}
+			if( serial2_tx.get() & 1 ) {  // resend serial RX (e.g. FLARM) on TX
+				ESP_LOGI(FNAME,"Serial TX size %u", readString.length() );
+				xSemaphoreTake(nvMutex,portMAX_DELAY );
+				Serial2.print(readString.c_str());
+				xSemaphoreGive(nvMutex);
 			}
 			readString.clear();
 		}
@@ -279,30 +279,14 @@ void btBridge(void *pvParameters){
 }
 
 
-void BTSender::begin( bool enable_bt, const char * bt_name, int speed, bool bridge, int serial_tx, bool tx_inv, bool rx_inv ){
-	ESP_LOGI(FNAME,"BTSender::begin() bt:%d s-bridge:%d", enable_bt, bridge );
-	_enable = enable_bt;
-	if( speed && serial_tx )
-	{
-		if( serial_tx == 1)
-			_serial_nmea_tx = true;
-		if( serial_tx == 2)
-			_serial_bt_tx = true;
-		if( serial_tx == 3 ) {
-			_serial_nmea_tx = true;
-			_serial_bt_tx = true;
-		}
-	}
-	else
-	{
-		_serial_nmea_tx = false;
-		_serial_bt_tx = false;
-	}
+void BTSender::begin(){
+	ESP_LOGI(FNAME,"BTSender::begin()" );
+
 	hci_dump_enable_log_level( ESP_LOG_INFO, 0 );
 	hci_dump_enable_log_level( ESP_LOG_ERROR, 0 );
 	hci_dump_enable_log_level( ESP_LOG_WARN, 0 );
 	hci_dump_enable_log_level( ESP_LOG_DEBUG, 0 );
-	if( _enable ) {
+	if( blue_enable.get() ) {
 		l2cap_init();
 		le_device_db_init();   // new try 28-09
 		rfcomm_init();
@@ -316,25 +300,25 @@ void BTSender::begin( bool enable_bt, const char * bt_name, int speed, bool brid
 		sdp_register_service(spp_service_buffer);
 		ESP_LOGI(FNAME,"SDP service record size: %u", de_get_len(spp_service_buffer));
 		gap_discoverable_control(1);
-		gap_set_local_name(bt_name);
+		gap_set_local_name(SetupCommon::getID());
 		sdp_init();
 		hci_power_control(HCI_POWER_ON);
 	}
-	if( (speed != 0) && (bridge || _serial_nmea_tx)){
-    	ESP_LOGI(FNAME,"Serial TX or Bridge enabled with speed: %d baud: %d tx_inv: %d rx_inv: %d",  speed, baud[speed], tx_inv, rx_inv );
-    	Serial2.begin(baud[speed],SERIAL_8N1,16,17);   //  IO16: RXD2,  IO17: TXD2
-    	if( rx_inv || tx_inv ) {
+	if( (serial2_speed.get() != 0) && (serial2_rxloop.get() || serial2_tx.get() ) ){
+    	ESP_LOGI(FNAME,"Serial TX or Bridge enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial2_speed.get(), baud[serial2_speed.get()], serial2_tx_inverted.get(), serial2_rx_inverted.get() );
+    	Serial2.begin(baud[serial2_speed.get()],SERIAL_8N1,16,17);   //  IO16: RXD2,  IO17: TXD2
+    	if( serial2_rx_inverted.get() || serial2_tx_inverted.get() ) {
     		uart_signal_inv_t sigrx=UART_SIGNAL_INV_DISABLE;
     		uart_signal_inv_t sigtx=UART_SIGNAL_INV_DISABLE;
-    		if( rx_inv )
+    		if( serial2_rx_inverted.get() )
     			sigrx = UART_SIGNAL_RXD_INV;
-    		if( tx_inv )
+    		if( serial2_tx_inverted.get() )
     			sigtx = UART_SIGNAL_TXD_INV;
     		ESP_LOGI(FNAME,"Set UART Inversion Mask (4=RX | 32=TX): %d", sigrx | sigtx  );
     		uart_set_line_inverse(2, sigrx | sigtx );
     	}
     }
-	if( bridge && speed ) {
+	if( serial2_rxloop.get() && serial2_speed.get() ) {
 		ESP_LOGI(FNAME,"Serial Bluetooth bridge enabled ");
 		xTaskCreatePinnedToCore(&btBridge, "btBridge", 4096, NULL, 30, 0, 0);
 	}

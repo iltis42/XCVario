@@ -138,7 +138,7 @@ void drawDisplay(void *pvParameters){
 				airspeed = tas;
 			display.drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, aCl, Audio.getS2FMode(), standard_setting );
 		}
-		vTaskDelay(30);
+		vTaskDelay(10);
 		if( uxTaskGetStackHighWaterMark( dpid ) < 1024  )
 			ESP_LOGW(FNAME,"Warning drawDisplay stack low: %d bytes", uxTaskGetStackHighWaterMark( dpid ) );
 	}

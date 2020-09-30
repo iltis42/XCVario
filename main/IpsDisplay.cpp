@@ -71,6 +71,8 @@ const int   S2F_TRISIZE = 60; // triangle size quality up/down
 #define BTH    24
 #define ASVALX 165
 
+#define FLOGO  24
+
 int S2FST = 45;
 
 #define UNITVAR (vario_unit.get())
@@ -213,7 +215,7 @@ void IpsDisplay::initDisplay() {
 		ucg->print("  Knots");
 	ucg->setPrintPos(FIELD_START,YVAR-VARFONTH);    // 65 -52 = 13
 
-	ucg->print("Average Vario");
+	ucg->print("AVG Vario");
 	ucg->setColor(0, COLOR_WHITE );
 
 	// print TE scale
@@ -722,7 +724,6 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 				ucg->setColor( COLOR_BLUE );  // blue
 
 			ucg->drawRBox( btx-BTW/2, bty-BTH/2, BTW, BTH, BTW/2-1);
-
 			// inner symbol
 			ucg->setColor( COLOR_WHITE );
 			ucg->drawTriangle( btx, bty, btx+BTSIZE, bty-BTSIZE, btx, bty-2*BTSIZE );
@@ -732,6 +733,24 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		}
 		btqueue = btq;
 	}
+	bool flarm=false;
+	if( flarm ){
+		ucg_int_t flx=DISPLAY_W-58;
+		ucg_int_t fly=FLOGO-7;
+		if( flarm )
+			ucg->setColor(COLOR_RED);
+		else
+			ucg->setColor( COLOR_MGREY );
+		ucg->setClipRange( flx, fly-FLOGO, FLOGO, FLOGO );
+		ucg->drawTriangle( flx+1, fly, flx+1+(FLOGO/2), fly, flx+1+(FLOGO/4), fly-(FLOGO/2)+2 );
+		ucg->setClipRange( flx+FLOGO/4+3, fly-FLOGO, FLOGO, FLOGO );
+		ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/4)-2, UCG_DRAW_UPPER_RIGHT);
+		ucg->setClipRange( flx+FLOGO/4+5, fly-FLOGO, FLOGO, FLOGO );
+		ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/2)-2, UCG_DRAW_UPPER_RIGHT);
+		ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/2)-3, UCG_DRAW_UPPER_RIGHT);
+		ucg->undoClipRange();
+	}
+
 
  	int s2fclip = s2fd;
 	if( s2fclip > MAXS2FTRI )

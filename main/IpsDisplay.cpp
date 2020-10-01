@@ -710,11 +710,11 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 		chargealt = chargev;
 	}
 	if( charge < red ) {  // blank battery for blinking
-		if( (tick%10) == 0 ) {
+		if( (tick%100) == 0 ) {
 			ucg->setColor( COLOR_BLACK );
 			ucg->drawBox( BATX-40,BATY-2, 40, 12  );
 		}
-		if( ((tick+5)%10) == 0 )  // trigger redraw
+		if( ((tick+50)%100) == 0 )  // trigger redraw
 		{
 			chargealt++;
 		}

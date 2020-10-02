@@ -606,11 +606,11 @@ void ESPAudio::modtask(void* arg )
 
 void ESPAudio::incVolume( int steps ) {
 	steps = int( 1+ ( (float)wiper/16.0 ))*steps;
-	// ESP_LOGD(FNAME,"steps %d wiper %d", steps, wiper );
 	while( steps && (wiper > 0) ){
 		wiper--;
 		steps--;
 	}
+	ESP_LOGI(FNAME,"inc volume, wiper: %d", wiper );
 };
 void ESPAudio::decVolume( int steps ) {
 	steps = int( 1+ ( (float)wiper/16.0 ))*steps;
@@ -618,6 +618,7 @@ void ESPAudio::decVolume( int steps ) {
 		wiper++;
 		steps--;
 	}
+	ESP_LOGI(FNAME,"dec volume, wiper: %d", wiper );
 };
 
 void ESPAudio::setVolume( int vol ) {
@@ -637,22 +638,22 @@ void ESPAudio::startAudio(){
 
 void ESPAudio::calcS2Fmode(){
 	switch( audio_mode.get() ) {
-			case 0: // Vario
-				_s2f_mode = false;
-				break;
-			case 1: // S2F
-				_s2f_mode = true;
-				break;
-			case 2: // Switch
-				_s2f_mode = VaSoSW.isClosed();
-				break;
-			case 3: // Auto
-				if( (_ias > s2f_speed.get())  or VaSoSW.isClosed())
-					_s2f_mode = true;
-				else
-					_s2f_mode = false;
-				break;
-			}
+	case 0: // Vario
+		_s2f_mode = false;
+		break;
+	case 1: // S2F
+		_s2f_mode = true;
+		break;
+	case 2: // Switch
+		_s2f_mode = VaSoSW.isClosed();
+		break;
+	case 3: // Auto
+		if( (_ias > s2f_speed.get())  or VaSoSW.isClosed())
+			_s2f_mode = true;
+		else
+			_s2f_mode = false;
+		break;
+	}
 }
 
 
@@ -686,7 +687,7 @@ void ESPAudio::dactask(void* arg )
 				}
 				if( hightone && (_tonemode == 0) ){
 					if( (_chopping_mode == BOTH_CHOP) ||
-						(_s2f_mode && (_chopping_mode == S2F_CHOP)) ||	(!_s2f_mode && (_chopping_mode == VARIO_CHOP)) ) {
+							(_s2f_mode && (_chopping_mode == S2F_CHOP)) ||	(!_s2f_mode && (_chopping_mode == VARIO_CHOP)) ) {
 						sound = false;
 					}
 				}
@@ -696,21 +697,16 @@ void ESPAudio::dactask(void* arg )
 				ESP_LOGV(FNAME, "have sound");
 				if( !sound_on  || (cur_wiper != wiper) ) {
 					ESP_LOGI(FNAME, "sound on wiper: %d", wiper );
-					int sca;
-					if( volumeScale( wiper, sca, scaled_wip ) ) {
-						if( ! sound_on ) {
-							for( int i=1; i<=4; i++ ) {
-								int nw=(scaled_wip/4) * i;
-								Poti.writeWiper( nw );
-								delayMicroseconds( 20 );
-								// ESP_LOGI(FNAME, "sound off & wiper != 0 sound set wiper: %d", nw );
-							}
+					if( ! sound_on ) {
+						for( int i=1; i<=4; i++ ) {
+							int nw=(wiper/4) * i;
+							Poti.writeWiper( nw );
+							delayMicroseconds( 20 );
+							ESP_LOGI(FNAME, "fade in sound, wiper: %d", nw);
 						}
-						Poti.writeWiper( scaled_wip );
-						Audio.dac_scale_set(_ch, sca );
 					}
-					else
-						ESP_LOGE(FNAME, "wiper out of bounds: %d", wiper );
+					Poti.writeWiper( wiper );
+					ESP_LOGI(FNAME, "sound on, set wiper: %d", wiper );
 					cur_wiper = wiper;
 					sound_on = true;
 				}
@@ -753,11 +749,12 @@ void ESPAudio::dactask(void* arg )
 				}
 			}else{
 				if( sound_on ) {
-					if( cur_wiper != 0 ) {  // turn off gracefully sound
+					if( cur_wiper > 1 ) {  // turn off gracefully sound
 						for( int i=4; i>=1; i-- ) {
-							Poti.writeWiper( (scaled_wip/4) * i );  // fade out volume
+							int nw=(wiper/4) * i;
+							Poti.writeWiper(nw);  // fade out volume
 							delayMicroseconds( 20 );
-							// ESP_LOGI(FNAME, "sound off & wiper != 0 sound set wiper: %d", scaled_wip / i );
+							ESP_LOGI(FNAME, "fade out sound, set wiper: %d", nw );
 						}
 						Poti.writeWiper( 1 );
 						cur_wiper = 1;
@@ -892,7 +889,8 @@ void ESPAudio::enableAmplifier( bool enable )
 	// enable Audio
 	if( enable )
 	{
-		gpio_set_direction(GPIO_NUM_19, GPIO_MODE_INPUT );   // use pullup 1 == SOUND 0 == SILENCE
+		gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );   // use pullup 1 == SOUND 0 == SILENCE
+		gpio_set_level(GPIO_NUM_19, 1 );
 	}
 	else {
 		gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );   // use pullup 1 == SOUND 0 == SILENCE

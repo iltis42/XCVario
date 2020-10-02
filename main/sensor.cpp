@@ -606,7 +606,6 @@ void sensor(void *args){
 			gpio_set_drive_capability((gpio_num_t)i, GPIO_DRIVE_CAP_1);
 	}
 
-
 	vTaskDelete( NULL );
 
 }

@@ -29,12 +29,15 @@ OpenVario::~OpenVario() {
 
 }
 
-float lbank = 0;
-float lpitch = 0;
+float roll = 0;
+float pitch = 0;
+
+float groll = 0;
+float gpitch = 0;
 
 
 void OpenVario::makeNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
-		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z ){
+		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz  ){
 	if( !validTemp )
 		temp=0;
 
@@ -104,8 +107,15 @@ void OpenVario::makeNMEA( proto_t proto, char* str, float baro, float dp, float 
 	}
 	else if( proto == P_EYE_PEYI ){
 		// mathematical way to describe the tilt using precise data from an accelerometer
-		float roll = atan2(acc_y, acc_z) * 57.3;
-		float xpitch = atan2((acc_x) , sqrt(acc_y * acc_y + acc_z * acc_z)) * 57.3;
+		float aroll = atan2(acc_y, acc_z) * 57.3;
+		float apitch = atan2((acc_x) , sqrt(acc_y * acc_y + acc_z * acc_z)) * 57.3;
+		groll -= gz/5;
+		gpitch -= gy/5;
+		groll = (groll - roll)*0.4 + roll;     // low pass back filter
+		gpitch = (gpitch - pitch)*0.4 + pitch;
+		roll = (0.06*aroll + 0.94*groll);
+		pitch = (0.06*apitch + 0.94*gpitch);
+
 		/*
 			$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,%.2f,
 			lbank,         // Bank == roll    (deg)           SRC
@@ -115,19 +125,19 @@ void OpenVario::makeNMEA( proto_t proto, char* str, float baro, float dp, float 
 			z,
 			);
 		 */
-		sprintf(str, "$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,", roll,xpitch,acc_x,acc_y,acc_z );
+		sprintf(str, "$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,", roll,pitch,acc_x,acc_y,acc_z );
 	}
 	else if( proto == P_AHRS_APENV1 ) { // experimental
 		sprintf(str, "$APENV1,%.2f,%.2f,0,0,0,%.2f,", ias,alt,te );
 	}
 	else if( proto == P_AHRS_RPYL ) {   // experimental
-		float roll = atan2(acc_y, acc_z) * 57.3;
-		float xpitch = atan2((acc_x) , sqrt(acc_y * acc_y + acc_z * acc_z)) * 57.3;
-		lbank += roll;   // 5 times a second
-		lpitch += xpitch;
+		float groll = atan2(acc_y, acc_z) * 57.3;
+		float gpitch = atan2((acc_x) , sqrt(acc_y * acc_y + acc_z * acc_z)) * 57.3;
+		roll = groll;   // 5 times a second
+		pitch = gpitch;
 		sprintf(str, "$RPYL,%.2f,%.2f,0,0,,%.2f,0,",
-				lbank,         // Bank == roll    (deg)           SRC
-				lpitch,         // pItch           (deg)
+				roll,         // Bank == roll    (deg)           SRC
+				pitch,         // pItch           (deg)
 				acc_z
 		);
 	}

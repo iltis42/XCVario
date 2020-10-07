@@ -122,6 +122,7 @@ static bool  standard_setting = false;
 long millisec = millis();
 
 static mpud::float_axes_t accelG;
+static mpud::float_axes_t gyroDPS;
 
 // Gyro and acceleration sensor
 static I2C_t& i2c                     = i2c0;  // i2c0 or i2c1
@@ -159,6 +160,10 @@ void drawDisplay(void *pvParameters){
 }
 
 int count=0;
+float ox=0;
+float oy=0;
+float oz=0;
+
 
 void readBMP(void *pvParameters){
 	while (1)
@@ -209,13 +214,19 @@ void readBMP(void *pvParameters){
 				if( haveMPU )  // 4th Generation HW, MPU6050
 				{
 					mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
-					// mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
+					mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
 					MPU.acceleration(&accelRaw);  // fetch raw data from the registers
-					// MPU.rotation(&gyroRaw);       // fetch raw data from the registers
+					MPU.rotation(&gyroRaw);       // fetch raw data from the registers
 					accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_4G);  // raw data to gravity
-					// mpud::float_axes_t gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_2000DPS);  // raw data to º/s
-					ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f\n", -accelG[2], accelG[1], accelG[0]);
-					// ESP_LOGI( FNAME, "gyro: %+.2f %+.2f %+.2f\n", gyroDPS.x, gyroDPS.y, gyroDPS.z);
+					gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_2000DPS);  // raw data to º/s
+					// ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f\n", -accelG[2], accelG[1], accelG[0]);
+					ESP_LOGI( FNAME, "gyro X: %+.2f Y:%+.2f Z:%+.2f\n", gyroDPS.x+ox, gyroDPS.y+oy, gyroDPS.z+oz);
+					if( ox == 0 ){
+						ox = -gyroDPS.x;
+						oy = -gyroDPS.y;
+						oz = -gyroDPS.z;
+					}
+
 					// float x, float y, float z, float bank, float pitch, float head
 				}
 				xSemaphoreTake(xMutex,portMAX_DELAY );
@@ -234,7 +245,7 @@ void readBMP(void *pvParameters){
 					OV.makeNMEA( P_EYE_PEYA, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Audio.getS2FMode(), alt, validTemperature  );
 					btsender.send( lb );
 					OV.makeNMEA( P_EYE_PEYI, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Audio.getS2FMode(), alt, validTemperature,
-							     -accelG[2], accelG[1],accelG[0]  );
+							     -accelG[2], accelG[1],accelG[0], gyroDPS.x+ox, gyroDPS.y+oy, gyroDPS.z+oz );
 					// btsender.send( lb );
 					// OV.makeNMEA( P_GENERIC, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Audio.getS2FMode(), alt  );
 				}

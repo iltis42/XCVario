@@ -56,13 +56,13 @@ The Vario Prototype with 500 nits 2.4 inch IPS Technology LCD Display features a
 
 The Soft- and Hardware features:
 
-- Easy QNH and McCready Adjustment
+- QNH and McCready Adjustment
 - Audio-Generator with adjustable Volume and Deadband plus setup option for frequency tone style and range
-- Integrated Loudspeaker 
+- Integrated Loudspeaker
 - Flap Position Indicator Option
 - S2F (Speed2Fly) Indicator with configurable MC Ballast and Bugs based on customizable Polar
-- More that 80 Polars are already included ( list in https://github.com/iltis42/OpenIVario/blob/master/main/Polars.cpp )
-- IAS (Indicated Airspeed) Indicator
+- Around 100 Polars are already included ( list in https://github.com/iltis42/OpenIVario/blob/master/main/Polars.cpp )
+- IAS (Indicated Airspeed) and TAS Indicator
 - Temperatur Indicator
 - Battery Charge Indicator
 - Variometer display with adjustable range (1 m/s - 30 m/s), and damping ( 1s - 10s )
@@ -75,4 +75,5 @@ The Soft- and Hardware features:
 - Serial to Bluetooth Bridge e.g. for FLARM
 - Serial Output of OpenVarion Format NMEA data
 - Software Update OverTheAir (OTA) via WiFi Access Point
+- Planned Attitude and Heading sensor for next hardware revision
 

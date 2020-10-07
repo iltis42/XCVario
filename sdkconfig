@@ -131,6 +131,36 @@ CONFIG_AP_PASSPHARSE="12345678"
 # end of OTA WiFi Configuration
 
 #
+# I2Cbus
+#
+CONFIG_I2CBUS_LOG_ERRORS=y
+# CONFIG_I2CBUS_LOG_READWRITES is not set
+# end of I2Cbus
+
+#
+# MPU driver
+#
+# CONFIG_MPU6000 is not set
+CONFIG_MPU6050=y
+# CONFIG_MPU6500 is not set
+# CONFIG_MPU6555 is not set
+# CONFIG_MPU9150 is not set
+# CONFIG_MPU9250 is not set
+# CONFIG_MPU9255 is not set
+CONFIG_MPU_CHIP_MODEL="MPU6050"
+CONFIG_MPU_I2C=y
+CONFIG_MPU_COMM_PROTOCOL="I2C"
+CONFIG_MPU_LOG_LEVEL_DEFAULT=y
+# CONFIG_MPU_LOG_LEVEL_NONE is not set
+# CONFIG_MPU_LOG_LEVEL_ERROR is not set
+# CONFIG_MPU_LOG_LEVEL_WARN is not set
+# CONFIG_MPU_LOG_LEVEL_INFO is not set
+CONFIG_MPU_LOG_LEVEL=3
+CONFIG_MPU_ENABLE_DMP=y
+CONFIG_MPU_LOG_ERROR_TRACES=y
+# end of MPU driver
+
+#
 # Arduino Configuration
 #
 CONFIG_ENABLE_ARDUINO_DEPENDS=y
@@ -1299,6 +1329,16 @@ CONFIG_WPA_MBEDTLS_CRYPTO=y
 # CONFIG_WPA_TLS_V12 is not set
 # CONFIG_WPA_WPS_WARS is not set
 # end of Supplicant
+
+#
+# I2Cbus
+#
+# end of I2Cbus
+
+#
+# MPU driver
+#
+# end of MPU driver
 # end of Component config
 
 #

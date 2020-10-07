@@ -935,7 +935,8 @@ void SetupMenu::setup( )
 		nmea->setHelp( "Setup protocol used for NMEA sending what corresponds to the driver used in OpenVario");
 		nmea->addEntry( "OpenVario");
 		nmea->addEntry( "Borgelt");
-
+		nmea->addEntry( "Cambridge");
+		nmea->addEntry( "Eye Sensor Box");
 	}
 	SetupMenu::display();
 }

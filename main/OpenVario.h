@@ -11,12 +11,17 @@
 #ifndef MAIN_OPENVARIO_H_
 #define MAIN_OPENVARIO_H_
 
+typedef enum protocol_t  { P_OPENVARIO, P_BORGELT, P_CAMBRIDGE, P_EYE_PEYA, P_EYE_PEYI, P_AHRS_RPYL, P_AHRS_APENV1, P_GENERIC } proto_t;
+
 
 class OpenVario {
 public:
 	OpenVario( S2F * as2f );
 	virtual ~OpenVario( );
-	void makeNMEA( char* str, float baro, float dp, float te, float temp, float ias, float tas, float mc, int bugs, float ballast, bool cruise );
+	void makeNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
+			       float mc, int bugs, float ballast, bool cruise, float alt,
+				   bool validTemp=false, float acc_x=0, float acc_y=0, float acc_z=0 );
+
 	static void parseNMEA( char *str );
 	static int getCheckSum(char * s);
 private:

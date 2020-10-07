@@ -41,6 +41,11 @@
 #include "SetupNG.h"
 #include <logdef.h>
 
+#include "MPU.hpp"        // main file, provides the class itself
+#include "mpu/math.hpp"   // math helper for dealing with MPU data
+#include "mpu/types.hpp"  // MPU data types and definitions
+#include "I2Cbus.hpp"
+
 
 // #include "sound.h"
 
@@ -75,6 +80,8 @@ bool  validTemperature=false;
 float battery=0.0;
 float TE=0;
 float dynamicP;
+
+bool haveMPU=false;
 
 DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 standard, alternative  GPIO_NUM_17
 MP5004DP MP5004DP;
@@ -113,6 +120,13 @@ static float s2f_delta = 0;
 static float polar_sink = 0;
 static bool  standard_setting = false;
 long millisec = millis();
+
+static mpud::float_axes_t accelG;
+
+// Gyro and acceleration sensor
+static I2C_t& i2c                     = i2c0;  // i2c0 or i2c1
+MPU_t MPU;         // create an object
+
 
 void handleRfcommRx( char * rx, uint16_t len ){
 	ESP_LOGI(FNAME,"RFCOMM packet, %s, len %d %d", rx, len, strlen( rx ));
@@ -160,7 +174,6 @@ void readBMP(void *pvParameters){
 		Audio.setValues( TE, s2f_delta, ias );
 		TE = bmpVario.readTE( tasraw );  // 10x per second
 		xSemaphoreGive(xMutex);
-
 		if( (count++ % 2) == 0 ) {
 			xSemaphoreTake(xMutex,portMAX_DELAY );
 			baroP = bmpBA.readPressure();   // 5x per second
@@ -188,15 +201,49 @@ void readBMP(void *pvParameters){
 			as2f = Speed2Fly.speed( netto );
 			s2f_delta = as2f - ias;
 			xSemaphoreGive(xMutex);
+
 			if( Audio.getDisable() != true ){
+				if( haveMPU )  // 4th Generation HW, MPU6050
+				{
+					mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
+					// mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
+					MPU.acceleration(&accelRaw);  // fetch raw data from the registers
+					// MPU.rotation(&gyroRaw);       // fetch raw data from the registers
+					accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_4G);  // raw data to gravity
+					// mpud::float_axes_t gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_2000DPS);  // raw data to º/s
+					ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f\n", -accelG[2], accelG[1], accelG[0]);
+					// ESP_LOGI( FNAME, "gyro: %+.2f %+.2f %+.2f\n", gyroDPS.x, gyroDPS.y, gyroDPS.z);
+					// float x, float y, float z, float bank, float pitch, float head
+				}
 				xSemaphoreTake(xMutex,portMAX_DELAY );
 				// reduce also messages from 10 per second to 5 per second to reduce load in XCSoar
 				char lb[120];
-				OV.makeNMEA( lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Audio.getS2FMode()  );
+				if( nmea_protocol.get() == BORGELT ) {
+					OV.makeNMEA( P_BORGELT, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Audio.getS2FMode(), alt  );
+					btsender.send( lb );
+					OV.makeNMEA( P_GENERIC, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Audio.getS2FMode(), alt  );
+				}
+				else if( nmea_protocol.get() == OPENVARIO )
+					OV.makeNMEA( P_OPENVARIO, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Audio.getS2FMode(), alt  );
+				else if( nmea_protocol.get() == CAMBRIDGE )
+					OV.makeNMEA( P_CAMBRIDGE, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Audio.getS2FMode(), alt  );
+				else if( nmea_protocol.get() == EYE_SENSOR_BOX ) {
+					OV.makeNMEA( P_EYE_PEYA, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Audio.getS2FMode(), alt, validTemperature  );
+					btsender.send( lb );
+					OV.makeNMEA( P_EYE_PEYI, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Audio.getS2FMode(), alt, validTemperature,
+							     -accelG[2], accelG[1],accelG[0]  );
+					btsender.send( lb );
+					OV.makeNMEA( P_GENERIC, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Audio.getS2FMode(), alt  );
+				}
+				else
+					ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
+
 				btsender.send( lb );
 				vTaskDelay(2);
 				xSemaphoreGive(xMutex);
 			}
+
+
 		}
 		if( uxTaskGetStackHighWaterMark( bpid )  < 1024 )
 			ESP_LOGW(FNAME,"Warning bmpTask stack low: %d", uxTaskGetStackHighWaterMark( bpid ) );
@@ -245,6 +292,7 @@ void readTemp(void *pvParameters){
 }
 
 
+
 void sensor(void *args){
 	bool selftestPassed=true;
 	int line = 1;
@@ -252,9 +300,32 @@ void sensor(void *args){
 	esp_wifi_set_mode(WIFI_MODE_NULL);
 	spiMutex = xSemaphoreCreateMutex();
 	esp_log_level_set("*", ESP_LOG_INFO);
-
 	ESP_LOGI( FNAME, "Log level set globally to INFO %d",  ESP_LOG_INFO);
 
+	esp_chip_info_t chip_info;
+	esp_chip_info(&chip_info);
+	ESP_LOGI( FNAME,"This is ESP32 chip with %d CPU cores, WiFi%s%s, ",
+			chip_info.cores,
+			(chip_info.features & CHIP_FEATURE_BT) ? "/BT" : "",
+					(chip_info.features & CHIP_FEATURE_BLE) ? "/BLE" : "");
+	ESP_LOGI( FNAME,"silicon revision %d, ", chip_info.revision);
+	ESP_LOGI( FNAME,"%dMB %s flash\n", spi_flash_get_chip_size() / (1024 * 1024),
+			(chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
+
+	i2c.begin(GPIO_NUM_21, GPIO_NUM_22);
+
+	MPU.setBus(i2c0);  // set communication bus, for SPI -> pass 'hspi'
+	MPU.setAddr(mpud::MPU_I2CADDRESS_AD0_LOW);  // set address or handle, for SPI -> pass 'mpu_spi_handle'
+	esp_err_t mpu = MPU.testConnection();  // test connection with the chip, return is a error code
+	if( mpu != ESP_ERR_NOT_FOUND ){
+		haveMPU = true;
+		MPU.initialize();  // this will initialize the chip and set default configurations
+		MPU.setSampleRate(50);  // in (Hz)
+		MPU.setAccelFullScale(mpud::ACCEL_FS_4G);
+		MPU.setGyroFullScale(mpud::GYRO_FS_2000DPS);
+		MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
+	// MPU.setInterruptEnabled(mpud::INT_EN_RAWDATA_READY);  // enable INT pin
+	}
 	ESP_LOGI(FNAME,"Now init all Setup elements");
 	SetupCommon::initSetup();
 
@@ -274,7 +345,6 @@ void sensor(void *args){
 	uint8_t Mode = 3;   //Normal mode
 
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
-
 
 	SPI.begin( SPI_SCLK, SPI_MISO, SPI_MOSI, CS_bme280BA );
 	xSemaphoreGive(spiMutex);

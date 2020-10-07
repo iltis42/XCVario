@@ -1,0 +1,5 @@
+#
+# Top-level component makefile
+#
+
+CPPFLAGS += -DI2CBUS_COMPONENT_TRUE=1

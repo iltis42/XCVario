@@ -94,9 +94,10 @@ void OpenVario::makeNMEA( proto_t proto, char* str, float baro, float dp, float 
 		// Vertical speed from anemometry (m/s) (i.e. +05.4)
 		// Outside Air Temperature (?C) (i.e. +15.2)
 		// Relative humidity [%] (i.e. 095)
+		float pa = alt - 8.92*(QNH.get() - 1013.25);
 
 		if( validTemp )
-			sprintf(str, "$PEYA,%.2f,%.2f,%.2f,%.2f,,,%.2f,%.2f,%.2f,,", baro, baro+(dp/100),alt, QNH.get(),tas,te,temp);
+			sprintf(str, "$PEYA,%.2f,%.2f,%.2f,%.2f,,,%.2f,%.2f,%.2f,,", baro, baro+(dp/100),pa, QNH.get(),tas,te,temp);
 		else
 			sprintf(str, "$PEYA,%.2f,%.2f,%.2f,%.2f,,,%.2f,%.2f,0,,", baro, baro+(dp/100),alt, QNH.get(),tas,te);
 

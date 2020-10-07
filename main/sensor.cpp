@@ -168,7 +168,10 @@ void readBMP(void *pvParameters){
 		TE = bmpVario.readTE( tas );  // 10x per second
 		dynamicP = MP5004DP.readPascal(30);
 		float iasraw = ( MP5004DP.pascal2km( dynamicP ) );
-		float tasraw = iasraw * sqrt( 1.225 / ( baroP*100.0 / (287.058 * (273.15+temperature) ) ) );  // True airspeed
+		float T=temperature;
+		if( !validTemperature )
+			T= 15 - ( (alt/100) * 0.65 );
+		float tasraw = iasraw * sqrt( 1.225 / ( baroP*100.0 / (287.058 * (273.15+T) ) ) );  // True airspeed
 		ias = ias + (iasraw - ias)*0.25;  // low pass filter
 		tas += (tasraw-tas)*0.25;       // low pass filter
 		Audio.setValues( TE, s2f_delta, ias );
@@ -232,8 +235,8 @@ void readBMP(void *pvParameters){
 					btsender.send( lb );
 					OV.makeNMEA( P_EYE_PEYI, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Audio.getS2FMode(), alt, validTemperature,
 							     -accelG[2], accelG[1],accelG[0]  );
-					btsender.send( lb );
-					OV.makeNMEA( P_GENERIC, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Audio.getS2FMode(), alt  );
+					// btsender.send( lb );
+					// OV.makeNMEA( P_GENERIC, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Audio.getS2FMode(), alt  );
 				}
 				else
 					ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );

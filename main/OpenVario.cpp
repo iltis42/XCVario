@@ -34,7 +34,7 @@ float pitch = 0;
 
 float groll = 0;
 float gpitch = 0;
-
+float alpha = 0;
 
 void OpenVario::makeNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
 		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz  ){
@@ -111,11 +111,13 @@ void OpenVario::makeNMEA( proto_t proto, char* str, float baro, float dp, float 
 		float apitch = atan2((acc_x) , sqrt(acc_y * acc_y + acc_z * acc_z)) * 57.3;
 		groll -= gz/5;
 		gpitch -= gy/5;
+		// alpha = (abs( gx/100 ) - alpha)*0.4 + alpha;
+		alpha = abs( gx/100 ); // low yaw means no turn, trust more g sensor
 		groll = (groll - roll)*0.4 + roll;     // low pass back filter
 		gpitch = (gpitch - pitch)*0.4 + pitch;
-		roll = (0.06*aroll + 0.94*groll);
-		pitch = (0.06*apitch + 0.94*gpitch);
-
+		roll = (  (1-alpha)*0.1*aroll + 0.9*groll + (alpha)*0.1*groll );
+		pitch = (  (1-alpha)*0.1*apitch + 0.9*gpitch + (alpha)*0.1*gpitch );
+		ESP_LOGI(FNAME,"alpha %f roll %f pitch %f", alpha, roll, pitch );
 		/*
 			$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,%.2f,
 			lbank,         // Bank == roll    (deg)           SRC

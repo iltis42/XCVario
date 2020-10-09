@@ -218,7 +218,7 @@ void readBMP(void *pvParameters){
 					MPU.acceleration(&accelRaw);  // fetch raw data from the registers
 					MPU.rotation(&gyroRaw);       // fetch raw data from the registers
 					accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_4G);  // raw data to gravity
-					gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_2000DPS);  // raw data to º/s
+					gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
 					// ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f\n", -accelG[2], accelG[1], accelG[0]);
 					ESP_LOGI( FNAME, "gyro X: %+.2f Y:%+.2f Z:%+.2f\n", gyroDPS.x+ox, gyroDPS.y+oy, gyroDPS.z+oz);
 					if( ox == 0 ){
@@ -336,7 +336,7 @@ void sensor(void *args){
 		MPU.initialize();  // this will initialize the chip and set default configurations
 		MPU.setSampleRate(50);  // in (Hz)
 		MPU.setAccelFullScale(mpud::ACCEL_FS_4G);
-		MPU.setGyroFullScale(mpud::GYRO_FS_2000DPS);
+		MPU.setGyroFullScale(mpud::GYRO_FS_500DPS);
 		MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
 	// MPU.setInterruptEnabled(mpud::INT_EN_RAWDATA_READY);  // enable INT pin
 	}
@@ -465,11 +465,11 @@ void sensor(void *args){
 	}
 
 	if( selftestPassed ) {
-		if( (abs(ba_t - te_t) >2.0)  && ( ias < 50 ) ) {
+		if( (abs(ba_t - te_t) >4.0)  && ( ias < 50 ) ) {   // each sensor has deviations, and new PCB has more heat sources
 			selftestPassed = false;
-			ESP_LOGI(FNAME,"Severe Temperature deviation delta > 2 °C between Baro and TE sensor: °C %f", abs(ba_t - te_t) );
+			ESP_LOGI(FNAME,"Severe Temperature deviation delta > 4 °C between Baro and TE sensor: °C %f", abs(ba_t - te_t) );
 			display.writeText( line++, "TE/Baro Temp: Unequal");
-			failed_tests += "TE/Baro Sensor T diff. <2°C: FAILED\n";
+			failed_tests += "TE/Baro Sensor T diff. <4°C: FAILED\n";
 		}
 		else{
 			ESP_LOGI(FNAME,"BMP 280 Temperature deviation test PASSED, dev: %f",  abs(ba_t - te_t));

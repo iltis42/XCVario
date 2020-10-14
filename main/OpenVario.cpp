@@ -18,8 +18,10 @@
 #include "mpu/math.hpp"   // math helper for dealing with MPU data
 #include "mpu/types.hpp"  // MPU data types and definitions
 #include "DallasRmt.h"
+#include "madgwik.h"
 
 S2F * OpenVario::_s2f = 0;
+uint64_t last_rts=0;
 
 OpenVario::OpenVario(S2F * s2f) {
 	_s2f = s2f;
@@ -31,10 +33,7 @@ OpenVario::~OpenVario() {
 
 float roll = 0;
 float pitch = 0;
-
-float groll = 0;
-float gpitch = 0;
-float alpha = 0;
+float yaw = 0;
 
 void OpenVario::makeNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
 		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz  ){
@@ -106,18 +105,15 @@ void OpenVario::makeNMEA( proto_t proto, char* str, float baro, float dp, float 
 
 	}
 	else if( proto == P_EYE_PEYI ){
-		// mathematical way to describe the tilt using precise data from an accelerometer
-		float aroll = atan2(acc_y, acc_z) * 57.3;
-		float apitch = atan2((acc_x) , sqrt(acc_y * acc_y + acc_z * acc_z)) * 57.3;
-		groll -= gz/5;
-		gpitch -= gy/5;
-		// alpha = (abs( gx/100 ) - alpha)*0.4 + alpha;
-		alpha = abs( gx/100 ); // low yaw means no turn, trust more g sensor
-		groll = (groll - roll)*0.4 + roll;     // low pass back filter
-		gpitch = (gpitch - pitch)*0.4 + pitch;
-		roll = (  (1-alpha)*0.1*aroll + 0.9*groll + (alpha)*0.1*groll );
-		pitch = (  (1-alpha)*0.1*apitch + 0.9*gpitch + (alpha)*0.1*gpitch );
-		ESP_LOGI(FNAME,"alpha %f roll %f pitch %f", alpha, roll, pitch );
+		// data from gyro sensor 5 times a second
+		uint64_t rts = esp_timer_get_time();
+		float delta=0;
+		if( last_rts != 0 ) {
+			delta = (float)(rts - last_rts)/1000000.0;   // in seconds
+			filterUpdate( gx*DEG_TO_RAD, gy*DEG_TO_RAD, gz*DEG_TO_RAD, acc_x, acc_y, acc_z, &roll, &pitch, &yaw, delta );
+		}
+		last_rts = rts;
+		ESP_LOGI(FNAME,"roll %.2f pitch %.2f yaw %.2f delta %f", roll, pitch, yaw, delta  );
 		/*
 			$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,%.2f,
 			lbank,         // Bank == roll    (deg)           SRC
@@ -127,16 +123,12 @@ void OpenVario::makeNMEA( proto_t proto, char* str, float baro, float dp, float 
 			z,
 			);
 		 */
-		sprintf(str, "$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,", roll,pitch,acc_x,acc_y,acc_z );
+		sprintf(str, "$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,", roll, pitch,acc_x,acc_y,acc_z );
 	}
 	else if( proto == P_AHRS_APENV1 ) { // experimental
 		sprintf(str, "$APENV1,%.2f,%.2f,0,0,0,%.2f,", ias,alt,te );
 	}
 	else if( proto == P_AHRS_RPYL ) {   // experimental
-		float groll = atan2(acc_y, acc_z) * 57.3;
-		float gpitch = atan2((acc_x) , sqrt(acc_y * acc_y + acc_z * acc_z)) * 57.3;
-		roll = groll;   // 5 times a second
-		pitch = gpitch;
 		sprintf(str, "$RPYL,%.2f,%.2f,0,0,,%.2f,0,",
 				roll,         // Bank == roll    (deg)           SRC
 				pitch,         // pItch           (deg)

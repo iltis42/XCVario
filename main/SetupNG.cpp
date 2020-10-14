@@ -109,6 +109,7 @@ SetupNG<int>		    rotary_inc( "ROTARY_INC", 0 );
 SetupNG<int>		    student_mode( "STUD_MOD", 0 );
 SetupNG<float>		    password( "PASSWORD", 0 );
 SetupNG<int>		    autozero( "AUTOZERO", 0 );
+SetupNG<int>		    attitude_indicator("AHRS", 0 );
 
 
 

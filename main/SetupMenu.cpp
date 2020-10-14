@@ -670,13 +670,13 @@ void SetupMenu::setup( )
 		SetupMenuValFloat * pos1 = new SetupMenuValFloat( "Sink  1", 0, "m/s", -3.0, 0.0, 0.01, polar_adj, false, &polar_sink1 );
 		pos1->setHelp(PROGMEM"Sink indication at Speed 1 from polar");
 		pa->addMenu( pos1 );
-		SetupMenuValFloat * pov2 = new SetupMenuValFloat( "Speed 2", 0, "km/h", 100.0, 180.0, 1, polar_adj, false, &polar_speed2 );
+		SetupMenuValFloat * pov2 = new SetupMenuValFloat( "Speed 2", 0, "km/h", 70.0, 180.0, 1, polar_adj, false, &polar_speed2 );
 		pov2->setHelp(PROGMEM"Speed 2 for a moderate cruise from polar e.g. 120 km/h");
 		pa->addMenu( pov2 );
 		SetupMenuValFloat * pos2 = new SetupMenuValFloat( "Sink  2", 0, "m/s", -5.0, 0.0, 0.01, polar_adj, false, &polar_sink2 );
 		pos2->setHelp(PROGMEM"Sink indication at Speed 2 from polar");
 		pa->addMenu( pos2 );
-		SetupMenuValFloat * pov3 = new SetupMenuValFloat( "Speed 3", 0, "km/h", 120.0, 250.0, 1, polar_adj, false, &polar_speed3 );
+		SetupMenuValFloat * pov3 = new SetupMenuValFloat( "Speed 3", 0, "km/h", 100.0, 250.0, 1, polar_adj, false, &polar_speed3 );
 		pov3->setHelp(PROGMEM"Speed 3 for a fast cruise from polar e.g. 170 km/h");
 		pa->addMenu( pov3 );
 		SetupMenuValFloat * pos3 = new SetupMenuValFloat( "Sink  3", 0, "m/s", -6.0, 0.0, 0.01, polar_adj, false, &polar_sink3 );
@@ -845,6 +845,13 @@ void SetupMenu::setup( )
 		roinc->setHelp( PROGMEM "Select type of rotary increment per detent, different brands may need adjustmet");
 		roinc->addEntry( "Single Increment");
 		roinc->addEntry( "Double Increment");
+
+		SetupMenuSelect * mpu = new SetupMenuSelect( "Attitude Indicator", 0, false , 0, false, &attitude_indicator );
+		hardware->addMenu( mpu );
+		mpu->setHelp( PROGMEM "Enable or disable attitude indicator(AHRS) processing, available on 4th generation hardware (two RJ45)");
+		mpu->addEntry( "Disable");
+		mpu->addEntry( "Enable");
+
 
 		float fva = factory_volt_adjust.get();
 		if( abs(fva - 0.00815) < 0.00001 ) {

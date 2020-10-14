@@ -220,13 +220,12 @@ void readBMP(void *pvParameters){
 					accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_4G);  // raw data to gravity
 					gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
 					// ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f\n", -accelG[2], accelG[1], accelG[0]);
-					ESP_LOGI( FNAME, "gyro X: %+.2f Y:%+.2f Z:%+.2f\n", gyroDPS.x+ox, gyroDPS.y+oy, gyroDPS.z+oz);
+					// ESP_LOGI( FNAME, "gyro X: %+.2f Y:%+.2f Z:%+.2f\n", gyroDPS.x+ox, gyroDPS.y+oy, gyroDPS.z+oz);
 					if( ox == 0 ){
 						ox = -gyroDPS.x;
 						oy = -gyroDPS.y;
 						oz = -gyroDPS.z;
 					}
-
 					// float x, float y, float z, float bank, float pitch, float head
 				}
 				xSemaphoreTake(xMutex,portMAX_DELAY );
@@ -322,27 +321,27 @@ void sensor(void *args){
 			chip_info.cores,
 			(chip_info.features & CHIP_FEATURE_BT) ? "/BT" : "",
 					(chip_info.features & CHIP_FEATURE_BLE) ? "/BLE" : "");
-	ESP_LOGI( FNAME,"silicon revision %d, ", chip_info.revision);
+	ESP_LOGI( FNAME,"Silicon revision %d, ", chip_info.revision);
 	ESP_LOGI( FNAME,"%dMB %s flash\n", spi_flash_get_chip_size() / (1024 * 1024),
 			(chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 
-	i2c.begin(GPIO_NUM_21, GPIO_NUM_22);
-
-	MPU.setBus(i2c0);  // set communication bus, for SPI -> pass 'hspi'
-	MPU.setAddr(mpud::MPU_I2CADDRESS_AD0_LOW);  // set address or handle, for SPI -> pass 'mpu_spi_handle'
-	esp_err_t mpu = MPU.testConnection();  // test connection with the chip, return is a error code
-	if( mpu != ESP_ERR_NOT_FOUND ){
-		haveMPU = true;
-		MPU.initialize();  // this will initialize the chip and set default configurations
-		MPU.setSampleRate(50);  // in (Hz)
-		MPU.setAccelFullScale(mpud::ACCEL_FS_4G);
-		MPU.setGyroFullScale(mpud::GYRO_FS_500DPS);
-		MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
-	// MPU.setInterruptEnabled(mpud::INT_EN_RAWDATA_READY);  // enable INT pin
-	}
-	ESP_LOGI(FNAME,"Now init all Setup elements");
+	esp_err_t mpu=ESP_ERR_NOT_FOUND;
+	if( attitude_indicator.get() ) {
+		i2c.begin(GPIO_NUM_21, GPIO_NUM_22);
+		MPU.setBus(i2c0);  // set communication bus, for SPI -> pass 'hspi'
+		MPU.setAddr(mpud::MPU_I2CADDRESS_AD0_LOW);  // set address or handle, for SPI -> pass 'mpu_spi_handle'
+		mpu = MPU.testConnection();  // test connection with the chip, return is a error code
+		if( mpu != ESP_ERR_NOT_FOUND ){
+			haveMPU = true;
+			MPU.initialize();  // this will initialize the chip and set default configurations
+			MPU.setSampleRate(50);  // in (Hz)
+			MPU.setAccelFullScale(mpud::ACCEL_FS_4G);
+			MPU.setGyroFullScale(mpud::GYRO_FS_500DPS);
+			MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
+			// MPU.setInterruptEnabled(mpud::INT_EN_RAWDATA_READY);  // enable INT pin
+		}
+		ESP_LOGI(FNAME,"Now init all Setup elements");
 	SetupCommon::initSetup();
-
 	ESP_LOGI(FNAME, "QNH->get() %f", QNH.get() );
 
 	NVS.begin();

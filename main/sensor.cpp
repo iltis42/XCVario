@@ -341,6 +341,7 @@ void sensor(void *args){
 			// MPU.setInterruptEnabled(mpud::INT_EN_RAWDATA_READY);  // enable INT pin
 		}
 		ESP_LOGI(FNAME,"Now init all Setup elements");
+	}
 	SetupCommon::initSetup();
 	ESP_LOGI(FNAME, "QNH->get() %f", QNH.get() );
 

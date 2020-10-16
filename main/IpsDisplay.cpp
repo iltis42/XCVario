@@ -902,11 +902,11 @@ void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_
 		if( wkposalt != wk ) {
 			// ESP_LOGI(FNAME,"ias:%d wksp:%f wki:%d wk:%d wkpos%f", ias, wkspeed, wki, wk, wkpos );
 			ucg->setColor(  COLOR_WHITE  );
-			drawWkBar( YS2F-fh, WKSYMST, (float)(wk)/10 );
+			drawWkBar( YS2F-fh, WKSYMST+2, (float)(wk)/10 );
 			wkposalt = wk;
 		}
 		if( wki != wkialt ) {
-			drawWkSymbol( YS2F-fh-25, WKSYMST, wki, wkialt );
+			drawWkSymbol( YS2F-fh-25, WKSYMST+2, wki, wkialt );
 			wkialt=wki;
 		}
 	}

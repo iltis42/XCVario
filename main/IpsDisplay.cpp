@@ -69,7 +69,7 @@ const int   S2F_TRISIZE = 60; // triangle size quality up/down
 #define MAXS2FTRI 43
 #define MAXTEBAR ((DISPLAY_H-(VARBARGAP*2))/2)
 
-#define YALT (YS2F+S2FFONTH+HEADFONTH+GAP+2*MAXS2FTRI +25 )
+#define YALT (YS2F+S2FFONTH+HEADFONTH+GAP+2*MAXS2FTRI +22 )
 
 #define BATX (DISPLAY_W-15)
 #define BATY (DISPLAY_H-12)

@@ -824,12 +824,21 @@ void SetupMenu::setup( )
 			dtype->addEntry( "ILI9341_TFT_18P");
 			display->addMenu( dtype );
 		}
+
+		SetupMenuSelect * disty = new SetupMenuSelect( "Display Style", 0, false , 0, false, &display_style );
+		display->addMenu( disty );
+		disty->setHelp( PROGMEM "Display style in more digital airliner stype or retro mode with classic vario meter needle");
+		disty->addEntry( "Airliner");
+		disty->addEntry( "Retro");
+
 		// Orientation   _display_orientation
 		SetupMenuSelect * diso = new SetupMenuSelect( "Display Orientation", 0, true , 0, true, &display_orientation );
 		display->addMenu( diso );
 		diso->setHelp( PROGMEM "Display Orientation either NORMAL means control panel is right, or TOPDOWN means control panel is left");
 		diso->addEntry( "NORMAL (Rotary left)");
 		diso->addEntry( "TOPDOWN (Rotary right)");
+
+
 
 		SetupMenu * rotary = new SetupMenu( "Rotary Setup" );
 		hardware->addMenu( rotary );

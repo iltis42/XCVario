@@ -110,6 +110,7 @@ SetupNG<int>		    student_mode( "STUD_MOD", 0 );
 SetupNG<float>		    password( "PASSWORD", 0 );
 SetupNG<int>		    autozero( "AUTOZERO", 0 );
 SetupNG<int>		    attitude_indicator("AHRS", 0 );
+SetupNG<int>		    display_style("DISPLAY_STYLE", 0 );
 
 
 

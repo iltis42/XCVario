@@ -151,9 +151,10 @@ void drawDisplay(void *pvParameters){
 				airspeed = ias;
 			else if( airspeed_mode.get() == MODE_TAS )
 				airspeed = tas;
+			// ESP_LOGI(FNAME,"TE=%f %0.1f",TE,TE);
 			display.drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, aCl, Audio.getS2FMode(), standard_setting );
 		}
-		vTaskDelay(10);
+		vTaskDelay(20);
 		if( uxTaskGetStackHighWaterMark( dpid ) < 1024  )
 			ESP_LOGW(FNAME,"Warning drawDisplay stack low: %d bytes", uxTaskGetStackHighWaterMark( dpid ) );
 	}
@@ -255,7 +256,6 @@ void readBMP(void *pvParameters){
 				vTaskDelay(2);
 				xSemaphoreGive(xMutex);
 			}
-
 
 		}
 		if( uxTaskGetStackHighWaterMark( bpid )  < 1024 )
@@ -680,7 +680,7 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
 	xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096*2, NULL, 5, bpid, 0);  // 20
-	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 4096*2, NULL, 4, dpid, 0);  // 10
+	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 4096*2, NULL, 20, dpid, 0);  // 10
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 4096, NULL, 3, tpid, 0);
 
 	Audio.startAudio();

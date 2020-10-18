@@ -46,6 +46,7 @@ typedef enum rs232linemode { RS232_NORMAL, RS232_INVERTED } rs232lm_t;
 typedef enum nmea_protocol  { OPENVARIO, BORGELT, CAMBRIDGE, EYE_SENSOR_BOX, GENERIC } nmea_proto_t;
 typedef enum airspeed_mode  { MODE_IAS, MODE_TAS } airspeed_mode_t;
 typedef enum e_display_style  { DISPLAY_AIRLINER, DISPLAY_RETRO } display_style_t;
+typedef enum e_s2f_type  { S2F_HW_SWITCH, S2F_HW_PUSH_BUTTON } e_s2f_type;
 
 class SetupCommon {
 public:
@@ -299,7 +300,7 @@ extern SetupNG<float>		password;
 extern SetupNG<int>		    autozero;
 extern SetupNG<int>		    attitude_indicator;
 extern SetupNG<int>		    display_style;
-
+extern SetupNG<int>		    s2f_switch_type;
 
 
 #endif /* MAIN_SETUP_NG_H_ */

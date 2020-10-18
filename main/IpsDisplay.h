@@ -128,7 +128,10 @@ private:
 	static int x_3;
 	static int y_3;
 
-	static void drawMC( float mc );
+	static void drawMC( float mc, bool large=false );
+	static void drawS2FMode( int x, int y, bool cruise );
+	static void drawCircling( int x, int y, bool draw );
+	static void drawCruise( int x, int y, bool draw );
 	static void drawBT();
 	static void drawBat( float volt );
 	static void drawTemperature( int x, int y, float t );

@@ -13,6 +13,7 @@
 #include <driver/uart.h>
 #include "OpenVario.h"
 #include <logdef.h>
+#include "Switch.h"
 
 
 extern xSemaphoreHandle nvMutex;

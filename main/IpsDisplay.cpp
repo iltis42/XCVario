@@ -519,15 +519,54 @@ void IpsDisplay::drawWkSymbol( int ypos, int xpos, int wk, int wkalt ){
 			xpos+DISCRAD+BOXLEN-2+FLAPLEN, ypos+wk*4 );
 }
 
-void IpsDisplay::drawMC( float mc ) {
+void IpsDisplay::drawMC( float mc, bool large ) {
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setPrintPos(5,DISPLAY_H-8);
 	ucg->setColor(COLOR_HEADER);
 	ucg->printf("MC:");
 	ucg->setPrintPos(5+ucg->getStrWidth("MC:"),DISPLAY_H-4);
 	ucg->setColor(COLOR_WHITE);
-	ucg->setFont(ucg_font_fur14_hf);
+	if( large )
+		ucg->setFont(ucg_font_fub20_hn);
+	else
+		ucg->setFont(ucg_font_fub14_hn);
 	ucg->printf("%1.1f", mc );
+}
+
+
+#define S2FSS 16
+#define S2FTS 6
+
+void IpsDisplay::drawCircling( int x, int y, bool draw ){
+	if( draw )
+		ucg->setColor( COLOR_WHITE );
+	else
+		ucg->setColor( COLOR_BLACK );
+	ucg->drawCircle( x, y, S2FSS,   UCG_DRAW_ALL );
+	ucg->drawCircle( x, y, S2FSS-1, UCG_DRAW_ALL );
+	int tm=x-S2FSS+1;
+	ucg->drawTriangle( tm-S2FTS, y+2, tm+S2FTS, y+2, tm, y+2-2*S2FTS );
+}
+
+void IpsDisplay::drawCruise( int x, int y, bool draw ){
+	if( draw )
+		ucg->setColor( COLOR_WHITE );
+	else
+		ucg->setColor( COLOR_BLACK );
+	ucg->drawTetragon(x-S2FSS,y-5, x-S2FSS,y-1, x+S2FSS,y+5, x+S2FSS,y+1 );
+	ucg->drawTriangle( x+6, y+7, x+8, y-4, x+S2FSS, y+3 );
+}
+
+void IpsDisplay::drawS2FMode( int x, int y, bool cruise ){
+	if( cruise ) {
+		drawCircling(x,y,false);
+		drawCruise(x,y,true);
+	}
+	else
+	{
+		drawCruise(x,y,false);
+		drawCircling(x,y,true);
+	}
 }
 
 void IpsDisplay::drawBT() {
@@ -675,9 +714,6 @@ void IpsDisplay::initRetroDisplay(){
 		drawAnalogScale((r-1)/2,150);
 		drawAnalogScale((-r+1)/2,155);
 	}
-
-
-
 	// Unit's
 	String units;
 	ucg->setFont(ucg_font_fub11_hr);
@@ -687,10 +723,10 @@ void IpsDisplay::initRetroDisplay(){
 		units="ft/m";
 	else if(  UNITVAR == 2 )
 		units="kt ";
-	ucg->setPrintPos(125,AMIDY-34);
+	ucg->setPrintPos(85,15);
 	ucg->print(units.c_str());
 	drawBT();
-	drawMC( MC.get() );
+	drawMC( MC.get(), true );
 	drawThermometer(  10, 30 );
 
 }
@@ -701,7 +737,7 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 	if( _menu )
 		return;
 	tick++;
-	ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f IAS:%d km/h", te, ias );
+	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f IAS:%d km/h", te, ias );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	if( te > _range )
 		te = _range;
@@ -728,7 +764,8 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 			ate = 9.9;
 		if( ate < -9.9 )
 			ate = -9.9;
-		ucg->setPrintPos(90, AMIDY+17 );
+		ucg->setPrintPos(90, AMIDY+2 );
+		ucg->setFontPosCenter();
 		ucg->setColor( COLOR_WHITE );
 		// ucg->setFont(ucg_font_fub25_hr);
 		ucg->setFont(ucg_font_fub35_hn);
@@ -751,6 +788,7 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 		}
 		else if(  UNITVAR == 2 )
 			ucg->printf("%0.1f ", pte*1.94384 );         // knots
+		ucg->setFontPosBottom();
 		ucg->undoClipRange();
 		_ate = (int)(ate*30);
 	}
@@ -758,7 +796,7 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 	if(  !(tick%8) ) {
 		int aMC = MC.get() * 10;
 		if( aMC != mcalt && !(tick%4) ) {
-			drawMC( MC.get() );
+			drawMC( MC.get(), true );
 			mcalt=aMC;
 		}
 	}
@@ -770,28 +808,38 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 	// S2F Command triangle
 	if( (int)s2fd != s2fdalt && !((tick+1)%2) ) {
 		// ESP_LOGI(FNAME,"S2F in");
-		int start=190;
+		int start=120;
 		int width=50;
-		int maxs2f=60;
-		ucg->setClipRange( start, dmid-maxs2f, width, (maxs2f*2)+1 );
+		int maxs2f=55;
+		ucg->setClipRange( start, dmid-maxs2f-25, width, (maxs2f*2)+1+25 );
 		bool clear = false;
+		int dmo = dmid+25;
 		if( s2fd > 0 ) {
-			if ( (int)s2fd < s2fdalt || (int)s2fdalt < 0 )
+			if ( (int)s2fd < s2fdalt || (int)s2fdalt < 0 ){
 				clear = true;
+			}
 		}
 		else {
-			if ( (int)s2fd > s2fdalt || (int)s2fdalt > 0  )
+			if ( (int)s2fd > s2fdalt || (int)s2fdalt > 0  ) {
 				clear = true;
+			}
 		}
+		if( int(s2fd) < 0  && (int)s2fdalt < 0 )
+			dmo = dmid-25;
+
+		if( dmo < dmid )
+			ucg->setClipRange( start, dmid-25-maxs2f, width, (maxs2f)+1 );
+		else
+			ucg->setClipRange( start, dmid+25, width, (maxs2f)+1 );
 		// clear old triangle for S2F
 		if( clear ) {
 			ucg->setColor( COLOR_BLACK );
-			ucg->drawTriangle(  start, dmid,
-					start+(width/2), dmid+(int)s2fd,
-					start+(width/2), dmid+(int)s2fdalt );
-			ucg->drawTriangle( 	start+width, dmid,
-					start+(width/2), dmid+(int)s2fd,
-					start+(width/2), dmid+(int)s2fdalt );
+			ucg->drawTriangle(  start, dmo,
+					start+(width/2), dmo+(int)s2fd,
+					start+(width/2), dmo+(int)s2fdalt );
+			ucg->drawTriangle( 	start+width, dmo,
+					start+(width/2), dmo+(int)s2fd,
+					start+(width/2), dmo+(int)s2fdalt );
 		}
 		// draw new S2F command triangle
 		if( s2fd < 0 )
@@ -799,12 +847,20 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 		else
 			ucg->setColor( COLOR_RED );
 		// ESP_LOGI(FNAME,"S2F %d-%d %d-%d %d-%d", start, dmid, start+width, dmid, start+(width/2), dmid+(int)s2fd );
-		ucg->drawTriangle(  start, dmid,
-				start+width, dmid,
-				start+(width/2), dmid+(int)s2fd );
+		ucg->drawTriangle(  start, dmo,
+				start+width, dmo,
+				start+(width/2), dmo+(int)s2fd );
 
-		s2fdalt=(int)s2fd;
 		ucg->undoClipRange();
+		if( s2fd > 0 && s2fdalt < 0 ){
+			ucg->setColor( COLOR_BLACK );
+			ucg->drawBox( start, dmid-25-maxs2f, width, (maxs2f)+1 );
+		}
+		else if( s2fd < 0 && s2fdalt > 0 ){
+			ucg->setColor( COLOR_BLACK );
+			ucg->drawBox( start, dmid+25, width, (maxs2f)+1 );
+		}
+		s2fdalt=(int)s2fd;
 
 	}
 	if(!(tick%7) ) {
@@ -857,6 +913,10 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 			wkialt=wki;
 		}
 	}
+	if( !(tick%9) ){
+		drawS2FMode( 180, 16, s2fmode );
+	}
+
 	xSemaphoreGive(spiMutex);
 }
 

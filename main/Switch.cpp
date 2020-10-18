@@ -16,10 +16,14 @@
 #include "driver/gpio.h"
 #include "Switch.h"
 #include <logdef.h>
+#include "Setup.h"
 
+bool Switch::_cruise_mode = false;
+bool Switch::_closed = false;
+int Switch::_holddown = 0;
+gpio_num_t Switch::_sw = GPIO_NUM_0;
 
 Switch::Switch() {
-	_sw = GPIO_NUM_0;
 }
 
 Switch::~Switch() {
@@ -41,12 +45,37 @@ bool Switch::isClosed() {
 		return false;
 	else
 		return true;
-// 	gpio_set_pull_mode(_sw, GPIO_PULLDOWN_ONLY);
-
 }
+
 bool Switch::isOpen() {
-   return( !isClosed() );
+	return( !isClosed() );
 }
 
-
-
+void Switch::tick() {
+	if( s2f_switch_type.get() == S2F_HW_SWITCH ){
+		if( isClosed() )
+			_cruise_mode = true;
+		else
+			_cruise_mode = false;
+	}
+	else if( s2f_switch_type.get() == S2F_HW_PUSH_BUTTON ){
+		if( _holddown ){   // debouncing
+			_holddown--;
+			return;
+		}
+		if( _closed ) {
+			if( !isClosed() )
+				_closed = false;
+		}
+		else {
+			if( isClosed() ) {
+				_closed = true;
+				_holddown = 5;
+				if( _cruise_mode )
+					_cruise_mode = false;
+				else
+					_cruise_mode = true;
+			}
+		}
+	}
+}

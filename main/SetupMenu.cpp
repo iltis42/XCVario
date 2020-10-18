@@ -855,11 +855,19 @@ void SetupMenu::setup( )
 		roinc->addEntry( "Single Increment");
 		roinc->addEntry( "Double Increment");
 
+		SetupMenuSelect * s2fsw = new SetupMenuSelect( "S2F Switch Type", 0, false , 0, false, &s2f_switch_type );
+		hardware->addMenu( s2fsw );
+		s2fsw->setHelp( PROGMEM "Select S2F hardware switch type, what can be an normal switch or a push button without lock toggling mode any time pressed");
+		s2fsw->addEntry( "Switch");
+		s2fsw->addEntry( "Push Button");
+
 		SetupMenuSelect * mpu = new SetupMenuSelect( "Attitude Indicator", 0, false , 0, false, &attitude_indicator );
 		hardware->addMenu( mpu );
 		mpu->setHelp( PROGMEM "Enable or disable attitude indicator(AHRS) processing, available on 4th generation hardware (two RJ45)");
 		mpu->addEntry( "Disable");
 		mpu->addEntry( "Enable");
+
+
 
 
 		float fva = factory_volt_adjust.get();

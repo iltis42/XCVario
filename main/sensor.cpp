@@ -40,6 +40,7 @@
 #include <OTA.h>
 #include "SetupNG.h"
 #include <logdef.h>
+#include "Switch.h"
 
 #include "MPU.hpp"        // main file, provides the class itself
 #include "mpu/math.hpp"   // math helper for dealing with MPU data
@@ -152,7 +153,7 @@ void drawDisplay(void *pvParameters){
 			else if( airspeed_mode.get() == MODE_TAS )
 				airspeed = tas;
 			// ESP_LOGI(FNAME,"TE=%f %0.1f",TE,TE);
-			display.drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, aCl, Audio.getS2FMode(), standard_setting );
+			display.drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, aCl, Switch::cruiseMode(), standard_setting );
 		}
 		vTaskDelay(20);
 		if( uxTaskGetStackHighWaterMark( dpid ) < 1024  )
@@ -233,21 +234,19 @@ void readBMP(void *pvParameters){
 				// reduce also messages from 10 per second to 5 per second to reduce load in XCSoar
 				char lb[120];
 				if( nmea_protocol.get() == BORGELT ) {
-					OV.makeNMEA( P_BORGELT, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Audio.getS2FMode(), alt  );
+					OV.makeNMEA( P_BORGELT, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt  );
 					btsender.send( lb );
-					OV.makeNMEA( P_GENERIC, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Audio.getS2FMode(), alt  );
+					OV.makeNMEA( P_GENERIC, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt  );
 				}
 				else if( nmea_protocol.get() == OPENVARIO )
-					OV.makeNMEA( P_OPENVARIO, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Audio.getS2FMode(), alt  );
+					OV.makeNMEA( P_OPENVARIO, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt  );
 				else if( nmea_protocol.get() == CAMBRIDGE )
-					OV.makeNMEA( P_CAMBRIDGE, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Audio.getS2FMode(), alt  );
+					OV.makeNMEA( P_CAMBRIDGE, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt  );
 				else if( nmea_protocol.get() == EYE_SENSOR_BOX ) {
-					OV.makeNMEA( P_EYE_PEYA, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Audio.getS2FMode(), alt, validTemperature  );
+					OV.makeNMEA( P_EYE_PEYA, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature  );
 					btsender.send( lb );
-					OV.makeNMEA( P_EYE_PEYI, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Audio.getS2FMode(), alt, validTemperature,
+					OV.makeNMEA( P_EYE_PEYI, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
 							     -accelG[2], accelG[1],accelG[0], gyroDPS.x+ox, gyroDPS.y+oy, gyroDPS.z+oz );
-					// btsender.send( lb );
-					// OV.makeNMEA( P_GENERIC, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Audio.getS2FMode(), alt  );
 				}
 				else
 					ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
@@ -680,7 +679,7 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
 	xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096*2, NULL, 5, bpid, 0);  // 20
-	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 4096*2, NULL, 20, dpid, 0);  // 10
+	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 12000, NULL, 20, dpid, 0);  // 10
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 4096, NULL, 3, tpid, 0);
 
 	Audio.startAudio();

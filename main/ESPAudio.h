@@ -32,7 +32,6 @@ public:
 	void disable( bool disable=true );
 	inline bool getDisable() { return _disable; };  // Just store the disable state and return on demand, Audio itself now can play in setup mode
 	void setup();
-	inline bool getS2FMode() { return _s2f_mode; }
 	void incVolume( int steps );
 	void decVolume( int steps );
 	void setVolume( int vol );

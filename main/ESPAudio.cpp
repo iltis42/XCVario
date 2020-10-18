@@ -54,8 +54,6 @@ int    ESPAudio::prev_scale = -1;
 int    ESPAudio::scaled_wip = 0;
 
 MCP4018 Poti;
-Switch VaSoSW;
-
 
 ESPAudio::ESPAudio( ) {
 	_ch = DAC_CHANNEL_1;
@@ -645,10 +643,10 @@ void ESPAudio::calcS2Fmode(){
 		_s2f_mode = true;
 		break;
 	case 2: // Switch
-		_s2f_mode = VaSoSW.isClosed();
+		_s2f_mode = Switch::cruiseMode();
 		break;
 	case 3: // Auto
-		if( (_ias > s2f_speed.get())  or VaSoSW.isClosed())
+		if( (_ias > s2f_speed.get())  or Switch::cruiseMode())
 			_s2f_mode = true;
 		else
 			_s2f_mode = false;
@@ -656,17 +654,16 @@ void ESPAudio::calcS2Fmode(){
 	}
 }
 
-
-
-
 void ESPAudio::dactask(void* arg )
 {
 	while(1){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		tick++;
+		Switch::tick();
 		if( !_testmode ) {
-			if( (tick % 5) == 0 )
-				calcS2Fmode();
+			if( tick%5 )
+				continue;
+			calcS2Fmode();
 			bool sound=true;
 			float f;
 			int step;
@@ -764,7 +761,7 @@ void ESPAudio::dactask(void* arg )
 			}
 			// assert( heap_caps_check_integrity_all(true) == true );
 		}
-		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&xLastWakeTime, 20/portTICK_PERIOD_MS);
 	}
 }
 
@@ -866,7 +863,7 @@ void ESPAudio::restart()
 void ESPAudio::begin( dac_channel_t ch, gpio_num_t button  )
 {
 	ESP_LOGD(FNAME,"ESPAudio::begin");
-	VaSoSW.begin( GPIO_NUM_12 );
+	Switch::begin( GPIO_NUM_12 );
 	setup();
 	mute();
 	_ch = ch;

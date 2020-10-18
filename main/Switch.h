@@ -12,11 +12,16 @@ class Switch {
 public:
 	Switch( );
 	virtual ~Switch();
-	void begin( gpio_num_t sw );
-	bool isClosed();
-	bool isOpen();
+	static void begin( gpio_num_t sw );
+	static bool isClosed();
+	static bool isOpen();
+	static inline bool cruiseMode() { return _cruise_mode; };
+	static void tick();   // call al least every 100 mS
 private:
-	gpio_num_t _sw;
+	static gpio_num_t _sw;
+	static bool _cruise_mode;
+	static bool _closed;
+	static int _holddown;
 };
 
 #endif /* MAIN_SWITCH_H_ */

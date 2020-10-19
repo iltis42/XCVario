@@ -750,8 +750,8 @@ void ESPAudio::dactask(void* arg )
 						for( int i=4; i>=1; i-- ) {
 							int nw=(wiper/4) * i;
 							Poti.writeWiper(nw);  // fade out volume
-							delayMicroseconds( 20 );
-							ESP_LOGI(FNAME, "fade out sound, set wiper: %d", nw );
+							delayMicroseconds( 30 );
+							// ESP_LOGI(FNAME, "fade out sound, set wiper: %d", nw );
 						}
 						Poti.writeWiper( 1 );
 						cur_wiper = 1;

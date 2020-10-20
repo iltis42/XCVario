@@ -693,17 +693,16 @@ void ESPAudio::dactask(void* arg )
 			if( sound ){
 				ESP_LOGV(FNAME, "have sound");
 				if( !sound_on  || (cur_wiper != wiper) ) {
-					ESP_LOGI(FNAME, "sound on wiper: %d", wiper );
 					if( ! sound_on ) {
 						for( int i=1; i<=4; i++ ) {
 							int nw=(wiper/4) * i;
 							Poti.writeWiper( nw );
 							delayMicroseconds( 20 );
-							ESP_LOGI(FNAME, "fade in sound, wiper: %d", nw);
+							// ESP_LOGI(FNAME, "fade in sound, wiper: %d", nw);
 						}
 					}
 					Poti.writeWiper( wiper );
-					ESP_LOGI(FNAME, "sound on, set wiper: %d", wiper );
+					// ESP_LOGI(FNAME, "sound on, set wiper: %d", wiper );
 					cur_wiper = wiper;
 					sound_on = true;
 				}

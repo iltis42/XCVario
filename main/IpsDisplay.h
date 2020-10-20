@@ -46,7 +46,7 @@
 #define TEGAP 26
 #define TEMIN TEGAP
 #define TEMAX DISPLAY_H-TEGAP
-
+#define DISPLAY_LEFT 25
 
 enum ips_display { ILI9341 };
 
@@ -145,9 +145,11 @@ private:
 	static void setTeBuf( int y1, int y2, int r, int g, int b );
 	static void drawTeBuf();
 	static void drawGaugeTriangle( int y, int r, int g, int b, bool s2f=false );
-	static void drawAvgSymbol( int y, int r, int g, int b );
+	static void drawAvgSymbol( int y, int r, int g, int b, int x=DISPLAY_LEFT );
+	static void drawAvg( float mps );
 	static void drawLegend( bool onlyLines=false );
 	static void drawWkBar( int ypos, int xpos, float wk );
+	static void drawBigWkBar( int ypos, int xpos, float wk );
 	static void drawWkSymbol( int ypos, int xpos, int wk, int wkalt );
 	static int getWk( float wks );
 };

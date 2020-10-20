@@ -47,8 +47,6 @@ const int   hbw   = 12;   // horizontal bar width for unit of bargraph
 const int   bw    = 32;   // bar width
 const int   S2F_TRISIZE = 60; // triangle size quality up/down
 
-#define DISPLAY_LEFT 25
-
 #define TRISIZE 15
 #define abs(x)  (x < 0.0 ? -x : x)
 
@@ -91,6 +89,8 @@ int S2FST = 45;
 
 
 int ASLEN = 0;
+#define AMIDY 160
+#define AMIDX 140
 static int fh;
 
 extern xSemaphoreHandle spiMutex;
@@ -341,18 +341,31 @@ void IpsDisplay::drawGaugeTriangle( int y, int r, int g, int b, bool s2f ) {
 				DISPLAY_LEFT+4+bw+3+TRISIZE, dmid-y-TRISIZE );
 }
 
-
-void IpsDisplay::drawAvgSymbol( int y, int r, int g, int b ) {
+void IpsDisplay::drawAvgSymbol( int y, int r, int g, int b, int x ) {
 	int size = 6;
 	ucg->setColor( r,g,b );
-	ucg->drawTetragon( DISPLAY_LEFT+size-1, dmid-y,
-			DISPLAY_LEFT,        dmid-y+size,
-			DISPLAY_LEFT-size,   dmid-y,
-			DISPLAY_LEFT,        dmid-y-size
-	);
+	ucg->drawTetragon( x+size-1,dmid-y, x,dmid-y+size, x-size,dmid-y, x,dmid-y-size );
 }
 
+float avc_old=0;
 
+void IpsDisplay::drawAvg( float avclimb ){
+	ESP_LOGI(FNAME,"drawAvg: av=%.2f", avclimb );
+	int pos=130;
+	int size=6;
+	if( avc_old != -1000 ){
+		ucg->setColor( COLOR_BLACK );
+		int x=AMIDX - cos((avc_old/_range)*M_PI_2)*pos;
+		int y=AMIDY - sin((avc_old/_range)*M_PI_2)*pos;
+		ucg->drawTetragon( x+size, y, x,y+size, x-size,y, x,y-size );
+		avc_old=avclimb;
+	}
+	ucg->setColor( COLOR_RED );
+	int x=AMIDX - cos((avclimb/_range)*M_PI_2)*pos;
+	int y=AMIDY - sin((avclimb/_range)*M_PI_2)*pos;
+	ESP_LOGI(FNAME,"drawAvg: x=%d  y=%d", x,y );
+	ucg->drawTetragon( x+size,y, x, y+size, x-size,y, x,y-size );
+}
 
 void IpsDisplay::redrawValues()
 {
@@ -467,7 +480,7 @@ int IpsDisplay::getWk( float wks )
 
 void IpsDisplay::drawWkBar( int ypos, int xpos, float wkf ){
 	ucg->setFont(ucg_font_profont22_mr );
-	int lfh = ucg->getFontAscent()+4;
+	int	lfh = ucg->getFontAscent()+4;
 	int lfw = ucg->getStrWidth( "+2" );
 	int top = ypos-lfh/2;
 	if( !wkbox ) {
@@ -486,16 +499,57 @@ void IpsDisplay::drawWkBar( int ypos, int xpos, float wkf ){
 			sprintf( wkss,"%+d", wk);
 		int y=top+(lfh+4)*(5-(wk+2))+(int)((wkf-2)*(lfh+4));
 		ucg->setPrintPos(xpos-2, y );
-		if( wk == 0 )
-			ucg->setColor(COLOR_WHITE);
-		else
-			ucg->setColor(COLOR_WHITE);
+		ucg->setColor(COLOR_WHITE);
 		ucg->printf(wkss);
 		if( wk != -2 ) {
-			ucg->setColor(COLOR_WHITE);
 			ucg->drawHLine(xpos-5, y+3, lfw+4 );
 		}
 	}
+	ucg->undoClipRange();
+}
+
+#define NUMPOS  5
+#define MINPOS -2
+#define MAXPOS  2
+
+int wkyold=0;
+
+void IpsDisplay::drawBigWkBar( int ypos, int xpos, float wkf ){
+	ucg->setFont(ucg_font_profont22_mr );
+	ucg->setFontPosCenter();
+	int lfh = ucg->getFontAscent()+10;  // a bit place around number
+	int lfw = ucg->getStrWidth( "+2" );
+	int size = NUMPOS*lfh;
+	// draw Frame around and a triangle
+	if( !wkbox ) {
+		for( int wk=MINPOS; wk<=MAXPOS; wk++ ){
+			if( wk == 0 )
+				sprintf( wkss,"% d", wk);
+			else
+				sprintf( wkss,"%+d", wk);
+			int y= ypos + lfh*wk;  // negative WK eq. lower position
+			ucg->setPrintPos(xpos+2, y);
+			ucg->setColor(COLOR_WHITE);
+			// print digit
+			ucg->printf(wkss);
+			// Frame around digit
+			ucg->drawFrame(xpos-2, y-(lfh/2), lfw+6, lfh );
+		}
+		wkbox = true;
+	}
+	ucg->setClipRange( xpos-15, ypos-size, 15, 2*size );
+	// now draw the numbers
+
+	int y = ypos + (int)((wkf)*(lfh) + 0.5 );
+	if( wkyold != y ) {
+		ucg->setColor(COLOR_BLACK);
+		ucg->drawTriangle( xpos-15,wkyold-5,  xpos-15,wkyold+5,  xpos,wkyold );
+		ucg->setColor(COLOR_WHITE);
+		ucg->drawTriangle( xpos-15,y-5,  xpos-15,y+5,  xpos,y );
+		wkyold = y;
+	}
+
+	ucg->setFontPosBottom();
 	ucg->undoClipRange();
 }
 
@@ -680,8 +734,6 @@ void IpsDisplay::drawTetragon( float a, int x0, int y0, int l1, int l2, int w, b
 	ucg->drawTetragon(xn_0,yn_0,xn_1,yn_1,xn_2,yn_2,xn_3,yn_3);
 }
 
-#define AMIDY 160
-#define AMIDX 140
 
 void IpsDisplay::drawAnalogScale( int val, int pos ){
 	ucg->setFontPosCenter();
@@ -860,6 +912,21 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 			ucg->setColor( COLOR_BLACK );
 			ucg->drawBox( start, dmid+25, width, (maxs2f)+1 );
 		}
+		// every 10 km/h one line
+		if( s2fd > 0 ){
+			ucg->setColor( COLOR_BLACK );
+			for( int i=0; i<s2fd && i<maxs2f; i+=10 ) {
+				ucg->drawHLine( start, dmid+25+i, width );
+				ucg->drawHLine( start, dmid+25+i+1, width );
+			}
+		}else{
+			ucg->setColor( COLOR_BLACK );
+			for( int i=0; i>s2fd && i>-maxs2f; i-=10 ) {
+				ucg->drawHLine( start, dmid-25+i, width );
+				ucg->drawHLine( start, dmid-25+i-1, width );
+			}
+		}
+
 		s2fdalt=(int)s2fd;
 
 	}
@@ -893,8 +960,8 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 		drawTemperature( 20, 30, temp );
 		tempalt=(int)(temp*10);
 	}
-	// WK-Indicator
 
+	// WK-Indicator
 	if( flap_enable.get() && !(tick%7) )
 	{
 		float wkspeed = ias * sqrt( 100.0/( ballast.get() +100.0) );
@@ -905,16 +972,22 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 		if( wkposalt != wk ) {
 			ESP_LOGD(FNAME,"WK changed");
 			ucg->setColor(  COLOR_WHITE  );
-			drawWkBar( AMIDY-100, WKSYMST-3, (float)(wk)/10 );
+			drawBigWkBar( AMIDY, WKSYMST-4, (float)(wk)/10 );
 			wkposalt = wk;
 		}
 		if( wki != wkialt ) {
-			drawWkSymbol( AMIDY-122, WKSYMST-3, wki, wkialt );
+			drawWkSymbol( AMIDY-82, WKSYMST-3, wki, wkialt );
 			wkialt=wki;
 		}
 	}
 	if( !(tick%9) ){
 		drawS2FMode( 180, 16, s2fmode );
+	}
+
+	ESP_LOGI(FNAME,"acl:%f iacl:%d, nt:%d", acl, average_climb, !(tick%16) );
+	if ( average_climb != (int)(acl*10) && !(tick%16) && acl > 0 ){
+		drawAvg( acl );
+		average_climb = (int)(acl*10);
 	}
 
 	xSemaphoreGive(spiMutex);
@@ -1147,7 +1220,7 @@ void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_
 		s2fmodealt = s2fmode;
 	}
 
-	if ( average_climb !=  (int)(acl*10) && !(tick%10) ){
+	if ( average_climb !=  (int)(acl*10) && !(tick%10) && acl > 0 ){
 		drawAvgSymbol(  (average_climb*_pixpmd)/10, COLOR_BLACK );
 		drawLegend( true );
 		average_climb = (int)(acl*10);

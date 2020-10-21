@@ -543,7 +543,7 @@ void IpsDisplay::drawBigWkBar( int ypos, int xpos, float wkf ){
 	int y = ypos + (int)((wkf)*(lfh) + 0.5 );
 	if( wkyold != y ) {
 		ucg->setColor(COLOR_BLACK);
-		ucg->drawTriangle( xpos-15,wkyold-5,  xpos-15,wkyold+5,  xpos,wkyold );
+		ucg->drawTriangle( xpos-15,wkyold-5,  xpos-15,wkyold+5,  xpos-2,wkyold );
 		ucg->setColor(COLOR_WHITE);
 		ucg->drawTriangle( xpos-15,y-5,  xpos-15,y+5,  xpos,y );
 		wkyold = y;
@@ -930,11 +930,11 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 		s2fdalt=(int)s2fd;
 
 	}
-	if(!(tick%7) ) {
+	if(!(tick%8) ) {
 		int alt = (int)(altitude+0.5);
 		if( alt != prefalt ) {
 			ucg->setColor(  COLOR_WHITE  );
-			ucg->setPrintPos(110,270);
+			ucg->setPrintPos(110,273);
 			ucg->setFont(ucg_font_fub20_hr);
 			if( UNITALT == 0 ) { //m
 				ucg->printf("  %-4d m ", alt  );
@@ -956,7 +956,7 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 	}
 
 	// Temperature Value
-	if( (int)(temp*10) != tempalt && !(tick%11)) {
+	if( (int)(temp*10) != tempalt && !(tick%12)) {
 		drawTemperature( 20, 30, temp );
 		tempalt=(int)(temp*10);
 	}
@@ -980,7 +980,7 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 			wkialt=wki;
 		}
 	}
-	if( !(tick%9) ){
+	if( !(tick%11) ){
 		drawS2FMode( 180, 16, s2fmode );
 	}
 

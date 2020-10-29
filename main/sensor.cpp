@@ -83,6 +83,7 @@ float TE=0;
 float dynamicP;
 
 bool haveMPU=false;
+int  hardwareRevision=2;
 
 DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 standard, alternative  GPIO_NUM_17
 MP5004DP MP5004DP;
@@ -173,7 +174,7 @@ void readBMP(void *pvParameters){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		xSemaphoreTake(xMutex,portMAX_DELAY );
 		TE = bmpVario.readTE( tas );  // 10x per second
-		dynamicP = MP5004DP.readPascal(30);
+		dynamicP = MP5004DP.readPascal(60);
 		float iasraw = ( MP5004DP.pascal2km( dynamicP ) );
 		float T=temperature;
 		if( !validTemperature )
@@ -303,15 +304,20 @@ void readTemp(void *pvParameters){
 	}
 }
 
-
-
 void sensor(void *args){
 	bool selftestPassed=true;
 	int line = 1;
+	gpio_set_direction( GPIO_NUM_19, GPIO_MODE_INPUT );
+	gpio_set_pull_mode( GPIO_NUM_19, GPIO_FLOATING );
+	if( gpio_get_level(GPIO_NUM_19) == 0 )
+		hardwareRevision = 3;
+	else
+		hardwareRevision = 2;
 	gpio_set_drive_capability(GPIO_NUM_23, GPIO_DRIVE_CAP_1);
 	esp_wifi_set_mode(WIFI_MODE_NULL);
 	spiMutex = xSemaphoreCreateMutex();
 	esp_log_level_set("*", ESP_LOG_INFO);
+	ESP_LOGI( FNAME, "Hardware revision detected %d", hardwareRevision );
 	ESP_LOGI( FNAME, "Log level set globally to INFO %d",  ESP_LOG_INFO);
 
 	esp_chip_info_t chip_info;
@@ -385,7 +391,7 @@ void sensor(void *args){
 	bool works=MP5004DP.selfTest( val );
 
 	MP5004DP.doOffset();
-	dynamicP=MP5004DP.readPascal(30);
+	dynamicP=MP5004DP.readPascal(60);
 	ias = MP5004DP.pascal2km( dynamicP );
 	ESP_LOGI(FNAME,"Speed=%f", ias );
 

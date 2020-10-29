@@ -745,6 +745,8 @@ void IpsDisplay::drawAnalogScale( int val, int pos ){
 	ucg->setFontPosBottom();
 }
 
+String riasu;
+
 void IpsDisplay::initRetroDisplay(){
 	redrawValues();
 	int modulo=1;
@@ -780,6 +782,13 @@ void IpsDisplay::initRetroDisplay(){
 	drawBT();
 	drawMC( MC.get(), true );
 	drawThermometer(  10, 30 );
+
+	if( UNITAS == 0 ) // km/h
+		riasu = "km/h";
+	if( UNITAS == 1 ) // mph
+		riasu = "mph";
+	if( UNITAS == 2 ) // knots
+		riasu = "kt";
 
 }
 
@@ -930,6 +939,8 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 		s2fdalt=(int)s2fd;
 
 	}
+
+	// Altitude
 	if(!(tick%8) ) {
 		int alt = (int)(altitude+0.5);
 		if( alt != prefalt ) {
@@ -949,6 +960,7 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 		}
 	}
 
+	// Battery
 	int chargev = (int)( volt *10 );
 	if ( chargealt != chargev  ) {
 		drawBat( volt );
@@ -988,6 +1000,22 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 	if ( average_climb != (int)(acl*10) && !(tick%16) && acl > 0 ){
 		drawAvg( acl );
 		average_climb = (int)(acl*10);
+	}
+	// Airspeed
+	if( !(tick%7) ){
+		if( iasalt != ias ) {
+			ucg->setColor(  COLOR_WHITE  );
+			ucg->setPrintPos(140,75);
+			ucg->setFont(ucg_font_fub20_hr);
+			char s[10];
+			sprintf(s,"%3d", ias );
+			int fl=ucg->getStrWidth(s);
+			ucg->printf("%s  ", s);
+			ucg->setPrintPos(140+fl,70);
+			ucg->setFont(ucg_font_fub11_hr);
+			ucg->printf(" %s  ", riasu.c_str());
+			iasalt = ias;
+		}
 	}
 
 	xSemaphoreGive(spiMutex);

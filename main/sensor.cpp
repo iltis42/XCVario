@@ -84,6 +84,7 @@ float dynamicP;
 
 bool haveMPU=false;
 int  hardwareRevision=2;
+int ccp=60;
 
 DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 standard, alternative  GPIO_NUM_17
 MP5004DP MP5004DP;
@@ -185,6 +186,11 @@ void readBMP(void *pvParameters){
 		Audio.setValues( TE, s2f_delta, ias );
 		TE = bmpVario.readTE( tasraw );  // 10x per second
 		xSemaphoreGive(xMutex);
+		// ESP_LOGI(FNAME,"count %d ccp %d", count, ccp );
+		if( !(count % ccp) ) {
+			bmpVario.recalcAvgClimb();
+			aCl = bmpVario.readAvgClimb();
+		}
 		if( (count++ % 2) == 0 ) {
 			xSemaphoreTake(xMutex,portMAX_DELAY );
 			baroP = bmpBA.readPressure();   // 5x per second
@@ -206,7 +212,7 @@ void readBMP(void *pvParameters){
 			}
 			aTE = bmpVario.readAVGTE();
 			aTES2F = bmpVario.readS2FTE();
-			aCl = bmpVario.readAvgClimb();
+
 			polar_sink = Speed2Fly.sink( ias );
 			netto = aTES2F - polar_sink;
 			as2f = Speed2Fly.speed( netto );
@@ -364,7 +370,7 @@ void sensor(void *args){
 	uint8_t Mode = 3;   //Normal mode
 
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
-
+	ccp = (int)(core_climb_period.get()*10);
 	SPI.begin( SPI_SCLK, SPI_MISO, SPI_MOSI, CS_bme280BA );
 	xSemaphoreGive(spiMutex);
 	display.begin();

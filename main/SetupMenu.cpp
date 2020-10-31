@@ -539,10 +539,13 @@ void SetupMenu::setup( )
 		vccm->setHelp(PROGMEM"Minimum climb rate that counts for arithmetic mean climb value (red rhombus left of TE bar)");
 		vae->addMenu( vccm );
 
-		SetupMenuValFloat * vcch = new SetupMenuValFloat( "Mean Climb Period", 0,	"min", 1, 300, 1, 0, false, &core_climb_history );
-		vcch->setHelp(PROGMEM"Number of minutes where samples for mean climb value are regarded, default is last 3 thermals a 15 min");
+		SetupMenuValFloat * vcch = new SetupMenuValFloat( "Mean Climb Minutes", 0,	"min", 1, 300, 1, 0, false, &core_climb_history );
+		vcch->setHelp(PROGMEM"Number of minutes where samples for mean climb value are regarded, default is last 3 thermals or 45 min");
 		vae->addMenu( vcch );
 
+		SetupMenuValFloat * vcp = new SetupMenuValFloat( "Mean Climb Period", 0,	"sec", 10, 60, 1, 0, false, &core_climb_period );
+		vcp->setHelp(PROGMEM"Number of seconds when mean climb value is recalculated, default is last 60 seconds");
+		vae->addMenu( vcp);
 
 		SetupMenuSelect * sink = new SetupMenuSelect( 	"Polar Sink Display", 0, false, 0 , true, &ps_display );
 		sink->setHelp(PROGMEM"Show polar sink rate together with TE in Vario bar");

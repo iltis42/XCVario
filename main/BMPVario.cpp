@@ -43,18 +43,32 @@ void BMPVario::setup() {
 
 
 void BMPVario::recalcAvgClimb() {
-		float ac = 0;
-		int ns=0;
-		for( int i=avindexMin, j=(int)(core_climb_history.get()); i>=0 && j>=0; i--, j-- ) {
-			// ESP_LOGI(FNAME,"MST pM= %2.2f  %d", avClimbMin[i], i  );
-			if( avClimbMin[i] > core_climb_min.get() ) {
-				ac += avClimbMin[i];
-				ns++;
-			}
+	float ac = 0;
+	int ns=1;
+	for( int i=avindexMin, j=(int)(core_climb_history.get() * 60/core_climb_period.get() ); i>=0 && j>=0; i--, j-- ) {
+		// ESP_LOGI(FNAME,"MST pM= %2.2f  %d", avClimbMin[i], i  );
+		if( avClimbMin[i] > core_climb_min.get() ) {
+			ac += avClimbMin[i];
+			ns++;
 		}
-		if( ns ) {
-			averageClimb = ac/ns;
+	}
+	float ac_sec = 0;
+	int nss=0; // number of relevant samples per second
+	// Look also to second values counted in last second
+	for( int i=0; i<60; i++ ) {
+		// ESP_LOGI(FNAME,"MST pM= %2.2f  %d", avClimbSec[i], i  );
+		if( avClimbSec[i] > core_climb_min.get() ) {
+			ac_sec += avClimbSec[i];
+			nss++;
 		}
+	}
+	if( nss ) {
+		ac += ac_sec/nss;
+		ns++;
+	}
+	if( ns )
+		averageClimb = ac/ns;
+	ESP_LOGI(FNAME,"AVGsec:%2.2f  AVG:%2.2f", ac_sec, averageClimb );
 }
 
 
@@ -137,12 +151,12 @@ double BMPVario::readTE( float tas ) {
 			avindex100MSec = 0;
 			float ac=0;
 			for( int i=0; i<10; i++ )
-			if( avClimb100MSec[i] > 0 )
-				ac += avClimb100MSec[i];
+				if( avClimb100MSec[i] > 0 )
+					ac += avClimb100MSec[i];
 			avClimbSec[avindexSec] = ac/10;
 			// ESP_LOGI(FNAME,"- MST pSEC= %2.2f %d", avClimbSec[avindexSec], avindexSec );
 			avindexSec++;
-			// every minute
+			// every minute, or what is setup in mean climb period
 			if( avindexSec > 60 ) {
 				avindexSec = 0;
 				ac=0;
@@ -157,7 +171,6 @@ double BMPVario::readTE( float tas ) {
 					}
 					avindexMin = 240;
 				}
-				recalcAvgClimb();
 			}
 		}
 	}
@@ -186,7 +199,7 @@ double BMPVario::readTE( float tas ) {
 void BMPVario::setTE( double te ) {
 	_test = true;
 	_TEF = te;
-   // calcAnalogOut();
+	// calcAnalogOut();
 }  // for testing purposes
 
 void BMPVario::calcAnalogOut()

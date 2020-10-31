@@ -129,6 +129,7 @@ float IpsDisplay::_range_clip = 0;
 int   IpsDisplay::_divisons = 5;
 float IpsDisplay::_range = 5;
 int IpsDisplay::average_climb = -100;
+float IpsDisplay::average_climbf = 0;
 bool IpsDisplay::wkbox = false;
 int  IpsDisplay::pref_qnh = 0;
 
@@ -347,24 +348,47 @@ void IpsDisplay::drawAvgSymbol( int y, int r, int g, int b, int x ) {
 	ucg->drawTetragon( x+size-1,dmid-y, x,dmid-y+size, x-size,dmid-y, x,dmid-y-size );
 }
 
-float avc_old=0;
+float avc_old=-1000;
+int yusize=7;
+int ylsize=7;
 
-void IpsDisplay::drawAvg( float avclimb ){
-	ESP_LOGI(FNAME,"drawAvg: av=%.2f", avclimb );
+void IpsDisplay::drawAvg( float avclimb, float delta ){
+	ESP_LOGI(FNAME,"drawAvg: av=%.2f delta=%.2f", avclimb, delta );
 	int pos=130;
-	int size=6;
+	int size=7;
 	if( avc_old != -1000 ){
 		ucg->setColor( COLOR_BLACK );
 		int x=AMIDX - cos((avc_old/_range)*M_PI_2)*pos;
 		int y=AMIDY - sin((avc_old/_range)*M_PI_2)*pos;
-		ucg->drawTetragon( x+size, y, x,y+size, x-size,y, x,y-size );
-		avc_old=avclimb;
+		ucg->drawTetragon( x+size, y, x,y+ylsize, x-size,y, x,y-yusize );
 	}
-	ucg->setColor( COLOR_RED );
+	drawScaleLines( false );
+	drawAnalogScale(0, 132);
+	if( delta > 0 )
+		ucg->setColor( COLOR_GREEN );
+	else
+		ucg->setColor( COLOR_RED );
+
+	if( delta > 0.2 ){
+		yusize=size*2;
+		ylsize=size;
+	}
+	else if ( delta < -0.2 ){
+		ylsize=size*2;
+		yusize=size;
+	}
+	else{
+		ylsize=size;
+		yusize=size;
+	}
+
+	if( avclimb > _range ) // clip values off weeds
+		avclimb = _range;
 	int x=AMIDX - cos((avclimb/_range)*M_PI_2)*pos;
 	int y=AMIDY - sin((avclimb/_range)*M_PI_2)*pos;
 	ESP_LOGI(FNAME,"drawAvg: x=%d  y=%d", x,y );
-	ucg->drawTetragon( x+size,y, x, y+size, x-size,y, x,y-size );
+	ucg->drawTetragon( x+size,y, x, y+ylsize, x-size,y, x,y-yusize );
+	avc_old=avclimb;
 }
 
 void IpsDisplay::redrawValues()
@@ -704,7 +728,7 @@ void IpsDisplay::drawTemperature( int x, int y, float t ) {
 		ucg->printf(" ---   ");
 }
 
-void IpsDisplay::drawTetragon( float a, int x0, int y0, int l1, int l2, int w, bool del ){
+void IpsDisplay::drawTetragon( float a, int x0, int y0, int l1, int l2, int w, int r, int g, int b, bool del ){
 	float si=sin(a);
 	float co=cos(a);
 	int w2=w+1;
@@ -730,10 +754,21 @@ void IpsDisplay::drawTetragon( float a, int x0, int y0, int l1, int l2, int w, b
 		y_3 = yn_3;
 		old_a = a;
 	}
-	ucg->setColor(  COLOR_WHITE  );
+	ucg->setColor( r,g,b  );
 	ucg->drawTetragon(xn_0,yn_0,xn_1,yn_1,xn_2,yn_2,xn_3,yn_3);
 }
 
+void IpsDisplay::drawScaleLines( bool full ){
+	int modulo=1;
+	if( _range > 10 )
+		modulo = 2;
+	int lower = 0;
+	if( full )
+		lower = -(int)_range;
+	for( int a=lower; a<=(int)_range; a+=modulo ) {
+		drawTetragon( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 120, 140, 2, COLOR_WHITE, false );
+	}
+}
 
 void IpsDisplay::drawAnalogScale( int val, int pos ){
 	ucg->setFontPosCenter();
@@ -749,13 +784,7 @@ String riasu;
 
 void IpsDisplay::initRetroDisplay(){
 	redrawValues();
-	int modulo=1;
-	if( _range > 10 )
-		modulo = 2;
-	for( int a=-(int)_range; a<=(int)_range; a+=modulo ) {
-		ESP_LOGI(FNAME,"a=%d",a);
-		drawTetragon( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 120, 140, 2, false );
-	}
+	drawScaleLines();
     int r = (int)_range;
 	drawAnalogScale(-r,150);
 	drawAnalogScale(r,150);
@@ -792,6 +821,7 @@ void IpsDisplay::initRetroDisplay(){
 
 }
 
+float polar_sink_prev = 0;
 
 void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sink, float altitude,
 		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt ){
@@ -815,11 +845,14 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 		s2fd = s2fd*0.539957;
 	}
 
+	// draw TE pointer
 	float a = (te)/(_range) * (M_PI_2);
 	if( int(a*100) != int(old_a*100) ) {
-		drawTetragon( a, AMIDX, AMIDY, 60, 120, 3 );
+		drawTetragon( a, AMIDX, AMIDY, 60, 120, 3, COLOR_WHITE );
 		// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 	}
+
+	// average Climb
 	if( (int)(ate*30) != _ate && !(tick%3) ) {
 		if( ate > 9.9 )
 			ate = 9.9;
@@ -828,10 +861,8 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 		ucg->setPrintPos(90, AMIDY+2 );
 		ucg->setFontPosCenter();
 		ucg->setColor( COLOR_WHITE );
-		// ucg->setFont(ucg_font_fub25_hr);
 		ucg->setFont(ucg_font_fub35_hn);
 		ucg->setClipRange( 90, AMIDY-30, 95, 50 );
-		// ucg->drawFrame( 90, AMIDY-30, 95, 50 );
 		float pte = ate;
 		if( pte < 0 ) {
 			pte = -pte;
@@ -866,6 +897,7 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 	{
 		drawBT();
 	}
+
 	// S2F Command triangle
 	if( (int)s2fd != s2fdalt && !((tick+1)%2) ) {
 		// ESP_LOGI(FNAME,"S2F in");
@@ -935,15 +967,13 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 				ucg->drawHLine( start, dmid-25+i-1, width );
 			}
 		}
-
 		s2fdalt=(int)s2fd;
-
 	}
 
 	// Altitude
 	if(!(tick%8) ) {
 		int alt = (int)(altitude+0.5);
-		if( alt != prefalt ) {
+		if( alt != prefalt || !(tick%64) ) {
 			ucg->setColor(  COLOR_WHITE  );
 			ucg->setPrintPos(110,273);
 			ucg->setFont(ucg_font_fub20_hr);
@@ -992,18 +1022,22 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 			wkialt=wki;
 		}
 	}
+
+	// Cruise mode or circling
 	if( !(tick%11) ){
 		drawS2FMode( 180, 16, s2fmode );
 	}
 
-	ESP_LOGI(FNAME,"acl:%f iacl:%d, nt:%d", acl, average_climb, !(tick%16) );
+	// Medium Climb Indicator
+	// ESP_LOGI(FNAME,"acl:%f iacl:%d, nt:%d", acl, average_climb, !(tick%16) );
 	if ( average_climb != (int)(acl*10) && !(tick%16) && acl > 0 ){
-		drawAvg( acl );
+		drawAvg( acl, acl-average_climbf );
 		average_climb = (int)(acl*10);
+		average_climbf = acl;
 	}
 	// Airspeed
 	if( !(tick%7) ){
-		if( iasalt != ias ) {
+		if( iasalt != ias || !(tick%49) ) {
 			ucg->setColor(  COLOR_WHITE  );
 			ucg->setPrintPos(140,75);
 			ucg->setFont(ucg_font_fub20_hr);
@@ -1017,7 +1051,30 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 			iasalt = ias;
 		}
 	}
-
+	// Polar Sink
+	if( !(tick%9) ){
+		if( (int)(polar_sink*10) != (int)(polar_sink_prev*10) ) {
+			float step= (M_PI_2/100) * _range;
+			float len = 0;
+			if( polar_sink < polar_sink_prev ){  // draw blue what's missing
+				for( float a=polar_sink_prev; a>polar_sink && a>-_range; a-=step ) {
+					ESP_LOGI(FNAME,"blue a=%f",a);
+					if( a <= -step*2 ) // don't overwrite the '0'
+						drawTetragon( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 120, 125, 2, COLOR_BLUE, false );
+					len-=step;
+				}
+			}
+			else{   // delete what's too much
+				for( float a=polar_sink_prev-step; a<=polar_sink; a+=step ) {
+					ESP_LOGI(FNAME,"black a=%f",a);
+					if( a >= -_range && a <= -step*2)
+						drawTetragon( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 119, 126, 2, COLOR_BLACK, false );
+					len +=step;
+				}
+			}
+			polar_sink_prev = polar_sink + step;
+		}
+	}
 	xSemaphoreGive(spiMutex);
 }
 

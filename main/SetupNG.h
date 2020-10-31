@@ -259,6 +259,7 @@ extern SetupNG<float>  		bat_low_volt;
 extern SetupNG<float>  		bat_red_volt;
 extern SetupNG<float>  		bat_yellow_volt;
 extern SetupNG<float>  		bat_full_volt;
+extern SetupNG<float>  		core_climb_period;
 extern SetupNG<float>  		core_climb_min;
 extern SetupNG<float>  		core_climb_history;
 extern SetupNG<float>  		elevation;

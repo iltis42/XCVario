@@ -71,6 +71,7 @@ SetupNG<float>  		bat_low_volt( "BAT_LOW_VOLT" , 11.5 );
 SetupNG<float>  		bat_red_volt( "BAT_RED_VOLT", 11.75 );
 SetupNG<float>  		bat_yellow_volt( "BAT_YELLOW_VOLT" , 12.0 );
 SetupNG<float>  		bat_full_volt( "BAT_FULL_VOLT", 12.8 );
+SetupNG<float>  		core_climb_period( "CORE_CLIMB_P" , 60 );
 SetupNG<float>  		core_climb_min( "CORE_CLIMB_MIN" , 0.5 );
 SetupNG<float>  		core_climb_history( "CORE_CLIMB_HIST" , 45 );
 SetupNG<float>  		elevation( "ELEVATION", -1 );

@@ -111,6 +111,7 @@ private:
 	static int tyalt;
 	static int pyalt;
 	static int average_climb;
+	static float average_climbf;
 	// Battery Indicator related
 	static int charge;
 	static int red;
@@ -136,17 +137,17 @@ private:
 	static void drawBat( float volt );
 	static void drawTemperature( int x, int y, float t );
 	static void drawThermometer( int x, int y );
-	static void drawTetragon( float a, int x0, int y0, int l1, int l2, int w, bool del=true );
+	static void drawTetragon( float a, int x0, int y0, int l1, int l2, int w, int r, int g, int b, bool del=true );
 	static void initRetroDisplay();
 	static void drawRetroDisplay( int ias, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt );
 	static void drawAirlinerDisplay( int ias, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt );
 	static void drawAnalogScale( int val, int pos );
-
+	static void drawScaleLines( bool full=true );
 	static void setTeBuf( int y1, int y2, int r, int g, int b );
 	static void drawTeBuf();
 	static void drawGaugeTriangle( int y, int r, int g, int b, bool s2f=false );
 	static void drawAvgSymbol( int y, int r, int g, int b, int x=DISPLAY_LEFT );
-	static void drawAvg( float mps );
+	static void drawAvg( float mps, float delta );
 	static void drawLegend( bool onlyLines=false );
 	static void drawWkBar( int ypos, int xpos, float wk );
 	static void drawBigWkBar( int ypos, int xpos, float wk );

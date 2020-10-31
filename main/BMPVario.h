@@ -59,7 +59,7 @@ public:
 	void setup();
 
 	double   readTE( float tas );   // get TE value im m/s
-	float readAvgClimb() { return averageClimb; }
+	inline float readAvgClimb() { return averageClimb; }
 
 	double   readAVGTE();   // get TE value im m/s
 	float    readS2FTE();   // get TE value im m/s for S2F

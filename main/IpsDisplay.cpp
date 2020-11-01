@@ -822,6 +822,7 @@ void IpsDisplay::initRetroDisplay(){
 }
 
 float polar_sink_prev = 0;
+float te_prev = 0;
 
 void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sink, float altitude,
 		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt ){
@@ -850,6 +851,27 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 	if( int(a*100) != int(old_a*100) ) {
 		drawTetragon( a, AMIDX, AMIDY, 60, 120, 3, COLOR_WHITE );
 		// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
+		// Climb bar
+
+	}
+	if( !(tick%4) ){
+		if( (int)(te*10) != (int)(te_prev*10) ) {
+			float step= (M_PI_2/100) * _range;
+			if( te > te_prev && te > 0 ){  // draw green what's missing
+				for( float a=te_prev; a<te && a<_range; a+=step ) {
+					if( a >= step*2 ) // don't overwrite the '0'
+						drawTetragon( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 120, 125, 2, COLOR_GREEN, false );
+				}
+			}
+			else{   // delete what's too much
+				ESP_LOGI(FNAME,"delete te:%0.2f prev:%0.2f", te, te_prev );
+				for( float a=te_prev+step; a>=te && a >= step*2; a-=step ) {
+					ESP_LOGI(FNAME,"delete %0.2f", a );
+					drawTetragon( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 119, 126, 2, COLOR_BLACK, false );
+				}
+			}
+			te_prev = te+step;
+		}
 	}
 
 	// average Climb
@@ -1055,13 +1077,11 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 	if( !(tick%9) ){
 		if( (int)(polar_sink*10) != (int)(polar_sink_prev*10) ) {
 			float step= (M_PI_2/100) * _range;
-			float len = 0;
 			if( polar_sink < polar_sink_prev ){  // draw blue what's missing
 				for( float a=polar_sink_prev; a>polar_sink && a>-_range; a-=step ) {
 					ESP_LOGI(FNAME,"blue a=%f",a);
 					if( a <= -step*2 ) // don't overwrite the '0'
 						drawTetragon( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 120, 125, 2, COLOR_BLUE, false );
-					len-=step;
 				}
 			}
 			else{   // delete what's too much
@@ -1069,12 +1089,12 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 					ESP_LOGI(FNAME,"black a=%f",a);
 					if( a >= -_range && a <= -step*2)
 						drawTetragon( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 119, 126, 2, COLOR_BLACK, false );
-					len +=step;
 				}
 			}
 			polar_sink_prev = polar_sink + step;
 		}
 	}
+
 	xSemaphoreGive(spiMutex);
 }
 

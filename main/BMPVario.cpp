@@ -45,7 +45,7 @@ void BMPVario::setup() {
 void BMPVario::recalcAvgClimb() {
 	float ac = 0;
 	int ns=1;
-	for( int i=avindexMin, j=(int)(core_climb_history.get() * 60/core_climb_period.get() ); i>=0 && j>=0; i--, j-- ) {
+	for( int i=avindexMin, j=(int)(core_climb_history.get() * 60 )-1; i>=0 && j>=0; i--, j-- ) {
 		// ESP_LOGI(FNAME,"MST pM= %2.2f  %d", avClimbMin[i], i  );
 		if( avClimbMin[i] > core_climb_min.get() ) {
 			ac += avClimbMin[i];
@@ -146,7 +146,7 @@ double BMPVario::readTE( float tas ) {
 		else
 			avClimb100MSec[avindex100MSec] = 0;
 		avindex100MSec++;
-		if( avindex100MSec > 10 ) {
+		if( avindex100MSec >= 10 ) {  // 0..9
 			// every second
 			avindex100MSec = 0;
 			float ac=0;
@@ -157,19 +157,21 @@ double BMPVario::readTE( float tas ) {
 			// ESP_LOGI(FNAME,"- MST pSEC= %2.2f %d", avClimbSec[avindexSec], avindexSec );
 			avindexSec++;
 			// every minute, or what is setup in mean climb period
-			if( avindexSec > 60 ) {
+			if( avindexSec >= 60 ) { // 0..59
 				avindexSec = 0;
 				ac=0;
-				for( int i=0; i<60; i++ )
+				for( int i=0; i<60; i++ ) {
 					ac +=  avClimbSec[i];
+					avClimbSec[i] = 0;
+				}
 				avClimbMin[avindexMin] = ac/60;
 				// ESP_LOGI(FNAME,"new MST pM= %2.2f", avClimbMin[avindexMin] );
 				avindexMin++;
-				if( avindexMin >= 300 ) { // drop last h
+				if( avindexMin >= 300 ) { // overflowing, drop last h
 					for( int i=60; i<300; i++ ) {
-						avClimbMin[i-60] = avClimbMin[i];
+						avClimbMin[i-60] = avClimbMin[i]; // move by one h
 					}
-					avindexMin = 240;
+					avindexMin = 240; // one h free again
 				}
 			}
 		}

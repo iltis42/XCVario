@@ -75,7 +75,7 @@ void BTSender::packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *p
 			size = RXBUFLEN;
 		}
 		ESP_LOGD(FNAME,"RFCOMM RX (CH %u), size %u", channel, size );
-		ESP_LOG_BUFFER_HEXDUMP(FNAME,msg,size, ESP_LOG_DEBUG);
+		ESP_LOG_BUFFER_HEXDUMP(FNAME,msg,size, ESP_LOG_INFO);
 		if( strncmp( msg, "!g,", 3 )  == 0 ) {
 			ESP_LOGD(FNAME,"Matched a Borgelt command");
 			OpenVario::parseNMEA( msg );
@@ -201,7 +201,7 @@ void serialHandler(void *pvParameters){
 			ser2txbuf.pull(&s);
 			portEXIT_CRITICAL_ISR(&btmux);
 			ESP_LOGD(FNAME,"Serial 2 TX len: %d bytes", s.length() );
-			ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
+			ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
 			int wr = Serial2.write( s.c_str(), s.length() );
 			ESP_LOGD(FNAME,"Serial 2 TX written: %d", wr);
 		}
@@ -217,7 +217,7 @@ void serialHandler(void *pvParameters){
 		// ESP_LOGD(FNAME,"serial RX len: %d", serialRx.length() );
 		if (serialRx.length() > 0) {
 			ESP_LOGD(FNAME,"Serial 2 RX len: %d bytes, Q:%d", serialRx.length(), btbuf.isFull() );
-			ESP_LOG_BUFFER_HEXDUMP(FNAME,serialRx.c_str(),serialRx.length(), ESP_LOG_DEBUG);
+			ESP_LOG_BUFFER_HEXDUMP(FNAME,serialRx.c_str(),serialRx.length(), ESP_LOG_INFO);
 			// Send to BT device
 			if( !btbuf.isFull() &&  (serial2_tx.get() & 2) ) {
 				ESP_LOGD(FNAME,"Send to BT device %d bytes", serialRx.length() );
@@ -244,13 +244,13 @@ void serialHandler(void *pvParameters){
 					else
 					{
 						ESP_LOGD(FNAME,"RFCOMM TX, size %u", s.length() );
-						ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
+						ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
 					}
 				}
 			}
 
 		}
-		if( !(btick++ % 5) )
+		if( !(btick++ % 8) )
 			vTaskDelay( 10/portTICK_PERIOD_MS );
 	}
 }

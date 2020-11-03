@@ -353,7 +353,7 @@ int yusize=7;
 int ylsize=7;
 
 void IpsDisplay::drawAvg( float avclimb, float delta ){
-	ESP_LOGI(FNAME,"drawAvg: av=%.2f delta=%.2f", avclimb, delta );
+	ESP_LOGD(FNAME,"drawAvg: av=%.2f delta=%.2f", avclimb, delta );
 	int pos=130;
 	int size=7;
 	if( avc_old != -1000 ){
@@ -386,7 +386,7 @@ void IpsDisplay::drawAvg( float avclimb, float delta ){
 		avclimb = _range;
 	int x=AMIDX - cos((avclimb/_range)*M_PI_2)*pos;
 	int y=AMIDY - sin((avclimb/_range)*M_PI_2)*pos;
-	ESP_LOGI(FNAME,"drawAvg: x=%d  y=%d", x,y );
+	ESP_LOGD(FNAME,"drawAvg: x=%d  y=%d", x,y );
 	ucg->drawTetragon( x+size,y, x, y+ylsize, x-size,y, x,y-yusize );
 	avc_old=avclimb;
 }
@@ -854,6 +854,7 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 		// Climb bar
 
 	}
+	// draw green bar
 	if( !(tick%4) ){
 		if( (int)(te*10) != (int)(te_prev*10) ) {
 			float step= (M_PI_2/100) * _range;
@@ -864,9 +865,9 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 				}
 			}
 			else{   // delete what's too much
-				ESP_LOGI(FNAME,"delete te:%0.2f prev:%0.2f", te, te_prev );
+				ESP_LOGD(FNAME,"delete te:%0.2f prev:%0.2f", te, te_prev );
 				for( float a=te_prev+step; a>=te && a >= step*2; a-=step ) {
-					ESP_LOGI(FNAME,"delete %0.2f", a );
+					ESP_LOGD(FNAME,"delete %0.2f", a );
 					drawTetragon( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 119, 126, 2, COLOR_BLACK, false );
 				}
 			}
@@ -1086,7 +1087,7 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 			}
 			else{   // delete what's too much
 				for( float a=polar_sink_prev-step; a<=polar_sink; a+=step ) {
-					ESP_LOGI(FNAME,"black a=%f",a);
+					ESP_LOGD(FNAME,"black a=%f",a);
 					if( a >= -_range && a <= -step*2)
 						drawTetragon( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 119, 126, 2, COLOR_BLACK, false );
 				}

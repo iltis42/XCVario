@@ -68,7 +68,7 @@ void BMPVario::recalcAvgClimb() {
 	}
 	if( ns )
 		averageClimb = ac/ns;
-	ESP_LOGI(FNAME,"AVGsec:%2.2f  AVG:%2.2f", ac_sec, averageClimb );
+	// ESP_LOGI(FNAME,"AVGsec:%2.2f  AVG:%2.2f", ac_sec, averageClimb );
 }
 
 

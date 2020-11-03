@@ -4,7 +4,8 @@
 #include "RingBufHelpers.h"
 
 
-#define SSTRLEN 150
+#define SSTRLEN 260
+
 class SString {
 public:
 	SString() { clear();
@@ -13,7 +14,7 @@ public:
 		len = SSTRLEN-1;
 		if( os.length() < len)
 			len = os.length();
-		memcpy(str,os.c_str(),strlen(os.c_str()));
+		memcpy(str,os.c_str(),len);
 		str[len] = 0;
 	}
 	SString( char * s ) {
@@ -44,6 +45,9 @@ public:
 	void clear() {
 		memset(str,0,SSTRLEN);
 		len = 0;
+	}
+	void setLen( int alen ) {
+		len = alen;
 	}
 	char *c_str() { return str; };
 	size_t length() { return len; }

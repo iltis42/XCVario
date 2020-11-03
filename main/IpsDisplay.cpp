@@ -698,7 +698,7 @@ void IpsDisplay::drawBat( float volt ) {
 	ucg->drawBox( BATX-40+2+chgpos,BATY, 32-chgpos, 8 );  // Empty bat bar
 	ucg->setColor( COLOR_WHITE );
 	ucg->setFont(ucg_font_fub11_hr);
-	ucg->setPrintPos(BATX-40,BATY-8);
+	ucg->setPrintPos(BATX-40,BATY-7);
 	if( battery_display.get() == 0 )
 		ucg->printf("%3d%%  ", charge);
 	else {
@@ -1240,7 +1240,7 @@ void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_
 		int alt = (int)(altitude+0.5);
 		if( alt != prefalt ) {
 			ucg->setColor(  COLOR_WHITE  );
-			ucg->setPrintPos(FIELD_START,YALT);
+			ucg->setPrintPos(FIELD_START,YALT+2);
 			ucg->setFont(ucg_font_fub25_hr);
 			if( UNITALT == 0 ) { //m
 				ucg->printf("  %-4d m ", alt  );
@@ -1445,7 +1445,7 @@ void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_
 		if( s2fd < 0 )
 			ypos = dmid+s2fclip-2;  // slower, up
 		else
-			ypos = dmid+s2fclip+2+fa;
+			ypos = dmid+s2fclip+12+fa;
 		// new S2F Delta val
 		if( abs(s2fd) > 10 ) {
 			ucg->setColor(  COLOR_WHITE  );

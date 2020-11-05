@@ -458,6 +458,7 @@ void sensor(void *args){
 		}
 	}
 
+	sleep( 1 );
 	// Temp Sensor test
 	ds18b20.begin();
 	temperature = ds18b20.getTemp();
@@ -740,6 +741,6 @@ void sensor(void *args){
 }
 
 extern "C" int btstack_main(int argc, const char * argv[]){
-	xTaskCreatePinnedToCore(&sensor, "sensor", 8192, NULL, 16, 0, 0);
+	xTaskCreatePinnedToCore(&sensor, "sensor", 8192, NULL, 25, 0, 0);
 	return 0;
 }

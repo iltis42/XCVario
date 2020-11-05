@@ -50,7 +50,7 @@ int MS4525DO::measure()
 {
 	char ret;
 	ret = fetch_pressure(P_dat, T_dat);
-	// ESP_LOGI(FNAME,"MS4525DO::fetch_pressure: %d", P_dat );
+	ESP_LOGI(FNAME,"MS4525DO::fetch_pressure: %d", P_dat );
 	return ret;
 }
 
@@ -86,7 +86,7 @@ char MS4525DO::fetch_pressure(uint16_t &P_dat, uint16_t &T_dat)
 
 float   MS4525DO::readPascal( float minimum ){
 	measure();
-	float _pascal = (P_dat - _offset) * multiplier * ((100.0 + speedcal.get()) / 100.0);
+	float _pascal = (_offset - P_dat) * multiplier * ((100.0 + speedcal.get()) / 100.0);
 	    if ( (_pascal < minimum) && (minimum != 0) ) {
 		  _pascal = 0.0;
 		};

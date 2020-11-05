@@ -38,6 +38,9 @@ public:
   // raw read value of airspeed sensor
   int readVal();
 
+  // check for reply with I2C bus address
+  esp_err_t selfTest();
+
   /*
   Reads the analog register of the MCP3221 and converts it to a useable value. (a voltage)
   */

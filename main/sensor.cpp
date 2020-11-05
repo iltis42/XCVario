@@ -18,6 +18,7 @@
 #include "mcp4018.h"
 #include "ESP32NVS.h"
 #include "MP5004DP.h"
+#include "MS4525DO.h"
 #include "BMPVario.h"
 #include "BTSender.h"
 #include "OpenVario.h"
@@ -46,7 +47,6 @@
 #include "mpu/math.hpp"   // math helper for dealing with MPU data
 #include "mpu/types.hpp"  // MPU data types and definitions
 #include "I2Cbus.hpp"
-
 
 // #include "sound.h"
 
@@ -88,6 +88,7 @@ int ccp=60;
 
 DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 standard, alternative  GPIO_NUM_17
 MP5004DP MP5004DP;
+MS4525DO MS4525DO;
 xSemaphoreHandle xMutex=NULL;
 
 S2F Speed2Fly;
@@ -123,6 +124,7 @@ static float s2f_delta = 0;
 static float polar_sink = 0;
 static bool  standard_setting = false;
 long millisec = millis();
+t_as_sensor as_sensor;
 
 static mpud::float_axes_t accelG;
 static mpud::float_axes_t gyroDPS;
@@ -132,12 +134,15 @@ static I2C_t& i2c                     = i2c0;  // i2c0 or i2c1
 MPU_t MPU;         // create an object
 
 
+
+
 void handleRfcommRx( char * rx, uint16_t len ){
 	ESP_LOGI(FNAME,"RFCOMM packet, %s, len %d %d", rx, len, strlen( rx ));
 }
 
 
 BTSender btsender( handleRfcommRx  );
+
 
 bool lastAudioDisable = false;
 
@@ -175,7 +180,11 @@ void readBMP(void *pvParameters){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		xSemaphoreTake(xMutex,portMAX_DELAY );
 		TE = bmpVario.readTE( tas );  // 10x per second
-		dynamicP = MP5004DP.readPascal(60);
+		if( as_sensor == SENSOR_MP3V5004DP )
+			dynamicP = MP5004DP.readPascal(60);
+		else if( as_sensor == SENSOR_MS4525DO )
+			dynamicP = MS4525DO.readPascal(60);
+
 		float iasraw = ( MP5004DP.pascal2km( dynamicP ) );
 		float T=temperature;
 		if( !validTemperature )
@@ -392,29 +401,46 @@ void sensor(void *args){
 	display.writeText(line++, ver.c_str() );
 
 	ESP_LOGI(FNAME,"Speed sensors init..");
-	MP5004DP.begin( GPIO_NUM_21, GPIO_NUM_22);  // sda, scl
-	int val;
-	bool works=MP5004DP.selfTest( val );
 
-	MP5004DP.doOffset();
-	dynamicP=MP5004DP.readPascal(60);
-	ias = MP5004DP.pascal2km( dynamicP );
-	ESP_LOGI(FNAME,"Speed=%f", ias );
-
-	if( !works ){
-		ESP_LOGE(FNAME,"Error reading air speed pressure sensor MP5004DP->MCP3321 I2C returned error");
+	int offset;
+	bool offset_plausible = false;
+	MS4525DO.begin( GPIO_NUM_21, GPIO_NUM_22 );  // sda, scl
+	if( MS4525DO.selfTest( offset ) ){
+		ESP_LOGI(FNAME,"Speed sensors MS4525DO self test PASSED");
+		MS4525DO.doOffset();
+		offset_plausible = MS4525DO.offsetPlausible( offset );
+		as_sensor = SENSOR_MS4525DO;
+		dynamicP=MS4525DO.readPascal(60);
+		ias = MS4525DO.pascal2km( dynamicP );
+		ESP_LOGI(FNAME,"Using speed sensor MS4525DO type, current speed=%f", ias );
+	}
+	else
+	{
+		MP5004DP.begin( GPIO_NUM_21, GPIO_NUM_22);  // sda, scl
+		if( MP5004DP.selfTest( offset ) ) {
+			ESP_LOGI(FNAME,"Speed sensors MP5004DP self test PASSED");
+			MP5004DP.doOffset();
+			offset_plausible = MP5004DP.offsetPlausible( offset );
+			as_sensor = SENSOR_MP3V5004DP;
+			dynamicP=MP5004DP.readPascal(60);
+			ias = MP5004DP.pascal2km( dynamicP );
+			ESP_LOGI(FNAME,"Using speed sensor MP3V5004DP type, current speed=%f", ias );
+		}
+	}
+	if( as_sensor==SENSOR_NONE ){
+		ESP_LOGE(FNAME,"Error with air speed pressure sensor, now working sensor found");
 		display.writeText( line++, "AS Sensor: Not found");
 		failed_tests += "AS Sensor: NOT FOUND\n";
 		selftestPassed = false;
 	}else {
-		if( !MP5004DP.offsetPlausible( val )  && ( ias < 50 ) ){
-			ESP_LOGE(FNAME,"Error: AS P sensor offset MP5004DP->MCP3321 out of bounds (608-1067), act value=%d", val );
+		if( !offset_plausible && ( ias < 50 ) ){
+			ESP_LOGE(FNAME,"Error: air speed presure sensor offset out of bounds, act value=%d", offset );
 			display.writeText( line++, "AS Sensor: NEED ZERO" );
 			failed_tests += "AS Sensor offset test: FAILED\n";
 			selftestPassed = false;
 		}
 		else {
-			ESP_LOGI(FNAME,"MP5004->MCP3321 test PASSED, readout value in bounds (608-1067)=%d", val );
+			ESP_LOGI(FNAME,"air speed offset test PASSED, readout value in bounds=%d", offset );
 			char s[40];
 			if( ias > 50 ) {
 				sprintf(s, "AS Sensor: %d km/h", (int)(ias+0.5) );
@@ -588,7 +614,10 @@ void sensor(void *args){
 			float speed=0;
 #define LOOPS 150
 			for( int j=0; j< LOOPS; j++ ) {
-				speed += MP5004DP.readPascal(5);
+				if( as_sensor == SENSOR_MP3V5004DP )
+					speed += MP5004DP.readPascal(5);
+				else if( as_sensor == SENSOR_MS4525DO )
+					speed += MS4525DO.readPascal(5);
 				ba += bmpBA.readPressure();
 				te += bmpTE.readPressure();
 				delay( 33 );

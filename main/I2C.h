@@ -20,10 +20,11 @@ class I2C
     esp_err_t read16bit( uint8_t addr, uint16_t *word );
     esp_err_t read8bit( uint8_t addr, uint16_t *word );
     esp_err_t write16bit( uint8_t addr, uint16_t word );
+    esp_err_t read32bit( uint8_t addr, uint8_t *data );
     esp_err_t write8bit( uint8_t addr, uint16_t word );  // write only lower byte from word
     void start();
     void stop();
-    esp_err_t scan();
+    esp_err_t scan( uint8_t addr = 0 );
   private:
     // i2c_cmd_handle_t cmd;
     gpio_num_t _sda;

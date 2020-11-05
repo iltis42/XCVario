@@ -30,6 +30,9 @@ bool MP5004DP::begin(gpio_num_t sda, gpio_num_t scl ){
 
 bool MP5004DP::selfTest(int& val)
 {
+	if( MCP.selfTest() != ESP_OK ){
+		return false;
+	}
 	val = MCP.readVal();
 	if( MCP.readVal() >= 0 ) {
 		return( true);
@@ -145,11 +148,4 @@ float MP5004DP::readPascal( float minimum ){
 	return _pascal;
 }
 
-float   MP5004DP::pascal2km( float pascal )
-{
-    // p = 1/2 * rho * v^2
-    // v = sqrt( 2*p / rho )
-    float v = sqrt( 2*pascal / 1.225 );
-	return v*3.6;
-}
 

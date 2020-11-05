@@ -23,6 +23,16 @@ MCP3221::~MCP3221()
 {
 }
 
+// scan bus for I2C address
+esp_err_t MCP3221::selfTest(){
+	if( scan( MCP3221_CONVERSE ) != ESP_OK ){
+		ESP_LOGI(FNAME,"MCP3221 selftest, scan for I2C address %02x FAILED",MCP3221_CONVERSE );
+		return ESP_FAIL;
+	}
+	ESP_LOGI(FNAME,"MCP3221 selftest, scan for I2C address %02x PASSED",MCP3221_CONVERSE );
+	return ESP_OK;
+}
+
 float MCP3221::readAVG( float alpha ) {
 
 	uint16_t newval;

@@ -13,6 +13,10 @@ xSemaphoreHandle I2C::mutex = 0;
 void I2C::init(gpio_num_t sda, gpio_num_t scl, uint32_t frequency, i2c_port_t num)
 {
 	ESP_LOGI(FNAME,"I2C(sda=%02x  scl=%02x)", sda, scl);
+	if( mutex ) {
+		ESP_LOGW(FNAME,"I2C driver already installed for sda=%02x  scl=%02x", sda, scl );
+		return;
+	}
 	bool error=false;
 	_sda=sda;
 	_scl=scl;
@@ -123,6 +127,28 @@ esp_err_t I2C::read16bit( uint8_t addr, uint16_t *word )
     return ret;
 }
 
+esp_err_t I2C::read32bit( uint8_t addr, uint8_t *data )
+{
+	xSemaphoreTake(mutex,portMAX_DELAY );
+	cmd = i2c_cmd_link_create();
+	start();
+	write(addr, true, I2C_MASTER_READ);
+	read(&data[0], 0);
+    read(&data[1], 0);
+    read(&data[2], 0);
+	read(&data[3], 1);
+
+	stop();
+	esp_err_t ret = i2c_master_cmd_begin(_num, cmd, 100 / portTICK_RATE_MS);
+    if( ret == ESP_FAIL){
+		ESP_LOGE(FNAME,"I2C ERROR read 16 bit: %x", ret);
+	}
+
+    i2c_cmd_link_delete(cmd);
+    xSemaphoreGive(mutex);
+    return ret;
+}
+
 esp_err_t I2C::read8bit( uint8_t addr, uint16_t *word )
 {
 	xSemaphoreTake(mutex,portMAX_DELAY );
@@ -144,30 +170,41 @@ esp_err_t I2C::read8bit( uint8_t addr, uint16_t *word )
 }
 
 
-esp_err_t I2C::scan()
+esp_err_t I2C::scan(  uint8_t addr  )
 {
-	bool found=false;
+	bool found=true;
 	cmd = i2c_cmd_link_create();
-	for( uint8_t addr=3; addr<0x78; addr++ )
+	uint8_t _start = 3;
+	uint8_t _stop = 0x78;
+	if( addr ) {
+		_start = addr;
+		_stop = addr;
+	}
+
+	for( uint8_t addr=_start; addr<=_stop; addr++ )
 	{
 		ESP_LOGI(FNAME,"scan a %02x sca %02x scl %02x", addr, _sda, _scl );
 		start();
-		esp_err_t ret = write( addr, true );
+		esp_err_t ret = write(addr, true, I2C_MASTER_WRITE);
 		stop();
-		if( ret == ESP_OK )
-		{
-			ESP_LOGI(FNAME,"Found I2C address: %02x", addr);
-			found = true;
-			vTaskDelay(1000 / portTICK_PERIOD_MS);
+		if( ret != ESP_OK ){
+			found = false;
 		}
+		ret = i2c_master_cmd_begin(_num, cmd, 100 / portTICK_RATE_MS);
+		if( ret != ESP_OK ){
+			ESP_LOGE(FNAME,"I2C address not found");
+			found = false;
+		}
+		else
+			ESP_LOGI(FNAME,"Found I2C address: %02x", addr);
 
 	}
 	i2c_cmd_link_delete(cmd);
 	if( !found )
 	{
 		ESP_LOGI(FNAME,"I2C scan found nothing");
+		return ESP_FAIL;
 	}
-	vTaskDelay(5000 / portTICK_PERIOD_MS);
 	return ESP_OK;
 }
 

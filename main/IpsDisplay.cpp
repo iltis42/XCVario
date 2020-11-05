@@ -279,6 +279,7 @@ void IpsDisplay::initDisplay() {
 
 // Thermometer
 void IpsDisplay::drawThermometer( int x, int y) {
+		ucg->setColor(COLOR_WHITE);
 		ucg->drawDisc( x, y,  4, UCG_DRAW_ALL ); // white disk
 		ucg->setColor(COLOR_RED);
 		ucg->drawDisc( x, y,  2, UCG_DRAW_ALL );  // red disk
@@ -689,6 +690,8 @@ void IpsDisplay::drawBat( float volt ) {
 	else if ( charge < yellow && charge > red )
 		ucg->setColor( COLOR_YELLOW ); //  yellow
 	else if ( charge < red )
+		ucg->setColor( COLOR_RED ); // red
+	else
 		ucg->setColor( COLOR_RED ); // red
 	int chgpos=(charge*32)/100;
 	if(chgpos <= 4)
@@ -1265,7 +1268,7 @@ void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_
 
 	// Temperature Value
 	if( (int)(temp*10) != tempalt && !(tick%11)) {
-	    drawTemperature( FIELD_START+2, DISPLAY_H, temp );
+	    drawTemperature( FIELD_START+30, DISPLAY_H, temp );
 		tempalt=(int)(temp*10);
 	}
 	// Battery Symbol

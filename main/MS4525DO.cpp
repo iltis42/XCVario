@@ -50,7 +50,7 @@ int MS4525DO::measure()
 {
 	char ret;
 	ret = fetch_pressure(P_dat, T_dat);
-	ESP_LOGI(FNAME,"MS4525DO::fetch_pressure: %d", P_dat );
+	// ESP_LOGI(FNAME,"MS4525DO::fetch_pressure: %d", P_dat );
 	return ret;
 }
 

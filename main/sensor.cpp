@@ -400,6 +400,11 @@ void sensor(void *args){
 	ver += V.version();
 	display.writeText(line++, ver.c_str() );
 
+	String btname="Bluetooth ID: ";
+	btname += SetupCommon::getID();
+	display.writeText(line++, btname.c_str() );
+
+
 	ESP_LOGI(FNAME,"Speed sensors init..");
 
 	int offset;

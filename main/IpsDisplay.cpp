@@ -242,7 +242,7 @@ void IpsDisplay::initDisplay() {
 		// Sollfahrt Text
 		ucg->setFont(ucg_font_fub11_tr);
 		fh = ucg->getFontAscent();
-		ucg->setPrintPos(FIELD_START+6,YS2F-(2*fh)-8);
+		ucg->setPrintPos(FIELD_START+6,YS2F-(2*fh)-11);
 		ucg->setColor(0, COLOR_HEADER );
 		String iasu;
 		if( UNITAS == 0 ) // km/h
@@ -257,7 +257,7 @@ void IpsDisplay::initDisplay() {
 		else if( airspeed_mode.get() == MODE_TAS )
 			ucg->printf("TAS %s", iasu.c_str());
 
-		ucg->setPrintPos(ASVALX,YS2F-(2*fh)-8);
+		ucg->setPrintPos(ASVALX,YS2F-(2*fh)-11);
 		ucg->print(" S2F");
 
 		ucg->setColor(0, COLOR_WHITE );
@@ -1411,7 +1411,7 @@ void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_
 		ucg->undoClipRange();
 		// AS cleartext
 		ucg->setFont(ucg_font_fub14_hn);
-		ucg->setPrintPos(FIELD_START+8, YS2F-fh );
+		ucg->setPrintPos(FIELD_START+8, YS2F-fh-3 );
 		ucg->setColor(  COLOR_WHITE  );
 		ucg->printf("%3d ", iasp);
 		iasalt = ias;
@@ -1431,7 +1431,7 @@ void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_
 		ucg->setFont(ucg_font_fub14_hn);
 		int fa=ucg->getFontAscent();
 		int fl=ucg->getStrWidth("100");
-		ucg->setPrintPos(ASVALX, YS2F-fh);
+		ucg->setPrintPos(ASVALX, YS2F-fh-3);
 		ucg->printf("%3d  ", (int)(s2falt+0.5)  );
 		// draw S2F Delta
 		// erase old

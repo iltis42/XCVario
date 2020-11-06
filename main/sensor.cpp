@@ -134,8 +134,6 @@ static I2C_t& i2c                     = i2c0;  // i2c0 or i2c1
 MPU_t MPU;         // create an object
 
 
-
-
 void handleRfcommRx( char * rx, uint16_t len ){
 	ESP_LOGI(FNAME,"RFCOMM packet, %s, len %d %d", rx, len, strlen( rx ));
 }
@@ -322,17 +320,12 @@ void readTemp(void *pvParameters){
 void sensor(void *args){
 	bool selftestPassed=true;
 	int line = 1;
-	gpio_set_direction( GPIO_NUM_19, GPIO_MODE_INPUT );
-	gpio_set_pull_mode( GPIO_NUM_19, GPIO_FLOATING );
-	if( gpio_get_level(GPIO_NUM_19) == 0 )
-		hardwareRevision = 3;
-	else
-		hardwareRevision = 2;
+
 	gpio_set_drive_capability(GPIO_NUM_23, GPIO_DRIVE_CAP_1);
 	esp_wifi_set_mode(WIFI_MODE_NULL);
 	spiMutex = xSemaphoreCreateMutex();
 	esp_log_level_set("*", ESP_LOG_INFO);
-	ESP_LOGI( FNAME, "Hardware revision detected %d", hardwareRevision );
+	hardwareRevision = 2;  // generation 2 hardware without MPU
 	ESP_LOGI( FNAME, "Log level set globally to INFO %d",  ESP_LOG_INFO);
 
 	esp_chip_info_t chip_info;
@@ -346,13 +339,14 @@ void sensor(void *args){
 			(chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 
 	esp_err_t mpu=ESP_ERR_NOT_FOUND;
-	if( attitude_indicator.get() ) {
-		i2c.begin(GPIO_NUM_21, GPIO_NUM_22);
-		MPU.setBus(i2c0);  // set communication bus, for SPI -> pass 'hspi'
-		MPU.setAddr(mpud::MPU_I2CADDRESS_AD0_LOW);  // set address or handle, for SPI -> pass 'mpu_spi_handle'
-		mpu = MPU.testConnection();  // test connection with the chip, return is a error code
-		if( mpu != ESP_ERR_NOT_FOUND ){
-			haveMPU = true;
+	i2c.begin(GPIO_NUM_21, GPIO_NUM_22);
+	MPU.setBus(i2c0);  // set communication bus, for SPI -> pass 'hspi'
+	MPU.setAddr(mpud::MPU_I2CADDRESS_AD0_LOW);  // set address or handle, for SPI -> pass 'mpu_spi_handle'
+	mpu = MPU.testConnection();  // test connection with the chip, return is a error code
+	if( mpu != ESP_ERR_NOT_FOUND ){
+		haveMPU = true;
+		hardwareRevision = 3;  // wow, there is MPU6050 gyro and acceleration sensor
+		if( attitude_indicator.get() ) {
 			MPU.initialize();  // this will initialize the chip and set default configurations
 			MPU.setSampleRate(50);  // in (Hz)
 			MPU.setAccelFullScale(mpud::ACCEL_FS_4G);
@@ -360,8 +354,9 @@ void sensor(void *args){
 			MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
 			// MPU.setInterruptEnabled(mpud::INT_EN_RAWDATA_READY);  // enable INT pin
 		}
-		ESP_LOGI(FNAME,"Now init all Setup elements");
 	}
+	ESP_LOGI(FNAME,"Now init all Setup elements");
+	ESP_LOGI( FNAME, "Hardware revision detected %d", hardwareRevision );
 	SetupCommon::initSetup();
 	ESP_LOGI(FNAME, "QNH->get() %f", QNH.get() );
 

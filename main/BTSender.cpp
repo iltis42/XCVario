@@ -194,7 +194,7 @@ void serialHandler(void *pvParameters){
 			i=0;
 #endif
 
-		if ( !ser2txbuf.isEmpty() && Serial2.availableForWrite() ){
+		if ( !ser2txbuf.isEmpty() && Serial1.availableForWrite() ){
 			ESP_LOGD(FNAME,"Serial Data and avail");
 			SString s;
 			portENTER_CRITICAL_ISR(&btmux);
@@ -202,15 +202,15 @@ void serialHandler(void *pvParameters){
 			portEXIT_CRITICAL_ISR(&btmux);
 			ESP_LOGD(FNAME,"Serial 2 TX len: %d bytes", s.length() );
 			ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
-			int wr = Serial2.write( s.c_str(), s.length() );
+			int wr = Serial1.write( s.c_str(), s.length() );
 			ESP_LOGD(FNAME,"Serial 2 TX written: %d", wr);
 		}
 		serialRx.clear();
 		int numread=0;
-		bool avail = Serial2.available();
+		bool avail = Serial1.available();
 		if(  avail ) {
 			ESP_LOGD(FNAME,"Serial RX avail" );
-			numread = Serial2.read( rxBuffer, RXBUFLEN );
+			numread = Serial1.read( rxBuffer, RXBUFLEN );
 			ESP_LOGD(FNAME,"Serial RX read %d", numread );
 			serialRx.addl( rxBuffer, numread );
 		}
@@ -282,18 +282,9 @@ void BTSender::begin(){
 	}
 	if( (serial2_speed.get() != 0) && (serial2_rxloop.get() || serial2_tx.get() ) ){
 		ESP_LOGD(FNAME,"Serial TX or Bridge enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial2_speed.get(), baud[serial2_speed.get()], serial2_tx_inverted.get(), serial2_rx_inverted.get() );
-		Serial2.begin(baud[serial2_speed.get()],SERIAL_8N1,16,17);   //  IO16: RXD2,  IO17: TXD2
-		Serial2.setRxBufferSize(256);
-		if( serial2_rx_inverted.get() || serial2_tx_inverted.get() ) {
-			uart_signal_inv_t sigrx=UART_SIGNAL_INV_DISABLE;
-			uart_signal_inv_t sigtx=UART_SIGNAL_INV_DISABLE;
-			if( serial2_rx_inverted.get() )
-				sigrx = UART_SIGNAL_RXD_INV;
-			if( serial2_tx_inverted.get() )
-				sigtx = UART_SIGNAL_TXD_INV;
-			ESP_LOGD(FNAME,"Set UART Inversion Mask (4=RX | 32=TX): %d", sigrx | sigtx  );
-			uart_set_line_inverse(2, sigrx | sigtx );
-		}
+		Serial1.begin(baud[serial2_speed.get()],SERIAL_8N1,16,17, serial2_rx_inverted.get(), serial2_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
+		Serial1.setRxBufferSize(256);
+
 	}
 	if( serial2_rxloop.get() && serial2_speed.get() ) {
 		ESP_LOGD(FNAME,"Serial Bluetooth bridge enabled ");

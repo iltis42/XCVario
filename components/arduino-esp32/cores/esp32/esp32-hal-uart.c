@@ -160,7 +160,7 @@ void uartAttachTx(uart_t* uart, uint8_t txPin, bool inverted)
     pinMatrixOutAttach(txPin, UART_TXD_IDX(uart->num), inverted, false);
 }
 
-uart_t* uartBegin(uint8_t uart_nr, uint32_t baudrate, uint32_t config, int8_t rxPin, int8_t txPin, uint16_t queueLen, bool inverted)
+uart_t* uartBegin(uint8_t uart_nr, uint32_t baudrate, uint32_t config, int8_t rxPin, int8_t txPin, uint16_t queueLen, bool rxinverted, bool txinverted )
 {
     if(uart_nr > 2) {
         return NULL;
@@ -216,11 +216,11 @@ uart_t* uartBegin(uint8_t uart_nr, uint32_t baudrate, uint32_t config, int8_t rx
     UART_MUTEX_UNLOCK();
 
     if(rxPin != -1) {
-        uartAttachRx(uart, rxPin, inverted);
+        uartAttachRx(uart, rxPin, rxinverted);
     }
 
     if(txPin != -1) {
-        uartAttachTx(uart, txPin, inverted);
+        uartAttachTx(uart, txPin, txinverted);
     }
     addApbChangeCallback(uart, uart_on_apb_change);
     return uart;
@@ -275,6 +275,17 @@ void uartSetRxInvert(uart_t* uart, bool invert)
         uart->dev->conf0.rxd_inv = 1;
     else
         uart->dev->conf0.rxd_inv = 0;
+}
+
+void uartSetTxInvert(uart_t* uart, bool invert)
+{
+    if (uart == NULL)
+        return;
+
+    if (invert)
+        uart->dev->conf0.txd_inv = 1;
+    else
+        uart->dev->conf0.txd_inv = 0;
 }
 
 uint32_t uartAvailable(uart_t* uart)

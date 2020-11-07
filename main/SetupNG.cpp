@@ -92,11 +92,15 @@ SetupNG<int>  			alt_unit( "ALT_UNIT", 0 );
 SetupNG<int>  			ias_unit( "IAS_UNIT", 0 );
 SetupNG<int>  			vario_unit( "VARIO_UNIT", 0 );
 SetupNG<int>  			rot_default( "ROTARY_DEFAULT", 0 );
-SetupNG<int>  			serial2_speed( "SERIAL2_SPEED", 3 );
-SetupNG<int>  			serial2_rxloop( "SERIAL2_RXLOOP", 1 );
-SetupNG<int>  			serial2_tx( "SERIAL2_TX", 0 );
-SetupNG<int>  			serial2_tx_inverted( "SERIAL2_TX_INV", RS232_INVERTED );
-SetupNG<int>  			serial2_rx_inverted( "SERIAL2_RX_INV", RS232_INVERTED );
+SetupNG<int>  			serial1_speed( "SERIAL2_SPEED", 0 );   // tag will stay SERIAL2 from historical reason
+SetupNG<int>  			serial1_rxloop( "SERIAL2_RXLOOP", 0 );
+SetupNG<int>  			serial1_tx( "SERIAL2_TX", 2 );      // Just BT device = XCSoar to control FLARM
+SetupNG<int>  			serial1_tx_inverted( "SERIAL2_TX_INV", RS232_INVERTED );
+SetupNG<int>  			serial1_rx_inverted( "SERIAL2_RX_INV", RS232_INVERTED );
+SetupNG<int>  			serial2_speed( "SERIAL1_SPEED", 3 );
+SetupNG<int>  			serial2_tx( "SERIAL1_TX", 3 );     //  BT device and XCVario, Serial2 is foreseen for OpenVario or Kobo
+SetupNG<int>  			serial2_tx_inverted( "SERIAL1_TX_INV", RS232_INVERTED );
+SetupNG<int>  			serial2_rx_inverted( "SERIAL1_RX_INV", RS232_INVERTED );
 SetupNG<int>  			software_update( "SOFTWARE_UPDATE", 0 );
 SetupNG<int>  			battery_display( "BAT_DISPLAY", 0 );
 SetupNG<int>  			airspeed_mode( "AIRSPEED_MODE", MODE_IAS );

@@ -14,6 +14,7 @@
 #include "OpenVario.h"
 #include <logdef.h>
 #include "Switch.h"
+#include "sensor.h"
 
 
 extern xSemaphoreHandle nvMutex;
@@ -22,7 +23,9 @@ const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
 
 #define QUEUE_SIZE 10
 RingBufCPP<SString, QUEUE_SIZE> btbuf;
+RingBufCPP<SString, QUEUE_SIZE> ser1txbuf;
 RingBufCPP<SString, QUEUE_SIZE> ser2txbuf;
+
 
 #define RXBUFLEN 256
 char rxBuffer[RXBUFLEN];
@@ -52,10 +55,24 @@ int BTSender::queueFull() {
 }
 
 void BTSender::send(char * s){
-	ESP_LOGD( FNAME,"Vario NMEA %s",s);
-	if ( !btbuf.isFull() && blue_enable.get() ) {
+	ESP_LOGD( FNAME,"XCVario TX %s",s);
+	if ( !btbuf.isFull() && blue_enable.get() ) {   // bluetooth enabled (if yes sent XCVario data)
 		portENTER_CRITICAL_ISR(&btmux);
 		btbuf.add( s );
+		portEXIT_CRITICAL_ISR(&btmux);
+	}
+	if( serial1_tx.get() & 1 ){         //  XCVario data enabled for ttyS1 ?
+		portENTER_CRITICAL_ISR(&btmux);
+		SString S;
+		S.add( s );
+		ser1txbuf.add( S );
+		portEXIT_CRITICAL_ISR(&btmux);
+	}
+	if( serial2_tx.get() & 1 ){         //  XCVario data enabled for ttyS2 ?
+		portENTER_CRITICAL_ISR(&btmux);
+		SString S;
+		S.add( s );
+		ser2txbuf.add( S );
 		portEXIT_CRITICAL_ISR(&btmux);
 	}
 }
@@ -64,7 +81,6 @@ void BTSender::send(char * s){
 void BTSender::packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	bd_addr_t event_addr;
 	uint16_t  mtu;
-	int pos;
 	char *msg = (char *)packet;
 	// ESP_LOGD(FNAME,"BTstack packet type %02x size %d", packet_type, size);
 	switch (packet_type) {
@@ -75,20 +91,26 @@ void BTSender::packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *p
 			size = RXBUFLEN;
 		}
 		ESP_LOGD(FNAME,"RFCOMM RX (CH %u), size %u", channel, size );
-		ESP_LOG_BUFFER_HEXDUMP(FNAME,msg,size, ESP_LOG_INFO);
+		ESP_LOG_BUFFER_HEXDUMP(FNAME,msg,size, ESP_LOG_DEBUG);
 		if( strncmp( msg, "!g,", 3 )  == 0 ) {
 			ESP_LOGD(FNAME,"Matched a Borgelt command");
 			OpenVario::parseNMEA( msg );
 		}
-		else {
-			pos=0;
-			if( serial2_tx.get() & 2 ){  // Serial data TX from bluetooth enabled ?
-				portENTER_CRITICAL_ISR(&btmux);
-				SString s;
-				s.addl( msg, size);
-				ser2txbuf.add( s );
-				portEXIT_CRITICAL_ISR(&btmux);
-			}
+		if( serial1_tx.get() & 2 ){  // Serial data TX from bluetooth enabled ?
+			portENTER_CRITICAL_ISR(&btmux);
+			SString s;
+			s.addl( msg, size);
+			ser1txbuf.add( s );
+			portEXIT_CRITICAL_ISR(&btmux);
+			ESP_LOGI(FNAME,"BT -> Serial 1 TX %d bytes", size );
+
+		}
+		if(serial2_tx.get() & 2){
+			portENTER_CRITICAL_ISR(&btmux);
+			SString s;
+			s.addl( msg, size);
+			ser2txbuf.add( s );
+			portEXIT_CRITICAL_ISR(&btmux);
 		}
 		break;
 
@@ -176,15 +198,16 @@ some sentences might be lost or truncated.
  */
 
 int btick = 0;
+int numrxp1 = 0;
 
 // Serial Handler
-void serialHandler(void *pvParameters){
+void serialHandler1(void *pvParameters){
 	SString serialRx;
 #ifdef FLARM_SIM
 	int i=0;
 #endif
 	while(1) {
-		TickType_t xLastWakeTime = xTaskGetTickCount();
+		// TickType_t xLastWakeTime = xTaskGetTickCount();
 #ifdef FLARM_SIM
 		portENTER_CRITICAL_ISR(&btmux);
 		btbuf.add( flarm[i++] );
@@ -193,44 +216,63 @@ void serialHandler(void *pvParameters){
 		if(i>12)
 			i=0;
 #endif
-
-		if ( !ser2txbuf.isEmpty() && Serial1.availableForWrite() ){
+		// Serial Interface tty1 send
+		if ( !ser1txbuf.isEmpty() && Serial1.availableForWrite() ){
 			ESP_LOGD(FNAME,"Serial Data and avail");
 			SString s;
 			portENTER_CRITICAL_ISR(&btmux);
-			ser2txbuf.pull(&s);
+			ser1txbuf.pull(&s);
 			portEXIT_CRITICAL_ISR(&btmux);
-			ESP_LOGD(FNAME,"Serial 2 TX len: %d bytes", s.length() );
+			ESP_LOGI(FNAME,"Serial 2 TX len: %d bytes", s.length() );
 			ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
 			int wr = Serial1.write( s.c_str(), s.length() );
 			ESP_LOGD(FNAME,"Serial 2 TX written: %d", wr);
 		}
 		serialRx.clear();
 		int numread=0;
-		bool avail = Serial1.available();
-		if(  avail ) {
-			ESP_LOGD(FNAME,"Serial RX avail" );
+		int num = Serial1.available();
+		if( num > 0 )
+			ESP_LOGI(FNAME,"Serial 1 RX avail: %d bytes, prev: %d", num, numrxp1 );
+		if( num > 0 && ( num == numrxp1 || num > 250 ) )
+		{
+			// ESP_LOGI(FNAME,"Serial 1 RX avail %d bytes", num );
 			numread = Serial1.read( rxBuffer, RXBUFLEN );
-			ESP_LOGD(FNAME,"Serial RX read %d", numread );
+			if( numread != num )
+				ESP_LOGW(FNAME,"Serial 1 RX read WARNING, avail %d != read %d", num, numread);
+			numrxp1 = 0;
+			ESP_LOGI(FNAME,"Serial 1 RX read %d", numread );
+			// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuffer,numread, ESP_LOG_INFO);
 			serialRx.addl( rxBuffer, numread );
 		}
+		else
+			numrxp1 = num;
 		// ESP_LOGD(FNAME,"serial RX len: %d", serialRx.length() );
 		if (serialRx.length() > 0) {
-			ESP_LOGD(FNAME,"Serial 2 RX len: %d bytes, Q:%d", serialRx.length(), btbuf.isFull() );
-			ESP_LOG_BUFFER_HEXDUMP(FNAME,serialRx.c_str(),serialRx.length(), ESP_LOG_INFO);
+			ESP_LOGD(FNAME,"Serial 1 RX len: %d bytes, Q:%d", serialRx.length(), btbuf.isFull() );
+			ESP_LOG_BUFFER_HEXDUMP(FNAME,serialRx.c_str(),serialRx.length(), ESP_LOG_DEBUG);
 			// Send to BT device
-			if( !btbuf.isFull() &&  (serial2_tx.get() & 2) ) {
+			if( !btbuf.isFull() &&  (serial1_tx.get() & 2) ) {
 				ESP_LOGD(FNAME,"Send to BT device %d bytes", serialRx.length() );
 				portENTER_CRITICAL_ISR(&btmux);
 				btbuf.add( serialRx );
 				portEXIT_CRITICAL_ISR(&btmux);
 			}
 			else
-				ESP_LOGD(FNAME,"serial 2 RX bt buffer overrun");
+				ESP_LOGD(FNAME,"serial 1 RX bt buffer overrun");
+
+			if( !ser1txbuf.isFull() && serial1_rxloop.get() ) {
+				ESP_LOGD(FNAME,"Send to ttyS1 TX device RX looped %d bytes", serialRx.length() );
+				portENTER_CRITICAL_ISR(&btmux);
+				ser1txbuf.add( serialRx );
+				portEXIT_CRITICAL_ISR(&btmux);
+			}
+			else
+				ESP_LOGD(FNAME,"serial 1 RX loop bt buffer overrun");
+
 		}
 		if (rfcomm_channel_id ){
 			if ( !btbuf.isEmpty() ){
-				ESP_LOGD(FNAME,"have data for bluetooth");
+				// ESP_LOGD(FNAME,"have data for bluetooth");
 				if (rfcomm_can_send_packet_now(rfcomm_channel_id)){
 					ESP_LOGD(FNAME,"can send now to bluetooth");
 					SString s;
@@ -244,16 +286,74 @@ void serialHandler(void *pvParameters){
 					else
 					{
 						ESP_LOGD(FNAME,"RFCOMM TX, size %u", s.length() );
-						ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
+						ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
 					}
 				}
 			}
 
 		}
+		vTaskDelay( 1/portTICK_PERIOD_MS );
 		if( !(btick++ % 8) )
 			vTaskDelay( 10/portTICK_PERIOD_MS );
 	}
 }
+
+int btick2 = 0;
+int numrxp2 = 0;
+
+void serialHandler2(void *pvParameters){
+	while(1) {
+		SString serialRx;
+		if ( !ser2txbuf.isEmpty() && Serial2.availableForWrite() ){
+			ESP_LOGD(FNAME,"Serial Data and avail");
+			SString s;
+			portENTER_CRITICAL_ISR(&btmux);
+			ser2txbuf.pull(&s);
+			portEXIT_CRITICAL_ISR(&btmux);
+			ESP_LOGD(FNAME,"Serial 2 TX len: %d bytes", s.length() );
+			ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
+			int wr = Serial2.write( s.c_str(), s.length() );
+			ESP_LOGD(FNAME,"Serial 2 TX written: %d", wr);
+		}
+		serialRx.clear();
+		int numread=0;
+		int num = Serial2.available();
+		if( num > 0 )
+			ESP_LOGI(FNAME,"Serial 2 RX avail: %d bytes, prev: %d", num, numrxp1 );
+		if( num > 0 && ( num == numrxp2 || num > 250 ) )
+		{
+			// ESP_LOGI(FNAME,"Serial 2 RX avail %d bytes", num );
+			numread = Serial2.read( rxBuffer, RXBUFLEN );
+			if( numread != num )
+				ESP_LOGW(FNAME,"Serial 2 RX read WARNING, avail %d != read %d", num, numread);
+			numrxp2 = 0;
+			ESP_LOGI(FNAME,"Serial 2 RX read %d", numread );
+			// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuffer,numread, ESP_LOG_INFO);
+			serialRx.addl( rxBuffer, numread );
+		}
+		else
+			numrxp2 = num;
+
+		// ESP_LOGD(FNAME,"serial 2 RX len: %d", serialRx.length() );
+		if (serialRx.length() > 0) {
+			ESP_LOGD(FNAME,"Serial 2 RX len: %d bytes, Q:%d", serialRx.length(), btbuf.isFull() );
+			ESP_LOG_BUFFER_HEXDUMP(FNAME,serialRx.c_str(),serialRx.length(), ESP_LOG_DEBUG);
+			// Send to BT device
+			if( !btbuf.isFull() &&  (serial2_tx.get() & 2) ) {
+				ESP_LOGD(FNAME,"Send to BT device %d bytes", serialRx.length() );
+				portENTER_CRITICAL_ISR(&btmux);
+				btbuf.add( serialRx );
+				portEXIT_CRITICAL_ISR(&btmux);
+			}
+			else
+				ESP_LOGD(FNAME,"serial 2 RX bt buffer overrun");
+
+		}
+		if( !(btick2++ % 8) )
+			vTaskDelay( 10/portTICK_PERIOD_MS );
+	}
+}
+
 
 
 void BTSender::begin(){
@@ -280,16 +380,19 @@ void BTSender::begin(){
 		sdp_init();
 		hci_power_control(HCI_POWER_ON);
 	}
-	if( (serial2_speed.get() != 0) && (serial2_rxloop.get() || serial2_tx.get() ) ){
-		ESP_LOGD(FNAME,"Serial TX or Bridge enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial2_speed.get(), baud[serial2_speed.get()], serial2_tx_inverted.get(), serial2_rx_inverted.get() );
-		Serial1.begin(baud[serial2_speed.get()],SERIAL_8N1,16,17, serial2_rx_inverted.get(), serial2_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
+	if( serial1_speed.get() != 0  || blue_enable.get() ){
+		ESP_LOGD(FNAME,"Serial Interface ttyS1 enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial1_speed.get(), baud[serial1_speed.get()], serial1_tx_inverted.get(), serial1_rx_inverted.get() );
+		Serial1.begin(baud[serial1_speed.get()],SERIAL_8N1,16,17, serial1_rx_inverted.get(), serial1_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
 		Serial1.setRxBufferSize(256);
+		xTaskCreatePinnedToCore(&serialHandler1, "serialHandler1", 4096, NULL, 25, 0, 0);
+	}
+	if( serial2_speed.get() != 0  && hardwareRevision >= 3 ){
+		ESP_LOGD(FNAME,"Serial Interface ttyS2 enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial2_speed.get(), baud[serial2_speed.get()], serial2_tx_inverted.get(), serial2_rx_inverted.get() );
+		Serial2.begin(baud[serial2_speed.get()],SERIAL_8N1,34,18, serial2_rx_inverted.get(), serial2_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
+		Serial2.setRxBufferSize(256);
+		xTaskCreatePinnedToCore(&serialHandler2, "serialHandler2", 4096, NULL, 23, 0, 0);
+	}
 
-	}
-	if( serial2_rxloop.get() && serial2_speed.get() ) {
-		ESP_LOGD(FNAME,"Serial Bluetooth bridge enabled ");
-		xTaskCreatePinnedToCore(&serialHandler, "serialHandler", 4096, NULL, 30, 0, 0);
-	}
 };
 
 

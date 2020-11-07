@@ -15,6 +15,7 @@
 #include "Version.h"
 #include "Polars.h"
 #include <logdef.h>
+#include <sensor.h>
 
 IpsDisplay* MenuEntry::_display = 0;
 MenuEntry* MenuEntry::root = 0;
@@ -918,44 +919,82 @@ void SetupMenu::setup( )
 		rd->addEntry( "Volume");
 		rd->addEntry( "MC Value");
 
-		// _serial2_speed
-		SetupMenu * rs232 = new SetupMenu( "RS232 Serial Interface" );
+		// _serial1_speed
+		SetupMenu * rs232 = new SetupMenu( "RS232 Interface ttyS1" );
 		sye->addMenu( rs232 );
-		SetupMenuSelect * s2sp = new SetupMenuSelect( PROGMEM "Serial RS232 Speed",	0, false, 0, true, &serial2_speed );
+		SetupMenuSelect * s2sp = new SetupMenuSelect( PROGMEM "Baudraute",	0, false, 0, true, &serial1_speed );
 		rs232->addMenu( s2sp );
 		// s2sp->setHelp( "Serial RS232 (TTL) speed, pins RX:2, TX:3 on external RJ45 connector");
-		s2sp->addEntry( "Serial OFF");
+		s2sp->addEntry( "OFF");
 		s2sp->addEntry( "4800 baud");
 		s2sp->addEntry( "9600 baud");
 		s2sp->addEntry( "19200 baud");
 		s2sp->addEntry( "38400 baud");
 		s2sp->addEntry( "57600 baud");
 		s2sp->addEntry( "115200 baud");
-		SetupMenuSelect * s2lo = new SetupMenuSelect( PROGMEM "Serial BT Bridge", 0, false, 0, true, &serial2_rxloop );
-		rs232->addMenu( s2lo );
-		s2lo->setHelp( "Serial RS232 (TTL) option to retransmit data on serial RX (pin2 RJ45), to bluetooth sender to connect e.g. FLARM");
-		s2lo->addEntry( "Disable");
-		s2lo->addEntry( "Enable");
 
-		SetupMenuSelect * sout = new SetupMenuSelect( PROGMEM "Serial TX", 0, false, 0, true, &serial2_tx );
-		rs232->addMenu( sout );
-		sout->setHelp( "Serial RS232 (TTL) option to transmit Vario,Flarm NMEA data and or data from Bluetooth device (e.g. XCSoar) on serial TX");
-		sout->addEntry( "Disable all");
-		sout->addEntry( "Enable Vario,Flarm");   // 1
-		sout->addEntry( "Enable BT Bridge");     // 2
-		sout->addEntry( "Enable all");           // 3
+		SetupMenuSelect * s1in = new SetupMenuSelect( PROGMEM "RX Routing", 0, false, 0, true, &serial1_rxloop );
+		rs232->addMenu( s1in );
+		s1in->setHelp( "Option loop RX data to TX, to connect FLARM (RX) and OV or Kobo (TX) on same interface" );
+		s1in->addEntry( "Disable");
+		s1in->addEntry( "Enable Loop");
 
-		SetupMenuSelect * stxi = new SetupMenuSelect( PROGMEM "Serial TX Inversion", 0, true , 0, true, &serial2_tx_inverted );
+
+		SetupMenuSelect * s1out = new SetupMenuSelect( PROGMEM "TX Routing", 0, false, 0, true, &serial1_tx );
+		rs232->addMenu( s1out );
+		s1out->setHelp( "Select source of data for sending on serial interface ttyS1 TX (usually going to FLARM)");
+		s1out->addEntry( "Disable all");
+		s1out->addEntry( "XCVario");                     // 1    XCVario NMEA Data
+		s1out->addEntry( "Bluetooth Dev");               // 2    XCSoar Data
+		s1out->addEntry( "Bluetooth Dev, XCVario");      // 3
+
+
+		SetupMenuSelect * stxi = new SetupMenuSelect( PROGMEM "Serial TX Inversion", 0, true , 0, true, &serial1_tx_inverted );
 		rs232->addMenu( stxi );
 		stxi->setHelp( "Serial RS232 (TTL) option for negative logic, means a '1' will be sent at zero level (RS232 standard and default) and vice versa");
 		stxi->addEntry( "Normal");
 		stxi->addEntry( "Inverted");
 
-		SetupMenuSelect * srxi = new SetupMenuSelect( PROGMEM "Serial RX Inversion", 0, true, 0, true, &serial2_rx_inverted );
+		SetupMenuSelect * srxi = new SetupMenuSelect( PROGMEM "Serial RX Inversion", 0, true, 0, true, &serial1_rx_inverted );
 		rs232->addMenu( srxi );
 		srxi->setHelp( "Serial RS232 (TTL) option for negative logic, means a '1' will be received at zero level (RS232 standard and default) and vice versa");
 		srxi->addEntry( "Normal");
 		srxi->addEntry( "Inverted");
+
+		if( hardwareRevision >= 3 ) {
+			SetupMenu * rs232_2 = new SetupMenu( "RS232 Interface ttyS2" );
+			sye->addMenu( rs232_2 );
+			SetupMenuSelect * s2sp2 = new SetupMenuSelect( PROGMEM "Baudraute",	0, false, 0, true, &serial2_speed );
+			rs232_2->addMenu( s2sp2 );
+			// s2sp->setHelp( "Serial RS232 (TTL) speed, pins RX:2, TX:3 on external RJ45 connector");
+			s2sp2->addEntry( "OFF");
+			s2sp2->addEntry( "4800 baud");
+			s2sp2->addEntry( "9600 baud");
+			s2sp2->addEntry( "19200 baud");
+			s2sp2->addEntry( "38400 baud");
+			s2sp2->addEntry( "57600 baud");
+			s2sp2->addEntry( "115200 baud");
+
+			SetupMenuSelect * s1out2 = new SetupMenuSelect( PROGMEM "TX Routing", 0, false, 0, true, &serial2_tx );
+			rs232_2->addMenu( s1out2 );
+			s1out2->setHelp( "Select source of data for sending on serial interface ttyS2 TX (usually going to a device)");
+			s1out2->addEntry( "Disable all");
+			s1out2->addEntry( "XCVario");                     // 1    XCVario NMEA Data bidir
+			s1out2->addEntry( "Bluetooth Dev");               // 2    XCSoar Data bidir
+			s1out2->addEntry( "Bluetooth Dev, XCVario");      // 3
+
+			SetupMenuSelect * stxi2 = new SetupMenuSelect( PROGMEM "Serial TX Inversion", 0, true , 0, true, &serial2_tx_inverted );
+			rs232->addMenu( stxi2 );
+			stxi2->setHelp( "Serial RS232 (TTL) option for negative logic, means a '1' will be sent at zero level (RS232 standard and default) and vice versa");
+			stxi2->addEntry( "Normal");
+			stxi2->addEntry( "Inverted");
+
+			SetupMenuSelect * srxi2 = new SetupMenuSelect( PROGMEM "Serial RX Inversion", 0, true, 0, true, &serial2_rx_inverted );
+			rs232_2->addMenu( srxi2 );
+			srxi2->setHelp( "Serial RS232 (TTL) option for negative logic, means a '1' will be received at zero level (RS232 standard and default) and vice versa");
+			srxi2->addEntry( "Normal");
+			srxi2->addEntry( "Inverted");
+		}
 
 		SetupMenuSelect * nmea = new SetupMenuSelect( PROGMEM "NMEA Protocol", 0, false , 0, true, &nmea_protocol );
 		sye->addMenu( nmea );

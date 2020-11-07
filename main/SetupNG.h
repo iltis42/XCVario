@@ -281,8 +281,12 @@ extern SetupNG<int>  		ias_unit;
 extern SetupNG<int>  		vario_unit;
 extern SetupNG<int>  		rot_default;
 
+extern SetupNG<int>  		serial1_speed;
+extern SetupNG<int>  		serial1_rxloop;
+extern SetupNG<int>  		serial1_tx;
+extern SetupNG<int>  		serial1_tx_inverted;
+extern SetupNG<int>  		serial1_rx_inverted;
 extern SetupNG<int>  		serial2_speed;
-extern SetupNG<int>  		serial2_rxloop;
 extern SetupNG<int>  		serial2_tx;
 extern SetupNG<int>  		serial2_tx_inverted;
 extern SetupNG<int>  		serial2_rx_inverted;

@@ -102,7 +102,7 @@ void BTSender::packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *p
 			s.addl( msg, size);
 			ser1txbuf.add( s );
 			portEXIT_CRITICAL_ISR(&btmux);
-			ESP_LOGI(FNAME,"BT -> Serial 1 TX %d bytes", size );
+			ESP_LOGD(FNAME,"BT -> Serial 1 TX %d bytes", size );
 
 		}
 		if(serial2_tx.get() & 2){
@@ -223,7 +223,7 @@ void serialHandler1(void *pvParameters){
 			portENTER_CRITICAL_ISR(&btmux);
 			ser1txbuf.pull(&s);
 			portEXIT_CRITICAL_ISR(&btmux);
-			ESP_LOGI(FNAME,"Serial 2 TX len: %d bytes", s.length() );
+			ESP_LOGD(FNAME,"Serial 2 TX len: %d bytes", s.length() );
 			ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
 			int wr = Serial1.write( s.c_str(), s.length() );
 			ESP_LOGD(FNAME,"Serial 2 TX written: %d", wr);
@@ -232,15 +232,15 @@ void serialHandler1(void *pvParameters){
 		int numread=0;
 		int num = Serial1.available();
 		if( num > 0 )
-			ESP_LOGI(FNAME,"Serial 1 RX avail: %d bytes, prev: %d", num, numrxp1 );
+			ESP_LOGD(FNAME,"Serial 1 RX avail: %d bytes, prev: %d", num, numrxp1 );
 		if( num > 0 && ( num == numrxp1 || num > 250 ) )
 		{
-			// ESP_LOGI(FNAME,"Serial 1 RX avail %d bytes", num );
+			// ESP_LOGD(FNAME,"Serial 1 RX avail %d bytes", num );
 			numread = Serial1.read( rxBuffer, RXBUFLEN );
 			if( numread != num )
 				ESP_LOGW(FNAME,"Serial 1 RX read WARNING, avail %d != read %d", num, numread);
 			numrxp1 = 0;
-			ESP_LOGI(FNAME,"Serial 1 RX read %d", numread );
+			ESP_LOGD(FNAME,"Serial 1 RX read %d", numread );
 			// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuffer,numread, ESP_LOG_INFO);
 			serialRx.addl( rxBuffer, numread );
 		}
@@ -260,14 +260,19 @@ void serialHandler1(void *pvParameters){
 			else
 				ESP_LOGD(FNAME,"serial 1 RX bt buffer overrun");
 
-			if( !ser1txbuf.isFull() && serial1_rxloop.get() ) {
+			if( !ser1txbuf.isFull() && serial1_rxloop.get() & 1 ) {
 				ESP_LOGD(FNAME,"Send to ttyS1 TX device RX looped %d bytes", serialRx.length() );
 				portENTER_CRITICAL_ISR(&btmux);
 				ser1txbuf.add( serialRx );
 				portEXIT_CRITICAL_ISR(&btmux);
 			}
-			else
-				ESP_LOGD(FNAME,"serial 1 RX loop bt buffer overrun");
+
+			if( !ser2txbuf.isFull() && serial1_rxloop.get() & 2 ) {
+				ESP_LOGD(FNAME,"Send to ttyS2 TX device RX looped %d bytes", serialRx.length() );
+				portENTER_CRITICAL_ISR(&btmux);
+				ser2txbuf.add( serialRx );
+				portEXIT_CRITICAL_ISR(&btmux);
+			}
 
 		}
 		if (rfcomm_channel_id ){
@@ -319,15 +324,15 @@ void serialHandler2(void *pvParameters){
 		int numread=0;
 		int num = Serial2.available();
 		if( num > 0 )
-			ESP_LOGI(FNAME,"Serial 2 RX avail: %d bytes, prev: %d", num, numrxp1 );
+			ESP_LOGD(FNAME,"Serial 2 RX avail: %d bytes, prev: %d", num, numrxp1 );
 		if( num > 0 && ( num == numrxp2 || num > 250 ) )
 		{
-			// ESP_LOGI(FNAME,"Serial 2 RX avail %d bytes", num );
+			// ESP_LOGD(FNAME,"Serial 2 RX avail %d bytes", num );
 			numread = Serial2.read( rxBuffer, RXBUFLEN );
 			if( numread != num )
 				ESP_LOGW(FNAME,"Serial 2 RX read WARNING, avail %d != read %d", num, numread);
 			numrxp2 = 0;
-			ESP_LOGI(FNAME,"Serial 2 RX read %d", numread );
+			ESP_LOGD(FNAME,"Serial 2 RX read %d", numread );
 			// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuffer,numread, ESP_LOG_INFO);
 			serialRx.addl( rxBuffer, numread );
 		}
@@ -388,7 +393,7 @@ void BTSender::begin(){
 	}
 	if( serial2_speed.get() != 0  && hardwareRevision >= 3 ){
 		ESP_LOGD(FNAME,"Serial Interface ttyS2 enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial2_speed.get(), baud[serial2_speed.get()], serial2_tx_inverted.get(), serial2_rx_inverted.get() );
-		Serial2.begin(baud[serial2_speed.get()],SERIAL_8N1,34,18, serial2_rx_inverted.get(), serial2_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
+		Serial2.begin(baud[serial2_speed.get()],SERIAL_8N1,39,18, serial2_rx_inverted.get(), serial2_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
 		Serial2.setRxBufferSize(256);
 		xTaskCreatePinnedToCore(&serialHandler2, "serialHandler2", 4096, NULL, 23, 0, 0);
 	}

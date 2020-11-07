@@ -935,9 +935,10 @@ void SetupMenu::setup( )
 
 		SetupMenuSelect * s1in = new SetupMenuSelect( PROGMEM "RX Routing", 0, false, 0, true, &serial1_rxloop );
 		rs232->addMenu( s1in );
-		s1in->setHelp( "Option loop RX data to TX, to connect FLARM (RX) and OV or Kobo (TX) on same interface" );
-		s1in->addEntry( "Disable");
-		s1in->addEntry( "Enable Loop");
+		s1in->setHelp( "Option to route ttyS1 RX, usually from FLARM to serial TX port for OV or Kobo" );
+		s1in->addEntry( "Disable");       // 0
+		s1in->addEntry( "Enable ttyS1");  // 1
+		s1in->addEntry( "Enable ttyS2");  // 2
 
 
 		SetupMenuSelect * s1out = new SetupMenuSelect( PROGMEM "TX Routing", 0, false, 0, true, &serial1_tx );
@@ -984,7 +985,7 @@ void SetupMenu::setup( )
 			s1out2->addEntry( "Bluetooth Dev, XCVario");      // 3
 
 			SetupMenuSelect * stxi2 = new SetupMenuSelect( PROGMEM "Serial TX Inversion", 0, true , 0, true, &serial2_tx_inverted );
-			rs232->addMenu( stxi2 );
+			rs232_2->addMenu( stxi2 );
 			stxi2->setHelp( "Serial RS232 (TTL) option for negative logic, means a '1' will be sent at zero level (RS232 standard and default) and vice versa");
 			stxi2->addEntry( "Normal");
 			stxi2->addEntry( "Inverted");

@@ -881,7 +881,7 @@ void ESPAudio::begin( dac_channel_t ch, gpio_num_t button  )
 
 void ESPAudio::enableAmplifier( bool enable )
 {
-	ESP_LOGI(FNAME,"ESPAudio::enableAmplifier( %d )", (int)enable );
+	// ESP_LOGI(FNAME,"ESPAudio::enableAmplifier( %d )", (int)enable );
 	// enable Audio
 	if( enable )
 	{

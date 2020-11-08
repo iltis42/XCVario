@@ -1083,7 +1083,7 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 			float step= (M_PI_2/100) * _range;
 			if( polar_sink < polar_sink_prev ){  // draw blue what's missing
 				for( float a=polar_sink_prev; a>polar_sink && a>-_range; a-=step ) {
-					ESP_LOGI(FNAME,"blue a=%f",a);
+					ESP_LOGD(FNAME,"blue a=%f",a);
 					if( a <= -step*2 ) // don't overwrite the '0'
 						drawTetragon( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 120, 125, 2, COLOR_BLUE, false );
 				}

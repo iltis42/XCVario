@@ -393,7 +393,11 @@ void BTSender::begin(){
 	}
 	if( serial2_speed.get() != 0  && hardwareRevision >= 3 ){
 		ESP_LOGD(FNAME,"Serial Interface ttyS2 enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial2_speed.get(), baud[serial2_speed.get()], serial2_tx_inverted.get(), serial2_rx_inverted.get() );
-		Serial2.begin(baud[serial2_speed.get()],SERIAL_8N1,39,18, serial2_rx_inverted.get(), serial2_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
+		if( serial2_pins_twisted.get() )
+			Serial2.begin(baud[serial2_speed.get()],SERIAL_8N1,4,18, serial2_rx_inverted.get(), serial2_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
+		else
+			Serial2.begin(baud[serial2_speed.get()],SERIAL_8N1,18,4, serial2_rx_inverted.get(), serial2_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
+
 		Serial2.setRxBufferSize(256);
 		xTaskCreatePinnedToCore(&serialHandler2, "serialHandler2", 4096, NULL, 23, 0, 0);
 	}

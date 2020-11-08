@@ -381,7 +381,10 @@ void sensor(void *args){
 	display.bootDisplay();
 
 	if( software_update.get() ) {
-		Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
+		if( hardwareRevision == 2 )
+			Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
+		else
+			Rotary.begin( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);
 		ota.begin( &Rotary );
 		ota.doSoftwareUpdate( &display );
 	}
@@ -713,7 +716,10 @@ void sensor(void *args){
 	{
 		Audio.disable(false);
 	}
-	Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
+	if( hardwareRevision == 2 )
+		Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
+	else
+		Rotary.begin( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);
 
 	gpio_set_pull_mode(RESET_Display, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_Display, GPIO_PULLUP_ONLY );

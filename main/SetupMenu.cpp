@@ -995,6 +995,13 @@ void SetupMenu::setup( )
 			srxi2->setHelp( "Serial RS232 (TTL) option for negative logic, means a '1' will be received at zero level (RS232 standard and default) and vice versa");
 			srxi2->addEntry( "Normal");
 			srxi2->addEntry( "Inverted");
+
+			SetupMenuSelect * srxtw2 = new SetupMenuSelect( PROGMEM "Twist RX/TX Pins", 0, true, 0, true, &serial2_pins_twisted );
+			rs232_2->addMenu( srxtw2 );
+			srxtw2->setHelp( "Option to twist RX and TX line for ttyS2. Useful to support different types of peers. After restart also a true power-cycle is needed");
+			srxtw2->addEntry( "Normal  (4:TX 3:RX)");
+			srxtw2->addEntry( "Twisted (4:RX 3:TX)");
+
 		}
 
 		SetupMenuSelect * nmea = new SetupMenuSelect( PROGMEM "NMEA Protocol", 0, false , 0, true, &nmea_protocol );

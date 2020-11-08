@@ -288,6 +288,7 @@ extern SetupNG<int>  		serial1_tx_inverted;
 extern SetupNG<int>  		serial1_rx_inverted;
 extern SetupNG<int>  		serial2_speed;
 extern SetupNG<int>  		serial2_tx;
+extern SetupNG<int>			serial2_pins_twisted;
 extern SetupNG<int>  		serial2_tx_inverted;
 extern SetupNG<int>  		serial2_rx_inverted;
 extern SetupNG<int>  		software_update;

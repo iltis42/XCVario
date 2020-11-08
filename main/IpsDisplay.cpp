@@ -570,7 +570,7 @@ void IpsDisplay::drawBigWkBar( int ypos, int xpos, float wkf ){
 		ucg->setColor(COLOR_BLACK);
 		ucg->drawTriangle( xpos-15,wkyold-5,  xpos-15,wkyold+5,  xpos-2,wkyold );
 		ucg->setColor(COLOR_WHITE);
-		ucg->drawTriangle( xpos-15,y-5,  xpos-15,y+5,  xpos,y );
+		ucg->drawTriangle( xpos-15,y-5,       xpos-15,y+5,       xpos-2,y );
 		wkyold = y;
 	}
 

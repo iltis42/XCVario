@@ -66,6 +66,10 @@ char MS4525DO::fetch_pressure(uint16_t &P_dat, uint16_t &T_dat)
 
 	uint8_t data[4];
 	error = read32bit( address, data );
+	if( error != ESP_OK ) {
+		_status = 5;   // i2c error detected
+		return _status;
+	}
 
 	Press_H = data[0];
 	Press_L = data[1];
@@ -83,9 +87,21 @@ char MS4525DO::fetch_pressure(uint16_t &P_dat, uint16_t &T_dat)
 	return _status;
 }
 
-
-float   MS4525DO::readPascal( float minimum ){
+float   MS4525DO::readPascal( float minimum, bool &ok ){
 	measure();
+	if( _status == 0 )
+		ok=true;
+	else{
+		ESP_LOGI(FNAME,"Retry measure, status :%d  p=%d", _status, P_dat );
+		measure();
+		if( _status == 0 )
+			ok=true;
+		else{
+			ESP_LOGI(FNAME,"Warning, status :%d  p=%d, bad even retry", _status, P_dat );
+			ok=false;
+		}
+	}
+
 	float _pascal = (_offset - P_dat) * multiplier * ((100.0 + speedcal.get()) / 100.0);
 	    if ( (_pascal < minimum) && (minimum != 0) ) {
 		  _pascal = 0.0;

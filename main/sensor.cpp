@@ -180,8 +180,12 @@ void readBMP(void *pvParameters){
 		TE = bmpVario.readTE( tas );  // 10x per second
 		if( as_sensor == SENSOR_MP3V5004DP )
 			dynamicP = MP5004DP.readPascal(60);
-		else if( as_sensor == SENSOR_MS4525DO )
-			dynamicP = MS4525DO.readPascal(60);
+		else if( as_sensor == SENSOR_MS4525DO ) {
+			bool ok=false;
+			float p=MS4525DO.readPascal(60, ok);
+			if( ok )
+				dynamicP = p;
+		}
 
 		float iasraw = ( MP5004DP.pascal2km( dynamicP ) );
 		float T=temperature;
@@ -343,7 +347,8 @@ void sensor(void *args){
 	MPU.setBus(i2c0);  // set communication bus, for SPI -> pass 'hspi'
 	MPU.setAddr(mpud::MPU_I2CADDRESS_AD0_LOW);  // set address or handle, for SPI -> pass 'mpu_spi_handle'
 	mpu = MPU.testConnection();  // test connection with the chip, return is a error code
-	if( mpu != ESP_ERR_NOT_FOUND ){
+	ESP_LOGI( FNAME,"MPU Probing returned %d", mpu);
+	if( mpu == ESP_OK ){
 		haveMPU = true;
 		hardwareRevision = 3;  // wow, there is MPU6050 gyro and acceleration sensor
 		if( attitude_indicator.get() ) {
@@ -413,7 +418,10 @@ void sensor(void *args){
 		MS4525DO.doOffset();
 		offset_plausible = MS4525DO.offsetPlausible( offset );
 		as_sensor = SENSOR_MS4525DO;
-		dynamicP=MS4525DO.readPascal(60);
+		bool ok=false;
+		float p=MS4525DO.readPascal(60, ok);
+		if( ok )
+			dynamicP = p;
 		ias = MS4525DO.pascal2km( dynamicP );
 		ESP_LOGI(FNAME,"Using speed sensor MS4525DO type, current speed=%f", ias );
 	}
@@ -518,9 +526,9 @@ void sensor(void *args){
 			failed_tests += "TE/Baro Sensor T diff. <2°C: PASSED\n";
 		}
 
-		if( (abs(ba_p - te_p) >2.0)  && ( ias < 50 ) ) {
+		if( (abs(ba_p - te_p) >2.5)  && ( ias < 50 ) ) {
 			selftestPassed = false;
-			ESP_LOGI(FNAME,"Severe Pressure deviation delta > 2 hPa between Baro and TE sensor: %f", abs(ba_p - te_p) );
+			ESP_LOGI(FNAME,"Pressure deviation delta > 2 hPa between Baro and TE sensor: %f", abs(ba_p - te_p) );
 			display.writeText( line++, "TE/Baro P: Unequal");
 			failed_tests += "TE/Baro Sensor P diff. <2hPa: FAILED\n";
 		}
@@ -617,18 +625,25 @@ void sensor(void *args){
 			float te=0;
 			float speed=0;
 #define LOOPS 150
+			int loops_run=0;
 			for( int j=0; j< LOOPS; j++ ) {
 				if( as_sensor == SENSOR_MP3V5004DP )
 					speed += MP5004DP.readPascal(5);
-				else if( as_sensor == SENSOR_MS4525DO )
-					speed += MS4525DO.readPascal(5);
+				else if( as_sensor == SENSOR_MS4525DO ){
+					bool ok=false;
+					float s = MS4525DO.readPascal(5,ok);
+					if( ok ){
+						speed +=s;
+						loops_run++;
+					}
+				}
 				ba += bmpBA.readPressure();
 				te += bmpTE.readPressure();
 				delay( 33 );
 			}
 			ba = ba/LOOPS;
 			te = te/LOOPS;
-			speed = speed/LOOPS;
+			speed = speed/loops_run;
 			if( i==0 ) {
 				sba = ba;
 				ste = te;

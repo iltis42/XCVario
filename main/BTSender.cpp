@@ -90,8 +90,8 @@ void BTSender::packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *p
 			ESP_LOGW(FNAME,"Warning, RX data packet truncated len=%d, max=%d", size, RXBUFLEN );
 			size = RXBUFLEN;
 		}
-		ESP_LOGD(FNAME,"RFCOMM RX (CH %u), size %u", channel, size );
-		ESP_LOG_BUFFER_HEXDUMP(FNAME,msg,size, ESP_LOG_DEBUG);
+		ESP_LOGI(FNAME,"BT RFCOMM RX (CH %u), size %u", channel, size );
+		ESP_LOG_BUFFER_HEXDUMP(FNAME,msg,size, ESP_LOG_INFO);
 		if( strncmp( msg, "!g,", 3 )  == 0 ) {
 			ESP_LOGD(FNAME,"Matched a Borgelt command");
 			OpenVario::parseNMEA( msg );
@@ -297,7 +297,7 @@ void serialHandler1(void *pvParameters){
 			}
 
 		}
-		vTaskDelay( 1/portTICK_PERIOD_MS );
+		vTaskDelay( 2/portTICK_PERIOD_MS );
 		if( !(btick++ % 8) )
 			vTaskDelay( 10/portTICK_PERIOD_MS );
 	}
@@ -315,8 +315,8 @@ void serialHandler2(void *pvParameters){
 			portENTER_CRITICAL_ISR(&btmux);
 			ser2txbuf.pull(&s);
 			portEXIT_CRITICAL_ISR(&btmux);
-			ESP_LOGD(FNAME,"Serial 2 TX len: %d bytes", s.length() );
-			ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
+			ESP_LOGI(FNAME,"Serial 2 TX len: %d bytes", s.length() );
+			ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
 			int wr = Serial2.write( s.c_str(), s.length() );
 			ESP_LOGD(FNAME,"Serial 2 TX written: %d", wr);
 		}
@@ -332,8 +332,8 @@ void serialHandler2(void *pvParameters){
 			if( numread != num )
 				ESP_LOGW(FNAME,"Serial 2 RX read WARNING, avail %d != read %d", num, numread);
 			numrxp2 = 0;
-			ESP_LOGD(FNAME,"Serial 2 RX read %d", numread );
-			// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuffer,numread, ESP_LOG_INFO);
+			ESP_LOGI(FNAME,"Serial 2 RX read %d", numread );
+			ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuffer,numread, ESP_LOG_INFO);
 			serialRx.addl( rxBuffer, numread );
 		}
 		else
@@ -354,6 +354,7 @@ void serialHandler2(void *pvParameters){
 				ESP_LOGD(FNAME,"serial 2 RX bt buffer overrun");
 
 		}
+		vTaskDelay( 3/portTICK_PERIOD_MS );
 		if( !(btick2++ % 8) )
 			vTaskDelay( 10/portTICK_PERIOD_MS );
 	}

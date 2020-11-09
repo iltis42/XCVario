@@ -976,9 +976,9 @@ void SetupMenu::setup( )
 			s2sp2->addEntry( "57600 baud");
 			s2sp2->addEntry( "115200 baud");
 
-			SetupMenuSelect * s1out2 = new SetupMenuSelect( PROGMEM "TX Routing", 0, false, 0, true, &serial2_tx );
+			SetupMenuSelect * s1out2 = new SetupMenuSelect( PROGMEM "Routing", 0, false, 0, true, &serial2_tx );
 			rs232_2->addMenu( s1out2 );
-			s1out2->setHelp( "Select source of data for sending on serial interface ttyS2 TX (usually going to a device)");
+			s1out2->setHelp( "Select source of data for exchange with serial interface ttyS2 (usually going to a device)");
 			s1out2->addEntry( "Disable all");
 			s1out2->addEntry( "XCVario");                     // 1    XCVario NMEA Data bidir
 			s1out2->addEntry( "Bluetooth Dev");               // 2    XCSoar Data bidir

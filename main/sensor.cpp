@@ -468,21 +468,25 @@ void sensor(void *args){
 	// Temp Sensor test
 	ds18b20.begin();
 	temperature = ds18b20.getTemp();
+	gpio_set_direction(GPIO_NUM_14, GPIO_MODE_OUTPUT );
 	if( temperature == DEVICE_DISCONNECTED_C ) {
 		ESP_LOGE(FNAME,"Error: Self test Temperatur Sensor failed; returned T=%2.2f", temperature );
 		display.writeText( line++, "Temp Sensor: Not found");
 		validTemperature = false;
 		failed_tests += "External Temperature Sensor: NOT FOUND\n";
+		gpio_set_level(GPIO_NUM_14, 0 );
 	}else
 	{
 		ESP_LOGI(FNAME,"Self test Temperatur Sensor PASSED; returned T=%2.2f", temperature );
 		display.writeText( line++, "Temp Sensor: OK");
 		validTemperature = true;
 		failed_tests += "External Temperature Sensor:PASSED\n";
-
+		gpio_set_level(GPIO_NUM_14, 1 );
 	}
 	ESP_LOGI(FNAME,"BMP280 sensors init..");
-
+    while( 1 ) {
+    	sleep( 1 );
+    }
 
 	bmpBA.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
 	bmpTE.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);

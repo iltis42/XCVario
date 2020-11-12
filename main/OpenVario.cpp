@@ -19,6 +19,8 @@
 #include "mpu/types.hpp"  // MPU data types and definitions
 #include "DallasRmt.h"
 #include "madgwik.h"
+#include "KalmanMPU6050.h"
+
 
 S2F * OpenVario::_s2f = 0;
 uint64_t last_rts=0;
@@ -98,6 +100,7 @@ void OpenVario::makeNMEA( proto_t proto, char* str, float baro, float dp, float 
 		// Relative humidity [%] (i.e. 095)
 		float pa = alt - 8.92*(QNH.get() - 1013.25);
 
+
 		if( validTemp )
 			sprintf(str, "$PEYA,%.2f,%.2f,%.2f,%.2f,,,%.2f,%.2f,%.2f,,", baro, baro+(dp/100),pa, QNH.get(),tas,te,temp);
 		else
@@ -105,15 +108,10 @@ void OpenVario::makeNMEA( proto_t proto, char* str, float baro, float dp, float 
 
 	}
 	else if( proto == P_EYE_PEYI ){
-		// data from gyro sensor 5 times a second
-		uint64_t rts = esp_timer_get_time();
-		float delta=0;
-		if( last_rts != 0 ) {
-			delta = (float)(rts - last_rts)/1000000.0;   // in seconds
-			filterUpdate( gx*DEG_TO_RAD, gy*DEG_TO_RAD, gz*DEG_TO_RAD, acc_x, acc_y, acc_z, &roll, &pitch, &yaw, delta );
-		}
-		last_rts = rts;
-		ESP_LOGI(FNAME,"roll %.2f pitch %.2f yaw %.2f delta %f", roll, pitch, yaw, delta  );
+		roll = IMU::getRoll();
+   	    pitch = IMU::getPitch();
+		// last_rts = rts;
+		// ESP_LOGI(FNAME,"roll %.2f pitch %.2f yaw %.2f", roll, pitch, yaw  );
 		/*
 			$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,%.2f,
 			lbank,         // Bank == roll    (deg)           SRC

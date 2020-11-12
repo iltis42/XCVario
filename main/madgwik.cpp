@@ -3,6 +3,8 @@
 #include <time.h>
 #include <inttypes.h>    // for timing
 
+
+
 // System constants
 //#define deltat 0.010f    // sampling period in seconds (shown as 10 ms)
 #define gyroMeasError 3.14159265358979f * (5.0f / 180.0f) // gyro measurement error in rad/s (shown as 5 deg/s)
@@ -84,3 +86,27 @@ float ayaw   = atan2(2*SEq_3*SEq_4 - 2*SEq_1*SEq_2, 2*SEq_1*SEq_1 + 2*SEq_4*SEq_
 *yaw   =   ayaw*(180.0f/3.14159265358979f);
 
 }
+
+
+float groll = 0;
+float gpitch = 0;
+float alpha = 0;
+
+float mroll=0;
+float mpitch=0;
+
+void filterUpdate2(float gx, float gy, float gz, float acc_x, float acc_y, float acc_z, float *rollo, float *pitcho, float *yawo, double deltat)
+{
+	float aroll = atan2(acc_y, acc_z) * 57.3;
+	float apitch = atan2((acc_x) , sqrt(acc_y * acc_y + acc_z * acc_z)) * 57.3;
+	groll -= gz*deltat;
+	gpitch -= gy*deltat;
+	// alpha = (abs( gx/100 ) - alpha)*0.4 + alpha;
+	alpha = abs( gx/100 ); // low yaw means no turn, trust more g sensor
+	groll = (groll - mroll)*0.4 + mroll;     // low pass back filter
+	gpitch = (gpitch - mpitch)*0.4 + mpitch;
+	*rollo = (  (1-alpha)*0.1*aroll + 0.9*groll + (alpha)*0.1*groll );
+	*pitcho = (  (1-alpha)*0.1*apitch + 0.9*gpitch + (alpha)*0.1*gpitch );
+	*yawo = 0;
+}
+

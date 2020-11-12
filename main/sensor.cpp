@@ -47,6 +47,7 @@
 #include "mpu/math.hpp"   // math helper for dealing with MPU data
 #include "mpu/types.hpp"  // MPU data types and definitions
 #include "I2Cbus.hpp"
+#include "KalmanMPU6050.h"
 
 // #include "sound.h"
 
@@ -126,8 +127,12 @@ static bool  standard_setting = false;
 long millisec = millis();
 t_as_sensor as_sensor;
 
-static mpud::float_axes_t accelG;
-static mpud::float_axes_t gyroDPS;
+mpud::float_axes_t accelG;
+mpud::float_axes_t gyroDPS;
+
+float ox=0;
+float oy=0;
+float oz=0;
 
 // Gyro and acceleration sensor
 static I2C_t& i2c                     = i2c0;  // i2c0 or i2c1
@@ -167,9 +172,7 @@ void drawDisplay(void *pvParameters){
 }
 
 int count=0;
-float ox=0;
-float oy=0;
-float oz=0;
+
 
 
 void readBMP(void *pvParameters){
@@ -246,8 +249,10 @@ void readBMP(void *pvParameters){
 						oy = -gyroDPS.y;
 						oz = -gyroDPS.z;
 					}
+					IMU::read();
 					// float x, float y, float z, float bank, float pitch, float head
 				}
+
 				xSemaphoreTake(xMutex,portMAX_DELAY );
 				// reduce also messages from 10 per second to 5 per second to reduce load in XCSoar
 				char lb[120];
@@ -347,19 +352,21 @@ void sensor(void *args){
 	MPU.setBus(i2c0);  // set communication bus, for SPI -> pass 'hspi'
 	MPU.setAddr(mpud::MPU_I2CADDRESS_AD0_LOW);  // set address or handle, for SPI -> pass 'mpu_spi_handle'
 	mpu = MPU.testConnection();  // test connection with the chip, return is a error code
-	ESP_LOGI( FNAME,"MPU Probing returned %d", mpu);
+	ESP_LOGI( FNAME,"MPU Probing returned %d MPU enable: %d ", mpu, attitude_indicator.get() );
 	if( mpu == ESP_OK ){
 		haveMPU = true;
 		hardwareRevision = 3;  // wow, there is MPU6050 gyro and acceleration sensor
-		if( attitude_indicator.get() ) {
-			MPU.initialize();  // this will initialize the chip and set default configurations
-			MPU.setSampleRate(50);  // in (Hz)
-			MPU.setAccelFullScale(mpud::ACCEL_FS_4G);
-			MPU.setGyroFullScale(mpud::GYRO_FS_500DPS);
-			MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
-			// MPU.setInterruptEnabled(mpud::INT_EN_RAWDATA_READY);  // enable INT pin
-		}
+		ESP_LOGI( FNAME,"MPU initialize");
+		MPU.initialize();  // this will initialize the chip and set default configurations
+		MPU.setSampleRate(50);  // in (Hz)
+		MPU.setAccelFullScale(mpud::ACCEL_FS_4G);
+		MPU.setGyroFullScale(mpud::GYRO_FS_500DPS);
+		MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
 	}
+
+	IMU::init();
+	IMU::read();
+
 	ESP_LOGI(FNAME,"Now init all Setup elements");
 	ESP_LOGI( FNAME, "Hardware revision detected %d", hardwareRevision );
 	SetupCommon::initSetup();

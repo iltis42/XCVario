@@ -18,7 +18,6 @@
 #include "mpu/math.hpp"   // math helper for dealing with MPU data
 #include "mpu/types.hpp"  // MPU data types and definitions
 #include "DallasRmt.h"
-#include "madgwik.h"
 #include "KalmanMPU6050.h"
 
 

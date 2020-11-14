@@ -203,7 +203,7 @@ void IMU::read()
 		kalmanY.angle = pitch;
 		kalYAngle = pitch;
 		gyroYAngle = pitch;
-		ESP_LOGD( FNAME, "1: gyroXAngle Y:%f", gyroYAngle );
+
 	}
 	else
 	{
@@ -229,7 +229,7 @@ void IMU::read()
 		ESP_LOGD( FNAME, "3: gyroXAngle Y:%f", gyroYAngle );
 	}
 
-	ESP_LOGD( FNAME, "KalAngle X:%f  Y:%f", kalXAngle, kalYAngle );
+	ESP_LOGI( FNAME, "KalAngle roll:%2.2f  pitch:%2.2f, Gyro X:%2.2f Y%2.2f, ACC roll:%2.2f pitch:%2.2f", kalXAngle, kalYAngle, gyroXAngle, gyroYAngle, roll, pitch  );
 }
 
 uint32_t IMU::getLastReadTime()
@@ -284,9 +284,9 @@ void IMU::MPU6050Read()
 	accelX = -accelG[2];
 	accelY = accelG[1];
 	accelZ = accelG[0];
-	gyroX = gyroDPS.x+ox;
+	gyroX = -(gyroDPS.z+oz);
 	gyroY = gyroDPS.y+oy;
-	gyroZ = gyroDPS.z+oz;
+	gyroZ = gyroDPS.x+ox;
 }
 
 void IMU::RollPitchFromAccel(double *roll, double *pitch)

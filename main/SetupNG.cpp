@@ -161,7 +161,7 @@ char * SetupCommon::getID() {
 	if ( esp_efuse_mac_get_default(mac) == ESP_OK ){
 		crc = mz_crc32(0L, mac, 6);
 		}
-	int id = int(crc % 1000);
+	int id = int(crc % 10000);
 	sprintf( _ID, "iVario-%d", id );
 	}
 	return _ID;

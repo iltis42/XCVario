@@ -386,7 +386,7 @@ void BTSender::begin(){
 		sdp_init();
 		hci_power_control(HCI_POWER_ON);
 	}
-	if( serial1_speed.get() != 0  || blue_enable.get() ){
+	if( serial1_speed.get() != 0 ){
 		ESP_LOGD(FNAME,"Serial Interface ttyS1 enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial1_speed.get(), baud[serial1_speed.get()], serial1_tx_inverted.get(), serial1_rx_inverted.get() );
 		Serial1.begin(baud[serial1_speed.get()],SERIAL_8N1,16,17, serial1_rx_inverted.get(), serial1_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
 		Serial1.setRxBufferSize(256);

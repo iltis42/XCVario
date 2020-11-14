@@ -347,25 +347,7 @@ void sensor(void *args){
 	ESP_LOGI( FNAME,"%dMB %s flash\n", spi_flash_get_chip_size() / (1024 * 1024),
 			(chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 
-	esp_err_t mpu=ESP_ERR_NOT_FOUND;
-	i2c.begin(GPIO_NUM_21, GPIO_NUM_22);
-	MPU.setBus(i2c0);  // set communication bus, for SPI -> pass 'hspi'
-	MPU.setAddr(mpud::MPU_I2CADDRESS_AD0_LOW);  // set address or handle, for SPI -> pass 'mpu_spi_handle'
-	mpu = MPU.testConnection();  // test connection with the chip, return is a error code
-	ESP_LOGI( FNAME,"MPU Probing returned %d MPU enable: %d ", mpu, attitude_indicator.get() );
-	if( mpu == ESP_OK ){
-		haveMPU = true;
-		hardwareRevision = 3;  // wow, there is MPU6050 gyro and acceleration sensor
-		ESP_LOGI( FNAME,"MPU initialize");
-		MPU.initialize();  // this will initialize the chip and set default configurations
-		MPU.setSampleRate(50);  // in (Hz)
-		MPU.setAccelFullScale(mpud::ACCEL_FS_4G);
-		MPU.setGyroFullScale(mpud::GYRO_FS_500DPS);
-		MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
-	}
 
-	IMU::init();
-	IMU::read();
 
 	ESP_LOGI(FNAME,"Now init all Setup elements");
 	ESP_LOGI( FNAME, "Hardware revision detected %d", hardwareRevision );
@@ -375,7 +357,7 @@ void sensor(void *args){
 	NVS.begin();
 	btsender.begin();
 	ADC.begin();  // for battery voltage
-	sleep( 2 );
+	sleep( 1 );
 
 	xMutex=xSemaphoreCreateMutex();
 	uint8_t t_sb = 0;   //stanby 0: 0,5 mS 1: 62,5 mS 2: 125 mS
@@ -392,14 +374,7 @@ void sensor(void *args){
 	display.begin();
 	display.bootDisplay();
 
-	if( software_update.get() ) {
-		if( hardwareRevision == 2 )
-			Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
-		else
-			Rotary.begin( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);
-		ota.begin( &Rotary );
-		ota.doSoftwareUpdate( &display );
-	}
+
 
 	// int valid;
 	String failed_tests;
@@ -591,6 +566,37 @@ void sensor(void *args){
 			failed_tests += "Bluetooth test: FAILED\n";
 		}
 	}
+
+	esp_err_t err=ESP_ERR_NOT_FOUND;
+	i2c.begin(GPIO_NUM_21, GPIO_NUM_22, GPIO_PULLUP_ENABLE, GPIO_PULLUP_ENABLE );
+	MPU.setBus(i2c);  // set communication bus, for SPI -> pass 'hspi'
+	MPU.setAddr(mpud::MPU_I2CADDRESS_AD0_LOW);  // set address or handle, for SPI -> pass 'mpu_spi_handle'
+	// mpu = MPU.testConnection();  // test connection with the chip, return is a error code
+	err = MPU.initialize();
+	ESP_LOGI( FNAME,"MPU Probing returned %d MPU enable: %d ", err, attitude_indicator.get() );
+	if( err == ESP_OK ){
+		haveMPU = true;
+		hardwareRevision = 3;  // wow, there is MPU6050 gyro and acceleration sensor
+		ESP_LOGI( FNAME,"MPU initialize");
+		MPU.initialize();  // this will initialize the chip and set default configurations
+		MPU.setSampleRate(50);  // in (Hz)
+		MPU.setAccelFullScale(mpud::ACCEL_FS_4G);
+		MPU.setGyroFullScale(mpud::GYRO_FS_500DPS);
+		MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
+	}
+
+	IMU::init();
+	IMU::read();
+
+	if( software_update.get() ) {
+		if( hardwareRevision == 2 )
+			Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
+		else
+			Rotary.begin( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);
+		ota.begin( &Rotary );
+		ota.doSoftwareUpdate( &display );
+	}
+
 
 	Speed2Fly.change_polar();
 	Speed2Fly.change_mc_bal();

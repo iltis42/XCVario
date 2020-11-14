@@ -25,6 +25,8 @@ static const char* TAG = CONFIG_MPU_CHIP_MODEL;
 
 #include "mpu/log.hpp"
 
+
+
 /*! MPU Driver namespace */
 namespace mpud
 {

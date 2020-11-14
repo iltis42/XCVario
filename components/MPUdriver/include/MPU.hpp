@@ -29,6 +29,10 @@
 #include "esp_err.h"
 #include "sdkconfig.h"
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
+
+extern xSemaphoreHandle i2c_mutex;
 
 #ifdef CONFIG_MPU_I2C
 #if !defined I2CBUS_COMPONENT_TRUE
@@ -319,42 +323,59 @@ inline esp_err_t MPU::lastError()
 /*! Read a single bit from a register*/
 inline esp_err_t MPU::readBit(uint8_t regAddr, uint8_t bitNum, uint8_t* data)
 {
-    return err = bus->readBit(addr, regAddr, bitNum, data);
+	xSemaphoreTake(i2c_mutex,portMAX_DELAY );
+	esp_err_t err = bus->readBit(addr, regAddr, bitNum, data);
+	xSemaphoreGive(i2c_mutex);
+    return err;
 }
 /*! Read a range of bits from a register */
 inline esp_err_t MPU::readBits(uint8_t regAddr, uint8_t bitStart, uint8_t length, uint8_t* data)
-{
-    return err = bus->readBits(addr, regAddr, bitStart, length, data);
+{	xSemaphoreTake(i2c_mutex,portMAX_DELAY );
+    err = bus->readBits(addr, regAddr, bitStart, length, data);
+	xSemaphoreGive(i2c_mutex);
+    return err;
 }
 /*! Read a single register */
 inline esp_err_t MPU::readByte(uint8_t regAddr, uint8_t* data)
-{
-    return err = bus->readByte(addr, regAddr, data);
+{	xSemaphoreTake(i2c_mutex,portMAX_DELAY );
+    esp_err_t err = bus->readByte(addr, regAddr, data);
+	xSemaphoreGive(i2c_mutex);
+    return err;
 }
 /*! Read data from sequence of registers */
 inline esp_err_t MPU::readBytes(uint8_t regAddr, size_t length, uint8_t* data)
-{
-    return err = bus->readBytes(addr, regAddr, length, data);
+{	xSemaphoreTake(i2c_mutex,portMAX_DELAY );
+    esp_err_t err = bus->readBytes(addr, regAddr, length, data);
+	xSemaphoreGive(i2c_mutex);
+    return err;
 }
 /*! Write a single bit to a register */
 inline esp_err_t MPU::writeBit(uint8_t regAddr, uint8_t bitNum, uint8_t data)
-{
-    return err = bus->writeBit(addr, regAddr, bitNum, data);
+{	xSemaphoreTake(i2c_mutex,portMAX_DELAY );
+    esp_err_t err = bus->writeBit(addr, regAddr, bitNum, data);
+    xSemaphoreGive(i2c_mutex);
+    return err;
 }
 /*! Write a range of bits to a register */
 inline esp_err_t MPU::writeBits(uint8_t regAddr, uint8_t bitStart, uint8_t length, uint8_t data)
-{
-    return err = bus->writeBits(addr, regAddr, bitStart, length, data);
+{	xSemaphoreTake(i2c_mutex,portMAX_DELAY );
+    esp_err_t err = bus->writeBits(addr, regAddr, bitStart, length, data);
+	xSemaphoreGive(i2c_mutex);
+    return err;
 }
 /*! Write a value to a register */
 inline esp_err_t MPU::writeByte(uint8_t regAddr, uint8_t data)
-{
-    return err = bus->writeByte(addr, regAddr, data);
+{	xSemaphoreTake(i2c_mutex,portMAX_DELAY );
+    esp_err_t err = bus->writeByte(addr, regAddr, data);
+	xSemaphoreGive(i2c_mutex);
+    return err;
 }
 /*! Write a sequence to data to a sequence of registers */
 inline esp_err_t MPU::writeBytes(uint8_t regAddr, size_t length, const uint8_t* data)
-{
-    return err = bus->writeBytes(addr, regAddr, length, data);
+{	xSemaphoreTake(i2c_mutex,portMAX_DELAY );
+    esp_err_t err = bus->writeBytes(addr, regAddr, length, data);
+	xSemaphoreGive(i2c_mutex);
+    return err;
 }
 
 

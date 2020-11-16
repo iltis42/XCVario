@@ -4,23 +4,12 @@
 #include "logdef.h"
 #include "sensor.h"
 
-#if SERIAL_IMU_DEBUG
-#define DEBUG_INIT() Serial.begin(115200)
-#define DEBUG_PRINT(x) Serial.print(x)
-#define DEBUG_PRINTLN(x) Serial.println(x)
-#define DEBUG_TS_PRINT(x)  \
-		DEBUG_PRINT_TIMESTAMP(); \
-		Serial.print(x)
-#define DEBUG_TS_PRINTLN(x) \
-		DEBUG_PRINT_TIMESTAMP();  \
-		Serial.println(x)
-#else
+
 #define DEBUG_INIT()
 #define DEBUG_PRINT(x)
 #define DEBUG_PRINTLN(x)
 #define DEBUG_TS_PRINT(x)
 #define DEBUG_TS_PRINTLN(x)
-#endif // SERIAL_IMU_DEBUG
 
 #ifndef M_PI
 #define M_PI 3.14159265359
@@ -156,12 +145,17 @@ void IMU::init()
 
 static uint64_t last_rts=0;
 
+float myrolly = 0;
+float myrollz = 0;
+float myaccroll = 0;
+double  mypitch = 0;
+
+
 void IMU::read()
 {
 	double dt=0;
 	bool ret=false;
 	MPU6050Read();
-
 	uint64_t rts = esp_timer_get_time();
 	if( last_rts == 0 )
 		ret=true;
@@ -170,66 +164,78 @@ void IMU::read()
 	if( ret )
 		return;
 
-	double roll, pitch;
-	IMU::RollPitchFromAccel(&roll, &pitch);
-	ESP_LOGD( FNAME, "RollPitchFromAccel: roll: %f pitch: %f  dt: %f", roll, pitch, dt );
+	if( getTAS() < 10 ) {
+		// On ground, the simple kalman filter worked perfectly.
+		double roll, pitch;
+		IMU::RollPitchFromAccel(&roll, &pitch);
+		ESP_LOGD( FNAME, "RollPitchFromAccel: roll: %f pitch: %f  dt: %f", roll, pitch, dt );
 
-	double gyroXRate, gyroYRate;
-	gyroXRate = (double)gyroX; // is already in deg/s
-	gyroYRate = (double)gyroY; // dito
+		double gyroXRate, gyroYRate;
+		gyroXRate = (double)gyroX; // is already in deg/s
+		gyroYRate = (double)gyroY; // dito
+		// This fixes the transition problem when the accelerometer angle jumps between -180 and 180 degrees
+		if ((pitch < -90 && kalYAngle > 90) ||
+				(pitch > 90 && kalYAngle < -90))
+		{
+			kalmanY.angle = pitch;
+			kalYAngle = pitch;
+			gyroYAngle = pitch;
+		}
+		else
+		{
+			kalYAngle = Kalman_GetAngle(&kalmanY, pitch, gyroYRate, dt); // Calculate the angle using a Kalman filter
+		}
 
-#ifdef RESTRICT_PITCH
-	// This fixes the transition problem when the accelerometer angle jumps between -180 and 180 degrees
-	if ((roll < -90 && kalXAngle > 90) ||
-			(roll > 90 && kalXAngle < -90))
-	{
-		kalmanX.angle = roll;
-		kalXAngle = roll;
-		gyroXAngle = roll;
-	}
-	else
-	{
+		if (abs(kalYAngle) > 90)
+			gyroXRate = -gyroXRate;                                   // Invert rate, so it fits the restriced accelerometer reading
 		kalXAngle = Kalman_GetAngle(&kalmanX, roll, gyroXRate, dt); // Calculate the angle using a Kalman filter
-	}
 
-	if (abs(kalXAngle) > 90)
-		gyroYRate = -gyroYRate; // Invert rate, so it fits the restriced accelerometer reading
-	kalYAngle = Kalman_GetAngle(&kalmanY, pitch, gyroYRate, dt);
-#else
-	// This fixes the transition problem when the accelerometer angle jumps between -180 and 180 degrees
-	if ((pitch < -90 && kalYAngle > 90) ||
-			(pitch > 90 && kalYAngle < -90))
-	{
-		kalmanY.angle = pitch;
-		kalYAngle = pitch;
-		gyroYAngle = pitch;
+		gyroXAngle += gyroXRate * dt; // Calculate gyro angle without any filter
+		gyroYAngle += gyroYRate * dt;
+		//gyroXAngle += kalmanX.rate * dt; // Calculate gyro angle using the unbiased rate
+		//gyroYAngle += kalmanY.rate * dt;
 
+		// Reset the gyro angle when it has drifted too much
+		if (gyroXAngle < -180 || gyroXAngle > 180)
+			gyroXAngle = kalXAngle;
+		if (gyroYAngle < -180 || gyroYAngle > 180) {
+			gyroYAngle = kalYAngle;
+			ESP_LOGD( FNAME, "3: gyroXAngle Y:%f", gyroYAngle );
+		}
 	}
 	else
-	{
-		kalYAngle = Kalman_GetAngle(&kalmanY, pitch, gyroYRate, dt); // Calculate the angle using a Kalman filter
+	{   // But simple kalman algo as above needs adjustment in aircraft with fixed wings, acceleration's differ, esp. in a curve there is no lateral acceleration
+		// 1: calculate angle of bank (roll) from Gyro yaw rates Y and Z with low pass filter
+		myrollz += (atan(  (gyroZ *PI/180 * (getTAS()/3.6) ) / 9.81 ) * (180/PI) - myrollz) * 0.1;
+
+		// 2: estimate angle of bank from increased acceleration in Z axis
+		float posa=accelZ;
+		// only positive G-force is to be considered
+		if( posa < 1 )
+			posa = 1;
+		float aroll = acos( 1 / posa )*180/PI;
+		// estimate sign from gyro
+		if( myrollz+myrolly < 0 )
+			aroll = -aroll;
+		// low pass filter
+		myaccroll += ( aroll - myaccroll )*0.2;
+		// with higher Angle, the rate lowers as Z axis gets out of direction of rotation, we need to correct this
+		// and merge with the estimated roll angle from acceleration.
+		kalXAngle = ((myrollz * (1+(1- cos( kalXAngle*PI/180 )) ) ) + myaccroll ) / 2;
+
+		// Calculate Pitch from Gyro and acceleration
+		double pitch;
+		double gyroYRate=0;
+		PitchFromAccel(&pitch);
+		mypitch += (pitch - mypitch)*0.2;
+		gyroYRate = (double)gyroY; // dito
+		kalYAngle = Kalman_GetAngle(&kalmanY, mypitch, gyroYRate, dt); // Calculate the angle using a Kalman filter
 	}
 
-	if (abs(kalYAngle) > 90)
-		gyroXRate = -gyroXRate;                                   // Invert rate, so it fits the restriced accelerometer reading
-	kalXAngle = Kalman_GetAngle(&kalmanX, roll, gyroXRate, dt); // Calculate the angle using a Kalman filter
-#endif
+	// ESP_LOGD( FNAME, "KalAngle roll:%2.2f  pitch:%2.2f, Gyro X:%2.2f Y%2.2f, ACC roll:%2.2f pitch:%2.2f", kalXAngle, kalYAngle, gyroXAngle, gyroYAngle, roll, pitch  );
+	ESP_LOGD( FNAME, "TAS: %2.1f GyroZ %2.2f roll:%2.2f az:%2.2f aroll%2.2f ", getTAS(), gyroZ, kalXAngle, accelZ, myaccroll );
 
-	gyroXAngle += gyroXRate * dt; // Calculate gyro angle without any filter
-	gyroYAngle += gyroYRate * dt;
-	ESP_LOGD( FNAME, "2: gyroXAngle X:%f  Y:%f", gyroXAngle, gyroYAngle );
-	//gyroXAngle += kalmanX.rate * dt; // Calculate gyro angle using the unbiased rate
-	//gyroYAngle += kalmanY.rate * dt;
 
-	// Reset the gyro angle when it has drifted too much
-	if (gyroXAngle < -180 || gyroXAngle > 180)
-		gyroXAngle = kalXAngle;
-	if (gyroYAngle < -180 || gyroYAngle > 180) {
-		gyroYAngle = kalYAngle;
-		ESP_LOGD( FNAME, "3: gyroXAngle Y:%f", gyroYAngle );
-	}
-
-	ESP_LOGI( FNAME, "KalAngle roll:%2.2f  pitch:%2.2f, Gyro X:%2.2f Y%2.2f, ACC roll:%2.2f pitch:%2.2f", kalXAngle, kalYAngle, gyroXAngle, gyroYAngle, roll, pitch  );
 }
 
 uint32_t IMU::getLastReadTime()
@@ -281,12 +287,17 @@ double IMU::getPitch()
 
 void IMU::MPU6050Read()
 {
-	accelX = -accelG[2];
+	accelX = -( accelG[2] );
 	accelY = accelG[1];
-	accelZ = accelG[0];
+	accelZ = accelG[0] + aoz;
 	gyroX = -(gyroDPS.z+oz);
 	gyroY = gyroDPS.y+oy;
 	gyroZ = gyroDPS.x+ox;
+}
+
+void IMU::PitchFromAccel(double *pitch)
+{
+	*pitch = atan2(-accelX, accelZ) * RAD_TO_DEG;
 }
 
 void IMU::RollPitchFromAccel(double *roll, double *pitch)
@@ -294,13 +305,9 @@ void IMU::RollPitchFromAccel(double *roll, double *pitch)
 	// Source: http://www.freescale.com/files/sensors/doc/app_note/AN3461.pdf eq. 25 and eq. 26
 	// atan2 outputs the value of -π to π (radians) - see http://en.wikipedia.org/wiki/Atan2
 	// It is then converted from radians to degrees
-#ifdef RESTRICT_PITCH // Eq. 25 and 26
-	*roll = atan2((double)accelY, (double)accelZ) * RAD_TO_DEG;
-	*pitch = atan((double)-accelX / hypotenuse((double)accelY, (double)accelZ)) * RAD_TO_DEG;
-#else  // Eq. 28 and 29
-	*roll = atan((double)accel.y / hypotenuse((double)accelX, (double)accelZ)) * RAD_TO_DEG;
+
+	*roll = atan((double)accelY / hypotenuse((double)accelX, (double)accelZ)) * RAD_TO_DEG;
 	*pitch = atan2((double)-accelX, (double)accelZ) * RAD_TO_DEG;
-#endif // RESTRICT_PITCH
 
 	ESP_LOGD( FNAME,"Accelerometer Roll: %f  Pitch: %f  (y:%f x:%f)", *roll, *pitch, (double)accelY, (double)accelX );
 

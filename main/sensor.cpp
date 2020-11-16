@@ -114,7 +114,7 @@ ESPRotary Rotary;
 SetupMenu  Menu;
 
 static float ias = 0;
-static float tas = 0;
+float tas = 0;
 static float aTE = 0;
 static float aTES2F = 0;
 static float alt;
@@ -134,6 +134,10 @@ float ox=0;
 float oy=0;
 float oz=0;
 
+float aox=0;
+float aoy=0;
+float aoz=0;
+
 // Gyro and acceleration sensor
 static I2C_t& i2c                     = i2c0;  // i2c0 or i2c1
 MPU_t MPU;         // create an object
@@ -143,6 +147,9 @@ void handleRfcommRx( char * rx, uint16_t len ){
 	ESP_LOGI(FNAME,"RFCOMM packet, %s, len %d %d", rx, len, strlen( rx ));
 }
 
+
+float getTAS() { return tas; };
+float getTE() { return TE; };
 
 BTSender btsender( handleRfcommRx  );
 
@@ -192,11 +199,16 @@ void readBMP(void *pvParameters){
 
 		float iasraw = ( MP5004DP.pascal2km( dynamicP ) );
 		float T=temperature;
-		if( !validTemperature )
+		if( !validTemperature ) {
 			T= 15 - ( (alt/100) * 0.65 );
-		float tasraw = iasraw * sqrt( 1.225 / ( baroP*100.0 / (287.058 * (273.15+T) ) ) );  // True airspeed
+			// ESP_LOGW(FNAME,"T invalid, using 15 deg");
+		}
+		float tasraw = 0;
+		if( baroP != 0 )
+			tasraw = iasraw * sqrt( 1.225 / ( baroP*100.0 / (287.058 * (273.15+T) ) ) );  // True airspeed
 		ias = ias + (iasraw - ias)*0.25;  // low pass filter
 		tas += (tasraw-tas)*0.25;       // low pass filter
+		// ESP_LOGI(FNAME,"IAS=%f, T=%f, TAS=%f baroP=%f", ias, T, tas, baroP );
 		Audio.setValues( TE, s2f_delta, ias );
 		TE = bmpVario.readTE( tasraw );  // 10x per second
 		xSemaphoreGive(xMutex);
@@ -249,6 +261,12 @@ void readBMP(void *pvParameters){
 						oy = -gyroDPS.y;
 						oz = -gyroDPS.z;
 					}
+					if( aox == 0 ){
+						aox = -accelG[2];
+						aoy =  -accelG[1];
+						aoz =  1 - accelG[0];
+					}
+
 					IMU::read();
 					// float x, float y, float z, float bank, float pitch, float head
 				}

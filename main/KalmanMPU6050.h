@@ -113,6 +113,7 @@ private:
 
   static void MPU6050Read();
   static void RollPitchFromAccel(double *roll, double *pitch);
+  static void PitchFromAccel(double *pitch);
 };
 
 #endif // _KalmanMPU6050_H_

@@ -15,4 +15,11 @@ extern float ox;
 extern float oy;
 extern float oz;
 
+extern float aox;
+extern float aoy;
+extern float aoz;
+
+float getTAS();
+float getTE();
+
 #endif

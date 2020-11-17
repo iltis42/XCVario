@@ -16,6 +16,7 @@ extern "C" {
 }
 
 #include <string>
+#include <stdio.h>
 #include "esp_system.h"
 #include "stdio.h"
 #include <esp_log.h>
@@ -26,7 +27,8 @@ extern "C" {
 #include <iostream>
 #include <vector>
 #include <logdef.h>
-
+#include "MPU.h"
+#include <WString.h>
 
 
 /*
@@ -80,7 +82,9 @@ public:
 		return _key;
 	}
 	bool set( T aval ) {
-		std::cout << "set( "<< aval << " )\n";
+		String val( aval );
+		ESP_LOGI( FNAME,"set val: %s", val.c_str() );
+		// std::cout << "set( "<< aval << " )\n";
 		_value = T(aval);
 		if( !open() ) {
 			ESP_LOGE(FNAME,"NVS Error open nvs handle !");
@@ -140,7 +144,8 @@ public:
 					set( _default );  // try to init
 				}
 				else {
-					ESP_LOGI(FNAME,"NVS key %s exists len: %d value: %f0.1",_key, required_size, (float)_value );
+					String val( _value );
+					ESP_LOGI(FNAME,"NVS key %s exists len: %d value: %s", _key, required_size, val.c_str() );
 					// std::cout << _value << "\n";
 				}
 			}
@@ -307,6 +312,9 @@ extern SetupNG<int>		    autozero;
 extern SetupNG<int>		    attitude_indicator;
 extern SetupNG<int>		    display_style;
 extern SetupNG<int>		    s2f_switch_type;
+extern SetupNG<mpud::raw_axes_t> gyro_bias;
+extern SetupNG<mpud::raw_axes_t> accl_bias;
+
 
 
 #endif /* MAIN_SETUP_NG_H_ */

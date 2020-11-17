@@ -254,19 +254,7 @@ void readBMP(void *pvParameters){
 					MPU.rotation(&gyroRaw);       // fetch raw data from the registers
 					accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_4G);  // raw data to gravity
 					gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
-					// ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f\n", -accelG[2], accelG[1], accelG[0]);
-					// ESP_LOGI( FNAME, "gyro X: %+.2f Y:%+.2f Z:%+.2f\n", gyroDPS.x+ox, gyroDPS.y+oy, gyroDPS.z+oz);
-					if( ox == 0 ){
-						ox = -gyroDPS.x;
-						oy = -gyroDPS.y;
-						oz = -gyroDPS.z;
-					}
-					if( aox == 0 ){
-						aox = -accelG[2];
-						aoy =  -accelG[1];
-						aoz =  1 - accelG[0];
-					}
-
+					// ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f  gyro X: %+.2f Y:%+.2f Z:%+.2f\n", -accelG[2], accelG[1], accelG[0] ,  gyroDPS.x, gyroDPS.y, gyroDPS.z);
 					IMU::read();
 					// float x, float y, float z, float bank, float pitch, float head
 				}
@@ -605,7 +593,26 @@ void sensor(void *args){
 
 	IMU::init();
 	IMU::read();
+	// BIAS MPU6050
+	mpud::raw_axes_t test;
+	test.x = 0;
+	test.y = 0;
+	test.z = 0;
+	gyro_bias.set( test );
+	accl_bias.set( test );
 
+	mpud::raw_axes_t gb = gyro_bias.get();
+	mpud::raw_axes_t ab = accl_bias.get();
+	ESP_LOGI( FNAME,"MPU current offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
+	if( (gb.isZero() || ab.isZero()) ) {
+		ESP_LOGI( FNAME,"MPU computeOffsets");
+		MPU.computeOffsets( &ab, &gb );
+		gyro_bias.set( gb );
+		//accl_bias.set( ab );
+		ESP_LOGI( FNAME,"MPU new offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
+	}
+	MPU.setGyroOffset(gb);
+	//MPU.setAccelOffset(ab);
 	if( software_update.get() ) {
 		if( hardwareRevision == 2 )
 			Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);

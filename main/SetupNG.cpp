@@ -25,6 +25,7 @@
 #include "Polars.h"
 #include "esp_task_wdt.h"
 #include <logdef.h>
+#include "mpu/types.hpp"  // MPU data types and definitions
 
 std::vector<SetupCommon *> SetupCommon::entries;
 char SetupCommon::_ID[14];
@@ -119,6 +120,9 @@ SetupNG<int>		    attitude_indicator("AHRS", 1 );
 SetupNG<int>		    display_style("DISPLAY_STYLE", 0 );
 SetupNG<int>		    s2f_switch_type("S2FHWSW", S2F_HW_SWITCH );
 
+mpud::raw_axes_t zero_bias;
+SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );
+SetupNG<mpud::raw_axes_t>	accl_bias("ACCL_BIAS", zero_bias );
 
 
 void SetupCommon::initSetup() {

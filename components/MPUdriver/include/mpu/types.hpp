@@ -13,8 +13,10 @@
 #define _MPU_TYPES_HPP_
 
 #include <stdint.h>
+#include <string>
 #include "mpu/registers.hpp"
 #include "sdkconfig.h"
+#include "WString.h"
 
 /*! MPU Driver namespace */
 namespace mpud
@@ -448,6 +450,7 @@ static constexpr dmp_tap_axis_t DMP_TAP_XYZ     {0x3F};
  */
 
 /*! Generic axes struct to store sensors' data */
+
 template <class type_t>
 struct axes_t
 {
@@ -461,7 +464,11 @@ struct axes_t
             type_t z;
         };
     };
-    type_t& operator[](int i) { return xyz[i]; }
+    type_t& operator[](int i) { return xyz[i]; };
+    bool isZero() { return bool( !(x|y|z) ); }
+    operator String  () {
+    	return "X:" + String(x) + " Y:" + String(y) + " Z:" + String(z);
+    };
 };
 // Ready-to-use axes types
 typedef axes_t<int16_t> raw_axes_t;  //!< Axes type to hold gyroscope, accelerometer, magnetometer raw data.

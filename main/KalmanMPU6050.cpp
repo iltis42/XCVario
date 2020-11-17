@@ -287,8 +287,8 @@ double IMU::getPitch()
 
 void IMU::MPU6050Read()
 {
-	accelX = -( accelG[2] );
-	accelY = accelG[1];
+	accelX = -( accelG[2] + aox );
+	accelY = accelG[1] + aoy;
 	accelZ = accelG[0] + aoz;
 	gyroX = -(gyroDPS.z+oz);
 	gyroY = gyroDPS.y+oy;

@@ -254,7 +254,7 @@ void readBMP(void *pvParameters){
 					MPU.rotation(&gyroRaw);       // fetch raw data from the registers
 					accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_4G);  // raw data to gravity
 					gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
-					// ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f  gyro X: %+.2f Y:%+.2f Z:%+.2f\n", -accelG[2], accelG[1], accelG[0] ,  gyroDPS.x, gyroDPS.y, gyroDPS.z);
+					ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f  gyro X: %+.2f Y:%+.2f Z:%+.2f\n", -accelG[2], accelG[1], accelG[0] ,  gyroDPS.x, gyroDPS.y, gyroDPS.z);
 					IMU::read();
 					// float x, float y, float z, float bank, float pitch, float head
 				}
@@ -383,8 +383,8 @@ void sensor(void *args){
 
 
 	// int valid;
-	String failed_tests;
-	failed_tests += "\n\n\n";
+	String logged_tests;
+	logged_tests += "\n\n\n";
 
 	Version V;
 	std::string ver( "Version: " );
@@ -428,14 +428,14 @@ void sensor(void *args){
 	}
 	if( as_sensor==SENSOR_NONE ){
 		ESP_LOGE(FNAME,"Error with air speed pressure sensor, now working sensor found");
-		display.writeText( line++, "AS Sensor: Not found");
-		failed_tests += "AS Sensor: NOT FOUND\n";
+		display.writeText( line++, "AS Sensor: NOT FOUND");
+		logged_tests += "AS Sensor: NOT FOUND\n";
 		selftestPassed = false;
 	}else {
 		if( !offset_plausible && ( ias < 50 ) ){
 			ESP_LOGE(FNAME,"Error: air speed presure sensor offset out of bounds, act value=%d", offset );
 			display.writeText( line++, "AS Sensor: NEED ZERO" );
-			failed_tests += "AS Sensor offset test: FAILED\n";
+			logged_tests += "AS Sensor offset test: FAILED\n";
 			selftestPassed = false;
 		}
 		else {
@@ -448,7 +448,7 @@ void sensor(void *args){
 			else
 				display.writeText( line++, "AS Sensor: OK" );
 
-			failed_tests += "AS Sensor offset test: PASSED\n";
+			logged_tests += "AS Sensor offset test: PASSED\n";
 		}
 	}
 
@@ -458,15 +458,15 @@ void sensor(void *args){
 	temperature = ds18b20.getTemp();
 	if( temperature == DEVICE_DISCONNECTED_C ) {
 		ESP_LOGE(FNAME,"Error: Self test Temperatur Sensor failed; returned T=%2.2f", temperature );
-		display.writeText( line++, "Temp Sensor: Not found");
+		display.writeText( line++, "Temp Sensor: NOT FOUND");
 		validTemperature = false;
-		failed_tests += "External Temperature Sensor: NOT FOUND\n";
+		logged_tests += "External Temperature Sensor: NOT FOUND\n";
 	}else
 	{
 		ESP_LOGI(FNAME,"Self test Temperatur Sensor PASSED; returned T=%2.2f", temperature );
 		display.writeText( line++, "Temp Sensor: OK");
 		validTemperature = true;
-		failed_tests += "External Temperature Sensor:PASSED\n";
+		logged_tests += "External Temperature Sensor:PASSED\n";
 
 	}
 	ESP_LOGI(FNAME,"BMP280 sensors init..");
@@ -479,26 +479,26 @@ void sensor(void *args){
 	float ba_t, ba_p, te_t, te_p;
 	if( ! bmpBA.selfTest( ba_t, ba_p)  ) {
 		ESP_LOGE(FNAME,"HW Error: Self test Barometric Pressure Sensor failed!");
-		display.writeText( line++, "Baro Sensor: Not found");
+		display.writeText( line++, "Baro Sensor: NOT FOUND");
 		selftestPassed = false;
-		failed_tests += "Baro Sensor Test: NOT FOUND\n";
+		logged_tests += "Baro Sensor Test: NOT FOUND\n";
 	}
 	else {
 		ESP_LOGI(FNAME,"Barometric Sensor T=%f P=%f", ba_t, ba_p);
 		display.writeText( line++, "Baro Sensor: OK");
-		failed_tests += "Baro Sensor Test: PASSED\n";
+		logged_tests += "Baro Sensor Test: PASSED\n";
 	}
 
 	if( ! bmpTE.selfTest(te_t, te_p) ) {
 		ESP_LOGE(FNAME,"HW Error: Self test TE Pressure Sensor failed!");
-		display.writeText( line++, "TE Sensor: Not found");
+		display.writeText( line++, "TE Sensor: NOT FOUND");
 		selftestPassed = false;
-		failed_tests += "TE Sensor Test: NOT FOUND\n";
+		logged_tests += "TE Sensor Test: NOT FOUND\n";
 	}
 	else {
 		ESP_LOGI(FNAME,"TE Sensor         T=%f P=%f", te_t, te_p);
 		display.writeText( line++, "TE Sensor: OK");
-		failed_tests += "TE Sensor Test: PASSED\n";
+		logged_tests += "TE Sensor Test: PASSED\n";
 	}
 
 	if( selftestPassed ) {
@@ -506,24 +506,24 @@ void sensor(void *args){
 			selftestPassed = false;
 			ESP_LOGI(FNAME,"Severe Temperature deviation delta > 4 °C between Baro and TE sensor: °C %f", abs(ba_t - te_t) );
 			display.writeText( line++, "TE/Baro Temp: Unequal");
-			failed_tests += "TE/Baro Sensor T diff. <4°C: FAILED\n";
+			logged_tests += "TE/Baro Sensor T diff. <4°C: FAILED\n";
 		}
 		else{
 			ESP_LOGI(FNAME,"BMP 280 Temperature deviation test PASSED, dev: %f",  abs(ba_t - te_t));
 			// display.writeText( line++, "TE/Baro Temp: OK");
-			failed_tests += "TE/Baro Sensor T diff. <2°C: PASSED\n";
+			logged_tests += "TE/Baro Sensor T diff. <2°C: PASSED\n";
 		}
 
 		if( (abs(ba_p - te_p) >2.5)  && ( ias < 50 ) ) {
 			selftestPassed = false;
 			ESP_LOGI(FNAME,"Pressure deviation delta > 2 hPa between Baro and TE sensor: %f", abs(ba_p - te_p) );
 			display.writeText( line++, "TE/Baro P: Unequal");
-			failed_tests += "TE/Baro Sensor P diff. <2hPa: FAILED\n";
+			logged_tests += "TE/Baro Sensor P diff. <2hPa: FAILED\n";
 		}
 		else
 			ESP_LOGI(FNAME,"BMP 280 Pressure deviation test PASSED, dev: %f", abs(ba_p - te_p) );
 		// display.writeText( line++, "TE/Baro P: OK");
-		failed_tests += "TE/Baro Sensor P diff. <2hPa: PASSED\n";
+		logged_tests += "TE/Baro Sensor P diff. <2hPa: PASSED\n";
 
 	}
 
@@ -539,11 +539,11 @@ void sensor(void *args){
 		ESP_LOGE(FNAME,"Error: Digital potentiomenter selftest failed");
 		display.writeText( line++, "Digital Poti: Failure");
 		selftestPassed = false;
-		failed_tests += "Digital Audio Poti test: FAILED\n";
+		logged_tests += "Digital Audio Poti test: FAILED\n";
 	}
 	else{
 		ESP_LOGI(FNAME,"Digital potentiometer test PASSED");
-		failed_tests += "Digital Audio Poti test: PASSED\n";
+		logged_tests += "Digital Audio Poti test: PASSED\n";
 		display.writeText( line++, "Digital Poti: OK");
 	}
 
@@ -552,24 +552,24 @@ void sensor(void *args){
 	if( bat < 1 || bat > 28.0 ){
 		ESP_LOGE(FNAME,"Error: Battery voltage metering out of bounds, act value=%f", bat );
 		display.writeText( line++, "Bat Sensor: Failure");
-		failed_tests += "Battery Voltage Sensor: FAILED\n";
+		logged_tests += "Battery Voltage Sensor: FAILED\n";
 		selftestPassed = false;
 	}
 	else{
 		ESP_LOGI(FNAME,"Battery voltage metering test PASSED, act value=%f", bat );
 		display.writeText( line++, "Bat Sensor: OK");
-		failed_tests += "Battery Voltage Sensor: PASSED\n";
+		logged_tests += "Battery Voltage Sensor: PASSED\n";
 	}
 
 	sleep( 0.5 );
 	if( blue_enable.get() ) {
 		if( btsender.selfTest() ){
 			display.writeText( line++, "Bluetooth: OK");
-			failed_tests += "Bluetooth test: PASSED\n";
+			logged_tests += "Bluetooth test: PASSED\n";
 		}
 		else{
 			display.writeText( line++, "Bluetooth: FAILED");
-			failed_tests += "Bluetooth test: FAILED\n";
+			logged_tests += "Bluetooth test: FAILED\n";
 		}
 	}
 
@@ -589,10 +589,19 @@ void sensor(void *args){
 		MPU.setAccelFullScale(mpud::ACCEL_FS_4G);
 		MPU.setGyroFullScale(mpud::GYRO_FS_500DPS);
 		MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
+		display.writeText( line++, "AHRS Sensor: OK");
+		logged_tests += "MPU6050 AHRS test: PASSED\n";
+		IMU::init();
+		IMU::read();
+	}
+	else{
+		if( attitude_indicator.get() ) { // log negative message only if AHRS is enabled
+			display.writeText( line++, "AHRS Sensor: NOT FOUND");
+			logged_tests += "MPU6050 AHRS test: NOT FOUND\n";
+			selftestPassed = false;
+		}
 	}
 
-	IMU::init();
-	IMU::read();
 	// BIAS MPU6050
 	mpud::raw_axes_t test;
 	test.x = 0;
@@ -629,7 +638,7 @@ void sensor(void *args){
 	ESP_LOGI(FNAME,"Program Version %s", myVersion.version() );
 	gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);  // blue LED, maybe use for BT connection
 
-	ESP_LOGI(FNAME,"%s", failed_tests.c_str());
+	ESP_LOGI(FNAME,"%s", logged_tests.c_str());
 	if( !selftestPassed )
 	{
 		ESP_LOGI(FNAME,"\n\n\nSelftest failed, see above LOG for Problems\n\n\n");

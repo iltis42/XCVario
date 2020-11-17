@@ -277,7 +277,7 @@ void serialHandler1(void *pvParameters){
 		}
 		if (rfcomm_channel_id ){
 			if ( !btbuf.isEmpty() ){
-				// ESP_LOGD(FNAME,"have data for bluetooth");
+				ESP_LOGD(FNAME,"have data for bluetooth");
 				if (rfcomm_can_send_packet_now(rfcomm_channel_id)){
 					ESP_LOGD(FNAME,"can send now to bluetooth");
 					SString s;
@@ -365,9 +365,9 @@ void serialHandler2(void *pvParameters){
 void BTSender::begin(){
 	ESP_LOGD(FNAME,"BTSender::begin()" );
 
-	hci_dump_enable_log_level( ESP_LOG_INFO, 0 );
-	hci_dump_enable_log_level( ESP_LOG_ERROR, 0 );
-	hci_dump_enable_log_level( ESP_LOG_WARN, 0 );
+	hci_dump_enable_log_level( ESP_LOG_INFO, 1 );
+	hci_dump_enable_log_level( ESP_LOG_ERROR, 1 );
+	hci_dump_enable_log_level( ESP_LOG_WARN, 1 );
 	hci_dump_enable_log_level( ESP_LOG_DEBUG, 0 );
 	if( blue_enable.get() ) {
 		l2cap_init();

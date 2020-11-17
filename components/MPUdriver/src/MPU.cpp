@@ -52,7 +52,9 @@ namespace mpud
 esp_err_t MPU::initialize()
 {
     // reset device (wait a little to clear all registers)
-    if (MPU_ERR_CHECK(reset())) return err;
+    esp_err_t err = reset();
+    if( err != ESP_OK )
+    	return err;
     // wake-up the device (power on-reset state is asleep for some models)
     if (MPU_ERR_CHECK(setSleep(false))) return err;
         // disable MPU's I2C slave module when using SPI
@@ -99,7 +101,11 @@ esp_err_t MPU::initialize()
  * */
 esp_err_t MPU::reset()
 {
-    if (MPU_ERR_CHECK(writeBit(regs::PWR_MGMT1, regs::PWR1_DEVICE_RESET_BIT, 1))) return err;
+	esp_err_t err = writeBit(regs::PWR_MGMT1, regs::PWR1_DEVICE_RESET_BIT, 1);
+    if ( err != ESP_OK ) {
+    	MPU_LOGI("MPU reset, error %d", err );
+    	return err;
+    }
     vTaskDelay(100 / portTICK_PERIOD_MS);
 #ifdef CONFIG_MPU_SPI
     if (MPU_ERR_CHECK(resetSignalPath())) {

@@ -593,8 +593,30 @@ void sensor(void *args){
 		logged_tests += "MPU6050 AHRS test: PASSED\n";
 		IMU::init();
 		IMU::read();
+		// BIAS MPU6050
+		mpud::raw_axes_t test;
+		test.x = 0;
+		test.y = 0;
+		test.z = 0;
+		gyro_bias.set( test );
+		accl_bias.set( test );
+
+		mpud::raw_axes_t gb = gyro_bias.get();
+		mpud::raw_axes_t ab = accl_bias.get();
+		ESP_LOGI( FNAME,"MPU current offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
+		if( (gb.isZero() || ab.isZero()) ) {
+			ESP_LOGI( FNAME,"MPU computeOffsets");
+			MPU.computeOffsets( &ab, &gb );
+			gyro_bias.set( gb );
+			//accl_bias.set( ab );
+			ESP_LOGI( FNAME,"MPU new offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
+			MPU.acceleration(&test);
+			ESP_LOGI( FNAME,"MPU raw data accl:%d/%d/%d", test.x,test.y,test.z );
+		}
+		MPU.setGyroOffset(gb);
 	}
 	else{
+		hardwareRevision = 2;
 		if( attitude_indicator.get() ) { // log negative message only if AHRS is enabled
 			display.writeText( line++, "AHRS Sensor: NOT FOUND");
 			logged_tests += "MPU6050 AHRS test: NOT FOUND\n";
@@ -602,31 +624,16 @@ void sensor(void *args){
 		}
 	}
 
-	// BIAS MPU6050
-	mpud::raw_axes_t test;
-	test.x = 0;
-	test.y = 0;
-	test.z = 0;
-	gyro_bias.set( test );
-	accl_bias.set( test );
-
-	mpud::raw_axes_t gb = gyro_bias.get();
-	mpud::raw_axes_t ab = accl_bias.get();
-	ESP_LOGI( FNAME,"MPU current offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
-	if( (gb.isZero() || ab.isZero()) ) {
-		ESP_LOGI( FNAME,"MPU computeOffsets");
-		MPU.computeOffsets( &ab, &gb );
-		gyro_bias.set( gb );
-		//accl_bias.set( ab );
-		ESP_LOGI( FNAME,"MPU new offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
-	}
-	MPU.setGyroOffset(gb);
 	//MPU.setAccelOffset(ab);
 	if( software_update.get() ) {
-		if( hardwareRevision == 2 )
+		if( hardwareRevision == 2 ) {
+			ESP_LOGI( FNAME,"Hardware Revision detected 2");
 			Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
-		else
+		}
+		else  {
+			ESP_LOGI( FNAME,"Hardware Revision detected 3");
 			Rotary.begin( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);
+		}
 		ota.begin( &Rotary );
 		ota.doSoftwareUpdate( &display );
 	}

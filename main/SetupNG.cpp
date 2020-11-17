@@ -26,6 +26,7 @@
 #include "esp_task_wdt.h"
 #include <logdef.h>
 #include "mpu/types.hpp"  // MPU data types and definitions
+#include "sensor.h"
 
 std::vector<SetupCommon *> SetupCommon::entries;
 char SetupCommon::_ID[14];
@@ -165,7 +166,9 @@ char * SetupCommon::getID() {
 	if ( esp_efuse_mac_get_default(mac) == ESP_OK ){
 		crc = mz_crc32(0L, mac, 6);
 		}
-	int id = int(crc % 10000);
+	int id = int(crc % 1000);
+	if( hardwareRevision >= 3 )
+		id = int(crc % 10000);
 	sprintf( _ID, "iVario-%d", id );
 	}
 	return _ID;

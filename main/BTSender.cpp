@@ -26,7 +26,6 @@ RingBufCPP<SString, QUEUE_SIZE> btbuf;
 RingBufCPP<SString, QUEUE_SIZE> ser1txbuf;
 RingBufCPP<SString, QUEUE_SIZE> ser2txbuf;
 
-
 #define RXBUFLEN 256
 char rxBuffer[RXBUFLEN];
 int BTSender::i=0;
@@ -90,8 +89,8 @@ void BTSender::packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *p
 			ESP_LOGW(FNAME,"Warning, RX data packet truncated len=%d, max=%d", size, RXBUFLEN );
 			size = RXBUFLEN;
 		}
-		ESP_LOGI(FNAME,"BT RFCOMM RX (CH %u), size %u", channel, size );
-		ESP_LOG_BUFFER_HEXDUMP(FNAME,msg,size, ESP_LOG_INFO);
+		ESP_LOGD(FNAME,"BT RFCOMM RX (CH %u), size %u", channel, size );
+		ESP_LOG_BUFFER_HEXDUMP(FNAME,msg,size, ESP_LOG_DEBUG);
 		if( strncmp( msg, "!g,", 3 )  == 0 ) {
 			ESP_LOGD(FNAME,"Matched a Borgelt command");
 			OpenVario::parseNMEA( msg );
@@ -315,8 +314,8 @@ void serialHandler2(void *pvParameters){
 			portENTER_CRITICAL_ISR(&btmux);
 			ser2txbuf.pull(&s);
 			portEXIT_CRITICAL_ISR(&btmux);
-			ESP_LOGI(FNAME,"Serial 2 TX len: %d bytes", s.length() );
-			ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
+			ESP_LOGD(FNAME,"Serial 2 TX len: %d bytes", s.length() );
+			ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
 			int wr = Serial2.write( s.c_str(), s.length() );
 			ESP_LOGD(FNAME,"Serial 2 TX written: %d", wr);
 		}
@@ -332,8 +331,8 @@ void serialHandler2(void *pvParameters){
 			if( numread != num )
 				ESP_LOGW(FNAME,"Serial 2 RX read WARNING, avail %d != read %d", num, numread);
 			numrxp2 = 0;
-			ESP_LOGI(FNAME,"Serial 2 RX read %d", numread );
-			ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuffer,numread, ESP_LOG_INFO);
+			ESP_LOGD(FNAME,"Serial 2 RX read %d", numread );
+			ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuffer,numread, ESP_LOG_DEBUG);
 			serialRx.addl( rxBuffer, numread );
 		}
 		else
@@ -363,7 +362,7 @@ void serialHandler2(void *pvParameters){
 
 
 void BTSender::begin(){
-	ESP_LOGD(FNAME,"BTSender::begin()" );
+	ESP_LOGI(FNAME,"BTSender::begin()" );
 
 	hci_dump_enable_log_level( ESP_LOG_INFO, 1 );
 	hci_dump_enable_log_level( ESP_LOG_ERROR, 1 );
@@ -389,7 +388,7 @@ void BTSender::begin(){
 	if( serial1_speed.get() != 0  || blue_enable.get() ){
 		int baudrate = baud[serial1_speed.get()];
 		if( baudrate != 0 ) {
-			ESP_LOGD(FNAME,"Serial Interface ttyS1 enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial1_speed.get(), baud[serial1_speed.get()], serial1_tx_inverted.get(), serial1_rx_inverted.get() );
+			ESP_LOGI(FNAME,"Serial Interface ttyS1 enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial1_speed.get(), baud[serial1_speed.get()], serial1_tx_inverted.get(), serial1_rx_inverted.get() );
 			Serial1.begin(baudrate,SERIAL_8N1,16,17, serial1_rx_inverted.get(), serial1_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
 			Serial1.setRxBufferSize(256);
 		}
@@ -397,7 +396,7 @@ void BTSender::begin(){
 		xTaskCreatePinnedToCore(&serialHandler1, "serialHandler1", 4096, NULL, 25, 0, 0);
 	}
 	if( serial2_speed.get() != 0  && hardwareRevision >= 3 ){
-		ESP_LOGD(FNAME,"Serial Interface ttyS2 enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial2_speed.get(), baud[serial2_speed.get()], serial2_tx_inverted.get(), serial2_rx_inverted.get() );
+		ESP_LOGI(FNAME,"Serial Interface ttyS2 enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial2_speed.get(), baud[serial2_speed.get()], serial2_tx_inverted.get(), serial2_rx_inverted.get() );
 		if( serial2_pins_twisted.get() )
 			Serial2.begin(baud[serial2_speed.get()],SERIAL_8N1,4,18, serial2_rx_inverted.get(), serial2_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
 		else

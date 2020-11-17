@@ -94,14 +94,14 @@ SetupNG<int>  			alt_unit( "ALT_UNIT", 0 );
 SetupNG<int>  			ias_unit( "IAS_UNIT", 0 );
 SetupNG<int>  			vario_unit( "VARIO_UNIT", 0 );
 SetupNG<int>  			rot_default( "ROTARY_DEFAULT", 0 );
-SetupNG<int>  			serial1_speed( "SERIAL2_SPEED", 0 );   // tag will stay SERIAL2 from historical reason
+SetupNG<int>  			serial1_speed( "SERIAL2_SPEED", 3 );   // tag will stay SERIAL2 from historical reason
 SetupNG<int>  			serial1_rxloop( "SERIAL2_RXLOOP", 0 );
 SetupNG<int>  			serial1_tx( "SERIAL2_TX", 2 );      // Just BT device = XCSoar to control FLARM
 SetupNG<int>  			serial1_tx_inverted( "SERIAL2_TX_INV", RS232_INVERTED );
 SetupNG<int>  			serial1_rx_inverted( "SERIAL2_RX_INV", RS232_INVERTED );
 SetupNG<int>  			serial2_speed( "SERIAL1_SPEED", 3 );
 SetupNG<int>  			serial2_pins_twisted( "SERIAL1_PINS", 0 );
-SetupNG<int>  			serial2_tx( "SERIAL1_TX", 3 );     //  BT device and XCVario, Serial2 is foreseen for OpenVario or Kobo
+SetupNG<int>  			serial2_tx( "SERIAL1_TX", 1 );     //  BT device and XCVario, Serial2 is foreseen for OpenVario or Kobo
 SetupNG<int>  			serial2_tx_inverted( "SERIAL1_TX_INV", RS232_INVERTED );
 SetupNG<int>  			serial2_rx_inverted( "SERIAL1_RX_INV", RS232_INVERTED );
 SetupNG<int>  			software_update( "SOFTWARE_UPDATE", 0 );
@@ -117,7 +117,7 @@ SetupNG<int>		    rotary_inc( "ROTARY_INC", 0 );
 SetupNG<int>		    student_mode( "STUD_MOD", 0 );
 SetupNG<float>		    password( "PASSWORD", 0 );
 SetupNG<int>		    autozero( "AUTOZERO", 0 );
-SetupNG<int>		    attitude_indicator("AHRS", 1 );
+SetupNG<int>		    attitude_indicator("AHRS", 0 );
 SetupNG<int>		    display_style("DISPLAY_STYLE", 0 );
 SetupNG<int>		    s2f_switch_type("S2FHWSW", S2F_HW_SWITCH );
 

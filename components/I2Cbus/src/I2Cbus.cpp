@@ -102,7 +102,20 @@ void I2C::setTimeout(uint32_t ms) {
     ticksToWait = pdMS_TO_TICKS(ms);
 }
 
-
+esp_err_t I2C::write8bit( uint8_t addr, uint16_t word )
+{
+	xSemaphoreTake(i2cbus_mutex,portMAX_DELAY );
+	i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+	uint8_t datal=(uint8_t(word & 0xFF));
+	i2c_master_start(cmd);
+	i2c_master_write_byte(cmd, (addr<<1)| I2C_MASTER_WRITE , I2C_MASTER_ACK);
+	esp_err_t ret = i2c_master_write_byte(cmd, datal , I2C_MASTER_NACK);  // ACK = 0, NACK = 1
+	i2c_master_stop(cmd);
+	ret |= i2c_master_cmd_begin(port, cmd, 100 / portTICK_RATE_MS);
+    i2c_cmd_link_delete(cmd);
+    xSemaphoreGive(i2cbus_mutex);
+    return ret;
+}
 
 esp_err_t I2C::read8bit( uint8_t addr, uint16_t *word )
 {
@@ -110,13 +123,10 @@ esp_err_t I2C::read8bit( uint8_t addr, uint16_t *word )
 	i2c_cmd_handle_t cmd = i2c_cmd_link_create();
 	uint8_t datal;
 	i2c_master_start(cmd);
-	i2c_master_write_byte(cmd, (addr<<1)| I2C_MASTER_READ , true);
-	esp_err_t ret = i2c_master_read_byte(cmd, &datal, (i2c_ack_type_t)1); //Read data back on B
+	i2c_master_write_byte(cmd, (addr<<1)| I2C_MASTER_READ , I2C_MASTER_ACK);
+	esp_err_t ret = i2c_master_read_byte(cmd, &datal, I2C_MASTER_NACK); //Read data back on B
 	i2c_master_stop(cmd);
-	ret = i2c_master_cmd_begin(port, cmd, 100 / portTICK_RATE_MS);
-    // if( ret == ESP_FAIL){
-	// 	ESP_LOGE(FNAME,"I2C ERROR read 8 bit: %x", ret);
-	// }
+	ret |= i2c_master_cmd_begin(port, cmd, 100 / portTICK_RATE_MS);
     *word = (uint16_t)datal;
     i2c_cmd_link_delete(cmd);
     xSemaphoreGive(i2cbus_mutex);

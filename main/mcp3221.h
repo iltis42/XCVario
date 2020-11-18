@@ -1,5 +1,6 @@
 #include "I2C.h"
 #include "esp_system.h"
+#include "I2Cbus.hpp"
 
 #ifndef MCP3221_H
 #define MCP3221_H
@@ -19,7 +20,7 @@
 
  */
 
-class MCP3221 : public I2C
+class MCP3221
 {
 public:
   /*
@@ -30,6 +31,8 @@ public:
   MCP3221();
 
   bool begin(gpio_num_t sda, gpio_num_t scl);
+  void setBus( I2C_t *theBus ) {  bus = theBus; };
+
   /*
   Destroys instance.
   */
@@ -60,7 +63,7 @@ public:
 
 private:
   // I2C i2c;
-
+  I2C_t *bus;
   char _data[2];
   int  errorcount;
   float exponential_average;

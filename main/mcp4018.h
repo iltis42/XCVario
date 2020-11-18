@@ -1,5 +1,6 @@
 #include "I2C.h"
 #include "esp_system.h"
+#include "I2Cbus.hpp"
 
 #ifndef MCP4018_H
 #define MCP4018_H
@@ -9,7 +10,7 @@
 //Library for the MCP4018 7 bit digital potentiometer.
 
 
-class MCP4018 : public I2C
+class MCP4018
 {
 public:
   /*
@@ -19,7 +20,8 @@ public:
   */
   MCP4018();
 
-  bool begin(gpio_num_t sda, gpio_num_t scl);
+  bool begin();
+  void setBus( I2C_t *theBus ) {  bus = theBus; };
 
   /*
   Destroys instance.
@@ -33,8 +35,7 @@ public:
   bool haveDevice();
 
 private:
-  // I2C i2c;
-
+  I2C_t *bus;
   int  errorcount;
   bool  _noDevice;
   uint16_t wiper;  // only bit 0..7 supported

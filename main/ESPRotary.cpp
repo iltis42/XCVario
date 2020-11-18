@@ -13,7 +13,8 @@
 #include "Setup.h"
 
 
-gpio_num_t ESPRotary::clk, ESPRotary::dt, ESPRotary::sw;
+gpio_num_t ESPRotary::clk, ESPRotary::dt;
+gpio_num_t ESPRotary::sw = GPIO_NUM_0;
 std::vector<RotaryObserver *> ESPRotary::observers;
 
 pcnt_config_t ESPRotary::enc;
@@ -26,6 +27,8 @@ void ESPRotary::attach(RotaryObserver *obs) {
 }
 
 bool ESPRotary::readSwitch() {
+	gpio_set_direction(sw,GPIO_MODE_INPUT);
+	gpio_pullup_en(sw);
 	if( gpio_get_level((gpio_num_t)sw) )
 		return false;
 	else

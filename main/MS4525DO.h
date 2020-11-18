@@ -8,6 +8,7 @@
 #include <logdef.h>
 #include "Setup.h"
 #include <math.h>
+#include "I2Cbus.hpp"
 
 #define I2C_ADDRESS_MS4525DO    0x28    /**< 7-bit address =0x28. 8-bit is 0x50. Depends on the order code (this is for code "I") */
  
@@ -32,7 +33,7 @@ const int16_t MS4525ZeroCounts=(MS4525MinScaleCounts+MS4525FullScaleCounts)/2;
 
 const float multiplier ( 2 * 6894.76 / MS4525Span );
 
-class MS4525DO : public I2C
+class MS4525DO
 {
     public:
     // instance methods
@@ -41,6 +42,7 @@ class MS4525DO : public I2C
     
     // public functions
         bool  begin( gpio_num_t sda, gpio_num_t sck, char slave_adr = I2C_ADDRESS_MS4525DO );
+        void setBus( I2C_t *theBus ) {  bus = theBus; };
         void  initialize(void);
         int   measure(void);            // returns status of measurement
         float getPSI(void);             // returns the PSI of last measurement
@@ -54,6 +56,7 @@ class MS4525DO : public I2C
         bool  selfTest( int& adval );
 
     private:
+        I2C_t *bus;
         char        address;
         char        _status;
         float       psi;

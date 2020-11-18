@@ -84,9 +84,9 @@ float TE=0;
 float dynamicP;
 
 bool haveMPU=false;
-int  hardwareRevision=2;
 int ccp=60;
 
+MCP3221 MCP;
 DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 standard, alternative  GPIO_NUM_17
 MP5004DP MP5004DP;
 MS4525DO MS4525DO;
@@ -139,7 +139,7 @@ float aoy=0;
 float aoz=0;
 
 // Gyro and acceleration sensor
-static I2C_t& i2c                     = i2c0;  // i2c0 or i2c1
+I2C_t& i2c                     = i2c0;  // i2c0 or i2c1
 MPU_t MPU;         // create an object
 
 
@@ -335,12 +335,13 @@ void readTemp(void *pvParameters){
 void sensor(void *args){
 	bool selftestPassed=true;
 	int line = 1;
-
+	// i2c.begin(GPIO_NUM_21, GPIO_NUM_22, GPIO_PULLUP_ENABLE, GPIO_PULLUP_ENABLE );
+	i2c.begin(GPIO_NUM_21, GPIO_NUM_22, 100000 );
+	MCP.setBus( &i2c );
 	gpio_set_drive_capability(GPIO_NUM_23, GPIO_DRIVE_CAP_1);
 	esp_wifi_set_mode(WIFI_MODE_NULL);
 	spiMutex = xSemaphoreCreateMutex();
 	esp_log_level_set("*", ESP_LOG_INFO);
-	hardwareRevision = 2;  // generation 2 hardware without MPU
 	ESP_LOGI( FNAME, "Log level set globally to INFO %d",  ESP_LOG_INFO);
 
 	esp_chip_info_t chip_info;
@@ -353,17 +354,14 @@ void sensor(void *args){
 	ESP_LOGI( FNAME,"%dMB %s flash\n", spi_flash_get_chip_size() / (1024 * 1024),
 			(chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 
-
-
 	ESP_LOGI(FNAME,"Now init all Setup elements");
-	ESP_LOGI( FNAME, "Hardware revision detected %d", hardwareRevision );
 	SetupCommon::initSetup();
 	ESP_LOGI(FNAME, "QNH->get() %f", QNH.get() );
-
+	ESP_LOGI( FNAME, "Hardware revision detected %d", hardwareRevision.get() );
 	NVS.begin();
 	btsender.begin();
 	ADC.begin();  // for battery voltage
-	sleep( 1 );
+	// sleep( 1 );
 
 	xMutex=xSemaphoreCreateMutex();
 	uint8_t t_sb = 0;   //stanby 0: 0,5 mS 1: 62,5 mS 2: 125 mS
@@ -380,8 +378,6 @@ void sensor(void *args){
 	display.begin();
 	display.bootDisplay();
 
-
-
 	// int valid;
 	String logged_tests;
 	logged_tests += "\n\n\n";
@@ -390,6 +386,12 @@ void sensor(void *args){
 	std::string ver( "Version: " );
 	ver += V.version();
 	display.writeText(line++, ver.c_str() );
+	sleep(2);
+	bool doUpdate = software_update.get();
+	if( Rotary.readSwitch() ){
+			doUpdate = true;
+			ESP_LOGI(FNAME,"Rotary pressed: Do Software Update");
+	}
 
 	String btname="Bluetooth ID: ";
 	btname += SetupCommon::getID();
@@ -398,9 +400,12 @@ void sensor(void *args){
 
 	ESP_LOGI(FNAME,"Speed sensors init..");
 
+
 	int offset;
 	bool offset_plausible = false;
 	MS4525DO.begin( GPIO_NUM_21, GPIO_NUM_22 );  // sda, scl
+	MS4525DO.setBus( &i2c );
+
 	if( MS4525DO.selfTest( offset ) ){
 		ESP_LOGI(FNAME,"Speed sensors MS4525DO self test PASSED");
 		MS4525DO.doOffset();
@@ -574,7 +579,7 @@ void sensor(void *args){
 	}
 
 	esp_err_t err=ESP_ERR_NOT_FOUND;
-	i2c.begin(GPIO_NUM_21, GPIO_NUM_22, GPIO_PULLUP_ENABLE, GPIO_PULLUP_ENABLE );
+
 	MPU.setBus(i2c);  // set communication bus, for SPI -> pass 'hspi'
 	MPU.setAddr(mpud::MPU_I2CADDRESS_AD0_LOW);  // set address or handle, for SPI -> pass 'mpu_spi_handle'
 	// mpu = MPU.testConnection();  // test connection with the chip, return is a error code
@@ -582,7 +587,7 @@ void sensor(void *args){
 	ESP_LOGI( FNAME,"MPU Probing returned %d MPU enable: %d ", err, attitude_indicator.get() );
 	if( err == ESP_OK ){
 		haveMPU = true;
-		hardwareRevision = 3;  // wow, there is MPU6050 gyro and acceleration sensor
+		hardwareRevision.set(3);  // wow, there is MPU6050 gyro and acceleration sensor
 		ESP_LOGI( FNAME,"MPU initialize");
 		MPU.initialize();  // this will initialize the chip and set default configurations
 		MPU.setSampleRate(50);  // in (Hz)
@@ -612,21 +617,23 @@ void sensor(void *args){
 			ESP_LOGI( FNAME,"MPU new offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
 			MPU.acceleration(&test);
 			ESP_LOGI( FNAME,"MPU raw data accl:%d/%d/%d", test.x,test.y,test.z );
+			if( hardwareRevision.get() != 3 )
+				hardwareRevision.set(3);
 		}
 		MPU.setGyroOffset(gb);
 	}
 	else{
-		hardwareRevision = 2;
+		if( hardwareRevision.get() != 2 )
+			hardwareRevision.set(2);
 		if( attitude_indicator.get() ) { // log negative message only if AHRS is enabled
 			display.writeText( line++, "AHRS Sensor: NOT FOUND");
 			logged_tests += "MPU6050 AHRS test: NOT FOUND\n";
 			selftestPassed = false;
 		}
 	}
-
 	//MPU.setAccelOffset(ab);
-	if( software_update.get() ) {
-		if( hardwareRevision == 2 ) {
+	if( doUpdate ) {
+		if( hardwareRevision.get() == 2) {
 			ESP_LOGI( FNAME,"Hardware Revision detected 2");
 			Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
 		}
@@ -637,7 +644,6 @@ void sensor(void *args){
 		ota.begin( &Rotary );
 		ota.doSoftwareUpdate( &display );
 	}
-
 
 	Speed2Fly.change_polar();
 	Speed2Fly.change_mc_bal();
@@ -650,15 +656,15 @@ void sensor(void *args){
 	{
 		ESP_LOGI(FNAME,"\n\n\nSelftest failed, see above LOG for Problems\n\n\n");
 		if( !Rotary.readSwitch() )
-			sleep(6);
+			sleep(4);
 	}
 	else{
 		ESP_LOGI(FNAME,"\n\n\n*****  Selftest PASSED  ********\n\n\n");
 		display.writeText( line++, "Selftest PASSED");
 		if( !Rotary.readSwitch() )
-			sleep(3);
+			sleep(2);
 	}
-	sleep(1);
+	// sleep(1);
 
 	if( Rotary.readSwitch() )
 	{
@@ -785,7 +791,7 @@ void sensor(void *args){
 	{
 		Audio.disable(false);
 	}
-	if( hardwareRevision == 2 )
+	if( hardwareRevision.get() == 2 )
 		Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
 	else
 		Rotary.begin( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);

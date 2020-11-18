@@ -120,6 +120,7 @@ SetupNG<int>		    autozero( "AUTOZERO", 0 );
 SetupNG<int>		    attitude_indicator("AHRS", 0 );
 SetupNG<int>		    display_style("DISPLAY_STYLE", 0 );
 SetupNG<int>		    s2f_switch_type("S2FHWSW", S2F_HW_SWITCH );
+SetupNG<int>		    hardwareRevision("HWREV", 2 );
 
 mpud::raw_axes_t zero_bias;
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );
@@ -167,7 +168,7 @@ char * SetupCommon::getID() {
 		crc = mz_crc32(0L, mac, 6);
 		}
 	int id = int(crc % 1000);
-	if( hardwareRevision >= 3 )
+	if( hardwareRevision.get() >= 3 )
 		id = int(crc % 10000);
 	sprintf( _ID, "iVario-%d", id );
 	}

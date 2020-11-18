@@ -3,7 +3,7 @@
 #include <logdef.h>
 
 //Create instance  MCP3221(gpio_num_t sda, gpio_num_t scl);
-MCP3221::MCP3221(): I2C()
+MCP3221::MCP3221()
 {
 	errorcount=0;
 	exponential_average=0;
@@ -13,7 +13,7 @@ MCP3221::MCP3221(): I2C()
 bool MCP3221::begin(gpio_num_t sda, gpio_num_t scl)
 {
 	errorcount=0;
-	init( sda, scl );
+	// init( sda, scl );
 	exponential_average = 0;
 	return true;
 }
@@ -25,7 +25,9 @@ MCP3221::~MCP3221()
 
 // scan bus for I2C address
 esp_err_t MCP3221::selfTest(){
-	if( scan( MCP3221_CONVERSE ) != ESP_OK ){
+	uint8_t data[2];
+	esp_err_t err = bus->readBytes(MCP3221_CONVERSE, 0, 2, data );
+	if( err != ESP_OK ){
 		ESP_LOGI(FNAME,"MCP3221 selftest, scan for I2C address %02x FAILED",MCP3221_CONVERSE );
 		return ESP_FAIL;
 	}
@@ -61,16 +63,27 @@ float MCP3221::readAVG( float alpha ) {
 //read a byte (with NAK)
 //I2C.STOP
 
+uint16_t as_last= 1000;
+
 int  MCP3221::readVal(){
 	int retval = 0;
-	for( int i=0; i<32; i++ ){
+	int samples = 0;
+	for( int i=0; i<4; i++ ){
 		uint16_t as;
-		if( readRaw( as ) == ESP_OK )
-			retval += as;
+		if( readRaw( as ) == ESP_OK ) {
+			if( abs( as - as_last) < 500 ) {
+				retval += as;
+				samples++;
+			}
+			else{
+				 ESP_LOGE(FNAME,"Airspeed delta out of bounds, cur:%d  last:%d", as, as_last );
+			}
+			as_last = as;
+		}
 		else
 			return -1;
 	}
-	retval = retval / 32;
+	retval = retval / samples;
 	// ESP_LOGI(FNAME,"Airspeed AD1 readVal: %d", retval );
 	return retval;
 }
@@ -78,11 +91,16 @@ int  MCP3221::readVal(){
 
 esp_err_t MCP3221::readRaw(uint16_t &val)
 {
-	esp_err_t ret=read16bit( MCP3221_CONVERSE, &val );
-	if( ret != ESP_OK ){
+	// esp_err_t ret=read16bit( MCP3221_CONVERSE, &val );
+	uint8_t data[2];
+	esp_err_t err = bus->readBytes(MCP3221_CONVERSE, 0, 2, data );
+	if( err != ESP_OK ){
 		val = 0;
+	}else{
+		val = data[1] | (data[0] << 8 );
 	}
-	return( ret );
+
+	return( err );
 }
 
-MCP3221 MCP;
+

@@ -28,6 +28,8 @@
 #include <vector>
 #include <logdef.h>
 #include "Switch.h"
+#include "I2Cbus.hpp"
+#include "sensor.h"
 
 
 float ESPAudio::_range = 5.0;
@@ -399,19 +401,20 @@ void ESPAudio::dac_cosine_enable(dac_channel_t channel, bool enable)
 }
 
 bool ESPAudio::selfTest(){
-	ESP_LOGD(FNAME,"ESPAudio::selfTest");
+	ESP_LOGI(FNAME,"ESPAudio::selfTest");
 	uint16_t getwiper;
 	uint16_t setwiper = ((default_volume.get() * 100.0) / 128) -1 ;
-	ESP_LOGV(FNAME, "selfTest wiper: %d", wiper );
+	ESP_LOGI(FNAME, "selfTest wiper: %d", wiper );
+	Poti.haveDevice();
 	Poti.writeWiper( setwiper );
 	bool ret = Poti.readWiper( getwiper );
 	if( ret == false ) {
-		ESP_LOGD(FNAME,"readWiper returned error");
+		ESP_LOGI(FNAME,"readWiper returned error");
 		return false;
 	}
 	if( getwiper != setwiper )  // begin sets already cur_wiperw
 	{
-		ESP_LOGD(FNAME,"readWiper returned wrong setting set=%d get=%d", setwiper, getwiper );
+		ESP_LOGI(FNAME,"readWiper returned wrong setting set=%d get=%d", setwiper, getwiper );
 		ret = false;
 	}
 	else
@@ -419,14 +422,14 @@ bool ESPAudio::selfTest(){
 
 	dac_output_enable(_ch);
 	for( float f=261.62; f<1046.51; f=f*1.03){
-		ESP_LOGD(FNAME,"f=%f",f);
+		ESP_LOGI(FNAME,"f=%f",f);
 		Audio.dac_frequency_set(clk_8m_div, int(f/freq_step) );
 		delay(30);
 		esp_task_wdt_reset();
 	}
 
 	delay(200);
-	ESP_LOGV(FNAME, "selfTest wiper: %d", 0 );
+	ESP_LOGI(FNAME, "selfTest wiper: %d", 0 );
 	Poti.writeWiper( 0 );
 	Audio.dac_frequency_set(clk_8m_div, int(_center/freq_step) );
 	_testmode=true;
@@ -861,14 +864,14 @@ void ESPAudio::restart()
 
 void ESPAudio::begin( dac_channel_t ch, gpio_num_t button  )
 {
-	ESP_LOGD(FNAME,"ESPAudio::begin");
+	ESP_LOGI(FNAME,"ESPAudio::begin");
 	Switch::begin( GPIO_NUM_12 );
+	Poti.setBus( &i2c );
+	Poti.begin();
 	setup();
 	mute();
 	_ch = ch;
 	_button = button;
-	Poti.begin(GPIO_NUM_21, GPIO_NUM_22);
-
 	wiper = (uint16_t)( ( (default_volume.get() * 100.0) / 128) -1 );
 	restart();
 	_testmode = true;

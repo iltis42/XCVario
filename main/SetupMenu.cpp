@@ -938,7 +938,7 @@ void SetupMenu::setup( )
 		s1in->setHelp( "Option to loop serial RX to ttyS1 TX port, e.g. for unidirectional OV or Kobo connection" );
 		s1in->addEntry( "Disable");          // 0
 		s1in->addEntry( "Enable ttyS1 RX");  // 1
-		if( hardwareRevision >= 3 )
+		if( hardwareRevision.get() >= 3 )
 			s1in->addEntry( "Enable ttyS2 RX");  // 2
 
 
@@ -963,7 +963,7 @@ void SetupMenu::setup( )
 		srxi->addEntry( "Normal");
 		srxi->addEntry( "Inverted");
 
-		if( hardwareRevision >= 3 ) {
+		if( hardwareRevision.get() >= 3 ) {
 			SetupMenu * rs232_2 = new SetupMenu( "RS232 Interface ttyS2" );
 			sye->addMenu( rs232_2 );
 			SetupMenuSelect * s2sp2 = new SetupMenuSelect( PROGMEM "Baudraute",	0, false, 0, true, &serial2_speed );
@@ -1011,7 +1011,8 @@ void SetupMenu::setup( )
 		nmea->addEntry( "OpenVario");
 		nmea->addEntry( "Borgelt");
 		nmea->addEntry( "Cambridge");
-		nmea->addEntry( "Eye Sensor Box");
+		if( hardwareRevision.get() >= 3 )
+			nmea->addEntry( "Eye Sensor Box");
 	}
 	SetupMenu::display();
 }

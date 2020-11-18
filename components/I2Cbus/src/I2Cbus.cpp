@@ -31,6 +31,11 @@ IN THE SOFTWARE.
 #include "driver/gpio.h"
 
 
+// #define CONFIG_I2CBUS_LOG_RW_LEVEL_INFO
+// #define CONFIG_I2CBUS_LOG_READWRITES
+// #define CONFIG_I2CBUS_LOG_ERRORS
+
+
 #if defined   CONFIG_I2CBUS_LOG_RW_LEVEL_INFO
 #define I2CBUS_LOG_RW(format, ...) ESP_LOGI(TAG, format, ##__VA_ARGS__)
 #elif defined CONFIG_I2CBUS_LOG_RW_LEVEL_DEBUG
@@ -46,6 +51,8 @@ IN THE SOFTWARE.
 
 
 static const char* TAG __attribute__((unused)) = "I2Cbus";
+
+xSemaphoreHandle i2cbus_mutex = 0;
 
 /*******************************************************************************
  * OBJECTS
@@ -73,15 +80,15 @@ esp_err_t I2C::begin(gpio_num_t sda_io_num, gpio_num_t scl_io_num, uint32_t clk_
     return begin(sda_io_num, scl_io_num, GPIO_PULLUP_ENABLE, GPIO_PULLUP_ENABLE, clk_speed);
 }
 
-esp_err_t I2C::begin(gpio_num_t sda_io_num, gpio_num_t scl_io_num, gpio_pullup_t sda_pullup_en,
-        gpio_pullup_t scl_pullup_en, uint32_t clk_speed) {
-    i2c_config_t conf;
+esp_err_t I2C::begin(gpio_num_t sda_io_num, gpio_num_t scl_io_num, gpio_pullup_t sda_pullup_en, gpio_pullup_t scl_pullup_en, uint32_t clk_speed) {
+	i2c_config_t conf;
     conf.mode = I2C_MODE_MASTER;
     conf.sda_io_num = sda_io_num;
     conf.sda_pullup_en = sda_pullup_en;
     conf.scl_io_num = scl_io_num;
     conf.scl_pullup_en = scl_pullup_en;
     conf.master.clk_speed = clk_speed;
+    i2cbus_mutex = xSemaphoreCreateMutex();
     esp_err_t err = i2c_param_config(port, &conf);
     if (!err) err = i2c_driver_install(port, conf.mode, 0, 0, 0);
     return err;
@@ -93,6 +100,27 @@ esp_err_t I2C::close() {
 
 void I2C::setTimeout(uint32_t ms) {
     ticksToWait = pdMS_TO_TICKS(ms);
+}
+
+
+
+esp_err_t I2C::read8bit( uint8_t addr, uint16_t *word )
+{
+	xSemaphoreTake(i2cbus_mutex,portMAX_DELAY );
+	i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+	uint8_t datal;
+	i2c_master_start(cmd);
+	i2c_master_write_byte(cmd, (addr<<1)| I2C_MASTER_READ , true);
+	esp_err_t ret = i2c_master_read_byte(cmd, &datal, (i2c_ack_type_t)1); //Read data back on B
+	i2c_master_stop(cmd);
+	ret = i2c_master_cmd_begin(port, cmd, 100 / portTICK_RATE_MS);
+    // if( ret == ESP_FAIL){
+	// 	ESP_LOGE(FNAME,"I2C ERROR read 8 bit: %x", ret);
+	// }
+    *word = (uint16_t)datal;
+    i2c_cmd_link_delete(cmd);
+    xSemaphoreGive(i2cbus_mutex);
+    return ret;
 }
 
 
@@ -109,6 +137,7 @@ esp_err_t I2C::writeBit(uint8_t devAddr, uint8_t regAddr, uint8_t bitNum, uint8_
 }
 
 esp_err_t I2C::writeBits(uint8_t devAddr, uint8_t regAddr, uint8_t bitStart, uint8_t length, uint8_t data, int32_t timeout) {
+
     uint8_t buffer;
     esp_err_t err = readByte(devAddr, regAddr, &buffer, timeout);
     if (err) return err;
@@ -121,11 +150,12 @@ esp_err_t I2C::writeBits(uint8_t devAddr, uint8_t regAddr, uint8_t bitStart, uin
 }
 
 esp_err_t I2C::writeByte(uint8_t devAddr, uint8_t regAddr, uint8_t data, int32_t timeout) {
-    return writeBytes(devAddr, regAddr, 1, &data, timeout);
+	return writeBytes(devAddr, regAddr, 1, &data, timeout);
 }
 
 esp_err_t I2C::writeBytes(uint8_t devAddr, uint8_t regAddr, size_t length, const uint8_t *data, int32_t timeout) {
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+	xSemaphoreTake(i2cbus_mutex,portMAX_DELAY );
+	i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
     i2c_master_write_byte(cmd, (devAddr << 1) | I2C_MASTER_WRITE, I2C_MASTER_ACK_EN);
     i2c_master_write_byte(cmd, regAddr, I2C_MASTER_ACK_EN);
@@ -152,6 +182,7 @@ esp_err_t I2C::writeBytes(uint8_t devAddr, uint8_t regAddr, size_t length, const
             port, devAddr, length, regAddr, err);
     }
 #endif
+    xSemaphoreGive(i2cbus_mutex);
     return err;
 }
 
@@ -180,7 +211,8 @@ esp_err_t I2C::readByte(uint8_t devAddr, uint8_t regAddr, uint8_t *data, int32_t
 }
 
 esp_err_t I2C::readBytes(uint8_t devAddr, uint8_t regAddr, size_t length, uint8_t *data, int32_t timeout) {
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+	xSemaphoreTake(i2cbus_mutex,portMAX_DELAY );
+	i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
     i2c_master_write_byte(cmd, (devAddr << 1) | I2C_MASTER_WRITE, I2C_MASTER_ACK_EN);
     i2c_master_write_byte(cmd, regAddr, I2C_MASTER_ACK_EN);
@@ -208,6 +240,7 @@ esp_err_t I2C::readBytes(uint8_t devAddr, uint8_t regAddr, size_t length, uint8_
             port, devAddr, length, regAddr, err);
     }
 #endif
+    xSemaphoreGive(i2cbus_mutex);
     return err;
 }
 

@@ -54,7 +54,7 @@ bool MP5004DP::offsetPlausible(uint16_t aoffset )
 	ESP_LOGI(FNAME,"MP5004DP offsetPlausible( %d )", aoffset );
 	int lower_val = 608;
 	int upper_val = 1067;
-	if( hardwareRevision == 3 ){  // XGZ sensor, measured 252 typical
+	if( hardwareRevision.get() >= 4 ){  // XGZ sensor, measured 252 typical
 		lower_val = 150;
 		upper_val = 500;
 	}
@@ -134,17 +134,19 @@ float MP5004DP::readPascal( float minimum ){
 		return 0.0;
 	}
 	float corr;
-	if( hardwareRevision < 3 )
+	if( hardwareRevision.get() < 3 )
 		corr = correction;
 	else{
 		corr = correctionXZG;
 		// ESP_LOGI(FNAME,"pressure correction for XZG %f", corr );
 	}
 	float val = MCP.readVal();
+
 	float _pascal = (val - _offset) * corr * ((100.0 + speedcal.get()) / 100.0);
     if ( (_pascal < minimum) && (minimum != 0) ) {
 	  _pascal = 0.0;
 	};
+    // ESP_LOGI(FNAME,"pressure read %f", _pascal );
 	return _pascal;
 }
 

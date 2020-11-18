@@ -314,7 +314,7 @@ extern SetupNG<int>		    display_style;
 extern SetupNG<int>		    s2f_switch_type;
 extern SetupNG<mpud::raw_axes_t> gyro_bias;
 extern SetupNG<mpud::raw_axes_t> accl_bias;
-
+extern SetupNG<int>		    hardwareRevision;
 
 
 #endif /* MAIN_SETUP_NG_H_ */

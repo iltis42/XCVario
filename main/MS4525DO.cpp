@@ -2,7 +2,7 @@
 #include <math.h>
 #include <logdef.h>
 
-MS4525DO::MS4525DO() : I2C()
+MS4525DO::MS4525DO()
 {
 	address = I2C_ADDRESS_MS4525DO;
 	psi = 0;
@@ -14,7 +14,7 @@ MS4525DO::MS4525DO() : I2C()
 }
 
 bool MS4525DO::begin(gpio_num_t sda, gpio_num_t scl, char slave_adr) {
-	init( sda, scl );
+	// init( sda, scl );
 	// exponential_average = 0;
 	address = slave_adr;
 	return true;
@@ -65,8 +65,8 @@ char MS4525DO::fetch_pressure(uint16_t &P_dat, uint16_t &T_dat)
 	char Temp_L;
 
 	uint8_t data[4];
-	error = read32bit( address, data );
-	if( error != ESP_OK ) {
+	esp_err_t err = bus->readBytes(address, 0, 4, data );
+	if( err != ESP_OK ) {
 		_status = 5;   // i2c error detected
 		return _status;
 	}
@@ -110,7 +110,9 @@ float   MS4525DO::readPascal( float minimum, bool &ok ){
 }
 
 bool    MS4525DO::selfTest( int& adval ){
-	if( scan( I2C_ADDRESS_MS4525DO ) != ESP_OK ){
+	uint8_t data[4];
+	esp_err_t err = bus->readBytes(address, 0, 4, data );
+	if( err != ESP_OK ){
 		ESP_LOGI(FNAME,"MS4525DO selftest, scan for I2C address %02x FAILED",I2C_ADDRESS_MS4525DO );
 		return false;
 	}

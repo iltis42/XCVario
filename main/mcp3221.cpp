@@ -10,10 +10,9 @@ MCP3221::MCP3221()
 	_noDevice = false;
 }
 
-bool MCP3221::begin(gpio_num_t sda, gpio_num_t scl)
+bool MCP3221::begin()
 {
 	errorcount=0;
-	// init( sda, scl );
 	exponential_average = 0;
 	return true;
 }

@@ -20,7 +20,7 @@ bool MP5004DP::begin(gpio_num_t sda, gpio_num_t scl ){
 	}
 	 else
 	 	ESP_LOGI(FNAME,"MP5004DP: NVS init ok");
-	ret = MCP.begin( sda, scl);
+	ret = MCP.begin();
 		if ( ret == false ){
 			ESP_LOGE(FNAME,"MP5004DP: Error MCP init");
 			return ret;

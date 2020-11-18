@@ -580,11 +580,14 @@ void sensor(void *args){
 
 	esp_err_t err=ESP_ERR_NOT_FOUND;
 
-	MPU.setBus(i2c);  // set communication bus, for SPI -> pass 'hspi'
-	MPU.setAddr(mpud::MPU_I2CADDRESS_AD0_LOW);  // set address or handle, for SPI -> pass 'mpu_spi_handle'
+
 	// mpu = MPU.testConnection();  // test connection with the chip, return is a error code
-	err = MPU.initialize();
-	ESP_LOGI( FNAME,"MPU Probing returned %d MPU enable: %d ", err, attitude_indicator.get() );
+	if( attitude_indicator.get() ) {
+		MPU.setBus(i2c);  // set communication bus, for SPI -> pass 'hspi'
+		MPU.setAddr(mpud::MPU_I2CADDRESS_AD0_LOW);  // set address or handle, for SPI -> pass 'mpu_spi_handle'
+		err = MPU.initialize();
+		ESP_LOGI( FNAME,"MPU Probing returned %d MPU enable: %d ", err, attitude_indicator.get() );
+	}
 	if( err == ESP_OK ){
 		haveMPU = true;
 		hardwareRevision.set(3);  // wow, there is MPU6050 gyro and acceleration sensor
@@ -598,29 +601,27 @@ void sensor(void *args){
 		logged_tests += "MPU6050 AHRS test: PASSED\n";
 		IMU::init();
 		IMU::read();
-		// BIAS MPU6050
-		mpud::raw_axes_t test;
-		test.x = 0;
-		test.y = 0;
-		test.z = 0;
-		gyro_bias.set( test );
-		accl_bias.set( test );
 
+		// BIAS MPU6050
 		mpud::raw_axes_t gb = gyro_bias.get();
 		mpud::raw_axes_t ab = accl_bias.get();
 		ESP_LOGI( FNAME,"MPU current offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
-		if( (gb.isZero() || ab.isZero()) ) {
+		if( (gb.isZero() || ab.isZero()) || ahrs_autozero.get() ) {
 			ESP_LOGI( FNAME,"MPU computeOffsets");
+			ahrs_autozero.set(0);
 			MPU.computeOffsets( &ab, &gb );
 			gyro_bias.set( gb );
-			//accl_bias.set( ab );
+			accl_bias.set( ab );
+			MPU.setGyroOffset(gb);
+			MPU.setAccelOffset(ab);
 			ESP_LOGI( FNAME,"MPU new offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
-			MPU.acceleration(&test);
-			ESP_LOGI( FNAME,"MPU raw data accl:%d/%d/%d", test.x,test.y,test.z );
 			if( hardwareRevision.get() != 3 )
 				hardwareRevision.set(3);
 		}
-		MPU.setGyroOffset(gb);
+		else{
+			MPU.setAccelOffset(ab);
+			MPU.setGyroOffset(gb);
+		}
 	}
 	else{
 		if( hardwareRevision.get() != 2 )
@@ -631,7 +632,7 @@ void sensor(void *args){
 			selftestPassed = false;
 		}
 	}
-	//MPU.setAccelOffset(ab);
+
 	if( doUpdate ) {
 		if( hardwareRevision.get() == 2) {
 			ESP_LOGI( FNAME,"Hardware Revision detected 2");

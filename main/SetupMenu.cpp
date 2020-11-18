@@ -865,13 +865,21 @@ void SetupMenu::setup( )
 		s2fsw->addEntry( "Switch");
 		s2fsw->addEntry( "Push Button");
 
-		SetupMenuSelect * mpu = new SetupMenuSelect( "Attitude Indicator", 0, false , 0, false, &attitude_indicator );
-		hardware->addMenu( mpu );
-		mpu->setHelp( PROGMEM "Enable or disable attitude indicator(AHRS) processing, available on 4th generation hardware (two RJ45)");
+
+		SetupMenu * ahrs = new SetupMenu( "AHRS Setup" );
+		hardware->addMenu( ahrs );
+
+		SetupMenuSelect * mpu = new SetupMenuSelect( "AHRS Sensor", 0, true , 0, true, &attitude_indicator );
+		ahrs->addMenu( mpu );
+		mpu->setHelp( PROGMEM "Enable or disable High Accuracy Attitude Sensor (AHRS), available with new 2021 hardware (two RJ45)");
 		mpu->addEntry( "Disable");
 		mpu->addEntry( "Enable");
 
-
+		SetupMenuSelect * ahrsaz = new SetupMenuSelect( "AHRS Autozero", 0, true , 0, true, &ahrs_autozero );
+		ahrs->addMenu( ahrsaz );
+		ahrsaz->setHelp( PROGMEM "Start Autozero of AHRS Sensor; Preconditions: On ground; Wings 100% horizontal, fuselage in flight position !");
+		ahrsaz->addEntry( "Cancel");
+		ahrsaz->addEntry( "Start AHRS Autozero");
 
 
 		float fva = factory_volt_adjust.get();

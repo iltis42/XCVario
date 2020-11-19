@@ -465,6 +465,7 @@ struct axes_t
         };
     };
     type_t& operator[](int i) { return xyz[i]; };
+    struct axes_t operator = ( const struct axes_t &other ) { x = other.x; y = other.y; z = other.z; return *this; };
     bool isZero() { return bool( !(x|y|z) ); }
     operator String  () {
     	return "X:" + String(x) + " Y:" + String(y) + " Z:" + String(z);

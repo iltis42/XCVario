@@ -63,6 +63,7 @@ float MCP3221::readAVG( float alpha ) {
 //I2C.STOP
 
 uint16_t as_last= 1000;
+int lastVal=0;
 
 int  MCP3221::readVal(){
 	int retval = 0;
@@ -70,7 +71,7 @@ int  MCP3221::readVal(){
 	for( int i=0; i<4; i++ ){
 		uint16_t as;
 		if( readRaw( as ) == ESP_OK ) {
-			if( abs( as - as_last) < 500 ) {
+			if( abs( as - as_last) < 2500 ) {
 				retval += as;
 				samples++;
 			}
@@ -79,10 +80,16 @@ int  MCP3221::readVal(){
 			}
 			as_last = as;
 		}
-		else
-			return -1;
+		else{
+			ESP_LOGE(FNAME,"Airspeed I2C read error");
+		}
 	}
-	retval = retval / samples;
+	if( samples ) {
+		retval = retval / samples;
+		lastVal = retval;
+	}
+	else
+		retval = lastVal;
 	// ESP_LOGI(FNAME,"Airspeed AD1 readVal: %d", retval );
 	return retval;
 }

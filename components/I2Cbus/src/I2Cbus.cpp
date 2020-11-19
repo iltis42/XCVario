@@ -33,7 +33,7 @@ IN THE SOFTWARE.
 
 // #define CONFIG_I2CBUS_LOG_RW_LEVEL_INFO
 // #define CONFIG_I2CBUS_LOG_READWRITES
-#define CONFIG_I2CBUS_LOG_ERRORS
+// #define CONFIG_I2CBUS_LOG_ERRORS
 
 
 #if defined   CONFIG_I2CBUS_LOG_RW_LEVEL_INFO
@@ -193,6 +193,10 @@ esp_err_t I2C::writeBytes(uint8_t devAddr, uint8_t regAddr, size_t length, const
     }
 #endif
     xSemaphoreGive(i2cbus_mutex);
+    if (err) {
+            I2CBUS_LOGE("[port:%d, slave:0x%X] Failed to write %d bytes to__ register 0x%X, error: 0x%X",
+                port, devAddr, length, regAddr, err);
+    }
     return err;
 }
 
@@ -226,11 +230,15 @@ esp_err_t I2C::readBytes(uint8_t devAddr, uint8_t regAddr, size_t length, uint8_
     i2c_master_start(cmd);
     i2c_master_write_byte(cmd, (devAddr << 1) | I2C_MASTER_WRITE, I2C_MASTER_ACK_EN);
     i2c_master_write_byte(cmd, regAddr, I2C_MASTER_ACK_EN);
+    i2c_master_stop(cmd);
+    esp_err_t err = i2c_master_cmd_begin(port, cmd, (timeout < 0 ? ticksToWait : pdMS_TO_TICKS(timeout)));
+    i2c_cmd_link_delete(cmd);
+    cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
     i2c_master_write_byte(cmd, (devAddr << 1) | I2C_MASTER_READ, I2C_MASTER_ACK_EN);
     i2c_master_read(cmd, data, length, I2C_MASTER_LAST_NACK);
     i2c_master_stop(cmd);
-    esp_err_t err = i2c_master_cmd_begin(port, cmd, (timeout < 0 ? ticksToWait : pdMS_TO_TICKS(timeout)));
+    err |= i2c_master_cmd_begin(port, cmd, (timeout < 0 ? ticksToWait : pdMS_TO_TICKS(timeout)));
     i2c_cmd_link_delete(cmd);
 #if defined CONFIG_I2CBUS_LOG_READWRITES
     if (!err) {
@@ -251,6 +259,10 @@ esp_err_t I2C::readBytes(uint8_t devAddr, uint8_t regAddr, size_t length, uint8_
     }
 #endif
     xSemaphoreGive(i2cbus_mutex);
+    if (err) {
+         I2CBUS_LOGE("[port:%d, slave:0x%X] Failed to read %d bytes from register 0x%X, error: 0x%X",
+             port, devAddr, length, regAddr, err);
+     }
     return err;
 }
 

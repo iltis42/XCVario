@@ -149,7 +149,8 @@ float myrolly = 0;
 float myrollz = 0;
 float myaccroll = 0;
 double  mypitch = 0;
-
+double  filterPitch = 0;
+double  filterRoll = 0;
 
 void IMU::read()
 {
@@ -189,6 +190,7 @@ void IMU::read()
 		if (abs(kalYAngle) > 90)
 			gyroXRate = -gyroXRate;                                   // Invert rate, so it fits the restriced accelerometer reading
 		kalXAngle = Kalman_GetAngle(&kalmanX, roll, gyroXRate, dt); // Calculate the angle using a Kalman filter
+		filterRoll = kalXAngle;
 
 		gyroXAngle += gyroXRate * dt; // Calculate gyro angle without any filter
 		gyroYAngle += gyroYRate * dt;
@@ -202,6 +204,7 @@ void IMU::read()
 			gyroYAngle = kalYAngle;
 			ESP_LOGD( FNAME, "3: gyroXAngle Y:%f", gyroYAngle );
 		}
+		filterPitch = kalYAngle;
 	}
 	else
 	{   // But simple kalman algo as above needs adjustment in aircraft with fixed wings, acceleration's differ, esp. in a curve there is no lateral acceleration
@@ -222,14 +225,17 @@ void IMU::read()
 		// with higher Angle, the rate lowers as Z axis gets out of direction of rotation, we need to correct this
 		// and merge with the estimated roll angle from acceleration.
 		kalXAngle = ((myrollz * (1+(1- cos( kalXAngle*PI/180 )) ) ) + myaccroll ) / 2;
+		// correct the sign, we need negative
+		filterRoll = -kalXAngle;
 
 		// Calculate Pitch from Gyro and acceleration
 		double pitch;
 		double gyroYRate=0;
 		PitchFromAccel(&pitch);
-		mypitch += (pitch - mypitch)*0.2;
+		mypitch += (pitch - mypitch)*0.25;
 		gyroYRate = (double)gyroY; // dito
-		kalYAngle = Kalman_GetAngle(&kalmanY, mypitch, gyroYRate, dt); // Calculate the angle using a Kalman filter
+		kalYAngle = Kalman_GetAngle(&kalmanY, mypitch, gyroYRate, dt);  // Calculate the angle using a Kalman filter
+		filterPitch += (kalYAngle - filterPitch) * 0.2;   // addittional low pass filter
 	}
 
 	// ESP_LOGD( FNAME, "KalAngle roll:%2.2f  pitch:%2.2f, Gyro X:%2.2f Y%2.2f, ACC roll:%2.2f pitch:%2.2f", kalXAngle, kalYAngle, gyroXAngle, gyroYAngle, roll, pitch  );
@@ -275,12 +281,12 @@ double IMU::getRawGyroZ()
 
 double IMU::getRoll()
 {
-	return kalXAngle;
+	return filterRoll;
 }
 
 double IMU::getPitch()
 {
-	return -kalYAngle;
+	return -filterPitch;
 }
 
 // IMU Function Definition

@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "esp_task_wdt.h"
 #include <freertos/semphr.h>
 #include <algorithm>
 #include <HardwareSerial.h>
@@ -21,23 +22,23 @@ extern xSemaphoreHandle nvMutex;
 
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
 
-#define QUEUE_SIZE 10
+#define QUEUE_SIZE 5
 RingBufCPP<SString, QUEUE_SIZE> btbuf;
 RingBufCPP<SString, QUEUE_SIZE> ser1txbuf;
 RingBufCPP<SString, QUEUE_SIZE> ser2txbuf;
 
-#define RXBUFLEN 256
+#define RXBUFLEN (SSTRLEN-2)
 char rxBuffer[RXBUFLEN];
 int BTSender::i=0;
 
 #define RFCOMM_SERVER_CHANNEL 1
-#define HEARTBEAT_PERIOD_MS 50
+#define HEARTBEAT_PERIOD_MS 20
 
 
 bool      BTSender::bluetooth_up = false;
 uint8_t   BTSender::rfcomm_channel_nr = 1;
 uint16_t  rfcomm_channel_id = 0;
-uint8_t   BTSender::spp_service_buffer[200]; // 100
+uint8_t   BTSender::spp_service_buffer[500]; // 100
 btstack_timer_source_t BTSender::heartbeat;
 btstack_packet_callback_registration_t BTSender::hci_event_callback_registration;
 void ( * BTSender::_callback)(char * rx, uint16_t len);
@@ -89,7 +90,7 @@ void BTSender::packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *p
 			ESP_LOGW(FNAME,"Warning, RX data packet truncated len=%d, max=%d", size, RXBUFLEN );
 			size = RXBUFLEN;
 		}
-		ESP_LOGD(FNAME,"BT RFCOMM RX (CH %u), size %u", channel, size );
+		ESP_LOGI(FNAME,"BT RFCOMM RX (CH %u), size %u", channel, size );
 		ESP_LOG_BUFFER_HEXDUMP(FNAME,msg,size, ESP_LOG_DEBUG);
 		if( strncmp( msg, "!g,", 3 )  == 0 ) {
 			ESP_LOGD(FNAME,"Matched a Borgelt command");
@@ -197,7 +198,6 @@ some sentences might be lost or truncated.
  */
 
 int btick = 0;
-int numrxp1 = 0;
 
 // Serial Handler
 void serialHandler1(void *pvParameters){
@@ -228,23 +228,18 @@ void serialHandler1(void *pvParameters){
 			ESP_LOGD(FNAME,"Serial 2 TX written: %d", wr);
 		}
 		serialRx.clear();
-		int numread=0;
 		int num = Serial1.available();
-		if( num > 0 )
-			ESP_LOGD(FNAME,"Serial 1 RX avail: %d bytes, prev: %d", num, numrxp1 );
-		if( num > 0 && ( num == numrxp1 || num > 250 ) )
-		{
+		if( num > 0 ) {
 			// ESP_LOGD(FNAME,"Serial 1 RX avail %d bytes", num );
-			numread = Serial1.read( rxBuffer, RXBUFLEN );
-			if( numread != num )
-				ESP_LOGW(FNAME,"Serial 1 RX read WARNING, avail %d != read %d", num, numread);
-			numrxp1 = 0;
-			ESP_LOGD(FNAME,"Serial 1 RX read %d", numread );
+			if( num >= RXBUFLEN ) {
+				ESP_LOGW(FNAME,"Serial 1 Overrun RX >= %d bytes avail: %d, Bytes", RXBUFLEN, num);
+				num=RXBUFLEN;
+			}
+			int numread = Serial1.read( rxBuffer, num );
+			ESP_LOGI(FNAME,"Serial 1 RX bytes read: %d", numread );
 			// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuffer,numread, ESP_LOG_INFO);
 			serialRx.addl( rxBuffer, numread );
 		}
-		else
-			numrxp1 = num;
 		// ESP_LOGD(FNAME,"serial RX len: %d", serialRx.length() );
 		if (serialRx.length() > 0) {
 			ESP_LOGD(FNAME,"Serial 1 RX len: %d bytes, Q:%d", serialRx.length(), btbuf.isFull() );
@@ -272,7 +267,6 @@ void serialHandler1(void *pvParameters){
 				ser2txbuf.add( serialRx );
 				portEXIT_CRITICAL_ISR(&btmux);
 			}
-
 		}
 		if (rfcomm_channel_id ){
 			if ( !btbuf.isEmpty() ){
@@ -289,21 +283,18 @@ void serialHandler1(void *pvParameters){
 					}
 					else
 					{
-						ESP_LOGD(FNAME,"RFCOMM TX, size %u", s.length() );
+						ESP_LOGI(FNAME,"RFCOMM TX, size %u", s.length() );
 						ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
 					}
 				}
 			}
-
 		}
-		vTaskDelay( 2/portTICK_PERIOD_MS );
-		if( !(btick++ % 8) )
-			vTaskDelay( 10/portTICK_PERIOD_MS );
+		esp_task_wdt_reset();
+		vTaskDelay( HEARTBEAT_PERIOD_MS/portTICK_PERIOD_MS );
 	}
 }
 
 int btick2 = 0;
-int numrxp2 = 0;
 
 void serialHandler2(void *pvParameters){
 	while(1) {
@@ -320,23 +311,18 @@ void serialHandler2(void *pvParameters){
 			ESP_LOGD(FNAME,"Serial 2 TX written: %d", wr);
 		}
 		serialRx.clear();
-		int numread=0;
 		int num = Serial2.available();
-		if( num > 0 )
-			ESP_LOGD(FNAME,"Serial 2 RX avail: %d bytes, prev: %d", num, numrxp1 );
-		if( num > 0 && ( num == numrxp2 || num > 250 ) )
-		{
+		if( num > 0 ) {
 			// ESP_LOGD(FNAME,"Serial 2 RX avail %d bytes", num );
-			numread = Serial2.read( rxBuffer, RXBUFLEN );
-			if( numread != num )
-				ESP_LOGW(FNAME,"Serial 2 RX read WARNING, avail %d != read %d", num, numread);
-			numrxp2 = 0;
-			ESP_LOGD(FNAME,"Serial 2 RX read %d", numread );
-			ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuffer,numread, ESP_LOG_DEBUG);
+			if( num >= RXBUFLEN ) {
+				ESP_LOGW(FNAME,"Serial 2 RX Overrun >= %d bytes avail: %d, Bytes", RXBUFLEN, num);
+				num=RXBUFLEN;
+			}
+			int numread = Serial2.read( rxBuffer, num );
+			ESP_LOGI(FNAME,"Serial 2 RX bytes read: %d", numread );
+			// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuffer,numread, ESP_LOG_INFO);
 			serialRx.addl( rxBuffer, numread );
 		}
-		else
-			numrxp2 = num;
 
 		// ESP_LOGD(FNAME,"serial 2 RX len: %d", serialRx.length() );
 		if (serialRx.length() > 0) {
@@ -351,11 +337,9 @@ void serialHandler2(void *pvParameters){
 			}
 			else
 				ESP_LOGD(FNAME,"serial 2 RX bt buffer overrun");
-
 		}
-		vTaskDelay( 3/portTICK_PERIOD_MS );
-		if( !(btick2++ % 8) )
-			vTaskDelay( 10/portTICK_PERIOD_MS );
+		esp_task_wdt_reset();
+		vTaskDelay( HEARTBEAT_PERIOD_MS/portTICK_PERIOD_MS );  // 48 bytes each 20 mS traffic at 19.200 baud
 	}
 }
 
@@ -393,7 +377,7 @@ void BTSender::begin(){
 			Serial1.setRxBufferSize(256);
 		}
 		// need this for bluetooth
-		xTaskCreatePinnedToCore(&serialHandler1, "serialHandler1", 4096, NULL, 25, 0, 0);
+		xTaskCreatePinnedToCore(&serialHandler1, "serialHandler1", 4096, NULL, 15, 0, 0);
 	}
 	if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 ){
 		ESP_LOGI(FNAME,"Serial Interface ttyS2 enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial2_speed.get(), baud[serial2_speed.get()], serial2_tx_inverted.get(), serial2_rx_inverted.get() );
@@ -403,7 +387,7 @@ void BTSender::begin(){
 			Serial2.begin(baud[serial2_speed.get()],SERIAL_8N1,18,4, serial2_rx_inverted.get(), serial2_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
 
 		Serial2.setRxBufferSize(256);
-		xTaskCreatePinnedToCore(&serialHandler2, "serialHandler2", 4096, NULL, 23, 0, 0);
+		xTaskCreatePinnedToCore(&serialHandler2, "serialHandler2", 4096, NULL, 14, 0, 0);
 	}
 
 };

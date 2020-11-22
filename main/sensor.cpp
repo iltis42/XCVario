@@ -129,6 +129,8 @@ t_as_sensor as_sensor;
 
 mpud::float_axes_t accelG;
 mpud::float_axes_t gyroDPS;
+mpud::float_axes_t accelG_Prev;
+mpud::float_axes_t gyroDPS_Prev;
 
 float ox=0;
 float oy=0;
@@ -179,7 +181,8 @@ void drawDisplay(void *pvParameters){
 }
 
 int count=0;
-
+mpud::raw_axes_t accelRawPrev;     // holds x, y, z axes as int16
+mpud::raw_axes_t gyroRawPrev;      // holds x, y, z axes as int16
 
 
 void readBMP(void *pvParameters){
@@ -250,13 +253,30 @@ void readBMP(void *pvParameters){
 				{
 					mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
 					mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
-					MPU.acceleration(&accelRaw);  // fetch raw data from the registers
-					MPU.rotation(&gyroRaw);       // fetch raw data from the registers
+					esp_err_t err = MPU.acceleration(&accelRaw);  // fetch raw data from the registers
+					if( err != ESP_OK )
+						ESP_LOGE(FNAME, "accel I2C error, X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
+					err |= MPU.rotation(&gyroRaw);       // fetch raw data from the registers
+					if( err != ESP_OK )
+						ESP_LOGE(FNAME, "gyro I2C error, X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
 					accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_4G);  // raw data to gravity
 					gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
-					ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f  gyro X: %+.2f Y:%+.2f Z:%+.2f\n", -accelG[2], accelG[1], accelG[0] ,  gyroDPS.x, gyroDPS.y, gyroDPS.z);
-					IMU::read();
-					// float x, float y, float z, float bank, float pitch, float head
+					// ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f  gyro X: %+.2f Y:%+.2f Z:%+.2f\n", -accelG[2], accelG[1], accelG[0] ,  gyroDPS.x, gyroDPS.y, gyroDPS.z);
+					bool goodAccl = true;
+					if( abs( accelG.x - accelG_Prev.x ) > 0.6 || abs( accelG.y - accelG_Prev.y ) > 0.6 || abs( accelG.z - accelG_Prev.z ) > 0.6 ) {
+						goodAccl = false;
+						ESP_LOGE(FNAME, "accel sensor out of bounds:  X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
+					}
+					bool goodGyro = true;
+					if( abs( gyroDPS.x - gyroDPS_Prev.x ) > 360 || abs( gyroDPS.y - gyroDPS_Prev.y ) > 360 || abs( gyroDPS.z - gyroDPS_Prev.z ) > 360 ) {
+						goodGyro = false;
+						ESP_LOGE(FNAME, "gyro sensor out of bounds: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
+					}
+					if( err == ESP_OK && goodAccl && goodGyro ) {
+						IMU::read();
+					}
+					gyroDPS_Prev = gyroDPS;
+					accelG_Prev = accelG;
 				}
 
 				xSemaphoreTake(xMutex,portMAX_DELAY );
@@ -336,7 +356,7 @@ void sensor(void *args){
 	bool selftestPassed=true;
 	int line = 1;
 	// i2c.begin(GPIO_NUM_21, GPIO_NUM_22, GPIO_PULLUP_ENABLE, GPIO_PULLUP_ENABLE );
-	i2c.begin(GPIO_NUM_21, GPIO_NUM_22, 100000 );
+	i2c.begin(GPIO_NUM_21, GPIO_NUM_22, 400000 );
 	MCP.setBus( &i2c );
 	gpio_set_drive_capability(GPIO_NUM_23, GPIO_DRIVE_CAP_1);
 	esp_wifi_set_mode(WIFI_MODE_NULL);
@@ -580,11 +600,14 @@ void sensor(void *args){
 
 	esp_err_t err=ESP_ERR_NOT_FOUND;
 
-	MPU.setBus(i2c);  // set communication bus, for SPI -> pass 'hspi'
-	MPU.setAddr(mpud::MPU_I2CADDRESS_AD0_LOW);  // set address or handle, for SPI -> pass 'mpu_spi_handle'
+
 	// mpu = MPU.testConnection();  // test connection with the chip, return is a error code
-	err = MPU.initialize();
-	ESP_LOGI( FNAME,"MPU Probing returned %d MPU enable: %d ", err, attitude_indicator.get() );
+	if( attitude_indicator.get() ) {
+		MPU.setBus(i2c);  // set communication bus, for SPI -> pass 'hspi'
+		MPU.setAddr(mpud::MPU_I2CADDRESS_AD0_LOW);  // set address or handle, for SPI -> pass 'mpu_spi_handle'
+		err = MPU.initialize();
+		ESP_LOGI( FNAME,"MPU Probing returned %d MPU enable: %d ", err, attitude_indicator.get() );
+	}
 	if( err == ESP_OK ){
 		haveMPU = true;
 		hardwareRevision.set(3);  // wow, there is MPU6050 gyro and acceleration sensor
@@ -598,29 +621,27 @@ void sensor(void *args){
 		logged_tests += "MPU6050 AHRS test: PASSED\n";
 		IMU::init();
 		IMU::read();
-		// BIAS MPU6050
-		mpud::raw_axes_t test;
-		test.x = 0;
-		test.y = 0;
-		test.z = 0;
-		gyro_bias.set( test );
-		accl_bias.set( test );
 
+		// BIAS MPU6050
 		mpud::raw_axes_t gb = gyro_bias.get();
 		mpud::raw_axes_t ab = accl_bias.get();
 		ESP_LOGI( FNAME,"MPU current offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
-		if( (gb.isZero() || ab.isZero()) ) {
+		if( (gb.isZero() || ab.isZero()) || ahrs_autozero.get() ) {
 			ESP_LOGI( FNAME,"MPU computeOffsets");
+			ahrs_autozero.set(0);
 			MPU.computeOffsets( &ab, &gb );
 			gyro_bias.set( gb );
-			//accl_bias.set( ab );
+			accl_bias.set( ab );
+			MPU.setGyroOffset(gb);
+			MPU.setAccelOffset(ab);
 			ESP_LOGI( FNAME,"MPU new offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
-			MPU.acceleration(&test);
-			ESP_LOGI( FNAME,"MPU raw data accl:%d/%d/%d", test.x,test.y,test.z );
 			if( hardwareRevision.get() != 3 )
 				hardwareRevision.set(3);
 		}
-		MPU.setGyroOffset(gb);
+		else{
+			MPU.setAccelOffset(ab);
+			MPU.setGyroOffset(gb);
+		}
 	}
 	else{
 		if( hardwareRevision.get() != 2 )
@@ -631,7 +652,7 @@ void sensor(void *args){
 			selftestPassed = false;
 		}
 	}
-	//MPU.setAccelOffset(ab);
+
 	if( doUpdate ) {
 		if( hardwareRevision.get() == 2) {
 			ESP_LOGI( FNAME,"Hardware Revision detected 2");
@@ -801,9 +822,9 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280BA, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
-	xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096*2, NULL, 5, bpid, 0);  // 20
+	xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096*2, NULL, 10, bpid, 0);  // 20
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 12000, NULL, 20, dpid, 0);  // 10
-	xTaskCreatePinnedToCore(&readTemp, "readTemp", 4096, NULL, 3, tpid, 0);
+	xTaskCreatePinnedToCore(&readTemp, "readTemp", 4096, NULL, 6, tpid, 0);
 
 	Audio.startAudio();
 
@@ -811,7 +832,6 @@ void sensor(void *args){
 		if( i != 23 && i < 6 && i > 12  )
 			gpio_set_drive_capability((gpio_num_t)i, GPIO_DRIVE_CAP_1);
 	}
-
 	vTaskDelete( NULL );
 
 }

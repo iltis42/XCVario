@@ -310,6 +310,7 @@ extern SetupNG<int>		    student_mode;
 extern SetupNG<float>		password;
 extern SetupNG<int>		    autozero;
 extern SetupNG<int>		    attitude_indicator;
+extern SetupNG<int>		    ahrs_autozero;
 extern SetupNG<int>		    display_style;
 extern SetupNG<int>		    s2f_switch_type;
 extern SetupNG<mpud::raw_axes_t> gyro_bias;

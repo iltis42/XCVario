@@ -2361,8 +2361,8 @@ esp_err_t MPU::getBiases(accel_fs_t accelFS, gyro_fs_t gyroFS, raw_axes_t* accel
                          bool selftest)
 {
     // configurations to compute biases
-    constexpr uint16_t kSampleRate      = 1000;
-    constexpr dlpf_t kDLPF              = DLPF_188HZ;
+    constexpr uint16_t kSampleRate      = 50;
+    constexpr dlpf_t kDLPF              = DLPF_5HZ;
     constexpr fifo_config_t kFIFOConfig = FIFO_CFG_ACCEL | FIFO_CFG_GYRO;
     constexpr size_t kPacketSize        = 12;
     // backup previous configuration
@@ -2432,7 +2432,7 @@ esp_err_t MPU::getBiases(accel_fs_t accelFS, gyro_fs_t gyroFS, raw_axes_t* accel
     gyroAvg.z /= packetCount;
     // remove gravity from Accel Z axis
     const uint16_t gravityLSB = INT16_MAX >> (accelFS + 1);
-    accelAvg.z -= gravityLSB;
+    accelAvg.x -= gravityLSB;
     // save biases
     for (int i = 0; i < 3; i++) {
         (*accelBias)[i] = (int16_t) accelAvg[i];

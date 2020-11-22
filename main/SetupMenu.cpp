@@ -865,13 +865,21 @@ void SetupMenu::setup( )
 		s2fsw->addEntry( "Switch");
 		s2fsw->addEntry( "Push Button");
 
-		SetupMenuSelect * mpu = new SetupMenuSelect( "Attitude Indicator", 0, false , 0, false, &attitude_indicator );
-		hardware->addMenu( mpu );
-		mpu->setHelp( PROGMEM "Enable or disable attitude indicator(AHRS) processing, available on 4th generation hardware (two RJ45)");
+
+		SetupMenu * ahrs = new SetupMenu( "AHRS Setup" );
+		hardware->addMenu( ahrs );
+
+		SetupMenuSelect * mpu = new SetupMenuSelect( "AHRS Sensor", 0, true , 0, true, &attitude_indicator );
+		ahrs->addMenu( mpu );
+		mpu->setHelp( PROGMEM "Enable or disable High Accuracy Attitude Sensor (AHRS), available with new 2021 hardware (two RJ45)");
 		mpu->addEntry( "Disable");
 		mpu->addEntry( "Enable");
 
-
+		SetupMenuSelect * ahrsaz = new SetupMenuSelect( "AHRS Autozero", 0, true , 0, true, &ahrs_autozero );
+		ahrs->addMenu( ahrsaz );
+		ahrsaz->setHelp( PROGMEM "Start Autozero of AHRS Sensor; Preconditions: On ground; Wings 100% horizontal, fuselage in flight position !");
+		ahrsaz->addEntry( "Cancel");
+		ahrsaz->addEntry( "Start AHRS Autozero");
 
 
 		float fva = factory_volt_adjust.get();
@@ -922,7 +930,7 @@ void SetupMenu::setup( )
 		// _serial1_speed
 		SetupMenu * rs232 = new SetupMenu( "RS232 Interface ttyS1" );
 		sye->addMenu( rs232 );
-		SetupMenuSelect * s2sp = new SetupMenuSelect( PROGMEM "Baudraute",	0, false, 0, true, &serial1_speed );
+		SetupMenuSelect * s2sp = new SetupMenuSelect( PROGMEM "Baudraute",	0, true, 0, true, &serial1_speed );
 		rs232->addMenu( s2sp );
 		// s2sp->setHelp( "Serial RS232 (TTL) speed, pins RX:2, TX:3 on external RJ45 connector");
 		s2sp->addEntry( "OFF");
@@ -966,7 +974,7 @@ void SetupMenu::setup( )
 		if( hardwareRevision.get() >= 3 ) {
 			SetupMenu * rs232_2 = new SetupMenu( "RS232 Interface ttyS2" );
 			sye->addMenu( rs232_2 );
-			SetupMenuSelect * s2sp2 = new SetupMenuSelect( PROGMEM "Baudraute",	0, false, 0, true, &serial2_speed );
+			SetupMenuSelect * s2sp2 = new SetupMenuSelect( PROGMEM "Baudraute",	0, true, 0, true, &serial2_speed );
 			rs232_2->addMenu( s2sp2 );
 			// s2sp->setHelp( "Serial RS232 (TTL) speed, pins RX:2, TX:3 on external RJ45 connector");
 			s2sp2->addEntry( "OFF");

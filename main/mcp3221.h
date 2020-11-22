@@ -30,7 +30,7 @@ public:
   */
   MCP3221();
 
-  bool begin(gpio_num_t sda, gpio_num_t scl);
+  bool begin();
   void setBus( I2C_t *theBus ) {  bus = theBus; };
 
   /*

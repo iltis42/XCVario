@@ -32,7 +32,7 @@ char rxBuffer[RXBUFLEN];
 int BTSender::i=0;
 
 #define RFCOMM_SERVER_CHANNEL 1
-#define HEARTBEAT_PERIOD_MS 20
+#define HEARTBEAT_PERIOD_MS 30
 
 
 bool      BTSender::bluetooth_up = false;
@@ -97,18 +97,21 @@ void BTSender::packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *p
 			OpenVario::parseNMEA( msg );
 		}
 		if( serial1_tx.get() & 2 ){  // Serial data TX from bluetooth enabled ?
-			portENTER_CRITICAL_ISR(&btmux);
 			SString s;
-			s.addl( msg, size);
+			portENTER_CRITICAL_ISR(&btmux);
+			if( !ser1txbuf.isEmpty() )
+				ser1txbuf.pull(&s);
+			s.append( msg, size );
 			ser1txbuf.add( s );
 			portEXIT_CRITICAL_ISR(&btmux);
 			ESP_LOGD(FNAME,"BT -> Serial 1 TX %d bytes", size );
-
 		}
 		if(serial2_tx.get() & 2){
-			portENTER_CRITICAL_ISR(&btmux);
 			SString s;
-			s.addl( msg, size);
+			portENTER_CRITICAL_ISR(&btmux);
+			if( !ser2txbuf.isEmpty() )
+				ser2txbuf.pull(&s);
+			s.append( msg, size);
 			ser2txbuf.add( s );
 			portEXIT_CRITICAL_ISR(&btmux);
 		}
@@ -218,14 +221,16 @@ void serialHandler1(void *pvParameters){
 		// Serial Interface tty1 send
 		if ( !ser1txbuf.isEmpty() && Serial1.availableForWrite() ){
 			ESP_LOGD(FNAME,"Serial Data and avail");
-			SString s;
-			portENTER_CRITICAL_ISR(&btmux);
-			ser1txbuf.pull(&s);
-			portEXIT_CRITICAL_ISR(&btmux);
-			ESP_LOGD(FNAME,"Serial 2 TX len: %d bytes", s.length() );
-			ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
-			int wr = Serial1.write( s.c_str(), s.length() );
-			ESP_LOGD(FNAME,"Serial 2 TX written: %d", wr);
+			while( !ser1txbuf.isEmpty() ) {
+				SString s;
+				portENTER_CRITICAL_ISR(&btmux);
+				ser1txbuf.pull(&s);
+				portEXIT_CRITICAL_ISR(&btmux);
+				ESP_LOGD(FNAME,"Serial 1 TX len: %d bytes", s.length() );
+				ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
+				int wr = Serial1.write( s.c_str(), s.length() );
+				ESP_LOGD(FNAME,"Serial 1 TX written: %d", wr);
+			}
 		}
 		serialRx.clear();
 		int num = Serial1.available();
@@ -236,7 +241,7 @@ void serialHandler1(void *pvParameters){
 				num=RXBUFLEN;
 			}
 			int numread = Serial1.read( rxBuffer, num );
-			ESP_LOGI(FNAME,"Serial 1 RX bytes read: %d", numread );
+			ESP_LOGD(FNAME,"Serial 1 RX bytes read: %d", numread );
 			// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuffer,numread, ESP_LOG_INFO);
 			serialRx.addl( rxBuffer, numread );
 		}
@@ -283,7 +288,7 @@ void serialHandler1(void *pvParameters){
 					}
 					else
 					{
-						ESP_LOGI(FNAME,"RFCOMM TX, size %u", s.length() );
+						ESP_LOGD(FNAME,"RFCOMM TX, size %u", s.length() );
 						ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
 					}
 				}
@@ -319,7 +324,7 @@ void serialHandler2(void *pvParameters){
 				num=RXBUFLEN;
 			}
 			int numread = Serial2.read( rxBuffer, num );
-			ESP_LOGI(FNAME,"Serial 2 RX bytes read: %d", numread );
+			ESP_LOGD(FNAME,"Serial 2 RX bytes read: %d", numread );
 			// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuffer,numread, ESP_LOG_INFO);
 			serialRx.addl( rxBuffer, numread );
 		}
@@ -377,7 +382,7 @@ void BTSender::begin(){
 			Serial1.setRxBufferSize(256);
 		}
 		// need this for bluetooth
-		xTaskCreatePinnedToCore(&serialHandler1, "serialHandler1", 4096, NULL, 15, 0, 0);
+		xTaskCreatePinnedToCore(&serialHandler1, "serialHandler1", 4096, NULL, 27, 0, 0);
 	}
 	if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 ){
 		ESP_LOGI(FNAME,"Serial Interface ttyS2 enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial2_speed.get(), baud[serial2_speed.get()], serial2_tx_inverted.get(), serial2_rx_inverted.get() );
@@ -387,7 +392,7 @@ void BTSender::begin(){
 			Serial2.begin(baud[serial2_speed.get()],SERIAL_8N1,18,4, serial2_rx_inverted.get(), serial2_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
 
 		Serial2.setRxBufferSize(256);
-		xTaskCreatePinnedToCore(&serialHandler2, "serialHandler2", 4096, NULL, 14, 0, 0);
+		xTaskCreatePinnedToCore(&serialHandler2, "serialHandler2", 4096, NULL, 26, 0, 0);
 	}
 
 };

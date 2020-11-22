@@ -42,6 +42,13 @@ public:
 			memcpy(str,s,len);
 			str[len] = 0;
 	}
+	void append( char *s, int alen ) {
+		if( alen+len < SSTRLEN-1 ){
+			memcpy(str+len,s,alen);
+			str[alen+len] = 0;
+			len += alen;
+		}
+	}
 	void clear() {
 		memset(str,0,SSTRLEN);
 		len = 0;

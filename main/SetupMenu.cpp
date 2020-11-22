@@ -930,7 +930,7 @@ void SetupMenu::setup( )
 		// _serial1_speed
 		SetupMenu * rs232 = new SetupMenu( "RS232 Interface ttyS1" );
 		sye->addMenu( rs232 );
-		SetupMenuSelect * s2sp = new SetupMenuSelect( PROGMEM "Baudraute",	0, false, 0, true, &serial1_speed );
+		SetupMenuSelect * s2sp = new SetupMenuSelect( PROGMEM "Baudraute",	0, true, 0, true, &serial1_speed );
 		rs232->addMenu( s2sp );
 		// s2sp->setHelp( "Serial RS232 (TTL) speed, pins RX:2, TX:3 on external RJ45 connector");
 		s2sp->addEntry( "OFF");
@@ -974,7 +974,7 @@ void SetupMenu::setup( )
 		if( hardwareRevision.get() >= 3 ) {
 			SetupMenu * rs232_2 = new SetupMenu( "RS232 Interface ttyS2" );
 			sye->addMenu( rs232_2 );
-			SetupMenuSelect * s2sp2 = new SetupMenuSelect( PROGMEM "Baudraute",	0, false, 0, true, &serial2_speed );
+			SetupMenuSelect * s2sp2 = new SetupMenuSelect( PROGMEM "Baudraute",	0, true, 0, true, &serial2_speed );
 			rs232_2->addMenu( s2sp2 );
 			// s2sp->setHelp( "Serial RS232 (TTL) speed, pins RX:2, TX:3 on external RJ45 connector");
 			s2sp2->addEntry( "OFF");

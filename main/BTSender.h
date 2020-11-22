@@ -20,7 +20,7 @@ private:
    static void ( * _callback)(char * rx, uint16_t len);
    static int i;
    static uint8_t   rfcomm_channel_nr;
-   static uint8_t   spp_service_buffer[200];
+   static uint8_t   spp_service_buffer[500];
    static btstack_timer_source_t heartbeat;
    static btstack_packet_callback_registration_t hci_event_callback_registration;
 

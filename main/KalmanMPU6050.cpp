@@ -150,6 +150,7 @@ float myrollz = 0;
 float myaccroll = 0;
 double  mypitch = 0;
 double  filterPitch = 0;
+double  filterRoll = 0;
 
 void IMU::read()
 {
@@ -189,6 +190,7 @@ void IMU::read()
 		if (abs(kalYAngle) > 90)
 			gyroXRate = -gyroXRate;                                   // Invert rate, so it fits the restriced accelerometer reading
 		kalXAngle = Kalman_GetAngle(&kalmanX, roll, gyroXRate, dt); // Calculate the angle using a Kalman filter
+		filterRoll = kalXAngle;
 
 		gyroXAngle += gyroXRate * dt; // Calculate gyro angle without any filter
 		gyroYAngle += gyroYRate * dt;
@@ -223,6 +225,8 @@ void IMU::read()
 		// with higher Angle, the rate lowers as Z axis gets out of direction of rotation, we need to correct this
 		// and merge with the estimated roll angle from acceleration.
 		kalXAngle = ((myrollz * (1+(1- cos( kalXAngle*PI/180 )) ) ) + myaccroll ) / 2;
+		// correct the sign, we need negative
+		filterRoll = -kalXAngle;
 
 		// Calculate Pitch from Gyro and acceleration
 		double pitch;
@@ -277,7 +281,7 @@ double IMU::getRawGyroZ()
 
 double IMU::getRoll()
 {
-	return kalXAngle;
+	return filterRoll;
 }
 
 double IMU::getPitch()

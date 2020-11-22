@@ -4,7 +4,7 @@
 #include "RingBufHelpers.h"
 
 
-#define SSTRLEN 260
+#define SSTRLEN 250
 
 class SString {
 public:

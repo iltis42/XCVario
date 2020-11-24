@@ -45,7 +45,7 @@ extern "C" {
 typedef enum display_type { UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P } display_t;
 typedef enum chopping_mode { NO_CHOP, VARIO_CHOP, S2F_CHOP, BOTH_CHOP } chopping_mode_t;
 typedef enum rs232linemode { RS232_NORMAL, RS232_INVERTED } rs232lm_t;
-typedef enum nmea_protocol  { OPENVARIO, BORGELT, CAMBRIDGE, EYE_SENSOR_BOX, GENERIC } nmea_proto_t;
+typedef enum nmea_protocol  { OPENVARIO, BORGELT, CAMBRIDGE, EYE_SENSOR_BOX, XCVARIO, GENERIC } nmea_proto_t;
 typedef enum airspeed_mode  { MODE_IAS, MODE_TAS } airspeed_mode_t;
 typedef enum e_display_style  { DISPLAY_AIRLINER, DISPLAY_RETRO } display_style_t;
 typedef enum e_s2f_type  { S2F_HW_SWITCH, S2F_HW_PUSH_BUTTON } e_s2f_type;

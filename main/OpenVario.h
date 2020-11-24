@@ -11,7 +11,7 @@
 #ifndef MAIN_OPENVARIO_H_
 #define MAIN_OPENVARIO_H_
 
-typedef enum protocol_t  { P_OPENVARIO, P_BORGELT, P_CAMBRIDGE, P_EYE_PEYA, P_EYE_PEYI, P_AHRS_RPYL, P_AHRS_APENV1, P_GENERIC } proto_t;
+typedef enum protocol_t  { P_OPENVARIO, P_BORGELT, P_CAMBRIDGE, P_EYE_PEYA, P_EYE_PEYI, P_AHRS_RPYL, P_AHRS_APENV1, P_GENERIC, P_XCVARIO } proto_t;
 
 
 class OpenVario {

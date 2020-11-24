@@ -40,8 +40,31 @@ void OpenVario::makeNMEA( proto_t proto, char* str, float baro, float dp, float 
 		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz  ){
 	if( !validTemp )
 		temp=0;
-
-	if( proto == P_OPENVARIO ) {
+	if( proto == P_XCVARIO ){
+		/*
+				Sentence has following format:
+				$PXCV,
+				BBB.B = Vario, -10 to +15 knots, negative sign for sink,
+				C.C = MacCready 0 to 8.0 knots,
+				EE = bugs degradation, 0 = clean to 30 %,
+				F.FF = Ballast 1.00 to 1.60,
+				G = 0 in climb, 1 in cruise,
+				HH = Outside airtemp in degrees celcius ( may have leading negative sign ),
+				QQQQ.Q = QNH e.g. 1013.2,
+				PPPP.P: static pressure in hPa,
+				QQQQ.Q: dynamic pressure in Pa,
+				RRR.R: roll angle,
+				III.I: pitch angle,
+				X.XX:   acceleration in X-Axis,
+				Y.YY:   acceleration in Y-Axis,
+				Z.ZZ:   acceleration in Z-Axis,
+				*CHK = standard NMEA checksum
+		*/
+		roll = IMU::getRoll();
+	   	pitch = IMU::getPitch();
+		sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%4.1f,%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", te, mc, bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
+	}
+	else if( proto == P_OPENVARIO ) {
 		sprintf(str,"$POV,P,%0.1f,Q,%0.1f,E,%0.1f,T,%0.1f",baro,dp,te,temp);
 	}
 	else if ( proto == P_BORGELT ) {
@@ -57,10 +80,6 @@ void OpenVario::makeNMEA( proto_t proto, char* str, float baro, float dp, float 
 		G = 0 in climb, 1 in cruise
 		HH = Outside airtemp in degrees celcius ( may have leading negative sign )
 		CHK = standard NMEA checksum
-		  // $PBB50,100,0,10,1,10000,0,1,0,20*4A..
-		  // $PBB50,0,.0,.0,0,0,1.07,0,-228*58
-		  // $PBB50,14,-.2,.0,196,0,.92,0,-228*71
-
 		 */
 		float iaskn = ias*0.539957;
 		sprintf(str,"$PBB50,%03d,%3.1f,%1.1f,%d,%d,%1.2f,%1d,%2d", (int)(tas*0.539957+0.5), te*1.94384, mc*1.94384, (int)((iaskn*iaskn)+0.5), bugs, (aballast+100)/100.0, cruise, (int)(temp+0.5) );
@@ -152,8 +171,8 @@ void OpenVario::makeNMEA( proto_t proto, char* str, float baro, float dp, float 
 
 void OpenVario::parseNMEA( char *str ){
 	ESP_LOGI(FNAME,"parseNMEA %s", str);
-	if ( nmea_protocol.get() == BORGELT ) {
-		ESP_LOGI(FNAME,"parseNMEA, BORGELT");
+	if ( strncmp( str, "!g,", 3 ) == 0 ) {
+		ESP_LOGI(FNAME,"parseNMEA, Cambridge C302 style command !g detected");
 		if (str[3] == 'b') {
 			ESP_LOGI(FNAME,"parseNMEA, BORGELT, ballast modification");
 			float aballast;

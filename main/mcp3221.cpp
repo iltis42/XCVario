@@ -71,12 +71,19 @@ int  MCP3221::readVal(){
 	for( int i=0; i<4; i++ ){
 		uint16_t as;
 		if( readRaw( as ) == ESP_OK ) {
-			if( abs( as - as_last) < 2500 ) {
-				retval += as;
-				samples++;
+			if( abs( as - as_last) > 2500 ) {
+				readRaw( as );
+				if( abs( as - as_last) > 2500 ){
+					ESP_LOGE(FNAME,"REREAD AS delta OOB dropped, cur:%04x  last:%04x", as, as_last );
+				}
+				else {
+					retval += as;
+					samples++;
+				}
 			}
 			else{
-				 ESP_LOGE(FNAME,"Airspeed delta out of bounds, cur:%d  last:%d", as, as_last );
+				retval += as;
+				samples++;
 			}
 			as_last = as;
 		}
@@ -98,12 +105,14 @@ int  MCP3221::readVal(){
 esp_err_t MCP3221::readRaw(uint16_t &val)
 {
 	// esp_err_t ret=read16bit( MCP3221_CONVERSE, &val );
-	uint8_t data[2];
-	esp_err_t err = bus->readBytes(MCP3221_CONVERSE, 0, 2, data );
+	// uint8_t data[2];
+	uint16_t v;
+	esp_err_t err = bus->read16bit(MCP3221_CONVERSE, &v );
 	if( err != ESP_OK ){
 		val = 0;
-	}else{
-		val = data[1] | (data[0] << 8 );
+	}
+	else{
+		val = v;
 	}
 
 	return( err );

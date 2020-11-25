@@ -141,7 +141,7 @@ float aoy=0;
 float aoz=0;
 
 // Gyro and acceleration sensor
-I2C_t& i2c                     = i2c0;  // i2c0 or i2c1
+I2C_t& i2c                     = i2c1;  // i2c0 or i2c1
 MPU_t MPU;         // create an object
 
 
@@ -174,7 +174,7 @@ void drawDisplay(void *pvParameters){
 			// ESP_LOGI(FNAME,"TE=%f %0.1f",TE,TE);
 			display.drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, aCl, Switch::cruiseMode(), standard_setting );
 		}
-		vTaskDelay(20);
+		vTaskDelay(20/portTICK_PERIOD_MS);
 		if( uxTaskGetStackHighWaterMark( dpid ) < 1024  )
 			ESP_LOGW(FNAME,"Warning drawDisplay stack low: %d bytes", uxTaskGetStackHighWaterMark( dpid ) );
 	}
@@ -263,14 +263,31 @@ void readBMP(void *pvParameters){
 					gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
 					// ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f  gyro X: %+.2f Y:%+.2f Z:%+.2f\n", -accelG[2], accelG[1], accelG[0] ,  gyroDPS.x, gyroDPS.y, gyroDPS.z);
 					bool goodAccl = true;
-					if( abs( accelG.x - accelG_Prev.x ) > 0.6 || abs( accelG.y - accelG_Prev.y ) > 0.6 || abs( accelG.z - accelG_Prev.z ) > 0.6 ) {
-						goodAccl = false;
-						ESP_LOGE(FNAME, "accel sensor out of bounds:  X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
+					if( abs( accelG.x - accelG_Prev.x ) > 0.4 || abs( accelG.y - accelG_Prev.y ) > 0.4 || abs( accelG.z - accelG_Prev.z ) > 0.4 ) {
+						// ESP_LOGE(FNAME, "accel sensor out of bounds:  X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
+						// ESP_LOGE(FNAME, "%04x %04x %04x", accelRaw.x, accelRaw.y, accelRaw.z );
+						MPU.acceleration(&accelRaw);
+						accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_4G);
+						if( abs( accelG.x - accelG_Prev.x ) > 0.4 || abs( accelG.y - accelG_Prev.y ) > 0.4 || abs( accelG.z - accelG_Prev.z ) > 0.4 ){
+							goodAccl = false;
+							ESP_LOGE(FNAME, "REREAD accel still out of bounds:  X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
+						}
+						// else
+						//    ESP_LOGE(FNAME, "REREAD, accel OKAY:  X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
+
 					}
 					bool goodGyro = true;
-					if( abs( gyroDPS.x - gyroDPS_Prev.x ) > 360 || abs( gyroDPS.y - gyroDPS_Prev.y ) > 360 || abs( gyroDPS.z - gyroDPS_Prev.z ) > 360 ) {
-						goodGyro = false;
-						ESP_LOGE(FNAME, "gyro sensor out of bounds: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
+					if( abs( gyroDPS.x - gyroDPS_Prev.x ) > 90 || abs( gyroDPS.y - gyroDPS_Prev.y ) > 90 || abs( gyroDPS.z - gyroDPS_Prev.z ) > 90 ) {
+						// ESP_LOGE(FNAME, "gyro sensor out of bounds: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
+						// ESP_LOGE(FNAME, "%04x %04x %04x", gyroRaw.x, gyroRaw.y, gyroRaw.z );
+						MPU.rotation(&gyroRaw);
+						gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);
+						if( abs( gyroDPS.x - gyroDPS_Prev.x ) > 90 || abs( gyroDPS.y - gyroDPS_Prev.y ) > 90 || abs( gyroDPS.z - gyroDPS_Prev.z ) > 90 ) {
+							goodGyro = false;
+							ESP_LOGE(FNAME, "REREAD gyro still out of bounds: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
+						}
+						// else
+						//	ESP_LOGE(FNAME, "REREAD, gyro OKAY: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
 					}
 					if( err == ESP_OK && goodAccl && goodGyro ) {
 						IMU::read();
@@ -305,7 +322,7 @@ void readBMP(void *pvParameters){
 					ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
 
 				btsender.send( lb );
-				vTaskDelay(2);
+				vTaskDelay(2/portTICK_PERIOD_MS);
 				xSemaphoreGive(xMutex);
 			}
 
@@ -354,13 +371,14 @@ void readTemp(void *pvParameters){
 				ESP_LOGW(FNAME,"Warning heap_caps_get_free_size getting low: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
 		}
 	}
+
 }
 
 void sensor(void *args){
 	bool selftestPassed=true;
 	int line = 1;
 	// i2c.begin(GPIO_NUM_21, GPIO_NUM_22, GPIO_PULLUP_ENABLE, GPIO_PULLUP_ENABLE );
-	i2c.begin(GPIO_NUM_21, GPIO_NUM_22, 400000 );
+	i2c.begin(GPIO_NUM_21, GPIO_NUM_22, 20000 );
 	MCP.setBus( &i2c );
 	gpio_set_drive_capability(GPIO_NUM_23, GPIO_DRIVE_CAP_1);
 	esp_wifi_set_mode(WIFI_MODE_NULL);
@@ -826,7 +844,7 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280BA, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
-	xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096*2, NULL, 10, bpid, 0);  // 20
+	xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096*2, NULL, 15, bpid, 0);  // 10
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 12000, NULL, 20, dpid, 0);  // 10
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 4096, NULL, 6, tpid, 0);
 

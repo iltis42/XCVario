@@ -70,7 +70,7 @@ const int   S2F_TRISIZE = 60; // triangle size quality up/down
 #define YALT (YS2F+S2FFONTH+HEADFONTH+GAP+2*MAXS2FTRI +22 )
 
 #define BATX (DISPLAY_W-15)
-#define BATY (DISPLAY_H-12)
+#define BATY (DISPLAY_H-15)
 #define LOWBAT  11.6    // 20%  -> 0%
 #define FULLBAT 12.8    // 100%
 
@@ -364,7 +364,7 @@ void IpsDisplay::drawAvg( float avclimb, float delta ){
 		ucg->drawTetragon( x+size, y, x,y+ylsize, x-size,y, x,y-yusize );
 	}
 	drawScaleLines( false );
-	drawAnalogScale(0, 132);
+	// drawAnalogScale(0, 132);
 	if( delta > 0 )
 		ucg->setColor( COLOR_GREEN );
 	else
@@ -600,7 +600,7 @@ void IpsDisplay::drawWkSymbol( int ypos, int xpos, int wk, int wkalt ){
 
 void IpsDisplay::drawMC( float mc, bool large ) {
 	ucg->setFont(ucg_font_fub11_hr);
-	ucg->setPrintPos(5,DISPLAY_H-8);
+	ucg->setPrintPos(5,DISPLAY_H-6);
 	ucg->setColor(COLOR_HEADER);
 	ucg->printf("MC:");
 	ucg->setPrintPos(5+ucg->getStrWidth("MC:"),DISPLAY_H-4);
@@ -653,7 +653,7 @@ void IpsDisplay::drawBT() {
 	if( btq != btqueue ){
 		if( blue_enable.get() ) {
 			ucg_int_t btx=DISPLAY_W-22;
-			ucg_int_t bty=BTH/2;
+			ucg_int_t bty=(BTH/2) + 8;
 			if( btq )
 				ucg->setColor( COLOR_MGREY );
 			else
@@ -734,15 +734,15 @@ void IpsDisplay::drawTemperature( int x, int y, float t ) {
 void IpsDisplay::drawTetragon( float a, int x0, int y0, int l1, int l2, int w, int r, int g, int b, bool del ){
 	float si=sin(a);
 	float co=cos(a);
-	int w2=w+1;
-	float xn_0 = x0-l1*co+w2*si;
-	float yn_0 = y0-l1*si-w2*co;
-	float xn_1 = x0-l1*co-w2*si;
-	float yn_1 = y0-l1*si+w2*co;
-	float xn_2 = x0-l2*co-w*si;
-	float yn_2 = y0-l2*si+w*co;
-	float xn_3 = x0-l2*co+w*si;
-	float yn_3 = y0-l2*si-w*co;
+	int w2=w;
+	int xn_0 = x0-l1*co+w2*si;
+	int yn_0 = y0-l1*si-w2*co;
+	int xn_1 = x0-l1*co-w2*si;
+	int yn_1 = y0-l1*si+w2*co;
+	int xn_2 = x0-l2*co-w2*si;
+	int yn_2 = y0-l2*si+w2*co;
+	int xn_3 = x0-l2*co+w2*si;
+	int yn_3 = y0-l2*si-w2*co;
 	// ESP_LOGI(FNAME,"IpsDisplay::drawTetragon  x0:%d y0:%d x1:%d y1:%d x2:%d y2:%d x3:%d y3:%d", (int)xn_0, (int)yn_0, (int)xn_1 ,(int)yn_1, (int)xn_2, (int)yn_2, (int)xn_3 ,(int)yn_3 );
 	if( del ) {  // cleanup previous incarnation
 		ucg->setColor(  COLOR_BLACK  );
@@ -769,7 +769,26 @@ void IpsDisplay::drawScaleLines( bool full ){
 	if( full )
 		lower = -(int)_range;
 	for( int a=lower; a<=(int)_range; a+=modulo ) {
-		drawTetragon( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 120, 140, 2, COLOR_WHITE, false );
+		int width=1;
+		int end=135;
+		int r = (int)_range;
+		if( a==0 || abs(a)==r ){
+			width=2;
+			end=140;
+		}
+		if((r%2) == 0) {
+			if(abs(a)==r/2){
+				width = 2;
+				end=140;
+			}
+		}
+		else{
+			if( abs(a) == (r-1)/2 ){
+				width = 2;
+				end=140;
+			}
+		}
+		drawTetragon( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 125, end, width, COLOR_WHITE, false );
 	}
 }
 
@@ -791,7 +810,7 @@ void IpsDisplay::initRetroDisplay(){
     int r = (int)_range;
 	drawAnalogScale(-r,150);
 	drawAnalogScale(r,150);
-	drawAnalogScale(0, 132);
+	// drawAnalogScale(0, 132);
 	if((r%2) == 0) {
 		drawAnalogScale(r/2,150);
 		drawAnalogScale(-r/2,155);
@@ -1001,16 +1020,27 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 		int alt = (int)(altitude+0.5);
 		if( alt != prefalt || !(tick%64) ) {
 			ucg->setColor(  COLOR_WHITE  );
-			ucg->setPrintPos(110,273);
+			ucg->setPrintPos(135,273);
 			ucg->setFont(ucg_font_fub20_hr);
+			char s[10];
+			int fl;
 			if( UNITALT == 0 ) { //m
-				ucg->printf("  %-4d m ", alt  );
+				sprintf(s,"%4d", alt );
+				fl=ucg->getStrWidth(s);
+				ucg->printf("%s  ", s  );
+				ucg->setPrintPos(135+fl,273);
+				ucg->printf(" m  ");
 			}
 			if( UNITALT == 1 ){ //feet
-				ucg->printf("  %-4d ft ", int((altitude*3.28084) + 0.5)  );
+				sprintf(s,"%4d", int((altitude*3.28084) + 0.5));
+				fl=ucg->getStrWidth(s);
+				ucg->printf("%s  ", s );
+				ucg->setPrintPos(135+fl,273);
+				ucg->printf(" ft  ");
 			}
 			if( UNITALT == 2 ){ //FL
-				ucg->printf("FL %-4d  ", int((altitude*0.0328084) + 0.5)  );
+				sprintf(s,"%4d", int((altitude*0.0328084) + 0.5) );
+				ucg->printf("FL %s  ", s  );
 			}
 			prefalt = alt;
 		}
@@ -1051,7 +1081,7 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 
 	// Cruise mode or circling
 	if( !(tick%11) ){
-		drawS2FMode( 180, 16, s2fmode );
+		drawS2FMode( 180, 20, s2fmode );
 	}
 
 	// Medium Climb Indicator

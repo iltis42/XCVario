@@ -68,12 +68,12 @@ int lastVal=0;
 int  MCP3221::readVal(){
 	int retval = 0;
 	int samples = 0;
-	for( int i=0; i<4; i++ ){
+	for( int i=0; i<8; i++ ){
 		uint16_t as;
 		if( readRaw( as ) == ESP_OK ) {
-			if( abs( as - as_last) > 2500 ) {
+			if( abs( as - as_last) > 1000 ) {
 				readRaw( as );
-				if( abs( as - as_last) > 2500 ){
+				if( abs( as - as_last) > 1000 ){
 					ESP_LOGE(FNAME,"REREAD AS delta OOB dropped, cur:%04x  last:%04x", as, as_last );
 				}
 				else {

@@ -144,18 +144,14 @@ float aoz=0;
 I2C_t& i2c                     = i2c1;  // i2c0 or i2c1
 MPU_t MPU;         // create an object
 
-
 void handleRfcommRx( char * rx, uint16_t len ){
 	ESP_LOGI(FNAME,"RFCOMM packet, %s, len %d %d", rx, len, strlen( rx ));
 }
-
 
 float getTAS() { return tas; };
 float getTE() { return TE; };
 
 BTSender btsender( handleRfcommRx  );
-
-
 bool lastAudioDisable = false;
 
 void drawDisplay(void *pvParameters){
@@ -264,17 +260,12 @@ void readBMP(void *pvParameters){
 					// ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f  gyro X: %+.2f Y:%+.2f Z:%+.2f\n", -accelG[2], accelG[1], accelG[0] ,  gyroDPS.x, gyroDPS.y, gyroDPS.z);
 					bool goodAccl = true;
 					if( abs( accelG.x - accelG_Prev.x ) > 0.4 || abs( accelG.y - accelG_Prev.y ) > 0.4 || abs( accelG.z - accelG_Prev.z ) > 0.4 ) {
-						// ESP_LOGE(FNAME, "accel sensor out of bounds:  X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
-						// ESP_LOGE(FNAME, "%04x %04x %04x", accelRaw.x, accelRaw.y, accelRaw.z );
 						MPU.acceleration(&accelRaw);
 						accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_4G);
 						if( abs( accelG.x - accelG_Prev.x ) > 0.4 || abs( accelG.y - accelG_Prev.y ) > 0.4 || abs( accelG.z - accelG_Prev.z ) > 0.4 ){
 							goodAccl = false;
-							ESP_LOGE(FNAME, "REREAD accel still out of bounds:  X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
+							ESP_LOGE(FNAME, "accelaration change >0.4 g in 0.2 S:  X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
 						}
-						// else
-						//    ESP_LOGE(FNAME, "REREAD, accel OKAY:  X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
-
 					}
 					bool goodGyro = true;
 					if( abs( gyroDPS.x - gyroDPS_Prev.x ) > 90 || abs( gyroDPS.y - gyroDPS_Prev.y ) > 90 || abs( gyroDPS.z - gyroDPS_Prev.z ) > 90 ) {
@@ -284,10 +275,8 @@ void readBMP(void *pvParameters){
 						gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);
 						if( abs( gyroDPS.x - gyroDPS_Prev.x ) > 90 || abs( gyroDPS.y - gyroDPS_Prev.y ) > 90 || abs( gyroDPS.z - gyroDPS_Prev.z ) > 90 ) {
 							goodGyro = false;
-							ESP_LOGE(FNAME, "REREAD gyro still out of bounds: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
+							ESP_LOGE(FNAME, "gyro angle >90 deg/s in 0.2 S: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
 						}
-						// else
-						//	ESP_LOGE(FNAME, "REREAD, gyro OKAY: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
 					}
 					if( err == ESP_OK && goodAccl && goodGyro ) {
 						IMU::read();
@@ -312,11 +301,11 @@ void readBMP(void *pvParameters){
 					OV.makeNMEA( P_EYE_PEYA, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature  );
 					btsender.send( lb );
 					OV.makeNMEA( P_EYE_PEYI, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-							     -accelG[2], accelG[1],accelG[0], gyroDPS.x+ox, gyroDPS.y+oy, gyroDPS.z+oz );
+							-accelG[2], accelG[1],accelG[0], gyroDPS.x+ox, gyroDPS.y+oy, gyroDPS.z+oz );
 				}
 				else if( nmea_protocol.get() == XCVARIO ) {
 					OV.makeNMEA( P_XCVARIO, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-							     -accelG[2], accelG[1],accelG[0], gyroDPS.x+ox, gyroDPS.y+oy, gyroDPS.z+oz );
+							-accelG[2], accelG[1],accelG[0], gyroDPS.x+ox, gyroDPS.y+oy, gyroDPS.z+oz );
 				}
 				else
 					ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
@@ -371,7 +360,6 @@ void readTemp(void *pvParameters){
 				ESP_LOGW(FNAME,"Warning heap_caps_get_free_size getting low: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
 		}
 	}
-
 }
 
 void sensor(void *args){
@@ -431,18 +419,15 @@ void sensor(void *args){
 	sleep(2);
 	bool doUpdate = software_update.get();
 	if( Rotary.readSwitch() ){
-			doUpdate = true;
-			ESP_LOGI(FNAME,"Rotary pressed: Do Software Update");
+		doUpdate = true;
+		ESP_LOGI(FNAME,"Rotary pressed: Do Software Update");
 	}
 
 	String btname="Bluetooth ID: ";
 	btname += SetupCommon::getID();
 	display.writeText(line++, btname.c_str() );
 
-
 	ESP_LOGI(FNAME,"Speed sensors init..");
-
-
 	int offset;
 	bool offset_plausible = false;
 	MS4525DO.begin( GPIO_NUM_21, GPIO_NUM_22 );  // sda, scl
@@ -622,8 +607,6 @@ void sensor(void *args){
 
 	esp_err_t err=ESP_ERR_NOT_FOUND;
 
-
-	// mpu = MPU.testConnection();  // test connection with the chip, return is a error code
 	if( attitude_indicator.get() ) {
 		MPU.setBus(i2c);  // set communication bus, for SPI -> pass 'hspi'
 		MPU.setAddr(mpud::MPU_I2CADDRESS_AD0_LOW);  // set address or handle, for SPI -> pass 'mpu_spi_handle'
@@ -707,7 +690,6 @@ void sensor(void *args){
 		if( !Rotary.readSwitch() )
 			sleep(2);
 	}
-	// sleep(1);
 
 	if( Rotary.readSwitch() )
 	{

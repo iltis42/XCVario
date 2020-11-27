@@ -1305,7 +1305,7 @@ void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_
 
 	int chargev = (int)( volt *10 );
 	if ( chargealt != chargev  ) {
-		drawBat( volt, BATX, BATY );
+		drawBat( volt, BATX, BATY+3 );
 		chargealt = chargev;
 	}
 

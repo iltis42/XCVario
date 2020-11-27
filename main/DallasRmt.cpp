@@ -57,14 +57,14 @@ DallasRmt::~DallasRmt()
 
 void DallasRmt::begin(void)
 {
-	ESP_LOGI(FNAME, "begin");
+	ESP_LOGD(FNAME, "begin");
     DeviceAddress deviceAddress;
     _ow->reset_search();
     _devices = 0; // Reset the number of devices when we enumerate wire devices
 
     while (_ow->search(deviceAddress)) {
         if (validAddress(deviceAddress)) {
-        	ESP_LOGI(FNAME, "new device found on OW bus");
+        	ESP_LOGD(FNAME, "new device found on OW bus");
             if (!_parasite && readPowerSupply(deviceAddress)) {
                 _parasite = true;
             }
@@ -303,7 +303,7 @@ bool DallasRmt::setResolution(const uint8_t* deviceAddress, uint8_t newResolutio
 
 void DallasRmt::requestTemperatures()
 {
-	ESP_LOGD(FNAME,"requestTemperatures()");
+	ESP_LOGD(FNAME,"requestTemperatures() %d", _parasite );
     _ow->reset();
     _ow->skip();
     _ow->write(STARTCONVO, _parasite);
@@ -456,12 +456,15 @@ int16_t DallasRmt::calculateTemperature(const uint8_t* deviceAddress, uint8_t* s
 
 void DallasRmt::blockTillConversionComplete(uint8_t bitResolution)
 {
+	ESP_LOGD(FNAME,"blockTillConversionComplete()");
     uint32_t delms = 1000 * millisToWaitForConversion(bitResolution);
+    ESP_LOGD(FNAME,"delms = %d", delms );
     if (_checkForConversion && !_parasite) {
         uint64_t now = xTaskGetTickCount(); // get_time_since_boot(); //millis();
-        while (!isConversionComplete() && (xTaskGetTickCount() - delms < now));
-    } else {
-    	 vTaskDelay( delms/1000 / portTICK_PERIOD_MS);
+        while(!isConversionComplete() && (xTaskGetTickCount() - delms < now) ){
+        	ESP_LOGD(FNAME,"blockTillConversionComplete(): wait");
+        	vTaskDelay( ((delms/100)+50) / portTICK_PERIOD_MS);
+        }
     }
 }
 

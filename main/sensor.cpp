@@ -836,6 +836,7 @@ void sensor(void *args){
 		if( i != 23 && i < 6 && i > 12  )
 			gpio_set_drive_capability((gpio_num_t)i, GPIO_DRIVE_CAP_1);
 	}
+	gpio_set_drive_capability(GPIO_NUM_23, GPIO_DRIVE_CAP_2);
 	vTaskDelete( NULL );
 
 }

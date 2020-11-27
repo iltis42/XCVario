@@ -167,7 +167,7 @@ void drawDisplay(void *pvParameters){
 				airspeed = ias;
 			else if( airspeed_mode.get() == MODE_TAS )
 				airspeed = tas;
-			// ESP_LOGI(FNAME,"TE=%f %0.1f",TE,TE);
+			// ESP_LOGI(FNAME,"airseed=%f ",airspeed );
 			display.drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, aCl, Switch::cruiseMode(), standard_setting );
 		}
 		vTaskDelay(20/portTICK_PERIOD_MS);
@@ -197,6 +197,7 @@ void readBMP(void *pvParameters){
 		}
 
 		float iasraw = ( MP5004DP.pascal2km( dynamicP ) );
+		// ESP_LOGI("FNAME","P: %f  IAS:%f", dynamicP, iasraw );
 		float T=temperature;
 		if( !validTemperature ) {
 			T= 15 - ( (alt/100) * 0.65 );
@@ -206,6 +207,7 @@ void readBMP(void *pvParameters){
 		if( baroP != 0 )
 			tasraw = iasraw * sqrt( 1.225 / ( baroP*100.0 / (287.058 * (273.15+T) ) ) );  // True airspeed
 		ias = ias + (iasraw - ias)*0.25;  // low pass filter
+		// ESP_LOGI("FNAME","P: %f  IAS:%f IASF: %d", dynamicP, iasraw, ias );
 		tas += (tasraw-tas)*0.25;       // low pass filter
 		// ESP_LOGI(FNAME,"IAS=%f, T=%f, TAS=%f baroP=%f", ias, T, tas, baroP );
 		Audio.setValues( TE, s2f_delta, ias );
@@ -349,9 +351,9 @@ void readTemp(void *pvParameters){
 				}
 				temperature = t;
 			}
-			// ESP_LOGI(FNAME,"temperature=%f", temperature );
+			ESP_LOGV(FNAME,"temperature=%f", temperature );
 		}
-		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS);
 
 		if( (ttick++ % 100) == 0) {
 			if( uxTaskGetStackHighWaterMark( tpid ) < 1024 )
@@ -836,7 +838,6 @@ void sensor(void *args){
 		if( i != 23 && i < 6 && i > 12  )
 			gpio_set_drive_capability((gpio_num_t)i, GPIO_DRIVE_CAP_1);
 	}
-	gpio_set_drive_capability(GPIO_NUM_23, GPIO_DRIVE_CAP_2);
 	vTaskDelete( NULL );
 
 }

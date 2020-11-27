@@ -41,7 +41,7 @@
 DallasRmt::DallasRmt( OnewireRmt* ow )
 {	  _ow = ow;
 	  _parasite = false;
-	  _bitResolution = 9;
+	  _bitResolution = 10;
 	  _waitForConversion = true;
 	  _checkForConversion = true;
 }
@@ -124,12 +124,22 @@ bool DallasRmt::isConnected(const uint8_t* deviceAddress)
 
 // attempt to determine if the device at the given address is connected to the bus
 // also allows for updating the read scratchpad
+int errors=0;
 
 bool DallasRmt::isConnected(const uint8_t* deviceAddress, uint8_t* scratchPad)
 {
     bool b = readScratchPad(deviceAddress, scratchPad);
-    bool crc = (_ow->crc8(scratchPad, 8) == scratchPad[SCRATCHPAD_CRC]);
-    if( crc && b ){
+    if( !b ) {
+    	ESP_LOGW(FNAME,"T Sensor read retured error");
+    	return false;
+    }
+    int cs = _ow->crc8(scratchPad, 8);
+    bool crc = true;
+    if( scratchPad[SCRATCHPAD_CRC] != cs ) {
+    	crc = false;
+    	ESP_LOGW(FNAME,"T Sensor checksum error %d != %d errors: %d", cs, scratchPad[SCRATCHPAD_CRC], errors++ );
+    }
+    if( crc ){
     	if( _is_connected )   // suppress the first power value of 85 deg
     		return true;
     	else{
@@ -240,6 +250,7 @@ uint8_t DallasRmt::getResolution(const uint8_t* deviceAddress)
 
 void DallasRmt::setResolution(uint8_t newResolution)
 {
+	ESP_LOGI(FNAME, "setResolution: %d", newResolution);
     _bitResolution = (newResolution < 9) ? 9 : (newResolution > 12 ? 12 : newResolution);
     DeviceAddress deviceAddress;
     for (int i = 0; i < _devices; i++) {
@@ -456,14 +467,14 @@ int16_t DallasRmt::calculateTemperature(const uint8_t* deviceAddress, uint8_t* s
 
 void DallasRmt::blockTillConversionComplete(uint8_t bitResolution)
 {
-	ESP_LOGD(FNAME,"blockTillConversionComplete()");
+	ESP_LOGD(FNAME,"blockTillConversionComplete() %d",bitResolution );
     uint32_t delms = 1000 * millisToWaitForConversion(bitResolution);
     ESP_LOGD(FNAME,"delms = %d", delms );
     if (_checkForConversion && !_parasite) {
         uint64_t now = xTaskGetTickCount(); // get_time_since_boot(); //millis();
         while(!isConversionComplete() && (xTaskGetTickCount() - delms < now) ){
-        	ESP_LOGD(FNAME,"blockTillConversionComplete(): wait");
-        	vTaskDelay( ((delms/100)+50) / portTICK_PERIOD_MS);
+        	ESP_LOGD(FNAME,"blockTillConversionComplete(): wait res:%d", bitResolution );
+        	vTaskDelay( ((delms/1000)+20) / portTICK_PERIOD_MS);
         }
     }
 }

@@ -134,7 +134,7 @@ private:
 	static void drawCircling( int x, int y, bool draw );
 	static void drawCruise( int x, int y, bool draw );
 	static void drawBT();
-	static void drawBat( float volt );
+	static void drawBat( float volt, int x, int y );
 	static void drawTemperature( int x, int y, float t );
 	static void drawThermometer( int x, int y );
 	static void drawTetragon( float a, int x0, int y0, int l1, int l2, int w, int r, int g, int b, bool del=true );

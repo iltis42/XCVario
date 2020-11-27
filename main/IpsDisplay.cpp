@@ -671,7 +671,7 @@ void IpsDisplay::drawBT() {
 	}
 }
 
-void IpsDisplay::drawBat( float volt ) {
+void IpsDisplay::drawBat( float volt, int x, int y ) {
 	charge = (int)(( volt -  bat_low_volt.get() )*100)/( bat_full_volt.get() - bat_low_volt.get() );
 	if(charge < 0)
 		charge = 0;
@@ -683,8 +683,8 @@ void IpsDisplay::drawBat( float volt ) {
 		red = (int)(( bat_red_volt.get() - bat_low_volt.get() )*100)/( bat_full_volt.get() - bat_low_volt.get() );
 	}
 	ucg->setColor( COLOR_WHITE );
-	ucg->drawBox( BATX-40,BATY-2, 36, 12  );  // Bat body square
-	ucg->drawBox( BATX-4, BATY+1, 3, 6  );      // Bat pluspole pimple
+	ucg->drawBox( x-40,y-2, 36, 12  );  // Bat body square
+	ucg->drawBox( x-4, y+1, 3, 6  );      // Bat pluspole pimple
 	if ( charge > yellow )  // >25% grün
 		ucg->setColor( COLOR_GREEN ); // green
 	else if ( charge < yellow && charge > red )
@@ -696,23 +696,23 @@ void IpsDisplay::drawBat( float volt ) {
 	int chgpos=(charge*32)/100;
 	if(chgpos <= 4)
 		chgpos = 4;
-	ucg->drawBox( BATX-40+2,BATY, chgpos, 8  );  // Bat charge state
+	ucg->drawBox( x-40+2,y, chgpos, 8  );  // Bat charge state
 	ucg->setColor( DARK_GREY );
-	ucg->drawBox( BATX-40+2+chgpos,BATY, 32-chgpos, 8 );  // Empty bat bar
+	ucg->drawBox( x-40+2+chgpos,y, 32-chgpos, 8 );  // Empty bat bar
 	ucg->setColor( COLOR_WHITE );
 	ucg->setFont(ucg_font_fub11_hr);
-	ucg->setPrintPos(BATX-40,BATY-7);
+	ucg->setPrintPos(x-40,y-7);
 	if( battery_display.get() == 0 )
 		ucg->printf("%3d%%  ", charge);
 	else {
-		ucg->setPrintPos(BATX-50,BATY-8);
+		ucg->setPrintPos(x-50,y-8);
 		ucg->printf("%2.1f V", volt);
 	}
 
 	if( charge < red ) {  // blank battery for blinking
 		if( (tick%100) == 0 ) {
 			ucg->setColor( COLOR_BLACK );
-			ucg->drawBox( BATX-40,BATY-2, 40, 12  );
+			ucg->drawBox( x-40,y-2, 40, 12  );
 		}
 		if( ((tick+50)%100) == 0 )  // trigger redraw
 		{
@@ -1049,7 +1049,7 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 	// Battery
 	int chargev = (int)( volt *10 );
 	if ( chargealt != chargev  ) {
-		drawBat( volt );
+		drawBat( volt, BATX, BATY );
 		chargealt = chargev;
 	}
 
@@ -1305,7 +1305,7 @@ void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_
 
 	int chargev = (int)( volt *10 );
 	if ( chargealt != chargev  ) {
-		drawBat( volt );
+		drawBat( volt, BATX, BATY );
 		chargealt = chargev;
 	}
 

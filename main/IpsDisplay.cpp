@@ -762,13 +762,15 @@ void IpsDisplay::drawTetragon( float a, int x0, int y0, int l1, int l2, int w, i
 }
 
 void IpsDisplay::drawScaleLines( bool full ){
-	int modulo=1;
+	float modulo=1;
 	if( _range > 10 )
 		modulo = 2;
+	if( _range < 5 )
+		modulo = 0.5;
 	int lower = 0;
 	if( full )
 		lower = -(int)_range;
-	for( int a=lower; a<=(int)_range; a+=modulo ) {
+	for( float a=lower; a<=(int)_range; a+=modulo ) {
 		int width=1;
 		int end=135;
 		int r = (int)_range;
@@ -777,13 +779,19 @@ void IpsDisplay::drawScaleLines( bool full ){
 			end=140;
 		}
 		if((r%2) == 0) {
-			if(abs(a)==r/2){
+			if(abs(a)==r/2){  // half scale big line
 				width = 2;
 				end=140;
 			}
 		}
 		else{
-			if( abs(a) == (r-1)/2 ){
+			if( abs(a) == (r-1)/2 ){  // half scale minus one for even ranges big line
+				width = 2;
+				end=140;
+			}
+		}
+		if( modulo < 1 ){
+			if( fmod(a,1) == 0 ){  // every integer big line
 				width = 2;
 				end=140;
 			}

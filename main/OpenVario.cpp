@@ -44,8 +44,8 @@ void OpenVario::makeNMEA( proto_t proto, char* str, float baro, float dp, float 
 		/*
 				Sentence has following format:
 				$PXCV,
-				BBB.B = Vario, -10 to +15 knots, negative sign for sink,
-				C.C = MacCready 0 to 8.0 knots,
+				BBB.B = Vario, -30 to +30 m/s, negative sign for sink,
+				C.C = MacCready 0 to 10 m/s
 				EE = bugs degradation, 0 = clean to 30 %,
 				F.FF = Ballast 1.00 to 1.60,
 				G = 0 in climb, 1 in cruise,

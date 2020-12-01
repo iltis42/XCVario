@@ -6,6 +6,7 @@
 
 OnewireRmt::OnewireRmt(gpio_num_t pin, rmt_channel_t rmt_rx, rmt_channel_t rmt_tx)
 {
+	ESP_LOGI(FNAME,"OnewireRmt::OnewireRmt");
     _ow = onewire_rmt_create(pin,rmt_rx,rmt_tx);
 }
 

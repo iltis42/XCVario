@@ -22,10 +22,14 @@ extern xSemaphoreHandle nvMutex;
 
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
 
-#define QUEUE_SIZE 5
+
+RingBufCPP<SString, QUEUE_SIZE> tcpvariobuf;
+RingBufCPP<SString, QUEUE_SIZE> tcpflarmbuf;
 RingBufCPP<SString, QUEUE_SIZE> btbuf;
 RingBufCPP<SString, QUEUE_SIZE> ser1txbuf;
 RingBufCPP<SString, QUEUE_SIZE> ser2txbuf;
+
+extern RingBufCPP<SString, QUEUE_SIZE> tcprxbuf;
 
 #define RXBUFLEN (SSTRLEN-2)
 char rxBuffer[RXBUFLEN];
@@ -55,12 +59,22 @@ int BTSender::queueFull() {
 }
 
 void BTSender::send(char * s){
-	ESP_LOGD( FNAME,"XCVario TX %s",s);
+	// ESP_LOGI( FNAME,"XCVario TX %s",s);
 	if ( !btbuf.isFull() && blue_enable.get() ) {   // bluetooth enabled (if yes sent XCVario data)
 		portENTER_CRITICAL_ISR(&btmux);
 		btbuf.add( s );
 		portEXIT_CRITICAL_ISR(&btmux);
 	}
+	if( !tcpvariobuf.isFull() ) {
+		portENTER_CRITICAL_ISR(&btmux);
+		tcpvariobuf.add( s );
+		portEXIT_CRITICAL_ISR(&btmux);
+	}
+	else
+	{
+		// ESP_LOGW( FNAME,"XCVario TX dropped, FULL buf: %s",s);
+	}
+
 	if( serial1_tx.get() & 1 ){         //  XCVario data enabled for ttyS1 ?
 		portENTER_CRITICAL_ISR(&btmux);
 		SString S;
@@ -235,7 +249,7 @@ void serialHandler1(void *pvParameters){
 		serialRx.clear();
 		int num = Serial1.available();
 		if( num > 0 ) {
-			// ESP_LOGD(FNAME,"Serial 1 RX avail %d bytes", num );
+			// ESP_LOGI(FNAME,"Serial 1 RX avail %d bytes", num );
 			if( num >= RXBUFLEN ) {
 				ESP_LOGW(FNAME,"Serial 1 Overrun RX >= %d bytes avail: %d, Bytes", RXBUFLEN, num);
 				num=RXBUFLEN;
@@ -244,6 +258,12 @@ void serialHandler1(void *pvParameters){
 			ESP_LOGD(FNAME,"Serial 1 RX bytes read: %d", numread );
 			// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuffer,numread, ESP_LOG_INFO);
 			serialRx.addl( rxBuffer, numread );
+			if( !tcpflarmbuf.isFull() ){
+				ESP_LOGD(FNAME,"Serial 1 RX bytes read: %d add to tcpflarmbuf", numread );
+				portENTER_CRITICAL_ISR(&btmux);
+				tcpflarmbuf.add( serialRx );
+				portEXIT_CRITICAL_ISR(&btmux);
+			}
 		}
 		// ESP_LOGD(FNAME,"serial RX len: %d", serialRx.length() );
 		if (serialRx.length() > 0) {
@@ -260,18 +280,27 @@ void serialHandler1(void *pvParameters){
 				ESP_LOGD(FNAME,"serial 1 RX bt buffer overrun");
 
 			if( !ser1txbuf.isFull() && serial1_rxloop.get() & 1 ) {
-				ESP_LOGD(FNAME,"Send to ttyS1 TX device RX looped %d bytes", serialRx.length() );
+				ESP_LOGD(FNAME,"Send to ttyS1 TX device looped %d bytes from ttyS1 RX", serialRx.length() );
 				portENTER_CRITICAL_ISR(&btmux);
 				ser1txbuf.add( serialRx );
 				portEXIT_CRITICAL_ISR(&btmux);
 			}
-
 			if( !ser2txbuf.isFull() && serial1_rxloop.get() & 2 ) {
-				ESP_LOGD(FNAME,"Send to ttyS2 TX device RX looped %d bytes", serialRx.length() );
+				ESP_LOGD(FNAME,"Send to ttyS2 device RX looped %d bytes from ttyS2 RX", serialRx.length() );
 				portENTER_CRITICAL_ISR(&btmux);
 				ser2txbuf.add( serialRx );
 				portEXIT_CRITICAL_ISR(&btmux);
 			}
+		}
+		// Check if there is data from TCP and forward to serial port
+		// ESP_LOGI(FNAME,"TTYS1 buf-free:%d toSend:%d ena:%d", !ser1txbuf.isFull(), !tcprxbuf.isEmpty(), serial1_tx.get() & 2  );
+		if(!ser1txbuf.isFull() && !tcprxbuf.isEmpty() && serial1_tx.get() & 2 ) {
+			SString tcp;
+			ESP_LOGI(FNAME,"Send to ttyS1 device, TCP received %d bytes", tcp.length() );
+			portENTER_CRITICAL_ISR(&btmux);
+			tcprxbuf.pull( &tcp );
+			ser1txbuf.add( tcp );
+			portEXIT_CRITICAL_ISR(&btmux);
 		}
 		if (rfcomm_channel_id ){
 			if ( !btbuf.isEmpty() ){
@@ -353,11 +382,11 @@ void serialHandler2(void *pvParameters){
 void BTSender::begin(){
 	ESP_LOGI(FNAME,"BTSender::begin()" );
 
-	hci_dump_enable_log_level( ESP_LOG_INFO, 1 );
-	hci_dump_enable_log_level( ESP_LOG_ERROR, 1 );
-	hci_dump_enable_log_level( ESP_LOG_WARN, 1 );
-	hci_dump_enable_log_level( ESP_LOG_DEBUG, 0 );
 	if( blue_enable.get() ) {
+		hci_dump_enable_log_level( ESP_LOG_INFO, 1 );
+		hci_dump_enable_log_level( ESP_LOG_ERROR, 1 );
+		hci_dump_enable_log_level( ESP_LOG_WARN, 1 );
+		hci_dump_enable_log_level( ESP_LOG_DEBUG, 0 );
 		l2cap_init();
 		le_device_db_init();   // new try 28-09
 		rfcomm_init();

@@ -53,7 +53,7 @@ static esp_err_t event_handler(void *ctx, system_event_t *event)
 		case SYSTEM_EVENT_STA_AUTHMODE_CHANGE:	printf("SYSTEM_EVENT_STA_AUTHMODE_CHANGE\r\n");	break;      /**< the auth mode of AP connected by ESP32 station changed */
 		case SYSTEM_EVENT_STA_GOT_IP:			/**< ESP32 station got IP from connected AP */
 												printf("SYSTEM_EVENT_STA_GOT_IP\r\n");
-												ESP_LOGI("WiFI", "got ip:%s",	ip4addr_ntoa(&event->event_info.got_ip.ip_info.ip));
+												ESP_LOGI("WiFI", "got ip:%s",	ip4addr_ntoa((const struct ip4_addr *)&event->event_info.got_ip.ip_info.ip));
 												xEventGroupSetBits(wifi_event_group, WIFI_STA_CONNECTED_BIT);
 												/* Start the web server */
 												if (*server == NULL) 
@@ -168,7 +168,7 @@ void printStationList(void)
 				station.mac[3],
 				station.mac[4],
 				station.mac[5],
-				ip4addr_ntoa(&(station.ip)));
+				ip4addr_ntoa( (const struct ip4_addr *)&(station.ip) ) );
 		}
 
 		printf("\r\n");

@@ -5,6 +5,8 @@
 #ifndef __BTSENDER_H__
 #define __BTSENDER_H__
 
+#define QUEUE_SIZE 5
+
 class BTSender {
 public:
   BTSender( void (* cb)(char * rx, uint16_t len )  ) {

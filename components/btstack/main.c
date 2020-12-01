@@ -359,12 +359,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 }
 
-extern int btstack_main(int argc, const char * argv[]);
+// extern int btstack_main(int argc, const char * argv[]);
 
 // main
-int app_main(void){
-
-    printf("BTstack: setup\n");
+void btstack_app(void* ignore){
+    printf("BTstack: btstack_app\n");
 
     // enable packet logger
     // hci_dump_open(NULL, HCI_DUMP_STDOUT);
@@ -394,10 +393,10 @@ int app_main(void){
     // setup i2s audio sink
     btstack_audio_sink_set_instance(btstack_audio_esp32_sink_get_instance());
 
-    btstack_main(0, NULL);
+    // btstack_main(0, NULL);
 
     printf("BTstack: execute run loop\n");
     btstack_run_loop_execute();
-    return 0;
+    // return 0;
 }
 

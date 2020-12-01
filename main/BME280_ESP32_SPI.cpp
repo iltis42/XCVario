@@ -379,7 +379,7 @@ uint16_t BME280_ESP32_SPI::read16bit(uint8_t reg) {
 	digitalWrite(_cs, HIGH);
 	SPI.endTransaction();
 	xSemaphoreGive(spiMutex);
-	ESP_LOGI(FNAME,"read 16bit: %04x", data );
+	ESP_LOGV(FNAME,"read 16bit: %04x", data );
 	return data;
 }
 

@@ -48,6 +48,7 @@
 #include "mpu/types.hpp"  // MPU data types and definitions
 #include "I2Cbus.hpp"
 #include "KalmanMPU6050.h"
+#include "WifiApp.h"
 
 // #include "sound.h"
 
@@ -181,6 +182,7 @@ mpud::raw_axes_t accelRawPrev;     // holds x, y, z axes as int16
 mpud::raw_axes_t gyroRawPrev;      // holds x, y, z axes as int16
 
 
+
 void readBMP(void *pvParameters){
 	while (1)
 	{
@@ -311,7 +313,6 @@ void readBMP(void *pvParameters){
 				}
 				else
 					ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
-
 				btsender.send( lb );
 				vTaskDelay(2/portTICK_PERIOD_MS);
 				xSemaphoreGive(xMutex);
@@ -364,8 +365,13 @@ void readTemp(void *pvParameters){
 	}
 }
 
+bool init_done=false;
+
 void sensor(void *args){
 	bool selftestPassed=true;
+	if( init_done )
+		ESP_LOGI( FNAME, "sensor init already called");
+	init_done=true;
 	int line = 1;
 	// i2c.begin(GPIO_NUM_21, GPIO_NUM_22, GPIO_PULLUP_ENABLE, GPIO_PULLUP_ENABLE );
 	i2c.begin(GPIO_NUM_21, GPIO_NUM_22, 20000 );
@@ -386,14 +392,13 @@ void sensor(void *args){
 	ESP_LOGI( FNAME,"%dMB %s flash\n", spi_flash_get_chip_size() / (1024 * 1024),
 			(chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 
-	ESP_LOGI(FNAME,"Now init all Setup elements");
-	SetupCommon::initSetup();
+
 	ESP_LOGI(FNAME, "QNH->get() %f", QNH.get() );
 	ESP_LOGI( FNAME, "Hardware revision detected %d", hardwareRevision.get() );
 	NVS.begin();
-	btsender.begin();
+
 	ADC.begin();  // for battery voltage
-	// sleep( 1 );
+
 
 	xMutex=xSemaphoreCreateMutex();
 	uint8_t t_sb = 0;   //stanby 0: 0,5 mS 1: 62,5 mS 2: 125 mS
@@ -460,6 +465,8 @@ void sensor(void *args){
 			ESP_LOGI(FNAME,"Using speed sensor MP3V5004DP type, current speed=%f", ias );
 		}
 	}
+
+
 	if( as_sensor==SENSOR_NONE ){
 		ESP_LOGE(FNAME,"Error with air speed pressure sensor, now working sensor found");
 		display.writeText( line++, "AS Sensor: NOT FOUND");
@@ -485,11 +492,12 @@ void sensor(void *args){
 			logged_tests += "AS Sensor offset test: PASSED\n";
 		}
 	}
-
+	ESP_LOGI(FNAME,"Now start T sensor test");
 	sleep( 1 );
 	// Temp Sensor test
 	ds18b20.begin();
 	temperature = ds18b20.getTemp();
+	ESP_LOGI(FNAME,"End T sensor test");
 	if( temperature == DEVICE_DISCONNECTED_C ) {
 		ESP_LOGE(FNAME,"Error: Self test Temperatur Sensor failed; returned T=%2.2f", temperature );
 		display.writeText( line++, "Temp Sensor: NOT FOUND");
@@ -504,7 +512,6 @@ void sensor(void *args){
 
 	}
 	ESP_LOGI(FNAME,"BMP280 sensors init..");
-
 
 	bmpBA.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
 	bmpTE.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
@@ -596,6 +603,7 @@ void sensor(void *args){
 	}
 
 	sleep( 0.5 );
+	btsender.begin();  // at least serial init: TBD: rename and split BT part
 	if( blue_enable.get() ) {
 		if( btsender.selfTest() ){
 			display.writeText( line++, "Bluetooth: OK");
@@ -605,7 +613,10 @@ void sensor(void *args){
 			display.writeText( line++, "Bluetooth: FAILED");
 			logged_tests += "Bluetooth test: FAILED\n";
 		}
+	}else{
+		wifi_init_softap();
 	}
+
 
 	esp_err_t err=ESP_ERR_NOT_FOUND;
 
@@ -838,11 +849,28 @@ void sensor(void *args){
 		if( i != 23 && i < 6 && i > 12  )
 			gpio_set_drive_capability((gpio_num_t)i, GPIO_DRIVE_CAP_1);
 	}
+	// vTaskDelete( NULL );
+
+}
+
+extern "C" void btstack_app(void *ignore);
+
+extern "C" void  app_main(void){
+	ESP_LOGI(FNAME,"app_main" );
+	ESP_LOGI(FNAME,"Now init all Setup elements");
+	SetupCommon::initSetup();
+	// xTaskCreatePinnedToCore(&sensor, "sensor", 8192, NULL, 25, 0, 0);
+	// sleep( 2 );
+	if( blue_enable.get() ) {
+		ESP_LOGI(FNAME,"start btstack task");
+		xTaskCreatePinnedToCore(&btstack_app, "btstack_app", 4096, NULL, 25, 0, 0);
+		sleep( 2 );
+	}
+	// sleep( 10 );
+	sensor( 0 );
+
 	vTaskDelete( NULL );
-
 }
 
-extern "C" int btstack_main(int argc, const char * argv[]){
-	xTaskCreatePinnedToCore(&sensor, "sensor", 8192, NULL, 25, 0, 0);
-	return 0;
-}
+
+

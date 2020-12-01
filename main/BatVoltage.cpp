@@ -17,6 +17,7 @@
 
 #define DIODE_VOLTAGE_DROP 0        // New Vario now measures behind Diode
 
+portMUX_TYPE batmux = portMUX_INITIALIZER_UNLOCKED;
 
 BatVoltage::BatVoltage() {
   _battery = 0;
@@ -49,10 +50,12 @@ void BatVoltage::begin( adc1_channel_t battery, adc1_channel_t reference ) {
 
 float BatVoltage::getBatVoltage( bool init ){
 	float adc = 0.0;
-	for( int i=0; i<1000; i++ ) {
+	portENTER_CRITICAL_ISR(&batmux);
+	for( int i=0; i<100; i++ ) {
 	   adc += adc1_get_raw( _battery_ch );
 	}
-	adc = adc/1000.0;
+	portEXIT_CRITICAL_ISR(&batmux);
+	adc = adc/100.0;
 	uint32_t voltage = esp_adc_cal_raw_to_voltage( (int)(adc+0.5), adc_chars);
     // ESP_LOGI(FNAME,"Voltage %d", voltage);
 

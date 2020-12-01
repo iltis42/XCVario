@@ -422,7 +422,7 @@ bool ESPAudio::selfTest(){
 
 	dac_output_enable(_ch);
 	for( float f=261.62; f<1046.51; f=f*1.03){
-		ESP_LOGI(FNAME,"f=%f",f);
+		ESP_LOGV(FNAME,"f=%f",f);
 		Audio.dac_frequency_set(clk_8m_div, int(f/freq_step) );
 		delay(30);
 		esp_task_wdt_reset();

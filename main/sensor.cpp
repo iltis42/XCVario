@@ -601,9 +601,8 @@ void sensor(void *args){
 		display.writeText( line++, "Bat Sensor: OK");
 		logged_tests += "Battery Voltage Sensor: PASSED\n";
 	}
-
-	sleep( 0.5 );
 	btsender.begin();  // at least serial init: TBD: rename and split BT part
+	sleep( 2 );
 	if( blue_enable.get() ) {
 		if( btsender.selfTest() ){
 			display.writeText( line++, "Bluetooth: OK");

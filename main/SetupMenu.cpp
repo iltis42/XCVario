@@ -943,21 +943,17 @@ void SetupMenu::setup( )
 
 		SetupMenuSelect * s1in = new SetupMenuSelect( PROGMEM "Serial Loops", 0, false, 0, true, &serial1_rxloop );
 		rs232->addMenu( s1in );
-		s1in->setHelp( "Option to loop serial RX to ttyS1 TX port, e.g. for unidirectional OV or Kobo connection" );
-		s1in->addEntry( "Disable");          // 0
-		s1in->addEntry( "Enable ttyS1 RX");  // 1
-		if( hardwareRevision.get() >= 3 )
-			s1in->addEntry( "Enable ttyS2 RX");  // 2
-
+		s1in->setHelp( "Option to loop serial ttyS1 RX to ttyS1 TX, e.g. for unidirectional OV or Kobo connection" );
+		s1in->addEntry( "Disable");     // 0
+		s1in->addEntry( "Enable");      // 1
 
 		SetupMenuSelect * s1out = new SetupMenuSelect( PROGMEM "Serial Routing", 0, false, 0, true, &serial1_tx );
 		rs232->addMenu( s1out );
 		s1out->setHelp( "Select devices routed to serial interface ttyS1");
 		s1out->addEntry( "Disable all");
 		s1out->addEntry( "XCVario");                 // 1    XCVario NMEA Data
-		s1out->addEntry( "Bluetooth-XCSoar");      // 2    XCSoar Data
-		s1out->addEntry( "BT-XCSoar, XCVario");      // 3
-
+		s1out->addEntry( "Wireless-XCSoar");         // 2    XCSoar Data
+		s1out->addEntry( "WL-XCSoar, XCVario");      // 3
 
 		SetupMenuSelect * stxi = new SetupMenuSelect( PROGMEM "Serial TX Inversion", 0, true , 0, true, &serial1_tx_inverted );
 		rs232->addMenu( stxi );
@@ -989,9 +985,12 @@ void SetupMenu::setup( )
 			rs232_2->addMenu( s1out2 );
 			s1out2->setHelp( "Select devices routed to serial interface ttyS2");
 			s1out2->addEntry( "Disable all");
-			s1out2->addEntry( "XCVario");                     // 1    XCVario NMEA Data bidir
-			s1out2->addEntry( "Bluetooth-XCSoar");               // 2    XCSoar Data bidir
-			s1out2->addEntry( "BT-XCSoar, XCVario");      // 3
+			s1out2->addEntry( "XCVario");                       // 1    XCVario NMEA Data bidir
+			s1out2->addEntry( "Wireless-XCSoar");               // 2    XCSoar Data bidir
+			s1out2->addEntry( "WL-XCSoar, XCVario");            // 3
+			s1out2->addEntry( "ttyS1");                         // 4
+			s1out2->addEntry( "XCVARIO, ttyS1");                // 5
+
 
 			SetupMenuSelect * stxi2 = new SetupMenuSelect( PROGMEM "Serial TX Inversion", 0, true , 0, true, &serial2_tx_inverted );
 			rs232_2->addMenu( stxi2 );

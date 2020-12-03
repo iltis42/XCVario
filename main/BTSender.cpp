@@ -9,55 +9,22 @@
 #include "esp_task_wdt.h"
 #include <freertos/semphr.h>
 #include <algorithm>
-#include <HardwareSerial.h>
 #include "RingBufCPP.h"
 #include <driver/uart.h>
 #include "OpenVario.h"
 #include <logdef.h>
 #include "Switch.h"
 #include "sensor.h"
+#include "Router.h"
 
-
-extern xSemaphoreHandle nvMutex;
-
-const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
-
-
-RingBufCPP<SString, QUEUE_SIZE> wl_vario_tx_q;
-RingBufCPP<SString, QUEUE_SIZE> wl_flarm_tx_q;
-RingBufCPP<SString, QUEUE_SIZE> wl_aux_tx_q;
-extern RingBufCPP<SString, QUEUE_SIZE> wl_vario_rx_q;
-extern RingBufCPP<SString, QUEUE_SIZE> wl_flarm_rx_q;
-extern RingBufCPP<SString, QUEUE_SIZE> wl_aux_rx_q;
-
-RingBufCPP<SString, QUEUE_SIZE> bt_tx_q;
-RingBufCPP<SString, QUEUE_SIZE> bt_rx_q;
-RingBufCPP<SString, QUEUE_SIZE> s1_tx_q;
-RingBufCPP<SString, QUEUE_SIZE> s2_tx_q;
-RingBufCPP<SString, QUEUE_SIZE> s1_rx_q;
-RingBufCPP<SString, QUEUE_SIZE> s2_rx_q;
-
-RingBufCPP<SString, QUEUE_SIZE> xcv_rx_q;
-RingBufCPP<SString, QUEUE_SIZE> xcv_tx_q;
-
-
-#define RXBUFLEN (SSTRLEN-2)
-char rxBuffer[RXBUFLEN];
-int BTSender::i=0;
-
-#define RFCOMM_SERVER_CHANNEL 1
-#define HEARTBEAT_PERIOD_MS 30
 
 
 bool      BTSender::bluetooth_up = false;
 uint8_t   BTSender::rfcomm_channel_nr = 1;
 uint16_t  rfcomm_channel_id = 0;
-uint8_t   BTSender::spp_service_buffer[500]; // 100
-btstack_timer_source_t BTSender::heartbeat;
+uint8_t   BTSender::spp_service_buffer[SPP_SERVICE_BUFFER_SIZE]; // 500
 btstack_packet_callback_registration_t BTSender::hci_event_callback_registration;
 void ( * BTSender::_callback)(char * rx, uint16_t len);
-portMUX_TYPE btmux = portMUX_INITIALIZER_UNLOCKED;
-
 
 int BTSender::queueFull() {
 	if( !blue_enable.get() )
@@ -66,137 +33,6 @@ int BTSender::queueFull() {
 	if(bt_tx_q.isFull())
 		ret=1;
 	return ret;
-}
-
-// checks if Queue is full, otherwise appends SString
-bool forwardMsg( SString &s, RingBufCPP<SString, QUEUE_SIZE>& q ){
-	if( !q.isFull() ) {
-		portENTER_CRITICAL_ISR(&btmux);
-		q.add( s );
-		portEXIT_CRITICAL_ISR(&btmux);
-		return true;
-	}
-	return false;
-}
-
-// gets last message from ringbuffer FIFO
-bool pullMsg( RingBufCPP<SString, QUEUE_SIZE>& q, SString& s ){
-	if( !q.isEmpty() ){
-		portENTER_CRITICAL_ISR(&btmux);
-		q.pull( &s );
-		portEXIT_CRITICAL_ISR(&btmux);
-		return true;
-	}
-	return false;
-}
-
-
-
-// XCVario Router
-
-// Route XCVario messages
-void routeXCV( SString &xcv ){
-	if( blue_enable.get() )
-		if( forwardMsg( xcv, bt_tx_q ) )
-			ESP_LOGI(FNAME,"Send to BT device, XCV received %d bytes", xcv.length() );
-	if( !blue_enable.get() )  // tbd: Extra config option for WLAN
-		if( forwardMsg( xcv, wl_vario_tx_q ) )
-			ESP_LOGI(FNAME,"Send to WLAN port 8880, XCV received %d bytes", xcv.length() );
-	if( serial1_tx.get() & RT_XCVARIO )
-		if( forwardMsg( xcv, s1_tx_q ) )
-			ESP_LOGI(FNAME,"Send to ttyS2 device, XCV received %d bytes", xcv.length() );
-	if( serial2_tx.get() & RT_XCVARIO )
-		if( forwardMsg( xcv, s2_tx_q ) )
-			ESP_LOGI(FNAME,"Send to ttyS2 device, XCV received %d bytes", xcv.length() );
-
-}
-
-// Route messages from serial interface S1
-void routeS1(){
-	SString s1;
-	if( pullMsg( s1_rx_q, s1) ){
-		ESP_LOGD(FNAME,"Serial 1 RX len: %d bytes, Q:%d", s1.length(), bt_tx_q.isFull() );
-		ESP_LOG_BUFFER_HEXDUMP(FNAME,s1.c_str(),s1.length(), ESP_LOG_DEBUG);
-		if( !blue_enable.get() )   // tbd extra config.
-			if( forwardMsg( s1, wl_flarm_tx_q ))
-				ESP_LOGI(FNAME,"Serial 1 RX bytes %d forward to wl_flarm_tx_q port 8881", s1.length() );
-		if( blue_enable.get() )
-			if( forwardMsg( s1, bt_tx_q ))
-				ESP_LOGI(FNAME,"Serial 1 RX bytes %d forward to bt_tx_q", s1.length() );
-		if( serial1_rxloop.get() )  // only 0=DISABLE | 1=ENABLE
-			if( forwardMsg( s1, s1_tx_q ))
-				ESP_LOGI(FNAME,"Serial 1 RX bytes %d looped to s1_tx_q", s1.length() );
-		if( serial2_tx.get() & RT_S1 )
-			if( forwardMsg( s1, s2_tx_q ))
-				ESP_LOGI(FNAME,"Serial 1 RX bytes %d looped to s2_tx_q", s1.length() );
-	}
-}
-
-// Route messages from serial interface S2
-void routeS2(){
-	SString s2;
-	if( pullMsg( s2_rx_q, s2) ){
-		ESP_LOGD(FNAME,"Serial 2 RX len: %d bytes, Q:%d", s2.length(), bt_tx_q.isFull() );
-		ESP_LOG_BUFFER_HEXDUMP(FNAME,s2.c_str(),s2.length(), ESP_LOG_DEBUG);
-		if( !blue_enable.get() )
-			if( forwardMsg( s2, wl_aux_tx_q ))
-				ESP_LOGI(FNAME,"Serial 2 RX bytes %d forward to wl_aux_tx_q port 8882", s2.length() );
-		if( blue_enable.get() )
-			if( forwardMsg( s2, bt_tx_q ))
-				ESP_LOGI(FNAME,"Serial 2 RX bytes %d forward to bt_tx_q", s2.length() );
-		if( serial2_tx.get() & RT_S1 )
-			if( forwardMsg( s2, s1_tx_q ))
-				ESP_LOGI(FNAME,"Serial 2 RX bytes %d looped to s1_tx_q", s2.length() );
-	}
-}
-
-// route messages from WLAN
-void routeWLAN(){
-	if( blue_enable.get() )  // tbd: extra config to switch of WLAN
-		return;
-	// Route received data from WLAN ports
-	SString wlmsg;
-	if( pullMsg( wl_vario_rx_q, wlmsg) ){
-		if( strncmp( wlmsg.c_str(), "!g,", 3 )  == 0 ) {
-			ESP_LOGI(FNAME,"From WLAN port 8880 RX matched a Borgelt command %s", wlmsg.c_str() );
-			OpenVario::parseNMEA( wlmsg.c_str() );
-		}
-	}
-	if( pullMsg( wl_flarm_rx_q, wlmsg ) ){
-		if( serial1_tx.get() & RT_WIRELESS )
-			if( forwardMsg( wlmsg, s1_tx_q ) )
-				ESP_LOGI(FNAME,"Send to ttyS1 device, TCP port 8881 received %d bytes", wlmsg.length() );
-		if( serial2_tx.get() & RT_WIRELESS )
-			if( forwardMsg( wlmsg, s2_tx_q ) )
-				ESP_LOGI(FNAME,"Send to ttyS2 device, TCP port 8881 received %d bytes", wlmsg.length() );
-	}
-	if( pullMsg( wl_aux_rx_q, wlmsg ) ){
-		if( serial1_tx.get() & RT_WIRELESS )
-			if( forwardMsg( wlmsg, s1_tx_q ) )
-				ESP_LOGI(FNAME,"Send to ttyS1 device, TCP port 8882 received %d bytes", wlmsg.length() );
-		if( serial2_tx.get() & RT_WIRELESS )
-			if( forwardMsg( wlmsg, s2_tx_q ) )
-				ESP_LOGI(FNAME,"Send to ttyS2 device, TCP port 8882 received %d bytes", wlmsg.length() );
-	}
-}
-
-// route messages from Bluetooth
-void routeBT(){
-	if( !blue_enable.get() )
-		return;
-	SString bt;
-	if( pullMsg( bt_rx_q, bt ) ){
-		if( serial1_tx.get() & RT_XCVARIO )  // Serial data TX from bluetooth enabled ?
-			if( forwardMsg( bt, s1_tx_q ) )
-				ESP_LOGI(FNAME,"Send to ttyS1 device, BT received %d bytes", bt.length() );
-		if( serial2_tx.get() & RT_XCVARIO )  // Serial data TX from bluetooth enabled ?
-			if( forwardMsg( bt, s2_tx_q ) )
-				ESP_LOGI(FNAME,"Send to ttyS2 device, BT received %d bytes", bt.length() );
-		if( strncmp( bt.c_str(), "!g,", 3 )  == 0 ) {
-			ESP_LOGI(FNAME,"BT RX Matched a Borgelt command %s", bt.c_str() );
-			OpenVario::parseNMEA( bt.c_str() );
-		}
-	}
 }
 
 
@@ -219,18 +55,15 @@ void BTSender::packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *p
 	case RFCOMM_DATA_PACKET:
 	{
 		// ESP_LOGD(FNAME,"Received RFCOMM data on channel id %u, size %u %s", channel, size, packet);
-		if( size > RXBUFLEN ) {
-			ESP_LOGW(FNAME,"Warning, RX data packet truncated len=%d, max=%d", size, RXBUFLEN );
-			size = RXBUFLEN;
+		if( size >= SSTRLEN ) {
+			ESP_LOGW(FNAME,"Warning, RX data packet truncated len=%d, max=%d", size, SSTRLEN );
+			size = SSTRLEN;
 		}
 		ESP_LOGI(FNAME,"BT RFCOMM RX (CH %u), size %u", channel, size );
 		SString s;
-		portENTER_CRITICAL_ISR(&btmux);
-		if( !bt_rx_q.isEmpty() )
-			bt_rx_q.pull(&s);
+		pullMsg( bt_rx_q , s );
 		s.append( msg, size );
-		bt_rx_q.add( s );
-		portEXIT_CRITICAL_ISR(&btmux);
+		forwardMsg( s, bt_rx_q );
 		ESP_LOGD(FNAME,"BT received %d bytes", size );
 	}
 	break;
@@ -281,31 +114,8 @@ void BTSender::packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *p
 			// ESP_LOGD(FNAME,"RFCOMM ignored packet event %u size: %d", hci_event_packet_get_type(packet), size );
 			break;
 		}
-
 	}
 };
-
-
-// #define FLARM_SIM
-#ifdef FLARM_SIM
-char *flarm[] = {
-		"$PFLAA,0,11461,-9272,1436,1,AFFFFF,51,0,257,0.0,0*7A\n",
-		"$PFLAA,0,2784,3437,216,1,AFFFFE,141,0,77,0.0,0*56\n",
-		"$PFLAA,1,-1375,1113,64,1,AFFFFD,231,0,30,0.0,0*43\n",
-		"$PFLAA,0,-3158,3839,1390,1,A858F3,302,0,123,-12.4,0*6B\n",
-		"$GPRMC,084854.40,A,44xx.xxx38,N,093xx.xxx15,W,0.0,0.0,300116,,,D*43\n",
-		"$PFLAA,0,11621,-9071,1437,1,AFFFFF,52,0,257,0.0,0*7F\n",
-		"$PFLAA,0,2724,3485,218,1,AFFFFE,142,0,77,0.0,0*58\n",
-		"$PFLAA,1,-1394,1089,65,1,AFFFFD,232,0,30,0.0,0*4C\n",
-		"$PFLAA,0,-3158,3839,1384,1,A858F3,302,0,123,-12.4,0*6E\n",
-		"$GPRMC,084855.40,A,44xx.xxx38,N,093xx.xxx15,W,0.0,0.0,300116,,,D*42\n",
-		"$GPGGA,152011.934,4850.555,N,00839.186,E,1,12,1.0,0.0,M,0.0,M,,*67\n",
-		"$GPGSA,A,3,01,02,03,04,05,06,07,08,09,10,11,12,1.0,1.0,1.0*30\n",
-		"$GPRMC,152949.571,A,4846.973,N,00843.677,E,,,220620,000.0,W*75\n"
-
-};
-#endif
-
 
 /* Note that the standard NMEA 0183 baud rate is only 4.8 kBaud.
 Nevertheless, a lot of NMEA-compatible devices can properly work with
@@ -318,139 +128,40 @@ some sentences might be lost or truncated.
 
  */
 
-
-// Serial Handler  ttyS1, S1, port 8881
-void serialHandler1(void *pvParameters){
-
-#ifdef FLARM_SIM
-	int i=0;
-#endif
-	while(1) {
-		// TickType_t xLastWakeTime = xTaskGetTickCount();
-#ifdef FLARM_SIM
-		portENTER_CRITICAL_ISR(&btmux);
-		bt_tx_q.add( flarm[i++] );
-		portEXIT_CRITICAL_ISR(&btmux);
-		// ESP_LOGD(FNAME,"Serial TX: %s",  flarm[i-1] );
-		if(i>12)
-			i=0;
-#endif
-
-
-		// Serial Interface tty1 send
-		if ( !s1_tx_q.isEmpty() && Serial1.availableForWrite() ){
-			ESP_LOGD(FNAME,"Serial Data and avail");
-			while( !s1_tx_q.isEmpty() ) {
-				SString s;
-				portENTER_CRITICAL_ISR(&btmux);
-				s1_tx_q.pull(&s);
-				portEXIT_CRITICAL_ISR(&btmux);
-				ESP_LOGD(FNAME,"Serial 1 TX len: %d bytes", s.length() );
-				ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
-				int wr = Serial1.write( s.c_str(), s.length() );
-				ESP_LOGD(FNAME,"Serial 1 TX written: %d", wr);
-			}
-		}
-		int num = Serial1.available();
-		if( num > 0 ) {
-			SString serialRx;
-			// ESP_LOGI(FNAME,"Serial 1 RX avail %d bytes", num );
-			if( num >= RXBUFLEN ) {
-				ESP_LOGW(FNAME,"Serial 1 Overrun RX >= %d bytes avail: %d, Bytes", RXBUFLEN, num);
-				num=RXBUFLEN;
-			}
-			int numread = Serial1.read( rxBuffer, num );
-			ESP_LOGD(FNAME,"Serial 1 RX bytes read: %d", numread );
-			// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuffer,numread, ESP_LOG_INFO);
-			serialRx.addl( rxBuffer, numread );
-			if( ! s1_rx_q.isFull() )
-				s1_rx_q.add( serialRx );
-		}
-		routeS1();
-		routeBT();
-		routeWLAN();
-		if (rfcomm_channel_id ){
-			if ( !bt_tx_q.isEmpty() ){
-				ESP_LOGD(FNAME,"have data for bluetooth");
-				if (rfcomm_can_send_packet_now(rfcomm_channel_id)){
-					ESP_LOGD(FNAME,"can send now to bluetooth");
-					SString s;
-					portENTER_CRITICAL_ISR(&btmux);
-					bt_tx_q.pull(&s);
-					portEXIT_CRITICAL_ISR(&btmux);
-					int err = rfcomm_send(rfcomm_channel_id, (uint8_t*) s.c_str(), s.length() );
-					if (err) {
-						ESP_LOGE(FNAME,"rfcomm_send -> error %d", err);
-					}
-					else
-					{
-						ESP_LOGD(FNAME,"RFCOMM TX, size %u", s.length() );
-						ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
-					}
+void BTSender::transmit( SString &s ){
+	if (rfcomm_channel_id ){
+		if ( pullMsg( bt_tx_q, s ) ){
+			ESP_LOGD(FNAME,"have data for bluetooth");
+			if (rfcomm_can_send_packet_now(rfcomm_channel_id)){
+				ESP_LOGD(FNAME,"can send now to bluetooth");
+				int err = rfcomm_send(rfcomm_channel_id, (uint8_t*) s.c_str(), s.length() );
+				if (err) {
+					ESP_LOGE(FNAME,"rfcomm_send -> error %d", err);
+				}
+				else
+				{
+					ESP_LOGD(FNAME,"RFCOMM TX, size %u", s.length() );
+					ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
 				}
 			}
 		}
-
-		esp_task_wdt_reset();
-		vTaskDelay( HEARTBEAT_PERIOD_MS/portTICK_PERIOD_MS );
 	}
 }
-
-
-// ttyS2, port 8882
-void serialHandler2(void *pvParameters){
-	while(1) {
-		routeBT();
-		if ( !s2_tx_q.isEmpty() && Serial2.availableForWrite() ){
-			ESP_LOGD(FNAME,"Serial Data and avail");
-			SString s;
-			portENTER_CRITICAL_ISR(&btmux);
-			s2_tx_q.pull(&s);
-			portEXIT_CRITICAL_ISR(&btmux);
-			ESP_LOGD(FNAME,"Serial 2 TX len: %d bytes", s.length() );
-			ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
-			int wr = Serial2.write( s.c_str(), s.length() );
-			ESP_LOGD(FNAME,"Serial 2 TX written: %d", wr);
-		}
-		int num = Serial2.available();
-		if( num > 0 ) {
-			SString serialRx;
-			// ESP_LOGD(FNAME,"Serial 2 RX avail %d bytes", num );
-			if( num >= RXBUFLEN ) {
-				ESP_LOGW(FNAME,"Serial 2 RX Overrun >= %d bytes avail: %d, Bytes", RXBUFLEN, num);
-				num=RXBUFLEN;
-			}
-			int numread = Serial2.read( rxBuffer, num );
-			ESP_LOGD(FNAME,"Serial 2 RX bytes read: %d", numread );
-			// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuffer,numread, ESP_LOG_INFO);
-			serialRx.addl( rxBuffer, numread );
-			if( ! s2_rx_q.isFull() )
-				s2_rx_q.add( serialRx );
-		}
-		routeWLAN();
-		routeS2();
-
-		esp_task_wdt_reset();
-		vTaskDelay( HEARTBEAT_PERIOD_MS/portTICK_PERIOD_MS );  // 48 bytes each 20 mS traffic at 19.200 baud
-	}
-}
-
 
 void BTSender::begin(){
 	ESP_LOGI(FNAME,"BTSender::begin()" );
-
 	if( blue_enable.get() ) {
 		hci_dump_enable_log_level( ESP_LOG_INFO, 1 );
 		hci_dump_enable_log_level( ESP_LOG_ERROR, 1 );
 		hci_dump_enable_log_level( ESP_LOG_WARN, 1 );
 		hci_dump_enable_log_level( ESP_LOG_DEBUG, 0 );
 		l2cap_init();
-		le_device_db_init();   // new try 28-09
+		le_device_db_init();
 		rfcomm_init();
 		// register for HCI events
 		hci_event_callback_registration.callback = &packet_handler;
 		hci_add_event_handler(&hci_event_callback_registration);
-		rfcomm_register_service(packet_handler, rfcomm_channel_nr, 500); // reserved channel, mtu=100
+		rfcomm_register_service(packet_handler, rfcomm_channel_nr, SPP_SERVICE_BUFFER_SIZE); // reserved channel, mtu=100
 		memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
 		spp_create_sdp_record(spp_service_buffer, 0x10001, RFCOMM_SERVER_CHANNEL, "SPP Counter");
 		sdp_register_service(spp_service_buffer);
@@ -460,27 +171,8 @@ void BTSender::begin(){
 		sdp_init();
 		hci_power_control(HCI_POWER_ON);
 	}
-	if( serial1_speed.get() != 0  || blue_enable.get() ){
-		int baudrate = baud[serial1_speed.get()];
-		if( baudrate != 0 ) {
-			ESP_LOGI(FNAME,"Serial Interface ttyS1 enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial1_speed.get(), baud[serial1_speed.get()], serial1_tx_inverted.get(), serial1_rx_inverted.get() );
-			Serial1.begin(baudrate,SERIAL_8N1,16,17, serial1_rx_inverted.get(), serial1_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
-			Serial1.setRxBufferSize(256);
-		}
-		// need this for bluetooth
-		xTaskCreatePinnedToCore(&serialHandler1, "serialHandler1", 4096, NULL, 27, 0, 0);
-	}
-	if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 ){
-		ESP_LOGI(FNAME,"Serial Interface ttyS2 enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial2_speed.get(), baud[serial2_speed.get()], serial2_tx_inverted.get(), serial2_rx_inverted.get() );
-		if( serial2_pins_twisted.get() )  //   speed, RX, TX, invRX, invTX
-			Serial2.begin(baud[serial2_speed.get()],SERIAL_8N1,4,18, serial2_rx_inverted.get(), serial2_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
-		else
-			Serial2.begin(baud[serial2_speed.get()],SERIAL_8N1,18,4, serial2_rx_inverted.get(), serial2_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
-
-		Serial2.setRxBufferSize(256);
-		xTaskCreatePinnedToCore(&serialHandler2, "serialHandler2", 4096, NULL, 26, 0, 0);
-	}
-
+	else
+		ESP_LOGI(FNAME,"BTSender::begin() Nothing done, BT disabled! " );
 };
 
 

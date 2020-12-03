@@ -49,6 +49,7 @@
 #include "I2Cbus.hpp"
 #include "KalmanMPU6050.h"
 #include "WifiApp.h"
+#include "Serial.h"
 
 // #include "sound.h"
 
@@ -602,6 +603,7 @@ void sensor(void *args){
 		logged_tests += "Battery Voltage Sensor: PASSED\n";
 	}
 	btsender.begin();  // at least serial init: TBD: rename and split BT part
+	Serial::begin();
 	sleep( 2 );
 	if( blue_enable.get() ) {
 		if( btsender.selfTest() ){

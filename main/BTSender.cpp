@@ -24,7 +24,6 @@ uint8_t   BTSender::rfcomm_channel_nr = 1;
 uint16_t  rfcomm_channel_id = 0;
 uint8_t   BTSender::spp_service_buffer[SPP_SERVICE_BUFFER_SIZE]; // 500
 btstack_packet_callback_registration_t BTSender::hci_event_callback_registration;
-void ( * BTSender::_callback)(char * rx, uint16_t len);
 
 int BTSender::queueFull() {
 	if( !blue_enable.get() )
@@ -35,17 +34,16 @@ int BTSender::queueFull() {
 	return ret;
 }
 
-
 // Formerly there was only BT, tbd: rename to XCVario sender
 void BTSender::send(char * s){
 	// ESP_LOGI( FNAME,"XCVario message %s",s);
 	SString xcv( s );
 	ESP_LOGI(FNAME,"Received %d bytes from XCV", xcv.length() );
-	routeXCV( xcv );
+	Router::routeXCV( xcv );
 }
 
 // BTStack Bluetooth Receiver
-void BTSender::packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+void BTSender::bt_data_packet (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	bd_addr_t event_addr;
 	uint16_t  mtu;
 	char *msg = (char *)packet;
@@ -61,9 +59,9 @@ void BTSender::packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *p
 		}
 		ESP_LOGI(FNAME,"BT RFCOMM RX (CH %u), size %u", channel, size );
 		SString s;
-		pullMsg( bt_rx_q , s );
+		Router::pullMsg( bt_rx_q , s );
 		s.append( msg, size );
-		forwardMsg( s, bt_rx_q );
+		Router::forwardMsg( s, bt_rx_q );
 		ESP_LOGD(FNAME,"BT received %d bytes", size );
 	}
 	break;
@@ -130,7 +128,7 @@ some sentences might be lost or truncated.
 
 void BTSender::transmit( SString &s ){
 	if (rfcomm_channel_id ){
-		if ( pullMsg( bt_tx_q, s ) ){
+		if ( Router::pullMsg( bt_tx_q, s ) ){
 			ESP_LOGD(FNAME,"have data for bluetooth");
 			if (rfcomm_can_send_packet_now(rfcomm_channel_id)){
 				ESP_LOGD(FNAME,"can send now to bluetooth");
@@ -159,9 +157,9 @@ void BTSender::begin(){
 		le_device_db_init();
 		rfcomm_init();
 		// register for HCI events
-		hci_event_callback_registration.callback = &packet_handler;
+		hci_event_callback_registration.callback = &bt_data_packet;
 		hci_add_event_handler(&hci_event_callback_registration);
-		rfcomm_register_service(packet_handler, rfcomm_channel_nr, SPP_SERVICE_BUFFER_SIZE); // reserved channel, mtu=100
+		rfcomm_register_service(bt_data_packet, rfcomm_channel_nr, SPP_SERVICE_BUFFER_SIZE); // reserved channel, mtu=100
 		memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
 		spp_create_sdp_record(spp_service_buffer, 0x10001, RFCOMM_SERVER_CHANNEL, "SPP Counter");
 		sdp_register_service(spp_service_buffer);

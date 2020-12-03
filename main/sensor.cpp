@@ -146,14 +146,10 @@ float aoz=0;
 I2C_t& i2c                     = i2c1;  // i2c0 or i2c1
 MPU_t MPU;         // create an object
 
-void handleRfcommRx( char * rx, uint16_t len ){
-	ESP_LOGI(FNAME,"RFCOMM packet, %s, len %d %d", rx, len, strlen( rx ));
-}
-
 float getTAS() { return tas; };
 float getTE() { return TE; };
 
-BTSender btsender( handleRfcommRx  );
+BTSender btsender;
 bool lastAudioDisable = false;
 
 void drawDisplay(void *pvParameters){

@@ -30,8 +30,6 @@ some sentences might be lost or truncated.
 
  */
 
-
-
 // #define FLARM_SIM
 // Option to simulate FLARM sentences
 
@@ -77,7 +75,7 @@ void Serial::serialHandlerS1(void *pvParameters){
 		// Serial Interface tty1 send
 		if ( !s1_tx_q.isEmpty() && Serial1.availableForWrite() ){
 			ESP_LOGD(FNAME,"Serial Data and avail");
-			while( pullMsg( s1_tx_q, s ) ) {
+			while( Router::pullMsg( s1_tx_q, s ) ) {
 				ESP_LOGD(FNAME,"Serial 1 TX len: %d bytes", s.length() );
 				ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
 				int wr = Serial1.write( s.c_str(), s.length() );
@@ -95,11 +93,11 @@ void Serial::serialHandlerS1(void *pvParameters){
 			ESP_LOGD(FNAME,"Serial 1 RX bytes read: %d", numread );
 			// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuffer,numread, ESP_LOG_INFO);
 			s.setLen( numread );
-			forwardMsg( s, s1_rx_q );
+			Router::forwardMsg( s, s1_rx_q );
 		}
-		routeS1();
-		routeBT();
-		routeWLAN();
+		Router::routeS1();
+		Router::routeBT();
+		Router::routeWLAN();
 	    BTSender::transmit(s);   // piggyback this here, saves one task for BT sender, SString s is recycled as buffer
 		esp_task_wdt_reset();
 		vTaskDelay( HEARTBEAT_PERIOD_MS/portTICK_PERIOD_MS );
@@ -109,10 +107,10 @@ void Serial::serialHandlerS1(void *pvParameters){
 // ttyS2, port 8882
 void Serial::serialHandlerS2(void *pvParameters){
 	while(1) {
-		routeBT();
+		Router::routeBT();
 		SString s;
 		if ( !s2_tx_q.isEmpty() && Serial2.availableForWrite() ){
-			if( pullMsg( s2_tx_q, s ) ) {
+			if( Router::pullMsg( s2_tx_q, s ) ) {
 				ESP_LOGD(FNAME,"Serial Data and avail");
 				ESP_LOGD(FNAME,"Serial 2 TX len: %d bytes", s.length() );
 				ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
@@ -131,10 +129,10 @@ void Serial::serialHandlerS2(void *pvParameters){
 			ESP_LOGD(FNAME,"Serial 2 RX bytes read: %d", numread );
 			// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuffer,numread, ESP_LOG_INFO);
 			s.setLen( numread );
-			forwardMsg( s, s2_rx_q );
+			Router::forwardMsg( s, s2_rx_q );
 		}
-		routeWLAN();
-		routeS2();
+		Router::routeWLAN();
+		Router::routeS2();
 		esp_task_wdt_reset();
 		vTaskDelay( HEARTBEAT_PERIOD_MS/portTICK_PERIOD_MS );  // 48 bytes each 20 mS traffic at 19.200 baud
 	}

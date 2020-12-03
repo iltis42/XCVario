@@ -39,7 +39,7 @@ portMUX_TYPE btmux = portMUX_INITIALIZER_UNLOCKED;
 // Utility methods to push and pull data into/from queues
 
 // checks if Queue is full, otherwise appends SString
-bool forwardMsg( SString &s, RingBufCPP<SString, QUEUE_SIZE>& q ){
+bool Router::forwardMsg( SString &s, RingBufCPP<SString, QUEUE_SIZE>& q ){
 	if( !q.isFull() ) {
 		portENTER_CRITICAL_ISR(&btmux);
 		q.add( s );
@@ -50,7 +50,7 @@ bool forwardMsg( SString &s, RingBufCPP<SString, QUEUE_SIZE>& q ){
 }
 
 // gets last message from ringbuffer FIFO
-bool pullMsg( RingBufCPP<SString, QUEUE_SIZE>& q, SString& s ){
+bool Router::pullMsg( RingBufCPP<SString, QUEUE_SIZE>& q, SString& s ){
 	if( !q.isEmpty() ){
 		portENTER_CRITICAL_ISR(&btmux);
 		q.pull( &s );
@@ -63,7 +63,7 @@ bool pullMsg( RingBufCPP<SString, QUEUE_SIZE>& q, SString& s ){
 // XCVario Router
 
 // Route XCVario messages
-void routeXCV( SString &xcv ){
+void Router::routeXCV( SString &xcv ){
 	if( blue_enable.get() )
 		if( forwardMsg( xcv, bt_tx_q ) )
 			ESP_LOGI(FNAME,"Send to BT device, XCV received %d bytes", xcv.length() );
@@ -80,7 +80,7 @@ void routeXCV( SString &xcv ){
 }
 
 // Route messages from serial interface S1
-void routeS1(){
+void Router::routeS1(){
 	SString s1;
 	if( pullMsg( s1_rx_q, s1) ){
 		ESP_LOGD(FNAME,"Serial 1 RX len: %d bytes, Q:%d", s1.length(), bt_tx_q.isFull() );
@@ -101,7 +101,7 @@ void routeS1(){
 }
 
 // Route messages from serial interface S2
-void routeS2(){
+void Router::routeS2(){
 	SString s2;
 	if( pullMsg( s2_rx_q, s2) ){
 		ESP_LOGD(FNAME,"Serial 2 RX len: %d bytes, Q:%d", s2.length(), bt_tx_q.isFull() );
@@ -119,7 +119,7 @@ void routeS2(){
 }
 
 // route messages from WLAN
-void routeWLAN(){
+void Router::routeWLAN(){
 	if( blue_enable.get() )  // tbd: extra config to switch of WLAN
 		return;
 	// Route received data from WLAN ports
@@ -149,7 +149,7 @@ void routeWLAN(){
 }
 
 // route messages from Bluetooth
-void routeBT(){
+void Router::routeBT(){
 	if( !blue_enable.get() )
 		return;
 	SString bt;

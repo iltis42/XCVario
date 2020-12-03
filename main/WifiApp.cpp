@@ -70,7 +70,6 @@ int create_socket( int port ){
 }
 
 
-
 void socket_server(void *setup) {
 	sock_server_t *config = (sock_server_t *)setup;
 	struct sockaddr_in clientAddress;

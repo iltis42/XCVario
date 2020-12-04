@@ -2,6 +2,7 @@
 #define EM_RINGBUF_CPP_H
 
 #include "RingBufHelpers.h"
+#include <cstring>
 
 
 #define SSTRLEN 250

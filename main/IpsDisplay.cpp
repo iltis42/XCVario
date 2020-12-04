@@ -651,7 +651,7 @@ void IpsDisplay::drawS2FMode( int x, int y, bool cruise ){
 void IpsDisplay::drawBT() {
 	int btq=BTSender::queueFull();
 	if( btq != btqueue ){
-		if( blue_enable.get() ) {
+		if( blue_enable.get() == WL_BLUETOOTH ) {
 			ucg_int_t btx=DISPLAY_W-22;
 			ucg_int_t bty=(BTH/2) + 8;
 			if( btq )
@@ -670,6 +670,41 @@ void IpsDisplay::drawBT() {
 		btqueue = btq;
 	}
 }
+
+void IpsDisplay::drawFlarm( int x, int y, bool flarm ) {
+	ucg_int_t flx=x;
+	ucg_int_t fly=y;
+	if( flarm )
+		ucg->setColor(COLOR_RED);
+	else
+		ucg->setColor( COLOR_MGREY );
+	ucg->setClipRange( flx, fly-FLOGO, FLOGO, FLOGO );
+	ucg->drawTriangle( flx+1, fly, flx+1+(FLOGO/2), fly, flx+1+(FLOGO/4), fly-(FLOGO/2)+2 );
+	ucg->setClipRange( flx+FLOGO/4+3, fly-FLOGO, FLOGO, FLOGO );
+	ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/4)-2, UCG_DRAW_UPPER_RIGHT);
+	ucg->setClipRange( flx+FLOGO/4+5, fly-FLOGO, FLOGO, FLOGO );
+	ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/2)-2, UCG_DRAW_UPPER_RIGHT);
+	ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/2)-3, UCG_DRAW_UPPER_RIGHT);
+	ucg->undoClipRange();
+}
+
+
+void IpsDisplay::drawWifi( int x, int y, bool wifi ) {
+	ucg_int_t flx=x;
+	ucg_int_t fly=y;
+	if( wifi )
+		ucg->setColor(COLOR_BLUE);
+	else
+		ucg->setColor( COLOR_MGREY );
+
+	ucg->setClipRange( flx-FLOGO/2, fly-FLOGO, FLOGO, FLOGO );
+	ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/4)-2, UCG_DRAW_UPPER_RIGHT);
+	ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/4)-2, UCG_DRAW_UPPER_RIGHT);
+	ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/2)-2, UCG_DRAW_UPPER_RIGHT);
+	ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/2)-3, UCG_DRAW_UPPER_RIGHT);
+	ucg->undoClipRange();
+}
+
 
 void IpsDisplay::drawBat( float volt, int x, int y ) {
 	charge = (int)(( volt -  bat_low_volt.get() )*100)/( bat_full_volt.get() - bat_low_volt.get() );
@@ -1170,7 +1205,7 @@ void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_
 		s2f = s2f*0.539957;
 		s2fd = s2fd*0.539957;
 	}
-
+	 vTaskDelay(3);
 	// WK-Indicator
 
 	if( flap_enable.get() && !(tick%7) )
@@ -1303,7 +1338,7 @@ void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_
 			mcalt=aMC;
 		}
 	}
-
+	 vTaskDelay(3);
 	// Temperature Value
 	if( (int)(temp*10) != tempalt && !(tick%11)) {
 	    drawTemperature( FIELD_START+30, DISPLAY_H, temp );
@@ -1413,7 +1448,7 @@ void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_
 		}
 		tyalt = ty;
 		pyalt = py;
-		// vTaskDelay(3);
+	    vTaskDelay(3);
 
 	}
 

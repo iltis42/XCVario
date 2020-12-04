@@ -1,5 +1,3 @@
-#include <btstack.h> 
-
 #include <string>
 #include "sdkconfig.h"
 #include <stdio.h>
@@ -88,7 +86,7 @@ float dynamicP;
 bool haveMPU=false;
 int ccp=60;
 
-MCP3221 MCP;
+MCP3221 *MCP=0;
 DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 standard, alternative  GPIO_NUM_17
 MP5004DP MP5004DP;
 MS4525DO MS4525DO;
@@ -108,12 +106,13 @@ xSemaphoreHandle spiMutex=NULL;
 
 BME280_ESP32_SPI bmpBA(SPI_SCLK, SPI_MOSI, SPI_MISO, CS_bme280BA, FREQ_BMP_SPI);
 BME280_ESP32_SPI bmpTE(SPI_SCLK, SPI_MOSI, SPI_MISO, CS_bme280TE, FREQ_BMP_SPI);
-Ucglib_ILI9341_18x240x320_HWSPI myucg( SPI_DC, CS_Display, RESET_Display );
-IpsDisplay display( &myucg );
-OTA ota;
+Ucglib_ILI9341_18x240x320_HWSPI *myucg;  // ( SPI_DC, CS_Display, RESET_Display );
+IpsDisplay *display;
+
+OTA *ota = 0;
 
 ESPRotary Rotary;
-SetupMenu  Menu;
+SetupMenu  *Menu = 0;
 
 static float ias = 0;
 float tas = 0;
@@ -166,7 +165,7 @@ void drawDisplay(void *pvParameters){
 			else if( airspeed_mode.get() == MODE_TAS )
 				airspeed = tas;
 			// ESP_LOGI(FNAME,"airseed=%f ",airspeed );
-			display.drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, aCl, Switch::cruiseMode(), standard_setting );
+			display->drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, aCl, Switch::cruiseMode(), standard_setting );
 		}
 		vTaskDelay(20/portTICK_PERIOD_MS);
 		if( uxTaskGetStackHighWaterMark( dpid ) < 1024  )
@@ -177,7 +176,7 @@ void drawDisplay(void *pvParameters){
 int count=0;
 mpud::raw_axes_t accelRawPrev;     // holds x, y, z axes as int16
 mpud::raw_axes_t gyroRawPrev;      // holds x, y, z axes as int16
-
+bool peya = false;
 
 
 void readBMP(void *pvParameters){
@@ -246,7 +245,7 @@ void readBMP(void *pvParameters){
 			xSemaphoreGive(xMutex);
 
 			if( Audio.getDisable() != true ){
-				if( haveMPU )  // 4th Generation HW, MPU6050
+				if( haveMPU  )  // 4th Generation HW, MPU6050
 				{
 					mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
 					mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
@@ -293,28 +292,39 @@ void readBMP(void *pvParameters){
 					OV.makeNMEA( P_BORGELT, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt  );
 					btsender.send( lb );
 					OV.makeNMEA( P_GENERIC, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt  );
-				}
-				else if( nmea_protocol.get() == OPENVARIO )
-					OV.makeNMEA( P_OPENVARIO, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt  );
-				else if( nmea_protocol.get() == CAMBRIDGE )
-					OV.makeNMEA( P_CAMBRIDGE, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt  );
-				else if( nmea_protocol.get() == EYE_SENSOR_BOX ) {
-					OV.makeNMEA( P_EYE_PEYA, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature  );
 					btsender.send( lb );
-					OV.makeNMEA( P_EYE_PEYI, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
+				}
+				else if( nmea_protocol.get() == OPENVARIO ){
+					OV.makeNMEA( P_OPENVARIO, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt  );
+					btsender.send( lb );
+				}
+				else if( nmea_protocol.get() == CAMBRIDGE ){
+					OV.makeNMEA( P_CAMBRIDGE, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt  );
+					btsender.send( lb );
+				}
+				else if( nmea_protocol.get() == EYE_SENSOR_BOX ) {
+					if( peya ) {  // toggle sentence each time
+						OV.makeNMEA( P_EYE_PEYA, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature  );
+						btsender.send( lb );
+						peya = false;
+					}
+					else {
+						peya = true;
+						OV.makeNMEA( P_EYE_PEYI, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
 							-accelG[2], accelG[1],accelG[0], gyroDPS.x+ox, gyroDPS.y+oy, gyroDPS.z+oz );
+						btsender.send( lb );
+					}
 				}
 				else if( nmea_protocol.get() == XCVARIO ) {
 					OV.makeNMEA( P_XCVARIO, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
 							-accelG[2], accelG[1],accelG[0], gyroDPS.x+ox, gyroDPS.y+oy, gyroDPS.z+oz );
+					btsender.send( lb );
 				}
 				else
 					ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
-				btsender.send( lb );
 				vTaskDelay(2/portTICK_PERIOD_MS);
 				xSemaphoreGive(xMutex);
 			}
-
 		}
 		if( uxTaskGetStackHighWaterMark( bpid )  < 1024 )
 			ESP_LOGW(FNAME,"Warning bmpTask stack low: %d", uxTaskGetStackHighWaterMark( bpid ) );
@@ -359,6 +369,7 @@ void readTemp(void *pvParameters){
 			if( heap_caps_get_free_size(MALLOC_CAP_8BIT) < 10000 )
 				ESP_LOGW(FNAME,"Warning heap_caps_get_free_size getting low: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
 		}
+
 	}
 }
 
@@ -372,11 +383,12 @@ void sensor(void *args){
 	int line = 1;
 	// i2c.begin(GPIO_NUM_21, GPIO_NUM_22, GPIO_PULLUP_ENABLE, GPIO_PULLUP_ENABLE );
 	i2c.begin(GPIO_NUM_21, GPIO_NUM_22, 20000 );
-	MCP.setBus( &i2c );
+	MCP = new MCP3221();
+	MCP->setBus( &i2c );
 	gpio_set_drive_capability(GPIO_NUM_23, GPIO_DRIVE_CAP_1);
 	esp_wifi_set_mode(WIFI_MODE_NULL);
 	spiMutex = xSemaphoreCreateMutex();
-	esp_log_level_set("*", ESP_LOG_INFO);
+	// esp_log_level_set("*", ESP_LOG_INFO);
 	ESP_LOGI( FNAME, "Log level set globally to INFO %d",  ESP_LOG_INFO);
 
 	esp_chip_info_t chip_info;
@@ -390,12 +402,12 @@ void sensor(void *args){
 			(chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 
 
-	ESP_LOGI(FNAME, "QNH->get() %f", QNH.get() );
+	ESP_LOGI(FNAME, "QNH.get() %f", QNH.get() );
 	ESP_LOGI( FNAME, "Hardware revision detected %d", hardwareRevision.get() );
 	NVS.begin();
 
 	ADC.begin();  // for battery voltage
-
+	btsender.begin();  //
 
 	xMutex=xSemaphoreCreateMutex();
 	uint8_t t_sb = 0;   //stanby 0: 0,5 mS 1: 62,5 mS 2: 125 mS
@@ -409,8 +421,11 @@ void sensor(void *args){
 	ccp = (int)(core_climb_period.get()*10);
 	SPI.begin( SPI_SCLK, SPI_MISO, SPI_MOSI, CS_bme280BA );
 	xSemaphoreGive(spiMutex);
-	display.begin();
-	display.bootDisplay();
+
+	myucg = new Ucglib_ILI9341_18x240x320_HWSPI( SPI_DC, CS_Display, RESET_Display );
+	display = new IpsDisplay( myucg );
+	display->begin();
+	display->bootDisplay();
 
 	// int valid;
 	String logged_tests;
@@ -419,7 +434,7 @@ void sensor(void *args){
 	Version V;
 	std::string ver( "Version: " );
 	ver += V.version();
-	display.writeText(line++, ver.c_str() );
+	display->writeText(line++, ver.c_str() );
 	sleep(2);
 	bool doUpdate = software_update.get();
 	if( Rotary.readSwitch() ){
@@ -427,9 +442,9 @@ void sensor(void *args){
 		ESP_LOGI(FNAME,"Rotary pressed: Do Software Update");
 	}
 
-	String btname="Bluetooth ID: ";
+	String btname="Wireless ID: ";
 	btname += SetupCommon::getID();
-	display.writeText(line++, btname.c_str() );
+	display->writeText(line++, btname.c_str() );
 
 	ESP_LOGI(FNAME,"Speed sensors init..");
 	int offset;
@@ -466,13 +481,13 @@ void sensor(void *args){
 
 	if( as_sensor==SENSOR_NONE ){
 		ESP_LOGE(FNAME,"Error with air speed pressure sensor, now working sensor found");
-		display.writeText( line++, "AS Sensor: NOT FOUND");
+		display->writeText( line++, "AS Sensor: NOT FOUND");
 		logged_tests += "AS Sensor: NOT FOUND\n";
 		selftestPassed = false;
 	}else {
 		if( !offset_plausible && ( ias < 50 ) ){
 			ESP_LOGE(FNAME,"Error: air speed presure sensor offset out of bounds, act value=%d", offset );
-			display.writeText( line++, "AS Sensor: NEED ZERO" );
+			display->writeText( line++, "AS Sensor: NEED ZERO" );
 			logged_tests += "AS Sensor offset test: FAILED\n";
 			selftestPassed = false;
 		}
@@ -481,10 +496,10 @@ void sensor(void *args){
 			char s[40];
 			if( ias > 50 ) {
 				sprintf(s, "AS Sensor: %d km/h", (int)(ias+0.5) );
-				display.writeText( line++, s );
+				display->writeText( line++, s );
 			}
 			else
-				display.writeText( line++, "AS Sensor: OK" );
+				display->writeText( line++, "AS Sensor: OK" );
 
 			logged_tests += "AS Sensor offset test: PASSED\n";
 		}
@@ -497,13 +512,13 @@ void sensor(void *args){
 	ESP_LOGI(FNAME,"End T sensor test");
 	if( temperature == DEVICE_DISCONNECTED_C ) {
 		ESP_LOGE(FNAME,"Error: Self test Temperatur Sensor failed; returned T=%2.2f", temperature );
-		display.writeText( line++, "Temp Sensor: NOT FOUND");
+		display->writeText( line++, "Temp Sensor: NOT FOUND");
 		validTemperature = false;
 		logged_tests += "External Temperature Sensor: NOT FOUND\n";
 	}else
 	{
 		ESP_LOGI(FNAME,"Self test Temperatur Sensor PASSED; returned T=%2.2f", temperature );
-		display.writeText( line++, "Temp Sensor: OK");
+		display->writeText( line++, "Temp Sensor: OK");
 		validTemperature = true;
 		logged_tests += "External Temperature Sensor:PASSED\n";
 
@@ -517,25 +532,25 @@ void sensor(void *args){
 	float ba_t, ba_p, te_t, te_p;
 	if( ! bmpBA.selfTest( ba_t, ba_p)  ) {
 		ESP_LOGE(FNAME,"HW Error: Self test Barometric Pressure Sensor failed!");
-		display.writeText( line++, "Baro Sensor: NOT FOUND");
+		display->writeText( line++, "Baro Sensor: NOT FOUND");
 		selftestPassed = false;
 		logged_tests += "Baro Sensor Test: NOT FOUND\n";
 	}
 	else {
 		ESP_LOGI(FNAME,"Barometric Sensor T=%f P=%f", ba_t, ba_p);
-		display.writeText( line++, "Baro Sensor: OK");
+		display->writeText( line++, "Baro Sensor: OK");
 		logged_tests += "Baro Sensor Test: PASSED\n";
 	}
 
 	if( ! bmpTE.selfTest(te_t, te_p) ) {
 		ESP_LOGE(FNAME,"HW Error: Self test TE Pressure Sensor failed!");
-		display.writeText( line++, "TE Sensor: NOT FOUND");
+		display->writeText( line++, "TE Sensor: NOT FOUND");
 		selftestPassed = false;
 		logged_tests += "TE Sensor Test: NOT FOUND\n";
 	}
 	else {
 		ESP_LOGI(FNAME,"TE Sensor         T=%f P=%f", te_t, te_p);
-		display.writeText( line++, "TE Sensor: OK");
+		display->writeText( line++, "TE Sensor: OK");
 		logged_tests += "TE Sensor Test: PASSED\n";
 	}
 
@@ -543,24 +558,24 @@ void sensor(void *args){
 		if( (abs(ba_t - te_t) >4.0)  && ( ias < 50 ) ) {   // each sensor has deviations, and new PCB has more heat sources
 			selftestPassed = false;
 			ESP_LOGI(FNAME,"Severe Temperature deviation delta > 4 °C between Baro and TE sensor: °C %f", abs(ba_t - te_t) );
-			display.writeText( line++, "TE/Baro Temp: Unequal");
+			display->writeText( line++, "TE/Baro Temp: Unequal");
 			logged_tests += "TE/Baro Sensor T diff. <4°C: FAILED\n";
 		}
 		else{
 			ESP_LOGI(FNAME,"BMP 280 Temperature deviation test PASSED, dev: %f",  abs(ba_t - te_t));
-			// display.writeText( line++, "TE/Baro Temp: OK");
+			// display->writeText( line++, "TE/Baro Temp: OK");
 			logged_tests += "TE/Baro Sensor T diff. <2°C: PASSED\n";
 		}
 
 		if( (abs(ba_p - te_p) >2.5)  && ( ias < 50 ) ) {
 			selftestPassed = false;
 			ESP_LOGI(FNAME,"Pressure deviation delta > 2 hPa between Baro and TE sensor: %f", abs(ba_p - te_p) );
-			display.writeText( line++, "TE/Baro P: Unequal");
+			display->writeText( line++, "TE/Baro P: Unequal");
 			logged_tests += "TE/Baro Sensor P diff. <2hPa: FAILED\n";
 		}
 		else
 			ESP_LOGI(FNAME,"BMP 280 Pressure deviation test PASSED, dev: %f", abs(ba_p - te_p) );
-		// display.writeText( line++, "TE/Baro P: OK");
+		// display->writeText( line++, "TE/Baro P: OK");
 		logged_tests += "TE/Baro Sensor P diff. <2hPa: PASSED\n";
 
 	}
@@ -575,42 +590,42 @@ void sensor(void *args){
 	ESP_LOGI(FNAME,"Poti and Audio test");
 	if( !Audio.selfTest() ) {
 		ESP_LOGE(FNAME,"Error: Digital potentiomenter selftest failed");
-		display.writeText( line++, "Digital Poti: Failure");
+		display->writeText( line++, "Digital Poti: Failure");
 		selftestPassed = false;
 		logged_tests += "Digital Audio Poti test: FAILED\n";
 	}
 	else{
 		ESP_LOGI(FNAME,"Digital potentiometer test PASSED");
 		logged_tests += "Digital Audio Poti test: PASSED\n";
-		display.writeText( line++, "Digital Poti: OK");
+		display->writeText( line++, "Digital Poti: OK");
 	}
 
 
 	float bat = ADC.getBatVoltage(true);
 	if( bat < 1 || bat > 28.0 ){
 		ESP_LOGE(FNAME,"Error: Battery voltage metering out of bounds, act value=%f", bat );
-		display.writeText( line++, "Bat Sensor: Failure");
+		display->writeText( line++, "Bat Sensor: Failure");
 		logged_tests += "Battery Voltage Sensor: FAILED\n";
 		selftestPassed = false;
 	}
 	else{
 		ESP_LOGI(FNAME,"Battery voltage metering test PASSED, act value=%f", bat );
-		display.writeText( line++, "Bat Sensor: OK");
+		display->writeText( line++, "Bat Sensor: OK");
 		logged_tests += "Battery Voltage Sensor: PASSED\n";
 	}
-	btsender.begin();  // at least serial init: TBD: rename and split BT part
+
 	Serial::begin();
 	sleep( 2 );
-	if( blue_enable.get() ) {
+	if( blue_enable.get() == WL_BLUETOOTH ) {
 		if( btsender.selfTest() ){
-			display.writeText( line++, "Bluetooth: OK");
+			display->writeText( line++, "Bluetooth: OK");
 			logged_tests += "Bluetooth test: PASSED\n";
 		}
 		else{
-			display.writeText( line++, "Bluetooth: FAILED");
+			display->writeText( line++, "Bluetooth: FAILED");
 			logged_tests += "Bluetooth test: FAILED\n";
 		}
-	}else{
+	}else if ( blue_enable.get() == WL_WLAN ){
 		wifi_init_softap();
 	}
 
@@ -632,7 +647,7 @@ void sensor(void *args){
 		MPU.setAccelFullScale(mpud::ACCEL_FS_4G);
 		MPU.setGyroFullScale(mpud::GYRO_FS_500DPS);
 		MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
-		display.writeText( line++, "AHRS Sensor: OK");
+		display->writeText( line++, "AHRS Sensor: OK");
 		logged_tests += "MPU6050 AHRS test: PASSED\n";
 		IMU::init();
 		IMU::read();
@@ -662,7 +677,7 @@ void sensor(void *args){
 		if( hardwareRevision.get() != 2 )
 			hardwareRevision.set(2);
 		if( attitude_indicator.get() ) { // log negative message only if AHRS is enabled
-			display.writeText( line++, "AHRS Sensor: NOT FOUND");
+			display->writeText( line++, "AHRS Sensor: NOT FOUND");
 			logged_tests += "MPU6050 AHRS test: NOT FOUND\n";
 			selftestPassed = false;
 		}
@@ -677,8 +692,9 @@ void sensor(void *args){
 			ESP_LOGI( FNAME,"Hardware Revision detected 3");
 			Rotary.begin( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);
 		}
-		ota.begin( &Rotary );
-		ota.doSoftwareUpdate( &display );
+		ota = new OTA();
+		ota->begin( &Rotary );
+		ota->doSoftwareUpdate( display );
 	}
 
 	Speed2Fly.change_polar();
@@ -696,7 +712,7 @@ void sensor(void *args){
 	}
 	else{
 		ESP_LOGI(FNAME,"\n\n\n*****  Selftest PASSED  ********\n\n\n");
-		display.writeText( line++, "Selftest PASSED");
+		display->writeText( line++, "Selftest PASSED");
 		if( !Rotary.readSwitch() )
 			sleep(2);
 	}
@@ -704,8 +720,8 @@ void sensor(void *args){
 	if( Rotary.readSwitch() )
 	{
 		ESP_LOGI(FNAME,"Starting Leak test");
-		display.clear();
-		display.writeText( 1, "** Leak Test **");
+		display->clear();
+		display->writeText( 1, "** Leak Test **");
 		float sba=0;
 		float ste=0;
 		float sspeed = 0;
@@ -748,9 +764,9 @@ void sensor(void *args){
 			sprintf(bas, "ST P: %3.2f hPa   ", ba);
 			sprintf(tes, "TE P: %3.2f hPa   ", te);
 			sprintf(pis, "PI P: %3.2f Pa    ", speed);
-			display.writeText( 2, bas);
-			display.writeText( 3, tes);
-			display.writeText( 4, pis);
+			display->writeText( 2, bas);
+			display->writeText( 3, tes);
+			display->writeText( 4, pis);
 			if( i==0 ) {
 				ESP_LOGI(FNAME,"%s  %s  %s", bas,tes,pis);
 			}
@@ -761,22 +777,22 @@ void sensor(void *args){
 				sprintf(bas, "ST delta: %2.3f %%   ", bad );
 				sprintf(tes, "TE delta: %2.3f %%   ", ted );
 				sprintf(pis, "PI delta: %2.2f %%   ", speedd );
-				display.writeText( 5, bas);
-				display.writeText( 6, tes);
-				display.writeText( 7, pis);
+				display->writeText( 5, bas);
+				display->writeText( 6, tes);
+				display->writeText( 7, pis);
 				ESP_LOGI(FNAME,"%s%s%s", bas,tes,pis);
 
 			}
 			char sec[40];
 			sprintf(sec, "Seconds: %d", (i*5)+5 );
-			display.writeText( 8, sec );
+			display->writeText( 8, sec );
 		}
 		if( (abs(bad) > 0.1) || (abs(ted) > 0.1) || ( (sspeed > 10.0) && (abs(speedd) > (1.0) ) ) ) {
-			display.writeText( 9, "Test FAILED" );
+			display->writeText( 9, "Test FAILED" );
 			ESP_LOGI(FNAME,"FAILED");
 		}
 		else {
-			display.writeText( 9, "Test PASSED" );
+			display->writeText( 9, "Test PASSED" );
 			ESP_LOGI(FNAME,"PASSED");
 		}
 		while(1) {
@@ -785,8 +801,9 @@ void sensor(void *args){
 	}
 
 
-	display.initDisplay();
-	Menu.begin( &display, &Rotary, &bmpBA, &ADC );
+	display->initDisplay();
+	Menu = new SetupMenu();
+	Menu->begin( display, &Rotary, &bmpBA, &ADC );
 	if( ias < 50.0 ){
 		xSemaphoreTake(xMutex,portMAX_DELAY );
 		ESP_LOGI(FNAME,"QNH Autosetup, IAS=%3f (<50 km/h)", ias );
@@ -837,7 +854,7 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
 	xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096*2, NULL, 15, bpid, 0);  // 10
-	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 12000, NULL, 20, dpid, 0);  // 10
+	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 20, dpid, 0);  // 10
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 4096, NULL, 6, tpid, 0);
 
 	Audio.startAudio();
@@ -850,20 +867,19 @@ void sensor(void *args){
 
 }
 
-extern "C" void btstack_app(void *ignore);
+// extern "C" void btstack_app(void *ignore);
 
 extern "C" void  app_main(void){
 	ESP_LOGI(FNAME,"app_main" );
 	ESP_LOGI(FNAME,"Now init all Setup elements");
 	SetupCommon::initSetup();
-	// xTaskCreatePinnedToCore(&sensor, "sensor", 8192, NULL, 25, 0, 0);
-	// sleep( 2 );
-	if( blue_enable.get() ) {
-		ESP_LOGI(FNAME,"start btstack task");
-		xTaskCreatePinnedToCore(&btstack_app, "btstack_app", 4096, NULL, 25, 0, 0);
+	esp_log_level_set("*", ESP_LOG_INFO);
+	if( blue_enable.get() == WL_BLUETOOTH ) {
+		// ESP_LOGI(FNAME,"start btstack task");
+		// xTaskCreatePinnedToCore(&btstack_app, "btstack_app", 8192, NULL, 1, 0, 0 );
 		sleep( 2 );
 	}
-	// sleep( 10 );
+
 	sensor( 0 );
 
 	vTaskDelete( NULL );

@@ -98,7 +98,7 @@ void Serial::serialHandlerS1(void *pvParameters){
 		Router::routeS1();
 		Router::routeBT();
 		Router::routeWLAN();
-	    BTSender::transmit(s);   // piggyback this here, saves one task for BT sender, SString s is recycled as buffer
+	    BTSender::progress();   // piggyback this here, saves one task for BT sender
 		esp_task_wdt_reset();
 		vTaskDelay( HEARTBEAT_PERIOD_MS/portTICK_PERIOD_MS );
 	}
@@ -141,7 +141,7 @@ void Serial::serialHandlerS2(void *pvParameters){
 
 void Serial::begin(){
 	ESP_LOGI(FNAME,"Serial::begin()" );
-	if( serial1_speed.get() != 0  || blue_enable.get() ){
+	if( serial1_speed.get() != 0  || blue_enable.get() != 0 ){
 		int baudrate = baud[serial1_speed.get()];
 		if( baudrate != 0 ) {
 			ESP_LOGI(FNAME,"Serial Interface ttyS1 enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial1_speed.get(), baud[serial1_speed.get()], serial1_tx_inverted.get(), serial1_rx_inverted.get() );

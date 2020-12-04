@@ -5,12 +5,13 @@
    Unless required by applicable law or agreed to in writing, this
    software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
    CONDITIONS OF ANY KIND, either express or implied.
-*/
-#include <string.h>
+ */
+
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_system.h"
-#include "esp_wifi.h"
+
 #include "esp_event.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
@@ -27,6 +28,8 @@
 #include "RingBufCPP.h"
 #include "BTSender.h"
 #include "Router.h"
+#include <string.h>
+#include "esp_wifi.h"
 
 typedef struct xcv_sock_server {
 	RingBufCPP<SString, QUEUE_SIZE>* txbuf;
@@ -132,70 +135,72 @@ void socket_server(void *setup) {
 
 /* WiFi configuration and startup
 
-*/
+ */
 
 static void wifi_event_handler(void* arg, esp_event_base_t event_base,
-                                    int32_t event_id, void* event_data)
+		int32_t event_id, void* event_data)
 {
-    if (event_id == WIFI_EVENT_AP_STACONNECTED) {
-        wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*) event_data;
-        ESP_LOGI(FNAME,"station %x:%x:%x:%x:%x:%x joined, AID=%d", MAC2STR(event->mac), event->aid);
-    } else if (event_id == WIFI_EVENT_AP_STADISCONNECTED) {
-        wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*) event_data;
-        ESP_LOGI(FNAME,"station %x:%x:%x:%x:%x:%x left, AID=%d", MAC2STR(event->mac), event->aid);
-    }
+	if (event_id == WIFI_EVENT_AP_STACONNECTED) {
+		wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*) event_data;
+		ESP_LOGI(FNAME,"station %x:%x:%x:%x:%x:%x joined, AID=%d", MAC2STR(event->mac), event->aid);
+	} else if (event_id == WIFI_EVENT_AP_STADISCONNECTED) {
+		wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*) event_data;
+		ESP_LOGI(FNAME,"station %x:%x:%x:%x:%x:%x left, AID=%d", MAC2STR(event->mac), event->aid);
+	}
 }
 
 
 void wifi_init_softap()
 {
-	tcpip_adapter_init();
-	ESP_LOGI(FNAME,"now esp_netif_init");
-    ESP_ERROR_CHECK(esp_netif_init());
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
-    ESP_LOGI(FNAME,"now esp_event_handler_instance_register");
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
-                                                           ESP_EVENT_ANY_ID,
-                                                           &wifi_event_handler,
-                                                           NULL,
-                                                           NULL));
+	if( blue_enable.get() == WL_WLAN ){
+		tcpip_adapter_init();
+		ESP_LOGI(FNAME,"now esp_netif_init");
+		ESP_ERROR_CHECK(esp_netif_init());
+		ESP_ERROR_CHECK(esp_event_loop_create_default());
+		ESP_LOGI(FNAME,"now esp_event_handler_instance_register");
+		ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
+				ESP_EVENT_ANY_ID,
+				&wifi_event_handler,
+				NULL,
+				NULL));
 
-    // ESP_LOGI(FNAME,"now esp_netif_create_default_wifi_ap");
-    // esp_netif_create_default_wifi_ap();
-    ESP_LOGI(FNAME,"now esp_wifi_init");
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+		// ESP_LOGI(FNAME,"now esp_netif_create_default_wifi_ap");
+		// esp_netif_create_default_wifi_ap();
+		ESP_LOGI(FNAME,"now esp_wifi_init");
+		wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+		ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
-    esp_event_loop_init( (system_event_cb_t)wifi_event_handler, 0 );
+		esp_event_loop_init( (system_event_cb_t)wifi_event_handler, 0 );
 
-    ESP_LOGI(FNAME,"now esp_wifi_set_config");
-    wifi_config_t wc;
-    strcpy( (char *)wc.ap.ssid, SetupCommon::getID() );
-    wc.ap.ssid_len = strlen( (char *)wc.ap.ssid );
-    strcpy( (char *)wc.ap.password, "xcvario-21" );
-    wc.ap.channel = 1;
-    wc.ap.max_connection = 2;
-    wc.ap.authmode = WIFI_AUTH_WPA_WPA2_PSK;
-    wc.ap.ssid_hidden = 0;
-    wc.ap.max_connection = 2;
-    wc.ap.beacon_interval = 50;
+		ESP_LOGI(FNAME,"now esp_wifi_set_config");
+		wifi_config_t wc;
+		strcpy( (char *)wc.ap.ssid, SetupCommon::getID() );
+		wc.ap.ssid_len = strlen( (char *)wc.ap.ssid );
+		strcpy( (char *)wc.ap.password, "xcvario-21" );
+		wc.ap.channel = 1;
+		wc.ap.max_connection = 2;
+		wc.ap.authmode = WIFI_AUTH_WPA_WPA2_PSK;
+		wc.ap.ssid_hidden = 0;
+		wc.ap.max_connection = 2;
+		wc.ap.beacon_interval = 50;
 
-    ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &wc));
-    ESP_LOGI(FNAME,"now esp_wifi_set_mode");
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
-    ESP_LOGI(FNAME,"now esp_wifi_set_storage");
-    ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+		ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &wc));
+		ESP_LOGI(FNAME,"now esp_wifi_set_mode");
+		ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+		ESP_LOGI(FNAME,"now esp_wifi_set_storage");
+		ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
 
-    sleep(1);
-    ESP_LOGI(FNAME,"now esp_wifi_start");
-    ESP_ERROR_CHECK(esp_wifi_start());
-    ESP_ERROR_CHECK(esp_wifi_set_max_tx_power(8));
+		sleep(1);
+		ESP_LOGI(FNAME,"now esp_wifi_start");
+		ESP_ERROR_CHECK(esp_wifi_start());
+		ESP_ERROR_CHECK(esp_wifi_set_max_tx_power(8));
 
 
-  	xTaskCreatePinnedToCore(&socket_server, "socket_srv_0", 2500, &XCVario, 27, 0, 0);  // 10
-   	xTaskCreatePinnedToCore(&socket_server, "socket_ser_1", 2500, &FLARM, 28, 0, 0);  // 10
-  	xTaskCreatePinnedToCore(&socket_server, "socket_ser_2", 2500, &AUX, 26, 0, 0);  // 10
+		xTaskCreatePinnedToCore(&socket_server, "socket_srv_0", 2500, &XCVario, 17, 0, 0);  // 10
+		xTaskCreatePinnedToCore(&socket_server, "socket_ser_1", 2500, &FLARM, 18, 0, 0);  // 10
+		xTaskCreatePinnedToCore(&socket_server, "socket_ser_2", 2500, &AUX, 16, 0, 0);  // 10
 
-    ESP_LOGI(FNAME, "wifi_init_softap finished SUCCESS. SSID:%s password:%s channel:%d", (char *)wc.ap.ssid, (char *)wc.ap.password, wc.ap.channel );
+		ESP_LOGI(FNAME, "wifi_init_softap finished SUCCESS. SSID:%s password:%s channel:%d", (char *)wc.ap.ssid, (char *)wc.ap.password, wc.ap.channel );
+	}
 }
 

@@ -912,12 +912,13 @@ void SetupMenu::setup( )
 
 
 		// Bluetooth
-		String btname="Bluetooth   ";
+		String btname="Wireless ";
 		btname += SetupCommon::getID();
 
 		SetupMenuSelect * btm = new SetupMenuSelect(  btname, 0, true, 0, true, &blue_enable );
-		btm->addEntry( "Sender OFF");
-		btm->addEntry( "Sender ON");
+		btm->addEntry( "Disable");
+		btm->addEntry( "Bluetooth");
+		btm->addEntry( "Wireless LAN");
 		opt->addMenu( btm );
 
 		// Rotary Default

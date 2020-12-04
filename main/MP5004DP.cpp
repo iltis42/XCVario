@@ -20,7 +20,7 @@ bool MP5004DP::begin(gpio_num_t sda, gpio_num_t scl ){
 	}
 	 else
 	 	ESP_LOGI(FNAME,"MP5004DP: NVS init ok");
-	ret = MCP.begin();
+	ret = MCP->begin();
 		if ( ret == false ){
 			ESP_LOGE(FNAME,"MP5004DP: Error MCP init");
 			return ret;
@@ -30,11 +30,11 @@ bool MP5004DP::begin(gpio_num_t sda, gpio_num_t scl ){
 
 bool MP5004DP::selfTest(int& val)
 {
-	if( MCP.selfTest() != ESP_OK ){
+	if( MCP->selfTest() != ESP_OK ){
 		return false;
 	}
-	val = MCP.readVal();
-	if( MCP.readVal() >= 0 ) {
+	val = MCP->readVal();
+	if( MCP->readVal() >= 0 ) {
 		return( true);
 	}
 	else
@@ -66,7 +66,7 @@ bool MP5004DP::offsetPlausible(uint16_t aoffset )
 
 bool MP5004DP::doOffset( bool force ){
 	ESP_LOGI(FNAME,"MP5004DP doOffset()");
-	if ( !MCP.haveDevice() ){
+	if ( !MCP->haveDevice() ){
 		ESP_LOGI(FNAME,"Dont see a device, skip offset");
 		_haveDevice=false;
 		return true;
@@ -79,7 +79,7 @@ bool MP5004DP::doOffset( bool force ){
 	else
 		ESP_LOGI(FNAME,"offset from NVS: %0.1f", _offset );
 
-	int adcval = MCP.readVal();
+	int adcval = MCP->readVal();
 	ESP_LOGI(FNAME,"offset from ADC %d", adcval );
 
 	bool plausible = offsetPlausible( adcval );
@@ -103,7 +103,7 @@ bool MP5004DP::doOffset( bool force ){
 	 	uint32_t rawOffset=0;
 	 	for( int i=0; i<100; i++){
 	 		uint16_t raw;
-	 		MCP.readRaw(raw);
+	 		MCP->readRaw(raw);
 	 		rawOffset += raw;
 	 		vTaskDelay(10 / portTICK_PERIOD_MS);
 	 	}
@@ -140,7 +140,7 @@ float MP5004DP::readPascal( float minimum ){
 		corr = correctionXZG;
 		// ESP_LOGI(FNAME,"pressure correction for XZG %f", corr );
 	}
-	float val = MCP.readVal();
+	float val = MCP->readVal();
 
 	float _pascal = (val - _offset) * corr * ((100.0 + speedcal.get()) / 100.0);
     if ( (_pascal < minimum) && (minimum != 0) ) {

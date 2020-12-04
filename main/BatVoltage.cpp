@@ -49,14 +49,14 @@ void BatVoltage::begin( adc1_channel_t battery, adc1_channel_t reference ) {
 }
 
 float BatVoltage::getBatVoltage( bool init ){
-	float adc = 0.0;
-	portENTER_CRITICAL_ISR(&batmux);
-	for( int i=0; i<100; i++ ) {
+	int adc = 0;
+	// portENTER_CRITICAL_ISR(&batmux);
+	for( int i=0; i<64; i++ ) {
 	   adc += adc1_get_raw( _battery_ch );
 	}
-	portEXIT_CRITICAL_ISR(&batmux);
-	adc = adc/100.0;
-	uint32_t voltage = esp_adc_cal_raw_to_voltage( (int)(adc+0.5), adc_chars);
+	// portEXIT_CRITICAL_ISR(&batmux);
+	adc = adc/64;
+	uint32_t voltage = esp_adc_cal_raw_to_voltage( adc, adc_chars);
     // ESP_LOGI(FNAME,"Voltage %d", voltage);
 
 	float bat = (float)voltage * _correct * ( (100.0 + factory_volt_adjust.get()) / 100.0 ) +  DIODE_VOLTAGE_DROP;

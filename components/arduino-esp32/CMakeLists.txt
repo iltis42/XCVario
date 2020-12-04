@@ -11,6 +11,7 @@ set( src_dirs
   "libraries/Ticker/src"
   "libraries/Update/src"
   "libraries/Wire/src"
+  "libraries/BluetoothSerial/src"
   )
 
 set( inc_dirs
@@ -26,11 +27,12 @@ set( inc_dirs
   "libraries/Ticker/src"
   "libraries/Update/src"
   "libraries/Wire/src"
+  "libraries/BluetoothSerial/src"
   )
 
 
 
 idf_component_register( SRC_DIRS "${src_dirs}"
          	        INCLUDE_DIRS "${inc_dirs}"
-         		REQUIRES spi_flash mbedtls mdns soc app_update bt fatfs spiffs )
+         		REQUIRES spi_flash mbedtls mdns soc app_update bt fatfs spiffs bt )
 

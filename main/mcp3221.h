@@ -72,4 +72,4 @@ private:
 
 #endif
 
-extern MCP3221 MCP;
+extern MCP3221 *MCP;

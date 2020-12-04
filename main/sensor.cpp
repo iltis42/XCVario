@@ -442,9 +442,13 @@ void sensor(void *args){
 		ESP_LOGI(FNAME,"Rotary pressed: Do Software Update");
 	}
 
-	String btname="Wireless ID: ";
-	btname += SetupCommon::getID();
-	display->writeText(line++, btname.c_str() );
+	String wireless_id;
+	if( blue_enable.get() == WL_BLUETOOTH )
+		wireless_id="Bluetooth ID: ";
+	else
+		wireless_id="WLAN SID: ";
+	wireless_id += SetupCommon::getID();
+	display->writeText(line++, wireless_id.c_str() );
 
 	ESP_LOGI(FNAME,"Speed sensors init..");
 	int offset;

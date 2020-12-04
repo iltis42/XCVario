@@ -19,12 +19,16 @@
 #include "BluetoothSerial.h"
 
 bool BTSender::selfTest(){
+	ESP_LOGI(FNAME,"SerialBT::selfTest");
 	if( !SerialBT ){
 		ESP_LOGI(FNAME,"SerialBT not initialized");
 		return false;
 	}
-	if( SerialBT->isReady( true ) )
+	if( SerialBT->isReady( true ) ) {
+		ESP_LOGI(FNAME,"SerialBT::selfTest: PASSED");
 		return true;
+	}
+	ESP_LOGI(FNAME,"SerialBT::selfTest: FAILED");
 	return false;
 }
 
@@ -87,10 +91,9 @@ void BTSender::progress(){
 void BTSender::begin(){
 	ESP_LOGI(FNAME,"BTSender::begin()" );
 	if( blue_enable.get() == WL_BLUETOOTH ) {
-		 ESP_LOGI(FNAME,"BT on, create object" );
+		 ESP_LOGI(FNAME,"BT on, create BT master object" );
 		 SerialBT = new BluetoothSerial();
-		 SerialBT->begin(SetupCommon::getID());
-		 sleep( 2 );
+		 SerialBT->begin(SetupCommon::getID(), true);
 	}
 }
 

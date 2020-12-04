@@ -911,11 +911,12 @@ void SetupMenu::setup( )
 		auze->addEntry( "Start Autozero");
 
 
-		// Bluetooth
+		// Bluetooth or Wifi
 		String btname="Wireless ";
 		btname += SetupCommon::getID();
 
 		SetupMenuSelect * btm = new SetupMenuSelect(  btname, 0, true, 0, true, &blue_enable );
+		btm->setHelp( PROGMEM "Activate corresponding type wireless interface to connect navigation devices running e.g. XCSoar");
 		btm->addEntry( "Disable");
 		btm->addEntry( "Bluetooth");
 		btm->addEntry( "Wireless LAN");

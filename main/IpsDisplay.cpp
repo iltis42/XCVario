@@ -651,22 +651,20 @@ void IpsDisplay::drawS2FMode( int x, int y, bool cruise ){
 void IpsDisplay::drawBT() {
 	int btq=BTSender::queueFull();
 	if( btq != btqueue ){
-		if( blue_enable.get() == WL_BLUETOOTH ) {
-			ucg_int_t btx=DISPLAY_W-22;
-			ucg_int_t bty=(BTH/2) + 8;
-			if( btq )
-				ucg->setColor( COLOR_MGREY );
-			else
-				ucg->setColor( COLOR_BLUE );  // blue
+		ucg_int_t btx=DISPLAY_W-22;
+		ucg_int_t bty=(BTH/2) + 8;
+		if( btq )
+			ucg->setColor( COLOR_MGREY );
+		else
+			ucg->setColor( COLOR_BLUE );  // blue
 
-			ucg->drawRBox( btx-BTW/2, bty-BTH/2, BTW, BTH, BTW/2-1);
-			// inner symbol
-			ucg->setColor( COLOR_WHITE );
-			ucg->drawTriangle( btx, bty, btx+BTSIZE, bty-BTSIZE, btx, bty-2*BTSIZE );
-			ucg->drawTriangle( btx, bty, btx+BTSIZE, bty+BTSIZE, btx, bty+2*BTSIZE );
-			ucg->drawLine( btx, bty, btx-BTSIZE, bty-BTSIZE );
-			ucg->drawLine( btx, bty, btx-BTSIZE, bty+BTSIZE );
-		}
+		ucg->drawRBox( btx-BTW/2, bty-BTH/2, BTW, BTH, BTW/2-1);
+		// inner symbol
+		ucg->setColor( COLOR_WHITE );
+		ucg->drawTriangle( btx, bty, btx+BTSIZE, bty-BTSIZE, btx, bty-2*BTSIZE );
+		ucg->drawTriangle( btx, bty, btx+BTSIZE, bty+BTSIZE, btx, bty+2*BTSIZE );
+		ucg->drawLine( btx, bty, btx-BTSIZE, bty-BTSIZE );
+		ucg->drawLine( btx, bty, btx-BTSIZE, bty+BTSIZE );
 		btqueue = btq;
 	}
 }
@@ -689,20 +687,21 @@ void IpsDisplay::drawFlarm( int x, int y, bool flarm ) {
 }
 
 
-void IpsDisplay::drawWifi( int x, int y, bool wifi ) {
-	ucg_int_t flx=x;
-	ucg_int_t fly=y;
-	if( wifi )
-		ucg->setColor(COLOR_BLUE);
-	else
-		ucg->setColor( COLOR_MGREY );
-
-	ucg->setClipRange( flx-FLOGO/2, fly-FLOGO, FLOGO, FLOGO );
-	ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/4)-2, UCG_DRAW_UPPER_RIGHT);
-	ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/4)-2, UCG_DRAW_UPPER_RIGHT);
-	ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/2)-2, UCG_DRAW_UPPER_RIGHT);
-	ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/2)-3, UCG_DRAW_UPPER_RIGHT);
-	ucg->undoClipRange();
+void IpsDisplay::drawWifi( int x, int y ) {
+	int btq=BTSender::queueFull();
+	ESP_LOGI(FNAME,"IpsDisplay::drawWifi %d %d %d", x,y,btq);
+	if( btq != btqueue ){
+		if( btq )
+			ucg->setColor(COLOR_MGREY);
+		else
+			ucg->setColor( COLOR_BLUE );
+		ucg->drawDisc( x, y, 3, UCG_DRAW_ALL );
+		ucg->drawCircle( x, y, 9, UCG_DRAW_UPPER_RIGHT);
+		ucg->drawCircle( x, y, 10, UCG_DRAW_UPPER_RIGHT);
+		ucg->drawCircle( x, y, 16, UCG_DRAW_UPPER_RIGHT);
+		ucg->drawCircle( x, y, 17, UCG_DRAW_UPPER_RIGHT);
+		btqueue = btq;
+	}
 }
 
 
@@ -873,7 +872,10 @@ void IpsDisplay::initRetroDisplay(){
 		units="kt ";
 	ucg->setPrintPos(85,15);
 	ucg->print(units.c_str());
-	drawBT();
+	if( blue_enable.get() == WL_BLUETOOTH )
+		drawBT();
+	if( blue_enable.get() == WL_WLAN )
+		drawWifi(DISPLAY_W-27, FLOGO+2 );
 	drawMC( MC.get(), true );
 	drawThermometer(  10, 30 );
 
@@ -983,7 +985,10 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 	// Bluetooth
 	if( !(tick%12) )
 	{
-		drawBT();
+		if( blue_enable.get() == WL_BLUETOOTH )
+			drawBT();
+		if( blue_enable.get() == WL_WLAN )
+			drawWifi(DISPLAY_W-27, FLOGO+2 );
 	}
 
 	// S2F Command triangle
@@ -1354,9 +1359,11 @@ void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_
 
 	// Bluetooth Symbol
 
-	if( !(tick%12) )
-	{
-		drawBT();
+	if( !(tick%12) ){
+		if( blue_enable.get() == WL_BLUETOOTH )
+			drawBT();
+		if( blue_enable.get() == WL_WLAN )
+			drawWifi(DISPLAY_W-25, FLOGO);
 	}
 
 	bool flarm=false;

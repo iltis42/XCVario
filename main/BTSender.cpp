@@ -24,7 +24,7 @@ bool BTSender::selfTest(){
 		ESP_LOGI(FNAME,"SerialBT not initialized");
 		return false;
 	}
-	if( SerialBT->isReady( true ) ) {
+	if( SerialBT->isReady( false ) ) {
 		ESP_LOGI(FNAME,"SerialBT::selfTest: PASSED");
 		return true;
 	}
@@ -93,7 +93,7 @@ void BTSender::begin(){
 	if( blue_enable.get() == WL_BLUETOOTH ) {
 		 ESP_LOGI(FNAME,"BT on, create BT master object" );
 		 SerialBT = new BluetoothSerial();
-		 SerialBT->begin(SetupCommon::getID(), true);
+		 SerialBT->begin(SetupCommon::getID() );
 	}
 }
 

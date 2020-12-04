@@ -64,9 +64,9 @@ bool Router::pullMsg( RingBufCPP<SString, QUEUE_SIZE>& q, SString& s ){
 void Router::sendXCV(char * s){
 	// ESP_LOGI( FNAME,"XCVario message %s",s);
 	SString xcv( s );
-	if( Router::forwardMsg( xcv, xcv_rx_q ) )
+	if( forwardMsg( xcv, xcv_rx_q ) )
 		ESP_LOGI(FNAME,"Received %d bytes from XCV", xcv.length() );
-	Router::routeXCV();
+	routeXCV();
 }
 
 // Route XCVario messages
@@ -97,7 +97,7 @@ void Router::routeS1(){
 	if( pullMsg( s1_rx_q, s1) ){
 		ESP_LOGD(FNAME,"ttyS1 RX len: %d bytes, Q:%d", s1.length(), bt_tx_q.isFull() );
 		ESP_LOG_BUFFER_HEXDUMP(FNAME,s1.c_str(),s1.length(), ESP_LOG_DEBUG);
-		if( blue_enable.get() == WL_WLAN )   // tbd extra config.
+		if( blue_enable.get() == WL_WLAN )
 			if( forwardMsg( s1, wl_flarm_tx_q ))
 				ESP_LOGI(FNAME,"ttyS1 RX bytes %d forward to wl_flarm_tx_q port 8881", s1.length() );
 		if( blue_enable.get() == WL_BLUETOOTH )
@@ -132,7 +132,7 @@ void Router::routeS2(){
 
 // route messages from WLAN
 void Router::routeWLAN(){
-	if( blue_enable.get() != WL_WLAN )  // tbd: extra config to switch of WLAN
+	if( blue_enable.get() != WL_WLAN )
 		return;
 	// Route received data from WLAN ports
 	SString wlmsg;

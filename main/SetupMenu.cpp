@@ -156,7 +156,7 @@ int mc_adj( SetupMenuValFloat * p )
 #ifdef MC_FROM_XC
 	char mc[30];
 	sprintf(mc, "$POV,?,MC");
-	int cs = OpenVario::getCheckSum(&mc[1]);
+	int cs = Protocols::getCheckSum(&mc[1]);
 	int i = strlen(mc);
 	sprintf( &mc[i], "*%02X\n", cs );
 	btsender.send(mc);
@@ -1015,7 +1015,7 @@ void SetupMenu::setup( )
 
 		SetupMenuSelect * nmea = new SetupMenuSelect( PROGMEM "NMEA Protocol", 0, false , 0, true, &nmea_protocol );
 		sye->addMenu( nmea );
-		nmea->setHelp( "Setup protocol used for NMEA sending what corresponds to the driver used in OpenVario");
+		nmea->setHelp( "Setup the protocol used for sending NMEA sentences. This needs to be inline with the device driver chosen in XCSoar/LK8000");
 		nmea->addEntry( "OpenVario");
 		nmea->addEntry( "Borgelt");
 		nmea->addEntry( "Cambridge");
@@ -1023,7 +1023,6 @@ void SetupMenu::setup( )
 			nmea->addEntry( "Eye Sensor Box");
 			nmea->addEntry( "XCVario");
 		}
-
 	}
 	SetupMenu::display();
 }

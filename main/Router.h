@@ -55,6 +55,9 @@ public:
   // route messages coming in from Bluetooth
   static void routeBT();
 
+  // add messages from XCVario to Router
+  static void sendXCV(char * s);
+
 private:
 
 };

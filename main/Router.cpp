@@ -9,7 +9,7 @@
 #include "esp_task_wdt.h"
 #include <freertos/semphr.h>
 #include "RingBufCPP.h"
-#include "OpenVario.h"
+#include "Protocols.h"
 #include <logdef.h>
 #include "Switch.h"
 #include "sensor.h"
@@ -61,6 +61,13 @@ bool Router::pullMsg( RingBufCPP<SString, QUEUE_SIZE>& q, SString& s ){
 }
 
 // XCVario Router
+void Router::sendXCV(char * s){
+	// ESP_LOGI( FNAME,"XCVario message %s",s);
+	SString xcv( s );
+	if( Router::forwardMsg( xcv, xcv_rx_q ) )
+		ESP_LOGI(FNAME,"Received %d bytes from XCV", xcv.length() );
+	Router::routeXCV();
+}
 
 // Route XCVario messages
 void Router::routeXCV(){
@@ -132,7 +139,7 @@ void Router::routeWLAN(){
 	if( pullMsg( wl_vario_rx_q, wlmsg) ){
 		if( strncmp( wlmsg.c_str(), "!g,", 3 )  == 0 ) {
 			ESP_LOGI(FNAME,"From WLAN port 8880 RX matched a Borgelt command %s", wlmsg.c_str() );
-			OpenVario::parseNMEA( wlmsg.c_str() );
+			Protocols::parseNMEA( wlmsg.c_str() );
 		}
 	}
 	if( pullMsg( wl_flarm_rx_q, wlmsg ) ){
@@ -168,7 +175,7 @@ void Router::routeBT(){
 		// always check if it is a command to ourselves
 		if( strncmp( bt.c_str(), "!g,", 3 )  == 0 ) {
 			ESP_LOGI(FNAME,"BT RX Matched a Borgelt command %s", bt.c_str() );
-			OpenVario::parseNMEA( bt.c_str() );
+			Protocols::parseNMEA( bt.c_str() );
 		}
 	}
 }

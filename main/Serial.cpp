@@ -12,7 +12,7 @@
 #include <HardwareSerial.h>
 #include "RingBufCPP.h"
 #include <driver/uart.h>
-#include "OpenVario.h"
+#include "Protocols.h"
 #include <logdef.h>
 #include "Switch.h"
 #include "sensor.h"

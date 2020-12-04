@@ -11,7 +11,7 @@
 #include <algorithm>
 #include "RingBufCPP.h"
 #include <driver/uart.h>
-#include "OpenVario.h"
+#include "Protocols.h"
 #include <logdef.h>
 #include "Switch.h"
 #include "sensor.h"
@@ -34,10 +34,6 @@ bool BTSender::selfTest(){
 
 BluetoothSerial *BTSender::SerialBT = 0;
 
-// dummy, we don't implement BLE right now
-extern "C" void btsnd_hcic_ble_update_adv_report_flow_control( int ignore ) {};
-
-
 int BTSender::queueFull() {
 	if( blue_enable.get() == WL_BLUETOOTH ){
 		if(bt_tx_q.isFull())
@@ -48,15 +44,6 @@ int BTSender::queueFull() {
 			return 1;
 	}
 	return 0;
-}
-
-// Formerly there was only BT, tbd: remove from here
-void BTSender::send(char * s){
-	// ESP_LOGI( FNAME,"XCVario message %s",s);
-	SString xcv( s );
-	if( Router::forwardMsg( xcv, xcv_rx_q ) )
-		ESP_LOGI(FNAME,"Received %d bytes from XCV", xcv.length() );
-	Router::routeXCV();
 }
 
 void BTSender::progress(){
@@ -96,4 +83,8 @@ void BTSender::begin(){
 		 SerialBT->begin(SetupCommon::getID() );
 	}
 }
+
+
+// dummy, we don't implement BLE right now
+extern "C" void btsnd_hcic_ble_update_adv_report_flow_control( int ignore ) {};
 

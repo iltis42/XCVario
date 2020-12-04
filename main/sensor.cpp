@@ -19,7 +19,7 @@
 #include "MS4525DO.h"
 #include "BMPVario.h"
 #include "BTSender.h"
-#include "OpenVario.h"
+#include "Protocols.h"
 #include "DS18B20.h"
 #include "Setup.h"
 #include "esp_sleep.h"
@@ -93,7 +93,7 @@ MS4525DO MS4525DO;
 xSemaphoreHandle xMutex=NULL;
 
 S2F Speed2Fly;
-OpenVario OV( &Speed2Fly );
+Protocols OV( &Speed2Fly );
 
 BatVoltage ADC;
 
@@ -289,36 +289,29 @@ void readBMP(void *pvParameters){
 				// reduce also messages from 10 per second to 5 per second to reduce load in XCSoar
 				char lb[120];
 				if( nmea_protocol.get() == BORGELT ) {
-					OV.makeNMEA( P_BORGELT, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt  );
-					btsender.send( lb );
-					OV.makeNMEA( P_GENERIC, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt  );
-					btsender.send( lb );
+					OV.sendNMEA( P_BORGELT, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt  );
+					OV.sendNMEA( P_GENERIC, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt  );
 				}
 				else if( nmea_protocol.get() == OPENVARIO ){
-					OV.makeNMEA( P_OPENVARIO, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt  );
-					btsender.send( lb );
+					OV.sendNMEA( P_OPENVARIO, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt  );
 				}
 				else if( nmea_protocol.get() == CAMBRIDGE ){
-					OV.makeNMEA( P_CAMBRIDGE, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt  );
-					btsender.send( lb );
+					OV.sendNMEA( P_CAMBRIDGE, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt  );
 				}
 				else if( nmea_protocol.get() == EYE_SENSOR_BOX ) {
 					if( peya ) {  // toggle sentence each time
-						OV.makeNMEA( P_EYE_PEYA, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature  );
-						btsender.send( lb );
+						OV.sendNMEA( P_EYE_PEYA, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature  );
 						peya = false;
 					}
 					else {
 						peya = true;
-						OV.makeNMEA( P_EYE_PEYI, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
+						OV.sendNMEA( P_EYE_PEYI, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
 							-accelG[2], accelG[1],accelG[0], gyroDPS.x+ox, gyroDPS.y+oy, gyroDPS.z+oz );
-						btsender.send( lb );
 					}
 				}
 				else if( nmea_protocol.get() == XCVARIO ) {
-					OV.makeNMEA( P_XCVARIO, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
+					OV.sendNMEA( P_XCVARIO, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
 							-accelG[2], accelG[1],accelG[0], gyroDPS.x+ox, gyroDPS.y+oy, gyroDPS.z+oz );
-					btsender.send( lb );
 				}
 				else
 					ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );

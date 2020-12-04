@@ -15,7 +15,6 @@ class BTSender {
 public:
   BTSender() { SerialBT = 0; };
   void begin();
-  void send( char * s );
   static int queueFull();
   static void progress();  // progress loop
   bool selfTest();         // call 3 seconds after begin

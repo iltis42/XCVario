@@ -21,7 +21,6 @@
 #include "KalmanMPU6050.h"
 #include "Router.h"
 
-
 S2F * Protocols::_s2f = 0;
 
 Protocols::Protocols(S2F * s2f) {
@@ -31,7 +30,6 @@ Protocols::Protocols(S2F * s2f) {
 Protocols::~Protocols() {
 
 }
-
 
 void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
 		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz  ){

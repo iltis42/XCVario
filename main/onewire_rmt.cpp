@@ -677,9 +677,6 @@ void onewire_rmt_skip(struct mgos_rmt_onewire *ow) {
     onewire_write_bits(ow->pin, 0xCC, 8, owDefaultPower);
 }
 
-
-
-
 void onewire_rmt_search_clean(struct mgos_rmt_onewire *ow) {
     memset(&ow->sst, 0, sizeof (ow->sst));
 }
@@ -725,7 +722,6 @@ void onewire_rmt_write_bytes(struct mgos_rmt_onewire *ow, const uint8_t *buf, in
             return; //PLATFORM_ERR;
         }
     }
-
     return; // PLATFORM_OK;
 }
 

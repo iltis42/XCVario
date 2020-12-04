@@ -5,7 +5,6 @@
 #include "driver/gpio.h"
 #include "onewire_rmt.h"
 
-
 struct mgos_rmt_onewire* onewire_rmt_create(gpio_num_t pin, rmt_channel_t rmt_rx, rmt_channel_t rmt_tx);
 void onewire_rmt_close(struct mgos_rmt_onewire *ow);
 

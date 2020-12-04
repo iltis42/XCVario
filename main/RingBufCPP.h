@@ -9,56 +9,56 @@
 
 class SString {
 public:
-	SString() { clear();
+	inline SString() { clear();
 	}
-	SString( SString& os) {
+	inline SString( SString& os) {
 		len = SSTRLEN-1;
 		if( os.length() < len)
 			len = os.length();
 		memcpy(str,os.c_str(),len);
 		str[len] = 0;
 	}
-	SString( char * s ) {
+	inline SString( char * s ) {
 		len = SSTRLEN-1;
 		if( strlen(s) < len)
 			len = strlen(s);
 		memcpy(str,s,len);
 		str[len] = 0;
 	}
-	void add( char c ) {
+	inline void add( char c ) {
 		if( len < SSTRLEN-1 )
 			str[len++] = c;
 	}
-	void add( char *s ) {   // add pure strings
+	inline void add( char *s ) {   // add pure strings
 		len = SSTRLEN-1;
 		if( strlen(s) < len)
 			len = strlen(s);
 		memcpy(str,s,len);
 		str[len] = 0;
 	}
-	void addl( char *s, int alen ) {
+	inline void addl( char *s, int alen ) {
 			len = SSTRLEN-1;
 			if( alen < len)
 				len = alen;
 			memcpy(str,s,len);
 			str[len] = 0;
 	}
-	void append( char *s, int alen ) {
+	inline void append( char *s, int alen ) {
 		if( alen+len < SSTRLEN-1 ){
 			memcpy(str+len,s,alen);
 			str[alen+len] = 0;
 			len += alen;
 		}
 	}
-	void clear() {
+	inline void clear() {
 		memset(str,0,SSTRLEN);
 		len = 0;
 	}
-	void setLen( int alen ) {
+	inline void setLen( int alen ) {
 		len = alen;
 	}
-	char *c_str() { return str; };
-	size_t length() { return len; }
+	inline char *c_str() { return str; };
+	inline size_t length() { return len; }
 private:
 	char str[SSTRLEN];
 	int  len;
@@ -70,12 +70,11 @@ class RingBufCPP
 {
 public:
 
-RingBufCPP()
+inline RingBufCPP()
 {
      RB_ATOMIC_START
      {
          _numElements = 0;
-
          _head = 0;
      }
      RB_ATOMIC_END
@@ -90,7 +89,7 @@ RingBufCPP()
 *
 * Return: true if there was room in the buffer to add this element
 */
-bool add(const Type &obj, bool overwrite=false)
+inline bool add(const Type &obj, bool overwrite=false)
 {
     bool full = false;
     RB_ATOMIC_START
@@ -112,7 +111,7 @@ bool add(const Type &obj, bool overwrite=false)
 * Remove last element from buffer, and copy it to dest
 * Return: true on success
 */
-bool pull(Type *dest)
+inline bool pull(Type *dest)
 {
     bool ret = false;
     size_t tail;
@@ -137,7 +136,7 @@ bool pull(Type *dest)
 * Peek at num'th element in the buffer
 * Return: a pointer to the num'th element
 */
-Type* peek(size_t num)
+inline Type* peek(size_t num)
 {
     Type *ret = NULL;
 
@@ -155,7 +154,7 @@ Type* peek(size_t num)
 /**
 * Return: true if buffer is full
 */
-bool isFull() const
+inline bool isFull() const
 {
     bool ret;
 
@@ -172,7 +171,7 @@ bool isFull() const
 /**
 * Return: number of elements in buffer
 */
-size_t numElements() const
+inline size_t numElements() const
 {
     size_t ret;
 
@@ -189,7 +188,7 @@ size_t numElements() const
 /**
 * Return: true if buffer is empty
 */
-bool isEmpty() const
+inline bool isEmpty() const
 {
     bool ret;
 
@@ -207,7 +206,7 @@ protected:
 * Calculates the index in the array of the oldest element
 * Return: index in array of element
 */
-size_t getTail() const
+inline size_t getTail() const
 {
     return (_head + (MaxElements - _numElements))%MaxElements;
 }

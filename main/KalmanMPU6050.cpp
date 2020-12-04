@@ -1,9 +1,6 @@
 #include "KalmanMPU6050.h"
-
-// #include <Wire.h>
 #include "logdef.h"
 #include "sensor.h"
-
 
 #define DEBUG_INIT()
 #define DEBUG_PRINT(x)

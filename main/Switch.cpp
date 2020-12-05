@@ -17,6 +17,7 @@
 #include "Switch.h"
 #include <logdef.h>
 #include "Setup.h"
+#include "sensor.h"
 
 bool Switch::_cruise_mode = false;
 bool Switch::_closed = false;
@@ -28,6 +29,14 @@ Switch::Switch() {
 
 Switch::~Switch() {
 }
+
+bool Switch::cruiseMode( bool check_automode ) {
+	if( check_automode )
+		if( audio_mode.get() == AM_AUTOSPEED )
+			if ( ias > s2f_speed.get() )
+				return true;
+	return _cruise_mode;
+};
 
 void Switch::begin( gpio_num_t sw ){
 	_sw = sw;

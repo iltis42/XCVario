@@ -114,7 +114,7 @@ OTA *ota = 0;
 ESPRotary Rotary;
 SetupMenu  *Menu = 0;
 
-static float ias = 0;
+float ias = 0;
 float tas = 0;
 static float aTE = 0;
 static float aTES2F = 0;

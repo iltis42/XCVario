@@ -646,10 +646,10 @@ void ESPAudio::calcS2Fmode(){
 		_s2f_mode = true;
 		break;
 	case 2: // Switch
-		_s2f_mode = Switch::cruiseMode();
+		_s2f_mode = Switch::cruiseMode(false);
 		break;
 	case 3: // Auto
-		if( (_ias > s2f_speed.get())  or Switch::cruiseMode())
+		if( Switch::cruiseMode() )
 			_s2f_mode = true;
 		else
 			_s2f_mode = false;

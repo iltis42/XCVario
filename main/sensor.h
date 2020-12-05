@@ -18,6 +18,8 @@ extern float aox;
 extern float aoy;
 extern float aoz;
 
+extern float ias;
+
 float getTAS();
 float getTE();
 

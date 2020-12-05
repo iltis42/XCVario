@@ -15,7 +15,7 @@ public:
 	static void begin( gpio_num_t sw );
 	static bool isClosed();
 	static bool isOpen();
-	static inline bool cruiseMode() { return _cruise_mode; };
+	static bool cruiseMode( bool check_automode = true );
 	static void tick();   // call al least every 100 mS
 private:
 	static gpio_num_t _sw;

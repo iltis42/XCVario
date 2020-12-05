@@ -4,11 +4,6 @@
 #include "driver/gpio.h"
 #include "driver/rmt.h"
 
-#ifdef select
-#undef select
-#endif
-
-
 // *****************************************************************************
 // Onewire platform interface
 
@@ -40,15 +35,6 @@
 
 
 
-struct onewire_search_state {
-    int search_mode;
-    int last_device;
-    int last_discrepancy;
-    int last_family_discrepancy;
-    uint8_t rom[8];
-    uint8_t crc8;
-};
-
 typedef struct {
     uint8_t power;
     uint8_t LastDeviceFlag;
@@ -71,9 +57,6 @@ typedef struct {
     gpio_num_t gpio;
 } ow_rmt_t;
 
-
-
-// struct mgos_rmt_onewire;
 
 class OnewireRmt
 {
@@ -136,8 +119,8 @@ public:
     // ROM and scratchpad registers.
     static uint8_t crc8(const uint8_t *addr, uint8_t len);
 private:
-    ow_rmt_t ow_rmt;
-    struct mgos_rmt_onewire _ow;
+    ow_rmt_t   ow_rmt;
+    mgos_ro_t  _ow;
     uint8_t owDefaultPower;
     bool onewire_rmt_init(gpio_num_t gpio_num, rmt_channel_t tx_channel, rmt_channel_t rx_channel);
     bool onewire_rmt_attach_pin(gpio_num_t gpio_num);

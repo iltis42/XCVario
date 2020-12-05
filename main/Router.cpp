@@ -81,13 +81,13 @@ void Router::routeXCV(){
 		{
 			if( forwardMsg( xcv, wl_vario_tx_q ) )
 				ESP_LOGI(FNAME,"Send to WLAN port 8880, XCV received %d bytes", xcv.length() );
-			if( serial1_tx.get() & RT_XCVARIO )
+		}
+		if( serial1_tx.get() & RT_XCVARIO )
 				if( forwardMsg( xcv, s1_tx_q ) )
-					ESP_LOGI(FNAME,"Send to ttyS2 device, XCV received %d bytes", xcv.length() );
-			if( serial2_tx.get() & RT_XCVARIO )
+					ESP_LOGI(FNAME,"Send to ttyS1 device, XCV received %d bytes", xcv.length() );
+		if( serial2_tx.get() & RT_XCVARIO )
 				if( forwardMsg( xcv, s2_tx_q ) )
 					ESP_LOGI(FNAME,"Send to ttyS2 device, XCV received %d bytes", xcv.length() );
-		}
 	}
 }
 

@@ -1020,10 +1020,7 @@ void SetupMenu::setup( )
 		nmea->addEntry( "OpenVario");
 		nmea->addEntry( "Borgelt");
 		nmea->addEntry( "Cambridge");
-//		if( hardwareRevision.get() >= 3 ) {
-			nmea->addEntry( "Eye Sensor Box");
-			nmea->addEntry( "XCVario");
-// }
+		nmea->addEntry( "XCVario");
 	}
 	SetupMenu::display();
 }

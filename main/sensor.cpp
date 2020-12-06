@@ -299,17 +299,6 @@ void readBMP(void *pvParameters){
 				else if( nmea_protocol.get() == CAMBRIDGE ){
 					OV.sendNMEA( P_CAMBRIDGE, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature  );
 				}
-				else if( nmea_protocol.get() == EYE_SENSOR_BOX ) {
-					if( peya ) {  // toggle sentence each time
-						OV.sendNMEA( P_EYE_PEYA, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature  );
-						peya = false;
-					}
-					else {
-						peya = true;
-						OV.sendNMEA( P_EYE_PEYI, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-							-accelG[2], accelG[1],accelG[0], gyroDPS.x+ox, gyroDPS.y+oy, gyroDPS.z+oz );
-					}
-				}
 				else if( nmea_protocol.get() == XCVARIO ) {
 					OV.sendNMEA( P_XCVARIO, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
 							-accelG[2], accelG[1],accelG[0], gyroDPS.x+ox, gyroDPS.y+oy, gyroDPS.z+oz );

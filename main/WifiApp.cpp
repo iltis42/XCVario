@@ -30,6 +30,7 @@
 #include "Router.h"
 #include <string.h>
 #include "esp_wifi.h"
+#include <list>
 
 typedef struct xcv_sock_server {
 	RingBufCPP<SString, QUEUE_SIZE>* txbuf;
@@ -72,10 +73,12 @@ int create_socket( int port ){
 	return mysock;
 }
 
+// Multi client TCP server with dynamic updated list of clients connected
 
 void socket_server(void *setup) {
 	sock_server_t *config = (sock_server_t *)setup;
 	struct sockaddr_in clientAddress;
+	std::list<int>  clients;
 	int sock = create_socket( config->port );
 	if( sock < 0 ) {
 		ESP_LOGE(FNAME, "Socket creation for %d port FAILED: Abort task", config->port );
@@ -85,48 +88,57 @@ void socket_server(void *setup) {
 	{
 		// we have a socket
 		socklen_t clientAddressLength = sizeof(clientAddress);
-		int client = -1;
 		while (1) {
-			if( client < 0 ) {
-				client = accept(sock, (struct sockaddr *)&clientAddress, &clientAddressLength);
-				ESP_LOGI(FNAME, "accept tcp socket client  %d", client );
+			fcntl(sock, F_SETFL, O_NONBLOCK);
+			int new_client = accept(sock, (struct sockaddr *)&clientAddress, &clientAddressLength);
+			if( new_client >= 0 ){
+				clients.push_back( new_client );
+				ESP_LOGI(FNAME, "New sock client:  %d", new_client );
 			}
-			// Sending data from tcp client
-			ESP_LOGD(FNAME, "tcp send to client %d, port %d", client , config->port );
-			if ( !config->txbuf->isEmpty() ){
+			if( clients.size() ) {
 				SString s;
-				portENTER_CRITICAL_ISR(&btmux);
-				config->txbuf->pull(&s);
-				portEXIT_CRITICAL_ISR(&btmux);
-				ESP_LOGV(FNAME, "send to tcp client %d bytes", s.length() );
-				ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_VERBOSE);
-				if( client > 0 ){
-					int err = send(client, s.c_str(), s.length(), 0);
-					if( err < 0 ) {
-						ESP_LOGW(FNAME, "tcp client send err %d %s", err,  strerror(err) );
-						close(client);
-						client = -1;
+				Router::pullMsg( *(config->txbuf), s);
+				if( s.length() )
+					ESP_LOGV(FNAME, "port %d to sent %d: bytes, %s", config->port, s.length(), s.c_str() );
+				std::list<int>::iterator it;
+				bool has_died = false;
+				int client;
+				for(it = clients.begin(); it != clients.end(); ++it)
+				{
+					client=*it;
+					// ESP_LOGD(FNAME, "loop tcp client %d, port %d", client , config->port );
+					if ( s.length() ){
+						ESP_LOGV(FNAME, "sent to tcp client %d: %d bytes", client, s.length() );
+						ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_VERBOSE);
+						if( client > 0 ){
+							int num = send(client, s.c_str(), s.length(), 0);
+							if( num < 0 ) {
+								ESP_LOGW(FNAME, "tcp client %d (port %d) send err: %s, remove!", client,  config->port, strerror(errno) );
+								close(client);
+								has_died = true;
+								// check on sending and remove from list if client has died
+							}
+							else{
+								ESP_LOGV(FNAME, "tcp send to client %d (port: %d), bytes %d success", client, config->port, num );
+							}
+						}
 					}
-					else{
-						ESP_LOGV(FNAME, "tcp send to port: %d bytes %d", config->port, err );
+					if( !has_died ){
+						// ESP_LOGI(FNAME, "read from client %d", client);
+						SString tcprx;
+						ssize_t sizeRead = recv(client, tcprx.c_str(), SSTRLEN-1, MSG_DONTWAIT);
+						if (sizeRead > 0) {
+							tcprx.setLen( sizeRead );
+							Router::forwardMsg( tcprx, *(config->rxbuf) );
+							ESP_LOGI(FNAME, "tcp read from port %d size: %d data: %s", config->port, sizeRead, tcprx.c_str() );
+						}
 					}
 				}
-			}
-			// ESP_LOGI(FNAME, "read from client %d", client);
-			if( client > 0 ){
-				SString tcprx;
-				ssize_t sizeRead = recv(client, tcprx.c_str(), SSTRLEN-1, MSG_DONTWAIT);
-				if (sizeRead > 0) {
-					tcprx.setLen( sizeRead );
-					portENTER_CRITICAL_ISR(&btmux);
-					config->rxbuf->add( tcprx );
-					portEXIT_CRITICAL_ISR(&btmux);
-					ESP_LOGI(FNAME, "tcp read from port %d size: %d data: %s", config->port, sizeRead, tcprx.c_str() );
-				}
+				if( has_died )
+					clients.remove( client );
 			}
 			vTaskDelay(20/portTICK_PERIOD_MS);
 		}
-		close(client);
 	}
 	vTaskDelete(NULL);
 }

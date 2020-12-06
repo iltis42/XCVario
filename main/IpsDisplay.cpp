@@ -689,8 +689,8 @@ void IpsDisplay::drawFlarm( int x, int y, bool flarm ) {
 
 void IpsDisplay::drawWifi( int x, int y ) {
 	int btq=BTSender::queueFull();
-	ESP_LOGI(FNAME,"IpsDisplay::drawWifi %d %d %d", x,y,btq);
 	if( btq != btqueue ){
+		ESP_LOGD(FNAME,"IpsDisplay::drawWifi %d %d %d", x,y,btq);
 		if( btq )
 			ucg->setColor(COLOR_MGREY);
 		else

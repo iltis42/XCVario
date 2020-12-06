@@ -55,9 +55,14 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 				Z.ZZ:   acceleration in Z-Axis,
 				*CHK = standard NMEA checksum
 		*/
-		float roll = IMU::getRoll();
-	   	float pitch = IMU::getPitch();
-		sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%4.1f,%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", te, mc, bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
+		if( haveMPU ){
+			float roll = IMU::getRoll();
+			float pitch = IMU::getPitch();
+			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%4.1f,%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", te, mc, bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
+
+		}else{
+			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%4.1f,,,,,", te, mc, bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp );
+		}
 	}
 	else if( proto == P_OPENVARIO ) {
 		if( validTemp )

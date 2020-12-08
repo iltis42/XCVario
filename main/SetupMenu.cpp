@@ -637,13 +637,13 @@ void SetupMenu::setup( )
 		dbmaxlv->setHelp(PROGMEM"Upper limit for Audio mute function");
 		dbe->addMenu( dbmaxlv );
 
-		SetupMenuValFloat * dbmaxls2f = new SetupMenuValFloat( "Upper Value S2F", 	0, "+-km/h", 0, 25.0, 1, 0 , false, &s2f_deadband );
-		dbmaxls2f->setHelp(PROGMEM"Positive limit in speed deviation for S2F mute function");
-		dbe->addMenu( dbmaxls2f );
-
 		SetupMenuValFloat * dbmaxls2fn = new SetupMenuValFloat(	"Lower Value S2F", 	0, "+-km/h", 0, 25.0, 1, 0 , false, &s2f_deadband_neg );
 		dbmaxls2fn->setHelp(PROGMEM"Negative limit in speed deviation for S2F mute function");
 		dbe->addMenu( dbmaxls2fn );
+
+		SetupMenuValFloat * dbmaxls2f = new SetupMenuValFloat( "Upper Value S2F", 	0, "+-km/h", 0, 25.0, 1, 0 , false, &s2f_deadband );
+		dbmaxls2f->setHelp(PROGMEM"Positive limit in speed deviation for S2F mute function");
+		dbe->addMenu( dbmaxls2f );
 
 		SetupMenuValFloat * afac = new SetupMenuValFloat( 	"Audio Exponent", 	0, "", 0.1, 2, 0.025, 0 , false, &audio_factor );
 		afac->setHelp(PROGMEM"Exponential factor < 1 gives a logarithmic, and > 1 exponential characteristic for frequency of audio signal");

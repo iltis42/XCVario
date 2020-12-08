@@ -61,9 +61,6 @@ private:
 	static float _high_tone_var;
 	float _s2fd;
 	float _center;
-	float _deadband;
-	float _deadband_neg;
-	float _s2f_deadband;
 	float _variation;  // max = center * variation,  min = center / variation
 	static bool _testmode;
 	static bool sound_on;

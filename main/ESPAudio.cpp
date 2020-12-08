@@ -65,12 +65,9 @@ ESPAudio::ESPAudio( ) {
 	_variation = 3.0;
 	_testmode = false;
 	_button = GPIO_NUM_0;
-	_s2f_deadband = 0;
 	_mute = false;
 	_test_ms = 0;
 	_dead_mute = true;
-	_deadband = 0;
-	_deadband_neg = 0;
 	_disable = false;
 	_old_ms = 0;
 	_range = 5.0;
@@ -769,11 +766,11 @@ void ESPAudio::dactask(void* arg )
 
 bool ESPAudio::inDeadBand( float te )
 {
-	float dbp = _deadband;
-	float dbn = _deadband_neg;
+	float dbp = deadband.get();
+	float dbn = deadband_neg.get();
 	if( _s2f_mode ) {
-		dbp = _s2f_deadband;
-		dbn = -_s2f_deadband;
+		dbp = s2f_deadband.get()/10;
+		dbn = s2f_deadband_neg.get()/10;
 	}
 	if( te > 0 ) {
 		if( te < dbp )
@@ -821,9 +818,6 @@ void ESPAudio::setup()
 	_te = 0.0;
 	_variation = tone_var.get();
 	_testmode = false;
-	_deadband = deadband.get();
-	_deadband_neg = deadband_neg.get();
-	_s2f_deadband = s2f_deadband.get()/10.0;
 	_dead_mute = true;
 	_mute = false;
 	if( audio_range.get() == 0 )

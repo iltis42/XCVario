@@ -625,21 +625,25 @@ void SetupMenu::setup( )
 		ar->setHelp(PROGMEM"Select either fix (5m/s) or variable Audio range according to current vario setting");
 		ade->addMenu( ar );
 
-		SetupMenu * db = new SetupMenu( "Deadband" );
+		SetupMenu * db = new SetupMenu( "Deadbands" );
 		MenuEntry* dbe = ade->addMenu( db );
-		dbe->setHelp(PROGMEM"Audio dead band limits within Audio remains silent in metric scale. 0,1 m/s equals roughtly 20 ft/min or 0.2 knots");
+		dbe->setHelp(PROGMEM"Audio dead band limits within Audio remains silent in metric scale. 0,1 m/s equals roughly 20 ft/min or 0.2 knots");
 
-		SetupMenuValFloat * dbminlv = new SetupMenuValFloat( 	"Lower Value Vario", 0,	"m/s", -5.0, 0, 0.1, 0 , false, &deadband_neg  );
+		SetupMenuValFloat * dbminlv = new SetupMenuValFloat( "Lower Value Vario", 0,	"m/s", -5.0, 0, 0.1, 0 , false, &deadband_neg  );
 		dbminlv->setHelp(PROGMEM"Lower limit for Audio mute function");
 		dbe->addMenu( dbminlv );
 
-		SetupMenuValFloat * dbmaxlv = new SetupMenuValFloat( 	"Upper Value Vario", 0,	"m/s", 0, 5.0, 0.1, 0 , false, &deadband );
+		SetupMenuValFloat * dbmaxlv = new SetupMenuValFloat( "Upper Value Vario", 0,	"m/s", 0, 5.0, 0.1, 0 , false, &deadband );
 		dbmaxlv->setHelp(PROGMEM"Upper limit for Audio mute function");
 		dbe->addMenu( dbmaxlv );
 
-		SetupMenuValFloat * dbmaxls2f = new SetupMenuValFloat( 	"S2F Deadband", 	0, "+-km/h", 0, 25.0, 1, 0 , false, &s2f_deadband );
-		dbmaxls2f->setHelp(PROGMEM"Positive and negative limit in speed deviation for S2F mute function");
+		SetupMenuValFloat * dbmaxls2f = new SetupMenuValFloat( "Upper Value S2F", 	0, "+-km/h", 0, 25.0, 1, 0 , false, &s2f_deadband );
+		dbmaxls2f->setHelp(PROGMEM"Positive limit in speed deviation for S2F mute function");
 		dbe->addMenu( dbmaxls2f );
+
+		SetupMenuValFloat * dbmaxls2fn = new SetupMenuValFloat(	"Lower Value S2F", 	0, "+-km/h", 0, 25.0, 1, 0 , false, &s2f_deadband_neg );
+		dbmaxls2fn->setHelp(PROGMEM"Negative limit in speed deviation for S2F mute function");
+		dbe->addMenu( dbmaxls2fn );
 
 		SetupMenuValFloat * afac = new SetupMenuValFloat( 	"Audio Exponent", 	0, "", 0.1, 2, 0.025, 0 , false, &audio_factor );
 		afac->setHelp(PROGMEM"Exponential factor < 1 gives a logarithmic, and > 1 exponential characteristic for frequency of audio signal");

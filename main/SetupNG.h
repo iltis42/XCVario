@@ -277,6 +277,7 @@ extern SetupNG<float>  		core_climb_history;
 extern SetupNG<float>  		elevation;
 extern SetupNG<float>  		default_volume;
 extern SetupNG<float>  		s2f_deadband;
+extern SetupNG<float>  		s2f_deadband_neg;
 extern SetupNG<float>  		s2f_delay;
 extern SetupNG<float>  		factory_volt_adjust;
 extern SetupNG<float>  		bugs;

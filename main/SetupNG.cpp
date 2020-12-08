@@ -166,15 +166,17 @@ void SetupCommon::initSetup() {
 
 char * SetupCommon::getID() {
 	if( strlen( _ID ) == 0 ) {
-	uint8_t mac[6];
-	unsigned long  crc = 0;
-	if ( esp_efuse_mac_get_default(mac) == ESP_OK ){
-		crc = mz_crc32(0L, mac, 6);
+		uint8_t mac[6];
+		unsigned long  crc = 0;
+		if ( esp_efuse_mac_get_default(mac) == ESP_OK ){
+			crc = mz_crc32(0L, mac, 6);
 		}
-	int id = int(crc % 1000);
-	if( hardwareRevision.get() >= 3 )
-		id = int(crc % 10000);
-	sprintf( _ID, "iVario-%d", id );
+		if( hardwareRevision.get() >= 3 ){
+			sprintf( _ID, "XCVario-%d", int(crc % 10000) );
+		}
+		else{
+			sprintf( _ID, "iVario-%d", int(crc % 1000));
+		}
 	}
 	return _ID;
 }

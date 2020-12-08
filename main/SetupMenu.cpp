@@ -846,8 +846,11 @@ void SetupMenu::setup( )
 
 		SetupMenu * rotary = new SetupMenu( "Rotary Setup" );
 		hardware->addMenu( rotary );
-
-		SetupMenuSelect * rotype = new SetupMenuSelect( "Rotary Direction", 0, false , 0, false, &rotary_dir );
+		SetupMenuSelect * rotype;
+		if( hardwareRevision.get() < 3 )
+			rotype = new SetupMenuSelect( "Rotary Direction", 0, false , 0, false, &rotary_dir );
+		else
+			rotype = new SetupMenuSelect( "Rotary Direction", 0, false , 0, false, &rotary_dir_21 );
 		rotary->addMenu( rotype );
 		rotype->setHelp( PROGMEM "Select type of rotary switch, different brands may need adjustment");
 		rotype->addEntry( "Clockwise");

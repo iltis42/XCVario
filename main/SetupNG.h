@@ -312,6 +312,7 @@ extern SetupNG<float>		audio_factor;
 extern SetupNG<float>		te_comp_adjust;
 extern SetupNG<int>		    te_comp_enable;
 extern SetupNG<int>		    rotary_dir;
+extern SetupNG<int>		    rotary_dir_21;
 extern SetupNG<int>		    rotary_inc;
 extern SetupNG<int>		    student_mode;
 extern SetupNG<float>		password;

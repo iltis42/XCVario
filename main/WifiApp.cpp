@@ -119,7 +119,7 @@ void socket_server(void *setup) {
 								// check on sending and remove from list if client has died
 							}
 							else{
-								ESP_LOGV(FNAME, "tcp send to client %d (port: %d), bytes %d success", client, config->port, num );
+								ESP_LOGI(FNAME, "tcp send to client %d (port: %d), bytes %d success", client, config->port, num );
 							}
 						}
 					}

@@ -143,8 +143,14 @@ void ESPRotary::informObservers( void * args )
 			// pcnt_counter_clear(PCNT_UNIT_0);
 			// ESP_LOGI(FNAME,"Rotary counter %d %d", r_enc_count,  r_enc2_count);
 			int diff = (r_enc_count+r_enc2_count) - old_cnt;
-			if( rotary_dir.get() == 1 ) // reverse type
-				diff = -diff;
+			if( hardwareRevision.get() >= 3 ) {
+				if( rotary_dir_21.get() == 1 ) // reverse default for 2021 series
+					diff = -diff;
+			}
+			else{
+				if( rotary_dir.get() == 1 )    // reverse type default for 2020 series
+					diff = -diff;
+			}
 			old_cnt = r_enc_count+r_enc2_count;
 			if( diff < 0 ) {
 				// ESP_LOGI(FNAME,"Rotary up %d times",abs(diff) );

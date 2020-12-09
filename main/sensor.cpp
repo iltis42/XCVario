@@ -418,7 +418,7 @@ void sensor(void *args){
 	std::string ver( "Version: " );
 	ver += V.version();
 	display->writeText(line++, ver.c_str() );
-	sleep(2);
+	sleep(1);
 	bool doUpdate = software_update.get();
 	if( Rotary.readSwitch() ){
 		doUpdate = true;
@@ -492,7 +492,6 @@ void sensor(void *args){
 		}
 	}
 	ESP_LOGI(FNAME,"Now start T sensor test");
-	sleep( 1 );
 	// Temp Sensor test
 	ds18b20.begin();
 	temperature = ds18b20.getTemp();
@@ -514,7 +513,6 @@ void sensor(void *args){
 
 	bmpBA.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
 	bmpTE.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
-	sleep( 1 );
 
 	float ba_t, ba_p, te_t, te_p;
 	if( ! bmpBA.selfTest( ba_t, ba_p)  ) {
@@ -602,7 +600,6 @@ void sensor(void *args){
 	}
 
 	Serial::begin();
-	sleep( 2 );
 	if( blue_enable.get() == WL_BLUETOOTH ) {
 		if( btsender.selfTest() ){
 			display->writeText( line++, "Bluetooth: OK");
@@ -862,14 +859,7 @@ extern "C" void  app_main(void){
 	ESP_LOGI(FNAME,"Now init all Setup elements");
 	SetupCommon::initSetup();
 	esp_log_level_set("*", ESP_LOG_INFO);
-	if( blue_enable.get() == WL_BLUETOOTH ) {
-		// ESP_LOGI(FNAME,"start btstack task");
-		// xTaskCreatePinnedToCore(&btstack_app, "btstack_app", 8192, NULL, 1, 0, 0 );
-		sleep( 2 );
-	}
-
 	sensor( 0 );
-
 	vTaskDelete( NULL );
 }
 

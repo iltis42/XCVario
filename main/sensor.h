@@ -3,6 +3,7 @@
 
 #include "MPU.hpp"        // main file, provides the class itself
 extern bool haveMPU;
+extern bool ahrsKeyValid;
 typedef enum e_as_sensor { SENSOR_MP3V5004DP, SENSOR_MS4525DO, SENSOR_XGZ6899, SENSOR_NONE } t_as_sensor;
 extern t_as_sensor as_sensor;
 

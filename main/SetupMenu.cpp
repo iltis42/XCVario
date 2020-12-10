@@ -16,6 +16,7 @@
 #include "Polars.h"
 #include <logdef.h>
 #include <sensor.h>
+#include "Cipher.h"
 
 IpsDisplay* MenuEntry::_display = 0;
 MenuEntry* MenuEntry::root = 0;
@@ -30,6 +31,7 @@ extern xSemaphoreHandle spiMutex;
 Ucglib_ILI9341_18x240x320_HWSPI *MenuEntry::ucg = 0;
 static char rentry[25];
 SetupMenuSelect * audio_range_sm = 0;
+SetupMenuSelect * mpu = 0;
 
 
 int update_rentry(SetupMenuValFloat * p)
@@ -41,9 +43,17 @@ int update_rentry(SetupMenuValFloat * p)
 }
 
 // Action Routines
-int contrast( SetupMenuValFloat * p )
+int add_key( SetupMenuSelect * p )
 {
-	ESP_LOGI(FNAME,"contrast( %f ) ", *p->_value );
+	ESP_LOGI(FNAME,"add_key( %d ) ", p->getSelect() );
+	if( Cipher::checkKeyAHRS() ){
+		if( !mpu->existsEntry( "Enable") )
+			mpu->addEntry( "Enable");
+	}
+	else{
+		if( mpu->existsEntry( "Enable") )
+			mpu->delEntry( "Enable");
+	}
 	return 0;
 }
 
@@ -872,22 +882,44 @@ void SetupMenu::setup( )
 		s2fsw->addEntry( "Switch");
 		s2fsw->addEntry( "Push Button");
 
+		if( hardwareRevision.get() >= 3 ){
+			SetupMenu * ahrs = new SetupMenu( "AHRS Setup" );
+			hardware->addMenu( ahrs );
+			mpu = new SetupMenuSelect( "AHRS Option", 0, true , 0, true, &attitude_indicator );
+			ahrs->addMenu( mpu );
+			mpu->setHelp( PROGMEM "Enable High Accuracy Attitude Sensor (AHRS) with valid license key entered");
+			mpu->addEntry( "Disable");
+			if( ahrsKeyValid )
+				mpu->addEntry( "Enable");
 
-		SetupMenu * ahrs = new SetupMenu( "AHRS Setup" );
-		hardware->addMenu( ahrs );
+			SetupMenuSelect * ahrsaz = new SetupMenuSelect( "AHRS Autozero", 0, true , 0, true, &ahrs_autozero );
+			ahrs->addMenu( ahrsaz );
+			ahrsaz->setHelp( PROGMEM "Start Autozero of AHRS Sensor; Preconditions: On ground; Wings 100% horizontal, fuselage in flight position !");
+			ahrsaz->addEntry( "Cancel");
+			ahrsaz->addEntry( "Start AHRS Autozero");
 
-		SetupMenuSelect * mpu = new SetupMenuSelect( "AHRS Sensor", 0, true , 0, true, &attitude_indicator );
-		ahrs->addMenu( mpu );
-		mpu->setHelp( PROGMEM "Enable or disable High Accuracy Attitude Sensor (AHRS), available with new 2021 hardware (two RJ45)");
-		mpu->addEntry( "Disable");
-		mpu->addEntry( "Enable");
+			SetupMenu * ahrslc = new SetupMenu( "AHRS License Key" );
+			ahrslc->setHelp( PROGMEM "Enter valid AHRS License Key, then with valid key under 'AHRS Option', AHRS feature can be enabled");
+			ahrs->addMenu( ahrslc );
 
-		SetupMenuSelect * ahrsaz = new SetupMenuSelect( "AHRS Autozero", 0, true , 0, true, &ahrs_autozero );
-		ahrs->addMenu( ahrsaz );
-		ahrsaz->setHelp( PROGMEM "Start Autozero of AHRS Sensor; Preconditions: On ground; Wings 100% horizontal, fuselage in flight position !");
-		ahrsaz->addEntry( "Cancel");
-		ahrsaz->addEntry( "Start AHRS Autozero");
-
+			SetupMenuSelect * ahrslc1 = new SetupMenuSelect( "First  Letter",	0, false, add_key, false, &ahrs_licence_dig1 );
+			SetupMenuSelect * ahrslc2 = new SetupMenuSelect( "Second Letter",	0, false, add_key, false, &ahrs_licence_dig2 );
+			SetupMenuSelect * ahrslc3 = new SetupMenuSelect( "Third  Letter",	0, false, add_key, false, &ahrs_licence_dig3 );
+			SetupMenuSelect * ahrslc4 = new SetupMenuSelect( "Last   Letter",	0, false, add_key, false, &ahrs_licence_dig4 );
+			ahrslc->addMenu( ahrslc1 );
+			ahrslc->addMenu( ahrslc2 );
+			ahrslc->addMenu( ahrslc3 );
+			ahrslc->addMenu( ahrslc4 );
+			for( int x=48; x<= 90; x++ ){
+				char e[2];
+				e[0]=char(x);
+				e[1]='\0';
+				ahrslc1->addEntry( e );
+				ahrslc2->addEntry( e );
+				ahrslc3->addEntry( e );
+				ahrslc4->addEntry( e );
+			}
+		}
 
 		float fva = factory_volt_adjust.get();
 		if( abs(fva - 0.00815) < 0.00001 ) {
@@ -1215,7 +1247,7 @@ void SetupMenuSelect::display( int mode ){
 	ESP_LOGI(FNAME,"Title: %s y=%d", _title.c_str(),y );
 	ucg->printf("<< %s",_title.c_str());
 	xSemaphoreGive(spiMutex );
-	ESP_LOGI(FNAME,"select=%d numval=%d", *_select, _numval );
+	ESP_LOGI(FNAME,"select=%d numval=%d size=%d val=%s", *_select, _numval, _values.size(), _values[*_select].c_str() );
 	if( _numval > 9 ){
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		ucg->setPrintPos( 1, 50 );

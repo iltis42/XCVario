@@ -325,6 +325,10 @@ extern SetupNG<int>		    s2f_switch_type;
 extern SetupNG<mpud::raw_axes_t> gyro_bias;
 extern SetupNG<mpud::raw_axes_t> accl_bias;
 extern SetupNG<int>		    hardwareRevision;
+extern SetupNG<int>		    ahrs_licence_dig1;
+extern SetupNG<int>		    ahrs_licence_dig2;
+extern SetupNG<int>		    ahrs_licence_dig3;
+extern SetupNG<int>		    ahrs_licence_dig4;
 
 
 #endif /* MAIN_SETUP_NG_H_ */

@@ -1,14 +1,13 @@
 #include <string>
 #include "sdkconfig.h"
 #include <stdio.h>
+#include "Cipher.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_task_wdt.h"
-
 #include "string.h"
 #include "esp_system.h"
 #include "nvs_flash.h"
-
 #include "BME280_ESP32_SPI.h"
 #include <driver/adc.h>
 #include "driver/gpio.h"
@@ -48,7 +47,8 @@
 #include "KalmanMPU6050.h"
 #include "WifiApp.h"
 #include "Serial.h"
-
+#include "Cipher.h"
+#include <esp32/rom/miniz.h>
 
 // #include "sound.h"
 
@@ -85,6 +85,7 @@ float TE=0;
 float dynamicP;
 
 bool haveMPU=false;
+bool ahrsKeyValid=false;
 int ccp=60;
 
 MCP3221 *MCP=0;
@@ -358,6 +359,7 @@ void readTemp(void *pvParameters){
 
 bool init_done=false;
 
+// Sensor board init method. Herein all functions that make the XCVario are launched and tested.
 void sensor(void *args){
 	bool selftestPassed=true;
 	if( init_done )
@@ -389,6 +391,13 @@ void sensor(void *args){
 	ESP_LOGI( FNAME, "Hardware revision detected %d", hardwareRevision.get() );
 	NVS.begin();
 
+	if( Cipher::checkKeyAHRS() ){
+		ESP_LOGI( FNAME, "AHRS key valid=%d", ahrsKeyValid );
+	}else{
+		ESP_LOGI( FNAME, "AHRS key invalid=%d, disable AHRS Sensor", ahrsKeyValid );
+		if( attitude_indicator.get() )
+			attitude_indicator.set(0);
+	}
 	ADC.begin();  // for battery voltage
 	btsender.begin();  //
 

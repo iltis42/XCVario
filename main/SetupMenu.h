@@ -112,9 +112,24 @@ public:
 	SetupMenuSelect();
 	SetupMenuSelect(  String title, int *select, bool restart=false, int (*action)(SetupMenuSelect *p) = 0, bool save=true, SetupNG<int> *anvs=0 );
 	void display(int mode=0);
-
-	void addEntry( String ent ) {  _values.push_back( ent );
-										_numval++; };
+	bool existsEntry( String ent ){
+	for( std::vector<String>::iterator iter = _values.begin(); iter != _values.end(); ++iter )
+			if( *iter == ent )
+				return true;
+		return false;
+	};
+	inline void addEntry( String ent ) {  _values.push_back( ent );
+										  _numval++;
+	};
+	void delEntry( String ent ) {
+		for( std::vector<String>::iterator iter = _values.begin(); iter != _values.end(); ++iter )
+			if( *iter == ent )
+			{
+				_values.erase( iter );
+				_numval--;
+				break;
+			}
+	};
 	void updateEntry( String ent, int num ) {  _values[ num ] = ent; };
 	void up( int count );  // step up to parent
 	void down( int count );

@@ -124,7 +124,10 @@ SetupNG<int>		    ahrs_autozero("AHRSAZ", 0 );
 SetupNG<int>		    display_style("DISPLAY_STYLE", 0 );
 SetupNG<int>		    s2f_switch_type("S2FHWSW", S2F_HW_SWITCH );
 SetupNG<int>		    hardwareRevision("HWREV", 2 );
-
+SetupNG<int>		    ahrs_licence_dig1("AHRS_LIC_1", 1);
+SetupNG<int>		    ahrs_licence_dig2("AHRS_LIC_2", 1);
+SetupNG<int>		    ahrs_licence_dig3("AHRS_LIC_3", 1);
+SetupNG<int>		    ahrs_licence_dig4("AHRS_LIC_4", 1);
 
 mpud::raw_axes_t zero_bias;
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );

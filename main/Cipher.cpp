@@ -45,7 +45,7 @@ char Cipher::ShiftChar(char a, int keyDistance) {
 	// ESP_LOGI(FNAME,"ShiftChar %c, %d", a, keyDistance );
 	for (int i = 0; i < keyDistance; i++) {
 		a += 1; // shift our char once
-		if( a > 57 && a < 64 )
+		if( a < 65 && a > 57 )
 			a+=7;  // skip ;:<...
 		if (a > 90) // Check if we've gone past z
 			a = 48; // Set our char back to a
@@ -58,7 +58,7 @@ char Cipher::ShiftCharBack(char a, int keyDistance) {
 	// ESP_LOGI(FNAME,"ShiftCharBack %c, %d", a, keyDistance );
 	for (int i = 0; i < keyDistance; i++) {
 		a -= 1; // shift our char once
-		if( a > 57 && a < 64 )
+		if( a < 65 && a > 57 )
 			a-=7;  // skip ;:<...
 		if (a < 48) // Check if we've gone before a
 			a = 90; // Set our char back to z
@@ -87,16 +87,16 @@ void Cipher::FormatEncrypted(std::string& encrypted) {
 
 
 bool Cipher::init(){
-	std::string i=Cipher::id();
-	std::string e = Cipher::Encrypt(CIPHER_KEY, i );
-	ESP_LOGI(FNAME,"init() Encrypted ID %s", e.c_str() );
-	ahrs_licence_dig1.set( e[0]-'0' );
-	ahrs_licence_dig2.set( e[1]-'0' );
-	ahrs_licence_dig3.set( e[2]-'0' );
-	ahrs_licence_dig4.set( e[3]-'0' );
-	std::string di = Cipher::Decrypt(CIPHER_KEY, e );
-	ahrsKeyValid = (di == i);
-	ESP_LOGI(FNAME,"init() returned: %d", ahrsKeyValid );
+	std::string id=Cipher::id();
+	std::string encid = Cipher::Encrypt(CIPHER_KEY, id );
+	ESP_LOGI(FNAME,"init() Encrypted ID %s", encid.c_str() );
+	ahrs_licence_dig1.set( encid[0]-'0' );
+	ahrs_licence_dig2.set( encid[1]-'0' );
+	ahrs_licence_dig3.set( encid[2]-'0' );
+	ahrs_licence_dig4.set( encid[3]-'0' );
+	std::string decid = Cipher::Decrypt(CIPHER_KEY, encid );
+	ahrsKeyValid = (id == decid);
+	ESP_LOGI(FNAME,"init() ID/DECID %s == %s returns %d", id.c_str(), decid.c_str(), ahrsKeyValid );
 	return ahrsKeyValid;
 }
 
@@ -115,5 +115,6 @@ bool Cipher::checkKeyAHRS(){
 	key += char(ahrs_licence_dig4.get()+'0');
 	std::string decid = Cipher::Decrypt(CIPHER_KEY, key );
 	ahrsKeyValid = (id == decid);
+	ESP_LOGI(FNAME,"checkKeyAHRS() ID/KEY/DECID %s %s %s returns %d", id.c_str(), key.c_str(), decid.c_str(), ahrsKeyValid );
 	return ahrsKeyValid;
 }

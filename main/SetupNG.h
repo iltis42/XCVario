@@ -63,9 +63,10 @@ public:
 	~SetupCommon() {};
 	virtual bool init() = 0;
 	virtual bool erase() = 0;
+	virtual bool mustReset() = 0;
 	virtual const char* key() = 0;
 	static std::vector<SetupCommon *> entries;
-	static void initSetup();
+	static bool initSetup( bool &present );  // returns false if FLASH was completely blank
 	static char *getID();
 private:
 	static char _ID[14];
@@ -123,6 +124,18 @@ public:
 		close();
 		return true;
 	};
+	bool exists() {
+		if( !open() ) {
+			ESP_LOGE(FNAME,"Error open nvs handle !");
+			return false;
+		}
+		size_t required_size;
+		esp_err_t _err = nvs_get_blob(_nvs_handle, _key, NULL, &required_size);
+		if ( _err != ESP_OK )
+			return false;
+		return true;
+	};
+
 	bool init() {
 		if( !open() ) {
 			ESP_LOGE(FNAME,"Error open nvs handle !");
@@ -161,12 +174,13 @@ public:
 		return true;
 	};
 	SetupNG() {};
-	SetupNG( const char * akey, T adefault ) {
+	SetupNG( const char * akey, T adefault, bool reset=true ) {
 		// ESP_LOGI(FNAME,"SetupNG(%s)", akey );
 		entries.push_back( this );  // an into vector
 		_nvs_handle = 0;
 		_key = akey;
 		_default = adefault;
+		_reset = reset;
 
 	};
 
@@ -198,12 +212,17 @@ public:
 		}
 	};
 
+	virtual bool mustReset() {
+		return _reset;
+	};
+
 
 private:
 	T _value;
 	T _default;
 	const char * _key;
 	nvs_handle_t  _nvs_handle;
+	bool _reset;
 
 	bool open() {
 		if( _nvs_handle == 0) {
@@ -227,7 +246,6 @@ private:
 		}
 	};
 };
-
 
 extern SetupNG<float>  		QNH;
 extern SetupNG<float> 		polar_wingload;

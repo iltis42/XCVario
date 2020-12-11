@@ -247,7 +247,7 @@ void readBMP(void *pvParameters){
 			xSemaphoreGive(xMutex);
 
 			if( Audio.getDisable() != true ){
-				if( haveMPU  )  // 4th Generation HW, MPU6050
+				if( haveMPU && attitude_indicator.get() )  // 3th Generation HW, MPU6050
 				{
 					mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
 					mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
@@ -861,7 +861,14 @@ void sensor(void *args){
 extern "C" void  app_main(void){
 	ESP_LOGI(FNAME,"app_main" );
 	ESP_LOGI(FNAME,"Now init all Setup elements");
-	SetupCommon::initSetup();
+	bool setupPresent;
+	SetupCommon::initSetup( setupPresent );
+	if( !setupPresent ){
+		if( Cipher::init() )
+			attitude_indicator.set(1);
+	}
+	else
+		ESP_LOGI(FNAME,"Setup already present");
 	esp_log_level_set("*", ESP_LOG_INFO);
 	sensor( 0 );
 	vTaskDelete( NULL );

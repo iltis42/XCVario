@@ -86,10 +86,28 @@ void Cipher::FormatEncrypted(std::string& encrypted) {
 }
 
 
-bool Cipher::checkKeyAHRS(){
+bool Cipher::init(){
+	std::string i=Cipher::id();
+	std::string e = Cipher::Encrypt(CIPHER_KEY, i );
+	ESP_LOGI(FNAME,"init() Encrypted ID %s", e.c_str() );
+	ahrs_licence_dig1.set( e[0]-'0' );
+	ahrs_licence_dig2.set( e[1]-'0' );
+	ahrs_licence_dig3.set( e[2]-'0' );
+	ahrs_licence_dig4.set( e[3]-'0' );
+	std::string di = Cipher::Decrypt(CIPHER_KEY, e );
+	ahrsKeyValid = (di == i);
+	ESP_LOGI(FNAME,"init() returned: %d", ahrsKeyValid );
+	return ahrsKeyValid;
+}
+
+std::string Cipher::id(){
 	uint8_t mac[6];
 	esp_efuse_mac_get_default(mac);
-	std::string id = std::to_string( mz_crc32(0L, mac, 6) % 10000 );
+	return( std::to_string( mz_crc32(0L, mac, 6) % 10000 ) );
+}
+
+bool Cipher::checkKeyAHRS(){
+	std::string id=Cipher::id();
 	std::string key;
 	key += char(ahrs_licence_dig1.get()+'0');
 	key += char(ahrs_licence_dig2.get()+'0');

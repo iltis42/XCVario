@@ -127,6 +127,8 @@ public:
 			{
 				_values.erase( iter );
 				_numval--;
+				if( *_select >= _numval )
+					*_select = _numval-1;
 				break;
 			}
 	};

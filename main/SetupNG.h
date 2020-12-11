@@ -77,6 +77,18 @@ template<typename T>
 class SetupNG: public SetupCommon
 {
 public:
+	SetupNG() {};
+
+	SetupNG( const char * akey, T adefault, bool reset=true ) {
+		// ESP_LOGI(FNAME,"SetupNG(%s)", akey );
+		entries.push_back( this );  // an into vector
+		_nvs_handle = 0;
+		_key = akey;
+		_default = adefault;
+		_reset = reset;
+
+	};
+
 	inline T* getPtr() {
 		return &_value;
 	};
@@ -89,6 +101,7 @@ public:
 	const char * key() {
 		return _key;
 	}
+
 	bool set( T aval ) {
 		String val( aval );
 		ESP_LOGI( FNAME,"set val: %s", val.c_str() );
@@ -101,6 +114,7 @@ public:
 		bool ret = commit();
 		return ret;
 	};
+
 	bool commit() {
 		ESP_LOGI(FNAME,"NVS commit(): ");
 		if( !open() ) {
@@ -124,6 +138,7 @@ public:
 		close();
 		return true;
 	};
+
 	bool exists() {
 		if( !open() ) {
 			ESP_LOGE(FNAME,"Error open nvs handle !");
@@ -136,7 +151,7 @@ public:
 		return true;
 	};
 
-	bool init() {
+	virtual bool init() {
 		if( !open() ) {
 			ESP_LOGE(FNAME,"Error open nvs handle !");
 			return false;
@@ -173,32 +188,9 @@ public:
 		close();
 		return true;
 	};
-	SetupNG() {};
-	SetupNG( const char * akey, T adefault, bool reset=true ) {
-		// ESP_LOGI(FNAME,"SetupNG(%s)", akey );
-		entries.push_back( this );  // an into vector
-		_nvs_handle = 0;
-		_key = akey;
-		_default = adefault;
-		_reset = reset;
 
-	};
 
-	bool erase_all() {
-		open();
-		esp_err_t _err = nvs_erase_all(_nvs_handle);
-		if(_err != ESP_OK)
-			return false;
-		else
-			ESP_LOGI(FNAME,"NVS erased all by handle %d", _nvs_handle );
-		if( commit() )
-			return true;
-		else
-			return false;
-
-	};
-
-	bool erase() {
+	virtual bool erase() {
 		open();
 		esp_err_t _err = nvs_erase_key(_nvs_handle, _key);
 		if(_err != ESP_OK)
@@ -216,6 +208,18 @@ public:
 		return _reset;
 	};
 
+	bool erase_all() {
+		open();
+		esp_err_t _err = nvs_erase_all(_nvs_handle);
+		if(_err != ESP_OK)
+			return false;
+		else
+			ESP_LOGI(FNAME,"NVS erased all by handle %d", _nvs_handle );
+		if( commit() )
+			return true;
+		else
+			return false;
+	};
 
 private:
 	T _value;

@@ -329,8 +329,12 @@ bool BME280_ESP32_SPI::selfTest( float& t, float &p ) {
 		return( false );
 	}
 	bool success = false;
-	double temp=readTemperature(success);
-	t = (float)temp;
+	double temp=0;
+	for( int i=0; i<10; i++ ){
+		temp += readTemperature(success);
+		delay(100);
+	}
+	t = (float)(temp/10);
 	if( success == false ) {
 		ESP_LOGE(FNAME,"BMP280 Error, Temperatur reading BMP280 failed, invalid readout");
 		return( false );
@@ -343,7 +347,12 @@ bool BME280_ESP32_SPI::selfTest( float& t, float &p ) {
 		ESP_LOGE(FNAME,"BMP280 Error, initialisation invalid response from device");
 		return( false );
 	}
-	p = (float)readPressure();
+	p=0;
+	for( int i=0; i<10; i++ ){
+		p += (float)readPressure();
+		delay(100);
+	}
+	p=p/10;
 
     return( true );
 }

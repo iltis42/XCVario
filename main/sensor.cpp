@@ -522,7 +522,7 @@ void sensor(void *args){
 
 	bmpBA.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
 	bmpTE.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
-
+	delay(2000);
 	float ba_t, ba_p, te_t, te_p;
 	if( ! bmpBA.selfTest( ba_t, ba_p)  ) {
 		ESP_LOGE(FNAME,"HW Error: Self test Barometric Pressure Sensor failed!");

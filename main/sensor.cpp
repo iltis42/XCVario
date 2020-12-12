@@ -26,7 +26,7 @@
 #include <esp_wifi.h>
 #include "SetupMenu.h"
 #include "ESPRotary.h"
-#include "BatVoltage.h"
+#include "AnalogInput.h"
 #include "IpsDisplay.h"
 #include "sensor.h"
 #include "S2F.h"
@@ -97,7 +97,9 @@ xSemaphoreHandle xMutex=NULL;
 S2F Speed2Fly;
 Protocols OV( &Speed2Fly );
 
-BatVoltage ADC;
+AnalogInput Battery( (22.0+1.2)/1200 );
+// AnalogInput AnalogInWk( 1.0, ADC_ATTEN_DB_11 );
+AnalogInput2 AnalogInWk( ADC_ATTEN_DB_0 );
 
 TaskHandle_t *bpid;
 TaskHandle_t *apid;
@@ -219,6 +221,9 @@ void readBMP(void *pvParameters){
 			aCl = bmpVario.readAvgClimb();
 		}
 		if( (count++ % 2) == 0 ) {
+			// int wk = AnalogInWk.getRaw();
+			// ESP_LOGI(FNAME,"WK: %d", wk );
+
 			xSemaphoreTake(xMutex,portMAX_DELAY );
 			baroP = bmpBA.readPressure();   // 5x per second
 			float alt_standard = bmpBA.calcAVGAltitudeSTD( baroP );
@@ -323,10 +328,12 @@ int ttick = 0;
 void readTemp(void *pvParameters){
 	while (1) {
 		TickType_t xLastWakeTime = xTaskGetTickCount();
+		gpio_set_pull_mode(GPIO_NUM_2, GPIO_PULLUP_ONLY);
+
 		float t=15.0;
 		if( Audio.getDisable() != true )
 		{
-			battery = ADC.getBatVoltage();
+			battery = Battery.get();
 			// ESP_LOGI(FNAME,"Battery=%f V", battery );
 			t = ds18b20.getTemp();
 			if( t ==  DEVICE_DISCONNECTED_C ) {
@@ -398,7 +405,10 @@ void sensor(void *args){
 		if( attitude_indicator.get() )
 			attitude_indicator.set(0);
 	}
-	ADC.begin();  // for battery voltage
+	Battery.begin();  // for battery voltage
+	gpio_set_pull_mode(GPIO_NUM_2, GPIO_PULLUP_ONLY);
+	AnalogInWk.begin(); // GPIO2 for Wk Sensor
+
 	btsender.begin();  //
 
 	xMutex=xSemaphoreCreateMutex();
@@ -595,7 +605,7 @@ void sensor(void *args){
 	}
 
 
-	float bat = ADC.getBatVoltage(true);
+	float bat = Battery.get(true);
 	if( bat < 1 || bat > 28.0 ){
 		ESP_LOGE(FNAME,"Error: Battery voltage metering out of bounds, act value=%f", bat );
 		display->writeText( line++, "Bat Sensor: Failure");
@@ -792,7 +802,7 @@ void sensor(void *args){
 
 	display->initDisplay();
 	Menu = new SetupMenu();
-	Menu->begin( display, &Rotary, &bmpBA, &ADC );
+	Menu->begin( display, &Rotary, &bmpBA, &Battery );
 	if( ias < 50.0 ){
 		xSemaphoreTake(xMutex,portMAX_DELAY );
 		ESP_LOGI(FNAME,"QNH Autosetup, IAS=%3f (<50 km/h)", ias );

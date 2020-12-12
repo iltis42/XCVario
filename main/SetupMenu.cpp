@@ -22,7 +22,7 @@ IpsDisplay* MenuEntry::_display = 0;
 MenuEntry* MenuEntry::root = 0;
 MenuEntry* MenuEntry::selected = 0;
 ESPRotary* MenuEntry::_rotary = 0;
-BatVoltage* MenuEntry::_adc = 0;
+AnalogInput* MenuEntry::_adc = 0;
 BME280_ESP32_SPI *MenuEntry::_bmp = 0;
 float MenuEntry::volume;
 bool      MenuEntry::_menu_enabled = false;
@@ -114,7 +114,7 @@ int elev_adj( SetupMenuValFloat * p )
 int factv_adj( SetupMenuValFloat * p )
 {
 	ESP_LOGI(FNAME,"factv_adj");
-	float bat = p->_adc->getBatVoltage(true);
+	float bat = p->_adc->get(true);
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->setPrintPos(1,100);
 	p->ucg->printf("%0.2f Volt", bat);
@@ -194,7 +194,7 @@ SetupMenu::SetupMenu( String title ) {
 	highlight = -1;
 }
 
-void SetupMenu::begin( IpsDisplay* display, ESPRotary * rotary, BME280_ESP32_SPI * bmp, BatVoltage *adc ){
+void SetupMenu::begin( IpsDisplay* display, ESPRotary * rotary, BME280_ESP32_SPI * bmp, AnalogInput *adc ){
 	ESP_LOGI(FNAME,"SetupMenu() begin");
 	_rotary = rotary;
 	_bmp = bmp;

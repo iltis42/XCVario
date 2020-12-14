@@ -102,7 +102,7 @@ S2F Speed2Fly;
 Protocols OV( &Speed2Fly );
 
 AnalogInput Battery( (22.0+1.2)/1200, ADC_ATTEN_DB_0, ADC_CHANNEL_7, ADC_UNIT_1 );
-AnalogInput *AnalogInWk;
+AnalogInput *AnalogInWk = 0;
 
 TaskHandle_t *bpid;
 TaskHandle_t *apid;
@@ -225,7 +225,8 @@ void readBMP(void *pvParameters){
 			aCl = bmpVario.readAvgClimb();
 		}
 		if( (count++ % 2) == 0 ) {
-			wksensor = AnalogInWk->getRaw(true, 32);
+			if( AnalogInWk )
+				wksensor = AnalogInWk->getRaw(true, 32);
 			// ESP_LOGI(FNAME,"WK: %d", wksensor );
 			xSemaphoreTake(xMutex,portMAX_DELAY );
 			baroP = bmpBA.readPressure();   // 5x per second
@@ -331,7 +332,6 @@ int ttick = 0;
 void readTemp(void *pvParameters){
 	while (1) {
 		TickType_t xLastWakeTime = xTaskGetTickCount();
-		gpio_set_pull_mode(GPIO_NUM_2, GPIO_PULLUP_ONLY);
 
 		float t=15.0;
 		if( Audio.getDisable() != true )
@@ -695,11 +695,11 @@ void sensor(void *args){
 	else{
 		if( hardwareRevision.get() != 2 )
 			hardwareRevision.set(2);
-		display->writeText( line++, "AHRS Sensor: NOT FOUND");
-		logged_tests += "MPU6050 AHRS test: NOT FOUND\n";
+		if( hardwareRevision.get() == 3 ) {
+			display->writeText( line++, "AHRS Sensor: NOT FOUND");
+			logged_tests += "MPU6050 AHRS test: NOT FOUND\n";
+		}
 	}
-
-
 
 	Speed2Fly.change_polar();
 	Speed2Fly.change_mc_bal();
@@ -850,27 +850,27 @@ void sensor(void *args){
 	}
 	if( hardwareRevision.get() == 2 )
 		Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
-	else
+	else {
 		Rotary.begin( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);
-
-	gpio_set_pull_mode(GPIO_NUM_2, GPIO_PULLUP_ONLY);
-	gpio_set_pull_mode(GPIO_NUM_34, GPIO_PULLUP_ONLY);
-	delay(10);
-	AnalogInWk = new AnalogInput( -1, ADC_ATTEN_DB_0, ADC_CHANNEL_2, ADC_UNIT_2, false );
-	AnalogInWk->begin(); // GPIO2 for Wk Sensor
-	uint32_t read =  AnalogInWk->getRaw();
-	if( read == 0  || read >= 4096 ){ // try GPIO pin 34, series 2021-2
-		ESP_LOGI( FNAME, "ADC2, GPIO 2 not usable (Wifi), try GPIO 34, reading: %d", read);
-		delete AnalogInWk;
-		AnalogInWk = new AnalogInput( -1, ADC_ATTEN_DB_0, ADC_CHANNEL_6, ADC_UNIT_1, false );
-		read=AnalogInWk->getRaw();
-		if( read == 0 || read >=4096  ){
-			ESP_LOGI( FNAME, "ADC1 GPIO 34 also zero/one signal, maybe no WK sensor poti connected, reading: %d", read );
-		}else
-			ESP_LOGI( FNAME, "ADC1 apparently usable GPIO 34 usable, reading: %d", read );
+		gpio_set_pull_mode(GPIO_NUM_2, GPIO_PULLUP_ONLY);
+		gpio_set_pull_mode(GPIO_NUM_34, GPIO_PULLUP_ONLY);
+		delay(10);
+		AnalogInWk = new AnalogInput( -1, ADC_ATTEN_DB_0, ADC_CHANNEL_2, ADC_UNIT_2, false );
+		AnalogInWk->begin(); // GPIO2 for Wk Sensor
+		uint32_t read =  AnalogInWk->getRaw();
+		if( read == 0  || read >= 4096 ){ // try GPIO pin 34, series 2021-2
+			ESP_LOGI( FNAME, "ADC2, GPIO 2 not usable (Wifi), try GPIO 34, reading: %d", read);
+			delete AnalogInWk;
+			AnalogInWk = new AnalogInput( -1, ADC_ATTEN_DB_0, ADC_CHANNEL_6, ADC_UNIT_1, false );
+			read=AnalogInWk->getRaw();
+			if( read == 0 || read >=4096  ){
+				ESP_LOGI( FNAME, "ADC1 GPIO 34 also zero/one signal, maybe no WK sensor poti connected, reading: %d", read );
+			}else
+				ESP_LOGI( FNAME, "ADC1 apparently usable GPIO 34 usable, reading: %d", read );
+		}
+		else
+			ESP_LOGI( FNAME, "ADC2 GPIO 2 looks good, reading: %d", read );
 	}
-	else
-		ESP_LOGI( FNAME, "ADC2 GPIO 2 looks good, reading: %d", read );
 
 
 	gpio_set_pull_mode(RESET_Display, GPIO_PULLUP_ONLY );

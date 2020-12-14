@@ -23,24 +23,27 @@
 // ADC_ATTEN_DB_11   : The input voltage of ADC will be attenuated, extending the range of measurement to up to approx. 2600 mV.
 
 
-AnalogInput::AnalogInput( float multiplier, adc_atten_t attenuation ) {
-  _adc_ch = ADC1_CHANNEL_MAX;
-  adc_chars = 0;
+AnalogInput::AnalogInput( float multiplier, adc_atten_t attenuation, adc_channel_t ch, adc_unit_t unit, bool calibration ) {
+  _adc_ch = ch;
   _correct = multiplier;
   _attenuation = attenuation;
+  _unit = unit;
+  _cal = calibration;
 }
 
-esp_adc_cal_characteristics_t adc_cal;
+void AnalogInput::begin() {
 
-esp_adc_cal_characteristics_t adc_cal2;
+	if( _unit == ADC_UNIT_1 ) {
+		adc1_config_width(ADC_WIDTH_BIT_12);
+		adc1_config_channel_atten((adc1_channel_t)_adc_ch,_attenuation);
+	}
+	else if( _unit == ADC_UNIT_2 ) {
+		adc2_config_channel_atten((adc2_channel_t)_adc_ch,_attenuation);
+	}else
+		 ESP_LOGE(FNAME,"ADC unit %d illegal", _unit );
 
-void AnalogInput::begin( adc1_channel_t ch ) {
-	_adc_ch = ch;
-	adc1_config_width(ADC_WIDTH_BIT_12);
-	adc1_config_channel_atten(ch,_attenuation);
-
-	adc_chars = (esp_adc_cal_characteristics_t *) &adc_cal;
-	esp_adc_cal_value_t val_type = esp_adc_cal_characterize(ADC_UNIT_1, _attenuation, ADC_WIDTH_BIT_12, DEFAULT_VREF, adc_chars);
+	ESP_LOGI(FNAME,"ADC chars: unit:%d atten:%d", _unit, _attenuation );
+	esp_adc_cal_value_t val_type = esp_adc_cal_characterize(_unit, _attenuation, ADC_WIDTH_BIT_12, DEFAULT_VREF, &adc_chars);
 	//Check type of calibration value used to characterize ADC
 	if (val_type == ESP_ADC_CAL_VAL_EFUSE_VREF) {
 		ESP_LOGI(FNAME,"ESP32 ADC eFuse Vref");
@@ -49,35 +52,43 @@ void AnalogInput::begin( adc1_channel_t ch ) {
 	} else {
 		ESP_LOGI(FNAME,"ESP32 ADC Default");
 	}
-	get( true );
+	get();
 }
 
 float AnalogInput::get( bool nofilter, int loops ){
 	int adc = 0;
 	for( int i=0; i<loops; i++ ) {
-	   adc += adc1_get_raw( _adc_ch );
+		int raw;
+		if( _unit == ADC_UNIT_1 )
+			raw =  adc1_get_raw((adc1_channel_t)_adc_ch);
+		else if( _unit == ADC_UNIT_2 )
+			adc2_get_raw((adc2_channel_t)_adc_ch, ADC_WIDTH_BIT_12, &raw );
+	   adc += raw;
 	}
-	adc = adc/64;
-	uint32_t voltage = esp_adc_cal_raw_to_voltage( adc, adc_chars);
-    // ESP_LOGI(FNAME,"Voltage %d", voltage);
+	adc = adc/loops;
 
-	float current = (float)voltage * _correct * ( (100.0 + factory_volt_adjust.get()) / 100.0 ) +  DIODE_VOLTAGE_DROP;
-	if( nofilter )
-		_value = current;
+	uint32_t voltage;
+	if( _cal )
+		voltage = esp_adc_cal_raw_to_voltage(adc, &adc_chars);
 	else
-		_value += ( current - _value ) * 0.2;
+		voltage = adc;
+	float corrected;
+	if( _correct > 0 )
+		corrected = (float)voltage * _correct * ( (100.0 + factory_volt_adjust.get()) / 100.0 ) +  DIODE_VOLTAGE_DROP;
+	else
+		corrected = (float)voltage;
+	// ESP_LOGI(FNAME,"ADC raw unit:%d ch:%d raw %d cal:%d  corr: %f", _unit, _adc_ch, adc, voltage, corrected );
+
+	if( nofilter )
+		_value = corrected;
+	else
+		_value += ( corrected - _value ) * 0.2;
+
 	return _value;
 }
 
 AnalogInput::~AnalogInput() {
 
 }
-
-void AnalogInput2::begin( adc2_channel_t ch ){
-	_adc_ch = ch;
-	adc1_config_width(ADC_WIDTH_BIT_12);
-	adc2_config_channel_atten(ch,_attenuation);
-	adc_chars = (esp_adc_cal_characteristics_t *) &adc_cal2;
-};
 
 

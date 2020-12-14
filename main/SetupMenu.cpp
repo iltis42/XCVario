@@ -42,7 +42,57 @@ int update_rentry(SetupMenuValFloat * p)
 	return 0;
 }
 
+void showWk(SetupMenuSelect * p){
+	p->ucg->setPrintPos(1,120);
+	p->ucg->printf("Sensor: %d  ", AnalogInWk->getRaw(1000, -1) );
+	delay(20);
+}
+
 // Action Routines
+int wk_cal( SetupMenuSelect * p )
+{
+	ESP_LOGI(FNAME,"WK calibaration ( %d ) ", p->getSelect() );
+	if( p->getSelect() ){
+		p->clear();
+		p->ucg->setFont(ucg_font_fub25_hr);
+		p->ucg->setPrintPos(1,60);
+		p->ucg->printf("Set Flap +2  ");
+		delay(1000);
+		while( !p->_rotary->readSwitch() )
+			showWk(p);
+		wk_sens_pos_plus_2.set( AnalogInWk->getRaw(true, 1000) );
+		p->ucg->setPrintPos(1,60);
+		p->ucg->printf("Set Flap +1  ");
+		delay(1000);
+		while( !p->_rotary->readSwitch() )
+			showWk(p);
+		wk_sens_pos_plus_1.set( AnalogInWk->getRaw(true, 1000) );
+		p->ucg->setPrintPos(1,60);
+		p->ucg->printf("Set Flap  0  ");
+		delay(1000);
+		while( !p->_rotary->readSwitch() )
+			showWk(p);
+		wk_sens_pos_0.set( AnalogInWk->getRaw(true, 1000) );
+		p->ucg->setPrintPos(1,60);
+		p->ucg->printf("Set Flap -1  ");
+		delay(1000);
+		while( !p->_rotary->readSwitch() )
+			showWk(p);
+		wk_sens_pos_minus_1.set( AnalogInWk->getRaw(true,1000) );
+		p->ucg->setPrintPos(1,60);
+		p->ucg->printf("Set Flap -2  ");
+		delay(1000);
+		while( !p->_rotary->readSwitch() )
+			showWk(p);
+		wk_sens_pos_minus_2.set( AnalogInWk->getRaw(true,1000) );
+		p->ucg->setPrintPos(1,60);
+		p->ucg->printf("Saved        ");
+		delay(2000);
+		ESP_LOGI(FNAME,"Push Button pressed");
+	}
+	return 0;
+}
+
 int add_key( SetupMenuSelect * p )
 {
 	ESP_LOGI(FNAME,"add_key( %d ) ", p->getSelect() );
@@ -721,6 +771,7 @@ void SetupMenu::setup( )
 
 		SetupMenu * wk = new SetupMenu( "Flap (WK) Indicator" );
 		MenuEntry* wkm = opt->addMenu( wk );
+
 		SetupMenuSelect * wke = new SetupMenuSelect( "Flap Indicator Option", 0, true, 0, true, &flap_enable );
 		wke->addEntry( "Disable");
 		wke->addEntry( "Enable");
@@ -739,6 +790,12 @@ void SetupMenu::setup( )
 		SetupMenuValFloat * min2 = new SetupMenuValFloat("Speed -1 to -2", 0, "km/h",  100, 280, 1, 0, false, &flap_minus_2  );
 		min2->setHelp(PROGMEM"Speed for transition from -1 to -2 flap setting");
 		wkm->addMenu( min2 );
+
+		SetupMenuSelect * wkcal = new SetupMenuSelect( "Flap Sensor Calibration", 0, false, wk_cal, false, &dummy );
+		wkcal->addEntry( "Cancel");
+		wkcal->addEntry( "Start Calibration");
+		wkcal->setHelp( PROGMEM "Option to calibrate flap Sensor (WK), to indicate current flap setting: Press button after each setting" );
+		wkm->addMenu( wkcal );
 
 
 		// Units

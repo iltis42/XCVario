@@ -351,6 +351,12 @@ extern SetupNG<int>		    ahrs_licence_dig1;
 extern SetupNG<int>		    ahrs_licence_dig2;
 extern SetupNG<int>		    ahrs_licence_dig3;
 extern SetupNG<int>		    ahrs_licence_dig4;
+extern SetupNG<int>		    dummy;
+extern SetupNG<int>		    wk_sens_pos_plus_2;
+extern SetupNG<int>		    wk_sens_pos_plus_1;
+extern SetupNG<int>		    wk_sens_pos_0;
+extern SetupNG<int>		    wk_sens_pos_minus_1;
+extern SetupNG<int>		    wk_sens_pos_minus_2;
 
 
 #endif /* MAIN_SETUP_NG_H_ */

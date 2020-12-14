@@ -49,6 +49,10 @@
 #include "Serial.h"
 #include "Cipher.h"
 #include <esp32/rom/miniz.h>
+#include "esp32-hal-adc.h" // needed for adc pin reset
+#include "soc/sens_reg.h" // needed for adc pin reset
+// uint64_t reg_b; // Used to store Pin registers
+// uint64_t reg_a; // Used to store Pin registers
 
 // #include "sound.h"
 
@@ -97,9 +101,8 @@ xSemaphoreHandle xMutex=NULL;
 S2F Speed2Fly;
 Protocols OV( &Speed2Fly );
 
-AnalogInput Battery( (22.0+1.2)/1200 );
-// AnalogInput AnalogInWk( 1.0, ADC_ATTEN_DB_11 );
-AnalogInput2 AnalogInWk( ADC_ATTEN_DB_0 );
+AnalogInput Battery( (22.0+1.2)/1200, ADC_ATTEN_DB_0, ADC_CHANNEL_7, ADC_UNIT_1 );
+AnalogInput *AnalogInWk;
 
 TaskHandle_t *bpid;
 TaskHandle_t *apid;
@@ -144,6 +147,7 @@ float oz=0;
 float aox=0;
 float aoy=0;
 float aoz=0;
+int   wksensor=0;
 
 // Gyro and acceleration sensor
 I2C_t& i2c                     = i2c1;  // i2c0 or i2c1
@@ -169,7 +173,7 @@ void drawDisplay(void *pvParameters){
 			else if( airspeed_mode.get() == MODE_TAS )
 				airspeed = tas;
 			// ESP_LOGI(FNAME,"airseed=%f ",airspeed );
-			display->drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, aCl, Switch::cruiseMode(), standard_setting );
+			display->drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, aCl, Switch::cruiseMode(), standard_setting, wksensor );
 		}
 		vTaskDelay(20/portTICK_PERIOD_MS);
 		if( uxTaskGetStackHighWaterMark( dpid ) < 1024  )
@@ -221,9 +225,8 @@ void readBMP(void *pvParameters){
 			aCl = bmpVario.readAvgClimb();
 		}
 		if( (count++ % 2) == 0 ) {
-			// int wk = AnalogInWk.getRaw();
-			// ESP_LOGI(FNAME,"WK: %d", wk );
-
+			wksensor = AnalogInWk->getRaw(true, 32);
+			// ESP_LOGI(FNAME,"WK: %d", wksensor );
 			xSemaphoreTake(xMutex,portMAX_DELAY );
 			baroP = bmpBA.readPressure();   // 5x per second
 			float alt_standard = bmpBA.calcAVGAltitudeSTD( baroP );
@@ -252,7 +255,7 @@ void readBMP(void *pvParameters){
 			xSemaphoreGive(xMutex);
 
 			if( Audio.getDisable() != true ){
-				if( haveMPU && attitude_indicator.get() )  // 3th Generation HW, MPU6050
+				if( haveMPU )  // 3th Generation HW, MPU6050
 				{
 					mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
 					mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
@@ -378,6 +381,9 @@ void sensor(void *args){
 	MCP = new MCP3221();
 	MCP->setBus( &i2c );
 	gpio_set_drive_capability(GPIO_NUM_23, GPIO_DRIVE_CAP_1);
+	// WA for ADC2 Wifi issue
+	// reg_b = READ_PERI_REG(SENS_SAR_READ_CTRL2_REG);
+	// reg_a =  READ_PERI_REG(SENS_SAR_MEAS_START2_REG);
 	esp_wifi_set_mode(WIFI_MODE_NULL);
 	spiMutex = xSemaphoreCreateMutex();
 	// esp_log_level_set("*", ESP_LOG_INFO);
@@ -398,6 +404,7 @@ void sensor(void *args){
 	ESP_LOGI( FNAME, "Hardware revision detected %d", hardwareRevision.get() );
 	NVS.begin();
 
+
 	if( Cipher::checkKeyAHRS() ){
 		ESP_LOGI( FNAME, "AHRS key valid=%d", ahrsKeyValid );
 	}else{
@@ -406,9 +413,6 @@ void sensor(void *args){
 			attitude_indicator.set(0);
 	}
 	Battery.begin();  // for battery voltage
-	gpio_set_pull_mode(GPIO_NUM_2, GPIO_PULLUP_ONLY);
-	AnalogInWk.begin(); // GPIO2 for Wk Sensor
-
 	btsender.begin();  //
 
 	xMutex=xSemaphoreCreateMutex();
@@ -846,6 +850,26 @@ void sensor(void *args){
 		Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
 	else
 		Rotary.begin( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);
+
+	gpio_set_pull_mode(GPIO_NUM_2, GPIO_PULLUP_ONLY);
+	gpio_set_pull_mode(GPIO_NUM_34, GPIO_PULLUP_ONLY);
+	delay(10);
+	AnalogInWk = new AnalogInput( -1, ADC_ATTEN_DB_0, ADC_CHANNEL_2, ADC_UNIT_2, false );
+	AnalogInWk->begin(); // GPIO2 for Wk Sensor
+	uint32_t read =  AnalogInWk->getRaw();
+	if( read == 0  || read >= 4096 ){ // try GPIO pin 34, series 2021-2
+		ESP_LOGI( FNAME, "ADC2, GPIO 2 not usable (Wifi), try GPIO 34, reading: %d", read);
+		delete AnalogInWk;
+		AnalogInWk = new AnalogInput( -1, ADC_ATTEN_DB_0, ADC_CHANNEL_6, ADC_UNIT_1, false );
+		read=AnalogInWk->getRaw();
+		if( read == 0 || read >=4096  ){
+			ESP_LOGI( FNAME, "ADC1 GPIO 34 also zero/one signal, maybe no WK sensor poti connected, reading: %d", read );
+		}else
+			ESP_LOGI( FNAME, "ADC1 apparently usable GPIO 34 usable, reading: %d", read );
+	}
+	else
+		ESP_LOGI( FNAME, "ADC2 GPIO 2 looks good, reading: %d", read );
+
 
 	gpio_set_pull_mode(RESET_Display, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_Display, GPIO_PULLUP_ONLY );

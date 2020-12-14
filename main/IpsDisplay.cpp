@@ -120,6 +120,7 @@ int IpsDisplay::tyalt = 0;
 int IpsDisplay::pyalt = 0;
 int IpsDisplay::wkalt = -3;
 int IpsDisplay::wkspeeds[6];
+int IpsDisplay::wksenspos[7];
 ucg_color_t IpsDisplay::wkcolor;
 char IpsDisplay::wkss[6];
 int IpsDisplay::wkposalt;
@@ -423,6 +424,16 @@ void IpsDisplay::redrawValues()
 	wkspeeds[3] = flap_0.get();
 	wkspeeds[4] = flap_plus_1.get();
 	wkspeeds[5] = 60;
+
+	wksenspos[0] = wk_sens_pos_minus_2.get() - ( wk_sens_pos_minus_1.get() - wk_sens_pos_minus_2.get()); // extrapolated neg pole
+	wksenspos[1] = wk_sens_pos_minus_2.get();
+	wksenspos[2] = wk_sens_pos_minus_1.get();
+	wksenspos[3] = wk_sens_pos_0.get();
+	wksenspos[4] = wk_sens_pos_plus_1.get();
+	wksenspos[5] = wk_sens_pos_plus_2.get();
+	wksenspos[6] = wk_sens_pos_plus_2.get() - ( wk_sens_pos_plus_1.get() - wk_sens_pos_plus_2.get()); // extrapolated pos pole
+
+
 	wkbox = false;
 	wkposalt = -100;
 	wkialt = -3;
@@ -483,6 +494,23 @@ float wkRelPos( float wks, float minv, float maxv ){
 	else if( wks < minv )
 		return 0.5;
 	return 0.5;
+}
+
+float IpsDisplay::getSensorWkPos(int wks)
+{
+	int wk=0;
+	for( int i=0; i<=5; i++ ){
+		if( ((wksenspos[i] < wks) && (wks < wksenspos[i+1]))  ||
+			((wksenspos[i] > wks) && (wks > wksenspos[i+1]))	) {
+			wk = i;
+			break;
+		}
+	}
+	float delta=wksenspos[wk]-wksenspos[wk+1];
+	float moved=wksenspos[wk]-wks;
+	float relative=moved/delta;
+	float wkf =(wk-3) + relative;
+	return wkf;
 }
 
 int IpsDisplay::getWk( float wks )
@@ -892,7 +920,7 @@ float polar_sink_prev = 0;
 float te_prev = 0;
 
 void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sink, float altitude,
-		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt ){
+		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, int wksensor ){
 	if( _menu )
 		return;
 	tick++;
@@ -1113,9 +1141,11 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 		float wkspeed = ias * sqrt( 100.0/( ballast.get() +100.0) );
 		int wki = getWk( wkspeed );
 		float wkpos=wkRelPos( wkspeed, wkspeeds[wki+3], wkspeeds[wki+2] );
+		float wkhebel=getSensorWkPos( wksensor );
+		int wkhebeli= roundf((wkhebel)*10);
 		int wk = (int)((wki - wkpos + 0.5)*10);
-		ESP_LOGD(FNAME,"ias:%d wksp:%f wki:%d wk:%d wkpos%f", ias, wkspeed, wki, wk, wkpos );
-		if( wkposalt != wk ) {
+		// ESP_LOGI(FNAME,"ias:%d wksp:%f wki:%d wk:%d wkpos:%f wksensor:%d wkhebel:%f wkh:%d", ias, wkspeed, wki, wk, wkpos, wksensor, wkhebel, wkhebeli );
+		if( wkposalt != wk ) {  // wkhebeli
 			ESP_LOGD(FNAME,"WK changed");
 			ucg->setColor(  COLOR_WHITE  );
 			drawBigWkBar( AMIDY, WKSYMST-4, (float)(wk)/10 );
@@ -1182,19 +1212,19 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 
 
 void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, float altitude,
-		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt ){
+		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, int wksensor ){
 	if( _menu )
 		return;
 
 	if( display_style.get() == DISPLAY_AIRLINER )
-		drawAirlinerDisplay( ias,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_alt );
+		drawAirlinerDisplay( ias,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_alt, wksensor );
 	else if( display_style.get() == DISPLAY_RETRO )
-		drawRetroDisplay( ias,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_alt );
+		drawRetroDisplay( ias,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_alt, wksensor );
 
 }
 
 void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_sink, float altitude,
-		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt ){
+		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, int wksensor ){
 	if( _menu )
 		return;
 	// ESP_LOGI(FNAME,"IpsDisplay::drawDisplay  TE=%0.1f", te);

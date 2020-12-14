@@ -62,7 +62,7 @@ public:
 	static void setup();
 	static void bootDisplay();
 	static void writeText( int line, String text );                          // ias,       TE,       aTE,       polar_sink,       alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode
-	static void drawDisplay( int ias, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt );
+	static void drawDisplay( int ias, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, int wksensor );
 	static void initDisplay();
 	static void clear();   // erase whole display
 	void doMenu( bool menu=true ) { _menu = menu; };
@@ -103,6 +103,7 @@ private:
 	static int wkalt;
 	static char wkss[6];
 	static int  wkspeeds[6];
+	static int  wksenspos[7];
 	static bool wkbox;
 	static int wkposalt;
 	static int wkialt;
@@ -141,8 +142,8 @@ private:
 	static void drawThermometer( int x, int y );
 	static void drawTetragon( float a, int x0, int y0, int l1, int l2, int w, int r, int g, int b, bool del=true );
 	static void initRetroDisplay();
-	static void drawRetroDisplay( int ias, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt );
-	static void drawAirlinerDisplay( int ias, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt );
+	static void drawRetroDisplay( int ias, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, int wksensor );
+	static void drawAirlinerDisplay( int ias, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, int wksensor );
 	static void drawAnalogScale( int val, int pos );
 	static void drawScaleLines( bool full=true );
 	static void setTeBuf( int y1, int y2, int r, int g, int b );
@@ -155,6 +156,8 @@ private:
 	static void drawBigWkBar( int ypos, int xpos, float wk );
 	static void drawWkSymbol( int ypos, int xpos, int wk, int wkalt );
 	static int getWk( float wks );
+	static float getSensorWkPos(int wks);
+
 };
 
 

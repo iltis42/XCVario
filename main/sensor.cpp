@@ -413,7 +413,7 @@ void sensor(void *args){
 			attitude_indicator.set(0);
 	}
 	Battery.begin();  // for battery voltage
-	btsender.begin();  //
+
 
 	xMutex=xSemaphoreCreateMutex();
 	uint8_t t_sb = 0;   //stanby 0: 0,5 mS 1: 62,5 mS 2: 125 mS
@@ -446,6 +446,19 @@ void sensor(void *args){
 	if( Rotary.readSwitch() ){
 		doUpdate = true;
 		ESP_LOGI(FNAME,"Rotary pressed: Do Software Update");
+	}
+	if( doUpdate ) {
+		if( hardwareRevision.get() == 2) {
+			ESP_LOGI( FNAME,"Hardware Revision detected 2");
+			Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
+		}
+		else  {
+			ESP_LOGI( FNAME,"Hardware Revision detected 3");
+			Rotary.begin( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);
+		}
+		ota = new OTA();
+		ota->begin( &Rotary );
+		ota->doSoftwareUpdate( display );
 	}
 
 	String wireless_id;
@@ -686,19 +699,7 @@ void sensor(void *args){
 		logged_tests += "MPU6050 AHRS test: NOT FOUND\n";
 	}
 
-	if( doUpdate ) {
-		if( hardwareRevision.get() == 2) {
-			ESP_LOGI( FNAME,"Hardware Revision detected 2");
-			Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
-		}
-		else  {
-			ESP_LOGI( FNAME,"Hardware Revision detected 3");
-			Rotary.begin( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);
-		}
-		ota = new OTA();
-		ota->begin( &Rotary );
-		ota->doSoftwareUpdate( display );
-	}
+
 
 	Speed2Fly.change_polar();
 	Speed2Fly.change_mc_bal();
@@ -719,6 +720,7 @@ void sensor(void *args){
 		if( !Rotary.readSwitch() )
 			sleep(2);
 	}
+	btsender.begin();  //
 
 	if( Rotary.readSwitch() )
 	{

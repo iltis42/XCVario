@@ -462,8 +462,10 @@ void sensor(void *args){
 	}
 
 	String wireless_id;
-	if( blue_enable.get() == WL_BLUETOOTH )
+	if( blue_enable.get() == WL_BLUETOOTH ) {
 		wireless_id="Bluetooth ID: ";
+		btsender.begin();
+	}
 	else
 		wireless_id="WLAN SID: ";
 	wireless_id += SetupCommon::getID();
@@ -635,6 +637,7 @@ void sensor(void *args){
 		logged_tests += "Battery Voltage Sensor: PASSED\n";
 	}
 
+
 	Serial::begin();
 	if( blue_enable.get() == WL_BLUETOOTH ) {
 		if( btsender.selfTest() ){
@@ -720,7 +723,7 @@ void sensor(void *args){
 		if( !Rotary.readSwitch() )
 			sleep(2);
 	}
-	btsender.begin();  //
+
 
 	if( Rotary.readSwitch() )
 	{

@@ -4,6 +4,7 @@
 #include <string>
 #include "sdkconfig.h"
 #include <stdio.h>
+#include <string>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_task_wdt.h"
@@ -138,6 +139,45 @@ void Serial::serialHandlerS2(void *pvParameters){
 	}
 }
 
+bool Serial::selfTest(int num){
+	if( num == 1 ){
+		delay(100);  // wait for serial hardware init
+		std::string test( PROGMEM "The quick brown fox jumps over the lazy dog" );
+		int tx = 0;
+		if( Serial1.availableForWrite() ) {
+			tx = Serial1.write( test.c_str(), test.length() );
+			ESP_LOGI(FNAME,"Serial 1 TX written: %d", tx );
+		}
+		else {
+			ESP_LOGI(FNAME,"Serial 1 not avail for sending, abort");
+			return false;
+		}
+		char recv[50];
+		int numread = 0;
+		for( int i=1; i<100; i++ ){
+			int avail = Serial1.available();
+			if( avail >= tx ){
+				if( avail > tx )
+					avail = tx+1;
+				numread = Serial1.read( recv, avail );
+				ESP_LOGI(FNAME,"Serial 1 RX bytes read: %d %s", numread, recv );
+				break;
+			}
+			delay( 10 );
+			ESP_LOGI(FNAME,"Serial 1 bytes avail: %d", numread );
+		}
+		std::string r( recv );
+		if( r.find( test ) != std::string::npos )  {
+			ESP_LOGI(FNAME,"Serial 1 Test PASSED");
+			return true;
+		}
+		else {
+			ESP_LOGI(FNAME,"Serial 1 Test FAILED !");
+			return false;
+		}
+	}
+	return false;
+}
 
 void Serial::begin(){
 	ESP_LOGI(FNAME,"Serial::begin()" );
@@ -149,7 +189,6 @@ void Serial::begin(){
 			Serial1.setRxBufferSize(256);
 		}
 		// need this for bluetooth
-		xTaskCreatePinnedToCore(&Serial::serialHandlerS1, "serialHandlerS1", 4096, NULL, 27, 0, 0);
 	}
 	if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 ){
 		ESP_LOGI(FNAME,"Serial Interface ttyS2 enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial2_speed.get(), baud[serial2_speed.get()], serial2_tx_inverted.get(), serial2_rx_inverted.get() );
@@ -159,8 +198,18 @@ void Serial::begin(){
 			Serial2.begin(baud[serial2_speed.get()],SERIAL_8N1,18,4, serial2_rx_inverted.get(), serial2_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
 
 		Serial2.setRxBufferSize(256);
+	}
+}
+
+void Serial::taskStart(){
+	ESP_LOGI(FNAME,"Serial::taskStart()" );
+	if( serial1_speed.get() != 0  || blue_enable.get() != 0 ){
+		xTaskCreatePinnedToCore(&Serial::serialHandlerS1, "serialHandlerS1", 4096, NULL, 27, 0, 0);
+	}
+	if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 ){
 		xTaskCreatePinnedToCore(&Serial::serialHandlerS2, "serialHandlerS2", 4096, NULL, 26, 0, 0);
 	}
 }
+
 
 

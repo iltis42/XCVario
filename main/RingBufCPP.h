@@ -18,7 +18,7 @@ public:
 		memcpy(str,os.c_str(),len);
 		str[len] = 0;
 	}
-	inline SString( char * s ) {
+	inline SString( const char * s ) {
 		len = SSTRLEN-1;
 		if( strlen(s) < len)
 			len = strlen(s);

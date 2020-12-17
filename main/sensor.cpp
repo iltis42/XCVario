@@ -639,6 +639,15 @@ void sensor(void *args){
 
 
 	Serial::begin();
+	// Factory test for serial interface plus cable
+	if( abs(factory_volt_adjust.get() - 0.00815) < 0.00001 ) {
+		if( Serial::selfTest( 1 ) )
+			display->writeText( line++, "Serial S1: OK");
+		else
+			display->writeText( line++, "Serial S1: FAILED");
+	}
+	Serial::taskStart();
+
 	if( blue_enable.get() == WL_BLUETOOTH ) {
 		if( btsender.selfTest() ){
 			display->writeText( line++, "Bluetooth: OK");
@@ -651,7 +660,6 @@ void sensor(void *args){
 	}else if ( blue_enable.get() == WL_WLAN ){
 		wifi_init_softap();
 	}
-
 
 	esp_err_t err=ESP_ERR_NOT_FOUND;
 

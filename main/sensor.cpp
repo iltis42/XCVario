@@ -641,10 +641,18 @@ void sensor(void *args){
 	Serial::begin();
 	// Factory test for serial interface plus cable
 	if( abs(factory_volt_adjust.get() - 0.00815) < 0.00001 ) {
+		String result("Serial ");
 		if( Serial::selfTest( 1 ) )
-			display->writeText( line++, "Serial S1: OK");
+			result += "S1 OK";
 		else
-			display->writeText( line++, "Serial S1: FAILED");
+			result += "S1 FAIL";
+		if( hardwareRevision.get() >= 3 ){
+			if( Serial::selfTest( 2 ) )
+				result += ",S2 OK";
+			else
+				result += ",S2 FAIL";
+		}
+		display->writeText( line++, result.c_str() );
 	}
 	Serial::taskStart();
 

@@ -140,41 +140,47 @@ void Serial::serialHandlerS2(void *pvParameters){
 }
 
 bool Serial::selfTest(int num){
-	if( num == 1 ){
-		delay(100);  // wait for serial hardware init
-		std::string test( PROGMEM "The quick brown fox jumps over the lazy dog" );
-		int tx = 0;
-		if( Serial1.availableForWrite() ) {
-			tx = Serial1.write( test.c_str(), test.length() );
-			ESP_LOGI(FNAME,"Serial 1 TX written: %d", tx );
-		}
-		else {
-			ESP_LOGI(FNAME,"Serial 1 not avail for sending, abort");
-			return false;
-		}
-		char recv[50];
-		int numread = 0;
-		for( int i=1; i<100; i++ ){
-			int avail = Serial1.available();
+	HardwareSerial *mySerial;
+	if( num == 1 )
+		mySerial = &Serial1;
+	else if( num == 2 )
+		mySerial = &Serial2;
+	else
+		return false;
+	ESP_LOGI(FNAME,"Serial %d selftest", num );
+	delay(100);  // wait for serial hardware init
+	std::string test( PROGMEM "The quick brown fox jumps over the lazy dog" );
+	int tx = 0;
+	if( mySerial->availableForWrite() ) {
+		tx = mySerial->write( test.c_str(), test.length() );
+		ESP_LOGI(FNAME,"Serial TX written: %d", tx );
+	}
+	else {
+		ESP_LOGI(FNAME,"Serial not avail for sending, abort");
+		return false;
+	}
+	char recv[50];
+	int numread = 0;
+	for( int i=1; i<100; i++ ){
+			int avail = mySerial->available();
 			if( avail >= tx ){
 				if( avail > tx )
 					avail = tx+1;
-				numread = Serial1.read( recv, avail );
-				ESP_LOGI(FNAME,"Serial 1 RX bytes read: %d %s", numread, recv );
+				numread = mySerial->read( recv, avail );
+				ESP_LOGI(FNAME,"Serial RX bytes read: %d %s", numread, recv );
 				break;
 			}
-			delay( 10 );
-			ESP_LOGI(FNAME,"Serial 1 bytes avail: %d", numread );
-		}
-		std::string r( recv );
-		if( r.find( test ) != std::string::npos )  {
-			ESP_LOGI(FNAME,"Serial 1 Test PASSED");
-			return true;
-		}
-		else {
-			ESP_LOGI(FNAME,"Serial 1 Test FAILED !");
-			return false;
-		}
+		delay( 10 );
+		ESP_LOGI(FNAME,"Serial bytes avail: %d", numread );
+	}
+	std::string r( recv );
+	if( r.find( test ) != std::string::npos )  {
+		ESP_LOGI(FNAME,"Serial Test PASSED");
+		return true;
+	}
+	else {
+		ESP_LOGI(FNAME,"Serial Test FAILED !");
+		return false;
 	}
 	return false;
 }

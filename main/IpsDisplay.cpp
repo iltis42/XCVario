@@ -124,6 +124,7 @@ int IpsDisplay::wksenspos[7];
 ucg_color_t IpsDisplay::wkcolor;
 char IpsDisplay::wkss[6];
 int IpsDisplay::wkposalt;
+int IpsDisplay::wksensoralt;
 int IpsDisplay::wkialt;
 
 float IpsDisplay::_range_clip = 0;
@@ -436,6 +437,7 @@ void IpsDisplay::redrawValues()
 
 	wkbox = false;
 	wkposalt = -100;
+	wksensoralt = -1;
 	wkialt = -3;
 	tyalt = -1000;
 }
@@ -565,9 +567,21 @@ void IpsDisplay::drawWkBar( int ypos, int xpos, float wkf ){
 #define MINPOS -2
 #define MAXPOS  2
 
-int wkyold=0;
 
-void IpsDisplay::drawBigWkBar( int ypos, int xpos, float wkf ){
+int wkyold=0;
+int wksyold=0;
+
+void IpsDisplay::drawWkLever( int xpos, int ypos, int oldypos ){
+	ucg->setColor(COLOR_BLACK);
+	ucg->drawBox( xpos-35, oldypos-4, 29, 8 );
+	ucg->drawBox( xpos-6, oldypos-2, 4, 4 );
+
+	ucg->setColor(COLOR_WHITE);  // left upper x,y and w,h
+	ucg->drawBox( xpos-35, ypos-4, 29, 8 );
+	ucg->drawBox( xpos-6, ypos-2, 4, 4 );
+}
+
+void IpsDisplay::drawBigWkBar( int ypos, int xpos, float wkf, int wksens ){
 	ucg->setFont(ucg_font_profont22_mr );
 	ucg->setFontPosCenter();
 	int lfh = ucg->getFontAscent()+10;  // a bit place around number
@@ -594,13 +608,23 @@ void IpsDisplay::drawBigWkBar( int ypos, int xpos, float wkf ){
 	// now draw the numbers
 
 	int y = ypos + (int)((wkf)*(lfh) + 0.5 );
-	if( wkyold != y ) {
+	int ys = 500;  // off screen to blank out when sensor is pulled
+	if( wksens < 4095 && wksens > 0 ){
+		ys = ypos + (int)(( getSensorWkPos( wksens ))*(lfh) + 0.5 );
+	}
+
+	if( wkyold != y || ( (wksyold != ys) )) {  // redraw on change or when wklever is near
 		ucg->setColor(COLOR_BLACK);
 		ucg->drawTriangle( xpos-15,wkyold-5,  xpos-15,wkyold+5,  xpos-2,wkyold );
-		ucg->setColor(COLOR_WHITE);
+		ucg->setColor(COLOR_GREEN);
 		ucg->drawTriangle( xpos-15,y-5,       xpos-15,y+5,       xpos-2,y );
 		wkyold = y;
 	}
+	if( wksyold != ys ) {
+		drawWkLever( xpos, ys, wksyold );
+		wksyold = ys;
+	}
+
 
 	ucg->setFontPosBottom();
 	ucg->undoClipRange();
@@ -919,6 +943,7 @@ void IpsDisplay::initRetroDisplay(){
 float polar_sink_prev = 0;
 float te_prev = 0;
 
+
 void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sink, float altitude,
 		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, int wksensor ){
 	if( _menu )
@@ -1141,15 +1166,17 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 		float wkspeed = ias * sqrt( 100.0/( ballast.get() +100.0) );
 		int wki = getWk( wkspeed );
 		float wkpos=wkRelPos( wkspeed, wkspeeds[wki+3], wkspeeds[wki+2] );
-		float wkhebel=getSensorWkPos( wksensor );
-		int wkhebeli= roundf((wkhebel)*10);
+		bool drawLever = true;
+		if( wksensor <= 0 || wksensor >= 4095 )
+			drawLever = false;
 		int wk = (int)((wki - wkpos + 0.5)*10);
 		// ESP_LOGI(FNAME,"ias:%d wksp:%f wki:%d wk:%d wkpos:%f wksensor:%d wkhebel:%f wkh:%d", ias, wkspeed, wki, wk, wkpos, wksensor, wkhebel, wkhebeli );
-		if( wkposalt != wk ) {  // wkhebeli
+		if( wkposalt != wk || wksensoralt != wksensor ) {  // wkhebeli
 			ESP_LOGD(FNAME,"WK changed");
 			ucg->setColor(  COLOR_WHITE  );
-			drawBigWkBar( AMIDY, WKSYMST-4, (float)(wk)/10 );
+			drawBigWkBar( AMIDY, WKSYMST-4, (float)(wk)/10, wksensor);
 			wkposalt = wk;
+			wksensoralt = wksensor;
 		}
 		if( wki != wkialt ) {
 			drawWkSymbol( AMIDY-82, WKSYMST-3, wki, wkialt );

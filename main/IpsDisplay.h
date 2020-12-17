@@ -106,6 +106,7 @@ private:
 	static int  wksenspos[7];
 	static bool wkbox;
 	static int wkposalt;
+	static int wksensoralt;
 	static int wkialt;
 
 	static int yposalt;
@@ -153,8 +154,9 @@ private:
 	static void drawAvg( float mps, float delta );
 	static void drawLegend( bool onlyLines=false );
 	static void drawWkBar( int ypos, int xpos, float wk );
-	static void drawBigWkBar( int ypos, int xpos, float wk );
+	static void drawBigWkBar( int ypos, int xpos, float wk, int wksens );
 	static void drawWkSymbol( int ypos, int xpos, int wk, int wkalt );
+	static void drawWkLever( int xpos, int ypos, int oldpos );
 	static int getWk( float wks );
 	static float getSensorWkPos(int wks);
 

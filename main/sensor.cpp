@@ -172,7 +172,7 @@ void drawDisplay(void *pvParameters){
 				airspeed = ias;
 			else if( airspeed_mode.get() == MODE_TAS )
 				airspeed = tas;
-			// ESP_LOGI(FNAME,"airseed=%f ",airspeed );
+			// ESP_LOGI(FNAME,"WK raw=%d ", wksensor );
 			display->drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, aCl, Switch::cruiseMode(), standard_setting, wksensor );
 		}
 		vTaskDelay(20/portTICK_PERIOD_MS);

@@ -573,11 +573,11 @@ int wksyold=0;
 
 void IpsDisplay::drawWkLever( int xpos, int ypos, int oldypos ){
 	ucg->setColor(COLOR_BLACK);
-	ucg->drawBox( xpos-35, oldypos-4, 29, 8 );
+	ucg->drawBox( xpos-25, oldypos-4, 19, 8 );
 	ucg->drawBox( xpos-6, oldypos-2, 4, 4 );
 
 	ucg->setColor(COLOR_WHITE);  // left upper x,y and w,h
-	ucg->drawBox( xpos-35, ypos-4, 29, 8 );
+	ucg->drawBox( xpos-25, ypos-4, 19, 8 );
 	ucg->drawBox( xpos-6, ypos-2, 4, 4 );
 }
 
@@ -757,52 +757,49 @@ void IpsDisplay::drawWifi( int x, int y ) {
 }
 
 
-void IpsDisplay::drawBat( float volt, int x, int y ) {
-	charge = (int)(( volt -  bat_low_volt.get() )*100)/( bat_full_volt.get() - bat_low_volt.get() );
-	if(charge < 0)
-		charge = 0;
-	if( charge > 100 )
-		charge = 100;
-	if( (tick%100) == 0 )  // check setup changes all 10 sec
-	{
-		yellow =  (int)(( bat_yellow_volt.get() - bat_low_volt.get() )*100)/( bat_full_volt.get() - bat_low_volt.get() );
-		red = (int)(( bat_red_volt.get() - bat_low_volt.get() )*100)/( bat_full_volt.get() - bat_low_volt.get() );
+void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
+	if( blank ) {  // blank battery for blinking
+		// ESP_LOGI(FNAME,"blank bat");
+		ucg->setColor( COLOR_BLACK );
+		ucg->drawBox( x-40,y-2, 40, 12  );
 	}
-	ucg->setColor( COLOR_WHITE );
-	ucg->drawBox( x-40,y-2, 36, 12  );  // Bat body square
-	ucg->drawBox( x-4, y+1, 3, 6  );      // Bat pluspole pimple
-	if ( charge > yellow )  // >25% grün
-		ucg->setColor( COLOR_GREEN ); // green
-	else if ( charge < yellow && charge > red )
-		ucg->setColor( COLOR_YELLOW ); //  yellow
-	else if ( charge < red )
-		ucg->setColor( COLOR_RED ); // red
 	else
-		ucg->setColor( COLOR_RED ); // red
-	int chgpos=(charge*32)/100;
-	if(chgpos <= 4)
-		chgpos = 4;
-	ucg->drawBox( x-40+2,y, chgpos, 8  );  // Bat charge state
-	ucg->setColor( DARK_GREY );
-	ucg->drawBox( x-40+2+chgpos,y, 32-chgpos, 8 );  // Empty bat bar
-	ucg->setColor( COLOR_WHITE );
-	ucg->setFont(ucg_font_fub11_hr);
-	ucg->setPrintPos(x-40,y-7);
-	if( battery_display.get() == 0 )
-		ucg->printf("%3d%%  ", charge);
-	else {
-		ucg->setPrintPos(x-50,y-8);
-		ucg->printf("%2.1f V", volt);
-	}
-
-	if( charge < red ) {  // blank battery for blinking
-		if( (tick%100) == 0 ) {
-			ucg->setColor( COLOR_BLACK );
-			ucg->drawBox( x-40,y-2, 40, 12  );
-		}
-		if( ((tick+50)%100) == 0 )  // trigger redraw
+	{
+		charge = (int)(( volt -  bat_low_volt.get() )*100)/( bat_full_volt.get() - bat_low_volt.get() );
+		if(charge < 0)
+			charge = 0;
+		if( charge > 100 )
+			charge = 100;
+		if( (tick%100) == 0 )  // check setup changes all 10 sec
 		{
-			chargealt++;
+			yellow =  (int)(( bat_yellow_volt.get() - bat_low_volt.get() )*100)/( bat_full_volt.get() - bat_low_volt.get() );
+			red = (int)(( bat_red_volt.get() - bat_low_volt.get() )*100)/( bat_full_volt.get() - bat_low_volt.get() );
+		}
+		ucg->setColor( COLOR_WHITE );
+		ucg->drawBox( x-40,y-2, 36, 12  );  // Bat body square
+		ucg->drawBox( x-4, y+1, 3, 6  );      // Bat pluspole pimple
+		if ( charge > yellow )  // >25% grün
+			ucg->setColor( COLOR_GREEN ); // green
+		else if ( charge < yellow && charge > red )
+			ucg->setColor( COLOR_YELLOW ); //  yellow
+		else if ( charge < red )
+			ucg->setColor( COLOR_RED ); // red
+		else
+			ucg->setColor( COLOR_RED ); // red
+		int chgpos=(charge*32)/100;
+		if(chgpos <= 4)
+			chgpos = 4;
+		ucg->drawBox( x-40+2,y, chgpos, 8  );  // Bat charge state
+		ucg->setColor( DARK_GREY );
+		ucg->drawBox( x-40+2+chgpos,y, 32-chgpos, 8 );  // Empty bat bar
+		ucg->setColor( COLOR_WHITE );
+		ucg->setFont(ucg_font_fub11_hr);
+		ucg->setPrintPos(x-40,y-7);
+		if( battery_display.get() == 0 )
+			ucg->printf("%3d%%  ", charge);
+		else {
+			ucg->setPrintPos(x-50,y-8);
+			ucg->printf("%2.1f V", volt);
 		}
 	}
 }
@@ -942,6 +939,8 @@ void IpsDisplay::initRetroDisplay(){
 
 float polar_sink_prev = 0;
 float te_prev = 0;
+bool blankold = false;
+bool blank = false;
 
 
 void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sink, float altitude,
@@ -1149,9 +1148,16 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 
 	// Battery
 	int chargev = (int)( volt *10 );
-	if ( chargealt != chargev  ) {
-		drawBat( volt, BATX, BATY );
+	if( volt < bat_red_volt.get() ){
+		if( !(tick%40) )
+			blank = true;
+		else if( !((tick+20)%40) )
+			blank = false;
+	}
+	if ( chargealt != chargev || blank != blankold  ) {
+		drawBat( volt, BATX, BATY, blank );
 		chargealt = chargev;
+		blankold = blank;
 	}
 
 	// Temperature Value
@@ -1166,9 +1172,6 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 		float wkspeed = ias * sqrt( 100.0/( ballast.get() +100.0) );
 		int wki = getWk( wkspeed );
 		float wkpos=wkRelPos( wkspeed, wkspeeds[wki+3], wkspeeds[wki+2] );
-		bool drawLever = true;
-		if( wksensor <= 0 || wksensor >= 4095 )
-			drawLever = false;
 		int wk = (int)((wki - wkpos + 0.5)*10);
 		// ESP_LOGI(FNAME,"ias:%d wksp:%f wki:%d wk:%d wkpos:%f wksensor:%d wkhebel:%f wkh:%d", ias, wkspeed, wki, wk, wkpos, wksensor, wkhebel, wkhebeli );
 		if( wkposalt != wk || wksensoralt != wksensor ) {  // wkhebeli
@@ -1409,9 +1412,16 @@ void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_
 	// Battery Symbol
 
 	int chargev = (int)( volt *10 );
-	if ( chargealt != chargev  ) {
-		drawBat( volt, BATX, BATY+3 );
+	if( volt < bat_red_volt.get() ){
+			if( !(tick%40) )
+				blank = true;
+			else if( !((tick+20)%40) )
+				blank = false;
+	}
+	if ( chargealt != chargev || blank != blankold ) {
+		drawBat( volt, BATX, BATY+3, blank );
 		chargealt = chargev;
+		blankold = blank;
 	}
 
 	// Bluetooth Symbol

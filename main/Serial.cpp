@@ -161,7 +161,7 @@ bool Serial::selfTest(int num){
 	}
 	char recv[50];
 	int numread = 0;
-	for( int i=1; i<100; i++ ){
+	for( int i=1; i<10; i++ ){
 			int avail = mySerial->available();
 			if( avail >= tx ){
 				if( avail > tx )
@@ -170,7 +170,7 @@ bool Serial::selfTest(int num){
 				ESP_LOGI(FNAME,"Serial RX bytes read: %d %s", numread, recv );
 				break;
 			}
-		delay( 10 );
+		delay( 30 );
 		ESP_LOGI(FNAME,"Serial bytes avail: %d", numread );
 	}
 	std::string r( recv );

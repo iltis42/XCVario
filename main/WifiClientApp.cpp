@@ -34,7 +34,6 @@ void wifi_connect(){
 	wifi_config_t cfg;
 	memset( &cfg, 0, sizeof(cfg) );
 	strcpy( (char *)cfg.sta.ssid, SSID );
-	//wc.ap.ssid_len = strlen( (char *)wc.ap.ssid );
 	strcpy( (char *)cfg.sta.password, PASSPHARSE );
 
     ESP_ERROR_CHECK( esp_wifi_disconnect() );

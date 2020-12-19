@@ -50,7 +50,6 @@ class MS4525DO
         float getAirSpeed(void);        // calculates and returns the airspeed
         bool  doOffset( bool force=false );
         float readPascal( float minimum, bool &ok );
-    	inline float pascal2km( float pascal) {  float v = sqrt( 2*pascal / 1.225 ); return v*3.6; };
         char  fetch_pressure(uint16_t &P_dat, uint16_t &T_dat);
         bool  offsetPlausible( uint16_t offset );
         bool  selfTest( int& adval );

@@ -20,6 +20,7 @@
 #include "DallasRmt.h"
 #include "KalmanMPU6050.h"
 #include "Router.h"
+#include "Atmosphere.h"
 
 S2F * Protocols::_s2f = 0;
 
@@ -173,7 +174,6 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 	Router::sendXCV(str);
 }
 
-
 // The XCVario Protocol or Cambridge CAI302 protocol to adjust MC,Ballast,Bugs.
 void Protocols::parseNMEA( char *str ){
 	ESP_LOGI(FNAME,"parseNMEA %s", str);
@@ -212,6 +212,46 @@ void Protocols::parseNMEA( char *str ){
 			bugs.set( mybugs );
 			_s2f->change_mc_bal();
 		}
+	}else if( !strncmp( str, "$PXCV,", 5 ) ){   // $PXCV,-0.0,0.5,0,1.00,0,24.4,1013.2,990.8, 0.0,0.2,-29.2,-0.45,0.01,0.80*2C
+		/*
+		$PXCV,
+		BBB.B = Vario, -30 to +30 m/s, negative sign for sink,
+		C.C = MacCready 0 to 10 m/s
+		EE = bugs degradation, 0 = clean to 30 %,
+		F.FF = Ballast 1.00 to 1.60,
+		G = 0 in climb, 1 in cruise,
+		HH = Outside airtemp in degrees celcius ( may have leading negative sign ),
+		QQQQ.Q = QNH e.g. 1013.2,
+		PPPP.P: static pressure in hPa,
+		QQQQ.Q: dynamic pressure in Pa,
+		RRR.R: roll angle,
+		III.I: pitch angle,
+		X.XX:   acceleration in X-Axis,
+		Y.YY:   acceleration in Y-Axis,
+		Z.ZZ:   acceleration in Z-Axis,
+		*CHK = standard NMEA checksum
+		*/
+		// tbd: checksum check
+		// ESP_LOGI(FNAME,"parseNMEA, PXCV");
+		float _mc,_te,_bugs,_ballast,_cruise, _temp, _qnh, _baro, _pitot, _roll, _pitch, _ax, _ay, _az;
+		int _cs;
+		sscanf( str, "$PXCV,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f*%02x", &_te, &_mc, &_bugs, &_ballast,&_cruise, &_temp, &_qnh, &_baro, &_pitot, &_roll, &_pitch, &_ax, &_ay, &_az, &_cs  );
+		// ESP_LOGI(FNAME,"parseNMEA, $PXCV TE=%2.1f T=%2.1f Baro=%4.1f Pitot=%4.1f", _te, _temp, _baro, _pitot );
+		TE = _te;
+		temperature = _temp;
+		validTemperature = true;
+		baroP = _baro;
+		dynamicP = _pitot;
+		float iasraw= Atmosphere::pascal2kmh( dynamicP );
+		ias = ias + (iasraw - ias)*0.25;
+		tas += ( Atmosphere::TAS( iasraw , _baro, _temp) - tas)*0.25;
+		aTE += (TE - aTE)* (1/(10*vario_av_delay.get()));
+		aTES2F += ( _te - aTES2F ) * ( 1/(s2f_delay.get() * 10) );
+		polar_sink = Speed2Fly.sink( ias );
+		float netto = aTES2F - polar_sink;
+		as2f = Speed2Fly.speed( netto );
+		s2f_delta = as2f - ias;
+		alt=Atmosphere::calcAltitude( QNH.get(), _baro );
 	}
 }
 

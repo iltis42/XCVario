@@ -77,7 +77,6 @@ public:
 	bool    begin(gpio_num_t sda, gpio_num_t scl );
 	bool    doOffset( bool force=false );
 	float   readPascal( float minimum=min_pascal );
-	inline float pascal2km( float pascal ){  float v = sqrt( 2*pascal / 1.225 ); return v*3.6; };
 	bool    selfTest( int& adval );
 	bool    offsetPlausible( uint16_t offset );
 

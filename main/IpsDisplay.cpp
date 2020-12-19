@@ -16,6 +16,7 @@
 #include "DallasRmt.h"
 #include "freertos/task.h"
 #include <logdef.h>
+#include "WifiClientApp.h"
 
 
 int   IpsDisplay::tick = 0;
@@ -740,7 +741,15 @@ void IpsDisplay::drawFlarm( int x, int y, bool flarm ) {
 
 
 void IpsDisplay::drawWifi( int x, int y ) {
-	int btq=BTSender::queueFull();
+	int btq=1;
+	if( blue_enable.get() == WL_WLAN_CLIENT ){
+		if( client_connected() )
+			btq=0;
+	}
+	else if( blue_enable.get() == WL_WLAN )
+		btq=BTSender::queueFull();
+	else
+		return;
 	if( btq != btqueue ){
 		ESP_LOGD(FNAME,"IpsDisplay::drawWifi %d %d %d", x,y,btq);
 		if( btq )
@@ -923,7 +932,7 @@ void IpsDisplay::initRetroDisplay(){
 	ucg->print(units.c_str());
 	if( blue_enable.get() == WL_BLUETOOTH )
 		drawBT();
-	if( blue_enable.get() == WL_WLAN )
+	if( blue_enable.get() == WL_WLAN  ||  blue_enable.get() == WL_WLAN_CLIENT )
 		drawWifi(DISPLAY_W-27, FLOGO+2 );
 	drawMC( MC.get(), true );
 	drawThermometer(  10, 30 );
@@ -1039,7 +1048,7 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 	{
 		if( blue_enable.get() == WL_BLUETOOTH )
 			drawBT();
-		if( blue_enable.get() == WL_WLAN )
+		if( blue_enable.get() == WL_WLAN ||  blue_enable.get() == WL_WLAN_CLIENT )
 			drawWifi(DISPLAY_W-27, FLOGO+2 );
 	}
 
@@ -1154,6 +1163,8 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 		else if( !((tick+20)%40) )
 			blank = false;
 	}
+	else
+		blank = false;
 	if ( chargealt != chargev || blank != blankold  ) {
 		drawBat( volt, BATX, BATY, blank );
 		chargealt = chargev;
@@ -1418,6 +1429,8 @@ void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_
 			else if( !((tick+20)%40) )
 				blank = false;
 	}
+	else
+		blank = false;
 	if ( chargealt != chargev || blank != blankold ) {
 		drawBat( volt, BATX, BATY+3, blank );
 		chargealt = chargev;
@@ -1429,7 +1442,7 @@ void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_
 	if( !(tick%12) ){
 		if( blue_enable.get() == WL_BLUETOOTH )
 			drawBT();
-		if( blue_enable.get() == WL_WLAN )
+		if( blue_enable.get() == WL_WLAN || blue_enable.get() == WL_WLAN_CLIENT )
 			drawWifi(DISPLAY_W-25, FLOGO);
 	}
 

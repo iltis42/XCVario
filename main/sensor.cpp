@@ -27,6 +27,7 @@
 #include "SetupMenu.h"
 #include "ESPRotary.h"
 #include "AnalogInput.h"
+#include "Atmosphere.h"
 #include "IpsDisplay.h"
 #include "sensor.h"
 #include "S2F.h"
@@ -46,6 +47,7 @@
 #include "I2Cbus.hpp"
 #include "KalmanMPU6050.h"
 #include "WifiApp.h"
+#include "WifiClientApp.h"
 #include "Serial.h"
 #include "Cipher.h"
 #include <esp32/rom/miniz.h>
@@ -65,8 +67,6 @@ BMP:
     CS - this is the Chip Select pin, drop it low to start an SPI transaction. Its an input to the chip
 
  */
-
-
 
 #define SPI_SCLK GPIO_NUM_14  // SPI Clock pin 14
 #define SPI_DC   GPIO_NUM_15  // SPI Data/Command pin 15
@@ -123,15 +123,15 @@ SetupMenu  *Menu = 0;
 
 float ias = 0;
 float tas = 0;
-static float aTE = 0;
-static float aTES2F = 0;
-static float alt;
-static float aCl = 0;
-static float netto = 0;
-static float as2f = 0;
-static float s2f_delta = 0;
-static float polar_sink = 0;
-static bool  standard_setting = false;
+float aTE = 0;
+float aTES2F = 0;
+float alt;
+float aCl = 0;
+float netto = 0;
+float as2f = 0;
+float s2f_delta = 0;
+float polar_sink = 0;
+bool  standard_setting = false;
 long millisec = millis();
 t_as_sensor as_sensor;
 
@@ -201,8 +201,7 @@ void readBMP(void *pvParameters){
 			if( ok )
 				dynamicP = p;
 		}
-
-		float iasraw = ( MP5004DP.pascal2km( dynamicP ) );
+		float iasraw = Atmosphere::pascal2kmh( dynamicP );
 		// ESP_LOGI("FNAME","P: %f  IAS:%f", dynamicP, iasraw );
 		float T=temperature;
 		if( !validTemperature ) {
@@ -211,7 +210,7 @@ void readBMP(void *pvParameters){
 		}
 		float tasraw = 0;
 		if( baroP != 0 )
-			tasraw = iasraw * sqrt( 1.225 / ( baroP*100.0 / (287.058 * (273.15+T) ) ) );  // True airspeed
+			tasraw =  Atmosphere::TAS( iasraw , baroP, T);  // True airspeed
 		ias = ias + (iasraw - ias)*0.25;  // low pass filter
 		// ESP_LOGI("FNAME","P: %f  IAS:%f IASF: %d", dynamicP, iasraw, ias );
 		tas += (tasraw-tas)*0.25;       // low pass filter
@@ -338,22 +337,24 @@ void readTemp(void *pvParameters){
 		{
 			battery = Battery.get();
 			// ESP_LOGI(FNAME,"Battery=%f V", battery );
-			t = ds18b20.getTemp();
-			if( t ==  DEVICE_DISCONNECTED_C ) {
-				if( validTemperature == true ) {
-					ESP_LOGI(FNAME,"Temperatur Sensor disconnected, please plug Temperature Sensor");
-					validTemperature = false;
+			if( blue_enable.get() != WL_WLAN_CLIENT ) {  // client Vario will get Temperature info from main Vario
+				t = ds18b20.getTemp();
+				if( t ==  DEVICE_DISCONNECTED_C ) {
+					if( validTemperature == true ) {
+						ESP_LOGI(FNAME,"Temperatur Sensor disconnected, please plug Temperature Sensor");
+						validTemperature = false;
+					}
 				}
-			}
-			else
-			{
-				if( validTemperature == false ) {
-					ESP_LOGI(FNAME,"Temperatur Sensor connected, temperature valid");
-					validTemperature = true;
+				else
+				{
+					if( validTemperature == false ) {
+						ESP_LOGI(FNAME,"Temperatur Sensor connected, temperature valid");
+						validTemperature = true;
+					}
+					temperature = t;
 				}
-				temperature = t;
+				ESP_LOGV(FNAME,"temperature=%f", temperature );
 			}
-			ESP_LOGV(FNAME,"temperature=%f", temperature );
 		}
 		vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS);
 
@@ -486,7 +487,7 @@ void sensor(void *args){
 		float p=MS4525DO.readPascal(60, ok);
 		if( ok )
 			dynamicP = p;
-		ias = MS4525DO.pascal2km( dynamicP );
+		ias = Atmosphere::pascal2kmh( dynamicP );
 		ESP_LOGI(FNAME,"Using speed sensor MS4525DO type, current speed=%f", ias );
 	}
 	else
@@ -498,7 +499,7 @@ void sensor(void *args){
 			offset_plausible = MP5004DP.offsetPlausible( offset );
 			as_sensor = SENSOR_MP3V5004DP;
 			dynamicP=MP5004DP.readPascal(60);
-			ias = MP5004DP.pascal2km( dynamicP );
+			ias = Atmosphere::pascal2kmh( dynamicP );
 			ESP_LOGI(FNAME,"Using speed sensor MP3V5004DP type, current speed=%f", ias );
 		}
 	}
@@ -667,6 +668,9 @@ void sensor(void *args){
 		}
 	}else if ( blue_enable.get() == WL_WLAN ){
 		wifi_init_softap();
+	}
+	else if ( blue_enable.get() == WL_WLAN_CLIENT ){
+		start_wifi_client();
 	}
 
 	esp_err_t err=ESP_ERR_NOT_FOUND;
@@ -897,9 +901,12 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280BA, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
-	xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096*2, NULL, 15, bpid, 0);  // 10
-	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 20, dpid, 0);  // 10
+	if( blue_enable.get() != WL_WLAN_CLIENT ) {
+		xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096*2, NULL, 15, bpid, 0);  // 10
+	}
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 4096, NULL, 6, tpid, 0);
+	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 20, dpid, 0);  // 10
+
 
 	Audio.startAudio();
 

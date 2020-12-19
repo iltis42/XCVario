@@ -1012,10 +1012,11 @@ void SetupMenu::setup( )
 		btname += SetupCommon::getID();
 
 		SetupMenuSelect * btm = new SetupMenuSelect(  btname, 0, true, 0, true, &blue_enable );
-		btm->setHelp( PROGMEM "Activate corresponding type wireless interface to connect navigation devices running e.g. XCSoar");
+		btm->setHelp( PROGMEM "Activate type wireless interface to connect navigation devices running e.g. XCSoar, or to another XCVario as client");
 		btm->addEntry( "Disable");
 		btm->addEntry( "Bluetooth");
 		btm->addEntry( "Wireless LAN");
+		btm->addEntry( "Wireless Client");
 		opt->addMenu( btm );
 
 		// Rotary Default

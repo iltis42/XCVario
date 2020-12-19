@@ -32,6 +32,7 @@
 #include "esp_wifi.h"
 #include <list>
 
+
 typedef struct xcv_sock_server {
 	RingBufCPP<SString, QUEUE_SIZE>* txbuf;
 	RingBufCPP<SString, QUEUE_SIZE>* rxbuf;
@@ -206,7 +207,6 @@ void wifi_init_softap()
 		ESP_LOGI(FNAME,"now esp_wifi_start");
 		ESP_ERROR_CHECK(esp_wifi_start());
 		ESP_ERROR_CHECK(esp_wifi_set_max_tx_power(8));
-
 
 		xTaskCreatePinnedToCore(&socket_server, "socket_srv_0", 2500, &XCVario, 17, 0, 0);  // 10
 		xTaskCreatePinnedToCore(&socket_server, "socket_ser_1", 2500, &FLARM, 18, 0, 0);  // 10

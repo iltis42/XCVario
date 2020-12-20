@@ -8,7 +8,7 @@
 #include "S2F.h"
 #include "math.h"
 #include "Polars.h"
-#include <logdef.h>
+#include "logdef.h"
 
 
 S2F::S2F() {

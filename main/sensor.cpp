@@ -47,7 +47,7 @@
 #include "I2Cbus.hpp"
 #include "KalmanMPU6050.h"
 #include "WifiApp.h"
-#include "WifiClientApp.h"
+#include "WifiClient.h"
 #include "Serial.h"
 #include "Cipher.h"
 #include <esp32/rom/miniz.h>
@@ -670,7 +670,7 @@ void sensor(void *args){
 		wifi_init_softap();
 	}
 	else if ( blue_enable.get() == WL_WLAN_CLIENT ){
-		start_wifi_client();
+		WifiClient::start();
 	}
 
 	esp_err_t err=ESP_ERR_NOT_FOUND;

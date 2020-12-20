@@ -15,25 +15,23 @@
 #include "logdef.h"
 #include "RingBufCPP.h"
 #include "Protocols.h"
+#include "WifiClient.h"
 
-#define SSID "XCVario-9491"
 #define PASSPHARSE "xcvario-21"
-#define MESSAGE "HelloTCPServer"
 #define TCPServerIP "192.168.4.1"
 
-static EventGroupHandle_t wifi_event_group;
+EventGroupHandle_t WifiClient::wifi_event_group;
+bool WifiClient::cl_connected=false;
+esp_netif_t *WifiClient::sta_netif = 0;
+std::string WifiClient::SSID;
+
 const int CONNECTED_BIT = BIT0;
-bool cl_connected=false;
 
-bool client_connected() {
-	return cl_connected;
-}
-
-void wifi_connect(){
+void WifiClient::wifi_connect(){
 	ESP_LOGI(FNAME,"wifi_connect()");
 	wifi_config_t cfg;
 	memset( &cfg, 0, sizeof(cfg) );
-	strcpy( (char *)cfg.sta.ssid, SSID );
+	strcpy( (char *)cfg.sta.ssid, SSID.c_str() );
 	strcpy( (char *)cfg.sta.password, PASSPHARSE );
 
     ESP_ERROR_CHECK( esp_wifi_disconnect() );
@@ -41,7 +39,7 @@ void wifi_connect(){
     ESP_ERROR_CHECK( esp_wifi_connect() );
 }
 
-static esp_err_t event_handler(void *ctx, system_event_t *event)
+esp_err_t event_handler(void *ctx, system_event_t *event)
 {
     switch(event->event_id) {
     case SYSTEM_EVENT_STA_START:
@@ -63,14 +61,17 @@ static esp_err_t event_handler(void *ctx, system_event_t *event)
     return ESP_OK;
 }
 
-static void initialise_wifi(void)
+void WifiClient::initialise_wifi(void)
 {
     esp_log_level_set("wifi", ESP_LOG_DEBUG); // disable wifi driver logging
+    ESP_ERROR_CHECK( esp_event_loop_init(event_handler, NULL) );
+    wifi_event_group = xEventGroupCreate();
     tcpip_adapter_init();
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
 
     // Initialize default station as network interface instance (esp-netif)
-    esp_netif_t *sta_netif = esp_netif_create_default_wifi_sta();
+    if( !sta_netif )
+    	sta_netif = esp_netif_create_default_wifi_sta();
     assert(sta_netif);
 
     ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
@@ -78,7 +79,50 @@ static void initialise_wifi(void)
     ESP_ERROR_CHECK( esp_wifi_start() );
 }
 
-void tcp_client(void *pvParam){
+#define DEFAULT_SCAN_LIST_SIZE 20
+
+void WifiClient::scan( void ){
+	ESP_LOGI(FNAME,"wifi scan");
+	ESP_ERROR_CHECK(esp_netif_init());
+	ESP_ERROR_CHECK(esp_event_loop_create_default());
+	if( !sta_netif )
+		sta_netif = esp_netif_create_default_wifi_sta();
+	assert(sta_netif);
+	wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+
+	ESP_ERROR_CHECK( esp_wifi_init(&cfg));
+
+	uint16_t number = DEFAULT_SCAN_LIST_SIZE;
+	wifi_ap_record_t ap_info[DEFAULT_SCAN_LIST_SIZE];
+	uint16_t ap_count = 0;
+	memset(ap_info, 0, sizeof(ap_info));
+
+	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+	ESP_ERROR_CHECK(esp_wifi_start());
+	bool found = false;
+	while( !found ) {
+		ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, true));
+		ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&ap_count));
+		ESP_LOGI(FNAME, "Total APs scanned = %u", ap_count);
+		ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&number, ap_info));
+		for (int i = 0; (i < DEFAULT_SCAN_LIST_SIZE) && (i < ap_count); i++) {
+			if( strncmp( (char*)ap_info[i].ssid, "XCVARIO-", 8 ) == 0 )
+			ESP_LOGI(FNAME, "SSID \t%s", ap_info[i].ssid);
+			ESP_LOGI(FNAME, "RSSI \t%d", ap_info[i].rssi);
+			if( strncmp( (char*)ap_info[i].ssid, "XCVario-", 8 ) == 0 ) {
+				found = true;
+				SSID = std::string( (char*)ap_info[i].ssid );
+				ESP_LOGI(FNAME,"SCAN found master XCVario: %s", SSID.c_str() );
+			}
+		}
+	}
+	ESP_ERROR_CHECK( esp_wifi_disconnect() );
+	ESP_ERROR_CHECK( esp_wifi_stop() );
+	ESP_ERROR_CHECK( esp_wifi_restore() );
+}
+
+
+void WifiClient::tcp_client(void *pvParam){
     ESP_LOGI(FNAME,"tcp_client task started");
     struct sockaddr_in tcpServerAddr;
     tcpServerAddr.sin_addr.s_addr = inet_addr(TCPServerIP);
@@ -87,8 +131,10 @@ void tcp_client(void *pvParam){
     int sock = -1;
 	int num = 0;
     SString send;
+    int timeout=0;
     while(1){
         xEventGroupWaitBits(wifi_event_group,CONNECTED_BIT,false,true,portMAX_DELAY);
+        timeout++;
         if( sock < 0 ){
         	sock = socket(AF_INET, SOCK_STREAM, 0);
         	if(sock < 0) {
@@ -108,7 +154,6 @@ void tcp_client(void *pvParam){
         		continue;
         	}
         	ESP_LOGI(FNAME, "socket %d connected", sock);
-        	cl_connected = true;
         }
 
         if( send.length() ){
@@ -130,17 +175,20 @@ void tcp_client(void *pvParam){
         	recv.setLen( num );
         	ESP_LOGI(FNAME, "socket read %d bytes: %s", num, recv.c_str() );
         	Protocols::parseNMEA( recv.c_str() );
+        	timeout = 0;
+        	cl_connected = true;
         }
+        if( timeout > 60 )
+        	cl_connected = false;
         vTaskDelay(30 / portTICK_PERIOD_MS);
     }
     ESP_LOGI(FNAME, "tcp_client task closed\n");
 }
 
-void start_wifi_client()
+void WifiClient::start()
 {	
-	ESP_LOGI(FNAME, "start_wifi_client()"  );
-    ESP_ERROR_CHECK( esp_event_loop_init(event_handler, NULL) );
-    wifi_event_group = xEventGroupCreate();
+	ESP_LOGI(FNAME, "start wifi_client"  );
+	scan();
     initialise_wifi();
     xTaskCreate(&tcp_client,"tcp_client",4048,NULL,5,NULL);
 }

@@ -16,7 +16,7 @@
 #include "DallasRmt.h"
 #include "freertos/task.h"
 #include <logdef.h>
-#include "WifiClientApp.h"
+#include "WifiClient.h"
 
 
 int   IpsDisplay::tick = 0;
@@ -743,7 +743,7 @@ void IpsDisplay::drawFlarm( int x, int y, bool flarm ) {
 void IpsDisplay::drawWifi( int x, int y ) {
 	int btq=1;
 	if( blue_enable.get() == WL_WLAN_CLIENT ){
-		if( client_connected() )
+		if( WifiClient::isConnected() )
 			btq=0;
 	}
 	else if( blue_enable.get() == WL_WLAN )

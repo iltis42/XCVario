@@ -121,7 +121,7 @@ int IpsDisplay::tyalt = 0;
 int IpsDisplay::pyalt = 0;
 int IpsDisplay::wkalt = -3;
 int IpsDisplay::wkspeeds[6];
-int IpsDisplay::wksenspos[7];
+
 ucg_color_t IpsDisplay::wkcolor;
 char IpsDisplay::wkss[6];
 int IpsDisplay::wkposalt;
@@ -427,15 +427,6 @@ void IpsDisplay::redrawValues()
 	wkspeeds[4] = flap_plus_1.get();
 	wkspeeds[5] = 60;
 
-	wksenspos[0] = wk_sens_pos_minus_2.get() - ( wk_sens_pos_minus_1.get() - wk_sens_pos_minus_2.get()); // extrapolated neg pole
-	wksenspos[1] = wk_sens_pos_minus_2.get();
-	wksenspos[2] = wk_sens_pos_minus_1.get();
-	wksenspos[3] = wk_sens_pos_0.get();
-	wksenspos[4] = wk_sens_pos_plus_1.get();
-	wksenspos[5] = wk_sens_pos_plus_2.get();
-	wksenspos[6] = wk_sens_pos_plus_2.get() - ( wk_sens_pos_plus_1.get() - wk_sens_pos_plus_2.get()); // extrapolated pos pole
-
-
 	wkbox = false;
 	wkposalt = -100;
 	wksensoralt = -1;
@@ -499,22 +490,7 @@ float wkRelPos( float wks, float minv, float maxv ){
 	return 0.5;
 }
 
-float IpsDisplay::getSensorWkPos(int wks)
-{
-	int wk=0;
-	for( int i=0; i<=5; i++ ){
-		if( ((wksenspos[i] < wks) && (wks < wksenspos[i+1]))  ||
-			((wksenspos[i] > wks) && (wks > wksenspos[i+1]))	) {
-			wk = i;
-			break;
-		}
-	}
-	float delta=wksenspos[wk]-wksenspos[wk+1];
-	float moved=wksenspos[wk]-wks;
-	float relative=moved/delta;
-	float wkf =(wk-3) + relative;
-	return wkf;
-}
+
 
 int IpsDisplay::getWk( float wks )
 {
@@ -582,7 +558,7 @@ void IpsDisplay::drawWkLever( int xpos, int ypos, int oldypos ){
 	ucg->drawBox( xpos-6, ypos-2, 4, 4 );
 }
 
-void IpsDisplay::drawBigWkBar( int ypos, int xpos, float wkf, int wksens ){
+void IpsDisplay::drawBigWkBar( int ypos, int xpos, float wkf, float wksens ){
 	ucg->setFont(ucg_font_profont22_mr );
 	ucg->setFontPosCenter();
 	int lfh = ucg->getFontAscent()+10;  // a bit place around number
@@ -609,10 +585,7 @@ void IpsDisplay::drawBigWkBar( int ypos, int xpos, float wkf, int wksens ){
 	// now draw the numbers
 
 	int y = ypos + (int)((wkf)*(lfh) + 0.5 );
-	int ys = 500;  // off screen to blank out when sensor is pulled
-	if( wksens < 4095 && wksens > 0 ){
-		ys = ypos + (int)(( getSensorWkPos( wksens ))*(lfh) + 0.5 );
-	}
+	int ys = ypos + (int)(( wksens )*(lfh) + 0.5 );
 
 	if( wkyold != y || ( (wksyold != ys) )) {  // redraw on change or when wklever is near
 		ucg->setColor(COLOR_BLACK);
@@ -622,6 +595,7 @@ void IpsDisplay::drawBigWkBar( int ypos, int xpos, float wkf, int wksens ){
 		wkyold = y;
 	}
 	if( wksyold != ys ) {
+		ESP_LOGI(FNAME,"wk lever redraw, old=%d", wksyold );
 		drawWkLever( xpos, ys, wksyold );
 		wksyold = ys;
 	}
@@ -953,11 +927,11 @@ bool blank = false;
 
 
 void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sink, float altitude,
-		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, int wksensor ){
+		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor ){
 	if( _menu )
 		return;
 	tick++;
-	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f IAS:%d km/h", te, ias );
+	// ESP_LOGI(FNAME,"drawRetroDisplay  TE=%0.1f IAS:%d km/h  WK=%d", te, ias, wksensor  );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	if( te > _range )
 		te = _range;
@@ -1185,12 +1159,12 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 		float wkpos=wkRelPos( wkspeed, wkspeeds[wki+3], wkspeeds[wki+2] );
 		int wk = (int)((wki - wkpos + 0.5)*10);
 		// ESP_LOGI(FNAME,"ias:%d wksp:%f wki:%d wk:%d wkpos:%f wksensor:%d wkhebel:%f wkh:%d", ias, wkspeed, wki, wk, wkpos, wksensor, wkhebel, wkhebeli );
-		if( wkposalt != wk || wksensoralt != wksensor ) {  // wkhebeli
-			ESP_LOGD(FNAME,"WK changed");
+		if( wkposalt != wk || wksensoralt != (int)(wksensor*10) ) {
+			ESP_LOGI(FNAME,"WK changed WKE=%d WKS=%f", wk, wksensor );
 			ucg->setColor(  COLOR_WHITE  );
 			drawBigWkBar( AMIDY, WKSYMST-4, (float)(wk)/10, wksensor);
 			wkposalt = wk;
-			wksensoralt = wksensor;
+			wksensoralt = (int)(wksensor*10);
 		}
 		if( wki != wkialt ) {
 			drawWkSymbol( AMIDY-82, WKSYMST-3, wki, wkialt );
@@ -1253,7 +1227,7 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 
 
 void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, float altitude,
-		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, int wksensor ){
+		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor ){
 	if( _menu )
 		return;
 
@@ -1265,7 +1239,7 @@ void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, fl
 }
 
 void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_sink, float altitude,
-		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, int wksensor ){
+		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor ){
 	if( _menu )
 		return;
 	// ESP_LOGI(FNAME,"IpsDisplay::drawDisplay  TE=%0.1f", te);

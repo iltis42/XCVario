@@ -17,8 +17,7 @@
 #include "Protocols.h"
 #include "WifiClient.h"
 
-#define PASSPHARSE "xcvario-21"
-#define TCPServerIP "192.168.4.1"
+
 
 EventGroupHandle_t WifiClient::wifi_event_group;
 bool WifiClient::cl_connected=false;
@@ -139,6 +138,9 @@ void WifiClient::tcp_client(void *pvParam){
     while(1){
         xEventGroupWaitBits(wifi_event_group,CONNECTED_BIT,false,true,portMAX_DELAY);
         timeout++;
+        // ESP_LOGI(FNAME,"tcp_client task timeout=%d", timeout);
+        if( timeout > 60 )
+           cl_connected = false;
         if( sock < 0 ){
         	sock = socket(AF_INET, SOCK_STREAM, 0);
         	if(sock < 0) {
@@ -173,17 +175,15 @@ void WifiClient::tcp_client(void *pvParam){
         	}
         	ESP_LOGI(FNAME, "socket send success");
         }
-        SString recv;
-        num = read(sock, recv.c_str(), SSTRLEN-1 );
+        SString rec;
+        num = recv(sock, rec.c_str(), SSTRLEN-1, MSG_DONTWAIT );
         if(num > 0){
-        	recv.setLen( num );
-        	ESP_LOGI(FNAME, "socket read %d bytes: %s", num, recv.c_str() );
-        	Protocols::parseNMEA( recv.c_str() );
+        	rec.setLen( num );
+        	ESP_LOGV(FNAME, "socket read %d bytes: %s", num, rec.c_str() );
+        	Protocols::parseNMEA( rec.c_str() );
         	timeout = 0;
         	cl_connected = true;
         }
-        if( timeout > 60 )
-        	cl_connected = false;
         vTaskDelay(30 / portTICK_PERIOD_MS);
     }
     ESP_LOGI(FNAME, "tcp_client task closed\n");

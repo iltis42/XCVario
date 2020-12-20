@@ -32,6 +32,13 @@ Protocols::~Protocols() {
 
 }
 
+void Protocols::sendWkChange( float wk ){
+	char str[20];
+	sprintf( str,"!xw,%1.1f", wk );
+	ESP_LOGI(FNAME,"New WK pos: %f, cmd:%s", wk, str );
+	Router::sendXCV(str);
+}
+
 void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
 		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz  ){
 	if( !validTemp )
@@ -177,6 +184,12 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 // The XCVario Protocol or Cambridge CAI302 protocol to adjust MC,Ballast,Bugs.
 void Protocols::parseNMEA( char *str ){
 	ESP_LOGI(FNAME,"parseNMEA %s", str);
+	if ( strncmp( str, "!xw,", 4 ) == 0 ) {
+		float wkcmd;
+		sscanf( str,"!xw,%f", &wkcmd );  // directly scan into sensor variable
+		wksensor = wkcmd;
+		// ESP_LOGI(FNAME,"XW command detected wk=%f", wksensor );
+	}
 	if ( strncmp( str, "!g,", 3 ) == 0 ) {
 		ESP_LOGI(FNAME,"parseNMEA, Cambridge C302 style command !g detected");
 		if (str[3] == 'b') {

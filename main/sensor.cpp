@@ -147,7 +147,8 @@ float oz=0;
 float aox=0;
 float aoy=0;
 float aoz=0;
-int   wksensor=0;
+float wksensor=0;
+int wksenspos[7];
 
 // Gyro and acceleration sensor
 I2C_t& i2c                     = i2c1;  // i2c0 or i2c1
@@ -158,6 +159,33 @@ float getTE() { return TE; };
 
 BTSender btsender;
 bool lastAudioDisable = false;
+
+void init_wksensor(){
+	wksenspos[0] = wk_sens_pos_minus_2.get() - ( wk_sens_pos_minus_1.get() - wk_sens_pos_minus_2.get()); // extrapolated neg pole
+	wksenspos[1] = wk_sens_pos_minus_2.get();
+	wksenspos[2] = wk_sens_pos_minus_1.get();
+	wksenspos[3] = wk_sens_pos_0.get();
+	wksenspos[4] = wk_sens_pos_plus_1.get();
+	wksenspos[5] = wk_sens_pos_plus_2.get();
+	wksenspos[6] = wk_sens_pos_plus_2.get() - ( wk_sens_pos_plus_1.get() - wk_sens_pos_plus_2.get()); // extrapolated pos pole
+}
+
+float getSensorWkPos(int wks)
+{
+	int wk=0;
+	for( int i=0; i<=5; i++ ){
+		if( ((wksenspos[i] < wks) && (wks < wksenspos[i+1]))  ||
+			((wksenspos[i] > wks) && (wks > wksenspos[i+1]))	) {
+			wk = i;
+			break;
+		}
+	}
+	float delta=wksenspos[wk]-wksenspos[wk+1];
+	float moved=wksenspos[wk]-wks;
+	float relative=moved/delta;
+	float wkf =(wk-3) + relative;
+	return wkf;
+}
 
 void drawDisplay(void *pvParameters){
 	while (1) {
@@ -185,6 +213,7 @@ int count=0;
 mpud::raw_axes_t accelRawPrev;     // holds x, y, z axes as int16
 mpud::raw_axes_t gyroRawPrev;      // holds x, y, z axes as int16
 bool peya = false;
+int wksensorold=0;
 
 
 void readBMP(void *pvParameters){
@@ -224,8 +253,22 @@ void readBMP(void *pvParameters){
 			aCl = bmpVario.readAvgClimb();
 		}
 		if( (count++ % 2) == 0 ) {
-			if( AnalogInWk )
-				wksensor = AnalogInWk->getRaw(true, 32);
+			if( AnalogInWk ) {
+				int wkraw = AnalogInWk->getRaw(true, 32);
+				if( wkraw < 4095 && wkraw > 0 ){
+					wksensor = getSensorWkPos( wkraw );
+					// ESP_LOGI(FNAME,"wk sensor=%f", wksensor );
+				}
+				else
+					wksensor = -10;  // off screen to blank
+				if( blue_enable.get() == WL_WLAN ) {
+					if( wksensorold != (int)(wksensor*10) ){
+						OV.sendWkChange( wksensor );   // update secondary vario
+						wksensorold = (int)(wksensor*10);
+					}
+				}
+			}
+
 			// ESP_LOGI(FNAME,"WK: %d", wksensor );
 			xSemaphoreTake(xMutex,portMAX_DELAY );
 			baroP = bmpBA.readPressure();   // 5x per second
@@ -405,6 +448,7 @@ void sensor(void *args){
 	ESP_LOGI( FNAME, "Hardware revision detected %d", hardwareRevision.get() );
 	NVS.begin();
 
+	init_wksensor();
 
 	if( Cipher::checkKeyAHRS() ){
 		ESP_LOGI( FNAME, "AHRS key valid=%d", ahrsKeyValid );
@@ -836,11 +880,11 @@ void sensor(void *args){
 			char id[30];
 			sprintf( id, "Wifi ID: %s", ssid.c_str() );
 			display->writeText( 4, id );
-			delay( 3000 );
 			display->writeText( 5, "Now start" );
 			WifiClient::start();
 			delay( 2000 );
 			display->clear();
+			display->initDisplay();
 	}
 	else if( ias < 50.0 ){
 		xSemaphoreTake(xMutex,portMAX_DELAY );
@@ -881,7 +925,7 @@ void sensor(void *args){
 	{
 		Audio.disable(false);
 	}
-	display->initDisplay();
+
 
 	if( hardwareRevision.get() == 2 )
 		Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);

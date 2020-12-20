@@ -669,9 +669,7 @@ void sensor(void *args){
 	}else if ( blue_enable.get() == WL_WLAN ){
 		wifi_init_softap();
 	}
-	else if ( blue_enable.get() == WL_WLAN_CLIENT ){
-		WifiClient::start();
-	}
+
 
 	esp_err_t err=ESP_ERR_NOT_FOUND;
 
@@ -828,11 +826,23 @@ void sensor(void *args){
 		}
 	}
 
-
-	display->initDisplay();
 	Menu = new SetupMenu();
 	Menu->begin( display, &Rotary, &bmpBA, &Battery );
-	if( ias < 50.0 ){
+	if ( blue_enable.get() == WL_WLAN_CLIENT ){
+			display->clear();
+			display->writeText( 2, "Wait for Master XCVario" );
+			std::string ssid = WifiClient::scan();
+			display->writeText( 3, "Master XCVario Found" );
+			char id[30];
+			sprintf( id, "Wifi ID: %s", ssid.c_str() );
+			display->writeText( 4, id );
+			delay( 3000 );
+			display->writeText( 5, "Now start" );
+			WifiClient::start();
+			delay( 2000 );
+			display->clear();
+	}
+	else if( ias < 50.0 ){
 		xSemaphoreTake(xMutex,portMAX_DELAY );
 		ESP_LOGI(FNAME,"QNH Autosetup, IAS=%3f (<50 km/h)", ias );
 		// QNH autosetup
@@ -871,6 +881,8 @@ void sensor(void *args){
 	{
 		Audio.disable(false);
 	}
+	display->initDisplay();
+
 	if( hardwareRevision.get() == 2 )
 		Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
 	else {

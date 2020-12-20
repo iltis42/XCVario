@@ -3,7 +3,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_wifi.h"
-#include "esp_event_loop.h"
+// #include "esp_event_loop.h"
 #include "freertos/event_groups.h"
 #include "esp_system.h"
 #include "esp_log.h"
@@ -24,10 +24,8 @@ EventGroupHandle_t WifiClient::wifi_event_group;
 bool WifiClient::cl_connected=false;
 esp_netif_t *WifiClient::sta_netif = 0;
 std::string WifiClient::SSID;
+int WifiClient::sock = -1;
 
-const int CONNECTED_BIT = BIT0;
-
-int sock = -1;
 
 void WifiClient::wifi_connect(){
 	ESP_LOGI(FNAME,"wifi_connect()");
@@ -41,7 +39,7 @@ void WifiClient::wifi_connect(){
     ESP_ERROR_CHECK( esp_wifi_connect() );
 }
 
-static void event_handler(void* arg, esp_event_base_t event_base,
+void WifiClient::event_handler(void* arg, esp_event_base_t event_base,
 		int32_t event_id, void* event_data)
 {
 	if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {

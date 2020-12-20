@@ -31,6 +31,7 @@
 #include <string.h>
 #include "esp_wifi.h"
 #include <list>
+#include "WifiClient.h"
 
 
 typedef struct xcv_sock_server {
@@ -189,7 +190,7 @@ void wifi_init_softap()
 		wifi_config_t wc;
 		strcpy( (char *)wc.ap.ssid, SetupCommon::getID() );
 		wc.ap.ssid_len = strlen( (char *)wc.ap.ssid );
-		strcpy( (char *)wc.ap.password, "xcvario-21" );
+		strcpy( (char *)wc.ap.password, PASSPHARSE );
 		wc.ap.channel = 1;
 		wc.ap.max_connection = 2;
 		wc.ap.authmode = WIFI_AUTH_WPA_WPA2_PSK;

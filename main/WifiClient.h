@@ -17,6 +17,8 @@ public:
 	static void wifi_connect();
 
 	static EventGroupHandle_t wifi_event_group;
+	static bool cl_connected;
+
 
 private:
 	static void tcp_client(void *pvParam);
@@ -26,8 +28,6 @@ private:
 
 	static esp_netif_t *sta_netif;
 	static std::string SSID;
-	static bool cl_connected;
-
 
 };
 

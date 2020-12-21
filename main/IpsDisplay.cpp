@@ -1147,7 +1147,7 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 
 	// Temperature Value
 	if( (int)(temp*10) != tempalt && !(tick%12)) {
-		drawTemperature( 20, 30, temp );
+		drawTemperature( 20, 35, temp );
 		tempalt=(int)(temp*10);
 	}
 

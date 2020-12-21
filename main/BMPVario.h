@@ -34,7 +34,6 @@ public:
 		_filter_len = 10;
 		memset( TEarr, 0, sizeof(TEarr) );
 		_TEF = 0;
-		_analog_adj = 0;
 		_test = false;
 		_init = false;
 		_bmpTE = 0;
@@ -43,13 +42,7 @@ public:
 		bmpTemp = 0;
 		_damping = 1.0;
 		_currentAlt = 0;
-		samples = 0;
-		averageClimb = 0.0;
-		averageClimbSec = 0.0;
-		holddown = 0;
-		avindexSec = 0;
-		avindexMin = 0;
-		avindex100MSec = 0;
+
 	}
 
 	void begin( BME280_ESP32_SPI *bmp, S2F* s2f );
@@ -59,19 +52,14 @@ public:
 	void setup();
 
 	double   readTE( float tas );   // get TE value im m/s
-	inline float readAvgClimb() { return averageClimb; }
+
 
 	double   readAVGTE();   // get TE value im m/s
 	float    readS2FTE();   // get TE value im m/s for S2F
 	inline double   readAVGalt() { return averageAlt; };   // get average Altitude
 	inline double   readCuralt() { return _currentAlt; };   // get average Altitude
-
-	// Analog Display
-	void analogOut( gpio_num_t negative=GPIO_NUM_0, gpio_num_t positive=GPIO_NUM_0 );
-	void calcAnalogOut();
 	void setTE( double te ); // for testing purposes
-	void setAdj( double adj ) { _analog_adj = adj; calcAnalogOut(); };
-	void recalcAvgClimb();
+
 
 private:
 	gpio_num_t _negative;
@@ -97,15 +85,6 @@ private:
 	float _S2FTE;
 	double _currentAlt;
 
-	float averageClimbSec;
-	float averageClimb;
-	float avClimb100MSec[10];
-	float avClimbSec[60];
-	float avClimbMin[300];
-	int avindex100MSec;
-	int avindexSec;
-	int avindexMin;
-	int    samples;
 	static int   holddown;
 	S2F * myS2F;
 };

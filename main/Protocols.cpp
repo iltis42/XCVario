@@ -39,6 +39,13 @@ void Protocols::sendWkChange( float wk ){
 	Router::sendXCV(str);
 }
 
+void Protocols::sendMeanClimb( float climb ){
+	char str[20];
+	sprintf( str,"!xa,%1.1f", climb );
+	ESP_LOGI(FNAME,"New mean climb value: %f, cmd:%s", climb, str );
+	Router::sendXCV(str);
+}
+
 void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
 		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz  ){
 	if( !validTemp )
@@ -189,6 +196,12 @@ void Protocols::parseNMEA( char *str ){
 		sscanf( str,"!xw,%f", &wkcmd );  // directly scan into sensor variable
 		wksensor = wkcmd;
 		// ESP_LOGI(FNAME,"XW command detected wk=%f", wksensor );
+	}
+	if ( strncmp( str, "!xa,", 4 ) == 0 ) {
+		float climb;
+		sscanf( str,"!xa,%f", &climb );  // directly scan into sensor variable
+		meanClimb = climb;
+		// ESP_LOGI(FNAME,"mean climb change detected mean climb=%f", climb );
 	}
 	if ( strncmp( str, "!g,", 3 ) == 0 ) {
 		ESP_LOGI(FNAME,"parseNMEA, Cambridge C302 style command !g detected");

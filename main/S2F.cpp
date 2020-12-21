@@ -9,6 +9,7 @@
 #include "math.h"
 #include "Polars.h"
 #include "logdef.h"
+#include "sensor.h"
 
 
 S2F::S2F() {
@@ -19,6 +20,13 @@ S2F::S2F() {
 }
 
 S2F::~S2F() {
+}
+
+float S2F::getN() {
+	float n = accelG[0];
+	if( n < 0.3 )
+		n=0.3;
+	return n;
 }
 
 void S2F::change_polar()
@@ -35,7 +43,7 @@ void S2F::change_polar()
 	a2= ((v2-v3)*(w1-w3)+(v3-v1)*(w2-w3)) / (pow(v1,2)*(v2-v3)+pow(v2,2)*(v3-v1)+ pow(v3,2)*(v1-v2));
 	a1= (w2-w3-a2*(pow(v2,2)-pow(v3,2))) / (v2-v3);
 	a0= w3 -a2*pow(v3,2) - a1*v3;
-    a2 = a2/sqrt( ( ballast.get() +100.0)/100.0 );   // wingload  e.g. 100l @ 500 kg = 1.2
+    a2 = a2/sqrt( ( ballast.get() +100.0)/100.0   );   // wingload  e.g. 100l @ 500 kg = 1.2 and G-Force
     a0 = a0 * ((bugs.get() + 100.0) / 100.0);
     a1 = a1 * ((bugs.get() + 100.0) / 100.0);
     a2 = a2 * ((bugs.get() + 100.0) / 100.0);
@@ -76,15 +84,15 @@ double S2F::sink( double v_in ) {
 	double s=0;
 	if ( v_in > 50 ){
 		double v=v_in/3.6;
-		s = a0+a1*v+a2*pow(v,2);
+		s = a0+a1*v+a2*pow(v,2) * sqrt( pow( getN(), 3 ));
 	}
 	return s;
 }
 
 float S2F::cw( float v ){  // in m/s
 	float cw = 0;
-	if( v > 14.0 ){  // > 50 km/h we got valit polar data
-		float sink = a0+a1*v+a2*pow(v,2);
+	if( v > 14.0 ){  // > 50 km/h we got valid polar data
+		float sink = a0+a1*v+a2*pow(v,2) * sqrt( pow( getN(), 3 ));
 		ESP_LOGI(FNAME,"S2F::cw( %0.1f ) sink: %f cw. %f", v, sink, cw );
 		cw = sink / v;
 	}
@@ -93,7 +101,10 @@ float S2F::cw( float v ){  // in m/s
 
 double S2F::speed( double st )
 {
-   double stf = 3.6*sqrt( (a0-_MC+st) / a2 );
+   float n = accelG[0];
+   if( n < 0.3 )
+		n = 0.3;
+   double stf = 3.6*sqrt( ((a0-_MC+st)*getN()) / a2 );
    // ESP_LOGI(FNAME,"speed()  %f", stf );
    if( (stf < _minsink) or isnan(stf) )
 	   return _minsink;

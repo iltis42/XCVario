@@ -40,6 +40,7 @@
 #include "SetupNG.h"
 #include <logdef.h>
 #include "Switch.h"
+#include "AverageVario.h"
 
 #include "MPU.hpp"        // main file, provides the class itself
 #include "mpu/math.hpp"   // math helper for dealing with MPU data
@@ -126,7 +127,7 @@ float tas = 0;
 float aTE = 0;
 float aTES2F = 0;
 float alt;
-float aCl = 0;
+float meanClimb = 0;
 float netto = 0;
 float as2f = 0;
 float s2f_delta = 0;
@@ -201,7 +202,7 @@ void drawDisplay(void *pvParameters){
 			else if( airspeed_mode.get() == MODE_TAS )
 				airspeed = tas;
 			// ESP_LOGI(FNAME,"WK raw=%d ", wksensor );
-			display->drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, aCl, Switch::cruiseMode(), standard_setting, wksensor );
+			display->drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, meanClimb, Switch::cruiseMode(), standard_setting, wksensor );
 		}
 		vTaskDelay(20/portTICK_PERIOD_MS);
 		if( uxTaskGetStackHighWaterMark( dpid ) < 1024  )
@@ -249,8 +250,8 @@ void readBMP(void *pvParameters){
 		xSemaphoreGive(xMutex);
 		// ESP_LOGI(FNAME,"count %d ccp %d", count, ccp );
 		if( !(count % ccp) ) {
-			bmpVario.recalcAvgClimb();
-			aCl = bmpVario.readAvgClimb();
+			AverageVario::recalcAvgClimb();
+			meanClimb = AverageVario::readAvgClimb();
 		}
 		if( (count++ % 2) == 0 ) {
 			if( AnalogInWk ) {
@@ -310,7 +311,7 @@ void readBMP(void *pvParameters){
 						ESP_LOGE(FNAME, "gyro I2C error, X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
 					accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_4G);  // raw data to gravity
 					gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
-					// ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f  gyro X: %+.2f Y:%+.2f Z:%+.2f\n", -accelG[2], accelG[1], accelG[0] ,  gyroDPS.x, gyroDPS.y, gyroDPS.z);
+					ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f  gyro X: %+.2f Y:%+.2f Z:%+.2f\n", -accelG[2], accelG[1], accelG[0] ,  gyroDPS.x, gyroDPS.y, gyroDPS.z);
 					bool goodAccl = true;
 					if( abs( accelG.x - accelG_Prev.x ) > 0.4 || abs( accelG.y - accelG_Prev.y ) > 0.4 || abs( accelG.z - accelG_Prev.z ) > 0.4 ) {
 						MPU.acceleration(&accelRaw);
@@ -415,6 +416,7 @@ bool init_done=false;
 
 // Sensor board init method. Herein all functions that make the XCVario are launched and tested.
 void sensor(void *args){
+	accelG[0] = 1;
 	bool selftestPassed=true;
 	if( init_done )
 		ESP_LOGI( FNAME, "sensor init already called");
@@ -447,6 +449,7 @@ void sensor(void *args){
 	ESP_LOGI(FNAME, "QNH.get() %f", QNH.get() );
 	ESP_LOGI( FNAME, "Hardware revision detected %d", hardwareRevision.get() );
 	NVS.begin();
+	AverageVario::begin();
 
 	init_wksensor();
 
@@ -925,7 +928,7 @@ void sensor(void *args){
 	{
 		Audio.disable(false);
 	}
-
+	display->initDisplay();
 
 	if( hardwareRevision.get() == 2 )
 		Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);

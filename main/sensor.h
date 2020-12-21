@@ -3,6 +3,7 @@
 
 #include "MPU.hpp"        // main file, provides the class itself
 #include "AnalogInput.h"
+#include "Protocols.h"
 
 #include "S2F.h"
 extern bool haveMPU;
@@ -47,6 +48,8 @@ extern float alt;
 extern float wksensor;
 
 extern S2F Speed2Fly;
+extern float meanClimb;
+extern Protocols OV;
 
 
 #endif

@@ -22,6 +22,8 @@ public:
 	double minsink();
 	float cw( float v );
 	void test( void );
+	float getN();
+
 private:
 	double a0,a1,a2;
 	double w0,w1,w2;

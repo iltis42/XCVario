@@ -359,7 +359,7 @@ void Audio::modtask(void* arg )
 			}
 			delay = int( defaultDelay - delaydelta + 0.5 );
 		}
-		ESP_LOGI(FNAME,"delay:%d  ht:%d", delay, hightone);
+		// ESP_LOGI(FNAME,"delay:%d  ht:%d", delay, hightone);
 		vTaskDelayUntil(&xLastWakeTime, delay/portTICK_PERIOD_MS);
 	}
 }

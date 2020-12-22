@@ -275,7 +275,7 @@ void Audio::alarm( bool enable ){  // non blocking
 		setValues( 3.0, 0  );
 		_alarm_mode=true;
 		_tonemode_back = _tonemode;
-		_tonemode = 1;
+		_tonemode = ATM_DUAL_TONE;
 		_vol_back = wiper;
 		wiper = 100;
 		defaultDelay = 125;
@@ -420,7 +420,7 @@ void Audio::dactask(void* arg )
 			if( !(tick%20) )
 				calcS2Fmode();
 			bool sound=true;
-			if( (inDeadBand(_te) || (wiper == 0 ) ) && !_testmode ){
+			if( (inDeadBand(_te) || (wiper == 0 )) && !_testmode ){
 				if( !deadband_active ) {
 					ESP_LOGD(FNAME,"Audio in DeadBand true");
 					enableAmplifier(false);
@@ -434,7 +434,7 @@ void Audio::dactask(void* arg )
 					enableAmplifier(true);
 					deadband_active = false;
 				}
-				if( hightone && (_tonemode == 0) ){
+				if( hightone && (_tonemode == ATM_SINGLE_TONE) ){
 					if( (_chopping_mode == BOTH_CHOP) ||
 							(_s2f_mode && (_chopping_mode == S2F_CHOP)) ||	(!_s2f_mode && (_chopping_mode == VARIO_CHOP)) ) {
 						sound = false;
@@ -471,7 +471,7 @@ void Audio::dactask(void* arg )
 				}
 				float f = center_freq.get() + ((mult*_te)/range )  * (max/exponent_max);
 				ESP_LOGV(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f multi:%0.3f", f, _te, audio_factor.get(), mult );
-				if( hightone && (_tonemode == 1 ) )
+				if( hightone && (_tonemode == ATM_DUAL_TONE ) )
 					setFrequency( f*_high_tone_var );
 				else
 					setFrequency( f );
@@ -541,9 +541,9 @@ void Audio::setup()
 	ESP_LOGD(FNAME,"Audio::setup");
 	_te = 0.0;
 	_testmode = false;
-	if( audio_range.get() == 0 )
+	if( audio_range.get() == AUDIO_RANGE_5_MS )
 		_range = 5.0;
-	else if( audio_range.get() == 1 )
+	else if( audio_range.get() == AUDIO_RANGE_10_MS )
 		_range = 10.0;
 	else
 		_range = range.get();

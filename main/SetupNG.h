@@ -52,6 +52,8 @@ typedef enum e_s2f_type  { S2F_HW_SWITCH, S2F_HW_PUSH_BUTTON } e_s2f_type;
 typedef enum e_serial_route_type { RT_DISABLE = 0, RT_XCVARIO = 1, RT_WIRELESS = 2, RT_S1 = 4, RT_XCVARIO_S1 = 5  } e_serial_routing_t;
 typedef enum e_wireless_type { WL_DISABLE, WL_BLUETOOTH, WL_WLAN, WL_WLAN_CLIENT } e_wireless_t;
 typedef enum e_audiomode_type { AM_VARIO, AM_S2F, AM_SWITCH, AM_AUTOSPEED } e_audiomode_t;
+typedef enum e_audio_tone_mode { ATM_SINGLE_TONE, ATM_DUAL_TONE } e_audio_tone_mode_t;
+typedef enum e_audio_range { AUDIO_RANGE_5_MS, AUDIO_RANGE_10_MS, AUDIO_RANGE_VARIABLE } e_audio_range_t;
 
 
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };

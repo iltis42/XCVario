@@ -61,7 +61,7 @@ SetupNG<int>  			chopping_mode( "CHOPPING_MODE",  VARIO_CHOP );
 
 SetupNG<int>  			blue_enable( "BT_ENABLE" ,  1);
 SetupNG<int>  			factory_reset( "FACTORY_RES" , 0 );
-SetupNG<int>  			audio_range( "AUDIO_RANGE" , 0 );
+SetupNG<int>  			audio_range( "AUDIO_RANGE" , AUDIO_RANGE_5_MS );
 SetupNG<int>  			alt_select( "ALT_SELECT" , 1 );
 SetupNG<int>  			fl_auto_transition( "FL_AUTO" , 0 );
 SetupNG<float>  		transition_alt( "TRANS_ALT", 50 );   // Transition Altitude

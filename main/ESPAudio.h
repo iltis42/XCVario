@@ -29,7 +29,7 @@ public:
 	static void begin( dac_channel_t ch=DAC_CHANNEL_1 );
 	static void restart();
 	static void startAudio();
-	static void setValues( float te, float s2fd, float ias, bool fromtest=false );
+	static void setValues( float te, float s2fd );
 	static void setup();
 	static void incVolume( int steps );
 	static void decVolume( int steps );
@@ -42,7 +42,7 @@ public:
 
 private:
 	static void dac_cosine_enable(dac_channel_t channel, bool enable=true);
-	static inline void dac_frequency_set(int clk_8m_div, int frequency_step);
+	static void dac_frequency_set(int clk_8m_div, int frequency_step);
 	static void dac_scale_set(dac_channel_t channel, int scale);
 	static void dac_offset_set(dac_channel_t channel, int offset);
 	static void dac_invert_set(dac_channel_t channel, int invert);
@@ -75,6 +75,14 @@ private:
     static int scale;
     static int prev_scale;
     static bool hightone;
+    static bool _alarm_mode;
+    static int  defaultDelay;
+    static float _vol_back;
+    static bool  _s2f_mode_back;
+    static int   _tonemode_back;
+    static int tick;
+    static int tickmod;
+
 };
 
 

@@ -32,32 +32,42 @@
 #include "sensor.h"
 
 
-float Audio::_range = 5.0;
-bool  Audio::_s2f_mode = false;
 uint8_t Audio::_tonemode;
 uint8_t Audio::_chopping_mode;
-float Audio::_high_tone_var;
-dac_channel_t Audio::_ch;
 uint16_t Audio::wiper;
 uint16_t Audio::cur_wiper;
-bool  Audio::sound_on;
-bool  Audio::_testmode;
+dac_channel_t Audio::_ch;
+
+float Audio::_range = 5.0;
+float Audio::_high_tone_var;
+bool  Audio::_s2f_mode = false;
+bool  Audio::sound_on=false;
+bool  Audio::_testmode=false;
+bool  Audio::deadband_active = false;
+bool  Audio::hightone = false;
+bool  Audio::_alarm_mode=false;
+bool  Audio::_s2f_mode_back = false;
+
+float Audio::_vol_back = 0;
 float Audio::maxf = 2000;
 float Audio::minf = 250;
 float Audio::_te = 0;
-int   Audio::prev_div = 0;
-int   Audio::prev_step = 0;
-bool  Audio::deadband_active = false;
 float Audio::exponent_max = 2;
 float Audio::prev_aud_fact = 0;
+
+int   Audio::prev_div = 0;
+int   Audio::prev_step = 0;
 int   Audio::scale = 0;
 int   Audio::prev_scale = -1;
-bool  Audio::hightone = false;
+int   Audio::defaultDelay = 500;
+int   Audio::_tonemode_back = 0;
+int   Audio::tick = 0;
+int   Audio::tickmod  = 0;
+
+const int clk_8m_div = 7;    // RTC 8M clock divider (division is by clk_8m_div+1, i.e. 0 means 8MHz frequency)
 
 MCP4018 Poti;
 
-bool _alarm_mode=false;
-int defaultDelay = 500;
 
 Audio::Audio( ) {
 	_ch = DAC_CHANNEL_1;
@@ -118,7 +128,6 @@ PROGMEM std::vector<t_lookup_entry> lftab{
  * so they may be then accessed and changed from debugger
  * over an JTAG interface
  */
-const int clk_8m_div = 7;    // RTC 8M clock divider (division is by clk_8m_div+1, i.e. 0 means 8MHz frequency)
 
 /*
  * Enable cosine waveform generator on a DAC channel
@@ -254,15 +263,13 @@ void Audio::dac_scale_set(dac_channel_t channel, int scale)
 	}
 }
 
-float _vol_back = 0;
-bool  _s2f_mode_back = false;
-int   _tonemode_back = 0;
+
 
 void Audio::alarm( bool enable ){  // non blocking
 	if( enable ) {
 		_s2f_mode_back = _s2f_mode;
 		_s2f_mode = false;
-		setValues( 3.0, 0, 0 );
+		setValues( 3.0, 0  );
 		_alarm_mode=true;
 		_tonemode_back = _tonemode;
 		_tonemode = 1;
@@ -326,8 +333,6 @@ void Audio::dac_invert_set(dac_channel_t channel, int invert)
 	}
 }
 
-int tick = 0;
-int tickmod  = 0;
 
 //  modulation frequency
 void Audio::modtask(void* arg )
@@ -510,7 +515,7 @@ bool Audio::inDeadBand( float te )
 	return false;
 }
 
-void Audio::setValues( float te, float s2fd, float ias, bool fromtest )
+void Audio::setValues( float te, float s2fd )
 {
 	float max = _range;
 	if( !_alarm_mode ){

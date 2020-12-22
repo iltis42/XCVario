@@ -246,7 +246,7 @@ void readBMP(void *pvParameters){
 		// ESP_LOGI("FNAME","P: %f  IAS:%f IASF: %d", dynamicP, iasraw, ias );
 		tas += (tasraw-tas)*0.25;       // low pass filter
 		// ESP_LOGI(FNAME,"IAS=%f, T=%f, TAS=%f baroP=%f", ias, T, tas, baroP );
-		Audio::setValues( TE, s2f_delta, ias );
+		Audio::setValues( TE, s2f_delta );
 		TE = bmpVario.readTE( tasraw );  // 10x per second
 		xSemaphoreGive(xMutex);
 		// ESP_LOGI(FNAME,"count %d ccp %d", count, ccp );

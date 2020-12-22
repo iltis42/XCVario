@@ -35,6 +35,7 @@ public:
 	void incVolume( int steps );
 	void decVolume( int steps );
 	void setVolume( int vol );
+	void alarm( bool enable );
 	inline int  getVolume() { return wiper; };
 	bool selfTest();
 	inline void setTestmode( bool mode ) { _testmode = mode; }

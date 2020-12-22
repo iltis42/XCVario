@@ -276,8 +276,8 @@ void IpsDisplay::initDisplay() {
 
 		// Thermometer
 		drawThermometer(  FIELD_START+10, DISPLAY_H-4 );
-		redrawValues();
 	}
+	redrawValues();
 }
 
 // Thermometer

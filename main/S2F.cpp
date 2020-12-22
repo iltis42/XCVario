@@ -24,7 +24,7 @@ S2F::~S2F() {
 
 float S2F::getN() {
 	float n = accelG[0];
-	if( n < 0.3 )
+	if( n < 0.3 )        // Polars and airfoils physics behave different negative or even low g forces, we stop here impacting from g force at 0.3 g
 		n=0.3;
 	return n;
 }

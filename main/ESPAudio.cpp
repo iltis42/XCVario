@@ -57,6 +57,9 @@ int    ESPAudio::scaled_wip = 0;
 
 MCP4018 Poti;
 
+bool _alarm_mode=false;
+int del = 500;
+
 ESPAudio::ESPAudio( ) {
 	_ch = DAC_CHANNEL_1;
 	_center = 440;
@@ -475,6 +478,38 @@ void ESPAudio::dac_scale_set(dac_channel_t channel, int scale)
 	}
 }
 
+float _te_back = 0;
+float _vol_back = 0;
+bool  _s2f_mode_back = false;
+int   _tonemode_back = 0;
+
+void ESPAudio::alarm( bool enable ){
+   if( enable ) {
+	   _s2f_mode_back = _s2f_mode;
+	   _s2f_mode = false;
+	   setValues( 3.0, 0, 0 );
+	   _alarm_mode=true;
+	   _tonemode_back = _tonemode;
+	   _tonemode = 1;
+	   // _te_back = _te;
+	   _vol_back = wiper;
+	   wiper = 100;
+	   del = 125;
+	   // Poti.writeWiper( 100 );
+	   // _te = 5.0;
+	   // Audio.dac_frequency_set(clk_8m_div, int(500/freq_step) );
+   }
+   else
+   {
+	   _s2f_mode = _s2f_mode_back;
+	   del = 500;
+	   _alarm_mode=false;
+	   _tonemode = _tonemode_back;
+	   // _te = _te_back;
+	   wiper = _vol_back;
+	   Poti.writeWiper( _vol_back );
+   }
+}
 
 /*
  * Offset output of a DAC channel
@@ -575,7 +610,7 @@ int tickmod  = 0;
 //  modulation frequency
 
 bool hightone = false;
-const int del = 500;
+
 
 void ESPAudio::modtask(void* arg )
 {
@@ -598,6 +633,7 @@ void ESPAudio::modtask(void* arg )
 			}
 			delay = int( del - delaydelta + 0.5 );
 		}
+		ESP_LOGI(FNAME,"delay:%d  ht:%d", delay, hightone);
 		vTaskDelayUntil(&xLastWakeTime, delay/portTICK_PERIOD_MS);
 	}
 }
@@ -630,27 +666,29 @@ bool output_enable = false;
 void ESPAudio::startAudio(){
 	_testmode = false;
 	xTaskCreate(modtask, "modtask", 1024*2, NULL, 31, NULL);
-	xTaskCreate(dactask, "dactask", 1024*2, NULL, 31, NULL);
+	xTaskCreate(dactask, "dactask", 1024*2, NULL, 30, NULL);
 }
 
 
 void ESPAudio::calcS2Fmode(){
-	switch( audio_mode.get() ) {
-	case 0: // Vario
-		_s2f_mode = false;
-		break;
-	case 1: // S2F
-		_s2f_mode = true;
-		break;
-	case 2: // Switch
-		_s2f_mode = Switch::cruiseMode(false);
-		break;
-	case 3: // Auto
-		if( Switch::cruiseMode() )
-			_s2f_mode = true;
-		else
+	if( !_alarm_mode ) {
+		switch( audio_mode.get() ) {
+		case 0: // Vario
 			_s2f_mode = false;
-		break;
+			break;
+		case 1: // S2F
+			_s2f_mode = true;
+			break;
+		case 2: // Switch
+			_s2f_mode = Switch::cruiseMode(false);
+			break;
+		case 3: // Auto
+			if( Switch::cruiseMode() )
+				_s2f_mode = true;
+			else
+				_s2f_mode = false;
+			break;
+		}
 	}
 }
 
@@ -661,9 +699,9 @@ void ESPAudio::dactask(void* arg )
 		tick++;
 		Switch::tick();
 		if( !_testmode ) {
-			if( tick%5 )
-				continue;
-			calcS2Fmode();
+			if( !(tick%20) )
+			// 	continue;
+				calcS2Fmode();
 			bool sound=true;
 			float f;
 			int step;
@@ -786,18 +824,20 @@ bool ESPAudio::inDeadBand( float te )
 void ESPAudio::setValues( float te, float s2fd, float ias, bool fromtest )
 {
 	float max = _range;
-	if( _s2f_mode ) {
-		_te = -s2fd/10.0;
-		max = 5.0;
+	if( !_alarm_mode ){
+		if( _s2f_mode ) {
+			_te = -s2fd/10.0;
+			max = 5.0;
+		}
+		else {
+			_te = te;
+		}
+		if( _te > max )
+			_te = max;
+		else if( _te < -max )
+			_te = -max;
+		_ias = ias;
 	}
-	else {
-		_te = te;
-	}
-	if( _te > max )
-		_te = max;
-	else if( _te < -max )
-		_te = -max;
-	_ias = ias;
 }
 
 /*

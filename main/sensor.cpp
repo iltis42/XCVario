@@ -311,7 +311,7 @@ void readBMP(void *pvParameters){
 						ESP_LOGE(FNAME, "gyro I2C error, X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
 					accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_4G);  // raw data to gravity
 					gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
-					ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f  gyro X: %+.2f Y:%+.2f Z:%+.2f\n", -accelG[2], accelG[1], accelG[0] ,  gyroDPS.x, gyroDPS.y, gyroDPS.z);
+					// ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f  gyro X: %+.2f Y:%+.2f Z:%+.2f\n", -accelG[2], accelG[1], accelG[0] ,  gyroDPS.x, gyroDPS.y, gyroDPS.z);
 					bool goodAccl = true;
 					if( abs( accelG.x - accelG_Prev.x ) > 0.4 || abs( accelG.y - accelG_Prev.y ) > 0.4 || abs( accelG.z - accelG_Prev.z ) > 0.4 ) {
 						MPU.acceleration(&accelRaw);
@@ -790,6 +790,7 @@ void sensor(void *args){
 	}
 
 
+
 	if( Rotary.readSwitch() )
 	{
 		ESP_LOGI(FNAME,"Starting Leak test");
@@ -875,6 +876,7 @@ void sensor(void *args){
 
 	Menu = new SetupMenu();
 	Menu->begin( display, &Rotary, &bmpBA, &Battery );
+
 	if ( blue_enable.get() == WL_WLAN_CLIENT ){
 			display->clear();
 			display->writeText( 2, "Wait for Master XCVario" );
@@ -886,11 +888,9 @@ void sensor(void *args){
 			display->writeText( 5, "Now start" );
 			WifiClient::start();
 			delay( 2000 );
-			display->clear();
-			display->initDisplay();
 	}
 	else if( ias < 50.0 ){
-		xSemaphoreTake(xMutex,portMAX_DELAY );
+		// xSemaphoreTake(xMutex,portMAX_DELAY );
 		ESP_LOGI(FNAME,"QNH Autosetup, IAS=%3f (<50 km/h)", ias );
 		// QNH autosetup
 		float ae = elevation.get();
@@ -920,15 +920,16 @@ void sensor(void *args){
 			float &qnh = QNH.getRef();
 			qnh = qnh_best;
 		}
-
+		// xSemaphoreGive(xMutex);
+		display->clear();
 		SetupMenuValFloat::showQnhMenu();
-		xSemaphoreGive(xMutex);
 	}
 	else
 	{
 		Audio.disable(false);
+		display->initDisplay();
 	}
-	display->initDisplay();
+
 
 	if( hardwareRevision.get() == 2 )
 		Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
@@ -968,6 +969,10 @@ void sensor(void *args){
 
 
 	Audio.startAudio();
+	// delay( 1000 );
+	// Audio.alarm(true);
+	// delay( 4000 );
+	// Audio.alarm(false);
 
 	for( int i=0; i<36; i++ ) {
 		if( i != 23 && i < 6 && i > 12  )

@@ -70,9 +70,10 @@ void AverageVario::newSample( float te ){  // to be called every 0.1 Second (100
 		// every second
 		avindex100MSec = 0;
 		float ac=0;
-		for( int i=0; i<10; i++ )
+		for( int i=0; i<10; i++ ){
 			if( avClimb100MSec[i] > 0 )
 				ac += avClimb100MSec[i];
+		}
 		avClimbSec[avindexSec] = ac/10;
 		// ESP_LOGI(FNAME,"- MST pSEC= %2.2f %d", avClimbSec[avindexSec], avindexSec );
 		avindexSec++;
@@ -95,7 +96,6 @@ void AverageVario::newSample( float te ){  // to be called every 0.1 Second (100
 			}
 		}
 	}
-
 }
 
 

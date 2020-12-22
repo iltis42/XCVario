@@ -8,37 +8,32 @@
 #ifndef MAIN_ESPAUDIO_H_
 #define MAIN_ESPAUDIO_H_
 
-
 #include "driver/gpio.h"
 #include "driver/dac.h"
 #include "Setup.h"
 #include "soc/rtc.h"
-
-#define SOUND_ON 1
-#define SOUND_OFF 0
-
-const float freq_step = RTC_FAST_CLK_FREQ_APPROX / (65536 * 8 );  // div = 0x07
-typedef struct lookup {  uint16_t f; uint8_t div; uint8_t step; } t_lookup_entry;
-typedef struct volume {  uint16_t vol; uint8_t scale; uint8_t wiper; } t_scale_wip;
 
 
 class Audio {
 public:
 	Audio();
 	virtual ~Audio(){};
+
 	static void begin( dac_channel_t ch=DAC_CHANNEL_1 );
 	static void restart();
 	static void startAudio();
+
 	static void setValues( float te, float s2fd );
+	static void setFrequency( float f );
+
 	static void setup();
 	static void incVolume( int steps );
 	static void decVolume( int steps );
 	static inline void setVolume( int vol ) {wiper = vol;};
+
 	static void alarm( bool enable );
-	static inline int  getVolume() { return wiper; };
 	static bool selfTest();
 	static inline void setTestmode( bool mode ) { _testmode = mode; }
-	static void setFrequency( float f );
 
 private:
 	static void dac_cosine_enable(dac_channel_t channel, bool enable=true);

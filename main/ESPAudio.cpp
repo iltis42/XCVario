@@ -65,6 +65,9 @@ int   Audio::tick = 0;
 int   Audio::tickmod  = 0;
 
 const int clk_8m_div = 7;    // RTC 8M clock divider (division is by clk_8m_div+1, i.e. 0 means 8MHz frequency)
+const float freq_step = RTC_FAST_CLK_FREQ_APPROX / (65536 * 8 );  // div = 0x07
+typedef struct lookup {  uint16_t f; uint8_t div; uint8_t step; } t_lookup_entry;
+typedef struct volume {  uint16_t vol; uint8_t scale; uint8_t wiper; } t_scale_wip;
 
 MCP4018 Poti;
 

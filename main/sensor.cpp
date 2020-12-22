@@ -889,6 +889,7 @@ void sensor(void *args){
 			display->writeText( 5, "Now start" );
 			WifiClient::start();
 			delay( 2000 );
+			inSetup = false;
 			display->initDisplay();
 	}
 	else if( ias < 50.0 ){

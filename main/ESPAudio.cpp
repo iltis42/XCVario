@@ -436,7 +436,8 @@ void Audio::dactask(void* arg )
 				}
 				if( hightone && (_tonemode == ATM_SINGLE_TONE) ){
 					if( (_chopping_mode == BOTH_CHOP) ||
-							(_s2f_mode && (_chopping_mode == S2F_CHOP)) ||	(!_s2f_mode && (_chopping_mode == VARIO_CHOP)) ) {
+						(_s2f_mode && (_chopping_mode == S2F_CHOP)) ||
+						(!_s2f_mode && (_chopping_mode == VARIO_CHOP)) ) {
 						sound = false;
 					}
 				}

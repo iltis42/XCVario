@@ -191,8 +191,6 @@ float getSensorWkPos(int wks)
 	return wkf;
 }
 
-bool stall=false;
-
 void drawDisplay(void *pvParameters){
 	while (1) {
 		// TickType_t dLastWakeTime = xTaskGetTickCount();
@@ -206,18 +204,23 @@ void drawDisplay(void *pvParameters){
 			else if( airspeed_mode.get() == MODE_TAS )
 				airspeed = tas;
 			// ESP_LOGI(FNAME,"WK raw=%d ", wksensor );
-			if( stall_warning_active ) {
-				if( !stall ){
-					display->drawWarning( "! STALL !", true );
-					stall=true;
+			if( stall_warning.get() ){
+				if( ias < stall_speed.get() && ias > (stall_speed.get()*0.7) ){
+					if( !stall_warning_active ){
+						Audio::alarm( true );
+						display->drawWarning( "! STALL !", true );
+						stall_warning_active = true;
+					}
 				}
-			}else{
-				if( stall ) {
-					display->initDisplay();
-					stall=false;
+				else{
+					if( stall_warning_active ){
+						Audio::alarm( false );
+						display->initDisplay();
+						stall_warning_active = false;
+					}
 				}
 			}
-			if( !stall )
+			if( !stall_warning_active )
 				display->drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, meanClimb, Switch::cruiseMode(), standard_setting, wksensor );
 		}
 		vTaskDelay(20/portTICK_PERIOD_MS);
@@ -258,21 +261,6 @@ void readBMP(void *pvParameters){
 		if( baroP != 0 )
 			tasraw =  Atmosphere::TAS( iasraw , baroP, T);  // True airspeed
 		ias = ias + (iasraw - ias)*0.25;  // low pass filter
-		if( stall_warning.get() ){
-			float stall = stall_speed.get();
-			if( ias < stall && ias > (stall*0.7) ){
-				if( !stall_warning_active ){
-					Audio::alarm( true );
-					stall_warning_active = true;
-				}
-			}
-			else{
-				if( stall_warning_active ){
-					Audio::alarm( false );
-					stall_warning_active = false;
-				}
-			}
-		}
 
 		// ESP_LOGI("FNAME","P: %f  IAS:%f IASF: %d", dynamicP, iasraw, ias );
 		tas += (tasraw-tas)*0.25;       // low pass filter

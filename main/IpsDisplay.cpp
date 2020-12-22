@@ -137,6 +137,9 @@ float IpsDisplay::average_climbf = 0;
 bool IpsDisplay::wkbox = false;
 int  IpsDisplay::pref_qnh = 0;
 
+int wkyold=0;
+int wksyold=0;
+
 
 IpsDisplay::IpsDisplay( Ucglib_ILI9341_18x240x320_HWSPI *aucg ) {
 	ucg = aucg;
@@ -433,6 +436,7 @@ void IpsDisplay::redrawValues()
 	wksensoralt = -1;
 	wkialt = -3;
 	tyalt = -1000;
+	wksyold = -1000;
 }
 
 void IpsDisplay::drawTeBuf(){
@@ -546,8 +550,7 @@ void IpsDisplay::drawWkBar( int ypos, int xpos, float wkf ){
 #define MAXPOS  2
 
 
-int wkyold=0;
-int wksyold=0;
+
 
 void IpsDisplay::drawWkLever( int xpos, int ypos, int oldypos ){
 	ucg->setColor(COLOR_BLACK);

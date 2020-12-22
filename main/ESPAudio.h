@@ -18,19 +18,18 @@
 #define SOUND_OFF 0
 
 const float freq_step = RTC_FAST_CLK_FREQ_APPROX / (65536 * 8 );  // div = 0x07
+typedef struct lookup {  uint16_t f; uint8_t div; uint8_t step; } t_lookup_entry;
+typedef struct volume {  uint16_t vol; uint8_t scale; uint8_t wiper; } t_scale_wip;
+
 
 class ESPAudio {
 public:
 	ESPAudio();
-	virtual ~ESPAudio();
-	void begin( dac_channel_t ch=DAC_CHANNEL_1, gpio_num_t button=GPIO_NUM_0 );
+	virtual ~ESPAudio(){};
+	void begin( dac_channel_t ch=DAC_CHANNEL_1 );
 	void restart();
 	void startAudio();
 	void setValues( float te, float s2fd, float ias, bool fromtest=false );
-	void test( float to, float from );
-	inline void mute( bool mt=true ) { _mute = mt; };
-	void disable( bool disable=true );
-	inline bool getDisable() { return _disable; };  // Just store the disable state and return on demand, Audio itself now can play in setup mode
 	void setup();
 	void incVolume( int steps );
 	void decVolume( int steps );
@@ -39,6 +38,7 @@ public:
 	inline int  getVolume() { return wiper; };
 	bool selfTest();
 	inline void setTestmode( bool mode ) { _testmode = mode; }
+	void setFrequency( float f );
 
 private:
 	void dac_cosine_enable(dac_channel_t channel, bool enable=true);
@@ -67,9 +67,6 @@ private:
 	static bool sound_on;
     static float _range;
 	gpio_num_t _button;
-	bool _mute;
-	bool _disable;
-	bool _dead_mute;
 	float _test_ms;
 	float _old_ms;
 	static float _ias;
@@ -85,10 +82,9 @@ private:
     static int scale;
     static int prev_scale;
     static int scaled_wip;
+    static bool hightone;
 };
 
-typedef struct lookup {  uint16_t f; uint8_t div; uint8_t step; } t_lookup_entry;
-typedef struct volume {  uint16_t vol; uint8_t scale; uint8_t wiper; } t_scale_wip;
 
 
 

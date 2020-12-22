@@ -449,9 +449,6 @@ void SetupMenu::up(int count){
 void SetupMenu::longPress(){
 	long_pressed = true;
 	ESP_LOGI(FNAME,"SetupMenue: longPress");
-	// Audio.disable();
-	// delay(1000);
-	// esp_restart();
 }
 
 
@@ -469,7 +466,7 @@ void SetupMenu::press(){
 		if( !pressed )
 		{
 			ESP_LOGI(FNAME,"!pressed");
-			Audio.disable();
+			inSetup=true;
 			delay( 500 );
 			_menu_enabled = true;
 		}
@@ -481,7 +478,7 @@ void SetupMenu::press(){
 			Audio.setup();
 			bmpVario.setup();
 			_menu_enabled = false;
-			Audio.disable(false);
+			inSetup=false;
 		}
 	}
 	// default is not pressed, so just display, but we toogle pressed state at the end
@@ -1171,7 +1168,7 @@ void SetupMenuValFloat::showQnhMenu(){
 		ESP_LOGI(FNAME,"qnh_menu = true");
 		_menu_enabled = true;
 		selected = qnh_menu;
-		Audio.disable();
+		inSetup=true;
 		qnh_menu->clear();
 		qnh_menu->display();
 		qnh_menu->pressed = true;

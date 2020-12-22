@@ -50,6 +50,7 @@ extern float wksensor;
 extern S2F Speed2Fly;
 extern float meanClimb;
 extern Protocols OV;
+extern bool inSetup;
 
 
 #endif

@@ -33,45 +33,41 @@
 
 
 float ESPAudio::_range = 5.0;
-bool ESPAudio::_s2f_mode = false;
+bool  ESPAudio::_s2f_mode = false;
 uint8_t ESPAudio::_tonemode;
 uint8_t ESPAudio::_chopping_mode;
 float ESPAudio::_high_tone_var;
 dac_channel_t ESPAudio::_ch;
 uint16_t ESPAudio::wiper;
 uint16_t ESPAudio::cur_wiper;
-bool ESPAudio::sound_on;
-bool ESPAudio::_testmode;
+bool  ESPAudio::sound_on;
+bool  ESPAudio::_testmode;
 float ESPAudio::maxf = 2000;
 float ESPAudio::minf = 250;
 float ESPAudio::_te = 0;
 float ESPAudio::_ias = 0;
-int ESPAudio::prev_div = 0;
-int ESPAudio::prev_step = 0;
-bool ESPAudio::deadband_active = false;
-float  ESPAudio::exponent_max = 2;
-float  ESPAudio::prev_aud_fact = 0;
-int    ESPAudio::scale = 0;
-int    ESPAudio::prev_scale = -1;
-int    ESPAudio::scaled_wip = 0;
+int   ESPAudio::prev_div = 0;
+int   ESPAudio::prev_step = 0;
+bool  ESPAudio::deadband_active = false;
+float ESPAudio::exponent_max = 2;
+float ESPAudio::prev_aud_fact = 0;
+int   ESPAudio::scale = 0;
+int   ESPAudio::prev_scale = -1;
+int   ESPAudio::scaled_wip = 0;
+bool  ESPAudio::hightone = false;
 
 MCP4018 Poti;
 
 bool _alarm_mode=false;
-int del = 500;
+int defaultDelay = 500;
 
 ESPAudio::ESPAudio( ) {
 	_ch = DAC_CHANNEL_1;
 	_center = 440;
 	_te = 0.0;
 	_s2fd = 0.0;
-	_variation = 3.0;
 	_testmode = false;
-	_button = GPIO_NUM_0;
-	_mute = false;
 	_test_ms = 0;
-	_dead_mute = true;
-	_disable = false;
 	_old_ms = 0;
 	_range = 5.0;
 	_s2f_mode = false;
@@ -80,286 +76,48 @@ ESPAudio::ESPAudio( ) {
 	sound_on = false;
 }
 
-ESPAudio::~ESPAudio() {
-
-}
-
 // Table to lookup settings audio generator setting divider and step covering frequencies up to 800 Hz
 PROGMEM std::vector<t_scale_wip> scaletab{
-	{ 0,2,0 },
-	{ 1,2,1 },
-	{ 2,2,4 },
-	{ 3,2,7 },
-	{ 4,2,10 },
-	{ 5,2,13 },
-	{ 6,2,16 },
-	{ 7,2,19 },
-	{ 8,2,22 },
-	{ 9,2,25 },
-	{ 10,2,28 },
-	{ 11,2,31 },
-	{ 12,2,34 },
-	{ 13,2,37 },
-	{ 14,2,40 },
-	{ 15,2,43 },
-	{ 16,2,46 },
-	{ 17,2,49 },
-	{ 18,2,52 },
-	{ 19,2,55 },
-	{ 20,2,58 },
-	{ 21,2,61 },
-	{ 22,2,64 },
-	{ 23,2,67 },
-	{ 24,2,70 },
-	{ 25,2,73 },
-	{ 26,2,76 },
-	{ 27,2,79 },
-	{ 28,2,82 },
-	{ 29,2,85 },
-	{ 30,2,88 },
-	{ 31,2,91 },
-	{ 32,2,94 },
-	{ 33,2,97 },
-	{ 34,2,100 },
-	{ 35,2,103 },
-	{ 36,2,106 },
-	{ 37,2,109 },
-	{ 38,2,112 },
-	{ 39,2,115 },
-	{ 40,2,118 },
-	{ 41,2,121 },
-	{ 42,2,124 },
-	{ 43,2,127 },
-	{ 44,1,86 },
-	{ 45,1,88 },
-	{ 46,1,90 },
-	{ 47,1,92 },
-	{ 48,1,94 },
-	{ 49,1,96 },
-	{ 50,1,98 },
-	{ 51,1,100 },
-	{ 52,1,102 },
-	{ 53,1,104 },
-	{ 54,1,106 },
-	{ 55,1,108 },
-	{ 56,1,110 },
-	{ 57,1,112 },
-	{ 58,1,114 },
-	{ 59,1,116 },
-	{ 60,1,118 },
-	{ 61,1,120 },
-	{ 62,1,122 },
-	{ 63,1,124 },
-	{ 64,1,126 },
-	{ 65,1,127 },
-	{ 66,0,65 },
-	{ 67,0,66 },
-	{ 68,0,67 },
-	{ 69,0,68 },
-	{ 70,0,69 },
-	{ 71,0,70 },
-	{ 72,0,71 },
-	{ 73,0,72 },
-	{ 74,0,73 },
-	{ 75,0,74 },
-	{ 76,0,75 },
-	{ 77,0,76 },
-	{ 78,0,77 },
-	{ 79,0,78 },
-	{ 80,0,79 },
-	{ 81,0,80 },
-	{ 82,0,81 },
-	{ 83,0,82 },
-	{ 84,0,83 },
-	{ 85,0,84 },
-	{ 86,0,85 },
-	{ 87,0,86 },
-	{ 88,0,87 },
-	{ 89,0,88 },
-	{ 90,0,89 },
-	{ 91,0,90 },
-	{ 92,0,91 },
-	{ 93,0,92 },
-	{ 94,0,93 },
-	{ 95,0,94 },
-	{ 96,0,95 },
-	{ 97,0,96 },
-	{ 98,0,97 },
-	{ 99,0,98 },
-	{ 100,0,99 },
-	{ 101,0,100 },
-	{ 102,0,101 },
-	{ 103,0,102 },
-	{ 104,0,103 },
-	{ 105,0,104 },
-	{ 106,0,105 },
-	{ 107,0,106 },
-	{ 108,0,107 },
-	{ 109,0,108 },
-	{ 110,0,109 },
-	{ 111,0,110 },
-	{ 112,0,111 },
-	{ 113,0,112 },
-	{ 114,0,113 },
-	{ 115,0,114 },
-	{ 116,0,115 },
-	{ 117,0,116 },
-	{ 118,0,117 },
-	{ 119,0,118 },
-	{ 120,0,119 },
-	{ 121,0,120 },
-	{ 122,0,121 },
-	{ 123,0,122 },
-	{ 124,0,123 },
-	{ 125,0,124 },
-	{ 126,0,125 },
-	{ 127,0,126 },
+	{ 0,2,0 },	    { 1,2,1 },	    { 2,2,4 },	    { 3,2,7 },	    { 4,2,10 },	    { 5,2,13 },	    { 6,2,16 },	    { 7,2,19 },
+	{ 8,2,22 },	    { 9,2,25 },	    { 10,2,28 },    { 11,2,31 },	{ 12,2,34 },	{ 13,2,37 },	{ 14,2,40 },	{ 15,2,43 },
+	{ 16,2,46 },	{ 17,2,49 },	{ 18,2,52 },	{ 19,2,55 },	{ 20,2,58 },	{ 21,2,61 },	{ 22,2,64 },	{ 23,2,67 },
+	{ 24,2,70 },	{ 25,2,73 },	{ 26,2,76 },	{ 27,2,79 },	{ 28,2,82 },	{ 29,2,85 },	{ 30,2,88 },	{ 31,2,91 },
+	{ 32,2,94 },	{ 33,2,97 },	{ 34,2,100 },	{ 35,2,103 },	{ 36,2,106 },	{ 37,2,109 },	{ 38,2,112 },	{ 39,2,115 },
+	{ 40,2,118 },	{ 41,2,121 },	{ 42,2,124 },	{ 43,2,127 },	{ 44,1,86 },	{ 45,1,88 },	{ 46,1,90 },	{ 47,1,92 },
+	{ 48,1,94 },	{ 49,1,96 },	{ 50,1,98 },	{ 51,1,100 },	{ 52,1,102 },	{ 53,1,104 },	{ 54,1,106 },	{ 55,1,108 },
+	{ 56,1,110 },	{ 57,1,112 },	{ 58,1,114 },	{ 59,1,116 },	{ 60,1,118 },	{ 61,1,120 },	{ 62,1,122 },	{ 63,1,124 },
+	{ 64,1,126 },	{ 65,1,127 },	{ 66,0,65 },	{ 67,0,66 },	{ 68,0,67 },	{ 69,0,68 },	{ 70,0,69 },	{ 71,0,70 },
+	{ 72,0,71 },	{ 73,0,72 },	{ 74,0,73 },	{ 75,0,74 },	{ 76,0,75 },	{ 77,0,76 },	{ 78,0,77 },	{ 79,0,78 },
+	{ 80,0,79 },	{ 81,0,80 },	{ 82,0,81 },	{ 83,0,82 },	{ 84,0,83 },	{ 85,0,84 },	{ 86,0,85 },	{ 87,0,86 },
+	{ 88,0,87 },	{ 89,0,88 },	{ 90,0,89 },	{ 91,0,90 },	{ 92,0,91 },	{ 93,0,92 },	{ 94,0,93 },	{ 95,0,94 },
+	{ 96,0,95 },	{ 97,0,96 },	{ 98,0,97 },	{ 99,0,98 },	{ 100,0,99 },	{ 101,0,100 },	{ 102,0,101 },	{ 103,0,102 },
+	{ 104,0,103 },	{ 105,0,104 },	{ 106,0,105 },	{ 107,0,106 },	{ 108,0,107 },	{ 109,0,108 },	{ 110,0,109 },	{ 111,0,110 },
+	{ 112,0,111 },	{ 113,0,112 },	{ 114,0,113 },	{ 115,0,114 },	{ 116,0,115 },	{ 117,0,116 },	{ 118,0,117 },	{ 119,0,118 },
+	{ 120,0,119 },	{ 121,0,120 },	{ 122,0,121 },	{ 123,0,122 },	{ 124,0,123 },	{ 125,0,124 },	{ 126,0,125 },	{ 127,0,126 },
 	{ 128,0,127 }
 };
 
 
 PROGMEM std::vector<t_lookup_entry> lftab{
-	{ 18,6,1 },
-	{ 21,5,1 },
-	{ 25,4,1 },
-	{ 32,3,1 },
-	{ 37,6,2 },
-	{ 43,5,2 },
-	{ 51,4,2 },
-	{ 55,6,3 },
-	{ 64,5,3 },
-	{ 74,6,4 },
-	{ 77,4,3 },
-	{ 86,5,4 },
-	{ 92,6,5 },
-	{ 97,3,3 },
-	{ 103,4,4 },
-	{ 108,5,5 },
-	{ 111,6,6 },
-	{ 129,6,7 },
-	{ 148,6,8 },
-	{ 151,5,7 },
-	{ 155,4,6 },
-	{ 162,3,5 },
-	{ 166,6,9 },
-	{ 172,5,8 },
-	{ 181,4,7 },
-	{ 185,6,10 },
-	{ 194,5,9 },
-	{ 203,6,11 },
-	{ 207,4,8 },
-	{ 216,5,10 },
-	{ 222,6,12 },
-	{ 226,3,7 },
-	{ 233,4,9 },
-	{ 237,5,11 },
-	{ 240,6,13 },
-	{ 259,6,14 },
-	{ 277,6,15 },
-	{ 281,5,13 },
-	{ 285,4,11 },
-	{ 291,3,9 },
-	{ 296,6,16 },
-	{ 302,5,14 },
-	{ 311,4,12 },
-	{ 314,6,17 },
-	{ 324,5,15 },
-	{ 333,6,18 },
-	{ 337,4,13 },
-	{ 345,5,16 },
-	{ 352,6,19 },
-	{ 356,3,11 },
-	{ 363,4,14 },
-	{ 367,5,17 },
-	{ 370,6,20 },
-	{ 389,6,21 },
-	{ 407,6,22 },
-	{ 410,5,19 },
-	{ 415,4,16 },
-	{ 421,3,13 },
-	{ 426,6,23 },
-	{ 432,5,20 },
-	{ 440,4,17 },
-	{ 444,6,24 },
-	{ 453,5,21 },
-	{ 463,6,25 },
-	{ 466,4,18 },
-	{ 475,5,22 },
-	{ 481,6,26 },
-	{ 486,3,15 },
-	{ 492,4,19 },
-	{ 497,5,23 },
-	{ 500,6,27 },
-	{ 518,6,28 },
-	{ 537,6,29 },
-	{ 540,5,25 },
-	{ 544,4,21 },
-	{ 551,3,17 },
-	{ 555,6,30 },
-	{ 562,5,26 },
-	{ 570,4,22 },
-	{ 574,6,31 },
-	{ 583,5,27 },
-	{ 592,6,32 },
-	{ 596,4,23 },
-	{ 605,5,28 },
-	{ 611,6,33 },
-	{ 616,3,19 },
-	{ 622,4,24 },
-	{ 626,5,29 },
-	{ 629,6,34 },
-	{ 648,6,35 },
-	{ 667,6,36 },
-	{ 670,5,31 },
-	{ 674,4,26 },
-	{ 680,3,21 },
-	{ 685,6,37 },
-	{ 691,5,32 },
-	{ 700,4,27 },
-	{ 704,6,38 },
-	{ 713,5,33 },
-	{ 722,6,39 },
-	{ 726,4,28 },
-	{ 734,5,34 },
-	{ 741,6,40 },
-	{ 745,3,23 },
-	{ 752,4,29 },
-	{ 756,5,35 },
-	{ 759,6,41 },
-	{ 778,6,42 },
-	{ 796,6,43 },
-	{ 799,5,37 },
-	{ 804,4,31 },
-	{ 810,3,25 },
-	{ 815,6,44 },
-	{ 821,5,38 },
-	{ 830,4,32 },
-	{ 833,6,45 },
-	{ 843,5,39 },
-	{ 852,6,46 },
-	{ 856,4,33 },
-	{ 864,5,40 },
-	{ 870,6,47 },
-	{ 875,3,27 },
-	{ 881,4,34 },
-	{ 886,5,41 },
-	{ 889,6,48 },
-	{ 907,6,49 },
-	{ 926,6,50 },
-	{ 929,5,43 },
-	{ 933,4,36 },
-	{ 940,3,29 },
-	{ 944,6,51 },
-	{ 951,5,44 },
-	{ 959,4,37 },
-	{ 963,6,52 },
-	{ 972,5,45 },
-	{ 982,6,53 },
-	{ 985,4,38 },
-	{ 994,5,46 },
-	{ 1000,6,54 }
+	{ 18,6,1 },		{ 21,5,1 },		{ 25,4,1 },		{ 32,3,1 },		{ 37,6,2 },		{ 43,5,2 },		{ 51,4,2 },		{ 55,6,3 },
+	{ 64,5,3 },		{ 74,6,4 },		{ 77,4,3 },		{ 86,5,4 },		{ 92,6,5 },		{ 97,3,3 },		{ 103,4,4 },	{ 108,5,5 },
+	{ 111,6,6 },	{ 129,6,7 },	{ 148,6,8 },	{ 151,5,7 },	{ 155,4,6 },	{ 162,3,5 },	{ 166,6,9 },	{ 172,5,8 },
+	{ 181,4,7 },	{ 185,6,10 },	{ 194,5,9 },	{ 203,6,11 },	{ 207,4,8 },	{ 216,5,10 },	{ 222,6,12 },	{ 226,3,7 },
+	{ 233,4,9 },	{ 237,5,11 },	{ 240,6,13 },	{ 259,6,14 },	{ 277,6,15 },	{ 281,5,13 },	{ 285,4,11 },	{ 291,3,9 },
+	{ 296,6,16 },	{ 302,5,14 },	{ 311,4,12 },	{ 314,6,17 },	{ 324,5,15 },	{ 333,6,18 },	{ 337,4,13 },	{ 345,5,16 },
+	{ 352,6,19 },	{ 356,3,11 },	{ 363,4,14 },	{ 367,5,17 },	{ 370,6,20 },	{ 389,6,21 },	{ 407,6,22 },	{ 410,5,19 },
+	{ 415,4,16 },	{ 421,3,13 },	{ 426,6,23 },	{ 432,5,20 },	{ 440,4,17 },	{ 444,6,24 },	{ 453,5,21 },	{ 463,6,25 },
+	{ 466,4,18 },	{ 475,5,22 },	{ 481,6,26 },	{ 486,3,15 },	{ 492,4,19 },	{ 497,5,23 },	{ 500,6,27 },	{ 518,6,28 },
+	{ 537,6,29 },	{ 540,5,25 },	{ 544,4,21 },	{ 551,3,17 },	{ 555,6,30 },	{ 562,5,26 },	{ 570,4,22 },	{ 574,6,31 },
+	{ 583,5,27 },	{ 592,6,32 },	{ 596,4,23 },	{ 605,5,28 },	{ 611,6,33 },	{ 616,3,19 },	{ 622,4,24 },	{ 626,5,29 },
+	{ 629,6,34 },	{ 648,6,35 },	{ 667,6,36 },	{ 670,5,31 },	{ 674,4,26 },	{ 680,3,21 },	{ 685,6,37 },	{ 691,5,32 },
+	{ 700,4,27 },	{ 704,6,38 },	{ 713,5,33 },	{ 722,6,39 },	{ 726,4,28 },	{ 734,5,34 },	{ 741,6,40 },	{ 745,3,23 },
+	{ 752,4,29 },	{ 756,5,35 },	{ 759,6,41 },	{ 778,6,42 },	{ 796,6,43 },	{ 799,5,37 },	{ 804,4,31 },	{ 810,3,25 },
+	{ 815,6,44 },	{ 821,5,38 },	{ 830,4,32 },	{ 833,6,45 },	{ 843,5,39 },	{ 852,6,46 },	{ 856,4,33 },	{ 864,5,40 },
+	{ 870,6,47 },	{ 875,3,27 },	{ 881,4,34 },	{ 886,5,41 },	{ 889,6,48 },	{ 907,6,49 },	{ 926,6,50 },	{ 929,5,43 },
+	{ 933,4,36 },	{ 940,3,29 },	{ 944,6,51 },	{ 951,5,44 },	{ 959,4,37 },	{ 963,6,52 },	{ 972,5,45 },	{ 982,6,53 },
+	{ 985,4,38 },	{ 994,5,46 },	{ 1000,6,54 }
 };
-
 
 
 /* Declare global sine waveform parameters
@@ -367,8 +125,6 @@ PROGMEM std::vector<t_lookup_entry> lftab{
  * over an JTAG interface
  */
 const int clk_8m_div = 7;    // RTC 8M clock divider (division is by clk_8m_div+1, i.e. 0 means 8MHz frequency)
-const int offset = 0;        // leave it default / 0 = no any offset
-const int invert = 2;        // invert MSB to get sine waveform
 
 /*
  * Enable cosine waveform generator on a DAC channel
@@ -423,7 +179,7 @@ bool ESPAudio::selfTest(){
 	dac_output_enable(_ch);
 	for( float f=261.62; f<1046.51; f=f*1.03){
 		ESP_LOGV(FNAME,"f=%f",f);
-		Audio.dac_frequency_set(clk_8m_div, int(f/freq_step) );
+		Audio.setFrequency( f );
 		delay(30);
 		esp_task_wdt_reset();
 	}
@@ -431,19 +187,29 @@ bool ESPAudio::selfTest(){
 	delay(200);
 	ESP_LOGI(FNAME, "selfTest wiper: %d", 0 );
 	Poti.writeWiper( 0 );
-	Audio.dac_frequency_set(clk_8m_div, int(_center/freq_step) );
+	Audio.setFrequency( _center );
 	_testmode=true;
 	return ret;
 }
 
-
 /*
- * Set frequency of internal CW generator common to both DAC channels
- *
- * clk_8m_div: 0b000 - 0b111
- * frequency_step: range 0x0001 - 0xFFFF
- *
+
+  freq = dig_clk_rtc_freq x SENS_SAR_SW_FSTEP / 65536
+
+  frequency = ( (RTC_FAST_CLK_FREQ_APPROX / (1 + clk_8m_div) ) *  frequency_step) / 65536;
+
+  frequency_step =  (frequency * 65536) * (1 + clk_8m_div) ) / RTC_FAST_CLK_FREQ_APPROX
+
+   RTC_FAST_CLK_FREQ_APPROX = 8500000
+
+   frequency_step =  (frequency * 65536) * (1 + clk_8m_div) ) / 8500000
+
+   GPIO_NUM_19 as input programmed will enable the PAM amplifier.
+   We do not use enable/disable from amplifier as this creates some pop noise
+   Mute will be realized by putting down the wiper from digital poti to zero what works like a charm.
+
  */
+
 void ESPAudio::dac_frequency_set(int adiv, int frequency_step)
 {
 	ESP_LOGD(FNAME,"ESPAudio::dac_frequency_set( div:%d step:%d )", adiv, frequency_step );
@@ -451,6 +217,22 @@ void ESPAudio::dac_frequency_set(int adiv, int frequency_step)
 	SET_PERI_REG_BITS(SENS_SAR_DAC_CTRL1_REG, SENS_SW_FSTEP, frequency_step, SENS_SW_FSTEP_S);
 }
 
+void ESPAudio::setFrequency( float f ){
+	int step;
+	int div;
+	if( f < 800.0 ) {
+		lookup( f, div, step );
+	}
+	else {
+		step = int( (f/freq_step) + 0.5);
+		div = clk_8m_div;
+	}
+	if ( prev_div != div || prev_step != step ) {
+		prev_div = div;
+		prev_step = step;
+		Audio.dac_frequency_set(div, step);
+	}
+}
 
 /*
  * Scale output of a DAC channel using two bit pattern:
@@ -478,37 +260,31 @@ void ESPAudio::dac_scale_set(dac_channel_t channel, int scale)
 	}
 }
 
-float _te_back = 0;
 float _vol_back = 0;
 bool  _s2f_mode_back = false;
 int   _tonemode_back = 0;
 
-void ESPAudio::alarm( bool enable ){
-   if( enable ) {
-	   _s2f_mode_back = _s2f_mode;
-	   _s2f_mode = false;
-	   setValues( 3.0, 0, 0 );
-	   _alarm_mode=true;
-	   _tonemode_back = _tonemode;
-	   _tonemode = 1;
-	   // _te_back = _te;
-	   _vol_back = wiper;
-	   wiper = 100;
-	   del = 125;
-	   // Poti.writeWiper( 100 );
-	   // _te = 5.0;
-	   // Audio.dac_frequency_set(clk_8m_div, int(500/freq_step) );
-   }
-   else
-   {
-	   _s2f_mode = _s2f_mode_back;
-	   del = 500;
-	   _alarm_mode=false;
-	   _tonemode = _tonemode_back;
-	   // _te = _te_back;
-	   wiper = _vol_back;
-	   Poti.writeWiper( _vol_back );
-   }
+void ESPAudio::alarm( bool enable ){  // non blocking
+	if( enable ) {
+		_s2f_mode_back = _s2f_mode;
+		_s2f_mode = false;
+		setValues( 3.0, 0, 0 );
+		_alarm_mode=true;
+		_tonemode_back = _tonemode;
+		_tonemode = 1;
+		_vol_back = wiper;
+		wiper = 100;
+		defaultDelay = 125;
+	}
+	else
+	{
+		_s2f_mode = _s2f_mode_back;
+		defaultDelay = 500;
+		_alarm_mode=false;
+		_tonemode = _tonemode_back;
+		wiper = _vol_back;
+		Poti.writeWiper( _vol_back );
+	}
 }
 
 /*
@@ -556,62 +332,10 @@ void ESPAudio::dac_invert_set(dac_channel_t channel, int invert)
 	}
 }
 
-/*
- * Main task that let you test CW parameters in action
- *
- *
-  freq = dig_clk_rtc_freq x SENS_SAR_SW_FSTEP / 65536
-
-
-  frequency = ( (RTC_FAST_CLK_FREQ_APPROX / (1 + clk_8m_div) ) *  frequency_step) / 65536;
-  frequency = ( (RTC_FAST_CLK_FREQ_APPROX / (1 + clk_8m_div) ) *  frequency_step) / 65536;
-   (RTC_FAST_CLK_FREQ_APPROX / (1 + clk_8m_div) ) *  frequency_step = frequency * 65536
-   frequency_step =  (frequency * 65536) / ( RTC_FAST_CLK_FREQ_APPROX / (1 + clk_8m_div) )
-   frequency_step =  (frequency * 65536) * (1 + clk_8m_div) ) / RTC_FAST_CLK_FREQ_APPROX
-
-  RTC_FAST_CLK_FREQ_APPROX = 8500000
-
-  frequency_step =  (frequency * 65536) * (1 + clk_8m_div) ) / 8500000
-
-  div: 4 bit =  0x0F or 15
-
-  div = 4:
-  frequency_step =  ( frequency * 65536  * 5 ) / 8500000
-  frequency_step =  frequency  / 25.93
-  200 = 8
-  500 = 19
-  2000 = 77
-
-  div = 7:
-  frequency_step =  frequency  / 16.21
-  100 = 6
-  500 = 30
-  2000 = 123
-
-
-   RTC_FAST_CLK_FREQ_APPROX / (65536  * 8 )
-
-   GPIO_NUM_19 as input programmed will enable the PAM amplifier.
-   We do not use enable/disable from amplifier as this creates some pop noise
-   Mute will be realized by putting down the wiper from digital poti to zero what works like a charm.
-
-
- */
-
-/*
-const float delta = 1.05946309436;
-sounds strange, better chop tone
- */
-
-
 int tick = 0;
 int tickmod  = 0;
 
 //  modulation frequency
-
-bool hightone = false;
-
-
 void ESPAudio::modtask(void* arg )
 {
 	while(1){
@@ -627,11 +351,11 @@ void ESPAudio::modtask(void* arg )
 			int delaydelta = 0;
 			if (_te > 0.05 ){
 				if( _s2f_mode )
-					delaydelta = del * 0.8 *(_te/5.0);
+					delaydelta = defaultDelay * 0.8 *(_te/5.0);
 				else
-					delaydelta = del * 0.8 *(_te/_range);
+					delaydelta = defaultDelay * 0.8 *(_te/_range);
 			}
-			delay = int( del - delaydelta + 0.5 );
+			delay = int( defaultDelay - delaydelta + 0.5 );
 		}
 		ESP_LOGI(FNAME,"delay:%d  ht:%d", delay, hightone);
 		vTaskDelayUntil(&xLastWakeTime, delay/portTICK_PERIOD_MS);
@@ -645,7 +369,8 @@ void ESPAudio::incVolume( int steps ) {
 		steps--;
 	}
 	ESP_LOGI(FNAME,"inc volume, wiper: %d", wiper );
-};
+}
+
 void ESPAudio::decVolume( int steps ) {
 	steps = int( 1+ ( (float)wiper/16.0 ))*steps;
 	while( steps && (wiper < 127) ){
@@ -653,22 +378,17 @@ void ESPAudio::decVolume( int steps ) {
 		steps--;
 	}
 	ESP_LOGI(FNAME,"dec volume, wiper: %d", wiper );
-};
+}
 
 void ESPAudio::setVolume( int vol ) {
 	wiper = vol;
-};
-
-
-bool output_enable = false;
-
+}
 
 void ESPAudio::startAudio(){
 	_testmode = false;
 	xTaskCreate(modtask, "modtask", 1024*2, NULL, 31, NULL);
 	xTaskCreate(dactask, "dactask", 1024*2, NULL, 30, NULL);
 }
-
 
 void ESPAudio::calcS2Fmode(){
 	if( !_alarm_mode ) {
@@ -697,15 +417,11 @@ void ESPAudio::dactask(void* arg )
 	while(1){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		tick++;
-		Switch::tick();
+		Switch::tick();    // we hook switch sceduling here to save extra task
 		if( !_testmode ) {
 			if( !(tick%20) )
-			// 	continue;
 				calcS2Fmode();
 			bool sound=true;
-			float f;
-			int step;
-			int div;
 			if( (Audio.inDeadBand(_te) || (wiper == 0 ) ) && !_testmode ){
 				if( !deadband_active ) {
 					ESP_LOGD(FNAME,"Audio in DeadBand true");
@@ -731,7 +447,7 @@ void ESPAudio::dactask(void* arg )
 			if( sound ){
 				ESP_LOGV(FNAME, "have sound");
 				if( !sound_on  || (cur_wiper != wiper) ) {
-					if( ! sound_on ) {
+					if( !sound_on ) {
 						for( int i=1; i<=4; i++ ) {
 							int nw=(wiper/4) * i;
 							Poti.writeWiper( nw );
@@ -744,50 +460,30 @@ void ESPAudio::dactask(void* arg )
 					cur_wiper = wiper;
 					sound_on = true;
 				}
-				float max;
+				float max = minf;
 				if ( _te > 0 )
 					max = maxf;
-				else
-					max = minf;
-
 				float range = _range;
 				if( _s2f_mode )
 					range = 5.0;
-
 				float mult = std::pow( (abs(_te)/range)+1, audio_factor.get());
 				if( audio_factor.get() != prev_aud_fact ) {
 					exponent_max  = std::pow( 2, audio_factor.get());
 					prev_aud_fact = audio_factor.get();
 				}
-				f = center_freq.get() + ((mult*_te)/range )  * (max/exponent_max);
+				float f = center_freq.get() + ((mult*_te)/range )  * (max/exponent_max);
 				ESP_LOGV(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f multi:%0.3f", f, _te, audio_factor.get(), mult );
-				//	f = center_freq.get() + ( (_te/range ) * max );
-
-
-				float var = 1.0;
-				if( hightone && (_tonemode == 1)  )
-					var = _high_tone_var;
-
-				if( f < 800.0 ) {
-					lookup( f*var, div, step );
-				}
-				else {
-					step = int( (f*var/freq_step) + 0.5);
-					div = clk_8m_div;
-				}
-
-				if ( prev_div != div || prev_step != step ) {
-					prev_div = div;
-					prev_step = step;
-					Audio.dac_frequency_set(div, step);
-				}
+				if( hightone && (_tonemode == 1 ) )
+					Audio.setFrequency( f*_high_tone_var );
+				else
+					Audio.setFrequency( f );
 			}else{
 				if( sound_on ) {
 					if( cur_wiper > 1 ) {  // turn off gracefully sound
 						for( int i=4; i>=1; i-- ) {
 							int nw=(wiper/4) * i;
 							Poti.writeWiper(nw);  // fade out volume
-							delayMicroseconds( 30 );
+							delayMicroseconds( 20 );
 							// ESP_LOGI(FNAME, "fade out sound, set wiper: %d", nw );
 						}
 						Poti.writeWiper( 1 );
@@ -804,11 +500,14 @@ void ESPAudio::dactask(void* arg )
 
 bool ESPAudio::inDeadBand( float te )
 {
-	float dbp = deadband.get();
-	float dbn = deadband_neg.get();
+	float dbp;
+	float dbn;
 	if( _s2f_mode ) {
 		dbp = s2f_deadband.get()/10;
 		dbn = s2f_deadband_neg.get()/10;
+	}else{
+		dbp = deadband.get();
+		dbn = deadband_neg.get();
 	}
 	if( te > 0 ) {
 		if( te < dbp )
@@ -856,10 +555,7 @@ void ESPAudio::setup()
 	ESP_LOGD(FNAME,"ESPAudio::setup");
 	_center = center_freq.get();
 	_te = 0.0;
-	_variation = tone_var.get();
 	_testmode = false;
-	_dead_mute = true;
-	_mute = false;
 	if( audio_range.get() == 0 )
 		_range = 5.0;
 	else if( audio_range.get() == 1 )
@@ -872,53 +568,40 @@ void ESPAudio::setup()
 
 	maxf = center_freq.get() * tone_var.get();
 	minf = center_freq.get() - ( center_freq.get() / tone_var.get() );
-
-
 }
-
-
 
 void ESPAudio::restart()
 {
 	ESP_LOGD(FNAME,"ESPAudio::restart");
 	dac_output_disable(_ch);
 	dac_cosine_enable(_ch);
-	dac_offset_set(_ch, offset);
-	dac_invert_set(_ch, 2 );
+	dac_offset_set(_ch, 0 );
+	dac_invert_set(_ch, 2 );    // invert MSB to get sine waveform
 	dac_scale_set(_ch, 2 );
 	enableAmplifier( true );
 	ESP_LOGV(FNAME, "restart wiper: %d", wiper );
 	Poti.writeWiper( wiper );
 	delay( 10 );
 	dac_output_enable(_ch);
-	_dead_mute = false;
-	_mute = false;
 }
 
-
-void ESPAudio::begin( dac_channel_t ch, gpio_num_t button  )
+void ESPAudio::begin( dac_channel_t ch  )
 {
 	ESP_LOGI(FNAME,"ESPAudio::begin");
 	Switch::begin( GPIO_NUM_12 );
 	Poti.setBus( &i2c );
 	Poti.begin();
 	setup();
-	mute();
 	_ch = ch;
-	_button = button;
 	wiper = (uint16_t)( ( (default_volume.get() * 100.0) / 128) -1 );
 	restart();
 	_testmode = true;
-
-	gpio_set_direction(_button, GPIO_MODE_INPUT);
-	gpio_set_pull_mode(_button, GPIO_PULLUP_ONLY);
-
-	delay(100);
+	delay(10);
 }
 
 void ESPAudio::enableAmplifier( bool enable )
 {
-	ESP_LOGI(FNAME,"ESPAudio::enableAmplifier( %d )", (int)enable );
+	ESP_LOGV(FNAME,"ESPAudio::enableAmplifier( %d )", (int)enable );
 	// enable Audio
 	if( enable )
 	{
@@ -931,29 +614,6 @@ void ESPAudio::enableAmplifier( bool enable )
 	}
 }
 
-void ESPAudio::disable( bool disable ) {
-	ESP_LOGD(FNAME,"ESPAudio::disable( %d )", disable );
-	_disable = disable;
-};
-
-void ESPAudio::test( float to, float from )
-{
-	// Audio.setTestmode( true );
-	if( to > from){
-		for( float tef=from; tef < to; tef=tef+0.05 ){
-			Audio.setValues( tef, 0, true );
-			delay(50);
-		}
-	}
-	else{
-		for( float tef=from; tef > to; tef=tef-0.05 ){
-			Audio.setValues( tef, 0, true );
-			delay(50);
-		}
-	}
-	// Audio.setTestmode( false );
-}
-
 bool ESPAudio::volumeScale( int volume, int& scale, int &wiper ) {
 	if( volume < 128 ){
 		scale = scaletab[ volume ].scale;
@@ -963,7 +623,6 @@ bool ESPAudio::volumeScale( int volume, int& scale, int &wiper ) {
 	}
 	return false;
 }
-
 
 bool ESPAudio::lookup( float f, int& div, int &step ){
 	int fi = (int)(f + 0.5);

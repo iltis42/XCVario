@@ -151,6 +151,8 @@ float aoz=0;
 float wksensor=0;
 int wksenspos[7];
 
+bool inSetup=true;
+
 // Gyro and acceleration sensor
 I2C_t& i2c                     = i2c1;  // i2c0 or i2c1
 MPU_t MPU;         // create an object
@@ -191,8 +193,7 @@ float getSensorWkPos(int wks)
 void drawDisplay(void *pvParameters){
 	while (1) {
 		// TickType_t dLastWakeTime = xTaskGetTickCount();
-		bool dis = Audio.getDisable();
-		if( dis != true ) {
+		if( inSetup != true ) {
 			float t=temperature;
 			if( validTemperature == false )
 				t = DEVICE_DISCONNECTED_C;
@@ -298,7 +299,7 @@ void readBMP(void *pvParameters){
 			s2f_delta = as2f - ias;
 			xSemaphoreGive(xMutex);
 
-			if( Audio.getDisable() != true ){
+			if( inSetup != true ){
 				if( haveMPU )  // 3th Generation HW, MPU6050
 				{
 					mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
@@ -377,7 +378,7 @@ void readTemp(void *pvParameters){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 
 		float t=15.0;
-		if( Audio.getDisable() != true )
+		if( inSetup != true )
 		{
 			battery = Battery.get();
 			// ESP_LOGI(FNAME,"Battery=%f V", battery );
@@ -657,7 +658,7 @@ void sensor(void *args){
 	esp_task_wdt_reset();
 
 	ESP_LOGI(FNAME,"Audio begin");
-	Audio.begin( DAC_CHANNEL_1, GPIO_NUM_0);
+	Audio.begin( DAC_CHANNEL_1 );
 	ESP_LOGI(FNAME,"Poti and Audio test");
 	if( !Audio.selfTest() ) {
 		ESP_LOGE(FNAME,"Error: Digital potentiomenter selftest failed");
@@ -927,7 +928,7 @@ void sensor(void *args){
 	}
 	else
 	{
-		Audio.disable(false);
+		inSetup = false;
 		display->initDisplay();
 	}
 

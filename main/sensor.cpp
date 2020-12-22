@@ -152,6 +152,7 @@ float wksensor=0;
 int wksenspos[7];
 
 bool inSetup=true;
+bool stall_warning_active=false;
 
 // Gyro and acceleration sensor
 I2C_t& i2c                     = i2c1;  // i2c0 or i2c1
@@ -190,6 +191,8 @@ float getSensorWkPos(int wks)
 	return wkf;
 }
 
+bool stall=false;
+
 void drawDisplay(void *pvParameters){
 	while (1) {
 		// TickType_t dLastWakeTime = xTaskGetTickCount();
@@ -203,7 +206,19 @@ void drawDisplay(void *pvParameters){
 			else if( airspeed_mode.get() == MODE_TAS )
 				airspeed = tas;
 			// ESP_LOGI(FNAME,"WK raw=%d ", wksensor );
-			display->drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, meanClimb, Switch::cruiseMode(), standard_setting, wksensor );
+			if( stall_warning_active ) {
+				if( !stall ){
+					display->drawWarning( "! STALL !", true );
+					stall=true;
+				}
+			}else{
+				if( stall ) {
+					display->initDisplay();
+					stall=false;
+				}
+			}
+			if( !stall )
+				display->drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, meanClimb, Switch::cruiseMode(), standard_setting, wksensor );
 		}
 		vTaskDelay(20/portTICK_PERIOD_MS);
 		if( uxTaskGetStackHighWaterMark( dpid ) < 1024  )
@@ -216,7 +231,7 @@ mpud::raw_axes_t accelRawPrev;     // holds x, y, z axes as int16
 mpud::raw_axes_t gyroRawPrev;      // holds x, y, z axes as int16
 bool peya = false;
 int wksensorold=0;
-bool stall_warning_active=false;
+
 
 void readBMP(void *pvParameters){
 	while (1)

@@ -51,6 +51,7 @@ extern S2F Speed2Fly;
 extern float meanClimb;
 extern Protocols OV;
 extern bool inSetup;
+extern bool stall_warning_active;
 
 
 #endif

@@ -17,6 +17,7 @@
 #include "freertos/task.h"
 #include <logdef.h>
 #include "WifiClient.h"
+#include "sensor.h"
 
 
 int   IpsDisplay::tick = 0;
@@ -926,13 +927,31 @@ bool blankold = false;
 bool blank = false;
 
 
+void IpsDisplay::drawWarning( const char *warn, bool push ){
+	ESP_LOGI(FNAME,"drawWarning");
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
+	clear();
+	ucg->setColor( COLOR_RED );
+	if( push ){
+		ucg->drawTriangle(  60, 220, 180, 220, 120, 262 );
+	}
+	ucg->setPrintPos(10, AMIDY );
+	ucg->setFontPosCenter();
+	ucg->setColor( COLOR_RED );
+	ucg->setFont(ucg_font_fub35_hr);
+	ucg->printf(warn);
+	xSemaphoreGive(spiMutex);
+}
+
+
 void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sink, float altitude,
 		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor ){
 	if( _menu )
 		return;
 	tick++;
-	// ESP_LOGI(FNAME,"drawRetroDisplay  TE=%0.1f IAS:%d km/h  WK=%d", te, ias, wksensor  );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
+	// ESP_LOGI(FNAME,"drawRetroDisplay  TE=%0.1f IAS:%d km/h  WK=%d", te, ias, wksensor  );
+
 	if( te > _range )
 		te = _range;
 	if( te < -_range )

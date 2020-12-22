@@ -22,35 +22,35 @@ typedef struct lookup {  uint16_t f; uint8_t div; uint8_t step; } t_lookup_entry
 typedef struct volume {  uint16_t vol; uint8_t scale; uint8_t wiper; } t_scale_wip;
 
 
-class ESPAudio {
+class Audio {
 public:
-	ESPAudio();
-	virtual ~ESPAudio(){};
-	void begin( dac_channel_t ch=DAC_CHANNEL_1 );
-	void restart();
-	void startAudio();
-	void setValues( float te, float s2fd, float ias, bool fromtest=false );
-	void setup();
-	void incVolume( int steps );
-	void decVolume( int steps );
-	void setVolume( int vol );
-	void alarm( bool enable );
-	inline int  getVolume() { return wiper; };
-	bool selfTest();
-	inline void setTestmode( bool mode ) { _testmode = mode; }
-	void setFrequency( float f );
+	Audio();
+	virtual ~Audio(){};
+	static void begin( dac_channel_t ch=DAC_CHANNEL_1 );
+	static void restart();
+	static void startAudio();
+	static void setValues( float te, float s2fd, float ias, bool fromtest=false );
+	static void setup();
+	static void incVolume( int steps );
+	static void decVolume( int steps );
+	static inline void setVolume( int vol ) {wiper = vol;};
+	static void alarm( bool enable );
+	static inline int  getVolume() { return wiper; };
+	static bool selfTest();
+	static inline void setTestmode( bool mode ) { _testmode = mode; }
+	static void setFrequency( float f );
 
 private:
-	void dac_cosine_enable(dac_channel_t channel, bool enable=true);
-	inline void dac_frequency_set(int clk_8m_div, int frequency_step);
-	void dac_scale_set(dac_channel_t channel, int scale);
-	void dac_offset_set(dac_channel_t channel, int offset);
-	void dac_invert_set(dac_channel_t channel, int invert);
+	static void dac_cosine_enable(dac_channel_t channel, bool enable=true);
+	static inline void dac_frequency_set(int clk_8m_div, int frequency_step);
+	static void dac_scale_set(dac_channel_t channel, int scale);
+	static void dac_offset_set(dac_channel_t channel, int offset);
+	static void dac_invert_set(dac_channel_t channel, int invert);
 	static void dactask(void* arg);
 	static void modtask(void* arg );
     static void enableAmplifier( bool enable );  // frue ON, false OFF
     static void calcS2Fmode();
-	bool inDeadBand( float te );
+    static bool inDeadBand( float te );
 	static bool lookup( float f, int& div, int &step );
 	static bool volumeScale( int vol, int& scale, int &wiper );
 
@@ -60,16 +60,9 @@ private:
 	static uint8_t _tonemode;
 	static uint8_t _chopping_mode;
 	static float _high_tone_var;
-	float _s2fd;
-	float _center;
-	float _variation;  // max = center * variation,  min = center / variation
 	static bool _testmode;
 	static bool sound_on;
     static float _range;
-	gpio_num_t _button;
-	float _test_ms;
-	float _old_ms;
-	static float _ias;
     static uint16_t wiper;
     static uint16_t cur_wiper;
     static float maxf;
@@ -81,14 +74,8 @@ private:
     static float prev_aud_fact;
     static int scale;
     static int prev_scale;
-    static int scaled_wip;
     static bool hightone;
 };
 
-
-
-
-
-extern ESPAudio Audio;
 
 #endif /* MAIN_ESPAUDIO_H_ */

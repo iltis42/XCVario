@@ -246,7 +246,7 @@ void readBMP(void *pvParameters){
 		// ESP_LOGI("FNAME","P: %f  IAS:%f IASF: %d", dynamicP, iasraw, ias );
 		tas += (tasraw-tas)*0.25;       // low pass filter
 		// ESP_LOGI(FNAME,"IAS=%f, T=%f, TAS=%f baroP=%f", ias, T, tas, baroP );
-		Audio.setValues( TE, s2f_delta, ias );
+		Audio::setValues( TE, s2f_delta, ias );
 		TE = bmpVario.readTE( tasraw );  // 10x per second
 		xSemaphoreGive(xMutex);
 		// ESP_LOGI(FNAME,"count %d ccp %d", count, ccp );
@@ -658,9 +658,9 @@ void sensor(void *args){
 	esp_task_wdt_reset();
 
 	ESP_LOGI(FNAME,"Audio begin");
-	Audio.begin( DAC_CHANNEL_1 );
+	Audio::begin( DAC_CHANNEL_1 );
 	ESP_LOGI(FNAME,"Poti and Audio test");
-	if( !Audio.selfTest() ) {
+	if( !Audio::selfTest() ) {
 		ESP_LOGE(FNAME,"Error: Digital potentiomenter selftest failed");
 		display->writeText( line++, "Digital Poti: Failure");
 		selftestPassed = false;
@@ -970,11 +970,11 @@ void sensor(void *args){
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 20, dpid, 0);  // 10
 
 
-	Audio.startAudio();
+	Audio::startAudio();
 	// delay( 1000 );
-	// Audio.alarm(true);
+	// Audio::alarm(true);
 	// delay( 4000 );
-	// Audio.alarm(false);
+	// Audio::alarm(false);
 
 	for( int i=0; i<36; i++ ) {
 		if( i != 23 && i < 6 && i > 12  )

@@ -32,43 +32,37 @@
 #include "sensor.h"
 
 
-float ESPAudio::_range = 5.0;
-bool  ESPAudio::_s2f_mode = false;
-uint8_t ESPAudio::_tonemode;
-uint8_t ESPAudio::_chopping_mode;
-float ESPAudio::_high_tone_var;
-dac_channel_t ESPAudio::_ch;
-uint16_t ESPAudio::wiper;
-uint16_t ESPAudio::cur_wiper;
-bool  ESPAudio::sound_on;
-bool  ESPAudio::_testmode;
-float ESPAudio::maxf = 2000;
-float ESPAudio::minf = 250;
-float ESPAudio::_te = 0;
-float ESPAudio::_ias = 0;
-int   ESPAudio::prev_div = 0;
-int   ESPAudio::prev_step = 0;
-bool  ESPAudio::deadband_active = false;
-float ESPAudio::exponent_max = 2;
-float ESPAudio::prev_aud_fact = 0;
-int   ESPAudio::scale = 0;
-int   ESPAudio::prev_scale = -1;
-int   ESPAudio::scaled_wip = 0;
-bool  ESPAudio::hightone = false;
+float Audio::_range = 5.0;
+bool  Audio::_s2f_mode = false;
+uint8_t Audio::_tonemode;
+uint8_t Audio::_chopping_mode;
+float Audio::_high_tone_var;
+dac_channel_t Audio::_ch;
+uint16_t Audio::wiper;
+uint16_t Audio::cur_wiper;
+bool  Audio::sound_on;
+bool  Audio::_testmode;
+float Audio::maxf = 2000;
+float Audio::minf = 250;
+float Audio::_te = 0;
+int   Audio::prev_div = 0;
+int   Audio::prev_step = 0;
+bool  Audio::deadband_active = false;
+float Audio::exponent_max = 2;
+float Audio::prev_aud_fact = 0;
+int   Audio::scale = 0;
+int   Audio::prev_scale = -1;
+bool  Audio::hightone = false;
 
 MCP4018 Poti;
 
 bool _alarm_mode=false;
 int defaultDelay = 500;
 
-ESPAudio::ESPAudio( ) {
+Audio::Audio( ) {
 	_ch = DAC_CHANNEL_1;
-	_center = 440;
 	_te = 0.0;
-	_s2fd = 0.0;
 	_testmode = false;
-	_test_ms = 0;
-	_old_ms = 0;
 	_range = 5.0;
 	_s2f_mode = false;
 	wiper = 63;
@@ -129,10 +123,10 @@ const int clk_8m_div = 7;    // RTC 8M clock divider (division is by clk_8m_div+
 /*
  * Enable cosine waveform generator on a DAC channel
  */
-void ESPAudio::dac_cosine_enable(dac_channel_t channel, bool enable)
+void Audio::dac_cosine_enable(dac_channel_t channel, bool enable)
 {
 	// Enable tone generator common to both channels
-	ESP_LOGD(FNAME,"ESPAudio::dac_cosine_enable ch: %d", channel);
+	ESP_LOGD(FNAME,"Audio::dac_cosine_enable ch: %d", channel);
 	SET_PERI_REG_MASK(SENS_SAR_DAC_CTRL1_REG, SENS_SW_TONE_EN);
 	switch(channel) {
 	case DAC_CHANNEL_1:
@@ -156,8 +150,8 @@ void ESPAudio::dac_cosine_enable(dac_channel_t channel, bool enable)
 	}
 }
 
-bool ESPAudio::selfTest(){
-	ESP_LOGI(FNAME,"ESPAudio::selfTest");
+bool Audio::selfTest(){
+	ESP_LOGI(FNAME,"Audio::selfTest");
 	uint16_t getwiper;
 	uint16_t setwiper = ((default_volume.get() * 100.0) / 128) -1 ;
 	ESP_LOGI(FNAME, "selfTest wiper: %d", wiper );
@@ -179,7 +173,7 @@ bool ESPAudio::selfTest(){
 	dac_output_enable(_ch);
 	for( float f=261.62; f<1046.51; f=f*1.03){
 		ESP_LOGV(FNAME,"f=%f",f);
-		Audio.setFrequency( f );
+		setFrequency( f );
 		delay(30);
 		esp_task_wdt_reset();
 	}
@@ -187,7 +181,7 @@ bool ESPAudio::selfTest(){
 	delay(200);
 	ESP_LOGI(FNAME, "selfTest wiper: %d", 0 );
 	Poti.writeWiper( 0 );
-	Audio.setFrequency( _center );
+	setFrequency( 440 );
 	_testmode=true;
 	return ret;
 }
@@ -210,14 +204,14 @@ bool ESPAudio::selfTest(){
 
  */
 
-void ESPAudio::dac_frequency_set(int adiv, int frequency_step)
+void Audio::dac_frequency_set(int adiv, int frequency_step)
 {
-	ESP_LOGD(FNAME,"ESPAudio::dac_frequency_set( div:%d step:%d )", adiv, frequency_step );
+	ESP_LOGD(FNAME,"Audio::dac_frequency_set( div:%d step:%d )", adiv, frequency_step );
 	REG_SET_FIELD(RTC_CNTL_CLK_CONF_REG, RTC_CNTL_CK8M_DIV_SEL, adiv);
 	SET_PERI_REG_BITS(SENS_SAR_DAC_CTRL1_REG, SENS_SW_FSTEP, frequency_step, SENS_SW_FSTEP_S);
 }
 
-void ESPAudio::setFrequency( float f ){
+void Audio::setFrequency( float f ){
 	int step;
 	int div;
 	if( f < 800.0 ) {
@@ -230,7 +224,7 @@ void ESPAudio::setFrequency( float f ){
 	if ( prev_div != div || prev_step != step ) {
 		prev_div = div;
 		prev_step = step;
-		Audio.dac_frequency_set(div, step);
+		dac_frequency_set(div, step);
 	}
 }
 
@@ -243,7 +237,7 @@ void ESPAudio::setFrequency( float f ){
  * - 11: scale to 1/8
  *
  */
-void ESPAudio::dac_scale_set(dac_channel_t channel, int scale)
+void Audio::dac_scale_set(dac_channel_t channel, int scale)
 {
 	if( scale != prev_scale ) {
 		switch(channel) {
@@ -264,7 +258,7 @@ float _vol_back = 0;
 bool  _s2f_mode_back = false;
 int   _tonemode_back = 0;
 
-void ESPAudio::alarm( bool enable ){  // non blocking
+void Audio::alarm( bool enable ){  // non blocking
 	if( enable ) {
 		_s2f_mode_back = _s2f_mode;
 		_s2f_mode = false;
@@ -293,7 +287,7 @@ void ESPAudio::alarm( bool enable ){  // non blocking
  * Range 0x00 - 0xFF
  *
  */
-void ESPAudio::dac_offset_set(dac_channel_t channel, int offset)
+void Audio::dac_offset_set(dac_channel_t channel, int offset)
 {
 	switch(channel) {
 	case DAC_CHANNEL_1:
@@ -317,7 +311,7 @@ void ESPAudio::dac_offset_set(dac_channel_t channel, int offset)
  * - 11: inverts all bits except for MSB
  *
  */
-void ESPAudio::dac_invert_set(dac_channel_t channel, int invert)
+void Audio::dac_invert_set(dac_channel_t channel, int invert)
 {
 	ESP_LOGD(FNAME,"DAC invert: channel %d, invert: %d", channel, invert);
 	switch(channel) {
@@ -336,7 +330,7 @@ int tick = 0;
 int tickmod  = 0;
 
 //  modulation frequency
-void ESPAudio::modtask(void* arg )
+void Audio::modtask(void* arg )
 {
 	while(1){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -362,7 +356,7 @@ void ESPAudio::modtask(void* arg )
 	}
 }
 
-void ESPAudio::incVolume( int steps ) {
+void Audio::incVolume( int steps ) {
 	steps = int( 1+ ( (float)wiper/16.0 ))*steps;
 	while( steps && (wiper > 0) ){
 		wiper--;
@@ -371,7 +365,7 @@ void ESPAudio::incVolume( int steps ) {
 	ESP_LOGI(FNAME,"inc volume, wiper: %d", wiper );
 }
 
-void ESPAudio::decVolume( int steps ) {
+void Audio::decVolume( int steps ) {
 	steps = int( 1+ ( (float)wiper/16.0 ))*steps;
 	while( steps && (wiper < 127) ){
 		wiper++;
@@ -380,17 +374,13 @@ void ESPAudio::decVolume( int steps ) {
 	ESP_LOGI(FNAME,"dec volume, wiper: %d", wiper );
 }
 
-void ESPAudio::setVolume( int vol ) {
-	wiper = vol;
-}
-
-void ESPAudio::startAudio(){
+void Audio::startAudio(){
 	_testmode = false;
 	xTaskCreate(modtask, "modtask", 1024*2, NULL, 31, NULL);
 	xTaskCreate(dactask, "dactask", 1024*2, NULL, 30, NULL);
 }
 
-void ESPAudio::calcS2Fmode(){
+void Audio::calcS2Fmode(){
 	if( !_alarm_mode ) {
 		switch( audio_mode.get() ) {
 		case 0: // Vario
@@ -412,7 +402,7 @@ void ESPAudio::calcS2Fmode(){
 	}
 }
 
-void ESPAudio::dactask(void* arg )
+void Audio::dactask(void* arg )
 {
 	while(1){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -422,7 +412,7 @@ void ESPAudio::dactask(void* arg )
 			if( !(tick%20) )
 				calcS2Fmode();
 			bool sound=true;
-			if( (Audio.inDeadBand(_te) || (wiper == 0 ) ) && !_testmode ){
+			if( (inDeadBand(_te) || (wiper == 0 ) ) && !_testmode ){
 				if( !deadband_active ) {
 					ESP_LOGD(FNAME,"Audio in DeadBand true");
 					enableAmplifier(false);
@@ -430,7 +420,7 @@ void ESPAudio::dactask(void* arg )
 				}
 				sound = false;
 			}
-			else if( !Audio.inDeadBand(_te) || wiper > 0 ){
+			else if( !inDeadBand(_te) || wiper > 0 ){
 				if( deadband_active ) {
 					ESP_LOGD(FNAME,"Audio in DeadBand false");
 					enableAmplifier(true);
@@ -474,9 +464,9 @@ void ESPAudio::dactask(void* arg )
 				float f = center_freq.get() + ((mult*_te)/range )  * (max/exponent_max);
 				ESP_LOGV(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f multi:%0.3f", f, _te, audio_factor.get(), mult );
 				if( hightone && (_tonemode == 1 ) )
-					Audio.setFrequency( f*_high_tone_var );
+					setFrequency( f*_high_tone_var );
 				else
-					Audio.setFrequency( f );
+					setFrequency( f );
 			}else{
 				if( sound_on ) {
 					if( cur_wiper > 1 ) {  // turn off gracefully sound
@@ -498,7 +488,7 @@ void ESPAudio::dactask(void* arg )
 	}
 }
 
-bool ESPAudio::inDeadBand( float te )
+bool Audio::inDeadBand( float te )
 {
 	float dbp;
 	float dbn;
@@ -520,7 +510,7 @@ bool ESPAudio::inDeadBand( float te )
 	return false;
 }
 
-void ESPAudio::setValues( float te, float s2fd, float ias, bool fromtest )
+void Audio::setValues( float te, float s2fd, float ias, bool fromtest )
 {
 	float max = _range;
 	if( !_alarm_mode ){
@@ -535,25 +525,12 @@ void ESPAudio::setValues( float te, float s2fd, float ias, bool fromtest )
 			_te = max;
 		else if( _te < -max )
 			_te = -max;
-		_ias = ias;
 	}
 }
 
-/*
- * Generate a sine waveform on both DAC channels:
- *
- * _ch - GPIO25
- * DAC_CHANNEL_2 - GPIO26
- *
- * Connect scope to both GPIO25 and GPIO26
- * to observe the waveform changes
- * in response to the parameter change
- */
-
-void ESPAudio::setup()
+void Audio::setup()
 {
-	ESP_LOGD(FNAME,"ESPAudio::setup");
-	_center = center_freq.get();
+	ESP_LOGD(FNAME,"Audio::setup");
 	_te = 0.0;
 	_testmode = false;
 	if( audio_range.get() == 0 )
@@ -570,9 +547,9 @@ void ESPAudio::setup()
 	minf = center_freq.get() - ( center_freq.get() / tone_var.get() );
 }
 
-void ESPAudio::restart()
+void Audio::restart()
 {
-	ESP_LOGD(FNAME,"ESPAudio::restart");
+	ESP_LOGD(FNAME,"Audio::restart");
 	dac_output_disable(_ch);
 	dac_cosine_enable(_ch);
 	dac_offset_set(_ch, 0 );
@@ -585,9 +562,9 @@ void ESPAudio::restart()
 	dac_output_enable(_ch);
 }
 
-void ESPAudio::begin( dac_channel_t ch  )
+void Audio::begin( dac_channel_t ch  )
 {
-	ESP_LOGI(FNAME,"ESPAudio::begin");
+	ESP_LOGI(FNAME,"Audio::begin");
 	Switch::begin( GPIO_NUM_12 );
 	Poti.setBus( &i2c );
 	Poti.begin();
@@ -599,9 +576,9 @@ void ESPAudio::begin( dac_channel_t ch  )
 	delay(10);
 }
 
-void ESPAudio::enableAmplifier( bool enable )
+void Audio::enableAmplifier( bool enable )
 {
-	ESP_LOGV(FNAME,"ESPAudio::enableAmplifier( %d )", (int)enable );
+	ESP_LOGV(FNAME,"Audio::enableAmplifier( %d )", (int)enable );
 	// enable Audio
 	if( enable )
 	{
@@ -614,7 +591,7 @@ void ESPAudio::enableAmplifier( bool enable )
 	}
 }
 
-bool ESPAudio::volumeScale( int volume, int& scale, int &wiper ) {
+bool Audio::volumeScale( int volume, int& scale, int &wiper ) {
 	if( volume < 128 ){
 		scale = scaletab[ volume ].scale;
 		wiper   = scaletab[ volume ].wiper;
@@ -624,7 +601,7 @@ bool ESPAudio::volumeScale( int volume, int& scale, int &wiper ) {
 	return false;
 }
 
-bool ESPAudio::lookup( float f, int& div, int &step ){
+bool Audio::lookup( float f, int& div, int &step ){
 	int fi = (int)(f + 0.5);
 	if( fi < 19  || fi > 1000 ) {
 		ESP_LOGW(FNAME,"f out of bounds");
@@ -656,6 +633,4 @@ bool ESPAudio::lookup( float f, int& div, int &step ){
 	// ESP_LOGD(FNAME, "found at %d d:%d s:%d with f:%d for f%d", i, div, step, lftab[i-1].f, fi );
 	return true;
 }
-
-ESPAudio Audio;
 

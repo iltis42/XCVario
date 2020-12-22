@@ -225,7 +225,7 @@ int mc_adj( SetupMenuValFloat * p )
 }
 
 int vol_adj( SetupMenuValFloat * p ){
-	Audio.setVolume( (int(p->volume*1.270)));
+	Audio::setVolume( (int(p->volume*1.270)));
 	return 0;
 }
 
@@ -377,11 +377,11 @@ void MenuEntry::showhelp( int y ){
 }
 
 void dec_volume( int count ) {
-	Audio.decVolume(count);
+	Audio::decVolume(count);
 }
 
 void inc_volume( int count ) {
-	Audio.incVolume(count);
+	Audio::incVolume(count);
 }
 
 
@@ -475,7 +475,7 @@ void SetupMenu::press(){
 			ESP_LOGI(FNAME,"pressed");
 			_display->setup();
 			_display->initDisplay();
-			Audio.setup();
+			Audio::setup();
 			bmpVario.setup();
 			_menu_enabled = false;
 			inSetup=false;

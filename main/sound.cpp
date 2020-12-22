@@ -76,7 +76,7 @@ void Sound::playSound( e_sound a_sound, bool end ){
 	ready = false;
 	sound = a_sound;
 	ESP_LOGI(FNAME,"Start play sound");
-	Audio.setTestmode(true);
+	Audio::setTestmode(true);
 	uint16_t volume;
 	_poti->readWiper( volume );
 	_poti->writeWiper( 50 );
@@ -92,7 +92,7 @@ void Sound::playSound( e_sound a_sound, bool end ){
 	ESP_LOGI(FNAME,"play Sound end");
 	if( end ) {
 		_poti->writeWiper( volume );
-	   Audio.restart();
+	   Audio::restart();
 	}
 	ESP_LOGI(FNAME,"play Sound task end");
 }

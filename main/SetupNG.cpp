@@ -134,7 +134,8 @@ SetupNG<int>		    wk_sens_pos_plus_1("WKSP1", 0);
 SetupNG<int>		    wk_sens_pos_0("WKSP0", 0);
 SetupNG<int>		    wk_sens_pos_minus_1("WKSM1", 0);
 SetupNG<int>		    wk_sens_pos_minus_2("WKSM2", 0);
-
+SetupNG<int>         	stall_warning( "STALL_WARN", 0 );
+SetupNG<float>			stall_speed( "STALL_SPEED", 70 );
 
 mpud::raw_axes_t zero_bias;
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );

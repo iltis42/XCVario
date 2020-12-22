@@ -1003,6 +1003,30 @@ void SetupMenu::setup( )
 		auze->addEntry( "Cancel");
 		auze->addEntry( "Start Autozero");
 
+		SetupMenu * ausw = new SetupMenu( "Stall Warning");
+		aia->addMenu( ausw );
+		ausw->setHelp( PROGMEM "Configure stall warning");
+
+		SetupMenuSelect * auswo = new SetupMenuSelect( "Stall Warning Option", 0, false, 0, false, &stall_warning );
+		ausw->addMenu( auswo );
+		auswo->setHelp( PROGMEM "Enable alarm sound when speed goes below configured stall speed and below (until 30% less)");
+		auswo->addEntry( "Disable");
+		auswo->addEntry( "Enable");
+
+
+		String sunit( "Km/h" );
+		/*
+		if( ias_unit.get() == 0 )
+			sunit = "Km/h";
+		else if( ias_unit.get() == 1 )
+			vunit = "mph";
+		else if( ias_unit.get() == 2 )
+			vunit = "kt";
+		 */
+		SetupMenuValFloat * ausws = new SetupMenuValFloat( "Stall Speed", 0, sunit.c_str(), 20, 200, 1, 0, false, &stall_speed  );
+		ausws->setHelp(PROGMEM"Configure stalling speed in Km/h for corresponding airplane type");
+		ausw->addMenu( ausws );
+
 
 		// Bluetooth or Wifi
 		String btname="Wireless ";

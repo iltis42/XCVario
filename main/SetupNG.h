@@ -359,6 +359,9 @@ extern SetupNG<int>		    wk_sens_pos_plus_1;
 extern SetupNG<int>		    wk_sens_pos_0;
 extern SetupNG<int>		    wk_sens_pos_minus_1;
 extern SetupNG<int>		    wk_sens_pos_minus_2;
+extern SetupNG<int>         stall_warning;
+extern SetupNG<float>		stall_speed;
+
 
 
 #endif /* MAIN_SETUP_NG_H_ */

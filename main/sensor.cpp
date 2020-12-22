@@ -216,7 +216,7 @@ mpud::raw_axes_t accelRawPrev;     // holds x, y, z axes as int16
 mpud::raw_axes_t gyroRawPrev;      // holds x, y, z axes as int16
 bool peya = false;
 int wksensorold=0;
-
+bool stall_warning_active=false;
 
 void readBMP(void *pvParameters){
 	while (1)
@@ -243,6 +243,22 @@ void readBMP(void *pvParameters){
 		if( baroP != 0 )
 			tasraw =  Atmosphere::TAS( iasraw , baroP, T);  // True airspeed
 		ias = ias + (iasraw - ias)*0.25;  // low pass filter
+		if( stall_warning.get() ){
+			float stall = stall_speed.get();
+			if( ias < stall && ias > (stall*0.7) ){
+				if( !stall_warning_active ){
+					Audio::alarm( true );
+					stall_warning_active = true;
+				}
+			}
+			else{
+				if( stall_warning_active ){
+					Audio::alarm( false );
+					stall_warning_active = false;
+				}
+			}
+		}
+
 		// ESP_LOGI("FNAME","P: %f  IAS:%f IASF: %d", dynamicP, iasraw, ias );
 		tas += (tasraw-tas)*0.25;       // low pass filter
 		// ESP_LOGI(FNAME,"IAS=%f, T=%f, TAS=%f baroP=%f", ias, T, tas, baroP );

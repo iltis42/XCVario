@@ -205,7 +205,11 @@ void drawDisplay(void *pvParameters){
 				airspeed = tas;
 			// ESP_LOGI(FNAME,"WK raw=%d ", wksensor );
 			if( stall_warning.get() ){
-				if( ias < stall_speed.get() && ias > (stall_speed.get()*0.7) ){
+				float acceleration=accelG[0];
+				if( acceleration < 0.3 )
+					acceleration = 0.3;  // limit acceleration effect to minimum 30% of 1g
+				float acc_stall=stall_speed.get()*sqrt( acceleration + (ballast.get()/100) );  // accelerated and ballast(ed) stall speed
+				if( ias < acc_stall && ias > acc_stall*0.7 ){
 					if( !stall_warning_active ){
 						Audio::alarm( true );
 						display->drawWarning( "! STALL !", true );

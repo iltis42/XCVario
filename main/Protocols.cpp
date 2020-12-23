@@ -278,6 +278,8 @@ void Protocols::parseNMEA( char *str ){
 		as2f = Speed2Fly.speed( netto );
 		s2f_delta = as2f - ias;
 		alt=Atmosphere::calcAltitude( QNH.get(), _baro );
+		ballast.set( (_ballast-1.0)*100, false ); // just save in variable, not store in FLASH
+		bugs.set( _bugs, false ); // just save in variable, not store in FLASH
 	}
 }
 

@@ -44,7 +44,7 @@ int update_rentry(SetupMenuValFloat * p)
 
 void showWk(SetupMenuSelect * p){
 	p->ucg->setPrintPos(1,120);
-	p->ucg->printf("Sensor: %d  ", AnalogInWk->getRaw(1000, -1) );
+	p->ucg->printf("Sensor: %d  ", AnalogInWk->getRaw(false, 500) );
 	delay(20);
 }
 

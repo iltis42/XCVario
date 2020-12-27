@@ -32,7 +32,7 @@ AnalogInput::AnalogInput( float multiplier, adc_atten_t attenuation, adc_channel
 }
 
 void AnalogInput::begin() {
-
+	ESP_LOGI(FNAME,"begin() unit: %d ch:%d cal:%d att: %d", _unit, _adc_ch, _cal, _attenuation  );
 	if( _unit == ADC_UNIT_1 ) {
 		adc1_config_width(ADC_WIDTH_BIT_12);
 		adc1_config_channel_atten((adc1_channel_t)_adc_ch,_attenuation);

@@ -822,7 +822,6 @@ void sensor(void *args){
 	Speed2Fly.change_mc_bal();
 	Version myVersion;
 	ESP_LOGI(FNAME,"Program Version %s", myVersion.version() );
-	gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);  // blue LED, maybe use for BT connection
 
 	ESP_LOGI(FNAME,"%s", logged_tests.c_str());
 	if( !selftestPassed )
@@ -986,17 +985,21 @@ void sensor(void *args){
 		Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
 	else {
 		Rotary.begin( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);
-		gpio_set_pull_mode(GPIO_NUM_2, GPIO_PULLUP_ONLY);
-		gpio_set_pull_mode(GPIO_NUM_34, GPIO_PULLUP_ONLY);
+		gpio_set_direction(GPIO_NUM_2, GPIO_MODE_INPUT);     // 2020 series 1, analog in
+		// gpio_set_pull_mode(GPIO_NUM_2, GPIO_PULLUP_ONLY);
+		gpio_pullup_en( GPIO_NUM_2 );
+		gpio_pullup_en( GPIO_NUM_34 );
+		// gpio_set_pull_mode(GPIO_NUM_34, GPIO_PULLUP_ONLY);
 		delay(10);
-		AnalogInWk = new AnalogInput( -1, ADC_ATTEN_DB_0, ADC_CHANNEL_2, ADC_UNIT_2, false );
+		AnalogInWk = new AnalogInput( -1, ADC_ATTEN_DB_0, ADC_CHANNEL_2, ADC_UNIT_2, true );
 		AnalogInWk->begin(); // GPIO2 for Wk Sensor
-		uint32_t read =  AnalogInWk->getRaw();
+		delay(10);
+		uint32_t read =  AnalogInWk->getRaw(true);
 		if( read == 0  || read >= 4096 ){ // try GPIO pin 34, series 2021-2
-			ESP_LOGI( FNAME, "ADC2, GPIO 2 not usable (Wifi), try GPIO 34, reading: %d", read);
+			ESP_LOGI( FNAME, "ADC2, GPIO 2 not usable (Wifi ?), try GPIO 34, reading: %d", read);
 			delete AnalogInWk;
-			AnalogInWk = new AnalogInput( -1, ADC_ATTEN_DB_0, ADC_CHANNEL_6, ADC_UNIT_1, false );
-			read=AnalogInWk->getRaw();
+			AnalogInWk = new AnalogInput( -1, ADC_ATTEN_DB_0, ADC_CHANNEL_6, ADC_UNIT_1, true );
+			read=AnalogInWk->getRaw(true);
 			if( read == 0 || read >=4096  ){
 				ESP_LOGI( FNAME, "ADC1 GPIO 34 also zero/one signal, maybe no WK sensor poti connected, reading: %d", read );
 			}else

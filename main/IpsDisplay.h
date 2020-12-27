@@ -31,8 +31,8 @@ public:
 	static void begin();
 	static void setup();
 	static void bootDisplay();
-	static void writeText( int line, String text );                          // ias,       TE,       aTE,       polar_sink,       alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode
-	static void drawDisplay( int ias, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor );
+	static void writeText( int line, String text );                          // airspeed,       TE,       aTE,       polar_sink,       alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode
+	static void drawDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor );
 	static void drawWarning( const char *warn, bool push=false );
 	static void initDisplay();
 	static void clear();   // erase whole display
@@ -70,7 +70,7 @@ private:
 	static int mcalt;
 	static bool s2fmodealt;
 	static int s2fclipalt;
-	static int iasalt;
+	static int as_prev;
 
 	static int wkalt;
 	static char wkss[6];
@@ -114,8 +114,8 @@ private:
 	static void drawThermometer( int x, int y );
 	static void drawTetragon( float a, int x0, int y0, int l1, int l2, int w, int r, int g, int b, bool del=true );
 	static void initRetroDisplay();
-	static void drawRetroDisplay( int ias, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor );
-	static void drawAirlinerDisplay( int ias, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor );
+	static void drawRetroDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor );
+	static void drawAirlinerDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor );
 	static void drawAnalogScale( int val, int pos );
 	static void drawScaleLines( bool full=true );
 	static void setTeBuf( int y1, int y2, int r, int g, int b );

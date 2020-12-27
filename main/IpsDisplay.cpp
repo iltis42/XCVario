@@ -18,6 +18,7 @@
 #include <logdef.h>
 #include "WifiClient.h"
 #include "sensor.h"
+#include "Units.h"
 
 int screens_init = INIT_DISPLAY_NULL;
 
@@ -117,7 +118,7 @@ int IpsDisplay::tempalt = -2000;
 int IpsDisplay::mcalt = -100;
 bool IpsDisplay::s2fmodealt = false;
 int IpsDisplay::s2fclipalt = 0;
-int IpsDisplay::iasalt = -1;
+int IpsDisplay::as_prev = -1;
 int IpsDisplay::yposalt = 0;
 int IpsDisplay::tyalt = 0;
 int IpsDisplay::pyalt = 0;
@@ -259,18 +260,11 @@ void IpsDisplay::initDisplay() {
 		fh = ucg->getFontAscent();
 		ucg->setPrintPos(FIELD_START+6,YS2F-(2*fh)-11);
 		ucg->setColor(0, COLOR_HEADER );
-		String iasu;
-		if( UNITAS == 0 ) // km/h
-			iasu = "km/h";
-		if( UNITAS == 1 ) // mph
-			iasu = "mph";
-		if( UNITAS == 2 ) // knots
-			iasu = "kt";
 
 		if( airspeed_mode.get() == MODE_IAS )
-			ucg->printf("IAS %s", iasu.c_str());
+			ucg->printf("IAS %s", Units::AirspeedUnit() );
 		else if( airspeed_mode.get() == MODE_TAS )
-			ucg->printf("TAS %s", iasu.c_str());
+			ucg->printf("TAS %s", Units::AirspeedUnit() );
 
 		ucg->setPrintPos(ASVALX,YS2F-(2*fh)-11);
 		ucg->print(" S2F");
@@ -417,7 +411,7 @@ void IpsDisplay::redrawValues()
 	btqueue = -1;
 	_te=-200;
 	mcalt = -100;
-	iasalt = -1;
+	as_prev = -1;
 	_ate = -200;
 	prefalt = -1;
 	pref_qnh = -1;
@@ -889,8 +883,6 @@ void IpsDisplay::drawAnalogScale( int val, int pos ){
 	ucg->setFontPosBottom();
 }
 
-String riasu;
-
 void IpsDisplay::initRetroDisplay(){
 	bootDisplay();
 	ucg->setFontPosBottom();
@@ -909,16 +901,9 @@ void IpsDisplay::initRetroDisplay(){
 		drawAnalogScale((-r+1)/2,155);
 	}
 	// Unit's
-	String units;
 	ucg->setFont(ucg_font_fub11_hr);
-	if     ( UNITVAR == 0 )
-		units = "m/s";
-	else if(  UNITVAR == 1 )
-		units="ft/m";
-	else if(  UNITVAR == 2 )
-		units="kt ";
 	ucg->setPrintPos(85,15);
-	ucg->print(units.c_str());
+	ucg->print( Units::VarioUnit() );
 	if( blue_enable.get() == WL_BLUETOOTH )
 		drawBT();
 	if( blue_enable.get() == WL_WLAN  ||  blue_enable.get() == WL_WLAN_CLIENT )
@@ -926,12 +911,6 @@ void IpsDisplay::initRetroDisplay(){
 	drawMC( MC.get(), true );
 	drawThermometer(  10, 30 );
 
-	if( UNITAS == 0 ) // km/h
-		riasu = "km/h";
-	if( UNITAS == 1 ) // mph
-		riasu = "mph";
-	if( UNITAS == 2 ) // knots
-		riasu = "kt";
 
 }
 
@@ -953,7 +932,7 @@ void IpsDisplay::drawWarning( const char *warn, bool push ){
 }
 
 
-void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sink, float altitude,
+void IpsDisplay::drawRetroDisplay( int airspeed, float te, float ate, float polar_sink, float altitude,
 		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor ){
 	if( _menu )
 		return;
@@ -963,7 +942,7 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 	}
 	tick++;
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	// ESP_LOGI(FNAME,"drawRetroDisplay  TE=%0.1f IAS:%d km/h  WK=%d", te, ias, wksensor  );
+	// ESP_LOGI(FNAME,"drawRetroDisplay  TE=%0.1f IAS:%d km/h  WK=%d", te, airspeed, wksensor  );
 
 	if( te > _range )
 		te = _range;
@@ -1140,22 +1119,22 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 			char s[10];
 			int fl;
 			if( UNITALT == 0 ) { //m
-				sprintf(s,"%4d", alt );
+				sprintf(s,"%4d", int( Units::Altitude( alt ) +0.5) );
 				fl=ucg->getStrWidth(s);
 				ucg->printf("%s  ", s  );
 				ucg->setPrintPos(135+fl,273);
-				ucg->printf(" m  ");
+				ucg->printf(" %s  ", Units::AltitudeUnit() );
 			}
 			if( UNITALT == 1 ){ //feet
-				sprintf(s,"%4d", int((altitude*3.28084) + 0.5));
+				sprintf(s,"%5d", int( Units::Altitude( alt ) +0.5));
 				fl=ucg->getStrWidth(s);
 				ucg->printf("%s  ", s );
 				ucg->setPrintPos(135+fl,273);
-				ucg->printf(" ft  ");
+				ucg->printf(" %s  ", Units::AltitudeUnit() );
 			}
 			if( UNITALT == 2 ){ //FL
-				sprintf(s,"%4d", int((altitude*0.0328084) + 0.5) );
-				ucg->printf("FL %s  ", s  );
+				sprintf(s,"%4d", int( Units::Altitude( alt ) +0.5) );
+				ucg->printf("%s %s  ", Units::AltitudeUnit(), s  );
 			}
 			prefalt = alt;
 		}
@@ -1186,11 +1165,11 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 	// WK-Indicator
 	if( flap_enable.get() && !(tick%7) )
 	{
-		float wkspeed = ias * sqrt( 100.0/( ballast.get() +100.0) );
+		float wkspeed = airspeed * sqrt( 100.0/( ballast.get() +100.0) );
 		int wki = getWk( wkspeed );
 		float wkpos=wkRelPos( wkspeed, wkspeeds[wki+3], wkspeeds[wki+2] );
 		int wk = (int)((wki - wkpos + 0.5)*10);
-		// ESP_LOGI(FNAME,"ias:%d wksp:%f wki:%d wk:%d wkpos:%f wksensor:%d wkhebel:%f wkh:%d", ias, wkspeed, wki, wk, wkpos, wksensor, wkhebel, wkhebeli );
+		// ESP_LOGI(FNAME,"ias:%d wksp:%f wki:%d wk:%d wkpos:%f wksensor:%d wkhebel:%f wkh:%d", airspeed, wkspeed, wki, wk, wkpos, wksensor, wkhebel, wkhebeli );
 		if( wkposalt != wk || wksensoralt != (int)(wksensor*10) ) {
 			ESP_LOGI(FNAME,"WK changed WKE=%d WKS=%f", wk, wksensor );
 			ucg->setColor(  COLOR_WHITE  );
@@ -1218,18 +1197,18 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 	}
 	// Airspeed
 	if( !(tick%7) ){
-		if( iasalt != ias || !(tick%49) ) {
+		if( as_prev != airspeed || !(tick%49) ) {
 			ucg->setColor(  COLOR_WHITE  );
 			ucg->setPrintPos(140,75);
 			ucg->setFont(ucg_font_fub20_hr);
 			char s[10];
-			sprintf(s,"%3d", ias );
+			sprintf(s,"%3d", (int)(Units::Airspeed( airspeed ) +0.5)  );
 			int fl=ucg->getStrWidth(s);
 			ucg->printf("%s  ", s);
 			ucg->setPrintPos(140+fl,70);
 			ucg->setFont(ucg_font_fub11_hr);
-			ucg->printf(" %s  ", riasu.c_str());
-			iasalt = ias;
+			ucg->printf(" %s  ", Units::AirspeedUnit() );
+			as_prev = ias;
 		}
 	}
 	// Polar Sink
@@ -1258,19 +1237,19 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 }
 
 
-void IpsDisplay::drawDisplay( int ias, float te, float ate, float polar_sink, float altitude,
+void IpsDisplay::drawDisplay( int airspeed, float te, float ate, float polar_sink, float altitude,
 		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor ){
 	if( _menu )
 		return;
 
 	if( display_style.get() == DISPLAY_AIRLINER )
-		drawAirlinerDisplay( ias,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_alt, wksensor );
+		drawAirlinerDisplay( airspeed,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_alt, wksensor );
 	else if( display_style.get() == DISPLAY_RETRO )
-		drawRetroDisplay( ias,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_alt, wksensor );
+		drawRetroDisplay( airspeed,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_alt, wksensor );
 
 }
 
-void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_sink, float altitude,
+void IpsDisplay::drawAirlinerDisplay( int airspeed, float te, float ate, float polar_sink, float altitude,
 		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor ){
 	if( _menu )
 		return;
@@ -1296,12 +1275,12 @@ void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_
 
 	if( flap_enable.get() && !(tick%7) )
 	{
-		float wkspeed = ias * sqrt( 100.0/( ballast.get() +100.0) );
+		float wkspeed = airspeed * sqrt( 100.0/( ballast.get() +100.0) );
 		int wki = getWk( wkspeed );
 		float wkpos=wkRelPos( wkspeed, wkspeeds[wki+3], wkspeeds[wki+2] );
 		int wk = (int)((wki - wkpos + 0.5)*10);
 		if( wkposalt != wk ) {
-			// ESP_LOGI(FNAME,"ias:%d wksp:%f wki:%d wk:%d wkpos%f", ias, wkspeed, wki, wk, wkpos );
+			// ESP_LOGI(FNAME,"ias:%d wksp:%f wki:%d wk:%d wkpos%f", airspeed, wkspeed, wki, wk, wkpos );
 			ucg->setColor(  COLOR_WHITE  );
 			drawWkBar( YS2F-fh, WKSYMST+2, (float)(wk)/10 );
 			wkposalt = wk;
@@ -1342,10 +1321,10 @@ void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_
 		if( tep < 0 )
 			tep=-ate;
 
-		if     ( UNITVAR == 0 )
-			ucg->printf("%0.1f  ", tep);
+		if( UNITVAR == 0 )
+			ucg->printf("%0.1f  ", Units::Vario( tep ) );
 		else if(  UNITVAR == 1 ){
-			int fpm = (int((tep*196.85)+0.5)/10)*10;
+			int fpm = (int(Units::Vario( tep )+0.5)/10)*10;
 			if( abs(fpm) > 999 ) {
 				ucg->setPrintPos(FIELD_START+SIGNLEN,YVAR-8);
 				ucg->setFont(ucg_font_fub25_hr);
@@ -1353,24 +1332,16 @@ void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_
 			ucg->printf("%d   ", fpm );  // ft/min
 		}
 		else if(  UNITVAR == 2 )
-			ucg->printf("%0.1f  ", tep*1.94384 );         // knots
+			ucg->printf("%0.1f  ", Units::Vario( tep ) );         // knots
 
-		String units;
 		ucg->setFont(ucg_font_fub11_hr);
-		if     ( UNITVAR == 0 )
-			units = "m/s";
-		else if(  UNITVAR == 1 )
-			units="ft/m";
-		else if(  UNITVAR == 2 )
-			units="kt ";
-		int mslen = ucg->getStrWidth(units.c_str());
+		int mslen = ucg->getStrWidth( Units::VarioUnit() );
 		ucg->setPrintPos(DISPLAY_W-mslen,YVAR-10);
-		ucg->print(units.c_str());
+		ucg->print( Units::VarioUnit() );
 		_ate = (int)(ate)*10;
 	}
 
 	// Altitude Header
-
 	if( !(tick%24) ){
 		int qnh = (int)(QNH.get() +0.5 );
 		if( standard_alt )
@@ -1400,13 +1371,13 @@ void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_
 			ucg->setPrintPos(FIELD_START,YALT+6);
 			ucg->setFont(ucg_font_fub25_hr);
 			if( UNITALT == 0 ) { //m
-				ucg->printf("  %-4d m ", alt  );
+				ucg->printf("  %-4d %s ", int( Units::Altitude( alt ) +0.5), Units::AltitudeUnit() );
 			}
 			if( UNITALT == 1 ){ //feet
-				ucg->printf("  %-4d ft ", int((altitude*3.28084) + 0.5)  );
+				ucg->printf("  %-5d %s ", int(Units::Altitude( alt ) + 0.5), Units::AltitudeUnit() );
 			}
 			if( UNITALT == 2 ){ //FL
-				ucg->printf("FL %-4d  ", int((altitude*0.0328084) + 0.5)  );
+				ucg->printf("%s %-4d  ", Units::AltitudeUnit(), int(Units::Altitude( alt ) + 0.5)  );
 			}
 			prefalt = alt;
 		}
@@ -1546,33 +1517,27 @@ void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_
 
 
 	// AS
-	if( iasalt != ias && !(tick%2)) {
+	if( as_prev != airspeed && !(tick%2)) {
 		// draw new
-		int iasp=0;
-		if( UNITVAR == 0 ) // km/h
-			iasp = ias;
-		if( UNITVAR == 1 ) // mph
-			iasp = ias*0.621371;
-		if( UNITVAR == 2 ) // knots
-			iasp = ias*0.539957;
+		int airspeed_unit =  (int)(Units::Airspeed( airspeed ) + 0.5);
 
 		ucg->setColor(  COLOR_WHITE  );
 		// print speed values bar
 		ucg->setFont(ucg_font_fub11_hn);
 		ucg->drawFrame( FIELD_START, dmid-(MAXS2FTRI)-4, ASLEN+6, (MAXS2FTRI*2)+8 );
 		ucg->setClipRange( FIELD_START, dmid-(MAXS2FTRI), ASLEN+6, (MAXS2FTRI*2) );
-		for( int speed = iasp-MAXS2FTRI-(fh); speed<iasp+MAXS2FTRI+(fh); speed++ )
+		for( int speed = airspeed_unit-MAXS2FTRI-(fh); speed<airspeed_unit+MAXS2FTRI+(fh); speed++ )
 		{
 			if( (speed%20) == 0 && (speed >= 0) ) {
 				// blank old values
 				ucg->setColor( COLOR_BLACK );
 				if( speed == 0 )
-					ucg->drawBox( FIELD_START+6,dmid+(speed-iasp)-(fh/2)-19, ASLEN-6, fh+25 );
+					ucg->drawBox( FIELD_START+6,dmid+(speed-airspeed_unit)-(fh/2)-19, ASLEN-6, fh+25 );
 				else
-					ucg->drawBox( FIELD_START+6,dmid+(speed-iasp)-(fh/2)-9, ASLEN-6, fh+15 );
-				int col = abs(((speed-iasp)*2));
+					ucg->drawBox( FIELD_START+6,dmid+(speed-airspeed_unit)-(fh/2)-9, ASLEN-6, fh+15 );
+				int col = abs(((speed-airspeed_unit)*2));
 				ucg->setColor(  col,col,col  );
-				ucg->setPrintPos(FIELD_START+8,dmid+(speed-iasp)+(fh/2));
+				ucg->setPrintPos(FIELD_START+8,dmid+(speed-airspeed_unit)+(fh/2));
 				ucg->printf("%3d ""-", speed);
 			}
 		}
@@ -1581,8 +1546,8 @@ void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_
 		ucg->setFont(ucg_font_fub14_hn);
 		ucg->setPrintPos(FIELD_START+8, YS2F-fh-3 );
 		ucg->setColor(  COLOR_WHITE  );
-		ucg->printf("%3d ", iasp);
-		iasalt = ias;
+		ucg->printf("%3d ", airspeed_unit );
+		as_prev = airspeed;
 	}
 	// S2F command trend triangle
 	if( (int)s2fd != s2fdalt && !((tick+1)%2) ) {

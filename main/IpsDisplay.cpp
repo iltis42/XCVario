@@ -990,32 +990,50 @@ void IpsDisplay::drawRetroDisplay( int airspeed, float te, float ate, float pola
 
 	// average Climb
 	if( (int)(ate*30) != _ate && !(tick%3) ) {
-		if( ate > 9.9 )
-			ate = 9.9;
-		if( ate < -9.9 )
-			ate = -9.9;
 		ucg->setPrintPos(90, AMIDY+2 );
 		ucg->setFontPosCenter();
 		ucg->setColor( COLOR_WHITE );
 		ucg->setFont(ucg_font_fub35_hn);
 		ucg->setClipRange( 90, AMIDY-30, 95, 50 );
-		float pte = ate;
-		if( pte < 0 ) {
-			pte = -pte;
-			ucg->printf("-");
-		}
-		else
-			ucg->printf(" ");
+
 		if( UNITVAR == 0 ) {
-			ucg->printf("%0.1f ", pte);
-			// ESP_LOGI(FNAME,"pte %f", pte );
+			ucg->setFont(ucg_font_fub35_hn);
+			if( abs(ate) >= 10 ){
+				ucg->setFont(ucg_font_fub30_hn);
+				ucg->setPrintPos(90, AMIDY-2 );
+			}
+			if( ate > 0 )
+				ucg->printf(" %2.1f  ", ate);
+			else
+				ucg->printf("%2.1f  ", ate);
+			// ESP_LOGI(FNAME,"ate %f", ate );
 		}
 		else if(  UNITVAR == 1 ){
-			int fpm = (int((pte*196.85)+0.5)/10)*10;
-			ucg->printf("%d ", fpm );  // ft/min
+			ucg->setFont(ucg_font_fub30_hn);
+			int fpm = (int(Units::Vario( ate )+0.5)/10)*10;
+			if( abs(fpm) >= 1000 ){
+				ucg->setPrintPos(90, AMIDY );
+				ucg->setFont(ucg_font_fub25_hn);
+			}
+			if( fpm > 0 )
+				ucg->printf(" %4d   ", fpm );  // ft/min
+			else {
+				ucg->printf("%4d   ", fpm );  // ft/min
+			}
 		}
-		else if(  UNITVAR == 2 )
-			ucg->printf("%0.1f ", pte*1.94384 );         // knots
+		else if(  UNITVAR == 2 ){
+			float kte = Units::Vario( ate );
+			ucg->setFont(ucg_font_fub35_hn);
+			if( abs(kte) >= 10 ){
+				ucg->setPrintPos(90, AMIDY-2 );  // shift 2 pixel up
+				ucg->setFont(ucg_font_fub30_hn);
+			}
+			if( kte > 0 )
+				ucg->printf(" %2.1f   ", kte );
+			else{
+				ucg->printf("%2.1f   ", kte );         // knots
+			}
+		}
 		ucg->setFontPosBottom();
 		ucg->undoClipRange();
 		_ate = (int)(ate*30);

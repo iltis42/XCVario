@@ -19,6 +19,7 @@
 #include "WifiClient.h"
 #include "sensor.h"
 
+int screens_init = INIT_DISPLAY_NULL;
 
 int   IpsDisplay::tick = 0;
 bool  IpsDisplay::_menu = false;
@@ -140,6 +141,11 @@ int  IpsDisplay::pref_qnh = 0;
 int wkyold=0;
 int wksyold=0;
 
+float polar_sink_prev = 0;
+float te_prev = 0;
+bool blankold = false;
+bool blank = false;
+
 
 IpsDisplay::IpsDisplay( Ucglib_ILI9341_18x240x320_HWSPI *aucg ) {
 	ucg = aucg;
@@ -199,6 +205,7 @@ void IpsDisplay::writeText( int line, String text ){
 void IpsDisplay::clear(){
 	ucg->setColor( COLOR_BLACK );
 	ucg->drawBox( 0,0,240,320 );
+	screens_init = INIT_DISPLAY_NULL;
 }
 
 void IpsDisplay::bootDisplay() {
@@ -220,11 +227,12 @@ void IpsDisplay::bootDisplay() {
 
 void IpsDisplay::initDisplay() {
 	ESP_LOGI(FNAME,"IpsDisplay::initDisplay()");
-	bootDisplay();
 	if( display_style.get() == DISPLAY_RETRO ) {
 		initRetroDisplay();
 	}
 	if( display_style.get() == DISPLAY_AIRLINER ) {
+		bootDisplay();
+		ucg->setFontPosBottom();
 		ucg->setPrintPos(0,YVAR-VARFONTH);
 		ucg->setColor(0, COLOR_HEADER );
 		if( UNITVAR == 0 ) // m/s
@@ -437,6 +445,7 @@ void IpsDisplay::redrawValues()
 	wkialt = -3;
 	tyalt = -1000;
 	wksyold = -1000;
+	polar_sink_prev = 0.1;
 }
 
 void IpsDisplay::drawTeBuf(){
@@ -883,6 +892,8 @@ void IpsDisplay::drawAnalogScale( int val, int pos ){
 String riasu;
 
 void IpsDisplay::initRetroDisplay(){
+	bootDisplay();
+	ucg->setFontPosBottom();
 	redrawValues();
 	drawScaleLines();
     int r = (int)_range;
@@ -924,11 +935,6 @@ void IpsDisplay::initRetroDisplay(){
 
 }
 
-float polar_sink_prev = 0;
-float te_prev = 0;
-bool blankold = false;
-bool blank = false;
-
 
 void IpsDisplay::drawWarning( const char *warn, bool push ){
 	ESP_LOGI(FNAME,"drawWarning");
@@ -951,6 +957,10 @@ void IpsDisplay::drawRetroDisplay( int ias, float te, float ate, float polar_sin
 		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor ){
 	if( _menu )
 		return;
+	if( !(screens_init & INIT_DISPLAY_RETRO) ){
+		initRetroDisplay();
+		screens_init |= INIT_DISPLAY_RETRO;
+	}
 	tick++;
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	// ESP_LOGI(FNAME,"drawRetroDisplay  TE=%0.1f IAS:%d km/h  WK=%d", te, ias, wksensor  );
@@ -1264,6 +1274,10 @@ void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_
 		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor ){
 	if( _menu )
 		return;
+	if( !(screens_init & INIT_DISPLAY_AIRLINER) ){
+			initDisplay();
+			screens_init |= INIT_DISPLAY_AIRLINER;
+	}
 	// ESP_LOGI(FNAME,"IpsDisplay::drawDisplay  TE=%0.1f", te);
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	tick++;
@@ -1297,7 +1311,6 @@ void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_
 			wkialt=wki;
 		}
 	}
-
 	ucg->setFont(ucg_font_fub35_hn);  // 52 height
 	ucg->setColor(  COLOR_WHITE  );
 
@@ -1324,7 +1337,7 @@ void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_
 			ucg->drawVLine( FIELD_START+PMLEN/2, YVARMID-PMLEN/2, PMLEN );
 			ucg->drawVLine( FIELD_START+PMLEN/2+1, YVARMID-PMLEN/2, PMLEN );
 		}
-		ucg->setPrintPos(FIELD_START+SIGNLEN,YVAR);
+		ucg->setPrintPos(FIELD_START+SIGNLEN,YVAR+2);
 		float tep=ate;
 		if( tep < 0 )
 			tep=-ate;
@@ -1351,7 +1364,7 @@ void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_
 		else if(  UNITVAR == 2 )
 			units="kt ";
 		int mslen = ucg->getStrWidth(units.c_str());
-		ucg->setPrintPos(DISPLAY_W-mslen,YVAR-12);
+		ucg->setPrintPos(DISPLAY_W-mslen,YVAR-10);
 		ucg->print(units.c_str());
 		_ate = (int)(ate)*10;
 	}
@@ -1365,20 +1378,16 @@ void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_
 		if( qnh != pref_qnh ) {
 			ucg->setFont(ucg_font_fub11_tr);
 			ucg->setPrintPos(FIELD_START,YALT-S2FFONTH);
-			if( standard_alt ) {
-				ucg->setColor(0, COLOR_BLACK );
-				ucg->printf("Altitude QNH %d ", pref_qnh );
-				ucg->setPrintPos(FIELD_START,YALT-S2FFONTH);
-				ucg->setColor(0, COLOR_HEADER );
-				ucg->printf("Altitude QNE %d ", qnh );
-			}
-			else {
-				ucg->setColor(0, COLOR_BLACK );
-				ucg->printf("Altitude QNE %d ", pref_qnh );
-				ucg->setPrintPos(FIELD_START,YALT-S2FFONTH);
-				ucg->setColor(0, COLOR_HEADER );
-				ucg->printf("Altitude QNH %d ", qnh );
-			}
+			char unit[4];
+			if( standard_alt )
+				sprintf( unit, "QNH" );
+			else
+				sprintf( unit, "QNE" );
+			ucg->setColor(0, COLOR_BLACK );
+			ucg->printf("Altitude %s %d ", unit, pref_qnh );
+			ucg->setPrintPos(FIELD_START,(YALT-S2FFONTH));
+			ucg->setColor(0, COLOR_HEADER );
+			ucg->printf("Altitude %s %d ", unit, qnh );
 			pref_qnh = qnh;
 		}
 	}
@@ -1388,7 +1397,7 @@ void IpsDisplay::drawAirlinerDisplay( int ias, float te, float ate, float polar_
 		int alt = (int)(altitude+0.5);
 		if( alt != prefalt ) {
 			ucg->setColor(  COLOR_WHITE  );
-			ucg->setPrintPos(FIELD_START,YALT+2);
+			ucg->setPrintPos(FIELD_START,YALT+6);
 			ucg->setFont(ucg_font_fub25_hr);
 			if( UNITALT == 0 ) { //m
 				ucg->printf("  %-4d m ", alt  );

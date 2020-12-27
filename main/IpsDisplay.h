@@ -12,36 +12,7 @@
 #include "Setup.h"
 #include <SPI.h>
 #include <Ucglib.h>
-
-// For display with invers Color
-
-#define COLOR_HEADER 255-101,255-108,255-255  // Azureish gray
-#define COLOR_WHITE 0,0,0
-#define COLOR_BLACK 255,255,255
-#define COLOR_GREEN 255, 30, 255
-#define COLOR_RED   0,255,255
-#define LIGHT_GREEN 127,0,255
-#define COLOR_YELLOW 0, 0, 255
-#define DARK_GREY    230, 230, 230
-#define COLOR_MGREY  180, 180, 180
-#define COLOR_BLUE   255, 255, 0
-#define COLOR_LBLUE  200, 200, 0
-
-/*
-#define COLOR_HEADER 65,105,225  // royal blue
-#define COLOR_WHITE  255,255,255
-#define COLOR_BLACK  0,0,0
-#define COLOR_GREEN  0, 225, 0
-#define COLOR_RED    255,80,80
-#define LIGHT_GREEN  127,255,0
-#define COLOR_YELLOW 255,255,0
-#define DARK_GREY    25,25,25
-#define COLOR_MGREY  75,75,75
-#define COLOR_BLUE    0,0,255
-
-*/
-#define DISPLAY_H 320
-#define DISPLAY_W 240
+#include "Colors.h"
 
 #define TEGAP 26
 #define TEMIN TEGAP
@@ -50,9 +21,8 @@
 
 enum ips_display { ILI9341 };
 
-typedef enum bars { TEBAR, S2FBAR } t_bar;
-
-
+typedef enum e_sreens { INIT_DISPLAY_NULL, INIT_DISPLAY_AIRLINER=1, INIT_DISPLAY_RETRO=2, INIT_DISPLAY_FLARM=4 } e_screens_t;
+extern int screens_init;
 
 class IpsDisplay {
 public:
@@ -70,6 +40,7 @@ public:
 	static void drawArrowBox( int x, int y, bool are=true );
 	static void redrawValues();
 	static inline Ucglib_ILI9341_18x240x320_HWSPI *getDisplay() { return ucg; };
+
 private:
 	static Ucglib_ILI9341_18x240x320_HWSPI *ucg;
 	gpio_num_t _reset;

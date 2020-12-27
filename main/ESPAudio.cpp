@@ -267,18 +267,47 @@ void Audio::dac_scale_set(dac_channel_t channel, int scale)
 }
 
 
-
-void Audio::alarm( bool enable ){  // non blocking
+void Audio::alarm( bool enable, int volume, e_audio_alarm_type_t style ){  // non blocking
 	if( enable ) {
+		ESP_LOGI(FNAME,"Alarm sound enable volume: %d style: %d", volume, style );
+		enableAmplifier( true );
 		_s2f_mode_back = _s2f_mode;
 		_s2f_mode = false;
-		setValues( 3.0, 0  );
-		_alarm_mode=true;
-		_tonemode_back = _tonemode;
-		_tonemode = ATM_DUAL_TONE;
 		_vol_back = wiper;
-		wiper = 100;
-		defaultDelay = 125;
+		wiper = volume;
+		_tonemode_back = _tonemode;
+		if( style == AUDIO_ALARM_STALL ){
+			_te = 3.0;
+			_tonemode = ATM_DUAL_TONE;
+			defaultDelay = 125;
+		}
+		else if( style == AUDIO_ALARM_FLARM_1 ){  // lowest
+			_te = 3.0;
+			_tonemode = ATM_SINGLE_TONE;
+			defaultDelay = 500;
+		}
+		else if( style == AUDIO_ALARM_FLARM_2 ){
+			_te = 4.0;
+			_tonemode = ATM_SINGLE_TONE;
+			defaultDelay = 400;
+		}
+		else if( style == AUDIO_ALARM_FLARM_3 ){ // highest
+			_te = 5.0;
+			_tonemode = ATM_SINGLE_TONE;
+			defaultDelay = 300;
+		}
+		else if( style == AUDIO_ALARM_GEAR ){
+			_te = 2.0;
+			_tonemode = ATM_DUAL_TONE;
+			defaultDelay = 250;
+		}
+		else if( style == AUDIO_ALARM_OFF ){
+			volume = 0;
+		}
+		else
+			ESP_LOGE(FNAME,"Error, wrong alarm style %d", style );
+
+		_alarm_mode=true;
 	}
 	else
 	{
@@ -383,6 +412,7 @@ void Audio::decVolume( int steps ) {
 }
 
 void Audio::startAudio(){
+	ESP_LOGI(FNAME,"startAudio");
 	_testmode = false;
 	xTaskCreate(modtask, "modtask", 1024*2, NULL, 31, NULL);
 	xTaskCreate(dactask, "dactask", 1024*2, NULL, 30, NULL);
@@ -417,20 +447,22 @@ void Audio::dactask(void* arg )
 		tick++;
 		Switch::tick();    // we hook switch sceduling here to save extra task
 		if( !_testmode ) {
+			// ESP_LOGI(FNAME, "sound dactask %d wiper %d  tm %d", tick, wiper, _testmode   );
 			if( !(tick%20) )
 				calcS2Fmode();
 			bool sound=true;
 			if( (inDeadBand(_te) || (wiper == 0 )) && !_testmode ){
 				if( !deadband_active ) {
-					ESP_LOGD(FNAME,"Audio in DeadBand true");
+					ESP_LOGI(FNAME,"Audio in DeadBand true");
 					enableAmplifier(false);
 					deadband_active = true;
 				}
 				sound = false;
+				// ESP_LOGI(FNAME,"sound = false");
 			}
 			else if( !inDeadBand(_te) || wiper > 0 ){
 				if( deadband_active ) {
-					ESP_LOGD(FNAME,"Audio in DeadBand false");
+					ESP_LOGI(FNAME,"Audio in DeadBand false");
 					enableAmplifier(true);
 					deadband_active = false;
 				}
@@ -439,18 +471,19 @@ void Audio::dactask(void* arg )
 						(_s2f_mode && (_chopping_mode == S2F_CHOP)) ||
 						(!_s2f_mode && (_chopping_mode == VARIO_CHOP)) ) {
 						sound = false;
+						// ESP_LOGI(FNAME,"sound = false 2");
 					}
 				}
 			}
-			ESP_LOGV(FNAME, "sound dactask %d", tick );
+			// ESP_LOGI(FNAME, "sound %d, ht %d", sound, hightone );
 			if( sound ){
-				ESP_LOGV(FNAME, "have sound");
+				// ESP_LOGI(FNAME, "have sound");
 				if( !sound_on  || (cur_wiper != wiper) ) {
 					if( !sound_on ) {
 						for( int i=1; i<=8; i++ ) {
 							int nw=(wiper/8) * i;
 							Poti.writeWiper( nw );
-							delayMicroseconds( 5 );
+							delayMicroseconds( 3 );
 							// ESP_LOGI(FNAME, "fade in sound, wiper: %d", nw);
 						}
 					}
@@ -471,7 +504,7 @@ void Audio::dactask(void* arg )
 					prev_aud_fact = audio_factor.get();
 				}
 				float f = center_freq.get() + ((mult*_te)/range )  * (max/exponent_max);
-				ESP_LOGV(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f multi:%0.3f", f, _te, audio_factor.get(), mult );
+				// ESP_LOGI(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f multi:%0.3f", f, _te, audio_factor.get(), mult );
 				if( hightone && (_tonemode == ATM_DUAL_TONE ) )
 					setFrequency( f*_high_tone_var );
 				else
@@ -482,7 +515,7 @@ void Audio::dactask(void* arg )
 						for( int i=8; i>=1; i-- ) {
 							int nw=(wiper/8) * i;
 							Poti.writeWiper(nw);  // fade out volume
-							delayMicroseconds( 5 );
+							delayMicroseconds( 3 );
 							// ESP_LOGI(FNAME, "fade out sound, set wiper: %d", nw );
 						}
 						Poti.writeWiper( 1 );

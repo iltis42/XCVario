@@ -97,6 +97,7 @@ void Router::routeS1(){
 	if( pullMsg( s1_rx_q, s1) ){
 		ESP_LOGD(FNAME,"ttyS1 RX len: %d bytes, Q:%d", s1.length(), bt_tx_q.isFull() );
 		ESP_LOG_BUFFER_HEXDUMP(FNAME,s1.c_str(),s1.length(), ESP_LOG_DEBUG);
+		Protocols::parseNMEA( s1.c_str() );
 		if( blue_enable.get() == WL_WLAN )
 			if( forwardMsg( s1, wl_flarm_tx_q ))
 				ESP_LOGV(FNAME,"ttyS1 RX bytes %d forward to wl_flarm_tx_q port 8881", s1.length() );
@@ -118,6 +119,7 @@ void Router::routeS2(){
 	if( pullMsg( s2_rx_q, s2) ){
 		ESP_LOGD(FNAME,"ttyS2 RX len: %d bytes, Q:%d", s2.length(), bt_tx_q.isFull() );
 		ESP_LOG_BUFFER_HEXDUMP(FNAME,s2.c_str(),s2.length(), ESP_LOG_DEBUG);
+		Protocols::parseNMEA( s2.c_str() );
 		if( blue_enable.get() == WL_WLAN )
 			if( forwardMsg( s2, wl_aux_tx_q ))
 				ESP_LOGV(FNAME,"ttyS2 RX bytes %d forward to wl_aux_tx_q port 8882", s2.length() );

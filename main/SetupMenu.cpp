@@ -328,6 +328,7 @@ void SetupMenu::display( int mode ){
 	ESP_LOGI(FNAME,"Title: %s y=%d", selected->_title.c_str(),y );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setPrintPos(1,y);
+	ucg->setFontPosBottom();
 	ucg->printf("<< %s",selected->_title.c_str());
 	ucg->drawFrame( 1,3,238,25 );
 
@@ -474,7 +475,7 @@ void SetupMenu::press(){
 		{
 			ESP_LOGI(FNAME,"pressed");
 			_display->setup();
-			_display->initDisplay();
+			_display->clear();
 			Audio::setup();
 			bmpVario.setup();
 			_menu_enabled = false;
@@ -835,6 +836,22 @@ void SetupMenu::setup( )
 		tral->setHelp(PROGMEM"Transition altitude (or transition height, when using QFE) is the altitude/height above which standard pressure (QNE) is set (1013.2 mb/hPa)");
 		opt->addMenu( tral );
 
+		SetupMenu * flarm = new SetupMenu( "FLARM" );
+		opt->addMenu( flarm );
+		flarm->setHelp( PROGMEM "Option to diplay FLARM Warnings depending on FLARM alarm level");
+
+		SetupMenuSelect * flarml = new SetupMenuSelect( "FLARM Level",	0, false, 0, true, &flarm_warning );
+		flarm->addMenu( flarml );
+		flarml->setHelp( PROGMEM "Enable FLARM Alarm level 1 is highest with 13-18 sec, 2 medium 9-12 sec and 3 lowest with 0-8 sec until impact");
+		flarml->addEntry( "Disable");
+		flarml->addEntry( "Alarm Level 1");
+		flarml->addEntry( "Alarm Level 2");
+		flarml->addEntry( "Alarm Level 3");
+
+		SetupMenuValFloat * flarmv = new SetupMenuValFloat("Alarm Volume",  0, "%", 20, 125, 1, 0, false, &flarm_volume  );
+		flarmv->setHelp(PROGMEM "Maximum volume FLARM alarm audio warning");
+		flarm->addMenu( flarmv );
+
 		SetupMenu * sy = new SetupMenu( "System" );
 		MenuEntry* sye = mm->addMenu( sy );
 
@@ -982,7 +999,6 @@ void SetupMenu::setup( )
 			fvoltadj->setHelp(PROGMEM "Option to fine factory adjust voltmeter");
 			sye->addMenu( fvoltadj );
 		}
-
 
 		// Altimeter, IAS
 		SetupMenu * aia = new SetupMenu( "Altimeter, Airspeed" );

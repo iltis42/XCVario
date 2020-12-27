@@ -13,6 +13,8 @@
 #include "Setup.h"
 #include "soc/rtc.h"
 
+typedef enum e_audio_alarm_type { AUDIO_ALARM_OFF, AUDIO_ALARM_STALL, AUDIO_ALARM_FLARM_1, AUDIO_ALARM_FLARM_2, AUDIO_ALARM_FLARM_3, AUDIO_ALARM_GEAR } e_audio_alarm_type_t;
+
 
 class Audio {
 public:
@@ -31,7 +33,7 @@ public:
 	static void decVolume( int steps );
 	static inline void setVolume( int vol ) {wiper = vol;};
 
-	static void alarm( bool enable );
+	static void alarm( bool enable, int volume=100, e_audio_alarm_type_t alarmType=AUDIO_ALARM_STALL );
 	static bool selfTest();
 	static inline void setTestmode( bool mode ) { _testmode = mode; }
 

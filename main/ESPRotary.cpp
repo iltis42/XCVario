@@ -22,6 +22,11 @@ pcnt_config_t ESPRotary::enc2;
 int16_t ESPRotary::r_enc_count  = 0;
 int16_t ESPRotary::r_enc2_count = 0;
 
+#define ROTARY_SINGLE_INC 0
+#define ROTARY_DOUBLE_INC 1
+
+
+
 void ESPRotary::attach(RotaryObserver *obs) {
 	observers.push_back(obs);
 }
@@ -68,7 +73,7 @@ void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
 	pcnt_counter_resume(PCNT_UNIT_0);
 
 
-	if( rotary_inc.get() == 0 ) {   // Single step type, need both counters
+	if( rotary_inc.get() == ROTARY_SINGLE_INC ) {   // Single step type, need both counters
 		// second encoder for incrementing on each rotary step:
 		enc2.pulse_gpio_num = clk; //Rotary Encoder Chan A
 		enc2.ctrl_gpio_num = dt;	 //Rotary Encoder Chan B
@@ -143,6 +148,7 @@ void ESPRotary::informObservers( void * args )
 			// pcnt_counter_clear(PCNT_UNIT_0);
 			// ESP_LOGI(FNAME,"Rotary counter %d %d", r_enc_count,  r_enc2_count);
 			int diff = (r_enc_count+r_enc2_count) - old_cnt;
+			// ESP_LOGI(FNAME,"Rotary diff %d", diff );
 			if( hardwareRevision.get() >= 3 ) {
 				if( rotary_dir_21.get() == 1 ) // reverse default for 2021 series
 					diff = -diff;
@@ -157,7 +163,7 @@ void ESPRotary::informObservers( void * args )
 				for (int i = 0; i < observers.size(); i++)
 					observers[i]->up( abs(diff) );
 			}
-			else if( diff > 0 ) {
+			else{
 				// ESP_LOGI(FNAME,"Rotary down %d times", abs(diff) );
 				for (int i = 0; i < observers.size(); i++)
 					observers[i]->down( abs(diff) );

@@ -33,6 +33,7 @@
 #include "S2F.h"
 #include "Version.h"
 #include "Polars.h"
+#include "Flarm.h"
 
 #include <SPI.h>
 #include <Ucglib.h>
@@ -191,6 +192,8 @@ float getSensorWkPos(int wks)
 	return wkf;
 }
 
+bool flarmWarning = false;
+
 void drawDisplay(void *pvParameters){
 	while (1) {
 		// TickType_t dLastWakeTime = xTaskGetTickCount();
@@ -219,12 +222,30 @@ void drawDisplay(void *pvParameters){
 				else{
 					if( stall_warning_active ){
 						Audio::alarm( false );
-						display->initDisplay();
+						display->clear();
 						stall_warning_active = false;
 					}
 				}
 			}
-			if( !stall_warning_active ){
+			if( flarm_warning.get() && !stall_warning_active ){ // 0 -> Disable
+				// ESP_LOGI(FNAME,"Flarm::alarmLevel: %d, flarm_warning.get() %d", Flarm::alarmLevel(), flarm_warning.get() );
+				if(  Flarm::alarmLevel() >= flarm_warning.get() ){
+					if( !flarmWarning ) {
+						flarmWarning = true;
+						display->clear();
+					}
+				}
+				else{
+					if( flarmWarning ){
+						flarmWarning = false;
+						display->clear();
+						Audio::alarm( false );
+					}
+				}
+				if( flarmWarning )
+					Flarm::drawFlarmWarning();
+			}
+			if( !(stall_warning_active || flarmWarning) ) {
 				display->drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, meanClimb, Switch::cruiseMode(), standard_setting, wksensor );
 				Audio::setValues( TE, s2f_delta );
 			}
@@ -477,6 +498,7 @@ void sensor(void *args){
 	NVS.begin();
 	AverageVario::begin();
 
+
 	init_wksensor();
 
 	if( Cipher::checkKeyAHRS() ){
@@ -504,6 +526,7 @@ void sensor(void *args){
 
 	myucg = new Ucglib_ILI9341_18x240x320_HWSPI( SPI_DC, CS_Display, RESET_Display );
 	display = new IpsDisplay( myucg );
+	Flarm::setDisplay( myucg );
 	display->begin();
 	display->bootDisplay();
 
@@ -915,7 +938,7 @@ void sensor(void *args){
 			WifiClient::start();
 			delay( 2000 );
 			inSetup = false;
-			display->initDisplay();
+			display->clear();
 	}
 	else if( ias < 50.0 ){
 		// xSemaphoreTake(xMutex,portMAX_DELAY );
@@ -955,7 +978,7 @@ void sensor(void *args){
 	else
 	{
 		inSetup = false;
-		display->initDisplay();
+		display->clear();
 	}
 
 

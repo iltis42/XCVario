@@ -21,6 +21,7 @@
 #include "KalmanMPU6050.h"
 #include "Router.h"
 #include "Atmosphere.h"
+#include "Flarm.h"
 
 S2F * Protocols::_s2f = 0;
 
@@ -281,6 +282,10 @@ void Protocols::parseNMEA( char *str ){
 		ballast.set( (_ballast-1.0)*100, false ); // just save in variable, not store in FLASH
 		bugs.set( _bugs, false ); // just save in variable, not store in FLASH
 	}
+	else if( !strncmp( str, "$PFLAU,", 6 )) {
+		Flarm::parsePFLAU( str );
+	}
+
 }
 
 

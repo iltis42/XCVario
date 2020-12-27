@@ -363,7 +363,8 @@ extern SetupNG<int>		    wk_sens_pos_minus_1;
 extern SetupNG<int>		    wk_sens_pos_minus_2;
 extern SetupNG<int>         stall_warning;
 extern SetupNG<float>		stall_speed;
-
+extern SetupNG<int>        	flarm_warning;
+extern SetupNG<float>       flarm_volume;
 
 
 #endif /* MAIN_SETUP_NG_H_ */

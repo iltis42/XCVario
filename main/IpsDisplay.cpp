@@ -938,11 +938,11 @@ void IpsDisplay::drawAvgVario( int x, int y, float ate ){
 	ucg->setFont(ucg_font_fub35_hn);
 	ucg->setClipRange( x, y-30, 95, 50 );
 
-	if( UNITVAR == 0 ) {
+	if( UNITVAR == 0 ) {  // m/s
 		ucg->setFont(ucg_font_fub35_hn);
 		if( abs(ate) >= 10 ){
 			ucg->setFont(ucg_font_fub30_hn);
-			ucg->setPrintPos(x, y-2 );
+			ucg->setPrintPos(x, y-4 );
 		}
 		if( ate > 0 )
 			ucg->printf(" %2.1f  ", ate);

@@ -247,7 +247,7 @@ void drawDisplay(void *pvParameters){
 			}
 			if( !(stall_warning_active || flarmWarning) ) {
 				display->drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, meanClimb, Switch::cruiseMode(), standard_setting, wksensor );
-				Audio::setValues( TE, s2f_delta );
+
 			}
 		}
 		vTaskDelay(20/portTICK_PERIOD_MS);
@@ -300,6 +300,8 @@ void readBMP(void *pvParameters){
 			AverageVario::recalcAvgClimb();
 			meanClimb = AverageVario::readAvgClimb();
 		}
+		Audio::setValues( TE, s2f_delta );
+
 		if( (count++ % 2) == 0 ) {
 			if( AnalogInWk ) {
 				int wkraw = AnalogInWk->getRaw(true, 32);

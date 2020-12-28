@@ -33,7 +33,6 @@ static char rentry[25];
 SetupMenuSelect * audio_range_sm = 0;
 SetupMenuSelect * mpu = 0;
 
-
 int update_rentry(SetupMenuValFloat * p)
 {
 	char rentry[25];
@@ -770,7 +769,7 @@ void SetupMenu::setup( )
 		SetupMenu * wk = new SetupMenu( "Flap (WK) Indicator" );
 		MenuEntry* wkm = opt->addMenu( wk );
 
-		SetupMenuSelect * wke = new SetupMenuSelect( "Flap Indicator Option", 0, true, 0, true, &flap_enable );
+		SetupMenuSelect * wke = new SetupMenuSelect( "Flap Indicator Option", 0, false, 0, true, &flap_enable );
 		wke->addEntry( "Disable");
 		wke->addEntry( "Enable");
 		wke->setHelp(PROGMEM"Option to enable Flap (WK) Indicator to assist optimum flap setting depending on speed and ballast");
@@ -789,7 +788,7 @@ void SetupMenu::setup( )
 		min2->setHelp(PROGMEM"Speed for transition from -1 to -2 flap setting");
 		wkm->addMenu( min2 );
 
-		SetupMenuSelect * wkcal = new SetupMenuSelect( "Flap Sensor Calibration", 0, false, wk_cal, false, &dummy );
+		SetupMenuSelect * wkcal = new SetupMenuSelect( "Flap Sensor Calibration", 0, true, wk_cal, false, &dummy );
 		wkcal->addEntry( "Cancel");
 		wkcal->addEntry( "Start Calibration");
 		wkcal->setHelp( PROGMEM "Option to calibrate flap Sensor (WK), to indicate current flap setting: Press button after each setting" );
@@ -921,7 +920,7 @@ void SetupMenu::setup( )
 		disty->addEntry( "Retro");
 
 		// Orientation   _display_orientation
-		SetupMenuSelect * diso = new SetupMenuSelect( "Display Orientation", 0, true , 0, true, &display_orientation );
+		SetupMenuSelect * diso = new SetupMenuSelect( "Display Orientation", 0, true, 0, true, &display_orientation );
 		display->addMenu( diso );
 		diso->setHelp( PROGMEM "Display Orientation either NORMAL means control panel is right, or TOPDOWN means control panel is left");
 		diso->addEntry( "NORMAL (Rotary left)");

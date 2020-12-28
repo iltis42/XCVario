@@ -592,8 +592,8 @@ void IpsDisplay::drawBigWkBar( int ypos, int xpos, float wkf, float wksens ){
 	// now draw the numbers
 
 	int y = ypos + (int)((wkf)*(lfh) + 0.5 );
-	int ys = ypos + (int)(( wksens )*(lfh) + 0.5 );
 
+	int ys = ypos + (int)(( wksens )*(lfh) + 0.5 );
 	if( wkyold != y || ( (wksyold != ys) )) {  // redraw on change or when wklever is near
 		ucg->setColor(COLOR_BLACK);
 		ucg->drawTriangle( xpos-15,wkyold-5,  xpos-15,wkyold+5,  xpos-2,wkyold );
@@ -601,13 +601,13 @@ void IpsDisplay::drawBigWkBar( int ypos, int xpos, float wkf, float wksens ){
 		ucg->drawTriangle( xpos-15,y-5,       xpos-15,y+5,       xpos-2,y );
 		wkyold = y;
 	}
-	if( wksyold != ys ) {
-		ESP_LOGI(FNAME,"wk lever redraw, old=%d", wksyold );
-		drawWkLever( xpos, ys, wksyold );
-		wksyold = ys;
+	if( flap_sensor.get() ) {
+		if( wksyold != ys ) {
+			ESP_LOGI(FNAME,"wk lever redraw, old=%d", wksyold );
+			drawWkLever( xpos, ys, wksyold );
+			wksyold = ys;
+		}
 	}
-
-
 	ucg->setFontPosBottom();
 	ucg->undoClipRange();
 }

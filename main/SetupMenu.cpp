@@ -772,6 +772,7 @@ void SetupMenu::setup( )
 		SetupMenuSelect * wke = new SetupMenuSelect( "Flap Indicator Option", 0, false, 0, true, &flap_enable );
 		wke->addEntry( "Disable");
 		wke->addEntry( "Enable");
+
 		wke->setHelp(PROGMEM"Option to enable Flap (WK) Indicator to assist optimum flap setting depending on speed and ballast");
 		wkm->addMenu( wke );
 
@@ -787,6 +788,15 @@ void SetupMenu::setup( )
 		SetupMenuValFloat * min2 = new SetupMenuValFloat("Speed -1 to -2", 0, "km/h",  100, 280, 1, 0, false, &flap_minus_2  );
 		min2->setHelp(PROGMEM"Speed for transition from -1 to -2 flap setting");
 		wkm->addMenu( min2 );
+
+		SetupMenuSelect * wkes = new SetupMenuSelect( "Flap Sensor Option", 0, true, 0, true, &flap_sensor );
+		wkes->addEntry( "Disable");
+		wkes->addEntry( "Enable IO-2");
+		wkes->addEntry( "Enable IO-34");
+
+		wkes->setHelp(PROGMEM"Option to enable Flap sensor on corresponding IO pin, for now its IO-2, later 2021 series will use IO-34");
+		wkm->addMenu( wkes );
+
 
 		SetupMenuSelect * wkcal = new SetupMenuSelect( "Flap Sensor Calibration", 0, true, wk_cal, false, &dummy );
 		wkcal->addEntry( "Cancel");

@@ -41,7 +41,6 @@ extern "C" {
  *
  */
 
-
 typedef enum display_type { UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P } display_t;
 typedef enum chopping_mode { NO_CHOP, VARIO_CHOP, S2F_CHOP, BOTH_CHOP } chopping_mode_t;
 typedef enum rs232linemode { RS232_NORMAL, RS232_INVERTED } rs232lm_t;
@@ -54,10 +53,9 @@ typedef enum e_wireless_type { WL_DISABLE, WL_BLUETOOTH, WL_WLAN, WL_WLAN_CLIENT
 typedef enum e_audiomode_type { AM_VARIO, AM_S2F, AM_SWITCH, AM_AUTOSPEED } e_audiomode_t;
 typedef enum e_audio_tone_mode { ATM_SINGLE_TONE, ATM_DUAL_TONE } e_audio_tone_mode_t;
 typedef enum e_audio_range { AUDIO_RANGE_5_MS, AUDIO_RANGE_10_MS, AUDIO_RANGE_VARIABLE } e_audio_range_t;
-
+typedef enum e_flap_sensor { FLAP_SENSOR_DISABLE, FLAP_SENSOR_GPIO_2, FLAP_SENSOR_GPIO_34 } e_flap_sensor_t;
 
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
-
 
 class SetupCommon {
 public:
@@ -365,6 +363,7 @@ extern SetupNG<int>         stall_warning;
 extern SetupNG<float>		stall_speed;
 extern SetupNG<int>        	flarm_warning;
 extern SetupNG<float>       flarm_volume;
+extern SetupNG<int>         flap_sensor;
 
 
 #endif /* MAIN_SETUP_NG_H_ */

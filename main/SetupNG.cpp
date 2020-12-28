@@ -138,7 +138,7 @@ SetupNG<int>         	stall_warning( "STALL_WARN", 0 );
 SetupNG<float>			stall_speed( "STALL_SPEED", 70 );
 SetupNG<int>         	flarm_warning( "FLARM_WARN_LEVEL", 1 );
 SetupNG<float>         	flarm_volume( "FLARM_VOL", 100 );
-
+SetupNG<int>         	flap_sensor( "FLAP_SENS", 0 );
 
 mpud::raw_axes_t zero_bias;
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );

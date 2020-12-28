@@ -149,7 +149,7 @@ float oz=0;
 float aox=0;
 float aoy=0;
 float aoz=0;
-float wksensor=0;
+float wksensor=-1;
 int wksenspos[7];
 
 bool inSetup=true;
@@ -260,7 +260,7 @@ int count=0;
 mpud::raw_axes_t accelRawPrev;     // holds x, y, z axes as int16
 mpud::raw_axes_t gyroRawPrev;      // holds x, y, z axes as int16
 bool peya = false;
-int wksensorold=0;
+int wksensorold=-2;
 
 
 void readBMP(void *pvParameters){
@@ -477,9 +477,7 @@ void sensor(void *args){
 	MCP = new MCP3221();
 	MCP->setBus( &i2c );
 	gpio_set_drive_capability(GPIO_NUM_23, GPIO_DRIVE_CAP_1);
-	// WA for ADC2 Wifi issue
-	// reg_b = READ_PERI_REG(SENS_SAR_READ_CTRL2_REG);
-	// reg_a =  READ_PERI_REG(SENS_SAR_MEAS_START2_REG);
+
 	esp_wifi_set_mode(WIFI_MODE_NULL);
 	spiMutex = xSemaphoreCreateMutex();
 	// esp_log_level_set("*", ESP_LOG_INFO);
@@ -989,29 +987,23 @@ void sensor(void *args){
 	else {
 		Rotary.begin( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);
 		gpio_set_direction(GPIO_NUM_2, GPIO_MODE_INPUT);     // 2020 series 1, analog in
-		// gpio_set_pull_mode(GPIO_NUM_2, GPIO_PULLUP_ONLY);
 		gpio_pullup_en( GPIO_NUM_2 );
 		gpio_pullup_en( GPIO_NUM_34 );
-		// gpio_set_pull_mode(GPIO_NUM_34, GPIO_PULLUP_ONLY);
-		delay(10);
-		AnalogInWk = new AnalogInput( -1, ADC_ATTEN_DB_0, ADC_CHANNEL_2, ADC_UNIT_2, true );
-		AnalogInWk->begin(); // GPIO2 for Wk Sensor
-		delay(10);
-		uint32_t read =  AnalogInWk->getRaw(true);
-		if( read == 0  || read >= 4096 ){ // try GPIO pin 34, series 2021-2
-			ESP_LOGI( FNAME, "ADC2, GPIO 2 not usable (Wifi ?), try GPIO 34, reading: %d", read);
-			delete AnalogInWk;
+		if( flap_sensor.get() == FLAP_SENSOR_GPIO_2 ) {
+			AnalogInWk = new AnalogInput( -1, ADC_ATTEN_DB_0, ADC_CHANNEL_2, ADC_UNIT_2, true );
+		}else if( flap_sensor.get() == FLAP_SENSOR_GPIO_34 ) {
 			AnalogInWk = new AnalogInput( -1, ADC_ATTEN_DB_0, ADC_CHANNEL_6, ADC_UNIT_1, true );
-			read=AnalogInWk->getRaw(true);
-			if( read == 0 || read >=4096  ){
-				ESP_LOGI( FNAME, "ADC1 GPIO 34 also zero/one signal, maybe no WK sensor poti connected, reading: %d", read );
-			}else
-				ESP_LOGI( FNAME, "ADC1 apparently usable GPIO 34 usable, reading: %d", read );
 		}
-		else
-			ESP_LOGI( FNAME, "ADC2 GPIO 2 looks good, reading: %d", read );
+		if( AnalogInWk != 0 ) {
+			AnalogInWk->begin(); // GPIO2 for Wk Sensor)
+			delay(10);
+			uint32_t read =  AnalogInWk->getRaw(true);
+			if( read == 0  || read >= 4096 ) // try GPIO pin 34, series 2021-2
+				ESP_LOGI( FNAME, "Flap senor not found or edge value, reading: %d", read);
+			else
+				ESP_LOGI( FNAME, "ADC2 GPIO 2 looks good, reading: %d", read );
+		}
 	}
-
 
 	gpio_set_pull_mode(RESET_Display, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_Display, GPIO_PULLUP_ONLY );
@@ -1024,18 +1016,11 @@ void sensor(void *args){
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 4096, NULL, 6, tpid, 0);
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 20, dpid, 0);  // 10
 
-
 	Audio::startAudio();
-	// delay( 1000 );
-	// Audio::alarm(true);
-	// delay( 4000 );
-	// Audio::alarm(false);
-
 	for( int i=0; i<36; i++ ) {
 		if( i != 23 && i < 6 && i > 12  )
 			gpio_set_drive_capability((gpio_num_t)i, GPIO_DRIVE_CAP_1);
 	}
-	// vTaskDelete( NULL );
 
 }
 

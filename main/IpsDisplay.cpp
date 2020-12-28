@@ -234,14 +234,14 @@ void IpsDisplay::initDisplay() {
 	if( display_style.get() == DISPLAY_AIRLINER ) {
 		bootDisplay();
 		ucg->setFontPosBottom();
-		ucg->setPrintPos(0,YVAR-VARFONTH);
+		ucg->setPrintPos(20,YVAR-VARFONTH+7);
 		ucg->setColor(0, COLOR_HEADER );
 		if( UNITVAR == 0 ) // m/s
-			ucg->print("   m/s ");
+			ucg->print("  m/s");
 		if( UNITVAR == 1 ) // ft/min
-			ucg->print("100 ft/m");
+			ucg->print("cft/m");
 		if( UNITVAR == 2 ) // knots
-			ucg->print("  Knots");
+			ucg->print("knots");
 		ucg->setPrintPos(FIELD_START,YVAR-VARFONTH);    // 65 -52 = 13
 
 		ucg->print("AVG Vario");
@@ -931,9 +931,57 @@ void IpsDisplay::drawWarning( const char *warn, bool push ){
 	xSemaphoreGive(spiMutex);
 }
 
+void IpsDisplay::drawAvgVario( int x, int y, float ate ){
+	ucg->setPrintPos(x, y );
+	ucg->setFontPosCenter();
+	ucg->setColor( COLOR_WHITE );
+	ucg->setFont(ucg_font_fub35_hn);
+	ucg->setClipRange( x, y-30, 95, 50 );
+
+	if( UNITVAR == 0 ) {
+		ucg->setFont(ucg_font_fub35_hn);
+		if( abs(ate) >= 10 ){
+			ucg->setFont(ucg_font_fub30_hn);
+			ucg->setPrintPos(x, y-2 );
+		}
+		if( ate > 0 )
+			ucg->printf(" %2.1f  ", ate);
+		else
+			ucg->printf("%2.1f  ", ate);
+		// ESP_LOGI(FNAME,"ate %f", ate );
+	}
+	else if(  UNITVAR == 1 ){
+		ucg->setFont(ucg_font_fub30_hn);
+		int fpm = (int(Units::Vario( ate )+0.5)/10)*10;
+		if( abs(fpm) >= 1000 ){
+			ucg->setPrintPos(x, y-2 );
+			ucg->setFont(ucg_font_fub25_hn);
+		}
+		if( fpm > 0 )
+			ucg->printf(" %4d   ", fpm );  // ft/min
+		else {
+			ucg->printf("%4d   ", fpm );  // ft/min
+		}
+	}
+	else if(  UNITVAR == 2 ){
+		float kte = Units::Vario( ate );
+		ucg->setFont(ucg_font_fub35_hn);
+		if( abs(kte) >= 10 ){
+			ucg->setPrintPos(x, y-4);  // shift 3 pixel up
+			ucg->setFont(ucg_font_fub30_hn);
+		}
+		if( kte > 0 )
+			ucg->printf(" %2.1f   ", kte );
+		else{
+			ucg->printf("%2.1f   ", kte );         // knots
+		}
+	}
+	ucg->setFontPosBottom();
+	ucg->undoClipRange();
+}
 
 void IpsDisplay::drawRetroDisplay( int airspeed, float te, float ate, float polar_sink, float altitude,
-		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor ){
+		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_setting, float wksensor ){
 	if( _menu )
 		return;
 	if( !(screens_init & INIT_DISPLAY_RETRO) ){
@@ -990,52 +1038,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed, float te, float ate, float pola
 
 	// average Climb
 	if( (int)(ate*30) != _ate && !(tick%3) ) {
-		ucg->setPrintPos(90, AMIDY+2 );
-		ucg->setFontPosCenter();
-		ucg->setColor( COLOR_WHITE );
-		ucg->setFont(ucg_font_fub35_hn);
-		ucg->setClipRange( 90, AMIDY-30, 95, 50 );
-
-		if( UNITVAR == 0 ) {
-			ucg->setFont(ucg_font_fub35_hn);
-			if( abs(ate) >= 10 ){
-				ucg->setFont(ucg_font_fub30_hn);
-				ucg->setPrintPos(90, AMIDY-2 );
-			}
-			if( ate > 0 )
-				ucg->printf(" %2.1f  ", ate);
-			else
-				ucg->printf("%2.1f  ", ate);
-			// ESP_LOGI(FNAME,"ate %f", ate );
-		}
-		else if(  UNITVAR == 1 ){
-			ucg->setFont(ucg_font_fub30_hn);
-			int fpm = (int(Units::Vario( ate )+0.5)/10)*10;
-			if( abs(fpm) >= 1000 ){
-				ucg->setPrintPos(90, AMIDY );
-				ucg->setFont(ucg_font_fub25_hn);
-			}
-			if( fpm > 0 )
-				ucg->printf(" %4d   ", fpm );  // ft/min
-			else {
-				ucg->printf("%4d   ", fpm );  // ft/min
-			}
-		}
-		else if(  UNITVAR == 2 ){
-			float kte = Units::Vario( ate );
-			ucg->setFont(ucg_font_fub35_hn);
-			if( abs(kte) >= 10 ){
-				ucg->setPrintPos(90, AMIDY-2 );  // shift 2 pixel up
-				ucg->setFont(ucg_font_fub30_hn);
-			}
-			if( kte > 0 )
-				ucg->printf(" %2.1f   ", kte );
-			else{
-				ucg->printf("%2.1f   ", kte );         // knots
-			}
-		}
-		ucg->setFontPosBottom();
-		ucg->undoClipRange();
+		drawAvgVario( 90, AMIDY+2, ate );
 		_ate = (int)(ate*30);
 	}
 	// MC val
@@ -1256,19 +1259,19 @@ void IpsDisplay::drawRetroDisplay( int airspeed, float te, float ate, float pola
 
 
 void IpsDisplay::drawDisplay( int airspeed, float te, float ate, float polar_sink, float altitude,
-		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor ){
+		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_setting, float wksensor ){
 	if( _menu )
 		return;
 
 	if( display_style.get() == DISPLAY_AIRLINER )
-		drawAirlinerDisplay( airspeed,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_alt, wksensor );
+		drawAirlinerDisplay( airspeed,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_setting, wksensor );
 	else if( display_style.get() == DISPLAY_RETRO )
-		drawRetroDisplay( airspeed,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_alt, wksensor );
+		drawRetroDisplay( airspeed,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_setting, wksensor );
 
 }
 
 void IpsDisplay::drawAirlinerDisplay( int airspeed, float te, float ate, float polar_sink, float altitude,
-		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor ){
+		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_setting, float wksensor ){
 	if( _menu )
 		return;
 	if( !(screens_init & INIT_DISPLAY_AIRLINER) ){
@@ -1313,65 +1316,31 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed, float te, float ate, float p
 
 	// Average Vario
 	if( _ate != (int)(ate*10) && !(tick%3) ) {
-		if( ate < 0 ) {
-			// erase V line from +
-			ucg->setColor( COLOR_BLACK );
-			ucg->drawVLine( FIELD_START+PMLEN/2-1, YVARMID-PMLEN/2, PMLEN );
-			ucg->drawVLine( FIELD_START+PMLEN/2, YVARMID-PMLEN/2, PMLEN );
-			ucg->drawVLine( FIELD_START+PMLEN/2+1, YVARMID-PMLEN/2, PMLEN );
-			// draw just minus
-			ucg->setColor(  COLOR_WHITE  );
-			ucg->drawHLine( FIELD_START, YVARMID-1, PMLEN );
-			ucg->drawHLine( FIELD_START, YVARMID, PMLEN );
-			ucg->drawHLine( FIELD_START, YVARMID+1, PMLEN );
-		}
-		else {
-			// draw just plus
-			ucg->drawHLine( FIELD_START, YVARMID-1, PMLEN );
-			ucg->drawHLine( FIELD_START, YVARMID, PMLEN );
-			ucg->drawHLine( FIELD_START, YVARMID+1, PMLEN );
-			ucg->drawVLine( FIELD_START+PMLEN/2-1, YVARMID-PMLEN/2, PMLEN );
-			ucg->drawVLine( FIELD_START+PMLEN/2, YVARMID-PMLEN/2, PMLEN );
-			ucg->drawVLine( FIELD_START+PMLEN/2+1, YVARMID-PMLEN/2, PMLEN );
-		}
-		ucg->setPrintPos(FIELD_START+SIGNLEN,YVAR+2);
-		float tep=ate;
-		if( tep < 0 )
-			tep=-ate;
-
-		if( UNITVAR == 0 )
-			ucg->printf("%0.1f  ", Units::Vario( tep ) );
-		else if(  UNITVAR == 1 ){
-			int fpm = (int(Units::Vario( tep )+0.5)/10)*10;
-			if( abs(fpm) > 999 ) {
-				ucg->setPrintPos(FIELD_START+SIGNLEN,YVAR-8);
-				ucg->setFont(ucg_font_fub25_hr);
-			}
-			ucg->printf("%d   ", fpm );  // ft/min
-		}
-		else if(  UNITVAR == 2 )
-			ucg->printf("%0.1f  ", Units::Vario( tep ) );         // knots
-
+		// draw numeric value
+		drawAvgVario( FIELD_START, YVAR-20, ate );
+        // draw Unit
 		ucg->setFont(ucg_font_fub11_hr);
 		int mslen = ucg->getStrWidth( Units::VarioUnit() );
 		ucg->setPrintPos(DISPLAY_W-mslen,YVAR-10);
 		ucg->print( Units::VarioUnit() );
+
 		_ate = (int)(ate)*10;
 	}
 
 	// Altitude Header
 	if( !(tick%24) ){
 		int qnh = (int)(QNH.get() +0.5 );
-		if( standard_alt )
+		// ESP_LOGI(FNAME,"standard_setting:%d",standard_setting );
+		if( standard_setting )
 			qnh = 1013;
 		if( qnh != pref_qnh ) {
 			ucg->setFont(ucg_font_fub11_tr);
 			ucg->setPrintPos(FIELD_START,YALT-S2FFONTH);
 			char unit[4];
-			if( standard_alt )
-				sprintf( unit, "QNH" );
-			else
+			if( standard_setting )
 				sprintf( unit, "QNE" );
+			else
+				sprintf( unit, "QNH" );
 			ucg->setColor(0, COLOR_BLACK );
 			ucg->printf("Altitude %s %d ", unit, pref_qnh );
 			ucg->setPrintPos(FIELD_START,(YALT-S2FFONTH));

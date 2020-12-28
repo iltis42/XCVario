@@ -324,16 +324,19 @@ void readBMP(void *pvParameters){
 			if( alt_select.get() == 0 ) // TE
 				alt = bmpVario.readAVGalt();
 			else { // Baro
-				if(  alt_unit.get() == 2 || (
-						(fl_auto_transition.get() == 1) && ((int)alt_standard*0.0328084 + (int)(standard_setting) > transition_alt.get() ) ) ) // FL or auto transition
-				{
+				if(  alt_unit.get() == 2 ) { // FL, always standard
 					alt = alt_standard;
 					standard_setting = true;
+					// ESP_LOGI(FNAME,"au: %d", alt_unit.get() );
+				}else if( (fl_auto_transition.get() == 1) && ((int)alt_standard*0.0328084 + (int)(standard_setting) > transition_alt.get() ) ) {
+					alt = alt_standard;
+					standard_setting = true;
+					// ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), alt_standard, standard_setting, transition_alt.get() );
 				}
 				else {
 					alt = bmpBA.calcAVGAltitude( QNH.get(), baroP );
-					// ESP_LOGI(FNAME,"rbmp QNH %f baro: %f alt: %f", QNH.get(), baroP, alt  );
 					standard_setting = false;
+					// ESP_LOGI(FNAME,"rbmp QNH %f baro: %f alt: %f SS:%d", QNH.get(), baroP, alt, standard_setting  );
 				}
 			}
 			aTE = bmpVario.readAVGTE();

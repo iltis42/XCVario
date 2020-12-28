@@ -799,17 +799,17 @@ void SetupMenu::setup( )
 		// Units
 		SetupMenu * un = new SetupMenu( "Units" );
 		un->setHelp( PROGMEM "Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units");
-		SetupMenuSelect * alu = new SetupMenuSelect( 	"Altimeter",	0, true,  0, true, &alt_unit );
+		SetupMenuSelect * alu = new SetupMenuSelect( 	"Altimeter",	0, false,  0, true, &alt_unit );
 		alu->addEntry( "Meter       (m)");
 		alu->addEntry( "Foot        (ft)");
 		alu->addEntry( "FlightLevel (FL)");
 		un->addMenu( alu );
-		SetupMenuSelect * iau = new SetupMenuSelect( "Indicated Airspeed", 0, true , 0, true, &ias_unit );
+		SetupMenuSelect * iau = new SetupMenuSelect( "Indicated Airspeed", 0, false , 0, true, &ias_unit );
 		iau->addEntry( "Km per hour     (Km/h)");
 		iau->addEntry( "Miles  per hour (mph)");
 		iau->addEntry( "Knots               (kt)");
 		un->addMenu( iau );
-		SetupMenuSelect * vau = new SetupMenuSelect( "Vario", 0, true , 0, true, &vario_unit );
+		SetupMenuSelect * vau = new SetupMenuSelect( "Vario", 0, false , 0, true, &vario_unit );
 		vau->addEntry( "Meters/sec   (m/s)");
 		vau->addEntry( "Foot per min (ft/min)");
 		vau->addEntry( "Knots        (knots)");

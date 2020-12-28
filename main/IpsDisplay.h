@@ -130,6 +130,7 @@ private:
 	static void drawWkLever( int xpos, int ypos, int oldpos );
 	static int getWk( float wks );
 	static float getSensorWkPos(int wks);
+	static void drawAvgVario( int x, int y, float ate );
 
 };
 

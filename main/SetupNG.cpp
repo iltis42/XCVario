@@ -200,10 +200,10 @@ char * SetupCommon::getID() {
 			crc = mz_crc32(0L, mac, 6);
 		}
 		if( hardwareRevision.get() >= 3 ){
-			sprintf( _ID, "XCVario-%d", int(crc % 10000) );
+			sprintf( _ID, "XCVario-%04d", int(crc % 10000) );
 		}
 		else{
-			sprintf( _ID, "iVario-%d", int(crc % 1000));
+			sprintf( _ID, "iVario-%03d", int(crc % 1000));
 		}
 	}
 	return _ID;

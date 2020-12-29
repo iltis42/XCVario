@@ -103,7 +103,10 @@ bool Cipher::init(){
 std::string Cipher::id(){
 	uint8_t mac[6];
 	esp_efuse_mac_get_default(mac);
-	return( std::to_string( mz_crc32(0L, mac, 6) % 10000 ) );
+	char id[6];
+	sprintf( id,"%04d", (int)(mz_crc32(0L, mac, 6) % 10000) );
+	ESP_LOGI(FNAME,"Cipher::id() returns: %s", id );
+	return( std::string( id ) );
 }
 
 bool Cipher::checkKeyAHRS(){

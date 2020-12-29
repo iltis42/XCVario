@@ -851,7 +851,7 @@ void SetupMenu::setup( )
 
 		SetupMenuSelect * flarml = new SetupMenuSelect( "FLARM Level",	0, false, 0, true, &flarm_warning );
 		flarm->addMenu( flarml );
-		flarml->setHelp( PROGMEM "Enable FLARM Alarm level 1 is highest with 13-18 sec, 2 medium 9-12 sec and 3 lowest with 0-8 sec until impact");
+		flarml->setHelp( PROGMEM "Enable FLARM Alarm level 1 is lowest with 13-18 sec, 2 medium 9-12 sec and 3 highest with 0-8 sec until impact");
 		flarml->addEntry( "Disable");
 		flarml->addEntry( "Alarm Level 1");
 		flarml->addEntry( "Alarm Level 2");

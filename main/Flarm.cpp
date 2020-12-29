@@ -132,9 +132,6 @@ void Flarm::drawAirplane( int x, int y, bool fromBehind ){
 	}
 }
 
-
-
-
 void Flarm::initFlarmWarning(){
 	ucg->setPrintPos(15, 20 );
 	ucg->setFontPosCenter();
@@ -155,8 +152,6 @@ void Flarm::initFlarmWarning(){
 	oldBear = 0;
 	// Audio::alarm( true, 30, AUDIO_ALARM_FLARM_1 );
 }
-
-
 
 void Flarm::drawFlarmWarning(){
 	ESP_LOGI(FNAME,"drawFlarmWarning");

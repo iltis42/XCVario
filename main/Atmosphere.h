@@ -7,6 +7,21 @@
 #define ATMOSPHERE_H
 
 
+// With density of water from: http://www.csgnetwork.com/waterinformation.html
+// @ 22.8 degree: 0.997585
+// earth gravity: 9.0807 m/s^2
+// and standard ICAO air density with 1.225 kg/m3 there is:
+// V(km/h) = sqrt(2*( <mmH2O> * 0.997585 * 9.807  )/1.225) * 3.6
+
+//   Speed
+// mmH2O m/s	km/h
+// 100	 40,0	143,9
+// 110	 41,9	150,9
+// 116	 43,0	155,0
+// 120	 43,8	157,6
+// 130	 45,6	164,0
+// 140	 47,3	170,2
+
 class Atmosphere {
 	Atmosphere() {};
 	~Atmosphere() {};

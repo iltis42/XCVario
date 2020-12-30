@@ -846,7 +846,7 @@ void sensor(void *args){
 			float step=10.0; // 80 m
 			float min=1000.0;
 			float qnh_best = 1013.2;
-			for( float qnh = 900; qnh< 1080; qnh+=step ) {
+			for( float qnh = 870; qnh< 1085; qnh+=step ) {
 				float alt = bmpBA.readAltitude( qnh );
 				float diff = alt - ae;
 				ESP_LOGI(FNAME,"Alt diff=%4.2f  abs=%4.2f", diff, abs(diff) );

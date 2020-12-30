@@ -7,11 +7,63 @@
 #include <logdef.h>
 #include "sensor.h"
 
-// MP5004DP::MP5004DP(){
-//
-// }
 
-bool MP5004DP::begin(gpio_num_t sda, gpio_num_t scl ){
+
+/*
+Analog / Digital conversion MP3V5004DP:
+- MP3V5004DP Vout -> (0.2*VS) - VS = 0.66..3.3V
+- MCP3221    0...4095 (12 bit)
+- VS = 3.3 V
+
+1)
+V = VS*[(0.2*P) +0.2]
+adc = 4096* Vout/VS
+Vout = (adc/4096) * VS
+
+2)
+after offset compensation:  ( P in kPA )
+Vout = VS*0.2*Pkpa
+P = Vout / VS*0.2
+
+
+1) in 2)
+P = (adc / 4096)*VS / VS*0.2
+VS surplus:
+P = (adc /4096) / 0.2
+or
+P = adc * 5/4096     (kPa)
+or in Pascal:
+P = 5000/4096 * adc
+
+100 mm H2O:  P = 1000 Pascal o. 0.6 V o. 0.2*4096 = 819.2
+
+
+XZG:
+1)
+V = 2.5V * Pascal/5000;
+adc = 4096 * Vout/3.3V
+
+   Vout = (adc/4096) * 3.3V
+2)
+Pkpa = Vout / (2.5V * 0.2)
+
+   Pkpa = Vout / 0.5V
+
+1) in 2):
+Pkpa = (adc/4096) *3.3V / 0.5V
+or
+P = (adc/4096) * 2*3.3    in kPa
+P = (adc/4096) * 6.6      in kPa
+or
+P = adc * (6600/4096) in Pascal
+P = 1.611328125 * adc
+
+
+
+*/
+
+
+bool MP5004DP::begin(gpio_num_t sda, gpio_num_t scl, char slave_adr ){
 	ESP_LOGI(FNAME,"MP5004DP::begin");
 	bool ret = NVS.begin();
 	if ( ret == false ){
@@ -129,8 +181,10 @@ bool MP5004DP::doOffset( bool force ){
 	return true;
 }
 
-float MP5004DP::readPascal( float minimum ){
+float MP5004DP::readPascal( float minimum, bool &ok ){
+	ok=true;
 	if( !_haveDevice ) {
+		ok = false;
 		return 0.0;
 	}
 	float corr;

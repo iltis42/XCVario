@@ -3,7 +3,7 @@
 
 #define LOOPS 150
 
-void LeakTest::start( BME280_ESP32_SPI &bmpBA, BME280_ESP32_SPI &bmpTE, t_as_sensor as_sensor ) {
+void LeakTest::start( BME280_ESP32_SPI &bmpBA, BME280_ESP32_SPI &bmpTE, AirspeedSensor *asSensor ) {
 	ESP_LOGI(FNAME,"Starting Leak test");
 	display->clear();
 	display->writeText( 1, "** Leak Test **");
@@ -21,15 +21,13 @@ void LeakTest::start( BME280_ESP32_SPI &bmpBA, BME280_ESP32_SPI &bmpTE, t_as_sen
 		float speed=0;
 		int loops_run=0;
 		for( int j=0; j< LOOPS; j++ ) {
-			if( as_sensor == SENSOR_MP3V5004DP )
-				speed += theMP5004DP.readPascal(5);
-			else if( as_sensor == SENSOR_MS4525DO ){
-				bool ok=false;
-				float s = theMS4525DO.readPascal(5,ok);
-				if( ok ){
-					speed +=s;
-					loops_run++;
-				}
+			bool ok=false;
+			float s=0;
+			if( asSensor )
+				s = asSensor->readPascal(5,ok);
+			if( ok ){
+				speed +=s;
+				loops_run++;
 			}
 			ba += bmpBA.readPressure();
 			te += bmpTE.readPressure();
@@ -37,7 +35,8 @@ void LeakTest::start( BME280_ESP32_SPI &bmpBA, BME280_ESP32_SPI &bmpTE, t_as_sen
 		}
 		ba = ba/LOOPS;
 		te = te/LOOPS;
-		speed = speed/loops_run;
+		if( loops_run )
+			speed = speed/loops_run;
 		if( i==0 ) {
 			sba = ba;
 			ste = te;

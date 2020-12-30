@@ -4,11 +4,12 @@
 
 #include "sensor.h"
 #include "BME280_ESP32_SPI.h"
+#include "AirspeedSensor.h"
 
 class LeakTest{
 
 public:
-	static void start( BME280_ESP32_SPI &bmpBA, BME280_ESP32_SPI &bmpTE, t_as_sensor as_sensor );
+	static void start( BME280_ESP32_SPI &bmpBA, BME280_ESP32_SPI &bmpTE, AirspeedSensor *as );
 
 };
 

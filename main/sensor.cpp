@@ -98,6 +98,7 @@ MCP3221 *MCP=0;
 DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 standard, alternative  GPIO_NUM_17
 MP5004DP theMP5004DP;
 MS4525DO theMS4525DO;
+AirspeedSensor *asSensor=0;
 xSemaphoreHandle xMutex=NULL;
 
 S2F Speed2Fly;
@@ -135,7 +136,6 @@ float s2f_delta = 0;
 float polar_sink = 0;
 bool  standard_setting = false;
 long millisec = millis();
-t_as_sensor as_sensor;
 
 mpud::float_axes_t accelG;
 mpud::float_axes_t gyroDPS;
@@ -269,14 +269,10 @@ void readBMP(void *pvParameters){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		xSemaphoreTake(xMutex,portMAX_DELAY );
 		TE = bmpVario.readTE( tas );  // 10x per second
-		if( as_sensor == SENSOR_MP3V5004DP )
-			dynamicP = theMP5004DP.readPascal(60);
-		else if( as_sensor == SENSOR_MS4525DO ) {
-			bool ok=false;
-			float p=theMS4525DO.readPascal(60, ok);
-			if( ok )
-				dynamicP = p;
-		}
+		bool ok=false;
+		float p = asSensor->readPascal(60, ok);
+		if( ok )
+			dynamicP = p;
 		float iasraw = Atmosphere::pascal2kmh( dynamicP );
 		// ESP_LOGI("FNAME","P: %f  IAS:%f", dynamicP, iasraw );
 		float T=temperature;
@@ -360,13 +356,13 @@ void readBMP(void *pvParameters){
 					err |= MPU.rotation(&gyroRaw);       // fetch raw data from the registers
 					if( err != ESP_OK )
 						ESP_LOGE(FNAME, "gyro I2C error, X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
-					accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_4G);  // raw data to gravity
+					accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
 					gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
 					// ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f  gyro X: %+.2f Y:%+.2f Z:%+.2f\n", -accelG[2], accelG[1], accelG[0] ,  gyroDPS.x, gyroDPS.y, gyroDPS.z);
 					bool goodAccl = true;
 					if( abs( accelG.x - accelG_Prev.x ) > 0.4 || abs( accelG.y - accelG_Prev.y ) > 0.4 || abs( accelG.z - accelG_Prev.z ) > 0.4 ) {
 						MPU.acceleration(&accelRaw);
-						accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_4G);
+						accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);
 						if( abs( accelG.x - accelG_Prev.x ) > 0.4 || abs( accelG.y - accelG_Prev.y ) > 0.4 || abs( accelG.z - accelG_Prev.z ) > 0.4 ){
 							goodAccl = false;
 							ESP_LOGE(FNAME, "accelaration change >0.4 g in 0.2 S:  X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
@@ -572,32 +568,31 @@ void sensor(void *args){
 	bool offset_plausible = false;
 	theMS4525DO.begin( GPIO_NUM_21, GPIO_NUM_22 );  // sda, scl
 	theMS4525DO.setBus( &i2c );
+
 	if( theMS4525DO.selfTest( offset ) ){
 		ESP_LOGI(FNAME,"Speed sensors theMS4525DO self test PASSED");
-		theMS4525DO.doOffset();
-		offset_plausible = theMS4525DO.offsetPlausible( offset );
-		as_sensor = SENSOR_MS4525DO;
-		bool ok=false;
-		float p=theMS4525DO.readPascal(60, ok);
-		if( ok )
-			dynamicP = p;
-		ias = Atmosphere::pascal2kmh( dynamicP );
-		ESP_LOGI(FNAME,"Using speed sensor theMS4525DO type, current speed=%f", ias );
+		asSensor = &theMS4525DO;
 	}
 	else
 	{
 		theMP5004DP.begin( GPIO_NUM_21, GPIO_NUM_22);  // sda, scl
 		if( theMP5004DP.selfTest( offset ) ) {
 			ESP_LOGI(FNAME,"Speed sensors theMP5004DP self test PASSED");
-			theMP5004DP.doOffset();
-			offset_plausible = theMP5004DP.offsetPlausible( offset );
-			as_sensor = SENSOR_MP3V5004DP;
-			dynamicP=theMP5004DP.readPascal(60);
-			ias = Atmosphere::pascal2kmh( dynamicP );
-			ESP_LOGI(FNAME,"Using speed sensor MP3V5004DP type, current speed=%f", ias );
+			asSensor = &theMP5004DP;
 		}
 	}
-	if( as_sensor==SENSOR_NONE ){
+	if( asSensor ){
+		asSensor->doOffset();
+		offset_plausible = asSensor->offsetPlausible( offset );
+		bool ok=false;
+		float p=asSensor->readPascal(60, ok);
+		if( ok )
+			dynamicP = p;
+		ias = Atmosphere::pascal2kmh( dynamicP );
+		ESP_LOGI(FNAME,"Aispeed sensor current speed=%f", ias );
+	}
+
+	if( !asSensor ){
 		ESP_LOGE(FNAME,"Error with air speed pressure sensor, now working sensor found");
 		display->writeText( line++, "AS Sensor: NOT FOUND");
 		logged_tests += "AS Sensor: NOT FOUND\n";
@@ -618,7 +613,6 @@ void sensor(void *args){
 			}
 			else
 				display->writeText( line++, "AS Sensor: OK" );
-
 			logged_tests += "AS Sensor offset test: PASSED\n";
 		}
 	}
@@ -712,7 +706,6 @@ void sensor(void *args){
 		display->writeText( line++, "Digital Poti: OK");
 	}
 
-
 	float bat = Battery.get(true);
 	if( bat < 1 || bat > 28.0 ){
 		ESP_LOGE(FNAME,"Error: Battery voltage metering out of bounds, act value=%f", bat );
@@ -768,7 +761,7 @@ void sensor(void *args){
 		ESP_LOGI( FNAME,"MPU initialize");
 		MPU.initialize();  // this will initialize the chip and set default configurations
 		MPU.setSampleRate(50);  // in (Hz)
-		MPU.setAccelFullScale(mpud::ACCEL_FS_4G);
+		MPU.setAccelFullScale(mpud::ACCEL_FS_8G);
 		MPU.setGyroFullScale(mpud::GYRO_FS_500DPS);
 		MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
 		display->writeText( line++, "AHRS Sensor: OK");
@@ -825,7 +818,7 @@ void sensor(void *args){
 
 	if( Rotary.readSwitch() )
 	{
-		LeakTest::start( bmpBA, bmpTE, as_sensor );
+		LeakTest::start( bmpBA, bmpTE, asSensor );
 	}
 	Menu = new SetupMenu();
 	Menu->begin( display, &Rotary, &bmpBA, &Battery );

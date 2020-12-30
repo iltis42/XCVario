@@ -12,8 +12,6 @@
 #include "S2F.h"
 extern bool haveMPU;
 extern bool ahrsKeyValid;
-typedef enum e_as_sensor { SENSOR_MP3V5004DP, SENSOR_MS4525DO, SENSOR_XGZ6899, SENSOR_NONE } t_as_sensor;
-extern t_as_sensor as_sensor;
 
 // MPU6050 sensor
 extern mpud::float_axes_t accelG;
@@ -56,9 +54,6 @@ extern float meanClimb;
 extern Protocols OV;
 extern bool inSetup;
 extern bool stall_warning_active;
-
-extern MP5004DP theMP5004DP;
-extern MS4525DO theMS4525DO;
 
 extern IpsDisplay *display;
 

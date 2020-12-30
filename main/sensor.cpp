@@ -351,7 +351,7 @@ void readBMP(void *pvParameters){
 			xSemaphoreGive(xMutex);
 
 			if( inSetup != true ){
-				if( haveMPU )  // 3th Generation HW, MPU6050
+				if( haveMPU && attitude_indicator.get() )  // 3th Generation HW, MPU6050 avail and feature enabled
 				{
 					mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
 					mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
@@ -468,7 +468,13 @@ bool init_done=false;
 
 // Sensor board init method. Herein all functions that make the XCVario are launched and tested.
 void sensor(void *args){
-	accelG[0] = 1;
+	accelG[0] = 1;  // earth gravity default = 1 g
+	accelG[1] = 0;
+	accelG[2] = 0;
+	gyroDPS.x = 0;
+	gyroDPS.y = 0;
+	gyroDPS.z = 0;
+
 	bool selftestPassed=true;
 	if( init_done )
 		ESP_LOGI( FNAME, "sensor init already called");

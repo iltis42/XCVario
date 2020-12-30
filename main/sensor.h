@@ -4,6 +4,10 @@
 #include "MPU.hpp"        // main file, provides the class itself
 #include "AnalogInput.h"
 #include "Protocols.h"
+#include "MP5004DP.h"
+#include "MS4525DO.h"
+#include "IpsDisplay.h"
+#include "ESPRotary.h"
 
 #include "S2F.h"
 extern bool haveMPU;
@@ -52,6 +56,13 @@ extern float meanClimb;
 extern Protocols OV;
 extern bool inSetup;
 extern bool stall_warning_active;
+
+extern MP5004DP theMP5004DP;
+extern MS4525DO theMS4525DO;
+
+extern IpsDisplay *display;
+
+extern ESPRotary Rotary;
 
 
 #endif

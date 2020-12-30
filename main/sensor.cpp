@@ -55,8 +55,8 @@
 #include <esp32/rom/miniz.h>
 #include "esp32-hal-adc.h" // needed for adc pin reset
 #include "soc/sens_reg.h" // needed for adc pin reset
-// uint64_t reg_b; // Used to store Pin registers
-// uint64_t reg_a; // Used to store Pin registers
+#include "LeakTest.h"
+
 
 // #include "sound.h"
 
@@ -96,8 +96,8 @@ int ccp=60;
 
 MCP3221 *MCP=0;
 DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 standard, alternative  GPIO_NUM_17
-MP5004DP MP5004DP;
-MS4525DO MS4525DO;
+MP5004DP theMP5004DP;
+MS4525DO theMS4525DO;
 xSemaphoreHandle xMutex=NULL;
 
 S2F Speed2Fly;
@@ -270,10 +270,10 @@ void readBMP(void *pvParameters){
 		xSemaphoreTake(xMutex,portMAX_DELAY );
 		TE = bmpVario.readTE( tas );  // 10x per second
 		if( as_sensor == SENSOR_MP3V5004DP )
-			dynamicP = MP5004DP.readPascal(60);
+			dynamicP = theMP5004DP.readPascal(60);
 		else if( as_sensor == SENSOR_MS4525DO ) {
 			bool ok=false;
-			float p=MS4525DO.readPascal(60, ok);
+			float p=theMS4525DO.readPascal(60, ok);
 			if( ok )
 				dynamicP = p;
 		}
@@ -570,29 +570,29 @@ void sensor(void *args){
 	ESP_LOGI(FNAME,"Speed sensors init..");
 	int offset;
 	bool offset_plausible = false;
-	MS4525DO.begin( GPIO_NUM_21, GPIO_NUM_22 );  // sda, scl
-	MS4525DO.setBus( &i2c );
-	if( MS4525DO.selfTest( offset ) ){
-		ESP_LOGI(FNAME,"Speed sensors MS4525DO self test PASSED");
-		MS4525DO.doOffset();
-		offset_plausible = MS4525DO.offsetPlausible( offset );
+	theMS4525DO.begin( GPIO_NUM_21, GPIO_NUM_22 );  // sda, scl
+	theMS4525DO.setBus( &i2c );
+	if( theMS4525DO.selfTest( offset ) ){
+		ESP_LOGI(FNAME,"Speed sensors theMS4525DO self test PASSED");
+		theMS4525DO.doOffset();
+		offset_plausible = theMS4525DO.offsetPlausible( offset );
 		as_sensor = SENSOR_MS4525DO;
 		bool ok=false;
-		float p=MS4525DO.readPascal(60, ok);
+		float p=theMS4525DO.readPascal(60, ok);
 		if( ok )
 			dynamicP = p;
 		ias = Atmosphere::pascal2kmh( dynamicP );
-		ESP_LOGI(FNAME,"Using speed sensor MS4525DO type, current speed=%f", ias );
+		ESP_LOGI(FNAME,"Using speed sensor theMS4525DO type, current speed=%f", ias );
 	}
 	else
 	{
-		MP5004DP.begin( GPIO_NUM_21, GPIO_NUM_22);  // sda, scl
-		if( MP5004DP.selfTest( offset ) ) {
-			ESP_LOGI(FNAME,"Speed sensors MP5004DP self test PASSED");
-			MP5004DP.doOffset();
-			offset_plausible = MP5004DP.offsetPlausible( offset );
+		theMP5004DP.begin( GPIO_NUM_21, GPIO_NUM_22);  // sda, scl
+		if( theMP5004DP.selfTest( offset ) ) {
+			ESP_LOGI(FNAME,"Speed sensors theMP5004DP self test PASSED");
+			theMP5004DP.doOffset();
+			offset_plausible = theMP5004DP.offsetPlausible( offset );
 			as_sensor = SENSOR_MP3V5004DP;
-			dynamicP=MP5004DP.readPascal(60);
+			dynamicP=theMP5004DP.readPascal(60);
 			ias = Atmosphere::pascal2kmh( dynamicP );
 			ESP_LOGI(FNAME,"Using speed sensor MP3V5004DP type, current speed=%f", ias );
 		}
@@ -825,85 +825,7 @@ void sensor(void *args){
 
 	if( Rotary.readSwitch() )
 	{
-		ESP_LOGI(FNAME,"Starting Leak test");
-		display->clear();
-		display->writeText( 1, "** Leak Test **");
-		float sba=0;
-		float ste=0;
-		float sspeed = 0;
-		float bad=0;
-		float ted=0;
-		float speedd=0;
-		for( int i=0; i<24; i++ ){  // 180
-			char bas[40];
-			char tes[40];
-			char pis[40];
-			float ba=0;
-			float te=0;
-			float speed=0;
-#define LOOPS 150
-			int loops_run=0;
-			for( int j=0; j< LOOPS; j++ ) {
-				if( as_sensor == SENSOR_MP3V5004DP )
-					speed += MP5004DP.readPascal(5);
-				else if( as_sensor == SENSOR_MS4525DO ){
-					bool ok=false;
-					float s = MS4525DO.readPascal(5,ok);
-					if( ok ){
-						speed +=s;
-						loops_run++;
-					}
-				}
-				ba += bmpBA.readPressure();
-				te += bmpTE.readPressure();
-				delay( 33 );
-			}
-			ba = ba/LOOPS;
-			te = te/LOOPS;
-			speed = speed/loops_run;
-			if( i==0 ) {
-				sba = ba;
-				ste = te;
-				sspeed = speed;
-			}
-			// esp_task_wdt_reset();
-			sprintf(bas, "ST P: %3.2f hPa   ", ba);
-			sprintf(tes, "TE P: %3.2f hPa   ", te);
-			sprintf(pis, "PI P: %3.2f Pa    ", speed);
-			display->writeText( 2, bas);
-			display->writeText( 3, tes);
-			display->writeText( 4, pis);
-			if( i==0 ) {
-				ESP_LOGI(FNAME,"%s  %s  %s", bas,tes,pis);
-			}
-			if( i>=1 ) {
-				bad = 100*(ba-sba)/sba;
-				ted = 100*(te-ste)/ste;
-				speedd = 100*(speed-sspeed)/sspeed;
-				sprintf(bas, "ST delta: %2.3f %%   ", bad );
-				sprintf(tes, "TE delta: %2.3f %%   ", ted );
-				sprintf(pis, "PI delta: %2.2f %%   ", speedd );
-				display->writeText( 5, bas);
-				display->writeText( 6, tes);
-				display->writeText( 7, pis);
-				ESP_LOGI(FNAME,"%s%s%s", bas,tes,pis);
-
-			}
-			char sec[40];
-			sprintf(sec, "Seconds: %d", (i*5)+5 );
-			display->writeText( 8, sec );
-		}
-		if( (abs(bad) > 0.1) || (abs(ted) > 0.1) || ( (sspeed > 10.0) && (abs(speedd) > (1.0) ) ) ) {
-			display->writeText( 9, "Test FAILED" );
-			ESP_LOGI(FNAME,"FAILED");
-		}
-		else {
-			display->writeText( 9, "Test PASSED" );
-			ESP_LOGI(FNAME,"PASSED");
-		}
-		while(1) {
-			delay(5000);
-		}
+		LeakTest::start( bmpBA, bmpTE, as_sensor );
 	}
 	Menu = new SetupMenu();
 	Menu->begin( display, &Rotary, &bmpBA, &Battery );

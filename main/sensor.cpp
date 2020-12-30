@@ -318,7 +318,6 @@ void readBMP(void *pvParameters){
 					}
 				}
 			}
-
 			// ESP_LOGI(FNAME,"WK: %d", wksensor );
 			xSemaphoreTake(xMutex,portMAX_DELAY );
 			baroP = bmpBA.readPressure();   // 5x per second
@@ -460,7 +459,6 @@ void readTemp(void *pvParameters){
 			if( heap_caps_get_free_size(MALLOC_CAP_8BIT) < 10000 )
 				ESP_LOGW(FNAME,"Warning heap_caps_get_free_size getting low: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
 		}
-
 	}
 }
 
@@ -490,7 +488,6 @@ void sensor(void *args){
 	spiMutex = xSemaphoreCreateMutex();
 	// esp_log_level_set("*", ESP_LOG_INFO);
 	ESP_LOGI( FNAME, "Log level set globally to INFO %d",  ESP_LOG_INFO);
-
 	esp_chip_info_t chip_info;
 	esp_chip_info(&chip_info);
 	ESP_LOGI( FNAME,"This is ESP32 chip with %d CPU cores, WiFi%s%s, ",
@@ -500,14 +497,10 @@ void sensor(void *args){
 	ESP_LOGI( FNAME,"Silicon revision %d, ", chip_info.revision);
 	ESP_LOGI( FNAME,"%dMB %s flash\n", spi_flash_get_chip_size() / (1024 * 1024),
 			(chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
-
-
 	ESP_LOGI(FNAME, "QNH.get() %f", QNH.get() );
 	ESP_LOGI( FNAME, "Hardware revision detected %d", hardwareRevision.get() );
 	NVS.begin();
 	AverageVario::begin();
-
-
 	init_wksensor();
 
 	if( Cipher::checkKeyAHRS() ){
@@ -518,8 +511,6 @@ void sensor(void *args){
 			attitude_indicator.set(0);
 	}
 	Battery.begin();  // for battery voltage
-
-
 	xMutex=xSemaphoreCreateMutex();
 	uint8_t t_sb = 0;   //stanby 0: 0,5 mS 1: 62,5 mS 2: 125 mS
 	uint8_t filter = 0; //filter O = off
@@ -542,7 +533,6 @@ void sensor(void *args){
 	// int valid;
 	String logged_tests;
 	logged_tests += "\n\n\n";
-
 	Version V;
 	std::string ver( "Version: " );
 	ver += V.version();
@@ -582,7 +572,6 @@ void sensor(void *args){
 	bool offset_plausible = false;
 	MS4525DO.begin( GPIO_NUM_21, GPIO_NUM_22 );  // sda, scl
 	MS4525DO.setBus( &i2c );
-
 	if( MS4525DO.selfTest( offset ) ){
 		ESP_LOGI(FNAME,"Speed sensors MS4525DO self test PASSED");
 		MS4525DO.doOffset();
@@ -608,8 +597,6 @@ void sensor(void *args){
 			ESP_LOGI(FNAME,"Using speed sensor MP3V5004DP type, current speed=%f", ias );
 		}
 	}
-
-
 	if( as_sensor==SENSOR_NONE ){
 		ESP_LOGE(FNAME,"Error with air speed pressure sensor, now working sensor found");
 		display->writeText( line++, "AS Sensor: NOT FOUND");
@@ -670,7 +657,6 @@ void sensor(void *args){
 		display->writeText( line++, "Baro Sensor: OK");
 		logged_tests += "Baro Sensor Test: PASSED\n";
 	}
-
 	if( ! bmpTE.selfTest(te_t, te_p) ) {
 		ESP_LOGE(FNAME,"HW Error: Self test TE Pressure Sensor failed!");
 		display->writeText( line++, "TE Sensor: NOT FOUND");
@@ -708,12 +694,9 @@ void sensor(void *args){
 		logged_tests += "TE/Baro Sensor P diff. <2hPa: PASSED\n";
 
 	}
-
 	bmpVario.begin( &bmpTE, &Speed2Fly );
 	bmpVario.setup();
-
 	esp_task_wdt_reset();
-
 	ESP_LOGI(FNAME,"Audio begin");
 	Audio::begin( DAC_CHANNEL_1 );
 	ESP_LOGI(FNAME,"Poti and Audio test");
@@ -774,11 +757,7 @@ void sensor(void *args){
 	}else if ( blue_enable.get() == WL_WLAN ){
 		wifi_init_softap();
 	}
-
-
 	esp_err_t err=ESP_ERR_NOT_FOUND;
-
-
 	MPU.setBus(i2c);  // set communication bus, for SPI -> pass 'hspi'
 	MPU.setAddr(mpud::MPU_I2CADDRESS_AD0_LOW);  // set address or handle, for SPI -> pass 'mpu_spi_handle'
 	err = MPU.initialize();
@@ -796,7 +775,6 @@ void sensor(void *args){
 		logged_tests += "MPU6050 AHRS test: PASSED\n";
 		IMU::init();
 		IMU::read();
-
 		// BIAS MPU6050
 		mpud::raw_axes_t gb = gyro_bias.get();
 		mpud::raw_axes_t ab = accl_bias.get();
@@ -831,7 +809,6 @@ void sensor(void *args){
 	Speed2Fly.change_mc_bal();
 	Version myVersion;
 	ESP_LOGI(FNAME,"Program Version %s", myVersion.version() );
-
 	ESP_LOGI(FNAME,"%s", logged_tests.c_str());
 	if( !selftestPassed )
 	{
@@ -845,8 +822,6 @@ void sensor(void *args){
 		if( !Rotary.readSwitch() )
 			sleep(2);
 	}
-
-
 
 	if( Rotary.readSwitch() )
 	{
@@ -930,7 +905,6 @@ void sensor(void *args){
 			delay(5000);
 		}
 	}
-
 	Menu = new SetupMenu();
 	Menu->begin( display, &Rotary, &bmpBA, &Battery );
 
@@ -949,7 +923,6 @@ void sensor(void *args){
 			display->clear();
 	}
 	else if( ias < 50.0 ){
-		// xSemaphoreTake(xMutex,portMAX_DELAY );
 		ESP_LOGI(FNAME,"QNH Autosetup, IAS=%3f (<50 km/h)", ias );
 		// QNH autosetup
 		float ae = elevation.get();
@@ -979,7 +952,6 @@ void sensor(void *args){
 			float &qnh = QNH.getRef();
 			qnh = qnh_best;
 		}
-		// xSemaphoreGive(xMutex);
 		display->clear();
 		SetupMenuValFloat::showQnhMenu();
 	}
@@ -988,8 +960,6 @@ void sensor(void *args){
 		inSetup = false;
 		display->clear();
 	}
-
-
 	if( hardwareRevision.get() == 2 )
 		Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
 	else {
@@ -1012,7 +982,6 @@ void sensor(void *args){
 				ESP_LOGI( FNAME, "ADC2 GPIO 2 looks good, reading: %d", read );
 		}
 	}
-
 	gpio_set_pull_mode(RESET_Display, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_Display, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_bme280BA, GPIO_PULLUP_ONLY );
@@ -1029,10 +998,7 @@ void sensor(void *args){
 		if( i != 23 && i < 6 && i > 12  )
 			gpio_set_drive_capability((gpio_num_t)i, GPIO_DRIVE_CAP_1);
 	}
-
 }
-
-// extern "C" void btstack_app(void *ignore);
 
 extern "C" void  app_main(void){
 	ESP_LOGI(FNAME,"app_main" );

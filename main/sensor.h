@@ -17,14 +17,6 @@ extern bool ahrsKeyValid;
 extern mpud::float_axes_t accelG;
 extern mpud::float_axes_t gyroDPS;
 
-extern float ox;
-extern float oy;
-extern float oz;
-
-extern float aox;
-extern float aoy;
-extern float aoz;
-
 extern float ias;
 
 float getTAS();

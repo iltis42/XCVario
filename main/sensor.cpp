@@ -83,22 +83,13 @@ BMP:
 #define FREQ_BMP_SPI 13111111/2
 
 
-float baroP=0;
-float temperature=15.0;
-bool  validTemperature=false;
-float battery=0.0;
-float TE=0;
-float dynamicP;
-
-bool haveMPU=false;
-bool ahrsKeyValid=false;
-int ccp=60;
-
 MCP3221 *MCP=0;
 DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 standard, alternative  GPIO_NUM_17
+
 MP5004DP theMP5004DP;
 MS4525DO theMS4525DO;
 AirspeedSensor *asSensor=0;
+
 xSemaphoreHandle xMutex=NULL;
 
 S2F Speed2Fly;
@@ -108,7 +99,6 @@ AnalogInput Battery( (22.0+1.2)/1200, ADC_ATTEN_DB_0, ADC_CHANNEL_7, ADC_UNIT_1 
 AnalogInput *AnalogInWk = 0;
 
 TaskHandle_t *bpid;
-TaskHandle_t *apid;
 TaskHandle_t *tpid;
 TaskHandle_t *dpid;
 
@@ -124,6 +114,26 @@ OTA *ota = 0;
 ESPRotary Rotary;
 SetupMenu  *Menu = 0;
 
+// Gyro and acceleration sensor
+I2C_t& i2c                     = i2c1;  // i2c0 or i2c1
+MPU_t MPU;         // create an object
+mpud::float_axes_t accelG;
+mpud::float_axes_t gyroDPS;
+mpud::float_axes_t accelG_Prev;
+mpud::float_axes_t gyroDPS_Prev;
+
+BTSender btsender;
+
+float baroP=0;
+float temperature=15.0;
+bool  validTemperature=false;
+float battery=0.0;
+float TE=0;
+float dynamicP;
+
+bool haveMPU=false;
+bool ahrsKeyValid=false;
+int  ccp=60;
 float ias = 0;
 float tas = 0;
 float aTE = 0;
@@ -135,35 +145,20 @@ float as2f = 0;
 float s2f_delta = 0;
 float polar_sink = 0;
 bool  standard_setting = false;
-long millisec = millis();
 
-mpud::float_axes_t accelG;
-mpud::float_axes_t gyroDPS;
-mpud::float_axes_t accelG_Prev;
-mpud::float_axes_t gyroDPS_Prev;
-
-float ox=0;
-float oy=0;
-float oz=0;
-
-float aox=0;
-float aoy=0;
-float aoz=0;
 float wksensor=-1;
 int wksenspos[7];
+int wksensorold=-2;
 
 bool inSetup=true;
 bool stall_warning_active=false;
 
-// Gyro and acceleration sensor
-I2C_t& i2c                     = i2c1;  // i2c0 or i2c1
-MPU_t MPU;         // create an object
+int count=0;
+bool flarmWarning = false;
 
 float getTAS() { return tas; };
 float getTE() { return TE; };
 
-BTSender btsender;
-bool lastAudioDisable = false;
 
 void init_wksensor(){
 	wksenspos[0] = wk_sens_pos_minus_2.get() - ( wk_sens_pos_minus_1.get() - wk_sens_pos_minus_2.get()); // extrapolated neg pole
@@ -180,7 +175,7 @@ float getSensorWkPos(int wks)
 	int wk=0;
 	for( int i=0; i<=5; i++ ){
 		if( ((wksenspos[i] < wks) && (wks < wksenspos[i+1]))  ||
-			((wksenspos[i] > wks) && (wks > wksenspos[i+1]))	) {
+				((wksenspos[i] > wks) && (wks > wksenspos[i+1]))	) {
 			wk = i;
 			break;
 		}
@@ -191,8 +186,6 @@ float getSensorWkPos(int wks)
 	float wkf =(wk-3) + relative;
 	return wkf;
 }
-
-bool flarmWarning = false;
 
 void drawDisplay(void *pvParameters){
 	while (1) {
@@ -255,13 +248,6 @@ void drawDisplay(void *pvParameters){
 			ESP_LOGW(FNAME,"Warning drawDisplay stack low: %d bytes", uxTaskGetStackHighWaterMark( dpid ) );
 	}
 }
-
-int count=0;
-mpud::raw_axes_t accelRawPrev;     // holds x, y, z axes as int16
-mpud::raw_axes_t gyroRawPrev;      // holds x, y, z axes as int16
-bool peya = false;
-int wksensorold=-2;
-
 
 void readBMP(void *pvParameters){
 	while (1)
@@ -401,7 +387,7 @@ void readBMP(void *pvParameters){
 				}
 				else if( nmea_protocol.get() == XCVARIO ) {
 					OV.sendNMEA( P_XCVARIO, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-							-accelG[2], accelG[1],accelG[0], gyroDPS.x+ox, gyroDPS.y+oy, gyroDPS.z+oz );
+							-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
 				}
 				else
 					ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
@@ -824,18 +810,18 @@ void sensor(void *args){
 	Menu->begin( display, &Rotary, &bmpBA, &Battery );
 
 	if ( blue_enable.get() == WL_WLAN_CLIENT ){
-			display->clear();
-			display->writeText( 2, "Wait for Master XCVario" );
-			std::string ssid = WifiClient::scan();
-			display->writeText( 3, "Master XCVario Found" );
-			char id[30];
-			sprintf( id, "Wifi ID: %s", ssid.c_str() );
-			display->writeText( 4, id );
-			display->writeText( 5, "Now start" );
-			WifiClient::start();
-			delay( 2000 );
-			inSetup = false;
-			display->clear();
+		display->clear();
+		display->writeText( 2, "Wait for Master XCVario" );
+		std::string ssid = WifiClient::scan();
+		display->writeText( 3, "Master XCVario Found" );
+		char id[30];
+		sprintf( id, "Wifi ID: %s", ssid.c_str() );
+		display->writeText( 4, id );
+		display->writeText( 5, "Now start" );
+		WifiClient::start();
+		delay( 2000 );
+		inSetup = false;
+		display->clear();
 	}
 	else if( ias < 50.0 ){
 		ESP_LOGI(FNAME,"QNH Autosetup, IAS=%3f (<50 km/h)", ias );

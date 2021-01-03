@@ -137,6 +137,7 @@ SetupNG<int>		    wk_sens_pos_minus_2("WKSM2", 0);
 SetupNG<int>         	stall_warning( "STALL_WARN", 0 );
 SetupNG<float>			stall_speed( "STALL_SPEED", 70 );
 SetupNG<int>         	flarm_warning( "FLARM_WARN_LEVEL", 1 );
+SetupNG<int>         	flarm_sim( "FLARM_SIM", 0, false );
 SetupNG<float>         	flarm_volume( "FLARM_VOL", 100 );
 SetupNG<int>         	flap_sensor( "FLAP_SENS", 0 );
 

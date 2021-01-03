@@ -29,14 +29,24 @@ This limits the overall channel capacity to 5 sentences per second (at 4.8k Baud
 If  too  many  sentences  are  produced  with  regard  to  the  available  transmission  speed,
 some sentences might be lost or truncated.
 
- */
+*/
 
-// #define FLARM_SIM
 // Option to simulate FLARM sentences
-
-#ifdef FLARM_SIM
 char *flarm[] = {
-		/*
+		"$PFLAU,3,1,2,1,1,-60,2,-100,755,1234*12\n",
+		"$PFLAU,3,1,2,1,1,-20,2,-100,655,1234*12\n",
+		"$PFLAU,3,1,2,1,1,-10,2,-80,455,1234*12\n",
+		"$PFLAU,3,1,2,1,2,10,2,-40,155,1234*12\n",
+		"$PFLAU,3,1,2,1,2,20,2,-20,155,1234*12\n",
+		"$PFLAU,3,1,2,1,3,30,2,0,155,1234*12\n",
+		"$PFLAU,3,1,2,1,3,60,2,20,255,1234*12\n",
+		"$PFLAU,3,1,2,1,2,80,2,40,455,1234*12\n",
+		"$PFLAU,3,1,2,1,1,90,2,80,855,1234*12\n",
+		"$PFLAU,3,1,2,1,1,90,2,80,1555,1234*12\n"
+
+};
+/*
+char *gps[] = {
 		"$PFLAA,0,11461,-9272,1436,1,AFFFFF,51,0,257,0.0,0*7A\n",
 		"$PFLAA,0,2784,3437,216,1,AFFFFE,141,0,77,0.0,0*56\n",
 		"$PFLAA,1,-1375,1113,64,1,AFFFFD,231,0,30,0.0,0*43\n",
@@ -48,47 +58,26 @@ char *flarm[] = {
 		"$PFLAA,0,-3158,3839,1384,1,A858F3,302,0,123,-12.4,0*6E\n",
 		"$GPRMC,084855.40,A,44xx.xxx38,N,093xx.xxx15,W,0.0,0.0,300116,,,D*42\n",
 		"$GPGGA,152011.934,4850.555,N,00839.186,E,1,12,1.0,0.0,M,0.0,M,,*67\n",
-		*/
 		"$GPGSA,A,3,01,02,03,04,05,06,07,08,09,10,11,12,1.0,1.0,1.0*30\n",
 		"$GPRMC,152949.571,A,4846.973,N,00843.677,E,,,220620,000.0,W*75\n",
-		"$PFLAU,3,1,2,1,1,-60,2,-100,755,1234*12\n",
-		"$PFLAU,3,1,2,1,1,-10,2,-80,455,1234*12\n",
-		"$PFLAU,3,1,2,1,2,10,2,-40,155,1234*12\n",
-		"$PFLAU,3,1,2,1,2,20,2,-20,155,1234*12\n",
-		"$PFLAU,3,1,2,1,3,30,2,0,155,1234*12\n",
-		"$PFLAU,3,1,2,1,3,60,2,20,255,1234*12\n",
-		"$PFLAU,3,1,2,1,2,80,2,40,455,1234*12\n",
-		"$PFLAU,3,1,2,1,1,90,2,80,855,1234*12\n"
-		"$PFLAU,3,1,2,1,1,90,2,80,1555,1234*12\n"
-
 };
-#endif
+*/
 
-
-
+int sim=100;
 // Serial Handler  ttyS1, S1, port 8881
 void Serial::serialHandlerS1(void *pvParameters){
-
-#ifdef FLARM_SIM
-	int i=0;
-#endif
 	while(1) {
-#ifdef FLARM_SIM
-		i++;
-		if( i < 10 ){
-			SString sf(  flarm[i] );
-			// s.append( flarm[i++], strlen(flarm[i++] ) );
+		if( flarm_sim.get() ){
+			sim=0;
+			flarm_sim.set( 0 );
+		}
+		if( sim < 10 ){
+			SString sf(  flarm[sim] );
 			Router::forwardMsg( sf, s1_rx_q );
 			ESP_LOGI(FNAME,"Serial FLARM SIM: %s",  sf.c_str() );
-			delay(3000);
+			delay(5000);
+			sim++;
 		}
-/*
-		if(i>9) {
-			i=0;
-		}
-		delay(2000);
-		*/
-#endif
 		SString s;
 		// Serial Interface tty1 send
 		if ( !s1_tx_q.isEmpty() && Serial1.availableForWrite() ){

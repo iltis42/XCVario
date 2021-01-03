@@ -861,6 +861,12 @@ void SetupMenu::setup( )
 		flarmv->setHelp(PROGMEM "Maximum volume FLARM alarm audio warning");
 		flarm->addMenu( flarmv );
 
+		SetupMenuSelect * flarms = new SetupMenuSelect( "FLARM Simulation",	0, false, 0, true, &flarm_sim );
+		flarm->addMenu( flarms );
+		flarms->setHelp( PROGMEM "Simulate an airplane crossing from left to right with different alarm levels and vertical distance");
+		flarms->addEntry( "Disable");
+		flarms->addEntry( "Start Sim");
+
 		SetupMenu * sy = new SetupMenu( "System" );
 		MenuEntry* sye = mm->addMenu( sy );
 

@@ -363,6 +363,7 @@ extern SetupNG<int>         stall_warning;
 extern SetupNG<float>		stall_speed;
 extern SetupNG<int>        	flarm_warning;
 extern SetupNG<float>       flarm_volume;
+extern SetupNG<int>         flarm_sim;
 extern SetupNG<int>         flap_sensor;
 
 

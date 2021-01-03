@@ -200,7 +200,7 @@ void Flarm::drawFlarmWarning(){
 		ucg->setColor( COLOR_WHITE );
 		ucg->setFont(ucg_font_fub20_hr);
 		char d[16];
-		sprintf(d,"%d m", RelativeDistance );
+		sprintf(d,"%d m  ", RelativeDistance );
 		ucg->printf( d );
 		oldDist = RelativeDistance;
 	}
@@ -210,7 +210,7 @@ void Flarm::drawFlarmWarning(){
     	ucg->setColor( COLOR_WHITE );
     	ucg->setFont(ucg_font_fub20_hr);
     	char v[16];
-    	sprintf(v,"%d m", RelativeVertical );
+    	sprintf(v,"%d m  ", RelativeVertical );
     	ucg->printf( v );
     	double relDist =  (double)RelativeDistance;
     	if( RelativeBearing < 0 )

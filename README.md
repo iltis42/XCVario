@@ -61,22 +61,24 @@ The Soft- and Hardware features:
 
 - QNH and McCready Adjustment
 - Audio-Generator with adjustable Volume and Deadband plus setup option for frequency tone style and range
-- Integrated Loudspeaker
-- Flap Position Indicator Option
+- Integrated Loudspeaker, 2 Watt Audio power (loud and clear)
+- Optimum Flap Position Indicator with Flap Sensor (optional)
 - S2F (Speed2Fly) Indicator with configurable MC Ballast and Bugs based on customizable Polar
 - Around 100 Polars are already included ( list in https://github.com/iltis42/OpenIVario/blob/master/main/Polars.cpp )
 - IAS (Indicated Airspeed) and TAS Indicator
-- Temperatur Indicator
+- Outside Temperatur Sensor
 - Battery Charge Indicator
 - Variometer display with adjustable range (1 m/s - 30 m/s), and damping ( 1s - 10s )
-- Bluetooth Interface for Android devices running XC Soar (OpenVario or Borgelt protocol to sync from or to the device)
+- Bluetooth or Wifi Interface e.g. for Android devices running XC Soar
+- Biderectional Sync of MacCready Value, Ballast and Bugs
+- Sync QNH from device
 - High precision barometric Altimeter 1 hPa (8 meter) absolute accuracy
-- Sunlight readable 500 nits 2.4 inch IPS Technology Display
+- Sunlight readable high contrast 500 nits 2.4 inch IPS Technology Display
 - Battery Voltage Indicator
 - Audio Switch for Vario/S2F Audio
 - Detailed Setup Menu
 - Serial to Bluetooth Bridge e.g. for FLARM
 - Serial Output of OpenVarion Format NMEA data
 - Software Update OverTheAir (OTA) via WiFi Access Point
-- Planned Attitude and Heading sensor for next hardware revision
+- Attitude and Heading Reference System (AHRS) available in this hardware revision
 

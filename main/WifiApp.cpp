@@ -186,7 +186,10 @@ void wifi_init_softap()
 
 		esp_event_loop_init( (system_event_cb_t)wifi_event_handler, 0 );
 
-		ESP_LOGI(FNAME,"now esp_wifi_set_config");
+		ESP_LOGI(FNAME,"now esp_wifi_set_mode");
+		ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+
+		ESP_LOGI(FNAME,"now esp_wifi_set_config ssid:%s", SetupCommon::getID() );
 		wifi_config_t wc;
 		strcpy( (char *)wc.ap.ssid, SetupCommon::getID() );
 		wc.ap.ssid_len = strlen( (char *)wc.ap.ssid );
@@ -199,8 +202,7 @@ void wifi_init_softap()
 		wc.ap.beacon_interval = 50;
 
 		ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &wc));
-		ESP_LOGI(FNAME,"now esp_wifi_set_mode");
-		ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+
 		ESP_LOGI(FNAME,"now esp_wifi_set_storage");
 		ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
 

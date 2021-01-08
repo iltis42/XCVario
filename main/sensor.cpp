@@ -286,7 +286,7 @@ void readBMP(void *pvParameters){
 
 		if( (count++ % 2) == 0 ) {
 			if( AnalogInWk ) {
-				int wkraw = AnalogInWk->getRaw(true, 32);
+				int wkraw = AnalogInWk->getRaw();
 				if( wkraw < 4095 && wkraw > 0 ){
 					wksensor = getSensorWkPos( wkraw );
 					// ESP_LOGI(FNAME,"wk sensor=%f", wksensor );
@@ -579,7 +579,7 @@ void sensor(void *args){
 	}
 
 	if( !asSensor ){
-		ESP_LOGE(FNAME,"Error with air speed pressure sensor, now working sensor found");
+		ESP_LOGE(FNAME,"Error with air speed pressure sensor, no working sensor found!");
 		display->writeText( line++, "AS Sensor: NOT FOUND");
 		logged_tests += "AS Sensor: NOT FOUND\n";
 		selftestPassed = false;
@@ -876,7 +876,7 @@ void sensor(void *args){
 		if( AnalogInWk != 0 ) {
 			AnalogInWk->begin(); // GPIO2 for Wk Sensor)
 			delay(10);
-			uint32_t read =  AnalogInWk->getRaw(true);
+			uint32_t read =  AnalogInWk->getRaw();
 			if( read == 0  || read >= 4096 ) // try GPIO pin 34, series 2021-2
 				ESP_LOGI( FNAME, "Flap senor not found or edge value, reading: %d", read);
 			else

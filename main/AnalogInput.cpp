@@ -55,7 +55,7 @@ void AnalogInput::begin() {
 	get();
 }
 
-float AnalogInput::get( bool nofilter, int loops ){
+unsigned int AnalogInput::getRaw( int loops ) {
 	int adc = 0;
 	for( int i=0; i<loops; i++ ) {
 		int raw;
@@ -63,10 +63,14 @@ float AnalogInput::get( bool nofilter, int loops ){
 			raw =  adc1_get_raw((adc1_channel_t)_adc_ch);
 		else if( _unit == ADC_UNIT_2 )
 			adc2_get_raw((adc2_channel_t)_adc_ch, ADC_WIDTH_BIT_12, &raw );
-	   adc += raw;
+		adc += raw;
 	}
 	adc = adc/loops;
+	return( adc );
+};
 
+float AnalogInput::get( bool nofilter, int loops ){
+	int adc = getRaw( loops );
 	uint32_t voltage;
 	if( _cal )
 		voltage = esp_adc_cal_raw_to_voltage(adc, &adc_chars);

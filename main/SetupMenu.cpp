@@ -43,7 +43,7 @@ int update_rentry(SetupMenuValFloat * p)
 
 void showWk(SetupMenuSelect * p){
 	p->ucg->setPrintPos(1,120);
-	p->ucg->printf("Sensor: %d  ", AnalogInWk->getRaw(false, 500) );
+	p->ucg->printf("Sensor: %d    ", AnalogInWk->getRaw(1000) );
 	delay(20);
 }
 
@@ -59,31 +59,31 @@ int wk_cal( SetupMenuSelect * p )
 		delay(1000);
 		while( !p->_rotary->readSwitch() )
 			showWk(p);
-		wk_sens_pos_plus_2.set( AnalogInWk->getRaw(true, 1000) );
+		wk_sens_pos_plus_2.set( AnalogInWk->getRaw(1000) );
 		p->ucg->setPrintPos(1,60);
 		p->ucg->printf("Set Flap +1  ");
 		delay(1000);
 		while( !p->_rotary->readSwitch() )
 			showWk(p);
-		wk_sens_pos_plus_1.set( AnalogInWk->getRaw(true, 1000) );
+		wk_sens_pos_plus_1.set( AnalogInWk->getRaw(1000) );
 		p->ucg->setPrintPos(1,60);
 		p->ucg->printf("Set Flap  0  ");
 		delay(1000);
 		while( !p->_rotary->readSwitch() )
 			showWk(p);
-		wk_sens_pos_0.set( AnalogInWk->getRaw(true, 1000) );
+		wk_sens_pos_0.set( AnalogInWk->getRaw(1000) );
 		p->ucg->setPrintPos(1,60);
 		p->ucg->printf("Set Flap -1  ");
 		delay(1000);
 		while( !p->_rotary->readSwitch() )
 			showWk(p);
-		wk_sens_pos_minus_1.set( AnalogInWk->getRaw(true,1000) );
+		wk_sens_pos_minus_1.set( AnalogInWk->getRaw(1000) );
 		p->ucg->setPrintPos(1,60);
 		p->ucg->printf("Set Flap -2  ");
 		delay(1000);
 		while( !p->_rotary->readSwitch() )
 			showWk(p);
-		wk_sens_pos_minus_2.set( AnalogInWk->getRaw(true,1000) );
+		wk_sens_pos_minus_2.set( AnalogInWk->getRaw(1000) );
 		p->ucg->setPrintPos(1,60);
 		p->ucg->printf("Saved        ");
 		delay(2000);

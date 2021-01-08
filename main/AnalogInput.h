@@ -26,7 +26,7 @@ public:
 
 	void begin();
 	float get( bool nofilter=false, int loops=64 );
-	inline unsigned int getRaw( bool nofilter=false, int loops=64 ) { return ( roundf(get( nofilter, loops) )); };
+	unsigned int getRaw( int loops=32 );
 
 private:
 	float _value;

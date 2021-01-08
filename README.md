@@ -64,7 +64,7 @@ The Soft- and Hardware features:
 - Integrated Loudspeaker, 2 Watt Audio power (loud and clear)
 - Optimum Flap Position Indicator with Flap Sensor (optional)
 - S2F (Speed2Fly) Indicator with configurable MC Ballast and Bugs based on customizable Polar
-- Around 100 Polars are already included ( list in https://github.com/iltis42/OpenIVario/blob/master/main/Polars.cpp )
+- Around 100 Polars are already included ( list in https://github.com/iltis42/XCVario/blob/master/main/Polars.cpp )
 - IAS (Indicated Airspeed) and TAS Indicator
 - Outside Temperatur Sensor
 - Battery Charge Indicator

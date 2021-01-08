@@ -1,5 +1,5 @@
 # XCVario
-Software for ESP32 based lean Variometer system with data interface in OpenVario, Cambridge Borgelt or (new) XCVario format, running on dedicated XCVario hardware
+Software for ESP32 based lean Variometer system with data interface in OpenVario, Cambridge, Borgelt or (new) XCVario format, running on dedicated XCVario hardware
 
 ![Vario]( https://raw.githubusercontent.com/iltis42/XCVario/master/images/Vario3D/vario-perspectiv.png )
 ![Vario Back]( https://github.com/iltis42/XCVario/blob/master/images/Vario3D/backviev-xcv-21.png )

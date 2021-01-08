@@ -1,4 +1,4 @@
-# OpenIVario
+# XCVario
 Software for ESP32 based lean Variometer system with OpenVario Interface running on XC Vario hardware
 
 ![Vario]( https://raw.githubusercontent.com/iltis42/OpenIVario/master/images/Vario3D/vario-perspectiv.png )

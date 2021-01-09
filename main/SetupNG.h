@@ -54,6 +54,7 @@ typedef enum e_audiomode_type { AM_VARIO, AM_S2F, AM_SWITCH, AM_AUTOSPEED } e_au
 typedef enum e_audio_tone_mode { ATM_SINGLE_TONE, ATM_DUAL_TONE } e_audio_tone_mode_t;
 typedef enum e_audio_range { AUDIO_RANGE_5_MS, AUDIO_RANGE_10_MS, AUDIO_RANGE_VARIABLE } e_audio_range_t;
 typedef enum e_flap_sensor { FLAP_SENSOR_DISABLE, FLAP_SENSOR_GPIO_2, FLAP_SENSOR_GPIO_34 } e_flap_sensor_t;
+typedef enum e_audio_brutto_netto { AUDIO_BRUTTO, AUDIO_NETTO } e_audio_brutto_netto_t;
 
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
 
@@ -365,6 +366,7 @@ extern SetupNG<int>        	flarm_warning;
 extern SetupNG<float>       flarm_volume;
 extern SetupNG<int>         flarm_sim;
 extern SetupNG<int>         flap_sensor;
+extern SetupNG<int>         audio_bn_mode;
 
 
 #endif /* MAIN_SETUP_NG_H_ */

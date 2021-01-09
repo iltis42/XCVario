@@ -627,52 +627,61 @@ void SetupMenu::setup( )
 
 		// Audio
 		SetupMenu * ad = new SetupMenu( "Audio" );
-		MenuEntry* ade = mm->addMenu( ad );
+		MenuEntry* audio = mm->addMenu( ad );
 
 		SetupMenuValFloat * dv = new SetupMenuValFloat( "Default Volume", 0, "%", 0, 100, 1.0, 0, false, &default_volume );
-		ade->addMenu( dv );
+		audio->addMenu( dv );
 		dv->setHelp(PROGMEM"Default volume for Audio when device is switched on");
 
-		SetupMenuSelect * dt = new SetupMenuSelect( 	"Tone Style", 0, false, 0 , true, &dual_tone );
+		SetupMenuSelect * abnm = new SetupMenuSelect( "Brutto/Netto Mode", 0, false, 0 , true, &audio_bn_mode );
+		abnm->setHelp(PROGMEM"Select either brutto vario, or netto vario (excluding polar sink) as source for audio");
+		abnm->addEntry( "Brutto Audio");       // 0
+		abnm->addEntry( "Netto Audio");        // 1
+		audio->addMenu( abnm );
+
+		SetupMenu * audios = new SetupMenu( "Tone Styles" );
+		audio->addMenu( audios );
+		audios->setHelp( PROGMEM "Configure audio style in terms of center frequency, octaves, single/dual tone, pitch and chopping");
+
+		SetupMenuValFloat * cf = new SetupMenuValFloat( "CenterFreq", 0,	"Hz", 200.0, 2000.0, 10.0, 0, false, &center_freq );
+		cf->setHelp(PROGMEM"Center frequency for Audio at zero Vario or zero S2F delta");
+		audios->addMenu( cf );
+
+		SetupMenuValFloat * oc = new SetupMenuValFloat( "Octaves", 0, "fold", 1.5, 4, 0.1, 0, false, &tone_var );
+		oc->setHelp(PROGMEM"Maximum tone frequency variation");
+		audios->addMenu( oc );
+
+		SetupMenuSelect * dt = new SetupMenuSelect( "Single/Dual Tone", 0, false, 0 , true, &dual_tone );
 		dt->setHelp(PROGMEM"Select dual tone aka ilec sound, (di/da/di) or single tone (di-di-di) mode");
 		dt->addEntry( "Single Tone");      // 0
 		dt->addEntry( "Dual Tone");        // 1
-		ade->addMenu( dt );
+		audios->addMenu( dt );
 
-		SetupMenuSelect * tch = new SetupMenuSelect( 	"Tone Chopping", 0, false, 0 , true, &chopping_mode );
+		SetupMenuValFloat * htv = new SetupMenuValFloat( "Dual Tone Pich", 0, "%", 0, 50, 1.0, 0, false, &high_tone_var );
+		htv->setHelp(PROGMEM"Tone variation in Dual Tone mode, percent of frequency pitch up for second tone");
+		audios->addMenu( htv );
+
+		SetupMenuSelect * tch = new SetupMenuSelect( "Tone Chopping", 0, false, 0 , true, &chopping_mode );
 		tch->setHelp(PROGMEM"Select tone chopping option on positive values for Vario and or S2F");
 		tch->addEntry( "Disabled");             // 0
 		tch->addEntry( "Vario only");           // 1
 		tch->addEntry( "S2F only");             // 2
 		tch->addEntry( "Vario and S2F");        // 3  default
-		ade->addMenu( tch );
+		audios->addMenu( tch );
 
-		SetupMenuValFloat * htv = new SetupMenuValFloat( 	"Dual Tone Pich", 0, "%", 0, 50, 1.0, 0, false, &high_tone_var );
-		htv->setHelp(PROGMEM"Tone variation in Dual Tone mode, percent of frequency pitch up for second tone");
-		ade->addMenu( htv );
-
-
-		SetupMenuSelect * am = new SetupMenuSelect( 	"Audio Mode", 0, false, 0 , true, &audio_mode );
+		SetupMenuSelect * am = new SetupMenuSelect( "Audio Mode", 0, false, 0 , true, &audio_mode );
 		am->setHelp( PROGMEM"Selects audio source. Audio either follows Vario, or S2F exclusively, controlled by external switch or automatically by speed" );
 		am->addEntry( "Vario");
 		am->addEntry( "S2F");
 		am->addEntry( "Switch");
 		am->addEntry( "AutoSpeed");
-		ade->addMenu( am );
+		audio->addMenu( am );
 
-		SetupMenuValFloat * ts = new SetupMenuValFloat( 	"AutoSpeed", 0, "km/h", 30.0, 200.0, 1.0, 0, false, &s2f_speed );
-		ade->addMenu( ts );
+		SetupMenuValFloat * ts = new SetupMenuValFloat( "S2F AutoSpeed", 0, "km/h", 30.0, 200.0, 1.0, 0, false, &s2f_speed );
+		audio->addMenu( ts );
 		ts->setHelp(PROGMEM"Transition speed when audio changes to S2F mode in AutoSpeed mode in metric system. 100 km/h equals rounfd 62 mph or 54 knots");
 
-		SetupMenuValFloat * cf = new SetupMenuValFloat( 	"CenterFreq", 0,	"Hz", 200.0, 2000.0, 10.0, 0, false, &center_freq );
-		cf->setHelp(PROGMEM"Center frequency for Audio at zero Vario or zero S2F delta");
-		ade->addMenu( cf );
-		SetupMenuValFloat * oc = new SetupMenuValFloat( 	"Octaves", 0, "fold", 1.5, 4, 0.1, 0, false, &tone_var );
-		oc->setHelp(PROGMEM"Maximum tone frequency variation");
-		ade->addMenu( oc );
-
-
-		SetupMenuSelect * ar = new SetupMenuSelect( 	"Range", 0, false, 0 , true, &audio_range  );
+		SetupMenuSelect * ar = new SetupMenuSelect( "Audio Range", 0, false, 0 , true, &audio_range  );
 
 		audio_range_sm = ar;
 		sprintf( rentry, "Variable (%d m/s)", (int)(range.get()) );
@@ -680,10 +689,12 @@ void SetupMenu::setup( )
 		ar->addEntry( "Max eq. 10 m/s");
 		ar->addEntry( rentry );
 		ar->setHelp(PROGMEM"Select either fix (5m/s) or variable Audio range according to current vario setting");
-		ade->addMenu( ar );
+		audio->addMenu( ar );
+
+
 
 		SetupMenu * db = new SetupMenu( "Deadbands" );
-		MenuEntry* dbe = ade->addMenu( db );
+		MenuEntry* dbe = audio->addMenu( db );
 		dbe->setHelp(PROGMEM"Audio dead band limits within Audio remains silent in metric scale. 0,1 m/s equals roughly 20 ft/min or 0.2 knots");
 
 		SetupMenuValFloat * dbminlv = new SetupMenuValFloat( "Lower Value Vario", 0,	"m/s", -5.0, 0, 0.1, 0 , false, &deadband_neg  );
@@ -704,7 +715,7 @@ void SetupMenu::setup( )
 
 		SetupMenuValFloat * afac = new SetupMenuValFloat( 	"Audio Exponent", 	0, "", 0.1, 2, 0.025, 0 , false, &audio_factor );
 		afac->setHelp(PROGMEM"Exponential factor < 1 gives a logarithmic, and > 1 exponential characteristic for frequency of audio signal");
-		ade->addMenu( afac);
+		audio->addMenu( afac);
 
 
 

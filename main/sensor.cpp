@@ -282,7 +282,16 @@ void readBMP(void *pvParameters){
 			AverageVario::recalcAvgClimb();
 			meanClimb = AverageVario::readAvgClimb();
 		}
-		Audio::setValues( TE, s2f_delta );
+		aTES2F = bmpVario.readS2FTE();
+		polar_sink = Speed2Fly.sink( ias );
+		netto = aTES2F - polar_sink;
+		as2f = Speed2Fly.speed( netto );
+		s2f_delta = as2f - ias;
+		if( audio_bn_mode.get() == AUDIO_BRUTTO )
+			Audio::setValues( TE, s2f_delta );
+		else {
+			Audio::setValues( TE - polar_sink, s2f_delta );
+		}
 
 		if( (count++ % 2) == 0 ) {
 			if( AnalogInWk ) {
@@ -323,12 +332,6 @@ void readBMP(void *pvParameters){
 				}
 			}
 			aTE = bmpVario.readAVGTE();
-			aTES2F = bmpVario.readS2FTE();
-
-			polar_sink = Speed2Fly.sink( ias );
-			netto = aTES2F - polar_sink;
-			as2f = Speed2Fly.speed( netto );
-			s2f_delta = as2f - ias;
 			xSemaphoreGive(xMutex);
 
 			if( inSetup != true ){

@@ -207,6 +207,7 @@ void IpsDisplay::clear(){
 	ucg->setColor( COLOR_BLACK );
 	ucg->drawBox( 0,0,240,320 );
 	screens_init = INIT_DISPLAY_NULL;
+	redrawValues();
 }
 
 void IpsDisplay::bootDisplay() {
@@ -410,6 +411,7 @@ void IpsDisplay::redrawValues()
 	s2fdalt = -1;
 	btqueue = -1;
 	_te=-200;
+	old_a=-1000;
 	mcalt = -100;
 	as_prev = -1;
 	_ate = -200;

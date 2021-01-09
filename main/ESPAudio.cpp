@@ -266,7 +266,6 @@ void Audio::dac_scale_set(dac_channel_t channel, int scale)
 	}
 }
 
-
 void Audio::alarm( bool enable, int volume, e_audio_alarm_type_t style ){  // non blocking
 	if( enable ) {
 		ESP_LOGI(FNAME,"Alarm sound enable volume: %d style: %d", volume, style );
@@ -340,7 +339,6 @@ void Audio::dac_offset_set(dac_channel_t channel, int offset)
 	}
 }
 
-
 /*
  * Invert output pattern of a DAC channel
  *
@@ -364,7 +362,6 @@ void Audio::dac_invert_set(dac_channel_t channel, int invert)
 		ESP_LOGD(FNAME,"Channel %d", channel);
 	}
 }
-
 
 //  modulation frequency
 void Audio::modtask(void* arg )

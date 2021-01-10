@@ -905,10 +905,6 @@ void sensor(void *args){
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 20, dpid, 0);  // 10
 
 	Audio::startAudio();
-	for( int i=0; i<33; i++ ) {
-		if( i != 23 && i < 6 && i > 12  )
-			gpio_set_drive_capability((gpio_num_t)i, GPIO_DRIVE_CAP_1);
-	}
 }
 
 extern "C" void  app_main(void){

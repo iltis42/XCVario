@@ -191,7 +191,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 
 // The XCVario Protocol or Cambridge CAI302 protocol to adjust MC,Ballast,Bugs.
 void Protocols::parseNMEA( char *str ){
-	ESP_LOGI(FNAME,"parseNMEA %s", str);
+	// ESP_LOGI(FNAME,"parseNMEA %s", str);
 	if ( strncmp( str, "!xw,", 4 ) == 0 ) {
 		float wkcmd;
 		sscanf( str,"!xw,%f", &wkcmd );  // directly scan into sensor variable

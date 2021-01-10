@@ -287,7 +287,7 @@ void readBMP(void *pvParameters){
 		netto = aTES2F - polar_sink;
 		as2f = Speed2Fly.speed( netto );
 		s2f_delta = as2f - ias;
-		if( audio_bn_mode.get() == AUDIO_BRUTTO )
+		if( audio_netto_mode.get() == AUDIO_BRUTTO )
 			Audio::setValues( TE, s2f_delta );
 		else {
 			Audio::setValues( TE - polar_sink, s2f_delta );

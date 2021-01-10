@@ -633,7 +633,7 @@ void SetupMenu::setup( )
 		audio->addMenu( dv );
 		dv->setHelp(PROGMEM"Default volume for Audio when device is switched on");
 
-		SetupMenuSelect * abnm = new SetupMenuSelect( "Brutto/Netto Mode", 0, false, 0 , true, &audio_bn_mode );
+		SetupMenuSelect * abnm = new SetupMenuSelect( "Brutto/Netto Mode", 0, false, 0 , true, &audio_netto_mode );
 		abnm->setHelp(PROGMEM"Select either brutto vario, or netto vario (excluding polar sink) as source for audio");
 		abnm->addEntry( "Brutto Audio");       // 0
 		abnm->addEntry( "Netto Audio");        // 1

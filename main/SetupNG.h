@@ -366,7 +366,7 @@ extern SetupNG<int>        	flarm_warning;
 extern SetupNG<float>       flarm_volume;
 extern SetupNG<int>         flarm_sim;
 extern SetupNG<int>         flap_sensor;
-extern SetupNG<int>         audio_bn_mode;
+extern SetupNG<int>         audio_netto_mode;
 
 
 #endif /* MAIN_SETUP_NG_H_ */

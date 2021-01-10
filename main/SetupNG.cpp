@@ -140,7 +140,7 @@ SetupNG<int>         	flarm_warning( "FLARM_WARN_LEVEL", 1 );
 SetupNG<int>         	flarm_sim( "FLARM_SIM", 0, false );
 SetupNG<float>         	flarm_volume( "FLARM_VOL", 100 );
 SetupNG<int>         	flap_sensor( "FLAP_SENS", 0 );
-SetupNG<int>         	audio_bn_mode( "AUDIO_BN_MOD", 0 );
+SetupNG<int>         	audio_netto_mode( "AUDIO_BN_MOD", 0 );
 
 mpud::raw_axes_t zero_bias;
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );

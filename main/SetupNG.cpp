@@ -81,7 +81,7 @@ SetupNG<float>  		default_volume( "DEFAULT_VOL", 10.0 );
 SetupNG<float>  		s2f_deadband( "DEADBAND_S2F", 10.0 );
 SetupNG<float>  		s2f_deadband_neg( "DB_S2F_NEG", -10.0 );
 SetupNG<float>  		s2f_delay( "S2F_DELAY", 1.0 );
-SetupNG<float>  		factory_volt_adjust("FACT_VOLT_ADJ" , 0.00815 );
+SetupNG<float>  		factory_volt_adjust("FACT_VOLT_ADJ" , 0.00815, false );
 SetupNG<float>  		bugs( "BUGS", 0.0 );
 
 SetupNG<int>  			display_type( "DISPLAY_TYPE",  UNIVERSAL );
@@ -137,7 +137,7 @@ SetupNG<int>		    wk_sens_pos_minus_2("WKSM2", 0);
 SetupNG<int>         	stall_warning( "STALL_WARN", 0 );
 SetupNG<float>			stall_speed( "STALL_SPEED", 70 );
 SetupNG<int>         	flarm_warning( "FLARM_WARN_LEVEL", 1 );
-SetupNG<int>         	flarm_sim( "FLARM_SIM", 0, false );
+SetupNG<int>         	flarm_sim( "FLARM_SIM", 0 );
 SetupNG<float>         	flarm_volume( "FLARM_VOL", 100 );
 SetupNG<int>         	flap_sensor( "FLAP_SENS", 0 );
 SetupNG<int>         	audio_netto_mode( "AUDIO_BN_MOD", 0 );

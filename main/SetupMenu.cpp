@@ -17,6 +17,7 @@
 #include <logdef.h>
 #include <sensor.h>
 #include "Cipher.h"
+#include "Units.h"
 
 IpsDisplay* MenuEntry::_display = 0;
 MenuEntry* MenuEntry::root = 0;
@@ -32,6 +33,17 @@ Ucglib_ILI9341_18x240x320_HWSPI *MenuEntry::ucg = 0;
 static char rentry[25];
 SetupMenuSelect * audio_range_sm = 0;
 SetupMenuSelect * mpu = 0;
+
+String vunit;
+
+void update_vunit_str( int unit ){
+	vunit = Units::VarioUnitLong( unit );
+}
+
+int update_vunit(SetupMenuSelect * p) {
+	update_vunit_str( p->getSelect() );
+	return 0;
+}
 
 int update_rentry(SetupMenuValFloat * p)
 {
@@ -515,11 +527,14 @@ void SetupMenu::press(){
 void SetupMenu::setup( )
 {
 	ESP_LOGI(FNAME,"SetupMenu setup()");
+
+	update_vunit_str( vario_unit.get() );
+
 	SetupMenu * root = new SetupMenu( "Setup" );
 	MenuEntry* mm = root->addMenu( root );
 
-	SetupMenuValFloat * mc = new SetupMenuValFloat( "MC", 0, "m/s",	0.0, 9.9, 0.1,  mc_adj, true, &MC );
-	mc->setHelp(PROGMEM"Default Mac Cready value for optimum cruise speed, or average climb rate, MC is provided in usual metric system means");
+	SetupMenuValFloat * mc = new SetupMenuValFloat( "MC", 0, vunit.c_str(),	0.0, 9.9, 0.1, mc_adj, true, &MC );
+	mc->setHelp(PROGMEM"Default Mac Cready value for optimum cruise speed, or average climb rate to be provided in same units as variometer setting");
 	mm->addMenu( mc );
 
 	SetupMenuValFloat * vol = new SetupMenuValFloat( "Audio Volume", &volume, "%", 0.0, 100, 1, vol_adj, true );
@@ -566,13 +581,7 @@ void SetupMenu::setup( )
 		SetupMenu * va = new SetupMenu( "Vario" );
 		MenuEntry* vae = mm->addMenu( va );
 
-		String vunit;
-		if( vario_unit.get() == 0 )
-			vunit = "m/s";
-		else if( vario_unit.get() == 1 )
-			vunit = "x 100ft/m";
-		else if( vario_unit.get() == 2 )
-			vunit = "kt";
+
 		SetupMenuValFloat * vga = new SetupMenuValFloat( 	"Range", 0, vunit.c_str(),	1.0, 30.0, 1, update_rentry, true, &range );
 		vga->setHelp(PROGMEM"Upper and lower value for Vario graphic display region");
 		vga->setPrecision( 0 );
@@ -829,10 +838,10 @@ void SetupMenu::setup( )
 		iau->addEntry( "Miles  per hour (mph)");
 		iau->addEntry( "Knots               (kt)");
 		un->addMenu( iau );
-		SetupMenuSelect * vau = new SetupMenuSelect( "Vario", 0, false , 0, true, &vario_unit );
-		vau->addEntry( "Meters/sec   (m/s)");
-		vau->addEntry( "Foot per min (ft/min)");
-		vau->addEntry( "Knots        (knots)");
+		SetupMenuSelect * vau = new SetupMenuSelect( "Vario", 0, false , update_vunit, true, &vario_unit );
+		vau->addEntry( "Meters/sec  (m/s)");
+		vau->addEntry( "x100 ft/min (cft/min)");
+		vau->addEntry( "Knots       (knots)");
 		un->addMenu( vau );
 		opt->addMenu( un );
 
@@ -1185,7 +1194,7 @@ void SetupMenu::setup( )
 	SetupMenu::display();
 }
 
-SetupMenuValFloat::SetupMenuValFloat( String title, float *value, String unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs ) {
+SetupMenuValFloat::SetupMenuValFloat( String title, float *value, const char *unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs ) {
 	// ESP_LOGI(FNAME,"SetupMenuValFloat( %s ) ", title.c_str() );
 	_rotary->attach(this);
 	_title = title;
@@ -1271,8 +1280,8 @@ void SetupMenuValFloat::displayVal()
 	ucg->setFont(ucg_font_fub25_hr);
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setPrintPos( 1, 70 );
-
-	ucg->printf("%0.*f %s   ", _precision, *_value, _unit.c_str());
+	if( _unit )
+		ucg->printf("%0.*f %s   ", _precision, *_value, _unit);
 	xSemaphoreGive(spiMutex );
 	ucg->setFont(ucg_font_ncenR14_hr);
 }

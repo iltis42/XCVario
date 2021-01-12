@@ -30,6 +30,7 @@ public:
 		return "nan";
 	};
 
+
 	static inline float Vario( float te ){
 		if( vario_unit.get() == 0 )
 			return( te );
@@ -43,13 +44,40 @@ public:
 		return 0;
 	};
 
+	static inline float Vario2ms( float var ){
+		if( vario_unit.get() == 0 )
+			return( var );
+		else if(  vario_unit.get() == 1 ){
+			return( var/196.85 );
+		}
+		else if( vario_unit.get() == 2 )
+			return( var/1.94384 );         // knots
+		else
+			ESP_LOGE(FNAME,"Wrong unit for Vario");
+		return 0;
+	};
+
 	static inline const char * VarioUnit(){
 		if( vario_unit.get() == 0 )
 			return("m/s");
 		else if( vario_unit.get() == 1 )
-			return("ft/m");
+			return("cft/m");
 		else if( vario_unit.get() == 2 )
 			return("kt");
+		else
+			ESP_LOGE(FNAME,"Wrong unit for altitude");
+		return "nan";
+	};
+	static inline const char * VarioUnitLong( int unit = -1 ){
+		int u = unit;
+		if( u == -1 )
+			u=vario_unit.get();
+		if( u == 0 )
+			return("m/s");
+		else if( u == 1 )
+			return("x 100ft/m");
+		else if( u == 2 )
+			return("knots");
 		else
 			ESP_LOGE(FNAME,"Wrong unit for altitude");
 		return "nan";

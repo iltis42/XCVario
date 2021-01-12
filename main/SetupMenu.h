@@ -85,8 +85,8 @@ public:
 
 class SetupMenuValFloat:  public MenuEntry {
 public:
-	SetupMenuValFloat();
-	SetupMenuValFloat(  String title, float *value, String unit, float min, float max, float step, int (*action)(SetupMenuValFloat *p) = 0, bool end_menu=false, SetupNG<float> *anvs = 0 );
+	SetupMenuValFloat() { _unit = 0; };
+	SetupMenuValFloat(  String title, float *value, const char *unit, float min, float max, float step, int (*action)(SetupMenuValFloat *p) = 0, bool end_menu=false, SetupNG<float> *anvs = 0 );
 	void display(int mode=0);
 	void displayVal();
 	void setPrecision( int prec );
@@ -101,7 +101,7 @@ public:
 private:
 	float _min, _max, _step;
 	bool _end_menu;
-	String _unit;
+	const char * _unit;
 	int (*_action)( SetupMenuValFloat *p );
 	int _precision;
 	SetupNG<float> * _nvs;

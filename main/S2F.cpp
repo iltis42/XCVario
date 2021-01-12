@@ -10,7 +10,7 @@
 #include "Polars.h"
 #include "logdef.h"
 #include "sensor.h"
-
+#include "Units.h"
 
 S2F::S2F() {
     a0=a1=a2=0;
@@ -75,7 +75,7 @@ void S2F::select_polar()
 void S2F::change_mc_bal()
 {
 	ESP_LOGI(FNAME,"S2F::change_mc_bal()");
-	_MC = MC.get();
+	_MC = Units::Vario2ms( MC.get() );
 	change_polar();
 	// test();
 }

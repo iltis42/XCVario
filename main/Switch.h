@@ -17,11 +17,13 @@ public:
 	static bool isOpen();
 	static bool cruiseMode( bool check_automode = true );
 	static void tick();   // call al least every 100 mS
+	static void setCruiseSpeed( float s ) { _cruise_speed_kmh = s; };
 private:
 	static gpio_num_t _sw;
 	static bool _cruise_mode;
 	static bool _closed;
 	static int _holddown;
+	static float _cruise_speed_kmh;
 };
 
 #endif /* MAIN_SWITCH_H_ */

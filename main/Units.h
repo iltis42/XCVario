@@ -17,19 +17,32 @@ public:
 			ESP_LOGE(FNAME,"Wrong unit for AS");
 		return 0;
 	};
-
-	static inline const char * AirspeedUnit(){
+	static inline float Airspeed2Kmh( float as ){
 		if( ias_unit.get() == 0 ) // km/h
+			return( as );
+		else if( ias_unit.get() == 1 ) // mph
+			return( as/0.621371 );
+		else if( ias_unit.get() == 2 ) // knots
+			return( as/0.539957 );
+		else
+			ESP_LOGE(FNAME,"Wrong unit for AS");
+		return 0;
+	};
+
+	static inline const char * AirspeedUnit( int unit = -1 ){
+		int u = unit;
+		if( u == -1 )
+			u=ias_unit.get();
+		if( u == 0 ) // km/h
 			return("km/h");
-		if( ias_unit.get() == 1 ) // mph
+		if( u == 1 ) // mph
 			return("mph");
-		if( ias_unit.get() == 2 ) // knots
+		if( u == 2 ) // knots
 			return("kt");
 		else
 			ESP_LOGE(FNAME,"Wrong unit for airspeed");
 		return "nan";
 	};
-
 
 	static inline float Vario( float te ){
 		if( vario_unit.get() == 0 )

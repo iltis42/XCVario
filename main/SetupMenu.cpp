@@ -18,6 +18,7 @@
 #include <sensor.h>
 #include "Cipher.h"
 #include "Units.h"
+#include "Switch.h"
 
 IpsDisplay* MenuEntry::_display = 0;
 MenuEntry* MenuEntry::root = 0;
@@ -35,6 +36,7 @@ SetupMenuSelect * audio_range_sm = 0;
 SetupMenuSelect * mpu = 0;
 
 String vunit;
+String sunit;
 
 void update_vunit_str( int unit ){
 	vunit = Units::VarioUnitLong( unit );
@@ -42,6 +44,21 @@ void update_vunit_str( int unit ){
 
 int update_vunit(SetupMenuSelect * p) {
 	update_vunit_str( p->getSelect() );
+	return 0;
+}
+
+void update_sunit_str( int unit ){
+	sunit = Units::AirspeedUnit( unit );
+}
+
+int update_sunit(SetupMenuSelect * p) {
+	update_sunit_str( p->getSelect() );
+	return 0;
+}
+
+int update_s2f_speed(SetupMenuValFloat * p)
+{
+	Switch::setCruiseSpeed( Units::Airspeed2Kmh( *(p->_value) ) );
 	return 0;
 }
 
@@ -529,6 +546,7 @@ void SetupMenu::setup( )
 	ESP_LOGI(FNAME,"SetupMenu setup()");
 
 	update_vunit_str( vario_unit.get() );
+	update_sunit_str( ias_unit.get() );
 
 	SetupMenu * root = new SetupMenu( "Setup" );
 	MenuEntry* mm = root->addMenu( root );
@@ -686,9 +704,9 @@ void SetupMenu::setup( )
 		am->addEntry( "AutoSpeed");
 		audio->addMenu( am );
 
-		SetupMenuValFloat * ts = new SetupMenuValFloat( "S2F AutoSpeed", 0, "km/h", 30.0, 200.0, 1.0, 0, false, &s2f_speed );
+		SetupMenuValFloat * ts = new SetupMenuValFloat( "S2F AutoSpeed", 0, sunit.c_str(), 20.0, 250.0, 1.0, update_s2f_speed, false, &s2f_speed );
 		audio->addMenu( ts );
-		ts->setHelp(PROGMEM"Transition speed when audio changes to S2F mode in AutoSpeed mode in metric system. 100 km/h equals rounfd 62 mph or 54 knots");
+		ts->setHelp(PROGMEM"Transition speed in AutoSpeed mode when audio changes from Vario to S2F mode");
 
 		SetupMenuSelect * ar = new SetupMenuSelect( "Audio Range", 0, false, 0 , true, &audio_range  );
 
@@ -833,10 +851,10 @@ void SetupMenu::setup( )
 		alu->addEntry( "Foot        (ft)");
 		alu->addEntry( "FlightLevel (FL)");
 		un->addMenu( alu );
-		SetupMenuSelect * iau = new SetupMenuSelect( "Indicated Airspeed", 0, false , 0, true, &ias_unit );
+		SetupMenuSelect * iau = new SetupMenuSelect( "Indicated Airspeed", 0, false , update_sunit, true, &ias_unit );
 		iau->addEntry( "Km per hour     (Km/h)");
-		iau->addEntry( "Miles  per hour (mph)");
-		iau->addEntry( "Knots               (kt)");
+		iau->addEntry( "Miles per hour (mph)");
+		iau->addEntry( "Knots           (kt)");
 		un->addMenu( iau );
 		SetupMenuSelect * vau = new SetupMenuSelect( "Vario", 0, false , update_vunit, true, &vario_unit );
 		vau->addEntry( "Meters/sec  (m/s)");
@@ -1064,20 +1082,9 @@ void SetupMenu::setup( )
 		auswo->addEntry( "Disable");
 		auswo->addEntry( "Enable");
 
-
-		String sunit( "Km/h" );
-		/*
-		if( ias_unit.get() == 0 )
-			sunit = "Km/h";
-		else if( ias_unit.get() == 1 )
-			vunit = "mph";
-		else if( ias_unit.get() == 2 )
-			vunit = "kt";
-		 */
 		SetupMenuValFloat * ausws = new SetupMenuValFloat( "Stall Speed", 0, sunit.c_str(), 20, 200, 1, 0, false, &stall_speed  );
-		ausws->setHelp(PROGMEM"Configure stalling speed in Km/h for corresponding airplane type");
+		ausws->setHelp(PROGMEM"Configure stalling speed for corresponding airplane type");
 		ausw->addMenu( ausws );
-
 
 		// Bluetooth or Wifi
 		String btname="Wireless ";

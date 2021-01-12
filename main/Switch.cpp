@@ -22,6 +22,7 @@
 bool Switch::_cruise_mode = false;
 bool Switch::_closed = false;
 int Switch::_holddown = 0;
+float Switch::_cruise_speed_kmh = 100;
 gpio_num_t Switch::_sw = GPIO_NUM_0;
 
 Switch::Switch() {
@@ -33,7 +34,7 @@ Switch::~Switch() {
 bool Switch::cruiseMode( bool check_automode ) {
 	if( check_automode )
 		if( audio_mode.get() == AM_AUTOSPEED )
-			if ( ias > s2f_speed.get() )
+			if ( ias > _cruise_speed_kmh )
 				return true;
 	return _cruise_mode;
 };
@@ -43,7 +44,6 @@ void Switch::begin( gpio_num_t sw ){
 	gpio_set_direction(_sw, GPIO_MODE_INPUT);
 	gpio_set_pull_mode(_sw, GPIO_PULLDOWN_ONLY);
 }
-
 
 bool Switch::isClosed() {
 	gpio_set_pull_mode(_sw, GPIO_PULLUP_ONLY);

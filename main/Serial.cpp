@@ -64,6 +64,7 @@ char *gps[] = {
 */
 
 int sim=100;
+int numreadS1=0;
 // Serial Handler  ttyS1, S1, port 8881
 void Serial::serialHandlerS1(void *pvParameters){
 	while(1) {
@@ -96,11 +97,17 @@ void Serial::serialHandlerS1(void *pvParameters){
 				ESP_LOGW(FNAME,"Serial 1 Overrun RX >= %d bytes avail: %d, Bytes", SSTRLEN, num);
 				num=SSTRLEN;
 			}
-			int numread = Serial1.read( s.c_str(), num );
-			ESP_LOGD(FNAME,"Serial 1 RX bytes read: %d", numread );
-			// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuffer,numread, ESP_LOG_INFO);
-			s.setLen( numread );
-			Router::forwardMsg( s, s1_rx_q );
+			int avail=Serial1.peek();
+			if( numreadS1 > 0 && numreadS1 == avail ) {  // have something received, but it stopped.
+				int numread = Serial1.read( s.c_str(), num );
+				ESP_LOGD(FNAME,"Serial 1 RX bytes read: %d", numread );
+				// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuffer,numread, ESP_LOG_INFO);
+				s.setLen( numread );
+				Router::forwardMsg( s, s1_rx_q );
+				numreadS1 = 0;
+			}
+			else
+				numreadS1 = avail;
 		}
 		Router::routeS1();
 		Router::routeBT();

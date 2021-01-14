@@ -335,7 +335,7 @@ void readBMP(void *pvParameters){
 			aTE = bmpVario.readAVGTE();
 			xSemaphoreGive(xMutex);
 
-			if( inSetup != true ){
+			if( (inSetup != true) && !Flarm::bincom ){
 				if( haveMPU && attitude_indicator.get() )  // 3th Generation HW, MPU6050 avail and feature enabled
 				{
 					mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16

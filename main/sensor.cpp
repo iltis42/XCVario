@@ -257,7 +257,9 @@ void readBMP(void *pvParameters){
 		xSemaphoreTake(xMutex,portMAX_DELAY );
 		TE = bmpVario.readTE( tas );  // 10x per second
 		bool ok=false;
-		float p = asSensor->readPascal(60, ok);
+		float p = 0;
+		if( asSensor )
+			p = asSensor->readPascal(60, ok);
 		if( ok )
 			dynamicP = p;
 		float iasraw = Atmosphere::pascal2kmh( dynamicP );

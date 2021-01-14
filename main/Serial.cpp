@@ -19,6 +19,7 @@
 #include "sensor.h"
 #include "Router.h"
 #include "Serial.h"
+#include "Flarm.h"
 
 /* Note that the standard NMEA 0183 baud rate is only 4.8 kBaud.
 Nevertheless, a lot of NMEA-compatible devices can properly work with
@@ -64,7 +65,9 @@ char *gps[] = {
 */
 
 int sim=100;
-int numreadS1=0;
+int numS1=0;
+#define HEARTBEAT_PERIOD_MS_SERIAL 25
+
 // Serial Handler  ttyS1, S1, port 8881
 void Serial::serialHandlerS1(void *pvParameters){
 	while(1) {
@@ -85,7 +88,7 @@ void Serial::serialHandlerS1(void *pvParameters){
 			ESP_LOGD(FNAME,"Serial Data and avail");
 			while( Router::pullMsg( s1_tx_q, s ) ) {
 				ESP_LOGD(FNAME,"Serial 1 TX len: %d bytes", s.length() );
-				ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
+				// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
 				int wr = Serial1.write( s.c_str(), s.length() );
 				ESP_LOGD(FNAME,"Serial 1 TX written: %d", wr);
 			}
@@ -97,27 +100,28 @@ void Serial::serialHandlerS1(void *pvParameters){
 				ESP_LOGW(FNAME,"Serial 1 Overrun RX >= %d bytes avail: %d, Bytes", SSTRLEN, num);
 				num=SSTRLEN;
 			}
-			int avail=Serial1.peek();
-			if( numreadS1 > 0 && numreadS1 == avail ) {  // have something received, but it stopped.
+			ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
+			if( (numS1 == num) || Flarm::bincom ){    // normally wait unit sentence has ended, or in binary mode just continue
 				int numread = Serial1.read( s.c_str(), num );
-				ESP_LOGD(FNAME,"Serial 1 RX bytes read: %d", numread );
-				// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuffer,numread, ESP_LOG_INFO);
+				ESP_LOGI(FNAME,"Serial 1 RX bytes read: %d", numread );
+				// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),numread, ESP_LOG_INFO);
 				s.setLen( numread );
 				Router::forwardMsg( s, s1_rx_q );
-				numreadS1 = 0;
+				numS1 = 0;
 			}
 			else
-				numreadS1 = avail;
+				numS1 = num;
 		}
 		Router::routeS1();
 		Router::routeBT();
 		Router::routeWLAN();
 	    BTSender::progress();   // piggyback this here, saves one task for BT sender
 		esp_task_wdt_reset();
-		vTaskDelay( HEARTBEAT_PERIOD_MS/portTICK_PERIOD_MS );
+		vTaskDelay( HEARTBEAT_PERIOD_MS_SERIAL/portTICK_PERIOD_MS );
 	}
 }
 
+int numS2=0;
 // ttyS2, port 8882
 void Serial::serialHandlerS2(void *pvParameters){
 	while(1) {
@@ -139,16 +143,21 @@ void Serial::serialHandlerS2(void *pvParameters){
 				ESP_LOGW(FNAME,"Serial 2 RX Overrun >= %d bytes avail: %d, Bytes", SSTRLEN, num);
 				num=SSTRLEN;
 			}
-			int numread = Serial2.read( s.c_str(), num );
-			ESP_LOGD(FNAME,"Serial 2 RX bytes read: %d", numread );
-			// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuffer,numread, ESP_LOG_INFO);
-			s.setLen( numread );
-			Router::forwardMsg( s, s2_rx_q );
+			if( (numS2 == num) || Flarm::bincom ){  // normally wait unit sentence has ended, or in binary mode just continue
+				int numread = Serial2.read( s.c_str(), num );
+				ESP_LOGD(FNAME,"Serial 2 RX bytes read: %d", numread );
+				// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuffer,numread, ESP_LOG_INFO);
+				s.setLen( numread );
+				Router::forwardMsg( s, s2_rx_q );
+				numS2 = 0;
+			}
+			else
+				numS2 = num;
 		}
 		Router::routeWLAN();
 		Router::routeS2();
 		esp_task_wdt_reset();
-		vTaskDelay( HEARTBEAT_PERIOD_MS/portTICK_PERIOD_MS );  // 48 bytes each 20 mS traffic at 19.200 baud
+		vTaskDelay( HEARTBEAT_PERIOD_MS_SERIAL/portTICK_PERIOD_MS );  // 48 bytes each 20 mS traffic at 19.200 baud
 	}
 }
 

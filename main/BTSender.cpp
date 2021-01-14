@@ -16,6 +16,7 @@
 #include "Switch.h"
 #include "sensor.h"
 #include "Router.h"
+#include "Flarm.h"
 #include "BluetoothSerial.h"
 
 bool BTSender::selfTest(){
@@ -62,14 +63,17 @@ void BTSender::progress(){
 			// ESP_LOGI(FNAME,"BT RFCOMM RX %c", byte );
 			rx.append( &byte, 1 );
 		}
-		ESP_LOGI(FNAME,"BT RFCOMM RX %d byte: %s",  rx.length(), rx.c_str() );
+		ESP_LOGI(FNAME,"BT RFCOMM RX %d byte",  rx.length() );
+		ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.c_str(),rx.length(), ESP_LOG_INFO);
+		if( !strncmp( rx.c_str(), "\n$PFLAX,", 6 ) )
+			Flarm::bincom = 5;
 		Router::forwardMsg( rx, bt_rx_q );
 	}
 
 	if( SerialBT->hasClient() ) {
 		SString msg;
 		if ( Router::pullMsg( bt_tx_q, msg ) ){
-			ESP_LOGI(FNAME,"data avail for BT send %d bytes: %s", msg.length(), msg.c_str() );
+			ESP_LOGV(FNAME,"data avail for BT send %d bytes: %s", msg.length(), msg.c_str() );
 			SerialBT->write( (const uint8_t *)msg.c_str(), msg.length() );
 		}
 	}

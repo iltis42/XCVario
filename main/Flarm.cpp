@@ -15,6 +15,7 @@ int Flarm::AlarmType = 0;
 int Flarm::RelativeVertical = 0;
 int Flarm::RelativeDistance = 0;
 char Flarm::ID[8] = "";
+int Flarm::bincom = 0;
 Ucglib_ILI9341_18x240x320_HWSPI* Flarm::ucg;
 
 extern xSemaphoreHandle spiMutex;

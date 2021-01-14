@@ -40,11 +40,17 @@ void Protocols::sendWkChange( float wk ){
 	Router::sendXCV(str);
 }
 
+int last_climb=-1000;
+
 void Protocols::sendMeanClimb( float climb ){
-	char str[20];
-	sprintf( str,"!xa,%1.1f", climb );
-	ESP_LOGI(FNAME,"New mean climb value: %f, cmd:%s", climb, str );
-	Router::sendXCV(str);
+	if( int(climb*10) != last_climb )
+	{
+		last_climb=int(climb*10);
+		char str[20];
+		sprintf( str,"!xa,%1.1f", climb );
+		ESP_LOGI(FNAME,"New mean climb value: %f, cmd:%s", climb, str );
+		Router::sendXCV(str);
+	}
 }
 
 void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
@@ -189,6 +195,8 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 	Router::sendXCV(str);
 }
 
+int countPFLAU=0;
+
 // The XCVario Protocol or Cambridge CAI302 protocol to adjust MC,Ballast,Bugs.
 void Protocols::parseNMEA( char *str ){
 	// ESP_LOGI(FNAME,"parseNMEA %s", str);
@@ -284,8 +292,9 @@ void Protocols::parseNMEA( char *str ){
 	}
 	else if( !strncmp( str, "$PFLAU,", 6 )) {
 		Flarm::parsePFLAU( str );
+		if( Flarm::bincom  )
+			Flarm::bincom--;
 	}
-
 }
 
 

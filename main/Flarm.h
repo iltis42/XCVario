@@ -14,6 +14,7 @@ public:
  	static inline int alarmLevel(){ return AlarmLevel; };
  	static void drawFlarmWarning();
  	static void initFlarmWarning();
+ 	static int bincom;
 
 private:
  	static void drawClearTriangle( int x, int y, int rb, int dist, int size, int factor );

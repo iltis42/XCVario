@@ -80,6 +80,19 @@ void Flarm::parsePFLAU( char *pflau ) {
 	tick=0;
 }
 
+void Flarm::parsePFLAX( SString &msg ) {
+	ESP_LOGI(FNAME,"parsePFLAX");
+	ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
+	int start=0;
+    if( !strncmp( msg.c_str(), "\n", 1 )  ){
+    	start=1;
+    }
+	if( !strncmp( (msg.c_str())+start, "$PFLAX,", 6 ) ){
+		Flarm::bincom = 5;
+		ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
+	}
+}
+
 int rbOld = -500; // outside normal range
 
 void Flarm::drawClearTriangle( int x, int y, int rb, int dist, int size, int factor ) {

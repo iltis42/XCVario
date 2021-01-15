@@ -14,6 +14,7 @@
 #include "Switch.h"
 #include "sensor.h"
 #include "Router.h"
+#include "Flarm.h"
 
 RingBufCPP<SString, QUEUE_SIZE> wl_vario_tx_q;
 RingBufCPP<SString, QUEUE_SIZE> wl_flarm_tx_q;
@@ -145,6 +146,7 @@ void Router::routeWLAN(){
 		}
 	}
 	if( pullMsg( wl_flarm_rx_q, wlmsg ) ){
+		Flarm::parsePFLAX( wlmsg );
 		if( serial1_tx.get() & RT_WIRELESS )
 			if( forwardMsg( wlmsg, s1_tx_q ) )
 				ESP_LOGV(FNAME,"Send to  device, TCP port 8881 received %d bytes", wlmsg.length() );
@@ -153,6 +155,7 @@ void Router::routeWLAN(){
 				ESP_LOGV(FNAME,"Send to ttyS2 device, TCP port 8881 received %d bytes", wlmsg.length() );
 	}
 	if( pullMsg( wl_aux_rx_q, wlmsg ) ){
+		Flarm::parsePFLAX( wlmsg );
 		if( serial1_tx.get() & RT_WIRELESS )
 			if( forwardMsg( wlmsg, s1_tx_q ) )
 				ESP_LOGV(FNAME,"Send to  device, TCP port 8882 received %d bytes", wlmsg.length() );
@@ -168,12 +171,13 @@ void Router::routeBT(){
 		return;
 	SString bt;
 	if( pullMsg( bt_rx_q, bt ) ){
+		Flarm::parsePFLAX( bt );
 		if( serial1_tx.get() & RT_WIRELESS )  // Serial data TX from bluetooth enabled ?
 			if( forwardMsg( bt, s1_tx_q ) )
-				ESP_LOGV(FNAME,"Send to  device, BT received %d bytes", bt.length() );
+				ESP_LOGV(FNAME,"Send to S1 device, BT received %d bytes", bt.length() );
 		if( serial2_tx.get() & RT_WIRELESS )  // Serial data TX from bluetooth enabled ?
 			if( forwardMsg( bt, s2_tx_q ) )
-				ESP_LOGV(FNAME,"Send to ttyS2 device, BT received %d bytes", bt.length() );
+				ESP_LOGV(FNAME,"Send to S2 device, BT received %d bytes", bt.length() );
 		// always check if it is a command to ourselves
 		if( strncmp( bt.c_str(), "!g,", 3 )  == 0 ) {
 			ESP_LOGV(FNAME,"BT RX Matched a Borgelt command %s", bt.c_str() );

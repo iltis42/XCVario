@@ -292,8 +292,10 @@ void Protocols::parseNMEA( char *str ){
 	}
 	else if( !strncmp( str, "$PFLAU,", 6 )) {
 		Flarm::parsePFLAU( str );
-		if( Flarm::bincom  )
+		if( Flarm::bincom  ) {
 			Flarm::bincom--;
+			ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
+		}
 	}
 }
 

@@ -4,6 +4,7 @@
 #include <string> // std::string
 #include <locale> // std::locale, std::toupper
 #include <Ucglib.h>
+#include "RingBufCPP.h"  // SString, tbd: extra header
 
 
 class Flarm {
@@ -11,6 +12,7 @@ public:
 	static void setDisplay( Ucglib_ILI9341_18x240x320_HWSPI *theUcg ) { ucg = theUcg; };
 	static void parsePFLAU( char *pflau );
 	static void parsePFLAA( char *pflaa );
+	static void parsePFLAX( SString &msg );
  	static inline int alarmLevel(){ return AlarmLevel; };
  	static void drawFlarmWarning();
  	static void initFlarmWarning();

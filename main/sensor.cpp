@@ -140,6 +140,7 @@ float tas = 0;
 float aTE = 0;
 float aTES2F = 0;
 float alt;
+float altSTD;
 float meanClimb = 0;
 float netto = 0;
 float as2f = 0;
@@ -315,18 +316,18 @@ void readBMP(void *pvParameters){
 			// ESP_LOGI(FNAME,"WK: %d", wksensor );
 			xSemaphoreTake(xMutex,portMAX_DELAY );
 			baroP = bmpBA.readPressure();   // 5x per second
-			float alt_standard = bmpBA.calcAVGAltitudeSTD( baroP );
+			float altSTD = bmpBA.calcAVGAltitudeSTD( baroP );
 			if( alt_select.get() == 0 ) // TE
 				alt = bmpVario.readAVGalt();
 			else { // Baro
 				if(  alt_unit.get() == 2 ) { // FL, always standard
-					alt = alt_standard;
+					alt = altSTD;
 					standard_setting = true;
 					// ESP_LOGI(FNAME,"au: %d", alt_unit.get() );
-				}else if( (fl_auto_transition.get() == 1) && ((int)alt_standard*0.0328084 + (int)(standard_setting) > transition_alt.get() ) ) {
-					alt = alt_standard;
+				}else if( (fl_auto_transition.get() == 1) && ((int)altSTD*0.0328084 + (int)(standard_setting) > transition_alt.get() ) ) {
+					alt = altSTD;
 					standard_setting = true;
-					// ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), alt_standard, standard_setting, transition_alt.get() );
+					// ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), altSTD, standard_setting, transition_alt.get() );
 				}
 				else {
 					alt = bmpBA.calcAVGAltitude( QNH.get(), baroP );
@@ -382,8 +383,8 @@ void readBMP(void *pvParameters){
 				// reduce also messages from 10 per second to 5 per second to reduce load in XCSoar
 				char lb[120];
 				if( nmea_protocol.get() == BORGELT ) {
-					OV.sendNMEA( P_BORGELT, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature  );
-					OV.sendNMEA( P_GENERIC, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature  );
+					OV.sendNMEA( P_BORGELT, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), altSTD, validTemperature  );
+					OV.sendNMEA( P_GENERIC, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), altSTD, validTemperature  );
 				}
 				else if( nmea_protocol.get() == OPENVARIO ){
 					OV.sendNMEA( P_OPENVARIO, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature  );
@@ -539,6 +540,7 @@ void sensor(void *args){
 		else  {
 			ESP_LOGI( FNAME,"Hardware Revision detected 3");
 			Rotary.begin( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);
+
 		}
 		ota = new OTA();
 		ota->begin( &Rotary );

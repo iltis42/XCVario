@@ -79,23 +79,23 @@ int create_socket( int port ){
 
 void socket_server(void *setup) {
 	sock_server_t *config = (sock_server_t *)setup;
-	struct sockaddr_in clientAddress;
+	struct sockaddr_in clientAddress[10];  // we support max 10 clients try to connect same time
+	socklen_t clientAddressLength = sizeof(struct sockaddr_in);
 	std::list<int>  clients;
 	int sock = create_socket( config->port );
 	if( sock < 0 ) {
 		ESP_LOGE(FNAME, "Socket creation for %d port FAILED: Abort task", config->port );
 		vTaskDelete(NULL);
 	}
-	while( 1 )
+	// we have a socket
+	fcntl(sock, F_SETFL, O_NONBLOCK); // socket should not block, so we can server several clients
+	while(1)
 	{
-		// we have a socket
-		socklen_t clientAddressLength = sizeof(clientAddress);
 		while (1) {
-			fcntl(sock, F_SETFL, O_NONBLOCK);
-			int new_client = accept(sock, (struct sockaddr *)&clientAddress, &clientAddressLength);
-			if( new_client >= 0 ){
+			int new_client = accept(sock, (struct sockaddr *)&clientAddress[clients.size()], &clientAddressLength);
+			if( new_client >= 0 && clients.size() < 10 ){
 				clients.push_back( new_client );
-				ESP_LOGI(FNAME, "New sock client:  %d", new_client );
+				ESP_LOGV(FNAME, "New sock client: %d, number of clients: %d", new_client, clients.size()  );
 			}
 			if( clients.size() ) {
 				SString s;
@@ -103,7 +103,7 @@ void socket_server(void *setup) {
 				if( s.length() )
 					ESP_LOGV(FNAME, "port %d to sent %d: bytes, %s", config->port, s.length(), s.c_str() );
 				std::list<int>::iterator it;
-				bool has_died = false;
+				int client_dead = 0;
 				int client;
 				for(it = clients.begin(); it != clients.end(); ++it)
 				{
@@ -114,10 +114,11 @@ void socket_server(void *setup) {
 						ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_VERBOSE);
 						if( client > 0 ){
 							int num = send(client, s.c_str(), s.length(), 0);
+							// ESP_LOGI(FNAME, "client %d, num send %d", client, num );
 							if( num < 0 ) {
 								ESP_LOGW(FNAME, "tcp client %d (port %d) send err: %s, remove!", client,  config->port, strerror(errno) );
 								close(client);
-								has_died = true;
+								client_dead = client;
 								// check on sending and remove from list if client has died
 							}
 							else{
@@ -125,19 +126,19 @@ void socket_server(void *setup) {
 							}
 						}
 					}
-					if( !has_died ){
+					if( !client_dead ){
 						// ESP_LOGI(FNAME, "read from client %d", client);
 						SString tcprx;
 						ssize_t sizeRead = recv(client, tcprx.c_str(), SSTRLEN-1, MSG_DONTWAIT);
 						if (sizeRead > 0) {
 							tcprx.setLen( sizeRead );
 							Router::forwardMsg( tcprx, *(config->rxbuf) );
-							ESP_LOGI(FNAME, "tcp read from port %d size: %d data: %s", config->port, sizeRead, tcprx.c_str() );
+							ESP_LOGV(FNAME, "tcp read from port %d size: %d data: %s", config->port, sizeRead, tcprx.c_str() );
 						}
 					}
 				}
-				if( has_died )
-					clients.remove( client );
+				if( client_dead )
+					clients.remove( client_dead );
 			}
 			vTaskDelay(20/portTICK_PERIOD_MS);
 		}
@@ -195,10 +196,9 @@ void wifi_init_softap()
 		wc.ap.ssid_len = strlen( (char *)wc.ap.ssid );
 		strcpy( (char *)wc.ap.password, PASSPHARSE );
 		wc.ap.channel = 1;
-		wc.ap.max_connection = 2;
+		wc.ap.max_connection = 4;
 		wc.ap.authmode = WIFI_AUTH_WPA_WPA2_PSK;
 		wc.ap.ssid_hidden = 0;
-		wc.ap.max_connection = 2;
 		wc.ap.beacon_interval = 50;
 
 		ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &wc));

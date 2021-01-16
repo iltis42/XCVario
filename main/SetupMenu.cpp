@@ -1161,7 +1161,7 @@ void SetupMenu::setup( )
 
 			SetupMenuSelect * s1out2 = new SetupMenuSelect( PROGMEM "Routing", 0, false, 0, true, &serial2_tx );
 			rs232_2->addMenu( s1out2 );
-			s1out2->setHelp( "Select devices routed to serial interface ttyS2");
+			s1out2->setHelp( "Select devices routed to serial interface ttyS2", 220 );
 			s1out2->addEntry( "Disable all");
 			s1out2->addEntry( "XCVario");                       // 1    XCVario NMEA Data bidir
 			s1out2->addEntry( "Wireless-XCSoar");               // 2    XCSoar Data bidir

@@ -72,31 +72,28 @@ void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
 	pcnt_counter_clear(PCNT_UNIT_0);
 	pcnt_counter_resume(PCNT_UNIT_0);
 
+	// second encoder for incrementing on each rotary step:
+	enc2.pulse_gpio_num = clk; //Rotary Encoder Chan A
+	enc2.ctrl_gpio_num = dt;	 //Rotary Encoder Chan B
+	enc2.unit = PCNT_UNIT_1;
+	enc2.channel = PCNT_CHANNEL_1;
 
-	if( rotary_inc.get() == ROTARY_SINGLE_INC ) {   // Single step type, need both counters
-		// second encoder for incrementing on each rotary step:
-		enc2.pulse_gpio_num = clk; //Rotary Encoder Chan A
-		enc2.ctrl_gpio_num = dt;	 //Rotary Encoder Chan B
-		enc2.unit = PCNT_UNIT_1;
-		enc2.channel = PCNT_CHANNEL_1;
+	enc2.pos_mode = PCNT_COUNT_DIS; //Count Only On Rising-Edges
+	enc2.neg_mode = PCNT_COUNT_INC;	// Discard Falling-Edge
 
-		enc2.pos_mode = PCNT_COUNT_DIS; //Count Only On Rising-Edges
-		enc2.neg_mode = PCNT_COUNT_INC;	// Discard Falling-Edge
+	enc2.lctrl_mode = PCNT_MODE_REVERSE;    // Rising A on HIGH B = CW Step
+	enc2.hctrl_mode = PCNT_MODE_KEEP; // Rising A on LOW B = CCW Step
 
-		enc2.lctrl_mode = PCNT_MODE_REVERSE;    // Rising A on HIGH B = CW Step
-		enc2.hctrl_mode = PCNT_MODE_KEEP; // Rising A on LOW B = CCW Step
+	enc2.counter_h_lim = 32000;
+	enc2.counter_l_lim = -32000;
 
-		enc2.counter_h_lim = 32000;
-		enc2.counter_l_lim = -32000;
+	pcnt_unit_config(&enc2);
+	pcnt_set_filter_value(PCNT_UNIT_1, 250);  // Filter Runt Pulses
+	pcnt_filter_enable(PCNT_UNIT_1);
 
-		pcnt_unit_config(&enc2);
-		pcnt_set_filter_value(PCNT_UNIT_1, 250);  // Filter Runt Pulses
-		pcnt_filter_enable(PCNT_UNIT_1);
-
-		pcnt_counter_pause(PCNT_UNIT_1); // Initial PCNT init
-		pcnt_counter_clear(PCNT_UNIT_1);
-		pcnt_counter_resume(PCNT_UNIT_1);
-	}
+	pcnt_counter_pause(PCNT_UNIT_1); // Initial PCNT init
+	pcnt_counter_clear(PCNT_UNIT_1);
+	pcnt_counter_resume(PCNT_UNIT_1);
 
 	xTaskCreatePinnedToCore(&ESPRotary::informObservers, "informObservers", 1024*10, NULL, 29, NULL, 0);
 }
@@ -143,11 +140,12 @@ void ESPRotary::informObservers( void * args )
 				ESP_LOGE(FNAME,"Error get counter");
 		}
 
-		if( abs( r_enc_count+r_enc2_count - old_cnt) > 1 )
+		if( abs( r_enc_count+r_enc2_count - old_cnt) > rotary_inc.get() )
 		{
 			// pcnt_counter_clear(PCNT_UNIT_0);
 			// ESP_LOGI(FNAME,"Rotary counter %d %d", r_enc_count,  r_enc2_count);
 			int diff = (r_enc_count+r_enc2_count) - old_cnt;
+			diff = diff / ( rotary_inc.get()+1 );
 			// ESP_LOGI(FNAME,"Rotary diff %d", diff );
 			if( hardwareRevision.get() >= 3 ) {
 				if( rotary_dir_21.get() == 1 ) // reverse default for 2021 series

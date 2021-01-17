@@ -1092,9 +1092,11 @@ void SetupMenu::setup( )
 
 		SetupMenuSelect * roinc = new SetupMenuSelect( "Rotary Increment", 0, false , 0, false, &rotary_inc );
 		rotary->addMenu( roinc );
-		roinc->setHelp( PROGMEM "Select type of rotary increment per detent, different brands may need adjustmet");
-		roinc->addEntry( "Single Increment");
-		roinc->addEntry( "Double Increment");
+		roinc->setHelp( PROGMEM "Select rotary sensitivity in increment's per detent, for personal preference");
+		roinc->addEntry( "1 Indent per Increment");
+		roinc->addEntry( "2 Indent per Increment");
+		roinc->addEntry( "3 Indent per Increment");
+		roinc->addEntry( "4 Indent per Increment");
 
 		SetupMenuSelect * s2fsw = new SetupMenuSelect( "S2F Switch Type", 0, false , 0, false, &s2f_switch_type );
 		hardware->addMenu( s2fsw );

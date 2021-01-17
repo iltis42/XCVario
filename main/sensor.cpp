@@ -218,11 +218,11 @@ void init_wksensor(){
 
 float getSensorWkPos(int wks)
 {
-	ESP_LOGI(FNAME,"getSensorWkPos %d", wks);
+	// ESP_LOGI(FNAME,"getSensorWkPos %d", wks);
 	int wk=0;
 	int min = 3 - flap_pos_max.get();
 	int max = 5 - flap_neg_max.get();
-	ESP_LOGI(FNAME,"getSensorWkPos %d min:%d max:%d", wks, min, max );
+	// ESP_LOGI(FNAME,"getSensorWkPos %d min:%d max:%d", wks, min, max );
 	for( int i=min; i<=max; i++ ){
 		if( ((wksenspos[i] < wks) && (wks < wksenspos[i+1]))  ||
 				((wksenspos[i] > wks) && (wks > wksenspos[i+1]))	) {
@@ -234,7 +234,7 @@ float getSensorWkPos(int wks)
 	float moved=wksenspos[wk]-wks;
 	float relative=moved/delta;
 	float wkf =(wk-4) + relative;
-	ESP_LOGI(FNAME,"return flap: %1.2f wk:%d relative: %f ", wkf, wk, relative  );
+	// ESP_LOGI(FNAME,"return flap: %1.2f wk:%d relative: %f ", wkf, wk, relative  );
 	return wkf;
 }
 

@@ -22,6 +22,7 @@
 #include "Router.h"
 #include "Atmosphere.h"
 #include "Flarm.h"
+#include "Units.h"
 
 S2F * Protocols::_s2f = 0;
 
@@ -80,10 +81,10 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		if( haveMPU && attitude_indicator.get() ){
 			float roll = IMU::getRoll();
 			float pitch = IMU::getPitch();
-			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%4.1f,%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", te, mc, bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
+			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%4.1f,%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
 
 		}else{
-			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%4.1f,,,,,", te, mc, bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp );
+			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%4.1f,,,,,", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp );
 		}
 	}
 	else if( proto == P_OPENVARIO ) {
@@ -106,8 +107,8 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		HH = Outside airtemp in degrees celcius ( may have leading negative sign )
 		CHK = standard NMEA checksum
 		 */
-		float iaskn = ias*0.539957;
-		sprintf(str,"$PBB50,%03d,%3.1f,%1.1f,%d,%d,%1.2f,%1d,%2d", (int)(tas*0.539957+0.5), te*1.94384, mc*1.94384, (int)((iaskn*iaskn)+0.5), bugs, (aballast+100)/100.0, cruise, (int)(temp+0.5) );
+		float iaskn = Units::kmh2knots( ias );
+		sprintf(str,"$PBB50,%03d,%3.1f,%1.1f,%d,%d,%1.2f,%1d,%2d", (int)(Units::kmh2knots(tas)+0.5), Units::ms2knots(te), Units::mcval2knots(mc), (int)((iaskn*iaskn)+0.5), bugs, (aballast+100)/100.0, cruise, (int)(temp+0.5) );
 	}
 	else if( proto == P_CAMBRIDGE ){
 		/*
@@ -128,7 +129,8 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		<13>   Instrument Bug setting
 		 *hh   Checksum, XOR of all bytes of the sentence after the ‘!’ and before the ‘*’
 		 */
-		sprintf(str, "!w,0,0,0,0,%d,%d,%d,%d,0,0,%d,%d,%d", int(alt+1000), (int)(QNH.get()), int(tas*0.539957*100), int((te*1.94384*10)+200), int( mc*1.94384*10 ), int( aballast ), (int)bugs );
+
+		sprintf(str, "!w,0,0,0,0,%d,%d,%d,%d,0,0,%d,%d,%d", int(alt+1000), (int)(QNH.get()), int(Units::kmh2knots(tas)*100), int((Units::ms2knots(te)*10)+200), int( Units::mcval2knots(mc)*10 ), int( aballast ), (int)bugs );
 	}
 	else if( proto == P_EYE_PEYA ){
 		// Static pressure from aircraft pneumatic system [hPa] (i.e. 1015.5)
@@ -183,7 +185,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		 * zzzzz: Barometric altitude in feet +2000
 		 * aaa:   TAS knots 0-200
 		 */
-		sprintf(str, "$PTAS1,%d,%d,%d,%d", int((te*1.94384*10)+200), 0, int(alt*3.28084+2000), int(ias*0.539957+0.5) );
+		sprintf(str, "$PTAS1,%d,%d,%d,%d", int((Units::ms2knots(te)*10)+200), 0, int(Units::meters2feet(alt)+2000), int(Units::kmh2knots(ias)+0.5) );
 	}
 	else {
 		ESP_LOGW(FNAME,"Not supported protocol %d", nmea_protocol.get() );
@@ -233,9 +235,9 @@ void Protocols::parseNMEA( char *str ){
 			ESP_LOGI(FNAME,"parseNMEA, BORGELT, MC modification");
 			float mc;
 			sscanf(str, "!g,m%f", &mc);
-			mc = mc*0.1 / 1.94384;
-			ESP_LOGI(FNAME,"New MC: %1.1f m/s", mc);
-			MC.set( mc );
+			mc = mc*0.1;   // comes in knots*10, unify to knots
+			ESP_LOGI(FNAME,"New MC: %1.1f knots", mc);
+			MC.set( Units::Vario( Units::knots2ms(mc) ) );  // set mc according corresponding vario units
 			_s2f->change_mc_bal();
 		}
 		if (str[3] == 'u') {

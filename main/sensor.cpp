@@ -149,7 +149,7 @@ float polar_sink = 0;
 bool  standard_setting = false;
 
 float wksensor=-1;
-int wksenspos[7];
+int wksenspos[9];
 int wksensorold=-2;
 
 bool inSetup=true;
@@ -163,19 +163,21 @@ float getTE() { return TE; };
 
 
 void init_wksensor(){
-	wksenspos[0] = wk_sens_pos_minus_2.get() - ( wk_sens_pos_minus_1.get() - wk_sens_pos_minus_2.get()); // extrapolated neg pole
-	wksenspos[1] = wk_sens_pos_minus_2.get();
-	wksenspos[2] = wk_sens_pos_minus_1.get();
-	wksenspos[3] = wk_sens_pos_0.get();
-	wksenspos[4] = wk_sens_pos_plus_1.get();
-	wksenspos[5] = wk_sens_pos_plus_2.get();
-	wksenspos[6] = wk_sens_pos_plus_2.get() - ( wk_sens_pos_plus_1.get() - wk_sens_pos_plus_2.get()); // extrapolated pos pole
+	wksenspos[0] = wk_sens_pos_minus_3.get() - ( wk_sens_pos_minus_2.get() - wk_sens_pos_minus_3.get()); // extrapolated neg pole
+	wksenspos[1] = wk_sens_pos_minus_3.get();
+	wksenspos[2] = wk_sens_pos_minus_2.get();
+	wksenspos[3] = wk_sens_pos_minus_1.get();
+	wksenspos[4] = wk_sens_pos_0.get();
+	wksenspos[5] = wk_sens_pos_plus_1.get();
+	wksenspos[6] = wk_sens_pos_plus_2.get();
+	wksenspos[7] = wk_sens_pos_plus_3.get();
+	wksenspos[8] = wk_sens_pos_plus_3.get() - ( wk_sens_pos_plus_2.get() - wk_sens_pos_plus_3.get()); // extrapolated pos pole
 }
 
 float getSensorWkPos(int wks)
 {
 	int wk=0;
-	for( int i=0; i<=5; i++ ){
+	for( int i=0; i<=7; i++ ){
 		if( ((wksenspos[i] < wks) && (wks < wksenspos[i+1]))  ||
 				((wksenspos[i] > wks) && (wks > wksenspos[i+1]))	) {
 			wk = i;
@@ -185,7 +187,7 @@ float getSensorWkPos(int wks)
 	float delta=wksenspos[wk]-wksenspos[wk+1];
 	float moved=wksenspos[wk]-wks;
 	float relative=moved/delta;
-	float wkf =(wk-3) + relative;
+	float wkf =(wk-4) + relative;
 	return wkf;
 }
 

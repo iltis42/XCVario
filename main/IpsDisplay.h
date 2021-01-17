@@ -74,7 +74,7 @@ private:
 
 	static int wkalt;
 	static char wkss[6];
-	static int  wkspeeds[6];
+	static int  wkspeeds[8];
 	static bool wkbox;
 	static int wkposalt;
 	static int wksensoralt;

@@ -76,6 +76,15 @@ void showWk(SetupMenuSelect * p){
 	delay(20);
 }
 
+
+void wk_cal_read( SetupMenuSelect * p, int wk ){
+	p->ucg->setPrintPos(1,60);
+	p->ucg->printf("Set Flap %+d  ", wk );
+	delay(1000);
+	while( !p->_rotary->readSwitch() )
+		showWk(p);
+}
+
 // Action Routines
 int wk_cal( SetupMenuSelect * p )
 {
@@ -83,36 +92,34 @@ int wk_cal( SetupMenuSelect * p )
 	if( p->getSelect() ){
 		p->clear();
 		p->ucg->setFont(ucg_font_fub25_hr);
-		p->ucg->setPrintPos(1,60);
-		p->ucg->printf("Set Flap +2  ");
-		delay(1000);
-		while( !p->_rotary->readSwitch() )
-			showWk(p);
-		wk_sens_pos_plus_2.set( AnalogInWk->getRaw(1000) );
-		p->ucg->setPrintPos(1,60);
-		p->ucg->printf("Set Flap +1  ");
-		delay(1000);
-		while( !p->_rotary->readSwitch() )
-			showWk(p);
-		wk_sens_pos_plus_1.set( AnalogInWk->getRaw(1000) );
-		p->ucg->setPrintPos(1,60);
-		p->ucg->printf("Set Flap  0  ");
-		delay(1000);
-		while( !p->_rotary->readSwitch() )
-			showWk(p);
+		if( flap_pos_max.get() > 2 ){
+			wk_cal_read( p,3 );
+			wk_sens_pos_plus_3.set( AnalogInWk->getRaw(1000) );
+		}
+		if( flap_pos_max.get() > 1 ){
+			wk_cal_read( p,2 );
+			wk_sens_pos_plus_2.set( AnalogInWk->getRaw(1000) );
+		}
+		if( flap_pos_max.get() > 0 ){
+			wk_cal_read( p,1 );
+			wk_sens_pos_plus_1.set( AnalogInWk->getRaw(1000) );
+		}
+		wk_cal_read( p,0 );
 		wk_sens_pos_0.set( AnalogInWk->getRaw(1000) );
-		p->ucg->setPrintPos(1,60);
-		p->ucg->printf("Set Flap -1  ");
-		delay(1000);
-		while( !p->_rotary->readSwitch() )
-			showWk(p);
-		wk_sens_pos_minus_1.set( AnalogInWk->getRaw(1000) );
-		p->ucg->setPrintPos(1,60);
-		p->ucg->printf("Set Flap -2  ");
-		delay(1000);
-		while( !p->_rotary->readSwitch() )
-			showWk(p);
-		wk_sens_pos_minus_2.set( AnalogInWk->getRaw(1000) );
+
+		if( flap_neg_max.get() < 0 ){
+			wk_cal_read( p,-1 );
+			wk_sens_pos_minus_1.set( AnalogInWk->getRaw(1000) );
+		}
+		if( flap_neg_max.get() < -1 ){
+			wk_cal_read( p,-2 );
+			wk_sens_pos_minus_2.set( AnalogInWk->getRaw(1000) );
+		}
+		if( flap_neg_max.get() < -2 ){
+			wk_cal_read( p,-3 );
+			wk_sens_pos_minus_3.set( AnalogInWk->getRaw(1000) );
+		}
+
 		p->ucg->setPrintPos(1,60);
 		p->ucg->printf("Saved        ");
 		delay(2000);

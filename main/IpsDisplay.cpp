@@ -123,7 +123,7 @@ int IpsDisplay::yposalt = 0;
 int IpsDisplay::tyalt = 0;
 int IpsDisplay::pyalt = 0;
 int IpsDisplay::wkalt = -3;
-int IpsDisplay::wkspeeds[6];
+int IpsDisplay::wkspeeds[8];
 
 ucg_color_t IpsDisplay::wkcolor;
 char IpsDisplay::wkss[6];
@@ -428,13 +428,15 @@ void IpsDisplay::redrawValues()
 		colorsalt[l].color[2] = 0;
 	}
 	average_climb = -1000;
-	wkalt = -3;
-	wkspeeds[0] = 220;
-	wkspeeds[1] = flap_minus_2.get();
-	wkspeeds[2] = flap_minus_1.get();
-	wkspeeds[3] = flap_0.get();
-	wkspeeds[4] = flap_plus_1.get();
-	wkspeeds[5] = 60;
+	wkalt = -4;
+	wkspeeds[0] = 280;
+	wkspeeds[1] = flap_minus_3.get();
+	wkspeeds[2] = flap_minus_2.get();
+	wkspeeds[3] = flap_minus_1.get();
+	wkspeeds[4] = flap_0.get();
+	wkspeeds[5] = flap_plus_1.get();
+	wkspeeds[6] = flap_plus_2.get();
+	wkspeeds[7] = 50;
 
 	wkbox = false;
 	wkposalt = -100;
@@ -505,12 +507,12 @@ float wkRelPos( float wks, float minv, float maxv ){
 
 int IpsDisplay::getWk( float wks )
 {
-	for( int wk=-2; wk<=2; wk++ ){
-		if( wks <= wkspeeds[wk+2] && wks >=  wkspeeds[wk+3] ) {
+	for( int wk=flap_neg_max.get(); wk<=flap_pos_max.get(); wk++ ){
+		if( wks <= wkspeeds[wk+3] && wks >=  wkspeeds[wk+4] ) {
 			return wk;
 		}
 	}
-	if( wks < wkspeeds[5] ) {
+	if( wks < wkspeeds[6] ) {
 		return 1;
 	}
 	else if( wks > wkspeeds[0] ){
@@ -1191,7 +1193,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed, float te, float ate, float pola
 	{
 		float wkspeed = airspeed * sqrt( 100.0/( ballast.get() +100.0) );
 		int wki = getWk( wkspeed );
-		float wkpos=wkRelPos( wkspeed, wkspeeds[wki+3], wkspeeds[wki+2] );
+		float wkpos=wkRelPos( wkspeed, wkspeeds[wki+4], wkspeeds[wki+3] );
 		int wk = (int)((wki - wkpos + 0.5)*10);
 		// ESP_LOGI(FNAME,"ias:%d wksp:%f wki:%d wk:%d wkpos:%f wksensor:%d wkhebel:%f wkh:%d", airspeed, wkspeed, wki, wk, wkpos, wksensor, wkhebel, wkhebeli );
 		if( wkposalt != wk || wksensoralt != (int)(wksensor*10) ) {
@@ -1301,7 +1303,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed, float te, float ate, float p
 	{
 		float wkspeed = airspeed * sqrt( 100.0/( ballast.get() +100.0) );
 		int wki = getWk( wkspeed );
-		float wkpos=wkRelPos( wkspeed, wkspeeds[wki+3], wkspeeds[wki+2] );
+		float wkpos=wkRelPos( wkspeed, wkspeeds[wki+4], wkspeeds[wki+3] );
 		int wk = (int)((wki - wkpos + 0.5)*10);
 		if( wkposalt != wk ) {
 			// ESP_LOGI(FNAME,"ias:%d wksp:%f wki:%d wk:%d wkpos%f", airspeed, wkspeed, wki, wk, wkpos );

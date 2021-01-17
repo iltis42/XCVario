@@ -9,6 +9,7 @@
 #include "IpsDisplay.h"
 #include <inttypes.h>
 #include <iterator>
+#include <algorithm>
 #include "ESPAudio.h"
 #include "BMPVario.h"
 #include "S2F.h"
@@ -34,6 +35,15 @@ Ucglib_ILI9341_18x240x320_HWSPI *MenuEntry::ucg = 0;
 static char rentry[25];
 SetupMenuSelect * audio_range_sm = 0;
 SetupMenuSelect * mpu = 0;
+
+// Menu for flap setup
+MenuEntry* wkm = 0;
+SetupMenuValFloat * plus3 = 0;
+SetupMenuValFloat * plus2 = 0;
+SetupMenuValFloat * plus1 = 0;
+SetupMenuValFloat * min1 = 0;
+SetupMenuValFloat * min2 = 0;
+SetupMenuValFloat * min3 = 0;
 
 String vunit;
 String sunit;
@@ -147,6 +157,41 @@ int add_key( SetupMenuSelect * p )
 		if( mpu->existsEntry( "Enable") )
 			mpu->delEntry( "Enable");
 	}
+	return 0;
+}
+
+
+void wkm_clear(){
+	wkm->delMenu( plus3 );
+	wkm->delMenu( plus2 );
+	wkm->delMenu( plus1 );
+	wkm->delMenu( min1 );
+	wkm->delMenu( min2 );
+	wkm->delMenu( min3 );
+}
+
+
+int flap_pos_act( SetupMenuValFloat * p ){
+	int max_pos = *(p->_value);
+	wkm_clear();
+	if( (int)flap_pos_max.get() > 2 )
+		wkm->addMenu( plus3 );
+	if( (int)flap_pos_max.get() > 1 )
+		wkm->addMenu( plus2 );
+	if( (int)flap_pos_max.get() > 0 )
+		wkm->addMenu( plus1 );
+	if( (int)flap_neg_max.get() < 0 )
+		wkm->addMenu( min1 );
+	if( (int)flap_neg_max.get() < -1 )
+		wkm->addMenu( min2 );
+	if( (int)flap_neg_max.get() < -2 )
+		wkm->addMenu( min3 );
+	return 0;
+}
+
+int flap_neg_act( SetupMenuValFloat * p ){
+	int max_neg = *(p->_value);
+	flap_pos_act(p);
 	return 0;
 }
 
@@ -341,6 +386,17 @@ MenuEntry* MenuEntry::addMenu( MenuEntry * item ) {
 	}
 }
 
+void MenuEntry::delMenu( MenuEntry * item ) {
+	ESP_LOGI(FNAME,"MenuEntry delMenu() title %s", item->_title.c_str() );
+	std::vector<MenuEntry *>::iterator position = std::find(_childs.begin(), _childs.end(), item );
+	if (position != _childs.end()) { // == myVector.end() means the element was not found
+		ESP_LOGI(FNAME,"found entry, now erase" );
+		_childs.erase(position);
+	}
+
+}
+
+
 MenuEntry* MenuEntry::findMenu( String title, MenuEntry* start )
 {
 	ESP_LOGI(FNAME,"MenuEntry findMenu() %s %x", title.c_str(), (uint32_t)start );
@@ -374,8 +430,7 @@ void SetupMenu::display( int mode ){
 	ucg->setFontPosBottom();
 	ucg->printf("<< %s",selected->_title.c_str());
 	ucg->drawFrame( 1,3,238,25 );
-
-	for (int i=0; i<_childs.size(); i++ ) {
+	for (int i=0; i<_childs.size(); i++ ){
 		MenuEntry * child = _childs[i];
 		ucg->setPrintPos(1,(i+1)*25+25);
 		ucg->printf("%s",child->_title.c_str());
@@ -820,55 +875,13 @@ void SetupMenu::setup( )
 		}
 
 		SetupMenu * wk = new SetupMenu( "Flap (WK) Indicator" );
-		MenuEntry* wkm = opt->addMenu( wk );
+		wkm = opt->addMenu( wk );
 
 		SetupMenuSelect * wke = new SetupMenuSelect( "Flap Indicator Option", 0, false, 0, true, &flap_enable );
 		wke->addEntry( "Disable");
 		wke->addEntry( "Enable");
-
-
 		wke->setHelp(PROGMEM"Option to enable Flap (WK) Indicator to assist optimum flap setting depending on speed and ballast");
 		wkm->addMenu( wke );
-
-		SetupMenuValFloat * nflpos = new SetupMenuValFloat("Max positive flap setting", 0, "", 0, 3, 1, 0, false, &flap_pos_max  );
-		nflpos->setHelp(PROGMEM"Maximum positive flap position. Restart XCVario to adjust speed menu entries");
-		wkm->addMenu( nflpos );
-
-		SetupMenuValFloat * nflneg = new SetupMenuValFloat("Max negative flap setting", 0, "", -3, 0, 1, 0, false, &flap_neg_max  );
-		nflneg->setHelp(PROGMEM"Maximum negative flap position, default -2. Restart XCVario to adjust speed menu entries");
-		wkm->addMenu( nflneg );
-
-		if( flap_pos_max.get() > 2 ){
-			SetupMenuValFloat * plus2 = new SetupMenuValFloat("Speed +3 to +3", 0, "km/h",  50, 150, 1, 0, false, &flap_plus_2  );
-			plus2->setHelp(PROGMEM"Speed for transition from +3 to +3 flap setting");
-			wkm->addMenu( plus2 );
-		}
-
-		if( flap_pos_max.get() > 1 ){
-			SetupMenuValFloat * plus1 = new SetupMenuValFloat("Speed +2 to +1", 0, "km/h",  50, 150, 1, 0, false, &flap_plus_1  );
-			plus1->setHelp(PROGMEM"Speed for transition from +2 to +1 flap setting");
-			wkm->addMenu( plus1 );
-		}
-		if( flap_pos_max.get() > 0 ){
-			SetupMenuValFloat * zero = new SetupMenuValFloat("Speed +1 to 0", 0, "km/h",  50, 150, 1, 0, false, &flap_0  );
-			zero->setHelp(PROGMEM"Speed for transition from +1 to 0 flap setting");
-			wkm->addMenu( zero );
-		}
-		SetupMenuValFloat * min1 = new SetupMenuValFloat("Speed 0 to -1", 0, "km/h",  80, 180, 1, 0, false, &flap_minus_1  );
-		min1->setHelp(PROGMEM"Speed for transition from 0 to -1 flap setting");
-		wkm->addMenu( min1 );
-
-		if( flap_pos_max.get() > 1 ){
-			SetupMenuValFloat * min2 = new SetupMenuValFloat("Speed -1 to -2", 0, "km/h",  100, 280, 1, 0, false, &flap_minus_2  );
-			min2->setHelp(PROGMEM"Speed for transition from -1 to -2 flap setting");
-			wkm->addMenu( min2 );
-		}
-		if( flap_pos_max.get() > 2 ){
-			SetupMenuValFloat * min3 = new SetupMenuValFloat("Speed -2 to -3", 0, "km/h",  100, 280, 1, 0, false, &flap_minus_2  );
-			min3->setHelp(PROGMEM"Speed for transition from -2 to -3 flap setting");
-			wkm->addMenu( min3 );
-		}
-
 
 		SetupMenuSelect * wkes = new SetupMenuSelect( "Flap Sensor Option", 0, true, 0, true, &flap_sensor );
 		wkes->addEntry( "Disable");
@@ -878,12 +891,52 @@ void SetupMenu::setup( )
 		wkes->setHelp(PROGMEM"Option to enable Flap sensor on corresponding IO pin, for now its IO-2, later 2021 series will use IO-34");
 		wkm->addMenu( wkes );
 
-
 		SetupMenuSelect * wkcal = new SetupMenuSelect( "Flap Sensor Calibration", 0, true, wk_cal, false, &dummy );
 		wkcal->addEntry( "Cancel");
 		wkcal->addEntry( "Start Calibration");
 		wkcal->setHelp( PROGMEM "Option to calibrate flap Sensor (WK), to indicate current flap setting: Press button after each setting" );
 		wkm->addMenu( wkcal );
+
+
+		SetupMenuValFloat * nflpos = new SetupMenuValFloat("Max positive flap setting", 0, "", 0, 3, 1, flap_pos_act, false, &flap_pos_max  );
+		nflpos->setHelp(PROGMEM"Maximum positive flap position. Restart XCVario to adjust speed menu entries");
+		wkm->addMenu( nflpos );
+
+		SetupMenuValFloat * nflneg = new SetupMenuValFloat("Max negative flap setting", 0, "", -3, 0, 1, flap_pos_act, false, &flap_neg_max  );
+		nflneg->setHelp(PROGMEM"Maximum negative flap position, default -2. Restart XCVario to adjust speed menu entries");
+		wkm->addMenu( nflneg );
+
+		plus3 = new SetupMenuValFloat("Speed +3 to +2", 0, "km/h",  50, 150, 1, 0, false, &flap_plus_2  );
+		plus3->setHelp(PROGMEM"Speed for transition from +3 to +3 flap setting");
+		if( (int)flap_pos_max.get() > 2 )
+			wkm->addMenu( plus3 );
+
+		plus2 = new SetupMenuValFloat("Speed +2 to +1", 0, "km/h",  50, 150, 1, 0, false, &flap_plus_1  );
+		plus2->setHelp(PROGMEM"Speed for transition from +2 to +1 flap setting");
+		if( (int)flap_pos_max.get() > 1 )
+			wkm->addMenu( plus2 );
+
+		plus1 = new SetupMenuValFloat("Speed +1 to 0", 0, "km/h",  50, 150, 1, 0, false, &flap_0  );
+		plus1->setHelp(PROGMEM"Speed for transition from +1 to 0 flap setting");
+		if( (int)flap_pos_max.get() > 0 )
+			wkm->addMenu( plus1 );
+
+		min1 = new SetupMenuValFloat("Speed 0 to -1", 0, "km/h",  80, 180, 1, 0, false, &flap_minus_1  );
+		min1->setHelp(PROGMEM"Speed for transition from 0 to -1 flap setting");
+		if( (int)flap_neg_max.get() < 0 )
+			wkm->addMenu( min1 );
+
+		min2 = new SetupMenuValFloat("Speed -1 to -2", 0, "km/h",  100, 280, 1, 0, false, &flap_minus_2  );
+		min2->setHelp(PROGMEM"Speed for transition from -1 to -2 flap setting");
+		if( (int)flap_neg_max.get() < -1 )
+			wkm->addMenu( min2 );
+
+		min3 = new SetupMenuValFloat("Speed -2 to -3", 0, "km/h",  100, 280, 1, 0, false, &flap_minus_2  );
+		min3->setHelp(PROGMEM"Speed for transition from -2 to -3 flap setting");
+		if( (int)flap_neg_max.get() < -2 )
+			wkm->addMenu( min3 );
+
+
 
 
 		// Units

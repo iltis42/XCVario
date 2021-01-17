@@ -143,7 +143,7 @@ void ESPRotary::informObservers( void * args )
 				ESP_LOGE(FNAME,"Error get counter");
 		}
 
-		if( r_enc_count+r_enc2_count != old_cnt )
+		if( abs( r_enc_count+r_enc2_count - old_cnt) > 1 )
 		{
 			// pcnt_counter_clear(PCNT_UNIT_0);
 			// ESP_LOGI(FNAME,"Rotary counter %d %d", r_enc_count,  r_enc2_count);

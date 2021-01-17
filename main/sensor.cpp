@@ -163,46 +163,67 @@ float getTE() { return TE; };
 
 
 void init_wksensor(){
-	wksenspos[0] = wk_sens_pos_minus_3.get() - ( wk_sens_pos_minus_2.get() - wk_sens_pos_minus_3.get()); // extrapolated neg pole
-	if( flap_neg_max.get() < 2 )
+	ESP_LOGI(FNAME,"init_wksensor");
+	wksenspos[0] = 4095;
+
+	if( (int)flap_neg_max.get() < -2 )
 		wksenspos[1] = wk_sens_pos_minus_3.get();
-	else
+	else{
 		wksenspos[1] = wk_sens_pos_minus_2.get() - ( wk_sens_pos_minus_1.get() - wk_sens_pos_minus_2.get()); // extrapolated
+		if( wksenspos[1] > 4095 )
+			wksenspos[1] = 4095;
+	}
 
-	if(  flap_neg_max.get() < 1)
+	if(  (int)flap_neg_max.get() < -1)
 		wksenspos[2] = wk_sens_pos_minus_2.get();
-	else
+	else{
 		wksenspos[2] = wk_sens_pos_minus_1.get() - ( wk_sens_pos_0.get() - wk_sens_pos_minus_1.get()); // extrapolated
+		if( wksenspos[2] > 4095 )
+			wksenspos[2] = 4095;
+	}
 
-	if( flap_neg_max.get() < 0 )
+	if( (int)flap_neg_max.get() < 0 )
 		wksenspos[3] = wk_sens_pos_minus_1.get();
 	else
 		wksenspos[3] = wk_sens_pos_0.get() - ( wk_sens_pos_plus_1.get() - wk_sens_pos_0.get()); // extrapolated
 
 	wksenspos[4] = wk_sens_pos_0.get();
 
-	if( flap_pos_max.get() > 0 )
+	if( (int)flap_pos_max.get() > 0 )
 		wksenspos[5] = wk_sens_pos_plus_1.get();
 	else
 		wksenspos[5] = wk_sens_pos_0.get() - ( wk_sens_pos_minus_1.get() - wk_sens_pos_0.get()); // extrapolated pos pole
 
-	if( flap_pos_max.get() > 1 )
-			wksenspos[6] = wk_sens_pos_plus_2.get();
-		else
-			wksenspos[6] = wk_sens_pos_plus_1.get() - ( wk_sens_pos_0.get() - wk_sens_pos_plus_1.get()); // extrapolated pos pole
-
-	if( flap_pos_max.get() > 2 )
+	if( (int)flap_pos_max.get() > 1 )
+		wksenspos[6] = wk_sens_pos_plus_2.get();
+	else{
+		wksenspos[6] = wk_sens_pos_plus_1.get() - ( wk_sens_pos_0.get() - wk_sens_pos_plus_1.get()); // extrapolated pos pole
+		if( wksenspos[6] < 0 )
+			wksenspos[6] = 0;
+	}
+	if( (int)flap_pos_max.get() > 2 )
 		wksenspos[7] = wk_sens_pos_plus_3.get();
-	else
+	else{
 		wksenspos[7] = wk_sens_pos_plus_2.get() - ( wk_sens_pos_plus_1.get() - wk_sens_pos_plus_2.get()); // extrapolated pos pole
+		if( wksenspos[7] < 0 )
+			wksenspos[7] = 0;
+	}
 
-	wksenspos[8] = wk_sens_pos_plus_3.get() - ( wk_sens_pos_plus_2.get() - wk_sens_pos_plus_3.get()); // extrapolated pos pole
+	wksenspos[8] = 0;
+
+	for( int i=0; i<=8; i++ ){
+		ESP_LOGI(FNAME,"i: %d  wksenspos[i]: %d", i, wksenspos[i]  );
+	}
 }
 
 float getSensorWkPos(int wks)
 {
+	ESP_LOGI(FNAME,"getSensorWkPos %d", wks);
 	int wk=0;
-	for( int i=0; i<=7; i++ ){
+	int min = 3 - flap_pos_max.get();
+	int max = 5 - flap_neg_max.get();
+	ESP_LOGI(FNAME,"getSensorWkPos %d min:%d max:%d", wks, min, max );
+	for( int i=min; i<=max; i++ ){
 		if( ((wksenspos[i] < wks) && (wks < wksenspos[i+1]))  ||
 				((wksenspos[i] > wks) && (wks > wksenspos[i+1]))	) {
 			wk = i;
@@ -213,6 +234,7 @@ float getSensorWkPos(int wks)
 	float moved=wksenspos[wk]-wks;
 	float relative=moved/delta;
 	float wkf =(wk-4) + relative;
+	ESP_LOGI(FNAME,"return flap: %1.2f wk:%d relative: %f ", wkf, wk, relative  );
 	return wkf;
 }
 
@@ -329,7 +351,7 @@ void readBMP(void *pvParameters){
 				int wkraw = AnalogInWk->getRaw();
 				if( wkraw < 4095 && wkraw > 0 ){
 					wksensor = getSensorWkPos( wkraw );
-					ESP_LOGI(FNAME,"wk sensor=%f", wksensor );
+					// ESP_LOGI(FNAME,"wk sensor=%1.2f", wksensor );
 				}
 				else
 					wksensor = -10;  // off screen to blank

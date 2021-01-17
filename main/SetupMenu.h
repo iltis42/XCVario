@@ -9,6 +9,7 @@
 #define MAIN_SetupMenu_H_
 #include <string>
 #include <vector>
+#include <set>
 #include <list>
 #include <stdio.h>
 #include "IpsDisplay.h"
@@ -30,7 +31,8 @@ public:
 	virtual void release() { display(); };
 	virtual void longPress() {};
 	virtual ~MenuEntry() {};
-	MenuEntry* addMenu( MenuEntry * item);
+	MenuEntry* addMenu( MenuEntry * item );
+	void       delMenu( MenuEntry * item );
 	MenuEntry* findMenu( String title, MenuEntry* start=root  );
 	void togglePressed() {
 		if( pressed )

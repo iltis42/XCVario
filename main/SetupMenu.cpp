@@ -79,7 +79,7 @@ void showWk(SetupMenuSelect * p){
 
 void wk_cal_show( SetupMenuSelect * p, int wk ){
 	p->ucg->setPrintPos(1,60);
-	p->ucg->printf("Set Flap %+d  ", wk );
+	p->ucg->printf("Set Flap %+d   ", wk );
 	delay(1000);
 	while( !p->_rotary->readSwitch() )
 		showWk(p);

@@ -164,13 +164,38 @@ float getTE() { return TE; };
 
 void init_wksensor(){
 	wksenspos[0] = wk_sens_pos_minus_3.get() - ( wk_sens_pos_minus_2.get() - wk_sens_pos_minus_3.get()); // extrapolated neg pole
-	wksenspos[1] = wk_sens_pos_minus_3.get();
-	wksenspos[2] = wk_sens_pos_minus_2.get();
-	wksenspos[3] = wk_sens_pos_minus_1.get();
+	if( flap_neg_max.get() < 2 )
+		wksenspos[1] = wk_sens_pos_minus_3.get();
+	else
+		wksenspos[1] = wk_sens_pos_minus_2.get() - ( wk_sens_pos_minus_1.get() - wk_sens_pos_minus_2.get()); // extrapolated
+
+	if(  flap_neg_max.get() < 1)
+		wksenspos[2] = wk_sens_pos_minus_2.get();
+	else
+		wksenspos[2] = wk_sens_pos_minus_1.get() - ( wk_sens_pos_0.get() - wk_sens_pos_minus_1.get()); // extrapolated
+
+	if( flap_neg_max.get() < 0 )
+		wksenspos[3] = wk_sens_pos_minus_1.get();
+	else
+		wksenspos[3] = wk_sens_pos_0.get() - ( wk_sens_pos_plus_1.get() - wk_sens_pos_0.get()); // extrapolated
+
 	wksenspos[4] = wk_sens_pos_0.get();
-	wksenspos[5] = wk_sens_pos_plus_1.get();
-	wksenspos[6] = wk_sens_pos_plus_2.get();
-	wksenspos[7] = wk_sens_pos_plus_3.get();
+
+	if( flap_pos_max.get() > 0 )
+		wksenspos[5] = wk_sens_pos_plus_1.get();
+	else
+		wksenspos[5] = wk_sens_pos_0.get() - ( wk_sens_pos_minus_1.get() - wk_sens_pos_0.get()); // extrapolated pos pole
+
+	if( flap_pos_max.get() > 1 )
+			wksenspos[6] = wk_sens_pos_plus_2.get();
+		else
+			wksenspos[6] = wk_sens_pos_plus_1.get() - ( wk_sens_pos_0.get() - wk_sens_pos_plus_1.get()); // extrapolated pos pole
+
+	if( flap_pos_max.get() > 2 )
+		wksenspos[7] = wk_sens_pos_plus_3.get();
+	else
+		wksenspos[7] = wk_sens_pos_plus_2.get() - ( wk_sens_pos_plus_1.get() - wk_sens_pos_plus_2.get()); // extrapolated pos pole
+
 	wksenspos[8] = wk_sens_pos_plus_3.get() - ( wk_sens_pos_plus_2.get() - wk_sens_pos_plus_3.get()); // extrapolated pos pole
 }
 
@@ -304,7 +329,7 @@ void readBMP(void *pvParameters){
 				int wkraw = AnalogInWk->getRaw();
 				if( wkraw < 4095 && wkraw > 0 ){
 					wksensor = getSensorWkPos( wkraw );
-					// ESP_LOGI(FNAME,"wk sensor=%f", wksensor );
+					ESP_LOGI(FNAME,"wk sensor=%f", wksensor );
 				}
 				else
 					wksensor = -10;  // off screen to blank

@@ -77,7 +77,7 @@ void showWk(SetupMenuSelect * p){
 }
 
 
-void wk_cal_read( SetupMenuSelect * p, int wk ){
+void wk_cal_show( SetupMenuSelect * p, int wk ){
 	p->ucg->setPrintPos(1,60);
 	p->ucg->printf("Set Flap %+d  ", wk );
 	delay(1000);
@@ -89,34 +89,41 @@ void wk_cal_read( SetupMenuSelect * p, int wk ){
 int wk_cal( SetupMenuSelect * p )
 {
 	ESP_LOGI(FNAME,"WK calibaration ( %d ) ", p->getSelect() );
+	if( !AnalogInWk ){
+		p->ucg->setPrintPos(1,60);
+		p->ucg->printf("No Sensor, Abort");
+		delay(2000);
+		ESP_LOGI(FNAME,"Abort calibration, no signal");
+		return 0;
+	}
 	if( p->getSelect() ){
 		p->clear();
 		p->ucg->setFont(ucg_font_fub25_hr);
 		if( flap_pos_max.get() > 2 ){
-			wk_cal_read( p,3 );
+			wk_cal_show( p,3 );
 			wk_sens_pos_plus_3.set( AnalogInWk->getRaw(1000) );
 		}
 		if( flap_pos_max.get() > 1 ){
-			wk_cal_read( p,2 );
+			wk_cal_show( p,2 );
 			wk_sens_pos_plus_2.set( AnalogInWk->getRaw(1000) );
 		}
 		if( flap_pos_max.get() > 0 ){
-			wk_cal_read( p,1 );
+			wk_cal_show( p,1 );
 			wk_sens_pos_plus_1.set( AnalogInWk->getRaw(1000) );
 		}
-		wk_cal_read( p,0 );
+		wk_cal_show( p,0 );
 		wk_sens_pos_0.set( AnalogInWk->getRaw(1000) );
 
 		if( flap_neg_max.get() < 0 ){
-			wk_cal_read( p,-1 );
+			wk_cal_show( p,-1 );
 			wk_sens_pos_minus_1.set( AnalogInWk->getRaw(1000) );
 		}
 		if( flap_neg_max.get() < -1 ){
-			wk_cal_read( p,-2 );
+			wk_cal_show( p,-2 );
 			wk_sens_pos_minus_2.set( AnalogInWk->getRaw(1000) );
 		}
 		if( flap_neg_max.get() < -2 ){
-			wk_cal_read( p,-3 );
+			wk_cal_show( p,-3 );
 			wk_sens_pos_minus_3.set( AnalogInWk->getRaw(1000) );
 		}
 

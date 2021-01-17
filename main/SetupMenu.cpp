@@ -90,6 +90,7 @@ int wk_cal( SetupMenuSelect * p )
 {
 	ESP_LOGI(FNAME,"WK calibaration ( %d ) ", p->getSelect() );
 	if( !AnalogInWk ){
+		p->clear();
 		p->ucg->setPrintPos(1,60);
 		p->ucg->printf("No Sensor, Abort");
 		delay(2000);

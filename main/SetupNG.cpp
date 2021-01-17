@@ -87,10 +87,12 @@ SetupNG<float>  		bugs( "BUGS", 0.0 );
 SetupNG<int>  			display_type( "DISPLAY_TYPE",  UNIVERSAL );
 SetupNG<int>  			display_orientation("DISPLAY_ORIENT" , 0 );
 SetupNG<int>  			flap_enable( "FLAP_ENABLE", 0 );
+SetupNG<float>  		flap_minus_3( "FLAP_MINUS_3", 200 );
 SetupNG<float>  		flap_minus_2( "FLAP_MINUS_2", 165 );
 SetupNG<float>  		flap_minus_1( "FLAP_MINUS_1", 105);
 SetupNG<float>  		flap_0( "FLAP_0", 88 );
 SetupNG<float>  		flap_plus_1( "FLAP_PLUS_1", 78 );
+SetupNG<float>  		flap_plus_2( "FLAP_PLUS_2", 70 );
 SetupNG<int>  			alt_unit( "ALT_UNIT", 0 );
 SetupNG<int>  			ias_unit( "IAS_UNIT", 0 );
 SetupNG<int>  			vario_unit( "VARIO_UNIT", 0 );
@@ -141,6 +143,9 @@ SetupNG<int>         	flarm_sim( "FLARM_SIM", 0 );
 SetupNG<float>         	flarm_volume( "FLARM_VOL", 100 );
 SetupNG<int>         	flap_sensor( "FLAP_SENS", 0 );
 SetupNG<int>         	audio_netto_mode( "AUDIO_BN_MOD", 0 );
+SetupNG<float>          flap_pos_max("FL_POS_M", +2);
+SetupNG<float>          flap_neg_max("FL_NEG_M", -2);
+
 
 mpud::raw_axes_t zero_bias;
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );

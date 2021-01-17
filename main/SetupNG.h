@@ -310,10 +310,12 @@ extern SetupNG<float>  		bugs;
 extern SetupNG<int>  		display_type;
 extern SetupNG<int>  		display_orientation;
 extern SetupNG<int>  		flap_enable;
+extern SetupNG<float>  		flap_minus_3;
 extern SetupNG<float>  		flap_minus_2;
 extern SetupNG<float>  		flap_minus_1;
 extern SetupNG<float>  		flap_0;
 extern SetupNG<float>  		flap_plus_1;
+extern SetupNG<float>  		flap_plus_2;
 extern SetupNG<int>  		alt_unit;
 extern SetupNG<int>  		ias_unit;
 extern SetupNG<int>  		vario_unit;
@@ -367,6 +369,8 @@ extern SetupNG<float>       flarm_volume;
 extern SetupNG<int>         flarm_sim;
 extern SetupNG<int>         flap_sensor;
 extern SetupNG<int>         audio_netto_mode;
+extern SetupNG<float>       flap_pos_max;
+extern SetupNG<float>       flap_neg_max;
 
 
 #endif /* MAIN_SETUP_NG_H_ */

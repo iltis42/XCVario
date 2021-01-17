@@ -141,6 +141,7 @@ int  IpsDisplay::pref_qnh = 0;
 
 int wkyold=0;
 int wksyold=0;
+#define WKBARMID (AMIDY-15)
 
 float polar_sink_prev = 0;
 float te_prev = 0;
@@ -550,9 +551,9 @@ void IpsDisplay::drawWkBar( int ypos, int xpos, float wkf ){
 	ucg->undoClipRange();
 }
 
-#define NUMPOS  5
-#define MINPOS -2
-#define MAXPOS  2
+#define NUMPOS  ( flap_pos_max.get() - flap_neg_max.get() )
+#define MINPOS  flap_neg_max.get()
+#define MAXPOS  flap_pos_max.get()
 
 
 
@@ -1196,12 +1197,12 @@ void IpsDisplay::drawRetroDisplay( int airspeed, float te, float ate, float pola
 		if( wkposalt != wk || wksensoralt != (int)(wksensor*10) ) {
 			ESP_LOGI(FNAME,"WK changed WKE=%d WKS=%f", wk, wksensor );
 			ucg->setColor(  COLOR_WHITE  );
-			drawBigWkBar( AMIDY, WKSYMST-4, (float)(wk)/10, wksensor);
+			drawBigWkBar( WKBARMID, WKSYMST-4, (float)(wk)/10, wksensor);
 			wkposalt = wk;
 			wksensoralt = (int)(wksensor*10);
 		}
 		if( wki != wkialt ) {
-			drawWkSymbol( AMIDY-82, WKSYMST-3, wki, wkialt );
+			drawWkSymbol( WKBARMID-(27*(abs(flap_neg_max.get())+1)  ), WKSYMST-3, wki, wkialt );
 			wkialt=wki;
 		}
 	}
@@ -1222,13 +1223,13 @@ void IpsDisplay::drawRetroDisplay( int airspeed, float te, float ate, float pola
 	if( !(tick%7) ){
 		if( as_prev != airspeed || !(tick%49) ) {
 			ucg->setColor(  COLOR_WHITE  );
-			ucg->setPrintPos(140,75);
+			ucg->setPrintPos(125,75);
 			ucg->setFont(ucg_font_fub20_hr);
 			char s[10];
 			sprintf(s,"%3d", (int)(Units::Airspeed( airspeed ) +0.5)  );
 			int fl=ucg->getStrWidth(s);
 			ucg->printf("%s  ", s);
-			ucg->setPrintPos(140+fl,70);
+			ucg->setPrintPos(125+fl,70);
 			ucg->setFont(ucg_font_fub11_hr);
 			ucg->printf(" %s  ", Units::AirspeedUnit() );
 			as_prev = ias;

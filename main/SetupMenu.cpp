@@ -811,21 +811,49 @@ void SetupMenu::setup( )
 		wke->addEntry( "Disable");
 		wke->addEntry( "Enable");
 
+
 		wke->setHelp(PROGMEM"Option to enable Flap (WK) Indicator to assist optimum flap setting depending on speed and ballast");
 		wkm->addMenu( wke );
 
-		SetupMenuValFloat * plus1 = new SetupMenuValFloat("Speed +2 to +1", 0, "km/h",  50, 150, 1, 0, false, &flap_plus_1  );
-		plus1->setHelp(PROGMEM"Speed for transition from +2 to +1 flap setting");
-		wkm->addMenu( plus1 );
-		SetupMenuValFloat * zero = new SetupMenuValFloat("Speed +1 to 0", 0, "km/h",  50, 150, 1, 0, false, &flap_0  );
-		zero->setHelp(PROGMEM"Speed for transition from +1 to 0 flap setting");
-		wkm->addMenu( zero );
+		SetupMenuValFloat * nflpos = new SetupMenuValFloat("Max positive flap setting", 0, "", 0, 3, 1, 0, false, &flap_pos_max  );
+		nflpos->setHelp(PROGMEM"Maximum positive flap position. Restart XCVario to adjust speed menu entries");
+		wkm->addMenu( nflpos );
+
+		SetupMenuValFloat * nflneg = new SetupMenuValFloat("Max negative flap setting", 0, "", -3, 0, 1, 0, false, &flap_neg_max  );
+		nflneg->setHelp(PROGMEM"Maximum negative flap position, default -2. Restart XCVario to adjust speed menu entries");
+		wkm->addMenu( nflneg );
+
+		if( flap_pos_max.get() > 2 ){
+			SetupMenuValFloat * plus2 = new SetupMenuValFloat("Speed +3 to +3", 0, "km/h",  50, 150, 1, 0, false, &flap_plus_2  );
+			plus2->setHelp(PROGMEM"Speed for transition from +3 to +3 flap setting");
+			wkm->addMenu( plus2 );
+		}
+
+		if( flap_pos_max.get() > 1 ){
+			SetupMenuValFloat * plus1 = new SetupMenuValFloat("Speed +2 to +1", 0, "km/h",  50, 150, 1, 0, false, &flap_plus_1  );
+			plus1->setHelp(PROGMEM"Speed for transition from +2 to +1 flap setting");
+			wkm->addMenu( plus1 );
+		}
+		if( flap_pos_max.get() > 0 ){
+			SetupMenuValFloat * zero = new SetupMenuValFloat("Speed +1 to 0", 0, "km/h",  50, 150, 1, 0, false, &flap_0  );
+			zero->setHelp(PROGMEM"Speed for transition from +1 to 0 flap setting");
+			wkm->addMenu( zero );
+		}
 		SetupMenuValFloat * min1 = new SetupMenuValFloat("Speed 0 to -1", 0, "km/h",  80, 180, 1, 0, false, &flap_minus_1  );
 		min1->setHelp(PROGMEM"Speed for transition from 0 to -1 flap setting");
 		wkm->addMenu( min1 );
-		SetupMenuValFloat * min2 = new SetupMenuValFloat("Speed -1 to -2", 0, "km/h",  100, 280, 1, 0, false, &flap_minus_2  );
-		min2->setHelp(PROGMEM"Speed for transition from -1 to -2 flap setting");
-		wkm->addMenu( min2 );
+
+		if( flap_pos_max.get() > 1 ){
+			SetupMenuValFloat * min2 = new SetupMenuValFloat("Speed -1 to -2", 0, "km/h",  100, 280, 1, 0, false, &flap_minus_2  );
+			min2->setHelp(PROGMEM"Speed for transition from -1 to -2 flap setting");
+			wkm->addMenu( min2 );
+		}
+		if( flap_pos_max.get() > 2 ){
+			SetupMenuValFloat * min3 = new SetupMenuValFloat("Speed -2 to -3", 0, "km/h",  100, 280, 1, 0, false, &flap_minus_2  );
+			min3->setHelp(PROGMEM"Speed for transition from -2 to -3 flap setting");
+			wkm->addMenu( min3 );
+		}
+
 
 		SetupMenuSelect * wkes = new SetupMenuSelect( "Flap Sensor Option", 0, true, 0, true, &flap_sensor );
 		wkes->addEntry( "Disable");

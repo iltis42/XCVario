@@ -23,6 +23,7 @@
 #include "Atmosphere.h"
 #include "Flarm.h"
 #include "Units.h"
+#include "Flap.h"
 
 S2F * Protocols::_s2f = 0;
 
@@ -205,7 +206,7 @@ void Protocols::parseNMEA( char *str ){
 	if ( strncmp( str, "!xw,", 4 ) == 0 ) {
 		float wkcmd;
 		sscanf( str,"!xw,%f", &wkcmd );  // directly scan into sensor variable
-		wksensor = wkcmd;
+		Flap::setSensor( wkcmd );
 		// ESP_LOGI(FNAME,"XW command detected wk=%f", wksensor );
 	}
 	if ( strncmp( str, "!xa,", 4 ) == 0 ) {

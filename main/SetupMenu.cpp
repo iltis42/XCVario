@@ -20,6 +20,7 @@
 #include "Cipher.h"
 #include "Units.h"
 #include "Switch.h"
+#include "Flap.h"
 
 IpsDisplay* MenuEntry::_display = 0;
 MenuEntry* MenuEntry::root = 0;
@@ -82,7 +83,7 @@ int update_rentry(SetupMenuValFloat * p)
 
 void showWk(SetupMenuSelect * p){
 	p->ucg->setPrintPos(1,120);
-	p->ucg->printf("Sensor: %d    ", AnalogInWk->getRaw(1000) );
+	p->ucg->printf("Sensor: %d    ", Flap::getSensorRaw() );
 	delay(20);
 }
 
@@ -99,7 +100,7 @@ void wk_cal_show( SetupMenuSelect * p, int wk ){
 int wk_cal( SetupMenuSelect * p )
 {
 	ESP_LOGI(FNAME,"WK calibaration ( %d ) ", p->getSelect() );
-	if( !AnalogInWk ){
+	if( !Flap::haveSensor() ){
 		p->clear();
 		p->ucg->setPrintPos(1,60);
 		p->ucg->printf("No Sensor, Abort");
@@ -112,30 +113,30 @@ int wk_cal( SetupMenuSelect * p )
 		p->ucg->setFont(ucg_font_fub25_hr);
 		if( flap_pos_max.get() > 2 ){
 			wk_cal_show( p,3 );
-			wk_sens_pos_plus_3.set( AnalogInWk->getRaw(1000) );
+			wk_sens_pos_plus_3.set( Flap::getSensorRaw() );
 		}
 		if( flap_pos_max.get() > 1 ){
 			wk_cal_show( p,2 );
-			wk_sens_pos_plus_2.set( AnalogInWk->getRaw(1000) );
+			wk_sens_pos_plus_2.set( Flap::getSensorRaw() );
 		}
 		if( flap_pos_max.get() > 0 ){
 			wk_cal_show( p,1 );
-			wk_sens_pos_plus_1.set( AnalogInWk->getRaw(1000) );
+			wk_sens_pos_plus_1.set( Flap::getSensorRaw() );
 		}
 		wk_cal_show( p,0 );
-		wk_sens_pos_0.set( AnalogInWk->getRaw(1000) );
+		wk_sens_pos_0.set( Flap::getSensorRaw() );
 
 		if( flap_neg_max.get() < 0 ){
 			wk_cal_show( p,-1 );
-			wk_sens_pos_minus_1.set( AnalogInWk->getRaw(1000) );
+			wk_sens_pos_minus_1.set( Flap::getSensorRaw() );
 		}
 		if( flap_neg_max.get() < -1 ){
 			wk_cal_show( p,-2 );
-			wk_sens_pos_minus_2.set( AnalogInWk->getRaw(1000) );
+			wk_sens_pos_minus_2.set( Flap::getSensorRaw() );
 		}
 		if( flap_neg_max.get() < -2 ){
 			wk_cal_show( p,-3 );
-			wk_sens_pos_minus_3.set( AnalogInWk->getRaw(1000) );
+			wk_sens_pos_minus_3.set( Flap::getSensorRaw() );
 		}
 
 		p->ucg->setPrintPos(1,60);
@@ -172,7 +173,6 @@ void wkm_clear(){
 
 
 int flap_pos_act( SetupMenuValFloat * p ){
-	int max_pos = *(p->_value);
 	wkm_clear();
 	if( (int)flap_pos_max.get() > 2 )
 		wkm->addMenu( plus3 );
@@ -190,7 +190,6 @@ int flap_pos_act( SetupMenuValFloat * p ){
 }
 
 int flap_neg_act( SetupMenuValFloat * p ){
-	int max_neg = *(p->_value);
 	flap_pos_act(p);
 	return 0;
 }

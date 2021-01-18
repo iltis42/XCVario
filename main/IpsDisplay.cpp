@@ -19,6 +19,7 @@
 #include "WifiClient.h"
 #include "sensor.h"
 #include "Units.h"
+#include "Flap.h"
 
 int screens_init = INIT_DISPLAY_NULL;
 
@@ -123,7 +124,6 @@ int IpsDisplay::yposalt = 0;
 int IpsDisplay::tyalt = 0;
 int IpsDisplay::pyalt = 0;
 int IpsDisplay::wkalt = -3;
-int IpsDisplay::wkspeeds[8];
 
 ucg_color_t IpsDisplay::wkcolor;
 char IpsDisplay::wkss[6];
@@ -428,16 +428,8 @@ void IpsDisplay::redrawValues()
 		colorsalt[l].color[2] = 0;
 	}
 	average_climb = -1000;
-	wkalt = -4;
-	wkspeeds[0] = 280;
-	wkspeeds[1] = flap_minus_3.get();
-	wkspeeds[2] = flap_minus_2.get();
-	wkspeeds[3] = flap_minus_1.get();
-	wkspeeds[4] = flap_0.get();
-	wkspeeds[5] = flap_plus_1.get();
-	wkspeeds[6] = flap_plus_2.get();
-	wkspeeds[7] = 50;
 
+	wkalt = -4;
 	wkbox = false;
 	wkposalt = -100;
 	wksensoralt = -1;
@@ -492,36 +484,6 @@ void IpsDisplay::setTeBuf( int y1, int h, int r, int g, int b ){
 	}
 }
 
-float wkRelPos( float wks, float minv, float maxv ){
-	// ESP_LOGI(FNAME,"wks:%f min:%f max:%f", wks, minv, maxv );
-	if( wks <= maxv && wks >= minv )
-		return ((wks-minv)/(maxv-minv));
-	else if( wks > maxv )
-		return 1;
-	else if( wks < minv )
-		return 0.5;
-	return 0.5;
-}
-
-
-
-int IpsDisplay::getWk( float wks )
-{
-	for( int wk=flap_neg_max.get(); wk<=flap_pos_max.get(); wk++ ){
-		if( wks <= wkspeeds[wk+3] && wks >=  wkspeeds[wk+4] ) {
-			return wk;
-		}
-	}
-	if( wks < wkspeeds[6] ) {
-		return 1;
-	}
-	else if( wks > wkspeeds[0] ){
-		return -2;
-	}
-	else {
-		return 1;
-	}
-}
 
 void IpsDisplay::drawWkBar( int ypos, int xpos, float wkf ){
 	ucg->setFont(ucg_font_profont22_mr );
@@ -1193,8 +1155,8 @@ void IpsDisplay::drawRetroDisplay( int airspeed, float te, float ate, float pola
 	if( flap_enable.get() && !(tick%7) )
 	{
 		float wkspeed = airspeed * sqrt( 100.0/( ballast.get() +100.0) );
-		int wki = getWk( wkspeed );
-		float wkpos=wkRelPos( wkspeed, wkspeeds[wki+4], wkspeeds[wki+3] );
+		int wki = Flap::getOptimumInt( wkspeed );
+		float wkpos=Flap::getOptimum( wkspeed, wki );
 		int wk = (int)((wki - wkpos + 0.5)*10);
 		// ESP_LOGI(FNAME,"ias:%d wksp:%f wki:%d wk:%d wkpos:%f wksensor:%d wkhebel:%f wkh:%d", airspeed, wkspeed, wki, wk, wkpos, wksensor, wkhebel, wkhebeli );
 		if( wkposalt != wk || wksensoralt != (int)(wksensor*10) ) {
@@ -1303,8 +1265,8 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed, float te, float ate, float p
 	if( flap_enable.get() && !(tick%7) )
 	{
 		float wkspeed = airspeed * sqrt( 100.0/( ballast.get() +100.0) );
-		int wki = getWk( wkspeed );
-		float wkpos=wkRelPos( wkspeed, wkspeeds[wki+4], wkspeeds[wki+3] );
+		int wki = Flap::getOptimumInt( wkspeed );
+		float wkpos=Flap::getOptimum( wkspeed, wki );
 		int wk = (int)((wki - wkpos + 0.5)*10);
 		if( wkposalt != wk ) {
 			// ESP_LOGI(FNAME,"ias:%d wksp:%f wki:%d wk:%d wkpos%f", airspeed, wkspeed, wki, wk, wkpos );

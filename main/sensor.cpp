@@ -147,12 +147,8 @@ float as2f = 0;
 float s2f_delta = 0;
 float polar_sink = 0;
 bool  standard_setting = false;
-
-
-
 bool inSetup=true;
 bool stall_warning_active=false;
-
 int count=0;
 bool flarmWarning = false;
 
@@ -610,7 +606,6 @@ void sensor(void *args){
 		display->writeText( line++, "TE Sensor: OK");
 		logged_tests += "TE Sensor Test: PASSED\n";
 	}
-
 	if( selftestPassed ) {
 		if( (abs(ba_t - te_t) >4.0)  && ( ias < 50 ) ) {   // each sensor has deviations, and new PCB has more heat sources
 			selftestPassed = false;
@@ -666,8 +661,6 @@ void sensor(void *args){
 		display->writeText( line++, "Bat Sensor: OK");
 		logged_tests += "Battery Voltage Sensor: PASSED\n";
 	}
-
-
 	Serial::begin();
 	// Factory test for serial interface plus cable
 	if( abs(factory_volt_adjust.get() - 0.00815) < 0.00001 ) {
@@ -745,7 +738,6 @@ void sensor(void *args){
 			logged_tests += "MPU6050 AHRS test: NOT FOUND\n";
 		}
 	}
-
 	Speed2Fly.change_polar();
 	Speed2Fly.change_mc_bal();
 	Version myVersion;
@@ -763,7 +755,6 @@ void sensor(void *args){
 		if( !Rotary.readSwitch() )
 			sleep(2);
 	}
-
 	if( Rotary.readSwitch() )
 	{
 		LeakTest::start( bmpBA, bmpTE, asSensor );
@@ -785,12 +776,10 @@ void sensor(void *args){
 			delay( 2000 );
 			inSetup = false;
 			display->clear();
-
 		}
 		else{
 			display->writeText( 3, "Abort Wifi Scan" );
 		}
-
 	}
 	else if( ias < 50.0 ){
 		ESP_LOGI(FNAME,"QNH Autosetup, IAS=%3f (<50 km/h)", ias );

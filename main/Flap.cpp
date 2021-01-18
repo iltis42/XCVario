@@ -1,6 +1,8 @@
 #include "Flap.h"
 #include "sensor.h"
 #include "Setup.h"
+#include "Units.h"
+
 
 
 #define ZERO_INDEX 4
@@ -8,9 +10,20 @@
 
 AnalogInput * Flap::sensorAdc = 0;
 float Flap::lever=-1;
-int   Flap::senspos[NUMBER_POS];
 int   Flap::leverold=-2;
-#define ZERO_INDEX 4
+int   Flap::senspos[NUMBER_POS];
+int   Flap::flapSpeeds[NUMBER_POS];
+
+void  Flap::initSpeeds(){
+	flapSpeeds[0] = Units::Airspeed2Kmh( 280 );
+	flapSpeeds[1] = Units::Airspeed2Kmh( flap_minus_3.get() );
+	flapSpeeds[2] = Units::Airspeed2Kmh( flap_minus_2.get() );
+	flapSpeeds[3] = Units::Airspeed2Kmh( flap_minus_1.get() );
+	flapSpeeds[4] = Units::Airspeed2Kmh( flap_0.get() );
+	flapSpeeds[5] = Units::Airspeed2Kmh( flap_plus_1.get() );
+	flapSpeeds[6] = Units::Airspeed2Kmh( flap_plus_2.get() );
+	flapSpeeds[7] = Units::Airspeed2Kmh( 50 );
+}
 
 void  Flap::init(){
 	if( flap_sensor.get() == FLAP_SENSOR_GPIO_2 ) {
@@ -27,6 +40,7 @@ void  Flap::init(){
 		else
 			ESP_LOGI( FNAME, "ADC2 GPIO 2 looks good, reading: %d", read );
 	}
+	initSpeeds();
 }
 
 float Flap::getLeverPosition( int wks ){
@@ -114,10 +128,42 @@ void  Flap::initSensor(){
 		if( senspos[ZERO_INDEX+3] < 0 )
 			senspos[ZERO_INDEX+3] = 0;
 	}
-
 	senspos[ZERO_INDEX+4] = 0;
 	for( int i=0; i<=8; i++ ){
 		ESP_LOGI(FNAME,"lever: %d  senspos[i]: %d", i-4, senspos[i]  );
 	}
-
 }
+
+
+float Flap::getOptimum( float wks, int wki ){
+	// ESP_LOGI(FNAME,"wks:%f min:%f max:%f", wks, minv, maxv );
+	float minv = flapSpeeds[wki+4];
+	float maxv = flapSpeeds[wki+3];
+	if( wks <= maxv && wks >= minv )
+		return ((wks-minv)/(maxv-minv));
+	else if( wks > maxv )
+		return 1;
+	else if( wks < minv )
+		return 0.5;
+	return 0.5;
+}
+
+
+int Flap::getOptimumInt( float wks )
+{
+	for( int wk=flap_neg_max.get(); wk<=flap_pos_max.get(); wk++ ){
+		if( wks <= flapSpeeds[wk+3] && wks >=  flapSpeeds[wk+4] ) {
+			return wk;
+		}
+	}
+	if( wks < flapSpeeds[7] ) {
+		return 1;
+	}
+	else if( wks > flapSpeeds[0] ){
+		return -2;
+	}
+	else {
+		return 1;
+	}
+}
+

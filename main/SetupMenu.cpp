@@ -87,7 +87,6 @@ void showWk(SetupMenuSelect * p){
 	delay(20);
 }
 
-
 void wk_cal_show( SetupMenuSelect * p, int wk ){
 	p->ucg->setPrintPos(1,60);
 	p->ucg->printf("Set Flap %+d   ", wk );
@@ -138,7 +137,6 @@ int wk_cal( SetupMenuSelect * p )
 			wk_cal_show( p,-3 );
 			wk_sens_pos_minus_3.set( Flap::getSensorRaw() );
 		}
-
 		p->ucg->setPrintPos(1,60);
 		p->ucg->printf("Saved        ");
 		Flap::initSensor();
@@ -172,6 +170,10 @@ void wkm_clear(){
 	wkm->delMenu( min3 );
 }
 
+int flap_speed_act( SetupMenuValFloat * p ){
+	Flap::initSpeeds();
+	return 0;
+}
 
 int flap_pos_act( SetupMenuValFloat * p ){
 	wkm_clear();
@@ -298,7 +300,6 @@ int bug_adj( SetupMenuValFloat * p ){
 	return 0;
 }
 
-
 int mc_adj( SetupMenuValFloat * p )
 {
 	Speed2Fly.change_mc_bal();
@@ -369,7 +370,6 @@ void MenuEntry::uprint( int x, int y, const char* str ) {
 	xSemaphoreGive(spiMutex );
 }
 
-
 MenuEntry* MenuEntry::addMenu( MenuEntry * item ) {
 	// ESP_LOGI(FNAME,"MenuEntry addMenu() title %s", item->_title.c_str() );
 	if( root == 0 ){
@@ -397,7 +397,6 @@ void MenuEntry::delMenu( MenuEntry * item ) {
 
 }
 
-
 MenuEntry* MenuEntry::findMenu( String title, MenuEntry* start )
 {
 	ESP_LOGI(FNAME,"MenuEntry findMenu() %s %x", title.c_str(), (uint32_t)start );
@@ -417,7 +416,6 @@ MenuEntry* MenuEntry::findMenu( String title, MenuEntry* start )
 	ESP_LOGW(FNAME,"Menu entry not found for %s", title.c_str() );
 	return 0;
 }
-
 
 void SetupMenu::display( int mode ){
 	if( (selected != this) || !_menu_enabled )
@@ -483,7 +481,6 @@ void dec_volume( int count ) {
 void inc_volume( int count ) {
 	Audio::incVolume(count);
 }
-
 
 void SetupMenu::down(int count){
 	if( selected == this && !_menu_enabled ) {
@@ -551,7 +548,6 @@ void SetupMenu::longPress(){
 	ESP_LOGI(FNAME,"SetupMenue: longPress");
 }
 
-
 void SetupMenu::press(){
 	if( selected == 0 )
 		selected = root;
@@ -609,9 +605,6 @@ void SetupMenu::press(){
 	ESP_LOGI(FNAME,"~SetupMenu press()");
 }
 
-
-
-
 void SetupMenu::setup( )
 {
 	ESP_LOGI(FNAME,"SetupMenu setup()");
@@ -653,7 +646,6 @@ void SetupMenu::setup( )
 	afe->setHelp(PROGMEM"Set airfield elevation in meters for QNH auto adjust on ground according to this setting");
 	mm->addMenu( afe );
 
-
 	if( (int)(password.get()) == 271 ) {
 		student_mode.set( 0 );
 		password.set( 0 );
@@ -670,7 +662,6 @@ void SetupMenu::setup( )
 		SetupMenu * va = new SetupMenu( "Vario" );
 		MenuEntry* vae = mm->addMenu( va );
 
-
 		SetupMenuValFloat * vga = new SetupMenuValFloat( 	"Range", 0, vunit.c_str(),	1.0, 30.0, 1, update_rentry, true, &range );
 		vga->setHelp(PROGMEM"Upper and lower value for Vario graphic display region");
 		vga->setPrecision( 0 );
@@ -679,8 +670,6 @@ void SetupMenu::setup( )
 		SetupMenuValFloat * vda = new SetupMenuValFloat( 	"Vario Bar Damping", 0, "sec", 2.0, 10.0, 0.1, 0, false, &vario_delay );
 		vda->setHelp(PROGMEM"Response time, time constant of Vario low pass kalman filter");
 		vae->addMenu( vda );
-
-
 
 		SetupMenuValFloat * vds2 = new SetupMenuValFloat( 	"S2F Damping", 0, "sec", 0.10001, 10.0, 0.1, 0, false, &s2f_delay );
 		vds2->setHelp(PROGMEM"Time constant of S2F low pass filter");
@@ -720,8 +709,6 @@ void SetupMenu::setup( )
 		SetupMenuValFloat * elca = new SetupMenuValFloat( "Adjustment Factor", 0, "%",	-100, 100, 0.1, 0, false, &te_comp_adjust );
 		elca->setHelp(PROGMEM"Adjustment option for electronic compensation in %. This affects in % the enegry altitude calculated from airspeed");
 		elco->addMenu( elca );
-
-
 
 		// Audio
 		SetupMenu * ad = new SetupMenu( "Audio" );
@@ -789,8 +776,6 @@ void SetupMenu::setup( )
 		ar->setHelp(PROGMEM"Select either fix (5m/s) or variable Audio range according to current vario setting");
 		audio->addMenu( ar );
 
-
-
 		SetupMenu * db = new SetupMenu( "Deadbands" );
 		MenuEntry* dbe = audio->addMenu( db );
 		dbe->setHelp(PROGMEM"Audio dead band limits within Audio remains silent in metric scale. 0,1 m/s equals roughly 20 ft/min or 0.2 knots");
@@ -815,13 +800,10 @@ void SetupMenu::setup( )
 		afac->setHelp(PROGMEM"Exponential factor < 1 gives a logarithmic, and > 1 exponential characteristic for frequency of audio signal");
 		audio->addMenu( afac);
 
-
-
 		// Polar Setup
 		SetupMenu * po = new SetupMenu( "Polar" );
 		po->setHelp( PROGMEM"Polar setup to match performance of glider");
 		MenuEntry* poe = mm->addMenu( po );
-
 
 		SetupMenuSelect * glt = new SetupMenuSelect( 	"Glider-Type",	0, false, polar_select, true, &glider_type );
 		poe->addMenu( glt );
@@ -907,38 +889,35 @@ void SetupMenu::setup( )
 		nflneg->setHelp(PROGMEM"Maximum negative flap position, default -2. Restart XCVario to adjust speed menu entries");
 		wkm->addMenu( nflneg );
 
-		plus3 = new SetupMenuValFloat("Speed +3 to +2", 0, "km/h",  50, 150, 1, 0, false, &flap_plus_2  );
+		plus3 = new SetupMenuValFloat("Speed +3 to +2", 0, Units::AirspeedUnit(),  20, 150, 1, flap_speed_act, false, &flap_plus_2  );
 		plus3->setHelp(PROGMEM"Speed for transition from +3 to +3 flap setting");
 		if( (int)flap_pos_max.get() > 2 )
 			wkm->addMenu( plus3 );
 
-		plus2 = new SetupMenuValFloat("Speed +2 to +1", 0, "km/h",  50, 150, 1, 0, false, &flap_plus_1  );
+		plus2 = new SetupMenuValFloat("Speed +2 to +1", 0, Units::AirspeedUnit(),  20, 150, 1, flap_speed_act, false, &flap_plus_1  );
 		plus2->setHelp(PROGMEM"Speed for transition from +2 to +1 flap setting");
 		if( (int)flap_pos_max.get() > 1 )
 			wkm->addMenu( plus2 );
 
-		plus1 = new SetupMenuValFloat("Speed +1 to 0", 0, "km/h",  50, 150, 1, 0, false, &flap_0  );
+		plus1 = new SetupMenuValFloat("Speed +1 to 0", 0, Units::AirspeedUnit(),  20, 150, 1, flap_speed_act, false, &flap_0  );
 		plus1->setHelp(PROGMEM"Speed for transition from +1 to 0 flap setting");
 		if( (int)flap_pos_max.get() > 0 )
 			wkm->addMenu( plus1 );
 
-		min1 = new SetupMenuValFloat("Speed 0 to -1", 0, "km/h",  80, 180, 1, 0, false, &flap_minus_1  );
+		min1 = new SetupMenuValFloat("Speed 0 to -1", 0, Units::AirspeedUnit(),   20, 180, 1, flap_speed_act, false, &flap_minus_1  );
 		min1->setHelp(PROGMEM"Speed for transition from 0 to -1 flap setting");
 		if( (int)flap_neg_max.get() < 0 )
 			wkm->addMenu( min1 );
 
-		min2 = new SetupMenuValFloat("Speed -1 to -2", 0, "km/h",  100, 280, 1, 0, false, &flap_minus_2  );
+		min2 = new SetupMenuValFloat("Speed -1 to -2", 0, Units::AirspeedUnit(),  50, 280, 1, flap_speed_act, false, &flap_minus_2  );
 		min2->setHelp(PROGMEM"Speed for transition from -1 to -2 flap setting");
 		if( (int)flap_neg_max.get() < -1 )
 			wkm->addMenu( min2 );
 
-		min3 = new SetupMenuValFloat("Speed -2 to -3", 0, "km/h",  100, 280, 1, 0, false, &flap_minus_2  );
+		min3 = new SetupMenuValFloat("Speed -2 to -3", 0, Units::AirspeedUnit(),  50, 280, 1, flap_speed_act, false, &flap_minus_3  );
 		min3->setHelp(PROGMEM"Speed for transition from -2 to -3 flap setting");
 		if( (int)flap_neg_max.get() < -2 )
 			wkm->addMenu( min3 );
-
-
-
 
 		// Units
 		SetupMenu * un = new SetupMenu( "Units" );
@@ -960,15 +939,11 @@ void SetupMenu::setup( )
 		un->addMenu( vau );
 		opt->addMenu( un );
 
-
-
 		SetupMenuSelect * amode = new SetupMenuSelect( "Airspeed Mode",	0, false, 0, true, &airspeed_mode );
 		opt->addMenu( amode );
 		amode->setHelp( PROGMEM "Select mode of Airspeed indicator to display IAS (Indicated AirSpeed, default) or TAS (True AirSpeed) considering air density");
 		amode->addEntry( "IAS");
 		amode->addEntry( "TAS");
-
-
 
 		SetupMenuSelect * atl = new SetupMenuSelect( "Automatic Transition",	0, false, 0, true, &fl_auto_transition );
 		opt->addMenu( atl );
@@ -1076,8 +1051,6 @@ void SetupMenu::setup( )
 		diso->setHelp( PROGMEM "Display Orientation either NORMAL means control panel is right, or TOPDOWN means control panel is left");
 		diso->addEntry( "NORMAL (Rotary left)");
 		diso->addEntry( "TOPDOWN (Rotary right)");
-
-
 
 		SetupMenu * rotary = new SetupMenu( "Rotary Setup" );
 		hardware->addMenu( rotary );
@@ -1321,7 +1294,6 @@ SetupMenuValFloat::SetupMenuValFloat( String title, float *value, const char *un
 		_nvs = anvs;
 		_value = _nvs->getPtr();
 	}
-
 }
 
 void SetupMenuValFloat::setPrecision( int prec ){

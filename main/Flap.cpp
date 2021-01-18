@@ -3,9 +3,9 @@
 #include "Setup.h"
 
 AnalogInput * Flap::AnalogInWk = 0;
-float Flap::wksensor=-1;
+float Flap::lever=-1;
 int   Flap::wksenspos[9];
-int   Flap::wksensorold=-2;
+int   Flap::leverold=-2;
 
 void  Flap::init(){
 	if( flap_sensor.get() == FLAP_SENSOR_GPIO_2 ) {
@@ -23,7 +23,6 @@ void  Flap::init(){
 			ESP_LOGI( FNAME, "ADC2 GPIO 2 looks good, reading: %d", read );
 	}
 }
-
 
 float Flap::getLeverPosition( int wks ){
 	// ESP_LOGI(FNAME,"getSensorWkPos %d", wks);
@@ -51,15 +50,15 @@ void  Flap::progress(){
 	if( AnalogInWk ) {
 		int wkraw = AnalogInWk->getRaw();
 		if( wkraw < 4095 && wkraw > 0 ){
-			wksensor = getLeverPosition( wkraw );
-			// ESP_LOGI(FNAME,"wk sensor=%1.2f", wksensor );
+			lever = getLeverPosition( wkraw );
+			// ESP_LOGI(FNAME,"wk sensor=%1.2f", lever );
 		}
 		else
-			wksensor = -10;  // off screen to blank
+			lever = -10;  // off screen to blank
 		if( blue_enable.get() == WL_WLAN ) {
-			if( wksensorold != (int)(wksensor*10) ){
-				OV.sendWkChange( wksensor );   // update secondary vario
-				wksensorold = (int)(wksensor*10);
+			if( leverold != (int)(lever*10) ){
+				OV.sendWkChange( lever );   // update secondary vario
+				leverold = (int)(lever*10);
 			}
 		}
 	}

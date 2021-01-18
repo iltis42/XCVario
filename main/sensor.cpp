@@ -210,7 +210,7 @@ void drawDisplay(void *pvParameters){
 					Flarm::drawFlarmWarning();
 			}
 			if( !(stall_warning_active || flarmWarning) ) {
-				display->drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, meanClimb, Switch::cruiseMode(), standard_setting, Flap::getSensor() );
+				display->drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, meanClimb, Switch::cruiseMode(), standard_setting, Flap::getLever() );
 
 			}
 		}

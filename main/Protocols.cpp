@@ -206,7 +206,7 @@ void Protocols::parseNMEA( char *str ){
 	if ( strncmp( str, "!xw,", 4 ) == 0 ) {
 		float wkcmd;
 		sscanf( str,"!xw,%f", &wkcmd );  // directly scan into sensor variable
-		Flap::setSensor( wkcmd );
+		Flap::setLever( wkcmd );
 		// ESP_LOGI(FNAME,"XW command detected wk=%f", wksensor );
 	}
 	if ( strncmp( str, "!xa,", 4 ) == 0 ) {

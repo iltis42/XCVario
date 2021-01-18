@@ -32,8 +32,8 @@ void  Flap::init(){
 float Flap::getLeverPosition( int wks ){
 	// ESP_LOGI(FNAME,"getSensorWkPos %d", wks);
 	int wk=0;
-	int min = ZERO_INDEX -1 - flap_pos_max.get();
-	int max = ZERO_INDEX +1 - flap_neg_max.get();
+	int max = ZERO_INDEX +1 + flap_pos_max.get();
+	int min = ZERO_INDEX -1 + flap_neg_max.get();
 	// ESP_LOGI(FNAME,"getSensorWkPos %d min:%d max:%d", wks, min, max );
 	for( int i=min; i<=max; i++ ){
 		if( ((senspos[i] < wks) && (wks < senspos[i+1]))  ||
@@ -46,7 +46,7 @@ float Flap::getLeverPosition( int wks ){
 	float moved=senspos[wk]-wks;
 	float relative=moved/delta;
 	float wkf =(wk-ZERO_INDEX) + relative;
-	// ESP_LOGI(FNAME,"return flap: %1.2f wk:%d relative: %f ", wkf, wk, relative  );
+	// ESP_LOGI(FNAME,"getLeverPos(%d): lever: %1.2f wk: %d relative: %1.1f  N:%d X%d ", wks, wkf, wk, relative, min, max  );
 	return wkf;
 }
 

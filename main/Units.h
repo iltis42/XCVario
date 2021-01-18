@@ -39,7 +39,7 @@ public:
 		if( u == -1 )
 			u=ias_unit.get();
 		if( u == 0 ) // km/h
-			return("km/h");
+			return("kmh");
 		if( u == 1 ) // mph
 			return("mph");
 		if( u == 2 ) // knots

@@ -141,6 +141,7 @@ int wk_cal( SetupMenuSelect * p )
 
 		p->ucg->setPrintPos(1,60);
 		p->ucg->printf("Saved        ");
+		Flap::initSensor();
 		delay(2000);
 		ESP_LOGI(FNAME,"Push Button pressed");
 	}
@@ -186,6 +187,7 @@ int flap_pos_act( SetupMenuValFloat * p ){
 		wkm->addMenu( min2 );
 	if( (int)flap_neg_max.get() < -2 )
 		wkm->addMenu( min3 );
+	Flap::initSensor();
 	return 0;
 }
 
@@ -1313,6 +1315,8 @@ SetupMenuValFloat::SetupMenuValFloat( String title, float *value, const char *un
 	_action = action;
 	_end_menu = end_menu;
 	_precision = 2;
+	if( step >= 1 )
+		_precision = 0;
 	if( anvs ) {
 		_nvs = anvs;
 		_value = _nvs->getPtr();

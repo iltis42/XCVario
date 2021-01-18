@@ -553,11 +553,9 @@ void IpsDisplay::drawWkBar( int ypos, int xpos, float wkf ){
 	ucg->undoClipRange();
 }
 
-#define NUMPOS  ( flap_pos_max.get() - flap_neg_max.get() )
+#define NUMPOS  (int)( flap_pos_max.get() +1 - flap_neg_max.get() )
 #define MINPOS  flap_neg_max.get()
 #define MAXPOS  flap_pos_max.get()
-
-
 
 
 void IpsDisplay::drawWkLever( int xpos, int ypos, int oldypos ){
@@ -593,9 +591,12 @@ void IpsDisplay::drawBigWkBar( int ypos, int xpos, float wkf, float wksens ){
 		}
 		wkbox = true;
 	}
-	ucg->setClipRange( xpos-15, ypos-size, 15, 2*size );
+	ESP_LOGI(FNAME,"np: %d size: %d",  NUMPOS, size );
+	int yclip = ypos+MINPOS*lfh-(lfh/2);
+	ucg->setClipRange( xpos-15, yclip, 15, size );
+	// ucg->setColor(COLOR_MGREY);
+	// ucg->drawBox(      xpos-15, yclip, 15, size );
 	// now draw the numbers
-
 	int y = ypos + (int)((wkf)*(lfh) + 0.5 );
 
 	int ys = ypos + (int)(( wksens )*(lfh) + 0.5 );
@@ -1225,13 +1226,13 @@ void IpsDisplay::drawRetroDisplay( int airspeed, float te, float ate, float pola
 	if( !(tick%7) ){
 		if( as_prev != airspeed || !(tick%49) ) {
 			ucg->setColor(  COLOR_WHITE  );
-			ucg->setPrintPos(125,75);
+			ucg->setPrintPos(113,75);
 			ucg->setFont(ucg_font_fub20_hr);
 			char s[10];
 			sprintf(s,"%3d", (int)(Units::Airspeed( airspeed ) +0.5)  );
 			int fl=ucg->getStrWidth(s);
 			ucg->printf("%s  ", s);
-			ucg->setPrintPos(125+fl,70);
+			ucg->setPrintPos(113+fl,70);
 			ucg->setFont(ucg_font_fub11_hr);
 			ucg->printf(" %s  ", Units::AirspeedUnit() );
 			as_prev = ias;

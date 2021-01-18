@@ -20,17 +20,17 @@ public:
 
 	static inline unsigned int getSensorRaw() {
 		if( haveSensor() )
-			return AnalogInWk->getRaw(1000);
+			return sensorAdc->getRaw(1000);
 		else
 			return 0;
 	}
-	static inline bool haveSensor() { if( AnalogInWk != 0 ) return true; else return false; }
+	static inline bool haveSensor() { if( sensorAdc != 0 ) return true; else return false; }
 
 private:
-	static AnalogInput *AnalogInWk;
+	static AnalogInput *sensorAdc;
 	static float lever;
-	static int wksenspos[9];
-	static int  leverold;
+	static int   senspos[9];
+	static int   leverold;
 };
 
 #endif

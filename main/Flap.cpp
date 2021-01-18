@@ -2,10 +2,15 @@
 #include "sensor.h"
 #include "Setup.h"
 
+
+#define ZERO_INDEX 4
+#define NUMBER_POS 9
+
 AnalogInput * Flap::AnalogInWk = 0;
 float Flap::lever=-1;
-int   Flap::wksenspos[9];
+int   Flap::wksenspos[NUMBER_POS];
 int   Flap::leverold=-2;
+#define ZERO_INDEX 4
 
 void  Flap::init(){
 	if( flap_sensor.get() == FLAP_SENSOR_GPIO_2 ) {
@@ -27,8 +32,8 @@ void  Flap::init(){
 float Flap::getLeverPosition( int wks ){
 	// ESP_LOGI(FNAME,"getSensorWkPos %d", wks);
 	int wk=0;
-	int min = 3 - flap_pos_max.get();
-	int max = 5 - flap_neg_max.get();
+	int min = ZERO_INDEX -1 - flap_pos_max.get();
+	int max = ZERO_INDEX +1 - flap_neg_max.get();
 	// ESP_LOGI(FNAME,"getSensorWkPos %d min:%d max:%d", wks, min, max );
 	for( int i=min; i<=max; i++ ){
 		if( ((wksenspos[i] < wks) && (wks < wksenspos[i+1]))  ||
@@ -40,7 +45,7 @@ float Flap::getLeverPosition( int wks ){
 	float delta=wksenspos[wk]-wksenspos[wk+1];
 	float moved=wksenspos[wk]-wks;
 	float relative=moved/delta;
-	float wkf =(wk-4) + relative;
+	float wkf =(wk-ZERO_INDEX) + relative;
 	// ESP_LOGI(FNAME,"return flap: %1.2f wk:%d relative: %f ", wkf, wk, relative  );
 	return wkf;
 }
@@ -66,52 +71,52 @@ void  Flap::progress(){
 
 void  Flap::initSensor(){
 	ESP_LOGI(FNAME,"initSensor");
-	wksenspos[0] = 4095;
+	wksenspos[ZERO_INDEX-4] = 4095;
 
 	if( (int)flap_neg_max.get() < -2 )
-		wksenspos[1] = wk_sens_pos_minus_3.get();
+		wksenspos[ZERO_INDEX-3] = wk_sens_pos_minus_3.get();
 	else{
-		wksenspos[1] = wk_sens_pos_minus_2.get() - ( wk_sens_pos_minus_1.get() - wk_sens_pos_minus_2.get()); // extrapolated
-		if( wksenspos[1] > 4095 )
-			wksenspos[1] = 4095;
+		wksenspos[ZERO_INDEX-3] = wk_sens_pos_minus_2.get() - ( wk_sens_pos_minus_1.get() - wk_sens_pos_minus_2.get()); // extrapolated
+		if( wksenspos[ZERO_INDEX-3] > 4095 )
+			wksenspos[ZERO_INDEX-3] = 4095;
 	}
 
 	if(  (int)flap_neg_max.get() < -1)
-		wksenspos[2] = wk_sens_pos_minus_2.get();
+		wksenspos[ZERO_INDEX-2] = wk_sens_pos_minus_2.get();
 	else{
-		wksenspos[2] = wk_sens_pos_minus_1.get() - ( wk_sens_pos_0.get() - wk_sens_pos_minus_1.get()); // extrapolated
-		if( wksenspos[2] > 4095 )
-			wksenspos[2] = 4095;
+		wksenspos[ZERO_INDEX-2] = wk_sens_pos_minus_1.get() - ( wk_sens_pos_0.get() - wk_sens_pos_minus_1.get()); // extrapolated
+		if( wksenspos[ZERO_INDEX-2] > 4095 )
+			wksenspos[ZERO_INDEX-2] = 4095;
 	}
 
 	if( (int)flap_neg_max.get() < 0 )
-		wksenspos[3] = wk_sens_pos_minus_1.get();
+		wksenspos[ZERO_INDEX-1] = wk_sens_pos_minus_1.get();
 	else
-		wksenspos[3] = wk_sens_pos_0.get() - ( wk_sens_pos_plus_1.get() - wk_sens_pos_0.get()); // extrapolated
+		wksenspos[ZERO_INDEX-1] = wk_sens_pos_0.get() - ( wk_sens_pos_plus_1.get() - wk_sens_pos_0.get()); // extrapolated
 
-	wksenspos[4] = wk_sens_pos_0.get();
+	wksenspos[ZERO_INDEX] = wk_sens_pos_0.get();
 
 	if( (int)flap_pos_max.get() > 0 )
-		wksenspos[5] = wk_sens_pos_plus_1.get();
+		wksenspos[ZERO_INDEX+1] = wk_sens_pos_plus_1.get();
 	else
-		wksenspos[5] = wk_sens_pos_0.get() - ( wk_sens_pos_minus_1.get() - wk_sens_pos_0.get()); // extrapolated pos pole
+		wksenspos[ZERO_INDEX+1] = wk_sens_pos_0.get() - ( wk_sens_pos_minus_1.get() - wk_sens_pos_0.get()); // extrapolated pos pole
 
 	if( (int)flap_pos_max.get() > 1 )
-		wksenspos[6] = wk_sens_pos_plus_2.get();
+		wksenspos[ZERO_INDEX+2] = wk_sens_pos_plus_2.get();
 	else{
-		wksenspos[6] = wk_sens_pos_plus_1.get() - ( wk_sens_pos_0.get() - wk_sens_pos_plus_1.get()); // extrapolated pos pole
-		if( wksenspos[6] < 0 )
-			wksenspos[6] = 0;
+		wksenspos[ZERO_INDEX+2] = wk_sens_pos_plus_1.get() - ( wk_sens_pos_0.get() - wk_sens_pos_plus_1.get()); // extrapolated pos pole
+		if( wksenspos[ZERO_INDEX+2] < 0 )
+			wksenspos[ZERO_INDEX+2] = 0;
 	}
 	if( (int)flap_pos_max.get() > 2 )
-		wksenspos[7] = wk_sens_pos_plus_3.get();
+		wksenspos[ZERO_INDEX+3] = wk_sens_pos_plus_3.get();
 	else{
-		wksenspos[7] = wk_sens_pos_plus_2.get() - ( wk_sens_pos_plus_1.get() - wk_sens_pos_plus_2.get()); // extrapolated pos pole
-		if( wksenspos[7] < 0 )
-			wksenspos[7] = 0;
+		wksenspos[ZERO_INDEX+3] = wk_sens_pos_plus_2.get() - ( wk_sens_pos_plus_1.get() - wk_sens_pos_plus_2.get()); // extrapolated pos pole
+		if( wksenspos[ZERO_INDEX+3] < 0 )
+			wksenspos[ZERO_INDEX+3] = 0;
 	}
 
-	wksenspos[8] = 0;
+	wksenspos[ZERO_INDEX+4] = 0;
 	for( int i=0; i<=8; i++ ){
 		ESP_LOGI(FNAME,"i: %d  wksenspos[i]: %d", i, wksenspos[i]  );
 	}

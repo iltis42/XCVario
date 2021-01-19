@@ -364,7 +364,8 @@ float avc_old=-1000;
 int yusize=7;
 int ylsize=7;
 
-void IpsDisplay::drawAvg( float avclimb, float delta ){
+void IpsDisplay::drawAvg( float avclimb_ms, float delta ){
+	float avclimb = Units::Vario( avclimb_ms );
 	ESP_LOGD(FNAME,"drawAvg: av=%.2f delta=%.2f", avclimb, delta );
 	int pos=130;
 	int size=7;
@@ -878,10 +879,7 @@ void IpsDisplay::initRetroDisplay(){
 		drawWifi(DISPLAY_W-27, FLOGO+2 );
 	drawMC( MC.get(), true );
 	drawThermometer(  10, 30 );
-
-
 }
-
 
 void IpsDisplay::drawWarning( const char *warn, bool push ){
 	ESP_LOGI(FNAME,"drawWarning");
@@ -948,7 +946,7 @@ void IpsDisplay::drawAvgVario( int x, int y, float ate ){
 	ucg->undoClipRange();
 }
 
-void IpsDisplay::drawRetroDisplay( int airspeed, float te, float ate, float polar_sink, float altitude,
+void IpsDisplay::drawRetroDisplay( int airspeed, float te_ms, float ate, float polar_sink, float altitude,
 		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_setting, float wksensor ){
 	if( _menu )
 		return;
@@ -959,6 +957,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed, float te, float ate, float pola
 	tick++;
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	// ESP_LOGI(FNAME,"drawRetroDisplay  TE=%0.1f IAS:%d km/h  WK=%d", te, airspeed, wksensor  );
+	float te = Units::Vario( te_ms );
 
 	if( te > _range )
 		te = _range;
@@ -1239,7 +1238,7 @@ void IpsDisplay::drawDisplay( int airspeed, float te, float ate, float polar_sin
 }
 
 void IpsDisplay::drawAirlinerDisplay( int airspeed, float te, float ate, float polar_sink, float altitude,
-		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_setting, float wksensor ){
+		float temp, float volt, float s2fd, float s2f, float acl_ms, bool s2fmode, bool standard_setting, float wksensor ){
 	if( _menu )
 		return;
 	if( !(screens_init & INIT_DISPLAY_AIRLINER) ){
@@ -1249,6 +1248,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed, float te, float ate, float p
 	// ESP_LOGI(FNAME,"IpsDisplay::drawDisplay  TE=%0.1f", te);
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	tick++;
+	float acl = Units::Vario( acl_ms );
 
 	// S2F given im km/h: Unit adaption for mph and knots
 	if( UNITVAR == 1 ){  // mph

@@ -281,6 +281,7 @@ extern SetupNG<float>  		s2f_speed;
 
 extern SetupNG<int>  		audio_mode;
 extern SetupNG<int>  		chopping_mode;
+extern SetupNG<int>  		amplifier_shutdown;
 
 extern SetupNG<int>  		blue_enable;
 extern SetupNG<int>  		factory_reset;

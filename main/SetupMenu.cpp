@@ -800,6 +800,12 @@ void SetupMenu::setup( )
 		afac->setHelp(PROGMEM"Exponential factor < 1 gives a logarithmic, and > 1 exponential characteristic for frequency of audio signal");
 		audio->addMenu( afac);
 
+		SetupMenuSelect * amps = new SetupMenuSelect( "Amplifier Shutdown", 0, false, 0 , true, &amplifier_shutdown );
+		amps->setHelp(PROGMEM"Select if Amplifier is totally shutdown while in Deadband (saves energy), or stays always on");
+		amps->addEntry( "Always On");         // 0
+		amps->addEntry( "Shutdown");        // 1
+		audio->addMenu( amps );
+
 		// Polar Setup
 		SetupMenu * po = new SetupMenu( "Polar" );
 		po->setHelp( PROGMEM"Polar setup to match performance of glider");
@@ -889,32 +895,32 @@ void SetupMenu::setup( )
 		nflneg->setHelp(PROGMEM"Maximum negative flap position, default -2. Restart XCVario to adjust speed menu entries");
 		wkm->addMenu( nflneg );
 
-		plus3 = new SetupMenuValFloat("Speed +3 to +2", 0, Units::AirspeedUnit(),  20, 150, 1, flap_speed_act, false, &flap_plus_2  );
+		plus3 = new SetupMenuValFloat("Speed +3 to +2", 0, sunit.c_str(),  20, 150, 1, flap_speed_act, false, &flap_plus_2  );
 		plus3->setHelp(PROGMEM"Speed for transition from +3 to +3 flap setting");
 		if( (int)flap_pos_max.get() > 2 )
 			wkm->addMenu( plus3 );
 
-		plus2 = new SetupMenuValFloat("Speed +2 to +1", 0, Units::AirspeedUnit(),  20, 150, 1, flap_speed_act, false, &flap_plus_1  );
+		plus2 = new SetupMenuValFloat("Speed +2 to +1", 0, sunit.c_str(),  20, 150, 1, flap_speed_act, false, &flap_plus_1  );
 		plus2->setHelp(PROGMEM"Speed for transition from +2 to +1 flap setting");
 		if( (int)flap_pos_max.get() > 1 )
 			wkm->addMenu( plus2 );
 
-		plus1 = new SetupMenuValFloat("Speed +1 to 0", 0, Units::AirspeedUnit(),  20, 150, 1, flap_speed_act, false, &flap_0  );
+		plus1 = new SetupMenuValFloat("Speed +1 to 0", 0, sunit.c_str(),  20, 150, 1, flap_speed_act, false, &flap_0  );
 		plus1->setHelp(PROGMEM"Speed for transition from +1 to 0 flap setting");
 		if( (int)flap_pos_max.get() > 0 )
 			wkm->addMenu( plus1 );
 
-		min1 = new SetupMenuValFloat("Speed 0 to -1", 0, Units::AirspeedUnit(),   20, 180, 1, flap_speed_act, false, &flap_minus_1  );
+		min1 = new SetupMenuValFloat("Speed 0 to -1", 0, sunit.c_str(),   20, 180, 1, flap_speed_act, false, &flap_minus_1  );
 		min1->setHelp(PROGMEM"Speed for transition from 0 to -1 flap setting");
 		if( (int)flap_neg_max.get() < 0 )
 			wkm->addMenu( min1 );
 
-		min2 = new SetupMenuValFloat("Speed -1 to -2", 0, Units::AirspeedUnit(),  50, 280, 1, flap_speed_act, false, &flap_minus_2  );
+		min2 = new SetupMenuValFloat("Speed -1 to -2", 0, sunit.c_str(),  50, 280, 1, flap_speed_act, false, &flap_minus_2  );
 		min2->setHelp(PROGMEM"Speed for transition from -1 to -2 flap setting");
 		if( (int)flap_neg_max.get() < -1 )
 			wkm->addMenu( min2 );
 
-		min3 = new SetupMenuValFloat("Speed -2 to -3", 0, Units::AirspeedUnit(),  50, 280, 1, flap_speed_act, false, &flap_minus_3  );
+		min3 = new SetupMenuValFloat("Speed -2 to -3", 0, sunit.c_str(),  50, 280, 1, flap_speed_act, false, &flap_minus_3  );
 		min3->setHelp(PROGMEM"Speed for transition from -2 to -3 flap setting");
 		if( (int)flap_neg_max.get() < -2 )
 			wkm->addMenu( min3 );
@@ -927,7 +933,7 @@ void SetupMenu::setup( )
 		alu->addEntry( "Foot        (ft)");
 		alu->addEntry( "FlightLevel (FL)");
 		un->addMenu( alu );
-		SetupMenuSelect * iau = new SetupMenuSelect( "Indicated Airspeed", 0, false , update_sunit, true, &ias_unit );
+		SetupMenuSelect * iau = new SetupMenuSelect( "Airspeed", 0, false , update_sunit, true, &ias_unit );
 		iau->addEntry( "Km per hour     (Km/h)");
 		iau->addEntry( "Miles per hour (mph)");
 		iau->addEntry( "Knots           (kt)");

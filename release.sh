@@ -1,5 +1,5 @@
 git pull
-VER=`date +"%y.%m%d-%H"`
+VER=`date +"%y.%m%d-%H%M"`
 comment=$1
 cd /home/nextpcb/sensor
 touch ./main/Version.h

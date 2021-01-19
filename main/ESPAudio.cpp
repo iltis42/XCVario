@@ -477,9 +477,9 @@ void Audio::dactask(void* arg )
 				// ESP_LOGI(FNAME, "have sound");
 				if( !sound_on  || (cur_wiper != wiper) ) {
 					if( !sound_on ) {
-						for( int i=0; i<wiper; i+=1 ) {
+						for( int i=0; i<wiper; i+=3 ) {
 							Poti.writeWiper( i );
-							delayMicroseconds( 50 );
+							delayMicroseconds( 25 );
 							// ESP_LOGI(FNAME, "fade in sound, wiper: %d", nw);
 						}
 					}
@@ -508,9 +508,9 @@ void Audio::dactask(void* arg )
 			}else{
 				if( sound_on ) {
 					if( cur_wiper > 1 ) {  // turn off gracefully sound
-						for( int i=wiper; i>0; i-=1 ) {
+						for( int i=wiper; i>0; i-=3 ) {
 							Poti.writeWiper( i );
-							delayMicroseconds( 50 );
+							delayMicroseconds( 25 );
 							// ESP_LOGI(FNAME, "fade in sound, wiper: %d", nw);
 						}
 						Poti.writeWiper( 0 );

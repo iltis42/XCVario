@@ -364,8 +364,7 @@ float avc_old=-1000;
 int yusize=7;
 int ylsize=7;
 
-void IpsDisplay::drawAvg( float avclimb_ms, float delta ){
-	float avclimb = Units::Vario( avclimb_ms );
+void IpsDisplay::drawAvg( float avclimb, float delta ){
 	ESP_LOGD(FNAME,"drawAvg: av=%.2f delta=%.2f", avclimb, delta );
 	int pos=130;
 	int size=7;
@@ -894,6 +893,7 @@ void IpsDisplay::drawWarning( const char *warn, bool push ){
 	ucg->setColor( COLOR_RED );
 	ucg->setFont(ucg_font_fub35_hr);
 	ucg->printf(warn);
+	ucg->setFontPosBottom();
 	xSemaphoreGive(spiMutex);
 }
 
@@ -904,19 +904,7 @@ void IpsDisplay::drawAvgVario( int x, int y, float ate ){
 	ucg->setFont(ucg_font_fub35_hn);
 	ucg->setClipRange( x, y-30, 95, 50 );
 
-	if( UNITVAR == 0 ) {  // m/s
-		ucg->setFont(ucg_font_fub35_hn);
-		if( abs(ate) >= 10 ){
-			ucg->setFont(ucg_font_fub30_hn);
-			ucg->setPrintPos(x, y-4 );
-		}
-		if( ate > 0 )
-			ucg->printf(" %2.1f  ", ate);
-		else
-			ucg->printf("%2.1f  ", ate);
-		// ESP_LOGI(FNAME,"ate %f", ate );
-	}
-	else if(  UNITVAR == 1 ){
+	if(  UNITVAR == 1 ){
 		ucg->setFont(ucg_font_fub30_hn);
 		int fpm = (int(Units::Vario( ate )+0.5)/10)*10;
 		if( abs(fpm) >= 1000 ){
@@ -924,30 +912,50 @@ void IpsDisplay::drawAvgVario( int x, int y, float ate ){
 			ucg->setFont(ucg_font_fub25_hn);
 		}
 		if( fpm > 0 )
-			ucg->printf(" %4d   ", fpm );  // ft/min
+			ucg->printf(" %4d   ", (int)( (ate+0.5)/10)*10 );  // ft/min
 		else {
-			ucg->printf("%4d   ", fpm );  // ft/min
+			ucg->printf("%4d   ",  (int)( (ate+0.5)/10)*10 );  // ft/min
 		}
 	}
-	else if(  UNITVAR == 2 ){
-		float kte = Units::Vario( ate );
+	else{
 		ucg->setFont(ucg_font_fub35_hn);
-		if( abs(kte) >= 10 ){
+		if( abs(ate) >= 10 ){
 			ucg->setPrintPos(x, y-4);  // shift 3 pixel up
 			ucg->setFont(ucg_font_fub30_hn);
 		}
-		if( kte > 0 )
-			ucg->printf(" %2.1f   ", kte );
+		if( ate > 0 )
+			ucg->printf(" %2.1f   ", ate );
 		else{
-			ucg->printf("%2.1f   ", kte );         // knots
+			ucg->printf("%2.1f   ", ate );         // knots
 		}
 	}
 	ucg->setFontPosBottom();
 	ucg->undoClipRange();
 }
 
-void IpsDisplay::drawRetroDisplay( int airspeed, float te_ms, float ate, float polar_sink, float altitude,
-		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_setting, float wksensor ){
+void IpsDisplay::drawAltitude( float altitude, int x, int y ){
+	int alt = (int)(altitude+0.5);
+	if( alt != prefalt ) {
+		ucg->setColor(  COLOR_WHITE  );
+		ucg->setPrintPos(x,y);
+		ucg->setFont(ucg_font_fub25_hr);
+		if( UNITALT == 0 ) { //m
+			ucg->printf("%-4d %s   ", alt, Units::AltitudeUnit() );
+		}
+		if( UNITALT == 1 ){ //feet
+			ucg->printf("%-5d %s   ", (alt/10)*10, Units::AltitudeUnit() );
+		}
+		if( UNITALT == 2 ){ //FL
+			ucg->printf("%s %-4d   ", Units::AltitudeUnit(), alt  );
+		}
+		prefalt = alt;
+	}
+}
+
+
+
+void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, float polar_sink_ms, float altitude_m,
+		float temp, float volt, float s2fd_ms, float s2f_ms, float acl_ms, bool s2fmode, bool standard_setting, float wksensor ){
 	if( _menu )
 		return;
 	if( !(screens_init & INIT_DISPLAY_RETRO) ){
@@ -957,22 +965,20 @@ void IpsDisplay::drawRetroDisplay( int airspeed, float te_ms, float ate, float p
 	tick++;
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	// ESP_LOGI(FNAME,"drawRetroDisplay  TE=%0.1f IAS:%d km/h  WK=%d", te, airspeed, wksensor  );
-	float te = Units::Vario( te_ms );
 
+	// Unit adaption for mph and knots
+	float te = Units::Vario( te_ms );
+	float ate = Units::Vario( ate_ms );
+	float acl = Units::Vario( acl_ms );
 	if( te > _range )
 		te = _range;
 	if( te < -_range )
 		te = -_range;
-
-	// S2F given im km/h: Unit adaption for mph and knots
-	if( UNITVAR == 1 ){  // mph
-		s2f = s2f*0.621371;
-		s2fd = s2fd*0.621371;
-	}
-	else if( UNITVAR == 2 ){ // knots
-		s2f = s2f*0.539957;
-		s2fd = s2fd*0.539957;
-	}
+	float polar_sink = Units::Vario( polar_sink_ms );
+	//  float s2f = Units::Airspeed( s2f_ms );   not used for now
+	float s2fd = Units::Airspeed( s2fd_ms );
+	int airspeed =  (int)(Units::Airspeed( airspeed_kmh ) + 0.5);
+	float altitude = Units::Altitude( altitude_m );
 
 	// draw TE pointer
 	float a = (te)/(_range) * (M_PI_2);
@@ -1099,33 +1105,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed, float te_ms, float ate, float p
 
 	// Altitude
 	if(!(tick%8) ) {
-		int alt = (int)(altitude+0.5);
-		if( alt != prefalt || !(tick%64) ) {
-			ucg->setColor(  COLOR_WHITE  );
-			ucg->setPrintPos(135,273);
-			ucg->setFont(ucg_font_fub20_hr);
-			char s[10];
-			int fl;
-			if( UNITALT == 0 ) { //m
-				sprintf(s,"%4d", int( Units::Altitude( alt ) +0.5) );
-				fl=ucg->getStrWidth(s);
-				ucg->printf("%s  ", s  );
-				ucg->setPrintPos(135+fl,273);
-				ucg->printf(" %s  ", Units::AltitudeUnit() );
-			}
-			if( UNITALT == 1 ){ //feet
-				sprintf(s,"%5d", int( Units::Altitude( alt ) +0.5));
-				fl=ucg->getStrWidth(s);
-				ucg->printf("%s  ", s );
-				ucg->setPrintPos(135+fl,273);
-				ucg->printf(" %s  ", Units::AltitudeUnit() );
-			}
-			if( UNITALT == 2 ){ //FL
-				sprintf(s,"%4d", int( Units::Altitude( alt ) +0.5) );
-				ucg->printf("%s %s  ", Units::AltitudeUnit(), s  );
-			}
-			prefalt = alt;
-		}
+		drawAltitude( altitude, 110,282 );
 	}
 
 	// Battery
@@ -1190,7 +1170,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed, float te_ms, float ate, float p
 			ucg->setPrintPos(113,75);
 			ucg->setFont(ucg_font_fub20_hr);
 			char s[10];
-			sprintf(s,"%3d", (int)(Units::Airspeed( airspeed ) +0.5)  );
+			sprintf(s,"%3d",  airspeed );
 			int fl=ucg->getStrWidth(s);
 			ucg->printf("%s  ", s);
 			ucg->setPrintPos(113+fl,70);
@@ -1237,8 +1217,8 @@ void IpsDisplay::drawDisplay( int airspeed, float te, float ate, float polar_sin
 
 }
 
-void IpsDisplay::drawAirlinerDisplay( int airspeed, float te, float ate, float polar_sink, float altitude,
-		float temp, float volt, float s2fd, float s2f, float acl_ms, bool s2fmode, bool standard_setting, float wksensor ){
+void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_ms, float polar_sink_ms, float altitude_m,
+		float temp, float volt, float s2fd_ms, float s2f_ms, float acl_ms, bool s2fmode, bool standard_setting, float wksensor ){
 	if( _menu )
 		return;
 	if( !(screens_init & INIT_DISPLAY_AIRLINER) ){
@@ -1248,20 +1228,24 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed, float te, float ate, float p
 	// ESP_LOGI(FNAME,"IpsDisplay::drawDisplay  TE=%0.1f", te);
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	tick++;
-	float acl = Units::Vario( acl_ms );
 
 	// S2F given im km/h: Unit adaption for mph and knots
-	if( UNITVAR == 1 ){  // mph
-		s2f = s2f*0.621371;
-		s2fd = s2fd*0.621371;
-	}
-	else if( UNITVAR == 2 ){ // knots
-		s2f = s2f*0.539957;
-		s2fd = s2fd*0.539957;
-	}
-	 vTaskDelay(3);
-	// WK-Indicator
+	float te = Units::Vario( te_ms );
+	float ate = Units::Vario( ate_ms );
+	float acl = Units::Vario( acl_ms );
+	if( te > _range )
+		te = _range;
+	if( te < -_range )
+		te = -_range;
+	float polar_sink = Units::Vario( polar_sink_ms );
+	float s2f = Units::Airspeed( s2f_ms );
+	float s2fd = Units::Airspeed( s2fd_ms );
+	int airspeed =  (int)(Units::Airspeed( airspeed_kmh ) + 0.5);
+	float altitude = Units::Altitude( altitude_m );
 
+	 vTaskDelay(3);
+
+	// WK-Indicator
 	if( flap_enable.get() && !(tick%7) )
 	{
 		float wkspeed = airspeed * sqrt( 100.0/( ballast.get() +100.0) );
@@ -1317,25 +1301,10 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed, float te, float ate, float p
 			pref_qnh = qnh;
 		}
 	}
-	// Altitude
 
+	// Altitude
 	if(!(tick%7) ) {
-		int alt = (int)(altitude+0.5);
-		if( alt != prefalt ) {
-			ucg->setColor(  COLOR_WHITE  );
-			ucg->setPrintPos(FIELD_START,YALT+6);
-			ucg->setFont(ucg_font_fub25_hr);
-			if( UNITALT == 0 ) { //m
-				ucg->printf("  %-4d %s ", int( Units::Altitude( alt ) +0.5), Units::AltitudeUnit() );
-			}
-			if( UNITALT == 1 ){ //feet
-				ucg->printf("  %-5d %s ", int(Units::Altitude( alt ) + 0.5), Units::AltitudeUnit() );
-			}
-			if( UNITALT == 2 ){ //FL
-				ucg->printf("%s %-4d  ", Units::AltitudeUnit(), int(Units::Altitude( alt ) + 0.5)  );
-			}
-			prefalt = alt;
-		}
+		drawAltitude( altitude, FIELD_START,YALT+6 );
 	}
 	// MC Value
 	if(  !(tick%8) ) {
@@ -1395,20 +1364,13 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed, float te, float ate, float p
 		ucg->undoClipRange();
 	}
 
-
 	int s2fclip = s2fd;
 	if( s2fclip > MAXS2FTRI )
 		s2fclip = MAXS2FTRI;
 	if( s2fclip < -MAXS2FTRI )
 		s2fclip = -MAXS2FTRI;
 
-	int ty = 0;
-	if( UNITVAR == 0 )  // m/s
-			ty = (int)(te*_pixpmd);         // 1 unit = 1 m/s
-	else if( UNITVAR == 1 )
-		ty = (int)(te*_pixpmd*1.9685);  // 1 unit = 100 ft/min
-	else if( UNITVAR == 2 )
-		ty = (int)(te*_pixpmd*1.94384); // 1 unit = 1 kt
+	int ty = (int)(te*_pixpmd);
 
 	int py = (int)(polar_sink*_pixpmd);
 	// Gauge Triangle
@@ -1469,30 +1431,26 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed, float te, float ate, float p
 	    vTaskDelay(3);
 
 	}
-
-
 	// AS
 	if( as_prev != airspeed && !(tick%2)) {
 		// draw new
-		int airspeed_unit =  (int)(Units::Airspeed( airspeed ) + 0.5);
-
 		ucg->setColor(  COLOR_WHITE  );
 		// print speed values bar
 		ucg->setFont(ucg_font_fub11_hn);
 		ucg->drawFrame( FIELD_START, dmid-(MAXS2FTRI)-4, ASLEN+6, (MAXS2FTRI*2)+8 );
 		ucg->setClipRange( FIELD_START, dmid-(MAXS2FTRI), ASLEN+6, (MAXS2FTRI*2) );
-		for( int speed = airspeed_unit-MAXS2FTRI-(fh); speed<airspeed_unit+MAXS2FTRI+(fh); speed++ )
+		for( int speed = airspeed-MAXS2FTRI-(fh); speed<airspeed+MAXS2FTRI+(fh); speed++ )
 		{
 			if( (speed%20) == 0 && (speed >= 0) ) {
 				// blank old values
 				ucg->setColor( COLOR_BLACK );
 				if( speed == 0 )
-					ucg->drawBox( FIELD_START+6,dmid+(speed-airspeed_unit)-(fh/2)-19, ASLEN-6, fh+25 );
+					ucg->drawBox( FIELD_START+6,dmid+(speed-airspeed)-(fh/2)-19, ASLEN-6, fh+25 );
 				else
-					ucg->drawBox( FIELD_START+6,dmid+(speed-airspeed_unit)-(fh/2)-9, ASLEN-6, fh+15 );
-				int col = abs(((speed-airspeed_unit)*2));
+					ucg->drawBox( FIELD_START+6,dmid+(speed-airspeed)-(fh/2)-9, ASLEN-6, fh+15 );
+				int col = abs(((speed-airspeed)*2));
 				ucg->setColor(  col,col,col  );
-				ucg->setPrintPos(FIELD_START+8,dmid+(speed-airspeed_unit)+(fh/2));
+				ucg->setPrintPos(FIELD_START+8,dmid+(speed-airspeed)+(fh/2));
 				ucg->printf("%3d ""-", speed);
 			}
 		}
@@ -1501,7 +1459,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed, float te, float ate, float p
 		ucg->setFont(ucg_font_fub14_hn);
 		ucg->setPrintPos(FIELD_START+8, YS2F-fh-3 );
 		ucg->setColor(  COLOR_WHITE  );
-		ucg->printf("%3d ", airspeed_unit );
+		ucg->printf("%3d ", airspeed );
 		as_prev = airspeed;
 	}
 	// S2F command trend triangle

@@ -123,6 +123,7 @@ private:
 	static void drawGaugeTriangle( int y, int r, int g, int b, bool s2f=false );
 	static void drawAvgSymbol( int y, int r, int g, int b, int x=DISPLAY_LEFT );
 	static void drawAvg( float mps, float delta );
+	static void drawAltitude( float altitude, int x, int y );
 	static void drawLegend( bool onlyLines=false );
 	static void drawWkBar( int ypos, int xpos, float wk );
 	static void drawBigWkBar( int ypos, int xpos, float wk, float wksens );

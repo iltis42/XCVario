@@ -5,22 +5,13 @@
  *      Author: iltis
  */
 
-#include "SetupMenu.h"
+// #include "SetupMenu.h"
 #include "IpsDisplay.h"
-#include <inttypes.h>
-#include <iterator>
-#include <algorithm>
-#include "ESPAudio.h"
 #include "BMPVario.h"
-#include "S2F.h"
-#include "Version.h"
 #include "Polars.h"
 #include <logdef.h>
 #include <sensor.h>
-#include "Cipher.h"
 #include "Units.h"
-#include "Switch.h"
-#include "Flap.h"
 #include "SetupMenuValFloat.h"
 
 SetupMenuValFloat * SetupMenuValFloat::qnh_menu = 0;

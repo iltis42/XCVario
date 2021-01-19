@@ -25,17 +25,6 @@
 #include "SetupMenuValFloat.h"
 #include "MenuEntry.h"
 
-IpsDisplay* MenuEntry::_display = 0;
-MenuEntry* MenuEntry::root = 0;
-MenuEntry* MenuEntry::selected = 0;
-ESPRotary* MenuEntry::_rotary = 0;
-AnalogInput* MenuEntry::_adc = 0;
-BME280_ESP32_SPI *MenuEntry::_bmp = 0;
-float MenuEntry::volume;
-bool      MenuEntry::_menu_enabled = false;
-extern S2F Speed2Fly;
-extern xSemaphoreHandle spiMutex;
-Ucglib_ILI9341_18x240x320_HWSPI *MenuEntry::ucg = 0;
 static char rentry[25];
 SetupMenuSelect * audio_range_sm = 0;
 SetupMenuSelect * mpu = 0;
@@ -163,7 +152,6 @@ int add_key( SetupMenuSelect * p )
 	return 0;
 }
 
-
 void wkm_clear(){
 	wkm->delMenu( plus3 );
 	wkm->delMenu( plus2 );
@@ -223,9 +211,8 @@ int qnh_adj( SetupMenuValFloat * p )
 	}
 	else {
 		u = "ft";
-		altp = alt*3.28084;
+		altp = Units::meters2feet( alt );
 	}
-
 	p->ucg->printf("%4d %s ", (int)(altp+0.5), u.c_str() );
 	p->ucg->setFont(ucg_font_ncenR14_hr);
 	xSemaphoreGive(spiMutex );
@@ -253,7 +240,6 @@ int elev_adj( SetupMenuValFloat * p )
 	return 0;
 }
 
-
 // Battery Voltage Meter Calibration
 int factv_adj( SetupMenuValFloat * p )
 {
@@ -265,7 +251,6 @@ int factv_adj( SetupMenuValFloat * p )
 	xSemaphoreGive(spiMutex );
 	return 0;
 }
-
 
 int polar_adj( SetupMenuValFloat * p )
 {
@@ -306,14 +291,6 @@ int bug_adj( SetupMenuValFloat * p ){
 int mc_adj( SetupMenuValFloat * p )
 {
 	Speed2Fly.change_mc_bal();
-#ifdef MC_FROM_XC
-	char mc[30];
-	sprintf(mc, "$POV,?,MC");
-	int cs = Protocols::getCheckSum(&mc[1]);
-	int i = strlen(mc);
-	sprintf( &mc[i], "*%02X\n", cs );
-	btsender.send(mc);
-#endif
 	return 0;
 }
 
@@ -531,7 +508,6 @@ void SetupMenu::setup( )
 	SetupMenuValFloat * bgs = new SetupMenuValFloat( "Bugs", 0, "% bugs", 0.0, 50, 1, bug_adj, true, &bugs  );
 	bgs->setHelp(PROGMEM"Percent of bugs contamination to indicate degradation of gliding performance");
 	mm->addMenu( bgs );
-
 
 	String elev_unit = "m";
 	int step = 1;

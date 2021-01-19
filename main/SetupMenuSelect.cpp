@@ -5,24 +5,30 @@
  *      Author: iltis
  */
 
-#include "SetupMenu.h"
-#include "IpsDisplay.h"
-#include <inttypes.h>
-#include <iterator>
-#include <algorithm>
-#include "ESPAudio.h"
-#include "BMPVario.h"
-#include "S2F.h"
-#include "Version.h"
-#include "Polars.h"
 #include <logdef.h>
 #include <sensor.h>
-#include "Cipher.h"
 #include "Units.h"
-#include "Switch.h"
-#include "Flap.h"
 #include "SetupMenuSelect.h"
 
+
+bool SetupMenuSelect::existsEntry( String ent ){
+	for( std::vector<String>::iterator iter = _values.begin(); iter != _values.end(); ++iter )
+		if( *iter == ent )
+			return true;
+	return false;
+}
+
+void SetupMenuSelect::delEntry( String ent ) {
+	for( std::vector<String>::iterator iter = _values.begin(); iter != _values.end(); ++iter )
+		if( *iter == ent )
+		{
+			_values.erase( iter );
+			_numval--;
+			if( *_select >= _numval )
+				*_select = _numval-1;
+			break;
+		}
+}
 
 SetupMenuSelect::SetupMenuSelect( String title, int *select, bool restart, int (*action)(SetupMenuSelect *p), bool save, SetupNG<int> *anvs ) {
 	ESP_LOGI(FNAME,"SetupMenuSelect( %s ) ", title.c_str() );

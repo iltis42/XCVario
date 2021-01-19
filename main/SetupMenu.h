@@ -5,13 +5,8 @@
  *      Author: iltis
  */
 
-#ifndef MAIN_SetupMenu_H_
-#define MAIN_SetupMenu_H_
-#include <string>
-#include <vector>
-#include <set>
-#include <list>
-#include <stdio.h>
+#ifndef _SetupMenu_H_
+#define _SetupMenu_H_
 #include "IpsDisplay.h"
 #include "ESPRotary.h"
 #include "Setup.h"
@@ -33,7 +28,5 @@ public:
 	void longPress();
 	virtual ~SetupMenu() {};
 };
-
-
 
 #endif

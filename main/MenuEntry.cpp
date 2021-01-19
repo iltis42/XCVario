@@ -23,6 +23,16 @@
 #include "Flap.h"
 #include "MenuEntry.h"
 
+Ucglib_ILI9341_18x240x320_HWSPI *MenuEntry::ucg = 0;
+IpsDisplay* MenuEntry::_display = 0;
+MenuEntry* MenuEntry::root = 0;
+MenuEntry* MenuEntry::selected = 0;
+ESPRotary* MenuEntry::_rotary = 0;
+AnalogInput* MenuEntry::_adc = 0;
+BME280_ESP32_SPI *MenuEntry::_bmp = 0;
+float MenuEntry::volume;
+bool  MenuEntry::_menu_enabled = false;
+
 
 void MenuEntry::uprintf( int x, int y, const char* format, ...) {
 	if( ucg == 0 ) {

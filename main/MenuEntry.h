@@ -16,6 +16,7 @@
 #include "ESPRotary.h"
 #include "Setup.h"
 #include "AnalogInput.h"
+#include "BMPVario.h"
 
 
 class MenuEntry: public RotaryObserver{

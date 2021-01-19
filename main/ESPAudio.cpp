@@ -437,6 +437,8 @@ void Audio::calcS2Fmode(){
 	}
 }
 
+#define FADING_TIME 4
+
 void Audio::dactask(void* arg )
 {
 	while(1){
@@ -476,10 +478,12 @@ void Audio::dactask(void* arg )
 			if( sound ){
 				// ESP_LOGI(FNAME, "have sound");
 				if( !sound_on  || (cur_wiper != wiper) ) {
+					int delta = 1;
 					if( !sound_on ) {
-						for( int i=0; i<wiper; i+=3 ) {
+						for( int i=1; i<wiper; i+=delta ) {
 							Poti.writeWiper( i );
-							delayMicroseconds( 25 );
+							delta = 1+i/FADING_TIME;
+							delay(1);
 							// ESP_LOGI(FNAME, "fade in sound, wiper: %d", nw);
 						}
 					}
@@ -508,9 +512,11 @@ void Audio::dactask(void* arg )
 			}else{
 				if( sound_on ) {
 					if( cur_wiper > 1 ) {  // turn off gracefully sound
-						for( int i=wiper; i>0; i-=3 ) {
+						int delta = wiper/(FADING_TIME*2);
+						for( int i=wiper; i>0; i-=delta ) {
 							Poti.writeWiper( i );
-							delayMicroseconds( 25 );
+							delta = 1+i/(FADING_TIME*2);
+							delay(1);
 							// ESP_LOGI(FNAME, "fade in sound, wiper: %d", nw);
 						}
 						Poti.writeWiper( 0 );

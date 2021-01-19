@@ -1,0 +1,176 @@
+/*
+ * SetupMenu.cpp
+ *
+ *  Created on: Feb 4, 2018
+ *      Author: iltis
+ */
+
+#include "SetupMenu.h"
+#include "IpsDisplay.h"
+#include <inttypes.h>
+#include <iterator>
+#include <algorithm>
+#include "ESPAudio.h"
+#include "BMPVario.h"
+#include "S2F.h"
+#include "Version.h"
+#include "Polars.h"
+#include <logdef.h>
+#include <sensor.h>
+#include "Cipher.h"
+#include "Units.h"
+#include "Switch.h"
+#include "Flap.h"
+#include "SetupMenuSelect.h"
+
+
+SetupMenuSelect::SetupMenuSelect( String title, int *select, bool restart, int (*action)(SetupMenuSelect *p), bool save, SetupNG<int> *anvs ) {
+	ESP_LOGI(FNAME,"SetupMenuSelect( %s ) ", title.c_str() );
+	_rotary->attach(this);
+	_title = title;
+	_nvs = 0;
+	highlight = -1;
+	if( select ) {
+		_select = select;
+		_select_save = *select;
+	}
+	_numval = 0;
+	_restart = restart;
+	_action = action;
+	_save = save;
+	if( anvs ) {
+		_nvs = anvs;
+		ESP_LOGI(FNAME,"_nvs->key(): %s val: %d", _nvs->key(), (int)(_nvs->get()) );
+		_select = _nvs->getPtr();
+		_select_save = _nvs->get();
+	}
+}
+
+
+void SetupMenuSelect::display( int mode ){
+	if( (selected != this) || !_menu_enabled )
+		return;
+	ESP_LOGI(FNAME,"SetupMenuSelect display() %d %x", pressed, (int)this);
+	clear();
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
+	ucg->setPrintPos(1,25);
+	ESP_LOGI(FNAME,"Title: %s y=%d", _title.c_str(),y );
+	ucg->printf("<< %s",_title.c_str());
+	xSemaphoreGive(spiMutex );
+	ESP_LOGI(FNAME,"select=%d numval=%d size=%d val=%s", *_select, _numval, _values.size(), _values[*_select].c_str() );
+	if( _numval > 9 ){
+		xSemaphoreTake(spiMutex,portMAX_DELAY );
+		ucg->setPrintPos( 1, 50 );
+		ucg->printf( "%s                ", _values[*_select].c_str() );
+		xSemaphoreGive(spiMutex );
+	}else
+	{
+		xSemaphoreTake(spiMutex,portMAX_DELAY );
+		for( int i=0; i<_numval && i<+10; i++ )	{
+			ucg->setPrintPos( 1, 50+25*i );
+			ucg->print( _values[i].c_str() );
+		}
+		ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );
+		xSemaphoreGive(spiMutex );
+	}
+
+	y=_numval*25+50;
+	showhelp( y );
+	if(mode == 1 && _save == true ){
+		xSemaphoreTake(spiMutex,portMAX_DELAY );
+		ucg->setPrintPos( 1, 300 );
+		ucg->print("Saved !" );
+		if( _select_save != *_select )
+			if( _restart ) {
+				ucg->setColor(COLOR_BLACK);
+				ucg->drawBox( 0,160,240,160 );
+				ucg->setPrintPos( 1, 250  );
+				ucg->setColor(COLOR_WHITE);
+				ucg->print("Now Restart" );
+			}
+		xSemaphoreGive(spiMutex );
+	}
+	if( mode == 1 )
+		delay(1000);
+}
+
+void SetupMenuSelect::down(int count){
+	if( (selected != this) || !_menu_enabled )
+		return;
+
+	if( _numval > 9 ){
+		xSemaphoreTake(spiMutex,portMAX_DELAY );
+		while( count ) {
+			if( (*_select) > 0 )
+				(*_select)--;
+			count--;
+		}
+		ucg->setPrintPos( 1, 50 );
+		ucg->printf("%s                  ",_values[*_select].c_str());
+		xSemaphoreGive(spiMutex );
+	}else {
+		ucg->setColor(COLOR_BLACK);
+		xSemaphoreTake(spiMutex,portMAX_DELAY );
+		ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // blank old frame
+		ucg->setColor(COLOR_WHITE);
+		if( (*_select) >  0 )
+			(*_select)--;
+		ESP_LOGI(FNAME,"val down %d", *_select );
+		ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // draw new frame
+		xSemaphoreGive(spiMutex );
+	}
+}
+
+void SetupMenuSelect::up(int count){
+	if( (selected != this) || !_menu_enabled )
+		return;
+	if( _numval > 9 )
+	{
+		xSemaphoreTake(spiMutex,portMAX_DELAY );
+		while( count ) {
+			if( (*_select) <  _numval-1 )
+				(*_select)++;
+			count--;
+		}
+		ucg->setPrintPos( 1, 50 );
+		ucg->printf("%s                   ", _values[*_select].c_str());
+		xSemaphoreGive(spiMutex );
+	}else {
+		xSemaphoreTake(spiMutex,portMAX_DELAY );
+		ucg->setColor(COLOR_BLACK);
+		ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // blank old frame
+		ucg->setColor(COLOR_WHITE);
+		if ( (*_select) < _numval-1 )
+			(*_select)++;
+		ESP_LOGI(FNAME,"val up %d", *_select );
+		ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // draw new frame
+		xSemaphoreGive(spiMutex );
+	}
+}
+
+void SetupMenuSelect::press(){
+	if( selected != this )
+		return;
+	ESP_LOGI(FNAME,"SetupMenuSelect press");
+	if ( pressed ){
+		display( 1 );
+		if( _parent != 0)
+			selected = _parent;
+		_parent->highlight = -1;  // to topmost selection when back
+		selected->pressed = true;
+		if( _nvs )
+			_nvs->commit();
+		pressed = false;
+		if( _action != 0 )
+			(*_action)( this );
+		if( _select_save != *_select )
+			if( _restart ) {
+				sleep( 2 );
+				esp_restart();
+			}
+	}
+	else
+	{
+		pressed = true;
+	}
+}

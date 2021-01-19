@@ -906,7 +906,7 @@ void IpsDisplay::drawAvgVario( int x, int y, float ate ){
 
 	if(  UNITVAR == 1 ){
 		ucg->setFont(ucg_font_fub30_hn);
-		int fpm = (int(Units::Vario( ate )+0.5)/10)*10;
+		int fpm = ((ate +0.5)/10)*10;
 		if( abs(fpm) >= 1000 ){
 			ucg->setPrintPos(x, y-2 );
 			ucg->setFont(ucg_font_fub25_hn);

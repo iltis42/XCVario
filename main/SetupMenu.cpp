@@ -21,6 +21,9 @@
 #include "Units.h"
 #include "Switch.h"
 #include "Flap.h"
+#include "SetupMenuSelect.h"
+#include "SetupMenuValFloat.h"
+#include "MenuEntry.h"
 
 IpsDisplay* MenuEntry::_display = 0;
 MenuEntry* MenuEntry::root = 0;
@@ -319,6 +322,14 @@ int vol_adj( SetupMenuValFloat * p ){
 	return 0;
 }
 
+void dec_volume( int count ) {
+	Audio::decVolume(count);
+}
+
+void inc_volume( int count ) {
+	Audio::incVolume(count);
+}
+
 SetupMenu::SetupMenu(){
 	highlight = -1;
 	_parent = 0;
@@ -345,78 +356,6 @@ void SetupMenu::begin( IpsDisplay* display, ESPRotary * rotary, BME280_ESP32_SPI
 	volume = default_volume.get();
 }
 
-void MenuEntry::uprintf( int x, int y, const char* format, ...) {
-	if( ucg == 0 ) {
-		ESP_LOGE(FNAME,"Error UCG not initialized !");
-		return;
-	}
-	va_list argptr;
-	va_start(argptr, format);
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	ucg->setPrintPos(x,y);
-	ucg->printf( format, argptr );
-	xSemaphoreGive(spiMutex );
-	va_end(argptr);
-}
-
-void MenuEntry::uprint( int x, int y, const char* str ) {
-	if( ucg == 0 ) {
-		ESP_LOGE(FNAME,"Error UCG not initialized !");
-		return;
-	}
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	ucg->setPrintPos(x,y);
-	ucg->print( str );
-	xSemaphoreGive(spiMutex );
-}
-
-MenuEntry* MenuEntry::addMenu( MenuEntry * item ) {
-	// ESP_LOGI(FNAME,"MenuEntry addMenu() title %s", item->_title.c_str() );
-	if( root == 0 ){
-		ESP_LOGI(FNAME,"Init root menu");
-		root = item;
-		item->_parent = 0;
-		selected = item;
-		return item;
-	}
-	else{
-		// ESP_LOGI(FNAME,"add to childs");
-		item->_parent = this;
-		_childs.push_back( item );
-		return item;
-	}
-}
-
-void MenuEntry::delMenu( MenuEntry * item ) {
-	ESP_LOGI(FNAME,"MenuEntry delMenu() title %s", item->_title.c_str() );
-	std::vector<MenuEntry *>::iterator position = std::find(_childs.begin(), _childs.end(), item );
-	if (position != _childs.end()) { // == myVector.end() means the element was not found
-		ESP_LOGI(FNAME,"found entry, now erase" );
-		_childs.erase(position);
-	}
-
-}
-
-MenuEntry* MenuEntry::findMenu( String title, MenuEntry* start )
-{
-	ESP_LOGI(FNAME,"MenuEntry findMenu() %s %x", title.c_str(), (uint32_t)start );
-	if( start->_title == title ) {
-		ESP_LOGI(FNAME,"Menu entry found for start %s", title.c_str() );
-		return start;
-	}
-	for(MenuEntry* child : start->_childs) {
-		if( child->_title == title )
-			return child;
-		MenuEntry* m = child->findMenu( title, child );
-		if( m != 0 ) {
-			ESP_LOGI(FNAME,"Menu entry found for %s", title.c_str() );
-			return m;
-		}
-	};
-	ESP_LOGW(FNAME,"Menu entry not found for %s", title.c_str() );
-	return 0;
-}
-
 void SetupMenu::display( int mode ){
 	if( (selected != this) || !_menu_enabled )
 		return;
@@ -438,48 +377,6 @@ void SetupMenu::display( int mode ){
 	y+=170;
 	xSemaphoreGive(spiMutex );
 	showhelp( y );
-}
-
-void MenuEntry::showhelp( int y ){
-	if( helptext != 0 ){
-		int w=0;
-		char buf[512];
-		memset(buf, 0, 512);
-		memcpy( buf, helptext, strlen(helptext));
-		char *p = strtok (buf, " ");
-		char *words[100];
-		while (p != NULL)
-		{
-			words[w++] = p;
-			p = strtok (NULL, " ");
-		}
-		// ESP_LOGI(FNAME,"showhelp number of words: %d", w);
-		int x=1;
-		int y=hypos;
-		ucg->setFont(ucg_font_ncenR14_hr);
-		for( int p=0; p<w; p++ )
-		{
-			int len = ucg->getStrWidth( words[p] );
-			// ESP_LOGI(FNAME,"showhelp pix len word #%d = %d, %s ", p, len, words[p]);
-			if( x+len > 239 ) {   // does still fit on line
-				y+=25;
-				x=1;
-			}
-			xSemaphoreTake(spiMutex,portMAX_DELAY );
-			ucg->setPrintPos(x, y);
-			ucg->print( words[p] );
-			xSemaphoreGive(spiMutex );
-			x+=len+5;
-		}
-	}
-}
-
-void dec_volume( int count ) {
-	Audio::decVolume(count);
-}
-
-void inc_volume( int count ) {
-	Audio::incVolume(count);
 }
 
 void SetupMenu::down(int count){
@@ -726,7 +623,7 @@ void SetupMenu::setup( )
 
 		SetupMenu * audios = new SetupMenu( "Tone Styles" );
 		audio->addMenu( audios );
-		audios->setHelp( PROGMEM "Configure audio style in terms of center frequency, octaves, single/dual tone, pitch and chopping");
+		audios->setHelp( PROGMEM "Configure audio style in terms of center frequency, octaves, single/dual tone, pitch and chopping", 220);
 
 		SetupMenuValFloat * cf = new SetupMenuValFloat( "CenterFreq", 0,	"Hz", 200.0, 2000.0, 10.0, 0, false, &center_freq );
 		cf->setHelp(PROGMEM"Center frequency for Audio at zero Vario or zero S2F delta");
@@ -753,6 +650,12 @@ void SetupMenu::setup( )
 		tch->addEntry( "S2F only");             // 2
 		tch->addEntry( "Vario and S2F");        // 3  default
 		audios->addMenu( tch );
+
+		SetupMenuSelect * tchs = new SetupMenuSelect( "Chopping Style", 0, false, 0 , true, &chopping_style );
+		tchs->setHelp(PROGMEM"Select style of tone chopping either hard, or soft with fadein/fadeout");
+		tchs->addEntry( "Soft");              // 0  default
+		tchs->addEntry( "Hard");              // 1
+		audios->addMenu( tchs );
 
 		SetupMenuSelect * am = new SetupMenuSelect( "Audio Mode", 0, false, 0 , true, &audio_mode );
 		am->setHelp( PROGMEM"Selects audio source. Audio either follows Vario, or S2F exclusively, controlled by external switch or automatically by speed" );
@@ -1277,306 +1180,4 @@ void SetupMenu::setup( )
 		nmea->addEntry( "XCVario");
 	}
 	SetupMenu::display();
-}
-
-SetupMenuValFloat::SetupMenuValFloat( String title, float *value, const char *unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs ) {
-	// ESP_LOGI(FNAME,"SetupMenuValFloat( %s ) ", title.c_str() );
-	_rotary->attach(this);
-	_title = title;
-	highlight = -1;
-	_nvs = 0;
-	if( value )
-		_value = value;
-	_unit = unit;
-	_min = min;
-	_max = max;
-	_step = step;
-	_action = action;
-	_end_menu = end_menu;
-	_precision = 2;
-	if( step >= 1 )
-		_precision = 0;
-	if( anvs ) {
-		_nvs = anvs;
-		_value = _nvs->getPtr();
-	}
-}
-
-void SetupMenuValFloat::setPrecision( int prec ){
-	_precision = prec;
-}
-
-
-void MenuEntry::clear()
-{
-	ESP_LOGI(FNAME,"MenuEntry::clear");
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	ucg->setColor(COLOR_BLACK);
-	ucg->drawBox( 0,0,240,320 );
-	// ucg->begin(UCG_FONT_MODE_SOLID);
-	ucg->setFont(ucg_font_ncenR14_hr);
-	ucg->setPrintPos( 1, 30 );
-	ucg->setColor(COLOR_WHITE);
-	xSemaphoreGive(spiMutex );
-}
-
-
-SetupMenuValFloat * SetupMenuValFloat::qnh_menu = 0;
-
-void SetupMenuValFloat::showQnhMenu(){
-	ESP_LOGI(FNAME,"SetupMenuValFloat::showQnhMenu()");
-	if( qnh_menu ) {
-		ESP_LOGI(FNAME,"qnh_menu = true");
-		_menu_enabled = true;
-		selected = qnh_menu;
-		inSetup=true;
-		qnh_menu->clear();
-		qnh_menu->display();
-		qnh_menu->pressed = true;
-	}
-}
-
-void SetupMenuValFloat::display( int mode ){
-	if( (selected != this) || !_menu_enabled )
-		return;
-	// ESP_LOGI(FNAME,"SetupMenuValFloat display() %d %x", pressed, (int)this);
-	uprintf( 5,25, selected->_title.c_str() );
-	displayVal();
-	y= 75;
-	if( _action != 0 )
-		(*_action)( this );
-
-	showhelp( y );
-	if(mode == 1){
-		y+=24;
-		xSemaphoreTake(spiMutex,portMAX_DELAY );
-		ucg->setPrintPos( 1, 300 );
-		ucg->print("Saved");
-		xSemaphoreGive(spiMutex );
-	}
-	y=0;
-
-	if( mode == 1 )
-		vTaskDelay(1000 / portTICK_PERIOD_MS);
-	ESP_LOGI(FNAME,"~SetupMenuValFloat display");
-}
-
-void SetupMenuValFloat::displayVal()
-{
-	ucg->setFont(ucg_font_fub25_hr);
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	ucg->setPrintPos( 1, 70 );
-	if( _unit )
-		ucg->printf("%0.*f %s   ", _precision, *_value, _unit);
-	xSemaphoreGive(spiMutex );
-	ucg->setFont(ucg_font_ncenR14_hr);
-}
-
-void SetupMenuValFloat::down( int count ){
-	if( (selected != this) || !_menu_enabled )
-		return;
-	ESP_LOGI(FNAME,"val down %d times ", count );
-	while( (*_value > _min) && count ) {
-		*_value -= _step;
-		count --;
-	}
-	if( *_value < _min )
-		*_value = _min;
-	displayVal();
-	if( _action != 0 )
-		(*_action)( this );
-}
-
-void SetupMenuValFloat::up( int count ){
-	if( (selected != this) || !_menu_enabled )
-		return;
-	ESP_LOGI(FNAME,"val up %d times ", count );
-	while( (*_value < _max) && count ) {
-		*_value += _step;
-		count--;
-	}
-	if( *_value > _max )
-		*_value = _max;
-	displayVal();
-	if( _action != 0 )
-		(*_action)( this );
-}
-
-void SetupMenuValFloat::press(){
-	if( selected != this )
-		return;
-	ESP_LOGI(FNAME,"SetupMenuValFloat press");
-	if ( pressed ){
-		display( 1 );
-		if( _end_menu )
-			selected = root;
-		else if( _parent != 0 )
-			selected = _parent;
-		selected->highlight = -1;  // to topmost selection when back
-		selected->pressed = true;
-		if( _nvs )
-			_nvs->commit();
-		pressed = false;
-		BMPVario::setHolddown( 150 );  // so seconds stop average
-		if( _end_menu )
-			selected->press();
-	}
-	else
-	{
-		pressed = true;
-		clear();
-		display();
-	}
-}
-
-
-SetupMenuSelect::SetupMenuSelect( String title, int *select, bool restart, int (*action)(SetupMenuSelect *p), bool save, SetupNG<int> *anvs ) {
-	ESP_LOGI(FNAME,"SetupMenuSelect( %s ) ", title.c_str() );
-	_rotary->attach(this);
-	_title = title;
-	_nvs = 0;
-	highlight = -1;
-	if( select ) {
-		_select = select;
-		_select_save = *select;
-	}
-	_numval = 0;
-	_restart = restart;
-	_action = action;
-	_save = save;
-	if( anvs ) {
-		_nvs = anvs;
-		ESP_LOGI(FNAME,"_nvs->key(): %s val: %d", _nvs->key(), (int)(_nvs->get()) );
-		_select = _nvs->getPtr();
-		_select_save = _nvs->get();
-	}
-}
-
-
-void SetupMenuSelect::display( int mode ){
-	if( (selected != this) || !_menu_enabled )
-		return;
-	ESP_LOGI(FNAME,"SetupMenuSelect display() %d %x", pressed, (int)this);
-	clear();
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	ucg->setPrintPos(1,25);
-	ESP_LOGI(FNAME,"Title: %s y=%d", _title.c_str(),y );
-	ucg->printf("<< %s",_title.c_str());
-	xSemaphoreGive(spiMutex );
-	ESP_LOGI(FNAME,"select=%d numval=%d size=%d val=%s", *_select, _numval, _values.size(), _values[*_select].c_str() );
-	if( _numval > 9 ){
-		xSemaphoreTake(spiMutex,portMAX_DELAY );
-		ucg->setPrintPos( 1, 50 );
-		ucg->printf( "%s                ", _values[*_select].c_str() );
-		xSemaphoreGive(spiMutex );
-	}else
-	{
-		xSemaphoreTake(spiMutex,portMAX_DELAY );
-		for( int i=0; i<_numval && i<+10; i++ )	{
-			ucg->setPrintPos( 1, 50+25*i );
-			ucg->print( _values[i].c_str() );
-		}
-		ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );
-		xSemaphoreGive(spiMutex );
-	}
-
-	y=_numval*25+50;
-	showhelp( y );
-	if(mode == 1 && _save == true ){
-		xSemaphoreTake(spiMutex,portMAX_DELAY );
-		ucg->setPrintPos( 1, 300 );
-		ucg->print("Saved !" );
-		if( _select_save != *_select )
-			if( _restart ) {
-				ucg->setColor(COLOR_BLACK);
-				ucg->drawBox( 0,160,240,160 );
-				ucg->setPrintPos( 1, 250  );
-				ucg->setColor(COLOR_WHITE);
-				ucg->print("Now Restart" );
-			}
-		xSemaphoreGive(spiMutex );
-	}
-	if( mode == 1 )
-		delay(1000);
-}
-
-void SetupMenuSelect::down(int count){
-	if( (selected != this) || !_menu_enabled )
-		return;
-
-	if( _numval > 9 ){
-		xSemaphoreTake(spiMutex,portMAX_DELAY );
-		while( count ) {
-			if( (*_select) > 0 )
-				(*_select)--;
-			count--;
-		}
-		ucg->setPrintPos( 1, 50 );
-		ucg->printf("%s                  ",_values[*_select].c_str());
-		xSemaphoreGive(spiMutex );
-	}else {
-		ucg->setColor(COLOR_BLACK);
-		xSemaphoreTake(spiMutex,portMAX_DELAY );
-		ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // blank old frame
-		ucg->setColor(COLOR_WHITE);
-		if( (*_select) >  0 )
-			(*_select)--;
-		ESP_LOGI(FNAME,"val down %d", *_select );
-		ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // draw new frame
-		xSemaphoreGive(spiMutex );
-	}
-}
-
-void SetupMenuSelect::up(int count){
-	if( (selected != this) || !_menu_enabled )
-		return;
-	if( _numval > 9 )
-	{
-		xSemaphoreTake(spiMutex,portMAX_DELAY );
-		while( count ) {
-			if( (*_select) <  _numval-1 )
-				(*_select)++;
-			count--;
-		}
-		ucg->setPrintPos( 1, 50 );
-		ucg->printf("%s                   ", _values[*_select].c_str());
-		xSemaphoreGive(spiMutex );
-	}else {
-		xSemaphoreTake(spiMutex,portMAX_DELAY );
-		ucg->setColor(COLOR_BLACK);
-		ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // blank old frame
-		ucg->setColor(COLOR_WHITE);
-		if ( (*_select) < _numval-1 )
-			(*_select)++;
-		ESP_LOGI(FNAME,"val up %d", *_select );
-		ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // draw new frame
-		xSemaphoreGive(spiMutex );
-	}
-}
-
-void SetupMenuSelect::press(){
-	if( selected != this )
-		return;
-	ESP_LOGI(FNAME,"SetupMenuSelect press");
-	if ( pressed ){
-		display( 1 );
-		if( _parent != 0)
-			selected = _parent;
-		_parent->highlight = -1;  // to topmost selection when back
-		selected->pressed = true;
-		if( _nvs )
-			_nvs->commit();
-		pressed = false;
-		if( _action != 0 )
-			(*_action)( this );
-		if( _select_save != *_select )
-			if( _restart ) {
-				sleep( 2 );
-				esp_restart();
-			}
-	}
-	else
-	{
-		pressed = true;
-	}
 }

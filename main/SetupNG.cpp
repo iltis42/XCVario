@@ -58,6 +58,7 @@ SetupNG<float>  		s2f_speed( "S2F_SPEED", 100.0 );
 
 SetupNG<int>  			audio_mode( "AUDIO_MODE" ,  3 );
 SetupNG<int>  			chopping_mode( "CHOPPING_MODE",  VARIO_CHOP );
+SetupNG<int>  			chopping_style( "CHOP_STYLE",  AUDIO_CHOP_SOFT );
 SetupNG<int>  			amplifier_shutdown( "AMP_DIS", 1 );
 
 SetupNG<int>  			blue_enable( "BT_ENABLE" ,  1);

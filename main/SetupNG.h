@@ -52,6 +52,7 @@ typedef enum e_serial_route_type { RT_DISABLE = 0, RT_XCVARIO = 1, RT_WIRELESS =
 typedef enum e_wireless_type { WL_DISABLE, WL_BLUETOOTH, WL_WLAN, WL_WLAN_CLIENT } e_wireless_t;
 typedef enum e_audiomode_type { AM_VARIO, AM_S2F, AM_SWITCH, AM_AUTOSPEED } e_audiomode_t;
 typedef enum e_audio_tone_mode { ATM_SINGLE_TONE, ATM_DUAL_TONE } e_audio_tone_mode_t;
+typedef enum e_audio_chopping_style { AUDIO_CHOP_SOFT, AUDIO_CHOP_HARD } e_audio_chopping_style_t;
 typedef enum e_audio_range { AUDIO_RANGE_5_MS, AUDIO_RANGE_10_MS, AUDIO_RANGE_VARIABLE } e_audio_range_t;
 typedef enum e_flap_sensor { FLAP_SENSOR_DISABLE, FLAP_SENSOR_GPIO_2, FLAP_SENSOR_GPIO_34 } e_flap_sensor_t;
 typedef enum e_audio_brutto_netto { AUDIO_BRUTTO, AUDIO_NETTO } e_audio_brutto_netto_t;
@@ -281,6 +282,7 @@ extern SetupNG<float>  		s2f_speed;
 
 extern SetupNG<int>  		audio_mode;
 extern SetupNG<int>  		chopping_mode;
+extern SetupNG<int>  		chopping_style;
 extern SetupNG<int>  		amplifier_shutdown;
 
 extern SetupNG<int>  		blue_enable;

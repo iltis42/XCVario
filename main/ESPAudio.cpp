@@ -467,8 +467,8 @@ void Audio::dactask(void* arg )
 				}
 				if( hightone && (_tonemode == ATM_SINGLE_TONE) ){
 					if( (_chopping_mode == BOTH_CHOP) ||
-						(_s2f_mode && (_chopping_mode == S2F_CHOP)) ||
-						(!_s2f_mode && (_chopping_mode == VARIO_CHOP)) ) {
+							(_s2f_mode && (_chopping_mode == S2F_CHOP)) ||
+							(!_s2f_mode && (_chopping_mode == VARIO_CHOP)) ) {
 						sound = false;
 						// ESP_LOGI(FNAME,"sound = false 2");
 					}
@@ -477,20 +477,28 @@ void Audio::dactask(void* arg )
 			// ESP_LOGI(FNAME, "sound %d, ht %d", sound, hightone );
 			if( sound ){
 				// ESP_LOGI(FNAME, "have sound");
-				if( !sound_on  || (cur_wiper != wiper) ) {
-					int delta = 1;
-					if( !sound_on ) {
-						for( int i=1; i<wiper; i+=delta ) {
-							Poti.writeWiper( i );
-							delta = 1+i/FADING_TIME;
-							delay(1);
-							// ESP_LOGI(FNAME, "fade in sound, wiper: %d", nw);
+				if( !sound_on ) {
+					if( chopping_style.get() == AUDIO_CHOP_HARD ){
+						dac_output_enable(_ch);
+					}
+					else{
+						int delta = 1;
+						if( !sound_on ) {
+							for( int i=1; i<wiper; i+=delta ) {
+								Poti.writeWiper( i );
+								delta = 1+i/FADING_TIME;
+								delay(1);
+								// ESP_LOGI(FNAME, "fade in sound, wiper: %d", nw);
+							}
 						}
 					}
+					sound_on = true;
+				}
+				if(  cur_wiper != wiper ){
 					Poti.writeWiper( wiper );
 					// ESP_LOGI(FNAME, "sound on, set wiper: %d", wiper );
 					cur_wiper = wiper;
-					sound_on = true;
+
 				}
 				float max = minf;
 				if ( _te > 0 )
@@ -509,23 +517,27 @@ void Audio::dactask(void* arg )
 					setFrequency( f*_high_tone_var );
 				else
 					setFrequency( f );
-			}else{
+			}
+			else{
 				if( sound_on ) {
-					if( cur_wiper > 1 ) {  // turn off gracefully sound
-						int delta = wiper/(FADING_TIME*2);
-						for( int i=wiper; i>0; i-=delta ) {
-							Poti.writeWiper( i );
-							delta = 1+i/(FADING_TIME*2);
-							delay(1);
-							// ESP_LOGI(FNAME, "fade in sound, wiper: %d", nw);
+					if( chopping_style.get() == AUDIO_CHOP_HARD ){
+						dac_output_disable(_ch);
+					}else{
+						if( cur_wiper > 1 ) {  // turn off gracefully sound
+							int delta = wiper/(FADING_TIME*2);
+							for( int i=wiper; i>0; i-=delta ) {
+								Poti.writeWiper( i );
+								delta = 1+i/(FADING_TIME*2);
+								delay(1);
+								// ESP_LOGI(FNAME, "fade out sound, wiper: %d", nw);
+							}
+							Poti.writeWiper( 0 );
+							cur_wiper = 0;
 						}
-						Poti.writeWiper( 0 );
-						cur_wiper = 0;
 					}
 					sound_on = false;
 				}
 			}
-			// assert( heap_caps_check_integrity_all(true) == true );
 		}
 		vTaskDelayUntil(&xLastWakeTime, 20/portTICK_PERIOD_MS);
 	}

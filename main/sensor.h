@@ -51,6 +51,6 @@ extern IpsDisplay *display;
 
 extern ESPRotary Rotary;
 
-
+extern xSemaphoreHandle spiMutex;
 
 #endif

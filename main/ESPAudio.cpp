@@ -482,6 +482,7 @@ void Audio::dactask(void* arg )
 						dac_output_enable(_ch);
 					}
 					else{
+						dac_output_enable(_ch);
 						int delta = 1;
 						if( !sound_on ) {
 							for( int i=1; i<wiper; i+=delta ) {
@@ -532,6 +533,7 @@ void Audio::dactask(void* arg )
 								// ESP_LOGI(FNAME, "fade out sound, wiper: %d", nw);
 							}
 							Poti.writeWiper( 0 );
+							dac_output_disable(_ch);
 							cur_wiper = 0;
 						}
 					}
@@ -639,9 +641,11 @@ void Audio::enableAmplifier( bool enable )
 	{
 		gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );   // use pullup 1 == SOUND 0 == SILENCE
 		gpio_set_level(GPIO_NUM_19, 1 );
+		dac_output_enable(_ch);
 	}
 	else {
 		if( amplifier_shutdown.get() ){
+			dac_output_disable(_ch);
 			gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );   // use pullup 1 == SOUND 0 == SILENCE
 			gpio_set_level(GPIO_NUM_19, 0 );
 		}

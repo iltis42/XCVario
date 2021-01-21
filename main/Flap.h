@@ -33,7 +33,7 @@ public:
 	static void drawBigBar( int ypos, int xpos, float wkf, float wksens );
 	static void drawLever( int xpos, int ypos, int oldypos );
 	static void drawWingSymbol( int ypos, int xpos, int wk, int wkalt );
-	static void redraw() { sensorOldY = -1000; };
+	static void redraw() { sensorOldY = -1000; surroundingBox=false; };
 
 private:
 	static Ucglib_ILI9341_18x240x320_HWSPI* ucg;

@@ -1024,7 +1024,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		int wki = Flap::getOptimumInt( wkspeed );
 		float wkpos=Flap::getOptimum( wkspeed, wki );
 		int wk = (int)((wki - wkpos + 0.5)*10);
-		// ESP_LOGI(FNAME,"ias:%d wksp:%f wki:%d wk:%d wkpos:%f wksensor:%d wkhebel:%f wkh:%d", airspeed, wkspeed, wki, wk, wkpos, wksensor, wkhebel, wkhebeli );
+		// ESP_LOGI(FNAME,"as:%d wksp:%f wki:%d wk:%d", airspeed, wkspeed, wki, wk  );
 		if( wkposalt != wk || wksensoralt != (int)(wksensor*10) ) {
 			ESP_LOGI(FNAME,"WK changed WKE=%d WKS=%f", wk, wksensor );
 			ucg->setColor(  COLOR_WHITE  );

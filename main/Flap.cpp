@@ -21,7 +21,6 @@ int Flap::sensorOldY;
 #define MINPOS  flap_neg_max.get()
 #define MAXPOS  flap_pos_max.get()
 
-
 void Flap::drawSmallBar( int ypos, int xpos, float wkf ){
 	ucg->setFont(ucg_font_profont22_mr );
 	int	lfh = ucg->getFontAscent()+4;
@@ -124,21 +123,21 @@ void Flap::drawWingSymbol( int ypos, int xpos, int wk, int wkalt ){
 	ucg->drawTriangle( xpos+DISCRAD+BOXLEN-2, ypos-DISCRAD,
 			xpos+DISCRAD+BOXLEN-2, ypos+DISCRAD+1,
 			xpos+DISCRAD+BOXLEN-2+FLAPLEN, ypos+wkalt*4 );
-	ucg->setColor( COLOR_RED );
+	ucg->setColor( COLOR_GREEN );
 	ucg->drawTriangle( xpos+DISCRAD+BOXLEN-2, ypos-DISCRAD,
 			xpos+DISCRAD+BOXLEN-2, ypos+DISCRAD+1,
 			xpos+DISCRAD+BOXLEN-2+FLAPLEN, ypos+wk*4 );
 }
 
 void  Flap::initSpeeds(){
-	flapSpeeds[0] = Units::Airspeed2Kmh( 280 );
-	flapSpeeds[1] = Units::Airspeed2Kmh( flap_minus_3.get() );
-	flapSpeeds[2] = Units::Airspeed2Kmh( flap_minus_2.get() );
-	flapSpeeds[3] = Units::Airspeed2Kmh( flap_minus_1.get() );
-	flapSpeeds[4] = Units::Airspeed2Kmh( flap_0.get() );
-	flapSpeeds[5] = Units::Airspeed2Kmh( flap_plus_1.get() );
-	flapSpeeds[6] = Units::Airspeed2Kmh( flap_plus_2.get() );
-	flapSpeeds[7] = Units::Airspeed2Kmh( 50 );
+	flapSpeeds[0] = 280;
+	flapSpeeds[1] = flap_minus_3.get();
+	flapSpeeds[2] = flap_minus_2.get();
+	flapSpeeds[3] = flap_minus_1.get();
+	flapSpeeds[4] = flap_0.get();
+	flapSpeeds[5] = flap_plus_1.get();
+	flapSpeeds[6] = flap_plus_2.get();
+	flapSpeeds[7] = 50;
 }
 
 void  Flap::init( Ucglib_ILI9341_18x240x320_HWSPI *theUcg ){
@@ -265,20 +264,26 @@ float Flap::getOptimum( float wks, int wki ){
 	return 0.5;
 }
 
-int Flap::getOptimumInt( float wks )
+int Flap::getOptimumInt( float speed )
 {
+	// ESP_LOGI(FNAME,"getOptimumInt( %3.1f )", speed );
 	for( int wk=flap_neg_max.get(); wk<=flap_pos_max.get(); wk++ ){
-		if( wks <= flapSpeeds[wk+3] && wks >=  flapSpeeds[wk+4] ) {
+		// ESP_LOGI(FNAME,"Check Flap: %d %d %d", wk, flapSpeeds[wk+3],  flapSpeeds[wk+4] );
+		if( speed <= flapSpeeds[wk+3] && speed >=  flapSpeeds[wk+4] ) {
+			// ESP_LOGI(FNAME,"Ret: %d", wk);
 			return wk;
 		}
 	}
-	if( wks < flapSpeeds[7] ) {
-		return 1;
+	if( speed < flapSpeeds[7] ) {
+		// ESP_LOGI(FNAME,"Ret: %d", 1);
+		return flap_pos_max.get() - 1;
 	}
-	else if( wks > flapSpeeds[0] ){
-		return -2;
+	else if( speed > flapSpeeds[0] ){
+		// ESP_LOGI(FNAME,"Ret: %d", -2);
+		return flap_neg_max.get();
 	}
 	else {
+		// ESP_LOGI(FNAME,"Ret: %d", 1);
 		return 1;
 	}
 }

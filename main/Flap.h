@@ -1,8 +1,8 @@
-#ifndef FLAP_H
-#define FLAP_H
+#ifndef _FLAP_H
+#define _FLAP_H
 
-#include "Flap.h"
 #include "AnalogInput.h"
+#include <Ucglib.h>
 
 /*
  * This class handels flap display and Flap sensor
@@ -11,7 +11,7 @@
 
 class Flap {
 public:
-	static void  init();
+	static void  init( Ucglib_ILI9341_18x240x320_HWSPI *theUcg );
 	static float getLeverPosition( int sensorreading );
 	static void  progress();
 	static void  initSensor();
@@ -29,13 +29,22 @@ public:
 			return 0;
 	}
 	static inline bool haveSensor() { if( sensorAdc != 0 ) return true; else return false; }
+	static void drawSmallBar( int ypos, int xpos, float wkf );
+	static void drawBigBar( int ypos, int xpos, float wkf, float wksens );
+	static void drawLever( int xpos, int ypos, int oldypos );
+	static void drawWingSymbol( int ypos, int xpos, int wk, int wkalt );
+	static void redraw() { sensorOldY = -1000; };
 
 private:
+	static Ucglib_ILI9341_18x240x320_HWSPI* ucg;
 	static AnalogInput *sensorAdc;
 	static float lever;
 	static int   senspos[9];
 	static int   leverold;
 	static int   flapSpeeds[9];
+	static bool  surroundingBox;
+	static int   optPosOldY;
+	static int   sensorOldY;
 };
 
 #endif

@@ -826,7 +826,7 @@ void sensor(void *args){
 		gpio_set_direction(GPIO_NUM_2, GPIO_MODE_INPUT);     // 2020 series 1, analog in
 		gpio_pullup_en( GPIO_NUM_2 );
 		gpio_pullup_en( GPIO_NUM_34 );
-		Flap::init();
+		Flap::init(myucg);
 	}
 	gpio_set_pull_mode(RESET_Display, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_Display, GPIO_PULLUP_ONLY );

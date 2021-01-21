@@ -125,8 +125,10 @@ int IpsDisplay::tyalt = 0;
 int IpsDisplay::pyalt = 0;
 int IpsDisplay::wkalt = -3;
 
+
+// Flap definitions
+#define WKSYMST DISPLAY_W-28
 ucg_color_t IpsDisplay::wkcolor;
-char IpsDisplay::wkss[6];
 int IpsDisplay::wkposalt;
 int IpsDisplay::wksensoralt;
 int IpsDisplay::wkialt;
@@ -136,11 +138,9 @@ int   IpsDisplay::_divisons = 5;
 float IpsDisplay::_range = 5;
 int IpsDisplay::average_climb = -100;
 float IpsDisplay::average_climbf = 0;
-bool IpsDisplay::wkbox = false;
 int  IpsDisplay::pref_qnh = 0;
 
-int wkyold=0;
-int wksyold=0;
+
 #define WKBARMID (AMIDY-15)
 
 float polar_sink_prev = 0;
@@ -430,13 +430,12 @@ void IpsDisplay::redrawValues()
 	average_climb = -1000;
 
 	wkalt = -4;
-	wkbox = false;
 	wkposalt = -100;
 	wksensoralt = -1;
 	wkialt = -3;
 	tyalt = -1000;
-	wksyold = -1000;
 	polar_sink_prev = 0.1;
+	Flap::redraw();
 }
 
 void IpsDisplay::drawTeBuf(){
@@ -485,120 +484,8 @@ void IpsDisplay::setTeBuf( int y1, int h, int r, int g, int b ){
 }
 
 
-void IpsDisplay::drawWkBar( int ypos, int xpos, float wkf ){
-	ucg->setFont(ucg_font_profont22_mr );
-	int	lfh = ucg->getFontAscent()+4;
-	int lfw = ucg->getStrWidth( "+2" );
-	int top = ypos-lfh/2;
-	if( !wkbox ) {
-		ucg->drawFrame(xpos-5, top-3, lfw+4, 2*lfh);
-		int tri = ypos+lfh/2-3;
-		ucg->drawTriangle( xpos-10, tri-5,  xpos-10,tri+5, xpos-5, tri );
-		wkbox = true;
-	}
-	ucg->setClipRange( xpos-2, top-2, lfw, 2*lfh-2 );
-	for( int wk=int(wkf-1); wk<=int(wkf+1) && wk<=2; wk++ ){
-		if(wk<-2)
-			continue;
-		if( wk == 0 )
-			sprintf( wkss,"% d", wk);
-		else
-			sprintf( wkss,"%+d", wk);
-		int y=top+(lfh+4)*(5-(wk+2))+(int)((wkf-2)*(lfh+4));
-		ucg->setPrintPos(xpos-2, y );
-		ucg->setColor(COLOR_WHITE);
-		ucg->printf(wkss);
-		if( wk != -2 ) {
-			ucg->drawHLine(xpos-5, y+3, lfw+4 );
-		}
-	}
-	ucg->undoClipRange();
-}
-
-#define NUMPOS  (int)( flap_pos_max.get() +1 - flap_neg_max.get() )
-#define MINPOS  flap_neg_max.get()
-#define MAXPOS  flap_pos_max.get()
 
 
-void IpsDisplay::drawWkLever( int xpos, int ypos, int oldypos ){
-	ucg->setColor(COLOR_BLACK);
-	ucg->drawBox( xpos-25, oldypos-4, 19, 8 );
-	ucg->drawBox( xpos-6, oldypos-2, 4, 4 );
-
-	ucg->setColor(COLOR_WHITE);  // left upper x,y and w,h
-	ucg->drawBox( xpos-25, ypos-4, 19, 8 );
-	ucg->drawBox( xpos-6, ypos-2, 4, 4 );
-}
-
-void IpsDisplay::drawBigWkBar( int ypos, int xpos, float wkf, float wksens ){
-	ucg->setFont(ucg_font_profont22_mr );
-	ucg->setFontPosCenter();
-	int lfh = ucg->getFontAscent()+10;  // a bit place around number
-	int lfw = ucg->getStrWidth( "+2" );
-	int size = NUMPOS*lfh;
-	// draw Frame around and a triangle
-	if( !wkbox ) {
-		for( int wk=MINPOS; wk<=MAXPOS; wk++ ){
-			if( wk == 0 )
-				sprintf( wkss,"% d", wk);
-			else
-				sprintf( wkss,"%+d", wk);
-			int y= ypos + lfh*wk;  // negative WK eq. lower position
-			ucg->setPrintPos(xpos+2, y);
-			ucg->setColor(COLOR_WHITE);
-			// print digit
-			ucg->printf(wkss);
-			// Frame around digit
-			ucg->drawFrame(xpos-2, y-(lfh/2), lfw+6, lfh );
-		}
-		wkbox = true;
-	}
-	ESP_LOGI(FNAME,"np: %d size: %d",  NUMPOS, size );
-	int yclip = ypos+MINPOS*lfh-(lfh/2);
-	ucg->setClipRange( xpos-15, yclip, 15, size );
-	// ucg->setColor(COLOR_MGREY);
-	// ucg->drawBox(      xpos-15, yclip, 15, size );
-	// now draw the numbers
-	int y = ypos + (int)((wkf)*(lfh) + 0.5 );
-
-	int ys = ypos + (int)(( wksens )*(lfh) + 0.5 );
-	if( wkyold != y || ( (wksyold != ys) )) {  // redraw on change or when wklever is near
-		ucg->setColor(COLOR_BLACK);
-		ucg->drawTriangle( xpos-15,wkyold-5,  xpos-15,wkyold+5,  xpos-2,wkyold );
-		ucg->setColor(COLOR_GREEN);
-		ucg->drawTriangle( xpos-15,y-5,       xpos-15,y+5,       xpos-2,y );
-		wkyold = y;
-	}
-	if( flap_sensor.get() ) {
-		if( wksyold != ys ) {
-			ESP_LOGI(FNAME,"wk lever redraw, old=%d", wksyold );
-			drawWkLever( xpos, ys, wksyold );
-			wksyold = ys;
-		}
-	}
-	ucg->setFontPosBottom();
-	ucg->undoClipRange();
-}
-
-#define DISCRAD 3
-#define BOXLEN  12
-#define FLAPLEN 14
-#define WKSYMST DISPLAY_W-28
-
-
-void IpsDisplay::drawWkSymbol( int ypos, int xpos, int wk, int wkalt ){
-	ucg->setColor( COLOR_WHITE );
-	ucg->drawDisc( xpos, ypos, DISCRAD, UCG_DRAW_ALL );
-	ucg->drawBox( xpos, ypos-DISCRAD, BOXLEN, DISCRAD*2+1  );
-	ucg->setColor( COLOR_BLACK );
-	ucg->drawTriangle( xpos+DISCRAD+BOXLEN-2, ypos-DISCRAD,
-			xpos+DISCRAD+BOXLEN-2, ypos+DISCRAD+1,
-			xpos+DISCRAD+BOXLEN-2+FLAPLEN, ypos+wkalt*4 );
-	ucg->setColor( COLOR_RED );
-	ucg->drawTriangle( xpos+DISCRAD+BOXLEN-2, ypos-DISCRAD,
-			xpos+DISCRAD+BOXLEN-2, ypos+DISCRAD+1,
-			xpos+DISCRAD+BOXLEN-2+FLAPLEN, ypos+wk*4 );
-}
 
 void IpsDisplay::drawMC( float mc, bool large ) {
 	ucg->setFont(ucg_font_fub11_hr);
@@ -1141,12 +1028,12 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		if( wkposalt != wk || wksensoralt != (int)(wksensor*10) ) {
 			ESP_LOGI(FNAME,"WK changed WKE=%d WKS=%f", wk, wksensor );
 			ucg->setColor(  COLOR_WHITE  );
-			drawBigWkBar( WKBARMID, WKSYMST-4, (float)(wk)/10, wksensor);
+			Flap::drawBigBar( WKBARMID, WKSYMST-4, (float)(wk)/10, wksensor);
 			wkposalt = wk;
 			wksensoralt = (int)(wksensor*10);
 		}
 		if( wki != wkialt ) {
-			drawWkSymbol( WKBARMID-(27*(abs(flap_neg_max.get())+1)  ), WKSYMST-3, wki, wkialt );
+			Flap::drawWingSymbol( WKBARMID-(27*(abs(flap_neg_max.get())+1)  ), WKSYMST-3, wki, wkialt );
 			wkialt=wki;
 		}
 	}
@@ -1255,11 +1142,11 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		if( wkposalt != wk ) {
 			// ESP_LOGI(FNAME,"ias:%d wksp:%f wki:%d wk:%d wkpos%f", airspeed, wkspeed, wki, wk, wkpos );
 			ucg->setColor(  COLOR_WHITE  );
-			drawWkBar( YS2F-fh, WKSYMST+2, (float)(wk)/10 );
+			Flap::drawSmallBar( YS2F-fh, WKSYMST+2, (float)(wk)/10 );
 			wkposalt = wk;
 		}
 		if( wki != wkialt ) {
-			drawWkSymbol( YS2F-fh-25, WKSYMST+2, wki, wkialt );
+			Flap::drawWingSymbol( YS2F-fh-25, WKSYMST+2, wki, wkialt );
 			wkialt=wki;
 		}
 	}

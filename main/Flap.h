@@ -34,6 +34,7 @@ public:
 	static void drawLever( int xpos, int ypos, int oldypos );
 	static void drawWingSymbol( int ypos, int xpos, int wk, int wkalt );
 	static void redraw() { sensorOldY = -1000; surroundingBox=false; };
+	static void redrawLever() { sensorOldY = -1000; };
 
 private:
 	static Ucglib_ILI9341_18x240x320_HWSPI* ucg;

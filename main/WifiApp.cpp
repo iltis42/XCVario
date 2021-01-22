@@ -112,7 +112,7 @@ void socket_server(void *setup) {
 					if ( s.length() ){
 						ESP_LOGV(FNAME, "sent to tcp client %d: %d bytes", client, s.length() );
 						ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_VERBOSE);
-						if( client > 0 ){
+						if( client >= 0 ){
 							int num = send(client, s.c_str(), s.length(), 0);
 							// ESP_LOGI(FNAME, "client %d, num send %d", client, num );
 							if( num < 0 ) {

@@ -266,6 +266,7 @@ void readBMP(void *pvParameters){
 			Flap::progress();
 			xSemaphoreTake(xMutex,portMAX_DELAY );
 			baroP = bmpBA.readPressure();   // 5x per second
+			// ESP_LOGI(FNAME,"Baro Pressure: %4.3f", baroP );
 			float altSTD = bmpBA.calcAVGAltitudeSTD( baroP );
 			if( alt_select.get() == 0 ) // TE
 				alt = bmpVario.readAVGalt();

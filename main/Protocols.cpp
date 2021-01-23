@@ -274,7 +274,6 @@ void Protocols::parseNMEA( char *str ){
 		float _mc,_te,_bugs,_ballast,_cruise, _temp, _qnh, _baro, _pitot, _roll, _pitch, _ax, _ay, _az;
 		int _cs;
 		sscanf( str, "$PXCV,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f*%02x", &_te, &_mc, &_bugs, &_ballast,&_cruise, &_temp, &_qnh, &_baro, &_pitot, &_roll, &_pitch, &_ax, &_ay, &_az, &_cs  );
-		// ESP_LOGI(FNAME,"parseNMEA, $PXCV TE=%2.1f T=%2.1f Baro=%4.1f Pitot=%4.1f", _te, _temp, _baro, _pitot );
 		TE = _te;
 		temperature = _temp;
 		validTemperature = true;
@@ -292,6 +291,7 @@ void Protocols::parseNMEA( char *str ){
 		alt=Atmosphere::calcAltitude( QNH.get(), _baro );
 		ballast.set( (_ballast-1.0)*100, false ); // just save in variable, not store in FLASH
 		bugs.set( _bugs, false ); // just save in variable, not store in FLASH
+		// ESP_LOGI(FNAME,"parseNMEA, $PXCV TE=%2.1f T=%2.1f Baro=%4.1f Pitot=%4.1f IAS:%3.1f", _te, _temp, _baro, _pitot, ias);
 	}
 	else if( !strncmp( str, "$PFLAU,", 6 )) {
 		Flarm::parsePFLAU( str );

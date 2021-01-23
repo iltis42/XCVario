@@ -99,10 +99,7 @@ void Flap::drawBigBar( int ypos, int xpos, float wkf, float wksens ){
 		ucg->setColor(COLOR_GREEN);
 		ucg->drawTriangle( xpos-15,y-5,       xpos-15,y+5,       xpos-2,y );
 		optPosOldY = y;
-		redrawLever();
-	}
-	if( flap_sensor.get() ) {
-		if( sensorOldY != ys ) {
+		if( flap_sensor.get() ) {
 			ESP_LOGI(FNAME,"wk lever redraw, old=%d", sensorOldY );
 			drawLever( xpos, ys, sensorOldY );
 			sensorOldY = ys;

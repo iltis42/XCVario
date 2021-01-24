@@ -325,10 +325,6 @@ void Protocols::parseNMEA( char *str ){
 		as2f = Speed2Fly.speed( netto );
 		s2f_delta = as2f - ias;
 		alt=Atmosphere::calcAltitude( QNH.get(), _baro );
-		if( !(tickNMEA%50) ) {  // takeover from Master with 10 second delay, so we can also modify from here
-			ballast.set( (_ballast-1.0)*100, false ); // just save in variable, not store in FLASH
-			bugs.set( _bugs, false ); // just save in variable, not store in FLASH
-		}
 		// ESP_LOGI(FNAME,"parseNMEA, $PXCV TE=%2.1f T=%2.1f Baro=%4.1f Pitot=%4.1f IAS:%3.1f", _te, _temp, _baro, _pitot, ias);
 	}
 	else if( !strncmp( str, "$PFLAU,", 6 )) {

@@ -530,9 +530,9 @@ void SetupMenu::setup( )
 	if( student_mode.get() )
 	{
 		SetupMenuValFloat * passw = new SetupMenuValFloat( "Expert Password", 0, "", 0, 1000, 1, 0, false, &password  );
-		mm->addMenu( passw );
 		passw->setPrecision( 0 );
 		passw->setHelp( PROGMEM"To exit from student mode enter expert password and restart device after expert password has been set correctly");
+		mm->addMenu( passw );
 	}
 	else
 	{

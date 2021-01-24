@@ -216,6 +216,7 @@ int qnh_adj( SetupMenuValFloat * p )
 	p->ucg->printf("%4d %s ", (int)(altp+0.5), u.c_str() );
 	p->ucg->setFont(ucg_font_ncenR14_hr);
 	xSemaphoreGive(spiMutex );
+	OV.sendQNHChange( QNH.get() );
 	return 0;
 }
 
@@ -280,11 +281,13 @@ int bal_adj( SetupMenuValFloat * p )
 	p->ucg->printf("%u liter  ", liter);
 	xSemaphoreGive(spiMutex );
 	p->ucg->setFont(ucg_font_ncenR14_hr);
+	OV.sendBallastChange( ballast.get() );
 	return 0;
 }
 
 int bug_adj( SetupMenuValFloat * p ){
 	Speed2Fly.change_mc_bal();
+	OV.sendBugsChange( bugs.get() );
 	return 0;
 }
 

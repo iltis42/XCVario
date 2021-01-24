@@ -42,6 +42,33 @@ void Protocols::sendWkChange( float wk ){
 	Router::sendXCV(str);
 }
 
+void Protocols::sendQNHChange( float qnh ){
+	char str[20];
+	sprintf( str,"!xq,%4.2f", qnh );
+	ESP_LOGI(FNAME,"New QNH: %4.2f, cmd:%s", qnh, str );
+	Router::sendXCV(str);
+}
+
+void Protocols::sendBallastChange( float ballast ){
+	char str[20];
+	ESP_LOGI(FNAME,"Send new Ballast %f ", ballast );
+	float refw = polar_wingload.get() * polar_wingarea.get();
+	ESP_LOGI(FNAME,"Reference weight: %3.1f kg", refw);
+	float liters = (1+ (ballast/100))*refw -refw;
+	ESP_LOGI(FNAME,"New Ballast in liters: %f ", liters);
+	float bal = (liters/polar_max_ballast.get())*10;
+	sprintf( str,"!g,b%d", (int)(bal + 0.5));
+	ESP_LOGI(FNAME,"New ballast %f, cmd: %s", bal, str );
+	Router::sendXCV(str);
+}
+
+void Protocols::sendBugsChange( float bugs ){
+	char str[20];
+	sprintf( str,"!g,b%d", (int)(100-bugs));
+	ESP_LOGI(FNAME,"New bugs %f, cmd: %s", bugs, str );
+	Router::sendXCV(str);
+}
+
 int last_climb=-1000;
 
 void Protocols::sendMeanClimb( float climb ){
@@ -194,29 +221,37 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 	int cs = getCheckSum(&str[1]);
 	int i = strlen(str);
 	sprintf( &str[i], "*%02X\r\n", cs );
-
 	Router::sendXCV(str);
 }
 
 int countPFLAU=0;
 
+int tickNMEA=0;
 // The XCVario Protocol or Cambridge CAI302 protocol to adjust MC,Ballast,Bugs.
 void Protocols::parseNMEA( char *str ){
 	// ESP_LOGI(FNAME,"parseNMEA %s", str);
+	tickNMEA++;
 	if ( strncmp( str, "!xw,", 4 ) == 0 ) {
 		float wkcmd;
 		sscanf( str,"!xw,%f", &wkcmd );  // directly scan into sensor variable
 		Flap::setLever( wkcmd );
 		// ESP_LOGI(FNAME,"XW command detected wk=%f", wksensor );
 	}
-	if ( strncmp( str, "!xa,", 4 ) == 0 ) {
+	else if ( strncmp( str, "!xa,", 4 ) == 0 ) {
 		float climb;
 		sscanf( str,"!xa,%f", &climb );  // directly scan into sensor variable
 		meanClimb = climb;
 		// ESP_LOGI(FNAME,"mean climb change detected mean climb=%f", climb );
 	}
-	if ( strncmp( str, "!g,", 3 ) == 0 ) {
-		ESP_LOGI(FNAME,"parseNMEA, Cambridge C302 style command !g detected");
+	else if ( strncmp( str, "!xq,", 4 ) == 0 ) {
+		float qnh;
+		sscanf( str,"!xq,%f", &qnh );  // directly scan into sensor variable
+		if( QNH.get() != qnh )
+			QNH.set( qnh );
+		ESP_LOGI(FNAME,"QNH change cmd new QNH: %f, cmd: %s", qnh, str );
+	}
+	else if ( (strncmp( str, "!g,", 3 ) == 0)  && (blue_enable.get() != WL_WLAN_CLIENT)  ) { // the clients gets this already via XCV protocol
+		ESP_LOGI(FNAME,"parseNMEA, Cambridge C302 style command !g detected: %s",str);
 		if (str[3] == 'b') {
 			ESP_LOGI(FNAME,"parseNMEA, BORGELT, ballast modification");
 			float aballast;
@@ -250,7 +285,8 @@ void Protocols::parseNMEA( char *str ){
 			bugs.set( mybugs );
 			_s2f->change_mc_bal();
 		}
-	}else if( !strncmp( str, "$PXCV,", 5 ) ){   // $PXCV,-0.0,0.5,0,1.00,0,24.4,1013.2,990.8, 0.0,0.2,-29.2,-0.45,0.01,0.80*2C
+	}
+	else if( !strncmp( str, "$PXCV,", 5 ) ){   // $PXCV,-0.0,0.5,0,1.00,0,24.4,1013.2,990.8, 0.0,0.2,-29.2,-0.45,0.01,0.80*2C
 		/*
 		$PXCV,
 		BBB.B = Vario, -30 to +30 m/s, negative sign for sink,
@@ -289,8 +325,10 @@ void Protocols::parseNMEA( char *str ){
 		as2f = Speed2Fly.speed( netto );
 		s2f_delta = as2f - ias;
 		alt=Atmosphere::calcAltitude( QNH.get(), _baro );
-		ballast.set( (_ballast-1.0)*100, false ); // just save in variable, not store in FLASH
-		bugs.set( _bugs, false ); // just save in variable, not store in FLASH
+		if( !(tickNMEA%50) ) {  // takeover from Master with 10 second delay, so we can also modify from here
+			ballast.set( (_ballast-1.0)*100, false ); // just save in variable, not store in FLASH
+			bugs.set( _bugs, false ); // just save in variable, not store in FLASH
+		}
 		// ESP_LOGI(FNAME,"parseNMEA, $PXCV TE=%2.1f T=%2.1f Baro=%4.1f Pitot=%4.1f IAS:%3.1f", _te, _temp, _baro, _pitot, ias);
 	}
 	else if( !strncmp( str, "$PFLAU,", 6 )) {

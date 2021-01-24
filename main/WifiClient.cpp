@@ -17,6 +17,7 @@
 #include "Protocols.h"
 #include "WifiClient.h"
 #include "sensor.h"
+#include "Router.h"
 
 
 
@@ -136,7 +137,6 @@ void WifiClient::tcp_client(void *pvParam){
     tcpServerAddr.sin_family = AF_INET;
     tcpServerAddr.sin_port = htons( 8880 );
 	int num = 0;
-    SString send;
     int timeout=0;
     while(1){
         xEventGroupWaitBits(wifi_event_group,CONNECTED_BIT,false,true,portMAX_DELAY);
@@ -164,7 +164,8 @@ void WifiClient::tcp_client(void *pvParam){
         	}
         	ESP_LOGI(FNAME, "socket %d connected", sock);
         }
-
+        SString send;
+    	Router::pullMsg( wl_vario_tx_q, send);
         if( send.length() ){
         	ESP_LOGI(FNAME, "have data to send");
         	if( write(sock , send.c_str() , send.length() ) < 0)

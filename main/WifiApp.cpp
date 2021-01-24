@@ -32,7 +32,7 @@
 #include "esp_wifi.h"
 #include <list>
 #include "WifiClient.h"
-
+#include "sensor.h"
 
 typedef struct xcv_sock_server {
 	RingBufCPP<SString, QUEUE_SIZE>* txbuf;
@@ -43,7 +43,6 @@ typedef struct xcv_sock_server {
 static sock_server_t XCVario = { .txbuf = &wl_vario_tx_q, .rxbuf = &wl_vario_rx_q, .port=8880 };
 static sock_server_t FLARM   = { .txbuf = &wl_flarm_tx_q, .rxbuf = &wl_flarm_rx_q, .port=8881 };
 static sock_server_t AUX     = { .txbuf = &wl_aux_tx_q,   .rxbuf = &wl_aux_rx_q,   .port=8882 };
-
 
 int create_socket( int port ){
 	struct sockaddr_in serverAddress;
@@ -77,6 +76,15 @@ int create_socket( int port ){
 
 // Multi client TCP server with dynamic updated list of clients connected
 
+void on_client_connect( int port ){
+	if( port == 8880 ){ // have a client to XCVario protocol connected
+		OV.sendQNHChange( QNH.get() );
+		OV.sendBallastChange( ballast.get() );
+		OV.sendBugsChange( bugs.get() );
+	}
+}
+
+
 void socket_server(void *setup) {
 	sock_server_t *config = (sock_server_t *)setup;
 	struct sockaddr_in clientAddress[10];  // we support max 10 clients try to connect same time
@@ -96,6 +104,7 @@ void socket_server(void *setup) {
 			if( new_client >= 0 && clients.size() < 10 ){
 				clients.push_back( new_client );
 				ESP_LOGV(FNAME, "New sock client: %d, number of clients: %d", new_client, clients.size()  );
+				on_client_connect( config->port );
 			}
 			if( clients.size() ) {
 				SString s;
@@ -145,8 +154,6 @@ void socket_server(void *setup) {
 	}
 	vTaskDelete(NULL);
 }
-
-
 
 /* WiFi configuration and startup
 

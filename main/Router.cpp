@@ -78,7 +78,7 @@ void Router::routeXCV(){
 			if( forwardMsg( xcv, bt_tx_q ) )
 				ESP_LOGV(FNAME,"Send to BT device, XCV received %d bytes", xcv.length() );
 		}
-		else if( blue_enable.get() == WL_WLAN )
+		else if( blue_enable.get() == WL_WLAN || blue_enable.get() == WL_WLAN_CLIENT )
 		{
 			if( forwardMsg( xcv, wl_vario_tx_q ) )
 				ESP_LOGV(FNAME,"Send to WLAN port 8880, XCV received %d bytes", xcv.length() );
@@ -140,7 +140,7 @@ void Router::routeWLAN(){
 	// Route received data from WLAN ports
 	SString wlmsg;
 	if( pullMsg( wl_vario_rx_q, wlmsg) ){
-		if( strncmp( wlmsg.c_str(), "!g,", 3 )  == 0 ) {
+		if( strncmp( wlmsg.c_str(), "!", 1 )  == 0 ) {
 			ESP_LOGV(FNAME,"From WLAN port 8880 RX matched a Borgelt command %s", wlmsg.c_str() );
 			Protocols::parseNMEA( wlmsg.c_str() );
 		}

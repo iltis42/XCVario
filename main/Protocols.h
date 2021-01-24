@@ -22,6 +22,9 @@ public:
 	void sendMcChange( float mc ) {};
 	void sendWkChange( float wk );
 	void sendMeanClimb( float climb );
+	void sendBallastChange( float ballast );
+	void sendBugsChange( float bugs );
+	void sendQNHChange( float qnh );
 	void sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
 			       float mc, int bugs, float ballast, bool cruise, float alt,
 				   bool validTemp=false, float ax=0, float ay=0, float az=0, float gx=0, float gy=0, float gz=0 );

@@ -60,25 +60,7 @@ I (42) boot.esp32: SPI Speed      : 40MHz
 I (46) boot.esp32: SPI Mode       : DIO
 I (51) boot.esp32: SPI Flash Size : 2MB
 
-$ idf.py -p /dev/ttyUSB0 monitor
-Executing action: monitor
-:
-I (28) boot: ESP-IDF v4.2-dev-1905-g625bd5eb1-dirty 2nd stage bootloader
-I (28) boot: compile time 10:16:30
-I (30) boot: chip revision: 1
-I (33) boot_comm: chip revision: 1, min. bootloader chip revision: 0
-I (40) boot.esp32: SPI Speed      : 40MHz
-:
-I (312) cpu_start: Starting scheduler on PRO CPU.
-I (0) cpu_start: Starting scheduler on APP CPU.
-Hello world!
-This is esp32 chip with 2 CPU cores, WiFi/BT/BLE, silicon revision 1, 2MB external flash
-Free heap: 299596
-Restarting in 10 seconds...
-
-After this is done successfully, then clone the 
-XCVario into the examples directory, parallel to the example directory hello_world,
-and do the same from there, and voila the control is yours:
+After this is done successfully, then clone the XCVario into the examples directory, parallel to the example directory hello_world, and do the same from there, and voila the control is yours:
 
 A) Clone XCVario repository:
 cd ~/esp/esp-idf/examples/get-started/; git clone https://github.com/iltis42/XCVario.git;

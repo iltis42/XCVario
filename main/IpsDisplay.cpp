@@ -994,6 +994,10 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	if(!(tick%8) ) {
 		drawAltitude( altitude, 110,282 );
 	}
+	if(!(tick%25) ) {
+			prefalt = -1000;  // trigger redraw
+			as_prev = -1000;
+	}
 
 	// Battery
 	int chargev = (int)( volt *10 );

@@ -36,7 +36,7 @@ void WifiClient::wifi_connect(){
 	strcpy( (char *)cfg.sta.password, PASSPHARSE );
 
     ESP_ERROR_CHECK( esp_wifi_disconnect() );
-    ESP_ERROR_CHECK( esp_wifi_set_config(ESP_IF_WIFI_STA, &cfg) );
+    ESP_ERROR_CHECK( esp_wifi_set_config(WIFI_IF_STA, &cfg) );
     ESP_ERROR_CHECK( esp_wifi_connect() );
 }
 

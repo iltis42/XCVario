@@ -208,7 +208,7 @@ void wifi_init_softap()
 		wc.ap.ssid_hidden = 0;
 		wc.ap.beacon_interval = 50;
 
-		ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &wc));
+		ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wc));
 
 		ESP_LOGI(FNAME,"now esp_wifi_set_storage");
 		ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));

@@ -53,7 +53,7 @@ void Protocols::sendBallastChange( float ballast ){
 	char str[20];
 	ESP_LOGI(FNAME,"Send new Ballast %f ", ballast );
 	float refw = polar_wingload.get() * polar_wingarea.get();
-	ESP_LOGI(FNAME,"Reference weight: %3.1f kg", refw);
+	ESP_LOGI(FNAME,"Reference weight: %f kg", refw);
 	float liters = (1+ (ballast/100))*refw -refw;
 	ESP_LOGI(FNAME,"New Ballast in liters: %f ", liters);
 	float bal = (liters/polar_max_ballast.get())*10;

@@ -33,7 +33,7 @@ typedef struct apb_change_cb_s {
         apb_change_cb_t cb;
 } apb_change_t;
 
-const uint32_t MHZ = 1000000;
+const uint32_t _MHZ = 1000000;
 
 static apb_change_t * apb_change_callbacks = NULL;
 static xSemaphoreHandle apb_change_lock = NULL;
@@ -120,9 +120,9 @@ bool removeApbChangeCallback(void * arg, apb_change_cb_t cb){
 
 static uint32_t calculateApb(rtc_cpu_freq_config_t * conf){
     if(conf->freq_mhz >= 80){
-        return 80 * MHZ;
+        return 80 * _MHZ;
     }
-    return (conf->source_freq_mhz * MHZ) / conf->div;
+    return (conf->source_freq_mhz * _MHZ) / conf->div;
 }
 
 void esp_timer_impl_update_apb_freq(uint32_t apb_ticks_per_us); //private in IDF
@@ -185,15 +185,15 @@ bool setCpuFrequencyMhz(uint32_t cpu_freq_mhz){
     if(capb != apb){
         //Update REF_TICK (uncomment if REF_TICK is different than 1MHz)
         //if(conf.freq_mhz < 80){
-        //    ESP_REG(APB_CTRL_XTAL_TICK_CONF_REG) = conf.freq_mhz / (REF_CLK_FREQ / MHZ) - 1;
+        //    ESP_REG(APB_CTRL_XTAL_TICK_CONF_REG) = conf.freq_mhz / (REF_CLK_FREQ / _MHZ) - 1;
         //}
         //Update APB Freq REG
         rtc_clk_apb_freq_update(apb);
         //Update esp_timer divisor
-        esp_timer_impl_update_apb_freq(apb / MHZ);
+        esp_timer_impl_update_apb_freq(apb / _MHZ);
     }
     //Update FreeRTOS Tick Divisor
-    uint32_t fcpu = (conf.freq_mhz >= 80)?(conf.freq_mhz * MHZ):(apb);
+    uint32_t fcpu = (conf.freq_mhz >= 80)?(conf.freq_mhz * _MHZ):(apb);
     _xt_tick_divisor = fcpu / XT_TICK_PER_SEC;
     //Call peripheral functions after the APB change
     if(apb_change_callbacks){

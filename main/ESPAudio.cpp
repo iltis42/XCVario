@@ -633,6 +633,14 @@ void Audio::begin( dac_channel_t ch  )
 	delay(10);
 }
 
+void Audio::shutdown(){
+	dac_output_disable(_ch);
+	gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );   // use pullup 1 == SOUND 0 == SILENCE
+	gpio_set_level(GPIO_NUM_19, 0 );
+	wiper = 0;
+	sound_on = false;
+}
+
 void Audio::enableAmplifier( bool enable )
 {
 	ESP_LOGV(FNAME,"Audio::enableAmplifier( %d )", (int)enable );

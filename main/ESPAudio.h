@@ -36,6 +36,7 @@ public:
 	static void alarm( bool enable, int volume=100, e_audio_alarm_type_t alarmType=AUDIO_ALARM_STALL );
 	static bool selfTest();
 	static inline void setTestmode( bool mode ) { _testmode = mode; }
+    static void shutdown();  // frue ON, false OFF
 
 private:
 	static void dac_cosine_enable(dac_channel_t channel, bool enable=true);
@@ -45,11 +46,11 @@ private:
 	static void dac_invert_set(dac_channel_t channel, int invert);
 	static void dactask(void* arg);
 	static void modtask(void* arg );
-    static void enableAmplifier( bool enable );  // frue ON, false OFF
     static void calcS2Fmode();
     static bool inDeadBand( float te );
 	static bool lookup( float f, int& div, int &step );
 	static bool volumeScale( int vol, int& scale, int &wiper );
+	static void enableAmplifier( bool enable );  // frue ON, false OFF
 
 	static dac_channel_t _ch;
 	static float _te;

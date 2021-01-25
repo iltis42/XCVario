@@ -22,6 +22,7 @@ extern "C" {
 #include "Setup.h"
 #include "OTA.h"
 #include <logdef.h>
+#include "ESPAudio.h"
 
 OTA::OTA(){
 	pressed = false;
@@ -73,5 +74,6 @@ void OTA::doSoftwareUpdate(IpsDisplay * p ){
 		}
 	}
 	software_update.set( 0 );
+	Audio::shutdown();
 	esp_restart();
 }

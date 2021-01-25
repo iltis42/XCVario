@@ -9,6 +9,7 @@
 #include <sensor.h>
 #include "Units.h"
 #include "SetupMenuSelect.h"
+#include "ESPAudio.h"
 
 
 bool SetupMenuSelect::existsEntry( String ent ){
@@ -171,6 +172,7 @@ void SetupMenuSelect::press(){
 			(*_action)( this );
 		if( _select_save != *_select )
 			if( _restart ) {
+				Audio::shutdown();
 				sleep( 2 );
 				esp_restart();
 			}

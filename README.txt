@@ -9,7 +9,6 @@ mkdir -p ~/esp; cd ~/esp; git clone --recursive https://github.com/espressif/esp
 cd ~/esp/esp-idf; ./install.sh; . ./export.sh;
 pip install cmake;
 
-
 This will get you the lates state of esp-idf plus compiler (at this time is: esp-2020r3-8.4.0)
 
 2) Build hello world application.
@@ -21,18 +20,17 @@ from the directory of the software to be build. The workflow for each is shown h
 
 cd ~/esp/esp-idf/examples/get-started/hello_world;
 idf.py build
+WARNING: Support for Python 2 is deprecated and will be removed in future versions.
 Executing action: all (aliases: build)
-Running make in directory /home/nextpcb/esp/esp-idf/examples/get-started/hello_world/build
-Executing "make -j 6 all"...
+Running cmake in directory /home/gittest2/esp/esp-idf/examples/get-started/hello_world/build
+Executing "cmake -G 'Unix Makefiles' -DPYTHON_DEPS_CHECKED=1 -DESP_PLATFORM=1 -DCCACHE_ENABLE=0 /home/gittest2/esp/esp-idf/examples/get-started/hello_world"...
+-- Found Git: /usr/bin/git (found version "2.17.1") 
+-- IDF_TARGET not set, using default target: esp32
+-- The C compiler identification is GNU 8.4.0
 :
-[100%] Generating binary image from built executable
-esptool.py v3.0-dev
-Generated /home/nextpcb/esp/esp-idf/examples/get-started/hello_world/build/hello-world.bin
-[100%] Built target gen_project_binary
 [100%] Built target app
-
 Project build complete. To flash, run this command:
-/home/xcvario/.espressif/python_env/idf4.2_py2.7_env/bin/python ../../../components/esptool_py/esptool/esptool.py -p (PORT) -b 460800 --before default_reset --after hard_reset --chip esp32  write_flash --flash_mode dio --flash_size detect --flash_freq 40m 0x1000 build/bootloader/bootloader.bin 0x8000 build/partition_table/partition-table.bin 0x10000 build/hello-world.bin
+/home/gittest2/.espressif/python_env/idf4.3_py2.7_env/bin/python ../../../components/esptool_py/esptool/esptool.py -p (PORT) -b 460800 --before default_reset --after hard_reset --chip esp32  write_flash --flash_mode dio --flash_size detect --flash_freq 40m 0x1000 build/bootloader/bootloader.bin 0x8000 build/partition_table/partition-table.bin 0x10000 build/hello-world.bin
 or run 'idf.py -p (PORT) flash'
 
 $ idf.py -p /dev/ttyUSB0 flash
@@ -46,6 +44,21 @@ Leaving...
 Hard resetting via RTS pin...
 [100%] Built target flash
 Done
+
+$ idf.py -p /dev/ttyUSB0 monitor
+WARNING: Support for Python 2 is deprecated and will be removed in future versions.
+Executing action: monitor
+Running idf_monitor in directory /home/gittest2/esp/esp-idf/examples/get-started/hello_world
+Executing "/home/gittest2/.espressif/python_env/idf4.3_py2.7_env/bin/python /home/gittest2/esp/esp-idf/tools/idf_monitor.py -p /dev/ttyUSB0 -b 115200 --toolchain-prefix xtensa-esp32-elf- /home/gittest2/esp/esp-idf/examples/get-started/hello_world/build/hello-world.elf -m '/home/gittest2/.espressif/python_env/idf4.3_py2.7_env/bin/python' '/home/gittest2/esp/esp-idf/tools/idf.py' '-p' '/dev/ttyUSB0'"...
+--- idf_monitor on /dev/ttyUSB0 115200 ---
+--- Quit: Ctrl+] | Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H ---
+I (30) boot: ESP-IDF v4.3-dev-2586-g526f68239 2nd stage bootloader
+I (30) boot: compile time 11:40:17
+I (30) boot: chip revision: 1
+I (34) boot_comm: chip revision: 1, min. bootloader chip revision: 0
+I (42) boot.esp32: SPI Speed      : 40MHz
+I (46) boot.esp32: SPI Mode       : DIO
+I (51) boot.esp32: SPI Flash Size : 2MB
 
 $ idf.py -p /dev/ttyUSB0 monitor
 Executing action: monitor
@@ -70,17 +83,20 @@ and do the same from there, and voila the control is yours:
 A) Clone XCVario repository:
 cd ~/esp/esp-idf/examples/get-started/; git clone https://github.com/iltis42/XCVario.git;
 
-B) Build software and flash
+B) Build software and flash XCVario Software, e.g. shown as here via USB cable, or use OTA
 cd XCVario; 
 idf.py build;
 idf.py -p /dev/ttyUSB0 flash;
 idf.py monitor;
 
-Appendix: 
+C) Flashing via OTA
+Start OTA Software download Wifi AP at XCVario and
+upload through this webpage binary image: ~/esp/esp-idf/examples/get-started/XCVario/build/sensor.bin
 
-The esp-idf needs to be patched:
 
-1) Open I2C bug: https://github.com/espressif/esp-idf/issues/5108
+Appendix
+The esp-idf needs to be patched: 
+Open I2C bug: https://github.com/espressif/esp-idf/issues/5108
 The native i2c driver has a multithreading bug from using malloc and free, that will lead to a crash
 as of multiple chips/tasks are using malloc and free what makes the system to crash regularly.
 The issue is still open after a year, even provided a solution it has beed discussed in another

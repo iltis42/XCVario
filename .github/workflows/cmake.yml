@@ -20,7 +20,7 @@ jobs:
     - name: Install
       run: mkdir -p ~/esp
            cd ~/esp
-           ls -al
+           ls -l
            #git clone --recursive https://github.com/espressif/esp-idf.git;
            #cd ~/esp/esp-idf; 
            #./install.sh; 

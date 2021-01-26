@@ -54,12 +54,12 @@ public:
   /**
    * After excecuting the soft reset command, the chip goes into the standby mode.
    */
-  uint8_t softReset();
+  esp_err_t softReset();
 
   /**
    * This call resets the period register.
    */
-  uint8_t resetPeriodRegister();
+  esp_err_t resetPeriodRegister();
 
   /**
    * Read the Data Ready Register bit from status register 06H and return it.
@@ -70,7 +70,7 @@ public:
    * Configure device. In dependency of the mode bit, the device can start or
    * stop running.
    */
-  uint8_t configureDevice();
+  esp_err_t configureDevice();
   
   /**
    * Reads the heading in degrees of 1...360. If heading is not valid a value of
@@ -88,7 +88,7 @@ public:
    * Read out the registers X, Y, Z (0...5) in raw format.
    * Returns true in case of success otherwise false.
    */
-  bool readRawHeading( int16_t *x, int16_t *y, int16_t *z, int16_t *t );
+  bool readRawHeading( int16_t *x, int16_t *y, int16_t *z );
 
   /**
    * Read out the registers TOUT (7...8) in raw format.
@@ -99,9 +99,9 @@ public:
   void resetCalibration();
   void setSamplingRate( const uint8_t rate );
   void setRange( const uint8_t range );
-  void setOversampling( const uint8_t ovl );
+  void setOversampling( const uint16_t ovl );
   
-  void setMode( const uint8_t mode );
+  void setMode( const uint8_t modeIn );
 
   /** Write with data part. */
   esp_err_t writeRegister( const uint8_t addr,

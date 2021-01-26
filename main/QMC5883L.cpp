@@ -86,7 +86,7 @@ QMC5883L::QMC5883L( const uint8_t addrIn,
                     const uint8_t rateIn,
                     const uint8_t rangeIn,
                     const uint8_t oversamplingIn,
-                    2C_t *i2cBus ) :
+                    I2C_t *i2cBus ) :
   bus( i2cBus ),
   addr( addrIn ),
   mode( modeIn ),
@@ -122,7 +122,7 @@ esp_err_t QMC5883L::selfTest()
 {
   if( checkBus() == false )
     {
-      eturn ESP_FAIL;
+      return ESP_FAIL;
     }
 
   uint8_t data[1];
@@ -159,7 +159,7 @@ esp_err_t QMC5883L::writeRegister( const uint8_t addr,
   if( err != ESP_OK )
     {
       ESP_LOGI( FNAME, "QMC5883L writeRegister( %02X, %02X, %02X ) FAILED",
-                adr, reg, value );
+                addr, reg, value );
       return ESP_FAIL;
     }
 
@@ -181,12 +181,12 @@ uint8_t QMC5883L::readRegister( const uint8_t addr,
     }
 
   // read bytes from chip
-  esp_err_t err = readBytes( addr, reg, count, data );
+  esp_err_t err = bus->readBytes( addr, reg, count, data );
 
   if( err != ESP_OK )
     {
       ESP_LOGI( FNAME, "QMC5883L readRegister( %02X, %02x, %d ) FAILED",
-                adr, reg, count );
+                addr, reg, count );
       return 0;
     }
 
@@ -233,7 +233,7 @@ esp_err_t QMC5883L::resetPeriodRegister()
   return writeRegister( addr, QMC5883L_RESET_PERIOD, 0x01 );
 }
 
-void QMC5883L::setOversampling( const uint8_t x )
+void QMC5883L::setOversampling( const uint16_t x )
 {
   switch(x)
   {
@@ -284,15 +284,15 @@ void QMC5883L::setSamplingRate( const uint8_t x )
   }
 }
 
-void setMode( const uint8_t mode )
+void QMC5883L::setMode( const uint8_t modeIn )
 {
-  switch(x)
+  switch( modeIn )
   {
     case QMC5883L_CONFIG_STANDBY:
       mode = QMC5883L_CONFIG_STANDBY;
       break;
     case QMC5883L_CONFIG_CONTINUOUS:
-      rate = QMC5883L_CONFIG_CONTINUOUS;
+      mode = QMC5883L_CONFIG_CONTINUOUS;
       break;
   }
 }
@@ -376,7 +376,7 @@ int QMC5883L::readHeading()
 {
   int16_t x, y, z;
 
-  if( readRaw( &x, &y, &z ) == false )
+  if( readRawHeading( &x, &y, &z ) == false )
     {
       return -1;
     }
@@ -426,7 +426,7 @@ int QMC5883L::readTemperature()
 {
   int16_t t;
 
-  if( readRaw( &t ) == false )
+  if( readRawTemperature( &t ) == false )
     {
       return -999;
     }

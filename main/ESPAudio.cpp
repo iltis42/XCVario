@@ -396,6 +396,8 @@ void Audio::incVolume( int steps ) {
 		wiper--;
 		steps--;
 	}
+	if( wiper == 0 )
+		dac_output_disable(_ch);
 	ESP_LOGI(FNAME,"inc volume, wiper: %d", wiper );
 }
 
@@ -405,6 +407,8 @@ void Audio::decVolume( int steps ) {
 		wiper++;
 		steps--;
 	}
+	if( wiper > 0 )
+		dac_output_enable(_ch);
 	ESP_LOGI(FNAME,"dec volume, wiper: %d", wiper );
 }
 
@@ -499,7 +503,6 @@ void Audio::dactask(void* arg )
 					Poti.writeWiper( wiper );
 					// ESP_LOGI(FNAME, "sound on, set wiper: %d", wiper );
 					cur_wiper = wiper;
-
 				}
 				float max = minf;
 				if ( _te > 0 )

@@ -18,8 +18,8 @@ jobs:
     - uses: actions/checkout@v2
     
     - name: Install
-      run: mkdir -p ~/esp;
-           cd ~/esp;
+      run: #mkdir -p ~/esp;
+           cd ~/esp/esp-idf;
            ls -l;
            #git clone --recursive https://github.com/espressif/esp-idf.git;
            #cd ~/esp/esp-idf; 

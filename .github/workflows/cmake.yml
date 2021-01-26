@@ -16,6 +16,16 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    
+    - name: Install
+      run: mkdir -p ~/esp; 
+           cd ~/esp; 
+           git clone --recursive https://github.com/espressif/esp-idf.git;
+           cd ~/esp/esp-idf; 
+           ./install.sh; 
+           . ./export.sh;
+           pip install cmake;
+      
 
     - name: Build 
       # Use a bash shell so we can use the same syntax for environment variable

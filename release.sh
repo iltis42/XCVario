@@ -1,7 +1,6 @@
 git pull
 VER=`date +"%y.%m%d-%H%M"`
 comment=$1
-cd /home/nextpcb/sensor
 touch ./main/Version.h
 idf.py build
 cp ./build/sensor.bin  ./images/sensor-${VER}.bin

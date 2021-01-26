@@ -33,7 +33,7 @@ some sentences might be lost or truncated.
 */
 
 // Option to simulate FLARM sentences
-char *flarm[] = {
+const char *flarm[] = {
 		"$PFLAU,3,1,2,1,1,-60,2,-100,755,1234*12\n",
 		"$PFLAU,3,1,2,1,1,-20,2,-100,655,1234*12\n",
 		"$PFLAU,3,1,2,1,1,-10,2,-80,455,1234*12\n",
@@ -47,7 +47,7 @@ char *flarm[] = {
 
 };
 /*
-char *gps[] = {
+const char *gps[] = {
 		"$PFLAA,0,11461,-9272,1436,1,AFFFFF,51,0,257,0.0,0*7A\n",
 		"$PFLAA,0,2784,3437,216,1,AFFFFE,141,0,77,0.0,0*56\n",
 		"$PFLAA,1,-1375,1113,64,1,AFFFFD,231,0,30,0.0,0*43\n",

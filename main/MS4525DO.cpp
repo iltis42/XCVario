@@ -14,8 +14,6 @@ MS4525DO::MS4525DO()
 }
 
 bool MS4525DO::begin(gpio_num_t sda, gpio_num_t scl, char slave_adr) {
-	// init( sda, scl );
-	// exponential_average = 0;
 	address = slave_adr;
 	return true;
 }

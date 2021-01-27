@@ -26,11 +26,12 @@ extern "C" {
 
 OTA::OTA(){
 	pressed = false;
-	_rotary->attach(this);
+	_rotary = 0;
 }
 
 void OTA::begin(ESPRotary * aRotary){
 	_rotary = aRotary;
+	_rotary->attach(this);
 }
 
 void OTA::press() {

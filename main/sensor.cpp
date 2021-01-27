@@ -123,6 +123,10 @@ mpud::float_axes_t gyroDPS;
 mpud::float_axes_t accelG_Prev;
 mpud::float_axes_t gyroDPS_Prev;
 
+// Magnetic sensor
+QMC5883L magneticSensor( 0x0D, ODR_10HZ, RNG_2G, OSR_512 );
+bool haveMagneticSensor = false;
+
 BTSender btsender;
 
 float baroP=0;
@@ -739,7 +743,20 @@ void sensor(void *args){
 			logged_tests += "MPU6050 AHRS test: NOT FOUND\n";
 		}
 	}
-	Speed2Fly.change_polar();
+
+	// Check for magnetic sensor
+	ESP_LOGI( FNAME, "Magnetic sensor initialize");
+	magneticSensor.setBus( &i2c );
+	err = magneticSensor.selfTest();
+
+	if( err == ESP_OK )
+	  {
+	    haveMagneticSensor = true;
+	    // Activate working of sensor
+	    magneticSensor.modeContinuous();
+	  }
+
+  Speed2Fly.change_polar();
 	Speed2Fly.change_mc_bal();
 	Version myVersion;
 	ESP_LOGI(FNAME,"Program Version %s", myVersion.version() );

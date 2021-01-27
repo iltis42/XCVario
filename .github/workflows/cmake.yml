@@ -32,7 +32,7 @@ jobs:
             git add $PWD/images/sensor-${VER}.bin;
             git tag -a v${VER} -m "New XCVario build ${VER}";
             git commit -a -m "new version build sensor-${VER}.bin";
-            git push;
+            git push https://${{github.actor}}:${{secrets.GH_TOKEN}}@github.com/${{github.repository}}.git HEAD:${{ github.ref }} || echo "No changes to commit"
             
 
   

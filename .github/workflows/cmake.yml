@@ -26,8 +26,8 @@ jobs:
       # and build directories, but this is only available with CMake 3.13 and higher.  
       # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
       run:  touch $PWD/main/Version.h;
-            date > $PWD/generated_date.txt
-            git add $PWD/generated_date.txt
+            date > $PWD/generated_date.txt;
+            git add $PWD/generated_date.txt;
             git config user.name github-actions;
             git config user.email github-actions@github.com;
             VER=`date +"%y.%m%d-%H%M"`;

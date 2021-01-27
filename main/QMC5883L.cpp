@@ -11,19 +11,15 @@ I2C driver for the chip QMC5883L, 3-Axis Magnetic Sensor.
 
 QMC5883L data sheet:
 
-http://wiki.epalsite.com/images/7/72/QMC5883L-Datasheet-1.0.pdf
+https://datasheetspdf.com/pdf-file/1309218/QST/QMC5883L/1
 
 Author: Axel Pauli, January 2021
 
-*/
+****************************************************************************/
 
 #include <cmath>
-#include <ctime>
 #include <logdef.h>
 #include "QMC5883L.h"
-
-/* The default I2C address of this chip */
-#define QMC5883L_ADDR 0x0D
 
 /* Register numbers */
 #define REG_X_LSB 0         // Output Data Registers for magnetic sensor.
@@ -54,19 +50,6 @@ Author: Axel Pauli, January 2021
 /* Flags for Control Register 1. */
 #define MODE_STANDBY    0b00000000  // Standby mode.
 #define MODE_CONTINUOUS 0b00000001  // Continuous read mode.
-
-#define ODR_10HZ   0b00000000       // Output Data Rate Hz.
-#define ODR_50HZ   0b00000100
-#define ODR_100HZ  0b00001000
-#define ODR_200HZ  0b00001100
-
-#define RNG_2G 0b00000000  // Range 2 Gauss: for magnetic-clean environments.
-#define RNG_8G 0b00010000  // Range 8 Gauss: for strong magnetic fields.
-
-#define OSR_512 0b00000000  // Over Sample Rate 512: less noise, more power.
-#define OSR_256 0b01000000
-#define OSR_128 0b10000000
-#define OSR_64  0b11000000  // Over Sample Rate 64: more noise, less power.
 
 /*
   Creates instance for I2C connection with passing the desired parameters.
@@ -337,62 +320,54 @@ int QMC5883L::readStatusFlags()
 
 /**
  * Read out the registers X, Y, Z (0...5) in raw format.
+ *
+ * The status register bits are checked, if the heading data available, if no
+ * overflow has occurred and if no data locking is shown.
+ *
  * Returns true in case of success otherwise false.
  */
 bool QMC5883L::readRawHeading( int16_t *x, int16_t *y, int16_t *z )
 {
-  int i = 0;
+// Check, if data are available
+uint8_t data[6];
+uint8_t status = 0;
 
-  while( i++ < 20 )
-    {
-      // Check, if data are available
-      uint8_t data[6];
-      uint8_t status = 0;
+// Read status register
+uint8_t err = readRegister( addr, REG_STATUS, 1, &status );
 
-      // Read status register
-      uint8_t err = readRegister( addr, REG_STATUS, 1, &status );
+if( err != ESP_OK )
+  {
+    return false;
+  }
 
-      if( err != ESP_OK )
-        {
-          return false;
-        }
+if( ( status & STATUS_OVL ) == true &&
+    range == RNG_2G && overflowWarning == false )
+  {
+    // Overflow has occurred, give out a warning only once
+    overflowWarning = true;
+    ESP_LOGE( FNAME, "QMC5883L: readRawHeading detected an overflow." );
+    return false;;
+  }
 
-      if( ( status & STATUS_OVL ) == true &&
-          range == RNG_2G && overflowWarning == false )
-        {
-          // Overflow has occurred, give out a warning only once
-          overflowWarning = true;
-          ESP_LOGE( FNAME, "QMC5883L: readRawHeading detected an overflow." );
-          continue;
-        }
+if( ( status & STATUS_DOR ) == true )
+  {
+    // Previous measure was read partially, sensor in Data Lock.
+    // Read all data again to overcome lock.
+    readRegister( addr, REG_X_LSB, 6, data );
+    return false;;
+  }
 
-      if( ( status & STATUS_DOR ) == true )
-        {
-          // Previous measure was read partially, sensor in Data Lock.
-          // Read all data again to overcome lock.
-          readRegister( addr, REG_X_LSB, 6, data );
-          continue;
-        }
-
-      if( ( status & STATUS_DRDY ) == true )
-        {
-          // Data ready for reading
-          if( readRegister( addr, REG_X_LSB, 6, data ) > 0 )
-            {
-              *x = ( data[1] << 8 ) | data[0];
-              *y = ( data[3] << 8 ) | data[2];
-              *z = ( data[5] << 8 ) | data[4];
-              return true;
-            }
-         }
-
-      // Wait for DRDY, sleep 10ms
-      struct timespec req, rem;
-      req.tv_sec = 0;
-      req.tv_nsec = 10000000;
-
-      nanosleep( &req, &rem );
-    }
+if( ( status & STATUS_DRDY ) == true )
+  {
+    // Data ready for reading
+    if( readRegister( addr, REG_X_LSB, 6, data ) > 0 )
+      {
+        *x = ( data[1] << 8 ) | data[0];
+        *y = ( data[3] << 8 ) | data[2];
+        *z = ( data[5] << 8 ) | data[4];
+        return true;
+      }
+   }
 
   return false;
 }
@@ -459,10 +434,10 @@ int QMC5883L::readHeading()
 
   /* Rescale the measurement to the range observed. */
   
-  float fx = (float) x / (xhigh - xlow);
-  float fy = (float) y / (yhigh - ylow);
+  float fx = static_cast<float>( x / (xhigh - xlow) );
+  float fy = static_cast<float>( y / (yhigh - ylow) );
 
-  int heading = static_cast<int> ( rint( 180.0 * atan2( fy, fx ) / M_PI ) );
+  int heading = static_cast<int>( rint( 180.0 * atan2( fy, fx ) / M_PI ) );
 
   if( heading <= 0 )
     {

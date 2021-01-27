@@ -11,17 +11,34 @@ I2C driver for the chip QMC5883L, 3-Axis Magnetic Sensor.
 
 QMC5883L data sheet:
 
-http://wiki.epalsite.com/images/7/72/QMC5883L-Datasheet-1.0.pdf
+https://datasheetspdf.com/pdf-file/1309218/QST/QMC5883L/1
 
 Author: Axel Pauli, January 2021
 
-*/
+****************************************************************************/
 
 #ifndef QMC5883L_H
 #define QMC5883L_H
 
 #include "esp_system.h"
 #include "I2Cbus.hpp"
+
+/* The default I2C address of this chip */
+#define QMC5883L_ADDR 0x0D
+
+/* Flags for Control Register 1. */
+#define ODR_10HZ   0b00000000 // Output Data Rate in Hz.
+#define ODR_50HZ   0b00000100
+#define ODR_100HZ  0b00001000
+#define ODR_200HZ  0b00001100
+
+#define RNG_2G 0b00000000  // Range 2 Gauss: for magnetic-clean environments.
+#define RNG_8G 0b00010000  // Range 8 Gauss: for strong magnetic fields.
+
+#define OSR_512 0b00000000  // Over Sample Rate 512: less noise, more power.
+#define OSR_256 0b01000000
+#define OSR_128 0b10000000
+#define OSR_64  0b11000000  // Over Sample Rate 64: more noise, less power.
 
 class QMC5883L
 {

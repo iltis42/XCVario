@@ -1,9 +1,9 @@
+#ifndef MCP3221_H
+#define MCP3221_H
+
 #include "I2C.h"
 #include "esp_system.h"
 #include "I2Cbus.hpp"
-
-#ifndef MCP3221_H
-#define MCP3221_H
 
 #define  MCP3221_CONVERSE 0x4d //10011010 NOTE IF IT ENDS IN 1, this is the READ ADDRESS. This is all this device does.
                                  //It opens a conversation via this specific READ address

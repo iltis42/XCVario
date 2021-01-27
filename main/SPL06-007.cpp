@@ -18,13 +18,12 @@ bool SPL06_007::begin(char slave_adr) {
 }
 
 bool SPL06_007::selfTest( int& adval ){
-	uint8_t data[4];
-	esp_err_t err = bus->readBytes(address, 0, 4, data );
-	if( err != ESP_OK ){
-		ESP_LOGI(FNAME,"SPL06_007 selftest, scan for I2C address %02x FAILED",adval );
-		return false;
-	}
-	ESP_LOGI(FNAME,"SPL06_007 selftest, scan for I2C address %02x PASSED",adval );
+	uint8_t rdata = 0xFF;
+	esp_err_t err = bus->readByte(address, 0x0D, &rdata );  // ID
+	if( err != ESP_OK )
+		ESP_LOGE(FNAME,"Error I2C read, status :%d", err );
+
+	ESP_LOGI(FNAME,"SPL06_007 selftest, scan for I2C address %02x PASSED, Product ID: %d, Revision ID:%d", address, rdata>>4 , rdata&0x0F );
 	/*
 	measure();
 	adval = P_dat;
@@ -42,17 +41,10 @@ double SPL06_007::get_altitude(double pressure, double seaLevelhPa) {
 	return altitude;
 }
 
-double SPL06_007::get_altitude_f(double pressure, double seaLevelhPa)
-{
-	double altitude;
-	altitude = 44330 * (1.0 - pow(pressure / seaLevelhPa, 0.1903));
-	return altitude * 3.281;
-}
-
 double SPL06_007::get_traw_sc()
 {
 	int32_t traw = get_traw();
-	return (double(traw)/get_temperature_scale_factor());
+	return (double(traw)/get_scale_factor( 0x07 ));
 }
 
 double SPL06_007::get_temp_c()
@@ -71,50 +63,6 @@ double SPL06_007::get_temp_f()
 	c1 = get_c1();
 	double traw_sc = get_traw_sc();
 	return (((double(c0) * 0.5f) + (double(c1) * traw_sc)) * 9/5) + 32;
-}
-
-double SPL06_007::get_temperature_scale_factor()
-{
-	double k;
-	uint8_t tmp_Byte;
-	tmp_Byte = i2c_read_uint8( 0X07); // MSB
-	tmp_Byte = tmp_Byte & 0B00000111;
-
-	switch (tmp_Byte)
-	{
-	case 0B000:
-		k = 524288.0;
-		break;
-
-	case 0B001:
-		k = 1572864.0;
-		break;
-
-	case 0B010:
-		k = 3670016.0;
-		break;
-
-	case 0B011:
-		k = 7864320.0;
-		break;
-
-	case 0B100:
-		k = 253952.0;
-		break;
-
-	case 0B101:
-		k = 516096.0;
-		break;
-
-	case 0B110:
-		k = 1040384.0;
-		break;
-
-	case 0B111:
-		k = 2088960.0;
-		break;
-	}
-	return k;
 }
 
 int32_t SPL06_007::get_traw()
@@ -136,7 +84,7 @@ int32_t SPL06_007::get_traw()
 double SPL06_007::get_praw_sc()
 {
 	int32_t praw = get_praw();
-	return (double(praw)/get_pressure_scale_factor());
+	return (double(praw)/get_scale_factor( 0x06 ));
 }
 
 double SPL06_007::get_pcomp()
@@ -161,14 +109,12 @@ double SPL06_007::get_pressure()
 	return pcomp / 100; // convert to mb
 }
 
-double SPL06_007::get_pressure_scale_factor()
+double SPL06_007::get_scale_factor( int reg )
 {
 	double k;
-
 	uint8_t tmp_Byte;
-	tmp_Byte = i2c_read_uint8( 0X06); // MSB
-
-	tmp_Byte = tmp_Byte & 0B00000111; // Focus on 2-0 oversampling rate 
+	tmp_Byte = i2c_read_uint8( reg );   // MSB
+	tmp_Byte = tmp_Byte & 0B00000111;   // Focus on 2-0 oversampling rate
 
 	switch (tmp_Byte) // oversampling rate
 	{

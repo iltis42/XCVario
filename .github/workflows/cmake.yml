@@ -25,10 +25,14 @@ jobs:
       # Note the current convention is to use the -S and -B options here to specify source 
       # and build directories, but this is only available with CMake 3.13 and higher.  
       # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
-      run:  docker run --rm -v $PWD:/project -w /project espressif/idf idf.py build
-      
-     #     cd ~/XCVario;
-     #    source ~/esp/esp-idf/export.sh;
-     #    idf.py build;
-      
+      run:  touch /project/main/Version.h
+            docker run --rm -v $PWD:/project -w /project espressif/idf idf.py build;
+            VER=`date +"%y.%m%d-%H%M"`;
+            cp /project/build/sensor.bin  /project/images/sensor-${VER}.bin
+            git add /project/images/sensor-${VER}.bin
+            git commit -a -m "new version: sensor-${VER}.bin"
+            git push
+            git tag -a v${VER} -m "New XCVario build ${VER}"
+
+  
       

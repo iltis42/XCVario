@@ -1,98 +1,91 @@
-/**
-MIT License
+/***************************************************************************
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+****************************************************************************
 
-Copyright (c) 2020 Douglas Thain
+I2C driver for the chip QMC5883L, 3-Axis Magnetic Sensor.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+QMC5883L data sheet:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+http://wiki.epalsite.com/images/7/72/QMC5883L-Datasheet-1.0.pdf
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+Author: Axel Pauli, January 2021
+
 */
 
 #include <cmath>
-#include "QMC5883L.h"
+#include <ctime>
 #include <logdef.h>
-
-/*
- * QMC5883L data sheet
- * http://wiki.epalsite.com/images/7/72/QMC5883L-Datasheet-1.0.pdf
- */
+#include "QMC5883L.h"
 
 /* The default I2C address of this chip */
 #define QMC5883L_ADDR 0x0D
 
 /* Register numbers */
-#define QMC5883L_X_LSB 0
-#define QMC5883L_X_MSB 1
-#define QMC5883L_Y_LSB 2
-#define QMC5883L_Y_MSB 3
-#define QMC5883L_Z_LSB 4
-#define QMC5883L_Z_MSB 5
-#define QMC5883L_STATUS 6
-#define QMC5883L_TEMP_LSB 7
-#define QMC5883L_TEMP_MSB 8
-#define QMC5883L_CONTROL1 9
-#define QMC5883L_CONTROL2 0xA
-#define QMC5883L_RESET_PERIOD 0xB
-#define QMC5883L_RESERVED 0xC
-#define QMC5883L_CHIP_ID 0xD
+#define REG_X_LSB 0         // Output Data Registers for magnetic sensor.
+#define REG_X_MSB 1
+#define REG_Y_LSB 2
+#define REG_Y_MSB 3
+#define REG_Z_LSB 4
+#define REG_Z_MSB 5
+#define REG_STATUS 6        // Status Register.
+#define REG_TEMP_LSB 7      // Output Data Registers for temperature.
+#define REG_TEMP_MSB 8
+#define REG_CONTROL1 9      // Control Register #1.
+#define REG_CONTROL2 0xA    // Control Register #2.
+#define REG_RST_PERIOD 0xB  // ET/RESET Period Register.
+#define REG_RESERVED 0xC    // Reserved.
+#define REG_CHIP_ID 0xD     // Chip ID register.
 
-/* Bit values for the STATUS register */
-#define QMC5883L_STATUS_DRDY 1
-#define QMC5883L_STATUS_OVL 2
-#define QMC5883L_STATUS_DOR 4
+/* Flags for Status Register #1. */
+#define STATUS_DRDY 1 // Data Ready.
+#define STATUS_OVL 2  // Overflow flag.
+#define STATUS_DOR 4  // Data skipped for reading.
 
-/* Oversampling values for the CONFIG register */
-#define QMC5883L_CONFIG_OS512 0b00000000
-#define QMC5883L_CONFIG_OS256 0b01000000
-#define QMC5883L_CONFIG_OS128 0b10000000
-#define QMC5883L_CONFIG_OS64  0b11000000
+/* Flags for Status Register #2. */
+#define INT_ENB 0b00000001   // Interrupt Pin Enabling.
+#define POL_PNT 0b01000000   // Pointer Roll-over.
+#define SOFT_RST 0b10000000  // Soft Reset.
 
-/* Range values for the CONFIG register */
-#define QMC5883L_CONFIG_2GAUSS 0b00000000
-#define QMC5883L_CONFIG_8GAUSS 0b00010000
+/* Flags for Control Register 1. */
+#define MODE_STANDBY    0b00000000  // Standby mode.
+#define MODE_CONTINUOUS 0b00000001  // Continuous read mode.
 
-/* Rate values for the CONFIG register */
-#define QMC5883L_CONFIG_10HZ   0b00000000
-#define QMC5883L_CONFIG_50HZ   0b00000100
-#define QMC5883L_CONFIG_100HZ  0b00001000
-#define QMC5883L_CONFIG_200HZ  0b00001100
+#define ODR_10HZ   0b00000000       // Output Data Rate Hz.
+#define ODR_50HZ   0b00000100
+#define ODR_100HZ  0b00001000
+#define ODR_200HZ  0b00001100
 
-/* Mode values for the CONFIG register */
-#define QMC5883L_CONFIG_STANDBY    0b00000000
-#define QMC5883L_CONFIG_CONTINUOUS 0b00000001
+#define RNG_2G 0b00000000  // Range 2 Gauss: for magnetic-clean environments.
+#define RNG_8G 0b00010000  // Range 8 Gauss: for strong magnetic fields.
 
-/* Apparently M_PI isn't available in all environments. */
-#ifndef M_PI
-#define M_PI 3.14159265358979323846264338327950288
-#endif
+#define OSR_512 0b00000000  // Over Sample Rate 512: less noise, more power.
+#define OSR_256 0b01000000
+#define OSR_128 0b10000000
+#define OSR_64  0b11000000  // Over Sample Rate 64: more noise, less power.
 
-
+/*
+  Creates instance for I2C connection with passing the desired parameters.
+  No action is done at the bus. Note if i2cBus is not set in the constructor,
+  you have to set it by calling method setBus(). The default address of the
+  chip is 0x0D.
+*/
 QMC5883L::QMC5883L( const uint8_t addrIn,
-                    const uint8_t modeIn,
                     const uint8_t rateIn,
                     const uint8_t rangeIn,
                     const uint8_t oversamplingIn,
                     I2C_t *i2cBus ) :
   bus( i2cBus ),
   addr( addrIn ),
-  mode( modeIn ),
   rate( rateIn ),
   range( rangeIn ),
-  oversampling( oversamplingIn )
+  oversampling( oversamplingIn ),
+  declination( 0 ),
+  overflowWarning( false )
 {
   if( addrIn == 0 )
     {
@@ -103,45 +96,6 @@ QMC5883L::QMC5883L( const uint8_t addrIn,
 
 QMC5883L::~QMC5883L()
 {
-}
-
-/** Check, if the bus pointer is valid. */
-bool QMC5883L::checkBus()
-{
-  if( bus == nullptr )
-    {
-      ESP_LOGI( FNAME, "QMC5883L bus pointer is zero" );
-      return false;
-    }
-
-  return true;
-}
-
-// scan bus for I2C address
-esp_err_t QMC5883L::selfTest()
-{
-  if( checkBus() == false )
-    {
-      return ESP_FAIL;
-    }
-
-  uint8_t data[1];
-
-  // Try to read Register 06H, it can deliver one byte.
-  esp_err_t err = bus->readByte( QMC5883L_ADDR, QMC5883L_STATUS, data );
-
-  if( err != ESP_OK )
-    {
-      ESP_LOGI( FNAME, "QMC5883L self-test, scan for I2C address %02x FAILED",
-      QMC5883L_ADDR );
-
-      return ESP_FAIL;
-    }
-
-  ESP_LOGI( FNAME, "QMC5883L selftest, scan for I2C address %02x PASSED",
-            QMC5883L_ADDR );
-
-  return ESP_OK;
 }
 
 /** Write with data part. */
@@ -158,7 +112,8 @@ esp_err_t QMC5883L::writeRegister( const uint8_t addr,
 
   if( err != ESP_OK )
     {
-      ESP_LOGI( FNAME, "QMC5883L writeRegister( %02X, %02X, %02X ) FAILED",
+      ESP_LOGE( FNAME,
+                "QMC5883L writeRegister( %02X, %02X, %02X ) FAILED",
                 addr, reg, value );
       return ESP_FAIL;
     }
@@ -185,7 +140,8 @@ uint8_t QMC5883L::readRegister( const uint8_t addr,
 
   if( err != ESP_OK )
     {
-      ESP_LOGI( FNAME, "QMC5883L readRegister( %02X, %02x, %d ) FAILED",
+      ESP_LOGE( FNAME,
+                "QMC5883L readRegister( %02X, %02x, %d ) FAILED",
                 addr, reg, count );
       return 0;
     }
@@ -193,23 +149,92 @@ uint8_t QMC5883L::readRegister( const uint8_t addr,
   return count;
 }
 
-/**
- * Configure device. In dependency of the mode bit, the device can start or
- * stop running.
- */
-esp_err_t QMC5883L::configureDevice()
+/** Check, if the bus pointer is valid. */
+bool QMC5883L::checkBus()
 {
-  esp_err_t e1, e2, e3;
-  e1 = e2 = e3 = 0;
+  if( bus == nullptr )
+    {
+      ESP_LOGE( FNAME, "QMC5883L bus pointer is zero" );
+      return false;
+    }
+
+  return true;
+}
+
+// scan bus for I2C address
+esp_err_t QMC5883L::selfTest()
+{
+  if( checkBus() == false )
+    {
+      return ESP_FAIL;
+    }
+
+  uint8_t chipId;
+
+  // Try to read Register 0xD, it delivers the chip id 0xff for a QMC5883L
+  esp_err_t err = bus->readByte( QMC5883L_ADDR, REG_CHIP_ID, &chipId );
+
+  if( err != ESP_OK )
+    {
+      ESP_LOGE( FNAME,
+                "QMC5883L self-test, scan for I2C address %02x FAILED",
+                QMC5883L_ADDR );
+      return ESP_FAIL;
+    }
+
+  if( chipId != 0xff )
+    {
+      ESP_LOGE( FNAME,
+                "QMC5883L self-test, chip ID %02X is unsupported, expected 0xFF",
+                chipId );
+      return ESP_FAIL;
+
+    }
+
+  ESP_LOGI( FNAME,
+            "QMC5883L selftest, scan for I2C address %02x and chip ID %02X PASSED",
+            QMC5883L_ADDR, chipId );
+
+  return ESP_OK;
+}
+
+/** Sets the declination. Declination must be >= -180 and <= 180. */
+esp_err_t QMC5883L::setDeclination( const int16_t d )
+{
+  if( d < -180 or d > 180 )
+    {
+      ESP_LOGE( FNAME, "QMC5883L: Declination must be >= -180 and <= 180." );
+      return ESP_FAIL;
+    }
+
+    declination = d;
+    return ESP_OK;
+}
+
+/**
+ * Configure the device with the set parameters and set the mode to continuous.
+ * That means, the device starts working.
+ */
+esp_err_t QMC5883L::modeContinuous()
+{
+  esp_err_t e1, e2, e3, e4;
+  e1 = e2 = e3 = e4 = 0;
+
+  // Soft Reset
+  e1 = writeRegister( addr, REG_CONTROL2, SOFT_RST );
 
   // Enable ROL_PTN, Pointer roll over function.
-  e1 = writeRegister( addr, QMC5883L_CONTROL2, 0x40 );
+  e2 = writeRegister( addr, REG_CONTROL2, POL_PNT );
+
+  // Define SET/RESET period. Should be set to 1
+  e3 = writeRegister( addr, REG_RST_PERIOD, 1 );
 
   // Set mesaurement data and start it in dependency of mode bit.
-  e2 = writeRegister( addr, QMC5883L_CONTROL1, oversampling | range | rate | mode );
-  e3 = resetPeriodRegister();
+  e4 = writeRegister( addr,
+                      REG_CONTROL1,
+                      oversampling | range | rate | MODE_CONTINUOUS );
 
-  if( (e1 + e2 + e3) == 0 )
+  if( (e1 + e2 + e3 + e4) == 0 )
     {
       return ESP_OK;
     }
@@ -218,19 +243,20 @@ esp_err_t QMC5883L::configureDevice()
 }
 
 /**
- * After excecuting the soft reset command, the chip goes into the standby mode.
+ * Set the device in standby mode.
  */
-esp_err_t QMC5883L::softReset()
+esp_err_t QMC5883L::modeStandby()
 {
-  return writeRegister( addr, QMC5883L_CONTROL2, 0x80 );
+  // Soft reset, device goes after that in the standby mode.
+  return writeRegister( addr, REG_CONTROL2, SOFT_RST );
 }
 
 /**
- * After excecuting the reset command, the chip goes into the standby mode.
+ * Define SET/RESET period. Should be set to 1 after a reset.
  */
-esp_err_t QMC5883L::resetPeriodRegister()
+esp_err_t QMC5883L::setPeriodRegister()
 {
-  return writeRegister( addr, QMC5883L_RESET_PERIOD, 0x01 );
+  return writeRegister( addr, REG_RST_PERIOD, 0x01 );
 }
 
 void QMC5883L::setOversampling( const uint16_t x )
@@ -238,16 +264,19 @@ void QMC5883L::setOversampling( const uint16_t x )
   switch(x)
   {
     case 512:
-      oversampling = QMC5883L_CONFIG_OS512;
+      oversampling = OSR_512;
       break;
     case 256:
-      oversampling = QMC5883L_CONFIG_OS256;
+      oversampling = OSR_256;
       break;
     case 128:
-      oversampling = QMC5883L_CONFIG_OS128;
+      oversampling = OSR_128;
       break;
     case 64:
-      oversampling = QMC5883L_CONFIG_OS64;
+      oversampling = OSR_64;
+      break;
+    default:
+      ESP_LOGE( FNAME, "QMC5883L: Wrong Oversampling value %d passed", x );
       break;
   }
 }
@@ -257,10 +286,13 @@ void QMC5883L::setRange( const uint8_t x )
   switch(x)
   {
     case 2:
-      range = QMC5883L_CONFIG_2GAUSS;
+      range = RNG_2G;
       break;
     case 8:
-      range = QMC5883L_CONFIG_8GAUSS;
+      range = RNG_8G;
+      break;
+    default:
+      ESP_LOGE( FNAME, "QMC5883L: Wrong Gauss Range value %d passed", x );
       break;
   }
 }
@@ -270,46 +302,37 @@ void QMC5883L::setSamplingRate( const uint8_t x )
   switch(x)
   {
     case 10:
-      rate = QMC5883L_CONFIG_10HZ;
+      rate = ODR_10HZ;
       break;
     case 50:
-      rate = QMC5883L_CONFIG_50HZ;
+      rate = ODR_50HZ;
       break;
     case 100:
-      rate = QMC5883L_CONFIG_100HZ;
+      rate = ODR_100HZ;
       break;
     case 200:
-      rate = QMC5883L_CONFIG_200HZ;
+      rate = ODR_200HZ;
       break;
-  }
-}
-
-void QMC5883L::setMode( const uint8_t modeIn )
-{
-  switch( modeIn )
-  {
-    case QMC5883L_CONFIG_STANDBY:
-      mode = QMC5883L_CONFIG_STANDBY;
-      break;
-    case QMC5883L_CONFIG_CONTINUOUS:
-      mode = QMC5883L_CONFIG_CONTINUOUS;
+    default:
+      ESP_LOGE( FNAME, "QMC5883L: Wrong SamplingRate value %d passed", x );
       break;
   }
 }
 
 /**
- * Read the Data Ready Register bit from status register 06H and return it.
+ * Read status Register 1 (0x6) and return its content. If read has failed,
+ * -1 is returned.
  */
-int QMC5883L::ready()
+int QMC5883L::readStatusFlags()
 {
   uint8_t status;
 
-  if( readRegister( addr, QMC5883L_STATUS, 1, &status ) != ESP_OK )
+  if( readRegister( addr, REG_STATUS, 1, &status ) != ESP_OK )
     {
-      return 0;
+      return -1;
     }
 
-  return status & QMC5883L_STATUS_DRDY; 
+  return status;
 }
 
 /**
@@ -318,48 +341,79 @@ int QMC5883L::ready()
  */
 bool QMC5883L::readRawHeading( int16_t *x, int16_t *y, int16_t *z )
 {
-  if( ready() == 0 )
+  int i = 0;
+
+  while( i++ < 20 )
     {
-      return false;
+      // Check, if data are available
+      uint8_t data[6];
+      uint8_t status = 0;
+
+      // Read status register
+      uint8_t err = readRegister( addr, REG_STATUS, 1, &status );
+
+      if( err != ESP_OK )
+        {
+          return false;
+        }
+
+      if( ( status & STATUS_OVL ) == true &&
+          range == RNG_2G && overflowWarning == false )
+        {
+          // Overflow has occurred, give out a warning only once
+          overflowWarning = true;
+          ESP_LOGE( FNAME, "QMC5883L: readRawHeading detected an overflow." );
+          continue;
+        }
+
+      if( ( status & STATUS_DOR ) == true )
+        {
+          // Previous measure was read partially, sensor in Data Lock.
+          // Read all data again to overcome lock.
+          readRegister( addr, REG_X_LSB, 6, data );
+          continue;
+        }
+
+      if( ( status & STATUS_DRDY ) == true )
+        {
+          // Data ready for reading
+          if( readRegister( addr, REG_X_LSB, 6, data ) > 0 )
+            {
+              *x = ( data[1] << 8 ) | data[0];
+              *y = ( data[3] << 8 ) | data[2];
+              *z = ( data[5] << 8 ) | data[4];
+              return true;
+            }
+         }
+
+      // Wait for DRDY, sleep 10ms
+      struct timespec req, rem;
+      req.tv_sec = 0;
+      req.tv_nsec = 10000000;
+
+      nanosleep( &req, &rem );
     }
 
-  uint8_t data[6];
-
-  if( readRegister( addr, QMC5883L_X_LSB, 6, data ) == 0 )
-    {
-      // Nothing has been read
-      return 0;
-    }
-
-  *x = ( data[1] << 8 ) | data[0];
-  *y = ( data[3] << 8 ) | data[2];
-  *z = ( data[5] << 8 ) | data[4];
-
-  return true;
+  return false;
 }
 
 /**
- * Read out the registers TOUT (7...8) in raw format.
- * Returns true in case of success otherwise false.
+ * Read temperature in degree Celsius. If the measurement is invalid,
+ * a value of -999 is returned.
  */
-bool QMC5883L::readRawTemperature( int16_t *t )
+int16_t QMC5883L::readTemperature()
 {
-  if( ready() == 0 )
-    {
-      return false;
-    }
-
   uint8_t data[2];
 
-  if( readRegister( addr, QMC5883L_TEMP_LSB, 2, data ) == 0 )
+  if( readRegister( addr, REG_TEMP_LSB, 2, data ) == 0 )
     {
       // Nothing has been read
-      return 0;
+      return -999;
     }
 
-  *t = ( data[1] << 8 ) | data[0];
+  int16_t t = ( data[1] << 8 ) | data[0];
 
-  return true;
+  return t;
 }
 
 void QMC5883L::resetCalibration()
@@ -416,20 +470,4 @@ int QMC5883L::readHeading()
     }
   
   return heading;
-}
-
-/**
- * Read temperature in degree Celsius. If the measurement is invalid,
- * a value of -999 is returned.
- */
-int QMC5883L::readTemperature()
-{
-  int16_t t;
-
-  if( readRawTemperature( &t ) == false )
-    {
-      return -999;
-    }
-
-    return t;
 }

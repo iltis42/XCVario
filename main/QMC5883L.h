@@ -1,25 +1,20 @@
-/**
-MIT License
+/***************************************************************************
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+****************************************************************************
 
-Copyright (c) 2020 Douglas Thain
+I2C driver for the chip QMC5883L, 3-Axis Magnetic Sensor.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+QMC5883L data sheet:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+http://wiki.epalsite.com/images/7/72/QMC5883L-Datasheet-1.0.pdf
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+Author: Axel Pauli, January 2021
+
 */
 
 #ifndef QMC5883L_H
@@ -34,10 +29,10 @@ public:
   /*
     Creates instance for I2C connection with passing the desired parameters.
     No action is done at the bus. Note if i2cBus is not set in the constructor,
-    you have to set it by calling method setBus().
+    you have to set it by calling method setBus(). The default address of the
+    chip is 0x0D.
   */
   QMC5883L( const uint8_t addr,
-            const uint8_t mode,
             const uint8_t rate,
             const uint8_t range,
             const uint8_t oversampling,
@@ -52,25 +47,26 @@ public:
   esp_err_t selfTest();
 
   /**
-   * After excecuting the soft reset command, the chip goes into the standby mode.
+   * Define SET/RESET period. Should be set to 1 after a reset.
    */
-  esp_err_t softReset();
+  esp_err_t setPeriodRegister();
 
   /**
-   * This call resets the period register.
+   * Read status Register 1 (0x6) and return its content. If read has failed,
+   * -1 is returned.
    */
-  esp_err_t resetPeriodRegister();
+  int readStatusFlags();
 
   /**
-   * Read the Data Ready Register bit from status register 06H and return it.
+   *  Set the device in standby mode.
    */
-  int ready();
+  esp_err_t modeStandby();
 
   /**
-   * Configure device. In dependency of the mode bit, the device can start or
-   * stop running.
+   * Configure the device with the set parameters and set the mode to continuous.
+   * That means, the device starts working.
    */
-  esp_err_t configureDevice();
+  esp_err_t modeContinuous();
   
   /**
    * Reads the heading in degrees of 1...360. If heading is not valid a value of
@@ -82,7 +78,7 @@ public:
    * Read temperature in degree Celsius. If the measurement is invalid,
    * a value of -999 is returned.
    */
-  int readTemperature();
+  int16_t readTemperature();
 
   /**
    * Read out the registers X, Y, Z (0...5) in raw format.
@@ -90,18 +86,13 @@ public:
    */
   bool readRawHeading( int16_t *x, int16_t *y, int16_t *z );
 
-  /**
-   * Read out the registers TOUT (7...8) in raw format.
-   * Returns true in case of success otherwise false.
-   */
-  bool readRawTemperature( int16_t *t );
-
   void resetCalibration();
   void setSamplingRate( const uint8_t rate );
   void setRange( const uint8_t range );
   void setOversampling( const uint16_t ovl );
   
-  void setMode( const uint8_t modeIn );
+  /** Sets the declination. Declination must be >= -180 and <= 180. */
+  esp_err_t setDeclination( const int16_t declinationIn );
 
   /** Write with data part. */
   esp_err_t writeRegister( const uint8_t addr,
@@ -123,15 +114,14 @@ private:
   bool checkBus();
 
   I2C_t *bus;
-
-  // Variables from original source
   int16_t xhigh, xlow;
   int16_t yhigh, ylow;
   uint8_t addr;
-  uint8_t mode;
   uint8_t rate;
   uint8_t range;
   uint8_t oversampling;
+  int16_t declination;
+  bool overflowWarning;
 };
 
 #endif

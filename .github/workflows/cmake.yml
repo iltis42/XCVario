@@ -27,12 +27,13 @@ jobs:
       # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
       run:  touch $PWD/main/Version.h;
             docker run --rm -v $PWD:/project -w /project espressif/idf idf.py build;
-            #VER=`date +"%y.%m%d-%H%M"`;
-            #cp /project/build/sensor.bin  /project/images/sensor-${VER}.bin
-            #git add /project/images/sensor-${VER}.bin
-            #git commit -a -m "new version: sensor-${VER}.bin"
-            #git push
-            #git tag -a v${VER} -m "New XCVario build ${VER}"
+            VER=`date +"%y.%m%d-%H%M"`;
+            cp $PWD/build/sensor.bin $PWD/images/sensor-${VER}.bin
+            git add $PWD/images/sensor-${VER}.bin
+            git tag -a v${VER} -m "New XCVario build ${VER}"
+            git commit -a -m "new version: sensor-${VER}.bin"
+            git push
+            
 
   
       

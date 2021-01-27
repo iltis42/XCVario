@@ -30,7 +30,7 @@ jobs:
             git config user.email github-actions@github.com
             VER=`date +"%y.%m%d-%H%M"`;
             git commit -a -m "new version build sensor-${VER}.bin";
-            git push
+            git push;
             #docker run --rm -v $PWD:/project -w /project espressif/idf idf.py build;
             #VER=`date +"%y.%m%d-%H%M"`;
             #cp $PWD/build/sensor.bin $PWD/images/sensor-${VER}.bin;

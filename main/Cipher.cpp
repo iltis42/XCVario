@@ -3,7 +3,7 @@
 #include "sensor.h"
 #include <esp32/rom/miniz.h>
 #include "Setup.h"
-
+#include "cipher.h"
 
 std::string Cipher::Encrypt(std::string key, std::string plaintext) {
 	// std::string to hold our encrypted text

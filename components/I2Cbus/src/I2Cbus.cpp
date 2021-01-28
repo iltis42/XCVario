@@ -55,6 +55,7 @@ IN THE SOFTWARE.
 
 static const char* TAG __attribute__((unused)) = "I2Cbus";
 
+// Protect multithreading by semaphore
 xSemaphoreHandle i2cbus_mutex = 0;
 
 /*******************************************************************************
@@ -298,12 +299,14 @@ esp_err_t I2C::readBytes(uint8_t devAddr, uint8_t regAddr, size_t length, uint8_
  * UTILS
  ******************************************************************************/
 esp_err_t I2C::testConnection(uint8_t devAddr, int32_t timeout) {
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+	xSemaphoreTake(i2cbus_mutex,portMAX_DELAY );
+	i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
     i2c_master_write_byte(cmd, (devAddr << 1) | I2C_MASTER_WRITE, I2C_MASTER_ACK_EN);
     i2c_master_stop(cmd);
     esp_err_t err = i2c_master_cmd_begin(port, cmd, (timeout < 0 ? ticksToWait : pdMS_TO_TICKS(timeout)));
     i2c_cmd_link_delete(cmd);
+    xSemaphoreGive(i2cbus_mutex);
     return err;
 }
 

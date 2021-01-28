@@ -3,9 +3,8 @@
 #include <stdlib.h> // abs
 #include <string> // std::string
 #include <locale> // std::locale, std::toupper
+#include "cipher.h"
 
-
-#define CIPHER_KEY "2791"
 
 class Cipher {
 public:

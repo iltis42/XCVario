@@ -1,8 +1,9 @@
+#ifndef __ROUTER_H__
+#define __ROUTER_H__
+
 // #include <btstack.h>
 #include <esp_log.h>
 #include <string>
-#ifndef __ROUTER_H__
-#define __ROUTER_H__
 
 /*
  *   Router for XCVario, to interconnect wireless (Bluetooth or WLAN), XCVario and serial S1,S2 interfaces

@@ -1,10 +1,11 @@
+#ifndef __SERIAL_H__
+#define __SERIAL_H__
+
 #include <cstring>
 #include "driver/gpio.h"
 #include <esp_log.h>
 #include "RingBufCPP.h"
 #include <string>
-#ifndef __SERIAL_H__
-#define __SERIAL_H__
 
 class Serial {
 public:

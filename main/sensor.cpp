@@ -353,10 +353,23 @@ void readBMP(void *pvParameters){
 				}
 				else
 					ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
-				vTaskDelay(2/portTICK_PERIOD_MS);
-				xSemaphoreGive(xMutex);
+				  vTaskDelay(2/portTICK_PERIOD_MS);
+				  xSemaphoreGive(xMutex);
 			}
 		}
+
+		if( haveMagneticSensor == true && (count++ % 5 ) == 0 ) {
+		    // try to get compass heading from sensor and forward it via NMEA.
+		    bool ok = false;
+		    float heading = magneticSensor.readHeading( &ok );
+
+		    if( ok == true ) {
+		        xSemaphoreTake(xMutex, portMAX_DELAY );
+		        OV.sendNmeaHeading( heading );
+		        xSemaphoreGive( xMutex );
+		    }
+		}
+
 		if( uxTaskGetStackHighWaterMark( bpid )  < 1024 )
 			ESP_LOGW(FNAME,"Warning bmpTask stack low: %d", uxTaskGetStackHighWaterMark( bpid ) );
 

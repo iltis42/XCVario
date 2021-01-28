@@ -58,16 +58,15 @@ Author: Axel Pauli, January 2021
   chip is 0x0D.
 */
 QMC5883L::QMC5883L( const uint8_t addrIn,
-                    const uint8_t rateIn,
+                    const uint8_t odrIn,
                     const uint8_t rangeIn,
-                    const uint8_t oversamplingIn,
+                    const uint8_t osrIn,
                     I2C_t *i2cBus ) :
   bus( i2cBus ),
   addr( addrIn ),
-  rate( rateIn ),
+  odr( odrIn ),
   range( rangeIn ),
-  oversampling( oversamplingIn ),
-  declination( 0 ),
+  osr( osrIn ),
   overflowWarning( false )
 {
   if( addrIn == 0 )
@@ -96,7 +95,7 @@ esp_err_t QMC5883L::writeRegister( const uint8_t addr,
   if( err != ESP_OK )
     {
       ESP_LOGE( FNAME,
-                "QMC5883L writeRegister( %02X, %02X, %02X ) FAILED",
+                "QMC5883L writeRegister( 0x%02X, 0x%02X, 0x%02X ) FAILED",
                 addr, reg, value );
       return ESP_FAIL;
     }
@@ -124,7 +123,7 @@ uint8_t QMC5883L::readRegister( const uint8_t addr,
   if( err != ESP_OK )
     {
       ESP_LOGE( FNAME,
-                "QMC5883L readRegister( %02X, %02x, %d ) FAILED",
+                "QMC5883L readRegister( 0x%02X, 0x%02X, %d ) FAILED",
                 addr, reg, count );
       return 0;
     }
@@ -160,7 +159,7 @@ esp_err_t QMC5883L::selfTest()
   if( err != ESP_OK )
     {
       ESP_LOGE( FNAME,
-                "QMC5883L self-test, scan for I2C address %02x FAILED",
+                "QMC5883L self-test, scan for I2C address 0x%02X FAILED",
                 QMC5883L_ADDR );
       return ESP_FAIL;
     }
@@ -168,30 +167,17 @@ esp_err_t QMC5883L::selfTest()
   if( chipId != 0xff )
     {
       ESP_LOGE( FNAME,
-                "QMC5883L self-test, chip ID %02X is unsupported, expected 0xFF",
+                "QMC5883L self-test, chip ID 0x%02X is unsupported, expected 0xFF",
                 chipId );
       return ESP_FAIL;
 
     }
 
   ESP_LOGI( FNAME,
-            "QMC5883L selftest, scan for I2C address %02x and chip ID %02X PASSED",
+            "QMC5883L selftest, scan for I2C address 0x%02X and chip ID 0x%02X PASSED",
             QMC5883L_ADDR, chipId );
 
   return ESP_OK;
-}
-
-/** Sets the declination. Declination must be >= -180 and <= 180. */
-esp_err_t QMC5883L::setDeclination( const int16_t d )
-{
-  if( d < -180 or d > 180 )
-    {
-      ESP_LOGE( FNAME, "QMC5883L: Declination must be >= -180 and <= 180." );
-      return ESP_FAIL;
-    }
-
-    declination = d;
-    return ESP_OK;
 }
 
 /**
@@ -215,7 +201,7 @@ esp_err_t QMC5883L::modeContinuous()
   // Set mesaurement data and start it in dependency of mode bit.
   e4 = writeRegister( addr,
                       REG_CONTROL1,
-                      oversampling | range | rate | MODE_CONTINUOUS );
+                      osr | range | odr | MODE_CONTINUOUS );
 
   if( (e1 + e2 + e3 + e4) == 0 )
     {
@@ -242,31 +228,34 @@ esp_err_t QMC5883L::setPeriodRegister()
   return writeRegister( addr, REG_RST_PERIOD, 0x01 );
 }
 
-void QMC5883L::setOversampling( const uint16_t x )
+/** Set oversampling rate OSR_64 ... OSR_512. */
+void QMC5883L::setOverSampleRatio( const uint16_t osrIn )
 {
-  switch(x)
+  switch( osrIn )
   {
     case 512:
-      oversampling = OSR_512;
+      osr = OSR_512;
       break;
     case 256:
-      oversampling = OSR_256;
+      osr = OSR_256;
       break;
     case 128:
-      oversampling = OSR_128;
+      osr = OSR_128;
       break;
     case 64:
-      oversampling = OSR_64;
+      osr = OSR_64;
       break;
     default:
-      ESP_LOGE( FNAME, "QMC5883L: Wrong Oversampling value %d passed", x );
+      ESP_LOGE( FNAME, "QMC5883L: Wrong Over Sample Ration value %d passed",
+                osrIn );
       break;
   }
 }
 
-void QMC5883L::setRange( const uint8_t x )
+/** Set magnetic range for measurement RNG_2G, RNG_8G. */
+void QMC5883L::setRange( const uint8_t rangeIn )
 {
-  switch(x)
+  switch( rangeIn )
   {
     case 2:
       range = RNG_2G;
@@ -275,29 +264,31 @@ void QMC5883L::setRange( const uint8_t x )
       range = RNG_8G;
       break;
     default:
-      ESP_LOGE( FNAME, "QMC5883L: Wrong Gauss Range value %d passed", x );
+      ESP_LOGE( FNAME, "QMC5883L: Wrong Gauss Range value %d passed",
+                rangeIn );
       break;
   }
 }
 
-void QMC5883L::setSamplingRate( const uint8_t x )
+/** Set ODR output data rate. */
+void QMC5883L::setOutputDataRate( const uint8_t odrIn )
 {
-  switch(x)
+  switch( odrIn )
   {
     case 10:
-      rate = ODR_10HZ;
+      odr = ODR_10HZ;
       break;
     case 50:
-      rate = ODR_50HZ;
+      odr = ODR_50HZ;
       break;
     case 100:
-      rate = ODR_100HZ;
+      odr = ODR_100HZ;
       break;
     case 200:
-      rate = ODR_200HZ;
+      odr = ODR_200HZ;
       break;
     default:
-      ESP_LOGE( FNAME, "QMC5883L: Wrong SamplingRate value %d passed", x );
+      ESP_LOGE( FNAME, "QMC5883L: Wrong Output Data Rate value %d passed", odrIn );
       break;
   }
 }
@@ -345,7 +336,7 @@ if( ( status & STATUS_OVL ) == true &&
   {
     // Overflow has occurred, give out a warning only once
     overflowWarning = true;
-    ESP_LOGE( FNAME, "QMC5883L: readRawHeading detected an overflow." );
+    ESP_LOGE( FNAME, "QMC5883L: readRawHeading detected a gauss overflow." );
     return false;;
   }
 
@@ -373,20 +364,30 @@ if( ( status & STATUS_DRDY ) == true )
 }
 
 /**
- * Read temperature in degree Celsius. If the measurement is invalid,
- * a value of -999 is returned.
+ * Read temperature in degree Celsius. If ok is passed, it is set to true,
+ * if temperature data is valid, otherwise it is set to false.
  */
-int16_t QMC5883L::readTemperature()
+int16_t QMC5883L::readTemperature( bool *ok )
 {
   uint8_t data[2];
 
   if( readRegister( addr, REG_TEMP_LSB, 2, data ) == 0 )
     {
+      if( ok != nullptr )
+        {
+          *ok = false;
+        }
+
       // Nothing has been read
-      return -999;
+      return 0.0;
     }
 
   int16_t t = ( data[1] << 8 ) | data[0];
+
+  if( ok != nullptr )
+    {
+      *ok = true;
+    }
 
   return t;
 }
@@ -398,20 +399,24 @@ void QMC5883L::resetCalibration()
 }
 
 /**
- * Reads the heading in degrees of 1...360. If heading is not valid a value of
- * -1 is returned.
+ * Reads the heading in degrees of 1...360. If ok is passed, it is set to true,
+ * if heading data is valid, otherwise it is set to false.
  */
-int QMC5883L::readHeading()
+float QMC5883L::readHeading( bool *ok )
 {
   int16_t x, y, z;
 
+  if( ok != nullptr )
+    {
+      *ok = false;
+    }
+
   if( readRawHeading( &x, &y, &z ) == false )
     {
-      return -1;
+      return 0.0;
     }
 
   /* Update the observed boundaries of the measurements */
-
   if( x < xlow )
     xlow = x;
   if( x > xhigh )
@@ -424,24 +429,27 @@ int QMC5883L::readHeading()
   /* Bail out if not enough data is available. */
   if( xlow == xhigh || ylow == yhigh )
     {
-      return -1;
+      return 0.0;
     }
 
   /* Recenter the measurement by subtracting the average */
-
   x -= (xhigh + xlow) / 2;
   y -= (yhigh + ylow) / 2;
 
   /* Rescale the measurement to the range observed. */
-  
   float fx = static_cast<float>( x / (xhigh - xlow) );
   float fy = static_cast<float>( y / (yhigh - ylow) );
 
-  int heading = static_cast<int>( rint( 180.0 * atan2( fy, fx ) / M_PI ) );
+  float heading = 180.0 * ( atan2( fy, fx ) / M_PI );
 
-  if( heading <= 0 )
+  if( heading <= 0.0 )
     {
-      heading += 360;
+      heading += 360.0;
+    }
+
+  if( ok != nullptr )
+    {
+      *ok = true;
     }
   
   return heading;

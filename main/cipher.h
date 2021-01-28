@@ -1,1 +1,1 @@
-#define CIPHER_KEY 
+#define CIPHER_KEY 1234

@@ -38,7 +38,7 @@ jobs:
       #      git commit -a -m "new version build sensor-${VER}.bin";
       #      git push;        
       run:  touch $PWD/main/Version.h;
-            echo "#define CIPHER_KEY ${{ secrets.AHRS_CIPHER_KEY }}" >$PWD/main/cipher.h;
+            echo "#define CIPHER_KEY \"${{ secrets.AHRS_CIPHER_KEY }}\"" >$PWD/main/cipher.h;
             docker run --rm -v $PWD:/project -w /project espressif/idf idf.py build;
             cp $PWD/build/sensor.bin $PWD/images/sensor-${VER}.bin;
             VER=`date +"%y.%m%d-%H%M"`;

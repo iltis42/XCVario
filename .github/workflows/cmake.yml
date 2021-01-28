@@ -26,7 +26,10 @@ jobs:
       # and build directories, but this is only available with CMake 3.13 and higher.  
       # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
       run:  touch $PWD/main/Version.h;
+            echo "CIPHER_KEY=${{ secrets.SuperSecret }}" >$PWD/main/cipher.h
             docker run --rm -v $PWD:/project -w /project espressif/idf idf.py build;
+            rm $PWD/main/cipher.h
+            touch $PWD/main/cipher.h
             VER=`date +"%y.%m%d-%H%M"`;
             cp $PWD/build/sensor.bin $PWD/images/sensor-${VER}.bin;
             git config user.name github-actions;

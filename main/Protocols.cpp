@@ -38,15 +38,15 @@ Protocols::~Protocols() {
 void Protocols::sendWkChange( float wk ){
 	char str[20];
 	sprintf( str,"!xw,%1.1f", wk );
-	ESP_LOGI(FNAME,"New WK pos: %f, cmd:%s", wk, str );
+	ESP_LOGI(FNAME,"New WK pos: %f, cmd: %s", wk, str );
 	Router::sendXCV(str);
 }
 
 void Protocols::sendQNHChange( float qnh ){
-	char str[20];
-	sprintf( str,"!xq,%4.2f", qnh );
-	ESP_LOGI(FNAME,"New QNH: %4.2f, cmd:%s", qnh, str );
-	Router::sendXCV(str);
+  char str[20];
+  sprintf( str,"!xq,%4.2f", qnh );
+  ESP_LOGI(FNAME,"New QNH: %4.2f, cmd: %s", qnh, str );
+  Router::sendXCV(str);
 }
 
 void Protocols::sendBallastChange( float ballast ){
@@ -80,6 +80,25 @@ void Protocols::sendMeanClimb( float climb ){
 		ESP_LOGI(FNAME,"New mean climb value: %f, cmd:%s", climb, str );
 		Router::sendXCV(str);
 	}
+}
+
+/*
+ * $HCHDM,238.5,M*hh/CR/LF
+ *
+ * Field Number:
+ *  1) Magnetic Heading to one decimal place
+ *  2) M (Magnetic)
+ *  3) Checksum
+ */
+void Protocols::sendNmeaHeading( float heading ){
+  char str[21];
+  sprintf( str,"$HCHDM,%3.1f,M", heading );
+  ESP_LOGI(FNAME,"New Heading: %3.1f, cmd: %s", heading, str );
+
+  int cs = getCheckSum(&str[1]);
+  int i = strlen(str);
+  sprintf( &str[i], "*%02X\r\n", cs );
+  Router::sendXCV(str);
 }
 
 void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,

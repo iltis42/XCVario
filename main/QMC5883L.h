@@ -50,9 +50,9 @@ public:
     chip is 0x0D.
   */
   QMC5883L( const uint8_t addr,
-            const uint8_t rate,
+            const uint8_t odr,
             const uint8_t range,
-            const uint8_t oversampling,
+            const uint8_t osr,
             I2C_t *i2cBus=nullptr );
 
   ~QMC5883L();
@@ -86,16 +86,16 @@ public:
   esp_err_t modeContinuous();
   
   /**
-   * Reads the heading in degrees of 1...360. If heading is not valid a value of
-   * -1 is returned.
+   * Reads the heading in degrees of 1...360. If ok is passed, it is set to true,
+   * if heading data is valid, otherwise it is set to false.
    */
-  int readHeading();
+  float readHeading( bool *ok=nullptr );
 
   /**
-   * Read temperature in degree Celsius. If the measurement is invalid,
-   * a value of -999 is returned.
+   * Read temperature in degree Celsius. If ok is passed, it is set to true,
+   * if temperature data is valid, otherwise it is set to false.
    */
-  int16_t readTemperature();
+  short readTemperature( bool *ok=nullptr );
 
   /**
    * Read out the registers X, Y, Z (0...5) in raw format.
@@ -104,13 +104,16 @@ public:
   bool readRawHeading( int16_t *x, int16_t *y, int16_t *z );
 
   void resetCalibration();
-  void setSamplingRate( const uint8_t rate );
-  void setRange( const uint8_t range );
-  void setOversampling( const uint16_t ovl );
-  
-  /** Sets the declination. Declination must be >= -180 and <= 180. */
-  esp_err_t setDeclination( const int16_t declinationIn );
 
+  /** Set ODR output data rate. */
+  void setOutputDataRate( const uint8_t odrIn );
+
+  /** Set magnetic range for measurement RNG_2G, RNG_8G. */
+  void setRange( const uint8_t rangeIn );
+
+  /** Set over sample ratio OSR_64 ... OSR_512. */
+  void setOverSampleRatio( const uint16_t osrIn );
+  
   /** Write with data part. */
   esp_err_t writeRegister( const uint8_t addr,
                            const uint8_t reg,
@@ -124,7 +127,6 @@ public:
                         const uint8_t reg,
                         const uint8_t count,
                         uint8_t *data );
-
 private:
 
   /** Check, if the bus pointer is valid. */
@@ -133,11 +135,11 @@ private:
   I2C_t *bus;
   int16_t xhigh, xlow;
   int16_t yhigh, ylow;
-  uint8_t addr;
-  uint8_t rate;
-  uint8_t range;
-  uint8_t oversampling;
-  int16_t declination;
+
+  uint8_t addr; // chip adress
+  uint8_t odr;  // output data rate
+  uint8_t range; // magnetic resolution of sensor
+  uint8_t osr; // over sample ratio
   bool overflowWarning;
 };
 

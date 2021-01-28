@@ -11,6 +11,9 @@ MS4525DO::MS4525DO()
 	P_dat = 0;  // 14 bit pressure data
 	T_dat = 0;  // 11 bit temperature data
 	error = ESP_OK;
+	_status = 0;
+	_offset = 0;
+	bus = 0;
 }
 
 bool MS4525DO::begin(gpio_num_t sda, gpio_num_t scl, char slave_adr) {
@@ -23,7 +26,6 @@ MS4525DO::~MS4525DO()
 {
 
 }
-
 
 /* public functions
         void initialize(void);

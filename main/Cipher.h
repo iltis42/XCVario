@@ -4,6 +4,7 @@
 #include <string> // std::string
 #include <locale> // std::locale, std::toupper
 
+
 #define CIPHER_KEY "2791"
 
 class Cipher {

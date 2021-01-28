@@ -8,8 +8,8 @@ MCP4018::MCP4018()
 	errorcount=0;
 	_noDevice = false;
 	wiper = 63;
+	bus = 0;
 }
-
 
 bool MCP4018::begin()
 {
@@ -22,7 +22,6 @@ bool MCP4018::begin()
 		ESP_LOGE(FNAME,"MCP4018 Error reading wiper!");
 	    return( false );
 	}
-
 }
 
 //destroy instance

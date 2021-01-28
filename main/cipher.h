@@ -1,1 +1,3 @@
-#define CIPHER_KEY 1234
+#pragma once
+
+#define CIPHER_KEY "1234"

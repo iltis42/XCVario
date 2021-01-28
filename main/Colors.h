@@ -1,3 +1,4 @@
+#pragma once
 
 #define COLOR_HEADER 255-101,255-108,255-255  // Azureish gray
 #define COLOR_WHITE 0,0,0

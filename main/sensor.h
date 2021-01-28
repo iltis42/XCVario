@@ -9,6 +9,7 @@
 #include "IpsDisplay.h"
 #include "ESPRotary.h"
 #include "QMC5883L.h" // 3-Axis Magnetic Sensor
+#include <hal/gpio_types.h>
 
 #include "S2F.h"
 

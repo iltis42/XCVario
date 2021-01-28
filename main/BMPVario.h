@@ -2,7 +2,7 @@
 #define __BMPVario_H__
 
 #include "ESP32NVS.h"
-#include "BME280_ESP32_SPI.h"
+#include "PressureSensor.h"
 
 #include "Setup.h"
 #include "S2F.h"
@@ -42,10 +42,12 @@ public:
 		bmpTemp = 0;
 		_damping = 1.0;
 		_currentAlt = 0;
-
+		_S2FTE = 0;
+		_analog_adj = 0;
+		myS2F = 0;
 	}
 
-	void begin( BME280_ESP32_SPI *bmp, S2F* s2f );
+	void begin( PressureSensor *bmp, S2F* s2f );
 
 	static void setHolddown( int hold ) { holddown = hold; }
 	void setQNH( float qnh ) { _qnh = qnh; };
@@ -68,7 +70,7 @@ private:
 	int   _filter_len;
 	double _errorval;
 	double _qnh;
-	BME280_ESP32_SPI *_bmpTE;
+	PressureSensor *_bmpTE;
 	double predictAlt;
 	double Altitude;
 	double lastAltitude;

@@ -85,6 +85,7 @@ esp_err_t I2C::begin(gpio_num_t sda_io_num, gpio_num_t scl_io_num, uint32_t clk_
 }
 
 esp_err_t I2C::begin(gpio_num_t sda_io_num, gpio_num_t scl_io_num, gpio_pullup_t sda_pullup_en, gpio_pullup_t scl_pullup_en, uint32_t clk_speed) {
+	i2c_driver_delete(port);
 	i2c_config_t conf;
 	memset( &conf, 0, sizeof(conf) );
     conf.mode = I2C_MODE_MASTER;
@@ -96,6 +97,7 @@ esp_err_t I2C::begin(gpio_num_t sda_io_num, gpio_num_t scl_io_num, gpio_pullup_t
     i2cbus_mutex = xSemaphoreCreateMutex();
     esp_err_t err = i2c_param_config(port, &conf);
     // i2c_set_stop_timing( port, 200, 200 );
+
     if (!err) err = i2c_driver_install(port, conf.mode, 0, 0, 0);
     i2c_filter_enable(port, 7 );
     int setup, hold;

@@ -29,10 +29,10 @@ jobs:
             docker run --rm -v $PWD:/project -w /project espressif/idf idf.py build;
             VER=`date +"%y.%m%d-%H%M"`;
             cp $PWD/build/sensor.bin $PWD/images/sensor-${VER}.bin;
-            git add $PWD/images/sensor-${VER}.bin;
-            git tag -a v${VER} -m "New XCVario build ${VER}";
             git config user.name github-actions;
             git config user.email github-actions@github.com;
+            git add $PWD/images/sensor-${VER}.bin;
+            git tag -a v${VER} -m "New XCVario build ${VER}";
             git commit -a -m "new version build sensor-${VER}.bin";
             git push;            
 

@@ -151,7 +151,7 @@ esp_err_t QMC5883L::selfTest()
       return ESP_FAIL;
     }
 
-  uint8_t chipId;
+  uint8_t chipId = 0;
 
   // Try to read Register 0xD, it delivers the chip id 0xff for a QMC5883L
   esp_err_t err = bus->readByte( QMC5883L_ADDR, REG_CHIP_ID, &chipId );
@@ -188,6 +188,8 @@ esp_err_t QMC5883L::modeContinuous()
 {
   esp_err_t e1, e2, e3, e4;
   e1 = e2 = e3 = e4 = 0;
+
+  resetCalibration();
 
   // Soft Reset
   e1 = writeRegister( addr, REG_CONTROL2, SOFT_RST );

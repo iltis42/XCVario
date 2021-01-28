@@ -28,7 +28,7 @@ jobs:
       env:  
             AHRS_SECRET: ${{ secrets.AHRS_CIPHER_KEY }}
       run:  touch $PWD/main/Version.h;
-            echo "#define CIPHER_KEY=$AHRS_SECRET" >$PWD/main/cipher.h;
+            echo "#define CIPHER_KEY $AHRS_SECRET" >$PWD/main/cipher.h;
             docker run --rm -v $PWD:/project -w /project espressif/idf idf.py build;
             VER=`date +"%y.%m%d-%H%M"`;
             cp $PWD/build/sensor.bin $PWD/images/sensor-${VER}.bin;

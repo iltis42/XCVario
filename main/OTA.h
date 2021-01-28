@@ -4,11 +4,10 @@
  *  Created on: Feb 24, 2019
  *      Author: iltis
  */
-
-#include "ESPRotary.h"
-
 #ifndef MAIN_OTA_H_
 #define MAIN_OTA_H_
+
+#include "ESPRotary.h"
 
 class OTA: public RotaryObserver
 {

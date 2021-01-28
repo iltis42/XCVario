@@ -42,7 +42,7 @@ jobs:
             VER=`date +"%y.%m%d-%H%M"`;
             git config user.name github-actions;
             git config user.email github-actions@github.com;
-            git add $PWD/main/cipher.h
+            git add $PWD/main/cipher.h;
             git commit -m "new version build sensor-${VER}.bin";
             git push;            
 

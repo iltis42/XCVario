@@ -30,7 +30,7 @@ jobs:
       run:  touch $PWD/main/Version.h;
             echo "#define CIPHER_KEY $AHRS_SECRET" >$PWD/main/cipher.h;
             # docker run --rm -v $PWD:/project -w /project espressif/idf idf.py build;
-            #VER=`date +"%y.%m%d-%H%M"`;
+            VER=`date +"%y.%m%d-%H%M"`;
             #cp $PWD/build/sensor.bin $PWD/images/sensor-${VER}.bin;
             git config user.name github-actions;
             git config user.email github-actions@github.com;

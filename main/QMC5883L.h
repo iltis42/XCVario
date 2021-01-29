@@ -5,7 +5,7 @@
  *   the Free Software Foundation; either version 2 of the License, or     *
  *   (at your option) any later version.                                   *
  *                                                                         *
-****************************************************************************
+ ****************************************************************************
 
 I2C driver for the chip QMC5883L, 3-Axis Magnetic Sensor.
 
@@ -15,7 +15,7 @@ https://datasheetspdf.com/pdf-file/1309218/QST/QMC5883L/1
 
 Author: Axel Pauli, January 2021
 
-****************************************************************************/
+ ****************************************************************************/
 
 #ifndef QMC5883L_H
 #define QMC5883L_H
@@ -43,104 +43,104 @@ Author: Axel Pauli, January 2021
 class QMC5883L
 {
 public:
-  /*
+	/*
     Creates instance for I2C connection with passing the desired parameters.
     No action is done at the bus. Note if i2cBus is not set in the constructor,
     you have to set it by calling method setBus(). The default address of the
     chip is 0x0D.
-  */
-  QMC5883L( const uint8_t addr,
-            const uint8_t odr,
-            const uint8_t range,
-            const uint8_t osr,
-            I2C_t *i2cBus=nullptr );
+	 */
+	QMC5883L( const uint8_t addr,
+			const uint8_t odr,
+			const uint8_t range,
+			const uint8_t osr,
+			I2C_t *i2cBus=nullptr );
 
-  ~QMC5883L();
+	~QMC5883L();
 
-  /** Set the I2C bus used for the connection. */
-  void setBus( I2C_t *theBus ) { bus = theBus; }
+	/** Set the I2C bus used for the connection. */
+	void setBus( I2C_t *theBus ) { bus = theBus; }
 
-  /** Check for reply with I2C bus address */
-  esp_err_t selfTest();
+	/** Check for reply with I2C bus address */
+	esp_err_t selfTest();
 
-  /**
-   * Define SET/RESET period. Should be set to 1 after a reset.
-   */
-  esp_err_t setPeriodRegister();
+	/**
+	 * Define SET/RESET period. Should be set to 1 after a reset.
+	 */
+	esp_err_t setPeriodRegister();
 
-  /**
-   * Read status Register 1 (0x6) and return its content. If read has failed,
-   * -1 is returned.
-   */
-  int readStatusFlags();
+	/**
+	 * Read status Register 1 (0x6) and return its content. If read has failed,
+	 * -1 is returned.
+	 */
+	int readStatusFlags();
 
-  /**
-   *  Set the device in standby mode.
-   */
-  esp_err_t modeStandby();
+	/**
+	 *  Set the device in standby mode.
+	 */
+	esp_err_t modeStandby();
 
-  /**
-   * Configure the device with the set parameters and set the mode to continuous.
-   * That means, the device starts working.
-   */
-  esp_err_t modeContinuous();
-  
-  /**
-   * Reads the heading in degrees of 1...360. If ok is passed, it is set to true,
-   * if heading data is valid, otherwise it is set to false.
-   */
-  float readHeading( bool *ok=nullptr );
+	/**
+	 * Configure the device with the set parameters and set the mode to continuous.
+	 * That means, the device starts working.
+	 */
+	esp_err_t modeContinuous();
 
-  /**
-   * Read temperature in degree Celsius. If ok is passed, it is set to true,
-   * if temperature data is valid, otherwise it is set to false.
-   */
-  short readTemperature( bool *ok=nullptr );
+	/**
+	 * Reads the heading in degrees of 1...360. If ok is passed, it is set to true,
+	 * if heading data is valid, otherwise it is set to false.
+	 */
+	float readHeading( bool *ok=nullptr );
 
-  /**
-   * Read out the registers X, Y, Z (0...5) in raw format.
-   * Returns true in case of success otherwise false.
-   */
-  bool readRawHeading( int16_t *x, int16_t *y, int16_t *z );
+	/**
+	 * Read temperature in degree Celsius. If ok is passed, it is set to true,
+	 * if temperature data is valid, otherwise it is set to false.
+	 */
+	short readTemperature( bool *ok=nullptr );
 
-  void resetCalibration();
+	/**
+	 * Read out the registers X, Y, Z (0...5) in raw format.
+	 * Returns true in case of success otherwise false.
+	 */
+	bool readRawHeading( int16_t *x, int16_t *y, int16_t *z );
 
-  /** Set ODR output data rate. */
-  void setOutputDataRate( const uint8_t odrIn );
+	void resetCalibration();
 
-  /** Set magnetic range for measurement RNG_2G, RNG_8G. */
-  void setRange( const uint8_t rangeIn );
+	/** Set ODR output data rate. */
+	void setOutputDataRate( const uint8_t odrIn );
 
-  /** Set over sample ratio OSR_64 ... OSR_512. */
-  void setOverSampleRatio( const uint16_t osrIn );
-  
-  /** Write with data part. */
-  esp_err_t writeRegister( const uint8_t addr,
-                           const uint8_t reg,
-                           const uint8_t value );
+	/** Set magnetic range for measurement RNG_2G, RNG_8G. */
+	void setRange( const uint8_t rangeIn );
 
-  /**
-   * Read bytes from the chip.
-   * Return the number of read bytes or 0 in error case.
-   */
-  uint8_t readRegister( const uint8_t addr,
-                        const uint8_t reg,
-                        const uint8_t count,
-                        uint8_t *data );
+	/** Set over sample ratio OSR_64 ... OSR_512. */
+	void setOverSampleRatio( const uint16_t osrIn );
+
+	/** Write with data part. */
+	esp_err_t writeRegister( const uint8_t addr,
+			const uint8_t reg,
+			const uint8_t value );
+
+	/**
+	 * Read bytes from the chip.
+	 * Return the number of read bytes or 0 in error case.
+	 */
+	uint8_t readRegister( const uint8_t addr,
+			const uint8_t reg,
+			const uint8_t count,
+			uint8_t *data );
 private:
 
-  /** Check, if the bus pointer is valid. */
-  bool checkBus();
+	/** Check, if the bus pointer is valid. */
+	bool checkBus();
 
-  I2C_t *bus;
-  int16_t xhigh, xlow;
-  int16_t yhigh, ylow;
+	I2C_t *bus;
+	int16_t xhigh, xlow;
+	int16_t yhigh, ylow;
 
-  uint8_t addr; // chip adress
-  uint8_t odr;  // output data rate
-  uint8_t range; // magnetic resolution of sensor
-  uint8_t osr; // over sample ratio
-  bool overflowWarning;
+	uint8_t addr; // chip adress
+	uint8_t odr;  // output data rate
+	uint8_t range; // magnetic resolution of sensor
+	uint8_t osr; // over sample ratio
+	bool overflowWarning;
 };
 
 #endif

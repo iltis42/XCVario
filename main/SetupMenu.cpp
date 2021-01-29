@@ -871,21 +871,21 @@ void SetupMenu::setup( )
 
 
 		SetupMenu * compass = new SetupMenu( "Compass" );
-    compassME = opt->addMenu( compass );
+		compassME = opt->addMenu( compass );
 
-    SetupMenuSelect * compSensor = new SetupMenuSelect( "Compass Sensor Option", 0, false, 0, true, &compass_enable );
-    compSensor->addEntry( "Disable");
-    compSensor->addEntry( "Enable");
-    compSensor->setHelp( PROGMEM "Option to enable/disable the Compass Sensor" );
-    compass->addMenu( compSensor );
+		SetupMenuSelect * compSensor = new SetupMenuSelect( "Compass Sensor Option", 0, false, 0, true, &compass_enable );
+		compSensor->addEntry( "Disable");
+		compSensor->addEntry( "Enable");
+		compSensor->setHelp( PROGMEM "Option to enable/disable the Compass Sensor" );
+		compass->addMenu( compSensor );
 
 #if 0
-    // Next step for compass calibration
-    SetupMenuSelect * compCal = new SetupMenuSelect( "Compass Sensor Calibration", 0, true, compCal, false, &dummy );
-    compCal->addEntry( "Cancel");
-    compCal->addEntry( "Start Calibration");
-    compCal->setHelp( PROGMEM "Option to calibrate Compass Sensor, turn airplane to the shown heading: Press button if done" );
-    compassME->addMenu( compCal );
+		// Next step for compass calibration
+		SetupMenuSelect * compCal = new SetupMenuSelect( "Compass Sensor Calibration", 0, true, compCal, false, &dummy );
+		compCal->addEntry( "Cancel");
+		compCal->addEntry( "Start Calibration");
+		compCal->setHelp( PROGMEM "Option to calibrate Compass Sensor, turn airplane to the shown heading: Press button if done" );
+		compassME->addMenu( compCal );
 #endif
 
 		SetupMenu * sy = new SetupMenu( "System" );

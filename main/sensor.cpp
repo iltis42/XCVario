@@ -362,7 +362,7 @@ void readBMP(void *pvParameters){
 		}
 
 		if( compass_enable.get() == true &&
-		    haveMagneticSensor == true && (count++ % 5 ) == 0 ) {
+				haveMagneticSensor == true && (count++ % 5 ) == 0 ) {
 			// try to get compass heading from sensor and forward it via NMEA.
 			bool ok = false;
 			float heading = magneticSensor.readHeading( &ok );

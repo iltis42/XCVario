@@ -1,50 +1,79 @@
 #include "SPL06-007.h"
 #include "logdef.h"
 
-SPL06_007::SPL06_007(){
+SPL06_007::SPL06_007( char _addr ){
 	bus = 0;
-	address = 0;
+	address = _addr;
+	c00 = c10 = c01 = c11 = c20 = c21 = c30 = 0;
+	_scale_factor_p = 0;
+	_scale_factor_t = 0;
+	errors = 0;
 }
 
-bool SPL06_007::begin(char slave_adr) {
-	address = slave_adr;
+// Addr. 0x06 PM_RATE Bits 6-4:    110  - 64 measurements pr. sec.
+//            PM_PRC  Bis  3-0:    0011 - 8 times oversampling
+
+// Addr. 0x08 MEAS_CTRL Bits 2-0:  111  - Continuous pressure and temperature measurement
+
+bool SPL06_007::begin() {
 	// ---- Oversampling of >8x for temperature or pressuse requires FIFO operational mode which is not implemented ---
 	// ---- Use rates of 8x or less until feature is implemented ---
-	i2c_write_uint8( 0X06, 0x03);	// Pressure 8x oversampling
+	errors = 0;
+	i2c_write_uint8( 0X06, 0x63);	// Pressure 6=64 samples per second & 3 = 8x oversampling
 	i2c_write_uint8( 0X07, 0X83);	// Temperature 8x oversampling
 	i2c_write_uint8( 0X08, 0B0111);	// continuous temp and pressure measurement
 	i2c_write_uint8( 0X09, 0X00);	// FIFO Pressure measurement
-	return true;
-}
+	c00 = get_c00();
+	if( errors )
+		return false;
+	c10 = get_c10();
 
-bool SPL06_007::selfTest( int& adval ){
-	uint8_t rdata = 0xFF;
-	esp_err_t err = bus->readByte(address, 0x0D, &rdata );  // ID
-	if( err != ESP_OK )
-		ESP_LOGE(FNAME,"Error I2C read, status :%d", err );
-
-	ESP_LOGI(FNAME,"SPL06_007 selftest, scan for I2C address %02x PASSED, Product ID: %d, Revision ID:%d", address, rdata>>4 , rdata&0x0F );
-	/*
-	measure();
-	adval = P_dat;
-	 */
-	if( err != ESP_OK )
+	c01 = get_16bit( 0X18 );  // ok
+	c11 = get_16bit( 0X1A );  //
+	c20 = get_16bit( 0X1C );
+	c21 = get_16bit( 0X1E );
+	c30 = get_16bit( 0X20 );
+	_scale_factor_p = get_scale_factor( 0x06 );
+	_scale_factor_t = get_scale_factor( 0x07 );
+	if( errors )
 		return false;
 	else
 		return true;
 }
 
+bool SPL06_007::selfTest( float& p, float& t ){
+	uint8_t rdata = 0xFF;
+	esp_err_t err = bus->readByte(address, 0x0D, &rdata );  // ID
+	if( err != ESP_OK ){
+		ESP_LOGE(FNAME,"Error I2C read, status :%d", err );
+		return false;
+	}
+
+	ESP_LOGI(FNAME,"SPL06_007 selftest, scan for I2C address %02x PASSED, Product ID: %d, Revision ID:%d", address, rdata>>4 , rdata&0x0F );
+	p = (float)get_pressure();
+	t = (float)get_temp_c();
+	ESP_LOGI(FNAME,"SPL06_007 selftest, p=%f t=%f", p, t );
+
+	if( p < 1200  ) {
+		ESP_LOGI(FNAME,"SPL06_007 selftest addr: %d PASSED, p=%f t=%f", address, p, t );
+		return true;
+	}
+	else{
+		ESP_LOGI(FNAME,"SPL06_007 selftest addr: %d FAILED, p=%f t=%f", address, p, t );
+		return false;
+	}
+}
+
 double SPL06_007::get_altitude(double pressure, double seaLevelhPa) {
-	double altitude;
-	altitude = 44330 * (1.0 - pow(pressure / seaLevelhPa, 0.1903));
-	ESP_LOGI(FNAME,"SPL06_007::get_altitude: %f", altitude );
+	double altitude = 44330.0 * (1.0 - pow(pressure / seaLevelhPa, 0.19029495718));
+	// ESP_LOGI(FNAME,"SPL06_007::get_altitude: %f, p: %f, qnh: %f",altitude, pressure, seaLevelhPa );
 	return altitude;
 }
 
 double SPL06_007::get_traw_sc()
 {
 	int32_t traw = get_traw();
-	return (double(traw)/get_scale_factor( 0x07 ));
+	return (double(traw)/_scale_factor_t);
 }
 
 double SPL06_007::get_temp_c()
@@ -84,20 +113,12 @@ int32_t SPL06_007::get_traw()
 double SPL06_007::get_praw_sc()
 {
 	int32_t praw = get_praw();
-	return (double(praw)/get_scale_factor( 0x06 ));
+	return (double(praw)/_scale_factor_p);
 }
 
 double SPL06_007::get_pcomp()
 {
-	int32_t c00,c10;
-	int16_t c01,c11,c20,c21,c30;
-	c00 = get_c00();
-	c10 = get_c10();
-	c01 = get_c01();
-	c11 = get_c11();
-	c20 = get_c20();
-	c21 = get_c21();
-	c30 = get_c30();
+
 	double traw_sc = get_traw_sc();
 	double praw_sc = get_praw_sc();
 	return double(c00) + praw_sc * (double(c10) + praw_sc * (double(c20) + praw_sc * double(c30))) + traw_sc * double(c01) + traw_sc * praw_sc * ( double(c11) + praw_sc * double(c21));
@@ -237,71 +258,21 @@ int32_t SPL06_007::get_c10()
 	return tmp;
 }
 
-int16_t SPL06_007::get_c01()
+int16_t SPL06_007::get_16bit( uint8_t addr )
 {
-	int16_t tmp;
 	uint8_t tmp_MSB,tmp_LSB;
-
-	tmp_MSB = i2c_read_uint8( 0X18);
-	tmp_LSB = i2c_read_uint8( 0X19);
-
-	tmp = (tmp_MSB << 8) | tmp_LSB;
-	return tmp;
-}
-
-int16_t SPL06_007::get_c11()
-{
-	int16_t tmp;
-	uint8_t tmp_MSB,tmp_LSB;
-
-	tmp_MSB = i2c_read_uint8( 0X1A);
-	tmp_LSB = i2c_read_uint8( 0X1B);
-
-	tmp = (tmp_MSB << 8) | tmp_LSB;
-	return tmp;
-}
-
-int16_t SPL06_007::get_c20()
-{
-	int16_t tmp;
-	uint8_t tmp_MSB,tmp_LSB;
-
-	tmp_MSB = i2c_read_uint8( 0X1C);
-	tmp_LSB = i2c_read_uint8( 0X1D);
-
-	tmp = (tmp_MSB << 8) | tmp_LSB;
-	return tmp;
-}
-
-int16_t SPL06_007::get_c21()
-{
-	int16_t tmp;
-	uint8_t tmp_MSB,tmp_LSB;
-
-	tmp_MSB = i2c_read_uint8( 0X1E);
-	tmp_LSB = i2c_read_uint8( 0X1F);
-
-	tmp = (tmp_MSB << 8) | tmp_LSB;
-	return tmp;
-}
-
-int16_t SPL06_007::get_c30()
-{
-	int16_t tmp;
-	uint8_t tmp_MSB,tmp_LSB;
-
-	tmp_MSB = i2c_read_uint8( 0X20);
-	tmp_LSB = i2c_read_uint8( 0X21);
-
-	tmp = (tmp_MSB << 8) | tmp_LSB;
-	return tmp;
+	tmp_MSB = i2c_read_uint8( addr );
+	tmp_LSB = i2c_read_uint8( addr+1 );
+	return (int16_t)(tmp_LSB | (tmp_MSB<<8));
 }
 
 void SPL06_007::i2c_write_uint8( uint8_t eeaddress, uint8_t data )
 {
 	esp_err_t err = bus->writeByte(address, eeaddress, data );
-	if( err != ESP_OK )
+	if( err != ESP_OK ){
 		ESP_LOGE(FNAME,"Error I2C write, status :%d", err );
+		errors++;
+	}
 
 }
 
@@ -309,7 +280,9 @@ uint8_t SPL06_007::i2c_read_uint8( uint8_t eeaddress )
 {
 	uint8_t rdata = 0xFF;
 	esp_err_t err = bus->readByte(address, eeaddress, &rdata );
-	if( err != ESP_OK )
+	if( err != ESP_OK ){
 		ESP_LOGE(FNAME,"Error I2C read, status :%d", err );
+		errors++;
+	}
 	return rdata;
 }

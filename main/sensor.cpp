@@ -10,7 +10,7 @@
 #include "nvs_flash.h"
 #include "BME280_ESP32_SPI.h"
 #include <driver/adc.h>
-#include "driver/gpio.h"
+#include <driver/gpio.h>
 #include "mcp3221.h"
 #include "mcp4018.h"
 #include "ESP32NVS.h"
@@ -58,7 +58,7 @@
 #include "LeakTest.h"
 #include "Units.h"
 #include "Flap.h"
-
+#include "SPL06-007.h"
 
 // #include "sound.h"
 
@@ -84,6 +84,8 @@ BMP:
 #define RESET_Display GPIO_NUM_5  // Reset pin for Display
 #define FREQ_BMP_SPI 13111111/2
 
+#define SPL06_007_BARO 0x77
+#define SPL06_007_TE   0x76
 
 MCP3221 *MCP=0;
 DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 standard, alternative  GPIO_NUM_17
@@ -105,8 +107,9 @@ TaskHandle_t *dpid;
 
 xSemaphoreHandle spiMutex=NULL;
 
-BME280_ESP32_SPI bmpBA(SPI_SCLK, SPI_MOSI, SPI_MISO, CS_bme280BA, FREQ_BMP_SPI);
-BME280_ESP32_SPI bmpTE(SPI_SCLK, SPI_MOSI, SPI_MISO, CS_bme280TE, FREQ_BMP_SPI);
+PressureSensor *baroSensor = 0;
+PressureSensor *teSensor = 0;
+
 Ucglib_ILI9341_18x240x320_HWSPI *myucg;  // ( SPI_DC, CS_Display, RESET_Display );
 IpsDisplay *display;
 
@@ -269,9 +272,9 @@ void readBMP(void *pvParameters){
 		if( (count++ % 2) == 0 ) {
 			Flap::progress();
 			xSemaphoreTake(xMutex,portMAX_DELAY );
-			baroP = bmpBA.readPressure();   // 5x per second
+			baroP = baroSensor->readPressure();   // 5x per second
 			// ESP_LOGI(FNAME,"Baro Pressure: %4.3f", baroP );
-			float altSTD = bmpBA.calcAVGAltitudeSTD( baroP );
+			float altSTD = baroSensor->calcAVGAltitudeSTD( baroP );
 			if( alt_select.get() == 0 ) // TE
 				alt = bmpVario.readAVGalt();
 			else { // Baro
@@ -285,9 +288,9 @@ void readBMP(void *pvParameters){
 					// ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), altSTD, standard_setting, transition_alt.get() );
 				}
 				else {
-					alt = bmpBA.calcAVGAltitude( QNH.get(), baroP );
+					alt = baroSensor->calcAVGAltitude( QNH.get(), baroP );
 					standard_setting = false;
-					// ESP_LOGI(FNAME,"rbmp QNH %f baro: %f alt: %f SS:%d", QNH.get(), baroP, alt, standard_setting  );
+					// ESP_LOGI(FNAME,"QNH %f baro: %f alt: %f SS:%d", QNH.get(), baroP, alt, standard_setting  );
 				}
 			}
 			aTE = bmpVario.readAVGTE();
@@ -353,21 +356,20 @@ void readBMP(void *pvParameters){
 				}
 				else
 					ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
-				  vTaskDelay(2/portTICK_PERIOD_MS);
-				  xSemaphoreGive(xMutex);
+				vTaskDelay(2/portTICK_PERIOD_MS);
+				xSemaphoreGive(xMutex);
 			}
 		}
-
 		if( haveMagneticSensor == true && (count++ % 5 ) == 0 ) {
-		    // try to get compass heading from sensor and forward it via NMEA.
-		    bool ok = false;
-		    float heading = magneticSensor.readHeading( &ok );
+			// try to get compass heading from sensor and forward it via NMEA.
+			bool ok = false;
+			float heading = magneticSensor.readHeading( &ok );
 
-		    if( ok == true ) {
-		        xSemaphoreTake(xMutex, portMAX_DELAY );
-		        OV.sendNmeaHeading( heading );
-		        xSemaphoreGive( xMutex );
-		    }
+			if( ok == true ) {
+				xSemaphoreTake(xMutex, portMAX_DELAY );
+				OV.sendNmeaHeading( heading );
+				xSemaphoreGive( xMutex );
+			}
 		}
 
 		if( uxTaskGetStackHighWaterMark( bpid )  < 1024 )
@@ -383,7 +385,6 @@ int ttick = 0;
 void readTemp(void *pvParameters){
 	while (1) {
 		TickType_t xLastWakeTime = xTaskGetTickCount();
-
 		float t=15.0;
 		if( inSetup != true )
 		{
@@ -469,12 +470,6 @@ void sensor(void *args){
 	}
 	Battery.begin();  // for battery voltage
 	xMutex=xSemaphoreCreateMutex();
-	uint8_t t_sb = 0;   //stanby 0: 0,5 mS 1: 62,5 mS 2: 125 mS
-	uint8_t filter = 0; //filter O = off
-	uint8_t osrs_t = 5; //OverSampling Temperature
-	uint8_t osrs_p = 5; //OverSampling Pressure (5:x16 4:x8, 3:x4 2:x2 )
-	uint8_t osrs_h = 0; //OverSampling Humidity x4
-	uint8_t Mode = 3;   //Normal mode
 
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ccp = (int)(core_climb_period.get()*10);
@@ -596,60 +591,89 @@ void sensor(void *args){
 		logged_tests += "External Temperature Sensor:PASSED\n";
 
 	}
-	ESP_LOGI(FNAME,"BMP280 sensors init..");
+	ESP_LOGI(FNAME,"Absolute pressure sensors init, detect type of sensor type..");
 
-	bmpBA.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
-	bmpTE.begin(t_sb, filter, osrs_t, osrs_p, osrs_h, Mode);
-	delay(200);
 	float ba_t, ba_p, te_t, te_p;
-	if( ! bmpBA.selfTest( ba_t, ba_p)  ) {
+
+	SPL06_007 *splBA = new SPL06_007( SPL06_007_BARO );
+	splBA->setBus( &i2c );
+	if( splBA->begin() ){
+		ESP_LOGI(FNAME,"SPL06_007 type detected");
+		i2c.begin(GPIO_NUM_21, GPIO_NUM_22, 100000 );  // higher speed, we have 10K pullups on that board
+		SPL06_007 *splTE = new SPL06_007( SPL06_007_TE );
+		splTE->setBus( &i2c );
+		splTE->begin();
+		baroSensor = splBA;
+		teSensor = splTE;
+	}
+	else{
+		delete splBA;
+		ESP_LOGI(FNAME,"No SPL06_007 chip detected, now check BMP280");
+		BME280_ESP32_SPI *bmpBA = new BME280_ESP32_SPI();
+		BME280_ESP32_SPI *bmpTE= new BME280_ESP32_SPI();
+		bmpBA->setSPIBus(SPI_SCLK, SPI_MOSI, SPI_MISO, CS_bme280BA, FREQ_BMP_SPI);
+		bmpTE->setSPIBus(SPI_SCLK, SPI_MOSI, SPI_MISO, CS_bme280TE, FREQ_BMP_SPI);
+		bmpTE->begin();
+		bmpBA->begin();
+		baroSensor = bmpBA;
+		teSensor = bmpTE;
+	}
+	bool tetest=true;
+	bool batest=true;
+	delay(200);
+	if( ! baroSensor->selfTest( ba_t, ba_p)  ) {
 		ESP_LOGE(FNAME,"HW Error: Self test Barometric Pressure Sensor failed!");
 		display->writeText( line++, "Baro Sensor: NOT FOUND");
 		selftestPassed = false;
+		batest=false;
 		logged_tests += "Baro Sensor Test: NOT FOUND\n";
 	}
 	else {
-		ESP_LOGI(FNAME,"Barometric Sensor T=%f P=%f", ba_t, ba_p);
+		ESP_LOGI(FNAME,"Baro Sensor test OK, T=%f P=%f", ba_t, ba_p);
 		display->writeText( line++, "Baro Sensor: OK");
 		logged_tests += "Baro Sensor Test: PASSED\n";
 	}
-	if( ! bmpTE.selfTest(te_t, te_p) ) {
+	if( !teSensor->selfTest(te_t, te_p) ) {
 		ESP_LOGE(FNAME,"HW Error: Self test TE Pressure Sensor failed!");
 		display->writeText( line++, "TE Sensor: NOT FOUND");
 		selftestPassed = false;
+		tetest=false;
 		logged_tests += "TE Sensor Test: NOT FOUND\n";
 	}
 	else {
-		ESP_LOGI(FNAME,"TE Sensor         T=%f P=%f", te_t, te_p);
+		ESP_LOGI(FNAME,"TE Sensor test OK,   T=%f P=%f", te_t, te_p);
 		display->writeText( line++, "TE Sensor: OK");
 		logged_tests += "TE Sensor Test: PASSED\n";
 	}
-	if( selftestPassed ) {
+	if( tetest && batest ) {
+		ESP_LOGI(FNAME,"Both absolute pressure sensor TESTs SUCCEEDED, now test deltas");
 		if( (abs(ba_t - te_t) >4.0)  && ( ias < 50 ) ) {   // each sensor has deviations, and new PCB has more heat sources
 			selftestPassed = false;
-			ESP_LOGI(FNAME,"Severe Temperature deviation delta > 4 °C between Baro and TE sensor: °C %f", abs(ba_t - te_t) );
+			ESP_LOGE(FNAME,"Severe T delta > 4 °C between Baro and TE sensor: °C %f", abs(ba_t - te_t) );
 			display->writeText( line++, "TE/Baro Temp: Unequal");
 			logged_tests += "TE/Baro Sensor T diff. <4°C: FAILED\n";
 		}
 		else{
-			ESP_LOGI(FNAME,"BMP 280 Temperature deviation test PASSED, dev: %f",  abs(ba_t - te_t));
+			ESP_LOGI(FNAME,"Abs p sensors temp. delta test PASSED, delta: %f °C",  abs(ba_t - te_t));
 			// display->writeText( line++, "TE/Baro Temp: OK");
 			logged_tests += "TE/Baro Sensor T diff. <2°C: PASSED\n";
 		}
-
 		if( (abs(ba_p - te_p) >2.5)  && ( ias < 50 ) ) {
 			selftestPassed = false;
-			ESP_LOGI(FNAME,"Pressure deviation delta > 2 hPa between Baro and TE sensor: %f", abs(ba_p - te_p) );
+			ESP_LOGI(FNAME,"Abs p sensors deviation delta > 2.5 hPa between Baro and TE sensor: %f", abs(ba_p - te_p) );
 			display->writeText( line++, "TE/Baro P: Unequal");
 			logged_tests += "TE/Baro Sensor P diff. <2hPa: FAILED\n";
 		}
 		else
-			ESP_LOGI(FNAME,"BMP 280 Pressure deviation test PASSED, dev: %f", abs(ba_p - te_p) );
+			ESP_LOGI(FNAME,"Abs p sensor deta test PASSED, delta: %f hPa", abs(ba_p - te_p) );
 		// display->writeText( line++, "TE/Baro P: OK");
 		logged_tests += "TE/Baro Sensor P diff. <2hPa: PASSED\n";
 
 	}
-	bmpVario.begin( &bmpTE, &Speed2Fly );
+	else
+		ESP_LOGI(FNAME,"Absolute pressure sensor TESTs failed");
+
+	bmpVario.begin( teSensor, &Speed2Fly );
 	bmpVario.setup();
 	esp_task_wdt_reset();
 	ESP_LOGI(FNAME,"Audio begin");
@@ -756,20 +780,19 @@ void sensor(void *args){
 			logged_tests += "MPU6050 AHRS test: NOT FOUND\n";
 		}
 	}
-
 	// Check for magnetic sensor
 	ESP_LOGI( FNAME, "Magnetic sensor initialize");
 	magneticSensor.setBus( &i2c );
 	err = magneticSensor.selfTest();
 
 	if( err == ESP_OK )
-	  {
-	    haveMagneticSensor = true;
-	    // Activate working of sensor
-	    magneticSensor.modeContinuous();
-	  }
+	{
+		haveMagneticSensor = true;
+		// Activate working of sensor
+		magneticSensor.modeContinuous();
+	}
 
-  Speed2Fly.change_polar();
+	Speed2Fly.change_polar();
 	Speed2Fly.change_mc_bal();
 	Version myVersion;
 	ESP_LOGI(FNAME,"Program Version %s", myVersion.version() );
@@ -788,10 +811,10 @@ void sensor(void *args){
 	}
 	if( Rotary.readSwitch() )
 	{
-		LeakTest::start( bmpBA, bmpTE, asSensor );
+		LeakTest::start( baroSensor, teSensor, asSensor );
 	}
 	Menu = new SetupMenu();
-	Menu->begin( display, &Rotary, &bmpBA, &Battery );
+	Menu->begin( display, &Rotary, baroSensor, &Battery );
 
 	if ( blue_enable.get() == WL_WLAN_CLIENT ){
 		display->clear();
@@ -816,13 +839,13 @@ void sensor(void *args){
 		ESP_LOGI(FNAME,"QNH Autosetup, IAS=%3f (<50 km/h)", ias );
 		// QNH autosetup
 		float ae = elevation.get();
-		baroP = bmpBA.readPressure();
+		baroP = baroSensor->readPressure();
 		if( ae > 0 ) {
 			float step=10.0; // 80 m
 			float min=1000.0;
 			float qnh_best = 1013.2;
 			for( float qnh = 870; qnh< 1085; qnh+=step ) {
-				float alt = bmpBA.readAltitude( qnh );
+				float alt = baroSensor->readAltitude( qnh );
 				float diff = alt - ae;
 				ESP_LOGI(FNAME,"Alt diff=%4.2f  abs=%4.2f", diff, abs(diff) );
 				if( abs( diff ) < 100 )

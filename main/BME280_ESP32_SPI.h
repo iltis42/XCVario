@@ -32,13 +32,17 @@ altitude calculation by open source community on github.
 #include <SPI.h>
 #include <esp32-hal-spi.h>
 #include <math.h>
+#include <hal/gpio_types.h>
+#include "PressureSensor.h"
 
-class BME280_ESP32_SPI
+
+class BME280_ESP32_SPI: public PressureSensor
 {
 public:
 	BME280_ESP32_SPI();
-	BME280_ESP32_SPI(gpio_num_t sclk, gpio_num_t mosi, gpio_num_t miso, gpio_num_t cs, uint32_t freq);
-	void begin(uint8_t Stanby_t, uint8_t filter, uint8_t overS_T, uint8_t overS_P, uint8_t overS_H, uint8_t mode);
+	bool  setBus( I2C_t *_theBus ) { return true; };  // for future
+	bool  setSPIBus(gpio_num_t sclk, gpio_num_t mosi, gpio_num_t miso, gpio_num_t cs, uint32_t freq );
+	bool begin();
     bool selfTest( float& p, float& t );
 
 	double readTemperature( bool& success );
@@ -46,9 +50,7 @@ public:
 	double readPressureAVG( float alpha=0.1 );
 	double readHumidity();
 	double readAltitude(double SeaLevel_Pres=1013.25);
-	inline double calcAltitude(double SeaLevel_Pres, double pressure) {
-		return ( 44330.0 * (1.0 - pow(pressure / SeaLevel_Pres, (1.0/5.255))) );
-	}
+	inline double calcAltitude(double SeaLevel_Pres, double pressure) { return ( 44330.0 * (1.0 - pow(pressure / SeaLevel_Pres, (1.0/5.255))) ); }
 	double calcAVGAltitude(double SeaLevel_Pres, double p );
 	double calcAVGAltitudeSTD( double p );
 	uint8_t readID();

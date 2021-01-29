@@ -29,6 +29,7 @@ AnalogInput::AnalogInput( float multiplier, adc_atten_t attenuation, adc_channel
   _attenuation = attenuation;
   _unit = unit;
   _cal = calibration;
+  _value = 0;
 }
 
 void AnalogInput::begin() {

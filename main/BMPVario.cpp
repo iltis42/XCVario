@@ -10,7 +10,7 @@
 const double sigmaAdjust = 255 * 2.0/33;  // 2 Vss
 int BMPVario::holddown = 0;
 
-void BMPVario::begin( BME280_ESP32_SPI *bmp, S2F *aS2F  ) {
+void BMPVario::begin( PressureSensor *bmp, S2F *aS2F  ) {
 	_bmpTE = bmp;
 	_init = true;
 
@@ -44,6 +44,7 @@ double BMPVario::readTE( float tas ) {
 	bmpTemp = _bmpTE->readTemperature( success );
 	// ESP_LOGI(FNAME,"BMP temp=%0.1f", bmpTemp );
 	_currentAlt = _bmpTE->readAltitude(_qnh);
+	// ESP_LOGI(FNAME,"TE alt: %4.3f m", _currentAlt );
 	if( te_comp_enable.get() ) {
 		float mps = tas / 3.6;  // m/s
 		float cw  = myS2F->cw( mps );
@@ -56,7 +57,7 @@ double BMPVario::readTE( float tas ) {
 	if( delta < 0.075 )  // ensure every 100 mS one calculation
 		return _TEF;
 
-	// ESP_LOGI(FNAME,"Vario delta=%f", delta );
+	// ESP_LOGI(FNAME,"Vario delta=%2.3f sec", delta );
 	lastrts = rts;
 	// ESP_LOGI(FNAME, "TE-Alt %0.1f  NM:", _currentAlt );
 	if( _init  ){

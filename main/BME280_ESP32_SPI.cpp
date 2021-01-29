@@ -15,10 +15,20 @@
 #include <SPI.h>
 #include <logdef.h>
 
+
 extern xSemaphoreHandle spiMutex;
 
-BME280_ESP32_SPI::BME280_ESP32_SPI(gpio_num_t sclk, gpio_num_t mosi, gpio_num_t miso, gpio_num_t cs, uint32_t freq)
-: _sclk(sclk), _mosi(mosi), _miso(miso), _cs(cs), _freq(freq)
+bool BME280_ESP32_SPI::setSPIBus(gpio_num_t sclk, gpio_num_t mosi, gpio_num_t miso, gpio_num_t cs, uint32_t freq)
+{
+	_sclk = sclk;
+	_mosi = mosi;
+	_miso = miso;
+	_cs =   cs;
+	_freq = freq;
+	return true;
+}
+
+BME280_ESP32_SPI::BME280_ESP32_SPI()
 {
 	_t_fine = 0;
 	_dig_T1 = 0;
@@ -45,12 +55,22 @@ BME280_ESP32_SPI::BME280_ESP32_SPI(gpio_num_t sclk, gpio_num_t mosi, gpio_num_t 
 	init_err = false;
 	_avg_alt = 0;
 	_avg_alt_std = 0;
-
+	_freq = 0;
+	_cs = 0;
+	_miso = GPIO_NUM_MAX;
+	_mosi = GPIO_NUM_MAX;
+	_sclk = GPIO_NUM_MAX;
 }
 
+#define c_sb      0   //stanby 0: 0,5 mS 1: 62,5 mS 2: 125 mS
+#define c_filter  0   //filter O = off
+#define c_osrs_t  5   //OverSampling Temperature
+#define c_osrs_p  5   //OverSampling Pressure (5:x16 4:x8, 3:x4 2:x2 )
+#define c_osrs_h  0   //OverSampling Humidity x4
+#define c_Mode    3   //Normal mode
 
 //****************BME280_ESP32_SPI*************************************************
-void BME280_ESP32_SPI::begin(uint8_t Stanby_t, uint8_t filter, uint8_t overS_T, uint8_t overS_P, uint8_t overS_H, uint8_t mode){
+bool BME280_ESP32_SPI::begin(){
 	pinMode(_cs, GPIO_MODE_OUTPUT);
 	digitalWrite(_cs, HIGH);
 	spis = SPISettings( _freq, SPI_MSBFIRST, SPI_MODE3 );
@@ -60,11 +80,11 @@ void BME280_ESP32_SPI::begin(uint8_t Stanby_t, uint8_t filter, uint8_t overS_T, 
 	SPI.setHwCs( false );
 
 	uint8_t spi3or4 = 0; //SPI 3wire or 4wire, 0=4wire, 1=3wire
-	uint8_t ctrl_meas = (overS_T << 5) | (overS_P << 2) | mode;
-	uint8_t config    = (Stanby_t << 5) | (filter << 2) | spi3or4;
-	uint8_t ctrl_hum  = overS_H;
+	uint8_t ctrl_meas = (c_osrs_t << 5) | (c_osrs_p << 2) | c_Mode;
+	uint8_t config    = (c_sb << 5) | (c_filter << 2) | spi3or4;
+	uint8_t ctrl_hum  = c_osrs_h;
 
-	WriteRegister(0xE0, 0xB6); //reset
+	WriteRegister(0xE0, 0xB6); //reset device
 	int id = readID();
 	int count = 0;
 	while( (id != 0x58) && (count < 20) ) {
@@ -94,6 +114,7 @@ void BME280_ESP32_SPI::begin(uint8_t Stanby_t, uint8_t filter, uint8_t overS_T, 
 		ESP_LOGE(FNAME,"BMP280 Calibration Data Error  CS: %d !", _cs);
 		init_err = true;
 	}
+	return init_err;
 }
 
 //***************BME280 ****************************

@@ -111,7 +111,12 @@ float   MS4525DO::readPascal( float minimum, bool &ok ){
 
 bool    MS4525DO::selfTest( int& adval ){
 	uint8_t data[4];
-	esp_err_t err = bus->readBytes(address, 0, 4, data );
+	esp_err_t err = ESP_FAIL;
+	for( int i=0; i<4; i++ ){
+		err = bus->readBytes(address, 0, 4, data );
+		if( err == ESP_OK )
+			break;
+	}
 	if( err != ESP_OK ){
 		ESP_LOGI(FNAME,"MS4525DO selftest, scan for I2C address %02x FAILED",I2C_ADDRESS_MS4525DO );
 		return false;

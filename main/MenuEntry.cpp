@@ -29,7 +29,7 @@ MenuEntry* MenuEntry::root = 0;
 MenuEntry* MenuEntry::selected = 0;
 ESPRotary* MenuEntry::_rotary = 0;
 AnalogInput* MenuEntry::_adc = 0;
-BME280_ESP32_SPI *MenuEntry::_bmp = 0;
+PressureSensor *MenuEntry::_bmp = 0;
 float MenuEntry::volume;
 bool  MenuEntry::_menu_enabled = false;
 

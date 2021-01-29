@@ -325,7 +325,7 @@ SetupMenu::SetupMenu( String title ) {
 	highlight = -1;
 }
 
-void SetupMenu::begin( IpsDisplay* display, ESPRotary * rotary, BME280_ESP32_SPI * bmp, AnalogInput *adc ){
+void SetupMenu::begin( IpsDisplay* display, ESPRotary * rotary, PressureSensor * bmp, AnalogInput *adc ){
 	ESP_LOGI(FNAME,"SetupMenu() begin");
 	_rotary = rotary;
 	_bmp = bmp;

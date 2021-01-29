@@ -10,7 +10,7 @@
 #include "nvs_flash.h"
 #include "BME280_ESP32_SPI.h"
 #include <driver/adc.h>
-#include "driver/gpio.h"
+#include <driver/gpio.h>
 #include "mcp3221.h"
 #include "mcp4018.h"
 #include "ESP32NVS.h"

@@ -360,7 +360,9 @@ void readBMP(void *pvParameters){
 				xSemaphoreGive(xMutex);
 			}
 		}
-		if( haveMagneticSensor == true && (count++ % 5 ) == 0 ) {
+
+		if( compass_enable.get() == true &&
+		    haveMagneticSensor == true && (count++ % 5 ) == 0 ) {
 			// try to get compass heading from sensor and forward it via NMEA.
 			bool ok = false;
 			float heading = magneticSensor.readHeading( &ok );

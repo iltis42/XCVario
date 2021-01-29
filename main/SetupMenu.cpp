@@ -41,6 +41,9 @@ SetupMenuValFloat * min3 = 0;
 String vunit;
 String sunit;
 
+// Menu for compass setup
+MenuEntry* compassME = nullptr;
+
 void update_vunit_str( int unit ){
 	vunit = Units::VarioUnitLong( unit );
 }
@@ -770,7 +773,6 @@ void SetupMenu::setup( )
 		wkcal->setHelp( PROGMEM "Option to calibrate flap Sensor (WK), to indicate current flap setting: Press button after each setting" );
 		wkm->addMenu( wkcal );
 
-
 		SetupMenuValFloat * nflpos = new SetupMenuValFloat("Max positive flap setting", 0, "", 0, 3, 1, flap_pos_act, false, &flap_pos_max  );
 		nflpos->setHelp(PROGMEM"Maximum positive flap position. Restart XCVario to adjust speed menu entries");
 		wkm->addMenu( nflpos );
@@ -866,6 +868,25 @@ void SetupMenu::setup( )
 		flarms->setHelp( PROGMEM "Simulate an airplane crossing from left to right with different alarm levels and vertical distance");
 		flarms->addEntry( "Disable");
 		flarms->addEntry( "Start Sim");
+
+
+		SetupMenu * compass = new SetupMenu( "Compass" );
+    compassME = opt->addMenu( compass );
+
+    SetupMenuSelect * compSensor = new SetupMenuSelect( "Compass Sensor Option", 0, false, 0, true, &compass_enable );
+    compSensor->addEntry( "Disable");
+    compSensor->addEntry( "Enable");
+    compSensor->setHelp( PROGMEM "Option to enable/disable the Compass Sensor" );
+    compass->addMenu( compSensor );
+
+#if 0
+    // Next step for compass calibration
+    SetupMenuSelect * compCal = new SetupMenuSelect( "Compass Sensor Calibration", 0, true, compCal, false, &dummy );
+    compCal->addEntry( "Cancel");
+    compCal->addEntry( "Start Calibration");
+    compCal->setHelp( PROGMEM "Option to calibrate Compass Sensor, turn airplane to the shown heading: Press button if done" );
+    compassME->addMenu( compCal );
+#endif
 
 		SetupMenu * sy = new SetupMenu( "System" );
 		MenuEntry* sye = mm->addMenu( sy );

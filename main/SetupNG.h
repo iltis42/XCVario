@@ -367,15 +367,15 @@ extern SetupNG<int>		    wk_sens_pos_0;
 extern SetupNG<int>		    wk_sens_pos_minus_1;
 extern SetupNG<int>		    wk_sens_pos_minus_2;
 extern SetupNG<int>		    wk_sens_pos_minus_3;
-extern SetupNG<int>         stall_warning;
-extern SetupNG<float>		stall_speed;
-extern SetupNG<int>        	flarm_warning;
-extern SetupNG<float>       flarm_volume;
-extern SetupNG<int>         flarm_sim;
-extern SetupNG<int>         flap_sensor;
-extern SetupNG<int>         audio_netto_mode;
-extern SetupNG<float>       flap_pos_max;
-extern SetupNG<float>       flap_neg_max;
-
+extern SetupNG<int>       stall_warning;
+extern SetupNG<float>		  stall_speed;
+extern SetupNG<int>       flarm_warning;
+extern SetupNG<float>     flarm_volume;
+extern SetupNG<int>       flarm_sim;
+extern SetupNG<int>       flap_sensor;
+extern SetupNG<int>       audio_netto_mode;
+extern SetupNG<float>     flap_pos_max;
+extern SetupNG<float>     flap_neg_max;
+extern SetupNG<int>       compass_enable;
 
 #endif /* MAIN_SETUP_NG_H_ */

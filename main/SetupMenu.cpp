@@ -24,6 +24,7 @@
 #include "SetupMenuSelect.h"
 #include "SetupMenuValFloat.h"
 #include "MenuEntry.h"
+#include "Compass.h"
 
 static char rentry[25];
 SetupMenuSelect * audio_range_sm = 0;
@@ -93,7 +94,7 @@ void wk_cal_show( SetupMenuSelect * p, int wk ){
 // Action Routines
 int wk_cal( SetupMenuSelect * p )
 {
-	ESP_LOGI(FNAME,"WK calibaration ( %d ) ", p->getSelect() );
+	ESP_LOGI(FNAME,"WK calibration ( %d ) ", p->getSelect() );
 	if( !Flap::haveSensor() ){
 		p->clear();
 		p->ucg->setPrintPos(1,60);
@@ -311,6 +312,14 @@ void dec_volume( int count ) {
 
 void inc_volume( int count ) {
 	Audio::incVolume(count);
+}
+
+/**
+ * Wrapper function to compass action method.
+ */
+int compassCalibrateAction( SetupMenuSelect *p )
+{
+  return compass.calibrateAction( p );
 }
 
 SetupMenu::SetupMenu(){
@@ -870,23 +879,27 @@ void SetupMenu::setup( )
 		flarms->addEntry( "Start Sim");
 
 
-		SetupMenu * compass = new SetupMenu( "Compass" );
-		compassME = opt->addMenu( compass );
+		SetupMenu * compassMenu = new SetupMenu( "Compass" );
+		compassME = opt->addMenu( compassMenu );
 
 		SetupMenuSelect * compSensor = new SetupMenuSelect( "Compass Sensor Option", 0, false, 0, true, &compass_enable );
 		compSensor->addEntry( "Disable");
 		compSensor->addEntry( "Enable");
 		compSensor->setHelp( PROGMEM "Option to enable/disable the Compass Sensor" );
-		compass->addMenu( compSensor );
+		compassMenu->addMenu( compSensor );
 
-#if 0
 		// Next step for compass calibration
-		SetupMenuSelect * compCal = new SetupMenuSelect( "Compass Sensor Calibration", 0, true, compCal, false, &dummy );
+		SetupMenuSelect * compCal = new SetupMenuSelect( "Compass Calibration",
+		                                                 0,
+		                                                 false,
+		                                                 compassCalibrateAction,
+		                                                 false,
+		                                                 &dummy );
 		compCal->addEntry( "Cancel");
 		compCal->addEntry( "Start Calibration");
-		compCal->setHelp( PROGMEM "Option to calibrate Compass Sensor, turn airplane to the shown heading: Press button if done" );
+		compCal->addEntry( "Reset Calibration");
+		compCal->setHelp( PROGMEM "Calibrate Compass Sensor or reset calibration" );
 		compassME->addMenu( compCal );
-#endif
 
 		SetupMenu * sy = new SetupMenu( "System" );
 		MenuEntry* sye = mm->addMenu( sy );

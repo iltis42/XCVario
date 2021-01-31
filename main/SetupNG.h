@@ -377,5 +377,13 @@ extern SetupNG<int>       	audio_netto_mode;
 extern SetupNG<float>     	flap_pos_max;
 extern SetupNG<float>     	flap_neg_max;
 extern SetupNG<int>       	compass_enable;
+extern SetupNG<float>       compass_deviation_45;
+extern SetupNG<float>       compass_deviation_90;
+extern SetupNG<float>       compass_deviation_135;
+extern SetupNG<float>       compass_deviation_180;
+extern SetupNG<float>       compass_deviation_225;
+extern SetupNG<float>       compass_deviation_270;
+extern SetupNG<float>       compass_deviation_335;
+extern SetupNG<float>       compass_deviation_360;
 
 #endif /* MAIN_SETUP_NG_H_ */

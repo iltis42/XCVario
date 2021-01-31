@@ -150,6 +150,14 @@ SetupNG<int>            audio_netto_mode( "AUDIO_BN_MOD", 0 );
 SetupNG<float>          flap_pos_max("FL_POS_M", +2);
 SetupNG<float>          flap_neg_max("FL_NEG_M", -2);
 SetupNG<int>            compass_enable( "COMPASS_ENABLE", 0 );
+SetupNG<float>          compass_deviation_45( "COMPASS_DEV_45", 0 );
+SetupNG<float>          compass_deviation_90( "COMPASS_DEV_90", 0 );
+SetupNG<float>          compass_deviation_135( "COMPASS_DEV_135", 0 );
+SetupNG<float>          compass_deviation_180( "COMPASS_DEV_180", 0 );
+SetupNG<float>          compass_deviation_225( "COMPASS_DEV_225", 0 );
+SetupNG<float>          compass_deviation_270( "COMPASS_DEV_279", 0 );
+SetupNG<float>          compass_deviation_335( "COMPASS_DEV_335", 0 );
+SetupNG<float>          compass_deviation_360( "COMPASS_DEV_360", 0 );
 
 mpud::raw_axes_t zero_bias;
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );

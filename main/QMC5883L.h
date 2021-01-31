@@ -50,15 +50,24 @@ public:
     chip is 0x0D.
 	 */
 	QMC5883L( const uint8_t addr,
-			const uint8_t odr,
-			const uint8_t range,
-			const uint8_t osr,
-			I2C_t *i2cBus=nullptr );
+			      const uint8_t odr,
+			      const uint8_t range,
+			      const uint8_t osr,
+			      I2C_t *i2cBus=nullptr );
 
 	~QMC5883L();
 
+	/**
+	 * Returns true, if the self test has been passed successfully, otherwise
+	 * false.
+	 */
+	static bool haveSensor()
+	{
+	  return m_sensor;
+	}
+
 	/** Set the I2C bus used for the connection. */
-	void setBus( I2C_t *theBus ) { bus = theBus; }
+	void setBus( I2C_t *theBus ) { m_bus = theBus; }
 
 	/** Check for reply with I2C bus address */
 	esp_err_t selfTest();
@@ -89,19 +98,19 @@ public:
 	 * Reads the heading in degrees of 1...360. If ok is passed, it is set to true,
 	 * if heading data is valid, otherwise it is set to false.
 	 */
-	float readHeading( bool *ok=nullptr );
+	float heading( bool *ok=nullptr );
 
 	/**
 	 * Read temperature in degree Celsius. If ok is passed, it is set to true,
 	 * if temperature data is valid, otherwise it is set to false.
 	 */
-	short readTemperature( bool *ok=nullptr );
+	short temperature( bool *ok=nullptr );
 
 	/**
 	 * Read out the registers X, Y, Z (0...5) in raw format.
 	 * Returns true in case of success otherwise false.
 	 */
-	bool readRawHeading( int16_t *x, int16_t *y, int16_t *z );
+	bool rawHeading( int16_t *x, int16_t *y, int16_t *z );
 
 	void resetCalibration();
 
@@ -132,7 +141,8 @@ private:
 	/** Check, if the bus pointer is valid. */
 	bool checkBus();
 
-	I2C_t *bus;
+	static bool m_sensor;
+	I2C_t* m_bus;
 	int16_t xhigh, xlow;
 	int16_t yhigh, ylow;
 

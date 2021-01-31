@@ -51,6 +51,8 @@ Author: Axel Pauli, January 2021
 #define MODE_STANDBY    0b00000000  // Standby mode.
 #define MODE_CONTINUOUS 0b00000001  // Continuous read mode.
 
+// Sensor state
+bool QMC5883L::m_sensor = false;
 /*
   Creates instance for I2C connection with passing the desired parameters.
   No action is done at the bus. Note if i2cBus is not set in the constructor,
@@ -62,7 +64,7 @@ QMC5883L::QMC5883L( const uint8_t addrIn,
                     const uint8_t rangeIn,
                     const uint8_t osrIn,
                     I2C_t *i2cBus ) :
-  bus( i2cBus ),
+  m_bus( i2cBus ),
   addr( addrIn ),
   odr( odrIn ),
   range( rangeIn ),
@@ -90,7 +92,7 @@ esp_err_t QMC5883L::writeRegister( const uint8_t addr,
       return ESP_FAIL;
     }
 
-  esp_err_t err = bus->writeByte( addr, reg, value );
+  esp_err_t err = m_bus->writeByte( addr, reg, value );
 
   if( err != ESP_OK )
     {
@@ -118,7 +120,7 @@ uint8_t QMC5883L::readRegister( const uint8_t addr,
     }
 
   // read bytes from chip
-  esp_err_t err = bus->readBytes( addr, reg, count, data );
+  esp_err_t err = m_bus->readBytes( addr, reg, count, data );
 
   if( err != ESP_OK )
     {
@@ -134,7 +136,7 @@ uint8_t QMC5883L::readRegister( const uint8_t addr,
 /** Check, if the bus pointer is valid. */
 bool QMC5883L::checkBus()
 {
-  if( bus == nullptr )
+  if( m_bus == nullptr )
     {
       ESP_LOGE( FNAME, "QMC5883L bus pointer is zero" );
       return false;
@@ -148,16 +150,19 @@ esp_err_t QMC5883L::selfTest()
 {
   if( checkBus() == false )
     {
+      m_sensor = false;
       return ESP_FAIL;
     }
 
   uint8_t chipId = 0;
 
   // Try to read Register 0xD, it delivers the chip id 0xff for a QMC5883L
-  esp_err_t err = bus->readByte( QMC5883L_ADDR, REG_CHIP_ID, &chipId );
+  esp_err_t err = m_bus->readByte( QMC5883L_ADDR, REG_CHIP_ID, &chipId );
 
   if( err != ESP_OK )
     {
+      m_sensor = false;
+
       ESP_LOGE( FNAME,
                 "QMC5883L self-test, scan for I2C address 0x%02X FAILED",
                 QMC5883L_ADDR );
@@ -166,6 +171,8 @@ esp_err_t QMC5883L::selfTest()
 
   if( chipId != 0xff )
     {
+      m_sensor = false;
+
       ESP_LOGE( FNAME,
                 "QMC5883L self-test, chip ID 0x%02X is unsupported, expected 0xFF",
                 chipId );
@@ -176,6 +183,8 @@ esp_err_t QMC5883L::selfTest()
   ESP_LOGI( FNAME,
             "QMC5883L selftest, scan for I2C address 0x%02X and chip ID 0x%02X PASSED",
             QMC5883L_ADDR, chipId );
+
+  m_sensor = true;
 
   return ESP_OK;
 }
@@ -319,7 +328,7 @@ int QMC5883L::readStatusFlags()
  *
  * Returns true in case of success otherwise false.
  */
-bool QMC5883L::readRawHeading( int16_t *x, int16_t *y, int16_t *z )
+bool QMC5883L::rawHeading( int16_t *x, int16_t *y, int16_t *z )
 {
 // Check, if data are available
 uint8_t data[6];
@@ -369,7 +378,7 @@ if( ( status & STATUS_DRDY ) == true )
  * Read temperature in degree Celsius. If ok is passed, it is set to true,
  * if temperature data is valid, otherwise it is set to false.
  */
-int16_t QMC5883L::readTemperature( bool *ok )
+int16_t QMC5883L::temperature( bool *ok )
 {
   uint8_t data[2];
 
@@ -404,7 +413,7 @@ void QMC5883L::resetCalibration()
  * Reads the heading in degrees of 1...360. If ok is passed, it is set to true,
  * if heading data is valid, otherwise it is set to false.
  */
-float QMC5883L::readHeading( bool *ok )
+float QMC5883L::heading( bool *ok )
 {
   int16_t x, y, z;
 
@@ -413,7 +422,7 @@ float QMC5883L::readHeading( bool *ok )
       *ok = false;
     }
 
-  if( readRawHeading( &x, &y, &z ) == false )
+  if( rawHeading( &x, &y, &z ) == false )
     {
       return 0.0;
     }

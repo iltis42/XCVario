@@ -385,5 +385,8 @@ extern SetupNG<float>       compass_deviation_225;
 extern SetupNG<float>       compass_deviation_270;
 extern SetupNG<float>       compass_deviation_335;
 extern SetupNG<float>       compass_deviation_360;
+extern SetupNG<int> 		s2f_with_gload;
+extern SetupNG<int> 		s2f_blockspeed;
+
 
 #endif /* MAIN_SETUP_NG_H_ */

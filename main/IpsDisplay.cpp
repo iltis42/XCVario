@@ -53,7 +53,6 @@ const int   bw    = 32;   // bar width
 const int   S2F_TRISIZE = 60; // triangle size quality up/down
 
 #define TRISIZE 15
-#define abs(x)  (x < 0.0 ? -x : x)
 
 #define FIELD_START 85
 #define SIGNLEN 24+4

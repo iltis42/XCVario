@@ -549,7 +549,7 @@ void SetupMenu::setup( )
 	else
 	{
 		// Vario
-		SetupMenu * va = new SetupMenu( "Vario" );
+		SetupMenu * va = new SetupMenu( "Vario and S2F" );
 		MenuEntry* vae = mm->addMenu( va );
 
 		SetupMenuValFloat * vga = new SetupMenuValFloat( 	"Range", 0, vunit.c_str(),	1.0, 30.0, 1, update_rentry, true, &range );
@@ -560,10 +560,6 @@ void SetupMenu::setup( )
 		SetupMenuValFloat * vda = new SetupMenuValFloat( 	"Vario Bar Damping", 0, "sec", 2.0, 10.0, 0.1, 0, false, &vario_delay );
 		vda->setHelp(PROGMEM"Response time, time constant of Vario low pass kalman filter");
 		vae->addMenu( vda );
-
-		SetupMenuValFloat * vds2 = new SetupMenuValFloat( 	"S2F Damping", 0, "sec", 0.10001, 10.0, 0.1, 0, false, &s2f_delay );
-		vds2->setHelp(PROGMEM"Time constant of S2F low pass filter");
-		vae->addMenu( vds2 );
 
 		SetupMenuValFloat * vdav = new SetupMenuValFloat( 	"Average Vario Damping", 0, "sec", 2.0, 60.0,	0.1, 0, false, &vario_av_delay );
 		vdav->setHelp(PROGMEM"Response time, time constant of digital Average Vario Display");
@@ -587,6 +583,25 @@ void SetupMenu::setup( )
 		sink->addEntry( "DISABLE");
 		sink->addEntry( "ENABLE");
 		vae->addMenu( sink );
+
+		SetupMenuSelect * gsink = new SetupMenuSelect( 	"Polar Sink with G load", 0, false, 0 , true, &s2f_with_gload );
+		gsink->setHelp(PROGMEM"Polar Sink considers G Load (when AHRS option enabled)");
+		gsink->addEntry( "DISABLE");
+		gsink->addEntry( "ENABLE");
+		vae->addMenu( gsink );
+
+		SetupMenu * s2fs = new SetupMenu( "S2F Settings" );
+		MenuEntry* s2fse = vae->addMenu( s2fs );
+
+		SetupMenuValFloat * vds2 = new SetupMenuValFloat( "S2F Damping", 0, "sec", 0.10001, 10.0, 0.1, 0, false, &s2f_delay );
+		vds2->setHelp(PROGMEM"Time constant of S2F low pass filter");
+		s2fse->addMenu( vds2 );
+
+		SetupMenuSelect * blck = new SetupMenuSelect( "Blockspeed", 0, false, 0 , true, &s2f_blockspeed );
+		blck->setHelp(PROGMEM"With Blockspeed enabled, vertical movement of airmass or G-load is not considered for speed to fly (S2F) calculation");
+		blck->addEntry( "DISABLE");
+		blck->addEntry( "ENABLE");
+		s2fse->addMenu( blck );
 
 		SetupMenu * elco = new SetupMenu( "Electronic Compensation" );
 		vae->addMenu( elco );

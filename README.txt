@@ -68,6 +68,11 @@ cd ~/esp/esp-idf/examples/get-started/; git clone https://github.com/iltis42/XCV
 B) Build software and flash XCVario Software, e.g. shown as here via USB cable, or use OTA
 cd XCVario
 idf.py build
+
+# If you change files in the build environment, issue the command:
+
+idf.py reconfigure
+
 idf.py -p /dev/ttyUSB0 flash
 idf.py -p /dev/ttyUSB0 monitor
 

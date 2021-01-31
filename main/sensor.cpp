@@ -119,16 +119,15 @@ ESPRotary Rotary;
 SetupMenu  *Menu = 0;
 
 // Gyro and acceleration sensor
-I2C_t& i2c                     = i2c1;  // i2c0 or i2c1
+I2C_t& i2c = i2c1;  // i2c0 or i2c1
 MPU_t MPU;         // create an object
 mpud::float_axes_t accelG;
 mpud::float_axes_t gyroDPS;
 mpud::float_axes_t accelG_Prev;
 mpud::float_axes_t gyroDPS_Prev;
 
-// Magnetic sensor
-QMC5883L magneticSensor( 0x0D, ODR_10HZ, RNG_2G, OSR_512 );
-bool haveMagneticSensor = false;
+// Magnetic sensor / compass
+Compass compass( 0x0D, ODR_10HZ, RNG_2G, OSR_512 );
 
 BTSender btsender;
 
@@ -362,10 +361,10 @@ void readBMP(void *pvParameters){
 		}
 
 		if( compass_enable.get() == true &&
-				haveMagneticSensor == true && (count++ % 5 ) == 0 ) {
+				compass.haveSensor() == true && (count++ % 5 ) == 0 ) {
 			// try to get compass heading from sensor and forward it via NMEA.
 			bool ok = false;
-			float heading = magneticSensor.readHeading( &ok );
+			float heading = compass.trueHeading( &ok );
 
 			if( ok == true ) {
 				xSemaphoreTake(xMutex, portMAX_DELAY );
@@ -782,16 +781,15 @@ void sensor(void *args){
 			logged_tests += "MPU6050 AHRS test: NOT FOUND\n";
 		}
 	}
-	// Check for magnetic sensor
+	// Check for magnetic sensor / compass
 	ESP_LOGI( FNAME, "Magnetic sensor initialize");
-	magneticSensor.setBus( &i2c );
-	err = magneticSensor.selfTest();
+	compass.setBus( &i2c );
+	err = compass.selfTest();
 
 	if( err == ESP_OK )
 	{
-		haveMagneticSensor = true;
-		// Activate working of sensor
-		magneticSensor.modeContinuous();
+		// Activate working of magnetic sensor
+		compass.modeContinuous();
 	}
 
 	Speed2Fly.change_polar();

@@ -13,6 +13,8 @@ Class to handle compass data and actions.
 
 Author: Axel Pauli, January 2021
 
+Last update: 2021-02-01
+
 **************************************************************************/
 
 #include <stdio.h>
@@ -131,9 +133,9 @@ int Compass::calibrateAction( SetupMenuSelect *p )
       for( int i = 0; i < 8; i++ )
         {
           p->clear();
-          p->ucg->setFont( ucg_font_ncenR14_hr );
+          p->ucg->setFont( ucg_font_fur14_hf );
           p->ucg->setPrintPos( 1, 60 );
-          p->ucg->printf( "Turn airplain to %d degrees  ", skydirs[i] );
+          p->ucg->printf( "Turn airplain to %d\260  ", skydirs[i] );
           p->ucg->setPrintPos( 1, 90 );
           p->ucg->printf( "and push button when done" );
           delay( 500 );
@@ -151,9 +153,9 @@ int Compass::calibrateAction( SetupMenuSelect *p )
                   heading = static_cast<float>(skydirs[i]);
                 }
 
-              p->ucg->setFont( ucg_font_fub20_hr );
+              p->ucg->setFont( ucg_font_fur20_hf );
               p->ucg->setPrintPos( 1, 180 );
-              p->ucg->printf( "Heading: %.1f \260  ", heading );
+              p->ucg->printf( "Heading: %.1f\260  ", heading );
               delay( 250 );
             }
 

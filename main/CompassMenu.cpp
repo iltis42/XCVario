@@ -57,7 +57,6 @@ int CompassMenu::calibrateAction( SetupMenuSelect *p )
       return 0;
     }
 
-#if 0
   if( compass.haveSensor() == false )
     {
       p->clear();
@@ -68,7 +67,6 @@ int CompassMenu::calibrateAction( SetupMenuSelect *p )
       ESP_LOGI( FNAME, "Abort calibration, no sensor signal" );
       return 0;
     }
-#endif
 
   if( p->getSelect() == 1 )
     {

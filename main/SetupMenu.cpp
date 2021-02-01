@@ -25,6 +25,7 @@
 #include "SetupMenuValFloat.h"
 #include "MenuEntry.h"
 #include "Compass.h"
+#include "CompassMenu.h"
 
 static char rentry[25];
 SetupMenuSelect * audio_range_sm = 0;
@@ -44,6 +45,9 @@ String sunit;
 
 // Menu for compass setup
 MenuEntry* compassME = nullptr;
+
+// Compass menu handler
+CompassMenu compassMenuHandler( compass );
 
 void update_vunit_str( int unit ){
 	vunit = Units::VarioUnitLong( unit );
@@ -315,11 +319,16 @@ void inc_volume( int count ) {
 }
 
 /**
- * Wrapper function to compass action method.
+ * C-Wrappers function to compass menu handlers.
  */
 int compassCalibrateAction( SetupMenuSelect *p )
 {
-  return compass.calibrateAction( p );
+  return compassMenuHandler.calibrateAction( p );
+}
+
+int compassDeclinationAction( SetupMenuValFloat *p )
+{
+  return compassMenuHandler.declinationAction( p );
 }
 
 SetupMenu::SetupMenu(){
@@ -893,18 +902,30 @@ void SetupMenu::setup( )
 		flarms->addEntry( "Disable");
 		flarms->addEntry( "Start Sim");
 
-
 		SetupMenu * compassMenu = new SetupMenu( "Compass" );
 		compassME = opt->addMenu( compassMenu );
 
-		SetupMenuSelect * compSensor = new SetupMenuSelect( "Compass Sensor Option", 0, false, 0, true, &compass_enable );
+		SetupMenuSelect * compSensor = new SetupMenuSelect( "Sensor Option", 0, false, 0, true, &compass_enable );
 		compSensor->addEntry( "Disable");
 		compSensor->addEntry( "Enable");
 		compSensor->setHelp( PROGMEM "Option to enable/disable the Compass Sensor" );
 		compassMenu->addMenu( compSensor );
 
+    SetupMenuValFloat *cd = new SetupMenuValFloat( "Setup Declination",
+                                                   0,
+                                                   "\260",
+                                                   -180,
+                                                   180,
+                                                   1.0,
+                                                   compassDeclinationAction,
+                                                   false,
+                                                   &compass_declination );
+
+    cd->setHelp( PROGMEM "Set compass declination in degrees" );
+    compassMenu->addMenu( cd );
+
 		// Next step for compass calibration
-		SetupMenuSelect * compCal = new SetupMenuSelect( "Compass Calibration",
+		SetupMenuSelect * compCal = new SetupMenuSelect( "Setup Calibration",
 		                                                 0,
 		                                                 false,
 		                                                 compassCalibrateAction,
@@ -915,6 +936,21 @@ void SetupMenu::setup( )
 		compCal->addEntry( "Reset Calibration");
 		compCal->setHelp( PROGMEM "Calibrate Compass Sensor or reset calibration" );
 		compassME->addMenu( compCal );
+
+    SetupMenu * nmeaMenu = new SetupMenu( "Setup NMEA" );
+    compassMenu->addMenu( nmeaMenu );
+
+    SetupMenuSelect * nmeaHdm = new SetupMenuSelect( "$HCHDM", 0, false, 0, true, &compass_nmea_hdm );
+    nmeaHdm->addEntry( "Disable");
+    nmeaHdm->addEntry( "Enable");
+    nmeaHdm->setHelp( PROGMEM "Enable/disable NMEA '$HCHDM' sentence (magnetic heading)" );
+    nmeaMenu->addMenu( nmeaHdm );
+
+    SetupMenuSelect * nmeaHdt = new SetupMenuSelect( "$HCHDT", 0, false, 0, true, &compass_nmea_hdt );
+    nmeaHdt->addEntry( "Disable");
+    nmeaHdt->addEntry( "Enable");
+    nmeaHdt->setHelp( PROGMEM "Enable/disable NMEA '$HCHDT' sentence (magnetic true heading)" );
+    nmeaMenu->addMenu( nmeaHdt );
 
 		SetupMenu * sy = new SetupMenu( "System" );
 		MenuEntry* sye = mm->addMenu( sy );

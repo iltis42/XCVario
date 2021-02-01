@@ -36,8 +36,11 @@ class CompassMenu : public RotaryObserver
 
   ~CompassMenu();
 
-  // Compass Menu Action method
+  /** Compass Menu Action method. */
   int calibrateAction( SetupMenuSelect *p );
+
+  /** Compass Menu Action method to set declination valid. */
+  int declinationAction( SetupMenuValFloat *p );
 
   virtual void up( int count );
   virtual void down( int count );

@@ -135,6 +135,17 @@ int CompassMenu::calibrateAction( SetupMenuSelect *p )
   return 0;
 }
 
+int CompassMenu::declinationAction( SetupMenuValFloat *p )
+{
+  if( p->pressed )
+    {
+      ESP_LOGI( FNAME, "Compass declination set to valid" );
+      compass_decl_valid.set( true );
+    }
+
+  return 0;
+}
+
 void CompassMenu::up( int count )
 {
   ESP_LOGI( FNAME, "CompassMenu::up" );

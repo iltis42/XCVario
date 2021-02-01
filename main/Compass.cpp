@@ -9,16 +9,13 @@
 
 File: Compass.cpp
 
-Class to handle compass data and actions.
+Class to handle compass data access.
 
 Author: Axel Pauli, January 2021
 
 Last update: 2021-02-01
 
 **************************************************************************/
-
-#include <stdio.h>
-#include <wchar.h>
 
 #include "esp_log.h"
 #include "esp_system.h"
@@ -40,11 +37,11 @@ SetupNG<float>* Compass::deviations[8] = { &compass_deviation_45,
   you have to set it by calling method setBus(). The default address of the
   chip is 0x0D.
 */
-Compass::Compass(const uint8_t addr,
-                 const uint8_t odr,
-                 const uint8_t range,
-                 const uint8_t osr,
-                 I2C_t *i2cBus ) :
+Compass::Compass( const uint8_t addr,
+                  const uint8_t odr,
+                  const uint8_t range,
+                  const uint8_t osr,
+                  I2C_t *i2cBus ) :
  QMC5883L( addr, odr, range, osr, i2cBus )
 {
 }
@@ -53,9 +50,11 @@ Compass::~Compass()
 {
 }
 
-/** Returns the heading by considering deviation. If ok is passed, it is set
- * to true, if heading data is valid, otherwise it is set to false.*/
-float Compass::trueHeading( bool *okIn )
+/**
+ * Returns the magnetic heading by considering deviation. If ok is passed,
+ * it is set to true, if heading data is valid, otherwise it is set to false.
+ */
+float Compass::magneticHeading( bool *okIn )
 {
   bool ok = false;
 
@@ -100,93 +99,34 @@ float Compass::trueHeading( bool *okIn )
   return heading;
 }
 
-// Compass Menu Action Routine
-int Compass::calibrateAction( SetupMenuSelect *p )
+/**
+ * Returns the magnetic heading by considering deviation and declination.
+ * If ok is passed, it is set to true, if heading data is valid, otherwise
+ * it is set to false.
+ */
+float Compass::trueHeading( bool *okIn )
 {
-  ESP_LOGI( FNAME, "Compass calibration ( %d ) ", p->getSelect() );
+  bool ok = false;
 
-  if( p->getSelect() == 0 )
+  float heading = magneticHeading( &ok );
+
+  if( ok == false )
     {
-      // Cancel is requested
-      delay( 500 );
-      ESP_LOGI( FNAME, "Cancel Button pressed" );
-      return 0;
-    }
-
-  if( QMC5883L::haveSensor() == false )
-    {
-      p->clear();
-      p->ucg->setFont( ucg_font_ncenR14_hr );
-      p->ucg->setPrintPos( 1, 60 );
-      p->ucg->printf( "No magnetic Sensor, Abort" );
-      delay( 2000 );
-      ESP_LOGI( FNAME, "Abort calibration, no sensor signal" );
-      return 0;
-    }
-
-  if( p->getSelect() == 1 )
-    {
-      // Calibration menu is requested
-      const unsigned short skydirs[8] =
-        { 45, 90, 135, 180, 225, 270, 335, 360 };
-
-      for( int i = 0; i < 8; i++ )
+      if( okIn != nullptr )
         {
-          p->clear();
-          p->ucg->setFont( ucg_font_fur14_hf );
-          p->ucg->setPrintPos( 1, 60 );
-          p->ucg->printf( "Turn airplain to %d\260  ", skydirs[i] );
-          p->ucg->setPrintPos( 1, 90 );
-          p->ucg->printf( "and push button when done" );
-          delay( 500 );
-
-          float heading = 0.0;
-
-          while( !p->_rotary->readSwitch() )
-            {
-              bool ok = false;
-              float heading = QMC5883L::heading( &ok );
-
-              if( ok == false )
-                {
-                  // in case of error deviation is set to 0
-                  heading = static_cast<float>(skydirs[i]);
-                }
-
-              p->ucg->setFont( ucg_font_fur20_hf );
-              p->ucg->setPrintPos( 1, 180 );
-              p->ucg->printf( "Heading: %.1f\260  ", heading );
-              delay( 250 );
-            }
-
-          // Save deviation value
-          deviations[i]->set( static_cast<float>(skydirs[i]) - heading );
+          *okIn = false;
         }
 
-      ESP_LOGI( FNAME, "Compass calibration is finished" );
+      return 0.0;
     }
-  else if( p->getSelect() == 2 )
+
+  // Calculate true heading
+  heading = heading + compass_declination.get();
+
+  if( okIn != nullptr )
     {
-      p->clear();
-      p->ucg->setFont( ucg_font_ncenR14_hr );
-      p->ucg->setPrintPos( 1, 60 );
-      p->ucg->printf( "Reset compass calibration" );
-
-      // Reset calibration
-      for( int i = 0; i < 8; i++ )
-        {
-          deviations[i]->set( 0.0 );
-        }
-
-      ESP_LOGI( FNAME, "Compass calibration was reset" );
-      delay( 1000 );
+      *okIn = true;
     }
 
-  p->clear();
-  p->ucg->setFont( ucg_font_ncenR14_hr );
-  p->ucg->setPrintPos( 1, 60 );
-  p->ucg->printf( "Saved        " );
-  delay( 2000 );
-
-  return 0;
+  return heading;
 }

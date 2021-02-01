@@ -83,23 +83,51 @@ void Protocols::sendMeanClimb( float climb ){
 }
 
 /*
- * $HCHDM,238.5,M*hh/CR/LF
- *
- * Field Number:
- *  1) Magnetic Heading to one decimal place
- *  2) M (Magnetic)
- *  3) Checksum
- */
-void Protocols::sendNmeaHeading( float heading ){
+HDM - Heading - Magnetic
+
+        1   2 3
+        |   | |
+ $--HDM,x.x,M*hh<CR><LF>
+
+ Field Number:
+  1) Heading Degrees, magnetic
+  2) M = magnetic
+  3) Checksum
+*/
+void Protocols::sendNmeaHDM( float heading ) {
   char str[21];
   sprintf( str,"$HCHDM,%3.1f,M", heading );
-  ESP_LOGI(FNAME,"New Heading: %3.1f, cmd: %s", heading, str );
+  ESP_LOGI(FNAME,"New magnetic Heading: %3.1f, cmd: %s", heading, str );
 
   int cs = getCheckSum(&str[1]);
   int i = strlen(str);
   sprintf( &str[i], "*%02X\r\n", cs );
   Router::sendXCV(str);
 }
+
+/*
+HDT - Heading - True
+
+        1   2 3
+        |   | |
+ $--HDT,x.x,T*hh<CR><LF>
+
+ Field Number:
+  1) Heading Degrees, true
+  2) T = True
+  3) Checksum
+*/
+void Protocols::sendNmeaHDT( float heading ) {
+  char str[21];
+  sprintf( str,"$HCHDT,%3.1f,T", heading );
+  ESP_LOGI(FNAME,"New true Heading: %3.1f, cmd: %s", heading, str );
+
+  int cs = getCheckSum(&str[1]);
+  int i = strlen(str);
+  sprintf( &str[i], "*%02X\r\n", cs );
+  Router::sendXCV(str);
+}
+
 
 void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
 		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz  ){

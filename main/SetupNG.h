@@ -385,6 +385,11 @@ extern SetupNG<float>       compass_deviation_225;
 extern SetupNG<float>       compass_deviation_270;
 extern SetupNG<float>       compass_deviation_335;
 extern SetupNG<float>       compass_deviation_360;
+extern SetupNG<float>       compass_declination;
+extern SetupNG<int>        compass_decl_valid;
+extern SetupNG<int>         compass_nmea_hdm;
+extern SetupNG<int>         compass_nmea_hdt;
+extern SetupNG<int>         audio_netto_mode;
 extern SetupNG<int> 		s2f_with_gload;
 extern SetupNG<int> 		s2f_blockspeed;
 

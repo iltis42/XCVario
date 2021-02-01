@@ -361,17 +361,45 @@ void readBMP(void *pvParameters){
 		}
 
 		if( compass_enable.get() == true &&
-				compass.haveSensor() == true && (count++ % 5 ) == 0 ) {
-			// try to get compass heading from sensor and forward it via NMEA.
-			bool ok = false;
-			float heading = compass.trueHeading( &ok );
+				compass.haveSensor() == true &&
+				( compass_nmea_hdm.get() == true || compass_nmea_hdt.get() == true ) &&
+				(count++ % 5 ) == 0 )
+		  {
+          // try to get compass heading from sensor and forward it via NMEA.
+          bool ok1 = false;
+          bool ok2 = false;
+          float mh = -400.;
+          float th = -400.;
 
-			if( ok == true ) {
-				xSemaphoreTake(xMutex, portMAX_DELAY );
-				OV.sendNmeaHeading( heading );
-				xSemaphoreGive( xMutex );
-			}
-		}
+          if( compass_nmea_hdm.get() == true )
+            {
+              mh = compass.magneticHeading( &ok1 );
+            }
+
+          if( compass_decl_valid.get() == true &&
+              compass_nmea_hdt.get() == true )
+            {
+              // get true heading only, if declination is valid
+              th = compass.trueHeading( &ok2 );
+            }
+
+          if( ok1 == true || ok2 == true )
+            {
+              xSemaphoreTake( xMutex, portMAX_DELAY );
+
+              if( ok1 == true )
+                {
+                  OV.sendNmeaHDM( mh );
+                }
+
+              if( ok2 == true )
+                {
+                  OV.sendNmeaHDT( th );
+                }
+
+              xSemaphoreGive( xMutex );
+            }
+        }
 
 		if( uxTaskGetStackHighWaterMark( bpid )  < 1024 )
 			ESP_LOGW(FNAME,"Warning bmpTask stack low: %d", uxTaskGetStackHighWaterMark( bpid ) );

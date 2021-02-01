@@ -362,7 +362,7 @@ void readBMP(void *pvParameters){
 
 		if( compass_enable.get() == true &&
 				compass.haveSensor() == true &&
-				( compass_nmea_hdm.get() == true || compass_nmea_hdt.get() == true ) &&
+				( comp_nmea_hdm.get() == true || comp_nmea_hdt.get() == true ) &&
 				(count++ % 5 ) == 0 )
 		  {
           // try to get compass heading from sensor and forward it via NMEA.
@@ -371,13 +371,13 @@ void readBMP(void *pvParameters){
           float mh = -400.;
           float th = -400.;
 
-          if( compass_nmea_hdm.get() == true )
+          if( comp_nmea_hdm.get() == true )
             {
               mh = compass.magneticHeading( &ok1 );
             }
 
-          if( compass_decl_valid.get() == true &&
-              compass_nmea_hdt.get() == true )
+          if( comp_decl_valid.get() == true &&
+              comp_nmea_hdt.get() == true )
             {
               // get true heading only, if declination is valid
               th = compass.trueHeading( &ok2 );

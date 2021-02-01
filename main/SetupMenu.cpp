@@ -919,7 +919,7 @@ void SetupMenu::setup( )
                                                    1.0,
                                                    compassDeclinationAction,
                                                    false,
-                                                   &compass_declination );
+                                                   &compass_decl );
 
     cd->setHelp( PROGMEM "Set compass declination in degrees" );
     compassMenu->addMenu( cd );
@@ -940,13 +940,13 @@ void SetupMenu::setup( )
     SetupMenu * nmeaMenu = new SetupMenu( "Setup NMEA" );
     compassMenu->addMenu( nmeaMenu );
 
-    SetupMenuSelect * nmeaHdm = new SetupMenuSelect( "$HCHDM", 0, false, 0, true, &compass_nmea_hdm );
+    SetupMenuSelect * nmeaHdm = new SetupMenuSelect( "$HCHDM", 0, false, 0, true, &comp_nmea_hdm );
     nmeaHdm->addEntry( "Disable");
     nmeaHdm->addEntry( "Enable");
     nmeaHdm->setHelp( PROGMEM "Enable/disable NMEA '$HCHDM' sentence (magnetic heading)" );
     nmeaMenu->addMenu( nmeaHdm );
 
-    SetupMenuSelect * nmeaHdt = new SetupMenuSelect( "$HCHDT", 0, false, 0, true, &compass_nmea_hdt );
+    SetupMenuSelect * nmeaHdt = new SetupMenuSelect( "$HCHDT", 0, false, 0, true, &comp_nmea_hdt );
     nmeaHdt->addEntry( "Disable");
     nmeaHdt->addEntry( "Enable");
     nmeaHdt->setHelp( PROGMEM "Enable/disable NMEA '$HCHDT' sentence (magnetic true heading)" );

@@ -23,14 +23,14 @@ Last update: 2021-02-01
 #include "Compass.h"
 
 // Initialise static members
-SetupNG<float>* Compass::deviations[8] = { &compass_deviation_45,
-                                           &compass_deviation_90,
-                                           &compass_deviation_135,
-                                           &compass_deviation_180,
-                                           &compass_deviation_225,
-                                           &compass_deviation_270,
-                                           &compass_deviation_335,
-                                           &compass_deviation_360 };
+SetupNG<float>* Compass::deviations[8] = { &compass_dev_45,
+                                           &compass_dev_90,
+                                           &compass_dev_135,
+                                           &compass_dev_180,
+                                           &compass_dev_225,
+                                           &compass_dev_270,
+                                           &compass_dev_335,
+                                           &compass_dev_360 };
 /*
   Creates instance for I2C connection with passing the desired parameters.
   No action is done at the bus. Note if i2cBus is not set in the constructor,
@@ -121,7 +121,7 @@ float Compass::trueHeading( bool *okIn )
     }
 
   // Calculate true heading
-  heading = heading + compass_declination.get();
+  heading = heading + compass_decl.get();
 
   if( okIn != nullptr )
     {

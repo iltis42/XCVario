@@ -23,14 +23,14 @@ Last update: 2021-02-01
 #include "CompassMenu.h"
 
 // Initialise static members
-SetupNG<float>* CompassMenu::deviations[8] = { &compass_deviation_45,
-                                               &compass_deviation_90,
-                                               &compass_deviation_135,
-                                               &compass_deviation_180,
-                                               &compass_deviation_225,
-                                               &compass_deviation_270,
-                                               &compass_deviation_335,
-                                               &compass_deviation_360 };
+SetupNG<float>* CompassMenu::deviations[8] = { &compass_dev_45,
+                                               &compass_dev_90,
+                                               &compass_dev_135,
+                                               &compass_dev_180,
+                                               &compass_dev_225,
+                                               &compass_dev_270,
+                                               &compass_dev_335,
+                                               &compass_dev_360 };
 /**
  * Creates a compass menu instance with an active compass object.
  */
@@ -140,7 +140,7 @@ int CompassMenu::declinationAction( SetupMenuValFloat *p )
   if( p->pressed )
     {
       ESP_LOGI( FNAME, "Compass declination set to valid" );
-      compass_decl_valid.set( true );
+      comp_decl_valid.set( true );
     }
 
   return 0;

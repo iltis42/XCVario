@@ -83,6 +83,8 @@ public:
 
 	SetupNG( const char * akey, T adefault, bool reset=true ) {
 		// ESP_LOGI(FNAME,"SetupNG(%s)", akey );
+		if( strlen( akey ) > 15 )
+			ESP_LOGE(FNAME,"SetupNG(%s) key > 15 char !", akey );
 		entries.push_back( this );  // an into vector
 		_nvs_handle = 0;
 		_key = akey;

@@ -83,7 +83,7 @@ void SetupMenuValFloat::display( int mode ){
 
 void SetupMenuValFloat::displayVal()
 {
-	ucg->setFont(ucg_font_fub25_hr);
+	ucg->setFont(ucg_font_fur25_hf);
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setPrintPos( 1, 70 );
 	if( _unit )

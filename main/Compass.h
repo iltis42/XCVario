@@ -9,16 +9,16 @@
 
 File: Compass.h
 
-Class to handle compass data and actions.
+Class to handle compass data access.
 
 Author: Axel Pauli, January 2021
+
+Last update: 2021-02-01
 
 **************************************************************************/
 
 #pragma once
 
-#include "SetupMenuValFloat.h"
-#include "SetupMenuSelect.h"
 #include "SetupNG.h"
 #include "QMC5883L.h"
 
@@ -40,15 +40,21 @@ public:
 
   ~Compass();
 
-  /** Returns the heading by considering deviation. If ok is passed, it is set
-   * to true, if heading data is valid, otherwise it is set to false.*/
-  float trueHeading( bool *ok=nullptr );
+  /**
+   * Returns the heading by considering deviation and declination. If ok is
+   * passed, it is set to true, if heading data is valid, otherwise it is set
+   * to false.
+   */
+  float trueHeading( bool *okIn=nullptr );
 
-  // Compass Menu Action method
-  int calibrateAction( SetupMenuSelect *p );
+  /**
+   * Returns the magnetic heading by considering deviation and declination.
+   * If ok is passed, it is set to true, if heading data is valid, otherwise
+   * it is set to false.
+   */
+  float magneticHeading( bool *okIn=nullptr );
 
 private:
 
   static SetupNG<float> *deviations[8];
 };
-

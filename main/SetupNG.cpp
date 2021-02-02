@@ -150,14 +150,18 @@ SetupNG<int>            audio_netto_mode( "AUDIO_BN_MOD", 0 );
 SetupNG<float>          flap_pos_max("FL_POS_M", +2);
 SetupNG<float>          flap_neg_max("FL_NEG_M", -2);
 SetupNG<int>            compass_enable( "COMPASS_ENABLE", 0 );
-SetupNG<float>          compass_deviation_45( "COMPASS_DEV_45", 0 );
-SetupNG<float>          compass_deviation_90( "COMPASS_DEV_90", 0 );
-SetupNG<float>          compass_deviation_135( "COMPASS_DEV_135", 0 );
-SetupNG<float>          compass_deviation_180( "COMPASS_DEV_180", 0 );
-SetupNG<float>          compass_deviation_225( "COMPASS_DEV_225", 0 );
-SetupNG<float>          compass_deviation_270( "COMPASS_DEV_279", 0 );
-SetupNG<float>          compass_deviation_335( "COMPASS_DEV_335", 0 );
-SetupNG<float>          compass_deviation_360( "COMPASS_DEV_360", 0 );
+SetupNG<float>          compass_dev_45( "COMPASS_DEV_45", 0 );
+SetupNG<float>          compass_dev_90( "COMPASS_DEV_90", 0 );
+SetupNG<float>          compass_dev_135( "COMPASS_DEV_135", 0 );
+SetupNG<float>          compass_dev_180( "COMPASS_DEV_180", 0 );
+SetupNG<float>          compass_dev_225( "COMPASS_DEV_225", 0 );
+SetupNG<float>          compass_dev_270( "COMPASS_DEV_279", 0 );
+SetupNG<float>          compass_dev_335( "COMPASS_DEV_335", 0 );
+SetupNG<float>          compass_dev_360( "COMPASS_DEV_360", 0 );
+SetupNG<float>          compass_decl( "compass_decl", 0 );
+SetupNG<int>            comp_decl_valid( "comp_decl_valid", 0 );
+SetupNG<int>            comp_nmea_hdm( "comp_nmea_hdm", 0 );
+SetupNG<int>            comp_nmea_hdt( "comp_nmea_hdt", 0 );
 SetupNG<int> 			s2f_with_gload( "S2G_GLOAD", 1 );       // considering g load in S2F
 SetupNG<int> 			s2f_blockspeed( "S2G_BLOCKSPEED", 0 );  // considering netto vario and g load for S2F or not
 

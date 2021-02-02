@@ -225,6 +225,7 @@ void drawDisplay(void *pvParameters){
 void readBMP(void *pvParameters){
 	while (1)
 	{
+		count++;
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		xSemaphoreTake(xMutex,portMAX_DELAY );
 		TE = bmpVario.readTE( tas );  // 10x per second
@@ -268,7 +269,7 @@ void readBMP(void *pvParameters){
 			Audio::setValues( TE - polar_sink, s2f_delta );
 		}
 
-		if( (count++ % 2) == 0 ) {
+		if( (count % 2) == 0 ) {
 			Flap::progress();
 			xSemaphoreTake(xMutex,portMAX_DELAY );
 			baroP = baroSensor->readPressure();   // 5x per second
@@ -363,7 +364,7 @@ void readBMP(void *pvParameters){
 		if( compass_enable.get() == true &&
 				compass.haveSensor() == true &&
 				( comp_nmea_hdm.get() == true || comp_nmea_hdt.get() == true ) &&
-				(count++ % 5 ) == 0 )
+				(count % 5 ) == 0 )
 		  {
           // try to get compass heading from sensor and forward it via NMEA.
           bool ok1 = false;

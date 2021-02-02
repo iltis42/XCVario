@@ -396,4 +396,5 @@ extern SetupNG<int> 		s2f_with_gload;
 extern SetupNG<int> 		s2f_blockspeed;
 
 
+
 #endif /* MAIN_SETUP_NG_H_ */

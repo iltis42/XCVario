@@ -33,6 +33,7 @@ SetupMenuSelect * mpu = 0;
 
 // Menu for flap setup
 MenuEntry* wkm = 0;
+MenuEntry *flapssm = 0;
 SetupMenuValFloat * plus3 = 0;
 SetupMenuValFloat * plus2 = 0;
 SetupMenuValFloat * plus1 = 0;
@@ -161,12 +162,12 @@ int add_key( SetupMenuSelect * p )
 }
 
 void wkm_clear(){
-	wkm->delMenu( plus3 );
-	wkm->delMenu( plus2 );
-	wkm->delMenu( plus1 );
-	wkm->delMenu( min1 );
-	wkm->delMenu( min2 );
-	wkm->delMenu( min3 );
+	flapssm->delMenu( plus3 );
+	flapssm->delMenu( plus2 );
+	flapssm->delMenu( plus1 );
+	flapssm->delMenu( min1 );
+	flapssm->delMenu( min2 );
+	flapssm->delMenu( min3 );
 }
 
 int flap_speed_act( SetupMenuValFloat * p ){
@@ -177,17 +178,17 @@ int flap_speed_act( SetupMenuValFloat * p ){
 int flap_pos_act( SetupMenuValFloat * p ){
 	wkm_clear();
 	if( (int)flap_pos_max.get() > 2 )
-		wkm->addMenu( plus3 );
+		flapssm->addMenu( plus3 );
 	if( (int)flap_pos_max.get() > 1 )
-		wkm->addMenu( plus2 );
+		flapssm->addMenu( plus2 );
 	if( (int)flap_pos_max.get() > 0 )
-		wkm->addMenu( plus1 );
+		flapssm->addMenu( plus1 );
 	if( (int)flap_neg_max.get() < 0 )
-		wkm->addMenu( min1 );
+		flapssm->addMenu( min1 );
 	if( (int)flap_neg_max.get() < -1 )
-		wkm->addMenu( min2 );
+		flapssm->addMenu( min2 );
 	if( (int)flap_neg_max.get() < -2 )
-		wkm->addMenu( min3 );
+		flapssm->addMenu( min3 );
 	Flap::initSensor();
 	return 0;
 }
@@ -814,35 +815,38 @@ void SetupMenu::setup( )
 		nflneg->setHelp(PROGMEM"Maximum negative flap position, default -2. Restart XCVario to adjust speed menu entries");
 		wkm->addMenu( nflneg );
 
+		SetupMenu * flapss = new SetupMenu( "Flap Speeds Setup" );
+		MenuEntry *flapssm = wkm->addMenu( flapss );
+
 		plus3 = new SetupMenuValFloat("Speed +3 to +2", 0, sunit.c_str(),  20, 150, 1, flap_speed_act, false, &flap_plus_2  );
 		plus3->setHelp(PROGMEM"Speed for transition from +3 to +3 flap setting");
 		if( (int)flap_pos_max.get() > 2 )
-			wkm->addMenu( plus3 );
+			flapssm->addMenu( plus3 );
 
 		plus2 = new SetupMenuValFloat("Speed +2 to +1", 0, sunit.c_str(),  20, 150, 1, flap_speed_act, false, &flap_plus_1  );
 		plus2->setHelp(PROGMEM"Speed for transition from +2 to +1 flap setting");
 		if( (int)flap_pos_max.get() > 1 )
-			wkm->addMenu( plus2 );
+			flapssm->addMenu( plus2 );
 
 		plus1 = new SetupMenuValFloat("Speed +1 to 0", 0, sunit.c_str(),  20, 150, 1, flap_speed_act, false, &flap_0  );
 		plus1->setHelp(PROGMEM"Speed for transition from +1 to 0 flap setting");
 		if( (int)flap_pos_max.get() > 0 )
-			wkm->addMenu( plus1 );
+			flapssm->addMenu( plus1 );
 
 		min1 = new SetupMenuValFloat("Speed 0 to -1", 0, sunit.c_str(),   20, 180, 1, flap_speed_act, false, &flap_minus_1  );
 		min1->setHelp(PROGMEM"Speed for transition from 0 to -1 flap setting");
 		if( (int)flap_neg_max.get() < 0 )
-			wkm->addMenu( min1 );
+			flapssm->addMenu( min1 );
 
 		min2 = new SetupMenuValFloat("Speed -1 to -2", 0, sunit.c_str(),  50, 280, 1, flap_speed_act, false, &flap_minus_2  );
 		min2->setHelp(PROGMEM"Speed for transition from -1 to -2 flap setting");
 		if( (int)flap_neg_max.get() < -1 )
-			wkm->addMenu( min2 );
+			flapssm->addMenu( min2 );
 
 		min3 = new SetupMenuValFloat("Speed -2 to -3", 0, sunit.c_str(),  50, 280, 1, flap_speed_act, false, &flap_minus_3  );
 		min3->setHelp(PROGMEM"Speed for transition from -2 to -3 flap setting");
 		if( (int)flap_neg_max.get() < -2 )
-			wkm->addMenu( min3 );
+			flapssm->addMenu( min3 );
 
 		// Units
 		SetupMenu * un = new SetupMenu( "Units" );

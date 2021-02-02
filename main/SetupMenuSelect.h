@@ -30,6 +30,7 @@ public:
 	void press();
 	virtual ~SetupMenuSelect() {};
 	inline int getSelect() { return *_select; };
+	inline const char * getEntry(){ return _values[ *_select ].c_str(); }
 
 private:
 	int  *_select;

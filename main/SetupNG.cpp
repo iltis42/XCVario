@@ -164,7 +164,13 @@ SetupNG<int>            comp_nmea_hdm( "comp_nmea_hdm", 0 );
 SetupNG<int>            comp_nmea_hdt( "comp_nmea_hdt", 0 );
 SetupNG<int> 			s2f_with_gload( "S2G_GLOAD", 1 );       // considering g load in S2F
 SetupNG<int> 			s2f_blockspeed( "S2G_BLOCKSPEED", 0 );  // considering netto vario and g load for S2F or not
-
+SetupNG<int> 			wk_label_plus_3( "WKLP3", 3);
+SetupNG<int> 			wk_label_plus_2( "WKLP2", 2);
+SetupNG<int> 			wk_label_plus_1( "WKLP1", 1);
+SetupNG<int> 			wk_label_null_0( "WKL0",  0);
+SetupNG<int> 			wk_label_minus_1( "WKLM1", 1);
+SetupNG<int> 			wk_label_minus_2( "WKLM2", 2);
+SetupNG<int> 			wk_label_minus_3( "WKLM3", 3);
 
 mpud::raw_axes_t zero_bias;
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );

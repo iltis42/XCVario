@@ -848,6 +848,57 @@ void SetupMenu::setup( )
 		if( (int)flap_neg_max.get() < -2 )
 			flapssm->addMenu( min3 );
 
+		SetupMenu * flapls = new SetupMenu( "Flap Label Setup" );
+		MenuEntry *flaplsm = wkm->addMenu( flapls );
+
+		SetupMenuSelect * flabp3 = new SetupMenuSelect( "Flap Label +3",	0, false, add_key, false, &wk_label_plus_3 );
+		flaplsm->addMenu( flabp3 );
+		SetupMenuSelect * flabp2 = new SetupMenuSelect( "Flap Label +2",	0, false, add_key, false, &wk_label_plus_2 );
+		flaplsm->addMenu( flabp2 );
+		SetupMenuSelect * flabp1 = new SetupMenuSelect( "Flap Label +1",	0, false, add_key, false, &wk_label_plus_1 );
+		flaplsm->addMenu( flabp1 );
+		SetupMenuSelect * flab0 = new SetupMenuSelect( "Flap Label  0",		0, false, add_key, false, &wk_label_null_0 );
+		flaplsm->addMenu( flab0 );
+		SetupMenuSelect * flabm1 = new SetupMenuSelect( "Flap Label -1",	0, false, add_key, false, &wk_label_minus_1 );
+		flaplsm->addMenu( flabm1 );
+		SetupMenuSelect * flabm2 = new SetupMenuSelect( "Flap Label -2",	0, false, add_key, false, &wk_label_minus_2 );
+		flaplsm->addMenu( flabm2 );
+		SetupMenuSelect * flabm3 = new SetupMenuSelect( "Flap Label -3",	0, false, add_key, false, &wk_label_minus_3 );
+		flaplsm->addMenu( flabm3 );
+		// Initialize Flap Label Entries
+		for( int pos=-9; pos< 10; pos++ ){  // -9,.,-2,-1,+0,+1,+2,.,+9
+			char p[5];
+			sprintf( p, "%+d", pos );
+			flabp1->addEntry( p );
+			flabp2->addEntry( p );
+			flabp3->addEntry( p );
+			flab0->addEntry( p );
+			flabm1->addEntry( p );
+			flabm2->addEntry( p );
+			flabm3->addEntry( p );
+		}
+		for( int pos=0; pos<=20; pos++ ){  // 0,1,2,3,.,20
+			char p[5];
+			sprintf( p, "%d", pos );
+			flabp1->addEntry( p );
+			flabp2->addEntry( p );
+			flabp3->addEntry( p );
+			flab0->addEntry( p );
+			flabm1->addEntry( p );
+			flabm2->addEntry( p );
+			flabm3->addEntry( p );
+		}
+		flab0->addEntry( " N" );   // N,L,S
+		flab0->addEntry( " L" );
+		flab0->addEntry( " S" );
+		flabp1->addEntry( " L" );
+		flabp2->addEntry( " L" );
+		flabp3->addEntry( " L" );
+		flabm1->addEntry( " S" );
+		flabm2->addEntry( " S" );
+		flabm3->addEntry( " S" );
+
+
 		// Units
 		SetupMenu * un = new SetupMenu( "Units" );
 		un->setHelp( PROGMEM "Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units");

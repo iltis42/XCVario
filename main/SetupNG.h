@@ -394,7 +394,13 @@ extern SetupNG<int>         comp_nmea_hdt;
 extern SetupNG<int>         audio_netto_mode;
 extern SetupNG<int> 		s2f_with_gload;
 extern SetupNG<int> 		s2f_blockspeed;
-
+extern SetupNG<int> 		wk_label_plus_3;
+extern SetupNG<int> 		wk_label_plus_2;
+extern SetupNG<int> 		wk_label_plus_1;
+extern SetupNG<int> 		wk_label_null_0;
+extern SetupNG<int> 		wk_label_minus_1;
+extern SetupNG<int> 		wk_label_minus_2;
+extern SetupNG<int> 		wk_label_minus_3;
 
 
 #endif /* MAIN_SETUP_NG_H_ */

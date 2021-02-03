@@ -482,10 +482,6 @@ void IpsDisplay::setTeBuf( int y1, int h, int r, int g, int b ){
 	}
 }
 
-
-
-
-
 void IpsDisplay::drawMC( float mc, bool large ) {
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setPrintPos(5,DISPLAY_H-6);
@@ -574,7 +570,6 @@ void IpsDisplay::drawFlarm( int x, int y, bool flarm ) {
 	ucg->undoClipRange();
 }
 
-
 void IpsDisplay::drawWifi( int x, int y ) {
 	int btq=1;
 	if( blue_enable.get() == WL_WLAN_CLIENT ){
@@ -599,7 +594,6 @@ void IpsDisplay::drawWifi( int x, int y ) {
 		btqueue = btq;
 	}
 }
-
 
 void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
 	if( blank ) {  // blank battery for blinking
@@ -837,8 +831,6 @@ void IpsDisplay::drawAltitude( float altitude, int x, int y ){
 		prefalt = alt;
 	}
 }
-
-
 
 void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, float polar_sink_ms, float altitude_m,
 		float temp, float volt, float s2fd_ms, float s2f_ms, float acl_ms, bool s2fmode, bool standard_setting, float wksensor ){

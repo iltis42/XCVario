@@ -293,7 +293,7 @@ void Flap::drawBigBar( int ypos, int xpos, float wkf, float wksens ){
 			char position[6];
 			sprintf( position,"%s", flapLabels[wk+3]->getEntry());
 			int y= ypos + lfh*wk;  // negative WK eq. lower position
-			ucg->setPrintPos(xpos+2, y);
+			ucg->setPrintPos(xpos+2, y+1);
 			ucg->setColor(COLOR_WHITE);
 			// print digit
 			ucg->printf(position);

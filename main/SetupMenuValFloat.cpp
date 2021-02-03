@@ -140,6 +140,8 @@ void SetupMenuValFloat::press(){
 			if( _nvs )
 				_nvs->commit();
 			if( _restart ) {
+				ucg->setColor(COLOR_BLACK);
+				ucg->drawBox( 0,160,240,160 );
 				ucg->setPrintPos( 1, 250  );
 				ucg->setColor(COLOR_WHITE);
 				ucg->print("Now Restart" );

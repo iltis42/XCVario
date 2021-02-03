@@ -143,12 +143,16 @@ void Flap::setupMenue( SetupMenu *parent ){
 	wkm->addMenu( wkcal );
 
 	SetupMenuValFloat * nflpos = new SetupMenuValFloat("Max positive flap setting", 0, "", 0, 3, 1, flap_pos_act, false, &flap_pos_max, true);
-	nflpos->setHelp(PROGMEM"Maximum positive flap position. Restart XCVario to adjust speed menu entries");
+	nflpos->setHelp(PROGMEM"Maximum positive flap position to be displayed");
 	wkm->addMenu( nflpos );
 
 	SetupMenuValFloat * nflneg = new SetupMenuValFloat("Max negative flap setting", 0, "", -3, 0, 1, flap_pos_act, false, &flap_neg_max, true  );
-	nflneg->setHelp(PROGMEM"Maximum negative flap position, default -2. Restart XCVario to adjust speed menu entries");
+	nflneg->setHelp(PROGMEM"Maximum negative flap position to be displayed");
 	wkm->addMenu( nflneg );
+
+	SetupMenuValFloat * flgnd = new SetupMenuValFloat("Takeoff Setting", 0, "", -3, 3, 1, 0, false, &flap_takeoff  );
+	flgnd->setHelp(PROGMEM"Flap position to be set on ground for takeoff, when there is no airspeed");
+	wkm->addMenu( flgnd );
 
 	SetupMenu * flapss = new SetupMenu( "Flap Speeds Setup" );
 	MenuEntry *flapssm = wkm->addMenu( flapss );
@@ -305,10 +309,9 @@ void Flap::drawBigBar( int ypos, int xpos, float wkf, float wksens ){
 	ESP_LOGI(FNAME,"np: %d size: %d",  NUMPOS, size );
 	int yclip = ypos+MINPOS*lfh-(lfh/2);
 	ucg->setClipRange( xpos-15, yclip, 15, size );
-	// now draw the numbers
 	int y = ypos + (int)((wkf)*(lfh) + 0.5 );
-
 	int ys = ypos + (int)(( wksens )*(lfh) + 0.5 );
+	ESP_LOGI(FNAME,"wkf: %f", wkf);
 	if( optPosOldY != y || ( (sensorOldY != ys) )) {  // redraw on change or when wklever is near
 		ucg->setColor(COLOR_BLACK);
 		ucg->drawTriangle( xpos-15,optPosOldY-5,  xpos-15,optPosOldY+5,  xpos-2,optPosOldY );
@@ -490,7 +493,7 @@ int Flap::getOptimumInt( float speed )
 	}
 	if( speed < flapSpeeds[7] ) {
 		// ESP_LOGI(FNAME,"Ret: %d", 1);
-		return flap_pos_max.get() - 1;
+		return flap_takeoff.get();
 	}
 	else if( speed > flapSpeeds[0] ){
 		// ESP_LOGI(FNAME,"Ret: %d", -2);

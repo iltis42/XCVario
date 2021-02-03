@@ -171,6 +171,7 @@ SetupNG<int> 			wk_label_null_0( "WKL0",  0);
 SetupNG<int> 			wk_label_minus_1( "WKLM1", 1);
 SetupNG<int> 			wk_label_minus_2( "WKLM2", 2);
 SetupNG<int> 			wk_label_minus_3( "WKLM3", 3);
+SetupNG<float>       	flap_takeoff("FLAPTO", 1 );
 
 mpud::raw_axes_t zero_bias;
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );

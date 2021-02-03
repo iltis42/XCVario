@@ -401,6 +401,8 @@ extern SetupNG<int> 		wk_label_null_0;
 extern SetupNG<int> 		wk_label_minus_1;
 extern SetupNG<int> 		wk_label_minus_2;
 extern SetupNG<int> 		wk_label_minus_3;
+extern SetupNG<float>       flap_takeoff;
+
 
 
 #endif /* MAIN_SETUP_NG_H_ */

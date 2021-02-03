@@ -15,6 +15,10 @@
 #include "MenuEntry.h"
 #include "SetupMenuValFloat.h"
 
+extern String vunit;
+extern String sunit;
+
+
 class SetupMenu:  public MenuEntry {
 public:
 	SetupMenu();

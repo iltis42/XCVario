@@ -3,6 +3,7 @@
 
 #include "AnalogInput.h"
 #include <Ucglib.h>
+#include "SetupMenu.h"
 
 /*
  * This class handels flap display and Flap sensor
@@ -35,6 +36,7 @@ public:
 	static void drawWingSymbol( int ypos, int xpos, int wk, int wkalt );
 	static void redraw() { sensorOldY = -1000; surroundingBox=false; };
 	static void redrawLever() { sensorOldY = -1000; };
+	static void setupMenue( SetupMenu *parent );
 
 private:
 	static Ucglib_ILI9341_18x240x320_HWSPI* ucg;

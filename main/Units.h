@@ -53,7 +53,7 @@ public:
 		if( vario_unit.get() == 0 )
 			return( te );
 		else if(  vario_unit.get() == 1 )
-			return( te*196.85 );
+			return( te*1.9685 );
 		else if( vario_unit.get() == 2 )
 			return( te*1.94384 );         // knots
 		else

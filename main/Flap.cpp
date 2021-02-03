@@ -40,7 +40,7 @@ SetupMenuSelect * flabm1 = 0;
 SetupMenuSelect * flabm2 = 0;
 SetupMenuSelect * flabm3 = 0;
 
-
+SetupMenuSelect *flapLabels[NUMBER_POS];
 
 void showWk(SetupMenuSelect * p){
 	p->ucg->setPrintPos(1,120);
@@ -56,40 +56,15 @@ void wk_cal_show( SetupMenuSelect * p, int wk ){
 		showWk(p);
 }
 
-
-void wkm_clear(){
-	flapssm->delMenu( plus3 );
-	flapssm->delMenu( plus2 );
-	flapssm->delMenu( plus1 );
-	flapssm->delMenu( min1 );
-	flapssm->delMenu( min2 );
-	flapssm->delMenu( min3 );
-}
-
 int flap_speed_act( SetupMenuValFloat * p ){
 	Flap::initSpeeds();
 	return 0;
 }
 
-
 int flap_pos_act( SetupMenuValFloat * p ){
-	wkm_clear();
-	if( (int)flap_pos_max.get() > 2 )
-		flapssm->addMenu( plus3 );
-	if( (int)flap_pos_max.get() > 1 )
-		flapssm->addMenu( plus2 );
-	if( (int)flap_pos_max.get() > 0 )
-		flapssm->addMenu( plus1 );
-	if( (int)flap_neg_max.get() < 0 )
-		flapssm->addMenu( min1 );
-	if( (int)flap_neg_max.get() < -1 )
-		flapssm->addMenu( min2 );
-	if( (int)flap_neg_max.get() < -2 )
-		flapssm->addMenu( min3 );
 	Flap::initSensor();
 	return 0;
 }
-
 
 // Action Routines
 int wk_cal( SetupMenuSelect * p )
@@ -167,11 +142,11 @@ void Flap::setupMenue( SetupMenu *parent ){
 	wkcal->setHelp( PROGMEM "Option to calibrate flap Sensor (WK), to indicate current flap setting: Press button after each setting" );
 	wkm->addMenu( wkcal );
 
-	SetupMenuValFloat * nflpos = new SetupMenuValFloat("Max positive flap setting", 0, "", 0, 3, 1, flap_pos_act, false, &flap_pos_max  );
+	SetupMenuValFloat * nflpos = new SetupMenuValFloat("Max positive flap setting", 0, "", 0, 3, 1, flap_pos_act, false, &flap_pos_max, true);
 	nflpos->setHelp(PROGMEM"Maximum positive flap position. Restart XCVario to adjust speed menu entries");
 	wkm->addMenu( nflpos );
 
-	SetupMenuValFloat * nflneg = new SetupMenuValFloat("Max negative flap setting", 0, "", -3, 0, 1, flap_pos_act, false, &flap_neg_max  );
+	SetupMenuValFloat * nflneg = new SetupMenuValFloat("Max negative flap setting", 0, "", -3, 0, 1, flap_pos_act, false, &flap_neg_max, true  );
 	nflneg->setHelp(PROGMEM"Maximum negative flap position, default -2. Restart XCVario to adjust speed menu entries");
 	wkm->addMenu( nflneg );
 
@@ -180,33 +155,27 @@ void Flap::setupMenue( SetupMenu *parent ){
 
 	plus3 = new SetupMenuValFloat("Speed +3 to +2", 0, sunit.c_str(),  20, 150, 1, flap_speed_act, false, &flap_plus_2  );
 	plus3->setHelp(PROGMEM"Speed for transition from +3 to +3 flap setting");
-	if( (int)flap_pos_max.get() > 2 )
-		flapssm->addMenu( plus3 );
+	flapssm->addMenu( plus3 );
 
 	plus2 = new SetupMenuValFloat("Speed +2 to +1", 0, sunit.c_str(),  20, 150, 1, flap_speed_act, false, &flap_plus_1  );
 	plus2->setHelp(PROGMEM"Speed for transition from +2 to +1 flap setting");
-	if( (int)flap_pos_max.get() > 1 )
-		flapssm->addMenu( plus2 );
+	flapssm->addMenu( plus2 );
 
 	plus1 = new SetupMenuValFloat("Speed +1 to 0", 0, sunit.c_str(),  20, 150, 1, flap_speed_act, false, &flap_0  );
 	plus1->setHelp(PROGMEM"Speed for transition from +1 to 0 flap setting");
-	if( (int)flap_pos_max.get() > 0 )
-		flapssm->addMenu( plus1 );
+	flapssm->addMenu( plus1 );
 
 	min1 = new SetupMenuValFloat("Speed 0 to -1", 0, sunit.c_str(),   20, 180, 1, flap_speed_act, false, &flap_minus_1  );
 	min1->setHelp(PROGMEM"Speed for transition from 0 to -1 flap setting");
-	if( (int)flap_neg_max.get() < 0 )
-		flapssm->addMenu( min1 );
+	flapssm->addMenu( min1 );
 
 	min2 = new SetupMenuValFloat("Speed -1 to -2", 0, sunit.c_str(),  50, 280, 1, flap_speed_act, false, &flap_minus_2  );
 	min2->setHelp(PROGMEM"Speed for transition from -1 to -2 flap setting");
-	if( (int)flap_neg_max.get() < -1 )
-		flapssm->addMenu( min2 );
+	flapssm->addMenu( min2 );
 
 	min3 = new SetupMenuValFloat("Speed -2 to -3", 0, sunit.c_str(),  50, 280, 1, flap_speed_act, false, &flap_minus_3  );
 	min3->setHelp(PROGMEM"Speed for transition from -2 to -3 flap setting");
-	if( (int)flap_neg_max.get() < -2 )
-		flapssm->addMenu( min3 );
+	flapssm->addMenu( min3 );
 
 	SetupMenu * flapls = new SetupMenu( "Flap Label Setup" );
 	MenuEntry *flaplsm = wkm->addMenu( flapls );
@@ -239,7 +208,10 @@ void Flap::setupMenue( SetupMenu *parent ){
 	}
 	for( int pos=0; pos<=20; pos++ ){  // 0,1,2,3,.,20
 		char p[5];
-		sprintf( p, "%d", pos );
+		if(pos<10)
+			sprintf( p, " %d", pos );
+		else
+			sprintf( p, "%d", pos );
 		flabp1->addEntry( p );
 		flabp2->addEntry( p );
 		flabp3->addEntry( p );
@@ -257,6 +229,14 @@ void Flap::setupMenue( SetupMenu *parent ){
 	flabm1->addEntry( " S" );
 	flabm2->addEntry( " S" );
 	flabm3->addEntry( " S" );
+	flapLabels[0] = flabm3;
+	flapLabels[1] = flabm2;
+	flapLabels[2] = flabm1;
+	flapLabels[3] = flab0;
+	flapLabels[4] = flabp1;
+	flapLabels[5] = flabp2;
+	flapLabels[6] = flabp3;
+
 }
 
 
@@ -311,10 +291,7 @@ void Flap::drawBigBar( int ypos, int xpos, float wkf, float wksens ){
 	if( !surroundingBox ) {
 		for( int wk=MINPOS; wk<=MAXPOS; wk++ ){
 			char position[6];
-			if( wk == 0 )
-				sprintf( position,"% d", wk);
-			else
-				sprintf( position,"%+d", wk);
+			sprintf( position,"%s", flapLabels[wk+3]->getEntry());
 			int y= ypos + lfh*wk;  // negative WK eq. lower position
 			ucg->setPrintPos(xpos+2, y);
 			ucg->setColor(COLOR_WHITE);

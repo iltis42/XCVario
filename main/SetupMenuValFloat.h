@@ -21,7 +21,7 @@
 class SetupMenuValFloat:  public MenuEntry {
 public:
 	SetupMenuValFloat() { _unit = 0; };
-	SetupMenuValFloat(  String title, float *value, const char *unit, float min, float max, float step, int (*action)(SetupMenuValFloat *p) = 0, bool end_menu=false, SetupNG<float> *anvs = 0 );
+	SetupMenuValFloat(  String title, float *value, const char *unit, float min, float max, float step, int (*action)(SetupMenuValFloat *p) = 0, bool end_menu=false, SetupNG<float> *anvs = 0, bool restart=false );
 	void display( int mode=0 );
 	void displayVal();
 	void setPrecision( int prec );
@@ -35,6 +35,8 @@ public:
 
 private:
 	float _min, _max, _step;
+	float _value_safe;
+	bool _restart;
 	bool _end_menu;
 	const char * _unit;
 	int (*_action)( SetupMenuValFloat *p );

@@ -5,7 +5,7 @@
  *   the Free Software Foundation; either version 2 of the License, or     *
  *   (at your option) any later version.                                   *
  *                                                                         *
-****************************************************************************
+ ****************************************************************************
 
 I2C driver for the chip QMC5883L, 3-Axis Magnetic Sensor.
 
@@ -15,7 +15,7 @@ https://datasheetspdf.com/pdf-file/1309218/QST/QMC5883L/1
 
 Author: Axel Pauli, January 2021
 
-****************************************************************************/
+ ****************************************************************************/
 
 #include <cmath>
 #include <logdef.h>
@@ -58,24 +58,28 @@ bool QMC5883L::m_sensor = false;
   No action is done at the bus. Note if i2cBus is not set in the constructor,
   you have to set it by calling method setBus(). The default address of the
   chip is 0x0D.
-*/
+ */
 QMC5883L::QMC5883L( const uint8_t addrIn,
-                    const uint8_t odrIn,
-                    const uint8_t rangeIn,
-                    const uint8_t osrIn,
-                    I2C_t *i2cBus ) :
-  m_bus( i2cBus ),
-  addr( addrIn ),
-  odr( odrIn ),
-  range( rangeIn ),
-  osr( osrIn ),
-  overflowWarning( false )
+		const uint8_t odrIn,
+		const uint8_t rangeIn,
+		const uint8_t osrIn,
+		I2C_t *i2cBus ) :
+		  m_bus( i2cBus ),
+		  addr( addrIn ),
+		  odr( odrIn ),
+		  range( rangeIn ),
+		  osr( osrIn ),
+		  overflowWarning( false )
 {
-  if( addrIn == 0 )
-    {
-      // set address to default value of chip, if it is zero.
-      addr = QMC5883L_ADDR;
-    }
+	if( addrIn == 0 )
+	{
+		// set address to default value of chip, if it is zero.
+		addr = QMC5883L_ADDR;
+	}
+	yhigh = 0;
+	ylow  = 0;
+	xlow = 0;
+	xhigh = 0;
 }
 
 QMC5883L::~QMC5883L()
@@ -84,25 +88,25 @@ QMC5883L::~QMC5883L()
 
 /** Write with data part. */
 esp_err_t QMC5883L::writeRegister( const uint8_t addr,
-                                   const uint8_t reg,
-                                   const uint8_t value )
+		const uint8_t reg,
+		const uint8_t value )
 {
-  if( checkBus() == false )
-    {
-      return ESP_FAIL;
-    }
+	if( checkBus() == false )
+	{
+		return ESP_FAIL;
+	}
 
-  esp_err_t err = m_bus->writeByte( addr, reg, value );
+	esp_err_t err = m_bus->writeByte( addr, reg, value );
 
-  if( err != ESP_OK )
-    {
-      ESP_LOGE( FNAME,
-                "QMC5883L writeRegister( 0x%02X, 0x%02X, 0x%02X ) FAILED",
-                addr, reg, value );
-      return ESP_FAIL;
-    }
+	if( err != ESP_OK )
+	{
+		ESP_LOGE( FNAME,
+				"QMC5883L writeRegister( 0x%02X, 0x%02X, 0x%02X ) FAILED",
+				addr, reg, value );
+		return ESP_FAIL;
+	}
 
-  return err;
+	return err;
 }
 
 /**
@@ -110,83 +114,84 @@ esp_err_t QMC5883L::writeRegister( const uint8_t addr,
  * Return the number of read bytes or 0 in error case.
  */
 uint8_t QMC5883L::readRegister( const uint8_t addr,
-                                const uint8_t reg,
-                                const uint8_t count,
-                                uint8_t *data  )
+		const uint8_t reg,
+		const uint8_t count,
+		uint8_t *data  )
 {
-  if( checkBus() == false )
-    {
-      return 0;
-    }
+	if( checkBus() == false )
+	{
+		return 0;
+	}
 
-  // read bytes from chip
-  esp_err_t err = m_bus->readBytes( addr, reg, count, data );
+	// read bytes from chip
+	// esp_err_t readBytes(uint8_t devAddr, uint8_t regAddr, size_t length, uint8_t *data, int32_t timeout = -1);
+	esp_err_t err = m_bus->readBytes( addr, reg, count, data );
 
-  if( err != ESP_OK )
-    {
-      ESP_LOGE( FNAME,
-                "QMC5883L readRegister( 0x%02X, 0x%02X, %d ) FAILED",
-                addr, reg, count );
-      return 0;
-    }
+	if( err != ESP_OK )
+	{
+		ESP_LOGE( FNAME,
+				"QMC5883L readRegister( 0x%02X, 0x%02X, %d ) FAILED",
+				addr, reg, count );
+		return 0;
+	}
 
-  return count;
+	return count;
 }
 
 /** Check, if the bus pointer is valid. */
 bool QMC5883L::checkBus()
 {
-  if( m_bus == nullptr )
-    {
-      ESP_LOGE( FNAME, "QMC5883L bus pointer is zero" );
-      return false;
-    }
+	if( m_bus == nullptr )
+	{
+		ESP_LOGE( FNAME, "QMC5883L bus pointer is zero" );
+		return false;
+	}
 
-  return true;
+	return true;
 }
 
 // scan bus for I2C address
 esp_err_t QMC5883L::selfTest()
 {
-  if( checkBus() == false )
-    {
-      m_sensor = false;
-      return ESP_FAIL;
-    }
+	if( checkBus() == false )
+	{
+		m_sensor = false;
+		return ESP_FAIL;
+	}
 
-  uint8_t chipId = 0;
+	uint8_t chipId = 0;
 
-  // Try to read Register 0xD, it delivers the chip id 0xff for a QMC5883L
-  esp_err_t err = m_bus->readByte( QMC5883L_ADDR, REG_CHIP_ID, &chipId );
+	// Try to read Register 0xD, it delivers the chip id 0xff for a QMC5883L
+	esp_err_t err = m_bus->readByte( QMC5883L_ADDR, REG_CHIP_ID, &chipId );
 
-  if( err != ESP_OK )
-    {
-      m_sensor = false;
+	if( err != ESP_OK )
+	{
+		m_sensor = false;
 
-      ESP_LOGE( FNAME,
-                "QMC5883L self-test, scan for I2C address 0x%02X FAILED",
-                QMC5883L_ADDR );
-      return ESP_FAIL;
-    }
+		ESP_LOGE( FNAME,
+				"QMC5883L self-test, scan for I2C address 0x%02X FAILED",
+				QMC5883L_ADDR );
+		return ESP_FAIL;
+	}
 
-  if( chipId != 0xff )
-    {
-      m_sensor = false;
+	if( chipId != 0xff )
+	{
+		m_sensor = false;
 
-      ESP_LOGE( FNAME,
-                "QMC5883L self-test, chip ID 0x%02X is unsupported, expected 0xFF",
-                chipId );
-      return ESP_FAIL;
+		ESP_LOGE( FNAME,
+				"QMC5883L self-test, chip ID 0x%02X is unsupported, expected 0xFF",
+				chipId );
+		return ESP_FAIL;
 
-    }
+	}
 
-  ESP_LOGI( FNAME,
-            "QMC5883L selftest, scan for I2C address 0x%02X and chip ID 0x%02X PASSED",
-            QMC5883L_ADDR, chipId );
+	ESP_LOGI( FNAME,
+			"QMC5883L selftest, scan for I2C address 0x%02X and chip ID 0x%02X PASSED",
+			QMC5883L_ADDR, chipId );
 
-  m_sensor = true;
+	m_sensor = true;
 
-  return ESP_OK;
+	return ESP_OK;
 }
 
 /**
@@ -195,31 +200,31 @@ esp_err_t QMC5883L::selfTest()
  */
 esp_err_t QMC5883L::modeContinuous()
 {
-  esp_err_t e1, e2, e3, e4;
-  e1 = e2 = e3 = e4 = 0;
+	esp_err_t e1, e2, e3, e4;
+	e1 = e2 = e3 = e4 = 0;
 
-  resetCalibration();
+	resetCalibration();
 
-  // Soft Reset
-  e1 = writeRegister( addr, REG_CONTROL2, SOFT_RST );
+	// Soft Reset
+	e1 = writeRegister( addr, REG_CONTROL2, SOFT_RST );
 
-  // Enable ROL_PTN, Pointer roll over function.
-  e2 = writeRegister( addr, REG_CONTROL2, POL_PNT );
+	// Enable ROL_PTN, Pointer roll over function.
+	e2 = writeRegister( addr, REG_CONTROL2, POL_PNT );
 
-  // Define SET/RESET period. Should be set to 1
-  e3 = writeRegister( addr, REG_RST_PERIOD, 1 );
+	// Define SET/RESET period. Should be set to 1
+	e3 = writeRegister( addr, REG_RST_PERIOD, 1 );
 
-  // Set mesaurement data and start it in dependency of mode bit.
-  e4 = writeRegister( addr,
-                      REG_CONTROL1,
-                      osr | range | odr | MODE_CONTINUOUS );
+	// Set mesaurement data and start it in dependency of mode bit.
+	e4 = writeRegister( addr,
+			REG_CONTROL1,
+			osr | range | odr | MODE_CONTINUOUS );
 
-  if( (e1 + e2 + e3 + e4) == 0 )
-    {
-      return ESP_OK;
-    }
+	if( (e1 + e2 + e3 + e4) == 0 )
+	{
+		return ESP_OK;
+	}
 
-  return ESP_FAIL;
+	return ESP_FAIL;
 }
 
 /**
@@ -227,8 +232,8 @@ esp_err_t QMC5883L::modeContinuous()
  */
 esp_err_t QMC5883L::modeStandby()
 {
-  // Soft reset, device goes after that in the standby mode.
-  return writeRegister( addr, REG_CONTROL2, SOFT_RST );
+	// Soft reset, device goes after that in the standby mode.
+	return writeRegister( addr, REG_CONTROL2, SOFT_RST );
 }
 
 /**
@@ -236,72 +241,72 @@ esp_err_t QMC5883L::modeStandby()
  */
 esp_err_t QMC5883L::setPeriodRegister()
 {
-  return writeRegister( addr, REG_RST_PERIOD, 0x01 );
+	return writeRegister( addr, REG_RST_PERIOD, 0x01 );
 }
 
 /** Set oversampling rate OSR_64 ... OSR_512. */
 void QMC5883L::setOverSampleRatio( const uint16_t osrIn )
 {
-  switch( osrIn )
-  {
-    case 512:
-      osr = OSR_512;
-      break;
-    case 256:
-      osr = OSR_256;
-      break;
-    case 128:
-      osr = OSR_128;
-      break;
-    case 64:
-      osr = OSR_64;
-      break;
-    default:
-      ESP_LOGE( FNAME, "QMC5883L: Wrong Over Sample Ration value %d passed",
-                osrIn );
-      break;
-  }
+	switch( osrIn )
+	{
+	case 512:
+		osr = OSR_512;
+		break;
+	case 256:
+		osr = OSR_256;
+		break;
+	case 128:
+		osr = OSR_128;
+		break;
+	case 64:
+		osr = OSR_64;
+		break;
+	default:
+		ESP_LOGE( FNAME, "Wrong Over Sample Ration value %d passed",
+				osrIn );
+		break;
+	}
 }
 
 /** Set magnetic range for measurement RNG_2G, RNG_8G. */
 void QMC5883L::setRange( const uint8_t rangeIn )
 {
-  switch( rangeIn )
-  {
-    case 2:
-      range = RNG_2G;
-      break;
-    case 8:
-      range = RNG_8G;
-      break;
-    default:
-      ESP_LOGE( FNAME, "QMC5883L: Wrong Gauss Range value %d passed",
-                rangeIn );
-      break;
-  }
+	switch( rangeIn )
+	{
+	case 2:
+		range = RNG_2G;
+		break;
+	case 8:
+		range = RNG_8G;
+		break;
+	default:
+		ESP_LOGE( FNAME, "Wrong Gauss Range value %d passed",
+				rangeIn );
+		break;
+	}
 }
 
 /** Set ODR output data rate. */
 void QMC5883L::setOutputDataRate( const uint8_t odrIn )
 {
-  switch( odrIn )
-  {
-    case 10:
-      odr = ODR_10HZ;
-      break;
-    case 50:
-      odr = ODR_50HZ;
-      break;
-    case 100:
-      odr = ODR_100HZ;
-      break;
-    case 200:
-      odr = ODR_200HZ;
-      break;
-    default:
-      ESP_LOGE( FNAME, "QMC5883L: Wrong Output Data Rate value %d passed", odrIn );
-      break;
-  }
+	switch( odrIn )
+	{
+	case 10:
+		odr = ODR_10HZ;
+		break;
+	case 50:
+		odr = ODR_50HZ;
+		break;
+	case 100:
+		odr = ODR_100HZ;
+		break;
+	case 200:
+		odr = ODR_200HZ;
+		break;
+	default:
+		ESP_LOGE( FNAME, "Wrong Output Data Rate value %d passed", odrIn );
+		break;
+	}
 }
 
 /**
@@ -310,14 +315,14 @@ void QMC5883L::setOutputDataRate( const uint8_t odrIn )
  */
 int QMC5883L::readStatusFlags()
 {
-  uint8_t status;
+	uint8_t status;
 
-  if( readRegister( addr, REG_STATUS, 1, &status ) != ESP_OK )
-    {
-      return -1;
-    }
+	if( readRegister( addr, REG_STATUS, 1, &status ) != ESP_OK )
+	{
+		return -1;
+	}
 
-  return status;
+	return status;
 }
 
 /**
@@ -330,48 +335,53 @@ int QMC5883L::readStatusFlags()
  */
 bool QMC5883L::rawHeading( int16_t *x, int16_t *y, int16_t *z )
 {
-// Check, if data are available
-uint8_t data[6];
-uint8_t status = 0;
+	// Check, if data are available
+	uint8_t data[6];
+	uint8_t status = 0;
 
-// Read status register
-uint8_t err = readRegister( addr, REG_STATUS, 1, &status );
+	// Read status register
+	uint8_t count = readRegister( addr, REG_STATUS, 1, &status );
 
-if( err != ESP_OK )
-  {
-    return false;
-  }
+	if( count != 1 )
+	{
+		ESP_LOGE( FNAME, "read REG_STATUS FAILED" );
+		return false;
+	}
+	// ESP_LOGI( FNAME, "REG_STATUS: %02x", status );
 
-if( ( status & STATUS_OVL ) == true &&
-    range == RNG_2G && overflowWarning == false )
-  {
-    // Overflow has occurred, give out a warning only once
-    overflowWarning = true;
-    ESP_LOGE( FNAME, "QMC5883L: readRawHeading detected a gauss overflow." );
-    return false;;
-  }
+	if( ( status & STATUS_OVL ) == true &&
+			range == RNG_2G && overflowWarning == false )
+	{
+		// Overflow has occurred, give out a warning only once
+		overflowWarning = true;
+		ESP_LOGE( FNAME, "readRawHeading detected a gauss overflow." );
+		return false;;
+	}
 
-if( ( status & STATUS_DOR ) == true )
-  {
-    // Previous measure was read partially, sensor in Data Lock.
-    // Read all data again to overcome lock.
-    readRegister( addr, REG_X_LSB, 6, data );
-    return false;;
-  }
+	if( ( status & STATUS_DOR ) == true )
+	{
+		// Previous measure was read partially, sensor in Data Lock.
+		// Read all data again to overcome lock.
+		readRegister( addr, REG_X_LSB, 6, data );
+		ESP_LOGE( FNAME, "read REG_X_LSB FAILED" );
+		return false;
+	}
 
-if( ( status & STATUS_DRDY ) == true )
-  {
-    // Data ready for reading
-    if( readRegister( addr, REG_X_LSB, 6, data ) > 0 )
-      {
-        *x = ( data[1] << 8 ) | data[0];
-        *y = ( data[3] << 8 ) | data[2];
-        *z = ( data[5] << 8 ) | data[4];
-        return true;
-      }
-   }
+	if( ( status & STATUS_DRDY ) == true  )
+	{
+		// Data ready for reading
+		if( readRegister( addr, REG_X_LSB, 6, data ) > 0 )
+		{
+			*x = ( data[1] << 8 ) | data[0];
+			*y = ( data[3] << 8 ) | data[2];
+			*z = ( data[5] << 8 ) | data[4];
+			return true;
+		}
+		ESP_LOGE( FNAME, "read Register returned <= 0" );
+	}
+	ESP_LOGE( FNAME, "STATUS_DRDY FAILED" );
 
-  return false;
+	return false;
 }
 
 /**
@@ -380,33 +390,33 @@ if( ( status & STATUS_DRDY ) == true )
  */
 int16_t QMC5883L::temperature( bool *ok )
 {
-  uint8_t data[2];
+	uint8_t data[2];
 
-  if( readRegister( addr, REG_TEMP_LSB, 2, data ) == 0 )
-    {
-      if( ok != nullptr )
-        {
-          *ok = false;
-        }
+	if( readRegister( addr, REG_TEMP_LSB, 2, data ) == 0 )
+	{
+		if( ok != nullptr )
+		{
+			*ok = false;
+		}
 
-      // Nothing has been read
-      return 0.0;
-    }
+		// Nothing has been read
+		return 0.0;
+	}
 
-  int16_t t = ( data[1] << 8 ) | data[0];
+	int16_t t = ( data[1] << 8 ) | data[0];
 
-  if( ok != nullptr )
-    {
-      *ok = true;
-    }
+	if( ok != nullptr )
+	{
+		*ok = true;
+	}
 
-  return t;
+	return t;
 }
 
 void QMC5883L::resetCalibration()
 {
-  xhigh = yhigh = 0;
-  xlow = ylow = 0;
+	xhigh = yhigh = 0;
+	xlow = ylow = 0;
 }
 
 /**
@@ -415,53 +425,56 @@ void QMC5883L::resetCalibration()
  */
 float QMC5883L::heading( bool *ok )
 {
-  int16_t x, y, z;
+	int16_t x, y, z;
 
-  if( ok != nullptr )
-    {
-      *ok = false;
-    }
+	if( ok != nullptr )
+	{
+		*ok = false;
+	}
 
-  if( rawHeading( &x, &y, &z ) == false )
-    {
-      return 0.0;
-    }
+	if( rawHeading( &x, &y, &z ) == false )
+	{
+		ESP_LOGE(FNAME,"rawHeading() retured false" );
+		return 0.0;
+	}
 
-  /* Update the observed boundaries of the measurements */
-  if( x < xlow )
-    xlow = x;
-  if( x > xhigh )
-    xhigh = x;
-  if( y < ylow )
-    ylow = y;
-  if( y > yhigh )
-    yhigh = y;
+	/* Update the observed boundaries of the measurements */
+	if( x < xlow )
+		xlow = x;
+	if( x > xhigh )
+		xhigh = x;
+	if( y < ylow )
+		ylow = y;
+	if( y > yhigh )
+		yhigh = y;
 
-  /* Bail out if not enough data is available. */
-  if( xlow == xhigh || ylow == yhigh )
-    {
-      return 0.0;
-    }
+	/* Bail out if not enough data is available. */
+	if( xlow == xhigh || ylow == yhigh )
+	{
+		ESP_LOGE(FNAME,"Bail out if not enough data is available, return 0" );
+		return 0.0;
+	}
 
-  /* Recenter the measurement by subtracting the average */
-  x -= (xhigh + xlow) / 2;
-  y -= (yhigh + ylow) / 2;
+	/* Recenter the measurement by subtracting the average */
+	x -= (xhigh + xlow) / 2;
+	y -= (yhigh + ylow) / 2;
 
-  /* Rescale the measurement to the range observed. */
-  float fx = static_cast<float>( x / (xhigh - xlow) );
-  float fy = static_cast<float>( y / (yhigh - ylow) );
+	/* Rescale the measurement to the range observed. */
+	float fx = (float)( (float)x / (xhigh - xlow) );
+	float fy = (float)( (float)y / (yhigh - ylow) );
 
-  float heading = 180.0 * ( atan2( fy, fx ) / M_PI );
+	float heading = -180.0 * ( atan2( fy, fx ) / M_PI ) -90;
 
-  if( heading <= 0.0 )
-    {
-      heading += 360.0;
-    }
+	if( heading <= 0.0 )
+	{
+		heading += 360.0;
+	}
 
-  if( ok != nullptr )
-    {
-      *ok = true;
-    }
-  
-  return heading;
+	if( ok != nullptr )
+	{
+		*ok = true;
+	}
+	ESP_LOGI(FNAME,"rawHeading, x:%d y:%d z:%d, fx:%f fy:%f mh:%f ", x,y,z,fx,fy, heading );
+
+	return heading;
 }

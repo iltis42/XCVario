@@ -120,6 +120,7 @@ SetupMenu  *Menu = 0;
 
 // Gyro and acceleration sensor
 I2C_t& i2c = i2c1;  // i2c0 or i2c1
+I2C_t& i2c_0 = i2c0;  // i2c0 or i2c1
 MPU_t MPU;         // create an object
 mpud::float_axes_t accelG;
 mpud::float_axes_t gyroDPS;
@@ -360,7 +361,7 @@ void readBMP(void *pvParameters){
 				xSemaphoreGive(xMutex);
 			}
 		}
-
+		// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d ena=%d", compass.haveSensor(),  comp_nmea_hdm.get(),  compass_enable.get() );
 		if( compass_enable.get() == true &&
 				compass.haveSensor() == true &&
 				( comp_nmea_hdm.get() == true || comp_nmea_hdt.get() == true ) &&
@@ -376,7 +377,7 @@ void readBMP(void *pvParameters){
             {
               mh = compass.magneticHeading( &ok1 );
             }
-
+          ESP_LOGI(FNAME,"Compass, MH: %f  OK: %d", mh, ok1);
           if( comp_decl_valid.get() == true &&
               comp_nmea_hdt.get() == true )
             {
@@ -468,6 +469,8 @@ void sensor(void *args){
 	int line = 1;
 	// i2c.begin(GPIO_NUM_21, GPIO_NUM_22, GPIO_PULLUP_ENABLE, GPIO_PULLUP_ENABLE );
 	i2c.begin(GPIO_NUM_21, GPIO_NUM_22, 20000 );
+	if( compass_enable.get() )
+		i2c_0.begin(GPIO_NUM_4, GPIO_NUM_18, GPIO_PULLUP_DISABLE, GPIO_PULLUP_DISABLE, 20000 );
 	MCP = new MCP3221();
 	MCP->setBus( &i2c );
 	gpio_set_drive_capability(GPIO_NUM_23, GPIO_DRIVE_CAP_1);
@@ -811,14 +814,14 @@ void sensor(void *args){
 		}
 	}
 	// Check for magnetic sensor / compass
-	ESP_LOGI( FNAME, "Magnetic sensor initialize");
-	compass.setBus( &i2c );
-	err = compass.selfTest();
-
-	if( err == ESP_OK )
-	{
-		// Activate working of magnetic sensor
-		compass.modeContinuous();
+	if( compass_enable.get() ) {
+		ESP_LOGI( FNAME, "Magnetic sensor enabled: initialize");
+		compass.setBus( &i2c_0 );
+		err = compass.selfTest();
+		if( err == ESP_OK )		{
+			// Activate working of magnetic sensor
+			compass.modeContinuous();
+		}
 	}
 
 	Speed2Fly.change_polar();

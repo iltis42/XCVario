@@ -63,6 +63,7 @@ int   Audio::defaultDelay = 500;
 int   Audio::_tonemode_back = 0;
 int   Audio::tick = 0;
 int   Audio::tickmod  = 0;
+int   Audio::volume_change=0;
 
 const int clk_8m_div = 7;    // RTC 8M clock divider (division is by clk_8m_div+1, i.e. 0 means 8MHz frequency)
 const float freq_step = RTC_FAST_CLK_FREQ_APPROX / (65536 * 8 );  // div = 0x07
@@ -398,6 +399,7 @@ void Audio::incVolume( int steps ) {
 	}
 	if( wiper == 0 )
 		dac_output_disable(_ch);
+	volume_change = 25;
 	ESP_LOGI(FNAME,"inc volume, wiper: %d", wiper );
 }
 
@@ -409,6 +411,7 @@ void Audio::decVolume( int steps ) {
 	}
 	if( wiper > 0 )
 		dac_output_enable(_ch);
+	volume_change = 25;
 	ESP_LOGI(FNAME,"dec volume, wiper: %d", wiper );
 }
 
@@ -442,6 +445,7 @@ void Audio::calcS2Fmode(){
 }
 
 #define FADING_TIME 4
+bool sound=true;
 
 void Audio::dactask(void* arg )
 {
@@ -454,7 +458,7 @@ void Audio::dactask(void* arg )
 			if( !(tick%20) )
 				calcS2Fmode();
 			bool sound=true;
-			if( (inDeadBand(_te) || (wiper == 0 )) && !_testmode ){
+			if( (inDeadBand(_te) || (wiper == 0 )) && !_testmode && !volume_change ){
 				if( !deadband_active ) {
 					ESP_LOGI(FNAME,"Audio in DeadBand true");
 					enableAmplifier(false);
@@ -463,7 +467,7 @@ void Audio::dactask(void* arg )
 				sound = false;
 				// ESP_LOGI(FNAME,"sound = false");
 			}
-			else if( !inDeadBand(_te) || wiper > 0 ){
+			else if( !inDeadBand(_te) || wiper > 0 || volume_change ){
 				if( deadband_active ) {
 					ESP_LOGI(FNAME,"Audio in DeadBand false");
 					enableAmplifier(true);
@@ -545,6 +549,8 @@ void Audio::dactask(void* arg )
 			}
 		}
 		vTaskDelayUntil(&xLastWakeTime, 20/portTICK_PERIOD_MS);
+		if( volume_change )
+			volume_change--;
 	}
 }
 

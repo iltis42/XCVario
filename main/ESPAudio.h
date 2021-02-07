@@ -80,7 +80,7 @@ private:
     static int   _tonemode_back;
     static int tick;
     static int tickmod;
-
+    static int volume_change;
 };
 
 

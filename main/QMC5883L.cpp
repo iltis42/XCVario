@@ -411,17 +411,17 @@ float QMC5883L::heading( bool *ok )
 	y -= (yhigh + ylow) / 2;
 	z -= (zhigh + zlow) / 2;
 
-	ESP_LOGI(FNAME,"RANGE XH:%d YH:%d ZH:%d  XL:%d YL:%d ZL:%d OX:%d OY:%d OZ:%d", xhigh,yhigh,zhigh, xlow,ylow,zlow, xhigh + xlow, yhigh + ylow,zhigh + zlow);
+	// ESP_LOGI(FNAME,"RANGE XH:%d YH:%d ZH:%d  XL:%d YL:%d ZL:%d OX:%d OY:%d OZ:%d", xhigh,yhigh,zhigh, xlow,ylow,zlow, xhigh + xlow, yhigh + ylow,zhigh + zlow);
 
 	/* Rescale the measurement to the range observed. */
 	double fy = -(float)( (float)y *2 / (yhigh - ylow) );
 	double fx = -(float)( (float)x *2 / (xhigh - xlow) );
 	double fz = (float)( (float)z *2 / (zhigh - zlow) );
-	ESP_LOGI(FNAME,"RAW NORM Flux, fx:%f fy:%f fz:%f", fx,fy,fz);
+	// ESP_LOGI(FNAME,"RAW NORM Flux, fx:%f fy:%f fz:%f", fx,fy,fz);
 
 // 	Xhorizontal = X*cos(pitch) + Y*sin(roll)*sin(pitch) – Z*cos(roll)*sin(pitch)
 	double tcx = fx*cos( IMU::getPitchRad() )  + fy*sin( IMU::getRollRad() )*sin( IMU::getPitchRad()) - fz*cos( IMU::getRollRad())*sin( IMU::getPitchRad());
-	ESP_LOGI(FNAME,"RR:%f, PR:%f tcx 1:%f tcx2:%f tcx3:%f", IMU::getPitchRad(), IMU::getRollRad(), fx*cos( IMU::getPitchRad() ),   fy*sin( IMU::getRollRad() )*sin( IMU::getPitchRad()), fz*cos( IMU::getRollRad())*sin( IMU::getPitchRad() ) );
+	// ESP_LOGI(FNAME,"RR:%f, PR:%f tcx 1:%f tcx2:%f tcx3:%f", IMU::getPitchRad(), IMU::getRollRad(), fx*cos( IMU::getPitchRad() ),   fy*sin( IMU::getRollRad() )*sin( IMU::getPitchRad()), fz*cos( IMU::getRollRad())*sin( IMU::getPitchRad() ) );
 // 	Yhorizontal = Y*cos(roll) + Z*sin(roll)
 	double tcy = fy*cos( IMU::getRollRad()) + fz*sin( IMU::getRollRad());
 
@@ -432,7 +432,7 @@ float QMC5883L::heading( bool *ok )
 
 	if( ok != nullptr )
 		*ok = true;
-	ESP_LOGI(FNAME,"rawHeading, x:%d y:%d z:%d, roll: %f  pitch: %f  tcx:%f tcy:%f mh:%f ", x,y,z, IMU::getRoll(), IMU::getPitch(), tcx,tcy, heading );
+	// ESP_LOGI(FNAME,"rawHeading, x:%d y:%d z:%d, roll: %f  pitch: %f  tcx:%f tcy:%f mh:%f ", x,y,z, IMU::getRoll(), IMU::getPitch(), tcx,tcy, heading );
 
 	return heading;
 }

@@ -8,13 +8,6 @@
 #define DEBUG_TS_PRINT(x)
 #define DEBUG_TS_PRINTLN(x)
 
-#ifndef M_PI
-#define M_PI 3.14159265359
-#endif // M_PI
-#ifndef RAD_TO_DEG
-#define RAD_TO_DEG 180.0 / M_PI
-#endif // RAD_TO_DEG
-
 #define sqr(x) x *x
 #define hypotenuse(x, y) sqrt(sqr(x) + sqr(y))
 
@@ -24,35 +17,24 @@
 #define IMU_REG 0x19
 #define IMU_PWR_MGMT_1 0x6B
 
-typedef struct kalman_t
-{
-	double Q_angle;   // Process noise variance for the accelerometer
-	double Q_bias;    // Process noise variance for the gyro bias
-	double R_measure; // Measurement noise variance - this is actually the variance of the measurement noise
-
-	double angle; // The angle calculated by the Kalman filter - part of the 2x1 state vector
-	double bias;  // The gyro bias calculated by the Kalman filter - part of the 2x1 state vector
-	double rate;  // Unbiased rate calculated from the rate and the calculated bias - you have to call getAngle to update the rate
-
-	double P[2][2]; // Error covariance matrix - This is a 2x2 matrix
-	double K[2];    // Kalman gain - This is a 2x1 vector
-	double y;       // Angle difference
-	double S;       // Estimate error
-} Kalman;
-
 // Kalman Variables
+Kalman IMU::kalmanX; // Create the Kalman instances
+Kalman IMU::kalmanY;
 
-static Kalman kalmanX; // Create the Kalman instances
-static Kalman kalmanY;
-
-static double gyroXAngle, gyroYAngle; // Angle calculate using the gyro only
-
+// Private Variables
+double IMU::gyroXAngle;
+double IMU::gyroYAngle; // Angle calculate using the gyro only
 uint32_t IMU::lastProcessed = 0;
-
 double IMU::accelX, IMU::accelY, IMU::accelZ;
 double IMU::gyroX,  IMU::gyroY,  IMU::gyroZ;
-
 double IMU::kalXAngle, IMU::kalYAngle;
+ uint64_t IMU::last_rts=0;
+float 	IMU::myrolly = 0;
+float 	IMU::myrollz = 0;
+float 	IMU::myaccroll = 0;
+double  IMU::mypitch = 0;
+double  IMU::filterPitch = 0;
+double  IMU::filterRoll = 0;
 
 // Kalman Function Definition
 
@@ -138,16 +120,6 @@ void IMU::init()
 	lastProcessed = micros();
 	ESP_LOGD(FNAME, "Finished IMU setup  gyroYAngle:%f ", gyroYAngle);
 }
-
-
-static uint64_t last_rts=0;
-
-float myrolly = 0;
-float myrollz = 0;
-float myaccroll = 0;
-double  mypitch = 0;
-double  filterPitch = 0;
-double  filterRoll = 0;
 
 void IMU::read()
 {
@@ -239,51 +211,6 @@ void IMU::read()
 	ESP_LOGD( FNAME, "TAS: %2.1f GyroZ %2.2f roll:%2.2f az:%2.2f aroll%2.2f ", getTAS(), gyroZ, kalXAngle, accelZ, myaccroll );
 
 
-}
-
-uint32_t IMU::getLastReadTime()
-{
-	return lastProcessed;
-}
-
-double IMU::getRawAccelX()
-{
-	return accelX;
-}
-
-double IMU::getRawAccelY()
-{
-	return accelY;
-}
-
-double IMU::getRawAccelZ()
-{
-	return accelZ;
-}
-
-double IMU::getRawGyroX()
-{
-	return gyroX;
-}
-
-double IMU::getRawGyroY()
-{
-	return gyroY;
-}
-
-double IMU::getRawGyroZ()
-{
-	return gyroZ;
-}
-
-double IMU::getRoll()
-{
-	return filterRoll;
-}
-
-double IMU::getPitch()
-{
-	return -filterPitch;
 }
 
 // IMU Function Definition

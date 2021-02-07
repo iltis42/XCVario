@@ -737,7 +737,7 @@ void SetupMenu::setup( )
 		flarm->addMenu( flarms );
 		flarms->setHelp( PROGMEM "Simulate an airplane crossing from left to right with different alarm levels and vertical distance");
 		flarms->addEntry( "Disable");
-		flarms->addEntry( "Start Sim");
+		flarms->addEntry( "Start Sim in 5 seconds");
 
 		SetupMenu * compassMenu = new SetupMenu( "Compass" );
 		compassME = opt->addMenu( compassMenu );

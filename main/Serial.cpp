@@ -72,14 +72,16 @@ int numS1=0;
 void Serial::serialHandlerS1(void *pvParameters){
 	while(1) {
 		if( flarm_sim.get() ){
-			sim=0;
+			sim=-3;
 			flarm_sim.set( 0 );
 		}
 		if( sim < 10 ){
-			SString sf(  flarm[sim] );
-			Router::forwardMsg( sf, s1_rx_q );
-			ESP_LOGI(FNAME,"Serial FLARM SIM: %s",  sf.c_str() );
-			delay(5000);
+			if( sim >= 0 ){
+				SString sf(  flarm[sim] );
+				Router::forwardMsg( sf, s1_rx_q );
+				ESP_LOGI(FNAME,"Serial FLARM SIM: %s",  sf.c_str() );
+			}
+			delay(2500);
 			sim++;
 		}
 		SString s;

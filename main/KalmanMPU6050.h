@@ -122,6 +122,7 @@ public:
    * @returns The x rotation (roll) in degrees
    */
   static inline double getRoll() {  return filterRoll;  };
+  static inline double getRollRad() {  return filterRoll*DEG_TO_RAD;  };
 
   /**
    * Gets the pitch (Y rotation) in degrees from the Kalman Filter.\
@@ -129,6 +130,7 @@ public:
    * @returns The y rotation (pitch) in degrees
    */
   static inline double getPitch()  {	return -filterPitch;  }
+  static inline double getPitchRad()  {	return -filterPitch*DEG_TO_RAD;  }
 
 
 private:

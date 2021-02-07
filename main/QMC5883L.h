@@ -78,12 +78,6 @@ public:
 	esp_err_t setPeriodRegister();
 
 	/**
-	 * Read status Register 1 (0x6) and return its content. If read has failed,
-	 * -1 is returned.
-	 */
-	int readStatusFlags();
-
-	/**
 	 *  Set the device in standby mode.
 	 */
 	esp_err_t modeStandby();
@@ -110,7 +104,7 @@ public:
 	 * Read out the registers X, Y, Z (0...5) in raw format.
 	 * Returns true in case of success otherwise false.
 	 */
-	bool rawHeading( int16_t *x, int16_t *y, int16_t *z );
+	bool rawHeading();
 
 	void resetCalibration();
 
@@ -143,8 +137,9 @@ private:
 
 	static bool m_sensor;
 	I2C_t* m_bus;
-	int16_t xhigh, xlow;
-	int16_t yhigh, ylow;
+	int xhigh, xlow, zlow;
+	int yhigh, ylow, zhigh;
+	int x,y,z;
 
 	uint8_t addr; // chip adress
 	uint8_t odr;  // output data rate

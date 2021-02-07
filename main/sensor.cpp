@@ -128,7 +128,7 @@ mpud::float_axes_t accelG_Prev;
 mpud::float_axes_t gyroDPS_Prev;
 
 // Magnetic sensor / compass
-Compass compass( 0x0D, ODR_10HZ, RNG_2G, OSR_512 );
+Compass compass( 0x0D, ODR_10HZ, RNG_2G, OSR_256 );
 
 BTSender btsender;
 
@@ -362,46 +362,30 @@ void readBMP(void *pvParameters){
 			}
 		}
 		// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d ena=%d", compass.haveSensor(),  comp_nmea_hdm.get(),  compass_enable.get() );
-		if( compass_enable.get() == true &&
-				compass.haveSensor() == true &&
-				( comp_nmea_hdm.get() == true || comp_nmea_hdt.get() == true ) &&
-				(count % 5 ) == 0 )
-		  {
-          // try to get compass heading from sensor and forward it via NMEA.
-          bool ok1 = false;
-          bool ok2 = false;
-          float mh = -400.;
-          float th = -400.;
+		if( compass_enable.get() == true && (count % 5 ) == 0 )
+		{
+			// try to get compass heading from sensor and forward it via NMEA.
+			bool ok1 = false;
+			bool ok2 = false;
+			float mh = -400.;
+			float th = -400.;
 
-          if( comp_nmea_hdm.get() == true )
-            {
-              mh = compass.magneticHeading( &ok1 );
-            }
-          ESP_LOGI(FNAME,"Compass, MH: %f  OK: %d", mh, ok1);
-          if( comp_decl_valid.get() == true &&
-              comp_nmea_hdt.get() == true )
-            {
-              // get true heading only, if declination is valid
-              th = compass.trueHeading( &ok2 );
-            }
-
-          if( ok1 == true || ok2 == true )
-            {
-              xSemaphoreTake( xMutex, portMAX_DELAY );
-
-              if( ok1 == true )
-                {
-                  OV.sendNmeaHDM( mh );
-                }
-
-              if( ok2 == true )
-                {
-                  OV.sendNmeaHDT( th );
-                }
-
-              xSemaphoreGive( xMutex );
-            }
-        }
+			if( comp_nmea_hdm.get() == true )
+				mh = compass.magneticHeading( &ok1 );
+			// ESP_LOGI(FNAME,"Compass, MH: %f  OK: %d", mh, ok1);
+			if( comp_decl_valid.get() == true && comp_nmea_hdt.get() == true ){
+				// get true heading only, if declination is valid
+				th = compass.trueHeading( &ok2 );
+			}
+			if( ok1 == true || ok2 == true ){
+				xSemaphoreTake( xMutex, portMAX_DELAY );
+				if( ok1 == true )
+					OV.sendNmeaHDM( mh );
+				if( ok2 == true )
+					OV.sendNmeaHDT( th );
+				xSemaphoreGive( xMutex );
+			}
+		}
 
 		if( uxTaskGetStackHighWaterMark( bpid )  < 1024 )
 			ESP_LOGW(FNAME,"Warning bmpTask stack low: %d", uxTaskGetStackHighWaterMark( bpid ) );

@@ -147,7 +147,7 @@ float polar_sink_prev = 0;
 float te_prev = 0;
 bool blankold = false;
 bool blank = false;
-
+bool flarm_connected=false;
 
 IpsDisplay::IpsDisplay( Ucglib_ILI9341_18x240x320_HWSPI *aucg ) {
 	ucg = aucg;
@@ -535,7 +535,7 @@ void IpsDisplay::drawS2FMode( int x, int y, bool cruise ){
 
 void IpsDisplay::drawBT() {
 	int btq=BTSender::queueFull();
-	if( btq != btqueue ){
+	if( btq != btqueue || Flarm::connected() != flarm_connected ){
 		ucg_int_t btx=DISPLAY_W-22;
 		ucg_int_t bty=(BTH/2) + 8;
 		if( btq )
@@ -554,6 +554,7 @@ void IpsDisplay::drawBT() {
 		ucg->drawLine( btx, bty, btx-BTSIZE, bty-BTSIZE );
 		ucg->drawLine( btx, bty, btx-BTSIZE, bty+BTSIZE );
 		btqueue = btq;
+		flarm_connected = Flarm::connected();
 	}
 }
 
@@ -575,7 +576,7 @@ void IpsDisplay::drawFlarm( int x, int y, bool flarm ) {
 }
 
 void IpsDisplay::drawWifi( int x, int y ) {
-	static bool flarm_connected=false;
+
 	int btq=1;
 	if( blue_enable.get() == WL_WLAN_CLIENT ){
 		if( WifiClient::isConnected() )

@@ -20,6 +20,7 @@
 #include "sensor.h"
 #include "Units.h"
 #include "Flap.h"
+#include "Flarm.h"
 
 int screens_init = INIT_DISPLAY_NULL;
 
@@ -571,6 +572,7 @@ void IpsDisplay::drawFlarm( int x, int y, bool flarm ) {
 }
 
 void IpsDisplay::drawWifi( int x, int y ) {
+	static bool flarm_connected=false;
 	int btq=1;
 	if( blue_enable.get() == WL_WLAN_CLIENT ){
 		if( WifiClient::isConnected() )
@@ -580,17 +582,20 @@ void IpsDisplay::drawWifi( int x, int y ) {
 		btq=BTSender::queueFull();
 	else
 		return;
-	if( btq != btqueue ){
+	if( btq != btqueue || Flarm::connected() != flarm_connected ){
 		ESP_LOGD(FNAME,"IpsDisplay::drawWifi %d %d %d", x,y,btq);
 		if( btq )
 			ucg->setColor(COLOR_MGREY);
 		else
 			ucg->setColor( COLOR_BLUE );
-		ucg->drawDisc( x, y, 3, UCG_DRAW_ALL );
 		ucg->drawCircle( x, y, 9, UCG_DRAW_UPPER_RIGHT);
 		ucg->drawCircle( x, y, 10, UCG_DRAW_UPPER_RIGHT);
 		ucg->drawCircle( x, y, 16, UCG_DRAW_UPPER_RIGHT);
 		ucg->drawCircle( x, y, 17, UCG_DRAW_UPPER_RIGHT);
+		if( Flarm::connected() )
+			ucg->setColor( COLOR_GREEN );
+		ucg->drawDisc( x, y, 3, UCG_DRAW_ALL );
+		flarm_connected = Flarm::connected();
 		btqueue = btq;
 	}
 }

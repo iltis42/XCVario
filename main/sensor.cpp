@@ -424,6 +424,7 @@ void readTemp(void *pvParameters){
 				ESP_LOGV(FNAME,"temperature=%f", temperature );
 			}
 		}
+		Flarm::progress();
 		vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS);
 
 		if( (ttick++ % 100) == 0) {

@@ -10,11 +10,12 @@
 #include "ESPRotary.h"
 #include "Compass.h" // 3-Axis Magnetic Sensor
 #include <hal/gpio_types.h>
-
+#include "SetupMenu.h"
 #include "S2F.h"
 
 extern bool haveMPU;
 extern bool ahrsKeyValid;
+extern SetupMenu  *Menu;
 
 // MPU6050 sensor
 extern mpud::float_axes_t accelG;

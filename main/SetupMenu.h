@@ -30,6 +30,7 @@ public:
 	void down( int count );
 	void press();
 	void longPress();
+	bool isActive() { return _menu_enabled; };
 	virtual ~SetupMenu() {};
 };
 

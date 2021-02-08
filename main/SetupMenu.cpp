@@ -621,6 +621,12 @@ void SetupMenu::setup( )
 		amps->addEntry( "Shutdown");        // 1
 		audio->addMenu( amps );
 
+		SetupMenuSelect * ameda = new SetupMenuSelect( "Audio while Setup", 0, false, 0 , true, &audio_disable );
+		ameda->setHelp(PROGMEM"Select if Audio will get muted while Setup Menu is open or stays always on");
+		ameda->addEntry( "Audio remains on");      // 0
+		ameda->addEntry( "Audio disable");         // 1
+		audio->addMenu( ameda );
+
 		// Polar Setup
 		SetupMenu * po = new SetupMenu( "Polar" );
 		po->setHelp( PROGMEM"Polar setup to match performance of glider");

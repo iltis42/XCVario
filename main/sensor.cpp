@@ -462,6 +462,7 @@ void sensor(void *args){
 
 	esp_wifi_set_mode(WIFI_MODE_NULL);
 	spiMutex = xSemaphoreCreateMutex();
+	Menu = new SetupMenu();
 	// esp_log_level_set("*", ESP_LOG_INFO);
 	ESP_LOGI( FNAME, "Log level set globally to INFO %d",  ESP_LOG_INFO);
 	esp_chip_info_t chip_info;
@@ -830,7 +831,7 @@ void sensor(void *args){
 	{
 		LeakTest::start( baroSensor, teSensor, asSensor );
 	}
-	Menu = new SetupMenu();
+
 	Menu->begin( display, &Rotary, baroSensor, &Battery );
 
 	if ( blue_enable.get() == WL_WLAN_CLIENT ){

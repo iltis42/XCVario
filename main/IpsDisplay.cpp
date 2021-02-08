@@ -545,7 +545,10 @@ void IpsDisplay::drawBT() {
 
 		ucg->drawRBox( btx-BTW/2, bty-BTH/2, BTW, BTH, BTW/2-1);
 		// inner symbol
-		ucg->setColor( COLOR_WHITE );
+		if( Flarm::connected() )
+			ucg->setColor( COLOR_GREEN );
+		else
+			ucg->setColor( COLOR_WHITE );
 		ucg->drawTriangle( btx, bty, btx+BTSIZE, bty-BTSIZE, btx, bty-2*BTSIZE );
 		ucg->drawTriangle( btx, bty, btx+BTSIZE, bty+BTSIZE, btx, bty+2*BTSIZE );
 		ucg->drawLine( btx, bty, btx-BTSIZE, bty-BTSIZE );

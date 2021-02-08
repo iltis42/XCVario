@@ -85,11 +85,18 @@ void SetupMenuValFloat::display( int mode ){
 
 void SetupMenuValFloat::displayVal()
 {
-	ucg->setFont(ucg_font_fur25_hf);
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setPrintPos( 1, 70 );
-	if( _unit )
-		ucg->printf("%0.*f %s   ", _precision, *_value, _unit);
+	ucg->setFont(ucg_font_fub25_hf);
+	char val[20];
+	sprintf(val, "%0.*f", _precision, *_value );
+	ucg->printf("%s",val);
+	if( _unit ) {
+		ucg->setFont(ucg_font_fur25_hf);   // use different font for unit as of ° special char
+		ucg->setPrintPos( 1+ ucg->getStrWidth(val), 70 );
+		ucg->printf(" %s   ", _unit);
+	}
+
 	xSemaphoreGive(spiMutex );
 	ucg->setFont(ucg_font_ncenR14_hr);
 }

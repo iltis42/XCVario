@@ -258,17 +258,14 @@ void Flap::drawSmallBar( int ypos, int xpos, float wkf ){
 	ucg->setClipRange( xpos-2, top-2, lfw, 2*lfh-2 );
 	for( int wk=int(wkf-1); wk<=int(wkf+1) && wk<=2; wk++ ){
 		char position[6];
-		if(wk<-2)
+		if(wk<-3)
 			continue;
-		if( wk == 0 )
-			sprintf( position,"% d", wk);
-		else
-			sprintf( position,"%+d", wk);
+		sprintf( position,"%s", flapLabels[wk+3]->getEntry());
 		int y=top+(lfh+4)*(5-(wk+2))+(int)((wkf-2)*(lfh+4));
 		ucg->setPrintPos(xpos-2, y );
 		ucg->setColor(COLOR_WHITE);
 		ucg->printf(position);
-		if( wk != -2 ) {
+		if( wk != -3 ) {
 			ucg->drawHLine(xpos-5, y+3, lfw+4 );
 		}
 	}

@@ -13,7 +13,7 @@ Class to handle compass data and actions.
 
 Author: Axel Pauli, February 2021
 
-Last update: 2021-02-01
+Last update: 2021-02-09
 
 **************************************************************************/
 
@@ -41,6 +41,9 @@ class CompassMenu : public RotaryObserver
 
   /** Compass Menu Action method to set declination valid. */
   int declinationAction( SetupMenuValFloat *p );
+
+  /** Compass Menu Action method to calibrate sensor. */
+  int sensorCalibrationAction( SetupMenuSelect *p );
 
   virtual void up( int count );
   virtual void down( int count );

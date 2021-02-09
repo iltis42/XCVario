@@ -32,6 +32,7 @@ public:
 	virtual void display( int mode=0 ) = 0;
 	virtual void release() { display(); };
 	virtual void longPress() {};
+	virtual char* value() = 0;
 	virtual ~MenuEntry() {};
 	MenuEntry* addMenu( MenuEntry * item );
 	void       delMenu( MenuEntry * item );

@@ -26,6 +26,7 @@ public:
 	void begin( IpsDisplay* display, ESPRotary * rotary, PressureSensor * bmp, AnalogInput *adc );
 	void setup();
 	void display( int mode=0 );
+	char *value() { return 0; };
 	void up( int count );  // step up to parent
 	void down( int count );
 	void press();

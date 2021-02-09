@@ -15,6 +15,7 @@
 #include "SetupMenuValFloat.h"
 
 SetupMenuValFloat * SetupMenuValFloat::qnh_menu = 0;
+char SetupMenuValFloat::_val_str[20];
 
 SetupMenuValFloat::SetupMenuValFloat( String title, float *value, const char *unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs, bool restart ) {
 	// ESP_LOGI(FNAME,"SetupMenuValFloat( %s ) ", title.c_str() );
@@ -25,7 +26,10 @@ SetupMenuValFloat::SetupMenuValFloat( String title, float *value, const char *un
 	_restart = restart;
 	if( value )
 		_value = value;
-	_unit = unit;
+	if( unit != 0 )
+		_unit = unit;
+	else
+		_unit = "";
 	_min = min;
 	_max = max;
 	_step = step;

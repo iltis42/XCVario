@@ -28,11 +28,13 @@ public:
 	void up( int count );  // step up to parent
 	void down( int count );
 	void press();
+	char *value() { sprintf(_val_str,"%s", getEntry() ); return _val_str; }
 	virtual ~SetupMenuSelect() {};
 	inline int getSelect() { return *_select; };
 	inline const char * getEntry(){ return _values[ *_select ].c_str(); }
 
 private:
+	static char _val_str[10];
 	int  *_select;
 	int  _select_save;
 	int  _numval;

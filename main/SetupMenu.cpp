@@ -228,9 +228,9 @@ int compassDeclinationAction( SetupMenuValFloat *p )
 
 int compassSensorCalibrateAction( SetupMenuSelect *p )
 {
+	ESP_LOGI(FNAME,"compassSensorCalibrateAction()");
 	return compassMenuHandler.sensorCalibrationAction( p );
 }
-
 
 SetupMenu::SetupMenu(){
 	highlight = -1;

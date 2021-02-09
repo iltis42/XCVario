@@ -1,11 +1,11 @@
 /**************************************************************************
-*                                                                         *
-*   This program is free software; you can redistribute it and/or modify  *
-*   it under the terms of the GNU General Public License as published by  *
-*   the Free Software Foundation; either version 2 of the License, or     *
-*   (at your option) any later version.                                   *
-*                                                                         *
-***************************************************************************
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ ***************************************************************************
 
 I2C driver for the chip QMC5883L, 3-Axis Magnetic Sensor.
 
@@ -17,7 +17,7 @@ Author: Axel Pauli, January 2021
 
 Last update: 2021-02-09
 
-***************************************************************************/
+ ***************************************************************************/
 
 #include <cmath>
 #include <logdef.h>
@@ -68,12 +68,12 @@ QMC5883L::QMC5883L( const uint8_t addrIn,
 		const uint8_t rangeIn,
 		const uint8_t osrIn,
 		I2C_t *i2cBus ) :
-		  m_bus( i2cBus ),
-		  addr( addrIn ),
-		  odr( odrIn ),
-		  range( rangeIn ),
-		  osr( osrIn ),
-		  overflowWarning( false )
+				  m_bus( i2cBus ),
+				  addr( addrIn ),
+				  odr( odrIn ),
+				  range( rangeIn ),
+				  osr( osrIn ),
+				  overflowWarning( false )
 {
 	if( addrIn == 0 )
 	{
@@ -360,12 +360,12 @@ int16_t QMC5883L::temperature( bool *ok )
  */
 void QMC5883L::resetClassCalibration()
 {
-  samples = 0;
-  xraw = yraw = zraw = 0;
-  xbias = ybias = zbias = 0.0;
-  xscale = yscale = zscale = 0.0;
-  xmax = ymax = zmax = -32767;
-  xmin = ymin = zmin = 32767;
+	samples = 0;
+	xraw = yraw = zraw = 0;
+	xbias = ybias = zbias = 0.0;
+	xscale = yscale = zscale = 0.0;
+	xmax = ymax = zmax = -32767;
+	xmin = ymin = zmin = 32767;
 }
 
 /**
@@ -373,23 +373,23 @@ void QMC5883L::resetClassCalibration()
  */
 void QMC5883L::resetCalibration()
 {
-  resetClassCalibration();
+	resetClassCalibration();
 
-  // reset nonvolatile configuration data
-  compass_x_bias.set( 0 );
-  compass_y_bias.set( 0 );
-  compass_z_bias.set( 0 );
-  compass_x_scale.set( 0 );
-  compass_y_scale.set( 0 );
-  compass_z_scale.set( 0 );
-  compass_calibrated.set( false );
-  compass_x_bias.commit();
-  compass_y_bias.commit();
-  compass_z_bias.commit();
-  compass_x_scale.commit();
-  compass_y_scale.commit();
-  compass_z_scale.commit();
-  compass_calibrated.commit();
+	// reset nonvolatile configuration data
+	compass_x_bias.set( 0 );
+	compass_y_bias.set( 0 );
+	compass_z_bias.set( 0 );
+	compass_x_scale.set( 0 );
+	compass_y_scale.set( 0 );
+	compass_z_scale.set( 0 );
+	compass_calibrated.set( false );
+	compass_x_bias.commit();
+	compass_y_bias.commit();
+	compass_z_bias.commit();
+	compass_x_scale.commit();
+	compass_y_scale.commit();
+	compass_z_scale.commit();
+	compass_calibrated.commit();
 }
 
 /**
@@ -397,20 +397,20 @@ void QMC5883L::resetCalibration()
  */
 void QMC5883L::saveCalibration()
 {
-  compass_x_bias.set( xbias );
-  compass_y_bias.set( ybias );
-  compass_z_bias.set( zbias );
-  compass_x_scale.set( xscale );
-  compass_y_scale.set( yscale );
-  compass_z_scale.set( zscale );
-  compass_calibrated.set( true );
-  compass_x_bias.commit();
-  compass_y_bias.commit();
-  compass_z_bias.commit();
-  compass_x_scale.commit();
-  compass_y_scale.commit();
-  compass_z_scale.commit();
-  compass_calibrated.commit();
+	compass_x_bias.set( xbias );
+	compass_y_bias.set( ybias );
+	compass_z_bias.set( zbias );
+	compass_x_scale.set( xscale );
+	compass_y_scale.set( yscale );
+	compass_z_scale.set( zscale );
+	compass_calibrated.set( true );
+	compass_x_bias.commit();
+	compass_y_bias.commit();
+	compass_z_bias.commit();
+	compass_x_scale.commit();
+	compass_y_scale.commit();
+	compass_z_scale.commit();
+	compass_calibrated.commit();
 }
 
 /**
@@ -419,20 +419,20 @@ void QMC5883L::saveCalibration()
  */
 bool QMC5883L::loadCalibration()
 {
-  if( compass_calibrated.get() == false )
-    {
-      // no stored calibration available
-      resetClassCalibration();
-      return false;
-    }
+	if( compass_calibrated.get() == false )
+	{
+		// no stored calibration available
+		resetClassCalibration();
+		return false;
+	}
 
-  xbias = compass_x_bias.get();
-  ybias = compass_y_bias.get();
-  zbias = compass_z_bias.get();
-  xscale = compass_x_scale.get();
-  yscale = compass_y_scale.get();
-  zscale = compass_z_scale.get();
-  return true;
+	xbias = compass_x_bias.get();
+	ybias = compass_y_bias.get();
+	zbias = compass_z_bias.get();
+	xscale = compass_x_scale.get();
+	yscale = compass_y_scale.get();
+	zscale = compass_z_scale.get();
+	return true;
 }
 
 /**
@@ -441,87 +441,96 @@ bool QMC5883L::loadCalibration()
  */
 bool QMC5883L::calibrate( const uint16_t seconds )
 {
-  // reset all old calibration data
-  resetCalibration();
+	// reset all old calibration data
+	ESP_LOGI( FNAME, "calibrate( %d )", seconds);
+	resetCalibration();
 
-  // The calibration is done with data output rate of 100 Hz.
-  samples = seconds * 1000 / 10;
+	// The calibration is done with data output rate of 100 Hz.
+	samples = seconds * 1000 / 10;
 
-  // Save current used ODR
-  uint8_t usedOdr = odr;
+	// Save current used ODR
+	uint8_t usedOdr = odr;
 
-  // Set ODR to 100 Hz
-  setOutputDataRate( ODR_100HZ );
+	// Set ODR to 100 Hz
+	setOutputDataRate( ODR_100HZ );
 
-  // Switch on continues mode
-  if( modeContinuous() != ESP_OK )
-    {
-      setOutputDataRate( usedOdr );
-      return false;
-    }
+	// Switch on continues mode
+	if( modeContinuous() != ESP_OK )
+	{
+		setOutputDataRate( usedOdr );
+		return false;
+	}
 
-  // wait a moment after measurement start.
-  delay( 20 );
+	// wait a moment after measurement start.
+	delay( 20 );
 
-  for( int i = 0; i < samples; i++ )
-    {
-      if( rawHeading() == false )
-        {
-          setOutputDataRate( usedOdr );
-          return false;
-        }
+	ESP_LOGI( FNAME, "calibrate xymin");
+	int i;
+	for( i=0 ; i < samples; i++ )
+	{
+		if( rawHeading() == false )
+		{
+			setOutputDataRate( usedOdr );
+			ESP_LOGI( FNAME, "abort calibrate xymin");
+			return false;
+		}
 
-      /* Find max/min xyz values */
-      xmin = ( xraw < xmin ) ? xraw : xmin;
-      ymin = ( yraw < ymin ) ? yraw : ymin;
-      zmin = ( zraw < zmin ) ? zraw : zmin;
-      xmax = ( xraw > xmax ) ? xraw : xmax;
-      ymax = ( yraw > ymax ) ? yraw : ymax;
-      zmax = ( zraw > zmax ) ? zraw : zmax;
-      delay( 10 );
-    }
+		/* Find max/min xyz values */
+		xmin = ( xraw < xmin ) ? xraw : xmin;
+		ymin = ( yraw < ymin ) ? yraw : ymin;
+		zmin = ( zraw < zmin ) ? zraw : zmin;
+		xmax = ( xraw > xmax ) ? xraw : xmax;
+		ymax = ( yraw > ymax ) ? yraw : ymax;
+		zmax = ( zraw > zmax ) ? zraw : zmax;
+		delay( 10 );
+	}
 
-  if( samples < 2 )
-    {
-      // Too less samples to start calibration
-      setOutputDataRate( usedOdr );
-      return false;
-    }
+	if( i < 2 )
+	{
+		// Too less samples to start calibration
+		ESP_LOGI( FNAME, "calibrate xymin not enough samples");
+		setOutputDataRate( usedOdr );
+		return false;
+	}
 
-  // Calculate hard iron correction
-  // calculate average x,y, z magnetic bias in counts
-  xbias = static_cast<float>( xmax + xmin ) / 2.;
-  ybias = static_cast<float>( ymax + ymin ) / 2.;
-  zbias = static_cast<float>( zmax + zmin ) / 2.;
+	// Calculate hard iron correction
+	// calculate average x,y, z magnetic bias in counts
+	xbias = static_cast<float>( xmax + xmin ) / 2.;
+	ybias = static_cast<float>( ymax + ymin ) / 2.;
+	zbias = static_cast<float>( zmax + zmin ) / 2.;
+	ESP_LOGI( FNAME, "New bias x:%f  y:%f  z%f", xbias, ybias, zbias );
 
-  // Calculate soft-iron scale factors
-  // calculate average x, y, z axis max chord length in counts
-  float xchord = static_cast<float>( xmax - xmin ) / 2.;
-  float ychord = static_cast<float>( ymax - ymin ) / 2.;
-  float zchord = static_cast<float>( zmax - zmin ) / 2.;
+	// Calculate soft-iron scale factors
+	// calculate average x, y, z axis max chord length in counts
+	float xchord = static_cast<float>( xmax - xmin ) / 2.;
+	float ychord = static_cast<float>( ymax - ymin ) / 2.;
+	float zchord = static_cast<float>( zmax - zmin ) / 2.;
 
-  float cord_avgerage = ( xchord + ychord + zchord ) / 3.;
+	float cord_avgerage = ( xchord + ychord + zchord ) / 3.;
 
-  xscale = cord_avgerage / xchord;
-  yscale = cord_avgerage / ychord;
-  zscale = cord_avgerage / zchord;
+	xscale = cord_avgerage / xchord;
+	yscale = cord_avgerage / ychord;
+	zscale = cord_avgerage / zchord;
 
-  // save calibration
-  saveCalibration();
-  setOutputDataRate( usedOdr );
+	ESP_LOGI( FNAME, "New scale x:%f  y:%f  z%f", xscale, yscale, zscale );
 
-  ESP_LOGI( FNAME, "Compass: xmin=%d xmax=%d, ymin=%d ymax=%d, zmin=%d zmax=%d",
-            xmin, xmax, ymin, ymax, zmin, zmax );
+	// save calibration
+	saveCalibration();
+	setOutputDataRate( usedOdr );
 
-  ESP_LOGI( FNAME, "Compass hard-iron: xbias=%.3f, ybias=%.3f, zbias=%.3f",
-            xbias, ybias, zbias );
+	ESP_LOGI( FNAME, "Compass: xmin=%d xmax=%d, ymin=%d ymax=%d, zmin=%d zmax=%d",
+			xmin, xmax, ymin, ymax, zmin, zmax );
 
-  ESP_LOGI( FNAME, "Compass soft-iron: xscale=%.3f, yscale=%.3f, zscale=%.3f",
-            xscale, yscale, zscale );
+	ESP_LOGI( FNAME, "Compass hard-iron: xbias=%.3f, ybias=%.3f, zbias=%.3f",
+			xbias, ybias, zbias );
 
-  // restart previous continuous mode
-  modeContinuous();
-  return true;
+	ESP_LOGI( FNAME, "Compass soft-iron: xscale=%.3f, yscale=%.3f, zscale=%.3f",
+			xscale, yscale, zscale );
+
+	// restart previous continuous mode
+	modeContinuous();
+	ESP_LOGI( FNAME, "calibration end" );
+	return true;
 }
 
 /**
@@ -530,7 +539,7 @@ bool QMC5883L::calibrate( const uint16_t seconds )
  */
 float QMC5883L::heading( bool *ok )
 {
-  static short error = 0;
+	static short error = 0;
 
 	if( ok != nullptr )
 		*ok = false;
@@ -540,7 +549,7 @@ float QMC5883L::heading( bool *ok )
 		error++;
 
 		if( error > 10 ) {
-	      modeContinuous();  // reinitialize once crashed
+			modeContinuous();  // reinitialize once crashed
 		}
 
 		return 0.0;
@@ -550,28 +559,28 @@ float QMC5883L::heading( bool *ok )
 
 	// Check if calibration data are available
 	if( compass_calibrated.get() == false )
-	  {
-	    // No calibration data available, return the raw values.
-      float heading = RAD_TO_DEG * atan2f( float( xraw ), float( yraw ) );
+	{
+		// No calibration data available, return the raw values.
+		float heading = RAD_TO_DEG * atan2f( float( xraw ), float( yraw ) );
 
-	    if( heading <= 0.0 )
-	      heading += 360.0;
+		if( heading <= 0.0 )
+			heading += 360.0;
 
-	    return heading;
-	  }
+		return heading;
+	}
 
 	/* Apply corrections to the measured values. */
-  double fx = - (float( xraw ) - xbias) * xscale;
-  double fy = - (float( yraw ) - ybias) * yscale;
-  double fz = (float( zraw ) - zbias) * zscale;
+	double fx = - (float( xraw ) - xbias) * xscale;
+	double fy = - (float( yraw ) - ybias) * yscale;
+	double fz = (float( zraw ) - zbias) * zscale;
 
 	// ESP_LOGI(FNAME,"RANGE XH:%d YH:%d ZH:%d  XL:%d YL:%d ZL:%d OX:%d OY:%d OZ:%d", xmax,ymax,zmax, xmin,ymin,zmin, xmax + xmin, ymax + ymin,zmax + zmin);
 	// ESP_LOGI(FNAME,"RAW NORM Flux, fx:%f fy:%f fz:%f", fx,fy,fz);
 
-// 	Xhorizontal = X*cos(pitch) + Y*sin(roll)*sin(pitch) – Z*cos(roll)*sin(pitch)
+	// 	Xhorizontal = X*cos(pitch) + Y*sin(roll)*sin(pitch) – Z*cos(roll)*sin(pitch)
 	double tcx = fx*cos( IMU::getPitchRad() )  + fy*sin( IMU::getRollRad() )*sin( IMU::getPitchRad()) - fz*cos( IMU::getRollRad())*sin( IMU::getPitchRad());
 	// ESP_LOGI(FNAME,"RR:%f, PR:%f tcx 1:%f tcx2:%f tcx3:%f", IMU::getPitchRad(), IMU::getRollRad(), fx*cos( IMU::getPitchRad() ),   fy*sin( IMU::getRollRad() )*sin( IMU::getPitchRad()), fz*cos( IMU::getRollRad())*sin( IMU::getPitchRad() ) );
-// 	Yhorizontal = Y*cos(roll) + Z*sin(roll)
+	// 	Yhorizontal = Y*cos(roll) + Z*sin(roll)
 	double tcy = fy*cos( IMU::getRollRad()) + fz*sin( IMU::getRollRad());
 
 	float heading = RAD_TO_DEG * atan2( tcx, tcy );

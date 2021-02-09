@@ -273,11 +273,17 @@ void SetupMenu::display( int mode ){
 	for (int i=0; i<_childs.size(); i++ ){
 		MenuEntry * child = _childs[i];
 		ucg->setPrintPos(1,(i+1)*25+25);
+		ucg->setColor( COLOR_HEADER_LIGHT );
 		ucg->printf("%s",child->_title.c_str());
 		if( child->value() ){
-			ucg->setPrintPos(1+ucg->getStrWidth( child->_title.c_str() ),(i+1)*25+25);
-			ucg->printf(": %s",child->value());
+			int fl=ucg->getStrWidth( child->_title.c_str());
+			ucg->setPrintPos(1+fl,(i+1)*25+25);
+			ucg->printf(": ");
+			ucg->setPrintPos(1+fl+ucg->getStrWidth( ": " ),(i+1)*25+25);
+			ucg->setColor( COLOR_WHITE );
+			ucg->printf("%s",child->value());
 		}
+		ucg->setColor( COLOR_WHITE );
 		ESP_LOGI(FNAME,"Child: %s y=%d",child->_title.c_str() ,y );
 	}
 	y+=170;
@@ -722,7 +728,7 @@ void SetupMenu::setup( )
 		amode->addEntry( "IAS");
 		amode->addEntry( "TAS");
 
-		SetupMenuSelect * atl = new SetupMenuSelect( "Automatic Transition",	0, false, 0, true, &fl_auto_transition );
+		SetupMenuSelect * atl = new SetupMenuSelect( "Auto Transition",	0, false, 0, true, &fl_auto_transition );
 		opt->addMenu( atl );
 		atl->setHelp( PROGMEM "Option to enable automatic altitude transition to QNH Standard (1013.25) above 'Transition Altitude'");
 		atl->addEntry( "Disable");
@@ -878,7 +884,7 @@ void SetupMenu::setup( )
 		bat->addMenu( batv );
 
 		SetupMenu * hardware = new SetupMenu( "Hardware Setup" );
-		hardware->setHelp( PROGMEM "Setup variometer hardware like display, rotary");
+		hardware->setHelp( PROGMEM "Setup variometer hardware like display, rotary, AHRS sensor");
 		sye->addMenu( hardware );
 
 		SetupMenu * display = new SetupMenu( "DISPLAY Setup" );
@@ -886,7 +892,7 @@ void SetupMenu::setup( )
 		// UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P
 		if( display_type.get() == UNIVERSAL )
 		{
-			SetupMenuSelect * dtype = new SetupMenuSelect( 	"Display Type", 0, false, 0, true, &display_type );
+			SetupMenuSelect * dtype = new SetupMenuSelect( 	"HW Type", 0, false, 0, true, &display_type );
 			dtype->setHelp( PROGMEM "Factory setup for corresponding display type used");
 			dtype->addEntry( "UNIVERSAL");
 			dtype->addEntry( "RAYSTAR");
@@ -895,14 +901,14 @@ void SetupMenu::setup( )
 			display->addMenu( dtype );
 		}
 
-		SetupMenuSelect * disty = new SetupMenuSelect( "Display Style", 0, false , 0, false, &display_style );
+		SetupMenuSelect * disty = new SetupMenuSelect( "Style", 0, false , 0, false, &display_style );
 		display->addMenu( disty );
 		disty->setHelp( PROGMEM "Display style in more digital airliner stype or retro mode with classic vario meter needle");
 		disty->addEntry( "Airliner");
 		disty->addEntry( "Retro");
 
 		// Orientation   _display_orientation
-		SetupMenuSelect * diso = new SetupMenuSelect( "Display Orientation", 0, true, 0, true, &display_orientation );
+		SetupMenuSelect * diso = new SetupMenuSelect( "Orientation", 0, true, 0, true, &display_orientation );
 		display->addMenu( diso );
 		diso->setHelp( PROGMEM "Display Orientation either NORMAL means Rotary is right, or TOPDOWN means Rotary is left");
 		diso->addEntry( "NORMAL");
@@ -954,10 +960,10 @@ void SetupMenu::setup( )
 			ahrslc->setHelp( PROGMEM "Enter valid AHRS License Key, then with valid key under 'AHRS Option', AHRS feature can be enabled");
 			ahrs->addMenu( ahrslc );
 
-			SetupMenuSelect * ahrslc1 = new SetupMenuSelect( "First  Letter",	0, false, add_key, false, &ahrs_licence_dig1 );
+			SetupMenuSelect * ahrslc1 = new SetupMenuSelect( "First    Letter",	0, false, add_key, false, &ahrs_licence_dig1 );
 			SetupMenuSelect * ahrslc2 = new SetupMenuSelect( "Second Letter",	0, false, add_key, false, &ahrs_licence_dig2 );
-			SetupMenuSelect * ahrslc3 = new SetupMenuSelect( "Third  Letter",	0, false, add_key, false, &ahrs_licence_dig3 );
-			SetupMenuSelect * ahrslc4 = new SetupMenuSelect( "Last   Letter",	0, false, add_key, false, &ahrs_licence_dig4 );
+			SetupMenuSelect * ahrslc3 = new SetupMenuSelect( "Third   Letter",	0, false, add_key, false, &ahrs_licence_dig3 );
+			SetupMenuSelect * ahrslc4 = new SetupMenuSelect( "Last     Letter",	0, false, add_key, false, &ahrs_licence_dig4 );
 			ahrslc->addMenu( ahrslc1 );
 			ahrslc->addMenu( ahrslc2 );
 			ahrslc->addMenu( ahrslc3 );
@@ -1015,8 +1021,8 @@ void SetupMenu::setup( )
 		ausw->addMenu( ausws );
 
 		// Bluetooth or Wifi
-		String btname="Wireless ";
-		btname += SetupCommon::getID();
+		String btname="Wireless";
+		// btname += SetupCommon::getID();
 
 		SetupMenuSelect * btm = new SetupMenuSelect(  btname, 0, true, 0, true, &blue_enable );
 		btm->setHelp( PROGMEM "Activate type wireless interface to connect navigation devices running e.g. XCSoar, or to another XCVario as client");

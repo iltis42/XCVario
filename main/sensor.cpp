@@ -361,7 +361,7 @@ void readBMP(void *pvParameters){
 				xSemaphoreGive(xMutex);
 			}
 		}
-		// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d ena=%d", compass.haveSensor(),  comp_nmea_hdm.get(),  compass_enable.get() );
+		// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d ena=%d", compass.haveSensor(),  compass_nmea_hdt.get(),  compass_enable.get() );
 		if( compass_enable.get() == true && (count % 5 ) == 0 )
 		{
 			// try to get compass heading from sensor and forward it via NMEA.
@@ -370,10 +370,10 @@ void readBMP(void *pvParameters){
 			float mh = -400.;
 			float th = -400.;
 
-			if( comp_nmea_hdm.get() == true )
+			if( compass_nmea_hdm.get() == true )
 				mh = compass.magneticHeading( &ok1 );
 			// ESP_LOGI(FNAME,"Compass, MH: %f  OK: %d", mh, ok1);
-			if( comp_decl_valid.get() == true && comp_nmea_hdt.get() == true ){
+			if( compass_declination_valid.get() == true && compass_nmea_hdt.get() == true ){
 				// get true heading only, if declination is valid
 				th = compass.trueHeading( &ok2 );
 			}

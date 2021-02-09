@@ -97,7 +97,7 @@ HDM - Heading - Magnetic
 void Protocols::sendNmeaHDM( float heading ) {
   char str[21];
   sprintf( str,"$HCHDM,%3.1f,M", heading );
-  // ESP_LOGI(FNAME,"New magnetic Heading: %3.1f, cmd: %s", heading, str );
+  ESP_LOGI(FNAME,"Magnetic Heading: %3.1f", heading );
 
   int cs = getCheckSum(&str[1]);
   int i = strlen(str);
@@ -120,7 +120,7 @@ HDT - Heading - True
 void Protocols::sendNmeaHDT( float heading ) {
   char str[21];
   sprintf( str,"$HCHDT,%3.1f,T", heading );
-  // ESP_LOGI(FNAME,"New true Heading: %3.1f, cmd: %s", heading, str );
+  // ESP_LOGI(FNAME,"True Heading: %3.1f", heading );
 
   int cs = getCheckSum(&str[1]);
   int i = strlen(str);

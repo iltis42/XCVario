@@ -468,12 +468,7 @@ bool QMC5883L::calibrate( const uint16_t seconds )
 	int i;
 	for( i=0 ; i < samples; i++ )
 	{
-		if( rawHeading() == false )
-		{
-			setOutputDataRate( usedOdr );
-			ESP_LOGI( FNAME, "abort calibrate xymin");
-			return false;
-		}
+		rawHeading();
 
 		/* Find max/min xyz values */
 		xmin = ( xraw < xmin ) ? xraw : xmin;

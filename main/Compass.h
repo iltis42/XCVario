@@ -13,7 +13,7 @@ Class to handle compass data access.
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-02-01
+Last update: 2021-02-09
 
 **************************************************************************/
 
@@ -53,6 +53,12 @@ public:
    * it is set to false.
    */
   float magneticHeading( bool *okIn=nullptr );
+
+  /**
+   * Calibrate compass by using the read x, y, z raw values. The calibration
+   * duration is passed as seconds.
+   */
+  bool calibrate( const uint16_t seconds );
 
 private:
 

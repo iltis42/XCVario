@@ -15,6 +15,8 @@ https://datasheetspdf.com/pdf-file/1309218/QST/QMC5883L/1
 
 Author: Axel Pauli, January 2021
 
+Last update: 2021-02-09
+
  ****************************************************************************/
 
 #ifndef QMC5883L_H
@@ -106,7 +108,27 @@ public:
 	 */
 	bool rawHeading();
 
+	/**
+	 * Calibrate compass by using the read x, y, z raw values. The calibration
+	 * duration is passed as seconds.
+	 */
+	bool calibrate( const uint16_t seconds );
+
+	/**
+	 * Resets the whole compass calibration, also the saved configuration.
+	 */
 	void resetCalibration();
+
+	/**
+	 * Saves a done compass calibration.
+	 */
+	void saveCalibration();
+
+	/**
+	 * Loads a stored compass calibration. Returns true, if valid calibration
+	 * data could be loaded, otherwise false.
+	 */
+	bool loadCalibration();
 
 	/** Set ODR output data rate. */
 	void setOutputDataRate( const uint8_t odrIn );
@@ -130,16 +152,30 @@ public:
 			const uint8_t reg,
 			const uint8_t count,
 			uint8_t *data );
+
 private:
+
+  /**
+   * Resets the class calibration variables.
+   */
+  void resetClassCalibration();
 
 	/** Check, if the bus pointer is valid. */
 	bool checkBus();
 
 	static bool m_sensor;
 	I2C_t* m_bus;
-	int xhigh, xlow, zlow;
-	int yhigh, ylow, zhigh;
-	int x,y,z;
+
+	/** Variables used by calibration. */
+	float xbias, ybias, zbias;
+	float xscale, yscale, zscale;
+	int16_t xmax, xmin;
+	int16_t ymax, ymin;
+	int16_t zmax, zmin;
+	uint32_t samples;
+
+	/** Read raw values from chip */
+	int xraw, yraw, zraw;
 
 	uint8_t addr; // chip adress
 	uint8_t odr;  // output data rate

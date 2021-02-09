@@ -158,10 +158,18 @@ SetupNG<float>          compass_dev_225( "COMPASS_DEV_225", 0 );
 SetupNG<float>          compass_dev_270( "COMPASS_DEV_279", 0 );
 SetupNG<float>          compass_dev_335( "COMPASS_DEV_335", 0 );
 SetupNG<float>          compass_dev_360( "COMPASS_DEV_360", 0 );
-SetupNG<float>          compass_decl( "compass_decl", 0 );
-SetupNG<int>            comp_decl_valid( "comp_decl_valid", 0 );
-SetupNG<int>            comp_nmea_hdm( "comp_nmea_hdm", 0 );
-SetupNG<int>            comp_nmea_hdt( "comp_nmea_hdt", 0 );
+SetupNG<float>          compass_x_bias( "COMPASS_X_BIAS", 0 );
+SetupNG<float>          compass_y_bias( "COMPASS_Y_BIAS", 0 );
+SetupNG<float>          compass_z_bias( "COMPASS_Z_BIAS", 0 );
+SetupNG<float>          compass_x_scale( "COMPASS_X_SCALE", 0 );
+SetupNG<float>          compass_y_scale( "COMPASS_Y_SCALE", 0 );
+SetupNG<float>          compass_z_scale( "COMPASS_Z_SCALE", 0 );
+SetupNG<float>          compass_calibration_time( "COMPASS_C_TIME", 10 );
+SetupNG<bool>           compass_calibrated( "COMPASS_CALIBRATED", 0 );
+SetupNG<float>          compass_declination( "COMPASS_DECL", 0 );
+SetupNG<int>            compass_declination_valid( "COMP_DECL_VALID", 0 );
+SetupNG<int>            compass_nmea_hdm( "COMPASS_NMEA_HDM", 0 );
+SetupNG<int>            compass_nmea_hdt( "COMPASS_NMEA_HDT", 0 );
 SetupNG<int> 			s2f_with_gload( "S2G_GLOAD", 1 );       // considering g load in S2F
 SetupNG<int> 			s2f_blockspeed( "S2G_BLOCKSPEED", 0 );  // considering netto vario and g load for S2F or not
 SetupNG<int> 			wk_label_plus_3( "WKLP3", 3);

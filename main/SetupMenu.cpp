@@ -226,6 +226,11 @@ int compassDeclinationAction( SetupMenuValFloat *p )
   return compassMenuHandler.declinationAction( p );
 }
 
+int compassSensorCalibrateAction( SetupMenuSelect *p )
+{
+  return compassMenuHandler.sensorCalibrationAction( p );
+}
+
 SetupMenu::SetupMenu(){
 	highlight = -1;
 	_parent = 0;
@@ -746,6 +751,7 @@ void SetupMenu::setup( )
 		flarms->addEntry( "Start Sim in 5 seconds");
 
 		SetupMenu * compassMenu = new SetupMenu( "Compass" );
+		compassMenu->setHelp( PROGMEM "Setup Magnetic Sensor and Compass", 240 );
 		compassME = opt->addMenu( compassMenu );
 
 		SetupMenuSelect * compSensor = new SetupMenuSelect( "Sensor Option", 0, false, 0, true, &compass_enable );
@@ -753,6 +759,33 @@ void SetupMenu::setup( )
 		compSensor->addEntry( "Enable");
 		compSensor->setHelp( PROGMEM "Option to enable/disable the Compass Sensor" );
 		compassMenu->addMenu( compSensor );
+
+		SetupMenu * calibrationMenu = new SetupMenu( "Sensor Calibration" );
+		calibrationMenu->setHelp( PROGMEM "Calibrate Magnetic Sensor" );
+		compassMenu->addMenu( calibrationMenu );
+
+    SetupMenuValFloat *sct = new SetupMenuValFloat( "Setup Calibration Time",
+                                                    0,
+                                                    "s",
+                                                    10,
+                                                    300,
+                                                    1.0,
+                                                    nullptr,
+                                                    false,
+                                                    &compass_calibration_time );
+    calibrationMenu->addMenu( sct );
+
+		compSensor = new SetupMenuSelect( "Sensor Calibration",
+		                                  0,
+		                                  false,
+		                                  compassSensorCalibrateAction,
+		                                  false,
+		                                  &dummy );
+
+    compSensor->addEntry( "Cancel");
+    compSensor->addEntry( "Start Calibration");
+    compSensor->setHelp( PROGMEM "Calibrate Magnetic Sensor" );
+    calibrationMenu->addMenu( compSensor );
 
     SetupMenuValFloat *cd = new SetupMenuValFloat( "Setup Declination",
                                                    0,
@@ -762,7 +795,7 @@ void SetupMenu::setup( )
                                                    1.0,
                                                    compassDeclinationAction,
                                                    false,
-                                                   &compass_decl );
+                                                   &compass_declination );
 
     cd->setHelp( PROGMEM "Set compass declination in degrees" );
     compassMenu->addMenu( cd );
@@ -783,13 +816,13 @@ void SetupMenu::setup( )
     SetupMenu * nmeaMenu = new SetupMenu( "Setup NMEA" );
     compassMenu->addMenu( nmeaMenu );
 
-    SetupMenuSelect * nmeaHdm = new SetupMenuSelect( "$HCHDM", 0, false, 0, true, &comp_nmea_hdm );
+    SetupMenuSelect * nmeaHdm = new SetupMenuSelect( "$HCHDM", 0, false, 0, true, &compass_nmea_hdm );
     nmeaHdm->addEntry( "Disable");
     nmeaHdm->addEntry( "Enable");
     nmeaHdm->setHelp( PROGMEM "Enable/disable NMEA '$HCHDM' sentence (magnetic heading)" );
     nmeaMenu->addMenu( nmeaHdm );
 
-    SetupMenuSelect * nmeaHdt = new SetupMenuSelect( "$HCHDT", 0, false, 0, true, &comp_nmea_hdt );
+    SetupMenuSelect * nmeaHdt = new SetupMenuSelect( "$HCHDT", 0, false, 0, true, &compass_nmea_hdt );
     nmeaHdt->addEntry( "Disable");
     nmeaHdt->addEntry( "Enable");
     nmeaHdt->setHelp( PROGMEM "Enable/disable NMEA '$HCHDT' sentence (magnetic true heading)" );

@@ -13,7 +13,7 @@ Class to handle compass data and actions.
 
 Author: Axel Pauli, February 2021
 
-Last update: 2021-02-01
+Last update: 2021-02-09
 
 **************************************************************************/
 
@@ -137,12 +137,42 @@ int CompassMenu::calibrateAction( SetupMenuSelect *p )
 
 int CompassMenu::declinationAction( SetupMenuValFloat *p )
 {
+  ESP_LOGI( FNAME, "declinationAction()" );
+
   if( p->pressed )
     {
       ESP_LOGI( FNAME, "Compass declination set to valid" );
-      comp_decl_valid.set( true );
     }
 
+  return 0;
+}
+
+int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
+{
+  ESP_LOGI( FNAME, "sensorCalibrationAction()" );
+
+  if( p->getSelect() == 0 )
+    {
+      // Cancel is requested
+      ESP_LOGI( FNAME, "Cancel Button pressed" );
+      return 0;
+    }
+
+  ESP_LOGI( FNAME, "Start magnetic sensor calibration" );
+
+  if( compass.haveSensor() == false )
+    {
+      p->clear();
+      p->ucg->setFont( ucg_font_fur14_hf );
+      p->ucg->setPrintPos( 1, 60 );
+      p->ucg->printf( "No magnetic Sensor, Abort" );
+      delay( 2000 );
+      ESP_LOGI( FNAME, "Abort calibration, no sensor signal" );
+      return 0;
+    }
+
+  uint16_t calTime = uint16_t( compass_calibration_time.get() );
+  compass.calibrate( calTime );
   return 0;
 }
 

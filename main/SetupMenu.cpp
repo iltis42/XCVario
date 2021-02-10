@@ -793,7 +793,7 @@ void SetupMenu::setup( )
 				&dummy );
 
 		compSensor->addEntry( "Cancel");
-		compSensor->addEntry( "Start Calibration");
+		compSensor->addEntry( "Start");
 		compSensor->setHelp( PROGMEM "Calibrate Magnetic Sensor" );
 		calibrationMenu->addMenu( compSensor );
 

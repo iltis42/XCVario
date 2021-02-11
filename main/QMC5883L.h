@@ -15,7 +15,7 @@ https://datasheetspdf.com/pdf-file/1309218/QST/QMC5883L/1
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-02-09
+Last update: 2021-02-11
 
  ****************************************************************************/
 
@@ -27,20 +27,6 @@ Last update: 2021-02-09
 
 /* The default I2C address of this chip */
 #define QMC5883L_ADDR 0x0D
-
-/* Flags for Control Register 1. */
-#define ODR_10HZ   0b00000000 // Output Data Rate in Hz.
-#define ODR_50HZ   0b00000100
-#define ODR_100HZ  0b00001000
-#define ODR_200HZ  0b00001100
-
-#define RNG_2G 0b00000000  // Range 2 Gauss: for magnetic-clean environments.
-#define RNG_8G 0b00010000  // Range 8 Gauss: for strong magnetic fields.
-
-#define OSR_512 0b00000000  // Over Sample Rate 512: less noise, more power.
-#define OSR_256 0b01000000
-#define OSR_128 0b10000000
-#define OSR_64  0b11000000  // Over Sample Rate 64: more noise, less power.
 
 class QMC5883L
 {
@@ -54,7 +40,7 @@ public:
 	QMC5883L( const uint8_t addr,
 			      const uint8_t odr,
 			      const uint8_t range,
-			      const uint8_t osr,
+			      const uint16_t osr,
 			      I2C_t *i2cBus=nullptr );
 
 	~QMC5883L();
@@ -130,13 +116,13 @@ public:
 	 */
 	bool loadCalibration();
 
-	/** Set ODR output data rate. */
+	/** Set ODR output data rate, accepted values are: [10, 50, 100, 200] */
 	void setOutputDataRate( const uint8_t odrIn );
 
-	/** Set magnetic range for measurement RNG_2G, RNG_8G. */
+	/** Set magnetic range for measurement, accepted values are: [2, 8]. */
 	void setRange( const uint8_t rangeIn );
 
-	/** Set over sample ratio OSR_64 ... OSR_512. */
+	/** Set over sample ratio OSR, accepted values are: [64, 128, 256, 512]. */
 	void setOverSampleRatio( const uint16_t osrIn );
 
 	/** Write with data part. */
@@ -174,7 +160,7 @@ private:
 	int16_t zmax, zmin;
 	uint32_t samples;
 
-	/** Read raw values from chip */
+	/** Read raw values from the chip */
 	int xraw, yraw, zraw;
 
 	uint8_t addr; // chip adress
@@ -182,6 +168,7 @@ private:
 	uint8_t range; // magnetic resolution of sensor
 	uint8_t osr; // over sample ratio
 	bool overflowWarning;
+	bool calibrationRunning;
 };
 
 #endif

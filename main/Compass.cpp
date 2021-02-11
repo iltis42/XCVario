@@ -13,7 +13,7 @@ Class to handle compass data access.
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-02-09
+Last update: 2021-02-11
 
 **************************************************************************/
 
@@ -40,7 +40,7 @@ SetupNG<float>* Compass::deviations[8] = { &compass_dev_45,
 Compass::Compass( const uint8_t addr,
                   const uint8_t odr,
                   const uint8_t range,
-                  const uint8_t osr,
+                  const uint16_t osr,
                   I2C_t *i2cBus ) :
  QMC5883L( addr, odr, range, osr, i2cBus )
 {

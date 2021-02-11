@@ -128,7 +128,7 @@ mpud::float_axes_t accelG_Prev;
 mpud::float_axes_t gyroDPS_Prev;
 
 // Magnetic sensor / compass
-Compass compass( 0x0D, ODR_10HZ, RNG_2G, OSR_256 );
+Compass compass( 0x0D, 10, 2, 512 );
 
 BTSender btsender;
 

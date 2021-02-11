@@ -57,4 +57,7 @@ private:
 
   // active compass instance
   Compass& compass;
+
+  // press state
+  bool pressed;
 };

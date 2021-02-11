@@ -1,11 +1,11 @@
 /**************************************************************************
-*                                                                         *
-*   This program is free software; you can redistribute it and/or modify  *
-*   it under the terms of the GNU General Public License as published by  *
-*   the Free Software Foundation; either version 2 of the License, or     *
-*   (at your option) any later version.                                   *
-*                                                                         *
-***************************************************************************
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ ***************************************************************************
 
 I2C driver for the chip QMC5883L, 3-Axis Magnetic Sensor.
 
@@ -17,7 +17,7 @@ Author: Axel Pauli, January 2021
 
 Last update: 2021-02-11
 
-***************************************************************************/
+ ***************************************************************************/
 
 // Activate/deactivate debug messages
 // #define DEBUG_COMP 1
@@ -85,13 +85,13 @@ QMC5883L::QMC5883L( const uint8_t addrIn,
 		const uint8_t rangeIn,
 		const uint16_t osrIn,
 		I2C_t *i2cBus ) :
-				  m_bus( i2cBus ),
-				  addr( addrIn ),
-				  odr( odrIn ),
-				  range( rangeIn ),
-				  osr( osrIn ),
-				  overflowWarning( false ),
-				  calibrationRunning( false )
+						  m_bus( i2cBus ),
+						  addr( addrIn ),
+						  odr( odrIn ),
+						  range( rangeIn ),
+						  osr( osrIn ),
+						  overflowWarning( false ),
+						  calibrationRunning( false )
 {
 	if( addrIn == 0 )
 	{
@@ -183,8 +183,8 @@ esp_err_t QMC5883L::selfTest()
 	ESP_LOGI( FNAME, "QMC5883L selftest, scan for I2C address 0x%02X and chip ID 0x%02X PASSED",	QMC5883L_ADDR, chipId );
 	m_sensor = true;
 
-  // load last known calibration.
-  loadCalibration();
+	// load last known calibration.
+	loadCalibration();
 	return ESP_OK;
 }
 
@@ -443,7 +443,7 @@ bool QMC5883L::loadCalibration()
 {
 	if( compass_calibrated.get() == 0 )
 	{
-	    ESP_LOGI( FNAME, "Compass calibration is not valid" );
+		ESP_LOGI( FNAME, "Compass calibration is not valid" );
 		// no stored calibration available
 		resetClassCalibration();
 		return false;
@@ -457,7 +457,7 @@ bool QMC5883L::loadCalibration()
 	zscale = compass_z_scale.get();
 
 	ESP_LOGI( FNAME, "Read calibration: %f, %f, %f, %f, %f, %f, valid=%d",
-	          xbias, ybias, zbias, xscale, yscale, zscale, compass_calibrated.get() );
+			xbias, ybias, zbias, xscale, yscale, zscale, compass_calibrated.get() );
 
 	return true;
 }
@@ -502,9 +502,9 @@ bool QMC5883L::calibrate( const uint16_t seconds )
 	for( i=0 ; i < samples; i++ )
 	{
 		if( rawHeading() == false )
-		  {
-		    errors++;
-		  }
+		{
+			errors++;
+		}
 
 		/* Find max/min xyz values */
 		xmin = ( xraw < xmin ) ? xraw : xmin;
@@ -519,7 +519,7 @@ bool QMC5883L::calibrate( const uint16_t seconds )
 	}
 
 	ESP_LOGI( FNAME, "Read Cal-Samples=%d, OK=%d, NOK=%d",
-	          samples, samples-errors, errors );
+			samples, samples-errors, errors );
 
 	if( i < 2 )
 	{
@@ -585,10 +585,10 @@ float QMC5883L::heading( bool *ok )
 		*ok = false;
 
 	if( calibrationRunning == true )
-	  {
-	    // Calibration is running, don't disturb it.
-	    return 0.0;
-	  }
+	{
+		// Calibration is running, don't disturb it.
+		return 0.0;
+	}
 
 	if( rawHeading() == false )
 	{

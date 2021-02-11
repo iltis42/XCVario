@@ -625,14 +625,13 @@ float QMC5883L::heading( bool *ok )
 	}
 
 	/* Apply corrections to the measured values. */
-	double fx = (double) ((float( xraw ) - xbias) * xscale);
-	double fy = (double) ((float( yraw ) - ybias) * yscale);
+	double fx = -(double) ((float( xraw ) - xbias) * xscale);
+	double fy = -(double) ((float( yraw ) - ybias) * yscale);
 	double fz = (double) ((float( zraw ) - zbias) * zscale);
 
-	double headingc = RAD_TO_DEG * atan2( double( fy ), double( fx ) );
-
 #ifdef DEBUG_COMP
-  ESP_LOGI( FNAME, "fX=%.1f fY=%.1f fZ=%.1f Cor-Heading=%.1f", fx, fy, fz, headingc );
+	double headingc = RAD_TO_DEG * atan2( double( fy ), double( fx ) );
+	ESP_LOGI( FNAME, "fX=%.1f fY=%.1f fZ=%.1f Cor-Heading=%.1f", fx, fy, fz, headingc );
 #endif
 
 	// ESP_LOGI(FNAME,"RANGE XH:%d YH:%d ZH:%d  XL:%d YL:%d ZL:%d OX:%d OY:%d OZ:%d", xmax,ymax,zmax, xmin,ymin,zmin, xmax + xmin, ymax + ymin,zmax + zmin);

@@ -55,6 +55,7 @@ IN THE SOFTWARE.
 
 static const char* TAG __attribute__((unused)) = "I2Cbus";
 
+// Protect multithreading by semaphore
 xSemaphoreHandle i2cbus_mutex = 0;
 
 /*******************************************************************************
@@ -84,6 +85,7 @@ esp_err_t I2C::begin(gpio_num_t sda_io_num, gpio_num_t scl_io_num, uint32_t clk_
 }
 
 esp_err_t I2C::begin(gpio_num_t sda_io_num, gpio_num_t scl_io_num, gpio_pullup_t sda_pullup_en, gpio_pullup_t scl_pullup_en, uint32_t clk_speed) {
+	i2c_driver_delete(port);
 	i2c_config_t conf;
 	memset( &conf, 0, sizeof(conf) );
     conf.mode = I2C_MODE_MASTER;
@@ -95,6 +97,7 @@ esp_err_t I2C::begin(gpio_num_t sda_io_num, gpio_num_t scl_io_num, gpio_pullup_t
     i2cbus_mutex = xSemaphoreCreateMutex();
     esp_err_t err = i2c_param_config(port, &conf);
     // i2c_set_stop_timing( port, 200, 200 );
+
     if (!err) err = i2c_driver_install(port, conf.mode, 0, 0, 0);
     i2c_filter_enable(port, 7 );
     int setup, hold;
@@ -298,12 +301,14 @@ esp_err_t I2C::readBytes(uint8_t devAddr, uint8_t regAddr, size_t length, uint8_
  * UTILS
  ******************************************************************************/
 esp_err_t I2C::testConnection(uint8_t devAddr, int32_t timeout) {
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+	xSemaphoreTake(i2cbus_mutex,portMAX_DELAY );
+	i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
     i2c_master_write_byte(cmd, (devAddr << 1) | I2C_MASTER_WRITE, I2C_MASTER_ACK_EN);
     i2c_master_stop(cmd);
     esp_err_t err = i2c_master_cmd_begin(port, cmd, (timeout < 0 ? ticksToWait : pdMS_TO_TICKS(timeout)));
     i2c_cmd_link_delete(cmd);
+    xSemaphoreGive(i2cbus_mutex);
     return err;
 }
 

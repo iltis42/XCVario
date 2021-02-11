@@ -63,6 +63,7 @@ int   Audio::defaultDelay = 500;
 int   Audio::_tonemode_back = 0;
 int   Audio::tick = 0;
 int   Audio::tickmod  = 0;
+int   Audio::volume_change=0;
 
 const int clk_8m_div = 7;    // RTC 8M clock divider (division is by clk_8m_div+1, i.e. 0 means 8MHz frequency)
 const float freq_step = RTC_FAST_CLK_FREQ_APPROX / (65536 * 8 );  // div = 0x07
@@ -398,6 +399,7 @@ void Audio::incVolume( int steps ) {
 	}
 	if( wiper == 0 )
 		dac_output_disable(_ch);
+	volume_change = 25;
 	ESP_LOGI(FNAME,"inc volume, wiper: %d", wiper );
 }
 
@@ -409,6 +411,7 @@ void Audio::decVolume( int steps ) {
 	}
 	if( wiper > 0 )
 		dac_output_enable(_ch);
+	volume_change = 25;
 	ESP_LOGI(FNAME,"dec volume, wiper: %d", wiper );
 }
 
@@ -442,6 +445,7 @@ void Audio::calcS2Fmode(){
 }
 
 #define FADING_TIME 4
+bool sound=true;
 
 void Audio::dactask(void* arg )
 {
@@ -449,102 +453,115 @@ void Audio::dactask(void* arg )
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		tick++;
 		Switch::tick();    // we hook switch sceduling here to save extra task
-		if( !_testmode ) {
-			// ESP_LOGI(FNAME, "sound dactask %d wiper %d  tm %d", tick, wiper, _testmode   );
-			if( !(tick%20) )
-				calcS2Fmode();
-			bool sound=true;
-			if( (inDeadBand(_te) || (wiper == 0 )) && !_testmode ){
-				if( !deadband_active ) {
-					ESP_LOGI(FNAME,"Audio in DeadBand true");
-					enableAmplifier(false);
-					deadband_active = true;
-				}
-				sound = false;
-				// ESP_LOGI(FNAME,"sound = false");
+		if( audio_disable.get() && Menu->isActive() ){
+			if( sound_on ){
+				dac_output_disable(_ch);
+				Poti.writeWiper( 0 );
+				cur_wiper = 0;
+				sound_on = false;
 			}
-			else if( !inDeadBand(_te) || wiper > 0 ){
-				if( deadband_active ) {
-					ESP_LOGI(FNAME,"Audio in DeadBand false");
-					enableAmplifier(true);
-					deadband_active = false;
-				}
-				if( hightone && (_tonemode == ATM_SINGLE_TONE) ){
-					if( (_chopping_mode == BOTH_CHOP) ||
-							(_s2f_mode && (_chopping_mode == S2F_CHOP)) ||
-							(!_s2f_mode && (_chopping_mode == VARIO_CHOP)) ) {
-						sound = false;
-						// ESP_LOGI(FNAME,"sound = false 2");
+		}
+		else
+		{
+			if( !_testmode ) {
+				// ESP_LOGI(FNAME, "sound dactask %d wiper %d  tm %d", tick, wiper, _testmode   );
+				if( !(tick%20) )
+					calcS2Fmode();
+				bool sound=true;
+				if( (inDeadBand(_te) || (wiper == 0 )) && !_testmode && !volume_change ){
+					if( !deadband_active ) {
+						ESP_LOGI(FNAME,"Audio in DeadBand true");
+						enableAmplifier(false);
+						deadband_active = true;
 					}
+					sound = false;
+					// ESP_LOGI(FNAME,"sound = false");
 				}
-			}
-			// ESP_LOGI(FNAME, "sound %d, ht %d", sound, hightone );
-			if( sound ){
-				// ESP_LOGI(FNAME, "have sound");
-				if( !sound_on ) {
-					if( chopping_style.get() == AUDIO_CHOP_HARD ){
-						dac_output_enable(_ch);
+				else if( !inDeadBand(_te) || wiper > 0 || volume_change ){
+					if( deadband_active ) {
+						ESP_LOGI(FNAME,"Audio in DeadBand false");
+						enableAmplifier(true);
+						deadband_active = false;
 					}
-					else{
-						dac_output_enable(_ch);
-						int delta = 1;
-						if( !sound_on ) {
-							for( int i=1; i<wiper; i+=delta ) {
-								Poti.writeWiper( i );
-								delta = 1+i/FADING_TIME;
-								delay(1);
-								// ESP_LOGI(FNAME, "fade in sound, wiper: %d", nw);
-							}
+					if( hightone && (_tonemode == ATM_SINGLE_TONE) ){
+						if( (_chopping_mode == BOTH_CHOP) ||
+								(_s2f_mode && (_chopping_mode == S2F_CHOP)) ||
+								(!_s2f_mode && (_chopping_mode == VARIO_CHOP)) ) {
+							sound = false;
+							// ESP_LOGI(FNAME,"sound = false 2");
 						}
 					}
-					sound_on = true;
 				}
-				if(  cur_wiper != wiper ){
-					Poti.writeWiper( wiper );
-					// ESP_LOGI(FNAME, "sound on, set wiper: %d", wiper );
-					cur_wiper = wiper;
-				}
-				float max = minf;
-				if ( _te > 0 )
-					max = maxf;
-				float range = _range;
-				if( _s2f_mode )
-					range = 5.0;
-				float mult = std::pow( (abs(_te)/range)+1, audio_factor.get());
-				if( audio_factor.get() != prev_aud_fact ) {
-					exponent_max  = std::pow( 2, audio_factor.get());
-					prev_aud_fact = audio_factor.get();
-				}
-				float f = center_freq.get() + ((mult*_te)/range )  * (max/exponent_max);
-				// ESP_LOGI(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f multi:%0.3f", f, _te, audio_factor.get(), mult );
-				if( hightone && (_tonemode == ATM_DUAL_TONE ) )
-					setFrequency( f*_high_tone_var );
-				else
-					setFrequency( f );
-			}
-			else{
-				if( sound_on ) {
-					if( chopping_style.get() == AUDIO_CHOP_HARD ){
-						dac_output_disable(_ch);
-					}else{
-						if( cur_wiper > 1 ) {  // turn off gracefully sound
-							int delta = wiper/(FADING_TIME*2);
-							for( int i=wiper; i>0; i-=delta ) {
-								Poti.writeWiper( i );
-								delta = 1+i/(FADING_TIME*2);
-								delay(1);
-								// ESP_LOGI(FNAME, "fade out sound, wiper: %d", nw);
+				// ESP_LOGI(FNAME, "sound %d, ht %d", sound, hightone );
+				if( sound ){
+					// ESP_LOGI(FNAME, "have sound");
+					if( !sound_on ) {
+						if( chopping_style.get() == AUDIO_CHOP_HARD ){
+							dac_output_enable(_ch);
+						}
+						else{
+							dac_output_enable(_ch);
+							int delta = 1;
+							if( !sound_on ) {
+								for( int i=1; i<wiper; i+=delta ) {
+									Poti.writeWiper( i );
+									delta = 1+i/FADING_TIME;
+									delay(1);
+									// ESP_LOGI(FNAME, "fade in sound, wiper: %d", nw);
+								}
 							}
-							Poti.writeWiper( 0 );
+						}
+						sound_on = true;
+					}
+					if(  cur_wiper != wiper ){
+						Poti.writeWiper( wiper );
+						// ESP_LOGI(FNAME, "sound on, set wiper: %d", wiper );
+						cur_wiper = wiper;
+					}
+					float max = minf;
+					if ( _te > 0 )
+						max = maxf;
+					float range = _range;
+					if( _s2f_mode )
+						range = 5.0;
+					float mult = std::pow( (abs(_te)/range)+1, audio_factor.get());
+					if( audio_factor.get() != prev_aud_fact ) {
+						exponent_max  = std::pow( 2, audio_factor.get());
+						prev_aud_fact = audio_factor.get();
+					}
+					float f = center_freq.get() + ((mult*_te)/range )  * (max/exponent_max);
+					// ESP_LOGI(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f multi:%0.3f", f, _te, audio_factor.get(), mult );
+					if( hightone && (_tonemode == ATM_DUAL_TONE ) )
+						setFrequency( f*_high_tone_var );
+					else
+						setFrequency( f );
+				}
+				else{
+					if( sound_on ) {
+						if( chopping_style.get() == AUDIO_CHOP_HARD ){
 							dac_output_disable(_ch);
-							cur_wiper = 0;
+						}else{
+							if( cur_wiper > 1 ) {  // turn off gracefully sound
+								int delta = wiper/(FADING_TIME*2);
+								for( int i=wiper; i>0; i-=delta ) {
+									Poti.writeWiper( i );
+									delta = 1+i/(FADING_TIME*2);
+									delay(1);
+									// ESP_LOGI(FNAME, "fade out sound, wiper: %d", nw);
+								}
+								Poti.writeWiper( 0 );
+								dac_output_disable(_ch);
+								cur_wiper = 0;
+							}
 						}
+						sound_on = false;
 					}
-					sound_on = false;
 				}
 			}
 		}
 		vTaskDelayUntil(&xLastWakeTime, 20/portTICK_PERIOD_MS);
+		if( volume_change )
+			volume_change--;
 	}
 }
 

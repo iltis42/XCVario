@@ -83,6 +83,8 @@ public:
 
 	SetupNG( const char * akey, T adefault, bool reset=true ) {
 		// ESP_LOGI(FNAME,"SetupNG(%s)", akey );
+		if( strlen( akey ) > 15 )
+			ESP_LOGE(FNAME,"SetupNG(%s) key > 15 char !", akey );
 		entries.push_back( this );  // an into vector
 		_nvs_handle = 0;
 		_key = akey;
@@ -367,15 +369,48 @@ extern SetupNG<int>		    wk_sens_pos_0;
 extern SetupNG<int>		    wk_sens_pos_minus_1;
 extern SetupNG<int>		    wk_sens_pos_minus_2;
 extern SetupNG<int>		    wk_sens_pos_minus_3;
-extern SetupNG<int>         stall_warning;
+extern SetupNG<int>       	stall_warning;
 extern SetupNG<float>		stall_speed;
-extern SetupNG<int>        	flarm_warning;
-extern SetupNG<float>       flarm_volume;
-extern SetupNG<int>         flarm_sim;
-extern SetupNG<int>         flap_sensor;
+extern SetupNG<int>       	flarm_warning;
+extern SetupNG<float>     	flarm_volume;
+extern SetupNG<int>       	flarm_sim;
+extern SetupNG<int>       	flap_sensor;
+extern SetupNG<int>       	audio_netto_mode;
+extern SetupNG<float>     	flap_pos_max;
+extern SetupNG<float>     	flap_neg_max;
+extern SetupNG<int>       	compass_enable;
+extern SetupNG<float>       compass_dev_45;
+extern SetupNG<float>       compass_dev_90;
+extern SetupNG<float>       compass_dev_135;
+extern SetupNG<float>       compass_dev_180;
+extern SetupNG<float>       compass_dev_225;
+extern SetupNG<float>       compass_dev_270;
+extern SetupNG<float>       compass_dev_335;
+extern SetupNG<float>       compass_dev_360;
+extern SetupNG<float>       compass_x_bias;
+extern SetupNG<float>       compass_y_bias;
+extern SetupNG<float>       compass_z_bias;
+extern SetupNG<float>       compass_x_scale;
+extern SetupNG<float>       compass_y_scale;
+extern SetupNG<float>       compass_z_scale;
+extern SetupNG<float>       compass_calibration_time;
+extern SetupNG<bool>        compass_calibrated;
+extern SetupNG<float>       compass_declination;
+extern SetupNG<int>         compass_declination_valid;
+extern SetupNG<int>         compass_nmea_hdm;
+extern SetupNG<int>         compass_nmea_hdt;
 extern SetupNG<int>         audio_netto_mode;
-extern SetupNG<float>       flap_pos_max;
-extern SetupNG<float>       flap_neg_max;
+extern SetupNG<int> 		s2f_with_gload;
+extern SetupNG<int> 		s2f_blockspeed;
+extern SetupNG<int> 		wk_label_plus_3;
+extern SetupNG<int> 		wk_label_plus_2;
+extern SetupNG<int> 		wk_label_plus_1;
+extern SetupNG<int> 		wk_label_null_0;
+extern SetupNG<int> 		wk_label_minus_1;
+extern SetupNG<int> 		wk_label_minus_2;
+extern SetupNG<int> 		wk_label_minus_3;
+extern SetupNG<float>       flap_takeoff;
+extern SetupNG<int> 		audio_disable;
 
 
 #endif /* MAIN_SETUP_NG_H_ */

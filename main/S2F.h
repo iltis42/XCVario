@@ -18,7 +18,7 @@ public:
 	void select_polar();
 	void change_mc_bal();
 	double speed( double st );
-	double sink( double v );
+	double sink( double v, double v_min=50 );
 	double minsink();
 	float cw( float v );
 	void test( void );

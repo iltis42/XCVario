@@ -63,18 +63,22 @@ I (51) boot.esp32: SPI Flash Size : 2MB
 After this is done successfully, then clone the XCVario into the examples directory, parallel to the example directory hello_world, and do the same from there, and voila the control is yours:
 
 A) Clone XCVario repository:
-cd ~/esp/esp-idf/examples/get-started/; git clone https://github.com/iltis42/XCVario.git;
+cd ~/esp/esp-idf/examples/get-started/; git clone https://github.com/iltis42/XCVario.git
 
 B) Build software and flash XCVario Software, e.g. shown as here via USB cable, or use OTA
-cd XCVario; 
-idf.py build;
-idf.py -p /dev/ttyUSB0 flash;
-idf.py monitor;
+cd XCVario
+idf.py build
+
+# If you change files in the build environment, issue the command:
+
+idf.py reconfigure
+
+idf.py -p /dev/ttyUSB0 flash
+idf.py -p /dev/ttyUSB0 monitor
 
 C) Flashing via OTA
 Start OTA Software download Wifi AP at XCVario and
 upload through this webpage binary image: ~/esp/esp-idf/examples/get-started/XCVario/build/sensor.bin
-
 
 Appendix
 The esp-idf needs to be patched: 
@@ -83,5 +87,3 @@ The native i2c driver has a multithreading bug from using malloc and free, that 
 as of multiple chips/tasks are using malloc and free what makes the system to crash regularly.
 The issue is still open after a year, even provided a solution it has beed discussed in another
 direction, hence also this solution didn't come. So for now only my workaround is possible: 
-
-

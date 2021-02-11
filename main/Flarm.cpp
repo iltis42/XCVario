@@ -65,11 +65,17 @@ void Flarm::parsePFLAA( char *pflaa ){
 #define RTD(x) (x*RAD_TO_DEG)
 #define DTR(x) (x*DEG_TO_RAD)
 
-int oldDist = 0;
-int oldVertical = 0;
-int oldBear = 0;
-int alarmOld=0;
-int tick=0;
+int Flarm::oldDist = 0;
+int Flarm::oldVertical = 0;
+int Flarm::oldBear = 0;
+int Flarm::alarmOld=0;
+int Flarm::tick=0;
+int Flarm::timeout=0;
+
+void Flarm::progress(){  // once per second
+	if( timeout )
+		timeout--;
+}
 
 void Flarm::parsePFLAU( char *pflau ) {
 	int cs;
@@ -78,6 +84,7 @@ void Flarm::parsePFLAU( char *pflau ) {
 	// ESP_LOGI(FNAME,"parsePFLAU() RB: %d ALT:%d  DIST %d",RelativeBearing,RelativeVertical, RelativeDistance );
 	sprintf( ID,"%06x", id );
 	tick=0;
+	timeout = 10;
 }
 
 void Flarm::parsePFLAX( SString &msg ) {
@@ -91,6 +98,7 @@ void Flarm::parsePFLAX( SString &msg ) {
 		Flarm::bincom = 5;
 		ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
 	}
+	timeout = 10;
 }
 
 int rbOld = -500; // outside normal range

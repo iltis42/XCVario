@@ -16,6 +16,8 @@ public:
  	static inline int alarmLevel(){ return AlarmLevel; };
  	static void drawFlarmWarning();
  	static void initFlarmWarning();
+ 	static void progress();
+ 	static bool connected(){ return (bool)timeout; };
  	static int bincom;
 
 private:
@@ -30,6 +32,12 @@ private:
 	static int RelativeBearing,RelativeVertical,RelativeDistance;
 	static int AlarmType;
 	static char ID[8];
+	static int oldDist;
+	static int oldVertical;
+	static int oldBear;
+	static int alarmOld;
+	static int tick;
+	static int timeout;
 };
 
 #endif

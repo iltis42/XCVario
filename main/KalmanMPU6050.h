@@ -21,6 +21,32 @@
 
 #include "Arduino.h"
 
+#ifndef M_PI
+#define M_PI 3.14159265359
+#endif // M_PI
+#ifndef RAD_TO_DEG
+#define RAD_TO_DEG (180.0/M_PI)
+#endif // RAD_TO_DEG
+
+#ifndef DEG_TO_RAD
+#define DEG_TO_RAD (M_PI/180.0)
+#endif // DEG_TO_RAD
+
+typedef struct kalman_t
+{
+	double Q_angle;   // Process noise variance for the accelerometer
+	double Q_bias;    // Process noise variance for the gyro bias
+	double R_measure; // Measurement noise variance - this is actually the variance of the measurement noise
+
+	double angle; // The angle calculated by the Kalman filter - part of the 2x1 state vector
+	double bias;  // The gyro bias calculated by the Kalman filter - part of the 2x1 state vector
+	double rate;  // Unbiased rate calculated from the rate and the calculated bias - you have to call getAngle to update the rate
+
+	double P[2][2]; // Error covariance matrix - This is a 2x2 matrix
+	double K[2];    // Kalman gain - This is a 2x1 vector
+	double y;       // Angle difference
+	double S;       // Estimate error
+} Kalman;
 
 #define SERIAL_KalmanMPU6050_DEBUG 0 // 1 Enables, 0 Disables
 
@@ -44,49 +70,50 @@ public:
    * 
    * @returns Last time the data was fetched from the IMU in microseconds (micros())
    */
-  static uint32_t getLastReadTime();
+  static inline uint32_t getLastReadTime() { return lastProcessed; };
 
   /**
    * Gets the accelerometer raw X reading, as per last read() call.
    * 
    * @returns The accelerometer raw X reading
    */
-  static double getRawAccelX();
+  static inline double getRawAccelX()  {  return accelX;  };
 
   /**
    * Gets the accelerometer raw Y reading, as per last read() call.
    * 
    * @returns The accelerometer raw Y reading
    */
-  static double getRawAccelY();
+  static inline double getRawAccelY()   {   return accelY;   };
 
   /**
    * Gets the accelerometer raw Z reading, as per last read() call.
    * 
    * @returns The accelerometer raw Z reading
    */
-  static double getRawAccelZ();
+  static inline double getRawAccelZ()  {  	return accelZ;  };
 
   /**
    * Gets the gyroscope raw X reading, as per last read() call.
    * 
    * @returns The gyroscope raw X reading.
    */
-  static double getRawGyroX();
+  static inline double getRawGyroX()   {  	return gyroX;  };
 
   /**
    * Gets the gyroscope raw Y reading, as per last read() call.
    * 
    * @returns The gyroscope raw Y reading.
    */
-  static double getRawGyroY();
+  static inline double getRawGyroY()   {  	return gyroY;  };
 
   /**
    * Gets the gyroscope raw Z reading, as per last read() call.
    * 
    * @returns The gyroscope raw Z reading.
    */
-  static double getRawGyroZ();
+  static inline double getRawGyroZ()   {  return gyroZ;  };
+
 
   /**
    * Gets the roll (X rotation) in degress from the Kalman Filter.
@@ -94,26 +121,39 @@ public:
    * 
    * @returns The x rotation (roll) in degrees
    */
-  static double getRoll();
+  static inline double getRoll() {  return filterRoll;  };
+  static inline double getRollRad() {  return filterRoll*DEG_TO_RAD;  };
 
   /**
    * Gets the pitch (Y rotation) in degrees from the Kalman Filter.\
    * 
    * @returns The y rotation (pitch) in degrees
    */
-  static double getPitch();
+  static inline double getPitch()  {	return -filterPitch;  }
+  static inline double getPitchRad()  {	return -filterPitch*DEG_TO_RAD;  }
+
 
 private:
   static uint32_t lastProcessed;
+  static Kalman kalmanX; // Create the Kalman instances
+  static Kalman kalmanY;
+  static double gyroXAngle, gyroYAngle; // Angle calculate using the gyro only
 
   static double accelX, accelY, accelZ;
   static double gyroX, gyroY, gyroZ;
-  
   static double kalXAngle, kalYAngle;
 
   static void MPU6050Read();
   static void RollPitchFromAccel(double *roll, double *pitch);
   static void PitchFromAccel(double *pitch);
+  static uint64_t last_rts;
+  static float   myrolly;
+  static float   myrollz;
+  static float   myaccroll;
+  static double  mypitch;
+  static double  filterPitch;
+  static double  filterRoll;
+
 };
 
 #endif // _KalmanMPU6050_H_

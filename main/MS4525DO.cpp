@@ -11,11 +11,12 @@ MS4525DO::MS4525DO()
 	P_dat = 0;  // 14 bit pressure data
 	T_dat = 0;  // 11 bit temperature data
 	error = ESP_OK;
+	_status = 0;
+	_offset = 0;
+	bus = 0;
 }
 
 bool MS4525DO::begin(gpio_num_t sda, gpio_num_t scl, char slave_adr) {
-	// init( sda, scl );
-	// exponential_average = 0;
 	address = slave_adr;
 	return true;
 }
@@ -25,7 +26,6 @@ MS4525DO::~MS4525DO()
 {
 
 }
-
 
 /* public functions
         void initialize(void);
@@ -111,7 +111,12 @@ float   MS4525DO::readPascal( float minimum, bool &ok ){
 
 bool    MS4525DO::selfTest( int& adval ){
 	uint8_t data[4];
-	esp_err_t err = bus->readBytes(address, 0, 4, data );
+	esp_err_t err = ESP_FAIL;
+	for( int i=0; i<4; i++ ){
+		err = bus->readBytes(address, 0, 4, data );
+		if( err == ESP_OK )
+			break;
+	}
 	if( err != ESP_OK ){
 		ESP_LOGI(FNAME,"MS4525DO selftest, scan for I2C address %02x FAILED",I2C_ADDRESS_MS4525DO );
 		return false;

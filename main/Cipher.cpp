@@ -1,8 +1,11 @@
 #include "Cipher.h"
+#include "cipher.h"
 #include "logdef.h"
 #include "sensor.h"
 #include <esp32/rom/miniz.h>
 #include "Setup.h"
+#include "freertos/FreeRTOS.h"
+
 
 
 std::string Cipher::Encrypt(std::string key, std::string plaintext) {

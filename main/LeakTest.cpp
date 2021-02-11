@@ -3,7 +3,7 @@
 
 #define LOOPS 150
 
-void LeakTest::start( BME280_ESP32_SPI &bmpBA, BME280_ESP32_SPI &bmpTE, AirspeedSensor *asSensor ) {
+void LeakTest::start( PressureSensor* bmpBA, PressureSensor* bmpTE, AirspeedSensor *asSensor ) {
 	ESP_LOGI(FNAME,"Starting Leak test");
 	display->clear();
 	display->writeText( 1, "** Leak Test **");
@@ -29,8 +29,8 @@ void LeakTest::start( BME280_ESP32_SPI &bmpBA, BME280_ESP32_SPI &bmpTE, Airspeed
 				speed +=s;
 				loops_run++;
 			}
-			ba += bmpBA.readPressure();
-			te += bmpTE.readPressure();
+			ba += bmpBA->readPressure();
+			te += bmpTE->readPressure();
 			delay( 33 );
 		}
 		ba = ba/LOOPS;

@@ -33,7 +33,7 @@ some sentences might be lost or truncated.
 */
 
 // Option to simulate FLARM sentences
-char *flarm[] = {
+const char *flarm[] = {
 		"$PFLAU,3,1,2,1,1,-60,2,-100,755,1234*12\n",
 		"$PFLAU,3,1,2,1,1,-20,2,-100,655,1234*12\n",
 		"$PFLAU,3,1,2,1,1,-10,2,-80,455,1234*12\n",
@@ -47,7 +47,7 @@ char *flarm[] = {
 
 };
 /*
-char *gps[] = {
+const char *gps[] = {
 		"$PFLAA,0,11461,-9272,1436,1,AFFFFF,51,0,257,0.0,0*7A\n",
 		"$PFLAA,0,2784,3437,216,1,AFFFFE,141,0,77,0.0,0*56\n",
 		"$PFLAA,1,-1375,1113,64,1,AFFFFD,231,0,30,0.0,0*43\n",
@@ -72,14 +72,16 @@ int numS1=0;
 void Serial::serialHandlerS1(void *pvParameters){
 	while(1) {
 		if( flarm_sim.get() ){
-			sim=0;
+			sim=-3;
 			flarm_sim.set( 0 );
 		}
 		if( sim < 10 ){
-			SString sf(  flarm[sim] );
-			Router::forwardMsg( sf, s1_rx_q );
-			ESP_LOGI(FNAME,"Serial FLARM SIM: %s",  sf.c_str() );
-			delay(5000);
+			if( sim >= 0 ){
+				SString sf(  flarm[sim] );
+				Router::forwardMsg( sf, s1_rx_q );
+				ESP_LOGI(FNAME,"Serial FLARM SIM: %s",  sf.c_str() );
+			}
+			delay(2500);
 			sim++;
 		}
 		SString s;
@@ -218,7 +220,7 @@ void Serial::begin(){
 		}
 		// need this for bluetooth
 	}
-	if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 ){
+	if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 && !compass_enable.get() ){
 		ESP_LOGI(FNAME,"Serial Interface ttyS2 enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial2_speed.get(), baud[serial2_speed.get()], serial2_tx_inverted.get(), serial2_rx_inverted.get() );
 		if( serial2_pins_twisted.get() )  //   speed, RX, TX, invRX, invTX
 			Serial2.begin(baud[serial2_speed.get()],SERIAL_8N1,4,18, serial2_rx_inverted.get(), serial2_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
@@ -234,7 +236,7 @@ void Serial::taskStart(){
 	if( serial1_speed.get() != 0  || blue_enable.get() != 0 ){
 		xTaskCreatePinnedToCore(&Serial::serialHandlerS1, "serialHandlerS1", 4096, NULL, 27, 0, 0);
 	}
-	if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 ){
+	if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 && !compass_enable.get() ){
 		xTaskCreatePinnedToCore(&Serial::serialHandlerS2, "serialHandlerS2", 4096, NULL, 26, 0, 0);
 	}
 }

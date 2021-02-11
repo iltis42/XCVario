@@ -38,15 +38,15 @@ Protocols::~Protocols() {
 void Protocols::sendWkChange( float wk ){
 	char str[20];
 	sprintf( str,"!xw,%1.1f", wk );
-	ESP_LOGI(FNAME,"New WK pos: %f, cmd:%s", wk, str );
+	ESP_LOGI(FNAME,"New WK pos: %f, cmd: %s", wk, str );
 	Router::sendXCV(str);
 }
 
 void Protocols::sendQNHChange( float qnh ){
-	char str[20];
-	sprintf( str,"!xq,%4.2f", qnh );
-	ESP_LOGI(FNAME,"New QNH: %4.2f, cmd:%s", qnh, str );
-	Router::sendXCV(str);
+  char str[20];
+  sprintf( str,"!xq,%4.2f", qnh );
+  ESP_LOGI(FNAME,"New QNH: %4.2f, cmd: %s", qnh, str );
+  Router::sendXCV(str);
 }
 
 void Protocols::sendBallastChange( float ballast ){
@@ -81,6 +81,53 @@ void Protocols::sendMeanClimb( float climb ){
 		Router::sendXCV(str);
 	}
 }
+
+/*
+HDM - Heading - Magnetic
+
+        1   2 3
+        |   | |
+ $--HDM,x.x,M*hh<CR><LF>
+
+ Field Number:
+  1) Heading Degrees, magnetic
+  2) M = magnetic
+  3) Checksum
+*/
+void Protocols::sendNmeaHDM( float heading ) {
+  char str[21];
+  sprintf( str,"$HCHDM,%3.1f,M", heading );
+  ESP_LOGI(FNAME,"Magnetic Heading: %3.1f", heading );
+
+  int cs = getCheckSum(&str[1]);
+  int i = strlen(str);
+  sprintf( &str[i], "*%02X\r\n", cs );
+  Router::sendXCV(str);
+}
+
+/*
+HDT - Heading - True
+
+        1   2 3
+        |   | |
+ $--HDT,x.x,T*hh<CR><LF>
+
+ Field Number:
+  1) Heading Degrees, true
+  2) T = True
+  3) Checksum
+*/
+void Protocols::sendNmeaHDT( float heading ) {
+  char str[21];
+  sprintf( str,"$HCHDT,%3.1f,T", heading );
+  // ESP_LOGI(FNAME,"True Heading: %3.1f", heading );
+
+  int cs = getCheckSum(&str[1]);
+  int i = strlen(str);
+  sprintf( &str[i], "*%02X\r\n", cs );
+  Router::sendXCV(str);
+}
+
 
 void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
 		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz  ){

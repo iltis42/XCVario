@@ -1,3 +1,5 @@
+#pragma once
+
 #include <Arduino.h>
 
 const unsigned char ding_co_wav[] = {

@@ -20,6 +20,7 @@
 #include "sensor.h"
 #include "Units.h"
 #include "Flap.h"
+#include "Flarm.h"
 
 int screens_init = INIT_DISPLAY_NULL;
 
@@ -53,7 +54,6 @@ const int   bw    = 32;   // bar width
 const int   S2F_TRISIZE = 60; // triangle size quality up/down
 
 #define TRISIZE 15
-#define abs(x)  (x < 0.0 ? -x : x)
 
 #define FIELD_START 85
 #define SIGNLEN 24+4
@@ -147,7 +147,7 @@ float polar_sink_prev = 0;
 float te_prev = 0;
 bool blankold = false;
 bool blank = false;
-
+bool flarm_connected=false;
 
 IpsDisplay::IpsDisplay( Ucglib_ILI9341_18x240x320_HWSPI *aucg ) {
 	ucg = aucg;
@@ -483,10 +483,6 @@ void IpsDisplay::setTeBuf( int y1, int h, int r, int g, int b ){
 	}
 }
 
-
-
-
-
 void IpsDisplay::drawMC( float mc, bool large ) {
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setPrintPos(5,DISPLAY_H-6);
@@ -539,7 +535,7 @@ void IpsDisplay::drawS2FMode( int x, int y, bool cruise ){
 
 void IpsDisplay::drawBT() {
 	int btq=BTSender::queueFull();
-	if( btq != btqueue ){
+	if( btq != btqueue || Flarm::connected() != flarm_connected ){
 		ucg_int_t btx=DISPLAY_W-22;
 		ucg_int_t bty=(BTH/2) + 8;
 		if( btq )
@@ -549,12 +545,16 @@ void IpsDisplay::drawBT() {
 
 		ucg->drawRBox( btx-BTW/2, bty-BTH/2, BTW, BTH, BTW/2-1);
 		// inner symbol
-		ucg->setColor( COLOR_WHITE );
+		if( Flarm::connected() )
+			ucg->setColor( COLOR_GREEN );
+		else
+			ucg->setColor( COLOR_WHITE );
 		ucg->drawTriangle( btx, bty, btx+BTSIZE, bty-BTSIZE, btx, bty-2*BTSIZE );
 		ucg->drawTriangle( btx, bty, btx+BTSIZE, bty+BTSIZE, btx, bty+2*BTSIZE );
 		ucg->drawLine( btx, bty, btx-BTSIZE, bty-BTSIZE );
 		ucg->drawLine( btx, bty, btx-BTSIZE, bty+BTSIZE );
 		btqueue = btq;
+		flarm_connected = Flarm::connected();
 	}
 }
 
@@ -575,8 +575,8 @@ void IpsDisplay::drawFlarm( int x, int y, bool flarm ) {
 	ucg->undoClipRange();
 }
 
-
 void IpsDisplay::drawWifi( int x, int y ) {
+
 	int btq=1;
 	if( blue_enable.get() == WL_WLAN_CLIENT ){
 		if( WifiClient::isConnected() )
@@ -586,21 +586,23 @@ void IpsDisplay::drawWifi( int x, int y ) {
 		btq=BTSender::queueFull();
 	else
 		return;
-	if( btq != btqueue ){
+	if( btq != btqueue || Flarm::connected() != flarm_connected ){
 		ESP_LOGD(FNAME,"IpsDisplay::drawWifi %d %d %d", x,y,btq);
 		if( btq )
 			ucg->setColor(COLOR_MGREY);
 		else
 			ucg->setColor( COLOR_BLUE );
-		ucg->drawDisc( x, y, 3, UCG_DRAW_ALL );
 		ucg->drawCircle( x, y, 9, UCG_DRAW_UPPER_RIGHT);
 		ucg->drawCircle( x, y, 10, UCG_DRAW_UPPER_RIGHT);
 		ucg->drawCircle( x, y, 16, UCG_DRAW_UPPER_RIGHT);
 		ucg->drawCircle( x, y, 17, UCG_DRAW_UPPER_RIGHT);
+		if( Flarm::connected() )
+			ucg->setColor( COLOR_GREEN );
+		ucg->drawDisc( x, y, 3, UCG_DRAW_ALL );
+		flarm_connected = Flarm::connected();
 		btqueue = btq;
 	}
 }
-
 
 void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
 	if( blank ) {  // blank battery for blinking
@@ -838,8 +840,6 @@ void IpsDisplay::drawAltitude( float altitude, int x, int y ){
 		prefalt = alt;
 	}
 }
-
-
 
 void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, float polar_sink_ms, float altitude_m,
 		float temp, float volt, float s2fd_ms, float s2f_ms, float acl_ms, bool s2fmode, bool standard_setting, float wksensor ){

@@ -15,16 +15,21 @@
 #include "SetupMenuValFloat.h"
 
 SetupMenuValFloat * SetupMenuValFloat::qnh_menu = 0;
+char SetupMenuValFloat::_val_str[20];
 
-SetupMenuValFloat::SetupMenuValFloat( String title, float *value, const char *unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs ) {
+SetupMenuValFloat::SetupMenuValFloat( String title, float *value, const char *unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs, bool restart ) {
 	// ESP_LOGI(FNAME,"SetupMenuValFloat( %s ) ", title.c_str() );
 	_rotary->attach(this);
 	_title = title;
 	highlight = -1;
 	_nvs = 0;
+	_restart = restart;
 	if( value )
 		_value = value;
-	_unit = unit;
+	if( unit != 0 )
+		_unit = unit;
+	else
+		_unit = "";
 	_min = min;
 	_max = max;
 	_step = step;
@@ -36,6 +41,7 @@ SetupMenuValFloat::SetupMenuValFloat( String title, float *value, const char *un
 	if( anvs ) {
 		_nvs = anvs;
 		_value = _nvs->getPtr();
+		_value_safe = *_value;
 	}
 }
 
@@ -83,11 +89,18 @@ void SetupMenuValFloat::display( int mode ){
 
 void SetupMenuValFloat::displayVal()
 {
-	ucg->setFont(ucg_font_fub25_hr);
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setPrintPos( 1, 70 );
-	if( _unit )
-		ucg->printf("%0.*f %s   ", _precision, *_value, _unit);
+	ucg->setFont(ucg_font_fub25_hf);
+	char val[20];
+	sprintf(val, "%0.*f", _precision, *_value );
+	ucg->printf("%s",val);
+	if( _unit ) {
+		ucg->setFont(ucg_font_fur25_hf);   // use different font for unit as of ° special char
+		ucg->setPrintPos( 1+ ucg->getStrWidth(val), 70 );
+		ucg->printf(" %s   ", _unit);
+	}
+
 	xSemaphoreGive(spiMutex );
 	ucg->setFont(ucg_font_ncenR14_hr);
 }
@@ -134,8 +147,19 @@ void SetupMenuValFloat::press(){
 			selected = _parent;
 		selected->highlight = -1;  // to topmost selection when back
 		selected->pressed = true;
-		if( _nvs )
-			_nvs->commit();
+		if( *_value != _value_safe ){
+			if( _nvs )
+				_nvs->commit();
+			if( _restart ) {
+				ucg->setColor(COLOR_BLACK);
+				ucg->drawBox( 0,160,240,160 );
+				ucg->setPrintPos( 1, 250  );
+				ucg->setColor(COLOR_WHITE);
+				ucg->print("Now Restart" );
+				delay(1000);
+				esp_restart();
+			}
+		}
 		pressed = false;
 		BMPVario::setHolddown( 150 );  // so seconds stop average
 		if( _end_menu )

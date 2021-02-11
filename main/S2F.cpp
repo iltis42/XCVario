@@ -80,31 +80,39 @@ void S2F::change_mc_bal()
 	// test();
 }
 
-double S2F::sink( double v_in ) {
+double S2F::sink( double v_in, double v_min ) {
 	double s=0;
-	if ( v_in > 50 ){
+	if ( v_in > v_min ){
 		double v=v_in/3.6;
-		s = a0+a1*v+a2*pow(v,2) * sqrt( pow( getN(), 3 ));
+		s = (a0+a1*v+a2*pow(v,2));
+		if( s2f_with_gload.get() )
+			s *= sqrt( pow( getN(), 3 ));
+		// ESP_LOGI(FNAME,"S2F::sink() v:%0.1f sink:%2.1f  sink(G):%2.1f G:%1.1f powG:%f ", v, a0+a1*v+a2*pow(v,2), s, getN(), sqrt( pow( getN(), 3 )) );
 	}
 	return s;
 }
 
 float S2F::cw( float v ){  // in m/s
 	float cw = 0;
-	if( v > 14.0 ){  // > 50 km/h we got valid polar data
-		float sink = a0+a1*v+a2*pow(v,2) * sqrt( pow( getN(), 3 ));
-		ESP_LOGI(FNAME,"S2F::cw( %0.1f ) sink: %f cw. %f", v, sink, cw );
-		cw = sink / v;
+	if( v > 14.0 ) {
+		double cur_sink = sink(v*3.6);
+		// ESP_LOGI(FNAME,"S2F::cw( %0.1f ) sink: %2.1f cw. %2.2f  G: %1.1f", v, sink, cw, getN() );
+		cw = cur_sink / v;
 	}
 	return cw;
 }
 
-double S2F::speed( double st )
+double S2F::speed( double netto_vario )
 {
    float n = accelG[0];
    if( n < 0.3 )
 		n = 0.3;
-   double stf = 3.6*sqrt( ((a0-_MC+st)*getN()) / a2 );
+   double stf = 0;
+   if( s2f_blockspeed.get() )
+	   stf = 3.6*sqrt( ((a0-_MC)) / a2 );  // no netto vario, no G impact
+   else
+	   stf = 3.6*sqrt( ((a0-_MC+netto_vario)*getN()) / a2 );
+
    // ESP_LOGI(FNAME,"speed()  %f", stf );
    if( (stf < _minsink) or isnan(stf) )
 	   return _minsink;

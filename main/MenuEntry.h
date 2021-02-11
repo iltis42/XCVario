@@ -27,10 +27,12 @@ public:
 				 y=0;
 				 helptext=0;
 				 long_pressed = false;
+				 hypos=0;
 	};
 	virtual void display( int mode=0 ) = 0;
 	virtual void release() { display(); };
 	virtual void longPress() {};
+	virtual char* value() = 0;
 	virtual ~MenuEntry() {};
 	MenuEntry* addMenu( MenuEntry * item );
 	void       delMenu( MenuEntry * item );
@@ -57,7 +59,7 @@ public:
 	static IpsDisplay* _display;
 	static ESPRotary* _rotary;
 	static AnalogInput* _adc;
-	static BME280_ESP32_SPI *_bmp;
+	static PressureSensor *_bmp;
 	static bool _menu_enabled;
 	int    highlight;
 	bool   pressed;

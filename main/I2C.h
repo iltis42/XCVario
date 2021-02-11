@@ -1,9 +1,9 @@
+#ifndef I2C_h
+#define I2C_h
+
 #include <inttypes.h>
 #include "esp_system.h"
 #include <driver/i2c.h>
-
-#ifndef I2C_h
-#define I2C_h
 
 #define I2C_MASTER_FREQ_HZ         100000   /*!< I2C master clock frequency 100000 */
 #define I2C_MASTER_TX_BUF_DISABLE    0      /*!< I2C master do not need buffer */
@@ -33,6 +33,5 @@ class I2C
     i2c_cmd_handle_t cmd;
     static xSemaphoreHandle mutex;
 };
-
 
 #endif

@@ -1059,7 +1059,7 @@ void SetupMenu::setup( )
 		s1in->addEntry( "Disable");     // 0
 		s1in->addEntry( "Enable");      // 1
 
-		SetupMenuSelect * s1out = new SetupMenuSelect( PROGMEM "S1 Routing", 0, false, 0, true, &serial1_tx );
+		SetupMenuSelect * s1out = new SetupMenuSelect( PROGMEM "Routing", 0, false, 0, true, &serial1_tx );
 		rs232->addMenu( s1out );
 		s1out->setHelp( "Select devices routed to serial interface S1");
 		s1out->addEntry( "Disable all");
@@ -1067,13 +1067,13 @@ void SetupMenu::setup( )
 		s1out->addEntry( "Wireless-XCSoar");         // 2    XCSoar Data
 		s1out->addEntry( "WL-XCSoar, XCV");      // 3
 
-		SetupMenuSelect * stxi = new SetupMenuSelect( PROGMEM "S1 TX Inversion", 0, true , 0, true, &serial1_tx_inverted );
+		SetupMenuSelect * stxi = new SetupMenuSelect( PROGMEM "TX Inversion", 0, true , 0, true, &serial1_tx_inverted );
 		rs232->addMenu( stxi );
 		stxi->setHelp( "Serial RS232 (TTL) option for negative logic, means a '1' will be sent at zero level (RS232 standard and default) and vice versa");
 		stxi->addEntry( "Normal");
 		stxi->addEntry( "Inverted");
 
-		SetupMenuSelect * srxi = new SetupMenuSelect( PROGMEM "S1 RX Inversion", 0, true, 0, true, &serial1_rx_inverted );
+		SetupMenuSelect * srxi = new SetupMenuSelect( PROGMEM "RX Inversion", 0, true, 0, true, &serial1_rx_inverted );
 		rs232->addMenu( srxi );
 		srxi->setHelp( "Serial RS232 (TTL) option for negative logic, means a '1' will be received at zero level (RS232 standard and default) and vice versa");
 		srxi->addEntry( "Normal");
@@ -1102,7 +1102,6 @@ void SetupMenu::setup( )
 			s1out2->addEntry( "WL-XCSoar, XCV");            // 3
 			s1out2->addEntry( "S1");                         // 4
 			s1out2->addEntry( "XCVARIO, S1");                // 5
-
 
 			SetupMenuSelect * stxi2 = new SetupMenuSelect( PROGMEM "TX Inversion", 0, true , 0, true, &serial2_tx_inverted );
 			rs232_2->addMenu( stxi2 );

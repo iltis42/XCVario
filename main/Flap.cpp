@@ -227,11 +227,29 @@ void Flap::setupMenue( SetupMenu *parent ){
 	flab0->addEntry( " N" );   // N,L,S
 	flab0->addEntry( " L" );
 	flab0->addEntry( " S" );
+
+	flabp1->addEntry( " N" );
 	flabp1->addEntry( " L" );
+	flabp1->addEntry( " S" );
+
+	flabp2->addEntry( " N" );
 	flabp2->addEntry( " L" );
+	flabp2->addEntry( " S" );
+
+	flabp3->addEntry( " N" );
 	flabp3->addEntry( " L" );
+	flabp3->addEntry( " S" );
+
+	flabm1->addEntry( " N" );
+	flabm1->addEntry( " L" );
 	flabm1->addEntry( " S" );
+
+	flabm2->addEntry( " N" );
+	flabm2->addEntry( " L" );
 	flabm2->addEntry( " S" );
+
+	flabm3->addEntry( " N" );
+	flabm3->addEntry( " L" );
 	flabm3->addEntry( " S" );
 	flapLabels[0] = flabm3;
 	flapLabels[1] = flabm2;
@@ -252,7 +270,9 @@ void Flap::drawSmallBar( int ypos, int xpos, float wkf ){
 	if( !surroundingBox ) {
 		ucg->drawFrame(xpos-5, top-3, lfw+4, 2*lfh);
 		int tri = ypos+lfh/2-3;
+		ucg->setColor(COLOR_GREEN);
 		ucg->drawTriangle( xpos-10, tri-5,  xpos-10,tri+5, xpos-5, tri );
+		ucg->setColor(COLOR_WHITE);
 		surroundingBox = true;
 	}
 	ucg->setClipRange( xpos-2, top-2, lfw, 2*lfh-2 );

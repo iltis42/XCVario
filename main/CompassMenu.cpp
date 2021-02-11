@@ -36,7 +36,8 @@ SetupNG<float>* CompassMenu::deviations[8] = { &compass_dev_45,
  */
 CompassMenu::CompassMenu( Compass& compassIn ) :
 		 RotaryObserver(),
-		 compass( compassIn )
+		 compass( compassIn ),
+		 pressed( false )
 {
 }
 
@@ -131,7 +132,6 @@ int CompassMenu::calibrateAction( SetupMenuSelect *p )
 	p->ucg->setPrintPos( 1, 60 );
 	p->ucg->printf( "Saved        " );
 	delay( 2000 );
-
 	return 0;
 }
 
@@ -171,8 +171,26 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 		return 0;
 	}
 
+	p->clear();
+  p->ucg->setFont( ucg_font_fur14_hf );
+  p->ucg->setPrintPos( 1, 40 );
+  p->ucg->printf( "Calibration is running" );
+
 	uint16_t calTime = uint16_t( compass_calibration_time.get() );
 	compass.calibrate( calTime );
+
+  p->ucg->setPrintPos( 1, 70 );
+  p->ucg->printf( "Calibration is finished" );
+
+  p->ucg->setPrintPos( 1, 130 );
+  p->ucg->printf( "Press button to exit" );
+  pressed = false;
+
+  while( p->_rotary->readSwitch() == false )
+    {
+      delay( 100 );
+    }
+
 	return 0;
 }
 
@@ -189,6 +207,7 @@ void CompassMenu::down( int count )
 void CompassMenu::press()
 {
 	ESP_LOGI( FNAME, "CompassMenu::press" );
+	pressed = true;
 }
 
 void CompassMenu::release()

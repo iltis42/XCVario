@@ -1,11 +1,11 @@
 /**************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************
+*                                                                         *
+*   This program is free software; you can redistribute it and/or modify  *
+*   it under the terms of the GNU General Public License as published by  *
+*   the Free Software Foundation; either version 2 of the License, or     *
+*   (at your option) any later version.                                   *
+*                                                                         *
+***************************************************************************
 
 I2C driver for the chip QMC5883L, 3-Axis Magnetic Sensor.
 
@@ -15,9 +15,12 @@ https://datasheetspdf.com/pdf-file/1309218/QST/QMC5883L/1
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-02-09
+Last update: 2021-02-11
 
- ***************************************************************************/
+***************************************************************************/
+
+// Activate/deactivate debug messages
+// #define DEBUG_COMP 1
 
 #include <cmath>
 #include <logdef.h>
@@ -55,6 +58,20 @@ Last update: 2021-02-09
 #define MODE_STANDBY    0b00000000  // Standby mode.
 #define MODE_CONTINUOUS 0b00000001  // Continuous read mode.
 
+/* Flags for Control Register #1. */
+#define ODR_10HZ   0b00000000 // Output Data Rate in Hz.
+#define ODR_50HZ   0b00000100
+#define ODR_100HZ  0b00001000
+#define ODR_200HZ  0b00001100
+
+#define RNG_2G 0b00000000  // Range 2 Gauss: for magnetic-clean environments.
+#define RNG_8G 0b00010000  // Range 8 Gauss: for strong magnetic fields.
+
+#define OSR_512 0b00000000  // Over Sample Rate 512: less noise, more power.
+#define OSR_256 0b01000000
+#define OSR_128 0b10000000
+#define OSR_64  0b11000000  // Over Sample Rate 64: more noise, less power.
+
 // Sensor state
 bool QMC5883L::m_sensor = false;
 /*
@@ -66,14 +83,15 @@ bool QMC5883L::m_sensor = false;
 QMC5883L::QMC5883L( const uint8_t addrIn,
 		const uint8_t odrIn,
 		const uint8_t rangeIn,
-		const uint8_t osrIn,
+		const uint16_t osrIn,
 		I2C_t *i2cBus ) :
 				  m_bus( i2cBus ),
 				  addr( addrIn ),
 				  odr( odrIn ),
 				  range( rangeIn ),
 				  osr( osrIn ),
-				  overflowWarning( false )
+				  overflowWarning( false ),
+				  calibrationRunning( false )
 {
 	if( addrIn == 0 )
 	{
@@ -81,8 +99,9 @@ QMC5883L::QMC5883L( const uint8_t addrIn,
 		addr = QMC5883L_ADDR;
 	}
 
-	// load last known calibration.
-	loadCalibration();
+	setOutputDataRate( odrIn );
+	setRange( rangeIn );
+	setOverSampleRatio( osrIn );
 }
 
 QMC5883L::~QMC5883L()
@@ -163,6 +182,9 @@ esp_err_t QMC5883L::selfTest()
 	}
 	ESP_LOGI( FNAME, "QMC5883L selftest, scan for I2C address 0x%02X and chip ID 0x%02X PASSED",	QMC5883L_ADDR, chipId );
 	m_sensor = true;
+
+  // load last known calibration.
+  loadCalibration();
 	return ESP_OK;
 }
 
@@ -382,7 +404,7 @@ void QMC5883L::resetCalibration()
 	compass_x_scale.set( 0 );
 	compass_y_scale.set( 0 );
 	compass_z_scale.set( 0 );
-	compass_calibrated.set( false );
+	compass_calibrated.set( 0 );
 	compass_x_bias.commit();
 	compass_y_bias.commit();
 	compass_z_bias.commit();
@@ -403,7 +425,7 @@ void QMC5883L::saveCalibration()
 	compass_x_scale.set( xscale );
 	compass_y_scale.set( yscale );
 	compass_z_scale.set( zscale );
-	compass_calibrated.set( true );
+	compass_calibrated.set( 1 );
 	compass_x_bias.commit();
 	compass_y_bias.commit();
 	compass_z_bias.commit();
@@ -419,8 +441,9 @@ void QMC5883L::saveCalibration()
  */
 bool QMC5883L::loadCalibration()
 {
-	if( compass_calibrated.get() == false )
+	if( compass_calibrated.get() == 0 )
 	{
+	    ESP_LOGI( FNAME, "Compass calibration is not valid" );
 		// no stored calibration available
 		resetClassCalibration();
 		return false;
@@ -432,6 +455,10 @@ bool QMC5883L::loadCalibration()
 	xscale = compass_x_scale.get();
 	yscale = compass_y_scale.get();
 	zscale = compass_z_scale.get();
+
+	ESP_LOGI( FNAME, "Read calibration: %f, %f, %f, %f, %f, %f, valid=%d",
+	          xbias, ybias, zbias, xscale, yscale, zscale, compass_calibrated.get() );
+
 	return true;
 }
 
@@ -452,23 +479,32 @@ bool QMC5883L::calibrate( const uint16_t seconds )
 	uint8_t usedOdr = odr;
 
 	// Set ODR to 100 Hz
-	setOutputDataRate( ODR_100HZ );
+	setOutputDataRate( 100 );
+
+	calibrationRunning = true;
 
 	// Switch on continues mode
 	if( modeContinuous() != ESP_OK )
 	{
-		setOutputDataRate( usedOdr );
+		odr = usedOdr;
+		calibrationRunning = false;
 		return false;
 	}
 
 	// wait a moment after measurement start.
-	delay( 20 );
+	delay( 50 );
 
-	ESP_LOGI( FNAME, "calibrate xymin");
-	int i;
+	ESP_LOGI( FNAME, "calibrate min-max xyz");
+
+	int i = 0;
+	int errors = 0;
+
 	for( i=0 ; i < samples; i++ )
 	{
-		rawHeading();
+		if( rawHeading() == false )
+		  {
+		    errors++;
+		  }
 
 		/* Find max/min xyz values */
 		xmin = ( xraw < xmin ) ? xraw : xmin;
@@ -477,14 +513,20 @@ bool QMC5883L::calibrate( const uint16_t seconds )
 		xmax = ( xraw > xmax ) ? xraw : xmax;
 		ymax = ( yraw > ymax ) ? yraw : ymax;
 		zmax = ( zraw > zmax ) ? zraw : zmax;
-		delay( 10 );
+
+		// The sensor seems to have sometimes problems to deliver all 10ms new data
+		delay( 13 );
 	}
+
+	ESP_LOGI( FNAME, "Read Cal-Samples=%d, OK=%d, NOK=%d",
+	          samples, samples-errors, errors );
 
 	if( i < 2 )
 	{
 		// Too less samples to start calibration
-		ESP_LOGI( FNAME, "calibrate xymin not enough samples");
-		setOutputDataRate( usedOdr );
+		ESP_LOGI( FNAME, "calibrate min-max xyz not enough samples");
+		odr = usedOdr;
+		calibrationRunning = false;
 		return false;
 	}
 
@@ -511,7 +553,9 @@ bool QMC5883L::calibrate( const uint16_t seconds )
 
 	// save calibration
 	saveCalibration();
-	setOutputDataRate( usedOdr );
+
+	// Set used before ODR value
+	odr = usedOdr;
 
 	ESP_LOGI( FNAME, "Compass: xmin=%d xmax=%d, ymin=%d ymax=%d, zmin=%d zmax=%d",
 			xmin, xmax, ymin, ymax, zmin, zmax );
@@ -524,6 +568,7 @@ bool QMC5883L::calibrate( const uint16_t seconds )
 
 	// restart previous continuous mode
 	modeContinuous();
+	calibrationRunning = false;
 	ESP_LOGI( FNAME, "calibration end" );
 	return true;
 }
@@ -539,7 +584,14 @@ float QMC5883L::heading( bool *ok )
 	if( ok != nullptr )
 		*ok = false;
 
-	if( rawHeading() == false ) {
+	if( calibrationRunning == true )
+	  {
+	    // Calibration is running, don't disturb it.
+	    return 0.0;
+	  }
+
+	if( rawHeading() == false )
+	{
 		ESP_LOGE(FNAME,"rawHeading() returned false" );
 		error++;
 
@@ -553,21 +605,35 @@ float QMC5883L::heading( bool *ok )
 	error = 0;
 
 	// Check if calibration data are available
-	if( compass_calibrated.get() == false )
+#ifndef DEBUG_COMP
+	if( compass_calibrated.get() == 0 )
+#endif
 	{
 		// No calibration data available, return the raw values.
-		float heading = RAD_TO_DEG * atan2f( float( xraw ), float( yraw ) );
+		double heading = RAD_TO_DEG * atan2( double( yraw ), double( xraw ) );
+
+		double h0 = heading;
 
 		if( heading <= 0.0 )
 			heading += 360.0;
 
+		ESP_LOGI( FNAME, "X=%d Y=%d Z=%d H0=%f Raw-Heading=%f", xraw, yraw, zraw, h0, heading );
+
+#ifndef DEBUG_COMP
 		return heading;
+#endif
 	}
 
 	/* Apply corrections to the measured values. */
-	double fx = - (float( xraw ) - xbias) * xscale;
-	double fy = - (float( yraw ) - ybias) * yscale;
-	double fz = (float( zraw ) - zbias) * zscale;
+	double fx = (double) ((float( xraw ) - xbias) * xscale);
+	double fy = (double) ((float( yraw ) - ybias) * yscale);
+	double fz = (double) ((float( zraw ) - zbias) * zscale);
+
+	double headingc = RAD_TO_DEG * atan2( double( fy ), double( fx ) );
+
+#ifdef DEBUG_COMP
+  ESP_LOGI( FNAME, "fX=%.1f fY=%.1f fZ=%.1f Cor-Heading=%.1f", fx, fy, fz, headingc );
+#endif
 
 	// ESP_LOGI(FNAME,"RANGE XH:%d YH:%d ZH:%d  XL:%d YL:%d ZL:%d OX:%d OY:%d OZ:%d", xmax,ymax,zmax, xmin,ymin,zmin, xmax + xmin, ymax + ymin,zmax + zmin);
 	// ESP_LOGI(FNAME,"RAW NORM Flux, fx:%f fy:%f fz:%f", fx,fy,fz);

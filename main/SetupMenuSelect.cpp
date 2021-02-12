@@ -11,7 +11,7 @@
 #include "SetupMenuSelect.h"
 #include "ESPAudio.h"
 
-char SetupMenuSelect::_val_str[10];
+char SetupMenuSelect::_val_str[20];
 
 bool SetupMenuSelect::existsEntry( String ent ){
 	for( std::vector<String>::iterator iter = _values.begin(); iter != _values.end(); ++iter )

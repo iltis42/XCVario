@@ -30,6 +30,7 @@
 static char rentry[25];
 SetupMenuSelect * audio_range_sm = 0;
 SetupMenuSelect * mpu = 0;
+static int select_dummy = 0;
 
 // Menu for flap setup
 
@@ -774,23 +775,10 @@ void SetupMenu::setup( )
 		calibrationMenu->setHelp( PROGMEM "Calibrate Magnetic Sensor" );
 		compassMenu->addMenu( calibrationMenu );
 
-		SetupMenuValFloat *sct = new SetupMenuValFloat( "Calibration Time",
-				0,
-				"s",
-				10,
-				300,
-				1.0,
-				nullptr,
-				false,
-				&compass_calibration_time );
+		SetupMenuValFloat *sct = new SetupMenuValFloat( "Calibration Time",0,"sec",10,300,1.0,0,false,&compass_calibration_time );
 		calibrationMenu->addMenu( sct );
 
-		compSensor = new SetupMenuSelect( "Sensor Calibration",
-				0,
-				false,
-				compassSensorCalibrateAction,
-				false,
-				&dummy );
+		compSensor = new SetupMenuSelect( "Sensor Calibration",&select_dummy,false,compassSensorCalibrateAction,false );
 
 		compSensor->addEntry( "Cancel");
 		compSensor->addEntry( "Start");
@@ -846,7 +834,7 @@ void SetupMenu::setup( )
 		sye->addMenu( soft );
 
 		Version V;
-		static int select_dummy = 0;
+
 		SetupMenuSelect * ver = new SetupMenuSelect( "Software Vers.", &select_dummy, false, 0, false );
 		ver->addEntry( V.version() );
 		soft->addMenu( ver );

@@ -128,7 +128,7 @@ mpud::float_axes_t accelG_Prev;
 mpud::float_axes_t gyroDPS_Prev;
 
 // Magnetic sensor / compass
-Compass compass( 0x0D, 10, 2, 512 );
+Compass compass( 0x0D, 50, 2, 64 );
 
 BTSender btsender;
 
@@ -222,6 +222,9 @@ void drawDisplay(void *pvParameters){
 			ESP_LOGW(FNAME,"Warning drawDisplay stack low: %d bytes", uxTaskGetStackHighWaterMark( dpid ) );
 	}
 }
+
+float mh = 0;
+float th = 0;
 
 void readBMP(void *pvParameters){
 	while (1)
@@ -362,27 +365,32 @@ void readBMP(void *pvParameters){
 			}
 		}
 		// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d ena=%d", compass.haveSensor(),  compass_nmea_hdt.get(),  compass_enable.get() );
-		if( compass_enable.get() == true && (count % 5 ) == 0 )
+		if( compass_enable.get() == true  )
 		{
 			// try to get compass heading from sensor and forward it via NMEA.
-			bool ok1 = false;
-			bool ok2 = false;
-			float mh = -400.;
-			float th = -400.;
+			bool okmh = false;
+			bool okth = false;
 
-			if( compass_nmea_hdm.get() == true )
-				mh = compass.magneticHeading( &ok1 );
+			if( compass_nmea_hdm.get() == true ){
+				float val = compass.magneticHeading( &okmh );
+				if( okmh )
+					mh += (val-mh)*0.1;  // Low pass filter 1 second
+			}
 			// ESP_LOGI(FNAME,"Compass, MH: %f  OK: %d", mh, ok1);
 			if( compass_declination_valid.get() == true && compass_nmea_hdt.get() == true ){
 				// get true heading only, if declination is valid
-				th = compass.trueHeading( &ok2 );
+				float val = compass.trueHeading( &okth );
+				if( okth )
+					th = (val-th)*0.1;
 			}
-			if( ok1 == true || ok2 == true ){
+			if( (count % 5 ) == 0 ){
 				xSemaphoreTake( xMutex, portMAX_DELAY );
-				if( ok1 == true )
-					OV.sendNmeaHDM( mh );
-				if( ok2 == true )
-					OV.sendNmeaHDT( th );
+				OV.sendNmeaHDM( mh );
+				xSemaphoreGive( xMutex );
+			}
+			if( (count % 5 ) == 0 ){
+				xSemaphoreTake( xMutex, portMAX_DELAY );
+				OV.sendNmeaHDT( th );
 				xSemaphoreGive( xMutex );
 			}
 		}

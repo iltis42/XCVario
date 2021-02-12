@@ -405,13 +405,7 @@ void QMC5883L::resetCalibration()
 	compass_y_scale.set( 0 );
 	compass_z_scale.set( 0 );
 	compass_calibrated.set( 0 );
-	compass_x_bias.commit();
-	compass_y_bias.commit();
-	compass_z_bias.commit();
-	compass_x_scale.commit();
-	compass_y_scale.commit();
-	compass_z_scale.commit();
-	compass_calibrated.commit();
+	// commit() is implicitely done in set()
 }
 
 /**
@@ -426,13 +420,6 @@ void QMC5883L::saveCalibration()
 	compass_y_scale.set( yscale );
 	compass_z_scale.set( zscale );
 	compass_calibrated.set( 1 );
-	compass_x_bias.commit();
-	compass_y_bias.commit();
-	compass_z_bias.commit();
-	compass_x_scale.commit();
-	compass_y_scale.commit();
-	compass_z_scale.commit();
-	compass_calibrated.commit();
 }
 
 /**
@@ -480,6 +467,7 @@ bool QMC5883L::calibrate( const uint16_t seconds )
 
 	// Set ODR to 100 Hz
 	setOutputDataRate( 100 );
+	delay( 50 );
 
 	calibrationRunning = true;
 
@@ -499,6 +487,13 @@ bool QMC5883L::calibrate( const uint16_t seconds )
 	int i = 0;
 	int errors = 0;
 
+	int xmin_old = 0;
+	int xmax_old = 0;
+	int ymin_old = 0;
+	int ymax_old = 0;
+	int zmin_old = 0;
+	int zmax_old = 0;
+
 	for( i=0 ; i < samples; i++ )
 	{
 		if( rawHeading() == false )
@@ -515,7 +510,33 @@ bool QMC5883L::calibrate( const uint16_t seconds )
 		zmax = ( zraw > zmax ) ? zraw : zmax;
 
 		// The sensor seems to have sometimes problems to deliver all 10ms new data
-		delay( 13 );
+		delay( 20 );
+		if( xmin_old != xmin ){
+			ESP_LOGI( FNAME, "New X-Min: %d", xmin );
+			xmin_old = xmin;
+		}
+		if( xmax_old != xmax ){
+			ESP_LOGI( FNAME, "New X-Max: %d", xmax );
+			xmax_old = xmax;
+		}
+		if( ymin_old != ymin ){
+			ESP_LOGI( FNAME, "New Y-Min: %d", ymin );
+			ymin_old = ymin;
+		}
+		if( ymax_old != ymax ){
+			ESP_LOGI( FNAME, "New Y-Max: %d", ymax );
+			ymax_old = ymax;
+		}
+		if( zmin_old != zmin ){
+			ESP_LOGI( FNAME, "New Z-Min: %d", zmin );
+			zmin_old = zmin;
+		}
+		if( zmax_old != zmax ){
+			ESP_LOGI( FNAME, "New Z-Max: %d", zmax );
+			zmax_old = zmax;
+		}
+
+
 	}
 
 	ESP_LOGI( FNAME, "Read Cal-Samples=%d, OK=%d, NOK=%d",
@@ -629,9 +650,10 @@ float QMC5883L::heading( bool *ok )
 	double fy = -(double) ((float( yraw ) - ybias) * yscale);
 	double fz = (double) ((float( zraw ) - zbias) * zscale);
 
+// #define DEBUG_COMP
 #ifdef DEBUG_COMP
 	double headingc = RAD_TO_DEG * atan2( double( fy ), double( fx ) );
-	ESP_LOGI( FNAME, "fX=%.1f fY=%.1f fZ=%.1f Cor-Heading=%.1f", fx, fy, fz, headingc );
+	ESP_LOGI( FNAME, "fX=%d fY=%d fZ=%d Cor-Heading=%.1f", xraw, yraw, zraw, headingc );
 #endif
 
 	// ESP_LOGI(FNAME,"RANGE XH:%d YH:%d ZH:%d  XL:%d YL:%d ZL:%d OX:%d OY:%d OZ:%d", xmax,ymax,zmax, xmin,ymin,zmin, xmax + xmin, ymax + ymin,zmax + zmin);

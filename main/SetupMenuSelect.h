@@ -34,7 +34,7 @@ public:
 	inline const char * getEntry(){ return _values[ *_select ].c_str(); }
 
 private:
-	static char _val_str[10];
+	static char _val_str[20];
 	int  *_select;
 	int  _select_save;
 	int  _numval;

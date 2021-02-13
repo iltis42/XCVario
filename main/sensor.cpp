@@ -16,6 +16,7 @@
 #include "ESP32NVS.h"
 #include "MP5004DP.h"
 #include "MS4525DO.h"
+#include "ABPMRR.h"
 #include "BMPVario.h"
 #include "BTSender.h"
 #include "Protocols.h"
@@ -90,8 +91,6 @@ BMP:
 MCP3221 *MCP=0;
 DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 standard, alternative  GPIO_NUM_17
 
-MP5004DP theMP5004DP;
-MS4525DO theMS4525DO;
 AirspeedSensor *asSensor=0;
 
 xSemaphoreHandle xMutex=NULL;
@@ -548,24 +547,24 @@ void sensor(void *args){
 	display->writeText(line++, wireless_id.c_str() );
 
 	ESP_LOGI(FNAME,"Speed sensors init..");
+	switch( airspeed_sensor_type.get() ){
+		case PS_MP3V5004:
+			asSensor = new MP5004DP();
+			break;
+		case PS_TE4525:
+			asSensor = new MS4525DO();
+			break;
+		case PS_ABPMRR:
+			asSensor = new ABPMRR();
+			break;
+	}
+
 	int offset;
 	bool offset_plausible = false;
-	theMS4525DO.begin( GPIO_NUM_21, GPIO_NUM_22 );  // sda, scl
-	theMS4525DO.setBus( &i2c );
+	asSensor->setBus( &i2c );
 
-	if( theMS4525DO.selfTest( offset ) ){
-		ESP_LOGI(FNAME,"Speed sensors theMS4525DO self test PASSED");
-		asSensor = &theMS4525DO;
-	}
-	else
-	{
-		theMP5004DP.begin( GPIO_NUM_21, GPIO_NUM_22);  // sda, scl
-		if( theMP5004DP.selfTest( offset ) ) {
-			ESP_LOGI(FNAME,"Speed sensors theMP5004DP self test PASSED");
-			asSensor = &theMP5004DP;
-		}
-	}
-	if( asSensor ){
+	if( asSensor->selfTest( offset ) ){
+		ESP_LOGI(FNAME,"AS Speed sensors self test PASSED, offset=%d", offset);
 		asSensor->doOffset();
 		offset_plausible = asSensor->offsetPlausible( offset );
 		bool ok=false;
@@ -574,14 +573,6 @@ void sensor(void *args){
 			dynamicP = p;
 		ias = Atmosphere::pascal2kmh( dynamicP );
 		ESP_LOGI(FNAME,"Aispeed sensor current speed=%f", ias );
-	}
-
-	if( !asSensor ){
-		ESP_LOGE(FNAME,"Error with air speed pressure sensor, no working sensor found!");
-		display->writeText( line++, "AS Sensor: NOT FOUND");
-		logged_tests += "AS Sensor: NOT FOUND\n";
-		selftestPassed = false;
-	}else {
 		if( !offset_plausible && ( ias < 50 ) ){
 			ESP_LOGE(FNAME,"Error: air speed presure sensor offset out of bounds, act value=%d", offset );
 			display->writeText( line++, "AS Sensor: NEED ZERO" );
@@ -599,6 +590,12 @@ void sensor(void *args){
 				display->writeText( line++, "AS Sensor: OK" );
 			logged_tests += "AS Sensor offset test: PASSED\n";
 		}
+	}
+	else{
+		ESP_LOGE(FNAME,"Error with air speed pressure sensor, no working sensor found!");
+		display->writeText( line++, "AS Sensor: NOT FOUND");
+		logged_tests += "AS Sensor: NOT FOUND\n";
+		selftestPassed = false;
 	}
 	ESP_LOGI(FNAME,"Now start T sensor test");
 	// Temp Sensor test

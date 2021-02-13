@@ -1,10 +1,10 @@
-#include "MS4525DO.h"
+#include "ABPMRR.h"
 #include <math.h>
 #include <logdef.h>
 
-MS4525DO::MS4525DO()
+ABPMRR::ABPMRR()
 {
-	address = I2C_ADDRESS_MS4525DO;
+	address = I2C_ADDRESS_ABPMRR;
 	psi = 0;
 	temperature = 0;
 	airspeed = 0;
@@ -16,26 +16,26 @@ MS4525DO::MS4525DO()
 	bus = 0;
 }
 
-MS4525DO::~MS4525DO()
+ABPMRR::~ABPMRR()
 {
-
 }
+
 // combine measure and collect into one function that returns the status code only, and holds the results in variables
 // other subroutines for returning clean values should be get functions
 
 
-int MS4525DO::measure()
+int ABPMRR::measure()
 {
 	char ret;
 	ret = fetch_pressure(P_dat, T_dat);
-	// ESP_LOGI(FNAME,"MS4525DO::fetch_pressure: %d", P_dat );
+	// ESP_LOGI(FNAME,"ABPMRR::fetch_pressure: %d", P_dat );
 	return ret;
 }
 
 
-char MS4525DO::fetch_pressure(uint16_t &P_dat, uint16_t &T_dat)
+char ABPMRR::fetch_pressure(uint16_t &P_dat, uint16_t &T_dat)
 {
-	// ESP_LOGI(FNAME,"MS4525DO::fetch_pressure");
+	// ESP_LOGI(FNAME,"ABPMRR::fetch_pressure");
 	char _status;
 	char Press_H;
 	char Press_L;
@@ -65,29 +65,31 @@ char MS4525DO::fetch_pressure(uint16_t &P_dat, uint16_t &T_dat)
 	return _status;
 }
 
-float   MS4525DO::readPascal( float minimum, bool &ok ){
+float   ABPMRR::readPascal( float minimum, bool &ok ){
 	measure();
 	if( _status == 0 )
 		ok=true;
 	else{
-		ESP_LOGI(FNAME,"Retry measure, status :%d  p=%d", _status, P_dat );
+		ESP_LOGE(FNAME,"Retry measure, status :%d  p=%d", _status, P_dat );
 		measure();
 		if( _status == 0 )
 			ok=true;
 		else{
-			ESP_LOGI(FNAME,"Warning, status :%d  p=%d, bad even retry", _status, P_dat );
+			ESP_LOGE(FNAME,"Warning, status :%d  p=%d, bad even retry", _status, P_dat );
 			ok=false;
 		}
 	}
 
-	float _pascal = (_offset - P_dat) * multiplier * ((100.0 + speedcal.get()) / 100.0);
+	float _pascal = (P_dat - _offset) * ABPMRRmultiplier * ((100.0 + speedcal.get()) / 100.0);
 	    if ( (_pascal < minimum) && (minimum != 0) ) {
 		  _pascal = 0.0;
 		};
+
+	// ESP_LOGI(FNAME,"pressure: %f offset: %d raw: %d  raw-off:%f m:%f", _pascal, (int)_offset, P_dat,  (_offset - P_dat),  ABPMRRmultiplier );
 	return( _pascal );
 }
 
-bool    MS4525DO::selfTest( int& adval ){
+bool    ABPMRR::selfTest( int& adval ){
 	uint8_t data[4];
 	esp_err_t err = ESP_FAIL;
 	for( int i=0; i<4; i++ ){
@@ -96,10 +98,10 @@ bool    MS4525DO::selfTest( int& adval ){
 			break;
 	}
 	if( err != ESP_OK ){
-		ESP_LOGI(FNAME,"MS4525DO selftest, scan for I2C address %02x FAILED",I2C_ADDRESS_MS4525DO );
+		ESP_LOGI(FNAME,"ABPMRR selftest, scan for I2C address %02x FAILED",I2C_ADDRESS_ABPMRR );
 		return false;
 	}
-	ESP_LOGI(FNAME,"MS4525DO selftest, scan for I2C address %02x PASSED",I2C_ADDRESS_MS4525DO );
+	ESP_LOGI(FNAME,"ABPMRR selftest, scan for I2C address %02x PASSED",I2C_ADDRESS_ABPMRR );
 	measure();
 	adval = P_dat;
 	if( error != ESP_OK )
@@ -108,21 +110,21 @@ bool    MS4525DO::selfTest( int& adval ){
 		return true;
 }
 
-float MS4525DO::getPSI(void){             // returns the PSI of last measurement
+float ABPMRR::getPSI(void){             // returns the PSI of last measurement
 	// convert and store PSI
-	psi=( static_cast<float>(static_cast<int16_t>(P_dat)-MS4525ZeroCounts))  / static_cast<float>(MS4525Span)* static_cast<float>(MS4525FullScaleRange);
+	psi=( static_cast<float>(static_cast<int16_t>(P_dat)-ABPMRRZeroCounts))  / static_cast<float>(ABPMRRSpan)* static_cast<float>(ABPMRRFullScaleRange);
 
 return psi;
 }             
 
-float MS4525DO::getTemperature(void){     // returns temperature of last measurement
+float ABPMRR::getTemperature(void){     // returns temperature of last measurement
 	temperature= (static_cast<float>(static_cast<int16_t>(T_dat)));
 	temperature = (temperature / 10);   // now in deg F
 	temperature = ((temperature -32) / 1.8f);   // now in deg C
 	return temperature;
 }
 
-float MS4525DO::getAirSpeed(void){        // calculates and returns the airspeed
+float ABPMRR::getAirSpeed(void){        // calculates and returns the airspeed
 	/* Velocity calculation from a pitot tube explanation */
 	/* +/- 1PSI, approximately 100 m/s */
 	float rho = 1.225; // density of air
@@ -139,19 +141,19 @@ float MS4525DO::getAirSpeed(void){        // calculates and returns the airspeed
 }
 
 
-bool MS4525DO::offsetPlausible(uint16_t aoffset )
+bool ABPMRR::offsetPlausible(uint16_t aoffset )
 {
-	ESP_LOGI(FNAME,"MS4525DO offsetPlausible( %d )", aoffset );
-	int lower_val = 7700;
-	int upper_val = 8300;
+	ESP_LOGI(FNAME,"ABPMRR offsetPlausible( %d )", aoffset );
+	int lower_val = 8192-200;
+	int upper_val = 8192+200;
 	if( (aoffset > lower_val ) && (aoffset < upper_val )  )
 		return true;
 	else
 		return false;
 }
 
-bool MS4525DO::doOffset( bool force ){
-	ESP_LOGI(FNAME,"MS4525DO doOffset()");
+bool ABPMRR::doOffset( bool force ){
+	ESP_LOGI(FNAME,"ABPMRR doOffset()");
 
 	_offset = as_offset.get();
 	if( _offset < 0 )

@@ -182,6 +182,7 @@ SetupNG<int> 			wk_label_minus_3( "WKLM3", 33); //  S
 SetupNG<float>       	flap_takeoff("FLAPTO", 1 );
 SetupNG<int> 			audio_disable( "AUDIS", 0 );
 SetupNG<int>			vario_mode("VAMOD", 0 );
+SetupNG<int>			airspeed_sensor_type("PTYPE", 0, false);
 
 mpud::raw_axes_t zero_bias;
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );

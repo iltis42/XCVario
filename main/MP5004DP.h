@@ -8,11 +8,7 @@
 #include "AirspeedSensor.h"
 
 
-
-
-
 const float correction    = 5000.0/4096.0;  // according to above formula, this is the relation between adc readout and Pascal
-const float correctionXZG = (6600.0/4096.0) * (141.0/147.0);
 
 const float alpha = 0.4;
 const float min_pascal = 10.0;
@@ -24,11 +20,11 @@ public:
 	    _alpha = alpha;
 	    _haveDevice = false;
 	}
-	bool    begin(gpio_num_t sda, gpio_num_t scl, char slave_adr=0 );
 	bool    doOffset( bool force=false );
 	float   readPascal( float minimum, bool &ok );
 	bool    selfTest( int& adval );
 	bool    offsetPlausible( uint16_t offset );
+	void    setBus( I2C_t *_theBus );
 
 private:
 	float _offset;

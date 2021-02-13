@@ -37,47 +37,12 @@ P = 5000/4096 * adc
 
 100 mm H2O:  P = 1000 Pascal o. 0.6 V o. 0.2*4096 = 819.2
 
-
-XZG:
-1)
-V = 2.5V * Pascal/5000;
-adc = 4096 * Vout/3.3V
-
-   Vout = (adc/4096) * 3.3V
-2)
-Pkpa = Vout / (2.5V * 0.2)
-
-   Pkpa = Vout / 0.5V
-
-1) in 2):
-Pkpa = (adc/4096) *3.3V / 0.5V
-or
-P = (adc/4096) * 2*3.3    in kPa
-P = (adc/4096) * 6.6      in kPa
-or
-P = adc * (6600/4096) in Pascal
-P = 1.611328125 * adc
-
-
-
 */
 
-
-bool MP5004DP::begin(gpio_num_t sda, gpio_num_t scl, char slave_adr ){
-	ESP_LOGI(FNAME,"MP5004DP::begin");
-	bool ret = NVS.begin();
-	if ( ret == false ){
-		ESP_LOGE(FNAME,"MP5004DP: Error NVS init");
-		return ret;
-	}
-	 else
-	 	ESP_LOGI(FNAME,"MP5004DP: NVS init ok");
-	ret = MCP->begin();
-		if ( ret == false ){
-			ESP_LOGE(FNAME,"MP5004DP: Error MCP init");
-			return ret;
-		}
-	return true;
+void MP5004DP::setBus( I2C_t *_theBus ){
+	bool ret = MCP->begin();
+	if ( ret == false )
+		ESP_LOGE(FNAME,"MP5004DP: Error MCP init");
 }
 
 bool MP5004DP::selfTest(int& val)
@@ -187,16 +152,8 @@ float MP5004DP::readPascal( float minimum, bool &ok ){
 		ok = false;
 		return 0.0;
 	}
-	float corr;
-	if( hardwareRevision.get() < 3 )
-		corr = correction;
-	else{
-		corr = correctionXZG;
-		// ESP_LOGI(FNAME,"pressure correction for XZG %f", corr );
-	}
 	float val = MCP->readVal();
-
-	float _pascal = (val - _offset) * corr * ((100.0 + speedcal.get()) / 100.0);
+	float _pascal = (val - _offset) * correction * ((100.0 + speedcal.get()) / 100.0);
     if ( (_pascal < minimum) && (minimum != 0) ) {
 	  _pascal = 0.0;
 	};

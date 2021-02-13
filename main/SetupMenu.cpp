@@ -975,6 +975,13 @@ void SetupMenu::setup( )
 				ahrslc3->addEntry( e );
 				ahrslc4->addEntry( e );
 			}
+
+			SetupMenuSelect * pstype = new SetupMenuSelect( "AS Sensor type", 0, true , 0, false, &airspeed_sensor_type );
+			hardware->addMenu( pstype );
+			pstype->setHelp( PROGMEM "Factory default for type of pressure sensor, will not erase on factory reset");
+			pstype->addEntry( "APBMRR");
+			pstype->addEntry( "TE4525");
+			pstype->addEntry( "MP5004");
 		}
 
 		float fva = factory_volt_adjust.get();

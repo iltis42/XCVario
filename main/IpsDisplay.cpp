@@ -841,6 +841,8 @@ void IpsDisplay::drawAltitude( float altitude, int x, int y ){
 	}
 }
 
+bool netto_old;
+
 void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, float polar_sink_ms, float altitude_m,
 		float temp, float volt, float s2fd_ms, float s2f_ms, float acl_ms, bool s2fmode, bool standard_setting, float wksensor ){
 	if( _menu )
@@ -852,6 +854,24 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	tick++;
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	// ESP_LOGI(FNAME,"drawRetroDisplay  TE=%0.1f IAS:%d km/h  WK=%d", te, airspeed, wksensor  );
+
+	bool netto=false;
+	if( vario_mode.get() == VARIO_NETTO || (s2fmode && ( vario_mode.get() == CRUISE_NETTO )) ){
+		te_ms = te_ms - polar_sink_ms;
+		netto=true;
+	}
+	if( !(tick%20) ){
+		if( netto != netto_old ){
+			ucg->setFont(ucg_font_fub11_hr);
+			ucg->setPrintPos(55,15);
+			if( netto )
+				ucg->setColor( COLOR_WHITE );
+			else
+				ucg->setColor( COLOR_BLACK );
+			ucg->print( "net" );
+			netto_old = netto;
+		}
+	}
 
 	// Unit adaption for mph and knots
 	float te = Units::Vario( te_ms );
@@ -876,7 +896,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	}
 	// draw green bar
-	if( !(tick%4) ){
+	if( !(tick%5) ){
 		if( (int)(te*10) != (int)(te_prev*10) ) {
 			float step= (M_PI_2/100) * _range;
 			if( te > te_prev && te > 0 ){  // draw green what's missing
@@ -887,7 +907,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			}
 			else{   // delete what's too much
 				ESP_LOGD(FNAME,"delete te:%0.2f prev:%0.2f", te, te_prev );
-				for( float a=te_prev+step; a>=te && a >= step*2; a-=step ) {
+				for( float a=te_prev+step; a>=te && a >= step; a-=step ) {
 					ESP_LOGD(FNAME,"delete %0.2f", a );
 					drawTetragon( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 119, 126, 2, COLOR_BLACK, false );
 				}
@@ -895,6 +915,37 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			te_prev = te+step;
 		}
 	}
+	// Polar Sink or Netto Sink
+	if( !(tick%5) ){
+		if( netto || ps_display.get() ){
+			float val = polar_sink;
+			if( netto )
+				val = te;
+			if( (int)(val*10) != (int)(polar_sink_prev*10) ) {  // tbd: rename polar_sink_prev
+				float step= (M_PI_2/100) * _range;
+				if( val < polar_sink_prev && val < 0 ){  // draw what's missing
+					for( float a=polar_sink_prev; a>val && a>-_range; a-=step ) {
+						ESP_LOGD(FNAME,"blue a=%f",a);
+						if( a <= -step*2 ){ // don't overwrite the '0'
+							if( netto )
+								drawTetragon( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 120, 125, 2, COLOR_RED, false );
+							else
+								drawTetragon( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 120, 125, 2, COLOR_BLUE, false );
+						}
+					}
+				}
+				else{   // delete what's too much
+					for( float a=polar_sink_prev-step; a<=val && a <= -step; a+=step ) {
+						ESP_LOGD(FNAME,"black a=%f",a);
+						/* if( a >= -_range && a <= -step*2) */
+							drawTetragon( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 119, 126, 2, COLOR_BLACK, false );
+					}
+				}
+				polar_sink_prev = val + step;
+			}
+		}
+	}
+
 
 	// average Climb
 	if( (int)(ate*30) != _ate && !(tick%3) ) {
@@ -1068,27 +1119,6 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			ucg->setFont(ucg_font_fub11_hr);
 			ucg->printf(" %s  ", Units::AirspeedUnit() );
 			as_prev = ias;
-		}
-	}
-	// Polar Sink
-	if( !(tick%9) ){
-		if( (int)(polar_sink*10) != (int)(polar_sink_prev*10) ) {
-			float step= (M_PI_2/100) * _range;
-			if( polar_sink < polar_sink_prev ){  // draw blue what's missing
-				for( float a=polar_sink_prev; a>polar_sink && a>-_range; a-=step ) {
-					ESP_LOGD(FNAME,"blue a=%f",a);
-					if( a <= -step*2 ) // don't overwrite the '0'
-						drawTetragon( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 120, 125, 2, COLOR_BLUE, false );
-				}
-			}
-			else{   // delete what's too much
-				for( float a=polar_sink_prev-step; a<=polar_sink; a+=step ) {
-					ESP_LOGD(FNAME,"black a=%f",a);
-					if( a >= -_range && a <= -step*2)
-						drawTetragon( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 119, 126, 2, COLOR_BLACK, false );
-				}
-			}
-			polar_sink_prev = polar_sink + step;
 		}
 	}
 

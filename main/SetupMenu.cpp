@@ -473,6 +473,13 @@ void SetupMenu::setup( )
 		SetupMenu * va = new SetupMenu( "Vario and S2F" );
 		MenuEntry* vae = mm->addMenu( va );
 
+		SetupMenuSelect * vamod = new SetupMenuSelect( 	"Mode", 0, false, 0 , true, &vario_mode );
+		vamod->setHelp(PROGMEM"Controls if vario considers polar sink (=Netto), or not (=Brutto), or if Netto vario applies only in Cruise Mode");
+		vamod->addEntry( "Brutto");
+		vamod->addEntry( "Netto");
+		vamod->addEntry( "Cruise-Netto");
+		vae->addMenu( vamod );
+
 		SetupMenuValFloat * vga = new SetupMenuValFloat( 	"Range", 0, vunit.c_str(),	1.0, 30.0, 1, update_rentry, true, &range );
 		vga->setHelp(PROGMEM"Upper and lower value for Vario graphic display region");
 		vga->setPrecision( 0 );
@@ -486,20 +493,23 @@ void SetupMenu::setup( )
 		vdav->setHelp(PROGMEM"Response time, time constant of digital Average Vario Display");
 		vae->addMenu( vdav );
 
-		SetupMenuValFloat * vccm = new SetupMenuValFloat( "Mean Cl. min", 0, "m/s",	0.0, 2.0, 0.1, 0, false, &core_climb_min );
+		SetupMenu * meancl = new SetupMenu( "Mean Climb" );
+		MenuEntry* meanclm = vae->addMenu( meancl );
+
+		SetupMenuValFloat * vccm = new SetupMenuValFloat( "Minimum climb", 0, "m/s",	0.0, 2.0, 0.1, 0, false, &core_climb_min );
 		vccm->setHelp(PROGMEM"Minimum climb rate that counts for arithmetic mean climb value (red rhombus left of TE bar)");
-		vae->addMenu( vccm );
+		meanclm->addMenu( vccm );
 
-		SetupMenuValFloat * vcch = new SetupMenuValFloat( "Mean Cl. dur", 0,	"min", 1, 300, 1, 0, false, &core_climb_history );
+		SetupMenuValFloat * vcch = new SetupMenuValFloat( "Duration", 0,	"min", 1, 300, 1, 0, false, &core_climb_history );
 		vcch->setHelp(PROGMEM"Duration in minutes where samples for mean climb value are regarded, default is last 3 thermals or 45 min");
-		vae->addMenu( vcch );
+		meanclm->addMenu( vcch );
 
-		SetupMenuValFloat * vcp = new SetupMenuValFloat( "Mean Cl. cycl", 0,	"sec", 10, 60, 1, 0, false, &core_climb_period );
-		vcp->setHelp(PROGMEM"Number of seconds when mean climb value is recalculated, default is last 60 seconds");
-		vae->addMenu( vcp);
+		SetupMenuValFloat * vcp = new SetupMenuValFloat( "Cycle", 0,	"sec", 10, 60, 1, 0, false, &core_climb_period );
+		vcp->setHelp(PROGMEM"Cycle in number of seconds when mean climb value is recalculated, default is last 60 seconds");
+		meanclm->addMenu( vcp);
 
 		SetupMenuSelect * sink = new SetupMenuSelect( 	"Polar Sink", 0, false, 0 , true, &ps_display );
-		sink->setHelp(PROGMEM"Show polar sink rate together with TE in Vario bar");
+		sink->setHelp(PROGMEM"Show polar sink rate together with TE in Vario bar when Vario is in Brutto Mode (else disabled)");
 		sink->addEntry( "DISABLE");
 		sink->addEntry( "ENABLE");
 		vae->addMenu( sink );

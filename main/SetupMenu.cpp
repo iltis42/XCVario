@@ -553,10 +553,10 @@ void SetupMenu::setup( )
 		audio->addMenu( dv );
 		dv->setHelp(PROGMEM"Default volume for Audio when device is switched on");
 
-		SetupMenuSelect * abnm = new SetupMenuSelect( "Audio Mode", 0, false, 0 , true, &audio_netto_mode );
-		abnm->setHelp(PROGMEM"Select either brutto vario, or netto vario (excluding polar sink) as source for audio");
-		abnm->addEntry( "Brutto");       // 0
-		abnm->addEntry( "Netto");        // 1
+		SetupMenuSelect * abnm = new SetupMenuSelect( "Cruise Audio", 0, false, 0 , true, &cruise_audio_mode );
+		abnm->setHelp(PROGMEM"Select either S2F command or Variometer (Netto/Brutto as selected) as audio source while cruising");
+		abnm->addEntry( "Speed2Fly");       // 0
+		abnm->addEntry( "Vario");           // 1
 		audio->addMenu( abnm );
 
 		SetupMenu * audios = new SetupMenu( "Tone Styles" );

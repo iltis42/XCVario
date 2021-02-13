@@ -30,6 +30,7 @@
 #include "Switch.h"
 #include "I2Cbus.hpp"
 #include "sensor.h"
+#include "SetupNG.h"
 
 
 uint8_t Audio::_tonemode;
@@ -379,7 +380,7 @@ void Audio::modtask(void* arg )
 		{
 			int delaydelta = 0;
 			if (_te > 0.05 ){
-				if( _s2f_mode )
+				if( _s2f_mode && (cruise_audio_mode.get() == AUDIO_S2F) )
 					delaydelta = defaultDelay * 0.8 *(_te/5.0);
 				else
 					delaydelta = defaultDelay * 0.8 *(_te/_range);
@@ -485,8 +486,9 @@ void Audio::dactask(void* arg )
 					}
 					if( hightone && (_tonemode == ATM_SINGLE_TONE) ){
 						if( (_chopping_mode == BOTH_CHOP) ||
-								(_s2f_mode && (_chopping_mode == S2F_CHOP)) ||
-								(!_s2f_mode && (_chopping_mode == VARIO_CHOP)) ) {
+							(_s2f_mode && (_chopping_mode == S2F_CHOP) ) ||
+							( _s2f_mode && (cruise_audio_mode.get() == AUDIO_VARIO) && (_chopping_mode != NO_CHOP) ) ||
+							(!_s2f_mode && (_chopping_mode == VARIO_CHOP) )) {
 							sound = false;
 							// ESP_LOGI(FNAME,"sound = false 2");
 						}
@@ -591,7 +593,7 @@ void Audio::setValues( float te, float s2fd )
 {
 	float max = _range;
 	if( !_alarm_mode ){
-		if( _s2f_mode ) {
+		if( _s2f_mode && (cruise_audio_mode.get() == AUDIO_S2F) ) {
 			_te = -s2fd/10.0;
 			max = 5.0;
 		}

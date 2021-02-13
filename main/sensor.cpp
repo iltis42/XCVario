@@ -266,12 +266,11 @@ void readBMP(void *pvParameters){
 		netto = aTES2F - polar_sink;
 		as2f = Speed2Fly.speed( netto );
 		s2f_delta = as2f - ias;
-		if( audio_netto_mode.get() == AUDIO_BRUTTO )
-			Audio::setValues( TE, s2f_delta );
-		else {
+		if( vario_mode.get() == VARIO_NETTO || (Switch::cruiseMode() &&  (vario_mode.get() == CRUISE_NETTO)) )
 			Audio::setValues( TE - polar_sink, s2f_delta );
+		else {
+			Audio::setValues( TE, s2f_delta );
 		}
-
 		if( (count % 2) == 0 ) {
 			Flap::progress();
 			xSemaphoreTake(xMutex,portMAX_DELAY );

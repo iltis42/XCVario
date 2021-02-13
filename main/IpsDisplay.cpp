@@ -937,16 +937,13 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 				else{   // delete what's too much
 					for( float a=polar_sink_prev-step; a<=val && a <= -step; a+=step ) {
 						ESP_LOGD(FNAME,"black a=%f",a);
-						/* if( a >= -_range && a <= -step*2) */
-							drawTetragon( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 119, 126, 2, COLOR_BLACK, false );
+						drawTetragon( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 119, 126, 2, COLOR_BLACK, false );
 					}
 				}
 				polar_sink_prev = val + step;
 			}
 		}
 	}
-
-
 	// average Climb
 	if( (int)(ate*30) != _ate && !(tick%3) ) {
 		drawAvgVario( 90, AMIDY+2, ate );

@@ -51,6 +51,7 @@ private:
 	static bool lookup( float f, int& div, int &step );
 	static bool volumeScale( int vol, int& scale, int &wiper );
 	static void enableAmplifier( bool enable );  // frue ON, false OFF
+	static void  evaluateChopping();
 
 	static dac_channel_t _ch;
 	static float _te;
@@ -81,6 +82,7 @@ private:
     static int tick;
     static int tickmod;
     static int volume_change;
+    static bool _chopping;
 };
 
 

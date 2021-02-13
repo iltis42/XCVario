@@ -39,6 +39,7 @@ uint16_t Audio::wiper;
 uint16_t Audio::cur_wiper;
 dac_channel_t Audio::_ch;
 
+bool  Audio::_chopping = false;
 float Audio::_range = 5.0;
 float Audio::_high_tone_var;
 bool  Audio::_s2f_mode = false;
@@ -448,12 +449,27 @@ void Audio::calcS2Fmode(){
 #define FADING_TIME 4
 bool sound=true;
 
+void  Audio::evaluateChopping(){
+	if(
+		(_chopping_mode == BOTH_CHOP) ||
+		(_s2f_mode && (_chopping_mode == S2F_CHOP) ) ||
+		( _s2f_mode && (cruise_audio_mode.get() == AUDIO_VARIO) && (_chopping_mode != NO_CHOP) ) ||
+		(!_s2f_mode && (_chopping_mode == VARIO_CHOP) )
+	)
+	_chopping = true;
+	else
+	_chopping = false;
+}
+
+
 void Audio::dactask(void* arg )
 {
 	while(1){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		tick++;
 		Switch::tick();    // we hook switch sceduling here to save extra task
+		if( !(tick%20) )
+			evaluateChopping();
 		if( audio_disable.get() && Menu->isActive() ){
 			if( sound_on ){
 				dac_output_disable(_ch);
@@ -485,13 +501,8 @@ void Audio::dactask(void* arg )
 						deadband_active = false;
 					}
 					if( hightone && (_tonemode == ATM_SINGLE_TONE) ){
-						if( (_chopping_mode == BOTH_CHOP) ||
-							(_s2f_mode && (_chopping_mode == S2F_CHOP) ) ||
-							( _s2f_mode && (cruise_audio_mode.get() == AUDIO_VARIO) && (_chopping_mode != NO_CHOP) ) ||
-							(!_s2f_mode && (_chopping_mode == VARIO_CHOP) )) {
+						if( _chopping )
 							sound = false;
-							// ESP_LOGI(FNAME,"sound = false 2");
-						}
 					}
 				}
 				// ESP_LOGI(FNAME, "sound %d, ht %d", sound, hightone );
@@ -524,7 +535,7 @@ void Audio::dactask(void* arg )
 					if ( _te > 0 )
 						max = maxf;
 					float range = _range;
-					if( _s2f_mode )
+					if( _s2f_mode && (cruise_audio_mode.get() == AUDIO_S2F) )
 						range = 5.0;
 					float mult = std::pow( (abs(_te)/range)+1, audio_factor.get());
 					if( audio_factor.get() != prev_aud_fact ) {
@@ -571,7 +582,7 @@ bool Audio::inDeadBand( float te )
 {
 	float dbp;
 	float dbn;
-	if( _s2f_mode ) {
+	if( _s2f_mode && (cruise_audio_mode.get() == AUDIO_S2F)) {
 		dbp = s2f_deadband.get()/10;
 		dbn = s2f_deadband_neg.get()/10;
 	}else{

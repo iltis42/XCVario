@@ -248,7 +248,7 @@ void IpsDisplay::initDisplay() {
 			ucg->print("knots");
 		ucg->setPrintPos(FIELD_START,YVAR-VARFONTH);    // 65 -52 = 13
 
-		ucg->print("AVG Vario");
+		ucg->print("AV Vario");
 		ucg->setColor(0, COLOR_WHITE );
 
 		// print TE scale
@@ -844,8 +844,6 @@ void IpsDisplay::drawAltitude( float altitude, int x, int y ){
 	}
 }
 
-
-
 void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, float polar_sink_ms, float altitude_m,
 		float temp, float volt, float s2fd_ms, float s2f_ms, float acl_ms, bool s2fmode, bool standard_setting, float wksensor ){
 	if( _menu )
@@ -911,7 +909,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// draw green bar
 	if( !(tick%5) ){
 		if( (int)(te*10) != (int)(te_prev*10) ) {
-			float step= (M_PI_2/100) * _range;
+			float step= (M_PI_2/150) * _range;
 			if( te > te_prev && te > 0 ){  // draw green what's missing
 				for( float a=te_prev; a<te && a<_range; a+=step ) {
 					if( a >= step*2 ) // don't overwrite the '0'
@@ -935,7 +933,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			if( netto )
 				val = te;
 			if( (int)(val*10) != (int)(polar_sink_prev*10) ) {  // tbd: rename polar_sink_prev
-				float step= (M_PI_2/100) * _range;
+				float step= (M_PI_2/150) * _range;
 				if( val < polar_sink_prev && val < 0 ){  // draw what's missing
 					for( float a=polar_sink_prev; a>val && a>-_range; a-=step ) {
 						ESP_LOGD(FNAME,"blue a=%f",a);
@@ -1172,6 +1170,21 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 			ate_ms = ate_ms - polar_sink_ms + Speed2Fly.circlingSink( airspeed_kmh );
 		}
 		netto=true;
+	}
+	if( !(tick%20) ){
+		if( netto != netto_old ){
+			ucg->setFont(ucg_font_fub11_hr);
+			ucg->setPrintPos(165,15);
+			if( netto )
+				ucg->setColor( COLOR_WHITE );
+			else
+				ucg->setColor( COLOR_BLACK );
+			if( netto_mode.get() == NETTO_NORMAL )
+				ucg->print( "  net" );
+			else
+				ucg->print( "s-net" );
+			netto_old = netto;
+		}
 	}
 
 	float te = Units::Vario( te_ms );

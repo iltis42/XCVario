@@ -986,6 +986,7 @@ void SetupMenu::setup( )
 			pstype->addEntry( "APBMRR");
 			pstype->addEntry( "TE4525");
 			pstype->addEntry( "MP5004");
+			pstype->addEntry( "Autodetect");
 		}
 
 		float fva = factory_volt_adjust.get();

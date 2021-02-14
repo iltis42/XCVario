@@ -5,6 +5,7 @@
 
 class AirspeedSensor {
 public:
+	virtual ~AirspeedSensor() {};
 	virtual bool  doOffset( bool force=false ) = 0;
 	virtual float readPascal( float minimum, bool &ok ) = 0;
 	virtual bool  selfTest( int& adval ) = 0;

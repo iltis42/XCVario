@@ -481,7 +481,7 @@ void Audio::dactask(void* arg )
 		else
 		{
 			if( !_testmode ) {
-				// ESP_LOGI(FNAME, "sound dactask %d wiper %d  tm %d", tick, wiper, _testmode   );
+				// ESP_LOGI(FNAME, "sound dactask tick:%d wiper:%d  te:%f db:%d", tick, wiper, _te, inDeadBand(_te) );
 				if( !(tick%20) )
 					calcS2Fmode();
 				bool sound=true;

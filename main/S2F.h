@@ -9,6 +9,7 @@
 #define MAIN_S2F_H_
 
 #include "Setup.h"
+#include "Units.h"
 
 class S2F {
 public:
@@ -17,9 +18,16 @@ public:
 	void change_polar();
 	void select_polar();
 	void change_mc_bal();
-	double speed( double st );
-	double sink( double v, double v_min=50 );
-	double minsink();
+	double speed( double st, bool circling=false );
+	double sink( double v );
+	inline double minsink() { return _speedMinSink; };
+	void recalc();
+	inline double circlingSink(double v) {
+		if( v > Units::Airspeed2Kmh( stall_speed.get())*0.6 )
+			return _circling_sink;
+		else
+			return 0;
+	};
 	float cw( float v );
 	void test( void );
 	float getN();
@@ -28,7 +36,10 @@ private:
 	double a0,a1,a2;
 	double w0,w1,w2;
 	double _MC;
-	double _minsink;
+	double _minimumSink;
+	double _speedMinSink;
+	double _circling_speed;
+	double _circling_sink;
 };
 
 #endif /* MAIN_S2F_H_ */

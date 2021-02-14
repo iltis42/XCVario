@@ -225,6 +225,8 @@ void drawDisplay(void *pvParameters){
 float mh = 0;
 float th = 0;
 
+
+
 void readBMP(void *pvParameters){
 	while (1)
 	{
@@ -264,10 +266,15 @@ void readBMP(void *pvParameters){
 		aTES2F = bmpVario.readS2FTE();
 		polar_sink = Speed2Fly.sink( ias );
 		netto = aTES2F - polar_sink;
-		as2f = Speed2Fly.speed( netto );
+
+		as2f = Speed2Fly.speed( netto, !Switch::cruiseMode() );
 		s2f_delta = as2f - ias;
-		if( vario_mode.get() == VARIO_NETTO || (Switch::cruiseMode() &&  (vario_mode.get() == CRUISE_NETTO)) )
-			Audio::setValues( TE - polar_sink, s2f_delta );
+		if( vario_mode.get() == VARIO_NETTO || (Switch::cruiseMode() &&  (vario_mode.get() == CRUISE_NETTO)) ){
+			if( netto_mode.get() == NETTO_RELATIVE )
+				Audio::setValues( TE - polar_sink + Speed2Fly.circlingSink( ias ), s2f_delta );
+			else if( netto_mode.get() == NETTO_NORMAL )
+				Audio::setValues( TE - polar_sink, s2f_delta );
+		}
 		else {
 			Audio::setValues( TE, s2f_delta );
 		}

@@ -58,6 +58,7 @@ typedef enum e_flap_sensor { FLAP_SENSOR_DISABLE, FLAP_SENSOR_GPIO_2, FLAP_SENSO
 typedef enum e_cruise_audio { AUDIO_S2F, AUDIO_VARIO } e_cruise_audio_2;
 typedef enum e_vario_mode { VARIO_BRUTTO, VARIO_NETTO, CRUISE_NETTO } e_vario_mode_t;
 typedef enum e_airspeed_sensor_type { PS_ABPMRR, PS_TE4525, PS_MP3V5004 } e_airspeed_sensor_type_t;
+typedef enum e_netto_mode { NETTO_NORMAL, NETTO_RELATIVE } e_netto_mode_t;
 
 
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
@@ -415,6 +416,7 @@ extern SetupNG<int> 		audio_disable;
 extern SetupNG<int>			vario_mode;
 extern SetupNG<int>			airspeed_sensor_type;
 extern SetupNG<int>			cruise_audio_mode;
-
+extern SetupNG<int>			netto_mode;
+extern SetupNG<float>		v_max;
 
 #endif /* MAIN_SETUP_NG_H_ */

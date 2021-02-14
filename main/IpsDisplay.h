@@ -87,6 +87,7 @@ private:
 	static int red;
 	static int yellow;
 	static ucg_color_t wkcolor;
+	static bool netto_old;
 
 	// Pointer edges and alpha for analog display
 	static float old_a;

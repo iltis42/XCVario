@@ -472,6 +472,10 @@ void SetupMenu::setup( )
 		// Vario
 		SetupMenu * va = new SetupMenu( "Vario and S2F" );
 		MenuEntry* vae = mm->addMenu( va );
+		SetupMenuValFloat * vga = new SetupMenuValFloat( 	"Range", 0, vunit.c_str(),	1.0, 30.0, 1, update_rentry, true, &range );
+		vga->setHelp(PROGMEM"Upper and lower value for Vario graphic display region");
+		vga->setPrecision( 0 );
+		vae->addMenu( vga );
 
 		SetupMenuSelect * vamod = new SetupMenuSelect( 	"Mode", 0, false, 0 , true, &vario_mode );
 		vamod->setHelp(PROGMEM"Controls if vario considers polar sink (=Netto), or not (=Brutto), or if Netto vario applies only in Cruise Mode");
@@ -480,10 +484,11 @@ void SetupMenu::setup( )
 		vamod->addEntry( "Cruise-Netto");
 		vae->addMenu( vamod );
 
-		SetupMenuValFloat * vga = new SetupMenuValFloat( 	"Range", 0, vunit.c_str(),	1.0, 30.0, 1, update_rentry, true, &range );
-		vga->setHelp(PROGMEM"Upper and lower value for Vario graphic display region");
-		vga->setPrecision( 0 );
-		vae->addMenu( vga );
+		SetupMenuSelect * nemod = new SetupMenuSelect( 	"Netto Mode", 0, false, 0 , true, &netto_mode );
+		nemod->setHelp(PROGMEM"In 'Relative' mode, also circling sink is considered also called 'Super-Netto' to show climb rate as if you were circling there");
+		nemod->addEntry( "Normal");
+		nemod->addEntry( "Relative");
+		vae->addMenu( nemod );
 
 		SetupMenuValFloat * vda = new SetupMenuValFloat( 	"Damping", 0, "sec", 2.0, 10.0, 0.1, 0, false, &vario_delay );
 		vda->setHelp(PROGMEM"Response time, time constant of Vario low pass kalman filter");
@@ -532,6 +537,18 @@ void SetupMenu::setup( )
 		blck->addEntry( "DISABLE");
 		blck->addEntry( "ENABLE");
 		s2fse->addMenu( blck );
+
+		SetupMenuSelect * s2fmod = new SetupMenuSelect( "Mode", 0, false, 0 , true, &audio_mode );
+		s2fmod->setHelp( PROGMEM"Select either fixed Vario, or S2F mode, or let transition control by an external switch or automatically by 'AutoSpeed'" );
+		s2fmod->addEntry( "Vario (Circling)");
+		s2fmod->addEntry( "S2F (Cruise)");
+		s2fmod->addEntry( "Switch");
+		s2fmod->addEntry( "AutoSpeed");
+		s2fse->addMenu( s2fmod );
+
+		SetupMenuValFloat * autospeed = new SetupMenuValFloat( "S2F AutoSpeed", 0, sunit.c_str(), 20.0, 250.0, 1.0, update_s2f_speed, false, &s2f_speed );
+		s2fse->addMenu( autospeed );
+		autospeed->setHelp(PROGMEM"Transition speed when in AutoSpeed mode for audio to change from Vario to S2F mode");
 
 		SetupMenu * elco = new SetupMenu( "Electronic Compensation" );
 		vae->addMenu( elco );
@@ -595,20 +612,7 @@ void SetupMenu::setup( )
 		tchs->addEntry( "Hard");              // 1
 		audios->addMenu( tchs );
 
-		SetupMenuSelect * am = new SetupMenuSelect( "Audio Source", 0, false, 0 , true, &audio_mode );
-		am->setHelp( PROGMEM"Selects audio source. Audio either follows Vario, or S2F exclusively, controlled by external switch or automatically by speed" );
-		am->addEntry( "Vario");
-		am->addEntry( "S2F");
-		am->addEntry( "Switch");
-		am->addEntry( "AutoSpeed");
-		audio->addMenu( am );
-
-		SetupMenuValFloat * ts = new SetupMenuValFloat( "S2F AutoSpeed", 0, sunit.c_str(), 20.0, 250.0, 1.0, update_s2f_speed, false, &s2f_speed );
-		audio->addMenu( ts );
-		ts->setHelp(PROGMEM"Transition speed when in AutoSpeed mode for audio to change from Vario to S2F mode");
-
 		SetupMenuSelect * ar = new SetupMenuSelect( "Range", 0, false, 0 , true, &audio_range  );
-
 		audio_range_sm = ar;
 		sprintf( rentry, "Variable (=%d m/s)", (int)(range.get()) );
 		ar->addEntry( "Fix 5 m/s");
@@ -1024,6 +1028,10 @@ void SetupMenu::setup( )
 		SetupMenuValFloat * ausws = new SetupMenuValFloat( "Stall Speed", 0, sunit.c_str(), 20, 200, 1, 0, false, &stall_speed  );
 		ausws->setHelp(PROGMEM"Configure stalling speed for corresponding airplane type");
 		ausw->addMenu( ausws );
+
+		SetupMenuValFloat * vmax = new SetupMenuValFloat( "Maximum Speed", 0, sunit.c_str(), 70, 450, 1, 0, false, &v_max  );
+		vmax->setHelp(PROGMEM"Configure maximum speed for corresponding airplane type");
+		vmax->addMenu( ausws );
 
 		// Bluetooth or Wifi
 		String btname="Wireless";

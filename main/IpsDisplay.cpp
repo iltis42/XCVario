@@ -41,6 +41,8 @@ int IpsDisplay::y_2 = 0;
 int IpsDisplay::x_3 = 0;
 int IpsDisplay::y_3 = 0;
 
+bool IpsDisplay::netto_old = false;
+
 #define DISPLAY_H 320
 #define DISPLAY_W 240
 
@@ -436,6 +438,7 @@ void IpsDisplay::redrawValues()
 	tyalt = -1000;
 	polar_sink_prev = 0.1;
 	Flap::redraw();
+	netto_old = false;
 }
 
 void IpsDisplay::drawTeBuf(){
@@ -841,7 +844,7 @@ void IpsDisplay::drawAltitude( float altitude, int x, int y ){
 	}
 }
 
-bool netto_old;
+
 
 void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, float polar_sink_ms, float altitude_m,
 		float temp, float volt, float s2fd_ms, float s2f_ms, float acl_ms, bool s2fmode, bool standard_setting, float wksensor ){
@@ -857,18 +860,28 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	bool netto=false;
 	if( vario_mode.get() == VARIO_NETTO || (s2fmode && ( vario_mode.get() == CRUISE_NETTO )) ){
-		te_ms = te_ms - polar_sink_ms;
+		if( netto_mode.get() == NETTO_NORMAL ){
+			te_ms = te_ms - polar_sink_ms;
+			ate_ms = ate_ms - polar_sink_ms;
+		}
+		else if( netto_mode.get() == NETTO_RELATIVE ){  // Super Netto, considering circling sink
+			te_ms = te_ms - polar_sink_ms + Speed2Fly.circlingSink( airspeed_kmh );
+			ate_ms = ate_ms - polar_sink_ms + Speed2Fly.circlingSink( airspeed_kmh );
+		}
 		netto=true;
 	}
 	if( !(tick%20) ){
 		if( netto != netto_old ){
 			ucg->setFont(ucg_font_fub11_hr);
-			ucg->setPrintPos(55,15);
+			ucg->setPrintPos(40,15);
 			if( netto )
 				ucg->setColor( COLOR_WHITE );
 			else
 				ucg->setColor( COLOR_BLACK );
-			ucg->print( "net" );
+			if( netto_mode.get() == NETTO_NORMAL )
+				ucg->print( "  net" );
+			else
+				ucg->print( "s-net" );
 			netto_old = netto;
 		}
 	}
@@ -1065,7 +1078,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	// Temperature Value
 	if( (int)(temp*10) != tempalt && !(tick%12)) {
-		drawTemperature( 20, 35, temp );
+		drawTemperature( 20, 38, temp );
 		tempalt=(int)(temp*10);
 	}
 
@@ -1148,6 +1161,19 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	tick++;
 
 	// S2F given im km/h: Unit adaption for mph and knots
+	bool netto=false;
+	if( vario_mode.get() == VARIO_NETTO || (s2fmode && ( vario_mode.get() == CRUISE_NETTO )) ){
+		if( netto_mode.get() == NETTO_NORMAL ){
+			te_ms = te_ms - polar_sink_ms;
+			ate_ms = ate_ms - polar_sink_ms;
+		}
+		else if( netto_mode.get() == NETTO_RELATIVE ){  // Super Netto, considering circling sink
+			te_ms = te_ms - polar_sink_ms + Speed2Fly.circlingSink( airspeed_kmh );
+			ate_ms = ate_ms - polar_sink_ms + Speed2Fly.circlingSink( airspeed_kmh );
+		}
+		netto=true;
+	}
+
 	float te = Units::Vario( te_ms );
 	float ate = Units::Vario( ate_ms );
 	float acl = Units::Vario( acl_ms );
@@ -1315,15 +1341,15 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		setTeBuf(  dmid, MAXTEBAR, COLOR_BLACK );
 		setTeBuf(  dmid, -MAXTEBAR, COLOR_BLACK );
 
-		if( ps_display.get() )
+		if( ps_display.get() && !netto )
 			setTeBuf(  dmid, py, COLOR_BLUE );
 		if( ty > 0 ){
 			setTeBuf(  dmid, ty, COLOR_GREEN );
-			if( ps_display.get() )
+			if( ps_display.get() && !netto )
 				setTeBuf(  dmid, py, COLOR_GREEN );
 		}
 		else {
-			if( ps_display.get() ) {
+			if( ps_display.get() && !netto ) {
 				if( ty > py ){
 					setTeBuf(  dmid, ty, COLOR_BLUE );
 					setTeBuf(  dmid+ty, py-ty, COLOR_GREEN );

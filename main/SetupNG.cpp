@@ -183,6 +183,9 @@ SetupNG<int> 			audio_disable( "AUDIS", 0 );
 SetupNG<int>			vario_mode("VAMOD", 0 );
 SetupNG<int>			airspeed_sensor_type("PTYPE", 0, false);
 SetupNG<int>			cruise_audio_mode("CAUDIO", 0 );
+SetupNG<int>			netto_mode("NETMOD", 0 );
+SetupNG<float>			v_max("VMAX", 270 );
+
 
 mpud::raw_axes_t zero_bias;
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );

@@ -229,36 +229,43 @@ void Flap::setupMenue( SetupMenu *parent ){
 	flab0->addEntry( " S" );
 	flab0->addEntry( " 3a" );
 	flab0->addEntry( " 3b" );
+	flab0->addEntry( " A" );
 
 	flabp1->addEntry( " N" );
 	flabp1->addEntry( " L" );
 	flabp1->addEntry( " S" );
 	flabp1->addEntry( " 3a" );
 	flabp1->addEntry( " 3b" );
+	flabp1->addEntry( " A" );
 
 	flabp2->addEntry( " N" );
 	flabp2->addEntry( " L" );
 	flabp2->addEntry( " S" );
 	flabp2->addEntry( " 3a" );
 	flabp2->addEntry( " 3b" );
+	flabp2->addEntry( " A" );
 
 	flabp3->addEntry( " N" );
 	flabp3->addEntry( " L" );
 	flabp3->addEntry( " S" );
 	flabp3->addEntry( " 3a" );
 	flabp3->addEntry( " 3b" );
+	flabp3->addEntry( " A" );
 
 	flabm1->addEntry( " N" );
 	flabm1->addEntry( " L" );
 	flabm1->addEntry( " S" );
+	flabm1->addEntry( " A" );
 
 	flabm2->addEntry( " N" );
 	flabm2->addEntry( " L" );
 	flabm2->addEntry( " S" );
+	flabm2->addEntry( " A" );
 
 	flabm3->addEntry( " N" );
 	flabm3->addEntry( " L" );
 	flabm3->addEntry( " S" );
+	flabm3->addEntry( " A" );
 
 	flapLabels[0] = flabm3;
 	flapLabels[1] = flabm2;

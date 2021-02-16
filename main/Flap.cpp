@@ -227,29 +227,29 @@ void Flap::setupMenue( SetupMenu *parent ){
 	flab0->addEntry( " N" );   // N,L,S
 	flab0->addEntry( " L" );
 	flab0->addEntry( " S" );
-	flab0->addEntry( " 3a" );
-	flab0->addEntry( " 3b" );
+	flab0->addEntry( "3a" );
+	flab0->addEntry( "3b" );
 	flab0->addEntry( " A" );
 
 	flabp1->addEntry( " N" );
 	flabp1->addEntry( " L" );
 	flabp1->addEntry( " S" );
-	flabp1->addEntry( " 3a" );
-	flabp1->addEntry( " 3b" );
+	flabp1->addEntry( "3a" );
+	flabp1->addEntry( "3b" );
 	flabp1->addEntry( " A" );
 
 	flabp2->addEntry( " N" );
 	flabp2->addEntry( " L" );
 	flabp2->addEntry( " S" );
-	flabp2->addEntry( " 3a" );
-	flabp2->addEntry( " 3b" );
+	flabp2->addEntry( "3a" );
+	flabp2->addEntry( "3b" );
 	flabp2->addEntry( " A" );
 
 	flabp3->addEntry( " N" );
 	flabp3->addEntry( " L" );
 	flabp3->addEntry( " S" );
-	flabp3->addEntry( " 3a" );
-	flabp3->addEntry( " 3b" );
+	flabp3->addEntry( "3a" );
+	flabp3->addEntry( "3b" );
 	flabp3->addEntry( " A" );
 
 	flabm1->addEntry( " N" );

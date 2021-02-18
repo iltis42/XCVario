@@ -13,10 +13,11 @@ Class to handle compass data access.
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-02-11
+Last update: 2021-02-18
 
 **************************************************************************/
 
+#include <cmath>
 #include "esp_log.h"
 #include "esp_system.h"
 
@@ -76,6 +77,7 @@ float Compass::magneticHeading( bool *okIn )
 
   for( int i = 0; i < 8; i++ )
     {
+      break;
       float lowlim = skydirs[i] - 22.5;
       float uplim  = skydirs[i] + 22.5;
 
@@ -138,4 +140,53 @@ float Compass::trueHeading( bool *okIn )
 bool Compass::calibrate( const uint16_t seconds)
 {
   return QMC5883L::calibrate( seconds );
+}
+
+//------------------------------------------------------------------------------
+
+CompassFilter::CompassFilter( const float coefficientIn ) :
+  coefficient( coefficientIn ),
+  turns( 0 ),
+  oldValue ( 0.0 ),
+  filteredValue( 0.0 )
+{
+}
+
+float CompassFilter::filter( float newValue )
+{
+#if 0
+  ESP_LOGI( FNAME, "Filter: H=%f, FV=%f, Coeff=%f",
+            newValue, filteredValue, coefficient );
+#endif
+
+  // Check in which direction North was passed
+  if( (oldValue < 90.) && (newValue > 270.) )
+    turns--;
+  else if( (oldValue > 270.) && (newValue < 90.) )
+    turns++;
+
+  // Save new value as old
+  oldValue = newValue;
+
+  // Correct angle's north overflow or underflow
+  newValue += float( turns * 360 );
+
+  // Low pass filtering
+  filteredValue += ( newValue - filteredValue ) * coefficient;
+
+  // Correct angle areas and turns
+  if( filteredValue <= 0.0 )
+    {
+      filteredValue += 360.;
+      turns++;
+    }
+  else if( filteredValue > 360. )
+    {
+      filteredValue -= 360.;
+      turns--;
+    }
+
+  // ESP_LOGI( FNAME,"F-Heading=%.1f", filteredValue );
+
+  return filteredValue;
 }

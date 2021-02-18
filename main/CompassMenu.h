@@ -13,7 +13,7 @@ Class to handle compass data and actions.
 
 Author: Axel Pauli, February 2021
 
-Last update: 2021-02-09
+Last update: 2021-02-18
 
 **************************************************************************/
 
@@ -57,6 +57,9 @@ private:
 
   // active compass instance
   Compass& compass;
+
+  // Compass filter
+  CompassFilter filter;
 
   // press state
   bool pressed;

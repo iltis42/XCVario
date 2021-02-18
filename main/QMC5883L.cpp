@@ -15,7 +15,7 @@ https://datasheetspdf.com/pdf-file/1309218/QST/QMC5883L/1
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-02-11
+Last update: 2021-02-18
 
  ***************************************************************************/
 
@@ -460,14 +460,17 @@ bool QMC5883L::calibrate( const uint16_t seconds )
 	resetCalibration();
 
 	// The calibration is done with data output rate of 100 Hz.
-	samples = seconds * 1000 / 10;
+	samples = seconds * 1000 / 20;
 
-	// Save current used ODR
+	// Save current used ODR and OSR
 	uint8_t usedOdr = odr;
+	uint8_t usedOsr = osr;
 
 	// Set ODR to 100 Hz
 	setOutputDataRate( 100 );
-	delay( 50 );
+
+	// Set OSR to 5125
+	setOverSampleRatio( 512 );
 
 	calibrationRunning = true;
 
@@ -475,6 +478,7 @@ bool QMC5883L::calibrate( const uint16_t seconds )
 	if( modeContinuous() != ESP_OK )
 	{
 		odr = usedOdr;
+		osr = usedOsr;
 		calibrationRunning = false;
 		return false;
 	}
@@ -535,8 +539,6 @@ bool QMC5883L::calibrate( const uint16_t seconds )
 			ESP_LOGI( FNAME, "New Z-Max: %d", zmax );
 			zmax_old = zmax;
 		}
-
-
 	}
 
 	ESP_LOGI( FNAME, "Read Cal-Samples=%d, OK=%d, NOK=%d",
@@ -547,6 +549,7 @@ bool QMC5883L::calibrate( const uint16_t seconds )
 		// Too less samples to start calibration
 		ESP_LOGI( FNAME, "calibrate min-max xyz not enough samples");
 		odr = usedOdr;
+		osr = usedOsr;
 		calibrationRunning = false;
 		return false;
 	}
@@ -570,13 +573,14 @@ bool QMC5883L::calibrate( const uint16_t seconds )
 	yscale = cord_avgerage / ychord;
 	zscale = cord_avgerage / zchord;
 
-	ESP_LOGI( FNAME, "New scale x:%f  y:%f  z%f", xscale, yscale, zscale );
+	ESP_LOGI( FNAME, "New scale x:%f  y:%f  z:%f", xscale, yscale, zscale );
 
 	// save calibration
 	saveCalibration();
 
-	// Set used before ODR value
+	// Set used before ODR and OSR values
 	odr = usedOdr;
+	osr = usedOsr;
 
 	ESP_LOGI( FNAME, "Compass: xmin=%d xmax=%d, ymin=%d ymax=%d, zmin=%d zmax=%d",
 			xmin, xmax, ymin, ymax, zmin, zmax );
@@ -626,53 +630,52 @@ float QMC5883L::heading( bool *ok )
 	error = 0;
 
 	// Check if calibration data are available
-#ifndef DEBUG_COMP
-	if( compass_calibrated.get() == 0 )
-#endif
-	{
-		// No calibration data available, return the raw values.
-		double heading = RAD_TO_DEG * atan2( double( yraw ), double( xraw ) );
-
-		double h0 = heading;
-
-		if( heading <= 0.0 )
-			heading += 360.0;
-
-		ESP_LOGI( FNAME, "X=%d Y=%d Z=%d H0=%f Raw-Heading=%f", xraw, yraw, zraw, h0, heading );
-
-#ifndef DEBUG_COMP
-		return heading;
-#endif
-	}
+  if( compass_calibrated.get() == 0 )
+    {
+      // No calibration data available, return error because to return
+      // the raw heading is not meaningful.
+      return 0.0;
+    }
 
 	/* Apply corrections to the measured values. */
 	double fx = -(double) ((float( xraw ) - xbias) * xscale);
 	double fy = -(double) ((float( yraw ) - ybias) * yscale);
 	double fz = (double) ((float( zraw ) - zbias) * zscale);
 
-// #define DEBUG_COMP
-#ifdef DEBUG_COMP
-	double headingc = RAD_TO_DEG * atan2( double( fy ), double( fx ) );
-	ESP_LOGI( FNAME, "fX=%d fY=%d fZ=%d Cor-Heading=%.1f", xraw, yraw, zraw, headingc );
+#if 0
+	double headingc = RAD_TO_DEG * atan2( fx, fy );
+
+  if( headingc <= 0.0 )
+    headingc += 360.0;
+
+	static uint8_t out = 0;
+
+	if( out % 10 )
+	  ESP_LOGI( FNAME, "fX=%f fY=%f fZ=%f C-Heading=%.1f", fx, fy, fz, headingc );
 #endif
 
 	// ESP_LOGI(FNAME,"RANGE XH:%d YH:%d ZH:%d  XL:%d YL:%d ZL:%d OX:%d OY:%d OZ:%d", xmax,ymax,zmax, xmin,ymin,zmin, xmax + xmin, ymax + ymin,zmax + zmin);
 	// ESP_LOGI(FNAME,"RAW NORM Flux, fx:%f fy:%f fz:%f", fx,fy,fz);
 
 	// 	Xhorizontal = X*cos(pitch) + Y*sin(roll)*sin(pitch) – Z*cos(roll)*sin(pitch)
-	double tcx = fx*cos( IMU::getPitchRad() )  + fy*sin( IMU::getRollRad() )*sin( IMU::getPitchRad()) - fz*cos( IMU::getRollRad())*sin( IMU::getPitchRad());
+	double tcx = fx * cos( IMU::getPitchRad() ) + fy * sin( IMU::getRollRad() ) * sin( IMU::getPitchRad()) - fz * cos( IMU::getRollRad()) * sin( IMU::getPitchRad());
 	// ESP_LOGI(FNAME,"RR:%f, PR:%f tcx 1:%f tcx2:%f tcx3:%f", IMU::getPitchRad(), IMU::getRollRad(), fx*cos( IMU::getPitchRad() ),   fy*sin( IMU::getRollRad() )*sin( IMU::getPitchRad()), fz*cos( IMU::getRollRad())*sin( IMU::getPitchRad() ) );
 	// 	Yhorizontal = Y*cos(roll) + Z*sin(roll)
-	double tcy = fy*cos( IMU::getRollRad()) + fz*sin( IMU::getRollRad());
+	double tcy = fy * cos( IMU::getRollRad()) + fz * sin( IMU::getRollRad());
 
-	float heading = RAD_TO_DEG * atan2( tcx, tcy );
+	double heading = RAD_TO_DEG * atan2( tcx, tcy );
 
 	if( heading <= 0.0 )
 		heading += 360.0;
 
 	if( ok != nullptr )
 		*ok = true;
-	// ESP_LOGI(FNAME,"rawHeading, x:%d y:%d z:%d, roll: %f  pitch: %f  tcx:%f tcy:%f mh:%f ", x,y,z, IMU::getRoll(), IMU::getPitch(), tcx,tcy, heading );
 
-	return heading;
+#ifdef DEBUG_COMP1
+  ESP_LOGI( FNAME,
+            "rawHeading, x:%d y:%d z:%d, roll: %f  pitch: %f  tcx:%f tcy:%f mh:%f ",
+            xraw, yraw, zraw, IMU::getRoll(), IMU::getPitch(), tcx, tcy, heading );
+#endif
+
+  return float( heading );
 }

@@ -64,3 +64,43 @@ private:
 
   static SetupNG<float> *deviations[8];
 };
+
+/**
+ * Low pass filter for heading values.
+ */
+class CompassFilter
+{
+ public:
+
+  CompassFilter( const float coefficientIn );
+
+  ~CompassFilter() {};
+
+  void setCoefficient( const float value )
+  {
+    coefficient = value;
+  }
+
+  /**
+   * Low pass filter method. The filtering time constant can be set by using
+   * method setCoefficient():
+   */
+  float filter( float value );
+
+  /**
+   * Resets all used dynamic filter values.
+   */
+  void reset()
+  {
+    turns = 0;
+    oldValue = 0.0;
+    filteredValue = 0.0;
+  }
+
+ private:
+
+  float coefficient;
+  int turns;
+  float oldValue;
+  float filteredValue;
+};

@@ -13,7 +13,7 @@ Class to handle compass data and actions.
 
 Author: Axel Pauli, February 2021
 
-Last update: 2021-02-09
+Last update: 2021-02-18
 
  **************************************************************************/
 
@@ -37,6 +37,7 @@ SetupNG<float>* CompassMenu::deviations[8] = { &compass_dev_45,
 CompassMenu::CompassMenu( Compass& compassIn ) :
 		 RotaryObserver(),
 		 compass( compassIn ),
+		 filter( 0.1 ),
 		 pressed( false )
 {
 }
@@ -75,6 +76,10 @@ int CompassMenu::calibrateAction( SetupMenuSelect *p )
 		const unsigned short skydirs[8] =
 		{ 45, 90, 135, 180, 225, 270, 335, 360 };
 
+		// Setup low pass filter
+		filter.reset();
+		filter.setCoefficient( 0.1 );
+
 		for( int i = 0; i < 8; i++ )
 		{
 			p->clear();
@@ -93,15 +98,20 @@ int CompassMenu::calibrateAction( SetupMenuSelect *p )
 				float heading = compass.heading( &ok );
 
 				if( ok == false )
-				{
-					// in case of error deviation is set to 0
-					heading = static_cast<float>(skydirs[i]);
-				}
+          {
+            // in case of error deviation is set to 0
+            heading = static_cast<float>(skydirs[i]);
+          }
+				else
+				  {
+				    // Low pass filtering of heading
+				    heading = filter.filter( heading );
+				  }
 
 				p->ucg->setFont( ucg_font_fur20_hf );
 				p->ucg->setPrintPos( 1, 180 );
-				p->ucg->printf( "Heading: %.1f\260  ", heading );
-				delay( 250 );
+				p->ucg->printf( "Heading: %.0f\260     ", heading );
+				delay( 100 );
 			}
 
 			// Save deviation value

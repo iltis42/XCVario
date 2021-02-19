@@ -133,6 +133,7 @@ void Flap::setupMenue( SetupMenu *parent ){
 	wkes->addEntry( "Disable");
 	wkes->addEntry( "Enable IO-2");
 	wkes->addEntry( "Enable IO-34");
+	wkes->addEntry( "Enable IO-26");
 	wkes->setHelp(PROGMEM"Option to enable Flap sensor on corresponding IO pin, for now its IO-2, later 2021 series will use IO-34");
 	wkm->addMenu( wkes );
 
@@ -394,20 +395,25 @@ void  Flap::initSpeeds(){
 
 void  Flap::init( Ucglib_ILI9341_18x240x320_HWSPI *theUcg ){
 	ucg = theUcg;
+	ESP_LOGI( FNAME, "Flap sensor init");
 
 	if( flap_sensor.get() == FLAP_SENSOR_GPIO_2 ) {
 		sensorAdc = new AnalogInput( -1, ADC_ATTEN_DB_0, ADC_CHANNEL_2, ADC_UNIT_2, true );
 	}else if( flap_sensor.get() == FLAP_SENSOR_GPIO_34 ) {
 		sensorAdc = new AnalogInput( -1, ADC_ATTEN_DB_0, ADC_CHANNEL_6, ADC_UNIT_1, true );
 	}
+	else if( flap_sensor.get() == FLAP_SENSOR_GPIO_26 ) {
+		sensorAdc = new AnalogInput( -1, ADC_ATTEN_DB_0, ADC_CHANNEL_9, ADC_UNIT_2, true );
+	}
 	if( sensorAdc != 0 ) {
-		sensorAdc->begin(); // GPIO2 for Wk Sensor)
+		ESP_LOGI( FNAME, "Flap sensor configured");
+		sensorAdc->begin();
 		delay(10);
 		uint32_t read =  sensorAdc->getRaw();
 		if( read == 0  || read >= 4096 ) // try GPIO pin 34, series 2021-2
-			ESP_LOGI( FNAME, "Flap senor not found or edge value, reading: %d", read);
+			ESP_LOGI( FNAME, "Flap sensor not found or edge value, reading: %d", read);
 		else
-			ESP_LOGI( FNAME, "ADC2 GPIO 2 looks good, reading: %d", read );
+			ESP_LOGI( FNAME, "Flap sensor looks good, reading: %d", read );
 	}
 	initSpeeds();
 }

@@ -133,13 +133,13 @@ SetupNG<int>		    ahrs_licence_dig2("AHRS_LIC_2", 0, false );
 SetupNG<int>		    ahrs_licence_dig3("AHRS_LIC_3", 0, false );
 SetupNG<int>		    ahrs_licence_dig4("AHRS_LIC_4", 0, false );
 SetupNG<int>		    dummy("DUMMY", 0, false );
-SetupNG<int>		    wk_sens_pos_plus_3("WKSP3", 0);
-SetupNG<int>		    wk_sens_pos_plus_2("WKSP2", 0);
-SetupNG<int>		    wk_sens_pos_plus_1("WKSP1", 0);
-SetupNG<int>		    wk_sens_pos_0("WKSP0", 0);
-SetupNG<int>		    wk_sens_pos_minus_1("WKSM1", 0);
-SetupNG<int>		    wk_sens_pos_minus_2("WKSM2", 0);
-SetupNG<int>		    wk_sens_pos_minus_3("WKSM3", 0);
+SetupNG<int>		    wk_sens_pos_plus_3("WKSP3", 1000);
+SetupNG<int>		    wk_sens_pos_plus_2("WKSP2", 1500);
+SetupNG<int>		    wk_sens_pos_plus_1("WKSP1", 2000);
+SetupNG<int>		    wk_sens_pos_0("WKSP0", 2500);
+SetupNG<int>		    wk_sens_pos_minus_1("WKSM1", 3000);
+SetupNG<int>		    wk_sens_pos_minus_2("WKSM2", 3500);
+SetupNG<int>		    wk_sens_pos_minus_3("WKSM3", 4000);
 SetupNG<int>            stall_warning( "STALL_WARN", 0 );
 SetupNG<float>			stall_speed( "STALL_SPEED", 70 );
 SetupNG<int>            flarm_warning( "FLARM_LEVEL", 1 );
@@ -172,11 +172,11 @@ SetupNG<int>            compass_nmea_hdt( "CP_NMEA_HDT", 0 );
 SetupNG<int> 			s2f_with_gload( "S2G_GLOAD", 1 );       // considering g load in S2F
 SetupNG<int> 			s2f_blockspeed( "S2G_BLOCKSPEED", 0 );  // considering netto vario and g load for S2F or not
 SetupNG<int> 			wk_label_plus_3( "WKLP3", 32);  //  L
-SetupNG<int> 			wk_label_plus_2( "WKLP2", 12);  //  2
-SetupNG<int> 			wk_label_plus_1( "WKLP1", 11);  //  1
-SetupNG<int> 			wk_label_null_0( "WKL0",  10);  //  0
-SetupNG<int> 			wk_label_minus_1( "WKLM1", 9);  // -1
-SetupNG<int> 			wk_label_minus_2( "WKLM2", 8);  // -2
+SetupNG<int> 			wk_label_plus_2( "WKLP2", 11);  //  2
+SetupNG<int> 			wk_label_plus_1( "WKLP1", 10);  //  1
+SetupNG<int> 			wk_label_null_0( "WKL0",   9);  //  0
+SetupNG<int> 			wk_label_minus_1( "WKLM1", 8);  // -1
+SetupNG<int> 			wk_label_minus_2( "WKLM2", 7);  // -2
 SetupNG<int> 			wk_label_minus_3( "WKLM3", 33); //  S
 SetupNG<float>       	flap_takeoff("FLAPTO", 1 );
 SetupNG<int> 			audio_disable( "AUDIS", 0 );

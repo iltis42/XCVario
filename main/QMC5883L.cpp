@@ -625,6 +625,14 @@ float QMC5883L::heading( bool *ok )
 	if( ok != nullptr )
 		*ok = false;
 
+	// Holddown processing and throwing errors once sensor is gone
+	if( error > 100 && error%100 ){
+		*ok = false;
+		error++;
+		return 0;
+	}
+
+
 	if( calibrationRunning == true )
 	{
 		// Calibration is running, don't disturb it.

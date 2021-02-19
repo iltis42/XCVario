@@ -15,7 +15,7 @@ https://datasheetspdf.com/pdf-file/1309218/QST/QMC5883L/1
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-02-11
+Last update: 2021-02-19
 
  ****************************************************************************/
 
@@ -96,9 +96,11 @@ public:
 
 	/**
 	 * Calibrate compass by using the read x, y, z raw values. The calibration
-	 * duration is passed as seconds.
+	 * duration is passed as seconds. Additionally a reporter function can be
+	 * passed to get intermediate results of the calibration action.
 	 */
-	bool calibrate( const uint16_t seconds );
+	bool calibrate( const uint16_t seconds,
+	                void (*reporter)( float x, float y, float z ) = nullptr );
 
 	/**
 	 * Resets the whole compass calibration, also the saved configuration.

@@ -22,6 +22,8 @@ Last update: 2021-02-18
 
 #include "CompassMenu.h"
 
+SetupMenuSelect* CompassMenu::menuPtr = nullptr;
+
 // Initialise static members
 SetupNG<float>* CompassMenu::deviations[8] = { &compass_dev_45,
 		&compass_dev_90,
@@ -122,6 +124,7 @@ int CompassMenu::calibrateAction( SetupMenuSelect *p )
 	}
 	else if( p->getSelect() == 2 )
 	{
+
 		p->clear();
 		p->ucg->setFont( ucg_font_fur14_hf );
 		p->ucg->setPrintPos( 1, 60 );
@@ -181,18 +184,19 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 		return 0;
 	}
 
+	menuPtr = p;
 	p->clear();
   p->ucg->setFont( ucg_font_fur14_hf );
   p->ucg->setPrintPos( 1, 40 );
   p->ucg->printf( "Calibration is running" );
 
 	uint16_t calTime = uint16_t( compass_calibration_time.get() );
-	compass.calibrate( calTime );
+	compass.calibrate( calTime, calibrationReport );
 
-  p->ucg->setPrintPos( 1, 70 );
+  p->ucg->setPrintPos( 1, 220 );
   p->ucg->printf( "Calibration is finished" );
 
-  p->ucg->setPrintPos( 1, 130 );
+  p->ucg->setPrintPos( 1, 250 );
   p->ucg->printf( "Press button to exit" );
   pressed = false;
 
@@ -201,7 +205,22 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
       delay( 100 );
     }
 
+  menuPtr = nullptr;
 	return 0;
+}
+
+/** Method for receiving intermediate calibration results. */
+void CompassMenu::calibrationReport( float xscale, float yscale, float zscale )
+{
+  if( menuPtr == nullptr )
+    return;
+
+  menuPtr->ucg->setPrintPos( 1, 100 );
+  menuPtr->ucg->printf( "X-Scale=%f       ", xscale );
+  menuPtr->ucg->setPrintPos( 1, 130 );
+  menuPtr->ucg->printf( "Y-Scale=%f       ", yscale );
+  menuPtr->ucg->setPrintPos( 1, 160 );
+  menuPtr->ucg->printf( "Z-Scale=%f       ", zscale );
 }
 
 void CompassMenu::up( int count )

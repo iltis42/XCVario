@@ -23,6 +23,7 @@ Last update: 2021-02-18
 // #define DEBUG_COMP 1
 
 #include <cmath>
+#include <ctime>
 #include <logdef.h>
 #include "QMC5883L.h"
 #include "KalmanMPU6050.h"
@@ -451,16 +452,18 @@ bool QMC5883L::loadCalibration()
 
 /**
  * Calibrate compass by using the read x, y, z raw values. The calibration
- * duration is passed as seconds.
+ * duration is passed as seconds. Additionally a reporter function can be
+ * passed to get intermediate results of the calibration action.
  */
-bool QMC5883L::calibrate( const uint16_t seconds )
+bool QMC5883L::calibrate( const uint16_t seconds,
+                          void (*reporter)( float x, float y, float z ) )
 {
 	// reset all old calibration data
-	ESP_LOGI( FNAME, "calibrate( %d )", seconds);
+	ESP_LOGI( FNAME, "calibrate( %d sec )", seconds);
 	resetCalibration();
 
 	// The calibration is done with data output rate of 100 Hz.
-	samples = seconds * 1000 / 20;
+	samples = seconds * 1000 / 15;
 
 	// Save current used ODR and OSR
 	uint8_t usedOdr = odr;
@@ -484,19 +487,23 @@ bool QMC5883L::calibrate( const uint16_t seconds )
 	}
 
 	// wait a moment after measurement start.
-	delay( 50 );
+	delay( 100 );
 
 	ESP_LOGI( FNAME, "calibrate min-max xyz");
 
 	int i = 0;
 	int errors = 0;
 
+// #define MAX_MIN_LOGGING
+
+#ifdef MAX_MIN_LOGGING
 	int xmin_old = 0;
 	int xmax_old = 0;
 	int ymin_old = 0;
 	int ymax_old = 0;
 	int zmin_old = 0;
 	int zmax_old = 0;
+#endif
 
 	for( i=0 ; i < samples; i++ )
 	{
@@ -513,8 +520,7 @@ bool QMC5883L::calibrate( const uint16_t seconds )
 		ymax = ( yraw > ymax ) ? yraw : ymax;
 		zmax = ( zraw > zmax ) ? zraw : zmax;
 
-		// The sensor seems to have sometimes problems to deliver all 10ms new data
-		delay( 20 );
+#ifdef MAX_MIN_LOGGING
 		if( xmin_old != xmin ){
 			ESP_LOGI( FNAME, "New X-Min: %d", xmin );
 			xmin_old = xmin;
@@ -539,10 +545,41 @@ bool QMC5883L::calibrate( const uint16_t seconds )
 			ESP_LOGI( FNAME, "New Z-Max: %d", zmax );
 			zmax_old = zmax;
 		}
+#endif
+
+		if( i < 2 )
+		  continue;
+
+	  // Calculate hard iron correction
+	  // calculate average x, y, z magnetic bias in counts
+	  xbias = static_cast<float>( xmax + xmin ) / 2.;
+	  ybias = static_cast<float>( ymax + ymin ) / 2.;
+	  zbias = static_cast<float>( zmax + zmin ) / 2.;
+
+	  // Calculate soft-iron scale factors
+	  // calculate average x, y, z axis max chord length in counts
+	  float xchord = static_cast<float>( xmax - xmin ) / 2.;
+	  float ychord = static_cast<float>( ymax - ymin ) / 2.;
+	  float zchord = static_cast<float>( zmax - zmin ) / 2.;
+
+	  float cord_avgerage = ( xchord + ychord + zchord ) / 3.;
+
+	  xscale = cord_avgerage / xchord;
+	  yscale = cord_avgerage / ychord;
+	  zscale = cord_avgerage / zchord;
+
+	  if( i > 0 && i % 30 == 0 && reporter != nullptr )
+	    {
+	      // Send every second a calibration report to the subscriber
+	      reporter( xscale, yscale, zscale );
+	    }
+
+    // The sensor seems to have sometimes problems to deliver all 10ms new data
+    delay( 15 );
 	}
 
 	ESP_LOGI( FNAME, "Read Cal-Samples=%d, OK=%d, NOK=%d",
-			samples, samples-errors, errors );
+	          samples, samples-errors, errors );
 
 	if( i < 2 )
 	{
@@ -554,27 +591,6 @@ bool QMC5883L::calibrate( const uint16_t seconds )
 		return false;
 	}
 
-	// Calculate hard iron correction
-	// calculate average x,y, z magnetic bias in counts
-	xbias = static_cast<float>( xmax + xmin ) / 2.;
-	ybias = static_cast<float>( ymax + ymin ) / 2.;
-	zbias = static_cast<float>( zmax + zmin ) / 2.;
-	ESP_LOGI( FNAME, "New bias x:%f  y:%f  z%f", xbias, ybias, zbias );
-
-	// Calculate soft-iron scale factors
-	// calculate average x, y, z axis max chord length in counts
-	float xchord = static_cast<float>( xmax - xmin ) / 2.;
-	float ychord = static_cast<float>( ymax - ymin ) / 2.;
-	float zchord = static_cast<float>( zmax - zmin ) / 2.;
-
-	float cord_avgerage = ( xchord + ychord + zchord ) / 3.;
-
-	xscale = cord_avgerage / xchord;
-	yscale = cord_avgerage / ychord;
-	zscale = cord_avgerage / zchord;
-
-	ESP_LOGI( FNAME, "New scale x:%f  y:%f  z:%f", xscale, yscale, zscale );
-
 	// save calibration
 	saveCalibration();
 
@@ -583,13 +599,13 @@ bool QMC5883L::calibrate( const uint16_t seconds )
 	osr = usedOsr;
 
 	ESP_LOGI( FNAME, "Compass: xmin=%d xmax=%d, ymin=%d ymax=%d, zmin=%d zmax=%d",
-			xmin, xmax, ymin, ymax, zmin, zmax );
+	          xmin, xmax, ymin, ymax, zmin, zmax );
 
 	ESP_LOGI( FNAME, "Compass hard-iron: xbias=%.3f, ybias=%.3f, zbias=%.3f",
-			xbias, ybias, zbias );
+	          xbias, ybias, zbias );
 
 	ESP_LOGI( FNAME, "Compass soft-iron: xscale=%.3f, yscale=%.3f, zscale=%.3f",
-			xscale, yscale, zscale );
+	          xscale, yscale, zscale );
 
 	// restart previous continuous mode
 	modeContinuous();

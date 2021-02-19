@@ -389,12 +389,12 @@ void readBMP(void *pvParameters){
 				if( okth )
 					th = cfth.filter( val );  // Low pass filter 1 second
 			}
-			if( (count % 5 ) == 0 ){
+			if( (count % 5 ) == 0 && okmh == true ){
 				xSemaphoreTake( xMutex, portMAX_DELAY );
 				OV.sendNmeaHDM( mh );
 				xSemaphoreGive( xMutex );
 			}
-			if( (count % 5 ) == 0 ){
+			if( (count % 5 ) == 0 && okth == true ){
 				xSemaphoreTake( xMutex, portMAX_DELAY );
 				OV.sendNmeaHDT( th );
 				xSemaphoreGive( xMutex );

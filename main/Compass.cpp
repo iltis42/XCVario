@@ -133,15 +133,6 @@ float Compass::trueHeading( bool *okIn )
   return heading;
 }
 
-/**
- * Calibrate compass by using the read x, y, z raw values. The calibration
- * duration is passed as seconds.
- */
-bool Compass::calibrate( const uint16_t seconds)
-{
-  return QMC5883L::calibrate( seconds );
-}
-
 //------------------------------------------------------------------------------
 
 CompassFilter::CompassFilter( const float coefficientIn ) :

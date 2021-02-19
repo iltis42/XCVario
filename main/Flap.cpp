@@ -119,6 +119,7 @@ int wk_cal( SetupMenuSelect * p )
 
 
 void Flap::setupMenue( SetupMenu *parent ){
+	ESP_LOGI(FNAME,"Flap::setupMenue");
 	SetupMenu * wk = new SetupMenu( "Flap (WK) Indicator" );
 	wkm = parent->addMenu( wk );
 
@@ -132,11 +133,12 @@ void Flap::setupMenue( SetupMenu *parent ){
 	wkes->addEntry( "Disable");
 	wkes->addEntry( "Enable IO-2");
 	wkes->addEntry( "Enable IO-34");
-
 	wkes->setHelp(PROGMEM"Option to enable Flap sensor on corresponding IO pin, for now its IO-2, later 2021 series will use IO-34");
 	wkm->addMenu( wkes );
 
-	SetupMenuSelect * wkcal = new SetupMenuSelect( "Sensor Calibration", 0, true, wk_cal, false, &dummy );
+
+	static int select_dummy;
+	SetupMenuSelect * wkcal = new SetupMenuSelect( "Sensor Calibration", &select_dummy, true, wk_cal, false  );
 	wkcal->addEntry( "Cancel");
 	wkcal->addEntry( "Start");
 	wkcal->setHelp( PROGMEM "Option to calibrate flap Sensor (WK), to indicate current flap setting: Press button after each setting" );

@@ -54,12 +54,6 @@ public:
    */
   float magneticHeading( bool *okIn=nullptr );
 
-  /**
-   * Calibrate compass by using the read x, y, z raw values. The calibration
-   * duration is passed as seconds.
-   */
-  bool calibrate( const uint16_t seconds );
-
 private:
 
   static SetupNG<float> *deviations[8];

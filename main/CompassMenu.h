@@ -42,6 +42,9 @@ class CompassMenu : public RotaryObserver
   /** Compass Menu Action method to set declination valid. */
   int declinationAction( SetupMenuValFloat *p );
 
+  /** Method for receiving intermediate calibration results. */
+  static void calibrationReport( float xscale, float yscale, float zscale );
+
   /** Compass Menu Action method to calibrate sensor. */
   int sensorCalibrationAction( SetupMenuSelect *p );
 
@@ -63,4 +66,7 @@ private:
 
   // press state
   bool pressed;
+
+  // Pointer to setup menu of sensorCalibrationAction
+  static SetupMenuSelect* menuPtr;
 };

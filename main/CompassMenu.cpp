@@ -13,7 +13,7 @@ Class to handle compass data and actions.
 
 Author: Axel Pauli, February 2021
 
-Last update: 2021-02-18
+Last update: 2021-02-20
 
  **************************************************************************/
 
@@ -21,6 +21,7 @@ Last update: 2021-02-18
 #include "esp_system.h"
 
 #include "CompassMenu.h"
+#include "MenuEntry.h"
 
 SetupMenuSelect* CompassMenu::menuPtr = nullptr;
 
@@ -37,10 +38,8 @@ SetupNG<float>* CompassMenu::deviations[8] = { &compass_dev_45,
  * Creates a compass menu instance with an active compass object.
  */
 CompassMenu::CompassMenu( Compass& compassIn ) :
-		 RotaryObserver(),
 		 compass( compassIn ),
-		 filter( 0.1 ),
-		 pressed( false )
+		 filter( 0.1 )
 {
 }
 
@@ -164,7 +163,7 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 {
 	ESP_LOGI( FNAME, "sensorCalibrationAction()" );
 
-	if( p->getSelect() == 0 )
+	if( p->getSelect() == 1 )
 	{
 		// Cancel is requested
 		ESP_LOGI( FNAME, "Cancel Button pressed" );
@@ -189,16 +188,14 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
   p->ucg->setFont( ucg_font_fur14_hf );
   p->ucg->setPrintPos( 1, 40 );
   p->ucg->printf( "Calibration is running" );
-
-	uint16_t calTime = uint16_t( compass_calibration_time.get() );
-	compass.calibrate( calTime, calibrationReport );
-
   p->ucg->setPrintPos( 1, 220 );
-  p->ucg->printf( "Calibration is finished" );
+  p->ucg->printf( "Press button to finish it" );
 
+	compass.calibrate( calibrationReport );
   p->ucg->setPrintPos( 1, 250 );
   p->ucg->printf( "Press button to exit" );
-  pressed = false;
+
+  delay( 2000 );
 
   while( p->_rotary->readSwitch() == false )
     {
@@ -210,10 +207,10 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 }
 
 /** Method for receiving intermediate calibration results. */
-void CompassMenu::calibrationReport( float xscale, float yscale, float zscale )
+bool CompassMenu::calibrationReport( float xscale, float yscale, float zscale )
 {
   if( menuPtr == nullptr )
-    return;
+    return false;
 
   menuPtr->ucg->setPrintPos( 1, 100 );
   menuPtr->ucg->printf( "X-Scale=%f       ", xscale );
@@ -221,30 +218,13 @@ void CompassMenu::calibrationReport( float xscale, float yscale, float zscale )
   menuPtr->ucg->printf( "Y-Scale=%f       ", yscale );
   menuPtr->ucg->setPrintPos( 1, 160 );
   menuPtr->ucg->printf( "Z-Scale=%f       ", zscale );
-}
 
-void CompassMenu::up( int count )
-{
-	ESP_LOGI( FNAME, "CompassMenu::up" );
-}
+  if( MenuEntry::_rotary->readSwitch() == false )
+    {
+      // further reports are welcome
+      return true;
+    }
 
-void CompassMenu::down( int count )
-{
-	ESP_LOGI( FNAME, "CompassMenu::down" );
-}
-
-void CompassMenu::press()
-{
-	ESP_LOGI( FNAME, "CompassMenu::press" );
-	pressed = true;
-}
-
-void CompassMenu::release()
-{
-	ESP_LOGI( FNAME, "CompassMenu::release" );
-}
-
-void CompassMenu::longPress()
-{
-	ESP_LOGI( FNAME, "CompassMenu::longPress" );
+  // Stop further reporting.
+  return false;
 }

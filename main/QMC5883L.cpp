@@ -15,7 +15,7 @@ https://datasheetspdf.com/pdf-file/1309218/QST/QMC5883L/1
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-02-18
+Last update: 2021-02-20
 
  ***************************************************************************/
 
@@ -23,7 +23,6 @@ Last update: 2021-02-18
 // #define DEBUG_COMP 1
 
 #include <cmath>
-#include <ctime>
 #include <logdef.h>
 #include "QMC5883L.h"
 #include "KalmanMPU6050.h"
@@ -383,7 +382,6 @@ int16_t QMC5883L::temperature( bool *ok )
  */
 void QMC5883L::resetClassCalibration()
 {
-	samples = 0;
 	xraw = yraw = zraw = 0;
 	xbias = ybias = zbias = 0.0;
 	xscale = yscale = zscale = 0.0;
@@ -451,19 +449,15 @@ bool QMC5883L::loadCalibration()
 }
 
 /**
- * Calibrate compass by using the read x, y, z raw values. The calibration
- * duration is passed as seconds. Additionally a reporter function can be
- * passed to get intermediate results of the calibration action.
+ * Calibrate compass by using the read x, y, z raw values. The calibration is
+ * stopped by the reporter function which displays intermediate results of the
+ * calibration action.
  */
-bool QMC5883L::calibrate( const uint16_t seconds,
-                          void (*reporter)( float x, float y, float z ) )
+bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z ) )
 {
 	// reset all old calibration data
-	ESP_LOGI( FNAME, "calibrate( %d sec )", seconds);
+	ESP_LOGI( FNAME, "calibrate magnetic sensor" );
 	resetCalibration();
-
-	// The calibration is done with data output rate of 100 Hz.
-	samples = seconds * 1000 / 15;
 
 	// Save current used ODR and OSR
 	uint8_t usedOdr = odr;
@@ -493,6 +487,7 @@ bool QMC5883L::calibrate( const uint16_t seconds,
 
 	int i = 0;
 	int errors = 0;
+	uint64_t lastReport = 0;
 
 // #define MAX_MIN_LOGGING
 
@@ -505,12 +500,16 @@ bool QMC5883L::calibrate( const uint16_t seconds,
 	int zmax_old = 0;
 #endif
 
-	for( i=0 ; i < samples; i++ )
+	while( true )
 	{
+	  i++;
+
 		if( rawHeading() == false )
 		{
 			errors++;
 		}
+
+		uint64_t start = getMsTime();
 
 		/* Find max/min xyz values */
 		xmin = ( xraw < xmin ) ? xraw : xmin;
@@ -568,18 +567,37 @@ bool QMC5883L::calibrate( const uint16_t seconds,
 	  yscale = cord_avgerage / ychord;
 	  zscale = cord_avgerage / zchord;
 
-	  if( i > 0 && i % 30 == 0 && reporter != nullptr )
+	  if( (getMsTime() - lastReport) >= 500 )
 	    {
-	      // Send every second a calibration report to the subscriber
-	      reporter( xscale, yscale, zscale );
+	      lastReport = getMsTime();
+
+	      // Send a calibration report to the subscriber every 500ms
+	      if( reporter( xscale, yscale, zscale ) == false )
+	        {
+	          // Stop reporting, user has pushed rotary button.
+	          break;
+	        }
 	    }
 
-    // The sensor seems to have sometimes problems to deliver all 10ms new data
-    delay( 15 );
+	  uint64_t stop = getMsTime();
+	  uint64_t elapsed = stop - start;
+
+	  if( elapsed >= 15 )
+	    {
+	      // ESP_LOGI( FNAME, "Elapsed=%llu > 15 ms -> no delay", elapsed );
+	      continue;
+	    }
+
+	  // calculate time to wait
+	  int wait = 15 - elapsed;
+
+	  // The sensor seems to have sometimes problems to deliver all 10ms new data
+	  // Therefore we wait at least 15ms.
+    delay( wait );
 	}
 
 	ESP_LOGI( FNAME, "Read Cal-Samples=%d, OK=%d, NOK=%d",
-	          samples, samples-errors, errors );
+	          i, i-errors, errors );
 
 	if( i < 2 )
 	{

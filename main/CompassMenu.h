@@ -13,19 +13,18 @@ Class to handle compass data and actions.
 
 Author: Axel Pauli, February 2021
 
-Last update: 2021-02-18
+Last update: 2021-02-20
 
 **************************************************************************/
 
 #pragma once
 
 #include "Compass.h"
-#include "ESPRotary.h"
 #include "SetupMenuValFloat.h"
 #include "SetupMenuSelect.h"
 #include "SetupNG.h"
 
-class CompassMenu : public RotaryObserver
+class CompassMenu
 {
   public:
 
@@ -43,16 +42,10 @@ class CompassMenu : public RotaryObserver
   int declinationAction( SetupMenuValFloat *p );
 
   /** Method for receiving intermediate calibration results. */
-  static void calibrationReport( float xscale, float yscale, float zscale );
+  static bool calibrationReport( float xscale, float yscale, float zscale );
 
   /** Compass Menu Action method to calibrate sensor. */
   int sensorCalibrationAction( SetupMenuSelect *p );
-
-  virtual void up( int count );
-  virtual void down( int count );
-  virtual void press();
-  virtual void release();
-  virtual void longPress();
 
 private:
 
@@ -63,9 +56,6 @@ private:
 
   // Compass filter
   CompassFilter filter;
-
-  // press state
-  bool pressed;
 
   // Pointer to setup menu of sensorCalibrationAction
   static SetupMenuSelect* menuPtr;

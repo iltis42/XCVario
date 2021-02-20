@@ -15,13 +15,14 @@ https://datasheetspdf.com/pdf-file/1309218/QST/QMC5883L/1
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-02-19
+Last update: 2021-02-20
 
  ****************************************************************************/
 
 #ifndef QMC5883L_H
 #define QMC5883L_H
 
+#include <ctime>
 #include "esp_system.h"
 #include "I2Cbus.hpp"
 
@@ -95,12 +96,11 @@ public:
 	bool rawHeading();
 
 	/**
-	 * Calibrate compass by using the read x, y, z raw values. The calibration
-	 * duration is passed as seconds. Additionally a reporter function can be
-	 * passed to get intermediate results of the calibration action.
+	 * Calibrate compass by using the read x, y, z raw values. The calibration is
+	 * stopped by the reporter function which displays intermediate results of the
+	 * calibration action.
 	 */
-	bool calibrate( const uint16_t seconds,
-	                void (*reporter)( float x, float y, float z ) = nullptr );
+	bool calibrate( bool (*reporter)( float x, float y, float z ) );
 
 	/**
 	 * Resets the whole compass calibration, also the saved configuration.
@@ -143,6 +143,16 @@ public:
 
 private:
 
+	/**
+	 * Get time in ms since 1.1.1970
+	 */
+	uint64_t getMsTime()
+	{
+	  struct timeval tv;
+	  gettimeofday( &tv, nullptr );
+	  return ( tv.tv_sec * 1000 ) + ( tv.tv_usec / 1000 );
+	}
+
   /**
    * Resets the class calibration variables.
    */
@@ -160,7 +170,6 @@ private:
 	int16_t xmax, xmin;
 	int16_t ymax, ymin;
 	int16_t zmax, zmin;
-	uint32_t samples;
 
 	/** Read raw values from the chip */
 	int xraw, yraw, zraw;

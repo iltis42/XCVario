@@ -396,7 +396,6 @@ extern SetupNG<float>       compass_z_bias;
 extern SetupNG<float>       compass_x_scale;
 extern SetupNG<float>       compass_y_scale;
 extern SetupNG<float>       compass_z_scale;
-extern SetupNG<float>       compass_calibration_time;
 extern SetupNG<int>         compass_calibrated;
 extern SetupNG<float>       compass_declination;
 extern SetupNG<int>         compass_declination_valid;

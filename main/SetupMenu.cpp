@@ -785,19 +785,11 @@ void SetupMenu::setup( )
 		compSensor->setHelp( PROGMEM "Option to enable/disable the Compass Sensor" );
 		compassMenu->addMenu( compSensor );
 
-		SetupMenu * calibrationMenu = new SetupMenu( "Sensor Calibration" );
-		calibrationMenu->setHelp( PROGMEM "Calibrate Magnetic Sensor" );
-		compassMenu->addMenu( calibrationMenu );
-
-		SetupMenuValFloat *sct = new SetupMenuValFloat( "Calibration Time",0,"sec",10,300,1.0,0,false,&compass_calibration_time );
-		calibrationMenu->addMenu( sct );
-
-		compSensor = new SetupMenuSelect( "Sensor Calibration",&select_dummy,false,compassSensorCalibrateAction,false );
-
-		compSensor->addEntry( "Cancel");
-		compSensor->addEntry( "Start");
-		compSensor->setHelp( PROGMEM "Calibrate Magnetic Sensor" );
-		calibrationMenu->addMenu( compSensor );
+		SetupMenuSelect * compSensorCal = new SetupMenuSelect( "Sensor Calibration", &select_dummy, false, compassSensorCalibrateAction, false );
+		compSensorCal->addEntry( "Start");
+    compSensorCal->addEntry( "Cancel");
+		compSensorCal->setHelp( PROGMEM "Calibrate Magnetic Sensor" );
+		compassMenu->addMenu( compSensorCal );
 
 		SetupMenuValFloat *cd = new SetupMenuValFloat( "Setup Declination",
 				0,

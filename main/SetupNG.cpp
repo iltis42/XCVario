@@ -163,7 +163,6 @@ SetupNG<float>          compass_z_bias( "CP_Z_BIAS", 0 );
 SetupNG<float>          compass_x_scale( "CP_X_SCALE", 0 );
 SetupNG<float>          compass_y_scale( "CP_Y_SCALE", 0 );
 SetupNG<float>          compass_z_scale( "CP_Z_SCALE", 0 );
-SetupNG<float>          compass_calibration_time( "CP_C_TIME", 10 );
 SetupNG<int>            compass_calibrated( "CP_CALIBRATED", 0 );
 SetupNG<float>          compass_declination( "CP_DECL", 0 );
 SetupNG<int>            compass_declination_valid( "CP_DECL_VALID", 0 );

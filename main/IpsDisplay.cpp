@@ -21,6 +21,7 @@
 #include "Units.h"
 #include "Flap.h"
 #include "Flarm.h"
+#include "Compass.h"
 
 int screens_init = INIT_DISPLAY_NULL;
 
@@ -138,10 +139,10 @@ int IpsDisplay::wkialt;
 float IpsDisplay::_range_clip = 0;
 int   IpsDisplay::_divisons = 5;
 float IpsDisplay::_range = 5;
-int IpsDisplay::average_climb = -100;
+int   IpsDisplay::average_climb = -100;
 float IpsDisplay::average_climbf = 0;
-int  IpsDisplay::pref_qnh = 0;
-
+int   IpsDisplay::prev_heading = 0;
+int   IpsDisplay::pref_qnh = 0;
 
 #define WKBARMID (AMIDY-15)
 
@@ -1129,7 +1130,20 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			as_prev = ias;
 		}
 	}
-
+	if( !(tick%8) ){
+		if( compass_calibrated.get() && compass_enable.get() ){
+			int heading = Compass::magnHeading();
+			if( prev_heading != heading ){
+				ucg->setPrintPos(120,105);
+				ucg->setColor(  COLOR_WHITE  );
+				ucg->setFont(ucg_font_fub20_hr);
+				char s[10];
+				sprintf(s,"%3d\xb0", heading );
+				ucg->printf("%s   ", s);
+				prev_heading = heading;
+			}
+		}
+	}
 	xSemaphoreGive(spiMutex);
 }
 

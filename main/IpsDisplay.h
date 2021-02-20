@@ -47,6 +47,7 @@ private:
 	gpio_num_t _cs;
 	gpio_num_t _dc;
 	static float _range;
+	static int prev_heading;
 	static int _divisons;
 	static float _range_clip;
 	static int _pixpmd;

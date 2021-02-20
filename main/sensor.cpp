@@ -366,28 +366,18 @@ void readBMP(void *pvParameters){
 		}
 		// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d ena=%d", compass.haveSensor(),  compass_nmea_hdt.get(),  compass_enable.get() );
 		if( compass_enable.get() == true  ) {
-		  // Low pass filter for compass values
-	    static CompassFilter cfmh( 0.1 );
-	    static CompassFilter cfth( 0.1 );
-
 			// try to get compass heading from sensor and forward it via NMEA.
 			bool okmh = false;
 			bool okth = false;
-
-      float mh = 0.0;
-      float th = 0.0;
-
+			float mh = 0.0;
+			float th = 0.0;
 			if( compass_nmea_hdm.get() == true ){
-				float val = compass.magneticHeading( &okmh );
-				if( okmh )
-					mh = cfmh.filter( val );  // Low pass filter 1 second
+				mh = compass.magneticHeading( &okmh );
 			}
 			// ESP_LOGI(FNAME,"Compass, MH: %f  OK: %d", mh, ok1);
 			if( compass_declination_valid.get() == true && compass_nmea_hdt.get() == true ){
 				// get true heading only, if declination is valid
-				float val = compass.trueHeading( &okth );
-				if( okth )
-					th = cfth.filter( val );  // Low pass filter 1 second
+				th = compass.trueHeading( &okth );
 			}
 			if( (count % 5 ) == 0 && okmh == true ){
 				xSemaphoreTake( xMutex, portMAX_DELAY );
@@ -400,7 +390,6 @@ void readBMP(void *pvParameters){
 				xSemaphoreGive( xMutex );
 			}
 		}
-
 		if( uxTaskGetStackHighWaterMark( bpid )  < 1024 )
 			ESP_LOGW(FNAME,"Warning bmpTask stack low: %d", uxTaskGetStackHighWaterMark( bpid ) );
 

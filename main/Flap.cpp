@@ -43,9 +43,24 @@ SetupMenuSelect * flabm3 = 0;
 SetupMenuSelect *flapLabels[NUMBER_POS];
 
 void showWk(SetupMenuSelect * p){
-	p->ucg->setPrintPos(1,120);
+	p->ucg->setPrintPos(1,140);
 	p->ucg->printf("Sensor: %d    ", Flap::getSensorRaw() );
-	delay(20);
+	delay(10);
+}
+
+int select_flap_io(SetupMenuSelect * p){
+	Flap::configureADC();
+	p->clear();
+	p->ucg->setPrintPos(1,30);
+	p->ucg->printf("Check Sensor Reading,");
+	p->ucg->setPrintPos(1,60);
+	p->ucg->printf("Press Button to exit");
+	while( !p->_rotary->readSwitch() ){
+		p->ucg->setPrintPos(1,90);
+		p->ucg->printf("Sensor: %d       ", Flap::getSensorRaw() );
+		delay(20);
+	}
+	return 0;
 }
 
 void wk_cal_show( SetupMenuSelect * p, int wk ){
@@ -109,7 +124,7 @@ int wk_cal( SetupMenuSelect * p )
 			wk_sens_pos_minus_3.set( Flap::getSensorRaw() );
 		}
 		p->ucg->setPrintPos(1,60);
-		p->ucg->printf("Saved        ");
+		p->ucg->printf("Saved, restart");
 		Flap::initSensor();
 		delay(2000);
 		ESP_LOGI(FNAME,"Push Button pressed");
@@ -129,12 +144,12 @@ void Flap::setupMenue( SetupMenu *parent ){
 	wke->setHelp(PROGMEM"Option to enable Flap (WK) Indicator to assist optimum flap setting depending on speed and ballast");
 	wkm->addMenu( wke );
 
-	SetupMenuSelect * wkes = new SetupMenuSelect( "Flap Sensor", 0, true, 0, true, &flap_sensor );
+	SetupMenuSelect * wkes = new SetupMenuSelect( "Flap Sensor", 0, false, select_flap_io, true, &flap_sensor );
 	wkes->addEntry( "Disable");
 	wkes->addEntry( "Enable IO-2");
 	wkes->addEntry( "Enable IO-34");
 	wkes->addEntry( "Enable IO-26");
-	wkes->setHelp(PROGMEM"Option to enable Flap sensor on corresponding IO pin, for now its IO-2, later 2021 series will use IO-34");
+	wkes->setHelp(PROGMEM"Option to enable Flap sensor on corresponding IO pin, hardware may differ: check where you get a valid reading");
 	wkm->addMenu( wkes );
 
 
@@ -204,7 +219,7 @@ void Flap::setupMenue( SetupMenu *parent ){
 	// Initialize Flap Label Entries
 	for( int pos=-9; pos< 10; pos++ ){  // -9,.,-2,-1,+0,+1,+2,.,+9
 		char p[5];
-		sprintf( p, "%+d", pos );
+		sprintf( p, "%+d", pos );       // 0:-9 9:0 10:1 12:2
 		flabp1->addEntry( p );
 		flabp2->addEntry( p );
 		flabp3->addEntry( p );
@@ -393,10 +408,10 @@ void  Flap::initSpeeds(){
 	flapSpeeds[7] = 50;
 }
 
-void  Flap::init( Ucglib_ILI9341_18x240x320_HWSPI *theUcg ){
-	ucg = theUcg;
-	ESP_LOGI( FNAME, "Flap sensor init");
-
+void Flap::configureADC(){
+	ESP_LOGI( FNAME, "Flap::configureADC");
+	if( sensorAdc )
+		delete sensorAdc;
 	if( flap_sensor.get() == FLAP_SENSOR_GPIO_2 ) {
 		sensorAdc = new AnalogInput( -1, ADC_ATTEN_DB_0, ADC_CHANNEL_2, ADC_UNIT_2, true );
 	}else if( flap_sensor.get() == FLAP_SENSOR_GPIO_34 ) {
@@ -415,6 +430,12 @@ void  Flap::init( Ucglib_ILI9341_18x240x320_HWSPI *theUcg ){
 		else
 			ESP_LOGI( FNAME, "Flap sensor looks good, reading: %d", read );
 	}
+
+}
+
+void  Flap::init( Ucglib_ILI9341_18x240x320_HWSPI *theUcg ){
+	ucg = theUcg;
+	configureADC();
 	initSpeeds();
 }
 
@@ -442,12 +463,17 @@ float Flap::getLeverPosition( int wks ){
 void  Flap::progress(){
 	if( sensorAdc ) {
 		int wkraw = sensorAdc->getRaw();
-		if( wkraw < 4095 && wkraw > 0 ){
-			lever = getLeverPosition( wkraw );
-			// ESP_LOGI(FNAME,"wk sensor=%1.2f", lever );
-		}
-		else
-			lever = -10;  // off screen to blank
+		if( wkraw > 4094 )
+			wkraw = 4094;
+		if( wkraw < 1 )
+			wkraw = 1;
+		lever = getLeverPosition( wkraw );
+		// ESP_LOGI(FNAME,"wk sensor=%1.2f  raw=%d", lever, wkraw );
+		if( lever < flap_neg_max.get()-0.5 )
+			lever = flap_neg_max.get()-0.5;
+		else if( lever > flap_pos_max.get()+0.5 )
+			lever = flap_pos_max.get()+0.5;
+
 		if( blue_enable.get() == WL_WLAN ) {
 			if( leverold != (int)(lever*10) ){
 				OV.sendWkChange( lever );   // update secondary vario

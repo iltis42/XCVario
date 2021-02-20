@@ -22,7 +22,7 @@ public:
 	// recommendations
 	static float getOptimum( float wks, int wki );
 	static int   getOptimumInt( float wks );
-
+	static void configureADC();
 	static inline unsigned int getSensorRaw() {
 		if( haveSensor() )
 			return sensorAdc->getRaw(1000);

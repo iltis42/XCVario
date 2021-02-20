@@ -145,7 +145,7 @@ SetupNG<float>			stall_speed( "STALL_SPEED", 70 );
 SetupNG<int>            flarm_warning( "FLARM_LEVEL", 1 );
 SetupNG<int>            flarm_sim( "FLARM_SIM", 0 );
 SetupNG<float>          flarm_volume( "FLARM_VOL", 100 );
-SetupNG<int>            flap_sensor( "FLAP_SENS", 0 );
+SetupNG<int>            flap_sensor( "FLAP_SENS", 0, false );
 SetupNG<float>          flap_pos_max("FL_POS_M", +2);
 SetupNG<float>          flap_neg_max("FL_NEG_M", -2);
 SetupNG<int>            compass_enable( "CP_ENABLE", 0 );

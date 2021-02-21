@@ -755,7 +755,7 @@ void SetupMenu::setup( )
 
 		SetupMenu * flarm = new SetupMenu( "FLARM" );
 		opt->addMenu( flarm );
-		flarm->setHelp( PROGMEM "Option to diplay FLARM Warnings depending on FLARM alarm level");
+		flarm->setHelp( PROGMEM "Option to display FLARM Warnings depending on FLARM alarm level");
 
 		SetupMenuSelect * flarml = new SetupMenuSelect( "Alarm Level",	0, false, 0, true, &flarm_warning );
 		flarm->addMenu( flarml );

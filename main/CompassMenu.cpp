@@ -45,7 +45,7 @@ CompassMenu::CompassMenu( Compass& compassIn ) :
 {
 }
 
-CompassMenu::~CompassMenu()true
+CompassMenu::~CompassMenu()
 {
 }
 

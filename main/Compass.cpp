@@ -13,7 +13,7 @@ Class to handle compass data access.
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-02-18
+Last update: 2021-02-23
 
  **************************************************************************/
 
@@ -24,14 +24,14 @@ Last update: 2021-02-18
 #include "Compass.h"
 
 // Initialise static members
-SetupNG<float>* Compass::deviations[8] = { &compass_dev_45,
+SetupNG<float>* Compass::deviations[8] = { &compass_dev_0,
+    &compass_dev_45,
 		&compass_dev_90,
 		&compass_dev_135,
 		&compass_dev_180,
 		&compass_dev_225,
 		&compass_dev_270,
-		&compass_dev_335,
-		&compass_dev_360 };
+		&compass_dev_335 };
 /*
   Creates instance for I2C connection with passing the desired parameters.
   No action is done at the bus. Note if i2cBus is not set in the constructor,
@@ -56,14 +56,18 @@ Compass::~Compass()
 }
 
 /**
- * Returns the magnetic heading by considering deviation. If ok is passed,
- * it is set to true, if heading data is valid, otherwise it is set to false.
+ * Reads the current heading from the sensor and apply a low pass filter
+ * to it. Returns the low pass filtered magnetic heading by considering
+ * deviation and declination.
+ * If ok is passed, it is set to true, if heading data is valid, otherwise
+ * it is set to false.
  */
 float Compass::magneticHeading( bool *okIn )
 {
-	ESP_LOGI(FNAME,"magneticHeading()");
+	// ESP_LOGI(FNAME,"magneticHeading()");
 	bool ok = false;
-	float new_heading =  QMC5883L::heading( &ok );
+	float new_heading = QMC5883L::heading( &ok );
+
 	if( ok == false )
 	{
 		if( okIn != nullptr )
@@ -73,9 +77,12 @@ float Compass::magneticHeading( bool *okIn )
 		}
 		return 0.0;
 	}
+
 	magn_heading = cfmh.filter( new_heading );
+
 	// consider deviation
-	const float skydirs[8] = { 45, 90, 135, 180, 225, 270, 335, 360 };
+	const float skydirs[8] = { 0, 45, 90, 135, 180, 225, 270, 335 };
+
 	for( int i = 0; i < 8; i++ )
 	{
 		break;
@@ -97,35 +104,25 @@ float Compass::magneticHeading( bool *okIn )
 	{
 		*okIn = true;
 	}
-	ESP_LOGI(FNAME,"magneticHeading ret=%3.1f", magn_heading );
+	// ESP_LOGI(FNAME,"magneticHeading ret=%3.1f", magn_heading );
 	return magn_heading;
 }
 
 /**
- * Returns the magnetic heading by considering deviation and declination.
+ * Returns the low pass filtered magnetic heading by considering deviation and
+ * declination.
  * If ok is passed, it is set to true, if heading data is valid, otherwise
  * it is set to false.
  */
 float Compass::trueHeading( bool *okIn )
 {
-	bool ok = false;
-	true_heading = magneticHeading( &ok );
-	if( ok == false )
-	{
-		if( okIn != nullptr )
-		{
-			*okIn = false;
-		}
-		return 0.0;
-	}
-	// Calculate true heading
-	true_heading = magn_heading + compass_declination.get();
+  if( okIn != nullptr )
+  {
+    *okIn = true;
+  }
 
-	if( okIn != nullptr )
-	{
-		*okIn = true;
-	}
-	return true_heading;
+	// Calculate and return true heading
+	return magn_heading + compass_declination.get();
 }
 
 //------------------------------------------------------------------------------

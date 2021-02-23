@@ -97,7 +97,7 @@ HDM - Heading - Magnetic
 void Protocols::sendNmeaHDM( float heading ) {
   char str[21];
   sprintf( str,"$HCHDM,%3.1f,M", heading );
-  ESP_LOGI(FNAME,"Magnetic Heading: %3.1f", heading );
+  // ESP_LOGI(FNAME,"Magnetic Heading: %3.1f", heading );
 
   int cs = getCheckSum(&str[1]);
   int i = strlen(str);

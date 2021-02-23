@@ -15,7 +15,7 @@ https://datasheetspdf.com/pdf-file/1309218/QST/QMC5883L/1
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-02-20
+Last update: 2021-02-23
 
  ***************************************************************************/
 
@@ -638,7 +638,7 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z ) )
  */
 float QMC5883L::heading( bool *ok )
 {
-	static short error = 0;
+	static unsigned short error = 0;
 
 	if( ok != nullptr )
 		*ok = false;
@@ -649,7 +649,6 @@ float QMC5883L::heading( bool *ok )
 		error++;
 		return 0;
 	}
-
 
 	if( calibrationRunning == true )
 	{

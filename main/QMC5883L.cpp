@@ -700,12 +700,12 @@ float QMC5883L::heading( bool *ok )
 	// ESP_LOGI(FNAME,"RAW NORM Flux, fx:%f fy:%f fz:%f", fx,fy,fz);
 
 	// 	Xhorizontal = X*cos(pitch) + Y*sin(roll)*sin(pitch) – Z*cos(roll)*sin(pitch)
-	double tcx = fx * cos( IMU::getPitchRad() ) + fy * sin( IMU::getRollRad() ) * sin( IMU::getPitchRad()) - fz * cos( IMU::getRollRad()) * sin( IMU::getPitchRad());
+	double tcx = fx * cos( -IMU::getPitchRad() ) + fy * sin( -IMU::getRollRad() ) * sin( -IMU::getPitchRad()) - fz * cos( -IMU::getRollRad()) * sin( -IMU::getPitchRad());
 	// ESP_LOGI(FNAME,"RR:%f, PR:%f tcx 1:%f tcx2:%f tcx3:%f", IMU::getPitchRad(), IMU::getRollRad(), fx*cos( IMU::getPitchRad() ),   fy*sin( IMU::getRollRad() )*sin( IMU::getPitchRad()), fz*cos( IMU::getRollRad())*sin( IMU::getPitchRad() ) );
 	// 	Yhorizontal = Y*cos(roll) + Z*sin(roll)
-	double tcy = fy * cos( IMU::getRollRad()) + fz * sin( IMU::getRollRad());
+	double tcy = fy * cos( -IMU::getRollRad()) + fz * sin( -IMU::getRollRad());
 
-	double heading = RAD_TO_DEG * atan2( tcy, tcx );
+	double heading = -RAD_TO_DEG * atan2( tcy, tcx );
 
 	if( heading <= 0.0 )
 		heading += 360.0;

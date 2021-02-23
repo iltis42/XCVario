@@ -705,7 +705,7 @@ float QMC5883L::heading( bool *ok )
 	// 	Yhorizontal = Y*cos(roll) + Z*sin(roll)
 	double tcy = fy * cos( IMU::getRollRad()) + fz * sin( IMU::getRollRad());
 
-	double heading = RAD_TO_DEG * atan2( tcx, tcy );
+	double heading = RAD_TO_DEG * atan2( tcy, tcx );
 
 	if( heading <= 0.0 )
 		heading += 360.0;

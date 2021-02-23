@@ -61,7 +61,7 @@ Compass::~Compass()
  */
 float Compass::magneticHeading( bool *okIn )
 {
-	ESP_LOGI(FNAME,"magneticHeading()");
+	// ESP_LOGI(FNAME,"magneticHeading()");
 	bool ok = false;
 	float new_heading =  QMC5883L::heading( &ok );
 	if( ok == false )
@@ -97,7 +97,7 @@ float Compass::magneticHeading( bool *okIn )
 	{
 		*okIn = true;
 	}
-	ESP_LOGI(FNAME,"magneticHeading ret=%3.1f", magn_heading );
+	// ESP_LOGI(FNAME,"magneticHeading ret=%3.1f", magn_heading );
 	return magn_heading;
 }
 

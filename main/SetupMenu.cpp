@@ -787,7 +787,7 @@ void SetupMenu::setup( )
 
 		SetupMenuSelect * compSensorCal = new SetupMenuSelect( "Sensor Calibration", &select_dummy, false, compassSensorCalibrateAction, false );
 		compSensorCal->addEntry( "Start");
-    compSensorCal->addEntry( "Cancel");
+        compSensorCal->addEntry( "Cancel");
 		compSensorCal->setHelp( PROGMEM "Calibrate Magnetic Sensor" );
 		compassMenu->addMenu( compSensorCal );
 

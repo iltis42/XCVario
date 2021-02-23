@@ -85,13 +85,13 @@ QMC5883L::QMC5883L( const uint8_t addrIn,
 		const uint8_t rangeIn,
 		const uint16_t osrIn,
 		I2C_t *i2cBus ) :
-						  m_bus( i2cBus ),
-						  addr( addrIn ),
-						  odr( odrIn ),
-						  range( rangeIn ),
-						  osr( osrIn ),
-						  overflowWarning( false ),
-						  calibrationRunning( false )
+								  m_bus( i2cBus ),
+								  addr( addrIn ),
+								  odr( odrIn ),
+								  range( rangeIn ),
+								  osr( osrIn ),
+								  overflowWarning( false ),
+								  calibrationRunning( false )
 {
 	if( addrIn == 0 )
 	{
@@ -489,7 +489,7 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z ) )
 	int errors = 0;
 	uint64_t lastReport = 0;
 
-// #define MAX_MIN_LOGGING
+	// #define MAX_MIN_LOGGING
 
 #ifdef MAX_MIN_LOGGING
 	int xmin_old = 0;
@@ -502,7 +502,7 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z ) )
 
 	while( true )
 	{
-	  i++;
+		i++;
 
 		if( rawHeading() == false )
 		{
@@ -547,57 +547,57 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z ) )
 #endif
 
 		if( i < 2 )
-		  continue;
+			continue;
 
-	  // Calculate hard iron correction
-	  // calculate average x, y, z magnetic bias in counts
-	  xbias = static_cast<float>( xmax + xmin ) / 2.;
-	  ybias = static_cast<float>( ymax + ymin ) / 2.;
-	  zbias = static_cast<float>( zmax + zmin ) / 2.;
+		// Calculate hard iron correction
+		// calculate average x, y, z magnetic bias in counts
+		xbias = ( (float)xmax + xmin ) / 2;
+		ybias = ( (float)ymax + ymin ) / 2;
+		zbias = ( (float)zmax + zmin ) / 2;
 
-	  // Calculate soft-iron scale factors
-	  // calculate average x, y, z axis max chord length in counts
-	  float xchord = static_cast<float>( xmax - xmin ) / 2.;
-	  float ychord = static_cast<float>( ymax - ymin ) / 2.;
-	  float zchord = static_cast<float>( zmax - zmin ) / 2.;
+		// Calculate soft-iron scale factors
+		// calculate average x, y, z axis max chord length in counts
+		float xchord = ( (float)xmax - xmin ) / 2;
+		float ychord = ( (float)ymax - ymin ) / 2;
+		float zchord = ( (float)zmax - zmin ) / 2;
 
-	  float cord_avgerage = ( xchord + ychord + zchord ) / 3.;
+		float cord_avgerage = ( xchord + ychord + zchord ) / 3.;
 
-	  xscale = cord_avgerage / xchord;
-	  yscale = cord_avgerage / ychord;
-	  zscale = cord_avgerage / zchord;
+		xscale = cord_avgerage / xchord;
+		yscale = cord_avgerage / ychord;
+		zscale = cord_avgerage / zchord;
 
-	  if( (getMsTime() - lastReport) >= 500 )
-	    {
-	      lastReport = getMsTime();
+		if( (getMsTime() - lastReport) >= 500 )
+		{
+			lastReport = getMsTime();
 
-	      // Send a calibration report to the subscriber every 500ms
-	      if( reporter( xscale, yscale, zscale ) == false )
-	        {
-	          // Stop reporting, user has pushed rotary button.
-	          break;
-	        }
-	    }
+			// Send a calibration report to the subscriber every 500ms
+			if( reporter( xscale, yscale, zscale ) == false )
+			{
+				// Stop reporting, user has pushed rotary button.
+				break;
+			}
+		}
 
-	  uint64_t stop = getMsTime();
-	  uint64_t elapsed = stop - start;
+		uint64_t stop = getMsTime();
+		uint64_t elapsed = stop - start;
 
-	  if( elapsed >= 15 )
-	    {
-	      // ESP_LOGI( FNAME, "Elapsed=%llu > 15 ms -> no delay", elapsed );
-	      continue;
-	    }
+		if( elapsed >= 15 )
+		{
+			// ESP_LOGI( FNAME, "Elapsed=%llu > 15 ms -> no delay", elapsed );
+			continue;
+		}
 
-	  // calculate time to wait
-	  int wait = 15 - elapsed;
+		// calculate time to wait
+		int wait = 15 - elapsed;
 
-	  // The sensor seems to have sometimes problems to deliver all 10ms new data
-	  // Therefore we wait at least 15ms.
-    delay( wait );
+		// The sensor seems to have sometimes problems to deliver all 10ms new data
+		// Therefore we wait at least 15ms.
+		delay( wait );
 	}
 
 	ESP_LOGI( FNAME, "Read Cal-Samples=%d, OK=%d, NOK=%d",
-	          i, i-errors, errors );
+			i, i-errors, errors );
 
 	if( i < 2 )
 	{
@@ -617,13 +617,13 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z ) )
 	osr = usedOsr;
 
 	ESP_LOGI( FNAME, "Compass: xmin=%d xmax=%d, ymin=%d ymax=%d, zmin=%d zmax=%d",
-	          xmin, xmax, ymin, ymax, zmin, zmax );
+			xmin, xmax, ymin, ymax, zmin, zmax );
 
 	ESP_LOGI( FNAME, "Compass hard-iron: xbias=%.3f, ybias=%.3f, zbias=%.3f",
-	          xbias, ybias, zbias );
+			xbias, ybias, zbias );
 
 	ESP_LOGI( FNAME, "Compass soft-iron: xscale=%.3f, yscale=%.3f, zscale=%.3f",
-	          xscale, yscale, zscale );
+			xscale, yscale, zscale );
 
 	// restart previous continuous mode
 	modeContinuous();
@@ -671,40 +671,40 @@ float QMC5883L::heading( bool *ok )
 	error = 0;
 
 	// Check if calibration data are available
-  if( compass_calibrated.get() == 0 )
-    {
-      // No calibration data available, return error because to return
-      // the raw heading is not meaningful.
-      return 0.0;
-    }
+	if( compass_calibrated.get() == 0 )
+	{
+		// No calibration data available, return error because to return
+		// the raw heading is not meaningful.
+		return 0.0;
+	}
 
 	/* Apply corrections to the measured values. */
-	double fx = -(double) ((float( xraw ) - xbias) * xscale);
-	double fy = -(double) ((float( yraw ) - ybias) * yscale);
+	double fy = (double) ((float( xraw ) - xbias) * xscale);
+	double fx = -(double) ((float( yraw ) - ybias) * yscale);
 	double fz = (double) ((float( zraw ) - zbias) * zscale);
 
 #if 0
 	double headingc = RAD_TO_DEG * atan2( fx, fy );
 
-  if( headingc <= 0.0 )
-    headingc += 360.0;
+	if( headingc <= 0.0 )
+		headingc += 360.0;
 
 	static uint8_t out = 0;
 
 	if( out % 10 )
-	  ESP_LOGI( FNAME, "fX=%f fY=%f fZ=%f C-Heading=%.1f", fx, fy, fz, headingc );
+		ESP_LOGI( FNAME, "fX=%f fY=%f fZ=%f C-Heading=%.1f", fx, fy, fz, headingc );
 #endif
 
 	// ESP_LOGI(FNAME,"RANGE XH:%d YH:%d ZH:%d  XL:%d YL:%d ZL:%d OX:%d OY:%d OZ:%d", xmax,ymax,zmax, xmin,ymin,zmin, xmax + xmin, ymax + ymin,zmax + zmin);
 	// ESP_LOGI(FNAME,"RAW NORM Flux, fx:%f fy:%f fz:%f", fx,fy,fz);
 
 	// 	Xhorizontal = X*cos(pitch) + Y*sin(roll)*sin(pitch) – Z*cos(roll)*sin(pitch)
-	double tcx = fx * cos( IMU::getPitchRad() ) + fy * sin( IMU::getRollRad() ) * sin( IMU::getPitchRad()) - fz * cos( IMU::getRollRad()) * sin( IMU::getPitchRad());
+	double tcx = fx * cos( -IMU::getPitchRad() ) + fy * sin( -IMU::getRollRad() ) * sin( -IMU::getPitchRad()) - fz * cos( -IMU::getRollRad()) * sin( -IMU::getPitchRad());
 	// ESP_LOGI(FNAME,"RR:%f, PR:%f tcx 1:%f tcx2:%f tcx3:%f", IMU::getPitchRad(), IMU::getRollRad(), fx*cos( IMU::getPitchRad() ),   fy*sin( IMU::getRollRad() )*sin( IMU::getPitchRad()), fz*cos( IMU::getRollRad())*sin( IMU::getPitchRad() ) );
 	// 	Yhorizontal = Y*cos(roll) + Z*sin(roll)
-	double tcy = fy * cos( IMU::getRollRad()) + fz * sin( IMU::getRollRad());
+	double tcy = fy * cos( -IMU::getRollRad()) + fz * sin( -IMU::getRollRad());
 
-	double heading = RAD_TO_DEG * atan2( tcx, tcy );
+	double heading = -RAD_TO_DEG * atan2( tcy, tcx );
 
 	if( heading <= 0.0 )
 		heading += 360.0;
@@ -712,11 +712,13 @@ float QMC5883L::heading( bool *ok )
 	if( ok != nullptr )
 		*ok = true;
 
+
+#define DEBUG_COMP1
 #ifdef DEBUG_COMP1
-  ESP_LOGI( FNAME,
-            "rawHeading, x:%d y:%d z:%d, roll: %f  pitch: %f  tcx:%f tcy:%f mh:%f ",
-            xraw, yraw, zraw, IMU::getRoll(), IMU::getPitch(), tcx, tcy, heading );
+	ESP_LOGI( FNAME,
+			"rawHeading, x:%d y:%d z:%d, roll: %f  pitch: %f  tcx:%f tcy:%f mh:%f ",
+			xraw, yraw, zraw, IMU::getRoll(), IMU::getPitch(), (float)tcx, (float)tcy, heading );
 #endif
 
-  return float( heading );
+	return float( heading );
 }

@@ -816,7 +816,6 @@ void SetupMenu::setup( )
         char buffer[20];
       
         SetupMenuSelect* sms = new SetupMenuSelect( "Direction ",
-                                                    nullptr,
                                                     false,
                                                     compassDeviationAction,
                                                     false,

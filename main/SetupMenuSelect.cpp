@@ -37,6 +37,8 @@ SetupMenuSelect::SetupMenuSelect( String title, bool restart, int (*action)(Setu
 	_rotary->attach(this);
 	_title = title;
 	_nvs = 0;
+	_select = 0;
+	_select_save = 0;
 	highlight = -1;
 	select_intern = 0;
 	if( !anvs ) {
@@ -164,9 +166,10 @@ void SetupMenuSelect::press(){
 	ESP_LOGI(FNAME,"SetupMenuSelect press");
 	if ( pressed ){
 		display( 1 );
-		if( _parent != 0)
+		if( _parent != 0) {
 			selected = _parent;
-		_parent->highlight = -1;  // to topmost selection when back
+			_parent->highlight = -1;  // to topmost selection when back
+		}
 		selected->pressed = true;
 		if( _nvs )
 			_nvs->commit();

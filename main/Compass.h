@@ -13,7 +13,7 @@ Class to handle compass data access.
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-02-11
+Last update: 2021-02-23
 
  **************************************************************************/
 
@@ -89,12 +89,22 @@ public:
 	float trueHeading( bool *okIn=nullptr );
 
 	/**
-	 * Returns the magnetic heading by considering deviation and declination.
+	 * Reads the current heading from the sensor and apply a low pass filter
+	 * to it. Returns the low pass filtered magnetic heading by considering
+	 * deviation and declination.
 	 * If ok is passed, it is set to true, if heading data is valid, otherwise
 	 * it is set to false.
 	 */
 	float magneticHeading( bool *okIn=nullptr );
+
+	/**
+	 * Returns the low pass filtered true heading.
+	 */
 	static inline float trueHeading() { return true_heading; }
+
+  /**
+   * Returns the low pass filtered magnetic heading.
+   */
 	static inline float magnHeading() { return magn_heading; }
 
 
@@ -105,5 +115,3 @@ private:
 	static float true_heading;
 	static CompassFilter cfmh;
 };
-
-

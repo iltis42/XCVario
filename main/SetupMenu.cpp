@@ -216,9 +216,9 @@ void inc_volume( int count ) {
 /**
  * C-Wrappers function to compass menu handlers.
  */
-int compassCalibrateAction( SetupMenuSelect *p )
+int compassDeviationAction( SetupMenuSelect *p )
 {
-	return compassMenuHandler.calibrateAction( p );
+	return compassMenuHandler.deviationAction( p );
 }
 
 int compassDeclinationAction( SetupMenuValFloat *p )
@@ -782,13 +782,13 @@ void SetupMenu::setup( )
 		compSensor->addEntry( "Disable");
 		compSensor->addEntry( "Enable");
 		compSensor->setHelp( PROGMEM "Option to enable/disable the Compass Sensor" );
-		compassMenu->addMenu( compSensor );
+		compassME->addMenu( compSensor );
 
 		SetupMenuSelect * compSensorCal = new SetupMenuSelect( "Sensor Calibration", false, compassSensorCalibrateAction, false );
 		compSensorCal->addEntry( "Start");
         compSensorCal->addEntry( "Cancel");
 		compSensorCal->setHelp( PROGMEM "Calibrate Magnetic Sensor" );
-		compassMenu->addMenu( compSensorCal );
+		compassME->addMenu( compSensorCal );
 
 		SetupMenuValFloat *cd = new SetupMenuValFloat( "Setup Declination",
 				0,
@@ -801,23 +801,37 @@ void SetupMenu::setup( )
 				&compass_declination );
 
 		cd->setHelp( PROGMEM "Set compass declination in degrees" );
-		compassMenu->addMenu( cd );
+		compassME->addMenu( cd );
 
-		// Next step for compass calibration
-		SetupMenuSelect * compCal = new SetupMenuSelect( "Setup Calibration",
-				false,
-				compassCalibrateAction,
-				false,
-				&dummy );
-		compCal->addEntry( "Cancel");
-		compCal->addEntry( "Start");
-		compCal->addEntry( "Reset");
-		compCal->setHelp( PROGMEM "Calibrate Compass Sensor or reset calibration" );
-		compassME->addMenu( compCal );
+    SetupMenu * devMenu = new SetupMenu( "Setup Deviations" );
+    devMenu->setHelp( "Compass Deviations", 280 );
+    MenuEntry* dme = compassMenu->addMenu( devMenu );
+    
+    // Calibration menu is requested
+    const short skydirs[8] =
+    { 0, 45, 90, 135, 180, 225, 270, 335 };
+
+    for( int i = 0; i < 8; i++ )
+      {
+        char buffer[20];
+      
+        SetupMenuSelect* sms = new SetupMenuSelect( "Direction ",
+                                                    nullptr,
+                                                    false,
+                                                    compassDeviationAction,
+                                                    false,
+                                                    &dummy );
+
+        sms->setHelp( "Push button to start deviation action" );
+        sprintf( buffer, "%03d", skydirs[i] );
+        sms->addEntry( buffer );
+        dme->addMenu( sms );
+      }
+
+    // devMenu->addEntry( "Reset All" );
 
 		SetupMenu * nmeaMenu = new SetupMenu( "Setup NMEA" );
-		compassMenu->addMenu( nmeaMenu );
-
+		compassME->addMenu( nmeaMenu );
 
 		SetupMenuSelect * nmeaHdm = new SetupMenuSelect( "$HCHDM", false, 0, true, &compass_nmea_hdm );
 		nmeaHdm->addEntry( "Disable");

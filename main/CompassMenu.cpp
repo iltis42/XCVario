@@ -13,10 +13,12 @@ Class to handle compass data and actions.
 
 Author: Axel Pauli, February 2021
 
-Last update: 2021-02-20
+Last update: 2021-02-23
 
  **************************************************************************/
 
+#include <cstring>
+#include <cstdlib>
 #include "esp_log.h"
 #include "esp_system.h"
 
@@ -26,14 +28,14 @@ Last update: 2021-02-20
 SetupMenuSelect* CompassMenu::menuPtr = nullptr;
 
 // Initialise static members
-SetupNG<float>* CompassMenu::deviations[8] = { &compass_dev_45,
+SetupNG<float>* CompassMenu::deviations[8] = { &compass_dev_0,
+    &compass_dev_45,
 		&compass_dev_90,
 		&compass_dev_135,
 		&compass_dev_180,
 		&compass_dev_225,
 		&compass_dev_270,
-		&compass_dev_335,
-		&compass_dev_360 };
+		&compass_dev_335 };
 /**
  * Creates a compass menu instance with an active compass object.
  */
@@ -48,17 +50,10 @@ CompassMenu::~CompassMenu()
 }
 
 // Compass Menu Action Routine
-int CompassMenu::calibrateAction( SetupMenuSelect *p )
+int CompassMenu::deviationAction( SetupMenuSelect *p )
 {
-	ESP_LOGI( FNAME, "Compass calibration ( %d ) ", p->getSelect() );
-
-	if( p->getSelect() == 0 )
-	{
-		// Cancel is requested
-		delay( 500 );
-		ESP_LOGI( FNAME, "Cancel Button pressed" );
-		return 0;
-	}
+  ESP_LOGI( FNAME, "Compass deviation setup for direction '%s'",
+            p->getEntry() );
 
 	if( compass.haveSensor() == false )
 	{
@@ -71,63 +66,62 @@ int CompassMenu::calibrateAction( SetupMenuSelect *p )
 		return 0;
 	}
 
-	if( p->getSelect() == 1 )
+  int direction = strtol( p->getEntry(), nullptr, 10 ) / 45;
+
+
+  // Calibration menu is requested
+  const unsigned short skydirs[8] =
+  { 0, 45, 90, 135, 180, 225, 270, 335 };
+
+  p->clear();
+  p->ucg->setFont( ucg_font_fur14_hf );
+  p->ucg->setPrintPos( 1, 60 );
+  p->ucg->printf( "Turn airplain to %s\260  ", p->getEntry() );
+  p->ucg->setPrintPos( 1, 90 );
+  p->ucg->printf( "and push button when done" );
+  delay( 500 );
+
+  float heading = 0.0;
+
+  while( !p->_rotary->readSwitch() )
+  {
+    bool ok = true;
+    heading = Compass::magnHeading();
+
+    if( ok == false )
+      {
+        // in case of error deviation is set to 0
+        heading = static_cast<float>(skydirs[direction]);
+      }
+
+    p->ucg->setFont( ucg_font_fur20_hf );
+    p->ucg->setPrintPos( 1, 180 );
+    p->ucg->printf( "Heading: %.0f\260     ", heading );
+    delay( 100 );
+  }
+
+  while( p->_rotary->readSwitch() )
+    {
+      // wait so long while rotary is pressed to avoid unwanted actions
+      delay( 50 );
+      continue;
+    }
+
+  // Save deviation value
+  deviations[direction]->set( static_cast<float>(skydirs[direction]) - heading );
+
+  ESP_LOGI( FNAME, "Compass deviation action for %s is finished",
+            p->getEntry() );
+  return 1;
+
+
+#if 0
+	else if( p->getSelect() == 10 )
 	{
-		// Calibration menu is requested
-		const unsigned short skydirs[8] =
-		{ 45, 90, 135, 180, 225, 270, 335, 360 };
-
-		// Setup low pass filter
-		filter.reset();
-		filter.setCoefficient( 0.1 );
-
-		for( int i = 0; i < 8; i++ )
-		{
-			p->clear();
-			p->ucg->setFont( ucg_font_fur14_hf );
-			p->ucg->setPrintPos( 1, 60 );
-			p->ucg->printf( "Turn airplain to %d\260  ", skydirs[i] );
-			p->ucg->setPrintPos( 1, 90 );
-			p->ucg->printf( "and push button when done" );
-			delay( 500 );
-
-			float heading = 0.0;
-
-			while( !p->_rotary->readSwitch() )
-			{
-				bool ok = false;
-				float heading = compass.heading( &ok );
-
-				if( ok == false )
-          {
-            // in case of error deviation is set to 0
-            heading = static_cast<float>(skydirs[i]);
-          }
-				else
-				  {
-				    // Low pass filtering of heading
-				    heading = filter.filter( heading );
-				  }
-
-				p->ucg->setFont( ucg_font_fur20_hf );
-				p->ucg->setPrintPos( 1, 180 );
-				p->ucg->printf( "Heading: %.0f\260     ", heading );
-				delay( 100 );
-			}
-
-			// Save deviation value
-			deviations[i]->set( static_cast<float>(skydirs[i]) - heading );
-		}
-
-		ESP_LOGI( FNAME, "Compass calibration is finished" );
-	}
-	else if( p->getSelect() == 2 )
-	{
-
 		p->clear();
 		p->ucg->setFont( ucg_font_fur14_hf );
 		p->ucg->setPrintPos( 1, 60 );
-		p->ucg->printf( "Reset compass calibration" );
+		p->ucg->printf( "Reset compass deviations" );
 
 		// Reset calibration
 		for( int i = 0; i < 8; i++ )
@@ -135,7 +129,7 @@ int CompassMenu::calibrateAction( SetupMenuSelect *p )
 			deviations[i]->set( 0.0 );
 		}
 
-		ESP_LOGI( FNAME, "Compass calibration was reset" );
+		ESP_LOGI( FNAME, "Compass deviations values were reset" );
 		delay( 1000 );
 	}
 
@@ -145,6 +139,9 @@ int CompassMenu::calibrateAction( SetupMenuSelect *p )
 	p->ucg->printf( "Saved        " );
 	delay( 2000 );
 	return 0;
+#endif
+
+  return 0;
 }
 
 int CompassMenu::declinationAction( SetupMenuValFloat *p )

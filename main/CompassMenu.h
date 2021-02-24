@@ -13,7 +13,7 @@ Class to handle compass data and actions.
 
 Author: Axel Pauli, February 2021
 
-Last update: 2021-02-20
+Last update: 2021-02-23
 
 **************************************************************************/
 
@@ -31,12 +31,12 @@ class CompassMenu
   /**
    * Creates a compass menu instance with an active compass object.
    */
-  CompassMenu( Compass& compassIn  );
+  CompassMenu( Compass& compassIn);
 
   ~CompassMenu();
 
-  /** Compass Menu Action method. */
-  int calibrateAction( SetupMenuSelect *p );
+  /** Compass Menu Action method to set deviations. */
+  int deviationAction( SetupMenuSelect *p );
 
   /** Compass Menu Action method to set declination valid. */
   int declinationAction( SetupMenuValFloat *p );

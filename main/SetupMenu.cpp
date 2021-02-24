@@ -37,10 +37,10 @@ String vunit;
 String sunit;
 
 // Menu for compass setup
-MenuEntry* compassME = nullptr;
+static MenuEntry* compassME = nullptr;
 
 // Compass menu handler
-CompassMenu compassMenuHandler( compass );
+static CompassMenu compassMenuHandler( compass );
 
 void update_vunit_str( int unit ){
 	vunit = Units::VarioUnitLong( unit );
@@ -216,17 +216,22 @@ void inc_volume( int count ) {
 /**
  * C-Wrappers function to compass menu handlers.
  */
-int compassDeviationAction( SetupMenuSelect *p )
+static int compassDeviationAction( SetupMenuSelect *p )
 {
 	return compassMenuHandler.deviationAction( p );
 }
 
-int compassDeclinationAction( SetupMenuValFloat *p )
+static int compassResetDeviationAction( SetupMenuSelect *p )
+{
+  return compassMenuHandler.resetDeviationAction( p );
+}
+
+static int compassDeclinationAction( SetupMenuValFloat *p )
 {
 	return compassMenuHandler.declinationAction( p );
 }
 
-int compassSensorCalibrateAction( SetupMenuSelect *p )
+static int compassSensorCalibrateAction( SetupMenuSelect *p )
 {
 	ESP_LOGI(FNAME,"compassSensorCalibrateAction()");
 	return compassMenuHandler.sensorCalibrationAction( p );
@@ -814,7 +819,6 @@ void SetupMenu::setup( )
     for( int i = 0; i < 8; i++ )
       {
         char buffer[20];
-      
         SetupMenuSelect* sms = new SetupMenuSelect( "Direction ",
                                                     false,
                                                     compassDeviationAction,
@@ -827,7 +831,40 @@ void SetupMenu::setup( )
         dme->addMenu( sms );
       }
 
-    // devMenu->addEntry( "Reset All" );
+    // Show deviations
+    SetupMenuSelect* sms = new SetupMenuSelect( "Show Deviations",
+                                                false,
+                                                nullptr,
+                                                false,
+                                                0 );
+    compassME->addMenu( sms );
+
+    const char* skydirdev[8] =
+    { "N  000", "NE 045", "E  090", "SE 135", "S  180", "SW 225", "W  270", "NW 335" };
+
+
+    for( int i = 0; i < 8; i++ )
+      {
+        char buffer[30];
+        sprintf( buffer,
+                 "%s Deviation %d",
+                 skydirdev[i],
+                 static_cast<int>(rintf(CompassMenu::deviations[i]->get())) );
+        sms->addEntry( buffer );
+      }
+
+    sms = new SetupMenuSelect( "Reset Deviations ",
+                               false,
+                               compassResetDeviationAction,
+                               false,
+                               0 );
+
+    sms->setHelp( "Reset all deviation data to zero" );
+    sms->addEntry( "Cancel" );
+    sms->addEntry( "Reset" );
+    compassME->addMenu( sms );
+
+
 
 		SetupMenu * nmeaMenu = new SetupMenu( "Setup NMEA" );
 		compassME->addMenu( nmeaMenu );

@@ -13,7 +13,7 @@ Class to handle compass data and actions.
 
 Author: Axel Pauli, February 2021
 
-Last update: 2021-02-23
+Last update: 2021-02-24
 
 **************************************************************************/
 
@@ -38,6 +38,9 @@ class CompassMenu
   /** Compass Menu Action method to set deviations. */
   int deviationAction( SetupMenuSelect *p );
 
+  /** Compass Menu Action method to reset all deviations to 0. */
+  int resetDeviationAction( SetupMenuSelect *p );
+
   /** Compass Menu Action method to set declination valid. */
   int declinationAction( SetupMenuValFloat *p );
 
@@ -47,9 +50,9 @@ class CompassMenu
   /** Compass Menu Action method to calibrate sensor. */
   int sensorCalibrationAction( SetupMenuSelect *p );
 
-private:
-
   static SetupNG<float> *deviations[8];
+
+  private:
 
   // active compass instance
   Compass& compass;

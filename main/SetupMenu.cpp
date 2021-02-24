@@ -30,7 +30,6 @@
 static char rentry[25];
 SetupMenuSelect * audio_range_sm = 0;
 SetupMenuSelect * mpu = 0;
-static int select_dummy = 0;
 
 // Menu for flap setup
 
@@ -477,14 +476,14 @@ void SetupMenu::setup( )
 		vga->setPrecision( 0 );
 		vae->addMenu( vga );
 
-		SetupMenuSelect * vamod = new SetupMenuSelect( 	"Mode", 0, false, 0 , true, &vario_mode );
+		SetupMenuSelect * vamod = new SetupMenuSelect( 	"Mode", false, 0 , true, &vario_mode );
 		vamod->setHelp(PROGMEM"Controls if vario considers polar sink (=Netto), or not (=Brutto), or if Netto vario applies only in Cruise Mode");
 		vamod->addEntry( "Brutto");
 		vamod->addEntry( "Netto");
 		vamod->addEntry( "Cruise-Netto");
 		vae->addMenu( vamod );
 
-		SetupMenuSelect * nemod = new SetupMenuSelect( 	"Netto Mode", 0, false, 0 , true, &netto_mode );
+		SetupMenuSelect * nemod = new SetupMenuSelect( 	"Netto Mode", false, 0 , true, &netto_mode );
 		nemod->setHelp(PROGMEM"In 'Relative' mode, also circling sink is considered also called 'Super-Netto' to show climb rate as if you were circling there");
 		nemod->addEntry( "Normal");
 		nemod->addEntry( "Relative");
@@ -513,13 +512,13 @@ void SetupMenu::setup( )
 		vcp->setHelp(PROGMEM"Cycle in number of seconds when mean climb value is recalculated, default is last 60 seconds");
 		meanclm->addMenu( vcp);
 
-		SetupMenuSelect * sink = new SetupMenuSelect( 	"Polar Sink", 0, false, 0 , true, &ps_display );
+		SetupMenuSelect * sink = new SetupMenuSelect( 	"Polar Sink", false, 0 , true, &ps_display );
 		sink->setHelp(PROGMEM"Show polar sink rate together with TE in Vario bar when Vario is in Brutto Mode (else disabled)");
 		sink->addEntry( "DISABLE");
 		sink->addEntry( "ENABLE");
 		vae->addMenu( sink );
 
-		SetupMenuSelect * gsink = new SetupMenuSelect( 	"Polar Sink G", 0, false, 0 , true, &s2f_with_gload );
+		SetupMenuSelect * gsink = new SetupMenuSelect( 	"Polar Sink G", false, 0 , true, &s2f_with_gload );
 		gsink->setHelp(PROGMEM"Polar Sink considers G load acceleration (when AHRS option enabled)");
 		gsink->addEntry( "DISABLE");
 		gsink->addEntry( "ENABLE");
@@ -532,13 +531,13 @@ void SetupMenu::setup( )
 		vds2->setHelp(PROGMEM"Time constant of S2F low pass filter");
 		s2fse->addMenu( vds2 );
 
-		SetupMenuSelect * blck = new SetupMenuSelect( "Blockspeed", 0, false, 0 , true, &s2f_blockspeed );
+		SetupMenuSelect * blck = new SetupMenuSelect( "Blockspeed", false, 0 , true, &s2f_blockspeed );
 		blck->setHelp(PROGMEM"With Blockspeed enabled, vertical movement of airmass or G-load is not considered for speed to fly (S2F) calculation");
 		blck->addEntry( "DISABLE");
 		blck->addEntry( "ENABLE");
 		s2fse->addMenu( blck );
 
-		SetupMenuSelect * s2fmod = new SetupMenuSelect( "Mode", 0, false, 0 , true, &audio_mode );
+		SetupMenuSelect * s2fmod = new SetupMenuSelect( "Mode", false, 0 , true, &audio_mode );
 		s2fmod->setHelp( PROGMEM"Select either fixed Vario, or S2F mode, or let transition control by an external switch or automatically by 'AutoSpeed'" );
 		s2fmod->addEntry( "Vario (Circling)");
 		s2fmod->addEntry( "S2F (Cruise)");
@@ -552,7 +551,7 @@ void SetupMenu::setup( )
 
 		SetupMenu * elco = new SetupMenu( "Electronic Compensation" );
 		vae->addMenu( elco );
-		SetupMenuSelect * enac = new SetupMenuSelect( "eCompensation", 0, false, 0 , false, &te_comp_enable );
+		SetupMenuSelect * enac = new SetupMenuSelect( "eCompensation", false, 0 , false, &te_comp_enable );
 		enac->setHelp(PROGMEM"Enable/Disable electronic TE compensation option; Enable only when TE pressure is connected to ST (static) pressure");
 		enac->addEntry( "DISABLE");
 		enac->addEntry( "ENABLE");
@@ -570,7 +569,7 @@ void SetupMenu::setup( )
 		audio->addMenu( dv );
 		dv->setHelp(PROGMEM"Default volume for Audio when device is switched on");
 
-		SetupMenuSelect * abnm = new SetupMenuSelect( "Cruise Audio", 0, false, 0 , true, &cruise_audio_mode );
+		SetupMenuSelect * abnm = new SetupMenuSelect( "Cruise Audio", false, 0 , true, &cruise_audio_mode );
 		abnm->setHelp(PROGMEM"Select either S2F command or Variometer (Netto/Brutto as selected) as audio source while cruising");
 		abnm->addEntry( "Speed2Fly");       // 0
 		abnm->addEntry( "Vario");           // 1
@@ -588,7 +587,7 @@ void SetupMenu::setup( )
 		oc->setHelp(PROGMEM"Maximum tone frequency variation");
 		audios->addMenu( oc );
 
-		SetupMenuSelect * dt = new SetupMenuSelect( "Dual Tone", 0, false, 0 , true, &dual_tone );
+		SetupMenuSelect * dt = new SetupMenuSelect( "Dual Tone", false, 0 , true, &dual_tone );
 		dt->setHelp(PROGMEM"Select dual tone modue aka ilec sound, (di/da/di) or single tone (di/di/di) mode");
 		dt->addEntry( "Disable");       // 0
 		dt->addEntry( "Enable");        // 1
@@ -598,7 +597,7 @@ void SetupMenu::setup( )
 		htv->setHelp(PROGMEM"Tone variation in Dual Tone mode, percent of frequency pitch up for second tone");
 		audios->addMenu( htv );
 
-		SetupMenuSelect * tch = new SetupMenuSelect( "Chopping", 0, false, 0 , true, &chopping_mode );
+		SetupMenuSelect * tch = new SetupMenuSelect( "Chopping", false, 0 , true, &chopping_mode );
 		tch->setHelp(PROGMEM"Select tone chopping option on positive values for Vario and or S2F");
 		tch->addEntry( "Disabled");             // 0
 		tch->addEntry( "Vario only");           // 1
@@ -606,13 +605,13 @@ void SetupMenu::setup( )
 		tch->addEntry( "Vario and S2F");        // 3  default
 		audios->addMenu( tch );
 
-		SetupMenuSelect * tchs = new SetupMenuSelect( "Chopping Style", 0, false, 0 , true, &chopping_style );
+		SetupMenuSelect * tchs = new SetupMenuSelect( "Chopping Style", false, 0 , true, &chopping_style );
 		tchs->setHelp(PROGMEM"Select style of tone chopping either hard, or soft with fadein/fadeout");
 		tchs->addEntry( "Soft");              // 0  default
 		tchs->addEntry( "Hard");              // 1
 		audios->addMenu( tchs );
 
-		SetupMenuSelect * ar = new SetupMenuSelect( "Range", 0, false, 0 , true, &audio_range  );
+		SetupMenuSelect * ar = new SetupMenuSelect( "Range", false, 0 , true, &audio_range  );
 		audio_range_sm = ar;
 		sprintf( rentry, "Variable (=%d m/s)", (int)(range.get()) );
 		ar->addEntry( "Fix 5 m/s");
@@ -645,13 +644,13 @@ void SetupMenu::setup( )
 		afac->setHelp(PROGMEM"Exponential factor < 1 gives a logarithmic, and > 1 exponential characteristic for frequency of audio signal");
 		audio->addMenu( afac);
 
-		SetupMenuSelect * amps = new SetupMenuSelect( "Amplifier Off", 0, false, 0 , true, &amplifier_shutdown );
+		SetupMenuSelect * amps = new SetupMenuSelect( "Amplifier Off", false, 0 , true, &amplifier_shutdown );
 		amps->setHelp(PROGMEM"Select if Amplifier is totally shutdown while in deadband (saves energy), or stays always on");
 		amps->addEntry( "Always On");         // 0
 		amps->addEntry( "Shutdown");          // 1
 		audio->addMenu( amps );
 
-		SetupMenuSelect * ameda = new SetupMenuSelect( "Audio in Setup", 0, false, 0 , true, &audio_disable );
+		SetupMenuSelect * ameda = new SetupMenuSelect( "Audio in Setup", false, 0 , true, &audio_disable );
 		ameda->setHelp(PROGMEM"Select if Audio will get muted while Setup Menu is open or stays always on");
 		ameda->addEntry( "Stay On");      // 0
 		ameda->addEntry( "Silent");       // 1
@@ -662,7 +661,7 @@ void SetupMenu::setup( )
 		po->setHelp( PROGMEM"Polar setup to match performance of glider");
 		MenuEntry* poe = mm->addMenu( po );
 
-		SetupMenuSelect * glt = new SetupMenuSelect( 	"Glider-Type",	0, false, polar_select, true, &glider_type );
+		SetupMenuSelect * glt = new SetupMenuSelect( "Glider-Type",	false, polar_select, true, &glider_type );
 		poe->addMenu( glt );
 
 		ESP_LOGI(FNAME, "Number of Polars installed: %d", Polars::numPolars() );
@@ -707,7 +706,7 @@ void SetupMenu::setup( )
 		SetupMenu * opt = new SetupMenu( "Options" );
 		mm->addMenu( opt );
 		if( student_mode.get() == 0 ) {
-			SetupMenuSelect *stumo  = new SetupMenuSelect( "Student Mode", 0, true, 0, true, &student_mode );
+			SetupMenuSelect *stumo  = new SetupMenuSelect( "Student Mode", true, 0, true, &student_mode );
 			opt->addMenu( stumo );
 			stumo->setHelp( PROGMEM "Student mode, disables all sophisticated setup to just basic pre-flight related items like MC, ballast or bugs");
 			stumo->addEntry( "Disable");
@@ -720,30 +719,30 @@ void SetupMenu::setup( )
 		// Units
 		SetupMenu * un = new SetupMenu( "Units" );
 		un->setHelp( PROGMEM "Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units");
-		SetupMenuSelect * alu = new SetupMenuSelect( 	"Altimeter",	0, false,  0, true, &alt_unit );
+		SetupMenuSelect * alu = new SetupMenuSelect( "Altimeter", false,  0, true, &alt_unit );
 		alu->addEntry( "Meter (m)");
 		alu->addEntry( "Foot  (ft)");
 		alu->addEntry( "FL    (FL)");
 		un->addMenu( alu );
-		SetupMenuSelect * iau = new SetupMenuSelect( "Airspeed", 0, false , update_sunit, true, &ias_unit );
+		SetupMenuSelect * iau = new SetupMenuSelect( "Airspeed", false , update_sunit, true, &ias_unit );
 		iau->addEntry( "Kilom. (Km/h)");
 		iau->addEntry( "Miles  (mph)");
 		iau->addEntry( "Knots  (kt)");
 		un->addMenu( iau );
-		SetupMenuSelect * vau = new SetupMenuSelect( "Vario", 0, false , update_vunit, true, &vario_unit );
+		SetupMenuSelect * vau = new SetupMenuSelect( "Vario", false , update_vunit, true, &vario_unit );
 		vau->addEntry( "Meters/sec (m/s)");
 		vau->addEntry( "100ft/min (cft/min)");
 		vau->addEntry( "Knots     (knots)");
 		un->addMenu( vau );
 		opt->addMenu( un );
 
-		SetupMenuSelect * amode = new SetupMenuSelect( "Airspeed Mode",	0, false, 0, true, &airspeed_mode );
+		SetupMenuSelect * amode = new SetupMenuSelect( "Airspeed Mode",	false, 0, true, &airspeed_mode );
 		opt->addMenu( amode );
 		amode->setHelp( PROGMEM "Select mode of Airspeed indicator to display IAS (Indicated AirSpeed, default) or TAS (True AirSpeed) considering air density");
 		amode->addEntry( "IAS");
 		amode->addEntry( "TAS");
 
-		SetupMenuSelect * atl = new SetupMenuSelect( "Auto Transition",	0, false, 0, true, &fl_auto_transition );
+		SetupMenuSelect * atl = new SetupMenuSelect( "Auto Transition",	false, 0, true, &fl_auto_transition );
 		opt->addMenu( atl );
 		atl->setHelp( PROGMEM "Option to enable automatic altitude transition to QNH Standard (1013.25) above 'Transition Altitude'");
 		atl->addEntry( "Disable");
@@ -757,7 +756,7 @@ void SetupMenu::setup( )
 		opt->addMenu( flarm );
 		flarm->setHelp( PROGMEM "Option to display FLARM Warnings depending on FLARM alarm level");
 
-		SetupMenuSelect * flarml = new SetupMenuSelect( "Alarm Level",	0, false, 0, true, &flarm_warning );
+		SetupMenuSelect * flarml = new SetupMenuSelect( "Alarm Level",	false, 0, true, &flarm_warning );
 		flarm->addMenu( flarml );
 		flarml->setHelp( PROGMEM "Enable FLARM Alarm level 1 is lowest with 13-18 sec, 2 medium 9-12 sec and 3 highest with 0-8 sec until impact");
 		flarml->addEntry( "Disable");
@@ -769,7 +768,7 @@ void SetupMenu::setup( )
 		flarmv->setHelp(PROGMEM "Maximum volume FLARM alarm audio warning");
 		flarm->addMenu( flarmv );
 
-		SetupMenuSelect * flarms = new SetupMenuSelect( "FLARM Simulation",	0, false, 0, true, &flarm_sim );
+		SetupMenuSelect * flarms = new SetupMenuSelect( "FLARM Simulation",	false, 0, true, &flarm_sim );
 		flarm->addMenu( flarms );
 		flarms->setHelp( PROGMEM "Simulate an airplane crossing from left to right with different alarm levels and vertical distance 5 seconds after pressed (leave setup!)");
 		flarms->addEntry( "Disable");
@@ -779,13 +778,13 @@ void SetupMenu::setup( )
 		compassMenu->setHelp( PROGMEM "Setup Magnetic Sensor and Compass", 240 );
 		compassME = opt->addMenu( compassMenu );
 
-		SetupMenuSelect * compSensor = new SetupMenuSelect( "Sensor Option", 0, false, 0, true, &compass_enable );
+		SetupMenuSelect * compSensor = new SetupMenuSelect( "Sensor Option", false, 0, true, &compass_enable );
 		compSensor->addEntry( "Disable");
 		compSensor->addEntry( "Enable");
 		compSensor->setHelp( PROGMEM "Option to enable/disable the Compass Sensor" );
 		compassME->addMenu( compSensor );
 
-		SetupMenuSelect * compSensorCal = new SetupMenuSelect( "Sensor Calibration", &select_dummy, false, compassSensorCalibrateAction, false );
+		SetupMenuSelect * compSensorCal = new SetupMenuSelect( "Sensor Calibration", false, compassSensorCalibrateAction, false );
 		compSensorCal->addEntry( "Start");
         compSensorCal->addEntry( "Cancel");
 		compSensorCal->setHelp( PROGMEM "Calibrate Magnetic Sensor" );
@@ -801,13 +800,13 @@ void SetupMenu::setup( )
 				false,
 				&compass_declination );
 
-		cd->setHelp( PROGMEM "Set compass declinations in degrees" );
+		cd->setHelp( PROGMEM "Set compass declination in degrees" );
 		compassME->addMenu( cd );
 
     SetupMenu * devMenu = new SetupMenu( "Setup Deviations" );
     devMenu->setHelp( "Compass Deviations", 280 );
     MenuEntry* dme = compassMenu->addMenu( devMenu );
-
+    
     // Calibration menu is requested
     const short skydirs[8] =
     { 0, 45, 90, 135, 180, 225, 270, 335 };
@@ -815,7 +814,7 @@ void SetupMenu::setup( )
     for( int i = 0; i < 8; i++ )
       {
         char buffer[20];
-
+      
         SetupMenuSelect* sms = new SetupMenuSelect( "Direction ",
                                                     nullptr,
                                                     false,
@@ -834,13 +833,13 @@ void SetupMenu::setup( )
 		SetupMenu * nmeaMenu = new SetupMenu( "Setup NMEA" );
 		compassME->addMenu( nmeaMenu );
 
-		SetupMenuSelect * nmeaHdm = new SetupMenuSelect( "$HCHDM", 0, false, 0, true, &compass_nmea_hdm );
+		SetupMenuSelect * nmeaHdm = new SetupMenuSelect( "$HCHDM", false, 0, true, &compass_nmea_hdm );
 		nmeaHdm->addEntry( "Disable");
 		nmeaHdm->addEntry( "Enable");
 		nmeaHdm->setHelp( PROGMEM "Enable/disable NMEA '$HCHDM' sentence (magnetic heading)" );
 		nmeaMenu->addMenu( nmeaHdm );
 
-		SetupMenuSelect * nmeaHdt = new SetupMenuSelect( "$HCHDT", 0, false, 0, true, &compass_nmea_hdt );
+		SetupMenuSelect * nmeaHdt = new SetupMenuSelect( "$HCHDT", false, 0, true, &compass_nmea_hdt );
 		nmeaHdt->addEntry( "Disable");
 		nmeaHdt->addEntry( "Enable");
 		nmeaHdt->setHelp( PROGMEM "Enable/disable NMEA '$HCHDT' sentence (magnetic true heading)" );
@@ -854,17 +853,17 @@ void SetupMenu::setup( )
 
 		Version V;
 
-		SetupMenuSelect * ver = new SetupMenuSelect( "Software Vers.", &select_dummy, false, 0, false );
+		SetupMenuSelect * ver = new SetupMenuSelect( "Software Vers.", false, 0, false );
 		ver->addEntry( V.version() );
 		soft->addMenu( ver );
 
-		SetupMenuSelect * upd = new SetupMenuSelect( "Software Update", 0, true, 0, true, &software_update );
+		SetupMenuSelect * upd = new SetupMenuSelect( "Software Update", true, 0, true, &software_update );
 		soft->addMenu( upd );
 		upd->setHelp(PROGMEM "Software Update over the air (OTA). Start Wifi AP, then connect to Wifi 'ESP32 OTA' and open http://192.161.0.1 to upload firmware");
 		upd->addEntry( "Cancel");
 		upd->addEntry( "Start");
 
-		SetupMenuSelect * fa = new SetupMenuSelect( "Factory Reset", 0, true, 0, false, &factory_reset );
+		SetupMenuSelect * fa = new SetupMenuSelect( "Factory Reset", true, 0, false, &factory_reset );
 		fa->setHelp(PROGMEM "Option to reset all settings to factory defaults, means metric system, 5m/s vario range and more");
 		fa->addEntry( "Cancel");
 		fa->addEntry( "ResetAll");
@@ -879,7 +878,7 @@ void SetupMenu::setup( )
 		SetupMenuValFloat * byellow = new SetupMenuValFloat( "Battery Yellow", 0, "Volt ", 0.0, 28.0, 0.1, 0, false, &bat_yellow_volt );
 		SetupMenuValFloat * bfull = new SetupMenuValFloat( "Battery Full", 0, "Volt ", 0.0, 28.0, 0.1, 0, false, &bat_full_volt  );
 
-		SetupMenuSelect * batv = new SetupMenuSelect( "Battery Display", 0, false, 0, true, &battery_display  );
+		SetupMenuSelect * batv = new SetupMenuSelect( "Battery Display", false, 0, true, &battery_display  );
 		batv->setHelp(PROGMEM "Option to display battery charge state either in Percentage e.g. 75% or Voltage e.g. 12.5V");
 		batv->addEntry( "Percentage");
 		batv->addEntry( "Voltage");
@@ -899,7 +898,7 @@ void SetupMenu::setup( )
 		// UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P
 		if( display_type.get() == UNIVERSAL )
 		{
-			SetupMenuSelect * dtype = new SetupMenuSelect( 	"HW Type", 0, false, 0, true, &display_type );
+			SetupMenuSelect * dtype = new SetupMenuSelect( 	"HW Type", false, 0, true, &display_type );
 			dtype->setHelp( PROGMEM "Factory setup for corresponding display type used");
 			dtype->addEntry( "UNIVERSAL");
 			dtype->addEntry( "RAYSTAR");
@@ -908,14 +907,14 @@ void SetupMenu::setup( )
 			display->addMenu( dtype );
 		}
 
-		SetupMenuSelect * disty = new SetupMenuSelect( "Style", 0, false , 0, false, &display_style );
+		SetupMenuSelect * disty = new SetupMenuSelect( "Style", false , 0, false, &display_style );
 		display->addMenu( disty );
 		disty->setHelp( PROGMEM "Display style in more digital airliner stype or retro mode with classic vario meter needle");
 		disty->addEntry( "Airliner");
 		disty->addEntry( "Retro");
 
 		// Orientation   _display_orientation
-		SetupMenuSelect * diso = new SetupMenuSelect( "Orientation", 0, true, 0, true, &display_orientation );
+		SetupMenuSelect * diso = new SetupMenuSelect( "Orientation", true, 0, true, &display_orientation );
 		display->addMenu( diso );
 		diso->setHelp( PROGMEM "Display Orientation either NORMAL means Rotary is right, or TOPDOWN means Rotary is left");
 		diso->addEntry( "NORMAL");
@@ -925,15 +924,15 @@ void SetupMenu::setup( )
 		hardware->addMenu( rotary );
 		SetupMenuSelect * rotype;
 		if( hardwareRevision.get() < 3 )
-			rotype = new SetupMenuSelect( "Direction", 0, false , 0, false, &rotary_dir );
+			rotype = new SetupMenuSelect( "Direction", false , 0, false, &rotary_dir );
 		else
-			rotype = new SetupMenuSelect( "Direction", 0, false , 0, false, &rotary_dir_21 );
+			rotype = new SetupMenuSelect( "Direction", false , 0, false, &rotary_dir_21 );
 		rotary->addMenu( rotype );
 		rotype->setHelp( PROGMEM "Select type of rotary switch, different brands may need adjustment");
 		rotype->addEntry( "Clockwise");
 		rotype->addEntry( "Counterclockwise");
 
-		SetupMenuSelect * roinc = new SetupMenuSelect( "Sensitivity", 0, false , 0, false, &rotary_inc );
+		SetupMenuSelect * roinc = new SetupMenuSelect( "Sensitivity", false , 0, false, &rotary_inc );
 		rotary->addMenu( roinc );
 		roinc->setHelp( PROGMEM "Select rotary sensitivity in number of Indent's for one increment, to your personal preference, 1 Indent is most sensitive");
 		roinc->addEntry( "1 Indent");
@@ -941,7 +940,7 @@ void SetupMenu::setup( )
 		roinc->addEntry( "3 Indent");
 		roinc->addEntry( "4 Indent");
 
-		SetupMenuSelect * s2fsw = new SetupMenuSelect( "S2F Switch", 0, false , 0, false, &s2f_switch_type );
+		SetupMenuSelect * s2fsw = new SetupMenuSelect( "S2F Switch", false , 0, false, &s2f_switch_type );
 		hardware->addMenu( s2fsw );
 		s2fsw->setHelp( PROGMEM "Select S2F hardware switch type, what can be an normal switch or a push button without lock toggling mode any time pressed");
 		s2fsw->addEntry( "Switch");
@@ -950,14 +949,14 @@ void SetupMenu::setup( )
 		if( hardwareRevision.get() >= 3 ){
 			SetupMenu * ahrs = new SetupMenu( "AHRS Setup" );
 			hardware->addMenu( ahrs );
-			mpu = new SetupMenuSelect( "AHRS Option", 0, true , 0, true, &attitude_indicator );
+			mpu = new SetupMenuSelect( "AHRS Option", true , 0, true, &attitude_indicator );
 			ahrs->addMenu( mpu );
 			mpu->setHelp( PROGMEM "Enable High Accuracy Attitude Sensor (AHRS) with valid license key entered");
 			mpu->addEntry( "Disable");
 			if( ahrsKeyValid )
 				mpu->addEntry( "Enable");
 
-			SetupMenuSelect * ahrsaz = new SetupMenuSelect( "AHRS Autozero", 0, true , 0, true, &ahrs_autozero );
+			SetupMenuSelect * ahrsaz = new SetupMenuSelect( "AHRS Autozero", true , 0, true, &ahrs_autozero );
 			ahrs->addMenu( ahrsaz );
 			ahrsaz->setHelp( PROGMEM "Start Autozero of AHRS Sensor; Preconditions: On ground; Wings 100% horizontal, fuselage in flight position !");
 			ahrsaz->addEntry( "Cancel");
@@ -967,10 +966,10 @@ void SetupMenu::setup( )
 			ahrslc->setHelp( PROGMEM "Enter valid AHRS License Key, then with valid key under 'AHRS Option', AHRS feature can be enabled");
 			ahrs->addMenu( ahrslc );
 
-			SetupMenuSelect * ahrslc1 = new SetupMenuSelect( "First    Letter",	0, false, add_key, false, &ahrs_licence_dig1 );
-			SetupMenuSelect * ahrslc2 = new SetupMenuSelect( "Second Letter",	0, false, add_key, false, &ahrs_licence_dig2 );
-			SetupMenuSelect * ahrslc3 = new SetupMenuSelect( "Third   Letter",	0, false, add_key, false, &ahrs_licence_dig3 );
-			SetupMenuSelect * ahrslc4 = new SetupMenuSelect( "Last     Letter",	0, false, add_key, false, &ahrs_licence_dig4 );
+			SetupMenuSelect * ahrslc1 = new SetupMenuSelect( "First    Letter",	false, add_key, false, &ahrs_licence_dig1 );
+			SetupMenuSelect * ahrslc2 = new SetupMenuSelect( "Second Letter",	false, add_key, false, &ahrs_licence_dig2 );
+			SetupMenuSelect * ahrslc3 = new SetupMenuSelect( "Third   Letter",	false, add_key, false, &ahrs_licence_dig3 );
+			SetupMenuSelect * ahrslc4 = new SetupMenuSelect( "Last     Letter",	false, add_key, false, &ahrs_licence_dig4 );
 			ahrslc->addMenu( ahrslc1 );
 			ahrslc->addMenu( ahrslc2 );
 			ahrslc->addMenu( ahrslc3 );
@@ -985,7 +984,7 @@ void SetupMenu::setup( )
 				ahrslc4->addEntry( e );
 			}
 
-			SetupMenuSelect * pstype = new SetupMenuSelect( "AS Sensor type", 0, true , 0, false, &airspeed_sensor_type );
+			SetupMenuSelect * pstype = new SetupMenuSelect( "AS Sensor type", true , 0, false, &airspeed_sensor_type );
 			hardware->addMenu( pstype );
 			pstype->setHelp( PROGMEM "Factory default for type of pressure sensor, will not erase on factory reset");
 			pstype->addEntry( "APBMRR");
@@ -1005,7 +1004,7 @@ void SetupMenu::setup( )
 		// Altimeter, IAS
 		SetupMenu * aia = new SetupMenu( "Altimeter, Airspeed" );
 		sye->addMenu( aia );
-		SetupMenuSelect * als = new SetupMenuSelect( "Altimeter Source",	0, false, 0, true, &alt_select );
+		SetupMenuSelect * als = new SetupMenuSelect( "Altimeter Source", false, 0, true, &alt_select );
 		aia->addMenu( als );
 		als->setHelp( PROGMEM "Select sensor for altimeter to either barometric or static pressure sensor (default), or TE sensor what results in an 'energy' altitude");
 		als->addEntry( "TE");
@@ -1015,7 +1014,7 @@ void SetupMenu::setup( )
 		spc->setHelp(PROGMEM"Calibration of indicated airspeed (IAS). Normally not needed, hence pressure probes may have systematic error");
 		aia->addMenu( spc );
 
-		SetupMenuSelect * auze = new SetupMenuSelect( "AutoZero AS Sensor",	0, true, 0, true, &autozero );
+		SetupMenuSelect * auze = new SetupMenuSelect( "AutoZero AS Sensor",	true, 0, true, &autozero );
 		aia->addMenu( auze );
 		auze->setHelp( PROGMEM "Recalculate zero point for airspeed sensor on next power on");
 		auze->addEntry( "Cancel");
@@ -1025,7 +1024,7 @@ void SetupMenu::setup( )
 		aia->addMenu( ausw );
 		ausw->setHelp( PROGMEM "Configure stall warning");
 
-		SetupMenuSelect * auswo = new SetupMenuSelect( "Stall Warning", 0, false, 0, false, &stall_warning );
+		SetupMenuSelect * auswo = new SetupMenuSelect( "Stall Warning", false, 0, false, &stall_warning );
 		ausw->addMenu( auswo );
 		auswo->setHelp( PROGMEM "Enable alarm sound when speed goes below configured stall speed and below (until 30% less)");
 		auswo->addEntry( "Disable");
@@ -1043,7 +1042,7 @@ void SetupMenu::setup( )
 		String btname="Wireless";
 		// btname += SetupCommon::getID();
 
-		SetupMenuSelect * btm = new SetupMenuSelect(  btname, 0, true, 0, true, &blue_enable );
+		SetupMenuSelect * btm = new SetupMenuSelect(  btname, true, 0, true, &blue_enable );
 		btm->setHelp( PROGMEM "Activate type wireless interface to connect navigation devices running e.g. XCSoar, or to another XCVario as client");
 		btm->addEntry( "Disable");
 		btm->addEntry( "Bluetooth");
@@ -1052,7 +1051,7 @@ void SetupMenu::setup( )
 		opt->addMenu( btm );
 
 		// Rotary Default
-		SetupMenuSelect * rd = new SetupMenuSelect( "Rotary Default", 0, false, 0, true, &rot_default );
+		SetupMenuSelect * rd = new SetupMenuSelect( "Rotary Default", false, 0, true, &rot_default );
 		sye->addMenu( rd );
 		rd->setHelp(PROGMEM "Select value to be altered at rotary movement outside of setup menu");
 		rd->addEntry( "Volume");
@@ -1061,7 +1060,7 @@ void SetupMenu::setup( )
 		// _serial1_speed
 		SetupMenu * rs232 = new SetupMenu( "RS232 Interface S1" );
 		sye->addMenu( rs232 );
-		SetupMenuSelect * s2sp = new SetupMenuSelect( PROGMEM "Baudraute",	0, true, 0, true, &serial1_speed );
+		SetupMenuSelect * s2sp = new SetupMenuSelect( PROGMEM "Baudraute",	true, 0, true, &serial1_speed );
 		rs232->addMenu( s2sp );
 		// s2sp->setHelp( "Serial RS232 (TTL) speed, pins RX:2, TX:3 on external RJ45 connector");
 		s2sp->addEntry( "OFF");
@@ -1072,13 +1071,13 @@ void SetupMenu::setup( )
 		s2sp->addEntry( "57600 baud");
 		s2sp->addEntry( "115200 baud");
 
-		SetupMenuSelect * s1in = new SetupMenuSelect( PROGMEM "Serial Loops", 0, false, 0, true, &serial1_rxloop );
+		SetupMenuSelect * s1in = new SetupMenuSelect( PROGMEM "Serial Loops", false, 0, true, &serial1_rxloop );
 		rs232->addMenu( s1in );
 		s1in->setHelp( "Option to loop serial S1 RX to S1 TX, e.g. for unidirectional OV or Kobo connection" );
 		s1in->addEntry( "Disable");     // 0
 		s1in->addEntry( "Enable");      // 1
 
-		SetupMenuSelect * s1out = new SetupMenuSelect( PROGMEM "Routing", 0, false, 0, true, &serial1_tx );
+		SetupMenuSelect * s1out = new SetupMenuSelect( PROGMEM "Routing", false, 0, true, &serial1_tx );
 		rs232->addMenu( s1out );
 		s1out->setHelp( "Select devices routed to serial interface S1");
 		s1out->addEntry( "Disable all");
@@ -1086,13 +1085,13 @@ void SetupMenu::setup( )
 		s1out->addEntry( "Wireless-XCSoar");         // 2    XCSoar Data
 		s1out->addEntry( "WL-XCSoar, XCV");      // 3
 
-		SetupMenuSelect * stxi = new SetupMenuSelect( PROGMEM "TX Inversion", 0, true , 0, true, &serial1_tx_inverted );
+		SetupMenuSelect * stxi = new SetupMenuSelect( PROGMEM "TX Inversion", true , 0, true, &serial1_tx_inverted );
 		rs232->addMenu( stxi );
 		stxi->setHelp( "Serial RS232 (TTL) option for negative logic, means a '1' will be sent at zero level (RS232 standard and default) and vice versa");
 		stxi->addEntry( "Normal");
 		stxi->addEntry( "Inverted");
 
-		SetupMenuSelect * srxi = new SetupMenuSelect( PROGMEM "RX Inversion", 0, true, 0, true, &serial1_rx_inverted );
+		SetupMenuSelect * srxi = new SetupMenuSelect( PROGMEM "RX Inversion", true, 0, true, &serial1_rx_inverted );
 		rs232->addMenu( srxi );
 		srxi->setHelp( "Serial RS232 (TTL) option for negative logic, means a '1' will be received at zero level (RS232 standard and default) and vice versa");
 		srxi->addEntry( "Normal");
@@ -1101,7 +1100,7 @@ void SetupMenu::setup( )
 		if( hardwareRevision.get() >= 3 ) {
 			SetupMenu * rs232_2 = new SetupMenu( "RS232 Interface S2" );
 			sye->addMenu( rs232_2 );
-			SetupMenuSelect * s2sp2 = new SetupMenuSelect( PROGMEM "Baudraute",	0, true, 0, true, &serial2_speed );
+			SetupMenuSelect * s2sp2 = new SetupMenuSelect( PROGMEM "Baudraute",	true, 0, true, &serial2_speed );
 			rs232_2->addMenu( s2sp2 );
 			// s2sp->setHelp( "Serial RS232 (TTL) speed, pins RX:2, TX:3 on external RJ45 connector");
 			s2sp2->addEntry( "OFF");
@@ -1112,7 +1111,7 @@ void SetupMenu::setup( )
 			s2sp2->addEntry( "57600 baud");
 			s2sp2->addEntry( "115200 baud");
 
-			SetupMenuSelect * s1out2 = new SetupMenuSelect( PROGMEM "Routing", 0, false, 0, true, &serial2_tx );
+			SetupMenuSelect * s1out2 = new SetupMenuSelect( PROGMEM "Routing", false, 0, true, &serial2_tx );
 			rs232_2->addMenu( s1out2 );
 			s1out2->setHelp( "Select devices routed to serial interface S2", 220 );
 			s1out2->addEntry( "Disable all");
@@ -1122,19 +1121,19 @@ void SetupMenu::setup( )
 			s1out2->addEntry( "S1");                         // 4
 			s1out2->addEntry( "XCVARIO, S1");                // 5
 
-			SetupMenuSelect * stxi2 = new SetupMenuSelect( PROGMEM "TX Inversion", 0, true , 0, true, &serial2_tx_inverted );
+			SetupMenuSelect * stxi2 = new SetupMenuSelect( PROGMEM "TX Inversion", true , 0, true, &serial2_tx_inverted );
 			rs232_2->addMenu( stxi2 );
 			stxi2->setHelp( "Serial RS232 (TTL) option for negative logic, means a '1' will be sent at zero level (RS232 standard and default) and vice versa");
 			stxi2->addEntry( "Normal");
 			stxi2->addEntry( "Inverted");
 
-			SetupMenuSelect * srxi2 = new SetupMenuSelect( PROGMEM "Serial RX Inversion", 0, true, 0, true, &serial2_rx_inverted );
+			SetupMenuSelect * srxi2 = new SetupMenuSelect( PROGMEM "Serial RX Inversion", true, 0, true, &serial2_rx_inverted );
 			rs232_2->addMenu( srxi2 );
 			srxi2->setHelp( "Serial RS232 (TTL) option for negative logic, means a '1' will be received at zero level (RS232 standard and default) and vice versa");
 			srxi2->addEntry( "Normal");
 			srxi2->addEntry( "Inverted");
 
-			SetupMenuSelect * srxtw2 = new SetupMenuSelect( PROGMEM "Twist RX/TX Pins", 0, true, 0, true, &serial2_pins_twisted );
+			SetupMenuSelect * srxtw2 = new SetupMenuSelect( PROGMEM "Twist RX/TX Pins", true, 0, true, &serial2_pins_twisted );
 			rs232_2->addMenu( srxtw2 );
 			srxtw2->setHelp( "Option to twist RX and TX line for S2. Normal Pin 4=TX, 3=RX. After change also a true power-cycle is needed");
 			srxtw2->addEntry( "Normal");
@@ -1142,7 +1141,7 @@ void SetupMenu::setup( )
 
 		}
 
-		SetupMenuSelect * nmea = new SetupMenuSelect( PROGMEM "NMEA Protocol", 0, false , 0, true, &nmea_protocol );
+		SetupMenuSelect * nmea = new SetupMenuSelect( PROGMEM "NMEA Protocol", false , 0, true, &nmea_protocol );
 		sye->addMenu( nmea );
 		nmea->setHelp( "Setup the protocol used for sending NMEA sentences. This needs to be inline with the device driver chosen in XCSoar/LK8000");
 		nmea->addEntry( "OpenVario");

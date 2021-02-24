@@ -819,7 +819,7 @@ void SetupMenu::setup( )
                                                     false,
                                                     compassDeviationAction,
                                                     false,
-                                                    &dummy );
+                                                    0 );
 
         sms->setHelp( "Push button to start deviation action" );
         sprintf( buffer, "%03d", skydirs[i] );

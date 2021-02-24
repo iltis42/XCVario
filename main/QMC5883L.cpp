@@ -15,7 +15,7 @@ https://datasheetspdf.com/pdf-file/1309218/QST/QMC5883L/1
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-02-23
+Last update: 2021-02-24
 
  ***************************************************************************/
 
@@ -633,7 +633,7 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z ) )
 }
 
 /**
- * Reads the heading in degrees of 1...360. If ok is passed, it is set to true,
+ * Reads the heading in degrees of 0...359. If ok is passed, it is set to true,
  * if heading data is valid, otherwise it is set to false.
  */
 float QMC5883L::heading( bool *ok )
@@ -686,7 +686,7 @@ float QMC5883L::heading( bool *ok )
 #if 0
 	double headingc = RAD_TO_DEG * atan2( fx, fy );
 
-	if( headingc <= 0.0 )
+	if( headingc < 0.0 )
 		headingc += 360.0;
 
 	static uint8_t out = 0;
@@ -706,7 +706,7 @@ float QMC5883L::heading( bool *ok )
 
 	double heading = -RAD_TO_DEG * atan2( tcy, tcx );
 
-	if( heading <= 0.0 )
+	if( heading < 0.0 )
 		heading += 360.0;
 
 	if( ok != nullptr )

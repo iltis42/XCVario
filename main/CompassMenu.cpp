@@ -13,7 +13,7 @@ Class to handle compass data and actions.
 
 Author: Axel Pauli, February 2021
 
-Last update: 2021-02-23
+Last update: 2021-02-24
 
  **************************************************************************/
 
@@ -66,8 +66,8 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 		return 0;
 	}
 
-  int direction = strtol( p->getEntry(), nullptr, 10 ) / 45;
-
+  short direction = strtol( p->getEntry(), nullptr, 10 );
+  short diridx = direction / 45;
 
   // Calibration menu is requested
   const unsigned short skydirs[8] =
@@ -86,17 +86,19 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
   while( !p->_rotary->readSwitch() )
   {
     bool ok = true;
-    heading = Compass::magnHeading();
+    heading = Compass::magnHeading( &ok, false );
 
     if( ok == false )
       {
         // in case of error deviation is set to 0
-        heading = static_cast<float>(skydirs[direction]);
+        heading = static_cast<float>( skydirs[diridx] );
       }
 
     p->ucg->setFont( ucg_font_fur20_hf );
     p->ucg->setPrintPos( 1, 180 );
-    p->ucg->printf( "Heading: %.0f\260     ", heading );
+    p->ucg->printf( "Heading: %.0f\260   ", heading );
+    p->ucg->setPrintPos( 1, 220 );
+    p->ucg->printf( "Deviation: %.0f\260   ", direction - heading );
     delay( 100 );
   }
 

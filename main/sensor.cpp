@@ -366,27 +366,21 @@ void readBMP(void *pvParameters){
 		}
 		// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d ena=%d", compass.haveSensor(),  compass_nmea_hdt.get(),  compass_enable.get() );
 		if( compass_enable.get() == true  ) {
-			// try to get compass heading from sensor and forward it via NMEA.
-			bool okmh = false;
-			bool okth = false;
-			float mh = 0.0;
-			float th = 0.0;
-			if( compass_nmea_hdm.get() == true ){
-				mh = compass.magneticHeading( &okmh );
-			}
-			// ESP_LOGI(FNAME,"Compass, MH: %f  OK: %d", mh, ok1);
-			if( compass_declination_valid.get() == true && compass_nmea_hdt.get() == true ){
-				// get true heading only, if declination is valid
-				th = compass.trueHeading( &okth );
-			}
-			if( (count % 5 ) == 0 && okmh == true ){
+      // Trigger heading reading and low pass filtering. That job must be
+      // done periodically.
+      compass.calculateHeading();
+
+			// get state of current heading
+			const bool hok = compass.headingValid();
+
+			if( (count % 5 ) == 0 && hok == true && compass_nmea_hdm.get() == true ) {
 				xSemaphoreTake( xMutex, portMAX_DELAY );
-				OV.sendNmeaHDM( mh );
+				OV.sendNmeaHDM( compass.magnHeading() );
 				xSemaphoreGive( xMutex );
 			}
-			if( (count % 5 ) == 0 && okth == true ){
+			if( (count % 5 ) == 0 && hok == true && compass_nmea_hdt.get() == true ) {
 				xSemaphoreTake( xMutex, portMAX_DELAY );
-				OV.sendNmeaHDT( th );
+				OV.sendNmeaHDT( compass.trueHeading() );
 				xSemaphoreGive( xMutex );
 			}
 		}

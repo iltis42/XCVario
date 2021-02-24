@@ -13,12 +13,13 @@ Class to handle compass data and actions.
 
 Author: Axel Pauli, February 2021
 
-Last update: 2021-02-23
+Last update: 2021-02-24
 
  **************************************************************************/
 
 #include <cstring>
 #include <cstdlib>
+#include <cmath>
 #include "esp_log.h"
 #include "esp_system.h"
 
@@ -66,8 +67,8 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 		return 0;
 	}
 
-  int direction = strtol( p->getEntry(), nullptr, 10 ) / 45;
-
+  short direction = strtol( p->getEntry(), nullptr, 10 );
+  short diridx = direction / 45;
 
   // Calibration menu is requested
   const unsigned short skydirs[8] =
@@ -82,21 +83,36 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
   delay( 500 );
 
   float heading = 0.0;
+  short hi = 0;
+  short deviation = 0;
 
   while( !p->_rotary->readSwitch() )
   {
     bool ok = true;
-    heading = Compass::magnHeading();
+    heading = Compass::magnHeading( &ok, false );
 
     if( ok == false )
       {
         // in case of error deviation is set to 0
-        heading = static_cast<float>(skydirs[direction]);
+        heading = static_cast<float>( skydirs[diridx] );
       }
+
+    hi = static_cast<short>(rintf( heading ));
+
+    if( hi >= 360 )
+      hi -= 360;
 
     p->ucg->setFont( ucg_font_fur20_hf );
     p->ucg->setPrintPos( 1, 180 );
-    p->ucg->printf( "Heading: %.0f\260     ", heading );
+    p->ucg->printf( "Heading:   %d\260    ", hi );
+    p->ucg->setPrintPos( 1, 230 );
+
+    deviation = direction - hi;
+
+    if( deviation < -180 )
+      deviation += 360;
+
+    p->ucg->printf( "Deviation: %d\260    ", deviation );
     delay( 100 );
   }
 
@@ -108,39 +124,45 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
     }
 
   // Save deviation value
-  deviations[direction]->set( static_cast<float>(skydirs[direction]) - heading );
+  deviations[diridx]->set( deviation );
 
   ESP_LOGI( FNAME, "Compass deviation action for %s is finished",
             p->getEntry() );
   return 1;
+}
 
+/** Compass Menu Action method to reset all deviations to 0. */
+int CompassMenu::resetDeviationAction( SetupMenuSelect *p )
+{
+  if( p->getSelect() == 0 )
+    {
+      // Cancel is selected
+      return 0;
+    }
+  else if( p->getSelect() == 1 )
+  {
+    p->clear();
+    p->ucg->setFont( ucg_font_fur14_hf );
+    p->ucg->setPrintPos( 1, 60 );
+    p->ucg->printf( "Reset all compass" );
+    p->ucg->setPrintPos( 1, 90 );
+    p->ucg->printf( "deviation data" );
 
-#if 0
-	else if( p->getSelect() == 10 )
-	{
-		p->clear();
-		p->ucg->setFont( ucg_font_fur14_hf );
-		p->ucg->setPrintPos( 1, 60 );
-		p->ucg->printf( "Reset compass deviations" );
+    // Reset calibration
+    for( int i = 0; i < 8; i++ )
+    {
+      deviations[i]->set( 0.0 );
+    }
 
-		// Reset calibration
-		for( int i = 0; i < 8; i++ )
-		{
-			deviations[i]->set( 0.0 );
-		}
+    ESP_LOGI( FNAME, "All compass deviations values were reset" );
+    delay( 1000 );
+  }
 
-		ESP_LOGI( FNAME, "Compass deviations values were reset" );
-		delay( 1000 );
-	}
-
-	p->clear();
-	p->ucg->setFont( ucg_font_fur14_hf );
-	p->ucg->setPrintPos( 1, 60 );
-	p->ucg->printf( "Saved        " );
-	delay( 2000 );
-	return 0;
-#endif
-
+  p->clear();
+  p->ucg->setFont( ucg_font_fur14_hf );
+  p->ucg->setPrintPos( 1, 300 );
+  p->ucg->printf( "Saved        " );
+  delay( 2000 );
   return 0;
 }
 

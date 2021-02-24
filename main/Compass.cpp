@@ -13,7 +13,7 @@ Class to handle compass data access.
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-02-23
+Last update: 2021-02-24
 
  **************************************************************************/
 
@@ -32,6 +32,11 @@ SetupNG<float>* Compass::deviations[8] = { &compass_dev_0,
 		&compass_dev_225,
 		&compass_dev_270,
 		&compass_dev_335 };
+
+float Compass::m_magn_heading = 0;
+bool Compass::m_headingValid = false;
+CompassFilter Compass::m_cfmh;
+
 /*
   Creates instance for I2C connection with passing the desired parameters.
   No action is done at the bus. Note if i2cBus is not set in the constructor,
@@ -47,22 +52,19 @@ Compass::Compass( const uint8_t addr,
 {
 }
 
-float Compass::magn_heading = 0;
-float Compass::true_heading = 0;
-CompassFilter Compass::cfmh;
-
 Compass::~Compass()
 {
 }
 
 /**
- * Reads the current heading from the sensor and apply a low pass filter
- * to it. Returns the low pass filtered magnetic heading by considering
- * deviation and declination.
+ * This method must be called periodically in a fixed time raster. It Reads
+ * the current heading from the sensor and apply a low pass filter
+ * to it. It Returns the low pass filtered magnetic heading without applying
+ * any corrections to it as declination or deviation.
  * If ok is passed, it is set to true, if heading data is valid, otherwise
  * it is set to false.
  */
-float Compass::magneticHeading( bool *okIn )
+float Compass::calculateHeading( bool *okIn )
 {
 	// ESP_LOGI(FNAME,"magneticHeading()");
 	bool ok = false;
@@ -73,39 +75,62 @@ float Compass::magneticHeading( bool *okIn )
 		if( okIn != nullptr )
 		{
 			*okIn = false;
-			ESP_LOGW(FNAME,"magneticHeading() error return from heading()");
+			m_headingValid = false;
+			ESP_LOGW( FNAME, "magneticHeading() error return from heading()");
 		}
+
 		return 0.0;
 	}
 
-	magn_heading = cfmh.filter( new_heading );
+	m_magn_heading = m_cfmh.filter( new_heading );
+	m_headingValid = true;
 
-	// consider deviation
-	const float skydirs[8] = { 0, 45, 90, 135, 180, 225, 270, 335 };
-
-	for( int i = 0; i < 8; i++ )
-	{
-		break;
-		float lowlim = skydirs[i] - 22.5;
-		float uplim  = skydirs[i] + 22.5;
-
-		if( uplim > 360 )
-		{
-			uplim -= 360;
-		}
-
-		if( magn_heading >= lowlim && magn_heading <= uplim )
-		{
-			magn_heading += deviations[i]->get();
-			break;
-		}
-	}
 	if( okIn != nullptr )
 	{
 		*okIn = true;
 	}
-	// ESP_LOGI(FNAME,"magneticHeading ret=%3.1f", magn_heading );
-	return magn_heading;
+	// ESP_LOGI(FNAME,"magneticHeading ret=%3.1f", m_magn_heading );
+	return m_magn_heading;
+}
+
+/**
+ * Returns the low pass filtered magnetic heading by considering
+ * deviation, if argument withDeviation is set to true.
+ * If ok is passed, it is set to true, if heading data is valid, otherwise
+ * it is set to false.
+ */
+float Compass::magnHeading( bool *okIn, bool withDeviation )
+{
+  if( okIn != nullptr )
+  {
+    *okIn = m_headingValid;
+  }
+
+#if 0
+    // consider deviation
+    const float skydirs[8] = { 0, 45, 90, 135, 180, 225, 270, 335 };
+
+    for( int i = 0; i < 8; i++ )
+    {
+      break;
+      float lowlim = skydirs[i] - 22.5;
+      float uplim  = skydirs[i] + 22.5;
+
+      if( uplim >= 360 )
+      {
+        uplim -= 360;
+      }
+
+      if( m_magn_heading >= lowlim && m_magn_heading <= uplim )
+      {
+        m_magn_heading += deviations[i]->get();
+        break;
+      }
+    }
+#endif
+
+  // Return magnetic heading
+  return m_magn_heading;
 }
 
 /**
@@ -118,11 +143,11 @@ float Compass::trueHeading( bool *okIn )
 {
   if( okIn != nullptr )
   {
-    *okIn = true;
+    *okIn = m_headingValid;
   }
 
 	// Calculate and return true heading
-	return magn_heading + compass_declination.get();
+	return m_magn_heading + compass_declination.get();
 }
 
 //------------------------------------------------------------------------------
@@ -155,12 +180,12 @@ float CompassFilter::filter( float newValue )
 	// Low pass filtering
 	filteredValue += ( newValue - filteredValue ) * coefficient;
 	// Correct angle areas and turns
-	if( filteredValue <= 0.0 )
+	if( filteredValue < 0.0 )
 	{
 		filteredValue += 360.;
 		turns++;
 	}
-	else if( filteredValue > 360. )
+	else if( filteredValue >= 360. )
 	{
 		filteredValue -= 360.;
 		turns--;

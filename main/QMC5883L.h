@@ -15,12 +15,11 @@ https://datasheetspdf.com/pdf-file/1309218/QST/QMC5883L/1
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-02-23
+Last update: 2021-02-24
 
  ****************************************************************************/
 
-#ifndef QMC5883L_H
-#define QMC5883L_H
+#pragma once
 
 #include <ctime>
 #include "esp_system.h"
@@ -78,7 +77,7 @@ public:
 	esp_err_t modeContinuous();
 
 	/**
-	 * Reads the heading in degrees of 1...360. If ok is passed, it is set to true,
+	 * Reads the heading in degrees of 0...359. If ok is passed, it is set to true,
 	 * if heading data is valid, otherwise it is set to false.
 	 */
 	float heading( bool *ok=nullptr );
@@ -182,4 +181,3 @@ private:
 	bool calibrationRunning;
 };
 
-#endif

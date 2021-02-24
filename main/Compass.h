@@ -13,7 +13,7 @@ Class to handle compass data access.
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-02-23
+Last update: 2021-02-24
 
  **************************************************************************/
 
@@ -81,37 +81,53 @@ public:
 
 	~Compass();
 
-	/**
+  /**
+   * This method must be called periodically in a fixed time raster. It Reads
+   * the current heading from the sensor and apply a low pass filter
+   * to it. It Returns the low pass filtered magnetic heading without applying
+   * any corrections to it as declination or deviation.
+   * If ok is passed, it is set to true, if heading data is valid, otherwise
+   * it is set to false.
+   */
+  float calculateHeading( bool *okIn=nullptr );
+
+  /**
 	 * Returns the heading by considering deviation and declination. If ok is
 	 * passed, it is set to true, if heading data is valid, otherwise it is set
 	 * to false.
 	 */
-	float trueHeading( bool *okIn=nullptr );
-
-	/**
-	 * Reads the current heading from the sensor and apply a low pass filter
-	 * to it. Returns the low pass filtered magnetic heading by considering
-	 * deviation and declination.
-	 * If ok is passed, it is set to true, if heading data is valid, otherwise
-	 * it is set to false.
-	 */
-	float magneticHeading( bool *okIn=nullptr );
-
-	/**
-	 * Returns the low pass filtered true heading.
-	 */
-	static inline float trueHeading() { return true_heading; }
+	static float trueHeading( bool *okIn=nullptr );
 
   /**
-   * Returns the low pass filtered magnetic heading.
+   * Returns the low pass filtered magnetic heading by considering
+   * deviation, if argument withDeviation is set to true.
+   * If ok is passed, it is set to true, if heading data is valid, otherwise
+   * it is set to false.
    */
-	static inline float magnHeading() { return magn_heading; }
+	static float magnHeading( bool *okIn=nullptr, bool withDeviation=true );
 
+	/**
+	 *  Returns the heading valid flag.
+	 */
+
+	static bool headingValid()
+	{
+	  return m_headingValid;
+	}
+
+	/**
+	 * Returns the used compass filter object.
+	 */
+	static CompassFilter& compassFilter() { return m_cfmh; }
 
 private:
 
 	static SetupNG<float> *deviations[8];
-	static float magn_heading;
-	static float true_heading;
-	static CompassFilter cfmh;
+
+	/** Pure low pass filtered magnetic heading */
+	static float m_magn_heading;
+
+	/** Control flag of filtered heading. */
+  static bool m_headingValid;
+	static CompassFilter m_cfmh;
 };

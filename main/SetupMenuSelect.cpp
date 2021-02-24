@@ -32,15 +32,16 @@ void SetupMenuSelect::delEntry( String ent ) {
 		}
 }
 
-SetupMenuSelect::SetupMenuSelect( String title, int *select, bool restart, int (*action)(SetupMenuSelect *p), bool save, SetupNG<int> *anvs ) {
+SetupMenuSelect::SetupMenuSelect( String title, bool restart, int (*action)(SetupMenuSelect *p), bool save, SetupNG<int> *anvs ) {
 	ESP_LOGI(FNAME,"SetupMenuSelect( %s ) ", title.c_str() );
 	_rotary->attach(this);
 	_title = title;
 	_nvs = 0;
 	highlight = -1;
-	if( select ) {
-		_select = select;
-		_select_save = *select;
+	select_intern = 0;
+	if( !anvs ) {
+		_select = &select_intern;
+		_select_save = select_intern;
 	}
 	_numval = 0;
 	_restart = restart;
@@ -52,6 +53,7 @@ SetupMenuSelect::SetupMenuSelect( String title, int *select, bool restart, int (
 		_select = _nvs->getPtr();
 		_select_save = _nvs->get();
 	}
+
 }
 
 

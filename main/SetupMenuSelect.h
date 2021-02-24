@@ -17,7 +17,7 @@
 class SetupMenuSelect:  public MenuEntry {
 public:
 	SetupMenuSelect();
-	SetupMenuSelect(  String title, int *select, bool restart=false, int (*action)(SetupMenuSelect *p) = 0, bool save=true, SetupNG<int> *anvs=0 );
+	SetupMenuSelect(  String title, bool restart=false, int (*action)(SetupMenuSelect *p) = 0, bool save=true, SetupNG<int> *anvs=0 );
 	void display( int mode=0 );
 	bool existsEntry( String ent );
 	inline void addEntry( String ent ) {  _values.push_back( ent );
@@ -36,6 +36,7 @@ public:
 private:
 	static char _val_str[20];
 	int  *_select;
+	int  select_intern;
 	int  _select_save;
 	int  _numval;
 	bool _restart;

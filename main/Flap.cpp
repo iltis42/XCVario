@@ -138,13 +138,13 @@ void Flap::setupMenue( SetupMenu *parent ){
 	SetupMenu * wk = new SetupMenu( "Flap (WK) Indicator" );
 	wkm = parent->addMenu( wk );
 
-	SetupMenuSelect * wke = new SetupMenuSelect( "Flap Indicator", 0, false, 0, true, &flap_enable );
+	SetupMenuSelect * wke = new SetupMenuSelect( "Flap Indicator", false, 0, true, &flap_enable );
 	wke->addEntry( "Disable");
 	wke->addEntry( "Enable");
 	wke->setHelp(PROGMEM"Option to enable Flap (WK) Indicator to assist optimum flap setting depending on speed and ballast");
 	wkm->addMenu( wke );
 
-	SetupMenuSelect * wkes = new SetupMenuSelect( "Flap Sensor", 0, false, select_flap_io, true, &flap_sensor );
+	SetupMenuSelect * wkes = new SetupMenuSelect( "Flap Sensor", false, select_flap_io, true, &flap_sensor );
 	wkes->addEntry( "Disable");
 	wkes->addEntry( "Enable IO-2");
 	wkes->addEntry( "Enable IO-34");
@@ -153,8 +153,7 @@ void Flap::setupMenue( SetupMenu *parent ){
 	wkm->addMenu( wkes );
 
 
-	static int select_dummy;
-	SetupMenuSelect * wkcal = new SetupMenuSelect( "Sensor Calibration", &select_dummy, true, wk_cal, false  );
+	SetupMenuSelect * wkcal = new SetupMenuSelect( "Sensor Calibration", true, wk_cal, false  );
 	wkcal->addEntry( "Cancel");
 	wkcal->addEntry( "Start");
 	wkcal->setHelp( PROGMEM "Option to calibrate flap Sensor (WK), to indicate current flap setting: Press button after each setting" );
@@ -202,19 +201,19 @@ void Flap::setupMenue( SetupMenu *parent ){
 	SetupMenu * flapls = new SetupMenu( "Flap Position Labels" );
 	MenuEntry *flaplsm = wkm->addMenu( flapls );
 
-	flabp3 = new SetupMenuSelect( "Flap Label +3",	0, false, 0, false, &wk_label_plus_3 );
+	flabp3 = new SetupMenuSelect( "Flap Label +3",	false, 0, false, &wk_label_plus_3 );
 	flaplsm->addMenu( flabp3 );
-	flabp2 = new SetupMenuSelect( "Flap Label +2",	0, false, 0, false, &wk_label_plus_2 );
+	flabp2 = new SetupMenuSelect( "Flap Label +2",	false, 0, false, &wk_label_plus_2 );
 	flaplsm->addMenu( flabp2 );
-	flabp1 = new SetupMenuSelect( "Flap Label +1",	0, false, 0, false, &wk_label_plus_1 );
+	flabp1 = new SetupMenuSelect( "Flap Label +1",	false, 0, false, &wk_label_plus_1 );
 	flaplsm->addMenu( flabp1 );
-	flab0 = new SetupMenuSelect( "Flap Label  0",		0, false, 0, false, &wk_label_null_0 );
+	flab0 = new SetupMenuSelect( "Flap Label  0",	false, 0, false, &wk_label_null_0 );
 	flaplsm->addMenu( flab0 );
-	flabm1 = new SetupMenuSelect( "Flap Label -1",	0, false, 0, false, &wk_label_minus_1 );
+	flabm1 = new SetupMenuSelect( "Flap Label -1",	false, 0, false, &wk_label_minus_1 );
 	flaplsm->addMenu( flabm1 );
-	flabm2 = new SetupMenuSelect( "Flap Label -2",	0, false, 0, false, &wk_label_minus_2 );
+	flabm2 = new SetupMenuSelect( "Flap Label -2",	false, 0, false, &wk_label_minus_2 );
 	flaplsm->addMenu( flabm2 );
-	flabm3 = new SetupMenuSelect( "Flap Label -3",	0, false, 0, false, &wk_label_minus_3 );
+	flabm3 = new SetupMenuSelect( "Flap Label -3",	false, 0, false, &wk_label_minus_3 );
 	flaplsm->addMenu( flabm3 );
 	// Initialize Flap Label Entries
 	for( int pos=-9; pos< 10; pos++ ){  // -9,.,-2,-1,+0,+1,+2,.,+9

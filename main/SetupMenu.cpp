@@ -23,6 +23,7 @@
 #include "Flap.h"
 #include "SetupMenuSelect.h"
 #include "SetupMenuValFloat.h"
+#include "DisplayDeviations.h"
 #include "MenuEntry.h"
 #include "Compass.h"
 #include "CompassMenu.h"
@@ -74,9 +75,6 @@ int update_rentry(SetupMenuValFloat * p)
 	return 0;
 }
 
-
-
-
 int add_key( SetupMenuSelect * p )
 {
 	ESP_LOGI(FNAME,"add_key( %d ) ", p->getSelect() );
@@ -90,7 +88,6 @@ int add_key( SetupMenuSelect * p )
 	}
 	return 0;
 }
-
 
 int qnh_adj( SetupMenuValFloat * p )
 {
@@ -237,7 +234,7 @@ static int compassSensorCalibrateAction( SetupMenuSelect *p )
 	return compassMenuHandler.sensorCalibrationAction( p );
 }
 
-SetupMenu::SetupMenu(){
+SetupMenu::SetupMenu() : MenuEntry() {
 	highlight = -1;
 	_parent = 0;
 	y = 0;
@@ -245,7 +242,7 @@ SetupMenu::SetupMenu(){
 	long_pressed = false;
 }
 
-SetupMenu::SetupMenu( String title ) {
+SetupMenu::SetupMenu( String title ) : MenuEntry() {
 	// ESP_LOGI(FNAME,"SetupMenu::SetupMenu( %s ) ", title.c_str() );
 	_rotary->attach(this);
 	_title = title;
@@ -831,40 +828,20 @@ void SetupMenu::setup( )
         dme->addMenu( sms );
       }
 
-    // Show deviations
-    SetupMenuSelect* sms = new SetupMenuSelect( "Show Deviations",
+    // Show comapss deviations
+    DisplayDeviations* smd = new DisplayDeviations( "Show Deviations" );
+    compassME->addMenu( smd );
+
+    SetupMenuSelect* sms = new SetupMenuSelect( "Reset Deviations ",
                                                 false,
-                                                nullptr,
+                                                compassResetDeviationAction,
                                                 false,
                                                 0 );
-    compassME->addMenu( sms );
-
-    const char* skydirdev[8] =
-    { "N  000", "NE 045", "E  090", "SE 135", "S  180", "SW 225", "W  270", "NW 335" };
-
-
-    for( int i = 0; i < 8; i++ )
-      {
-        char buffer[30];
-        sprintf( buffer,
-                 "%s Deviation %d",
-                 skydirdev[i],
-                 static_cast<int>(rintf(CompassMenu::deviations[i]->get())) );
-        sms->addEntry( buffer );
-      }
-
-    sms = new SetupMenuSelect( "Reset Deviations ",
-                               false,
-                               compassResetDeviationAction,
-                               false,
-                               0 );
 
     sms->setHelp( "Reset all deviation data to zero" );
     sms->addEntry( "Cancel" );
     sms->addEntry( "Reset" );
     compassME->addMenu( sms );
-
-
 
 		SetupMenu * nmeaMenu = new SetupMenu( "Setup NMEA" );
 		compassME->addMenu( nmeaMenu );

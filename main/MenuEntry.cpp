@@ -152,3 +152,13 @@ void MenuEntry::clear()
 	xSemaphoreGive(spiMutex );
 }
 
+void MenuEntry::semaphoreTake()
+{
+  xSemaphoreTake( spiMutex, portMAX_DELAY );
+}
+
+void MenuEntry::semaphoreGive()
+{
+  xSemaphoreGive( spiMutex );
+}
+

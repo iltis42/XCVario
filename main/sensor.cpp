@@ -392,7 +392,7 @@ void readBMP(void *pvParameters){
 	}
 }
 
-int ttick = 0;
+static int ttick = 0;
 
 void readTemp(void *pvParameters){
 	while (1) {
@@ -433,7 +433,7 @@ void readTemp(void *pvParameters){
 	}
 }
 
-bool init_done=false;
+static bool init_done=false;
 
 // Sensor board init method. Herein all functions that make the XCVario are launched and tested.
 void sensor(void *args){

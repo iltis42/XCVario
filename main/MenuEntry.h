@@ -19,16 +19,18 @@
 #include "BMPVario.h"
 
 
-class MenuEntry: public RotaryObserver{
+class MenuEntry: public RotaryObserver {
 public:
-	MenuEntry(){ _parent = 0;
+	MenuEntry() : RotaryObserver() {
+	       _parent = 0;
 				 highlight = 0;
 				 pressed = false;
 				 y=0;
 				 helptext=0;
 				 long_pressed = false;
 				 hypos=0;
-	};
+	}
+
 	virtual void display( int mode=0 ) = 0;
 	virtual void release() { display(); };
 	virtual void longPress() {};
@@ -49,7 +51,8 @@ public:
 	void uprintf( int x, int y, const char* format, ...);
 	void uprint( int x, int y, const char* str );
 	bool menuEnabled() { return _menu_enabled; };
-
+	void semaphoreTake();
+  void semaphoreGive();
 public:
 	std::vector<MenuEntry*>  _childs;
 	MenuEntry *_parent;

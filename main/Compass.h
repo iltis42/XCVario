@@ -13,7 +13,7 @@ Class to handle compass data access.
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-02-24
+Last update: 2021-02-26
 
  **************************************************************************/
 
@@ -120,6 +120,17 @@ public:
 	 */
 	static CompassFilter& compassFilter() { return m_cfmh; }
 
+	/**
+	 * Setup the deviation interpolation data.
+	 */
+	static void setupInterpolationData();
+
+	/**
+	 * Compute heading deviation by using linear interpolation.
+	 * @param heading Heading value between 0...359
+	 */
+	static float getDeviation( float heading );
+
 private:
 
 	static SetupNG<float> *deviations[8];
@@ -129,5 +140,15 @@ private:
 
 	/** Control flag of filtered heading. */
   static bool m_headingValid;
+
+  /** Low pass filter used by compass. */
 	static CompassFilter m_cfmh;
+
+	/** Deviation interpolation data. */
+	static struct IPD
+	{
+	  float m;  // tangens alpha
+	  float n;  // y for x=0
+	  float hi; // heading interval correction
+	} ipd[8];
 };

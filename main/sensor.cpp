@@ -570,6 +570,7 @@ void sensor(void *args){
 			}
 		}
 		else if( hardwareRevision.get() == 2 ){
+			ESP_LOGI(FNAME,"Aispeed sensor set MP3V5004" );
 			airspeed_sensor_type.set( PS_MP3V5004 );
 		}
 	}

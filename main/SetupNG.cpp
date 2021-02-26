@@ -180,7 +180,7 @@ SetupNG<int> 			wk_label_minus_3( "WKLM3", 33); //  S
 SetupNG<float>       	flap_takeoff("FLAPTO", 1 );
 SetupNG<int> 			audio_disable( "AUDIS", 0 );
 SetupNG<int>			vario_mode("VAMOD", 0 );
-SetupNG<int>			airspeed_sensor_type("PTYPE", PS_TE4525, false);
+SetupNG<int>			airspeed_sensor_type("PTYPE", PS_NONE, false);
 SetupNG<int>			cruise_audio_mode("CAUDIO", 0 );
 SetupNG<int>			netto_mode("NETMOD", 0 );
 SetupNG<float>			v_max("VMAX", 270 );

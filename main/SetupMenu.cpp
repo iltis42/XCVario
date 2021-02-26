@@ -220,7 +220,7 @@ static int compassDeviationAction( SetupMenuSelect *p )
 
 static int compassResetDeviationAction( SetupMenuSelect *p )
 {
-  return compassMenuHandler.resetDeviationAction( p );
+	return compassMenuHandler.resetDeviationAction( p );
 }
 
 static int compassDeclinationAction( SetupMenuValFloat *p )
@@ -788,7 +788,7 @@ void SetupMenu::setup( )
 
 		SetupMenuSelect * compSensorCal = new SetupMenuSelect( "Sensor Calibration", false, compassSensorCalibrateAction, false );
 		compSensorCal->addEntry( "Start");
-        compSensorCal->addEntry( "Cancel");
+		compSensorCal->addEntry( "Cancel");
 		compSensorCal->setHelp( PROGMEM "Calibrate Magnetic Sensor" );
 		compassME->addMenu( compSensorCal );
 
@@ -805,43 +805,43 @@ void SetupMenu::setup( )
 		cd->setHelp( PROGMEM "Set compass declination in degrees" );
 		compassME->addMenu( cd );
 
-    SetupMenu * devMenu = new SetupMenu( "Setup Deviations" );
-    devMenu->setHelp( "Compass Deviations", 280 );
-    MenuEntry* dme = compassMenu->addMenu( devMenu );
-    
-    // Calibration menu is requested
-    const short skydirs[8] =
-    { 0, 45, 90, 135, 180, 225, 270, 335 };
+		SetupMenu * devMenu = new SetupMenu( "Setup Deviations" );
+		devMenu->setHelp( "Compass Deviations", 280 );
+		MenuEntry* dme = compassMenu->addMenu( devMenu );
 
-    for( int i = 0; i < 8; i++ )
-      {
-        char buffer[20];
-        SetupMenuSelect* sms = new SetupMenuSelect( "Direction ",
-                                                    false,
-                                                    compassDeviationAction,
-                                                    false,
-                                                    0 );
+		// Calibration menu is requested
+		const short skydirs[8] =
+		{ 0, 45, 90, 135, 180, 225, 270, 335 };
 
-        sms->setHelp( "Push button to start deviation action" );
-        sprintf( buffer, "%03d", skydirs[i] );
-        sms->addEntry( buffer );
-        dme->addMenu( sms );
-      }
+		for( int i = 0; i < 8; i++ )
+		{
+			char buffer[20];
+			SetupMenuSelect* sms = new SetupMenuSelect( "Direction ",
+					false,
+					compassDeviationAction,
+					false,
+					0 );
 
-    // Show comapss deviations
-    DisplayDeviations* smd = new DisplayDeviations( "Show Deviations" );
-    compassME->addMenu( smd );
+			sms->setHelp( "Push button to start deviation action" );
+			sprintf( buffer, "%03d", skydirs[i] );
+			sms->addEntry( buffer );
+			dme->addMenu( sms );
+		}
 
-    SetupMenuSelect* sms = new SetupMenuSelect( "Reset Deviations ",
-                                                false,
-                                                compassResetDeviationAction,
-                                                false,
-                                                0 );
+		// Show comapss deviations
+		DisplayDeviations* smd = new DisplayDeviations( "Show Deviations" );
+		compassME->addMenu( smd );
 
-    sms->setHelp( "Reset all deviation data to zero" );
-    sms->addEntry( "Cancel" );
-    sms->addEntry( "Reset" );
-    compassME->addMenu( sms );
+		SetupMenuSelect* sms = new SetupMenuSelect( "Reset Deviations ",
+				false,
+				compassResetDeviationAction,
+				false,
+				0 );
+
+		sms->setHelp( "Reset all deviation data to zero" );
+		sms->addEntry( "Cancel" );
+		sms->addEntry( "Reset" );
+		compassME->addMenu( sms );
 
 		SetupMenu * nmeaMenu = new SetupMenu( "Setup NMEA" );
 		compassME->addMenu( nmeaMenu );
@@ -996,15 +996,15 @@ void SetupMenu::setup( )
 				ahrslc3->addEntry( e );
 				ahrslc4->addEntry( e );
 			}
-
-			SetupMenuSelect * pstype = new SetupMenuSelect( "AS Sensor type", true , 0, false, &airspeed_sensor_type );
-			hardware->addMenu( pstype );
-			pstype->setHelp( PROGMEM "Factory default for type of pressure sensor, will not erase on factory reset");
-			pstype->addEntry( "APBMRR");
-			pstype->addEntry( "TE4525");
-			pstype->addEntry( "MP5004");
-			pstype->addEntry( "Autodetect");
 		}
+
+		SetupMenuSelect * pstype = new SetupMenuSelect( "AS Sensor type", true , 0, false, &airspeed_sensor_type );
+		hardware->addMenu( pstype );
+		pstype->setHelp( PROGMEM "Factory default for type of pressure sensor, will not erase on factory reset");
+		pstype->addEntry( "APBMRR");
+		pstype->addEntry( "TE4525");
+		pstype->addEntry( "MP5004");
+		pstype->addEntry( "Autodetect");
 
 		float fva = factory_volt_adjust.get();
 		if( abs(fva - 0.00815) < 0.00001 ) {

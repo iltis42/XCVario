@@ -536,35 +536,42 @@ void sensor(void *args){
 	wireless_id += SetupCommon::getID();
 	display->writeText(line++, wireless_id.c_str() );
 
-	ESP_LOGI(FNAME,"Speed sensors init..  type configured: %d", airspeed_sensor_type.get() );
+	ESP_LOGI(FNAME,"Airspeed sensor init..  type configured: %d", airspeed_sensor_type.get() );
 	int offset;
 	if( airspeed_sensor_type.get() == PS_NONE ){ // autodetect
+		ESP_LOGI(FNAME,"Airspeed sensor Autodetect HW revision 3");
 		if( hardwareRevision.get() == 3 ) {
 			bool found = false;
 			asSensor = new MS4525DO();
 			asSensor->setBus( &i2c );
+			ESP_LOGI(FNAME,"Try MS4525");
 			if( asSensor->selfTest( offset ) ){
 				if( asSensor->offsetPlausible( offset ) ){
 					airspeed_sensor_type.set( PS_TE4525 );
 					found = true;
+					ESP_LOGI(FNAME,"MS4525: OKAY");
 				}
 			}
 			if( !found ){   // behaves same as above, so we can't detect this, needs to be setup in factory
 				asSensor = new ABPMRR();
 				asSensor->setBus( &i2c );
+				ESP_LOGI(FNAME,"Try ABPMRR");
 				if( asSensor->selfTest( offset ) ){
 					if( asSensor->offsetPlausible( offset ) ){
 						airspeed_sensor_type.set( PS_ABPMRR );
 						found = true;
+						ESP_LOGI(FNAME,"ABPMRR: OKAY");
 					}
 				}
 			}
 			if( !found ){
+				ESP_LOGI(FNAME,"Try MP5004DP");
 				asSensor = new MP5004DP();
-				asSensor->setBus( &i2c );
 				if( asSensor->selfTest( offset ) ){
 					if( asSensor->offsetPlausible( offset ) ){
 						airspeed_sensor_type.set( PS_MP3V5004 );
+						found = true;
+						ESP_LOGI(FNAME,"MP3V5004: OKAY");
 					}
 				}
 			}

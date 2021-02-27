@@ -13,7 +13,7 @@ Class to handle compass data and actions.
 
 Author: Axel Pauli, February 2021
 
-Last update: 2021-02-24
+Last update: 2021-02-26
 
  **************************************************************************/
 
@@ -126,6 +126,9 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
   // Save deviation value
   deviations[diridx]->set( deviation );
 
+  // Update compass interpolation data
+  Compass::setupInterpolationData();
+
   ESP_LOGI( FNAME, "Compass deviation action for %s is finished",
             p->getEntry() );
   return 1;
@@ -157,6 +160,9 @@ int CompassMenu::resetDeviationAction( SetupMenuSelect *p )
     ESP_LOGI( FNAME, "All compass deviations values were reset" );
     delay( 1000 );
   }
+
+  // Reset compass interpolation data
+  Compass::setupInterpolationData();
 
   p->clear();
   p->ucg->setFont( ucg_font_fur14_hf );
@@ -232,11 +238,11 @@ bool CompassMenu::calibrationReport( float xscale, float yscale, float zscale )
     return false;
 
   menuPtr->ucg->setPrintPos( 1, 100 );
-  menuPtr->ucg->printf( "X-Scale=%f       ", xscale );
+  menuPtr->ucg->printf( "X-Scale=%.1f       ", xscale * 100 );
   menuPtr->ucg->setPrintPos( 1, 130 );
-  menuPtr->ucg->printf( "Y-Scale=%f       ", yscale );
+  menuPtr->ucg->printf( "Y-Scale=%f.1       ", yscale * 100 );
   menuPtr->ucg->setPrintPos( 1, 160 );
-  menuPtr->ucg->printf( "Z-Scale=%f       ", zscale );
+  menuPtr->ucg->printf( "Z-Scale=%f.1       ", zscale * 100 );
 
   if( MenuEntry::_rotary->readSwitch() == false )
     {

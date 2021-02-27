@@ -15,7 +15,7 @@ https://datasheetspdf.com/pdf-file/1309218/QST/QMC5883L/1
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-02-24
+Last update: 2021-02-26
 
  ***************************************************************************/
 
@@ -93,6 +93,7 @@ QMC5883L::QMC5883L( const uint8_t addrIn,
 								  overflowWarning( false ),
 								  calibrationRunning( false )
 {
+  ESP_LOGI( FNAME, "QMC5883L( %02X )", addrIn );
 	if( addrIn == 0 )
 	{
 		// set address to default value of chip, if it is zero.
@@ -194,6 +195,8 @@ esp_err_t QMC5883L::selfTest()
  */
 esp_err_t QMC5883L::modeContinuous()
 {
+  ESP_LOGI( FNAME, "modeContinuous()" );
+
 	esp_err_t e1, e2, e3, e4;
 	e1 = e2 = e3 = e4 = 0;
 
@@ -222,6 +225,8 @@ esp_err_t QMC5883L::modeContinuous()
  */
 esp_err_t QMC5883L::modeStandby()
 {
+  ESP_LOGI( FNAME, "modeStandby()" );
+
 	// Soft reset, device goes after that in the standby mode.
 	return writeRegister( addr, REG_CONTROL2, SOFT_RST );
 }
@@ -352,7 +357,7 @@ bool QMC5883L::rawHeading()
 		}
 		ESP_LOGE( FNAME, "read Register returned <= 0" );
 	}
-	ESP_LOGE( FNAME, "STATUS_DRDY FAILED" );
+	ESP_LOGE( FNAME, "STATUS_DRDY=0, no new data available" );
 
 	return false;
 }
@@ -684,7 +689,7 @@ float QMC5883L::heading( bool *ok )
 	double fz = (double) ((float( zraw ) - zbias) * zscale);
 
 #if 0
-	double headingc = RAD_TO_DEG * atan2( fx, fy );
+	double headingc = -RAD_TO_DEG * atan2( fx, fy );
 
 	if( headingc < 0.0 )
 		headingc += 360.0;
@@ -712,8 +717,7 @@ float QMC5883L::heading( bool *ok )
 	if( ok != nullptr )
 		*ok = true;
 
-
-#define DEBUG_COMP1
+// #define DEBUG_COMP1
 #ifdef DEBUG_COMP1
 	ESP_LOGI( FNAME,
 			"rawHeading, x:%d y:%d z:%d, roll: %f  pitch: %f  tcx:%f tcy:%f mh:%f ",

@@ -13,7 +13,7 @@ Class to handle compass data access.
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-02-24
+Last update: 2021-02-26
 
  **************************************************************************/
 
@@ -36,6 +36,7 @@ SetupNG<float>* Compass::deviations[8] = { &compass_dev_0,
 float Compass::m_magn_heading = 0;
 bool Compass::m_headingValid = false;
 CompassFilter Compass::m_cfmh;
+struct Compass::IPD Compass::ipd[8];
 
 /*
   Creates instance for I2C connection with passing the desired parameters.
@@ -106,31 +107,67 @@ float Compass::magnHeading( bool *okIn, bool withDeviation )
     *okIn = m_headingValid;
   }
 
-#if 0
-    // consider deviation
-    const float skydirs[8] = { 0, 45, 90, 135, 180, 225, 270, 335 };
-
-    for( int i = 0; i < 8; i++ )
+  if( withDeviation == false )
     {
-      break;
-      float lowlim = skydirs[i] - 22.5;
-      float uplim  = skydirs[i] + 22.5;
-
-      if( uplim >= 360 )
-      {
-        uplim -= 360;
-      }
-
-      if( m_magn_heading >= lowlim && m_magn_heading <= uplim )
-      {
-        m_magn_heading += deviations[i]->get();
-        break;
-      }
+      // Return pure magnetic heading
+      return m_magn_heading;
     }
-#endif
 
-  // Return magnetic heading
-  return m_magn_heading;
+  // Return magnetic heading by considering deviation data.
+  return m_magn_heading + getDeviation( m_magn_heading );
+}
+
+/**
+ * Compute heading deviation by using linear interpolation.
+ *
+ * @param heading Heading value between 0...359
+ */
+float Compass::getDeviation( float heading )
+{
+  static bool idLoaded = false;
+
+  if( idLoaded == false )
+    {
+      // Load deviation interpolation data once.
+      setupInterpolationData();
+      idLoaded = true;
+    }
+
+  // Reduce heading to interval 0...45.
+  int iv = (static_cast<int>(heading) % 360) / 45;
+
+  // Apply linear interpolation
+  float deviation = ( ipd[iv].m * (heading - ipd[iv].hi) ) + ipd[iv].n;
+
+  // ESP_LOGI( FNAME, "RawHeading=%.1f : deviation=%0.1f", heading, deviation );
+  return deviation;
+}
+
+/**
+ * Setup the deviation interpolation data.
+ */
+void Compass::setupInterpolationData()
+{
+  // Deviation data 0...360
+  SetupNG<float>* devData[9] = { &compass_dev_0,
+      &compass_dev_45,
+      &compass_dev_90,
+      &compass_dev_135,
+      &compass_dev_180,
+      &compass_dev_225,
+      &compass_dev_270,
+      &compass_dev_335,
+      &compass_dev_0 };
+
+  for( int i = 0; i < 8; i++ )
+    {
+      ipd[i].m = ( devData[i+1]->get() - devData[i]->get() ) / 45.0;
+      ipd[i].n = devData[i]->get();
+      ipd[i].hi = float(i) * 45.0;
+      ESP_LOGI( FNAME, "I=%d dev1=%f dev2=%f m=%f n=%f hi=%f",
+                i, devData[i]->get(), devData[i+1]->get(),
+                ipd[i].m, ipd[i].n, ipd[i].hi );
+    }
 }
 
 /**

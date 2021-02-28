@@ -1140,7 +1140,7 @@ void SetupMenu::setup( )
 			stxi2->addEntry( "Normal");
 			stxi2->addEntry( "Inverted");
 
-			SetupMenuSelect * srxi2 = new SetupMenuSelect( PROGMEM "Serial RX Inversion", true, 0, true, &serial2_rx_inverted );
+			SetupMenuSelect * srxi2 = new SetupMenuSelect( PROGMEM "RX Inversion", true, 0, true, &serial2_rx_inverted );
 			rs232_2->addMenu( srxi2 );
 			srxi2->setHelp( "Serial RS232 (TTL) option for negative logic, means a '1' will be received at zero level (RS232 standard and default) and vice versa");
 			srxi2->addEntry( "Normal");

@@ -222,14 +222,9 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 
 	compass.calibrate( calibrationReport );
 	p->ucg->setPrintPos( 1, 250 );
-	p->ucg->printf( "Press button to exit" );
 
 	delay( 2000 );
 
-	while( p->_rotary->readSwitch() == false )
-	{
-		delay( 20 );
-	}
 
 	menuPtr = nullptr;
 	return 0;

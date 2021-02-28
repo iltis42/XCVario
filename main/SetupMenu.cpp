@@ -61,6 +61,13 @@ int update_sunit(SetupMenuSelect * p) {
 	return 0;
 }
 
+int gload_reset( SetupMenuSelect * p ){
+	gload_pos_max.set(0);
+	gload_neg_max.set(0);
+	return 0;
+}
+
+
 int update_s2f_speed(SetupMenuValFloat * p)
 {
 	Switch::setCruiseSpeed( Units::Airspeed2Kmh( *(p->_value) ) );
@@ -858,6 +865,49 @@ void SetupMenu::setup( )
 		nmeaHdt->setHelp( PROGMEM "Enable/disable NMEA '$HCHDT' sentence (magnetic true heading)" );
 		nmeaMenu->addMenu( nmeaHdt );
 
+		SetupMenuSelect * btm = new SetupMenuSelect( "Wireless", true, 0, true, &blue_enable );
+		btm->setHelp( PROGMEM "Activate type wireless interface to connect navigation devices running e.g. XCSoar, or to another XCVario as client");
+		btm->addEntry( "Disable");
+		btm->addEntry( "Bluetooth");
+		btm->addEntry( "Wireless LAN");
+		btm->addEntry( "Wireless Client");
+		opt->addMenu( btm );
+
+		SetupMenu * gload = new SetupMenu( "Load Factor Display" );
+		MenuEntry* gloadME = opt->addMenu( gload );
+
+		SetupMenuValFloat * gtpos = new SetupMenuValFloat( "Positive Threshold", 0, "", 0.0, 8.0, 0.1, 0, false, &gload_pos_thresh );
+		gloadME->addMenu( gtpos );
+		gtpos->setHelp(PROGMEM "Positive threshold to launch g load factor display");
+
+		SetupMenuValFloat * gtneg = new SetupMenuValFloat( "Negative Threshold", 0, "", -8.0, 0.0, 0.1, 0, false, &gload_neg_thresh );
+		gloadME->addMenu( gtneg );
+		gtneg->setHelp(PROGMEM "Negative threshold to launch g load factor display");
+
+		SetupMenuValFloat * glpos = new SetupMenuValFloat( "Positive Limit", 0, "", 0.0, 8.0, 0.1, 0, false, &gload_pos_limit );
+		gloadME->addMenu( glpos );
+		glpos->setHelp(PROGMEM "Positive g load factor limit the structure of airplane is able to handle according to manual");
+
+		SetupMenuValFloat * glneg = new SetupMenuValFloat( "Negative Limit", 0, "", -8.0, 0.0, 0.1, 0, false, &gload_neg_limit );
+		gloadME->addMenu( glneg );
+		glneg->setHelp(PROGMEM "Negative g load factor limit the structure of airplane is able to handle according to manual");
+
+		SetupMenuValFloat * gmpos = new SetupMenuValFloat( "Max Positive", 0, "", 0.0, 0.0, 0.0, 0, false, &gload_pos_max );
+		gloadME->addMenu( gmpos );
+		gmpos->setHelp(PROGMEM "Maximum positive g load factor measured since last reset");
+
+		SetupMenuValFloat * gmneg = new SetupMenuValFloat( "Max Negative", 0, "", 0.0, 0.0, 0.0, 0, false, &gload_neg_max );
+		gloadME->addMenu( gmneg );
+		gmneg->setHelp(PROGMEM "Maximum negative g load factor measured since last reset");
+
+		SetupMenuSelect * gloadres = new SetupMenuSelect( "Load factor reset", false, gload_reset, false, 0 );
+		gloadres->setHelp(PROGMEM "Option to reset stored maximum positive and negative g load factors");
+		gloadres->addEntry( "Reset");
+		gloadres->addEntry( "Cancel");
+		gloadME->addMenu( gloadres );
+
+
+
 		SetupMenu * sy = new SetupMenu( "System" );
 		MenuEntry* sye = mm->addMenu( sy );
 
@@ -1051,17 +1101,7 @@ void SetupMenu::setup( )
 		vmax->setHelp(PROGMEM"Configure maximum speed for corresponding airplane type");
 		vmax->addMenu( ausws );
 
-		// Bluetooth or Wifi
-		String btname="Wireless";
-		// btname += SetupCommon::getID();
 
-		SetupMenuSelect * btm = new SetupMenuSelect(  btname, true, 0, true, &blue_enable );
-		btm->setHelp( PROGMEM "Activate type wireless interface to connect navigation devices running e.g. XCSoar, or to another XCVario as client");
-		btm->addEntry( "Disable");
-		btm->addEntry( "Bluetooth");
-		btm->addEntry( "Wireless LAN");
-		btm->addEntry( "Wireless Client");
-		opt->addMenu( btm );
 
 		// Rotary Default
 		SetupMenuSelect * rd = new SetupMenuSelect( "Rotary Default", false, 0, true, &rot_default );

@@ -360,15 +360,16 @@ void readBMP(void *pvParameters){
 				}
 				else
 					ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
+
 				vTaskDelay(2/portTICK_PERIOD_MS);
 				xSemaphoreGive(xMutex);
 			}
 		}
 		// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d ena=%d", compass.haveSensor(),  compass_nmea_hdt.get(),  compass_enable.get() );
 		if( compass_enable.get() == true  ) {
-      // Trigger heading reading and low pass filtering. That job must be
-      // done periodically.
-      compass.calculateHeading();
+			// Trigger heading reading and low pass filtering. That job must be
+			// done periodically.
+			compass.calculateHeading();
 
 			// get state of current heading
 			const bool hok = compass.headingValid();
@@ -387,6 +388,11 @@ void readBMP(void *pvParameters){
 		if( uxTaskGetStackHighWaterMark( bpid )  < 1024 )
 			ESP_LOGW(FNAME,"Warning bmpTask stack low: %d", uxTaskGetStackHighWaterMark( bpid ) );
 
+		if( accelG[0] > gload_pos_max.get() ){
+			gload_pos_max.set( (float)accelG[0] );
+		}else if( accelG[0] < gload_neg_max.get() ){
+			gload_neg_max.set(  (float)accelG[0] );
+		}
 		esp_task_wdt_reset();
 		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
 	}

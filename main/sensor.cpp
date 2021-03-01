@@ -157,6 +157,7 @@ bool inSetup=true;
 bool stall_warning_active=false;
 int count=0;
 bool flarmWarning = false;
+bool gLoadDisplay = false;
 
 float getTAS() { return tas; };
 float getTE() { return TE; };
@@ -211,10 +212,24 @@ void drawDisplay(void *pvParameters){
 				if( flarmWarning )
 					Flarm::drawFlarmWarning();
 			}
-			if( !(stall_warning_active || flarmWarning) ) {
-				display->drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, meanClimb, Switch::cruiseMode(), standard_setting, Flap::getLever() );
-
+			if( accelG[0] > gload_pos_thresh.get() ||  accelG[0] < gload_neg_thresh.get() ){
+				if( !gLoadDisplay ){
+					gLoadDisplay = true;
+					display->clear();
+				}
 			}
+			else{
+				gLoadDisplay = false;
+				display->clear();
+			}
+			if( gLoadDisplay ) {
+				display->drawLoadDisplay( (float)accelG[0] );
+			}
+
+			if( !(stall_warning_active || flarmWarning || gLoadDisplay ) ) {
+				display->drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, meanClimb, Switch::cruiseMode(), standard_setting, Flap::getLever() );
+			}
+
 		}
 		vTaskDelay(20/portTICK_PERIOD_MS);
 		if( uxTaskGetStackHighWaterMark( dpid ) < 1024  )

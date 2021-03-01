@@ -21,7 +21,7 @@
 
 enum ips_display { ILI9341 };
 
-typedef enum e_sreens { INIT_DISPLAY_NULL, INIT_DISPLAY_AIRLINER=1, INIT_DISPLAY_RETRO=2, INIT_DISPLAY_FLARM=4 } e_screens_t;
+typedef enum e_sreens { INIT_DISPLAY_NULL, INIT_DISPLAY_AIRLINER=1, INIT_DISPLAY_RETRO=2, INIT_DISPLAY_FLARM=4, INIT_DISPLAY_GLOAD=8 } e_screens_t;
 extern int screens_init;
 
 class IpsDisplay {
@@ -34,6 +34,7 @@ public:
 	static void writeText( int line, String text );                          // airspeed,       TE,       aTE,       polar_sink,       alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode
 	static void drawDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor );
 	static void drawWarning( const char *warn, bool push=false );
+	static void drawLoadDisplay( float loadFactor );
 	static void initDisplay();
 	static void clear();   // erase whole display
 	void doMenu( bool menu=true ) { _menu = menu; };
@@ -113,10 +114,11 @@ private:
 	static void drawThermometer( int x, int y );
 	static void drawTetragon( float a, int x0, int y0, int l1, int l2, int w, int r, int g, int b, bool del=true );
 	static void initRetroDisplay();
+	static void initLoadDisplay();
 	static void drawRetroDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor );
 	static void drawAirlinerDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor );
-	static void drawAnalogScale( int val, int pos );
-	static void drawScaleLines( bool full=true );
+	static void drawAnalogScale( int val, int pos, float range, int offset=0 );
+	static void drawScaleLines( bool full, float max_pos, float max_neg );
 	static void setTeBuf( int y1, int y2, int r, int g, int b );
 	static void drawTeBuf();
 	static void drawGaugeTriangle( int y, int r, int g, int b, bool s2f=false );

@@ -377,7 +377,7 @@ void IpsDisplay::drawAvg( float avclimb, float delta ){
 		int y=AMIDY - sin((avc_old/_range)*M_PI_2)*pos;
 		ucg->drawTetragon( x+size, y, x,y+ylsize, x-size,y, x,y-yusize );
 	}
-	drawScaleLines( false );
+	drawScaleLines( false, _range, -_range );
 	// drawAnalogScale(0, 132);
 	if( delta > 0 )
 		ucg->setColor( COLOR_GREEN );
@@ -695,19 +695,19 @@ void IpsDisplay::drawTetragon( float a, int x0, int y0, int l1, int l2, int w, i
 	ucg->drawTetragon(xn_0,yn_0,xn_1,yn_1,xn_2,yn_2,xn_3,yn_3);
 }
 
-void IpsDisplay::drawScaleLines( bool full ){
+void IpsDisplay::drawScaleLines( bool full, float max_pos, float max_neg ){
 	float modulo=1;
-	if( _range > 10 )
+	if( max_pos > 10 )
 		modulo = 2;
-	if( _range < 5 )
+	if( max_pos < 5 )
 		modulo = 0.5;
 	int lower = 0;
 	if( full )
-		lower = -(int)_range;
-	for( float a=lower; a<=(int)_range; a+=modulo ) {
+		lower = (int)max_neg;
+	for( float a=lower; a<=(int)max_pos; a+=modulo ) {
 		int width=1;
 		int end=135;
-		int r = (int)_range;
+		int r = (int)max_pos;
 		if( a==0 || abs(a)==r ){
 			width=2;
 			end=140;
@@ -730,17 +730,18 @@ void IpsDisplay::drawScaleLines( bool full ){
 				end=140;
 			}
 		}
-		drawTetragon( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 125, end, width, COLOR_WHITE, false );
+		drawTetragon( ((float)a/max_pos)*M_PI_2, AMIDX, AMIDY, 125, end, width, COLOR_WHITE, false );
 	}
 }
 
-void IpsDisplay::drawAnalogScale( int val, int pos ){
+// Draw scale numbers for positive or negative value
+void IpsDisplay::drawAnalogScale( int val, int pos, float range, int offset ){
 	ucg->setFontPosCenter();
 	ucg->setFont(ucg_font_fub14_hn);
-	int x=AMIDX - cos((val/_range)*M_PI_2)*pos;
-	int y=AMIDY+1 - sin((val/_range)*M_PI_2)*pos;
+	int x=AMIDX - cos((val/range)*M_PI_2)*pos;
+	int y=AMIDY+1 - sin((val/range)*M_PI_2)*pos;
 	ucg->setPrintPos(x-8,y);
-	ucg->printf("%d", val );
+	ucg->printf("%d", val+offset );
 	ucg->setFontPosBottom();
 }
 
@@ -748,18 +749,18 @@ void IpsDisplay::initRetroDisplay(){
 	bootDisplay();
 	ucg->setFontPosBottom();
 	redrawValues();
-	drawScaleLines();
+	drawScaleLines( true, _range, -_range );
     int r = (int)_range;
-	drawAnalogScale(-r,150);
-	drawAnalogScale(r,150);
+	drawAnalogScale(-r,150, _range );
+	drawAnalogScale(r,150, _range);
 	// drawAnalogScale(0, 132);
 	if((r%2) == 0) {
-		drawAnalogScale(r/2,150);
-		drawAnalogScale(-r/2,155);
+		drawAnalogScale(r/2,150, _range);
+		drawAnalogScale(-r/2,155, _range);
 	}
 	else{
-		drawAnalogScale((r-1)/2,150);
-		drawAnalogScale((-r+1)/2,155);
+		drawAnalogScale((r-1)/2,150, _range);
+		drawAnalogScale((-r+1)/2,155, _range);
 	}
 	// Unit's
 	ucg->setFont(ucg_font_fub11_hr);
@@ -844,6 +845,73 @@ void IpsDisplay::drawAltitude( float altitude, int x, int y ){
 		prefalt = alt;
 	}
 }
+
+int max_gscale = 0;
+
+void IpsDisplay::initLoadDisplay(){
+	ESP_LOGI(FNAME,"initLoadDisplay()");
+	ucg->setColor(  COLOR_WHITE  );
+	ucg->setFont(ucg_font_fub11_hr);
+	ucg->setPrintPos(40,15);
+	ucg->print( "G-Force" );
+	max_gscale = (int)( gload_pos_limit.get() );
+	if( -gload_neg_limit.get() > max_gscale )
+		max_gscale = (int)( -gload_neg_limit.get()  );
+	drawScaleLines( true, max_gscale, -max_gscale );
+
+	drawAnalogScale(-max_gscale,150,max_gscale, 1 );
+	drawAnalogScale(max_gscale,150,max_gscale, 1 );
+	// drawAnalogScale(0, 132);
+	if((max_gscale%2) == 0) {
+		drawAnalogScale(max_gscale/2,150,max_gscale, 1);
+		drawAnalogScale(-max_gscale/2,155,max_gscale, 1);
+	}
+	else{
+		drawAnalogScale((max_gscale-1)/2,150,max_gscale, 1);
+		drawAnalogScale((-max_gscale+1)/2,155,max_gscale, 1);
+	}
+	ESP_LOGI(FNAME,"initLoadDisplay end");
+}
+
+float old_gmax = 0;
+float old_gmin = 0;
+
+void IpsDisplay::drawLoadDisplay( float loadFactor ){
+	ESP_LOGI(FNAME,"drawLoadDisplay %1.1f", loadFactor );
+	if( _menu )
+		return;
+	tick++;
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
+	if( !(screens_init & INIT_DISPLAY_GLOAD) ){
+		initLoadDisplay();
+		screens_init |= INIT_DISPLAY_GLOAD;
+	}
+	// draw G pointer
+	float a = (loadFactor-1)/max_gscale * (M_PI_2);
+	if( int(a*100) != int(old_a*100) ) {
+		drawTetragon( a, AMIDX, AMIDY, 60, 120, 3, COLOR_WHITE );
+		// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
+	}
+	// G load digital
+	if( (int)(loadFactor*30) != _ate && !(tick%3) ) {
+		drawAvgVario( 90, AMIDY+2, loadFactor );
+		_ate = (int)(loadFactor*30);
+	}
+	// Min/Max values
+	if( old_gmax != gload_pos_max.get() ){
+		ucg->setFont(ucg_font_fub20_hr);
+		ucg->setPrintPos(120,105);
+		ucg->printf("%1.2f", gload_pos_max.get() );
+	}
+	if( old_gmin != gload_neg_max.get() ){
+		ucg->setFont(ucg_font_fub20_hr);
+		ucg->setPrintPos(115,245);
+		ucg->printf("%1.2f", gload_neg_max.get() );
+	}
+
+	xSemaphoreGive(spiMutex);
+}
+
 
 void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, float polar_sink_ms, float altitude_m,
 		float temp, float volt, float s2fd_ms, float s2f_ms, float acl_ms, bool s2fmode, bool standard_setting, float wksensor ){
@@ -1137,9 +1205,12 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 				ucg->setPrintPos(120,105);
 				ucg->setColor(  COLOR_WHITE  );
 				ucg->setFont(ucg_font_fub20_hr);
-				char s[10];
-				sprintf(s,"%3d\xb0", heading );
+				char s[5];
+				sprintf(s,"%3d", heading );
 				ucg->printf("%s   ", s);
+				ucg->setFont(ucg_font_fur20_hr);
+				ucg->setPrintPos(120,105+ucg->getStrWidth(s));
+				ucg->printf("\xb0");
 				prev_heading = heading;
 			}
 		}

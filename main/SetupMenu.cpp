@@ -873,7 +873,8 @@ void SetupMenu::setup( )
 		btm->addEntry( "Wireless Client");
 		opt->addMenu( btm );
 
-		SetupMenu * gload = new SetupMenu( "Load Factor Display" );
+		SetupMenu * gload = new SetupMenu( "Load Factor"
+				"" );
 		MenuEntry* gloadME = opt->addMenu( gload );
 
 		SetupMenuValFloat * gtpos = new SetupMenuValFloat( "Positive Threshold", 0, "", 0.0, 8.0, 0.1, 0, false, &gload_pos_thresh );

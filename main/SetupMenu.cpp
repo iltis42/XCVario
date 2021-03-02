@@ -877,11 +877,11 @@ void SetupMenu::setup( )
 				"" );
 		MenuEntry* gloadME = opt->addMenu( gload );
 
-		SetupMenuValFloat * gtpos = new SetupMenuValFloat( "Positive Threshold", 0, "", 0.0, 8.0, 0.1, 0, false, &gload_pos_thresh );
+		SetupMenuValFloat * gtpos = new SetupMenuValFloat( "Positive Threshold", 0, "", 1.0, 8.0, 0.1, 0, false, &gload_pos_thresh );
 		gloadME->addMenu( gtpos );
 		gtpos->setHelp(PROGMEM "Positive threshold to launch G-Load display");
 
-		SetupMenuValFloat * gtneg = new SetupMenuValFloat( "Negative Threshold", 0, "", -8.0, 0.0, 0.1, 0, false, &gload_neg_thresh );
+		SetupMenuValFloat * gtneg = new SetupMenuValFloat( "Negative Threshold", 0, "", -8.0, 1.0, 0.1, 0, false, &gload_neg_thresh );
 		gloadME->addMenu( gtneg );
 		gtneg->setHelp(PROGMEM "Negative threshold to launch G-Load display");
 

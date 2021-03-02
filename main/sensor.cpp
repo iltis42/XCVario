@@ -212,15 +212,15 @@ void drawDisplay(void *pvParameters){
 				if( flarmWarning )
 					Flarm::drawFlarmWarning();
 			}
-			if( accelG[0] > gload_pos_thresh.get() ||  accelG[0] < gload_neg_thresh.get() ){
-				if( !gLoadDisplay ){
+			if( ((float)accelG[0] > gload_pos_thresh.get() ||  (float)accelG[0] < gload_neg_thresh.get() ) && !gLoadDisplay ){
 					gLoadDisplay = true;
 					display->clear();
-				}
 			}
 			else{
-				gLoadDisplay = false;
-				display->clear();
+				if( gLoadDisplay ) {
+					gLoadDisplay = false;
+					display->clear();
+				}
 			}
 			if( gLoadDisplay ) {
 				display->drawLoadDisplay( (float)accelG[0] );

@@ -1084,23 +1084,23 @@ void SetupMenu::setup( )
 		auze->addEntry( "Cancel");
 		auze->addEntry( "Start");
 
-		SetupMenu * ausw = new SetupMenu( "Stall Warning");
-		aia->addMenu( ausw );
-		ausw->setHelp( PROGMEM "Configure stall warning");
+		SetupMenu * stallwa = new SetupMenu( "Stall Warning");
+		aia->addMenu( stallwa );
+		stallwa->setHelp( PROGMEM "Configure stall warning");
 
-		SetupMenuSelect * auswo = new SetupMenuSelect( "Stall Warning", false, 0, false, &stall_warning );
-		ausw->addMenu( auswo );
-		auswo->setHelp( PROGMEM "Enable alarm sound when speed goes below configured stall speed and below (until 30% less)");
-		auswo->addEntry( "Disable");
-		auswo->addEntry( "Enable");
+		SetupMenuSelect * stawaen = new SetupMenuSelect( "Stall Warning", false, 0, false, &stall_warning );
+		stallwa->addMenu( stawaen );
+		stawaen->setHelp( PROGMEM "Enable alarm sound when speed goes below configured stall speed and below (until 30% less)");
+		stawaen->addEntry( "Disable");
+		stawaen->addEntry( "Enable");
 
-		SetupMenuValFloat * ausws = new SetupMenuValFloat( "Stall Speed", 0, sunit.c_str(), 20, 200, 1, 0, false, &stall_speed  );
-		ausws->setHelp(PROGMEM"Configure stalling speed for corresponding airplane type");
-		ausw->addMenu( ausws );
+		SetupMenuValFloat * staspe = new SetupMenuValFloat( "Stall Speed", 0, sunit.c_str(), 20, 200, 1, 0, false, &stall_speed  );
+		staspe->setHelp(PROGMEM"Configure stalling speed for corresponding airplane type");
+		stallwa->addMenu( staspe );
 
 		SetupMenuValFloat * vmax = new SetupMenuValFloat( "Maximum Speed", 0, sunit.c_str(), 70, 450, 1, 0, false, &v_max  );
 		vmax->setHelp(PROGMEM"Configure maximum speed for corresponding airplane type");
-		vmax->addMenu( ausws );
+		aia->addMenu( vmax );
 
 
 

@@ -877,6 +877,12 @@ void SetupMenu::setup( )
 				"" );
 		MenuEntry* gloadME = opt->addMenu( gload );
 
+		SetupMenuSelect * glmod = new SetupMenuSelect( "Activation Mode", false, 0, true, &gload_mode );
+		glmod->setHelp( PROGMEM "Activate G-Force screen either by threshold (dynamic) or switch always on");
+		glmod->addEntry( "Dynamic");
+		glmod->addEntry( "Always-On");
+		gloadME->addMenu( glmod );
+
 		SetupMenuValFloat * gtpos = new SetupMenuValFloat( "Positive Threshold", 0, "", 1.0, 8.0, 0.1, 0, false, &gload_pos_thresh );
 		gloadME->addMenu( gtpos );
 		gtpos->setHelp(PROGMEM "Positive threshold to launch G-Load display");

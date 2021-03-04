@@ -158,7 +158,14 @@ private:
   void resetClassCalibration();
 
 	/** Check, if the bus pointer is valid. */
-	bool checkBus();
+	inline bool checkBus()
+	{
+		if( m_bus == nullptr )	{
+			ESP_LOGE( FNAME, "QMC5883L bus pointer is zero" );
+			return false;
+		}
+		return true;
+	}
 
 	static bool m_sensor;
 	I2C_t* m_bus;

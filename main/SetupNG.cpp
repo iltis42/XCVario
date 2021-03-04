@@ -184,6 +184,7 @@ SetupNG<int>			airspeed_sensor_type("PTYPE", PS_NONE, false);
 SetupNG<int>			cruise_audio_mode("CAUDIO", 0 );
 SetupNG<int>			netto_mode("NETMOD", 0 );
 SetupNG<float>			v_max("VMAX", 270 );
+SetupNG<int>			gload_mode("GLMOD", 0 );
 SetupNG<float>			gload_pos_thresh("GLOADPT", 3 );
 SetupNG<float>			gload_neg_thresh("GLOADNT", -1 );
 SetupNG<float>			gload_pos_limit("GLOADPL", 5 );

@@ -145,43 +145,52 @@ uint8_t QMC5883L::readRegister( const uint8_t addr,
 	// read bytes from chip
 	esp_err_t err = m_bus->readBytes( addr, reg, count, data );
 	if( err != ESP_OK ){
-		ESP_LOGE( FNAME,"QMC5883L readRegister( 0x%02X, 0x%02X, %d ) FAILED", addr, reg, count );
-		return 0;
+		ESP_LOGW( FNAME,"readRegister( 0x%02X, 0x%02X, %d ) FAILED", addr, reg, count );
+		err = m_bus->readBytes( addr, reg, count, data );
+		if( err != ESP_OK ){
+			ESP_LOGW( FNAME,"Retry failed also, try to reinitialize chip now");
+			modeContinuous();
+			err = m_bus->readBytes( addr, reg, count, data );
+			if( err != ESP_OK ){
+				ESP_LOGW( FNAME,"Read after retry failed also, return with no data, len=0");
+				return 0;
+			}
+			else
+				ESP_LOGW( FNAME,"Read after retry SUCCESS, we did it!");
+		}
 	}
 	return count;
-}
-
-/** Check, if the bus pointer is valid. */
-bool QMC5883L::checkBus()
-{
-	if( m_bus == nullptr )	{
-		ESP_LOGE( FNAME, "QMC5883L bus pointer is zero" );
-		return false;
-	}
-	return true;
 }
 
 // scan bus for I2C address
 esp_err_t QMC5883L::selfTest()
 {
-	if( checkBus() == false )	{
+	ESP_LOGI( FNAME, "QMC5883L selftest");
+	if( !checkBus() )	{
 		m_sensor = false;
 		return ESP_FAIL;
 	}
 	uint8_t chipId = 0;
 	// Try to read Register 0xD, it delivers the chip id 0xff for a QMC5883L
+	m_sensor = false;
+	for( int i=0; i< 10; i++ ){
 	esp_err_t err = m_bus->readByte( QMC5883L_ADDR, REG_CHIP_ID, &chipId );
-	if( err != ESP_OK ){
-		m_sensor = false;
-		ESP_LOGE( FNAME,"QMC5883L self-test, scan for I2C address 0x%02X FAILED", QMC5883L_ADDR );
+		if( err == ESP_OK ){
+			m_sensor = true;
+			break;
+		}
+		delay(20);
+	}
+	if( !m_sensor ){
+		ESP_LOGE( FNAME,"Scan for I2C address 0x%02X FAILED", QMC5883L_ADDR );
 		return ESP_FAIL;
 	}
 	if( chipId != 0xff ){
 		m_sensor = false;
-		ESP_LOGE( FNAME, "QMC5883L self-test, chip ID 0x%02X is unsupported, expected 0xFF",	chipId );
+		ESP_LOGE( FNAME, "QMC5883L self-test, detected chip ID 0x%02X is unsupported, expected 0xFF",	chipId );
 		return ESP_FAIL;
 	}
-	ESP_LOGI( FNAME, "QMC5883L selftest, scan for I2C address 0x%02X and chip ID 0x%02X PASSED",	QMC5883L_ADDR, chipId );
+	ESP_LOGI( FNAME, "QMC5883L selftest PASSED");
 	m_sensor = true;
 
 	// load last known calibration.
@@ -332,10 +341,10 @@ bool QMC5883L::rawHeading()
 	{
 		// Overflow has occurred, give out a warning only once
 		overflowWarning = true;
-		ESP_LOGE( FNAME, "readRawHeading detected a gauss overflow." );
-		return false;;
+		ESP_LOGW( FNAME, "readRawHeading detected a gauss overflow." );
+		//return false;;
 	}
-
+/*
 	if( ( status & STATUS_DOR ) == true )
 	{
 		// Previous measure was read partially, sensor in Data Lock.
@@ -344,8 +353,10 @@ bool QMC5883L::rawHeading()
 		ESP_LOGE( FNAME, "read REG_X_LSB FAILED" );
 		return false;
 	}
-
-	if( ( status & STATUS_DRDY ) == true  )
+*/
+	if( !( status & STATUS_DRDY ) )
+		ESP_LOGW( FNAME, "RDY bit not set in sensor reading!" );
+	if( ( status & STATUS_DRDY ) || (status & STATUS_DOR ) )
 	{
 		// Data ready for reading
 		if( readRegister( addr, REG_X_LSB, 6, data ) > 0 )
@@ -587,14 +598,14 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z ) )
 		uint64_t stop = getMsTime();
 		uint64_t elapsed = stop - start;
 
-		if( elapsed >= 15 )
+		if( elapsed >= 50 )
 		{
 			// ESP_LOGI( FNAME, "Elapsed=%llu > 15 ms -> no delay", elapsed );
 			continue;
 		}
 
 		// calculate time to wait
-		int wait = 15 - elapsed;
+		int wait = 50 - elapsed;
 
 		// The sensor seems to have sometimes problems to deliver all 10ms new data
 		// Therefore we wait at least 15ms.

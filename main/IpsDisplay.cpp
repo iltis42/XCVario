@@ -877,7 +877,7 @@ float old_gmax = 0;
 float old_gmin = 0;
 
 void IpsDisplay::drawLoadDisplay( float loadFactor ){
-	ESP_LOGI(FNAME,"drawLoadDisplay %1.1f", loadFactor );
+	// ESP_LOGI(FNAME,"drawLoadDisplay %1.1f", loadFactor );
 	if( _menu )
 		return;
 	tick++;
@@ -1212,7 +1212,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 				ucg->printf("%s", s);
 				ucg->setFont(ucg_font_fub20_hf);
 				ucg->setPrintPos(120+ucg->getStrWidth(s),105);
-				ucg->printf("\xb0     ");
+				ucg->printf("\xb0 ");
 				prev_heading = heading;
 			}
 		}

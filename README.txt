@@ -4,6 +4,12 @@ XCVario is build using esp-idf (https://github.com/espressif/esp-idf), to be set
 https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/#get-started-get-esp-idf
 As OS to crossbuild XCVario software, linux e.g. latest ubuntu is strongly recommended.
 
+Another option is to fork XCVario in your own area, and use a github runner to build the project remotely on github.
+As an example check this repository Actions workflows, where binary is build by the following this yml:
+https://github.com/iltis42/XCVario/blob/master/.github/workflows/cmake.yml
+
+Here the instructions to build the binary locally:
+
 1)  Clone, install, activate esp-idf and get cmake (obviously cmake is missing from install.sh)
 mkdir -p ~/esp; cd ~/esp; git clone --recursive https://github.com/espressif/esp-idf.git;
 cd ~/esp/esp-idf; ./install.sh; . ./export.sh;

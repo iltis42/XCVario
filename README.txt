@@ -73,17 +73,12 @@ idf.py build
 
 idf.py reconfigure
 
+# In order to flash the binary through micro USB connector inside the device:
 idf.py -p /dev/ttyUSB0 flash
+# Then you may monitor loggings and printouts from USB serial console here:
 idf.py -p /dev/ttyUSB0 monitor
 
 C) Flashing via OTA
 Start OTA Software download Wifi AP at XCVario and
 upload through this webpage binary image: ~/esp/esp-idf/examples/get-started/XCVario/build/sensor.bin
 
-Appendix
-The esp-idf needs to be patched: 
-Open I2C bug: https://github.com/espressif/esp-idf/issues/5108
-The native i2c driver has a multithreading bug from using malloc and free, that will lead to a crash
-as of multiple chips/tasks are using malloc and free what makes the system to crash regularly.
-The issue is still open after a year, even provided a solution it has beed discussed in another
-direction, hence also this solution didn't come. So for now only my workaround is possible: 

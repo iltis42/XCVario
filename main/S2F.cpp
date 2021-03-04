@@ -20,16 +20,17 @@ S2F::S2F() {
     _speedMinSink = 0;
     _circling_speed = 0;
 	_circling_sink = 0;
+	_minimumSink = 0;
+	_stall_speed_ms = 0;
 }
 
 S2F::~S2F() {
 }
 
 float S2F::getN() {
-	float n = accelG[0];
-	if( n < 0.3 )        // Polars and airfoils physics behave different negative or even low g forces, we stop here impacting from g force at 0.3 g
-		n=0.3;
-	return n;
+	if( accelG[0] < 0.3 )        // Polars and airfoils physics behave different negative or even low g forces, we stop here impacting from g force at 0.3 g
+		return 0.3;
+	return accelG[0];
 }
 
 void S2F::change_polar()
@@ -51,6 +52,7 @@ void S2F::change_polar()
     a1 = a1 * ((bugs.get() + 100.0) / 100.0);
     a2 = a2 * ((bugs.get() + 100.0) / 100.0);
     ESP_LOGI(FNAME,"a0=%f a1=%f  a2=%f s(80)=%f, s(160)=%f", a0, a1, a2, sink(80), sink(160) );
+    _stall_speed_ms = stall_speed.get()/3.6;
     recalc();
 }
 
@@ -80,14 +82,30 @@ void S2F::change_mc_bal()
 	change_polar();
 }
 
+
+float S2F::getVn( float v ){
+	float Vn = v*pow(getN(),0.5);
+	if( Vn > _stall_speed_ms )
+		return Vn;
+	else
+		return _stall_speed_ms;
+}
+
+
+// static int tick=0;
 double S2F::sink( double v_in ) {
 	double s=0;
 	if ( v_in > Units::Airspeed2Kmh( stall_speed.get() )*0.6 ){
-		double v=v_in/3.6;
-		s = (a0+a1*v+a2*pow(v,2));
-		if( s2f_with_gload.get() )
-			s *= sqrt( pow( getN(), 3 ));
-		// ESP_LOGI(FNAME,"S2F::sink() v:%0.1f sink:%2.1f  sink(G):%2.1f G:%1.1f powG:%f ", v, a0+a1*v+a2*pow(v,2), s, getN(), sqrt( pow( getN(), 3 )) );
+		double v=v_in/3.6;   // meters per second
+		if( s2f_with_gload.get() ){
+			double n=getN();
+			double sqn = sqrt(n);
+			s = a0*pow(sqn,3) + a1*v*n + a2*pow(v,2)*sqn;
+			// if( !(tick++%2) )
+			//	ESP_LOGI(FNAME,"S2F::sink() V:%0.1f sink:%2.2f G-Load:%1.2f", v_in, s, n );
+		}
+		else
+			s = a0 + a1*v + a2*pow(v,2);
 	}
 	return s;
 }

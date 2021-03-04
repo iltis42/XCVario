@@ -31,6 +31,7 @@ public:
 	float cw( float v );
 	void test( void );
 	float getN();
+	float getVn( float v );
 
 private:
 	double a0,a1,a2;
@@ -40,6 +41,7 @@ private:
 	double _speedMinSink;
 	double _circling_speed;
 	double _circling_sink;
+	double _stall_speed_ms;
 };
 
 #endif /* MAIN_S2F_H_ */

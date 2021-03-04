@@ -1198,6 +1198,8 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			as_prev = ias;
 		}
 	}
+
+	// Compass
 	if( !(tick%8) ){
 		if( compass_calibrated.get() && compass_enable.get() ){
 			int heading = Compass::magnHeading();
@@ -1207,10 +1209,10 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 				ucg->setFont(ucg_font_fub20_hr);
 				char s[5];
 				sprintf(s,"%3d", heading );
-				ucg->printf("%s   ", s);
-				ucg->setFont(ucg_font_fur20_hr);
-				ucg->setPrintPos(120,105+ucg->getStrWidth(s));
-				ucg->printf("\xb0");
+				ucg->printf("%s", s);
+				ucg->setFont(ucg_font_fub20_hf);
+				ucg->setPrintPos(120+ucg->getStrWidth(s),105);
+				ucg->printf("\xb0     ");
 				prev_heading = heading;
 			}
 		}

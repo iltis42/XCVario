@@ -127,7 +127,7 @@ mpud::float_axes_t accelG_Prev;
 mpud::float_axes_t gyroDPS_Prev;
 
 // Magnetic sensor / compass
-Compass compass( 0x0D, 50, 2, 512 );
+Compass compass( 0x0D, ODR_50Hz, RANGE_2GAUSS, OSR_512 );
 
 BTSender btsender;
 
@@ -473,8 +473,11 @@ void sensor(void *args){
 	init_done=true;
 	int line = 1;
 	i2c.begin(GPIO_NUM_21, GPIO_NUM_22, 100000 );
-	if( compass_enable.get() )
+	if( compass_enable.get() ) {
 		i2c_0.begin(GPIO_NUM_4, GPIO_NUM_18, GPIO_PULLUP_DISABLE, GPIO_PULLUP_DISABLE, 100000 );
+		if( serial2_speed.get() )
+			serial2_speed.set(0);  // switch off serial interface, we can do only alternatively
+	}
 	MCP = new MCP3221();
 	MCP->setBus( &i2c );
 	gpio_set_drive_capability(GPIO_NUM_23, GPIO_DRIVE_CAP_1);
@@ -872,7 +875,7 @@ void sensor(void *args){
 		err = compass.selfTest();
 		if( err == ESP_OK )		{
 			// Activate working of magnetic sensor
-			compass.modeContinuous();
+			compass.initialize();
 		}
 	}
 

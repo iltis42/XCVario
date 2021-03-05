@@ -28,6 +28,11 @@ Last update: 2021-02-24
 /* The default I2C address of this chip */
 #define QMC5883L_ADDR 0x0D
 
+typedef enum e_oversampling { OSR_512=0, OSR_256=1, OSR_128=2, OSR_64=3 } e_oversampling_t;
+typedef enum e_datarate { ODR_10Hz=0, ODR_50Hz=1, ODR_100Hz=2, ODR_200Hz=3 } e_datarate_t;
+typedef enum e_magn_range { RANGE_2GAUSS=0, RANGE_8GAUSS=1 } e_mag_range_t;
+
+
 class QMC5883L
 {
 public:
@@ -61,20 +66,12 @@ public:
 	esp_err_t selfTest();
 
 	/**
-	 * Define SET/RESET period. Should be set to 1 after a reset.
-	 */
-	esp_err_t setPeriodRegister();
-
-	/**
-	 *  Set the device in standby mode.
-	 */
-	esp_err_t modeStandby();
-
-	/**
 	 * Configure the device with the set parameters and set the mode to continuous.
 	 * That means, the device starts working.
+	 * you max give output datarate (odr) and oversampling rate (osr)
+	 * if not given defaults are as from constructor
 	 */
-	esp_err_t modeContinuous();
+	esp_err_t initialize( int a_odr=0, int a_osr=0 );
 
 	/**
 	 * Reads the heading in degrees of 0...359. If ok is passed, it is set to true,
@@ -117,15 +114,6 @@ public:
 	 */
 	bool loadCalibration();
 
-	/** Set ODR output data rate, accepted values are: [10, 50, 100, 200] */
-	void setOutputDataRate( const uint8_t odrIn );
-
-	/** Set magnetic range for measurement, accepted values are: [2, 8]. */
-	void setRange( const uint8_t rangeIn );
-
-	/** Set over sample ratio OSR, accepted values are: [64, 128, 256, 512]. */
-	void setOverSampleRatio( const uint16_t osrIn );
-
 	/** Write with data part. */
 	esp_err_t writeRegister( const uint8_t addr,
 			const uint8_t reg,
@@ -139,6 +127,7 @@ public:
 			const uint8_t reg,
 			const uint8_t count,
 			uint8_t *data );
+
 
 private:
 

@@ -131,6 +131,7 @@ public:
 	 */
 	static float getDeviation( float heading );
 
+
 private:
 
 	static SetupNG<float> *deviations[8];

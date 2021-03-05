@@ -58,19 +58,6 @@ Last update: 2021-02-26
 #define MODE_STANDBY    0b00000000  // Standby mode.
 #define MODE_CONTINUOUS 0b00000001  // Continuous read mode.
 
-/* Flags for Control Register #1. */
-#define ODR_10HZ   0b00000000 // Output Data Rate in Hz.
-#define ODR_50HZ   0b00000100
-#define ODR_100HZ  0b00001000
-#define ODR_200HZ  0b00001100
-
-#define RNG_2G 0b00000000  // Range 2 Gauss: for magnetic-clean environments.
-#define RNG_8G 0b00010000  // Range 8 Gauss: for strong magnetic fields.
-
-#define OSR_512 0b00000000  // Over Sample Rate 512: less noise, more power.
-#define OSR_256 0b01000000
-#define OSR_128 0b10000000
-#define OSR_64  0b11000000  // Over Sample Rate 64: more noise, less power.
 
 // Sensor state
 bool QMC5883L::m_sensor = false;
@@ -99,10 +86,21 @@ QMC5883L::QMC5883L( const uint8_t addrIn,
 		// set address to default value of chip, if it is zero.
 		addr = QMC5883L_ADDR;
 	}
-
-	setOutputDataRate( odrIn );
-	setRange( rangeIn );
-	setOverSampleRatio( osrIn );
+    zraw=0;
+    xraw=0;
+    yraw=0;
+    zbias=0;
+    xbias=0;
+    ybias=0;
+    ymax=0;
+    ymin=0;
+    xscale=0;
+    yscale=0;
+    zscale=0;
+    xmax=0;
+    xmin=0;
+    zmin=0;
+    zmax=0;
 }
 
 QMC5883L::~QMC5883L()
@@ -115,14 +113,11 @@ esp_err_t QMC5883L::writeRegister( const uint8_t addr,
 		const uint8_t value )
 {
 	if( checkBus() == false )
-	{
 		return ESP_FAIL;
-	}
 
 	esp_err_t err = m_bus->writeByte( addr, reg, value );
 
-	if( err != ESP_OK )
-	{
+	if( err != ESP_OK )	{
 		ESP_LOGE( FNAME,
 				"QMC5883L writeRegister( 0x%02X, 0x%02X, 0x%02X ) FAILED",
 				addr, reg, value );
@@ -149,7 +144,7 @@ uint8_t QMC5883L::readRegister( const uint8_t addr,
 		err = m_bus->readBytes( addr, reg, count, data );
 		if( err != ESP_OK ){
 			ESP_LOGW( FNAME,"Retry failed also, try to reinitialize chip now");
-			modeContinuous();
+			initialize();
 			err = m_bus->readBytes( addr, reg, count, data );
 			if( err != ESP_OK ){
 				ESP_LOGW( FNAME,"Read after retry failed also, return with no data, len=0");
@@ -202,114 +197,40 @@ esp_err_t QMC5883L::selfTest()
  * Configure the device with the set parameters and set the mode to continuous.
  * That means, the device starts working.
  */
-esp_err_t QMC5883L::modeContinuous()
+esp_err_t QMC5883L::initialize( int a_odr, int a_osr )
 {
-  ESP_LOGI( FNAME, "modeContinuous()" );
+  ESP_LOGI( FNAME, "initialize() dataRate:%d  Oversampling%d", a_odr, a_osr );
 
 	esp_err_t e1, e2, e3, e4;
 	e1 = e2 = e3 = e4 = 0;
 
 	// Soft Reset
 	e1 = writeRegister( addr, REG_CONTROL2, SOFT_RST );
+	delay(2);
 
 	// Enable ROL_PTN, Pointer roll over function.
-	e2 = writeRegister( addr, REG_CONTROL2, POL_PNT );
+	// e2 = writeRegister( addr, REG_CONTROL2, POL_PNT );
 
 	// Define SET/RESET period. Should be set to 1
 	e3 = writeRegister( addr, REG_RST_PERIOD, 1 );
 
 	// Set mesaurement data and start it in dependency of mode bit.
-	e4 = writeRegister( addr,
-			REG_CONTROL1,
-			osr | range | odr | MODE_CONTINUOUS );
+
+	int used_osr = a_osr;
+	if( used_osr == 0 )
+		used_osr = osr;
+
+	int used_odr = a_odr;
+	if( used_odr == 0 )
+		used_odr = odr;
+
+	e4 = writeRegister( addr, REG_CONTROL1,	(used_osr << 6) | (range <<4) | (used_odr <<2) | MODE_CONTINUOUS );
 
 	if( (e1 + e2 + e3 + e4) == 0 )
+		ESP_LOGI( FNAME, "initialize() OK");
 		return ESP_OK;
 
 	return ESP_FAIL;
-}
-
-/**
- * Set the device in standby mode.
- */
-esp_err_t QMC5883L::modeStandby()
-{
-  ESP_LOGI( FNAME, "modeStandby()" );
-
-	// Soft reset, device goes after that in the standby mode.
-	return writeRegister( addr, REG_CONTROL2, SOFT_RST );
-}
-
-/**
- * Define SET/RESET period. Should be set to 1 after a reset.
- */
-esp_err_t QMC5883L::setPeriodRegister()
-{
-	return writeRegister( addr, REG_RST_PERIOD, 0x01 );
-}
-
-/** Set oversampling rate OSR_64 ... OSR_512. */
-void QMC5883L::setOverSampleRatio( const uint16_t osrIn )
-{
-	switch( osrIn )
-	{
-	case 512:
-		osr = OSR_512;
-		break;
-	case 256:
-		osr = OSR_256;
-		break;
-	case 128:
-		osr = OSR_128;
-		break;
-	case 64:
-		osr = OSR_64;
-		break;
-	default:
-		ESP_LOGE( FNAME, "Wrong Over Sample Ration value %d passed",
-				osrIn );
-		break;
-	}
-}
-
-/** Set magnetic range for measurement RNG_2G, RNG_8G. */
-void QMC5883L::setRange( const uint8_t rangeIn )
-{
-	switch( rangeIn )
-	{
-	case 2:
-		range = RNG_2G;
-		break;
-	case 8:
-		range = RNG_8G;
-		break;
-	default:
-		ESP_LOGE( FNAME, "Wrong Gauss Range value %d passed",rangeIn );
-		break;
-	}
-}
-
-/** Set ODR output data rate. */
-void QMC5883L::setOutputDataRate( const uint8_t odrIn )
-{
-	switch( odrIn )
-	{
-	case 10:
-		odr = ODR_10HZ;
-		break;
-	case 50:
-		odr = ODR_50HZ;
-		break;
-	case 100:
-		odr = ODR_100HZ;
-		break;
-	case 200:
-		odr = ODR_200HZ;
-		break;
-	default:
-		ESP_LOGE( FNAME, "Wrong Output Data Rate value %d passed", odrIn );
-		break;
-	}
 }
 
 /**
@@ -337,7 +258,7 @@ bool QMC5883L::rawHeading()
 	// ESP_LOGI( FNAME, "REG_STATUS: %02x", status );
 
 	if( ( status & STATUS_OVL ) == true &&
-			range == RNG_2G && overflowWarning == false )
+			range == RANGE_2GAUSS && overflowWarning == false )
 	{
 		// Overflow has occurred, give out a warning only once
 		overflowWarning = true;
@@ -475,23 +396,11 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z ) )
 	ESP_LOGI( FNAME, "calibrate magnetic sensor" );
 	resetCalibration();
 
-	// Save current used ODR and OSR
-	uint8_t usedOdr = odr;
-	uint8_t usedOsr = osr;
-
-	// Set ODR to 100 Hz
-	setOutputDataRate( 100 );
-
-	// Set OSR to 5125
-	setOverSampleRatio( 512 );
-
 	calibrationRunning = true;
 
 	// Switch on continues mode
-	if( modeContinuous() != ESP_OK )
+	if( initialize( ODR_100Hz, OSR_512 ) != ESP_OK )
 	{
-		odr = usedOdr;
-		osr = usedOsr;
 		calibrationRunning = false;
 		return false;
 	}
@@ -619,18 +528,12 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z ) )
 	{
 		// Too less samples to start calibration
 		ESP_LOGI( FNAME, "calibrate min-max xyz not enough samples");
-		odr = usedOdr;
-		osr = usedOsr;
 		calibrationRunning = false;
 		return false;
 	}
 
 	// save calibration
 	saveCalibration();
-
-	// Set used before ODR and OSR values
-	odr = usedOdr;
-	osr = usedOsr;
 
 	ESP_LOGI( FNAME, "Compass: xmin=%d xmax=%d, ymin=%d ymax=%d, zmin=%d zmax=%d",
 			xmin, xmax, ymin, ymax, zmin, zmax );
@@ -641,8 +544,8 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z ) )
 	ESP_LOGI( FNAME, "Compass soft-iron: xscale=%.3f, yscale=%.3f, zscale=%.3f",
 			xscale, yscale, zscale );
 
-	// restart previous continuous mode
-	modeContinuous();
+	// restart continuous mode given at construction time
+	initialize();
 	calibrationRunning = false;
 	ESP_LOGI( FNAME, "calibration end" );
 	return true;
@@ -678,7 +581,7 @@ float QMC5883L::heading( bool *ok )
 		error++;
 
 		if( error > 10 ) {
-			modeContinuous();  // reinitialize once crashed
+			initialize();  // reinitialize once crashed
 		}
 
 		return 0.0;

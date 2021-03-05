@@ -15,7 +15,7 @@ https://datasheetspdf.com/pdf-file/1309218/QST/QMC5883L/1
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-02-26
+Last update: 2021-03-05
 
  ***************************************************************************/
 
@@ -81,26 +81,14 @@ QMC5883L::QMC5883L( const uint8_t addrIn,
 								  calibrationRunning( false )
 {
   ESP_LOGI( FNAME, "QMC5883L( %02X )", addrIn );
+
 	if( addrIn == 0 )
 	{
 		// set address to default value of chip, if it is zero.
 		addr = QMC5883L_ADDR;
 	}
-    zraw=0;
-    xraw=0;
-    yraw=0;
-    zbias=0;
-    xbias=0;
-    ybias=0;
-    ymax=0;
-    ymin=0;
-    xscale=0;
-    yscale=0;
-    zscale=0;
-    xmax=0;
-    xmin=0;
-    zmin=0;
-    zmax=0;
+
+	resetClassCalibration();
 }
 
 QMC5883L::~QMC5883L()
@@ -260,12 +248,12 @@ bool QMC5883L::rawHeading()
 	if( ( status & STATUS_OVL ) == true &&
 			range == RANGE_2GAUSS && overflowWarning == false )
 	{
-		// Overflow has occurred, give out a warning only once
+		// Overflow has occurred, give out a warning only once and ignaore data.
 		overflowWarning = true;
 		ESP_LOGW( FNAME, "readRawHeading detected a gauss overflow." );
-		//return false;;
+		return false;
 	}
-/*
+
 	if( ( status & STATUS_DOR ) == true )
 	{
 		// Previous measure was read partially, sensor in Data Lock.
@@ -274,10 +262,8 @@ bool QMC5883L::rawHeading()
 		ESP_LOGE( FNAME, "read REG_X_LSB FAILED" );
 		return false;
 	}
-*/
-	if( !( status & STATUS_DRDY ) )
-		ESP_LOGW( FNAME, "RDY bit not set in sensor reading!" );
-	if( ( status & STATUS_DRDY ) || (status & STATUS_DOR ) )
+
+	if( status & STATUS_DRDY )
 	{
 		// Data ready for reading
 		if( readRegister( addr, REG_X_LSB, 6, data ) > 0 )
@@ -289,8 +275,8 @@ bool QMC5883L::rawHeading()
 		}
 		ESP_LOGE( FNAME, "read Register returned <= 0" );
 	}
-	ESP_LOGE( FNAME, "STATUS_DRDY=0, no new data available" );
 
+	ESP_LOGW( FNAME, "STATUS_DRDY=0, no new sensor data available" );
 	return false;
 }
 
@@ -559,11 +545,22 @@ float QMC5883L::heading( bool *ok )
 {
 	static unsigned short error = 0;
 
+#if 0
+	// Call time measurement
+	static uint64_t lastCall = getMsTime();
+
+	uint64_t elapsed = getMsTime() - lastCall;
+	lastCall = getMsTime();
+
+	ESP_LOGI( FNAME, "lct=%lld ms", elapsed );
+#endif
+
 	if( ok != nullptr )
 		*ok = false;
 
 	// Holddown processing and throwing errors once sensor is gone
-	if( error > 100 && error%100 ){
+	if( error > 100 && error%100 )
+	{
 		*ok = false;
 		error++;
 		return 0;
@@ -577,7 +574,7 @@ float QMC5883L::heading( bool *ok )
 
 	if( rawHeading() == false )
 	{
-		ESP_LOGE(FNAME,"rawHeading() returned false" );
+		ESP_LOGE( FNAME, "rawHeading() returned false" );
 		error++;
 
 		if( error > 10 ) {
@@ -597,7 +594,10 @@ float QMC5883L::heading( bool *ok )
 		return 0.0;
 	}
 
-	/* Apply corrections to the measured values. */
+	/* Apply corrections to the measured values. Note, due to mounting of chip
+	 * turned clockwise by 90 degrees the X-axis and the Y-axis are moved and
+	 * have to be handled in this way.
+	 */
 	double fy = (double) ((float( xraw ) - xbias) * xscale);
 	double fx = -(double) ((float( yraw ) - ybias) * yscale);
 	double fz = (double) ((float( zraw ) - zbias) * zscale);
@@ -614,13 +614,7 @@ float QMC5883L::heading( bool *ok )
 		ESP_LOGI( FNAME, "fX=%f fY=%f fZ=%f C-Heading=%.1f", fx, fy, fz, headingc );
 #endif
 
-	// ESP_LOGI(FNAME,"RANGE XH:%d YH:%d ZH:%d  XL:%d YL:%d ZL:%d OX:%d OY:%d OZ:%d", xmax,ymax,zmax, xmin,ymin,zmin, xmax + xmin, ymax + ymin,zmax + zmin);
-	// ESP_LOGI(FNAME,"RAW NORM Flux, fx:%f fy:%f fz:%f", fx,fy,fz);
-
-	// 	Xhorizontal = X*cos(pitch) + Y*sin(roll)*sin(pitch) – Z*cos(roll)*sin(pitch)
 	double tcx = fx * cos( -IMU::getPitchRad() ) + fy * sin( -IMU::getRollRad() ) * sin( -IMU::getPitchRad()) - fz * cos( -IMU::getRollRad()) * sin( -IMU::getPitchRad());
-	// ESP_LOGI(FNAME,"RR:%f, PR:%f tcx 1:%f tcx2:%f tcx3:%f", IMU::getPitchRad(), IMU::getRollRad(), fx*cos( IMU::getPitchRad() ),   fy*sin( IMU::getRollRad() )*sin( IMU::getPitchRad()), fz*cos( IMU::getRollRad())*sin( IMU::getPitchRad() ) );
-	// 	Yhorizontal = Y*cos(roll) + Z*sin(roll)
 	double tcy = fy * cos( -IMU::getRollRad()) + fz * sin( -IMU::getRollRad());
 
 	double heading = -RAD_TO_DEG * atan2( tcy, tcx );

@@ -854,9 +854,14 @@ void IpsDisplay::initLoadDisplay(){
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setPrintPos(40,15);
 	ucg->print( "G-Force" );
-	max_gscale = (int)( gload_pos_limit.get() );
-	if( -gload_neg_limit.get() > max_gscale )
-		max_gscale = (int)( -gload_neg_limit.get()  );
+	ucg->setPrintPos(130,70);
+	ucg->setColor(  COLOR_HEADER_LIGHT  );
+	ucg->print( "MIN" );
+	ucg->setPrintPos(130,210);
+	ucg->print( "MAX" );
+	max_gscale = (int)( gload_pos_limit.get() )+1;
+	if( -gload_neg_limit.get() >= max_gscale )
+		max_gscale = (int)( -gload_neg_limit.get()  )+1;
 	drawScaleLines( true, max_gscale, -max_gscale );
 
 	drawAnalogScale(-max_gscale,150,max_gscale, 1 );
@@ -870,6 +875,13 @@ void IpsDisplay::initLoadDisplay(){
 		drawAnalogScale((max_gscale-1)/2,150,max_gscale, 1);
 		drawAnalogScale((-max_gscale+1)/2,155,max_gscale, 1);
 	}
+	for( float a=gload_pos_limit.get()-1; a<max_gscale; a+=0.05 ) {
+		drawTetragon( ((float)a/max_gscale)*M_PI_2, AMIDX, AMIDY, 120, 130, 2, COLOR_RED, false );
+	}
+	for( float a=gload_neg_limit.get()-1; a>(-max_gscale); a-=0.05 ) {
+		drawTetragon( ((float)a/max_gscale)*M_PI_2, AMIDX, AMIDY, 120, 130, 2, COLOR_RED, false );
+	}
+
 	ESP_LOGI(FNAME,"initLoadDisplay end");
 }
 

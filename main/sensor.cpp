@@ -474,7 +474,7 @@ void sensor(void *args){
 	int line = 1;
 	i2c.begin(GPIO_NUM_21, GPIO_NUM_22, 100000 );
 	if( compass_enable.get() )
-		i2c_0.begin(GPIO_NUM_4, GPIO_NUM_18, GPIO_PULLUP_DISABLE, GPIO_PULLUP_DISABLE, 40000 );
+		i2c_0.begin(GPIO_NUM_4, GPIO_NUM_18, GPIO_PULLUP_DISABLE, GPIO_PULLUP_DISABLE, 100000 );
 	MCP = new MCP3221();
 	MCP->setBus( &i2c );
 	gpio_set_drive_capability(GPIO_NUM_23, GPIO_DRIVE_CAP_1);

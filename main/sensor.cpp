@@ -551,6 +551,57 @@ void sensor(void *args){
 		ota->doSoftwareUpdate( display );
 	}
 
+	esp_err_t err=ESP_ERR_NOT_FOUND;
+	MPU.setBus(i2c);  // set communication bus, for SPI -> pass 'hspi'
+	MPU.setAddr(mpud::MPU_I2CADDRESS_AD0_LOW);  // set address or handle, for SPI -> pass 'mpu_spi_handle'
+	err = MPU.initialize();
+	ESP_LOGI( FNAME,"MPU Probing returned %d MPU enable: %d ", err, attitude_indicator.get() );
+	if( err == ESP_OK ){
+		hardwareRevision.set(3);  // wow, there is MPU6050 gyro and acceleration sensor
+		haveMPU = true;
+		ESP_LOGI( FNAME,"MPU initialize");
+		MPU.initialize();  // this will initialize the chip and set default configurations
+		MPU.setSampleRate(50);  // in (Hz)
+		MPU.setAccelFullScale(mpud::ACCEL_FS_8G);
+		MPU.setGyroFullScale(mpud::GYRO_FS_500DPS);
+		MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
+		display->writeText( line++, "AHRS Sensor: OK");
+		logged_tests += "MPU6050 AHRS test: PASSED\n";
+		IMU::init();
+		IMU::read();
+		// BIAS MPU6050
+		mpud::raw_axes_t gb = gyro_bias.get();
+		mpud::raw_axes_t ab = accl_bias.get();
+		ESP_LOGI( FNAME,"MPU current offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
+		if( (gb.isZero() || ab.isZero()) || ahrs_autozero.get() ) {
+			ESP_LOGI( FNAME,"MPU computeOffsets");
+			ahrs_autozero.set(0);
+			MPU.computeOffsets( &ab, &gb );
+			gyro_bias.set( gb );
+			accl_bias.set( ab );
+			MPU.setGyroOffset(gb);
+			MPU.setAccelOffset(ab);
+			ESP_LOGI( FNAME,"MPU new offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
+			if( hardwareRevision.get() != 3 )
+				hardwareRevision.set(3);
+		}
+		else{
+			MPU.setAccelOffset(ab);
+			MPU.setGyroOffset(gb);
+		}
+	}
+	else{
+		if( hardwareRevision.get() != 2 ){
+			ESP_LOGI( FNAME,"hardwareRevision detected = 2, XCVario-20");
+			hardwareRevision.set(2);
+		}
+		if( hardwareRevision.get() == 3 ) {
+			ESP_LOGI( FNAME,"hardwareRevision detected = 3, XCVario-21");
+			display->writeText( line++, "AHRS Sensor: NOT FOUND");
+			logged_tests += "MPU6050 AHRS test: NOT FOUND\n";
+		}
+	}
+
 	String wireless_id;
 	if( blue_enable.get() == WL_BLUETOOTH ) {
 		wireless_id="Bluetooth ID: ";
@@ -567,25 +618,25 @@ void sensor(void *args){
 		ESP_LOGI(FNAME,"Airspeed sensor Autodetect HW revision 3");
 		if( hardwareRevision.get() == 3 ) {
 			bool found = false;
-			asSensor = new MS4525DO();
+			asSensor = new ABPMRR();
 			asSensor->setBus( &i2c );
-			ESP_LOGI(FNAME,"Try MS4525");
+			ESP_LOGI(FNAME,"Try ABPMRR");
 			if( asSensor->selfTest( offset ) ){
 				if( asSensor->offsetPlausible( offset ) ){
-					airspeed_sensor_type.set( PS_TE4525 );
+					airspeed_sensor_type.set( PS_ABPMRR );
 					found = true;
-					ESP_LOGI(FNAME,"MS4525: OKAY");
+					ESP_LOGI(FNAME,"Offest for ABPMRR OKAY");
 				}
 			}
 			if( !found ){   // behaves same as above, so we can't detect this, needs to be setup in factory
-				asSensor = new ABPMRR();
+				asSensor = new MS4525DO();
 				asSensor->setBus( &i2c );
-				ESP_LOGI(FNAME,"Try ABPMRR");
+				ESP_LOGI(FNAME,"Try MS4525");
 				if( asSensor->selfTest( offset ) ){
 					if( asSensor->offsetPlausible( offset ) ){
 						airspeed_sensor_type.set( PS_ABPMRR );
 						found = true;
-						ESP_LOGI(FNAME,"ABPMRR: OKAY");
+						ESP_LOGI(FNAME,"Offset for ABPMRR OKAY");
 					}
 				}
 			}
@@ -597,7 +648,7 @@ void sensor(void *args){
 					if( asSensor->offsetPlausible( offset ) ){
 						airspeed_sensor_type.set( PS_MP3V5004 );
 						found = true;
-						ESP_LOGI(FNAME,"MP3V5004 Offset: OKAY");
+						ESP_LOGI(FNAME,"Offeset for MP3V5004 OKAY");
 					}
 				}
 			}
@@ -818,54 +869,7 @@ void sensor(void *args){
 		wifi_init_softap();
 	}
 
-	esp_err_t err=ESP_ERR_NOT_FOUND;
-	MPU.setBus(i2c);  // set communication bus, for SPI -> pass 'hspi'
-	MPU.setAddr(mpud::MPU_I2CADDRESS_AD0_LOW);  // set address or handle, for SPI -> pass 'mpu_spi_handle'
-	err = MPU.initialize();
-	ESP_LOGI( FNAME,"MPU Probing returned %d MPU enable: %d ", err, attitude_indicator.get() );
-	if( err == ESP_OK ){
-		hardwareRevision.set(3);  // wow, there is MPU6050 gyro and acceleration sensor
-		haveMPU = true;
-		ESP_LOGI( FNAME,"MPU initialize");
-		MPU.initialize();  // this will initialize the chip and set default configurations
-		MPU.setSampleRate(50);  // in (Hz)
-		MPU.setAccelFullScale(mpud::ACCEL_FS_8G);
-		MPU.setGyroFullScale(mpud::GYRO_FS_500DPS);
-		MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
-		display->writeText( line++, "AHRS Sensor: OK");
-		logged_tests += "MPU6050 AHRS test: PASSED\n";
-		IMU::init();
-		IMU::read();
-		// BIAS MPU6050
-		mpud::raw_axes_t gb = gyro_bias.get();
-		mpud::raw_axes_t ab = accl_bias.get();
-		ESP_LOGI( FNAME,"MPU current offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
-		if( (gb.isZero() || ab.isZero()) || ahrs_autozero.get() ) {
-			ESP_LOGI( FNAME,"MPU computeOffsets");
-			ahrs_autozero.set(0);
-			MPU.computeOffsets( &ab, &gb );
-			gyro_bias.set( gb );
-			accl_bias.set( ab );
-			MPU.setGyroOffset(gb);
-			MPU.setAccelOffset(ab);
-			ESP_LOGI( FNAME,"MPU new offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
-			if( hardwareRevision.get() != 3 )
-				hardwareRevision.set(3);
-		}
-		else{
-			MPU.setAccelOffset(ab);
-			MPU.setGyroOffset(gb);
-		}
-	}
-	else{
-		if( hardwareRevision.get() != 2 )
-			hardwareRevision.set(2);
-		if( hardwareRevision.get() == 3 ) {
-			display->writeText( line++, "AHRS Sensor: NOT FOUND");
-			logged_tests += "MPU6050 AHRS test: NOT FOUND\n";
-		}
-	}
-
+// MPU
 
 
 	// Check for magnetic sensor / compass

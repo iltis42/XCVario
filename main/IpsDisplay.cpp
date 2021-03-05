@@ -6,7 +6,7 @@
  *
  */
 
-
+#include <cmath>
 #include "sdkconfig.h"
 #include <stdio.h>
 #include <string.h>
@@ -1214,13 +1214,15 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// Compass
 	if( !(tick%8) ){
 		if( compass_calibrated.get() && compass_enable.get() ){
-			int heading = Compass::magnHeading();
+			int heading = static_cast<int>(rintf(Compass::magnHeading()));
+			if( heading >= 360 )
+			  heading -= 360;
 			if( prev_heading != heading ){
 				ucg->setPrintPos(120,105);
 				ucg->setColor(  COLOR_WHITE  );
-				ucg->setFont(ucg_font_fub20_hr);
+				ucg->setFont(ucg_font_fur20_hf);
 				char s[5];
-				sprintf(s,"%3d", heading );
+				sprintf(s,"%03d", heading );
 				ucg->printf("%s", s);
 				ucg->setFont(ucg_font_fub20_hf);
 				ucg->setPrintPos(120+ucg->getStrWidth(s),105);

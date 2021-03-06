@@ -386,19 +386,17 @@ void readBMP(void *pvParameters){
 		if( compass_enable.get() == true  ) {
 			// Trigger heading reading and low pass filtering. That job must be
 			// done periodically.
-			compass.calculateHeading();
-
-			// get state of current heading
-			const bool hok = compass.headingValid();
+			bool hok;
+			compass.calculateHeading( &hok );
 
 			if( (count % 5 ) == 0 && hok == true && compass_nmea_hdm.get() == true ) {
 				xSemaphoreTake( xMutex, portMAX_DELAY );
-				OV.sendNmeaHDM( compass.magnHeading() );
+				OV.sendNmeaHDM( compass.magnHeading( &ok ) );
 				xSemaphoreGive( xMutex );
 			}
 			if( (count % 5 ) == 0 && hok == true && compass_nmea_hdt.get() == true ) {
 				xSemaphoreTake( xMutex, portMAX_DELAY );
-				OV.sendNmeaHDT( compass.trueHeading() );
+				OV.sendNmeaHDT( compass.trueHeading( &ok ) );
 				xSemaphoreGive( xMutex );
 			}
 		}

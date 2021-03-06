@@ -258,12 +258,12 @@ bool QMC5883L::rawHeading()
 	// ESP_LOGI( FNAME, "REG_STATUS: %02x", status );
 
 	if( ( status & STATUS_OVL ) == true &&
-			range == RANGE_2GAUSS && overflowWarning == false )
+		  range == RANGE_2GAUSS  )
 	{
 		// Overflow has occurred, give out a warning only once
 		overflowWarning = true;
 		ESP_LOGW( FNAME, "readRawHeading detected a gauss overflow." );
-		//return false;;
+		return false;
 	}
 /*
 	if( ( status & STATUS_DOR ) == true )
@@ -614,12 +614,8 @@ float QMC5883L::heading( bool *ok )
 		ESP_LOGI( FNAME, "fX=%f fY=%f fZ=%f C-Heading=%.1f", fx, fy, fz, headingc );
 #endif
 
-	// ESP_LOGI(FNAME,"RANGE XH:%d YH:%d ZH:%d  XL:%d YL:%d ZL:%d OX:%d OY:%d OZ:%d", xmax,ymax,zmax, xmin,ymin,zmin, xmax + xmin, ymax + ymin,zmax + zmin);
-	// ESP_LOGI(FNAME,"RAW NORM Flux, fx:%f fy:%f fz:%f", fx,fy,fz);
-
 	// 	Xhorizontal = X*cos(pitch) + Y*sin(roll)*sin(pitch) – Z*cos(roll)*sin(pitch)
 	double tcx = fx * cos( -IMU::getPitchRad() ) + fy * sin( -IMU::getRollRad() ) * sin( -IMU::getPitchRad()) - fz * cos( -IMU::getRollRad()) * sin( -IMU::getPitchRad());
-	// ESP_LOGI(FNAME,"RR:%f, PR:%f tcx 1:%f tcx2:%f tcx3:%f", IMU::getPitchRad(), IMU::getRollRad(), fx*cos( IMU::getPitchRad() ),   fy*sin( IMU::getRollRad() )*sin( IMU::getPitchRad()), fz*cos( IMU::getRollRad())*sin( IMU::getPitchRad() ) );
 	// 	Yhorizontal = Y*cos(roll) + Z*sin(roll)
 	double tcy = fy * cos( -IMU::getRollRad()) + fz * sin( -IMU::getRollRad());
 

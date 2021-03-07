@@ -13,10 +13,11 @@ Class to handle compass data access.
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-02-26
+Last update: 2021-03-07
 
  **************************************************************************/
 
+#include <cassert>
 #include <cmath>
 #include "esp_log.h"
 #include "esp_system.h"
@@ -62,21 +63,16 @@ Compass::~Compass()
  * the current heading from the sensor and apply a low pass filter
  * to it. It Returns the low pass filtered magnetic heading without applying
  * any corrections to it as declination or deviation.
- * If ok is passed, it is set to true, if heading data is valid, otherwise
- * it is set to false.
+ * Ok is set to true, if heading data is valid, otherwise it is set to false.
  */
 float Compass::calculateHeading( bool *okIn )
 {
-	// ESP_LOGI(FNAME,"magneticHeading()");
-	bool ok = false;
-	if( okIn == nullptr )  // mandatory, return if zero
-		return 0.0;
+  assert( okIn != nullptr && "Passing of NULL pointer is forbidden" );
 
-	float new_heading = QMC5883L::heading( &ok );
+  float new_heading = QMC5883L::heading( okIn );
 	// ESP_LOGI( FNAME, "calculateHeading H: %3.1f  OK: %d", new_heading, ok );
-	if( ok == false )
+	if( *okIn == false )
 	{
-		*okIn = false;
 		m_headingValid = false;
 		ESP_LOGW( FNAME, "magneticHeading() error return from heading()");
 		return 0.0;
@@ -92,13 +88,12 @@ float Compass::calculateHeading( bool *okIn )
 /**
  * Returns the low pass filtered magnetic heading by considering
  * deviation, if argument withDeviation is set to true.
- * If ok is passed, it is set to true, if heading data is valid, otherwise
- * it is set to false.
+ * Ok is set to true, if heading data is valid, otherwise it is set to false.
  */
 float Compass::magnHeading( bool *okIn, bool withDeviation )
 {
-  if( okIn == nullptr )
-	  return 0.0;
+  assert( okIn != nullptr && "Passing of NULL pointer is forbidden" );
+
   *okIn = m_headingValid;
 
   if( withDeviation == false )
@@ -139,7 +134,16 @@ float Compass::getDeviation( float heading )
   return deviation;
 }
 
-/**
+/**  // Call time measurement
+  static uint64_t lastCall = getMsTime();
+
+  uint64_t elapsed = getMsTime() - lastCall;
+  lastCall = getMsTime();
+
+  ESP_LOGI( FNAME, "lct=%lld ms", elapsed );
+#endif
+
+ *
  * Setup the deviation interpolation data.
  */
 void Compass::setupInterpolationData()
@@ -169,20 +173,29 @@ void Compass::setupInterpolationData()
 /**
  * Returns the low pass filtered magnetic heading by considering deviation and
  * declination.
- * If ok is passed, it is set to true, if heading data is valid, otherwise
- * it is set to false.
+ * Ok is set to true, if heading data is valid, otherwise it is set to false.
  */
 float Compass::trueHeading( bool *okIn )
 {
-  if( okIn == nullptr )
-	  return 0.0;
+  assert( okIn != nullptr && "Passing of NULL pointer is forbidden" );
 
   *okIn = m_headingValid;
+
 	// Calculate and return true heading
+  float heading = 0.0;
+
   if( m_headingValid )
-	  return m_magn_heading + compass_declination.get();
-  else
-	  return 0.0;
+  {
+    heading = m_magn_heading + compass_declination.get();
+
+    // Correct heading in case of over/underflow
+    if( heading >= 360.0 )
+      heading -= 360.0;
+    else if( heading < 0.0 )
+      heading += 360.0;
+  }
+
+	return heading;
 }
 
 //------------------------------------------------------------------------------

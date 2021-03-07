@@ -22,9 +22,18 @@ Kalman IMU::kalmanX; // Create the Kalman instances
 Kalman IMU::kalmanY;
 
 // Private Variables
-double IMU::gyroXAngle = 0.0;;
-double IMU::gyroYAngle = 0.0;; // Angle calculate using the gyro only
+double IMU::gyroXAngle = 0;
+double IMU::gyroYAngle = 0; // Angle calculate using the gyro only
 uint32_t IMU::lastProcessed = 0;
+
+float 	IMU::myrolly = 0;
+float 	IMU::myrollz = 0;
+float 	IMU::myaccroll = 0;
+double  IMU::mypitch = 0;
+double  IMU::filterPitch = 0;
+double  IMU::filterRoll = 0;
+
+uint64_t IMU::last_rts=0;
 double IMU::accelX = 0.0;
 double IMU::accelY = 0.0;
 double IMU::accelZ = 0.0;
@@ -32,14 +41,7 @@ double IMU::gyroX = 0.0;
 double IMU::gyroY = 0.0;
 double IMU::gyroZ = 0.0;
 double IMU::kalXAngle = 0.0;
-double IMU::kalYAngle = 0.0;;
-uint64_t IMU::last_rts=0;
-float 	IMU::myrolly = 0;
-float 	IMU::myrollz = 0;
-float 	IMU::myaccroll = 0;
-double  IMU::mypitch = 0;
-double  IMU::filterPitch = 0;
-double  IMU::filterRoll = 0;
+double IMU::kalYAngle = 0.0;
 
 // Kalman Function Definition
 

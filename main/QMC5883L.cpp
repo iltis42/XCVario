@@ -15,13 +15,14 @@ https://datasheetspdf.com/pdf-file/1309218/QST/QMC5883L/1
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-02-26
+Last update: 2021-03-07
 
  ***************************************************************************/
 
 // Activate/deactivate debug messages
 // #define DEBUG_COMP 1
 
+#include <cassert>
 #include <cmath>
 #include <logdef.h>
 #include "QMC5883L.h"
@@ -86,21 +87,8 @@ QMC5883L::QMC5883L( const uint8_t addrIn,
 		// set address to default value of chip, if it is zero.
 		addr = QMC5883L_ADDR;
 	}
-	zraw=0;
-	xraw=0;
-	yraw=0;
-	zbias=0;
-	xbias=0;
-	ybias=0;
-	ymax=0;
-	ymin=0;
-	xscale=0;
-	yscale=0;
-	zscale=0;
-	xmax=0;
-	xmin=0;
-	zmin=0;
-	zmax=0;
+
+	resetClassCalibration();
 }
 
 QMC5883L::~QMC5883L()
@@ -259,25 +247,19 @@ bool QMC5883L::rawHeading()
 	if( ( status & STATUS_OVL ) == true && range == RANGE_2GAUSS  )
 	{
 		// Magetic overflow has occurred, give out a warning only once
-		overflowWarning = true;
-		ESP_LOGW( FNAME, "readRawHeading detected a gauss overflow." );
+	  if( overflowWarning == false )
+	    ESP_LOGW( FNAME, "readRawHeading detected a gauss overflow." );
+
+    overflowWarning = true;
 		return false;
 	}
-	/*
-	if( ( status & STATUS_DOR ) == true )
-	{
-		// Previous measure was read partially, sensor in Data Lock.
-		// Read all data again to overcome lock.
-		readRegister( addr, REG_X_LSB, 6, data );
-		ESP_LOGE( FNAME, "read REG_X_LSB FAILED" );
-		return false;
-	}
-	 */
+
 	if( !( status & STATUS_DRDY ) )
-		ESP_LOGW( FNAME, "RDY bit not set in sensor reading!" );
+	  ESP_LOGE( FNAME, "STATUS_DRDY=0, no new sensor data available" );
+
 	if( ( status & STATUS_DRDY ) || (status & STATUS_DOR ) )
 	{
-		// Data ready for reading
+		// Data can be read in every case
 		if( readRegister( addr, REG_X_LSB, 6, data ) > 0 )
 		{
 			xraw = (int)( (int16_t)(( data[1] << 8 ) | data[0]) );
@@ -287,7 +269,6 @@ bool QMC5883L::rawHeading()
 		}
 		ESP_LOGE( FNAME, "read Register returned <= 0" );
 	}
-	ESP_LOGE( FNAME, "STATUS_DRDY=0, no new data available" );
 
 	return false;
 }
@@ -298,6 +279,8 @@ bool QMC5883L::rawHeading()
  */
 int16_t QMC5883L::temperature( bool *ok )
 {
+  assert( ok != nullptr && "Passing of NULL pointer is forbidden" );
+
 	uint8_t data[2];
 	if( readRegister( addr, REG_TEMP_LSB, 2, data ) == 0 ){
 		if( ok != nullptr )
@@ -550,18 +533,28 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z ) )
 }
 
 /**
- * Reads the heading in degrees of 0...359. If ok is passed, it is set to true,
+ * Reads the heading in degrees of 0...359. Ok is set to true,
  * if heading data is valid, otherwise it is set to false.
  */
 float QMC5883L::heading( bool *ok )
 {
 	static unsigned short error = 0;
 
-	if( ok == nullptr )
-		return 0;
+	assert( ok != nullptr && "Passing of NULL pointer is forbidden" );
+
+#if 0
+	// Call time measurement
+	static uint64_t lastCall = getMsTime();
+
+	uint64_t elapsed = getMsTime() - lastCall;
+	lastCall = getMsTime();
+
+	ESP_LOGI( FNAME, "lct=%lld ms", elapsed );
+#endif
 
 	// Holddown processing and throwing errors once sensor is gone
-	if( error > 100 && error%100 ){
+	if( error > 100 && error % 100 )
+	{
 		*ok = false;
 		error++;
 		return 0.0;
@@ -578,7 +571,8 @@ float QMC5883L::heading( bool *ok )
 		ESP_LOGE(FNAME,"rawHeading() returned false" );
 		error++;
 		*ok = false;
-		if( error > 10 ) {
+		if( error > 10 )
+		{
 			initialize();  // reinitialize once crashed
 		}
 		return 0.0;
@@ -593,7 +587,10 @@ float QMC5883L::heading( bool *ok )
 		return 0.0;
 	}
 
-	/* Apply corrections to the measured values. */
+	/* Apply corrections to the measured values. Note, due to mounting of chip
+	 * turned clockwise by 90 degrees the X-axis and the Y-axis are moved and
+	 * have to be handled in this way.
+	 */
 	double fy = (double) ((float( xraw ) - xbias) * xscale);
 	double fx = -(double) ((float( yraw ) - ybias) * yscale);
 	double fz = (double) ((float( zraw ) - zbias) * zscale);
@@ -610,9 +607,9 @@ float QMC5883L::heading( bool *ok )
 		ESP_LOGI( FNAME, "fX=%f fY=%f fZ=%f C-Heading=%.1f", fx, fy, fz, headingc );
 #endif
 
-	// 	Xhorizontal = X*cos(pitch) + Y*sin(roll)*sin(pitch) – Z*cos(roll)*sin(pitch)
+	// Xhorizontal = X*cos(pitch) + Y*sin(roll)*sin(pitch) – Z*cos(roll)*sin(pitch)
 	double tcx = fx * cos( -IMU::getPitchRad() ) + fy * sin( -IMU::getRollRad() ) * sin( -IMU::getPitchRad()) - fz * cos( -IMU::getRollRad()) * sin( -IMU::getPitchRad());
-	// 	Yhorizontal = Y*cos(roll) + Z*sin(roll)
+	// Yhorizontal = Y*cos(roll) + Z*sin(roll)
 	double tcy = fy * cos( -IMU::getRollRad()) + fz * sin( -IMU::getRollRad());
 
 	double heading = -RAD_TO_DEG * atan2( tcy, tcx );
@@ -622,7 +619,7 @@ float QMC5883L::heading( bool *ok )
 
 	*ok = true;
 
-	// #define DEBUG_COMP1
+// #define DEBUG_COMP1
 #ifdef DEBUG_COMP1
 	ESP_LOGI( FNAME,
 			"rawHeading, x:%d y:%d z:%d, roll: %f  pitch: %f  tcx:%f tcy:%f mh:%f ",

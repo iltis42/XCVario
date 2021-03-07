@@ -69,27 +69,22 @@ float Compass::calculateHeading( bool *okIn )
 {
 	// ESP_LOGI(FNAME,"magneticHeading()");
 	bool ok = false;
-	float new_heading = QMC5883L::heading( &ok );
+	if( okIn == nullptr )  // mandatory, return if zero
+		return 0.0;
 
+	float new_heading = QMC5883L::heading( &ok );
+	// ESP_LOGI( FNAME, "calculateHeading H: %3.1f  OK: %d", new_heading, ok );
 	if( ok == false )
 	{
-		if( okIn != nullptr )
-		{
-			*okIn = false;
-			m_headingValid = false;
-			ESP_LOGW( FNAME, "magneticHeading() error return from heading()");
-		}
-
+		*okIn = false;
+		m_headingValid = false;
+		ESP_LOGW( FNAME, "magneticHeading() error return from heading()");
 		return 0.0;
 	}
-
 	m_magn_heading = m_cfmh.filter( new_heading );
 	m_headingValid = true;
 
-	if( okIn != nullptr )
-	{
-		*okIn = true;
-	}
+	*okIn = true;
 	// ESP_LOGI(FNAME,"magneticHeading ret=%3.1f", m_magn_heading );
 	return m_magn_heading;
 }
@@ -102,19 +97,20 @@ float Compass::calculateHeading( bool *okIn )
  */
 float Compass::magnHeading( bool *okIn, bool withDeviation )
 {
-  if( okIn != nullptr )
-  {
-    *okIn = m_headingValid;
-  }
+  if( okIn == nullptr )
+	  return 0.0;
+  *okIn = m_headingValid;
 
   if( withDeviation == false )
     {
       // Return pure magnetic heading
       return m_magn_heading;
     }
-
   // Return magnetic heading by considering deviation data.
-  return m_magn_heading + getDeviation( m_magn_heading );
+  if( m_headingValid )
+	  return m_magn_heading + getDeviation( m_magn_heading );
+  else
+	  return 0.0;
 }
 
 /**
@@ -178,13 +174,15 @@ void Compass::setupInterpolationData()
  */
 float Compass::trueHeading( bool *okIn )
 {
-  if( okIn != nullptr )
-  {
-    *okIn = m_headingValid;
-  }
+  if( okIn == nullptr )
+	  return 0.0;
 
+  *okIn = m_headingValid;
 	// Calculate and return true heading
-	return m_magn_heading + compass_declination.get();
+  if( m_headingValid )
+	  return m_magn_heading + compass_declination.get();
+  else
+	  return 0.0;
 }
 
 //------------------------------------------------------------------------------

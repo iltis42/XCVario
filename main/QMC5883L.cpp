@@ -192,7 +192,7 @@ esp_err_t QMC5883L::selfTest()
  */
 esp_err_t QMC5883L::initialize( int a_odr, int a_osr )
 {
-	ESP_LOGI( FNAME, "initialize() dataRate: %d  Oversampling: %d", a_odr, a_osr );
+	ESP_LOGI( FNAME, "initialize() dataRate: %d Oversampling: %d", a_odr, a_osr );
 	esp_err_t e1, e2, e3, e4;
 	e1 = e2 = e3 = e4 = 0;
 
@@ -497,7 +497,7 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z ) )
 
 		if( elapsed >= 50 )
 		{
-			// ESP_LOGI( FNAME, "Elapsed=%llu > 15 ms -> no delay", elapsed );
+			// ESP_LOGI( FNAME, "Elapsed=%llu > 50 ms -> no delay", elapsed );
 			continue;
 		}
 
@@ -505,7 +505,7 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z ) )
 		int wait = 50 - elapsed;
 
 		// The sensor seems to have sometimes problems to deliver all 10ms new data
-		// Therefore we wait at least 15ms.
+		// Therefore we wait at least 50ms.
 		delay( wait );
 	}
 
@@ -591,6 +591,7 @@ float QMC5883L::heading( bool *ok )
 	{
 		// No calibration data available, return error because to return
 		// the raw heading is not meaningful.
+	  *ok = false;
 		return 0.0;
 	}
 

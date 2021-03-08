@@ -1,7 +1,7 @@
 #pragma once
 
 // for black on white display define COLOR_INVERS
-#define COLOR_INVERS
+// #define COLOR_INVERS  tbd: add configurable setup item for black on white style
 
 #ifdef COLOR_INVERS
   #define COLOR_HEADER       101,108,255  // Azureish gray

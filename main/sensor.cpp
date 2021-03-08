@@ -361,7 +361,7 @@ void readBMP(void *pvParameters){
 
 				xSemaphoreTake(xMutex,portMAX_DELAY );
 				// reduce also messages from 10 per second to 5 per second to reduce load in XCSoar
-				char lb[120];
+				char lb[150];
 				if( nmea_protocol.get() == BORGELT ) {
 					OV.sendNMEA( P_BORGELT, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), altSTD, validTemperature  );
 					OV.sendNMEA( P_GENERIC, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), altSTD, validTemperature  );
@@ -475,7 +475,7 @@ void sensor(void *args){
 		ESP_LOGI( FNAME, "sensor init already called");
 	init_done=true;
 	int line = 1;
-
+	ESP_LOGI( FNAME, "Now setup I2C bus IO 21/22");
 	i2c.begin(GPIO_NUM_21, GPIO_NUM_22, 20000 );
 
 	MCP = new MCP3221();

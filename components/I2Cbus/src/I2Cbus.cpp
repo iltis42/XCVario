@@ -58,6 +58,7 @@ static const char* TAG __attribute__((unused)) = "I2Cbus";
 // Protect multithreading by semaphore
 xSemaphoreHandle i2cbus_mutex = 0;
 
+
 /*******************************************************************************
  * OBJECTS
  ******************************************************************************/
@@ -69,6 +70,8 @@ I2C_t i2c1 = i2cbus::I2C(I2C_NUM_1);
  * I2Cbus
  * ^^^^^^ */
 namespace i2cbus {
+
+bool I2C::initDone[2] = { false, false };
 
 /*******************************************************************************
  * SETUP
@@ -85,7 +88,8 @@ esp_err_t I2C::begin(gpio_num_t sda_io_num, gpio_num_t scl_io_num, uint32_t clk_
 }
 
 esp_err_t I2C::begin(gpio_num_t sda_io_num, gpio_num_t scl_io_num, gpio_pullup_t sda_pullup_en, gpio_pullup_t scl_pullup_en, uint32_t clk_speed) {
-	i2c_driver_delete(port);
+	if( initDone[port] )
+		i2c_driver_delete(port);
 	i2c_config_t conf;
 	memset( &conf, 0, sizeof(conf) );
     conf.mode = I2C_MODE_MASTER;
@@ -99,6 +103,7 @@ esp_err_t I2C::begin(gpio_num_t sda_io_num, gpio_num_t scl_io_num, gpio_pullup_t
     // i2c_set_stop_timing( port, 200, 200 );
 
     if (!err) err = i2c_driver_install(port, conf.mode, 0, 0, 0);
+    initDone[port] = true;
     i2c_filter_enable(port, 7 );
     int setup, hold;
     i2c_get_stop_timing( port, &setup, &hold );

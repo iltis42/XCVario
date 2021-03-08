@@ -102,9 +102,15 @@ return err;
  * */
 esp_err_t MPU::reset()
 {
-	esp_err_t err = writeBit(regs::PWR_MGMT1, regs::PWR1_DEVICE_RESET_BIT, 1);
-	if ( err != ESP_OK ) {
-		MPU_LOGI("MPU reset, error %d", err );
+	int i;
+	for( i=0; i<=10; i++ ){
+		esp_err_t err = writeBit(regs::PWR_MGMT1, regs::PWR1_DEVICE_RESET_BIT, 1);
+		vTaskDelay(100 / portTICK_PERIOD_MS);
+		if ( err == ESP_OK )
+			break;
+	}
+	if( i == 10 ){
+		MPU_LOGI("MPU reset, ERROR %d", err );
 		return err;
 	}
 	vTaskDelay(100 / portTICK_PERIOD_MS);
@@ -113,7 +119,7 @@ esp_err_t MPU::reset()
 		return err;
 	}
 #endif
-	MPU_LOGI("Reset!");
+	MPU_LOGI("Reset OKAY!");
 	return err;
 }
 

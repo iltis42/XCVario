@@ -53,6 +53,7 @@ class I2C {
  private:
     i2c_port_t port;            /*!< I2C port: I2C_NUM_0 or I2C_NUM_1 */
     uint32_t ticksToWait;       /*!< Timeout in ticks for read and write */
+    static bool initDone[2];
 
  public:
     explicit I2C(i2c_port_t port);

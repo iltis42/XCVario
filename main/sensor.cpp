@@ -111,6 +111,7 @@ PressureSensor *teSensor = 0;
 
 Ucglib_ILI9341_18x240x320_HWSPI *myucg;  // ( SPI_DC, CS_Display, RESET_Display );
 IpsDisplay *display;
+bool topDown = false;
 
 OTA *ota = 0;
 
@@ -375,6 +376,10 @@ void readBMP(void *pvParameters){
 					OV.sendNMEA( P_XCVARIO, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
 							-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
 				}
+				else if( nmea_protocol.get() == XCVARIO_DEVEL ) {
+					OV.sendNMEA( P_XCVARIO_DEVEL, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
+							-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
+				}
 				else
 					ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
 
@@ -470,12 +475,9 @@ void sensor(void *args){
 		ESP_LOGI( FNAME, "sensor init already called");
 	init_done=true;
 	int line = 1;
-	i2c.begin(GPIO_NUM_21, GPIO_NUM_22, 100000 );
-	if( compass_enable.get() ) {
-		i2c_0.begin(GPIO_NUM_4, GPIO_NUM_18, GPIO_PULLUP_DISABLE, GPIO_PULLUP_DISABLE, 100000 );
-		if( serial2_speed.get() )
-			serial2_speed.set(0);  // switch off serial interface, we can do only alternatively
-	}
+
+	i2c.begin(GPIO_NUM_21, GPIO_NUM_22, 20000 );
+
 	MCP = new MCP3221();
 	MCP->setBus( &i2c );
 	gpio_set_drive_capability(GPIO_NUM_23, GPIO_DRIVE_CAP_1);
@@ -497,6 +499,11 @@ void sensor(void *args){
 	ESP_LOGI(FNAME, "QNH.get() %f", QNH.get() );
 	ESP_LOGI( FNAME, "Hardware revision detected %d", hardwareRevision.get() );
 	NVS.begin();
+	if( display_orientation.get() ){
+		ESP_LOGI( FNAME, "TopDown display mode flag set");
+		topDown = true;
+	}
+
 	AverageVario::begin();
 	Flap::initSensor();
 
@@ -609,6 +616,14 @@ void sensor(void *args){
 		wireless_id="WLAN SID: ";
 	wireless_id += SetupCommon::getID();
 	display->writeText(line++, wireless_id.c_str() );
+
+
+	if( compass_enable.get() ) {
+		i2c_0.begin(GPIO_NUM_4, GPIO_NUM_18, GPIO_PULLUP_DISABLE, GPIO_PULLUP_DISABLE, 20000 );
+		if( serial2_speed.get() )
+			serial2_speed.set(0);  // switch off serial interface, we can do only alternatively
+	}
+
 
 	ESP_LOGI(FNAME,"Airspeed sensor init..  type configured: %d", airspeed_sensor_type.get() );
 	int offset;
@@ -733,6 +748,7 @@ void sensor(void *args){
 	splBA->setBus( &i2c );
 	if( splBA->begin() ){
 		ESP_LOGI(FNAME,"SPL06_007 type detected");
+		i2c.begin(GPIO_NUM_21, GPIO_NUM_22, 100000 );  // higher speed, we have 10K pullups on that board
 		SPL06_007 *splTE = new SPL06_007( SPL06_007_TE );
 		splTE->setBus( &i2c );
 		splTE->begin();
@@ -962,6 +978,8 @@ void sensor(void *args){
 		inSetup = false;
 		display->clear();
 	}
+	Flap::init(myucg);
+
 	if( hardwareRevision.get() == 2 )
 		Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
 	else {
@@ -969,7 +987,6 @@ void sensor(void *args){
 		gpio_set_direction(GPIO_NUM_2, GPIO_MODE_INPUT);     // 2020 series 1, analog in
 		gpio_pullup_en( GPIO_NUM_2 );
 		gpio_pullup_en( GPIO_NUM_34 );
-		Flap::init(myucg);
 	}
 	gpio_set_pull_mode(RESET_Display, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_Display, GPIO_PULLUP_ONLY );

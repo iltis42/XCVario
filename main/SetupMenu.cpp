@@ -1198,7 +1198,6 @@ void SetupMenu::setup( )
 			srxtw2->addEntry( "Twisted");
 
 		}
-
 		SetupMenuSelect * nmea = new SetupMenuSelect( PROGMEM "NMEA Protocol", false , 0, true, &nmea_protocol );
 		sye->addMenu( nmea );
 		nmea->setHelp( "Setup the protocol used for sending NMEA sentences. This needs to be inline with the device driver chosen in XCSoar/LK8000");
@@ -1206,6 +1205,7 @@ void SetupMenu::setup( )
 		nmea->addEntry( "Borgelt");
 		nmea->addEntry( "Cambridge");
 		nmea->addEntry( "XCVario");
+		nmea->addEntry( "XCVario Devel");
 	}
 	SetupMenu::display();
 }

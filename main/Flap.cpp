@@ -535,9 +535,9 @@ void  Flap::initSensor(){
 }
 
 float Flap::getOptimum( float wks, int wki ){
-	// ESP_LOGI(FNAME,"wks:%f min:%f max:%f", wks, minv, maxv );
 	float minv = flapSpeeds[wki+4];
 	float maxv = flapSpeeds[wki+3];
+	// ESP_LOGI(FNAME,"wks:%f min:%f max:%f wki:%d", wks, minv, maxv, wki);
 	if( wks <= maxv && wks >= minv )
 		return ((wks-minv)/(maxv-minv));
 	else if( wks > maxv )

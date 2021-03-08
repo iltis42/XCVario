@@ -24,6 +24,7 @@
 #include "SetupMenuSelect.h"
 #include "SetupMenuValFloat.h"
 #include "DisplayDeviations.h"
+#include "ShowCompassSettings.h"
 #include "MenuEntry.h"
 #include "Compass.h"
 #include "CompassMenu.h"
@@ -784,7 +785,7 @@ void SetupMenu::setup( )
 		flarms->addEntry( "Start Sim");
 
 		SetupMenu * compassMenu = new SetupMenu( "Compass" );
-		compassMenu->setHelp( PROGMEM "Setup Magnetic Sensor and Compass", 240 );
+		compassMenu->setHelp( PROGMEM "Setup Magnetic Sensor and Compass", 280 );
 		compassME = opt->addMenu( compassMenu );
 
 		SetupMenuSelect * compSensor = new SetupMenuSelect( "Sensor Option", false, 0, true, &compass_enable );
@@ -865,6 +866,10 @@ void SetupMenu::setup( )
 		nmeaHdt->setHelp( PROGMEM "Enable/disable NMEA '$HCHDT' sentence (magnetic true heading)" );
 		nmeaMenu->addMenu( nmeaHdt );
 
+		// Show compass settings
+		ShowCompassSettings* scs = new ShowCompassSettings( "Show Settings" );
+    compassME->addMenu( scs );
+
 		SetupMenuSelect * btm = new SetupMenuSelect( "Wireless", true, 0, true, &blue_enable );
 		btm->setHelp( PROGMEM "Activate type wireless interface to connect navigation devices running e.g. XCSoar, or to another XCVario as client");
 		btm->addEntry( "Disable");
@@ -912,8 +917,6 @@ void SetupMenu::setup( )
 		gloadres->addEntry( "Reset");
 		gloadres->addEntry( "Cancel");
 		gloadME->addMenu( gloadres );
-
-
 
 		SetupMenu * sy = new SetupMenu( "System" );
 		MenuEntry* sye = mm->addMenu( sy );

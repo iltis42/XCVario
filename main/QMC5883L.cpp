@@ -13,9 +13,11 @@ QMC5883L data sheet:
 
 https://datasheetspdf.com/pdf-file/1309218/QST/QMC5883L/1
 
+File: QMC5883L.cpp
+
 Author: Axel Pauli, January 2021
 
-Last update: 2021-03-07
+Last update: 2021-03-08
 
  ***************************************************************************/
 
@@ -24,7 +26,6 @@ Last update: 2021-03-07
 
 #include <cassert>
 #include <cmath>
-#include <logdef.h>
 #include "QMC5883L.h"
 #include "KalmanMPU6050.h"
 #include "SetupNG.h"
@@ -59,9 +60,12 @@ Last update: 2021-03-07
 #define MODE_STANDBY    0b00000000  // Standby mode.
 #define MODE_CONTINUOUS 0b00000001  // Continuous read mode.
 
-
 // Sensor state
 bool QMC5883L::m_sensor = false;
+
+// Sensor overflow flag.
+bool QMC5883L::overflowWarning = false;
+
 /*
   Creates instance for I2C connection with passing the desired parameters.
   No action is done at the bus. Note if i2cBus is not set in the constructor,
@@ -78,16 +82,17 @@ QMC5883L::QMC5883L( const uint8_t addrIn,
 										  odr( odrIn ),
 										  range( rangeIn ),
 										  osr( osrIn ),
-										  overflowWarning( false ),
 										  calibrationRunning( false )
 {
 	ESP_LOGI( FNAME, "QMC5883L( %02X )", addrIn );
+
 	if( addrIn == 0 )
 	{
 		// set address to default value of chip, if it is zero.
 		addr = QMC5883L_ADDR;
 	}
 
+  overflowWarning = false;
 	resetClassCalibration();
 }
 
@@ -202,7 +207,6 @@ esp_err_t QMC5883L::initialize( int a_odr, int a_osr )
 	e3 = writeRegister( addr, REG_RST_PERIOD, 1 );
 
 	// Set mesaurement data and start it in dependency of mode bit.
-
 	int used_osr = a_osr;
 	if( used_osr == 0 )
 		used_osr = osr;
@@ -244,15 +248,18 @@ bool QMC5883L::rawHeading()
 	}
 	// ESP_LOGI( FNAME, "REG_STATUS: %02x", status );
 
-	if( ( status & STATUS_OVL ) == true && range == RANGE_2GAUSS  )
+	if( ( status & STATUS_OVL ) == true )
 	{
-		// Magetic overflow has occurred, give out a warning only once
+		// Magnetic X-Y-Z data overflow has occurred, give out a warning only once
 	  if( overflowWarning == false )
-	    ESP_LOGW( FNAME, "readRawHeading detected a gauss overflow." );
+	    ESP_LOGW( FNAME, "read rawHeading detected a X-Y-Z data overflow." );
 
     overflowWarning = true;
 		return false;
 	}
+
+	// Reset overflow warning, to get a current status of it.
+	overflowWarning = false;
 
 	if( !( status & STATUS_DRDY ) )
 	  ESP_LOGE( FNAME, "STATUS_DRDY=0, no new sensor data available" );
@@ -279,7 +286,7 @@ bool QMC5883L::rawHeading()
  */
 int16_t QMC5883L::temperature( bool *ok )
 {
-  assert( ok != nullptr && "Passing of NULL pointer is forbidden" );
+  assert( (ok != nullptr) && "Passing of NULL pointer is forbidden" );
 
 	uint8_t data[2];
 	if( readRegister( addr, REG_TEMP_LSB, 2, data ) == 0 ){
@@ -540,7 +547,7 @@ float QMC5883L::heading( bool *ok )
 {
 	static unsigned short error = 0;
 
-	assert( ok != nullptr && "Passing of NULL pointer is forbidden" );
+	assert( (ok != nullptr) && "Passing of NULL pointer is forbidden" );
 
 #if 0
 	// Call time measurement

@@ -13,16 +13,20 @@ QMC5883L data sheet:
 
 https://datasheetspdf.com/pdf-file/1309218/QST/QMC5883L/1
 
+File: QMC5883L.h
+
 Author: Axel Pauli, January 2021
 
-Last update: 2021-03-07
+Last update: 2021-03-08
 
  ****************************************************************************/
 
 #pragma once
 
-#include <ctime>
+#include <sys/time.h>
 #include "esp_system.h"
+#include "logdef.h"
+#include "esp_log.h"
 #include "I2Cbus.hpp"
 
 /* The default I2C address of this chip */
@@ -120,6 +124,15 @@ public:
 			const uint8_t value );
 
 	/**
+	 * Return the overflow status flag. It is set to true, if any data of three
+	 * axis magnetic sensor channels is out of range.
+	 */
+	static bool overflowFlag()
+	{
+	  return overflowWarning;
+	}
+
+	/**
 	 * Read bytes from the chip.
 	 * Return the number of read bytes or 0 in error case.
 	 */
@@ -127,7 +140,6 @@ public:
 			const uint8_t reg,
 			const uint8_t count,
 			uint8_t *data );
-
 
 private:
 
@@ -173,7 +185,6 @@ private:
 	uint8_t odr;  // output data rate
 	uint8_t range; // magnetic resolution of sensor
 	uint8_t osr; // over sample ratio
-	bool overflowWarning;
+	static bool overflowWarning;
 	bool calibrationRunning;
 };
-

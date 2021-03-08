@@ -13,7 +13,7 @@ Class to handle compass data access.
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-03-07
+Last update: 2021-03-08
 
  **************************************************************************/
 
@@ -67,7 +67,7 @@ Compass::~Compass()
  */
 float Compass::calculateHeading( bool *okIn )
 {
-  assert( okIn != nullptr && "Passing of NULL pointer is forbidden" );
+  assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
 
   float new_heading = QMC5883L::heading( okIn );
 	// ESP_LOGI( FNAME, "calculateHeading H: %3.1f  OK: %d", new_heading, ok );
@@ -92,7 +92,7 @@ float Compass::calculateHeading( bool *okIn )
  */
 float Compass::magnHeading( bool *okIn, bool withDeviation )
 {
-  assert( okIn != nullptr && "Passing of NULL pointer is forbidden" );
+  assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
 
   *okIn = m_headingValid;
 
@@ -101,11 +101,22 @@ float Compass::magnHeading( bool *okIn, bool withDeviation )
       // Return pure magnetic heading
       return m_magn_heading;
     }
-  // Return magnetic heading by considering deviation data.
+
+  float heading = 0.0;
+
   if( m_headingValid )
-	  return m_magn_heading + getDeviation( m_magn_heading );
-  else
-	  return 0.0;
+  {
+     // Return magnetic heading by considering deviation data.
+	  float heading = m_magn_heading + getDeviation( m_magn_heading );
+
+    // Correct heading in case of over/underflow
+    if( heading >= 360.0 )
+      heading -= 360.0;
+    else if( heading < 0.0 )
+      heading += 360.0;
+  }
+
+  return heading;
 }
 
 /**
@@ -134,18 +145,9 @@ float Compass::getDeviation( float heading )
   return deviation;
 }
 
-/**  // Call time measurement
-  static uint64_t lastCall = getMsTime();
-
-  uint64_t elapsed = getMsTime() - lastCall;
-  lastCall = getMsTime();
-
-  ESP_LOGI( FNAME, "lct=%lld ms", elapsed );
-#endif
-
- *
- * Setup the deviation interpolation data.
- */
+ /**
+  * Setup the deviation interpolation data.
+  */
 void Compass::setupInterpolationData()
 {
   // Deviation data 0...360
@@ -177,7 +179,7 @@ void Compass::setupInterpolationData()
  */
 float Compass::trueHeading( bool *okIn )
 {
-  assert( okIn != nullptr && "Passing of NULL pointer is forbidden" );
+  assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
 
   *okIn = m_headingValid;
 

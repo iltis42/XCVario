@@ -1,3 +1,4 @@
+
 /*
  * IpsDisplay.h
  *
@@ -21,7 +22,7 @@
 
 enum ips_display { ILI9341 };
 
-typedef enum e_sreens { INIT_DISPLAY_NULL, INIT_DISPLAY_AIRLINER=1, INIT_DISPLAY_RETRO=2, INIT_DISPLAY_FLARM=4, INIT_DISPLAY_GLOAD=8 } e_screens_t;
+typedef enum e_sreens { INIT_DISPLAY_NULL, INIT_DISPLAY_AIRLINER=1, INIT_DISPLAY_RETRO=2, INIT_DISPLAY_FLARM=4, INIT_DISPLAY_GLOAD=8, INIT_DISPLAY_UL=16 } e_screens_t;
 extern int screens_init;
 
 class IpsDisplay {
@@ -114,8 +115,10 @@ private:
 	static void drawThermometer( int x, int y );
 	static void drawTetragon( float a, int x0, int y0, int l1, int l2, int w, int r, int g, int b, bool del=true );
 	static void initRetroDisplay();
+	static void initULDisplay();
 	static void initLoadDisplay();
 	static void drawRetroDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor );
+	static void drawULDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor );
 	static void drawAirlinerDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor );
 	static void drawAnalogScale( int val, int pos, float range, int offset=0 );
 	static void drawScaleLines( bool full, float max_pos, float max_neg );
@@ -132,3 +135,5 @@ private:
 
 
 #endif /* IPS_DISPLAY_H */
+
+

@@ -1,9 +1,19 @@
 #pragma once
 
-#define COLOR_HEADER       255-101,255-108,255-255  // Azureish gray
-#define COLOR_HEADER_LIGHT 255-161,255-168,255-255  // Azureish ligher
-#define COLOR_WHITE 0,0,0
-#define COLOR_BLACK 255,255,255
+// for black on white display define COLOR_INVERS
+#define COLOR_INVERS
+
+#ifdef COLOR_INVERS
+  #define COLOR_HEADER       101,108,255  // Azureish gray
+  #define COLOR_HEADER_LIGHT 161,168,255  // Azureish ligher
+  #define COLOR_WHITE 255,255,255
+  #define COLOR_BLACK 0,0,0
+#else
+  #define COLOR_HEADER       255-101,255-108,255-255  // Azureish gray
+  #define COLOR_HEADER_LIGHT 255-161,255-168,255-255  // Azureish ligher
+  #define COLOR_WHITE 0,0,0
+  #define COLOR_BLACK 255,255,255
+#endif
 #define COLOR_GREEN 255, 30, 255
 #define COLOR_RED   0,255,255
 #define LIGHT_GREEN 127,0,255

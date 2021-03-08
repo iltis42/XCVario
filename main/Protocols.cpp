@@ -139,8 +139,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		float pitch = IMU::getPitch();
 		sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%4.1f,%3.1f,%3.1f,%1.4f,%1.4f,%1.4f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
 	}
-
-	if( proto == P_XCVARIO ){
+	else if( proto == P_XCVARIO ){
 		/*
 				Sentence has following format:
 				$PXCV,

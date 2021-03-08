@@ -1221,7 +1221,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			if( heading >= 360 )
 				heading -= 360;
 			// ESP_LOGI(FNAME, "heading %d, valid %d", heading, Compass::headingValid() );
-			if( prev_heading != heading || !(tick%33) ){
+			if( prev_heading != heading || !(tick%32) ){
 				ucg->setPrintPos(113,102);
 				ucg->setColor(  COLOR_WHITE  );
 				ucg->setFont(ucg_font_fub20_hr);

@@ -1064,6 +1064,8 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		int start=120;
 		int width=50;
 		int maxs2f=55;
+		if( compass_enable.get() && compass_enable.get() )
+			maxs2f=35;
 		ucg->setClipRange( start, dmid-maxs2f-25, width, (maxs2f*2)+1+25 );
 		bool clear = false;
 		int dmo = dmid+25;
@@ -1220,7 +1222,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 				heading -= 360;
 			// ESP_LOGI(FNAME, "heading %d, valid %d", heading, Compass::headingValid() );
 			if( prev_heading != heading ){
-				ucg->setPrintPos(120,105);
+				ucg->setPrintPos(113,102);
 				ucg->setColor(  COLOR_WHITE  );
 				ucg->setFont(ucg_font_fub20_hr);
 				char s[6];
@@ -1228,7 +1230,12 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 					sprintf(s,"%3d", heading );
 				else
 					sprintf(s,"%s", "  ---" );
-				ucg->printf("%s", s);
+				if( heading < 10 )
+					ucg->printf("%s    ", s);
+				else if( heading < 100 )
+					ucg->printf("%s  ", s);
+				else
+					ucg->printf("%s ", s);
 				ucg->setFont(ucg_font_fub20_hf);
 				ucg->setPrintPos(120+ucg->getStrWidth(s),105);
 				ucg->printf("\xb0 ");

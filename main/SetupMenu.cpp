@@ -986,6 +986,7 @@ void SetupMenu::setup( )
 		disty->setHelp( PROGMEM "Display style in more digital airliner stype or retro mode with classic vario meter needle");
 		disty->addEntry( "Airliner");
 		disty->addEntry( "Retro");
+		disty->addEntry( "UL");
 
 		// Orientation   _display_orientation
 		SetupMenuSelect * diso = new SetupMenuSelect( "Orientation", true, 0, true, &display_orientation );
@@ -1084,7 +1085,7 @@ void SetupMenu::setup( )
 		als->addEntry( "TE");
 		als->addEntry( "Baro");
 
-		SetupMenuValFloat * spc = new SetupMenuValFloat( "IAS Calibration", 0, "%", -10, 10, 1, 0, false, &speedcal  );
+		SetupMenuValFloat * spc = new SetupMenuValFloat( "IAS Calibration", 0, "%", -60, 60, 1, 0, false, &speedcal  );
 		spc->setHelp(PROGMEM"Calibration of indicated airspeed (IAS). Normally not needed, hence pressure probes may have systematic error");
 		aia->addMenu( spc );
 

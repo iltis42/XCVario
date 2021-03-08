@@ -107,7 +107,7 @@ float Compass::magnHeading( bool *okIn, bool withDeviation )
   if( m_headingValid )
   {
      // Return magnetic heading by considering deviation data.
-	  float heading = m_magn_heading + getDeviation( m_magn_heading );
+	  heading = m_magn_heading + getDeviation( m_magn_heading );
 
     // Correct heading in case of over/underflow
     if( heading >= 360.0 )

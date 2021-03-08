@@ -15,7 +15,7 @@ https://datasheetspdf.com/pdf-file/1309218/QST/QMC5883L/1
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-02-24
+Last update: 2021-03-07
 
  ****************************************************************************/
 
@@ -74,16 +74,16 @@ public:
 	esp_err_t initialize( int a_odr=0, int a_osr=0 );
 
 	/**
-	 * Reads the heading in degrees of 0...359. If ok is passed, it is set to true,
+	 * Reads the heading in degrees of 0...359. Ok is set to true,
 	 * if heading data is valid, otherwise it is set to false.
 	 */
-	float heading( bool *ok=nullptr );
+	float heading( bool *ok );
 
 	/**
-	 * Read temperature in degree Celsius. If ok is passed, it is set to true,
+	 * Read temperature in degree Celsius. Ok is set to true,
 	 * if temperature data is valid, otherwise it is set to false.
 	 */
-	short temperature( bool *ok=nullptr );
+	short temperature( bool *ok );
 
 	/**
 	 * Read out the registers X, Y, Z (0...5) in raw format.

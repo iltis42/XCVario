@@ -1059,7 +1059,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	// S2F Command triangle
-	if( (int)s2fd != s2fdalt && !((tick+1)%2) ) {
+	if( ((int)s2fd != s2fdalt && !((tick+1)%2) ) || !(tick+3%30) ) {
 		// ESP_LOGI(FNAME,"S2F in");
 		int start=120;
 		int width=50;
@@ -1221,11 +1221,11 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			if( heading >= 360 )
 				heading -= 360;
 			// ESP_LOGI(FNAME, "heading %d, valid %d", heading, Compass::headingValid() );
-			if( prev_heading != heading ){
+			if( prev_heading != heading || !(tick%33) ){
 				ucg->setPrintPos(113,102);
 				ucg->setColor(  COLOR_WHITE  );
 				ucg->setFont(ucg_font_fub20_hr);
-				char s[6];
+				char s[12];
 				if( ok )
 					sprintf(s,"%3d", heading );
 				else

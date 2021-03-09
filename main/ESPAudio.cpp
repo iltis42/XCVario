@@ -487,7 +487,7 @@ void Audio::dactask(void* arg )
 				bool sound=true;
 				if( (inDeadBand(_te) || (wiper == 0 )) && !_testmode && !volume_change ){
 					if( !deadband_active ) {
-						ESP_LOGI(FNAME,"Audio in DeadBand true");
+						// ESP_LOGI(FNAME,"Audio in DeadBand true");
 						enableAmplifier(false);
 						deadband_active = true;
 					}
@@ -496,7 +496,7 @@ void Audio::dactask(void* arg )
 				}
 				else if( !inDeadBand(_te) || wiper > 0 || volume_change ){
 					if( deadband_active ) {
-						ESP_LOGI(FNAME,"Audio in DeadBand false");
+						// ESP_LOGI(FNAME,"Audio in DeadBand false");
 						enableAmplifier(true);
 						deadband_active = false;
 					}

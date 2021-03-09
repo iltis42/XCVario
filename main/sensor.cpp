@@ -293,8 +293,8 @@ void readBMP(void *pvParameters){
 		else {
 			Audio::setValues( TE, s2f_delta );
 		}
+		Flap::progress();
 		if( (count % 2) == 0 ) {
-			Flap::progress();
 			xSemaphoreTake(xMutex,portMAX_DELAY );
 			baroP = baroSensor->readPressure();   // 5x per second
 			// ESP_LOGI(FNAME,"Baro Pressure: %4.3f", baroP );
@@ -954,7 +954,7 @@ void sensor(void *args){
 			for( float qnh = 870; qnh< 1085; qnh+=step ) {
 				float alt = baroSensor->readAltitude( qnh );
 				float diff = alt - ae;
-				ESP_LOGI(FNAME,"Alt diff=%4.2f  abs=%4.2f", diff, abs(diff) );
+				// ESP_LOGI(FNAME,"Alt diff=%4.2f  abs=%4.2f", diff, abs(diff) );
 				if( abs( diff ) < 100 )
 					step=1.0;  // 8m
 				if( abs( diff ) < 10 )
@@ -962,13 +962,13 @@ void sensor(void *args){
 				if( abs( diff ) < abs(min) ) {
 					min = diff;
 					qnh_best = qnh;
-					ESP_LOGI(FNAME,"New min=%4.2f", min);
+					// ESP_LOGI(FNAME,"New min=%4.2f", min);
 				}
 				if( diff > 1.0 ) // we are ready, values get already positive
 					break;
 				// esp_task_wdt_reset();
 			}
-			ESP_LOGI(FNAME,"qnh=%4.2f\n", qnh_best);
+			ESP_LOGI(FNAME,"Auto QNH=%4.2f\n", qnh_best);
 			float &qnh = QNH.getRef();
 			qnh = qnh_best;
 		}

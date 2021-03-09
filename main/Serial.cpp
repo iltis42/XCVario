@@ -105,7 +105,7 @@ void Serial::serialHandlerS1(void *pvParameters){
 			// ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
 			if( (numS1 == num) || Flarm::bincom ){    // normally wait unit sentence has ended, or in binary mode just continue
 				int numread = Serial1.read( s.c_str(), num );
-				ESP_LOGI(FNAME,"Serial 1 RX bytes read: %d  bincom: %d", numread,  Flarm::bincom  );
+				// ESP_LOGI(FNAME,"Serial 1 RX bytes read: %d  bincom: %d", numread,  Flarm::bincom  );
 				// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),numread, ESP_LOG_INFO);
 				s.setLen( numread );
 				Router::forwardMsg( s, s1_rx_q );

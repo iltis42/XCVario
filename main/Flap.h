@@ -48,6 +48,8 @@ private:
 	static bool  surroundingBox;
 	static int   optPosOldY;
 	static int   sensorOldY;
+	static int   rawFiltered;
+	static int   tick;
 };
 
 #endif

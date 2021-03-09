@@ -115,6 +115,7 @@ int IpsDisplay::_te=0;
 int IpsDisplay::_ate=0;
 int IpsDisplay::s2falt=-1;
 int IpsDisplay::s2fdalt=0;
+int IpsDisplay::s2fmode_prev=100;
 int IpsDisplay::prefalt=0;
 int IpsDisplay::chargealt=-1;
 int IpsDisplay::btqueue=-1;
@@ -440,6 +441,7 @@ void IpsDisplay::redrawValues()
 	polar_sink_prev = 0.1;
 	Flap::redraw();
 	netto_old = false;
+	s2fmode_prev = 100;
 }
 
 void IpsDisplay::drawTeBuf(){
@@ -859,7 +861,7 @@ void IpsDisplay::drawAvgVario( int x, int y, float ate ){
 
 void IpsDisplay::drawAltitude( float altitude, int x, int y ){
 	int alt = (int)(altitude+0.5);
-	if( alt != prefalt ) {
+	if( alt != prefalt || !(tick%40) ) {
 		ucg->setColor(  COLOR_WHITE  );
 		ucg->setPrintPos(x,y);
 		ucg->setFont(ucg_font_fub25_hr);
@@ -1166,10 +1168,6 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	if(!(tick%8) ) {
 		drawAltitude( altitude, 110,282 );
 	}
-	if(!(tick%25) ) {
-			prefalt = -1000;  // trigger redraw
-			as_prev = -1000;
-	}
 
 	// Battery
 	int chargev = (int)( volt *10 );
@@ -1202,7 +1200,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		int wk = (int)((wki - wkpos + 0.5)*10);
 		// ESP_LOGI(FNAME,"as:%d wksp:%f wki:%d wk:%d wkpos:%f", airspeed, wkspeed, wki, wk, wkpos );
 		if( wkposalt != wk || wksensoralt != (int)(wksensor*10) ) {
-			ESP_LOGI(FNAME,"WK changed WKE=%d WKS=%f", wk, wksensor );
+			// ESP_LOGI(FNAME,"WK changed WKE=%d WKS=%f", wk, wksensor );
 			ucg->setColor(  COLOR_WHITE  );
 			Flap::drawBigBar( WKBARMID, WKSYMST-4, (float)(wk)/10, wksensor);
 			wkposalt = wk;
@@ -1215,8 +1213,9 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	// Cruise mode or circling
-	if( !(tick%11) ){
+	if( (int)s2fmode != s2fmode_prev ){
 		drawS2FMode( 180, 20, s2fmode );
+		s2fmode_prev = (int)s2fmode;
 	}
 
 	// Medium Climb Indicator
@@ -1228,7 +1227,8 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 	// Airspeed
 	if( !(tick%7) ){
-		if( as_prev != airspeed || !(tick%49) ) {
+		if( as_prev != airspeed || !(tick%70) ) {
+			// ESP_LOGI(FNAME,"draw airspeed %d %d", airspeed, as_prev );
 			ucg->setColor(  COLOR_WHITE  );
 			ucg->setPrintPos(113,75);
 			ucg->setFont(ucg_font_fub20_hr);
@@ -1239,7 +1239,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			ucg->setPrintPos(113+fl,70);
 			ucg->setFont(ucg_font_fub11_hr);
 			ucg->printf(" %s  ", Units::AirspeedUnit() );
-			as_prev = ias;
+			as_prev = airspeed;
 		}
 	}
 
@@ -1507,14 +1507,8 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 	}
 
 	// Altitude
-	if(!(tick%7) ) {
+	if(!(tick%8) ) {
 		drawAltitude( altitude, FIELD_START,YALT+6 );
-	}
-
-
-	if(!(tick%25) ) {
-			prefalt = -1000;  // trigger redraw
-			as_prev = -1000;
 	}
 
 	// Battery
@@ -1548,7 +1542,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 		int wk = (int)((wki - wkpos + 0.5)*10);
 		// ESP_LOGI(FNAME,"as:%d wksp:%f wki:%d wk:%d", airspeed, wkspeed, wki, wk  );
 		if( wkposalt != wk || wksensoralt != (int)(wksensor*10) ) {
-			ESP_LOGI(FNAME,"WK changed WKE=%d WKS=%f", wk, wksensor );
+			// ESP_LOGI(FNAME,"WK changed WKE=%d WKS=%f", wk, wksensor );
 			ucg->setColor(  COLOR_WHITE  );
 			Flap::drawBigBar( WKBARMID, WKSYMST-4, (float)(wk)/10, wksensor);
 			wkposalt = wk;
@@ -1586,7 +1580,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 			ucg->setPrintPos(113+fl,70);
 			ucg->setFont(ucg_font_fub11_hr);
 			ucg->printf(" %s  ", Units::AirspeedUnit() );
-			as_prev = ias;
+			as_prev = airspeed;
 		}
 	}
 	// Compass
@@ -1751,7 +1745,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	}
 
 	// Altitude
-	if(!(tick%7) ) {
+	if(!(tick%8) ) {
 		drawAltitude( altitude, FIELD_START,YALT+6 );
 	}
 	// MC Value

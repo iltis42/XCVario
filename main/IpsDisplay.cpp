@@ -1070,6 +1070,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			}
 		}
 	}
+	// vTaskDelay(3);
 	// average Climb
 	if( (int)(ate*30) != _ate && !(tick%3) ) {
 		drawAvgVario( 90, AMIDY+2, ate );
@@ -1192,7 +1193,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		drawTemperature( 20, 38, temp );
 		tempalt=(int)(temp*10);
 	}
-
+	// vTaskDelay(3);
 	// WK-Indicator
 	if( flap_enable.get() && !(tick%9) )
 	{
@@ -1341,7 +1342,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 
 	}
 	// draw green bar
-	if( !(tick%5) ){
+	if( !(tick%3) ){
 		if( (int)(te*10) != (int)(te_prev*10) ) {
 			float step= (M_PI_2/150) * _range;
 			if( te > te_prev && te > 0 ){  // draw green what's missing
@@ -1435,13 +1436,8 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 	}
 
 	// Altitude
-<<<<<<< HEAD
 	if(!(tick%8) ) {
 		drawAltitude( altitude, FIELD_START,YALT+6 );
-=======
-	if(!(tick%7) ) {
-		drawAltitude( altitude, FIELD_START,YALT-4 );
->>>>>>> cfbb2e539f329545457f64d15dd2a41fb58c15be
 	}
 
 	// Battery

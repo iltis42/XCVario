@@ -237,6 +237,9 @@ void IpsDisplay::initDisplay() {
 	if( display_style.get() == DISPLAY_RETRO ) {
 		initRetroDisplay();
 	}
+	if( display_style.get() == DISPLAY_UL ) {
+		initULDisplay();
+	}
 	if( display_style.get() == DISPLAY_AIRLINER ) {
 		bootDisplay();
 		ucg->setFontPosBottom();
@@ -772,7 +775,6 @@ void IpsDisplay::initULDisplay(){
 		drawBT();
 	if( blue_enable.get() == WL_WLAN  ||  blue_enable.get() == WL_WLAN_CLIENT )
 		drawWifi(DISPLAY_W-27, FLOGO+2 );
-	drawMC( MC.get(), true );
 	drawThermometer(  10, 30 );
 }
 
@@ -1281,7 +1283,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 	if( _menu )
 		return;
 	if( !(screens_init & INIT_DISPLAY_UL) ){
-		initRetroDisplay();
+		initULDisplay();
 		screens_init |= INIT_DISPLAY_UL;
 	}
 	tick++;
@@ -1410,105 +1412,36 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 			drawWifi(DISPLAY_W-27, FLOGO+2 );
 	}
 
-	// S2F Command triangle
-//	no s2F triangel
-//	if( (int)s2fd != s2fdalt && !((tick+1)%2) ) {
-	if (false) {
-		// ESP_LOGI(FNAME,"S2F in");
-		int start=120;
-		int width=50;
-		int maxs2f=55;
-		ucg->setClipRange( start, dmid-maxs2f-25, width, (maxs2f*2)+1+25 );
-		bool clear = false;
-		int dmo = dmid+25;
-		if( s2fd > 0 ) {
-			if ( (int)s2fd < s2fdalt || (int)s2fdalt < 0 ){
-				clear = true;
-			}
-		}
-		else {
-			if ( (int)s2fd > s2fdalt || (int)s2fdalt > 0  ) {
-				clear = true;
-			}
-		}
-		if( int(s2fd) < 0  && (int)s2fdalt < 0 )
-			dmo = dmid-25;
-
-		if( dmo < dmid )
-			ucg->setClipRange( start, dmid-25-maxs2f, width, (maxs2f)+1 );
-		else
-			ucg->setClipRange( start, dmid+25, width, (maxs2f)+1 );
-		// clear old triangle for S2F
-		if( clear ) {
-			ucg->setColor( COLOR_BLACK );
-			ucg->drawTriangle(  start, dmo,
-					start+(width/2), dmo+(int)s2fd,
-					start+(width/2), dmo+(int)s2fdalt );
-			ucg->drawTriangle( 	start+width, dmo,
-					start+(width/2), dmo+(int)s2fd,
-					start+(width/2), dmo+(int)s2fdalt );
-		}
-		// draw new S2F command triangle
-		if( s2fd < 0 )
-			ucg->setColor( LIGHT_GREEN );
-		else
-			ucg->setColor( COLOR_RED );
-		// ESP_LOGI(FNAME,"S2F %d-%d %d-%d %d-%d", start, dmid, start+width, dmid, start+(width/2), dmid+(int)s2fd );
-		ucg->drawTriangle(  start, dmo,
-				start+width, dmo,
-				start+(width/2), dmo+(int)s2fd );
-
-		ucg->undoClipRange();
-		if( s2fd > 0 && s2fdalt < 0 ){
-			ucg->setColor( COLOR_BLACK );
-			ucg->drawBox( start, dmid-25-maxs2f, width, (maxs2f)+1 );
-		}
-		else if( s2fd < 0 && s2fdalt > 0 ){
-			ucg->setColor( COLOR_BLACK );
-			ucg->drawBox( start, dmid+25, width, (maxs2f)+1 );
-		}
-		// every 10 km/h one line
-		if( s2fd > 0 ){
-			ucg->setColor( COLOR_BLACK );
-			for( int i=0; i<s2fd && i<maxs2f; i+=10 ) {
-				ucg->drawHLine( start, dmid+25+i, width );
-				ucg->drawHLine( start, dmid+25+i+1, width );
-			}
-		}else{
-			ucg->setColor( COLOR_BLACK );
-			for( int i=0; i>s2fd && i>-maxs2f; i-=10 ) {
-				ucg->drawHLine( start, dmid-25+i, width );
-				ucg->drawHLine( start, dmid-25+i-1, width );
-			}
-		}
-		s2fdalt=(int)s2fd;
-	}
 	// Altitude Header
 	if( !(tick%24) ){
 		int qnh = (int)(QNH.get() +0.5 );
 		// ESP_LOGI(FNAME,"standard_setting:%d",standard_setting );
 		if( standard_setting )
 			qnh = 1013;
-		if( qnh != pref_qnh ) {
-			ucg->setFont(ucg_font_fub11_tr);
-			ucg->setPrintPos(FIELD_START,YALT-S2FFONTH);
-			char unit[4];
-			if( standard_setting )
-				sprintf( unit, "QNE" );
-			else
-				sprintf( unit, "QNH" );
-			ucg->setColor(0, COLOR_BLACK );
-			ucg->printf("Altitude %s %d ", unit, pref_qnh );
-			ucg->setPrintPos(FIELD_START,(YALT-S2FFONTH));
-			ucg->setColor(0, COLOR_HEADER );
-			ucg->printf("Altitude %s %d ", unit, qnh );
-			pref_qnh = qnh;
-		}
+// redraw just in case the vario pointer was there
+		ucg->setFont(ucg_font_fub11_tr);
+		ucg->setPrintPos(FIELD_START,YALT-S2FFONTH-10);
+		char unit[4];
+		if( standard_setting )
+			sprintf( unit, "QNE" );
+		else
+			sprintf( unit, "QNH" );
+		ucg->setColor(0, COLOR_BLACK );
+		ucg->printf("Altitude %s %d ", unit, pref_qnh );
+		ucg->setPrintPos(FIELD_START,(YALT-S2FFONTH-10));
+		ucg->setColor(0, COLOR_HEADER );
+		ucg->printf("Altitude %s %d ", unit, qnh );
+		pref_qnh = qnh;
 	}
 
 	// Altitude
+<<<<<<< HEAD
 	if(!(tick%8) ) {
 		drawAltitude( altitude, FIELD_START,YALT+6 );
+=======
+	if(!(tick%7) ) {
+		drawAltitude( altitude, FIELD_START,YALT-4 );
+>>>>>>> cfbb2e539f329545457f64d15dd2a41fb58c15be
 	}
 
 	// Battery

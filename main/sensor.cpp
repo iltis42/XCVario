@@ -499,7 +499,7 @@ void sensor(void *args){
 	ESP_LOGI( FNAME,"%dMB %s flash\n", spi_flash_get_chip_size() / (1024 * 1024),
 			(chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 	ESP_LOGI(FNAME, "QNH.get() %f", QNH.get() );
-	ESP_LOGI( FNAME, "Hardware revision detected %d", hardwareRevision.get() );
+
 	NVS.begin();
 	if( display_orientation.get() ){
 		ESP_LOGI( FNAME, "TopDown display mode flag set");
@@ -561,7 +561,7 @@ void sensor(void *args){
 	esp_err_t err=ESP_ERR_NOT_FOUND;
 	MPU.setBus(i2c);  // set communication bus, for SPI -> pass 'hspi'
 	MPU.setAddr(mpud::MPU_I2CADDRESS_AD0_LOW);  // set address or handle, for SPI -> pass 'mpu_spi_handle'
-	err = MPU.initialize();
+	err = MPU.reset();
 	ESP_LOGI( FNAME,"MPU Probing returned %d MPU enable: %d ", err, attitude_indicator.get() );
 	if( err == ESP_OK ){
 		hardwareRevision.set(3);  // wow, there is MPU6050 gyro and acceleration sensor

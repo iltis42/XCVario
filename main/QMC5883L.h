@@ -162,7 +162,7 @@ private:
 	inline bool checkBus()
 	{
 		if( m_bus == nullptr )	{
-			ESP_LOGE( FNAME, "QMC5883L bus pointer is zero" );
+			// ESP_LOGE( FNAME, "QMC5883L bus pointer is zero" );
 			return false;
 		}
 		return true;
@@ -186,5 +186,6 @@ private:
 	uint8_t range; // magnetic resolution of sensor
 	uint8_t osr; // over sample ratio
 	static bool overflowWarning;
+	static int errors;
 	bool calibrationRunning;
 };

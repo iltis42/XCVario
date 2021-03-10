@@ -297,8 +297,8 @@ void readBMP(void *pvParameters){
 		else {
 			Audio::setValues( TE, s2f_delta );
 		}
+		Flap::progress();
 		if( (count % 2) == 0 ) {
-			Flap::progress();
 			xSemaphoreTake(xMutex,portMAX_DELAY );
 			baroP = baroSensor->readPressure();   // 5x per second
 			// ESP_LOGI(FNAME,"Baro Pressure: %4.3f", baroP );
@@ -503,7 +503,7 @@ void sensor(void *args){
 	ESP_LOGI( FNAME,"%dMB %s flash\n", spi_flash_get_chip_size() / (1024 * 1024),
 			(chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 	ESP_LOGI(FNAME, "QNH.get() %f", QNH.get() );
-	ESP_LOGI( FNAME, "Hardware revision detected %d", hardwareRevision.get() );
+
 	NVS.begin();
 	if( display_orientation.get() ){
 		ESP_LOGI( FNAME, "TopDown display mode flag set");
@@ -565,7 +565,7 @@ void sensor(void *args){
 	esp_err_t err=ESP_ERR_NOT_FOUND;
 	MPU.setBus(i2c);  // set communication bus, for SPI -> pass 'hspi'
 	MPU.setAddr(mpud::MPU_I2CADDRESS_AD0_LOW);  // set address or handle, for SPI -> pass 'mpu_spi_handle'
-	err = MPU.initialize();
+	err = MPU.reset();
 	ESP_LOGI( FNAME,"MPU Probing returned %d MPU enable: %d ", err, attitude_indicator.get() );
 	if( err == ESP_OK ){
 		hardwareRevision.set(3);  // wow, there is MPU6050 gyro and acceleration sensor
@@ -958,7 +958,7 @@ void sensor(void *args){
 			for( float qnh = 870; qnh< 1085; qnh+=step ) {
 				float alt = baroSensor->readAltitude( qnh );
 				float diff = alt - ae;
-				ESP_LOGI(FNAME,"Alt diff=%4.2f  abs=%4.2f", diff, abs(diff) );
+				// ESP_LOGI(FNAME,"Alt diff=%4.2f  abs=%4.2f", diff, abs(diff) );
 				if( abs( diff ) < 100 )
 					step=1.0;  // 8m
 				if( abs( diff ) < 10 )
@@ -966,13 +966,13 @@ void sensor(void *args){
 				if( abs( diff ) < abs(min) ) {
 					min = diff;
 					qnh_best = qnh;
-					ESP_LOGI(FNAME,"New min=%4.2f", min);
+					// ESP_LOGI(FNAME,"New min=%4.2f", min);
 				}
 				if( diff > 1.0 ) // we are ready, values get already positive
 					break;
 				// esp_task_wdt_reset();
 			}
-			ESP_LOGI(FNAME,"qnh=%4.2f\n", qnh_best);
+			ESP_LOGI(FNAME,"Auto QNH=%4.2f\n", qnh_best);
 			float &qnh = QNH.getRef();
 			qnh = qnh_best;
 		}
@@ -1003,7 +1003,7 @@ void sensor(void *args){
 		xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096*2, NULL, 15, bpid, 0);  // 10
 	}
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 4096, NULL, 6, tpid, 0);
-	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 20, dpid, 0);  // 10
+	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 13, dpid, 0);  // 10
 
 	Audio::startAudio();
 }

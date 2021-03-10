@@ -35,7 +35,7 @@ IN THE SOFTWARE.
 
 // #define CONFIG_I2CBUS_LOG_RW_LEVEL_INFO
 // #define CONFIG_I2CBUS_LOG_READWRITES
-#define CONFIG_I2CBUS_LOG_ERRORS
+// #define CONFIG_I2CBUS_LOG_ERRORS
 
 
 #if defined   CONFIG_I2CBUS_LOG_RW_LEVEL_INFO
@@ -45,7 +45,9 @@ IN THE SOFTWARE.
 #elif defined CONFIG_I2CBUS_LOG_RW_LEVEL_VERBOSE
 #define I2CBUS_LOG_RW(format, ...) ESP_LOGV(TAG, format, ##__VA_ARGS__)
 #endif
+#if defined CONFIG_I2CBUS_LOG_ERRORS
 #define I2CBUS_LOGE(format, ...)   ESP_LOGE(TAG, format, ##__VA_ARGS__)
+#endif
 
 #define I2CBUS_LOGI(format, ...)   ESP_LOGI(TAG, format, ##__VA_ARGS__)
 
@@ -227,15 +229,17 @@ esp_err_t I2C::writeBytes(uint8_t devAddr, uint8_t regAddr, size_t length, const
 #else
     if (err) {
 #endif
-        I2CBUS_LOGE("[port:%d, slave:0x%X] Failed to write %d bytes to__ register 0x%X, error: 0x%X",
-            port, devAddr, length, regAddr, err);
+        // I2CBUS_LOGE("[port:%d, slave:0x%X] Failed to write %d bytes to__ register 0x%X, error: 0x%X",
+        //   port, devAddr, length, regAddr, err);
     }
 #endif
     xSemaphoreGive(i2cbus_mutex);
+    /*
     if (err) {
             I2CBUS_LOGE("[port:%d, slave:0x%X] Failed to write %d bytes to__ register 0x%X, error: 0x%X",
                 port, devAddr, length, regAddr, err);
     }
+    */
     return err;
 }
 
@@ -291,15 +295,17 @@ esp_err_t I2C::readBytes(uint8_t devAddr, uint8_t regAddr, size_t length, uint8_
 #else
     if (err) {
 #endif
-        I2CBUS_LOGE("[port:%d, slave:0x%X] Failed to read %d bytes from register 0x%X, error: 0x%X",
-            port, devAddr, length, regAddr, err);
+        // I2CBUS_LOGE("[port:%d, slave:0x%X] Failed to read %d bytes from register 0x%X, error: 0x%X",
+        //     port, devAddr, length, regAddr, err);
     }
 #endif
     xSemaphoreGive(i2cbus_mutex);
+    /*
     if (err) {
          I2CBUS_LOGE("[port:%d, slave:0x%X] Failed to read %d bytes from register 0x%X, error: 0x%X",
              port, devAddr, length, regAddr, err);
      }
+     */
     return err;
 }
 

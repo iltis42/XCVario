@@ -23,9 +23,9 @@ public:
 	static float getOptimum( float wks, int wki );
 	static int   getOptimumInt( float wks );
 	static void configureADC();
-	static inline unsigned int getSensorRaw() {
+	static inline unsigned int getSensorRaw(int oversampling=1) {
 		if( haveSensor() )
-			return sensorAdc->getRaw(1000);
+			return sensorAdc->getRaw(oversampling);
 		else
 			return 0;
 	}
@@ -48,6 +48,8 @@ private:
 	static bool  surroundingBox;
 	static int   optPosOldY;
 	static int   sensorOldY;
+	static int   rawFiltered;
+	static int   tick;
 };
 
 #endif

@@ -65,6 +65,8 @@ unsigned int AnalogInput::getRaw( int loops ) {
 		else if( _unit == ADC_UNIT_2 )
 			adc2_get_raw((adc2_channel_t)_adc_ch, ADC_WIDTH_BIT_12, &raw );
 		adc += raw;
+		if( loops > 1)
+			delay(1);
 	}
 	adc = adc/loops;
 	return( adc );

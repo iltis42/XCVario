@@ -53,9 +53,7 @@ namespace mpud
 esp_err_t MPU::initialize()
 {
 	// reset device (wait a little to clear all registers)
-	esp_err_t err = reset();
-	if( err != ESP_OK )
-		return err;
+    // -> done a priori
 	// wake-up the device (power on-reset state is asleep for some models)
 	if (MPU_ERR_CHECK(setSleep(false))) return err;
 	// disable MPU's I2C slave module when using SPI
@@ -98,29 +96,30 @@ return err;
  * @brief Reset internal registers and restore to default start-up state.
  * @note
  *  - This function delays 100ms when using I2C and 200ms when using SPI.
- *  - It does not initialize the MPU again, just call initialize() instead.
+ *  - It does not initialize the MPU again, just call initialize() after.
  * */
 esp_err_t MPU::reset()
 {
 	int i;
-	for( i=0; i<=10; i++ ){
+	for( i=0; i<10; i++ ){
 		esp_err_t err = writeBit(regs::PWR_MGMT1, regs::PWR1_DEVICE_RESET_BIT, 1);
-		vTaskDelay(100 / portTICK_PERIOD_MS);
 		if ( err == ESP_OK )
 			break;
+		else
+			MPU_LOGI("MPU reset ERROR %d retry: %d", err, i );
+		vTaskDelay(100 / portTICK_PERIOD_MS);
 	}
 	if( i == 10 ){
-		MPU_LOGI("MPU reset, ERROR %d", err );
-		return err;
+		MPU_LOGI("MPU reset FAILED");
+		return ESP_FAIL;
 	}
-	vTaskDelay(100 / portTICK_PERIOD_MS);
 #ifdef CONFIG_MPU_SPI
 	if (MPU_ERR_CHECK(resetSignalPath())) {
 		return err;
 	}
 #endif
-	MPU_LOGI("Reset OKAY!");
-	return err;
+	MPU_LOGI("MPU Reset OKAY!");
+	return ESP_OK;
 }
 
 /**

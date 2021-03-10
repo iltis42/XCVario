@@ -74,6 +74,7 @@ private:
 	static bool s2fmodealt;
 	static int s2fclipalt;
 	static int as_prev;
+	static int s2fmode_prev;
 
 	static int wkalt;
 	static int wkposalt;

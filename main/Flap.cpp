@@ -16,8 +16,10 @@ int   Flap::senspos[NUMBER_POS];
 int   Flap::flapSpeeds[NUMBER_POS];
 Ucglib_ILI9341_18x240x320_HWSPI* Flap::ucg;
 bool Flap::surroundingBox = false;
-int Flap::optPosOldY;
-int Flap::sensorOldY;
+int Flap::optPosOldY = 0;
+int Flap::sensorOldY = 0;
+int Flap::rawFiltered = 0;
+int Flap::tick=0;
 
 #define NUMPOS  (int)( flap_pos_max.get() +1 - flap_neg_max.get() )
 #define MINPOS  flap_neg_max.get()
@@ -44,7 +46,7 @@ SetupMenuSelect *flapLabels[NUMBER_POS];
 
 void showWk(SetupMenuSelect * p){
 	p->ucg->setPrintPos(1,140);
-	p->ucg->printf("Sensor: %d    ", Flap::getSensorRaw() );
+	p->ucg->printf("Sensor: %d    ", Flap::getSensorRaw(256) );
 	delay(10);
 }
 
@@ -57,7 +59,7 @@ int select_flap_io(SetupMenuSelect * p){
 	p->ucg->printf("Press Button to exit");
 	while( !p->_rotary->readSwitch() ){
 		p->ucg->setPrintPos(1,90);
-		p->ucg->printf("Sensor: %d       ", Flap::getSensorRaw() );
+		p->ucg->printf("Sensor: %d       ", Flap::getSensorRaw(256) );
 		delay(20);
 	}
 	return 0;
@@ -98,30 +100,30 @@ int wk_cal( SetupMenuSelect * p )
 		p->ucg->setFont(ucg_font_fub25_hr);
 		if( flap_pos_max.get() > 2 ){
 			wk_cal_show( p,3 );
-			wk_sens_pos_plus_3.set( Flap::getSensorRaw() );
+			wk_sens_pos_plus_3.set( Flap::getSensorRaw(256) );
 		}
 		if( flap_pos_max.get() > 1 ){
 			wk_cal_show( p,2 );
-			wk_sens_pos_plus_2.set( Flap::getSensorRaw() );
+			wk_sens_pos_plus_2.set( Flap::getSensorRaw(256) );
 		}
 		if( flap_pos_max.get() > 0 ){
 			wk_cal_show( p,1 );
-			wk_sens_pos_plus_1.set( Flap::getSensorRaw() );
+			wk_sens_pos_plus_1.set( Flap::getSensorRaw(256) );
 		}
 		wk_cal_show( p,0 );
-		wk_sens_pos_0.set( Flap::getSensorRaw() );
+		wk_sens_pos_0.set( Flap::getSensorRaw(256) );
 
 		if( flap_neg_max.get() < 0 ){
 			wk_cal_show( p,-1 );
-			wk_sens_pos_minus_1.set( Flap::getSensorRaw() );
+			wk_sens_pos_minus_1.set( Flap::getSensorRaw(256) );
 		}
 		if( flap_neg_max.get() < -1 ){
 			wk_cal_show( p,-2 );
-			wk_sens_pos_minus_2.set( Flap::getSensorRaw() );
+			wk_sens_pos_minus_2.set( Flap::getSensorRaw(256) );
 		}
 		if( flap_neg_max.get() < -2 ){
 			wk_cal_show( p,-3 );
-			wk_sens_pos_minus_3.set( Flap::getSensorRaw() );
+			wk_sens_pos_minus_3.set( Flap::getSensorRaw(256) );
 		}
 		p->ucg->setPrintPos(1,60);
 		p->ucg->printf("Saved, restart");
@@ -356,12 +358,12 @@ void Flap::drawBigBar( int ypos, int xpos, float wkf, float wksens ){
 		}
 		surroundingBox = true;
 	}
-	ESP_LOGI(FNAME,"np: %d size: %d",  NUMPOS, size );
+	// ESP_LOGI(FNAME,"np: %d size: %d",  NUMPOS, size );
 	int yclip = ypos+MINPOS*lfh-(lfh/2);
 	ucg->setClipRange( xpos-15, yclip, 15, size );
 	int y = ypos + (int)((wkf)*(lfh) + 0.5 );
 	int ys = ypos + (int)(( wksens )*(lfh) + 0.5 );
-	ESP_LOGI(FNAME,"wkf: %f", wkf);
+	// ESP_LOGI(FNAME,"wkf: %f", wkf);
 	if( optPosOldY != y || ( (sensorOldY != ys) )) {  // redraw on change or when wklever is near
 		ucg->setColor(COLOR_BLACK);
 		ucg->drawTriangle( xpos-15,optPosOldY-5,  xpos-15,optPosOldY+5,  xpos-2,optPosOldY );
@@ -369,7 +371,7 @@ void Flap::drawBigBar( int ypos, int xpos, float wkf, float wksens ){
 		ucg->drawTriangle( xpos-15,y-5,       xpos-15,y+5,       xpos-2,y );
 		optPosOldY = y;
 		if( flap_sensor.get() ) {
-			ESP_LOGI(FNAME,"wk lever redraw, old=%d", sensorOldY );
+			// ESP_LOGI(FNAME,"wk lever redraw, old=%d", sensorOldY );
 			drawLever( xpos, ys, sensorOldY );
 			sensorOldY = ys;
 		}
@@ -461,22 +463,28 @@ float Flap::getLeverPosition( int wks ){
 
 void  Flap::progress(){
 	if( sensorAdc ) {
-		int wkraw = sensorAdc->getRaw();
-		if( wkraw > 4094 )
-			wkraw = 4094;
-		if( wkraw < 1 )
-			wkraw = 1;
-		lever = getLeverPosition( wkraw );
-		// ESP_LOGI(FNAME,"wk sensor=%1.2f  raw=%d", lever, wkraw );
-		if( lever < flap_neg_max.get()-0.5 )
-			lever = flap_neg_max.get()-0.5;
-		else if( lever > flap_pos_max.get()+0.5 )
-			lever = flap_pos_max.get()+0.5;
+		int wkraw = getSensorRaw(16);
+		if( wkraw > 4096 )
+			wkraw = 4096;
+		if( wkraw < 0 )  { // drop erratic negative readings
+			ESP_LOGW(FNAME,"negative flap sensor reading: %d", wkraw );
+			return;
+		}
+		rawFiltered = rawFiltered + (wkraw - rawFiltered)/6;
+		tick++;
+		if( !(tick%4) ){
+			lever = getLeverPosition( rawFiltered );
+			// ESP_LOGI(FNAME,"wk sensor=%1.2f  raw=%d", lever, rawFiltered );
+			if( lever < flap_neg_max.get()-0.5 )
+				lever = flap_neg_max.get()-0.5;
+			else if( lever > flap_pos_max.get()+0.5 )
+				lever = flap_pos_max.get()+0.5;
 
-		if( blue_enable.get() == WL_WLAN ) {
-			if( leverold != (int)(lever*10) ){
-				OV.sendWkChange( lever );   // update secondary vario
-				leverold = (int)(lever*10);
+			if( blue_enable.get() == WL_WLAN ) {
+				if( leverold != (int)(lever*10) ){
+					OV.sendWkChange( lever );   // update secondary vario
+					leverold = (int)(lever*10);
+				}
 			}
 		}
 	}

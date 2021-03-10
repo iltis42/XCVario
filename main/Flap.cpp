@@ -463,7 +463,7 @@ float Flap::getLeverPosition( int wks ){
 
 void  Flap::progress(){
 	if( sensorAdc ) {
-		int wkraw = getSensorRaw();
+		int wkraw = getSensorRaw(16);
 		if( wkraw > 4096 )
 			wkraw = 4096;
 		if( wkraw < 0 )  { // drop erratic negative readings

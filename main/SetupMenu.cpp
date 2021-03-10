@@ -988,6 +988,13 @@ void SetupMenu::setup( )
 		disty->addEntry( "Retro");
 		disty->addEntry( "UL");
 
+		SetupMenuSelect * disva = new SetupMenuSelect( "Color Variant", false , 0, false, &display_variant );
+		display->addMenu( disva );
+		disva->setHelp( PROGMEM "Display variant white on black (W/B) or black on white(B/W)");
+		disva->addEntry( "White on Black");
+		disva->addEntry( "Black on White");
+
+
 		// Orientation   _display_orientation
 		SetupMenuSelect * diso = new SetupMenuSelect( "Orientation", true, 0, true, &display_orientation );
 		display->addMenu( diso );

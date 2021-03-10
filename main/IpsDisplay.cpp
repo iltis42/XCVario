@@ -233,6 +233,16 @@ void IpsDisplay::bootDisplay() {
 
 void IpsDisplay::initDisplay() {
 	ESP_LOGI(FNAME,"IpsDisplay::initDisplay()");
+// set global color variables according to selected display_variant
+	if ( display_variant.get() == DISPLAY_WHITE_ON_BLACK ) {
+		g_col_background = 255;
+		g_col_highlight = 0;
+	}
+	else {
+	        g_col_background = 0;
+	        g_col_highlight = 255;
+	}	
+
 	if( display_style.get() == DISPLAY_RETRO ) {
 		initRetroDisplay();
 	}
@@ -1820,15 +1830,17 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 			if( (speed%20) == 0 && (speed >= 0) ) {
 				// blank old values
 				ucg->setColor( COLOR_BLACK );
+				int col = 0;
 				if( speed == 0 )
 					ucg->drawBox( FIELD_START+6,dmid+(speed-airspeed)-(fh/2)-19, ASLEN-6, fh+25 );
 				else
 					ucg->drawBox( FIELD_START+6,dmid+(speed-airspeed)-(fh/2)-9, ASLEN-6, fh+15 );
-#ifdef COLOR_INVERS					
-				int col = abs(255 - abs(((speed-airspeed)*2)));
-#else
-				int col = abs(((speed-airspeed)*2));
-#endif				
+				if ( display_variant.get() == DISPLAY_WHITE_ON_BLACK ) {
+					col = abs(255 - abs(((speed-airspeed)*2)));		
+				}
+				else {
+					col = abs(((speed-airspeed)*2));
+				}
 				ucg->setColor(  col,col,col  );
 				ucg->setPrintPos(FIELD_START+8,dmid+(speed-airspeed)+(fh/2));
 				ucg->printf("%3d ""-", speed);

@@ -126,6 +126,7 @@ SetupNG<int>		    autozero( "AUTOZERO", 0 );
 SetupNG<int>		    attitude_indicator("AHRS", 1 );
 SetupNG<int>		    ahrs_autozero("AHRSAZ", 0 );
 SetupNG<int>		    display_style("DISPLAY_STYLE", 0 );
+SetupNG<int>               display_variant("DISPLAY_VARIANT", 0 );
 SetupNG<int>		    s2f_switch_type("S2FHWSW", S2F_HW_SWITCH );
 SetupNG<int>		    hardwareRevision("HWREV", HW_UNKNOWN );
 SetupNG<int>		    ahrs_licence_dig1("AHRS_LIC_1_2", 0, false );

@@ -47,6 +47,7 @@ typedef enum rs232linemode { RS232_NORMAL, RS232_INVERTED } rs232lm_t;
 typedef enum nmea_protocol  { OPENVARIO, BORGELT, CAMBRIDGE, XCVARIO, XCVARIO_DEVEL, GENERIC } nmea_proto_t;
 typedef enum airspeed_mode  { MODE_IAS, MODE_TAS } airspeed_mode_t;
 typedef enum e_display_style  { DISPLAY_AIRLINER, DISPLAY_RETRO, DISPLAY_UL } display_style_t;
+typedef enum e_display_variant { DISPLAY_WHITE_ON_BLACK, DISPLAY_BLACK_ON_WHITE } display_variant_t;
 typedef enum e_s2f_type  { S2F_HW_SWITCH, S2F_HW_PUSH_BUTTON } e_s2f_type;
 typedef enum e_serial_route_type { RT_DISABLE = 0, RT_XCVARIO = 1, RT_WIRELESS = 2, RT_S1 = 4, RT_XCVARIO_S1 = 5  } e_serial_routing_t;
 typedef enum e_wireless_type { WL_DISABLE, WL_BLUETOOTH, WL_WLAN, WL_WLAN_CLIENT } e_wireless_t;
@@ -358,6 +359,7 @@ extern SetupNG<int>		    autozero;
 extern SetupNG<int>		    attitude_indicator;
 extern SetupNG<int>		    ahrs_autozero;
 extern SetupNG<int>		    display_style;
+extern SetupNG<int>		    display_variant;
 extern SetupNG<int>		    s2f_switch_type;
 extern SetupNG<mpud::raw_axes_t> gyro_bias;
 extern SetupNG<mpud::raw_axes_t> accl_bias;
@@ -426,5 +428,7 @@ extern SetupNG<float>		gload_neg_limit;
 extern SetupNG<float>		gload_pos_max;
 extern SetupNG<float>		gload_neg_max;
 
+extern int g_col_background;
+extern int g_col_highlight;
 
 #endif /* MAIN_SETUP_NG_H_ */

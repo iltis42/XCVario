@@ -1,19 +1,15 @@
 #pragma once
 
-// for black on white display define COLOR_INVERS
-// #define COLOR_INVERS  tbd: add configurable setup item for black on white style
+extern int g_col_background;
+extern int g_col_highlight;
 
-#ifdef COLOR_INVERS
-  #define COLOR_HEADER       101,108,255  // Azureish gray
-  #define COLOR_HEADER_LIGHT 161,168,255  // Azureish ligher
-  #define COLOR_WHITE 255,255,255
-  #define COLOR_BLACK 0,0,0
-#else
-  #define COLOR_HEADER       255-101,255-108,255-255  // Azureish gray
-  #define COLOR_HEADER_LIGHT 255-161,255-168,255-255  // Azureish ligher
-  #define COLOR_WHITE 0,0,0
-  #define COLOR_BLACK 255,255,255
-#endif
+// use extern int col_highlight and col_backgroud to define black and white
+
+#define COLOR_HEADER       (101+g_col_background/5),(108+g_col_background/5),g_col_highlight  // Azureish gray
+#define COLOR_HEADER_LIGHT (161-g_col_background/4),(168-g_col_background/3),g_col_highlight  // Azureish ligher
+
+#define COLOR_WHITE g_col_highlight, g_col_highlight, g_col_highlight
+#define COLOR_BLACK g_col_background, g_col_background, g_col_background
 #define COLOR_GREEN 255, 30, 255
 #define COLOR_RED   0,255,255
 #define LIGHT_GREEN 127,0,255
@@ -22,6 +18,7 @@
 #define COLOR_MGREY  180, 180, 180
 #define COLOR_BLUE   255, 255, 0
 #define COLOR_LBLUE  200, 200, 0
+
 
 
 #define DISPLAY_H 320

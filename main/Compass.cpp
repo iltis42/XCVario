@@ -74,7 +74,7 @@ float Compass::calculateHeading( bool *okIn )
 	if( *okIn == false )
 	{
 		m_headingValid = false;
-		ESP_LOGW( FNAME, "magneticHeading() error return from heading()");
+		// ESP_LOGW( FNAME, "magneticHeading() error return from heading()");
 		return 0.0;
 	}
 	m_magn_heading = m_cfmh.filter( new_heading );

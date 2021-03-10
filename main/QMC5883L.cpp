@@ -66,6 +66,9 @@ bool QMC5883L::m_sensor = false;
 // Sensor overflow flag.
 bool QMC5883L::overflowWarning = false;
 
+// Error counter
+int QMC5883L::errors = 0;
+
 /*
   Creates instance for I2C connection with passing the desired parameters.
   No action is done at the bus. Note if i2cBus is not set in the constructor,
@@ -111,9 +114,7 @@ esp_err_t QMC5883L::writeRegister( const uint8_t addr,
 	esp_err_t err = m_bus->writeByte( addr, reg, value );
 
 	if( err != ESP_OK )	{
-		ESP_LOGE( FNAME,
-				"QMC5883L writeRegister( 0x%02X, 0x%02X, 0x%02X ) FAILED",
-				addr, reg, value );
+		// ESP_LOGE( FNAME, "QMC5883L writeRegister( 0x%02X, 0x%02X, 0x%02X ) FAILED",	addr, reg, value );
 		return ESP_FAIL;
 	}
 	return err;
@@ -133,18 +134,20 @@ uint8_t QMC5883L::readRegister( const uint8_t addr,
 	// read bytes from chip
 	esp_err_t err = m_bus->readBytes( addr, reg, count, data );
 	if( err != ESP_OK ){
-		ESP_LOGW( FNAME,"readRegister( 0x%02X, 0x%02X, %d ) FAILED", addr, reg, count );
+		// ESP_LOGW( FNAME,"readRegister( 0x%02X, 0x%02X, %d ) FAILED", addr, reg, count );
 		err = m_bus->readBytes( addr, reg, count, data );
 		if( err != ESP_OK ){
-			ESP_LOGW( FNAME,"Retry failed also, try to reinitialize chip now");
+			// ESP_LOGW( FNAME,"Retry failed also, try to reinitialize chip now");
 			initialize();
 			err = m_bus->readBytes( addr, reg, count, data );
 			if( err != ESP_OK ){
-				ESP_LOGW( FNAME,"Read after retry failed also, return with no data, len=0");
+				// ESP_LOGW( FNAME,"Read after retry failed also, return with no data, len=0");
 				return 0;
 			}
+			/*
 			else
 				ESP_LOGW( FNAME,"Read after retry SUCCESS, we did it!");
+				*/
 		}
 	}
 	return count;
@@ -399,7 +402,6 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z ) )
 	ESP_LOGI( FNAME, "calibrate min-max xyz");
 
 	int i = 0;
-	int errors = 0;
 	uint64_t lastReport = 0;
 
 	// #define MAX_MIN_LOGGING
@@ -419,7 +421,7 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z ) )
 
 		if( rawHeading() == false )
 		{
-			errors++;
+			// errors++;
 		}
 
 		uint64_t start = getMsTime();
@@ -545,7 +547,6 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z ) )
  */
 float QMC5883L::heading( bool *ok )
 {
-	static unsigned short error = 0;
 
 	assert( (ok != nullptr) && "Passing of NULL pointer is forbidden" );
 
@@ -560,10 +561,10 @@ float QMC5883L::heading( bool *ok )
 #endif
 
 	// Holddown processing and throwing errors once sensor is gone
-	if( error > 100 && error % 100 )
+	if( errors > 100 && errors % 100 )
 	{
 		*ok = false;
-		error++;
+		errors++;
 		return 0.0;
 	}
 
@@ -575,16 +576,17 @@ float QMC5883L::heading( bool *ok )
 
 	if( rawHeading() == false )
 	{
-		ESP_LOGE(FNAME,"rawHeading() returned false" );
-		error++;
+
+		errors++;
 		*ok = false;
-		if( error > 10 )
+		if( errors > 100 )
 		{
+			ESP_LOGW(FNAME,"Magnetic sensor errors: init mag sensor" );
 			initialize();  // reinitialize once crashed
 		}
 		return 0.0;
 	}
-	error = 0;
+	errors = 0;
 
 	// Check if calibration data are available
 	if( compass_calibrated.get() == 0 )

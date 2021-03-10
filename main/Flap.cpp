@@ -46,7 +46,7 @@ SetupMenuSelect *flapLabels[NUMBER_POS];
 
 void showWk(SetupMenuSelect * p){
 	p->ucg->setPrintPos(1,140);
-	p->ucg->printf("Sensor: %d    ", Flap::getSensorRaw() );
+	p->ucg->printf("Sensor: %d    ", Flap::getSensorRaw(256) );
 	delay(10);
 }
 
@@ -59,7 +59,7 @@ int select_flap_io(SetupMenuSelect * p){
 	p->ucg->printf("Press Button to exit");
 	while( !p->_rotary->readSwitch() ){
 		p->ucg->setPrintPos(1,90);
-		p->ucg->printf("Sensor: %d       ", Flap::getSensorRaw() );
+		p->ucg->printf("Sensor: %d       ", Flap::getSensorRaw(256) );
 		delay(20);
 	}
 	return 0;
@@ -100,30 +100,30 @@ int wk_cal( SetupMenuSelect * p )
 		p->ucg->setFont(ucg_font_fub25_hr);
 		if( flap_pos_max.get() > 2 ){
 			wk_cal_show( p,3 );
-			wk_sens_pos_plus_3.set( Flap::getSensorRaw() );
+			wk_sens_pos_plus_3.set( Flap::getSensorRaw(256) );
 		}
 		if( flap_pos_max.get() > 1 ){
 			wk_cal_show( p,2 );
-			wk_sens_pos_plus_2.set( Flap::getSensorRaw() );
+			wk_sens_pos_plus_2.set( Flap::getSensorRaw(256) );
 		}
 		if( flap_pos_max.get() > 0 ){
 			wk_cal_show( p,1 );
-			wk_sens_pos_plus_1.set( Flap::getSensorRaw() );
+			wk_sens_pos_plus_1.set( Flap::getSensorRaw(256) );
 		}
 		wk_cal_show( p,0 );
-		wk_sens_pos_0.set( Flap::getSensorRaw() );
+		wk_sens_pos_0.set( Flap::getSensorRaw(256) );
 
 		if( flap_neg_max.get() < 0 ){
 			wk_cal_show( p,-1 );
-			wk_sens_pos_minus_1.set( Flap::getSensorRaw() );
+			wk_sens_pos_minus_1.set( Flap::getSensorRaw(256) );
 		}
 		if( flap_neg_max.get() < -1 ){
 			wk_cal_show( p,-2 );
-			wk_sens_pos_minus_2.set( Flap::getSensorRaw() );
+			wk_sens_pos_minus_2.set( Flap::getSensorRaw(256) );
 		}
 		if( flap_neg_max.get() < -2 ){
 			wk_cal_show( p,-3 );
-			wk_sens_pos_minus_3.set( Flap::getSensorRaw() );
+			wk_sens_pos_minus_3.set( Flap::getSensorRaw(256) );
 		}
 		p->ucg->setPrintPos(1,60);
 		p->ucg->printf("Saved, restart");
@@ -463,7 +463,7 @@ float Flap::getLeverPosition( int wks ){
 
 void  Flap::progress(){
 	if( sensorAdc ) {
-		int wkraw = sensorAdc->getRaw();
+		int wkraw = getSensorRaw();
 		if( wkraw > 4096 )
 			wkraw = 4096;
 		if( wkraw < 0 )  { // drop erratic negative readings

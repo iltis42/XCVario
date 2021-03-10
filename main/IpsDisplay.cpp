@@ -1447,7 +1447,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 
 	// Altitude
 	if(!(tick%8) ) {
-		drawAltitude( altitude, FIELD_START,YALT+6 );
+		drawAltitude( altitude, FIELD_START,YALT-4 );
 	}
 
 	// Battery
@@ -1831,11 +1831,11 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 				else
 					ucg->drawBox( FIELD_START+6,dmid+(speed-airspeed)-(fh/2)-9, ASLEN-6, fh+15 );
 				if ( display_variant.get() == DISPLAY_WHITE_ON_BLACK ) {
-					col = abs(255 - abs(((speed-airspeed)*2)));		
+					col = abs(((speed-airspeed)*2));	
 				}
 				else {
-					col = abs(((speed-airspeed)*2));
-				}
+					col = abs(255 - abs(((speed-airspeed)*2)));	
+				}	
 				ucg->setColor(  col,col,col  );
 				ucg->setPrintPos(FIELD_START+8,dmid+(speed-airspeed)+(fh/2));
 				ucg->printf("%3d ""-", speed);

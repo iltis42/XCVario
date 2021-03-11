@@ -436,6 +436,7 @@ void SetupMenu::setup( )
 
 	SetupMenuValFloat * mc = new SetupMenuValFloat( "MC", 0, vunit.c_str(),	0.0, 9.9, 0.1, mc_adj, true, &MC );
 	mc->setHelp(PROGMEM"Default Mac Cready value for optimum cruise speed, or average climb rate to be provided in same units as variometer setting");
+	mc->setPrecision(1);
 	mm->addMenu( mc );
 
 	SetupMenuValFloat * vol = new SetupMenuValFloat( "Audio Volume", &volume, "%", 0.0, 100, 1, vol_adj, true );

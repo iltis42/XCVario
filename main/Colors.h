@@ -1,19 +1,21 @@
 #pragma once
 
-// for black on white display define COLOR_INVERS
-// #define COLOR_INVERS  tbd: add configurable setup item for black on white style
+extern int g_col_background;
+extern int g_col_highlight;
+extern int g_col_header_r;
+extern int g_col_header_g;
+extern int g_col_header_b;
+extern int g_col_header_light_r;
+extern int g_col_header_light_g;
+extern int g_col_header_light_b;
 
-#ifdef COLOR_INVERS
-  #define COLOR_HEADER       101,108,255  // Azureish gray
-  #define COLOR_HEADER_LIGHT 161,168,255  // Azureish ligher
-  #define COLOR_WHITE 255,255,255
-  #define COLOR_BLACK 0,0,0
-#else
-  #define COLOR_HEADER       255-101,255-108,255-255  // Azureish gray
-  #define COLOR_HEADER_LIGHT 255-161,255-168,255-255  // Azureish ligher
-  #define COLOR_WHITE 0,0,0
-  #define COLOR_BLACK 255,255,255
-#endif
+// use extern int g_col_highlight and g_col_backgroud to define black and white
+// use xetren int g_col_header_xxx to define header color
+
+#define COLOR_HEADER       g_col_header_r,g_col_header_g,g_col_header_b  // Azureish gray
+#define COLOR_HEADER_LIGHT g_col_header_light_r,g_col_header_light_g,g_col_header_light_b  // Azureish ligher
+#define COLOR_WHITE g_col_highlight, g_col_highlight, g_col_highlight
+#define COLOR_BLACK g_col_background, g_col_background, g_col_background
 #define COLOR_GREEN 255, 30, 255
 #define COLOR_RED   0,255,255
 #define LIGHT_GREEN 127,0,255
@@ -22,6 +24,7 @@
 #define COLOR_MGREY  180, 180, 180
 #define COLOR_BLUE   255, 255, 0
 #define COLOR_LBLUE  200, 200, 0
+
 
 
 #define DISPLAY_H 320

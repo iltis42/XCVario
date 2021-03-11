@@ -234,6 +234,21 @@ void IpsDisplay::bootDisplay() {
 
 void IpsDisplay::initDisplay() {
 	ESP_LOGI(FNAME,"IpsDisplay::initDisplay()");
+// set global color variables according to selected display_variant
+	if ( display_variant.get() == DISPLAY_WHITE_ON_BLACK ) {
+		g_col_background = 255;
+		g_col_highlight = 0;
+	}
+	else {
+	        g_col_background = 0;
+	        g_col_highlight = 255;
+	}	
+	g_col_header_r=101+g_col_background/5;
+	g_col_header_g=108+g_col_background/5;
+	g_col_header_b=g_col_highlight;
+	g_col_header_light_r=161-g_col_background/4;
+	g_col_header_light_g=168-g_col_background/3;
+	g_col_header_light_b=g_col_highlight;
 	if( display_style.get() == DISPLAY_RETRO ) {
 		initRetroDisplay();
 	}
@@ -964,7 +979,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	if( _menu )
 		return;
 	if( !(screens_init & INIT_DISPLAY_RETRO) ){
-		initRetroDisplay();
+		initDisplay();
 		screens_init |= INIT_DISPLAY_RETRO;
 	}
 	tick++;
@@ -1284,7 +1299,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 	if( _menu )
 		return;
 	if( !(screens_init & INIT_DISPLAY_UL) ){
-		initULDisplay();
+		initDisplay();
 		screens_init |= INIT_DISPLAY_UL;
 	}
 	tick++;
@@ -1427,8 +1442,8 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 			sprintf( unit, "QNE" );
 		else
 			sprintf( unit, "QNH" );
-		ucg->setColor(0, COLOR_BLACK );
-		ucg->printf("Altitude %s %d ", unit, pref_qnh );
+//		ucg->setColor(0, COLOR_BLACK );
+//		ucg->printf("Altitude %s %d ", unit, pref_qnh );
 		ucg->setPrintPos(FIELD_START,(YALT-S2FFONTH-10));
 		ucg->setColor(0, COLOR_HEADER );
 		ucg->printf("Altitude %s %d ", unit, qnh );
@@ -1437,7 +1452,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 
 	// Altitude
 	if(!(tick%8) ) {
-		drawAltitude( altitude, FIELD_START,YALT+6 );
+		drawAltitude( altitude, FIELD_START,YALT-4 );
 	}
 
 	// Battery
@@ -1815,15 +1830,17 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 			if( (speed%20) == 0 && (speed >= 0) ) {
 				// blank old values
 				ucg->setColor( COLOR_BLACK );
+				int col = 0;
 				if( speed == 0 )
 					ucg->drawBox( FIELD_START+6,dmid+(speed-airspeed)-(fh/2)-19, ASLEN-6, fh+25 );
 				else
 					ucg->drawBox( FIELD_START+6,dmid+(speed-airspeed)-(fh/2)-9, ASLEN-6, fh+15 );
-#ifdef COLOR_INVERS					
-				int col = abs(255 - abs(((speed-airspeed)*2)));
-#else
-				int col = abs(((speed-airspeed)*2));
-#endif				
+				if ( display_variant.get() == DISPLAY_WHITE_ON_BLACK ) {
+					col = abs(((speed-airspeed)*2));	
+				}
+				else {
+					col = abs(255 - abs(((speed-airspeed)*2)));	
+				}	
 				ucg->setColor(  col,col,col  );
 				ucg->setPrintPos(FIELD_START+8,dmid+(speed-airspeed)+(fh/2));
 				ucg->printf("%3d ""-", speed);

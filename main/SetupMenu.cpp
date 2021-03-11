@@ -991,8 +991,8 @@ void SetupMenu::setup( )
 		SetupMenuSelect * disva = new SetupMenuSelect( "Color Variant", false , 0, false, &display_variant );
 		display->addMenu( disva );
 		disva->setHelp( PROGMEM "Display variant white on black (W/B) or black on white(B/W)");
-		disva->addEntry( "White on Black");
-		disva->addEntry( "Black on White");
+		disva->addEntry( "W/B");
+		disva->addEntry( "B/W");
 
 
 		// Orientation   _display_orientation

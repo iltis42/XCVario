@@ -2,12 +2,18 @@
 
 extern int g_col_background;
 extern int g_col_highlight;
+extern int g_col_header_r;
+extern int g_col_header_g;
+extern int g_col_header_b;
+extern int g_col_header_light_r;
+extern int g_col_header_light_g;
+extern int g_col_header_light_b;
 
-// use extern int col_highlight and col_backgroud to define black and white
+// use extern int g_col_highlight and g_col_backgroud to define black and white
+// use xetren int g_col_header_xxx to define header color
 
-#define COLOR_HEADER       (101+g_col_background/5),(108+g_col_background/5),g_col_highlight  // Azureish gray
-#define COLOR_HEADER_LIGHT (161-g_col_background/4),(168-g_col_background/3),g_col_highlight  // Azureish ligher
-
+#define COLOR_HEADER       g_col_header_r,g_col_header_g,g_col_header_b  // Azureish gray
+#define COLOR_HEADER_LIGHT g_col_header_light_r,g_col_header_light_g,g_col_header_light_b  // Azureish ligher
 #define COLOR_WHITE g_col_highlight, g_col_highlight, g_col_highlight
 #define COLOR_BLACK g_col_background, g_col_background, g_col_background
 #define COLOR_GREEN 255, 30, 255

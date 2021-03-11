@@ -243,7 +243,12 @@ void IpsDisplay::initDisplay() {
 	        g_col_background = 0;
 	        g_col_highlight = 255;
 	}	
-
+	g_col_header_r=101+g_col_background/5;
+	g_col_header_g=108+g_col_background/5;
+	g_col_header_b=g_col_highlight;
+	g_col_header_light_r=161-g_col_background/4;
+	g_col_header_light_g=168-g_col_background/3;
+	g_col_header_light_b=g_col_highlight;
 	if( display_style.get() == DISPLAY_RETRO ) {
 		initRetroDisplay();
 	}

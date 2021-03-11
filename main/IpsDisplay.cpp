@@ -1437,8 +1437,8 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 			sprintf( unit, "QNE" );
 		else
 			sprintf( unit, "QNH" );
-		ucg->setColor(0, COLOR_BLACK );
-		ucg->printf("Altitude %s %d ", unit, pref_qnh );
+//		ucg->setColor(0, COLOR_BLACK );
+//		ucg->printf("Altitude %s %d ", unit, pref_qnh );
 		ucg->setPrintPos(FIELD_START,(YALT-S2FFONTH-10));
 		ucg->setColor(0, COLOR_HEADER );
 		ucg->printf("Altitude %s %d ", unit, qnh );

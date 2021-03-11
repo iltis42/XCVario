@@ -974,7 +974,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	if( _menu )
 		return;
 	if( !(screens_init & INIT_DISPLAY_RETRO) ){
-		initRetroDisplay();
+		initDisplay();
 		screens_init |= INIT_DISPLAY_RETRO;
 	}
 	tick++;
@@ -1294,7 +1294,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 	if( _menu )
 		return;
 	if( !(screens_init & INIT_DISPLAY_UL) ){
-		initULDisplay();
+		initDisplay();
 		screens_init |= INIT_DISPLAY_UL;
 	}
 	tick++;

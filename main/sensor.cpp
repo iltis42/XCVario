@@ -139,8 +139,8 @@ float battery=0.0;
 float TE=0;
 float dynamicP;
 
-int g_col_background=0;
-int g_col_highlight=255;
+int g_col_background=255;
+int g_col_highlight=0;
 
 bool haveMPU=false;  
 bool ahrsKeyValid=false;

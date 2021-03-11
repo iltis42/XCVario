@@ -59,6 +59,7 @@ const int   S2F_TRISIZE = 60; // triangle size quality up/down
 #define TRISIZE 15
 
 #define FIELD_START 85
+#define FIELD_START_UL_AS 185
 #define SIGNLEN 24+4
 #define GAP 12
 
@@ -254,6 +255,16 @@ void IpsDisplay::initDisplay() {
 	}
 	if( display_style.get() == DISPLAY_UL ) {
 		initULDisplay();
+				// AS Box
+		int fl = 45; // ucg->getStrWidth("200-");
+
+		ASLEN = fl;
+		S2FST = ASLEN+16;
+		
+		// S2F Zero
+		// ucg->drawTriangle( FIELD_START, dmid+5, FIELD_START, dmid-5, FIELD_START+5, dmid);
+		ucg->drawTriangle( FIELD_START+ASLEN-1, dmid, FIELD_START+ASLEN+5, dmid-6, FIELD_START+ASLEN+5, dmid+6);
+
 	}
 	if( display_style.get() == DISPLAY_AIRLINER ) {
 		bootDisplay();
@@ -1452,7 +1463,8 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 
 	// Altitude
 	if(!(tick%8) ) {
-		drawAltitude( altitude, FIELD_START,YALT-4 );
+//		drawAltitude( altitude, FIELD_START,YALT-4 );
+		drawAltitude( altitude, 113,YALT-4 );
 	}
 
 	// Battery
@@ -1516,20 +1528,22 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 		if( as_prev != airspeed || !(tick%49) ) {
 			ucg->setColor(  COLOR_WHITE  );
 			ucg->setPrintPos(113,75);
-			ucg->setFont(ucg_font_fub20_hr);
+			ucg->setFont(ucg_font_fub25_hr);
 			char s[10];
 			sprintf(s,"%3d",  airspeed );
 			int fl=ucg->getStrWidth(s);
 			ucg->printf("%s  ", s);
 			ucg->setPrintPos(113+fl,70);
-			ucg->setFont(ucg_font_fub11_hr);
+			ucg->setFont(ucg_font_fub20_hr);
 			ucg->printf(" %s  ", Units::AirspeedUnit() );
 			as_prev = airspeed;
+
 		}
 	}
 	// Compass
 	if( !(tick%8) ){
 		if( compass_calibrated.get() && compass_enable.get() ){
+
 			bool ok;
 			int heading = static_cast<int>(rintf(Compass::trueHeading( &ok )));
 			if( heading >= 360 )
@@ -1544,6 +1558,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 					sprintf(s,"%3d", heading );
 				else
 					sprintf(s,"%s", "  ---" );
+
 				if( heading < 10 )
 					ucg->printf("%s    ", s);
 				else if( heading < 100 )

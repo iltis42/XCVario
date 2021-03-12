@@ -873,17 +873,15 @@ void IpsDisplay::drawAvgVario( int x, int y, float ate ){
 			ucg->setFont(ucg_font_fub25_hn);
 		}
 		if( fpm > 0 )
-			ucg->printf(" %4d   ", (int)( (ate+0.5)/10)*10 );  // ft/min
+//			ucg->printf(" %4d   ", (int)( (ate+0.5)/10)*10 );  // ft/min
+			ucg->printf(" %4d   ", (int)ate);  // ft/min
 		else {
-			ucg->printf("%4d   ",  (int)( (ate+0.5)/10)*10 );  // ft/min
+//			ucg->printf("%4d   ",  (int)( (ate+0.5)/10)*10 );  // ft/min
+			ucg->printf("%4d   ", (int)ate);  // ft/min
 		}
 	}
 	else{
 		ucg->setFont(ucg_font_fub35_hn);
-/*		if( abs(ate) >= 10 ){
-			ucg->setPrintPos(x, y-4);  // shift 3 pixel up
-			ucg->setFont(ucg_font_fub30_hn);
-		}*/
 		if( ate > 0 ){
 		        if ( ate < 10 ) 
 			 ucg->printf(" %2.1f   ", ate );

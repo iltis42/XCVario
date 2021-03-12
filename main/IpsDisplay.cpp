@@ -869,6 +869,7 @@ void IpsDisplay::drawAvgVario( int x, int y, float ate ){
 		int fpm = ((ate +0.5)/10)*10;
 		if( abs(fpm) >= 1000 ){
 			ucg->setPrintPos(x, y-2 );
+
 			ucg->setFont(ucg_font_fub25_hn);
 		}
 		if( fpm > 0 )
@@ -879,14 +880,21 @@ void IpsDisplay::drawAvgVario( int x, int y, float ate ){
 	}
 	else{
 		ucg->setFont(ucg_font_fub35_hn);
-		if( abs(ate) >= 10 ){
+/*		if( abs(ate) >= 10 ){
 			ucg->setPrintPos(x, y-4);  // shift 3 pixel up
 			ucg->setFont(ucg_font_fub30_hn);
+		}*/
+		if( ate > 0 ){
+		        if ( ate < 10 ) 
+			 ucg->printf(" %2.1f   ", ate );
+			 else
+			 ucg->printf(" %2.0f   ", ate);
 		}
-		if( ate > 0 )
-			ucg->printf(" %2.1f   ", ate );
 		else{
-			ucg->printf("%2.1f   ", ate );         // knots
+		        if ( ate > -10 ) 
+			 ucg->printf("%2.1f   ", ate );
+			 else
+			 ucg->printf("%2.0f   ", ate);
 		}
 	}
 	ucg->setFontPosBottom();

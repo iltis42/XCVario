@@ -239,17 +239,23 @@ void IpsDisplay::initDisplay() {
 	if ( display_variant.get() == DISPLAY_WHITE_ON_BLACK ) {
 		g_col_background = 255;
 		g_col_highlight = 0;
+		g_col_header_r=154;
+		g_col_header_g=147;
+		g_col_header_b=0;
+		g_col_header_light_r=94;
+		g_col_header_light_g=87;
+		g_col_header_light_b=0;
 	}
 	else {
 	        g_col_background = 0;
 	        g_col_highlight = 255;
+		g_col_header_r=101;
+		g_col_header_g=108;
+		g_col_header_b=255;
+		g_col_header_light_r=161;
+		g_col_header_light_g=168;
+		g_col_header_light_b=255;
 	}	
-	g_col_header_r=101+g_col_background/5;
-	g_col_header_g=108+g_col_background/5;
-	g_col_header_b=g_col_highlight;
-	g_col_header_light_r=161-g_col_background/4;
-	g_col_header_light_g=168-g_col_background/3;
-	g_col_header_light_b=g_col_highlight;
 	if( display_style.get() == DISPLAY_RETRO ) {
 		initRetroDisplay();
 	}
@@ -1362,7 +1368,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 	// draw TE pointer
 	float a = (te)/(_range) * (M_PI_2);
 	if( int(a*100) != int(old_a*100) ) {
-		drawTetragon( a, AMIDX, AMIDY, 60, 120, 3, COLOR_WHITE );
+		drawTetragon( a, AMIDX, AMIDY, 60, 120, 3, COLOR_RED );
 		// ESP_LOGI(FNAME,"IpsDisplay::drawULDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 		// Climb bar
 
@@ -1421,15 +1427,6 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 		drawAvgVario( 90, AMIDY+2, ate );
 		_ate = (int)(ate*30);
 	}
-	// MC val
-	if(  !(tick%8) ) {
-		int aMC = MC.get() * 10;
-		if( aMC != mcalt && !(tick%4) ) {
-//	no MC display
-//			drawMC( MC.get(), true );
-			mcalt=aMC;
-		}
-	}
 	// Bluetooth
 	if( !(tick%12) )
 	{
@@ -1453,8 +1450,6 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 			sprintf( unit, "QNE" );
 		else
 			sprintf( unit, "QNH" );
-//		ucg->setColor(0, COLOR_BLACK );
-//		ucg->printf("Altitude %s %d ", unit, pref_qnh );
 		ucg->setPrintPos(FIELD_START,(YALT-S2FFONTH-10));
 		ucg->setColor(0, COLOR_HEADER );
 		ucg->printf("Altitude %s %d ", unit, qnh );
@@ -1463,7 +1458,6 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 
 	// Altitude
 	if(!(tick%8) ) {
-//		drawAltitude( altitude, FIELD_START,YALT-4 );
 		drawAltitude( altitude, 113,YALT-4 );
 	}
 
@@ -1508,12 +1502,6 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 			Flap::drawWingSymbol( WKBARMID-(27*(abs(flap_neg_max.get())+1)  ), WKSYMST-3, wki, wkialt );
 			wkialt=wki;
 		}
-	}
-
-	// Cruise mode or circling
-	if( !(tick%11) ){
-//	no S2Fmode display
-//		drawS2FMode( 180, 20, s2fmode );
 	}
 
 	// Medium Climb Indicator

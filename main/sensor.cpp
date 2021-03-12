@@ -308,7 +308,8 @@ void readBMP(void *pvParameters){
 		Flap::progress();
 		if( (count % 2) == 0 ) {
 			xSemaphoreTake(xMutex,portMAX_DELAY );
-			baroP = baroSensor->readPressure();   // 5x per second
+			bool ok;
+			baroP = baroSensor->readPressure(ok);   // 5x per second
 			// ESP_LOGI(FNAME,"Baro Pressure: %4.3f", baroP );
 			float altSTD = baroSensor->calcAVGAltitudeSTD( baroP );
 			if( alt_select.get() == 0 ) // TE
@@ -980,13 +981,14 @@ void sensor(void *args){
 		ESP_LOGI(FNAME,"QNH Autosetup, IAS=%3f (<50 km/h)", ias );
 		// QNH autosetup
 		float ae = elevation.get();
-		baroP = baroSensor->readPressure();
+		bool ok;
+		baroP = baroSensor->readPressure(ok);
 		if( ae > 0 ) {
 			float step=10.0; // 80 m
 			float min=1000.0;
 			float qnh_best = 1013.2;
 			for( float qnh = 870; qnh< 1085; qnh+=step ) {
-				float alt = baroSensor->readAltitude( qnh );
+				float alt = baroSensor->readAltitude( qnh, ok);
 				float diff = alt - ae;
 				// ESP_LOGI(FNAME,"Alt diff=%4.2f  abs=%4.2f", diff, abs(diff) );
 				if( abs( diff ) < 100 )
@@ -1030,7 +1032,7 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
 	if( blue_enable.get() != WL_WLAN_CLIENT ) {
-		xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096*2, NULL, 15, bpid, 0);  // 10
+		xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096*2, NULL, 30, bpid, 0);  // 10
 	}
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 4096, NULL, 6, tpid, 0);
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 13, dpid, 0);  // 10

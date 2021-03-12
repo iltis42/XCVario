@@ -46,10 +46,10 @@ public:
     bool selfTest( float& p, float& t );
 
 	double readTemperature( bool& success );
-	double readPressure();
+	double readPressure(bool &ok);
 	double readPressureAVG( float alpha=0.1 );
 	double readHumidity();
-	double readAltitude(double SeaLevel_Pres=1013.25);
+	double readAltitude(double SeaLevel_Pres, bool &ok);
 	inline double calcAltitude(double SeaLevel_Pres, double pressure) { return ( 44330.0 * (1.0 - pow(pressure / SeaLevel_Pres, (1.0/5.255))) ); }
 	double calcAVGAltitude(double SeaLevel_Pres, double p );
 	double calcAVGAltitudeSTD( double p );

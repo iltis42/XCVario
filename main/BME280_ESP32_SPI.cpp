@@ -194,9 +194,11 @@ double BME280_ESP32_SPI::readTemperature( bool& success ){
 }
 
 //***************BME280 ****************************
-double BME280_ESP32_SPI::readPressure(){
-	if( init_err )
-			return 0.0;
+double BME280_ESP32_SPI::readPressure(bool &ok){
+	if( init_err ){
+		ok=false;
+		return 0.0;
+	}
 	// ESP_LOGI(FNAME,"++BMP280 readPressure cs:%d", _cs);
 	bool success;
 	readTemperature( success );
@@ -312,11 +314,13 @@ uint32_t BME280_ESP32_SPI::compensate_H(int32_t adc_H) {
 }
 
 //*******************************************************************
-double BME280_ESP32_SPI::readAltitude(double SeaLevel_Pres) {
-	if( init_err )
+double BME280_ESP32_SPI::readAltitude(double SeaLevel_Pres, bool &ok ) {
+	if( init_err ) {
+		ok = false;
 		return 0.0;
+	}
 	// ESP_LOGI(FNAME,"++BMP280 readAltitude QNH=%0.1f CS:%d", SeaLevel_Pres, _cs);
-	double pressure = readPressure();
+	double pressure = readPressure(ok);
 	// ESP_LOGI(FNAME,"press=%0.1f", pressure);
 	double altitude = calcAltitude( SeaLevel_Pres, pressure );
 	// ESP_LOGI(FNAME,"--BME280 readAltitude  qnh: %0.1f p=%0.1f alt=%0.1f", SeaLevel_Pres, pressure, altitude);
@@ -369,8 +373,9 @@ bool BME280_ESP32_SPI::selfTest( float& t, float &p ) {
 		return( false );
 	}
 	p=0;
+	bool ok;
 	for( int i=0; i<10; i++ ){
-		p += (float)readPressure();
+		p += (float)readPressure(ok);
 		delay(100);
 	}
 	p=p/10;
@@ -431,7 +436,8 @@ uint8_t BME280_ESP32_SPI::read8bit(uint8_t reg) {
 double BME280_ESP32_SPI::readPressureAVG( float alpha ){
 	if( init_err )
 		return 0.0;
-    double newval = readPressure();
+	bool ok;
+    double newval = readPressure(ok);
 	if ( exponential_average == 0 ){
 		exponential_average = newval;
 	}

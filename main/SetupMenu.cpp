@@ -102,7 +102,8 @@ int qnh_adj( SetupMenuValFloat * p )
 	// ESP_LOGI(FNAME,"qnh_adj");
 	float alt=0;
 	for( int i=0; i<6; i++ ) {
-		alt += p->_bmp->readAltitude( *(p->_value) );
+		bool ok;
+		alt += p->_bmp->readAltitude( *(p->_value), ok );
 		sleep(0.01);
 	}
 	alt = alt/6;

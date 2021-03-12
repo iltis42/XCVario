@@ -229,8 +229,7 @@ esp_err_t I2C::writeBytes(uint8_t devAddr, uint8_t regAddr, size_t length, const
 #else
     if (err) {
 #endif
-        // I2CBUS_LOGE("[port:%d, slave:0x%X] Failed to write %d bytes to__ register 0x%X, error: 0x%X",
-        //   port, devAddr, length, regAddr, err);
+        // I2CBUS_LOGE("[port:%d, slave:0x%X] Failed to write %d bytes to__ register 0x%X, error: 0x%X", port, devAddr, length, regAddr, err);
     }
 #endif
     xSemaphoreGive(i2cbus_mutex);
@@ -295,8 +294,7 @@ esp_err_t I2C::readBytes(uint8_t devAddr, uint8_t regAddr, size_t length, uint8_
 #else
     if (err) {
 #endif
-        // I2CBUS_LOGE("[port:%d, slave:0x%X] Failed to read %d bytes from register 0x%X, error: 0x%X",
-        //     port, devAddr, length, regAddr, err);
+        // I2CBUS_LOGE("[port:%d, slave:0x%X] Failed to read %d bytes from register 0x%X, error: 0x%X", port, devAddr, length, regAddr, err);
     }
 #endif
     xSemaphoreGive(i2cbus_mutex);

@@ -11,6 +11,7 @@
 
 
 
+
 class SPL06_007: public PressureSensor {
 public:
 	SPL06_007( char slave_adr );
@@ -22,22 +23,21 @@ public:
 	double get_altitude(double pressure, double seaLevelhPa);	// get altitude in meters
 	inline double calcAVGAltitudeSTD( double p ) { return get_altitude( p, 1013.25 ); };
 	inline double calcAVGAltitude( double sl, double p ) { return get_altitude( p, sl ); };
-	inline double readAltitude( double qnh ) {  return get_altitude( get_pressure(), qnh ); };
-
+	double readAltitude( double qnh, bool &ok );
 	double get_temp_c();
 	double get_temp_f();
 	inline double readTemperature( bool& success ) { success = true; return get_temp_c(); };
 
-	double get_pcomp();
-	double get_pressure();
-	inline double readPressure(){ return get_pressure(); };
+	double get_pcomp( bool &ok );
+	double get_pressure(bool &ok);
+	inline double readPressure(bool &ok){ return get_pressure(ok); };
 
 private:
-	int32_t get_praw();
-	double get_praw_sc();
+	int32_t get_praw( bool &ok );
+	double get_praw_sc( bool &ok );
 
-	int32_t get_traw();
-	double get_traw_sc();
+	int32_t get_traw( bool &ok );
+	double get_traw_sc( bool &ok );
 
 	double get_scale_factor( int reg );
 
@@ -58,16 +58,20 @@ private:
 
 
 	int32_t c00,c10;
+	int16_t c0,c1;
 	int16_t c01,c11,c20,c21,c30;
 
 	void i2c_write_uint8( uint8_t eeaddress, uint8_t data );
 	uint8_t i2c_read_uint8( uint8_t eeaddress );
+	bool i2c_read_bytes( uint8_t eeaddress, int num, uint8_t *data );
 
 	I2C_t *bus;
 	char   address;
 	double _scale_factor_p;
 	double _scale_factor_t;
 	int    errors;
+	int32_t _praw;
+	int32_t _traw;
 };
 
 #endif

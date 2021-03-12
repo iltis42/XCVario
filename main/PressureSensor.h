@@ -10,9 +10,9 @@ public:
 	virtual bool  setBus( I2C_t *theBus ) = 0;
 	virtual bool  begin() = 0;
 	virtual bool  selfTest( float& p, float &t ) = 0;
-	virtual double readPressure() = 0;
+	virtual double readPressure(bool &success) = 0;
 	virtual double readTemperature( bool& success ) = 0;
-	virtual double readAltitude( double qnh ) = 0;
+	virtual double readAltitude( double qnh, bool &success ) = 0;
 	virtual double calcAVGAltitudeSTD( double p ) = 0;
 	virtual double calcAVGAltitude( double qnh, double p ) = 0;
 };

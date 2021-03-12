@@ -43,7 +43,9 @@ double BMPVario::readTE( float tas ) {
 	bool success;
 	bmpTemp = _bmpTE->readTemperature( success );
 	// ESP_LOGI(FNAME,"BMP temp=%0.1f", bmpTemp );
-	_currentAlt = _bmpTE->readAltitude(_qnh);
+	_currentAlt = _bmpTE->readAltitude(_qnh, success );
+	if( !success )
+		_currentAlt = lastAltitude;  // ignore readout when failed
 	// ESP_LOGI(FNAME,"TE alt: %4.3f m", _currentAlt );
 	if( te_comp_enable.get() ) {
 		float mps = tas / 3.6;  // m/s
@@ -58,11 +60,12 @@ double BMPVario::readTE( float tas ) {
 		return _TEF;
 
 	// ESP_LOGI(FNAME,"Vario delta=%2.3f sec", delta );
+
 	lastrts = rts;
 	// ESP_LOGI(FNAME, "TE-Alt %0.1f  NM:", _currentAlt );
 	if( _init  ){
 		vTaskDelay(100 / portTICK_PERIOD_MS);
-		_currentAlt = _bmpTE->readAltitude(_qnh) * 1.03; // we want have some beep when powerd on
+		_currentAlt = _bmpTE->readAltitude(_qnh, success ) * 1.03; // we want have some beep when powerd on
 		lastAltitude = _currentAlt;
 		predictAlt = _currentAlt;
 		Altitude = _currentAlt;
@@ -107,6 +110,9 @@ double BMPVario::readTE( float tas ) {
 	else
 	{
 		AverageVario::newSample( _TEF );
+	}
+	if( (TE > 0.1) || (TE < -0.1) ){
+		ESP_LOGI(FNAME,"Vario alt: %f, Vario: %f, t-delta=%2.3f sec", _currentAlt, TE, delta );
 	}
 	return _TEF;
 }

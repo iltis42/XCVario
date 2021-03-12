@@ -32,7 +32,6 @@ int ABPMRR::measure()
 	return ret;
 }
 
-
 char ABPMRR::fetch_pressure(uint16_t &P_dat, uint16_t &T_dat)
 {
 	// ESP_LOGI(FNAME,"ABPMRR::fetch_pressure");
@@ -46,6 +45,7 @@ char ABPMRR::fetch_pressure(uint16_t &P_dat, uint16_t &T_dat)
 	esp_err_t err = bus->readBytes(address, 0, 4, data );
 	if( err != ESP_OK ) {
 		_status = 5;   // i2c error detected
+		ESP_LOGW(FNAME,"fetch_pressure() I2C error");
 		return _status;
 	}
 
@@ -53,6 +53,7 @@ char ABPMRR::fetch_pressure(uint16_t &P_dat, uint16_t &T_dat)
 	Press_L = data[1];
 	Temp_H = data[2];
 	Temp_L = data[3];
+
 	// ESP_LOG_BUFFER_HEXDUMP(FNAME,data,4, ESP_LOG_INFO);
 
 	_status = (Press_H >> 6) & 0x03;
@@ -62,6 +63,7 @@ char ABPMRR::fetch_pressure(uint16_t &P_dat, uint16_t &T_dat)
 	Temp_L = (Temp_L >> 5);
 	T_dat = (((uint16_t)Temp_H) << 3) | Temp_L;
 
+	// ESP_LOGI(FNAME,"fetch_pressure() status: %d, err %d,  P:%04x T: %04x",  _status, err, P_dat, T_dat );
 	return _status;
 }
 

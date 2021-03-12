@@ -1026,9 +1026,11 @@ void SetupMenu::setup( )
 
 		SetupMenuSelect * s2fsw = new SetupMenuSelect( "S2F Switch", false , 0, false, &s2f_switch_type );
 		hardware->addMenu( s2fsw );
-		s2fsw->setHelp( PROGMEM "Select S2F hardware switch type, what can be an normal switch or a push button without lock toggling mode any time pressed");
+		s2fsw->setHelp( PROGMEM "Select S2F hardware switch type, what can be an normal switch or a push button without lock toggling S2F mode any time pressed");
 		s2fsw->addEntry( "Switch");
 		s2fsw->addEntry( "Push Button");
+		s2fsw->addEntry( "Switch Inverted");
+
 
 		if( hardwareRevision.get() >= 3 ){
 			SetupMenu * ahrs = new SetupMenu( "AHRS Setup" );

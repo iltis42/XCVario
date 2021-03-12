@@ -61,11 +61,17 @@ bool Switch::isOpen() {
 }
 
 void Switch::tick() {
-	if( s2f_switch_type.get() == S2F_HW_SWITCH ){
+	if( s2f_switch_type.get() == S2F_HW_SWITCH || s2f_switch_type.get() == S2F_HW_SWITCH_INVERTED ){
 		if( isClosed() )
-			_cruise_mode = true;
+			if( s2f_switch_type.get() == S2F_HW_SWITCH_INVERTED )
+				_cruise_mode = false;
+			else
+				_cruise_mode = true;
 		else
-			_cruise_mode = false;
+			if( s2f_switch_type.get() == S2F_HW_SWITCH_INVERTED )
+				_cruise_mode = true;
+			else
+				_cruise_mode = false;
 	}
 	else if( s2f_switch_type.get() == S2F_HW_PUSH_BUTTON ){
 		if( _holddown ){   // debouncing

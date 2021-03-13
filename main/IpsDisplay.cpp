@@ -863,37 +863,18 @@ void IpsDisplay::drawAvgVario( int x, int y, float ate ){
 	ucg->setColor( COLOR_WHITE );
 	ucg->setFont(ucg_font_fub35_hn);
 	ucg->setClipRange( x, y-30, 95, 50 );
-
-	if(  UNITVAR == 1 ){
-		ucg->setFont(ucg_font_fub30_hn);
-		int fpm = ((ate +0.5)/10)*10;
-		if( abs(fpm) >= 1000 ){
-			ucg->setPrintPos(x, y-2 );
-
-			ucg->setFont(ucg_font_fub25_hn);
-		}
-		if( fpm > 0 )
-//			ucg->printf(" %4d   ", (int)( (ate+0.5)/10)*10 );  // ft/min
-			ucg->printf(" %4d   ", (int)ate);  // ft/min
-		else {
-//			ucg->printf("%4d   ",  (int)( (ate+0.5)/10)*10 );  // ft/min
-			ucg->printf("%4d   ", (int)ate);  // ft/min
-		}
+	ucg->setFont(ucg_font_fub35_hn);
+	if( ate > 0 ){
+	        if ( ate < 10 ) 
+		 ucg->printf(" %2.1f   ", ate );
+		 else
+		 ucg->printf(" %2.0f   ", ate);
 	}
 	else{
-		ucg->setFont(ucg_font_fub35_hn);
-		if( ate > 0 ){
-		        if ( ate < 10 ) 
-			 ucg->printf(" %2.1f   ", ate );
-			 else
-			 ucg->printf(" %2.0f   ", ate);
-		}
-		else{
-		        if ( ate > -10 ) 
-			 ucg->printf("%2.1f   ", ate );
-			 else
-			 ucg->printf("%2.0f   ", ate);
-		}
+	        if ( ate > -10 ) 
+		 ucg->printf("%2.1f   ", ate );
+		 else
+		 ucg->printf("%2.0f   ", ate);
 	}
 	ucg->setFontPosBottom();
 	ucg->undoClipRange();

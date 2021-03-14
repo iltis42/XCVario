@@ -782,13 +782,14 @@ void sensor(void *args){
 	float ba_t, ba_p, te_t, te_p;
 
 	SPL06_007 *splBA = new SPL06_007( SPL06_007_BARO );
+	SPL06_007 *splTE = new SPL06_007( SPL06_007_TE );
 	splBA->setBus( &i2c );
-	if( splBA->begin() ){
+	splTE->setBus( &i2c );
+	bool baok =  splBA->begin();
+	bool teok =  splTE->begin();
+	if( baok || teok ){
 		ESP_LOGI(FNAME,"SPL06_007 type detected");
 		i2c.begin(GPIO_NUM_21, GPIO_NUM_22, 100000 );  // higher speed, we have 10K pullups on that board
-		SPL06_007 *splTE = new SPL06_007( SPL06_007_TE );
-		splTE->setBus( &i2c );
-		splTE->begin();
 		baroSensor = splBA;
 		teSensor = splTE;
 	}

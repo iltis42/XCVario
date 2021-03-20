@@ -32,7 +32,7 @@ public:
 	static inline bool haveSensor() { if( sensorAdc != 0 ) return true; else return false; }
 	static void drawSmallBar( int ypos, int xpos, float wkf );
 	static void drawBigBar( int ypos, int xpos, float wkf, float wksens );
-	static void drawLever( int xpos, int ypos, int oldypos );
+	static void drawLever( int xpos, int ypos, int oldypos, bool warn );
 	static void drawWingSymbol( int ypos, int xpos, int wk, int wkalt );
 	static void redraw() { sensorOldY = -1000; surroundingBox=false; };
 	static void redrawLever() { sensorOldY = -1000; };
@@ -50,6 +50,7 @@ private:
 	static int   sensorOldY;
 	static int   rawFiltered;
 	static int   tick;
+	static bool  warn_color;
 };
 
 #endif

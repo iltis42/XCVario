@@ -20,6 +20,8 @@ int Flap::optPosOldY = 0;
 int Flap::sensorOldY = 0;
 int Flap::rawFiltered = 0;
 int Flap::tick=0;
+bool Flap::warn_color=false;
+
 
 #define NUMPOS  (int)( flap_pos_max.get() +1 - flap_neg_max.get() )
 #define MINPOS  flap_neg_max.get()
@@ -327,12 +329,24 @@ void Flap::drawSmallBar( int ypos, int xpos, float wkf ){
 	ucg->undoClipRange();
 }
 
-void Flap::drawLever( int xpos, int ypos, int oldypos ){
+void Flap::drawLever( int xpos, int ypos, int oldypos, bool warn ){
 	ucg->setColor(COLOR_BLACK);
 	ucg->drawBox( xpos-25, oldypos-4, 19, 8 );
 	ucg->drawBox( xpos-6, oldypos-2, 4, 4 );
-
-	ucg->setColor(COLOR_WHITE);  // left upper x,y and w,h
+    if( warn ){
+    	// Blink effekt
+    	if( warn_color ){
+    		ucg->setColor(COLOR_WHITE);
+    		warn_color = false;
+    	}
+    	else{
+    		ucg->setColor(COLOR_RED);
+    		warn_color = true;
+    	}
+    }
+    else{
+    	ucg->setColor(COLOR_WHITE);
+    }
 	ucg->drawBox( xpos-25, ypos-4, 19, 8 );
 	ucg->drawBox( xpos-6, ypos-2, 4, 4 );
 }
@@ -364,15 +378,21 @@ void Flap::drawBigBar( int ypos, int xpos, float wkf, float wksens ){
 	int y = ypos + (int)((wkf)*(lfh) + 0.5 );
 	int ys = ypos + (int)(( wksens )*(lfh) + 0.5 );
 	// ESP_LOGI(FNAME,"wkf: %f", wkf);
-	if( optPosOldY != y || ( (sensorOldY != ys) )) {  // redraw on change or when wklever is near
+
+	if( optPosOldY != y ) {  // redraw on change or when wklever is near
 		ucg->setColor(COLOR_BLACK);
 		ucg->drawTriangle( xpos-15,optPosOldY-5,  xpos-15,optPosOldY+5,  xpos-2,optPosOldY );
 		ucg->setColor(COLOR_GREEN);
 		ucg->drawTriangle( xpos-15,y-5,       xpos-15,y+5,       xpos-2,y );
 		optPosOldY = y;
+	}
+	bool warn=false;
+	if( abs( wkf - wksens) > 1 )
+		warn = true;
+	if( sensorOldY != ys || warn ) {  // redraw on change or when wklever is near
 		if( flap_sensor.get() ) {
 			// ESP_LOGI(FNAME,"wk lever redraw, old=%d", sensorOldY );
-			drawLever( xpos, ys, sensorOldY );
+			drawLever( xpos, ys, sensorOldY, warn );
 			sensorOldY = ys;
 		}
 	}

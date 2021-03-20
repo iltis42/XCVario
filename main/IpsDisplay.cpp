@@ -1214,17 +1214,17 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 	// vTaskDelay(3);
 	// WK-Indicator
-	if( flap_enable.get() && !(tick%9) )
+	if( flap_enable.get() && !(tick%7) )
 	{
 		float wkspeed = airspeed * sqrt( 100.0/( ballast.get() +100.0) );
 		int wki = Flap::getOptimumInt( wkspeed );
 		float wkpos=Flap::getOptimum( wkspeed, wki );
 		int wk = (int)((wki - wkpos + 0.5)*10);
 		// ESP_LOGI(FNAME,"as:%d wksp:%f wki:%d wk:%d wkpos:%f", airspeed, wkspeed, wki, wk, wkpos );
-		if( wkposalt != wk || wksensoralt != (int)(wksensor*10) ) {
+		if( wkposalt != wk || wksensoralt != (int)(wksensor*10) || !(tick%7) ) {
 			// ESP_LOGI(FNAME,"WK changed WKE=%d WKS=%f", wk, wksensor );
 			ucg->setColor(  COLOR_WHITE  );
-			Flap::drawBigBar( WKBARMID, WKSYMST-4, (float)(wk)/10, wksensor);
+			Flap::drawBigBar( WKBARMID, WKSYMST-4, (float)(wk)/10, wksensor );
 			wkposalt = wk;
 			wksensoralt = (int)(wksensor*10);
 		}
@@ -1478,7 +1478,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 		float wkpos=Flap::getOptimum( wkspeed, wki );
 		int wk = (int)((wki - wkpos + 0.5)*10);
 		// ESP_LOGI(FNAME,"as:%d wksp:%f wki:%d wk:%d", airspeed, wkspeed, wki, wk  );
-		if( wkposalt != wk || wksensoralt != (int)(wksensor*10) ) {
+		if( wkposalt != wk || wksensoralt != (int)(wksensor*10) || !(tick%7) ) {
 			// ESP_LOGI(FNAME,"WK changed WKE=%d WKS=%f", wk, wksensor );
 			ucg->setColor(  COLOR_WHITE  );
 			Flap::drawBigBar( WKBARMID, WKSYMST-4, (float)(wk)/10, wksensor);

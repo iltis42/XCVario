@@ -50,6 +50,7 @@ private:
 	static int   sensorOldY;
 	static int   rawFiltered;
 	static int   tick;
+	static int   tickopt;
 	static bool  warn_color;
 };
 

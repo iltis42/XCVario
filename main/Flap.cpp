@@ -20,6 +20,7 @@ int Flap::optPosOldY = 0;
 int Flap::sensorOldY = 0;
 int Flap::rawFiltered = 0;
 int Flap::tick=0;
+int Flap::tickopt=0;
 bool Flap::warn_color=false;
 
 
@@ -379,7 +380,8 @@ void Flap::drawBigBar( int ypos, int xpos, float wkf, float wksens ){
 	int ys = ypos + (int)(( wksens )*(lfh) + 0.5 );
 	// ESP_LOGI(FNAME,"wkf: %f", wkf);
 
-	if( optPosOldY != y ) {  // redraw on change or when wklever is near
+	tickopt++;
+	if( optPosOldY != y || !(tickopt%10)) {  // redraw on change or when wklever is near
 		ucg->setColor(COLOR_BLACK);
 		ucg->drawTriangle( xpos-15,optPosOldY-5,  xpos-15,optPosOldY+5,  xpos-2,optPosOldY );
 		ucg->setColor(COLOR_GREEN);

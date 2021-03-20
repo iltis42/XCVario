@@ -152,6 +152,7 @@ int g_col_header_light_b=g_col_highlight;
 
 bool haveMPU=false;  
 bool ahrsKeyValid=false;
+bool gload_alarm=false;
 int  ccp=60;
 float ias = 0;
 float tas = 0;
@@ -187,6 +188,7 @@ void drawDisplay(void *pvParameters){
 				airspeed = ias;
 			else if( airspeed_mode.get() == MODE_TAS )
 				airspeed = tas;
+			// Stall Warning Screen
 			if( stall_warning.get() ){
 				float acceleration=accelG[0];
 				if( acceleration < 0.3 )
@@ -207,6 +209,7 @@ void drawDisplay(void *pvParameters){
 					}
 				}
 			}
+			// Flarm Warning Screen
 			if( flarm_warning.get() && !stall_warning_active ){ // 0 -> Disable
 				// ESP_LOGI(FNAME,"Flarm::alarmLevel: %d, flarm_warning.get() %d", Flarm::alarmLevel(), flarm_warning.get() );
 				if(  Flarm::alarmLevel() >= flarm_warning.get() ){
@@ -225,6 +228,7 @@ void drawDisplay(void *pvParameters){
 				if( flarmWarning )
 					Flarm::drawFlarmWarning();
 			}
+			// G-Load Display
 			if( (((float)accelG[0] > gload_pos_thresh.get() || (float)accelG[0] < gload_neg_thresh.get()) && gload_mode.get() == GLOAD_DYNAMIC ) ||
 					( gload_mode.get() == GLOAD_ALWAYS_ON ) )
 			{
@@ -242,7 +246,23 @@ void drawDisplay(void *pvParameters){
 			if( gLoadDisplay ) {
 				display->drawLoadDisplay( (float)accelG[0] );
 			}
+			// G-Load Alarm when limits reached
+			if( gload_mode.get() != GLOAD_OFF  ){
+				if( (float)accelG[0] > gload_pos_limit.get() || (float)accelG[0] < gload_neg_limit.get() ){
+					if( !gload_alarm ) {
+						Audio::alarm( true );
+						gload_alarm = true;
+					}
+				}else
+				{
+					if( gload_alarm ) {
+						Audio::alarm( false );
+						gload_alarm = false;
+					}
+				}
+			}
 
+			// Vario Screen
 			if( !(stall_warning_active || flarmWarning || gLoadDisplay ) ) {
 				display->drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, meanClimb, Switch::cruiseMode(), standard_setting, Flap::getLever() );
 			}

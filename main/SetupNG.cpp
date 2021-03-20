@@ -192,7 +192,7 @@ SetupNG<float>			gload_pos_limit("GLOADPL", 5 );
 SetupNG<float>			gload_neg_limit("GLOADNL", -3 );
 SetupNG<float>			gload_pos_max("GLOADPM", 0 );
 SetupNG<float>			gload_neg_max("GLOADNM", 0 );
-SetupNG<int>               display_variant("DISPLAY_VARIANT", 0 );
+SetupNG<int>            display_variant("DISPLAY_VARIANT", 0 );
 
 
 mpud::raw_axes_t zero_bias;

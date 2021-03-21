@@ -10,7 +10,8 @@
 
 #include "Wind.h"
 #include "math.h"
-#define DEG_TO_RAD(x) (x*M_PI/180.0)
+#define DEG_TO_RAD(x) (x*0.01745329251)
+#define RAD_TO_DEG(x) (x*57.2957795131)
 
 
 float Wind::windspeed( float tas, float gs, float truehead, float gndhead ){
@@ -19,7 +20,7 @@ float Wind::windspeed( float tas, float gs, float truehead, float gndhead ){
 }
 
 float Wind::winddir( float tas, float windspeed, float truehead, float gndhead ){
-	return(  asinf( tas / ( windspeed/ sin( _drift ))) );
+	return(  truehead - RAD_TO_DEG( asinf( tas / ( windspeed/ sin( _drift )))) );
 }
 
 Wind::Wind() {

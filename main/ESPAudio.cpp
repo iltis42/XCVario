@@ -367,28 +367,33 @@ void Audio::dac_invert_set(dac_channel_t channel, int invert)
 }
 
 //  modulation frequency
+
+int break_duration = 100;
 void Audio::modtask(void* arg )
 {
 	while(1){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		tickmod++;
 		hightone = false;
-		if ( _te > 0 )
+		int delay=100;
+		if ( _te > 0 ){
 			if ( (tickmod & 1) == 1 )
 				hightone = true;
-		int delay = 100;
-		if ( !hightone )
-		{
-			int delaydelta = 0;
-			if (_te > 0.05 ){
-				if( _s2f_mode && (cruise_audio_mode.get() == AUDIO_S2F) )
-					delaydelta = defaultDelay * 0.8 *(_te/5.0);
-				else
-					delaydelta = defaultDelay * 0.8 *(_te/_range);
+			float f=0;
+			if( _s2f_mode && (cruise_audio_mode.get() == AUDIO_S2F) )
+				f = 1+9*(_te/5.0);
+			else
+				f = 1+9*(_te/_range);
+
+			float period_ms = 1000/f;
+			if ( hightone ){  // duration of break (or second tone)
+				delay = int(period_ms * 0.1)+40;  // 1Hz: 100 mS; 10Hz: 50 mS
 			}
-			delay = int( defaultDelay - delaydelta + 0.5 );
+			else{  // duration of main tone 1Hz: 900 mS; 10Hz: 50 mS
+				delay = int(period_ms * 0.9)-40;
+			}
 		}
-		// ESP_LOGI(FNAME,"delay:%d  ht:%d", delay, hightone);
+		// ESP_LOGI(FNAME,"delay:%d  ht:%d TE:%f", delay, hightone, _te);
 		vTaskDelayUntil(&xLastWakeTime, delay/portTICK_PERIOD_MS);
 	}
 }

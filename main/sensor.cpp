@@ -169,6 +169,9 @@ bool  standard_setting = false;
 bool inSetup=true;
 bool stall_warning_active=false;
 bool stall_warning_armed=false;
+float stall_speed_kmh=0;
+float stall_alarm_off_kmh=0;
+int   stall_alarm_off_holddown=0;
 int count=0;
 bool flarmWarning = false;
 bool gLoadDisplay = false;
@@ -210,10 +213,22 @@ void drawDisplay(void *pvParameters){
 							stall_warning_active = false;
 						}
 					}
+					if( ias < stall_alarm_off_kmh ){
+						stall_alarm_off_holddown++;
+						if( stall_alarm_off_holddown > 1200 ){  // ~30 seconds holddown
+							stall_warning_armed = false;
+							stall_alarm_off_holddown=0;
+						}
+					}
+					else{
+						stall_alarm_off_holddown=0;
+					}
 				}
 				else{
-					if( ias > Units::Airspeed2Kmh( stall_speed.get() ) )
+					if( ias > Units::Airspeed2Kmh( stall_speed_kmh ) ){
 						stall_warning_armed = true;
+						stall_alarm_off_holddown=0;
+					}
 				}
 			}
 			// Flarm Warning Screen
@@ -548,6 +563,8 @@ void sensor(void *args){
 
 	AverageVario::begin();
 	Flap::initSensor();
+	stall_speed_kmh = Units::Airspeed2Kmh( stall_speed.get() );
+	stall_alarm_off_kmh = stall_speed_kmh/3;
 
 	if( Cipher::checkKeyAHRS() ){
 		ESP_LOGI( FNAME, "AHRS key valid=%d", ahrsKeyValid );

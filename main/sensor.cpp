@@ -198,7 +198,7 @@ void drawDisplay(void *pvParameters){
 					float acceleration=accelG[0];
 					if( acceleration < 0.3 )
 						acceleration = 0.3;  // limit acceleration effect to minimum 30% of 1g
-					float acc_stall= Units::Airspeed2Kmh( stall_speed.get() )*sqrt( acceleration + (ballast.get()/100) );  // accelerated and ballast(ed) stall speed
+					float acc_stall= stall_speed_kmh * sqrt( acceleration + (ballast.get()/100));  // accelerated and ballast(ed) stall speed
 					if( ias < acc_stall && ias > acc_stall*0.7 ){
 						if( !stall_warning_active ){
 							Audio::alarm( true );
@@ -225,7 +225,7 @@ void drawDisplay(void *pvParameters){
 					}
 				}
 				else{
-					if( ias > Units::Airspeed2Kmh( stall_speed_kmh ) ){
+					if( ias > stall_speed_kmh ){
 						stall_warning_armed = true;
 						stall_alarm_off_holddown=0;
 					}

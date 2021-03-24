@@ -1116,8 +1116,8 @@ void SetupMenu::setup( )
 		stawaen->addEntry( "Disable");
 		stawaen->addEntry( "Enable");
 
-		SetupMenuValFloat * staspe = new SetupMenuValFloat( "Stall Speed", 0, sunit.c_str(), 20, 200, 1, polar_adj, false, &stall_speed  );
-		staspe->setHelp(PROGMEM"Configure stalling speed for corresponding airplane type");
+		SetupMenuValFloat * staspe = new SetupMenuValFloat( "Stall Speed", 0, sunit.c_str(), 20, 200, 1, polar_adj, true, &stall_speed  );
+		staspe->setHelp(PROGMEM"Configure stalling speed for corresponding airplane type and reboot");
 		stallwa->addMenu( staspe );
 
 		SetupMenuValFloat * vmax = new SetupMenuValFloat( "Maximum Speed", 0, sunit.c_str(), 70, 450, 1, 0, false, &v_max  );

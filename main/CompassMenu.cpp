@@ -25,11 +25,13 @@ Last update: 2021-02-26
 
 #include "CompassMenu.h"
 #include "MenuEntry.h"
+#include "sensor.h"  // we need spiMutex
 
 SetupMenuSelect* CompassMenu::menuPtr = nullptr;
 
 // Initialise static members
-SetupNG<float>* CompassMenu::deviations[8] = { &compass_dev_0,
+SetupNG<float>* CompassMenu::deviations[8] = {
+		&compass_dev_0,
 		&compass_dev_45,
 		&compass_dev_90,
 		&compass_dev_135,
@@ -197,6 +199,7 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 
 	ESP_LOGI( FNAME, "Start magnetic sensor calibration" );
 
+	/*
 	if( compass.haveSensor() == false )
 	{
 		p->clear();
@@ -207,6 +210,7 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 		ESP_LOGI( FNAME, "Abort calibration, no sensor signal" );
 		return 0;
 	}
+	*/
 
 	menuPtr = p;
 	p->clear();
@@ -219,7 +223,7 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 	p->ucg->printf( "numbers are stable." );
 	p->ucg->setPrintPos( 1, 270 );
 	p->ucg->printf( "Press button to finish" );
-
+	compass.initialize();
 	compass.calibrate( calibrationReport );
 	p->ucg->setPrintPos( 1, 250 );
 
@@ -235,14 +239,15 @@ bool CompassMenu::calibrationReport( float xscale, float yscale, float zscale )
 {
 	if( menuPtr == nullptr )
 		return false;
-
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	menuPtr->ucg->setPrintPos( 1, 100 );
 	menuPtr->ucg->printf( "X-Scale=%3.1f   ", xscale * 100 );
 	menuPtr->ucg->setPrintPos( 1, 130 );
 	menuPtr->ucg->printf( "Y-Scale=%3.1f   ", yscale * 100 );
 	menuPtr->ucg->setPrintPos( 1, 160 );
 	menuPtr->ucg->printf( "Z-Scale=%3.1f   ", zscale * 100 );
-
+	xSemaphoreGive(spiMutex);
+	delay(5); // we give other process also chance
 	if( MenuEntry::_rotary->readSwitch() == false )
 	{
 		// further reports are welcome

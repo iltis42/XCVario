@@ -29,6 +29,7 @@ Last update: 2021-03-08
 #include "QMC5883L.h"
 #include "KalmanMPU6050.h"
 #include "SetupNG.h"
+#include "MenuEntry.h"
 
 /* Register numbers */
 #define REG_X_LSB 0         // Output Data Registers for magnetic sensor.
@@ -485,14 +486,11 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z ) )
 		if( (getMsTime() - lastReport) >= 500 )
 		{
 			lastReport = getMsTime();
-
 			// Send a calibration report to the subscriber every 500ms
-			if( reporter( xscale, yscale, zscale ) == false )
-			{
-				// Stop reporting, user has pushed rotary button.
-				break;
-			}
+			reporter( xscale, yscale, zscale );
 		}
+		if( MenuEntry::_rotary->readSwitch() == true  )  // more responsive to query every loop
+			break;
 
 		uint64_t stop = getMsTime();
 		uint64_t elapsed = stop - start;

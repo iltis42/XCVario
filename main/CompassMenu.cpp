@@ -247,13 +247,6 @@ bool CompassMenu::calibrationReport( float xscale, float yscale, float zscale )
 	menuPtr->ucg->setPrintPos( 1, 160 );
 	menuPtr->ucg->printf( "Z-Scale=%3.1f   ", zscale * 100 );
 	xSemaphoreGive(spiMutex);
-	delay(5); // we give other process also chance
-	if( MenuEntry::_rotary->readSwitch() == false )
-	{
-		// further reports are welcome
-		return true;
-	}
-
 	// Stop further reporting.
-	return false;
+	return true;
 }

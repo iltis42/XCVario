@@ -49,7 +49,7 @@ void DisplayDeviations::display( int mode )
       &compass_dev_180,
       &compass_dev_225,
       &compass_dev_270,
-      &compass_dev_335 };
+      &compass_dev_315 };
 
   uint16_t y = 50;
   semaphoreTake();

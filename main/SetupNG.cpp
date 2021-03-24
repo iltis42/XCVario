@@ -157,7 +157,7 @@ SetupNG<float>          compass_dev_135( "CP_DEV_135", 0 );
 SetupNG<float>          compass_dev_180( "CP_DEV_180", 0 );
 SetupNG<float>          compass_dev_225( "CP_DEV_225", 0 );
 SetupNG<float>          compass_dev_270( "CP_DEV_279", 0 );
-SetupNG<float>          compass_dev_335( "CP_DEV_335", 0 );
+SetupNG<float>          compass_dev_315( "CP_DEV_315", 0 );
 SetupNG<float>          compass_x_bias( "CP_X_BIAS", 0 );
 SetupNG<float>          compass_y_bias( "CP_Y_BIAS", 0 );
 SetupNG<float>          compass_z_bias( "CP_Z_BIAS", 0 );

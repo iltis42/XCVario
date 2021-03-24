@@ -32,7 +32,7 @@ SetupNG<float>* Compass::deviations[8] = { &compass_dev_0,
 		&compass_dev_180,
 		&compass_dev_225,
 		&compass_dev_270,
-		&compass_dev_335 };
+		&compass_dev_315 };
 
 float Compass::m_magn_heading = 0;
 bool Compass::m_headingValid = false;
@@ -158,7 +158,7 @@ void Compass::setupInterpolationData()
       &compass_dev_180,
       &compass_dev_225,
       &compass_dev_270,
-      &compass_dev_335,
+      &compass_dev_315,
       &compass_dev_0 };
 
   for( int i = 0; i < 8; i++ )

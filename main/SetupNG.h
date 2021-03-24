@@ -393,7 +393,7 @@ extern SetupNG<float>       compass_dev_135;
 extern SetupNG<float>       compass_dev_180;
 extern SetupNG<float>       compass_dev_225;
 extern SetupNG<float>       compass_dev_270;
-extern SetupNG<float>       compass_dev_335;
+extern SetupNG<float>       compass_dev_315;
 extern SetupNG<float>       compass_x_bias;
 extern SetupNG<float>       compass_y_bias;
 extern SetupNG<float>       compass_z_bias;

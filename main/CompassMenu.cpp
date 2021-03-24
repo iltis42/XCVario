@@ -36,7 +36,7 @@ SetupNG<float>* CompassMenu::deviations[8] = { &compass_dev_0,
 		&compass_dev_180,
 		&compass_dev_225,
 		&compass_dev_270,
-		&compass_dev_335 };
+		&compass_dev_315 };
 /**
  * Creates a compass menu instance with an active compass object.
  */
@@ -72,7 +72,7 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 
 	// Calibration menu is requested
 	const unsigned short skydirs[8] =
-	{ 0, 45, 90, 135, 180, 225, 270, 335 };
+	{ 0, 45, 90, 135, 180, 225, 270, 315 };
 
 	p->clear();
 	p->ucg->setFont( ucg_font_fur14_hf );

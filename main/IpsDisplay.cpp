@@ -210,9 +210,11 @@ void IpsDisplay::writeText( int line, String text ){
 
 
 void IpsDisplay::clear(){
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setColor( COLOR_BLACK );
 	ucg->drawBox( 0,0,240,320 );
 	screens_init = INIT_DISPLAY_NULL;
+	xSemaphoreGive(spiMutex);
 	redrawValues();
 }
 
@@ -842,8 +844,8 @@ void IpsDisplay::initRetroDisplay(){
 
 void IpsDisplay::drawWarning( const char *warn, bool push ){
 	ESP_LOGI(FNAME,"drawWarning");
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	clear();
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setColor( COLOR_RED );
 	if( push ){
 		ucg->drawTriangle(  60, 220, 180, 220, 120, 262 );

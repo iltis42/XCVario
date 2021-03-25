@@ -821,7 +821,7 @@ void SetupMenu::setup( )
 
 		// Calibration menu is requested
 		const short skydirs[8] =
-		{ 0, 45, 90, 135, 180, 225, 270, 335 };
+		{ 0, 45, 90, 135, 180, 225, 270, 315 };
 
 		for( int i = 0; i < 8; i++ )
 		{

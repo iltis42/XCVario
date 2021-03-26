@@ -26,7 +26,7 @@ Last update: 2021-03-08
 
 // Initialise static members
 SetupNG<float>* Compass::deviations[8] = { &compass_dev_0,
-    &compass_dev_45,
+		&compass_dev_45,
 		&compass_dev_90,
 		&compass_dev_135,
 		&compass_dev_180,
@@ -35,9 +35,12 @@ SetupNG<float>* Compass::deviations[8] = { &compass_dev_0,
 		&compass_dev_315 };
 
 float Compass::m_magn_heading = 0;
+float Compass::m_true_heading_dev = 0;
+float Compass::m_magn_heading_dev = 0;
 bool Compass::m_headingValid = false;
+
 CompassFilter Compass::m_cfmh;
-struct Compass::IPD Compass::ipd[8];
+int Compass::ipd[360];
 
 /*
   Creates instance for I2C connection with passing the desired parameters.
@@ -50,7 +53,7 @@ Compass::Compass( const uint8_t addr,
 		const uint8_t range,
 		const uint16_t osr,
 		I2C_t *i2cBus ) :
-		 QMC5883L( addr, odr, range, osr, i2cBus )
+				 QMC5883L( addr, odr, range, osr, i2cBus )
 {
 }
 
@@ -67,9 +70,9 @@ Compass::~Compass()
  */
 float Compass::calculateHeading( bool *okIn )
 {
-  assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
+	assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
 
-  float new_heading = QMC5883L::heading( okIn );
+	float new_heading = QMC5883L::heading( okIn );
 	// ESP_LOGI( FNAME, "calculateHeading H: %3.1f  OK: %d", new_heading, ok );
 	if( *okIn == false )
 	{
@@ -92,31 +95,32 @@ float Compass::calculateHeading( bool *okIn )
  */
 float Compass::magnHeading( bool *okIn, bool withDeviation )
 {
-  assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
+	assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
 
-  *okIn = m_headingValid;
+	*okIn = m_headingValid;
 
-  if( withDeviation == false )
-    {
-      // Return pure magnetic heading
-      return m_magn_heading;
-    }
+	if( withDeviation == false )
+	{
+		// Return pure magnetic heading
+		return m_magn_heading;
+	}
 
-  float heading = 0.0;
+	if( m_headingValid )
+	{
+		// ESP_LOGI(FNAME,"magneticHeading valid");
+		// Return magnetic heading by considering deviation data.
+		m_magn_heading_dev = m_magn_heading + getDeviation( m_magn_heading );
 
-  if( m_headingValid )
-  {
-     // Return magnetic heading by considering deviation data.
-	  heading = m_magn_heading + getDeviation( m_magn_heading );
+		// Correct heading in case of over/underflow
+		if( m_magn_heading_dev >= 360.0 )
+			m_magn_heading_dev -= 360.0;
+		else if( m_magn_heading_dev < 0.0 )
+			m_magn_heading_dev += 360.0;
+	}
+	//else
+	//  ESP_LOGI(FNAME,"magneticHeading NOT valid");
 
-    // Correct heading in case of over/underflow
-    if( heading >= 360.0 )
-      heading -= 360.0;
-    else if( heading < 0.0 )
-      heading += 360.0;
-  }
-
-  return heading;
+	return m_magn_heading_dev;
 }
 
 /**
@@ -126,51 +130,50 @@ float Compass::magnHeading( bool *okIn, bool withDeviation )
  */
 float Compass::getDeviation( float heading )
 {
-  static bool idLoaded = false;
+	static bool idLoaded = false;
 
-  if( idLoaded == false )
-    {
-      // Load deviation interpolation data once.
-      setupInterpolationData();
-      idLoaded = true;
-    }
+	if( idLoaded == false )
+	{
+		// Load deviation interpolation data once.
+		setupInterpolationData();
+		idLoaded = true;
+	}
 
-  // Reduce heading to interval 0...45.
-  int iv = (static_cast<int>(heading) % 360) / 45;
+	// Reduce heading to interval 0...45.
+	int iv = (static_cast<int>(heading) % 360);
 
-  // Apply linear interpolation
-  float deviation = ( ipd[iv].m * (heading - ipd[iv].hi) ) + ipd[iv].n;
+	// Apply linear interpolation
+	float deviation = ( ipd[iv] );
 
-  // ESP_LOGI( FNAME, "RawHeading=%.1f : deviation=%0.1f", heading, deviation );
-  return deviation;
+	ESP_LOGI( FNAME, "RawHeading=%.1f : deviation=%0.1f", heading, deviation );
+	return deviation;
 }
 
- /**
-  * Setup the deviation interpolation data.
-  */
+/**
+ * Setup the deviation interpolation data.
+ */
 void Compass::setupInterpolationData()
 {
-  // Deviation data 0...360
-  SetupNG<float>* devData[9] = { &compass_dev_0,
-      &compass_dev_45,
-      &compass_dev_90,
-      &compass_dev_135,
-      &compass_dev_180,
-      &compass_dev_225,
-      &compass_dev_270,
-      &compass_dev_315,
-      &compass_dev_0 };
+	// Deviation data 0...360
+	SetupNG<float>* devData[9] = { &compass_dev_0,
+			&compass_dev_45,
+			&compass_dev_90,
+			&compass_dev_135,
+			&compass_dev_180,
+			&compass_dev_225,
+			&compass_dev_270,
+			&compass_dev_315,
+			&compass_dev_0 };
 
-  for( int i = 0; i < 8; i++ )
-    {
-      ipd[i].m = ( devData[i+1]->get() - devData[i]->get() ) / 45.0;
-      ipd[i].n = devData[i]->get();
-      ipd[i].hi = float(i) * 45.0;
-      ESP_LOGI( FNAME, "I=%d dev1=%f dev2=%f m=%f n=%f hi=%f",
-                i, devData[i]->get(), devData[i+1]->get(),
-                ipd[i].m, ipd[i].n, ipd[i].hi );
-    }
+	for( int i = 0; i < 360; i++ )
+	{
+		int base = ((i+22)%360)/45;
+		int dir = (i-(int)(devData[base]->get()))%360;
+		ipd[dir] = devData[base]->get();
+		ESP_LOGI( FNAME, "DEV Heading=%d  dev=%d", dir, ipd[dir] );
+	}
 }
+
 
 /**
  * Returns the low pass filtered magnetic heading by considering deviation and
@@ -179,34 +182,31 @@ void Compass::setupInterpolationData()
  */
 float Compass::trueHeading( bool *okIn )
 {
-  assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
-
-  *okIn = m_headingValid;
+	assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
+	*okIn = m_headingValid;
 
 	// Calculate and return true heading
-  float heading = 0.0;
+	if( m_headingValid )
+	{
+		m_true_heading_dev = m_magn_heading_dev + compass_declination.get();
 
-  if( m_headingValid )
-  {
-    heading = m_magn_heading + compass_declination.get();
+		// Correct heading in case of over/underflow
+		if( m_true_heading_dev >= 360.0 )
+			m_true_heading_dev -= 360.0;
+		else if( m_true_heading_dev < 0.0 )
+			m_true_heading_dev += 360.0;
+	}
 
-    // Correct heading in case of over/underflow
-    if( heading >= 360.0 )
-      heading -= 360.0;
-    else if( heading < 0.0 )
-      heading += 360.0;
-  }
-
-	return heading;
+	return m_true_heading_dev;
 }
 
 //------------------------------------------------------------------------------
 
 CompassFilter::CompassFilter( const float coefficientIn ) :
-		  coefficient( coefficientIn ),
-		  turns( 0 ),
-		  oldValue ( 0.0 ),
-		  filteredValue( 0.0 )
+				  coefficient( coefficientIn ),
+				  turns( 0 ),
+				  oldValue ( 0.0 ),
+				  filteredValue( 0.0 )
 {
 }
 

@@ -49,7 +49,9 @@ SetupMenuSelect *flapLabels[NUMBER_POS];
 
 void showWk(SetupMenuSelect * p){
 	p->ucg->setPrintPos(1,140);
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->printf("Sensor: %d    ", Flap::getSensorRaw(256) );
+	xSemaphoreGive(spiMutex);
 	delay(10);
 }
 
@@ -57,12 +59,16 @@ int select_flap_io(SetupMenuSelect * p){
 	Flap::configureADC();
 	p->clear();
 	p->ucg->setPrintPos(1,30);
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->printf("Check Sensor Reading,");
 	p->ucg->setPrintPos(1,60);
 	p->ucg->printf("Press Button to exit");
+	xSemaphoreGive(spiMutex);
 	while( !p->_rotary->readSwitch() ){
 		p->ucg->setPrintPos(1,90);
+		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		p->ucg->printf("Sensor: %d       ", Flap::getSensorRaw(256) );
+		xSemaphoreGive(spiMutex);
 		delay(20);
 	}
 	return 0;
@@ -70,7 +76,9 @@ int select_flap_io(SetupMenuSelect * p){
 
 void wk_cal_show( SetupMenuSelect * p, int wk ){
 	p->ucg->setPrintPos(1,60);
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->printf("Set Flap %+d   ", wk );
+	xSemaphoreGive(spiMutex);
 	delay(1000);
 	while( !p->_rotary->readSwitch() )
 		showWk(p);

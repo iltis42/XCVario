@@ -149,5 +149,5 @@ private:
  	static CompassFilter m_cfmh;
 
 	/** Deviation table */
-	static int ipd[360];
+	static float ipd[360];
 };

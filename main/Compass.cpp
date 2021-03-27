@@ -41,7 +41,7 @@ float Compass::m_magn_heading_dev = 0;
 bool Compass::m_headingValid = false;
 
 CompassFilter Compass::m_cfmh;
-int Compass::ipd[360];
+float Compass::ipd[360];
 
 /*
   Creates instance for I2C connection with passing the desired parameters.
@@ -141,10 +141,9 @@ float Compass::getDeviation( float heading )
 	}
 
 	// Reduce heading to interval 0...45.
-	int iv = (static_cast<int>(heading) % 360);
+	int iv = (static_cast<int>(heading + 0.5) % 360);
 
-	// Apply linear interpolation
-	float deviation = ( ipd[iv] );
+	float deviation = ipd[iv];
 
 	ESP_LOGI( FNAME, "RawHeading=%.1f : deviation=%0.1f", heading, deviation );
 	return deviation;
@@ -155,31 +154,14 @@ float Compass::getDeviation( float heading )
  */
 void Compass::setupInterpolationData()
 {
-	// Deviation data 0...360
-	SetupNG<float>* devData[9] = { &compass_dev_0,
-			&compass_dev_45,
-			&compass_dev_90,
-			&compass_dev_135,
-			&compass_dev_180,
-			&compass_dev_225,
-			&compass_dev_270,
-			&compass_dev_315,
-			&compass_dev_0 };
-
-	for( int i = 0; i < 360; i++ )
-	{
-		// TBD: use spline.h interpolation
-		/*
-		 std::vector<double> X = {0.1, 0.4, 1.2, 1.8, 2.0}; // must be increasing
-		   std::vector<double> Y = {0.1, 0.7, 0.6, 1.1, 0.9};
-
-		   tk::spline s(X,Y);
-		   double x=1.5, y=s(x), deriv=s.deriv(1,x);
-*/
-		int base = ((i+22)%360)/45;
-		int dir = (i-(int)(devData[base]->get()))%360;
-		ipd[dir] = devData[base]->get();
-		ESP_LOGI( FNAME, "DEV Heading=%d  dev=%d", dir, ipd[dir] );
+	// Setup cubic spline interpolation for deviation data 0...360
+	std::vector<double> X = { 0, 45, 90, 135, 180, 225, 270, 315 };
+	std::vector<double> Y = { compass_dev_0.get(),   compass_dev_45.get(),  compass_dev_90.get(),  compass_dev_135.get(),
+			compass_dev_180.get(), compass_dev_225.get(), compass_dev_270.get(), compass_dev_315.get() };
+	tk::spline s(X,Y);
+	for( int dir=0; dir < 360; dir++ ){
+		ipd[dir] = (float)( s((double)dir) );
+		ESP_LOGI( FNAME, "DEV Heading=%d  dev=%f", dir, ipd[dir] );
 	}
 }
 

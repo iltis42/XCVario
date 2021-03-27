@@ -24,91 +24,91 @@ Last update: 2021-03-08
 #include "SetupNG.h"
 
 ShowCompassSettings::ShowCompassSettings( String title) :
-  SetupMenuDisplay( title, nullptr )
+SetupMenuDisplay( title, nullptr )
 {
 	ESP_LOGI(FNAME, "ShowCompassSettings(): title='%s'", title.c_str() );
 }
 
 void ShowCompassSettings::display( int mode )
 {
-  if( (selected != this) || !_menu_enabled )
-    return;
+	if( (selected != this) || !_menu_enabled )
+		return;
 
-  ESP_LOGI(FNAME, "display() mode=%d", mode );
+	ESP_LOGI(FNAME, "display() mode=%d", mode );
 
-  clear();
-  ucg->setFont( ucg_font_fur14_hf );
-  uprintf( 5, 25, selected->_title.c_str() );
+	clear();
+	ucg->setFont( ucg_font_fur14_hf );
+	uprintf( 5, 25, selected->_title.c_str() );
 
-  uint16_t y = 75;
-  uint16_t y1 = 75;
-  char buffer[32];
+	uint16_t y = 75;
+	uint16_t y1 = 75;
+	char buffer[32];
 
-  semaphoreTake();
+	semaphoreTake();
 
-  ucg->setPrintPos( 0, y );
-  sprintf( buffer, "Sensor enabled: %s",
-           (compass_enable.get() == 0) ? "No" : "Yes"  );
-  ucg->printf( "%s", buffer );
-  y += 25;
+	ucg->setPrintPos( 0, y );
+	sprintf( buffer, "Sensor enabled: %s",
+			(compass_enable.get() == 0) ? "No" : "Yes"  );
+	ucg->printf( "%s", buffer );
+	y += 25;
 
-  ucg->setPrintPos( 0, y );
-  sprintf( buffer, "Sensor calibrated: %s",
-           (compass_calibrated.get() == 0) ? "No" : "Yes"  );
-  ucg->printf( "%s", buffer );
-  y += 25;
+	ucg->setPrintPos( 0, y );
+	sprintf( buffer, "Sensor calibrated: %s",
+			(compass_calibrated.get() == 0) ? "No" : "Yes"  );
+	ucg->printf( "%s", buffer );
+	y += 25;
 
-  y1 = y;
-  const char* soText = "Sensor overflow: ";
-  int sotw = ucg->getStrWidth( soText );
-  ucg->setPrintPos( 0, y );
-  ucg->printf( "%s", soText );
-  ucg->setPrintPos( sotw, y );
-  ucg->printf( "%s", (QMC5883L::overflowFlag() == false) ? "No" : "Yes" );
-  y += 25;
+	y1 = y;
+	const char* soText = "Sensor overflow: ";
+	int sotw = ucg->getStrWidth( soText );
+	ucg->setPrintPos( 0, y );
+	ucg->printf( "%s", soText );
+	ucg->setPrintPos( sotw, y );
+	ucg->printf( "%s", (QMC5883L::overflowFlag() == false) ? "No" : "Yes" );
+	y += 25;
 
-  ucg->setPrintPos( 0, y );
-  sprintf( buffer, "Compass declination: %d\260",
-           static_cast<int>(compass_declination.get()) );
-  ucg->printf( "%s", buffer );
-  y += 25;
+	ucg->setPrintPos( 0, y );
+	sprintf( buffer, "Compass declination: %d\260",
+			static_cast<int>(compass_declination.get()) );
+	ucg->printf( "%s", buffer );
+	y += 25;
 
-  ucg->setPrintPos( 0, y );
-  sprintf( buffer, "NMEA mag heading: %s",
-           (compass_nmea_hdm.get() == 0) ? "No" : "Yes"  );
-  ucg->printf( "%s", buffer );
-  y += 25;
+	ucg->setPrintPos( 0, y );
+	sprintf( buffer, "NMEA mag heading: %s",
+			(compass_nmea_hdm.get() == 0) ? "No" : "Yes"  );
+	ucg->printf( "%s", buffer );
+	y += 25;
 
-  ucg->setPrintPos( 0, y );
-  sprintf( buffer, "NMEA true heading: %s",
-           (compass_nmea_hdt.get() == 0) ? "No" : "Yes"  );
-  ucg->printf( "%s", buffer );
-  y += 25;
+	ucg->setPrintPos( 0, y );
+	sprintf( buffer, "NMEA true heading: %s",
+			(compass_nmea_hdt.get() == 0) ? "No" : "Yes"  );
+	ucg->printf( "%s", buffer );
+	y += 25;
 
-  ucg->setPrintPos( 5, 290 );
-  ucg->printf( "Press button to exit" );
+	ucg->setPrintPos( 5, 290 );
+	ucg->printf( "Press button to exit" );
 
-  semaphoreGive();
+	semaphoreGive();
 
-  uint32_t counter = 0;
+	uint32_t counter = 0;
 
-  while( _rotary->readSwitch() == false )
-    {
-      counter++;
+	while( _rotary->readSwitch() == false )
+	{
+		counter++;
 
-      if( counter % 100 != 0 )
-        {
-          delay( 10 );
-          continue;
-        }
+		if( counter % 100 != 0 )
+		{
+			delay( 10 );
+			continue;
+		}
 
-      // Ca. after a second make an update of the overflow flag display.
-      semaphoreTake();
-      ucg->setPrintPos( sotw, y1 );
-      ucg->printf( "%s", (QMC5883L::overflowFlag() == false) ? "No  " : "Yes" );
-      semaphoreGive();
-      continue;
-    }
+		// Ca. after a second make an update of the overflow flag display.
+		semaphoreTake();
+		ucg->setPrintPos( sotw, y1 );
+		ucg->printf( "%s", (QMC5883L::overflowFlag() == false) ? "No  " : "Yes" );
+		semaphoreGive();
+		continue;
+	}
 
-  press();
+	press();
 }

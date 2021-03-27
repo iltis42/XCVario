@@ -868,6 +868,11 @@ void SetupMenu::setup( )
 		nmeaHdt->setHelp( PROGMEM "Enable/disable NMEA '$HCHDT' sentence (magnetic true heading)" );
 		nmeaMenu->addMenu( nmeaHdt );
 
+		SetupMenuValFloat * compdamp = new SetupMenuValFloat( "Damping", 0, "sec", 1.0, 10.0, 0.1, 0, false, &compass_damping );
+		compassME->addMenu( compdamp );
+		compdamp->setHelp(PROGMEM "Compass damping factor in seconds. To avoid jitter 2-3 seconds are good choice");
+
+
 		// Show compass settings
 		ShowCompassSettings* scs = new ShowCompassSettings( "Show Settings" );
     compassME->addMenu( scs );

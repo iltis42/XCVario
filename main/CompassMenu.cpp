@@ -43,8 +43,8 @@ SetupNG<float>* CompassMenu::deviations[8] = {
  * Creates a compass menu instance with an active compass object.
  */
 CompassMenu::CompassMenu( Compass& compassIn ) :
-				 compass( compassIn ),
-				 filter( 0.1 )
+						 compass( compassIn ),
+						 filter( 0.1 )
 {
 }
 
@@ -77,11 +77,13 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 	{ 0, 45, 90, 135, 180, 225, 270, 315 };
 
 	p->clear();
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->setFont( ucg_font_fur14_hf );
 	p->ucg->setPrintPos( 1, 60 );
 	p->ucg->printf( "Turn airplain to %s\260  ", p->getEntry() );
 	p->ucg->setPrintPos( 1, 90 );
 	p->ucg->printf( "and push button when done" );
+	xSemaphoreGive(spiMutex);
 	delay( 500 );
 
 	float heading = 0.0;
@@ -92,7 +94,6 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 	{
 		bool ok = true;
 		heading = Compass::magnHeading( &ok, false );
-
 		if( ok == false )
 		{
 			// in case of error deviation is set to 0
@@ -100,21 +101,18 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 		}
 
 		hi = static_cast<short>(rintf( heading ));
-
 		if( hi >= 360 )
 			hi -= 360;
-
+		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		p->ucg->setFont( ucg_font_fur20_hf );
 		p->ucg->setPrintPos( 1, 180 );
 		p->ucg->printf( "Heading:   %d\260    ", hi );
 		p->ucg->setPrintPos( 1, 230 );
-
 		deviation = direction - hi;
-
 		if( deviation < -180 )
 			deviation += 360;
-
 		p->ucg->printf( "Deviation: %d\260    ", deviation );
+		xSemaphoreGive(spiMutex);
 		delay( 100 );
 	}
 
@@ -162,7 +160,6 @@ int CompassMenu::resetDeviationAction( SetupMenuSelect *p )
 		ESP_LOGI( FNAME, "All compass deviations values were reset" );
 		delay( 1000 );
 	}
-
 	// Reset compass interpolation data
 	Compass::setupInterpolationData();
 
@@ -198,19 +195,6 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 	}
 
 	ESP_LOGI( FNAME, "Start magnetic sensor calibration" );
-
-	/*
-	if( compass.haveSensor() == false )
-	{
-		p->clear();
-		p->ucg->setFont( ucg_font_fur14_hf );
-		p->ucg->setPrintPos( 1, 60 );
-		p->ucg->printf( "No magnetic Sensor, Abort" );
-		delay( 2000 );
-		ESP_LOGI( FNAME, "Abort calibration, no sensor signal" );
-		return 0;
-	}
-	*/
 
 	menuPtr = p;
 	p->clear();

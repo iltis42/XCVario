@@ -81,6 +81,8 @@ public:
 
 	~Compass();
 
+  void begin();
+
   /**
    * This method must be called periodically in a fixed time raster. It Reads
    * the current heading from the sensor and apply a low pass filter
@@ -131,8 +133,6 @@ public:
 
 private:
 
-	static SetupNG<float> *deviations[8];
-
 	/** Pure low pass filtered magnetic heading */
 	static float m_magn_heading;
 
@@ -148,6 +148,6 @@ private:
     /** Low pass filter used by compass. */
  	static CompassFilter m_cfmh;
 
-	/** Deviation table */
+ 	/** Deviation table */
 	static float ipd[360];
 };

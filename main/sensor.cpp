@@ -680,6 +680,7 @@ void sensor(void *args){
 		i2c_0.begin(GPIO_NUM_4, GPIO_NUM_18, GPIO_PULLUP_DISABLE, GPIO_PULLUP_DISABLE, 20000 );
 		if( serial2_speed.get() )
 			serial2_speed.set(0);  // switch off serial interface, we can do only alternatively
+		compass.begin();
 	}
 
 	ESP_LOGI(FNAME,"Airspeed sensor init..  type configured: %d", airspeed_sensor_type.get() );

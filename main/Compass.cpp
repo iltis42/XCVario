@@ -25,16 +25,6 @@ Last update: 2021-03-08
 
 #include "Compass.h"
 
-// Initialise static members
-SetupNG<float>* Compass::deviations[8] = { &compass_dev_0,
-		&compass_dev_45,
-		&compass_dev_90,
-		&compass_dev_135,
-		&compass_dev_180,
-		&compass_dev_225,
-		&compass_dev_270,
-		&compass_dev_315 };
-
 float Compass::m_magn_heading = 0;
 float Compass::m_true_heading_dev = 0;
 float Compass::m_magn_heading_dev = 0;
@@ -89,6 +79,10 @@ float Compass::calculateHeading( bool *okIn )
 	return m_magn_heading;
 }
 
+void Compass::begin(){
+	setupInterpolationData();
+}
+
 /**
  * Returns the low pass filtered magnetic heading by considering
  * deviation, if argument withDeviation is set to true.
@@ -97,7 +91,6 @@ float Compass::calculateHeading( bool *okIn )
 float Compass::magnHeading( bool *okIn, bool withDeviation )
 {
 	assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
-
 	*okIn = m_headingValid;
 
 	if( withDeviation == false )
@@ -131,21 +124,9 @@ float Compass::magnHeading( bool *okIn, bool withDeviation )
  */
 float Compass::getDeviation( float heading )
 {
-	static bool idLoaded = false;
-
-	if( idLoaded == false )
-	{
-		// Load deviation interpolation data once.
-		setupInterpolationData();
-		idLoaded = true;
-	}
-
-	// Reduce heading to interval 0...45.
 	int iv = (static_cast<int>(heading + 0.5) % 360);
-
 	float deviation = ipd[iv];
-
-	ESP_LOGI( FNAME, "RawHeading=%.1f : deviation=%0.1f", heading, deviation );
+	// ESP_LOGI( FNAME, "RawHeading=%.1f : deviation=%0.1f", heading, deviation );
 	return deviation;
 }
 
@@ -154,10 +135,11 @@ float Compass::getDeviation( float heading )
  */
 void Compass::setupInterpolationData()
 {
-	// Setup cubic spline interpolation for deviation data 0...360
-	std::vector<double> X = { 0, 45, 90, 135, 180, 225, 270, 315 };
+	// Setup cubic spline interpolation lookup table for dedicated angles 0...360
+	std::vector<double> X = { 0-compass_dev_0.get(),      45-compass_dev_45.get(),   90-compass_dev_90.get(),  135-compass_dev_135.get(),
+							  180-compass_dev_180.get(), 225-compass_dev_225.get(), 270-compass_dev_270.get(), 315-compass_dev_315.get() };
 	std::vector<double> Y = { compass_dev_0.get(),   compass_dev_45.get(),  compass_dev_90.get(),  compass_dev_135.get(),
-			compass_dev_180.get(), compass_dev_225.get(), compass_dev_270.get(), compass_dev_315.get() };
+			                  compass_dev_180.get(), compass_dev_225.get(), compass_dev_270.get(), compass_dev_315.get() };
 	tk::spline s(X,Y);
 	for( int dir=0; dir < 360; dir++ ){
 		ipd[dir] = (float)( s((double)dir) );
@@ -219,7 +201,7 @@ float CompassFilter::filter( float newValue )
 	// Correct angle's north overflow or underflow
 	newValue += float( turns * 360 );
 	// Low pass filtering
-	filteredValue += ( newValue - filteredValue ) * coefficient;
+	filteredValue += ( newValue - filteredValue ) * coefficient/compass_damping.get();  // default 1 sec ( 0.2 * 5 times/sec )
 	// Correct angle areas and turns
 	if( filteredValue < 0.0 )
 	{

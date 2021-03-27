@@ -21,6 +21,7 @@ Last update: 2021-03-08
 #include <cmath>
 #include "esp_log.h"
 #include "esp_system.h"
+#include "spline.h"
 
 #include "Compass.h"
 
@@ -167,6 +168,14 @@ void Compass::setupInterpolationData()
 
 	for( int i = 0; i < 360; i++ )
 	{
+		// TBD: use spline.h interpolation
+		/*
+		 std::vector<double> X = {0.1, 0.4, 1.2, 1.8, 2.0}; // must be increasing
+		   std::vector<double> Y = {0.1, 0.7, 0.6, 1.1, 0.9};
+
+		   tk::spline s(X,Y);
+		   double x=1.5, y=s(x), deriv=s.deriv(1,x);
+*/
 		int base = ((i+22)%360)/45;
 		int dir = (i-(int)(devData[base]->get()))%360;
 		ipd[dir] = devData[base]->get();

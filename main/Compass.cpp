@@ -73,6 +73,19 @@ float Compass::calculateHeading( bool *okIn )
 	}
 	m_magn_heading = m_cfmh.filter( new_heading );
 	m_headingValid = true;
+	m_magn_heading_dev = m_magn_heading + getDeviation( m_magn_heading );
+
+	// If declination is set, calculate true heading including deviation
+	if(  compass_declination.get() != 0.0 )
+		m_true_heading_dev = m_magn_heading_dev + compass_declination.get();
+	else
+		m_true_heading_dev = m_magn_heading_dev;
+
+	// Correct heading in case of over/underflow
+	if( m_magn_heading_dev >= 360.0 )
+		m_magn_heading_dev -= 360.0;
+	else if( m_magn_heading_dev < 0.0 )
+		m_magn_heading_dev += 360.0;
 
 	*okIn = true;
 	// ESP_LOGI(FNAME,"magneticHeading ret=%3.1f", m_magn_heading );
@@ -92,28 +105,13 @@ float Compass::magnHeading( bool *okIn, bool withDeviation )
 {
 	assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
 	*okIn = m_headingValid;
-
 	if( withDeviation == false )
 	{
 		// Return pure magnetic heading
 		return m_magn_heading;
 	}
-
-	if( m_headingValid )
-	{
-		// ESP_LOGI(FNAME,"magneticHeading valid");
-		// Return magnetic heading by considering deviation data.
-		m_magn_heading_dev = m_magn_heading + getDeviation( m_magn_heading );
-
-		// Correct heading in case of over/underflow
-		if( m_magn_heading_dev >= 360.0 )
-			m_magn_heading_dev -= 360.0;
-		else if( m_magn_heading_dev < 0.0 )
-			m_magn_heading_dev += 360.0;
-	}
 	//else
 	//  ESP_LOGI(FNAME,"magneticHeading NOT valid");
-
 	return m_magn_heading_dev;
 }
 
@@ -159,19 +157,6 @@ float Compass::trueHeading( bool *okIn )
 {
 	assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
 	*okIn = m_headingValid;
-
-	// Calculate and return true heading
-	if( m_headingValid )
-	{
-		m_true_heading_dev = m_magn_heading_dev + compass_declination.get();
-
-		// Correct heading in case of over/underflow
-		if( m_true_heading_dev >= 360.0 )
-			m_true_heading_dev -= 360.0;
-		else if( m_true_heading_dev < 0.0 )
-			m_true_heading_dev += 360.0;
-	}
-
 	return m_true_heading_dev;
 }
 

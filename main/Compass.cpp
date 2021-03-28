@@ -13,7 +13,7 @@ Class to handle compass data access.
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-03-08
+Last update: 2021-03-28
 
  **************************************************************************/
 
@@ -75,7 +75,6 @@ float Compass::calculateHeading( bool *okIn )
 	m_headingValid = true;
 
 	*okIn = true;
-	// ESP_LOGI(FNAME,"magneticHeading ret=%3.1f", m_magn_heading );
 	return m_magn_heading;
 }
 
@@ -101,7 +100,6 @@ float Compass::magnHeading( bool *okIn, bool withDeviation )
 
 	if( m_headingValid )
 	{
-		// ESP_LOGI(FNAME,"magneticHeading valid");
 		// Return magnetic heading by considering deviation data.
 		m_magn_heading_dev = m_magn_heading + getDeviation( m_magn_heading );
 
@@ -111,8 +109,6 @@ float Compass::magnHeading( bool *okIn, bool withDeviation )
 		else if( m_magn_heading_dev < 0.0 )
 			m_magn_heading_dev += 360.0;
 	}
-	//else
-	//  ESP_LOGI(FNAME,"magneticHeading NOT valid");
 
 	return m_magn_heading_dev;
 }
@@ -149,7 +145,6 @@ void Compass::setupInterpolationData()
 	}
 }
 
-
 /**
  * Returns the low pass filtered magnetic heading by considering deviation and
  * declination.
@@ -163,7 +158,7 @@ float Compass::trueHeading( bool *okIn )
 	// Calculate and return true heading
 	if( m_headingValid )
 	{
-		m_true_heading_dev = m_magn_heading_dev + compass_declination.get();
+		m_true_heading_dev = m_magn_heading + getDeviation( m_magn_heading ) + compass_declination.get();
 
 		// Correct heading in case of over/underflow
 		if( m_true_heading_dev >= 360.0 )
@@ -215,7 +210,6 @@ float CompassFilter::filter( float newValue )
 		filteredValue -= 360.;
 		turns--;
 	}
-	// ESP_LOGI( FNAME,"F-Heading=%.1f", filteredValue );
 
 	return filteredValue;
 }

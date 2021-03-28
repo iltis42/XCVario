@@ -100,18 +100,19 @@ void Compass::begin(){
  * deviation, if argument withDeviation is set to true.
  * Ok is set to true, if heading data is valid, otherwise it is set to false.
  */
-float Compass::magnHeading( bool *okIn, bool withDeviation )
+float Compass::magnHeading( bool *okIn )
 {
 	assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
 	*okIn = m_headingValid;
-	if( withDeviation == false )
-	{
-		// Return pure magnetic heading
-		return m_magn_heading;
-	}
 	return m_magn_heading_dev;
 }
 
+float Compass::rawHeading( bool *okIn )
+{
+	assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
+	*okIn = m_headingValid;
+	return m_magn_heading;
+}
 
 
 /**

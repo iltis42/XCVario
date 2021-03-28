@@ -93,7 +93,7 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 	while( !p->_rotary->readSwitch() )
 	{
 		bool ok = true;
-		heading = Compass::magnHeading( &ok, false );
+		heading = Compass::rawHeading( &ok );
 		if( ok == false )
 		{
 			// in case of error deviation is set to 0

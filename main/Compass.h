@@ -100,10 +100,15 @@ public:
 
   /**
    * Returns the low pass filtered magnetic heading by considering
-   * deviation, if argument withDeviation is set to true.
+   * deviation
    * Ok is set to true, if heading data is valid, otherwise it is set to false.
    */
-	static float magnHeading( bool *okIn, bool withDeviation=true );
+	static float magnHeading( bool *okIn );
+
+	/*
+	 * Returns the low pass filtered magnetic heading without deviation
+	 */
+	static float rawHeading( bool *okIn );
 
 	/**
 	 *  Returns the heading valid flag.

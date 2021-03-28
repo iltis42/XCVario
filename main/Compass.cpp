@@ -13,7 +13,7 @@ Class to handle compass data access.
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-03-08
+Last update: 2021-03-28
 
  **************************************************************************/
 
@@ -88,7 +88,6 @@ float Compass::calculateHeading( bool *okIn )
 		m_magn_heading_dev += 360.0;
 
 	*okIn = true;
-	// ESP_LOGI(FNAME,"magneticHeading ret=%3.1f", m_magn_heading );
 	return m_magn_heading;
 }
 
@@ -110,10 +109,10 @@ float Compass::magnHeading( bool *okIn, bool withDeviation )
 		// Return pure magnetic heading
 		return m_magn_heading;
 	}
-	//else
-	//  ESP_LOGI(FNAME,"magneticHeading NOT valid");
 	return m_magn_heading_dev;
 }
+
+
 
 /**
  * Compute heading deviation by using linear interpolation.
@@ -146,7 +145,6 @@ void Compass::setupInterpolationData()
 		ESP_LOGI( FNAME, "DEV Heading=%d  dev=%f", dir, ipd[dir] );
 	}
 }
-
 
 /**
  * Returns the low pass filtered magnetic heading by considering deviation and
@@ -200,7 +198,6 @@ float CompassFilter::filter( float newValue )
 		filteredValue -= 360.;
 		turns--;
 	}
-	// ESP_LOGI( FNAME,"F-Heading=%.1f", filteredValue );
 
 	return filteredValue;
 }

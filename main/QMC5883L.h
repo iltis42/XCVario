@@ -17,7 +17,7 @@ File: QMC5883L.h
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-03-08
+Last update: 2021-03-28
 
  ****************************************************************************/
 
@@ -133,6 +133,14 @@ public:
 	}
 
 	/**
+	 * Return the calibration flag. Set to true, if a calibration is running.
+	 */
+	static bool calibrationIsRunning()
+	{
+	  return calibrationRunning;
+	}
+
+	/**
 	 * Read bytes from the chip.
 	 * Return the number of read bytes or 0 in error case.
 	 */
@@ -187,5 +195,5 @@ private:
 	uint8_t osr; // over sample ratio
 	static bool overflowWarning;
 	static int errors;
-	bool calibrationRunning;
+	static bool calibrationRunning;
 };

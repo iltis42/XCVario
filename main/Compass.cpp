@@ -136,10 +136,12 @@ float Compass::getDeviation( float heading )
 void Compass::setupInterpolationData()
 {
 	// Setup cubic spline interpolation lookup table for dedicated angles 0...360
-	std::vector<double> X = { 0-compass_dev_0.get(),      45-compass_dev_45.get(),   90-compass_dev_90.get(),  135-compass_dev_135.get(),
-							  180-compass_dev_180.get(), 225-compass_dev_225.get(), 270-compass_dev_270.get(), 315-compass_dev_315.get() };
+	std::vector<double> X = {    0-compass_dev_0.get(),   45-compass_dev_45.get(),   90-compass_dev_90.get(),  135-compass_dev_135.get(),
+							   180-compass_dev_180.get(), 225-compass_dev_225.get(), 270-compass_dev_270.get(), 315-compass_dev_315.get(),
+							   360-compass_dev_0.get()}; // close spline
 	std::vector<double> Y = { compass_dev_0.get(),   compass_dev_45.get(),  compass_dev_90.get(),  compass_dev_135.get(),
-			                  compass_dev_180.get(), compass_dev_225.get(), compass_dev_270.get(), compass_dev_315.get() };
+			                  compass_dev_180.get(), compass_dev_225.get(), compass_dev_270.get(), compass_dev_315.get(),
+							  compass_dev_0.get() };
 	tk::spline s(X,Y);
 	for( int dir=0; dir < 360; dir++ ){
 		ipd[dir] = (float)( s((double)dir) );

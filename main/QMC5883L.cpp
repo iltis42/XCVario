@@ -17,7 +17,7 @@ File: QMC5883L.cpp
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-03-08
+Last update: 2021-03-28
 
  ***************************************************************************/
 
@@ -70,6 +70,9 @@ bool QMC5883L::overflowWarning = false;
 // Error counter
 int QMC5883L::errors = 0;
 
+// Calibration flag
+bool QMC5883L::calibrationRunning = false;
+
 /*
   Creates instance for I2C connection with passing the desired parameters.
   No action is done at the bus. Note if i2cBus is not set in the constructor,
@@ -85,8 +88,7 @@ QMC5883L::QMC5883L( const uint8_t addrIn,
 										  addr( addrIn ),
 										  odr( odrIn ),
 										  range( rangeIn ),
-										  osr( osrIn ),
-										  calibrationRunning( false )
+										  osr( osrIn )
 {
 	ESP_LOGI( FNAME, "QMC5883L( %02X )", addrIn );
 

@@ -579,7 +579,7 @@ float QMC5883L::heading( bool *ok )
 
 		errors++;
 		*ok = false;
-		if( errors > 100 )
+		if( errors > 3 )
 		{
 			ESP_LOGW(FNAME,"Magnetic sensor errors: init mag sensor" );
 			initialize();  // reinitialize once crashed

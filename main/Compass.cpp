@@ -13,7 +13,7 @@ Class to handle compass data access.
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-03-28
+Last update: 2021-03-29
 
  **************************************************************************/
 
@@ -75,17 +75,25 @@ float Compass::calculateHeading( bool *okIn )
 	m_headingValid = true;
 	m_magn_heading_dev = m_magn_heading + getDeviation( m_magn_heading );
 
+  // Correct magnetic heading in case of over/underflow
+  if( m_magn_heading_dev >= 360.0 )
+    m_magn_heading_dev -= 360.0;
+  else if( m_magn_heading_dev < 0.0 )
+    m_magn_heading_dev += 360.0;
+
 	// If declination is set, calculate true heading including deviation
 	if(  compass_declination.get() != 0.0 )
-		m_true_heading_dev = m_magn_heading_dev + compass_declination.get();
+	  {
+	    m_true_heading_dev = m_magn_heading_dev + compass_declination.get();
+
+	    // Correct true heading in case of over/underflow
+	    if( m_true_heading_dev >= 360.0 )
+	      m_true_heading_dev -= 360.0;
+	    else if( m_true_heading_dev < 0.0 )
+	      m_true_heading_dev += 360.0;
+	  }
 	else
 		m_true_heading_dev = m_magn_heading_dev;
-
-	// Correct heading in case of over/underflow
-	if( m_magn_heading_dev >= 360.0 )
-		m_magn_heading_dev -= 360.0;
-	else if( m_magn_heading_dev < 0.0 )
-		m_magn_heading_dev += 360.0;
 
 	*okIn = true;
 	return m_magn_heading;
@@ -113,7 +121,6 @@ float Compass::rawHeading( bool *okIn )
 	*okIn = m_headingValid;
 	return m_magn_heading;
 }
-
 
 /**
  * Compute heading deviation by using linear interpolation.

@@ -148,7 +148,7 @@ private:
 	static float m_true_heading_dev;
 
 	/** Control flag of filtered heading. */
-    static bool m_headingValid;
+  static bool m_headingValid;
 
     /** Low pass filter used by compass. */
  	static CompassFilter m_cfmh;

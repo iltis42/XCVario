@@ -13,7 +13,7 @@ Class to display the compass status overview.
 
 Author: Axel Pauli, March 2021
 
-Last update: 2021-03-08
+Last update: 2021-03-30
 
  ****************************************************************************/
 
@@ -72,6 +72,11 @@ void ShowCompassSettings::display( int mode )
 			static_cast<int>(compass_declination.get()) );
 	ucg->printf( "%s", buffer );
 	y += 25;
+
+  ucg->setPrintPos( 0, y );
+  sprintf( buffer, "Display damping: %.02fs", (compass_damping.get()) );
+  ucg->printf( "%s", buffer );
+  y += 25;
 
 	ucg->setPrintPos( 0, y );
 	sprintf( buffer, "NMEA mag heading: %s",

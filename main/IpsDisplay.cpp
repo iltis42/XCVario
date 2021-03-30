@@ -1272,8 +1272,6 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		if( compass_calibrated.get() && compass_enable.get() ){
 			bool ok;
 			int heading = static_cast<int>(rintf(Compass::trueHeading( &ok )));
-			if( heading >= 360 )
-				heading -= 360;
 			// ESP_LOGI(FNAME, "heading %d, valid %d", heading, Compass::headingValid() );
 			if( prev_heading != heading || !(tick%32) ){
 				ucg->setPrintPos(113,102);

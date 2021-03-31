@@ -642,5 +642,5 @@ float QMC5883L::heading( bool *ok )
 			xraw, yraw, zraw, IMU::getRoll(), IMU::getPitch(), (float)tcx, (float)tcy, heading );
 #endif
 
-	return float( _heading );
+	return _heading;
 }

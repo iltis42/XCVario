@@ -533,7 +533,7 @@ void sensor(void *args){
 	init_done=true;
 	int line = 1;
 	ESP_LOGI( FNAME, "Now setup I2C bus IO 21/22");
-	i2c.begin(GPIO_NUM_21, GPIO_NUM_22, 200000 );
+	i2c.begin(GPIO_NUM_21, GPIO_NUM_22, 100000 );
 
 	MCP = new MCP3221();
 	MCP->setBus( &i2c );

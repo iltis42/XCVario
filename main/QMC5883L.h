@@ -196,4 +196,5 @@ private:
 	static bool overflowWarning;
 	static int errors;
 	static bool calibrationRunning;
+	static float _heading;
 };

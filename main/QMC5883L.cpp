@@ -73,6 +73,7 @@ int QMC5883L::errors = 0;
 // Calibration flag
 bool QMC5883L::calibrationRunning = false;
 
+float QMC5883L::_heading = 0;
 /*
   Creates instance for I2C connection with passing the desired parameters.
   No action is done at the bus. Note if i2cBus is not set in the constructor,
@@ -574,18 +575,23 @@ float QMC5883L::heading( bool *ok )
 		return 0.0;
 	}
 
-	if( rawHeading() == false )
+	bool state = rawHeading();
+	if( state == false )
 	{
-
 		errors++;
-		*ok = false;
 		if( errors > 3 )
 		{
 			ESP_LOGW(FNAME,"Magnetic sensor errors: init mag sensor" );
 			initialize();  // reinitialize once crashed
 		}
-		return 0.0;
+		if( errors > 50 ){  // survive 50 samples with constant heading if no valid reading
+			*ok = false;
+			return 0.0;
+		}
+		*ok = true;
+		return _heading;
 	}
+
 	errors = 0;
 
 	// Check if calibration data are available
@@ -622,10 +628,10 @@ float QMC5883L::heading( bool *ok )
 	// Yhorizontal = Y*cos(roll) + Z*sin(roll)
 	double tcy = fy * cos( -IMU::getRollRad()) + fz * sin( -IMU::getRollRad());
 
-	double heading = -RAD_TO_DEG * atan2( tcy, tcx );
+	_heading = -RAD_TO_DEG * atan2( tcy, tcx );
 
-	if( heading < 0.0 )
-		heading += 360.0;
+	if( _heading < 0.0 )
+		_heading += 360.0;
 
 	*ok = true;
 
@@ -636,5 +642,5 @@ float QMC5883L::heading( bool *ok )
 			xraw, yraw, zraw, IMU::getRoll(), IMU::getPitch(), (float)tcx, (float)tcy, heading );
 #endif
 
-	return float( heading );
+	return float( _heading );
 }

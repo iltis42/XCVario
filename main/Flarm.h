@@ -5,6 +5,7 @@
 #include <locale> // std::locale, std::toupper
 #include <Ucglib.h>
 #include "RingBufCPP.h"  // SString, tbd: extra header
+#include "Units.h"
 
 
 class Flarm {
@@ -13,11 +14,19 @@ public:
 	static void parsePFLAU( char *pflau );
 	static void parsePFLAA( char *pflaa );
 	static void parsePFLAX( SString &msg );
+	static void parseGPRMC( char *gprmc );
  	static inline int alarmLevel(){ return AlarmLevel; };
  	static void drawFlarmWarning();
  	static void initFlarmWarning();
  	static void progress();
  	static bool connected(){ return (bool)timeout; };
+ 	static inline bool getGPS( double &gndSpeedKmh, double &gndTrack ) { if( gpsOK ) {
+ 																			gndSpeedKmh = Units::knots2kmh(gndSpeedKnots);
+ 																			gndTrack = gndCourse;
+ 																			return true; }
+ 																		else
+ 																			return false;
+ 	                                                                   };
  	static int bincom;
 
 private:
@@ -30,6 +39,9 @@ private:
 	static int RX,TX,GPS,Power;
 	static int AlarmLevel;
 	static int RelativeBearing,RelativeVertical,RelativeDistance;
+	static double gndSpeedKnots;
+	static double gndCourse;
+	static bool   gpsOK;
 	static int AlarmType;
 	static char ID[8];
 	static int oldDist;

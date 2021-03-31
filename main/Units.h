@@ -22,6 +22,10 @@ public:
 			return( kmh*0.539957 );
 	};
 
+	static inline float knots2kmh( float knots ){
+				return( knots/0.539957 );
+	};
+
 	static inline float Airspeed2Kmh( float as ){
 		if( ias_unit.get() == 0 ) // km/h
 			return( as );

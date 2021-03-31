@@ -14,6 +14,9 @@ int Flarm::RelativeBearing = 0;
 int Flarm::AlarmType = 0;
 int Flarm::RelativeVertical = 0;
 int Flarm::RelativeDistance = 0;
+double Flarm::gndSpeedKnots = 0;
+double Flarm::gndCourse = 0;
+bool Flarm::gpsOK = true;
 char Flarm::ID[8] = "";
 int Flarm::bincom = 0;
 Ucglib_ILI9341_18x240x320_HWSPI* Flarm::ucg;
@@ -76,6 +79,42 @@ void Flarm::progress(){  // once per second
 	if( timeout )
 		timeout--;
 }
+
+/*
+eg1. $GPRMC,081836,A,3751.65,S,14507.36,E,000.0,360.0,130998,011.3,E*62
+eg2. $GPRMC,225446,A,4916.45,N,12311.12,W,000.5,054.7,191194,020.3,E*68
+     $GPRMC,201914.00,A,4857.58740,N,00856.94735,E,0.172,122.95,310321,,,A*6D
+
+           225446.00    Time of fix 22:54:46 UTC
+           A            Navigation receiver warning A = OK, V = warning
+           4916.45,N    Latitude 49 deg. 16.45 min North
+           12311.12,W   Longitude 123 deg. 11.12 min West
+           000.5        Speed over ground, Knots
+           054.7        Course Made Good, True
+           191194       Date of fix  19 November 1994
+           020.3,E      Magnetic variation 20.3 deg East
+           *68          mandatory checksum
+
+
+*/
+void Flarm::parseGPRMC( char *gprmc ) {
+	float time;
+	int date;
+	char warn;
+	float lat,lon;
+	float magvar;
+	char dir;
+	int cs;
+
+	// ESP_LOGI(FNAME,"parseGPRMC: %s", gprmc );
+	sscanf( gprmc, "$GPRMC,%f,%c,%f,N,%f,E,%lf,%lf,%d,%f,%c*%02x",&time,&warn,&lat,&lon,&gndSpeedKnots,&gndCourse,&date,&magvar,&dir,&cs);
+	if( warn == 'A' )
+		gpsOK = true;
+	else
+		gpsOK = false;
+	// ESP_LOGI(FNAME,"parseGPRMC() GPS: %d, Speed: %3.1f knots, Track: %3.1f° ", gpsOK, gndSpeedKnots, gndCourse );
+}
+
 
 void Flarm::parsePFLAU( char *pflau ) {
 	int cs;

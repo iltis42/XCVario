@@ -387,6 +387,13 @@ void Protocols::parseNMEA( char *str ){
 			ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
 		}
 	}
+	else if( !strncmp( str, "$GPRMC,", 6 )) {
+		Flarm::parseGPRMC( str );
+		if( Flarm::bincom  ) {
+			Flarm::bincom--;
+			ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
+		}
+	}
 }
 
 

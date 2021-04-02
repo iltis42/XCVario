@@ -760,6 +760,12 @@ void SetupMenu::setup( )
 		atl->addEntry( "Disable");
 		atl->addEntry( "Enable");
 
+		SetupMenuSelect * altDisplayMode = new SetupMenuSelect( "Altitude Mode", false, 0, true, &alt_display_mode );
+		opt->addMenu( altDisplayMode );
+		altDisplayMode->setHelp( PROGMEM "Select altitude display mode");
+		altDisplayMode->addEntry( "QNH");
+		altDisplayMode->addEntry( "QFE");
+
 		SetupMenuValFloat * tral = new SetupMenuValFloat( "Transition Altitude", 0, "FL", 0, 400, 10, 0, false, &transition_alt  );
 		tral->setHelp(PROGMEM"Transition altitude (or transition height, when using QFE) is the altitude/height above which standard pressure (QNE) is set (1013.2 mb/hPa)");
 		opt->addMenu( tral );

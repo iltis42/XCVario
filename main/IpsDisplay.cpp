@@ -1556,6 +1556,10 @@ void IpsDisplay::drawDisplay( int airspeed, float te, float ate, float polar_sin
 	if( _menu )
 		return;
 
+	if ( alt_display_mode.get() == MODE_QFE ) {
+		altitude -= elevation.get();
+	}
+
 	if( display_style.get() == DISPLAY_AIRLINER )
 		drawAirlinerDisplay( airspeed,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_setting, wksensor );
 	else if( display_style.get() == DISPLAY_RETRO )

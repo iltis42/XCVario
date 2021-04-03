@@ -46,6 +46,7 @@ typedef enum chopping_mode { NO_CHOP, VARIO_CHOP, S2F_CHOP, BOTH_CHOP } chopping
 typedef enum rs232linemode { RS232_NORMAL, RS232_INVERTED } rs232lm_t;
 typedef enum nmea_protocol  { OPENVARIO, BORGELT, CAMBRIDGE, XCVARIO, XCVARIO_DEVEL, GENERIC } nmea_proto_t;
 typedef enum airspeed_mode  { MODE_IAS, MODE_TAS } airspeed_mode_t;
+typedef enum altitude_display_mode  { MODE_QNH, MODE_QFE } altitude_display_mode_t;
 typedef enum e_display_style  { DISPLAY_AIRLINER, DISPLAY_RETRO, DISPLAY_UL } display_style_t;
 typedef enum e_display_variant { DISPLAY_WHITE_ON_BLACK, DISPLAY_BLACK_ON_WHITE } display_variant_t;
 typedef enum e_s2f_type  { S2F_HW_SWITCH, S2F_HW_PUSH_BUTTON, S2F_HW_SWITCH_INVERTED } e_s2f_type;
@@ -299,6 +300,7 @@ extern SetupNG<int>  		factory_reset;
 extern SetupNG<int>  		audio_range;
 extern SetupNG<int>  		alt_select;
 extern SetupNG<int>  		fl_auto_transition;
+extern SetupNG<int>  		alt_display_mode;
 extern SetupNG<float>  		transition_alt;
 extern SetupNG<int>  		glider_type;
 extern SetupNG<int>  		ps_display;

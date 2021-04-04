@@ -793,7 +793,7 @@ void SetupMenu::setup( )
 		flarms->addEntry( "Start Sim");
 
 		SetupMenu * compassMenu = new SetupMenu( "Compass" );
-		compassMenu->setHelp( PROGMEM "Setup Magnetic Sensor and Compass", 280 );
+		// compassMenu->setHelp( PROGMEM "Setup Magnetic Sensor and Compass", 280 );
 		compassME = opt->addMenu( compassMenu );
 
 		SetupMenuSelect * compSensor = new SetupMenuSelect( "Sensor Option", false, 0, true, &compass_enable );
@@ -878,10 +878,14 @@ void SetupMenu::setup( )
 		compassME->addMenu( compdamp );
 		compdamp->setHelp(PROGMEM "Compass damping factor in seconds. To avoid jitter 2-3 seconds are good choice");
 
+		SetupMenuValFloat * compi2c = new SetupMenuValFloat( "I2C Clock", 0, "KHz", 10.0, 400.0, 10, 0, false, &compass_i2c_cl, true );
+		compassME->addMenu( compi2c );
+		compi2c->setHelp(PROGMEM "Setup compass I2C Bus clock in KHz");
+
 
 		// Show compass settings
 		ShowCompassSettings* scs = new ShowCompassSettings( "Show Settings" );
-    compassME->addMenu( scs );
+        compassME->addMenu( scs );
 
 		SetupMenuSelect * btm = new SetupMenuSelect( "Wireless", true, 0, true, &blue_enable );
 		btm->setHelp( PROGMEM "Activate type wireless interface to connect navigation devices running e.g. XCSoar, or to another XCVario as client");

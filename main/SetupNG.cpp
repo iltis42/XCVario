@@ -171,6 +171,7 @@ SetupNG<int>            compass_declination_valid( "CP_DECL_VALID", 0 );
 SetupNG<float>			compass_damping( "CP_DAMP", 3 );
 SetupNG<int>            compass_nmea_hdm( "CP_NMEA_HDM", 0 );
 SetupNG<int>            compass_nmea_hdt( "CP_NMEA_HDT", 0 );
+SetupNG<float>			compass_i2c_cl("CP_I2C_CL", 100 );
 SetupNG<int> 			s2f_with_gload( "S2G_GLOAD", 1 );       // considering g load in S2F
 SetupNG<int> 			s2f_blockspeed( "S2G_BLOCKSPEED", 0 );  // considering netto vario and g load for S2F or not
 SetupNG<int> 			wk_label_plus_3( "WKLP3", 32);  //  L
@@ -195,6 +196,7 @@ SetupNG<float>			gload_neg_limit("GLOADNL", -3 );
 SetupNG<float>			gload_pos_max("GLOADPM", 0 );
 SetupNG<float>			gload_neg_max("GLOADNM", 0 );
 SetupNG<int>            display_variant("DISPLAY_VARIANT", 0 );
+
 
 
 mpud::raw_axes_t zero_bias;

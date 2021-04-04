@@ -677,7 +677,7 @@ void sensor(void *args){
 	wireless_id += SetupCommon::getID();
 	display->writeText(line++, wireless_id.c_str() );
 	if( compass_enable.get() ) {
-		i2c_0.begin(GPIO_NUM_4, GPIO_NUM_18, GPIO_PULLUP_DISABLE, GPIO_PULLUP_DISABLE, 200000 );
+		i2c_0.begin(GPIO_NUM_4, GPIO_NUM_18, GPIO_PULLUP_DISABLE, GPIO_PULLUP_DISABLE, (int)(compass_i2c_cl.get()*1000) );
 		if( serial2_speed.get() )
 			serial2_speed.set(0);  // switch off serial interface, we can do only alternatively
 		compass.begin();

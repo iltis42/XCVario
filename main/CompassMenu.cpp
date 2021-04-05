@@ -207,7 +207,6 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 	p->ucg->printf( "numbers are stable." );
 	p->ucg->setPrintPos( 1, 270 );
 	p->ucg->printf( "Press button to finish" );
-	compass.initialize();
 	compass.calibrate( calibrationReport );
 	p->ucg->setPrintPos( 1, 250 );
 

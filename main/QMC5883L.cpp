@@ -207,7 +207,7 @@ esp_err_t QMC5883L::initialize( int a_odr, int a_osr )
 	delay(2);
 
 	// Enable ROL_PTN, Pointer roll over function.
-	// e2 = writeRegister( addr, REG_CONTROL2, POL_PNT );
+	e2 = writeRegister( addr, REG_CONTROL2, POL_PNT );
 
 	// Define SET/RESET period. Should be set to 1
 	e3 = writeRegister( addr, REG_RST_PERIOD, 1 );
@@ -243,11 +243,13 @@ esp_err_t QMC5883L::initialize( int a_odr, int a_osr )
  */
 bool QMC5883L::rawHeading()
 {
-  // calculate last call time to report it in error case.
+#if 1
+  // calculate last call time.
   static uint64_t lastCall = getMsTime();
 
   uint64_t elapsed = getMsTime() - lastCall;
   lastCall = getMsTime();
+#endif
 
 	// Check, if data are available
 	uint8_t data[6];

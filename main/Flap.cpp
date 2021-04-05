@@ -136,6 +136,7 @@ int wk_cal( SetupMenuSelect * p )
 			wk_cal_show( p,-3 );
 			wk_sens_pos_minus_3.set( Flap::getSensorRaw(256) );
 		}
+
 		p->ucg->setPrintPos(1,60);
 		p->ucg->printf("Saved, restart");
 		Flap::initSensor();
@@ -500,6 +501,7 @@ void  Flap::progress(){
 			ESP_LOGW(FNAME,"negative flap sensor reading: %d", wkraw );
 			return;
 		}
+		// ESP_LOGI(FNAME,"flap sensor =%d", wkraw );
 		rawFiltered = rawFiltered + (wkraw - rawFiltered)/6;
 		tick++;
 		if( !(tick%4) ){
@@ -522,7 +524,10 @@ void  Flap::progress(){
 
 void  Flap::initSensor(){
 	ESP_LOGI(FNAME,"initSensor");
-	senspos[ZERO_INDEX-4] = 4095;
+	if( (wk_sens_pos_0.get() - wk_sens_pos_minus_1.get()) < 0 )
+		senspos[ZERO_INDEX-4] = 4095;
+	else
+		senspos[ZERO_INDEX-4] = 0;
 
 	if( (int)flap_neg_max.get() < -2 )
 		senspos[ZERO_INDEX-3] = wk_sens_pos_minus_3.get();
@@ -530,6 +535,8 @@ void  Flap::initSensor(){
 		senspos[ZERO_INDEX-3] = wk_sens_pos_minus_2.get() - ( wk_sens_pos_minus_1.get() - wk_sens_pos_minus_2.get()); // extrapolated
 		if( senspos[ZERO_INDEX-3] > 4095 )
 			senspos[ZERO_INDEX-3] = 4095;
+		if( senspos[ZERO_INDEX-3] < 0 )
+			senspos[ZERO_INDEX-3] = 0;
 	}
 
 	if(  (int)flap_neg_max.get() < -1)
@@ -538,6 +545,8 @@ void  Flap::initSensor(){
 		senspos[ZERO_INDEX-2] = wk_sens_pos_minus_1.get() - ( wk_sens_pos_0.get() - wk_sens_pos_minus_1.get()); // extrapolated
 		if( senspos[ZERO_INDEX-2] > 4095 )
 			senspos[ZERO_INDEX-2] = 4095;
+		if( senspos[ZERO_INDEX-3] < 0 )
+			senspos[ZERO_INDEX-3] = 0;
 	}
 
 	if( (int)flap_neg_max.get() < 0 )
@@ -566,7 +575,10 @@ void  Flap::initSensor(){
 		if( senspos[ZERO_INDEX+3] < 0 )
 			senspos[ZERO_INDEX+3] = 0;
 	}
-	senspos[ZERO_INDEX+4] = 0;
+	if( (wk_sens_pos_0.get() - wk_sens_pos_minus_1.get()) < 0 )
+		senspos[ZERO_INDEX+4] = 0;
+	else
+		senspos[ZERO_INDEX+4] = 4095;
 	for( int i=0; i<=8; i++ ){
 		ESP_LOGI(FNAME,"lever: %d  senspos[i]: %d", i-4, senspos[i]  );
 	}

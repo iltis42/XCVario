@@ -17,7 +17,7 @@ File: QMC5883L.cpp
 
 Author: Axel Pauli, January 2021
 
-Last update: 2021-03-28
+Last update: 2021-04-05
 
  ***************************************************************************/
 
@@ -199,7 +199,6 @@ esp_err_t QMC5883L::selfTest()
  */
 esp_err_t QMC5883L::initialize( int a_odr, int a_osr )
 {
-	ESP_LOGI( FNAME, "initialize() dataRate: %d Oversampling: %d", a_odr, a_osr );
 	esp_err_t e1, e2, e3, e4;
 	e1 = e2 = e3 = e4 = 0;
 
@@ -222,11 +221,14 @@ esp_err_t QMC5883L::initialize( int a_odr, int a_osr )
 	if( used_odr == 0 )
 		used_odr = odr;
 
+  ESP_LOGI( FNAME, "initialize() dataRate: %d Oversampling: %d", used_odr, used_osr );
+
 	e4 = writeRegister( addr, REG_CONTROL1,	(used_osr << 6) | (range <<4) | (used_odr <<2) | MODE_CONTINUOUS );
 
-	if( (e1 + e2 + e3 + e4) == 0 )
-		ESP_LOGI( FNAME, "initialize() OK");
-	return ESP_OK;
+	if( (e1 + e2 + e3 + e4) == 0 ) {
+      ESP_LOGI( FNAME, "initialize() OK");
+      return ESP_OK;
+		}
 
 	return ESP_FAIL;
 }
@@ -241,6 +243,12 @@ esp_err_t QMC5883L::initialize( int a_odr, int a_osr )
  */
 bool QMC5883L::rawHeading()
 {
+  // calculate last call time to report it in error case.
+  static uint64_t lastCall = getMsTime();
+
+  uint64_t elapsed = getMsTime() - lastCall;
+  lastCall = getMsTime();
+
 	// Check, if data are available
 	uint8_t data[6];
 	uint8_t status = 0;
@@ -268,9 +276,6 @@ bool QMC5883L::rawHeading()
 	// Reset overflow warning, to get a current status of it.
 	overflowWarning = false;
 
-	if( !( status & STATUS_DRDY ) )
-	  ESP_LOGE( FNAME, "STATUS_DRDY=0, no new sensor data available" );
-
 	if( ( status & STATUS_DRDY ) || (status & STATUS_DOR ) )
 	{
 		// Data can be read in every case
@@ -283,6 +288,9 @@ bool QMC5883L::rawHeading()
 		}
 		ESP_LOGE( FNAME, "read Register returned <= 0" );
 	}
+	else
+	  ESP_LOGW( FNAME, "No sensor data read, Status-Reg=0x%X, last call before=%lld ms",
+	            status, elapsed );
 
 	return false;
 }
@@ -548,18 +556,7 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z, float xb,
  */
 float QMC5883L::heading( bool *ok )
 {
-
 	assert( (ok != nullptr) && "Passing of NULL pointer is forbidden" );
-
-#if 0
-	// Call time measurement
-	static uint64_t lastCall = getMsTime();
-
-	uint64_t elapsed = getMsTime() - lastCall;
-	lastCall = getMsTime();
-
-	ESP_LOGI( FNAME, "lct=%lld ms", elapsed );
-#endif
 
 	// Holddown processing and throwing errors once sensor is gone
 	if( errors > 100 && errors % 100 )

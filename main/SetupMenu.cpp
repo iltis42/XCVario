@@ -644,11 +644,11 @@ void SetupMenu::setup( )
 		dbmaxlv->setHelp(PROGMEM"Upper deadband limit (climb) for Audio mute function when in Vario mode");
 		dbe->addMenu( dbmaxlv );
 
-		SetupMenuValFloat * dbmaxls2fn = new SetupMenuValFloat(	"Lower S2F", 	0, "+-km/h", 0, 25.0, 1, 0 , false, &s2f_deadband_neg );
+		SetupMenuValFloat * dbmaxls2fn = new SetupMenuValFloat(	"Lower S2F", 	0, "km/h", -25.0, 0, 1, 0 , false, &s2f_deadband_neg );
 		dbmaxls2fn->setHelp(PROGMEM"Negative deadband limit in speed (too slow) deviation when in S2F mode");
 		dbe->addMenu( dbmaxls2fn );
 
-		SetupMenuValFloat * dbmaxls2f = new SetupMenuValFloat( "Upper S2F", 	0, "+-km/h", 0, 25.0, 1, 0 , false, &s2f_deadband );
+		SetupMenuValFloat * dbmaxls2f = new SetupMenuValFloat( "Upper S2F", 	0, "km/h", 0, 25.0, 1, 0 , false, &s2f_deadband );
 		dbmaxls2f->setHelp(PROGMEM"Positive deadband limit in speed (too high) deviation when in S2F mode");
 		dbe->addMenu( dbmaxls2f );
 

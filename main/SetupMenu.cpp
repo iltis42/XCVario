@@ -452,7 +452,7 @@ void SetupMenu::setup( )
 	bal->setHelp(PROGMEM"Percent wing load increase by ballast");
 	mm->addMenu( bal );
 
-	SetupMenuValFloat * bgs = new SetupMenuValFloat( "Bugs", 0, "% bugs", 0.0, 50, 1, bug_adj, true, &bugs  );
+	SetupMenuValFloat * bgs = new SetupMenuValFloat( "Bugs", 0, "%", 0.0, 50, 1, bug_adj, true, &bugs  );
 	bgs->setHelp(PROGMEM"Percent of bugs contamination to indicate degradation of gliding performance");
 	mm->addMenu( bgs );
 

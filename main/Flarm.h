@@ -1,6 +1,6 @@
 #ifndef FLARM_H
 #define FLARM_H
-#include <stdlib.h> // abs
+#include <cstdlib> // abs
 #include <string> // std::string
 #include <locale> // std::locale, std::toupper
 #include <Ucglib.h>
@@ -26,7 +26,11 @@ public:
  																			return true; }
  																		else
  																			return false;
- 	                                                                   };
+ 	                                                                   }
+
+ 	static bool gpsStatus() { return gpsOK; }
+  static double getGndSpeedKnots() { return gndSpeedKnots; }
+  static double getGndCourse() { return gndCourse; }
  	static int bincom;
 
 private:

@@ -19,11 +19,11 @@ public:
 	};
 
 	static inline float kmh2knots( float kmh ){
-			return( kmh*0.539957 );
+			return( kmh / 1.852 );
 	};
 
 	static inline float knots2kmh( float knots ){
-				return( knots/0.539957 );
+				return( knots * 1.852 );
 	};
 
 	static inline float Airspeed2Kmh( float as ){

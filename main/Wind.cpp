@@ -5,7 +5,7 @@
  *
  *  Author: Eckhard Völlm, Axel Pauli
  *
- *  Last update: 2021-04-10
+ *  Last update: 2021-04-12
  */
 
 #include <algorithm>
@@ -13,17 +13,8 @@
 #include "esp_system.h"
 #include "Compass.h"
 #include "Flarm.h"
+#include "SetupNG.h"
 #include "Wind.h"
-
-// TAS +- observation interval in Km/h
-#define OI_TAS 10.0
-
-// Heading +- observation interval in degrees
-#define OI_HD 5.0
-
-// Wait time in seconds after measurement start after which the wind will be
-// calculated and delivered
-#define DeliverWindAfter 10
 
 // C-Function from sensor.cpp
 extern "C" {
@@ -33,10 +24,10 @@ extern "C" {
 Wind::Wind() :
     _drift(0),
     nunberOfSamples( 0 ),
-    measurementDuration( 0 ),
-    deliverWind( DeliverWindAfter ),
-    deltaSpeed( OI_TAS ), // +- 10 km/h
-    deltaHeading( OI_HD ), // +- 5 degree
+    measurementStart( 0 ),
+    deliverWind( 0.0 ),
+    deltaSpeed( 0.0 ),
+    deltaHeading( 0.0 ),
     tas( 0.0 ),
     groundSpeed( 0.0 ),
     trueCourse( 0.0 ),
@@ -83,8 +74,13 @@ void Wind::start()
       return;
     }
 
+  // Read wind parameter from configuration, could be changed by the user in the meantime.
+  deliverWind = wind_measurement_time.get(); // default 10s
+  deltaSpeed = wind_speed_delta.get(); // default +- 10 km/h
+  deltaHeading = wind_heading_delta.get(); // default +- 5 degree
+
   nunberOfSamples = 1;
-  measurementDuration = getMsTime();
+  measurementStart = getMsTime();
   tas = double( getTAS() );
 
   bool ok;

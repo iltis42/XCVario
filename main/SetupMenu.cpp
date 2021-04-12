@@ -38,9 +38,6 @@ SetupMenuSelect * mpu = 0;
 String vunit;
 String sunit;
 
-// Menu for compass setup
-static MenuEntry* compassME = nullptr;
-
 // Compass menu handler
 static CompassMenu compassMenuHandler( compass );
 
@@ -237,6 +234,19 @@ static int compassDeclinationAction( SetupMenuValFloat *p )
 	return compassMenuHandler.declinationAction( p );
 }
 
+static int windResetAction( SetupMenuSelect *p )
+{
+  if( p->getSelect() == 1 )
+  {
+    // Reset is selected, set default values
+    wind_speed_delta.set( 10 );
+    wind_heading_delta.set( 5 );
+    wind_measurement_time.set( 10 );
+  }
+
+  return 0;
+}
+
 static int compassSensorCalibrateAction( SetupMenuSelect *p )
 {
 	ESP_LOGI(FNAME,"compassSensorCalibrateAction()");
@@ -292,7 +302,9 @@ void SetupMenu::display( int mode ){
 			ucg->printf(": ");
 			ucg->setPrintPos(1+fl+ucg->getStrWidth( ": " ),(i+1)*25+25);
 			ucg->setColor( COLOR_WHITE );
+			ucg->setFont(ucg_font_fur14_hf);
 			ucg->printf("%s",child->value());
+      ucg->setFont(ucg_font_ncenR14_hr);
 		}
 		ucg->setColor( COLOR_WHITE );
 		ESP_LOGI(FNAME,"Child: %s y=%d",child->_title.c_str() ,y );
@@ -792,9 +804,16 @@ void SetupMenu::setup( )
 		flarms->addEntry( "Disable");
 		flarms->addEntry( "Start Sim");
 
+		SetupMenu * compassWindMenu = new SetupMenu( "Compass/Wind" );
+		compassWindMenu->setHelp( PROGMEM "Setup Compass and Wind", 280 );
+		MenuEntry* compassWindME = opt->addMenu( compassWindMenu );
+
 		SetupMenu * compassMenu = new SetupMenu( "Compass" );
-		// compassMenu->setHelp( PROGMEM "Setup Magnetic Sensor and Compass", 280 );
-		compassME = opt->addMenu( compassMenu );
+		MenuEntry* compassME = compassWindME->addMenu( compassMenu );
+
+    SetupMenu * windMenu = new SetupMenu( "Wind" );
+    windMenu->setHelp( PROGMEM "Setup wind calculation parameters", 280 );
+    MenuEntry* windME = compassWindME->addMenu( windMenu );
 
 		SetupMenuSelect * compSensor = new SetupMenuSelect( "Sensor Option", false, 0, true, &compass_enable );
 		compSensor->addEntry( "Disable");
@@ -882,10 +901,62 @@ void SetupMenu::setup( )
 		compassME->addMenu( compi2c );
 		compi2c->setHelp(PROGMEM "Setup compass I2C Bus clock in KHz");
 
-
 		// Show compass settings
 		ShowCompassSettings* scs = new ShowCompassSettings( "Show Settings" );
-        compassME->addMenu( scs );
+    compassME->addMenu( scs );
+
+    // Wind speed observation window
+    SetupMenuValFloat *smvf = new SetupMenuValFloat( "Speed tolerance",
+        nullptr,
+        "Km/h",
+        0.0,
+        20.0,
+        1.0,
+        nullptr,
+        false,
+        &wind_speed_delta );
+
+    smvf->setHelp( PROGMEM "Setup speed tolerance value" );
+    windME->addMenu( smvf );
+
+    // Wind heading observation window
+    smvf = new SetupMenuValFloat( "Heading tolerance",
+        nullptr,
+        "\260",
+        0.0,
+        20.0,
+        1.0,
+        nullptr,
+        false,
+        &wind_heading_delta );
+
+    smvf->setHelp( PROGMEM "Setup heading tolerance value" );
+    windME->addMenu( smvf );
+
+    // Wind measurement time
+    smvf = new SetupMenuValFloat( "Wind after",
+        nullptr,
+        "s",
+        3.0,
+        60.0,
+        1.0,
+        nullptr,
+        false,
+        &wind_measurement_time );
+
+    smvf->setHelp( PROGMEM "Setup wind calculation time" );
+    windME->addMenu( smvf );
+
+    sms = new SetupMenuSelect( "Reset",
+        false,
+        windResetAction,
+        false,
+        0 );
+
+    sms->setHelp( "Reset all wind data to defaults" );
+    sms->addEntry( "Cancel" );
+    sms->addEntry( "Reset" );
+    windME->addMenu( sms );
 
 		SetupMenuSelect * btm = new SetupMenuSelect( "Wireless", true, 0, true, &blue_enable );
 		btm->setHelp( PROGMEM "Activate type wireless interface to connect navigation devices running e.g. XCSoar, or to another XCVario as client");
@@ -895,8 +966,7 @@ void SetupMenu::setup( )
 		btm->addEntry( "Wireless Client");
 		opt->addMenu( btm );
 
-		SetupMenu * gload = new SetupMenu( "G-Load Display"
-				"" );
+		SetupMenu * gload = new SetupMenu( "G-Load Display" );
 		MenuEntry* gloadME = opt->addMenu( gload );
 
 		SetupMenuSelect * glmod = new SetupMenuSelect( "Activation Mode", false, 0, true, &gload_mode );

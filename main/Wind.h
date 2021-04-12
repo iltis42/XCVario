@@ -5,7 +5,7 @@
  *
  *  Author: Eckhard Völlm, Axel Pauli
  *
- *  Last update: 2021-04-10
+ *  Last update: 2021-04-12
  */
 #pragma once
 
@@ -64,13 +64,13 @@ private:
    */
   uint64_t elapsed()
   {
-    return getMsTime() - measurementDuration;
+    return getMsTime() - measurementStart;
   }
 
 	double _drift;
 
   uint16_t nunberOfSamples;      // current number of samples
-  uint64_t measurementDuration;  // time measurement in milliseconds
+  uint64_t measurementStart;     // measurement start in milliseconds
   uint16_t deliverWind;          // Wait time before wind deliver
   double deltaSpeed;             // accepted speed deviation in km/h
   double deltaHeading;           // accepted heading deviation in degrees

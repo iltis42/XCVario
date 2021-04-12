@@ -12,6 +12,9 @@
 #include <hal/gpio_types.h>
 #include "SetupMenu.h"
 #include "S2F.h"
+#include "Wind.h"
+
+extern Wind theWind;
 
 extern bool haveMPU;
 extern bool ahrsKeyValid;
@@ -23,8 +26,8 @@ extern mpud::float_axes_t gyroDPS;
 
 extern float ias;
 
-float getTAS();
-float getTE();
+extern float getTAS();
+extern float getTE();
 
 extern I2C_t& i2c;
 extern AnalogInput *AnalogInWk;

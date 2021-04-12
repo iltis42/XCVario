@@ -60,6 +60,7 @@
 #include "Units.h"
 #include "Flap.h"
 #include "SPL06-007.h"
+#include "Wind.h"
 
 // #include "sound.h"
 
@@ -92,6 +93,7 @@ MCP3221 *MCP=0;
 DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 standard, alternative  GPIO_NUM_17
 
 AirspeedSensor *asSensor=0;
+Wind theWind;
 
 xSemaphoreHandle xMutex=NULL;
 

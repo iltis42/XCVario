@@ -4,6 +4,7 @@
 #include "math.h"
 #include "ESPAudio.h"
 #include "IpsDisplay.h"
+#include "sensor.h"
 
 int Flarm::RX = 0;
 int Flarm::TX = 0;
@@ -108,8 +109,10 @@ void Flarm::parseGPRMC( char *gprmc ) {
 
 	// ESP_LOGI(FNAME,"parseGPRMC: %s", gprmc );
 	sscanf( gprmc, "$GPRMC,%f,%c,%f,N,%f,E,%lf,%lf,%d,%f,%c*%02x",&time,&warn,&lat,&lon,&gndSpeedKnots,&gndCourse,&date,&magvar,&dir,&cs);
-	if( warn == 'A' )
+	if( warn == 'A' ) {
 		gpsOK = true;
+		theWind.calculateWind();
+	}
 	else
 		gpsOK = false;
 	// ESP_LOGI(FNAME,"parseGPRMC() GPS: %d, Speed: %3.1f knots, Track: %3.1f° ", gpsOK, gndSpeedKnots, gndCourse );

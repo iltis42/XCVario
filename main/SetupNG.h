@@ -434,9 +434,10 @@ extern SetupNG<float>		gload_pos_limit;
 extern SetupNG<float>		gload_neg_limit;
 extern SetupNG<float>		gload_pos_max;
 extern SetupNG<float>		gload_neg_max;
-extern SetupNG<float>   wind_speed_delta;
-extern SetupNG<float>   wind_heading_delta;
-extern SetupNG<float>   wind_measurement_time;
+extern SetupNG<float>   	wind_speed_delta;
+extern SetupNG<float>   	wind_heading_delta;
+extern SetupNG<float>   	wind_measurement_time;
+extern SetupNG<int> 		wind_enable;
 
 extern int g_col_background;
 extern int g_col_highlight;

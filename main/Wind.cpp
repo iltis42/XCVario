@@ -125,11 +125,11 @@ bool Wind::calculateWind()
 	*/
 
 	// Check, if given ground speed deltas are valid.
-	if( fabs( groundSpeed - cgs ) > wind_speed_delta.get() )
+	if( fabs( groundSpeed - cgs ) > Units::Airspeed2Kmh( wind_speed_delta.get() ) )
 	{
 		// Condition violated, start a new measurements cycle.
 		start();
-		ESP_LOGI(FNAME,"GS %3.1f - CGS: %3.1f > %3.1f", groundSpeed, cgs, wind_speed_delta.get() );
+		ESP_LOGI(FNAME,"GS %3.1f - CGS: %3.1f > %3.1f", groundSpeed, cgs, Units::Airspeed2Kmh( wind_speed_delta.get() ) );
 		return false;
 	}
 
@@ -137,11 +137,11 @@ bool Wind::calculateWind()
 	double ctas = double( getTAS() );
 
 	// check if given TAS deltas are valid.
-	if( fabs( tas - ctas ) > wind_speed_delta.get() )
+	if( fabs( tas - ctas ) > Units::Airspeed2Kmh( wind_speed_delta.get() ) )
 	{
 		// Condition violated, start a new measurements cycle.
 		start();
-		ESP_LOGI(FNAME,"TAS %3.1f - CTAS: %3.1f  > delta %3.1f", tas, ctas, wind_speed_delta.get() );
+		ESP_LOGI(FNAME,"TAS %3.1f - CTAS: %3.1f  > delta %3.1f", tas, ctas, Units::Airspeed2Kmh( wind_speed_delta.get() ) );
 		return false;
 	}
 
@@ -172,10 +172,11 @@ bool Wind::calculateWind()
 
 	ESP_LOGI(FNAME,"GND-C: %3.1f  MGN-C: %3.1f GS: %3.1f", ctc, cth, cgs );
 	// Check if given true course deltas are valid.
-	if( ! ( ctc >= hMin && ctc <= hMax ) )
+	if( ! ( ctc >=  && ctc <= hMax ) )
 	{
 		// Condition violated, start a new measurements cycle.
 		start();
+		ESP_LOGI(FNAME,"Magnetic Heading CTC: %3.1f outside min: %3.1f max: %3.1f", ctc, hMin, hMax );
 		return false;
 	}
 
@@ -258,6 +259,7 @@ bool Wind::calculateWind()
 		// store calculated results
 		windSpeed = ws;// wind speed in km/h
 		windDir = wd;  // wind direction in degrees
+		ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h", ws, wd );
 		return true;
 	}
 	return false;

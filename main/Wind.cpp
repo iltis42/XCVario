@@ -48,6 +48,7 @@ void Wind::start()
 	if( Flarm::gpsStatus() == true ) {
 		// Ground speed in Km/h
 		groundSpeed = Units::knots2kmh (Flarm::getGndSpeedKnots());
+		ESP_LOGI(FNAME,"start GS %3.1f", groundSpeed );
 		trueCourse = Flarm::getGndCourse();
 	}
 	else {
@@ -170,7 +171,7 @@ bool Wind::calculateWind()
 		ctc -= 360.0;
 	}
 
-	ESP_LOGI(FNAME,"GND-C: %3.1f  MGN-C: %3.1f GS: %3.1f", ctc, cth, cgs );
+	ESP_LOGI(FNAME,"GND-Track: %3.1f  MGN-Track: %3.1f GS: %3.1f  TAS:%3.1f", ctc, cth, cgs, ctas );
 	// Check if given true course deltas are valid.
 	if( ! ( ctc >= hMin && ctc <= hMax ) )
 	{
@@ -259,7 +260,7 @@ bool Wind::calculateWind()
 		// store calculated results
 		windSpeed = ws;// wind speed in km/h
 		windDir = wd;  // wind direction in degrees
-		ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h", ws, wd );
+		ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h", wd, ws );
 		return true;
 	}
 	return false;

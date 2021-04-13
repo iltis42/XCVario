@@ -987,7 +987,7 @@ void IpsDisplay::drawCompass(){
 			float wind;
 			bool ok = theWind.getWind( &winddir, &wind );
 			if( prev_heading != winddir || !(tick%32) ){
-				ucg->setPrintPos(85,102);
+				ucg->setPrintPos(85,104);
 				ucg->setColor(  COLOR_WHITE  );
 				// ucg->setFont(ucg_font_fub20_hr);
 				ucg->setFont(ucg_font_fub20_hf);
@@ -1311,7 +1311,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		if( as_prev != airspeed || !(tick%70) ) {
 			// ESP_LOGI(FNAME,"draw airspeed %d %d", airspeed, as_prev );
 			ucg->setColor(  COLOR_WHITE  );
-			ucg->setPrintPos(113,75);
+			ucg->setPrintPos(113,73);
 			ucg->setFont(ucg_font_fub20_hr);
 			char s[10];
 			sprintf(s,"%3d",  airspeed );
@@ -1534,7 +1534,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 	if( !(tick%7) ){
 		if( as_prev != airspeed || !(tick%49) ) {
 			ucg->setColor(  COLOR_WHITE  );
-			ucg->setPrintPos(113,75);
+			ucg->setPrintPos(113,73);
 			ucg->setFont(ucg_font_fub25_hr);
 			char s[10];
 			sprintf(s,"%3d",  airspeed );

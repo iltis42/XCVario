@@ -573,6 +573,10 @@ void SetupMenu::setup( )
 		s2fse->addMenu( autospeed );
 		autospeed->setHelp(PROGMEM"Transition speed when in AutoSpeed mode for audio to change from Vario to S2F mode");
 
+		SetupMenuValFloat * s2fhy = new SetupMenuValFloat( "Hysteresis", 0, sunit.c_str(),	-20, 20, 1, 0, false, &s2f_hysteresis );
+		s2fhy->setHelp(PROGMEM"Hysteresis for auto S2F transition at autospeed +- this value");
+		s2fse->addMenu( s2fhy );
+
 		SetupMenu * elco = new SetupMenu( "Electronic Compensation" );
 		vae->addMenu( elco );
 		SetupMenuSelect * enac = new SetupMenuSelect( "eCompensation", false, 0 , false, &te_comp_enable );
@@ -916,7 +920,7 @@ void SetupMenu::setup( )
 
 		SetupMenuValFloat *smvf = new SetupMenuValFloat( "Speed tolerance",
 				nullptr,
-				"Km/h",
+				sunit.c_str(),   //  Wind speed tolerace entered in Unit enterd for airspeed
 				0.0,
 				20.0,
 				1.0,
@@ -924,7 +928,7 @@ void SetupMenu::setup( )
 				false,
 				&wind_speed_delta );
 
-		smvf->setHelp( PROGMEM "Setup speed tolerance value" );
+		smvf->setHelp( PROGMEM "Setup wind speed tolerance value" );
 		windME->addMenu( smvf );
 
 		// Wind heading observation window

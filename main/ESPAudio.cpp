@@ -431,23 +431,7 @@ void Audio::startAudio(){
 
 void Audio::calcS2Fmode(){
 	if( !_alarm_mode ) {
-		switch( audio_mode.get() ) {
-		case 0: // Vario
-			_s2f_mode = false;
-			break;
-		case 1: // S2F
-			_s2f_mode = true;
-			break;
-		case 2: // Switch
-			_s2f_mode = Switch::cruiseMode(false);
-			break;
-		case 3: // Auto
-			if( Switch::cruiseMode() )
-				_s2f_mode = true;
-			else
-				_s2f_mode = false;
-			break;
-		}
+		_s2f_mode = Switch::cruiseMode();
 	}
 }
 

@@ -87,8 +87,8 @@ void Wind::start()
 	hMin = gndHeading - wind_heading_delta.get();
 	hMax = gndHeading + wind_heading_delta.get();
 
-	windDir = -1.0;
-	windSpeed = -1.0;
+	// windDir = -1.0;
+	// windSpeed = -1.0;
 }
 
 /**

@@ -66,9 +66,6 @@ private:
 
 	uint16_t nunberOfSamples;      // current number of samples
 	uint64_t measurementStart;     // measurement start in milliseconds
-	uint16_t deliverWind;          // Wait time before wind deliver
-	double deltaSpeed;             // accepted speed deviation in km/h
-	double deltaHeading;           // accepted heading deviation in degrees
 	double tas;                    // TAS in km/h
 	double groundSpeed;            // GS in km/h
 	double trueCourse;             // Compass true heading
@@ -79,6 +76,8 @@ private:
 	double sumTCDeviation;         // sum of GPS heading (true course) deviation
 	double hMin;                   // lower limit of heading observation window
 	double hMax;                   // upper limit of heading observation window
+	double hMin_magn;              // lower limit of magnetic heading observation window
+	double hMax_magn;              // upper limit of magnetic heading observation window
 	double windDir;                // calculated wind direction
 	double windSpeed;              // calculated wind speed in Km/h
 };

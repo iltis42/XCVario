@@ -989,12 +989,13 @@ void IpsDisplay::drawCompass(){
 			if( prev_heading != winddir || !(tick%32) ){
 				ucg->setPrintPos(85,102);
 				ucg->setColor(  COLOR_WHITE  );
-				ucg->setFont(ucg_font_fub20_hr);
+				// ucg->setFont(ucg_font_fub20_hr);
+				ucg->setFont(ucg_font_fub20_hf);
 				char s[12];
 				if( ok )
-					sprintf(s,"%3d\xb0/%2d", winddir, (int)(wind+0.5) );
+					sprintf(s,"%3d\xb0/%2d", winddir, (int)( Units::Airspeed2Kmh(wind)+0.5) );
 				else
-					sprintf(s,"%s", "  ---/--" );
+					sprintf(s,"%s", "    --/--" );
 				if( winddir < 10 )
 					ucg->printf("%s    ", s);
 				else if( winddir < 100 )

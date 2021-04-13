@@ -23,9 +23,6 @@ Wind::Wind() :
     		_drift(0),
 			nunberOfSamples( 0 ),
 			measurementStart( 0 ),
-			deliverWind( 0.0 ),
-			deltaSpeed( 0.0 ),
-			deltaHeading( 0.0 ),
 			tas( 0.0 ),
 			groundSpeed( 0.0 ),
 			trueCourse( 0.0 ),
@@ -36,6 +33,8 @@ Wind::Wind() :
 			sumTCDeviation( 0.0 ),
 			hMin( 0.0 ),
 			hMax( 0.0 ),
+			hMin_magn( 0.0 ),
+			hMax_magn( 0.0 ),
 			windDir( -1.0 ),
 			windSpeed( -1.0 )
 {
@@ -59,11 +58,6 @@ void Wind::start()
 		return;
 	}
 
-	// Read wind parameter from configuration, could be changed by the user in the meantime.
-	deliverWind = wind_measurement_time.get(); // default 10s
-	deltaSpeed = wind_speed_delta.get(); // default +- 10 km/h
-	deltaHeading = wind_heading_delta.get(); // default +- 5 degree
-
 	nunberOfSamples = 1;
 	measurementStart = getMsTime();
 	tas = double( getTAS() );
@@ -77,13 +71,20 @@ void Wind::start()
 		return;
 	}
 
+	// Read wind parameter from configuration, could be changed by the user in the meantime.
+	hMin_magn = trueHeading - wind_heading_delta.get();
+	hMax_magn = trueHeading + wind_heading_delta.get();
+
 	sumTas = tas;
 	sumGroundSpeed = groundSpeed;
 	sumTCDeviation = 0.0;
 	sumTHDeviation = 0.0;
 
 	// Define limit of observation window
-	hMin = trueHeading - deltaHeading;
+	double gndHeading = Flarm::getGndCourse();
+
+	hMin = gndHeading - wind_heading_delta.get();
+	hMax = gndHeading + wind_heading_delta.get();
 
 	windDir = -1.0;
 	windSpeed = -1.0;
@@ -104,6 +105,7 @@ bool Wind::calculateWind()
 			trueCourse == -1.0 || trueHeading == -1.0 ) {
 		// GPS status or GS, TC and TH start data are not valid
 		start();
+		ESP_LOGI(FNAME,"GPS Status bad or GS invalid");
 		return false;
 	}
 
@@ -112,18 +114,22 @@ bool Wind::calculateWind()
 
 	// Check, if we have a GS value > 25 km/h. GS can be nearly zero in the wave.
 	// If GS is to low, the measurement make no sense.
+	/*
 	if( cgs < 25.0 )
 	{
 		// We start a new measurement cycle.
 		start();
+		ESP_LOGI(FNAME,"GS %3.1f  < 25.0", cgs );
 		return false;
 	}
+	*/
 
 	// Check, if given ground speed deltas are valid.
-	if( fabs( groundSpeed - cgs ) > deltaSpeed )
+	if( fabs( groundSpeed - cgs ) > wind_speed_delta.get() )
 	{
 		// Condition violated, start a new measurements cycle.
 		start();
+		ESP_LOGI(FNAME,"GS %3.1f - CGS: %3.1f > %3.1f", groundSpeed, cgs, wind_speed_delta.get() );
 		return false;
 	}
 
@@ -131,37 +137,40 @@ bool Wind::calculateWind()
 	double ctas = double( getTAS() );
 
 	// check if given TAS deltas are valid.
-	if( fabs( tas - ctas ) > deltaSpeed )
+	if( fabs( tas - ctas ) > wind_speed_delta.get() )
 	{
 		// Condition violated, start a new measurements cycle.
 		start();
+		ESP_LOGI(FNAME,"TAS %3.1f - CTAS: %3.1f  > delta %3.1f", tas, ctas, wind_speed_delta.get() );
 		return false;
 	}
 
 	// Get current true heading
 	double cth = Compass::trueHeading( &ok );
 
-	if( cth >= (360.0 - deltaHeading ) )
+	if( cth >= (360.0 - wind_heading_delta.get() ) )
 	{
 		cth -= 360.0;
 	}
 
 	// Check if given magnetic heading deltas are valid.
-	if( ok == false || ! ( cth >= hMin && cth <= hMax ) )
+	if( ok == false || ! ( cth >= hMin_magn && cth <= hMax_magn ) )
 	{
 		// Condition violated, start a new measurements cycle.
 		start();
+		ESP_LOGI(FNAME,"cth %3.1f outside min: %3.1f max %3.1f", cth, hMin, hMax );
 		return false;
 	}
 
 	// Get true course
 	double ctc = Flarm::getGndCourse();
 
-	if( ctc >= (360.0 - deltaHeading ) )
+	if( ctc >= (360.0 - wind_heading_delta.get() ) )
 	{
 		ctc -= 360.0;
 	}
 
+	ESP_LOGI(FNAME,"GND-C: %3.1f  MGN-C: %3.1f GS: %3.1f", ctc, cth, cgs );
 	// Check if given true course deltas are valid.
 	if( ! ( ctc >= hMin && ctc <= hMax ) )
 	{
@@ -190,7 +199,7 @@ bool Wind::calculateWind()
 
 	sumTHDeviation += deviation;
 
-	if( elapsed() >= deliverWind * 1000 )
+	if( elapsed() >= wind_measurement_time.get() * 1000 )
 	{
 		/**
        calculate wind by using wind triangle, see more here:

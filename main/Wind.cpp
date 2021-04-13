@@ -172,11 +172,11 @@ bool Wind::calculateWind()
 
 	ESP_LOGI(FNAME,"GND-C: %3.1f  MGN-C: %3.1f GS: %3.1f", ctc, cth, cgs );
 	// Check if given true course deltas are valid.
-	if( ! ( ctc >=  && ctc <= hMax ) )
+	if( ! ( ctc >= hMin && ctc <= hMax ) )
 	{
 		// Condition violated, start a new measurements cycle.
 		start();
-		ESP_LOGI(FNAME,"Magnetic Heading CTC: %3.1f outside min: %3.1f max: %3.1f", ctc, hMin, hMax );
+		ESP_LOGI(FNAME,"Ground Heading CTC: %3.1f outside min: %3.1f max: %3.1f", ctc, hMin, hMax );
 		return false;
 	}
 

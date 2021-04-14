@@ -19,23 +19,23 @@
 
 
 Wind::Wind() :
-    		_drift(0),
-			nunberOfSamples( 0 ),
-			measurementStart( 0 ),
-			tas( 0.0 ),
-			groundSpeed( 0.0 ),
-			trueCourse( 0.0 ),
-			trueHeading( -1.0 ),
-			sumTas( 0.0 ),
-			sumGroundSpeed( 0.0 ),
-			sumTHDeviation( 0.0 ),
-			sumTCDeviation( 0.0 ),
-			hMin( 0.0 ),
-			hMax( 0.0 ),
-			hMin_magn( 0.0 ),
-			hMax_magn( 0.0 ),
-			windDir( -1.0 ),
-			windSpeed( -1.0 )
+_drift(0),
+nunberOfSamples( 0 ),
+measurementStart( 0 ),
+tas( 0.0 ),
+groundSpeed( 0.0 ),
+trueCourse( 0.0 ),
+trueHeading( -1.0 ),
+sumTas( 0.0 ),
+sumGroundSpeed( 0.0 ),
+sumTHDeviation( 0.0 ),
+sumTCDeviation( 0.0 ),
+hMin( 0.0 ),
+hMax( 0.0 ),
+hMin_magn( 0.0 ),
+hMax_magn( 0.0 ),
+windDir( -1.0 ),
+windSpeed( -1.0 )
 {
 }
 
@@ -76,31 +76,31 @@ void Wind::start()
 	sumTCDeviation = 0.0;
 	sumTHDeviation = 0.0;
 
-  // Define limit of TH observation window
-  hMin_magn = trueHeading - wind_heading_delta.get();
+	// Define limit of TH observation window
+	hMin_magn = trueHeading - wind_heading_delta.get();
 
-  if( hMin_magn < 0.0 ) {
-      hMin_magn += 360.0;
-  }
+	if( hMin_magn < 0.0 ) {
+		hMin_magn += 360.0;
+	}
 
-  hMax_magn = trueHeading + wind_heading_delta.get();
+	hMax_magn = trueHeading + wind_heading_delta.get();
 
-  if( hMax_magn >= 360.0 ) {
-      hMax_magn -= 360.0;
-  }
+	if( hMax_magn >= 360.0 ) {
+		hMax_magn -= 360.0;
+	}
 
-  // Define limit of TC observation window
+	// Define limit of TC observation window
 	hMin = trueCourse - wind_heading_delta.get();
 
-  if( hMin < 0.0 ) {
-      hMin += 360.0;
-  }
+	if( hMin < 0.0 ) {
+		hMin += 360.0;
+	}
 
 	hMax = trueCourse + wind_heading_delta.get();
 
-  if( hMax >= 360.0 ) {
-      hMax -= 360.0;
-  }
+	if( hMax >= 360.0 ) {
+		hMax -= 360.0;
+	}
 
 	// windDir = -1.0;
 	// windSpeed = -1.0;
@@ -114,11 +114,11 @@ void Wind::start()
  */
 bool Wind::calculateWind()
 {
-  // Check if wind requirements are fulfilled
-  if( compass_enable.get() == false || compass_calibrated.get() == false ||
-      wind_enable.get() == false ) {
-    return false;
-  }
+	// Check if wind requirements are fulfilled
+	if( compass_enable.get() == false || compass_calibrated.get() == false ||
+			wind_enable.get() == false ) {
+		return false;
+	}
 
 	// Check GPRMC data status, GS, TC and TH
 	if( Flarm::gpsStatus() == false || groundSpeed == -1.0 ||
@@ -142,7 +142,7 @@ bool Wind::calculateWind()
 		ESP_LOGI(FNAME,"GS %3.1f  < 25.0", cgs );
 		return false;
 	}
-	*/
+	 */
 
 	// Check, if given ground speed deltas are valid.
 	if( fabs( groundSpeed - cgs ) > Units::Airspeed2Kmh( wind_speed_delta.get() ) ) {
@@ -164,53 +164,53 @@ bool Wind::calculateWind()
 	}
 
 	// Get current true heading
-  bool ok = true;
+	bool ok = true;
 	double cth = Compass::trueHeading( &ok );
 
 	if( ok == false ) {
-    // No valid heading available
-    start();
-    return false;
-  }
+		// No valid heading available
+		start();
+		return false;
+	}
 
 	// Check if given magnetic heading deltas are valid.
 	if( hMin_magn < hMax_magn && ( cth < hMin_magn || cth > hMax_magn ) ) {
-    // Heading outside of observation window
-    ok = false;
-  }
+		// Heading outside of observation window
+		ok = false;
+	}
 	else if( hMin_magn > hMax_magn && cth < hMin_magn && cth > hMax_magn ) {
-    // Heading outside of observation window
-    ok = false;
-  }
+		// Heading outside of observation window
+		ok = false;
+	}
 
 	if( ok == false ) {
-    // Condition violated, start a new measurements cycle.
-    start();
-    ESP_LOGI(FNAME,"CTH %3.1f outside min: %3.1f max %3.1f", cth, hMin_magn, hMax_magn );
-    return false;
-  }
+		// Condition violated, start a new measurements cycle.
+		start();
+		ESP_LOGI(FNAME,"CTH %3.1f outside min: %3.1f max %3.1f", cth, hMin_magn, hMax_magn );
+		return false;
+	}
 
 	// Get current true course
 	double ctc = Flarm::getGndCourse();
 
-	ESP_LOGI(FNAME,"GND-Track: %3.1f  MGN-Track: %3.1f GS: %3.1f  TAS:%3.1f", ctc, cth, cgs, ctas );
+	ESP_LOGI(FNAME,"GND-Track: %3.1f GS:%3.1f MGN-Track: %3.1f IAS: %3.1f", ctc, cgs, cth, ctas );
 
 	// Check if given true course deltas are valid.
-  if( hMin < hMax && ( ctc < hMin || ctc > hMax ) ) {
-    // Heading outside of observation window
-    ok = false;
-  }
-  else if( hMin > hMax && ctc < hMin && ctc > hMax ) {
-    // Heading outside of observation window
-    ok = false;
-  }
+	if( hMin < hMax && ( ctc < hMin || ctc > hMax ) ) {
+		// Heading outside of observation window
+		ok = false;
+	}
+	else if( hMin > hMax && ctc < hMin && ctc > hMax ) {
+		// Heading outside of observation window
+		ok = false;
+	}
 
 	if( ok == false ) {
-    // Condition violated, start a new measurements cycle.
-    start();
-    ESP_LOGI(FNAME,"Ground Heading CTC: %3.1f outside min: %3.1f max: %3.1f", ctc, hMin, hMax );
-    return false;
-  }
+		// Condition violated, start a new measurements cycle.
+		start();
+		ESP_LOGI(FNAME,"Ground Heading CTC: %3.1f outside min: %3.1f max: %3.1f", ctc, hMin, hMax );
+		return false;
+	}
 
 	// Take all as new sample
 	nunberOfSamples++;
@@ -266,6 +266,8 @@ bool Wind::calculateWind()
 		double tas = sumTas / nos;
 		double gs = sumGroundSpeed / nos;
 
+		ESP_LOGI(FNAME,"TC:%3.1f TH:%3.1f  WCA:%3.1f°", tc, th, wca*180/M_PI );
+
 		// Apply the Cosinus sentence: c^2 = a^2 + b^2 − 2 * a * b * cos( α )
 		// to calculate the WS (wind speed)
 		double ws = sqrt( (tas * tas) + (gs * gs ) - ( 2 * tas * gs * cos( wca ) ) );
@@ -277,7 +279,7 @@ bool Wind::calculateWind()
 		double wa = asin( tas / term ) * 180. / M_PI;
 
 		// Wind direction: W = TC - WA
-		double wd = tc - wa;
+		double wd = (th-180 - wa);
 
 		if( wd < 0 )
 		{

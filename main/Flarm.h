@@ -29,8 +29,8 @@ public:
  	                                                                   }
 
  	static bool gpsStatus() { return gpsOK; }
-  static double getGndSpeedKnots() { return gndSpeedKnots; }
-  static double getGndCourse() { return gndCourse; }
+    static double getGndSpeedKnots() { return gndSpeedKnots; }
+    static double getGndCourse() { return gndCourse; }
  	static int bincom;
 
 private:

@@ -16,6 +16,7 @@
 #include "Wind.h"
 #include "Units.h"
 #include "sensor.h"
+#include "math.h"
 
 
 Wind::Wind() :
@@ -248,18 +249,23 @@ bool Wind::calculateWind()
 		double tc = sumTCDeviation / nos;
 
 		// normalize angle
-		if (tc >= 360.) { tc -= 360.; }
-		else if (tc < 0.) { tc += 360.; }
-
 		tc += trueCourse; // Average of TC
+
+		while(tc >= 360.)
+			tc -= 360.;
+		while(tc < 0.)
+			tc += 360.;
 
 		double th = sumTHDeviation / nos;
 
 		// normalize angle
-		if (th >= 360.) { th -= 360.; }
-		else if (th < 0.) { th += 360.; }
-
 		th += trueHeading; // Average of TH
+
+		while(th >= 360.)
+			th -= 360.;
+		while(th < 0.)
+			th += 360.;
+
 
 		// WCA in radians
 		double wca = (( sumTCDeviation - sumTHDeviation ) / nos ) * M_PI / 180.0;
@@ -281,14 +287,10 @@ bool Wind::calculateWind()
 		// Wind direction: W = TC - WA
 		double wd = (th-180 - wa);
 
-		if( wd < 0 )
-		{
+		while( wd < 0 )
 			wd += 360.;
-		}
-		else if( wd >= 360. )
-		{
+		while( wd >= 360. )
 			wd -= 360;
-		}
 
 		// store calculated results
 		windSpeed = ws;// wind speed in km/h

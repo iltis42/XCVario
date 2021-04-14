@@ -52,6 +52,9 @@ public:
 		return ( windDir != -1.0 && windSpeed != -1.0 );
 	}
 
+	void calculateWind( double tc, double gs, double th, double tas  );
+	void test();
+
 private:
 
 	/**

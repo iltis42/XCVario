@@ -266,37 +266,70 @@ bool Wind::calculateWind()
 		while(th < 0.)
 			th += 360.;
 
-
 		// WCA in radians
-		double wca = (( sumTCDeviation - sumTHDeviation ) / nos ) * M_PI / 180.0;
 		double tas = sumTas / nos;
 		double gs = sumGroundSpeed / nos;
 
-		ESP_LOGI(FNAME,"TC:%3.1f TH:%3.1f  WCA:%3.1f°", tc, th, wca*180/M_PI );
-
-		// Apply the Cosinus sentence: c^2 = a^2 + b^2 − 2 * a * b * cos( α )
-		// to calculate the WS (wind speed)
-		double ws = sqrt( (tas * tas) + (gs * gs ) - ( 2 * tas * gs * cos( wca ) ) );
-
-		// WS / sin(WCA)
-		double term = ws / sin( wca );
-
-		// calculate WA (wind angle) in degree
-		double wa = asin( tas / term ) * 180. / M_PI;
-
-		// Wind direction: W = TC - WA
-		double wd = (th-180 - wa);
-
-		while( wd < 0 )
-			wd += 360.;
-		while( wd >= 360. )
-			wd -= 360;
-
-		// store calculated results
-		windSpeed = ws;// wind speed in km/h
-		windDir = wd;  // wind direction in degrees
-		ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h", wd, ws );
+		calculateWind( tc, gs, th, tas  );
 		return true;
+
 	}
 	return false;
 }
+
+void Wind::calculateWind( double tc, double gs, double th, double tas  ){
+	ESP_LOGI(FNAME,"calculateWind: TC:%3.1f GS:%3.1f TH:%3.1f TAS:%3.1f", tc, gs, th, tas );
+
+	// Wind correction angle WCA
+	double wca = ( th - tc ) * M_PI / 180.0;
+	ESP_LOGI(FNAME,"WCA:%3.1f°", wca*180/M_PI );
+
+	// Apply the Cosinus sentence: c^2 = a^2 + b^2 − 2 * a * b * cos( α )
+	double ws = sqrt( (tas * tas) + (gs * gs ) - ( 2 * tas * gs * cos( wca ) ) );
+	// WS / sin(WCA)
+	double term = ws / sin( wca );
+
+	// calculate WA (wind angle) in degree
+	double wa = asin( tas / term ) * 180. / M_PI;
+
+	// Wind direction: W = TC - WA
+	double wd = (tc - wa);
+
+	while( wd < 0 )
+		wd += 360.;
+	while( wd >= 360. )
+		wd -= 360;
+
+	// store calculated results
+	windSpeed = ws;// wind speed in km/h
+	windDir = wd;  // wind direction in degrees
+	ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h", wd, ws );
+}
+
+void Wind::test(){    // Class Test
+	calculateWind( 90, 100, 0, 100 );
+	if( int( windSpeed ) != 141 || int(windDir +0.5) != 135 )
+		ESP_LOGI(FNAME,"Failed");
+	calculateWind( 270, 100, 0, 100 );
+	if( int( windSpeed ) != 141 || int(windDir +0.5) != 225 )
+		ESP_LOGI(FNAME,"Failed");
+
+	calculateWind( 0, 100, 90, 100 );
+	if( int( windSpeed ) != 141 || int(windDir +0.5) != 315 )
+		ESP_LOGI(FNAME,"Failed");
+	calculateWind( 0, 100, 270, 100 );
+	if( int( windSpeed ) != 141 || int(windDir +0.5) != 45 )
+		ESP_LOGI(FNAME,"Failed");
+
+	calculateWind( 90, 100, 180, 100 );
+	if( int( windSpeed ) != 141 || int(windDir +0.5) != 45 )
+		ESP_LOGI(FNAME,"Failed");
+
+	calculateWind( 180, 100, 270, 100 );
+	if( int( windSpeed ) != 141 || int(windDir +0.5) != 135 )
+		ESP_LOGI(FNAME,"Failed");
+
+}
+
+
+

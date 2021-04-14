@@ -5,9 +5,8 @@
  *
  *  Author: Eckhard Völlm, Axel Pauli
  *
- *  Last update: 2021-04-12
+ *  Last update: 2021-04-14
  */
-
 #include <algorithm>
 #include <cmath>
 #include "esp_system.h"
@@ -47,7 +46,7 @@ void Wind::start()
 {
 	if( Flarm::gpsStatus() == true ) {
 		// Ground speed in Km/h
-		groundSpeed = Units::knots2kmh (Flarm::getGndSpeedKnots());
+		groundSpeed = Units::knots2kmh(Flarm::getGndSpeedKnots());
 		ESP_LOGI(FNAME,"start GS %3.1f", groundSpeed );
 		trueCourse = Flarm::getGndCourse();
 	}
@@ -72,34 +71,54 @@ void Wind::start()
 		return;
 	}
 
-	// Read wind parameter from configuration, could be changed by the user in the meantime.
-	hMin_magn = trueHeading - wind_heading_delta.get();
-	hMax_magn = trueHeading + wind_heading_delta.get();
-
 	sumTas = tas;
 	sumGroundSpeed = groundSpeed;
 	sumTCDeviation = 0.0;
 	sumTHDeviation = 0.0;
 
-	// Define limit of observation window
-	double gndHeading = Flarm::getGndCourse();
+  // Define limit of TH observation window
+  hMin_magn = trueHeading - wind_heading_delta.get();
 
-	hMin = gndHeading - wind_heading_delta.get();
-	hMax = gndHeading + wind_heading_delta.get();
+  if( hMin_magn < 0.0 ) {
+      hMin_magn += 360.0;
+  }
+
+  hMax_magn = trueHeading + wind_heading_delta.get();
+
+  if( hMax_magn >= 360.0 ) {
+      hMax_magn -= 360.0;
+  }
+
+  // Define limit of TC observation window
+	hMin = trueCourse - wind_heading_delta.get();
+
+  if( hMin < 0.0 ) {
+      hMin += 360.0;
+  }
+
+	hMax = trueCourse + wind_heading_delta.get();
+
+  if( hMax >= 360.0 ) {
+      hMax -= 360.0;
+  }
 
 	// windDir = -1.0;
 	// windSpeed = -1.0;
 }
 
 /**
- * Measurment cycle for wind calculation in straight flight. Should be
+ * Measurement cycle for wind calculation in straight flight. Should be
  * triggered periodically, maybe once per second.
  *
  * Returns true, if a new wind was calculated.
  */
 bool Wind::calculateWind()
 {
-	bool ok = false;
+  // Check if wind requirements are fulfilled
+  if( compass_enable.get() == false || compass_calibrated.get() == false ||
+      wind_enable.get() == false ) {
+    return false;
+  }
 
 	// Check GPRMC data status, GS, TC and TH
 	if( Flarm::gpsStatus() == false || groundSpeed == -1.0 ||
@@ -111,7 +130,7 @@ bool Wind::calculateWind()
 	}
 
 	// Get current ground speed in km/h
-	double cgs = Units::knots2kmh ( Flarm::getGndSpeedKnots() );
+	double cgs = Units::knots2kmh( Flarm::getGndSpeedKnots() );
 
 	// Check, if we have a GS value > 25 km/h. GS can be nearly zero in the wave.
 	// If GS is to low, the measurement make no sense.
@@ -126,8 +145,7 @@ bool Wind::calculateWind()
 	*/
 
 	// Check, if given ground speed deltas are valid.
-	if( fabs( groundSpeed - cgs ) > Units::Airspeed2Kmh( wind_speed_delta.get() ) )
-	{
+	if( fabs( groundSpeed - cgs ) > Units::Airspeed2Kmh( wind_speed_delta.get() ) ) {
 		// Condition violated, start a new measurements cycle.
 		start();
 		ESP_LOGI(FNAME,"GS %3.1f - CGS: %3.1f > %3.1f", groundSpeed, cgs, Units::Airspeed2Kmh( wind_speed_delta.get() ) );
@@ -138,8 +156,7 @@ bool Wind::calculateWind()
 	double ctas = double( getTAS() );
 
 	// check if given TAS deltas are valid.
-	if( fabs( tas - ctas ) > Units::Airspeed2Kmh( wind_speed_delta.get() ) )
-	{
+	if( fabs( tas - ctas ) > Units::Airspeed2Kmh( wind_speed_delta.get() ) ) {
 		// Condition violated, start a new measurements cycle.
 		start();
 		ESP_LOGI(FNAME,"TAS %3.1f - CTAS: %3.1f  > delta %3.1f", tas, ctas, Units::Airspeed2Kmh( wind_speed_delta.get() ) );
@@ -147,39 +164,53 @@ bool Wind::calculateWind()
 	}
 
 	// Get current true heading
+  bool ok = true;
 	double cth = Compass::trueHeading( &ok );
 
-	if( cth >= (360.0 - wind_heading_delta.get() ) )
-	{
-		cth -= 360.0;
-	}
+	if( ok == false ) {
+    // No valid heading available
+    start();
+    return false;
+  }
 
 	// Check if given magnetic heading deltas are valid.
-	if( ok == false || ! ( cth >= hMin_magn && cth <= hMax_magn ) )
-	{
-		// Condition violated, start a new measurements cycle.
-		start();
-		ESP_LOGI(FNAME,"cth %3.1f outside min: %3.1f max %3.1f", cth, hMin, hMax );
-		return false;
-	}
+	if( hMin_magn < hMax_magn && ( cth < hMin_magn || cth > hMax_magn ) ) {
+    // Heading outside of observation window
+    ok = false;
+  }
+	else if( hMin_magn > hMax_magn && cth < hMin_magn && cth > hMax_magn ) {
+    // Heading outside of observation window
+    ok = false;
+  }
 
-	// Get true course
+	if( ok == false ) {
+    // Condition violated, start a new measurements cycle.
+    start();
+    ESP_LOGI(FNAME,"CTH %3.1f outside min: %3.1f max %3.1f", cth, hMin_magn, hMax_magn );
+    return false;
+  }
+
+	// Get current true course
 	double ctc = Flarm::getGndCourse();
 
-	if( ctc >= (360.0 - wind_heading_delta.get() ) )
-	{
-		ctc -= 360.0;
-	}
-
 	ESP_LOGI(FNAME,"GND-Track: %3.1f  MGN-Track: %3.1f GS: %3.1f  TAS:%3.1f", ctc, cth, cgs, ctas );
+
 	// Check if given true course deltas are valid.
-	if( ! ( ctc >= hMin && ctc <= hMax ) )
-	{
-		// Condition violated, start a new measurements cycle.
-		start();
-		ESP_LOGI(FNAME,"Ground Heading CTC: %3.1f outside min: %3.1f max: %3.1f", ctc, hMin, hMax );
-		return false;
-	}
+  if( hMin < hMax && ( ctc < hMin || ctc > hMax ) ) {
+    // Heading outside of observation window
+    ok = false;
+  }
+  else if( hMin > hMax && ctc < hMin && ctc > hMax ) {
+    // Heading outside of observation window
+    ok = false;
+  }
+
+	if( ok == false ) {
+    // Condition violated, start a new measurements cycle.
+    start();
+    ESP_LOGI(FNAME,"Ground Heading CTC: %3.1f outside min: %3.1f max: %3.1f", ctc, hMin, hMax );
+    return false;
+  }
 
 	// Take all as new sample
 	nunberOfSamples++;

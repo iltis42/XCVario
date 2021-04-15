@@ -18,6 +18,9 @@
 #include "sensor.h"
 #include "math.h"
 
+// degree to rad conversion
+#define D2R(x) ((x)/57.2957795131)
+#define R2D(x) ((x)*57.2957795131)
 
 Wind::Wind() :
 _drift(0),
@@ -29,8 +32,8 @@ trueCourse( 0.0 ),
 trueHeading( -1.0 ),
 sumTas( 0.0 ),
 sumGroundSpeed( 0.0 ),
-sumTHDeviation( 0.0 ),
-sumTCDeviation( 0.0 ),
+averageTH( 0.0 ),
+averageTC( 0.0 ),
 hMin( 0.0 ),
 hMax( 0.0 ),
 hMin_magn( 0.0 ),
@@ -38,6 +41,28 @@ hMax_magn( 0.0 ),
 windDir( -1.0 ),
 windSpeed( -1.0 )
 {
+}
+
+
+
+double Wind::meanAngle( double angle, double average ){
+	bool neg=false;
+	if( angle > 180 ){
+		angle = angle - 360;
+		neg=true;
+	}
+	if( average > 180 ){
+		average = average - 360;
+		neg=true;
+	}
+	double radangle=D2R(angle);
+	double radaverage=D2R(average);
+	double result = R2D(atan2( sin(radangle)+sin(radaverage), cos(radangle)+cos(radaverage)));
+	if( neg )
+		result = result + 360;
+	if( result > 360 )
+		result = result - 360;
+	return result;
 }
 
 /**
@@ -74,8 +99,9 @@ void Wind::start()
 
 	sumTas = tas;
 	sumGroundSpeed = groundSpeed;
-	sumTCDeviation = 0.0;
-	sumTHDeviation = 0.0;
+
+	averageTC = trueCourse;
+	averageTH = trueHeading;
 
 	// Define limit of TH observation window
 	hMin_magn = trueHeading - wind_heading_delta.get();
@@ -102,7 +128,6 @@ void Wind::start()
 	if( hMax >= 360.0 ) {
 		hMax -= 360.0;
 	}
-
 	// windDir = -1.0;
 	// windSpeed = -1.0;
 }
@@ -220,18 +245,13 @@ bool Wind::calculateWind()
 	sumTas += ctas;
 	sumGroundSpeed += cgs;
 
-	// Calculate course deviations
-	double deviation = ctc - trueCourse;
+	// Calculate average true course TC
+	averageTC = averageTC + (meanAngle( ctc, averageTC ) - averageTC)*0.1;
 
-	if( deviation < -180. ) { deviation += 360.; }
+	// Calculate average true heading TH
+	averageTH = averageTH + (meanAngle( cth, averageTH ) - averageTH)*0.1;
 
-	sumTCDeviation += deviation;
-
-	deviation = cth - trueHeading;
-
-	if( deviation < -180. ) { deviation += 360.; }
-
-	sumTHDeviation += deviation;
+	ESP_LOGI(FNAME,"avTC: %3.1f avTH:%3.1f ",averageTC,averageTH  );
 
 	if( elapsed() >= wind_measurement_time.get() * 1000 )
 	{
@@ -246,21 +266,15 @@ bool Wind::calculateWind()
 		 */
 		double nos = double( nunberOfSamples );
 
-		double tc = sumTCDeviation / nos;
-
+		double tc = averageTC;
 		// normalize angle
-		tc += trueCourse; // Average of TC
-
 		while(tc >= 360.)
 			tc -= 360.;
 		while(tc < 0.)
 			tc += 360.;
 
-		double th = sumTHDeviation / nos;
-
+		double th = averageTH;
 		// normalize angle
-		th += trueHeading; // Average of TH
-
 		while(th >= 360.)
 			th -= 360.;
 		while(th < 0.)
@@ -326,7 +340,7 @@ void Wind::test(){    // Class Test
 		ESP_LOGI(FNAME,"Failed");
 
 	calculateWind( 180, 100, 270, 100 );
-	if( int( windSpeed ) != 141 || int(windDir +0.5) != 135 )
+	if( int( windSpeed ) != 141 || int(windDir +0.5) != 135  )
 		ESP_LOGI(FNAME,"Failed");
 
 }

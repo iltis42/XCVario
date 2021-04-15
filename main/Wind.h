@@ -54,6 +54,7 @@ public:
 
 	void calculateWind( double tc, double gs, double th, double tas  );
 	void test();
+	double meanAngle( double angle, double average );
 
 private:
 
@@ -71,12 +72,12 @@ private:
 	uint64_t measurementStart;     // measurement start in milliseconds
 	double tas;                    // TAS in km/h
 	double groundSpeed;            // GS in km/h
-	double trueCourse;             // Compass true heading
-	double trueHeading;            // GPS heading
+	double trueCourse;             // GPS course
+	double trueHeading;            // Compass heading
 	double sumTas;                 // TAS in km/h
 	double sumGroundSpeed;         // sum of GS in km/h
-	double sumTHDeviation;         // sum of Compass true heading deviation
-	double sumTCDeviation;         // sum of GPS heading (true course) deviation
+	double averageTH;         // sum of Compass true heading
+	double averageTC;         // sum of GPS heading (true course)
 	double hMin;                   // lower limit of heading observation window
 	double hMax;                   // upper limit of heading observation window
 	double hMin_magn;              // lower limit of magnetic heading observation window

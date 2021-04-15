@@ -1012,7 +1012,7 @@ void IpsDisplay::drawCompass(){
 				heading -= 360;
 			// ESP_LOGI(FNAME, "heading %d, valid %d", heading, Compass::headingValid() );
 			if( prev_heading != heading || !(tick%32) ){
-				ucg->setPrintPos(113,102);
+				ucg->setPrintPos(105,104);
 				ucg->setColor(  COLOR_WHITE  );
 				ucg->setFont(ucg_font_fub20_hr);
 				char s[12];
@@ -1022,9 +1022,9 @@ void IpsDisplay::drawCompass(){
 					sprintf(s,"%s", "  ---" );
 
 				if( heading < 10 )
-					ucg->printf("%s    ", s);
+					ucg->printf("%s     ", s);
 				else if( heading < 100 )
-					ucg->printf("%s  ", s);
+					ucg->printf("%s   ", s);
 				else
 					ucg->printf("%s ", s);
 				ucg->setFont(ucg_font_fub20_hf);

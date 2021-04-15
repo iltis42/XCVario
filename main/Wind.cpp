@@ -47,7 +47,7 @@ windSpeed( -1.0 )
 
 double Wind::meanAngle( double angle, double average ){
 	bool neg=false;
-	if( angle > 180 ){
+	if( angle > 180 ){  // check if angle is in the second half and covernt to -+ 180° representation in case
 		angle = angle - 360;
 		neg=true;
 	}
@@ -58,7 +58,7 @@ double Wind::meanAngle( double angle, double average ){
 	double radangle=D2R(angle);
 	double radaverage=D2R(average);
 	double result = R2D(atan2( sin(radangle)+sin(radaverage), cos(radangle)+cos(radaverage)));
-	if( neg )
+	if( neg ) // convert back from -+180° representation
 		result = result + 360;
 	if( result > 360 )
 		result = result - 360;

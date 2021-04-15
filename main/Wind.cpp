@@ -43,6 +43,13 @@ windSpeed( -1.0 )
 {
 }
 
+double Wind::normAngle( double angle ){
+	while( angle < 0 )
+		angle += 360.;
+	while( angle >= 360. )
+		angle -= 360;
+	return angle;
+}
 
 
 double Wind::meanAngle( double angle, double average ){
@@ -158,8 +165,6 @@ bool Wind::calculateWind()
 	// Get current ground speed in km/h
 	double cgs = Units::knots2kmh( Flarm::getGndSpeedKnots() );
 
-
-
 	// Check, if given ground speed deltas are valid.
 	if( fabs( groundSpeed - cgs ) > Units::Airspeed2Kmh( wind_speed_delta.get() ) ) {
 		// Condition violated, start a new measurements cycle.
@@ -220,22 +225,13 @@ bool Wind::calculateWind()
 	// Get current true course
 	double ctc = Flarm::getGndCourse();
 
-	// Check if given true course deltas are valid.
-	if( hMin < hMax && ( ctc < hMin || ctc > hMax ) ) {
-		// Heading outside of observation window
-		ok = false;
-	}
-	else if( hMin > hMax && ctc < hMin && ctc > hMax ) {
-		// Heading outside of observation window
-		ok = false;
-	}
-
-	if( ok == false ) {
-		// Condition violated, start a new measurements cycle.
+	// Check if given GPS true course deltas are valid.
+	if( (ctc < hMin || ctc > hMax) && (cgs > 5.0)  ) { // below a minimum Groundspeed, we ignore this vector
 		start();
 		ESP_LOGI(FNAME,"Restart Cycle, Ground Heading CTC: %3.1f outside min: %3.1f max: %3.1f", ctc, hMin, hMax );
 		return false;
 	}
+
 	// Take all as new sample
 	nunberOfSamples++;
 
@@ -265,58 +261,44 @@ bool Wind::calculateWind()
 		 */
 		double nos = double( nunberOfSamples );
 
-		double tc = averageTC;
-		// normalize angle
-		while(tc >= 360.)
-			tc -= 360.;
-		while(tc < 0.)
-			tc += 360.;
+		double tc = normAngle( averageTC );
 
-		double th = averageTH;
-		// normalize angle
-		while(th >= 360.)
-			th -= 360.;
-		while(th < 0.)
-			th += 360.;
+		double th = normAngle( averageTH );
 
 		// WCA in radians
 		double tas = sumTas / nos;
 		double gs = sumGroundSpeed / nos;
 
 		calculateWind( tc, gs, th, tas  );
+		measurementStart = getMsTime();  // it is enough to calculate every ten seconds a new wind
 		return true;
-
 	}
 	return false;
 }
 
 void Wind::calculateWind( double tc, double gs, double th, double tas  ){
 	ESP_LOGI(FNAME,"calculateWind: TC:%3.1f GS:%3.1f TH:%3.1f TAS:%3.1f", tc, gs, th, tas );
-
 	// Wind correction angle WCA
-	double wca = ( th - tc ) * M_PI / 180.0;
-	ESP_LOGI(FNAME,"WCA:%3.1f°", wca*180/M_PI );
-
+	double wca = D2R( th - tc );  // catch the case when in wave there is no groundspeed and ground course is nonsense
+	if( gs < 5 ){
+		wca = 0;   // with invalid GPS directions we assume wca to be zero and tc=th
+		tc = th;   // what will deliver heading and airspeed for wind
+	}
 	// Apply the Cosinus sentence: c^2 = a^2 + b^2 − 2 * a * b * cos( α )
 	double ws = sqrt( (tas * tas) + (gs * gs ) - ( 2 * tas * gs * cos( wca ) ) );
 	// WS / sin(WCA)
 	double term = ws / sin( wca );
-
 	// calculate WA (wind angle) in degree
-	double wa = asin( tas / term ) * 180. / M_PI;
-
+	double wa = R2D(asin( tas / term ) );
 	// Wind direction: W = TC - WA
-	double wd = (tc - wa);
-
-	while( wd < 0 )
-		wd += 360.;
-	while( wd >= 360. )
-		wd -= 360;
-
+	double wd = normAngle(tc - wa);
+	// Alternative Method using TH
+	// Wind direction: W = TH +WCA - WA
+	// double wd = normAngle( (th + wca - wa) );
 	// store calculated results
 	windSpeed = ws;// wind speed in km/h
 	windDir = wd;  // wind direction in degrees
-	ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h", wd, ws );
+	ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h  WCA: %3.1f  WA: %3.1f", wd, ws, R2D(wca), wa );
 }
 
 void Wind::test(){    // Class Test

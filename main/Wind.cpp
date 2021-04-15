@@ -73,7 +73,6 @@ void Wind::start()
 	if( Flarm::gpsStatus() == true ) {
 		// Ground speed in Km/h
 		groundSpeed = Units::knots2kmh(Flarm::getGndSpeedKnots());
-		ESP_LOGI(FNAME,"start GS %3.1f", groundSpeed );
 		trueCourse = Flarm::getGndCourse();
 	}
 	else {
@@ -140,6 +139,7 @@ void Wind::start()
  */
 bool Wind::calculateWind()
 {
+	// ESP_LOGI(FNAME,"calculateWind");
 	// Check if wind requirements are fulfilled
 	if( compass_enable.get() == false || compass_calibrated.get() == false ||
 			wind_enable.get() == false ) {
@@ -236,8 +236,6 @@ bool Wind::calculateWind()
 		ESP_LOGI(FNAME,"Restart Cycle, Ground Heading CTC: %3.1f outside min: %3.1f max: %3.1f", ctc, hMin, hMax );
 		return false;
 	}
-	ESP_LOGI(FNAME,"GND-Track: %3.1f GS:%3.1f MGN-Track: %3.1f IAS: %3.1f", ctc, cgs, cth, ctas );
-
 	// Take all as new sample
 	nunberOfSamples++;
 
@@ -251,7 +249,8 @@ bool Wind::calculateWind()
 	// Calculate average true heading TH
 	averageTH = averageTH + (meanAngle( cth, averageTH ) - averageTH)*0.1;
 
-	ESP_LOGI(FNAME,"avTC: %3.1f avTH:%3.1f ",averageTC,averageTH  );
+	ESP_LOGI(FNAME,"%d TC: %3.1f (avg:%3.1f) GS:%3.1f TH: %3.1f (avg:%3.1f) IAS: %3.1f", nunberOfSamples, ctc, averageTC, cgs, cth, averageTH, ctas );
+	// ESP_LOGI(FNAME,"avTC: %3.1f avTH:%3.1f ",averageTC,averageTH  );
 
 	if( elapsed() >= wind_measurement_time.get() * 1000 )
 	{

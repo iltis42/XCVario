@@ -113,8 +113,11 @@ void Flarm::parseGPRMC( char *gprmc ) {
 		gpsOK = true;
 		theWind.calculateWind();
 	}
-	else
+	else{
 		gpsOK = false;
+		ESP_LOGI(FNAME,"GPRMC, GPS not OK: %s", gprmc );
+	}
+
 	// ESP_LOGI(FNAME,"parseGPRMC() GPS: %d, Speed: %3.1f knots, Track: %3.1f° ", gpsOK, gndSpeedKnots, gndCourse );
 }
 

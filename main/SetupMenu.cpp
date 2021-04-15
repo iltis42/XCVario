@@ -970,6 +970,10 @@ void SetupMenu::setup( )
 		sms->addEntry( "Reset" );
 		windME->addMenu( sms );
 
+		SetupMenuValFloat *smgsm = new SetupMenuValFloat( "Minimum Airspeed",	nullptr, sunit.c_str(), 0, 60.0, 1.0, nullptr, false, &wind_as_min );
+		windME->addMenu( smgsm );
+		smgsm->setHelp(PROGMEM "Minimum Airspeed to start wind calculation");
+
 		SetupMenuSelect * btm = new SetupMenuSelect( "Wireless", true, 0, true, &blue_enable );
 		btm->setHelp( PROGMEM "Activate type wireless interface to connect navigation devices running e.g. XCSoar, or to another XCVario as client");
 		btm->addEntry( "Disable");

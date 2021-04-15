@@ -179,6 +179,7 @@ SetupNG<float>          wind_speed_delta( "WIND_V_Delta", 10 );
 SetupNG<float>          wind_heading_delta( "WIND_H_Delta", 5 );
 SetupNG<float>          wind_measurement_time( "WIND_MT", 10 );
 SetupNG<int> 			wind_enable( "WIND_ENA", 0);
+SetupNG<float> 			wind_as_min( "WIND_ASM", 25);
 SetupNG<int> 			s2f_with_gload( "S2G_GLOAD", 1 );       // considering g load in S2F
 SetupNG<int> 			s2f_blockspeed( "S2G_BLOCKSPEED", 0 );  // considering netto vario and g load for S2F or not
 SetupNG<int> 			wk_label_plus_3( "WKLP3", 32);  //  L

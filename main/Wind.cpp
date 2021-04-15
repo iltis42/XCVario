@@ -54,7 +54,7 @@ double Wind::normAngle( double angle ){
 
 double Wind::meanAngle( double angle, double average ){
 	bool neg=false;
-	if( angle > 180 ){  // check if angle is in the second half and covernt to -+ 180° representation in case
+	if( angle > 180 ){  // check if angle is in the second half and convert to -+ 180° representation in case
 		angle = angle - 360;
 		neg=true;
 	}
@@ -110,30 +110,13 @@ void Wind::start()
 	averageTH = trueHeading;
 
 	// Define limit of TH observation window
-	hMin_magn = trueHeading - wind_heading_delta.get();
-
-	if( hMin_magn < 0.0 ) {
-		hMin_magn += 360.0;
-	}
-
-	hMax_magn = trueHeading + wind_heading_delta.get();
-
-	if( hMax_magn >= 360.0 ) {
-		hMax_magn -= 360.0;
-	}
+	hMin_magn = normAngle( trueHeading - wind_heading_delta.get() );
+	hMax_magn = normAngle( trueHeading + wind_heading_delta.get() );
 
 	// Define limit of TC observation window
-	hMin = trueCourse - wind_heading_delta.get();
+	hMin = normAngle( trueCourse - wind_heading_delta.get() );
+	hMax = normAngle( trueCourse + wind_heading_delta.get() );
 
-	if( hMin < 0.0 ) {
-		hMin += 360.0;
-	}
-
-	hMax = trueCourse + wind_heading_delta.get();
-
-	if( hMax >= 360.0 ) {
-		hMax -= 360.0;
-	}
 	// windDir = -1.0;
 	// windSpeed = -1.0;
 }
@@ -148,8 +131,7 @@ bool Wind::calculateWind()
 {
 	// ESP_LOGI(FNAME,"calculateWind");
 	// Check if wind requirements are fulfilled
-	if( compass_enable.get() == false || compass_calibrated.get() == false ||
-			wind_enable.get() == false ) {
+	if( compass_enable.get() == false || compass_calibrated.get() == false || wind_enable.get() == false ) {
 		return false;
 	}
 
@@ -185,8 +167,7 @@ bool Wind::calculateWind()
 	}
 
 	// Check, if we have a AS value > minimum, default is 25 km/h.
-	// If GS is too, the measurement makes also sense, hence if we are not flying it doesn't
-
+	// If GS is nearly zero, the measurement makes also sense (wave), hence if we are not flying it doesn't
 	if( ctas < Units::Airspeed2Kmh( wind_as_min.get() ) )
 	{
 		// We start a new measurement cycle.
@@ -260,7 +241,6 @@ bool Wind::calculateWind()
        WCA = Heading - DesiredCourse
 		 */
 		double nos = double( nunberOfSamples );
-
 		double tc = normAngle( averageTC );
 
 		double th = normAngle( averageTH );
@@ -284,21 +264,14 @@ void Wind::calculateWind( double tc, double gs, double th, double tas  ){
 		wca = 0;   // with invalid GPS directions we assume wca to be zero and tc=th
 		tc = th;   // what will deliver heading and airspeed for wind
 	}
-	// Apply the Cosinus sentence: c^2 = a^2 + b^2 − 2 * a * b * cos( α )
-	double ws = sqrt( (tas * tas) + (gs * gs ) - ( 2 * tas * gs * cos( wca ) ) );
-	// WS / sin(WCA)
-	double term = ws / sin( wca );
+	// Apply the Cosinus sentence: c^2 = a^2 + b^2 − 2 * a * b * cos( α ) for wind speed in km/h
+	windSpeed = sqrt( (tas * tas) + (gs * gs ) - ( 2 * tas * gs * cos( wca ) ) );
 	// calculate WA (wind angle) in degree
-	double wa = R2D(asin( tas / term ) );
+	double wa = R2D(asin( tas / (windSpeed/sin(wca)) ));
 	// Wind direction: W = TC - WA
-	double wd = normAngle(tc - wa);
-	// Alternative Method using TH
-	// Wind direction: W = TH +WCA - WA
-	// double wd = normAngle( (th + wca - wa) );
-	// store calculated results
-	windSpeed = ws;// wind speed in km/h
-	windDir = wd;  // wind direction in degrees
-	ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h  WCA: %3.1f  WA: %3.1f", wd, ws, R2D(wca), wa );
+	windDir = normAngle(tc - wa);  // wind direction in degrees
+
+	ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h  WCA: %3.1f  WA: %3.1f", windDir, windSpeed, R2D(wca), wa );
 }
 
 void Wind::test(){    // Class Test

@@ -1138,7 +1138,7 @@ void SetupMenu::setup( )
 			hardware->addMenu( ahrs );
 			mpu = new SetupMenuSelect( "AHRS Option", true , 0, true, &attitude_indicator );
 			ahrs->addMenu( mpu );
-			mpu->setHelp( PROGMEM "Enable High Accuracy Attitude Sensor (AHRS) with valid license key entered");
+			mpu->setHelp( PROGMEM "Enable High Accuracy Attitude Sensor (AHRS) NMEA messages (need valid license key entered)");
 			mpu->addEntry( "Disable");
 			if( ahrsKeyValid )
 				mpu->addEntry( "Enable");

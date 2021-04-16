@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@d8883343c6e27ee80ad71272c86bc6725231dd4f
   
     - name: Build 
       # Use a bash shell so we can use the same syntax for environment variable

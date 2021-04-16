@@ -1277,8 +1277,8 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	if( flap_enable.get() && !(tick%7) )
 	{
 		float wkspeed = airspeed * sqrt( 100.0/( ballast.get() +100.0) );
-		int wki = Flap::getOptimumInt( wkspeed );
-		float wkpos=Flap::getOptimum( wkspeed, wki );
+		int wki;
+		float wkpos = Flap::getOptimum( wkspeed, wki );
 		int wk = (int)((wki - wkpos + 0.5)*10);
 		// ESP_LOGI(FNAME,"as:%d wksp:%f wki:%d wk:%d wkpos:%f", airspeed, wkspeed, wki, wk, wkpos );
 		if( wkposalt != wk || wksensoralt != (int)(wksensor*10) || !(tick%7) ) {
@@ -1507,7 +1507,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 	if( flap_enable.get() && !(tick%7) )
 	{
 		float wkspeed = airspeed * sqrt( 100.0/( ballast.get() +100.0) );
-		int wki = Flap::getOptimumInt( wkspeed );
+		int wki;
 		float wkpos=Flap::getOptimum( wkspeed, wki );
 		int wk = (int)((wki - wkpos + 0.5)*10);
 		// ESP_LOGI(FNAME,"as:%d wksp:%f wki:%d wk:%d", airspeed, wkspeed, wki, wk  );
@@ -1634,7 +1634,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	if( flap_enable.get() && !(tick%7) )
 	{
 		float wkspeed = airspeed * sqrt( 100.0/( ballast.get() +100.0) );
-		int wki = Flap::getOptimumInt( wkspeed );
+		int wki;
 		float wkpos=Flap::getOptimum( wkspeed, wki );
 		int wk = (int)((wki - wkpos + 0.5)*10);
 		if( wkposalt != wk ) {

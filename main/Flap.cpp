@@ -584,15 +584,24 @@ void  Flap::initSensor(){
 	}
 }
 
-float Flap::getOptimum( float wks, int wki ){
+float Flap::getOptimum( float wks, int& wki )
+{
+	// Correct for current g load
+	float g_force = accelG[0];
+	if ( g_force < 0.3 ) {
+		g_force = 0.3; // Ignore meaningless values below 0.3g
+	}
+	float g_speed = wks / sqrt(g_force); // reduce current speed, instead of increase switch points
+	// ESP_LOGI(FNAME,"g corrected speed: %3.1f", g_speed );
+	wki = getOptimumInt(g_speed);
 	float minv = flapSpeeds[wki+4];
 	float maxv = flapSpeeds[wki+3];
 	// ESP_LOGI(FNAME,"wks:%f min:%f max:%f wki:%d", wks, minv, maxv, wki);
-	if( wks <= maxv && wks >= minv )
-		return ((wks-minv)/(maxv-minv));
-	else if( wks > maxv )
+	if( g_speed <= maxv && g_speed >= minv )
+		return ((g_speed-minv)/(maxv-minv));
+	else if( g_speed > maxv )
 		return 1;
-	else if( wks < minv )
+	else if( g_speed < minv )
 		return 0.5;
 	return 0.5;
 }

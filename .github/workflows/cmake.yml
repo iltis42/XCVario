@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@d8883343c6e27ee80ad71272c86bc6725231dd4f
+    - uses: actions/checkout@v2
   
     - name: Build 
       # Use a bash shell so we can use the same syntax for environment variable
@@ -27,7 +27,7 @@ jobs:
       # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
       run:  touch $PWD/main/Version.h;
             echo "#define CIPHER_KEY \"${{ secrets.AHRS_CIPHER_KEY }}\"" >$PWD/main/cipher.h;
-            docker run --rm -v $PWD:/project -w /project espressif/idf idf.py build;
+            docker run --rm -v $PWD:/project -w /project espressif/idf:release-v4.3-beta2 idf.py build;
             VER=`date +"%y.%m%d-%H%M"`;
             cp $PWD/build/sensor.bin $PWD/images/sensor-${VER}.bin;
             git config user.name github-actions;

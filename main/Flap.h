@@ -20,8 +20,7 @@ public:
 	static inline float getLever() { return lever; }
 	static inline void setLever( float l ) { lever = l; }
 	// recommendations
-	static float getOptimum( float wks, int wki );
-	static int   getOptimumInt( float wks );
+	static float getOptimum( float wks, int& wki );
 	static void configureADC();
 	static inline unsigned int getSensorRaw(int oversampling=1) {
 		if( haveSensor() )
@@ -37,6 +36,9 @@ public:
 	static void redraw() { sensorOldY = -1000; surroundingBox=false; };
 	static void redrawLever() { sensorOldY = -1000; };
 	static void setupMenue( SetupMenu *parent );
+
+private:
+	static int   getOptimumInt( float wks );
 
 private:
 	static Ucglib_ILI9341_18x240x320_HWSPI* ucg;

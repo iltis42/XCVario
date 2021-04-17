@@ -215,12 +215,23 @@ void Serial::begin(){
 		int baudrate = baud[serial1_speed.get()];
 		if( baudrate != 0 ) {
 			ESP_LOGI(FNAME,"Serial Interface ttyS1 enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial1_speed.get(), baud[serial1_speed.get()], serial1_tx_inverted.get(), serial1_rx_inverted.get() );
-			if( serial1_tx_enable.get() ){
-				Serial1.begin(baudrate,SERIAL_8N1,16,17, serial1_rx_inverted.get(), serial1_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
-			}else{
-				Serial1.begin(baudrate,SERIAL_8N1,16,36, serial1_rx_inverted.get(), serial1_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
-				gpio_set_direction(GPIO_NUM_17, GPIO_MODE_INPUT);     // 2020 series 1, analog in
-				gpio_pullup_dis( GPIO_NUM_17 );
+			if( serial1_pins_twisted.get() ){
+				if( serial1_tx_enable.get() ){
+					Serial1.begin(baudrate,SERIAL_8N1,17,16, serial1_rx_inverted.get(), serial1_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
+				}else{
+					Serial1.begin(baudrate,SERIAL_8N1,17,36, serial1_rx_inverted.get(), serial1_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
+					gpio_set_direction(GPIO_NUM_16, GPIO_MODE_INPUT);     // 2020 series 1, analog in
+					gpio_pullup_dis( GPIO_NUM_16 );
+				}
+			}
+			else{
+				if( serial1_tx_enable.get() ){
+					Serial1.begin(baudrate,SERIAL_8N1,16,17, serial1_rx_inverted.get(), serial1_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
+				}else{
+					Serial1.begin(baudrate,SERIAL_8N1,16,36, serial1_rx_inverted.get(), serial1_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
+					gpio_set_direction(GPIO_NUM_17, GPIO_MODE_INPUT);     // 2020 series 1, analog in
+					gpio_pullup_dis( GPIO_NUM_17 );
+				}
 			}
 			Serial1.setRxBufferSize(256);
 		}
@@ -247,7 +258,6 @@ void Serial::begin(){
 				gpio_pullup_dis( GPIO_NUM_4 );
 			}
 		}
-
 		Serial2.setRxBufferSize(256);
 	}
 }

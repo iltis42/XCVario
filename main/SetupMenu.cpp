@@ -1272,11 +1272,18 @@ void SetupMenu::setup( )
 		srxi->addEntry( "Normal");
 		srxi->addEntry( "Inverted");
 
+		SetupMenuSelect * srxtw1 = new SetupMenuSelect( PROGMEM "Twist RX/TX Pins", true, 0, true, &serial1_pins_twisted );
+		rs232->addMenu( srxtw1 );
+		srxtw1->setHelp( "Option to twist RX and TX line for S1, e.g. for OpenVario. After change also a true power-cycle is needed");
+		srxtw1->addEntry( "Normal");
+		srxtw1->addEntry( "Twisted");
+
 		SetupMenuSelect * stxdis1 = new SetupMenuSelect( PROGMEM "TX Line", true, 0, true, &serial1_tx_enable );
 		rs232->addMenu( stxdis1 );
 		stxdis1->setHelp( "Option to switch off RS232 TX line in case active sending is not required, e.g. for multiple devices connected to one device");
 		stxdis1->addEntry( "Disable");
 		stxdis1->addEntry( "Enable");
+
 
 		if( hardwareRevision.get() >= 3 ) {
 			SetupMenu * rs232_2 = new SetupMenu( "RS232 Interface S2" );
@@ -1316,7 +1323,7 @@ void SetupMenu::setup( )
 
 			SetupMenuSelect * srxtw2 = new SetupMenuSelect( PROGMEM "Twist RX/TX Pins", true, 0, true, &serial2_pins_twisted );
 			rs232_2->addMenu( srxtw2 );
-			srxtw2->setHelp( "Option to twist RX and TX line for S2. Normal Pin 4=TX, 3=RX. After change also a true power-cycle is needed");
+			srxtw2->setHelp( "Option to twist RX and TX line for S2, e.g. for OpenVario. After change also a true power-cycle is needed");
 			srxtw2->addEntry( "Normal");
 			srxtw2->addEntry( "Twisted");
 

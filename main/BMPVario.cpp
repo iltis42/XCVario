@@ -12,7 +12,7 @@ int BMPVario::holddown = 0;
 
 void BMPVario::begin( PressureSensor *te, PressureSensor *baro, S2F *aS2F  ) {
 	_sensorTE = te;
-	_sensorBARO = te;
+	_sensorBARO = baro;
 	_init = true;
 
 	_S2FTE = 0.0;

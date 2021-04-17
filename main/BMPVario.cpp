@@ -10,8 +10,9 @@
 const double sigmaAdjust = 255 * 2.0/33;  // 2 Vss
 int BMPVario::holddown = 0;
 
-void BMPVario::begin( PressureSensor *bmp, S2F *aS2F  ) {
-	_bmpTE = bmp;
+void BMPVario::begin( PressureSensor *te, PressureSensor *baro, S2F *aS2F  ) {
+	_sensorTE = te;
+	_sensorBARO = te;
 	_init = true;
 
 	_S2FTE = 0.0;
@@ -41,19 +42,25 @@ double BMPVario::readTE( float tas ) {
 	if ( _test )     // we are in testmode, just return what has been set
 		return _TEF;
 	bool success;
-	bmpTemp = _bmpTE->readTemperature( success );
+	bmpTemp = _sensorTE->readTemperature( success );
 	// ESP_LOGI(FNAME,"BMP temp=%0.1f", bmpTemp );
-	_currentAlt = _bmpTE->readAltitude(_qnh, success );
-	if( !success )
-		_currentAlt = lastAltitude;  // ignore readout when failed
-	// ESP_LOGI(FNAME,"TE alt: %4.3f m", _currentAlt );
 	if( te_comp_enable.get() ) {
+		_currentAlt = _sensorBARO->readAltitude(_qnh, success );
+		if( !success )
+			_currentAlt = lastAltitude;  // ignore readout when failed
 		float mps = tas / 3.6;  // m/s
 		float cw  = myS2F->cw( mps );
 		float ealt = (((  (mps*mps)/19.62) * (1+(te_comp_adjust.get()/100.0) ))) * ( 1 - cw );  // Ekin ~ h = v²/2g  * adjust * (1-cw)
 		_currentAlt += ealt;
 		ESP_LOGD(FNAME,"Energiehöhe @%0.1f km/h: %0.1f cw: %f", tas, ealt, cw );
 	}
+	else{
+		_currentAlt = _sensorTE->readAltitude(_qnh, success );
+		if( !success )
+			_currentAlt = lastAltitude;  // ignore readout when failed
+	}
+	// ESP_LOGI(FNAME,"TE alt: %4.3f m", _currentAlt );
+
 	uint64_t rts = esp_timer_get_time();
 	float delta = (float)(rts - lastrts)/1000000.0;   // in seconds
 	if( delta < 0.075 )  // ensure every 100 mS one calculation
@@ -65,7 +72,7 @@ double BMPVario::readTE( float tas ) {
 	// ESP_LOGI(FNAME, "TE-Alt %0.1f  NM:", _currentAlt );
 	if( _init  ){
 		vTaskDelay(100 / portTICK_PERIOD_MS);
-		_currentAlt = _bmpTE->readAltitude(_qnh, success ) * 1.03; // we want have some beep when powerd on
+		_currentAlt = _sensorTE->readAltitude(_qnh, success ) * 1.03; // we want have some beep when powerd on
 		lastAltitude = _currentAlt;
 		predictAlt = _currentAlt;
 		Altitude = _currentAlt;

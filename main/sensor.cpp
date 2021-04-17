@@ -909,7 +909,7 @@ void sensor(void *args){
 	else
 		ESP_LOGI(FNAME,"Absolute pressure sensor TESTs failed");
 
-	bmpVario.begin( teSensor, &Speed2Fly );
+	bmpVario.begin( teSensor, baroSensor, &Speed2Fly );
 	bmpVario.setup();
 	esp_task_wdt_reset();
 	ESP_LOGI(FNAME,"Audio begin");

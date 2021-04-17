@@ -36,7 +36,7 @@ public:
 		_TEF = 0;
 		_test = false;
 		_init = false;
-		_bmpTE = 0;
+		_sensorTE = 0;
 		_avgTE = 0;
 		averageAlt = 0;
 		bmpTemp = 0;
@@ -47,7 +47,7 @@ public:
 		myS2F = 0;
 	}
 
-	void begin( PressureSensor *bmp, S2F* s2f );
+	void begin( PressureSensor *te,  PressureSensor *baro, S2F* s2f );
 
 	static void setHolddown( int hold ) { holddown = hold; }
 	void setQNH( float qnh ) { _qnh = qnh; };
@@ -70,7 +70,8 @@ private:
 	int   _filter_len;
 	double _errorval;
 	double _qnh;
-	PressureSensor *_bmpTE;
+	PressureSensor *_sensorTE;
+	PressureSensor *_sensorBARO;
 	double predictAlt;
 	double Altitude;
 	double lastAltitude;

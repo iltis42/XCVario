@@ -13,7 +13,7 @@ Class to display the compass status overview.
 
 Author: Axel Pauli, March 2021
 
-Last update: 2021-03-30
+Last update: 2021-04-18
 
  ****************************************************************************/
 
@@ -75,6 +75,11 @@ void ShowCompassSettings::display( int mode )
 
   ucg->setPrintPos( 0, y );
   sprintf( buffer, "Display damping: %.02fs", (compass_damping.get()) );
+  ucg->printf( "%s", buffer );
+  y += 25;
+
+  ucg->setPrintPos( 0, y );
+  sprintf( buffer, "I2C Clock: %d KHz", static_cast<int>(compass_i2c_cl.get()) );
   ucg->printf( "%s", buffer );
   y += 25;
 

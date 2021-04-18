@@ -5,7 +5,7 @@
  *
  *  Author: Eckhard Völlm, Axel Pauli
  *
- *  Last update: 2021-04-14
+ *  Last update: 2021-04-18
  */
 #include <algorithm>
 #include <cmath>
@@ -23,7 +23,6 @@
 #define R2D(x) ((x)*57.2957795131)
 
 Wind::Wind() :
-_drift(0),
 nunberOfSamples( 0 ),
 measurementStart( 0 ),
 tas( 0.0 ),
@@ -34,23 +33,14 @@ sumTas( 0.0 ),
 sumGroundSpeed( 0.0 ),
 averageTH( 0.0 ),
 averageTC( 0.0 ),
-hMin( 0.0 ),
-hMax( 0.0 ),
-hMin_magn( 0.0 ),
-hMax_magn( 0.0 ),
+tcMin( 0.0 ),
+tcMax( 0.0 ),
+mhMin( 0.0 ),
+mhMax( 0.0 ),
 windDir( -1.0 ),
 windSpeed( -1.0 )
 {
 }
-
-double Wind::normAngle( double angle ){
-	while( angle < 0 )
-		angle += 360.;
-	while( angle >= 360. )
-		angle -= 360;
-	return angle;
-}
-
 
 double Wind::meanAngle( double angle, double average ){
 	bool neg=false;
@@ -83,7 +73,7 @@ void Wind::start()
 		trueCourse = Flarm::getGndCourse();
 	}
 	else {
-		// Mark values as invalid.
+		// Mark all values as invalid.
 		groundSpeed = -1.0;
 		trueCourse = -1.0;
 		trueHeading = -1.0;
@@ -110,15 +100,12 @@ void Wind::start()
 	averageTH = trueHeading;
 
 	// Define limit of TH observation window
-	hMin_magn = normAngle( trueHeading - wind_heading_delta.get() );
-	hMax_magn = normAngle( trueHeading + wind_heading_delta.get() );
+	mhMin = normAngle( trueHeading - wind_heading_delta.get() );
+	mhMax = normAngle( trueHeading + wind_heading_delta.get() );
 
 	// Define limit of TC observation window
-	hMin = normAngle( trueCourse - wind_heading_delta.get() );
-	hMax = normAngle( trueCourse + wind_heading_delta.get() );
-
-	// windDir = -1.0;
-	// windSpeed = -1.0;
+	tcMin = normAngle( trueCourse - wind_heading_delta.get() );
+	tcMax = normAngle( trueCourse + wind_heading_delta.get() );
 }
 
 /**
@@ -176,7 +163,7 @@ bool Wind::calculateWind()
 		return false;
 	}
 
-	// Get current true heading
+	// Get current true heading from compass.
 	bool ok = true;
 	double cth = Compass::trueHeading( &ok );
 
@@ -187,11 +174,11 @@ bool Wind::calculateWind()
 	}
 
 	// Check if given magnetic heading deltas are valid.
-	if( hMin_magn < hMax_magn && ( cth < hMin_magn || cth > hMax_magn ) ) {
+	if( mhMin < mhMax && ( cth < mhMin || cth > mhMax ) ) {
 		// Heading outside of observation window
 		ok = false;
 	}
-	else if( hMin_magn > hMax_magn && cth < hMin_magn && cth > hMax_magn ) {
+	else if( mhMin > mhMax && cth < mhMin && cth > mhMax ) {
 		// Heading outside of observation window
 		ok = false;
 	}
@@ -199,19 +186,29 @@ bool Wind::calculateWind()
 	if( ok == false ) {
 		// Condition violated, start a new measurements cycle.
 		start();
-		ESP_LOGI(FNAME,"Restart Cycle, CTH %3.1f outside min: %3.1f max %3.1f", cth, hMin_magn, hMax_magn );
+		ESP_LOGI(FNAME,"Restart Cycle, CTH %3.1f outside min: %3.1f max %3.1f", cth, mhMin, mhMax );
 		return false;
 	}
 
-	// Get current true course
+	// Get current true course from GPS
 	double ctc = Flarm::getGndCourse();
 
 	// Check if given GPS true course deltas are valid.
-	if( (ctc < hMin || ctc > hMax) && (cgs > 5.0)  ) { // below a minimum Groundspeed, we ignore this vector
-		start();
-		ESP_LOGI(FNAME,"Restart Cycle, Ground Heading CTC: %3.1f outside min: %3.1f max: %3.1f", ctc, hMin, hMax );
-		return false;
-	}
+  if( tcMin < tcMax && ( ctc < tcMin || cth > tcMax ) ) {
+    // true course outside of observation window
+    ok = false;
+  }
+  else if( tcMin > tcMax && cth < tcMin && cth > tcMax ) {
+    // true course outside of observation window
+    ok = false;
+  }
+
+  if( ok == false ) {
+    // Condition violated, start a new measurements cycle.
+    start();
+    ESP_LOGI(FNAME,"Restart Cycle, Ground Heading CTC: %3.1f outside min: %3.1f max: %3.1f", ctc, tcMin, tcMax );
+    return false;
+  }
 
 	// Take all as new sample
 	nunberOfSamples++;
@@ -221,10 +218,10 @@ bool Wind::calculateWind()
 	sumGroundSpeed += cgs;
 
 	// Calculate average true course TC
-	averageTC = averageTC + (meanAngle( ctc, averageTC ) - averageTC)*0.1;
+	averageTC = averageTC + (meanAngle( ctc, averageTC ) - averageTC) * 0.1;
 
 	// Calculate average true heading TH
-	averageTH = averageTH + (meanAngle( cth, averageTH ) - averageTH)*0.1;
+	averageTH = averageTH + (meanAngle( cth, averageTH ) - averageTH) * 0.1;
 
 	ESP_LOGI(FNAME,"%d TC: %3.1f (avg:%3.1f) GS:%3.1f TH: %3.1f (avg:%3.1f) IAS: %3.1f", nunberOfSamples, ctc, averageTC, cgs, cth, averageTH, ctas );
 	// ESP_LOGI(FNAME,"avTC: %3.1f avTH:%3.1f ",averageTC,averageTH  );

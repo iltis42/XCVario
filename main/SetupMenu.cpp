@@ -242,6 +242,7 @@ static int windResetAction( SetupMenuSelect *p )
 		wind_speed_delta.set( 10 );
 		wind_heading_delta.set( 5 );
 		wind_measurement_time.set( 10 );
+		wind_as_min.set( 25 );
 	}
 
 	return 0;
@@ -959,7 +960,11 @@ void SetupMenu::setup( )
 		smvf->setHelp( PROGMEM "Setup wind calculation time" );
 		windME->addMenu( smvf );
 
-		sms = new SetupMenuSelect( "Reset",
+    SetupMenuValFloat *smgsm = new SetupMenuValFloat( "Minimum Airspeed", nullptr, sunit.c_str(), 0, 60.0, 1.0, nullptr, false, &wind_as_min );
+    windME->addMenu( smgsm );
+    smgsm->setHelp(PROGMEM "Minimum Airspeed to start wind calculation");
+
+    sms = new SetupMenuSelect( "Reset",
 				false,
 				windResetAction,
 				false,
@@ -969,10 +974,6 @@ void SetupMenu::setup( )
 		sms->addEntry( "Cancel" );
 		sms->addEntry( "Reset" );
 		windME->addMenu( sms );
-
-		SetupMenuValFloat *smgsm = new SetupMenuValFloat( "Minimum Airspeed",	nullptr, sunit.c_str(), 0, 60.0, 1.0, nullptr, false, &wind_as_min );
-		windME->addMenu( smgsm );
-		smgsm->setHelp(PROGMEM "Minimum Airspeed to start wind calculation");
 
 		SetupMenuSelect * btm = new SetupMenuSelect( "Wireless", true, 0, true, &blue_enable );
 		btm->setHelp( PROGMEM "Activate type wireless interface to connect navigation devices running e.g. XCSoar, or to another XCVario as client");

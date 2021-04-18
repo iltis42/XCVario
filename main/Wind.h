@@ -5,7 +5,7 @@
  *
  *  Author: Eckhard Völlm, Axel Pauli
  *
- *  Last update: 2021-04-13
+ *  Last update: 2021-04-18
  */
 #pragma once
 
@@ -16,7 +16,6 @@ class Wind
 public:
 	Wind();
 	virtual ~Wind() {};
-	void drift( double truehead, double gndhead ) { _drift = truehead - gndhead; };
 
 	/**
 	 * Get time in ms since 1.1.1970
@@ -55,7 +54,17 @@ public:
 	void calculateWind( double tc, double gs, double th, double tas  );
 	void test();
 	double meanAngle( double angle, double average );
-	double normAngle( double angle );
+
+	/**
+	 * Normalize angle in to the range 0...359 degree.
+	 */
+	double normAngle( double angle ) {
+	  while( angle < 0. )
+	    angle += 360.;
+	  while( angle >= 360. )
+	    angle -= 360.;
+	  return angle;
+	}
 
 private:
 
@@ -67,22 +76,20 @@ private:
 		return getMsTime() - measurementStart;
 	}
 
-	double _drift;
-
-	uint16_t nunberOfSamples;      // current number of samples
-	uint64_t measurementStart;     // measurement start in milliseconds
-	double tas;                    // TAS in km/h
-	double groundSpeed;            // GS in km/h
-	double trueCourse;             // GPS course
-	double trueHeading;            // Compass heading
-	double sumTas;                 // TAS in km/h
-	double sumGroundSpeed;         // sum of GS in km/h
-	double averageTH;         // sum of Compass true heading
-	double averageTC;         // sum of GPS heading (true course)
-	double hMin;                   // lower limit of heading observation window
-	double hMax;                   // upper limit of heading observation window
-	double hMin_magn;              // lower limit of magnetic heading observation window
-	double hMax_magn;              // upper limit of magnetic heading observation window
-	double windDir;                // calculated wind direction
-	double windSpeed;              // calculated wind speed in Km/h
+	uint16_t nunberOfSamples;  // current number of samples
+	uint64_t measurementStart; // measurement start in milliseconds
+	double tas;                // TAS in km/h
+	double groundSpeed;        // GS in km/h
+	double trueCourse;         // GPS course
+	double trueHeading;        // Compass heading
+	double sumTas;             // TAS in km/h
+	double sumGroundSpeed;     // sum of GS in km/h
+	double averageTH;          // sum of Compass true heading
+	double averageTC;          // sum of GPS heading (true course)
+	double tcMin;              // lower limit of true course observation window
+	double tcMax;              // upper limit of true course observation window
+	double mhMin;              // lower limit of magnetic heading observation window
+	double mhMax;              // upper limit of magnetic heading observation window
+	double windDir;            // calculated wind direction
+	double windSpeed;          // calculated wind speed in Km/h
 };

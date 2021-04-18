@@ -3,7 +3,7 @@
 #include <stdlib.h> // abs
 #include <string> // std::string
 #include <locale> // std::locale, std::toupper
-#include "cipher.h"
+#include "cipherkey.h"
 
 
 class Cipher {

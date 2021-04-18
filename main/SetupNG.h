@@ -27,7 +27,7 @@ extern "C" {
 #include <iostream>
 #include <vector>
 #include "logdef.h"
-#include "MPU.h"
+#include "MPU.hpp" // change from .h to .hpp for Windows toolchain compatibility
 #include <WString.h>
 
 

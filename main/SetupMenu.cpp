@@ -326,7 +326,7 @@ void SetupMenu::down(int count){
 			}
 		}
 		else
-			inc_volume( count );
+			dec_volume( count );
 	}
 	if( (selected != this) || !_menu_enabled )
 		return;
@@ -356,7 +356,7 @@ void SetupMenu::up(int count){
 			}
 		}
 		else
-			dec_volume( count );
+			inc_volume( count );
 	}
 
 	if( (selected != this) || !_menu_enabled )

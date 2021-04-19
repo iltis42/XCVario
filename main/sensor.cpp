@@ -290,11 +290,37 @@ void drawDisplay(void *pvParameters){
 			if( !(stall_warning_active || flarmWarning || gLoadDisplay ) ) {
 				display->drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, meanClimb, Switch::cruiseMode(), standard_setting, Flap::getLever() );
 			}
-
 		}
 		vTaskDelay(20/portTICK_PERIOD_MS);
 		if( uxTaskGetStackHighWaterMark( dpid ) < 1024  )
 			ESP_LOGW(FNAME,"Warning drawDisplay stack low: %d bytes", uxTaskGetStackHighWaterMark( dpid ) );
+	}
+}
+
+// depending on mode calculate value for Audio and set values accordingly
+void doAudio( float te ){
+	aTES2F = te;
+	polar_sink = Speed2Fly.sink( ias );
+	netto = aTES2F - polar_sink;
+
+	as2f = Speed2Fly.speed( netto, !Switch::cruiseMode() );
+	s2f_delta = as2f - ias;
+	if( vario_mode.get() == VARIO_NETTO || (Switch::cruiseMode() &&  (vario_mode.get() == CRUISE_NETTO)) ){
+		if( netto_mode.get() == NETTO_RELATIVE )
+			Audio::setValues( TE - polar_sink + Speed2Fly.circlingSink( ias ), s2f_delta );
+		else if( netto_mode.get() == NETTO_NORMAL )
+			Audio::setValues( TE - polar_sink, s2f_delta );
+	}
+	else {
+		Audio::setValues( TE, s2f_delta );
+	}
+}
+
+void audioTask(void *pvParameters){
+	while (1)
+	{
+		doAudio( TE );
+		vTaskDelay(20/portTICK_PERIOD_MS);
 	}
 }
 
@@ -334,21 +360,7 @@ void readBMP(void *pvParameters){
 			AverageVario::recalcAvgClimb();
 			meanClimb = AverageVario::readAvgClimb();
 		}
-		aTES2F = bmpVario.readS2FTE();
-		polar_sink = Speed2Fly.sink( ias );
-		netto = aTES2F - polar_sink;
 
-		as2f = Speed2Fly.speed( netto, !Switch::cruiseMode() );
-		s2f_delta = as2f - ias;
-		if( vario_mode.get() == VARIO_NETTO || (Switch::cruiseMode() &&  (vario_mode.get() == CRUISE_NETTO)) ){
-			if( netto_mode.get() == NETTO_RELATIVE )
-				Audio::setValues( TE - polar_sink + Speed2Fly.circlingSink( ias ), s2f_delta );
-			else if( netto_mode.get() == NETTO_NORMAL )
-				Audio::setValues( TE - polar_sink, s2f_delta );
-		}
-		else {
-			Audio::setValues( TE, s2f_delta );
-		}
 		Flap::progress();
 		if( (count % 2) == 0 ) {
 			xSemaphoreTake(xMutex,portMAX_DELAY );
@@ -376,6 +388,8 @@ void readBMP(void *pvParameters){
 			}
 			aTE = bmpVario.readAVGTE();
 			xSemaphoreGive(xMutex);
+
+			doAudio( bmpVario.readS2FTE() );
 
 			if( (inSetup != true) && !Flarm::bincom ){
 				if( haveMPU  )  // 3th Generation HW, MPU6050 avail and feature enabled
@@ -1082,10 +1096,14 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
 	if( blue_enable.get() != WL_WLAN_CLIENT ) {
-		xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096*2, NULL, 30, bpid, 0);  // 10
+		xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096*2, NULL, 30, bpid, 0);
+	}else{
+		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 30, bpid, 0);
 	}
+
+
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 4096, NULL, 6, tpid, 0);
-	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 13, dpid, 0);  // 10
+	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 13, dpid, 0);
 
 	Audio::startAudio();
 }

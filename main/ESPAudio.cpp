@@ -168,7 +168,7 @@ void Audio::dac_cosine_enable(dac_channel_t channel, bool enable)
 bool Audio::selfTest(){
 	ESP_LOGI(FNAME,"Audio::selfTest");
 	uint16_t getwiper;
-	uint16_t setwiper = ((default_volume.get() * 100.0) / 128) -1 ;
+	uint16_t setwiper = ((default_volume.get() * 100.0) / 127);
 	ESP_LOGI(FNAME, "selfTest wiper: %d", wiper );
 	Poti.haveDevice();
 	Poti.writeWiper( setwiper );
@@ -398,7 +398,7 @@ void Audio::modtask(void* arg )
 	}
 }
 
-void Audio::incVolume( int steps ) {
+void Audio::decVolume( int steps ) {
 	steps = int( 1+ ( (float)wiper/16.0 ))*steps;
 	while( steps && (wiper > 0) ){
 		wiper--;
@@ -410,8 +410,10 @@ void Audio::incVolume( int steps ) {
 	ESP_LOGI(FNAME,"inc volume, wiper: %d", wiper );
 }
 
-void Audio::decVolume( int steps ) {
+void Audio::incVolume( int steps ) {
 	steps = int( 1+ ( (float)wiper/16.0 ))*steps;
+	if( wiper > 127 )
+		wiper = 127;
 	while( steps && (wiper < 127) ){
 		wiper++;
 		steps--;
@@ -435,7 +437,7 @@ void Audio::calcS2Fmode(){
 	}
 }
 
-#define FADING_TIME 4
+#define FADING_TIME 3
 bool sound=true;
 
 void  Audio::evaluateChopping(){
@@ -507,9 +509,9 @@ void Audio::dactask(void* arg )
 							if( !sound_on ) {
 								for( int i=1; i<wiper; i+=delta ) {
 									Poti.writeWiper( i );
-									delta = 1+i/FADING_TIME;
+									delta = 2+i/FADING_TIME;
 									delay(1);
-									// ESP_LOGI(FNAME, "fade in sound, wiper: %d", nw);
+									// ESP_LOGI(FNAME, "fade in sound, wiper: %d", i);
 								}
 							}
 						}
@@ -544,12 +546,12 @@ void Audio::dactask(void* arg )
 							dac_output_disable(_ch);
 						}else{
 							if( cur_wiper > 1 ) {  // turn off gracefully sound
-								int delta = wiper/(FADING_TIME*2);
+								int delta = wiper/(FADING_TIME);
 								for( int i=wiper; i>0; i-=delta ) {
 									Poti.writeWiper( i );
-									delta = 1+i/(FADING_TIME*2);
+									delta = 2+i/(FADING_TIME);
 									delay(1);
-									// ESP_LOGI(FNAME, "fade out sound, wiper: %d", nw);
+									// ESP_LOGI(FNAME, "fade out sound, wiper: %d", i);
 								}
 								Poti.writeWiper( 0 );
 								dac_output_disable(_ch);
@@ -649,7 +651,8 @@ void Audio::begin( dac_channel_t ch  )
 	Poti.begin();
 	setup();
 	_ch = ch;
-	wiper = (uint16_t)( ( (default_volume.get() * 100.0) / 128) -1 );
+	wiper = (uint16_t)( ( (default_volume.get() * 100.0) / 127)  );
+	ESP_LOGI(FNAME,"default volume/wiper: %d", wiper );
 	restart();
 	_testmode = true;
 	delay(10);

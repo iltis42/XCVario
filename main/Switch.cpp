@@ -28,6 +28,8 @@ int Switch::_tick = 0;
 bool Switch::cm_switch_prev = false;
 bool Switch::cm_auto_prev = false;
 bool Switch::cruise_mode_final = false;
+bool Switch::_cruise_mode_xcv = false;
+bool Switch::cm_xcv_prev = false;
 
 gpio_num_t Switch::_sw = GPIO_NUM_0;
 
@@ -37,16 +39,21 @@ Switch::Switch() {
 Switch::~Switch() {
 }
 
-
 bool Switch::cruiseMode() {
 	if( audio_mode.get() == AM_AUTOSPEED ){        // Let autospeed mode merge both states
 		if( _cruise_mode_sw != cm_switch_prev  ){
 			cm_switch_prev = _cruise_mode_sw;
 			cruise_mode_final = _cruise_mode_sw;
 		}
-		if( _cruise_mode_speed != cm_auto_prev ){
+		else if( _cruise_mode_speed != cm_auto_prev ){
 			cm_auto_prev = _cruise_mode_speed;
 			cruise_mode_final = _cruise_mode_speed;
+		}
+		else if( s2f_cm_takeover_from_master.get() ){
+			if( _cruise_mode_xcv != cm_xcv_prev  ){
+				cruise_mode_final = _cruise_mode_xcv;
+				cm_xcv_prev = _cruise_mode_xcv;
+			}
 		}
 	}
 	else if( audio_mode.get() == AM_SWITCH )

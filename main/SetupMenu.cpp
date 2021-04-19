@@ -578,6 +578,13 @@ void SetupMenu::setup( )
 		s2fhy->setHelp(PROGMEM"Hysteresis for auto S2F transition at autospeed +- this value");
 		s2fse->addMenu( s2fhy );
 
+		SetupMenuSelect * cmtoma = new SetupMenuSelect( "Cruise from Master", false, 0 , true, &s2f_cm_takeover_from_master );
+		cmtoma->setHelp(PROGMEM"Cruise/Vario mode will be taken over from master device if enabled");
+		cmtoma->addEntry( "DISABLE");
+		cmtoma->addEntry( "ENABLE");
+		s2fse->addMenu( cmtoma );
+
+
 		SetupMenu * elco = new SetupMenu( "Electronic Compensation" );
 		vae->addMenu( elco );
 		SetupMenuSelect * enac = new SetupMenuSelect( "eCompensation", false, 0 , false, &te_comp_enable );

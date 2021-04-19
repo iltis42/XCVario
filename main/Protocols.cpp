@@ -24,6 +24,7 @@
 #include "Flarm.h"
 #include "Units.h"
 #include "Flap.h"
+#include "Switch.h"
 
 S2F * Protocols::_s2f = 0;
 
@@ -360,15 +361,16 @@ void Protocols::parseNMEA( char *str ){
 		*/
 		// tbd: checksum check
 		// ESP_LOGI(FNAME,"parseNMEA, PXCV");
-		float _mc,_te,_bugs,_ballast,_cruise, _temp, _qnh, _baro, _pitot, _roll, _pitch, _ax, _ay, _az;
-		int _cs;
-		sscanf( str, "$PXCV,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f*%02x", &_te, &_mc, &_bugs, &_ballast,&_cruise, &_temp, &_qnh, &_baro, &_pitot, &_roll, &_pitch, &_ax, &_ay, &_az, &_cs  );
+		float _mc,_te,_bugs,_ballast, _temp, _qnh, _baro, _pitot, _roll, _pitch, _ax, _ay, _az;
+		int _cs, _cruise;
+		sscanf( str, "$PXCV,%f,%f,%f,%f,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f*%02x", &_te, &_mc, &_bugs, &_ballast,&_cruise, &_temp, &_qnh, &_baro, &_pitot, &_roll, &_pitch, &_ax, &_ay, &_az, &_cs  );
 		TE = _te;
 		temperature = _temp;
 		validTemperature = true;
 		baroP = _baro;
 		dynamicP = _pitot;
 		float iasraw= Atmosphere::pascal2kmh( dynamicP );
+		Switch::setCruiseModeXCV( _cruise );
 		ias = ias + (iasraw - ias)*0.25;
 		tas += ( Atmosphere::TAS( iasraw , _baro, _temp) - tas)*0.25;
 		aTE += (TE - aTE)* (1/(10*vario_av_delay.get()));

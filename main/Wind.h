@@ -53,7 +53,16 @@ public:
 
 	void calculateWind( double tc, double gs, double th, double tas  );
 	void test();
-	double meanAngle( double angle, double average );
+  double meanAngleEckhard( double angle, double average );
+
+  /**
+   * Calculate the smaller bisector value from angles.
+   *
+   * @param angle as degree 0...359
+   * @param average as degree 0...359
+   * @return average angle as degree 0...359
+   */
+  double meanAngle( double angle, double average );
 
 	/**
 	 * Normalize angle in to the range 0...359 degree.

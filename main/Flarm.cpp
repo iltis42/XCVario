@@ -133,8 +133,8 @@ void Flarm::parsePFLAU( char *pflau ) {
 }
 
 void Flarm::parsePFLAX( SString &msg ) {
-	ESP_LOGI(FNAME,"parsePFLAX");
-	ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
+	// ESP_LOGI(FNAME,"parsePFLAX");
+	// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
 	int start=0;
     if( !strncmp( msg.c_str(), "\n", 1 )  ){
     	start=1;

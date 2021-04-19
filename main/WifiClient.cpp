@@ -184,7 +184,7 @@ void WifiClient::tcp_client(void *pvParam){
         if(num > 0){
         	rec.setLen( num );
         	ESP_LOGV(FNAME, "socket read %d bytes: %s", num, rec.c_str() );
-        	Protocols::parseNMEA( rec.c_str() );
+        	Router::forwardMsg( rec, wl_vario_rx_q );
         	timeout = 0;
         	cl_connected = true;
         }

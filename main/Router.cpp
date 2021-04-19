@@ -135,33 +135,37 @@ void Router::routeS2(){
 
 // route messages from WLAN
 void Router::routeWLAN(){
-	if( blue_enable.get() != WL_WLAN )
-		return;
-	// Route received data from WLAN ports
 	SString wlmsg;
-	if( pullMsg( wl_vario_rx_q, wlmsg) ){
-		if( strncmp( wlmsg.c_str(), "!", 1 )  == 0 ) {
-			ESP_LOGV(FNAME,"From WLAN port 8880 RX matched a Borgelt command %s", wlmsg.c_str() );
+	if( blue_enable.get() == WL_WLAN || blue_enable.get() == WL_WLAN_CLIENT ){
+		// Route received data from WLAN ports
+		if( pullMsg( wl_vario_rx_q, wlmsg) ){
+			ESP_LOGV(FNAME,"From WLAN port 8880 RX parse NMEA %s", wlmsg.c_str() );
 			Protocols::parseNMEA( wlmsg.c_str() );
+			if( serial1_tx.get() & RT_WIRELESS )
+				if( forwardMsg( wlmsg, s1_tx_q ) )
+					ESP_LOGV(FNAME,"Send to  device, TCP port 8880 received %d bytes", wlmsg.length() );
+			if( serial2_tx.get() & RT_WIRELESS )
+				if( forwardMsg( wlmsg, s2_tx_q ) )
+					ESP_LOGV(FNAME,"Send to ttyS2 device, TCP port 8880 received %d bytes", wlmsg.length() );
 		}
-	}
-	if( pullMsg( wl_flarm_rx_q, wlmsg ) ){
-		Flarm::parsePFLAX( wlmsg );
-		if( serial1_tx.get() & RT_WIRELESS )
-			if( forwardMsg( wlmsg, s1_tx_q ) )
-				ESP_LOGV(FNAME,"Send to  device, TCP port 8881 received %d bytes", wlmsg.length() );
-		if( serial2_tx.get() & RT_WIRELESS )
-			if( forwardMsg( wlmsg, s2_tx_q ) )
-				ESP_LOGV(FNAME,"Send to ttyS2 device, TCP port 8881 received %d bytes", wlmsg.length() );
-	}
-	if( pullMsg( wl_aux_rx_q, wlmsg ) ){
-		Flarm::parsePFLAX( wlmsg );
-		if( serial1_tx.get() & RT_WIRELESS )
-			if( forwardMsg( wlmsg, s1_tx_q ) )
-				ESP_LOGV(FNAME,"Send to  device, TCP port 8882 received %d bytes", wlmsg.length() );
-		if( serial2_tx.get() & RT_WIRELESS )
-			if( forwardMsg( wlmsg, s2_tx_q ) )
-				ESP_LOGV(FNAME,"Send to ttyS2 device, TCP port 8882 received %d bytes", wlmsg.length() );
+		if( pullMsg( wl_flarm_rx_q, wlmsg ) ){
+			Flarm::parsePFLAX( wlmsg );
+			if( serial1_tx.get() & RT_WIRELESS )
+				if( forwardMsg( wlmsg, s1_tx_q ) )
+					ESP_LOGV(FNAME,"Send to  device, TCP port 8881 received %d bytes", wlmsg.length() );
+			if( serial2_tx.get() & RT_WIRELESS )
+				if( forwardMsg( wlmsg, s2_tx_q ) )
+					ESP_LOGV(FNAME,"Send to ttyS2 device, TCP port 8881 received %d bytes", wlmsg.length() );
+		}
+		if( pullMsg( wl_aux_rx_q, wlmsg ) ){
+			Flarm::parsePFLAX( wlmsg );
+			if( serial1_tx.get() & RT_WIRELESS )
+				if( forwardMsg( wlmsg, s1_tx_q ) )
+					ESP_LOGV(FNAME,"Send to  device, TCP port 8882 received %d bytes", wlmsg.length() );
+			if( serial2_tx.get() & RT_WIRELESS )
+				if( forwardMsg( wlmsg, s2_tx_q ) )
+					ESP_LOGV(FNAME,"Send to ttyS2 device, TCP port 8882 received %d bytes", wlmsg.length() );
+		}
 	}
 }
 

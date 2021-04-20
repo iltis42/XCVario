@@ -330,7 +330,6 @@ void readBMP(void *pvParameters){
 		count++;
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		xSemaphoreTake(xMutex,portMAX_DELAY );
-		TE = bmpVario.readTE( tas );  // 10x per second
 		bool ok=false;
 		float p = 0;
 		if( asSensor )

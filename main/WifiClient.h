@@ -18,7 +18,7 @@ public:
 	static std::string scan();
 	static bool client_connected();
 	static void start();
-	static inline bool isConnected() {return cl_connected;} ;
+	static bool isConnected( int port=8880 );
 	static void wifi_connect();
 	static void event_handler(void* arg, esp_event_base_t event_base,int32_t event_id, void* event_data);
 
@@ -30,7 +30,7 @@ private:
 	static esp_netif_t *sta_netif;
 	static std::string SSID;
 	static bool cl_connected;
-	static int sock;
+	// static int sock;
 
 
 };

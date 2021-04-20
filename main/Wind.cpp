@@ -42,7 +42,7 @@ windSpeed( -1.0 )
 {
 }
 
-double Wind::meanAngle( double angle, double average ){
+double Wind::meanAngleEckhard( double angle, double average ){
 	bool neg=false;
 	if( angle > 180 ){  // check if angle is in the second half and convert to -+ 180° representation in case
 		angle = angle - 360;
@@ -60,6 +60,42 @@ double Wind::meanAngle( double angle, double average ){
 	if( result > 360 )
 		result = result - 360;
 	return result;
+}
+
+/**
+ * Calculate the smaller bisector value from angles.
+ *
+ * @param angle as degree 0...359
+ * @param average as degree 0...359
+ * @return average angle as degree 0...359
+ */
+double Wind::meanAngle( double angle, double average )
+{
+	double bisector = 0.0;
+	double result = 0.0;
+	double absDiff = fabs( angle - average );
+
+	if( absDiff > 180.0 ) {
+		bisector = ( 360.0 - absDiff ) / 2.0;
+
+		if( angle <= average ) {
+			result = average + bisector;
+		}
+		else {
+			result = average - bisector;
+		}
+	}
+	else {
+		bisector = absDiff / 2.0;
+
+		if( angle <= average ) {
+			result = angle + bisector;
+		}
+		else {
+			result = angle - bisector;
+		}
+	}
+	return normAngle( result );
 }
 
 /**
@@ -193,22 +229,26 @@ bool Wind::calculateWind()
 	// Get current true course from GPS
 	double ctc = Flarm::getGndCourse();
 
-	// Check if given GPS true course deltas are valid.
-  if( tcMin < tcMax && ( ctc < tcMin || cth > tcMax ) ) {
-    // true course outside of observation window
-    ok = false;
-  }
-  else if( tcMin > tcMax && cth < tcMin && cth > tcMax ) {
-    // true course outside of observation window
-    ok = false;
-  }
+	if( cgs >= 10 ) {
+		// The ground course check is only done, if the ground speed is >=10 Km/h.
+		// Near speed zero, the ground course is not stable in its direction.
+		// Check if given GPS true course deltas are valid.
+		if( tcMin < tcMax && ( ctc < tcMin || cth > tcMax ) ) {
+			// true course outside of observation window
+			ok = false;
+		}
+		else if( tcMin > tcMax && cth < tcMin && cth > tcMax ) {
+			// true course outside of observation window
+			ok = false;
+		}
 
-  if( ok == false ) {
-    // Condition violated, start a new measurements cycle.
-    start();
-    ESP_LOGI(FNAME,"Restart Cycle, Ground Heading CTC: %3.1f outside min: %3.1f max: %3.1f", ctc, tcMin, tcMax );
-    return false;
-  }
+		if( ok == false ) {
+			// Condition violated, start a new measurements cycle.
+			start();
+			ESP_LOGI(FNAME,"Restart Cycle, Ground Heading CTC: %3.1f outside min: %3.1f max: %3.1f", ctc, tcMin, tcMax );
+			return false;
+		}
+	}
 
 	// Take all as new sample
 	nunberOfSamples++;

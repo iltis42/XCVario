@@ -326,7 +326,7 @@ void SetupMenu::down(int count){
 			}
 		}
 		else
-			inc_volume( count );
+			dec_volume( count );
 	}
 	if( (selected != this) || !_menu_enabled )
 		return;
@@ -356,7 +356,7 @@ void SetupMenu::up(int count){
 			}
 		}
 		else
-			dec_volume( count );
+			inc_volume( count );
 	}
 
 	if( (selected != this) || !_menu_enabled )
@@ -577,6 +577,13 @@ void SetupMenu::setup( )
 		SetupMenuValFloat * s2fhy = new SetupMenuValFloat( "Hysteresis", 0, sunit.c_str(),	-20, 20, 1, 0, false, &s2f_hysteresis );
 		s2fhy->setHelp(PROGMEM"Hysteresis for auto S2F transition at autospeed +- this value");
 		s2fse->addMenu( s2fhy );
+
+		SetupMenuSelect * cmtoma = new SetupMenuSelect( "Cruise from Master", false, 0 , true, &s2f_cm_takeover_from_master );
+		cmtoma->setHelp(PROGMEM"Cruise/Vario mode will be taken over from master device if enabled");
+		cmtoma->addEntry( "DISABLE");
+		cmtoma->addEntry( "ENABLE");
+		s2fse->addMenu( cmtoma );
+
 
 		SetupMenu * elco = new SetupMenu( "Electronic Compensation" );
 		vae->addMenu( elco );

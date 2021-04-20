@@ -28,6 +28,7 @@ extern float ias;
 
 extern float getTAS();
 extern float getTE();
+void doAudio( float te );
 
 extern I2C_t& i2c;
 extern AnalogInput *AnalogInWk;

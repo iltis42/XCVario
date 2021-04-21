@@ -180,7 +180,9 @@ bool gLoadDisplay = false;
 
 float getTAS() { return tas; };
 float getTE() { return TE; };
-
+//modif gfm
+float Vsz_gps;
+//fin modif gfm
 
 void drawDisplay(void *pvParameters){
 	while (1) {
@@ -302,7 +304,9 @@ void doAudio( float te ){
 	aTES2F = te;
 	polar_sink = Speed2Fly.sink( ias );
 	netto = aTES2F - polar_sink;
-
+	// modif gfm
+	netto = netto - Vsz_gps;// juste pour appeler le gps
+	//fin modif gfm
 	as2f = Speed2Fly.speed( netto, !Switch::cruiseMode() );
 	s2f_delta = as2f - ias;
 	if( vario_mode.get() == VARIO_NETTO || (Switch::cruiseMode() &&  (vario_mode.get() == CRUISE_NETTO)) ){

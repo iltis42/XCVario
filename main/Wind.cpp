@@ -5,7 +5,7 @@
  *
  *  Author: Eckhard Völlm, Axel Pauli
  *
- *  Last update: 2021-04-18
+ *  Last update: 2021-04-21
  */
 #include <algorithm>
 #include <cmath>
@@ -69,7 +69,7 @@ double Wind::meanAngleEckhard( double angle, double average ){
  * @param average as degree 0...359
  * @return average angle as degree 0...359
  */
-double WindCalcInStraightFlight::meanAngle( double angle, double average )
+double Wind::meanAngle( double angle, double average )
 {
   double bisector = 0.0;
   double result = 0.0;
@@ -303,15 +303,27 @@ void Wind::calculateWind( double tc, double gs, double th, double tas  ){
 	}
 	// Apply the Cosinus sentence: c^2 = a^2 + b^2 − 2 * a * b * cos( α ) for wind speed in km/h
 	windSpeed = sqrt( (tas * tas) + (gs * gs ) - ( 2 * tas * gs * cos( wca ) ) );
-	// calculate WA (wind angle) in degree
-	double wa = R2D(asin( tas / (windSpeed/sin(wca)) ));
-	// Wind direction: W = TC - WA
-	windDir = normAngle(tc - wa);  // wind direction in degrees
 
-	ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h  WCA: %3.1f  WA: %3.1f", windDir, windSpeed, R2D(wca), wa );
+	// calculate WA (wind angle) in degree
+  // wind direction calculation taken from here:
+  // view-source:http://www.owoba.de/fliegerei/flugrechner.html
+  double tcrad = D2R( tc );
+  double thrad = D2R( th );
+
+  // wind direction formula to calculate wd
+  double wd = tcrad + atan2( tas * sin( thrad - tcrad ),
+                             tas * cos( thrad - tcrad ) - gs );
+
+  // convert radian to degree
+  wd = normAngle( R2D( wd ) );
+
+  // wind direction in degrees
+  windDir = wd;
+	ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h  WCA: %3.1f", windDir, windSpeed, R2D(wca) );
 }
 
-void Wind::test(){    // Class Test
+void Wind::test()
+{    // Class Test, check here the results: http://www.owoba.de/fliegerei/flugrechner.html
 	calculateWind( 90, 100, 0, 100 );
 	if( int( windSpeed ) != 141 || int(windDir +0.5) != 135 )
 		ESP_LOGI(FNAME,"Failed");
@@ -333,8 +345,4 @@ void Wind::test(){    // Class Test
 	calculateWind( 180, 100, 270, 100 );
 	if( int( windSpeed ) != 141 || int(windDir +0.5) != 135  )
 		ESP_LOGI(FNAME,"Failed");
-
 }
-
-
-

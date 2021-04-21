@@ -638,7 +638,7 @@ float QMC5883L::heading( bool *ok )
 #ifdef DEBUG_COMP1
 	ESP_LOGI( FNAME,
 			"rawHeading, x:%d y:%d z:%d, roll: %f  pitch: %f  tcx:%f tcy:%f mh:%f ",
-			xraw, yraw, zraw, IMU::getRoll(), IMU::getPitch(), (float)tcx, (float)tcy, heading );
+			xraw, yraw, zraw, IMU::getRoll(), IMU::getPitch(), (float)tcx, (float)tcy, _heading );
 #endif
 
 	return _heading;

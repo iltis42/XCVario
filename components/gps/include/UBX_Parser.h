@@ -21,6 +21,10 @@
 /**
   * A class for parsing UBX messages.
   */
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 typedef enum {
 
             GOT_NONE,
@@ -74,3 +78,7 @@ void handle_NAV_VELNED(unsigned long iTOW,
 void reportUnhandled(char msgid);
 void Init_UBX_Parser();
 void parse(int b);
+
+#ifdef __cplusplus
+}
+#endif

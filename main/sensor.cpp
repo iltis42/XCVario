@@ -182,6 +182,7 @@ float getTAS() { return tas; };
 float getTE() { return TE; };
 //modif gfm
 float Vsz_gps;
+float Ground_Speed_gps;
 //fin modif gfm
 
 void drawDisplay(void *pvParameters){
@@ -306,6 +307,7 @@ void doAudio( float te ){
 	netto = aTES2F - polar_sink;
 	// modif gfm
 	netto = netto - Vsz_gps;// juste pour appeler le gps
+	netto = netto + Ground_Speed_gps;
 	//fin modif gfm
 	as2f = Speed2Fly.speed( netto, !Switch::cruiseMode() );
 	s2f_delta = as2f - ias;
@@ -434,6 +436,7 @@ void readBMP(void *pvParameters){
 					}
 					gyroDPS_Prev = gyroDPS;
 					accelG_Prev = accelG;
+					ESP_LOGE(FNAME, "Vsz_gps:%+.2f Ground_Speed_gps%+.2f",  Vsz_gps, Ground_Speed_gps );
 				}
 
 				xSemaphoreTake(xMutex,portMAX_DELAY );

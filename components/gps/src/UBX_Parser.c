@@ -66,6 +66,48 @@ void dispatchMessage() {
                     handle_NAV_DOP(iTOW, gDOP, pDOP, tDOP, vDOP, hDOP, nDOP, eDOP);
                     }
                     break;
+                case 0x07:
+                    {
+                    unsigned long iTOW = (unsigned long)unpack_int32(0);
+                    unsigned short year = (unsigned short)unpack_int16(4);
+                    unsigned char month = payload[6];
+                    unsigned char day = payload[7];
+                    unsigned char hour = payload[8];
+                    unsigned char minute = payload[9];
+                    unsigned char seconde = payload[10];
+                    unsigned char validate = payload[11];
+                    unsigned long tAcc = (unsigned long)unpack_int32(12);
+                    long nano = unpack_int32(16);
+                    unsigned char fixType = payload[20];
+                    unsigned char flags = payload[21];
+                    unsigned char flags2 = payload[22];
+                    unsigned char numSV = payload[23];
+                    long lon = unpack_int32(24);
+                    long lat = unpack_int32(28);
+                    long height = unpack_int32(32);
+                    long hMSL = unpack_int32(36);
+                    unsigned long hAcc = (unsigned long)unpack_int32(40);
+                    unsigned long vAcc = (unsigned long)unpack_int32(44);
+                    long velN = unpack_int32(48);
+                    long velE = unpack_int32(52);
+                    long velD = unpack_int32(56);
+                    long gSpeed = unpack_int32(60);
+                    long headMot = unpack_int32(64);
+                    unsigned long sAcc = (unsigned long)unpack_int32(68);
+                    unsigned long headAcc = (unsigned long)unpack_int32(72);
+                    unsigned short pDOP = (unsigned long)unpack_int16(76);
+                    unsigned char flags3 = payload[78];
+                    unsigned short reserved01 = (unsigned char)unpack_int16(79);
+                    unsigned long reserved02 = (unsigned char)unpack_int32(80);
+                    long headVeh = unpack_int32(84);
+                    short magDec = unpack_int16(88);
+                    unsigned short magAcc = (unsigned long)unpack_int16(90);
+                    handle_NAV_PVT(iTOW, year, month, day, hour, minute, seconde, validate,tAcc,nano,
+                    		fixType, flags, flags2, numSV,lon, lat, height, hMSL, hAcc, vAcc,
+							velN, velE, velD, gSpeed, headMot, sAcc, headAcc, pDOP, flags3, reserved01,reserved02,
+							headVeh,magDec,magAcc);
+                    }
+                    break;
                 case 0x12: 
                     {
                     unsigned long iTOW = (unsigned long)unpack_int32(0);
@@ -78,7 +120,6 @@ void dispatchMessage() {
                     unsigned long sAcc = (unsigned long)unpack_int32(28);
                     unsigned long cAcc = (unsigned long)unpack_int32(32);
                     handle_NAV_VELNED(iTOW, velN, velE, velD, speed, gSpeed, heading, sAcc, cAcc);
-                    Vsz_gps=-velD;
                     }
                     break;
                     /*
@@ -100,12 +141,12 @@ void dispatchMessage() {
 
 long unpack_int32(int offset) {
 
-            return unpack(offset, 4);;
+            return unpack(offset, 4);
         }
 
 long unpack_int16(int offset) {
 
-            return unpack(offset, 2);;
+            return unpack(offset, 2);
         }
 
 long unpack(int offset, int size) {
@@ -199,6 +240,44 @@ void handle_NAV_VELNED(unsigned long iTOW,
            * handled by current code.
            * @param msgid ID of current message
            */
+void handle_NAV_PVT(unsigned long iTOW,
+		        unsigned short year,
+				unsigned char month,
+				unsigned char day,
+				unsigned char hour,
+				unsigned char minute,
+				unsigned char seconde,
+				unsigned char validate,
+				unsigned long tAcc,
+				long nano,
+				unsigned char fixType,
+				unsigned char flags,
+				unsigned char flags2,
+				unsigned char numSV,
+				long lon,
+				long lat,
+				long height,
+				long hMSL,
+				unsigned long hAcc,
+				unsigned long vAcc,
+				long velN,
+                long velE,
+                long velD,
+                long gSpeed,
+                long headMot,
+                unsigned long sAcc,
+                unsigned long headAcc,
+				unsigned short pDOP,
+				unsigned char flags3,
+				unsigned short reserved01,
+				unsigned long reserved02,
+				long headVeh,
+				short magDec,
+                unsigned short magAcc) {
+    Vsz_gps=-velD;
+    Ground_Speed_gps = gSpeed;
+}
+
 void reportUnhandled(char msgid) { }
 
 

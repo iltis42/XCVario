@@ -379,7 +379,7 @@ void Protocols::parseNMEA( char *str ){
 		float netto = aTES2F - polar_sink;
 		as2f = Speed2Fly.speed( netto );
 		s2f_delta = as2f - ias;
-		alt=Atmosphere::calcAltitude( QNH.get(), _baro );
+		alt=Atmosphere::calcAltitude( QNH.get(), _baro, _temp );
 		// ESP_LOGI(FNAME,"parseNMEA, $PXCV TE=%2.1f T=%2.1f Baro=%4.1f Pitot=%4.1f IAS:%3.1f", _te, _temp, _baro, _pitot, ias);
 	}
 	else if( !strncmp( str, "$PFLAU,", 6 )) {

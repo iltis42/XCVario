@@ -636,9 +636,12 @@ float QMC5883L::heading( bool *ok )
 
 // #define DEBUG_COMP1
 #ifdef DEBUG_COMP1
+	double headingc = -RAD_TO_DEG * atan2( fy, fx );
+	if( headingc < 0.0 )
+			headingc += 360.0;
 	ESP_LOGI( FNAME,
-			"rawHeading, x:%d y:%d z:%d, roll: %f  pitch: %f  tcx:%f tcy:%f mh:%f ",
-			xraw, yraw, zraw, IMU::getRoll(), IMU::getPitch(), (float)tcx, (float)tcy, _heading );
+			"rawHeading, x:%d y:%d z:%d, roll: %f  pitch: %f  tcx:%f tcy:%f mh:%f mh_nc:%f",
+			xraw, yraw, zraw, IMU::getRoll(), IMU::getPitch(), (float)tcx, (float)tcy, _heading, headingc );
 #endif
 
 	return _heading;

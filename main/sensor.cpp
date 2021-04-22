@@ -63,6 +63,9 @@
 #include "Wind.h"
 
 // #include "sound.h"
+//modif gfm
+#include "UBX_Parser.h"
+//fin modif gfm
 
 /*
 
@@ -1113,6 +1116,9 @@ void sensor(void *args){
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 13, dpid, 0);
 
 	Audio::startAudio();
+	//modif gfm
+	Init_UBX_Parser();
+	//fin modif gfm
 }
 
 extern "C" void  app_main(void){

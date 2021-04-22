@@ -22,6 +22,20 @@
   * A class for parsing UBX messages.
   */
 #include "UBX_Parser.h"
+typedef enum {
+
+            GOT_NONE,
+            GOT_SYNC1,
+            GOT_SYNC2,
+            GOT_CLASS,
+            GOT_ID,
+            GOT_LENGTH1,
+            GOT_LENGTH2,
+            GOT_PAYLOAD,
+            GOT_CHKA
+
+        } state_t;
+state_t state;
 
 int msgclass;
 int msgid;
@@ -301,7 +315,7 @@ void Init_UBX_Parser()
           * message is successfully parsed.
           * @param b the byte
           */
-void parse(int b)
+void parse(char b)
         {
             if (b == 0xB5) {
 

@@ -25,20 +25,6 @@
 extern "C"
 {
 #endif
-typedef enum {
-
-            GOT_NONE,
-            GOT_SYNC1,
-            GOT_SYNC2,
-            GOT_CLASS,
-            GOT_ID,
-            GOT_LENGTH1,
-            GOT_LENGTH2, 
-            GOT_PAYLOAD,
-            GOT_CHKA 
-
-        } state_t;
-state_t state;
 extern float Vsz_gps;
 extern float Ground_Speed_gps;
 void addchk(int b);
@@ -113,7 +99,7 @@ void handle_NAV_PVT(unsigned long iTOW,
 
 void reportUnhandled(char msgid);
 void Init_UBX_Parser();
-void parse(int b);
+void parse(char b);
 
 #ifdef __cplusplus
 }

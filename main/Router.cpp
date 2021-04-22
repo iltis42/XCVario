@@ -99,7 +99,8 @@ void Router::routeS1(){
 	SString s1;
 	//modif gfm
 	int i;
-	if( !strcmp(s1.c_str(),"µb")){//Si le message reçu est un message GPS UBX
+	if( pullMsg( s1_rx_q, s1) ){
+	  if( !strcmp(s1.c_str(),"µb")){//Si le message reçu est un message GPS UBX
 		// on l'envoie sur le BT
 		if( blue_enable.get() == WL_WLAN )
 			if( forwardMsg( s1, wl_flarm_tx_q ))
@@ -108,9 +109,8 @@ void Router::routeS1(){
 			if( forwardMsg( s1, bt_tx_q ))
 				ESP_LOGV(FNAME,"ttyS1 RX bytes %d forward to bt_tx_q", s1.length() );
         // puis il est décodé
-		for(i=0;i<s1.length();i++) parse(i);
-	}
-	if( pullMsg( s1_rx_q, s1) ){
+		for(i=0;i<s1.length();i++) parse(s1.c_str()[i]);
+	  }
 		ESP_LOGD(FNAME,"ttyS1 RX len: %d bytes, Q:%d", s1.length(), bt_tx_q.isFull() );
 		ESP_LOG_BUFFER_HEXDUMP(FNAME,s1.c_str(),s1.length(), ESP_LOG_DEBUG);
 		Protocols::parseNMEA( s1.c_str() );

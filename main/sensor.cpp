@@ -63,6 +63,9 @@
 #include "Wind.h"
 
 // #include "sound.h"
+//modif gfm
+#include "UBX_Parser.h"
+//fin modif gfm
 
 /*
 
@@ -182,6 +185,7 @@ float getTAS() { return tas; };
 float getTE() { return TE; };
 //modif gfm
 float Vsz_gps;
+float Ground_Speed_gps;
 //fin modif gfm
 
 void drawDisplay(void *pvParameters){
@@ -306,6 +310,7 @@ void doAudio( float te ){
 	netto = aTES2F - polar_sink;
 	// modif gfm
 	netto = netto - Vsz_gps;// juste pour appeler le gps
+	netto = netto + Ground_Speed_gps;
 	//fin modif gfm
 	as2f = Speed2Fly.speed( netto, !Switch::cruiseMode() );
 	s2f_delta = as2f - ias;
@@ -434,6 +439,7 @@ void readBMP(void *pvParameters){
 					}
 					gyroDPS_Prev = gyroDPS;
 					accelG_Prev = accelG;
+					ESP_LOGE(FNAME, "Vsz_gps:%+.2f Ground_Speed_gps%+.2f",  Vsz_gps, Ground_Speed_gps );
 				}
 
 				xSemaphoreTake(xMutex,portMAX_DELAY );
@@ -1110,6 +1116,9 @@ void sensor(void *args){
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 13, dpid, 0);
 
 	Audio::startAudio();
+	//modif gfm
+	Init_UBX_Parser();
+	//fin modif gfm
 }
 
 extern "C" void  app_main(void){

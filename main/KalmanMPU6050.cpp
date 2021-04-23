@@ -185,7 +185,7 @@ void IMU::read()
 	else
 	{   // But simple kalman algo as above needs adjustment in aircraft with fixed wings, acceleration's differ, esp. in a curve there is no lateral acceleration
 		// 1: calculate angle of bank (roll) from Gyro yaw rates Y and Z with low pass filter
-		myrollz += (atan(  (gyroZ *PI/180 * (getTAS()/3.6) ) / 9.81 ) * (180/PI) - myrollz) * 0.1;
+		myrollz += (atan(  (gyroZ *PI/180 * (getTAS()/3.6) ) / 9.81 ) * (180/PI) - myrollz) * 0.05;
 
 		// 2: estimate angle of bank from increased acceleration in Z axis
 		float posa=accelZ;
@@ -194,13 +194,15 @@ void IMU::read()
 			posa = 1;
 		float aroll = acos( 1 / posa )*180/PI;
 		// estimate sign from gyro
-		if( myrollz+myrolly < 0 )
-			aroll = -aroll;
 		// low pass filter
-		myaccroll += ( aroll - myaccroll )*0.2;
+		myaccroll += ( aroll - myaccroll )*0.05;
+
+		float sign_accroll=myaccroll;
+		if( myrollz < 0 )
+			sign_accroll = -sign_accroll;
 		// with higher Angle, the rate lowers as Z axis gets out of direction of rotation, we need to correct this
 		// and merge with the estimated roll angle from acceleration.
-		kalXAngle = ((myrollz * (1+(1- cos( kalXAngle*PI/180 )) ) ) + myaccroll ) / 2;
+		kalXAngle = ((myrollz * (1+(1- cos( kalXAngle*PI/180 )) ) ) + sign_accroll ) / 2;
 		// correct the sign, we need negative
 		filterRoll = -kalXAngle;
 

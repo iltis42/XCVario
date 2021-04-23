@@ -52,7 +52,7 @@ void addchk(int b) {
         }
 
 
-void dispatchMessage() {
+void dispatchMessage() {//La payload est entièrement reçue et le checkSum est correct
 
             switch (msgid) {
                 case 0x02: 
@@ -288,8 +288,10 @@ void handle_NAV_PVT(unsigned long iTOW,
 				long headVeh,
 				short magDec,
                 unsigned short magAcc) {
-    Vsz_gps=-velD;
-    Ground_Speed_gps = gSpeed;
+    if((fixType==3) || (fixType==4)) {//Si les données GPS sont valides
+    	Vsz_gps=-velD;
+        Ground_Speed_gps = gSpeed;
+    }
 }
 
 void reportUnhandled(char msgid) { }

@@ -80,7 +80,7 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->setFont( ucg_font_fur14_hf );
 	p->ucg->setPrintPos( 1, 60 );
-	p->ucg->printf( "Turn airplain to %s\260  ", p->getEntry() );
+	p->ucg->printf( "Turn airplane to %s\260  ", p->getEntry() );
 	p->ucg->setPrintPos( 1, 90 );
 	p->ucg->printf( "and push button when done" );
 	xSemaphoreGive(spiMutex);

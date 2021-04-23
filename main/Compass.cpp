@@ -31,7 +31,7 @@ float Compass::m_magn_heading_dev = 0;
 bool Compass::m_headingValid = false;
 
 CompassFilter Compass::m_cfmh;
-float Compass::ipd[360];
+// float Compass::ipd[360];
 
 /*
   Creates instance for I2C connection with passing the desired parameters.
@@ -64,7 +64,7 @@ float Compass::calculateHeading( bool *okIn )
 	assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
 
 	float new_heading = QMC5883L::heading( okIn );
-	// ESP_LOGI( FNAME, "calculateHeading H: %3.1f  OK: %d", new_heading, ok );
+	// ESP_LOGI( FNAME, "H: %3.2f", new_heading  );
 	if( *okIn == false )
 	{
 		m_headingValid = false;
@@ -122,6 +122,8 @@ float Compass::rawHeading( bool *okIn )
 	return m_magn_heading;
 }
 
+tk::spline *deviationSpline = 0;
+
 /**
  * Compute heading deviation by using linear interpolation.
  *
@@ -129,10 +131,15 @@ float Compass::rawHeading( bool *okIn )
  */
 float Compass::getDeviation( float heading )
 {
+	float dev = (*deviationSpline)((double)heading);
+	// ESP_LOGI( FNAME, "RawHeading=%.1f : deviation=%0.2f", heading, dev );
+	return( (*deviationSpline)((double)heading) );
+	/*
 	int iv = (static_cast<int>(heading + 0.5) % 360);
 	float deviation = ipd[iv];
-	// ESP_LOGI( FNAME, "RawHeading=%.1f : deviation=%0.1f", heading, deviation );
+	// ESP_LOGI( FNAME, "RawHeading=%.1f : deviation=%0.2f", heading, deviation );
 	return deviation;
+	*/
 }
 
 /**
@@ -141,17 +148,23 @@ float Compass::getDeviation( float heading )
 void Compass::setupInterpolationData()
 {
 	// Setup cubic spline interpolation lookup table for dedicated angles 0...360
-	std::vector<double> X = {    0-compass_dev_0.get(),   45-compass_dev_45.get(),   90-compass_dev_90.get(),  135-compass_dev_135.get(),
+	std::vector<double> X = {  -135-compass_dev_225.get(), -90-compass_dev_270.get(), -45-compass_dev_315.get(), 0-compass_dev_0.get(),   45-compass_dev_45.get(),   90-compass_dev_90.get(),  135-compass_dev_135.get(),
 							   180-compass_dev_180.get(), 225-compass_dev_225.get(), 270-compass_dev_270.get(), 315-compass_dev_315.get(),
-							   360-compass_dev_0.get()}; // close spline
-	std::vector<double> Y = { compass_dev_0.get(),   compass_dev_45.get(),  compass_dev_90.get(),  compass_dev_135.get(),
+							   360-compass_dev_0.get(), 405-compass_dev_45.get(), 450-compass_dev_90.get(), 495-compass_dev_135.get() }; // close spline
+	std::vector<double> Y = { compass_dev_225.get(), compass_dev_270.get(), compass_dev_315.get(), compass_dev_0.get(),   compass_dev_45.get(),  compass_dev_90.get(),  compass_dev_135.get(),
 			                  compass_dev_180.get(), compass_dev_225.get(), compass_dev_270.get(), compass_dev_315.get(),
-							  compass_dev_0.get() };
-	tk::spline s(X,Y);
+							  compass_dev_0.get(), compass_dev_45.get(), compass_dev_90.get(), compass_dev_135.get()  };
+
+
+	if( deviationSpline )
+		delete deviationSpline;
+	deviationSpline  = new tk::spline(X,Y, tk::spline::cspline_hermite );
+
 	for( int dir=0; dir < 360; dir++ ){
-		ipd[dir] = (float)( s((double)dir) );
-		ESP_LOGI( FNAME, "DEV Heading=%d  dev=%f", dir, ipd[dir] );
+		// ipd[dir] = (float)( deviationSpline((double)dir) );
+		ESP_LOGI( FNAME, "DEV Heading=%d  dev=%f", dir, (float)( (*deviationSpline)((double)dir) ));
 	}
+
 }
 
 /**

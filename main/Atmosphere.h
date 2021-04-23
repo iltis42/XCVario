@@ -33,8 +33,8 @@ public:
 	static inline float pascal2kmh( float pascal ){
 		return sqrt( 2*pascal / 1.225 )*3.6;
 	};
-	static inline double calcAltitude(double SeaLevel_Pres, double pressure) {
-			return ( 44330.0 * (1.0 - pow(pressure / SeaLevel_Pres, (1.0/5.255))) );
+	static inline double calcAltitude(double SeaLevel_Pres, double pressure, float temp) {
+			return (  (temp + 273.15) / 0.0065 * (1.0 - pow(pressure / SeaLevel_Pres, (1.0/5.255))) );
 	};
 
 };

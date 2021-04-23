@@ -25,6 +25,9 @@
 #include "Units.h"
 #include "Flap.h"
 #include "Switch.h"
+//modif gfm
+#include "UBX_Parser.h"
+//fin modif gfm
 
 S2F * Protocols::_s2f = 0;
 
@@ -136,9 +139,30 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		temp=0;
 
 	if( proto == P_XCVARIO_DEVEL ){
+		/*
+			Sentence has following format:
+			$PXCV,
+			BBB.B = Vario, -30 to +30 m/s, negative sign for sink,
+			C.C = MacCready 0 to 10 m/s
+			EE = bugs degradation, 0 = clean to 30 %,
+			F.FF = Ballast 1.00 to 1.60,
+			G = 0 in climb, 1 in cruise,
+			HH = Outside airtemp in degrees celcius ( may have leading negative sign ),
+			QQQQ.Q = QNH e.g. 1013.2,
+			PPPP.P: static pressure in hPa,
+			QQQQ.Q: dynamic pressure in Pa,
+			RRR.R: roll angle,
+			III.I: pitch angle,
+			X.XX:   acceleration in X-Axis,
+			Y.YY:   acceleration in Y-Axis,
+			Z.ZZ:   acceleration in Z-Axis,
+			VVV.V:  Vsz_gps m/s,
+			VVV.V:  Ground_Speed_gps m/s,			
+			*CHK = standard NMEA checksum
+		*/ 
 		float roll = IMU::getRoll();
 		float pitch = IMU::getPitch();
-		sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%4.1f,%3.1f,%3.1f,%1.4f,%1.4f,%1.4f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
+		sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%4.1f,%3.1f,%3.1f,%1.4f,%1.4f,%1.4f,%3.1f,%3.1f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z, Vsz_gps, Ground_Speed_gps );
 	}
 	else if( proto == P_XCVARIO ){
 		/*
@@ -379,7 +403,7 @@ void Protocols::parseNMEA( char *str ){
 		float netto = aTES2F - polar_sink;
 		as2f = Speed2Fly.speed( netto );
 		s2f_delta = as2f - ias;
-		alt=Atmosphere::calcAltitude( QNH.get(), _baro );
+		alt=Atmosphere::calcAltitude( QNH.get(), _baro, _temp );
 		// ESP_LOGI(FNAME,"parseNMEA, $PXCV TE=%2.1f T=%2.1f Baro=%4.1f Pitot=%4.1f IAS:%3.1f", _te, _temp, _baro, _pitot, ias);
 	}
 	else if( !strncmp( str, "$PFLAU,", 6 )) {

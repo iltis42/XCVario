@@ -330,6 +330,47 @@ void readBMP(void *pvParameters){
 		count++;
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		xSemaphoreTake(xMutex,portMAX_DELAY );
+
+		if( haveMPU  )  // 3th Generation HW, MPU6050 avail and feature enabled
+		{
+			mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
+			mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
+			esp_err_t err = MPU.acceleration(&accelRaw);  // fetch raw data from the registers
+			if( err != ESP_OK )
+				ESP_LOGE(FNAME, "accel I2C error, X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
+			err |= MPU.rotation(&gyroRaw);       // fetch raw data from the registers
+			if( err != ESP_OK )
+				ESP_LOGE(FNAME, "gyro I2C error, X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
+			accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
+			gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
+			// ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f  gyro X: %+.2f Y:%+.2f Z:%+.2f\n", -accelG[2], accelG[1], accelG[0] ,  gyroDPS.x, gyroDPS.y, gyroDPS.z);
+			bool goodAccl = true;
+			if( abs( accelG.x - accelG_Prev.x ) > 1 || abs( accelG.y - accelG_Prev.y ) > 1 || abs( accelG.z - accelG_Prev.z ) > 1 ) {
+				MPU.acceleration(&accelRaw);
+				accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);
+				if( abs( accelG.x - accelG_Prev.x ) > 1 || abs( accelG.y - accelG_Prev.y ) > 1 || abs( accelG.z - accelG_Prev.z ) > 1 ){
+					goodAccl = false;
+					ESP_LOGE(FNAME, "accelaration change > g in 0.2 S:  X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
+				}
+			}
+			bool goodGyro = true;
+			if( abs( gyroDPS.x - gyroDPS_Prev.x ) > 90 || abs( gyroDPS.y - gyroDPS_Prev.y ) > 90 || abs( gyroDPS.z - gyroDPS_Prev.z ) > 90 ) {
+				// ESP_LOGE(FNAME, "gyro sensor out of bounds: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
+				// ESP_LOGE(FNAME, "%04x %04x %04x", gyroRaw.x, gyroRaw.y, gyroRaw.z );
+				MPU.rotation(&gyroRaw);
+				gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);
+				if( abs( gyroDPS.x - gyroDPS_Prev.x ) > 90 || abs( gyroDPS.y - gyroDPS_Prev.y ) > 90 || abs( gyroDPS.z - gyroDPS_Prev.z ) > 90 ) {
+					goodGyro = false;
+					ESP_LOGE(FNAME, "gyro angle >90 deg/s in 0.2 S: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
+				}
+			}
+			if( err == ESP_OK && goodAccl && goodGyro ) {
+				IMU::read();
+			}
+			gyroDPS_Prev = gyroDPS;
+			accelG_Prev = accelG;
+		}
+
 		bool ok=false;
 		float p = 0;
 		if( asSensor )
@@ -361,104 +402,61 @@ void readBMP(void *pvParameters){
 		}
 
 		Flap::progress();
-		if( (count % 2) == 0 ) {
-			xSemaphoreTake(xMutex,portMAX_DELAY );
-			bool ok;
-			baroP = baroSensor->readPressure(ok);   // 5x per second
-			// ESP_LOGI(FNAME,"Baro Pressure: %4.3f", baroP );
-			float altSTD = baroSensor->calcAVGAltitudeSTD( baroP );
-			if( alt_select.get() == 0 ) // TE
-				alt = bmpVario.readAVGalt();
-			else { // Baro
-				if(  alt_unit.get() == 2 ) { // FL, always standard
-					alt = altSTD;
-					standard_setting = true;
-					// ESP_LOGI(FNAME,"au: %d", alt_unit.get() );
-				}else if( (fl_auto_transition.get() == 1) && ((int)altSTD*0.0328084 + (int)(standard_setting) > transition_alt.get() ) ) {
-					alt = altSTD;
-					standard_setting = true;
-					// ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), altSTD, standard_setting, transition_alt.get() );
-				}
-				else {
-					alt = baroSensor->calcAVGAltitude( QNH.get(), baroP );
-					standard_setting = false;
-					// ESP_LOGI(FNAME,"QNH %f baro: %f alt: %f SS:%d", QNH.get(), baroP, alt, standard_setting  );
-				}
+		xSemaphoreTake(xMutex,portMAX_DELAY );
+		baroP = baroSensor->readPressure(ok);   // 5x per second
+		// ESP_LOGI(FNAME,"Baro Pressure: %4.3f", baroP );
+		float altSTD = baroSensor->calcAVGAltitudeSTD( baroP );
+		if( alt_select.get() == 0 ) // TE
+			alt = bmpVario.readAVGalt();
+		else { // Baro
+			if(  alt_unit.get() == 2 ) { // FL, always standard
+				alt = altSTD;
+				standard_setting = true;
+				// ESP_LOGI(FNAME,"au: %d", alt_unit.get() );
+			}else if( (fl_auto_transition.get() == 1) && ((int)altSTD*0.0328084 + (int)(standard_setting) > transition_alt.get() ) ) {
+				alt = altSTD;
+				standard_setting = true;
+				// ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), altSTD, standard_setting, transition_alt.get() );
 			}
-			aTE = bmpVario.readAVGTE();
-			xSemaphoreGive(xMutex);
-
-			doAudio( bmpVario.readS2FTE() );
-
-			if( (inSetup != true) && !Flarm::bincom ){
-				if( haveMPU  )  // 3th Generation HW, MPU6050 avail and feature enabled
-				{
-					mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
-					mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
-					esp_err_t err = MPU.acceleration(&accelRaw);  // fetch raw data from the registers
-					if( err != ESP_OK )
-						ESP_LOGE(FNAME, "accel I2C error, X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
-					err |= MPU.rotation(&gyroRaw);       // fetch raw data from the registers
-					if( err != ESP_OK )
-						ESP_LOGE(FNAME, "gyro I2C error, X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
-					accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
-					gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
-					// ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f  gyro X: %+.2f Y:%+.2f Z:%+.2f\n", -accelG[2], accelG[1], accelG[0] ,  gyroDPS.x, gyroDPS.y, gyroDPS.z);
-					bool goodAccl = true;
-					if( abs( accelG.x - accelG_Prev.x ) > 1 || abs( accelG.y - accelG_Prev.y ) > 1 || abs( accelG.z - accelG_Prev.z ) > 1 ) {
-						MPU.acceleration(&accelRaw);
-						accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);
-						if( abs( accelG.x - accelG_Prev.x ) > 1 || abs( accelG.y - accelG_Prev.y ) > 1 || abs( accelG.z - accelG_Prev.z ) > 1 ){
-							goodAccl = false;
-							ESP_LOGE(FNAME, "accelaration change >1 g in 0.2 S:  X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
-						}
-					}
-					bool goodGyro = true;
-					if( abs( gyroDPS.x - gyroDPS_Prev.x ) > 90 || abs( gyroDPS.y - gyroDPS_Prev.y ) > 90 || abs( gyroDPS.z - gyroDPS_Prev.z ) > 90 ) {
-						// ESP_LOGE(FNAME, "gyro sensor out of bounds: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
-						// ESP_LOGE(FNAME, "%04x %04x %04x", gyroRaw.x, gyroRaw.y, gyroRaw.z );
-						MPU.rotation(&gyroRaw);
-						gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);
-						if( abs( gyroDPS.x - gyroDPS_Prev.x ) > 90 || abs( gyroDPS.y - gyroDPS_Prev.y ) > 90 || abs( gyroDPS.z - gyroDPS_Prev.z ) > 90 ) {
-							goodGyro = false;
-							ESP_LOGE(FNAME, "gyro angle >90 deg/s in 0.2 S: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
-						}
-					}
-					if( err == ESP_OK && goodAccl && goodGyro ) {
-						IMU::read();
-					}
-					gyroDPS_Prev = gyroDPS;
-					accelG_Prev = accelG;
-				}
-
-				xSemaphoreTake(xMutex,portMAX_DELAY );
-				// reduce also messages from 10 per second to 5 per second to reduce load in XCSoar
-				char lb[150];
-				if( nmea_protocol.get() == BORGELT ) {
-					OV.sendNMEA( P_BORGELT, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), altSTD, validTemperature  );
-					OV.sendNMEA( P_GENERIC, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), altSTD, validTemperature  );
-				}
-				else if( nmea_protocol.get() == OPENVARIO ){
-					OV.sendNMEA( P_OPENVARIO, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature  );
-				}
-				else if( nmea_protocol.get() == CAMBRIDGE ){
-					OV.sendNMEA( P_CAMBRIDGE, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature  );
-				}
-				else if( nmea_protocol.get() == XCVARIO ) {
-					OV.sendNMEA( P_XCVARIO, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-							-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
-				}
-				else if( nmea_protocol.get() == XCVARIO_DEVEL ) {
-					OV.sendNMEA( P_XCVARIO_DEVEL, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-							-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
-				}
-				else
-					ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
-
-				vTaskDelay(2/portTICK_PERIOD_MS);
-				xSemaphoreGive(xMutex);
+			else {
+				alt = baroSensor->calcAVGAltitude( QNH.get(), baroP );
+				standard_setting = false;
+				// ESP_LOGI(FNAME,"QNH %f baro: %f alt: %f SS:%d", QNH.get(), baroP, alt, standard_setting  );
 			}
 		}
+		aTE = bmpVario.readAVGTE();
+		xSemaphoreGive(xMutex);
+		doAudio( bmpVario.readS2FTE() );
+
+		if( (inSetup != true) && !Flarm::bincom && ((count % 2) == 0 ) ){
+			xSemaphoreTake(xMutex,portMAX_DELAY );
+			// reduce also messages from 10 per second to 5 per second to reduce load in XCSoar
+			char lb[150];
+			if( nmea_protocol.get() == BORGELT ) {
+				OV.sendNMEA( P_BORGELT, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), altSTD, validTemperature  );
+				OV.sendNMEA( P_GENERIC, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), altSTD, validTemperature  );
+			}
+			else if( nmea_protocol.get() == OPENVARIO ){
+				OV.sendNMEA( P_OPENVARIO, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature  );
+			}
+			else if( nmea_protocol.get() == CAMBRIDGE ){
+				OV.sendNMEA( P_CAMBRIDGE, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature  );
+			}
+			else if( nmea_protocol.get() == XCVARIO ) {
+				OV.sendNMEA( P_XCVARIO, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
+						-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
+			}
+			else if( nmea_protocol.get() == XCVARIO_DEVEL ) {
+				OV.sendNMEA( P_XCVARIO_DEVEL, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
+						-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
+			}
+			else
+				ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
+
+			vTaskDelay(2/portTICK_PERIOD_MS);
+			xSemaphoreGive(xMutex);
+		}
+
 		// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d ena=%d", compass.haveSensor(),  compass_nmea_hdt.get(),  compass_enable.get() );
 		if( compass_enable.get() == true  && !Flarm::bincom && ! Compass::calibrationIsRunning() ) {
 			// Trigger heading reading and low pass filtering. That job must be

@@ -95,6 +95,12 @@ void Router::routeXCV(){
 // Route messages from serial interface S1
 void Router::routeS1(){
 	SString s1;
+	//modif gfm
+	int i;
+	if( pullMsg( s1_rx_q, s1) ){
+	  if( !strcmp(s1.c_str(),"µb")){ // if message is from GNSS in UBX format
+	    for(i=0;i<s1.length();i++) parse(s1.c_str()[i]); // decode it
+	  } else {// fin modif gfm
 	if( pullMsg( s1_rx_q, s1) ){
 		ESP_LOGD(FNAME,"ttyS1 RX len: %d bytes, Q:%d", s1.length(), bt_tx_q.isFull() );
 		ESP_LOG_BUFFER_HEXDUMP(FNAME,s1.c_str(),s1.length(), ESP_LOG_DEBUG);

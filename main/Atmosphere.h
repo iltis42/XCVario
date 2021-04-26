@@ -30,11 +30,17 @@ public:
 	static inline float TAS( float ias, float baro, float temp ) {
 		return( ias * sqrt( 1.225 / ( baro*100.0 / (287.058 * (273.15+temp)))));
 	};
+	static inline float IAS( float tas, float alti, float temp ) {
+			return( tas / sqrt( 1.225 / ( calcPressure(alti)*100.0 / (287.058 * (273.15+temp)))));
+	};
 	static inline float pascal2kmh( float pascal ){
 		return sqrt( 2*pascal / 1.225 )*3.6;
 	};
 	static inline double calcAltitude(double SeaLevel_Pres, double pressure) {
 			return ( 44330.0 * (1.0 - pow(pressure / SeaLevel_Pres, (1.0/5.255))) );
+	};
+	static inline double calcPressure(double alti) {
+			return ( 1013.25 * pow( (1.0 - (6.5 * alti / 288150.0)), 5.255 ));
 	};
 
 };

@@ -81,6 +81,8 @@ void on_client_connect( int port ){
 		OV.sendQNHChange( QNH.get() );
 		OV.sendBallastChange( ballast.get() );
 		OV.sendBugsChange( bugs.get() );
+		OV.sendMcChange( MC.get() );
+        OV.sendTemperatureChange( temperature );
 	}
 }
 

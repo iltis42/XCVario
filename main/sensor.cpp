@@ -302,9 +302,9 @@ void doAudio( float te ){
 	aTES2F = te;
 	polar_sink = Speed2Fly.sink( ias );
 	netto = aTES2F - polar_sink;
-
 	as2f = Speed2Fly.speed( netto, !Switch::cruiseMode() );
 	s2f_delta = as2f - ias;
+	// ESP_LOGI( FNAME, "te: %f, polar_sink: %f, netto %f, s2f: %f  delta: %f", te, polar_sink, netto, as2f, s2f_delta );
 	if( vario_mode.get() == VARIO_NETTO || (Switch::cruiseMode() &&  (vario_mode.get() == CRUISE_NETTO)) ){
 		if( netto_mode.get() == NETTO_RELATIVE )
 			Audio::setValues( TE - polar_sink + Speed2Fly.circlingSink( ias ), s2f_delta );
@@ -489,6 +489,7 @@ void readBMP(void *pvParameters){
 }
 
 static int ttick = 0;
+static int temp_prev = -3000;
 
 void readTemp(void *pvParameters){
 	while (1) {
@@ -513,6 +514,11 @@ void readTemp(void *pvParameters){
 						validTemperature = true;
 					}
 					temperature = t;
+					if( (int)(temperature*10) != temp_prev ){
+						OV.sendTemperatureChange( temperature );
+						temp_prev = (int)(temperature*10);
+						ESP_LOGI(FNAME,"NEW temperature=%f", temperature );
+					}
 				}
 				ESP_LOGV(FNAME,"temperature=%f", temperature );
 			}
@@ -821,21 +827,24 @@ void sensor(void *args){
 	}
 	ESP_LOGI(FNAME,"Now start T sensor test");
 	// Temp Sensor test
-	ds18b20.begin();
-	temperature = ds18b20.getTemp();
-	ESP_LOGI(FNAME,"End T sensor test");
-	if( temperature == DEVICE_DISCONNECTED_C ) {
-		ESP_LOGE(FNAME,"Error: Self test Temperatur Sensor failed; returned T=%2.2f", temperature );
-		display->writeText( line++, "Temp Sensor: NOT FOUND");
-		validTemperature = false;
-		logged_tests += "External Temperature Sensor: NOT FOUND\n";
-	}else
-	{
-		ESP_LOGI(FNAME,"Self test Temperatur Sensor PASSED; returned T=%2.2f", temperature );
-		display->writeText( line++, "Temp Sensor: OK");
-		validTemperature = true;
-		logged_tests += "External Temperature Sensor:PASSED\n";
+	if( blue_enable.get() != WL_WLAN_CLIENT ) {
+		ESP_LOGI(FNAME,"Now start T sensor test");
+		ds18b20.begin();
+		temperature = ds18b20.getTemp();
+		ESP_LOGI(FNAME,"End T sensor test");
+		if( temperature == DEVICE_DISCONNECTED_C ) {
+			ESP_LOGE(FNAME,"Error: Self test Temperatur Sensor failed; returned T=%2.2f", temperature );
+			display->writeText( line++, "Temp Sensor: NOT FOUND");
+			validTemperature = false;
+			logged_tests += "External Temperature Sensor: NOT FOUND\n";
+		}else
+		{
+			ESP_LOGI(FNAME,"Self test Temperatur Sensor PASSED; returned T=%2.2f", temperature );
+			display->writeText( line++, "Temp Sensor: OK");
+			validTemperature = true;
+			logged_tests += "External Temperature Sensor:PASSED\n";
 
+		}
 	}
 	ESP_LOGI(FNAME,"Absolute pressure sensors init, detect type of sensor type..");
 

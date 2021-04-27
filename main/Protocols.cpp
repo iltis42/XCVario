@@ -372,6 +372,10 @@ void Protocols::parseNMEA( char *astr ){
 				ESP_LOGI(FNAME,"Final new ballast: %f ", bal);
 				ballast.set( bal );
 				_s2f->change_mc_bal();
+				if( blue_enable.get() == WL_WLAN ) {// update also client from Master
+					delay( 500 );
+					OV.sendBallastChange( ballast.get() );
+				}
 			}
 			if (str[3] == 'm') {
 				ESP_LOGI(FNAME,"parseNMEA, BORGELT, MC modification");
@@ -383,6 +387,10 @@ void Protocols::parseNMEA( char *astr ){
 				ESP_LOGI(FNAME,"New MC: %1.1f knots, %f", mc, mc_ms );
 				MC.set( Units::Vario( mc_ms ) );  // set mc according corresponding vario units
 				_s2f->change_mc_bal();
+				if( blue_enable.get() == WL_WLAN ) {// update also client from Master
+					delay( 500 );
+					OV.sendMcChange( MC.get() );
+				}
 			}
 			if (str[3] == 'u') {
 				ESP_LOGI(FNAME,"parseNMEA, BORGELT, Bugs modification");
@@ -392,6 +400,10 @@ void Protocols::parseNMEA( char *astr ){
 				ESP_LOGI(FNAME,"New Bugs: %d %%", mybugs);
 				bugs.set( mybugs );
 				_s2f->change_mc_bal();
+				if( blue_enable.get() == WL_WLAN ) {// update also client from Master
+					delay( 500 );
+					OV.sendBugsChange( bugs.get() );
+				}
 			}
 		}
 		else if( !strncmp( str, "$PXCV,", 5 ) ){   // $PXCV,-0.0,0.5,0,1.00,0,24.4,1013.2,990.8, 0.0,0.2,-29.2,-0.45,0.01,0.80*2C

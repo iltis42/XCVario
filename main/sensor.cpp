@@ -514,8 +514,8 @@ void readTemp(void *pvParameters){
 						validTemperature = true;
 					}
 					temperature = t;
-					if( (int)(temperature*10) != temp_prev ){
-						OV.sendTemperatureChange( temperature );
+					if( (int)(temperature*10 ) != temp_prev ){
+						OV.sendTemperatureChange( temperature  );
 						temp_prev = (int)(temperature*10);
 						ESP_LOGI(FNAME,"NEW temperature=%f", temperature );
 					}

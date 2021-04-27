@@ -38,7 +38,7 @@ Protocols::~Protocols() {
 
 void Protocols::sendTemperatureChange( float temp ){
 	char str[20];
-	sprintf( str,"!xt,%2.1f\n", temp );
+	sprintf( str,"!xt,%2.2f\n", temp );
 	ESP_LOGI(FNAME,"New Temperature: %f, cmd: %s", temp, str );
 	Router::sendXCV(str);
 }
@@ -68,6 +68,9 @@ void Protocols::sendBallastChange( float ballast ){
 	sprintf( str,"!g,b%d\n", (int)(bal + 0.5));
 	ESP_LOGI(FNAME,"New ballast %f, cmd: %s", bal, str );
 	Router::sendXCV(str);
+	sprintf( str,"!xb,%3.1f\n", ballast);
+	ESP_LOGI(FNAME,"New ballast internal %f, cmd: %s", ballast, str );
+	Router::sendXCV(str);
 }
 
 void Protocols::sendBugsChange( float bugs ){
@@ -79,8 +82,7 @@ void Protocols::sendBugsChange( float bugs ){
 
 void Protocols::sendMcChange( float mc ){
 	char str[20];
-
-	sprintf( str,"!g,m%d\n", (int)(Units::ms2knots(mc)*10+0.5));
+	sprintf( str,"!g,m%d\n", (int)(Units::ms2knots(mc)*10));
 	ESP_LOGI(FNAME,"New MC %f, cmd: %s", mc , str );
 	Router::sendXCV(str);
 }
@@ -179,10 +181,10 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		if( haveMPU && attitude_indicator.get() ){
 			float roll = IMU::getRoll();
 			float pitch = IMU::getPitch();
-			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%4.1f,%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
+			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f,%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
 
 		}else{
-			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%4.1f,,,,,", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp );
+			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f,,,,,", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp );
 		}
 	}
 	else if( proto == P_OPENVARIO ) {
@@ -301,12 +303,24 @@ float Protocols::_mc_prev = 0.5;
 float Protocols::_qnh_prev = 0.5;
 
 // The XCVario Protocol or Cambridge CAI302 protocol to adjust MC,Ballast,Bugs.
-void Protocols::parseNMEA( char *longstr ){
-	ESP_LOGI(FNAME,"parseNMEA len: %d", strlen( longstr) );
-	const char delim = '\n';
-	char *str = strtok(longstr, &delim );
+
+char * mystrtok(char *s)
+{
+	int i, c;
+	for (i = 0; i < strlen(s); i++) {
+		c = (unsigned char)s[i];
+		if (c == '$' || c == '!')
+			return &s[i];
+	}
+	return 0;
+}
+
+
+void Protocols::parseNMEA( char *astr ){
+	// ESP_LOGI(FNAME,"parseNMEA: %s", astr );
+	char *str = mystrtok(astr);
 	while( str ){
-		ESP_LOGI(FNAME,"parseNMEA %s", str);
+		ESP_LOGI(FNAME,"parseNMEA token: %s", str);
 		tickNMEA++;
 		if ( strncmp( str, "!xw,", 4 ) == 0 ) {
 			float wkcmd;
@@ -334,6 +348,14 @@ void Protocols::parseNMEA( char *longstr ){
 				QNH.set( qnh );
 			ESP_LOGI(FNAME,"QNH change cmd new QNH: %f, cmd: %s", qnh, str );
 		}
+		else if ( strncmp( str, "!xb,", 4 ) == 0 ) {
+			float aballast;
+			sscanf(str, "!xb,%f", &aballast);
+			ballast.set( aballast );
+			ESP_LOGI(FNAME,"parseNMEA, internal ballast modification %s new ballast: %f", str, aballast );
+			_s2f->change_mc_bal();
+		}
+
 		else if ( (strncmp( str, "!g,", 3 ) == 0)    ) {
 			ESP_LOGI(FNAME,"parseNMEA, Cambridge C302 style command !g detected: %s",str);
 			if (str[3] == 'b') {
@@ -357,7 +379,9 @@ void Protocols::parseNMEA( char *longstr ){
 				sscanf(str, "!g,m%f", &mc);
 				mc = mc*0.1;   // comes in knots*10, unify to knots
 				ESP_LOGI(FNAME,"New MC: %1.1f knots", mc);
-				MC.set( Units::Vario( Units::knots2ms(mc) ) );  // set mc according corresponding vario units
+				float mc_ms =  Units::knots2ms(mc);
+				ESP_LOGI(FNAME,"New MC: %1.1f knots, %f", mc, mc_ms );
+				MC.set( Units::Vario( mc_ms ) );  // set mc according corresponding vario units
 				_s2f->change_mc_bal();
 			}
 			if (str[3] == 'u') {
@@ -372,39 +396,42 @@ void Protocols::parseNMEA( char *longstr ){
 		}
 		else if( !strncmp( str, "$PXCV,", 5 ) ){   // $PXCV,-0.0,0.5,0,1.00,0,24.4,1013.2,990.8, 0.0,0.2,-29.2,-0.45,0.01,0.80*2C
 			/*
-		$PXCV,
-		BBB.B = Vario, -30 to +30 m/s, negative sign for sink,
-		C.C = MacCready 0 to 10 m/s
-		EE = bugs degradation, 0 = clean to 30 %,
-		F.FF = Ballast 1.00 to 1.60,
-		G = 0 in climb, 1 in cruise,
-		HH = Outside airtemp in degrees celcius ( may have leading negative sign ),
-		QQQQ.Q = QNH e.g. 1013.2,
-		PPPP.P: static pressure in hPa,
-		QQQQ.Q: dynamic pressure in Pa,
-		RRR.R: roll angle,
-		III.I: pitch angle,
-		X.XX:   acceleration in X-Axis,
-		Y.YY:   acceleration in Y-Axis,
-		Z.ZZ:   acceleration in Z-Axis,
-			 *CHK = standard NMEA checksum
+				$PXCV,
+				BBB.B = Vario, -30 to +30 m/s, negative sign for sink,
+				C.C = MacCready 0 to 10 m/s
+				EE = bugs degradation, 0 = clean to 30 %,
+				F.FF = Ballast 1.00 to 1.60,
+				G = 0 in climb, 1 in cruise,
+				HH = Outside airtemp in degrees celcius ( may have leading negative sign ),
+				QQQQ.Q = QNH e.g. 1013.2,
+				PPPP.P: static pressure in hPa,
+				QQQQ.Q: dynamic pressure in Pa,
+				RRR.R: roll angle,
+				III.I: pitch angle,
+				X.XX:   acceleration in X-Axis,
+				Y.YY:   acceleration in Y-Axis,
+				Z.ZZ:   acceleration in Z-Axis,
+					 *CHK = standard NMEA checksum
 			 */
 			// tbd: checksum check
 			// ESP_LOGI(FNAME,"parseNMEA, PXCV");
 			float _mc,_te,_bugs,_ballast, _temp, _qnh, _baro, _pitot, _roll, _pitch, _ax, _ay, _az;
 			int _cs, _cruise;
 			sscanf( str, "$PXCV,%f,%f,%f,%f,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f*%02x", &_te, &_mc, &_bugs, &_ballast,&_cruise, &_temp, &_qnh, &_baro, &_pitot, &_roll, &_pitch, &_ax, &_ay, &_az, &_cs  );
-			TE = _te;
-			temperature = _temp;
-			validTemperature = true;
-			baroP = _baro;
-			dynamicP = _pitot;
-			float iasraw= Atmosphere::pascal2kmh( dynamicP );
-			Switch::setCruiseModeXCV( _cruise );
-			ias = ias + (iasraw - ias)*0.25;
-			tas += ( Atmosphere::TAS( iasraw , _baro, _temp) - tas)*0.25;
-			alt=Atmosphere::calcAltitude( QNH.get(), _baro );
-			aTE += (TE - aTE)* (1/(10*vario_av_delay.get()));
+			int calc_cs=getCheckSum( str );
+			if( _cs != calc_cs )
+				ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", str, calc_cs, _cs );
+			else{
+				TE = _te;
+				baroP = _baro;
+				dynamicP = _pitot;
+				float iasraw= Atmosphere::pascal2kmh( dynamicP );
+				Switch::setCruiseModeXCV( _cruise );
+				ias = ias + (iasraw - ias)*0.25;
+				tas += ( Atmosphere::TAS( iasraw , _baro, _temp) - tas)*0.25;
+				alt=Atmosphere::calcAltitude( QNH.get(), _baro );
+				aTE += (TE - aTE)* (1/(10*vario_av_delay.get()));
+			}
 			// ESP_LOGI(FNAME,"parseNMEA, $PXCV TE=%2.1f T=%2.1f Baro=%4.1f Pitot=%4.1f IAS:%3.1f", _te, _temp, _baro, _pitot, ias);
 		}
 		else if( !strncmp( str, "$PFLAU,", 6 )) {
@@ -441,30 +468,27 @@ void Protocols::parseNMEA( char *longstr ){
 			 *hh   Checksum, XOR of all bytes of the sentence after the ‘!’ and before the ‘*’
 			 */
 			float _alt, _qnh, _tas, _te, _mc, _ballast, _bugs;
-			sscanf(str, "!w,0,0,0,0,%f,%f,%f,%f,0,0,%f,%f,%f", &_alt, &_qnh, &_tas, &_te, &_mc, &_ballast, &_bugs );
-			alt = _alt-1000;
-			if( _qnh_prev != _qnh ){
-				QNH.set( _qnh );
-				_qnh_prev = _qnh;
+			int _cs;
+			sscanf(str, "!w,0,0,0,0,%f,%f,%f,%f,0,0,%f,%f,%f*%02x", &_alt, &_qnh, &_tas, &_te, &_mc, &_ballast, &_bugs, &_cs );
+			int calc_cs=getCheckSum( str );
+			if( _cs != calc_cs )
+				ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", str, calc_cs, _cs );
+			else{
+				alt = _alt-1000;
+				if( _qnh_prev != _qnh ){
+					QNH.set( _qnh );
+					_qnh_prev = _qnh;
+				}
+				tas = Units::knots2kmh( _tas )/100;
+				ias = Atmosphere::IAS( tas , alt, temperature );
+				TE = Units::knots2ms( _te - 200 )/10;
+				aTE += (TE - aTE)* (1/(10*vario_av_delay.get()));
+				// ESP_LOGI(FNAME,"parseNMEA/Cambridge %s: alt=%4.1f QNH=%4.1f TE=%2.1f TAS:%3.1f",str, alt, _qnh, TE, tas);
 			}
-			/*
-		if( _mc_prev != _mc ){
-			MC.set( _mc );  // set mc according corresponding value from master
-			_s2f->change_mc_bal();
-			_mc_prev = _mc;
 		}
-			 */
-
-			tas = Units::knots2kmh( _tas )/100;
-			ias = Atmosphere::IAS( tas , alt, temperature );
-			TE = Units::knots2ms( _te - 200 )/10;
-			aTE += (TE - aTE)* (1/(10*vario_av_delay.get()));
-
-			// ESP_LOGI(FNAME,"parseNMEA/Cambridge %s: alt=%4.1f QNH=%4.1f TE=%2.1f TAS:%3.1f",str, alt, _qnh, TE, tas);
-		}
-		str = strtok(0, &delim );
+		str++;
+		str = mystrtok(str);
 	}
-
 }
 
 

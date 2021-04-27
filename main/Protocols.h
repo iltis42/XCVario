@@ -34,10 +34,14 @@ public:
 
 	static void parseNMEA( char *str );
 	static int getCheckSum(char * s);
+
+
 private:
 	static S2F *   _s2f;
 	static float   _mc_prev;
 	static float   _qnh_prev;
+
+
 };
 
 #endif /* PROTOCOLS_H_ */

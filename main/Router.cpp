@@ -189,6 +189,7 @@ void Router::routeBT(){
 			ESP_LOGV(FNAME,"BT RX Matched a Borgelt command %s", bt.c_str() );
 			Protocols::parseNMEA( bt.c_str() );
 		}
+		bt.clear();
 	}
 }
 

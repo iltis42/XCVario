@@ -1854,7 +1854,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		as_prev = airspeed;
 	}
 	// S2F command trend triangle
-	if( (int)s2fd != s2fdalt && !((tick+1)%2) ) {
+	if( ((int)s2fd != s2fdalt && !((tick+1)%2)) || !(tick%21) ) {
 		// Arrow pointing there
 		if( s2fmode ){
 			// erase old

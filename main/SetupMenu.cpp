@@ -200,6 +200,7 @@ int bug_adj( SetupMenuValFloat * p ){
 int mc_adj( SetupMenuValFloat * p )
 {
 	Speed2Fly.change_mc_bal();
+	OV.sendMcChange( MC.get() );
 	return 0;
 }
 

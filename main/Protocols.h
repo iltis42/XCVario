@@ -21,7 +21,7 @@ public:
 	virtual ~Protocols( );
 	void sendWkChange( float wk );
 	void sendMeanClimb( float climb );
-	void sendBallastChange( float ballast );
+	void sendBallastChange( float ballast, bool external=true );
 	void sendBugsChange( float bugs );
 	void sendTemperatureChange( float temp );
 	void sendMcChange( float mc );
@@ -40,8 +40,7 @@ private:
 	static S2F *   _s2f;
 	static float   _mc_prev;
 	static float   _qnh_prev;
-
-
+	static float   ballast_percent;
 };
 
 #endif /* PROTOCOLS_H_ */

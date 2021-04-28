@@ -1001,6 +1001,13 @@ void sensor(void *args){
 		if( err == ESP_OK )		{
 			// Activate working of magnetic sensor
 			compass.initialize();
+			display->writeText( line++, "Compass: OK");
+			logged_tests += "Compass test: PASSED\n";
+		}
+		else{
+		        display->writeText( line++, "Compass: FAILED");
+		        logged_tests += "Compass test: FAILED\n";
+		        selftestPassed = false;
 		}
 	}
 
@@ -1012,6 +1019,7 @@ void sensor(void *args){
 	if( !selftestPassed )
 	{
 		ESP_LOGI(FNAME,"\n\n\nSelftest failed, see above LOG for Problems\n\n\n");
+		display->writeText( line++, "Selftest FAILED");
 		if( !Rotary.readSwitch() )
 			sleep(4);
 	}

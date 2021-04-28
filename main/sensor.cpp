@@ -1114,6 +1114,47 @@ void sensor(void *args){
 	Audio::startAudio();
 }
 
+int getCheckSum(char * s) {
+    int i, XOR, c;
+    for (XOR = 0, i = 0; i < strlen(s); i++) {
+        c = (unsigned char)s[i];
+        if (c == '*') break;
+        if ((c != '$') && (c != '!')) XOR ^= c;
+    }
+    return XOR;
+}
+
+
+
+void nmeaAddCS( char *nmea ){
+   int i, CS, c;
+    for (CS = 0, i = 0; i < strlen(nmea); i++) {
+        c = (unsigned char)nmea[i];
+        if (c == '*') break;
+        if ((c != '$') && (c != '!')) CS ^= c;
+    }
+    sprintf( nmea, "%s*%02X", nmea, CS );
+}
+
+void sendNmeaCS( const char * nmea ) {
+    char nmea_cs[80];
+    int i, CS, c;
+    for (CS = 0, i = 0; i < strlen(nmea); i++) {
+        c = (unsigned char)nmea[i];
+        if (c == '*') break;
+        if ((c != '$') && (c != '!')) CS ^= c;
+    }
+    sprintf( nmea_cs, "%s*%02X", nmea, CS );
+
+    // SerialBT.println( nmea_cs );
+}
+
+
+
+
+
+
+
 extern "C" void  app_main(void){
 	ESP_LOGI(FNAME,"app_main" );
 	ESP_LOGI(FNAME,"Now init all Setup elements");
@@ -1128,6 +1169,9 @@ extern "C" void  app_main(void){
 	esp_log_level_set("*", ESP_LOG_INFO);
 	sensor( 0 );
 	vTaskDelete( NULL );
+
+	sendNmeaCS( "$PFLAU,3,1,2,1,1,-60,2,-100,755,1234" );
+
 }
 
 

@@ -27,6 +27,7 @@
 #include "Switch.h"
 
 S2F * Protocols::_s2f = 0;
+float Protocols::ballast_percent=0;
 
 Protocols::Protocols(S2F * s2f) {
 	_s2f = s2f;
@@ -57,17 +58,25 @@ void Protocols::sendQNHChange( float qnh ){
   Router::sendXCV(str);
 }
 
-void Protocols::sendBallastChange( float ballast ){
+void Protocols::sendBallastChange( float ballast, bool external ){
 	char str[20];
 	ESP_LOGI(FNAME,"Send new Ballast %f ", ballast );
 	float refw = polar_wingload.get() * polar_wingarea.get();
 	ESP_LOGI(FNAME,"Reference weight: %f kg", refw);
 	float liters = (1+ (ballast/100))*refw -refw;
 	ESP_LOGI(FNAME,"New Ballast in liters: %f ", liters);
-	float bal = (liters/polar_max_ballast.get())*10;
-	sprintf( str,"!g,b%d\n", (int)(bal + 0.5));
-	ESP_LOGI(FNAME,"New ballast %f, cmd: %s", bal, str );
-	Router::sendXCV(str);
+	float max_bal = polar_max_ballast.get();
+	if( (int)(polar_max_ballast.get()) == 0 ) { // We use 100 liters as default once its not with the polar
+		max_bal = 100;
+	}
+	ESP_LOGI(FNAME,"Max ballast %f", max_bal );
+	float bal = (liters/max_bal)*10;
+	ballast_percent = bal*10;
+	if( external ){
+		sprintf( str,"!g,b%d\n\r", (int)(bal + 0.5));
+		ESP_LOGI(FNAME,"New ballast %f, cmd: %s", bal, str );
+		Router::sendXCV(str);
+	}
 	sprintf( str,"!xb,%3.1f\n", ballast);
 	ESP_LOGI(FNAME,"New ballast internal %f, cmd: %s", ballast, str );
 	Router::sendXCV(str);
@@ -230,7 +239,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		 *hh   Checksum, XOR of all bytes of the sentence after the ‘!’ and before the ‘*’
 		 */
 
-		sprintf(str, "!w,0,0,0,0,%d,%d,%d,%d,0,0,%d,%d,%d", int(alt+1000), (int)(QNH.get()), int(Units::kmh2knots(tas)*100), int((Units::ms2knots(te)*10)+200), int( Units::mcval2knots(mc)*10 ), int( aballast ), (int)bugs );
+		sprintf(str, "!w,0,0,0,0,%d,%d,%d,%d,0,0,%d,%d,%d", int(alt+1000), (int)(QNH.get()), int(Units::kmh2knots(tas)*100), int((Units::ms2knots(te)*10)+200), int( Units::mcval2knots(mc)*10 ), int( ballast_percent ), (int)bugs );
 	}
 	else if( proto == P_EYE_PEYA ){
 		// Static pressure from aircraft pneumatic system [hPa] (i.e. 1015.5)
@@ -358,7 +367,7 @@ void Protocols::parseNMEA( char *astr ){
 
 		else if ( (strncmp( str, "!g,", 3 ) == 0)    ) {
 			ESP_LOGI(FNAME,"parseNMEA, Cambridge C302 style command !g detected: %s",str);
-			if (str[3] == 'b') {
+			if (str[3] == 'b' && blue_enable.get() != WL_WLAN_CLIENT ) {  // we run own protocol between Master and Client as of bad precision in official
 				ESP_LOGI(FNAME,"parseNMEA, BORGELT, ballast modification");
 				float aballast;
 				sscanf(str, "!g,b%f", &aballast);
@@ -374,7 +383,7 @@ void Protocols::parseNMEA( char *astr ){
 				_s2f->change_mc_bal();
 				if( blue_enable.get() == WL_WLAN ) {// update also client from Master
 					delay( 500 );
-					OV.sendBallastChange( ballast.get() );
+					OV.sendBallastChange( ballast.get(), false );
 				}
 			}
 			if (str[3] == 'm') {

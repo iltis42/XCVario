@@ -81,8 +81,12 @@ void on_client_connect( int port, int msg ){
 		ESP_LOGI(FNAME, "on_client_connect: Send MC, Ballast, Bugs, etc");
 		if( msg == 1 )
 			OV.sendQNHChange( QNH.get() );
-		if( msg == 2 )
-			OV.sendBallastChange( ballast.get() );
+		if( msg == 2 ) {
+			if( blue_enable.get() == WL_WLAN_CLIENT )
+				OV.sendBallastChange( ballast.get(), false );
+			else
+				OV.sendBallastChange( ballast.get(), true );
+		}
 		if( msg == 3 )
 			OV.sendBugsChange( bugs.get() );
 		if( msg == 4 )

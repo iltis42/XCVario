@@ -187,7 +187,10 @@ int bal_adj( SetupMenuValFloat * p )
 	p->ucg->printf("%u liter  ", liter);
 	xSemaphoreGive(spiMutex );
 	p->ucg->setFont(ucg_font_ncenR14_hr);
-	OV.sendBallastChange( ballast.get() );
+	if( blue_enable.get() == WL_WLAN_CLIENT )
+		OV.sendBallastChange( ballast.get(), false );
+	else
+		OV.sendBallastChange( ballast.get(), true );
 	return 0;
 }
 

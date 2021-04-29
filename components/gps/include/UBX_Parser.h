@@ -28,21 +28,6 @@
 extern "C" {
 #endif
 
-typedef enum {
-
-            GOT_NONE,
-            GOT_SYNC1,
-            GOT_SYNC2,
-            GOT_CLASS,
-            GOT_ID,
-            GOT_LENGTH1,
-            GOT_LENGTH2, 
-            GOT_PAYLOAD,
-            GOT_CHKA 
-
-        } state_t;
-state_t state;
-
 void addchk(int b);
 void dispatchMessage();
 long unpack_int32(int offset);
@@ -77,10 +62,45 @@ void handle_NAV_VELNED(unsigned long iTOW,
                  short week, 
                  char gpsFix) { }
                  */
+void handle_NAV_PVT(unsigned long iTOW,
+		        unsigned short year,
+				unsigned char month,
+				unsigned char day,
+				unsigned char hour,
+				unsigned char minute,
+				unsigned char seconde,
+				unsigned char validate,
+				unsigned long tAcc,
+				long nano,
+				unsigned char fixType,
+				unsigned char flags,
+				unsigned char flags2,
+				unsigned char numSV,
+				long lon,
+				long lat,
+				long height,
+				long hMSL,
+				unsigned long hAcc,
+				unsigned long vAcc,
+				long velN,
+                long velE,
+                long velD,
+                long gSpeed,
+                long headMot,
+                unsigned long sAcc,
+                unsigned long headAcc,
+				unsigned short pDOP,
+				unsigned char flags3,
+				unsigned char reserved01,
+				unsigned long reserved02,
+				long headVeh,
+				short magDec,
+                unsigned short magAcc);
 
 void reportUnhandled(char msgid);
 void Init_UBX_Parser();
 void parse(char b);
+
 
 #ifdef __cplusplus
 }

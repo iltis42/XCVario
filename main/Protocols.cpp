@@ -25,11 +25,21 @@
 #include "Units.h"
 #include "Flap.h"
 #include "Switch.h"
-
 S2F * Protocols::_s2f = 0;
+//modif gfm
+#include "UBX_Parser.h"
+float Vsz_gps=-1;
+float Ground_Speed_gps=-10;
+float time_gps;
+int date_gps;
+float latitude,longitude;
+// fin modif gfm
 
 Protocols::Protocols(S2F * s2f) {
 	_s2f = s2f;
+	//modif gfm
+	Init_UBX_Parser();
+	// fin modif gfm
 }
 
 Protocols::~Protocols() {
@@ -138,7 +148,9 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 	if( proto == P_XCVARIO_DEVEL ){
 		float roll = IMU::getRoll();
 		float pitch = IMU::getPitch();
-		sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%4.1f,%3.1f,%3.1f,%1.4f,%1.4f,%1.4f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
+//modif gfm
+		sprintf(str,"$PXCV,%10ld,%8.3f,%8.6f,%8.6f,%3.2f,%6.2f,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%6.3f,%6.3f,%3.1f,%3.1f,%1.4f,%1.4f,%1.4f", (unsigned long)time, time_gps,latitude,longitude,Vsz_gps,Ground_Speed_gps,te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
+//fin modif gfm
 	}
 	else if( proto == P_XCVARIO ){
 		/*
@@ -163,10 +175,12 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		if( haveMPU && attitude_indicator.get() ){
 			float roll = IMU::getRoll();
 			float pitch = IMU::getPitch();
-			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%4.1f,%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
+//modif gfm
+			sprintf(str,"$PXCV,%4.2f,%6.3f,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%6.2f,%6.2f,%4.3f,%3.1f,%3.1f,%1.2f,%1.2f,%1.2f",Vsz_gps,Ground_Speed_gps, te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
 
 		}else{
-			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%4.1f,,,,,", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp );
+			sprintf(str,"$PXCV,%4.1f,%6.1f,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%6.2f,%6.2f,%4.3f,,,,,",Vsz_gps,Ground_Speed_gps, te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp );
+//fin modif gfm
 		}
 	}
 	else if( proto == P_OPENVARIO ) {

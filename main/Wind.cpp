@@ -233,7 +233,7 @@ bool Wind::calculateWind()
 		// The ground course check is only done, if the ground speed is >=10 Km/h.
 		// Near speed zero, the ground course is not stable in its direction.
 		// Check if given GPS true course deltas are valid.
-		if( tcMin < tcMax && ( ctc < tcMin || cth > tcMax ) ) {
+		if( tcMin < tcMax && ( ctc < tcMin || ctc > tcMax ) ) {// gfm : check the possible confusion between cth and ctc
 			// true course outside of observation window
 			ok = false;
 		}

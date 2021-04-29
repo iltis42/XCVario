@@ -65,6 +65,11 @@ int gload_reset( SetupMenuSelect * p ){
 	return 0;
 }
 
+int compass_ena( SetupMenuSelect * p ){
+	if( compass_enable.get() )
+		compass.begin();
+	return 0;
+}
 
 int update_s2f_speed(SetupMenuValFloat * p)
 {
@@ -831,7 +836,7 @@ void SetupMenu::setup( )
 		windMenu->setHelp( PROGMEM "Setup wind calculation parameters", 280 );
 		MenuEntry* windME = compassWindME->addMenu( windMenu );
 
-		SetupMenuSelect * compSensor = new SetupMenuSelect( "Sensor Option", false, 0, true, &compass_enable );
+		SetupMenuSelect * compSensor = new SetupMenuSelect( "Sensor Option", false, compass_ena, true, &compass_enable);
 		compSensor->addEntry( "Disable");
 		compSensor->addEntry( "Enable");
 

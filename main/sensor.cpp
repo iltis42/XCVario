@@ -697,11 +697,17 @@ void sensor(void *args){
 		wireless_id="WLAN SID: ";
 	wireless_id += SetupCommon::getID();
 	display->writeText(line++, wireless_id.c_str() );
+
+	compass.setBus( &i2c_0 );
+	// Check for magnetic sensor / compass
 	if( compass_enable.get() ) {
-		i2c_0.begin(GPIO_NUM_4, GPIO_NUM_18, GPIO_PULLUP_DISABLE, GPIO_PULLUP_DISABLE, (int)(compass_i2c_cl.get()*1000) );
-		if( serial2_speed.get() )
-			serial2_speed.set(0);  // switch off serial interface, we can do only alternatively
 		compass.begin();
+		ESP_LOGI( FNAME, "Magnetic sensor enabled: initialize");
+		err = compass.selfTest();
+		if( err == ESP_OK )		{
+			// Activate working of magnetic sensor
+			ESP_LOGI( FNAME, "Magnetic sensor selftest: OKAY");
+		}
 	}
 
 	ESP_LOGI(FNAME,"Airspeed sensor init..  type configured: %d", airspeed_sensor_type.get() );
@@ -988,20 +994,6 @@ void sensor(void *args){
 		}
 	}else if ( blue_enable.get() == WL_WLAN ){
 		wifi_init_softap();
-	}
-
-	// MPU
-
-
-	// Check for magnetic sensor / compass
-	if( compass_enable.get() ) {
-		ESP_LOGI( FNAME, "Magnetic sensor enabled: initialize");
-		compass.setBus( &i2c_0 );
-		err = compass.selfTest();
-		if( err == ESP_OK )		{
-			// Activate working of magnetic sensor
-			compass.initialize();
-		}
 	}
 
 	Speed2Fly.change_polar();

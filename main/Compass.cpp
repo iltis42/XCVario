@@ -22,6 +22,7 @@ Last update: 2021-03-29
 #include "esp_log.h"
 #include "esp_system.h"
 #include "spline.h"
+#include "sensor.h"
 
 #include "Compass.h"
 
@@ -101,6 +102,10 @@ float Compass::calculateHeading( bool *okIn )
 
 void Compass::begin(){
 	setupInterpolationData();
+	i2c_0.begin(GPIO_NUM_4, GPIO_NUM_18, GPIO_PULLUP_DISABLE, GPIO_PULLUP_DISABLE, (int)(compass_i2c_cl.get()*1000) );
+	if( serial2_speed.get() )
+		serial2_speed.set(0);  // switch off serial interface, we can do only alternatively
+	compass.initialize();
 }
 
 /**

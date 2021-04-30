@@ -1002,6 +1002,65 @@ void IpsDisplay::drawCompass(){
 				else if( windspeed < 100 )
 					ucg->printf("%s  ", s);
 				else
+					ucg->printf("%s ", s);
+				prev_heading = winddir;
+			}
+		}
+		else if( compass_enable.get()  ){
+			bool ok;
+			int heading = static_cast<int>(rintf(Compass::trueHeading( &ok )));
+			if( heading >= 360 )
+				heading -= 360;
+			// ESP_LOGI(FNAME, "heading %d, valid %d", heading, Compass::headingValid() );
+			if( prev_heading != heading || !(tick%32) ){
+				ucg->setPrintPos(105,104);
+				ucg->setColor(  COLOR_WHITE  );
+				ucg->setFont(ucg_font_fub20_hr);
+				char s[12];
+				if( ok )
+					sprintf(s,"%3d", heading );
+				else
+					sprintf(s,"%s", "  ---" );
+
+				if( heading < 10 )
+					ucg->printf("%s   ", s);
+				else if( heading < 100 )
+					ucg->printf("%s  ", s);
+				else
+					ucg->printf("%s ", s);
+				ucg->setFont(ucg_font_fub20_hf);
+				ucg->setPrintPos(120+ucg->getStrWidth(s),105);
+				ucg->printf("\xb0 ");
+				prev_heading = heading;
+			}
+		}
+	}
+}
+
+
+// Compass or Wind Display
+void IpsDisplay::drawULCompass(){
+	if( compass_calibrated.get() ){
+		if( compass_enable.get() && wind_enable.get() ){
+			int winddir;
+			float wind;
+			bool ok = theWind.getWind( &winddir, &wind );
+			if( prev_heading != winddir || !(tick%32) ){
+				ucg->setPrintPos(85,104);
+				ucg->setColor(  COLOR_WHITE  );
+				// ucg->setFont(ucg_font_fub20_hr);
+				ucg->setFont(ucg_font_fub17_hf);
+				char s[12];
+				int windspeed = (int)( Units::Airspeed(wind)+0.5 );
+				if( ok )
+					sprintf(s,"%3d\xb0/%2d", winddir, windspeed );
+				else
+					sprintf(s,"%s", "    --/--" );
+				if( windspeed < 10 )
+					ucg->printf("%s   ", s);
+				else if( windspeed < 100 )
+					ucg->printf("%s  ", s);
+				else
 					ucg->printf("%s  ", s);
 				prev_heading = winddir;
 			}
@@ -1548,7 +1607,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 	}
 	// Compass
 	if( !(tick%8) ){
-		drawCompass();
+		drawULCompass();
 	}
 	xSemaphoreGive(spiMutex);
 }

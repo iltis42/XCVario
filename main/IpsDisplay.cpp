@@ -1038,7 +1038,7 @@ void IpsDisplay::drawCompass(){
 }
 
 
-// Compass or Wind Display
+// Compass or Wind Display ULStyle
 void IpsDisplay::drawULCompass(){
 	if( compass_calibrated.get() ){
 		if( compass_enable.get() && wind_enable.get() ){
@@ -1074,14 +1074,8 @@ void IpsDisplay::drawULCompass(){
 			if( prev_heading != heading || !(tick%32) ){
 				
 				ucg->setColor(  COLOR_WHITE  );
-				if ( wind_enable.get () ){
-				  ucg->setFont(ucg_font_fub17_hf);
-				  ucg->setPrintPos(105,129);
-				}
-				else{
-				  ucg->setFont(ucg_font_fub20_hf);
-				  ucg->setPrintPos(105,105);
-				}
+     			  	ucg->setFont(ucg_font_fub20_hf);
+				ucg->setPrintPos(113,220);
 				char s[14];
 				if( ok )
 					sprintf(s,"%3d\xb0", heading );

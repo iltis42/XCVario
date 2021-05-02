@@ -136,9 +136,33 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		temp=0;
 
 	if( proto == P_XCVARIO_DEVEL ){
+		/*
+		Sentence has following format:
+		$PXCV,
+		TTTT.TTTTTT = time in second, with microsecond precision
+		BBB.B = Vario, -30 to +30 m/s, negative sign for sink,
+		C.C = MacCready 0 to 10 m/s
+		EE = bugs degradation, 0 = clean to 30 %,
+		F.FF = Ballast 1.00 to 1.60,
+		G = 0 in climb, 1 in cruise,
+		HH = Outside airtemp in degrees celcius ( may have leading negative sign ),
+		QQQQ.QQQ = QNH e.g. 1013.200,
+		PPPP.PPP: static pressure in hPa,
+		QQQQ.QQQ: dynamic pressure in Pa,
+		RRR.R: roll angle,
+		III.I: pitch angle,
+		X.XXXX:   acceleration in X-Axis,
+		Y.YYXX:   acceleration in Y-Axis,
+		Z.ZZZZ:   acceleration in Z-Axis,
+		X.XXXX:   gyro around X-axis,
+		Y.YYXX:   gyro around Y-Axis,
+		Z.ZZZZ:   gyro around Z-Axis,
+		*CHK = standard NMEA checksum
+		*/
 		float roll = IMU::getRoll();
 		float pitch = IMU::getPitch();
-		sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%.3f,%.3f,%.3f,%3.1f,%3.1f,%1.4f,%1.4f,%1.4f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
+		float timertime = esp_timer_get_time()/1000000.0; // time in second
+		sprintf(str,"$PXCV,%.6f,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%.3f,%.3f,%.3f,%3.1f,%3.1f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f", timertime, te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z, gz, gy, gx );
 	}
 	else if( proto == P_XCVARIO ){
 		/*

@@ -931,8 +931,10 @@ void SetupMenu::setup( )
 		// Wind speed observation window
 		SetupMenuSelect * windcal = new SetupMenuSelect( "Wind Calculation", false, 0, true, &wind_enable );
 		windcal->addEntry( "Disable");
-		windcal->addEntry( "Enable");
-		windcal->setHelp(PROGMEM "Enable Wind calculation and display wind in reto display style");
+		windcal->addEntry( "Straight");
+		windcal->addEntry( "Circling");
+		windcal->addEntry( "Both");
+		windcal->setHelp(PROGMEM "Enable Wind calculation for straight flight (needs compass), circling or both and display wind in reto display style");
 		windME->addMenu( windcal );
 
 		SetupMenuValFloat *smvf = new SetupMenuValFloat( "Speed tolerance",

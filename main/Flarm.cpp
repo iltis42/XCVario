@@ -117,7 +117,7 @@ void Flarm::parseGPRMC( char *gprmc ) {
 
 	// ESP_LOGI(FNAME,"parseGPRMC: %s", gprmc );
 	sscanf( gprmc, "$GPRMC,%f,%c,%f,N,%f,E,%lf,%lf,%d,%f,%c*%02x",&time,&warn,&lat,&lon,&gndSpeedKnots,&gndCourse,&date,&magvar,&dir,&cs);
-	if( warn == 'A' ) {
+	if( warn == 'A' && wind_enable.get() != WA_OFF ) {
 		if( gpsOK == false ){
 			gpsOK = true;
 			WindAnalyser::gpsStatusChange( true);
@@ -126,7 +126,7 @@ void Flarm::parseGPRMC( char *gprmc ) {
 		WindAnalyser::newSample( Vector( gndCourse, Units::knots2kmh( gndSpeedKnots ) ) );
 	}
 	else{
-		if( gpsOK == true ){
+		if( gpsOK == true  && wind_enable.get() != WA_OFF ){
 			gpsOK = false;
 			WindAnalyser::gpsStatusChange( false );
 		}
@@ -179,7 +179,7 @@ void Flarm::parseGPGGA( char *gpgga ) {
 	}
 	sscanf( gpgga, "$GPGGA,%f,%f,N,%f,E,%d,%d,%f,%f,M,%f,M,%f,%d*%02x",&time,&lat,&lon,&Q,&numSat,&dilutionH, &antennaAlt, &geoidalSep, &age, &ID, &cs);
 
-	if( numSat != _numSat ){
+	if( numSat != _numSat && wind_enable.get() != WA_OFF ){
 		_numSat = numSat;
 		WindAnalyser::newConstellation( numSat );
 	}

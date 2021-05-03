@@ -17,6 +17,7 @@
 #include "Units.h"
 #include "sensor.h"
 #include "math.h"
+#include "windanalyser.h"
 
 // degree to rad conversion
 #define D2R(x) ((x)/57.2957795131)

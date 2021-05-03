@@ -92,7 +92,6 @@ private:
   static int circleCount; // we are counting the number of circles, the first onces are probably not very round
   static bool circleLeft; // true=left, false=right
   static int circleDegrees; // Degrees of current flown circle
-  static int circleSectors; // Sectors of current flown circle
   static int lastHeading; // Last processed heading
   static int satCnt;
   static int minSatCnt;

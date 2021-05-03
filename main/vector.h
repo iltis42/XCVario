@@ -36,6 +36,8 @@
  * \date 2002-2015
  */
 
+#define PI2 2*M_PI
+
 
 class Vector
 {
@@ -51,8 +53,6 @@ public:
     static double polar(double y, double x);
     static double normalize(double angle);
 
-
-    static int angleDiff(int ang1, int ang2);
     static double angleDiff(double ang1, double ang2);
 
     /**
@@ -69,6 +69,7 @@ public:
      * set the angle in degrees
      */
     void setAngle(const int angle);
+    void setAngle(const double angle);
 
     /**
      * set the angle in degrees  and the speed
@@ -89,7 +90,7 @@ public:
     /**
      * @return The speed
      */
-    double getSpeed();
+    double getSpeed();  // in internal units of Kmh
 
     double getSpeedMps();
 

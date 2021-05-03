@@ -123,6 +123,7 @@ void Flarm::parseGPRMC( char *gprmc ) {
 			WindAnalyser::gpsStatusChange( true);
 		}
 		theWind.calculateWind();
+		// ESP_LOGI(FNAME,"Track: %3.2f, GPRMC: %s", gndCourse, gprmc );
 		WindAnalyser::newSample( Vector( gndCourse, Units::knots2kmh( gndSpeedKnots ) ) );
 	}
 	else{
@@ -170,7 +171,7 @@ void Flarm::parseGPGGA( char *gpgga ) {
 	float age;
 	int ID;
 	int cs;
-	ESP_LOGI(FNAME,"parseGPGGA: %s", gpgga );
+	ESP_LOGV(FNAME,"parseGPGGA: %s", gpgga );
 	int calc_cs=Protocols::calcNMEACheckSum( gpgga );
 	cs = Protocols::getNMEACheckSum( gpgga );
 	if( cs != calc_cs ){

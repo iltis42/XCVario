@@ -138,7 +138,7 @@ float Compass::getDeviation( float heading )
 {
 	if( !deviationSpline )
 		setupInterpolationData();
-	float dev = (*deviationSpline)((double)heading);
+	// float dev = (*deviationSpline)((double)heading);
 	// ESP_LOGI( FNAME, "RawHeading=%.1f : deviation=%0.2f", heading, dev );
 	return( (*deviationSpline)((double)heading) );
 }

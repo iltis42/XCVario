@@ -17,6 +17,7 @@
 #include <cmath>
 #include "Units.h"
 #include "vector.h"
+#include "logdef.h"
 
 Vector::Vector() :
 _angle(0.0),
@@ -44,13 +45,14 @@ Vector::Vector(const double& x, const double& y)
 }
 */
 
-Vector::Vector(const int angle, const double& R)
+Vector::Vector(const int angle, const double& speed)
 {
+	// ESP_LOGI(FNAME, "New Vector ang:%d speed %f", angle, speed );
 	_x = 0.0;
 	_y = 0.0;
 	dirtyXY = false;
 	dirtyDR = false;
-	_speed = R;
+	_speed = speed;
 	setAngle( angle );
 	dirtyDR = false;
 	dirtyXY = true;
@@ -59,6 +61,7 @@ Vector::Vector(const int angle, const double& R)
 
 Vector::Vector(const double angle, const double speed )
 {
+	// ESP_LOGI(FNAME, "New Vector ang:%f speed %f", angle, speed );
 	_x = 0.0;
 	_y = 0.0;
 	dirtyXY = false;
@@ -74,13 +77,12 @@ Vector::Vector(const double angle, const double speed )
 
 double Vector::normalize(double angle)
 {
-	//we needed to use a modulo for the integer version. We should
 	//perhaps use something similar here?
 	if (angle < 0)
-		return normalize (angle + M_PI_2);
+		return normalize (angle + PI2);
 
-	if (angle >= M_PI_2)
-		return normalize (angle - M_PI_2);
+	if (angle >= PI2)
+		return normalize (angle - PI2);
 
 	return angle;
 }
@@ -93,7 +95,7 @@ double Vector::polar(double y, double x)
 		if(y < 0.0)
 			return ( 1.5 * M_PI );
 		else
-			return ( M_PI_2 );
+			return ( PI2 );
 	}
 	// Punkt liegt auf der neg. X-Achse
 	if(x < 0.0)
@@ -103,28 +105,14 @@ double Vector::polar(double y, double x)
 
 	// Neg. value not allowed.
 	if(angle < 0.0)
-		angle = M_PI_2 + angle;
+		angle = PI2 + angle;
 
-	if(angle > (M_PI_2))
-		angle = angle - (M_PI_2);
+	if(angle > (PI2))
+		angle = angle - (PI2);
 
 	return angle;
 }
 
-int Vector::angleDiff(int ang1, int ang2)
-{
-	int a1 = normalize (ang1);
-	int a2 = normalize (ang2);
-	int a = a2 - a1;
-
-	if (a > 180)
-		return (a - 360);
-
-	if (a < -180)
-		return (a + 360);
-
-	return a;
-};
 
 
 double Vector::angleDiff(double ang1, double ang2)
@@ -133,11 +121,11 @@ double Vector::angleDiff(double ang1, double ang2)
 	double a2 = normalize (ang2);
 	double a = a2 - a1;
 
-	if (a > 180)
-		return (a - 360);
+	if (a > M_PI)
+		return (a - PI2);
 
-	if (a < -180)
-		return (a + 360);
+	if (a < -M_PI)
+		return (a + PI2);
 
 	return a;
 };
@@ -153,7 +141,7 @@ double Vector::getAngleDeg()
 		recalcDR();
 	}
 
-	return (_angle / M_PI) * 180.0;
+	return (_angle * 180.0/M_PI);
 }
 
 /** Get angle in radian. */
@@ -170,15 +158,32 @@ double Vector::getAngleRad()
 /** Set property of integer angle in degrees. */
 void Vector::setAngle(const int angle)
 {
+	// ESP_LOGI(FNAME, "setAngle I ang:%d", angle );
 	if( dirtyDR )
 	{
 		recalcDR();
 	}
 
-	_angle = (double( normalize( angle ) ) / 180.0) * M_PI;
+	_angle = normalize( angle );
 	dirtyXY = true;
 	_isValid = true;
+
 }
+
+void Vector::setAngle(const double angle)
+{
+	// ESP_LOGI(FNAME, "setAngle D ang:%f", angle );
+	if( dirtyDR )
+	{
+		recalcDR();
+	}
+
+	_angle = normalize( angle*M_PI/180.0 );
+	dirtyXY = true;
+	_isValid = true;
+	// ESP_LOGI(FNAME, "New angle ang:%f", _angle );
+}
+
 
 /**
  * set the angle in degrees and the speed.

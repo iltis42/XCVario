@@ -56,14 +56,14 @@
 WindAnalyser::WindAnalyser()
 {
 	// Initialization
-
+	minVector.setSpeedKmh( 370.0 );
+	maxVector.setSpeedKmh( 0.0 );
 }
 
 bool WindAnalyser::active = false;
 int WindAnalyser::circleCount = 0; 			// we are counting the number of circles, the first onces are probably not very round
 bool WindAnalyser::circleLeft = false; 		// true=left, false=right
 int WindAnalyser::circleDegrees = 0; 		// Degrees of current flown circle
-int WindAnalyser::circleSectors = 0; 		// Sectors of current flown circle
 int WindAnalyser::lastHeading = -1; 		// Last processed heading
 int WindAnalyser::satCnt = 0;
 int WindAnalyser::minSatCnt = 5;
@@ -83,11 +83,7 @@ WindAnalyser::~WindAnalyser()
 /** Called if a new sample is available in the sample list. */
 void WindAnalyser::newSample( Vector curVec )
 {
-	ESP_LOGI(FNAME,"newSample dir:%3.1f speed:%3.1f", curVec.getAngleDeg(), curVec.getSpeed() );
-	if( ! active )
-	{
-		return; // do only work if we are in active mode
-	}
+	ESP_LOGI(FNAME,"newSample dir:%3.2f° speed:%3.2f", curVec.getAngleDeg(), curVec.getSpeed() );
 	// circle detection
 	if( lastHeading != -1 )
 	{
@@ -100,39 +96,35 @@ void WindAnalyser::newSample( Vector curVec )
 			diff = abs(diff - 360 );
 		}
 		calcFlightMode( diff, curVec.getSpeed() );
-		circleDegrees += diff;
-		circleSectors++;
-	}
-	else
-	{
-		minVector = curVec;
-		maxVector = curVec;
-	}
 
+		if( flightMode == circlingL || flightMode == circlingR ){
+			circleDegrees += diff;
+		}
+	}
 	lastHeading = curVec.getAngleDeg();
 
-	if( curVec.getSpeedMps() < minVector.getSpeedMps() )
+	if( flightMode != circlingL && flightMode != circlingR ){
+		ESP_LOGI(FNAME,"FlightMode not circling %d", flightMode );
+		return;
+	}
+
+	if( curVec.getSpeed() < minVector.getSpeed() )
 	{
 		// New minimum speed detected
 		minVector = curVec;
+		// ESP_LOGI(FNAME,"new minimum detected:  %3.2f°/%3.2f kmh", minVector.getAngleDeg(), minVector.getSpeed() );
 	}
 
-	if( curVec.getSpeedMps() > maxVector.getSpeedMps() )
+	if( curVec.getSpeed() > maxVector.getSpeed() )
 	{
 		// New maximum speed detected
 		maxVector = curVec;
+		// ESP_LOGI(FNAME,"new maximum detected: %3.2f°/%3.2f kmh",  maxVector.getAngleDeg(), maxVector.getSpeed() );
 	}
-
-	/*
-  qDebug( "curVec: %.3f/%dGrad, minVec: %.3f/%dGrad, maxVec: %.3f/%dGrad",
-         curVec.getSpeed().getKph(), curVec.getAngleDeg(),
-         minVector.getSpeed().getKph(), minVector.getAngleDeg(),
-         maxVector.getSpeed().getKph(), maxVector.getAngleDeg() );
-	 */
 
 	if( circleDegrees > 360 )
 	{
-		// full circle made!
+		ESP_LOGI(FNAME,"full circle made, circles %d", circleCount);
 		// increase the number of circles flown (used to determine the quality)
 		circleCount++;
 
@@ -140,32 +132,36 @@ void WindAnalyser::newSample( Vector curVec )
 		_calcWind();
 
 		circleDegrees = 0;
-		circleSectors = 0;
 
-		minVector = curVec;
-		maxVector = curVec;
+		minVector.setSpeedKmh( 370.0 );
+		maxVector.setSpeedKmh( 0.0 );
 	}
 }
 
 void WindAnalyser::calcFlightMode( double headingDiff, double speed ){
+	// ESP_LOGI(FNAME,"calcFlightMode head diff:%3.2f gs:%3.2f", headingDiff, speed  );
 	if( speed < 25 ){
 		if( flightMode != none ) {
 			newFlightMode( none );
+			flightMode = none;
 		}
 	}
 	if( headingDiff > MINTURNANGDIFF ){
 		if( flightMode != circlingR ) {
 			newFlightMode( circlingR );
+			flightMode = circlingR;
 		}
 	}
 	else if( headingDiff < MINTURNANGDIFF ) {
 		if( flightMode != circlingL ) {
 			newFlightMode( circlingL );
+			flightMode = circlingL;
 		}
 	}
 	else{
 		if( flightMode != none ) {
 			newFlightMode( none );
+			flightMode = none;
 		}
 	}
 }
@@ -180,8 +176,9 @@ void WindAnalyser::newFlightMode( t_circling newFlightMode )
 
 	circleCount   = 0;
 	circleDegrees = 0;
-	circleSectors = 0;
 	lastHeading   = -1;
+	minVector.setSpeedKmh( 370.0 );
+	maxVector.setSpeedKmh( 0.0 );
 
 	// We are inactive as default.
 	active = false;
@@ -224,7 +221,9 @@ void WindAnalyser::newFlightMode( t_circling newFlightMode )
 
 void WindAnalyser::_calcWind()
 {
+	ESP_LOGI(FNAME,"calcWind");
 	float aDiff = Vector::angleDiff( minVector.getAngleDeg(), maxVector.getAngleDeg() );
+	ESP_LOGI(FNAME,"calcWind, min/max diff %3.2f", aDiff );
 
 	/*
     Determine quality.
@@ -235,7 +234,7 @@ void WindAnalyser::_calcWind()
     Furthermore, the first two circles are considered to be of lesser quality.
 	 */
 
-	quality = 5 - ((180 - abs( aDiff )) / 8);
+	quality = 5 - (abs( aDiff ) / 8);
 
 	if( circleCount < 2 )
 	{
@@ -247,10 +246,11 @@ void WindAnalyser::_calcWind()
 		quality--;
 	}
 
-	// qDebug() << "WindQuality=" << quality;
+	//  << "WindQuality=" << quality;
 
 	if( quality < 1 )
 	{
+		ESP_LOGI(FNAME,"quality %d < 1: Abort ", quality );
 		return; // Measurement quality too low
 	}
 
@@ -258,14 +258,14 @@ void WindAnalyser::_calcWind()
 	quality = std::min( quality, 5 );
 
 	// Invert maxVector angle
-	maxVector.setAngle( Vector::normalize( maxVector.getAngleDeg() + 180 ) );
+	maxVector.setAngle( maxVector.getAngleDeg() + 180 );
 
 	// take both directions for min and max vector into account
-	/*
-      ESP_LOGI(FNAME, "maxAngle=%d/%.0f minAngle=%d/%.0f",
-           maxVector.getAngleDeg(), maxVector.getSpeed().getKph(),
-           minVector.getAngleDeg(), minVector.getSpeed().getKph() );
-	 */
+
+      ESP_LOGI(FNAME, "maxAngle=%3.1f°/%.0f   minAngle=%3.1f°/%.0f",
+           maxVector.getAngleDeg(), maxVector.getSpeed(),
+           minVector.getAngleDeg(), minVector.getSpeed() );
+
 
 	// the direction of the wind is the direction where the greatest speed occurred
 	result.setAngle( ( maxVector.getAngleDeg() + minVector.getAngleDeg() ) / 2);
@@ -274,7 +274,7 @@ void WindAnalyser::_calcWind()
 	result.setSpeedKmh( (maxVector.getSpeed() - minVector.getSpeed()) / 2.0 );
 
 	// Let the world know about our measurement!
-	ESP_LOGI(FNAME,"### CircleWind: %3.1f°/%.0fKm/h  Q:%d", result.getAngleDeg(), result.getSpeed(), quality );
+	ESP_LOGI(FNAME,"### CircleWind: %3.1f°/%.1fKm/h  Q:%d", result.getAngleDeg(), result.getSpeed(), quality );
 }
 
 void WindAnalyser::newConstellation( int numSat )
@@ -298,7 +298,6 @@ void WindAnalyser::newConstellation( int numSat )
 		// Initialize analyzer-parameters
 		circleCount   = 0;
 		circleDegrees = 0;
-		circleSectors = 0;
 		lastHeading   = -1;
 	}
 }
@@ -322,7 +321,6 @@ void WindAnalyser::gpsStatusChange( bool newStatus )
 		// Initialize analyzer-parameters
 		circleCount   = 0;
 		circleDegrees = 0;
-		circleSectors = 0;
 		lastHeading   = -1;
 	}
 }

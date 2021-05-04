@@ -39,7 +39,8 @@ tcMax( 0.0 ),
 mhMin( 0.0 ),
 mhMax( 0.0 ),
 windDir( -1.0 ),
-windSpeed( -1.0 )
+windSpeed( -1.0 ),
+lowAirspeed( false )
 {
 }
 
@@ -196,8 +197,16 @@ bool Wind::calculateWind()
 	{
 		// We start a new measurement cycle.
 		start();
-		ESP_LOGI(FNAME,"Restart Cycle, AS %3.1f  < %3.1f Kmh", ctas,  Units::Airspeed2Kmh( wind_as_min.get() ) );
+		if( !lowAirspeed ) {
+			ESP_LOGI(FNAME,"Low Airspeed, stop wind calculation, AS %3.1f  < %3.1f Kmh", ctas,  Units::Airspeed2Kmh( wind_as_min.get() ) );
+			lowAirspeed = true;
+		}
 		return false;
+	}else{
+		if( lowAirspeed ) {
+			ESP_LOGI(FNAME,"Airspeed OK, start wind calculation, AS %3.1f  < %3.1f Kmh", ctas,  Units::Airspeed2Kmh( wind_as_min.get() ) );
+			lowAirspeed = false;
+		}
 	}
 
 	// Get current true heading from compass.

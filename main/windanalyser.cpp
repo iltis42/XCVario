@@ -73,6 +73,10 @@ Vector WindAnalyser::minVector;
 Vector WindAnalyser::maxVector;
 Vector WindAnalyser::result;
 int WindAnalyser::quality = 0;
+int WindAnalyser::num_samples = 0;
+float WindAnalyser::direction = 0;
+float WindAnalyser::windspeed = 0;
+
 t_circling WindAnalyser::flightMode = none;
 
 
@@ -83,7 +87,7 @@ WindAnalyser::~WindAnalyser()
 /** Called if a new sample is available in the sample list. */
 void WindAnalyser::newSample( Vector curVec )
 {
-	ESP_LOGI(FNAME,"newSample dir:%3.2f° speed:%3.2f", curVec.getAngleDeg(), curVec.getSpeed() );
+	// ESP_LOGI(FNAME,"newSample dir:%3.2f° speed:%3.2f", curVec.getAngleDeg(), curVec.getSpeed() );
 	// circle detection
 	if( lastHeading != -1 )
 	{
@@ -274,8 +278,26 @@ void WindAnalyser::_calcWind()
 	result.setSpeedKmh( (maxVector.getSpeed() - minVector.getSpeed()) / 2.0 );
 
 	// Let the world know about our measurement!
-	ESP_LOGI(FNAME,"### CircleWind: %3.1f°/%.1fKm/h  Q:%d", result.getAngleDeg(), result.getSpeed(), quality );
+	ESP_LOGI(FNAME,"### RAW CircleWind: %3.1f°/%.1fKm/h  Q:%d", result.getAngleDeg(), result.getSpeed(), quality );
+	newWind( result.getAngleDeg(), result.getSpeed(), quality );
 }
+
+void WindAnalyser::newWind( double angle, double speed, int q ){
+	num_samples++;
+	float kq = 0;
+	if( num_samples == 1 ){
+		direction = angle;
+		windspeed = speed;
+	}
+	else{
+		kq = (float)q/20.0 * (1/( 1 + abs(angle - direction)/60 ));
+		direction += (angle - direction) * kq;
+		windspeed += (speed - windspeed) * kq;
+	}
+	ESP_LOGI(FNAME,"### NEW AGV CircleWind: %3.1f°/%.1fKm/h  KQ:%1.3f", direction, windspeed, kq );
+}
+
+
 
 void WindAnalyser::newConstellation( int numSat )
 {

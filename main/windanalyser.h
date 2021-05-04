@@ -83,6 +83,16 @@ public:
    */
   static void gpsStatusChange( bool newStatus );
 
+
+  static void newWind( double angle, double speed, int q );
+
+  static bool getWind( int *dir, float *speed ) { *dir=rint(direction); *speed=windspeed;
+  	  	  	  	  	  	  	  	  	  	  	  	  if( num_samples )
+  	  	  	  	  	  	  	  	  	  	  	  		  return true;
+  	  	  	  	  	  	  	  	  	  	  	  	  else
+  	  	  	  	  	  	  	  	  	  	  	  	  	  return false;
+  };
+
 private:
 
   static void _calcWind();
@@ -102,7 +112,9 @@ private:
   static Vector result;
   static int quality;
   static t_circling flightMode;
-
+  static float direction;
+  static float windspeed;
+  static int num_samples;
 };
 
 #endif

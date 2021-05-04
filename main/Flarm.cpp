@@ -114,26 +114,28 @@ void Flarm::parseGPRMC( char *gprmc ) {
 		ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", gprmc, calc_cs, cs );
 		return;
 	}
-
 	// ESP_LOGI(FNAME,"parseGPRMC: %s", gprmc );
 	sscanf( gprmc, "$GPRMC,%f,%c,%f,N,%f,E,%lf,%lf,%d,%f,%c*%02x",&time,&warn,&lat,&lon,&gndSpeedKnots,&gndCourse,&date,&magvar,&dir,&cs);
-	if( warn == 'A' && wind_enable.get() != WA_OFF ) {
-		if( gpsOK == false ){
-			gpsOK = true;
-			WindAnalyser::gpsStatusChange( true);
+	if( wind_enable.get() != WA_OFF ){
+		if( warn == 'A' ) {
+			if( gpsOK == false ){
+				gpsOK = true;
+				ESP_LOGI(FNAME,"GPRMC, GPS status changed to good: %s", gprmc );
+				WindAnalyser::gpsStatusChange( true);
+			}
+			theWind.calculateWind();
+			// ESP_LOGI(FNAME,"Track: %3.2f, GPRMC: %s", gndCourse, gprmc );
+			WindAnalyser::newSample( Vector( gndCourse, Units::knots2kmh( gndSpeedKnots ) ) );
 		}
-		theWind.calculateWind();
-		// ESP_LOGI(FNAME,"Track: %3.2f, GPRMC: %s", gndCourse, gprmc );
-		WindAnalyser::newSample( Vector( gndCourse, Units::knots2kmh( gndSpeedKnots ) ) );
-	}
-	else{
-		if( gpsOK == true  && wind_enable.get() != WA_OFF ){
-			gpsOK = false;
-			WindAnalyser::gpsStatusChange( false );
+		else{
+			if( gpsOK == true  ){
+				gpsOK = false;
+				ESP_LOGI(FNAME,"GPRMC, GPS status changed to bad: %s", gprmc );
+				WindAnalyser::gpsStatusChange( false );
+			}
+			ESP_LOGI(FNAME,"GPRMC, GPS not OK: %s", gprmc );
 		}
-		ESP_LOGI(FNAME,"GPRMC, GPS not OK: %s", gprmc );
 	}
-
 	// ESP_LOGI(FNAME,"parseGPRMC() GPS: %d, Speed: %3.1f knots, Track: %3.1f° ", gpsOK, gndSpeedKnots, gndCourse );
 }
 

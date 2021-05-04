@@ -102,4 +102,5 @@ private:
 	double mhMax;              // upper limit of magnetic heading observation window
 	double windDir;            // calculated wind direction
 	double windSpeed;          // calculated wind speed in Km/h
+	bool   lowAirspeed;
 };

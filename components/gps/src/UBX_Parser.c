@@ -44,14 +44,6 @@ char chka;
 char chkb;
 int count;
 char payload[1000];
-//modif gfm
-extern float Vsz_gps;
-extern float Ground_Speed_gps;
-extern float time_gps;
-extern int date_gps;
-extern float latitude;
-extern float longitude;
-// fin modif gfm
 
 void addchk(int b) {
 
@@ -297,17 +289,21 @@ void handle_NAV_PVT(unsigned long iTOW,
 				short magDec,
                 unsigned short magAcc) {
     if((fixType==3) || (fixType==4)) {//Si les données GPS sont valides
+    	gps_nav_valid = 1;
+    	dead_reckon_clock = 26; // il faudrait faire revenir DR_PERIOD ici
     	Vsz_gps=-velD;
         Ground_Speed_gps = gSpeed;
         time_gps = iTOW*0.001f;
         latitude = lat*1e-7f;
         longitude = lon*1e-7f;
+        gps_altitude = hMSL/1000.0f;
         date_gps = day;
     }
     else{
+    	gps_nav_valid = 0;
     	Vsz_gps=1.23;
         Ground_Speed_gps = 3.45;
-
+        time_gps=0.0;
     }
 
 }
@@ -327,6 +323,7 @@ void Init_UBX_Parser()
             chka     = -1;
             chkb     = -1;
             count    = 0;
+            gps_nav_valid = 0;
         };
 
 

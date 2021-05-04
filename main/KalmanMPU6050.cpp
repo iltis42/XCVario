@@ -37,6 +37,9 @@ uint64_t IMU::last_rts=0;
 double IMU::accelX = 0.0;
 double IMU::accelY = 0.0;
 double IMU::accelZ = 0.0;
+double IMU::accel_earthX = 0.0;
+double IMU::accel_earthY = 0.0;
+double IMU::accel_earthZ = 0.0;
 double IMU::gyroX = 0.0;
 double IMU::gyroY = 0.0;
 double IMU::gyroZ = 0.0;
@@ -238,7 +241,6 @@ void IMU::PitchFromAccel(double *pitch)
 {
 	*pitch = atan2(-accelX, accelZ) * RAD_TO_DEG;
 }
-
 void IMU::RollPitchFromAccel(double *roll, double *pitch)
 {
 	// Source: http://www.freescale.com/files/sensors/doc/app_note/AN3461.pdf eq. 25 and eq. 26

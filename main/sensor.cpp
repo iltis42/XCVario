@@ -63,7 +63,12 @@
 #include "Wind.h"
 
 // #include "sound.h"
-
+// modif gfm
+#include "deadReckoning.h"
+#include "estAltitude.h"
+float estimated_altitude;
+float vze_fusion;
+// fin modif gfm
 /*
 
 BMP:
@@ -366,6 +371,8 @@ void readBMP(void *pvParameters){
 			}
 			if( err == ESP_OK && goodAccl && goodGyro ) {
 				IMU::read();
+//				dead_reckon();
+//				estAltitude();
 			}
 			gyroDPS_Prev = gyroDPS;
 			accelG_Prev = accelG;
@@ -444,11 +451,11 @@ void readBMP(void *pvParameters){
 			}
 			else if( nmea_protocol.get() == XCVARIO ) {
 				OV.sendNMEA( P_XCVARIO, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-						-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
+						accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
 			}
 			else if( nmea_protocol.get() == XCVARIO_DEVEL ) {
 				OV.sendNMEA( P_XCVARIO_DEVEL, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-						-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
+						accelG[0], accelG[1],accelG[2], gyroDPS.x, gyroDPS.y, gyroDPS.z );
 			}
 			else
 				ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
@@ -1103,6 +1110,7 @@ void sensor(void *args){
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 13, dpid, 0);
 
 	Audio::startAudio();
+	altimeter_calibrate();
 }
 
 extern "C" void  app_main(void){

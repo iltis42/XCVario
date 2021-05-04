@@ -27,6 +27,17 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+//modif gfm
+extern float Vsz_gps;
+extern float Ground_Speed_gps;
+extern float time_gps;
+extern int date_gps;
+extern float latitude;
+extern float longitude;
+extern float gps_altitude;
+extern int gps_nav_valid;
+extern int dead_reckon_clock;
+// fin modif gfm
 
 void addchk(int b);
 void dispatchMessage();

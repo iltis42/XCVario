@@ -28,11 +28,15 @@
 S2F * Protocols::_s2f = 0;
 //modif gfm
 #include "UBX_Parser.h"
+#include "estAltitude.h"
 float Vsz_gps=-1;
 float Ground_Speed_gps=-10;
 float time_gps;
 int date_gps;
-float latitude,longitude;
+float latitude,longitude,gps_altitude;
+extern int gps_nav_valid;
+extern float vze_fusion;
+extern float estimated_altitude;
 // fin modif gfm
 
 Protocols::Protocols(S2F * s2f) {
@@ -148,8 +152,21 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 	if( proto == P_XCVARIO_DEVEL ){
 		float roll = IMU::getRoll();
 		float pitch = IMU::getPitch();
+		float aex = 0;
+		float aey = 0;
+		float aez = 0;
+		//float aex = IMU::getEarthAccelX();
+		//float aey = IMU::getEarthAccelY();
+		//float aez = IMU::getEarthAccelZ();
+		//char str_loc[255];
+		float timertime = esp_timer_get_time()/1000000.0; // time in second
 //modif gfm
-		sprintf(str,"$PXCV,%10ld,%8.3f,%8.6f,%8.6f,%3.2f,%6.2f,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%6.3f,%6.3f,%3.1f,%3.1f,%1.4f,%1.4f,%1.4f", (unsigned long)time, time_gps,latitude,longitude,Vsz_gps,Ground_Speed_gps,te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
+		sprintf(str,"$PXCV,%.6f,%8.3f,%d,%8.6f,%8.6f,%8.6f,%3.2f,%3.2f,%6.2f,%3.1f,%2.1f,%4.1f,%6.3f,%6.3f,%3.1f,%3.1f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f",
+				timertime, time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsz_gps,vze_fusion,Ground_Speed_gps,
+				te, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z,aex,aey,aez );
+		//sprintf(str_loc,"$PXCV,%.6f,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%6.3f,%6.3f,%3.1f,%3.1f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f",
+		//		timertime,te, Units::Vario2ms(mc),
+		//		bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z,gx,gy,gz,aex,aey,aez );
 //fin modif gfm
 	}
 	else if( proto == P_XCVARIO ){

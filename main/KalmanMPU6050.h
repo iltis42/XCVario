@@ -31,7 +31,11 @@
 #ifndef DEG_TO_RAD
 #define DEG_TO_RAD (M_PI/180.0)
 #endif // DEG_TO_RAD
-
+//modif gfm
+#ifndef G
+#define G 9.806
+#endif // G
+//fin modif gfm
 typedef struct kalman_t
 {
 	double Q_angle;   // Process noise variance for the accelerometer
@@ -113,7 +117,16 @@ public:
    * @returns The gyroscope raw Z reading.
    */
   static inline double getRawGyroZ()   {  return gyroZ;  };
+  //modif gfm
+  #define cphi cos((double)getRollRad())
+  #define sphi sin((double)getRollRad())
+  #define cteta cos((double)getPitchRad())
+  #define steta sin((double)getPitchRad())
 
+  static inline double getEarthAccelX() {return (accelX*(cteta*cphi+sphi)+accelY*(-cteta*sphi+cphi)-accelZ*sphi)*G;}
+  static inline double getEarthAccelY() {return (accelX*sphi+accelY*cphi)*G;}
+  static inline double getEarthAccelZ() {return (accelX*(steta*cphi-sphi)+accelY*(steta*sphi+cphi)+accelZ*cteta - 1.0f)*G;}//Substract pesanteur
+//fin modif gfm
 
   /**
    * Gets the roll (X rotation) in degress from the Kalman Filter.
@@ -140,6 +153,7 @@ private:
   static double gyroXAngle, gyroYAngle; // Angle calculate using the gyro only
 
   static double accelX, accelY, accelZ;
+  static double accel_earthX, accel_earthY, accel_earthZ;
   static double gyroX, gyroY, gyroZ;
   static double kalXAngle, kalYAngle;
 

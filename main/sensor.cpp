@@ -159,7 +159,6 @@ int  ccp=60;
 float ias = 0;
 float tas = 0;
 float aTE = 0;
-float aTES2F = 0;
 float alt;
 float altSTD;
 float meanClimb = 0;
@@ -298,11 +297,10 @@ void drawDisplay(void *pvParameters){
 }
 
 // depending on mode calculate value for Audio and set values accordingly
-void doAudio( float te ){
-	aTES2F = te;
+void doAudio(){
 	polar_sink = Speed2Fly.sink( ias );
-	netto = aTES2F - polar_sink;
-	as2f = Speed2Fly.speed( netto, !Switch::cruiseMode() );
+	float aTES2F = bmpVario.readS2FTE();
+	as2f = Speed2Fly.speed( aTES2F, !Switch::cruiseMode() );
 	s2f_delta = as2f - ias;
 	// ESP_LOGI( FNAME, "te: %f, polar_sink: %f, netto %f, s2f: %f  delta: %f", te, polar_sink, netto, as2f, s2f_delta );
 	if( vario_mode.get() == VARIO_NETTO || (Switch::cruiseMode() &&  (vario_mode.get() == CRUISE_NETTO)) ){
@@ -319,7 +317,7 @@ void doAudio( float te ){
 void audioTask(void *pvParameters){
 	while (1)
 	{
-		doAudio( TE );
+		doAudio();
 		vTaskDelay(20/portTICK_PERIOD_MS);
 	}
 }
@@ -426,7 +424,7 @@ void readBMP(void *pvParameters){
 		}
 		aTE = bmpVario.readAVGTE();
 		xSemaphoreGive(xMutex);
-		doAudio( bmpVario.readS2FTE() );
+		doAudio();
 
 		if( (inSetup != true) && !Flarm::bincom && ((count % 2) == 0 ) ){
 			xSemaphoreTake(xMutex,portMAX_DELAY );
@@ -1095,11 +1093,10 @@ void sensor(void *args){
 
 	if( blue_enable.get() != WL_WLAN_CLIENT ) {
 		xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096*2, NULL, 30, bpid, 0);
-	}else{
+	}
+	if( blue_enable.get() == WL_WLAN_CLIENT ){
 		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 30, bpid, 0);
 	}
-
-
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 4096, NULL, 6, tpid, 0);
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 13, dpid, 0);
 

@@ -95,7 +95,7 @@ float S2F::getVn( float v ){
 // static int tick=0;
 double S2F::sink( double v_in ) {
 	double s=0;
-	if ( v_in > Units::Airspeed2Kmh( stall_speed.get() )*0.6 ){
+	if ( v_in > Units::Airspeed2Kmh( stall_speed.get() * 0.9 )){
 		double v=v_in/3.6;   // meters per second
 		if( s2f_with_gload.get() ){
 			double n=getN();
@@ -149,9 +149,12 @@ void S2F::recalc()
 {
    // 2*a2*v + a1 = 0
    _speedMinSink = (3.6*-a1)/(2*a2);
+   if ( _speedMinSink < Units::Airspeed2Kmh( stall_speed.get() ) )
+		_speedMinSink = Units::Airspeed2Kmh( stall_speed.get() );
+
    _minimumSink = sink( _speedMinSink );
    	ESP_LOGI(FNAME,"Airspeed @ minsink=%f", _speedMinSink );
-	_circling_speed = 4.32*(-a1)/(2*a2);
+	_circling_speed = 1.2*_speedMinSink;
 	_circling_sink = sink( _circling_speed );
    	ESP_LOGI(FNAME,"Airspeed @ minsink =%3.1f kmh", _speedMinSink );
    	ESP_LOGI(FNAME,"          minsink  =%2.1f m/s", _minimumSink );

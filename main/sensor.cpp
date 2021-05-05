@@ -300,7 +300,8 @@ void drawDisplay(void *pvParameters){
 void doAudio(){
 	polar_sink = Speed2Fly.sink( ias );
 	float aTES2F = bmpVario.readS2FTE();
-	as2f = Speed2Fly.speed( aTES2F, !Switch::cruiseMode() );
+	float netto = aTES2F - polar_sink;
+	as2f = Speed2Fly.speed( netto, !Switch::cruiseMode() );
 	s2f_delta = as2f - ias;
 	// ESP_LOGI( FNAME, "te: %f, polar_sink: %f, netto %f, s2f: %f  delta: %f", te, polar_sink, netto, as2f, s2f_delta );
 	if( vario_mode.get() == VARIO_NETTO || (Switch::cruiseMode() &&  (vario_mode.get() == CRUISE_NETTO)) ){

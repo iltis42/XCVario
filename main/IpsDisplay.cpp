@@ -1054,6 +1054,71 @@ void IpsDisplay::drawCompass(){
 		}
 	}
 }
+// Compass or Wind Display for ULStyle
+void IpsDisplay::drawULCompass(){
+
+	if( wind_enable.get() != WA_OFF ){
+		// ESP_LOGI(FNAME, "WIND calc on %d", wind_enable.get() );
+		int winddir=0;
+		float wind=0;
+		bool ok=false;
+		char type = '/';
+		if( wind_enable.get() == WA_STRAIGHT ){
+			ok = theWind.getWind( &winddir, &wind );
+			type = '-';
+		}
+		else if( wind_enable.get() == WA_CIRLCING ){
+			ok = WindAnalyser::getWind( &winddir, &wind );
+		}
+		else if( wind_enable.get() == WA_BOTH ){
+			ok = theWind.getWind( &winddir, &wind );
+			type = '-';
+			if( !ok ){
+				ok = WindAnalyser::getWind( &winddir, &wind );
+				type = '/';
+			}
+		}
+		// ESP_LOGI(FNAME, "WIND dir %d, speed %f, ok=%d", winddir, wind, ok );
+		if( prev_heading != winddir || !(tick%32) ){
+			ucg->setPrintPos(85,104);
+			ucg->setColor(  COLOR_WHITE  );
+			// ucg->setFont(ucg_font_fub20_hr);
+			ucg->setFont(ucg_font_fub17_hf);
+			char s[12];
+			int windspeed = (int)( Units::Airspeed(wind)+0.5 );
+			if( ok )
+				sprintf(s,"%3d\xb0%c%2d", winddir, type, windspeed );
+			else
+				sprintf(s,"%s", "    --/--" );
+			if( windspeed < 10 )
+				ucg->printf("%s   ", s);
+			else if( windspeed < 100 )
+				ucg->printf("%s  ", s);
+			else
+				ucg->printf("%s ", s);
+			prev_heading = winddir;
+		}
+	}
+	if( compass_enable.get() && compass_calibrated.get() ){
+		bool ok;
+		int heading = static_cast<int>(rintf(Compass::trueHeading( &ok )));
+		if( heading >= 360 )
+			heading -= 360;
+		// ESP_LOGI(FNAME, "heading %d, valid %d", heading, Compass::headingValid() );
+		if( prev_heading != heading || !(tick%32) ){
+			ucg->setColor(  COLOR_WHITE  );
+			ucg->setFont(ucg_font_fub20_hf);
+			ucg->setPrintPos(113,220);
+			char s[14];
+			if( ok )
+				sprintf(s,"%3d\xb0", heading );
+			else
+				sprintf(s,"%s", "  ---" );
+			ucg->printf("%s    ", s);
+			prev_heading = heading;
+		}
+	}
+}
 
 
 void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, float polar_sink_ms, float altitude_m,
@@ -1568,7 +1633,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 	}
 	// Compass
 	if( !(tick%8) ){
-		drawCompass();
+		drawULCompass();
 	}
 	xSemaphoreGive(spiMutex);
 }
@@ -1959,5 +2024,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	ucg->drawHLine( DISPLAY_LEFT+6, dmid, bw );
 	xSemaphoreGive(spiMutex);
 }
+
+
 
 

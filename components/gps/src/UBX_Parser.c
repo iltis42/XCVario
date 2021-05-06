@@ -292,7 +292,7 @@ void handle_NAV_PVT(unsigned long iTOW,
     	gps_nav_valid = 1;
     	dead_reckon_clock = 26; // il faudrait faire revenir DR_PERIOD ici
     	Vsz_gps=-velD;
-        Ground_Speed_gps = gSpeed;
+    	Ground_Speed_gps = gSpeed;
         time_gps = iTOW*0.001f;
         latitude = lat*1e-7f;
         longitude = lon*1e-7f;
@@ -300,7 +300,7 @@ void handle_NAV_PVT(unsigned long iTOW,
         date_gps = day;
     }
     else{
-    	gps_nav_valid = 0;
+    	gps_nav_valid = -1;
     	Vsz_gps=1.23;
         Ground_Speed_gps = 3.45;
         time_gps=0.0;

@@ -1065,16 +1065,16 @@ void IpsDisplay::drawULCompass(){
 		char type = '/';
 		if( wind_enable.get() == WA_STRAIGHT ){
 			ok = theWind.getWind( &winddir, &wind );
-			type = '-';
+			type = '|';
 		}
 		else if( wind_enable.get() == WA_CIRLCING ){
-			ok = WindAnalyser::getWind( &winddir, &wind );
+			ok = CircleWind::getWind( &winddir, &wind );
 		}
 		else if( wind_enable.get() == WA_BOTH ){
 			ok = theWind.getWind( &winddir, &wind );
-			type = '-';
+			type = '|';
 			if( !ok ){
-				ok = WindAnalyser::getWind( &winddir, &wind );
+				ok = CircleWind::getWind( &winddir, &wind );
 				type = '/';
 			}
 		}

@@ -53,6 +53,11 @@ public:
 	}
 
 	void calculateWind( double tc, double gs, double th, double tas  );
+	static double calculateSpeed( double angle1, double speed1, double angle2, double speed2  );
+	static double calculateAngle( double angle1, double speed1, double angle2, double speed2  );
+
+	void newCirclingWind( float angle, float speed );
+
 	void test();
 	double meanAngleEckhard( double angle, double average );
 
@@ -68,7 +73,7 @@ public:
 	/**
 	 * Normalize angle in to the range 0...359 degree.
 	 */
-	double normAngle( double angle ) {
+	static inline double normAngle( double angle ) {
 		while( angle < 0. )
 			angle += 360.;
 		while( angle >= 360. )
@@ -96,6 +101,7 @@ private:
 	double sumGroundSpeed;     // sum of GS in km/h
 	double averageTH;          // sum of Compass true heading
 	double averageTC;          // sum of GPS heading (true course)
+	double averageGS;		   // average ground speed
 	double tcMin;              // lower limit of true course observation window
 	double tcMax;              // upper limit of true course observation window
 	double mhMin;              // lower limit of magnetic heading observation window
@@ -103,4 +109,6 @@ private:
 	double windDir;            // calculated wind direction
 	double windSpeed;          // calculated wind speed in Km/h
 	bool   lowAirspeed;
+	float  circlingWindDir;
+	float  circlingWindSpeed;
 };

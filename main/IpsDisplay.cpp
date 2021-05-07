@@ -22,7 +22,7 @@
 #include "Flap.h"
 #include "Flarm.h"
 #include "Compass.h"
-#include "windanalyser.h"
+#include "CircleWind.h"
 
 int screens_init = INIT_DISPLAY_NULL;
 
@@ -994,13 +994,13 @@ void IpsDisplay::drawCompass(){
 			type = '-';
 		}
 		else if( wind_enable.get() == WA_CIRLCING ){
-			ok = WindAnalyser::getWind( &winddir, &wind );
+			ok = CircleWind::getWind( &winddir, &wind );
 		}
 		else if( wind_enable.get() == WA_BOTH ){
 			ok = theWind.getWind( &winddir, &wind );
 			type = '-';
 			if( !ok ){
-				ok = WindAnalyser::getWind( &winddir, &wind );
+				ok = CircleWind::getWind( &winddir, &wind );
 				type = '/';
 			}
 		}

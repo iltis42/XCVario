@@ -38,6 +38,10 @@
 
 #define PI2 2*M_PI
 
+#ifndef D2R
+#define D2R(x) ((x)/57.2957795131)
+#define R2D(x) ((x)*57.2957795131)
+#endif
 
 class Vector
 {
@@ -53,7 +57,8 @@ public:
     static double polar(double y, double x);
     static double normalize(double angle);
 
-    static double angleDiff(double ang1, double ang2);
+    static double angleDiff(double ang1, double ang2);    // RAD
+    static double angleDiffDeg(double ang1, double ang2); // DEG
 
     /**
      * Get angle in degrees.

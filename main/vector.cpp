@@ -115,6 +115,12 @@ double Vector::polar(double y, double x)
 
 
 
+
+double Vector::angleDiffDeg(double ang1, double ang2)
+{
+	return R2D( angleDiff( D2R(ang1), D2R(ang2) ) );
+};
+
 double Vector::angleDiff(double ang1, double ang2)
 {
 	double a1 = normalize (ang1);

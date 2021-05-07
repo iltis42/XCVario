@@ -17,7 +17,7 @@
 #include "Units.h"
 #include "sensor.h"
 #include "math.h"
-#include "windanalyser.h"
+#include "CircleWind.h"
 
 // degree to rad conversion
 #define D2R(x) ((x)/57.2957795131)
@@ -34,13 +34,16 @@ sumTas( 0.0 ),
 sumGroundSpeed( 0.0 ),
 averageTH( 0.0 ),
 averageTC( 0.0 ),
+averageGS(0.0),
 tcMin( 0.0 ),
 tcMax( 0.0 ),
 mhMin( 0.0 ),
 mhMax( 0.0 ),
 windDir( -1.0 ),
 windSpeed( -1.0 ),
-lowAirspeed( false )
+lowAirspeed( false ),
+circlingWindDir( -1.0 ),
+circlingWindSpeed( -1.0 )
 {
 }
 
@@ -220,13 +223,14 @@ bool Wind::calculateWind()
 	}
 
 	// Check if given magnetic heading deltas are valid.
-	if( mhMin < mhMax && ( cth < mhMin || cth > mhMax ) ) {
-		// Heading outside of observation window
-		ok = false;
+	if( mhMin < mhMax ){
+		if( cth < mhMin || cth > mhMax )
+			ok = false;  // Heading outside of observation window
 	}
-	else if( mhMin > mhMax && cth < mhMin && cth > mhMax ) {
-		// Heading outside of observation window
-		ok = false;
+	else
+	{
+		if( cth < mhMax || cth > mhMin  )
+			ok = false; // Heading outside of observation window
 	}
 
 	if( ok == false ) {
@@ -294,42 +298,58 @@ bool Wind::calculateWind()
 
 		// WCA in radians
 		double tas = sumTas / nos;
-		double gs = sumGroundSpeed / nos;
+		averageGS = sumGroundSpeed / nos;
 
-		calculateWind( tc, gs, th, tas  );
+		calculateWind( tc, averageGS, th, tas  );
 		measurementStart = getMsTime();  // it is enough to calculate every ten seconds a new wind
 		return true;
 	}
 	return false;
 }
 
+// length (or speed) of third vector in windtriangle
+double Wind::calculateSpeed( double angle1, double speed1, double angle2, double speed2  ){
+	double delta = D2R( angle2 - angle1 );
+	// Cosinus sentence: c^2 = a^2 + b^2 − 2 * a * b * cos( α ) for wind speed in km/h
+	return sqrt( (speed2 * speed2) + (speed1 * speed1 ) - ( 2 * speed2 * speed1 * cos( delta ) ) );
+}
+
+// calculate WA (wind angle) in degree
+// wind direction calculation taken from here:
+// view-source:http://www.owoba.de/fliegerei/flugrechner.html
+// direction in degrees of third vector in windtriangle
+double Wind::calculateAngle( double angle1, double speed1, double angle2, double speed2  ){
+	double tcrad = D2R( angle1 );
+	double thrad = D2R( angle2 );
+
+	double ang = tcrad + atan2( speed2 * sin( thrad - tcrad ), speed2 * cos( thrad - tcrad ) - speed1 );
+	return( normAngle( R2D( ang ) ) );  // convert radian to degree
+}
+
 void Wind::calculateWind( double tc, double gs, double th, double tas  ){
 	ESP_LOGI(FNAME,"calculateWind: TC:%3.1f GS:%3.1f TH:%3.1f TAS:%3.1f", tc, gs, th, tas );
 	// Wind correction angle WCA
-	double wca = D2R( th - tc );  // catch the case when in wave there is no groundspeed and ground course is nonsense
 	if( gs < 5 ){
-		wca = 0;   // with invalid GPS directions we assume wca to be zero and tc=th
 		tc = th;   // what will deliver heading and airspeed for wind
 	}
-	// Apply the Cosinus sentence: c^2 = a^2 + b^2 − 2 * a * b * cos( α ) for wind speed in km/h
-	windSpeed = sqrt( (tas * tas) + (gs * gs ) - ( 2 * tas * gs * cos( wca ) ) );
+	// Wind speed
+	windSpeed = calculateSpeed( tc, gs, th, tas );
+	// wind direction
+	windDir = calculateAngle( tc, gs, th, tas );
 
-	// calculate WA (wind angle) in degree
-  // wind direction calculation taken from here:
-  // view-source:http://www.owoba.de/fliegerei/flugrechner.html
-  double tcrad = D2R( tc );
-  double thrad = D2R( th );
+	ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h", windDir, windSpeed  );
 
-  // wind direction formula to calculate wd
-  double wd = tcrad + atan2( tas * sin( thrad - tcrad ),
-                             tas * cos( thrad - tcrad ) - gs );
+	// Reverse calculate windtriangle for deviation and airspeed calibration
+	float airspeed = calculateSpeed( circlingWindDir, circlingWindSpeed, averageTH, averageGS );
+	float trueHeading = calculateAngle( circlingWindDir, circlingWindSpeed, averageTH, averageGS );
+	ESP_LOGI(FNAME,"New heading vector from Wind and GS: %3.1f°/%3.1f km/h Compass: %3.1f°", trueHeading, airspeed, averageTH  );
+}
 
-  // convert radian to degree
-  wd = normAngle( R2D( wd ) );
 
-  // wind direction in degrees
-  windDir = wd;
-	ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h  WCA: %3.1f", windDir, windSpeed, R2D(wca) );
+void Wind::newCirclingWind( float angle, float speed ){
+	ESP_LOGI(FNAME,"New good circling wind %3.2f°/%3.2f", angle, speed );
+	circlingWindDir = angle;
+	circlingWindSpeed = speed;
 }
 
 void Wind::test()

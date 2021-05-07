@@ -5,7 +5,7 @@
 #include "ESPAudio.h"
 #include "IpsDisplay.h"
 #include "sensor.h"
-#include "windanalyser.h"
+#include "CircleWind.h"
 
 int Flarm::RX = 0;
 int Flarm::TX = 0;
@@ -121,17 +121,17 @@ void Flarm::parseGPRMC( char *gprmc ) {
 			if( gpsOK == false ){
 				gpsOK = true;
 				ESP_LOGI(FNAME,"GPRMC, GPS status changed to good: %s", gprmc );
-				WindAnalyser::gpsStatusChange( true);
+				CircleWind::gpsStatusChange( true);
 			}
 			theWind.calculateWind();
 			// ESP_LOGI(FNAME,"Track: %3.2f, GPRMC: %s", gndCourse, gprmc );
-			WindAnalyser::newSample( Vector( gndCourse, Units::knots2kmh( gndSpeedKnots ) ) );
+			CircleWind::newSample( Vector( gndCourse, Units::knots2kmh( gndSpeedKnots ) ) );
 		}
 		else{
 			if( gpsOK == true  ){
 				gpsOK = false;
 				ESP_LOGI(FNAME,"GPRMC, GPS status changed to bad: %s", gprmc );
-				WindAnalyser::gpsStatusChange( false );
+				CircleWind::gpsStatusChange( false );
 			}
 			ESP_LOGI(FNAME,"GPRMC, GPS not OK: %s", gprmc );
 		}
@@ -184,7 +184,7 @@ void Flarm::parseGPGGA( char *gpgga ) {
 
 	if( numSat != _numSat && wind_enable.get() != WA_OFF ){
 		_numSat = numSat;
-		WindAnalyser::newConstellation( numSat );
+		CircleWind::newConstellation( numSat );
 	}
 }
 

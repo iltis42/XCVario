@@ -863,6 +863,12 @@ void SetupMenu::setup( )
 		cd->setHelp( PROGMEM "Set compass declination in degrees" );
 		compassME->addMenu( cd );
 
+		SetupMenuSelect * devMenuA = new SetupMenuSelect( "AutoDeviation", false, 0, true, &compass_dev_auto );
+		devMenuA->setHelp( "Automatic adaptive deviation evaluation method using data from circling wind");
+		devMenuA->addEntry( "Disable");
+		devMenuA->addEntry( "Enable");
+		compassME->addMenu( devMenuA );
+
 		SetupMenu * devMenu = new SetupMenu( "Setup Deviations" );
 		devMenu->setHelp( "Compass Deviations", 280 );
 		MenuEntry* dme = compassMenu->addMenu( devMenu );

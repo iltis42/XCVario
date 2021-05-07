@@ -65,13 +65,11 @@
 // #include "sound.h"
 
 /*
-
 BMP:
     SCK - This is the SPI Clock pin, its an input to the chip
     SDO - this is the Serial Data Out / Master In Slave Out pin (MISO), for data sent from the BMP183 to your processor
     SDI - this is the Serial Data In / Master Out Slave In pin (MOSI), for data sent from your processor to the BME280
     CS - this is the Chip Select pin, drop it low to start an SPI transaction. Its an input to the chip
-
  */
 
 #define SPI_SCLK GPIO_NUM_14  // SPI Clock pin 14
@@ -704,8 +702,16 @@ void sensor(void *args){
 		ESP_LOGI( FNAME, "Magnetic sensor enabled: initialize");
 		err = compass.selfTest();
 		if( err == ESP_OK )		{
-			// Activate working of magnetic sensor
+		// Activate working of magnetic sensor
 			ESP_LOGI( FNAME, "Magnetic sensor selftest: OKAY");
+			display->writeText( line++, "Compass: OK");
+			logged_tests += "Compass test: OK\n";
+		}
+		else{
+			ESP_LOGI( FNAME, "Magnetic sensor selftest: FAILED");
+			display->writeText( line++, "Compass: FAILED");
+			logged_tests += "Compass test: FAILED\n";
+			selftestPassed = false;
 		}
 	}
 
@@ -1003,6 +1009,7 @@ void sensor(void *args){
 	if( !selftestPassed )
 	{
 		ESP_LOGI(FNAME,"\n\n\nSelftest failed, see above LOG for Problems\n\n\n");
+		display->writeText( line++, "Selftest FAILED");
 		if( !Rotary.readSwitch() )
 			sleep(4);
 	}
@@ -1121,6 +1128,4 @@ extern "C" void  app_main(void){
 	sensor( 0 );
 	vTaskDelete( NULL );
 }
-
-
 

@@ -991,14 +991,14 @@ void IpsDisplay::drawCompass(){
 		char type = '/';
 		if( wind_enable.get() == WA_STRAIGHT ){
 			ok = theWind.getWind( &winddir, &wind );
-			type = '-';
+			type = '|';
 		}
 		else if( wind_enable.get() == WA_CIRLCING ){
 			ok = CircleWind::getWind( &winddir, &wind );
 		}
 		else if( wind_enable.get() == WA_BOTH ){
 			ok = theWind.getWind( &winddir, &wind );
-			type = '-';
+			type = '|';
 			if( !ok ){
 				ok = CircleWind::getWind( &winddir, &wind );
 				type = '/';
@@ -1398,8 +1398,6 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 	if( te < -_range )
 		te = -_range;
 	float polar_sink = Units::Vario( polar_sink_ms );
-	//  float s2f = Units::Airspeed( s2f_ms );   not used for now
-	float s2fd = Units::Airspeed( s2fd_ms );
 	int airspeed =  (int)(Units::Airspeed( airspeed_kmh ) + 0.5);
 	float altitude = Units::Altitude( altitude_m );
 

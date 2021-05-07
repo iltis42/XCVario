@@ -81,28 +81,28 @@ public:
 
 	~Compass();
 
-  void begin();
+	void begin();
 
-  /**
-   * This method must be called periodically in a fixed time raster. It Reads
-   * the current heading from the sensor and apply a low pass filter
-   * to it. It Returns the low pass filtered magnetic heading without applying
-   * any corrections to it as declination or deviation.
-   * Ok is set to true, if heading data is valid, otherwise it is set to false.
-   */
-  float calculateHeading( bool *okIn );
+	/**
+	 * This method must be called periodically in a fixed time raster. It Reads
+	 * the current heading from the sensor and apply a low pass filter
+	 * to it. It Returns the low pass filtered magnetic heading without applying
+	 * any corrections to it as declination or deviation.
+	 * Ok is set to true, if heading data is valid, otherwise it is set to false.
+	 */
+	float calculateHeading( bool *okIn );
 
-  /**
+	/**
 	 * Returns the heading by considering deviation and declination.
 	 * Ok is set to true, if heading data is valid, otherwise it is set to false.
 	 */
 	static float trueHeading( bool *okIn );
 
-  /**
-   * Returns the low pass filtered magnetic heading by considering
-   * deviation
-   * Ok is set to true, if heading data is valid, otherwise it is set to false.
-   */
+	/**
+	 * Returns the low pass filtered magnetic heading by considering
+	 * deviation
+	 * Ok is set to true, if heading data is valid, otherwise it is set to false.
+	 */
 	static float magnHeading( bool *okIn );
 
 	/*
@@ -110,13 +110,15 @@ public:
 	 */
 	static float rawHeading( bool *okIn );
 
+	static void saveDeviation();
+
 	/**
 	 *  Returns the heading valid flag.
 	 */
 
 	static bool headingValid()
 	{
-	  return m_headingValid;
+		return m_headingValid;
 	}
 
 	/**
@@ -135,6 +137,9 @@ public:
 	 */
 	static float getDeviation( float heading );
 
+	static void newDeviation( float for_heading, float steer );
+
+
 
 private:
 
@@ -148,11 +153,14 @@ private:
 	static float m_true_heading_dev;
 
 	/** Control flag of filtered heading. */
-  static bool m_headingValid;
+	static bool m_headingValid;
 
-    /** Low pass filter used by compass. */
- 	static CompassFilter m_cfmh;
+	/** Low pass filter used by compass. */
+	static CompassFilter m_cfmh;
 
- 	/** Deviation table */
+	static std::vector<double> X;
+	static std::vector<double> Y;
+
+	/** Deviation table */
 	// static float ipd[360];
 };

@@ -1,6 +1,8 @@
 /*
  * Wind.cpp
  *
+ *  Module to calculate straight wind
+ *
  *  Created on: Mar 21, 2021
  *
  *  Author: Eckhard Völlm, Axel Pauli
@@ -35,15 +37,14 @@ sumGroundSpeed( 0.0 ),
 averageTH( 0.0 ),
 averageTC( 0.0 ),
 averageGS(0.0),
-tcMin( 0.0 ),
-tcMax( 0.0 ),
-mhMin( 0.0 ),
-mhMax( 0.0 ),
+tcStart( 0.0 ),
+mhStart( 0.0 ),
 windDir( -1.0 ),
 windSpeed( -1.0 ),
 lowAirspeed( false ),
 circlingWindDir( -1.0 ),
-circlingWindSpeed( -1.0 )
+circlingWindSpeed( -1.0 ),
+airspeedCorrection( 1.0 )
 {
 }
 
@@ -140,13 +141,9 @@ void Wind::start()
 	averageTC = trueCourse;
 	averageTH = trueHeading;
 
-	// Define limit of TH observation window
-	mhMin = normAngle( trueHeading - wind_heading_delta.get() );
-	mhMax = normAngle( trueHeading + wind_heading_delta.get() );
-
-	// Define limit of TC observation window
-	tcMin = normAngle( trueCourse - wind_heading_delta.get() );
-	tcMax = normAngle( trueCourse + wind_heading_delta.get() );
+	// Define start of TH and TC observation window
+	mhStart = normAngle( trueHeading );
+    tcStart = normAngle( trueCourse );
 }
 
 /**
@@ -157,7 +154,9 @@ void Wind::start()
  */
 bool Wind::calculateWind()
 {
-	// ESP_LOGI(FNAME,"calculateWind");
+	// ESP_LOGI(FNAME,"calculateWind flightMode: %d", CircleWind::getFlightMode() );
+	if( CircleWind::getFlightMode() != straight )
+		return false;
 	// Check if wind requirements are fulfilled
 	if( compass_enable.get() == false || compass_calibrated.get() == false || wind_enable.get() == false ) {
 		return false;
@@ -222,44 +221,26 @@ bool Wind::calculateWind()
 		return false;
 	}
 
-	// Check if given magnetic heading deltas are valid.
-	if( mhMin < mhMax ){
-		if( cth < mhMin || cth > mhMax )
-			ok = false;  // Heading outside of observation window
-	}
-	else
-	{
-		if( cth < mhMax || cth > mhMin  )
-			ok = false; // Heading outside of observation window
-	}
-
-	if( ok == false ) {
+	float diff = abs( Vector::angleDiffDeg( cth, mhStart ));
+	if( diff >  wind_heading_delta.get() ) {
 		// Condition violated, start a new measurements cycle.
 		start();
-		ESP_LOGI(FNAME,"Restart Cycle, CTH %3.1f outside min: %3.1f max %3.1f", cth, mhMin, mhMax );
+		ESP_LOGI(FNAME,"Restart Cycle, CTH diff %3.1f outside max %3.1f", diff, wind_heading_delta.get()  );
 		return false;
 	}
 
 	// Get current true course from GPS
 	double ctc = Flarm::getGndCourse();
 
+	// The ground course check is only done, if the ground speed is >=10 Km/h.
+	// Near speed zero, the ground course is not stable in its direction.
+	// Check if given GPS true course deltas are valid.
 	if( cgs >= 10 ) {
-		// The ground course check is only done, if the ground speed is >=10 Km/h.
-		// Near speed zero, the ground course is not stable in its direction.
-		// Check if given GPS true course deltas are valid.
-		if( tcMin < tcMax && ( ctc < tcMin || cth > tcMax ) ) {
-			// true course outside of observation window
-			ok = false;
-		}
-		else if( tcMin > tcMax && cth < tcMin && cth > tcMax ) {
-			// true course outside of observation window
-			ok = false;
-		}
-
-		if( ok == false ) {
+		float diff = abs( Vector::angleDiffDeg( ctc, tcStart ));
+		if( diff > wind_heading_delta.get() ) {
 			// Condition violated, start a new measurements cycle.
 			start();
-			ESP_LOGI(FNAME,"Restart Cycle, Ground Heading CTC: %3.1f outside min: %3.1f max: %3.1f", ctc, tcMin, tcMax );
+			ESP_LOGI(FNAME,"Restart Cycle, Ground Heading CTC diff: %3.1f outside delta: %3.1f", diff, wind_heading_delta.get() );
 			return false;
 		}
 	}
@@ -272,10 +253,10 @@ bool Wind::calculateWind()
 	sumGroundSpeed += cgs;
 
 	// Calculate average true course TC
-	averageTC = averageTC + (meanAngle( ctc, averageTC ) - averageTC) * 0.1;
+	averageTC +=  Vector::angleDiffDeg( ctc, averageTC ) * 0.1;
 
 	// Calculate average true heading TH
-	averageTH = averageTH + (meanAngle( cth, averageTH ) - averageTH) * 0.1;
+	averageTH += Vector::angleDiffDeg( cth, averageTH ) * 0.1;
 
 	ESP_LOGI(FNAME,"%d TC: %3.1f (avg:%3.1f) GS:%3.1f TH: %3.1f (avg:%3.1f) IAS: %3.1f", nunberOfSamples, ctc, averageTC, cgs, cth, averageTH, ctas );
 	// ESP_LOGI(FNAME,"avTC: %3.1f avTH:%3.1f ",averageTC,averageTH  );
@@ -292,16 +273,14 @@ bool Wind::calculateWind()
        WCA = Heading - DesiredCourse
 		 */
 		double nos = double( nunberOfSamples );
-		double tc = normAngle( averageTC );
-
-		double th = normAngle( averageTH );
 
 		// WCA in radians
 		double tas = sumTas / nos;
 		averageGS = sumGroundSpeed / nos;
 
-		calculateWind( tc, averageGS, th, tas  );
+		calculateWind( averageTC, averageGS, averageTH, tas  );
 		measurementStart = getMsTime();  // it is enough to calculate every ten seconds a new wind
+		start();
 		return true;
 	}
 	return false;
@@ -309,7 +288,7 @@ bool Wind::calculateWind()
 
 // length (or speed) of third vector in windtriangle
 double Wind::calculateSpeed( double angle1, double speed1, double angle2, double speed2  ){
-	double delta = D2R( angle2 - angle1 );
+	double delta = Vector::normalize( D2R( angle2 - angle1 ) );
 	// Cosinus sentence: c^2 = a^2 + b^2 − 2 * a * b * cos( α ) for wind speed in km/h
 	return sqrt( (speed2 * speed2) + (speed1 * speed1 ) - ( 2 * speed2 * speed1 * cos( delta ) ) );
 }
@@ -319,10 +298,12 @@ double Wind::calculateSpeed( double angle1, double speed1, double angle2, double
 // view-source:http://www.owoba.de/fliegerei/flugrechner.html
 // direction in degrees of third vector in windtriangle
 double Wind::calculateAngle( double angle1, double speed1, double angle2, double speed2  ){
+	ESP_LOGI(FNAME,"calculateAngle: angle1:%3.1f speed1:%3.1f angle2:%3.1f speed2:%3.1f", angle1, speed1, angle2, speed2 );
 	double tcrad = D2R( angle1 );
 	double thrad = D2R( angle2 );
+	double wca = Vector::normalize( thrad - tcrad );
 
-	double ang = tcrad + atan2( speed2 * sin( thrad - tcrad ), speed2 * cos( thrad - tcrad ) - speed1 );
+	double ang = tcrad + atan2( speed2 * sin( wca ), speed2 * cos( wca ) - speed1 );
 	return( normAngle( R2D( ang ) ) );  // convert radian to degree
 }
 
@@ -333,22 +314,26 @@ void Wind::calculateWind( double tc, double gs, double th, double tas  ){
 		tc = th;   // what will deliver heading and airspeed for wind
 	}
 	// Wind speed
-	windSpeed = calculateSpeed( tc, gs, th, tas );
+	windSpeed = calculateSpeed( tc, gs, th, tas*airspeedCorrection );
 	// wind direction
-	windDir = calculateAngle( tc, gs, th, tas );
+	windDir = calculateAngle( tc, gs, th, tas*airspeedCorrection );
 
 	ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h", windDir, windSpeed  );
 
 	// Reverse calculate windtriangle for deviation and airspeed calibration
-	float airspeed = calculateSpeed( circlingWindDir, circlingWindSpeed, averageTH, averageGS );
-	float trueHeading = calculateAngle( circlingWindDir, circlingWindSpeed, averageTH, averageGS );
-	ESP_LOGI(FNAME,"New heading vector from Wind and GS: %3.1f°/%3.1f km/h Compass: %3.1f°", trueHeading, airspeed, averageTH  );
+	if( circlingWindSpeed > 0  && compass_dev_auto.get() ){
+		float airspeed = calculateSpeed( circlingWindDir, circlingWindSpeed, tc, gs );
+		float trueHeading = calculateAngle( circlingWindDir, circlingWindSpeed, tc, gs );
+		Compass::newDeviation( averageTH, trueHeading);
+		airspeedCorrection +=  (airspeed/tas - airspeedCorrection) *0.2;
+		ESP_LOGI(FNAME,"Calculated TH/TAS: %3.1f°/%3.1f km/h  Measured TH: %3.1f° CAS:%3.2f", trueHeading, airspeed, averageTH, airspeedCorrection  );
+	}
 }
 
 
 void Wind::newCirclingWind( float angle, float speed ){
 	ESP_LOGI(FNAME,"New good circling wind %3.2f°/%3.2f", angle, speed );
-	circlingWindDir = angle;
+	circlingWindDir = Vector::normalizeDeg( angle + 180 );  // revers windvector
 	circlingWindSpeed = speed;
 }
 

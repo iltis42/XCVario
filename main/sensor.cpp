@@ -516,7 +516,7 @@ void readTemp(void *pvParameters){
 					if( rint(temperature*10) != temp_prev ){
 						OV.sendTemperatureChange( temperature  );
 						temp_prev = rint(temperature*10);
-						ESP_LOGI(FNAME,"NEW temperature=%f", temperature );
+						ESP_LOGI(FNAME,"NEW temperature=%f  rint10: %d", temperature, temp_prev );
 					}
 				}
 				ESP_LOGV(FNAME,"temperature=%f", temperature );

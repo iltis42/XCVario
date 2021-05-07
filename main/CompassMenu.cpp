@@ -88,7 +88,7 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 
 	float heading = 0.0;
 	short hi = 0;
-	short deviation = 0;
+	float deviation = 0;
 
 	while( !p->_rotary->readSwitch() )
 	{
@@ -111,7 +111,7 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 		deviation = direction - hi;
 		if( deviation < -180 )
 			deviation += 360;
-		p->ucg->printf( "Deviation: %d\260    ", deviation );
+		p->ucg->printf( "Deviation: %3.2f\260    ", deviation );
 		xSemaphoreGive(spiMutex);
 		delay( 100 );
 	}

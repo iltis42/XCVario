@@ -143,16 +143,58 @@ float Compass::getDeviation( float heading )
 	return( (*deviationSpline)((double)heading) );
 }
 
+static int samples = 0;
+
+void Compass::newDeviation( float measured_heading, float desired_heading ){
+	double deviation = Vector::angleDiffDeg( desired_heading , measured_heading );
+	ESP_LOGI( FNAME, "newDeviation Measured Head: %3.2f Desired Head: %3.2f => Deviation=%3.2f", measured_heading, desired_heading, deviation );
+	// we implement one point every 45 degrees, so each point comes with a guard band of 22.5 degree
+	auto ity = std::begin(Y);
+	auto itx = std::begin(X);
+	auto minxit = std::end(X);
+	auto minyit = std::end(Y);
+	float min_diff=360.0;
+	for( itx = std::begin(X); itx != std::end(X); ++itx, ++ity ){
+		ESP_LOGI( FNAME, "OLD Dev Head: %3.2f Dev: %3.2f", *itx, *ity );
+		float head = *itx;
+		float diff = abs( Vector::angleDiffDeg( measured_heading, head ));
+		if( diff < min_diff ){
+			min_diff = diff;
+			minxit = itx;
+			minyit = ity;
+		}
+	}
+	ESP_LOGI( FNAME, "Closest Dev: %3.2f Dev: %3.2f", *minxit, *minyit );
+	if( minxit != std::end(X) && min_diff < 30 ){  // maximum: at least all 30 deg one entry
+		ESP_LOGI( FNAME, "Now erase %3.2f:%3.2f", *minxit, *minyit);
+		minxit = X.erase(minxit);
+		minyit = Y.erase(minyit);
+	}
+	X.insert( minxit, measured_heading );  // insert before the element
+	Y.insert( minyit, deviation );
+	ity = std::begin(Y);
+	for(auto itx = std::begin(X); itx != std::end(X); ++itx, ++ity ){
+		ESP_LOGI( FNAME, "NEW Dev Head: %3.2f Dev: %3.2f", *itx, *ity );
+	}
+	setupInterpolationData();
+	samples++;
+	if( !(samples%50)  )
+		saveDeviation();
+}
+
+std::vector<double>	Compass::X;
+std::vector<double>	Compass::Y;
+
 /**
  * Setup the deviation interpolation data.
  */
 void Compass::setupInterpolationData()
 {
 	// Setup cubic spline interpolation lookup table for dedicated angles 0...360
-	std::vector<double> X = {  -135-compass_dev_225.get(), -90-compass_dev_270.get(), -45-compass_dev_315.get(), 0-compass_dev_0.get(),   45-compass_dev_45.get(),   90-compass_dev_90.get(),  135-compass_dev_135.get(),
+	X = {  -135-compass_dev_225.get(), -90-compass_dev_270.get(), -45-compass_dev_315.get(), 0-compass_dev_0.get(),   45-compass_dev_45.get(),   90-compass_dev_90.get(),  135-compass_dev_135.get(),
 							   180-compass_dev_180.get(), 225-compass_dev_225.get(), 270-compass_dev_270.get(), 315-compass_dev_315.get(),
 							   360-compass_dev_0.get(), 405-compass_dev_45.get(), 450-compass_dev_90.get(), 495-compass_dev_135.get() }; // close spline
-	std::vector<double> Y = { compass_dev_225.get(), compass_dev_270.get(), compass_dev_315.get(), compass_dev_0.get(),   compass_dev_45.get(),  compass_dev_90.get(),  compass_dev_135.get(),
+	Y = { compass_dev_225.get(), compass_dev_270.get(), compass_dev_315.get(), compass_dev_0.get(),   compass_dev_45.get(),  compass_dev_90.get(),  compass_dev_135.get(),
 			                  compass_dev_180.get(), compass_dev_225.get(), compass_dev_270.get(), compass_dev_315.get(),
 							  compass_dev_0.get(), compass_dev_45.get(), compass_dev_90.get(), compass_dev_135.get()  };
 
@@ -161,11 +203,40 @@ void Compass::setupInterpolationData()
 		delete deviationSpline;
 	deviationSpline  = new tk::spline(X,Y, tk::spline::cspline_hermite );
 
-	for( int dir=0; dir < 360; dir++ ){
+	for( int dir=0; dir < 360; dir+=30 ){
 		// ipd[dir] = (float)( deviationSpline((double)dir) );
 		ESP_LOGI( FNAME, "DEV Heading=%d  dev=%f", dir, (float)( (*deviationSpline)((double)dir) ));
 	}
 
+}
+
+void Compass::saveDeviation(){
+	ESP_LOGI( FNAME, "+++++++++++++ saveDeviation ++++++++++++++");
+	for( int dir=0; dir < 360; dir+=45 ){
+		// ipd[dir] = (float)( deviationSpline((double)dir) );
+		ESP_LOGI( FNAME, "OLD DEV Heading=%d  dev=%f", dir, (float)( (*deviationSpline)((double)dir) ));
+	}
+	if( abs( compass_dev_0.get() - (*deviationSpline)(0)) >0.1 )
+		compass_dev_0.set( (*deviationSpline)(0) );
+	if( abs( compass_dev_45.get() - (*deviationSpline)(45)) >0.1 )
+		compass_dev_45.set( (*deviationSpline)(45) );
+	if( abs( compass_dev_90.get() - (*deviationSpline)(90)) >0.1 )
+		compass_dev_90.set( (*deviationSpline)(90) );
+	if( abs( compass_dev_135.get() - (*deviationSpline)(135)) >0.1 )
+		compass_dev_135.set( (*deviationSpline)(135) );
+	if( abs( compass_dev_180.get() - (*deviationSpline)(180)) >0.1 )
+		compass_dev_180.set( (*deviationSpline)(180) );
+	if( abs( compass_dev_225.get() - (*deviationSpline)(225)) >0.1 )
+		compass_dev_225.set( (*deviationSpline)(225) );
+	if( abs( compass_dev_270.get() - (*deviationSpline)(270)) >0.1 )
+		compass_dev_270.set( (*deviationSpline)(270) );
+	if( abs( compass_dev_315.get() - (*deviationSpline)(315)) >0.1 )
+		compass_dev_315.set( (*deviationSpline)(315) );
+
+	for( int dir=0; dir < 360; dir+=45 ){
+		// ipd[dir] = (float)( deviationSpline((double)dir) );
+		ESP_LOGI( FNAME, "NEW DEV Heading=%d  dev=%f", dir, (float)( (*deviationSpline)((double)dir) ));
+	}
 }
 
 /**

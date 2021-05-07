@@ -79,7 +79,7 @@ int CircleWind::num_samples = 0;
 float CircleWind::direction = 0;
 float CircleWind::windspeed = 0;
 
-t_circling CircleWind::flightMode = none;
+t_circling CircleWind::flightMode = undefined;
 
 
 
@@ -89,20 +89,20 @@ CircleWind::~CircleWind()
 /** Called if a new sample is available in the sample list. */
 void CircleWind::newSample( Vector curVec )
 {
-	ESP_LOGI(FNAME,"newSample dir:%3.2f° speed:%3.2f", curVec.getAngleDeg(), curVec.getSpeed() );
+	ESP_LOGI(FNAME,"new GPS Sample dir:%3.2f° speed:%3.2f", curVec.getAngleDeg(), curVec.getSpeed() );
 
 	// circle detection
 	if( lastHeading != -1 )
 	{
-		float diff = abs( Vector::angleDiffDeg( curVec.getAngleDeg(), lastHeading ));
+		float diff = Vector::angleDiffDeg( curVec.getAngleDeg(), lastHeading );
 		calcFlightMode( diff, curVec.getSpeed() );
 		if( flightMode == circlingL || flightMode == circlingR )
-			circleDegrees += diff;
+			circleDegrees += abs(diff);
 	}
 	lastHeading = curVec.getAngleDeg();
 
 	if( flightMode != circlingL && flightMode != circlingR ){
-		ESP_LOGI(FNAME,"FlightMode not circling %d", flightMode );
+		// ESP_LOGI(FNAME,"FlightMode not circling %d", flightMode );
 		return;
 	}
 
@@ -135,27 +135,29 @@ void CircleWind::newSample( Vector curVec )
 void CircleWind::calcFlightMode( float headingDiff, float speed ){
 	// ESP_LOGI(FNAME,"calcFlightMode head diff:%3.2f gs:%3.2f", headingDiff, speed  );
 	if( speed < 25 ){
-		if( flightMode != none ) {
-			newFlightMode( none );
-			flightMode = none;
-		}
-	}
-	if( headingDiff > MINTURNANGDIFF ){
-		if( flightMode != circlingR ) {
-			newFlightMode( circlingR );
-			flightMode = circlingR;
-		}
-	}
-	else if( headingDiff < MINTURNANGDIFF ) {
-		if( flightMode != circlingL ) {
-			newFlightMode( circlingL );
-			flightMode = circlingL;
+		if( flightMode != undefined ) {
+			newFlightMode( undefined );
+			flightMode = undefined;
 		}
 	}
 	else{
-		if( flightMode != none ) {
-			newFlightMode( none );
-			flightMode = none;
+		if( headingDiff > MINTURNANGDIFF ){
+			if( flightMode != circlingR ) {
+				newFlightMode( circlingR );
+				flightMode = circlingR;
+			}
+		}
+		else if( headingDiff < -MINTURNANGDIFF ) {
+			if( flightMode != circlingL ) {
+				newFlightMode( circlingL );
+				flightMode = circlingL;
+			}
+		}
+		else{
+			if( flightMode != straight ) {
+				newFlightMode( straight );
+				flightMode = straight;
+			}
 		}
 	}
 }
@@ -215,7 +217,6 @@ void CircleWind::newFlightMode( t_circling newFlightMode )
 
 void CircleWind::_calcWind()
 {
-	ESP_LOGI(FNAME,"calcWind");
 	float aDiff = Vector::angleDiff( minVector.getAngleDeg(), maxVector.getAngleDeg() );
 	ESP_LOGI(FNAME,"calcWind, min/max diff %3.2f", aDiff );
 

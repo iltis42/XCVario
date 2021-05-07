@@ -102,13 +102,12 @@ private:
 	double averageTH;          // sum of Compass true heading
 	double averageTC;          // sum of GPS heading (true course)
 	double averageGS;		   // average ground speed
-	double tcMin;              // lower limit of true course observation window
-	double tcMax;              // upper limit of true course observation window
-	double mhMin;              // lower limit of magnetic heading observation window
-	double mhMax;              // upper limit of magnetic heading observation window
+	double tcStart;            // start value of true course observation window
+	double mhStart;			   // magnetic heading start value for observation window
 	double windDir;            // calculated wind direction
 	double windSpeed;          // calculated wind speed in Km/h
 	bool   lowAirspeed;
 	float  circlingWindDir;
 	float  circlingWindSpeed;
+	float  airspeedCorrection;
 };

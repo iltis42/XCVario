@@ -30,7 +30,7 @@
 #ifndef CIRCLEWIND_H
 #define CIRCLEWIND_H
 
-typedef enum e_circling { none, straight, circlingL, circlingR } t_circling;
+typedef enum e_circling { undefined, straight, circlingL, circlingR } t_circling;
 
 
 #include "vector.h"
@@ -59,6 +59,8 @@ public:
    * Called if the flight mode changes
    */
   static void newFlightMode( t_circling newMode );
+  static inline t_circling getFlightMode() { return flightMode; };
+
   /*
    * Calculate flightmode from heading diff if circling is left or right
    */

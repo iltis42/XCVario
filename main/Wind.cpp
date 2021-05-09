@@ -322,9 +322,15 @@ void Wind::calculateWind( double tc, double gs, double th, double tas  ){
 	// Wind speed
 	float dev = Compass::getDeviation( th );
 	ESP_LOGI(FNAME,"Deviation=%3.2f", dev );
-	windSpeed = calculateSpeed( tc, gs, th+dev, tas /* *airspeedCorrection  */ );
+	float thd = th+dev;
+	if( thd > 360 )
+		thd -= 360;
+	if( thd < 0 )
+		thd += 360;
+
+	windSpeed = calculateSpeed( tc, gs, thd, tas /* *airspeedCorrection  */ );
 	// wind direction
-	windDir = calculateAngle( tc, gs, th+dev, tas /* *airspeedCorrection */ );
+	windDir = calculateAngle( tc, gs, thd, tas /* *airspeedCorrection */ );
 
 	ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h", windDir, windSpeed  );
 	_age = 0;

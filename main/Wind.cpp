@@ -283,6 +283,14 @@ bool Wind::calculateWind()
 		// WCA in radians
 		double tas = sumTas / nos;
 		averageGS = sumGroundSpeed / nos;
+		if( averageTH > 360 )
+			averageTH -= 360;
+		if( averageTH < 0 )
+			averageTC += 360;
+		if( averageTC > 360 )
+			averageTC -= 360;
+		if( averageTC < 0 )
+			averageTC += 360;
 
 		calculateWind( averageTC, averageGS, averageTH, tas  );
 		measurementStart = getMsTime();  // it is enough to calculate every ten seconds a new wind

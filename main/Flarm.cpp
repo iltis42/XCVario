@@ -81,6 +81,7 @@ int Flarm::_numSat=0;
 void Flarm::progress(){  // once per second
 	if( timeout )
 		timeout--;
+
 }
 
 /*

@@ -176,9 +176,9 @@ void Compass::newDeviation( float measured_heading, float desired_heading ){
 	for(auto itx = std::begin(X); itx != std::end(X); ++itx, ++ity ){
 		ESP_LOGI( FNAME, "NEW Dev Head: %3.2f Dev: %3.2f", *itx, *ity );
 	}
-	setupInterpolationData();
 	samples++;
-	if( !(samples%50)  )
+	recalcInterpolationData();
+	if( !(samples%10)  )
 		saveDeviation();
 }
 
@@ -188,6 +188,21 @@ std::vector<double>	Compass::Y;
 /**
  * Setup the deviation interpolation data.
  */
+
+
+void Compass::recalcInterpolationData()
+{
+	if( deviationSpline )
+		delete deviationSpline;
+	deviationSpline  = new tk::spline(X,Y, tk::spline::cspline_hermite );
+
+	for( int dir=0; dir < 360; dir+=30 ){
+		// ipd[dir] = (float)( deviationSpline((double)dir) );
+		ESP_LOGI( FNAME, "DEV Heading=%d  dev=%f", dir, (float)( (*deviationSpline)((double)dir) ));
+	}
+
+}
+
 void Compass::setupInterpolationData()
 {
 	// Setup cubic spline interpolation lookup table for dedicated angles 0...360
@@ -198,16 +213,7 @@ void Compass::setupInterpolationData()
 			                  compass_dev_180.get(), compass_dev_225.get(), compass_dev_270.get(), compass_dev_315.get(),
 							  compass_dev_0.get(), compass_dev_45.get(), compass_dev_90.get(), compass_dev_135.get()  };
 
-
-	if( deviationSpline )
-		delete deviationSpline;
-	deviationSpline  = new tk::spline(X,Y, tk::spline::cspline_hermite );
-
-	for( int dir=0; dir < 360; dir+=30 ){
-		// ipd[dir] = (float)( deviationSpline((double)dir) );
-		ESP_LOGI( FNAME, "DEV Heading=%d  dev=%f", dir, (float)( (*deviationSpline)((double)dir) ));
-	}
-
+	recalcInterpolationData();
 }
 
 void Compass::saveDeviation(){

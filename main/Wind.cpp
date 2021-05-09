@@ -44,7 +44,8 @@ windSpeed( -1.0 ),
 lowAirspeed( false ),
 circlingWindDir( -1.0 ),
 circlingWindSpeed( -1.0 ),
-airspeedCorrection( 1.0 )
+airspeedCorrection( 1.0 ),
+_age (0)
 {
 }
 
@@ -146,6 +147,11 @@ void Wind::start()
     tcStart = normAngle( trueCourse );
 }
 
+
+void Wind::tick(){
+	_age++;
+}
+
 /**
  * Measurement cycle for wind calculation in straight flight. Should be
  * triggered periodically, maybe once per second.
@@ -158,7 +164,7 @@ bool Wind::calculateWind()
 	if( CircleWind::getFlightMode() != straight )
 		return false;
 	// Check if wind requirements are fulfilled
-	if( compass_enable.get() == false || compass_calibrated.get() == false || wind_enable.get() == false ) {
+	if( compass_enable.get() == false || compass_calibrated.get() == false || wind_enable.get() == WA_OFF ) {
 		return false;
 	}
 
@@ -319,10 +325,12 @@ void Wind::calculateWind( double tc, double gs, double th, double tas  ){
 	windDir = calculateAngle( tc, gs, th, tas*airspeedCorrection );
 
 	ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h", windDir, windSpeed  );
+	_age = 0;
 
 	// Reverse calculate windtriangle for deviation and airspeed calibration
 	if( circlingWindSpeed > 0  && compass_dev_auto.get() ){
 		float airspeed = calculateSpeed( circlingWindDir, circlingWindSpeed, tc, gs );
+		ESP_LOGI(FNAME,"Using reverse circling wind dir %3.2f", circlingWindDir );
 		float trueHeading = calculateAngle( circlingWindDir, circlingWindSpeed, tc, gs );
 		Compass::newDeviation( averageTH, trueHeading);
 		airspeedCorrection +=  (airspeed/tas - airspeedCorrection) *0.2;
@@ -333,7 +341,10 @@ void Wind::calculateWind( double tc, double gs, double th, double tas  ){
 
 void Wind::newCirclingWind( float angle, float speed ){
 	ESP_LOGI(FNAME,"New good circling wind %3.2f°/%3.2f", angle, speed );
-	circlingWindDir = Vector::normalizeDeg( angle + 180 );  // revers windvector
+	circlingWindDir += 180; // Vector::normalizeDeg( angle + 180 );  // revers windvector
+	if( circlingWindDir > 360 )
+		circlingWindDir -= 360;
+	ESP_LOGI(FNAME,"Reverce circling wind dir %3.2f", circlingWindDir );
 	circlingWindSpeed = speed;
 }
 

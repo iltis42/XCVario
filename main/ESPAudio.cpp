@@ -318,7 +318,6 @@ void Audio::alarm( bool enable, int volume, e_audio_alarm_type_t style ){  // no
 		_alarm_mode=false;
 		_tonemode = _tonemode_back;
 		wiper = _vol_back;
-		Poti.writeWiper( _vol_back );
 	}
 }
 

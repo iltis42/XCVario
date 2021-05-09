@@ -131,6 +131,11 @@ public:
 	 */
 	static void setupInterpolationData();
 
+	/*
+	 * Rebuild spline function
+	 */
+	static void recalcInterpolationData();
+
 	/**
 	 * Compute heading deviation by using linear interpolation.
 	 * @param heading Heading value between 0...359

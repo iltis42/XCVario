@@ -78,6 +78,7 @@ float CircleWind::quality = 0;
 int CircleWind::num_samples = 0;
 float CircleWind::direction = 0;
 float CircleWind::windspeed = 0;
+int CircleWind::_age = 0;
 
 t_circling CircleWind::flightMode = undefined;
 
@@ -268,6 +269,7 @@ void CircleWind::_calcWind()
 	// Let the world know about our measurement!
 	ESP_LOGI(FNAME,"### RAW CircleWind: %3.1f°/%.1fKm/h  Q:%f", result.getAngleDeg(), result.getSpeed(), quality );
 	newWind( result.getAngleDeg(), result.getSpeed(), quality );
+	_age = 0;
 }
 
 void CircleWind::newWind( double angle, double speed, float q ){
@@ -288,6 +290,9 @@ void CircleWind::newWind( double angle, double speed, float q ){
 
 }
 
+void CircleWind::tick(){
+	_age++;
+}
 
 void CircleWind::newConstellation( int numSat )
 {

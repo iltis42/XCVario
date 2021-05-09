@@ -18,6 +18,8 @@ public:
 	Wind();
 	virtual ~Wind() {};
 
+	void tick();
+
 	/**
 	 * Get time in ms since 1.1.1970
 	 */
@@ -45,10 +47,11 @@ public:
 	 * Return the last calculated wind. If return result is true, the wind data
 	 * are valid otherwise false.
 	 */
-	bool getWind( int* direction, float* speed )
+	bool getWind( int* direction, float* speed, int *age )
 	{
 		*direction = int( windDir + 0.5 );
 		*speed = float( windSpeed );
+		*age = _age;
 		return ( windDir != -1.0 && windSpeed != -1.0 );
 	}
 
@@ -110,4 +113,5 @@ private:
 	float  circlingWindDir;
 	float  circlingWindSpeed;
 	float  airspeedCorrection;
+	int    _age;
 };

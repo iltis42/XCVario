@@ -61,6 +61,7 @@
 #include "Flap.h"
 #include "SPL06-007.h"
 #include "Wind.h"
+#include "CircleWind.h"
 
 // #include "sound.h"
 
@@ -174,6 +175,7 @@ int   stall_alarm_off_holddown=0;
 int count=0;
 bool flarmWarning = false;
 bool gLoadDisplay = false;
+int hold_alarm=0;
 
 float getTAS() { return tas; };
 float getTE() { return TE; };
@@ -237,10 +239,11 @@ void drawDisplay(void *pvParameters){
 					if( !flarmWarning ) {
 						flarmWarning = true;
 						display->clear();
+						hold_alarm = 150;
 					}
 				}
 				else{
-					if( flarmWarning ){
+					if( flarmWarning && (hold_alarm == 0) ){
 						flarmWarning = false;
 						display->clear();
 						Audio::alarm( false );
@@ -288,6 +291,8 @@ void drawDisplay(void *pvParameters){
 				display->drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, meanClimb, Switch::cruiseMode(), standard_setting, Flap::getLever() );
 			}
 		}
+		if( hold_alarm )
+			hold_alarm--;
 		vTaskDelay(20/portTICK_PERIOD_MS);
 		if( uxTaskGetStackHighWaterMark( dpid ) < 1024  )
 			ESP_LOGW(FNAME,"Warning drawDisplay stack low: %d bytes", uxTaskGetStackHighWaterMark( dpid ) );
@@ -521,6 +526,8 @@ void readTemp(void *pvParameters){
 			}
 		}
 		Flarm::progress();
+		theWind.tick();
+		CircleWind::tick();
 		vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS);
 
 		if( (ttick++ % 100) == 0) {

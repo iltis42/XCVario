@@ -47,7 +47,7 @@ public:
   CircleWind();
 
   virtual ~CircleWind();
-
+  static void tick();
 
   /**
    * Call for wind measurement result. The result is included in wind,
@@ -84,7 +84,7 @@ public:
 
   static void newWind( double angle, double speed, float q );
 
-  static bool getWind( int *dir, float *speed ) { *dir=rint(direction); *speed=windspeed;
+  static bool getWind( int *dir, float *speed, int * age ) { *dir=rint(direction); *speed=windspeed; *age=_age;
   	  	  	  	  	  	  	  	  	  	  	  	  if( num_samples )
   	  	  	  	  	  	  	  	  	  	  	  		  return true;
   	  	  	  	  	  	  	  	  	  	  	  	  else
@@ -113,6 +113,7 @@ private:
   static float direction;
   static float windspeed;
   static int num_samples;
+  static int _age;
 };
 
 #endif

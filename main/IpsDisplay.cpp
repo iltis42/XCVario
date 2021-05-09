@@ -988,20 +988,33 @@ void IpsDisplay::drawCompass(){
 		int winddir=0;
 		float wind=0;
 		bool ok=false;
+		int ageStraight, ageCircling;
 		char type = '/';
 		if( wind_enable.get() == WA_STRAIGHT ){
-			ok = theWind.getWind( &winddir, &wind );
+			ok = theWind.getWind( &winddir, &wind, &ageStraight );
 			type = '|';
 		}
 		else if( wind_enable.get() == WA_CIRLCING ){
-			ok = CircleWind::getWind( &winddir, &wind );
+			ok = CircleWind::getWind( &winddir, &wind, &ageCircling );
 		}
 		else if( wind_enable.get() == WA_BOTH ){
-			ok = theWind.getWind( &winddir, &wind );
-			type = '|';
-			if( !ok ){
-				ok = CircleWind::getWind( &winddir, &wind );
+			int wds, wdc;
+			float ws, wc;
+			bool oks, okc;
+			oks = theWind.getWind( &wds, &ws, &ageStraight );
+			okc = CircleWind::getWind( &wdc, &wc, &ageCircling);
+			if( oks && ageStraight < ageCircling ){
+				wind = ws;
+				winddir = wds;
+				type = '|';
+				ok = true;
+			}
+			else if( okc && ageCircling < ageStraight )
+			{
+				wind = wc;
+				winddir = wdc;
 				type = '/';
+				ok = true;
 			}
 		}
 		// ESP_LOGI(FNAME, "WIND dir %d, speed %f, ok=%d", winddir, wind, ok );
@@ -1017,11 +1030,11 @@ void IpsDisplay::drawCompass(){
 			else
 				sprintf(s,"%s", "    --/--" );
 			if( windspeed < 10 )
-				ucg->printf("%s   ", s);
+				ucg->printf("%s    ", s);
 			else if( windspeed < 100 )
-				ucg->printf("%s  ", s);
+				ucg->printf("%s   ", s);
 			else
-				ucg->printf("%s ", s);
+				ucg->printf("%s  ", s);
 			prev_heading = winddir;
 		}
 	}
@@ -1062,19 +1075,20 @@ void IpsDisplay::drawULCompass(){
 		int winddir=0;
 		float wind=0;
 		bool ok=false;
+		int age;
 		char type = '/';
 		if( wind_enable.get() == WA_STRAIGHT ){
-			ok = theWind.getWind( &winddir, &wind );
+			ok = theWind.getWind( &winddir, &wind, &age );
 			type = '|';
 		}
 		else if( wind_enable.get() == WA_CIRLCING ){
-			ok = CircleWind::getWind( &winddir, &wind );
+			ok = CircleWind::getWind( &winddir, &wind, &age );
 		}
 		else if( wind_enable.get() == WA_BOTH ){
-			ok = theWind.getWind( &winddir, &wind );
+			ok = theWind.getWind( &winddir, &wind, &age );
 			type = '|';
 			if( !ok ){
-				ok = CircleWind::getWind( &winddir, &wind );
+				ok = CircleWind::getWind( &winddir, &wind, &age );
 				type = '/';
 			}
 		}

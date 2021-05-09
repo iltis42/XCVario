@@ -219,7 +219,7 @@ bool Wind::calculateWind()
 
 	// Get current true heading from compass.
 	bool ok = true;
-	double cth = Compass::trueHeading( &ok );
+	double cth = Compass::rawHeading( &ok );
 
 	if( ok == false ) {
 		// No valid heading available
@@ -320,9 +320,11 @@ void Wind::calculateWind( double tc, double gs, double th, double tas  ){
 		tc = th;   // what will deliver heading and airspeed for wind
 	}
 	// Wind speed
-	windSpeed = calculateSpeed( tc, gs, th, tas /* *airspeedCorrection  */ );
+	float dev = Compass::getDeviation( th );
+	ESP_LOGI(FNAME,"Deviation=%3.2f", dev );
+	windSpeed = calculateSpeed( tc, gs, th+dev, tas /* *airspeedCorrection  */ );
 	// wind direction
-	windDir = calculateAngle( tc, gs, th, tas /* *airspeedCorrection */ );
+	windDir = calculateAngle( tc, gs, th+dev, tas /* *airspeedCorrection */ );
 
 	ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h", windDir, windSpeed  );
 	_age = 0;
@@ -332,7 +334,7 @@ void Wind::calculateWind( double tc, double gs, double th, double tas  ){
 		float airspeed = calculateSpeed( circlingWindDir, circlingWindSpeed, tc, gs );
 		ESP_LOGI(FNAME,"Using reverse circling wind dir %3.2f, reverse cal. airspeed=%f", circlingWindDir, airspeed );
 		float trueHeading = calculateAngle( circlingWindDir, circlingWindSpeed, tc, gs );
-		Compass::newDeviation( averageTH, trueHeading);
+		Compass::newDeviation( th, trueHeading);
 		airspeedCorrection +=  (airspeed/tas - airspeedCorrection) *0.2;
 		ESP_LOGI(FNAME,"Calculated TH/TAS: %3.1f°/%3.1f km/h  Measured TH: %3.1f° CAS:%3.2f", trueHeading, airspeed, averageTH, airspeedCorrection  );
 	}

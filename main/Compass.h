@@ -112,6 +112,7 @@ public:
 
 	static void saveDeviation();
 
+
 	/**
 	 *  Returns the heading valid flag.
 	 */

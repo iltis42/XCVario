@@ -145,6 +145,7 @@ float Compass::getDeviation( float heading )
 
 static int samples = 0;
 
+
 void Compass::newDeviation( float measured_heading, float desired_heading ){
 	double deviation = Vector::angleDiffDeg( desired_heading , measured_heading );
 	ESP_LOGI( FNAME, "newDeviation Measured Head: %3.2f Desired Head: %3.2f => Deviation=%3.2f", measured_heading, desired_heading, deviation );

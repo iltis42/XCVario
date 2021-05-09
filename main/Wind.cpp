@@ -320,9 +320,9 @@ void Wind::calculateWind( double tc, double gs, double th, double tas  ){
 		tc = th;   // what will deliver heading and airspeed for wind
 	}
 	// Wind speed
-	windSpeed = calculateSpeed( tc, gs, th, tas*airspeedCorrection );
+	windSpeed = calculateSpeed( tc, gs, th, tas /* *airspeedCorrection  */ );
 	// wind direction
-	windDir = calculateAngle( tc, gs, th, tas*airspeedCorrection );
+	windDir = calculateAngle( tc, gs, th, tas /* *airspeedCorrection */ );
 
 	ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h", windDir, windSpeed  );
 	_age = 0;
@@ -330,7 +330,7 @@ void Wind::calculateWind( double tc, double gs, double th, double tas  ){
 	// Reverse calculate windtriangle for deviation and airspeed calibration
 	if( circlingWindSpeed > 0  && compass_dev_auto.get() ){
 		float airspeed = calculateSpeed( circlingWindDir, circlingWindSpeed, tc, gs );
-		ESP_LOGI(FNAME,"Using reverse circling wind dir %3.2f", circlingWindDir );
+		ESP_LOGI(FNAME,"Using reverse circling wind dir %3.2f, reverse cal. airspeed=%f", circlingWindDir, airspeed );
 		float trueHeading = calculateAngle( circlingWindDir, circlingWindSpeed, tc, gs );
 		Compass::newDeviation( averageTH, trueHeading);
 		airspeedCorrection +=  (airspeed/tas - airspeedCorrection) *0.2;

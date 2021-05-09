@@ -128,7 +128,7 @@ void Wind::start()
 	tas = double( getTAS() );
 
 	bool ok;
-	trueHeading = Compass::trueHeading( &ok );
+	trueHeading = Compass::rawHeading( &ok );
 
 	if( ok == false ) {
 		// Mark true heading as invalid

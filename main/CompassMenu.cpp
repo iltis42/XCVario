@@ -127,7 +127,7 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 	deviations[diridx]->set( deviation );
 
 	// Update compass interpolation data
-	Compass::setupInterpolationData();
+	Compass::deviationReload();
 
 	ESP_LOGI( FNAME, "Compass deviation action for %s is finished",
 			p->getEntry() );
@@ -161,7 +161,7 @@ int CompassMenu::resetDeviationAction( SetupMenuSelect *p )
 		delay( 1000 );
 	}
 	// Reset compass interpolation data
-	Compass::setupInterpolationData();
+	Compass::deviationReload();
 
 	p->clear();
 	p->ucg->setFont( ucg_font_fur14_hf );

@@ -49,6 +49,11 @@ _age (0)
 {
 }
 
+void Wind::begin(){
+	if( compass_dev_auto.get() )
+		airspeedCorrection = wind_as_calibration.get();
+}
+
 double Wind::meanAngleEckhard( double angle, double average ){
 	bool neg=false;
 	if( angle > 180 ){  // check if angle is in the second half and convert to -+ 180° representation in case
@@ -336,9 +341,9 @@ void Wind::calculateWind( double tc, double gs, double th, double tas  ){
 	if( thd < 0 )
 		thd += 360;
 
-	windSpeed = calculateSpeed( tc, gs, thd, tas /* *airspeedCorrection  */ );
+	windSpeed = calculateSpeed( tc, gs, thd, tas*airspeedCorrection );
 	// wind direction
-	windDir = calculateAngle( tc, gs, thd, tas /* *airspeedCorrection */ );
+	windDir = calculateAngle( tc, gs, thd, tas*airspeedCorrection );
 
 	ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h", windDir, windSpeed  );
 	_age = 0;
@@ -346,21 +351,24 @@ void Wind::calculateWind( double tc, double gs, double th, double tas  ){
 	// Reverse calculate windtriangle for deviation and airspeed calibration
 	if( circlingWindSpeed > 0  && compass_dev_auto.get() ){
 		float airspeed = calculateSpeed( circlingWindDir, circlingWindSpeed, tc, gs );
-		ESP_LOGI(FNAME,"Using reverse circling wind dir %3.2f, reverse cal. airspeed=%f", circlingWindDir, airspeed );
+#ifdef VERBOSE_LOG
+		ESP_LOGI(FNAME,"Using reverse circling wind dir %3.2f, reverse cal. airspeed=%3.3f, tas=%3.3f, delta %3.3f", circlingWindDir, airspeed, tas, airspeed-tas );
+#endif
 		float trueHeading = calculateAngle( circlingWindDir, circlingWindSpeed, tc, gs );
-		Compass::newDeviation( th, trueHeading);
-		airspeedCorrection +=  (airspeed/tas - airspeedCorrection) *0.2;
-		ESP_LOGI(FNAME,"Calculated TH/TAS: %3.1f°/%3.1f km/h  Measured TH: %3.1f° CAS:%3.2f", trueHeading, airspeed, averageTH, airspeedCorrection  );
+		airspeedCorrection +=  (airspeed/tas - airspeedCorrection) *0.02;
+		Compass::newDeviation( th, trueHeading, airspeedCorrection );
+		ESP_LOGI(FNAME,"Calculated TH/TAS: %3.1f°/%3.1f km/h  Measured TH/TAS: %3.1f°/%3.1f asCorr:%2.3f deltaAS:%3.2f", trueHeading, airspeed, averageTH, tas, airspeedCorrection , airspeed-tas );
 	}
 }
 
 
 void Wind::newCirclingWind( float angle, float speed ){
 	ESP_LOGI(FNAME,"New good circling wind %3.2f°/%3.2f", angle, speed );
+	circlingWindDir = angle;
 	circlingWindDir += 180; // Vector::normalizeDeg( angle + 180 );  // revers windvector
 	if( circlingWindDir > 360 )
 		circlingWindDir -= 360;
-	ESP_LOGI(FNAME,"Reverce circling wind dir %3.2f", circlingWindDir );
+	// ESP_LOGI(FNAME,"Reverse circling wind dir %3.2f", circlingWindDir );
 	circlingWindSpeed = speed;
 }
 

@@ -864,7 +864,7 @@ void SetupMenu::setup( )
 		compassME->addMenu( cd );
 
 		SetupMenuSelect * devMenuA = new SetupMenuSelect( "AutoDeviation", false, 0, true, &compass_dev_auto );
-		devMenuA->setHelp( "Automatic adaptive deviation evaluation method using data from circling wind");
+		devMenuA->setHelp( "Automatic adaptive deviation and precise airspeed evaluation method using data from circling wind");
 		devMenuA->addEntry( "Disable");
 		devMenuA->addEntry( "Enable");
 		compassME->addMenu( devMenuA );
@@ -1222,8 +1222,8 @@ void SetupMenu::setup( )
 		als->addEntry( "TE");
 		als->addEntry( "Baro");
 
-		SetupMenuValFloat * spc = new SetupMenuValFloat( "IAS Calibration", 0, "%", -60, 60, 1, 0, false, &speedcal  );
-		spc->setHelp(PROGMEM"Calibration of indicated airspeed (IAS). Normally not needed, hence pressure probes may have systematic error");
+		SetupMenuValFloat * spc = new SetupMenuValFloat( "AS Calibration", 0, "%", -60, 60, 1, 0, false, &speedcal  );
+		spc->setHelp(PROGMEM"Calibration of airspeed sensor (AS). Normally not needed, hence pressure probes may have systematic error");
 		aia->addMenu( spc );
 
 		SetupMenuSelect * auze = new SetupMenuSelect( "AutoZero AS Sensor",	true, 0, true, &autozero );

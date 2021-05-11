@@ -18,6 +18,8 @@ public:
 	Wind();
 	virtual ~Wind() {};
 
+	void begin();
+
 	void tick();
 
 	/**

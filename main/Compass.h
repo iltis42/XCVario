@@ -21,6 +21,8 @@ Last update: 2021-03-07
 
 #include "SetupNG.h"
 #include "QMC5883L.h"
+#include "spline.h"
+#include <map>
 
 /**
  * Low pass filter for heading values.
@@ -130,12 +132,12 @@ public:
 	/**
 	 * Setup the deviation interpolation data.
 	 */
-	static void setupInterpolationData();
+	static void readInterpolationData();
 
 	/*
 	 * Rebuild spline function
 	 */
-	static void recalcInterpolationData();
+	static void recalcInterpolationSpline();
 
 	/**
 	 * Compute heading deviation by using linear interpolation.
@@ -143,8 +145,11 @@ public:
 	 */
 	static float getDeviation( float heading );
 
-	static void newDeviation( float for_heading, float steer );
+	static void newDeviation( float for_heading, float steer, float airspeedCalibration );
 
+	static void loadDeviationMap();
+
+	static void deviationReload();
 
 
 private:
@@ -166,6 +171,9 @@ private:
 
 	static std::vector<double> X;
 	static std::vector<double> Y;
+	static xSemaphoreHandle splineMutex;
+	static tk::spline *deviationSpline;
+	static std::map< double, double> devmap;
 
 	/** Deviation table */
 	// static float ipd[360];

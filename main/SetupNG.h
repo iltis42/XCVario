@@ -443,6 +443,8 @@ extern SetupNG<float>   	wind_heading_delta;
 extern SetupNG<float>   	wind_measurement_time;
 extern SetupNG<int> 		wind_enable;
 extern SetupNG<float> 		wind_as_min;
+extern SetupNG<float> 		wind_as_calibration;
+
 
 extern int g_col_background;
 extern int g_col_highlight;

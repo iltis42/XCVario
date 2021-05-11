@@ -89,9 +89,23 @@ double Vector::normalize(double angle)
 
 double Vector::normalizeDeg(double angle)
 {
-	return R2D( normalize( D2R( angle )));
+	float a=angle;
+	while( a < 0.0 )
+		a += 360.0;
+	while( a >= 360.0 )
+		a -= 360.0;
+	return a;
 }
 
+double Vector::normalizeDeg180(double angle)
+{
+	float a=angle;
+	while( a < -180.0 )
+		a += 360.0;
+	while( a >= 180.0 )
+		a -= 360.0;
+	return a;
+}
 
 double Vector::polar(double y, double x)
 {
@@ -121,12 +135,12 @@ double Vector::polar(double y, double x)
 
 float Vector::angleDiffDeg(float ang1, float ang2)
 {
-	return R2D( angleDiff( D2R(ang1), D2R(ang2) ) );
+	return( normalizeDeg180( normalizeDeg180(ang1) - normalizeDeg180( ang2 ) ) );
 }
 
 double Vector::angleDiffDeg(double ang1, double ang2)
 {
-	return R2D( angleDiff( D2R(ang1), D2R(ang2) ) );
+	return( normalizeDeg180( normalizeDeg180(ang1) - normalizeDeg180( ang2 ) ) );
 }
 
 double Vector::angleDiff(double ang1, double ang2)

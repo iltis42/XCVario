@@ -151,6 +151,7 @@ public:
 
 	static void deviationReload();
 
+	static void tick() { _tick++; };
 
 private:
 
@@ -175,6 +176,5 @@ private:
 	static tk::spline *deviationSpline;
 	static std::map< double, double> devmap;
 
-	/** Deviation table */
-	// static float ipd[360];
+	static int _tick;
 };

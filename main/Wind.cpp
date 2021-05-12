@@ -44,34 +44,22 @@ windSpeed( -1.0 ),
 lowAirspeed( false ),
 circlingWindDir( -1.0 ),
 circlingWindSpeed( -1.0 ),
+circlingWindAge( 0 ),
 airspeedCorrection( 1.0 ),
-_age (0)
+_age (0),
+airspeed_jitter(0),
+groundspeed_jitter(0),
+airspeed_jitter_tmp(0),
+groundspeed_jitter_tmp(0),
+gpsStatus(false),
+deviation_cur(0),
+magneticHeading(0)
 {
 }
 
 void Wind::begin(){
 	if( compass_dev_auto.get() )
 		airspeedCorrection = wind_as_calibration.get();
-}
-
-double Wind::meanAngleEckhard( double angle, double average ){
-	bool neg=false;
-	if( angle > 180 ){  // check if angle is in the second half and convert to -+ 180° representation in case
-		angle = angle - 360;
-		neg=true;
-	}
-	if( average > 180 ){
-		average = average - 360;
-		neg=true;
-	}
-	double radangle=D2R(angle);
-	double radaverage=D2R(average);
-	double result = R2D(atan2( sin(radangle)+sin(radaverage), cos(radangle)+cos(radaverage)));
-	if( neg ) // convert back from -+180° representation
-		result = result + 360;
-	if( result > 360 )
-		result = result - 360;
-	return result;
 }
 
 /**
@@ -119,14 +107,17 @@ void Wind::start()
 		// Ground speed in Km/h
 		groundSpeed = Units::knots2kmh(Flarm::getGndSpeedKnots());
 		trueCourse = Flarm::getGndCourse();
+		gpsStatus = true;
 	}
 	else {
 		// Mark all values as invalid.
 		groundSpeed = -1.0;
 		trueCourse = -1.0;
 		trueHeading = -1.0;
+		gpsStatus = false;
 		return;
 	}
+
 
 	nunberOfSamples = 1;
 	measurementStart = getMsTime();
@@ -155,6 +146,7 @@ void Wind::start()
 
 void Wind::tick(){
 	_age++;
+	circlingWindAge++;
 }
 
 /**
@@ -184,28 +176,35 @@ bool Wind::calculateWind()
 
 	// Get current ground speed in km/h
 	double cgs = Units::knots2kmh( Flarm::getGndSpeedKnots() );
-
+	float gsdelta = fabs( groundSpeed - cgs );
 	// Check, if given ground speed deltas are valid.
-	if( fabs( groundSpeed - cgs ) > Units::Airspeed2Kmh( wind_speed_delta.get() ) ) {
+	if( gsdelta > Units::Airspeed2Kmh( wind_speed_delta.get() ) ) {
 		// Condition violated, start a new measurements cycle.
 		start();
 		ESP_LOGI(FNAME,"Restart Cycle GS %3.1f - CGS: %3.1f > %3.1f", groundSpeed, cgs, Units::Airspeed2Kmh( wind_speed_delta.get() ) );
 		return false;
 	}
+	if( groundspeed_jitter_tmp < gsdelta )
+		groundspeed_jitter_tmp = gsdelta;
 
 	// Get current TAS in km/h
 	double ctas = double( getTAS() );
-
 	// check if given TAS deltas are valid.
-	if( fabs( tas - ctas ) > Units::Airspeed2Kmh( wind_speed_delta.get() ) ) {
+	float tasdelta = fabs( tas - ctas );
+	if( tasdelta > Units::Airspeed2Kmh( wind_speed_delta.get() ) ) {
 		// Condition violated, start a new measurements cycle.
 		start();
 		ESP_LOGI(FNAME,"TAS %3.1f - CTAS: %3.1f  > delta %3.1f", tas, ctas, Units::Airspeed2Kmh( wind_speed_delta.get() ) );
 		return false;
 	}
+	if( airspeed_jitter_tmp < tasdelta )
+		airspeed_jitter_tmp = tasdelta;
+
+	// ESP_LOGI(FNAME,"++++++ TAS %3.1f GS: %3.1f GSJ%3.2f  ASJ %3.2f", tas, cgs, groundspeed_jitter, airspeed_jitter );
 
 	// Check, if we have a AS value > minimum, default is 25 km/h.
 	// If GS is nearly zero, the measurement makes also sense (wave), hence if we are not flying it doesn't
+
 	if( ctas < Units::Airspeed2Kmh( wind_as_min.get() ) )
 	{
 		// We start a new measurement cycle.
@@ -297,6 +296,11 @@ bool Wind::calculateWind()
 		if( averageTC < 0 )
 			averageTC += 360;
 
+		airspeed_jitter = airspeed_jitter_tmp;
+		groundspeed_jitter = groundspeed_jitter_tmp;
+		airspeed_jitter_tmp = 0;
+		groundspeed_jitter_tmp = 0;
+		magneticHeading = averageTH;
 		calculateWind( averageTC, averageGS, averageTH, tas  );
 		measurementStart = getMsTime();  // it is enough to calculate every ten seconds a new wind
 		start();
@@ -333,13 +337,9 @@ void Wind::calculateWind( double tc, double gs, double th, double tas  ){
 		tc = th;   // what will deliver heading and airspeed for wind
 	}
 	// Wind speed
-	float dev = Compass::getDeviation( th );
-	ESP_LOGI(FNAME,"Deviation=%3.2f", dev );
-	float thd = th+dev;
-	if( thd > 360 )
-		thd -= 360;
-	if( thd < 0 )
-		thd += 360;
+	deviation_cur = Compass::getDeviation( th );
+	ESP_LOGI(FNAME,"Deviation=%3.2f", deviation_cur );
+	float thd = Vector::normalizeDeg( th+deviation_cur );
 
 	windSpeed = calculateSpeed( tc, gs, thd, tas*airspeedCorrection );
 	// wind direction
@@ -349,15 +349,20 @@ void Wind::calculateWind( double tc, double gs, double th, double tas  ){
 	_age = 0;
 
 	// Reverse calculate windtriangle for deviation and airspeed calibration
-	if( circlingWindSpeed > 0  && compass_dev_auto.get() ){
+	if( circlingWindSpeed > 0 && circlingWindAge < 1800 && compass_dev_auto.get() ){
 		float airspeed = calculateSpeed( circlingWindDir, circlingWindSpeed, tc, gs );
 #ifdef VERBOSE_LOG
 		ESP_LOGI(FNAME,"Using reverse circling wind dir %3.2f, reverse cal. airspeed=%3.3f, tas=%3.3f, delta %3.3f", circlingWindDir, airspeed, tas, airspeed-tas );
 #endif
 		float trueHeading = calculateAngle( circlingWindDir, circlingWindSpeed, tc, gs );
 		airspeedCorrection +=  (airspeed/tas - airspeedCorrection) *0.02;
+		if( airspeedCorrection > 1.1 )
+			airspeedCorrection = 1.1;
+		if( airspeedCorrection < 0.9 )
+			airspeedCorrection = 0.9;
 		Compass::newDeviation( th, trueHeading, airspeedCorrection );
-		ESP_LOGI(FNAME,"Calculated TH/TAS: %3.1f°/%3.1f km/h  Measured TH/TAS: %3.1f°/%3.1f asCorr:%2.3f deltaAS:%3.2f", trueHeading, airspeed, averageTH, tas, airspeedCorrection , airspeed-tas );
+		ESP_LOGI(FNAME,"Calculated TH/TAS: %3.1f°/%3.1f km/h  Measured TH/TAS: %3.1f°/%3.1f, asCorr:%2.3f, deltaAS:%3.2f, Age:%d",
+				trueHeading, airspeed, averageTH, tas, airspeedCorrection , airspeed-tas, circlingWindAge );
 	}
 }
 
@@ -365,11 +370,12 @@ void Wind::calculateWind( double tc, double gs, double th, double tas  ){
 void Wind::newCirclingWind( float angle, float speed ){
 	ESP_LOGI(FNAME,"New good circling wind %3.2f°/%3.2f", angle, speed );
 	circlingWindDir = angle;
-	circlingWindDir += 180; // Vector::normalizeDeg( angle + 180 );  // revers windvector
+	circlingWindDir += 180;      // revers windvector
 	if( circlingWindDir > 360 )
 		circlingWindDir -= 360;
 	// ESP_LOGI(FNAME,"Reverse circling wind dir %3.2f", circlingWindDir );
 	circlingWindSpeed = speed;
+	circlingWindAge = 0;
 }
 
 void Wind::test()

@@ -25,6 +25,8 @@
 #include "SetupMenuValFloat.h"
 #include "DisplayDeviations.h"
 #include "ShowCompassSettings.h"
+#include "ShowCirclingWind.h"
+#include "ShowStraightWind.h"
 #include "MenuEntry.h"
 #include "Compass.h"
 #include "CompassMenu.h"
@@ -832,9 +834,6 @@ void SetupMenu::setup( )
 		SetupMenu * compassMenu = new SetupMenu( "Compass" );
 		MenuEntry* compassME = compassWindME->addMenu( compassMenu );
 
-		SetupMenu * windMenu = new SetupMenu( "Wind" );
-		windMenu->setHelp( PROGMEM "Setup wind calculation parameters", 280 );
-		MenuEntry* windME = compassWindME->addMenu( windMenu );
 
 		SetupMenuSelect * compSensor = new SetupMenuSelect( "Sensor Option", false, compass_ena, true, &compass_enable);
 		compSensor->addEntry( "Disable");
@@ -934,6 +933,8 @@ void SetupMenu::setup( )
 		ShowCompassSettings* scs = new ShowCompassSettings( "Show Settings" );
 		compassME->addMenu( scs );
 
+
+
 		// Wind speed observation window
 		SetupMenuSelect * windcal = new SetupMenuSelect( "Wind Calculation", false, 0, true, &wind_enable );
 		windcal->addEntry( "Disable");
@@ -941,7 +942,11 @@ void SetupMenu::setup( )
 		windcal->addEntry( "Circling");
 		windcal->addEntry( "Both");
 		windcal->setHelp(PROGMEM "Enable Wind calculation for straight flight (needs compass), circling or both and display wind in reto display style");
-		windME->addMenu( windcal );
+		compassWindME->addMenu( windcal );
+
+		SetupMenu * strWindM = new SetupMenu( "Straight Wind" );
+		compassWindME->addMenu( strWindM );
+		strWindM->setHelp( PROGMEM "Straight flight wind calculation needs compass module active", 220 );
 
 		SetupMenuValFloat *smvf = new SetupMenuValFloat( "Speed tolerance",
 				nullptr,
@@ -954,7 +959,7 @@ void SetupMenu::setup( )
 				&wind_speed_delta );
 
 		smvf->setHelp( PROGMEM "Setup wind speed tolerance value" );
-		windME->addMenu( smvf );
+		strWindM->addMenu( smvf );
 
 		// Wind heading observation window
 		smvf = new SetupMenuValFloat( "Heading tolerance",
@@ -968,7 +973,7 @@ void SetupMenu::setup( )
 				&wind_heading_delta );
 
 		smvf->setHelp( PROGMEM "Setup heading tolerance value" );
-		windME->addMenu( smvf );
+		strWindM->addMenu( smvf );
 
 		// Wind measurement time
 		smvf = new SetupMenuValFloat( "Wind after",
@@ -982,22 +987,30 @@ void SetupMenu::setup( )
 				&wind_measurement_time );
 
 		smvf->setHelp( PROGMEM "Setup wind calculation time" );
-		windME->addMenu( smvf );
+		strWindM->addMenu( smvf );
 
-    SetupMenuValFloat *smgsm = new SetupMenuValFloat( "Minimum Airspeed", nullptr, sunit.c_str(), 0, 60.0, 1.0, nullptr, false, &wind_as_min );
-    windME->addMenu( smgsm );
-    smgsm->setHelp(PROGMEM "Minimum Airspeed to start wind calculation");
+		SetupMenuValFloat *smgsm = new SetupMenuValFloat( "Minimum Airspeed", nullptr, sunit.c_str(), 0, 60.0, 1.0, nullptr, false, &wind_as_min );
+		strWindM->addMenu( smgsm );
+		smgsm->setHelp(PROGMEM "Minimum Airspeed to start wind calculation");
 
-    sms = new SetupMenuSelect( "Reset",
-				false,
-				windResetAction,
-				false,
-				0 );
+
+		ShowStraightWind* ssw = new ShowStraightWind( "Straight Wind Status" );
+		strWindM->addMenu( ssw );
+
+
+		sms = new SetupMenuSelect( "Reset",	false, windResetAction, false, 0 );
 
 		sms->setHelp( "Reset all wind data to defaults" );
 		sms->addEntry( "Cancel" );
 		sms->addEntry( "Reset" );
-		windME->addMenu( sms );
+		strWindM->addMenu( sms );
+
+		SetupMenu * cirWindM = new SetupMenu( "Circling Wind" );
+		compassWindME->addMenu( cirWindM );
+
+		// Show Circling Wind Status
+		ShowCirclingWind* scw = new ShowCirclingWind( "Circling Wind Status" );
+		cirWindM->addMenu( scw );
 
 		SetupMenuSelect * btm = new SetupMenuSelect( "Wireless", true, 0, true, &blue_enable );
 		btm->setHelp( PROGMEM "Activate type wireless interface to connect navigation devices running e.g. XCSoar, or to another XCVario as client");

@@ -64,7 +64,6 @@ public:
 	void newCirclingWind( float angle, float speed );
 
 	void test();
-	double meanAngleEckhard( double angle, double average );
 
 	/**
 	 * Calculate the smaller bisector value from angles.
@@ -85,6 +84,17 @@ public:
 			angle -= 360.;
 		return angle;
 	}
+
+	int getAge() { return _age; }
+	float getAsCorrection() { return airspeedCorrection; }
+	float getAngle() { return windDir; };
+	float getSpeed() { return windSpeed; };
+	float getAsJitter() { return airspeed_jitter; }
+	float getGsJitter() { return groundspeed_jitter; }
+	float getDeviation() { return deviation_cur; }
+	bool  getGpsStatus() { return gpsStatus; }
+	float getMH() { return magneticHeading; }
+
 
 private:
 
@@ -114,6 +124,14 @@ private:
 	bool   lowAirspeed;
 	float  circlingWindDir;
 	float  circlingWindSpeed;
+	int    circlingWindAge;
 	float  airspeedCorrection;
 	int    _age;
+	float  airspeed_jitter;
+	float  groundspeed_jitter;
+	float  airspeed_jitter_tmp;
+	float  groundspeed_jitter_tmp;
+	bool   gpsStatus;
+	float  deviation_cur;
+	float  magneticHeading;
 };

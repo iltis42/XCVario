@@ -34,6 +34,8 @@ typedef enum e_circling { undefined, straight, circlingL, circlingR } t_circling
 
 
 #include "vector.h"
+#include <cmath>
+
 // #include "calculator.h"
 // #include "gpsnmea.h"
 
@@ -90,6 +92,14 @@ public:
   	  	  	  	  	  	  	  	  	  	  	  	  else
   	  	  	  	  	  	  	  	  	  	  	  	  	  return false;
   };
+
+  static int getNumCircles() 	 {  return circleCount; }
+  static int getSatCnt()     	 {  return satCnt; }
+  static bool getGpsStatus()     {  return gpsStatus; }
+  static float  getAngle() 		 { return result.getAngleDeg(); }
+  static float  getSpeed() 		 { return result.getSpeed(); }
+  static int  getAge() 			 { return _age; }
+  static int  getQuality() 		 { return rint(quality*20); } // 0..100 %
 
 private:
 

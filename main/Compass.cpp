@@ -34,11 +34,8 @@ tk::spline *Compass::deviationSpline = 0;
 std::vector<double>	Compass::X;
 std::vector<double>	Compass::Y;
 std::map< double, double> Compass::devmap;
-
-
-
+int Compass::_tick = 0;
 CompassFilter Compass::m_cfmh;
-// float Compass::ipd[360];
 
 /*
   Creates instance for I2C connection with passing the desired parameters.
@@ -108,6 +105,7 @@ float Compass::calculateHeading( bool *okIn )
 }
 
 void Compass::deviationReload(){
+	ESP_LOGI( FNAME, "deviationReload()");
 	readInterpolationData();
 	loadDeviationMap();
 	recalcInterpolationSpline();
@@ -142,8 +140,6 @@ float Compass::rawHeading( bool *okIn )
 	return m_magn_heading;
 }
 
-
-
 /**
  * Compute heading deviation by using linear interpolation.
  *
@@ -163,10 +159,14 @@ float Compass::getDeviation( float heading )
 
 static int samples = 0;
 
-
+// new Deviation from reverse calculated TAWC Wind measurement
 void Compass::newDeviation( float measured_heading, float desired_heading, float airspeedCalibration ){
 	double deviation = Vector::angleDiffDeg( desired_heading , measured_heading );
 	ESP_LOGI( FNAME, "newDeviation Measured Head: %3.2f Desired Head: %3.2f => Deviation=%3.2f, Samples:%d", measured_heading, desired_heading, deviation, samples );
+	if( deviation > 30.0 ){ // data is not plausible/useful
+		ESP_LOGI( FNAME, "new Deviation out of bounds: %3.3f: Drop this deviation", deviation );
+		return;
+	}
 	// we implement one point every 45 degrees, so each point comes with a guard band of 22.5 degree
 	xSemaphoreTake(splineMutex,portMAX_DELAY );
 	for(auto itx = std::begin(devmap); itx != std::end(devmap); ++itx ){
@@ -208,14 +208,12 @@ void Compass::newDeviation( float measured_heading, float desired_heading, float
 	}
 }
 
-
 /**
  * Setup the deviation interpolation data.
  */
-
-
 void Compass::recalcInterpolationSpline()
 {
+	ESP_LOGI( FNAME, "recalcInterpolationSpline()");
 	xSemaphoreTake(splineMutex,portMAX_DELAY );
 #ifdef VERBOSE_LOG
 	if( deviationSpline ){
@@ -265,6 +263,7 @@ void Compass::recalcInterpolationSpline()
 
 void Compass::readInterpolationData()
 {
+	ESP_LOGI( FNAME, "readInterpolationData()");
 	// Setup cubic spline interpolation lookup table for dedicated angles 0...360
 	X = {  	0-compass_dev_0.get(),   45-compass_dev_45.get(),   90-compass_dev_90.get(),  135-compass_dev_135.get(),
 			180-compass_dev_180.get(), 225-compass_dev_225.get(), 270-compass_dev_270.get(), 315-compass_dev_315.get()

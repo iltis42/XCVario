@@ -18,7 +18,7 @@ int Flarm::RelativeVertical = 0;
 int Flarm::RelativeDistance = 0;
 double Flarm::gndSpeedKnots = 0;
 double Flarm::gndCourse = 0;
-bool Flarm::gpsOK = true;
+bool Flarm::gpsOK = false;
 char Flarm::ID[8] = "";
 int Flarm::bincom = 0;
 Ucglib_ILI9341_18x240x320_HWSPI* Flarm::ucg;
@@ -118,6 +118,7 @@ void Flarm::parseGPRMC( char *gprmc ) {
 	// ESP_LOGI(FNAME,"parseGPRMC: %s", gprmc );
 	sscanf( gprmc, "$GPRMC,%f,%c,%f,N,%f,E,%lf,%lf,%d,%f,%c*%02x",&time,&warn,&lat,&lon,&gndSpeedKnots,&gndCourse,&date,&magvar,&dir,&cs);
 	if( wind_enable.get() != WA_OFF ){
+		// ESP_LOGI(FNAME,"Wind enable, gpsOK %d", gpsOK );
 		if( warn == 'A' ) {
 			if( gpsOK == false ){
 				gpsOK = true;

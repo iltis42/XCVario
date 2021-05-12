@@ -63,8 +63,8 @@ CircleWind::CircleWind()
 }
 
 bool CircleWind::active = false;
-int CircleWind::circleCount = 0; 			// we are counting the number of circles, the first onces are probably not very round
-bool CircleWind::circleLeft = false; 		// true=left, false=right
+int CircleWind::circleCount = 0; 		// we are counting the number of circles, the first onces are probably not very round
+bool CircleWind::circleLeft = false; 	// true=left, false=right
 int CircleWind::circleDegrees = 0; 		// Degrees of current flown circle
 int CircleWind::lastHeading = -1; 		// Last processed heading
 int CircleWind::satCnt = 0;
@@ -287,7 +287,6 @@ void CircleWind::newWind( double angle, double speed, float q ){
 	ESP_LOGI(FNAME,"### NEW AGV CircleWind: %3.1f°/%.1fKm/h  KQ:%1.3f", direction, windspeed, kq );
 	if( q > 3 && circleCount > 2 )
 		theWind.newCirclingWind( direction, windspeed );
-
 }
 
 void CircleWind::tick(){

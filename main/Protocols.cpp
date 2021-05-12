@@ -176,7 +176,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 				EE = bugs degradation, 0 = clean to 30 %,
 				F.FF = Ballast 1.00 to 1.60,
 				G = 0 in climb, 1 in cruise,
-				HH = Outside airtemp in degrees celcius ( may have leading negative sign ),
+				HH.H = Outside airtemp in degrees celcius ( may have leading negative sign ),
 				QQQQ.Q = QNH e.g. 1013.2,
 				PPPP.P: static pressure in hPa,
 				QQQQ.Q: dynamic pressure in Pa,

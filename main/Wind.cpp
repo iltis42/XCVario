@@ -53,7 +53,8 @@ airspeed_jitter_tmp(0),
 groundspeed_jitter_tmp(0),
 gpsStatus(false),
 deviation_cur(0),
-magneticHeading(0)
+magneticHeading(0),
+status( "Initial" )
 {
 }
 
@@ -171,6 +172,7 @@ bool Wind::calculateWind()
 		// GPS status or GS, TC and TH start data are not valid
 		start();
 		ESP_LOGI(FNAME,"Restart Cycle: GPS Status bad or GS invalid");
+		status="Bad GPS";
 		return false;
 	}
 
@@ -182,6 +184,7 @@ bool Wind::calculateWind()
 		// Condition violated, start a new measurements cycle.
 		start();
 		ESP_LOGI(FNAME,"Restart Cycle GS %3.1f - CGS: %3.1f > %3.1f", groundSpeed, cgs, Units::Airspeed2Kmh( wind_speed_delta.get() ) );
+		status="GS Unstable";
 		return false;
 	}
 	if( groundspeed_jitter_tmp < gsdelta )
@@ -195,6 +198,7 @@ bool Wind::calculateWind()
 		// Condition violated, start a new measurements cycle.
 		start();
 		ESP_LOGI(FNAME,"TAS %3.1f - CTAS: %3.1f  > delta %3.1f", tas, ctas, Units::Airspeed2Kmh( wind_speed_delta.get() ) );
+		status="AS Unstable";
 		return false;
 	}
 	if( airspeed_jitter_tmp < tasdelta )
@@ -213,6 +217,7 @@ bool Wind::calculateWind()
 			ESP_LOGI(FNAME,"Low Airspeed, stop wind calculation, AS %3.1f  < %3.1f Kmh", ctas,  Units::Airspeed2Kmh( wind_as_min.get() ) );
 			lowAirspeed = true;
 		}
+		status="Low AS";
 		return false;
 	}else{
 		if( lowAirspeed ) {
@@ -221,6 +226,9 @@ bool Wind::calculateWind()
 		}
 	}
 
+
+
+
 	// Get current true heading from compass.
 	bool ok = true;
 	double cth = Compass::rawHeading( &ok );
@@ -228,6 +236,7 @@ bool Wind::calculateWind()
 	if( ok == false ) {
 		// No valid heading available
 		start();
+		status="No MH";
 		return false;
 	}
 
@@ -236,6 +245,7 @@ bool Wind::calculateWind()
 		// Condition violated, start a new measurements cycle.
 		start();
 		ESP_LOGI(FNAME,"Restart Cycle, CTH diff %3.1f outside max %3.1f", diff, wind_heading_delta.get()  );
+		status="MH Unstable";
 		return false;
 	}
 
@@ -251,6 +261,7 @@ bool Wind::calculateWind()
 			// Condition violated, start a new measurements cycle.
 			start();
 			ESP_LOGI(FNAME,"Restart Cycle, Ground Heading CTC diff: %3.1f outside delta: %3.1f", diff, wind_heading_delta.get() );
+			status="TC Unstable";
 			return false;
 		}
 	}
@@ -271,8 +282,10 @@ bool Wind::calculateWind()
 	ESP_LOGI(FNAME,"%d TC: %3.1f (avg:%3.1f) GS:%3.1f TH: %3.1f (avg:%3.1f) IAS: %3.1f", nunberOfSamples, ctc, averageTC, cgs, cth, averageTH, ctas );
 	// ESP_LOGI(FNAME,"avTC: %3.1f avTH:%3.1f ",averageTC,averageTH  );
 
+	status="Measuring";
 	if( elapsed() >= wind_measurement_time.get() * 1000 )
 	{
+		status="Calculating";
 		/**
        calculate wind by using wind triangle, see more here:
        http://klspublishing.de/downloads/KLSP%20061%20Allgemeine%20Navigation%20DREHMEIER.pdf
@@ -337,6 +350,36 @@ void Wind::calculateWind( double tc, double gs, double th, double tas  ){
 		tc = th;   // what will deliver heading and airspeed for wind
 	}
 	// Wind speed
+
+
+	// Reverse calculate windtriangle for deviation and airspeed calibration
+	if( circlingWindSpeed > 0 && compass_dev_auto.get() ){
+		if( circlingWindAge > 1800 ){
+			status = "OLD CIRC WIND";
+		}else{
+			float airspeed = calculateSpeed( circlingWindDir, circlingWindSpeed, tc, gs );
+#ifdef VERBOSE_LOG
+			ESP_LOGI(FNAME,"Using reverse circling wind dir %3.2f, reverse cal. airspeed=%3.3f, tas=%3.3f, delta %3.3f", circlingWindDir, airspeed, tas, airspeed-tas );
+#endif
+			float trueHeading = calculateAngle( circlingWindDir, circlingWindSpeed, tc, gs );
+			if( abs( airspeed/tas - 1.0 ) > 0.15 ){  // 15 percent max deviation
+				status = "AS OOB";
+				ESP_LOGI(FNAME,"Estimated Airspeed/Groundspeed OOB");
+				return;
+			}
+			airspeedCorrection +=  (airspeed/tas - airspeedCorrection) *0.02;
+
+			if( abs( Vector::angleDiffDeg( (float)th, trueHeading ) > 30 )){
+				status = "MH OOB";
+				return;
+			}
+			Compass::newDeviation( th, trueHeading, airspeedCorrection );
+			ESP_LOGI(FNAME,"Calculated TH/TAS: %3.1f°/%3.1f km/h  Measured TH/TAS: %3.1f°/%3.1f, asCorr:%2.3f, deltaAS:%3.2f, Age:%d",
+					trueHeading, airspeed, averageTH, tas, airspeedCorrection , airspeed-tas, circlingWindAge );
+		}
+	}else
+		status = "No Circ Wind";
+
 	deviation_cur = Compass::getDeviation( th );
 	ESP_LOGI(FNAME,"Deviation=%3.2f", deviation_cur );
 	float thd = Vector::normalizeDeg( th+deviation_cur );
@@ -348,22 +391,6 @@ void Wind::calculateWind( double tc, double gs, double th, double tas  ){
 	ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h", windDir, windSpeed  );
 	_age = 0;
 
-	// Reverse calculate windtriangle for deviation and airspeed calibration
-	if( circlingWindSpeed > 0 && circlingWindAge < 1800 && compass_dev_auto.get() ){
-		float airspeed = calculateSpeed( circlingWindDir, circlingWindSpeed, tc, gs );
-#ifdef VERBOSE_LOG
-		ESP_LOGI(FNAME,"Using reverse circling wind dir %3.2f, reverse cal. airspeed=%3.3f, tas=%3.3f, delta %3.3f", circlingWindDir, airspeed, tas, airspeed-tas );
-#endif
-		float trueHeading = calculateAngle( circlingWindDir, circlingWindSpeed, tc, gs );
-		airspeedCorrection +=  (airspeed/tas - airspeedCorrection) *0.02;
-		if( airspeedCorrection > 1.1 )
-			airspeedCorrection = 1.1;
-		if( airspeedCorrection < 0.9 )
-			airspeedCorrection = 0.9;
-		Compass::newDeviation( th, trueHeading, airspeedCorrection );
-		ESP_LOGI(FNAME,"Calculated TH/TAS: %3.1f°/%3.1f km/h  Measured TH/TAS: %3.1f°/%3.1f, asCorr:%2.3f, deltaAS:%3.2f, Age:%d",
-				trueHeading, airspeed, averageTH, tas, airspeedCorrection , airspeed-tas, circlingWindAge );
-	}
 }
 
 

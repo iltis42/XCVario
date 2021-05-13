@@ -45,13 +45,18 @@ void ShowStraightWind::display( int mode )
 	ucg->setFont( ucg_font_fur14_hf );
 	uprintf( 5, 25, selected->_title.c_str() );
 
-	uint16_t y = 75;
+	uint16_t y = 70;
 	char buffer[32];
 
 	semaphoreTake();
 
 	ucg->setPrintPos( 0, y );
 	sprintf( buffer, "Straight Wind enabled: %s", (wind_enable.get() & 1) ? "Yes" : "No  "  );
+	ucg->printf( "%s", buffer );
+	y += 25;
+
+	ucg->setPrintPos( 0, y );
+	sprintf( buffer, "Status: %s     ", theWind.getStatus() );
 	ucg->printf( "%s", buffer );
 	y += 25;
 
@@ -101,7 +106,7 @@ void ShowStraightWind::display( int mode )
 	y += 25;
 
 
-	ucg->setPrintPos( 5, 290 );
+	ucg->setPrintPos( 5, 310 );
 	ucg->printf( "Press button to exit" );
 
 	semaphoreGive();

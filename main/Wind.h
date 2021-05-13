@@ -94,7 +94,7 @@ public:
 	float getDeviation() { return deviation_cur; }
 	bool  getGpsStatus() { return gpsStatus; }
 	float getMH() { return magneticHeading; }
-
+	const char *getStatus() { return status; }
 
 private:
 
@@ -134,4 +134,5 @@ private:
 	bool   gpsStatus;
 	float  deviation_cur;
 	float  magneticHeading;
+	const char *status;
 };

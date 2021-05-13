@@ -700,7 +700,7 @@ void IpsDisplay::drawTemperature( int x, int y, float t ) {
 	ucg->setColor( COLOR_WHITE );
 	ucg->setPrintPos(x,y);
 	if( t != DEVICE_DISCONNECTED_C )
-		ucg->printf("%-2.1f\xb0""  ", t );
+		ucg->printf("%-2.1f\xb0""  ", std::roundf(t*10.f)/10.f );
 	else
 		ucg->printf(" ---   ");
 }

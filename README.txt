@@ -15,7 +15,8 @@ mkdir -p ~/esp; cd ~/esp; git clone --recursive https://github.com/espressif/esp
 cd ~/esp/esp-idf; ./install.sh; . ./export.sh;
 pip install cmake;
 
-This will get you the lates state of esp-idf plus compiler (at this time is: esp-2020r3-8.4.0)
+This will get you the lates state of esp-idf plus compiler (at this time is: esp-2020r3-8.4.0).
+For the docker official releases, stable version release-v4.3 is used at this time. 
 
 2) Build hello world application.
 A good idea is to work through the get-started manual from esp-idf, select the versions as shown,

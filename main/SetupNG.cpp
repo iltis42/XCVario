@@ -131,7 +131,7 @@ SetupNG<float>		    password( "PASSWORD", 0 );
 SetupNG<int>		    autozero( "AUTOZERO", 0 );
 SetupNG<int>		    attitude_indicator("AHRS", 1 );
 SetupNG<int>		    ahrs_autozero("AHRSAZ", 0 );
-SetupNG<int>		    display_style("DISPLAY_STYLE", 0 );
+SetupNG<int>		    display_style("DISPLAY_STYLE", 1 );
 //SetupNG<int>               display_variant("DISPLAY_VARIANT", 0 );
 SetupNG<int>		    s2f_switch_type("S2FHWSW", S2F_HW_SWITCH );
 SetupNG<int>		    hardwareRevision("HWREV", HW_UNKNOWN );
@@ -193,10 +193,10 @@ SetupNG<int> 			wk_label_minus_2( "WKLM2", 7);  // -2
 SetupNG<int> 			wk_label_minus_3( "WKLM3", 33); //  S
 SetupNG<float>       	flap_takeoff("FLAPTO", 1 );
 SetupNG<int> 			audio_disable( "AUDIS", 0 );
-SetupNG<int>			vario_mode("VAMOD", 0 );
+SetupNG<int>			vario_mode("VAMOD", CRUISE_NETTO );  // switch to netto mode when cruising
 SetupNG<int>			airspeed_sensor_type("PTYPE", PS_NONE, false);
 SetupNG<int>			cruise_audio_mode("CAUDIO", 0 );
-SetupNG<int>			netto_mode("NETMOD", 0 );
+SetupNG<int>			netto_mode("NETMOD", NETTO_RELATIVE );  // regard polar sink
 SetupNG<float>			v_max("VMAX", 270 );
 SetupNG<int>			gload_mode("GLMOD", GLOAD_OFF );
 SetupNG<float>			gload_pos_thresh("GLOADPT", 4 );

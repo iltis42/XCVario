@@ -66,6 +66,7 @@ int   Audio::_tonemode_back = 0;
 int   Audio::tick = 0;
 int   Audio::tickmod  = 0;
 int   Audio::volume_change=0;
+bool  Audio::prev_alarm=false;
 
 const int clk_8m_div = 7;    // RTC 8M clock divider (division is by clk_8m_div+1, i.e. 0 means 8MHz frequency)
 const float freq_step = RTC_FAST_CLK_FREQ_APPROX / (65536 * 8 );  // div = 0x07
@@ -269,13 +270,19 @@ void Audio::dac_scale_set(dac_channel_t channel, int scale)
 	}
 }
 
+
+
 void Audio::alarm( bool enable, int volume, e_audio_alarm_type_t style ){  // non blocking
 	if( enable ) {
-		ESP_LOGI(FNAME,"Alarm sound enable volume: %d style: %d", volume, style );
+		// ESP_LOGI(FNAME,"Alarm sound enable volume: %d style: %d", volume, style );
+		if( !prev_alarm ){
+			prev_alarm = true;
+			_vol_back = wiper;
+			ESP_LOGI(FNAME,"Alarm volume backup %d", wiper );
+		}
 		enableAmplifier( true );
 		_s2f_mode_back = _s2f_mode;
 		_s2f_mode = false;
-		_vol_back = wiper;
 		wiper = volume;
 		_tonemode_back = _tonemode;
 		if( style == AUDIO_ALARM_STALL ){
@@ -313,11 +320,15 @@ void Audio::alarm( bool enable, int volume, e_audio_alarm_type_t style ){  // no
 	}
 	else
 	{
+		if( prev_alarm ){
+			prev_alarm = false;
+			wiper = _vol_back;
+			ESP_LOGI(FNAME,"Alarm volume restore %d", wiper );
+		}
 		_s2f_mode = _s2f_mode_back;
 		defaultDelay = 500;
 		_alarm_mode=false;
 		_tonemode = _tonemode_back;
-		wiper = _vol_back;
 	}
 }
 
@@ -662,6 +673,7 @@ void Audio::shutdown(){
 	gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );   // use pullup 1 == SOUND 0 == SILENCE
 	gpio_set_level(GPIO_NUM_19, 0 );
 	wiper = 0;
+	ESP_LOGI(FNAME,"shutdown alarm volume set 0");
 	sound_on = false;
 }
 
@@ -688,6 +700,7 @@ bool Audio::volumeScale( int volume, int& scale, int &wiper ) {
 	if( volume < 128 ){
 		scale = scaletab[ volume ].scale;
 		wiper   = scaletab[ volume ].wiper;
+		ESP_LOGI(FNAME,"volumeScale Alarm volume set: %d", wiper );
 		ESP_LOGI(FNAME,"volumeScale v:%d s:%d w:%d", volume, scale, wiper );
 		return true;
 	}

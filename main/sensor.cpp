@@ -233,25 +233,23 @@ void drawDisplay(void *pvParameters){
 				}
 			}
 			// Flarm Warning Screen
-			if( flarm_warning.get() && !stall_warning_active ){ // 0 -> Disable
+			if( flarm_warning.get() && !stall_warning_active && Flarm::alarmLevel() >= flarm_warning.get()  ){ // 0 -> Disable
 				// ESP_LOGI(FNAME,"Flarm::alarmLevel: %d, flarm_warning.get() %d", Flarm::alarmLevel(), flarm_warning.get() );
-				if(  Flarm::alarmLevel() >= flarm_warning.get() ){
-					if( !flarmWarning ) {
-						flarmWarning = true;
-						display->clear();
-						hold_alarm = 150;
-					}
+				if( !flarmWarning ) {
+					flarmWarning = true;
+					display->clear();
+					hold_alarm = 250;
 				}
-				else{
-					if( flarmWarning && (hold_alarm == 0) ){
-						flarmWarning = false;
-						display->clear();
-						Audio::alarm( false );
-					}
-				}
-				if( flarmWarning )
-					Flarm::drawFlarmWarning();
 			}
+			else{
+				if( flarmWarning && (hold_alarm == 0) ){
+					flarmWarning = false;
+					display->clear();
+					Audio::alarm( false );
+				}
+			}
+			if( flarmWarning )
+				Flarm::drawFlarmWarning();
 			// G-Load Display
 			if( (((float)accelG[0] > gload_pos_thresh.get() || (float)accelG[0] < gload_neg_thresh.get()) && gload_mode.get() == GLOAD_DYNAMIC ) ||
 					( gload_mode.get() == GLOAD_ALWAYS_ON ) )

@@ -296,10 +296,11 @@ void Flarm::initFlarmWarning(){
 }
 
 void Flarm::drawFlarmWarning(){
-	ESP_LOGI(FNAME,"drawFlarmWarning");
+	// ESP_LOGI(FNAME,"drawFlarmWarning");
 	if( !( screens_init & INIT_DISPLAY_FLARM ) ){
 		initFlarmWarning();
 		screens_init |= INIT_DISPLAY_FLARM;
+		ESP_LOGI(FNAME,"init drawFlarmWarning");
 	}
 	tick++;
 	if( tick > 500 ) // age FLARM alarm in case there is no more input  50 per second = 10 sec

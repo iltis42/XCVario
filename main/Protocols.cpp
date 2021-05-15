@@ -188,8 +188,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		*/
 		float roll = IMU::getRoll();
 		float pitch = IMU::getPitch();
-		sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%4.1f,%3.1f,%3.1f,%1.4f,%1.4f,%1.4f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
-    float timertime = esp_timer_get_time()/1000000.0; // time in second
+		float timertime = esp_timer_get_time()/1000000.0; // time in second
 		sprintf(str,"$PXCV,%.6f,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%.3f,%.3f,%.3f,%3.1f,%3.1f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f", timertime, te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z, gz, gy, gx );
 	}
 	else if( proto == P_XCVARIO ){

@@ -3,6 +3,7 @@
 
 #include "RingBufHelpers.h"
 #include <cstring>
+#include "logdef.h"
 
 
 #define SSTRLEN 250
@@ -72,12 +73,9 @@ public:
 
 inline RingBufCPP()
 {
-     RB_ATOMIC_START
-     {
          _numElements = 0;
          _head = 0;
-     }
-     RB_ATOMIC_END
+         _tail = 0;
 }
 
 /**
@@ -98,11 +96,10 @@ inline bool add(const Type &obj, bool overwrite=false)
         if (!full || overwrite) {
             _buf[_head] = obj;
             _head = (_head + 1)%MaxElements;
-            _numElements = full ? _numElements : (_numElements + 1);
+            _numElements++;
         }
     }
     RB_ATOMIC_END
-
     return !full;
 }
 
@@ -114,15 +111,12 @@ inline bool add(const Type &obj, bool overwrite=false)
 inline bool pull(Type *dest)
 {
     bool ret = false;
-    size_t tail;
-
     RB_ATOMIC_START
     {
         if (!isEmpty()) {
-            tail = getTail();
-            *dest = _buf[tail];
+            *dest = _buf[_tail];
             _numElements--;
-
+            _tail = (_tail +1)%MaxElements;
             ret = true;
         }
     }
@@ -139,14 +133,12 @@ inline bool pull(Type *dest)
 inline Type* peek(size_t num)
 {
     Type *ret = NULL;
-
     RB_ATOMIC_START
     {
-        if (num < _numElements) //make sure not out of bounds
-            ret = &_buf[(getTail() + num)%MaxElements];
+        if (num < MaxElements) //make sure not out of bounds
+            ret = &_buf[num];
     }
     RB_ATOMIC_END
-
     return ret;
 }
 
@@ -156,15 +148,7 @@ inline Type* peek(size_t num)
 */
 inline bool isFull() const
 {
-    bool ret;
-
-    RB_ATOMIC_START
-    {
-        ret = _numElements >= MaxElements;
-    }
-    RB_ATOMIC_END
-
-    return ret;
+    return( _numElements >= MaxElements );
 }
 
 
@@ -173,15 +157,7 @@ inline bool isFull() const
 */
 inline size_t numElements() const
 {
-    size_t ret;
-
-    RB_ATOMIC_START
-    {
-        ret = _numElements;
-    }
-    RB_ATOMIC_END
-
-    return ret;
+    return _numElements;
 }
 
 
@@ -190,15 +166,7 @@ inline size_t numElements() const
 */
 inline bool isEmpty() const
 {
-    bool ret;
-
-    RB_ATOMIC_START
-    {
-        ret = !_numElements;
-    }
-    RB_ATOMIC_END
-
-    return ret;
+    return !_numElements;
 }
 
 protected:
@@ -208,7 +176,7 @@ protected:
 */
 inline size_t getTail() const
 {
-    return (_head + (MaxElements - _numElements))%MaxElements;
+    return _tail;
 }
 
 
@@ -216,6 +184,7 @@ inline size_t getTail() const
 Type _buf[MaxElements];
 
 size_t _head;
+size_t _tail;
 size_t _numElements;
 private:
 

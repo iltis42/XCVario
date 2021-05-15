@@ -61,17 +61,16 @@
 #include "Flap.h"
 #include "SPL06-007.h"
 #include "Wind.h"
+#include "CircleWind.h"
 
 // #include "sound.h"
 
 /*
-
 BMP:
     SCK - This is the SPI Clock pin, its an input to the chip
     SDO - this is the Serial Data Out / Master In Slave Out pin (MISO), for data sent from the BMP183 to your processor
     SDI - this is the Serial Data In / Master Out Slave In pin (MOSI), for data sent from your processor to the BME280
     CS - this is the Chip Select pin, drop it low to start an SPI transaction. Its an input to the chip
-
  */
 
 #define SPI_SCLK GPIO_NUM_14  // SPI Clock pin 14
@@ -160,7 +159,6 @@ int  ccp=60;
 float ias = 0;
 float tas = 0;
 float aTE = 0;
-float aTES2F = 0;
 float alt;
 float altSTD;
 float meanClimb = 0;
@@ -178,6 +176,7 @@ int   stall_alarm_off_holddown=0;
 int count=0;
 bool flarmWarning = false;
 bool gLoadDisplay = false;
+int hold_alarm=0;
 
 float getTAS() { return tas; };
 float getTE() { return TE; };
@@ -235,24 +234,23 @@ void drawDisplay(void *pvParameters){
 				}
 			}
 			// Flarm Warning Screen
-			if( flarm_warning.get() && !stall_warning_active ){ // 0 -> Disable
+			if( flarm_warning.get() && !stall_warning_active && Flarm::alarmLevel() >= flarm_warning.get()  ){ // 0 -> Disable
 				// ESP_LOGI(FNAME,"Flarm::alarmLevel: %d, flarm_warning.get() %d", Flarm::alarmLevel(), flarm_warning.get() );
-				if(  Flarm::alarmLevel() >= flarm_warning.get() ){
-					if( !flarmWarning ) {
-						flarmWarning = true;
-						display->clear();
-					}
+				if( !flarmWarning ) {
+					flarmWarning = true;
+					display->clear();
+					hold_alarm = 250;
 				}
-				else{
-					if( flarmWarning ){
-						flarmWarning = false;
-						display->clear();
-						Audio::alarm( false );
-					}
-				}
-				if( flarmWarning )
-					Flarm::drawFlarmWarning();
 			}
+			else{
+				if( flarmWarning && (hold_alarm == 0) ){
+					flarmWarning = false;
+					display->clear();
+					Audio::alarm( false );
+				}
+			}
+			if( flarmWarning )
+				Flarm::drawFlarmWarning();
 			// G-Load Display
 			if( (((float)accelG[0] > gload_pos_thresh.get() || (float)accelG[0] < gload_neg_thresh.get()) && gload_mode.get() == GLOAD_DYNAMIC ) ||
 					( gload_mode.get() == GLOAD_ALWAYS_ON ) )
@@ -292,6 +290,8 @@ void drawDisplay(void *pvParameters){
 				display->drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, meanClimb, Switch::cruiseMode(), standard_setting, Flap::getLever() );
 			}
 		}
+		if( hold_alarm )
+			hold_alarm--;
 		vTaskDelay(20/portTICK_PERIOD_MS);
 		if( uxTaskGetStackHighWaterMark( dpid ) < 1024  )
 			ESP_LOGW(FNAME,"Warning drawDisplay stack low: %d bytes", uxTaskGetStackHighWaterMark( dpid ) );
@@ -299,13 +299,13 @@ void drawDisplay(void *pvParameters){
 }
 
 // depending on mode calculate value for Audio and set values accordingly
-void doAudio( float te ){
-	aTES2F = te;
+void doAudio(){
 	polar_sink = Speed2Fly.sink( ias );
-	netto = aTES2F - polar_sink;
-
+	float aTES2F = bmpVario.readS2FTE();
+	float netto = aTES2F - polar_sink;
 	as2f = Speed2Fly.speed( netto, !Switch::cruiseMode() );
 	s2f_delta = as2f - ias;
+	// ESP_LOGI( FNAME, "te: %f, polar_sink: %f, netto %f, s2f: %f  delta: %f", te, polar_sink, netto, as2f, s2f_delta );
 	if( vario_mode.get() == VARIO_NETTO || (Switch::cruiseMode() &&  (vario_mode.get() == CRUISE_NETTO)) ){
 		if( netto_mode.get() == NETTO_RELATIVE )
 			Audio::setValues( TE - polar_sink + Speed2Fly.circlingSink( ias ), s2f_delta );
@@ -320,7 +320,7 @@ void doAudio( float te ){
 void audioTask(void *pvParameters){
 	while (1)
 	{
-		doAudio( TE );
+		doAudio();
 		vTaskDelay(20/portTICK_PERIOD_MS);
 	}
 }
@@ -430,7 +430,7 @@ void readBMP(void *pvParameters){
 		}
 		aTE = bmpVario.readAVGTE();
 		xSemaphoreGive(xMutex);
-		doAudio( bmpVario.readS2FTE() );
+		doAudio();
 
 		if( (inSetup != true) && !Flarm::bincom && ((count % 2) == 0 ) ){
 			xSemaphoreTake(xMutex,portMAX_DELAY );
@@ -493,6 +493,7 @@ void readBMP(void *pvParameters){
 }
 
 static int ttick = 0;
+static int temp_prev = -3000;
 
 void readTemp(void *pvParameters){
 	while (1) {
@@ -517,11 +518,18 @@ void readTemp(void *pvParameters){
 						validTemperature = true;
 					}
 					temperature = t;
+					if( rint(temperature*10) != temp_prev ){
+						OV.sendTemperatureChange( temperature  );
+						temp_prev = rint(temperature*10);
+						ESP_LOGI(FNAME,"NEW temperature=%f  rint10: %d", temperature, temp_prev );
+					}
 				}
 				ESP_LOGV(FNAME,"temperature=%f", temperature );
 			}
 		}
 		Flarm::progress();
+		theWind.tick();
+		CircleWind::tick();
 		vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS);
 
 		if( (ttick++ % 100) == 0) {
@@ -552,7 +560,7 @@ void sensor(void *args){
 	ESP_LOGI( FNAME, "Now setup I2C bus IO 21/22");
 	i2c.begin(GPIO_NUM_21, GPIO_NUM_22, 100000 );
 
-	// theWind.test();
+	theWind.begin();
 
 	MCP = new MCP3221();
 	MCP->setBus( &i2c );
@@ -695,11 +703,25 @@ void sensor(void *args){
 		wireless_id="WLAN SID: ";
 	wireless_id += SetupCommon::getID();
 	display->writeText(line++, wireless_id.c_str() );
+
+	compass.setBus( &i2c_0 );
+	// Check for magnetic sensor / compass
 	if( compass_enable.get() ) {
-		i2c_0.begin(GPIO_NUM_4, GPIO_NUM_18, GPIO_PULLUP_DISABLE, GPIO_PULLUP_DISABLE, (int)(compass_i2c_cl.get()*1000) );
-		if( serial2_speed.get() )
-			serial2_speed.set(0);  // switch off serial interface, we can do only alternatively
 		compass.begin();
+		ESP_LOGI( FNAME, "Magnetic sensor enabled: initialize");
+		err = compass.selfTest();
+		if( err == ESP_OK )		{
+		// Activate working of magnetic sensor
+			ESP_LOGI( FNAME, "Magnetic sensor selftest: OKAY");
+			display->writeText( line++, "Compass: OK");
+			logged_tests += "Compass test: OK\n";
+		}
+		else{
+			ESP_LOGI( FNAME, "Magnetic sensor selftest: FAILED");
+			display->writeText( line++, "Compass: FAILED");
+			logged_tests += "Compass test: FAILED\n";
+			selftestPassed = false;
+		}
 	}
 
 	ESP_LOGI(FNAME,"Airspeed sensor init..  type configured: %d", airspeed_sensor_type.get() );
@@ -825,21 +847,24 @@ void sensor(void *args){
 	}
 	ESP_LOGI(FNAME,"Now start T sensor test");
 	// Temp Sensor test
-	ds18b20.begin();
-	temperature = ds18b20.getTemp();
-	ESP_LOGI(FNAME,"End T sensor test");
-	if( temperature == DEVICE_DISCONNECTED_C ) {
-		ESP_LOGE(FNAME,"Error: Self test Temperatur Sensor failed; returned T=%2.2f", temperature );
-		display->writeText( line++, "Temp Sensor: NOT FOUND");
-		validTemperature = false;
-		logged_tests += "External Temperature Sensor: NOT FOUND\n";
-	}else
-	{
-		ESP_LOGI(FNAME,"Self test Temperatur Sensor PASSED; returned T=%2.2f", temperature );
-		display->writeText( line++, "Temp Sensor: OK");
-		validTemperature = true;
-		logged_tests += "External Temperature Sensor:PASSED\n";
+	if( blue_enable.get() != WL_WLAN_CLIENT ) {
+		ESP_LOGI(FNAME,"Now start T sensor test");
+		ds18b20.begin();
+		temperature = ds18b20.getTemp();
+		ESP_LOGI(FNAME,"End T sensor test");
+		if( temperature == DEVICE_DISCONNECTED_C ) {
+			ESP_LOGE(FNAME,"Error: Self test Temperatur Sensor failed; returned T=%2.2f", temperature );
+			display->writeText( line++, "Temp Sensor: NOT FOUND");
+			validTemperature = false;
+			logged_tests += "External Temperature Sensor: NOT FOUND\n";
+		}else
+		{
+			ESP_LOGI(FNAME,"Self test Temperatur Sensor PASSED; returned T=%2.2f", temperature );
+			display->writeText( line++, "Temp Sensor: OK");
+			validTemperature = true;
+			logged_tests += "External Temperature Sensor:PASSED\n";
 
+		}
 	}
 	ESP_LOGI(FNAME,"Absolute pressure sensors init, detect type of sensor type..");
 
@@ -985,20 +1010,6 @@ void sensor(void *args){
 		wifi_init_softap();
 	}
 
-	// MPU
-
-
-	// Check for magnetic sensor / compass
-	if( compass_enable.get() ) {
-		ESP_LOGI( FNAME, "Magnetic sensor enabled: initialize");
-		compass.setBus( &i2c_0 );
-		err = compass.selfTest();
-		if( err == ESP_OK )		{
-			// Activate working of magnetic sensor
-			compass.initialize();
-		}
-	}
-
 	Speed2Fly.change_polar();
 	Speed2Fly.change_mc_bal();
 	Version myVersion;
@@ -1007,6 +1018,7 @@ void sensor(void *args){
 	if( !selftestPassed )
 	{
 		ESP_LOGI(FNAME,"\n\n\nSelftest failed, see above LOG for Problems\n\n\n");
+		display->writeText( line++, "Selftest FAILED");
 		if( !Rotary.readSwitch() )
 			sleep(4);
 	}
@@ -1098,16 +1110,17 @@ void sensor(void *args){
 
 	if( blue_enable.get() != WL_WLAN_CLIENT ) {
 		xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096*2, NULL, 30, bpid, 0);
-	}else{
+	}
+	if( blue_enable.get() == WL_WLAN_CLIENT ){
 		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 30, bpid, 0);
 	}
-
-
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 4096, NULL, 6, tpid, 0);
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 13, dpid, 0);
 
 	Audio::startAudio();
 }
+
+
 
 extern "C" void  app_main(void){
 	ESP_LOGI(FNAME,"app_main" );
@@ -1124,6 +1137,4 @@ extern "C" void  app_main(void){
 	sensor( 0 );
 	vTaskDelete( NULL );
 }
-
-
 

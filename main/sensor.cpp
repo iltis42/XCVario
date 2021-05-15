@@ -138,6 +138,7 @@ float temperature=15.0;
 bool  validTemperature=false;
 float battery=0.0;
 float TE=0;
+float rawdynamicP;
 float dynamicP;
 
 // global color variables for adaptable display variant
@@ -374,9 +375,12 @@ void readBMP(void *pvParameters){
 		bool ok=false;
 		float p = 0;
 		if( asSensor )
-			p = asSensor->readPascal(60, ok);
-		if( ok )
+			p = asSensor->readPascal(0, ok); // removed minimum Dp test to allow use of rawdynamicP
+		if( ok ) {
+			rawdynamicP = p;
 			dynamicP = p;
+		}
+		if( dynamicP < 60 ) dynamicP = 0;
 		float iasraw = Atmosphere::pascal2kmh( dynamicP );
 		// ESP_LOGI("FNAME","P: %f  IAS:%f", dynamicP, iasraw );
 		float T=temperature;
@@ -433,21 +437,21 @@ void readBMP(void *pvParameters){
 			// reduce also messages from 10 per second to 5 per second to reduce load in XCSoar
 			char lb[150];
 			if( nmea_protocol.get() == BORGELT ) {
-				OV.sendNMEA( P_BORGELT, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), altSTD, validTemperature  );
-				OV.sendNMEA( P_GENERIC, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), altSTD, validTemperature  );
+				OV.sendNMEA( P_BORGELT, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), altSTD, validTemperature  );
+				OV.sendNMEA( P_GENERIC, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), altSTD, validTemperature  );
 			}
 			else if( nmea_protocol.get() == OPENVARIO ){
-				OV.sendNMEA( P_OPENVARIO, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature  );
+				OV.sendNMEA( P_OPENVARIO, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature  );
 			}
 			else if( nmea_protocol.get() == CAMBRIDGE ){
-				OV.sendNMEA( P_CAMBRIDGE, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature  );
+				OV.sendNMEA( P_CAMBRIDGE, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature  );
 			}
 			else if( nmea_protocol.get() == XCVARIO ) {
-				OV.sendNMEA( P_XCVARIO, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
+				OV.sendNMEA( P_XCVARIO, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
 						-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
 			}
 			else if( nmea_protocol.get() == XCVARIO_DEVEL ) {
-				OV.sendNMEA( P_XCVARIO_DEVEL, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
+				OV.sendNMEA( P_XCVARIO_DEVEL, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
 						-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
 			}
 			else

@@ -22,6 +22,7 @@
 #include "Flap.h"
 #include "Flarm.h"
 #include "Compass.h"
+#include "CircleWind.h"
 
 int screens_init = INIT_DISPLAY_NULL;
 
@@ -699,7 +700,7 @@ void IpsDisplay::drawTemperature( int x, int y, float t ) {
 	ucg->setColor( COLOR_WHITE );
 	ucg->setPrintPos(x,y);
 	if( t != DEVICE_DISCONNECTED_C )
-		ucg->printf("%-2.1f\xb0""  ", t );
+		ucg->printf("%-2.1f\xb0""  ", std::roundf(t*10.f)/10.f );
 	else
 		ucg->printf(" ---   ");
 }
@@ -981,58 +982,154 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 
 // Compass or Wind Display
 void IpsDisplay::drawCompass(){
-	if( compass_calibrated.get() ){
-		if( compass_enable.get() && wind_enable.get() ){
-			int winddir;
-			float wind;
-			bool ok = theWind.getWind( &winddir, &wind );
-			if( prev_heading != winddir || !(tick%32) ){
-				ucg->setPrintPos(85,104);
-				ucg->setColor(  COLOR_WHITE  );
-				// ucg->setFont(ucg_font_fub20_hr);
-				ucg->setFont(ucg_font_fub17_hf);
-				char s[12];
-				int windspeed = (int)( Units::Airspeed(wind)+0.5 );
-				if( ok )
-					sprintf(s,"%3d\xb0/%2d", winddir, windspeed );
-				else
-					sprintf(s,"%s", "    --/--" );
-				if( windspeed < 10 )
-					ucg->printf("%s   ", s);
-				else if( windspeed < 100 )
-					ucg->printf("%s  ", s);
-				else
-					ucg->printf("%s ", s);
-				prev_heading = winddir;
+
+	if( wind_enable.get() != WA_OFF ){
+		// ESP_LOGI(FNAME, "WIND calc on %d", wind_enable.get() );
+		int winddir=0;
+		float wind=0;
+		bool ok=false;
+		int ageStraight, ageCircling;
+		char type = '/';
+		if( wind_enable.get() == WA_STRAIGHT ){
+			ok = theWind.getWind( &winddir, &wind, &ageStraight );
+			type = '|';
+		}
+		else if( wind_enable.get() == WA_CIRLCING ){
+			ok = CircleWind::getWind( &winddir, &wind, &ageCircling );
+		}
+		else if( wind_enable.get() == WA_BOTH ){
+			int wds, wdc;
+			float ws, wc;
+			bool oks, okc;
+			oks = theWind.getWind( &wds, &ws, &ageStraight );
+			okc = CircleWind::getWind( &wdc, &wc, &ageCircling);
+			if( oks && ageStraight < ageCircling ){
+				wind = ws;
+				winddir = wds;
+				type = '|';
+				ok = true;
+			}
+			else if( okc && ageCircling < ageStraight )
+			{
+				wind = wc;
+				winddir = wdc;
+				type = '/';
+				ok = true;
 			}
 		}
-		else if( compass_enable.get()  ){
-			bool ok;
-			int heading = static_cast<int>(rintf(Compass::trueHeading( &ok )));
-			if( heading >= 360 )
-				heading -= 360;
-			// ESP_LOGI(FNAME, "heading %d, valid %d", heading, Compass::headingValid() );
-			if( prev_heading != heading || !(tick%32) ){
-				ucg->setPrintPos(105,104);
-				ucg->setColor(  COLOR_WHITE  );
-				ucg->setFont(ucg_font_fub20_hr);
-				char s[12];
-				if( ok )
-					sprintf(s,"%3d", heading );
-				else
-					sprintf(s,"%s", "  ---" );
+		// ESP_LOGI(FNAME, "WIND dir %d, speed %f, ok=%d", winddir, wind, ok );
+		if( prev_heading != winddir || !(tick%32) ){
+			ucg->setPrintPos(85,104);
+			ucg->setColor(  COLOR_WHITE  );
+			// ucg->setFont(ucg_font_fub20_hr);
+			ucg->setFont(ucg_font_fub17_hf);
+			char s[12];
+			int windspeed = (int)( Units::Airspeed(wind)+0.5 );
+			if( ok )
+				sprintf(s,"%3d\xb0%c%2d", winddir, type, windspeed );
+			else
+				sprintf(s,"%s", "    --/--" );
+			if( windspeed < 10 )
+				ucg->printf("%s    ", s);
+			else if( windspeed < 100 )
+				ucg->printf("%s   ", s);
+			else
+				ucg->printf("%s  ", s);
+			prev_heading = winddir;
+		}
+	}
+	else if( compass_enable.get() && compass_calibrated.get() ){
+		bool ok;
+		int heading = static_cast<int>(rintf(Compass::trueHeading( &ok )));
+		if( heading >= 360 )
+			heading -= 360;
+		// ESP_LOGI(FNAME, "heading %d, valid %d", heading, Compass::headingValid() );
+		if( prev_heading != heading || !(tick%32) ){
+			ucg->setPrintPos(105,104);
+			ucg->setColor(  COLOR_WHITE  );
+			ucg->setFont(ucg_font_fub20_hr);
+			char s[12];
+			if( ok )
+				sprintf(s,"%3d", heading );
+			else
+				sprintf(s,"%s", "  ---" );
 
-				if( heading < 10 )
-					ucg->printf("%s   ", s);
-				else if( heading < 100 )
-					ucg->printf("%s  ", s);
-				else
-					ucg->printf("%s ", s);
-				ucg->setFont(ucg_font_fub20_hf);
-				ucg->setPrintPos(120+ucg->getStrWidth(s),105);
-				ucg->printf("\xb0 ");
-				prev_heading = heading;
+			if( heading < 10 )
+				ucg->printf("%s   ", s);
+			else if( heading < 100 )
+				ucg->printf("%s  ", s);
+			else
+				ucg->printf("%s ", s);
+			ucg->setFont(ucg_font_fub20_hf);
+			ucg->setPrintPos(120+ucg->getStrWidth(s),105);
+			ucg->printf("\xb0 ");
+			prev_heading = heading;
+		}
+	}
+}
+// Compass or Wind Display for ULStyle
+void IpsDisplay::drawULCompass(){
+
+	if( wind_enable.get() != WA_OFF ){
+		// ESP_LOGI(FNAME, "WIND calc on %d", wind_enable.get() );
+		int winddir=0;
+		float wind=0;
+		bool ok=false;
+		int age;
+		char type = '/';
+		if( wind_enable.get() == WA_STRAIGHT ){
+			ok = theWind.getWind( &winddir, &wind, &age );
+			type = '|';
+		}
+		else if( wind_enable.get() == WA_CIRLCING ){
+			ok = CircleWind::getWind( &winddir, &wind, &age );
+		}
+		else if( wind_enable.get() == WA_BOTH ){
+			ok = theWind.getWind( &winddir, &wind, &age );
+			type = '|';
+			if( !ok ){
+				ok = CircleWind::getWind( &winddir, &wind, &age );
+				type = '/';
 			}
+		}
+		// ESP_LOGI(FNAME, "WIND dir %d, speed %f, ok=%d", winddir, wind, ok );
+		if( prev_heading != winddir || !(tick%32) ){
+			ucg->setPrintPos(85,104);
+			ucg->setColor(  COLOR_WHITE  );
+			// ucg->setFont(ucg_font_fub20_hr);
+			ucg->setFont(ucg_font_fub17_hf);
+			char s[12];
+			int windspeed = (int)( Units::Airspeed(wind)+0.5 );
+			if( ok )
+				sprintf(s,"%3d\xb0%c%2d", winddir, type, windspeed );
+			else
+				sprintf(s,"%s", "    --/--" );
+			if( windspeed < 10 )
+				ucg->printf("%s   ", s);
+			else if( windspeed < 100 )
+				ucg->printf("%s  ", s);
+			else
+				ucg->printf("%s ", s);
+			prev_heading = winddir;
+		}
+	}
+	if( compass_enable.get() && compass_calibrated.get() ){
+		bool ok;
+		int heading = static_cast<int>(rintf(Compass::trueHeading( &ok )));
+		if( heading >= 360 )
+			heading -= 360;
+		// ESP_LOGI(FNAME, "heading %d, valid %d", heading, Compass::headingValid() );
+		if( prev_heading != heading || !(tick%32) ){
+			ucg->setColor(  COLOR_WHITE  );
+			ucg->setFont(ucg_font_fub20_hf);
+			ucg->setPrintPos(113,220);
+			char s[14];
+			if( ok )
+				sprintf(s,"%3d\xb0", heading );
+			else
+				sprintf(s,"%s", "  ---" );
+			ucg->printf("%s    ", s);
+			prev_heading = heading;
 		}
 	}
 }
@@ -1380,8 +1477,6 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 	if( te < -_range )
 		te = -_range;
 	float polar_sink = Units::Vario( polar_sink_ms );
-	//  float s2f = Units::Airspeed( s2f_ms );   not used for now
-	float s2fd = Units::Airspeed( s2fd_ms );
 	int airspeed =  (int)(Units::Airspeed( airspeed_kmh ) + 0.5);
 	float altitude = Units::Altitude( altitude_m );
 
@@ -1550,7 +1645,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 	}
 	// Compass
 	if( !(tick%8) ){
-		drawCompass();
+		drawULCompass();
 	}
 	xSemaphoreGive(spiMutex);
 }
@@ -1941,5 +2036,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	ucg->drawHLine( DISPLAY_LEFT+6, dmid, bw );
 	xSemaphoreGive(spiMutex);
 }
+
+
 
 

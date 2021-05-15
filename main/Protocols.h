@@ -33,7 +33,8 @@ public:
 				         bool validTemp=false, float ax=0, float ay=0, float az=0, float gx=0, float gy=0, float gz=0 );
 
 	static void parseNMEA( char *str );
-	static int getCheckSum(char * s);
+	static int calcNMEACheckSum(char * nmea);
+	static int getNMEACheckSum(char * nmea);
 
 
 private:

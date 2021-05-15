@@ -127,7 +127,7 @@ void Protocols::sendNmeaHDM( float heading ) {
   sprintf( str,"$HCHDM,%3.1f,M", heading );
   // ESP_LOGI(FNAME,"Magnetic Heading: %3.1f", heading );
 
-  int cs = getCheckSum(&str[1]);
+  int cs = calcNMEACheckSum(&str[1]);
   int i = strlen(str);
   sprintf( &str[i], "*%02X\r\n", cs );
   Router::sendXCV(str);
@@ -150,7 +150,7 @@ void Protocols::sendNmeaHDT( float heading ) {
   sprintf( str,"$HCHDT,%3.1f,T", heading );
   // ESP_LOGI(FNAME,"True Heading: %3.1f", heading );
 
-  int cs = getCheckSum(&str[1]);
+  int cs = calcNMEACheckSum(&str[1]);
   int i = strlen(str);
   sprintf( &str[i], "*%02X\r\n", cs );
   Router::sendXCV(str);
@@ -165,7 +165,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 	if( proto == P_XCVARIO_DEVEL ){
 		float roll = IMU::getRoll();
 		float pitch = IMU::getPitch();
-		sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%4.1f,%3.1f,%3.1f,%1.4f,%1.4f,%1.4f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
+		sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%4.1f,%3.1f,%3.1f,%1.4f,%1.4f,%1.4f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
 	}
 	else if( proto == P_XCVARIO ){
 		/*
@@ -176,7 +176,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 				EE = bugs degradation, 0 = clean to 30 %,
 				F.FF = Ballast 1.00 to 1.60,
 				G = 0 in climb, 1 in cruise,
-				HH = Outside airtemp in degrees celcius ( may have leading negative sign ),
+				HH.H = Outside airtemp in degrees celcius ( may have leading negative sign ),
 				QQQQ.Q = QNH e.g. 1013.2,
 				PPPP.P: static pressure in hPa,
 				QQQQ.Q: dynamic pressure in Pa,
@@ -190,10 +190,10 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		if( haveMPU && attitude_indicator.get() ){
 			float roll = IMU::getRoll();
 			float pitch = IMU::getPitch();
-			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f,%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
+			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f,%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
 
 		}else{
-			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f,,,,,", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp );
+			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f,,,,,", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp );
 		}
 	}
 	else if( proto == P_OPENVARIO ) {
@@ -299,7 +299,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 	else {
 		ESP_LOGW(FNAME,"Not supported protocol %d", nmea_protocol.get() );
 	}
-	int cs = getCheckSum(&str[1]);
+	int cs = calcNMEACheckSum(&str[1]);
 	int i = strlen(str);
 	sprintf( &str[i], "*%02X\r\n", cs );
 	Router::sendXCV(str);
@@ -329,7 +329,7 @@ void Protocols::parseNMEA( char *astr ){
 	// ESP_LOGI(FNAME,"parseNMEA: %s", astr );
 	char *str = mystrtok(astr);
 	while( str ){
-		ESP_LOGI(FNAME,"parseNMEA token: %s", str);
+		ESP_LOGV(FNAME,"parseNMEA token: %s", str);
 		tickNMEA++;
 		if ( strncmp( str, "!xw,", 4 ) == 0 ) {
 			float wkcmd;
@@ -439,7 +439,7 @@ void Protocols::parseNMEA( char *astr ){
 			float _mc,_te,_bugs,_ballast, _temp, _qnh, _baro, _pitot, _roll, _pitch, _ax, _ay, _az;
 			int _cs, _cruise;
 			sscanf( str, "$PXCV,%f,%f,%f,%f,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f*%02x", &_te, &_mc, &_bugs, &_ballast,&_cruise, &_temp, &_qnh, &_baro, &_pitot, &_roll, &_pitch, &_ax, &_ay, &_az, &_cs  );
-			int calc_cs=getCheckSum( str );
+			int calc_cs=calcNMEACheckSum( str );
 			if( _cs != calc_cs )
 				ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", str, calc_cs, _cs );
 			else{
@@ -469,6 +469,13 @@ void Protocols::parseNMEA( char *astr ){
 				ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
 			}
 		}
+		else if( !strncmp( str, "$GPGGA,", 6 )) {
+			Flarm::parseGPGGA( str );
+			if( Flarm::bincom  ) {
+				Flarm::bincom--;
+				ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
+			}
+		}
 		else if( !strncmp( str, "!w,", 2 ) ){
 			/*
 			 * Cambridge 302 Format
@@ -491,7 +498,7 @@ void Protocols::parseNMEA( char *astr ){
 			float _alt, _qnh, _tas, _te, _mc, _ballast, _bugs;
 			int _cs;
 			sscanf(str, "!w,0,0,0,0,%f,%f,%f,%f,0,0,%f,%f,%f*%02x", &_alt, &_qnh, &_tas, &_te, &_mc, &_ballast, &_bugs, &_cs );
-			int calc_cs=getCheckSum( str );
+			int calc_cs=calcNMEACheckSum( str );
 			if( _cs != calc_cs )
 				ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", str, calc_cs, _cs );
 			else{
@@ -516,13 +523,23 @@ void Protocols::parseNMEA( char *astr ){
 // Calculate the checksum and output it as an int
 // is required as HEX in the NMEA data set
 // between $ or! and * character
-int Protocols::getCheckSum(char * s) {
+int Protocols::calcNMEACheckSum(char * nmea) {
 	int i, XOR, c;
-	for (XOR = 0, i = 0; i < strlen(s); i++) {
-		c = (unsigned char)s[i];
+	for (XOR = 0, i = 0; i < strlen(nmea); i++) {
+		c = (unsigned char)nmea[i];
 		if (c == '*') break;
 		if ((c != '$') && (c != '!')) XOR ^= c;
 	}
 	return XOR;
+}
+
+int Protocols::getNMEACheckSum(char * nmea) {
+	int i, cs, c;
+	for (i = 0; i < strlen(nmea); i++) {
+		c = (unsigned char)nmea[i];
+		if (c == '*') break;
+	}
+	sscanf( &nmea[i],"*%02x", &cs );
+	return cs;
 }
 

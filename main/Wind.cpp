@@ -390,7 +390,7 @@ void Wind::calculateWind( double tc, double gs, double th, double tas  ){
 
 	ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h", windDir, windSpeed  );
 	_age = 0;
-
+	OV.sendWindChange( windDir, windSpeed, WA_STRAIGHT );
 }
 
 

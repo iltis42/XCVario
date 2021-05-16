@@ -25,6 +25,8 @@
 #include "Units.h"
 #include "Flap.h"
 #include "Switch.h"
+#include "SetupNG.h"
+#include "CircleWind.h"
 
 S2F * Protocols::_s2f = 0;
 float Protocols::ballast_percent=0;
@@ -48,6 +50,13 @@ void Protocols::sendWkChange( float wk ){
 	char str[20];
 	sprintf( str,"!xw,%1.1f\n", wk );
 	ESP_LOGI(FNAME,"New WK pos: %f, cmd: %s", wk, str );
+	Router::sendXCV(str);
+}
+
+void Protocols::sendWindChange( float dir, float speed, e_windanalyser_mode_t type  ){
+	char str[20];
+	sprintf( str,"!xd,%3.1f,%3.1f,%d\n", dir, speed, type );
+	ESP_LOGI(FNAME,"New wind cmd: %s", str );
 	Router::sendXCV(str);
 }
 
@@ -348,6 +357,18 @@ void Protocols::parseNMEA( char *astr ){
 			Flap::setLever( wkcmd );
 			// ESP_LOGI(FNAME,"XW command detected wk=%f", wkcmd );
 		}
+		else if ( strncmp( str, "!xd,", 4 ) == 0 ) {
+			float dir, speed;
+			int type;
+			sscanf( str,"!xd,%f,%f,%d", &dir,&speed, &type );  // directly scan into sensor variable
+			if( type == WA_STRAIGHT ){
+				theWind.setWind( dir, speed );
+			}
+			else if( type == WA_CIRCLING ){
+				CircleWind::setWind( dir, speed );
+			}
+		}
+
 		else if ( strncmp( str, "!xt,", 4 ) == 0 ) {
 			float temp;
 			sscanf( str,"!xt,%f", &temp );  // directly scan into sensor variable

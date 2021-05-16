@@ -196,7 +196,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 			sprintf(str+append_idx,",%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", roll, pitch, acc_x, acc_y, acc_z );
 
 		}else{
-			sprintf(str,",,,,,");
+			sprintf(str+append_idx,",,,,,");
 		}
 	}
 	else if( proto == P_OPENVARIO ) {
@@ -357,7 +357,7 @@ void Protocols::parseNMEA( char *astr ){
 				float mc;
 				sscanf( str,"!xm,%f", &mc );
 				ESP_LOGI(FNAME,"MC change %s detected, new MC %f", str, mc );
-				if( MC.get() != mc*10 ){
+				if( MC.get() != mc ){
 					MC.set( mc );
 				}
 		}
@@ -447,12 +447,12 @@ void Protocols::parseNMEA( char *astr ){
 			 */
 			// tbd: checksum check
 			// ESP_LOGI(FNAME,"parseNMEA, PXCV");
-			float _te, _mc, _bugs,_ballast, _temp, _qnh, _baro, _pitot, _roll, _pitch, _ax, _ay, _az;
+			float _te, _mc, _bugs,_ballast, _temp, _qnh, _baro, _pitot;
 			int _cs, _cruise;
-			sscanf( str, "$PXCV,%f,%f,%f,%f,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f*%02x", &_te, &_mc, &_bugs, &_ballast,&_cruise, &_temp, &_qnh, &_baro, &_pitot, &_roll, &_pitch, &_ax, &_ay, &_az, &_cs  );
+			sscanf( str, "$PXCV,%f,%f,%f,%f,%d,%f,%f,%f,%f%*[^*]*%2x", &_te, &_mc, &_bugs, &_ballast,&_cruise, &_temp, &_qnh, &_baro, &_pitot, &_cs );
 			int calc_cs=calcNMEACheckSum( str );
 			if( _cs != calc_cs )
-				ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", str, calc_cs, _cs );
+				ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %x != delivered CS %x", str, calc_cs, _cs );
 			else{
 				TE = _te;
 				baroP = _baro;
@@ -508,7 +508,7 @@ void Protocols::parseNMEA( char *astr ){
 			 */
 			float _alt, _qnh, _tas, _te, _mc, _ballast, _bugs;
 			int _cs;
-			sscanf(str, "!w,0,0,0,0,%f,%f,%f,%f,0,0,%f,%f,%f*%02x", &_alt, &_qnh, &_tas, &_te, &_mc, &_ballast, &_bugs, &_cs );
+			sscanf(str, "!w,0,0,0,0,%f,%f,%f,%f,0,0,%f,%f,%f*%2x", &_alt, &_qnh, &_tas, &_te, &_mc, &_ballast, &_bugs, &_cs );
 			int calc_cs=calcNMEACheckSum( str );
 			if( _cs != calc_cs )
 				ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", str, calc_cs, _cs );
@@ -550,7 +550,7 @@ int Protocols::getNMEACheckSum(char * nmea) {
 		c = (unsigned char)nmea[i];
 		if (c == '*') break;
 	}
-	sscanf( &nmea[i],"*%02x", &cs );
+	sscanf( &nmea[i],"*%2x", &cs );
 	return cs;
 }
 

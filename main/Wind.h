@@ -57,6 +57,12 @@ public:
 		return ( windDir != -1.0 && windSpeed != -1.0 );
 	}
 
+	void setWind( float direction, float speed ){
+		windDir = direction;
+		windSpeed = speed;
+		_age = 0;
+	}
+
 	void calculateWind( double tc, double gs, double th, double tas  );
 	static double calculateSpeed( double angle1, double speed1, double angle2, double speed2  );
 	static double calculateAngle( double angle1, double speed1, double angle2, double speed2  );

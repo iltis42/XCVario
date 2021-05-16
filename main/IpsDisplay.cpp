@@ -994,7 +994,7 @@ void IpsDisplay::drawCompass(){
 			ok = theWind.getWind( &winddir, &wind, &ageStraight );
 			type = '|';
 		}
-		else if( wind_enable.get() == WA_CIRLCING ){
+		else if( wind_enable.get() == WA_CIRCLING ){
 			ok = CircleWind::getWind( &winddir, &wind, &ageCircling );
 		}
 		else if( wind_enable.get() == WA_BOTH ){
@@ -1081,7 +1081,7 @@ void IpsDisplay::drawULCompass(){
 			ok = theWind.getWind( &winddir, &wind, &age );
 			type = '|';
 		}
-		else if( wind_enable.get() == WA_CIRLCING ){
+		else if( wind_enable.get() == WA_CIRCLING ){
 			ok = CircleWind::getWind( &winddir, &wind, &age );
 		}
 		else if( wind_enable.get() == WA_BOTH ){

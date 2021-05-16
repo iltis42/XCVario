@@ -269,6 +269,7 @@ void CircleWind::_calcWind()
 	// Let the world know about our measurement!
 	ESP_LOGI(FNAME,"### RAW CircleWind: %3.1f°/%.1fKm/h  Q:%f", result.getAngleDeg(), result.getSpeed(), quality );
 	newWind( result.getAngleDeg(), result.getSpeed(), quality );
+	OV.sendWindChange( result.getAngleDeg(), result.getSpeed(), WA_CIRCLING );
 	_age = 0;
 }
 

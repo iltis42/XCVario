@@ -203,7 +203,10 @@ int bal_adj( SetupMenuValFloat * p )
 
 int bug_adj( SetupMenuValFloat * p ){
 	Speed2Fly.change_mc_bal();
-	OV.sendBugsChange( bugs.get() );
+	if( blue_enable.get() == WL_WLAN_CLIENT )
+		OV.sendClientBugsChange( bugs.get() );
+	else
+		OV.sendBugsChange( bugs.get() );
 	return 0;
 }
 

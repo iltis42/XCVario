@@ -52,10 +52,10 @@ void Protocols::sendWkChange( float wk ){
 }
 
 void Protocols::sendQNHChange( float qnh ){
-  char str[20];
-  sprintf( str,"!xq,%4.2f\n", qnh );
-  ESP_LOGI(FNAME,"New QNH: %4.2f, cmd: %s", qnh, str );
-  Router::sendXCV(str);
+	char str[20];
+	sprintf( str,"!xq,%4.2f\n", qnh );
+	ESP_LOGI(FNAME,"New QNH: %4.2f, cmd: %s", qnh, str );
+	Router::sendXCV(str);
 }
 
 void Protocols::sendBallastChange( float ballast, bool external ){
@@ -84,10 +84,18 @@ void Protocols::sendBallastChange( float ballast, bool external ){
 
 void Protocols::sendBugsChange( float bugs ){
 	char str[20];
-	sprintf( str,"!g,u%d\n", (int)(std::round(bugs)));
-	ESP_LOGI(FNAME,"New bugs %f, cmd: %s", bugs, str );
+	sprintf( str,"!g,u%d\n", (int)(std::round(100-bugs)));   // Cambridge protocol uses 100-%bugs notation, 25% bugs = !g,u75
+	ESP_LOGI(FNAME,"New bugs cmd: %s", str );
 	Router::sendXCV(str);
 }
+
+void Protocols::sendClientBugsChange( float bugs ){
+	char str[20];
+	sprintf( str,"!xu,%d\n", (int)(std::round(bugs)));
+	ESP_LOGI(FNAME,"New client bugs cmd: %s", str );
+	Router::sendXCV(str);
+}
+
 
 void Protocols::sendMcChange( float mc ){
 	char str[20];
@@ -127,16 +135,16 @@ HDM - Heading - Magnetic
   1) Heading Degrees, magnetic
   2) M = magnetic
   3) Checksum
-*/
+ */
 void Protocols::sendNmeaHDM( float heading ) {
-  char str[21];
-  sprintf( str,"$HCHDM,%3.1f,M", heading );
-  // ESP_LOGI(FNAME,"Magnetic Heading: %3.1f", heading );
+	char str[21];
+	sprintf( str,"$HCHDM,%3.1f,M", heading );
+	// ESP_LOGI(FNAME,"Magnetic Heading: %3.1f", heading );
 
-  int cs = calcNMEACheckSum(&str[1]);
-  int i = strlen(str);
-  sprintf( &str[i], "*%02X\r\n", cs );
-  Router::sendXCV(str);
+	int cs = calcNMEACheckSum(&str[1]);
+	int i = strlen(str);
+	sprintf( &str[i], "*%02X\r\n", cs );
+	Router::sendXCV(str);
 }
 
 /*
@@ -150,16 +158,16 @@ HDT - Heading - True
   1) Heading Degrees, true
   2) T = True
   3) Checksum
-*/
+ */
 void Protocols::sendNmeaHDT( float heading ) {
-  char str[21];
-  sprintf( str,"$HCHDT,%3.1f,T", heading );
-  // ESP_LOGI(FNAME,"True Heading: %3.1f", heading );
+	char str[21];
+	sprintf( str,"$HCHDT,%3.1f,T", heading );
+	// ESP_LOGI(FNAME,"True Heading: %3.1f", heading );
 
-  int cs = calcNMEACheckSum(&str[1]);
-  int i = strlen(str);
-  sprintf( &str[i], "*%02X\r\n", cs );
-  Router::sendXCV(str);
+	int cs = calcNMEACheckSum(&str[1]);
+	int i = strlen(str);
+	sprintf( &str[i], "*%02X\r\n", cs );
+	Router::sendXCV(str);
 }
 
 
@@ -186,8 +194,8 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 				X.XX:   acceleration in X-Axis,
 				Y.YY:   acceleration in Y-Axis,
 				Z.ZZ:   acceleration in Z-Axis,
-				*CHK = standard NMEA checksum
-		*/
+		 *CHK = standard NMEA checksum
+		 */
 		sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp );
 		int append_idx = strlen(str);
 		if( haveMPU && attitude_indicator.get() ){
@@ -266,7 +274,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 	}
 	else if( proto == P_EYE_PEYI ){
 		float roll = IMU::getRoll();
-   	    float pitch = IMU::getPitch();
+		float pitch = IMU::getPitch();
 		// ESP_LOGI(FNAME,"roll %.2f pitch %.2f yaw %.2f", roll, pitch, yaw  );
 		/*
 			$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,%.2f,
@@ -354,12 +362,20 @@ void Protocols::parseNMEA( char *astr ){
 			// ESP_LOGI(FNAME,"mean climb change detected mean climb=%f", climb );
 		}
 		else if ( strncmp( str, "!xm,", 4 ) == 0 ) {
-				float mc;
-				sscanf( str,"!xm,%f", &mc );
-				ESP_LOGI(FNAME,"MC change %s detected, new MC %f", str, mc );
-				if( MC.get() != mc*10 ){
-					MC.set( mc );
-				}
+			float mc;
+			sscanf( str,"!xm,%f", &mc );
+			ESP_LOGI(FNAME,"MC change %s detected, new MC %f", str, mc );
+			if( MC.get() != mc*10 ){
+				MC.set( mc );
+			}
+		}
+		else if ( strncmp( str, "!xu,", 4 ) == 0 ) {
+			float _bugs;
+			sscanf( str,"!xu,%f", &_bugs );
+			ESP_LOGI(FNAME,"bugs change from client detected=%f", _bugs );
+			if( bugs.get() != _bugs ){
+				bugs.set( _bugs );
+			}
 		}
 		else if ( strncmp( str, "!xq,", 4 ) == 0 ) {
 			float qnh;
@@ -413,7 +429,6 @@ void Protocols::parseNMEA( char *astr ){
 				}
 			}
 			if (str[3] == 'u') {
-				ESP_LOGI(FNAME,"parseNMEA, BORGELT, Bugs modification");
 				int mybugs;
 				sscanf(str, "!g,u%d", &mybugs);
 				mybugs = 100-mybugs;
@@ -443,7 +458,7 @@ void Protocols::parseNMEA( char *astr ){
 				X.XX:   acceleration in X-Axis,
 				Y.YY:   acceleration in Y-Axis,
 				Z.ZZ:   acceleration in Z-Axis,
-					 *CHK = standard NMEA checksum
+			 *CHK = standard NMEA checksum
 			 */
 			// tbd: checksum check
 			// ESP_LOGI(FNAME,"parseNMEA, PXCV");

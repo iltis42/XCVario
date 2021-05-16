@@ -23,6 +23,7 @@ public:
 	void sendMeanClimb( float climb );
 	void sendBallastChange( float ballast, bool external=true );
 	void sendBugsChange( float bugs );
+	void sendClientBugsChange( float bugs );
 	void sendTemperatureChange( float temp );
 	void sendMcChange( float mc );
 	void sendClientMcChange( float mc );  // only from client to master

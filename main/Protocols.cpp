@@ -73,7 +73,7 @@ void Protocols::sendBallastChange( float ballast, bool external ){
 	float bal = (liters/max_bal)*10;
 	ballast_percent = bal*10;
 	if( external ){
-		sprintf( str,"!g,b%d\n\r", (int)(bal + 0.5));
+		sprintf( str,"!g,b%d\n\r", (int)(std::round(bal)));
 		ESP_LOGI(FNAME,"New ballast %f, cmd: %s", bal, str );
 		Router::sendXCV(str);
 	}
@@ -84,14 +84,14 @@ void Protocols::sendBallastChange( float ballast, bool external ){
 
 void Protocols::sendBugsChange( float bugs ){
 	char str[20];
-	sprintf( str,"!g,u%d\n", (int)(100-bugs));
+	sprintf( str,"!g,u%d\n", (int)(std::round(bugs)));
 	ESP_LOGI(FNAME,"New bugs %f, cmd: %s", bugs, str );
 	Router::sendXCV(str);
 }
 
 void Protocols::sendMcChange( float mc ){
 	char str[20];
-	sprintf( str,"!g,m%d\n", (int)(Units::ms2knots(mc)*10));
+	sprintf( str,"!g,m%d\n", (int)std::round(Units::ms2knots(mc)*10) );
 	ESP_LOGI(FNAME,"New MC %f, cmd: %s", mc , str );
 	Router::sendXCV(str);
 }
@@ -106,12 +106,12 @@ void Protocols::sendClientMcChange( float mc ){
 int last_climb=-1000;
 
 void Protocols::sendMeanClimb( float climb ){
-	if( int(climb*10) != last_climb )
+	if( std::round(climb*10) != last_climb )
 	{
-		last_climb=int(climb*10);
+		last_climb=std::round(climb*10);
 		char str[20];
-		sprintf( str,"!xa,%1.1f\n", climb );
-		ESP_LOGI(FNAME,"New mean climb value: %f, cmd:%s", climb, str );
+		sprintf( str,"!xa,%1.1f\n", std::roundf(climb*10)/10 );
+		ESP_LOGI(FNAME,"New mean climb cmd:%s", str );
 		Router::sendXCV(str);
 	}
 }
@@ -168,12 +168,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 	if( !validTemp )
 		temp=0;
 
-	if( proto == P_XCVARIO_DEVEL ){
-		float roll = IMU::getRoll();
-		float pitch = IMU::getPitch();
-		sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%4.1f,%3.1f,%3.1f,%1.4f,%1.4f,%1.4f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
-	}
-	else if( proto == P_XCVARIO ){
+	if( proto == P_XCVARIO ){
 		/*
 				Sentence has following format:
 				$PXCV,
@@ -193,13 +188,15 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 				Z.ZZ:   acceleration in Z-Axis,
 				*CHK = standard NMEA checksum
 		*/
+		sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp );
+		int append_idx = strlen(str);
 		if( haveMPU && attitude_indicator.get() ){
 			float roll = IMU::getRoll();
 			float pitch = IMU::getPitch();
-			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f,%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
+			sprintf(str+append_idx,",%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", roll, pitch, acc_x, acc_y, acc_z );
 
 		}else{
-			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f,,,,,", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp );
+			sprintf(str,",,,,,");
 		}
 	}
 	else if( proto == P_OPENVARIO ) {
@@ -341,7 +338,7 @@ void Protocols::parseNMEA( char *astr ){
 			float wkcmd;
 			sscanf( str,"!xw,%f", &wkcmd );  // directly scan into sensor variable
 			Flap::setLever( wkcmd );
-			// ESP_LOGI(FNAME,"XW command detected wk=%f", wksensor );
+			// ESP_LOGI(FNAME,"XW command detected wk=%f", wkcmd );
 		}
 		else if ( strncmp( str, "!xt,", 4 ) == 0 ) {
 			float temp;
@@ -405,8 +402,7 @@ void Protocols::parseNMEA( char *astr ){
 				float mc;
 				sscanf(str, "!g,m%f", &mc);
 				mc = mc*0.1;   // comes in knots*10, unify to knots
-				ESP_LOGI(FNAME,"New MC: %1.1f knots", mc);
-				float mc_ms =  Units::knots2ms(mc);
+				float mc_ms =  std::roundf(Units::knots2ms(mc)*10.f)/10.f; // hide rough knot resolution
 				ESP_LOGI(FNAME,"New MC: %1.1f knots, %f", mc, mc_ms );
 				MC.set( Units::Vario( mc_ms ) );  // set mc according corresponding vario units
 				_s2f->change_mc_bal();
@@ -438,7 +434,7 @@ void Protocols::parseNMEA( char *astr ){
 				EE = bugs degradation, 0 = clean to 30 %,
 				F.FF = Ballast 1.00 to 1.60,
 				G = 0 in climb, 1 in cruise,
-				HH = Outside airtemp in degrees celcius ( may have leading negative sign ),
+				HH.H = Outside airtemp in degrees celcius ( may have leading negative sign ),
 				QQQQ.Q = QNH e.g. 1013.2,
 				PPPP.P: static pressure in hPa,
 				QQQQ.Q: dynamic pressure in Pa,
@@ -451,7 +447,7 @@ void Protocols::parseNMEA( char *astr ){
 			 */
 			// tbd: checksum check
 			// ESP_LOGI(FNAME,"parseNMEA, PXCV");
-			float _mc,_te,_bugs,_ballast, _temp, _qnh, _baro, _pitot, _roll, _pitch, _ax, _ay, _az;
+			float _te, _mc, _bugs,_ballast, _temp, _qnh, _baro, _pitot, _roll, _pitch, _ax, _ay, _az;
 			int _cs, _cruise;
 			sscanf( str, "$PXCV,%f,%f,%f,%f,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f*%02x", &_te, &_mc, &_bugs, &_ballast,&_cruise, &_temp, &_qnh, &_baro, &_pitot, &_roll, &_pitch, &_ax, &_ay, &_az, &_cs  );
 			int calc_cs=calcNMEACheckSum( str );

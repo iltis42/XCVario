@@ -25,6 +25,7 @@ public:
 	void sendBugsChange( float bugs );
 	void sendTemperatureChange( float temp );
 	void sendMcChange( float mc );
+	void sendClientMcChange( float mc );  // only from client to master
 	void sendQNHChange( float qnh );
     void sendNmeaHDM( float heading );
     void sendNmeaHDT( float heading );

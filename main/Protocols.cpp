@@ -96,6 +96,12 @@ void Protocols::sendMcChange( float mc ){
 	Router::sendXCV(str);
 }
 
+void Protocols::sendClientMcChange( float mc ){
+	char str[20];
+	sprintf( str,"!xm,%2.1f\n", std::roundf(mc*10)/10 );
+	ESP_LOGI(FNAME,"New Client MC %f, cmd: %s", mc , str );
+	Router::sendXCV(str);
+}
 
 int last_climb=-1000;
 
@@ -350,6 +356,14 @@ void Protocols::parseNMEA( char *astr ){
 			meanClimb = climb;
 			// ESP_LOGI(FNAME,"mean climb change detected mean climb=%f", climb );
 		}
+		else if ( strncmp( str, "!xm,", 4 ) == 0 ) {
+				float mc;
+				sscanf( str,"!xm,%f", &mc );
+				ESP_LOGI(FNAME,"MC change %s detected, new MC %f", str, mc );
+				if( MC.get() != mc*10 ){
+					MC.set( mc );
+				}
+		}
 		else if ( strncmp( str, "!xq,", 4 ) == 0 ) {
 			float qnh;
 			sscanf( str,"!xq,%f", &qnh );  // directly scan into sensor variable
@@ -386,7 +400,7 @@ void Protocols::parseNMEA( char *astr ){
 					OV.sendBallastChange( ballast.get(), false );
 				}
 			}
-			if (str[3] == 'm') {
+			if (str[3] == 'm' ) {
 				ESP_LOGI(FNAME,"parseNMEA, BORGELT, MC modification");
 				float mc;
 				sscanf(str, "!g,m%f", &mc);
@@ -399,6 +413,7 @@ void Protocols::parseNMEA( char *astr ){
 				if( blue_enable.get() == WL_WLAN ) {// update also client from Master
 					delay( 500 );
 					OV.sendMcChange( MC.get() );
+					ESP_LOGI(FNAME,"MC BG change detected, new MC %f", mc_ms );
 				}
 			}
 			if (str[3] == 'u') {

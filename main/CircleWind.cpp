@@ -223,7 +223,7 @@ void CircleWind::_calcWind()
 {
 	if( blue_enable.get() == WL_WLAN_CLIENT )
 		return;
-	float aDiff = Vector::angleDiff( minVector.getAngleDeg(), maxVector.getAngleDeg() );
+	float aDiff = Vector::angleDiffDeg( minVector.getAngleDeg(), maxVector.getAngleDeg() );
 	ESP_LOGI(FNAME,"calcWind, min/max diff %3.2f", aDiff );
 
 	/*

@@ -43,6 +43,7 @@ public:
 	static void redrawValues();
 	static void drawCompass();
 	static void drawULCompass();
+	static void drawWindArrow( float dir, float speed, int type );
 	static inline Ucglib_ILI9341_18x240x320_HWSPI *getDisplay() { return ucg; };
 
 private:

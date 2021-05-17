@@ -780,9 +780,53 @@ void IpsDisplay::drawAnalogScale( int val, int pos, float range, int offset ){
 	ucg->setFont(ucg_font_fub14_hn);
 	int x=AMIDX - cos((val/range)*M_PI_2)*pos;
 	int y=AMIDY+1 - sin((val/range)*M_PI_2)*pos;
-	ucg->setPrintPos(x-8,y);
-	ucg->printf("%d", val+offset );
+	if( val > 0 )
+		ucg->setPrintPos(x-15,y);
+	else
+		ucg->setPrintPos(x-8,y);
+	ucg->printf("%+d", val+offset );
 	ucg->setFontPosBottom();
+}
+
+
+static int wx0,wy0,wx1,wy1,wx2,wy2,wx3,wy3;
+static bool del_wind=false;
+
+void IpsDisplay::drawWindArrow( float a, float speed, int type ){
+	const int X=40;
+	const int Y=280;
+	float si=sin(a);
+	float co=cos(a);
+	const int b=5;
+	int s=speed/2;
+	int xn_0 = X+s*si;
+	int yn_0 = Y-s*co;
+
+	int xn_1 = X-s*si - b*co;
+	int yn_1 = Y+s*co - b*si;
+
+	int xn_3 = X-s*si + b*co;
+	int yn_3 = Y+s*co + b*si;
+
+	int xn_2 = (X-s*si)*0.9;
+	int yn_2 = (Y+s*co)*0.9;
+
+	ESP_LOGI(FNAME,"IpsDisplay::drawWindArrow  x0:%d y0:%d x1:%d y1:%d x2:%d y2:%d x3:%d y3:%d", (int)xn_0, (int)yn_0, (int)xn_1 ,(int)yn_1, (int)xn_2, (int)yn_2, (int)xn_3 ,(int)yn_3 );
+	if( del_wind ) {  // cleanup previous incarnation
+		ucg->setColor(  COLOR_BLACK  );
+		ucg->drawTetragon(wx0,wy0,wx1,wy1,wx2,wy2,wx3,wy3);
+		wx0 = xn_0;
+		wy0 = yn_0;
+		wx1 = xn_1;
+		wy1 = yn_1;
+		wx2 = xn_2;
+		wy2 = yn_2;
+		wx3 = xn_3;
+		wy3 = yn_3;
+		del_wind = true; // we have already painted one, so next time cleanup old
+	}
+	ucg->setColor( COLOR_LBLUE );
+	ucg->drawTetragon(xn_0,yn_0,xn_1,yn_1,xn_2,yn_2,xn_3,yn_3);
 }
 
 void IpsDisplay::initULDisplay(){
@@ -912,9 +956,9 @@ void IpsDisplay::initLoadDisplay(){
 	ucg->print( "G-Force" );
 	ucg->setPrintPos(130,70);
 	ucg->setColor(  COLOR_HEADER_LIGHT  );
-	ucg->print( "MIN" );
+	ucg->print( "MAX POS" );
 	ucg->setPrintPos(130,210);
-	ucg->print( "MAX" );
+	ucg->print( "MAX NEG" );
 	max_gscale = (int)( gload_pos_limit.get() )+1;
 	if( -gload_neg_limit.get() >= max_gscale )
 		max_gscale = (int)( -gload_neg_limit.get()  )+1;

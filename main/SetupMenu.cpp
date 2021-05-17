@@ -340,6 +340,10 @@ void SetupMenu::down(int count){
 			if( mc > 0.1 ) {
 				mc -= 0.1;
 				Speed2Fly.change_mc_bal();
+				if( blue_enable.get() == WL_WLAN_CLIENT )
+					OV.sendClientMcChange( MC.get() );
+				else
+					OV.sendMcChange( MC.get() );
 			}
 		}
 		else
@@ -370,6 +374,10 @@ void SetupMenu::up(int count){
 			if( mc < 9.9 ) {
 				mc += 0.1;
 				Speed2Fly.change_mc_bal();
+				if( blue_enable.get() == WL_WLAN_CLIENT )
+					OV.sendClientMcChange( MC.get() );
+				else
+					OV.sendMcChange( MC.get() );
 			}
 		}
 		else

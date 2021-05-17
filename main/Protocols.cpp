@@ -374,7 +374,7 @@ void Protocols::parseNMEA( char *astr ){
 			sscanf( str,"!xt,%f", &temp );  // directly scan into sensor variable
 			temperature = temp;
 			validTemperature=true;
-			ESP_LOGI(FNAME,"T change detected T=%f", temp );
+			ESP_LOGI(FNAME,"T change detected T=%2.1f", temp );
 		}
 		else if ( strncmp( str, "!xa,", 4 ) == 0 ) {
 			float climb;

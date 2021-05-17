@@ -547,7 +547,7 @@ void Protocols::parseNMEA( char *astr ){
 			sscanf(str, "!w,0,0,0,0,%f,%f,%f,%f,0,0,%f,%f,%f*%02x", &_alt, &_qnh, &_tas, &_te, &_mc, &_ballast, &_bugs, &_cs );
 			int calc_cs=calcNMEACheckSum( str );
 			if( _cs != calc_cs )
-				ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", str, calc_cs, _cs );
+				ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %02x != delivered CS %02x", str, calc_cs, _cs );
 			else{
 				alt = _alt-1000;
 				if( _qnh_prev != _qnh ){

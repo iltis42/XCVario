@@ -158,6 +158,8 @@ void Wind::tick(){
  */
 bool Wind::calculateWind()
 {
+	if( blue_enable.get() == WL_WLAN_CLIENT )
+		return false;
 	// ESP_LOGI(FNAME,"calculateWind flightMode: %d", CircleWind::getFlightMode() );
 	if( CircleWind::getFlightMode() != straight )
 		return false;

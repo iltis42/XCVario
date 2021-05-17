@@ -41,7 +41,7 @@ Protocols::~Protocols() {
 
 void Protocols::sendTemperatureChange( float temp ){
 	char str[20];
-	sprintf( str,"!xt,%2.2f\n", temp );
+	sprintf( str,"!xt,%2.1f\n", std::round(temp*10)/10 );
 	ESP_LOGI(FNAME,"New Temperature: %f, cmd: %s", temp, str );
 	Router::sendXCV(str);
 }
@@ -213,7 +213,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 			sprintf(str+append_idx,",%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", roll, pitch, acc_x, acc_y, acc_z );
 
 		}else{
-			sprintf(str,",,,,,");
+			sprintf(str+append_idx,",,,,,");
 		}
 	}
 	else if( proto == P_OPENVARIO ) {
@@ -346,7 +346,7 @@ char * mystrtok(char *s)
 
 
 void Protocols::parseNMEA( char *astr ){
-	// ESP_LOGI(FNAME,"parseNMEA: %s", astr );
+	ESP_LOGI(FNAME,"parseNMEA: %s", astr );
 	char *str = mystrtok(astr);
 	while( str ){
 		ESP_LOGV(FNAME,"parseNMEA token: %s", str);
@@ -357,10 +357,11 @@ void Protocols::parseNMEA( char *astr ){
 			Flap::setLever( wkcmd );
 			// ESP_LOGI(FNAME,"XW command detected wk=%f", wkcmd );
 		}
-		else if ( strncmp( str, "!xd,", 4 ) == 0 ) {
+		else if( strncmp( str, "!xd,", 4 ) == 0 ) {
 			float dir, speed;
 			int type;
-			sscanf( str,"!xd,%f,%f,%d", &dir,&speed, &type );  // directly scan into sensor variable
+			sscanf( str,"!xd,%f,%f,%d", &dir,&speed, &type );
+			ESP_LOGI(FNAME,"New wind type: %d detected %3.1f/%3.1f", type, dir, speed );
 			if( type == WA_STRAIGHT ){
 				theWind.setWind( dir, speed );
 			}
@@ -368,7 +369,6 @@ void Protocols::parseNMEA( char *astr ){
 				CircleWind::setWind( dir, speed );
 			}
 		}
-
 		else if ( strncmp( str, "!xt,", 4 ) == 0 ) {
 			float temp;
 			sscanf( str,"!xt,%f", &temp );  // directly scan into sensor variable
@@ -386,7 +386,7 @@ void Protocols::parseNMEA( char *astr ){
 			float mc;
 			sscanf( str,"!xm,%f", &mc );
 			ESP_LOGI(FNAME,"MC change %s detected, new MC %f", str, mc );
-			if( MC.get() != mc*10 ){
+			if( MC.get() != mc ){
 				MC.set( mc );
 			}
 		}
@@ -482,10 +482,10 @@ void Protocols::parseNMEA( char *astr ){
 			 *CHK = standard NMEA checksum
 			 */
 			// tbd: checksum check
-			// ESP_LOGI(FNAME,"parseNMEA, PXCV");
-			float _te, _mc, _bugs,_ballast, _temp, _qnh, _baro, _pitot, _roll, _pitch, _ax, _ay, _az;
+			ESP_LOGI(FNAME,"parseNMEA, PXCV %s", str);
+			float _te, _mc, _bugs,_ballast, _temp, _qnh, _baro, _pitot;
 			int _cs, _cruise;
-			sscanf( str, "$PXCV,%f,%f,%f,%f,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f*%02x", &_te, &_mc, &_bugs, &_ballast,&_cruise, &_temp, &_qnh, &_baro, &_pitot, &_roll, &_pitch, &_ax, &_ay, &_az, &_cs  );
+			sscanf( str, "$PXCV,%f,%f,%f,%f,%d,%f,%f,%f,%f%*[^*]*%2x", &_te, &_mc, &_bugs, &_ballast,&_cruise, &_temp, &_qnh, &_baro, &_pitot, &_cs  );
 			int calc_cs=calcNMEACheckSum( str );
 			if( _cs != calc_cs )
 				ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", str, calc_cs, _cs );

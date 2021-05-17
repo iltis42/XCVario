@@ -489,7 +489,7 @@ void readBMP(void *pvParameters){
 }
 
 static int ttick = 0;
-static int temp_prev = -3000;
+static float temp_prev = -3000;
 
 void readTemp(void *pvParameters){
 	while (1) {
@@ -512,11 +512,11 @@ void readTemp(void *pvParameters){
 					ESP_LOGI(FNAME,"Temperatur Sensor connected, temperature valid");
 					validTemperature = true;
 				}
-				temperature = t;
-				if( rint(temperature*10) != temp_prev ){
+				temperature = std::round(t*10)/10;
+				if( temperature != temp_prev ){
 					OV.sendTemperatureChange( temperature  );
-					temp_prev = rint(temperature*10);
-					ESP_LOGI(FNAME,"NEW temperature=%f  rint10: %d", temperature, temp_prev );
+					temp_prev = temperature;
+					ESP_LOGI(FNAME,"NEW temperature=%f  rint10: %f", temperature, temp_prev );
 				}
 			}
 			ESP_LOGV(FNAME,"temperature=%f", temperature );

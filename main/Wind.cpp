@@ -104,6 +104,8 @@ double Wind::meanAngle( double angle, double average )
  */
 void Wind::start()
 {
+	if( blue_enable.get() == WL_WLAN_CLIENT )
+		return;
 	if( Flarm::gpsStatus() == true ) {
 		// Ground speed in Km/h
 		groundSpeed = Units::knots2kmh(Flarm::getGndSpeedKnots());

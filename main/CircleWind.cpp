@@ -274,7 +274,6 @@ void CircleWind::_calcWind()
 	// Let the world know about our measurement!
 	ESP_LOGI(FNAME,"### RAW CircleWind: %3.1f°/%.1fKm/h  Q:%f", result.getAngleDeg(), result.getSpeed(), quality );
 	newWind( result.getAngleDeg(), result.getSpeed(), quality );
-	OV.sendWindChange( result.getAngleDeg(), result.getSpeed(), WA_CIRCLING );
 	_age = 0;
 }
 
@@ -291,6 +290,7 @@ void CircleWind::newWind( double angle, double speed, float q ){
 		windspeed += (speed - windspeed) * kq;
 	}
 	ESP_LOGI(FNAME,"### NEW AGV CircleWind: %3.1f°/%.1fKm/h  KQ:%1.3f", direction, windspeed, kq );
+	OV.sendWindChange( direction, windspeed, WA_CIRCLING );
 	if( q > 3 && circleCount > 2 )
 		theWind.newCirclingWind( direction, windspeed );
 }

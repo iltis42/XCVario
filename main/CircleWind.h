@@ -56,7 +56,7 @@ public:
    * the quality of the measurement (1-5; 1 is bad, 5 is excellent) in quality.
    */
   static inline void getWind( Vector &wind, int &qual ) { wind = result; qual=quality; };
-  static inline void setWind( float dir, float speed ) { result.setAngleAndSpeed( rint(dir), speed ); _age = 0; };
+  static inline void setWind( float dir, float speed ) { direction = dir; windspeed = speed; _age = 0; num_samples++; };
 
   /**
    * Called if the flight mode changes

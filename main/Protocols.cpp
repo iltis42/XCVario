@@ -346,7 +346,7 @@ char * mystrtok(char *s)
 
 
 void Protocols::parseNMEA( char *astr ){
-	ESP_LOGI(FNAME,"parseNMEA: %s", astr );
+	// ESP_LOGI(FNAME,"parseNMEA: %s", astr );
 	char *str = mystrtok(astr);
 	while( str ){
 		ESP_LOGV(FNAME,"parseNMEA token: %s", str);
@@ -482,7 +482,7 @@ void Protocols::parseNMEA( char *astr ){
 			 *CHK = standard NMEA checksum
 			 */
 			// tbd: checksum check
-			ESP_LOGI(FNAME,"parseNMEA, PXCV %s", str);
+			// ESP_LOGI(FNAME,"parseNMEA, PXCV %s", str);
 			float _te, _mc, _bugs,_ballast, _temp, _qnh, _baro, _pitot;
 			int _cs, _cruise;
 			sscanf( str, "$PXCV,%f,%f,%f,%f,%d,%f,%f,%f,%f%*[^*]*%2x", &_te, &_mc, &_bugs, &_ballast,&_cruise, &_temp, &_qnh, &_baro, &_pitot, &_cs  );

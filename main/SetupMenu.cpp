@@ -1112,6 +1112,7 @@ void SetupMenu::setup( )
 		batv->setHelp(PROGMEM "Option to display battery charge state either in Percentage e.g. 75% or Voltage e.g. 12.5V");
 		batv->addEntry( "Percentage");
 		batv->addEntry( "Voltage");
+		batv->addEntry( "Voltage Big");
 
 		bat->addMenu(blow);
 		bat->addMenu(bred);

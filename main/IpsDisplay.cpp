@@ -667,31 +667,39 @@ void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
 			red = (int)(( bat_red_volt.get() - bat_low_volt.get() )*100)/( bat_full_volt.get() - bat_low_volt.get() );
 		}
 		ucg->setColor( COLOR_WHITE );
-		ucg->drawBox( x-40,y-2, 36, 12  );  // Bat body square
-		ucg->drawBox( x-4, y+1, 3, 6  );      // Bat pluspole pimple
-		if ( charge > yellow )  // >25% grün
-			ucg->setColor( COLOR_GREEN ); // green
-		else if ( charge < yellow && charge > red )
-			ucg->setColor( COLOR_YELLOW ); //  yellow
-		else if ( charge < red )
-			ucg->setColor( COLOR_RED ); // red
-		else
-			ucg->setColor( COLOR_RED ); // red
-		int chgpos=(charge*32)/100;
-		if(chgpos <= 4)
-			chgpos = 4;
-		ucg->drawBox( x-40+2,y, chgpos, 8  );  // Bat charge state
-		ucg->setColor( DARK_GREY );
-		ucg->drawBox( x-40+2+chgpos,y, 32-chgpos, 8 );  // Empty bat bar
-		ucg->setColor( COLOR_WHITE );
-		ucg->setFont(ucg_font_fub11_hr);
-		ucg->setPrintPos(x-40,y-7);
-		if( battery_display.get() == 0 )
+		if ( battery_display.get() != BAT_VOLTAGE_BIG ){
+			ucg->drawBox( x-40,y-2, 36, 12  );  // Bat body square
+			ucg->drawBox( x-4, y+1, 3, 6  );      // Bat pluspole pimple
+			if ( charge > yellow )  // >25% grün
+				ucg->setColor( COLOR_GREEN ); // green
+			else if ( charge < yellow && charge > red )
+				ucg->setColor( COLOR_YELLOW ); //  yellow
+			else if ( charge < red )
+				ucg->setColor( COLOR_RED ); // red
+			else
+				ucg->setColor( COLOR_RED ); // red
+			int chgpos=(charge*32)/100;
+			if(chgpos <= 4)
+				chgpos = 4;
+			ucg->drawBox( x-40+2,y, chgpos, 8  );  // Bat charge state
+			ucg->setColor( DARK_GREY );
+			ucg->drawBox( x-40+2+chgpos,y, 32-chgpos, 8 );  // Empty bat bar
+			ucg->setColor( COLOR_WHITE );
+			ucg->setFont(ucg_font_fub11_hr);
+			ucg->setPrintPos(x-40,y-7);
+		}
+		if( battery_display.get() == BAT_PERCENTAGE )
 			ucg->printf("%3d%%  ", charge);
-		else {
+		else if ( battery_display.get() == BAT_VOLTAGE ) {
 			ucg->setPrintPos(x-50,y-8);
 			ucg->printf("%2.1f V", volt);
 		}
+		else if ( battery_display.get() == BAT_VOLTAGE_BIG ) {
+			ucg->setPrintPos(x-60,y);
+			ucg->setFont(ucg_font_fub14_hr);
+			ucg->printf("%2.1fV", volt);
+		}
+
 	}
 }
 

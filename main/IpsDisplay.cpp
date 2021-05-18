@@ -695,7 +695,7 @@ void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
 			ucg->printf("%2.1f V", volt);
 		}
 		else if ( battery_display.get() == BAT_VOLTAGE_BIG ) {
-			ucg->setPrintPos(x-60,y);
+			ucg->setPrintPos(x-60,y+8);
 			ucg->setFont(ucg_font_fub14_hr);
 			ucg->printf("%2.1fV", volt);
 		}

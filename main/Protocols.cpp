@@ -42,7 +42,7 @@ Protocols::~Protocols() {
 void Protocols::sendTemperatureChange( float temp ){
 	char str[20];
 	sprintf( str,"!xt,%2.1f\n", std::round(temp*10)/10 );
-	ESP_LOGI(FNAME,"New Temperature: %f, cmd: %s", temp, str );
+	// ESP_LOGI(FNAME,"New Temperature: %f, cmd: %s", temp, str );
 	Router::sendXCV(str);
 }
 

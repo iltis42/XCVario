@@ -512,11 +512,12 @@ void readTemp(void *pvParameters){
 					ESP_LOGI(FNAME,"Temperatur Sensor connected, temperature valid");
 					validTemperature = true;
 				}
-				temperature = std::round(t*10)/10;
+				temperature +=  (t - temperature) * 0.3; // A bit low pass as strategy against toggling
+				temperature = std::round(temperature*10)/10;
 				if( temperature != temp_prev ){
 					OV.sendTemperatureChange( temperature  );
+					ESP_LOGI(FNAME,"NEW temperature=%2.1f, prev T=%2.1f", temperature, temp_prev );
 					temp_prev = temperature;
-					ESP_LOGI(FNAME,"NEW temperature=%f  rint10: %f", temperature, temp_prev );
 				}
 			}
 			ESP_LOGV(FNAME,"temperature=%f", temperature );

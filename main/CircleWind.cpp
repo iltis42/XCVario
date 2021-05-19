@@ -223,6 +223,10 @@ void CircleWind::_calcWind()
 {
 	if( blue_enable.get() == WL_WLAN_CLIENT )
 		return;
+
+	// Invert maxVector angle
+	maxVector.setAngle( maxVector.getAngleDeg() + 180 );
+
 	float aDiff = Vector::angleDiffDeg( minVector.getAngleDeg(), maxVector.getAngleDeg() );
 	ESP_LOGI(FNAME,"calcWind, min/max diff %3.2f", aDiff );
 
@@ -255,8 +259,6 @@ void CircleWind::_calcWind()
 		return; // Measurement quality too low
 	}
 
-	// Invert maxVector angle
-	maxVector.setAngle( maxVector.getAngleDeg() + 180 );
 
 	// take both directions for min and max vector into account
 

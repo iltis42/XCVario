@@ -800,29 +800,34 @@ void IpsDisplay::drawAnalogScale( int val, int pos, float range, int offset ){
 static int wx0,wy0,wx1,wy1,wx2,wy2,wx3,wy3;
 static bool del_wind=false;
 
+
+// draw windsock style alike arrow white and red
 void IpsDisplay::drawWindArrow( float a, float speed, int type ){
-	const int X=40;
-	const int Y=280;
-	float si=sin(a);
-	float co=cos(a);
-	const int b=5;
-	int s=speed/2;
-	int xn_0 = X+s*si;
-	int yn_0 = Y-s*co;
+	const int X=80;
+	const int Y=220;
+	float si=sin(D2R(a));
+	float co=cos(D2R(a));
+	const int b=9; // width of the arrow
+	int s=speed*0.6;
+	if( s>30 )
+		s=30;   // maximum space we got on the display
 
-	int xn_1 = X-s*si - b*co;
-	int yn_1 = Y+s*co - b*si;
+	int xn_0 = rint(X-s*si);    // tip
+	int yn_0 = rint(Y+s*co);
 
-	int xn_3 = X-s*si + b*co;
-	int yn_3 = Y+s*co + b*si;
+	int xn_1 = rint(X+s*si - b*co);  // left back
+	int yn_1 = rint(Y-s*co - b*si);
 
-	int xn_2 = (X-s*si)*0.9;
-	int yn_2 = (Y+s*co)*0.9;
+	int xn_3 = rint(X+s*si + b*co);  // right back
+	int yn_3 = rint(Y-s*co + b*si);
 
-	ESP_LOGI(FNAME,"IpsDisplay::drawWindArrow  x0:%d y0:%d x1:%d y1:%d x2:%d y2:%d x3:%d y3:%d", (int)xn_0, (int)yn_0, (int)xn_1 ,(int)yn_1, (int)xn_2, (int)yn_2, (int)xn_3 ,(int)yn_3 );
+	int xn_2 = rint(X +(s*si*0.2));  // tip of second smaller arrow in red
+	int yn_2 = rint(Y -(s*co*0.2));
+
+	// ESP_LOGI(FNAME,"IpsDisplay::drawWindArrow  x0:%d y0:%d x1:%d y1:%d x2:%d y2:%d x3:%d y3:%d", (int)xn_0, (int)yn_0, (int)xn_1 ,(int)yn_1, (int)xn_2, (int)yn_2, (int)xn_3 ,(int)yn_3 );
 	if( del_wind ) {  // cleanup previous incarnation
 		ucg->setColor(  COLOR_BLACK  );
-		ucg->drawTetragon(wx0,wy0,wx1,wy1,wx2,wy2,wx3,wy3);
+		ucg->drawTriangle(wx0,wy0,wx1,wy1,wx3,wy3);
 		wx0 = xn_0;
 		wy0 = yn_0;
 		wx1 = xn_1;
@@ -831,10 +836,14 @@ void IpsDisplay::drawWindArrow( float a, float speed, int type ){
 		wy2 = yn_2;
 		wx3 = xn_3;
 		wy3 = yn_3;
-		del_wind = true; // we have already painted one, so next time cleanup old
 	}
-	ucg->setColor( COLOR_LBLUE );
-	ucg->drawTetragon(xn_0,yn_0,xn_1,yn_1,xn_2,yn_2,xn_3,yn_3);
+	if( s > 5 ) {  // draw white and red arror
+		ucg->setColor( COLOR_WHITE );
+		ucg->drawTriangle(xn_0,yn_0,xn_1,yn_1,xn_3,yn_3);
+		ucg->setColor(  COLOR_RED  );
+		ucg->drawTriangle(xn_2,yn_2,xn_1,yn_1,xn_3,yn_3);
+		del_wind = true;
+	}
 }
 
 void IpsDisplay::initULDisplay(){
@@ -1032,6 +1041,7 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 	xSemaphoreGive(spiMutex);
 }
 
+
 // Compass or Wind Display
 void IpsDisplay::drawCompass(){
 
@@ -1088,6 +1098,9 @@ void IpsDisplay::drawCompass(){
 			else
 				ucg->printf("%s  ", s);
 			prev_heading = winddir;
+			if( Flarm::gpsStatus() ){
+				drawWindArrow( Vector::angleDiffDeg( winddir, Flarm::getGndCourse() ), windspeed, 0 );
+			}
 		}
 	}
 	else if( compass_enable.get() && compass_calibrated.get() ){

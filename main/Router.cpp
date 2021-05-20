@@ -67,10 +67,12 @@ bool Router::pullMsg( RingBufCPP<SString, QUEUE_SIZE>& q, SString& s ){
 // XCVario Router
 void Router::sendXCV(char * s){
 	// ESP_LOGV( FNAME,"XCVario message %s",s);
-	SString xcv( s );
-	if( forwardMsg( xcv, xcv_rx_q ) )
-		ESP_LOGV(FNAME,"Received %d bytes from XCV", xcv.length() );
-	routeXCV();
+	if(  !Flarm::bincom  ){
+		SString xcv( s );
+		if( forwardMsg( xcv, xcv_rx_q ) )
+			ESP_LOGV(FNAME,"Received %d bytes from XCV", xcv.length() );
+		routeXCV();
+	}
 }
 
 // Route XCVario messages
@@ -115,7 +117,6 @@ void Router::routeS1(){
 /*	  } else {// fin modif gfm
 		ESP_LOGD(FNAME,"ttyS1 RX len: %d bytes, Q:%d", s1.length(), bt_tx_q.isFull() );
 		ESP_LOG_BUFFER_HEXDUMP(FNAME,s1.c_str(),s1.length(), ESP_LOG_DEBUG);
-		Protocols::parseNMEA( s1.c_str() );
 		if( blue_enable.get() == WL_WLAN )
 			if( forwardMsg( s1, wl_flarm_tx_q ))
 				ESP_LOGV(FNAME,"ttyS1 RX bytes %d forward to wl_flarm_tx_q port 8881", s1.length() );
@@ -128,7 +129,11 @@ void Router::routeS1(){
 		if( serial2_tx.get() & RT_S1 )
 			if( forwardMsg( s1, s2_tx_q ))
 				ESP_LOGV(FNAME,"ttyS1 RX bytes %d looped to s2_tx_q", s1.length() );
+<<<<<<< HEAD
 	  }*/
+=======
+		Protocols::parseNMEA( s1.c_str() );
+>>>>>>> refs/remotes/origin/HEAD
 	}
 }
 
@@ -138,7 +143,6 @@ void Router::routeS2(){
 	if( pullMsg( s2_rx_q, s2) ){
 		ESP_LOGD(FNAME,"ttyS2 RX len: %d bytes, Q:%d", s2.length(), bt_tx_q.isFull() );
 		ESP_LOG_BUFFER_HEXDUMP(FNAME,s2.c_str(),s2.length(), ESP_LOG_DEBUG);
-		Protocols::parseNMEA( s2.c_str() );
 		if( blue_enable.get() == WL_WLAN )
 			if( forwardMsg( s2, wl_aux_tx_q ))
 				ESP_LOGV(FNAME,"ttyS2 RX bytes %d forward to wl_aux_tx_q port 8882", s2.length() );
@@ -148,6 +152,7 @@ void Router::routeS2(){
 		if( serial2_tx.get() & RT_S1 )
 			if( forwardMsg( s2, s1_tx_q ))
 				ESP_LOGV(FNAME,"ttyS2 RX bytes %d looped to s1_tx_q", s2.length() );
+		Protocols::parseNMEA( s2.c_str() );
 	}
 }
 
@@ -158,13 +163,13 @@ void Router::routeWLAN(){
 		// Route received data from WLAN ports
 		if( pullMsg( wl_vario_rx_q, wlmsg) ){
 			ESP_LOGV(FNAME,"From WLAN port 8880 RX parse NMEA %s", wlmsg.c_str() );
-			Protocols::parseNMEA( wlmsg.c_str() );
 			if( serial1_tx.get() & RT_WIRELESS )
 				if( forwardMsg( wlmsg, s1_tx_q ) )
 					ESP_LOGV(FNAME,"Send to  device, TCP port 8880 received %d bytes", wlmsg.length() );
 			if( serial2_tx.get() & RT_WIRELESS )
 				if( forwardMsg( wlmsg, s2_tx_q ) )
 					ESP_LOGV(FNAME,"Send to ttyS2 device, TCP port 8880 received %d bytes", wlmsg.length() );
+			Protocols::parseNMEA( wlmsg.c_str() );
 		}
 		if( pullMsg( wl_flarm_rx_q, wlmsg ) ){
 			Flarm::parsePFLAX( wlmsg );
@@ -205,6 +210,7 @@ void Router::routeBT(){
 			ESP_LOGV(FNAME,"BT RX Matched a Borgelt command %s", bt.c_str() );
 			Protocols::parseNMEA( bt.c_str() );
 		}
+		bt.clear();
 	}
 }
 

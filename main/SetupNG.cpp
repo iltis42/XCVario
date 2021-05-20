@@ -131,7 +131,7 @@ SetupNG<float>		    password( "PASSWORD", 0 );
 SetupNG<int>		    autozero( "AUTOZERO", 0 );
 SetupNG<int>		    attitude_indicator("AHRS", 1 );
 SetupNG<int>		    ahrs_autozero("AHRSAZ", 0 );
-SetupNG<int>		    display_style("DISPLAY_STYLE", 0 );
+SetupNG<int>		    display_style("DISPLAY_STYLE", 1 );
 //SetupNG<int>               display_variant("DISPLAY_VARIANT", 0 );
 SetupNG<int>		    s2f_switch_type("S2FHWSW", S2F_HW_SWITCH );
 SetupNG<int>		    hardwareRevision("HWREV", HW_UNKNOWN );
@@ -180,7 +180,7 @@ SetupNG<float>          compass_i2c_cl("CP_I2C_CL", 100 );
 SetupNG<float>          wind_speed_delta( "WIND_V_Delta", 10 );
 SetupNG<float>          wind_heading_delta( "WIND_H_Delta", 5 );
 SetupNG<float>          wind_measurement_time( "WIND_MT", 10 );
-SetupNG<int> 			wind_enable( "WIND_ENA", 0);
+SetupNG<int> 			wind_enable( "WIND_ENA", WA_OFF );
 SetupNG<float> 			wind_as_min( "WIND_ASM", 25);
 SetupNG<int> 			s2f_with_gload( "S2G_GLOAD", 1 );       // considering g load in S2F
 SetupNG<int> 			s2f_blockspeed( "S2G_BLOCKSPEED", 0 );  // considering netto vario and g load for S2F or not
@@ -193,10 +193,10 @@ SetupNG<int> 			wk_label_minus_2( "WKLM2", 7);  // -2
 SetupNG<int> 			wk_label_minus_3( "WKLM3", 33); //  S
 SetupNG<float>       	flap_takeoff("FLAPTO", 1 );
 SetupNG<int> 			audio_disable( "AUDIS", 0 );
-SetupNG<int>			vario_mode("VAMOD", 0 );
+SetupNG<int>			vario_mode("VAMOD", CRUISE_NETTO );  // switch to netto mode when cruising
 SetupNG<int>			airspeed_sensor_type("PTYPE", PS_NONE, false);
 SetupNG<int>			cruise_audio_mode("CAUDIO", 0 );
-SetupNG<int>			netto_mode("NETMOD", 0 );
+SetupNG<int>			netto_mode("NETMOD", NETTO_RELATIVE );  // regard polar sink
 SetupNG<float>			v_max("VMAX", 270 );
 SetupNG<int>			gload_mode("GLMOD", GLOAD_OFF );
 SetupNG<float>			gload_pos_thresh("GLOADPT", 4 );
@@ -206,8 +206,8 @@ SetupNG<float>			gload_neg_limit("GLOADNL", -3 );
 SetupNG<float>			gload_pos_max("GLOADPM", 0 );
 SetupNG<float>			gload_neg_max("GLOADNM", 0 );
 SetupNG<int>        	display_variant("DISPLAY_VARIANT", 0 );
-
-
+SetupNG<int>        	compass_dev_auto("COMPASS_DEV", 0 );
+SetupNG<float> 			wind_as_calibration("WIND_AS_CAL", 1.0 );
 
 mpud::raw_axes_t zero_bias;
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );

@@ -45,7 +45,6 @@ public:
 		_S2FTE = 0;
 		_analog_adj = 0;
 		myS2F = 0;
-		_sensorBARO = 0;
 	}
 
 	void begin( PressureSensor *te,  PressureSensor *baro, S2F* s2f );

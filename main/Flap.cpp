@@ -584,12 +584,10 @@ void  Flap::initSensor(){
 	}
 }
 
-float Flap::g_force = 1.0;
-
 float Flap::getOptimum( float wks, int& wki )
 {
 	// Correct for current g load
-	g_force += (accelG[0] - g_force) * 0.02;  // lowpass filtering, to smooth display in rough air
+	float g_force = accelG[0];
 	if ( g_force < 0.3 ) {
 		g_force = 0.3; // Ignore meaningless values below 0.3g
 	}

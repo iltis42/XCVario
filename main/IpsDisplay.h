@@ -42,7 +42,6 @@ public:
 	static void drawArrowBox( int x, int y, bool are=true );
 	static void redrawValues();
 	static void drawCompass();
-	static void drawULCompass();
 	static inline Ucglib_ILI9341_18x240x320_HWSPI *getDisplay() { return ucg; };
 
 private:

@@ -54,7 +54,6 @@ private:
 	static int   tick;
 	static int   tickopt;
 	static bool  warn_color;
-	static float g_force;
 };
 
 #endif

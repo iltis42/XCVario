@@ -64,7 +64,8 @@ void DisplayDeviations::display( int mode )
       ucg->printf( "%03d\260", i * 45 );
       x += 50;
       ucg->setPrintPos( x, y );
-      ucg->printf( "Deviation %3.1f\260",  deviations[i]->get() );
+      ucg->printf( "Deviation %d\260",
+                   static_cast<int>(rintf(deviations[i]->get())) );
     }
 
   ucg->setPrintPos( 5, 290 );

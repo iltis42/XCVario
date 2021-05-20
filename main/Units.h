@@ -22,10 +22,6 @@ public:
 			return( kmh / 1.852 );
 	};
 
-	static inline float kmh2ms( float kmh ){
-			return( kmh * 0.277778 );
-	};
-
 	static inline float knots2kmh( float knots ){
 				return( knots * 1.852 );
 	};

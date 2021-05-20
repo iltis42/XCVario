@@ -10,17 +10,12 @@
 #pragma once
 
 #include <sys/time.h>
-#include "vector.h"
 
 class Wind
 {
 public:
 	Wind();
 	virtual ~Wind() {};
-
-	void begin();
-
-	void tick();
 
 	/**
 	 * Get time in ms since 1.1.1970
@@ -49,21 +44,16 @@ public:
 	 * Return the last calculated wind. If return result is true, the wind data
 	 * are valid otherwise false.
 	 */
-	bool getWind( int* direction, float* speed, int *age )
+	bool getWind( int* direction, float* speed )
 	{
 		*direction = int( windDir + 0.5 );
 		*speed = float( windSpeed );
-		*age = _age;
 		return ( windDir != -1.0 && windSpeed != -1.0 );
 	}
 
 	void calculateWind( double tc, double gs, double th, double tas  );
-	static double calculateSpeed( double angle1, double speed1, double angle2, double speed2  );
-	static double calculateAngle( double angle1, double speed1, double angle2, double speed2  );
-
-	void newCirclingWind( float angle, float speed );
-
 	void test();
+	double meanAngleEckhard( double angle, double average );
 
 	/**
 	 * Calculate the smaller bisector value from angles.
@@ -77,24 +67,13 @@ public:
 	/**
 	 * Normalize angle in to the range 0...359 degree.
 	 */
-	static inline double normAngle( double angle ) {
+	double normAngle( double angle ) {
 		while( angle < 0. )
 			angle += 360.;
 		while( angle >= 360. )
 			angle -= 360.;
 		return angle;
 	}
-
-	int getAge() { return _age; }
-	float getAsCorrection() { return airspeedCorrection; }
-	float getAngle() { return windDir; };
-	float getSpeed() { return windSpeed; };
-	float getAsJitter() { return airspeed_jitter; }
-	float getGsJitter() { return groundspeed_jitter; }
-	float getDeviation() { return deviation_cur; }
-	bool  getGpsStatus() { return gpsStatus; }
-	float getMH() { return magneticHeading; }
-	const char *getStatus() { return status; }
 
 private:
 
@@ -116,23 +95,10 @@ private:
 	double sumGroundSpeed;     // sum of GS in km/h
 	double averageTH;          // sum of Compass true heading
 	double averageTC;          // sum of GPS heading (true course)
-	double averageGS;		   // average ground speed
-	double tcStart;            // start value of true course observation window
-	double mhStart;			   // magnetic heading start value for observation window
+	double tcMin;              // lower limit of true course observation window
+	double tcMax;              // upper limit of true course observation window
+	double mhMin;              // lower limit of magnetic heading observation window
+	double mhMax;              // upper limit of magnetic heading observation window
 	double windDir;            // calculated wind direction
 	double windSpeed;          // calculated wind speed in Km/h
-	bool   lowAirspeed;
-	float  circlingWindDir;
-	float  circlingWindSpeed;
-	int    circlingWindAge;
-	float  airspeedCorrection;
-	int    _age;
-	float  airspeed_jitter;
-	float  groundspeed_jitter;
-	float  airspeed_jitter_tmp;
-	float  groundspeed_jitter_tmp;
-	bool   gpsStatus;
-	float  deviation_cur;
-	float  magneticHeading;
-	const char *status;
 };

@@ -83,7 +83,6 @@ private:
     static int tickmod;
     static int volume_change;
     static bool _chopping;
-    static bool prev_alarm;
 };
 
 

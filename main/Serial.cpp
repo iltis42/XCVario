@@ -20,7 +20,6 @@
 #include "Router.h"
 #include "Serial.h"
 #include "Flarm.h"
-#include "Protocols.h"
 
 /* Note that the standard NMEA 0183 baud rate is only 4.8 kBaud.
 Nevertheless, a lot of NMEA-compatible devices can properly work with
@@ -35,16 +34,17 @@ some sentences might be lost or truncated.
 
 // Option to simulate FLARM sentences
 const char *flarm[] = {
-		"$PFLAU,3,1,2,1,1,-60,2,-100,755,1234*\n",
-		"$PFLAU,3,1,2,1,1,-20,2,-100,655,1234*\n",
-		"$PFLAU,3,1,2,1,1,-10,2,-80,455,1234*\n",
-		"$PFLAU,3,1,2,1,2,10,2,-40,155,1234*\n",
-		"$PFLAU,3,1,2,1,2,20,2,-20,155,1234*\n",
-		"$PFLAU,3,1,2,1,3,30,2,0,155,1234*\n",
-		"$PFLAU,3,1,2,1,3,60,2,20,255,1234*\n",
-		"$PFLAU,3,1,2,1,2,80,2,40,455,1234*\n",
-		"$PFLAU,3,1,2,1,1,90,2,80,855,1234*\n",
-		"$PFLAU,3,1,2,1,1,90,2,80,1555,1234*\n"
+		"$PFLAU,3,1,2,1,1,-60,2,-100,755,1234*12\n",
+		"$PFLAU,3,1,2,1,1,-20,2,-100,655,1234*12\n",
+		"$PFLAU,3,1,2,1,1,-10,2,-80,455,1234*12\n",
+		"$PFLAU,3,1,2,1,2,10,2,-40,155,1234*12\n",
+		"$PFLAU,3,1,2,1,2,20,2,-20,155,1234*12\n",
+		"$PFLAU,3,1,2,1,3,30,2,0,155,1234*12\n",
+		"$PFLAU,3,1,2,1,3,60,2,20,255,1234*12\n",
+		"$PFLAU,3,1,2,1,2,80,2,40,455,1234*12\n",
+		"$PFLAU,3,1,2,1,1,90,2,80,855,1234*12\n",
+		"$PFLAU,3,1,2,1,1,90,2,80,1555,1234*12\n"
+
 };
 /*
 const char *gps[] = {
@@ -77,11 +77,7 @@ void Serial::serialHandlerS1(void *pvParameters){
 		}
 		if( sim < 10 ){
 			if( sim >= 0 ){
-				int cs = Protocols::calcNMEACheckSum( (char *)flarm[sim] );
-				char str[80];
-				int i = strlen(flarm[sim]);
-				sprintf( str, "%s%02X\r\n", flarm[sim], cs );
-				SString sf( str );
+				SString sf(  flarm[sim] );
 				Router::forwardMsg( sf, s1_rx_q );
 				ESP_LOGI(FNAME,"Serial FLARM SIM: %s",  sf.c_str() );
 			}

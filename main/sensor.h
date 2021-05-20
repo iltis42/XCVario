@@ -31,7 +31,6 @@ extern float getTE();
 void doAudio( float te );
 
 extern I2C_t& i2c;
-extern I2C_t& i2c_0;
 extern AnalogInput *AnalogInWk;
 
 extern float temperature;

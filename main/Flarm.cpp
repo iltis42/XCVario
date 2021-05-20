@@ -5,7 +5,6 @@
 #include "ESPAudio.h"
 #include "IpsDisplay.h"
 #include "sensor.h"
-#include "CircleWind.h"
 
 int Flarm::RX = 0;
 int Flarm::TX = 0;
@@ -18,7 +17,7 @@ int Flarm::RelativeVertical = 0;
 int Flarm::RelativeDistance = 0;
 double Flarm::gndSpeedKnots = 0;
 double Flarm::gndCourse = 0;
-bool Flarm::gpsOK = false;
+bool Flarm::gpsOK = true;
 char Flarm::ID[8] = "";
 int Flarm::bincom = 0;
 Ucglib_ILI9341_18x240x320_HWSPI* Flarm::ucg;
@@ -76,12 +75,10 @@ int Flarm::oldBear = 0;
 int Flarm::alarmOld=0;
 int Flarm::tick=0;
 int Flarm::timeout=0;
-int Flarm::_numSat=0;
 
 void Flarm::progress(){  // once per second
 	if( timeout )
 		timeout--;
-
 }
 
 /*
@@ -109,97 +106,25 @@ void Flarm::parseGPRMC( char *gprmc ) {
 	float magvar;
 	char dir;
 	int cs;
-	int calc_cs=Protocols::calcNMEACheckSum( gprmc );
-	cs = Protocols::getNMEACheckSum( gprmc );
-	if( cs != calc_cs ){
-		ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", gprmc, calc_cs, cs );
-		return;
-	}
+
 	// ESP_LOGI(FNAME,"parseGPRMC: %s", gprmc );
 	sscanf( gprmc, "$GPRMC,%f,%c,%f,N,%f,E,%lf,%lf,%d,%f,%c*%02x",&time,&warn,&lat,&lon,&gndSpeedKnots,&gndCourse,&date,&magvar,&dir,&cs);
-	if( wind_enable.get() != WA_OFF ){
-		// ESP_LOGI(FNAME,"Wind enable, gpsOK %d", gpsOK );
-		if( warn == 'A' ) {
-			if( gpsOK == false ){
-				gpsOK = true;
-				ESP_LOGI(FNAME,"GPRMC, GPS status changed to good: %s", gprmc );
-				CircleWind::gpsStatusChange( true);
-			}
-			theWind.calculateWind();
-			// ESP_LOGI(FNAME,"Track: %3.2f, GPRMC: %s", gndCourse, gprmc );
-			CircleWind::newSample( Vector( gndCourse, Units::knots2kmh( gndSpeedKnots ) ) );
-		}
-		else{
-			if( gpsOK == true  ){
-				gpsOK = false;
-				ESP_LOGI(FNAME,"GPRMC, GPS status changed to bad: %s", gprmc );
-				CircleWind::gpsStatusChange( false );
-			}
-			ESP_LOGI(FNAME,"GPRMC, GPS not OK: %s", gprmc );
-		}
+	if( warn == 'A' ) {
+		gpsOK = true;
+		theWind.calculateWind();
 	}
+	else{
+		gpsOK = false;
+		ESP_LOGI(FNAME,"GPRMC, GPS not OK: %s", gprmc );
+	}
+
 	// ESP_LOGI(FNAME,"parseGPRMC() GPS: %d, Speed: %3.1f knots, Track: %3.1f° ", gpsOK, gndSpeedKnots, gndCourse );
-}
-
-/*
-  GPGGA
-
-hhmmss.ss = UTC of position
-llll.ll = latitude of position
-a = N or S
-yyyyy.yy = Longitude of position
-a = E or W
-x = GPS Quality indicator (0=no fix, 1=GPS fix, 2=Dif. GPS fix)
-xx = number of satellites in use
-x.x = horizontal dilution of precision
-x.x = Antenna altitude above mean-sea-level
-M = units of antenna altitude, meters
-x.x = Geoidal separation
-M = units of geoidal separation, meters
-x.x = Age of Differential GPS data (seconds)
-xxxx = Differential reference station ID
-
-eg. $GPGGA,hhmmss.ss,llll.ll,a,yyyyy.yy,a,x,xx,x.x,x.x,M,x.x,M,x.x,xxxx*hh
-    $GPGGA,121318.00,4857.58750,N,00856.95715,E,1,05,3.87,247.7,M,48.0,M,,*52
- */
-
-
-void Flarm::parseGPGGA( char *gpgga ) {
-	float time;
-	float lat,lon;
-	int Q;
-	int numSat;
-	float dilutionH;
-	float antennaAlt;
-	float geoidalSep;
-	float age;
-	int ID;
-	int cs;
-	ESP_LOGV(FNAME,"parseGPGGA: %s", gpgga );
-	int calc_cs=Protocols::calcNMEACheckSum( gpgga );
-	cs = Protocols::getNMEACheckSum( gpgga );
-	if( cs != calc_cs ){
-		ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", gpgga, calc_cs, cs );
-		return;
-	}
-	sscanf( gpgga, "$GPGGA,%f,%f,N,%f,E,%d,%d,%f,%f,M,%f,M,%f,%d*%02x",&time,&lat,&lon,&Q,&numSat,&dilutionH, &antennaAlt, &geoidalSep, &age, &ID, &cs);
-
-	if( numSat != _numSat && wind_enable.get() != WA_OFF ){
-		_numSat = numSat;
-		CircleWind::newConstellation( numSat );
-	}
 }
 
 
 void Flarm::parsePFLAU( char *pflau ) {
 	int cs;
 	int id;
-	int calc_cs=Protocols::calcNMEACheckSum( pflau );
-	cs = Protocols::getNMEACheckSum( pflau );
-	if( cs != calc_cs ){
-		ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", pflau, calc_cs, cs );
-		return;
-	}
 	sscanf( pflau, "$PFLAU,%d,%d,%d,%d,%d,%d,%d,%d,%d,%x*%02x",&RX,&TX,&GPS,&Power,&AlarmLevel,&RelativeBearing,&AlarmType,&RelativeVertical,&RelativeDistance,&id,&cs);
 	// ESP_LOGI(FNAME,"parsePFLAU() RB: %d ALT:%d  DIST %d",RelativeBearing,RelativeVertical, RelativeDistance );
 	sprintf( ID,"%06x", id );
@@ -296,11 +221,10 @@ void Flarm::initFlarmWarning(){
 }
 
 void Flarm::drawFlarmWarning(){
-	// ESP_LOGI(FNAME,"drawFlarmWarning");
+	ESP_LOGI(FNAME,"drawFlarmWarning");
 	if( !( screens_init & INIT_DISPLAY_FLARM ) ){
 		initFlarmWarning();
 		screens_init |= INIT_DISPLAY_FLARM;
-		ESP_LOGI(FNAME,"init drawFlarmWarning");
 	}
 	tick++;
 	if( tick > 500 ) // age FLARM alarm in case there is no more input  50 per second = 10 sec

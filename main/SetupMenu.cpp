@@ -25,8 +25,6 @@
 #include "SetupMenuValFloat.h"
 #include "DisplayDeviations.h"
 #include "ShowCompassSettings.h"
-#include "ShowCirclingWind.h"
-#include "ShowStraightWind.h"
 #include "MenuEntry.h"
 #include "Compass.h"
 #include "CompassMenu.h"
@@ -67,11 +65,6 @@ int gload_reset( SetupMenuSelect * p ){
 	return 0;
 }
 
-int compass_ena( SetupMenuSelect * p ){
-	if( compass_enable.get() )
-		compass.begin();
-	return 0;
-}
 
 int update_s2f_speed(SetupMenuValFloat * p)
 {
@@ -194,10 +187,7 @@ int bal_adj( SetupMenuValFloat * p )
 	p->ucg->printf("%u liter  ", liter);
 	xSemaphoreGive(spiMutex );
 	p->ucg->setFont(ucg_font_ncenR14_hr);
-	if( blue_enable.get() == WL_WLAN_CLIENT )
-		OV.sendBallastChange( ballast.get(), false );
-	else
-		OV.sendBallastChange( ballast.get(), true );
+	OV.sendBallastChange( ballast.get() );
 	return 0;
 }
 
@@ -210,7 +200,6 @@ int bug_adj( SetupMenuValFloat * p ){
 int mc_adj( SetupMenuValFloat * p )
 {
 	Speed2Fly.change_mc_bal();
-	OV.sendMcChange( MC.get() );
 	return 0;
 }
 
@@ -834,8 +823,11 @@ void SetupMenu::setup( )
 		SetupMenu * compassMenu = new SetupMenu( "Compass" );
 		MenuEntry* compassME = compassWindME->addMenu( compassMenu );
 
+		SetupMenu * windMenu = new SetupMenu( "Wind" );
+		windMenu->setHelp( PROGMEM "Setup wind calculation parameters", 280 );
+		MenuEntry* windME = compassWindME->addMenu( windMenu );
 
-		SetupMenuSelect * compSensor = new SetupMenuSelect( "Sensor Option", false, compass_ena, true, &compass_enable);
+		SetupMenuSelect * compSensor = new SetupMenuSelect( "Sensor Option", false, 0, true, &compass_enable );
 		compSensor->addEntry( "Disable");
 		compSensor->addEntry( "Enable");
 
@@ -861,12 +853,6 @@ void SetupMenu::setup( )
 
 		cd->setHelp( PROGMEM "Set compass declination in degrees" );
 		compassME->addMenu( cd );
-
-		SetupMenuSelect * devMenuA = new SetupMenuSelect( "AutoDeviation", false, 0, true, &compass_dev_auto );
-		devMenuA->setHelp( "Automatic adaptive deviation and precise airspeed evaluation method using data from circling wind");
-		devMenuA->addEntry( "Disable");
-		devMenuA->addEntry( "Enable");
-		compassME->addMenu( devMenuA );
 
 		SetupMenu * devMenu = new SetupMenu( "Setup Deviations" );
 		devMenu->setHelp( "Compass Deviations", 280 );
@@ -933,20 +919,12 @@ void SetupMenu::setup( )
 		ShowCompassSettings* scs = new ShowCompassSettings( "Show Settings" );
 		compassME->addMenu( scs );
 
-
-
 		// Wind speed observation window
 		SetupMenuSelect * windcal = new SetupMenuSelect( "Wind Calculation", false, 0, true, &wind_enable );
 		windcal->addEntry( "Disable");
-		windcal->addEntry( "Straight");
-		windcal->addEntry( "Circling");
-		windcal->addEntry( "Both");
-		windcal->setHelp(PROGMEM "Enable Wind calculation for straight flight (needs compass), circling or both and display wind in reto display style");
-		compassWindME->addMenu( windcal );
-
-		SetupMenu * strWindM = new SetupMenu( "Straight Wind" );
-		compassWindME->addMenu( strWindM );
-		strWindM->setHelp( PROGMEM "Straight flight wind calculation needs compass module active", 220 );
+		windcal->addEntry( "Enable");
+		windcal->setHelp(PROGMEM "Enable Wind calculation and display wind in reto display style");
+		windME->addMenu( windcal );
 
 		SetupMenuValFloat *smvf = new SetupMenuValFloat( "Speed tolerance",
 				nullptr,
@@ -959,7 +937,7 @@ void SetupMenu::setup( )
 				&wind_speed_delta );
 
 		smvf->setHelp( PROGMEM "Setup wind speed tolerance value" );
-		strWindM->addMenu( smvf );
+		windME->addMenu( smvf );
 
 		// Wind heading observation window
 		smvf = new SetupMenuValFloat( "Heading tolerance",
@@ -973,7 +951,7 @@ void SetupMenu::setup( )
 				&wind_heading_delta );
 
 		smvf->setHelp( PROGMEM "Setup heading tolerance value" );
-		strWindM->addMenu( smvf );
+		windME->addMenu( smvf );
 
 		// Wind measurement time
 		smvf = new SetupMenuValFloat( "Wind after",
@@ -987,30 +965,22 @@ void SetupMenu::setup( )
 				&wind_measurement_time );
 
 		smvf->setHelp( PROGMEM "Setup wind calculation time" );
-		strWindM->addMenu( smvf );
+		windME->addMenu( smvf );
 
-		SetupMenuValFloat *smgsm = new SetupMenuValFloat( "Minimum Airspeed", nullptr, sunit.c_str(), 0, 60.0, 1.0, nullptr, false, &wind_as_min );
-		strWindM->addMenu( smgsm );
-		smgsm->setHelp(PROGMEM "Minimum Airspeed to start wind calculation");
+    SetupMenuValFloat *smgsm = new SetupMenuValFloat( "Minimum Airspeed", nullptr, sunit.c_str(), 0, 60.0, 1.0, nullptr, false, &wind_as_min );
+    windME->addMenu( smgsm );
+    smgsm->setHelp(PROGMEM "Minimum Airspeed to start wind calculation");
 
-
-		ShowStraightWind* ssw = new ShowStraightWind( "Straight Wind Status" );
-		strWindM->addMenu( ssw );
-
-
-		sms = new SetupMenuSelect( "Reset",	false, windResetAction, false, 0 );
+    sms = new SetupMenuSelect( "Reset",
+				false,
+				windResetAction,
+				false,
+				0 );
 
 		sms->setHelp( "Reset all wind data to defaults" );
 		sms->addEntry( "Cancel" );
 		sms->addEntry( "Reset" );
-		strWindM->addMenu( sms );
-
-		SetupMenu * cirWindM = new SetupMenu( "Circling Wind" );
-		compassWindME->addMenu( cirWindM );
-
-		// Show Circling Wind Status
-		ShowCirclingWind* scw = new ShowCirclingWind( "Circling Wind Status" );
-		cirWindM->addMenu( scw );
+		windME->addMenu( sms );
 
 		SetupMenuSelect * btm = new SetupMenuSelect( "Wireless", true, 0, true, &blue_enable );
 		btm->setHelp( PROGMEM "Activate type wireless interface to connect navigation devices running e.g. XCSoar, or to another XCVario as client");
@@ -1235,8 +1205,8 @@ void SetupMenu::setup( )
 		als->addEntry( "TE");
 		als->addEntry( "Baro");
 
-		SetupMenuValFloat * spc = new SetupMenuValFloat( "AS Calibration", 0, "%", -60, 60, 1, 0, false, &speedcal  );
-		spc->setHelp(PROGMEM"Calibration of airspeed sensor (AS). Normally not needed, hence pressure probes may have systematic error");
+		SetupMenuValFloat * spc = new SetupMenuValFloat( "IAS Calibration", 0, "%", -60, 60, 1, 0, false, &speedcal  );
+		spc->setHelp(PROGMEM"Calibration of indicated airspeed (IAS). Normally not needed, hence pressure probes may have systematic error");
 		aia->addMenu( spc );
 
 		SetupMenuSelect * auze = new SetupMenuSelect( "AutoZero AS Sensor",	true, 0, true, &autozero );

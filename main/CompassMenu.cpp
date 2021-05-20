@@ -88,7 +88,7 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 
 	float heading = 0.0;
 	short hi = 0;
-	float deviation = 0;
+	short deviation = 0;
 
 	while( !p->_rotary->readSwitch() )
 	{
@@ -111,7 +111,7 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 		deviation = direction - hi;
 		if( deviation < -180 )
 			deviation += 360;
-		p->ucg->printf( "Deviation: %3.2f\260    ", deviation );
+		p->ucg->printf( "Deviation: %d\260    ", deviation );
 		xSemaphoreGive(spiMutex);
 		delay( 100 );
 	}
@@ -127,7 +127,7 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 	deviations[diridx]->set( deviation );
 
 	// Update compass interpolation data
-	Compass::deviationReload();
+	Compass::setupInterpolationData();
 
 	ESP_LOGI( FNAME, "Compass deviation action for %s is finished",
 			p->getEntry() );
@@ -160,11 +160,8 @@ int CompassMenu::resetDeviationAction( SetupMenuSelect *p )
 		ESP_LOGI( FNAME, "All compass deviations values were reset" );
 		delay( 1000 );
 	}
-	// Reset also AS calibration
-	wind_as_calibration.set( 1.0 );
-	// Reload compass interpolation data
-	Compass::loadDeviationMap();
-	Compass::deviationReload();
+	// Reset compass interpolation data
+	Compass::setupInterpolationData();
 
 	p->clear();
 	p->ucg->setFont( ucg_font_fur14_hf );

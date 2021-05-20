@@ -15,7 +15,6 @@ public:
 	static void parsePFLAA( char *pflaa );
 	static void parsePFLAX( SString &msg );
 	static void parseGPRMC( char *gprmc );
-	static void parseGPGGA( char *gpgga );
  	static inline int alarmLevel(){ return AlarmLevel; };
  	static void drawFlarmWarning();
  	static void initFlarmWarning();
@@ -55,7 +54,6 @@ private:
 	static int alarmOld;
 	static int tick;
 	static int timeout;
-	static int _numSat;
 };
 
 #endif

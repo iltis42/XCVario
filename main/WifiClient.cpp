@@ -167,7 +167,7 @@ void WifiClient::tcp_client(void *setup){
         if( config->sock < 0 ){
         	config->sock = socket(AF_INET, SOCK_STREAM, 0);
         	if(config->sock < 0) {
-        		ESP_LOGE(FNAME, "Failed to allocate socket: %s, port %d", strerror(errno), config->port );
+        		ESP_LOGE(FNAME, "Failed to allocate socket, %s", strerror(errno) );
         		vTaskDelay(2000 / portTICK_PERIOD_MS);
         		config->connected = false;
         		continue;
@@ -175,7 +175,7 @@ void WifiClient::tcp_client(void *setup){
         	// fcntl(config->sock, F_SETFL, O_NONBLOCK);
         	ESP_LOGI(FNAME, "allocated socket %d", config->sock);
         	if(connect(config->sock, (struct sockaddr *)&tcpServerAddr, sizeof(tcpServerAddr)) != 0) {
-        		ESP_LOGE(FNAME, "socket connect failed: %s, port %d", strerror(errno ), config->port );
+        		ESP_LOGE(FNAME, "socket connect failed, %s", strerror(errno ));
         		close(config->sock);
         		config->sock = -1;
         		config->connected = false;
@@ -202,13 +202,13 @@ void WifiClient::tcp_client(void *setup){
         SString rec;
         num = recv(config->sock, rec.c_str(), SSTRLEN-1, MSG_DONTWAIT );
         if(num > 0){
-        	rec.setLen( num+1 );
+        	rec.setLen( num );
         	ESP_LOGV(FNAME, "socket read %d bytes: %s", num, rec.c_str() );
         	Router::forwardMsg( rec, *(config->rxbuf) );
         	timeout = 0;
         	config->connected = true;
         }
-        vTaskDelay(50 / portTICK_PERIOD_MS);
+        vTaskDelay(30 / portTICK_PERIOD_MS);
     }
     ESP_LOGI(FNAME, "tcp_client task closed\n");
 }
@@ -217,6 +217,6 @@ void WifiClient::start()
 {	
 	ESP_LOGI(FNAME, "start wifi_client"  );
     initialise_wifi();
-    xTaskCreate(&tcp_client,"tcp_client_xcv",4096,&XCVario,15,NULL);
-    xTaskCreate(&tcp_client,"tcp_client_flarm",4096,&FLARM,15,NULL);
+    xTaskCreate(&tcp_client,"tcp_client_xcv",4096,&XCVario,5,NULL);
+    xTaskCreate(&tcp_client,"tcp_client_flarm",4096,&FLARM,5,NULL);
 }

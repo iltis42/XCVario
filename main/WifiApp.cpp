@@ -76,23 +76,11 @@ int create_socket( int port ){
 
 // Multi client TCP server with dynamic updated list of clients connected
 
-void on_client_connect( int port, int msg ){
+void on_client_connect( int port ){
 	if( port == 8880 ){ // have a client to XCVario protocol connected
-		ESP_LOGI(FNAME, "on_client_connect: Send MC, Ballast, Bugs, etc");
-		if( msg == 1 )
-			OV.sendQNHChange( QNH.get() );
-		if( msg == 2 ) {
-			if( blue_enable.get() == WL_WLAN_CLIENT )
-				OV.sendBallastChange( ballast.get(), false );
-			else
-				OV.sendBallastChange( ballast.get(), true );
-		}
-		if( msg == 3 )
-			OV.sendBugsChange( bugs.get() );
-		if( msg == 4 )
-			OV.sendMcChange( MC.get() );
-		if( msg == 5 )
-			OV.sendTemperatureChange( temperature );
+		OV.sendQNHChange( QNH.get() );
+		OV.sendBallastChange( ballast.get() );
+		OV.sendBugsChange( bugs.get() );
 	}
 }
 
@@ -102,7 +90,6 @@ void socket_server(void *setup) {
 	struct sockaddr_in clientAddress[10];  // we support max 10 clients try to connect same time
 	socklen_t clientAddressLength = sizeof(struct sockaddr_in);
 	std::list<int>  clients;
-	int num_send = 0;
 	int sock = create_socket( config->port );
 	if( sock < 0 ) {
 		ESP_LOGE(FNAME, "Socket creation for %d port FAILED: Abort task", config->port );
@@ -116,8 +103,8 @@ void socket_server(void *setup) {
 			int new_client = accept(sock, (struct sockaddr *)&clientAddress[clients.size()], &clientAddressLength);
 			if( new_client >= 0 && clients.size() < 10 ){
 				clients.push_back( new_client );
-				num_send = 0;
 				ESP_LOGV(FNAME, "New sock client: %d, number of clients: %d", new_client, clients.size()  );
+				on_client_connect( config->port );
 			}
 			if( clients.size() ) {
 				SString s;
@@ -141,10 +128,11 @@ void socket_server(void *setup) {
 								ESP_LOGW(FNAME, "tcp client %d (port %d) send err: %s, remove!", client,  config->port, strerror(errno) );
 								close(client);
 								client_dead = client;
-								num_send = 0;
 								// check on sending and remove from list if client has died
 							}
-							// ESP_LOGI(FNAME, "tcp send to client %d (port: %d), bytes %d success", client, config->port, num );
+							else{
+								// ESP_LOGI(FNAME, "tcp send to client %d (port: %d), bytes %d success", client, config->port, num );
+							}
 						}
 					}
 					if( !client_dead ){
@@ -156,14 +144,7 @@ void socket_server(void *setup) {
 							Router::forwardMsg( tcprx, *(config->rxbuf) );
 							ESP_LOGV(FNAME, "tcp read from port %d size: %d data: %s", config->port, sizeRead, tcprx.c_str() );
 						}
-						if( config->port == 8880 ){
-							num_send ++;
-							if( num_send < 6 ){
-								on_client_connect( config->port, num_send );
-							}
-						}
 					}
-
 				}
 				if( client_dead )
 					clients.remove( client_dead );

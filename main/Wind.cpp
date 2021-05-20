@@ -64,42 +64,6 @@ void Wind::begin(){
 }
 
 /**
- * Calculate the smaller bisector value from angles.
- *
- * @param angle as degree 0...359
- * @param average as degree 0...359
- * @return average angle as degree 0...359
- */
-double Wind::meanAngle( double angle, double average )
-{
-	double bisector = 0.0;
-	double result = 0.0;
-	double absDiff = fabs( angle - average );
-
-	if( absDiff > 180.0 ) {
-		bisector = ( 360.0 - absDiff ) / 2.0;
-
-		if( angle <= average ) {
-			result = average + bisector;
-		}
-		else {
-			result = average - bisector;
-		}
-	}
-	else {
-		bisector = absDiff / 2.0;
-
-		if( angle <= average ) {
-			result = angle + bisector;
-		}
-		else {
-			result = angle - bisector;
-		}
-	}
-	return normAngle( result );
-}
-
-/**
  * Starts a new wind measurement cycle.
  */
 void Wind::start()
@@ -120,8 +84,6 @@ void Wind::start()
 		gpsStatus = false;
 		return;
 	}
-
-
 	nunberOfSamples = 1;
 	measurementStart = getMsTime();
 	tas = double( getTAS() );
@@ -142,10 +104,9 @@ void Wind::start()
 	averageTH = trueHeading;
 
 	// Define start of TH and TC observation window
-	mhStart = normAngle( trueHeading );
-    tcStart = normAngle( trueCourse );
+	mhStart = Vector::normalize( trueHeading );
+    tcStart = Vector::normalize( trueCourse );
 }
-
 
 void Wind::tick(){
 	_age++;
@@ -179,7 +140,6 @@ bool Wind::calculateWind()
 		status="Bad GPS";
 		return false;
 	}
-
 	// Get current ground speed in km/h
 	double cgs = Units::knots2kmh( Flarm::getGndSpeedKnots() );
 	float gsdelta = fabs( groundSpeed - cgs );
@@ -207,7 +167,6 @@ bool Wind::calculateWind()
 	}
 	if( airspeed_jitter_tmp < tasdelta )
 		airspeed_jitter_tmp = tasdelta;
-
 	// ESP_LOGI(FNAME,"++++++ TAS %3.1f GS: %3.1f GSJ%3.2f  ASJ %3.2f", tas, cgs, groundspeed_jitter, airspeed_jitter );
 
 	// Check, if we have a AS value > minimum, default is 25 km/h.
@@ -229,10 +188,6 @@ bool Wind::calculateWind()
 			lowAirspeed = false;
 		}
 	}
-
-
-
-
 	// Get current true heading from compass.
 	bool ok = true;
 	double cth = Compass::rawHeading( &ok );
@@ -304,15 +259,8 @@ bool Wind::calculateWind()
 		// WCA in radians
 		double tas = sumTas / nos;
 		averageGS = sumGroundSpeed / nos;
-		if( averageTH > 360 )
-			averageTH -= 360;
-		if( averageTH < 0 )
-			averageTC += 360;
-		if( averageTC > 360 )
-			averageTC -= 360;
-		if( averageTC < 0 )
-			averageTC += 360;
-
+		averageTH = Vector::normalize( averageTH );
+		averageTC = Vector::normalize( averageTC );
 		airspeed_jitter = airspeed_jitter_tmp;
 		groundspeed_jitter = groundspeed_jitter_tmp;
 		airspeed_jitter_tmp = 0;
@@ -344,7 +292,7 @@ double Wind::calculateAngle( double angle1, double speed1, double angle2, double
 	double wca = Vector::normalize( thrad - tcrad );
 
 	double ang = tcrad + atan2( speed2 * sin( wca ), speed2 * cos( wca ) - speed1 );
-	return( normAngle( R2D( ang ) ) );  // convert radian to degree
+	return( Vector::normalize( R2D( ang ) ) );  // convert radian to degree
 }
 
 void Wind::calculateWind( double tc, double gs, double th, double tas  ){

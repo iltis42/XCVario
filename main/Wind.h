@@ -66,31 +66,8 @@ public:
 	void calculateWind( double tc, double gs, double th, double tas  );
 	static double calculateSpeed( double angle1, double speed1, double angle2, double speed2  );
 	static double calculateAngle( double angle1, double speed1, double angle2, double speed2  );
-
 	void newCirclingWind( float angle, float speed );
-
 	void test();
-
-	/**
-	 * Calculate the smaller bisector value from angles.
-	 *
-	 * @param angle as degree 0...359
-	 * @param average as degree 0...359
-	 * @return average angle as degree 0...359
-	 */
-	double meanAngle( double angle, double average );
-
-	/**
-	 * Normalize angle in to the range 0...359 degree.
-	 */
-	static inline double normAngle( double angle ) {
-		while( angle < 0. )
-			angle += 360.;
-		while( angle >= 360. )
-			angle -= 360.;
-		return angle;
-	}
-
 	int getAge() { return _age; }
 	float getAsCorrection() { return airspeedCorrection; }
 	float getAngle() { return windDir; };

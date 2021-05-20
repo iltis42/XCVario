@@ -160,12 +160,12 @@ float Compass::getDeviation( float heading )
 static int samples = 0;
 
 // new Deviation from reverse calculated TAWC Wind measurement
-void Compass::newDeviation( float measured_heading, float desired_heading, float airspeedCalibration ){
+bool Compass::newDeviation( float measured_heading, float desired_heading, float airspeedCalibration ){
 	double deviation = Vector::angleDiffDeg( desired_heading , measured_heading );
 	ESP_LOGI( FNAME, "newDeviation Measured Head: %3.2f Desired Head: %3.2f => Deviation=%3.2f, Samples:%d", measured_heading, desired_heading, deviation, samples );
-	if( deviation > 30.0 ){ // data is not plausible/useful
+	if( abs(deviation) > wind_max_deviation.get() ){ // data is not plausible/useful
 		ESP_LOGI( FNAME, "new Deviation out of bounds: %3.3f: Drop this deviation", deviation );
-		return;
+		return false;
 	}
 	// we implement one point every 45 degrees, so each point comes with a guard band of 22.5 degree
 	xSemaphoreTake(splineMutex,portMAX_DELAY );
@@ -212,6 +212,7 @@ void Compass::newDeviation( float measured_heading, float desired_heading, float
 		if( abs( wind_as_calibration.get() - airspeedCalibration )*100 > 0.5 )
 			wind_as_calibration.set( airspeedCalibration );
 	}
+	return true;
 }
 
 /**

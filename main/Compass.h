@@ -145,7 +145,7 @@ public:
 	 */
 	static float getDeviation( float heading );
 
-	static void newDeviation( float for_heading, float steer, float airspeedCalibration );
+	static bool newDeviation( float for_heading, float steer, float airspeedCalibration );
 
 	static void loadDeviationMap();
 

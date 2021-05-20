@@ -971,7 +971,7 @@ void SetupMenu::setup( )
 		SetupMenuSelect * windref = new SetupMenuSelect( "Wind Reference", false, 0, true, &wind_reference );
 		windref->addEntry( "North");
 		windref->addEntry( "Heading");
-		windref->setHelp( PROGMEM "Wind arrow related either to geografic north or related to true airplane heading");
+		windref->setHelp( PROGMEM "Wind arrow related either to geographic north or related to true airplane heading");
 		compassWindME->addMenu( windref );
 
 		SetupMenu * strWindM = new SetupMenu( "Straight Wind" );
@@ -1004,6 +1004,10 @@ void SetupMenu::setup( )
 
 		smvf->setHelp( PROGMEM "Setup heading tolerance value" );
 		strWindM->addMenu( smvf );
+
+		SetupMenuValFloat *smdev = new SetupMenuValFloat( "Deviation tolerance", nullptr, "%", 0.0, 100.0, 1.0,	nullptr, false, &wind_max_deviation );
+		smdev->setHelp( PROGMEM "Setup maximum deviation accepted for a wind measurement" );
+		strWindM->addMenu( smdev );
 
 		// Wind measurement time
 		smvf = new SetupMenuValFloat( "Wind after",

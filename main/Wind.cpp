@@ -354,9 +354,8 @@ void Wind::calculateWind( double tc, double gs, double th, double tas  ){
 		tc = th;   // what will deliver heading and airspeed for wind
 	}
 	// Wind speed
-
-
 	// Reverse calculate windtriangle for deviation and airspeed calibration
+	bool devOK = true;
 	if( circlingWindSpeed > 0 && compass_dev_auto.get() ){
 		if( circlingWindAge > 1800 ){
 			status = "OLD CIRC WIND";
@@ -365,25 +364,25 @@ void Wind::calculateWind( double tc, double gs, double th, double tas  ){
 #ifdef VERBOSE_LOG
 			ESP_LOGI(FNAME,"Using reverse circling wind dir %3.2f, reverse cal. airspeed=%3.3f, tas=%3.3f, delta %3.3f", circlingWindDir, airspeed, tas, airspeed-tas );
 #endif
-			float trueHeading = calculateAngle( circlingWindDir, circlingWindSpeed, tc, gs );
+			float tH = calculateAngle( circlingWindDir, circlingWindSpeed, tc, gs );
 			if( abs( airspeed/tas - 1.0 ) > 0.15 ){  // 15 percent max deviation
 				status = "AS OOB";
 				ESP_LOGI(FNAME,"Estimated Airspeed/Groundspeed OOB");
 				return;
 			}
 			airspeedCorrection +=  (airspeed/tas - airspeedCorrection) *0.02;
-
-			if( abs( Vector::angleDiffDeg( (float)th, trueHeading ) > 30 )){
-				status = "MH OOB";
-				return;
-			}
-			Compass::newDeviation( th, trueHeading, airspeedCorrection );
+			devOK = Compass::newDeviation( th, tH, airspeedCorrection );
 			ESP_LOGI(FNAME,"Calculated TH/TAS: %3.1f°/%3.1f km/h  Measured TH/TAS: %3.1f°/%3.1f, asCorr:%2.3f, deltaAS:%3.2f, Age:%d",
 					trueHeading, airspeed, averageTH, tas, airspeedCorrection , airspeed-tas, circlingWindAge );
 		}
 	}else
 		status = "No Circ Wind";
 
+	if( !devOK ){ // data is not plausible/useful
+			ESP_LOGI( FNAME, "Calculated deviation out of bounds: Drop also this wind calculation");
+			status = "Deviation OOB";
+			return;
+	}
 	deviation_cur = Compass::getDeviation( th );
 	ESP_LOGI(FNAME,"Deviation=%3.2f", deviation_cur );
 	float thd = Vector::normalizeDeg( th+deviation_cur );

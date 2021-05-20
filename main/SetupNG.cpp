@@ -210,6 +210,7 @@ SetupNG<int>        	compass_dev_auto("COMPASS_DEV", 0 );
 SetupNG<float> 			wind_as_calibration("WIND_AS_CAL", 1.0 );
 SetupNG<int> 			wind_display( "WIND_DIS", WD_BOTH );
 SetupNG<int> 			wind_reference( "WIND_REF", WR_HEADING );
+SetupNG<float> 			wind_max_deviation("WIND_MDEV", 30.0 );
 
 
 mpud::raw_axes_t zero_bias;

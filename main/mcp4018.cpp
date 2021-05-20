@@ -70,10 +70,10 @@ bool MCP4018::readWiper( uint16_t &val ) {
 }
 
 bool MCP4018::writeWiper( uint16_t val ) {
-    ESP_LOGV(FNAME,"MCP4018 write wiper %d", val );
+    // ESP_LOGI(FNAME,"MCP4018 write wiper %d", val );
 	esp_err_t err = bus->write8bit(MPC4018_I2C_ADDR, val );
 	if( err == ESP_OK ){
-		ESP_LOGV(FNAME,"MCP4018 write wiper OK");
+		// ESP_LOGV(FNAME,"MCP4018 write wiper OK");
 		return true;
 	}
 	else

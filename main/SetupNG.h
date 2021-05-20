@@ -65,6 +65,8 @@ typedef enum e_hardware_rev { HW_UNKNOWN=0, HW_LONG_VARIO=1, HW_XCVARIO_20=2, HW
 typedef enum e_gload_mode { GLOAD_OFF=0, GLOAD_DYNAMIC=1, GLOAD_ALWAYS_ON=2 } e_gload_mode_t;
 typedef enum e_windanalyser_mode { WA_OFF=0, WA_STRAIGHT=1, WA_CIRCLING=2, WA_BOTH=3 } e_windanalyser_mode_t;
 typedef enum e_battery_display { BAT_PERCENTAGE, BAT_VOLTAGE, BAT_VOLTAGE_BIG } e_battery_display_t;
+typedef enum e_wind_display { WD_NONE, WD_DIGITS, WD_ARROW, WD_BOTH } e_wind_display_t;
+typedef enum e_wind_reference { WR_NORTH, WR_HEADING } e_wind_reference_t;
 
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
 
@@ -445,6 +447,8 @@ extern SetupNG<float>   	wind_measurement_time;
 extern SetupNG<int> 		wind_enable;
 extern SetupNG<float> 		wind_as_min;
 extern SetupNG<float> 		wind_as_calibration;
+extern SetupNG<int> 		wind_display;
+extern SetupNG<int> 		wind_reference;
 
 
 extern int g_col_background;

@@ -860,7 +860,7 @@ void SetupMenu::setup( )
 		SetupMenuSelect * compSensorCal = new SetupMenuSelect( "Sensor Calibration", false, compassSensorCalibrateAction, false );
 		compSensorCal->addEntry( "Start");
 		compSensorCal->addEntry( "Cancel");
-		compSensorCal->setHelp( PROGMEM "Calibrate Magnetic Sensor" );
+		compSensorCal->setHelp( PROGMEM "Calibrate Magnetic Sensor, mandatory for operation" );
 		compassME->addMenu( compSensorCal );
 
 		SetupMenuValFloat *cd = new SetupMenuValFloat( "Setup Declination",
@@ -957,6 +957,22 @@ void SetupMenu::setup( )
 		windcal->addEntry( "Both");
 		windcal->setHelp(PROGMEM "Enable Wind calculation for straight flight (needs compass), circling or both and display wind in reto display style");
 		compassWindME->addMenu( windcal );
+
+		// Wind display option
+		SetupMenuSelect * winddis = new SetupMenuSelect( "Wind Display", false, 0, true, &wind_display );
+		winddis->addEntry( "Disable");
+		winddis->addEntry( "Digits");
+		winddis->addEntry( "Wind Arrow");
+		winddis->addEntry( "Both");
+		winddis->setHelp( PROGMEM "Control how wind is to be displayed, either as digits or by wind arrow or both on retro style screen");
+		compassWindME->addMenu( winddis );
+
+		// Wind speed observation window
+		SetupMenuSelect * windref = new SetupMenuSelect( "Wind Reference", false, 0, true, &wind_reference );
+		windref->addEntry( "North");
+		windref->addEntry( "Heading");
+		windref->setHelp( PROGMEM "Wind arrow related either to geografic north or related to true airplane heading");
+		compassWindME->addMenu( windref );
 
 		SetupMenu * strWindM = new SetupMenu( "Straight Wind" );
 		compassWindME->addMenu( strWindM );

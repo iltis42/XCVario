@@ -208,6 +208,9 @@ SetupNG<float>			gload_neg_max("GLOADNM", 0 );
 SetupNG<int>        	display_variant("DISPLAY_VARIANT", 0 );
 SetupNG<int>        	compass_dev_auto("COMPASS_DEV", 0 );
 SetupNG<float> 			wind_as_calibration("WIND_AS_CAL", 1.0 );
+SetupNG<int> 			wind_display( "WIND_DIS", WD_BOTH );
+SetupNG<int> 			wind_reference( "WIND_REF", WR_HEADING );
+
 
 mpud::raw_axes_t zero_bias;
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );

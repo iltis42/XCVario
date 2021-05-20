@@ -1087,19 +1087,30 @@ void IpsDisplay::drawCompass(){
 			ucg->setFont(ucg_font_fub17_hf);
 			char s[12];
 			int windspeed = (int)( Units::Airspeed(wind)+0.5 );
-			if( ok )
-				sprintf(s,"%3d\xb0%c%2d", winddir, type, windspeed );
-			else
-				sprintf(s,"%s", "    --/--" );
-			if( windspeed < 10 )
-				ucg->printf("%s    ", s);
-			else if( windspeed < 100 )
-				ucg->printf("%s   ", s);
-			else
-				ucg->printf("%s  ", s);
+			if( wind_display.get() & WD_DIGITS ){
+				if( ok )
+					sprintf(s,"%3d\xb0%c%2d", winddir, type, windspeed );
+				else
+					sprintf(s,"%s", "    --/--" );
+				if( windspeed < 10 )
+					ucg->printf("%s    ", s);
+				else if( windspeed < 100 )
+					ucg->printf("%s   ", s);
+				else
+					ucg->printf("%s  ", s);
+			}
 			prev_heading = winddir;
-			if( Flarm::gpsStatus() ){
-				drawWindArrow( Vector::angleDiffDeg( winddir, Flarm::getGndCourse() ), windspeed, 0 );
+			if( wind_display.get() & WD_ARROW  ){
+				float dir=winddir;  // absolute wind related to geographic north
+				if( (wind_reference.get() & WR_HEADING) )  // wind relative to airplane, first choice compass, second is GPS true course
+				{
+					bool ok;
+					float heading = Compass::trueHeading( &ok );
+					if( !ok && Flarm::gpsStatus() )
+						heading = Flarm::getGndCourse();
+					dir = Vector::angleDiffDeg( winddir, heading );
+				}
+				drawWindArrow( dir, windspeed, 0 );
 			}
 		}
 	}

@@ -129,11 +129,7 @@ void Router::routeS1(){
 		if( serial2_tx.get() & RT_S1 )
 			if( forwardMsg( s1, s2_tx_q ))
 				ESP_LOGV(FNAME,"ttyS1 RX bytes %d looped to s2_tx_q", s1.length() );
-<<<<<<< HEAD
 	  }*/
-=======
-		Protocols::parseNMEA( s1.c_str() );
->>>>>>> refs/remotes/origin/HEAD
 	}
 }
 

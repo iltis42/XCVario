@@ -26,7 +26,6 @@
 #include "Flap.h"
 #include "Switch.h"
 S2F * Protocols::_s2f = 0;
-<<<<<<< HEAD
 //modif gfm
 #include "UBX_Parser.h"
 #include "estAltitude.h"
@@ -39,9 +38,7 @@ extern float vze_fusion;
 extern float estimated_altitude;
 extern int gps_nav_valid;
 // fin modif gfm
-=======
 float Protocols::ballast_percent=0;
->>>>>>> refs/remotes/origin/HEAD
 
 Protocols::Protocols(S2F * s2f) {
 	_s2f = s2f;
@@ -176,7 +173,6 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 	if( !validTemp )
 		temp=0;
 	if( proto == P_XCVARIO_DEVEL ){
-<<<<<<< HEAD
 		//modif gfm
 /* la ligne définie dans le sprintf ci-dessous semble occasionner l'apparition d'une exception, plus souvent quand on agite le XCVario
  * Le log montre des valeurs complètement aberrantes très très grandes, des acc_x, acc_y et acc_z signalées par le contexte "accelaration change > g in 0.2 S".
@@ -184,8 +180,8 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
  * ou bien doit-on respecter scrupuleusement les paramètres passés dans les fonctions sendNMEA,
  * et parseNMEA sscanf( str, "$PXCV,%f,%f,%f,%f,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f*%02x", &_te....  ???
  * J'en suis là, ce matin 6 mai 2021.
+  */
      	char str_loc[255];
-=======
 		/*
 		Sentence has following format:
 		$PXCV,
@@ -208,11 +204,9 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		Y.YYXX:   gyro around Y-Axis,
 		Z.ZZZZ:   gyro around Z-Axis,
 		*CHK = standard NMEA checksum
-		*/
->>>>>>> refs/remotes/origin/HEAD
+
 		float roll = IMU::getRoll();
 		float pitch = IMU::getPitch();
-<<<<<<< HEAD
 		float aex = 0;
 		float aey = 0;
 		float aez = 0;
@@ -227,15 +221,13 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		//sprintf(str_loc,"$PXCV,%.6f,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%6.3f,%6.3f,%3.1f,%3.1f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f",
 		//		timertime,te, Units::Vario2ms(mc),
 		//		bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z,gx,gy,gz,aex,aey,aez );
-*/
-//fin modif gfm
+
+//fin modif gfm*/
 		float roll = IMU::getRoll();
 		float pitch = IMU::getPitch();
 		sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%6.2f,%6.2f,%4.3f,%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
-=======
 		float timertime = esp_timer_get_time()/1000000.0; // time in second
 		sprintf(str,"$PXCV,%.6f,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%.3f,%.3f,%.3f,%3.1f,%3.1f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f", timertime, te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z, gz, gy, gx );
->>>>>>> refs/remotes/origin/HEAD
 	}
 	else if( proto == P_XCVARIO ){
 		/*
@@ -260,18 +252,10 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		if( haveMPU && attitude_indicator.get() ){
 			float roll = IMU::getRoll();
 			float pitch = IMU::getPitch();
-<<<<<<< HEAD
-			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%6.2f,%6.2f,%4.3f,%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
-=======
 			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f,%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
->>>>>>> refs/remotes/origin/HEAD
 
 		}else{
-<<<<<<< HEAD
-			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%6.2f,%6.2f,%4.3f,,,,,", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp );
-=======
 			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f,,,,,", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp );
->>>>>>> refs/remotes/origin/HEAD
 		}
 	}
 	else if( proto == P_OPENVARIO ) {

@@ -459,13 +459,8 @@ void readBMP(void *pvParameters){
 				OV.sendNMEA( P_CAMBRIDGE, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature  );
 			}
 			else if( nmea_protocol.get() == XCVARIO ) {
-<<<<<<< HEAD
 				OV.sendNMEA( P_XCVARIO, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
 						accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
-=======
-				OV.sendNMEA( P_XCVARIO, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-						-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
->>>>>>> refs/remotes/origin/HEAD
 			}
 			else if( nmea_protocol.get() == XCVARIO_DEVEL ) {
 				OV.sendNMEA( P_XCVARIO_DEVEL, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,

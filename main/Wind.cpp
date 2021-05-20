@@ -251,12 +251,12 @@ bool Wind::calculateWind()
 
 	// Get current true course from GPS
 	double ctc = Flarm::getGndCourse();
-
+	double tcMin=0.0;
+	double tcMax=273.0;
 	// The ground course check is only done, if the ground speed is >=10 Km/h.
 	// Near speed zero, the ground course is not stable in its direction.
 	// Check if given GPS true course deltas are valid.
 	if( cgs >= 10 ) {
-<<<<<<< HEAD
 		// The ground course check is only done, if the ground speed is >=10 Km/h.
 		// Near speed zero, the ground course is not stable in its direction.
 		// Check if given GPS true course deltas are valid.
@@ -270,10 +270,8 @@ bool Wind::calculateWind()
 		}
 
 		if( ok == false ) {
-=======
 		float diff = abs( Vector::angleDiffDeg( ctc, tcStart ));
 		if( diff > wind_heading_delta.get() ) {
->>>>>>> refs/remotes/origin/HEAD
 			// Condition violated, start a new measurements cycle.
 			start();
 			ESP_LOGI(FNAME,"Restart Cycle, Ground Heading CTC diff: %3.1f outside delta: %3.1f", diff, wind_heading_delta.get() );
@@ -281,7 +279,7 @@ bool Wind::calculateWind()
 			return false;
 		}
 	}
-
+	}
 	// Take all as new sample
 	nunberOfSamples++;
 

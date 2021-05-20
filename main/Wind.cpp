@@ -104,8 +104,8 @@ void Wind::start()
 	averageTH = trueHeading;
 
 	// Define start of TH and TC observation window
-	mhStart = Vector::normalize( trueHeading );
-    tcStart = Vector::normalize( trueCourse );
+	mhStart = Vector::normalizeDeg( trueHeading );
+    tcStart = Vector::normalizeDeg( trueCourse );
 }
 
 void Wind::tick(){
@@ -259,8 +259,8 @@ bool Wind::calculateWind()
 		// WCA in radians
 		double tas = sumTas / nos;
 		averageGS = sumGroundSpeed / nos;
-		averageTH = Vector::normalize( averageTH );
-		averageTC = Vector::normalize( averageTC );
+		averageTH = Vector::normalizeDeg( averageTH );
+		averageTC = Vector::normalizeDeg( averageTC );
 		airspeed_jitter = airspeed_jitter_tmp;
 		groundspeed_jitter = groundspeed_jitter_tmp;
 		airspeed_jitter_tmp = 0;
@@ -292,7 +292,7 @@ double Wind::calculateAngle( double angle1, double speed1, double angle2, double
 	double wca = Vector::normalize( thrad - tcrad );
 
 	double ang = tcrad + atan2( speed2 * sin( wca ), speed2 * cos( wca ) - speed1 );
-	return( Vector::normalize( R2D( ang ) ) );  // convert radian to degree
+	return( Vector::normalizeDeg( R2D( ang ) ) );  // convert radian to degree
 }
 
 void Wind::calculateWind( double tc, double gs, double th, double tas  ){

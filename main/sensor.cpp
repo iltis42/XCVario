@@ -65,6 +65,7 @@
 
 // #include "sound.h"
 // modif gfm
+#include "ahrs.h"
 #include "UBX_Parser.h"
 #include "deadReckoning.h"
 #include "estAltitude.h"
@@ -1131,6 +1132,8 @@ void sensor(void *args){
 
 	Audio::startAudio();
 //modif gfm
+    ahrs_init();
+
 	Init_UBX_Parser();
 
 	altimeter_calibrate();

@@ -28,16 +28,20 @@
  *
  */
 
-//#include "generated/airframe.h"
+/*#include "generated/airframe.h"*/
+#define SECTION_IMU 1
+#define IMU_BODY_TO_IMU_PHI 0.
+#define IMU_BODY_TO_IMU_THETA 0.
+#define IMU_BODY_TO_IMU_PSI 0.
 
-#include "ahrs_int_cmpl_quat.h"
-#include "ahrs_int_utils.h"
+#include "../include/ahrs_int_cmpl_quat.h"
+#include "../include/ahrs_int_utils.h"
 
 #if USE_GPS
 #include "gps.h"
 #endif
-#include "pprz_trig_int.h"
-#include "pprz_algebra_int.h"
+#include "../include/pprz_trig_int.h"
+#include "../include/pprz_algebra_int.h"
 
 #ifdef AHRS_PROPAGATE_LOW_PASS_RATES
 PRINT_CONFIG_MSG("LOW PASS FILTER ON GYRO RATES")

@@ -66,6 +66,7 @@ extern uint8_t ahrs_output_idx;
  */
 extern void ahrs_register_impl(AhrsEnableOutput enable);
 
+#define USE_AHRS_ALIGNER 1
 /** AHRS initialization. Called at startup.
  * Registers/initializes the default AHRS.
  */

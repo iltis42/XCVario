@@ -26,14 +26,14 @@
  *
  */
 
-#include "ahrs_aligner.h"
-
+#include "../include/ahrs_aligner.h"
+#include "../../MPUdriver/include/MPU.hpp"
 #include <stdlib.h> /* for abs() */
-#include "subsystems/imu.h"
+/*#include "subsystems/imu.h"
 #include "led.h"
 #include "subsystems/abi.h"
 #include "mcu_periph/sys_time.h"
-
+*/
 struct AhrsAligner ahrs_aligner;
 
 #ifndef AHRS_ALIGNER_SAMPLES_NB
@@ -49,7 +49,9 @@ static uint32_t samples_idx;
 #ifndef AHRS_ALIGNER_IMU_ID
 #define AHRS_ALIGNER_IMU_ID ABI_BROADCAST
 #endif
-static abi_event gyro_ev;
+MPU_t MPU;         // create an object
+
+/*static abi_event gyro_ev;
 
 static void gyro_cb(uint8_t sender_id __attribute__((unused)),
                     uint32_t stamp __attribute__((unused)),
@@ -59,7 +61,7 @@ static void gyro_cb(uint8_t sender_id __attribute__((unused)),
     ahrs_aligner_run();
   }
 }
-
+*/
 #if PERIODIC_TELEMETRY
 #include "subsystems/datalink/telemetry.h"
 
@@ -89,9 +91,9 @@ void ahrs_aligner_init(void)
   ahrs_aligner.noise = 0;
   ahrs_aligner.low_noise_cnt = 0;
 
-  // for now: only bind to gyro message and still read from global imu struct
+/*   for now: only bind to gyro message and still read from global imu struct
   AbiBindMsgIMU_GYRO_INT32(AHRS_ALIGNER_IMU_ID, &gyro_ev, gyro_cb);
-
+*/
 #if PERIODIC_TELEMETRY
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_FILTER_ALIGNER, send_aligner);
 #endif
@@ -107,12 +109,16 @@ void ahrs_aligner_init(void)
 
 void ahrs_aligner_run(void)
 {
+		mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
+		mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
+		esp_err_t err = MPU.acceleration(&accelRaw);  // fetch raw data from the registers
+		esp_err_t err = MPU.gyro(&gyroRaw);  // fetch raw data from the registers
 
-  RATES_ADD(gyro_sum,  imu.gyro);
-  VECT3_ADD(accel_sum, imu.accel);
-  VECT3_ADD(mag_sum,   imu.mag);
+  RATES_ADD(gyro_sum, gyroRaw);
+  VECT3_ADD(accel_sum, accelRaw);
+/*  VECT3_ADD(mag_sum,   imu.mag);*/
 
-  ref_sensor_samples[samples_idx] = imu.accel.z;
+  ref_sensor_samples[samples_idx] = accelRaw.z;
   samples_idx++;
 
 #ifdef AHRS_ALIGNER_LED

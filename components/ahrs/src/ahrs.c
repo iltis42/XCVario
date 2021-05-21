@@ -25,10 +25,10 @@
  */
 
 
-#include "ahrs.h"
+#include "../include/ahrs.h"
 
 #if USE_AHRS_ALIGNER
-#include "ahrs_aligner.h"
+#include "../include/ahrs_aligner.h"
 #endif
 
 
@@ -82,7 +82,7 @@ void ahrs_init(void)
   RegisterAhrs(SECONDARY_AHRS);
 #endif
 
-  // enable primary AHRS by default
+  /* enable primary AHRS by default*/
   ahrs_switch(0);
 
 #if USE_AHRS_ALIGNER

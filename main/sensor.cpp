@@ -65,8 +65,8 @@
 
 // #include "sound.h"
 // modif gfm
-#include "ahrs.h"
-#include "UBX_Parser.h"
+#include "../components/ahrs/include/ahrs.h"
+#include "../components/gps/include/UBX_Parser.h"
 #include "deadReckoning.h"
 #include "estAltitude.h"
 float estimated_altitude = 0;

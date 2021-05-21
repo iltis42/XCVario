@@ -30,7 +30,7 @@
 #define AHRS_ALIGNER_H
 
 #include "std.h"
-#include "math/pprz_algebra_int.h"
+#include "pprz_algebra_int.h"
 
 #define AHRS_ALIGNER_UNINIT  0
 #define AHRS_ALIGNER_RUNNING 1

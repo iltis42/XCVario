@@ -32,7 +32,7 @@
 #include "pprz_geodetic_int.h"
 #include "pprz_geodetic_float.h"
 
-#include "mcu_periph/sys_time.h"
+#include "sys_time.h"
 
 #define GPS_FIX_NONE 0x00     ///< No GPS fix
 #define GPS_FIX_2D   0x02     ///< 2D GPS fix

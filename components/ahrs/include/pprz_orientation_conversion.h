@@ -60,8 +60,8 @@
 extern "C" {
 #endif
 
-#include "math/pprz_algebra_int.h"
-#include "math/pprz_algebra_float.h"
+#include "pprz_algebra_int.h"
+#include "pprz_algebra_float.h"
 
 #include "std.h"
 

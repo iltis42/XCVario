@@ -36,8 +36,8 @@ extern "C" {
 #endif
 
 #include "std.h"
-#include "math/pprz_algebra.h"
-#include "math/pprz_trig_int.h"
+#include "pprz_algebra.h"
+#include "pprz_trig_int.h"
 #include <stdlib.h>
 
 

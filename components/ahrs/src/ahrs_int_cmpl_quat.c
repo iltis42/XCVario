@@ -28,16 +28,16 @@
  *
  */
 
-#include "generated/airframe.h"
+//#include "generated/airframe.h"
 
-#include "subsystems/ahrs/ahrs_int_cmpl_quat.h"
-#include "subsystems/ahrs/ahrs_int_utils.h"
+#include "ahrs_int_cmpl_quat.h"
+#include "ahrs_int_utils.h"
 
 #if USE_GPS
-#include "subsystems/gps.h"
+#include "gps.h"
 #endif
-#include "math/pprz_trig_int.h"
-#include "math/pprz_algebra_int.h"
+#include "pprz_trig_int.h"
+#include "pprz_algebra_int.h"
 
 #ifdef AHRS_PROPAGATE_LOW_PASS_RATES
 PRINT_CONFIG_MSG("LOW PASS FILTER ON GYRO RATES")

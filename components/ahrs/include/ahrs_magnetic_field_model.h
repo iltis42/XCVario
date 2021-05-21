@@ -1,7 +1,7 @@
 #ifndef AHRS_MAGNETIC_FIELD_MODEL_H
 #define AHRS_MAGNETIC_FIELD_MODEL_H
 
-#include "generated/airframe.h"
+//#include "generated/airframe.h"
 
 // for complete INS filters, magnetic field can be defined with INS_H_[XYZ]
 #if defined(INS_H_X) && defined(INS_H_Y) && defined(INS_H_Z)

@@ -30,8 +30,8 @@
 #ifndef AHRS_FLOAT_UTILS_H
 #define AHRS_FLOAT_UTILS_H
 
-#include "math/pprz_algebra_float.h"
-#include "subsystems/ahrs/ahrs_magnetic_field_model.h"
+#include "pprz_algebra_float.h"
+#include "ahrs_magnetic_field_model.h"
 
 #include "std.h" // for ABS
 

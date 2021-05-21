@@ -31,11 +31,11 @@
 #ifndef AHRS_INT_CMPL_QUAT_H
 #define AHRS_INT_CMPL_QUAT_H
 
-#include "subsystems/ahrs.h"
-#include "subsystems/gps.h"
+#include "ahrs.h"
+#include "gps.h"
 #include "std.h"
-#include "math/pprz_algebra_int.h"
-#include "math/pprz_orientation_conversion.h"
+#include "pprz_algebra_int.h"
+#include "pprz_orientation_conversion.h"
 
 enum AhrsICQStatus {
   AHRS_ICQ_UNINIT,

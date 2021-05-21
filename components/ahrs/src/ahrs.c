@@ -26,6 +26,7 @@
 
 
 #include "../include/ahrs.h"
+#include "../include/ahrs_int_cmpl_quat_wrapper.h"
 
 #if USE_AHRS_ALIGNER
 #include "../include/ahrs_aligner.h"

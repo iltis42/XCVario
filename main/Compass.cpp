@@ -36,6 +36,7 @@ std::vector<double>	Compass::Y;
 std::map< double, double> Compass::devmap;
 int Compass::_tick = 0;
 CompassFilter Compass::m_cfmh;
+bool Compass::_external_data = false;
 
 /*
   Creates instance for I2C connection with passing the desired parameters.
@@ -67,6 +68,10 @@ Compass::~Compass()
 float Compass::calculateHeading( bool *okIn )
 {
 	assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
+	if( _external_data ){
+		*okIn = true;
+		return m_magn_heading;
+	}
 
 	float new_heading = QMC5883L::heading( okIn );
 	// ESP_LOGI( FNAME, "H: %3.2f", new_heading  );

@@ -29,8 +29,8 @@
 
 
 #include "std.h"
-#include "math/pprz_geodetic_int.h"
-#include "math/pprz_geodetic_float.h"
+#include "pprz_geodetic_int.h"
+#include "pprz_geodetic_float.h"
 
 #include "mcu_periph/sys_time.h"
 

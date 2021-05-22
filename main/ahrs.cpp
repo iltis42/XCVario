@@ -114,7 +114,7 @@ void IMU::RollPitchFromAccel(double *roll, double *pitch)
 	// atan2 outputs the value of -π to π (radians) - see http://en.wikipedia.org/wiki/Atan2
 	// It is then converted from radians to degrees
 
-	*roll = atan((double)accelY / hypotenuse((double)accelX, (double)accelZ));
+	*roll = atan2((double)accelY , (double)accelZ);
 	*pitch = atan2((double)-accelX, (double)accelZ);
 
 	ESP_LOGD( FNAME,"Accelerometer Roll: %f  Pitch: %f  (y:%f x:%f)", *roll * RAD_TO_DEG, *pitch * RAD_TO_DEG, (double)accelY, (double)accelX );

@@ -74,6 +74,8 @@ public:
    */
   static void newSample( Vector vector );
 
+  static void restartCycle( bool clean );
+
   /**
    * Called if a new satellite constellation has been detected.
    */
@@ -84,7 +86,6 @@ public:
    */
   static void gpsStatusChange( bool newStatus );
 
-
   static void newWind( double angle, double speed, float q );
 
   static bool getWind( int *dir, float *speed, int * age ) { *dir=rint(direction); *speed=windspeed; *age=_age;
@@ -94,27 +95,35 @@ public:
   	  	  	  	  	  	  	  	  	  	  	  	  	  return false;
   };
 
-  static int getNumCircles() 	 {  return circleCount; }
+  static float getNumCircles() 	 {  return circleCount+(circleDegrees/360.0); }
   static int getSatCnt()     	 {  return satCnt; }
   static bool getGpsStatus()     {  return gpsStatus; }
   static float  getAngle() 		 { return result.getAngleDeg(); }
   static float  getSpeed() 		 { return result.getSpeed(); }
   static int  getAge() 			 { return _age; }
   static int  getQuality() 		 { return rint(quality*20); } // 0..100 %
+  static char * getStatus()      { return status; }
+  static char *getFlightModeStr(){
+                                   if( flightMode == straight )
+                                	   return "straight";
+                                   else if( flightMode == circlingL )
+                                	   return "circle left";
+                                   else if( flightMode == circlingR )
+                                	   return "circle right";
+                                   else
+                                	   return "undefined";
+  }
 
 private:
 
   static void _calcWind();
-
-  /** active is set to true or false by the newFlightMode slot. */
-  static bool active;
   static int circleCount; // we are counting the number of circles, the first onces are probably not very round
   static bool circleLeft; // true=left, false=right
   static int circleDegrees; // Degrees of current flown circle
   static int lastHeading; // Last processed heading
   static int satCnt;
   static int minSatCnt;
-  static bool ciclingMode;
+  static t_circling circlingMode;
   static int  gpsStatus;
   static Vector minVector;
   static Vector maxVector;
@@ -125,6 +134,7 @@ private:
   static float windspeed;
   static int num_samples;
   static int _age;
+  static char *status;
 };
 
 #endif

@@ -43,7 +43,7 @@ void ShowCirclingWind::display( int mode )
 	ucg->setFont( ucg_font_fur14_hf );
 	uprintf( 5, 25, selected->_title.c_str() );
 
-	uint16_t y = 75;
+	uint16_t y = 55;
 	char buffer[32];
 
 	semaphoreTake();
@@ -58,13 +58,15 @@ void ShowCirclingWind::display( int mode )
 	ucg->printf( "%s", buffer );
 	y += 25;
 
-	ucg->setPrintPos( 0, y );
-	sprintf( buffer, "GPS Satellites : %d  ", CircleWind::getSatCnt() );
-	ucg->printf( "%s", buffer );
-	y += 25;
+	if( CircleWind::getGpsStatus() ){
+		ucg->setPrintPos( 0, y );
+		sprintf( buffer, "GPS Satellites : %d  ", CircleWind::getSatCnt() );
+		ucg->printf( "%s", buffer );
+		y += 25;
+	}
 
 	ucg->setPrintPos( 0, y );
-	sprintf( buffer, "Number of Cirlces : %d  ", CircleWind::getNumCircles() );
+	sprintf( buffer, "Number of Circles : %2.2f  ", CircleWind::getNumCircles() );
 	ucg->printf( "%s", buffer );
 	y += 25;
 
@@ -80,6 +82,16 @@ void ShowCirclingWind::display( int mode )
 
 	ucg->setPrintPos( 0, y );
 	sprintf( buffer, "Quality : %d %%  ", CircleWind::getQuality() );
+	ucg->printf( "%s", buffer );
+	y += 25;
+
+	ucg->setPrintPos( 0, y );
+	sprintf( buffer, "Status : %s    ", CircleWind::getStatus() );
+	ucg->printf( "%s", buffer );
+	y += 25;
+
+	ucg->setPrintPos( 0, y );
+	sprintf( buffer, "Flight Mode : %s    ", CircleWind::getFlightModeStr() );
 	ucg->printf( "%s", buffer );
 	y += 25;
 

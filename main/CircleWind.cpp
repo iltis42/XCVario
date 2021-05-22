@@ -212,21 +212,12 @@ void CircleWind::_calcWind()
 		quality--;
 	}
 
-	if( circleCount < 1 )
-	{
-		ESP_LOGI(FNAME,"circles < 1 decrement quality");
-		quality--;
-	}
-
-	//  << "WindQuality=" << quality;
-
 	if( quality < 1 )
 	{
 		ESP_LOGI(FNAME,"quality bad %3.1f < 1: Abort ", quality );
 		status = "Too Low Qual";
 		return; // Measurement quality too low
 	}
-
 
 	// take both directions for min and max vector into account
 	ESP_LOGI(FNAME, "maxAngle=%3.1f°/%.0f   minAngle=%3.1f°/%.0f Quality=%3.1f",
@@ -254,7 +245,7 @@ void CircleWind::newWind( double angle, double speed, float q ){
 		windspeed = speed;
 	}
 	else{
-		kq = q/20.0;
+		kq = q/10.0;
 		direction += Vector::angleDiffDeg(angle,(double)direction) * kq;
 		windspeed += (speed - windspeed) * kq;
 	}

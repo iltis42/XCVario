@@ -70,7 +70,7 @@ extern void ahrs_register_impl(AhrsEnableOutput enable);
 /** AHRS initialization. Called at startup.
  * Registers/initializes the default AHRS.
  */
-extern void ahrs_init(void);
+void ahrs_init(void);
 
 /**
  * Switch to the output of another AHRS impl.

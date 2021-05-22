@@ -65,6 +65,7 @@
 
 // #include "sound.h"
 // modif gfm
+#include "../components/ahrs/include/ahrs_int_cmpl_quat_wrapper.h"
 #include "../components/ahrs/include/ahrs.h"
 #include "../components/gps/include/UBX_Parser.h"
 #include "deadReckoning.h"

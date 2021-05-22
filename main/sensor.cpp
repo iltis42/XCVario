@@ -65,8 +65,7 @@
 
 // #include "sound.h"
 // modif gfm
-#include "../components/ahrs/include/ahrs_int_cmpl_quat_wrapper.h"
-#include "../components/ahrs/include/ahrs.h"
+#include "MadgwickAHRS.h"
 #include "../components/gps/include/UBX_Parser.h"
 #include "deadReckoning.h"
 #include "estAltitude.h"
@@ -1133,7 +1132,6 @@ void sensor(void *args){
 
 	Audio::startAudio();
 //modif gfm
-    ahrs_init();
 
 	Init_UBX_Parser();
 

@@ -120,7 +120,7 @@ PRINT_CONFIG_VAR(AHRS_ICQ_IMU_ID)
  */
 /*
  *
- */#ifndef AHRS_ICQ_MAG_ID
+ #ifndef AHRS_ICQ_MAG_ID
 #define AHRS_ICQ_MAG_ID AHRS_ICQ_IMU_ID
 #endif
 PRINT_CONFIG_VAR(AHRS_ICQ_MAG_ID)
@@ -260,21 +260,22 @@ static void set_body_state_from_quat(void)
     struct Int32Quat ltp_to_body_quat;
     struct Int32Quat *body_to_imu_quat = orientationGetQuat_i(&ahrs_icq.body_to_imu);
     int32_quat_comp_inv(&ltp_to_body_quat, &ahrs_icq.ltp_to_imu_quat, body_to_imu_quat);
-    /* Set state */
-    stateSetNedToBodyQuat_i(&ltp_to_body_quat);
+    /* Set state
+    stateSetNedToBodyQuat_i(&ltp_to_body_quat);*/
 
     /* compute body rates */
     struct Int32Rates body_rate;
     struct Int32RMat *body_to_imu_rmat = orientationGetRMat_i(&ahrs_icq.body_to_imu);
     int32_rmat_transp_ratemult(&body_rate, body_to_imu_rmat, &ahrs_icq.imu_rate);
-    /* Set state */
-    stateSetBodyRates_i(&body_rate);
+    /* Set state
+    stateSetBodyRates_i(&body_rate);*/
   }
 }
 
 void ahrs_icq_register(void)
 {
-  ahrs_icq_output_enabled = AHRS_ICQ_OUTPUT_ENABLED;
+//gfm	  ahrs_icq_output_enabled = AHRS_ICQ_OUTPUT_ENABLED;
+	  ahrs_icq_output_enabled = 1;
   ahrs_icq_init();
   ahrs_register_impl(ahrs_icq_enable_output);
 

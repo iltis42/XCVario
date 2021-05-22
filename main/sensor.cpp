@@ -48,7 +48,7 @@
 #include "mpu/math.hpp"   // math helper for dealing with MPU data
 #include "mpu/types.hpp"  // MPU data types and definitions
 #include "I2Cbus.hpp"
-#include "KalmanMPU6050.h"
+#include "ahrs.h" /*"KalmanMPU6050.h"*/
 #include "WifiApp.h"
 #include "WifiClient.h"
 #include "Serial.h"
@@ -65,8 +65,8 @@
 
 // #include "sound.h"
 // modif gfm
-#include "MadgwickAHRS.h"
 #include "../components/gps/include/UBX_Parser.h"
+#include "MadgwickAHRS.h"
 #include "deadReckoning.h"
 #include "estAltitude.h"
 float estimated_altitude = 0;
@@ -75,6 +75,8 @@ int gps_nav_valid = 0;
 int dead_reckon_clock = 0;
 float Ground_Speed_gps = 0;
 float Vsz_gps = 0;
+float u,v,w;
+float vx,vy,vz;
 // fin modif gfm
 /*
 BMP:

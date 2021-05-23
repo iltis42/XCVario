@@ -102,8 +102,8 @@ public:
   static float  getSpeed() 		 { return result.getSpeed(); }
   static int  getAge() 			 { return _age; }
   static int  getQuality() 		 { return rint(quality*20); } // 0..100 %
-  static char * getStatus()      { return status; }
-  static char *getFlightModeStr(){
+  static const char * getStatus()      { return status; }
+  static const char *getFlightModeStr(){
                                    if( flightMode == straight )
                                 	   return "straight";
                                    else if( flightMode == circlingL )
@@ -134,7 +134,7 @@ private:
   static float windspeed;
   static int num_samples;
   static int _age;
-  static char *status;
+  static const char *status;
 };
 
 #endif

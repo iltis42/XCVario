@@ -1030,12 +1030,12 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 	if( old_gmax != gload_pos_max.get() ){
 		ucg->setFont(ucg_font_fub20_hr);
 		ucg->setPrintPos(120,105);
-		ucg->printf("%1.2f", gload_pos_max.get() );
+		ucg->printf("%+1.2f", gload_pos_max.get() );
 	}
 	if( old_gmin != gload_neg_max.get() ){
 		ucg->setFont(ucg_font_fub20_hr);
 		ucg->setPrintPos(115,245);
-		ucg->printf("%1.2f", gload_neg_max.get() );
+		ucg->printf("%+1.2f", gload_neg_max.get() );
 	}
 
 	xSemaphoreGive(spiMutex);

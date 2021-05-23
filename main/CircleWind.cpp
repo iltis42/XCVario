@@ -78,7 +78,7 @@ int CircleWind::num_samples = 0;
 float CircleWind::direction = 0;
 float CircleWind::windspeed = 0;
 int CircleWind::_age = 0;
-char * CircleWind::status = "idle";
+const char * CircleWind::status = "idle";
 
 t_circling CircleWind::flightMode = undefined;
 

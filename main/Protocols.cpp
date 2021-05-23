@@ -29,6 +29,7 @@ S2F * Protocols::_s2f = 0;
 //modif gfm
 #include "UBX_Parser.h"
 #include "estAltitude.h"
+#include "ahrs.h"
 extern float Vsz_gps;
 extern float Ground_Speed_gps;
 float time_gps;

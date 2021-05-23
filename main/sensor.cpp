@@ -66,6 +66,7 @@
 // #include "sound.h"
 // modif gfm
 #include "../components/gps/include/UBX_Parser.h"
+#include "ahrs.h"
 #include "MadgwickAHRS.h"
 #include "deadReckoning.h"
 #include "estAltitude.h"

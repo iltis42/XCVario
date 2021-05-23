@@ -15,9 +15,6 @@
 
 void IMU::init(){
 #define imax 10
-	roll=0;
-	pitch=0;
-	yaw=0;/* il faudrait initialiser Yaw sur le QFU de la piste lorsqu'on est parfaitement aligné*/
 	double gxsum=0;
 	double gysum=0;
 	double gzsum=0;

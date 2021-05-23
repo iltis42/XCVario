@@ -104,16 +104,18 @@ public:
    *
    * @returns The x rotation (roll) in degrees
    */
-  static inline double getRoll() {  return (filterRoll);  };
-  static inline double getRollRad() {  return (filterRoll*DEG_TO_RAD);  };
+  //static inline double getRoll() {  return (filterRoll);  };
+  /*static inline double getRollRad() {  return (filterRoll*DEG_TO_RAD);  };*/
+  static inline double getRollRad() {  return (roll);  };
 
   /**
    * Gets the pitch (Y rotation) in degrees from the Kalman Filter.\
    *
    * @returns The y rotation (pitch) in degrees
    */
-  static inline double getPitch()  {	return (-filterPitch);  }
-  static inline double getPitchRad()  {	return (-filterPitch*DEG_TO_RAD);  }
+  //static inline double getPitch()  {	return (-filterPitch);  }
+//  static inline double getPitchRad()  {	return (-filterPitch*DEG_TO_RAD);  }
+  static inline double getPitchRad()  {	return (-(pitch));  }
 
 
 private:
@@ -121,20 +123,26 @@ private:
   static double gyroXAngle, gyroYAngle; /* Angle calculate using the gyro only*/
 
   static double accelX, accelY, accelZ;
+  static double offset_accelX;
+  static double offset_accelY;
+  static double offset_accelZ;
   static double accel_earthX, accel_earthY, accel_earthZ;
   static double gyroX, gyroY, gyroZ;
+  static double offset_gyroX;
+  static double offset_gyroY;
+  static double offset_gyroZ;
   static double kalXAngle, kalYAngle;
 
   static void MPU6050Read();
   static void RollPitchFromAccel(double *roll, double *pitch);
   static void PitchFromAccel(double *pitch);
   static uint64_t last_rts;
-  static float   myrolly;
-  static float   myrollz;
+  static double   roll;
+  static double   yaw;
   static float   myaccroll;
-  static double  mypitch;
-  static double  filterPitch;
-  static double  filterRoll;
+  static double  pitch;
+  static double  offset_pitch;
+  static double  offset_roll;
 
 };
 

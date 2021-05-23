@@ -10,32 +10,60 @@
 #include "sensor.h"
 
 // IMU Function Definition
-	double roll=0;
-	double pitch=0;
-	double yaw=0;/* il faudrait initialiser Yaw sur le QFU de la piste lorsqu'on est parfaitement aligné*/
 	extern float u,v,w;
 	extern float vx,vy,vz;
 
-void IMU::init(void){
-	MPU6050Read();
-	// sleep( 0.1 );
+void IMU::init(){
+#define imax 10
 	roll=0;
 	pitch=0;
 	yaw=0;/* il faudrait initialiser Yaw sur le QFU de la piste lorsqu'on est parfaitement aligné*/
+	double gxsum=0;
+	double gysum=0;
+	double gzsum=0;
+	double axsum=0;
+	double aysum=0;
+	double azsum=0;
+	double rollsum=0;
+	double pitchsum=0;
+	for (int i=0;i<imax;i++){
+	MPU6050Read();
+	 sleep( 0.1 );
 	/* il faudrait faire une moyenne sur 10s*/
+	gxsum+=gyroX;
+	gysum+=gyroY;
+	gzsum+=gyroZ;
+	axsum+=accelX;
+	aysum+=accelY;
+	azsum+=accelZ;
+	}
+	offset_gyroX = gxsum/imax;
+	offset_gyroY = gysum/imax;
+	offset_gyroZ = gzsum/imax;
+	offset_accelX= axsum/imax;
+	offset_accelY= aysum/imax;
+	offset_accelZ= azsum/imax;
+
+	for (int i=0;i<imax;i++){
+	MPU6050Read();
+	 sleep( 0.1 );
 	IMU::RollPitchFromAccel(&roll, &pitch);
+	rollsum+=roll;
+	pitchsum+=pitch;
+	}
+	offset_roll=rollsum/imax;
+	offset_pitch = pitchsum/imax;
 
 	lastProcessed = micros();
 	ESP_LOGD(FNAME, "Finished IMU setup  gyroYAngle:%f ", pitch);
-
 	/* Initialisation du quaternion*/
-	q0=((cos((double)roll/2.0)*cos((double)pitch/2.0)*cos((double)yaw/2.0)+sin((double)roll/2.0)*sin((double)pitch/2.0)*sin((double)yaw/2.0)));
-	q1=((sin((double)roll/2.0)*cos((double)pitch/2.0)*cos((double)yaw/2.0)-cos((double)roll/2.0)*sin((double)pitch/2.0)*sin((double)yaw/2.0)));
-	q2=((cos((double)roll/2.0)*sin((double)pitch/2.0)*cos((double)yaw/2.0)+sin((double)roll/2.0)*cos((double)pitch/2.0)*sin((double)yaw/2.0)));
-	q3=((cos((double)roll/2.0)*cos((double)pitch/2.0)*sin((double)yaw/2.0)-sin((double)roll/2.0)*sin((double)pitch/2.0)*cos((double)yaw/2.0)));
+	q0=((cos((double)getRollRad()/2.0)*cos((double)getPitchRad()/2.0)*cos((double)yaw/2.0)+sin((double)getRollRad()/2.0)*sin((double)getPitchRad()/2.0)*sin((double)yaw/2.0)));
+	q1=((sin((double)getRollRad()/2.0)*cos((double)getPitchRad()/2.0)*cos((double)yaw/2.0)-cos((double)getRollRad()/2.0)*sin((double)getPitchRad()/2.0)*sin((double)yaw/2.0)));
+	q2=((cos((double)getRollRad()/2.0)*sin((double)getPitchRad()/2.0)*cos((double)yaw/2.0)+sin((double)getRollRad()/2.0)*cos((double)getPitchRad()/2.0)*sin((double)yaw/2.0)));
+	q3=((cos((double)getRollRad()/2.0)*cos((double)getPitchRad()/2.0)*sin((double)yaw/2.0)-sin((double)getRollRad()/2.0)*sin((double)getPitchRad()/2.0)*cos((double)yaw/2.0)));
 
 }
-void IMU::read(void){
+void IMU::read(){
 	double dt=0;
 	bool ret=false;
 
@@ -48,7 +76,7 @@ void IMU::read(void){
 			return;
 
 		MPU6050Read();
-		MadgwickAHRSupdateIMU(gyroX*DEG_TO_RAD, gyroY*DEG_TO_RAD, gyroZ*DEG_TO_RAD, accelX, accelY, accelZ);
+		//MadgwickAHRSupdateIMU(gyroX*DEG_TO_RAD, gyroY*DEG_TO_RAD, gyroZ*DEG_TO_RAD, accelX, accelY, accelZ);
 	// Intégration des anges d'Euler
 	  float temp1=q0;
 	  float temp2=q1;
@@ -114,8 +142,8 @@ void IMU::RollPitchFromAccel(double *roll, double *pitch)
 	// atan2 outputs the value of -π to π (radians) - see http://en.wikipedia.org/wiki/Atan2
 	// It is then converted from radians to degrees
 
-	*roll = atan2((double)accelY , (double)accelZ);
-	*pitch = atan2((double)-accelX, (double)accelZ);
+	*roll = atan2((double)(accelY-offset_accelY) , (double)(accelZ-offset_accelZ));
+	*pitch = atan2((double)-(accelX-offset_accelX), (double)(accelZ-offset_accelZ));
 
 	ESP_LOGD( FNAME,"Accelerometer Roll: %f  Pitch: %f  (y:%f x:%f)", *roll * RAD_TO_DEG, *pitch * RAD_TO_DEG, (double)accelY, (double)accelX );
 

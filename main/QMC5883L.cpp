@@ -27,7 +27,7 @@ Last update: 2021-04-05
 #include <cassert>
 #include <cmath>
 #include "QMC5883L.h"
-#include "KalmanMPU6050.h"
+#include "ahrs.h"
 #include "SetupNG.h"
 #include "MenuEntry.h"
 

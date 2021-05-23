@@ -22,7 +22,7 @@
 #include "deadReckoning.h"
 //#include "estWind.h"
 #include "estAltitude.h"
-#include "KalmanMPU6050.h"
+#include "ahrs.h"
 
 
 // seconds

@@ -18,7 +18,7 @@
 #include "mpu/math.hpp"   // math helper for dealing with MPU data
 #include "mpu/types.hpp"  // MPU data types and definitions
 #include "DallasRmt.h"
-#include "KalmanMPU6050.h"
+#include "ahrs.h"
 #include "Router.h"
 #include "Atmosphere.h"
 #include "Flarm.h"
@@ -181,9 +181,8 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
  * et parseNMEA sscanf( str, "$PXCV,%f,%f,%f,%f,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f*%02x", &_te....  ???
  * J'en suis là, ce matin 6 mai 2021.
   */
-     	char str_loc[255];
 		/*
-		Sentence has following format:
+     	char str_loc[255];
 		$PXCV,
 		TTTT.TTTTTT = time in second, with microsecond precision
 		BBB.B = Vario, -30 to +30 m/s, negative sign for sink,
@@ -223,15 +222,15 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		//		bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z,gx,gy,gz,aex,aey,aez );
 
 //fin modif gfm*/
-		float roll = IMU::getRoll();
-		float pitch = IMU::getPitch();
-		float aex = IMU::getEarthAccelX();
-		float aey = IMU::getEarthAccelY();
-		float aez = IMU::getEarthAccelZ();
+		double rolloc = IMU::getRollRad();
+		double pitchloc = IMU::getPitchRad();
+		double aex = IMU::getEarthAccelX();
+		double aey = IMU::getEarthAccelY();
+		double aez = IMU::getEarthAccelZ();
 //		sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%6.2f,%6.2f,%4.3f,%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
 		float timertime = esp_timer_get_time()/1000000.0; // time in second
 		sprintf(str,"$PXCV,%.6f,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%.3f,%.3f,%.3f,%3.1f,%3.1f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f",
-				timertime, te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z, gz, gy, gx,aex,aey,aez );
+				timertime, te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp, rolloc, pitchloc, acc_x, acc_y, acc_z, gz, gy, gx,aex,aey,aez );
 	}
 	else if( proto == P_XCVARIO ){
 		/*
@@ -254,9 +253,9 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 				*CHK = standard NMEA checksum
 		*/
 		if( haveMPU && attitude_indicator.get() ){
-			float roll = IMU::getRoll();
-			float pitch = IMU::getPitch();
-			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f,%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
+			double rolloc = IMU::getRollRad();
+			double pitchloc = IMU::getPitchRad();
+			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f,%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp, rolloc, pitchloc, acc_x, acc_y, acc_z );
 
 		}else{
 			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f,,,,,", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp );
@@ -328,8 +327,8 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 
 	}
 	else if( proto == P_EYE_PEYI ){
-		float roll = IMU::getRoll();
-   	    float pitch = IMU::getPitch();
+		double rolloc = IMU::getRollRad();
+		double pitchloc = IMU::getPitchRad();
 		// ESP_LOGI(FNAME,"roll %.2f pitch %.2f yaw %.2f", roll, pitch, yaw  );
 		/*
 			$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,%.2f,
@@ -340,15 +339,15 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 			z,
 			);
 		 */
-		sprintf(str, "$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,", roll, pitch,acc_x,acc_y,acc_z );
+		sprintf(str, "$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,", rolloc, pitchloc,acc_x,acc_y,acc_z );
 	}
 	else if( proto == P_AHRS_APENV1 ) { // experimental
 		sprintf(str, "$APENV1,%.2f,%.2f,0,0,0,%.2f,", ias,alt,te );
 	}
 	else if( proto == P_AHRS_RPYL ) {   // experimental
 		sprintf(str, "$RPYL,%.2f,%.2f,0,0,,%.2f,0,",
-				IMU::getRoll(),         // Bank == roll    (deg)           SRC
-				IMU::getPitch(),         // pItch           (deg)
+				IMU::getRollRad(),         // Bank == roll    (rad)           SRC
+				IMU::getPitchRad(),         // pItch           (rad)
 				acc_z
 		);
 	}

@@ -66,7 +66,7 @@
 // modif gfm
 #include "../components/gps/include/UBX_Parser.h"
 #include "ahrs.hpp" /*"KalmanMPU6050.h"*/
-#include "MagdwickAHRS.h"
+#include "MadgwickAHRS.h"
 #include "deadReckoning.h"
 #include "estAltitude.h"
 float estimated_altitude = 0;
@@ -678,7 +678,9 @@ void sensor(void *args){
 		display->writeText( line++, "AHRS Sensor: OK");
 		logged_tests += "MPU6050 AHRS test: PASSED\n";
 		IMU::init();
+		logged_tests += "MPU6050 AHRS init: PASSED\n";
 		IMU::read();
+		logged_tests += "MPU6050 AHRS read: PASSED\n";
 		// BIAS MPU6050
 		mpud::raw_axes_t gb = gyro_bias.get();
 		mpud::raw_axes_t ab = accl_bias.get();
@@ -1137,12 +1139,11 @@ void sensor(void *args){
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 13, dpid, 0);
 
 	Audio::startAudio();
-//modif gfm
-	IMU::init();
-	Init_UBX_Parser();
+	//modif gfm
+		Init_UBX_Parser();
 
-	altimeter_calibrate();
-	// fin modif gfm
+		altimeter_calibrate();
+		// fin modif gfm
 }
 
 

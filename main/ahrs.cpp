@@ -8,6 +8,7 @@
 #include "ahrs.hpp"
 
 #include "MadgwickAHRS.h"
+#include "logdef.h"
 #include "sensor.h"
 
 #define DEBUG_INIT()
@@ -49,6 +50,7 @@ double IMU::offset_gyroZ = 0.0;
 double IMU::offset_accelX = 0.0;
 double IMU::offset_accelY = 0.0;
 double IMU::offset_accelZ = 0.0;
+bool IMU::initdone = false;
 
 // IMU Function Definition
 	extern float u,v,w;
@@ -66,9 +68,10 @@ void IMU::init(){
 	double rollsum=0;
 	double pitchsum=0;
 	double yawsum=0;
+	initdone = false;
 	for (int i=0;i<imax;i++){
 		MPU6050Read();
-		sleep( 0.1 );
+		sleep( 1 );
 		/* il faudrait faire une moyenne sur 10s*/
 		gxsum+=gyroX;
 		gysum+=gyroY;
@@ -87,7 +90,7 @@ void IMU::init(){
 
 	for (int i=0;i<imax;i++){
 		MPU6050Read();
-		sleep( 0.1 );
+		sleep( 1 );
 		IMU::RollPitchFromAccel(&roll, &pitch);
 		rollsum+=roll;
 		pitchsum+=pitch;
@@ -96,15 +99,22 @@ void IMU::init(){
 	offset_roll=rollsum/imax;
 	offset_pitch = pitchsum/imax;
 	offset_yaw = yawsum/imax;
+	MPU6050Read();
+	IMU::RollPitchFromAccel(&roll, &pitch);
+	offset_roll=roll;
+	offset_pitch = pitch;
 
 	lastProcessed = micros();
-	ESP_LOGD(FNAME, "Finished IMU setup  gyroYAngle:%f ", pitch);
+	ESP_LOGI(FNAME, "Finished IMU setup  offsets:%f,%f,%f,%f,%f,%f ", offset_gyroX, offset_gyroY, offset_gyroZ, offset_accelX, offset_accelY, offset_accelZ);
+	ESP_LOGI(FNAME, "Attitude:%f,%f,%f ", roll,pitch,yaw);
 	/* Initialisation du quaternion*/
 	q0=((cos((double)getRollRad()/2.0)*cos((double)getPitchRad()/2.0)*cos((double)yaw/2.0)+sin((double)getRollRad()/2.0)*sin((double)getPitchRad()/2.0)*sin((double)yaw/2.0)));
 	q1=((sin((double)getRollRad()/2.0)*cos((double)getPitchRad()/2.0)*cos((double)yaw/2.0)-cos((double)getRollRad()/2.0)*sin((double)getPitchRad()/2.0)*sin((double)yaw/2.0)));
 	q2=((cos((double)getRollRad()/2.0)*sin((double)getPitchRad()/2.0)*cos((double)yaw/2.0)+sin((double)getRollRad()/2.0)*cos((double)getPitchRad()/2.0)*sin((double)yaw/2.0)));
 	q3=((cos((double)getRollRad()/2.0)*cos((double)getPitchRad()/2.0)*sin((double)yaw/2.0)-sin((double)getRollRad()/2.0)*sin((double)getPitchRad()/2.0)*cos((double)yaw/2.0)));
+	ESP_LOGI(FNAME, "Quaternion:%f,%f,%f,%f ", q0,q1,q2,q3);
 
+	initdone=true;
 }
 void IMU::read(){
 	double dt=0;
@@ -168,12 +178,22 @@ void IMU::read(){
 void IMU::MPU6050Read()
 {// Les mesures sont transformées en valeur SI dès leur mise en forme
 	// et les offsets enlevés
+	if (initdone){
 		accelX = -(accelG[2]*G-offset_accelX);
 		accelY = (accelG[1]*G-offset_accelY);
 		accelZ = (accelG[0]*G-offset_accelZ);
 		gyroX = -(gyroDPS.z*DEG_TO_RAD-offset_gyroX);
 		gyroY = (gyroDPS.y*DEG_TO_RAD-offset_gyroY);
 		gyroZ = (gyroDPS.x*DEG_TO_RAD-offset_gyroZ);
+	}
+	else{
+		accelX = -(accelG[2]*G);
+		accelY = (accelG[1]*G);
+		accelZ = (accelG[0]*G);
+		gyroX = -(gyroDPS.z*DEG_TO_RAD);
+		gyroY = (gyroDPS.y*DEG_TO_RAD);
+		gyroZ = (gyroDPS.x*DEG_TO_RAD);
+	}
 }
 
 void IMU::PitchFromAccel(double *pitch)

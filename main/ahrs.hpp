@@ -36,7 +36,7 @@
 #define G 9.806
 #endif // G
 //fin modif gfm
-typedef struct kalman_t
+/*typedef struct kalman_t
 {
 	double Q_angle;   // Process noise variance for the accelerometer
 	double Q_bias;    // Process noise variance for the gyro bias
@@ -51,8 +51,8 @@ typedef struct kalman_t
 	double y;       // Angle difference
 	double S;       // Estimate error
 } Kalman;
-
-#define SERIAL_KalmanMPU6050_DEBUG 0 // 1 Enables, 0 Disables
+*/
+//#define SERIAL_KalmanMPU6050_DEBUG 0 // 1 Enables, 0 Disables
 
 #define RESTRICT_PITCH     // Comment out to restrict roll to ±90deg instead please read: http://www.freescale.com/files/sensors/doc/app_note/AN3461.pdf
 
@@ -74,49 +74,49 @@ public:
    *
    * @returns Last time the data was fetched from the IMU in microseconds (micros())
    */
-  static inline uint32_t getLastReadTime() { return lastProcessed; };
+  static inline uint32_t getLastReadTime() { return (lastProcessed); };
 
   /**
    * Gets the accelerometer raw X reading, as per last read() call.
    *
    * @returns The accelerometer raw X reading
    */
-  static inline double getRawAccelX()  {  return accelX;  };
+  static inline double getRawAccelX()  {  return (accelX);  };
 
   /**
    * Gets the accelerometer raw Y reading, as per last read() call.
    *
    * @returns The accelerometer raw Y reading
    */
-  static inline double getRawAccelY()   {   return accelY;   };
+  static inline double getRawAccelY()   {   return (accelY);   };
 
   /**
    * Gets the accelerometer raw Z reading, as per last read() call.
    *
    * @returns The accelerometer raw Z reading
    */
-  static inline double getRawAccelZ()  {  	return accelZ;  };
+  static inline double getRawAccelZ()  {  	return (accelZ);  };
 
   /**
    * Gets the gyroscope raw X reading, as per last read() call.
    *
    * @returns The gyroscope raw X reading.
    */
-  static inline double getRawGyroX()   {  	return gyroX;  };
+  static inline double getRawGyroX()   {  	return (gyroX);  };
 
   /**
    * Gets the gyroscope raw Y reading, as per last read() call.
    *
    * @returns The gyroscope raw Y reading.
    */
-  static inline double getRawGyroY()   {  	return gyroY;  };
+  static inline double getRawGyroY()   {  	return (gyroY);  };
 
   /**
    * Gets the gyroscope raw Z reading, as per last read() call.
    *
    * @returns The gyroscope raw Z reading.
    */
-  static inline double getRawGyroZ()   {  return gyroZ;  };
+  static inline double getRawGyroZ()   {  return (gyroZ);  };
   //modif gfm
   #define cphi cos((double)getRollRad())
   #define sphi sin((double)getRollRad())
@@ -144,7 +144,7 @@ public:
    */
   static inline double getPitch()  {	return -pitch*RAD_TO_DEG;  };
   static inline double getPitchRad()  {	return -pitch;  };
-
+  static inline bool getInitdone() {return (initdone);};
 
 private:
   static uint32_t lastProcessed;
@@ -166,6 +166,7 @@ private:
   static double  offset_roll;
   static double  offset_pitch;
   static double  offset_yaw;
+  static bool initdone;
 };
 
 #endif // _KalmanMPU6050_H_

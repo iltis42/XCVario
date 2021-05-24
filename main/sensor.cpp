@@ -194,7 +194,7 @@ void drawDisplay(void *pvParameters){
 			else if( airspeed_mode.get() == MODE_TAS )
 				airspeed = tas;
 			// Stall Warning Screen
-			if( stall_warning.get() ){
+			if( stall_warning.get() && gload_mode.get() != GLOAD_ALWAYS_ON ){  // In aerobatics stall warning is contra productive, we concentrate on G-Load Display if permanent enabled
 				if( stall_warning_armed ){
 					float acceleration=accelG[0];
 					if( acceleration < 0.3 )

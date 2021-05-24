@@ -20,9 +20,10 @@
 
 
 #include "deadReckoning.h"
+
+#include "ahrs.hpp"
 //#include "estWind.h"
 #include "estAltitude.h"
-#include "ahrs.h"
 
 
 // seconds

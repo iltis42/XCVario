@@ -12,11 +12,15 @@
 //=====================================================================================================
 #ifndef MadgwickAHRS_h
 #define MadgwickAHRS_h
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 //----------------------------------------------------------------------------------------------------
 // Variable declaration
 
-extern volatile double beta_quat;				// algorithm gain
+extern double beta_quat;				// algorithm gain
 extern volatile double q0, q1, q2, q3;	// quaternion of sensor frame relative to auxiliary frame
 
 //---------------------------------------------------------------------------------------------------
@@ -25,6 +29,9 @@ extern volatile double q0, q1, q2, q3;	// quaternion of sensor frame relative to
 void MadgwickAHRSupdate(double gx, double gy, double gz, double ax, double ay, double az, double mx, double my, double mz);
 void MadgwickAHRSupdateIMU(double gx, double gy, double gz, double ax, double ay, double az);
 
+#ifdef __cplusplus
+}
+#endif
 #endif
 //=====================================================================================================
 // End of file

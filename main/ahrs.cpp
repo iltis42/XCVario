@@ -5,13 +5,55 @@
  *      Author: GFM
  */
 
-#include "ahrs.h"
+#include "ahrs.hpp"
+
 #include "MadgwickAHRS.h"
 #include "sensor.h"
+
+#define DEBUG_INIT()
+#define DEBUG_TS_PRINT(x)
+#define DEBUG_TS_PRINTLN(x)
+
+#define sqr(x) x *x
+#define hypotenuse(x, y) sqrt(sqr(x) + sqr(y))
+
+// MPU-6050
+#define IMU_ADDR 0x68
+#define IMU_ACCEL_XOUT_H 0x3B
+#define IMU_REG 0x19
+#define IMU_PWR_MGMT_1 0x6B
+
+// Private Variables
+uint32_t IMU::lastProcessed = 0;
+
+double 	IMU::roll = 0;
+double  IMU::pitch = 0;
+double  IMU::yaw= 0;
+double  IMU::offset_pitch = 0;
+double  IMU::offset_roll = 0;
+double  IMU::offset_yaw = 0;
+
+uint64_t IMU::last_rts=0;
+double IMU::accelX = 0.0;
+double IMU::accelY = 0.0;
+double IMU::accelZ = 0.0;
+double IMU::accel_earthX = 0.0;
+double IMU::accel_earthY = 0.0;
+double IMU::accel_earthZ = 0.0;
+double IMU::gyroX = 0.0;
+double IMU::gyroY = 0.0;
+double IMU::gyroZ = 0.0;
+double IMU::offset_gyroX = 0.0;
+double IMU::offset_gyroY = 0.0;
+double IMU::offset_gyroZ = 0.0;
+double IMU::offset_accelX = 0.0;
+double IMU::offset_accelY = 0.0;
+double IMU::offset_accelZ = 0.0;
 
 // IMU Function Definition
 	extern float u,v,w;
 	extern float vx,vy,vz;
+	double beta_quat;				// algorithm gain
 
 void IMU::init(){
 #define imax 10
@@ -23,33 +65,37 @@ void IMU::init(){
 	double azsum=0;
 	double rollsum=0;
 	double pitchsum=0;
+	double yawsum=0;
 	for (int i=0;i<imax;i++){
-	MPU6050Read();
-	 sleep( 0.1 );
-	/* il faudrait faire une moyenne sur 10s*/
-	gxsum+=gyroX;
-	gysum+=gyroY;
-	gzsum+=gyroZ;
-	axsum+=accelX;
-	aysum+=accelY;
-	azsum+=accelZ;
-	}
+		MPU6050Read();
+		sleep( 0.1 );
+		/* il faudrait faire une moyenne sur 10s*/
+		gxsum+=gyroX;
+		gysum+=gyroY;
+		gzsum+=gyroZ;
+		axsum+=accelX;
+		aysum+=accelY;
+		azsum+=accelZ;
+		}
 	offset_gyroX = gxsum/imax;
 	offset_gyroY = gysum/imax;
 	offset_gyroZ = gzsum/imax;
 	offset_accelX= axsum/imax;
 	offset_accelY= aysum/imax;
-	offset_accelZ= azsum/imax;
+	//offset_accelZ= azsum/imax;
+	offset_accelZ= (azsum-G)/imax;
 
 	for (int i=0;i<imax;i++){
-	MPU6050Read();
-	 sleep( 0.1 );
-	IMU::RollPitchFromAccel(&roll, &pitch);
-	rollsum+=roll;
-	pitchsum+=pitch;
-	}
+		MPU6050Read();
+		sleep( 0.1 );
+		IMU::RollPitchFromAccel(&roll, &pitch);
+		rollsum+=roll;
+		pitchsum+=pitch;
+		yawsum+=yaw;
+		}
 	offset_roll=rollsum/imax;
 	offset_pitch = pitchsum/imax;
+	offset_yaw = yawsum/imax;
 
 	lastProcessed = micros();
 	ESP_LOGD(FNAME, "Finished IMU setup  gyroYAngle:%f ", pitch);
@@ -73,7 +119,7 @@ void IMU::read(){
 			return;
 
 		MPU6050Read();
-		//MadgwickAHRSupdateIMU(gyroX*DEG_TO_RAD, gyroY*DEG_TO_RAD, gyroZ*DEG_TO_RAD, accelX, accelY, accelZ);
+		MadgwickAHRSupdateIMU(gyroX, gyroY, gyroZ, accelX, accelY, accelZ);
 	// Intégration des anges d'Euler
 	  float temp1=q0;
 	  float temp2=q1;
@@ -120,13 +166,14 @@ void IMU::read(){
 
 
 void IMU::MPU6050Read()
-{
-		accelX = -accelG[2];
-		accelY = accelG[1];
-		accelZ = accelG[0];
-		gyroX = -(gyroDPS.z);
-		gyroY = gyroDPS.y;
-		gyroZ = gyroDPS.x;
+{// Les mesures sont transformées en valeur SI dès leur mise en forme
+	// et les offsets enlevés
+		accelX = -(accelG[2]*G-offset_accelX);
+		accelY = (accelG[1]*G-offset_accelY);
+		accelZ = (accelG[0]*G-offset_accelZ);
+		gyroX = -(gyroDPS.z*DEG_TO_RAD-offset_gyroX);
+		gyroY = (gyroDPS.y*DEG_TO_RAD-offset_gyroY);
+		gyroZ = (gyroDPS.x*DEG_TO_RAD-offset_gyroZ);
 }
 
 void IMU::PitchFromAccel(double *pitch)
@@ -139,8 +186,8 @@ void IMU::RollPitchFromAccel(double *roll, double *pitch)
 	// atan2 outputs the value of -π to π (radians) - see http://en.wikipedia.org/wiki/Atan2
 	// It is then converted from radians to degrees
 
-	*roll = atan2((double)(accelY-offset_accelY) , (double)(accelZ-offset_accelZ));
-	*pitch = atan2((double)-(accelX-offset_accelX), (double)(accelZ-offset_accelZ));
+	*roll = atan2((double)(accelY) , (double)(accelZ));
+	*pitch = atan2((double)-(accelX), (double)(accelZ));
 
 	ESP_LOGD( FNAME,"Accelerometer Roll: %f  Pitch: %f  (y:%f x:%f)", *roll * RAD_TO_DEG, *pitch * RAD_TO_DEG, (double)accelY, (double)accelX );
 

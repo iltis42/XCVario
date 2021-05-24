@@ -27,7 +27,8 @@ Last update: 2021-04-05
 #include <cassert>
 #include <cmath>
 #include "QMC5883L.h"
-#include "ahrs.h"
+
+#include "ahrs.hpp"
 #include "SetupNG.h"
 #include "MenuEntry.h"
 

@@ -48,7 +48,6 @@
 #include "mpu/math.hpp"   // math helper for dealing with MPU data
 #include "mpu/types.hpp"  // MPU data types and definitions
 #include "I2Cbus.hpp"
-#include "ahrs.h" /*"KalmanMPU6050.h"*/
 #include "WifiApp.h"
 #include "WifiClient.h"
 #include "Serial.h"
@@ -66,8 +65,8 @@
 // #include "sound.h"
 // modif gfm
 #include "../components/gps/include/UBX_Parser.h"
-#include "ahrs.h"
-#include "MadgwickAHRS.h"
+#include "ahrs.hpp" /*"KalmanMPU6050.h"*/
+#include "MagdwickAHRS.h"
 #include "deadReckoning.h"
 #include "estAltitude.h"
 float estimated_altitude = 0;
@@ -78,6 +77,10 @@ float Ground_Speed_gps = 0;
 float Vsz_gps = 0;
 float u,v,w;
 float vx,vy,vz;
+volatile double q0 = 0.0;
+volatile double q1 = 0.0;
+volatile double q2 = 0.0;
+volatile double q3 = 0.0;	// quaternion of sensor frame relative to auxiliary frame
 // fin modif gfm
 /*
 BMP:
@@ -1135,7 +1138,7 @@ void sensor(void *args){
 
 	Audio::startAudio();
 //modif gfm
-
+	IMU::init();
 	Init_UBX_Parser();
 
 	altimeter_calibrate();

@@ -62,14 +62,13 @@ CircleWind::CircleWind()
 	maxVector.setSpeedKmh( 0.0 );
 }
 
-bool CircleWind::active = false;
 int CircleWind::circleCount = 0; 		// we are counting the number of circles, the first onces are probably not very round
 bool CircleWind::circleLeft = false; 	// true=left, false=right
 int CircleWind::circleDegrees = 0; 		// Degrees of current flown circle
 int CircleWind::lastHeading = -1; 		// Last processed heading
 int CircleWind::satCnt = 0;
 int CircleWind::minSatCnt = 5;
-bool CircleWind::ciclingMode = false;
+t_circling CircleWind::circlingMode = undefined;
 int  CircleWind::gpsStatus = false;
 Vector CircleWind::minVector;
 Vector CircleWind::maxVector;
@@ -79,6 +78,7 @@ int CircleWind::num_samples = 0;
 float CircleWind::direction = 0;
 float CircleWind::windspeed = 0;
 int CircleWind::_age = 0;
+const char * CircleWind::status = "idle";
 
 t_circling CircleWind::flightMode = undefined;
 
@@ -90,8 +90,9 @@ CircleWind::~CircleWind()
 /** Called if a new sample is available in the sample list. */
 void CircleWind::newSample( Vector curVec )
 {
+	if( blue_enable.get() == WL_WLAN_CLIENT )
+		return;
 	ESP_LOGI(FNAME,"new GPS Sample dir:%3.2f° speed:%3.2f", curVec.getAngleDeg(), curVec.getSpeed() );
-
 	// circle detection
 	if( lastHeading != -1 )
 	{
@@ -103,10 +104,11 @@ void CircleWind::newSample( Vector curVec )
 	lastHeading = curVec.getAngleDeg();
 
 	if( flightMode != circlingL && flightMode != circlingR ){
-		// ESP_LOGI(FNAME,"FlightMode not circling %d", flightMode );
+		ESP_LOGI(FNAME,"FlightMode not circling %d", flightMode );
+		status = "Not Circling";
 		return;
 	}
-
+	status = "Sampling";
 	if( curVec.getSpeed() < minVector.getSpeed() )
 	{
 		// New minimum speed detected
@@ -123,13 +125,11 @@ void CircleWind::newSample( Vector curVec )
 
 	if( circleDegrees > 361 )  // a bit more than one circle to ensure both ends are in
 	{
+		status = "Calculating";
 		circleCount++;  // increase the number of circles flown (used to determine the quality)
 		ESP_LOGI(FNAME,"full circle made, circles %d last circle had %d °", circleCount, circleDegrees );
 		_calcWind(); 	// calculate the wind for this circle
-
-		circleDegrees = 0;
-		minVector.setSpeedKmh( 370.0 );
-		maxVector.setSpeedKmh( 0.0 );
+		restartCycle( false );
 	}
 }
 
@@ -139,6 +139,7 @@ void CircleWind::calcFlightMode( float headingDiff, float speed ){
 		if( flightMode != undefined ) {
 			newFlightMode( undefined );
 			flightMode = undefined;
+			ESP_LOGI(FNAME,"calcFlightMode() New flightmode: undefined, no GS");
 		}
 	}
 	else{
@@ -146,18 +147,21 @@ void CircleWind::calcFlightMode( float headingDiff, float speed ){
 			if( flightMode != circlingR ) {
 				newFlightMode( circlingR );
 				flightMode = circlingR;
+				ESP_LOGI(FNAME,"calcFlightMode() New flightmode: circle right");
 			}
 		}
 		else if( headingDiff < -MINTURNANGDIFF ) {
 			if( flightMode != circlingL ) {
 				newFlightMode( circlingL );
 				flightMode = circlingL;
+				ESP_LOGI(FNAME,"calcFlightMode() New flightmode: circle left");
 			}
 		}
 		else{
 			if( flightMode != straight ) {
 				newFlightMode( straight );
 				flightMode = straight;
+				ESP_LOGI(FNAME,"calcFlightMode() New flightmode: straight");
 			}
 		}
 	}
@@ -167,58 +171,28 @@ void CircleWind::calcFlightMode( float headingDiff, float speed ){
 /** Called if the flight mode changes */
 void CircleWind::newFlightMode( t_circling newFlightMode )
 {
+	if( blue_enable.get() == WL_WLAN_CLIENT )
+		return;
 	// Reset the circle counter for each flight mode change. The important thing
 	// to measure is the number of turns in a thermal per turn direction.
 	ESP_LOGI(FNAME,"newFlightMode %d", newFlightMode );
-
-	circleCount   = 0;
-	circleDegrees = 0;
-	lastHeading   = -1;
-	minVector.setSpeedKmh( 370.0 );
-	maxVector.setSpeedKmh( 0.0 );
-
-	// We are inactive as default.
-	active = false;
-
-	if( newFlightMode == circlingL )
-	{
-		circleLeft = true;
+	if( newFlightMode == circlingL || newFlightMode == circlingR ){
+		if( circlingMode != newFlightMode ){
+			circlingMode = newFlightMode;
+			restartCycle( true );
+		}
 	}
-	else if( newFlightMode == circlingR )
-	{
-		circleLeft = false;
-	}
-	else
-	{
-		ciclingMode = false;
-
-		// Ok, so we are not circling.
-		return;
-	}
-
-	// Set circle mode to true.
-	ciclingMode = true;
-
-	// Do we have enough satellites in view? The minimum should be four. Otherwise
-	// the calculated wind results are very bad.
-	if( satCnt < minSatCnt )
-	{
-		return;
-	}
-
-	if( gpsStatus == 0 )
-	{
-		// We have not a valid fix.
-		return;
-	}
-
-	// We are active now.
-	active = true;
 }
 
 void CircleWind::_calcWind()
 {
-	float aDiff = Vector::angleDiff( minVector.getAngleDeg(), maxVector.getAngleDeg() );
+	if( blue_enable.get() == WL_WLAN_CLIENT )
+		return;
+
+	// Invert maxVector angle
+	maxVector.setAngle( maxVector.getAngleDeg() + 180 );
+
+	float aDiff = Vector::angleDiffDeg( minVector.getAngleDeg(), maxVector.getAngleDeg() );
 	ESP_LOGI(FNAME,"calcWind, min/max diff %3.2f", aDiff );
 
 	/*
@@ -234,30 +208,21 @@ void CircleWind::_calcWind()
 
 	if( circleCount < 2 )
 	{
+		ESP_LOGI(FNAME,"circles < 2 decrement quality");
 		quality--;
 	}
-
-	if( circleCount < 1 )
-	{
-		quality--;
-	}
-
-	//  << "WindQuality=" << quality;
 
 	if( quality < 1 )
 	{
-		ESP_LOGI(FNAME,"quality %f < 1: Abort ", quality );
+		ESP_LOGI(FNAME,"quality bad %3.1f < 1: Abort ", quality );
+		status = "Too Low Qual";
 		return; // Measurement quality too low
 	}
 
-	// Invert maxVector angle
-	maxVector.setAngle( maxVector.getAngleDeg() + 180 );
-
 	// take both directions for min and max vector into account
-
-	ESP_LOGI(FNAME, "maxAngle=%3.1f°/%.0f   minAngle=%3.1f°/%.0f",
+	ESP_LOGI(FNAME, "maxAngle=%3.1f°/%.0f   minAngle=%3.1f°/%.0f Quality=%3.1f",
 			maxVector.getAngleDeg(), maxVector.getSpeed(),
-			minVector.getAngleDeg(), minVector.getSpeed() );
+			minVector.getAngleDeg(), minVector.getSpeed(), quality );
 
 
 	// the direction of the wind is the direction where the greatest speed occurred
@@ -280,11 +245,12 @@ void CircleWind::newWind( double angle, double speed, float q ){
 		windspeed = speed;
 	}
 	else{
-		kq = q/20.0;
-		direction += (angle - direction) * kq;
+		kq = q/10.0;
+		direction += Vector::angleDiffDeg(angle,(double)direction) * kq;
 		windspeed += (speed - windspeed) * kq;
 	}
 	ESP_LOGI(FNAME,"### NEW AGV CircleWind: %3.1f°/%.1fKm/h  KQ:%1.3f", direction, windspeed, kq );
+	OV.sendWindChange( direction, windspeed, WA_CIRCLING );
 	if( q > 3 && circleCount > 2 )
 		theWind.newCirclingWind( direction, windspeed );
 }
@@ -293,50 +259,46 @@ void CircleWind::tick(){
 	_age++;
 }
 
+
+void CircleWind::restartCycle( bool clean ){
+	ESP_LOGI(FNAME,"restartCycle( clean=%d)", clean  );
+	if( clean )
+		circleCount   = 0;
+	circleDegrees = 0;
+	lastHeading   = -1;
+	minVector.setSpeedKmh( 370.0 );
+	maxVector.setSpeedKmh( 0.0 );
+}
+
 void CircleWind::newConstellation( int numSat )
 {
+	if( blue_enable.get() == WL_WLAN_CLIENT )
+		return;
 	ESP_LOGI(FNAME,"newConstellation num sat:%d", numSat );
 	satCnt = numSat;
 
-	if( active && (satCnt < minSatCnt) )
+	if( satCnt < minSatCnt )
 	{
 		ESP_LOGW(FNAME,"Sat Constellation below minimum");
 		// we are active, but the satellite count drops below minimum
-		active = false;
-		return;
-	}
-
-	if( !active && ciclingMode && satCnt >= minSatCnt )
-	{
-		ESP_LOGW(FNAME,"Sat Constellation okay, (re)start WindCalculation");
-		// we are not active because we had low satellite count but that has been
-		// changed now. So we become active.
-		// Initialize analyzer-parameters
-		circleCount   = 0;
-		circleDegrees = 0;
-		lastHeading   = -1;
+		status = "< 5 Sat";
+		restartCycle( true );
 	}
 }
 
 void CircleWind::gpsStatusChange( bool newStatus )
 {
-	ESP_LOGI(FNAME,"gpsStatusChange status:%d", newStatus );
-	gpsStatus = newStatus;
-
-	if( active && newStatus != false )
-	{
-		// we are active, but the GPS fix is lost
-		active = false;
+	if( blue_enable.get() == WL_WLAN_CLIENT )
 		return;
-	}
-
-	if( !active && ciclingMode )
+	ESP_LOGI(FNAME,"gpsStatusChange status:%d", newStatus );
+	if( gpsStatus != newStatus  )
 	{
 		// we are not active because we had no GPS fix but that has been
 		// changed now. So we become active.
 		// Initialize analyzer-parameters
-		circleCount   = 0;
-		circleDegrees = 0;
-		lastHeading   = -1;
+		gpsStatus = newStatus;
+		if( ! gpsStatus )
+			status = "Bad GPS";
+		restartCycle( true );
 	}
 }

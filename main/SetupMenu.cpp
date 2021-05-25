@@ -203,14 +203,20 @@ int bal_adj( SetupMenuValFloat * p )
 
 int bug_adj( SetupMenuValFloat * p ){
 	Speed2Fly.change_mc_bal();
-	OV.sendBugsChange( bugs.get() );
+	if( blue_enable.get() == WL_WLAN_CLIENT )
+		OV.sendClientBugsChange( bugs.get() );
+	else
+		OV.sendBugsChange( bugs.get() );
 	return 0;
 }
 
 int mc_adj( SetupMenuValFloat * p )
 {
 	Speed2Fly.change_mc_bal();
-	OV.sendMcChange( MC.get() );
+	if( blue_enable.get() == WL_WLAN_CLIENT )
+		OV.sendClientMcChange( MC.get() );
+	else
+		OV.sendMcChange( MC.get() );
 	return 0;
 }
 
@@ -334,6 +340,10 @@ void SetupMenu::down(int count){
 			if( mc > 0.1 ) {
 				mc -= 0.1;
 				Speed2Fly.change_mc_bal();
+				if( blue_enable.get() == WL_WLAN_CLIENT )
+					OV.sendClientMcChange( MC.get() );
+				else
+					OV.sendMcChange( MC.get() );
 			}
 		}
 		else
@@ -364,6 +374,10 @@ void SetupMenu::up(int count){
 			if( mc < 9.9 ) {
 				mc += 0.1;
 				Speed2Fly.change_mc_bal();
+				if( blue_enable.get() == WL_WLAN_CLIENT )
+					OV.sendClientMcChange( MC.get() );
+				else
+					OV.sendMcChange( MC.get() );
 			}
 		}
 		else
@@ -846,7 +860,7 @@ void SetupMenu::setup( )
 		SetupMenuSelect * compSensorCal = new SetupMenuSelect( "Sensor Calibration", false, compassSensorCalibrateAction, false );
 		compSensorCal->addEntry( "Start");
 		compSensorCal->addEntry( "Cancel");
-		compSensorCal->setHelp( PROGMEM "Calibrate Magnetic Sensor" );
+		compSensorCal->setHelp( PROGMEM "Calibrate Magnetic Sensor, mandatory for operation" );
 		compassME->addMenu( compSensorCal );
 
 		SetupMenuValFloat *cd = new SetupMenuValFloat( "Setup Declination",
@@ -944,6 +958,22 @@ void SetupMenu::setup( )
 		windcal->setHelp(PROGMEM "Enable Wind calculation for straight flight (needs compass), circling or both and display wind in reto display style");
 		compassWindME->addMenu( windcal );
 
+		// Wind display option
+		SetupMenuSelect * winddis = new SetupMenuSelect( "Wind Display", false, 0, true, &wind_display );
+		winddis->addEntry( "Disable");
+		winddis->addEntry( "Digits");
+		winddis->addEntry( "Wind Arrow");
+		winddis->addEntry( "Both");
+		winddis->setHelp( PROGMEM "Control how wind is to be displayed, either as digits or by wind arrow or both on retro style screen");
+		compassWindME->addMenu( winddis );
+
+		// Wind speed observation window
+		SetupMenuSelect * windref = new SetupMenuSelect( "Wind Reference", false, 0, true, &wind_reference );
+		windref->addEntry( "North");
+		windref->addEntry( "Heading");
+		windref->setHelp( PROGMEM "Wind arrow related either to geographic north or related to true airplane heading");
+		compassWindME->addMenu( windref );
+
 		SetupMenu * strWindM = new SetupMenu( "Straight Wind" );
 		compassWindME->addMenu( strWindM );
 		strWindM->setHelp( PROGMEM "Straight flight wind calculation needs compass module active", 220 );
@@ -974,6 +1004,10 @@ void SetupMenu::setup( )
 
 		smvf->setHelp( PROGMEM "Setup heading tolerance value" );
 		strWindM->addMenu( smvf );
+
+		SetupMenuValFloat *smdev = new SetupMenuValFloat( "Deviation tolerance", nullptr, "%", 0.0, 100.0, 1.0,	nullptr, false, &wind_max_deviation );
+		smdev->setHelp( PROGMEM "Setup maximum deviation accepted for a wind measurement" );
+		strWindM->addMenu( smdev );
 
 		// Wind measurement time
 		smvf = new SetupMenuValFloat( "Wind after",
@@ -1018,6 +1052,7 @@ void SetupMenu::setup( )
 		btm->addEntry( "Bluetooth");
 		btm->addEntry( "Wireless LAN");
 		btm->addEntry( "Wireless Client");
+		btm->addEntry( "Cable Client");
 		opt->addMenu( btm );
 
 		SetupMenu * gload = new SetupMenu( "G-Load Display" );
@@ -1097,6 +1132,7 @@ void SetupMenu::setup( )
 		batv->setHelp(PROGMEM "Option to display battery charge state either in Percentage e.g. 75% or Voltage e.g. 12.5V");
 		batv->addEntry( "Percentage");
 		batv->addEntry( "Voltage");
+		batv->addEntry( "Voltage Big");
 
 		bat->addMenu(blow);
 		bat->addMenu(bred);
@@ -1379,7 +1415,7 @@ void SetupMenu::setup( )
 		nmea->addEntry( "Borgelt");
 		nmea->addEntry( "Cambridge");
 		nmea->addEntry( "XCVario");
-		nmea->addEntry( "XCVario Devel");
+
 	}
 	SetupMenu::display();
 }

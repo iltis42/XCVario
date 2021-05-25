@@ -60,8 +60,9 @@ public:
     static double normalizeDeg180(double angle);
 
     static double angleDiff(double ang1, double ang2);    // RAD
-    static float angleDiffDeg(float ang1, float ang2);    // RAD
+    static float angleDiffDeg(float ang1, float ang2);    // DEG
     static double angleDiffDeg(double ang1, double ang2); // DEG
+
 
     /**
      * Get angle in degrees.

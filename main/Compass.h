@@ -114,7 +114,6 @@ public:
 
 	static void saveDeviation();
 
-
 	/**
 	 *  Returns the heading valid flag.
 	 */
@@ -145,13 +144,15 @@ public:
 	 */
 	static float getDeviation( float heading );
 
-	static void newDeviation( float for_heading, float steer, float airspeedCalibration );
+	static bool newDeviation( float for_heading, float steer, float airspeedCalibration );
 
 	static void loadDeviationMap();
 
 	static void deviationReload();
 
 	static void tick() { _tick++; };
+
+	static void setHeading( float h ) { m_magn_heading = h; m_headingValid=true; _external_data=true; };  // for simulation purposes
 
 private:
 
@@ -177,4 +178,6 @@ private:
 	static std::map< double, double> devmap;
 
 	static int _tick;
+	static bool _external_data;
+
 };

@@ -132,11 +132,11 @@ double Vector::polar(double y, double x)
 	return angle;
 }
 
-
 float Vector::angleDiffDeg(float ang1, float ang2)
 {
 	return( normalizeDeg180( normalizeDeg180(ang1) - normalizeDeg180( ang2 ) ) );
 }
+
 
 double Vector::angleDiffDeg(double ang1, double ang2)
 {

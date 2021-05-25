@@ -90,7 +90,7 @@ void on_client_connect( int port, int msg ){
 		if( msg == 3 )
 			OV.sendBugsChange( bugs.get() );
 		if( msg == 4 )
-			OV.sendMcChange( MC.get() );
+			OV.sendClientMcChange( MC.get() );
 		if( msg == 5 )
 			OV.sendTemperatureChange( temperature );
 	}

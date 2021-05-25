@@ -667,31 +667,39 @@ void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
 			red = (int)(( bat_red_volt.get() - bat_low_volt.get() )*100)/( bat_full_volt.get() - bat_low_volt.get() );
 		}
 		ucg->setColor( COLOR_WHITE );
-		ucg->drawBox( x-40,y-2, 36, 12  );  // Bat body square
-		ucg->drawBox( x-4, y+1, 3, 6  );      // Bat pluspole pimple
-		if ( charge > yellow )  // >25% grün
-			ucg->setColor( COLOR_GREEN ); // green
-		else if ( charge < yellow && charge > red )
-			ucg->setColor( COLOR_YELLOW ); //  yellow
-		else if ( charge < red )
-			ucg->setColor( COLOR_RED ); // red
-		else
-			ucg->setColor( COLOR_RED ); // red
-		int chgpos=(charge*32)/100;
-		if(chgpos <= 4)
-			chgpos = 4;
-		ucg->drawBox( x-40+2,y, chgpos, 8  );  // Bat charge state
-		ucg->setColor( DARK_GREY );
-		ucg->drawBox( x-40+2+chgpos,y, 32-chgpos, 8 );  // Empty bat bar
-		ucg->setColor( COLOR_WHITE );
-		ucg->setFont(ucg_font_fub11_hr);
-		ucg->setPrintPos(x-40,y-7);
-		if( battery_display.get() == 0 )
+		if ( battery_display.get() != BAT_VOLTAGE_BIG ){
+			ucg->drawBox( x-40,y-2, 36, 12  );  // Bat body square
+			ucg->drawBox( x-4, y+1, 3, 6  );      // Bat pluspole pimple
+			if ( charge > yellow )  // >25% grün
+				ucg->setColor( COLOR_GREEN ); // green
+			else if ( charge < yellow && charge > red )
+				ucg->setColor( COLOR_YELLOW ); //  yellow
+			else if ( charge < red )
+				ucg->setColor( COLOR_RED ); // red
+			else
+				ucg->setColor( COLOR_RED ); // red
+			int chgpos=(charge*32)/100;
+			if(chgpos <= 4)
+				chgpos = 4;
+			ucg->drawBox( x-40+2,y, chgpos, 8  );  // Bat charge state
+			ucg->setColor( DARK_GREY );
+			ucg->drawBox( x-40+2+chgpos,y, 32-chgpos, 8 );  // Empty bat bar
+			ucg->setColor( COLOR_WHITE );
+			ucg->setFont(ucg_font_fub11_hr);
+			ucg->setPrintPos(x-40,y-7);
+		}
+		if( battery_display.get() == BAT_PERCENTAGE )
 			ucg->printf("%3d%%  ", charge);
-		else {
+		else if ( battery_display.get() == BAT_VOLTAGE ) {
 			ucg->setPrintPos(x-50,y-8);
 			ucg->printf("%2.1f V", volt);
 		}
+		else if ( battery_display.get() == BAT_VOLTAGE_BIG ) {
+			ucg->setPrintPos(x-60,y+8);
+			ucg->setFont(ucg_font_fub14_hr);
+			ucg->printf("%2.1fV", volt);
+		}
+
 	}
 }
 
@@ -780,9 +788,62 @@ void IpsDisplay::drawAnalogScale( int val, int pos, float range, int offset ){
 	ucg->setFont(ucg_font_fub14_hn);
 	int x=AMIDX - cos((val/range)*M_PI_2)*pos;
 	int y=AMIDY+1 - sin((val/range)*M_PI_2)*pos;
-	ucg->setPrintPos(x-8,y);
-	ucg->printf("%d", val+offset );
+	if( val > 0 )
+		ucg->setPrintPos(x-15,y);
+	else
+		ucg->setPrintPos(x-8,y);
+	ucg->printf("%+d", val+offset );
 	ucg->setFontPosBottom();
+}
+
+
+static int wx0,wy0,wx1,wy1,wx2,wy2,wx3,wy3;
+static bool del_wind=false;
+
+
+// draw windsock style alike arrow white and red
+void IpsDisplay::drawWindArrow( float a, float speed, int type ){
+	const int X=80;
+	const int Y=220;
+	float si=sin(D2R(a));
+	float co=cos(D2R(a));
+	const int b=9; // width of the arrow
+	int s=speed*0.6;
+	if( s>30 )
+		s=30;   // maximum space we got on the display
+
+	int xn_0 = rint(X-s*si);    // tip
+	int yn_0 = rint(Y+s*co);
+
+	int xn_1 = rint(X+s*si - b*co);  // left back
+	int yn_1 = rint(Y-s*co - b*si);
+
+	int xn_3 = rint(X+s*si + b*co);  // right back
+	int yn_3 = rint(Y-s*co + b*si);
+
+	int xn_2 = rint(X +(s*si*0.2));  // tip of second smaller arrow in red
+	int yn_2 = rint(Y -(s*co*0.2));
+
+	// ESP_LOGI(FNAME,"IpsDisplay::drawWindArrow  x0:%d y0:%d x1:%d y1:%d x2:%d y2:%d x3:%d y3:%d", (int)xn_0, (int)yn_0, (int)xn_1 ,(int)yn_1, (int)xn_2, (int)yn_2, (int)xn_3 ,(int)yn_3 );
+	if( del_wind ) {  // cleanup previous incarnation
+		ucg->setColor(  COLOR_BLACK  );
+		ucg->drawTriangle(wx0,wy0,wx1,wy1,wx3,wy3);
+		wx0 = xn_0;
+		wy0 = yn_0;
+		wx1 = xn_1;
+		wy1 = yn_1;
+		wx2 = xn_2;
+		wy2 = yn_2;
+		wx3 = xn_3;
+		wy3 = yn_3;
+	}
+	if( s > 5 ) {  // draw white and red arror
+		ucg->setColor( COLOR_WHITE );
+		ucg->drawTriangle(xn_0,yn_0,xn_1,yn_1,xn_3,yn_3);
+		ucg->setColor(  COLOR_RED  );
+		ucg->drawTriangle(xn_2,yn_2,xn_1,yn_1,xn_3,yn_3);
+		del_wind = true;
+	}
 }
 
 void IpsDisplay::initULDisplay(){
@@ -912,9 +973,9 @@ void IpsDisplay::initLoadDisplay(){
 	ucg->print( "G-Force" );
 	ucg->setPrintPos(130,70);
 	ucg->setColor(  COLOR_HEADER_LIGHT  );
-	ucg->print( "MIN" );
+	ucg->print( "MAX POS" );
 	ucg->setPrintPos(130,210);
-	ucg->print( "MAX" );
+	ucg->print( "MAX NEG" );
 	max_gscale = (int)( gload_pos_limit.get() )+1;
 	if( -gload_neg_limit.get() >= max_gscale )
 		max_gscale = (int)( -gload_neg_limit.get()  )+1;
@@ -969,16 +1030,17 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 	if( old_gmax != gload_pos_max.get() ){
 		ucg->setFont(ucg_font_fub20_hr);
 		ucg->setPrintPos(120,105);
-		ucg->printf("%1.2f", gload_pos_max.get() );
+		ucg->printf("%+1.2f", gload_pos_max.get() );
 	}
 	if( old_gmin != gload_neg_max.get() ){
 		ucg->setFont(ucg_font_fub20_hr);
 		ucg->setPrintPos(115,245);
-		ucg->printf("%1.2f", gload_neg_max.get() );
+		ucg->printf("%+1.2f", gload_neg_max.get() );
 	}
 
 	xSemaphoreGive(spiMutex);
 }
+
 
 // Compass or Wind Display
 void IpsDisplay::drawCompass(){
@@ -994,7 +1056,7 @@ void IpsDisplay::drawCompass(){
 			ok = theWind.getWind( &winddir, &wind, &ageStraight );
 			type = '|';
 		}
-		else if( wind_enable.get() == WA_CIRLCING ){
+		else if( wind_enable.get() == WA_CIRCLING ){
 			ok = CircleWind::getWind( &winddir, &wind, &ageCircling );
 		}
 		else if( wind_enable.get() == WA_BOTH ){
@@ -1025,17 +1087,31 @@ void IpsDisplay::drawCompass(){
 			ucg->setFont(ucg_font_fub17_hf);
 			char s[12];
 			int windspeed = (int)( Units::Airspeed(wind)+0.5 );
-			if( ok )
-				sprintf(s,"%3d\xb0%c%2d", winddir, type, windspeed );
-			else
-				sprintf(s,"%s", "    --/--" );
-			if( windspeed < 10 )
-				ucg->printf("%s    ", s);
-			else if( windspeed < 100 )
-				ucg->printf("%s   ", s);
-			else
-				ucg->printf("%s  ", s);
+			if( wind_display.get() & WD_DIGITS ){
+				if( ok )
+					sprintf(s,"%3d\xb0%c%2d", winddir, type, windspeed );
+				else
+					sprintf(s,"%s", "    --/--" );
+				if( windspeed < 10 )
+					ucg->printf("%s    ", s);
+				else if( windspeed < 100 )
+					ucg->printf("%s   ", s);
+				else
+					ucg->printf("%s  ", s);
+			}
 			prev_heading = winddir;
+			if( wind_display.get() & WD_ARROW  ){
+				float dir=winddir;  // absolute wind related to geographic north
+				if( (wind_reference.get() & WR_HEADING) )  // wind relative to airplane, first choice compass, second is GPS true course
+				{
+					bool ok;
+					float heading = Compass::trueHeading( &ok );
+					if( !ok && Flarm::gpsStatus() )
+						heading = Flarm::getGndCourse();
+					dir = Vector::angleDiffDeg( winddir, heading );
+				}
+				drawWindArrow( dir, windspeed, 0 );
+			}
 		}
 	}
 	else if( compass_enable.get() && compass_calibrated.get() ){
@@ -1081,7 +1157,7 @@ void IpsDisplay::drawULCompass(){
 			ok = theWind.getWind( &winddir, &wind, &age );
 			type = '|';
 		}
-		else if( wind_enable.get() == WA_CIRLCING ){
+		else if( wind_enable.get() == WA_CIRCLING ){
 			ok = CircleWind::getWind( &winddir, &wind, &age );
 		}
 		else if( wind_enable.get() == WA_BOTH ){

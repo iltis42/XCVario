@@ -195,7 +195,7 @@ void drawDisplay(void *pvParameters){
 			else if( airspeed_mode.get() == MODE_TAS )
 				airspeed = tas;
 			// Stall Warning Screen
-			if( stall_warning.get() ){
+			if( stall_warning.get() && gload_mode.get() != GLOAD_ALWAYS_ON ){  // In aerobatics stall warning is contra productive, we concentrate on G-Load Display if permanent enabled
 				if( stall_warning_armed ){
 					float acceleration=accelG[0];
 					if( acceleration < 0.3 )
@@ -432,7 +432,7 @@ void readBMP(void *pvParameters){
 		xSemaphoreGive(xMutex);
 		doAudio();
 
-		if( (inSetup != true) && !Flarm::bincom && ((count % 2) == 0 ) ){
+		if( !Flarm::bincom && ((count % 2) == 0 ) ){
 			xSemaphoreTake(xMutex,portMAX_DELAY );
 			// reduce also messages from 10 per second to 5 per second to reduce load in XCSoar
 			char lb[150];
@@ -493,40 +493,40 @@ void readBMP(void *pvParameters){
 }
 
 static int ttick = 0;
-static int temp_prev = -3000;
+static float temp_prev = -3000;
 
 void readTemp(void *pvParameters){
 	while (1) {
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		float t=15.0;
-		if( inSetup != true )
-		{
-			battery = Battery.get();
-			// ESP_LOGI(FNAME,"Battery=%f V", battery );
-			if( blue_enable.get() != WL_WLAN_CLIENT ) {  // client Vario will get Temperature info from main Vario
-				t = ds18b20.getTemp();
-				if( t ==  DEVICE_DISCONNECTED_C ) {
-					if( validTemperature == true ) {
-						ESP_LOGI(FNAME,"Temperatur Sensor disconnected, please plug Temperature Sensor");
-						validTemperature = false;
-					}
+
+		battery = Battery.get();
+		// ESP_LOGI(FNAME,"Battery=%f V", battery );
+		if( blue_enable.get() != WL_WLAN_CLIENT ) {  // client Vario will get Temperature info from main Vario
+			t = ds18b20.getTemp();
+			if( t ==  DEVICE_DISCONNECTED_C ) {
+				if( validTemperature == true ) {
+					ESP_LOGI(FNAME,"Temperatur Sensor disconnected, please plug Temperature Sensor");
+					validTemperature = false;
 				}
-				else
-				{
-					if( validTemperature == false ) {
-						ESP_LOGI(FNAME,"Temperatur Sensor connected, temperature valid");
-						validTemperature = true;
-					}
-					temperature = t;
-					if( rint(temperature*10) != temp_prev ){
-						OV.sendTemperatureChange( temperature  );
-						temp_prev = rint(temperature*10);
-						ESP_LOGI(FNAME,"NEW temperature=%f  rint10: %d", temperature, temp_prev );
-					}
-				}
-				ESP_LOGV(FNAME,"temperature=%f", temperature );
 			}
+			else
+			{
+				if( validTemperature == false ) {
+					ESP_LOGI(FNAME,"Temperatur Sensor connected, temperature valid");
+					validTemperature = true;
+				}
+				temperature +=  (t - temperature) * 0.3; // A bit low pass as strategy against toggling
+				temperature = std::round(temperature*10)/10;
+				if( temperature != temp_prev ){
+					OV.sendTemperatureChange( temperature  );
+					ESP_LOGI(FNAME,"NEW temperature=%2.1f, prev T=%2.1f", temperature, temp_prev );
+					temp_prev = temperature;
+				}
+			}
+			ESP_LOGV(FNAME,"temperature=%f", temperature );
 		}
+
 		Flarm::progress();
 		theWind.tick();
 		CircleWind::tick();

@@ -651,8 +651,13 @@ void IpsDisplay::drawWifi( int x, int y ) {
 void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
 	if( blank ) {  // blank battery for blinking
 		// ESP_LOGI(FNAME,"blank bat");
-		ucg->setColor( COLOR_BLACK );
-		ucg->drawBox( x-40,y-2, 40, 12  );
+		if( battery_display.get() != BAT_VOLTAGE_BIG ){
+			ucg->setColor( COLOR_BLACK );
+			ucg->drawBox( x-40,y-2, 40, 12  );
+		}else{
+			ucg->setColor( COLOR_BLACK );
+			ucg->drawBox( x-60,y-16, 70, 22  );
+		}
 	}
 	else
 	{

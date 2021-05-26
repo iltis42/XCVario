@@ -432,6 +432,7 @@ void readBMP(void *pvParameters){
 			xSemaphoreTake(xMutex,portMAX_DELAY );
 			// reduce also messages from 10 per second to 5 per second to reduce load in XCSoar
 			char lb[150];
+
 			if( nmea_protocol.get() == BORGELT ) {
 				OV.sendNMEA( P_BORGELT, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), altSTD, validTemperature  );
 				OV.sendNMEA( P_GENERIC, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), altSTD, validTemperature  );
@@ -583,6 +584,9 @@ void sensor(void *args){
 		ESP_LOGI( FNAME, "TopDown display mode flag set");
 		topDown = true;
 	}
+
+	if( nmea_protocol.get() == XCVARIO_DEVEL )
+		nmea_protocol.set( XCVARIO );
 
 	AverageVario::begin();
 	Flap::initSensor();
@@ -1105,7 +1109,7 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
 	if( blue_enable.get() != WL_WLAN_CLIENT ) {
-		xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096*2, NULL, 30, bpid, 0);
+		xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096*3, NULL, 30, bpid, 0);
 	}
 	if( blue_enable.get() == WL_WLAN_CLIENT ){
 		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 30, bpid, 0);

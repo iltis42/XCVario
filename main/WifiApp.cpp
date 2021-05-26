@@ -78,7 +78,7 @@ int create_socket( int port ){
 
 void on_client_connect( int port, int msg ){
 	if( port == 8880 ){ // have a client to XCVario protocol connected
-		ESP_LOGI(FNAME, "on_client_connect: Send MC, Ballast, Bugs, etc");
+		// ESP_LOGI(FNAME, "on_client_connect: Send MC, Ballast, Bugs, etc");
 		if( msg == 1 )
 			OV.sendQNHChange( QNH.get() );
 		if( msg == 2 ) {
@@ -93,6 +93,7 @@ void on_client_connect( int port, int msg ){
 			OV.sendClientMcChange( MC.get() );
 		if( msg == 5 )
 			OV.sendTemperatureChange( temperature );
+		SetupCommon::syncEntry(msg);
 	}
 }
 
@@ -157,9 +158,9 @@ void socket_server(void *setup) {
 							ESP_LOGV(FNAME, "tcp read from port %d size: %d data: %s", config->port, sizeRead, tcprx.c_str() );
 						}
 						if( config->port == 8880 ){
-							num_send ++;
-							if( num_send < 6 ){
+							if( num_send < SetupCommon::numEntries() ){
 								on_client_connect( config->port, num_send );
+								num_send ++;
 							}
 						}
 					}

@@ -1052,7 +1052,6 @@ void SetupMenu::setup( )
 		btm->addEntry( "Bluetooth");
 		btm->addEntry( "Wireless LAN");
 		btm->addEntry( "Wireless Client");
-		btm->addEntry( "Cable Client");
 		opt->addMenu( btm );
 
 		SetupMenu * gload = new SetupMenu( "G-Load Display" );

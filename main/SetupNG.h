@@ -31,6 +31,8 @@ extern "C" {
 #include <WString.h>
 
 
+
+
 /*
  *
  * NEW Simplified and distributed non volatile config data API with template classes:
@@ -68,22 +70,33 @@ typedef enum e_battery_display { BAT_PERCENTAGE, BAT_VOLTAGE, BAT_VOLTAGE_BIG } 
 typedef enum e_wind_display { WD_NONE, WD_DIGITS, WD_ARROW, WD_BOTH } e_wind_display_t;
 typedef enum e_wind_reference { WR_NORTH, WR_HEADING } e_wind_reference_t;
 
+typedef enum e_sync { SYNC_NONE, SYNC_FROM_MASTER, SYNC_FROM_CLIENT, SYNC_BIDIR } e_sync_t;       // determines if data is synched from/to client
+typedef enum e_reset { RESET_NO, RESET_YES } e_reset_t;   // determines if data is reset to defaults on factory reset
+typedef enum e_volatility { VOLATILE, NON_VOLATILE, SEMI_VOLATILE } e_volatility_t;  // stored in RAM, FLASH, or into FLASH after a while
+
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
 
 class SetupCommon {
 public:
 	SetupCommon() {  memset( _ID, 0, sizeof( _ID )); };
-	~SetupCommon() {};
+	virtual ~SetupCommon() {};
 	virtual bool init() = 0;
 	virtual bool erase() = 0;
 	virtual bool mustReset() = 0;
 	virtual const char* key() = 0;
+	virtual char typeName() = 0;
+	virtual void sync() = 0;
 	static std::vector<SetupCommon *> entries;
 	static bool initSetup( bool &present );  // returns false if FLASH was completely blank
 	static char *getID();
+	static void sendSetup( e_sync_t sync, const char * key, char type, void *value, int len );
+	static SetupCommon * getMember( const char * key );
+	static void syncEntry( int entry );
+	static int numEntries() { return entries.size(); };
 private:
 	static char _ID[14];
 };
+
 
 template<typename T>
 
@@ -91,16 +104,26 @@ class SetupNG: public SetupCommon
 {
 public:
 	SetupNG() {};
-
-	SetupNG( const char * akey, T adefault, bool reset=true ) {
+	   char typeName(void){
+	   if( typeid( T ) == typeid( float ) )
+		   return 'F';
+	   else if( typeid( T ) == typeid( int ) )
+		   return 'I';
+	   return 'U';
+	}
+	SetupNG( const char * akey, T adefault,  // unique identification TAG
+			 bool reset=true,                // reset data on factory reset
+			 e_sync_t sync=SYNC_NONE )               // sync with client device is applicable
+	{
 		// ESP_LOGI(FNAME,"SetupNG(%s)", akey );
 		if( strlen( akey ) > 15 )
 			ESP_LOGE(FNAME,"SetupNG(%s) key > 15 char !", akey );
-		entries.push_back( this );  // an into vector
+		entries.push_back( this );  // add into vector
 		_nvs_handle = 0;
 		_key = akey;
 		_default = adefault;
 		_reset = reset;
+		_sync = sync;
 
 	};
 
@@ -132,6 +155,13 @@ public:
 		return ret;
 	};
 
+	void sync(){
+		if( _sync != SYNC_NONE ){
+			ESP_LOGI( FNAME,"Now sync %s", _key );
+			sendSetup( _sync, _key, typeName(), (void *)(&_value), sizeof( _value ) );
+		}
+	};
+
 	bool commit() {
 		ESP_LOGI(FNAME,"NVS commit(): ");
 		if( !open() ) {
@@ -140,6 +170,7 @@ public:
 		}
 		ESP_LOGI(FNAME,"NVS commit(key:%s , addr:%08x, len:%d, nvs_handle: %04x)", _key, (unsigned int)(&_value), sizeof( _value ), _nvs_handle);
 		esp_err_t _err = nvs_set_blob(_nvs_handle, _key, (void *)(&_value), sizeof( _value ));
+		sync();
 		if(_err != ESP_OK) {
 			ESP_LOGE(FNAME,"NVS set blob error %d", _err );
 			close();
@@ -199,6 +230,7 @@ public:
 					String val( _value );
 					ESP_LOGI(FNAME,"NVS key %s exists len: %d value: %s", _key, required_size, val.c_str() );
 					// std::cout << _value << "\n";
+
 				}
 			}
 		}
@@ -244,6 +276,7 @@ private:
 	const char * _key;
 	nvs_handle_t  _nvs_handle;
 	bool _reset;
+	e_sync_t _sync;
 
 	bool open() {
 		if( _nvs_handle == 0) {

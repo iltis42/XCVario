@@ -418,6 +418,29 @@ void Protocols::parseNMEA( char *astr ){
 			ESP_LOGI(FNAME,"parseNMEA, internal ballast modification %s new ballast: %f", str, aballast );
 			_s2f->change_mc_bal();
 		}
+		else if ( strncmp( str, "!xsM,", 5 ) == 0 && blue_enable.get() == WL_WLAN_CLIENT ) {
+			ESP_LOGI(FNAME,"parseNMEA %s", str );
+			char key[20];
+			char type;
+			int  length;
+			sscanf(str, "!xsM,%[^,],%c", key,&type );
+			ESP_LOGI(FNAME,"parseNMEA type=%c key=%s", type , key );
+			if( type == 'F' ){
+				float valf;
+				sscanf(str, "!xsM,%[^,],%c,%d,%f", key,&type,&length, &valf );
+				ESP_LOGI(FNAME,"parseNMEA float value=%f", valf );
+				SetupNG<float> *item = (SetupNG<float> *)SetupCommon::getMember( key );
+				if( item != 0 ){
+					item->set( valf );
+				}else
+					ESP_LOGW(FNAME,"Setup item with key %s not found", key );
+			}
+			else if( type == 'I' ){
+				int vali;
+				sscanf(str, "!xsM,%[^,],%c,%d,%d", key,&type,&length, &vali );
+				ESP_LOGI(FNAME,"parseNMEA %s val=%d", str, vali );
+			}
+		}
 
 		else if ( (strncmp( str, "!g,", 3 ) == 0)    ) {
 			ESP_LOGI(FNAME,"parseNMEA, Cambridge C302 style command !g detected: %s",str);

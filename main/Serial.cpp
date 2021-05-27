@@ -66,7 +66,7 @@ const char *gps[] = {
 
 int sim=100;
 int numS1=0;
-#define HEARTBEAT_PERIOD_MS_SERIAL 25
+#define HEARTBEAT_PERIOD_MS_SERIAL 15
 
 // Serial Handler  ttyS1, S1, port 8881
 void Serial::serialHandlerS1(void *pvParameters){

@@ -141,9 +141,9 @@ void socket_server(void *setup) {
 							if( num < 0 ) {
 								ESP_LOGW(FNAME, "tcp client %d (port %d) send err: %s, remove!", client,  config->port, strerror(errno) );
 								close(client);
+								it = clients.erase( it );
 								client_dead = client;
 								num_send = 0;
-								// check on sending and remove from list if client has died
 							}
 							// ESP_LOGI(FNAME, "tcp send to client %d (port: %d), bytes %d success", client, config->port, num );
 						}
@@ -166,8 +166,6 @@ void socket_server(void *setup) {
 					}
 
 				}
-				if( client_dead )
-					clients.remove( client_dead );
 			}
 			vTaskDelay(20/portTICK_PERIOD_MS);
 		}

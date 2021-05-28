@@ -27,20 +27,21 @@
 #include <logdef.h>
 #include "mpu/types.hpp"  // MPU data types and definitions
 #include "sensor.h"
+#include "Router.h"
 
 std::vector<SetupCommon *> SetupCommon::entries;
 char SetupCommon::_ID[14];
 
 SetupNG<float>  		QNH( "QNH", 1013.25 );
-SetupNG<float> 			polar_wingload( "POLAR_WINGLOAD", 34.40 );
-SetupNG<float> 			polar_speed1( "POLAR_SPEED1",   80 );
-SetupNG<float> 			polar_sink1( "POLAR_SINK1",    -0.66 );
-SetupNG<float> 			polar_speed2( "POLAR_SPEED2",   125 );
-SetupNG<float> 			polar_sink2( "POLAR_SINK2",    -0.97 );
-SetupNG<float> 			polar_speed3( "POLAR_SPEED3",   175 );
-SetupNG<float> 			polar_sink3( "POLAR_SINK3",    -2.24 );
-SetupNG<float> 			polar_max_ballast( "POLAR_MAX_BAL",  160 );
-SetupNG<float> 			polar_wingarea( "POLAR_WINGAREA", 10.5 );
+SetupNG<float> 			polar_wingload( "POLAR_WINGLOAD", 34.40, true, SYNC_FROM_MASTER );
+SetupNG<float> 			polar_speed1( "POLAR_SPEED1",   80, true, SYNC_FROM_MASTER );
+SetupNG<float> 			polar_sink1( "POLAR_SINK1",    -0.66, true, SYNC_FROM_MASTER );
+SetupNG<float> 			polar_speed2( "POLAR_SPEED2",   125, true, SYNC_FROM_MASTER );
+SetupNG<float> 			polar_sink2( "POLAR_SINK2",    -0.97, true, SYNC_FROM_MASTER );
+SetupNG<float> 			polar_speed3( "POLAR_SPEED3",   175, true, SYNC_FROM_MASTER );
+SetupNG<float> 			polar_sink3( "POLAR_SINK3",    -2.24, true, SYNC_FROM_MASTER );
+SetupNG<float> 			polar_max_ballast( "POLAR_MAX_BAL",  160, true, SYNC_FROM_MASTER );
+SetupNG<float> 			polar_wingarea( "POLAR_WINGAREA", 10.5, true, SYNC_FROM_MASTER );
 
 SetupNG<float>  		speedcal( "SPEEDCAL", 0.0 );
 SetupNG<float>  		vario_delay( "VARIO_DELAY", 3.0 );
@@ -217,6 +218,47 @@ mpud::raw_axes_t zero_bias;
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );
 SetupNG<mpud::raw_axes_t>	accl_bias("ACCL_BIAS", zero_bias );
 
+
+void SetupCommon::sendSetup( e_sync_t sync, const char *key, char type, void *value, int len ){
+	ESP_LOGI(FNAME,"sendSetup(): key=%s, type=%c, len=%d", key, type, len );
+	char str[40];
+	char sender;
+	if( blue_enable.get() == WL_WLAN && (sync & SYNC_FROM_MASTER) )              // or cable master tbd.
+		sender='M';
+	else if( blue_enable.get() == WL_WLAN_CLIENT && (sync & SYNC_FROM_CLIENT) )  // or cable client tbd.
+		sender='C';
+	else
+		sender='U';
+	if( sender != 'U' ) {
+		int l = sprintf( str,"!xs%c,%s,%c,%d,", sender, key, type, len );
+		if( type == 'F' )
+			sprintf( str+l,"%f\n", *(float*)(value) );
+		else if( type == 'I' )
+			sprintf( str+l,"%d\n", *(int*)(value) );
+		ESP_LOGI(FNAME,"Setup data: %s", str );
+		Router::sendXCV(str);
+	}
+}
+
+SetupCommon * SetupCommon::getMember( const char * key ){
+	for(int i = 0; i < entries.size(); i++ ) {
+		if( std::string( key ) == std::string( entries[i]->key() )){
+			ESP_LOGI(FNAME,"found key %s", entries[i]->key() );
+			return entries[i];
+		}
+	}
+	return 0;
+}
+
+void SetupCommon::syncEntry( int entry ){
+	// ESP_LOGI(FNAME,"SetupCommon::syncEntry( %d )", entry );
+	if( blue_enable.get() == WL_WLAN || blue_enable.get() == WL_WLAN_CLIENT ) { // tbd for cable client as well
+		// ESP_LOGI(FNAME,"We are wireless type=%d", blue_enable.get() );
+		if( entry  < entries.size() ) {
+			entries[entry]->sync();
+		}
+	}
+}
 
 bool SetupCommon::initSetup( bool& present ) {
 	bool ret=true;

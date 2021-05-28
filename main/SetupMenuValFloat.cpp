@@ -17,7 +17,7 @@
 SetupMenuValFloat * SetupMenuValFloat::qnh_menu = 0;
 char SetupMenuValFloat::_val_str[20];
 
-SetupMenuValFloat::SetupMenuValFloat( String title, float *value, const char *unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs, bool restart ) {
+SetupMenuValFloat::SetupMenuValFloat( String title, float *value, const char *unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs, bool restart, bool sync ) {
 	// ESP_LOGI(FNAME,"SetupMenuValFloat( %s ) ", title.c_str() );
 	_rotary->attach(this);
 	_title = title;

@@ -66,7 +66,7 @@ const char *gps[] = {
 
 int sim=100;
 int numS1=0;
-#define HEARTBEAT_PERIOD_MS_SERIAL 25
+#define HEARTBEAT_PERIOD_MS_SERIAL 15
 
 // Serial Handler  ttyS1, S1, port 8881
 void Serial::serialHandlerS1(void *pvParameters){
@@ -269,10 +269,10 @@ void Serial::begin(){
 void Serial::taskStart(){
 	ESP_LOGI(FNAME,"Serial::taskStart()" );
 	if( serial1_speed.get() != 0  || blue_enable.get() != 0 ){
-		xTaskCreatePinnedToCore(&Serial::serialHandlerS1, "serialHandlerS1", 4096, NULL, 27, 0, 0);
+		xTaskCreatePinnedToCore(&Serial::serialHandlerS1, "serialHandlerS1", 2*4096, NULL, 27, 0, 0);
 	}
 	if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 && !compass_enable.get() ){
-		xTaskCreatePinnedToCore(&Serial::serialHandlerS2, "serialHandlerS2", 4096, NULL, 26, 0, 0);
+		xTaskCreatePinnedToCore(&Serial::serialHandlerS2, "serialHandlerS2", 2*4096, NULL, 26, 0, 0);
 	}
 }
 

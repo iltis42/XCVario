@@ -65,11 +65,15 @@ const char *gps[] = {
 */
 
 int sim=100;
-int numS1=0;
+
 #define HEARTBEAT_PERIOD_MS_SERIAL 15
 
 // Serial Handler  ttyS1, S1, port 8881
 void Serial::serialHandlerS1(void *pvParameters){
+  // Contains the incomplete part of the NMEA sentence
+  char scrap[128];
+  scrap[0] = '\0';
+
 	while(1) {
 		if( flarm_sim.get() ){
 			sim=-3;
@@ -79,7 +83,6 @@ void Serial::serialHandlerS1(void *pvParameters){
 			if( sim >= 0 ){
 				int cs = Protocols::calcNMEACheckSum( (char *)flarm[sim] );
 				char str[80];
-				int i = strlen(flarm[sim]);
 				sprintf( str, "%s%02X\r\n", flarm[sim], cs );
 				SString sf( str );
 				Router::forwardMsg( sf, s1_rx_q );
@@ -99,30 +102,92 @@ void Serial::serialHandlerS1(void *pvParameters){
 				ESP_LOGD(FNAME,"Serial 1 TX written: %d", wr);
 			}
 		}
+
 		int num = Serial1.available();
+
 		if( num > 0 ) {
 			// ESP_LOGI(FNAME,"Serial 1 RX avail %d bytes", num );
-			if( num >= SSTRLEN ) {
-				ESP_LOGW(FNAME,"Serial 1 Overrun RX >= %d bytes avail: %d, Bytes", SSTRLEN, num);
-				num=SSTRLEN;
+		  char buf[512];
+		  buf[0] = '\0';
+		  int bufsize = sizeof(buf);
+
+			if( num >= bufsize ) {
+				ESP_LOGW(FNAME,"Serial 1 Overrun RX >= %d bytes avail: %d, Bytes", num, bufsize );
 			}
 			// ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
-			if( (numS1 == num) || Flarm::bincom ){    // normally wait unit sentence has ended, or in binary mode just continue
-				int numread = Serial1.read( s.c_str(), num );
-				// ESP_LOGI(FNAME,"Serial 1 RX bytes read: %d  bincom: %d", numread,  Flarm::bincom  );
-				// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),numread, ESP_LOG_INFO);
-				s.setLen( numread );
-				Router::forwardMsg( s, s1_rx_q );
-				numS1 = 0;
+			if( num > 0 ) {  // read all what is available for the passed buffer.
+				int numread = Serial1.read( buf, bufsize-1 );
+				if( numread > 0 )
+				  buf[numread] = '\0';
+
+				// ESP_LOGI(FNAME,"Serial 1 RX bytes read: %d of (%d) bincom: %d", num, numread, Flarm::bincom );
+				// ESP_LOG_BUFFER_HEXDUMP(FNAME,buf,numread, ESP_LOG_INFO);
+
+				if( Flarm::bincom == 0 && numread > 0 ) {
+				    // Flarm works in text mode. Check, if a whole NMEA sentence has been received. Read data can be segmented.
+				    char tmpbuf[bufsize + sizeof(scrap)];
+				    tmpbuf[0] = '\0';
+
+				    if( strlen( scrap ) > 0 ) {
+				        // ESP_LOGI(FNAME,"scrap has data: %s", scrap);
+				        // There is contained a NMEA fragment, append received data to it
+				        strcpy( tmpbuf, scrap );
+				        strcat( tmpbuf, buf );
+				        // reset scrap
+				        scrap[0] = '\0';
+				    }
+				    else {
+				        strcpy( tmpbuf, buf );
+				    }
+
+				    int start = 0;
+				    int end = strlen( tmpbuf );
+
+            // extract single NMEA sentences
+				    for( int idx = 0; idx < end; idx++ ) {
+				        if( tmpbuf[idx] != '\n' )
+			              continue;
+
+				      // replace newline by zero
+				      tmpbuf[idx] = '\0';
+
+				      // extract NMEA sentence
+				      SString ns;
+				      ns.add( &tmpbuf[start] );
+				      ns.add( '\n' );
+				      ns.setLen( strlen(ns.c_str()) );
+				      // ESP_LOGI(FNAME,"NMEA->Router %s", ns.c_str());
+				      Router::forwardMsg( ns, s1_rx_q );
+              start = idx + 1;
+				    }
+				    // Check, if NMEA sentence ends with a newline, otherwise we have to wait for the next read cycle
+				    if( start < end ) {
+				        // ESP_LOG_BUFFER_HEXDUMP(FNAME,tmpbuf,end-1, ESP_LOG_INFO);
+
+				        // Save the incomplete NMEA part for the next read cycle
+				        strcpy( scrap, &tmpbuf[start] );
+                // ESP_LOGI(FNAME,"Serial 1 RX %d bytes put in scrap", strlen(scrap));
+				    }
+				}
+				else if( numread > 0 && Flarm::bincom != 0 ) {
+				    // Flarm works in binary mode, forward all received data
+				    SString s;
+				    s.append( buf, numread );
+				    Router::forwardMsg( s, s1_rx_q );
+				}
 			}
-			else
-				numS1 = num;
 		}
 		Router::routeS1();
 		Router::routeBT();
 		Router::routeWLAN();
-	    BTSender::progress();   // piggyback this here, saves one task for BT sender
+	  BTSender::progress();   // piggyback this here, saves one task for BT sender
 		esp_task_wdt_reset();
+
+		if( Serial1.available() ) {
+		    // No delay, if further data is available
+	      continue;
+		}
+
 		vTaskDelay( HEARTBEAT_PERIOD_MS_SERIAL/portTICK_PERIOD_MS );
 	}
 }
@@ -237,7 +302,7 @@ void Serial::begin(){
 					gpio_pullup_dis( GPIO_NUM_17 );
 				}
 			}
-			Serial1.setRxBufferSize(256);
+			Serial1.setRxBufferSize(512);
 		}
 		// need this for bluetooth
 	}

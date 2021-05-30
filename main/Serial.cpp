@@ -142,8 +142,8 @@ void Serial::serialHandlerS1(void *pvParameters){
 
 				    int start = 0;
 				    int end = strlen( tmpbuf );
-
-            // extract single NMEA sentences
+				
+				    // extract single NMEA sentences
 				    for( int idx = 0; idx < end; idx++ ) {
 				        if( tmpbuf[idx] != '\n' )
 			              continue;
@@ -158,15 +158,19 @@ void Serial::serialHandlerS1(void *pvParameters){
 				      ns.setLen( strlen(ns.c_str()) );
 				      // ESP_LOGI(FNAME,"NMEA->Router %s", ns.c_str());
 				      Router::forwardMsg( ns, s1_rx_q );
-              start = idx + 1;
+				      start = idx + 1;
 				    }
 				    // Check, if NMEA sentence ends with a newline, otherwise we have to wait for the next read cycle
 				    if( start < end ) {
 				        // ESP_LOG_BUFFER_HEXDUMP(FNAME,tmpbuf,end-1, ESP_LOG_INFO);
-
 				        // Save the incomplete NMEA part for the next read cycle
-				        strcpy( scrap, &tmpbuf[start] );
-                // ESP_LOGI(FNAME,"Serial 1 RX %d bytes put in scrap", strlen(scrap));
+					if( strlen( &tmpbuf[start] ) < sizeof(scrap) - 1 ) {
+				        	strcpy( scrap, &tmpbuf[start] );
+						// ESP_LOGI(FNAME,"Serial 1 RX %d bytes put in scrap", strlen(scrap));
+					} else {
+						// Not enough space in scrap, disgard data
+						scrap[0] = '\0';
+					}
 				    }
 				}
 				else if( numread > 0 && Flarm::bincom != 0 ) {

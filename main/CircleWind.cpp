@@ -226,7 +226,7 @@ void CircleWind::_calcWind()
 
 
 	// the direction of the wind is the direction where the greatest speed occurred
-	result.setAngle( ( maxVector.getAngleDeg() + minVector.getAngleDeg() ) / 2);
+	result.setAngle( Vector::normalize( ( maxVector.getAngleDeg() + minVector.getAngleDeg() ) / 2));
 
 	// The speed of the wind is half the difference between the minimum and the maximum speeds.
 	result.setSpeedKmh( (maxVector.getSpeed() - minVector.getSpeed()) / 2.0 );
@@ -248,6 +248,7 @@ void CircleWind::newWind( double angle, double speed, float q ){
 		kq = q/10.0;
 		direction += Vector::angleDiffDeg(angle,(double)direction) * kq;
 		windspeed += (speed - windspeed) * kq;
+		direction = Vector::normalize( direction );
 	}
 	ESP_LOGI(FNAME,"### NEW AGV CircleWind: %3.1f°/%.1fKm/h  KQ:%1.3f", direction, windspeed, kq );
 	OV.sendWindChange( direction, windspeed, WA_CIRCLING );

@@ -154,6 +154,26 @@ size_t HardwareSerial::read(uint8_t *buffer, size_t size)
     return count;
 }
 
+// read serial interface until '\n' newline character
+size_t HardwareSerial::readLine(uint8_t *buffer, size_t size)
+{
+	bool newline=false;
+	int count = 0;
+	while( count < size ) {
+		if( available() ){
+			char c = uartRead(_uart);
+			*buffer = c;
+			buffer++;
+			count++;
+			if( c == '\n' )
+				break;
+		}else{
+			delay(5);  // w8 5 mS until next data avail check
+		}
+	}
+    return count;
+}
+
 void HardwareSerial::flush(void)
 {
     uartFlush(_uart);

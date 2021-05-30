@@ -67,6 +67,11 @@ public:
     {
         return read((uint8_t*) buffer, size);
     }
+    size_t readLine(uint8_t *buffer, size_t size );
+    inline size_t readLine(char * buffer, size_t size )
+    {
+    	return readLine((uint8_t*) buffer, size );
+    }
     void flush(void);
     void flush( bool txOnly);
     size_t write(uint8_t);

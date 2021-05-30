@@ -6,7 +6,7 @@
 #include "logdef.h"
 
 
-#define SSTRLEN 250
+#define SSTRLEN 128
 
 class SString {
 public:

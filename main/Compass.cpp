@@ -337,8 +337,14 @@ void Compass::saveDeviation(){
 float Compass::trueHeading( bool *okIn )
 {
 	assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
-	*okIn = m_headingValid;
-	return m_true_heading_dev;
+	if( compass_enable.get() ){
+		*okIn = m_headingValid;
+		return m_true_heading_dev;
+	}
+	else{
+		*okIn = false;
+		return 0;
+	}
 }
 
 //------------------------------------------------------------------------------

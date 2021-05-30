@@ -968,9 +968,10 @@ void SetupMenu::setup( )
 		compassWindME->addMenu( winddis );
 
 		// Wind speed observation window
-		SetupMenuSelect * windref = new SetupMenuSelect( "Wind Reference", false, 0, true, &wind_reference );
+		SetupMenuSelect * windref = new SetupMenuSelect( "Arrow Ref", false, 0, true, &wind_reference );
 		windref->addEntry( "North");
-		windref->addEntry( "Heading");
+		windref->addEntry( "Mag Heading");
+		windref->addEntry( "GPS Course");
 		windref->setHelp( PROGMEM "Wind arrow related either to geographic north or related to true airplane heading");
 		compassWindME->addMenu( windref );
 

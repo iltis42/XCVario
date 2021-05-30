@@ -65,7 +65,6 @@ const char *gps[] = {
 */
 
 int sim=100;
-int numS1=0;
 #define HEARTBEAT_PERIOD_MS_SERIAL 15
 
 // Serial Handler  ttyS1, S1, port 8881
@@ -107,16 +106,19 @@ void Serial::serialHandlerS1(void *pvParameters){
 				num=SSTRLEN;
 			}
 			// ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
-			if( (numS1 == num) || Flarm::bincom ){    // normally wait unit sentence has ended, or in binary mode just continue
-				int numread = Serial1.read( s.c_str(), num );
+			int numread = 0;
+			if( Flarm::bincom ){    // normally wait unit sentence has ended, or in binary mode just continue
+				numread = Serial1.read( s.c_str(), num );
+			}
+			else{
+				numread = Serial1.readLine( s.c_str(), SSTRLEN );
+			}
+			if( numread ) {
 				// ESP_LOGI(FNAME,"Serial 1 RX bytes read: %d  bincom: %d", numread,  Flarm::bincom  );
 				// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),numread, ESP_LOG_INFO);
 				s.setLen( numread );
 				Router::forwardMsg( s, s1_rx_q );
-				numS1 = 0;
 			}
-			else
-				numS1 = num;
 		}
 		Router::routeS1();
 		Router::routeBT();
@@ -127,7 +129,6 @@ void Serial::serialHandlerS1(void *pvParameters){
 	}
 }
 
-int numS2=0;
 // ttyS2, port 8882
 void Serial::serialHandlerS2(void *pvParameters){
 	while(1) {
@@ -149,16 +150,19 @@ void Serial::serialHandlerS2(void *pvParameters){
 				ESP_LOGW(FNAME,"Serial 2 RX Overrun >= %d bytes avail: %d, Bytes", SSTRLEN, num);
 				num=SSTRLEN;
 			}
-			if( (numS2 == num) || Flarm::bincom ){  // normally wait unit sentence has ended, or in binary mode just continue
-				int numread = Serial2.read( s.c_str(), num );
-				ESP_LOGD(FNAME,"Serial 2 RX bytes read: %d", numread );
-				// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuffer,numread, ESP_LOG_INFO);
+			int numread = 0;
+			if( Flarm::bincom ){    // normally wait unit sentence has ended, or in binary mode just continue
+				numread = Serial2.read( s.c_str(), num );
+			}
+			else{
+				numread = Serial2.readLine( s.c_str(), SSTRLEN );
+			}
+			if( numread ){
+				// ESP_LOGI(FNAME,"Serial 1 RX bytes read: %d  bincom: %d", numread,  Flarm::bincom  );
+				// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),numread, ESP_LOG_INFO);
 				s.setLen( numread );
 				Router::forwardMsg( s, s2_rx_q );
-				numS2 = 0;
 			}
-			else
-				numS2 = num;
 		}
 		Router::routeWLAN();
 		Router::routeS2();

@@ -1111,9 +1111,15 @@ void IpsDisplay::drawCompass(){
 				{
 					bool ok;
 					float heading = Compass::trueHeading( &ok );
-					if( !ok && Flarm::gpsStatus() )
+					if( !ok && Flarm::gpsStatus() )            // fall back to GPS course
 						heading = Flarm::getGndCourse();
 					dir = Vector::angleDiffDeg( winddir, heading );
+				}
+				else if( (wind_reference.get() & WR_GPS_COURSE) ){
+					if( Flarm::gpsStatus() ){
+						float heading = Flarm::getGndCourse();
+						dir = Vector::angleDiffDeg( winddir, heading );
+					}
 				}
 				drawWindArrow( dir, windspeed, 0 );
 			}

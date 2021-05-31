@@ -1,5 +1,5 @@
 /*
- * ahrs.c
+ * ahrs.cpp
  *
  *  Created on: 22 mai 2021
  *      Author: GFM
@@ -27,9 +27,6 @@
 // Private Variables
 uint32_t IMU::lastProcessed = 0;
 
-double 	IMU::roll = 0;
-double  IMU::pitch = 0;
-double  IMU::yaw= 0;
 double  IMU::offset_pitch = 0;
 double  IMU::offset_roll = 0;
 double  IMU::offset_yaw = 0;
@@ -51,44 +48,73 @@ double IMU::offset_accelX = 0.0;
 double IMU::offset_accelY = 0.0;
 double IMU::offset_accelZ = 0.0;
 bool IMU::initdone = false;
+double  IMU::filterPitch = 0;
+double  IMU::filterRoll = 0;
+double  IMU::filterYaw = 0;
 
 // IMU Function Definition
 	extern float u,v,w;
 	extern float vx,vy,vz;
-	double beta_quat;				// algorithm gain
+	extern MPU_t MPU;         // create an object
+	extern mpud::float_axes_t accelG;
+	extern mpud::float_axes_t gyroDPS;
+	mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
+	mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
+	double q0 = 0.0;
+	double q1 = 0.0;
+	double q2 = 0.0;
+	double q3 = 0.0;	// quaternion of sensor frame relative to auxiliary frame
 
-void IMU::init(){
-#define imax 10
+void IMU::init(bool f){
+	#define imax 10
+	double rollsum=0;
+	double pitchsum=0;
+	double yawsum=0;
+	initdone = false;
+	  double  roll=0.0;
+	  double  pitch=0.0;
+	  double  yaw=0.0;
+
 	double gxsum=0;
 	double gysum=0;
 	double gzsum=0;
 	double axsum=0;
 	double aysum=0;
 	double azsum=0;
-	double rollsum=0;
-	double pitchsum=0;
-	double yawsum=0;
-	initdone = false;
 	for (int i=0;i<imax;i++){
-		MPU6050Read();
 		sleep( 1 );
-		/* il faudrait faire une moyenne sur 10s*/
-		gxsum+=gyroX;
-		gysum+=gyroY;
-		gzsum+=gyroZ;
-		axsum+=accelX;
-		aysum+=accelY;
-		azsum+=accelZ;
+		esp_err_t err = MPU.acceleration(&accelRaw);  // fetch raw data from the registers
+		if( err != ESP_OK )
+			ESP_LOGE(FNAME, "accel I2C error, X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
+		err |= MPU.rotation(&gyroRaw);       // fetch raw data from the registers
+		if( err != ESP_OK )
+			ESP_LOGE(FNAME, "gyro I2C error, X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
+		accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
+		gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
+		gxsum-=(gyroDPS.z);
+		gysum+=(gyroDPS.y);
+		gzsum+=(gyroDPS.x);
+		axsum-=(accelG[2]);
+		aysum+=(accelG[1]);
+		azsum+=(accelG[0]);
+		ESP_LOGI(FNAME, "IMU setup  offsets:%d,%f,%f,%f,%f,%f,%f ",i, -(gyroDPS.z), (gyroDPS.y), (gyroDPS.x), -(accelG[2]), (accelG[1]), (accelG[0]));
 		}
-	offset_gyroX = gxsum/imax;
-	offset_gyroY = gysum/imax;
-	offset_gyroZ = gzsum/imax;
-	offset_accelX= axsum/imax;
-	offset_accelY= aysum/imax;
-	//offset_accelZ= azsum/imax;
-	offset_accelZ= (azsum-G)/imax;
+	offset_gyroX = (double)(gxsum/imax*DEG_TO_RAD);
+	offset_gyroY = (double)(gysum/imax*DEG_TO_RAD);
+	offset_gyroZ = (double)(gzsum/imax*DEG_TO_RAD);
+	offset_accelX= (double)(axsum/imax)*G;
+	offset_accelY= (double)(aysum/imax)*G;
+	offset_accelZ= (double)(azsum/imax)*G-G;
 
 	for (int i=0;i<imax;i++){
+		esp_err_t err = MPU.acceleration(&accelRaw);  // fetch raw data from the registers
+		if( err != ESP_OK )
+			ESP_LOGE(FNAME, "accel I2C error, X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
+		err |= MPU.rotation(&gyroRaw);       // fetch raw data from the registers
+		if( err != ESP_OK )
+			ESP_LOGE(FNAME, "gyro I2C error, X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
+		accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
+		gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
 		MPU6050Read();
 		sleep( 1 );
 		IMU::RollPitchFromAccel(&roll, &pitch);
@@ -99,19 +125,15 @@ void IMU::init(){
 	offset_roll=rollsum/imax;
 	offset_pitch = pitchsum/imax;
 	offset_yaw = yawsum/imax;
-	MPU6050Read();
-	IMU::RollPitchFromAccel(&roll, &pitch);
-	offset_roll=roll;
-	offset_pitch = pitch;
 
 	lastProcessed = micros();
 	ESP_LOGI(FNAME, "Finished IMU setup  offsets:%f,%f,%f,%f,%f,%f ", offset_gyroX, offset_gyroY, offset_gyroZ, offset_accelX, offset_accelY, offset_accelZ);
 	ESP_LOGI(FNAME, "Attitude:%f,%f,%f ", roll,pitch,yaw);
 	/* Initialisation du quaternion*/
-	q0=((cos((double)getRollRad()/2.0)*cos((double)getPitchRad()/2.0)*cos((double)yaw/2.0)+sin((double)getRollRad()/2.0)*sin((double)getPitchRad()/2.0)*sin((double)yaw/2.0)));
-	q1=((sin((double)getRollRad()/2.0)*cos((double)getPitchRad()/2.0)*cos((double)yaw/2.0)-cos((double)getRollRad()/2.0)*sin((double)getPitchRad()/2.0)*sin((double)yaw/2.0)));
-	q2=((cos((double)getRollRad()/2.0)*sin((double)getPitchRad()/2.0)*cos((double)yaw/2.0)+sin((double)getRollRad()/2.0)*cos((double)getPitchRad()/2.0)*sin((double)yaw/2.0)));
-	q3=((cos((double)getRollRad()/2.0)*cos((double)getPitchRad()/2.0)*sin((double)yaw/2.0)-sin((double)getRollRad()/2.0)*sin((double)getPitchRad()/2.0)*cos((double)yaw/2.0)));
+	q0=((cos((double)roll/2.0)*cos((double)pitch/2.0)*cos((double)yaw/2.0)+sin((double)roll/2.0)*sin((double)pitch/2.0)*sin((double)yaw/2.0)));
+	q1=((sin((double)roll/2.0)*cos((double)pitch/2.0)*cos((double)yaw/2.0)-cos((double)roll/2.0)*sin((double)pitch/2.0)*sin((double)yaw/2.0)));
+	q2=((cos((double)roll/2.0)*sin((double)pitch/2.0)*cos((double)yaw/2.0)+sin((double)roll/2.0)*cos((double)pitch/2.0)*sin((double)yaw/2.0)));
+	q3=((cos((double)roll/2.0)*cos((double)pitch/2.0)*sin((double)yaw/2.0)-sin((double)roll/2.0)*sin((double)pitch/2.0)*cos((double)yaw/2.0)));
 	ESP_LOGI(FNAME, "Quaternion:%f,%f,%f,%f ", q0,q1,q2,q3);
 
 	initdone=true;
@@ -119,6 +141,9 @@ void IMU::init(){
 void IMU::read(){
 	double dt=0;
 	bool ret=false;
+	  double  roll=0.0;
+	  double  pitch=0.0;
+	  double  yaw=0.0;
 
 		uint64_t rts = esp_timer_get_time();
 		if( last_rts == 0 )
@@ -127,43 +152,51 @@ void IMU::read(){
 		last_rts = rts;
 		if( ret )
 			return;
-
+		if(dt>10.11) {/* si la période de temps n'est pas celle attendue, on intègre pas les gyros*/
+			initdone = false;
+			IMU::init(false);
+		}
+		else {
+			esp_err_t err = MPU.acceleration(&accelRaw);  // fetch raw data from the registers
+			if( err != ESP_OK )
+				ESP_LOGE(FNAME, "accel I2C error, X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
+			err |= MPU.rotation(&gyroRaw);       // fetch raw data from the registers
+			if( err != ESP_OK )
+				ESP_LOGE(FNAME, "gyro I2C error, X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
+			accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
+			gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
 		MPU6050Read();
-		MadgwickAHRSupdateIMU(gyroX, gyroY, gyroZ, accelX, accelY, accelZ);
+		MadgwickAHRSupdateIMU(dt,gyroX, gyroY, gyroZ, accelX, accelY, accelZ,&q0,&q1,&q2,&q3);
 	// Intégration des anges d'Euler
-	  float temp1=q0;
-	  float temp2=q1;
-	  float temp3=q2;
-	  float temp4=q3;
-	  float temp5=2 * (temp1 * temp2 - temp3 * temp4);
-	  float temp6=temp1*temp1-temp2*temp2-temp3*temp3+temp4*temp4;
-	  roll = atan2(temp5, temp6); // phi
-	  temp5=2 * ( temp1 * temp3-temp2 * temp4 );
-	  if (abs(temp5)<1.0) pitch = asin(temp5); else pitch = 0.0; // theta
-	  temp5=2 * (temp2 * temp3 + temp1 * temp4);
-	  temp6=temp1*temp1+temp2*temp2-temp3*temp3-temp4*temp4;
-	  yaw = atan2(temp5,temp6 ) ; // psi
+	  roll = atan2(2 * (q0 * q1 + q2 * q3), (q0*q0-q1*q1-q2*q2+q3*q3)); // phi
+	  if (abs(2*( q0 * q2-q1 * q3 ))<1.0) pitch = asin(2 * ( q0 * q2-q1 * q3 )); else pitch = 0.0; // theta
+	  yaw = atan2(2 * (q1 * q2 + q0 * q3),(q0*q0+q1*q1-q2*q2-q3*q3) ) ; // psi
+	  filterPitch += (pitch - filterPitch) * 0.2;
+	  filterRoll += (roll - filterRoll) * 0.2;
+	  filterYaw += (yaw - filterYaw) * 0.2;
+		ESP_LOGI(FNAME, "attitude,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f ",
+				dt,gyroX, gyroY, gyroZ, accelX, accelY, accelZ,roll,pitch,yaw,q0,q1,q2,q3, -gyroDPS.z*DEG_TO_RAD, gyroDPS.y*DEG_TO_RAD, gyroDPS.x*DEG_TO_RAD, -accelG[2]*G, accelG[1]*G, accelG[0]*G);
 
 	   // Variables intermédiares
-			float q0q0 = temp1 * temp1;
-			float q0q1 = temp1 * temp2;
-			float q0q2 = temp1 * temp3;
-			float q0q3 = temp1 * temp4;
-			float q1q1 = temp2 * temp2;
-			float q1q2 = temp2 * temp3;
-			float q1q3 = temp2 * temp4;
-			float q2q2 = temp3 * temp3;
-			float q2q3 = temp3 * temp4;
-			float q3q3 = temp4 * temp4;
+			float q0q0 = q0 * q0;
+			float q0q1 = q0 * q1;
+			float q0q2 = q0 * q2;
+			float q0q3 = q0 * q3;
+			float q1q1 = q1 * q1;
+			float q1q2 = q1 * q2;
+			float q1q3 = q1 * q3;
+			float q2q2 = q2 * q2;
+			float q2q3 = q2 * q3;
+			float q3q3 = q3 * q3;
 
 // Calcul de la gravité en repère engin
 	float gx=2.0*(-q0q2 + q1q3)*G;
 	float gy=2.0*(q2q3+q0q1)*G;
 	float gz=(q0q0-q1q1-q2q2+q3q3)*G;
-	  // Intégration des vitesses en repère engin
-	u=u+(accelX-gx)*dt;
-	v=v+(accelY-gy)*dt;
-	w=w+(accelZ-gz)*dt;
+	  // Intégration des vitesses en repère engin avec prise en compte de l'accélération d'entrainement
+	u=u+(accelX-gx+v*gyroX-w*gyroY)*dt;
+	v=v+(accelY-gy+w*gyroX-u*gyroZ)*dt;
+	w=w+(accelZ-gz+u*gyroY-v*gyroX)*dt;
 
 	// Passage des vitesses du repère engin en repère galiléen
 	//  Psi:=arccos((q0q0+q1q1-q2q2-q3q3)/cos(Teta));If (q1q2+q0q3)<0.0 Then Psi:=-Psi;
@@ -172,28 +205,19 @@ void IMU::read(){
 	vx=(q0q0+q1q1-q2q2-q3q3)*u + 2.0*(q1q2-q0q3)*v + 2.0*(q0q2 + q1q3)*w;
 	vy=2.0*(q1q2+q0q3)*u + (q0q0-q1q1+q2q2-q3q3)*v + 2.0*(q2q3-q0q1)*w;
 	vz=2.0*(q1q3-q0q2)*u + 2.0*(q2q3+q0q1)*v + (q0q0-q1q1-q2q2+q3q3)*w;
+		}
 }
 
 
 void IMU::MPU6050Read()
 {// Les mesures sont transformées en valeur SI dès leur mise en forme
 	// et les offsets enlevés
-	if (initdone){
-		accelX = -(accelG[2]*G-offset_accelX);
+		accelX = -(accelG[2]*G+offset_accelX);
 		accelY = (accelG[1]*G-offset_accelY);
 		accelZ = (accelG[0]*G-offset_accelZ);
-		gyroX = -(gyroDPS.z*DEG_TO_RAD-offset_gyroX);
+		gyroX = -(gyroDPS.z*DEG_TO_RAD+offset_gyroX);
 		gyroY = (gyroDPS.y*DEG_TO_RAD-offset_gyroY);
 		gyroZ = (gyroDPS.x*DEG_TO_RAD-offset_gyroZ);
-	}
-	else{
-		accelX = -(accelG[2]*G);
-		accelY = (accelG[1]*G);
-		accelZ = (accelG[0]*G);
-		gyroX = -(gyroDPS.z*DEG_TO_RAD);
-		gyroY = (gyroDPS.y*DEG_TO_RAD);
-		gyroZ = (gyroDPS.x*DEG_TO_RAD);
-	}
 }
 
 void IMU::PitchFromAccel(double *pitch)

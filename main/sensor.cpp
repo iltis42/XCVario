@@ -66,7 +66,6 @@
 // modif gfm
 #include "../components/gps/include/UBX_Parser.h"
 #include "ahrs.hpp" /*"KalmanMPU6050.h"*/
-#include "MadgwickAHRS.h"
 #include "deadReckoning.h"
 #include "estAltitude.h"
 float estimated_altitude = 0;
@@ -77,10 +76,6 @@ float Ground_Speed_gps = 0;
 float Vsz_gps = 0;
 float u,v,w;
 float vx,vy,vz;
-volatile double q0 = 0.0;
-volatile double q1 = 0.0;
-volatile double q2 = 0.0;
-volatile double q3 = 0.0;	// quaternion of sensor frame relative to auxiliary frame
 // fin modif gfm
 /*
 BMP:
@@ -349,7 +344,7 @@ void readBMP(void *pvParameters){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		xSemaphoreTake(xMutex,portMAX_DELAY );
 
-		if( haveMPU  )  // 3th Generation HW, MPU6050 avail and feature enabled
+		if( haveMPU && IMU::getInitdone() )  // 3th Generation HW, MPU6050 avail and feature enabled
 		{
 			mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
 			mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
@@ -604,7 +599,7 @@ void sensor(void *args){
 	NVS.begin();
 	if( display_orientation.get() ){
 		ESP_LOGI( FNAME, "TopDown display mode flag set");
-		topDown = true;
+		topDown = false;
 	}
 
 	AverageVario::begin();
@@ -677,10 +672,6 @@ void sensor(void *args){
 		MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
 		display->writeText( line++, "AHRS Sensor: OK");
 		logged_tests += "MPU6050 AHRS test: PASSED\n";
-		IMU::init();
-		logged_tests += "MPU6050 AHRS init: PASSED\n";
-		IMU::read();
-		logged_tests += "MPU6050 AHRS read: PASSED\n";
 		// BIAS MPU6050
 		mpud::raw_axes_t gb = gyro_bias.get();
 		mpud::raw_axes_t ab = accl_bias.get();
@@ -1141,7 +1132,10 @@ void sensor(void *args){
 	Audio::startAudio();
 	//modif gfm
 		Init_UBX_Parser();
-
+		IMU::init(true);
+		logged_tests += "MPU6050 AHRS init: PASSED\n";
+		IMU::read();
+		logged_tests += "MPU6050 AHRS read: PASSED\n";
 		altimeter_calibrate();
 		// fin modif gfm
 }

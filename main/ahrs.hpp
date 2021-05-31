@@ -16,10 +16,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#ifndef _KalmanMPU6050_H_
-#define _KalmanMPU6050_H_
+#ifndef _ahrs_H_
+#define _ahrs_H_
 
 #include "Arduino.h"
+#include "MPU.hpp"        // main file, provides the class itself
+#include "mpu/math.hpp"   // math helper for dealing with MPU data
+#include "mpu/types.hpp"  // MPU data types and definitions
 
 #ifndef M_PI
 #define M_PI 3.14159265359
@@ -62,7 +65,7 @@ public:
   /**
    * Initializes the Wire library, the MPU and the Kalman Filter.
    */
-  static void init();
+  static void init(bool f=true);
 
   /**
    * Fetches the IMU data and proccesses it through the Kalman Filter.
@@ -134,16 +137,17 @@ public:
    *
    * @returns The x rotation (roll) in degrees
    */
-  static inline double getRoll() {  return roll*RAD_TO_DEG;  };
-  static inline double getRollRad() {  return roll;  };
+  static inline double getRoll() {  return filterRoll*RAD_TO_DEG;  };
+  static inline double getRollRad() {  return filterRoll;  };
 
   /**
    * Gets the pitch (Y rotation) in degrees from the Kalman Filter.\
    *
    * @returns The y rotation (pitch) in degrees
    */
-  static inline double getPitch()  {	return -pitch*RAD_TO_DEG;  };
-  static inline double getPitchRad()  {	return -pitch;  };
+  static inline double getPitch()  {	return -filterPitch*RAD_TO_DEG;  };
+  static inline double getPitchRad()  {	return -filterPitch;  };
+  static inline double getYawRad()  {	return -filterYaw;  };
   static inline bool getInitdone() {return (initdone);};
 
 private:
@@ -160,13 +164,13 @@ private:
   static void PitchFromAccel(double *pitch);
   static uint64_t last_rts;
 
-  static double  roll;
-  static double  pitch;
-  static double  yaw;
   static double  offset_roll;
   static double  offset_pitch;
   static double  offset_yaw;
   static bool initdone;
+  static double  filterPitch;
+  static double  filterRoll;
+  static double  filterYaw;
 };
 
-#endif // _KalmanMPU6050_H_
+#endif // _ahrs_H_

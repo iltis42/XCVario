@@ -16,7 +16,7 @@ inline constexpr size_t get_file_name_offset(const T (& str)[S], size_t i = S - 
 template <typename T>
 inline constexpr size_t get_file_name_offset(T (& str)[1])
 {
-    return 0;
+    return (0);
 }
 
 #define FNAME &__FILE__[get_file_name_offset(__FILE__)]

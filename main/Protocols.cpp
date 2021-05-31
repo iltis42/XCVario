@@ -223,14 +223,11 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		//		bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z,gx,gy,gz,aex,aey,aez );
 
 //fin modif gfm*/
-		double roll = IMU::getRawGyroX();
-		double pitch = IMU::getRawGyroY();
-		//double aex = IMU::getEarthAccelX();
-		//double aey = IMU::getEarthAccelY();
-		//double aez = IMU::getEarthAccelZ();
-		double aex = IMU::getRawAccelX();
-		double aey = IMU::getRawAccelY();
-		double aez = IMU::getRawAccelZ();
+		double roll = IMU::getRollRad();
+		double pitch = IMU::getPitchRad();
+		double aex = IMU::getEarthAccelX();
+		double aey = IMU::getEarthAccelY();
+		double aez = IMU::getEarthAccelZ();
 		int initdone = 0 ;
 		if (IMU::getInitdone()) initdone=1; else initdone=0;
 //		sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%6.2f,%6.2f,%4.3f,%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );

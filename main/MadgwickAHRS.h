@@ -12,6 +12,7 @@
 //=====================================================================================================
 #ifndef MadgwickAHRS_h
 #define MadgwickAHRS_h
+//#include "logdef.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -20,14 +21,13 @@ extern "C" {
 //----------------------------------------------------------------------------------------------------
 // Variable declaration
 
-extern double beta_quat;				// algorithm gain
-extern volatile double q0, q1, q2, q3;	// quaternion of sensor frame relative to auxiliary frame
+extern double q0, q1, q2, q3;	// quaternion of sensor frame relative to auxiliary frame
 
 //---------------------------------------------------------------------------------------------------
 // Function declarations
 
-void MadgwickAHRSupdate(double gx, double gy, double gz, double ax, double ay, double az, double mx, double my, double mz);
-void MadgwickAHRSupdateIMU(double gx, double gy, double gz, double ax, double ay, double az);
+void MadgwickAHRSupdate(double dt,double gx, double gy, double gz, double ax, double ay, double az, double mx, double my, double mz, double *pq0, double *pq1, double *pq2, double *pq3);
+void MadgwickAHRSupdateIMU(double dt,double gx, double gy, double gz, double ax, double ay, double az, double *pq0, double *pq1, double *pq2, double *pq3);
 
 #ifdef __cplusplus
 }

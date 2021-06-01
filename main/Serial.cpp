@@ -102,7 +102,7 @@ void Serial::serialHandlerS1(void *pvParameters){
 		if( num > 0 ) {
 			// ESP_LOGI(FNAME,"Serial 1 RX avail %d bytes", num );
 			if( num >= SSTRLEN ) {
-				ESP_LOGW(FNAME,"Serial 1 Overrun RX >= %d bytes avail: %d, Bytes", SSTRLEN, num);
+				// ESP_LOGW(FNAME,"Serial 1 Overrun RX >= %d bytes avail: %d, Bytes", SSTRLEN, num);
 				num=SSTRLEN;
 			}
 			// ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
@@ -147,7 +147,7 @@ void Serial::serialHandlerS2(void *pvParameters){
 		if( num > 0 ) {
 			ESP_LOGI(FNAME,"Serial 2 RX avail %d bytes", num );
 			if( num >= SSTRLEN ) {
-				ESP_LOGW(FNAME,"Serial 2 RX Overrun >= %d bytes avail: %d, Bytes", SSTRLEN, num);
+				// ESP_LOGW(FNAME,"Serial 2 RX Overrun >= %d bytes avail: %d, Bytes", SSTRLEN, num);
 				num=SSTRLEN;
 			}
 			int numread = 0;
@@ -273,10 +273,10 @@ void Serial::begin(){
 void Serial::taskStart(){
 	ESP_LOGI(FNAME,"Serial::taskStart()" );
 	if( serial1_speed.get() != 0  || blue_enable.get() != 0 ){
-		xTaskCreatePinnedToCore(&Serial::serialHandlerS1, "serialHandlerS1", 2*4096, NULL, 27, 0, 0);
+		xTaskCreatePinnedToCore(&Serial::serialHandlerS1, "serialHandlerS1", 2*4096, NULL, 7, 0, 0);
 	}
 	if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 && !compass_enable.get() ){
-		xTaskCreatePinnedToCore(&Serial::serialHandlerS2, "serialHandlerS2", 2*4096, NULL, 26, 0, 0);
+		xTaskCreatePinnedToCore(&Serial::serialHandlerS2, "serialHandlerS2", 2*4096, NULL, 6, 0, 0);
 	}
 }
 

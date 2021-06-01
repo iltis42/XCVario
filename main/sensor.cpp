@@ -567,7 +567,7 @@ void sensor(void *args){
 	spiMutex = xSemaphoreCreateMutex();
 	Menu = new SetupMenu();
 	// esp_log_level_set("*", ESP_LOG_INFO);
-	ESP_LOGI( FNAME, "Log level set globally to INFO %d",  ESP_LOG_INFO);
+	ESP_LOGI( FNAME, "Log level set globally to INFO %d; Max Prio: %d Wifi: %d",  ESP_LOG_INFO, configMAX_PRIORITIES, ESP_TASKD_EVENT_PRIO-5 );
 	esp_chip_info_t chip_info;
 	esp_chip_info(&chip_info);
 	ESP_LOGI( FNAME,"This is ESP32 chip with %d CPU cores, WiFi%s%s, ",
@@ -1109,13 +1109,13 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
 	if( blue_enable.get() != WL_WLAN_CLIENT ) {
-		xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096*3, NULL, 30, bpid, 0);
+		xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096*3, NULL, 9, bpid, 0);
 	}
 	if( blue_enable.get() == WL_WLAN_CLIENT ){
-		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 30, bpid, 0);
+		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 9, bpid, 0);
 	}
-	xTaskCreatePinnedToCore(&readTemp, "readTemp", 4096, NULL, 6, tpid, 0);
-	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 13, dpid, 0);
+	xTaskCreatePinnedToCore(&readTemp, "readTemp", 4096, NULL, 1, tpid, 0);
+	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 2, dpid, 0);
 
 	Audio::startAudio();
 }

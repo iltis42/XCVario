@@ -6,7 +6,7 @@
 #include "logdef.h"
 
 
-#define SSTRLEN 128
+#define SSTRLEN 81  // max size of NMEA
 
 class SString {
 public:

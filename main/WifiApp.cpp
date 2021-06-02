@@ -118,7 +118,7 @@ void socket_server(void *setup) {
 			if( new_client >= 0 && clients.size() < 10 ){
 				clients.push_back( new_client );
 				num_send = 0;
-				ESP_LOGV(FNAME, "New sock client: %d, number of clients: %d", new_client, clients.size()  );
+				ESP_LOGI(FNAME, "New sock client: %d, number of clients: %d", new_client, clients.size()  );
 			}
 			// ESP_LOGV(FNAME, "Number of clients %d, port %d", clients.size(), config->port );
 			if( clients.size() ) {
@@ -127,14 +127,14 @@ void socket_server(void *setup) {
 				if( s.length() )
 					ESP_LOGV(FNAME, "port %d to sent %d: bytes, %s", config->port, s.length(), s.c_str() );
 				std::list<int>::iterator it;
-				int client_dead = 0;
 				int client;
 				for(it = clients.begin(); it != clients.end(); ++it)
 				{
 					client=*it;
+					int client_dead = 0;
 					// ESP_LOGD(FNAME, "loop tcp client %d, port %d", client , config->port );
 					if ( s.length() ){
-						ESP_LOGV(FNAME, "sent to tcp client %d: %d bytes", client, s.length() );
+						ESP_LOGI(FNAME, "sent to tcp client %d, bytes %d, port %d", client, s.length(), config->port );
 						// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_VERBOSE);
 						if( client >= 0 ){
 							int num = send(client, s.c_str(), s.length(), 0);
@@ -165,7 +165,7 @@ void socket_server(void *setup) {
 							}
 						}
 					}
-
+					//vTaskDelay(5/portTICK_PERIOD_MS);
 				}
 			}
 			vTaskDelay(20/portTICK_PERIOD_MS);
@@ -237,9 +237,9 @@ void wifi_init_softap()
 		ESP_ERROR_CHECK(esp_wifi_start());
 		ESP_ERROR_CHECK(esp_wifi_set_max_tx_power(8));
 
-		xTaskCreatePinnedToCore(&socket_server, "socket_ser_2", 4096, &AUX, 3, 0, 0);  // 10
-		xTaskCreatePinnedToCore(&socket_server, "socket_srv_0", 4096, &XCVario, 4, 0, 0);  // 10
-		xTaskCreatePinnedToCore(&socket_server, "socket_ser_1", 4096, &FLARM, 5, 0, 0);  // 10
+		xTaskCreatePinnedToCore(&socket_server, "socket_ser_2", 4096, &AUX, 12, 0, 0);  // 10
+		xTaskCreatePinnedToCore(&socket_server, "socket_srv_0", 4096, &XCVario, 13, 0, 0);  // 10
+		xTaskCreatePinnedToCore(&socket_server, "socket_ser_1", 4096, &FLARM, 14, 0, 0);  // 10
 
 		ESP_LOGV(FNAME, "wifi_init_softap finished SUCCESS. SSID:%s password:%s channel:%d", (char *)wc.ap.ssid, (char *)wc.ap.password, wc.ap.channel );
 	}

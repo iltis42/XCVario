@@ -256,6 +256,7 @@ void SetupCommon::syncEntry( int entry ){
 		// ESP_LOGI(FNAME,"We are wireless type=%d", blue_enable.get() );
 		if( entry  < entries.size() ) {
 			entries[entry]->sync();
+			delay(100);
 		}
 	}
 }

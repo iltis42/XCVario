@@ -101,6 +101,7 @@ Protocols OV( &Speed2Fly );
 
 AnalogInput Battery( (22.0+1.2)/1200, ADC_ATTEN_DB_0, ADC_CHANNEL_7, ADC_UNIT_1 );
 
+TaskHandle_t *apid;
 TaskHandle_t *bpid;
 TaskHandle_t *tpid;
 TaskHandle_t *dpid;
@@ -320,6 +321,8 @@ void audioTask(void *pvParameters){
 	while (1)
 	{
 		doAudio();
+		if( uxTaskGetStackHighWaterMark( apid )  < 512 )
+			ESP_LOGW(FNAME,"Warning audio task stack low: %d", uxTaskGetStackHighWaterMark( apid ) );
 		vTaskDelay(20/portTICK_PERIOD_MS);
 	}
 }
@@ -476,8 +479,6 @@ void readBMP(void *pvParameters){
 				xSemaphoreGive( xMutex );
 			}
 		}
-		if( uxTaskGetStackHighWaterMark( bpid )  < 1024 )
-			ESP_LOGW(FNAME,"Warning bmpTask stack low: %d", uxTaskGetStackHighWaterMark( bpid ) );
 
 		if( accelG[0] > gload_pos_max.get() ){
 			gload_pos_max.set( (float)accelG[0] );
@@ -485,6 +486,8 @@ void readBMP(void *pvParameters){
 			gload_neg_max.set(  (float)accelG[0] );
 		}
 		esp_task_wdt_reset();
+		if( uxTaskGetStackHighWaterMark( bpid ) < 1024 )
+			ESP_LOGW(FNAME,"Warning sensor task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );
 		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
 	}
 }
@@ -529,7 +532,8 @@ void readTemp(void *pvParameters){
 		CircleWind::tick();
 		vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS);
 
-		if( (ttick++ % 100) == 0) {
+		if( (ttick++ % 5) == 0) {
+			ESP_LOGI(FNAME,"Free Heap: %d bytes", heap_caps_get_free_size(MALLOC_CAP_8BIT) );
 			if( uxTaskGetStackHighWaterMark( tpid ) < 1024 )
 				ESP_LOGW(FNAME,"Warning temperature task stack low: %d bytes", uxTaskGetStackHighWaterMark( tpid ) );
 			if( heap_caps_get_free_size(MALLOC_CAP_8BIT) < 10000 )
@@ -1109,13 +1113,13 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
 	if( blue_enable.get() != WL_WLAN_CLIENT ) {
-		xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096*3, NULL, 9, bpid, 0);
+		xTaskCreatePinnedToCore(&readBMP, "readBMP", 1024*10, NULL, 9, bpid, 0);
 	}
 	if( blue_enable.get() == WL_WLAN_CLIENT ){
-		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 9, bpid, 0);
+		xTaskCreatePinnedToCore(&audioTask, "audioTask", 2048, NULL, 9, apid, 0);
 	}
-	xTaskCreatePinnedToCore(&readTemp, "readTemp", 4096, NULL, 1, tpid, 0);
-	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 2, dpid, 0);
+	xTaskCreatePinnedToCore(&readTemp, "readTemp", 3072, NULL, 1, tpid, 0);
+	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 4096, NULL, 2, dpid, 0);
 
 	Audio::startAudio();
 }

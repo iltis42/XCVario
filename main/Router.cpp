@@ -61,6 +61,22 @@ bool Router::pullMsg( RingBufCPP<SString, QUEUE_SIZE>& q, SString& s ){
 	return false;
 }
 
+
+int Router::pullBlock( RingBufCPP<SString, QUEUE_SIZE>& q, char *block ){
+	int size = 0;
+	while( !q.isEmpty() ){
+		SString s;
+		portENTER_CRITICAL_ISR(&btmux);
+		q.pull(  &s );
+		portEXIT_CRITICAL_ISR(&btmux);
+		memcpy( block+size, s.c_str(), s.length() );
+		size += s.length();
+		if( (size + 80) >= 512 )
+			break;
+	}
+	return size;
+}
+
 // XCVario Router
 void Router::sendXCV(char * s){
 	// ESP_LOGV( FNAME,"XCVario message %s",s);

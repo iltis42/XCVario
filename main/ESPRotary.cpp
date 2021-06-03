@@ -24,7 +24,7 @@ int16_t ESPRotary::r_enc2_count = 0;
 
 #define ROTARY_SINGLE_INC 0
 #define ROTARY_DOUBLE_INC 1
-
+static TaskHandle_t *pid;
 
 
 void ESPRotary::attach(RotaryObserver *obs) {
@@ -95,7 +95,7 @@ void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
 	pcnt_counter_clear(PCNT_UNIT_1);
 	pcnt_counter_resume(PCNT_UNIT_1);
 
-	xTaskCreatePinnedToCore(&ESPRotary::informObservers, "informObservers", 1024*10, NULL, 8, NULL, 0);
+	xTaskCreatePinnedToCore(&ESPRotary::informObservers, "informObservers", 8192, NULL, 8, pid, 0);
 }
 
 int16_t old_cnt = 0;
@@ -167,6 +167,8 @@ void ESPRotary::informObservers( void * args )
 					observers[i]->down( abs(diff) );
 			}
 		}
+		if( uxTaskGetStackHighWaterMark( pid ) < 1024 )
+			ESP_LOGW(FNAME,"Warning rotary task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid ) );
 		vTaskDelay(20 / portTICK_PERIOD_MS);
 	}
 }

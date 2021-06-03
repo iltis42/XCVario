@@ -38,11 +38,13 @@ typedef struct xcv_sock_server {
 	RingBufCPP<SString, QUEUE_SIZE>* txbuf;
 	RingBufCPP<SString, QUEUE_SIZE>* rxbuf;
 	int port;
+	TaskHandle_t *pid;
 }sock_server_t;
 
-static sock_server_t XCVario = { .txbuf = &wl_vario_tx_q, .rxbuf = &wl_vario_rx_q, .port=8880 };
-static sock_server_t FLARM   = { .txbuf = &wl_flarm_tx_q, .rxbuf = &wl_flarm_rx_q, .port=8881 };
-static sock_server_t AUX     = { .txbuf = &wl_aux_tx_q,   .rxbuf = &wl_aux_rx_q,   .port=8882 };
+static sock_server_t XCVario = { .txbuf = &wl_vario_tx_q, .rxbuf = &wl_vario_rx_q, .port=8880, .pid = 0 };
+static sock_server_t FLARM   = { .txbuf = &wl_flarm_tx_q, .rxbuf = &wl_flarm_rx_q, .port=8881, .pid = 0  };
+static sock_server_t AUX     = { .txbuf = &wl_aux_tx_q,   .rxbuf = &wl_aux_rx_q,   .port=8882, .pid = 0  };
+
 
 int create_socket( int port ){
 	struct sockaddr_in serverAddress;
@@ -122,10 +124,10 @@ void socket_server(void *setup) {
 			}
 			// ESP_LOGV(FNAME, "Number of clients %d, port %d", clients.size(), config->port );
 			if( clients.size() ) {
-				SString s;
-				Router::pullMsg( *(config->txbuf), s);
-				if( s.length() )
-					ESP_LOGV(FNAME, "port %d to sent %d: bytes, %s", config->port, s.length(), s.c_str() );
+				char block[512];
+				int len = Router::pullBlock( *(config->txbuf), block );
+				if( len )
+					ESP_LOGV(FNAME, "port %d to sent %d: bytes, %s", config->port, len, block );
 				std::list<int>::iterator it;
 				int client;
 				for(it = clients.begin(); it != clients.end(); ++it)
@@ -133,11 +135,11 @@ void socket_server(void *setup) {
 					client=*it;
 					int client_dead = 0;
 					// ESP_LOGD(FNAME, "loop tcp client %d, port %d", client , config->port );
-					if ( s.length() ){
-						ESP_LOGI(FNAME, "sent to tcp client %d, bytes %d, port %d", client, s.length(), config->port );
+					if ( len ){
+						// ESP_LOGI(FNAME, "sent to tcp client %d, bytes %d, port %d", client, len, config->port );
 						// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_VERBOSE);
 						if( client >= 0 ){
-							int num = send(client, s.c_str(), s.length(), 0);
+							int num = send(client, block, len, 0);
 							// ESP_LOGV(FNAME, "client %d, num send %d", client, num );
 							if( num < 0 ) {
 								ESP_LOGW(FNAME, "tcp client %d (port %d) send err: %s, remove!", client,  config->port, strerror(errno) );
@@ -168,7 +170,9 @@ void socket_server(void *setup) {
 					//vTaskDelay(5/portTICK_PERIOD_MS);
 				}
 			}
-			vTaskDelay(20/portTICK_PERIOD_MS);
+			if( uxTaskGetStackHighWaterMark( config->pid ) < 256 )
+				ESP_LOGW(FNAME,"Warning task stack low: %d bytes, port %d", uxTaskGetStackHighWaterMark( config->pid ), config->port );
+			vTaskDelay(500/portTICK_PERIOD_MS);
 		}
 	}
 	vTaskDelete(NULL);
@@ -237,9 +241,9 @@ void wifi_init_softap()
 		ESP_ERROR_CHECK(esp_wifi_start());
 		ESP_ERROR_CHECK(esp_wifi_set_max_tx_power(8));
 
-		xTaskCreatePinnedToCore(&socket_server, "socket_ser_2", 4096, &AUX, 12, 0, 0);  // 10
-		xTaskCreatePinnedToCore(&socket_server, "socket_srv_0", 4096, &XCVario, 13, 0, 0);  // 10
-		xTaskCreatePinnedToCore(&socket_server, "socket_ser_1", 4096, &FLARM, 14, 0, 0);  // 10
+		xTaskCreatePinnedToCore(&socket_server, "socket_ser_2", 3072, &AUX, 12, AUX.pid, 0);  // 10
+		xTaskCreatePinnedToCore(&socket_server, "socket_srv_0", 3072, &XCVario, 13, XCVario.pid, 0);  // 10
+		xTaskCreatePinnedToCore(&socket_server, "socket_ser_1", 3072, &FLARM, 14, FLARM.pid, 0);  // 10
 
 		ESP_LOGV(FNAME, "wifi_init_softap finished SUCCESS. SSID:%s password:%s channel:%d", (char *)wc.ap.ssid, (char *)wc.ap.password, wc.ap.channel );
 	}

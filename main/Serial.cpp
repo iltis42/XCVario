@@ -69,7 +69,7 @@ int sim=100;
 static TaskHandle_t *pid;
 
 // Serial Handler  ttyS1, S1, port 8881
-void Serial::serialHandlerS1(void *pvParameters){
+void Serial::serialHandler(void *pvParameters){
 	while(1) {
 		if( flarm_sim.get() ){
 			sim=-3;
@@ -160,53 +160,12 @@ void Serial::serialHandlerS1(void *pvParameters){
 	    	Router::routeWLAN();
 	    }
 	    esp_task_wdt_reset();
+	    if( uxTaskGetStackHighWaterMark( pid ) < 1024 )
+	    	ESP_LOGW(FNAME,"Warning serial task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid ) );
 	    vTaskDelay( HEARTBEAT_PERIOD_MS_SERIAL/portTICK_PERIOD_MS );
 	}
 }
 
-// ttyS2, port 8882;   included above, to be removed.
-void Serial::serialHandlerS2(void *pvParameters){
-	while(1) {
-		Router::routeBT();
-		SString s;
-		if ( !s2_tx_q.isEmpty() && Serial2.availableForWrite() ){
-			if( Router::pullMsg( s2_tx_q, s ) ) {
-				ESP_LOGD(FNAME,"Serial Data and avail");
-				ESP_LOGD(FNAME,"Serial 2 TX len: %d bytes", s.length() );
-				ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
-				int wr = Serial2.write( s.c_str(), s.length() );
-				ESP_LOGD(FNAME,"Serial 2 TX written: %d", wr);
-			}
-		}
-		int num = Serial2.available();
-		if( num > 0 ) {
-			ESP_LOGI(FNAME,"Serial 2 RX avail %d bytes", num );
-			if( num >= SSTRLEN ) {
-				// ESP_LOGW(FNAME,"Serial 2 RX Overrun >= %d bytes avail: %d, Bytes", SSTRLEN, num);
-				num=SSTRLEN;
-			}
-			int numread = 0;
-			if( Flarm::bincom ){    // normally wait unit sentence has ended, or in binary mode just continue
-				numread = Serial2.read( s.c_str(), num );
-			}
-			else{
-				numread = Serial2.readLine( s.c_str(), SSTRLEN );
-			}
-			if( numread ){
-				// ESP_LOGI(FNAME,"Serial 1 RX bytes read: %d  bincom: %d", numread,  Flarm::bincom  );
-				// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),numread, ESP_LOG_INFO);
-				s.setLen( numread );
-				Router::forwardMsg( s, s2_rx_q );
-			}
-		}
-		Router::routeWLAN();
-		Router::routeS2();
-		esp_task_wdt_reset();
-		if( uxTaskGetStackHighWaterMark( pid ) < 1024 )
-			ESP_LOGW(FNAME,"Warning serial task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid ) );
-		vTaskDelay( HEARTBEAT_PERIOD_MS_SERIAL/portTICK_PERIOD_MS );  // 48 bytes each 20 mS traffic at 19.200 baud
-	 }
-}
 
 bool Serial::selfTest(int num){
 	HardwareSerial *mySerial;
@@ -310,7 +269,7 @@ void Serial::begin(){
 void Serial::taskStart(){
 	ESP_LOGI(FNAME,"Serial::taskStart()" );
 	if( serial1_speed.get() != 0  || blue_enable.get() != 0 ){
-		xTaskCreatePinnedToCore(&Serial::serialHandlerS1, "serialHandlerS1", 4096, NULL, 7, pid, 0);
+		xTaskCreatePinnedToCore(&Serial::serialHandler, "serialHandler", 4096, NULL, 7, pid, 0);
 	}
 	// handler S1 now serves both interfaces in one task
 }

@@ -202,15 +202,15 @@ void CircleWind::_calcWind()
     are on opposing sides of the circle to determine the quality. 140 degrees is
     the minimum separation, 180 is ideal.
     Furthermore, the first two circles are considered to be of lesser quality.
+
+    Display e.g. -40% (Q*20) %, ->  Q(final) = -2;
+    @ 1 Circle Q = -1.
+    abs( aDiff ) / 8 = 6 -> aDiff = 48°
+
+
 	 */
 
-	quality = 5 - (abs( aDiff ) / 8);
-
-	if( circleCount < 2 )
-	{
-		ESP_LOGI(FNAME,"circles < 2 decrement quality");
-		quality--;
-	}
+	quality = 5.0 - (abs( aDiff ) / max_circle_wind_diff.get() ) * 5.0;   // 90 degree diff is considered zero quality
 
 	if( quality < 1 )
 	{
@@ -252,7 +252,7 @@ void CircleWind::newWind( double angle, double speed, float q ){
 	}
 	ESP_LOGI(FNAME,"### NEW AGV CircleWind: %3.1f°/%.1fKm/h  KQ:%1.3f", direction, windspeed, kq );
 	OV.sendWindChange( direction, windspeed, WA_CIRCLING );
-	if( q > 3 && circleCount > 2 )
+	if( q > min_circle_wind_quality.get() && circleCount >= 2 )
 		theWind.newCirclingWind( direction, windspeed );
 }
 

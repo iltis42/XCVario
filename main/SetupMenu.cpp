@@ -1047,6 +1047,15 @@ void SetupMenu::setup( )
 		ShowCirclingWind* scw = new ShowCirclingWind( "Circling Wind Status" );
 		cirWindM->addMenu( scw );
 
+		SetupMenuValFloat *cirwd = new SetupMenuValFloat( "Max Angle Delta", nullptr, "\xb0", 0, 90.0, 1.0, nullptr, false, &max_circle_wind_diff );
+		cirWindM->addMenu( cirwd );
+		cirwd->setHelp(PROGMEM "Maximum accepted angle delta in degree between minimum and maximum speed used for circling wind calculation");
+
+		SetupMenuValFloat *cirwq = new SetupMenuValFloat( "Min Quality", nullptr, "", 0, 5.0, 0.0, nullptr, false, &min_circle_wind_quality );
+		cirWindM->addMenu( cirwq );
+		cirwq->setHelp(PROGMEM "Minimum accepted circle wind quality for compass auto deviation setup method");
+
+
 		SetupMenuSelect * btm = new SetupMenuSelect( "Wireless", true, 0, true, &blue_enable );
 		btm->setHelp( PROGMEM "Activate type wireless interface to connect navigation devices running e.g. XCSoar, or to another XCVario as client");
 		btm->addEntry( "Disable");

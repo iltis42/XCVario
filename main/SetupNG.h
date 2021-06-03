@@ -483,7 +483,8 @@ extern SetupNG<float> 		wind_as_calibration;
 extern SetupNG<int> 		wind_display;
 extern SetupNG<int> 		wind_reference;
 extern SetupNG<float> 		wind_max_deviation;
-
+extern SetupNG<float>       max_circle_wind_diff;
+extern SetupNG<float>       min_circle_wind_quality;
 
 extern int g_col_background;
 extern int g_col_highlight;

@@ -269,7 +269,7 @@ void Serial::begin(){
 void Serial::taskStart(){
 	ESP_LOGI(FNAME,"Serial::taskStart()" );
 	if( serial1_speed.get() != 0  || blue_enable.get() != 0 ){
-		xTaskCreatePinnedToCore(&Serial::serialHandler, "serialHandler", 4096, NULL, 7, pid, 0);
+		xTaskCreatePinnedToCore(&Serial::serialHandler, "serialHandler", 4096, NULL, 10, pid, 0);
 	}
 	// handler S1 now serves both interfaces in one task
 }

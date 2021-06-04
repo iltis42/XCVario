@@ -401,7 +401,7 @@ void Protocols::parseNMEA( char *astr ){
 		else if ( strncmp( str, "!xc,", 4 ) == 0 ) {
 				float h;
 				sscanf( str,"!xc,%f", &h );
-				ESP_LOGI(FNAME,"Compass heading detected=%3.1f", h );
+				// ESP_LOGI(FNAME,"Compass heading detected=%3.1f", h );
 				Compass::setHeading( h );
 		}
 		else if ( strncmp( str, "!xq,", 4 ) == 0 ) {

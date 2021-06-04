@@ -12,9 +12,9 @@
 #include <hal/gpio_types.h>
 #include "SetupMenu.h"
 #include "S2F.h"
-#include "Wind.h"
+#include "StraightWind.h"
 
-extern Wind theWind;
+extern StraightWind theWind;
 
 extern bool haveMPU;
 extern bool ahrsKeyValid;

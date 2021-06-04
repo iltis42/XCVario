@@ -833,6 +833,7 @@ void IpsDisplay::drawWindArrow( float a, float speed, int type ){
 	if( del_wind ) {  // cleanup previous incarnation
 		ucg->setColor(  COLOR_BLACK  );
 		ucg->drawTriangle(wx0,wy0,wx1,wy1,wx3,wy3);
+		Flarm::drawAirplane( wx0, wy0, false, true ); // clear small airplane symbol
 		wx0 = xn_0;
 		wy0 = yn_0;
 		wx1 = xn_1;
@@ -844,6 +845,7 @@ void IpsDisplay::drawWindArrow( float a, float speed, int type ){
 	}
 	if( s > 5 ) {  // draw white and red arror
 		ucg->setColor( COLOR_WHITE );
+		Flarm::drawAirplane( xn_0, yn_0, false, true ); // draw a small airplane symbol
 		ucg->drawTriangle(xn_0,yn_0,xn_1,yn_1,xn_3,yn_3);
 		ucg->setColor(  COLOR_RED  );
 		ucg->drawTriangle(xn_2,yn_2,xn_1,yn_1,xn_3,yn_3);

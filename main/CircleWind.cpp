@@ -92,7 +92,6 @@ void CircleWind::newSample( Vector curVec )
 {
 	if( blue_enable.get() == WL_WLAN_CLIENT )
 		return;
-	ESP_LOGI(FNAME,"new GPS Sample dir:%3.2f° speed:%3.2f", curVec.getAngleDeg(), curVec.getSpeed() );
 	// circle detection
 	if( lastHeading != -1 )
 	{
@@ -104,11 +103,13 @@ void CircleWind::newSample( Vector curVec )
 	lastHeading = curVec.getAngleDeg();
 
 	if( flightMode != circlingL && flightMode != circlingR ){
-		ESP_LOGI(FNAME,"FlightMode not circling %d", flightMode );
+		// ESP_LOGI(FNAME,"FlightMode not circling %d", flightMode );
 		status = "Not Circling";
 		return;
 	}
 	status = "Sampling";
+	ESP_LOGI(FNAME,"GPS Sample, dir:%3.2f° speed:%3.2f, Circling:%d", curVec.getAngleDeg(), curVec.getSpeed(), (flightMode == circlingL || flightMode == circlingR) );
+
 	if( curVec.getSpeed() < minVector.getSpeed() )
 	{
 		// New minimum speed detected

@@ -161,7 +161,7 @@ void MadgwickAHRSupdateIMU(double dt,double gx, double gy, double gz, double ax,
 		_4q2 = 4.0f * *pq2;
 		_8q1 = 8.0f * *pq1;
 		_8q2 = 8.0f * *pq2;
-		q0q0 = *pq0 * q0;
+		q0q0 = *pq0 * *pq0;
 		q1q1 = *pq1 * *pq1;
 		q2q2 = *pq2 * *pq2;
 		q3q3 = *pq3 * *pq3;

@@ -121,14 +121,9 @@ public:
    */
   static inline double getRawGyroZ()   {  return (gyroZ);  };
   //modif gfm
-  #define cphi cos((double)getRollRad())
-  #define sphi sin((double)getRollRad())
-  #define cteta cos((double)getPitchRad())
-  #define steta sin((double)getPitchRad())
-
-  static inline double getEarthAccelX() {return (accelX*(cteta*cphi+sphi)+accelY*(-cteta*sphi+cphi)-accelZ*sphi);};
-  static inline double getEarthAccelY() {return (accelX*sphi+accelY*cphi);};
-  static inline double getEarthAccelZ() {return (accelX*(steta*cphi-sphi)+accelY*(steta*sphi+cphi)+accelZ*cteta - 1.0f);};//Substract pesanteur
+  static inline double getEarthAccelX() { return (accel_earthX);};
+  static inline double getEarthAccelY() { return (accel_earthY);};
+  static inline double getEarthAccelZ() { return (accel_earthZ);};
 //fin modif gfm
 
   /**

@@ -64,6 +64,121 @@ double  IMU::filterYaw = 0;
 	double q1 = 0.0;
 	double q2 = 0.0;
 	double q3 = 0.0;	// quaternion of sensor frame relative to auxiliary frame
+	static double gravity_vector_plane[] = { 0, 0, G };
+	static double previous_tas =0;
+
+
+	static double omegaSOG(double omega, double speed)
+	{
+	#define CENTRIFSAT 600 //10 rd/s * 60 m/s
+		// multiplies omega times speed, and scales appropriately
+		// omega in radians per second, speed in m per second
+		double working;
+		working = omega * speed;
+		if (working > CENTRIFSAT)
+		{
+			return (1);
+		}
+		else if (working < -CENTRIFSAT)
+		{
+			return (- 1);
+		}
+		else
+		{
+			return (working);
+		}
+	}
+
+	static void adj_accel(double angleOfAttack)
+	{
+		// Performs centrifugal compensation without a GPS.
+		// Based on the fact that the magnitude of the
+		// compensated gplane vector should be GRAVITY*GRAVITY.
+		// This produces another equation from which the
+		// product of airspeed time rotation rate can be reasonably estimated.
+		double omega_times_velocity ; // it should be positive, but noise
+		                               // in the computations could produce neg
+		double radical;
+		double accum;
+		double accelY;
+		double vertical_cross_rotation_axis;
+		double force_cross_rotation_axis;
+		double rotation_axis[2];
+		double recipNorm;
+		// Compute the X-Z rotation axis
+		// by normalizing the X-Z gyro vector
+		rotation_axis[0] = IMU::getRawGyroX();
+		rotation_axis[1] = IMU::getRawGyroZ();
+		//vector2_normalize(rotation_axis, rotation_axis);
+		recipNorm = 1.0f / sqrt(rotation_axis[0] * rotation_axis[0] + rotation_axis[1] * rotation_axis[1]);
+		rotation_axis[0] *= recipNorm;
+		rotation_axis[1] *= recipNorm;
+
+		// compute force cross rotation axis:
+		force_cross_rotation_axis = (IMU::getRawAccelX() * rotation_axis[1]) - ( IMU::getRawAccelZ() * rotation_axis[0]  ) ;
+
+		// compute vertical cross rotation axis:
+		vertical_cross_rotation_axis = (2.0*(q0*q2+q1*q3)* rotation_axis[1]) - ((q0*q0-q1*q1-q2*q2+q3*q3)* rotation_axis[0] );
+
+		// compute the square root of the sum of the square of the
+		// force cross rotation, minus the square of the magnitude of the accelerometer vector,
+		// plus the square of GRAVITY
+
+		// Start by using rmat for accelY instead of the measured value.
+		// It is less sensitive to forward acceleration, which cannot be compensated without GPS.
+		accelY = ( 2.0*(q2*q3-q0*q1) * G );
+
+		// form the sum
+		accum = (force_cross_rotation_axis * force_cross_rotation_axis)
+		         + G * G
+		         - IMU::getRawAccelX() * IMU::getRawAccelX()
+		         - IMU::getRawAccelZ() * IMU::getRawAccelZ()
+		         - accelY* accelY;
+		if (accum < 0)
+		{
+			accum = 0;
+		}
+		radical = sqrt(accum);
+
+		// Now we are using the solution to quadratic equation in the theory,
+		// and there is some logic for selecting the positive or negative square root
+		if (force_cross_rotation_axis < 0)
+		{
+			omega_times_velocity = force_cross_rotation_axis + radical;
+		}
+		else
+		{
+			if (vertical_cross_rotation_axis < 0)
+			{
+				omega_times_velocity = force_cross_rotation_axis + radical;
+			}
+			else
+			{
+				omega_times_velocity = force_cross_rotation_axis - radical;
+			}
+		}
+		if (omega_times_velocity < 0)
+		{
+			omega_times_velocity = 0;
+		}
+		// now compute omega vector cross velocity vector and adjust
+		accum = (omega_times_velocity * rotation_axis[1]  );
+		gravity_vector_plane[0] = IMU::getRawAccelX() - accum;
+		gravity_vector_plane[1] = IMU::getRawAccelY();
+		accum = (omega_times_velocity * rotation_axis[0] );
+		gravity_vector_plane[2] = IMU::getRawAccelZ() + accum;
+
+		// account for angle of attack and forward acceleration
+		double air_speed_z;
+		// total (3D) airspeed in cm/sec is used to adjust for acceleration
+		// compute Z component of airspeed due to angle of attack
+		accum = angleOfAttack * getTAS();
+		air_speed_z = accum;
+		// compute centrifugal and forward acceleration compensation (must use corrected gyro) and suppose that this routine is called at 10 Hz
+		gravity_vector_plane[0] = gravity_vector_plane[0] + omegaSOG(IMU::getRawGyroY(), air_speed_z);
+		gravity_vector_plane[1] = gravity_vector_plane[1] - omegaSOG(IMU::getRawGyroX(), air_speed_z) +  (getTAS()-previous_tas)*10.0;
+		previous_tas = getTAS();
+	}
 
 void IMU::init(bool f){
 	#define imax 10
@@ -152,7 +267,7 @@ void IMU::read(){
 		last_rts = rts;
 		if( ret )
 			return;
-		if(dt>10.11) {/* si la période de temps n'est pas celle attendue, on intègre pas les gyros*/
+		if(dt>0.11) {/* si la période de temps n'est pas celle attendue, on intègre pas les gyros*/
 			initdone = false;
 			IMU::init(false);
 		}
@@ -166,7 +281,9 @@ void IMU::read(){
 			accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
 			gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
 		MPU6050Read();
-		MadgwickAHRSupdateIMU(dt,gyroX, gyroY, gyroZ, accelX, accelY, accelZ,&q0,&q1,&q2,&q3);
+		//adj_accel(angleOfAttack);
+		adj_accel(0.1);// angleOfAttack is supposed to be 6°
+		MadgwickAHRSupdateIMU(dt,gyroX, gyroY, gyroZ, gravity_vector_plane[0], gravity_vector_plane[1], gravity_vector_plane[2],&q0,&q1,&q2,&q3);
 	// Intégration des anges d'Euler
 	  roll = atan2(2 * (q0 * q1 + q2 * q3), (q0*q0-q1*q1-q2*q2+q3*q3)); // phi
 	  if (abs(2*( q0 * q2-q1 * q3 ))<1.0) pitch = asin(2 * ( q0 * q2-q1 * q3 )); else pitch = 0.0; // theta
@@ -174,8 +291,6 @@ void IMU::read(){
 	  filterPitch += (pitch - filterPitch) * 0.2;
 	  filterRoll += (roll - filterRoll) * 0.2;
 	  filterYaw += (yaw - filterYaw) * 0.2;
-		ESP_LOGI(FNAME, "attitude,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f ",
-				dt,gyroX, gyroY, gyroZ, accelX, accelY, accelZ,roll,pitch,yaw,q0,q1,q2,q3, -gyroDPS.z*DEG_TO_RAD, gyroDPS.y*DEG_TO_RAD, gyroDPS.x*DEG_TO_RAD, -accelG[2]*G, accelG[1]*G, accelG[0]*G);
 
 	   // Variables intermédiares
 			float q0q0 = q0 * q0;
@@ -205,7 +320,13 @@ void IMU::read(){
 	vx=(q0q0+q1q1-q2q2-q3q3)*u + 2.0*(q1q2-q0q3)*v + 2.0*(q0q2 + q1q3)*w;
 	vy=2.0*(q1q2+q0q3)*u + (q0q0-q1q1+q2q2-q3q3)*v + 2.0*(q2q3-q0q1)*w;
 	vz=2.0*(q1q3-q0q2)*u + 2.0*(q2q3+q0q1)*v + (q0q0-q1q1-q2q2+q3q3)*w;
+
+	accel_earthX = (accelX*(q0*q0+q1*q1-q2*q2-q3*q3)+accelY*2.0*(q1*q2+q0*q3)+accelZ*2.0*(q1*q3-q0*q2));
+	accel_earthY = (accelX*2.0*(q1*q2-q0*q3)+accelY*(q0*q0-q1*q1+q2*q2-q3*q3)+accelZ*2.0*(q2*q3+q0*q1));
+	accel_earthX = (accelX*2.0*(q0*q2+q1*q3)+accelY*2.0*(q2*q3-q0*q1)+accelZ*(q0*q0-q1*q1-q2*q2+q3*q3) - G);//Substract pesanteur
 		}
+	ESP_LOGI(FNAME, "attitude,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f ",
+				dt,gyroX, gyroY, gyroZ, accelX, accelY, accelZ,roll,pitch,yaw,q0,q1,q2,q3, gravity_vector_plane[0], gravity_vector_plane[1], gravity_vector_plane[2], accel_earthX, accel_earthY, accel_earthZ);
 }
 
 

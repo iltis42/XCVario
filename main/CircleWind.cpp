@@ -105,6 +105,7 @@ void CircleWind::newSample( Vector curVec )
 	if( flightMode != circlingL && flightMode != circlingR ){
 		// ESP_LOGI(FNAME,"FlightMode not circling %d", flightMode );
 		status = "Not Circling";
+		circleDegrees = 0;
 		return;
 	}
 	status = "Sampling";
@@ -263,7 +264,7 @@ void CircleWind::tick(){
 
 
 void CircleWind::restartCycle( bool clean ){
-	ESP_LOGI(FNAME,"restartCycle( clean=%d)", clean  );
+	// ESP_LOGI(FNAME,"restartCycle( clean=%d)", clean  );
 	if( clean )
 		circleCount   = 0;
 	circleDegrees = 0;

@@ -33,6 +33,7 @@
 #include <list>
 #include "WifiClient.h"
 #include "sensor.h"
+#include "Flarm.h"
 
 typedef struct xcv_sock_server {
 	RingBufCPP<SString, QUEUE_SIZE>* txbuf;
@@ -79,7 +80,7 @@ int create_socket( int port ){
 // Multi client TCP server with dynamic updated list of clients connected
 
 void on_client_connect( int port, int msg ){
-	if( port == 8880 ){ // have a client to XCVario protocol connected
+	if( port == 8880 && !Flarm::bincom ){ // have a client to XCVario protocol connected
 		// ESP_LOGV(FNAME, "on_client_connect: Send MC, Ballast, Bugs, etc");
 		if( msg == 1 )
 			OV.sendQNHChange( QNH.get() );
@@ -172,7 +173,10 @@ void socket_server(void *setup) {
 			}
 			if( uxTaskGetStackHighWaterMark( config->pid ) < 256 )
 				ESP_LOGW(FNAME,"Warning task stack low: %d bytes, port %d", uxTaskGetStackHighWaterMark( config->pid ), config->port );
-			vTaskDelay(500/portTICK_PERIOD_MS);
+			if( Flarm::bincom )
+				vTaskDelay(25/portTICK_PERIOD_MS);
+			else
+				vTaskDelay(500/portTICK_PERIOD_MS);
 		}
 	}
 	vTaskDelete(NULL);

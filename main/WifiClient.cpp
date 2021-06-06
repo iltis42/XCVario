@@ -158,6 +158,7 @@ void WifiClient::tcp_client(void *setup){
     tcpServerAddr.sin_port = htons( config->port );
 	int num = 0;
     int timeout=0;
+    SString rec;
     while(1){
         xEventGroupWaitBits(wifi_event_group,CONNECTED_BIT,false,true,portMAX_DELAY);
         timeout++;
@@ -199,14 +200,27 @@ void WifiClient::tcp_client(void *setup){
         	}
         	ESP_LOGI(FNAME, "socket send success");
         }
-        SString rec;
-        num = recv(config->sock, rec.c_str(), SSTRLEN-1, MSG_DONTWAIT );
-        if(num > 0){
-        	rec.setLen( num+1 );
-        	ESP_LOGV(FNAME, "socket read %d bytes: %s", num, rec.c_str() );
-        	Router::forwardMsg( rec, *(config->rxbuf) );
-        	timeout = 0;
-        	config->connected = true;
+        int end=100;
+        while( 1 ){
+        	if( recv(config->sock, rec.c_str()+num, 1, MSG_DONTWAIT ) > 0){
+        		if( rec.c_str()[num] == '\n' || num > SSTRLEN-1 ){
+        			rec.setLen( num );
+        			// ESP_LOGI(FNAME, "socket read %d bytes: %s", num, rec.c_str() );
+        			Router::forwardMsg( rec, *(config->rxbuf) );
+        			timeout = 0;
+        			num = 0;
+        			rec.clear();
+        			config->connected = true;
+        			break;
+        		}
+        		num++;
+        	}
+        	else{
+        		end--;
+        		if( !end )
+        			break;
+        		vTaskDelay(5 / portTICK_PERIOD_MS);
+        	}
         }
         vTaskDelay(50 / portTICK_PERIOD_MS);
     }

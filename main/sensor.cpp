@@ -583,6 +583,7 @@ void sensor(void *args){
 			(chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 	ESP_LOGI(FNAME, "QNH.get() %f", QNH.get() );
 
+	Polars::begin();
 	NVS.begin();
 	if( display_orientation.get() ){
 		ESP_LOGI( FNAME, "TopDown display mode flag set");

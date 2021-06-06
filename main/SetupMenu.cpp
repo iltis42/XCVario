@@ -175,6 +175,7 @@ int polar_adj( SetupMenuValFloat * p )
 int polar_select( SetupMenuSelect * p )
 {
 	Speed2Fly.select_polar();
+	glider_type_index.set( Polars::getPolar( glider_type.get() ).index );
 	return 0;
 }
 

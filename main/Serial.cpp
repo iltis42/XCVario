@@ -215,7 +215,7 @@ bool Serial::selfTest(int num){
 
 void Serial::begin(){
 	ESP_LOGI(FNAME,"Serial::begin()" );
-	if( serial1_speed.get() != 0  || blue_enable.get() != 0 ){
+	if( serial1_speed.get() != 0  || wireless != 0 ){
 		int baudrate = baud[serial1_speed.get()];
 		if( baudrate != 0 ) {
 			ESP_LOGI(FNAME,"Serial Interface ttyS1 enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial1_speed.get(), baud[serial1_speed.get()], serial1_tx_inverted.get(), serial1_rx_inverted.get() );
@@ -268,7 +268,7 @@ void Serial::begin(){
 
 void Serial::taskStart(){
 	ESP_LOGI(FNAME,"Serial::taskStart()" );
-	if( serial1_speed.get() != 0  || blue_enable.get() != 0 ){
+	if( serial1_speed.get() != 0  || wireless != 0 ){
 		xTaskCreatePinnedToCore(&Serial::serialHandler, "serialHandler", 4096, NULL, 10, pid, 0);
 	}
 	// handler S1 now serves both interfaces in one task

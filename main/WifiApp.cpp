@@ -84,7 +84,7 @@ void on_client_connect( int port, int msg ){
 		if( msg == 1 )
 			OV.sendQNHChange( QNH.get() );
 		if( msg == 2 ) {
-			if( blue_enable.get() == WL_WLAN_CLIENT )
+			if( wireless == WL_WLAN_CLIENT )
 				OV.sendBallastChange( ballast.get(), false );
 			else
 				OV.sendBallastChange( ballast.get(), true );
@@ -197,7 +197,7 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
 
 void wifi_init_softap()
 {
-	if( blue_enable.get() == WL_WLAN ){
+	if( wireless == WL_WLAN ){
 		tcpip_adapter_init();
 		ESP_LOGV(FNAME,"now esp_netif_init");
 		ESP_ERROR_CHECK(esp_netif_init());

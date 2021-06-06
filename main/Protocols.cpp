@@ -418,7 +418,7 @@ void Protocols::parseNMEA( char *astr ){
 			ESP_LOGI(FNAME,"parseNMEA, internal ballast modification %s new ballast: %f", str, aballast );
 			_s2f->change_mc_bal();
 		}
-		else if ( strncmp( str, "!xsM,", 5 ) == 0 && blue_enable.get() == WL_WLAN_CLIENT ) {
+		else if ( strncmp( str, "!xsM,", 5 ) == 0 && wireless == WL_WLAN_CLIENT ) {
 			ESP_LOGI(FNAME,"parseNMEA %s", str );
 			char key[20];
 			char type;
@@ -444,7 +444,7 @@ void Protocols::parseNMEA( char *astr ){
 
 		else if ( (strncmp( str, "!g,", 3 ) == 0)    ) {
 			ESP_LOGI(FNAME,"parseNMEA, Cambridge C302 style command !g detected: %s",str);
-			if (str[3] == 'b' && blue_enable.get() != WL_WLAN_CLIENT ) {  // we run own protocol between Master and Client as of bad precision in official
+			if (str[3] == 'b' && wireless != WL_WLAN_CLIENT ) {  // we run own protocol between Master and Client as of bad precision in official
 				ESP_LOGI(FNAME,"parseNMEA, BORGELT, ballast modification");
 				float aballast;
 				sscanf(str, "!g,b%f", &aballast);
@@ -458,7 +458,7 @@ void Protocols::parseNMEA( char *astr ){
 				ESP_LOGI(FNAME,"Final new ballast: %f ", bal);
 				ballast.set( bal );
 				_s2f->change_mc_bal();
-				if( blue_enable.get() == WL_WLAN ) {// update also client from Master
+				if( wireless == WL_WLAN ) {// update also client from Master
 					delay( 500 );
 					OV.sendBallastChange( ballast.get(), false );
 				}
@@ -472,7 +472,7 @@ void Protocols::parseNMEA( char *astr ){
 				ESP_LOGI(FNAME,"New MC: %1.1f knots, %f", mc, mc_ms );
 				MC.set( Units::Vario( mc_ms ) );  // set mc according corresponding vario units
 				_s2f->change_mc_bal();
-				if( blue_enable.get() == WL_WLAN ) {// update also client from Master
+				if( wireless == WL_WLAN ) {// update also client from Master
 					delay( 500 );
 					OV.sendMcChange( MC.get() );
 					ESP_LOGI(FNAME,"MC BG change detected, new MC %f", mc_ms );
@@ -485,7 +485,7 @@ void Protocols::parseNMEA( char *astr ){
 				ESP_LOGI(FNAME,"New Bugs: %d %%", mybugs);
 				bugs.set( mybugs );
 				_s2f->change_mc_bal();
-				if( blue_enable.get() == WL_WLAN ) {// update also client from Master
+				if( wireless == WL_WLAN ) {// update also client from Master
 					delay( 500 );
 					OV.sendBugsChange( bugs.get() );
 				}

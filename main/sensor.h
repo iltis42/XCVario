@@ -20,6 +20,8 @@ extern bool haveMPU;
 extern bool ahrsKeyValid;
 extern SetupMenu  *Menu;
 
+extern e_wireless_type wireless;
+
 // MPU6050 sensor
 extern mpud::float_axes_t accelG;
 extern mpud::float_axes_t gyroDPS;

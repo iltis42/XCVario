@@ -90,7 +90,7 @@ CircleWind::~CircleWind()
 /** Called if a new sample is available in the sample list. */
 void CircleWind::newSample( Vector curVec )
 {
-	if( blue_enable.get() == WL_WLAN_CLIENT )
+	if( wireless == WL_WLAN_CLIENT )
 		return;
 	// circle detection
 	if( lastHeading != -1 )
@@ -173,7 +173,7 @@ void CircleWind::calcFlightMode( float headingDiff, float speed ){
 /** Called if the flight mode changes */
 void CircleWind::newFlightMode( t_circling newFlightMode )
 {
-	if( blue_enable.get() == WL_WLAN_CLIENT )
+	if( wireless == WL_WLAN_CLIENT )
 		return;
 	// Reset the circle counter for each flight mode change. The important thing
 	// to measure is the number of turns in a thermal per turn direction.
@@ -188,7 +188,7 @@ void CircleWind::newFlightMode( t_circling newFlightMode )
 
 void CircleWind::_calcWind()
 {
-	if( blue_enable.get() == WL_WLAN_CLIENT )
+	if( wireless == WL_WLAN_CLIENT )
 		return;
 
 	// Invert maxVector angle
@@ -275,7 +275,7 @@ void CircleWind::restartCycle( bool clean ){
 
 void CircleWind::newConstellation( int numSat )
 {
-	if( blue_enable.get() == WL_WLAN_CLIENT )
+	if( wireless == WL_WLAN_CLIENT )
 		return;
 	ESP_LOGI(FNAME,"newConstellation num sat:%d", numSat );
 	satCnt = numSat;
@@ -291,7 +291,7 @@ void CircleWind::newConstellation( int numSat )
 
 void CircleWind::gpsStatusChange( bool newStatus )
 {
-	if( blue_enable.get() == WL_WLAN_CLIENT )
+	if( wireless == WL_WLAN_CLIENT )
 		return;
 	ESP_LOGI(FNAME,"gpsStatusChange status:%d", newStatus );
 	if( gpsStatus != newStatus  )

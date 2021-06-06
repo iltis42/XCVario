@@ -331,7 +331,7 @@ extern SetupNG<int>  		chopping_mode;
 extern SetupNG<int>  		chopping_style;
 extern SetupNG<int>  		amplifier_shutdown;
 
-extern SetupNG<int>  		blue_enable;
+extern SetupNG<int>  		wireless_type;
 extern SetupNG<int>  		factory_reset;
 extern SetupNG<int>  		audio_range;
 extern SetupNG<int>  		alt_select;

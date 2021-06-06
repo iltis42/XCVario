@@ -512,7 +512,7 @@ void  Flap::progress(){
 			else if( lever > flap_pos_max.get()+0.5 )
 				lever = flap_pos_max.get()+0.5;
 
-			if( blue_enable.get() == WL_WLAN ) {
+			if( wireless == WL_WLAN ) {
 				if( leverold != (int)(lever*10) ){
 					OV.sendWkChange( lever );   // update secondary vario
 					leverold = (int)(lever*10);

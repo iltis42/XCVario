@@ -106,6 +106,8 @@ TaskHandle_t *bpid;
 TaskHandle_t *tpid;
 TaskHandle_t *dpid;
 
+e_wireless_type wireless;
+
 xSemaphoreHandle spiMutex=NULL;
 
 PressureSensor *baroSensor = 0;
@@ -502,7 +504,7 @@ void readTemp(void *pvParameters){
 
 		battery = Battery.get();
 		// ESP_LOGI(FNAME,"Battery=%f V", battery );
-		if( blue_enable.get() != WL_WLAN_CLIENT ) {  // client Vario will get Temperature info from main Vario
+		if( wireless != WL_WLAN_CLIENT ) {  // client Vario will get Temperature info from main Vario
 			t = ds18b20.getTemp();
 			if( t ==  DEVICE_DISCONNECTED_C ) {
 				if( validTemperature == true ) {
@@ -593,8 +595,10 @@ void sensor(void *args){
 	if( nmea_protocol.get() == XCVARIO_DEVEL )
 		nmea_protocol.set( XCVARIO );
 
+	wireless = (e_wireless_type)(wireless_type.get()); // we cannot change this on the fly, so get that on boot
 	AverageVario::begin();
 	Flap::initSensor();
+
 	stall_speed_kmh = Units::Airspeed2Kmh( stall_speed.get() );
 	stall_alarm_off_kmh = stall_speed_kmh/3;
 
@@ -700,7 +704,7 @@ void sensor(void *args){
 	}
 
 	String wireless_id;
-	if( blue_enable.get() == WL_BLUETOOTH ) {
+	if( wireless == WL_BLUETOOTH ) {
 		wireless_id="Bluetooth ID: ";
 		btsender.begin();
 	}
@@ -852,7 +856,7 @@ void sensor(void *args){
 	}
 	ESP_LOGI(FNAME,"Now start T sensor test");
 	// Temp Sensor test
-	if( blue_enable.get() != WL_WLAN_CLIENT ) {
+	if( wireless != WL_WLAN_CLIENT ) {
 		ESP_LOGI(FNAME,"Now start T sensor test");
 		ds18b20.begin();
 		temperature = ds18b20.getTemp();
@@ -1002,7 +1006,7 @@ void sensor(void *args){
 	}
 	Serial::taskStart();
 
-	if( blue_enable.get() == WL_BLUETOOTH ) {
+	if( wireless == WL_BLUETOOTH ) {
 		if( btsender.selfTest() ){
 			display->writeText( line++, "Bluetooth: OK");
 			logged_tests += "Bluetooth test: PASSED\n";
@@ -1011,7 +1015,7 @@ void sensor(void *args){
 			display->writeText( line++, "Bluetooth: FAILED");
 			logged_tests += "Bluetooth test: FAILED\n";
 		}
-	}else if ( blue_enable.get() == WL_WLAN ){
+	}else if ( wireless == WL_WLAN ){
 		wifi_init_softap();
 	}
 
@@ -1040,7 +1044,7 @@ void sensor(void *args){
 
 	Menu->begin( display, &Rotary, baroSensor, &Battery );
 
-	if ( blue_enable.get() == WL_WLAN_CLIENT ){
+	if ( wireless == WL_WLAN_CLIENT ){
 		display->clear();
 		display->writeText( 2, "Wait for Master XCVario" );
 		std::string ssid = WifiClient::scan();
@@ -1113,10 +1117,10 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280BA, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
-	if( blue_enable.get() != WL_WLAN_CLIENT ) {
+	if( wireless != WL_WLAN_CLIENT ) {
 		xTaskCreatePinnedToCore(&readBMP, "readBMP", 1024*10, NULL, 9, bpid, 0);
 	}
-	if( blue_enable.get() == WL_WLAN_CLIENT ){
+	if( wireless == WL_WLAN_CLIENT ){
 		xTaskCreatePinnedToCore(&audioTask, "audioTask", 2048, NULL, 9, apid, 0);
 	}
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 3072, NULL, 1, tpid, 0);

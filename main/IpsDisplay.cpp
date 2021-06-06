@@ -622,11 +622,11 @@ void IpsDisplay::drawFlarm( int x, int y, bool flarm ) {
 void IpsDisplay::drawWifi( int x, int y ) {
 
 	int btq=1;
-	if( blue_enable.get() == WL_WLAN_CLIENT ){
+	if( wireless == WL_WLAN_CLIENT ){
 		if( WifiClient::isConnected() )
 			btq=0;
 	}
-	else if( blue_enable.get() == WL_WLAN )
+	else if( wireless == WL_WLAN )
 		btq=BTSender::queueFull();
 	else
 		return;
@@ -876,9 +876,9 @@ void IpsDisplay::initULDisplay(){
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setPrintPos(85,15);
 	ucg->print( Units::VarioUnit() );
-	if( blue_enable.get() == WL_BLUETOOTH )
+	if( wireless == WL_BLUETOOTH )
 		drawBT();
-	if( blue_enable.get() == WL_WLAN  ||  blue_enable.get() == WL_WLAN_CLIENT )
+	if( wireless == WL_WLAN  ||  wireless == WL_WLAN_CLIENT )
 		drawWifi(DISPLAY_W-27, FLOGO+2 );
 	drawThermometer(  10, 30 );
 }
@@ -905,9 +905,9 @@ void IpsDisplay::initRetroDisplay(){
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setPrintPos(85,15);
 	ucg->print( Units::VarioUnit() );
-	if( blue_enable.get() == WL_BLUETOOTH )
+	if( wireless == WL_BLUETOOTH )
 		drawBT();
-	if( blue_enable.get() == WL_WLAN  ||  blue_enable.get() == WL_WLAN_CLIENT )
+	if( wireless == WL_WLAN  ||  wireless == WL_WLAN_CLIENT )
 		drawWifi(DISPLAY_W-27, FLOGO+2 );
 	drawMC( MC.get(), true );
 	drawThermometer(  10, 30 );
@@ -1354,9 +1354,9 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// Bluetooth
 	if( !(tick%12) )
 	{
-		if( blue_enable.get() == WL_BLUETOOTH )
+		if( wireless == WL_BLUETOOTH )
 			drawBT();
-		if( blue_enable.get() == WL_WLAN ||  blue_enable.get() == WL_WLAN_CLIENT )
+		if( wireless == WL_WLAN ||  wireless == WL_WLAN_CLIENT )
 			drawWifi(DISPLAY_W-27, FLOGO+2 );
 	}
 
@@ -1636,9 +1636,9 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 	// Bluetooth
 	if( !(tick%12) )
 	{
-		if( blue_enable.get() == WL_BLUETOOTH )
+		if( wireless == WL_BLUETOOTH )
 			drawBT();
-		if( blue_enable.get() == WL_WLAN ||  blue_enable.get() == WL_WLAN_CLIENT )
+		if( wireless == WL_WLAN ||  wireless == WL_WLAN_CLIENT )
 			drawWifi(DISPLAY_W-27, FLOGO+2 );
 	}
 
@@ -1911,9 +1911,9 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	// Bluetooth Symbol
 
 	if( !(tick%12) ){
-		if( blue_enable.get() == WL_BLUETOOTH )
+		if( wireless == WL_BLUETOOTH )
 			drawBT();
-		if( blue_enable.get() == WL_WLAN || blue_enable.get() == WL_WLAN_CLIENT )
+		if( wireless == WL_WLAN || wireless == WL_WLAN_CLIENT )
 			drawWifi(DISPLAY_W-25, FLOGO);
 	}
 

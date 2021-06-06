@@ -66,7 +66,7 @@ int create_socket( int port ){
 	}
 	int flag = 1;
 	// this is really realtime data, so sent TCP_NODELAY for XCVario data exchange
-	setsockopt(mysock, IPPROTO_TCP, TCP_NODELAY, (char *) &flag, sizeof(int));
+	// setsockopt(mysock, IPPROTO_TCP, TCP_NODELAY, (char *) &flag, sizeof(int));
 	ESP_LOGV(FNAME, "bind port: %d", port  );
 	// Flag the socket as listening for new connections.
 	rc = listen(mysock, 5);
@@ -138,9 +138,9 @@ void socket_server(void *setup) {
 					// ESP_LOGD(FNAME, "loop tcp client %d, port %d", client , config->port );
 					if ( len ){
 						// ESP_LOGI(FNAME, "sent to tcp client %d, bytes %d, port %d", client, len, config->port );
-						// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_VERBOSE);
+						// ESP_LOG_BUFFER_HEXDUMP(FNAME,block,len, ESP_LOG_INFO);
 						if( client >= 0 ){
-							int num = send(client, block, len, 0);
+							int num = send(client, block, len, MSG_DONTWAIT);
 							// ESP_LOGV(FNAME, "client %d, num send %d", client, num );
 							if( num < 0 ) {
 								ESP_LOGW(FNAME, "tcp client %d (port %d) send err: %s, remove!", client,  config->port, strerror(errno) );
@@ -152,14 +152,17 @@ void socket_server(void *setup) {
 							// ESP_LOGV(FNAME, "tcp send to client %d (port: %d), bytes %d success", client, config->port, num );
 						}
 					}
+					if( Flarm::bincom )
+						vTaskDelay(10/portTICK_PERIOD_MS); // maximize realtime throuput for flight download
 					if( !client_dead ){
-						// ESP_LOGV(FNAME, "read from client %d", client);
+						// ESP_LOGI(FNAME, "read from client %d", client);
 						SString tcprx;
 						ssize_t sizeRead = recv(client, tcprx.c_str(), SSTRLEN-1, MSG_DONTWAIT);
 						if (sizeRead > 0) {
 							tcprx.setLen( sizeRead );
 							Router::forwardMsg( tcprx, *(config->rxbuf) );
-							ESP_LOGV(FNAME, "tcp read from port %d size: %d data: %s", config->port, sizeRead, tcprx.c_str() );
+							// ESP_LOGI(FNAME, "tcp read from port %d size: %d", config->port, sizeRead );
+							// ESP_LOG_BUFFER_HEXDUMP(FNAME,tcprx.c_str(),sizeRead, ESP_LOG_INFO);
 						}
 						if( config->port == 8880 ){
 							if( num_send < SetupCommon::numEntries() ){
@@ -168,13 +171,12 @@ void socket_server(void *setup) {
 							}
 						}
 					}
-					//vTaskDelay(5/portTICK_PERIOD_MS);
 				}
 			}
 			if( uxTaskGetStackHighWaterMark( config->pid ) < 256 )
 				ESP_LOGW(FNAME,"Warning task stack low: %d bytes, port %d", uxTaskGetStackHighWaterMark( config->pid ), config->port );
 			if( Flarm::bincom )
-				vTaskDelay(25/portTICK_PERIOD_MS);
+				vTaskDelay(10/portTICK_PERIOD_MS);  // maximize realtime throuput for flight download
 			else
 				vTaskDelay(500/portTICK_PERIOD_MS);
 		}

@@ -160,7 +160,7 @@ void Serial::serialHandler(void *pvParameters){
 	    	Router::routeWLAN();
 	    }
 	    esp_task_wdt_reset();
-	    if( uxTaskGetStackHighWaterMark( pid ) < 1024 )
+	    if( uxTaskGetStackHighWaterMark( pid ) < 256 )
 	    	ESP_LOGW(FNAME,"Warning serial task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid ) );
 	    vTaskDelay( HEARTBEAT_PERIOD_MS_SERIAL/portTICK_PERIOD_MS );
 	}

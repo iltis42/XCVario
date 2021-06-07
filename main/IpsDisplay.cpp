@@ -1054,7 +1054,7 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 // Compass or Wind Display
 void IpsDisplay::drawCompass(){
 
-	if( (wind_enable.get() == WD_DIGITS) || (wind_enable.get() == WD_ARROW) ){
+	if( (wind_enable.get() & WD_DIGITS) || (wind_enable.get() & WD_ARROW) ){
 		// ESP_LOGI(FNAME, "WIND calc on %d", wind_enable.get() );
 		int winddir=0;
 		float wind=0;

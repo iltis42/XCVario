@@ -178,7 +178,7 @@ void socket_server(void *setup) {
 			if( Flarm::bincom )
 				vTaskDelay(10/portTICK_PERIOD_MS);  // maximize realtime throuput for flight download
 			else
-				vTaskDelay(500/portTICK_PERIOD_MS);
+				vTaskDelay(200/portTICK_PERIOD_MS);
 		}
 	}
 	vTaskDelete(NULL);

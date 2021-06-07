@@ -1054,7 +1054,7 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 // Compass or Wind Display
 void IpsDisplay::drawCompass(){
 
-	if( wind_enable.get() != WA_OFF ){
+	if( (wind_enable.get() == WD_DIGITS) || (wind_enable.get() == WD_ARROW) ){
 		// ESP_LOGI(FNAME, "WIND calc on %d", wind_enable.get() );
 		int winddir=0;
 		float wind=0;
@@ -1129,7 +1129,7 @@ void IpsDisplay::drawCompass(){
 			}
 		}
 	}
-	else if( compass_enable.get() && compass_calibrated.get() ){
+	else if( compass_enable.get() && compass_calibrated.get() && (wind_display.get() & WD_COMPASS) ){
 		bool ok;
 		int heading = static_cast<int>(rintf(Compass::trueHeading( &ok )));
 		if( heading >= 360 )
@@ -1148,9 +1148,9 @@ void IpsDisplay::drawCompass(){
 			if( heading < 10 )
 				ucg->printf("%s   ", s);
 			else if( heading < 100 )
-				ucg->printf("%s  ", s);
+				ucg->printf("%s   ", s);
 			else
-				ucg->printf("%s ", s);
+				ucg->printf("%s  ", s);
 			ucg->setFont(ucg_font_fub20_hf);
 			ucg->setPrintPos(120+ucg->getStrWidth(s),105);
 			ucg->printf("\xb0 ");

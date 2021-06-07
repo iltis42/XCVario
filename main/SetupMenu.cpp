@@ -959,13 +959,14 @@ void SetupMenu::setup( )
 		windcal->setHelp(PROGMEM "Enable Wind calculation for straight flight (needs compass), circling or both and display wind in reto display style");
 		compassWindME->addMenu( windcal );
 
-		// Wind display option
-		SetupMenuSelect * winddis = new SetupMenuSelect( "Wind Display", false, 0, true, &wind_display );
+		// Display option
+		SetupMenuSelect * winddis = new SetupMenuSelect( "Display", false, 0, true, &wind_display );
 		winddis->addEntry( "Disable");
-		winddis->addEntry( "Digits");
+		winddis->addEntry( "Wind Digits");
 		winddis->addEntry( "Wind Arrow");
-		winddis->addEntry( "Both");
-		winddis->setHelp( PROGMEM "Control how wind is to be displayed, either as digits or by wind arrow or both on retro style screen");
+		winddis->addEntry( "Wind Both");
+		winddis->addEntry( "Compass");
+		winddis->setHelp( PROGMEM "Control what is to be displayed, either as digits or by arrow or both on retro style screen");
 		compassWindME->addMenu( winddis );
 
 		// Wind speed observation window

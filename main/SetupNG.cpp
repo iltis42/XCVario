@@ -64,7 +64,7 @@ SetupNG<int>  			chopping_mode( "CHOPPING_MODE",  VARIO_CHOP );
 SetupNG<int>  			chopping_style( "CHOP_STYLE",  AUDIO_CHOP_SOFT );
 SetupNG<int>  			amplifier_shutdown( "AMP_DIS", 1 );
 
-SetupNG<int>  			blue_enable( "BT_ENABLE" ,  1);
+SetupNG<int>  			wireless_type( "BT_ENABLE" ,  1);
 SetupNG<int>  			factory_reset( "FACTORY_RES" , 0 );
 SetupNG<int>  			audio_range( "AUDIO_RANGE" , AUDIO_RANGE_5_MS );
 SetupNG<int>  			alt_select( "ALT_SELECT" , 1 );
@@ -72,6 +72,7 @@ SetupNG<int>  			fl_auto_transition( "FL_AUTO" , 0 );
 SetupNG<int>  			alt_display_mode( "ALT_DISP_MODE" , MODE_QNH );
 SetupNG<float>  		transition_alt( "TRANS_ALT", 50 );   // Transition Altitude
 SetupNG<int>  			glider_type( "GLIDER_TYPE", 0 );
+SetupNG<int>  			glider_type_index( "GLIDER_TYPE_IDX", 0 );
 SetupNG<int>  			ps_display( "PS_DISPLAY", 1 );
 
 SetupNG<float>  		as_offset( "AS_OFFSET" , -1 );
@@ -212,7 +213,8 @@ SetupNG<float> 			wind_as_calibration("WIND_AS_CAL", 1.0 );
 SetupNG<int> 			wind_display( "WIND_DIS", WD_NONE );
 SetupNG<int> 			wind_reference( "WIND_REF", WR_HEADING );
 SetupNG<float> 			wind_max_deviation("WIND_MDEV", 30.0 );
-
+SetupNG<float>       	max_circle_wind_diff("CI_WIND_DMAX", 90.0 );
+SetupNG<float>       	min_circle_wind_quality("CI_WIND_QMIN", 2.0 );
 
 mpud::raw_axes_t zero_bias;
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );
@@ -223,9 +225,9 @@ void SetupCommon::sendSetup( e_sync_t sync, const char *key, char type, void *va
 	ESP_LOGI(FNAME,"sendSetup(): key=%s, type=%c, len=%d", key, type, len );
 	char str[40];
 	char sender;
-	if( blue_enable.get() == WL_WLAN && (sync & SYNC_FROM_MASTER) )              // or cable master tbd.
+	if( wireless == WL_WLAN && (sync & SYNC_FROM_MASTER) )              // or cable master tbd.
 		sender='M';
-	else if( blue_enable.get() == WL_WLAN_CLIENT && (sync & SYNC_FROM_CLIENT) )  // or cable client tbd.
+	else if( wireless == WL_WLAN_CLIENT && (sync & SYNC_FROM_CLIENT) )  // or cable client tbd.
 		sender='C';
 	else
 		sender='U';
@@ -252,10 +254,11 @@ SetupCommon * SetupCommon::getMember( const char * key ){
 
 void SetupCommon::syncEntry( int entry ){
 	// ESP_LOGI(FNAME,"SetupCommon::syncEntry( %d )", entry );
-	if( blue_enable.get() == WL_WLAN || blue_enable.get() == WL_WLAN_CLIENT ) { // tbd for cable client as well
-		// ESP_LOGI(FNAME,"We are wireless type=%d", blue_enable.get() );
+	if( wireless == WL_WLAN || wireless == WL_WLAN_CLIENT ) { // tbd for cable client as well
+		// ESP_LOGI(FNAME,"We are wireless type=%d", wireless );
 		if( entry  < entries.size() ) {
 			entries[entry]->sync();
+			delay(100);
 		}
 	}
 }

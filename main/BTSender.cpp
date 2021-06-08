@@ -36,11 +36,11 @@ bool BTSender::selfTest(){
 BluetoothSerial *BTSender::SerialBT = 0;
 
 int BTSender::queueFull() {
-	if( blue_enable.get() == WL_BLUETOOTH ){
+	if( wireless == WL_BLUETOOTH ){
 		if(bt_tx_q.isFull())
 			return 1;
 	}
-	else if( blue_enable.get() == WL_WLAN ){
+	else if( wireless == WL_WLAN ){
 		if( wl_vario_tx_q.isFull() )
 			return 1;
 	}
@@ -48,7 +48,7 @@ int BTSender::queueFull() {
 }
 
 void BTSender::progress(){
-	if (blue_enable.get() != WL_BLUETOOTH )
+	if (wireless != WL_BLUETOOTH )
 		return;
 	if( !SerialBT ){
 		ESP_LOGI(FNAME,"SerialBT not initialized");
@@ -77,7 +77,7 @@ void BTSender::progress(){
 
 void BTSender::begin(){
 	ESP_LOGI(FNAME,"BTSender::begin()" );
-	if( blue_enable.get() == WL_BLUETOOTH ) {
+	if( wireless == WL_BLUETOOTH ) {
 		 ESP_LOGI(FNAME,"BT on, create BT master object" );
 		 SerialBT = new BluetoothSerial();
 		 SerialBT->begin(SetupCommon::getID() );

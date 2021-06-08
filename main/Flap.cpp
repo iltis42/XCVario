@@ -196,19 +196,19 @@ void Flap::setupMenue( SetupMenu *parent ){
 	plus2->setHelp(PROGMEM"Speed for transition from +2 to +1 flap setting");
 	flapssm->addMenu( plus2 );
 
-	plus1 = new SetupMenuValFloat("Speed +1 to 0", 0, sunit.c_str(),  20, v_max.get(), 1, flap_speed_act, false, &flap_0  );
+	plus1 = new SetupMenuValFloat("Speed +1 to 0", 0, sunit.c_str(),  20, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_0  );
 	plus1->setHelp(PROGMEM"Speed for transition from +1 to 0 flap setting");
 	flapssm->addMenu( plus1 );
 
-	min1 = new SetupMenuValFloat("Speed 0 to -1", 0, sunit.c_str(),   20, v_max.get(), 1, flap_speed_act, false, &flap_minus_1  );
+	min1 = new SetupMenuValFloat("Speed 0 to -1", 0, sunit.c_str(),   20, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_minus_1  );
 	min1->setHelp(PROGMEM"Speed for transition from 0 to -1 flap setting");
 	flapssm->addMenu( min1 );
 
-	min2 = new SetupMenuValFloat("Speed -1 to -2", 0, sunit.c_str(),  50, v_max.get(), 1, flap_speed_act, false, &flap_minus_2  );
+	min2 = new SetupMenuValFloat("Speed -1 to -2", 0, sunit.c_str(),  50, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_minus_2  );
 	min2->setHelp(PROGMEM"Speed for transition from -1 to -2 flap setting");
 	flapssm->addMenu( min2 );
 
-	min3 = new SetupMenuValFloat("Speed -2 to -3", 0, sunit.c_str(),  50, v_max.get(), 1, flap_speed_act, false, &flap_minus_3  );
+	min3 = new SetupMenuValFloat("Speed -2 to -3", 0, sunit.c_str(),  50, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_minus_3  );
 	min3->setHelp(PROGMEM"Speed for transition from -2 to -3 flap setting");
 	flapssm->addMenu( min3 );
 
@@ -512,7 +512,7 @@ void  Flap::progress(){
 			else if( lever > flap_pos_max.get()+0.5 )
 				lever = flap_pos_max.get()+0.5;
 
-			if( blue_enable.get() == WL_WLAN ) {
+			if( wireless == WL_WLAN ) {
 				if( leverold != (int)(lever*10) ){
 					OV.sendWkChange( lever );   // update secondary vario
 					leverold = (int)(lever*10);

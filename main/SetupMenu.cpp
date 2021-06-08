@@ -175,6 +175,7 @@ int polar_adj( SetupMenuValFloat * p )
 int polar_select( SetupMenuSelect * p )
 {
 	Speed2Fly.select_polar();
+	glider_type_index.set( Polars::getPolar( glider_type.get() ).index );
 	return 0;
 }
 
@@ -194,7 +195,7 @@ int bal_adj( SetupMenuValFloat * p )
 	p->ucg->printf("%u liter  ", liter);
 	xSemaphoreGive(spiMutex );
 	p->ucg->setFont(ucg_font_ncenR14_hr);
-	if( blue_enable.get() == WL_WLAN_CLIENT )
+	if( wireless == WL_WLAN_CLIENT )
 		OV.sendBallastChange( ballast.get(), false );
 	else
 		OV.sendBallastChange( ballast.get(), true );
@@ -203,7 +204,7 @@ int bal_adj( SetupMenuValFloat * p )
 
 int bug_adj( SetupMenuValFloat * p ){
 	Speed2Fly.change_mc_bal();
-	if( blue_enable.get() == WL_WLAN_CLIENT )
+	if( wireless == WL_WLAN_CLIENT )
 		OV.sendClientBugsChange( bugs.get() );
 	else
 		OV.sendBugsChange( bugs.get() );
@@ -213,7 +214,7 @@ int bug_adj( SetupMenuValFloat * p ){
 int mc_adj( SetupMenuValFloat * p )
 {
 	Speed2Fly.change_mc_bal();
-	if( blue_enable.get() == WL_WLAN_CLIENT )
+	if( wireless == WL_WLAN_CLIENT )
 		OV.sendClientMcChange( MC.get() );
 	else
 		OV.sendMcChange( MC.get() );
@@ -340,7 +341,7 @@ void SetupMenu::down(int count){
 			if( mc > 0.1 ) {
 				mc -= 0.1;
 				Speed2Fly.change_mc_bal();
-				if( blue_enable.get() == WL_WLAN_CLIENT )
+				if( wireless == WL_WLAN_CLIENT )
 					OV.sendClientMcChange( MC.get() );
 				else
 					OV.sendMcChange( MC.get() );
@@ -374,7 +375,7 @@ void SetupMenu::up(int count){
 			if( mc < 9.9 ) {
 				mc += 0.1;
 				Speed2Fly.change_mc_bal();
-				if( blue_enable.get() == WL_WLAN_CLIENT )
+				if( wireless == WL_WLAN_CLIENT )
 					OV.sendClientMcChange( MC.get() );
 				else
 					OV.sendMcChange( MC.get() );
@@ -958,19 +959,21 @@ void SetupMenu::setup( )
 		windcal->setHelp(PROGMEM "Enable Wind calculation for straight flight (needs compass), circling or both and display wind in reto display style");
 		compassWindME->addMenu( windcal );
 
-		// Wind display option
-		SetupMenuSelect * winddis = new SetupMenuSelect( "Wind Display", false, 0, true, &wind_display );
+		// Display option
+		SetupMenuSelect * winddis = new SetupMenuSelect( "Display", false, 0, true, &wind_display );
 		winddis->addEntry( "Disable");
-		winddis->addEntry( "Digits");
+		winddis->addEntry( "Wind Digits");
 		winddis->addEntry( "Wind Arrow");
-		winddis->addEntry( "Both");
-		winddis->setHelp( PROGMEM "Control how wind is to be displayed, either as digits or by wind arrow or both on retro style screen");
+		winddis->addEntry( "Wind Both");
+		winddis->addEntry( "Compass");
+		winddis->setHelp( PROGMEM "Control what is to be displayed, either as digits or by arrow or both on retro style screen");
 		compassWindME->addMenu( winddis );
 
 		// Wind speed observation window
-		SetupMenuSelect * windref = new SetupMenuSelect( "Wind Reference", false, 0, true, &wind_reference );
+		SetupMenuSelect * windref = new SetupMenuSelect( "Arrow Ref", false, 0, true, &wind_reference );
 		windref->addEntry( "North");
-		windref->addEntry( "Heading");
+		windref->addEntry( "Mag Heading");
+		windref->addEntry( "GPS Course");
 		windref->setHelp( PROGMEM "Wind arrow related either to geographic north or related to true airplane heading");
 		compassWindME->addMenu( windref );
 
@@ -1046,7 +1049,16 @@ void SetupMenu::setup( )
 		ShowCirclingWind* scw = new ShowCirclingWind( "Circling Wind Status" );
 		cirWindM->addMenu( scw );
 
-		SetupMenuSelect * btm = new SetupMenuSelect( "Wireless", true, 0, true, &blue_enable );
+		SetupMenuValFloat *cirwd = new SetupMenuValFloat( "Max Angle Delta", nullptr, "\xb0", 0, 90.0, 1.0, nullptr, false, &max_circle_wind_diff );
+		cirWindM->addMenu( cirwd );
+		cirwd->setHelp(PROGMEM "Maximum accepted angle delta in degree between minimum and maximum speed used for circling wind calculation");
+
+		SetupMenuValFloat *cirwq = new SetupMenuValFloat( "Min Quality", nullptr, "", 0, 5.0, 0.0, nullptr, false, &min_circle_wind_quality );
+		cirWindM->addMenu( cirwq );
+		cirwq->setHelp(PROGMEM "Minimum accepted circle wind quality for compass auto deviation setup method");
+
+
+		SetupMenuSelect * btm = new SetupMenuSelect( "Wireless", true, 0, true, &wireless_type );
 		btm->setHelp( PROGMEM "Activate type wireless interface to connect navigation devices running e.g. XCSoar, or to another XCVario as client");
 		btm->addEntry( "Disable");
 		btm->addEntry( "Bluetooth");

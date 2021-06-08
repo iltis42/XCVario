@@ -260,17 +260,24 @@ void Flarm::drawTriangle( int x, int y, int rb, int dist, int size, int factor, 
 	ucg->drawTriangle( tipx, tipy, ax,ay, bx, by );
 }
 
-void Flarm::drawAirplane( int x, int y, bool fromBehind ){
-	ucg->setColor( COLOR_WHITE );
+void Flarm::drawAirplane( int x, int y, bool fromBehind, bool smallSize ){
+	// ESP_LOGI(FNAME,"drawAirplane x:%d y:%d small:%d", x, y, smallSize );
 	if( fromBehind ){
 		ucg->drawTetragon( x-30,y-2, x-30,y+2, x+30,y+2, x+30,y-2 );
 		ucg->drawTetragon( x-2,y-2, x-2,y-10, x+2,y-10, x+2,y-2 );
 		ucg->drawTetragon( x-8,y-12, x-8,y-16, x+8,y-16, x+8,y-12 );
 		ucg->drawDisc( x,y, 4, UCG_DRAW_ALL );
 	}else{
-		ucg->drawTetragon( x-30,y-2, x-30,y+2, x+30,y+2, x+30,y-2 );
-		ucg->drawTetragon( x-2,y+25, x-2,y-10, x+2,y-10, x+2,y+25 );
-		ucg->drawTetragon( x-8,y+25, x-8,y+21, x+8,y+21, x+8,y+25 );
+		if( smallSize ){
+			ucg->drawTetragon( x-15,y-1, x-15,y+1, x+15,y+1, x+15,y-1 );  // wings
+			ucg->drawTetragon( x-1,y+10, x-1,y-3, x+1,y-3, x+1,y+10 ); // fuselage
+			ucg->drawTetragon( x-4,y+10, x-4,y+9, x+4,y+9, x+4,y+10 ); // elevator
+
+		}else{
+			ucg->drawTetragon( x-30,y-2, x-30,y+2, x+30,y+2, x+30,y-2 );  // wings
+			ucg->drawTetragon( x-2,y+25, x-2,y-10, x+2,y-10, x+2,y+25 ); // fuselage
+			ucg->drawTetragon( x-8,y+25, x-8,y+21, x+8,y+21, x+8,y+25 ); // elevator
+		}
 	}
 }
 
@@ -362,6 +369,7 @@ void Flarm::drawFlarmWarning(){
     	ESP_LOGI(FNAME,"horizontalAngle: %f  vert:%d", horizontalAngle, RelativeVertical );
 
     	drawClearVerticalTriangle( 70, 220, horizontalAngle, 0, 50, 6 );
+    	ucg->setColor( COLOR_WHITE );
     	drawAirplane( 70, 220, true );
     	oldVertical = RelativeVertical;
     }
@@ -380,6 +388,7 @@ void Flarm::drawFlarmWarning(){
     	sprintf(b,"  %d  ", clock );
     	ucg->printf( b );
     	drawClearTriangle( 70,120, RelativeBearing, 0, 50, 4 );
+    	ucg->setColor( COLOR_WHITE );
     	drawAirplane( 70, 120 );
     	oldBear = RelativeBearing;
     }

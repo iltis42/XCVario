@@ -90,9 +90,8 @@ CircleWind::~CircleWind()
 /** Called if a new sample is available in the sample list. */
 void CircleWind::newSample( Vector curVec )
 {
-	if( blue_enable.get() == WL_WLAN_CLIENT )
+	if( wireless == WL_WLAN_CLIENT )
 		return;
-	ESP_LOGI(FNAME,"new GPS Sample dir:%3.2f° speed:%3.2f", curVec.getAngleDeg(), curVec.getSpeed() );
 	// circle detection
 	if( lastHeading != -1 )
 	{
@@ -104,11 +103,14 @@ void CircleWind::newSample( Vector curVec )
 	lastHeading = curVec.getAngleDeg();
 
 	if( flightMode != circlingL && flightMode != circlingR ){
-		ESP_LOGI(FNAME,"FlightMode not circling %d", flightMode );
+		// ESP_LOGI(FNAME,"FlightMode not circling %d", flightMode );
 		status = "Not Circling";
+		circleDegrees = 0;
 		return;
 	}
 	status = "Sampling";
+	ESP_LOGI(FNAME,"GPS Sample, dir:%3.2f° speed:%3.2f, Circling:%d", curVec.getAngleDeg(), curVec.getSpeed(), (flightMode == circlingL || flightMode == circlingR) );
+
 	if( curVec.getSpeed() < minVector.getSpeed() )
 	{
 		// New minimum speed detected
@@ -171,7 +173,7 @@ void CircleWind::calcFlightMode( float headingDiff, float speed ){
 /** Called if the flight mode changes */
 void CircleWind::newFlightMode( t_circling newFlightMode )
 {
-	if( blue_enable.get() == WL_WLAN_CLIENT )
+	if( wireless == WL_WLAN_CLIENT )
 		return;
 	// Reset the circle counter for each flight mode change. The important thing
 	// to measure is the number of turns in a thermal per turn direction.
@@ -186,7 +188,7 @@ void CircleWind::newFlightMode( t_circling newFlightMode )
 
 void CircleWind::_calcWind()
 {
-	if( blue_enable.get() == WL_WLAN_CLIENT )
+	if( wireless == WL_WLAN_CLIENT )
 		return;
 
 	// Invert maxVector angle
@@ -202,15 +204,15 @@ void CircleWind::_calcWind()
     are on opposing sides of the circle to determine the quality. 140 degrees is
     the minimum separation, 180 is ideal.
     Furthermore, the first two circles are considered to be of lesser quality.
+
+    Display e.g. -40% (Q*20) %, ->  Q(final) = -2;
+    @ 1 Circle Q = -1.
+    abs( aDiff ) / 8 = 6 -> aDiff = 48°
+
+
 	 */
 
-	quality = 5 - (abs( aDiff ) / 8);
-
-	if( circleCount < 2 )
-	{
-		ESP_LOGI(FNAME,"circles < 2 decrement quality");
-		quality--;
-	}
+	quality = 5.0 - (abs( aDiff ) / max_circle_wind_diff.get() ) * 5.0;   // 90 degree diff is considered zero quality
 
 	if( quality < 1 )
 	{
@@ -226,7 +228,7 @@ void CircleWind::_calcWind()
 
 
 	// the direction of the wind is the direction where the greatest speed occurred
-	result.setAngle( ( maxVector.getAngleDeg() + minVector.getAngleDeg() ) / 2);
+	result.setAngle( (maxVector.getAngleDeg() + minVector.getAngleDeg()) / 2.0 );
 
 	// The speed of the wind is half the difference between the minimum and the maximum speeds.
 	result.setSpeedKmh( (maxVector.getSpeed() - minVector.getSpeed()) / 2.0 );
@@ -248,10 +250,11 @@ void CircleWind::newWind( double angle, double speed, float q ){
 		kq = q/10.0;
 		direction += Vector::angleDiffDeg(angle,(double)direction) * kq;
 		windspeed += (speed - windspeed) * kq;
+		direction = Vector::normalizeDeg( direction );
 	}
 	ESP_LOGI(FNAME,"### NEW AGV CircleWind: %3.1f°/%.1fKm/h  KQ:%1.3f", direction, windspeed, kq );
 	OV.sendWindChange( direction, windspeed, WA_CIRCLING );
-	if( q > 3 && circleCount > 2 )
+	if( q > min_circle_wind_quality.get() && circleCount >= 2 )
 		theWind.newCirclingWind( direction, windspeed );
 }
 
@@ -261,7 +264,7 @@ void CircleWind::tick(){
 
 
 void CircleWind::restartCycle( bool clean ){
-	ESP_LOGI(FNAME,"restartCycle( clean=%d)", clean  );
+	// ESP_LOGI(FNAME,"restartCycle( clean=%d)", clean  );
 	if( clean )
 		circleCount   = 0;
 	circleDegrees = 0;
@@ -272,7 +275,7 @@ void CircleWind::restartCycle( bool clean ){
 
 void CircleWind::newConstellation( int numSat )
 {
-	if( blue_enable.get() == WL_WLAN_CLIENT )
+	if( wireless == WL_WLAN_CLIENT )
 		return;
 	ESP_LOGI(FNAME,"newConstellation num sat:%d", numSat );
 	satCnt = numSat;
@@ -288,7 +291,7 @@ void CircleWind::newConstellation( int numSat )
 
 void CircleWind::gpsStatusChange( bool newStatus )
 {
-	if( blue_enable.get() == WL_WLAN_CLIENT )
+	if( wireless == WL_WLAN_CLIENT )
 		return;
 	ESP_LOGI(FNAME,"gpsStatusChange status:%d", newStatus );
 	if( gpsStatus != newStatus  )

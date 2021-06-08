@@ -16,6 +16,7 @@ public:
 	static void parsePFLAX( SString &msg );
 	static void parseGPRMC( char *gprmc );
 	static void parseGPGGA( char *gpgga );
+	static void drawAirplane( int x, int y, bool fromBehind=false, bool smallSize=false );
  	static inline int alarmLevel(){ return AlarmLevel; };
  	static void drawFlarmWarning();
  	static void initFlarmWarning();
@@ -38,7 +39,6 @@ private:
  	static void drawClearTriangle( int x, int y, int rb, int dist, int size, int factor );
  	static void drawClearVerticalTriangle( int x, int y, int rb, int dist, int size, int factor );
  	static void drawTriangle( int x, int y, int rb, int dist, int size=15, int factor=2, bool erase=false );
- 	static void drawAirplane( int x, int y, bool fromBehind=false );
 
  	static Ucglib_ILI9341_18x240x320_HWSPI* ucg;
 	static int RX,TX,GPS,Power;

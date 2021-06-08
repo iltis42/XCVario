@@ -295,7 +295,7 @@ void drawDisplay(void *pvParameters){
 		if( hold_alarm )
 			hold_alarm--;
 		vTaskDelay(20/portTICK_PERIOD_MS);
-		if( uxTaskGetStackHighWaterMark( dpid ) < 1024  )
+		if( uxTaskGetStackHighWaterMark( dpid ) < 512  )
 			ESP_LOGW(FNAME,"Warning drawDisplay stack low: %d bytes", uxTaskGetStackHighWaterMark( dpid ) );
 	}
 }
@@ -488,7 +488,7 @@ void readBMP(void *pvParameters){
 			gload_neg_max.set(  (float)accelG[0] );
 		}
 		esp_task_wdt_reset();
-		if( uxTaskGetStackHighWaterMark( bpid ) < 1024 )
+		if( uxTaskGetStackHighWaterMark( bpid ) < 512 )
 			ESP_LOGW(FNAME,"Warning sensor task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );
 		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
 	}
@@ -536,7 +536,7 @@ void readTemp(void *pvParameters){
 
 		if( (ttick++ % 5) == 0) {
 			ESP_LOGI(FNAME,"Free Heap: %d bytes", heap_caps_get_free_size(MALLOC_CAP_8BIT) );
-			if( uxTaskGetStackHighWaterMark( tpid ) < 1024 )
+			if( uxTaskGetStackHighWaterMark( tpid ) < 256 )
 				ESP_LOGW(FNAME,"Warning temperature task stack low: %d bytes", uxTaskGetStackHighWaterMark( tpid ) );
 			if( heap_caps_get_free_size(MALLOC_CAP_8BIT) < 10000 )
 				ESP_LOGW(FNAME,"Warning heap_caps_get_free_size getting low: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
@@ -1118,12 +1118,12 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
 	if( wireless != WL_WLAN_CLIENT ) {
-		xTaskCreatePinnedToCore(&readBMP, "readBMP", 1024*10, NULL, 9, bpid, 0);
+		xTaskCreatePinnedToCore(&readBMP, "readBMP", 1024*8, NULL, 9, bpid, 0);
 	}
 	if( wireless == WL_WLAN_CLIENT ){
 		xTaskCreatePinnedToCore(&audioTask, "audioTask", 2048, NULL, 9, apid, 0);
 	}
-	xTaskCreatePinnedToCore(&readTemp, "readTemp", 3072, NULL, 1, tpid, 0);
+	xTaskCreatePinnedToCore(&readTemp, "readTemp", 2048, NULL, 1, tpid, 0);
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 4096, NULL, 2, dpid, 0);
 
 	Audio::startAudio();

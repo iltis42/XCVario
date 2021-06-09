@@ -1053,22 +1053,21 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 
 // Compass or Wind Display
 void IpsDisplay::drawCompass(){
-
-	if( (wind_enable.get() & WD_DIGITS) || (wind_enable.get() & WD_ARROW) ){
-		// ESP_LOGI(FNAME, "WIND calc on %d", wind_enable.get() );
+	// ESP_LOGI(FNAME, "drawCompass: %d ", wind_display.get() );
+	if( (wind_display.get() & WD_DIGITS) || (wind_display.get() & WD_ARROW) ){
 		int winddir=0;
 		float wind=0;
 		bool ok=false;
 		int ageStraight, ageCircling;
 		char type = '/';
-		if( wind_enable.get() == WA_STRAIGHT ){
+		if( wind_enable.get() == WA_STRAIGHT ){  // check what kind of wind is available from calculator
 			ok = theWind.getWind( &winddir, &wind, &ageStraight );
 			type = '|';
 		}
 		else if( wind_enable.get() == WA_CIRCLING ){
 			ok = CircleWind::getWind( &winddir, &wind, &ageCircling );
 		}
-		else if( wind_enable.get() == WA_BOTH ){
+		else if( wind_enable.get() == WA_BOTH ){  // dynamically change type depening on younger calculation
 			int wds, wdc;
 			float ws, wc;
 			bool oks, okc;
@@ -1129,7 +1128,7 @@ void IpsDisplay::drawCompass(){
 			}
 		}
 	}
-	else if( compass_enable.get() && compass_calibrated.get() && (wind_display.get() & WD_COMPASS) ){
+	else if( wind_display.get() & WD_COMPASS ){
 		bool ok;
 		int heading = static_cast<int>(rintf(Compass::trueHeading( &ok )));
 		if( heading >= 360 )
@@ -1146,7 +1145,7 @@ void IpsDisplay::drawCompass(){
 				sprintf(s,"%s", "  ---" );
 
 			if( heading < 10 )
-				ucg->printf("%s   ", s);
+				ucg->printf("%s    ", s);
 			else if( heading < 100 )
 				ucg->printf("%s   ", s);
 			else

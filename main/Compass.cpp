@@ -36,7 +36,7 @@ std::vector<double>	Compass::Y;
 std::map< double, double> Compass::devmap;
 int Compass::_tick = 0;
 CompassFilter Compass::m_cfmh;
-bool Compass::_external_data = false;
+int Compass::_external_data = 0;
 
 /*
   Creates instance for I2C connection with passing the desired parameters.
@@ -326,6 +326,11 @@ void Compass::saveDeviation(){
 float Compass::trueHeading( bool *okIn )
 {
 	assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
+	if( _external_data ){  // Simulation data
+			*okIn = true;
+			_external_data--;  // age external data
+			return m_true_heading_dev;
+	}
 	if( compass_enable.get() ){
 		*okIn = m_headingValid;
 		return m_true_heading_dev;
@@ -335,6 +340,14 @@ float Compass::trueHeading( bool *okIn )
 		return 0;
 	}
 }
+
+// for simulation purposes
+void Compass::setHeading( float h ) {
+	m_magn_heading = h;
+	m_headingValid=true;
+	m_true_heading_dev=h;
+	_external_data=100;
+};
 
 //------------------------------------------------------------------------------
 

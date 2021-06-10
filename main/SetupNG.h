@@ -93,6 +93,7 @@ public:
 	static SetupCommon * getMember( const char * key );
 	static void syncEntry( int entry );
 	static int numEntries() { return entries.size(); };
+	static bool factoryReset();
 private:
 	static char _ID[14];
 };

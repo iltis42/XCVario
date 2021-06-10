@@ -1260,7 +1260,7 @@ void SetupMenu::setup( )
 		SetupMenuSelect * pstype = new SetupMenuSelect( "AS Sensor type", true , 0, false, &airspeed_sensor_type );
 		hardware->addMenu( pstype );
 		pstype->setHelp( PROGMEM "Factory default for type of pressure sensor, will not erase on factory reset");
-		pstype->addEntry( "APBMRR");
+		pstype->addEntry( "ABPMRR");
 		pstype->addEntry( "TE4525");
 		pstype->addEntry( "MP5004");
 		pstype->addEntry( "Autodetect");

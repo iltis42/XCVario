@@ -264,6 +264,33 @@ void SetupCommon::syncEntry( int entry ){
 	}
 }
 
+bool SetupCommon::factoryReset(){
+	ESP_LOGI(FNAME,"\n\n******  FACTORY RESET ******");
+	bool retsum = true;
+	for(int i = 0; i < entries.size(); i++ ) {
+		ESP_LOGI(FNAME,"i=%d %s erase", i, entries[i]->key() );
+		if( entries[i]->mustReset() ){
+			bool ret = entries[i]->erase();
+			if( ret != true ) {
+				ESP_LOGE(FNAME,"Error erasing %s", entries[i]->key() );
+				retsum = false;
+			}
+			ret = entries[i]->init();
+			if( ret != true ) {
+				ESP_LOGE(FNAME,"Error init with default %s", entries[i]->key() );
+				retsum = false;
+			}
+			else
+				ESP_LOGI(FNAME,"%s successfully initialized with default", entries[i]->key() );
+		}
+	}
+	if( retsum )
+		ESP_LOGI(FNAME,"Factory reset SUCCESS");
+	else
+		ESP_LOGI(FNAME,"Factory reset FAILED!");
+	return retsum;
+}
+
 bool SetupCommon::initSetup( bool& present ) {
 	bool ret=true;
 	ESP_LOGI(FNAME,"SetupCommon::initSetup()");

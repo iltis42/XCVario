@@ -18,6 +18,8 @@
     <input type="button" value="Browse..." onclick="document.getElementById('selectedFile').click();" />
     <h3 id="file_info"></h3>
     <input type='submit' id="upload_button" value='Update Firmware' onclick="updateFirmware()">
+    <br><br><br>
+    <input type='submit' id="erase_flash" value='Factory Reset' onclick="clearSettings()">
 
     <h4 id="status"></h4>
     <h4 id="status1"></h4>
@@ -29,10 +31,31 @@
         function myFunction() {
             var x = document.getElementById("selectedFile");
             var file = x.files[0];
-
             document.getElementById("file_info").innerHTML = "<h4>File: " + file.name + "<br>" + "Size: " + file.size + " bytes</h4>";
         }
-
+		function clearSettings() {
+			var r = window.confirm("Warning, Factory Reset will clear all your settings. Do you really want to clear all settings to Factory Default ?");
+			if (r == true) {
+  				window.alert('Press OK to clear all settings to factory default, this takes a couple of seconds, then wait for response...');
+  				var xhr = new XMLHttpRequest();
+  	              xhr.open('POST', "/clear", true );
+  	              xhr.onreadystatechange = function() {
+  	            	if(xhr.readyState === XMLHttpRequest.DONE) {
+  	            	    var status = xhr.status;
+  	            	    if (status == 0 || (status >= 200 && status < 400)) {
+  	            	      // The request has been completed successfully
+  	            	       window.alert( "Factory Reset status: " + xhr.response );
+  	            	    } else {
+  	            	    	window.alert( "There has been an error with the status request for factory reset" );
+  	            	    }
+  	                }
+  	          	}
+  				xhr.send();
+			} else {
+				window.alert('Abort clear');
+			}    
+		}
+		
         function updateFirmware() {
             // Form Data
             var formData = new FormData();

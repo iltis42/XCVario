@@ -183,6 +183,9 @@ int hold_alarm=0;
 float getTAS() { return tas; };
 float getTE() { return TE; };
 
+bool do_factory_reset() {
+	return( SetupCommon::factoryReset() );
+}
 
 void drawDisplay(void *pvParameters){
 	while (1) {

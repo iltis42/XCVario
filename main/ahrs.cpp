@@ -118,7 +118,7 @@ double  IMU::filterYaw = 0;
 		force_cross_rotation_axis = (IMU::getRawAccelX() * rotation_axis[1]) - ( IMU::getRawAccelZ() * rotation_axis[0]  ) ;
 
 		// compute vertical cross rotation axis:
-		vertical_cross_rotation_axis = (2.0*(q0*q2+q1*q3)* rotation_axis[1]) - ((q0*q0-q1*q1-q2*q2+q3*q3)* rotation_axis[0] );
+		vertical_cross_rotation_axis = (2.0*(-q0*q2+q1*q3)* rotation_axis[1]) - ((q0*q0-q1*q1-q2*q2+q3*q3)* rotation_axis[0] );
 
 		// compute the square root of the sum of the square of the
 		// force cross rotation, minus the square of the magnitude of the accelerometer vector,
@@ -126,7 +126,7 @@ double  IMU::filterYaw = 0;
 
 		// Start by using rmat for accelY instead of the measured value.
 		// It is less sensitive to forward acceleration, which cannot be compensated without GPS.
-		accelY = ( 2.0*(q2*q3-q0*q1) * G );
+		accelY = ( 2.0*(q2*q3+q0*q1) * G );
 
 		// form the sum
 		accum = (force_cross_rotation_axis * force_cross_rotation_axis)
@@ -321,12 +321,14 @@ void IMU::read(){
 	vy=2.0*(q1q2+q0q3)*u + (q0q0-q1q1+q2q2-q3q3)*v + 2.0*(q2q3-q0q1)*w;
 	vz=2.0*(q1q3-q0q2)*u + 2.0*(q2q3+q0q1)*v + (q0q0-q1q1-q2q2+q3q3)*w;
 
-	accel_earthX = (accelX*(q0*q0+q1*q1-q2*q2-q3*q3)+accelY*2.0*(q1*q2+q0*q3)+accelZ*2.0*(q1*q3-q0*q2));
-	accel_earthY = (accelX*2.0*(q1*q2-q0*q3)+accelY*(q0*q0-q1*q1+q2*q2-q3*q3)+accelZ*2.0*(q2*q3+q0*q1));
-	accel_earthZ = (accelX*2.0*(q0*q2+q1*q3)+accelY*2.0*(q2*q3-q0*q1)+accelZ*(q0*q0-q1*q1-q2*q2+q3*q3)) - G;//Substract pesanteur
+	accel_earthX = (accelX*(q0*q0+q1*q1-q2*q2-q3*q3)+accelY*2.0*(q1*q2-q0*q3)+accelZ*2.0*(q1*q3+q0*q2));
+	accel_earthY = (accelX*2.0*(q1*q2+q0*q3)+accelY*(q0*q0-q1*q1+q2*q2-q3*q3)+accelZ*2.0*(q2*q3-q0*q1));
+	accel_earthZ = (accelX*2.0*(-q0*q2+q1*q3)+accelY*2.0*(q2*q3+q0*q1)+accelZ*(q0*q0-q1*q1-q2*q2+q3*q3)) - G;//Substract pesanteur
 		}
-	ESP_LOGI(FNAME, "attitude,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f ",
-				dt,gyroX, gyroY, gyroZ, accelX, accelY, accelZ,roll,pitch,yaw,q0,q1,q2,q3, gravity_vector_plane[0], gravity_vector_plane[1], gravity_vector_plane[2], accel_earthX, accel_earthY, accel_earthZ);
+	ESP_LOGI(FNAME, "attitude,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f ",
+				dt,gyroX, gyroY, gyroZ, accelX, accelY, accelZ,roll,pitch,yaw,q0,q1,q2,q3,
+				gravity_vector_plane[0], gravity_vector_plane[1], gravity_vector_plane[2], accel_earthX, accel_earthY, accel_earthZ,
+				u,v,w,vx,vy,vz);
 }
 
 

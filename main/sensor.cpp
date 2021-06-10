@@ -449,7 +449,7 @@ void readBMP(void *pvParameters){
 		if( (inSetup != true) && !Flarm::bincom && ((count % 2) == 0 ) ){
 			xSemaphoreTake(xMutex,portMAX_DELAY );
 			// reduce also messages from 10 per second to 5 per second to reduce load in XCSoar
-			char lb[150];
+			char lb[250];
 			if( nmea_protocol.get() == BORGELT ) {
 				OV.sendNMEA( P_BORGELT, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), altSTD, validTemperature  );
 				OV.sendNMEA( P_GENERIC, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), altSTD, validTemperature  );
@@ -466,7 +466,8 @@ void readBMP(void *pvParameters){
 			}
 			else if( nmea_protocol.get() == XCVARIO_DEVEL ) {
 				OV.sendNMEA( P_XCVARIO_DEVEL, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-						-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
+						-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z,
+						time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsz_gps,vze_fusion,Ground_Speed_gps);
 			}
 			else
 				ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );

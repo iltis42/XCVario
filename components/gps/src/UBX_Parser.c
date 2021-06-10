@@ -254,52 +254,53 @@ void handle_NAV_VELNED(unsigned long iTOW,
            * handled by current code.
            * @param msgid ID of current message
            */
-void handle_NAV_PVT(unsigned long iTOW,
-		        unsigned short year,
-				unsigned char month,
-				unsigned char day,
-				unsigned char hour,
-				unsigned char minute,
-				unsigned char seconde,
-				unsigned char validate,
-				unsigned long tAcc,
-				long nano,
-				unsigned char fixType,
-				unsigned char flags,
-				unsigned char flags2,
-				unsigned char numSV,
-				long lon,
-				long lat,
-				long height,
-				long hMSL,
-				unsigned long hAcc,
-				unsigned long vAcc,
-				long velN,
-                long velE,
-                long velD,
-                long gSpeed,
-                long headMot,
-                unsigned long sAcc,
-                unsigned long headAcc,
-				unsigned short pDOP,
-				unsigned char flags3,
-				unsigned char reserved01,
-				unsigned long reserved02,
-				long headVeh,
-				short magDec,
-                unsigned short magAcc) {
-    if((fixType==3) || (fixType==4)) {//Si les données GPS sont valides
+void handle_NAV_PVT(unsigned long iTOW, /* ms*/
+		        unsigned short year,	/*Year UTC*/
+				unsigned char month,	/* Month 1..12*/
+				unsigned char day,		/* Day 1..31*/
+				unsigned char hour,		/*Hour of the day 1..23 UTC*/
+				unsigned char minute,	/* Minutes 0..59*/
+				unsigned char seconde,	/* Secondes 0..59 s*/
+				unsigned char validate,	/* Validity date*/
+				unsigned long tAcc,		/* Time accuracy ns UTC*/
+				long nano,				/* Fraction of second, -1e9..1e9*/
+				unsigned char fixType,	/* GNSS Fix Type 0=no fix, 1 deadreckoning only, 2=2D-fix, 3=3D-fix, 4=GNSS+dead reckoning, 5=time only*/
+				unsigned char flags,	/* Fix status flag b0=valid fix, b1=diff corrections, b5=vehicule heading valid, b6..b7 carrSoln*/
+				unsigned char flags2,	/* Additional flags (time validations)*/
+				unsigned char numSV,	/* Number of satellites used in Nav Solution*/
+				long lon,				/* Longitude in ie-7 deg */
+				long lat,				/* Latitude in 1e-7 deg */
+				long height,			/* Height above ellipsoid in mm */
+				long hMSL,				/* Height above mean sea level mm */
+				unsigned long hAcc,		/* Horizontal accuracy estimate mm */
+				unsigned long vAcc,		/* Vertical accuracy estimate mm */
+				long velN,				/* NED north velociy mm/s */
+                long velE,				/* NED east velocity mm/s */
+                long velD,				/* NED down velocity mm/s */
+                long gSpeed,			/* Ground speed 2D mm/s */
+                long headMot,			/* Heading of motion 2-D 1e-5 deg */
+                unsigned long sAcc,		/* Speed accury estimate mm/s */
+                unsigned long headAcc,	/* Heading accuracy estimate both motion & vehicule 1e-5 deg/s */
+				unsigned short pDOP,	/* Position DOP 0.01 */
+				unsigned char flags3,	/* Additional flags b0 invalid lon, lat, height & hMSL */
+				unsigned char reserved01,/* Reserved*/
+				unsigned long reserved02,/* Reserved */
+				long headVeh,			/* Heading of vehicue 2-D */
+				short magDec,			/* Magnetic declination 1e-2 deg */
+                unsigned short magAcc) /* Magnetic declination accuracy 1e-2 deg */
+	{
+    if((fixType==3) || (fixType==4)) 	/* Si les données GPS sont valides */
     	gps_nav_valid = 1;
-    	dead_reckon_clock = 26; // il faudrait faire revenir DR_PERIOD ici
-    	Vsz_gps=-velD;
-    	Ground_Speed_gps = gSpeed;
+    	dead_reckon_clock = 26; 		/* il faudrait faire revenir DR_PERIOD ici */
+    	Vsz_gps=-velD*0.001f;
+    	Ground_Speed_gps = gSpeed*0.001f;
         time_gps = iTOW*0.001f;
         latitude = lat*1e-7f;
         longitude = lon*1e-7f;
-        gps_altitude = hMSL/1000.0f;
+        gps_altitude = hMSL*0.001f;
         date_gps = day;
     }
-    else{
+    else{/* Just to recognize bad parsing*/
     	gps_nav_valid = -1;
     	Vsz_gps=1.23;
         Ground_Speed_gps = 3.45;

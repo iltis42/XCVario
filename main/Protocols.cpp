@@ -170,18 +170,12 @@ void Protocols::sendNmeaHDT( float heading ) {
 
 
 void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
-		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz  ){
+		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz,
+		float time_gps,int gps_nav_valid,float latitude,float longitude,float estimated_altitude,float Vsz_gps,float vze_fusion,float Ground_Speed_gps){
 	if( !validTemp )
 		temp=0;
 	if( proto == P_XCVARIO_DEVEL ){
 		//modif gfm
-/* la ligne définie dans le sprintf ci-dessous semble occasionner l'apparition d'une exception, plus souvent quand on agite le XCVario
- * Le log montre des valeurs complètement aberrantes très très grandes, des acc_x, acc_y et acc_z signalées par le contexte "accelaration change > g in 0.2 S".
- * Il y a t'il une confusion dans l'adressage, entre le nom de la variable, son pointeur * ou son déférencement &???
- * ou bien doit-on respecter scrupuleusement les paramètres passés dans les fonctions sendNMEA,
- * et parseNMEA sscanf( str, "$PXCV,%f,%f,%f,%f,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f*%02x", &_te....  ???
- * J'en suis là, ce matin 6 mai 2021.
-  */
 		/*
      	char str_loc[255];
 		$PXCV,
@@ -205,15 +199,6 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		Z.ZZZZ:   gyro around Z-Axis,
 		*CHK = standard NMEA checksum
 
-		float roll = IMU::getRoll();
-		float pitch = IMU::getPitch();
-		float aex = 0;
-		float aey = 0;
-		float aez = 0;
-		//float aex = IMU::getEarthAccelX();
-		//float aey = IMU::getEarthAccelY();
-		//float aez = IMU::getEarthAccelZ();
-		//char str_loc[255];
 		float timertime = esp_timer_get_time()/1000000.0; // time in second
 		sprintf(str,"$PXCV,%.6f,%8.3f,%d,%8.6f,%8.6f,%8.6f,%3.2f,%3.2f,%6.2f,%3.1f,%2.1f,%4.1f,%6.3f,%6.3f,%3.1f,%3.1f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f",
 				timertime, time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsz_gps,vze_fusion,Ground_Speed_gps,
@@ -225,6 +210,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 //fin modif gfm*/
 		double roll = IMU::getRollRad();
 		double pitch = IMU::getPitchRad();
+		double yaw = IMU::getYawRad();
 		double aex = IMU::getEarthAccelX();
 		double aey = IMU::getEarthAccelY();
 		double aez = IMU::getEarthAccelZ();
@@ -232,8 +218,9 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		if (IMU::getInitdone()) initdone=1; else initdone=0;
 //		sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%6.2f,%6.2f,%4.3f,%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
 		float timertime = esp_timer_get_time()/1000000.0; // time in second
-		sprintf(str,"$PXCV,%.6f,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%.3f,%.3f,%.3f,%5.3f,%5.3f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f",
-				timertime, te, Units::Vario2ms(mc), initdone, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z, gz, gy, gx,aex,aey,aez );
+		sprintf(str,"$PXCV,%.6f,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%.3f,%.3f,%.3f,%5.3f,%5.3f,%5.3f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%8.3f,%d,%8.6f,%8.6f,%8.6f,%3.2f,%3.2f,%6.2f",
+				timertime, te, Units::Vario2ms(mc), initdone, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp, roll, pitch, yaw,
+				acc_x, acc_y, acc_z, gz, gy, gx,aex,aey,aez, time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsz_gps,vze_fusion,Ground_Speed_gps );
 	}
 	else if( proto == P_XCVARIO ){
 		/*

@@ -15,6 +15,8 @@ extern const uint8_t favicon_ico_end[]   asm("_binary_favicon_ico_end");
 extern const uint8_t jquery_3_4_1_min_js_start[] asm("_binary_jquery_3_4_1_min_js_start");
 extern const uint8_t jquery_3_4_1_min_js_end[]   asm("_binary_jquery_3_4_1_min_js_end");
 
+extern bool do_factory_reset();
+
 httpd_handle_t OTA_server = NULL;
 int8_t flash_status = 0;
 int progress = 0;
@@ -114,7 +116,27 @@ esp_err_t OTA_update_status_handler(httpd_req_t *req)
 	return ESP_OK;
 }
 
+esp_err_t OTA_clear_handler(httpd_req_t *req)
+{
+	ESP_LOGI("OTA", "Clear Settings Requested");
+	bool success = do_factory_reset();
+
+	httpd_resp_set_type(req, "text/html");
+	if( success )
+		httpd_resp_send(req, "Okay", 5 );
+	else
+		httpd_resp_send(req, "Error", 6 );
+
+	vTaskDelay(5000 / portTICK_PERIOD_MS);
+	esp_restart();
+
+	return ESP_OK;
+}
+
 #define TAG "OTA"
+
+
+
 
 /* Receive .Bin file */
 esp_err_t OTA_update_post_handler(httpd_req_t *req)
@@ -274,10 +296,18 @@ httpd_uri_t OTA_update = {
 	.handler = OTA_update_post_handler,
 	.user_ctx = NULL
 };
+
 httpd_uri_t OTA_status = {
 	.uri = "/status",
 	.method = HTTP_POST,
 	.handler = OTA_update_status_handler,
+	.user_ctx = NULL
+};
+
+httpd_uri_t OTA_clear = {
+	.uri = "/clear",
+	.method = HTTP_POST,
+	.handler = OTA_clear_handler,
 	.user_ctx = NULL
 };
 
@@ -306,12 +336,14 @@ httpd_handle_t start_OTA_webserver(void)
 		httpd_register_uri_handler(OTA_server, &OTA_jquery_3_4_1_min_js);
 		httpd_register_uri_handler(OTA_server, &OTA_update);
 		httpd_register_uri_handler(OTA_server, &OTA_status);
+		httpd_register_uri_handler(OTA_server, &OTA_clear);
 		return OTA_server;
 	}
 
 	printf("Error starting server!");
 	return NULL;
 }
+
 
 void stop_OTA_webserver(httpd_handle_t server)
 {

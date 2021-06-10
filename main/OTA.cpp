@@ -14,10 +14,8 @@
 
 #include "esp_ota_ops.h"
 #include "freertos/event_groups.h"
-extern "C" {
 #include "OTAServer.h"
 #include "MyWiFi.h"
-}
 #include "IpsDisplay.h"
 #include "Setup.h"
 #include "OTA.h"

@@ -268,7 +268,8 @@ void IMU::read(){
 		last_rts = rts;
 		if( ret )
 			return;
-		if(dt>0.11) {/* si la période de temps n'est pas celle attendue, on intègre pas les gyros*/
+//		if(dt>0.11) {/* si la période de temps n'est pas celle attendue, on n'intègre pas les gyros*/
+		if(false) {/* si la période de temps n'est pas celle attendue, on n'intègre pas les gyros*/
 			initdone = false;
 			IMU::init(false);
 		}

@@ -447,8 +447,8 @@ void Audio::incVolume( int steps ) {
 void Audio::startAudio(){
 	ESP_LOGI(FNAME,"startAudio");
 	_testmode = false;
-	xTaskCreate(modtask, "modtask", 1024*2, NULL, 12, NULL);
-	xTaskCreate(dactask, "dactask", 1024*2, NULL, 11, NULL);
+	xTaskCreate(modtask, "modtask", 1024*2, NULL, 25, NULL);
+	xTaskCreate(dactask, "dactask", 1024*2, NULL, 24, NULL);
 }
 
 void Audio::calcS2Fmode(){

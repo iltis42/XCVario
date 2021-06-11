@@ -290,7 +290,7 @@ void handle_NAV_PVT(unsigned long iTOW, /* ms*/
                 unsigned short magAcc) /* Magnetic declination accuracy 1e-2 deg */
 	{
     if((fixType==3) || (fixType==4)) 	/* Si les données GPS sont valides */
-    	gps_nav_valid = 1;
+    { 	gps_nav_valid = 1;
     	dead_reckon_clock = 26; 		/* il faudrait faire revenir DR_PERIOD ici */
     	Vsz_gps=-velD*0.001f;
     	Ground_Speed_gps = gSpeed*0.001f;

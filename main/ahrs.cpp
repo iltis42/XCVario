@@ -70,18 +70,18 @@ double  IMU::filterYaw = 0;
 
 	static double omegaSOG(double omega, double speed)
 	{
-	#define CENTRIFSAT 600 //10 rd/s * 60 m/s
+	#define CENTRIFSAT 60 //1 rd/s * 60 m/s
 		// multiplies omega times speed, and scales appropriately
 		// omega in radians per second, speed in m per second
 		double working;
 		working = omega * speed;
 		if (working > CENTRIFSAT)
 		{
-			return (1);
+			return (CENTRIFSAT);
 		}
 		else if (working < -CENTRIFSAT)
 		{
-			return (- 1);
+			return (- CENTRIFSAT);
 		}
 		else
 		{
@@ -324,7 +324,7 @@ void IMU::read(){
 	accel_earthX = (accelX*(q0*q0+q1*q1-q2*q2-q3*q3)+accelY*2.0*(q1*q2-q0*q3)+accelZ*2.0*(q1*q3+q0*q2));
 	accel_earthY = (accelX*2.0*(q1*q2+q0*q3)+accelY*(q0*q0-q1*q1+q2*q2-q3*q3)+accelZ*2.0*(q2*q3-q0*q1));
 	accel_earthZ = (accelX*2.0*(-q0*q2+q1*q3)+accelY*2.0*(q2*q3+q0*q1)+accelZ*(q0*q0-q1*q1-q2*q2+q3*q3)) - G;//Substract pesanteur
-		}
+	}
 	ESP_LOGI(FNAME, "attitude,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f ",
 				dt,gyroX, gyroY, gyroZ, accelX, accelY, accelZ,roll,pitch,yaw,q0,q1,q2,q3,
 				gravity_vector_plane[0], gravity_vector_plane[1], gravity_vector_plane[2], accel_earthX, accel_earthY, accel_earthZ,

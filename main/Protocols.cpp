@@ -214,13 +214,19 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		double aex = IMU::getEarthAccelX();
 		double aey = IMU::getEarthAccelY();
 		double aez = IMU::getEarthAccelZ();
+		double ax = IMU::getRawAccelX();
+		double ay = IMU::getRawAccelY();
+		double az = IMU::getRawAccelZ();
+		double gyx = IMU::getRawGyroX();
+		double gyy = IMU::getRawGyroY();
+		double gyz = IMU::getRawGyroZ();
 		int initdone = 0 ;
 		if (IMU::getInitdone()) initdone=1; else initdone=0;
 //		sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%6.2f,%6.2f,%4.3f,%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
 		float timertime = esp_timer_get_time()/1000000.0; // time in second
 		sprintf(str,"$PXCV,%.6f,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%.3f,%.3f,%.3f,%5.3f,%5.3f,%5.3f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%8.3f,%d,%8.6f,%8.6f,%8.6f,%3.2f,%3.2f,%6.2f",
 				timertime, te, Units::Vario2ms(mc), initdone, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp, roll, pitch, yaw,
-				acc_x, acc_y, acc_z, gz, gy, gx,aex,aey,aez, time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsz_gps,vze_fusion,Ground_Speed_gps );
+				ax, ay, az, gyx, gyy, gyz,aex,aey,aez, time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsz_gps,vze_fusion,Ground_Speed_gps );
 	}
 	else if( proto == P_XCVARIO ){
 		/*
@@ -243,8 +249,8 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 				*CHK = standard NMEA checksum
 		*/
 		if( haveMPU && attitude_indicator.get() ){
-			double roll = IMU::getRollRad();
-			double pitch = IMU::getPitchRad();
+			double roll = IMU::getRoll();
+			double pitch = IMU::getPitch();
 			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f,%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
 
 		}else{

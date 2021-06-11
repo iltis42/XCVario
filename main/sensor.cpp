@@ -1122,7 +1122,7 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
 	if( blue_enable.get() != WL_WLAN_CLIENT ) {
-		xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096*2, NULL, 30, bpid, 0);
+		xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096*4, NULL, 30, bpid, 0);
 	}
 	if( blue_enable.get() == WL_WLAN_CLIENT ){
 		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 30, bpid, 0);

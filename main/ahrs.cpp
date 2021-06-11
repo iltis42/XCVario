@@ -176,7 +176,8 @@ double  IMU::filterYaw = 0;
 		air_speed_z = accum;
 		// compute centrifugal and forward acceleration compensation (must use corrected gyro) and suppose that this routine is called at 10 Hz
 		gravity_vector_plane[0] = gravity_vector_plane[0] + omegaSOG(IMU::getRawGyroY(), air_speed_z);
-		gravity_vector_plane[1] = gravity_vector_plane[1] - omegaSOG(IMU::getRawGyroX(), air_speed_z) +  (getTAS()-previous_tas)*10.0;
+		//gravity_vector_plane[1] = gravity_vector_plane[1] - omegaSOG(IMU::getRawGyroX(), air_speed_z) +  (getTAS()-previous_tas)*10.0;
+		gravity_vector_plane[1] = gravity_vector_plane[1] - omegaSOG(IMU::getRawGyroX(), air_speed_z) ;
 		previous_tas = getTAS();
 	}
 
@@ -283,7 +284,7 @@ void IMU::read(){
 		MPU6050Read();
 		//adj_accel(angleOfAttack);
 		adj_accel(0.1);// angleOfAttack is supposed to be 6°
-		MadgwickAHRSupdateIMU(dt,gyroX, gyroY, gyroZ, gravity_vector_plane[0], gravity_vector_plane[1], gravity_vector_plane[2],&q0,&q1,&q2,&q3);
+		MadgwickAHRSupdateIMU(dt,gyroX, gyroY, gyroZ, gravity_vector_plane[1], gravity_vector_plane[0], gravity_vector_plane[2],&q0,&q1,&q2,&q3);
 	// Intégration des anges d'Euler
 	  roll = atan2(2 * (q0 * q1 + q2 * q3), (q0*q0-q1*q1-q2*q2+q3*q3)); // phi
 	  if (abs(2*( q0 * q2-q1 * q3 ))<1.0) pitch = asin(2 * ( q0 * q2-q1 * q3 )); else pitch = 0.0; // theta

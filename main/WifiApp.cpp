@@ -247,9 +247,9 @@ void wifi_init_softap()
 		ESP_ERROR_CHECK(esp_wifi_start());
 		ESP_ERROR_CHECK(esp_wifi_set_max_tx_power(8));
 
-		xTaskCreatePinnedToCore(&socket_server, "socket_ser_2", 3072, &AUX, 12, AUX.pid, 0);  // 10
-		xTaskCreatePinnedToCore(&socket_server, "socket_srv_0", 3072, &XCVario, 13, XCVario.pid, 0);  // 10
-		xTaskCreatePinnedToCore(&socket_server, "socket_ser_1", 3072, &FLARM, 14, FLARM.pid, 0);  // 10
+		xTaskCreatePinnedToCore(&socket_server, "socket_ser_2", 3072, &AUX, 11, AUX.pid, 0);  // 10
+		xTaskCreatePinnedToCore(&socket_server, "socket_srv_0", 3072, &XCVario, 12, XCVario.pid, 0);  // 10
+		xTaskCreatePinnedToCore(&socket_server, "socket_ser_1", 3072, &FLARM, 13, FLARM.pid, 0);  // 10
 
 		ESP_LOGV(FNAME, "wifi_init_softap finished SUCCESS. SSID:%s password:%s channel:%d", (char *)wc.ap.ssid, (char *)wc.ap.password, wc.ap.channel );
 	}

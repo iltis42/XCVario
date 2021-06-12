@@ -136,22 +136,24 @@ uint8_t QMC5883L::readRegister( const uint8_t addr,
 	if( checkBus() == false )
 		return 0;
 	// read bytes from chip
-	esp_err_t err = m_bus->readBytes( addr, reg, count, data );
-	if( err != ESP_OK ){
-		// ESP_LOGW( FNAME,"readRegister( 0x%02X, 0x%02X, %d ) FAILED", addr, reg, count );
-		err = m_bus->readBytes( addr, reg, count, data );
-		if( err != ESP_OK ){
-			// ESP_LOGW( FNAME,"Retry failed also, try to reinitialize chip now");
-			initialize();
-			err = m_bus->readBytes( addr, reg, count, data );
-			if( err != ESP_OK ){
-				// ESP_LOGW( FNAME,"Read after retry failed also, return with no data, len=0");
-				return 0;
+	for( int i=0; i<=10; i++ ){
+		esp_err_t err = m_bus->readBytes( addr, reg, count, data );
+		if( err == ESP_OK ){
+			break;
+		}
+		else
+		{
+			ESP_LOGW( FNAME,"readRegister( 0x%02X, 0x%02X, %d ) FAILED N:%d", addr, reg, count, i );
+			if( i == 10 ){
+				ESP_LOGW( FNAME,"10 retries failed also, now try to reinitialize chip");
+				if( initialize() != ESP_OK )
+					initialize();  // one retry
+				err = m_bus->readBytes( addr, reg, count, data );
+				if( err != ESP_OK ){
+					// ESP_LOGW( FNAME,"Read after retry failed also, return with no data, len=0");
+					return 0;
+				}
 			}
-			/*
-			else
-				ESP_LOGW( FNAME,"Read after retry SUCCESS, we did it!");
-				*/
 		}
 	}
 	return count;
@@ -204,7 +206,8 @@ esp_err_t QMC5883L::initialize( int a_odr, int a_osr )
 
 	// Soft Reset
 	e1 = writeRegister( addr, REG_CONTROL2, SOFT_RST );
-	delay(2);
+	// delay(2);
+	delayMicroseconds(100);
 
 	// Enable ROL_PTN, Pointer roll over function.
 	e2 = writeRegister( addr, REG_CONTROL2, POL_PNT );
@@ -221,15 +224,15 @@ esp_err_t QMC5883L::initialize( int a_odr, int a_osr )
 	if( used_odr == 0 )
 		used_odr = odr;
 
-  ESP_LOGI( FNAME, "initialize() dataRate: %d Oversampling: %d", used_odr, used_osr );
+	ESP_LOGI( FNAME, "initialize() dataRate: %d Oversampling: %d", used_odr, used_osr );
 
 	e4 = writeRegister( addr, REG_CONTROL1,	(used_osr << 6) | (range <<4) | (used_odr <<2) | MODE_CONTINUOUS );
 
 	if( (e1 + e2 + e3 + e4) == 0 ) {
-      ESP_LOGI( FNAME, "initialize() OK");
-      return ESP_OK;
-		}
-
+		ESP_LOGI( FNAME, "initialize() OK");
+		return ESP_OK;
+	}
+	ESP_LOGE( FNAME, "initialize() ERROR");
 	return ESP_FAIL;
 }
 
@@ -406,10 +409,12 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z, float xb,
 	// Switch on continues mode
 	if( initialize( ODR_100Hz, OSR_512 ) != ESP_OK )
 	{
-		calibrationRunning = false;
-		return false;
+		// retry
+		if( initialize(  ODR_100Hz, OSR_512 ) != ESP_OK ){
+			calibrationRunning = false;
+			return false;
+		}
 	}
-
 	// wait a moment after measurement start.
 	delay( 100 );
 
@@ -546,12 +551,15 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z, float xb,
 			xscale, yscale, zscale );
 
 	// restart continuous mode given at construction time
-	initialize();
+	if( initialize() != ESP_OK )
+		initialize();
 	calibrationRunning = false;
 	ESP_LOGI( FNAME, "calibration end" );
 	return true;
 }
 
+
+int N=0;
 /**
  * Reads the heading in degrees of 0...359. Ok is set to true,
  * if heading data is valid, otherwise it is set to false.
@@ -559,12 +567,13 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z, float xb,
 float QMC5883L::heading( bool *ok )
 {
 	assert( (ok != nullptr) && "Passing of NULL pointer is forbidden" );
-
+	// ESP_LOGI(FNAME,"QMC5883L::heading() errors:%d, N:%d", errors, N );
 	// Holddown processing and throwing errors once sensor is gone
 	if( errors > 100 && errors % 100 )
 	{
 		*ok = false;
 		errors++;
+		ESP_LOGI(FNAME,"QMC5883: Holddown");
 		return 0.0;
 	}
 
@@ -575,13 +584,17 @@ float QMC5883L::heading( bool *ok )
 	}
 
 	bool state = rawHeading();
+	N++;
 	if( state == false )
 	{
+		ESP_LOGI(FNAME,"Magnetic sensor error %d, N:%d", errors, N );
 		errors++;
 		if( errors > 3 )
 		{
-			ESP_LOGW(FNAME,"Magnetic sensor errors: init mag sensor" );
-			initialize();  // reinitialize once crashed
+			ESP_LOGI(FNAME,"Magnetic sensor errors > 3: init mag sensor" );
+			//  reinitialize once crashed, one retry
+			if( initialize() != ESP_OK )
+				initialize();
 		}
 		if( errors > 50 ){  // survive 50 samples with constant heading if no valid reading
 			*ok = false;

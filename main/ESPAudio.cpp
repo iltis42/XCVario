@@ -33,6 +33,10 @@
 #include "SetupNG.h"
 
 
+TaskHandle_t *dactid;
+TaskHandle_t *modtid;
+
+
 uint8_t Audio::_tonemode;
 uint8_t Audio::_chopping_mode;
 uint16_t *Audio::p_wiper;
@@ -410,6 +414,8 @@ void Audio::modtask(void* arg )
 			}
 		}
 		// ESP_LOGI(FNAME,"delay:%d  ht:%d TE:%f", delay, hightone, _te);
+		if( uxTaskGetStackHighWaterMark( modtid ) < 256 )
+			ESP_LOGW(FNAME,"Warning Audio mod task stack low: %d bytes", uxTaskGetStackHighWaterMark( modtid ) );
 		vTaskDelayUntil(&xLastWakeTime, delay/portTICK_PERIOD_MS);
 	}
 }
@@ -447,8 +453,8 @@ void Audio::incVolume( int steps ) {
 void Audio::startAudio(){
 	ESP_LOGI(FNAME,"startAudio");
 	_testmode = false;
-	xTaskCreate(modtask, "modtask", 1024*2, NULL, 25, NULL);
-	xTaskCreate(dactask, "dactask", 1024*2, NULL, 24, NULL);
+	xTaskCreatePinnedToCore(&modtask, "modtask", 1024, NULL, 25, modtid, 0);
+	xTaskCreatePinnedToCore(&dactask, "dactask", 2024, NULL, 24, dactid, 0);
 }
 
 void Audio::calcS2Fmode(){
@@ -605,6 +611,8 @@ void Audio::dactask(void* arg )
 				}
 			}
 		}
+		if( uxTaskGetStackHighWaterMark( dactid ) < 256 )
+			ESP_LOGW(FNAME,"Warning Audio dac task stack low: %d bytes", uxTaskGetStackHighWaterMark( dactid ) );
 		vTaskDelayUntil(&xLastWakeTime, 20/portTICK_PERIOD_MS);
 		if( volume_change )
 			volume_change--;

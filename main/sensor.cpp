@@ -470,18 +470,24 @@ void readBMP(void *pvParameters){
 		if( compass_enable.get() == true  && !Flarm::bincom && ! Compass::calibrationIsRunning() ) {
 			// Trigger heading reading and low pass filtering. That job must be
 			// done periodically.
-			bool hok;
-			compass.calculateHeading( &hok );
 
-			if( (count % 5 ) == 0 && hok == true && compass_nmea_hdm.get() == true ) {
-				xSemaphoreTake( xMutex, portMAX_DELAY );
-				OV.sendNmeaHDM( compass.magnHeading( &ok ) );
-				xSemaphoreGive( xMutex );
+			if( (count % 5 ) == 0 && compass_nmea_hdm.get() == true ) {
+				bool ok;
+				float heading = compass.magnHeading( &ok );
+				if( ok ) {
+					xSemaphoreTake( xMutex, portMAX_DELAY );
+					OV.sendNmeaHDM( heading );
+					xSemaphoreGive( xMutex );
+				}
 			}
-			if( (count % 5 ) == 0 && hok == true && compass_nmea_hdt.get() == true ) {
-				xSemaphoreTake( xMutex, portMAX_DELAY );
-				OV.sendNmeaHDT( compass.trueHeading( &ok ) );
-				xSemaphoreGive( xMutex );
+			if( (count % 5 ) == 0 && compass_nmea_hdt.get() == true ) {
+				bool ok;
+				float theading = compass.trueHeading( &ok );
+				if( ok ){
+					xSemaphoreTake( xMutex, portMAX_DELAY );
+					OV.sendNmeaHDT( theading );
+					xSemaphoreGive( xMutex );
+				}
 			}
 		}
 
@@ -538,10 +544,10 @@ void readTemp(void *pvParameters){
 		vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS);
 
 		if( (ttick++ % 5) == 0) {
-			ESP_LOGI(FNAME,"Free Heap: %d bytes", heap_caps_get_free_size(MALLOC_CAP_8BIT) );
+			// ESP_LOGI(FNAME,"Free Heap: %d bytes", heap_caps_get_free_size(MALLOC_CAP_8BIT) );
 			if( uxTaskGetStackHighWaterMark( tpid ) < 256 )
 				ESP_LOGW(FNAME,"Warning temperature task stack low: %d bytes", uxTaskGetStackHighWaterMark( tpid ) );
-			if( heap_caps_get_free_size(MALLOC_CAP_8BIT) < 10000 )
+			if( heap_caps_get_free_size(MALLOC_CAP_8BIT) < 20000 )
 				ESP_LOGW(FNAME,"Warning heap_caps_get_free_size getting low: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
 		}
 	}
@@ -1121,14 +1127,14 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
 	if( wireless != WL_WLAN_CLIENT ) {
-		xTaskCreatePinnedToCore(&readBMP, "readBMP", 1024*8, NULL, 9, bpid, 0);
+		xTaskCreatePinnedToCore(&readBMP, "readBMP", 1024*8, NULL, 14, bpid, 0);
 	}
 	if( wireless == WL_WLAN_CLIENT ){
-		xTaskCreatePinnedToCore(&audioTask, "audioTask", 2048, NULL, 9, apid, 0);
+		xTaskCreatePinnedToCore(&audioTask, "audioTask", 2048, NULL, 13, apid, 0);
 	}
-	xTaskCreatePinnedToCore(&readTemp, "readTemp", 2048, NULL, 1, tpid, 0);
+	xTaskCreatePinnedToCore(&readTemp, "readTemp", 2300, NULL, 1, tpid, 0);
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 4096, NULL, 2, dpid, 0);
-
+	compass.start();
 	Audio::startAudio();
 }
 

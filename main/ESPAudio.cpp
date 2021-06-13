@@ -413,9 +413,11 @@ void Audio::modtask(void* arg )
 				delay = int(period_ms * 0.9)-40;
 			}
 		}
-		// ESP_LOGI(FNAME,"delay:%d  ht:%d TE:%f", delay, hightone, _te);
+		// ESP_LOGI(FNAME,"delay:%d  ht:%d TE:%2.1f", delay, hightone, _te);
+		/*
 		if( uxTaskGetStackHighWaterMark( modtid ) < 256 )
 			ESP_LOGW(FNAME,"Warning Audio mod task stack low: %d bytes", uxTaskGetStackHighWaterMark( modtid ) );
+			*/
 		vTaskDelayUntil(&xLastWakeTime, delay/portTICK_PERIOD_MS);
 	}
 }
@@ -438,9 +440,9 @@ void Audio::decVolume( int steps ) {
 
 void Audio::incVolume( int steps ) {
 	steps = int( 1+ ( (float)(*p_wiper)/16.0 ))*steps;
-	if( (*p_wiper) > 127 )
-		(*p_wiper) = 127;
-	while( steps && ((*p_wiper) < 127) ){
+	if( (*p_wiper) > 126 )
+		(*p_wiper) = 126;
+	while( steps && ((*p_wiper) < 126) ){
 		(*p_wiper)++;
 		steps--;
 	}
@@ -453,8 +455,8 @@ void Audio::incVolume( int steps ) {
 void Audio::startAudio(){
 	ESP_LOGI(FNAME,"startAudio");
 	_testmode = false;
-	xTaskCreatePinnedToCore(&modtask, "modtask", 1024, NULL, 25, modtid, 0);
-	xTaskCreatePinnedToCore(&dactask, "dactask", 2024, NULL, 24, dactid, 0);
+	xTaskCreatePinnedToCore(&modtask, "modtask", 2048, NULL, 25, modtid, 0);
+	xTaskCreatePinnedToCore(&dactask, "dactask", 2048, NULL, 24, dactid, 0);
 }
 
 void Audio::calcS2Fmode(){
@@ -548,27 +550,28 @@ void Audio::dactask(void* arg )
 									Poti.writeWiper( (*p_wiper) );
 									cur_wiper = (*p_wiper);
 								}
+								// ESP_LOGI(FNAME, "fade in sound, final wiper: %d", cur_wiper );
 							}
 						}
 						sound_on = true;
-					}
-					// Fade in/out volume changes
-					if(  cur_wiper != (*p_wiper) ){
-						int delta = 1;
-						if( (*p_wiper) > cur_wiper )
-						for( int i=cur_wiper; i<(*p_wiper); i+=delta ) {
-							Poti.writeWiper( i );
-							delta = 2+i/FADING_TIME;
-							delay(1);
-						}else
-							for( int i=cur_wiper; i>(*p_wiper); i-=delta ) {
-							Poti.writeWiper( i );
-							delta = 2+i/FADING_TIME;
-							delay(1);
+						// Fade in/out volume changes
+						if(  cur_wiper != (*p_wiper) ){
+							int delta = 1;
+							if( (*p_wiper) > cur_wiper )
+								for( int i=cur_wiper; i<(*p_wiper); i+=delta ) {
+									Poti.writeWiper( i );
+									delta = 2+i/FADING_TIME;
+									delay(1);
+								}else
+									for( int i=cur_wiper; i>(*p_wiper); i-=delta ) {
+										Poti.writeWiper( i );
+										delta = 2+i/FADING_TIME;
+										delay(1);
+									}
+							Poti.writeWiper( (*p_wiper) );
+							cur_wiper = (*p_wiper);
+							// ESP_LOGI(FNAME, "volume change, new wiper: %d", cur_wiper );
 						}
-						Poti.writeWiper( (*p_wiper) );
-						// ESP_LOGI(FNAME, "sound on, set wiper: %d", (*p_wiper) );
-						cur_wiper = (*p_wiper);
 					}
 					float max = minf;
 					if ( _te > 0 )
@@ -582,7 +585,8 @@ void Audio::dactask(void* arg )
 						prev_aud_fact = audio_factor.get();
 					}
 					float f = center_freq.get() + ((mult*_te)/range )  * (max/exponent_max);
-					// ESP_LOGI(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f multi:%0.3f", f, _te, audio_factor.get(), mult );
+					// ESP_LOGI(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f multi:%0.3f  wiper:%d", f, _te, audio_factor.get(), mult, cur_wiper );
+					// ESP_LOGI(FNAME, "New Freq: %0.1f Hz, wiper:%d", f, cur_wiper );
 					if( hightone && (_tonemode == ATM_DUAL_TONE ) )
 						setFrequency( f*_high_tone_var );
 					else
@@ -599,9 +603,9 @@ void Audio::dactask(void* arg )
 									Poti.writeWiper( i );
 									delta = 2+i/(FADING_TIME);
 									delay(1);
-									// ESP_LOGI(FNAME, "fade out sound, wiper: %d", i);
 								}
 								Poti.writeWiper( 0 );
+								// ESP_LOGI(FNAME, "fade out sound, final wiper: 0" );
 								dac_output_disable(_ch);
 								cur_wiper = 0;
 							}
@@ -611,8 +615,10 @@ void Audio::dactask(void* arg )
 				}
 			}
 		}
+		/*
 		if( uxTaskGetStackHighWaterMark( dactid ) < 256 )
 			ESP_LOGW(FNAME,"Warning Audio dac task stack low: %d bytes", uxTaskGetStackHighWaterMark( dactid ) );
+			*/
 		vTaskDelayUntil(&xLastWakeTime, 20/portTICK_PERIOD_MS);
 		if( volume_change )
 			volume_change--;

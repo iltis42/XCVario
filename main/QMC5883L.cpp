@@ -74,6 +74,8 @@ int QMC5883L::errors = 0;
 bool QMC5883L::calibrationRunning = false;
 
 float QMC5883L::_heading = 0;
+
+int QMC5883L::totalReadErrors = 0;
 /*
   Creates instance for I2C connection with passing the desired parameters.
   No action is done at the bus. Note if i2cBus is not set in the constructor,
@@ -136,24 +138,26 @@ uint8_t QMC5883L::readRegister( const uint8_t addr,
 	if( checkBus() == false )
 		return 0;
 	// read bytes from chip
-	for( int i=0; i<=10; i++ ){
+	for( int i=0; i<=20; i++ ){
 		esp_err_t err = m_bus->readBytes( addr, reg, count, data );
 		if( err == ESP_OK ){
 			break;
 		}
 		else
 		{
-			ESP_LOGW( FNAME,"readRegister( 0x%02X, 0x%02X, %d ) FAILED N:%d", addr, reg, count, i );
+			// ESP_LOGW( FNAME,"readRegister( 0x%02X, 0x%02X, %d ) FAILED N:%d", addr, reg, count, i );
 			if( i == 10 ){
-				ESP_LOGW( FNAME,"10 retries failed also, now try to reinitialize chip");
+				ESP_LOGW( FNAME,"10 retries read mag sensor failed also, now try to reinitialize chip");
 				if( initialize() != ESP_OK )
 					initialize();  // one retry
 				err = m_bus->readBytes( addr, reg, count, data );
 				if( err != ESP_OK ){
-					// ESP_LOGW( FNAME,"Read after retry failed also, return with no data, len=0");
+					ESP_LOGW( FNAME,"Read after retry failed also, return with no data, len=0");
 					return 0;
-				}
+				}else
+					return count;
 			}
+			delay(10);
 		}
 	}
 	return count;
@@ -206,15 +210,12 @@ esp_err_t QMC5883L::initialize( int a_odr, int a_osr )
 
 	// Soft Reset
 	e1 = writeRegister( addr, REG_CONTROL2, SOFT_RST );
-	// delay(2);
-	delayMicroseconds(100);
+	delay(2);
 
 	// Enable ROL_PTN, Pointer roll over function.
 	e2 = writeRegister( addr, REG_CONTROL2, POL_PNT );
-
 	// Define SET/RESET period. Should be set to 1
 	e3 = writeRegister( addr, REG_RST_PERIOD, 1 );
-
 	// Set mesaurement data and start it in dependency of mode bit.
 	int used_osr = a_osr;
 	if( used_osr == 0 )
@@ -227,7 +228,6 @@ esp_err_t QMC5883L::initialize( int a_odr, int a_osr )
 	ESP_LOGI( FNAME, "initialize() dataRate: %d Oversampling: %d", used_odr, used_osr );
 
 	e4 = writeRegister( addr, REG_CONTROL1,	(used_osr << 6) | (range <<4) | (used_odr <<2) | MODE_CONTINUOUS );
-
 	if( (e1 + e2 + e3 + e4) == 0 ) {
 		ESP_LOGI( FNAME, "initialize() OK");
 		return ESP_OK;
@@ -246,56 +246,58 @@ esp_err_t QMC5883L::initialize( int a_odr, int a_osr )
  */
 bool QMC5883L::rawHeading()
 {
-#if 1
-  // calculate last call time.
-  static uint64_t lastCall = getMsTime();
-
-  uint64_t elapsed = getMsTime() - lastCall;
-  lastCall = getMsTime();
-#endif
-
-	// Check, if data are available
 	uint8_t data[6];
 	uint8_t status = 0;
-
-	// Read status register
-	uint8_t count = readRegister( addr, REG_STATUS, 1, &status );
-
-	if( count != 1 )
+	// Check, if data are available
+	// as sensor is outside the housing, there may be I2C noise, so we need retries
+	bool okay = false;
+	// Poll status until RDY or DOR
+	for( int i=1; i<10; i++ ){
+		esp_err_t ret = m_bus->readByte( addr, REG_STATUS, &status );
+		if( ret == ESP_OK ){
+			if( (status & STATUS_DRDY) || (status & STATUS_DOR )  ){
+				okay = true;
+				break;
+			}
+			else
+				ESP_LOGW( FNAME, "No new data,  N=%d  RDY%d  DOR%d", i, status & STATUS_DRDY, status & STATUS_DOR );
+		}
+		else{
+			// ESP_LOGW( FNAME, "read REG_STATUS failed, N=%d  RDY%d  DOR%d", i, status & STATUS_DRDY, status & STATUS_DOR );
+		}
+		delay( 10 );
+		//uint8_t count = readRegister( addr, REG_STATUS, 1, &status );
+	}
+	if( okay == false )
 	{
-		ESP_LOGE( FNAME, "read REG_STATUS FAILED, count=%d, status=%d", count, status );
+		// ESP_LOGE( FNAME, "read REG_STATUS FAILED");
 		return false;
 	}
-	// ESP_LOGI( FNAME, "REG_STATUS: %02x", status );
 
 	if( ( status & STATUS_OVL ) == true )
 	{
 		// Magnetic X-Y-Z data overflow has occurred, give out a warning only once
 	  if( overflowWarning == false )
 	    ESP_LOGW( FNAME, "read rawHeading detected a X-Y-Z data overflow." );
-
-    overflowWarning = true;
+        overflowWarning = true;
 		return false;
 	}
 
 	// Reset overflow warning, to get a current status of it.
 	overflowWarning = false;
 
-	if( ( status & STATUS_DRDY ) || (status & STATUS_DOR ) )
+    // Precondition already checked in loop before, point only reached if there is RDY or DOR
+	int count = readRegister( addr, REG_X_LSB, 6, data );
+	// Data can be read in every case
+	if( count == 6 )
 	{
-		// Data can be read in every case
-		if( readRegister( addr, REG_X_LSB, 6, data ) > 0 )
-		{
-			xraw = (int)( (int16_t)(( data[1] << 8 ) | data[0]) );
-			yraw = (int)( (int16_t)(( data[3] << 8 ) | data[2]) );
-			zraw = (int)( (int16_t)(( data[5] << 8 ) | data[4]) );
-			return true;
-		}
-		ESP_LOGE( FNAME, "read Register returned <= 0" );
+		xraw = (int)( (int16_t)(( data[1] << 8 ) | data[0]) );
+		yraw = (int)( (int16_t)(( data[3] << 8 ) | data[2]) );
+		zraw = (int)( (int16_t)(( data[5] << 8 ) | data[4]) );
+		// ESP_LOGI( FNAME, "X:%d Y:%d Z:%d  RDY:%d DOR:%d", xraw, yraw,zraw, status & STATUS_DRDY, status & STATUS_DOR );
+		return true;
 	}
-	else
-	  ESP_LOGW( FNAME, "No sensor data read, Status-Reg=0x%X, last call before=%lld ms",
-	            status, elapsed );
+	ESP_LOGE( FNAME, "read Register REG_X_LSB returned count != 6, count: %d", count );
 
 	return false;
 }
@@ -587,14 +589,17 @@ float QMC5883L::heading( bool *ok )
 	N++;
 	if( state == false )
 	{
-		ESP_LOGI(FNAME,"Magnetic sensor error %d, N:%d", errors, N );
 		errors++;
-		if( errors > 3 )
+		totalReadErrors++;
+		ESP_LOGI(FNAME,"Magnetic sensor error Reads:%d, Errors:%d", N, totalReadErrors );
+		if( errors > 10 )
 		{
 			ESP_LOGI(FNAME,"Magnetic sensor errors > 3: init mag sensor" );
 			//  reinitialize once crashed, one retry
 			if( initialize() != ESP_OK )
 				initialize();
+			*ok=false;
+			return 0.0;
 		}
 		if( errors > 50 ){  // survive 50 samples with constant heading if no valid reading
 			*ok = false;

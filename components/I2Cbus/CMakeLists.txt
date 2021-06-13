@@ -1,5 +1,6 @@
 set(COMPONENT_SRCS
-    "src/I2Cbus.cpp")
+    "src/I2Cbus.cpp"
+    "src/i2c.c")
 set(COMPONENT_ADD_INCLUDEDIRS "include")
 set(COMPONENT_REQUIRES
     driver

@@ -70,6 +70,7 @@ xSemaphoreHandle *i2cbus_mutex = 0;
 I2C_t i2c0 = i2cbus::I2C(I2C_NUM_0);
 I2C_t i2c1 = i2cbus::I2C(I2C_NUM_1);
 
+extern void i2c_set_alive_interval(i2c_port_t i2c_num, int interval);
 
 /* ^^^^^^
  * I2Cbus
@@ -95,6 +96,8 @@ esp_err_t I2C::begin(gpio_num_t sda_io_num, gpio_num_t scl_io_num, uint32_t clk_
 esp_err_t I2C::begin(gpio_num_t sda_io_num, gpio_num_t scl_io_num, gpio_pullup_t sda_pullup_en, gpio_pullup_t scl_pullup_en, uint32_t clk_speed) {
 	if( initDone[port] )
 		i2c_driver_delete(port);
+
+	i2c_set_alive_interval(port, 20 );
 
 	i2c_config_t conf;
 	memset( &conf, 0, sizeof(conf) );

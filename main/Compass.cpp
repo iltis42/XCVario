@@ -29,7 +29,7 @@ float Compass::m_magn_heading = 0;
 float Compass::m_true_heading_dev = 0;
 float Compass::m_magn_heading_dev = 0;
 bool Compass::m_headingValid = false;
-xSemaphoreHandle Compass::splineMutex = xSemaphoreCreateMutex();
+xSemaphoreHandle Compass::splineMutex = 0;
 tk::spline *Compass::deviationSpline = 0;
 std::vector<double>	Compass::X;
 std::vector<double>	Compass::Y;
@@ -37,6 +37,8 @@ std::map< double, double> Compass::devmap;
 int Compass::_tick = 0;
 CompassFilter Compass::m_cfmh;
 int Compass::_external_data = 0;
+
+TaskHandle_t *ctid = 0;
 
 /*
   Creates instance for I2C connection with passing the desired parameters.
@@ -67,6 +69,7 @@ Compass::~Compass()
  */
 float Compass::calculateHeading( bool *okIn )
 {
+	// ESP_LOGI( FNAME, "calculateHeading");
 	assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
 	if( _external_data ){
 		*okIn = true;
@@ -105,7 +108,24 @@ void Compass::deviationReload(){
 	recalcInterpolationSpline();
 }
 
+
+void Compass::compassT(void* arg ){
+	while(1){
+		TickType_t lastWakeTime = xTaskGetTickCount();
+		if( compass_enable.get() == true ){
+			bool hok;
+			compass.calculateHeading( &hok );
+			if( !hok )
+				ESP_LOGI( FNAME, "warning compass heading calculation error");
+		}
+		if( uxTaskGetStackHighWaterMark( ctid  ) < 256 )
+			ESP_LOGW(FNAME,"Warning Compass task stack low: %d bytes", uxTaskGetStackHighWaterMark( ctid ) );
+		vTaskDelayUntil(&lastWakeTime, 100/portTICK_PERIOD_MS);
+	}
+}
+
 void Compass::begin(){
+	splineMutex = xSemaphoreCreateMutex();
 	X.reserve(40);
 	Y.reserve(40);
 	deviationReload();
@@ -114,6 +134,11 @@ void Compass::begin(){
 		serial2_speed.set(0);  // switch off serial interface, we can do only alternatively
 	compass.initialize();
 }
+
+void Compass::start(){
+	xTaskCreatePinnedToCore(&compassT, "compassT", 2600, NULL, 12, ctid, 0);
+}
+
 
 /**
  * Returns the low pass filtered magnetic heading by considering
@@ -141,7 +166,6 @@ float Compass::rawHeading( bool *okIn )
  */
 float Compass::getDeviation( float heading )
 {
-
 	if( !deviationSpline )
 		return 0.0;
 	xSemaphoreTake(splineMutex,portMAX_DELAY );

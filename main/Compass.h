@@ -31,7 +31,7 @@ class CompassFilter
 {
 public:
 
-	CompassFilter( const float coefficientIn=0.2 );
+	CompassFilter( const float coefficientIn=0.15 );
 
 	~CompassFilter() {};
 
@@ -83,7 +83,10 @@ public:
 
 	~Compass();
 
+	static void compassT(void* arg );  // task for compass reading
+
 	void begin();
+	void start();
 
 	/**
 	 * This method must be called periodically in a fixed time raster. It Reads

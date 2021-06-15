@@ -43,18 +43,19 @@ At the begin i want to show a short Demo of the variometer, including sensitivit
 
 
 The design supports the follwing sensors:
-* TE Variometer
-* Airspeed
-* Barometric Altitude
+* TE Variometer (TE)
+* Airspeed (PI)
+* Barometric Altitude (BA)
 * Outside Temperature
 * Battery Voltage
+* Acceleration and Rotation
 
-The ESP32 module contains a bluetooth sender module, so we are able to transmit all data to XCSoar in [OpenVario format](https://github.com/iltis42/OpenIVario/blob/master/putty.log), so XCSoar can operate as full glide computer with TE-Vario, Barometric Altitude, Speed and more.
+The ESP32 module contains a bluetooth and WLAN sender module plus serial interfaces, so we are able to transmit wireless or wired all data to any navigation device running XCSoar, LK8000 and more in various formats as there is the native XCVario, Borgelt, Cambridge and Openvario format,so devices can operate as full glide computer with TE-Vario, Barometric Altitude, Speed and more.
 
 * [Handbücher Deutsch](https://github.com/iltis42/XCVario/blob/master/handbook)
 * [Handbuch Multilingual ->Translate](https://xcvario.de/handbuch)
 
-The Vario Prototype with 500 nits 2.4 inch IPS Technology LCD Display features a low power consumation of less that 1W, that equals to 70mA at 12.5V operating voltage. The Size is 68(H)x64(B)x35(T) mm, for a standard 57mm Instrument Panel. Weight is below 300 gramm.
+The Vario Prototype with 550 nits 2.4 inch IPS Technology LCD Display features a low power consumation of less that 1.2W, that equals to 100mA at 12.5V operating voltage. The Size is 68(H)x64(B)x35(T) mm, for a standard 57mm Instrument Panel. Weight is only about 170 gramm.
 
 The Soft- and Hardware features:
 
@@ -68,16 +69,17 @@ The Soft- and Hardware features:
 - Outside Temperatur Sensor
 - Battery Charge Indicator
 - Variometer display with adjustable range (1 m/s - 30 m/s), and damping ( 1s - 10s )
-- Bluetooth or Wifi Interface e.g. for Android devices running XC Soar
+- Bluetooth, Wifi or serial Interface to navigation devices (XCSoar, LK8000, etc).
 - Biderectional Sync of MacCready Value, Ballast and Bugs
 - Sync QNH from device
 - High precision barometric Altimeter 1 hPa (8 meter) absolute accuracy
-- Sunlight readable high contrast 500 nits 2.4 inch IPS Technology Display
+- Sunlight readable high contrast 550 nits 2.4 inch IPS Technology Display
 - Battery Voltage Indicator
 - Audio Switch for Vario/S2F Audio
 - Detailed Setup Menu
-- Serial to Bluetooth Bridge e.g. for FLARM
+- Serial to Bluetooth Bridge e.g. for FLARM and FLARM alert screen
 - Serial Output of OpenVarion Format NMEA data
 - Software Update OverTheAir (OTA) via WiFi Access Point
 - Attitude and Heading Reference System (AHRS) available in this hardware revision
+- Wind calculation in circling (with a Flarm) and in straight flight by magnet sensor extension
 

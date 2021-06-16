@@ -27,7 +27,8 @@ IN THE SOFTWARE.
 #include "sdkconfig.h"
 #include "esp_err.h"
 #include "esp_log.h"
-#include "driver/i2c.h"
+// #include "driver/i2c.h"
+#include "i2c.h"
 #include "driver/gpio.h"
 #include <iostream>
 #include <cstring>
@@ -69,8 +70,6 @@ xSemaphoreHandle *i2cbus_mutex = 0;
  ******************************************************************************/
 I2C_t i2c0 = i2cbus::I2C(I2C_NUM_0);
 I2C_t i2c1 = i2cbus::I2C(I2C_NUM_1);
-
-extern void i2c_set_alive_interval(i2c_port_t i2c_num, int interval);
 
 /* ^^^^^^
  * I2Cbus

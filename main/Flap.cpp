@@ -415,15 +415,27 @@ void Flap::drawBigBar( int ypos, int xpos, float wkf, float wksens ){
 #define BOXLEN  12
 #define FLAPLEN 14
 
-void Flap::drawWingSymbol( int ypos, int xpos, int wk, int wkalt ){
-	ucg->setColor( COLOR_WHITE );
+
+void Flap::drawWingSymbol( int ypos, int xpos, int wk, int wkalt, float wksens  ){
+	bool warn=false;
+	if( abs( wk - wksens) > 1 )
+		warn = true;
+	if(warn){
+		ucg->setColor( COLOR_RED );
+	}else{
+		ucg->setColor( COLOR_WHITE );
+	}
 	ucg->drawDisc( xpos, ypos, DISCRAD, UCG_DRAW_ALL );
 	ucg->drawBox( xpos, ypos-DISCRAD, BOXLEN, DISCRAD*2+1  );
 	ucg->setColor( COLOR_BLACK );
 	ucg->drawTriangle( xpos+DISCRAD+BOXLEN-2, ypos-DISCRAD,
 			xpos+DISCRAD+BOXLEN-2, ypos+DISCRAD+1,
 			xpos+DISCRAD+BOXLEN-2+FLAPLEN, ypos+wkalt*4 );
-	ucg->setColor( COLOR_GREEN );
+	if(warn){
+		ucg->setColor( COLOR_RED );
+	}else{
+		ucg->setColor( COLOR_GREEN );
+	}
 	ucg->drawTriangle( xpos+DISCRAD+BOXLEN-2, ypos-DISCRAD,
 			xpos+DISCRAD+BOXLEN-2, ypos+DISCRAD+1,
 			xpos+DISCRAD+BOXLEN-2+FLAPLEN, ypos+wk*4 );

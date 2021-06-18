@@ -529,6 +529,10 @@ void Audio::dactask(void* arg )
 					}
 				}
 				// ESP_LOGI(FNAME, "sound %d, ht %d", sound, hightone );
+				if( volume_change ){
+					Poti.writeWiper( (*p_wiper) );
+					cur_wiper = (*p_wiper);
+				}
 				if( sound ){
 					// ESP_LOGI(FNAME, "have sound");
 					if( !sound_on ) {

@@ -583,7 +583,7 @@ void Protocols::parseNMEA( char *astr ){
 					QNH.set( _qnh );
 					_qnh_prev = _qnh;
 				}
-				tas = Units::knots2kmh( _tas )/100;
+				tas = Units::ms2kmh( _tas )/100;    // True airspeed in 100ths of Meters per second
 				ias = Atmosphere::IAS( tas , alt, temperature );
 				TE = Units::knots2ms( _te - 200 )/10;
 				aTE += (TE - aTE)* (1/(10*vario_av_delay.get()));

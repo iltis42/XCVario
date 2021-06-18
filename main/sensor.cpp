@@ -411,7 +411,7 @@ void readBMP(void *pvParameters){
 
 		Flap::progress();
 		xSemaphoreTake(xMutex,portMAX_DELAY );
-		baroP = baroSensor->readPressure(ok);   // 5x per second
+		baroP = baroSensor->readPressure(ok);   // 10x per second
 		// ESP_LOGI(FNAME,"Baro Pressure: %4.3f", baroP );
 		float altSTD = baroSensor->calcAVGAltitudeSTD( baroP );
 		if( alt_select.get() == 0 ) // TE

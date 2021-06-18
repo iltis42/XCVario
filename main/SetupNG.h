@@ -353,6 +353,7 @@ extern SetupNG<float>  		core_climb_min;
 extern SetupNG<float>  		core_climb_history;
 extern SetupNG<float>  		elevation;
 extern SetupNG<float>  		default_volume;
+extern SetupNG<float>  		max_volume;
 extern SetupNG<float>  		s2f_deadband;
 extern SetupNG<float>  		s2f_deadband_neg;
 extern SetupNG<float>  		s2f_delay;

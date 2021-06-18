@@ -88,7 +88,7 @@ SetupNG<float>  		default_volume( "DEFAULT_VOL", 10.0 );
 SetupNG<float>  		max_volume( "MAX_VOL", 50.0 );
 SetupNG<float>  		s2f_deadband( "DEADBAND_S2F", 10.0 );
 SetupNG<float>  		s2f_deadband_neg( "DB_S2F_NEG", -10.0 );
-SetupNG<float>  		s2f_delay( "S2F_DELAY", 1.0 );
+SetupNG<float>  		s2f_delay( "S2F_DELAY", 5.0 );
 SetupNG<float>  		factory_volt_adjust("FACT_VOLT_ADJ" , 0.00815, false );
 SetupNG<float>  		bugs( "BUGS", 0.0 );
 

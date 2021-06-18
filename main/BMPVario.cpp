@@ -24,8 +24,7 @@ double BMPVario::readAVGTE() {
 }
 
 float BMPVario::readS2FTE() {
-	_S2FTE += ( (float)_TEF - _S2FTE ) * ( 1/(s2f_delay.get() * 10) );
-	return _S2FTE;
+	return _TEF;
 }
 
 

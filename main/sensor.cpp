@@ -309,7 +309,7 @@ void doAudio(){
 	float aTES2F = bmpVario.readS2FTE();
 	float netto = aTES2F - polar_sink;
 	as2f = Speed2Fly.speed( netto, !Switch::cruiseMode() );
-	s2f_delta = as2f - ias;
+	s2f_delta = s2f_delta + ((as2f - ias) - s2f_delta)* (1/(s2f_delay.get()*2)); // low pass damping moved to the correct place
 	// ESP_LOGI( FNAME, "te: %f, polar_sink: %f, netto %f, s2f: %f  delta: %f", te, polar_sink, netto, as2f, s2f_delta );
 	if( vario_mode.get() == VARIO_NETTO || (Switch::cruiseMode() &&  (vario_mode.get() == CRUISE_NETTO)) ){
 		if( netto_mode.get() == NETTO_RELATIVE )

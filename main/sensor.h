@@ -12,13 +12,15 @@
 #include <hal/gpio_types.h>
 #include "SetupMenu.h"
 #include "S2F.h"
-#include "Wind.h"
+#include "StraightWind.h"
 
-extern Wind theWind;
+extern StraightWind theWind;
 
 extern bool haveMPU;
 extern bool ahrsKeyValid;
 extern SetupMenu  *Menu;
+
+extern e_wireless_type wireless;
 
 // MPU6050 sensor
 extern mpud::float_axes_t accelG;

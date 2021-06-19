@@ -26,6 +26,10 @@ public:
 			return( kmh * 0.277778 );
 	};
 
+	static inline float ms2kmh( float ms ){
+			return( ms * 3.6 );
+	};
+
 	static inline float knots2kmh( float knots ){
 				return( knots * 1.852 );
 	};

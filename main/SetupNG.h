@@ -67,8 +67,8 @@ typedef enum e_hardware_rev { HW_UNKNOWN=0, HW_LONG_VARIO=1, HW_XCVARIO_20=2, HW
 typedef enum e_gload_mode { GLOAD_OFF=0, GLOAD_DYNAMIC=1, GLOAD_ALWAYS_ON=2 } e_gload_mode_t;
 typedef enum e_windanalyser_mode { WA_OFF=0, WA_STRAIGHT=1, WA_CIRCLING=2, WA_BOTH=3 } e_windanalyser_mode_t;
 typedef enum e_battery_display { BAT_PERCENTAGE, BAT_VOLTAGE, BAT_VOLTAGE_BIG } e_battery_display_t;
-typedef enum e_wind_display { WD_NONE, WD_DIGITS, WD_ARROW, WD_BOTH } e_wind_display_t;
-typedef enum e_wind_reference { WR_NORTH, WR_HEADING } e_wind_reference_t;
+typedef enum e_wind_display { WD_NONE, WD_DIGITS, WD_ARROW, WD_BOTH, WD_COMPASS } e_wind_display_t;
+typedef enum e_wind_reference { WR_NORTH, WR_HEADING, WR_GPS_COURSE } e_wind_reference_t;
 
 typedef enum e_sync { SYNC_NONE, SYNC_FROM_MASTER, SYNC_FROM_CLIENT, SYNC_BIDIR } e_sync_t;       // determines if data is synched from/to client
 typedef enum e_reset { RESET_NO, RESET_YES } e_reset_t;   // determines if data is reset to defaults on factory reset
@@ -93,6 +93,7 @@ public:
 	static SetupCommon * getMember( const char * key );
 	static void syncEntry( int entry );
 	static int numEntries() { return entries.size(); };
+	static bool factoryReset();
 private:
 	static char _ID[14];
 };
@@ -331,7 +332,7 @@ extern SetupNG<int>  		chopping_mode;
 extern SetupNG<int>  		chopping_style;
 extern SetupNG<int>  		amplifier_shutdown;
 
-extern SetupNG<int>  		blue_enable;
+extern SetupNG<int>  		wireless_type;
 extern SetupNG<int>  		factory_reset;
 extern SetupNG<int>  		audio_range;
 extern SetupNG<int>  		alt_select;
@@ -339,6 +340,7 @@ extern SetupNG<int>  		fl_auto_transition;
 extern SetupNG<int>  		alt_display_mode;
 extern SetupNG<float>  		transition_alt;
 extern SetupNG<int>  		glider_type;
+extern SetupNG<int>  		glider_type_index;
 extern SetupNG<int>  		ps_display;
 
 extern SetupNG<float>  		as_offset;
@@ -351,6 +353,7 @@ extern SetupNG<float>  		core_climb_min;
 extern SetupNG<float>  		core_climb_history;
 extern SetupNG<float>  		elevation;
 extern SetupNG<float>  		default_volume;
+extern SetupNG<float>  		max_volume;
 extern SetupNG<float>  		s2f_deadband;
 extern SetupNG<float>  		s2f_deadband_neg;
 extern SetupNG<float>  		s2f_delay;
@@ -483,7 +486,8 @@ extern SetupNG<float> 		wind_as_calibration;
 extern SetupNG<int> 		wind_display;
 extern SetupNG<int> 		wind_reference;
 extern SetupNG<float> 		wind_max_deviation;
-
+extern SetupNG<float>       max_circle_wind_diff;
+extern SetupNG<float>       min_circle_wind_quality;
 
 extern int g_col_background;
 extern int g_col_highlight;

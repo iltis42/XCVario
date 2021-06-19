@@ -4,7 +4,7 @@
 #include <esp_log.h>
 #include "esp_wifi.h"
 #include <esp_http_server.h>
-#include "esp_event_loop.h"
+#include "esp_event.h"
 #include "freertos/event_groups.h"
 
 #include "OTAServer.h"
@@ -72,7 +72,7 @@ static esp_err_t event_handler(void *ctx, system_event_t *event)
 		case SYSTEM_EVENT_AP_STACONNECTED:  	/**< a station connected to ESP32 soft-AP */
 												printf("SYSTEM_EVENT_AP_STACONNECTED\r\n");
 		
-												ESP_LOGI("WiFI-AP",	"station:"MACSTR" join, AID=%d", MAC2STR(event->event_info.sta_connected.mac),	event->event_info.sta_connected.aid);
+												ESP_LOGI("WiFI-AP",	"station: %02x:%02x:%02x:%02x:%02x:%02x join, AID=%d", MAC2STR(event->event_info.sta_connected.mac),	event->event_info.sta_connected.aid);
 												xEventGroupSetBits(wifi_event_group, AP_CLIENT_CONNECTED_BIT);
 												/* Start the web server */
 												if (*server == NULL) 
@@ -83,7 +83,7 @@ static esp_err_t event_handler(void *ctx, system_event_t *event)
 		
 	    case SYSTEM_EVENT_AP_STADISCONNECTED:	/**< a station disconnected from ESP32 soft-AP */
 												printf("SYSTEM_EVENT_AP_STADISCONNECTED\r\n");
-												ESP_LOGI("WiFI-AP",	"station:"MACSTR"leave, AID=%d", MAC2STR(event->event_info.sta_disconnected.mac),	event->event_info.sta_disconnected.aid);
+												ESP_LOGI("WiFI-AP",	"station: %02x:%02x:%02x:%02x:%02x:%02x leave, AID=%d", MAC2STR(event->event_info.sta_disconnected.mac),	event->event_info.sta_disconnected.aid);
 												xEventGroupSetBits(wifi_event_group, AP_CLIENT_DISCONNECTED_BIT);
 												/* Stop the web server */
 												if (*server) 
@@ -207,19 +207,15 @@ void init_wifi_softap(void *arg)
 	
 	
 	// configure the wifi connection and start the interface
-	wifi_config_t ap_config = {
-		.ap = {
-			.ssid = CONFIG_AP_SSID,
-		.password = CONFIG_AP_PASSPHARSE,
-		.ssid_len = 0,
-		.channel = 0,
-		.authmode = AP_AUTHMODE,
-		.ssid_hidden = AP_SSID_HIDDEN,
-		.max_connection = AP_MAX_CONNECTIONS,
-		.beacon_interval = AP_BEACON_INTERVAL,			
-		},
-	};
-	
+	wifi_config_t ap_config;
+	strcpy( (char *)(ap_config.ap.ssid), CONFIG_AP_SSID );
+	strcpy( (char*)ap_config.ap.password, CONFIG_AP_PASSPHARSE );
+	ap_config.ap.ssid_len = 0;
+	ap_config.ap.channel = 0;
+	ap_config.ap.authmode = AP_AUTHMODE;
+	ap_config.ap.ssid_hidden = AP_SSID_HIDDEN;
+	ap_config.ap.max_connection = AP_MAX_CONNECTIONS;
+	ap_config.ap.beacon_interval = AP_BEACON_INTERVAL;
 	
 	ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &ap_config));
 	
@@ -260,15 +256,11 @@ void init_wifi_station(void *arg)
 	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
 	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
 	
+	wifi_config_t wifi_config;
+	strcpy( (char *)wifi_config.ap.ssid, CONFIG_STATION_SSID );
+	strcpy( (char *)wifi_config.ap.password, CONFIG_STATION_PASSPHRASE );
 	
-	wifi_config_t wifi_config = {
-		.sta = {
-			.ssid = CONFIG_STATION_SSID,
-		.password = CONFIG_STATION_PASSPHRASE
-		},
-	};
-
-	ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
+	ESP_ERROR_CHECK(esp_wifi_set_config((wifi_interface_t)ESP_IF_WIFI_STA, &wifi_config));
 	ESP_ERROR_CHECK(esp_wifi_start());
 
 	ESP_LOGI("WiFi", "Station Set to SSID:%s Pass:%s\r\n", CONFIG_STATION_SSID, CONFIG_STATION_PASSPHRASE);

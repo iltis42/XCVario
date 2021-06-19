@@ -31,7 +31,7 @@ public:
 	static void setup();
 	static void incVolume( int steps );
 	static void decVolume( int steps );
-	static inline void setVolume( int vol ) {wiper = vol;};
+	static void setVolume( int vol );
 
 	static void alarm( bool enable, int volume=100, e_audio_alarm_type_t alarmType=AUDIO_ALARM_STALL );
 	static bool selfTest();
@@ -49,7 +49,6 @@ private:
     static void calcS2Fmode();
     static bool inDeadBand( float te );
 	static bool lookup( float f, int& div, int &step );
-	static bool volumeScale( int vol, int& scale, int &wiper );
 	static void enableAmplifier( bool enable );  // frue ON, false OFF
 	static void  evaluateChopping();
 
@@ -62,7 +61,9 @@ private:
 	static bool _testmode;
 	static bool sound_on;
     static float _range;
+    static uint16_t *p_wiper;
     static uint16_t wiper;
+    static uint16_t wiper_s2f;
     static uint16_t cur_wiper;
     static float maxf;
     static float minf;
@@ -76,7 +77,8 @@ private:
     static bool hightone;
     static bool _alarm_mode;
     static int  defaultDelay;
-    static float _vol_back;
+    static uint16_t _vol_back;
+    static uint16_t _vol_back_s2f;
     static bool  _s2f_mode_back;
     static int   _tonemode_back;
     static int tick;

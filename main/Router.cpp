@@ -61,6 +61,22 @@ bool Router::pullMsg( RingBufCPP<SString, QUEUE_SIZE>& q, SString& s ){
 	return false;
 }
 
+
+int Router::pullBlock( RingBufCPP<SString, QUEUE_SIZE>& q, char *block ){
+	int size = 0;
+	while( !q.isEmpty() ){
+		SString s;
+		portENTER_CRITICAL_ISR(&btmux);
+		q.pull(  &s );
+		portEXIT_CRITICAL_ISR(&btmux);
+		memcpy( block+size, s.c_str(), s.length() );
+		size += s.length();
+		if( (size + 80) >= 512 )
+			break;
+	}
+	return size;
+}
+
 // XCVario Router
 void Router::sendXCV(char * s){
 	// ESP_LOGV( FNAME,"XCVario message %s",s);
@@ -76,11 +92,11 @@ void Router::sendXCV(char * s){
 void Router::routeXCV(){
 	SString xcv;
 	if( pullMsg( xcv_rx_q, xcv ) ){
-		if( blue_enable.get() == WL_BLUETOOTH ) {
+		if( wireless == WL_BLUETOOTH ) {
 			if( forwardMsg( xcv, bt_tx_q ) )
 				ESP_LOGV(FNAME,"Send to BT device, XCV received %d bytes", xcv.length() );
 		}
-		else if( blue_enable.get() == WL_WLAN || blue_enable.get() == WL_WLAN_CLIENT )
+		else if( wireless == WL_WLAN || wireless == WL_WLAN_CLIENT )
 		{
 			if( forwardMsg( xcv, wl_vario_tx_q ) )
 				ESP_LOGV(FNAME,"Send to WLAN port 8880, XCV received %d bytes", xcv.length() );
@@ -100,10 +116,10 @@ void Router::routeS1(){
 	if( pullMsg( s1_rx_q, s1) ){
 		ESP_LOGD(FNAME,"ttyS1 RX len: %d bytes, Q:%d", s1.length(), bt_tx_q.isFull() );
 		ESP_LOG_BUFFER_HEXDUMP(FNAME,s1.c_str(),s1.length(), ESP_LOG_DEBUG);
-		if( blue_enable.get() == WL_WLAN )
+		if( wireless == WL_WLAN )
 			if( forwardMsg( s1, wl_flarm_tx_q ))
 				ESP_LOGV(FNAME,"ttyS1 RX bytes %d forward to wl_flarm_tx_q port 8881", s1.length() );
-		if( blue_enable.get() == WL_BLUETOOTH )
+		if( wireless == WL_BLUETOOTH )
 			if( forwardMsg( s1, bt_tx_q ))
 				ESP_LOGV(FNAME,"ttyS1 RX bytes %d forward to bt_tx_q", s1.length() );
 		if( serial1_rxloop.get() )  // only 0=DISABLE | 1=ENABLE
@@ -122,10 +138,10 @@ void Router::routeS2(){
 	if( pullMsg( s2_rx_q, s2) ){
 		ESP_LOGD(FNAME,"ttyS2 RX len: %d bytes, Q:%d", s2.length(), bt_tx_q.isFull() );
 		ESP_LOG_BUFFER_HEXDUMP(FNAME,s2.c_str(),s2.length(), ESP_LOG_DEBUG);
-		if( blue_enable.get() == WL_WLAN )
+		if( wireless == WL_WLAN )
 			if( forwardMsg( s2, wl_aux_tx_q ))
 				ESP_LOGV(FNAME,"ttyS2 RX bytes %d forward to wl_aux_tx_q port 8882", s2.length() );
-		if( blue_enable.get() == WL_BLUETOOTH )
+		if( wireless == WL_BLUETOOTH )
 			if( forwardMsg( s2, bt_tx_q ))
 				ESP_LOGV(FNAME,"ttyS2 RX bytes %d forward to bt_tx_q", s2.length() );
 		if( serial2_tx.get() & RT_S1 )
@@ -138,7 +154,7 @@ void Router::routeS2(){
 // route messages from WLAN
 void Router::routeWLAN(){
 	SString wlmsg;
-	if( blue_enable.get() == WL_WLAN || blue_enable.get() == WL_WLAN_CLIENT ){
+	if( wireless == WL_WLAN || wireless == WL_WLAN_CLIENT ){
 		// Route received data from WLAN ports
 		if( pullMsg( wl_vario_rx_q, wlmsg) ){
 			ESP_LOGV(FNAME,"From WLAN port 8880 RX parse NMEA %s", wlmsg.c_str() );
@@ -173,7 +189,7 @@ void Router::routeWLAN(){
 
 // route messages from Bluetooth
 void Router::routeBT(){
-	if( blue_enable.get() != WL_BLUETOOTH )
+	if( wireless != WL_BLUETOOTH )
 		return;
 	SString bt;
 	if( pullMsg( bt_rx_q, bt ) ){

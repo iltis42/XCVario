@@ -140,6 +140,8 @@ public:
 	  return calibrationRunning;
 	}
 
+	int getReadError(){ return totalReadErrors; };
+
 	/**
 	 * Read bytes from the chip.
 	 * Return the number of read bytes or 0 in error case.
@@ -197,4 +199,5 @@ private:
 	static int errors;
 	static bool calibrationRunning;
 	static float _heading;
+	static int   totalReadErrors;
 };

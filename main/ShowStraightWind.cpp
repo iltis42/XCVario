@@ -19,7 +19,7 @@ Last update: 2021-04-18
 
 #include "logdef.h"
 #include "esp_log.h"
-#include "Wind.h"
+#include "StraightWind.h"
 #include "ShowStraightWind.h"
 #include "SetupNG.h"
 #include "Units.h"

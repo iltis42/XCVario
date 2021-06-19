@@ -1,5 +1,5 @@
 /*
- * Wind.h
+ * StraightWind.h
  *
  *  Created on: Mar 21, 2021
  *
@@ -12,11 +12,11 @@
 #include <sys/time.h>
 #include "vector.h"
 
-class Wind
+class StraightWind
 {
 public:
-	Wind();
-	virtual ~Wind() {};
+	StraightWind();
+	virtual ~StraightWind() {};
 
 	void begin();
 

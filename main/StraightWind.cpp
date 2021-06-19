@@ -15,7 +15,7 @@
 #include "Compass.h"
 #include "Flarm.h"
 #include "SetupNG.h"
-#include "Wind.h"
+#include "StraightWind.h"
 #include "Units.h"
 #include "sensor.h"
 #include "math.h"
@@ -25,7 +25,7 @@
 #define D2R(x) ((x)/57.2957795131)
 #define R2D(x) ((x)*57.2957795131)
 
-Wind::Wind() :
+StraightWind::StraightWind() :
 nunberOfSamples( 0 ),
 measurementStart( 0 ),
 tas( 0.0 ),
@@ -58,7 +58,7 @@ status( "Initial" )
 {
 }
 
-void Wind::begin(){
+void StraightWind::begin(){
 	if( compass_dev_auto.get() )
 		airspeedCorrection = wind_as_calibration.get();
 }
@@ -66,9 +66,9 @@ void Wind::begin(){
 /**
  * Starts a new wind measurement cycle.
  */
-void Wind::start()
+void StraightWind::start()
 {
-	if( blue_enable.get() == WL_WLAN_CLIENT )
+	if( wireless == WL_WLAN_CLIENT )
 		return;
 	if( Flarm::gpsStatus() == true ) {
 		// Ground speed in Km/h
@@ -108,7 +108,7 @@ void Wind::start()
     tcStart = Vector::normalizeDeg( trueCourse );
 }
 
-void Wind::tick(){
+void StraightWind::tick(){
 	_age++;
 	circlingWindAge++;
 }
@@ -119,27 +119,65 @@ void Wind::tick(){
  *
  * Returns true, if a new wind was calculated.
  */
-bool Wind::calculateWind()
+bool StraightWind::calculateWind()
 {
-	if( blue_enable.get() == WL_WLAN_CLIENT )
+	// ESP_LOGI(FNAME,"Straight wind, calculateWind()");
+	if( wireless == WL_WLAN_CLIENT ){
+		ESP_LOGI(FNAME,"We are client device, get wind from master");
 		return false;
-	// ESP_LOGI(FNAME,"calculateWind flightMode: %d", CircleWind::getFlightMode() );
-	if( CircleWind::getFlightMode() != straight )
+	}
+	// ESP_LOGI(FNAME,"calculateWind flightMode: %d", CircleStraightWind::getFlightMode() );
+	if( CircleWind::getFlightMode() != straight ){
+		// ESP_LOGI(FNAME,"In Circling, stop ");
 		return false;
+	}
 	// Check if wind requirements are fulfilled
 	if( compass_enable.get() == false || compass_calibrated.get() == false || wind_enable.get() == WA_OFF ) {
+		ESP_LOGI(FNAME,"Compass issues: ENA:%d CAL:%d WIND_ENA:%d, abort", compass_enable.get(), compass_calibrated.get(), wind_enable.get() );
+		if( !compass_enable.get() )
+			status="Comps Dis";
+		if( !compass_calibrated.get() )
+			status="Comps NoCal";
+		if( !wind_enable.get() )
+			status="Wind NoEna";
 		return false;
 	}
 
 	// Check GPRMC data status, GS, TC and TH
-	if( Flarm::gpsStatus() == false || groundSpeed == -1.0 ||
-			trueCourse == -1.0 || trueHeading == -1.0 ) {
-		// GPS status or GS, TC and TH start data are not valid
+	if( Flarm::gpsStatus() == false ) {
+		// GPS status not valid
 		start();
-		ESP_LOGI(FNAME,"Restart Cycle: GPS Status bad or GS invalid");
+		ESP_LOGI(FNAME,"Restart Cycle: GPS Status invalid");
 		status="Bad GPS";
+		gpsStatus = false;
 		return false;
 	}
+	gpsStatus = true;
+
+	if(  groundSpeed == -1.0 ) {
+		// GS not valid
+		start();
+		ESP_LOGI(FNAME,"Restart Cycle: GS invalid");
+		status="GS invalid";
+		return false;
+	}
+
+	if( trueCourse == -1.0 ) {
+		// TC are not valid
+		start();
+		ESP_LOGI(FNAME,"Restart Cycle: TC invalid");
+		status="Bad TC";
+		return false;
+	}
+
+	if( trueHeading == -1.0 ) {
+		// TH start data are not valid
+		start();
+		ESP_LOGI(FNAME,"Restart Cycle: True Heading invalid");
+		status="Bad TH";
+		return false;
+	}
+
 	// Get current ground speed in km/h
 	double cgs = Units::knots2kmh( Flarm::getGndSpeedKnots() );
 	float gsdelta = fabs( groundSpeed - cgs );
@@ -165,6 +203,7 @@ bool Wind::calculateWind()
 		status="AS Unstable";
 		return false;
 	}
+	// ESP_LOGI(FNAME,"Straight Wind calculate GS:%3.2f TC%3.2f TH:%3.2f TAS:%3.2f ", groundSpeed, trueCourse, trueHeading, ctas  );
 	if( airspeed_jitter_tmp < tasdelta )
 		airspeed_jitter_tmp = tasdelta;
 	// ESP_LOGI(FNAME,"++++++ TAS %3.1f GS: %3.1f GSJ%3.2f  ASJ %3.2f", tas, cgs, groundspeed_jitter, airspeed_jitter );
@@ -196,6 +235,7 @@ bool Wind::calculateWind()
 		// No valid heading available
 		start();
 		status="No MH";
+		ESP_LOGI(FNAME,"Restart Cycle: No magnetic heading");
 		return false;
 	}
 
@@ -238,6 +278,9 @@ bool Wind::calculateWind()
 	// Calculate average true heading TH
 	averageTH += Vector::angleDiffDeg( cth, averageTH ) * 0.1;
 
+	averageTH = Vector::normalizeDeg( averageTH );
+	averageTC = Vector::normalizeDeg( averageTC );
+
 	ESP_LOGI(FNAME,"%d TC: %3.1f (avg:%3.1f) GS:%3.1f TH: %3.1f (avg:%3.1f) IAS: %3.1f", nunberOfSamples, ctc, averageTC, cgs, cth, averageTH, ctas );
 	// ESP_LOGI(FNAME,"avTC: %3.1f avTH:%3.1f ",averageTC,averageTH  );
 
@@ -259,8 +302,6 @@ bool Wind::calculateWind()
 		// WCA in radians
 		double tas = sumTas / nos;
 		averageGS = sumGroundSpeed / nos;
-		averageTH = Vector::normalizeDeg( averageTH );
-		averageTC = Vector::normalizeDeg( averageTC );
 		airspeed_jitter = airspeed_jitter_tmp;
 		groundspeed_jitter = groundspeed_jitter_tmp;
 		airspeed_jitter_tmp = 0;
@@ -275,7 +316,7 @@ bool Wind::calculateWind()
 }
 
 // length (or speed) of third vector in windtriangle
-double Wind::calculateSpeed( double angle1, double speed1, double angle2, double speed2  ){
+double StraightWind::calculateSpeed( double angle1, double speed1, double angle2, double speed2  ){
 	double delta = Vector::normalize( D2R( angle2 - angle1 ) );
 	// Cosinus sentence: c^2 = a^2 + b^2 − 2 * a * b * cos( α ) for wind speed in km/h
 	return sqrt( (speed2 * speed2) + (speed1 * speed1 ) - ( 2 * speed2 * speed1 * cos( delta ) ) );
@@ -285,7 +326,7 @@ double Wind::calculateSpeed( double angle1, double speed1, double angle2, double
 // wind direction calculation taken from here:
 // view-source:http://www.owoba.de/fliegerei/flugrechner.html
 // direction in degrees of third vector in windtriangle
-double Wind::calculateAngle( double angle1, double speed1, double angle2, double speed2  ){
+double StraightWind::calculateAngle( double angle1, double speed1, double angle2, double speed2  ){
 	ESP_LOGI(FNAME,"calculateAngle: angle1:%3.1f speed1:%3.1f angle2:%3.1f speed2:%3.1f", angle1, speed1, angle2, speed2 );
 	double tcrad = D2R( angle1 );
 	double thrad = D2R( angle2 );
@@ -295,7 +336,7 @@ double Wind::calculateAngle( double angle1, double speed1, double angle2, double
 	return( Vector::normalizeDeg( R2D( ang ) ) );  // convert radian to degree
 }
 
-void Wind::calculateWind( double tc, double gs, double th, double tas  ){
+void StraightWind::calculateWind( double tc, double gs, double th, double tas  ){
 	ESP_LOGI(FNAME,"calculateWind: TC:%3.1f GS:%3.1f TH:%3.1f TAS:%3.1f", tc, gs, th, tas );
 	// Wind correction angle WCA
 	if( gs < 5 ){
@@ -345,7 +386,7 @@ void Wind::calculateWind( double tc, double gs, double th, double tas  ){
 }
 
 
-void Wind::newCirclingWind( float angle, float speed ){
+void StraightWind::newCirclingWind( float angle, float speed ){
 	ESP_LOGI(FNAME,"New good circling wind %3.2f°/%3.2f", angle, speed );
 	circlingWindDir = angle;
 	circlingWindDir += 180;      // revers windvector
@@ -356,7 +397,7 @@ void Wind::newCirclingWind( float angle, float speed ){
 	circlingWindAge = 0;
 }
 
-void Wind::test()
+void StraightWind::test()
 {    // Class Test, check here the results: http://www.owoba.de/fliegerei/flugrechner.html
 	calculateWind( 90, 100, 0, 100 );
 	if( int( windSpeed ) != 141 || int(windDir +0.5) != 135 )

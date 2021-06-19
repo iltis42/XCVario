@@ -25,7 +25,8 @@ IN THE SOFTWARE.
 #define _I2CBUS_HPP_
 
 #include <stdint.h>
-#include "driver/i2c.h"
+// #include "driver/i2c.h"
+#include "i2c.h"
 #include "driver/gpio.h"
 #include "esp_err.h"
 

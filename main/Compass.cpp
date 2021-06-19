@@ -29,14 +29,16 @@ float Compass::m_magn_heading = 0;
 float Compass::m_true_heading_dev = 0;
 float Compass::m_magn_heading_dev = 0;
 bool Compass::m_headingValid = false;
-xSemaphoreHandle Compass::splineMutex = xSemaphoreCreateMutex();
+xSemaphoreHandle Compass::splineMutex = 0;
 tk::spline *Compass::deviationSpline = 0;
 std::vector<double>	Compass::X;
 std::vector<double>	Compass::Y;
 std::map< double, double> Compass::devmap;
 int Compass::_tick = 0;
 CompassFilter Compass::m_cfmh;
-bool Compass::_external_data = false;
+int Compass::_external_data = 0;
+
+TaskHandle_t *ctid = 0;
 
 /*
   Creates instance for I2C connection with passing the desired parameters.
@@ -67,6 +69,7 @@ Compass::~Compass()
  */
 float Compass::calculateHeading( bool *okIn )
 {
+	// ESP_LOGI( FNAME, "calculateHeading");
 	assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
 	if( _external_data ){
 		*okIn = true;
@@ -81,26 +84,15 @@ float Compass::calculateHeading( bool *okIn )
 		// ESP_LOGW( FNAME, "magneticHeading() error return from heading()");
 		return 0.0;
 	}
-	m_magn_heading = m_cfmh.filter( new_heading );
+	 // Correct magnetic heading in case of over/underflow
+	m_magn_heading = Vector::normalizeDeg( m_cfmh.filter( new_heading ) );
 	m_headingValid = true;
-	m_magn_heading_dev = m_magn_heading + getDeviation( m_magn_heading );
-
-  // Correct magnetic heading in case of over/underflow
-  if( m_magn_heading_dev >= 360.0 )
-    m_magn_heading_dev -= 360.0;
-  else if( m_magn_heading_dev < 0.0 )
-    m_magn_heading_dev += 360.0;
+	m_magn_heading_dev = Vector::normalizeDeg( m_magn_heading + getDeviation( m_magn_heading ) );
 
 	// If declination is set, calculate true heading including deviation
 	if(  compass_declination.get() != 0.0 )
 	  {
-	    m_true_heading_dev = m_magn_heading_dev + compass_declination.get();
-
-	    // Correct true heading in case of over/underflow
-	    if( m_true_heading_dev >= 360.0 )
-	      m_true_heading_dev -= 360.0;
-	    else if( m_true_heading_dev < 0.0 )
-	      m_true_heading_dev += 360.0;
+	    m_true_heading_dev = Vector::normalizeDeg( m_magn_heading_dev + compass_declination.get() );  // Correct true heading in case of over/underflow
 	  }
 	else
 		m_true_heading_dev = m_magn_heading_dev;
@@ -116,7 +108,24 @@ void Compass::deviationReload(){
 	recalcInterpolationSpline();
 }
 
+
+void Compass::compassT(void* arg ){
+	while(1){
+		TickType_t lastWakeTime = xTaskGetTickCount();
+		if( compass_enable.get() == true ){
+			bool hok;
+			compass.calculateHeading( &hok );
+			if( !hok )
+				ESP_LOGI( FNAME, "warning compass heading calculation error");
+		}
+		if( uxTaskGetStackHighWaterMark( ctid  ) < 256 )
+			ESP_LOGW(FNAME,"Warning Compass task stack low: %d bytes", uxTaskGetStackHighWaterMark( ctid ) );
+		vTaskDelayUntil(&lastWakeTime, 100/portTICK_PERIOD_MS);
+	}
+}
+
 void Compass::begin(){
+	splineMutex = xSemaphoreCreateMutex();
 	X.reserve(40);
 	Y.reserve(40);
 	deviationReload();
@@ -125,6 +134,11 @@ void Compass::begin(){
 		serial2_speed.set(0);  // switch off serial interface, we can do only alternatively
 	compass.initialize();
 }
+
+void Compass::start(){
+	xTaskCreatePinnedToCore(&compassT, "compassT", 2600, NULL, 12, ctid, 0);
+}
+
 
 /**
  * Returns the low pass filtered magnetic heading by considering
@@ -152,7 +166,6 @@ float Compass::rawHeading( bool *okIn )
  */
 float Compass::getDeviation( float heading )
 {
-
 	if( !deviationSpline )
 		return 0.0;
 	xSemaphoreTake(splineMutex,portMAX_DELAY );
@@ -337,9 +350,28 @@ void Compass::saveDeviation(){
 float Compass::trueHeading( bool *okIn )
 {
 	assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
-	*okIn = m_headingValid;
-	return m_true_heading_dev;
+	if( _external_data ){  // Simulation data
+			*okIn = true;
+			_external_data--;  // age external data
+			return m_true_heading_dev;
+	}
+	if( compass_enable.get() ){
+		*okIn = m_headingValid;
+		return m_true_heading_dev;
+	}
+	else{
+		*okIn = false;
+		return 0;
+	}
 }
+
+// for simulation purposes
+void Compass::setHeading( float h ) {
+	m_magn_heading = h;
+	m_headingValid=true;
+	m_true_heading_dev=h;
+	_external_data=100;
+};
 
 //------------------------------------------------------------------------------
 

@@ -622,11 +622,11 @@ void IpsDisplay::drawFlarm( int x, int y, bool flarm ) {
 void IpsDisplay::drawWifi( int x, int y ) {
 
 	int btq=1;
-	if( blue_enable.get() == WL_WLAN_CLIENT ){
+	if( wireless == WL_WLAN_CLIENT ){
 		if( WifiClient::isConnected() )
 			btq=0;
 	}
-	else if( blue_enable.get() == WL_WLAN )
+	else if( wireless == WL_WLAN )
 		btq=BTSender::queueFull();
 	else
 		return;
@@ -833,6 +833,8 @@ void IpsDisplay::drawWindArrow( float a, float speed, int type ){
 	if( del_wind ) {  // cleanup previous incarnation
 		ucg->setColor(  COLOR_BLACK  );
 		ucg->drawTriangle(wx0,wy0,wx1,wy1,wx3,wy3);
+		if( wind_reference.get() != WR_NORTH )
+			Flarm::drawAirplane( wx0, wy0, false, true ); // clear small airplane symbol
 		wx0 = xn_0;
 		wy0 = yn_0;
 		wx1 = xn_1;
@@ -844,6 +846,8 @@ void IpsDisplay::drawWindArrow( float a, float speed, int type ){
 	}
 	if( s > 5 ) {  // draw white and red arror
 		ucg->setColor( COLOR_WHITE );
+		if( wind_reference.get() != WR_NORTH )
+			Flarm::drawAirplane( xn_0, yn_0, false, true ); // draw a small airplane symbol
 		ucg->drawTriangle(xn_0,yn_0,xn_1,yn_1,xn_3,yn_3);
 		ucg->setColor(  COLOR_RED  );
 		ucg->drawTriangle(xn_2,yn_2,xn_1,yn_1,xn_3,yn_3);
@@ -872,9 +876,9 @@ void IpsDisplay::initULDisplay(){
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setPrintPos(85,15);
 	ucg->print( Units::VarioUnit() );
-	if( blue_enable.get() == WL_BLUETOOTH )
+	if( wireless == WL_BLUETOOTH )
 		drawBT();
-	if( blue_enable.get() == WL_WLAN  ||  blue_enable.get() == WL_WLAN_CLIENT )
+	if( wireless == WL_WLAN  ||  wireless == WL_WLAN_CLIENT )
 		drawWifi(DISPLAY_W-27, FLOGO+2 );
 	drawThermometer(  10, 30 );
 }
@@ -901,9 +905,9 @@ void IpsDisplay::initRetroDisplay(){
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setPrintPos(85,15);
 	ucg->print( Units::VarioUnit() );
-	if( blue_enable.get() == WL_BLUETOOTH )
+	if( wireless == WL_BLUETOOTH )
 		drawBT();
-	if( blue_enable.get() == WL_WLAN  ||  blue_enable.get() == WL_WLAN_CLIENT )
+	if( wireless == WL_WLAN  ||  wireless == WL_WLAN_CLIENT )
 		drawWifi(DISPLAY_W-27, FLOGO+2 );
 	drawMC( MC.get(), true );
 	drawThermometer(  10, 30 );
@@ -1049,22 +1053,21 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 
 // Compass or Wind Display
 void IpsDisplay::drawCompass(){
-
-	if( wind_enable.get() != WA_OFF ){
-		// ESP_LOGI(FNAME, "WIND calc on %d", wind_enable.get() );
+	// ESP_LOGI(FNAME, "drawCompass: %d ", wind_display.get() );
+	if( (wind_display.get() & WD_DIGITS) || (wind_display.get() & WD_ARROW) ){
 		int winddir=0;
 		float wind=0;
 		bool ok=false;
 		int ageStraight, ageCircling;
 		char type = '/';
-		if( wind_enable.get() == WA_STRAIGHT ){
+		if( wind_enable.get() == WA_STRAIGHT ){  // check what kind of wind is available from calculator
 			ok = theWind.getWind( &winddir, &wind, &ageStraight );
 			type = '|';
 		}
 		else if( wind_enable.get() == WA_CIRCLING ){
 			ok = CircleWind::getWind( &winddir, &wind, &ageCircling );
 		}
-		else if( wind_enable.get() == WA_BOTH ){
+		else if( wind_enable.get() == WA_BOTH ){  // dynamically change type depening on younger calculation
 			int wds, wdc;
 			float ws, wc;
 			bool oks, okc;
@@ -1111,15 +1114,21 @@ void IpsDisplay::drawCompass(){
 				{
 					bool ok;
 					float heading = Compass::trueHeading( &ok );
-					if( !ok && Flarm::gpsStatus() )
+					if( !ok && Flarm::gpsStatus() )            // fall back to GPS course
 						heading = Flarm::getGndCourse();
 					dir = Vector::angleDiffDeg( winddir, heading );
+				}
+				else if( (wind_reference.get() & WR_GPS_COURSE) ){
+					if( Flarm::gpsStatus() ){
+						float heading = Flarm::getGndCourse();
+						dir = Vector::angleDiffDeg( winddir, heading );
+					}
 				}
 				drawWindArrow( dir, windspeed, 0 );
 			}
 		}
 	}
-	else if( compass_enable.get() && compass_calibrated.get() ){
+	else if( wind_display.get() & WD_COMPASS ){
 		bool ok;
 		int heading = static_cast<int>(rintf(Compass::trueHeading( &ok )));
 		if( heading >= 360 )
@@ -1136,11 +1145,11 @@ void IpsDisplay::drawCompass(){
 				sprintf(s,"%s", "  ---" );
 
 			if( heading < 10 )
-				ucg->printf("%s   ", s);
+				ucg->printf("%s    ", s);
 			else if( heading < 100 )
-				ucg->printf("%s  ", s);
+				ucg->printf("%s   ", s);
 			else
-				ucg->printf("%s ", s);
+				ucg->printf("%s  ", s);
 			ucg->setFont(ucg_font_fub20_hf);
 			ucg->setPrintPos(120+ucg->getStrWidth(s),105);
 			ucg->printf("\xb0 ");
@@ -1344,9 +1353,9 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// Bluetooth
 	if( !(tick%12) )
 	{
-		if( blue_enable.get() == WL_BLUETOOTH )
+		if( wireless == WL_BLUETOOTH )
 			drawBT();
-		if( blue_enable.get() == WL_WLAN ||  blue_enable.get() == WL_WLAN_CLIENT )
+		if( wireless == WL_WLAN ||  wireless == WL_WLAN_CLIENT )
 			drawWifi(DISPLAY_W-27, FLOGO+2 );
 	}
 
@@ -1465,13 +1474,14 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			Flap::drawBigBar( WKBARMID, WKSYMST-4, (float)(wk)/10, wksensor );
 			wkposalt = wk;
 			wksensoralt = (int)(wksensor*10);
+			Flap::drawWingSymbol( WKBARMID-(27*(abs(flap_neg_max.get())+1)  ), WKSYMST-3, wki, wkialt ,wksensor);
 		}
 		if( wki != wkialt ) {
-			Flap::drawWingSymbol( WKBARMID-(27*(abs(flap_neg_max.get())+1)  ), WKSYMST-3, wki, wkialt );
+			Flap::drawWingSymbol( WKBARMID-(27*(abs(flap_neg_max.get())+1)  ), WKSYMST-3, wki, wkialt ,wksensor);
 			wkialt=wki;
 		}
 	}
-
+	
 	// Cruise mode or circling
 	if( (int)s2fmode != s2fmode_prev ){
 		drawS2FMode( 180, 20, s2fmode );
@@ -1626,9 +1636,9 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 	// Bluetooth
 	if( !(tick%12) )
 	{
-		if( blue_enable.get() == WL_BLUETOOTH )
+		if( wireless == WL_BLUETOOTH )
 			drawBT();
-		if( blue_enable.get() == WL_WLAN ||  blue_enable.get() == WL_WLAN_CLIENT )
+		if( wireless == WL_WLAN ||  wireless == WL_WLAN_CLIENT )
 			drawWifi(DISPLAY_W-27, FLOGO+2 );
 	}
 
@@ -1693,9 +1703,10 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 			Flap::drawBigBar( WKBARMID, WKSYMST-4, (float)(wk)/10, wksensor);
 			wkposalt = wk;
 			wksensoralt = (int)(wksensor*10);
+			Flap::drawWingSymbol( WKBARMID-(27*(abs(flap_neg_max.get())+1)  ), WKSYMST-3, wki, wkialt ,wksensor);
 		}
 		if( wki != wkialt ) {
-			Flap::drawWingSymbol( WKBARMID-(27*(abs(flap_neg_max.get())+1)  ), WKSYMST-3, wki, wkialt );
+			Flap::drawWingSymbol( WKBARMID-(27*(abs(flap_neg_max.get())+1)  ), WKSYMST-3, wki, wkialt ,wksensor);
 			wkialt=wki;
 		}
 	}
@@ -1813,17 +1824,21 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		int wki;
 		float wkpos=Flap::getOptimum( wkspeed, wki );
 		int wk = (int)((wki - wkpos + 0.5)*10);
-		if( wkposalt != wk ) {
+		if( wkposalt != wk || wksensoralt != (int)(wksensor*10) || !(tick%7) ) {
 			// ESP_LOGI(FNAME,"ias:%d wksp:%f wki:%d wk:%d wkpos%f", airspeed, wkspeed, wki, wk, wkpos );
 			ucg->setColor(  COLOR_WHITE  );
 			Flap::drawSmallBar( YS2F-fh, WKSYMST+2, (float)(wk)/10 );
 			wkposalt = wk;
+			Flap::drawWingSymbol( YS2F-fh-25, WKSYMST+2, wki, wkialt ,wksensor);
 		}
 		if( wki != wkialt ) {
-			Flap::drawWingSymbol( YS2F-fh-25, WKSYMST+2, wki, wkialt );
+			Flap::drawWingSymbol( YS2F-fh-25, WKSYMST+2, wki, wkialt ,wksensor);
 			wkialt=wki;
 		}
 	}
+	
+
+	
 	ucg->setFont(ucg_font_fub35_hn);  // 52 height
 	ucg->setColor(  COLOR_WHITE  );
 
@@ -1901,9 +1916,9 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	// Bluetooth Symbol
 
 	if( !(tick%12) ){
-		if( blue_enable.get() == WL_BLUETOOTH )
+		if( wireless == WL_BLUETOOTH )
 			drawBT();
-		if( blue_enable.get() == WL_WLAN || blue_enable.get() == WL_WLAN_CLIENT )
+		if( wireless == WL_WLAN || wireless == WL_WLAN_CLIENT )
 			drawWifi(DISPLAY_W-25, FLOGO);
 	}
 

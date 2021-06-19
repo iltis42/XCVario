@@ -72,7 +72,7 @@ static const char *I2C_TAG = "i2c";
 #define I2C_FIFO_FULL_THRESH_VAL       (28)
 #define I2C_FIFO_EMPTY_THRESH_VAL      (5)
 #define I2C_IO_INIT_LEVEL              (1)
-#define I2C_CMD_ALIVE_INTERVAL_TICK    (1000 / portTICK_PERIOD_MS)
+#define I2C_CMD_ALIVE_INTERVAL_TICK    (20 / portTICK_PERIOD_MS)
 #define I2C_CMD_EVT_ALIVE              (0)
 #define I2C_CMD_EVT_DONE               (1)
 #define I2C_EVT_QUEUE_LEN              (1)
@@ -861,17 +861,13 @@ esp_err_t i2c_set_pin(i2c_port_t i2c_num, int sda_io_num, int scl_io_num, bool s
     return ESP_OK;
 }
 
-portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
-
 i2c_cmd_handle_t i2c_cmd_link_create(void)
 {
-    I2C_ENTER_CRITICAL_ISR(&mux);
 #if !CONFIG_SPIRAM_USE_MALLOC
     i2c_cmd_desc_t *cmd_desc = (i2c_cmd_desc_t *) calloc(1, sizeof(i2c_cmd_desc_t));
 #else
     i2c_cmd_desc_t *cmd_desc = (i2c_cmd_desc_t *) heap_caps_calloc(1, sizeof(i2c_cmd_desc_t), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
 #endif
-    I2C_EXIT_CRITICAL_ISR(&mux);
     return (i2c_cmd_handle_t) cmd_desc;
 }
 
@@ -880,7 +876,6 @@ void i2c_cmd_link_delete(i2c_cmd_handle_t cmd_handle)
     if (cmd_handle == NULL) {
         return;
     }
-    I2C_ENTER_CRITICAL_ISR(&mux);
     i2c_cmd_desc_t *cmd = (i2c_cmd_desc_t *) cmd_handle;
     while (cmd->free) {
         i2c_cmd_link_t *ptmp = cmd->free;
@@ -891,13 +886,11 @@ void i2c_cmd_link_delete(i2c_cmd_handle_t cmd_handle)
     cmd->free = NULL;
     cmd->head = NULL;
     free(cmd_handle);
-    I2C_EXIT_CRITICAL_ISR(&mux);
     return;
 }
 
 static esp_err_t i2c_cmd_link_append(i2c_cmd_handle_t cmd_handle, i2c_cmd_t *cmd)
 {
-    I2C_ENTER_CRITICAL_ISR(&mux);
     i2c_cmd_desc_t *cmd_desc = (i2c_cmd_desc_t *) cmd_handle;
     if (cmd_desc->head == NULL) {
 #if !CONFIG_SPIRAM_USE_MALLOC
@@ -925,11 +918,9 @@ static esp_err_t i2c_cmd_link_append(i2c_cmd_handle_t cmd_handle, i2c_cmd_t *cmd
     }
     memcpy((uint8_t *) &cmd_desc->cur->cmd, (uint8_t *) cmd, sizeof(i2c_cmd_t));
     cmd_desc->cur->next = NULL;
-    I2C_EXIT_CRITICAL_ISR(&mux);
     return ESP_OK;
 
 err:
-    I2C_EXIT_CRITICAL_ISR(&mux);
     return ESP_FAIL;
 }
 
@@ -1166,6 +1157,8 @@ static bool is_cmd_link_buffer_internal(i2c_cmd_link_t *link)
 }
 #endif
 
+static uint8_t clear_bus_cnt[2] = { 0, 0 };
+
 esp_err_t i2c_master_cmd_begin(i2c_port_t i2c_num, i2c_cmd_handle_t cmd_handle, TickType_t ticks_to_wait)
 {
     I2C_CHECK(( i2c_num < I2C_NUM_MAX ), I2C_NUM_ERROR_STR, ESP_ERR_INVALID_ARG);
@@ -1184,7 +1177,6 @@ esp_err_t i2c_master_cmd_begin(i2c_port_t i2c_num, i2c_cmd_handle_t cmd_handle, 
     }
 #endif
     // Sometimes when the FSM get stuck, the ACK_ERR interrupt will occur endlessly until we reset the FSM and clear bus.
-    static uint8_t clear_bus_cnt = 0;
     esp_err_t ret = ESP_FAIL;
     i2c_obj_t *p_i2c = p_i2c_obj[i2c_num];
     portTickType ticks_start = xTaskGetTickCount();
@@ -1199,7 +1191,7 @@ esp_err_t i2c_master_cmd_begin(i2c_port_t i2c_num, i2c_cmd_handle_t cmd_handle, 
     if (p_i2c->status == I2C_STATUS_TIMEOUT
             || i2c_hal_is_bus_busy(&(i2c_context[i2c_num].hal))) {
         i2c_hw_fsm_reset(i2c_num);
-        clear_bus_cnt = 0;
+        clear_bus_cnt[i2c_num] = 0;
     }
     i2c_reset_tx_fifo(i2c_num);
     i2c_reset_rx_fifo(i2c_num);
@@ -1241,12 +1233,12 @@ esp_err_t i2c_master_cmd_begin(i2c_port_t i2c_num, i2c_cmd_handle_t cmd_handle, 
                     // If the I2C slave are powered off or the SDA/SCL are connected to ground, for example,
                     // I2C hw FSM would get stuck in wrong state, we have to reset the I2C module in this case.
                     i2c_hw_fsm_reset(i2c_num);
-                    clear_bus_cnt = 0;
+                    clear_bus_cnt[i2c_num] = 0;
                     ret = ESP_ERR_TIMEOUT;
                 } else if (p_i2c->status == I2C_STATUS_ACK_ERROR) {
-                    clear_bus_cnt++;
-                    if (clear_bus_cnt >= I2C_ACKERR_CNT_MAX) {
-                        clear_bus_cnt = 0;
+                    clear_bus_cnt[i2c_num]++;
+                    if (clear_bus_cnt[i2c_num] >= I2C_ACKERR_CNT_MAX) {
+                        clear_bus_cnt[i2c_num] = 0;
                     }
                     ret = ESP_FAIL;
                 } else {
@@ -1261,7 +1253,7 @@ esp_err_t i2c_master_cmd_begin(i2c_port_t i2c_num, i2c_cmd_handle_t cmd_handle, 
             // If the I2C slave are powered off or the SDA/SCL are connected to ground, for example,
             // I2C hw FSM would get stuck in wrong state, we have to reset the I2C module in this case.
             i2c_hw_fsm_reset(i2c_num);
-            clear_bus_cnt = 0;
+            clear_bus_cnt[i2c_num] = 0;
             break;
         }
     }

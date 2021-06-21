@@ -86,6 +86,9 @@ private:
     static int volume_change;
     static bool _chopping;
     static bool prev_alarm;
+    static int _delay;
+    static unsigned long next_scedule;
+    static int mtick;
 };
 
 

@@ -34,8 +34,6 @@
 
 
 TaskHandle_t *dactid;
-TaskHandle_t *modtid;
-
 
 uint8_t Audio::_tonemode;
 uint8_t Audio::_chopping_mode;
@@ -53,8 +51,11 @@ bool  Audio::sound_on=false;
 bool  Audio::_testmode=false;
 bool  Audio::deadband_active = false;
 bool  Audio::hightone = false;
+int   Audio::_delay=100;
+int   Audio::mtick = 0;
 bool  Audio::_alarm_mode=false;
 bool  Audio::_s2f_mode_back = false;
+unsigned long Audio::next_scedule=0;
 
 uint16_t Audio::_vol_back = 0;
 uint16_t Audio::_vol_back_s2f = 0;
@@ -71,7 +72,6 @@ int   Audio::prev_scale = -1;
 int   Audio::defaultDelay = 500;
 int   Audio::_tonemode_back = 0;
 int   Audio::tick = 0;
-int   Audio::tickmod  = 0;
 int   Audio::volume_change=0;
 bool  Audio::prev_alarm=false;
 
@@ -386,41 +386,6 @@ void Audio::dac_invert_set(dac_channel_t channel, int invert)
 	}
 }
 
-//  modulation frequency
-
-int break_duration = 100;
-void Audio::modtask(void* arg )
-{
-	while(1){
-		TickType_t xLastWakeTime = xTaskGetTickCount();
-		tickmod++;
-		hightone = false;
-		int delay=100;
-		if ( _te > 0 ){
-			if ( (tickmod & 1) == 1 )
-				hightone = true;
-			float f=0;
-			if( _s2f_mode && (cruise_audio_mode.get() == AUDIO_S2F) )
-				f = 1+9*(_te/5.0);
-			else
-				f = 1+9*(_te/_range);
-
-			float period_ms = 1000/f;
-			if ( hightone ){  // duration of break (or second tone)
-				delay = int(period_ms * 0.1)+40;  // 1Hz: 100 mS; 10Hz: 50 mS
-			}
-			else{  // duration of main tone 1Hz: 900 mS; 10Hz: 50 mS
-				delay = int(period_ms * 0.9)-40;
-			}
-		}
-		// ESP_LOGI(FNAME,"delay:%d  ht:%d TE:%2.1f", delay, hightone, _te);
-		/*
-		if( uxTaskGetStackHighWaterMark( modtid ) < 256 )
-			ESP_LOGW(FNAME,"Warning Audio mod task stack low: %d bytes", uxTaskGetStackHighWaterMark( modtid ) );
-			*/
-		vTaskDelayUntil(&xLastWakeTime, delay/portTICK_PERIOD_MS);
-	}
-}
 
 void Audio::setVolume( int vol ) {
 	(*p_wiper) = vol;
@@ -455,8 +420,7 @@ void Audio::incVolume( int steps ) {
 void Audio::startAudio(){
 	ESP_LOGI(FNAME,"startAudio");
 	_testmode = false;
-	xTaskCreatePinnedToCore(&modtask, "modtask", 2048, NULL, 25, modtid, 0);
-	xTaskCreatePinnedToCore(&dactask, "dactask", 2048, NULL, 24, dactid, 0);
+	xTaskCreatePinnedToCore(&dactask, "dactask", 2048, NULL, 15, dactid, 0);
 }
 
 void Audio::calcS2Fmode(){
@@ -484,13 +448,38 @@ void  Audio::evaluateChopping(){
 	_chopping = false;
 }
 
-
 void Audio::dactask(void* arg )
 {
 	while(1){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		tick++;
+		// break modulation
+		hightone = false;
+		if( millis() > next_scedule ){
+			if ( _te > 0 ){
+				mtick++;
+				if ( (mtick & 1) == 1 )
+					hightone = true;
+				float f=0;
+				if( _s2f_mode && (cruise_audio_mode.get() == AUDIO_S2F) )
+					f = 1+9*(_te/5.0);
+				else
+					f = 1+9*(_te/_range);
+
+				float period_ms = 1000/f;
+				if ( hightone ){  // duration of break (or second tone)
+					_delay = int(period_ms * 0.1)+40;  // 1Hz: 100 mS; 10Hz: 50 mS
+				}
+				else{  // duration of main tone 1Hz: 900 mS; 10Hz: 50 mS
+					_delay = int(period_ms * 0.9)-40;
+				}
+			}
+			else
+				_delay = 100;
+			next_scedule = millis()+_delay;
+		}
 		Switch::tick();    // we hook switch sceduling here to save extra task
+        // check if mode has changed
 		if( !(tick%20) )
 			evaluateChopping();
 		if( audio_disable.get() && Menu->isActive() ){
@@ -586,7 +575,6 @@ void Audio::dactask(void* arg )
 					}
 					float f = center_freq.get() + ((mult*_te)/range )  * (max/exponent_max);
 					// ESP_LOGI(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f multi:%0.3f  wiper:%d", f, _te, audio_factor.get(), mult, cur_wiper );
-					// ESP_LOGI(FNAME, "New Freq: %0.1f Hz, wiper:%d", f, cur_wiper );
 					if( hightone && (_tonemode == ATM_DUAL_TONE ) )
 						setFrequency( f*_high_tone_var );
 					else
@@ -598,10 +586,9 @@ void Audio::dactask(void* arg )
 							dac_output_disable(_ch);
 						}else{
 							if( cur_wiper > 1 ) {  // turn off gracefully sound
-								int delta = (*p_wiper)/(FADING_TIME);
+								int delta = (*p_wiper)/(FADING_TIME*2);
 								for( int i=(*p_wiper); i>0; i-=delta ) {
 									Poti.writeWiper( i );
-									delta = 2+i/(FADING_TIME);
 									delay(1);
 								}
 								Poti.writeWiper( 0 );
@@ -615,10 +602,9 @@ void Audio::dactask(void* arg )
 				}
 			}
 		}
-		/*
+		// ESP_LOGI(FNAME, "Audio delay %d", _delay );
 		if( uxTaskGetStackHighWaterMark( dactid ) < 256 )
 			ESP_LOGW(FNAME,"Warning Audio dac task stack low: %d bytes", uxTaskGetStackHighWaterMark( dactid ) );
-			*/
 		vTaskDelayUntil(&xLastWakeTime, 20/portTICK_PERIOD_MS);
 		if( volume_change )
 			volume_change--;

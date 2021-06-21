@@ -329,7 +329,7 @@ void audioTask(void *pvParameters){
 		doAudio();
 		if( uxTaskGetStackHighWaterMark( apid )  < 512 )
 			ESP_LOGW(FNAME,"Warning audio task stack low: %d", uxTaskGetStackHighWaterMark( apid ) );
-		vTaskDelayUntil(&xLastWakeTime, 20/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
 	}
 }
 
@@ -1131,7 +1131,7 @@ void sensor(void *args){
 		xTaskCreatePinnedToCore(&readBMP, "readBMP", 1024*8, NULL, 14, bpid, 0);
 	}
 	if( wireless == WL_WLAN_CLIENT ){
-		xTaskCreatePinnedToCore(&audioTask, "audioTask", 2048, NULL, 13, apid, 0);
+		xTaskCreatePinnedToCore(&audioTask, "audioTask", 2048, NULL, 14, apid, 0);
 	}
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 2300, NULL, 1, tpid, 0);
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 4096, NULL, 2, dpid, 0);

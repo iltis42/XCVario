@@ -587,10 +587,10 @@ void Audio::dactask(void* arg )
 							dac_output_disable(_ch);
 						}else{
 							if( cur_wiper > 1 ) {  // turn off gracefully sound
-								int volume = (*p_wiper);
-								for( int i=0; i<6 && volume > 1; i++ ) {
-									volume = volume/2;
+								int volume = (*p_wiper)/2;
+								for( int i=0; i<6 && volume > 0; i++ ) {
 									Poti.writeWiper( volume );
+									volume = volume/2;
 									delay(1);
 								}
 								Poti.writeWiper( 0 );

@@ -528,13 +528,14 @@ void Audio::dactask(void* arg )
 							dac_output_enable(_ch);
 							int delta = 1;
 							if( !sound_on ) {
-								for( int i=1; i<(*p_wiper); i+=delta ) {
-									Poti.writeWiper( i );
-									cur_wiper = (*p_wiper);
-									delta = 2+i/FADING_TIME;
+								int volume=2;
+								for( int i=0; i<6 && volume <(*p_wiper); i++ ) {
+									Poti.writeWiper( volume );
+									volume = volume*2;
 									delay(1);
 									// ESP_LOGI(FNAME, "fade in sound, wiper: %d", i);
 								}
+								cur_wiper = volume;
 								if(  cur_wiper != (*p_wiper) ){
 									Poti.writeWiper( (*p_wiper) );
 									cur_wiper = (*p_wiper);
@@ -586,9 +587,10 @@ void Audio::dactask(void* arg )
 							dac_output_disable(_ch);
 						}else{
 							if( cur_wiper > 1 ) {  // turn off gracefully sound
-								int delta = (*p_wiper)/(FADING_TIME*2);
-								for( int i=(*p_wiper); i>0; i-=delta ) {
-									Poti.writeWiper( i );
+								int volume = (*p_wiper);
+								for( int i=0; i<6 && volume > 1; i++ ) {
+									volume = volume/2;
+									Poti.writeWiper( volume );
 									delay(1);
 								}
 								Poti.writeWiper( 0 );

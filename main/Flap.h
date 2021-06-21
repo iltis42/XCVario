@@ -32,7 +32,7 @@ public:
 	static void drawSmallBar( int ypos, int xpos, float wkf );
 	static void drawBigBar( int ypos, int xpos, float wkf, float wksens );
 	static void drawLever( int xpos, int ypos, int oldypos, bool warn );
-	static void drawWingSymbol( int ypos, int xpos, int wk, int wkalt );
+	static void drawWingSymbol( int ypos, int xpos, int wk, int wkalt, float wksens);
 	static void redraw() { sensorOldY = -1000; surroundingBox=false; };
 	static void redrawLever() { sensorOldY = -1000; };
 	static void setupMenue( SetupMenu *parent );

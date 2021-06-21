@@ -442,7 +442,7 @@ void Audio::incVolume( int steps ) {
 	steps = int( 1+ ( (float)(*p_wiper)/16.0 ))*steps;
 	if( (*p_wiper) > 126 )
 		(*p_wiper) = 126;
-	while( steps && ((*p_wiper) < 126) ){
+	while( steps && ((*p_wiper) < 126*(max_volume.get()/100)) ){
 		(*p_wiper)++;
 		steps--;
 	}
@@ -529,9 +529,9 @@ void Audio::dactask(void* arg )
 					}
 				}
 				// ESP_LOGI(FNAME, "sound %d, ht %d", sound, hightone );
-				if( sound ){
+				if( sound || volume_change ){
 					// ESP_LOGI(FNAME, "have sound");
-					if( !sound_on ) {
+					if( !sound_on || volume_change ) {
 						if( chopping_style.get() == AUDIO_CHOP_HARD ){
 							dac_output_enable(_ch);
 						}

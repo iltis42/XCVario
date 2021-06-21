@@ -1474,13 +1474,14 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			Flap::drawBigBar( WKBARMID, WKSYMST-4, (float)(wk)/10, wksensor );
 			wkposalt = wk;
 			wksensoralt = (int)(wksensor*10);
+			Flap::drawWingSymbol( WKBARMID-(27*(abs(flap_neg_max.get())+1)  ), WKSYMST-3, wki, wkialt ,wksensor);
 		}
 		if( wki != wkialt ) {
-			Flap::drawWingSymbol( WKBARMID-(27*(abs(flap_neg_max.get())+1)  ), WKSYMST-3, wki, wkialt );
+			Flap::drawWingSymbol( WKBARMID-(27*(abs(flap_neg_max.get())+1)  ), WKSYMST-3, wki, wkialt ,wksensor);
 			wkialt=wki;
 		}
 	}
-
+	
 	// Cruise mode or circling
 	if( (int)s2fmode != s2fmode_prev ){
 		drawS2FMode( 180, 20, s2fmode );
@@ -1702,9 +1703,10 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 			Flap::drawBigBar( WKBARMID, WKSYMST-4, (float)(wk)/10, wksensor);
 			wkposalt = wk;
 			wksensoralt = (int)(wksensor*10);
+			Flap::drawWingSymbol( WKBARMID-(27*(abs(flap_neg_max.get())+1)  ), WKSYMST-3, wki, wkialt ,wksensor);
 		}
 		if( wki != wkialt ) {
-			Flap::drawWingSymbol( WKBARMID-(27*(abs(flap_neg_max.get())+1)  ), WKSYMST-3, wki, wkialt );
+			Flap::drawWingSymbol( WKBARMID-(27*(abs(flap_neg_max.get())+1)  ), WKSYMST-3, wki, wkialt ,wksensor);
 			wkialt=wki;
 		}
 	}
@@ -1822,17 +1824,21 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		int wki;
 		float wkpos=Flap::getOptimum( wkspeed, wki );
 		int wk = (int)((wki - wkpos + 0.5)*10);
-		if( wkposalt != wk ) {
+		if( wkposalt != wk || wksensoralt != (int)(wksensor*10) || !(tick%7) ) {
 			// ESP_LOGI(FNAME,"ias:%d wksp:%f wki:%d wk:%d wkpos%f", airspeed, wkspeed, wki, wk, wkpos );
 			ucg->setColor(  COLOR_WHITE  );
 			Flap::drawSmallBar( YS2F-fh, WKSYMST+2, (float)(wk)/10 );
 			wkposalt = wk;
+			Flap::drawWingSymbol( YS2F-fh-25, WKSYMST+2, wki, wkialt ,wksensor);
 		}
 		if( wki != wkialt ) {
-			Flap::drawWingSymbol( YS2F-fh-25, WKSYMST+2, wki, wkialt );
+			Flap::drawWingSymbol( YS2F-fh-25, WKSYMST+2, wki, wkialt ,wksensor);
 			wkialt=wki;
 		}
 	}
+	
+
+	
 	ucg->setFont(ucg_font_fub35_hn);  // 52 height
 	ucg->setColor(  COLOR_WHITE  );
 

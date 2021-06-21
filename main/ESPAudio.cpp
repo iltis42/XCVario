@@ -526,16 +526,15 @@ void Audio::dactask(void* arg )
 						}
 						else{
 							dac_output_enable(_ch);
-							int delta = 1;
 							if( !sound_on ) {
-								int volume=2;
+								int volume=1;
 								for( int i=0; i<6 && volume <(*p_wiper); i++ ) {
 									Poti.writeWiper( volume );
+									cur_wiper = volume;
 									volume = volume*2;
 									delay(1);
 									// ESP_LOGI(FNAME, "fade in sound, wiper: %d", i);
 								}
-								cur_wiper = volume;
 								if(  cur_wiper != (*p_wiper) ){
 									Poti.writeWiper( (*p_wiper) );
 									cur_wiper = (*p_wiper);
@@ -586,7 +585,7 @@ void Audio::dactask(void* arg )
 						if( chopping_style.get() == AUDIO_CHOP_HARD ){
 							dac_output_disable(_ch);
 						}else{
-							if( cur_wiper > 1 ) {  // turn off gracefully sound
+							if( cur_wiper > 0 ) {  // turn off gracefully sound
 								int volume = (*p_wiper)/2;
 								for( int i=0; i<6 && volume > 0; i++ ) {
 									Poti.writeWiper( volume );

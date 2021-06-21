@@ -85,13 +85,12 @@ SetupNG<float>  		core_climb_min( "CORE_CLIMB_MIN" , 0.5 );
 SetupNG<float>  		core_climb_history( "CORE_CLIMB_HIST" , 45 );
 SetupNG<float>  		elevation( "ELEVATION", -1 );
 SetupNG<float>  		default_volume( "DEFAULT_VOL", 10.0 );
-SetupNG<float>  		max_volume( "MAX_VOL", 50.0 );
+SetupNG<float>  		max_volume( "MAX_VOL", 100.0 );
 SetupNG<float>  		s2f_deadband( "DEADBAND_S2F", 10.0 );
 SetupNG<float>  		s2f_deadband_neg( "DB_S2F_NEG", -10.0 );
 SetupNG<float>  		s2f_delay( "S2F_DELAY", 5.0 );
 SetupNG<float>  		factory_volt_adjust("FACT_VOLT_ADJ" , 0.00815, false );
 SetupNG<float>  		bugs( "BUGS", 0.0 );
-
 SetupNG<int>  			display_type( "DISPLAY_TYPE",  UNIVERSAL );
 SetupNG<int>  			display_orientation("DISPLAY_ORIENT" , 0 );
 SetupNG<int>  			flap_enable( "FLAP_ENABLE", 0 );

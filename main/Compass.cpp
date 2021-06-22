@@ -72,12 +72,13 @@ float Compass::calculateHeading( bool *okIn )
 	// ESP_LOGI( FNAME, "calculateHeading");
 	assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
 	if( _external_data ){
+		_external_data--;
 		*okIn = true;
 		return m_magn_heading;
 	}
 
 	float new_heading = QMC5883L::heading( okIn );
-	// ESP_LOGI( FNAME, "H: %3.2f", new_heading  );
+	// ESP_LOGI( FNAME, "Mag Heading: %3.2f", new_heading  );
 	if( *okIn == false )
 	{
 		m_headingValid = false;

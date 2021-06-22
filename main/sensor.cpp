@@ -379,8 +379,8 @@ void readBMP(void *pvParameters){
 			}
 			if( err == ESP_OK && goodAccl && goodGyro ) {
 				IMU::read();
-				dead_reckon();
-				estAltitude();
+//				dead_reckon();
+//				estAltitude();
 			}
 			gyroDPS_Prev = gyroDPS;
 			accelG_Prev = accelG;
@@ -388,65 +388,65 @@ void readBMP(void *pvParameters){
 
 		bool ok=false;
 		float p = 0;
-		if( asSensor )
-			p = asSensor->readPascal(0, ok); // removed minimum Dp test to allow use of rawdynamicP
-		if( ok ) {
-			rawdynamicP = p;
-			dynamicP = p;
-		}
-		if( dynamicP < 60 ) dynamicP = 0;
-		float iasraw = Atmosphere::pascal2kmh( dynamicP );
-		// ESP_LOGI("FNAME","P: %f  IAS:%f", dynamicP, iasraw );
-		float T=temperature;
-		if( !validTemperature ) {
-			T= 15 - ( (alt/100) * 0.65 );
-			// ESP_LOGW(FNAME,"T invalid, using 15 deg");
-		}
-		float tasraw = 0;
-		if( baroP != 0 )
-			tasraw =  Atmosphere::TAS( iasraw , baroP, T);  // True airspeed
-		ias = ias + (iasraw - ias)*0.25;  // low pass filter
-
-		// ESP_LOGI("FNAME","P: %f  IAS:%f IASF: %d", dynamicP, iasraw, ias );
-		tas += (tasraw-tas)*0.25;       // low pass filter
-		// ESP_LOGI(FNAME,"IAS=%f, T=%f, TAS=%f baroP=%f", ias, T, tas, baroP );
-
-		TE = bmpVario.readTE( tasraw );  // 10x per second
-		xSemaphoreGive(xMutex);
-		// ESP_LOGI(FNAME,"count %d ccp %d", count, ccp );
-		if( !(count % ccp) ) {
-			AverageVario::recalcAvgClimb();
-			meanClimb = AverageVario::readAvgClimb();
-		}
-
-		Flap::progress();
-		xSemaphoreTake(xMutex,portMAX_DELAY );
-		baroP = baroSensor->readPressure(ok);   // 5x per second
-		// ESP_LOGI(FNAME,"Baro Pressure: %4.3f", baroP );
-		float altSTD = baroSensor->calcAVGAltitudeSTD( baroP );
-		if( alt_select.get() == 0 ) // TE
-			alt = bmpVario.readAVGalt();
-		else { // Baro
-			if(  alt_unit.get() == 2 ) { // FL, always standard
-				alt = altSTD;
-				standard_setting = true;
-				// ESP_LOGI(FNAME,"au: %d", alt_unit.get() );
-			}else if( (fl_auto_transition.get() == 1) && ((int)altSTD*0.0328084 + (int)(standard_setting) > transition_alt.get() ) ) {
-				alt = altSTD;
-				standard_setting = true;
-				// ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), altSTD, standard_setting, transition_alt.get() );
+			if( asSensor )
+				p = asSensor->readPascal(0, ok); // removed minimum Dp test to allow use of rawdynamicP
+			if( ok ) {
+				rawdynamicP = p;
+				dynamicP = p;
 			}
-			else {
-				alt = baroSensor->calcAVGAltitude( QNH.get(), baroP );
-				standard_setting = false;
-				// ESP_LOGI(FNAME,"QNH %f baro: %f alt: %f SS:%d", QNH.get(), baroP, alt, standard_setting  );
+			if( dynamicP < 60 ) dynamicP = 0;
+			float iasraw = Atmosphere::pascal2kmh( dynamicP );
+			// ESP_LOGI("FNAME","P: %f  IAS:%f", dynamicP, iasraw );
+			float T=temperature;
+			if( !validTemperature ) {
+				T= 15 - ( (alt/100) * 0.65 );
+				// ESP_LOGW(FNAME,"T invalid, using 15 deg");
 			}
-		}
-		aTE = bmpVario.readAVGTE();
-		xSemaphoreGive(xMutex);
-		doAudio();
+			float tasraw = 0;
+			if( baroP != 0 )
+				tasraw =  Atmosphere::TAS( iasraw , baroP, T);  // True airspeed
+			ias = ias + (iasraw - ias)*0.25;  // low pass filter
 
-		if( (inSetup != true) && !Flarm::bincom && ((count % 2) == 0 ) ){
+			// ESP_LOGI("FNAME","P: %f  IAS:%f IASF: %d", dynamicP, iasraw, ias );
+			tas += (tasraw-tas)*0.25;       // low pass filter
+			// ESP_LOGI(FNAME,"IAS=%f, T=%f, TAS=%f baroP=%f", ias, T, tas, baroP );
+
+			TE = bmpVario.readTE( tasraw );  // 10x per second
+			xSemaphoreGive(xMutex);
+			// ESP_LOGI(FNAME,"count %d ccp %d", count, ccp );
+			if( !(count % ccp) ) {
+				AverageVario::recalcAvgClimb();
+				meanClimb = AverageVario::readAvgClimb();
+			}
+
+			Flap::progress();
+			xSemaphoreTake(xMutex,portMAX_DELAY );
+			baroP = baroSensor->readPressure(ok);   // 5x per second
+			// ESP_LOGI(FNAME,"Baro Pressure: %4.3f", baroP );
+			float altSTD = baroSensor->calcAVGAltitudeSTD( baroP );
+			if( alt_select.get() == 0 ) // TE
+				alt = bmpVario.readAVGalt();
+			else { // Baro
+				if(  alt_unit.get() == 2 ) { // FL, always standard
+					alt = altSTD;
+					standard_setting = true;
+					// ESP_LOGI(FNAME,"au: %d", alt_unit.get() );
+				}else if( (fl_auto_transition.get() == 1) && ((int)altSTD*0.0328084 + (int)(standard_setting) > transition_alt.get() ) ) {
+					alt = altSTD;
+					standard_setting = true;
+					// ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), altSTD, standard_setting, transition_alt.get() );
+				}
+				else {
+					alt = baroSensor->calcAVGAltitude( QNH.get(), baroP );
+					standard_setting = false;
+					// ESP_LOGI(FNAME,"QNH %f baro: %f alt: %f SS:%d", QNH.get(), baroP, alt, standard_setting  );
+				}
+			}
+			aTE = bmpVario.readAVGTE();
+			xSemaphoreGive(xMutex);
+			doAudio();
+
+		if( (inSetup != true) && !Flarm::bincom && ((count % 5) == 0 ) ){
 			xSemaphoreTake(xMutex,portMAX_DELAY );
 			// reduce also messages from 10 per second to 5 per second to reduce load in XCSoar
 			char lb[250];
@@ -475,7 +475,7 @@ void readBMP(void *pvParameters){
 			vTaskDelay(2/portTICK_PERIOD_MS);
 			xSemaphoreGive(xMutex);
 		}
-
+/*
 		// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d ena=%d", compass.haveSensor(),  compass_nmea_hdt.get(),  compass_enable.get() );
 		if( compass_enable.get() == true  && !Flarm::bincom && ! Compass::calibrationIsRunning() ) {
 			// Trigger heading reading and low pass filtering. That job must be
@@ -483,17 +483,18 @@ void readBMP(void *pvParameters){
 			bool hok;
 			compass.calculateHeading( &hok );
 
-			if( (count % 5 ) == 0 && hok == true && compass_nmea_hdm.get() == true ) {
+			if( (count % 25 ) == 0 && hok == true && compass_nmea_hdm.get() == true ) {
 				xSemaphoreTake( xMutex, portMAX_DELAY );
 				OV.sendNmeaHDM( compass.magnHeading( &ok ) );
 				xSemaphoreGive( xMutex );
 			}
-			if( (count % 5 ) == 0 && hok == true && compass_nmea_hdt.get() == true ) {
+			if( (count % 25 ) == 0 && hok == true && compass_nmea_hdt.get() == true ) {
 				xSemaphoreTake( xMutex, portMAX_DELAY );
 				OV.sendNmeaHDT( compass.trueHeading( &ok ) );
 				xSemaphoreGive( xMutex );
 			}
 		}
+*/
 		if( uxTaskGetStackHighWaterMark( bpid )  < 1024 )
 			ESP_LOGW(FNAME,"Warning bmpTask stack low: %d", uxTaskGetStackHighWaterMark( bpid ) );
 
@@ -503,7 +504,7 @@ void readBMP(void *pvParameters){
 			gload_neg_max.set(  (float)accelG[0] );
 		}
 		esp_task_wdt_reset();
-		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&xLastWakeTime, 20/portTICK_PERIOD_MS);
 	}
 }
 
@@ -667,10 +668,10 @@ void sensor(void *args){
 		haveMPU = true;
 		ESP_LOGI( FNAME,"MPU initialize");
 		MPU.initialize();  // this will initialize the chip and set default configurations
-		MPU.setSampleRate(50);  // in (Hz)
+		MPU.setSampleRate(100);  // in (Hz)
 		MPU.setAccelFullScale(mpud::ACCEL_FS_8G);
 		MPU.setGyroFullScale(mpud::GYRO_FS_500DPS);
-		MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
+		MPU.setDigitalLowPassFilter(mpud::DLPF_42HZ);  // smoother data
 		display->writeText( line++, "AHRS Sensor: OK");
 		logged_tests += "MPU6050 AHRS test: PASSED\n";
 		// BIAS MPU6050

@@ -706,7 +706,8 @@ void Audio::shutdown(){
 	dac_output_disable(_ch);
 	gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );   // use pullup 1 == SOUND 0 == SILENCE
 	gpio_set_level(GPIO_NUM_19, 0 );
-	(*p_wiper) = 0;
+	if( p_wiper != 0)
+		(*p_wiper) = 0;
 	ESP_LOGI(FNAME,"shutdown alarm volume set 0");
 	sound_on = false;
 }

@@ -1,11 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 #include <esp_log.h>
 #include <sys/param.h>
 #include <esp_http_server.h>
 #include "esp_ota_ops.h"
 #include "freertos/event_groups.h"
+#include <coredump_to_server.h>
 
 // Embedded Files. To add or remove make changes is component.mk file as well. 
 extern const uint8_t index_html_start[] asm("_binary_index_html_start");
@@ -26,6 +28,54 @@ const int REBOOT_BIT = BIT0;
 
 uint8_t getFlashStatus() { return flash_status; }
 uint8_t getProgress() { return progress; }
+
+
+static esp_err_t
+_coredump_to_server_begin_cb_OTA(void * priv)
+{
+	char *head="================= CORE DUMP START =================\r\n";
+	// ESP_LOGI("OTA", "coredump_to_server_begin_cb, size %d bytes; %s; %08x", strlen( head ), head, (unsigned int)priv );
+	// printf("%s", head );
+	httpd_resp_send_chunk((httpd_req*)priv, head, strlen( head ) );
+	// char *end="\r\n================= CORE DUMP END =================\r\n";
+	// httpd_resp_send((httpd_req*)priv, end, strlen( end ) );
+    return ESP_OK;
+}
+
+static esp_err_t
+_coredump_to_server_end_cb_OTA(void * priv)
+{
+	char *end="================= CORE DUMP END =================\r\n";
+	// printf("%s", end );
+	// ESP_LOGI("OTA", "coredump_to_server_end_cb, size %d bytes; %s", strlen( end ), end );
+	httpd_resp_send_chunk((httpd_req*)priv, end, strlen( end ) );
+	httpd_resp_send_chunk((httpd_req*)priv, end, 0 );
+	return ESP_OK;
+}
+
+static esp_err_t
+_coredump_to_server_write_cb_OTA(void * priv, char const * const str)
+{
+	ESP_LOGI("OTA", "coredump_to_server_write_cb, size %d bytes; %s", strlen( str ), str );
+	// printf("%s", str );
+	httpd_resp_send_chunk((httpd_req*)priv, str, strlen( str ) );
+	httpd_resp_send_chunk((httpd_req*)priv, "\r\n", 2 );
+	vTaskDelay(50 / portTICK_PERIOD_MS);
+    return ESP_OK;
+}
+
+void send_coredump( httpd_req *req ) {
+	 coredump_to_server_config_t coredump_cfg = {
+	        .start = _coredump_to_server_begin_cb_OTA,
+	        .end = _coredump_to_server_end_cb_OTA,
+	        .write = _coredump_to_server_write_cb_OTA,
+	        .priv = req,
+	    };
+	 ESP_LOGI("OTA", "priv %08x", (unsigned int)req );
+	 if( coredump_to_server(&coredump_cfg) != ESP_OK ){ // Dump to Webserver
+		 httpd_resp_send(req, "", 0 );
+	 }
+}
 
 
 /*****************************************************
@@ -130,6 +180,18 @@ esp_err_t OTA_clear_handler(httpd_req_t *req)
 	vTaskDelay(5000 / portTICK_PERIOD_MS);
 	esp_restart();
 
+	return ESP_OK;
+}
+
+
+esp_err_t OTA_core_get_handler(httpd_req_t *req)
+{
+	ESP_LOGI("OTA", "Get Core File Requested");
+
+	httpd_resp_set_type(req, "text/html");
+	send_coredump( req );
+
+	clear_coredump();
 	return ESP_OK;
 }
 
@@ -311,6 +373,12 @@ httpd_uri_t OTA_clear = {
 	.user_ctx = NULL
 };
 
+httpd_uri_t OTA_core_get = {
+	.uri = "/core-get",
+	.method = HTTP_POST,
+	.handler = OTA_core_get_handler,
+	.user_ctx = NULL
+};
 
 httpd_handle_t start_OTA_webserver(void)
 {
@@ -327,6 +395,7 @@ httpd_handle_t start_OTA_webserver(void)
 	// Start the httpd server
 	printf("Starting server on port: '%d'", config.server_port);
 	
+
 	if (httpd_start(&OTA_server, &config) == ESP_OK) 
 	{
 		// Set URI handlers
@@ -337,6 +406,7 @@ httpd_handle_t start_OTA_webserver(void)
 		httpd_register_uri_handler(OTA_server, &OTA_update);
 		httpd_register_uri_handler(OTA_server, &OTA_status);
 		httpd_register_uri_handler(OTA_server, &OTA_clear);
+		httpd_register_uri_handler(OTA_server, &OTA_core_get);
 		return OTA_server;
 	}
 

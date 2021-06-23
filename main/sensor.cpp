@@ -62,6 +62,7 @@
 #include "SPL06-007.h"
 #include "StraightWind.h"
 #include "CircleWind.h"
+#include <coredump_to_server.h>
 
 // #include "sound.h"
 
@@ -556,6 +557,38 @@ void readTemp(void *pvParameters){
 
 static bool init_done=false;
 
+static esp_err_t
+_coredump_to_server_begin_cb(void * priv)
+{
+    ets_printf("================= CORE DUMP START =================\r\n");
+    return ESP_OK;
+}
+
+static esp_err_t
+_coredump_to_server_end_cb(void * priv)
+{
+    ets_printf("================= CORE DUMP END ===================\r\n");
+    return ESP_OK;
+}
+
+static esp_err_t
+_coredump_to_server_write_cb(void * priv, char const * const str)
+{
+    ets_printf("%s\r\n", str);
+    return ESP_OK;
+}
+
+void register_coredump() {
+	 coredump_to_server_config_t coredump_cfg = {
+	        .start = _coredump_to_server_begin_cb,
+	        .end = _coredump_to_server_end_cb,
+	        .write = _coredump_to_server_write_cb,
+	        .priv = NULL,
+	    };
+	 coredump_to_server(&coredump_cfg);  // Dump to console and do not clear (will done after fetched from Webserver)
+}
+
+
 // Sensor board init method. Herein all functions that make the XCVario are launched and tested.
 void sensor(void *args){
 	accelG[0] = 1;  // earth gravity default = 1 g
@@ -597,6 +630,9 @@ void sensor(void *args){
 
 	Polars::begin();
 	NVS.begin();
+
+	register_coredump();
+
 	if( display_orientation.get() ){
 		ESP_LOGI( FNAME, "TopDown display mode flag set");
 		topDown = true;
@@ -1139,8 +1175,6 @@ void sensor(void *args){
 	Audio::startAudio();
 }
 
-
-
 extern "C" void  app_main(void){
 	ESP_LOGI(FNAME,"app_main" );
 	ESP_LOGI(FNAME,"Now init all Setup elements");
@@ -1153,6 +1187,7 @@ extern "C" void  app_main(void){
 	else
 		ESP_LOGI(FNAME,"Setup already present");
 	esp_log_level_set("*", ESP_LOG_INFO);
+
 	sensor( 0 );
 	vTaskDelete( NULL );
 }

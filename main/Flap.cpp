@@ -357,11 +357,14 @@ void Flap::drawLever( int xpos, int ypos, int oldypos, bool warn ){
     else{
     	ucg->setColor(COLOR_WHITE);
     }
+
 	ucg->drawBox( xpos-25, ypos-4, 19, 8 );
 	ucg->drawBox( xpos-6, ypos-2, 4, 4 );
 }
 
 void Flap::drawBigBar( int ypos, int xpos, float wkf, float wksens ){
+	// int *i=0;
+	// *i=2;
 	ucg->setFont(ucg_font_profont22_mr );
 	ucg->setFontPosCenter();
 	int lfh = ucg->getFontAscent()+10;  // a bit place around number

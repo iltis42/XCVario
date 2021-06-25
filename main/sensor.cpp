@@ -585,7 +585,9 @@ void register_coredump() {
 	        .write = _coredump_to_server_write_cb,
 	        .priv = NULL,
 	    };
-	 coredump_to_server(&coredump_cfg);  // Dump to console and do not clear (will done after fetched from Webserver)
+	 if( coredump_to_server(&coredump_cfg) != ESP_OK ){  // Dump to console and do not clear (will done after fetched from Webserver)
+		 ESP_LOGI( FNAME, "+++ All green, no coredump found in FLASH +++");
+	 }
 }
 
 

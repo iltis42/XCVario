@@ -116,8 +116,8 @@ void Compass::compassT(void* arg ){
 		if( compass_enable.get() == true ){
 			bool hok;
 			compass.calculateHeading( &hok );
-			if( !hok )
-				ESP_LOGI( FNAME, "warning compass heading calculation error");
+			// if( !hok )
+			//	ESP_LOGI( FNAME, "warning compass heading calculation error");
 		}
 		if( uxTaskGetStackHighWaterMark( ctid  ) < 256 )
 			ESP_LOGW(FNAME,"Warning Compass task stack low: %d bytes", uxTaskGetStackHighWaterMark( ctid ) );

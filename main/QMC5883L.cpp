@@ -225,14 +225,14 @@ esp_err_t QMC5883L::initialize( int a_odr, int a_osr )
 	if( used_odr == 0 )
 		used_odr = odr;
 
-	ESP_LOGI( FNAME, "initialize() dataRate: %d Oversampling: %d", used_odr, used_osr );
+	// ESP_LOGI( FNAME, "initialize() dataRate: %d Oversampling: %d", used_odr, used_osr );
 
 	e4 = writeRegister( addr, REG_CONTROL1,	(used_osr << 6) | (range <<4) | (used_odr <<2) | MODE_CONTINUOUS );
 	if( (e1 + e2 + e3 + e4) == 0 ) {
-		ESP_LOGI( FNAME, "initialize() OK");
+		// ESP_LOGI( FNAME, "initialize() OK");
 		return ESP_OK;
 	}
-	ESP_LOGE( FNAME, "initialize() ERROR");
+	// ESP_LOGE( FNAME, "initialize() ERROR");
 	return ESP_FAIL;
 }
 
@@ -562,6 +562,7 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z, float xb,
 
 
 int N=0;
+bool holddown=false;
 /**
  * Reads the heading in degrees of 0...359. Ok is set to true,
  * if heading data is valid, otherwise it is set to false.
@@ -575,8 +576,17 @@ float QMC5883L::heading( bool *ok )
 	{
 		*ok = false;
 		errors++;
-		ESP_LOGI(FNAME,"QMC5883: Holddown");
 		return 0.0;
+	}
+	if( errors > 100 ){
+		if( !holddown ){
+			holddown = true;
+			ESP_LOGI(FNAME,"100 sensor read errors: Start Holddown");
+		}
+	}else{
+		if( holddown ){
+			holddown = false;
+		}
 	}
 
 	// Calibration is running, don't disturb it.
@@ -594,7 +604,7 @@ float QMC5883L::heading( bool *ok )
 		ESP_LOGI(FNAME,"Magnetic sensor error Reads:%d, Errors:%d", N, totalReadErrors );
 		if( errors > 10 )
 		{
-			ESP_LOGI(FNAME,"Magnetic sensor errors > 3: init mag sensor" );
+			// ESP_LOGI(FNAME,"Magnetic sensor errors > 10: init mag sensor" );
 			//  reinitialize once crashed, one retry
 			if( initialize() != ESP_OK )
 				initialize();

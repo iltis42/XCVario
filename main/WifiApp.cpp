@@ -35,17 +35,23 @@
 #include "sensor.h"
 #include "Flarm.h"
 
+
+typedef struct client_record {
+	int client;
+	int retries;
+}client_record_t;
+
 typedef struct xcv_sock_server {
 	RingBufCPP<SString, QUEUE_SIZE>* txbuf;
 	RingBufCPP<SString, QUEUE_SIZE>* rxbuf;
 	int port;
-	int numRetries;
 	TaskHandle_t *pid;
+	std::list<client_record_t>  clients;
 }sock_server_t;
 
-static sock_server_t XCVario = { .txbuf = &wl_vario_tx_q, .rxbuf = &wl_vario_rx_q, .port=8880, .numRetries = 0, .pid = 0 };
-static sock_server_t FLARM   = { .txbuf = &wl_flarm_tx_q, .rxbuf = &wl_flarm_rx_q, .port=8881, .numRetries = 0, .pid = 0  };
-static sock_server_t AUX     = { .txbuf = &wl_aux_tx_q,   .rxbuf = &wl_aux_rx_q,   .port=8882, .numRetries = 0, .pid = 0  };
+static sock_server_t XCVario = { .txbuf = &wl_vario_tx_q, .rxbuf = &wl_vario_rx_q, .port=8880, .pid = 0  };
+static sock_server_t FLARM   = { .txbuf = &wl_flarm_tx_q, .rxbuf = &wl_flarm_rx_q, .port=8881, .pid = 0  };
+static sock_server_t AUX     = { .txbuf = &wl_aux_tx_q,   .rxbuf = &wl_aux_rx_q,   .port=8882, .pid = 0  };
 
 
 int create_socket( int port ){
@@ -106,7 +112,7 @@ void socket_server(void *setup) {
 	sock_server_t *config = (sock_server_t *)setup;
 	struct sockaddr_in clientAddress[10];  // we support max 10 clients try to connect same time
 	socklen_t clientAddressLength = sizeof(struct sockaddr_in);
-	std::list<int>  clients;
+	std::list<client_record_t>  &clients = config->clients;
 	int num_send = 0;
 	int sock = create_socket( config->port );
 	if( sock < 0 ) {
@@ -120,7 +126,10 @@ void socket_server(void *setup) {
 		while (1) {
 			int new_client = accept(sock, (struct sockaddr *)&clientAddress[clients.size()], &clientAddressLength);
 			if( new_client >= 0 && clients.size() < 10 ){
-				clients.push_back( new_client );
+				client_record_t new_client_rec;
+				new_client_rec.client = new_client;
+				new_client_rec.retries = 0;
+				clients.push_back( new_client_rec );
 				num_send = 0;
 				ESP_LOGI(FNAME, "New sock client: %d, number of clients: %d", new_client, clients.size()  );
 			}
@@ -130,40 +139,40 @@ void socket_server(void *setup) {
 				int len = Router::pullBlock( *(config->txbuf), block );
 				if( len )
 					ESP_LOGV(FNAME, "port %d to sent %d: bytes, %s", config->port, len, block );
-				std::list<int>::iterator it;
-				int client;
+				std::list<client_record_t>::iterator it;
 				for(it = clients.begin(); it != clients.end(); ++it)
 				{
-					client=*it;
+					client_record_t &client_rec = *it;
 					int client_dead = 0;
 					// ESP_LOGD(FNAME, "loop tcp client %d, port %d", client , config->port );
 					if ( len ){
 						// ESP_LOGI(FNAME, "sent to tcp client %d, bytes %d, port %d", client, len, config->port );
 						// ESP_LOG_BUFFER_HEXDUMP(FNAME,block,len, ESP_LOG_INFO);
-						if( client >= 0 ){
-							int num = send(client, block, len, MSG_DONTWAIT);
+						client_rec.retries++;
+						if( client_rec.client >= 0 ){
+							int num = send(client_rec.client, block, len, MSG_DONTWAIT);
 							// ESP_LOGV(FNAME, "client %d, num send %d", client, num );
-							if( num < 0 )
-								config->numRetries++;
-							else
-								config->numRetries = 0;
-
-							if( config->numRetries > 10 ){
-								ESP_LOGW(FNAME, "tcp client %d (port %d) send err: %s, remove!", client,  config->port, strerror(errno) );
-								close(client);
-								it = clients.erase( it );
-								client_dead = client;
-								num_send = 0;
+							if( num >= 0 ){
+								client_rec.retries = 0;
+							    // ESP_LOGI(FNAME, "tcp send to client %d (port: %d), bytes %d success", client_rec.client, config->port, num );
 							}
-							// ESP_LOGV(FNAME, "tcp send to client %d (port: %d), bytes %d success", client, config->port, num );
 						}
+					}
+					if( client_rec.retries != 0 )
+						ESP_LOGI(FNAME, "tcp retry %d (port: %d), %d", client_rec.client, config->port, client_rec.retries );
+					if( client_rec.retries > 10 ){
+						ESP_LOGW(FNAME, "tcp client %d (port %d) permanent send err: %s, remove!", client_rec.client,  config->port, strerror(errno) );
+						close(client_rec.client );
+						it = clients.erase( it );
+						client_dead = client_rec.client;
+						num_send = 0;
 					}
 					if( Flarm::bincom )
 						vTaskDelay(10/portTICK_PERIOD_MS); // maximize realtime throuput for flight download
 					if( !client_dead ){
 						// ESP_LOGI(FNAME, "read from client %d", client);
 						SString tcprx;
-						ssize_t sizeRead = recv(client, tcprx.c_str(), SSTRLEN-1, MSG_DONTWAIT);
+						ssize_t sizeRead = recv(client_rec.client, tcprx.c_str(), SSTRLEN-1, MSG_DONTWAIT);
 						if (sizeRead > 0) {
 							tcprx.setLen( sizeRead );
 							Router::forwardMsg( tcprx, *(config->rxbuf) );

@@ -39,12 +39,13 @@ typedef struct xcv_sock_server {
 	RingBufCPP<SString, QUEUE_SIZE>* txbuf;
 	RingBufCPP<SString, QUEUE_SIZE>* rxbuf;
 	int port;
+	int numRetries;
 	TaskHandle_t *pid;
 }sock_server_t;
 
-static sock_server_t XCVario = { .txbuf = &wl_vario_tx_q, .rxbuf = &wl_vario_rx_q, .port=8880, .pid = 0 };
-static sock_server_t FLARM   = { .txbuf = &wl_flarm_tx_q, .rxbuf = &wl_flarm_rx_q, .port=8881, .pid = 0  };
-static sock_server_t AUX     = { .txbuf = &wl_aux_tx_q,   .rxbuf = &wl_aux_rx_q,   .port=8882, .pid = 0  };
+static sock_server_t XCVario = { .txbuf = &wl_vario_tx_q, .rxbuf = &wl_vario_rx_q, .port=8880, .numRetries = 0, .pid = 0 };
+static sock_server_t FLARM   = { .txbuf = &wl_flarm_tx_q, .rxbuf = &wl_flarm_rx_q, .port=8881, .numRetries = 0, .pid = 0  };
+static sock_server_t AUX     = { .txbuf = &wl_aux_tx_q,   .rxbuf = &wl_aux_rx_q,   .port=8882, .numRetries = 0, .pid = 0  };
 
 
 int create_socket( int port ){
@@ -142,7 +143,12 @@ void socket_server(void *setup) {
 						if( client >= 0 ){
 							int num = send(client, block, len, MSG_DONTWAIT);
 							// ESP_LOGV(FNAME, "client %d, num send %d", client, num );
-							if( num < 0 ) {
+							if( num < 0 )
+								config->numRetries++;
+							else
+								config->numRetries = 0;
+
+							if( config->numRetries > 10 ){
 								ESP_LOGW(FNAME, "tcp client %d (port %d) send err: %s, remove!", client,  config->port, strerror(errno) );
 								close(client);
 								it = clients.erase( it );

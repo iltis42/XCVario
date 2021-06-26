@@ -45,13 +45,14 @@ typedef struct xcv_sock_server {
 	RingBufCPP<SString, QUEUE_SIZE>* txbuf;
 	RingBufCPP<SString, QUEUE_SIZE>* rxbuf;
 	int port;
+	int idle;
 	TaskHandle_t *pid;
 	std::list<client_record_t>  clients;
 }sock_server_t;
 
-static sock_server_t XCVario = { .txbuf = &wl_vario_tx_q, .rxbuf = &wl_vario_rx_q, .port=8880, .pid = 0  };
-static sock_server_t FLARM   = { .txbuf = &wl_flarm_tx_q, .rxbuf = &wl_flarm_rx_q, .port=8881, .pid = 0  };
-static sock_server_t AUX     = { .txbuf = &wl_aux_tx_q,   .rxbuf = &wl_aux_rx_q,   .port=8882, .pid = 0  };
+static sock_server_t XCVario = { .txbuf = &wl_vario_tx_q, .rxbuf = &wl_vario_rx_q, .port=8880, .idle = 0, .pid = 0  };
+static sock_server_t FLARM   = { .txbuf = &wl_flarm_tx_q, .rxbuf = &wl_flarm_rx_q, .port=8881, .idle = 0, .pid = 0  };
+static sock_server_t AUX     = { .txbuf = &wl_aux_tx_q,   .rxbuf = &wl_aux_rx_q,   .port=8882, .idle = 0, .pid = 0  };
 
 
 int create_socket( int port ){
@@ -133,12 +134,23 @@ void socket_server(void *setup) {
 				num_send = 0;
 				ESP_LOGI(FNAME, "New sock client: %d, number of clients: %d", new_client, clients.size()  );
 			}
-			// ESP_LOGV(FNAME, "Number of clients %d, port %d", clients.size(), config->port );
+			// ESP_LOGI(FNAME, "Number of clients %d, port %d, idle %d", clients.size(), config->port, config->idle );
 			if( clients.size() ) {
 				char block[512];
 				int len = Router::pullBlock( *(config->txbuf), block );
-				if( len )
-					ESP_LOGV(FNAME, "port %d to sent %d: bytes, %s", config->port, len, block );
+				if( len ){
+					// ESP_LOGI(FNAME, "port %d to sent %d: bytes, %s", config->port, len, block );
+					config->idle = 0;
+				}
+				else
+				{
+					config->idle++;
+					if( config->idle > 10 ){  // if there is no data, send a \n all 2 seconds as keep alive
+						block[0] = '\n';
+						len=1;
+						config->idle = 0;
+					}
+				}
 				std::list<client_record_t>::iterator it;
 				for(it = clients.begin(); it != clients.end(); ++it)
 				{
@@ -151,7 +163,7 @@ void socket_server(void *setup) {
 						client_rec.retries++;
 						if( client_rec.client >= 0 ){
 							int num = send(client_rec.client, block, len, MSG_DONTWAIT);
-							// ESP_LOGV(FNAME, "client %d, num send %d", client, num );
+							// ESP_LOGI(FNAME, "client %d, num send %d", client_rec.client, num );
 							if( num >= 0 ){
 								client_rec.retries = 0;
 							    // ESP_LOGI(FNAME, "tcp send to client %d (port: %d), bytes %d success", client_rec.client, config->port, num );
@@ -160,7 +172,7 @@ void socket_server(void *setup) {
 					}
 					if( client_rec.retries != 0 )
 						ESP_LOGI(FNAME, "tcp retry %d (port: %d), %d", client_rec.client, config->port, client_rec.retries );
-					if( client_rec.retries > 10 ){
+					if( client_rec.retries > 100 ){
 						ESP_LOGW(FNAME, "tcp client %d (port %d) permanent send err: %s, remove!", client_rec.client,  config->port, strerror(errno) );
 						close(client_rec.client );
 						it = clients.erase( it );

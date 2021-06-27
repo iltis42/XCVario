@@ -67,6 +67,7 @@ bool Switch::cruiseMode() {
 }
 
 void Switch::begin( gpio_num_t sw ){
+	_cruise_speed_kmh = Units::Airspeed2Kmh( s2f_speed.get() );
 	_sw = sw;
 	gpio_set_direction(_sw, GPIO_MODE_INPUT);
 	gpio_set_pull_mode(_sw, GPIO_PULLDOWN_ONLY);

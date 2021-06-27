@@ -75,7 +75,7 @@ int compass_ena( SetupMenuSelect * p ){
 
 int update_s2f_speed(SetupMenuValFloat * p)
 {
-	Switch::setCruiseSpeed( Units::Airspeed2Kmh( *(p->_value) ) );
+	Switch::setCruiseSpeed( Units::Airspeed2Kmh( s2f_speed.get() ) );
 	return 0;
 }
 

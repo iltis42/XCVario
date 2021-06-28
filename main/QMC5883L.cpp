@@ -140,8 +140,8 @@ uint8_t QMC5883L::readRegister( const uint8_t addr,
 	// read bytes from chip
 	for( int i=0; i<=20; i++ ){
 		esp_err_t err = m_bus->readBytes( addr, reg, count, data );
-		if( err == ESP_OK ){
-			break;
+		if( err == ESP_OK && count == 6 ){
+			return count;
 		}
 		else
 		{
@@ -151,16 +151,15 @@ uint8_t QMC5883L::readRegister( const uint8_t addr,
 				if( initialize() != ESP_OK )
 					initialize();  // one retry
 				err = m_bus->readBytes( addr, reg, count, data );
-				if( err != ESP_OK ){
-					ESP_LOGW( FNAME,"Read after retry failed also, return with no data, len=0");
-					return 0;
-				}else
+				if( err == ESP_OK && count == 6 ){
 					return count;
+				}
 			}
 			delay(10);
 		}
 	}
-	return count;
+	ESP_LOGW( FNAME,"Read after init and retry failed also, return with no data, len=0");
+	return 0;
 }
 
 // scan bus for I2C address
@@ -260,7 +259,7 @@ bool QMC5883L::rawHeading()
 				break;
 			}
 			else
-				ESP_LOGW( FNAME, "No new data,  N=%d  RDY%d  DOR%d", i, status & STATUS_DRDY, status & STATUS_DOR );
+				ESP_LOGW( FNAME, "No new data,  N=%d  RDY%d  DOR%d REG:%02X", i, status & STATUS_DRDY, status & STATUS_DOR, status );
 		}
 		else{
 			// ESP_LOGW( FNAME, "read REG_STATUS failed, N=%d  RDY%d  DOR%d", i, status & STATUS_DRDY, status & STATUS_DOR );

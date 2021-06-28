@@ -150,7 +150,11 @@ int wk_cal( SetupMenuSelect * p )
 void Flap::setupMenue( SetupMenu *parent ){
 	ESP_LOGI(FNAME,"Flap::setupMenue");
 	SetupMenu * wk = new SetupMenu( "Flap (WK) Indicator" );
+	if( parent ){
 	wkm = parent->addMenu( wk );
+	}else{
+		wkm = new SetupMenu( "Dummy" );
+	}
 
 	SetupMenuSelect * wke = new SetupMenuSelect( "Flap Indicator", false, 0, true, &flap_enable );
 	wke->addEntry( "Disable");
@@ -327,6 +331,7 @@ void Flap::drawSmallBar( int ypos, int xpos, float wkf ){
 		char position[6];
 		if(wk<-3)
 			continue;
+
 		sprintf( position,"%s", flapLabels[wk+3]->getEntry());
 		int y=top+(lfh+4)*(5-(wk+2))+(int)((wkf-2)*(lfh+4));
 		ucg->setPrintPos(xpos-2, y );
@@ -357,14 +362,11 @@ void Flap::drawLever( int xpos, int ypos, int oldypos, bool warn ){
     else{
     	ucg->setColor(COLOR_WHITE);
     }
-
 	ucg->drawBox( xpos-25, ypos-4, 19, 8 );
 	ucg->drawBox( xpos-6, ypos-2, 4, 4 );
 }
 
 void Flap::drawBigBar( int ypos, int xpos, float wkf, float wksens ){
-	// int *i=0;
-	// *i=2;
 	ucg->setFont(ucg_font_profont22_mr );
 	ucg->setFontPosCenter();
 	int lfh = ucg->getFontAscent()+10;  // a bit place around number

@@ -516,6 +516,7 @@ void SetupMenu::setup( )
 		passw->setPrecision( 0 );
 		passw->setHelp( PROGMEM"To exit from student mode enter expert password and restart device after expert password has been set correctly");
 		mm->addMenu( passw );
+		Flap::setupMenue( NULL );
 	}
 	else
 	{
@@ -770,6 +771,7 @@ void SetupMenu::setup( )
 		poe->addMenu( wingarea );
 
 		SetupMenu * opt = new SetupMenu( "Options" );
+
 		mm->addMenu( opt );
 		if( student_mode.get() == 0 ) {
 			SetupMenuSelect *stumo  = new SetupMenuSelect( "Student Mode", true, 0, true, &student_mode );
@@ -778,10 +780,7 @@ void SetupMenu::setup( )
 			stumo->addEntry( "Disable");
 			stumo->addEntry( "Enable");
 		}
-
 		Flap::setupMenue( opt );
-
-
 		// Units
 		SetupMenu * un = new SetupMenu( "Units" );
 		un->setHelp( PROGMEM "Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units");

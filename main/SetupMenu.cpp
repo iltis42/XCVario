@@ -146,9 +146,10 @@ int elev_adj( SetupMenuValFloat * p )
 	}
 	else {
 		u = "ft";
-		elevp = elevp*3.28084;
+		elevp = Units::meters2feet(elevp);
 	}
-	p->ucg->printf("%4d %s ", (int)(elevp+0.5), u.c_str() );
+	p->ucg->printf("%4d %s ", ((int)((elevp+2.5)/5))*5, u.c_str() );
+	// p->ucg->printf("%4d %s ", (int)(elevp+0.5), u.c_str() );
 	p->ucg->setFont(ucg_font_ncenR14_hr);
 	xSemaphoreGive(spiMutex );
 	return 0;
@@ -496,9 +497,9 @@ void SetupMenu::setup( )
 	mm->addMenu( bgs );
 
 	String elev_unit = "m";
-	int step = 1;
+	float step = 1;
 	if( alt_unit.get() == 1 ){ // ft
-		step = 5;
+		step = 5.0/Units::meters2feet(1);
 	}
 
 	SetupMenuValFloat * afe = new SetupMenuValFloat( "Airfield Elevation", 0, "m", -1, 3000, step, elev_adj, true, &elevation );

@@ -622,6 +622,8 @@ void Audio::dactask(void* arg )
 uint16_t Audio::equal_volume( uint16_t volume ){
 	float fdelta = current_frequency/center_freq.get();
 	uint16_t new_vol = (uint16_t)( volume *( 1 - ((fdelta-1.0) * (frequency_response.get()/100.0) ) ));
+	if( new_vol >= 126*(max_volume.get()/100) )
+		new_vol = 126*(max_volume.get()/100);
 	// ESP_LOGI(FNAME,"Vol: %d Scaled %d  f: %4.0f delta:%2.2f", volume, new_vol, current_frequency, fdelta );
 	return new_vol;
 }

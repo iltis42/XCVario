@@ -724,6 +724,11 @@ void SetupMenu::setup( )
 		ameda->addEntry( "Silent");       // 1
 		audio->addMenu( ameda );
 
+		SetupMenuValFloat * frqr = new SetupMenuValFloat( "Frequency Response", 0,	"%", 1.0, 50.0, 10.0, 0, false, &frequency_response );
+		frqr->setHelp(PROGMEM"Setup frequency response; Double frequency will be attenuated by the factor given, half frequency amplified");
+		audios->addMenu( frqr );
+
+
 		// Polar Setup
 		SetupMenu * po = new SetupMenu( "Polar" );
 		po->setHelp( PROGMEM"Polar setup to match performance of glider");

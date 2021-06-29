@@ -61,6 +61,7 @@ uint16_t Audio::_vol_back = 0;
 uint16_t Audio::_vol_back_s2f = 0;
 float Audio::maxf = 2000;
 float Audio::minf = 250;
+float Audio::current_frequency;
 float Audio::_te = 0;
 float Audio::exponent_max = 2;
 float Audio::prev_aud_fact = 0;
@@ -197,7 +198,9 @@ bool Audio::selfTest(){
 	dac_output_enable(_ch);
 	for( float f=261.62; f<1046.51; f=f*1.03){
 		ESP_LOGV(FNAME,"f=%f",f);
+		current_frequency = f;
 		setFrequency( f );
+		Poti.writeWiper( equal_volume( setwiper ) );
 		delay(30);
 		esp_task_wdt_reset();
 	}
@@ -529,14 +532,14 @@ void Audio::dactask(void* arg )
 							if( !sound_on ) {
 								int volume=1;
 								for( int i=0; i<6 && volume <(*p_wiper); i++ ) {
-									Poti.writeWiper( volume );
+									Poti.writeWiper( equal_volume( volume ) );
 									cur_wiper = volume;
 									volume = volume*2;
 									delay(1);
 									// ESP_LOGI(FNAME, "fade in sound, wiper: %d", i);
 								}
 								if(  cur_wiper != (*p_wiper) ){
-									Poti.writeWiper( (*p_wiper) );
+									Poti.writeWiper( equal_volume( (*p_wiper) ) );
 									cur_wiper = (*p_wiper);
 								}
 								// ESP_LOGI(FNAME, "fade in sound, final wiper: %d", cur_wiper );
@@ -548,16 +551,16 @@ void Audio::dactask(void* arg )
 							int delta = 1;
 							if( (*p_wiper) > cur_wiper )
 								for( int i=cur_wiper; i<(*p_wiper); i+=delta ) {
-									Poti.writeWiper( i );
+									Poti.writeWiper( equal_volume(i) );
 									delta = 2+i/FADING_TIME;
 									delay(1);
 								}else
 									for( int i=cur_wiper; i>(*p_wiper); i-=delta ) {
-										Poti.writeWiper( i );
+										Poti.writeWiper( equal_volume(i) );
 										delta = 2+i/FADING_TIME;
 										delay(1);
 									}
-							Poti.writeWiper( (*p_wiper) );
+							Poti.writeWiper( equal_volume((*p_wiper)) );
 							cur_wiper = (*p_wiper);
 							// ESP_LOGI(FNAME, "volume change, new wiper: %d", cur_wiper );
 						}
@@ -574,11 +577,15 @@ void Audio::dactask(void* arg )
 						prev_aud_fact = audio_factor.get();
 					}
 					float f = center_freq.get() + ((mult*_te)/range )  * (max/exponent_max);
+					if( (int)(f/10.0) != int(current_frequency/10.0) ){
+						current_frequency = center_freq.get() + ((mult*_te)/range )  * (max/exponent_max);
+						Poti.writeWiper( equal_volume(*p_wiper) );
+					}
 					// ESP_LOGI(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f multi:%0.3f  wiper:%d", f, _te, audio_factor.get(), mult, cur_wiper );
 					if( hightone && (_tonemode == ATM_DUAL_TONE ) )
-						setFrequency( f*_high_tone_var );
+						setFrequency( current_frequency*_high_tone_var );
 					else
-						setFrequency( f );
+						setFrequency( current_frequency );
 				}
 				else{
 					if( sound_on ) {
@@ -588,7 +595,7 @@ void Audio::dactask(void* arg )
 							if( cur_wiper > 0 ) {  // turn off gracefully sound
 								int volume = (*p_wiper)/2;
 								for( int i=0; i<6 && volume > 0; i++ ) {
-									Poti.writeWiper( volume );
+									Poti.writeWiper( equal_volume( volume ) );
 									volume = volume/2;
 									delay(1);
 								}
@@ -610,6 +617,13 @@ void Audio::dactask(void* arg )
 		if( volume_change )
 			volume_change--;
 	}
+}
+
+uint16_t Audio::equal_volume( uint16_t volume ){
+	float fdelta = current_frequency/center_freq.get();
+	uint16_t new_vol = (uint16_t)( volume *( 1 - ((fdelta-1.0) * (frequency_response.get()/100.0) ) ));
+	// ESP_LOGI(FNAME,"Vol: %d Scaled %d  f: %4.0f delta:%2.2f", volume, new_vol, current_frequency, fdelta );
+	return new_vol;
 }
 
 bool Audio::inDeadBand( float te )
@@ -681,7 +695,7 @@ void Audio::restart()
 	dac_scale_set(_ch, 2 );
 	enableAmplifier( true );
 	ESP_LOGV(FNAME, "restart wiper: %d", (*p_wiper) );
-	Poti.writeWiper( (*p_wiper) );
+	Poti.writeWiper( equal_volume( (*p_wiper) ) );
 	delay( 10 );
 	dac_output_enable(_ch);
 }

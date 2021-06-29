@@ -50,7 +50,8 @@ private:
     static bool inDeadBand( float te );
 	static bool lookup( float f, int& div, int &step );
 	static void enableAmplifier( bool enable );  // frue ON, false OFF
-	static void  evaluateChopping();
+	static void evaluateChopping();
+	static uint16_t equal_volume( uint16_t volume );
 
 	static dac_channel_t _ch;
 	static float _te;
@@ -89,6 +90,7 @@ private:
     static int _delay;
     static unsigned long next_scedule;
     static int mtick;
+    static float current_frequency;
 };
 
 

@@ -143,13 +143,13 @@ int elev_adj( SetupMenuValFloat * p )
 	float elevp = elevation.get();
 	if( alt_unit.get() == 0 ){ // m
 		u = "m";
+		p->ucg->printf("%4d %s ", (int)(elevp+0.5), u.c_str() );
 	}
 	else {
 		u = "ft";
 		elevp = Units::meters2feet(elevp);
+		p->ucg->printf("%4d %s ", ((int)((elevp+2.5)/5))*5, u.c_str() );
 	}
-	p->ucg->printf("%4d %s ", ((int)((elevp+2.5)/5))*5, u.c_str() );
-	// p->ucg->printf("%4d %s ", (int)(elevp+0.5), u.c_str() );
 	p->ucg->setFont(ucg_font_ncenR14_hr);
 	xSemaphoreGive(spiMutex );
 	return 0;

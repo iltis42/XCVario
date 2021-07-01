@@ -91,6 +91,7 @@ private:
     static unsigned long next_scedule;
     static int mtick;
     static float current_frequency;
+    static int _step;
 };
 
 

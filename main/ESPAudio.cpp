@@ -24,6 +24,7 @@
 #include "driver/dac.h"
 #include "sensor.h"
 #include "mcp4018.h"
+#include "cat5171.h"
 #include <Arduino.h>
 #include <vector>
 #include <logdef.h>
@@ -31,6 +32,7 @@
 #include "I2Cbus.hpp"
 #include "sensor.h"
 #include "SetupNG.h"
+#include "Poti.h"
 
 
 TaskHandle_t *dactid;
@@ -74,6 +76,7 @@ int   Audio::defaultDelay = 500;
 int   Audio::_tonemode_back = 0;
 int   Audio::tick = 0;
 int   Audio::volume_change=0;
+int   Audio::_step = 2;
 bool  Audio::prev_alarm=false;
 
 const int clk_8m_div = 7;    // RTC 8M clock divider (division is by clk_8m_div+1, i.e. 0 means 8MHz frequency)
@@ -81,7 +84,7 @@ const float freq_step = RTC_FAST_CLK_FREQ_APPROX / (65536 * 8 );  // div = 0x07
 typedef struct lookup {  uint16_t f; uint8_t div; uint8_t step; } t_lookup_entry;
 typedef struct volume {  uint16_t vol; uint8_t scale; uint8_t wiper; } t_scale_wip;
 
-MCP4018 Poti;
+Poti *DigitalPoti;
 
 
 Audio::Audio( ) {
@@ -96,26 +99,6 @@ Audio::Audio( ) {
 	sound_on = false;
 }
 
-// Table to lookup settings audio generator setting divider and step covering frequencies up to 800 Hz
-PROGMEM std::vector<t_scale_wip> scaletab{
-	{ 0,2,0 },	    { 1,2,1 },	    { 2,2,4 },	    { 3,2,7 },	    { 4,2,10 },	    { 5,2,13 },	    { 6,2,16 },	    { 7,2,19 },
-	{ 8,2,22 },	    { 9,2,25 },	    { 10,2,28 },    { 11,2,31 },	{ 12,2,34 },	{ 13,2,37 },	{ 14,2,40 },	{ 15,2,43 },
-	{ 16,2,46 },	{ 17,2,49 },	{ 18,2,52 },	{ 19,2,55 },	{ 20,2,58 },	{ 21,2,61 },	{ 22,2,64 },	{ 23,2,67 },
-	{ 24,2,70 },	{ 25,2,73 },	{ 26,2,76 },	{ 27,2,79 },	{ 28,2,82 },	{ 29,2,85 },	{ 30,2,88 },	{ 31,2,91 },
-	{ 32,2,94 },	{ 33,2,97 },	{ 34,2,100 },	{ 35,2,103 },	{ 36,2,106 },	{ 37,2,109 },	{ 38,2,112 },	{ 39,2,115 },
-	{ 40,2,118 },	{ 41,2,121 },	{ 42,2,124 },	{ 43,2,127 },	{ 44,1,86 },	{ 45,1,88 },	{ 46,1,90 },	{ 47,1,92 },
-	{ 48,1,94 },	{ 49,1,96 },	{ 50,1,98 },	{ 51,1,100 },	{ 52,1,102 },	{ 53,1,104 },	{ 54,1,106 },	{ 55,1,108 },
-	{ 56,1,110 },	{ 57,1,112 },	{ 58,1,114 },	{ 59,1,116 },	{ 60,1,118 },	{ 61,1,120 },	{ 62,1,122 },	{ 63,1,124 },
-	{ 64,1,126 },	{ 65,1,127 },	{ 66,0,65 },	{ 67,0,66 },	{ 68,0,67 },	{ 69,0,68 },	{ 70,0,69 },	{ 71,0,70 },
-	{ 72,0,71 },	{ 73,0,72 },	{ 74,0,73 },	{ 75,0,74 },	{ 76,0,75 },	{ 77,0,76 },	{ 78,0,77 },	{ 79,0,78 },
-	{ 80,0,79 },	{ 81,0,80 },	{ 82,0,81 },	{ 83,0,82 },	{ 84,0,83 },	{ 85,0,84 },	{ 86,0,85 },	{ 87,0,86 },
-	{ 88,0,87 },	{ 89,0,88 },	{ 90,0,89 },	{ 91,0,90 },	{ 92,0,91 },	{ 93,0,92 },	{ 94,0,93 },	{ 95,0,94 },
-	{ 96,0,95 },	{ 97,0,96 },	{ 98,0,97 },	{ 99,0,98 },	{ 100,0,99 },	{ 101,0,100 },	{ 102,0,101 },	{ 103,0,102 },
-	{ 104,0,103 },	{ 105,0,104 },	{ 106,0,105 },	{ 107,0,106 },	{ 108,0,107 },	{ 109,0,108 },	{ 110,0,109 },	{ 111,0,110 },
-	{ 112,0,111 },	{ 113,0,112 },	{ 114,0,113 },	{ 115,0,114 },	{ 116,0,115 },	{ 117,0,116 },	{ 118,0,117 },	{ 119,0,118 },
-	{ 120,0,119 },	{ 121,0,120 },	{ 122,0,121 },	{ 123,0,122 },	{ 124,0,123 },	{ 125,0,124 },	{ 126,0,125 },	{ 127,0,126 },
-	{ 128,0,127 }
-};
 
 
 PROGMEM std::vector<t_lookup_entry> lftab{
@@ -175,14 +158,52 @@ void Audio::dac_cosine_enable(dac_channel_t channel, bool enable)
 	}
 }
 
+
+void Audio::begin( dac_channel_t ch  )
+{
+	ESP_LOGI(FNAME,"Audio::begin");
+	Switch::begin( GPIO_NUM_12 );
+	setup();
+	_ch = ch;
+
+	restart();
+	_testmode = true;
+	delay(10);
+}
+
 bool Audio::selfTest(){
 	ESP_LOGI(FNAME,"Audio::selfTest");
-	uint16_t getwiper;
-	uint16_t setwiper = ((default_volume.get() * 100.0) / 127);
+	DigitalPoti = new MCP4018();
+	DigitalPoti->setBus( &i2c );
+	DigitalPoti->begin();
+	if( !DigitalPoti->haveDevice() )
+	{
+		ESP_LOGI(FNAME,"Try CAT5171 digital Poti");
+		delete DigitalPoti;
+		DigitalPoti = new CAT5171();
+		DigitalPoti->setBus( &i2c );
+		DigitalPoti->begin();
+		if( DigitalPoti->haveDevice() )
+			ESP_LOGI(FNAME,"CAT5171 digital Poti found");
+		else{
+			ESP_LOGW(FNAME,"NO digital Poti found !");
+			return false;
+		}
+	}
+	else
+	{
+		ESP_LOGI(FNAME,"MCP4018 digital Poti found");
+	}
+	_step = DigitalPoti->getStep();
+
+	uint16_t setwiper = ((default_volume.get() * 100.0) / DigitalPoti->getRange());
+	wiper = wiper_s2f = setwiper;
+	p_wiper = &wiper;
+	ESP_LOGI(FNAME,"default volume/wiper: %d", (*p_wiper) );
 	ESP_LOGI(FNAME, "selfTest wiper: %d", wiper );
-	Poti.haveDevice();
-	Poti.writeWiper( setwiper );
-	bool ret = Poti.readWiper( getwiper );
+	DigitalPoti->writeWiper( setwiper );
+	uint16_t getwiper;
+	bool ret = DigitalPoti->readWiper( getwiper );
 	if( ret == false ) {
 		ESP_LOGI(FNAME,"readWiper returned error");
 		return false;
@@ -195,19 +216,19 @@ bool Audio::selfTest(){
 	else
 		ret = true;
 
-	dac_output_enable(_ch);
+	restart();
 	for( float f=261.62; f<1046.51; f=f*1.03){
 		ESP_LOGV(FNAME,"f=%f",f);
 		current_frequency = f;
 		setFrequency( f );
-		Poti.writeWiper( equal_volume( setwiper ) );
+		DigitalPoti->writeWiper( equal_volume( setwiper ) );
 		delay(30);
 		esp_task_wdt_reset();
 	}
 
 	delay(200);
 	ESP_LOGI(FNAME, "selfTest wiper: %d", 0 );
-	Poti.writeWiper( 0 );
+	DigitalPoti->writeWiper( 0 );
 	setFrequency( 440 );
 	_testmode=true;
 	return ret;
@@ -406,11 +427,12 @@ void Audio::decVolume( int steps ) {
 	ESP_LOGI(FNAME,"inc volume, *p_wiper: %d", (*p_wiper) );
 }
 
+
 void Audio::incVolume( int steps ) {
 	steps = int( 1+ ( (float)(*p_wiper)/16.0 ))*steps;
-	if( (*p_wiper) > 126 )
-		(*p_wiper) = 126;
-	while( steps && ((*p_wiper) < 126*(max_volume.get()/100)) ){
+	if( (*p_wiper) > DigitalPoti->getRange() )
+		(*p_wiper) =  DigitalPoti->getRange();
+	while( steps && ((*p_wiper) <  DigitalPoti->getRange()*(max_volume.get()/100)) ){
 		(*p_wiper)++;
 		steps--;
 	}
@@ -488,7 +510,7 @@ void Audio::dactask(void* arg )
 		if( audio_disable.get() && Menu->isActive() ){
 			if( sound_on ){
 				dac_output_disable(_ch);
-				Poti.writeWiper( 0 );
+				DigitalPoti->writeWiper( 0 );
 				cur_wiper = 0;
 				sound_on = false;
 			}
@@ -530,16 +552,17 @@ void Audio::dactask(void* arg )
 						else{
 							dac_output_enable(_ch);
 							if( !sound_on ) {
-								int volume=1;
+								int volume=4;
 								for( int i=0; i<6 && volume <(*p_wiper); i++ ) {
-									Poti.writeWiper( equal_volume( volume ) );
+									// ESP_LOGI(FNAME, "fade in sound, wiper: %d", volume );
+									DigitalPoti->writeWiper( equal_volume( volume ) );
 									cur_wiper = volume;
-									volume = volume*2;
+									volume = volume*_step;
 									delay(1);
-									// ESP_LOGI(FNAME, "fade in sound, wiper: %d", i);
 								}
 								if(  cur_wiper != (*p_wiper) ){
-									Poti.writeWiper( equal_volume( (*p_wiper) ) );
+									// ESP_LOGI(FNAME, "fade in sound, wiper: %d", (*p_wiper)  );
+									DigitalPoti->writeWiper( equal_volume( (*p_wiper) ) );
 									cur_wiper = (*p_wiper);
 								}
 								// ESP_LOGI(FNAME, "fade in sound, final wiper: %d", cur_wiper );
@@ -551,16 +574,16 @@ void Audio::dactask(void* arg )
 							int delta = 1;
 							if( (*p_wiper) > cur_wiper )
 								for( int i=cur_wiper; i<(*p_wiper); i+=delta ) {
-									Poti.writeWiper( equal_volume(i) );
-									delta = 2+i/FADING_TIME;
+									DigitalPoti->writeWiper( equal_volume(i) );
+									delta = _step+i/FADING_TIME;
 									delay(1);
 								}else
 									for( int i=cur_wiper; i>(*p_wiper); i-=delta ) {
-										Poti.writeWiper( equal_volume(i) );
-										delta = 2+i/FADING_TIME;
+										DigitalPoti->writeWiper( equal_volume(i) );
+										delta = _step+i/FADING_TIME;
 										delay(1);
 									}
-							Poti.writeWiper( equal_volume((*p_wiper)) );
+							DigitalPoti->writeWiper( equal_volume((*p_wiper)) );
 							cur_wiper = (*p_wiper);
 							// ESP_LOGI(FNAME, "volume change, new wiper: %d", cur_wiper );
 						}
@@ -579,7 +602,7 @@ void Audio::dactask(void* arg )
 					float f = center_freq.get() + ((mult*_te)/range )  * (max/exponent_max);
 					if( (int)(f/10.0) != int(current_frequency/10.0) ){
 						current_frequency = center_freq.get() + ((mult*_te)/range )  * (max/exponent_max);
-						Poti.writeWiper( equal_volume(*p_wiper) );
+						DigitalPoti->writeWiper( equal_volume(*p_wiper) );
 					}
 					// ESP_LOGI(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f multi:%0.3f  wiper:%d", f, _te, audio_factor.get(), mult, cur_wiper );
 					if( hightone && (_tonemode == ATM_DUAL_TONE ) )
@@ -593,13 +616,14 @@ void Audio::dactask(void* arg )
 							dac_output_disable(_ch);
 						}else{
 							if( cur_wiper > 0 ) {  // turn off gracefully sound
-								int volume = (*p_wiper)/2;
+								int volume = (*p_wiper)/_step;
 								for( int i=0; i<6 && volume > 0; i++ ) {
-									Poti.writeWiper( equal_volume( volume ) );
-									volume = volume/2;
+									// ESP_LOGI(FNAME, "fade out sound, wiper: %d", volume );
+									DigitalPoti->writeWiper( equal_volume( volume ) );
+									volume = volume/_step;
 									delay(1);
 								}
-								Poti.writeWiper( 0 );
+								DigitalPoti->writeWiper( 0 );
 								// ESP_LOGI(FNAME, "fade out sound, final wiper: 0" );
 								dac_output_disable(_ch);
 								cur_wiper = 0;
@@ -622,8 +646,8 @@ void Audio::dactask(void* arg )
 uint16_t Audio::equal_volume( uint16_t volume ){
 	float fdelta = current_frequency/center_freq.get();
 	uint16_t new_vol = (uint16_t)( volume *( 1 - ((fdelta-1.0) * (frequency_response.get()/100.0) ) ));
-	if( new_vol >= 126*(max_volume.get()/100) )
-		new_vol = 126*(max_volume.get()/100);
+	if( new_vol >=  DigitalPoti->getRange()*(max_volume.get()/100) )
+		new_vol =  DigitalPoti->getRange()*(max_volume.get()/100);
 	// ESP_LOGI(FNAME,"Vol: %d Scaled %d  f: %4.0f delta:%2.2f", volume, new_vol, current_frequency, fdelta );
 	return new_vol;
 }
@@ -696,27 +720,10 @@ void Audio::restart()
 	dac_invert_set(_ch, 2 );    // invert MSB to get sine waveform
 	dac_scale_set(_ch, 2 );
 	enableAmplifier( true );
-	ESP_LOGV(FNAME, "restart wiper: %d", (*p_wiper) );
-	Poti.writeWiper( equal_volume( (*p_wiper) ) );
 	delay( 10 );
 	dac_output_enable(_ch);
 }
 
-void Audio::begin( dac_channel_t ch  )
-{
-	ESP_LOGI(FNAME,"Audio::begin");
-	Switch::begin( GPIO_NUM_12 );
-	Poti.setBus( &i2c );
-	Poti.begin();
-	setup();
-	_ch = ch;
-	wiper = wiper_s2f = (uint16_t)( ( (default_volume.get() * 100.0) / 127)  );
-    p_wiper = &wiper;
-	ESP_LOGI(FNAME,"default volume/wiper: %d", (*p_wiper) );
-	restart();
-	_testmode = true;
-	delay(10);
-}
 
 void Audio::shutdown(){
 	dac_output_disable(_ch);

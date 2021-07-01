@@ -160,6 +160,22 @@ esp_err_t I2C::write8bit( uint8_t addr, uint16_t word )
     return ret;
 }
 
+esp_err_t I2C::write2bytes( uint8_t addr, uint8_t byte1, uint8_t byte2 )
+{
+	xSemaphoreTake(*i2cbus_mutex,portMAX_DELAY );
+	// I2CBUS_LOGI("write8bit NS");
+	i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+	i2c_master_start(cmd);
+	i2c_master_write_byte(cmd, (addr<<1)| I2C_MASTER_WRITE , I2C_MASTER_ACK);
+	esp_err_t ret = i2c_master_write_byte(cmd, byte1 , I2C_MASTER_ACK);  // ACK = 0, NACK = 1
+	ret |= i2c_master_write_byte(cmd, byte2 , I2C_MASTER_ACK);  // ACK = 0, NACK = 1
+	i2c_master_stop(cmd);
+	ret |= i2c_master_cmd_begin(port, cmd, pdMS_TO_TICKS(I2C_TIMEOUT) );
+    i2c_cmd_link_delete(cmd);
+    xSemaphoreGive(*i2cbus_mutex);
+    return ret;
+}
+
 esp_err_t I2C::read8bit( uint8_t addr, uint16_t *word )
 {
 	xSemaphoreTake(*i2cbus_mutex,portMAX_DELAY );

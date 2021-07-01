@@ -62,8 +62,9 @@ double BMPVario::readTE( float tas ) {
 
 	uint64_t rts = esp_timer_get_time();
 	float delta = (float)(rts - lastrts)/1000000.0;   // in seconds
-	if( delta < 0.075 || delta > 250 ) { // ensure every 100 mS one calculation
-		ESP_LOGI(FNAME, "Invalid TE time delta (<75 || >250) mS: %4.1f", delta*100 );
+	// ESP_LOGI(FNAME, "TE time delta %4.3f", delta );
+	if( (delta < 0.075) || (delta > 0.400) ) { // ensure delta is 100 mS +-
+		// ESP_LOGI(FNAME, "Invalid TE time delta (<75 || >250) mS: %4.1f", delta*1000 );
 		return _TEF;
 	}
 

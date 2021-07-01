@@ -327,7 +327,7 @@ void SetupMenu::display( int mode ){
 			ucg->setFont(ucg_font_ncenR14_hr);
 		}
 		ucg->setColor( COLOR_WHITE );
-		ESP_LOGI(FNAME,"Child: %s y=%d",child->_title.c_str() ,y );
+		// ESP_LOGI(FNAME,"Child: %s y=%d",child->_title.c_str() ,y );
 	}
 	y+=170;
 	xSemaphoreGive(spiMutex );
@@ -336,7 +336,7 @@ void SetupMenu::display( int mode ){
 
 void SetupMenu::down(int count){
 	if( selected == this && !_menu_enabled ) {
-		ESP_LOGI(FNAME,"root: down");
+		// ESP_LOGI(FNAME,"root: down");
 		float &mc = MC.getRef();
 		if( rot_default.get() == 1) {	 // MC Value
 			if( mc > 0.1 ) {
@@ -370,7 +370,7 @@ void SetupMenu::down(int count){
 
 void SetupMenu::up(int count){
 	if( selected == this && !_menu_enabled ) {
-		ESP_LOGI(FNAME,"root: up");
+		// ESP_LOGI(FNAME,"root: up");
 		float &mc = MC.getRef();
 		if(rot_default.get() == 1) {	 // MC Value
 			if( mc < 9.9 ) {
@@ -388,7 +388,7 @@ void SetupMenu::up(int count){
 
 	if( (selected != this) || !_menu_enabled )
 		return;
-	ESP_LOGI(FNAME,"SetupMenu::up %d %d", highlight, _childs.size() );
+	// ESP_LOGI(FNAME,"SetupMenu::up %d %d", highlight, _childs.size() );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setColor(COLOR_BLACK);
 	ucg->drawFrame( 1,(highlight+1)*25+3,238,25 );

@@ -84,7 +84,7 @@ const float freq_step = RTC_FAST_CLK_FREQ_APPROX / (65536 * 8 );  // div = 0x07
 typedef struct lookup {  uint16_t f; uint8_t div; uint8_t step; } t_lookup_entry;
 typedef struct volume {  uint16_t vol; uint8_t scale; uint8_t wiper; } t_scale_wip;
 
-#define FADING_STEPS 5  // steps used for fade in/out at chopping
+#define FADING_STEPS 6  // steps used for fade in/out at chopping
 #define FADING_TIME  3  // factor for volume changes fade over smoothing
 
 Poti *DigitalPoti;
@@ -559,13 +559,13 @@ void Audio::dactask(void* arg )
 						else{
 							dac_output_enable(_ch);
 							if( !sound_on ) {
-								int step = (*p_wiper)/FADING_STEPS;
-								int volume=0;
-								for( int i=0; i<FADING_STEPS && volume <(*p_wiper); i++ ) {
+								float step = (*p_wiper)/FADING_STEPS;
+								float volume=step;
+								for( int i=0; i<FADING_STEPS && (int)volume <=(*p_wiper); i++ ) {
 									// ESP_LOGI(FNAME, "fade in sound, wiper: %d", volume );
-									volume += step;
-									DigitalPoti->writeWiper( equal_volume( volume ) );
+									DigitalPoti->writeWiper( equal_volume( (int)volume ) );
 									cur_wiper = volume;
+									volume += step;
 									delay(1);
 								}
 								if(  cur_wiper != (*p_wiper) ){
@@ -624,16 +624,16 @@ void Audio::dactask(void* arg )
 							dac_output_disable(_ch);
 						}else{
 							if( cur_wiper > 0 ) {  // turn off gracefully sound
-								int step = (*p_wiper)/FADING_STEPS;
-								int volume = (*p_wiper);
-								for( int i=0; i<FADING_STEPS && volume > 0; i++ ) {
+								float step = (*p_wiper)/FADING_STEPS;
+								float volume = (float)(*p_wiper) - step;
+								for( int i=0; i<FADING_STEPS && (int)volume >=0; i++ ) {
 									// ESP_LOGI(FNAME, "fade out sound, wiper: %d", volume );
+									DigitalPoti->writeWiper( equal_volume( (int)volume ) );
 									volume -= step;
-									DigitalPoti->writeWiper( equal_volume( volume ) );
-									delay(1);
 								}
 								DigitalPoti->writeWiper( 0 );
 								// ESP_LOGI(FNAME, "fade out sound, final wiper: 0" );
+								delay(1);
 								dac_output_disable(_ch);
 								cur_wiper = 0;
 							}

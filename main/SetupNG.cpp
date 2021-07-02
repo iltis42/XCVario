@@ -62,7 +62,7 @@ SetupNG<int>  			s2f_cm_takeover_from_master( "S2F_CMTO", 1 );
 SetupNG<int>  			audio_mode( "AUDIO_MODE" ,  3 );
 SetupNG<int>  			chopping_mode( "CHOPPING_MODE",  VARIO_CHOP );
 SetupNG<int>  			chopping_style( "CHOP_STYLE",  AUDIO_CHOP_SOFT );
-SetupNG<int>  			amplifier_shutdown( "AMP_DIS", 1 );
+SetupNG<int>  			amplifier_shutdown( "AMP_DIS", 0 );
 
 SetupNG<int>  			wireless_type( "BT_ENABLE" ,  1);
 SetupNG<int>  			factory_reset( "FACTORY_RES" , 0 );

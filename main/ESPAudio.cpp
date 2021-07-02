@@ -84,6 +84,9 @@ const float freq_step = RTC_FAST_CLK_FREQ_APPROX / (65536 * 8 );  // div = 0x07
 typedef struct lookup {  uint16_t f; uint8_t div; uint8_t step; } t_lookup_entry;
 typedef struct volume {  uint16_t vol; uint8_t scale; uint8_t wiper; } t_scale_wip;
 
+#define FADING_STEPS 5  // steps used for fade in/out at chopping
+#define FADING_TIME  3  // factor for volume changes fade over smoothing
+
 Poti *DigitalPoti;
 
 
@@ -458,7 +461,7 @@ void Audio::calcS2Fmode(){
 	}
 }
 
-#define FADING_TIME 3
+
 bool sound=true;
 
 void  Audio::evaluateChopping(){
@@ -472,6 +475,8 @@ void  Audio::evaluateChopping(){
 	else
 	_chopping = false;
 }
+
+
 
 void Audio::dactask(void* arg )
 {
@@ -491,12 +496,14 @@ void Audio::dactask(void* arg )
 				else
 					f = 1+9*(_te/_range);
 
-				float period_ms = 1000/f;
+				float period_ms = 1000.0/f;
 				if ( hightone ){  // duration of break (or second tone)
 					_delay = int(period_ms * 0.1)+40;  // 1Hz: 100 mS; 10Hz: 50 mS
+					// ESP_LOGI(FNAME, "Break delay:%d period:%4.2f", _delay, period_ms );
 				}
 				else{  // duration of main tone 1Hz: 900 mS; 10Hz: 50 mS
 					_delay = int(period_ms * 0.9)-40;
+					// ESP_LOGI(FNAME, "Tone  delay:%d period:%4.2f", _delay, period_ms );
 				}
 			}
 			else
@@ -552,12 +559,13 @@ void Audio::dactask(void* arg )
 						else{
 							dac_output_enable(_ch);
 							if( !sound_on ) {
-								int volume=4;
-								for( int i=0; i<6 && volume <(*p_wiper); i++ ) {
+								int step = (*p_wiper)/FADING_STEPS;
+								int volume=0;
+								for( int i=0; i<FADING_STEPS && volume <(*p_wiper); i++ ) {
 									// ESP_LOGI(FNAME, "fade in sound, wiper: %d", volume );
+									volume += step;
 									DigitalPoti->writeWiper( equal_volume( volume ) );
 									cur_wiper = volume;
-									volume = volume*_step;
 									delay(1);
 								}
 								if(  cur_wiper != (*p_wiper) ){
@@ -616,11 +624,12 @@ void Audio::dactask(void* arg )
 							dac_output_disable(_ch);
 						}else{
 							if( cur_wiper > 0 ) {  // turn off gracefully sound
-								int volume = (*p_wiper)/_step;
-								for( int i=0; i<6 && volume > 0; i++ ) {
+								int step = (*p_wiper)/FADING_STEPS;
+								int volume = (*p_wiper);
+								for( int i=0; i<FADING_STEPS && volume > 0; i++ ) {
 									// ESP_LOGI(FNAME, "fade out sound, wiper: %d", volume );
+									volume -= step;
 									DigitalPoti->writeWiper( equal_volume( volume ) );
-									volume = volume/_step;
 									delay(1);
 								}
 								DigitalPoti->writeWiper( 0 );
@@ -637,7 +646,7 @@ void Audio::dactask(void* arg )
 		// ESP_LOGI(FNAME, "Audio delay %d", _delay );
 		if( uxTaskGetStackHighWaterMark( dactid ) < 256 )
 			ESP_LOGW(FNAME,"Warning Audio dac task stack low: %d bytes", uxTaskGetStackHighWaterMark( dactid ) );
-		vTaskDelayUntil(&xLastWakeTime, 20/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&xLastWakeTime, 10/portTICK_PERIOD_MS);
 		if( volume_change )
 			volume_change--;
 	}

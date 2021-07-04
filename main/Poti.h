@@ -16,8 +16,8 @@ public:
   virtual bool incWiper() = 0;
   virtual bool decWiper() = 0;
   virtual bool haveDevice() = 0;
-  virtual inline int  getRange() = 0;
-  virtual inline int  getStep() = 0;
+  virtual int  getRange() = 0;
+  virtual int  getStep() = 0;
 };
 
 #endif

@@ -37,6 +37,9 @@ public:
 	static bool selfTest();
 	static inline void setTestmode( bool mode ) { _testmode = mode; }
     static void shutdown();  // frue ON, false OFF
+    static void evaluateChopping();
+    static void dacEnable();
+    static void dacDisable();
 
 private:
 	static void dac_cosine_enable(dac_channel_t channel, bool enable=true);
@@ -50,17 +53,16 @@ private:
     static bool inDeadBand( float te );
 	static bool lookup( float f, int& div, int &step );
 	static void enableAmplifier( bool enable );  // frue ON, false OFF
-	static void evaluateChopping();
 	static uint16_t equal_volume( uint16_t volume );
 
 	static dac_channel_t _ch;
 	static float _te;
 	static bool _s2f_mode;
 	static uint8_t _tonemode;
-	static uint8_t _chopping_mode;
 	static float _high_tone_var;
 	static bool _testmode;
-	static bool sound_on;
+	static bool sound_enabled;
+	static bool sound;
     static float _range;
     static uint16_t *p_wiper;
     static uint16_t wiper;
@@ -92,6 +94,7 @@ private:
     static int mtick;
     static float current_frequency;
     static int _step;
+    static bool dac_enable;
 };
 
 

@@ -81,7 +81,7 @@ bool CAT5171::writeWiper( uint16_t val ) {
 	uint16_t b;
 	bool ret=readWiper( b );
 
-	if( b != (uint8_t)val ){
+	if( (b != (uint8_t)val) || !ret ){
 		ESP_LOGE(FNAME,"CAT5171 Error writing wiper, error count %d, write %d != read %d", errorcount, val, b );
 	}
 

@@ -267,6 +267,12 @@ static int windResetAction( SetupMenuSelect *p )
 	return 0;
 }
 
+static int eval_chop( SetupMenuSelect *p )
+{
+	Audio::evaluateChopping();
+	return 0;
+}
+
 static int compassSensorCalibrateAction( SetupMenuSelect *p )
 {
 	ESP_LOGI(FNAME,"compassSensorCalibrateAction()");
@@ -665,7 +671,7 @@ void SetupMenu::setup( )
 		htv->setHelp(PROGMEM"Tone variation in Dual Tone mode, percent of frequency pitch up for second tone");
 		audios->addMenu( htv );
 
-		SetupMenuSelect * tch = new SetupMenuSelect( "Chopping", false, 0 , true, &chopping_mode );
+		SetupMenuSelect * tch = new SetupMenuSelect( "Chopping", false, eval_chop, true, &chopping_mode );
 		tch->setHelp(PROGMEM"Select tone chopping option on positive values for Vario and or S2F");
 		tch->addEntry( "Disabled");             // 0
 		tch->addEntry( "Vario only");           // 1

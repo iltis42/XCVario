@@ -991,7 +991,10 @@ void sensor(void *args){
 			// display->writeText( line++, "TE/Baro Temp: OK");
 			logged_tests += "TE/Baro Sensor T diff. <2°C: PASSED\n";
 		}
-		if( (abs(ba_p - te_p) >2.5)  && ( ias < 50 ) ) {
+		float delta = 2.5; // in factory we test at normal temperature, so temperature change is ignored.
+		if( abs(factory_volt_adjust.get() - 0.00815) < 0.00001 )
+			delta += 1.8; // plus 1.5 Pa per Kelvin, for 60K T range = 90 Pa or 0.9 hPa per Sensor, for both there is 2.5 plus 1.8 hPa to consider
+		if( (abs(ba_p - te_p) >delta)  && ( ias < 50 ) ) {
 			selftestPassed = false;
 			ESP_LOGI(FNAME,"Abs p sensors deviation delta > 2.5 hPa between Baro and TE sensor: %f", abs(ba_p - te_p) );
 			display->writeText( line++, "TE/Baro P: Unequal");

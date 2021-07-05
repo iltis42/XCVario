@@ -48,7 +48,6 @@ bool  Audio::_chopping = false;
 float Audio::_range = 5.0;
 float Audio::_high_tone_var;
 bool  Audio::_s2f_mode = false;
-bool  Audio::sound_enabled=false;
 bool  Audio::sound=false;
 bool  Audio::_testmode=false;
 bool  Audio::deadband_active = false;
@@ -101,7 +100,6 @@ Audio::Audio( ) {
 	wiper = 63;
 	wiper_s2f = 63;
 	cur_wiper = 63;
-	sound_enabled = false;
 }
 
 
@@ -529,117 +527,107 @@ void Audio::dactask(void* arg )
 
 			next_scedule = millis()+_delay;
 		}
-
 		// Amplifier and Volume control
-		// Optionally disable Sound when in Menu
-		if( audio_disable.get() && Menu->isActive() ){
-			if( sound_enabled ){
-				dacDisable();
-				DigitalPoti->writeWiper( 0 );
-				cur_wiper = 0;
-				sound_enabled = false;
-			}
-		}
-		else
-		{
-			if( !_testmode && !(tick%2) ) {
-				// ESP_LOGI(FNAME, "sound dactask tick:%d wiper:%d  te:%f db:%d", tick, (*p_wiper), _te, inDeadBand(_te) );
-				if( !(tick%20) )
-					calcS2Fmode();
+		if( !_testmode && !(tick%2) ) {
+			// ESP_LOGI(FNAME, "sound dactask tick:%d wiper:%d  te:%f db:%d", tick, (*p_wiper), _te, inDeadBand(_te) );
+			if( !(tick%20) )
+				calcS2Fmode();
 
-				if( inDeadBand(_te) && !volume_change ){
-					deadband_active = true;
-					sound = false;
-					// ESP_LOGI(FNAME,"Audio in DeadBand true");
+			if( inDeadBand(_te) && !volume_change ){
+				deadband_active = true;
+				sound = false;
+				// ESP_LOGI(FNAME,"Audio in DeadBand true");
+			}
+			else{
+				deadband_active = false;
+				sound = true;
+				if( _tonemode == ATM_SINGLE_TONE ){
+					if( hightone )
+						if( _chopping )
+							sound = false;
 				}
-				else{
-					deadband_active = false;
-					sound = true;
-					if( _tonemode == ATM_SINGLE_TONE ){
-						if( hightone )
-							if( _chopping )
-								sound = false;
-					}
-					// ESP_LOGI(FNAME,"Audio in DeadBand false");
+				// ESP_LOGI(FNAME,"Audio in DeadBand false");
+			}
+			// Optionally disable Sound when in Menu
+			if( audio_disable.get() && Menu->isActive() )
+				sound = false;
+			//ESP_LOGI(FNAME, "sound %d, ht %d, te %2.1f vc:%d cw:%d ", sound, hightone, _te, volume_change, cur_wiper );
+			if( sound ){
+				if( !deadband_active ){
+					enableAmplifier( true );
 				}
-				//ESP_LOGI(FNAME, "sound %d, ht %d, te %2.1f vc:%d cw:%d ", sound, hightone, _te, volume_change, cur_wiper );
-				if( sound ){
-					if( !deadband_active ){
-						enableAmplifier( true );
-					}
-					// Blend over gracefully volume changes
-					if(  (cur_wiper != (*p_wiper)) && volume_change ){
-						ESP_LOGI(FNAME, "volume change, new wiper: %d, cur_wiper %d", (*p_wiper), cur_wiper );
-						int delta = 1;
-						if( (*p_wiper) > cur_wiper )
-							for( int i=cur_wiper; i<(*p_wiper); i+=delta ) {
+				// Blend over gracefully volume changes
+				if(  (cur_wiper != (*p_wiper)) && volume_change ){
+					ESP_LOGI(FNAME, "volume change, new wiper: %d, cur_wiper %d", (*p_wiper), cur_wiper );
+					int delta = 1;
+					if( (*p_wiper) > cur_wiper )
+						for( int i=cur_wiper; i<(*p_wiper); i+=delta ) {
+							DigitalPoti->writeWiper( equal_volume(i) );
+							delta = _step+i/FADING_TIME;
+							// ESP_LOGI(FNAME, "volume inc, new wiper: %d", i );
+							delay(1);
+						}else
+							for( int i=cur_wiper; i>(*p_wiper); i-=delta ) {
 								DigitalPoti->writeWiper( equal_volume(i) );
+								// ESP_LOGI(FNAME, "volume dec, new wiper: %d", i );
 								delta = _step+i/FADING_TIME;
-								// ESP_LOGI(FNAME, "volume inc, new wiper: %d", i );
 								delay(1);
-							}else
-								for( int i=cur_wiper; i>(*p_wiper); i-=delta ) {
-									DigitalPoti->writeWiper( equal_volume(i) );
-									// ESP_LOGI(FNAME, "volume dec, new wiper: %d", i );
-									delta = _step+i/FADING_TIME;
-									delay(1);
-								}
-						DigitalPoti->writeWiper( equal_volume((*p_wiper)) );
+							}
+					DigitalPoti->writeWiper( equal_volume((*p_wiper)) );
+					cur_wiper = (*p_wiper);
+					ESP_LOGI(FNAME, "volume change, new wiper: %d", cur_wiper );
+					// ESP_LOGI(FNAME, "have sound");
+				}
+				// Fade in volume
+				if(  cur_wiper != (*p_wiper) ){
+					if( chopping_style.get() == AUDIO_CHOP_HARD ){
+						dacEnable();
+						DigitalPoti->writeWiper( equal_volume( (*p_wiper)) );
 						cur_wiper = (*p_wiper);
-						ESP_LOGI(FNAME, "volume change, new wiper: %d", cur_wiper );
-						// ESP_LOGI(FNAME, "have sound");
 					}
-					// Fade in volume
-					if(  cur_wiper != (*p_wiper) ){
-						if( chopping_style.get() == AUDIO_CHOP_HARD ){
-							dacEnable();
-							DigitalPoti->writeWiper( equal_volume( (*p_wiper)) );
+					else{
+						float volume=3;
+						for( int i=0; i<FADING_STEPS && (int)volume <=(*p_wiper); i++ ) {
+							// ESP_LOGI(FNAME, "fade in sound, wiper: %3.1f", volume );
+							DigitalPoti->writeWiper( equal_volume( (int)volume ) );
+							cur_wiper = volume;
+							volume = volume*1.75;
+							delay(1);
+						}
+						if(  cur_wiper != (*p_wiper) ){
+							// ESP_LOGI(FNAME, "fade in sound, wiper: %d", (*p_wiper)  );
+							DigitalPoti->writeWiper( equal_volume( (*p_wiper) ) );
 							cur_wiper = (*p_wiper);
 						}
-						else{
-							float volume=3;
-							for( int i=0; i<FADING_STEPS && (int)volume <=(*p_wiper); i++ ) {
-								// ESP_LOGI(FNAME, "fade in sound, wiper: %3.1f", volume );
-								DigitalPoti->writeWiper( equal_volume( (int)volume ) );
-								cur_wiper = volume;
-								volume = volume*1.75;
-								delay(1);
-							}
-							if(  cur_wiper != (*p_wiper) ){
-								// ESP_LOGI(FNAME, "fade in sound, wiper: %d", (*p_wiper)  );
-								DigitalPoti->writeWiper( equal_volume( (*p_wiper) ) );
-								cur_wiper = (*p_wiper);
-							}
-						}
-					}
-					if( !(tick%10) ){
-						DigitalPoti->writeWiper( equal_volume((*p_wiper)) ); // take care frequency response
 					}
 				}
-				else{
-					// Fade out volume
-					if( cur_wiper != 0 ){
-						if( chopping_style.get() == AUDIO_CHOP_HARD ){
-							DigitalPoti->writeWiper( 0 );
-							dacDisable();
-							cur_wiper = 0;
-						}else{
-							float volume = (float)(*p_wiper);
-							for( int i=0; i<FADING_STEPS && (int)volume >=0; i++ ) {
-								//ESP_LOGI(FNAME, "fade out sound, wiper: %3.1f", volume );
-								DigitalPoti->writeWiper( equal_volume( (int)volume ) );
-								volume = volume*0.75;
-							}
-							delay(1);
-							DigitalPoti->writeWiper( 0 );
-							// ESP_LOGI(FNAME, "fade out sound, final wiper: 0" );
-							cur_wiper = 0;
+				if( !(tick%10) ){
+					DigitalPoti->writeWiper( equal_volume((*p_wiper)) ); // take care frequency response
+				}
+			}
+			else{
+				// Fade out volume
+				if( cur_wiper != 0 ){
+					if( chopping_style.get() == AUDIO_CHOP_HARD ){
+						DigitalPoti->writeWiper( 0 );
+						dacDisable();
+						cur_wiper = 0;
+					}else{
+						float volume = (float)(*p_wiper);
+						for( int i=0; i<FADING_STEPS && (int)volume >=0; i++ ) {
+							//ESP_LOGI(FNAME, "fade out sound, wiper: %3.1f", volume );
+							DigitalPoti->writeWiper( equal_volume( (int)volume ) );
+							volume = volume*0.75;
 						}
+						delay(1);
+						DigitalPoti->writeWiper( 0 );
+						// ESP_LOGI(FNAME, "fade out sound, final wiper: 0" );
+						cur_wiper = 0;
+					}
 
-					}
-					if( deadband_active )
-						enableAmplifier( false );
 				}
+				if( deadband_active )
+					enableAmplifier( false );
 			}
 		}
 		// ESP_LOGI(FNAME, "Audio delay %d", _delay );
@@ -743,7 +731,6 @@ void Audio::shutdown(){
 	if( p_wiper != 0)
 		(*p_wiper) = 0;
 	ESP_LOGI(FNAME,"shutdown alarm volume set 0");
-	sound_enabled = false;
 }
 
 void Audio::enableAmplifier( bool enable )

@@ -61,7 +61,6 @@ private:
 	static uint8_t _tonemode;
 	static float _high_tone_var;
 	static bool _testmode;
-	static bool sound_enabled;
 	static bool sound;
     static float _range;
     static uint16_t *p_wiper;

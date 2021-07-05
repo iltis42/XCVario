@@ -62,6 +62,7 @@
 #include "SPL06-007.h"
 #include "StraightWind.h"
 #include "CircleWind.h"
+#include <coredump_to_server.h>
 
 // #include "sound.h"
 
@@ -309,7 +310,7 @@ void doAudio(){
 	float aTES2F = bmpVario.readS2FTE();
 	float netto = aTES2F - polar_sink;
 	as2f = Speed2Fly.speed( netto, !Switch::cruiseMode() );
-	s2f_delta = s2f_delta + ((as2f - ias) - s2f_delta)* (1/(s2f_delay.get()*2)); // low pass damping moved to the correct place
+	s2f_delta = s2f_delta + ((as2f - ias) - s2f_delta)* (1/(s2f_delay.get()*10)); // low pass damping moved to the correct place
 	// ESP_LOGI( FNAME, "te: %f, polar_sink: %f, netto %f, s2f: %f  delta: %f", te, polar_sink, netto, as2f, s2f_delta );
 	if( vario_mode.get() == VARIO_NETTO || (Switch::cruiseMode() &&  (vario_mode.get() == CRUISE_NETTO)) ){
 		if( netto_mode.get() == NETTO_RELATIVE )
@@ -325,10 +326,11 @@ void doAudio(){
 void audioTask(void *pvParameters){
 	while (1)
 	{
+		TickType_t xLastWakeTime = xTaskGetTickCount();
 		doAudio();
 		if( uxTaskGetStackHighWaterMark( apid )  < 512 )
 			ESP_LOGW(FNAME,"Warning audio task stack low: %d", uxTaskGetStackHighWaterMark( apid ) );
-		vTaskDelay(20/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
 	}
 }
 
@@ -555,6 +557,40 @@ void readTemp(void *pvParameters){
 
 static bool init_done=false;
 
+static esp_err_t
+_coredump_to_server_begin_cb(void * priv)
+{
+    ets_printf("================= CORE DUMP START =================\r\n");
+    return ESP_OK;
+}
+
+static esp_err_t
+_coredump_to_server_end_cb(void * priv)
+{
+    ets_printf("================= CORE DUMP END ===================\r\n");
+    return ESP_OK;
+}
+
+static esp_err_t
+_coredump_to_server_write_cb(void * priv, char const * const str)
+{
+    ets_printf("%s\r\n", str);
+    return ESP_OK;
+}
+
+void register_coredump() {
+	 coredump_to_server_config_t coredump_cfg = {
+	        .start = _coredump_to_server_begin_cb,
+	        .end = _coredump_to_server_end_cb,
+	        .write = _coredump_to_server_write_cb,
+	        .priv = NULL,
+	    };
+	 if( coredump_to_server(&coredump_cfg) != ESP_OK ){  // Dump to console and do not clear (will done after fetched from Webserver)
+		 ESP_LOGI( FNAME, "+++ All green, no coredump found in FLASH +++");
+	 }
+}
+
+
 // Sensor board init method. Herein all functions that make the XCVario are launched and tested.
 void sensor(void *args){
 	accelG[0] = 1;  // earth gravity default = 1 g
@@ -596,6 +632,9 @@ void sensor(void *args){
 
 	Polars::begin();
 	NVS.begin();
+
+	register_coredump();
+
 	if( display_orientation.get() ){
 		ESP_LOGI( FNAME, "TopDown display mode flag set");
 		topDown = true;
@@ -952,7 +991,10 @@ void sensor(void *args){
 			// display->writeText( line++, "TE/Baro Temp: OK");
 			logged_tests += "TE/Baro Sensor T diff. <2°C: PASSED\n";
 		}
-		if( (abs(ba_p - te_p) >2.5)  && ( ias < 50 ) ) {
+		float delta = 2.5; // in factory we test at normal temperature, so temperature change is ignored.
+		if( abs(factory_volt_adjust.get() - 0.00815) < 0.00001 )
+			delta += 1.8; // plus 1.5 Pa per Kelvin, for 60K T range = 90 Pa or 0.9 hPa per Sensor, for both there is 2.5 plus 1.8 hPa to consider
+		if( (abs(ba_p - te_p) >delta)  && ( ias < 50 ) ) {
 			selftestPassed = false;
 			ESP_LOGI(FNAME,"Abs p sensors deviation delta > 2.5 hPa between Baro and TE sensor: %f", abs(ba_p - te_p) );
 			display->writeText( line++, "TE/Baro P: Unequal");
@@ -1130,15 +1172,13 @@ void sensor(void *args){
 		xTaskCreatePinnedToCore(&readBMP, "readBMP", 1024*8, NULL, 14, bpid, 0);
 	}
 	if( wireless == WL_WLAN_CLIENT ){
-		xTaskCreatePinnedToCore(&audioTask, "audioTask", 2048, NULL, 13, apid, 0);
+		xTaskCreatePinnedToCore(&audioTask, "audioTask", 2048, NULL, 14, apid, 0);
 	}
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 2300, NULL, 1, tpid, 0);
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 4096, NULL, 2, dpid, 0);
 	compass.start();
 	Audio::startAudio();
 }
-
-
 
 extern "C" void  app_main(void){
 	ESP_LOGI(FNAME,"app_main" );
@@ -1152,6 +1192,7 @@ extern "C" void  app_main(void){
 	else
 		ESP_LOGI(FNAME,"Setup already present");
 	esp_log_level_set("*", ESP_LOG_INFO);
+
 	sensor( 0 );
 	vTaskDelete( NULL );
 }

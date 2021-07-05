@@ -46,6 +46,18 @@ public:
 		return 0;
 	};
 
+	static inline float TemperatureUnit( float t ){
+		if( temperature_unit.get() == T_CELCIUS ) // °C
+			return( t );
+		if( temperature_unit.get() == T_FAHRENHEIT ) // °C
+			return( (t * 1.8) + 32 );
+		if( temperature_unit.get() == T_KELVIN ) // °C
+			return( t +  273.15 );
+		else{
+			return( t ); // default °C
+		}
+	}
+
 	static inline const char * AirspeedUnit( int unit = -1 ){
 		int u = unit;
 		if( u == -1 )

@@ -168,6 +168,7 @@ void Router::routeWLAN(){
 		}
 		if( pullMsg( wl_flarm_rx_q, wlmsg ) ){
 			Flarm::parsePFLAX( wlmsg );
+			Protocols::parseNMEA( wlmsg.c_str() );
 			if( serial1_tx.get() & RT_WIRELESS )
 				if( forwardMsg( wlmsg, s1_tx_q ) )
 					ESP_LOGV(FNAME,"Send to  device, TCP port 8881 received %d bytes", wlmsg.length() );
@@ -177,6 +178,7 @@ void Router::routeWLAN(){
 		}
 		if( pullMsg( wl_aux_rx_q, wlmsg ) ){
 			Flarm::parsePFLAX( wlmsg );
+			Protocols::parseNMEA( wlmsg.c_str() );
 			if( serial1_tx.get() & RT_WIRELESS )
 				if( forwardMsg( wlmsg, s1_tx_q ) )
 					ESP_LOGV(FNAME,"Send to  device, TCP port 8882 received %d bytes", wlmsg.length() );

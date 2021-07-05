@@ -45,7 +45,7 @@ SetupNG<float> 			polar_wingarea( "POLAR_WINGAREA", 10.5, true, SYNC_FROM_MASTER
 
 SetupNG<float>  		speedcal( "SPEEDCAL", 0.0 );
 SetupNG<float>  		vario_delay( "VARIO_DELAY", 3.0 );
-SetupNG<float>  		vario_av_delay( "VARIO_AV_DELAY", 5.0 );
+SetupNG<float>  		vario_av_delay( "VARIO_AV_DELAY", 20.0 );  // changed to 20 seconds (quasi standard) what equals to a half circle
 SetupNG<float>  		center_freq( "AUDIO_CENTER_F", 500.0 );
 SetupNG<float>  		tone_var( "OCTAVES", 2.0);
 SetupNG<int>  			dual_tone( "DUAL_TONE" , 0 );
@@ -62,7 +62,7 @@ SetupNG<int>  			s2f_cm_takeover_from_master( "S2F_CMTO", 1 );
 SetupNG<int>  			audio_mode( "AUDIO_MODE" ,  3 );
 SetupNG<int>  			chopping_mode( "CHOPPING_MODE",  VARIO_CHOP );
 SetupNG<int>  			chopping_style( "CHOP_STYLE",  AUDIO_CHOP_SOFT );
-SetupNG<int>  			amplifier_shutdown( "AMP_DIS", 1 );
+SetupNG<int>  			amplifier_shutdown( "AMP_DIS", 0 );
 
 SetupNG<int>  			wireless_type( "BT_ENABLE" ,  1);
 SetupNG<int>  			factory_reset( "FACTORY_RES" , 0 );
@@ -85,13 +85,13 @@ SetupNG<float>  		core_climb_min( "CORE_CLIMB_MIN" , 0.5 );
 SetupNG<float>  		core_climb_history( "CORE_CLIMB_HIST" , 45 );
 SetupNG<float>  		elevation( "ELEVATION", -1 );
 SetupNG<float>  		default_volume( "DEFAULT_VOL", 10.0 );
-SetupNG<float>  		max_volume( "MAX_VOL", 50.0 );
+SetupNG<float>  		max_volume( "MAX_VOL", 100.0 );
+SetupNG<float>  		frequency_response( "FREQ_RES", 30.0 );
 SetupNG<float>  		s2f_deadband( "DEADBAND_S2F", 10.0 );
 SetupNG<float>  		s2f_deadband_neg( "DB_S2F_NEG", -10.0 );
 SetupNG<float>  		s2f_delay( "S2F_DELAY", 5.0 );
 SetupNG<float>  		factory_volt_adjust("FACT_VOLT_ADJ" , 0.00815, false );
 SetupNG<float>  		bugs( "BUGS", 0.0 );
-
 SetupNG<int>  			display_type( "DISPLAY_TYPE",  UNIVERSAL );
 SetupNG<int>  			display_orientation("DISPLAY_ORIENT" , 0 );
 SetupNG<int>  			flap_enable( "FLAP_ENABLE", 0 );
@@ -104,6 +104,7 @@ SetupNG<float>  		flap_plus_2( "FLAP_PLUS_2", 70 );
 SetupNG<int>  			alt_unit( "ALT_UNIT", 0 );
 SetupNG<int>  			ias_unit( "IAS_UNIT", 0 );
 SetupNG<int>  			vario_unit( "VARIO_UNIT", 0 );
+SetupNG<int>  			temperature_unit( "TEMP_UNIT", T_CELCIUS );
 SetupNG<int>  			rot_default( "ROTARY_DEFAULT", 0 );
 SetupNG<int>  			serial1_speed( "SERIAL2_SPEED", 3 );   // tag will stay SERIAL2 from historical reason
 SetupNG<int>  			serial1_pins_twisted( "SERIAL2_PINS", 0 );

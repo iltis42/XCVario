@@ -163,8 +163,12 @@ void WifiClient::tcp_client(void *setup){
         xEventGroupWaitBits(wifi_event_group,CONNECTED_BIT,false,true,portMAX_DELAY);
         timeout++;
         // ESP_LOGI(FNAME,"tcp_client task timeout=%d", timeout);
-        if( timeout > 60 )
+        if( timeout > 300 ){
            config->connected = false;
+           close(config->sock);
+           config->sock = -1;
+           ESP_LOGI(FNAME,"tcp_client task timeout=%d", timeout);
+        }
         if( config->sock < 0 ){
         	config->sock = socket(AF_INET, SOCK_STREAM, 0);
         	if(config->sock < 0) {
@@ -182,8 +186,9 @@ void WifiClient::tcp_client(void *setup){
         		config->connected = false;
         		vTaskDelay(4000 / portTICK_PERIOD_MS);
         		continue;
+        	}else{
+        		ESP_LOGI(FNAME, "socket %d connected successfully!", config->sock);
         	}
-        	ESP_LOGI(FNAME, "socket %d connected", config->sock);
         }
         SString send;
     	Router::pullMsg( *(config->txbuf), send);
@@ -197,15 +202,17 @@ void WifiClient::tcp_client(void *setup){
         		config->connected = false;
         		vTaskDelay(4000 / portTICK_PERIOD_MS);
         		continue;
+        	}else {
+        		ESP_LOGI(FNAME, "socket send success");
+        		timeout = 0;
         	}
-        	ESP_LOGI(FNAME, "socket send success");
         }
         int end=100;
         while( 1 ){
         	if( recv(config->sock, rec.c_str()+num, 1, MSG_DONTWAIT ) > 0){
         		if( rec.c_str()[num] == '\n' || num > SSTRLEN-1 ){
         			rec.setLen( num );
-        			// ESP_LOGI(FNAME, "socket read %d bytes: %s", num, rec.c_str() );
+        			ESP_LOGI(FNAME, "socket %d read %d bytes: %s", config->sock, num, rec.c_str() );
         			Router::forwardMsg( rec, *(config->rxbuf) );
         			timeout = 0;
         			num = 0;
@@ -217,8 +224,10 @@ void WifiClient::tcp_client(void *setup){
         	}
         	else{
         		end--;
-        		if( !end )
+        		if( !end ){
+        			ESP_LOGI(FNAME, "socket %d read timeout", config->sock );
         			break;
+        		}
         		vTaskDelay(5 / portTICK_PERIOD_MS);
         	}
         }

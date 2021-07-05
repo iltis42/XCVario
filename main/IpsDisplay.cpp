@@ -220,7 +220,7 @@ void IpsDisplay::clear(){
 }
 
 void IpsDisplay::bootDisplay() {
-	ESP_LOGI(FNAME,"IpsDisplay::bootDisplay()");
+	// ESP_LOGI(FNAME,"IpsDisplay::bootDisplay()");
 	setup();
 	if( display_type.get() == ST7789_2INCH_12P )
 		ucg->setRedBlueTwist( true );
@@ -237,7 +237,7 @@ void IpsDisplay::bootDisplay() {
 
 
 void IpsDisplay::initDisplay() {
-	ESP_LOGI(FNAME,"IpsDisplay::initDisplay()");
+	// ESP_LOGI(FNAME,"IpsDisplay::initDisplay()");
 	// set global color variables according to selected display_variant
 	if ( display_variant.get() == DISPLAY_WHITE_ON_BLACK ) {
 		g_col_background = 255;
@@ -447,7 +447,7 @@ void IpsDisplay::drawAvg( float avclimb, float delta ){
 
 void IpsDisplay::redrawValues()
 {
-	ESP_LOGI(FNAME,"IpsDisplay::redrawValues()");
+	// ESP_LOGI(FNAME,"IpsDisplay::redrawValues()");
 	chargealt = 101;
 	tempalt = -2000;
 	s2falt = -1;
@@ -1751,13 +1751,14 @@ void IpsDisplay::drawDisplay( int airspeed, float te, float ate, float polar_sin
 	if ( alt_display_mode.get() == MODE_QFE ) {
 		altitude -= elevation.get();
 	}
+	float temp_unit = Units::TemperatureUnit( temp );
 
 	if( display_style.get() == DISPLAY_AIRLINER )
-		drawAirlinerDisplay( airspeed,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_setting, wksensor );
+		drawAirlinerDisplay( airspeed,te,ate, polar_sink, altitude, temp_unit, volt, s2fd, s2f, acl, s2fmode, standard_setting, wksensor );
 	else if( display_style.get() == DISPLAY_RETRO )
-		drawRetroDisplay( airspeed,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_setting, wksensor );
+		drawRetroDisplay( airspeed,te,ate, polar_sink, altitude, temp_unit, volt, s2fd, s2f, acl, s2fmode, standard_setting, wksensor );
 	else if( display_style.get() == DISPLAY_UL )
-		drawULDisplay( airspeed,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_setting, wksensor );
+		drawULDisplay( airspeed,te,ate, polar_sink, altitude, temp_unit, volt, s2fd, s2f, acl, s2fmode, standard_setting, wksensor );
 
 }
 

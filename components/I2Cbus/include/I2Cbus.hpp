@@ -109,6 +109,7 @@ class I2C {
      *          - ESP_ERR_TIMEOUT Operation timeout because the bus is busy.
      */
     esp_err_t writeBit(uint8_t devAddr, uint8_t regAddr, uint8_t bitNum, uint8_t data, int32_t timeout = -1);
+    esp_err_t write2bytes( uint8_t addr, uint8_t byte1, uint8_t byte2 );
     esp_err_t writeBits(uint8_t devAddr, uint8_t regAddr, uint8_t bitStart, uint8_t length, uint8_t data, int32_t timeout = -1);
     esp_err_t read8bit( uint8_t addr, uint16_t *word );
     esp_err_t read16bit( uint8_t addr, uint16_t *word );

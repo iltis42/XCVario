@@ -62,12 +62,14 @@ double BMPVario::readTE( float tas ) {
 
 	uint64_t rts = esp_timer_get_time();
 	float delta = (float)(rts - lastrts)/1000000.0;   // in seconds
-	if( delta < 0.075 )  // ensure every 100 mS one calculation
+	lastrts = rts;
+	// ESP_LOGI(FNAME, "TE time delta %4.3f", delta );
+	if( (delta < 0.075) || (delta > 0.400) ) { // ensure delta is 100 mS +-
+		ESP_LOGW(FNAME, "Invalid TE time delta (<75 || >400) mS: %4.1f", delta*1000 );
 		return _TEF;
+	}
 
 	// ESP_LOGI(FNAME,"Vario delta=%2.3f sec", delta );
-
-	lastrts = rts;
 	// ESP_LOGI(FNAME, "TE-Alt %0.1f  NM:", _currentAlt );
 	if( _init  ){
 		vTaskDelay(100 / portTICK_PERIOD_MS);
@@ -83,13 +85,17 @@ double BMPVario::readTE( float tas ) {
 		_init = false;
 	}
 	averageAlt += (_currentAlt - averageAlt) * 0.1;
-	double err = (abs(_currentAlt - predictAlt) * 1000) + 1;
+	double adiff = _currentAlt - Altitude;
 	// ESP_LOGI(FNAME,"BMPVario new alt %0.1f err %0.1f", _currentAlt, err);
-	double diff = (abs(_currentAlt - Altitude) * 1000) + 1;
-	// if(diff > 1000000)  // more than 10 m alt diff in 0.1 second not plausible ( > 400 km/h vertical )
-	// 	return _TEF;  // fancy errored value ignored, return last TE
+	double diff = (abs(adiff) * 1000) + 1;
+	if(diff > 1000000){  // more than 100 m alt diff in 0.1 second not plausible ( > 400 km/h vertical )
+		 ESP_LOGW(FNAME,"TE alt erratic reading: %f m", _currentAlt );
+	  	 return _TEF;  // looks like noise on the bus, fancy errored value ignored, return last TE
+	}
+	double err = (abs(_currentAlt - predictAlt) * 1000) + 1;
+	averageAlt += (_currentAlt - averageAlt) * 0.1;
 	double kg = (diff / (err*_errorval + diff)) * _alpha;
-	Altitude += (_currentAlt - Altitude) * kg;
+	Altitude += (adiff) * kg;
 	double TE = Altitude - lastAltitude;
 	// ESP_LOGI(FNAME," TE %0.1f diff %0.1f", TE, diff);
 	lastAltitude = Altitude;

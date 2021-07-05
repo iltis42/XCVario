@@ -75,7 +75,7 @@ int compass_ena( SetupMenuSelect * p ){
 
 int update_s2f_speed(SetupMenuValFloat * p)
 {
-	Switch::setCruiseSpeed( Units::Airspeed2Kmh( *(p->_value) ) );
+	Switch::setCruiseSpeed( Units::Airspeed2Kmh( s2f_speed.get() ) );
 	return 0;
 }
 
@@ -143,12 +143,13 @@ int elev_adj( SetupMenuValFloat * p )
 	float elevp = elevation.get();
 	if( alt_unit.get() == 0 ){ // m
 		u = "m";
+		p->ucg->printf("%4d %s ", (int)(elevp+0.5), u.c_str() );
 	}
 	else {
 		u = "ft";
-		elevp = elevp*3.28084;
+		elevp = Units::meters2feet(elevp);
+		p->ucg->printf("%4d %s ", ((int)((elevp+2.5)/5))*5, u.c_str() );
 	}
-	p->ucg->printf("%4d %s ", (int)(elevp+0.5), u.c_str() );
 	p->ucg->setFont(ucg_font_ncenR14_hr);
 	xSemaphoreGive(spiMutex );
 	return 0;
@@ -266,6 +267,12 @@ static int windResetAction( SetupMenuSelect *p )
 	return 0;
 }
 
+static int eval_chop( SetupMenuSelect *p )
+{
+	Audio::evaluateChopping();
+	return 0;
+}
+
 static int compassSensorCalibrateAction( SetupMenuSelect *p )
 {
 	ESP_LOGI(FNAME,"compassSensorCalibrateAction()");
@@ -326,7 +333,7 @@ void SetupMenu::display( int mode ){
 			ucg->setFont(ucg_font_ncenR14_hr);
 		}
 		ucg->setColor( COLOR_WHITE );
-		ESP_LOGI(FNAME,"Child: %s y=%d",child->_title.c_str() ,y );
+		// ESP_LOGI(FNAME,"Child: %s y=%d",child->_title.c_str() ,y );
 	}
 	y+=170;
 	xSemaphoreGive(spiMutex );
@@ -335,7 +342,7 @@ void SetupMenu::display( int mode ){
 
 void SetupMenu::down(int count){
 	if( selected == this && !_menu_enabled ) {
-		ESP_LOGI(FNAME,"root: down");
+		// ESP_LOGI(FNAME,"root: down");
 		float &mc = MC.getRef();
 		if( rot_default.get() == 1) {	 // MC Value
 			if( mc > 0.1 ) {
@@ -369,7 +376,7 @@ void SetupMenu::down(int count){
 
 void SetupMenu::up(int count){
 	if( selected == this && !_menu_enabled ) {
-		ESP_LOGI(FNAME,"root: up");
+		// ESP_LOGI(FNAME,"root: up");
 		float &mc = MC.getRef();
 		if(rot_default.get() == 1) {	 // MC Value
 			if( mc < 9.9 ) {
@@ -387,7 +394,7 @@ void SetupMenu::up(int count){
 
 	if( (selected != this) || !_menu_enabled )
 		return;
-	ESP_LOGI(FNAME,"SetupMenu::up %d %d", highlight, _childs.size() );
+	// ESP_LOGI(FNAME,"SetupMenu::up %d %d", highlight, _childs.size() );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setColor(COLOR_BLACK);
 	ucg->drawFrame( 1,(highlight+1)*25+3,238,25 );
@@ -496,9 +503,9 @@ void SetupMenu::setup( )
 	mm->addMenu( bgs );
 
 	String elev_unit = "m";
-	int step = 1;
+	float step = 1;
 	if( alt_unit.get() == 1 ){ // ft
-		step = 5;
+		step = 5.0/Units::meters2feet(1);
 	}
 
 	SetupMenuValFloat * afe = new SetupMenuValFloat( "Airfield Elevation", 0, "m", -1, 3000, step, elev_adj, true, &elevation );
@@ -516,6 +523,7 @@ void SetupMenu::setup( )
 		passw->setPrecision( 0 );
 		passw->setHelp( PROGMEM"To exit from student mode enter expert password and restart device after expert password has been set correctly");
 		mm->addMenu( passw );
+		Flap::setupMenue( NULL );
 	}
 	else
 	{
@@ -663,7 +671,7 @@ void SetupMenu::setup( )
 		htv->setHelp(PROGMEM"Tone variation in Dual Tone mode, percent of frequency pitch up for second tone");
 		audios->addMenu( htv );
 
-		SetupMenuSelect * tch = new SetupMenuSelect( "Chopping", false, 0 , true, &chopping_mode );
+		SetupMenuSelect * tch = new SetupMenuSelect( "Chopping", false, eval_chop, true, &chopping_mode );
 		tch->setHelp(PROGMEM"Select tone chopping option on positive values for Vario and or S2F");
 		tch->addEntry( "Disabled");             // 0
 		tch->addEntry( "Vario only");           // 1
@@ -722,6 +730,10 @@ void SetupMenu::setup( )
 		ameda->addEntry( "Silent");       // 1
 		audio->addMenu( ameda );
 
+		SetupMenuValFloat * frqr = new SetupMenuValFloat( "Frequency Response", 0,	"%", -70.0, 70.0, 1.0, 0, false, &frequency_response );
+		frqr->setHelp(PROGMEM"Setup frequency response, double frequency will be attenuated by the factor given, half frequency will be amplified");
+		audio->addMenu( frqr );
+
 		// Polar Setup
 		SetupMenu * po = new SetupMenu( "Polar" );
 		po->setHelp( PROGMEM"Polar setup to match performance of glider");
@@ -770,6 +782,7 @@ void SetupMenu::setup( )
 		poe->addMenu( wingarea );
 
 		SetupMenu * opt = new SetupMenu( "Options" );
+
 		mm->addMenu( opt );
 		if( student_mode.get() == 0 ) {
 			SetupMenuSelect *stumo  = new SetupMenuSelect( "Student Mode", true, 0, true, &student_mode );
@@ -778,10 +791,7 @@ void SetupMenu::setup( )
 			stumo->addEntry( "Disable");
 			stumo->addEntry( "Enable");
 		}
-
 		Flap::setupMenue( opt );
-
-
 		// Units
 		SetupMenu * un = new SetupMenu( "Units" );
 		un->setHelp( PROGMEM "Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units");
@@ -800,6 +810,11 @@ void SetupMenu::setup( )
 		vau->addEntry( "100ft/min (cft/min)");
 		vau->addEntry( "Knots     (knots)");
 		un->addMenu( vau );
+		SetupMenuSelect * teu = new SetupMenuSelect( "Temperature", false , update_vunit, true, &temperature_unit );
+		teu->addEntry( "Celcius");
+		teu->addEntry( "Fahrenheit");
+		teu->addEntry( "Kelvin");
+		un->addMenu( teu );
 		opt->addMenu( un );
 
 		SetupMenuSelect * amode = new SetupMenuSelect( "Airspeed Mode",	false, 0, true, &airspeed_mode );

@@ -140,8 +140,8 @@ uint8_t QMC5883L::readRegister( const uint8_t addr,
 	// read bytes from chip
 	for( int i=0; i<=20; i++ ){
 		esp_err_t err = m_bus->readBytes( addr, reg, count, data );
-		if( err == ESP_OK ){
-			break;
+		if( err == ESP_OK && count == 6 ){
+			return count;
 		}
 		else
 		{
@@ -151,16 +151,15 @@ uint8_t QMC5883L::readRegister( const uint8_t addr,
 				if( initialize() != ESP_OK )
 					initialize();  // one retry
 				err = m_bus->readBytes( addr, reg, count, data );
-				if( err != ESP_OK ){
-					ESP_LOGW( FNAME,"Read after retry failed also, return with no data, len=0");
-					return 0;
-				}else
+				if( err == ESP_OK && count == 6 ){
 					return count;
+				}
 			}
 			delay(10);
 		}
 	}
-	return count;
+	ESP_LOGW( FNAME,"Read after init and retry failed also, return with no data, len=0");
+	return 0;
 }
 
 // scan bus for I2C address
@@ -225,14 +224,14 @@ esp_err_t QMC5883L::initialize( int a_odr, int a_osr )
 	if( used_odr == 0 )
 		used_odr = odr;
 
-	ESP_LOGI( FNAME, "initialize() dataRate: %d Oversampling: %d", used_odr, used_osr );
+	// ESP_LOGI( FNAME, "initialize() dataRate: %d Oversampling: %d", used_odr, used_osr );
 
 	e4 = writeRegister( addr, REG_CONTROL1,	(used_osr << 6) | (range <<4) | (used_odr <<2) | MODE_CONTINUOUS );
 	if( (e1 + e2 + e3 + e4) == 0 ) {
-		ESP_LOGI( FNAME, "initialize() OK");
+		// ESP_LOGI( FNAME, "initialize() OK");
 		return ESP_OK;
 	}
-	ESP_LOGE( FNAME, "initialize() ERROR");
+	// ESP_LOGE( FNAME, "initialize() ERROR");
 	return ESP_FAIL;
 }
 
@@ -260,7 +259,7 @@ bool QMC5883L::rawHeading()
 				break;
 			}
 			else
-				ESP_LOGW( FNAME, "No new data,  N=%d  RDY%d  DOR%d", i, status & STATUS_DRDY, status & STATUS_DOR );
+				ESP_LOGW( FNAME, "No new data,  N=%d  RDY%d  DOR%d REG:%02X", i, status & STATUS_DRDY, status & STATUS_DOR, status );
 		}
 		else{
 			// ESP_LOGW( FNAME, "read REG_STATUS failed, N=%d  RDY%d  DOR%d", i, status & STATUS_DRDY, status & STATUS_DOR );
@@ -562,6 +561,7 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z, float xb,
 
 
 int N=0;
+bool holddown=false;
 /**
  * Reads the heading in degrees of 0...359. Ok is set to true,
  * if heading data is valid, otherwise it is set to false.
@@ -575,8 +575,17 @@ float QMC5883L::heading( bool *ok )
 	{
 		*ok = false;
 		errors++;
-		ESP_LOGI(FNAME,"QMC5883: Holddown");
 		return 0.0;
+	}
+	if( errors > 100 ){
+		if( !holddown ){
+			holddown = true;
+			ESP_LOGI(FNAME,"100 sensor read errors: Start Holddown");
+		}
+	}else{
+		if( holddown ){
+			holddown = false;
+		}
 	}
 
 	// Calibration is running, don't disturb it.
@@ -594,7 +603,7 @@ float QMC5883L::heading( bool *ok )
 		ESP_LOGI(FNAME,"Magnetic sensor error Reads:%d, Errors:%d", N, totalReadErrors );
 		if( errors > 10 )
 		{
-			ESP_LOGI(FNAME,"Magnetic sensor errors > 3: init mag sensor" );
+			// ESP_LOGI(FNAME,"Magnetic sensor errors > 10: init mag sensor" );
 			//  reinitialize once crashed, one retry
 			if( initialize() != ESP_OK )
 				initialize();

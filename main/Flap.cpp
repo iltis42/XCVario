@@ -150,7 +150,11 @@ int wk_cal( SetupMenuSelect * p )
 void Flap::setupMenue( SetupMenu *parent ){
 	ESP_LOGI(FNAME,"Flap::setupMenue");
 	SetupMenu * wk = new SetupMenu( "Flap (WK) Indicator" );
+	if( parent ){
 	wkm = parent->addMenu( wk );
+	}else{
+		wkm = new SetupMenu( "Dummy" );
+	}
 
 	SetupMenuSelect * wke = new SetupMenuSelect( "Flap Indicator", false, 0, true, &flap_enable );
 	wke->addEntry( "Disable");
@@ -327,6 +331,7 @@ void Flap::drawSmallBar( int ypos, int xpos, float wkf ){
 		char position[6];
 		if(wk<-3)
 			continue;
+
 		sprintf( position,"%s", flapLabels[wk+3]->getEntry());
 		int y=top+(lfh+4)*(5-(wk+2))+(int)((wkf-2)*(lfh+4));
 		ucg->setPrintPos(xpos-2, y );

@@ -40,33 +40,37 @@ Switch::~Switch() {
 }
 
 bool Switch::cruiseMode() {
-	if( audio_mode.get() == AM_AUTOSPEED ){        // Let autospeed mode merge both states
-		if( _cruise_mode_sw != cm_switch_prev  ){
-			cm_switch_prev = _cruise_mode_sw;
-			cruise_mode_final = _cruise_mode_sw;
-		}
-		else if( _cruise_mode_speed != cm_auto_prev ){
-			cm_auto_prev = _cruise_mode_speed;
-			cruise_mode_final = _cruise_mode_speed;
-		}
-		else if( s2f_cm_takeover_from_master.get() ){
-			if( _cruise_mode_xcv != cm_xcv_prev  ){
-				cruise_mode_final = _cruise_mode_xcv;
-				cm_xcv_prev = _cruise_mode_xcv;
-			}
+	if( s2f_cm_takeover_from_master.get() ){
+		// just take from master and ignore setting
+		if( _cruise_mode_xcv != cm_xcv_prev  ){
+			cruise_mode_final = _cruise_mode_xcv;
+			cm_xcv_prev = _cruise_mode_xcv;
 		}
 	}
-	else if( audio_mode.get() == AM_SWITCH )
-		cruise_mode_final = _cruise_mode_sw;
-	else if( audio_mode.get() == AM_VARIO )
-		cruise_mode_final = false;
-	else if( audio_mode.get() == AM_S2F )
-		cruise_mode_final = true;
-
+	else{
+		// locally control cruise mode
+		if( audio_mode.get() == AM_AUTOSPEED ){        // Let autospeed mode merge both states
+			if( _cruise_mode_sw != cm_switch_prev  ){
+				cm_switch_prev = _cruise_mode_sw;
+				cruise_mode_final = _cruise_mode_sw;
+			}
+			else if( _cruise_mode_speed != cm_auto_prev ){
+				cm_auto_prev = _cruise_mode_speed;
+				cruise_mode_final = _cruise_mode_speed;
+			}
+		}
+		else if( audio_mode.get() == AM_SWITCH )
+			cruise_mode_final = _cruise_mode_sw;
+		else if( audio_mode.get() == AM_VARIO )
+			cruise_mode_final = false;
+		else if( audio_mode.get() == AM_S2F )
+			cruise_mode_final = true;
+	}
 	return cruise_mode_final;
 }
 
 void Switch::begin( gpio_num_t sw ){
+	_cruise_speed_kmh = Units::Airspeed2Kmh( s2f_speed.get() );
 	_sw = sw;
 	gpio_set_direction(_sw, GPIO_MODE_INPUT);
 	gpio_set_pull_mode(_sw, GPIO_PULLDOWN_ONLY);

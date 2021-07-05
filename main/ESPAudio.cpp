@@ -445,14 +445,16 @@ void Audio::startAudio(){
 	xTaskCreatePinnedToCore(&dactask, "dactask", 2048, NULL, 15, dactid, 0);
 }
 
-void Audio::calcS2Fmode(){
+bool Audio::calcS2Fmode(){
+	bool mode = false;
 	if( !_alarm_mode ) {
-		_s2f_mode = Switch::cruiseMode();
-		if( _s2f_mode )
+		mode =  Switch::cruiseMode();
+		if( mode )
 			p_wiper = &wiper_s2f;
 		else
 			p_wiper = &wiper;
 	}
+	return mode;
 }
 
 void  Audio::evaluateChopping(){
@@ -465,6 +467,29 @@ void  Audio::evaluateChopping(){
 		_chopping = true;
 	else
 		_chopping = false;
+}
+
+void  Audio::calculateFrequency(){
+	float max = minf;
+	if ( _te > 0 )
+		max = maxf;
+	float range = _range;
+	if( _s2f_mode && (cruise_audio_mode.get() == AUDIO_S2F) )
+		range = 5.0;
+	float mult = std::pow( (abs(_te)/range)+1, audio_factor.get());
+	if( audio_factor.get() != prev_aud_fact ) {
+		exponent_max  = std::pow( 2, audio_factor.get());
+		prev_aud_fact = audio_factor.get();
+	}
+	float f = center_freq.get() + ((mult*_te)/range )  * (max/exponent_max);
+	if( (int)(f/10.0) != int(current_frequency/10.0) ){
+		current_frequency = center_freq.get() + ((mult*_te)/range )  * (max/exponent_max);
+	}
+	if( hightone && (_tonemode == ATM_DUAL_TONE ) )
+		setFrequency( current_frequency*_high_tone_var );
+	else
+		setFrequency( current_frequency );
+	// ESP_LOGI(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f multi:%0.3f  wiper:%d", f, _te, audio_factor.get(), mult, cur_wiper );
 }
 
 void Audio::dactask(void* arg )
@@ -504,34 +529,20 @@ void Audio::dactask(void* arg )
 				hightone = false;
 			}
 			// Frequency Control
-			float max = minf;
-			if ( _te > 0 )
-				max = maxf;
-			float range = _range;
-			if( _s2f_mode && (cruise_audio_mode.get() == AUDIO_S2F) )
-				range = 5.0;
-			float mult = std::pow( (abs(_te)/range)+1, audio_factor.get());
-			if( audio_factor.get() != prev_aud_fact ) {
-				exponent_max  = std::pow( 2, audio_factor.get());
-				prev_aud_fact = audio_factor.get();
-			}
-			float f = center_freq.get() + ((mult*_te)/range )  * (max/exponent_max);
-			if( (int)(f/10.0) != int(current_frequency/10.0) ){
-				current_frequency = center_freq.get() + ((mult*_te)/range )  * (max/exponent_max);
-			}
-			if( hightone && (_tonemode == ATM_DUAL_TONE ) )
-				setFrequency( current_frequency*_high_tone_var );
-			else
-				setFrequency( current_frequency );
-			// ESP_LOGI(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f multi:%0.3f  wiper:%d", f, _te, audio_factor.get(), mult, cur_wiper );
+			calculateFrequency();
 
 			next_scedule = millis()+_delay;
 		}
 		// Amplifier and Volume control
 		if( !_testmode && !(tick%2) ) {
 			// ESP_LOGI(FNAME, "sound dactask tick:%d wiper:%d  te:%f db:%d", tick, (*p_wiper), _te, inDeadBand(_te) );
-			if( !(tick%20) )
-				calcS2Fmode();
+			if( !(tick%10) ){
+				bool mode = calcS2Fmode();
+				if( _s2f_mode != mode ){
+					calculateFrequency();
+					_s2f_mode = mode;
+				}
+			}
 
 			if( inDeadBand(_te) && !volume_change ){
 				deadband_active = true;

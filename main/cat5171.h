@@ -34,7 +34,7 @@ public:
   bool incWiper();
   bool decWiper();
   bool haveDevice();
-  inline int  getRange() { return 170; };
+  inline int  getRange() { return 155; };
   inline int  getStep() { return 3; };
 
 private:

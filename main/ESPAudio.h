@@ -95,6 +95,7 @@ private:
     static float current_frequency;
     static int _step;
     static bool dac_enable;
+    static bool amplifier_enable;
 };
 
 

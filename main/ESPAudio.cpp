@@ -79,6 +79,7 @@ int   Audio::_step = 2;
 bool  Audio::prev_alarm=false;
 bool  Audio::dac_enable=false;
 bool  Audio::amplifier_enable=false;
+bool  Audio::_haveCAT5171=false;
 
 const int clk_8m_div = 7;    // RTC 8M clock divider (division is by clk_8m_div+1, i.e. 0 means 8MHz frequency)
 const float freq_step = RTC_FAST_CLK_FREQ_APPROX / (65536 * 8 );  // div = 0x07
@@ -185,8 +186,10 @@ bool Audio::selfTest(){
 		DigitalPoti = new CAT5171();
 		DigitalPoti->setBus( &i2c );
 		DigitalPoti->begin();
-		if( DigitalPoti->haveDevice() )
+		if( DigitalPoti->haveDevice() ){
 			ESP_LOGI(FNAME,"CAT5171 digital Poti found");
+			_haveCAT5171 = true;
+		}
 		else{
 			ESP_LOGW(FNAME,"NO digital Poti found !");
 			return false;
@@ -442,6 +445,7 @@ void Audio::startAudio(){
 	ESP_LOGI(FNAME,"startAudio");
 	_testmode = false;
 	evaluateChopping();
+	p_wiper = &wiper;
 	xTaskCreatePinnedToCore(&dactask, "dactask", 2048, NULL, 15, dactid, 0);
 }
 

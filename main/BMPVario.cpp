@@ -41,6 +41,20 @@ double BMPVario::readTE( float tas ) {
 	if ( _test )     // we are in testmode, just return what has been set
 		return _TEF;
 	bool success;
+	// Latency supervision and correction
+	uint64_t rts = esp_timer_get_time();
+	float delta = (float)(rts - lastrts)/1000000.0;   // in seconds
+	if( delta < 0.095 ) {   // ensure delta is 100 mS at least
+		int addwait = (int)(100.0-delta*1000);
+		// ESP_LOGW(FNAME, "Too short TE time delta <95 mS: %4.1f, add wait %d ", delta*1000, addwait );
+		delay( addwait );
+		rts = esp_timer_get_time();
+		delta = (float)(rts - lastrts)/1000000.0;
+	}
+	lastrts = rts;
+	if( delta < 0.090 || delta > 0.2 )
+		ESP_LOGW(FNAME,"Vario delta=%2.3f sec", delta );
+
 	bmpTemp = _sensorTE->readTemperature( success );
 	// ESP_LOGI(FNAME,"BMP temp=%0.1f", bmpTemp );
 	if( te_comp_enable.get() ) {
@@ -58,19 +72,8 @@ double BMPVario::readTE( float tas ) {
 		if( !success )
 			_currentAlt = lastAltitude;  // ignore readout when failed
 	}
+
 	// ESP_LOGI(FNAME,"TE alt: %4.3f m", _currentAlt );
-
-	uint64_t rts = esp_timer_get_time();
-	float delta = (float)(rts - lastrts)/1000000.0;   // in seconds
-	lastrts = rts;
-	// ESP_LOGI(FNAME, "TE time delta %4.3f", delta );
-	if( (delta < 0.075) || (delta > 0.400) ) { // ensure delta is 100 mS +-
-		ESP_LOGW(FNAME, "Invalid TE time delta (<75 || >400) mS: %4.1f", delta*1000 );
-		return _TEF;
-	}
-
-	// ESP_LOGI(FNAME,"Vario delta=%2.3f sec", delta );
-	// ESP_LOGI(FNAME, "TE-Alt %0.1f  NM:", _currentAlt );
 	if( _init  ){
 		vTaskDelay(100 / portTICK_PERIOD_MS);
 		_currentAlt = _sensorTE->readAltitude(_qnh, success ) * 1.03; // we want have some beep when powerd on

@@ -40,6 +40,7 @@ public:
     static void evaluateChopping();
     static void dacEnable();
     static void dacDisable();
+    static inline bool haveCAT5171(){ return _haveCAT5171; };
 
 private:
 	static void dac_cosine_enable(dac_channel_t channel, bool enable=true);
@@ -96,6 +97,7 @@ private:
     static int _step;
     static bool dac_enable;
     static bool amplifier_enable;
+    static bool _haveCAT5171;
 };
 
 

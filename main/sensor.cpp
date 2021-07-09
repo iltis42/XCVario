@@ -63,6 +63,7 @@
 #include "StraightWind.h"
 #include "CircleWind.h"
 #include <coredump_to_server.h>
+#include "canbus.h"
 
 // #include "sound.h"
 
@@ -498,6 +499,8 @@ void readBMP(void *pvParameters){
 		}else if( accelG[0] < gload_neg_max.get() ){
 			gload_neg_max.set(  (float)accelG[0] );
 		}
+		if( Audio::haveCAT5171() )
+			CANbus::tick();
 		esp_task_wdt_reset();
 		if( uxTaskGetStackHighWaterMark( bpid ) < 512 )
 			ESP_LOGW(FNAME,"Warning sensor task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );
@@ -1155,14 +1158,18 @@ void sensor(void *args){
 	}
 	Flap::init(myucg);
 
-	if( hardwareRevision.get() == 2 )
+	if( hardwareRevision.get() == 2 ){
 		Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
+	}
 	else {
 		Rotary.begin( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);
 		gpio_set_direction(GPIO_NUM_2, GPIO_MODE_INPUT);     // 2020 series 1, analog in
 		gpio_pullup_en( GPIO_NUM_2 );
 		gpio_pullup_en( GPIO_NUM_34 );
 	}
+	if( Audio::haveCAT5171() )  // 2021 series 3, with new digital poti CAT5171 also features CAN bus
+		CANbus::begin( GPIO_NUM_26, GPIO_NUM_33 );
+
 	gpio_set_pull_mode(RESET_Display, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_Display, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_bme280BA, GPIO_PULLUP_ONLY );

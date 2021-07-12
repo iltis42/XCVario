@@ -259,7 +259,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		 *hh   Checksum, XOR of all bytes of the sentence after the ‘!’ and before the ‘*’
 		 */
 
-		sprintf(str, "!w,0,0,0,0,%d,%d,%d,%d,0,0,%d,%d,%d", int(alt+1000), (int)(QNH.get()), int(Units::kmh2ms(tas)*100), int((Units::ms2knots(te)*10)+200), int( Units::mcval2knots(mc)*10 ), int( ballast_percent ), (int)(100-bugs) );
+		sprintf(str, "!w,0,0,0,0,%d,%4.2f,%d,%d,0,0,%d,%d,%d", int(alt+1000), QNH.get(), int(Units::kmh2ms(tas)*100), int((Units::ms2knots(te)*10)+200), int( Units::mcval2knots(mc)*10 ), int( ballast_percent ), (int)(100-bugs) );
 	}
 	else if( proto == P_EYE_PEYA ){
 		// Static pressure from aircraft pneumatic system [hPa] (i.e. 1015.5)

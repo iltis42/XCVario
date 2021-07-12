@@ -499,7 +499,7 @@ void readBMP(void *pvParameters){
 		}else if( accelG[0] < gload_neg_max.get() ){
 			gload_neg_max.set(  (float)accelG[0] );
 		}
-		if( Audio::haveCAT5171() )
+		if(  can_mode.get() != CAN_OFF )
 			CANbus::tick();
 		esp_task_wdt_reset();
 		if( uxTaskGetStackHighWaterMark( bpid ) < 512 )
@@ -1167,7 +1167,7 @@ void sensor(void *args){
 		gpio_pullup_en( GPIO_NUM_2 );
 		gpio_pullup_en( GPIO_NUM_34 );
 	}
-	if( Audio::haveCAT5171() )  // 2021 series 3, with new digital poti CAT5171 also features CAN bus
+	if(  can_mode.get() != CAN_OFF )  // 2021 series 3, with new digital poti CAT5171 also features CAN bus
 		CANbus::begin( GPIO_NUM_26, GPIO_NUM_33 );
 
 	gpio_set_pull_mode(RESET_Display, GPIO_PULLUP_ONLY );

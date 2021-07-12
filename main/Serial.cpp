@@ -21,6 +21,7 @@
 #include "Serial.h"
 #include "Flarm.h"
 #include "Protocols.h"
+#include "canbus.h"
 
 /* Note that the standard NMEA 0183 baud rate is only 4.8 kBaud.
 Nevertheless, a lot of NMEA-compatible devices can properly work with

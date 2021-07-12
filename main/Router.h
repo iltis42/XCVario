@@ -13,7 +13,7 @@
  */
 
 
-#define QUEUE_SIZE 10
+#define QUEUE_SIZE 8
 
 extern RingBufCPP<SString, QUEUE_SIZE> wl_vario_tx_q;
 extern RingBufCPP<SString, QUEUE_SIZE> wl_flarm_tx_q;
@@ -33,6 +33,9 @@ extern RingBufCPP<SString, QUEUE_SIZE> s2_rx_q;
 
 extern RingBufCPP<SString, QUEUE_SIZE> xcv_rx_q;
 extern RingBufCPP<SString, QUEUE_SIZE> xcv_tx_q;
+
+extern RingBufCPP<SString, QUEUE_SIZE> can_rx_q;
+extern RingBufCPP<SString, QUEUE_SIZE> can_tx_q;
 
 extern portMUX_TYPE btmux;
 
@@ -57,8 +60,11 @@ public:
   static void routeWLAN();
   // route messages coming in from Bluetooth
   static void routeBT();
+  // route messages coming in from CAN interface
+  static void routeCAN();
   // add messages from XCVario to Router
   static void sendXCV(char * s);
+
 
 private:
 

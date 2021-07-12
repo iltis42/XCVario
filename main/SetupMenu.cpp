@@ -1438,6 +1438,18 @@ void SetupMenu::setup( )
 			stxdis2->addEntry( "Enable");
 
 		}
+		// Can Interface C1
+		SetupMenu * can = new SetupMenu( "CAN Interface" );
+		sye->addMenu( can );
+		SetupMenuSelect * canmode = new SetupMenuSelect( PROGMEM "Datarate",	true, 0, true, &can_mode );
+		can->addMenu( canmode );
+		canmode->setHelp( "Datarate on high speed serial CAN interace in kbit per second");
+		canmode->addEntry( "CAN OFF");
+		canmode->addEntry( "250 kbit");
+		canmode->addEntry( "500 kbit");
+		canmode->addEntry( "1000 kbit");
+
+
 		SetupMenuSelect * nmea = new SetupMenuSelect( PROGMEM "NMEA Protocol", false , 0, true, &nmea_protocol );
 		sye->addMenu( nmea );
 		nmea->setHelp( "Setup the protocol used for sending NMEA sentences. This needs to be inline with the device driver chosen in XCSoar/LK8000");

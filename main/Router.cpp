@@ -33,7 +33,9 @@ RingBufCPP<SString, QUEUE_SIZE> s1_rx_q;
 RingBufCPP<SString, QUEUE_SIZE> s2_rx_q;
 
 RingBufCPP<SString, QUEUE_SIZE> xcv_rx_q;
-// RingBufCPP<SString, QUEUE_SIZE> xcv_tx_q;
+
+RingBufCPP<SString, QUEUE_SIZE> can_rx_q;
+RingBufCPP<SString, QUEUE_SIZE> can_tx_q;
 
 portMUX_TYPE btmux = portMUX_INITIALIZER_UNLOCKED;
 
@@ -99,14 +101,17 @@ void Router::routeXCV(){
 		else if( wireless == WL_WLAN || wireless == WL_WLAN_CLIENT )
 		{
 			if( forwardMsg( xcv, wl_vario_tx_q ) )
-				ESP_LOGV(FNAME,"Send to WLAN port 8880, XCV received %d bytes", xcv.length() );
+				ESP_LOGV(FNAME,"Send to WLAN port 8880, XCV %d bytes", xcv.length() );
 		}
 		if( serial1_tx.get() & RT_XCVARIO )
 				if( forwardMsg( xcv, s1_tx_q ) )
-					ESP_LOGV(FNAME,"Send to ttyS1 device, XCV received %d bytes", xcv.length() );
+					ESP_LOGV(FNAME,"Send to ttyS1 device, XCV %d bytes", xcv.length() );
 		if( serial2_tx.get() & RT_XCVARIO )
-				if( forwardMsg( xcv, s2_tx_q ) )
-					ESP_LOGV(FNAME,"Send to ttyS2 device, XCV received %d bytes", xcv.length() );
+			if( forwardMsg( xcv, s2_tx_q ) )
+				ESP_LOGV(FNAME,"Send to ttyS2 device, XCV %d bytes", xcv.length() );
+		if( can_tx.get() & RT_XCVARIO )
+			if( forwardMsg( xcv, can_tx_q ) )
+				ESP_LOGI(FNAME,"Send to CAN device, XCV %d bytes", xcv.length() );
 	}
 }
 
@@ -189,6 +194,9 @@ void Router::routeWLAN(){
 	}
 }
 
+
+
+
 // route messages from Bluetooth
 void Router::routeBT(){
 	if( wireless != WL_BLUETOOTH )
@@ -211,4 +219,11 @@ void Router::routeBT(){
 	}
 }
 
+// route messages from CAN
+void Router::routeCAN(){
+	SString can;
+	if( pullMsg( can_rx_q, can ) ){
+		Protocols::parseNMEA( can.c_str() );
+	}
+}
 

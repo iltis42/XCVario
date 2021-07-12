@@ -218,6 +218,8 @@ SetupNG<int> 			wind_reference( "WIND_REF", WR_HEADING );
 SetupNG<float> 			wind_max_deviation("WIND_MDEV", 30.0 );
 SetupNG<float>       	max_circle_wind_diff("CI_WIND_DMAX", 90.0 );
 SetupNG<float>       	min_circle_wind_quality("CI_WIND_QMIN", 2.0 );
+SetupNG<int> 			can_mode( "CANMODE", CAN_OFF );
+SetupNG<int> 			can_tx( "CANTX", RT_XCVARIO );
 
 mpud::raw_axes_t zero_bias;
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );

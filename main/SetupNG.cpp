@@ -64,6 +64,7 @@ SetupNG<int>  			chopping_style( "CHOP_STYLE",  AUDIO_CHOP_SOFT );
 SetupNG<int>  			amplifier_shutdown( "AMP_DIS", 0 );
 
 SetupNG<int>  			wireless_type( "BT_ENABLE" ,  1);
+SetupNG<float>  		wifi_max_power( "WIFI_MP" ,  50);
 SetupNG<int>  			factory_reset( "FACTORY_RES" , 0 );
 SetupNG<int>  			audio_range( "AUDIO_RANGE" , AUDIO_RANGE_5_MS );
 SetupNG<int>  			alt_select( "ALT_SELECT" , 1 );
@@ -217,8 +218,10 @@ SetupNG<int> 			wind_reference( "WIND_REF", WR_HEADING );
 SetupNG<float> 			wind_max_deviation("WIND_MDEV", 30.0 );
 SetupNG<float>       	max_circle_wind_diff("CI_WIND_DMAX", 90.0 );
 SetupNG<float>       	min_circle_wind_quality("CI_WIND_QMIN", 2.0 );
-SetupNG<int> 			can_mode( "CANMODE", CAN_OFF );
+SetupNG<int> 			can_speed( "CANSPEED", CAN_SPEED_OFF );
 SetupNG<int> 			can_tx( "CANTX", RT_XCVARIO );
+SetupNG<int> 			can_mode( "CANMOD", CAN_MODE_MASTER );
+
 
 mpud::raw_axes_t zero_bias;
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );
@@ -231,7 +234,7 @@ void SetupCommon::sendSetup( e_sync_t sync, const char *key, char type, void *va
 	char sender;
 	if( wireless == WL_WLAN && (sync & SYNC_FROM_MASTER) )              // or cable master tbd.
 		sender='M';
-	else if( wireless == WL_WLAN_CLIENT && (sync & SYNC_FROM_CLIENT) )  // or cable client tbd.
+	else if( ((wireless == WL_WLAN_CLIENT) || (can_mode.get() == CAN_MODE_CLIENT)) && (sync & SYNC_FROM_CLIENT) )  // or cable client tbd.
 		sender='C';
 	else
 		sender='U';
@@ -258,7 +261,7 @@ SetupCommon * SetupCommon::getMember( const char * key ){
 
 void SetupCommon::syncEntry( int entry ){
 	// ESP_LOGI(FNAME,"SetupCommon::syncEntry( %d )", entry );
-	if( wireless == WL_WLAN || wireless == WL_WLAN_CLIENT ) { // tbd for cable client as well
+	if( wireless == WL_WLAN || wireless == WL_WLAN_CLIENT || can_mode.get() == CAN_MODE_CLIENT ) {
 		// ESP_LOGI(FNAME,"We are wireless type=%d", wireless );
 		if( entry  < entries.size() ) {
 			entries[entry]->sync();

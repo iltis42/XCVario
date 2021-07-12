@@ -74,7 +74,9 @@ typedef enum e_temperature_unit { T_CELCIUS, T_FAHRENHEIT, T_KELVIN } e_temperat
 typedef enum e_sync { SYNC_NONE, SYNC_FROM_MASTER, SYNC_FROM_CLIENT, SYNC_BIDIR } e_sync_t;       // determines if data is synched from/to client
 typedef enum e_reset { RESET_NO, RESET_YES } e_reset_t;   // determines if data is reset to defaults on factory reset
 typedef enum e_volatility { VOLATILE, NON_VOLATILE, SEMI_VOLATILE } e_volatility_t;  // stored in RAM, FLASH, or into FLASH after a while
-typedef enum e_can_mode { CAN_OFF, CAN_250KBIT, CAN_500KBIT, CAN_1MBIT } e_can_mode_t;  // stored in RAM, FLASH, or into FLASH after a while
+typedef enum e_can_speed { CAN_SPEED_OFF, CAN_SPEED_250KBIT, CAN_SPEED_500KBIT, CAN_SPEED_1MBIT } e_can_speed_t;  // stored in RAM, FLASH, or into FLASH after a while
+typedef enum e_can_mode { CAN_MODE_MASTER, CAN_MODE_CLIENT } e_can_mode_t;
+
 
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
 
@@ -335,6 +337,7 @@ extern SetupNG<int>  		chopping_style;
 extern SetupNG<int>  		amplifier_shutdown;
 
 extern SetupNG<int>  		wireless_type;
+extern SetupNG<float>  		wifi_max_power;
 extern SetupNG<int>  		factory_reset;
 extern SetupNG<int>  		audio_range;
 extern SetupNG<int>  		alt_select;
@@ -491,8 +494,9 @@ extern SetupNG<int> 		wind_reference;
 extern SetupNG<float> 		wind_max_deviation;
 extern SetupNG<float>       max_circle_wind_diff;
 extern SetupNG<float>       min_circle_wind_quality;
-extern SetupNG<int> 		can_mode;
+extern SetupNG<int> 		can_speed;
 extern SetupNG<int> 		can_tx;
+extern SetupNG<int> 		can_mode;
 
 extern int g_col_background;
 extern int g_col_highlight;

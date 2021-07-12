@@ -30,6 +30,7 @@
 #include "MenuEntry.h"
 #include "Compass.h"
 #include "CompassMenu.h"
+#include "esp_wifi.h"
 
 static char rentry[25];
 SetupMenuSelect * audio_range_sm = 0;
@@ -84,6 +85,12 @@ int update_rentry(SetupMenuValFloat * p)
 	char rentry[25];
 	sprintf( rentry, "Variable (%d m/s)", (int)(range.get()) );
 	audio_range_sm->updateEntry( rentry, 1 );
+	return 0;
+}
+
+int update_wifi_power(SetupMenuValFloat * p)
+{
+	ESP_ERROR_CHECK(esp_wifi_set_max_tx_power( int(wifi_max_power.get()*80.0/100.0) ));
 	return 0;
 }
 
@@ -1071,13 +1078,22 @@ void SetupMenu::setup( )
 		cirwq->setHelp(PROGMEM "Minimum accepted circle wind quality for compass auto deviation setup method");
 
 
+		SetupMenu * wireless = new SetupMenu( "Wireless" );
+		MenuEntry* wirelessM = opt->addMenu( wireless );
+
 		SetupMenuSelect * btm = new SetupMenuSelect( "Wireless", true, 0, true, &wireless_type );
 		btm->setHelp( PROGMEM "Activate type wireless interface to connect navigation devices running e.g. XCSoar, or to another XCVario as client");
 		btm->addEntry( "Disable");
 		btm->addEntry( "Bluetooth");
 		btm->addEntry( "Wireless LAN");
 		btm->addEntry( "Wireless Client");
-		opt->addMenu( btm );
+		wirelessM->addMenu( btm );
+
+		SetupMenuValFloat *wifip = new SetupMenuValFloat( "WIFI Power", 0, "%", 10.0, 100.0, 5.0, update_wifi_power, false, &wifi_max_power );
+		wirelessM->addMenu( wifip );
+		wifip->setPrecision(0);
+		wifip->setHelp(PROGMEM "Maximum Wifi Power to be used 10..100% or 2..20dBm");
+
 
 		SetupMenu * gload = new SetupMenu( "G-Load Display" );
 		MenuEntry* gloadME = opt->addMenu( gload );
@@ -1435,7 +1451,7 @@ void SetupMenu::setup( )
 		// Can Interface C1
 		SetupMenu * can = new SetupMenu( "CAN Interface" );
 		sye->addMenu( can );
-		SetupMenuSelect * canmode = new SetupMenuSelect( PROGMEM "Datarate",	true, 0, true, &can_mode );
+		SetupMenuSelect * canmode = new SetupMenuSelect( PROGMEM "Datarate",	true, 0, true, &can_speed );
 		can->addMenu( canmode );
 		canmode->setHelp( "Datarate on high speed serial CAN interace in kbit per second");
 		canmode->addEntry( "CAN OFF");
@@ -1443,6 +1459,18 @@ void SetupMenu::setup( )
 		canmode->addEntry( "500 kbit");
 		canmode->addEntry( "1000 kbit");
 
+		SetupMenuSelect * canrt = new SetupMenuSelect( "Routing", false , 0, false, &can_tx );
+		can->addMenu( canrt );
+		canrt->setHelp( PROGMEM "Select data source that is routed from/to CAN interface");
+		canrt->addEntry( "Disable");
+		canrt->addEntry( "XCVario");
+
+
+		SetupMenuSelect * devmod = new SetupMenuSelect( "Mode", true , 0, false, &can_mode );
+		can->addMenu( devmod );
+		devmod->setHelp( PROGMEM "Select Master for single seater or master device in front, and for secondary device 'Client'");
+		devmod->addEntry( "Master");
+		devmod->addEntry( "Client");
 
 		SetupMenuSelect * nmea = new SetupMenuSelect( PROGMEM "NMEA Protocol", false , 0, true, &nmea_protocol );
 		sye->addMenu( nmea );

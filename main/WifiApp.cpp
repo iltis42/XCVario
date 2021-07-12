@@ -94,7 +94,7 @@ void on_client_connect( int port, int msg ){
 		if( msg == 1 )
 			OV.sendQNHChange( QNH.get() );
 		if( msg == 2 ) {
-			if( wireless == WL_WLAN_CLIENT )
+			if( wireless == WL_WLAN_CLIENT || can_mode.get() == CAN_MODE_CLIENT )
 				OV.sendBallastChange( ballast.get(), false );
 			else
 				OV.sendBallastChange( ballast.get(), true );
@@ -275,7 +275,7 @@ void wifi_init_softap()
 		sleep(1);
 		ESP_LOGV(FNAME,"now esp_wifi_start");
 		ESP_ERROR_CHECK(esp_wifi_start());
-		ESP_ERROR_CHECK(esp_wifi_set_max_tx_power(8));
+		ESP_ERROR_CHECK(esp_wifi_set_max_tx_power( int(wifi_max_power.get()*80.0/100.0) ));
 
 		xTaskCreatePinnedToCore(&socket_server, "socket_ser_2", 3200, &AUX, 11, AUX.pid, 0);  // 10
 		xTaskCreatePinnedToCore(&socket_server, "socket_srv_0", 3200, &XCVario, 12, XCVario.pid, 0);  // 10

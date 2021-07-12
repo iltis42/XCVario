@@ -13,9 +13,12 @@ public:
 	static void tick();
 	static bool selfTest();
 	static int _tick;
+	static bool connected() { return _connected; };
 private:
 	static void driverInstall( twai_mode_t mode, bool reinstall=false );
 	static bool can_ready;
 	static gpio_num_t _tx_io;
 	static gpio_num_t _rx_io;
+	static bool _connected;
+	static int _connected_timeout;
 };

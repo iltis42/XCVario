@@ -499,8 +499,6 @@ void readBMP(void *pvParameters){
 		}else if( accelG[0] < gload_neg_max.get() ){
 			gload_neg_max.set(  (float)accelG[0] );
 		}
-		if(  can_mode.get() != CAN_OFF )
-			CANbus::tick();
 		esp_task_wdt_reset();
 		if( uxTaskGetStackHighWaterMark( bpid ) < 512 )
 			ESP_LOGW(FNAME,"Warning sensor task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );
@@ -518,7 +516,7 @@ void readTemp(void *pvParameters){
 
 		battery = Battery.get();
 		// ESP_LOGI(FNAME,"Battery=%f V", battery );
-		if( wireless != WL_WLAN_CLIENT ) {  // client Vario will get Temperature info from main Vario
+		if( wireless != WL_WLAN_CLIENT && can_mode.get() != CAN_MODE_CLIENT ) {  // client Vario will get Temperature info from main Vario
 			t = ds18b20.getTemp();
 			if( t ==  DEVICE_DISCONNECTED_C ) {
 				if( validTemperature == true ) {
@@ -637,6 +635,11 @@ void sensor(void *args){
 	NVS.begin();
 
 	register_coredump();
+
+	if( hardwareRevision.get() != 2 ){
+		gpio_set_direction(GPIO_NUM_2, GPIO_MODE_INPUT);     // 2020 series 1, analog in default
+		gpio_pullup_en( GPIO_NUM_2 );
+	}
 
 	if( display_orientation.get() ){
 		ESP_LOGI( FNAME, "TopDown display mode flag set");
@@ -907,7 +910,7 @@ void sensor(void *args){
 	}
 	ESP_LOGI(FNAME,"Now start T sensor test");
 	// Temp Sensor test
-	if( wireless != WL_WLAN_CLIENT ) {
+	if( wireless != WL_WLAN_CLIENT && can_mode.get() != CAN_MODE_CLIENT  ) {
 		ESP_LOGI(FNAME,"Now start T sensor test");
 		ds18b20.begin();
 		temperature = ds18b20.getTemp();
@@ -953,10 +956,14 @@ void sensor(void *args){
 		bmpBA->begin();
 		baroSensor = bmpBA;
 		teSensor = bmpTE;
+		gpio_set_pull_mode(CS_bme280BA, GPIO_PULLUP_ONLY );
+		gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
+
 	}
 	bool tetest=true;
 	bool batest=true;
 	delay(200);
+
 	if( ! baroSensor->selfTest( ba_t, ba_p)  ) {
 		ESP_LOGE(FNAME,"HW Error: Self test Barometric Pressure Sensor failed!");
 		display->writeText( line++, "Baro Sensor: NOT FOUND");
@@ -1012,6 +1019,8 @@ void sensor(void *args){
 	else
 		ESP_LOGI(FNAME,"Absolute pressure sensor TESTs failed");
 
+
+
 	bmpVario.begin( teSensor, baroSensor, &Speed2Fly );
 	bmpVario.setup();
 	esp_task_wdt_reset();
@@ -1029,6 +1038,9 @@ void sensor(void *args){
 		logged_tests += "Digital Audio Poti test: PASSED\n";
 		display->writeText( line++, "Digital Poti: OK");
 	}
+
+	if(  can_speed.get() != CAN_SPEED_OFF )  // 2021 series 3, with new digital poti CAT5171 also features CAN bus
+		CANbus::begin( GPIO_NUM_26, GPIO_NUM_33 );
 
 	float bat = Battery.get(true);
 	if( bat < 1 || bat > 28.0 ){
@@ -1095,26 +1107,46 @@ void sensor(void *args){
 	{
 		LeakTest::start( baroSensor, teSensor, asSensor );
 	}
-
 	Menu->begin( display, &Rotary, baroSensor, &Battery );
 
-	if ( wireless == WL_WLAN_CLIENT ){
-		display->clear();
-		display->writeText( 2, "Wait for Master XCVario" );
-		std::string ssid = WifiClient::scan();
-		if( ssid.length() ){
-			display->writeText( 3, "Master XCVario Found" );
-			char id[30];
-			sprintf( id, "Wifi ID: %s", ssid.c_str() );
-			display->writeText( 4, id );
-			display->writeText( 5, "Now start" );
-			WifiClient::start();
-			delay( 2000 );
-			inSetup = false;
+	if ( wireless == WL_WLAN_CLIENT || can_mode.get() == CAN_MODE_CLIENT ){
+		if( wireless == WL_WLAN_CLIENT ){
 			display->clear();
+			display->writeText( 2, "Wait for Master XCVario" );
+			std::string ssid = WifiClient::scan();
+			if( ssid.length() ){
+				display->writeText( 3, "Master XCVario found" );
+				char id[30];
+				sprintf( id, "Wifi ID: %s", ssid.c_str() );
+				display->writeText( 4, id );
+				display->writeText( 5, "Now start" );
+				WifiClient::start();
+				delay( 2000 );
+				inSetup = false;
+				display->clear();
+			}
+			else{
+				display->writeText( 3, "Abort Wifi Scan" );
+			}
 		}
-		else{
-			display->writeText( 3, "Abort Wifi Scan" );
+		else if( can_mode.get() == CAN_MODE_CLIENT ){
+			display->clear();
+			display->writeText( 2, "Wait for Master XCVario" );
+			while( 1 ) {
+				if( CANbus::connected() ){
+					display->writeText( 3, "Master XCVario found" );
+					display->writeText( 5, "Now start" );
+					delay( 2000 );
+					inSetup = false;
+					display->clear();
+					break;
+				}
+				delay( 100 );
+				if( Rotary.readSwitch() ){
+					display->writeText( 3, "Abort CAN bus wait" );
+					break;
+				}
+			}
 		}
 	}
 	else if( ias < 50.0 ){
@@ -1156,6 +1188,7 @@ void sensor(void *args){
 		inSetup = false;
 		display->clear();
 	}
+
 	Flap::init(myucg);
 
 	if( hardwareRevision.get() == 2 ){
@@ -1163,25 +1196,19 @@ void sensor(void *args){
 	}
 	else {
 		Rotary.begin( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);
-		gpio_set_direction(GPIO_NUM_2, GPIO_MODE_INPUT);     // 2020 series 1, analog in
-		gpio_pullup_en( GPIO_NUM_2 );
 		gpio_pullup_en( GPIO_NUM_34 );
 	}
-	if(  can_mode.get() != CAN_OFF )  // 2021 series 3, with new digital poti CAT5171 also features CAN bus
-		CANbus::begin( GPIO_NUM_26, GPIO_NUM_33 );
 
 	gpio_set_pull_mode(RESET_Display, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_Display, GPIO_PULLUP_ONLY );
-	gpio_set_pull_mode(CS_bme280BA, GPIO_PULLUP_ONLY );
-	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
-	if( wireless != WL_WLAN_CLIENT ) {
+	if( wireless != WL_WLAN_CLIENT &&  can_mode.get() != CAN_MODE_CLIENT ) {
 		xTaskCreatePinnedToCore(&readBMP, "readBMP", 1024*8, NULL, 14, bpid, 0);
 	}
-	if( wireless == WL_WLAN_CLIENT ){
-		xTaskCreatePinnedToCore(&audioTask, "audioTask", 2048, NULL, 14, apid, 0);
+	if( wireless == WL_WLAN_CLIENT || can_mode.get() == CAN_MODE_CLIENT ){
+		xTaskCreatePinnedToCore(&audioTask, "audioTask", 2300, NULL, 14, apid, 0);
 	}
-	xTaskCreatePinnedToCore(&readTemp, "readTemp", 2300, NULL, 1, tpid, 0);
+	xTaskCreatePinnedToCore(&readTemp, "readTemp", 4096, NULL, 1, tpid, 0);
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 4096, NULL, 2, dpid, 0);
 	compass.start();
 	Audio::startAudio();

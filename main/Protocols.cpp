@@ -46,6 +46,13 @@ void Protocols::sendTemperatureChange( float temp ){
 	Router::sendXCV(str);
 }
 
+void Protocols::sendCruiseChange( bool cruiseMode ){
+	char str[20];
+	sprintf( str,"!xc,%d\n", (int)cruiseMode );
+	// ESP_LOGI(FNAME,"New Cruise Mode: %d, cnd %s", cruiseMode, str );
+	Router::sendXCV(str);
+}
+
 void Protocols::sendWkChange( float wk ){
 	char str[20];
 	sprintf( str,"!xw,%1.1f\n", wk );
@@ -375,6 +382,12 @@ void Protocols::parseNMEA( char *astr ){
 			temperature = temp;
 			validTemperature=true;
 			ESP_LOGI(FNAME,"T change detected T=%2.1f", temp );
+		}
+		else if ( strncmp( str, "!xc,", 4 ) == 0 ) {
+			int cruise;
+			sscanf( str,"!xc,%d", &cruise );
+			Switch::setCruiseModeXCV( (bool)cruise );
+			ESP_LOGI(FNAME,"Cruise Mode change detected Cruise=%d", cruise );
 		}
 		else if ( strncmp( str, "!xa,", 4 ) == 0 ) {
 			float climb;

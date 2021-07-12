@@ -57,7 +57,6 @@ SetupNG<float>  		ballast( "BALLAST" , 0.0 );
 SetupNG<float>  		MC( "MacCready", 0.5 );
 SetupNG<float>  		s2f_speed( "S2F_SPEED", 100.0 );
 SetupNG<float>  		s2f_hysteresis( "S2F_HYST", 5.0 );
-SetupNG<int>  			s2f_cm_takeover_from_master( "S2F_CMTO", 0 );
 
 SetupNG<int>  			audio_mode( "AUDIO_MODE" ,  3 );
 SetupNG<int>  			chopping_mode( "CHOPPING_MODE",  VARIO_CHOP );

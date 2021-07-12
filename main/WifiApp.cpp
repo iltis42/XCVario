@@ -34,6 +34,7 @@
 #include "WifiClient.h"
 #include "sensor.h"
 #include "Flarm.h"
+#include "Switch.h"
 
 
 typedef struct client_record {
@@ -104,6 +105,8 @@ void on_client_connect( int port, int msg ){
 			OV.sendClientMcChange( MC.get() );
 		if( msg == 5 )
 			OV.sendTemperatureChange( temperature );
+		if( msg == 6 )
+			OV.sendCruiseChange( Switch::getCruiseState() );
 		SetupCommon::syncEntry(msg);
 	}
 }
@@ -200,7 +203,7 @@ void socket_server(void *setup) {
 					}
 				}
 			}
-			if( uxTaskGetStackHighWaterMark( config->pid ) < 256 )
+			if( uxTaskGetStackHighWaterMark( config->pid ) < 128 )
 				ESP_LOGW(FNAME,"Warning task stack low: %d bytes, port %d", uxTaskGetStackHighWaterMark( config->pid ), config->port );
 			if( Flarm::bincom )
 				vTaskDelay(10/portTICK_PERIOD_MS);  // maximize realtime throuput for flight download
@@ -274,9 +277,9 @@ void wifi_init_softap()
 		ESP_ERROR_CHECK(esp_wifi_start());
 		ESP_ERROR_CHECK(esp_wifi_set_max_tx_power(8));
 
-		xTaskCreatePinnedToCore(&socket_server, "socket_ser_2", 3072, &AUX, 11, AUX.pid, 0);  // 10
-		xTaskCreatePinnedToCore(&socket_server, "socket_srv_0", 3072, &XCVario, 12, XCVario.pid, 0);  // 10
-		xTaskCreatePinnedToCore(&socket_server, "socket_ser_1", 3072, &FLARM, 13, FLARM.pid, 0);  // 10
+		xTaskCreatePinnedToCore(&socket_server, "socket_ser_2", 3200, &AUX, 11, AUX.pid, 0);  // 10
+		xTaskCreatePinnedToCore(&socket_server, "socket_srv_0", 3200, &XCVario, 12, XCVario.pid, 0);  // 10
+		xTaskCreatePinnedToCore(&socket_server, "socket_ser_1", 3200, &FLARM, 13, FLARM.pid, 0);  // 10
 
 		ESP_LOGV(FNAME, "wifi_init_softap finished SUCCESS. SSID:%s password:%s channel:%d", (char *)wc.ap.ssid, (char *)wc.ap.password, wc.ap.channel );
 	}

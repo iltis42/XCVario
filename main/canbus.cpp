@@ -112,7 +112,7 @@ int rx_pos=0;
 void CANbus::tick(){
 	_tick++;
 	if( !can_ready ){
-		ESP_LOGI(FNAME,"CANbus not ready");
+		// ESP_LOGI(FNAME,"CANbus not ready");
 		return;
 	}
 	SString msg;

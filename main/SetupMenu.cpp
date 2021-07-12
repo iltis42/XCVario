@@ -597,11 +597,12 @@ void SetupMenu::setup( )
 		s2fse->addMenu( blck );
 
 		SetupMenuSelect * s2fmod = new SetupMenuSelect( "Mode", false, 0 , true, &audio_mode );
-		s2fmod->setHelp( PROGMEM"Select either fixed Vario, or S2F mode, or let transition control by an external switch or automatically by 'AutoSpeed'" );
+		s2fmod->setHelp( PROGMEM"Select either fixed Vario, or S2F mode, or let transition control only by an external switch or by switch and speed 'AutoSpeed' or get from master" );
 		s2fmod->addEntry( "Vario (Circling)");
 		s2fmod->addEntry( "S2F (Cruise)");
 		s2fmod->addEntry( "Switch");
 		s2fmod->addEntry( "AutoSpeed");
+		s2fmod->addEntry( "From Master");
 		s2fse->addMenu( s2fmod );
 
 		SetupMenuValFloat * autospeed = new SetupMenuValFloat( "S2F AutoSpeed", 0, sunit.c_str(), 20.0, 250.0, 1.0, update_s2f_speed, false, &s2f_speed );
@@ -611,13 +612,6 @@ void SetupMenu::setup( )
 		SetupMenuValFloat * s2fhy = new SetupMenuValFloat( "Hysteresis", 0, sunit.c_str(),	-20, 20, 1, 0, false, &s2f_hysteresis );
 		s2fhy->setHelp(PROGMEM"Hysteresis for auto S2F transition at autospeed +- this value");
 		s2fse->addMenu( s2fhy );
-
-		SetupMenuSelect * cmtoma = new SetupMenuSelect( "Cruise from Master", false, 0 , true, &s2f_cm_takeover_from_master );
-		cmtoma->setHelp(PROGMEM"Cruise/Vario mode will be taken over from master device if enabled");
-		cmtoma->addEntry( "DISABLE");
-		cmtoma->addEntry( "ENABLE");
-		s2fse->addMenu( cmtoma );
-
 
 		SetupMenu * elco = new SetupMenu( "Electronic Compensation" );
 		vae->addMenu( elco );

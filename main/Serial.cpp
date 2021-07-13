@@ -123,7 +123,7 @@ void Serial::serialHandler(void *pvParameters){
 		}
 		Router::routeS1();
 		Router::routeBT();
-		Router::routeWLAN();
+
 	    BTSender::progress();   // piggyback this here, saves one task for BT sender
 
 	    if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 && !compass_enable.get() ){
@@ -158,7 +158,7 @@ void Serial::serialHandler(void *pvParameters){
 	    	}
 	    	Router::routeS2();
 	    	Router::routeBT();
-	    	Router::routeWLAN();
+
 	    }
 	    esp_task_wdt_reset();
 	    if( uxTaskGetStackHighWaterMark( pid ) < 256 )
@@ -238,7 +238,7 @@ void Serial::begin(){
 					gpio_pullup_dis( GPIO_NUM_17 );
 				}
 			}
-			Serial1.setRxBufferSize(256);
+			Serial1.setRxBufferSize(512);
 		}
 		// need this for bluetooth
 	}
@@ -263,14 +263,14 @@ void Serial::begin(){
 				gpio_pullup_dis( GPIO_NUM_4 );
 			}
 		}
-		Serial2.setRxBufferSize(256);
+		Serial2.setRxBufferSize(512);
 	}
 }
 
 void Serial::taskStart(){
 	ESP_LOGI(FNAME,"Serial::taskStart()" );
 	if( serial1_speed.get() != 0  || wireless != 0 ){
-		xTaskCreatePinnedToCore(&Serial::serialHandler, "serialHandler", 4096, NULL, 10, pid, 0);
+		xTaskCreatePinnedToCore(&Serial::serialHandler, "serialHandler", 4096, NULL, 12, pid, 0);
 	}
 	// handler S1 now serves both interfaces in one task
 }

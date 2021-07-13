@@ -55,7 +55,6 @@ static sock_server_t XCVario = { .txbuf = &wl_vario_tx_q, .rxbuf = &wl_vario_rx_
 static sock_server_t FLARM   = { .txbuf = &wl_flarm_tx_q, .rxbuf = &wl_flarm_rx_q, .port=8881, .idle = 0, .pid = 0  };
 static sock_server_t AUX     = { .txbuf = &wl_aux_tx_q,   .rxbuf = &wl_aux_rx_q,   .port=8882, .idle = 0, .pid = 0  };
 
-
 int create_socket( int port ){
 	struct sockaddr_in serverAddress;
 	// Create a socket that we will listen upon.
@@ -125,91 +124,91 @@ void socket_server(void *setup) {
 	}
 	// we have a socket
 	fcntl(sock, F_SETFL, O_NONBLOCK); // socket should not block, so we can server several clients
-	while(1)
+
+	while (1)
 	{
-		while (1) {
-			int new_client = accept(sock, (struct sockaddr *)&clientAddress[clients.size()], &clientAddressLength);
-			if( new_client >= 0 && clients.size() < 10 ){
-				client_record_t new_client_rec;
-				new_client_rec.client = new_client;
-				new_client_rec.retries = 0;
-				clients.push_back( new_client_rec );
-				num_send = 0;
-				ESP_LOGI(FNAME, "New sock client: %d, number of clients: %d", new_client, clients.size()  );
+		int new_client = accept(sock, (struct sockaddr *)&clientAddress[clients.size()], &clientAddressLength);
+		if( new_client >= 0 && clients.size() < 10 ){
+			client_record_t new_client_rec;
+			new_client_rec.client = new_client;
+			new_client_rec.retries = 0;
+			clients.push_back( new_client_rec );
+			num_send = 0;
+			ESP_LOGI(FNAME, "New sock client: %d, number of clients: %d", new_client, clients.size()  );
+		}
+		// ESP_LOGI(FNAME, "Number of clients %d, port %d, idle %d", clients.size(), config->port, config->idle );
+		if( clients.size() ) {
+			char block[512];
+			int len = Router::pullBlock( *(config->txbuf), block );
+			if( len ){
+				// ESP_LOGI(FNAME, "port %d to sent %d: bytes, %s", config->port, len, block );
+				config->idle = 0;
 			}
-			// ESP_LOGI(FNAME, "Number of clients %d, port %d, idle %d", clients.size(), config->port, config->idle );
-			if( clients.size() ) {
-				char block[512];
-				int len = Router::pullBlock( *(config->txbuf), block );
-				if( len ){
-					// ESP_LOGI(FNAME, "port %d to sent %d: bytes, %s", config->port, len, block );
+			else
+			{
+				config->idle++;
+				if( config->idle > 10 ){  // if there is no data, send a \n all 2 seconds as keep alive
+					block[0] = '\n';
+					len=1;
 					config->idle = 0;
 				}
-				else
-				{
-					config->idle++;
-					if( config->idle > 10 ){  // if there is no data, send a \n all 2 seconds as keep alive
-						block[0] = '\n';
-						len=1;
-						config->idle = 0;
+			}
+			std::list<client_record_t>::iterator it;
+			for(it = clients.begin(); it != clients.end(); ++it)
+			{
+				client_record_t &client_rec = *it;
+				int client_dead = 0;
+				// ESP_LOGD(FNAME, "loop tcp client %d, port %d", client , config->port );
+				if ( len ){
+					// ESP_LOGI(FNAME, "sent to tcp client %d, bytes %d, port %d", client, len, config->port );
+					// ESP_LOG_BUFFER_HEXDUMP(FNAME,block,len, ESP_LOG_INFO);
+					client_rec.retries++;
+					if( client_rec.client >= 0 ){
+						int num = send(client_rec.client, block, len, MSG_DONTWAIT);
+						// ESP_LOGI(FNAME, "client %d, num send %d", client_rec.client, num );
+						if( num >= 0 ){
+							client_rec.retries = 0;
+							// ESP_LOGI(FNAME, "tcp send to client %d (port: %d), bytes %d success", client_rec.client, config->port, num );
+						}
 					}
 				}
-				std::list<client_record_t>::iterator it;
-				for(it = clients.begin(); it != clients.end(); ++it)
-				{
-					client_record_t &client_rec = *it;
-					int client_dead = 0;
-					// ESP_LOGD(FNAME, "loop tcp client %d, port %d", client , config->port );
-					if ( len ){
-						// ESP_LOGI(FNAME, "sent to tcp client %d, bytes %d, port %d", client, len, config->port );
-						// ESP_LOG_BUFFER_HEXDUMP(FNAME,block,len, ESP_LOG_INFO);
-						client_rec.retries++;
-						if( client_rec.client >= 0 ){
-							int num = send(client_rec.client, block, len, MSG_DONTWAIT);
-							// ESP_LOGI(FNAME, "client %d, num send %d", client_rec.client, num );
-							if( num >= 0 ){
-								client_rec.retries = 0;
-							    // ESP_LOGI(FNAME, "tcp send to client %d (port: %d), bytes %d success", client_rec.client, config->port, num );
-							}
-						}
+				if( client_rec.retries != 0 )
+					ESP_LOGI(FNAME, "tcp retry %d (port: %d), %d", client_rec.client, config->port, client_rec.retries );
+				if( client_rec.retries > 100 ){
+					ESP_LOGW(FNAME, "tcp client %d (port %d) permanent send err: %s, remove!", client_rec.client,  config->port, strerror(errno) );
+					close(client_rec.client );
+					it = clients.erase( it );
+					client_dead = client_rec.client;
+					num_send = 0;
+				}
+				if( Flarm::bincom )
+					vTaskDelay(10/portTICK_PERIOD_MS); // maximize realtime throuput for flight download
+				if( !client_dead ){
+					// ESP_LOGI(FNAME, "read from client %d", client);
+					SString tcprx;
+					ssize_t sizeRead = recv(client_rec.client, tcprx.c_str(), SSTRLEN-1, MSG_DONTWAIT);
+					if (sizeRead > 0) {
+						tcprx.setLen( sizeRead );
+						Router::forwardMsg( tcprx, *(config->rxbuf) );
+						// ESP_LOGI(FNAME, "tcp read from port %d size: %d", config->port, sizeRead );
+						// ESP_LOG_BUFFER_HEXDUMP(FNAME,tcprx.c_str(),sizeRead, ESP_LOG_INFO);
 					}
-					if( client_rec.retries != 0 )
-						ESP_LOGI(FNAME, "tcp retry %d (port: %d), %d", client_rec.client, config->port, client_rec.retries );
-					if( client_rec.retries > 100 ){
-						ESP_LOGW(FNAME, "tcp client %d (port %d) permanent send err: %s, remove!", client_rec.client,  config->port, strerror(errno) );
-						close(client_rec.client );
-						it = clients.erase( it );
-						client_dead = client_rec.client;
-						num_send = 0;
-					}
-					if( Flarm::bincom )
-						vTaskDelay(10/portTICK_PERIOD_MS); // maximize realtime throuput for flight download
-					if( !client_dead ){
-						// ESP_LOGI(FNAME, "read from client %d", client);
-						SString tcprx;
-						ssize_t sizeRead = recv(client_rec.client, tcprx.c_str(), SSTRLEN-1, MSG_DONTWAIT);
-						if (sizeRead > 0) {
-							tcprx.setLen( sizeRead );
-							Router::forwardMsg( tcprx, *(config->rxbuf) );
-							// ESP_LOGI(FNAME, "tcp read from port %d size: %d", config->port, sizeRead );
-							// ESP_LOG_BUFFER_HEXDUMP(FNAME,tcprx.c_str(),sizeRead, ESP_LOG_INFO);
-						}
-						if( config->port == 8880 ){
-							if( num_send < SetupCommon::numEntries() ){
-								on_client_connect( config->port, num_send );
-								num_send ++;
-							}
+					if( config->port == 8880 ){
+						if( num_send < SetupCommon::numEntries() ){
+							on_client_connect( config->port, num_send );
+							num_send ++;
 						}
 					}
 				}
 			}
-			if( uxTaskGetStackHighWaterMark( config->pid ) < 128 )
-				ESP_LOGW(FNAME,"Warning task stack low: %d bytes, port %d", uxTaskGetStackHighWaterMark( config->pid ), config->port );
-			if( Flarm::bincom )
-				vTaskDelay(10/portTICK_PERIOD_MS);  // maximize realtime throuput for flight download
-			else
-				vTaskDelay(200/portTICK_PERIOD_MS);
 		}
+		Router::routeWLAN();
+		if( uxTaskGetStackHighWaterMark( config->pid ) < 128 )
+			ESP_LOGW(FNAME,"Warning task stack low: %d bytes, port %d", uxTaskGetStackHighWaterMark( config->pid ), config->port );
+		if( Flarm::bincom )
+			vTaskDelay(10/portTICK_PERIOD_MS);  // maximize realtime throuput for flight download
+		else
+			vTaskDelay(200/portTICK_PERIOD_MS);
 	}
 	vTaskDelete(NULL);
 }
@@ -277,8 +276,8 @@ void wifi_init_softap()
 		ESP_ERROR_CHECK(esp_wifi_start());
 		ESP_ERROR_CHECK(esp_wifi_set_max_tx_power( int(wifi_max_power.get()*80.0/100.0) ));
 
-		xTaskCreatePinnedToCore(&socket_server, "socket_ser_2", 3200, &AUX, 11, AUX.pid, 0);  // 10
-		xTaskCreatePinnedToCore(&socket_server, "socket_srv_0", 3200, &XCVario, 12, XCVario.pid, 0);  // 10
+		xTaskCreatePinnedToCore(&socket_server, "socket_ser_2", 3200, &AUX, 9, AUX.pid, 0);  // 10
+		xTaskCreatePinnedToCore(&socket_server, "socket_srv_0", 3200, &XCVario, 15, XCVario.pid, 0);  // 10
 		xTaskCreatePinnedToCore(&socket_server, "socket_ser_1", 3200, &FLARM, 13, FLARM.pid, 0);  // 10
 
 		ESP_LOGV(FNAME, "wifi_init_softap finished SUCCESS. SSID:%s password:%s channel:%d", (char *)wc.ap.ssid, (char *)wc.ap.password, wc.ap.channel );

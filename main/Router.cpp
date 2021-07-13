@@ -41,6 +41,9 @@ portMUX_TYPE btmux = portMUX_INITIALIZER_UNLOCKED;
 
 // Utility methods to push and pull data into/from queues
 
+#undef ESP_LOGV
+#define ESP_LOGV(x,y,z); ;
+
 // checks if Queue is full, otherwise appends SString
 bool Router::forwardMsg( SString &s, RingBufCPP<SString, QUEUE_SIZE>& q ){
 	if( !q.isFull() ) {
@@ -86,7 +89,6 @@ void Router::sendXCV(char * s){
 		SString xcv( s );
 		if( forwardMsg( xcv, xcv_rx_q ) )
 			ESP_LOGV(FNAME,"Received %d bytes from XCV", xcv.length() );
-		routeXCV();
 	}
 }
 
@@ -111,7 +113,7 @@ void Router::routeXCV(){
 				ESP_LOGV(FNAME,"Send to ttyS2 device, XCV %d bytes", xcv.length() );
 		if( can_tx.get() & RT_XCVARIO )
 			if( forwardMsg( xcv, can_tx_q ) )
-				ESP_LOGI(FNAME,"Send to CAN device, XCV %d bytes", xcv.length() );
+				ESP_LOGV(FNAME,"Send to CAN device, XCV %d bytes", xcv.length() );
 	}
 }
 
@@ -162,6 +164,7 @@ void Router::routeWLAN(){
 	if( wireless == WL_WLAN || wireless == WL_WLAN_CLIENT ){
 		// Route received data from WLAN ports
 		if( pullMsg( wl_vario_rx_q, wlmsg) ){
+			Protocols::parseNMEA( wlmsg.c_str() );
 			ESP_LOGV(FNAME,"From WLAN port 8880 RX parse NMEA %s", wlmsg.c_str() );
 			if( serial1_tx.get() & RT_WIRELESS )
 				if( forwardMsg( wlmsg, s1_tx_q ) )
@@ -169,7 +172,6 @@ void Router::routeWLAN(){
 			if( serial2_tx.get() & RT_WIRELESS )
 				if( forwardMsg( wlmsg, s2_tx_q ) )
 					ESP_LOGV(FNAME,"Send to ttyS2 device, TCP port 8880 received %d bytes", wlmsg.length() );
-			Protocols::parseNMEA( wlmsg.c_str() );
 		}
 		if( pullMsg( wl_flarm_rx_q, wlmsg ) ){
 			Flarm::parsePFLAX( wlmsg );
@@ -193,8 +195,6 @@ void Router::routeWLAN(){
 		}
 	}
 }
-
-
 
 
 // route messages from Bluetooth

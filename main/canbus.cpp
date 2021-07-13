@@ -73,15 +73,11 @@ void CANbus::driverInstall( twai_mode_t mode, bool reinstall ){
 
 void canTask(void *pvParameters){
 	while (1) {
-		// TickType_t xLastWakeTime = xTaskGetTickCount();
-
 		CANbus::tick();
-
-		// vTaskDelayUntil(&xLastWakeTime, 10/portTICK_PERIOD_MS);
 		if( (CANbus::_tick % 100) == 0) {
 			// ESP_LOGI(FNAME,"Free Heap: %d bytes", heap_caps_get_free_size(MALLOC_CAP_8BIT) );
 			if( uxTaskGetStackHighWaterMark( cpid ) < 128 )
-				ESP_LOGW(FNAME,"Warning temperature task stack low: %d bytes", uxTaskGetStackHighWaterMark( cpid ) );
+				ESP_LOGW(FNAME,"Warning canbus task stack low: %d bytes", uxTaskGetStackHighWaterMark( cpid ) );
 		}
 	}
 }
@@ -107,7 +103,7 @@ void CANbus::begin( gpio_num_t tx_io, gpio_num_t rx_io )
     can_ready = true;
 	selfTest();
 	driverInstall( TWAI_MODE_NORMAL, true );
-	xTaskCreatePinnedToCore(&canTask, "canTask", 3000, NULL, 8, cpid, 0);
+	xTaskCreatePinnedToCore(&canTask, "canTask", 4096, NULL, 8, cpid, 0);
 }
 
 // receive message of corresponding ID
@@ -134,17 +130,19 @@ int rx_pos=0;
 void CANbus::tick(){
 	_tick++;
 	if( !can_ready ){
-		ESP_LOGI(FNAME,"CANbus not ready");
+		// ESP_LOGI(FNAME,"CANbus not ready");
 		return;
 	}
 	SString msg;
 	// CAN bus send tick
 	if ( !can_tx_q.isEmpty() ){
 		// ESP_LOGI(FNAME,"There is CAN data");
-		while( Router::pullMsg( can_tx_q, msg ) ) {
-			// ESP_LOGI(FNAME,"CAN TX len: %d bytes", msg.length() );
-			// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
-			sendNMEA( msg.c_str() );
+		if( _connected ){
+			while( Router::pullMsg( can_tx_q, msg ) ) {
+				// ESP_LOGI(FNAME,"CAN TX len: %d bytes", msg.length() );
+				// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
+				sendNMEA( msg.c_str() );
+			}
 		}
 	}
 	msg.clear();
@@ -172,10 +170,13 @@ void CANbus::tick(){
 	}
 	else if( id == 0x22 ){
 		nmea.append( msg.c_str(), bytes );
-		ESP_LOGI(FNAME,"CAN RX end frame segment, msg: %s", nmea.c_str() );
+		// ESP_LOGI(FNAME,"CAN RX, msg: %s", nmea.c_str() );
 		Router::forwardMsg( nmea, can_rx_q );
-		Router::routeCAN();
 	}
+	if( !(_tick%4) )
+		Router::routeCAN();
+	if( !(_tick%50) )
+		sendData( 0x11, msg.c_str(), 1 ); // keep alive
 }
 
 
@@ -188,15 +189,17 @@ bool CANbus::sendNMEA( const char *msg ){
 	int id = 0x20;
 	int dlen=8;
 	int pos;
-	for( pos=0; pos <= len; pos+=8 ){
+	for( pos=0; pos < len; pos+=8 ){
 		int rest = len - pos;
-		if( rest < 8 ){
-			dlen = rest;
-			break;
-		}
-		// ESP_LOGI(FNAME,"Sent id:%d pos:%d dlen %d", id, pos, dlen );
 		if( !sendData( id, &msg[pos], dlen ) )
 			ret = false;
+		if( rest > 0 && rest <= 8 ){
+			dlen = rest;
+			break;
+		}else{
+			rest = 0;
+		}
+		// ESP_LOGI(FNAME,"Sent id:%d pos:%d dlen %d", id, pos, dlen );
 		id = 0x21;
 	}
 	id = 0x22;
@@ -250,7 +253,7 @@ bool CANbus::selfTest(){
 bool CANbus::sendData( int id, const char* msg, int length, int self ){
 	// ESP_LOGI(FNAME,"CANbus::send %d bytes, msg %s, self %d", length, msg, self );
 	if( !can_ready ){
-		ESP_LOGI(FNAME,"CANbus not ready, abort");
+		// ESP_LOGI(FNAME,"CANbus not ready, abort");
 		return false;
 	}
 	gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);
@@ -273,7 +276,7 @@ bool CANbus::sendData( int id, const char* msg, int length, int self ){
 		return true;
 	}
 	else{
-		ESP_LOGI(FNAME,"Send CAN bus message failed, ret:%02x", error );
+		// ESP_LOGI(FNAME,"Send CAN bus message failed, ret:%02x", error );
 		return false;
 	}
 }

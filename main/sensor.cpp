@@ -64,6 +64,7 @@
 #include "CircleWind.h"
 #include <coredump_to_server.h>
 #include "canbus.h"
+#include "Router.h"
 
 // #include "sound.h"
 
@@ -89,6 +90,8 @@ BMP:
 
 #define SPL06_007_BARO 0x77
 #define SPL06_007_TE   0x76
+
+#define MGRPS 360
 
 MCP3221 *MCP=0;
 DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 standard, alternative  GPIO_NUM_17
@@ -335,13 +338,11 @@ void audioTask(void *pvParameters){
 	}
 }
 
-void readBMP(void *pvParameters){
+void readSensors(void *pvParameters){
 	while (1)
 	{
 		count++;
 		TickType_t xLastWakeTime = xTaskGetTickCount();
-		xSemaphoreTake(xMutex,portMAX_DELAY );
-
 		if( haveMPU  )  // 3th Generation HW, MPU6050 avail and feature enabled
 		{
 			mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
@@ -365,12 +366,12 @@ void readBMP(void *pvParameters){
 				}
 			}
 			bool goodGyro = true;
-			if( abs( gyroDPS.x - gyroDPS_Prev.x ) > 90 || abs( gyroDPS.y - gyroDPS_Prev.y ) > 90 || abs( gyroDPS.z - gyroDPS_Prev.z ) > 90 ) {
+			if( abs( gyroDPS.x - gyroDPS_Prev.x ) > MGRPS || abs( gyroDPS.y - gyroDPS_Prev.y ) > MGRPS || abs( gyroDPS.z - gyroDPS_Prev.z ) > MGRPS ) {
 				// ESP_LOGE(FNAME, "gyro sensor out of bounds: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
 				// ESP_LOGE(FNAME, "%04x %04x %04x", gyroRaw.x, gyroRaw.y, gyroRaw.z );
 				MPU.rotation(&gyroRaw);
 				gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);
-				if( abs( gyroDPS.x - gyroDPS_Prev.x ) > 90 || abs( gyroDPS.y - gyroDPS_Prev.y ) > 90 || abs( gyroDPS.z - gyroDPS_Prev.z ) > 90 ) {
+				if( abs( gyroDPS.x - gyroDPS_Prev.x ) > MGRPS || abs( gyroDPS.y - gyroDPS_Prev.y ) > MGRPS || abs( gyroDPS.z - gyroDPS_Prev.z ) > MGRPS ) {
 					goodGyro = false;
 					ESP_LOGE(FNAME, "gyro angle >90 deg/s in 0.2 S: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
 				}
@@ -403,7 +404,7 @@ void readBMP(void *pvParameters){
 		// ESP_LOGI("FNAME","P: %f  IAS:%f IASF: %d", dynamicP, iasraw, ias );
 		tas += (tasraw-tas)*0.25;       // low pass filter
 		// ESP_LOGI(FNAME,"IAS=%f, T=%f, TAS=%f baroP=%f", ias, T, tas, baroP );
-
+		xSemaphoreTake(xMutex,portMAX_DELAY );
 		TE = bmpVario.readTE( tasraw );  // 10x per second
 		xSemaphoreGive(xMutex);
 		// ESP_LOGI(FNAME,"count %d ccp %d", count, ccp );
@@ -415,6 +416,7 @@ void readBMP(void *pvParameters){
 		Flap::progress();
 		xSemaphoreTake(xMutex,portMAX_DELAY );
 		baroP = baroSensor->readPressure(ok);   // 10x per second
+		xSemaphoreGive(xMutex);
 		// ESP_LOGI(FNAME,"Baro Pressure: %4.3f", baroP );
 		float altSTD = baroSensor->calcAVGAltitudeSTD( baroP );
 		if( alt_select.get() == 0 ) // TE
@@ -436,7 +438,6 @@ void readBMP(void *pvParameters){
 			}
 		}
 		aTE = bmpVario.readAVGTE();
-		xSemaphoreGive(xMutex);
 		doAudio();
 
 		if( !Flarm::bincom && ((count % 2) == 0 ) ){
@@ -464,11 +465,10 @@ void readBMP(void *pvParameters){
 			}
 			else
 				ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
-
-			vTaskDelay(2/portTICK_PERIOD_MS);
 			xSemaphoreGive(xMutex);
+			vTaskDelay(2/portTICK_PERIOD_MS);
 		}
-
+		Router::routeXCV();
 		// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d ena=%d", compass.haveSensor(),  compass_nmea_hdt.get(),  compass_enable.get() );
 		if( compass_enable.get() == true  && !Flarm::bincom && ! Compass::calibrationIsRunning() ) {
 			// Trigger heading reading and low pass filtering. That job must be
@@ -493,7 +493,6 @@ void readBMP(void *pvParameters){
 				}
 			}
 		}
-
 		if( accelG[0] > gload_pos_max.get() ){
 			gload_pos_max.set( (float)accelG[0] );
 		}else if( accelG[0] < gload_neg_max.get() ){
@@ -513,7 +512,6 @@ void readTemp(void *pvParameters){
 	while (1) {
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		float t=15.0;
-
 		battery = Battery.get();
 		// ESP_LOGI(FNAME,"Battery=%f V", battery );
 		if( wireless != WL_WLAN_CLIENT && can_mode.get() != CAN_MODE_CLIENT ) {  // client Vario will get Temperature info from main Vario
@@ -539,14 +537,14 @@ void readTemp(void *pvParameters){
 				}
 			}
 			ESP_LOGV(FNAME,"temperature=%f", temperature );
+			theWind.tick();
+			CircleWind::tick();
 		}
 
 		Flarm::progress();
-		theWind.tick();
-		CircleWind::tick();
 		vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS);
 
-		if( (ttick++ % 5) == 0) {
+		if( (ttick++ % 50) == 0) {
 			// ESP_LOGI(FNAME,"Free Heap: %d bytes", heap_caps_get_free_size(MALLOC_CAP_8BIT) );
 			if( uxTaskGetStackHighWaterMark( tpid ) < 256 )
 				ESP_LOGW(FNAME,"Warning temperature task stack low: %d bytes", uxTaskGetStackHighWaterMark( tpid ) );
@@ -1203,13 +1201,13 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_Display, GPIO_PULLUP_ONLY );
 
 	if( wireless != WL_WLAN_CLIENT &&  can_mode.get() != CAN_MODE_CLIENT ) {
-		xTaskCreatePinnedToCore(&readBMP, "readBMP", 1024*8, NULL, 14, bpid, 0);
+		xTaskCreatePinnedToCore(&readSensors, "readSensors", 4096, NULL, 14, bpid, 0);
 	}
 	if( wireless == WL_WLAN_CLIENT || can_mode.get() == CAN_MODE_CLIENT ){
 		xTaskCreatePinnedToCore(&audioTask, "audioTask", 2300, NULL, 14, apid, 0);
 	}
-	xTaskCreatePinnedToCore(&readTemp, "readTemp", 4096, NULL, 1, tpid, 0);
-	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 4096, NULL, 2, dpid, 0);
+	xTaskCreatePinnedToCore(&readTemp, "readTemp", 2048, NULL, 5, tpid, 0);
+	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 4096, NULL, 4, dpid, 0);
 	compass.start();
 	Audio::startAudio();
 }

@@ -43,7 +43,7 @@ portMUX_TYPE btmux = portMUX_INITIALIZER_UNLOCKED;
 // Utility methods to push and pull data into/from queues
 
 #undef ESP_LOGV
-#define ESP_LOGV(x,y,z); ;
+#define ESP_LOGV(x,y,z);  ;
 
 // checks if Queue is full, otherwise appends SString
 bool Router::forwardMsg( SString &s, RingBufCPP<SString, QUEUE_SIZE>& q ){
@@ -180,7 +180,7 @@ void Router::routeWLAN(){
 	if( wireless == WL_WLAN || wireless == WL_WLAN_CLIENT ){
 		// Route received data from WLAN ports
 		if( pullMsg( wl_vario_rx_q, wlmsg) ){
-			ESP_LOGV(FNAME,"From WLAN port 8880 RX parse NMEA %s", wlmsg.c_str() );
+			ESP_LOGV(FNAME,"From WLAN port 8880 RX NMEA %s", wlmsg.c_str() );
 			if( (serial1_tx.get() & RT_WIRELESS)  && serial1_speed.get() )
 				if( forwardMsg( wlmsg, s1_tx_q ) )
 					ESP_LOGV(FNAME,"Send to  device, TCP port 8880 received %d bytes", wlmsg.length() );
@@ -190,7 +190,6 @@ void Router::routeWLAN(){
 			Protocols::parseNMEA( wlmsg.c_str() );
 		}
 		if( pullMsg( wl_flarm_rx_q, wlmsg ) ){
-			// Protocols::parseNMEA( wlmsg.c_str() );
 			if( (serial1_tx.get() & RT_WIRELESS) && serial1_speed.get() )
 				if( forwardMsg( wlmsg, s1_tx_q ) )
 					ESP_LOGV(FNAME,"Send to  device, TCP port 8881 received %d bytes", wlmsg.length() );
@@ -230,8 +229,7 @@ void Router::routeBT(){
 		// always check if it is a command to ourselves
 		if( strncmp( bt.c_str(), "!g,", 3 )  == 0 ) {
 			ESP_LOGV(FNAME,"BT RX Matched a Borgelt command %s", bt.c_str() );
-			if( !Flarm::bincom )
-				Protocols::parseNMEA( bt.c_str() );
+			Protocols::parseNMEA( bt.c_str() );
 		}
 		bt.clear();
 	}

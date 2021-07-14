@@ -811,7 +811,7 @@ void SetupMenu::setup( )
 		vau->addEntry( "100ft/min (cft/min)");
 		vau->addEntry( "Knots     (knots)");
 		un->addMenu( vau );
-		SetupMenuSelect * teu = new SetupMenuSelect( "Temperature", false , update_vunit, true, &temperature_unit );
+		SetupMenuSelect * teu = new SetupMenuSelect( "Temperature", false , 0, true, &temperature_unit );
 		teu->addEntry( "Celcius");
 		teu->addEntry( "Fahrenheit");
 		teu->addEntry( "Kelvin");

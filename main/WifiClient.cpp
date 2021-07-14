@@ -231,6 +231,7 @@ void WifiClient::tcp_client(void *setup){
         		vTaskDelay(5 / portTICK_PERIOD_MS);
         	}
         }
+        Router::routeWLAN();
         vTaskDelay(50 / portTICK_PERIOD_MS);
     }
     ESP_LOGI(FNAME, "tcp_client task closed\n");

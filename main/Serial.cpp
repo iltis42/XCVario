@@ -66,7 +66,7 @@ const char *gps[] = {
 */
 
 int sim=100;
-#define HEARTBEAT_PERIOD_MS_SERIAL 15
+#define HEARTBEAT_PERIOD_MS_SERIAL 40
 static TaskHandle_t *pid;
 
 // Serial Handler  ttyS1, S1, port 8881
@@ -93,7 +93,7 @@ void Serial::serialHandler(void *pvParameters){
 		if ( !s1_tx_q.isEmpty() && Serial1.availableForWrite() ){
 			ESP_LOGD(FNAME,"Serial Data and avail");
 			while( Router::pullMsg( s1_tx_q, s ) ) {
-				ESP_LOGD(FNAME,"Serial 1 TX len: %d bytes", s.length() );
+				// ESP_LOGD(FNAME,"Serial 1 TX len: %d bytes", s.length() );
 				// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
 				int wr = Serial1.write( s.c_str(), s.length() );
 				ESP_LOGD(FNAME,"Serial 1 TX written: %d", wr);
@@ -123,14 +123,13 @@ void Serial::serialHandler(void *pvParameters){
 		}
 		Router::routeS1();
 		Router::routeBT();
-
 	    BTSender::progress();   // piggyback this here, saves one task for BT sender
 
 	    if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 && !compass_enable.get() ){
 	    	if ( !s2_tx_q.isEmpty() && Serial2.availableForWrite() ){
 	    		if( Router::pullMsg( s2_tx_q, s ) ) {
-	    			ESP_LOGD(FNAME,"Serial 2 TX len: %d bytes", s.length() );
-	    			ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
+	    			// ESP_LOGD(FNAME,"Serial 2 TX len: %d bytes", s.length() );
+	    			// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
 	    			int wr = Serial2.write( s.c_str(), s.length() );
 	    			ESP_LOGD(FNAME,"Serial 2 TX written: %d", wr);
 	    		}
@@ -158,12 +157,11 @@ void Serial::serialHandler(void *pvParameters){
 	    	}
 	    	Router::routeS2();
 	    	Router::routeBT();
-
 	    }
 	    esp_task_wdt_reset();
 	    if( uxTaskGetStackHighWaterMark( pid ) < 256 )
 	    	ESP_LOGW(FNAME,"Warning serial task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid ) );
-	    vTaskDelay( HEARTBEAT_PERIOD_MS_SERIAL/portTICK_PERIOD_MS );
+    	vTaskDelay( HEARTBEAT_PERIOD_MS_SERIAL/portTICK_PERIOD_MS );
 	}
 }
 

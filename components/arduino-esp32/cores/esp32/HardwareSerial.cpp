@@ -166,7 +166,7 @@ size_t HardwareSerial::readLine(uint8_t *buffer, size_t size)
 			*buffer = c;
 			buffer++;
 			count++;
-			if( c == '\n' || c == '\r' )
+			if( c == '\n' )
 				break;
 		}else{
 			delay(5);  // wait 5 mS until next data avail check

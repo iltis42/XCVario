@@ -103,7 +103,6 @@ inline bool add(const Type &obj, bool overwrite=false)
     return !full;
 }
 
-
 /**
 * Remove last element from buffer, and copy it to dest
 * Return: true on success

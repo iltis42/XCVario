@@ -167,6 +167,7 @@ float ias = 0;
 float tas = 0;
 float aTE = 0;
 float alt;
+float alt_external;
 float altSTD;
 float meanClimb = 0;
 float netto = 0;
@@ -419,10 +420,14 @@ void readSensors(void *pvParameters){
 		baroP = baroSensor->readPressure(ok);   // 10x per second
 		xSemaphoreGive(xMutex);
 		// ESP_LOGI(FNAME,"Baro Pressure: %4.3f", baroP );
-		float altSTD = baroSensor->calcAVGAltitudeSTD( baroP );
-		if( alt_select.get() == 0 ) // TE
+		float altSTD = 0;
+		if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
+			altSTD = alt_external;
+		else
+			altSTD = baroSensor->calcAVGAltitudeSTD( baroP );
+		if( alt_select.get() == AS_TE_SENSOR ) // TE
 			alt = bmpVario.readAVGalt();
-		else { // Baro
+		else if( alt_select.get() == AS_BARO_SENSOR  || alt_select.get() == AS_EXTERNAL ){ // Baro or external
 			if(  alt_unit.get() == 2 ) { // FL, always standard
 				alt = altSTD;
 				standard_setting = true;
@@ -433,7 +438,10 @@ void readSensors(void *pvParameters){
 				// ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), altSTD, standard_setting, transition_alt.get() );
 			}
 			else {
-				alt = baroSensor->calcAVGAltitude( QNH.get(), baroP );
+				if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
+					alt = altSTD + (QNH.get() - 1013.25)*8.2296;  // correct altitude according to ISA model = 27ft / hPa
+				else
+					alt = baroSensor->calcAVGAltitude( QNH.get(), baroP );
 				standard_setting = false;
 				// ESP_LOGI(FNAME,"QNH %f baro: %f alt: %f SS:%d", QNH.get(), baroP, alt, standard_setting  );
 			}
@@ -539,6 +547,7 @@ void readTemp(void *pvParameters){
 			}
 			ESP_LOGV(FNAME,"temperature=%f", temperature );
 			theWind.tick();
+			Flarm::tick();
 			CircleWind::tick();
 		}
 
@@ -1159,7 +1168,11 @@ void sensor(void *args){
 			float min=1000.0;
 			float qnh_best = 1013.2;
 			for( float qnh = 870; qnh< 1085; qnh+=step ) {
-				float alt = baroSensor->readAltitude( qnh, ok);
+				float alt = 0;
+				if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
+					alt = alt_external + (qnh  - 1013.25) * 8.2296;  // correct altitude according to ISA model = 27ft / hPa
+				else
+					alt = baroSensor->readAltitude( qnh, ok);
 				float diff = alt - ae;
 				// ESP_LOGI(FNAME,"Alt diff=%4.2f  abs=%4.2f", diff, abs(diff) );
 				if( abs( diff ) < 100 )

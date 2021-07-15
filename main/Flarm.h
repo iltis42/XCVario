@@ -16,6 +16,7 @@ public:
 	static void parsePFLAX( SString &msg );
 	static void parseGPRMC( char *gprmc );
 	static void parseGPGGA( char *gpgga );
+	static void parsePGRMZ( char *pgrmz );
 	static void drawAirplane( int x, int y, bool fromBehind=false, bool smallSize=false );
  	static inline int alarmLevel(){ return AlarmLevel; };
  	static void drawFlarmWarning();
@@ -34,6 +35,12 @@ public:
     static double getGndSpeedKnots() { return gndSpeedKnots; }
     static double getGndCourse() { return gndCourse; }
  	static int bincom;
+ 	static void tick();
+ 	static bool validExtAlt() { if( ext_alt_timer )
+ 									return true;
+ 								else
+ 									return false;
+ 	}
 
 private:
  	static void drawClearTriangle( int x, int y, int rb, int dist, int size, int factor );
@@ -53,8 +60,9 @@ private:
 	static int oldVertical;
 	static int oldBear;
 	static int alarmOld;
-	static int tick;
+	static int _tick;
 	static int timeout;
+	static int ext_alt_timer;
 	static int _numSat;
 };
 

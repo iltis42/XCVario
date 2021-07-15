@@ -954,7 +954,7 @@ void IpsDisplay::drawAvgVario( int x, int y, float ate ){
 }
 
 void IpsDisplay::drawAltitude( float altitude, int x, int y ){
-	int alt = (int)(altitude+0.5);
+	int alt = (int)(altitude);
 	if( alt != prefalt || !(tick%40) ) {
 		ucg->setColor(  COLOR_WHITE  );
 		ucg->setPrintPos(x,y);

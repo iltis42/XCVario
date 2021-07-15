@@ -50,6 +50,7 @@ extern float as2f;
 extern float s2f_delta;
 extern float polar_sink;
 extern float alt;
+extern float alt_external;
 extern float wksensor;
 
 extern S2F Speed2Fly;

@@ -76,6 +76,7 @@ typedef enum e_reset { RESET_NO, RESET_YES } e_reset_t;   // determines if data 
 typedef enum e_volatility { VOLATILE, NON_VOLATILE, SEMI_VOLATILE } e_volatility_t;  // stored in RAM, FLASH, or into FLASH after a while
 typedef enum e_can_speed { CAN_SPEED_OFF, CAN_SPEED_250KBIT, CAN_SPEED_500KBIT, CAN_SPEED_1MBIT } e_can_speed_t;  // stored in RAM, FLASH, or into FLASH after a while
 typedef enum e_can_mode { CAN_MODE_MASTER, CAN_MODE_CLIENT } e_can_mode_t;
+typedef enum e_altimeter_select { AS_TE_SENSOR, AS_BARO_SENSOR, AS_EXTERNAL } e_altimeter_select_t;
 
 
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };

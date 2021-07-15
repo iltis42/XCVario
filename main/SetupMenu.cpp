@@ -31,6 +31,7 @@
 #include "Compass.h"
 #include "CompassMenu.h"
 #include "esp_wifi.h"
+#include "Flarm.h"
 
 static char rentry[25];
 SetupMenuSelect * audio_range_sm = 0;
@@ -112,12 +113,16 @@ int qnh_adj( SetupMenuValFloat * p )
 {
 	// ESP_LOGI(FNAME,"qnh_adj");
 	float alt=0;
-	for( int i=0; i<6; i++ ) {
-		bool ok;
-		alt += p->_bmp->readAltitude( *(p->_value), ok );
-		sleep(0.01);
+	if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
+		alt = alt_external + ( (*(p->_value)) - 1013.25)*8.2296;  // correct altitude according to ISA model = 27ft / hPa
+	else{
+		for( int i=0; i<6; i++ ) {
+			bool ok;
+			alt += p->_bmp->readAltitude( *(p->_value), ok );
+			sleep(0.01);
+		}
+		alt = alt/6;
 	}
-	alt = alt/6;
 
 	ESP_LOGI(FNAME,"Setup BA alt=%f QNH=%f", alt, *(p->_value)  );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
@@ -1307,9 +1312,10 @@ void SetupMenu::setup( )
 		sye->addMenu( aia );
 		SetupMenuSelect * als = new SetupMenuSelect( "Altimeter Source", false, 0, true, &alt_select );
 		aia->addMenu( als );
-		als->setHelp( PROGMEM "Select sensor for altimeter to either barometric or static pressure sensor (default), or TE sensor what results in an 'energy' altitude");
-		als->addEntry( "TE");
-		als->addEntry( "Baro");
+		als->setHelp( PROGMEM "Select source for barometric altitude, either TE sensor or Baro sensor (recommended) or an external source e.g. FLARM (if avail)");
+		als->addEntry( "TE Sensor");
+		als->addEntry( "Baro Sensor");
+		als->addEntry( "External");
 
 		SetupMenuValFloat * spc = new SetupMenuValFloat( "AS Calibration", 0, "%", -60, 60, 1, 0, false, &speedcal  );
 		spc->setHelp(PROGMEM"Calibration of airspeed sensor (AS). Normally not needed, hence pressure probes may have systematic error");

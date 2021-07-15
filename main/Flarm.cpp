@@ -74,8 +74,9 @@ int Flarm::oldDist = 0;
 int Flarm::oldVertical = 0;
 int Flarm::oldBear = 0;
 int Flarm::alarmOld=0;
-int Flarm::tick=0;
+int Flarm::_tick=0;
 int Flarm::timeout=0;
+int Flarm::ext_alt_timer=0;
 int Flarm::_numSat=0;
 
 void Flarm::progress(){  // once per second
@@ -203,7 +204,7 @@ void Flarm::parsePFLAU( char *pflau ) {
 	sscanf( pflau, "$PFLAU,%d,%d,%d,%d,%d,%d,%d,%d,%d,%x*%02x",&RX,&TX,&GPS,&Power,&AlarmLevel,&RelativeBearing,&AlarmType,&RelativeVertical,&RelativeDistance,&id,&cs);
 	// ESP_LOGI(FNAME,"parsePFLAU() RB: %d ALT:%d  DIST %d",RelativeBearing,RelativeVertical, RelativeDistance );
 	sprintf( ID,"%06x", id );
-	tick=0;
+	_tick=0;
 	timeout = 10;
 }
 
@@ -220,6 +221,33 @@ void Flarm::parsePFLAX( SString &msg ) {
 	}
 	timeout = 10;
 }
+
+
+void Flarm::tick(){
+	if( ext_alt_timer )
+		ext_alt_timer--;
+};
+
+// $PGRMZ,880,F,2*3A  $PGRMZ,864,F,2*30
+void Flarm::parsePGRMZ( char *pgrmz ) {
+	if ( alt_select.get() != AS_EXTERNAL )
+		return;
+	int cs;
+	int alt1013_ft;
+	int calc_cs=Protocols::calcNMEACheckSum( pgrmz );
+	cs = Protocols::getNMEACheckSum( pgrmz );
+	if( cs != calc_cs ){
+		ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", pgrmz, calc_cs, cs );
+		return;
+	}
+	sscanf( pgrmz, "$PGRMZ,%d,F,2",&alt1013_ft );
+
+	alt_external = Units::feet2meters( (float)(alt1013_ft + 0.5) );
+	ESP_LOGI(FNAME,"parsePGRMZ() %s: ALT(1013):%5.0f m", pgrmz, alt_external );
+	timeout = 10;
+	ext_alt_timer = 10;  // Fall back to internal Barometer after 10 seconds
+}
+
 
 int rbOld = -500; // outside normal range
 
@@ -309,8 +337,8 @@ void Flarm::drawFlarmWarning(){
 		screens_init |= INIT_DISPLAY_FLARM;
 		ESP_LOGI(FNAME,"init drawFlarmWarning");
 	}
-	tick++;
-	if( tick > 500 ) // age FLARM alarm in case there is no more input  50 per second = 10 sec
+	_tick++;
+	if( _tick > 500 ) // age FLARM alarm in case there is no more input  50 per second = 10 sec
 		AlarmLevel = 0;
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	int volume=0;

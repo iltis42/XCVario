@@ -63,11 +63,11 @@ SetupNG<int>  			chopping_mode( "CHOPPING_MODE",  VARIO_CHOP );
 SetupNG<int>  			chopping_style( "CHOP_STYLE",  AUDIO_CHOP_SOFT );
 SetupNG<int>  			amplifier_shutdown( "AMP_DIS", 0 );
 
-SetupNG<int>  			wireless_type( "BT_ENABLE" ,  1);
+SetupNG<int>  			wireless_type( "BT_ENABLE" ,  WL_BLUETOOTH );
 SetupNG<float>  		wifi_max_power( "WIFI_MP" ,  50);
 SetupNG<int>  			factory_reset( "FACTORY_RES" , 0 );
 SetupNG<int>  			audio_range( "AUDIO_RANGE" , AUDIO_RANGE_5_MS );
-SetupNG<int>  			alt_select( "ALT_SELECT" , 1 );
+SetupNG<int>  			alt_select( "ALT_SELECT" , AS_BARO_SENSOR );
 SetupNG<int>  			fl_auto_transition( "FL_AUTO" , 0 );
 SetupNG<int>  			alt_display_mode( "ALT_DISP_MODE" , MODE_QNH );
 SetupNG<float>  		transition_alt( "TRANS_ALT", 50 );   // Transition Altitude

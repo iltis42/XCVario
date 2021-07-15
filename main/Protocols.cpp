@@ -565,6 +565,13 @@ void Protocols::parseNMEA( char *astr ){
 				ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
 			}
 		}
+		else if( !strncmp( str, "$PGRMZ,", 6 )) {
+			Flarm::parsePGRMZ( str );
+			if( Flarm::bincom  ) {
+				Flarm::bincom--;
+				ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
+			}
+		}
 		else if( !strncmp( str, "!w,", 2 ) ){
 			/*
 			 * Cambridge 302 Format

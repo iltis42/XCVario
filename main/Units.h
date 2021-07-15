@@ -160,6 +160,10 @@ public:
 			return( m*3.28084 );
 	};
 
+	static inline float feet2meters( float f ){
+			return( f/3.28084 );
+	};
+
 	static inline const char * AltitudeUnit(){
 		if( alt_unit.get() == 0 )  //m
 			return( "m" );

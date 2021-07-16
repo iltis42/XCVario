@@ -6,6 +6,7 @@
 #include <logdef.h>
 #include "S2F.h"
 #include "AverageVario.h"
+#include "sensor.h"
 
 const double sigmaAdjust = 255 * 2.0/33;  // 2 Vss
 int BMPVario::holddown = 0;
@@ -58,7 +59,7 @@ double BMPVario::readTE( float tas ) {
 	bmpTemp = _sensorTE->readTemperature( success );
 	// ESP_LOGI(FNAME,"BMP temp=%0.1f", bmpTemp );
 	if( te_comp_enable.get() ) {
-		_currentAlt = _sensorBARO->readAltitude(_qnh, success );
+		_currentAlt = alt; // already read
 		if( !success )
 			_currentAlt = lastAltitude;  // ignore readout when failed
 		float mps = tas / 3.6;  // m/s

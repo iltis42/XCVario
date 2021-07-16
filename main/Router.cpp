@@ -53,7 +53,7 @@ bool Router::forwardMsg( SString &s, RingBufCPP<SString, QUEUE_SIZE>& q ){
 		portEXIT_CRITICAL_ISR(&btmux);
 		return true;
 	}
-	ESP_LOGW(FNAME,"+++ WARNING +++ dropped msg %s", s.c_str() );
+	// ESP_LOGW(FNAME,"+++ WARNING +++ dropped msg %s", s.c_str() );
 	return false;
 }
 

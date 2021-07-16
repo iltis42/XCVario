@@ -1187,6 +1187,7 @@ void sensor(void *args){
 				if( diff > 1.0 ) // we are ready, values get already positive
 					break;
 				// esp_task_wdt_reset();
+				delay(50);
 			}
 			ESP_LOGI(FNAME,"Auto QNH=%4.2f\n", qnh_best);
 			float &qnh = QNH.getRef();

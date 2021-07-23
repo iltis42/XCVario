@@ -93,7 +93,7 @@ void on_client_connect( int port, int msg ){
 		if( msg == 1 )
 			OV.sendQNHChange( QNH.get() );
 		if( msg == 2 ) {
-			if( wireless == WL_WLAN_CLIENT || can_mode.get() == CAN_MODE_CLIENT )
+			if( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT )
 				OV.sendBallastChange( ballast.get(), false );
 			else
 				OV.sendBallastChange( ballast.get(), true );

@@ -1465,14 +1465,14 @@ void SetupMenu::setup( )
 		canmode->addEntry( "500 kbit");
 		canmode->addEntry( "1000 kbit");
 
-		SetupMenuSelect * canrt = new SetupMenuSelect( "Routing", false , 0, false, &can_tx );
+		SetupMenuSelect * canrt = new SetupMenuSelect( PROGMEM "Routing", false , 0, false, &can_tx );
 		can->addMenu( canrt );
 		canrt->setHelp( PROGMEM "Select data source that is routed from/to CAN interface");
 		canrt->addEntry( "Disable");
 		canrt->addEntry( "XCVario");
 
 
-		SetupMenuSelect * devmod = new SetupMenuSelect( "Mode", true , 0, false, &can_mode );
+		SetupMenuSelect * devmod = new SetupMenuSelect( PROGMEM "Mode", true , 0, false, &can_mode );
 		can->addMenu( devmod );
 		devmod->setHelp( PROGMEM "Select Master for single seater or master device in front, and for secondary device 'Client'");
 		devmod->addEntry( "Master");

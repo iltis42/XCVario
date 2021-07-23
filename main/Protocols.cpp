@@ -431,7 +431,7 @@ void Protocols::parseNMEA( char *astr ){
 			ESP_LOGI(FNAME,"parseNMEA, internal ballast modification %s new ballast: %f", str, aballast );
 			_s2f->change_mc_bal();
 		}
-		else if ( strncmp( str, "!xsM,", 5 ) == 0 && ( wireless == WL_WLAN_CLIENT || can_mode.get() == CAN_MODE_CLIENT ) ) {
+		else if ( strncmp( str, "!xsM,", 5 ) == 0 && ( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT ) ) {
 			ESP_LOGI(FNAME,"parseNMEA %s", str );
 			char key[20];
 			char type;
@@ -457,7 +457,7 @@ void Protocols::parseNMEA( char *astr ){
 
 		else if ( (strncmp( str, "!g,", 3 ) == 0)    ) {
 			ESP_LOGI(FNAME,"parseNMEA, Cambridge C302 style command !g detected: %s",str);
-			if (str[3] == 'b' && wireless != WL_WLAN_CLIENT && can_mode.get() != CAN_MODE_CLIENT ) {  // we run own protocol between Master and Client as of bad precision in official
+			if (str[3] == 'b' && wireless != WL_WLAN_CLIENT && the_can_mode != CAN_MODE_CLIENT ) {  // we run own protocol between Master and Client as of bad precision in official
 				ESP_LOGI(FNAME,"parseNMEA, BORGELT, ballast modification");
 				float aballast;
 				sscanf(str, "!g,b%f", &aballast);

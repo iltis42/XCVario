@@ -68,7 +68,7 @@ void StraightWind::begin(){
  */
 void StraightWind::start()
 {
-	if( wireless == WL_WLAN_CLIENT || can_mode.get() == CAN_MODE_CLIENT )
+	if( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT )
 		return;
 	if( Flarm::gpsStatus() == true ) {
 		// Ground speed in Km/h
@@ -122,7 +122,7 @@ void StraightWind::tick(){
 bool StraightWind::calculateWind()
 {
 	// ESP_LOGI(FNAME,"Straight wind, calculateWind()");
-	if( wireless == WL_WLAN_CLIENT || can_mode.get() == CAN_MODE_CLIENT ){
+	if( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT ){
 		ESP_LOGI(FNAME,"We are client device, get wind from master");
 		return false;
 	}

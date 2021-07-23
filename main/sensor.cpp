@@ -185,6 +185,7 @@ int count=0;
 bool flarmWarning = false;
 bool gLoadDisplay = false;
 int hold_alarm=0;
+int the_can_mode = CAN_MODE_MASTER;
 
 float getTAS() { return tas; };
 float getTE() { return TE; };
@@ -523,7 +524,7 @@ void readTemp(void *pvParameters){
 		float t=15.0;
 		battery = Battery.get();
 		// ESP_LOGI(FNAME,"Battery=%f V", battery );
-		if( wireless != WL_WLAN_CLIENT && can_mode.get() != CAN_MODE_CLIENT ) {  // client Vario will get Temperature info from main Vario
+		if( wireless != WL_WLAN_CLIENT && the_can_mode != CAN_MODE_CLIENT ) {  // client Vario will get Temperature info from main Vario
 			t = ds18b20.getTemp();
 			if( t ==  DEVICE_DISCONNECTED_C ) {
 				if( validTemperature == true ) {
@@ -641,8 +642,8 @@ void sensor(void *args){
 
 	Polars::begin();
 	NVS.begin();
-
 	register_coredump();
+	the_can_mode = can_mode.get(); // initialize variable for CAN mode
 
 	if( hardwareRevision.get() != 2 ){
 		gpio_set_direction(GPIO_NUM_2, GPIO_MODE_INPUT);     // 2020 series 1, analog in default
@@ -918,7 +919,7 @@ void sensor(void *args){
 	}
 	ESP_LOGI(FNAME,"Now start T sensor test");
 	// Temp Sensor test
-	if( wireless != WL_WLAN_CLIENT && can_mode.get() != CAN_MODE_CLIENT  ) {
+	if( wireless != WL_WLAN_CLIENT && the_can_mode != CAN_MODE_CLIENT  ) {
 		ESP_LOGI(FNAME,"Now start T sensor test");
 		ds18b20.begin();
 		temperature = ds18b20.getTemp();
@@ -1117,7 +1118,7 @@ void sensor(void *args){
 	}
 	Menu->begin( display, &Rotary, baroSensor, &Battery );
 
-	if ( wireless == WL_WLAN_CLIENT || can_mode.get() == CAN_MODE_CLIENT ){
+	if ( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT ){
 		if( wireless == WL_WLAN_CLIENT ){
 			display->clear();
 			display->writeText( 2, "Wait for Master XCVario" );
@@ -1137,7 +1138,7 @@ void sensor(void *args){
 				display->writeText( 3, "Abort Wifi Scan" );
 			}
 		}
-		else if( can_mode.get() == CAN_MODE_CLIENT ){
+		else if( the_can_mode == CAN_MODE_CLIENT ){
 			display->clear();
 			display->writeText( 2, "Wait for Master XCVario" );
 			while( 1 ) {
@@ -1215,10 +1216,10 @@ void sensor(void *args){
 	gpio_set_pull_mode(RESET_Display, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_Display, GPIO_PULLUP_ONLY );
 
-	if( wireless != WL_WLAN_CLIENT &&  can_mode.get() != CAN_MODE_CLIENT ) {
+	if( wireless != WL_WLAN_CLIENT &&  the_can_mode != CAN_MODE_CLIENT ) {
 		xTaskCreatePinnedToCore(&readSensors, "readSensors", 4096, NULL, 14, bpid, 0);
 	}
-	if( wireless == WL_WLAN_CLIENT || can_mode.get() == CAN_MODE_CLIENT ){
+	if( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT ){
 		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 14, apid, 0);
 	}
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 2048, NULL, 5, tpid, 0);

@@ -121,8 +121,8 @@ void SetupMenuSelect::down(int count){
 		ucg->printf("%s                  ",_values[*_select].c_str());
 		xSemaphoreGive(spiMutex );
 	}else {
-		ucg->setColor(COLOR_BLACK);
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
+		ucg->setColor(COLOR_BLACK);
 		ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // blank old frame
 		ucg->setColor(COLOR_WHITE);
 		if( (*_select) >  0 )

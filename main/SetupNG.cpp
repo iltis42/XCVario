@@ -234,7 +234,7 @@ void SetupCommon::sendSetup( e_sync_t sync, const char *key, char type, void *va
 	char sender;
 	if( wireless == WL_WLAN && (sync & SYNC_FROM_MASTER) )              // or cable master tbd.
 		sender='M';
-	else if( ((wireless == WL_WLAN_CLIENT) || (can_mode.get() == CAN_MODE_CLIENT)) && (sync & SYNC_FROM_CLIENT) )  // or cable client tbd.
+	else if( ((wireless == WL_WLAN_CLIENT) || (the_can_mode == CAN_MODE_CLIENT)) && (sync & SYNC_FROM_CLIENT) )  // or cable client tbd.
 		sender='C';
 	else
 		sender='U';
@@ -261,7 +261,7 @@ SetupCommon * SetupCommon::getMember( const char * key ){
 
 void SetupCommon::syncEntry( int entry ){
 	// ESP_LOGI(FNAME,"SetupCommon::syncEntry( %d )", entry );
-	if( wireless == WL_WLAN || wireless == WL_WLAN_CLIENT || can_mode.get() == CAN_MODE_CLIENT ) {
+	if( wireless == WL_WLAN || wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT ) {
 		// ESP_LOGI(FNAME,"We are wireless type=%d", wireless );
 		if( entry  < entries.size() ) {
 			entries[entry]->sync();

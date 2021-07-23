@@ -176,7 +176,6 @@ void Audio::begin( dac_channel_t ch  )
 
 bool Audio::selfTest(){
 	ESP_LOGI(FNAME,"Audio::selfTest");
-	enableAmplifier( false );
 	DigitalPoti = new MCP4018();
 	DigitalPoti->setBus( &i2c );
 	DigitalPoti->begin();
@@ -201,50 +200,46 @@ bool Audio::selfTest(){
 		ESP_LOGI(FNAME,"MCP4018 digital Poti found");
 	}
 	_step = DigitalPoti->getStep();
-	DigitalPoti->writeWiper( 0 );
-	enableAmplifier( true );
-	delay( 250 );
 	uint16_t setwiper = ((default_volume.get() * 100.0) / DigitalPoti->getRange());
 	p_wiper = &wiper;
 	wiper = wiper_s2f = setwiper;
-	int volume = 3;
-	for( int i=0; i<FADING_STEPS && (int)setwiper <=(*p_wiper); i++ ) {
-		// ESP_LOGI(FNAME, "fade in sound, wiper: %3.1f", volume );
-		DigitalPoti->writeWiper( equal_volume( (int)volume ) );
-		volume = volume*1.75;
-		delay(1);
-	}
 	ESP_LOGI(FNAME,"default volume/wiper: %d", (*p_wiper) );
 	ESP_LOGI(FNAME, "selfTest wiper: %d", wiper );
-	DigitalPoti->writeWiper( setwiper );
+	DigitalPoti->writeWiper( 1 );
 	uint16_t getwiper;
 	bool ret = DigitalPoti->readWiper( getwiper );
 	if( ret == false ) {
 		ESP_LOGI(FNAME,"readWiper returned error");
 		return false;
 	}
-	if( getwiper != setwiper )  // begin sets already cur_wiperw
+	if( getwiper != 1 )
 	{
 		ESP_LOGI(FNAME,"readWiper returned wrong setting set=%d get=%d", setwiper, getwiper );
 		ret = false;
 	}
 	else
 		ret = true;
-
-	restart();
+	bool fadein=false;
 	for( float f=261.62; f<1046.51; f=f*1.03){
 		ESP_LOGV(FNAME,"f=%f",f);
-		current_frequency = f;
 		setFrequency( f );
+		current_frequency = f;
+		if( !fadein ){
+			int volume = 3;
+			for( int i=0; i<FADING_STEPS && volume <= (int)setwiper; i++ ) {
+				DigitalPoti->writeWiper( equal_volume( (int)volume ) );
+				volume = volume*1.75;
+				delay(1);
+				fadein = true;
+			}
+		}
 		DigitalPoti->writeWiper( equal_volume( setwiper ) );
 		delay(30);
 		esp_task_wdt_reset();
 	}
-
 	delay(200);
 	ESP_LOGI(FNAME, "selfTest wiper: %d", 0 );
 	DigitalPoti->writeWiper( 0 );
-	setFrequency( 440 );
 	_testmode=true;
 	return ret;
 }
@@ -744,7 +739,6 @@ void Audio::restart()
 	dac_invert_set(_ch, 2 );    // invert MSB to get sine waveform
 	dac_scale_set(_ch, 2 );
 	enableAmplifier( true );
-	delay( 10 );
 	dacEnable();
 }
 

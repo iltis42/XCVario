@@ -205,8 +205,15 @@ bool Audio::selfTest(){
 	enableAmplifier( true );
 	delay( 250 );
 	uint16_t setwiper = ((default_volume.get() * 100.0) / DigitalPoti->getRange());
-	wiper = wiper_s2f = setwiper;
 	p_wiper = &wiper;
+	wiper = wiper_s2f = setwiper;
+	int volume = 3;
+	for( int i=0; i<FADING_STEPS && (int)setwiper <=(*p_wiper); i++ ) {
+		// ESP_LOGI(FNAME, "fade in sound, wiper: %3.1f", volume );
+		DigitalPoti->writeWiper( equal_volume( (int)volume ) );
+		volume = volume*1.75;
+		delay(1);
+	}
 	ESP_LOGI(FNAME,"default volume/wiper: %d", (*p_wiper) );
 	ESP_LOGI(FNAME, "selfTest wiper: %d", wiper );
 	DigitalPoti->writeWiper( setwiper );

@@ -176,6 +176,7 @@ void Audio::begin( dac_channel_t ch  )
 
 bool Audio::selfTest(){
 	ESP_LOGI(FNAME,"Audio::selfTest");
+	enableAmplifier( false );
 	DigitalPoti = new MCP4018();
 	DigitalPoti->setBus( &i2c );
 	DigitalPoti->begin();
@@ -200,7 +201,9 @@ bool Audio::selfTest(){
 		ESP_LOGI(FNAME,"MCP4018 digital Poti found");
 	}
 	_step = DigitalPoti->getStep();
-
+	DigitalPoti->writeWiper( 0 );
+	enableAmplifier( true );
+	delay( 250 );
 	uint16_t setwiper = ((default_volume.get() * 100.0) / DigitalPoti->getRange());
 	wiper = wiper_s2f = setwiper;
 	p_wiper = &wiper;

@@ -2,6 +2,7 @@
 #include <math.h>
 #include <logdef.h>
 
+
 ABPMRR::ABPMRR()
 {
 	address = I2C_ADDRESS_ABPMRR;

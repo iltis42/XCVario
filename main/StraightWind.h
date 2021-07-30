@@ -91,7 +91,6 @@ private:
 
 	uint16_t nunberOfSamples;  // current number of samples
 	uint64_t measurementStart; // measurement start in milliseconds
-	// double tas;                // TAS in km/h
 	double groundSpeed;        // GS in km/h
 	double trueCourse;         // GPS course
 	double trueHeading;        // Compass heading

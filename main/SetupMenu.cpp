@@ -1055,6 +1055,10 @@ void SetupMenu::setup( )
 		strWindM->addMenu( smgsm );
 		smgsm->setHelp(PROGMEM "Minimum Airspeed to start wind calculation");
 
+		SetupMenuValFloat *wlpf = new SetupMenuValFloat( "Lowpass Factor", nullptr, sunit.c_str(), 0, 1.0, 0.01, nullptr, false, &wind_filter_lowpass );
+		strWindM->addMenu( wlpf );
+		wlpf->setHelp(PROGMEM "Lowpass factor to smooth multiple wind calculations");
+
 
 		ShowStraightWind* ssw = new ShowStraightWind( "Straight Wind Status" );
 		strWindM->addMenu( ssw );

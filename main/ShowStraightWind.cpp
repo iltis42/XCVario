@@ -66,7 +66,7 @@ void ShowStraightWind::display( int mode )
 	y += 25;
 
 	ucg->setPrintPos( 0, y );
-	sprintf( buffer, "AS cor : %+3.3f %%    ", (theWind.getAsCorrection()-1.0)*100 );
+	sprintf( buffer, "AS C/F: %+3.3f %%/%3.3f %%  ", (theWind.getAsCorrection()-1.0)*100, (wind_as_calibration.get()-1.0)*100 );
 	ucg->printf( "%s", buffer );
 	y += 25;
 

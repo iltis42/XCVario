@@ -110,6 +110,7 @@ private:
 	int    circlingWindAge;
 	float  airspeedCorrection;
 	int    _age;
+	int    _tick;
 	float  airspeed_jitter;
 	float  groundspeed_jitter;
 	float  airspeed_jitter_tmp;

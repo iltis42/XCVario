@@ -213,6 +213,7 @@ SetupNG<int>        	display_variant("DISPLAY_VARIANT", 0 );
 SetupNG<int>        	compass_dev_auto("COMPASS_DEV", 0 );
 SetupNG<int> 			wind_enable( "WIND_ENA", WA_OFF );
 SetupNG<float> 			wind_as_calibration("WIND_AS_CAL", 1.0 );
+SetupNG<float> 			wind_filter_lowpass("WIND_LPF", 1.0 );
 SetupNG<int> 			wind_display( "WIND_DIS", WD_NONE );
 SetupNG<int> 			wind_reference( "WIND_REF", WR_HEADING );
 SetupNG<float> 			wind_max_deviation("WIND_MDEV", 30.0 );

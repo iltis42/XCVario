@@ -111,6 +111,7 @@ void StraightWind::start()
 void StraightWind::tick(){
 	_age++;
 	circlingWindAge++;
+	_tick++;
 }
 
 /**
@@ -360,6 +361,10 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 				return;
 			}
 			airspeedCorrection +=  (airspeed/tas - airspeedCorrection) *0.02;
+			if( !(_tick%1800) ){  // every 30 min we correct persistent value if needed
+				if( abs(airspeedCorrection/wind_as_calibration.get() - 1.0 ) > 0.003 ) // 0.3%
+					wind_as_calibration.set( airspeedCorrection );
+			}
 			devOK = Compass::newDeviation( th, tH, airspeedCorrection );
 			ESP_LOGI(FNAME,"Calculated TH/TAS: %3.1f°/%3.1f km/h  Measured TH/TAS: %3.1f°/%3.1f, asCorr:%2.3f, deltaAS:%3.2f, Age:%d",
 					trueHeading, airspeed, averageTH, tas, airspeedCorrection , airspeed-tas, circlingWindAge );
@@ -376,10 +381,11 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 	ESP_LOGI(FNAME,"Deviation=%3.2f", deviation_cur );
 	float thd = Vector::normalizeDeg( th+deviation_cur );
 
-	windSpeed = calculateSpeed( tc, gs, thd, tas*airspeedCorrection );
+	float newWindSpeed = calculateSpeed( tc, gs, thd, tas*airspeedCorrection );
+	windSpeed += (newWindSpeed - windSpeed )*wind_filter_lowpass.get();
 	// wind direction
-	windDir = calculateAngle( tc, gs, thd, tas*airspeedCorrection );
-
+	float newWindDir = calculateAngle( tc, gs, thd, tas*airspeedCorrection );
+	windDir += Vector::angleDiffDeg( newWindDir, windDir )*wind_filter_lowpass.get();
 	ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h", windDir, windSpeed  );
 	_age = 0;
 	OV.sendWindChange( windDir, windSpeed, WA_STRAIGHT );

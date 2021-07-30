@@ -267,7 +267,7 @@ bool StraightWind::calculateWind()
 	// Take all as new sample
 	nunberOfSamples++;
 
-	// The given deltas are fulfilled, summarize values
+	// depending on observation window, evaluate digital low pass constant
 	float damping = 1/wind_measurement_time.get();
 
 	averageTas += (ctas - averageTas) * damping;
@@ -275,12 +275,12 @@ bool StraightWind::calculateWind()
 
 	// Calculate average true course TC
 	averageTC +=  Vector::angleDiffDeg( ctc, averageTC ) * damping;
+	averageTC = Vector::normalizeDeg( averageTC );
 
 	// Calculate average true heading TH
 	averageTH += Vector::angleDiffDeg( cth, averageTH ) * damping;
-
 	averageTH = Vector::normalizeDeg( averageTH );
-	averageTC = Vector::normalizeDeg( averageTC );
+
 
 	ESP_LOGI(FNAME,"%d TC: %3.1f (avg:%3.1f) GS:%3.1f TH: %3.1f (avg:%3.1f) IAS: %3.1f", nunberOfSamples, ctc, averageTC, cgs, cth, averageTH, ctas );
 	// ESP_LOGI(FNAME,"avTC: %3.1f avTH:%3.1f ",averageTC,averageTH  );
@@ -383,6 +383,8 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 	// wind direction
 	float newWindDir = calculateAngle( tc, gs, thd, tas*airspeedCorrection );
 	windDir += Vector::angleDiffDeg( newWindDir, windDir )*wind_filter_lowpass.get();
+	windDir = Vector::normalizeDeg( windDir );
+
 	ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h", windDir, windSpeed  );
 	_age = 0;
 	OV.sendWindChange( windDir, windSpeed, WA_STRAIGHT );

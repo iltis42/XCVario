@@ -125,6 +125,16 @@ bool StraightWind::calculateWind()
 		ESP_LOGI(FNAME,"We are client device, get wind from master");
 		return false;
 	}
+
+	if( Flarm::gpsStatus() == false ) {
+		// GPS status not valid
+		start();
+		ESP_LOGI(FNAME,"Restart Cycle: GPS Status invalid");
+		status="Bad GPS";
+		gpsStatus = false;
+		return false;
+	}
+	gpsStatus = true;
 	// ESP_LOGI(FNAME,"calculateWind flightMode: %d", CircleStraightWind::getFlightMode() );
 	if( CircleWind::getFlightMode() != straight ){
 		// ESP_LOGI(FNAME,"In Circling, stop ");
@@ -143,16 +153,6 @@ bool StraightWind::calculateWind()
 	}
 
 	// Check GPRMC data status, GS, TC and TH
-	if( Flarm::gpsStatus() == false ) {
-		// GPS status not valid
-		start();
-		ESP_LOGI(FNAME,"Restart Cycle: GPS Status invalid");
-		status="Bad GPS";
-		gpsStatus = false;
-		return false;
-	}
-	gpsStatus = true;
-
 	if(  groundSpeed == -1.0 ) {
 		// GS not valid
 		start();
@@ -358,10 +358,6 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 				return;
 			}
 			airspeedCorrection +=  (airspeed/tas - airspeedCorrection) *0.02;
-			if( !(_tick%1800) ){  // every 30 min we correct persistent value if needed
-				if( abs(airspeedCorrection/wind_as_calibration.get() - 1.0 ) > 0.003 ) // 0.3%
-					wind_as_calibration.set( airspeedCorrection );
-			}
 			devOK = Compass::newDeviation( th, tH, airspeedCorrection );
 			ESP_LOGI(FNAME,"Calculated TH/TAS: %3.1f°/%3.1f km/h  Measured TH/TAS: %3.1f°/%3.1f, asCorr:%2.3f, deltaAS:%3.2f, Age:%d",
 					trueHeading, airspeed, averageTH, tas, airspeedCorrection , airspeed-tas, circlingWindAge );

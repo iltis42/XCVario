@@ -153,8 +153,9 @@ public:
 
 	static void deviationReload();
 
-	static void tick() { _tick++; };
-
+	static void tick() { _tick++;
+						 _devHolddown--;
+	}
 	static void setHeading( float h );
 
 private:
@@ -181,6 +182,7 @@ private:
 	static std::map< double, double> devmap;
 
 	static int _tick;
+	static int _devHolddown;
 	static int _external_data;
 
 };

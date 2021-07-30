@@ -35,6 +35,7 @@ std::vector<double>	Compass::X;
 std::vector<double>	Compass::Y;
 std::map< double, double> Compass::devmap;
 int Compass::_tick = 0;
+int Compass::_devHolddown = 0;
 CompassFilter Compass::m_cfmh;
 int Compass::_external_data = 0;
 
@@ -126,6 +127,7 @@ void Compass::compassT(void* arg ){
 }
 
 void Compass::begin(){
+	_devHolddown = 1800;
 	splineMutex = xSemaphoreCreateMutex();
 	X.reserve(40);
 	Y.reserve(40);
@@ -226,8 +228,10 @@ bool Compass::newDeviation( float measured_heading, float desired_heading, float
 	recalcInterpolationSpline();
 	ESP_LOGI( FNAME, "NEW Spline Deviation for mesured heading: %3.2f Dev: %3.2f", measured_heading, (*deviationSpline)((double)measured_heading) );
 	samples++;
-	if( !(samples%50)  ){
+	if( (samples > 50) && (_devHolddown <= 0) ){
 		saveDeviation();
+		_devHolddown = 1800; // maximum every half hour
+		samples = 0;
 		if( abs( wind_as_calibration.get() - airspeedCalibration )*100 > 0.5 )
 			wind_as_calibration.set( airspeedCalibration );
 	}

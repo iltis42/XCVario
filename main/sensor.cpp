@@ -550,6 +550,7 @@ void readTemp(void *pvParameters){
 			theWind.tick();
 			Flarm::tick();
 			CircleWind::tick();
+			Compass::tick();
 		}
 
 		Flarm::progress();

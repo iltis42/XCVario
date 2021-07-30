@@ -1041,9 +1041,9 @@ void SetupMenu::setup( )
 		smvf = new SetupMenuValFloat( "Wind after",
 				nullptr,
 				"s",
-				3.0,
+				0.5,
 				60.0,
-				1.0,
+				0.5,
 				nullptr,
 				false,
 				&wind_measurement_time );

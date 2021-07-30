@@ -352,12 +352,12 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 			ESP_LOGI(FNAME,"Using reverse circling wind dir %3.2f, reverse cal. airspeed=%3.3f, tas=%3.3f, delta %3.3f", circlingWindDir, airspeed, tas, airspeed-tas );
 #endif
 			float tH = calculateAngle( circlingWindDir, circlingWindSpeed, tc, gs );
-			if( abs( airspeed/averageTas - 1.0 ) > 0.15 ){  // 15 percent max deviation
+			if( abs( airspeed/tas - 1.0 ) > 0.15 ){  // 15 percent max deviation
 				status = "AS OOB";
 				ESP_LOGI(FNAME,"Estimated Airspeed/Groundspeed OOB");
 				return;
 			}
-			airspeedCorrection +=  (airspeed/averageTas - airspeedCorrection) *0.02;
+			airspeedCorrection +=  (airspeed/tas - airspeedCorrection) *0.02;
 			if( !(_tick%1800) ){  // every 30 min we correct persistent value if needed
 				if( abs(airspeedCorrection/wind_as_calibration.get() - 1.0 ) > 0.003 ) // 0.3%
 					wind_as_calibration.set( airspeedCorrection );

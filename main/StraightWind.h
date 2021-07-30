@@ -91,7 +91,7 @@ private:
 
 	uint16_t nunberOfSamples;  // current number of samples
 	uint64_t measurementStart; // measurement start in milliseconds
-	double tas;                // TAS in km/h
+	// double tas;                // TAS in km/h
 	double groundSpeed;        // GS in km/h
 	double trueCourse;         // GPS course
 	double trueHeading;        // Compass heading
@@ -101,6 +101,8 @@ private:
 	double averageGS;		   // average ground speed
 	double tcStart;            // start value of true course observation window
 	double mhStart;			   // magnetic heading start value for observation window
+	double tasStart;
+	double gsStart;
 	double windDir;            // calculated wind direction
 	double windSpeed;          // calculated wind speed in Km/h
 	bool   lowAirspeed;

@@ -28,7 +28,6 @@
 StraightWind::StraightWind() :
 nunberOfSamples( 0 ),
 measurementStart( 0 ),
-tas( 0.0 ),
 groundSpeed( 0.0 ),
 trueCourse( 0.0 ),
 trueHeading( -1.0 ),
@@ -37,6 +36,8 @@ averageTC( 0.0 ),
 averageGS(0.0),
 tcStart( 0.0 ),
 mhStart( 0.0 ),
+tasStart( 0.0 ),
+gsStart( 0.0 ),
 windDir( -1.0 ),
 windSpeed( -1.0 ),
 lowAirspeed( false ),
@@ -84,8 +85,6 @@ void StraightWind::start()
 	}
 	nunberOfSamples = 0;
 	measurementStart = getMsTime();
-	tas = double( getTAS() );
-
 	bool ok;
 	trueHeading = Compass::rawHeading( &ok );
 
@@ -95,15 +94,16 @@ void StraightWind::start()
 		return;
 	}
 
-	averageTas = tas;
+	averageTas = double( getTAS() );
 	averageGS = groundSpeed;
-
 	averageTC = trueCourse;
 	averageTH = trueHeading;
 
 	// Define start of TH and TC observation window
 	mhStart = Vector::normalizeDeg( trueHeading );
     tcStart = Vector::normalizeDeg( trueCourse );
+    tasStart = averageTas;
+    gsStart = groundSpeed;
 }
 
 void StraightWind::tick(){
@@ -179,7 +179,7 @@ bool StraightWind::calculateWind()
 
 	// Get current ground speed in km/h
 	double cgs = Units::knots2kmh( Flarm::getGndSpeedKnots() );
-	float gsdelta = fabs( groundSpeed - cgs );
+	float gsdelta = fabs( gsStart - cgs );
 	// Check, if given ground speed deltas are valid.
 	if( gsdelta > Units::Airspeed2Kmh( wind_speed_delta.get() ) ) {
 		// Condition violated, start a new measurements cycle.
@@ -194,7 +194,7 @@ bool StraightWind::calculateWind()
 	// Get current TAS in km/h
 	double ctas = double( getTAS() );
 	// check if given TAS deltas are valid.
-	float tasdelta = fabs( tas - ctas );
+	float tasdelta = fabs( tasStart - ctas );
 	if( tasdelta > Units::Airspeed2Kmh( wind_speed_delta.get() ) ) {
 		// Condition violated, start a new measurements cycle.
 		start();
@@ -352,12 +352,12 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 			ESP_LOGI(FNAME,"Using reverse circling wind dir %3.2f, reverse cal. airspeed=%3.3f, tas=%3.3f, delta %3.3f", circlingWindDir, airspeed, tas, airspeed-tas );
 #endif
 			float tH = calculateAngle( circlingWindDir, circlingWindSpeed, tc, gs );
-			if( abs( airspeed/tas - 1.0 ) > 0.15 ){  // 15 percent max deviation
+			if( abs( airspeed/averageTas - 1.0 ) > 0.15 ){  // 15 percent max deviation
 				status = "AS OOB";
 				ESP_LOGI(FNAME,"Estimated Airspeed/Groundspeed OOB");
 				return;
 			}
-			airspeedCorrection +=  (airspeed/tas - airspeedCorrection) *0.02;
+			airspeedCorrection +=  (airspeed/averageTas - airspeedCorrection) *0.02;
 			if( !(_tick%1800) ){  // every 30 min we correct persistent value if needed
 				if( abs(airspeedCorrection/wind_as_calibration.get() - 1.0 ) > 0.003 ) // 0.3%
 					wind_as_calibration.set( airspeedCorrection );
@@ -381,7 +381,7 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 	float newWindSpeed = calculateSpeed( tc, gs, thd, tas*airspeedCorrection );
 	windSpeed += (newWindSpeed - windSpeed )*wind_filter_lowpass.get();
 	// wind direction
-	float newWindDir = calculateAngle( tc, gs, thd, tas*airspeedCorrection );
+	double newWindDir = calculateAngle( tc, gs, thd, tas*airspeedCorrection );
 	windDir += Vector::angleDiffDeg( newWindDir, windDir )*wind_filter_lowpass.get();
 	windDir = Vector::normalizeDeg( windDir );
 

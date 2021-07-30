@@ -1004,7 +1004,7 @@ void SetupMenu::setup( )
 
 		SetupMenu * strWindM = new SetupMenu( "Straight Wind" );
 		compassWindME->addMenu( strWindM );
-		strWindM->setHelp( PROGMEM "Straight flight wind calculation needs compass module active", 220 );
+		strWindM->setHelp( PROGMEM "Straight flight wind calculation needs compass module active", 250 );
 
 		SetupMenuValFloat *smvf = new SetupMenuValFloat( "Speed tolerance",
 				nullptr,
@@ -1055,7 +1055,7 @@ void SetupMenu::setup( )
 		strWindM->addMenu( smgsm );
 		smgsm->setHelp(PROGMEM "Minimum Airspeed to start wind calculation");
 
-		SetupMenuValFloat *wlpf = new SetupMenuValFloat( "Lowpass Factor", nullptr, sunit.c_str(), 0, 1.0, 0.01, nullptr, false, &wind_filter_lowpass );
+		SetupMenuValFloat *wlpf = new SetupMenuValFloat( "Lowpass Factor", nullptr, "%", 0, 1.0, 0.01, nullptr, false, &wind_filter_lowpass );
 		strWindM->addMenu( wlpf );
 		wlpf->setHelp(PROGMEM "Lowpass factor to smooth multiple wind calculations");
 

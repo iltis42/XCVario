@@ -1041,14 +1041,14 @@ void SetupMenu::setup( )
 		smvf = new SetupMenuValFloat( "Wind after",
 				nullptr,
 				"s",
-				0.5,
+				1.0,
 				60.0,
-				0.5,
+				1,
 				nullptr,
 				false,
 				&wind_measurement_time );
 
-		smvf->setHelp( PROGMEM "Setup wind calculation time" );
+		smvf->setHelp( PROGMEM "Setup wind calculation time, 1 s means every sample");
 		strWindM->addMenu( smvf );
 
 		SetupMenuValFloat *smgsm = new SetupMenuValFloat( "Minimum Airspeed", nullptr, sunit.c_str(), 0, 60.0, 1.0, nullptr, false, &wind_as_min );

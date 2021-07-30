@@ -32,8 +32,6 @@ tas( 0.0 ),
 groundSpeed( 0.0 ),
 trueCourse( 0.0 ),
 trueHeading( -1.0 ),
-sumTas( 0.0 ),
-sumGroundSpeed( 0.0 ),
 averageTH( 0.0 ),
 averageTC( 0.0 ),
 averageGS(0.0),
@@ -84,7 +82,7 @@ void StraightWind::start()
 		gpsStatus = false;
 		return;
 	}
-	nunberOfSamples = 1;
+	nunberOfSamples = 0;
 	measurementStart = getMsTime();
 	tas = double( getTAS() );
 
@@ -97,8 +95,8 @@ void StraightWind::start()
 		return;
 	}
 
-	sumTas = tas;
-	sumGroundSpeed = groundSpeed;
+	averageTas = tas;
+	averageGS = groundSpeed;
 
 	averageTC = trueCourse;
 	averageTH = trueHeading;
@@ -270,14 +268,16 @@ bool StraightWind::calculateWind()
 	nunberOfSamples++;
 
 	// The given deltas are fulfilled, summarize values
-	sumTas += ctas;
-	sumGroundSpeed += cgs;
+	float damping = 1/wind_measurement_time.get();
+
+	averageTas += (ctas - averageTas) * damping;
+	averageGS += (cgs - averageGS) * damping;
 
 	// Calculate average true course TC
-	averageTC +=  Vector::angleDiffDeg( ctc, averageTC ) * 0.1;
+	averageTC +=  Vector::angleDiffDeg( ctc, averageTC ) * damping;
 
 	// Calculate average true heading TH
-	averageTH += Vector::angleDiffDeg( cth, averageTH ) * 0.1;
+	averageTH += Vector::angleDiffDeg( cth, averageTH ) * damping;
 
 	averageTH = Vector::normalizeDeg( averageTH );
 	averageTC = Vector::normalizeDeg( averageTC );
@@ -286,7 +286,7 @@ bool StraightWind::calculateWind()
 	// ESP_LOGI(FNAME,"avTC: %3.1f avTH:%3.1f ",averageTC,averageTH  );
 
 	status="Measuring";
-	if( elapsed() >= wind_measurement_time.get() * 1000 )
+	if( (elapsed() >= wind_measurement_time.get() * 1000) || (int(wind_measurement_time.get()) == 1 ))
 	{
 		status="Calculating";
 		/**
@@ -298,17 +298,14 @@ bool StraightWind::calculateWind()
 
        WCA = Heading - DesiredCourse
 		 */
-		double nos = double( nunberOfSamples );
 
 		// WCA in radians
-		double tas = sumTas / nos;
-		averageGS = sumGroundSpeed / nos;
 		airspeed_jitter = airspeed_jitter_tmp;
 		groundspeed_jitter = groundspeed_jitter_tmp;
 		airspeed_jitter_tmp = 0;
 		groundspeed_jitter_tmp = 0;
 		magneticHeading = averageTH;
-		calculateWind( averageTC, averageGS, averageTH, tas  );
+		calculateWind( averageTC, averageGS, averageTH, averageTas  );
 		measurementStart = getMsTime();  // it is enough to calculate every ten seconds a new wind
 		start();
 		return true;

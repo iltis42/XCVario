@@ -95,8 +95,7 @@ private:
 	double groundSpeed;        // GS in km/h
 	double trueCourse;         // GPS course
 	double trueHeading;        // Compass heading
-	double sumTas;             // TAS in km/h
-	double sumGroundSpeed;     // sum of GS in km/h
+	double averageTas;             // TAS in km/h
 	double averageTH;          // sum of Compass true heading
 	double averageTC;          // sum of GPS heading (true course)
 	double averageGS;		   // average ground speed

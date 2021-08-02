@@ -202,7 +202,8 @@ void IMU::read()
 			sign_accroll = -sign_accroll;
 		// with higher Angle, the rate lowers as Z axis gets out of direction of rotation, we need to correct this
 		// and merge with the estimated roll angle from acceleration.
-		kalXAngle = ((myrollz * (1+(1- cos( kalXAngle*PI/180 )) ) ) + sign_accroll ) / 2;
+		// kalXAngle = ((myrollz * (1+(1- cos( kalXAngle*PI/180 )) ) ) + sign_accroll ) / 2;
+		kalXAngle = myrollz * (1+(1- cos( kalXAngle*PI/180 )) );
 		// correct the sign, we need negative
 		filterRoll = -kalXAngle;
 

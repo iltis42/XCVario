@@ -1006,70 +1006,46 @@ void SetupMenu::setup( )
 		compassWindME->addMenu( strWindM );
 		strWindM->setHelp( PROGMEM "Straight flight wind calculation needs compass module active", 250 );
 
-		SetupMenuValFloat *smvf = new SetupMenuValFloat( "Speed tolerance",
-				nullptr,
-				sunit.c_str(),   //  Wind speed tolerace entered in Unit enterd for airspeed
-				0.0,
-				20.0,
-				1.0,
-				nullptr,
-				false,
-				&wind_speed_delta );
-
+		SetupMenuValFloat *smvf = new SetupMenuValFloat( "Speed tolerance", nullptr, sunit.c_str(), 0.0, 20.0, 1.0, nullptr, false, &wind_speed_delta );
 		smvf->setHelp( PROGMEM "Setup wind speed tolerance value" );
 		strWindM->addMenu( smvf );
 
 		// Wind heading observation window
-		smvf = new SetupMenuValFloat( "Heading tolerance",
-				nullptr,
-				"\260",
-				0.0,
-				20.0,
-				1.0,
-				nullptr,
-				false,
-				&wind_heading_delta );
-
+		smvf = new SetupMenuValFloat( "Heading tolerance", nullptr, "\260", 0.0, 20.0, 1.0, nullptr, false, &wind_heading_delta );
 		smvf->setHelp( PROGMEM "Setup heading tolerance value" );
 		strWindM->addMenu( smvf );
 
-		SetupMenuValFloat *smdev = new SetupMenuValFloat( "Deviation tolerance", nullptr, "%", 0.0, 100.0, 1.0,	nullptr, false, &wind_max_deviation );
+		SetupMenuValFloat *smdev = new SetupMenuValFloat( "Deviation tolerance", nullptr, "\xb0", 0.0, 180.0, 1.0,	nullptr, false, &wind_max_deviation );
 		smdev->setHelp( PROGMEM "Setup maximum deviation accepted for a wind measurement" );
 		strWindM->addMenu( smdev );
 
 		// Wind measurement time
-		smvf = new SetupMenuValFloat( "Wind after",
-				nullptr,
-				"s",
-				1.0,
-				60.0,
-				1,
-				nullptr,
-				false,
-				&wind_measurement_time );
-
+		smvf = new SetupMenuValFloat( "Wind after", nullptr, "s", 1.0, 60.0, 1, nullptr, false, &wind_measurement_time );
 		smvf->setHelp( PROGMEM "Setup wind calculation time, 1 s means every sample");
 		strWindM->addMenu( smvf );
 
-		SetupMenuValFloat *smgsm = new SetupMenuValFloat( "Minimum Airspeed", nullptr, sunit.c_str(), 0, 60.0, 1.0, nullptr, false, &wind_as_min );
+		SetupMenuValFloat *smgsm = new SetupMenuValFloat( "Airspeed Lowpass", nullptr, "", 0, 1.0, 0.001, nullptr, false, &wind_as_filter );
 		strWindM->addMenu( smgsm );
-		smgsm->setHelp(PROGMEM "Minimum Airspeed to start wind calculation");
+		smgsm->setHelp(PROGMEM "Lowpass factor for airspeed correction from reverse wind calculation");
 
-		SetupMenuValFloat *wlpf = new SetupMenuValFloat( "Lowpass Factor", nullptr, "", 0, 1.0, 0.01, nullptr, false, &wind_filter_lowpass );
+		SetupMenuValFloat *devlp = new SetupMenuValFloat( "Deviation Lowpass", nullptr, "", 0, 1.0, 0.001, nullptr, false, &wind_dev_filter );
+		strWindM->addMenu( devlp );
+		devlp->setHelp(PROGMEM "Lowpass factor for deviation table correction from reverse wind calculation");
+
+		SetupMenuValFloat *wlpf = new SetupMenuValFloat( "Wind Lowpass", nullptr, "", 0, 1.0, 0.01, nullptr, false, &wind_filter_lowpass );
 		strWindM->addMenu( wlpf );
 		wlpf->setHelp(PROGMEM "Lowpass factor to smooth wind calculations, useful values are 0.03 to 0.10 ");
-
 
 		ShowStraightWind* ssw = new ShowStraightWind( "Straight Wind Status" );
 		strWindM->addMenu( ssw );
 
 
-		sms = new SetupMenuSelect( "Reset",	false, windResetAction, false, 0 );
 
-		sms->setHelp( "Reset all wind data to defaults" );
-		sms->addEntry( "Cancel" );
-		sms->addEntry( "Reset" );
-		strWindM->addMenu( sms );
+//		sms = new SetupMenuSelect( "Reset",	false, windResetAction, false, 0 );
+//		sms->setHelp( "Reset all wind data to defaults" );
+//		sms->addEntry( "Cancel" );
+//		sms->addEntry( "Reset" );
+//		strWindM->addMenu( sms );
 
 		SetupMenu * cirWindM = new SetupMenu( "Circling Wind" );
 		compassWindME->addMenu( cirWindM );

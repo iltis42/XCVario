@@ -212,7 +212,7 @@ bool Compass::newDeviation( float measured_heading, float desired_heading, float
 	}
 	double delta = (deviation - old_dev);
 	ESP_LOGI( FNAME, "Deviation Delta: %f old dev: %f, new dev: %f", delta, old_dev, old_dev + (delta * 0.15) );
-	float k=0.15;
+	float k=wind_dev_filter.get();
 	if(old_dev == 0.0) {
 		ESP_LOGI( FNAME, "We are starting so provide initial value");
 		k=1.0;

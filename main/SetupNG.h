@@ -491,6 +491,8 @@ extern SetupNG<int> 		wind_enable;
 extern SetupNG<float> 		wind_as_min;
 extern SetupNG<float> 		wind_as_calibration;
 extern SetupNG<float> 		wind_filter_lowpass;
+extern SetupNG<float>       wind_as_filter;
+extern SetupNG<float>       wind_dev_filter;
 extern SetupNG<int> 		wind_display;
 extern SetupNG<int> 		wind_reference;
 extern SetupNG<float> 		wind_max_deviation;

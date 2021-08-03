@@ -181,11 +181,18 @@ SetupNG<float>          compass_damping( "CP_DAMP", 1.5 );
 SetupNG<int>            compass_nmea_hdm( "CP_NMEA_HDM", 0 );
 SetupNG<int>            compass_nmea_hdt( "CP_NMEA_HDT", 0 );
 SetupNG<float>          compass_i2c_cl("CP_I2C_CL", 100 );
-SetupNG<float>          wind_speed_delta( "WIND_V_Delta", 10 );
+SetupNG<float>          wind_speed_delta( "WIND_V_Delta", 5 );
 SetupNG<float>          wind_heading_delta( "WIND_H_Delta", 5 );
-SetupNG<float>          wind_measurement_time( "WIND_MT", 10 );
-
-SetupNG<float> 			wind_as_min( "WIND_ASM", 25);
+SetupNG<float>          wind_as_filter( "WIND_ASF", 0.002 );
+SetupNG<float>          wind_dev_filter( "WIND_DEVF", 0.02 );
+SetupNG<float>          wind_measurement_time( "WIND_MT", 1 );
+SetupNG<int> 			wind_enable( "WIND_ENA", WA_OFF );
+SetupNG<float> 			wind_as_calibration("WIND_AS_CAL", 1.0 );
+SetupNG<float> 			wind_filter_lowpass("WIND_LPF", 1.0 );
+SetupNG<int> 			wind_display( "WIND_DIS", WD_NONE );
+SetupNG<int> 			wind_reference( "WIND_REF", WR_HEADING );
+SetupNG<float> 			wind_max_deviation("WIND_MDEV", 30.0 );
+SetupNG<float> 			wind_as_min( "WIND_ASM", 25 );
 SetupNG<int> 			s2f_with_gload( "S2G_GLOAD", 1 );       // considering g load in S2F
 SetupNG<int> 			s2f_blockspeed( "S2G_BLOCKSPEED", 0 );  // considering netto vario and g load for S2F or not
 SetupNG<int> 			wk_label_plus_3( "WKLP3", 32);  //  L
@@ -211,12 +218,6 @@ SetupNG<float>			gload_pos_max("GLOADPM", 1 );
 SetupNG<float>			gload_neg_max("GLOADNM", 1 );
 SetupNG<int>        	display_variant("DISPLAY_VARIANT", 0 );
 SetupNG<int>        	compass_dev_auto("COMPASS_DEV", 0 );
-SetupNG<int> 			wind_enable( "WIND_ENA", WA_OFF );
-SetupNG<float> 			wind_as_calibration("WIND_AS_CAL", 1.0 );
-SetupNG<float> 			wind_filter_lowpass("WIND_LPF", 1.0 );
-SetupNG<int> 			wind_display( "WIND_DIS", WD_NONE );
-SetupNG<int> 			wind_reference( "WIND_REF", WR_HEADING );
-SetupNG<float> 			wind_max_deviation("WIND_MDEV", 30.0 );
 SetupNG<float>       	max_circle_wind_diff("CI_WIND_DMAX", 90.0 );
 SetupNG<float>       	min_circle_wind_quality("CI_WIND_QMIN", 2.0 );
 SetupNG<int> 			can_speed( "CANSPEED", CAN_SPEED_OFF );

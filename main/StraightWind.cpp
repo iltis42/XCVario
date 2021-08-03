@@ -181,12 +181,14 @@ bool StraightWind::calculateWind()
 	double cgs = Units::knots2kmh( Flarm::getGndSpeedKnots() );
 	float gsdelta = fabs( gsStart - cgs );
 	// Check, if given ground speed deltas are valid.
-	if( gsdelta > Units::Airspeed2Kmh( wind_speed_delta.get() ) ) {
-		// Condition violated, start a new measurements cycle.
-		start();
-		ESP_LOGI(FNAME,"Restart Cycle GS %3.1f - CGS: %3.1f > %3.1f", groundSpeed, cgs, Units::Airspeed2Kmh( wind_speed_delta.get() ) );
-		status="GS Unstable";
-		return false;
+	if( (int)wind_measurement_time.get() > 1 ){
+		if( gsdelta > Units::Airspeed2Kmh( wind_speed_delta.get() ) ) {
+			// Condition violated, start a new measurements cycle.
+			start();
+			ESP_LOGI(FNAME,"Restart Cycle GS %3.1f - CGS: %3.1f > %3.1f", groundSpeed, cgs, Units::Airspeed2Kmh( wind_speed_delta.get() ) );
+			status="GS Unstable";
+			return false;
+		}
 	}
 	if( groundspeed_jitter_tmp < gsdelta )
 		groundspeed_jitter_tmp = gsdelta;
@@ -195,12 +197,14 @@ bool StraightWind::calculateWind()
 	double ctas = double( getTAS() );
 	// check if given TAS deltas are valid.
 	float tasdelta = fabs( tasStart - ctas );
-	if( tasdelta > Units::Airspeed2Kmh( wind_speed_delta.get() ) ) {
-		// Condition violated, start a new measurements cycle.
-		start();
-		ESP_LOGI(FNAME,"TAS %3.1f - CTAS: %3.1f  > delta %3.1f", tas, ctas, Units::Airspeed2Kmh( wind_speed_delta.get() ) );
-		status="AS Unstable";
-		return false;
+	if( (int)wind_measurement_time.get() > 1 ){
+		if( tasdelta > Units::Airspeed2Kmh( wind_speed_delta.get() ) ) {
+			// Condition violated, start a new measurements cycle.
+			start();
+			ESP_LOGI(FNAME,"TAS %3.1f - CTAS: %3.1f  > delta %3.1f", tas, ctas, Units::Airspeed2Kmh( wind_speed_delta.get() ) );
+			status="AS Unstable";
+			return false;
+		}
 	}
 	// ESP_LOGI(FNAME,"Straight Wind calculate GS:%3.2f TC%3.2f TH:%3.2f TAS:%3.2f ", groundSpeed, trueCourse, trueHeading, ctas  );
 	if( airspeed_jitter_tmp < tasdelta )
@@ -237,14 +241,15 @@ bool StraightWind::calculateWind()
 		ESP_LOGI(FNAME,"Restart Cycle: No magnetic heading");
 		return false;
 	}
-
-	float diff = abs( Vector::angleDiffDeg( cth, mhStart ));
-	if( diff >  wind_heading_delta.get() ) {
-		// Condition violated, start a new measurements cycle.
-		start();
-		ESP_LOGI(FNAME,"Restart Cycle, CTH diff %3.1f outside max %3.1f", diff, wind_heading_delta.get()  );
-		status="MH Unstable";
-		return false;
+	if( (int)wind_measurement_time.get() > 1 ){
+		float diff = abs( Vector::angleDiffDeg( cth, mhStart ));
+		if( diff >  wind_heading_delta.get() ) {
+			// Condition violated, start a new measurements cycle.
+			start();
+			ESP_LOGI(FNAME,"Restart Cycle, CTH diff %3.1f outside max %3.1f", diff, wind_heading_delta.get()  );
+			status="MH Unstable";
+			return false;
+		}
 	}
 
 	// Get current true course from GPS
@@ -253,14 +258,16 @@ bool StraightWind::calculateWind()
 	// The ground course check is only done, if the ground speed is >=10 Km/h.
 	// Near speed zero, the ground course is not stable in its direction.
 	// Check if given GPS true course deltas are valid.
-	if( cgs >= 10 ) {
-		float diff = abs( Vector::angleDiffDeg( ctc, tcStart ));
-		if( diff > wind_heading_delta.get() ) {
-			// Condition violated, start a new measurements cycle.
-			start();
-			ESP_LOGI(FNAME,"Restart Cycle, Ground Heading CTC diff: %3.1f outside delta: %3.1f", diff, wind_heading_delta.get() );
-			status="TC Unstable";
-			return false;
+	if( (int)wind_measurement_time.get() > 1 ){
+		if( cgs >= 10 ) {
+			float diff = abs( Vector::angleDiffDeg( ctc, tcStart ));
+			if( diff > wind_heading_delta.get() ) {
+				// Condition violated, start a new measurements cycle.
+				start();
+				ESP_LOGI(FNAME,"Restart Cycle, Ground Heading CTC diff: %3.1f outside delta: %3.1f", diff, wind_heading_delta.get() );
+				status="TC Unstable";
+				return false;
+			}
 		}
 	}
 
@@ -343,8 +350,8 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 	// Wind speed
 	// Reverse calculate windtriangle for deviation and airspeed calibration
 	bool devOK = true;
-	if( circlingWindSpeed > 0 && compass_dev_auto.get() ){
-		if( circlingWindAge > 1800 ){
+	if( circlingWindSpeed > 0 && compass_dev_auto.get() && !(_tick%5) ){
+		if( circlingWindAge > 900 ){
 			status = "OLD CIRC WIND";
 		}else{
 			float airspeed = calculateSpeed( circlingWindDir, circlingWindSpeed, tc, gs );
@@ -352,12 +359,12 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 			ESP_LOGI(FNAME,"Using reverse circling wind dir %3.2f, reverse cal. airspeed=%3.3f, tas=%3.3f, delta %3.3f", circlingWindDir, airspeed, tas, airspeed-tas );
 #endif
 			float tH = calculateAngle( circlingWindDir, circlingWindSpeed, tc, gs );
-			if( abs( airspeed/tas - 1.0 ) > 0.15 ){  // 15 percent max deviation
+			if( abs( airspeed/tas - 1.0 ) > 0.30 ){  // 30 percent max deviation
 				status = "AS OOB";
 				ESP_LOGI(FNAME,"Estimated Airspeed/Groundspeed OOB");
-				return;
+				//return;
 			}
-			airspeedCorrection +=  (airspeed/tas - airspeedCorrection) *0.02;
+			airspeedCorrection +=  (airspeed/tas - airspeedCorrection) * wind_as_filter.get();
 			devOK = Compass::newDeviation( th, tH, airspeedCorrection );
 			ESP_LOGI(FNAME,"Calculated TH/TAS: %3.1f°/%3.1f km/h  Measured TH/TAS: %3.1f°/%3.1f, asCorr:%2.3f, deltaAS:%3.2f, Age:%d",
 					trueHeading, airspeed, averageTH, tas, airspeedCorrection , airspeed-tas, circlingWindAge );
@@ -368,7 +375,7 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 	if( !devOK ){ // data is not plausible/useful
 			ESP_LOGI( FNAME, "Calculated deviation out of bounds: Drop also this wind calculation");
 			status = "Deviation OOB";
-			return;
+			// return;
 	}
 	deviation_cur = Compass::getDeviation( th );
 	ESP_LOGI(FNAME,"Deviation=%3.2f", deviation_cur );

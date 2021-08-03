@@ -332,6 +332,7 @@ extern SetupNG<float>  		ballast;
 extern SetupNG<float>  		MC;
 extern SetupNG<float>  		s2f_speed;
 
+extern SetupNG<int>  		audio_variable_frequency;
 extern SetupNG<int>  		audio_mode;
 extern SetupNG<int>  		chopping_mode;
 extern SetupNG<int>  		chopping_style;

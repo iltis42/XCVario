@@ -538,10 +538,12 @@ void Audio::dactask(void* arg )
 				hightone = false;
 			}
 			// Frequency Control
-			calculateFrequency();
-
+			if( !audio_variable_frequency.get() )
+				calculateFrequency();
 			next_scedule = millis()+_delay;
 		}
+		if( audio_variable_frequency.get() )
+			calculateFrequency();
 		// Amplifier and Volume control
 		if( !_testmode && !(tick%2) ) {
 			// ESP_LOGI(FNAME, "sound dactask tick:%d wiper:%d  te:%f db:%d", tick, (*p_wiper), _te, inDeadBand(_te) );

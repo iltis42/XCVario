@@ -691,6 +691,12 @@ void SetupMenu::setup( )
 		tchs->addEntry( "Hard");              // 1
 		audios->addMenu( tchs );
 
+		SetupMenuSelect * advarto = new SetupMenuSelect( "Variable Tone", false, 0 , true, &audio_variable_frequency );
+		advarto->setHelp(PROGMEM"Option to enable audio frequency updates within climbing tone intervals, disable keeps frequency constant");
+		advarto->addEntry( "Disable");       // 0
+		advarto->addEntry( "Enable");        // 1
+		audios->addMenu( advarto );
+
 		SetupMenuSelect * ar = new SetupMenuSelect( "Range", false, 0 , true, &audio_range  );
 		audio_range_sm = ar;
 		sprintf( rentry, "Variable (=%d m/s)", (int)(range.get()) );

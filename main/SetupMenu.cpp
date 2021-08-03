@@ -1026,14 +1026,17 @@ void SetupMenu::setup( )
 
 		SetupMenuValFloat *smgsm = new SetupMenuValFloat( "Airspeed Lowpass", nullptr, "", 0, 1.0, 0.001, nullptr, false, &wind_as_filter );
 		strWindM->addMenu( smgsm );
+		smgsm->setPrecision(3);
 		smgsm->setHelp(PROGMEM "Lowpass factor for airspeed correction from reverse wind calculation");
 
 		SetupMenuValFloat *devlp = new SetupMenuValFloat( "Deviation Lowpass", nullptr, "", 0, 1.0, 0.001, nullptr, false, &wind_dev_filter );
 		strWindM->addMenu( devlp );
+		devlp->setPrecision(3);
 		devlp->setHelp(PROGMEM "Lowpass factor for deviation table correction from reverse wind calculation");
 
-		SetupMenuValFloat *wlpf = new SetupMenuValFloat( "Wind Lowpass", nullptr, "", 0, 1.0, 0.01, nullptr, false, &wind_filter_lowpass );
+		SetupMenuValFloat *wlpf = new SetupMenuValFloat( "Wind Lowpass", nullptr, "", 0, 1.0, 0.001, nullptr, false, &wind_filter_lowpass );
 		strWindM->addMenu( wlpf );
+		wlpf->setPrecision(3);
 		wlpf->setHelp(PROGMEM "Lowpass factor to smooth wind calculations, useful values are 0.03 to 0.10 ");
 
 		ShowStraightWind* ssw = new ShowStraightWind( "Straight Wind Status" );

@@ -214,7 +214,7 @@ void CircleWind::_calcWind()
 
 	quality = 5.0 - (abs( aDiff ) / max_circle_wind_diff.get() ) * 5.0;   // 90 degree diff is considered zero quality
 
-	if( quality < 1 )
+	if( quality < 0.5 )
 	{
 		ESP_LOGI(FNAME,"quality bad %3.1f < 1: Abort ", quality );
 		status = "Too Low Qual";

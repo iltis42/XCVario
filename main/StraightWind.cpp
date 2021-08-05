@@ -350,7 +350,7 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 	// Wind speed
 	// Reverse calculate windtriangle for deviation and airspeed calibration
 	bool devOK = true;
-	if( circlingWindSpeed > 0 && compass_dev_auto.get() && !(_tick%5) ){
+	if( circlingWindSpeed > 0 && compass_dev_auto.get() ){
 		if( circlingWindAge > 900 ){
 			status = "OLD CIRC WIND";
 		}else{

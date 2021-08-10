@@ -364,7 +364,7 @@ void Flarm::drawFlarmWarning(){
 		Audio::alarm( false );
 
     if( AlarmLevel != alarmOld ) {
-    	ucg->setPrintPos(200, 15 );
+    	ucg->setPrintPos(200, 20 );
     	ucg->setFontPosCenter();
     	ucg->setColor( COLOR_WHITE );
     	ucg->setFont(ucg_font_fub20_hr);

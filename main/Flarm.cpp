@@ -373,22 +373,28 @@ void Flarm::drawFlarmWarning(){
     	alarmOld = AlarmLevel;
     }
     if( oldDist !=  RelativeDistance ) {
-		ucg->setPrintPos(130, 135 );
+		ucg->setPrintPos(130, 140 );
 		ucg->setFontPosCenter();
 		ucg->setColor( COLOR_WHITE );
-		ucg->setFont(ucg_font_fub20_hr);
+		ucg->setFont(ucg_font_fub25_hr);
 		char d[16];
-		sprintf(d,"%d %s   ", (int)Units::Altitude( RelativeDistance ), Units::AltitudeUnit() );
+		sprintf(d,"%d m   ", RelativeDistance );
 		ucg->printf( d );
 		oldDist = RelativeDistance;
 	}
     if( oldVertical !=  RelativeVertical ) {
-    	ucg->setPrintPos(130, 215 );
+    	ucg->setPrintPos(130, 220 );
     	ucg->setFontPosCenter();
     	ucg->setColor( COLOR_WHITE );
-    	ucg->setFont(ucg_font_fub20_hr);
+    	ucg->setFont(ucg_font_fub25_hr);
     	char v[16];
-    	sprintf(v,"%d %s   ",  (int)Units::Altitude( RelativeVertical ), Units::AltitudeUnit() );
+    	int vdiff = RelativeVertical;
+    	char *unit = "m";
+    	if( alt_unit.get() != 0 ){  // then its ft or FL -> feet
+    		unit = "ft";
+    		vdiff = (vdiff/10)*10;
+    	}
+    	sprintf(v,"%d %s   ",  vdiff, unit );
     	ucg->printf( v );
     	double relDist =  (double)RelativeDistance;
     	if( RelativeBearing < 0 )
@@ -402,10 +408,10 @@ void Flarm::drawFlarmWarning(){
     	oldVertical = RelativeVertical;
     }
     if( oldBear != RelativeBearing ){
-    	ucg->setPrintPos(130, 75 );
+    	ucg->setPrintPos(130, 80 );
     	ucg->setFontPosCenter();
     	ucg->setColor( COLOR_WHITE );
-    	ucg->setFont(ucg_font_fub20_hr);
+    	ucg->setFont(ucg_font_fub25_hr);
     	char b[16];
     	int quant=15;
     	if( RelativeBearing < 0 )

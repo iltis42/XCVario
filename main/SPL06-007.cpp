@@ -48,7 +48,7 @@ bool SPL06_007::begin() {
 		return true;
 }
 
-bool SPL06_007::selfTest( float& p, float& t ){
+bool SPL06_007::selfTest( float& t, float& p ){
 	uint8_t rdata = 0xFF;
 	esp_err_t err = bus->readByte(address, 0x0D, &rdata );  // ID
 	if( err != ESP_OK ){

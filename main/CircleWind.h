@@ -53,9 +53,9 @@ public:
 
   /**
    * Call for wind measurement result. The result is included in wind,
-   * the quality of the measurement (1-5; 1 is bad, 5 is excellent) in quality.
+   * the jitter of the measurement (1-5; 1 is bad, 5 is excellent) in jitter.
    */
-  static inline void getWind( Vector &wind, int &qual ) { wind = result; qual=quality; };
+  static inline void getWind( Vector &wind, int &qual ) { wind = result; qual=jitter; };
   static inline void setWind( float dir, float speed ) { direction = dir; windspeed = speed; _age = 0; num_samples++; };
 
   /**
@@ -86,7 +86,7 @@ public:
    */
   static void gpsStatusChange( bool newStatus );
 
-  static void newWind( double angle, double speed, float q );
+  static void newWind( double angle, double speed );
 
   static bool getWind( int *dir, float *speed, int * age ) { *dir=rint(direction); *speed=windspeed; *age=_age;
   	  	  	  	  	  	  	  	  	  	  	  	  if( num_samples )
@@ -101,7 +101,7 @@ public:
   static float  getAngle() 		 { return result.getAngleDeg(); }
   static float  getSpeed() 		 { return result.getSpeed(); }
   static int  getAge() 			 { return _age; }
-  static int  getQuality() 		 { return rint(quality*20); } // 0..100 %
+  static int  getQuality() 		 { return rint(jitter*20); } // 0..100 %
   static const char * getStatus()      { return status; }
   static const char *getFlightModeStr(){
                                    if( flightMode == straight )
@@ -128,13 +128,15 @@ private:
   static Vector minVector;
   static Vector maxVector;
   static Vector result;
-  static float quality;
+  static float jitter;
   static t_circling flightMode;
   static float direction;
   static float windspeed;
   static int num_samples;
   static int _age;
   static const char *status;
+  static float headingDiff;
+  static float lastWindSpeed;
 };
 
 #endif

@@ -190,9 +190,9 @@ bool Compass::newDeviation( float measured_heading, float desired_heading, float
 	}
 	// we implement one point every 45 degrees, so each point comes with a guard band of 22.5 degree
 	xSemaphoreTake(splineMutex,portMAX_DELAY );
-	for(auto itx = std::begin(devmap); itx != std::end(devmap); ++itx ){
-		ESP_LOGI( FNAME, "Cur Dev MAP Head: %3.2f Dev: %3.2f", itx->first, itx->second );
-	}
+	// for(auto itx = std::begin(devmap); itx != std::end(devmap); ++itx ){
+	//	ESP_LOGI( FNAME, "Cur Dev MAP Head: %3.2f Dev: %3.2f", itx->first, itx->second );
+	//}
 	for(auto it = std::begin(devmap); it != std::end(devmap); ){
 #ifdef VERBOSE_LOG
 		ESP_LOGI( FNAME, "Main X/Y Vector Head: %3.2f Dev: %3.2f", it->first, it->second );
@@ -261,20 +261,20 @@ void Compass::recalcInterpolationSpline()
 	// take care for head of spline by extrapolation
 	for(auto it = std::begin(devmap); it != std::end(devmap); ++it ){
 		if( it->first >= 260 ){
-			ESP_LOGI( FNAME, "Pre  X/Y Vector Head: %3.2f Dev: %3.2f", it->first-360, it->second );
+			// ESP_LOGI( FNAME, "Pre  X/Y Vector Head: %3.2f Dev: %3.2f", it->first-360, it->second );
 			X.push_back( it->first-360.0 );
 			Y.push_back( it->second );
 		}
 	}
 	for(auto it = std::begin(devmap); it != std::end(devmap); ++it ){
-		ESP_LOGI( FNAME, "Main X/Y Vector Head: %3.2f Dev: %3.2f", it->first, it->second );
+		// ESP_LOGI( FNAME, "Main X/Y Vector Head: %3.2f Dev: %3.2f", it->first, it->second );
 		X.push_back( it->first );
 		Y.push_back( it->second );
 	}
 	// take care for tail of spline by extrapolation
 	for(auto it = std::begin(devmap); it != std::end(devmap); ++it ){
 		if( it->first <= 140 ){
-			ESP_LOGI( FNAME, "Post  X/Y Vector Head: %3.2f Dev: %3.2f", it->first+360, it->second );
+			// ESP_LOGI( FNAME, "Post  X/Y Vector Head: %3.2f Dev: %3.2f", it->first+360, it->second );
 			X.push_back( it->first+360.0 );
 			Y.push_back( it->second );
 		}

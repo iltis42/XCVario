@@ -20,6 +20,7 @@
 #include "sensor.h"
 #include "math.h"
 #include "CircleWind.h"
+#include "Router.h"
 
 // degree to rad conversion
 #define D2R(x) ((x)/57.2957795131)
@@ -31,6 +32,7 @@ measurementStart( 0 ),
 groundSpeed( 0.0 ),
 trueCourse( 0.0 ),
 trueHeading( -1.0 ),
+averageTas(0),
 averageTH( 0.0 ),
 averageTC( 0.0 ),
 averageGS(0.0),
@@ -40,12 +42,15 @@ tasStart( 0.0 ),
 gsStart( 0.0 ),
 windDir( -1.0 ),
 windSpeed( -1.0 ),
+lastWindSpeed( -1.0 ),
 lowAirspeed( false ),
 circlingWindDir( -1.0 ),
+circlingWindDirReverse( -1.0 ),
 circlingWindSpeed( -1.0 ),
 circlingWindAge( 0 ),
 airspeedCorrection( 1.0 ),
 _age (0),
+_tick(0),
 airspeed_jitter(0),
 groundspeed_jitter(0),
 airspeed_jitter_tmp(0),
@@ -53,7 +58,8 @@ groundspeed_jitter_tmp(0),
 gpsStatus(false),
 deviation_cur(0),
 magneticHeading(0),
-status( "Initial" )
+status( "Initial" ),
+jitter(0)
 {
 }
 
@@ -289,7 +295,7 @@ bool StraightWind::calculateWind()
 	averageTH = Vector::normalizeDeg( averageTH );
 
 
-	ESP_LOGI(FNAME,"%d TC: %3.1f (avg:%3.1f) GS:%3.1f TH: %3.1f (avg:%3.1f) IAS: %3.1f", nunberOfSamples, ctc, averageTC, cgs, cth, averageTH, ctas );
+	ESP_LOGI(FNAME,"%d TC: %3.1f (avg:%3.1f) GS:%3.1f TH: %3.1f (avg:%3.1f) TAS: %3.1f", nunberOfSamples, ctc, averageTC, cgs, cth, averageTH, ctas );
 	// ESP_LOGI(FNAME,"avTC: %3.1f avTH:%3.1f ",averageTC,averageTH  );
 
 	status="Measuring";
@@ -354,11 +360,11 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 		if( circlingWindAge > 900 ){
 			status = "OLD CIRC WIND";
 		}else{
-			float airspeed = calculateSpeed( circlingWindDir, circlingWindSpeed, tc, gs );
+			float airspeed = calculateSpeed( circlingWindDirReverse, circlingWindSpeed, tc, gs );
 #ifdef VERBOSE_LOG
-			ESP_LOGI(FNAME,"Using reverse circling wind dir %3.2f, reverse cal. airspeed=%3.3f, tas=%3.3f, delta %3.3f", circlingWindDir, airspeed, tas, airspeed-tas );
+			ESP_LOGI(FNAME,"Using reverse circling wind dir %3.2f, reverse cal. airspeed=%3.3f, tas=%3.3f, delta %3.3f", circlingWindDirReverse, airspeed, tas, airspeed-tas );
 #endif
-			float tH = calculateAngle( circlingWindDir, circlingWindSpeed, tc, gs );
+			float tH = calculateAngle( circlingWindDirReverse, circlingWindSpeed, tc, gs );
 			if( abs( airspeed/tas - 1.0 ) > 0.30 ){  // 30 percent max deviation
 				status = "AS OOB";
 				ESP_LOGI(FNAME,"Estimated Airspeed/Groundspeed OOB");
@@ -369,38 +375,63 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 			ESP_LOGI(FNAME,"Calculated TH/TAS: %3.1f°/%3.1f km/h  Measured TH/TAS: %3.1f°/%3.1f, asCorr:%2.3f, deltaAS:%3.2f, Age:%d",
 					trueHeading, airspeed, averageTH, tas, airspeedCorrection , airspeed-tas, circlingWindAge );
 		}
-	}else
+	}else{
 		status = "No Circ Wind";
+		// float airspeed = calculateSpeed( windDir, windSpeed, tc, gs );
+		// airspeedCorrection +=  (airspeed/tas - airspeedCorrection) * wind_as_filter.get();
+	}
 
 	if( !devOK ){ // data is not plausible/useful
 			ESP_LOGI( FNAME, "Calculated deviation out of bounds: Drop also this wind calculation");
 			status = "Deviation OOB";
-			// return;
+			return;
 	}
 	deviation_cur = Compass::getDeviation( th );
 	ESP_LOGI(FNAME,"Deviation=%3.2f", deviation_cur );
 	float thd = Vector::normalizeDeg( th+deviation_cur );
 
 	float newWindSpeed = calculateSpeed( tc, gs, thd, tas*airspeedCorrection );
-	windSpeed += (newWindSpeed - windSpeed )*wind_filter_lowpass.get();
+
+	if( lastWindSpeed > 0 ){
+		jitter += (abs( newWindSpeed - lastWindSpeed ) - jitter )  * 0.05;
+	}
+	lastWindSpeed = windSpeed;
+
+	ESP_LOGI( FNAME, "Calculated raw windspeed %.1f jitter:%.1f", newWindSpeed, jitter );
+
+	if( windSpeed < 0 )
+		windSpeed = newWindSpeed;
+	else
+		windSpeed += ((newWindSpeed-(jitter/2)) - windSpeed )*wind_filter_lowpass.get();
+
 	// wind direction
 	double newWindDir = calculateAngle( tc, gs, thd, tas*airspeedCorrection );
-	windDir += Vector::angleDiffDeg( newWindDir, windDir )*wind_filter_lowpass.get();
+	if( windDir > 0 )
+		windDir += Vector::angleDiffDeg( newWindDir, windDir )*wind_filter_lowpass.get();
+	else
+		windDir = newWindDir;
 	windDir = Vector::normalizeDeg( windDir );
 
-	ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h", windDir, windSpeed  );
+	ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h JI:%2.1f", windDir, windSpeed, jitter );
 	_age = 0;
+
+	if( wind_logging.get() ){
+		char log[120];
+		sprintf( log, "$WIND;%d;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.4f\n", _tick, tc, gs, th, tas, newWindDir, newWindSpeed, windDir, windSpeed, circlingWindDir, circlingWindSpeed, airspeedCorrection );
+		Router::sendAUX( log );
+	}
 	OV.sendWindChange( windDir, windSpeed, WA_STRAIGHT );
 }
 
 
 void StraightWind::newCirclingWind( float angle, float speed ){
 	ESP_LOGI(FNAME,"New good circling wind %3.2f°/%3.2f", angle, speed );
+	circlingWindDirReverse = angle;
 	circlingWindDir = angle;
-	circlingWindDir += 180;      // revers windvector
-	if( circlingWindDir > 360 )
-		circlingWindDir -= 360;
-	// ESP_LOGI(FNAME,"Reverse circling wind dir %3.2f", circlingWindDir );
+	circlingWindDirReverse += 180;      // revers windvector
+	if( circlingWindDirReverse > 360 )
+		circlingWindDirReverse -= 360;
+	// ESP_LOGI(FNAME,"Reverse circling wind dir %3.2f", circlingWindDirReverse );
 	circlingWindSpeed = speed;
 	circlingWindAge = 0;
 }

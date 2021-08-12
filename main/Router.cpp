@@ -108,6 +108,16 @@ void Router::sendXCV(char * s){
 	}
 }
 
+// XCVario Router
+void Router::sendAUX(char * s){
+    ESP_LOGI( FNAME,"AUX message %s",s);
+	if(  !Flarm::bincom  ){
+		SString xcv( s );
+		if( forwardMsg( xcv, wl_aux_tx_q ) )
+			ESP_LOGV(FNAME,"Sent %d bytes to 8882 port", xcv.length() );
+	}
+}
+
 // Route XCVario messages
 void Router::routeXCV(){
 	SString xcv;

@@ -1088,7 +1088,7 @@ void IpsDisplay::drawCompass(){
 			}
 		}
 		// ESP_LOGI(FNAME, "WIND dir %d, speed %f, ok=%d", winddir, wind, ok );
-		if( prev_heading != winddir || !(tick%32) ){
+		if( prev_heading != winddir || !(tick%16) ){
 			ucg->setPrintPos(85,104);
 			ucg->setColor(  COLOR_WHITE  );
 			// ucg->setFont(ucg_font_fub20_hr);
@@ -1134,7 +1134,7 @@ void IpsDisplay::drawCompass(){
 		if( heading >= 360 )
 			heading -= 360;
 		// ESP_LOGI(FNAME, "heading %d, valid %d", heading, Compass::headingValid() );
-		if( prev_heading != heading || !(tick%32) ){
+		if( prev_heading != heading || !(tick%16) ){
 			ucg->setPrintPos(105,104);
 			ucg->setColor(  COLOR_WHITE  );
 			ucg->setFont(ucg_font_fub20_hr);
@@ -1183,7 +1183,7 @@ void IpsDisplay::drawULCompass(){
 			}
 		}
 		// ESP_LOGI(FNAME, "WIND dir %d, speed %f, ok=%d", winddir, wind, ok );
-		if( prev_heading != winddir || !(tick%32) ){
+		if( prev_heading != winddir || !(tick%16) ){
 			ucg->setPrintPos(85,104);
 			ucg->setColor(  COLOR_WHITE  );
 			// ucg->setFont(ucg_font_fub20_hr);
@@ -1209,7 +1209,7 @@ void IpsDisplay::drawULCompass(){
 		if( heading >= 360 )
 			heading -= 360;
 		// ESP_LOGI(FNAME, "heading %d, valid %d", heading, Compass::headingValid() );
-		if( prev_heading != heading || !(tick%32) ){
+		if( prev_heading != heading || !(tick%16) ){
 			ucg->setColor(  COLOR_WHITE  );
 			ucg->setFont(ucg_font_fub20_hf);
 			ucg->setPrintPos(113,220);

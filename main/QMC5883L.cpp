@@ -258,8 +258,8 @@ bool QMC5883L::rawHeading()
 				okay = true;
 				break;
 			}
-			else
-				ESP_LOGW( FNAME, "No new data,  N=%d  RDY%d  DOR%d REG:%02X", i, status & STATUS_DRDY, status & STATUS_DOR, status );
+			// else
+			// 	ESP_LOGW( FNAME, "No new data,  N=%d  RDY%d  DOR%d REG:%02X", i, status & STATUS_DRDY, status & STATUS_DOR, status );
 		}
 		else{
 			// ESP_LOGW( FNAME, "read REG_STATUS failed, N=%d  RDY%d  DOR%d", i, status & STATUS_DRDY, status & STATUS_DOR );
@@ -269,7 +269,7 @@ bool QMC5883L::rawHeading()
 	}
 	if( okay == false )
 	{
-		// ESP_LOGE( FNAME, "read REG_STATUS FAILED");
+		ESP_LOGE( FNAME, "read REG_STATUS FAILED");
 		return false;
 	}
 

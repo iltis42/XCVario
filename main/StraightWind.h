@@ -104,8 +104,10 @@ private:
 	double gsStart;
 	double windDir;            // calculated wind direction
 	double windSpeed;          // calculated wind speed in Km/h
+	double lastWindSpeed;          // calculated wind speed in Km/h
 	bool   lowAirspeed;
 	float  circlingWindDir;
+	float  circlingWindDirReverse;
 	float  circlingWindSpeed;
 	int    circlingWindAge;
 	float  airspeedCorrection;
@@ -119,4 +121,5 @@ private:
 	float  deviation_cur;
 	float  magneticHeading;
 	const char *status;
+	float  jitter;
 };

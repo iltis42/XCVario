@@ -1012,7 +1012,7 @@ void SetupMenu::setup( )
 		compassWindME->addMenu( strWindM );
 		strWindM->setHelp( PROGMEM "Straight flight wind calculation needs compass module active", 250 );
 
-		SetupMenuValFloat *smvf = new SetupMenuValFloat( "Speed tolerance", nullptr, sunit.c_str(), 0.0, 20.0, 1.0, nullptr, false, &wind_speed_delta );
+		SetupMenuValFloat *smvf = new SetupMenuValFloat( "Speed tolerance", nullptr, sunit.c_str(), 0.0, 60.0, 1.0, nullptr, false, &wind_speed_delta );
 		smvf->setHelp( PROGMEM "Setup wind speed tolerance value" );
 		strWindM->addMenu( smvf );
 
@@ -1063,13 +1063,21 @@ void SetupMenu::setup( )
 		ShowCirclingWind* scw = new ShowCirclingWind( "Circling Wind Status" );
 		cirWindM->addMenu( scw );
 
-		SetupMenuValFloat *cirwd = new SetupMenuValFloat( "Max Angle Delta", nullptr, "\xb0", 0, 90.0, 1.0, nullptr, false, &max_circle_wind_diff );
+		SetupMenuValFloat *cirwd = new SetupMenuValFloat( "Max Delta", nullptr, sunit.c_str(), 0, 90.0, 1.0, nullptr, false, &max_circle_wind_diff );
 		cirWindM->addMenu( cirwd );
-		cirwd->setHelp(PROGMEM "Maximum accepted angle delta in degree between minimum and maximum speed used for circling wind calculation");
+		cirwd->setHelp(PROGMEM "Maximum accepted delta accepted value for ground speed jitter in circling wind calculation");
 
-		SetupMenuValFloat *cirwq = new SetupMenuValFloat( "Min Quality", nullptr, "", 0, 5.0, 0.0, nullptr, false, &min_circle_wind_quality );
-		cirWindM->addMenu( cirwq );
-		cirwq->setHelp(PROGMEM "Minimum accepted circle wind quality for compass auto deviation setup method");
+
+		SetupMenuValFloat *cirlp = new SetupMenuValFloat( "Wind Lowpass", nullptr, "", 0, 1, 0.01, nullptr, false, &circle_wind_lowpass );
+		cirWindM->addMenu( cirlp );
+		cirlp->setHelp(PROGMEM "Digital lowpass filter constant for circle wind. A factor of 0.1 means 10% of new measurement is taken for current wind");
+
+
+		SetupMenuSelect * windlog = new SetupMenuSelect( "Wind Logging", false, 0, true, &wind_logging );
+		windlog->addEntry( "Disable");
+		windlog->addEntry( "Enable");
+		windlog->setHelp(PROGMEM "Enable Wind logging NMEA output to WIFI port 8882");
+		compassWindME->addMenu( windlog );
 
 
 		SetupMenu * wireless = new SetupMenu( "Wireless" );

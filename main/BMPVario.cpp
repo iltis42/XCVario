@@ -129,7 +129,7 @@ double BMPVario::readTE( float tas ) {
 	}
 	// Bird catcher
 	// if( (TE > 0.1) || (TE < -0.1) ){
-	// 	ESP_LOGI(FNAME,"Vario alt: %f, Vario: %f, t-delta=%2.3f sec", _currentAlt, TE, delta );
+	// ESP_LOGI(FNAME,"Vario alt: %f, Vario: %f, t-delta=%2.3f sec", _currentAlt, TE, delta );
 	//}
 	return _TEF;
 }

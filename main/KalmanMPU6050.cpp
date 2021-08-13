@@ -24,6 +24,7 @@ Kalman IMU::kalmanY;
 // Private Variables
 double IMU::gyroXAngle = 0;
 double IMU::gyroYAngle = 0; // Angle calculate using the gyro only
+double IMU::gyroZAngle = 0; // Angle calculate using the gyro only
 uint32_t IMU::lastProcessed = 0;
 
 float 	IMU::myrolly = 0;
@@ -185,6 +186,13 @@ void IMU::read()
 	else
 	{   // But simple kalman algo as above needs adjustment in aircraft with fixed wings, acceleration's differ, esp. in a curve there is no lateral acceleration
 		// 1: calculate angle of bank (roll) from Gyro yaw rates Y and Z with low pass filter
+
+
+
+		gyroXAngle += (gyroX * dt); // ROLL
+		gyroYAngle += gyroY * dt;   // PITCH
+		gyroZAngle += gyroZ * dt;   // YAW
+
 		myrollz += (atan(  (gyroZ *PI/180 * (getTAS()/3.6) ) / 9.81 ) * (180/PI) - myrollz) * 0.05;
 
 		// 2: estimate angle of bank from increased acceleration in Z axis
@@ -202,9 +210,11 @@ void IMU::read()
 			sign_accroll = -sign_accroll;
 		// with higher Angle, the rate lowers as Z axis gets out of direction of rotation, we need to correct this
 		// and merge with the estimated roll angle from acceleration.
-		kalXAngle = ((myrollz * (1+(1- cos( kalXAngle*PI/180 )) ) ) + sign_accroll ) / 2;
-		// correct the sign, we need negative
-		filterRoll = -kalXAngle;
+		kalXAngle = -((myrollz * (1+(1- cos( kalXAngle*PI/180 )) ) ) + sign_accroll ) / 2;
+		if( ahrs_gyro_ena.get() )
+			filterRoll += ((gyroX * dt) - sin(filterRoll*PI/180)*(gyroY*dt))*0.98 + (kalXAngle -filterRoll) *0.02;
+		else
+			filterRoll = kalXAngle;
 
 		// Calculate Pitch from Gyro and acceleration
 		double pitch;
@@ -213,7 +223,13 @@ void IMU::read()
 		mypitch += (pitch - mypitch)*0.25;
 		gyroYRate = (double)gyroY; // dito
 		kalYAngle = Kalman_GetAngle(&kalmanY, mypitch, gyroYRate, dt);  // Calculate the angle using a Kalman filter
-		filterPitch += (kalYAngle - filterPitch) * 0.2;   // addittional low pass filter
+		if( ahrs_gyro_ena.get() )
+			filterPitch += ((gyroY *dt) - sin(filterRoll*PI/180)*(gyroZ*dt))*0.98 + (kalYAngle - filterPitch) * 0.02;   // and add acceleration based values with a low proportion to stabilize GYRO
+		else
+			filterPitch += (kalYAngle - filterPitch) * 0.2;   // addittional low pass filter
+
+		// ESP_LOGI( FNAME,"Gyro Y=%.1f  X=%.1f  Z=%.1f P=%.1f dGx:%.1f dGy:%0.1f sindGy: %.1f", gyroYAngle, gyroXAngle, gyroZAngle, filterPitch, (gyroX *dt), (gyroY *dt), sin(filterRoll*PI/180)*(gyroY*dt) );
+
 	}
 
 	// ESP_LOGD( FNAME, "KalAngle roll:%2.2f  pitch:%2.2f, Gyro X:%2.2f Y%2.2f, ACC roll:%2.2f pitch:%2.2f", kalXAngle, kalYAngle, gyroXAngle, gyroYAngle, roll, pitch  );

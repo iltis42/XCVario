@@ -270,12 +270,8 @@ static int windResetAction( SetupMenuSelect *p )
 	if( p->getSelect() == 1 )
 	{
 		// Reset is selected, set default values
-		wind_speed_delta.set( 10 );
-		wind_heading_delta.set( 5 );
-		wind_measurement_time.set( 10 );
 		wind_as_min.set( 25 );
 	}
-
 	return 0;
 }
 
@@ -967,9 +963,9 @@ void SetupMenu::setup( )
 		nmeaHdt->setHelp( PROGMEM "Enable/disable NMEA '$HCHDT' sentence (magnetic true heading)" );
 		nmeaMenu->addMenu( nmeaHdt );
 
-		SetupMenuValFloat * compdamp = new SetupMenuValFloat( "Damping", 0, "sec", 1.0, 10.0, 0.1, 0, false, &compass_damping );
+		SetupMenuValFloat * compdamp = new SetupMenuValFloat( "Damping", 0, "sec", 0.1, 10.0, 0.1, 0, false, &compass_damping );
 		compassME->addMenu( compdamp );
-		compdamp->setHelp(PROGMEM "Compass damping factor in seconds. To avoid jitter 2-3 seconds are good choice");
+		compdamp->setHelp(PROGMEM "Compass damping factor in seconds. To avoid jitter 1-2 seconds are good choice");
 
 		SetupMenuValFloat * compi2c = new SetupMenuValFloat( "I2C Clock", 0, "KHz", 10.0, 400.0, 10, 0, false, &compass_i2c_cl, true );
 		compassME->addMenu( compi2c );
@@ -1012,23 +1008,9 @@ void SetupMenu::setup( )
 		compassWindME->addMenu( strWindM );
 		strWindM->setHelp( PROGMEM "Straight flight wind calculation needs compass module active", 250 );
 
-		SetupMenuValFloat *smvf = new SetupMenuValFloat( "Speed tolerance", nullptr, sunit.c_str(), 0.0, 60.0, 1.0, nullptr, false, &wind_speed_delta );
-		smvf->setHelp( PROGMEM "Setup wind speed tolerance value" );
-		strWindM->addMenu( smvf );
-
-		// Wind heading observation window
-		smvf = new SetupMenuValFloat( "Heading tolerance", nullptr, "\260", 0.0, 20.0, 1.0, nullptr, false, &wind_heading_delta );
-		smvf->setHelp( PROGMEM "Setup heading tolerance value" );
-		strWindM->addMenu( smvf );
-
 		SetupMenuValFloat *smdev = new SetupMenuValFloat( "Deviation tolerance", nullptr, "\xb0", 0.0, 180.0, 1.0,	nullptr, false, &wind_max_deviation );
 		smdev->setHelp( PROGMEM "Setup maximum deviation accepted for a wind measurement" );
 		strWindM->addMenu( smdev );
-
-		// Wind measurement time
-		smvf = new SetupMenuValFloat( "Wind after", nullptr, "s", 1.0, 60.0, 1, nullptr, false, &wind_measurement_time );
-		smvf->setHelp( PROGMEM "Setup wind calculation time, 1 s means every sample");
-		strWindM->addMenu( smvf );
 
 		SetupMenuValFloat *smgsm = new SetupMenuValFloat( "Airspeed Lowpass", nullptr, "", 0, 1.0, 0.001, nullptr, false, &wind_as_filter );
 		strWindM->addMenu( smgsm );
@@ -1047,8 +1029,6 @@ void SetupMenu::setup( )
 
 		ShowStraightWind* ssw = new ShowStraightWind( "Straight Wind Status" );
 		strWindM->addMenu( ssw );
-
-
 
 //		sms = new SetupMenuSelect( "Reset",	false, windResetAction, false, 0 );
 //		sms->setHelp( "Reset all wind data to defaults" );
@@ -1286,6 +1266,12 @@ void SetupMenu::setup( )
 				ahrslc3->addEntry( e );
 				ahrslc4->addEntry( e );
 			}
+			SetupMenuSelect * ahrsge = new SetupMenuSelect( "AHRS Gyro", true , 0, true, &ahrs_gyro_ena );
+			ahrs->addMenu( ahrsge );
+			ahrsge->setHelp( PROGMEM "Enable direct gyro deltas in artifical horizont bank and pitch (more instant movement)");
+			ahrsge->addEntry( "Disable");
+			ahrsge->addEntry( "Enable");
+
 		}
 
 		SetupMenuSelect * pstype = new SetupMenuSelect( "AS Sensor type", true , 0, false, &airspeed_sensor_type );

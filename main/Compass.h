@@ -31,7 +31,7 @@ class CompassFilter
 {
 public:
 
-	CompassFilter( const float coefficientIn=0.15 );
+	CompassFilter( const float coefficientIn=0.10 );
 
 	~CompassFilter() {};
 

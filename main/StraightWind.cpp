@@ -7,6 +7,17 @@
  *
  *  Author: Eckhard Völlm, Axel Pauli
  *
+ *
+       Calculate wind continuously by using wind triangle, see more here:
+       http://klspublishing.de/downloads/KLSP%20061%20Allgemeine%20Navigation%20DREHMEIER.pdf
+
+       The Wind Correction Angle is the angle between the Heading and the
+       Desired Course:
+
+       WCA = Heading - DesiredCourse
+ *
+ *
+ *
  *  Last update: 2021-04-21
  */
 #include <algorithm>
@@ -186,16 +197,6 @@ bool StraightWind::calculateWind()
 	// Get current ground speed in km/h
 	double cgs = Units::knots2kmh( Flarm::getGndSpeedKnots() );
 	float gsdelta = fabs( gsStart - cgs );
-	// Check, if given ground speed deltas are valid.
-	if( (int)wind_measurement_time.get() > 1 ){
-		if( gsdelta > Units::Airspeed2Kmh( wind_speed_delta.get() ) ) {
-			// Condition violated, start a new measurements cycle.
-			start();
-			ESP_LOGI(FNAME,"Restart Cycle GS %3.1f - CGS: %3.1f > %3.1f", groundSpeed, cgs, Units::Airspeed2Kmh( wind_speed_delta.get() ) );
-			status="GS Unstable";
-			return false;
-		}
-	}
 	if( groundspeed_jitter_tmp < gsdelta )
 		groundspeed_jitter_tmp = gsdelta;
 
@@ -203,15 +204,7 @@ bool StraightWind::calculateWind()
 	double ctas = double( getTAS() );
 	// check if given TAS deltas are valid.
 	float tasdelta = fabs( tasStart - ctas );
-	if( (int)wind_measurement_time.get() > 1 ){
-		if( tasdelta > Units::Airspeed2Kmh( wind_speed_delta.get() ) ) {
-			// Condition violated, start a new measurements cycle.
-			start();
-			ESP_LOGI(FNAME,"TAS %3.1f - CTAS: %3.1f  > delta %3.1f", tas, ctas, Units::Airspeed2Kmh( wind_speed_delta.get() ) );
-			status="AS Unstable";
-			return false;
-		}
-	}
+
 	// ESP_LOGI(FNAME,"Straight Wind calculate GS:%3.2f TC%3.2f TH:%3.2f TAS:%3.2f ", groundSpeed, trueCourse, trueHeading, ctas  );
 	if( airspeed_jitter_tmp < tasdelta )
 		airspeed_jitter_tmp = tasdelta;
@@ -219,7 +212,6 @@ bool StraightWind::calculateWind()
 
 	// Check, if we have a AS value > minimum, default is 25 km/h.
 	// If GS is nearly zero, the measurement makes also sense (wave), hence if we are not flying it doesn't
-
 	if( ctas < Units::Airspeed2Kmh( wind_as_min.get() ) )
 	{
 		// We start a new measurement cycle.
@@ -239,7 +231,6 @@ bool StraightWind::calculateWind()
 	// Get current true heading from compass.
 	bool ok = true;
 	double cth = Compass::rawHeading( &ok );
-
 	if( ok == false ) {
 		// No valid heading available
 		start();
@@ -247,83 +238,38 @@ bool StraightWind::calculateWind()
 		ESP_LOGI(FNAME,"Restart Cycle: No magnetic heading");
 		return false;
 	}
-	if( (int)wind_measurement_time.get() > 1 ){
-		float diff = abs( Vector::angleDiffDeg( cth, mhStart ));
-		if( diff >  wind_heading_delta.get() ) {
-			// Condition violated, start a new measurements cycle.
-			start();
-			ESP_LOGI(FNAME,"Restart Cycle, CTH diff %3.1f outside max %3.1f", diff, wind_heading_delta.get()  );
-			status="MH Unstable";
-			return false;
-		}
-	}
 
 	// Get current true course from GPS
 	double ctc = Flarm::getGndCourse();
 
-	// The ground course check is only done, if the ground speed is >=10 Km/h.
-	// Near speed zero, the ground course is not stable in its direction.
-	// Check if given GPS true course deltas are valid.
-	if( (int)wind_measurement_time.get() > 1 ){
-		if( cgs >= 10 ) {
-			float diff = abs( Vector::angleDiffDeg( ctc, tcStart ));
-			if( diff > wind_heading_delta.get() ) {
-				// Condition violated, start a new measurements cycle.
-				start();
-				ESP_LOGI(FNAME,"Restart Cycle, Ground Heading CTC diff: %3.1f outside delta: %3.1f", diff, wind_heading_delta.get() );
-				status="TC Unstable";
-				return false;
-			}
-		}
-	}
-
 	// Take all as new sample
 	nunberOfSamples++;
 
-	// depending on observation window, evaluate digital low pass constant
-	float damping = 1/wind_measurement_time.get();
-
-	averageTas += (ctas - averageTas) * damping;
-	averageGS += (cgs - averageGS) * damping;
+	averageTas += (ctas - averageTas);
+	averageGS += (cgs - averageGS);
 
 	// Calculate average true course TC
-	averageTC +=  Vector::angleDiffDeg( ctc, averageTC ) * damping;
+	averageTC +=  Vector::angleDiffDeg( ctc, averageTC );
 	averageTC = Vector::normalizeDeg( averageTC );
 
 	// Calculate average true heading TH
-	averageTH += Vector::angleDiffDeg( cth, averageTH ) * damping;
+	averageTH += Vector::angleDiffDeg( cth, averageTH );
 	averageTH = Vector::normalizeDeg( averageTH );
-
 
 	ESP_LOGI(FNAME,"%d TC: %3.1f (avg:%3.1f) GS:%3.1f TH: %3.1f (avg:%3.1f) TAS: %3.1f", nunberOfSamples, ctc, averageTC, cgs, cth, averageTH, ctas );
 	// ESP_LOGI(FNAME,"avTC: %3.1f avTH:%3.1f ",averageTC,averageTH  );
 
-	status="Measuring";
-	if( (elapsed() >= wind_measurement_time.get() * 1000) || (int(wind_measurement_time.get()) == 1 ))
-	{
-		status="Calculating";
-		/**
-       calculate wind by using wind triangle, see more here:
-       http://klspublishing.de/downloads/KLSP%20061%20Allgemeine%20Navigation%20DREHMEIER.pdf
-
-       The Wind Correction Angle is the angle between the Heading and the
-       Desired Course:
-
-       WCA = Heading - DesiredCourse
-		 */
-
-		// WCA in radians
-		airspeed_jitter = airspeed_jitter_tmp;
-		groundspeed_jitter = groundspeed_jitter_tmp;
-		airspeed_jitter_tmp = 0;
-		groundspeed_jitter_tmp = 0;
-		magneticHeading = averageTH;
-		calculateWind( averageTC, averageGS, averageTH, averageTas  );
-		measurementStart = getMsTime();  // it is enough to calculate every ten seconds a new wind
-		start();
-		return true;
-	}
-	return false;
+	status="Calculating";
+	// WCA in radians
+	airspeed_jitter = airspeed_jitter_tmp;
+	groundspeed_jitter = groundspeed_jitter_tmp;
+	airspeed_jitter_tmp = 0;
+	groundspeed_jitter_tmp = 0;
+	magneticHeading = averageTH;
+	calculateWind( averageTC, averageGS, averageTH, averageTas  );
+	measurementStart = getMsTime();  // it is enough to calculate every ten seconds a new wind
+	start();
+	return true;
 }
 
 // length (or speed) of third vector in windtriangle

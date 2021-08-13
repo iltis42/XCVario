@@ -137,7 +137,7 @@ private:
   static uint32_t lastProcessed;
   static Kalman kalmanX; // Create the Kalman instances
   static Kalman kalmanY;
-  static double gyroXAngle, gyroYAngle; // Angle calculate using the gyro only
+  static double gyroXAngle, gyroYAngle, gyroZAngle; // Angle calculate using the gyro only
 
   static double accelX, accelY, accelZ;
   static double gyroX, gyroY, gyroZ;

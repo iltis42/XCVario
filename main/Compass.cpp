@@ -122,7 +122,7 @@ void Compass::compassT(void* arg ){
 		}
 		if( uxTaskGetStackHighWaterMark( ctid  ) < 256 )
 			ESP_LOGW(FNAME,"Warning Compass task stack low: %d bytes", uxTaskGetStackHighWaterMark( ctid ) );
-		vTaskDelayUntil(&lastWakeTime, 100/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&lastWakeTime, 50/portTICK_PERIOD_MS);
 	}
 }
 

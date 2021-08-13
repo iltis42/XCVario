@@ -183,7 +183,7 @@ static int samples = 0;
 // new Deviation from reverse calculated TAWC Wind measurement
 bool Compass::newDeviation( float measured_heading, float desired_heading, float airspeedCalibration ){
 	double deviation = Vector::angleDiffDeg( desired_heading , measured_heading );
-	ESP_LOGI( FNAME, "newDeviation Measured Head: %3.2f Desired Head: %3.2f => Deviation=%3.2f, Samples:%d", measured_heading, desired_heading, deviation, samples );
+	// ESP_LOGI( FNAME, "newDeviation Measured Head: %3.2f Desired Head: %3.2f => Deviation=%3.2f, Samples:%d", measured_heading, desired_heading, deviation, samples );
 	if( abs(deviation) > wind_max_deviation.get() ){ // data is not plausible/useful
 		ESP_LOGI( FNAME, "new Deviation out of bounds: %3.3f: Drop this deviation", deviation );
 		return false;
@@ -199,7 +199,7 @@ bool Compass::newDeviation( float measured_heading, float desired_heading, float
 #endif
 		float diff = Vector::angleDiffDeg( measured_heading, (float)it->first );
 		if( diff < 22.5 && diff > -22.5  ){
-			ESP_LOGI( FNAME, "Diff<22.5 @ head %3.2f, diff %3.3f Erase", it->first, diff );
+			// ESP_LOGI( FNAME, "Diff<22.5 @ head %3.2f, diff %3.3f Erase", it->first, diff );
 			devmap.erase( it++ );
 		}
 		else
@@ -208,7 +208,7 @@ bool Compass::newDeviation( float measured_heading, float desired_heading, float
 	double old_dev = 0;
 	if( deviationSpline ){
 		old_dev = (*deviationSpline)((double)measured_heading);
-		ESP_LOGI( FNAME, "OLD Spline Deviation for mesured heading: %3.2f Dev: %3.2f", measured_heading, old_dev );
+		// ESP_LOGI( FNAME, "OLD Spline Deviation for mesured heading: %3.2f Dev: %3.2f", measured_heading, old_dev );
 	}
 	double delta = (deviation - old_dev);
 	ESP_LOGI( FNAME, "Deviation Delta: %f old dev: %f, new dev: %f", delta, old_dev, old_dev + (delta * 0.15) );

@@ -76,11 +76,6 @@ void ShowStraightWind::display( int mode )
 	y += 25;
 
 	ucg->setPrintPos( 0, y );
-	sprintf( buffer, "AS/GS Jitter : %3.2f/%3.2f   ", theWind.getAsJitter(),  theWind.getGsJitter() );
-	ucg->printf( "%s", buffer );
-	y += 25;
-
-	ucg->setPrintPos( 0, y );
 	sprintf( buffer, "MH/Dev: %3.2f/%+3.2f   ", theWind.getMH(), theWind.getDeviation() );
 	ucg->printf( "%s", buffer );
 	y += 25;

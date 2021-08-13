@@ -33,11 +33,6 @@ public:
 	}
 
 	/**
-	 * Starts a new wind measurment cycle.
-	 */
-	void start();
-
-	/**
 	 * Measurement cycle for wind calculation in straight flight. Should be
 	 * triggered periodically, maybe once per second.
 	 *
@@ -72,8 +67,6 @@ public:
 	float getAsCorrection() { return airspeedCorrection; }
 	float getAngle() { return windDir; };
 	float getSpeed() { return windSpeed; };
-	float getAsJitter() { return airspeed_jitter; }
-	float getGsJitter() { return groundspeed_jitter; }
 	float getDeviation() { return deviation_cur; }
 	bool  getGpsStatus() { return gpsStatus; }
 	float getMH() { return magneticHeading; }
@@ -81,27 +74,11 @@ public:
 
 private:
 
-	/**
-	 * Return the elapsed time in milliseconds
-	 */
-	uint64_t elapsed()
-	{
-		return getMsTime() - measurementStart;
-	}
-
 	uint16_t nunberOfSamples;  // current number of samples
-	uint64_t measurementStart; // measurement start in milliseconds
-	double groundSpeed;        // GS in km/h
-	double trueCourse;         // GPS course
-	double trueHeading;        // Compass heading
 	double averageTas;             // TAS in km/h
 	double averageTH;          // sum of Compass true heading
 	double averageTC;          // sum of GPS heading (true course)
 	double averageGS;		   // average ground speed
-	double tcStart;            // start value of true course observation window
-	double mhStart;			   // magnetic heading start value for observation window
-	double tasStart;
-	double gsStart;
 	double windDir;            // calculated wind direction
 	double windSpeed;          // calculated wind speed in Km/h
 	double lastWindSpeed;          // calculated wind speed in Km/h
@@ -113,10 +90,6 @@ private:
 	float  airspeedCorrection;
 	int    _age;
 	int    _tick;
-	float  airspeed_jitter;
-	float  groundspeed_jitter;
-	float  airspeed_jitter_tmp;
-	float  groundspeed_jitter_tmp;
 	bool   gpsStatus;
 	float  deviation_cur;
 	float  magneticHeading;

@@ -39,18 +39,10 @@
 
 StraightWind::StraightWind() :
 nunberOfSamples( 0 ),
-measurementStart( 0 ),
-groundSpeed( 0.0 ),
-trueCourse( 0.0 ),
-trueHeading( -1.0 ),
 averageTas(0),
 averageTH( 0.0 ),
 averageTC( 0.0 ),
 averageGS(0.0),
-tcStart( 0.0 ),
-mhStart( 0.0 ),
-tasStart( 0.0 ),
-gsStart( 0.0 ),
 windDir( -1.0 ),
 windSpeed( -1.0 ),
 lastWindSpeed( -1.0 ),
@@ -62,10 +54,6 @@ circlingWindAge( 0 ),
 airspeedCorrection( 1.0 ),
 _age (0),
 _tick(0),
-airspeed_jitter(0),
-groundspeed_jitter(0),
-airspeed_jitter_tmp(0),
-groundspeed_jitter_tmp(0),
 gpsStatus(false),
 deviation_cur(0),
 magneticHeading(0),
@@ -77,50 +65,6 @@ jitter(0)
 void StraightWind::begin(){
 	if( compass_dev_auto.get() )
 		airspeedCorrection = wind_as_calibration.get();
-}
-
-/**
- * Starts a new wind measurement cycle.
- */
-void StraightWind::start()
-{
-	if( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT )
-		return;
-	if( Flarm::gpsStatus() == true ) {
-		// Ground speed in Km/h
-		groundSpeed = Units::knots2kmh(Flarm::getGndSpeedKnots());
-		trueCourse = Flarm::getGndCourse();
-		gpsStatus = true;
-	}
-	else {
-		// Mark all values as invalid.
-		groundSpeed = -1.0;
-		trueCourse = -1.0;
-		trueHeading = -1.0;
-		gpsStatus = false;
-		return;
-	}
-	nunberOfSamples = 0;
-	measurementStart = getMsTime();
-	bool ok;
-	trueHeading = Compass::rawHeading( &ok );
-
-	if( ok == false ) {
-		// Mark true heading as invalid
-		trueHeading = -1.0;
-		return;
-	}
-
-	averageTas = double( getTAS() );
-	averageGS = groundSpeed;
-	averageTC = trueCourse;
-	averageTH = trueHeading;
-
-	// Define start of TH and TC observation window
-	mhStart = Vector::normalizeDeg( trueHeading );
-    tcStart = Vector::normalizeDeg( trueCourse );
-    tasStart = averageTas;
-    gsStart = groundSpeed;
 }
 
 void StraightWind::tick(){
@@ -145,7 +89,6 @@ bool StraightWind::calculateWind()
 
 	if( Flarm::gpsStatus() == false ) {
 		// GPS status not valid
-		start();
 		ESP_LOGI(FNAME,"Restart Cycle: GPS Status invalid");
 		status="Bad GPS";
 		gpsStatus = false;
@@ -169,53 +112,17 @@ bool StraightWind::calculateWind()
 		return false;
 	}
 
-	// Check GPRMC data status, GS, TC and TH
-	if(  groundSpeed == -1.0 ) {
-		// GS not valid
-		start();
-		ESP_LOGI(FNAME,"Restart Cycle: GS invalid");
-		status="GS invalid";
-		return false;
-	}
-
-	if( trueCourse == -1.0 ) {
-		// TC are not valid
-		start();
-		ESP_LOGI(FNAME,"Restart Cycle: TC invalid");
-		status="Bad TC";
-		return false;
-	}
-
-	if( trueHeading == -1.0 ) {
-		// TH start data are not valid
-		start();
-		ESP_LOGI(FNAME,"Restart Cycle: True Heading invalid");
-		status="Bad TH";
-		return false;
-	}
-
 	// Get current ground speed in km/h
 	double cgs = Units::knots2kmh( Flarm::getGndSpeedKnots() );
-	float gsdelta = fabs( gsStart - cgs );
-	if( groundspeed_jitter_tmp < gsdelta )
-		groundspeed_jitter_tmp = gsdelta;
 
 	// Get current TAS in km/h
 	double ctas = double( getTAS() );
-	// check if given TAS deltas are valid.
-	float tasdelta = fabs( tasStart - ctas );
-
-	// ESP_LOGI(FNAME,"Straight Wind calculate GS:%3.2f TC%3.2f TH:%3.2f TAS:%3.2f ", groundSpeed, trueCourse, trueHeading, ctas  );
-	if( airspeed_jitter_tmp < tasdelta )
-		airspeed_jitter_tmp = tasdelta;
-	// ESP_LOGI(FNAME,"++++++ TAS %3.1f GS: %3.1f GSJ%3.2f  ASJ %3.2f", tas, cgs, groundspeed_jitter, airspeed_jitter );
 
 	// Check, if we have a AS value > minimum, default is 25 km/h.
 	// If GS is nearly zero, the measurement makes also sense (wave), hence if we are not flying it doesn't
 	if( ctas < Units::Airspeed2Kmh( wind_as_min.get() ) )
 	{
 		// We start a new measurement cycle.
-		start();
 		if( !lowAirspeed ) {
 			ESP_LOGI(FNAME,"Low Airspeed, stop wind calculation, AS %3.1f  < %3.1f Kmh", ctas,  Units::Airspeed2Kmh( wind_as_min.get() ) );
 			lowAirspeed = true;
@@ -233,7 +140,6 @@ bool StraightWind::calculateWind()
 	double cth = Compass::rawHeading( &ok );
 	if( ok == false ) {
 		// No valid heading available
-		start();
 		status="No MH";
 		ESP_LOGI(FNAME,"Restart Cycle: No magnetic heading");
 		return false;
@@ -245,30 +151,23 @@ bool StraightWind::calculateWind()
 	// Take all as new sample
 	nunberOfSamples++;
 
-	averageTas += (ctas - averageTas);
-	averageGS += (cgs - averageGS);
+	averageTas = ctas;
+	averageGS = cgs;
 
 	// Calculate average true course TC
-	averageTC +=  Vector::angleDiffDeg( ctc, averageTC );
-	averageTC = Vector::normalizeDeg( averageTC );
+	averageTC = ctc;
 
 	// Calculate average true heading TH
-	averageTH += Vector::angleDiffDeg( cth, averageTH );
-	averageTH = Vector::normalizeDeg( averageTH );
+	averageTH = cth;
 
 	ESP_LOGI(FNAME,"%d TC: %3.1f (avg:%3.1f) GS:%3.1f TH: %3.1f (avg:%3.1f) TAS: %3.1f", nunberOfSamples, ctc, averageTC, cgs, cth, averageTH, ctas );
 	// ESP_LOGI(FNAME,"avTC: %3.1f avTH:%3.1f ",averageTC,averageTH  );
 
 	status="Calculating";
 	// WCA in radians
-	airspeed_jitter = airspeed_jitter_tmp;
-	groundspeed_jitter = groundspeed_jitter_tmp;
-	airspeed_jitter_tmp = 0;
-	groundspeed_jitter_tmp = 0;
 	magneticHeading = averageTH;
 	calculateWind( averageTC, averageGS, averageTH, averageTas  );
-	measurementStart = getMsTime();  // it is enough to calculate every ten seconds a new wind
-	start();
+
 	return true;
 }
 
@@ -288,13 +187,12 @@ double StraightWind::calculateAngle( double angle1, double speed1, double angle2
 	double tcrad = D2R( angle1 );
 	double thrad = D2R( angle2 );
 	double wca = Vector::normalize( thrad - tcrad );
-
 	double ang = tcrad + atan2( speed2 * sin( wca ), speed2 * cos( wca ) - speed1 );
 	return( Vector::normalizeDeg( R2D( ang ) ) );  // convert radian to degree
 }
 
 void StraightWind::calculateWind( double tc, double gs, double th, double tas  ){
-	ESP_LOGI(FNAME,"calculateWind: TC:%3.1f GS:%3.1f TH:%3.1f TAS:%3.1f", tc, gs, th, tas );
+	// ESP_LOGI(FNAME,"calculateWind: TC:%3.1f GS:%3.1f TH:%3.1f TAS:%3.1f", tc, gs, th, tas );
 	// Wind correction angle WCA
 	if( gs < 5 ){
 		tc = th;   // what will deliver heading and airspeed for wind
@@ -317,9 +215,13 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 				//return;
 			}
 			airspeedCorrection +=  (airspeed/tas - airspeedCorrection) * wind_as_filter.get();
+			if( airspeedCorrection > 1.05 ) // we consider 5% as maximum needed correction
+				airspeedCorrection = 1.05;
+			else if( airspeedCorrection < 0.95 )
+				airspeedCorrection = 0.95;
 			devOK = Compass::newDeviation( th, tH, airspeedCorrection );
 			ESP_LOGI(FNAME,"Calculated TH/TAS: %3.1f°/%3.1f km/h  Measured TH/TAS: %3.1f°/%3.1f, asCorr:%2.3f, deltaAS:%3.2f, Age:%d",
-					trueHeading, airspeed, averageTH, tas, airspeedCorrection , airspeed-tas, circlingWindAge );
+					tH, airspeed, averageTH, tas, airspeedCorrection , airspeed-tas, circlingWindAge );
 		}
 	}else{
 		status = "No Circ Wind";
@@ -333,7 +235,7 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 			return;
 	}
 	deviation_cur = Compass::getDeviation( th );
-	ESP_LOGI(FNAME,"Deviation=%3.2f", deviation_cur );
+	// ESP_LOGI(FNAME,"Deviation=%3.2f", deviation_cur );
 	float thd = Vector::normalizeDeg( th+deviation_cur );
 
 	float newWindSpeed = calculateSpeed( tc, gs, thd, tas*airspeedCorrection );

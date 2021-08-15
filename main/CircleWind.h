@@ -39,6 +39,8 @@ typedef enum e_circling { undefined, straight, circlingL, circlingR } t_circling
 // #include "calculator.h"
 // #include "gpsnmea.h"
 
+#define NUM_RESULTS 10
+
 class CircleWind
 {
 
@@ -137,6 +139,8 @@ private:
   static const char *status;
   static float headingDiff;
   static float lastWindSpeed;
+  static Vector windVectors[NUM_RESULTS];
+  static int curVectorNum;
 };
 
 #endif

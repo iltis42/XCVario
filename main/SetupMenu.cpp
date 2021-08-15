@@ -1043,14 +1043,14 @@ void SetupMenu::setup( )
 		ShowCirclingWind* scw = new ShowCirclingWind( "Circling Wind Status" );
 		cirWindM->addMenu( scw );
 
-		SetupMenuValFloat *cirwd = new SetupMenuValFloat( "Max Delta", nullptr, sunit.c_str(), 0, 90.0, 1.0, nullptr, false, &max_circle_wind_diff );
+		SetupMenuValFloat *cirwd = new SetupMenuValFloat( "Max Delta", nullptr, "\260", 0, 90.0, 1.0, nullptr, false, &max_circle_wind_diff );
 		cirWindM->addMenu( cirwd );
-		cirwd->setHelp(PROGMEM "Maximum accepted delta accepted value for ground speed jitter in circling wind calculation");
+		cirwd->setHelp(PROGMEM "Maximum accepted delta accepted value for heading error in circling wind calculation");
 
 
-		SetupMenuValFloat *cirlp = new SetupMenuValFloat( "Wind Lowpass", nullptr, "", 0, 1, 0.01, nullptr, false, &circle_wind_lowpass );
+		SetupMenuValFloat *cirlp = new SetupMenuValFloat( "Averager", nullptr, "", 1, 10, 1, nullptr, false, &circle_wind_lowpass );
 		cirWindM->addMenu( cirlp );
-		cirlp->setHelp(PROGMEM "Digital lowpass filter constant for circle wind. A factor of 0.1 means 10% of new measurement is taken for current wind");
+		cirlp->setHelp(PROGMEM "Number of circles used for circling wind averager. A value of 1 means no average");
 
 
 		SetupMenuSelect * windlog = new SetupMenuSelect( "Wind Logging", false, 0, true, &wind_logging );

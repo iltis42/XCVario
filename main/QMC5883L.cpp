@@ -269,7 +269,7 @@ bool QMC5883L::rawHeading()
 	}
 	if( okay == false )
 	{
-		ESP_LOGE( FNAME, "read REG_STATUS FAILED");
+		// ESP_LOGE( FNAME, "read REG_STATUS FAILED");
 		return false;
 	}
 
@@ -600,7 +600,8 @@ float QMC5883L::heading( bool *ok )
 	{
 		errors++;
 		totalReadErrors++;
-		ESP_LOGI(FNAME,"Magnetic sensor error Reads:%d, Errors:%d", N, totalReadErrors );
+		if( !(totalReadErrors%100) )
+			ESP_LOGI(FNAME,"Magnetic sensor error Reads:%d, Errors:%d", N, totalReadErrors );
 		if( errors > 10 )
 		{
 			// ESP_LOGI(FNAME,"Magnetic sensor errors > 10: init mag sensor" );

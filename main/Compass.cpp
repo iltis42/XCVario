@@ -38,6 +38,7 @@ int Compass::_tick = 0;
 int Compass::_devHolddown = 0;
 CompassFilter Compass::m_cfmh;
 int Compass::_external_data = 0;
+float Compass::_heading_average = -1000;
 
 TaskHandle_t *ctid = 0;
 
@@ -89,7 +90,7 @@ float Compass::calculateHeading( bool *okIn )
 	 // Correct magnetic heading in case of over/underflow
 	m_magn_heading = Vector::normalizeDeg( m_cfmh.filter( new_heading ) );
 	m_headingValid = true;
-	m_magn_heading_dev = Vector::normalizeDeg( m_magn_heading + getDeviation( m_magn_heading ) );
+	m_magn_heading_dev = Vector::normalizeDeg( _heading_average + getDeviation( _heading_average ) );
 
 	// If declination is set, calculate true heading including deviation
 	if(  compass_declination.get() != 0.0 )
@@ -110,7 +111,6 @@ void Compass::deviationReload(){
 	recalcInterpolationSpline();
 }
 
-
 void Compass::compassT(void* arg ){
 	while(1){
 		TickType_t lastWakeTime = xTaskGetTickCount();
@@ -122,6 +122,15 @@ void Compass::compassT(void* arg ){
 		}
 		if( uxTaskGetStackHighWaterMark( ctid  ) < 256 )
 			ESP_LOGW(FNAME,"Warning Compass task stack low: %d bytes", uxTaskGetStackHighWaterMark( ctid ) );
+		bool ok;
+		float cth = (float)Compass::rawHeading( &ok );
+		float diff = Vector::angleDiffDeg( cth, _heading_average );
+		if( _heading_average == -1000 )
+			_heading_average = cth;
+		else
+			_heading_average += diff* (1/(20*compass_damping.get()));
+		_heading_average = Vector::normalizeDeg( _heading_average );
+		// ESP_LOGI(FNAME,"Heading: %.1f %.1f", cth, _heading_average );
 		vTaskDelayUntil(&lastWakeTime, 50/portTICK_PERIOD_MS);
 	}
 }
@@ -153,6 +162,13 @@ float Compass::magnHeading( bool *okIn )
 	assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
 	*okIn = m_headingValid;
 	return m_magn_heading_dev;
+}
+
+float Compass::filteredRawHeading( bool *okIn )
+{
+	assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
+	*okIn = m_headingValid;
+	return _heading_average;
 }
 
 float Compass::rawHeading( bool *okIn )

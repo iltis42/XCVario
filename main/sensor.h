@@ -15,6 +15,7 @@
 #include "StraightWind.h"
 
 extern StraightWind theWind;
+extern xSemaphoreHandle xMutex;
 
 extern bool haveMPU;
 extern bool ahrsKeyValid;

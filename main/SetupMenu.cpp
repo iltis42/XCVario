@@ -1022,10 +1022,10 @@ void SetupMenu::setup( )
 		devlp->setPrecision(3);
 		devlp->setHelp(PROGMEM "Lowpass factor for deviation table correction from reverse wind calculation");
 
-		SetupMenuValFloat *wlpf = new SetupMenuValFloat( "Wind Lowpass", nullptr, "", 0, 1.0, 0.001, nullptr, false, &wind_filter_lowpass );
+		SetupMenuValFloat *wlpf = new SetupMenuValFloat( "Averager", nullptr, "", 5, 50, 1, nullptr, false, &wind_filter_lowpass );
 		strWindM->addMenu( wlpf );
-		wlpf->setPrecision(3);
-		wlpf->setHelp(PROGMEM "Lowpass factor to smooth wind calculations, useful values are 0.03 to 0.10 ");
+		wlpf->setPrecision(0);
+		wlpf->setHelp(PROGMEM "Number of measurements used for straight flight live wind averager");
 
 		ShowStraightWind* ssw = new ShowStraightWind( "Straight Wind Status" );
 		strWindM->addMenu( ssw );
@@ -1050,6 +1050,7 @@ void SetupMenu::setup( )
 
 		SetupMenuValFloat *cirlp = new SetupMenuValFloat( "Averager", nullptr, "", 1, 10, 1, nullptr, false, &circle_wind_lowpass );
 		cirWindM->addMenu( cirlp );
+		cirlp->setPrecision(0);
 		cirlp->setHelp(PROGMEM "Number of circles used for circling wind averager. A value of 1 means no average");
 
 

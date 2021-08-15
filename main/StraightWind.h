@@ -12,6 +12,8 @@
 #include <sys/time.h>
 #include "vector.h"
 
+#define NUM_STRAIGHT_RESULTS 50
+
 class StraightWind
 {
 public:
@@ -74,7 +76,7 @@ public:
 
 private:
 
-	uint16_t nunberOfSamples;  // current number of samples
+	int    nunberOfSamples;  // current number of samples
 	double averageTas;             // TAS in km/h
 	double averageTH;          // sum of Compass true heading
 	double averageTC;          // sum of GPS heading (true course)
@@ -95,4 +97,6 @@ private:
 	float  magneticHeading;
 	const char *status;
 	float  jitter;
+	int curVectorNum;
+	static Vector windVectors[NUM_STRAIGHT_RESULTS];
 };

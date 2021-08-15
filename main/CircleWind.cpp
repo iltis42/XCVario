@@ -237,27 +237,24 @@ void CircleWind::newWind( double angle, double speed ){
 	windVectors[curVectorNum].setSpeedKmh( speed );
 	ESP_LOGI(FNAME,"New Wind Vector angle %.1f speed %.1f", windVectors[curVectorNum].getAngleDeg(), windVectors[curVectorNum].getSpeed() );
 
-	if( curVectorNum > NUM_RESULTS )
-		curVectorNum=0;
+	int max_samples = (int)circle_wind_lowpass.get();
 
 	Vector result;
-	for( int i=0; (i<(int)circle_wind_lowpass.get()) && (i<num_samples); i++ ){
-		int idx = curVectorNum-i;
-		if( idx < 0 )
-			idx = NUM_RESULTS;
-		result.add( windVectors[idx] );
-		ESP_LOGI(FNAME,"i=%d, angle %.1f speed %.1f", idx, result.getAngleDeg(), result.getSpeed() );
+	for( int i=0; (i<max_samples) && (i<num_samples); i++ ){
+		result.add( windVectors[i] );
+		// ESP_LOGI(FNAME,"i=%d, angle %.1f speed %.1f", i, result.getAngleDeg(), result.getSpeed() );
 	}
-
 	int cur_samples=num_samples;
-	if( cur_samples  > (int)circle_wind_lowpass.get() )
-		cur_samples = (int)circle_wind_lowpass.get();
+	if( cur_samples  > max_samples )
+		cur_samples = max_samples;
 
 	direction = result.getAngleDeg(); // Vector::normalizeDeg( result.getAngleDeg()/circle_wind_lowpass.get() );
 	windspeed = result.getSpeed() / cur_samples;
 
 	lastWindSpeed = windspeed;
 	curVectorNum++;
+	if( curVectorNum > max_samples )
+		curVectorNum=0;
 	ESP_LOGI(FNAME,"### NEW AGV CircleWind: %3.1f°/%.1fKm/h  JI:%2.1f", direction, windspeed, jitter  );
 	OV.sendWindChange( direction, windspeed, WA_CIRCLING );
 	if( circleCount >= 2 )

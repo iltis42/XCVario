@@ -188,7 +188,7 @@ SetupNG<float>          wind_dev_filter( "WIND_DEVF", 0.02 );
 SetupNG<int> 			wind_enable( "WIND_ENA", WA_OFF );
 SetupNG<int> 			wind_logging( "WIND_LOG", 0 );
 SetupNG<float> 			wind_as_calibration("WIND_AS_CAL", 1.0 );
-SetupNG<float> 			wind_filter_lowpass("WIND_LPF", 0.05 );
+SetupNG<float> 			wind_filter_lowpass("SWIND_AVER", 20 );
 SetupNG<int> 			wind_display( "WIND_DIS", WD_NONE );
 SetupNG<int> 			wind_reference( "WIND_REF", WR_HEADING );
 SetupNG<float> 			wind_max_deviation("WIND_MDEV", 30.0 );

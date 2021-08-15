@@ -1223,7 +1223,7 @@ void sensor(void *args){
 	if( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT ){
 		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 14, apid, 0);
 	}
-	xTaskCreatePinnedToCore(&readTemp, "readTemp", 2048, NULL, 5, tpid, 0);
+	xTaskCreatePinnedToCore(&readTemp, "readTemp", 2500, NULL, 5, tpid, 0);
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 4096, NULL, 4, dpid, 0);
 	compass.start();
 	Audio::startAudio();

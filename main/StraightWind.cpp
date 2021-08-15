@@ -37,6 +37,9 @@
 #define D2R(x) ((x)/57.2957795131)
 #define R2D(x) ((x)*57.2957795131)
 
+
+Vector StraightWind::windVectors[NUM_STRAIGHT_RESULTS];
+
 StraightWind::StraightWind() :
 nunberOfSamples( 0 ),
 averageTas(0),
@@ -58,7 +61,8 @@ gpsStatus(false),
 deviation_cur(0),
 magneticHeading(0),
 status( "Initial" ),
-jitter(0)
+jitter(0),
+curVectorNum(0)
 {
 }
 
@@ -71,6 +75,9 @@ void StraightWind::tick(){
 	_age++;
 	circlingWindAge++;
 	_tick++;
+	// bool ok;
+	// double cth = Compass::rawHeading( &ok );
+	// ESP_LOGI(FNAME,"Heading: %.1f", cth );
 }
 
 /**
@@ -137,7 +144,7 @@ bool StraightWind::calculateWind()
 	}
 	// Get current true heading from compass.
 	bool ok = true;
-	double cth = Compass::rawHeading( &ok );
+	double cth = Compass::filteredRawHeading( &ok );
 	if( ok == false ) {
 		// No valid heading available
 		status="No MH";
@@ -148,8 +155,6 @@ bool StraightWind::calculateWind()
 	// Get current true course from GPS
 	double ctc = Flarm::getGndCourse();
 
-	// Take all as new sample
-	nunberOfSamples++;
 
 	averageTas = ctas;
 	averageGS = cgs;
@@ -240,28 +245,39 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 
 	float newWindSpeed = calculateSpeed( tc, gs, thd, tas*airspeedCorrection );
 
-	if( lastWindSpeed > 0 ){
-		jitter += (abs( newWindSpeed - lastWindSpeed ) - jitter )  * 0.05;
-	}
-	lastWindSpeed = windSpeed;
 
 	ESP_LOGI( FNAME, "Calculated raw windspeed %.1f jitter:%.1f", newWindSpeed, jitter );
 
-	if( windSpeed < 0 )
-		windSpeed = newWindSpeed;
-	else
-		windSpeed += ((newWindSpeed-(jitter/2)) - windSpeed )*wind_filter_lowpass.get();
 
 	// wind direction
 	double newWindDir = calculateAngle( tc, gs, thd, tas*airspeedCorrection );
-	if( windDir > 0 )
-		windDir += Vector::angleDiffDeg( newWindDir, windDir )*wind_filter_lowpass.get();
-	else
-		windDir = newWindDir;
-	windDir = Vector::normalizeDeg( windDir );
+
+	windVectors[curVectorNum].setAngle( newWindDir );
+	windVectors[curVectorNum].setSpeedKmh( newWindSpeed );
+	// Take all as new sample
+	nunberOfSamples++;
+
+	int max_samples = wind_filter_lowpass.get();
+
+	Vector result;
+	for( int i=0; (i<max_samples) && (i<nunberOfSamples); i++ ){
+		result.add( windVectors[i] );
+		// ESP_LOGI(FNAME,"i=%d, angle %.1f speed %.1f", i, result.getAngleDeg(), result.getSpeed() );
+	}
+	int cur_samples=nunberOfSamples;
+	if( cur_samples  > max_samples )
+		cur_samples = max_samples;
+
+	windDir = result.getAngleDeg(); // Vector::normalizeDeg( result.getAngleDeg()/circle_wind_lowpass.get() );
+	windSpeed = result.getSpeed() / cur_samples;
+
+	curVectorNum++;
+	if( curVectorNum > max_samples )
+		curVectorNum=0;
 
 	ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h JI:%2.1f", windDir, windSpeed, jitter );
 	_age = 0;
+	lastWindSpeed = windSpeed;
 
 	if( wind_logging.get() ){
 		char log[120];

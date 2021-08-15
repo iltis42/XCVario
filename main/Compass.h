@@ -115,6 +115,9 @@ public:
 	 */
 	static float rawHeading( bool *okIn );
 
+	static float filteredRawHeading( bool *okIn );
+
+
 	static void saveDeviation();
 
 	/**
@@ -184,5 +187,6 @@ private:
 	static int _tick;
 	static int _devHolddown;
 	static int _external_data;
+	static float _heading_average;
 
 };

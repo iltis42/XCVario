@@ -157,6 +157,7 @@ uint8_t QMC5883L::readRegister( const uint8_t addr,
 			}
 			delay(10);
 		}
+		delay(1);
 	}
 	ESP_LOGW( FNAME,"Read after init and retry failed also, return with no data, len=0");
 	return 0;
@@ -231,7 +232,7 @@ esp_err_t QMC5883L::initialize( int a_odr, int a_osr )
 		// ESP_LOGI( FNAME, "initialize() OK");
 		return ESP_OK;
 	}
-	// ESP_LOGE( FNAME, "initialize() ERROR");
+	ESP_LOGE( FNAME, "initialize() ERROR");
 	return ESP_FAIL;
 }
 
@@ -251,7 +252,7 @@ bool QMC5883L::rawHeading()
 	// as sensor is outside the housing, there may be I2C noise, so we need retries
 	bool okay = false;
 	// Poll status until RDY or DOR
-	for( int i=1; i<10; i++ ){
+	for( int i=1; i<30; i++ ){
 		esp_err_t ret = m_bus->readByte( addr, REG_STATUS, &status );
 		if( ret == ESP_OK ){
 			if( (status & STATUS_DRDY) || (status & STATUS_DOR )  ){
@@ -264,7 +265,7 @@ bool QMC5883L::rawHeading()
 		else{
 			// ESP_LOGW( FNAME, "read REG_STATUS failed, N=%d  RDY%d  DOR%d", i, status & STATUS_DRDY, status & STATUS_DOR );
 		}
-		delay( 10 );
+		delay( 5 );
 		//uint8_t count = readRegister( addr, REG_STATUS, 1, &status );
 	}
 	if( okay == false )
@@ -600,9 +601,9 @@ float QMC5883L::heading( bool *ok )
 	{
 		errors++;
 		totalReadErrors++;
-		if( !(totalReadErrors%100) )
-			ESP_LOGI(FNAME,"Magnetic sensor error Reads:%d, Errors:%d", N, totalReadErrors );
-		if( errors > 10 )
+		//if( !(totalReadErrors%100) )
+		ESP_LOGI(FNAME,"Magnetic sensor error Reads:%d, Errors:%d", N, totalReadErrors );
+		if( errors > 50 )
 		{
 			// ESP_LOGI(FNAME,"Magnetic sensor errors > 10: init mag sensor" );
 			//  reinitialize once crashed, one retry
@@ -611,7 +612,7 @@ float QMC5883L::heading( bool *ok )
 			*ok=false;
 			return 0.0;
 		}
-		if( errors > 50 ){  // survive 50 samples with constant heading if no valid reading
+		if( errors > 100 ){  // survive 100 samples with constant heading if no valid reading
 			*ok = false;
 			return 0.0;
 		}

@@ -138,7 +138,7 @@ uint8_t QMC5883L::readRegister( const uint8_t addr,
 	if( checkBus() == false )
 		return 0;
 	// read bytes from chip
-	for( int i=0; i<=20; i++ ){
+	for( int i=0; i<=100; i++ ){
 		esp_err_t err = m_bus->readBytes( addr, reg, count, data );
 		if( err == ESP_OK && count == 6 ){
 			return count;
@@ -146,18 +146,19 @@ uint8_t QMC5883L::readRegister( const uint8_t addr,
 		else
 		{
 			// ESP_LOGW( FNAME,"readRegister( 0x%02X, 0x%02X, %d ) FAILED N:%d", addr, reg, count, i );
-			if( i == 10 ){
-				ESP_LOGW( FNAME,"10 retries read mag sensor failed also, now try to reinitialize chip");
+			if( i == 100 ){
+				ESP_LOGW( FNAME,"100 retries read mag sensor failed also, now try to reinitialize chip");
 				if( initialize() != ESP_OK )
 					initialize();  // one retry
 				err = m_bus->readBytes( addr, reg, count, data );
 				if( err == ESP_OK && count == 6 ){
+					// ESP_LOGI( FNAME,"Read after reinit ok");
 					return count;
 				}
 			}
-			delay(10);
+			// ESP_LOGW( FNAME,"retry #%d reg=%02X err=%d", i, reg, err );
+			delay(2);
 		}
-		delay(1);
 	}
 	ESP_LOGW( FNAME,"Read after init and retry failed also, return with no data, len=0");
 	return 0;
@@ -228,11 +229,14 @@ esp_err_t QMC5883L::initialize( int a_odr, int a_osr )
 	// ESP_LOGI( FNAME, "initialize() dataRate: %d Oversampling: %d", used_odr, used_osr );
 
 	e4 = writeRegister( addr, REG_CONTROL1,	(used_osr << 6) | (range <<4) | (used_odr <<2) | MODE_CONTINUOUS );
-	if( (e1 + e2 + e3 + e4) == 0 ) {
+	if( e1 == ESP_OK || e2 == ESP_OK || e3 == ESP_OK || e4 == ESP_OK ) {
 		// ESP_LOGI( FNAME, "initialize() OK");
 		return ESP_OK;
 	}
-	ESP_LOGE( FNAME, "initialize() ERROR");
+	else{
+		ESP_LOGE( FNAME, "initialize() ERROR %d %d %d %d", e1,e2,e3,e4 );
+		return ESP_FAIL;
+	}
 	return ESP_FAIL;
 }
 
@@ -252,8 +256,9 @@ bool QMC5883L::rawHeading()
 	// as sensor is outside the housing, there may be I2C noise, so we need retries
 	bool okay = false;
 	// Poll status until RDY or DOR
+	esp_err_t ret = ESP_OK;
 	for( int i=1; i<30; i++ ){
-		esp_err_t ret = m_bus->readByte( addr, REG_STATUS, &status );
+		ret = m_bus->readByte( addr, REG_STATUS, &status );
 		if( ret == ESP_OK ){
 			if( (status & STATUS_DRDY) || (status & STATUS_DOR )  ){
 				okay = true;
@@ -263,27 +268,27 @@ bool QMC5883L::rawHeading()
 			// 	ESP_LOGW( FNAME, "No new data,  N=%d  RDY%d  DOR%d REG:%02X", i, status & STATUS_DRDY, status & STATUS_DOR, status );
 		}
 		else{
+			delay( 10 );
 			// ESP_LOGW( FNAME, "read REG_STATUS failed, N=%d  RDY%d  DOR%d", i, status & STATUS_DRDY, status & STATUS_DOR );
 		}
-		delay( 5 );
-		//uint8_t count = readRegister( addr, REG_STATUS, 1, &status );
 	}
 	if( okay == false )
 	{
-		// ESP_LOGE( FNAME, "read REG_STATUS FAILED");
+		// ESP_LOGE( FNAME, "read REG_STATUS FAILED %d", ret );
 		return false;
 	}
 
 	if( ( status & STATUS_OVL ) == true )
 	{
 		// Magnetic X-Y-Z data overflow has occurred, give out a warning only once
-	  if( overflowWarning == false )
+	  if( overflowWarning == false ){
 	    ESP_LOGW( FNAME, "read rawHeading detected a X-Y-Z data overflow." );
         overflowWarning = true;
 		return false;
+	  }
 	}
-
 	// Reset overflow warning, to get a current status of it.
+
 	overflowWarning = false;
 
     // Precondition already checked in loop before, point only reached if there is RDY or DOR
@@ -602,10 +607,10 @@ float QMC5883L::heading( bool *ok )
 		errors++;
 		totalReadErrors++;
 		//if( !(totalReadErrors%100) )
-		ESP_LOGI(FNAME,"Magnetic sensor error Reads:%d, Errors:%d", N, totalReadErrors );
-		if( errors > 50 )
+		ESP_LOGI(FNAME,"Magnetic sensor error Reads:%d, Total Errors:%d  Init: %d", N, totalReadErrors, errors );
+		if( errors > 10 )
 		{
-			// ESP_LOGI(FNAME,"Magnetic sensor errors > 10: init mag sensor" );
+			ESP_LOGI(FNAME,"Magnetic sensor errors > 10: init mag sensor" );
 			//  reinitialize once crashed, one retry
 			if( initialize() != ESP_OK )
 				initialize();
@@ -619,7 +624,6 @@ float QMC5883L::heading( bool *ok )
 		*ok = true;
 		return _heading;
 	}
-
 	errors = 0;
 
 	// Check if calibration data are available

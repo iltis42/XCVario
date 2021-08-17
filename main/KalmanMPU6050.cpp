@@ -136,6 +136,7 @@ void IMU::init()
 	ESP_LOGD(FNAME, "Finished IMU setup  gyroYAngle:%f ", gyroYAngle);
 }
 
+
 void IMU::read()
 {
 	double dt=0;
@@ -218,7 +219,6 @@ void IMU::read()
 
 		kalYAngle = Kalman_GetAngle(&kalmanY, mypitch, 0, dt);            // Calculate the raw angle using a Kalman filter
 
-		// kalXAngle = Kalman_GetAngle(&kalmanX, myrollz, gyroX, dt);  // Calculate the raw angle using a Kalman filter
 		kalXAngle = Kalman_GetAngle(&kalmanX, akroll, 0, dt);          // Calculate the raw angle using a Kalman filter
 
 		// to get pitch and roll independent of circling, image sensor values into quaternion format
@@ -231,7 +231,7 @@ void IMU::read()
 			float a1 = 1 - 0.5 * ( kroll*kroll + kpitch*kpitch );
 			Quaternion qacc = quaternion_initialize(a1, kroll,kpitch, 0 );
 			quat =  quaternion_product(qacc, qgyro);
-			e = quaternion_to_euler_angles(qacc);
+			e = quaternion_to_euler_angles(quat);
 		}
 
 		if( ahrs_gyro_ena.get() )

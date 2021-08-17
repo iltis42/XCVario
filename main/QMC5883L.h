@@ -28,6 +28,7 @@ Last update: 2021-03-28
 #include "logdef.h"
 #include "esp_log.h"
 #include "I2Cbus.hpp"
+#include "average.h"
 
 /* The default I2C address of this chip */
 #define QMC5883L_ADDR 0x0D
@@ -200,4 +201,7 @@ private:
 	static bool calibrationRunning;
 	static float _heading;
 	static int   totalReadErrors;
+	static Average<20> filterX;
+	static Average<20> filterY;
+	static Average<20> filterZ;
 };

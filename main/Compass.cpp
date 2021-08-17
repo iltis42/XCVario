@@ -114,23 +114,26 @@ void Compass::deviationReload(){
 void Compass::compassT(void* arg ){
 	while(1){
 		TickType_t lastWakeTime = xTaskGetTickCount();
-		if( compass_enable.get() == true ){
-			bool hok;
-			compass.calculateHeading( &hok );
-			// if( !hok )
-			//	ESP_LOGI( FNAME, "warning compass heading calculation error");
+		if( !calibrationIsRunning() ){
+			if( compass_enable.get() == true ){
+				bool hok;
+				compass.calculateHeading( &hok );
+				// if( !hok )
+				//	ESP_LOGI( FNAME, "warning compass heading calculation error");
+			}
+			if( uxTaskGetStackHighWaterMark( ctid  ) < 256 )
+				ESP_LOGW(FNAME,"Warning Compass task stack low: %d bytes", uxTaskGetStackHighWaterMark( ctid ) );
+			bool ok;
+			float cth = (double)Compass::rawHeading( &ok );
+			float diff = Vector::angleDiffDeg( cth, _heading_average );
+			if( _heading_average == -1000 )
+				_heading_average = cth;
+			else
+				_heading_average += diff * (1/(20*compass_damping.get()));
+
+			_heading_average = Vector::normalizeDeg( _heading_average );
+			// ESP_LOGI(FNAME,"Heading: %.1f %.1f %.1f", cth, _heading_average, kalTH );
 		}
-		if( uxTaskGetStackHighWaterMark( ctid  ) < 256 )
-			ESP_LOGW(FNAME,"Warning Compass task stack low: %d bytes", uxTaskGetStackHighWaterMark( ctid ) );
-		bool ok;
-		float cth = (float)Compass::rawHeading( &ok );
-		float diff = Vector::angleDiffDeg( cth, _heading_average );
-		if( _heading_average == -1000 )
-			_heading_average = cth;
-		else
-			_heading_average += diff* (1/(20*compass_damping.get()));
-		_heading_average = Vector::normalizeDeg( _heading_average );
-		// ESP_LOGI(FNAME,"Heading: %.1f %.1f", cth, _heading_average );
 		vTaskDelayUntil(&lastWakeTime, 50/portTICK_PERIOD_MS);
 	}
 }

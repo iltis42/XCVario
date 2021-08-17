@@ -1,6 +1,7 @@
 #include "KalmanMPU6050.h"
 #include "logdef.h"
 #include "sensor.h"
+#include "quaternion.h"
 
 #define DEBUG_INIT()
 #define DEBUG_PRINT(x)
@@ -39,19 +40,24 @@ double IMU::accelX = 0.0;
 double IMU::accelY = 0.0;
 double IMU::accelZ = 0.0;
 double IMU::gyroX = 0.0;
+float  IMU::pitchfilter = 0.0;
+float  IMU::rollfilter = 0.0;
 double IMU::gyroY = 0.0;
 double IMU::gyroZ = 0.0;
 double IMU::kalXAngle = 0.0;
 double IMU::kalYAngle = 0.0;
+float IMU::filterAccRoll = 0.0;
+float IMU::filterGyroRoll = 0.0;
+Quaternion IMU::quat;
 
 // Kalman Function Definition
 
-inline void Kalman_Init(Kalman *kalPointer)
+void Kalman_Init(Kalman *kalPointer, double qang, double qbias, double rmeas )
 {
 	/* We will set the variables like so, these can also be tuned by the user */
-	kalPointer->Q_angle = 0.001;
-	kalPointer->Q_bias = 0.003;
-	kalPointer->R_measure = 0.03;
+	kalPointer->Q_angle = 0.01;
+	kalPointer->Q_bias = 0.03;
+	kalPointer->R_measure = 0.1;
 
 	kalPointer->angle = 0; // Reset the angle
 	kalPointer->bias = 0;  // Reset bias
@@ -63,7 +69,7 @@ inline void Kalman_Init(Kalman *kalPointer)
 }
 
 // The angle should be in degrees and the rate should be in degrees per second and the delta time in seconds
-inline double Kalman_GetAngle(Kalman *kalPointer,
+double Kalman_GetAngle(Kalman *kalPointer,
 		double newAngle, double newRate, double dt)
 {
 	// KasBot V2  -  Kalman filter module - http://www.x-firm.com/?page_id=145
@@ -78,8 +84,7 @@ inline double Kalman_GetAngle(Kalman *kalPointer,
 
 	// Update estimation error covariance - Project the error covariance ahead
 	/* Step 2 */
-	kalPointer->P[0][0] += dt * (dt * kalPointer->P[1][1] - kalPointer->P[0][1] -
-			kalPointer->P[1][0] + kalPointer->Q_angle);
+	kalPointer->P[0][0] += dt * (dt * kalPointer->P[1][1] - kalPointer->P[0][1] - kalPointer->P[1][0] + kalPointer->Q_angle);
 	kalPointer->P[0][1] -= dt * kalPointer->P[1][1];
 	kalPointer->P[1][0] -= dt * kalPointer->P[1][1];
 	kalPointer->P[1][1] += kalPointer->Q_bias * dt;
@@ -126,6 +131,8 @@ void IMU::init()
 	gyroYAngle = pitch;
 
 	lastProcessed = micros();
+	quat = quaternion_initialize(1.0,0.0,0.0,0.0);
+
 	ESP_LOGD(FNAME, "Finished IMU setup  gyroYAngle:%f ", gyroYAngle);
 }
 
@@ -184,70 +191,74 @@ void IMU::read()
 		filterPitch = kalYAngle;
 	}
 	else
-	{   // But simple kalman algo as above needs adjustment in aircraft with fixed wings, acceleration's differ, esp. in a curve there is no lateral acceleration
-		// 1: calculate angle of bank (roll) from Gyro yaw rates Y and Z with low pass filter
+	{   // Simple kalman algo as above needs adjustment in aircraft with fixed wings, acceleration's differ, esp. in a curve there is no lateral acceleration
+		// 1: calculate angle of bank (roll) from Gyro yaw rates Y and Z and increased gravity in curve
+		gyroXAngle = -D2R( gyroX * dt ) * 0.5; // ROLL
+		gyroYAngle = D2R( gyroY * dt) * 0.5;   // PITCH
+		gyroZAngle = D2R( gyroZ * dt) * 0.5;   // YAW
 
-
-
-		gyroXAngle += (gyroX * dt); // ROLL
-		gyroYAngle += gyroY * dt;   // PITCH
-		gyroZAngle += gyroZ * dt;   // YAW
-
-		myrollz += (atan(  (gyroZ *PI/180 * (getTAS()/3.6) ) / 9.81 ) * (180/PI) - myrollz) * 0.05;
-
+		// 1: exstimate roll angle from Z axis omega plus airspeed
+		myrollz = R2D(atan(  (gyroZ *PI/180 * (getTAS()/3.6) ) / 9.81 ));
 		// 2: estimate angle of bank from increased acceleration in Z axis
-		float posa=accelZ;
+		float posacc=accelZ;
 		// only positive G-force is to be considered
-		if( posa < 1 )
-			posa = 1;
-		float aroll = acos( 1 / posa )*180/PI;
+		if( posacc < 1 )
+			posacc = 1;
+		float aroll = acos( 1 / posacc )*180/PI;
 		// estimate sign from gyro
-		// low pass filter
-		myaccroll += ( aroll - myaccroll )*0.05;
-
-		float sign_accroll=myaccroll;
+		float sign_accroll=aroll;
 		if( myrollz < 0 )
 			sign_accroll = -sign_accroll;
-		// with higher Angle, the rate lowers as Z axis gets out of direction of rotation, we need to correct this
-		// and merge with the estimated roll angle from acceleration.
-		kalXAngle = -((myrollz * (1+(1- cos( kalXAngle*PI/180 )) ) ) + sign_accroll ) / 2;
-		if( ahrs_gyro_ena.get() )
-			filterRoll += ((gyroX * dt) - sin(filterRoll*PI/180)*(gyroY*dt))*0.98 + (kalXAngle -filterRoll) *0.02;
-		else
-			filterRoll = kalXAngle;
+		float akroll = -(myrollz + sign_accroll)/2;
 
 		// Calculate Pitch from Gyro and acceleration
 		double pitch;
-		double gyroYRate=0;
 		PitchFromAccel(&pitch);
-		mypitch += (pitch - mypitch)*0.25;
-		gyroYRate = (double)gyroY; // dito
-		kalYAngle = Kalman_GetAngle(&kalmanY, mypitch, gyroYRate, dt);  // Calculate the angle using a Kalman filter
+		mypitch += (pitch - mypitch)*0.05;
+
+		kalYAngle = Kalman_GetAngle(&kalmanY, mypitch, 0, dt);            // Calculate the raw angle using a Kalman filter
+
+		// kalXAngle = Kalman_GetAngle(&kalmanX, myrollz, gyroX, dt);  // Calculate the raw angle using a Kalman filter
+		kalXAngle = Kalman_GetAngle(&kalmanX, akroll, 0, dt);          // Calculate the raw angle using a Kalman filter
+
+		// to get pitch and roll independent of circling, image sensor values into quaternion format
+		euler_angles e = { 0,0,0 };
+		if( ahrs_gyro_ena.get() ){
+			float kpitch=D2R(0.5*kalYAngle);
+			float kroll=D2R(0.5*kalXAngle);
+			float a = 1 - 0.5 * (gyroXAngle*gyroXAngle+gyroYAngle*gyroYAngle+gyroZAngle*gyroZAngle);
+			Quaternion qgyro = quaternion_initialize(a,gyroXAngle,gyroYAngle,gyroZAngle);
+			float a1 = 1 - 0.5 * ( kroll*kroll + kpitch*kpitch );
+			Quaternion qacc = quaternion_initialize(a1, kroll,kpitch, 0 );
+			quat =  quaternion_product(qacc, qgyro);
+			e = quaternion_to_euler_angles(qacc);
+		}
+
 		if( ahrs_gyro_ena.get() )
-			filterPitch += ((gyroY *dt) - sin(filterRoll*PI/180)*(gyroZ*dt))*0.98 + (kalYAngle - filterPitch) * 0.02;   // and add acceleration based values with a low proportion to stabilize GYRO
+			filterRoll =  e.roll;
+		else
+			filterRoll = kalXAngle;
+
+		if( ahrs_gyro_ena.get() )
+			filterPitch =  e.pitch;
 		else
 			filterPitch += (kalYAngle - filterPitch) * 0.2;   // addittional low pass filter
 
-		// ESP_LOGI( FNAME,"Gyro Y=%.1f  X=%.1f  Z=%.1f P=%.1f dGx:%.1f dGy:%0.1f sindGy: %.1f", gyroYAngle, gyroXAngle, gyroZAngle, filterPitch, (gyroX *dt), (gyroY *dt), sin(filterRoll*PI/180)*(gyroY*dt) );
+		// ESP_LOGI( FNAME,"yaw=%.1f pitch=%.1f roll=%.1f kaly%.1f kayx%.1f GyRoll=%.1f AccRoll=%.1f TotR=%.1f", e.yaw, e.pitch, e.roll, kalYAngle, kalXAngle, myrollz, sign_accroll, akroll  );
 
 	}
-
-	// ESP_LOGD( FNAME, "KalAngle roll:%2.2f  pitch:%2.2f, Gyro X:%2.2f Y%2.2f, ACC roll:%2.2f pitch:%2.2f", kalXAngle, kalYAngle, gyroXAngle, gyroYAngle, roll, pitch  );
-	ESP_LOGD( FNAME, "TAS: %2.1f GyroZ %2.2f roll:%2.2f az:%2.2f aroll%2.2f ", getTAS(), gyroZ, kalXAngle, accelZ, myaccroll );
-
-
 }
 
 // IMU Function Definition
 
 void IMU::MPU6050Read()
 {
-		accelX = -accelG[2];
-		accelY = accelG[1];
-		accelZ = accelG[0];
-		gyroX = -(gyroDPS.z);
-		gyroY = gyroDPS.y;
-		gyroZ = gyroDPS.x;
+	accelX = -accelG[2];
+	accelY = accelG[1];
+	accelZ = accelG[0];
+	gyroX = -(gyroDPS.z);
+	gyroY = gyroDPS.y;
+	gyroZ = gyroDPS.x;
 }
 
 void IMU::PitchFromAccel(double *pitch)

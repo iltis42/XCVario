@@ -57,6 +57,7 @@ public:
     static double polar(double y, double x);
     static double normalize(double angle);
     static double normalizeDeg(double angle);
+    static float normalizeDeg(float angle);
     static double normalizeDeg180(double angle);
 
     static double angleDiff(double ang1, double ang2);    // RAD

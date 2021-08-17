@@ -154,10 +154,11 @@ bool StraightWind::calculateWind()
 
 	// Get current true course from GPS
 	double ctc = Flarm::getGndCourse();
-
+	averageTC += (ctc - averageTC) * 1/wind_gps_lowpass.get();
 
 	averageTas = ctas;
-	averageGS = cgs;
+
+	averageGS += (cgs -averageGS) * 1/wind_gps_lowpass.get();
 
 	// Calculate average true course TC
 	averageTC = ctc;
@@ -248,7 +249,6 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 
 	ESP_LOGI( FNAME, "Calculated raw windspeed %.1f jitter:%.1f", newWindSpeed, jitter );
 
-
 	// wind direction
 	double newWindDir = calculateAngle( tc, gs, thd, tas*airspeedCorrection );
 
@@ -282,7 +282,7 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 	if( wind_logging.get() ){
 		char log[120];
 		sprintf( log, "$WIND;%d;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.4f\n", _tick, tc, gs, th, tas, newWindDir, newWindSpeed, windDir, windSpeed, circlingWindDir, circlingWindSpeed, airspeedCorrection );
-		Router::sendAUX( log );
+		Router::sendXCV( log );
 	}
 	OV.sendWindChange( windDir, windSpeed, WA_STRAIGHT );
 }

@@ -89,6 +89,16 @@ double Vector::normalize(double angle)
 
 double Vector::normalizeDeg(double angle)
 {
+	double a=angle;
+	while( a < 0.0 )
+		a += 360.0;
+	while( a >= 360.0 )
+		a -= 360.0;
+	return a;
+}
+
+float Vector::normalizeDeg(float angle)
+{
 	float a=angle;
 	while( a < 0.0 )
 		a += 360.0;

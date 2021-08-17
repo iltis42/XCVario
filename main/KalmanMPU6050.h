@@ -20,6 +20,7 @@
 #define _KalmanMPU6050_H_
 
 #include "Arduino.h"
+#include "quaternion.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265359
@@ -47,6 +48,9 @@ typedef struct kalman_t
 	double y;       // Angle difference
 	double S;       // Estimate error
 } Kalman;
+
+void Kalman_Init(Kalman *kalPointer, double qang=0.001, double qbias=0.003, double rmeas=0.03 );
+double Kalman_GetAngle(Kalman *kalPointer, double newAngle, double newRate, double dt);
 
 #define SERIAL_KalmanMPU6050_DEBUG 0 // 1 Enables, 0 Disables
 
@@ -153,6 +157,12 @@ private:
   static double  mypitch;
   static double  filterPitch;
   static double  filterRoll;
+  static float   pitchfilter;
+  static float   rollfilter;
+  static float   filterAccRoll;
+  static float   filterGyroRoll;
+
+  static Quaternion quat;
 
 };
 

@@ -965,7 +965,8 @@ void SetupMenu::setup( )
 
 		SetupMenuValFloat * compdamp = new SetupMenuValFloat( "Damping", 0, "sec", 0.1, 10.0, 0.1, 0, false, &compass_damping );
 		compassME->addMenu( compdamp );
-		compdamp->setHelp(PROGMEM "Compass damping factor in seconds. To avoid jitter 1-2 seconds are good choice");
+		compdamp->setPrecision(1);
+		compdamp->setHelp(PROGMEM "Compass or magnetic heading damping factor in seconds");
 
 		SetupMenuValFloat * compi2c = new SetupMenuValFloat( "I2C Clock", 0, "KHz", 10.0, 400.0, 10, 0, false, &compass_i2c_cl, true );
 		compassME->addMenu( compi2c );
@@ -1026,6 +1027,12 @@ void SetupMenu::setup( )
 		strWindM->addMenu( wlpf );
 		wlpf->setPrecision(0);
 		wlpf->setHelp(PROGMEM "Number of measurements used for straight flight live wind averager");
+
+		SetupMenuValFloat *smgps = new SetupMenuValFloat( "GPS Lowpass", nullptr, "sec", 0.1, 10.0, 0.1, nullptr, false, &wind_gps_lowpass );
+		strWindM->addMenu( smgps );
+		smgps->setPrecision(1);
+		smgps->setHelp(PROGMEM "Lowpass factor for GPS info TC and GS, should correlate with compass lowpass less GPS latency");
+
 
 		ShowStraightWind* ssw = new ShowStraightWind( "Straight Wind Status" );
 		strWindM->addMenu( ssw );
@@ -1267,7 +1274,7 @@ void SetupMenu::setup( )
 				ahrslc3->addEntry( e );
 				ahrslc4->addEntry( e );
 			}
-			SetupMenuSelect * ahrsge = new SetupMenuSelect( "AHRS Gyro", true , 0, true, &ahrs_gyro_ena );
+			SetupMenuSelect * ahrsge = new SetupMenuSelect( "AHRS Gyro", false , 0, true, &ahrs_gyro_ena );
 			ahrs->addMenu( ahrsge );
 			ahrsge->setHelp( PROGMEM "Enable direct gyro deltas in artifical horizont bank and pitch (more instant movement)");
 			ahrsge->addEntry( "Disable");

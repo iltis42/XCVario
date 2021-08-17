@@ -30,6 +30,7 @@ Last update: 2021-04-05
 #include "KalmanMPU6050.h"
 #include "SetupNG.h"
 #include "MenuEntry.h"
+#include "Router.h"
 
 /* Register numbers */
 #define REG_X_LSB 0         // Output Data Registers for magnetic sensor.
@@ -63,19 +64,18 @@ Last update: 2021-04-05
 
 // Sensor state
 bool QMC5883L::m_sensor = false;
-
 // Sensor overflow flag.
 bool QMC5883L::overflowWarning = false;
-
 // Error counter
 int QMC5883L::errors = 0;
-
 // Calibration flag
 bool QMC5883L::calibrationRunning = false;
-
 float QMC5883L::_heading = 0;
-
 int QMC5883L::totalReadErrors = 0;
+Average<20> QMC5883L::filterX;
+Average<20> QMC5883L::filterY;
+Average<20> QMC5883L::filterZ;
+
 /*
   Creates instance for I2C connection with passing the desired parameters.
   No action is done at the bus. Note if i2cBus is not set in the constructor,
@@ -86,12 +86,7 @@ QMC5883L::QMC5883L( const uint8_t addrIn,
 		const uint8_t odrIn,
 		const uint8_t rangeIn,
 		const uint16_t osrIn,
-		I2C_t *i2cBus ) :
-										  m_bus( i2cBus ),
-										  addr( addrIn ),
-										  odr( odrIn ),
-										  range( rangeIn ),
-										  osr( osrIn )
+		I2C_t *i2cBus ) : m_bus( i2cBus ), addr( addrIn ), odr( odrIn ), range( rangeIn ), osr( osrIn )
 {
 	ESP_LOGI( FNAME, "QMC5883L( %02X )", addrIn );
 
@@ -101,7 +96,7 @@ QMC5883L::QMC5883L( const uint8_t addrIn,
 		addr = QMC5883L_ADDR;
 	}
 
-  overflowWarning = false;
+	overflowWarning = false;
 	resetClassCalibration();
 }
 
@@ -248,6 +243,9 @@ esp_err_t QMC5883L::initialize( int a_odr, int a_osr )
  *
  * Returns true in case of success otherwise false.
  */
+
+
+
 bool QMC5883L::rawHeading()
 {
 	uint8_t data[6];
@@ -281,29 +279,32 @@ bool QMC5883L::rawHeading()
 	if( ( status & STATUS_OVL ) == true )
 	{
 		// Magnetic X-Y-Z data overflow has occurred, give out a warning only once
-	  if( overflowWarning == false ){
-	    ESP_LOGW( FNAME, "read rawHeading detected a X-Y-Z data overflow." );
-        overflowWarning = true;
-		return false;
-	  }
+		if( overflowWarning == false ){
+			ESP_LOGW( FNAME, "read rawHeading detected a X-Y-Z data overflow." );
+			overflowWarning = true;
+			return false;
+		}
 	}
 	// Reset overflow warning, to get a current status of it.
 
 	overflowWarning = false;
 
-    // Precondition already checked in loop before, point only reached if there is RDY or DOR
+	// Precondition already checked in loop before, point only reached if there is RDY or DOR
 	int count = readRegister( addr, REG_X_LSB, 6, data );
 	// Data can be read in every case
 	if( count == 6 )
 	{
-		xraw = (int)( (int16_t)(( data[1] << 8 ) | data[0]) );
-		yraw = (int)( (int16_t)(( data[3] << 8 ) | data[2]) );
-		zraw = (int)( (int16_t)(( data[5] << 8 ) | data[4]) );
+		int x = (int)( (int16_t)(( data[1] << 8 ) | data[0]) );
+		int y = (int)( (int16_t)(( data[3] << 8 ) | data[2]) );
+		int z = (int)( (int16_t)(( data[5] << 8 ) | data[4]) );
+
+		xraw = filterX( x );
+		yraw = filterY( y );
+		zraw = filterZ( z );
 		// ESP_LOGI( FNAME, "X:%d Y:%d Z:%d  RDY:%d DOR:%d", xraw, yraw,zraw, status & STATUS_DRDY, status & STATUS_DOR );
 		return true;
 	}
 	ESP_LOGE( FNAME, "read Register REG_X_LSB returned count != 6, count: %d", count );
-
 	return false;
 }
 
@@ -313,7 +314,7 @@ bool QMC5883L::rawHeading()
  */
 int16_t QMC5883L::temperature( bool *ok )
 {
-  assert( (ok != nullptr) && "Passing of NULL pointer is forbidden" );
+	assert( (ok != nullptr) && "Passing of NULL pointer is forbidden" );
 
 	uint8_t data[2];
 	if( readRegister( addr, REG_TEMP_LSB, 2, data ) == 0 ){
@@ -444,12 +445,11 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z, float xb,
 	while( true )
 	{
 		i++;
-
 		if( rawHeading() == false )
 		{
 			// errors++;
+			continue;
 		}
-
 		uint64_t start = getMsTime();
 
 		/* Find max/min xyz values */
@@ -575,6 +575,12 @@ bool holddown=false;
 float QMC5883L::heading( bool *ok )
 {
 	assert( (ok != nullptr) && "Passing of NULL pointer is forbidden" );
+
+	if( calibrationRunning == true )
+	{
+		*ok = false;
+		return 0.0;
+	}
 	// ESP_LOGI(FNAME,"QMC5883L::heading() errors:%d, N:%d", errors, N );
 	// Holddown processing and throwing errors once sensor is gone
 	if( errors > 100 && errors % 100 )
@@ -595,10 +601,7 @@ float QMC5883L::heading( bool *ok )
 	}
 
 	// Calibration is running, don't disturb it.
-	if( calibrationRunning == true )
-	{
-		return 0.0;
-	}
+
 
 	bool state = rawHeading();
 	N++;
@@ -607,7 +610,7 @@ float QMC5883L::heading( bool *ok )
 		errors++;
 		totalReadErrors++;
 		//if( !(totalReadErrors%100) )
-		ESP_LOGI(FNAME,"Magnetic sensor error Reads:%d, Total Errors:%d  Init: %d", N, totalReadErrors, errors );
+		// ESP_LOGI(FNAME,"Magnetic sensor error Reads:%d, Total Errors:%d  Init: %d", N, totalReadErrors, errors );
 		if( errors > 10 )
 		{
 			ESP_LOGI(FNAME,"Magnetic sensor errors > 10: init mag sensor" );
@@ -631,7 +634,7 @@ float QMC5883L::heading( bool *ok )
 	{
 		// No calibration data available, return error because to return
 		// the raw heading is not meaningful.
-	  *ok = false;
+		*ok = false;
 		return 0.0;
 	}
 
@@ -664,14 +667,21 @@ float QMC5883L::heading( bool *ok )
 
 	if( _heading < 0.0 )
 		_heading += 360.0;
+#if 0
+	if( wind_logging.get() ){
+		char log[120];
+		sprintf( log, "$COMPASS;%d;%d;%d;%.1f;%.1f;%.1f;%d\n", xraw, yraw, zraw, IMU::getPitch(), IMU::getRoll(),  _heading,  totalReadErrors );
+		Router::sendXCV( log );
+	}
+#endif
 
 	*ok = true;
 
-// #define DEBUG_COMP1
+	// #define DEBUG_COMP1
 #ifdef DEBUG_COMP1
 	double headingc = -RAD_TO_DEG * atan2( fy, fx );
 	if( headingc < 0.0 )
-			headingc += 360.0;
+		headingc += 360.0;
 	ESP_LOGI( FNAME,
 			"rawHeading, x:%d y:%d z:%d, roll: %f  pitch: %f  tcx:%f tcy:%f mh:%f mh_nc:%f",
 			xraw, yraw, zraw, IMU::getRoll(), IMU::getPitch(), (float)tcx, (float)tcy, _heading, headingc );

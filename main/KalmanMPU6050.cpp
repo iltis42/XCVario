@@ -251,7 +251,7 @@ void IMU::read()
 		else
 			filterPitch += (kalYAngle - filterPitch) * 0.2;   // addittional low pass filter
 
-		// ESP_LOGI( FNAME,"Pitch=%.1f Roll=%.1f kalX:%.1f Ay:%d Pitch%.1f", euler.pitch, euler.roll, kalXAngle, (int)(-32768.0*sin(D2R(kalXAngle))), pitch );
+		// ESP_LOGI( FNAME,"Pitch=%.1f Roll=%.1f kalX:%.1f rollz %.1f Ay:%d Pitch%.1f", euler.pitch, euler.roll, kalXAngle, myrollz, (int)(-32768.0*sin(D2R(kalXAngle))), pitch );
 	}
 }
 

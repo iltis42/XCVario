@@ -132,7 +132,7 @@ void Compass::compassT(void* arg ){
 				_heading_average += diff * (1/(20*compass_damping.get()));
 
 			_heading_average = Vector::normalizeDeg( _heading_average );
-			// ESP_LOGI(FNAME,"Heading: %.1f %.1f %.1f", cth, _heading_average, kalTH );
+			// ESP_LOGI(FNAME,"Heading: %.1f %.1f ", cth, _heading_average );
 		}
 		vTaskDelayUntil(&lastWakeTime, 50/portTICK_PERIOD_MS);
 	}

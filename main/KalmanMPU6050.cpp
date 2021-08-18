@@ -2,6 +2,8 @@
 #include "logdef.h"
 #include "sensor.h"
 #include "quaternion.h"
+#include "vector_3d.h"
+#include "sensor_processing_lib.h"
 
 #define DEBUG_INIT()
 #define DEBUG_PRINT(x)
@@ -48,7 +50,9 @@ double IMU::kalXAngle = 0.0;
 double IMU::kalYAngle = 0.0;
 float IMU::filterAccRoll = 0.0;
 float IMU::filterGyroRoll = 0.0;
-Quaternion IMU::quat;
+Quaternion IMU::att_quat;
+vector_ijk IMU::att_vector;
+euler_angles IMU::euler;
 
 // Kalman Function Definition
 
@@ -131,10 +135,12 @@ void IMU::init()
 	gyroYAngle = pitch;
 
 	lastProcessed = micros();
-	quat = quaternion_initialize(1.0,0.0,0.0,0.0);
-
+	att_quat = quaternion_initialize(1.0,0.0,0.0,0.0);
+	att_vector = vector_3d_initialize(0.0,0.0,-1.0);
+	euler = { 0,0,0 };
 	ESP_LOGD(FNAME, "Finished IMU setup  gyroYAngle:%f ", gyroYAngle);
 }
+
 
 
 void IMU::read()
@@ -193,20 +199,16 @@ void IMU::read()
 	}
 	else
 	{   // Simple kalman algo as above needs adjustment in aircraft with fixed wings, acceleration's differ, esp. in a curve there is no lateral acceleration
-		// 1: calculate angle of bank (roll) from Gyro yaw rates Y and Z and increased gravity in curve
-		gyroXAngle = -D2R( gyroX * dt ) * 0.5; // ROLL
-		gyroYAngle = D2R( gyroY * dt) * 0.5;   // PITCH
-		gyroZAngle = D2R( gyroZ * dt) * 0.5;   // YAW
-
+		// This part is a deterministic and noise resistant approach for centrifugal force removal
 		// 1: exstimate roll angle from Z axis omega plus airspeed
 		myrollz = R2D(atan(  (gyroZ *PI/180 * (getTAS()/3.6) ) / 9.81 ));
 		// 2: estimate angle of bank from increased acceleration in Z axis
 		float posacc=accelZ;
-		// only positive G-force is to be considered
+		// only positive G-force is to be considered, curve at negative G is not define
 		if( posacc < 1 )
 			posacc = 1;
 		float aroll = acos( 1 / posacc )*180/PI;
-		// estimate sign from gyro
+		// estimate sign of acceleration angle from gyro
 		float sign_accroll=aroll;
 		if( myrollz < 0 )
 			sign_accroll = -sign_accroll;
@@ -215,37 +217,41 @@ void IMU::read()
 		// Calculate Pitch from Gyro and acceleration
 		double pitch;
 		PitchFromAccel(&pitch);
-		mypitch += (pitch - mypitch)*0.05;
-
-		kalYAngle = Kalman_GetAngle(&kalmanY, mypitch, 0, dt);            // Calculate the raw angle using a Kalman filter
-
-		kalXAngle = Kalman_GetAngle(&kalmanX, akroll, 0, dt);          // Calculate the raw angle using a Kalman filter
 
 		// to get pitch and roll independent of circling, image sensor values into quaternion format
-		euler_angles e = { 0,0,0 };
 		if( ahrs_gyro_ena.get() ){
-			float kpitch=D2R(0.5*kalYAngle);
-			float kroll=D2R(0.5*kalXAngle);
-			float a = 1 - 0.5 * (gyroXAngle*gyroXAngle+gyroYAngle*gyroYAngle+gyroZAngle*gyroZAngle);
-			Quaternion qgyro = quaternion_initialize(a,gyroXAngle,gyroYAngle,gyroZAngle);
-			float a1 = 1 - 0.5 * ( kroll*kroll + kpitch*kpitch );
-			Quaternion qacc = quaternion_initialize(a1, kroll,kpitch, 0 );
-			quat =  quaternion_product(qacc, qgyro);
-			e = quaternion_to_euler_angles(quat);
+			uint16_t ax=(UINT16_MAX/2)*sin(D2R(pitch));
+			uint16_t ay=(-(UINT16_MAX/2)*sin(D2R(akroll))) * cos( D2R(pitch) );
+			uint16_t az=(int16_t)(-(UINT16_MAX/2)*cos(D2R(akroll))) * cos( D2R(pitch) );
+
+			att_vector = update_fused_vector(att_vector,ax, ay, az,D2R(gyroX),D2R(gyroY),D2R(gyroZ),dt);
+			att_quat = quaternion_from_accelerometer(att_vector.a,att_vector.b,att_vector.c);
+			euler = quaternion_to_euler_angles(att_quat);
+			// treat gimbal lock, limit to 80 deg
+			if( euler.roll > 80.0 )
+				euler.roll = 80.0;
+			if( euler.pitch > 80.0 )
+				euler.pitch = 80.0;
+			if( euler.roll < -80.0 )
+				euler.roll = -80.0;
+			if( euler.pitch < -80.0 )
+				euler.pitch = -80.0;
+		}else{
+			kalYAngle = Kalman_GetAngle(&kalmanY, pitch, 0, dt);           // Pacify the raw angle using a Kalman filter
+			kalXAngle = Kalman_GetAngle(&kalmanX, akroll, 0, dt);
 		}
 
 		if( ahrs_gyro_ena.get() )
-			filterRoll =  e.roll;
+			filterRoll =  euler.roll;
 		else
 			filterRoll = kalXAngle;
 
 		if( ahrs_gyro_ena.get() )
-			filterPitch =  e.pitch;
+			filterPitch =  euler.pitch;
 		else
 			filterPitch += (kalYAngle - filterPitch) * 0.2;   // addittional low pass filter
 
-		// ESP_LOGI( FNAME,"yaw=%.1f pitch=%.1f roll=%.1f kaly%.1f kayx%.1f GyRoll=%.1f AccRoll=%.1f TotR=%.1f", e.yaw, e.pitch, e.roll, kalYAngle, kalXAngle, myrollz, sign_accroll, akroll  );
-
+		// ESP_LOGI( FNAME,"Pitch=%.1f Roll=%.1f kalX:%.1f Ay:%d Pitch%.1f", euler.pitch, euler.roll, kalXAngle, (int)(-32768.0*sin(D2R(kalXAngle))), pitch );
 	}
 }
 

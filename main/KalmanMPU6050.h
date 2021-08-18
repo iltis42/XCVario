@@ -162,7 +162,9 @@ private:
   static float   filterAccRoll;
   static float   filterGyroRoll;
 
-  static Quaternion quat;
+  static Quaternion att_quat;
+  static vector_ijk att_vector;
+  static euler_angles euler;
 
 };
 

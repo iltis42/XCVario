@@ -62,7 +62,9 @@ deviation_cur(0),
 magneticHeading(0),
 status( "Initial" ),
 jitter(0),
-curVectorNum(0)
+curVectorNum(0),
+newWindSpeed(0),
+newWindDir(0)
 {
 }
 
@@ -99,14 +101,10 @@ bool StraightWind::calculateWind()
 		ESP_LOGI(FNAME,"Restart Cycle: GPS Status invalid");
 		status="Bad GPS";
 		gpsStatus = false;
-		return false;
 	}
 	gpsStatus = true;
 	// ESP_LOGI(FNAME,"calculateWind flightMode: %d", CircleStraightWind::getFlightMode() );
-	if( CircleWind::getFlightMode() != straight ){
-		// ESP_LOGI(FNAME,"In Circling, stop ");
-		return false;
-	}
+
 	// Check if wind requirements are fulfilled
 	if( compass_enable.get() == false || compass_calibrated.get() == false || wind_enable.get() == WA_OFF ) {
 		ESP_LOGI(FNAME,"Compass issues: ENA:%d CAL:%d WIND_ENA:%d, abort", compass_enable.get(), compass_calibrated.get(), wind_enable.get() );
@@ -127,6 +125,7 @@ bool StraightWind::calculateWind()
 
 	// Check, if we have a AS value > minimum, default is 25 km/h.
 	// If GS is nearly zero, the measurement makes also sense (wave), hence if we are not flying it doesn't
+
 	if( ctas < Units::Airspeed2Kmh( wind_as_min.get() ) )
 	{
 		// We start a new measurement cycle.
@@ -135,7 +134,6 @@ bool StraightWind::calculateWind()
 			lowAirspeed = true;
 		}
 		status="Low AS";
-		return false;
 	}else{
 		if( lowAirspeed ) {
 			ESP_LOGI(FNAME,"Airspeed OK, start wind calculation, AS %3.1f  < %3.1f Kmh", ctas,  Units::Airspeed2Kmh( wind_as_min.get() ) );
@@ -143,13 +141,12 @@ bool StraightWind::calculateWind()
 		}
 	}
 	// Get current true heading from compass.
-	bool ok = true;
-	double cth = Compass::filteredRawHeading( &ok );
-	if( ok == false ) {
+	bool THok = true;
+	double cth = Compass::filteredRawHeading( &THok );
+	if( THok == false ) {
 		// No valid heading available
 		status="No MH";
 		ESP_LOGI(FNAME,"Restart Cycle: No magnetic heading");
-		return false;
 	}
 
 	// Get current true course from GPS
@@ -166,12 +163,22 @@ bool StraightWind::calculateWind()
 	// Calculate average true heading TH
 	averageTH = cth;
 
-	ESP_LOGI(FNAME,"%d TC: %3.1f (avg:%3.1f) GS:%3.1f TH: %3.1f (avg:%3.1f) TAS: %3.1f", nunberOfSamples, ctc, averageTC, cgs, cth, averageTH, ctas );
-	// ESP_LOGI(FNAME,"avTC: %3.1f avTH:%3.1f ",averageTC,averageTH  );
-
-	status="Calculating";
 	// WCA in radians
 	magneticHeading = averageTH;
+
+	if( wind_logging.get() ){
+		char log[120];
+		sprintf( log, "$WIND;%d;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.4f,%d,%d\n", _tick, averageTC, cgs, cth, averageTH, newWindDir, newWindSpeed, windDir, windSpeed, circlingWindDir, circlingWindSpeed, airspeedCorrection, CircleWind::getFlightMode(), gpsStatus );
+		Router::sendXCV( log );
+	}
+
+	if( (CircleWind::getFlightMode() != straight) || lowAirspeed || !THok || !gpsStatus ){
+		// ESP_LOGI(FNAME,"In Circling, stop ");
+		return false;
+	}
+
+	status="Calculating";
+	ESP_LOGI(FNAME,"%d TC: %3.1f (avg:%3.1f) GS:%3.1f TH: %3.1f (avg:%3.1f) TAS: %3.1f", nunberOfSamples, ctc, averageTC, cgs, cth, averageTH, ctas );
 	calculateWind( averageTC, averageGS, averageTH, averageTas  );
 
 	return true;
@@ -244,13 +251,13 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 	// ESP_LOGI(FNAME,"Deviation=%3.2f", deviation_cur );
 	float thd = Vector::normalizeDeg( th+deviation_cur );
 
-	float newWindSpeed = calculateSpeed( tc, gs, thd, tas*airspeedCorrection );
+	newWindSpeed = calculateSpeed( tc, gs, thd, tas*airspeedCorrection );
 
 
 	ESP_LOGI( FNAME, "Calculated raw windspeed %.1f jitter:%.1f", newWindSpeed, jitter );
 
 	// wind direction
-	double newWindDir = calculateAngle( tc, gs, thd, tas*airspeedCorrection );
+	newWindDir = calculateAngle( tc, gs, thd, tas*airspeedCorrection );
 
 	windVectors[curVectorNum].setAngle( newWindDir );
 	windVectors[curVectorNum].setSpeedKmh( newWindSpeed );
@@ -279,11 +286,7 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 	_age = 0;
 	lastWindSpeed = windSpeed;
 
-	if( wind_logging.get() ){
-		char log[120];
-		sprintf( log, "$WIND;%d;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.4f\n", _tick, tc, gs, th, tas, newWindDir, newWindSpeed, windDir, windSpeed, circlingWindDir, circlingWindSpeed, airspeedCorrection );
-		Router::sendXCV( log );
-	}
+
 	OV.sendWindChange( windDir, windSpeed, WA_STRAIGHT );
 }
 

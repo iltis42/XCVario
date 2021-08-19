@@ -99,4 +99,6 @@ private:
 	float  jitter;
 	int curVectorNum;
 	static Vector windVectors[NUM_STRAIGHT_RESULTS];
+	float newWindSpeed;
+	float newWindDir;
 };

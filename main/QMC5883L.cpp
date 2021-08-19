@@ -663,7 +663,10 @@ float QMC5883L::heading( bool *ok )
 	// Yhorizontal = Y*cos(roll) + Z*sin(roll)
 	double tcy = fy * cos( -IMU::getRollRad()) + fz * sin( -IMU::getRollRad());
 
-	_heading = -RAD_TO_DEG * atan2( tcy, tcx );
+	if( compass_enable.get() == 1 )
+		_heading = -RAD_TO_DEG * atan2( tcy, tcx );
+	else if ( compass_enable.get() == 2 )
+		_heading = -RAD_TO_DEG * atan2( fy, fx );
 
 	if( _heading < 0.0 )
 		_heading += 360.0;

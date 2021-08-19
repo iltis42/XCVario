@@ -115,7 +115,7 @@ void Compass::compassT(void* arg ){
 	while(1){
 		TickType_t lastWakeTime = xTaskGetTickCount();
 		if( !calibrationIsRunning() ){
-			if( compass_enable.get() == true ){
+			if( compass_enable.get() ){
 				bool hok;
 				compass.calculateHeading( &hok );
 				// if( !hok )

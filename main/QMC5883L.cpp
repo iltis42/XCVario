@@ -266,7 +266,7 @@ bool QMC5883L::rawHeading()
 			// 	ESP_LOGW( FNAME, "No new data,  N=%d  RDY%d  DOR%d REG:%02X", i, status & STATUS_DRDY, status & STATUS_DOR, status );
 		}
 		else{
-			delay( 10 );
+			delay( 2 );
 			// ESP_LOGW( FNAME, "read REG_STATUS failed, N=%d  RDY%d  DOR%d", i, status & STATUS_DRDY, status & STATUS_DOR );
 		}
 	}
@@ -410,21 +410,8 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z, float xb,
 {
 	// reset all old calibration data
 	ESP_LOGI( FNAME, "calibrate magnetic sensor" );
-	resetCalibration();
-
 	calibrationRunning = true;
-
-	// Switch on continues mode
-	if( initialize( ODR_100Hz, OSR_512 ) != ESP_OK )
-	{
-		// retry
-		if( initialize(  ODR_100Hz, OSR_512 ) != ESP_OK ){
-			calibrationRunning = false;
-			return false;
-		}
-	}
-	// wait a moment after measurement start.
-	delay( 100 );
+	resetCalibration();
 
 	ESP_LOGI( FNAME, "calibrate min-max xyz");
 
@@ -450,7 +437,7 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z, float xb,
 			// errors++;
 			continue;
 		}
-		uint64_t start = getMsTime();
+		// uint64_t start = getMsTime();
 
 		/* Find max/min xyz values */
 		xmin = ( xraw < xmin ) ? xraw : xmin;
@@ -517,21 +504,7 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z, float xb,
 		if( MenuEntry::_rotary->readSwitch() == true  )  // more responsive to query every loop
 			break;
 
-		uint64_t stop = getMsTime();
-		uint64_t elapsed = stop - start;
-
-		if( elapsed >= 50 )
-		{
-			// ESP_LOGI( FNAME, "Elapsed=%llu > 50 ms -> no delay", elapsed );
-			continue;
-		}
-
-		// calculate time to wait
-		int wait = 50 - elapsed;
-
-		// The sensor seems to have sometimes problems to deliver all 10ms new data
-		// Therefore we wait at least 50ms.
-		delay( wait );
+		delay(5);
 	}
 
 	ESP_LOGI( FNAME, "Read Cal-Samples=%d, OK=%d, NOK=%d",
@@ -557,10 +530,8 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z, float xb,
 	ESP_LOGI( FNAME, "Compass soft-iron: xscale=%.3f, yscale=%.3f, zscale=%.3f",
 			xscale, yscale, zscale );
 
-	// restart continuous mode given at construction time
-	if( initialize() != ESP_OK )
-		initialize();
 	calibrationRunning = false;
+
 	ESP_LOGI( FNAME, "calibration end" );
 	return true;
 }

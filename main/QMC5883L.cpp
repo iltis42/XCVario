@@ -406,7 +406,7 @@ bool QMC5883L::loadCalibration()
  * stopped by the reporter function which displays intermediate results of the
  * calibration action.
  */
-bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z, float xb, float yb, float zb ) )
+bool QMC5883L::calibrate( bool (*reporter)( float xc, float yc, float zc, float xscale, float yscale, float zscale, float xb, float yb, float zb ) )
 {
 	// reset all old calibration data
 	ESP_LOGI( FNAME, "calibrate magnetic sensor" );
@@ -495,16 +495,13 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z, float xb,
 		yscale = cord_avgerage / ychord;
 		zscale = cord_avgerage / zchord;
 
-		if( (getMsTime() - lastReport) >= 500 )
+		if( !(i%4) )
 		{
-			lastReport = getMsTime();
 			// Send a calibration report to the subscriber every 500ms
-			reporter( xscale, yscale, zscale, xbias, ybias, zbias );
+			reporter( xraw,yraw,zraw, xscale, yscale, zscale, xbias, ybias, zbias );
 		}
 		if( MenuEntry::_rotary->readSwitch() == true  )  // more responsive to query every loop
 			break;
-
-		delay(5);
 	}
 
 	ESP_LOGI( FNAME, "Read Cal-Samples=%d, OK=%d, NOK=%d",

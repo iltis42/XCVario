@@ -101,7 +101,7 @@ public:
 	 * stopped by the reporter function which displays intermediate results of the
 	 * calibration action.
 	 */
-	bool calibrate( bool (*reporter)( float x, float y, float z, float xbias, float ybias, float zbias ) );
+	bool calibrate( bool (*reporter)( float xc, float yc, float zc,float xs, float ys, float zs, float xbias, float ybias, float zbias ) );
 
 	/**
 	 * Resets the whole compass calibration, also the saved configuration.

@@ -167,11 +167,12 @@ bool StraightWind::calculateWind()
 	magneticHeading = averageTH;
 
 	if( wind_logging.get() ){
-		char log[120];
+		char log[SSTRLEN];
 		float dev = Compass::getDeviation( averageTH );
 		float thd = Vector::normalizeDeg( averageTH+dev );
 		sprintf( log, "$WIND;%d;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.4f,%d,%d,%.1f\n", _tick, averageTC, cgs, cth, thd, newWindDir, newWindSpeed, windDir, windSpeed, circlingWindDir, circlingWindSpeed, airspeedCorrection, CircleWind::getFlightMode(), gpsStatus, dev );
 		Router::sendXCV( log );
+		ESP_LOGI( FNAME,"%s", log );
 	}
 
 	if( (CircleWind::getFlightMode() != straight) || lowAirspeed || !THok || !gpsStatus ){

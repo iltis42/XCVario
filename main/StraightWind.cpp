@@ -168,7 +168,9 @@ bool StraightWind::calculateWind()
 
 	if( wind_logging.get() ){
 		char log[120];
-		sprintf( log, "$WIND;%d;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.4f,%d,%d\n", _tick, averageTC, cgs, cth, averageTH, newWindDir, newWindSpeed, windDir, windSpeed, circlingWindDir, circlingWindSpeed, airspeedCorrection, CircleWind::getFlightMode(), gpsStatus );
+		float dev = Compass::getDeviation( averageTH );
+		float thd = Vector::normalizeDeg( averageTH+dev );
+		sprintf( log, "$WIND;%d;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.4f,%d,%d,%.1f\n", _tick, averageTC, cgs, cth, thd, newWindDir, newWindSpeed, windDir, windSpeed, circlingWindDir, circlingWindSpeed, airspeedCorrection, CircleWind::getFlightMode(), gpsStatus, dev );
 		Router::sendXCV( log );
 	}
 

@@ -737,7 +737,7 @@ void sensor(void *args){
 		accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
 
 		char ahrs[30];
-		sprintf( ahrs,"AHRS Sensor: OK (%.1f g)", accelG[0] );
+		sprintf( ahrs,"AHRS Sensor: OK (%.2f g)", accelG[0] );
 		display->writeText( line++, ahrs );
 		logged_tests += "MPU6050 AHRS test: PASSED\n";
 		IMU::init();

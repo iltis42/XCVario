@@ -240,6 +240,7 @@ bool Audio::selfTest(){
 	delay(200);
 	ESP_LOGI(FNAME, "selfTest wiper: %d", 0 );
 	DigitalPoti->writeWiper( 0 );
+	dacDisable();
 	_testmode=true;
 	return ret;
 }
@@ -582,19 +583,22 @@ void Audio::dactask(void* arg )
 				if(  (cur_wiper != (*p_wiper)) && volume_change ){
 					ESP_LOGI(FNAME, "volume change, new wiper: %d, cur_wiper %d", (*p_wiper), cur_wiper );
 					int delta = 1;
-					if( (*p_wiper) > cur_wiper )
+					dacEnable();
+					if( (*p_wiper) > cur_wiper ){
 						for( int i=cur_wiper; i<(*p_wiper); i+=delta ) {
 							DigitalPoti->writeWiper( equal_volume(i) );
 							delta = _step+i/FADING_TIME;
 							// ESP_LOGI(FNAME, "volume inc, new wiper: %d", i );
 							delay(1);
-						}else
+						}}
+					else{
 							for( int i=cur_wiper; i>(*p_wiper); i-=delta ) {
 								DigitalPoti->writeWiper( equal_volume(i) );
 								// ESP_LOGI(FNAME, "volume dec, new wiper: %d", i );
 								delta = _step+i/FADING_TIME;
 								delay(1);
 							}
+					}
 					DigitalPoti->writeWiper( equal_volume((*p_wiper)) );
 					cur_wiper = (*p_wiper);
 					ESP_LOGI(FNAME, "volume change, new wiper: %d", cur_wiper );
@@ -602,8 +606,8 @@ void Audio::dactask(void* arg )
 				}
 				// Fade in volume
 				if(  cur_wiper != (*p_wiper) ){
+					dacEnable();
 					if( chopping_style.get() == AUDIO_CHOP_HARD ){
-						dacEnable();
 						DigitalPoti->writeWiper( equal_volume( (*p_wiper)) );
 						cur_wiper = (*p_wiper);
 					}
@@ -632,7 +636,6 @@ void Audio::dactask(void* arg )
 				if( cur_wiper != 0 ){
 					if( chopping_style.get() == AUDIO_CHOP_HARD ){
 						DigitalPoti->writeWiper( 0 );
-						dacDisable();
 						cur_wiper = 0;
 					}else{
 						float volume = (float)(*p_wiper);
@@ -646,7 +649,7 @@ void Audio::dactask(void* arg )
 						// ESP_LOGI(FNAME, "fade out sound, final wiper: 0" );
 						cur_wiper = 0;
 					}
-
+					dacDisable();
 				}
 				if( deadband_active )
 					enableAmplifier( false );

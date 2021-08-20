@@ -729,10 +729,26 @@ void sensor(void *args){
 		MPU.setAccelFullScale(mpud::ACCEL_FS_8G);
 		MPU.setGyroFullScale(mpud::GYRO_FS_500DPS);
 		MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
+
 		mpud::raw_axes_t gb = gyro_bias.get();
 		mpud::raw_axes_t ab = accl_bias.get();
-		MPU.setAccelOffset(ab);
-		MPU.setGyroOffset(gb);
+
+		if( (gb.isZero() || ab.isZero()) || ahrs_autozero.get() ) {
+				ESP_LOGI( FNAME,"MPU computeOffsets");
+				ahrs_autozero.set(0);
+				MPU.computeOffsets( &ab, &gb );
+				gyro_bias.set( gb );
+				accl_bias.set( ab );
+				MPU.setGyroOffset(gb);
+				MPU.setAccelOffset(ab);
+				ESP_LOGI( FNAME,"MPU new offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
+				if( hardwareRevision.get() != 3 )
+					hardwareRevision.set(3);
+		}else
+		{
+			MPU.setAccelOffset(ab);
+			MPU.setGyroOffset(gb);
+		}
 		delay( 50 );
 		mpud::raw_axes_t accelRaw;
 		esp_err_t err = MPU.acceleration(&accelRaw);  // fetch raw data from the registers
@@ -749,18 +765,7 @@ void sensor(void *args){
 		// BIAS MPU6050
 
 		ESP_LOGI( FNAME,"MPU current offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
-		if( (gb.isZero() || ab.isZero()) || ahrs_autozero.get() ) {
-			ESP_LOGI( FNAME,"MPU computeOffsets");
-			ahrs_autozero.set(0);
-			MPU.computeOffsets( &ab, &gb );
-			gyro_bias.set( gb );
-			accl_bias.set( ab );
-			MPU.setGyroOffset(gb);
-			MPU.setAccelOffset(ab);
-			ESP_LOGI( FNAME,"MPU new offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
-			if( hardwareRevision.get() != 3 )
-				hardwareRevision.set(3);
-		}
+
 
 	}
 	else{

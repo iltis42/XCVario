@@ -729,7 +729,16 @@ void sensor(void *args){
 		MPU.setAccelFullScale(mpud::ACCEL_FS_8G);
 		MPU.setGyroFullScale(mpud::GYRO_FS_500DPS);
 		MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
-		display->writeText( line++, "AHRS Sensor: OK");
+		delay( 50 );
+		mpud::raw_axes_t accelRaw;
+		esp_err_t err = MPU.acceleration(&accelRaw);  // fetch raw data from the registers
+		if( err != ESP_OK )
+			ESP_LOGE(FNAME, "AHRS acceleration I2C read error");
+		accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
+
+		char ahrs[30];
+		sprintf( ahrs,"AHRS Sensor: OK (%.1f g)", accelG[0] );
+		display->writeText( line++, ahrs );
 		logged_tests += "MPU6050 AHRS test: PASSED\n";
 		IMU::init();
 		IMU::read();

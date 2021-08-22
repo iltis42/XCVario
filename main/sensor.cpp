@@ -358,7 +358,7 @@ void readSensors(void *pvParameters){
 				ESP_LOGE(FNAME, "gyro I2C error, X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
 			accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
 			gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
-			// ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f  gyro X: %+.2f Y:%+.2f Z:%+.2f\n", -accelG[2], accelG[1], accelG[0] ,  gyroDPS.x, gyroDPS.y, gyroDPS.z);
+			// ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f  gyro X: %+.2f Y:%+.2f Z:%+.2f ABx:%d ABy:%d, ABz=%d\n", -accelG[2], accelG[1], accelG[0] ,  gyroDPS.x, gyroDPS.y, gyroDPS.z, accl_bias.get().x, accl_bias.get().y, accl_bias.get().z );
 			bool goodAccl = true;
 			if( abs( accelG.x - accelG_Prev.x ) > 1 || abs( accelG.y - accelG_Prev.y ) > 1 || abs( accelG.z - accelG_Prev.z ) > 1 ) {
 				MPU.acceleration(&accelRaw);
@@ -736,7 +736,7 @@ void sensor(void *args){
 		if( (gb.isZero() || ab.isZero()) || ahrs_autozero.get() ) {
 				ESP_LOGI( FNAME,"MPU computeOffsets");
 				ahrs_autozero.set(0);
-				MPU.computeOffsets( &ab, &gb );
+				MPU.computeOffsets( &ab, &gb );  // returns Offsets in 16G scale
 				gyro_bias.set( gb );
 				accl_bias.set( ab );
 				MPU.setGyroOffset(gb);
@@ -751,11 +751,14 @@ void sensor(void *args){
 		}
 		delay( 50 );
 		mpud::raw_axes_t accelRaw;
-		esp_err_t err = MPU.acceleration(&accelRaw);  // fetch raw data from the registers
-		if( err != ESP_OK )
-			ESP_LOGE(FNAME, "AHRS acceleration I2C read error");
-		accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
-
+		for( auto i=0; i<10; i++ ){
+			esp_err_t err = MPU.acceleration(&accelRaw);  // fetch raw data from the registers
+			if( err != ESP_OK )
+				ESP_LOGE(FNAME, "AHRS acceleration I2C read error");
+			accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
+			ESP_LOGI( FNAME,"MPU %.2f", accelG[0] );
+			delay( 100 );
+		}
 		char ahrs[30];
 		sprintf( ahrs,"AHRS Sensor: OK (%.2f g)", accelG[0] );
 		display->writeText( line++, ahrs );

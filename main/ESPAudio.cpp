@@ -601,6 +601,8 @@ void Audio::dactask(void* arg )
 					}
 					DigitalPoti->writeWiper( equal_volume((*p_wiper)) );
 					cur_wiper = (*p_wiper);
+					if( cur_wiper == 0 )
+						dacDisable();
 					ESP_LOGI(FNAME, "volume change, new wiper: %d", cur_wiper );
 					// ESP_LOGI(FNAME, "have sound");
 				}

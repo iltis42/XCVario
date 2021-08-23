@@ -751,16 +751,19 @@ void sensor(void *args){
 		}
 		delay( 50 );
 		mpud::raw_axes_t accelRaw;
-		for( auto i=0; i<10; i++ ){
+		float accel = 0;
+		for( auto i=0; i<11; i++ ){
 			esp_err_t err = MPU.acceleration(&accelRaw);  // fetch raw data from the registers
 			if( err != ESP_OK )
 				ESP_LOGE(FNAME, "AHRS acceleration I2C read error");
 			accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
 			ESP_LOGI( FNAME,"MPU %.2f", accelG[0] );
-			delay( 100 );
+			delay( 5 );
+			if( i>0 )
+				accel += accelG[0];
 		}
 		char ahrs[30];
-		sprintf( ahrs,"AHRS Sensor: OK (%.2f g)", accelG[0] );
+		sprintf( ahrs,"AHRS Sensor: OK (%.2f g)", accel/10 );
 		display->writeText( line++, ahrs );
 		logged_tests += "MPU6050 AHRS test: PASSED\n";
 		IMU::init();

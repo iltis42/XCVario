@@ -759,6 +759,10 @@ void Audio::shutdown(){
 	ESP_LOGI(FNAME,"shutdown alarm volume set 0");
 }
 
+void Audio::boot(){
+	restart();
+}
+
 void Audio::enableAmplifier( bool enable )
 {
 	// ESP_LOGI(FNAME,"Audio::enableAmplifier( %d )", (int)enable );

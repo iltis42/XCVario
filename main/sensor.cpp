@@ -1250,6 +1250,7 @@ void sensor(void *args){
 }
 
 extern "C" void  app_main(void){
+	Audio::boot();
 	ESP_LOGI(FNAME,"app_main" );
 	ESP_LOGI(FNAME,"Now init all Setup elements");
 	bool setupPresent;

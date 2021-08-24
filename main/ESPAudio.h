@@ -40,6 +40,7 @@ public:
     static void dacEnable();
     static void dacDisable();
     static inline bool haveCAT5171(){ return _haveCAT5171; };
+    static void boot();
 
 private:
 	static void dac_cosine_enable(dac_channel_t channel, bool enable=true);

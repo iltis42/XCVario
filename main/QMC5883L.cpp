@@ -434,7 +434,11 @@ bool QMC5883L::calibrate( bool (*reporter)( float xc, float yc, float zc, float 
 		i++;
 		if( rawHeading() == false )
 		{
-			// errors++;
+			errors++;
+			if( errors > 10 ){
+				initialize();
+				errors = 0;
+			}
 			continue;
 		}
 		// uint64_t start = getMsTime();

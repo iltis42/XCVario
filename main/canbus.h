@@ -2,11 +2,15 @@
 #include "driver/gpio.h"
 #include "driver/twai.h"
 
+
+#define CAN_BUS_TX_PIN GPIO_NUM_26
+#define CAN_BUS_RX_PIN GPIO_NUM_33
+
 class CANbus {
 public:
 	CANbus(){};
 	~CANbus(){};
-	static void begin( gpio_num_t tx, gpio_num_t rx );
+	static void begin();
 	static bool sendData( int id, const char* msg, int length, int self=0 );
 	static bool sendNMEA( const char* msg );
 	static int receive(  int *id, char *msg, int timeout=5);
@@ -14,6 +18,8 @@ public:
 	static bool selfTest();
 	static int _tick;
 	static bool connected() { return _connected; };
+	static bool isOkay() { return can_ready; };
+
 private:
 	static void driverInstall( twai_mode_t mode, bool reinstall=false );
 	static bool can_ready;

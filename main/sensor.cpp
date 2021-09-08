@@ -1069,19 +1069,42 @@ void sensor(void *args){
 		display->writeText( line++, "Digital Poti: OK");
 	}
 
-	if(  can_speed.get() != CAN_SPEED_OFF )  // 2021 series 3, with new digital poti CAT5171 also features CAN bus
-		CANbus::begin( GPIO_NUM_26, GPIO_NUM_33 );
+	String resultCAN;
+	if( Audio::haveCAT5171() )
+	{
+		if( CANbus::selfTest() ){
+			resultCAN = "OK";
+			ESP_LOGE(FNAME,"CAN Bus selftest: OK");
+			logged_tests += "CAN Interface: OK\n";
+		}
+		else{
+			resultCAN = "FAIL";
+			logged_tests += "CAN Bus selftest: FAILED\n";
+			ESP_LOGE(FNAME,"Error: CAN Interface failed");
+		}
+	}
+
+	if(  can_speed.get() != CAN_SPEED_OFF && resultCAN == "OK" )  // 2021 series 3, or 2022 model with new digital poti CAT5171 also features CAN bus
+	{	ESP_LOGI(FNAME, "Now start CAN Bus Interface");
+		CANbus::begin();  // start CAN tasks and driver
+	}
 
 	float bat = Battery.get(true);
 	if( bat < 1 || bat > 28.0 ){
 		ESP_LOGE(FNAME,"Error: Battery voltage metering out of bounds, act value=%f", bat );
-		display->writeText( line++, "Bat Sensor: Failure");
+		if( resultCAN.length() )
+			display->writeText( line++, "Bat Meter/CAN: ");
+		else
+			display->writeText( line++, "Bat Meter/CAN: Fail/" + resultCAN );
 		logged_tests += "Battery Voltage Sensor: FAILED\n";
 		selftestPassed = false;
 	}
 	else{
 		ESP_LOGI(FNAME,"Battery voltage metering test PASSED, act value=%f", bat );
-		display->writeText( line++, "Bat Sensor: OK");
+		if( resultCAN.length() )
+			display->writeText( line++, "Bat Meter/CAN: OK/"+ resultCAN );
+		else
+			display->writeText( line++, "Bat Meter: OK");
 		logged_tests += "Battery Voltage Sensor: PASSED\n";
 	}
 	Serial::begin();

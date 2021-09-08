@@ -15,8 +15,8 @@
 
 int CANbus::_tick = 0;
 bool CANbus::can_ready = false;
-gpio_num_t CANbus::_tx_io;
-gpio_num_t CANbus::_rx_io;
+gpio_num_t CANbus::_tx_io = CAN_BUS_TX_PIN;
+gpio_num_t CANbus::_rx_io = CAN_BUS_RX_PIN;
 bool       CANbus::_connected;
 int        CANbus::_connected_timeout;
 
@@ -53,6 +53,12 @@ void CANbus::driverInstall( twai_mode_t mode, bool reinstall ){
 		ESP_LOGI(FNAME,"CAN rate 1MBit");
 		t_config = TWAI_TIMING_CONFIG_1MBITS();
 	}
+	else{
+		if( !reinstall ) // need for testing a speed, even CAN is disabled.
+			ESP_LOGI(FNAME,"CAN rate 1MBit for selftest");
+			t_config = TWAI_TIMING_CONFIG_1MBITS();
+	}
+
 	twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
     //Install TWAI driver
 	if (twai_driver_install(&g_config, &t_config, &f_config) == ESP_OK) {
@@ -82,9 +88,8 @@ void canTask(void *pvParameters){
 	}
 }
 
-
 // begin CANbus, start selfTest and launch driver in normal (bidir) mode afterwards
-void CANbus::begin( gpio_num_t tx_io, gpio_num_t rx_io )
+void CANbus::begin()
 {
     //Initialize configuration structures using macro initializers
 	if( can_speed.get() == CAN_SPEED_OFF ){
@@ -92,19 +97,15 @@ void CANbus::begin( gpio_num_t tx_io, gpio_num_t rx_io )
 		return;
 	}
 	ESP_LOGI(FNAME,"CANbus::begin");
-	_tx_io = tx_io;
-	_rx_io = rx_io;
-    driverInstall( TWAI_MODE_NO_ACK );
     // Set RS pin
     // bus_off_io may operate invers, so for now set this here
     gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);
     gpio_set_level(GPIO_NUM_2, 0 );
     delay(100);
-    can_ready = true;
-	selfTest();
 	driverInstall( TWAI_MODE_NORMAL, true );
 	xTaskCreatePinnedToCore(&canTask, "canTask", 4096, NULL, 8, cpid, 0);
 }
+
 
 // receive message of corresponding ID
 SString nmea;
@@ -213,6 +214,8 @@ bool CANbus::sendNMEA( const char *msg ){
 
 bool CANbus::selfTest(){
 	ESP_LOGI(FNAME,"CAN bus selftest");
+	can_ready = true;
+	driverInstall( TWAI_MODE_NO_ACK );
 	gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);
 	gpio_set_level(GPIO_NUM_2, 0 );
 	delay(100);

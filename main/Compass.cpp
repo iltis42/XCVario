@@ -27,6 +27,7 @@ Last update: 2021-03-29
 
 float Compass::m_magn_heading = 0;
 float Compass::m_true_heading_dev = 0;
+float Compass::m_gyro_fused_heading = 0;
 float Compass::m_magn_heading_dev = 0;
 bool Compass::m_headingValid = false;
 xSemaphoreHandle Compass::splineMutex = 0;
@@ -35,6 +36,7 @@ std::vector<double>	Compass::X;
 std::vector<double>	Compass::Y;
 std::map< double, double> Compass::devmap;
 int Compass::_tick = 0;
+int Compass::gyro_age = 0;
 int Compass::_devHolddown = 0;
 CompassFilter Compass::m_cfmh;
 int Compass::_external_data = 0;
@@ -60,6 +62,21 @@ Compass::Compass( const uint8_t addr,
 
 Compass::~Compass()
 {
+}
+
+
+void Compass::setGyroHeading( float hd ){
+	m_gyro_fused_heading = hd;
+	gyro_age = 0;
+}
+
+float Compass::getGyroHeading( bool *ok ){
+
+	*ok = true;
+	if( gyro_age > 10 )
+		*ok = false;
+	// ESP_LOGI( FNAME, "Heading: %3.2f age: %d", m_gyro_fused_heading, gyro_age );
+	return m_gyro_fused_heading;
 }
 
 /**
@@ -123,7 +140,7 @@ void Compass::compassT(void* arg ){
 			if( uxTaskGetStackHighWaterMark( ctid  ) < 256 )
 				ESP_LOGW(FNAME,"Warning Compass task stack low: %d bytes", uxTaskGetStackHighWaterMark( ctid ) );
 			bool ok;
-			float cth = (double)Compass::rawHeading( &ok );
+			float cth = Compass::getGyroHeading( &ok );
 			float diff = Vector::angleDiffDeg( cth, _heading_average );
 			if( _heading_average == -1000 )
 				_heading_average = cth;
@@ -166,7 +183,7 @@ float Compass::magnHeading( bool *okIn )
 	return m_magn_heading_dev;
 }
 
-float Compass::filteredRawHeading( bool *okIn )
+float Compass::filteredHeading( bool *okIn )
 {
 	assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
 	*okIn = m_headingValid;

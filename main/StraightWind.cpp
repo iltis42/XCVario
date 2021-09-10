@@ -142,7 +142,7 @@ bool StraightWind::calculateWind()
 	}
 	// Get current true heading from compass.
 	bool THok = true;
-	double cth = Compass::filteredRawHeading( &THok );
+	double cth = Compass::filteredHeading( &THok );
 	if( THok == false ) {
 		// No valid heading available
 		status="No MH";

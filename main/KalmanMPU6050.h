@@ -126,7 +126,7 @@ public:
    * @returns The x rotation (roll) in degrees
    */
   static inline double getRoll() {  return filterRoll;  };
-  static inline double getRollRad() {  return filterRoll*DEG_TO_RAD;  };
+  static double getRollRad();
 
   /**
    * Gets the pitch (Y rotation) in degrees from the Kalman Filter.\
@@ -134,13 +134,14 @@ public:
    * @returns The y rotation (pitch) in degrees
    */
   static inline double getPitch()  {	return -filterPitch;  }
-  static inline double getPitchRad()  {	return -filterPitch*DEG_TO_RAD;  }
+  static double getPitchRad();
 
 
 private:
   static uint32_t lastProcessed;
   static Kalman kalmanX; // Create the Kalman instances
   static Kalman kalmanY;
+  static Kalman kalmanZ;
   static double gyroXAngle, gyroYAngle, gyroZAngle; // Angle calculate using the gyro only
 
   static double accelX, accelY, accelZ;

@@ -14,11 +14,14 @@ extern "C" {
 
 Quaternion quaternion_from_accelerometer(float ax, float ay, float az);
 Quaternion quaternion_from_gyro(float wx, float wy, float wz, float time);
+Quaternion quaternion_from_compass(float wx, float wy, float wz );
 float fusion_coeffecient(vector_ijk virtual_gravity, vector_ijk sensor_gravity);
 vector_ijk sensor_gravity_normalized(int16_t ax, int16_t ay, int16_t az);
 vector_ijk fuse_vector(vector_ijk virtual_gravity, vector_ijk sensor_gravity);
 vector_ijk update_gravity_vector(vector_ijk gravity_vector,float wx,float wy,float wz,float delta);
 vector_ijk update_fused_vector(vector_ijk fused_vector, int16_t ax, int16_t ay, int16_t az,float wx,float wy,float wz,float delta);
+
+float getGyroYawDelta();
 
 #endif // SENSOR_FUSION_LIB_H_INCLUDED
 

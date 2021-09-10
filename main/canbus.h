@@ -11,6 +11,7 @@ public:
 	CANbus(){};
 	~CANbus(){};
 	static void begin();
+	static void restart();
 	static bool sendData( int id, const char* msg, int length, int self=0 );
 	static bool sendNMEA( const char* msg );
 	static int receive(  int *id, char *msg, int timeout=5);

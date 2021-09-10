@@ -31,14 +31,13 @@ TaskHandle_t *cpid;
                                                                     .intr_flags = ESP_INTR_FLAG_LEVEL1}
 */
 
-#define MSG_ID 0x555
-
 
 // install/reinstall CAN driver in corresponding mode
 void CANbus::driverInstall( twai_mode_t mode, bool reinstall ){
 	if( reinstall ){
 		twai_stop();
 		twai_driver_uninstall();
+		delay(10);
 	}
 	twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT( _tx_io, _rx_io, mode );
 	twai_timing_config_t t_config;
@@ -68,6 +67,7 @@ void CANbus::driverInstall( twai_mode_t mode, bool reinstall ){
 		ESP_LOGI(FNAME,"Failed to install driver");
 		return;
 	}
+	delay(10);
 	//Start TWAI driver
 	if (twai_start() == ESP_OK) {
 		ESP_LOGI(FNAME,"Driver started");
@@ -89,6 +89,13 @@ void canTask(void *pvParameters){
 	}
 }
 
+void::CANbus::restart(){
+	if( can_speed.get() == CAN_SPEED_OFF ){
+		return;
+	}
+	driverInstall( TWAI_MODE_NORMAL, true );
+}
+
 // begin CANbus, start selfTest and launch driver in normal (bidir) mode afterwards
 void CANbus::begin()
 {
@@ -106,7 +113,6 @@ void CANbus::begin()
 	driverInstall( TWAI_MODE_NORMAL, true );
 	xTaskCreatePinnedToCore(&canTask, "canTask", 4096, NULL, 8, cpid, 0);
 }
-
 
 // receive message of corresponding ID
 SString nmea;
@@ -187,7 +193,6 @@ void CANbus::tick(){
 		sendData( 0x11, msg.c_str(), 1 ); // keep alive
 }
 
-
 bool CANbus::sendNMEA( const char *msg ){
 	if( !can_ready )
 		return false;
@@ -217,7 +222,6 @@ bool CANbus::sendNMEA( const char *msg ){
 
 	return ret;
 }
-
 
 bool CANbus::selfTest(){
 	ESP_LOGI(FNAME,"CAN bus selftest");
@@ -291,6 +295,4 @@ bool CANbus::sendData( int id, const char* msg, int length, int self ){
 		return false;
 	}
 }
-
-
 

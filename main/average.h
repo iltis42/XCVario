@@ -5,15 +5,18 @@ class Average {
         sum -= previousInputs[index];
         sum += input;
         previousInputs[index] = input;
-        if (++index == N)
+        if (++index == customN)
             index = 0;
-        return (sum  / N);
+        return (sum  / customN);
     }
 
+    void setN( int n ){
+    	customN = n;
+    }
 
   private:
     uint8_t index             = 0;
+    uint8_t customN = N;
     input_t previousInputs[N] = {};
     sum_t sum                 = 0;
 };
-

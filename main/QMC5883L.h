@@ -64,7 +64,7 @@ public:
 	  return m_sensor;
 	}
 
-	static void tick() { can_age++; }
+	static void tick() { age++; }
 
 	/** Set the I2C bus used for the connection. */
 	void setBus( I2C_t *theBus ) { m_bus = theBus; }
@@ -85,6 +85,13 @@ public:
 	 * if heading data is valid, otherwise it is set to false.
 	 */
 	float heading( bool *ok );
+
+	static float cur_heading( bool *ok ) {
+		*ok = true;
+		if( age > 10 )
+			*ok = false;
+		return _heading;
+	};
 
 	/**
 	 * Read temperature in degree Celsius. Ok is set to true,
@@ -208,9 +215,13 @@ private:
 	static Average<20> filterX;
 	static Average<20> filterY;
 	static Average<20> filterZ;
+	static Average<20, float, float> filterRoll;
+	static Average<20, float, float> filterPitch;
 	static int16_t can_x;
 	static int16_t can_y;
 	static int16_t can_z;
-	static int can_age;
+	static int age;
+	static float pitch;
+	static float roll;
 
 };

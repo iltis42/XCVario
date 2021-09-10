@@ -115,8 +115,10 @@ public:
 	 */
 	static float rawHeading( bool *okIn );
 
-	static float filteredRawHeading( bool *okIn );
+	static float filteredHeading( bool *okIn );
 
+	static void setGyroHeading( float hd );
+	static float getGyroHeading( bool *ok );
 
 	static void saveDeviation();
 
@@ -159,10 +161,12 @@ public:
 	static void tick() { _tick++;
 						 _devHolddown--;
 						 QMC5883L::tick();
+						 gyro_age++;
 	}
 	static void setHeading( float h );
 
 private:
+	static float m_gyro_fused_heading;
 
 	/** Pure low pass filtered magnetic heading */
 	static float m_magn_heading;
@@ -184,10 +188,10 @@ private:
 	static xSemaphoreHandle splineMutex;
 	static tk::spline *deviationSpline;
 	static std::map< double, double> devmap;
-
 	static int _tick;
 	static int _devHolddown;
 	static int _external_data;
 	static float _heading_average;
+	static int gyro_age;
 
 };

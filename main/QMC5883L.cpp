@@ -31,6 +31,9 @@ Last update: 2021-04-05
 #include "SetupNG.h"
 #include "MenuEntry.h"
 #include "Router.h"
+#include "vector.h"
+#include "sensor_processing_lib.h"
+#include "canbus.h"
 
 /* Register numbers */
 #define REG_X_LSB 0         // Output Data Registers for magnetic sensor.
@@ -75,10 +78,16 @@ int QMC5883L::totalReadErrors = 0;
 Average<20> QMC5883L::filterX;
 Average<20> QMC5883L::filterY;
 Average<20> QMC5883L::filterZ;
+Average<20, float, float> QMC5883L::filterRoll;
+Average<20, float, float> QMC5883L::filterPitch;
+
+float QMC5883L::pitch = 0;
+float QMC5883L::roll = 0;
+
 int16_t QMC5883L::can_x = 0;
 int16_t QMC5883L::can_y = 0;
 int16_t QMC5883L::can_z = 0;
-int QMC5883L::can_age = 100;
+int QMC5883L::age = 100;
 
 /*
   Creates instance for I2C connection with passing the desired parameters.
@@ -199,7 +208,7 @@ esp_err_t QMC5883L::selfTest()
 	return ESP_OK;
 	}
 	else if( compass_enable.get() == CS_CAN ){
-		if( can_age < 5 ){
+		if( age < 5 ){
 			return ESP_OK;
 		}
 	}
@@ -261,7 +270,7 @@ void QMC5883L::fromCAN( const char * msg ){
 	can_y = (msg[2] & 0xff) | ((msg[3] << 8) & 0xff00 );
 	can_z = (msg[4] & 0xff) | ((msg[5] << 8) & 0xff00 );
 	// ESP_LOGI(FNAME,"from CAN bus magn X=%d Y=%d Z=%d", can_x, can_y, can_z );
-	can_age = 0;
+	age = 0;
 }
 
 bool QMC5883L::rawHeading()
@@ -320,6 +329,7 @@ bool QMC5883L::rawHeading()
 			xraw = filterX( x );
 			yraw = filterY( y );
 			zraw = filterZ( z );
+			age = 0;
 			// ESP_LOGI( FNAME, "X:%d Y:%d Z:%d  RDY:%d DOR:%d", xraw, yraw,zraw, status & STATUS_DRDY, status & STATUS_DOR );
 			return true;
 		}
@@ -327,15 +337,16 @@ bool QMC5883L::rawHeading()
 		return false;
 	}
 	else if( compass_enable.get() == CS_CAN ){  // we get compass raw data via CAN interface
-		if( can_age < 100 ){
+		if( age < 10 ){
 			xraw = can_x;
 			yraw = can_y;
 			zraw = can_z;
-			// ESP_LOGI( FNAME, "X:%d Y:%d Z:%d  Age:%d", xraw, yraw, zraw, can_age );
+			// ESP_LOGI( FNAME, "X:%d Y:%d Z:%d  Age:%d", xraw, yraw, zraw, age );
 			return true;
 		}
 		else{
 			ESP_LOGE( FNAME, "Magnet sensor data from CAN missing");
+			CANbus::restart();
 			return false;
 		}
 	}
@@ -594,7 +605,7 @@ float QMC5883L::heading( bool *ok )
 	{
 		*ok = false;
 		errors++;
-		ESP_LOGI(FNAME,"Errors overrun, return 0");
+		// ESP_LOGI(FNAME,"Errors overrun, return 0");
 		return 0.0;
 	}
 	if( errors > 100 ){
@@ -656,22 +667,15 @@ float QMC5883L::heading( bool *ok )
 	double fx = -(double) ((float( yraw ) - ybias) * yscale);
 	double fz = (double) ((float( zraw ) - zbias) * zscale);
 
-#if 0
-	double headingc = -RAD_TO_DEG * atan2( fx, fy );
+	roll = filterRoll( IMU::getRollRad() );      // equal filter with equal delay to raw compass data for pitch and roll
+	pitch = filterPitch( IMU::getPitchRad() );
 
-	if( headingc < 0.0 )
-		headingc += 360.0;
-
-	static uint8_t out = 0;
-
-	if( out % 10 )
-		ESP_LOGI( FNAME, "fX=%f fY=%f fZ=%f C-Heading=%.1f", fx, fy, fz, headingc );
-#endif
-
-	// Xhorizontal = X*cos(pitch) + Y*sin(roll)*sin(pitch) – Z*cos(roll)*sin(pitch)
-	double tcx = fx * cos( -IMU::getPitchRad() ) + fy * sin( -IMU::getRollRad() ) * sin( -IMU::getPitchRad()) - fz * cos( -IMU::getRollRad()) * sin( -IMU::getPitchRad());
-	// Yhorizontal = Y*cos(roll) + Z*sin(roll)
-	double tcy = fy * cos( -IMU::getRollRad()) + fz * sin( -IMU::getRollRad());
+	double tcx = fx * cos( -pitch ) + fy * sin( -roll ) * sin( -pitch) - fz * cos( -roll) * sin( -pitch);
+	double tcy = fy * cos( -roll) + fz * sin( -roll);
+	if( isnan(tcx) || isnan(tcy) ){
+		*ok = true;
+		return _heading;  // deliver old value in case of gimbal lock
+	}
 
 	if( compass_enable.get() == CS_CAN || compass_enable.get() == CS_I2C ){
 		_heading = -RAD_TO_DEG * atan2( tcy, tcx );
@@ -680,8 +684,12 @@ float QMC5883L::heading( bool *ok )
 	else if ( compass_enable.get() == CS_I2C_NO_TILT )
 		_heading = -RAD_TO_DEG * atan2( fy, fx );
 
-	if( _heading < 0.0 )
-		_heading += 360.0;
+    // float heading_nt = -RAD_TO_DEG * atan2( fy, fx );
+	// heading_nt = Vector::normalizeDeg( heading_nt );
+
+	_heading = Vector::normalizeDeg( _heading );
+
+	// ESP_LOGI(FNAME,"CR: %.1f TC:%.1f Roll:%0.1f Pitch:%.1f", heading_nt, _heading, R2D(roll*2)+180, R2D(pitch*2)+180  );
 #if 0
 	if( wind_logging.get() ){
 		char log[120];
@@ -691,16 +699,5 @@ float QMC5883L::heading( bool *ok )
 #endif
 
 	*ok = true;
-
-	// #define DEBUG_COMP1
-#ifdef DEBUG_COMP1
-	double headingc = -RAD_TO_DEG * atan2( fy, fx );
-	if( headingc < 0.0 )
-		headingc += 360.0;
-	ESP_LOGI( FNAME,
-			"rawHeading, x:%d y:%d z:%d, roll: %f  pitch: %f  tcx:%f tcy:%f mh:%f mh_nc:%f",
-			xraw, yraw, zraw, IMU::getRoll(), IMU::getPitch(), (float)tcx, (float)tcy, _heading, headingc );
-#endif
-
 	return _heading;
 }

@@ -64,6 +64,8 @@ public:
 	  return m_sensor;
 	}
 
+	static void tick() { can_age++; }
+
 	/** Set the I2C bus used for the connection. */
 	void setBus( I2C_t *theBus ) { m_bus = theBus; }
 
@@ -152,6 +154,8 @@ public:
 			const uint8_t count,
 			uint8_t *data );
 
+	static void fromCAN( const char * msg );
+
 private:
 
 	/**
@@ -204,4 +208,9 @@ private:
 	static Average<20> filterX;
 	static Average<20> filterY;
 	static Average<20> filterZ;
+	static int16_t can_x;
+	static int16_t can_y;
+	static int16_t can_z;
+	static int can_age;
+
 };

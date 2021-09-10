@@ -480,7 +480,7 @@ void readSensors(void *pvParameters){
 		}
 		Router::routeXCV();
 		// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d ena=%d", compass.haveSensor(),  compass_nmea_hdt.get(),  compass_enable.get() );
-		if( compass_enable.get() == true  && !Flarm::bincom && ! Compass::calibrationIsRunning() ) {
+		if( compass_enable.get()  && !Flarm::bincom && ! Compass::calibrationIsRunning() ) {
 			// Trigger heading reading and low pass filtering. That job must be
 			// done periodically.
 
@@ -797,25 +797,7 @@ void sensor(void *args){
 	wireless_id += SetupCommon::getID();
 	display->writeText(line++, wireless_id.c_str() );
 
-	compass.setBus( &i2c_0 );
-	// Check for magnetic sensor / compass
-	if( compass_enable.get() ) {
-		compass.begin();
-		ESP_LOGI( FNAME, "Magnetic sensor enabled: initialize");
-		err = compass.selfTest();
-		if( err == ESP_OK )		{
-		// Activate working of magnetic sensor
-			ESP_LOGI( FNAME, "Magnetic sensor selftest: OKAY");
-			display->writeText( line++, "Compass: OK");
-			logged_tests += "Compass test: OK\n";
-		}
-		else{
-			ESP_LOGI( FNAME, "Magnetic sensor selftest: FAILED");
-			display->writeText( line++, "Compass: FAILED");
-			logged_tests += "Compass test: FAILED\n";
-			selftestPassed = false;
-		}
-	}
+
 
 	ESP_LOGI(FNAME,"Airspeed sensor init..  type configured: %d", airspeed_sensor_type.get() );
 	int offset;
@@ -1107,6 +1089,28 @@ void sensor(void *args){
 			display->writeText( line++, "Bat Meter: OK");
 		logged_tests += "Battery Voltage Sensor: PASSED\n";
 	}
+
+	compass.setBus( &i2c_0 );
+	// Check for magnetic sensor / compass
+	if( compass_enable.get() ) {
+		compass.begin();
+		ESP_LOGI( FNAME, "Magnetic sensor enabled: initialize");
+		err = compass.selfTest();
+		if( err == ESP_OK )		{
+		// Activate working of magnetic sensor
+			ESP_LOGI( FNAME, "Magnetic sensor selftest: OKAY");
+			display->writeText( line++, "Compass: OK");
+			logged_tests += "Compass test: OK\n";
+		}
+		else{
+			ESP_LOGI( FNAME, "Magnetic sensor selftest: FAILED");
+			display->writeText( line++, "Compass: FAILED");
+			logged_tests += "Compass test: FAILED\n";
+			selftestPassed = false;
+		}
+	}
+
+
 	Serial::begin();
 	// Factory test for serial interface plus cable
 	if( abs(factory_volt_adjust.get() - 0.00815) < 0.00001 ) {

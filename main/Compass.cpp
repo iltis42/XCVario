@@ -53,7 +53,7 @@ Compass::Compass( const uint8_t addr,
 		const uint8_t range,
 		const uint16_t osr,
 		I2C_t *i2cBus ) :
-				 QMC5883L( addr, odr, range, osr, i2cBus )
+						 QMC5883L( addr, odr, range, osr, i2cBus )
 {
 
 }
@@ -78,7 +78,6 @@ float Compass::calculateHeading( bool *okIn )
 		*okIn = true;
 		return m_magn_heading;
 	}
-
 	float new_heading = QMC5883L::heading( okIn );
 	// ESP_LOGI( FNAME, "Mag Heading: %3.2f", new_heading  );
 	if( *okIn == false )
@@ -87,16 +86,16 @@ float Compass::calculateHeading( bool *okIn )
 		// ESP_LOGW( FNAME, "magneticHeading() error return from heading()");
 		return 0.0;
 	}
-	 // Correct magnetic heading in case of over/underflow
+	// Correct magnetic heading in case of over/underflow
 	m_magn_heading = Vector::normalizeDeg( m_cfmh.filter( new_heading ) );
 	m_headingValid = true;
 	m_magn_heading_dev = Vector::normalizeDeg( _heading_average + getDeviation( _heading_average ) );
 
 	// If declination is set, calculate true heading including deviation
 	if(  compass_declination.get() != 0.0 )
-	  {
-	    m_true_heading_dev = Vector::normalizeDeg( m_magn_heading_dev + compass_declination.get() );  // Correct true heading in case of over/underflow
-	  }
+	{
+		m_true_heading_dev = Vector::normalizeDeg( m_magn_heading_dev + compass_declination.get() );  // Correct true heading in case of over/underflow
+	}
 	else
 		m_true_heading_dev = m_magn_heading_dev;
 
@@ -375,9 +374,9 @@ float Compass::trueHeading( bool *okIn )
 {
 	assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
 	if( _external_data ){  // Simulation data
-			*okIn = true;
-			_external_data--;  // age external data
-			return m_true_heading_dev;
+		*okIn = true;
+		_external_data--;  // age external data
+		return m_true_heading_dev;
 	}
 	if( compass_enable.get() ){
 		*okIn = m_headingValid;
@@ -400,10 +399,10 @@ void Compass::setHeading( float h ) {
 //------------------------------------------------------------------------------
 
 CompassFilter::CompassFilter( const float coefficientIn ) :
-				  coefficient( coefficientIn ),
-				  turns( 0 ),
-				  oldValue ( 0.0 ),
-				  filteredValue( 0.0 )
+						  coefficient( coefficientIn ),
+						  turns( 0 ),
+						  oldValue ( 0.0 ),
+						  filteredValue( 0.0 )
 {
 }
 

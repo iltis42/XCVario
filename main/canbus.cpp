@@ -5,6 +5,7 @@
 #include "esp_err.h"
 #include "sensor.h"
 #include "Router.h"
+#include "QMC5883L.h"
 
 /*
  *  Code for a 1:1 connection between two XCVario with a fixed message ID
@@ -174,6 +175,12 @@ void CANbus::tick(){
 		// ESP_LOGI(FNAME,"CAN RX, msg: %s", nmea.c_str() );
 		Router::forwardMsg( nmea, can_rx_q );
 	}
+	else if( id == 0x031 ){
+		// ESP_LOGI(FNAME,"CAN RX MagSensor, msg: %d", bytes );
+		// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), bytes, ESP_LOG_INFO);
+		QMC5883L::fromCAN( msg.c_str() );
+	}
+
 	if( !(_tick%4) )
 		Router::routeCAN();
 	if( !(_tick%50) )
@@ -229,6 +236,7 @@ bool CANbus::selfTest(){
 		if( !sendData( id, tx,len, 1 ) ){
 			ESP_LOGW(FNAME,"CAN bus selftest TX FAILED");
 		}
+		delay(10);
 		char msg[12];
 		int rxid;
 		int bytes = receive( &rxid, msg, 5 );

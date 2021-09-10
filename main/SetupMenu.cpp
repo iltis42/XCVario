@@ -879,8 +879,9 @@ void SetupMenu::setup( )
 
 		SetupMenuSelect * compSensor = new SetupMenuSelect( "Sensor Option", false, compass_ena, true, &compass_enable);
 		compSensor->addEntry( "Disable");
-		compSensor->addEntry( "Enable");
-		compSensor->addEntry( "Enable, no Tilt Correction");
+		compSensor->addEntry( "Enable I2C");
+		compSensor->addEntry( "Enable I2C, no Tilt Corr.");
+		compSensor->addEntry( "Enable CAN Sensor");
 
 		compSensor->setHelp( PROGMEM "Option to enable/disable the Compass Sensor" );
 		compassME->addMenu( compSensor );

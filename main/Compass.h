@@ -158,6 +158,7 @@ public:
 
 	static void tick() { _tick++;
 						 _devHolddown--;
+						 QMC5883L::tick();
 	}
 	static void setHeading( float h );
 

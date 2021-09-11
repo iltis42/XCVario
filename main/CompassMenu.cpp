@@ -43,8 +43,7 @@ SetupNG<float>* CompassMenu::deviations[8] = {
  * Creates a compass menu instance with an active compass object.
  */
 CompassMenu::CompassMenu( Compass& compassIn ) :
-						 compass( compassIn ),
-						 filter( 0.1 )
+						 compass( compassIn )
 {
 }
 

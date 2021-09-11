@@ -486,7 +486,7 @@ void readSensors(void *pvParameters){
 
 			if( (count % 5 ) == 0 && compass_nmea_hdm.get() == true ) {
 				bool ok;
-				float heading = compass.magnHeading( &ok );
+				float heading = compass.getGyroHeading( &ok );
 				if( ok ) {
 					xSemaphoreTake( xMutex, portMAX_DELAY );
 					OV.sendNmeaHDM( heading );
@@ -495,7 +495,7 @@ void readSensors(void *pvParameters){
 			}
 			if( (count % 5 ) == 0 && compass_nmea_hdt.get() == true ) {
 				bool ok;
-				float theading = compass.trueHeading( &ok );
+				float theading = compass.getGyroHeading( &ok, true );
 				if( ok ){
 					xSemaphoreTake( xMutex, portMAX_DELAY );
 					OV.sendNmeaHDT( theading );

@@ -16,6 +16,7 @@ https://datasheetspdf.com/pdf-file/1309218/QST/QMC5883L/1
 File: QMC5883L.h
 
 Author: Axel Pauli, January 2021
+		Eckhard Völlm, September 2021 (rework for can bus device and gyro fusion)
 
 Last update: 2021-03-28
 
@@ -47,138 +48,67 @@ public:
     you have to set it by calling method setBus(). The default address of the
     chip is 0x0D.
 	 */
-	QMC5883L( const uint8_t addr,
-			      const uint8_t odr,
-			      const uint8_t range,
-			      const uint16_t osr,
-			      I2C_t *i2cBus=nullptr );
-
+	QMC5883L( const uint8_t addr, const uint8_t odr, const uint8_t range, const uint16_t osr, I2C_t *i2cBus=nullptr );
 	~QMC5883L();
 
-	/**
-	 * Returns true, if the self test has been passed successfully, otherwise
-	 * false.
-	 */
-	static bool haveSensor()
-	{
-	  return m_sensor;
-	}
+	// Returns true, if the self test has been passed successfully, otherwise
+	static bool haveSensor() {  return m_sensor; }
 
+	// operation related methods
 	static void tick() { age++; }
-
-	/** Set the I2C bus used for the connection. */
+	// Set the I2C bus used for the connection
 	void setBus( I2C_t *theBus ) { m_bus = theBus; }
-
-	/** Check for reply with I2C bus address */
+	// Check for reply with I2C bus address
 	esp_err_t selfTest();
-
-	/**
-	 * Configure the device with the set parameters and set the mode to continuous.
-	 * That means, the device starts working.
-	 * you max give output datarate (odr) and oversampling rate (osr)
-	 * if not given defaults are as from constructor
-	 */
+	// Configure the device with the set parameters and set the mode to continuous.
 	esp_err_t initialize( int a_odr=0, int a_osr=0 );
-
-	/**
-	 * Reads the heading in degrees of 0...359. Ok is set to true,
-	 * if heading data is valid, otherwise it is set to false.
-	 */
-	float heading( bool *ok );
-
-	static float cur_heading( bool *ok ) {
-		*ok = true;
-		if( age > 10 )
-			*ok = false;
-		return _heading;
-	};
-
-	/**
-	 * Read temperature in degree Celsius. Ok is set to true,
-	 * if temperature data is valid, otherwise it is set to false.
-	 */
+	// Read temperature in degree Celsius.
 	short temperature( bool *ok );
-
-	/**
-	 * Read out the registers X, Y, Z (0...5) in raw format.
-	 * Returns true in case of success otherwise false.
-	 */
-	bool rawHeading();
-
-	/**
-	 * Calibrate compass by using the read x, y, z raw values. The calibration is
-	 * stopped by the reporter function which displays intermediate results of the
-	 * calibration action.
-	 */
-	bool calibrate( bool (*reporter)( float xc, float yc, float zc,float xs, float ys, float zs, float xbias, float ybias, float zbias ) );
-
-	/**
-	 * Resets the whole compass calibration, also the saved configuration.
-	 */
-	void resetCalibration();
-
-	/**
-	 * Saves a done compass calibration.
-	 */
-	void saveCalibration();
-
-	/**
-	 * Loads a stored compass calibration. Returns true, if valid calibration
-	 * data could be loaded, otherwise false.
-	 */
-	bool loadCalibration();
-
-	/** Write with data part. */
-	esp_err_t writeRegister( const uint8_t addr,
-			const uint8_t reg,
-			const uint8_t value );
-
-	/**
-	 * Return the overflow status flag. It is set to true, if any data of three
-	 * axis magnetic sensor channels is out of range.
-	 */
-	static bool overflowFlag()
-	{
-	  return overflowWarning;
-	}
-
-	/**
-	 * Return the calibration flag. Set to true, if a calibration is running.
-	 */
-	static bool calibrationIsRunning()
-	{
-	  return calibrationRunning;
-	}
-
+	//  Write with data part
+	static bool overflowFlag()	{ return overflowWarning; }
+	// Returns total number of read errors
 	int getReadError(){ return totalReadErrors; };
 
-	/**
-	 * Read bytes from the chip.
-	 * Return the number of read bytes or 0 in error case.
-	 */
-	uint8_t readRegister( const uint8_t addr,
-			const uint8_t reg,
-			const uint8_t count,
-			uint8_t *data );
+	// heading related methods
+	// Calculates tilt compensated heading in degrees of 0...359. The ok flag is set to true if fine, else false
+	float heading( bool *ok );
+	// Reads current heading
+	static float cur_heading( bool *ok );
+	// Read out the registers X, Y, Z (0...5) in raw format into variables, return true if success
+	bool rawHeading();
 
+	// Calibration releated methods
+	// Calibrate compass by using the read x, y, z raw values.
+	bool calibrate( bool (*reporter)( float xc, float yc, float zc,float xs, float ys, float zs, float xbias, float ybias, float zbias ) );
+	 // Resets the whole compass calibration, also the saved configuration.
+	void resetCalibration();
+	// Saves a done compass calibration.
+	void saveCalibration();
+	// Loads a stored compass calibration. Returns true if all okay
+	bool loadCalibration();
+	// Return the calibration flag. Set to true, if a calibration is running.
+	static bool calibrationIsRunning() {  return calibrationRunning; }
+
+	// Low level device access methods
+	esp_err_t writeRegister( const uint8_t addr, const uint8_t reg, const uint8_t value );
+	// Return the overflow status flag. It is set to true, if any data of three * axis magnetic sensor channels is out of range.
+	uint8_t readRegister( const uint8_t addr, const uint8_t reg, const uint8_t count, uint8_t *data );
+
+	// If device is connected via CAN, just get X,Y,Z data from there
 	static void fromCAN( const char * msg );
 
 private:
 
-	/**
-	 * Get time in ms since 1.1.1970
-	 */
-	uint64_t getMsTime()
+	// Get time in ms since 1.1.1970
+	inline uint64_t getMsTime()
 	{
-	  struct timeval tv;
-	  gettimeofday( &tv, nullptr );
-	  return ( tv.tv_sec * 1000 ) + ( tv.tv_usec / 1000 );
+		struct timeval tv;
+		gettimeofday( &tv, nullptr );
+		return ( tv.tv_sec * 1000 ) + ( tv.tv_usec / 1000 );
 	}
 
-  /**
-   * Resets the class calibration variables.
-   */
-  void resetClassCalibration();
+	 // Resets the class calibration variables.
+	void resetClassCalibration();
 
 	/** Check, if the bus pointer is valid. */
 	inline bool checkBus()

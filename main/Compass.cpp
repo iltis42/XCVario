@@ -26,9 +26,7 @@ Last update: 2021-03-29
 #include "Compass.h"
 
 float Compass::m_magn_heading = 0;
-float Compass::m_true_heading_dev = 0;
 float Compass::m_gyro_fused_heading = 0;
-float Compass::m_magn_heading_dev = 0;
 bool Compass::m_headingValid = false;
 xSemaphoreHandle Compass::splineMutex = 0;
 tk::spline *Compass::deviationSpline = 0;
@@ -38,7 +36,6 @@ std::map< double, double> Compass::devmap;
 int Compass::_tick = 0;
 int Compass::gyro_age = 0;
 int Compass::_devHolddown = 0;
-CompassFilter Compass::m_cfmh;
 int Compass::_external_data = 0;
 float Compass::_heading_average = -1000;
 
@@ -64,60 +61,35 @@ Compass::~Compass()
 {
 }
 
-
-void Compass::setGyroHeading( float hd ){
-	m_gyro_fused_heading = hd;
-	gyro_age = 0;
+void Compass::cur() {
+	_tick++;
+	_devHolddown--;
+	QMC5883L::tick();
+	gyro_age++;
 }
 
-float Compass::getGyroHeading( bool *ok ){
+void Compass::setGyroHeading( float hd ){
+	if( !_external_data ){
+		m_gyro_fused_heading = hd;
+		gyro_age = 0;
+	}
+}
+
+float Compass::getGyroHeading( bool *ok, bool addDecl ){
 
 	*ok = true;
 	if( gyro_age > 10 )
 		*ok = false;
+	if( _external_data ){  // Simulation data
+		*ok = true;
+		_external_data--;  // age external data
+	}
+	if( (compass_declination.get() != 0.0) && addDecl )
+	{
+		float true_gryro_heading = Vector::normalizeDeg( m_gyro_fused_heading + compass_declination.get() );  // Correct true heading in case of over/underflow
+	}
 	// ESP_LOGI( FNAME, "Heading: %3.2f age: %d", m_gyro_fused_heading, gyro_age );
 	return m_gyro_fused_heading;
-}
-
-/**
- * This method must be called periodically in a fixed time raster. It Reads
- * the current heading from the sensor and apply a low pass filter
- * to it. It Returns the low pass filtered magnetic heading without applying
- * any corrections to it as declination or deviation.
- * Ok is set to true, if heading data is valid, otherwise it is set to false.
- */
-float Compass::calculateHeading( bool *okIn )
-{
-	// ESP_LOGI( FNAME, "calculateHeading");
-	assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
-	if( _external_data ){
-		_external_data--;
-		*okIn = true;
-		return m_magn_heading;
-	}
-	float new_heading = QMC5883L::heading( okIn );
-	// ESP_LOGI( FNAME, "Mag Heading: %3.2f", new_heading  );
-	if( *okIn == false )
-	{
-		m_headingValid = false;
-		// ESP_LOGW( FNAME, "magneticHeading() error return from heading()");
-		return 0.0;
-	}
-	// Correct magnetic heading in case of over/underflow
-	m_magn_heading = Vector::normalizeDeg( new_heading );
-	m_headingValid = true;
-	m_magn_heading_dev = Vector::normalizeDeg( _heading_average + getDeviation( _heading_average ) );
-
-	// If declination is set, calculate true heading including deviation
-	if(  compass_declination.get() != 0.0 )
-	{
-		m_true_heading_dev = Vector::normalizeDeg( m_magn_heading_dev + compass_declination.get() );  // Correct true heading in case of over/underflow
-	}
-	else
-		m_true_heading_dev = m_magn_heading_dev;
-
-	*okIn = true;
-	return m_magn_heading;
 }
 
 void Compass::deviationReload(){
@@ -127,20 +99,32 @@ void Compass::deviationReload(){
 	recalcInterpolationSpline();
 }
 
+/**
+ * This is the compass task called periodically in a fixed time raster. It Reads
+ * the current heading from the sensor and apply a low pass filter
+ * to it. It retrieves the averaged magnetic heading without applying
+ * any corrections to it as declination or deviation.
+ * If OK, m_magn_heading is set to true, otherwise it is set to false.
+ */
+
 void Compass::compassT(void* arg ){
 	while(1){
 		TickType_t lastWakeTime = xTaskGetTickCount();
 		if( !calibrationIsRunning() ){
 			if( compass_enable.get() ){
-				bool hok;
-				compass.calculateHeading( &hok );
-				// if( !hok )
-				//	ESP_LOGI( FNAME, "warning compass heading calculation error");
+				bool rok;
+				float hd = compass.heading( &rok );
+				if( rok == false ){
+					m_headingValid = false;
+				}else{
+					m_magn_heading = hd;
+					m_headingValid = true;
+				}
 			}
 			if( uxTaskGetStackHighWaterMark( ctid  ) < 256 )
 				ESP_LOGW(FNAME,"Warning Compass task stack low: %d bytes", uxTaskGetStackHighWaterMark( ctid ) );
 			bool ok;
-			float cth = Compass::getGyroHeading( &ok );
+			float cth = getGyroHeading( &ok );
 			float diff = Vector::angleDiffDeg( cth, _heading_average );
 			if( _heading_average == -1000 )
 				_heading_average = cth;
@@ -168,19 +152,6 @@ void Compass::begin(){
 
 void Compass::start(){
 	xTaskCreatePinnedToCore(&compassT, "compassT", 2600, NULL, 12, ctid, 0);
-}
-
-
-/**
- * Returns the low pass filtered magnetic heading by considering
- * deviation, if argument withDeviation is set to true.
- * Ok is set to true, if heading data is valid, otherwise it is set to false.
- */
-float Compass::magnHeading( bool *okIn )
-{
-	assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
-	*okIn = m_headingValid;
-	return m_magn_heading_dev;
 }
 
 float Compass::filteredHeading( bool *okIn )
@@ -382,44 +353,11 @@ void Compass::saveDeviation(){
 	xSemaphoreGive(splineMutex);
 }
 
-/**
- * Returns the low pass filtered magnetic heading by considering deviation and
- * declination.
- * Ok is set to true, if heading data is valid, otherwise it is set to false.
- */
-float Compass::trueHeading( bool *okIn )
-{
-	assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
-	if( _external_data ){  // Simulation data
-		*okIn = true;
-		_external_data--;  // age external data
-		return m_true_heading_dev;
-	}
-	if( compass_enable.get() ){
-		*okIn = m_headingValid;
-		return m_true_heading_dev;
-	}
-	else{
-		*okIn = false;
-		return 0;
-	}
-}
-
 // for simulation purposes
 void Compass::setHeading( float h ) {
+	m_gyro_fused_heading = h;
 	m_magn_heading = h;
 	m_headingValid=true;
-	m_true_heading_dev=h;
 	_external_data=100;
+	ESP_LOGI( FNAME, "NEW external heading %.1f", h );
 };
-
-//------------------------------------------------------------------------------
-
-CompassFilter::CompassFilter( const float coefficientIn ) :
-						  coefficient( coefficientIn ),
-						  turns( 0 ),
-						  oldValue ( 0.0 ),
-						  filteredValue( 0.0 )
-{
-}
-

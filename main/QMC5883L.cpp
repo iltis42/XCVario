@@ -113,9 +113,18 @@ QMC5883L::QMC5883L( const uint8_t addrIn,
 	resetClassCalibration();
 }
 
+
 QMC5883L::~QMC5883L()
 {
 }
+
+float QMC5883L::cur_heading( bool *ok ) {
+	*ok = true;
+	if( age > 10 )
+		*ok = false;
+	return _heading;
+};
+
 
 /** Write with data part. */
 esp_err_t QMC5883L::writeRegister( const uint8_t addr,
@@ -269,7 +278,7 @@ void QMC5883L::fromCAN( const char * msg ){
 	can_x = (msg[0] & 0xff) | ((msg[1] << 8) & 0xff00 );
 	can_y = (msg[2] & 0xff) | ((msg[3] << 8) & 0xff00 );
 	can_z = (msg[4] & 0xff) | ((msg[5] << 8) & 0xff00 );
-	// ESP_LOGI(FNAME,"from CAN bus magn X=%d Y=%d Z=%d", can_x, can_y, can_z );
+	// hESP_LOGI(FNAME,"from CAN bus magn X=%d Y=%d Z=%d", can_x, can_y, can_z );
 	age = 0;
 }
 

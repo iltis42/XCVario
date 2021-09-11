@@ -68,9 +68,6 @@ class CompassMenu
   // active compass instance
   Compass& compass;
 
-  // Compass filter
-  CompassFilter filter;
-
   // Pointer to setup menu of sensorCalibrationAction
   static SetupMenuSelect* menuPtr;
 };

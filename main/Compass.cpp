@@ -359,5 +359,5 @@ void Compass::setHeading( float h ) {
 	m_magn_heading = h;
 	m_headingValid=true;
 	_external_data=100;
-	ESP_LOGI( FNAME, "NEW external heading %.1f", h );
+	// ESP_LOGI( FNAME, "NEW external heading %.1f", h );
 };

@@ -63,7 +63,7 @@ void Protocols::sendWkChange( float wk ){
 void Protocols::sendWindChange( float dir, float speed, e_windanalyser_mode_t type  ){
 	char str[20];
 	sprintf( str,"!xd,%3.1f,%3.1f,%d\n", dir, speed, type );
-	ESP_LOGI(FNAME,"New wind cmd: %s", str );
+	// ESP_LOGI(FNAME,"New wind cmd: %s", str );
 	Router::sendXCV(str);
 }
 

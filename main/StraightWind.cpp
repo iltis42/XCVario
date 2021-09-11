@@ -181,7 +181,7 @@ bool StraightWind::calculateWind()
 	}
 
 	status="Calculating";
-	ESP_LOGI(FNAME,"%d TC: %3.1f (avg:%3.1f) GS:%3.1f TH: %3.1f (avg:%3.1f) TAS: %3.1f", nunberOfSamples, ctc, averageTC, cgs, cth, averageTH, ctas );
+	// ESP_LOGI(FNAME,"%d TC: %3.1f (avg:%3.1f) GS:%3.1f TH: %3.1f (avg:%3.1f) TAS: %3.1f", nunberOfSamples, ctc, averageTC, cgs, cth, averageTH, ctas );
 	calculateWind( averageTC, averageGS, averageTH, averageTas  );
 
 	return true;
@@ -199,7 +199,7 @@ double StraightWind::calculateSpeed( double angle1, double speed1, double angle2
 // view-source:http://www.owoba.de/fliegerei/flugrechner.html
 // direction in degrees of third vector in windtriangle
 double StraightWind::calculateAngle( double angle1, double speed1, double angle2, double speed2  ){
-	ESP_LOGI(FNAME,"calculateAngle: angle1:%3.1f speed1:%3.1f angle2:%3.1f speed2:%3.1f", angle1, speed1, angle2, speed2 );
+	ESP_LOGI(FNAME,"calculateAngle: TC/GS=%3.1f°/%3.1f km/h  TH/AS=%3.1f°/%3.1f km/h", angle1, speed1, angle2, speed2 );
 	double tcrad = D2R( angle1 );
 	double thrad = D2R( angle2 );
 	double wca = Vector::normalize( thrad - tcrad );
@@ -236,8 +236,7 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 			else if( airspeedCorrection < 0.95 )
 				airspeedCorrection = 0.95;
 			devOK = Compass::newDeviation( th, tH, airspeedCorrection );
-			ESP_LOGI(FNAME,"Calculated TH/TAS: %3.1f°/%3.1f km/h  Measured TH/TAS: %3.1f°/%3.1f, asCorr:%2.3f, deltaAS:%3.2f, Age:%d",
-					tH, airspeed, averageTH, tas, airspeedCorrection , airspeed-tas, circlingWindAge );
+			// ESP_LOGI(FNAME,"Calculated TH/TAS: %3.1f°/%3.1f km/h  Measured TH/TAS: %3.1f°/%3.1f, asCorr:%2.3f, deltaAS:%3.2f, Age:%d", tH, airspeed, averageTH, tas, airspeedCorrection , airspeed-tas, circlingWindAge );
 		}
 	}else{
 		status = "No Circ Wind";
@@ -257,7 +256,7 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 	newWindSpeed = calculateSpeed( tc, gs, thd, tas*airspeedCorrection );
 
 
-	ESP_LOGI( FNAME, "Calculated raw windspeed %.1f jitter:%.1f", newWindSpeed, jitter );
+	// ESP_LOGI( FNAME, "Calculated raw windspeed %.1f jitter:%.1f", newWindSpeed, jitter );
 
 	// wind direction
 	newWindDir = calculateAngle( tc, gs, thd, tas*airspeedCorrection );

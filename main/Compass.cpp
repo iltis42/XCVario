@@ -69,8 +69,10 @@ void Compass::cur() {
 }
 
 void Compass::setGyroHeading( float hd ){
-	m_gyro_fused_heading = hd;
-	gyro_age = 0;
+	if( !_external_data ){
+		m_gyro_fused_heading = hd;
+		gyro_age = 0;
+	}
 }
 
 float Compass::getGyroHeading( bool *ok, bool addDecl ){
@@ -110,19 +112,19 @@ void Compass::compassT(void* arg ){
 		TickType_t lastWakeTime = xTaskGetTickCount();
 		if( !calibrationIsRunning() ){
 			if( compass_enable.get() ){
-				bool ok;
-				float hd = compass.heading( &ok );
-				if( ok == false ){
+				bool rok;
+				float hd = compass.heading( &rok );
+				if( rok == false ){
 					m_headingValid = false;
-					return;
+				}else{
+					m_magn_heading = hd;
+					m_headingValid = true;
 				}
-				m_magn_heading = hd;
-				m_headingValid = true;
 			}
 			if( uxTaskGetStackHighWaterMark( ctid  ) < 256 )
 				ESP_LOGW(FNAME,"Warning Compass task stack low: %d bytes", uxTaskGetStackHighWaterMark( ctid ) );
 			bool ok;
-			float cth = Compass::getGyroHeading( &ok );
+			float cth = getGyroHeading( &ok );
 			float diff = Vector::angleDiffDeg( cth, _heading_average );
 			if( _heading_average == -1000 )
 				_heading_average = cth;
@@ -354,6 +356,8 @@ void Compass::saveDeviation(){
 // for simulation purposes
 void Compass::setHeading( float h ) {
 	m_gyro_fused_heading = h;
+	m_magn_heading = h;
 	m_headingValid=true;
 	_external_data=100;
+	ESP_LOGI( FNAME, "NEW external heading %.1f", h );
 };

@@ -41,12 +41,6 @@ public:
 	}
 
 	/**
-	 * Low pass filter method. The filtering time constant can be set by using
-	 * method setCoefficient():
-	 */
-	float filter( float value );
-
-	/**
 	 * Resets all used dynamic filter values.
 	 */
 	void reset()
@@ -158,7 +152,7 @@ public:
 
 	static void deviationReload();
 
-	static void tick() { _tick++;
+	static void cur() { _tick++;
 						 _devHolddown--;
 						 QMC5883L::tick();
 						 gyro_age++;

@@ -104,7 +104,7 @@ float Compass::calculateHeading( bool *okIn )
 		return 0.0;
 	}
 	// Correct magnetic heading in case of over/underflow
-	m_magn_heading = Vector::normalizeDeg( m_cfmh.filter( new_heading ) );
+	m_magn_heading = Vector::normalizeDeg( new_heading );
 	m_headingValid = true;
 	m_magn_heading_dev = Vector::normalizeDeg( _heading_average + getDeviation( _heading_average ) );
 
@@ -423,36 +423,3 @@ CompassFilter::CompassFilter( const float coefficientIn ) :
 {
 }
 
-float CompassFilter::filter( float newValue )
-{
-#if 0
-	ESP_LOGI( FNAME, "Filter: H=%f, FV=%f, Coeff=%f",
-			newValue, filteredValue, coefficient );
-#endif
-
-	// Check in which direction North was passed
-	if( (oldValue < 90.) && (newValue > 270.) )
-		turns--;
-	else if( (oldValue > 270.) && (newValue < 90.) )
-		turns++;
-
-	// Save new value as old
-	oldValue = newValue;
-	// Correct angle's north overflow or underflow
-	newValue += float( turns * 360 );
-	// Low pass filtering
-	filteredValue += ( newValue - filteredValue ) * coefficient/compass_damping.get();  // default 1 sec ( 0.2 * 5 times/sec )
-	// Correct angle areas and turns
-	if( filteredValue < 0.0 )
-	{
-		filteredValue += 360.;
-		turns++;
-	}
-	else if( filteredValue >= 360. )
-	{
-		filteredValue -= 360.;
-		turns--;
-	}
-
-	return filteredValue;
-}

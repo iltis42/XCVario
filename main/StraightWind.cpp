@@ -254,8 +254,6 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 	float thd = Vector::normalizeDeg( th+deviation_cur );
 
 	newWindSpeed = calculateSpeed( tc, gs, thd, tas*airspeedCorrection );
-
-
 	// ESP_LOGI( FNAME, "Calculated raw windspeed %.1f jitter:%.1f", newWindSpeed, jitter );
 
 	// wind direction
@@ -287,8 +285,6 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 	ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h JI:%2.1f", windDir, windSpeed, jitter );
 	_age = 0;
 	lastWindSpeed = windSpeed;
-
-
 	OV.sendWindChange( windDir, windSpeed, WA_STRAIGHT );
 }
 

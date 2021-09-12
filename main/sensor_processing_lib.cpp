@@ -50,11 +50,10 @@ Quaternion quaternion_from_compass(float wx, float wy, float wz )
 float fusion_coeffecient(vector_ijk virtual_gravity, vector_ijk sensor_gravity)
 {
     float dot = vector_3d_dot_product(sensor_gravity,virtual_gravity);
-
     if (dot<=0.96)
-        return 40.0;
+       return 96.0;
 
-    return 10.0;
+    return 90.0;
 }
 
 vector_ijk sensor_gravity_normalized(int16_t ax, int16_t ay, int16_t az)

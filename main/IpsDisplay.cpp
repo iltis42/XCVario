@@ -1159,27 +1159,38 @@ void IpsDisplay::drawCompass(){
 }
 // Compass or Wind Display for ULStyle
 void IpsDisplay::drawULCompass(){
-
-	if( wind_enable.get() != WA_OFF ){
-		// ESP_LOGI(FNAME, "WIND calc on %d", wind_enable.get() );
+	// ESP_LOGI(FNAME, "drawULCompass: %d ", wind_display.get() );
+	if( (wind_display.get() & WD_DIGITS) || (wind_display.get() & WD_ARROW) ){
 		int winddir=0;
 		float wind=0;
 		bool ok=false;
-		int age;
+		int ageStraight, ageCircling;
 		char type = '/';
-		if( wind_enable.get() == WA_STRAIGHT ){
-			ok = theWind.getWind( &winddir, &wind, &age );
+		if( wind_enable.get() == WA_STRAIGHT ){  // check what kind of wind is available from calculator
+			ok = theWind.getWind( &winddir, &wind, &ageStraight );
 			type = '|';
 		}
 		else if( wind_enable.get() == WA_CIRCLING ){
-			ok = CircleWind::getWind( &winddir, &wind, &age );
+			ok = CircleWind::getWind( &winddir, &wind, &ageCircling );
 		}
-		else if( wind_enable.get() == WA_BOTH ){
-			ok = theWind.getWind( &winddir, &wind, &age );
-			type = '|';
-			if( !ok ){
-				ok = CircleWind::getWind( &winddir, &wind, &age );
+		else if( wind_enable.get() == WA_BOTH ){  // dynamically change type depening on younger calculation
+			int wds, wdc;
+			float ws, wc;
+			bool oks, okc;
+			oks = theWind.getWind( &wds, &ws, &ageStraight );
+			okc = CircleWind::getWind( &wdc, &wc, &ageCircling);
+			if( oks && ageStraight < ageCircling ){
+				wind = ws;
+				winddir = wds;
+				type = '|';
+				ok = true;
+			}
+			else if( okc && ageCircling < ageStraight )
+			{
+				wind = wc;
+				winddir = wdc;
 				type = '/';
+				ok = true;
 			}
 		}
 		// ESP_LOGI(FNAME, "WIND dir %d, speed %f, ok=%d", winddir, wind, ok );
@@ -1190,19 +1201,41 @@ void IpsDisplay::drawULCompass(){
 			ucg->setFont(ucg_font_fub17_hf);
 			char s[12];
 			int windspeed = (int)( Units::Airspeed(wind)+0.5 );
-			if( ok )
-				sprintf(s,"%3d\xb0%c%2d", winddir, type, windspeed );
-			else
-				sprintf(s,"%s", "    --/--" );
-			if( windspeed < 10 )
-				ucg->printf("%s   ", s);
-			else if( windspeed < 100 )
-				ucg->printf("%s  ", s);
-			else
-				ucg->printf("%s ", s);
+			if( wind_display.get() & WD_DIGITS ){
+				if( ok )
+					sprintf(s,"%3d\xb0%c%2d", winddir, type, windspeed );
+				else
+					sprintf(s,"%s", "    --/--" );
+				if( windspeed < 10 )
+					ucg->printf("%s    ", s);
+				else if( windspeed < 100 )
+					ucg->printf("%s   ", s);
+				else
+					ucg->printf("%s  ", s);
+			}
 			prev_heading = winddir;
+			if( wind_display.get() & WD_ARROW  ){
+				float dir=winddir;  // absolute wind related to geographic north
+				if( (wind_reference.get() & WR_HEADING) )  // wind relative to airplane, first choice compass, second is GPS true course
+				{
+					bool ok;
+					float heading = Compass::getGyroHeading( &ok );
+					if( !ok && Flarm::gpsStatus() )            // fall back to GPS course
+						heading = Flarm::getGndCourse();
+					dir = Vector::angleDiffDeg( winddir, heading );
+				}
+				else if( (wind_reference.get() & WR_GPS_COURSE) ){
+					if( Flarm::gpsStatus() ){
+						float heading = Flarm::getGndCourse();
+						dir = Vector::angleDiffDeg( winddir, heading );
+					}
+				}
+				drawWindArrow( dir, windspeed, 0 );
+			}
 		}
 	}
+//	else if( wind_display.get() & WD_COMPASS ){
+//	allways draw compass if possible and enabled
 	if( compass_enable.get() && compass_calibrated.get() ){
 		bool ok;
 		int heading = static_cast<int>(rintf(Compass::getGyroHeading( &ok )));
@@ -1210,15 +1243,24 @@ void IpsDisplay::drawULCompass(){
 			heading -= 360;
 		// ESP_LOGI(FNAME, "heading %d, valid %d", heading, Compass::headingValid() );
 		if( prev_heading != heading || !(tick%16) ){
+			ucg->setPrintPos(113,220);
 			ucg->setColor(  COLOR_WHITE  );
 			ucg->setFont(ucg_font_fub20_hf);
-			ucg->setPrintPos(113,220);
 			char s[14];
 			if( ok )
 				sprintf(s,"%3d\xb0", heading );
 			else
 				sprintf(s,"%s", "  ---" );
-			ucg->printf("%s    ", s);
+
+			if( heading < 10 )
+				ucg->printf("%s    ", s);
+			else if( heading < 100 )
+				ucg->printf("%s   ", s);
+			else
+				ucg->printf("%s  ", s);
+//			ucg->setFont(ucg_font_fub20_hf);
+//			ucg->setPrintPos(120+ucg->getStrWidth(s),105);
+//			ucg->printf("\xb0 ");
 			prev_heading = heading;
 		}
 	}

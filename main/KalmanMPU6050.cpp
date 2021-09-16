@@ -228,9 +228,10 @@ void IMU::read()
 		filterRoll = kalXAngle;
 		kalYAngle = Kalman_GetAngle(&kalmanY, pitch, 0, dt);
 		filterPitch += (kalYAngle - filterPitch) * 0.2;   // addittional low pass filter
-	}
-	// ESP_LOGI( FNAME,"Pitch=%.1f Roll=%.1f kalX:%.1f rollz %.1f Ay:%d Pitch%.1f", euler.pitch, euler.roll, kalXAngle, myrollz, (int)(-32768.0*sin(D2R(kalXAngle))), pitch );
 
+
+	}
+	// ESP_LOGI( FNAME,"ACC Pitch=%.1f Roll=%.1f GX:%.3f GY:%.3f GZ:%.3f:  FP:%.1f FR:%.1f", pitch, roll, gyroX,gyroY,gyroZ, filterPitch, filterRoll  );
 }
 
 // IMU Function Definition

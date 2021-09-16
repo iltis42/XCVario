@@ -51,9 +51,8 @@ float fusion_coeffecient(vector_ijk virtual_gravity, vector_ijk sensor_gravity)
 {
     float dot = vector_3d_dot_product(sensor_gravity,virtual_gravity);
     if (dot<=0.96)
-       return 96.0;
-
-    return 90.0;
+       return 90.0;
+    return 30.0;
 }
 
 vector_ijk sensor_gravity_normalized(int16_t ax, int16_t ay, int16_t az)

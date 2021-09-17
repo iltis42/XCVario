@@ -1,22 +1,25 @@
-template <int N, class input_t = int, class sum_t = int>
-class Average {
-  public:
-    input_t operator()(input_t input) {
-        sum -= previousInputs[index];
-        sum += input;
-        previousInputs[index] = input;
-        if (++index == customN)
-            index = 0;
-        return (sum  / customN);
-    }
 
-    void setN( int n ){
-    	customN = n;
+template <size_t N, typename T=int, typename Total=int >
+class Average
+{
+  public:
+    T operator()(T sample)
+    {
+        total_ += sample;
+        if (num_samples_ < N)
+            samples_[num_samples_++] = sample;
+        else
+        {
+            T& oldest = samples_[num_samples_++ % N];
+            total_ -= oldest;
+            oldest = sample;
+        }
+        return total_ / std::min(num_samples_, N);
     }
 
   private:
-    uint8_t index             = 0;
-    uint8_t customN = N;
-    input_t previousInputs[N] = {};
-    sum_t sum                 = 0;
+    T samples_[N];
+    size_t num_samples_{0};
+    Total total_{0};
 };
+

@@ -126,6 +126,7 @@ void Serial::serialHandler(void *pvParameters){
 	    BTSender::progress();   // piggyback this here, saves one task for BT sender
 
 	    if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 && !compass_enable.get() ){
+	    	// ESP_LOGI(FNAME,"Serial 2 tick");
 	    	if ( !s2_tx_q.isEmpty() && Serial2.availableForWrite() ){
 	    		if( Router::pullMsg( s2_tx_q, s ) ) {
 	    			// ESP_LOGD(FNAME,"Serial 2 TX len: %d bytes", s.length() );

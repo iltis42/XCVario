@@ -191,7 +191,7 @@ bool Compass::newDeviation( float measured_heading, float desired_heading, float
 	double deviation = Vector::angleDiffDeg( desired_heading , measured_heading );
 	// ESP_LOGI( FNAME, "newDeviation Measured Head: %3.2f Desired Head: %3.2f => Deviation=%3.2f, Samples:%d", measured_heading, desired_heading, deviation, samples );
 	if( abs(deviation) > wind_max_deviation.get() ){ // data is not plausible/useful
-		ESP_LOGI( FNAME, "new Deviation out of bounds: %3.3f: Drop this deviation", deviation );
+		ESP_LOGW( FNAME, "new Deviation out of bounds: %3.3f: Drop this deviation", deviation );
 		return false;
 	}
 	// we implement one point every 45 degrees, so each point comes with a guard band of 22.5 degree

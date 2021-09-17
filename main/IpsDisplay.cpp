@@ -814,20 +814,23 @@ void IpsDisplay::drawWindArrow( float a, float speed, int type ){
 	float co=cos(D2R(a));
 	const int b=9; // width of the arrow
 	int s=speed*0.6;
+	int s2=s;
 	if( s>30 )
-		s=30;   // maximum space we got on the display
+		s2=30;   // maximum space we got on the display
+	if( s<10 )
+		s2=10;    // minimum size, otherwise arrow is not readable
 
-	int xn_0 = rint(X-s*si);    // tip
-	int yn_0 = rint(Y+s*co);
+	int xn_0 = rint(X-s2*si);    // tip
+	int yn_0 = rint(Y+s2*co);
 
-	int xn_1 = rint(X+s*si - b*co);  // left back
-	int yn_1 = rint(Y-s*co - b*si);
+	int xn_1 = rint(X+s2*si - b*co);  // left back
+	int yn_1 = rint(Y-s2*co - b*si);
 
-	int xn_3 = rint(X+s*si + b*co);  // right back
-	int yn_3 = rint(Y-s*co + b*si);
+	int xn_3 = rint(X+s2*si + b*co);  // right back
+	int yn_3 = rint(Y-s2*co + b*si);
 
-	int xn_2 = rint(X +(s*si*0.2));  // tip of second smaller arrow in red
-	int yn_2 = rint(Y -(s*co*0.2));
+	int xn_2 = rint(X+(s2*si*0.2));  // tip of second smaller arrow in red
+	int yn_2 = rint(Y-(s2*co*0.2));
 
 	// ESP_LOGI(FNAME,"IpsDisplay::drawWindArrow  x0:%d y0:%d x1:%d y1:%d x2:%d y2:%d x3:%d y3:%d", (int)xn_0, (int)yn_0, (int)xn_1 ,(int)yn_1, (int)xn_2, (int)yn_2, (int)xn_3 ,(int)yn_3 );
 	if( del_wind ) {  // cleanup previous incarnation
@@ -844,15 +847,15 @@ void IpsDisplay::drawWindArrow( float a, float speed, int type ){
 		wx3 = xn_3;
 		wy3 = yn_3;
 	}
-	if( s > 5 ) {  // draw white and red arror
-		ucg->setColor( COLOR_WHITE );
-		if( wind_reference.get() != WR_NORTH )
-			Flarm::drawAirplane( xn_0, yn_0, false, true ); // draw a small airplane symbol
+	ucg->setColor( COLOR_WHITE );
+	if( wind_reference.get() != WR_NORTH )
+		Flarm::drawAirplane( xn_0, yn_0, false, true ); // draw a small airplane symbol
+	if( s > 5 ){
 		ucg->drawTriangle(xn_0,yn_0,xn_1,yn_1,xn_3,yn_3);
 		ucg->setColor(  COLOR_RED  );
 		ucg->drawTriangle(xn_2,yn_2,xn_1,yn_1,xn_3,yn_3);
-		del_wind = true;
 	}
+	del_wind = true;
 }
 
 void IpsDisplay::initULDisplay(){
@@ -1113,7 +1116,7 @@ void IpsDisplay::drawCompass(){
 				if( (wind_reference.get() & WR_HEADING) )  // wind relative to airplane, first choice compass, second is GPS true course
 				{
 					bool ok;
-					float heading = Compass::getGyroHeading( &ok );
+					float heading = Compass::filteredHeading( &ok );
 					if( !ok && Flarm::gpsStatus() )            // fall back to GPS course
 						heading = Flarm::getGndCourse();
 					dir = Vector::angleDiffDeg( winddir, heading );
@@ -1130,7 +1133,7 @@ void IpsDisplay::drawCompass(){
 	}
 	else if( wind_display.get() & WD_COMPASS ){
 		bool ok;
-		int heading = static_cast<int>(rintf(Compass::getGyroHeading( &ok )));
+		int heading = static_cast<int>(rintf(Compass::filteredHeading( &ok )));
 		if( heading >= 360 )
 			heading -= 360;
 		// ESP_LOGI(FNAME, "heading %d, valid %d", heading, Compass::headingValid() );
@@ -1219,7 +1222,7 @@ void IpsDisplay::drawULCompass(){
 				if( (wind_reference.get() & WR_HEADING) )  // wind relative to airplane, first choice compass, second is GPS true course
 				{
 					bool ok;
-					float heading = Compass::getGyroHeading( &ok );
+					float heading = Compass::filteredHeading( &ok );
 					if( !ok && Flarm::gpsStatus() )            // fall back to GPS course
 						heading = Flarm::getGndCourse();
 					dir = Vector::angleDiffDeg( winddir, heading );
@@ -1238,7 +1241,7 @@ void IpsDisplay::drawULCompass(){
 //	allways draw compass if possible and enabled
 	if( compass_enable.get() && compass_calibrated.get() ){
 		bool ok;
-		int heading = static_cast<int>(rintf(Compass::getGyroHeading( &ok )));
+		int heading = static_cast<int>(rintf(Compass::filteredHeading( &ok )));
 		if( heading >= 360 )
 			heading -= 360;
 		// ESP_LOGI(FNAME, "heading %d, valid %d", heading, Compass::headingValid() );

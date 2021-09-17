@@ -217,7 +217,7 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 	// Reverse calculate windtriangle for deviation and airspeed calibration
 	bool devOK = true;
 	if( circlingWindSpeed > 0 && compass_dev_auto.get() ){
-		if( circlingWindAge > 900 ){
+		if( circlingWindAge > 600 ){
 			status = "OLD CIRC WIND";
 		}else{
 			float airspeed = calculateSpeed( circlingWindDirReverse, circlingWindSpeed, tc, gs );
@@ -231,10 +231,10 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 				//return;
 			}
 			airspeedCorrection +=  (airspeed/tas - airspeedCorrection) * wind_as_filter.get();
-			if( airspeedCorrection > 1.05 ) // we consider 5% as maximum needed correction
-				airspeedCorrection = 1.05;
-			else if( airspeedCorrection < 0.95 )
-				airspeedCorrection = 0.95;
+			if( airspeedCorrection > 1.01 ) // we consider 1% as maximum needed correction
+				airspeedCorrection = 1.01;
+			else if( airspeedCorrection < 0.99 )
+				airspeedCorrection = 0.99;
 			devOK = Compass::newDeviation( th, tH, airspeedCorrection );
 			// ESP_LOGI(FNAME,"Calculated TH/TAS: %3.1f°/%3.1f km/h  Measured TH/TAS: %3.1f°/%3.1f, asCorr:%2.3f, deltaAS:%3.2f, Age:%d", tH, airspeed, averageTH, tas, airspeedCorrection , airspeed-tas, circlingWindAge );
 		}
@@ -243,7 +243,6 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 		// float airspeed = calculateSpeed( windDir, windSpeed, tc, gs );
 		// airspeedCorrection +=  (airspeed/tas - airspeedCorrection) * wind_as_filter.get();
 	}
-
 	if( !devOK ){ // data is not plausible/useful
 			ESP_LOGI( FNAME, "Calculated deviation out of bounds: Drop also this wind calculation");
 			status = "Deviation OOB";

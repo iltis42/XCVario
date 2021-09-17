@@ -49,6 +49,7 @@ public:
 	//  Returns the low pass filtered magnetic heading without deviation
 	static float rawHeading( bool *okIn );
 	static float filteredHeading( bool *okIn );
+	static float filteredTrueHeading( bool *okIn );
 	static void setGyroHeading( float hd );
 	static float getGyroHeading( bool *ok, bool addDeclination=false );
 	//  Returns the heading valid flag.

@@ -1116,7 +1116,7 @@ void IpsDisplay::drawCompass(){
 				if( (wind_reference.get() & WR_HEADING) )  // wind relative to airplane, first choice compass, second is GPS true course
 				{
 					bool ok;
-					float heading = Compass::filteredHeading( &ok );
+					float heading = Compass::filteredTrueHeading( &ok );
 					if( !ok && Flarm::gpsStatus() )            // fall back to GPS course
 						heading = Flarm::getGndCourse();
 					dir = Vector::angleDiffDeg( winddir, heading );
@@ -1133,7 +1133,7 @@ void IpsDisplay::drawCompass(){
 	}
 	else if( wind_display.get() & WD_COMPASS ){
 		bool ok;
-		int heading = static_cast<int>(rintf(Compass::filteredHeading( &ok )));
+		int heading = static_cast<int>(rintf(Compass::filteredTrueHeading( &ok )));
 		if( heading >= 360 )
 			heading -= 360;
 		// ESP_LOGI(FNAME, "heading %d, valid %d", heading, Compass::headingValid() );
@@ -1222,7 +1222,7 @@ void IpsDisplay::drawULCompass(){
 				if( (wind_reference.get() & WR_HEADING) )  // wind relative to airplane, first choice compass, second is GPS true course
 				{
 					bool ok;
-					float heading = Compass::filteredHeading( &ok );
+					float heading = Compass::filteredTrueHeading( &ok );
 					if( !ok && Flarm::gpsStatus() )            // fall back to GPS course
 						heading = Flarm::getGndCourse();
 					dir = Vector::angleDiffDeg( winddir, heading );
@@ -1241,7 +1241,7 @@ void IpsDisplay::drawULCompass(){
 //	allways draw compass if possible and enabled
 	if( compass_enable.get() && compass_calibrated.get() ){
 		bool ok;
-		int heading = static_cast<int>(rintf(Compass::filteredHeading( &ok )));
+		int heading = static_cast<int>(rintf(Compass::filteredTrueHeading( &ok )));
 		if( heading >= 360 )
 			heading -= 360;
 		// ESP_LOGI(FNAME, "heading %d, valid %d", heading, Compass::headingValid() );

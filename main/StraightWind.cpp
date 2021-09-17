@@ -77,9 +77,6 @@ void StraightWind::tick(){
 	_age++;
 	circlingWindAge++;
 	_tick++;
-	// bool ok;
-	// double cth = Compass::rawHeading( &ok );
-	// ESP_LOGI(FNAME,"Heading: %.1f", cth );
 }
 
 /**
@@ -142,7 +139,7 @@ bool StraightWind::calculateWind()
 	}
 	// Get current true heading from compass.
 	bool THok = true;
-	double cth = Compass::filteredHeading( &THok );
+	averageTH = Compass::filteredTrueHeading( &THok );
 	if( THok == false ) {
 		// No valid heading available
 		status="No MH";
@@ -160,17 +157,13 @@ bool StraightWind::calculateWind()
 	// Calculate average true course TC
 	averageTC = ctc;
 
-	// Calculate average true heading TH
-	averageTH = cth;
-
 	// WCA in radians
 	magneticHeading = averageTH;
 
 	if( wind_logging.get() ){
 		char log[SSTRLEN];
 		float dev = Compass::getDeviation( averageTH );
-		float thd = Vector::normalizeDeg( averageTH+dev );
-		sprintf( log, "$WIND;%d;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f,%d,%d,%.1f\n", _tick, averageTC, cgs, cth, thd, newWindDir, newWindSpeed, windDir, windSpeed, circlingWindDir, circlingWindSpeed, (airspeedCorrection-1)*100, CircleWind::getFlightMode(), gpsStatus, dev );
+		sprintf( log, "$WIND;%d;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f,%d,%d,%.1f\n", _tick, averageTC, cgs, averageTH, ctas, newWindDir, newWindSpeed, windDir, windSpeed, circlingWindDir, circlingWindSpeed, (airspeedCorrection-1)*100, CircleWind::getFlightMode(), gpsStatus, dev );
 		Router::sendXCV( log );
 		ESP_LOGI( FNAME,"%s", log );
 	}
@@ -248,15 +241,12 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 			status = "Deviation OOB";
 			return;
 	}
-	deviation_cur = Compass::getDeviation( th );
-	// ESP_LOGI(FNAME,"Deviation=%3.2f", deviation_cur );
-	float thd = Vector::normalizeDeg( th+deviation_cur );
-
-	newWindSpeed = calculateSpeed( tc, gs, thd, tas*airspeedCorrection );
+    // wind speed
+	newWindSpeed = calculateSpeed( tc, gs, th, tas*airspeedCorrection );
 	// ESP_LOGI( FNAME, "Calculated raw windspeed %.1f jitter:%.1f", newWindSpeed, jitter );
 
 	// wind direction
-	newWindDir = calculateAngle( tc, gs, thd, tas*airspeedCorrection );
+	newWindDir = calculateAngle( tc, gs, th, tas*airspeedCorrection );
 
 	windVectors[curVectorNum].setAngle( newWindDir );
 	windVectors[curVectorNum].setSpeedKmh( newWindSpeed );

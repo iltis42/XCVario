@@ -88,7 +88,7 @@ float Compass::getGyroHeading( bool *ok, bool addDecl ){
 	{
 		float true_gryro_heading = Vector::normalizeDeg( m_gyro_fused_heading + compass_declination.get() );  // Correct true heading in case of over/underflow
 	}
-	// ESP_LOGI( FNAME, "Heading: %3.2f age: %d", m_gyro_fused_heading, gyro_age );
+	// ESP_LOGI( FNAME, "Heading: %3.2f age: %d ext: %d", m_gyro_fused_heading, gyro_age, _external_data );
 	return m_gyro_fused_heading;
 }
 
@@ -111,27 +111,31 @@ void Compass::compassT(void* arg ){
 	while(1){
 		TickType_t lastWakeTime = xTaskGetTickCount();
 		if( !calibrationIsRunning() ){
-			if( compass_enable.get() ){
-				bool rok;
-				float hd = compass.heading( &rok );
-				if( rok == false ){
-					m_headingValid = false;
-				}else{
-					m_magn_heading = hd;
-					m_headingValid = true;
-				}
+			if( _external_data ){  // Simulation data
+				_external_data--;  // age external data
 			}
-			if( uxTaskGetStackHighWaterMark( ctid  ) < 256 )
-				ESP_LOGW(FNAME,"Warning Compass task stack low: %d bytes", uxTaskGetStackHighWaterMark( ctid ) );
-			bool ok;
-			float cth = getGyroHeading( &ok );
-			float diff = Vector::angleDiffDeg( cth, _heading_average );
-			if( _heading_average == -1000 )
-				_heading_average = cth;
-			else
-				_heading_average += diff * (1/(20*compass_damping.get()));
-
-			_heading_average = Vector::normalizeDeg( _heading_average );
+			if( compass_enable.get() ){
+				if( !_external_data ){
+					bool rok;
+					float hd = compass.heading( &rok );
+					if( rok == false ){
+						m_headingValid = false;
+					}else{
+						m_magn_heading = hd;
+						m_headingValid = true;
+					}
+				}
+				if( uxTaskGetStackHighWaterMark( ctid  ) < 256 )
+					ESP_LOGW(FNAME,"Warning Compass task stack low: %d bytes", uxTaskGetStackHighWaterMark( ctid ) );
+				bool ok;
+				float cth = getGyroHeading( &ok );
+				float diff = Vector::angleDiffDeg( cth, _heading_average );
+				if( _heading_average == -1000 )
+					_heading_average = cth;
+				else
+					_heading_average += diff * (1/(20*compass_damping.get()));
+				_heading_average = Vector::normalizeDeg( _heading_average );
+			}
 			// ESP_LOGI(FNAME,"Heading: %.1f %.1f ", cth, _heading_average );
 		}
 		vTaskDelayUntil(&lastWakeTime, 50/portTICK_PERIOD_MS);
@@ -182,6 +186,14 @@ float Compass::getDeviation( float heading )
 	// ESP_LOGI( FNAME, "RawHeading=%.1f : deviation=%0.2f", heading, dev );
 	xSemaphoreGive(splineMutex);
 	return( dev );
+}
+
+float Compass::filteredTrueHeading( bool *okIn ){ // consider deviation table
+	float deviation_cur = getDeviation(  _heading_average );
+	// ESP_LOGI(FNAME,"Deviation=%3.2f", deviation_cur );
+	float fth = Vector::normalizeDeg( _heading_average + deviation_cur );
+	*okIn = m_headingValid;
+	return fth;
 }
 
 static int samples = 0;

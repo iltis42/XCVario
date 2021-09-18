@@ -14,7 +14,7 @@ class Average
             total_ -= oldest;
             oldest = sample;
         }
-        return total_ / std::min(num_samples_, N);
+        return (Total)(total_ / std::min(num_samples_, N));
     }
 
   private:

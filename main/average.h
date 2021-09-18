@@ -1,5 +1,5 @@
 
-template <size_t N, typename T=int, typename Total=int >
+template <int N, typename T=int, typename Total=int >
 class Average
 {
   public:
@@ -14,12 +14,12 @@ class Average
             total_ -= oldest;
             oldest = sample;
         }
-        return (Total)(total_ / std::min(num_samples_, N));
+        return (Total)(total_ / N);
     }
 
   private:
     T samples_[N];
-    size_t num_samples_{0};
+    int num_samples_{0};
     Total total_{0};
 };
 

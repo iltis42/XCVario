@@ -793,14 +793,14 @@ void Audio::enableAmplifier( bool enable )
 
 void Audio::dacEnable(){
 	if( !dac_enable ){
-		ESP_LOGI(FNAME,"Audio::dacEnable");
+		// ESP_LOGI(FNAME,"Audio::dacEnable");
 		dac_output_enable(_ch);
 		dac_enable = true;
 	}
 }
 void Audio::dacDisable(){
 	if( dac_enable ){
-		ESP_LOGI(FNAME,"Audio::dacDisable");
+		// ESP_LOGI(FNAME,"Audio::dacDisable");
 		dac_output_disable(_ch);
 		dac_enable = false;
 	}

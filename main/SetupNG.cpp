@@ -136,7 +136,7 @@ SetupNG<float>		    password( "PASSWORD", 0 );
 SetupNG<int>		    autozero( "AUTOZERO", 0 );
 SetupNG<int>		    attitude_indicator("AHRS", 1 );
 SetupNG<int>		    ahrs_autozero("AHRSAZ", 0 );
-SetupNG<int>		    ahrs_gyro_ena("AHRSGE", 1 );
+SetupNG<float>		    ahrs_gyro_factor("AHRSGF", 90 );
 SetupNG<int>		    display_style("DISPLAY_STYLE", 1 );
 SetupNG<int>		    s2f_switch_type("S2FHWSW", S2F_HW_SWITCH );
 SetupNG<int>		    hardwareRevision("HWREV", HW_UNKNOWN );

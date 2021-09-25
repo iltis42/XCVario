@@ -1276,11 +1276,9 @@ void SetupMenu::setup( )
 				ahrslc3->addEntry( e );
 				ahrslc4->addEntry( e );
 			}
-			SetupMenuSelect * ahrsge = new SetupMenuSelect( "AHRS Gyro", false , 0, true, &ahrs_gyro_ena );
-			ahrs->addMenu( ahrsge );
-			ahrsge->setHelp( PROGMEM "Enable direct gyro deltas in artifical horizont bank and pitch (more instant movement)");
-			ahrsge->addEntry( "Disable");
-			ahrsge->addEntry( "Enable");
+			SetupMenuValFloat * ahrsgf = new SetupMenuValFloat( "AHRS Gyro", 0, "%", 0, 100, 0.1, 0, false, &ahrs_gyro_factor  );
+			ahrsgf->setHelp(PROGMEM"Gyro factor in artifical horizont bank and pitch (more instant movement), zero disables Gyro");
+			ahrs->addMenu( ahrsgf );
 
 		}
 

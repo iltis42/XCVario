@@ -1,5 +1,6 @@
 #include "sensor_processing_lib.h"
 #include "logdef.h"
+#include "SetupNG.h"
 
 Quaternion quaternion_from_accelerometer(float ax, float ay, float az)
 {
@@ -50,9 +51,10 @@ Quaternion quaternion_from_compass(float wx, float wy, float wz )
 float fusion_coeffecient(vector_ijk virtual_gravity, vector_ijk sensor_gravity)
 {
     float dot = vector_3d_dot_product(sensor_gravity,virtual_gravity);
-    if (dot<=0.96)
-       return 90.0;
-    return 30.0;
+    if (dot<=0.96){
+       return ahrs_gyro_factor.get();   // if both are close, trust more gyro
+    }
+    return ahrs_gyro_factor.get()/4;
 }
 
 vector_ijk sensor_gravity_normalized(int16_t ax, int16_t ay, int16_t az)

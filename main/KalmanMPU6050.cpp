@@ -219,7 +219,7 @@ void IMU::read()
 		fused_yaw +=  Vector::angleDiffDeg( curh ,fused_yaw )*0.05 + (getGyroYawDelta())*0.95;
 		Compass::setGyroHeading( Vector::normalizeDeg( fused_yaw ) );
 	}
-	if( ahrs_gyro_ena.get() ){
+	if( ahrs_gyro_factor.get() > 0.1  ){
 		filterRoll =  euler.roll;
 		filterPitch =  euler.pitch;
 	}

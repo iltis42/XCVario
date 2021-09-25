@@ -413,7 +413,7 @@ extern SetupNG<float>		password;
 extern SetupNG<int>		    autozero;
 extern SetupNG<int>		    attitude_indicator;
 extern SetupNG<int>		    ahrs_autozero;
-extern SetupNG<int>		    ahrs_gyro_ena;
+extern SetupNG<float>		ahrs_gyro_factor;
 extern SetupNG<int>		    display_style;
 extern SetupNG<int>		    display_variant;
 extern SetupNG<int>		    s2f_switch_type;

@@ -292,6 +292,8 @@ void handle_NAV_PVT(unsigned long iTOW, /* ms*/
     if((fixType==3) || (fixType==4)) 	/* Si les données GPS sont valides */
     { 	gps_nav_valid = 1;
     	dead_reckon_clock = 26; 		/* il faudrait faire revenir DR_PERIOD ici */
+    	Vsx_gps=velN*0.001f;
+    	Vsy_gps=-velE*0.001f;
     	Vsz_gps=-velD*0.001f;
     	Ground_Speed_gps = gSpeed*0.001f;
         time_gps = iTOW*0.001f;

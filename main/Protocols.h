@@ -12,7 +12,7 @@
 #include "S2F.h"
 
 // Supported Protocols
-typedef enum protocol_t  { P_OPENVARIO, P_BORGELT, P_CAMBRIDGE, P_EYE_PEYA, P_EYE_PEYI, P_AHRS_RPYL, P_AHRS_APENV1, P_GENERIC, P_XCVARIO, P_XCVARIO_DEVEL } proto_t;
+typedef enum protocol_t  { P_OPENVARIO, P_BORGELT, P_CAMBRIDGE, P_EYE_PEYA, P_EYE_PEYI, P_AHRS_RPYL, P_AHRS_APENV1, P_GENERIC, P_XCVARIO, P_XCVARIO_DEVEL, P_FLIGHT_TEST } proto_t;
 
 
 class Protocols {
@@ -28,10 +28,9 @@ public:
 	void sendQNHChange( float qnh );
     void sendNmeaHDM( float heading );
     void sendNmeaHDT( float heading );
-	void sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
-			        float mc, int bugs, float ballast, bool cruise, float alt,
-				    bool validTemp=false, float ax=0, float ay=0, float az=0, float gx=0, float gy=0, float gz=0,
-					float time_gps=0,int gps_nav_valid=0,float latitude=0,float longitude=0,float estimated_altitude=0,float Vsz_gps=0,float vze_fusion=0,float Ground_Speed_gps=0);
+	void sendNMEA( proto_t proto, char* str, float baro,float dp,float te,float temp,float ias,float tas,int mc,float bugs,float aballast,int cruise,float alt,bool validTemp,
+			float time_gps,int gps_nav_valid,float latitude,float longitude,float estimated_altitude,float Vsx_gps,float Vsy_gps,float Vsz_gps,float vze_fusion,float Ground_Speed_gps,
+			float u,float v,float w,float vx,float vy,float vz);
 
 	static void parseNMEA( char *str );
 	static int calcNMEACheckSum(char * nmea);

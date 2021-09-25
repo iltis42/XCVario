@@ -7,9 +7,11 @@
 
 #include "ahrs.hpp"
 
+#include "mpu/types.hpp"
 #include "MadgwickAHRS.h"
 #include "logdef.h"
 #include "sensor.h"
+#include "UBX_Parser.h"
 
 #define DEBUG_INIT()
 #define DEBUG_TS_PRINT(x)
@@ -51,6 +53,15 @@ bool IMU::initdone = false;
 double  IMU::filterPitch = 0;
 double  IMU::filterRoll = 0;
 double  IMU::filterYaw = 0;
+double  IMU::filterAccelX = 0;
+double  IMU::filterAccelY = 0;
+double  IMU::filterAccelZ = G;
+double  IMU::filterGyroX = 0;
+double  IMU::filterGyroY = 0;
+double  IMU::filterGyroZ = 0;
+double IMU::mX = 0.0;
+double IMU::mY = 0.0;
+double IMU::mZ = 0.0;
 
 // IMU Function Definition
 	extern float u,v,w;
@@ -66,6 +77,7 @@ double  IMU::filterYaw = 0;
 	double q3 = 0.0;	// quaternion of sensor frame relative to auxiliary frame
 	static double gravity_vector_plane[] = { 0, 0, G };
 	static double previous_tas =0;
+	bool ok=false;
 
 
 	static double omegaSOG(double omega, double speed)
@@ -107,15 +119,17 @@ double  IMU::filterYaw = 0;
 		double recipNorm;
 		// Compute the X-Z rotation axis
 		// by normalizing the X-Z gyro vector
-		rotation_axis[0] = IMU::getRawGyroX();
-		rotation_axis[1] = IMU::getRawGyroZ();
+		rotation_axis[0] = IMU::getFilterGyroX();
+		rotation_axis[1] = IMU::getFilterGyroZ();
 		//vector2_normalize(rotation_axis, rotation_axis);
-		recipNorm = 1.0f / sqrt(rotation_axis[0] * rotation_axis[0] + rotation_axis[1] * rotation_axis[1]);
-		rotation_axis[0] *= recipNorm;
-		rotation_axis[1] *= recipNorm;
+		if ( (rotation_axis[0] != 0) && (rotation_axis[0] != 0)) {
+			recipNorm = 1.0f / sqrt(rotation_axis[0] * rotation_axis[0] + rotation_axis[1] * rotation_axis[1]);
+			rotation_axis[0] *= recipNorm;
+			rotation_axis[1] *= recipNorm;
+			}
 
 		// compute force cross rotation axis:
-		force_cross_rotation_axis = (IMU::getRawAccelX() * rotation_axis[1]) - ( IMU::getRawAccelZ() * rotation_axis[0]  ) ;
+		force_cross_rotation_axis = (IMU::getFilterAccelX() * rotation_axis[1]) - ( IMU::getFilterAccelZ() * rotation_axis[0]  ) ;
 
 		// compute vertical cross rotation axis:
 		vertical_cross_rotation_axis = (2.0*(-q0*q2+q1*q3)* rotation_axis[1]) - ((q0*q0-q1*q1-q2*q2+q3*q3)* rotation_axis[0] );
@@ -131,8 +145,8 @@ double  IMU::filterYaw = 0;
 		// form the sum
 		accum = (force_cross_rotation_axis * force_cross_rotation_axis)
 		         + G * G
-		         - IMU::getRawAccelX() * IMU::getRawAccelX()
-		         - IMU::getRawAccelZ() * IMU::getRawAccelZ()
+		         - IMU::getFilterAccelX() * IMU::getFilterAccelX()
+		         - IMU::getFilterAccelZ() * IMU::getFilterAccelZ()
 		         - accelY* accelY;
 		if (accum < 0)
 		{
@@ -162,23 +176,26 @@ double  IMU::filterYaw = 0;
 			omega_times_velocity = 0;
 		}
 		// now compute omega vector cross velocity vector and adjust
+		gravity_vector_plane[0] = IMU::getFilterAccelX();
+		gravity_vector_plane[1] = IMU::getFilterAccelY();
+		gravity_vector_plane[2] = IMU::getFilterAccelZ();
 		accum = (omega_times_velocity * rotation_axis[1]  );
-		gravity_vector_plane[0] = IMU::getRawAccelX() - accum;
-		gravity_vector_plane[1] = IMU::getRawAccelY();
+		gravity_vector_plane[0] -= accum;
+		gravity_vector_plane[1] = IMU::getFilterAccelY();
 		accum = (omega_times_velocity * rotation_axis[0] );
-		gravity_vector_plane[2] = IMU::getRawAccelZ() + accum;
+		gravity_vector_plane[2] += accum;
 
 		// account for angle of attack and forward acceleration
 		double air_speed_z;
 		// total (3D) airspeed in cm/sec is used to adjust for acceleration
 		// compute Z component of airspeed due to angle of attack
 		accum = angleOfAttack * getTAS();
-		air_speed_z = accum;
+		air_speed_z = angleOfAttack * Ground_Speed_gps;
 		// compute centrifugal and forward acceleration compensation (must use corrected gyro) and suppose that this routine is called at 10 Hz
-		gravity_vector_plane[0] = gravity_vector_plane[0] + omegaSOG(IMU::getRawGyroY(), air_speed_z);
-		//gravity_vector_plane[1] = gravity_vector_plane[1] - omegaSOG(IMU::getRawGyroX(), air_speed_z) +  (getTAS()-previous_tas)*10.0;
-		gravity_vector_plane[1] = gravity_vector_plane[1] - omegaSOG(IMU::getRawGyroX(), air_speed_z) ;
-		previous_tas = getTAS();
+		gravity_vector_plane[0] = gravity_vector_plane[0] + omegaSOG(IMU::getFilterGyroY(), air_speed_z);
+		gravity_vector_plane[1] = gravity_vector_plane[1] - omegaSOG(IMU::getFilterGyroX(), air_speed_z) +  (Ground_Speed_gps-previous_tas)*10.0;
+		previous_tas = Ground_Speed_gps;
+
 	}
 
 void IMU::init(bool f){
@@ -218,10 +235,14 @@ void IMU::init(bool f){
 	offset_gyroX = (double)(gxsum/imax*DEG_TO_RAD);
 	offset_gyroY = (double)(gysum/imax*DEG_TO_RAD);
 	offset_gyroZ = (double)(gzsum/imax*DEG_TO_RAD);
+	/* Suppression de l'hypothèse que l'assiette initiale est horizontale
 	offset_accelX= (double)(axsum/imax)*G;
 	offset_accelY= (double)(aysum/imax)*G;
 	offset_accelZ= (double)(azsum/imax)*G-G;
-
+	offset_roll=rollsum/imax;
+	offset_pitch = pitchsum/imax;
+	offset_yaw = yawsum/imax;
+	*/
 	for (int i=0;i<imax;i++){
 		esp_err_t err = MPU.acceleration(&accelRaw);  // fetch raw data from the registers
 		if( err != ESP_OK )
@@ -232,16 +253,25 @@ void IMU::init(bool f){
 		accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
 		gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
 		MPU6050Read();
-		sleep( 1 );
 		IMU::RollPitchFromAccel(&roll, &pitch);
+		double my=QMC5883L::mag_vector[1]*cos(roll)- QMC5883L::mag_vector[2]*sin(roll);
+		double m2=(QMC5883L::mag_vector[0]*QMC5883L::mag_vector[0]+QMC5883L::mag_vector[1]*QMC5883L::mag_vector[1]+QMC5883L::mag_vector[2]*QMC5883L::mag_vector[2]);
+		double mz=-sin(pitch)*QMC5883L::mag_vector[0]+sin(roll)*cos(pitch)*QMC5883L::mag_vector[1]+cos(roll)*cos(pitch)*QMC5883L::mag_vector[2];
+		double mh2=m2-mz*mz;
+		double mx=sqrt(mh2-my*my);
+		yaw = -atan2( my,mx );
+		if (yaw>PI2) yaw -= PI2;
+		if (yaw<0.0) yaw += PI2;
 		rollsum+=roll;
 		pitchsum+=pitch;
 		yawsum+=yaw;
-		}
-	offset_roll=rollsum/imax;
-	offset_pitch = pitchsum/imax;
-	offset_yaw = yawsum/imax;
-
+		sleep( 1 );
+	}
+	roll=rollsum/imax;
+	pitch = pitchsum/imax;
+	yaw = yawsum/imax;
+	if (yaw>PI2) yaw -= PI2;
+	if (yaw<0.0) yaw += PI2;
 	lastProcessed = micros();
 	ESP_LOGI(FNAME, "Finished IMU setup  offsets:%f,%f,%f,%f,%f,%f ", offset_gyroX, offset_gyroY, offset_gyroZ, offset_accelX, offset_accelY, offset_accelZ);
 	ESP_LOGI(FNAME, "Attitude:%f,%f,%f ", roll,pitch,yaw);
@@ -285,15 +315,32 @@ void IMU::read(){
 		MPU6050Read();
 		//adj_accel(angleOfAttack);
 		adj_accel(0.1);// angleOfAttack is supposed to be 6°
-		MadgwickAHRSupdateIMU(dt,gyroX, gyroY, gyroZ, gravity_vector_plane[1], gravity_vector_plane[0], gravity_vector_plane[2],&q0,&q1,&q2,&q3);
+		// Acquisition du vecteur magnetomètre
+//		esp_err_t err = MPU.heading(&magRaw);  // fetch raw data from the registers
+		mX = QMC5883L::mag_vector[0];
+		mY = QMC5883L::mag_vector[1];
+		mZ = QMC5883L::mag_vector[2];
+		//MadgwickAHRSupdateIMU(dt,gyroX, gyroY, gyroZ, gravity_vector_plane[0], gravity_vector_plane[1], gravity_vector_plane[2],&q0,&q1,&q2,&q3);
+		//MadgwickAHRSupdateIMU(dt,gyroX, gyroY, gyroZ, accelX, accelY, accelZ,&q0,&q1,&q2,&q3);
+		MadgwickAHRSupdate(dt,gyroX, gyroY, gyroZ, gravity_vector_plane[0], gravity_vector_plane[1], gravity_vector_plane[2], mX, mY, mZ,&q0,&q1,&q2,&q3);
+		//MadgwickAHRSupdateIMU(dt,gyroX, gyroY, gyroZ, accelX, accelY, accelZ, mX, mY, mZ,&q0,&q1,&q2,&q3);
 	// Intégration des anges d'Euler
 	  roll = atan2(2 * (q0 * q1 + q2 * q3), (q0*q0-q1*q1-q2*q2+q3*q3)); // phi
 	  if (abs(2*( q0 * q2-q1 * q3 ))<1.0) pitch = asin(2 * ( q0 * q2-q1 * q3 )); else pitch = 0.0; // theta
 	  yaw = atan2(2 * (q1 * q2 + q0 * q3),(q0*q0+q1*q1-q2*q2-q3*q3) ) ; // psi
-	  filterPitch += (pitch - filterPitch) * 0.2;
+	  /*filterPitch += (pitch - filterPitch) * 0.2;
 	  filterRoll += (roll - filterRoll) * 0.2;
 	  filterYaw += (yaw - filterYaw) * 0.2;
-
+	   */
+	  filterPitch = pitch ;
+	  filterRoll = roll ;
+	  filterYaw = yaw ;
+	  filterAccelX += (accelX - filterAccelX);
+	  filterAccelY += (accelY - filterAccelY);
+	  filterAccelZ += (accelZ - filterAccelZ);
+	  filterGyroX += (gyroX - filterGyroX);
+	  filterGyroY += (gyroY - filterGyroY);
+	  filterGyroZ += (gyroZ - filterGyroZ);
 	   // Variables intermédiares
 			float q0q0 = q0 * q0;
 			float q0q1 = q0 * q1;
@@ -311,7 +358,7 @@ void IMU::read(){
 	float gy=2.0*(q2q3+q0q1)*G;
 	float gz=(q0q0-q1q1-q2q2+q3q3)*G;
 	  // Intégration des vitesses en repère engin avec prise en compte de l'accélération d'entrainement
-	u=u+(accelX-gx+v*gyroX-w*gyroY)*dt;
+	u=u+(accelX-gx+v*gyroZ-w*gyroY)*dt;
 	v=v+(accelY-gy+w*gyroX-u*gyroZ)*dt;
 	w=w+(accelZ-gz+u*gyroY-v*gyroX)*dt;
 
@@ -328,7 +375,7 @@ void IMU::read(){
 	accel_earthZ = (accelX*2.0*(-q0*q2+q1*q3)+accelY*2.0*(q2*q3+q0*q1)+accelZ*(q0*q0-q1*q1-q2*q2+q3*q3)) - G;//Substract pesanteur
 	}
 	ESP_LOGI(FNAME, "attitude,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f ",
-				dt,gyroX, gyroY, gyroZ, accelX, accelY, accelZ,roll,pitch,yaw,q0,q1,q2,q3,
+				dt,filterGyroX, filterGyroY, filterGyroZ, filterAccelX, filterAccelY, filterAccelZ,roll,pitch,yaw,q0,q1,q2,q3,
 				gravity_vector_plane[0], gravity_vector_plane[1], gravity_vector_plane[2], accel_earthX, accel_earthY, accel_earthZ,
 				u,v,w,vx,vy,vz);
 }
@@ -337,12 +384,12 @@ void IMU::read(){
 void IMU::MPU6050Read()
 {// Les mesures sont transformées en valeur SI dès leur mise en forme
 	// et les offsets enlevés
-		accelX = -(accelG[2]*G+offset_accelX);
+		accelX = (accelG[2]*G+offset_accelX);
 		accelY = (accelG[1]*G-offset_accelY);
 		accelZ = (accelG[0]*G-offset_accelZ);
 		gyroX = -(gyroDPS.z*DEG_TO_RAD+offset_gyroX);
-		gyroY = (gyroDPS.y*DEG_TO_RAD-offset_gyroY);
-		gyroZ = (gyroDPS.x*DEG_TO_RAD-offset_gyroZ);
+		gyroY = -(gyroDPS.y*DEG_TO_RAD-offset_gyroY);
+		gyroZ = -(gyroDPS.x*DEG_TO_RAD-offset_gyroZ);
 }
 
 void IMU::PitchFromAccel(double *pitch)
@@ -356,7 +403,7 @@ void IMU::RollPitchFromAccel(double *roll, double *pitch)
 	// It is then converted from radians to degrees
 
 	*roll = atan2((double)(accelY) , (double)(accelZ));
-	*pitch = atan2((double)-(accelX), (double)(accelZ));
+	*pitch = atan2((double)(-accelX), (double)(accelZ));
 
 	ESP_LOGD( FNAME,"Accelerometer Roll: %f  Pitch: %f  (y:%f x:%f)", *roll * RAD_TO_DEG, *pitch * RAD_TO_DEG, (double)accelY, (double)accelX );
 

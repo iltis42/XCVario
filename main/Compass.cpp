@@ -67,7 +67,7 @@ Compass::~Compass()
 float Compass::calculateHeading( bool *okIn )
 {
 	assert( (okIn != nullptr) && "Passing of NULL pointer is forbidden" );
-
+	QMC5883L::getMagnet(mag_raw,mag_vector, okIn );
 	float new_heading = QMC5883L::heading( okIn );
 	// ESP_LOGI( FNAME, "H: %3.2f", new_heading  );
 	if( *okIn == false )

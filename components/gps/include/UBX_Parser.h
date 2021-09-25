@@ -28,6 +28,8 @@
 extern "C" {
 #endif
 //modif gfm
+extern float Vsx_gps;
+extern float Vsy_gps;
 extern float Vsz_gps;
 extern float Ground_Speed_gps;
 extern float time_gps;

@@ -26,6 +26,7 @@ Last update: 2021-03-28
 #include <sys/time.h>
 #include "esp_system.h"
 #include "logdef.h"
+//#include "mpu/types.hpp"
 #include "esp_log.h"
 #include "I2Cbus.hpp"
 
@@ -148,6 +149,14 @@ public:
 			const uint8_t reg,
 			const uint8_t count,
 			uint8_t *data );
+	//    bool getMagnet(raw_axes_t* mag);
+
+	// modif gfm
+	static double mag_vector[3] ;
+	static double mag_raw[3] ;
+
+		void getMagnet(double mag_raw[],double mag_vector[], bool *ok);
+	//fin modif gfm
 
 private:
 

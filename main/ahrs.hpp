@@ -23,6 +23,7 @@
 #include "MPU.hpp"        // main file, provides the class itself
 #include "mpu/math.hpp"   // math helper for dealing with MPU data
 #include "mpu/types.hpp"  // MPU data types and definitions
+#include "QMC5883L.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265359
@@ -85,6 +86,7 @@ public:
    * @returns The accelerometer raw X reading
    */
   static inline double getRawAccelX()  {  return (accelX);  };
+  static inline double getFilterAccelX()  {  return (filterAccelX);  };
 
   /**
    * Gets the accelerometer raw Y reading, as per last read() call.
@@ -92,6 +94,7 @@ public:
    * @returns The accelerometer raw Y reading
    */
   static inline double getRawAccelY()   {   return (accelY);   };
+  static inline double getFilterAccelY()   {   return (filterAccelY);   };
 
   /**
    * Gets the accelerometer raw Z reading, as per last read() call.
@@ -99,6 +102,7 @@ public:
    * @returns The accelerometer raw Z reading
    */
   static inline double getRawAccelZ()  {  	return (accelZ);  };
+  static inline double getFilterAccelZ()  {  	return (filterAccelZ);  };
 
   /**
    * Gets the gyroscope raw X reading, as per last read() call.
@@ -106,6 +110,7 @@ public:
    * @returns The gyroscope raw X reading.
    */
   static inline double getRawGyroX()   {  	return (gyroX);  };
+  static inline double getFilterGyroX()   {  	return (filterGyroX);  };
 
   /**
    * Gets the gyroscope raw Y reading, as per last read() call.
@@ -113,6 +118,7 @@ public:
    * @returns The gyroscope raw Y reading.
    */
   static inline double getRawGyroY()   {  	return (gyroY);  };
+  static inline double getFilterGyroY()   {  	return (filterGyroY);  };
 
   /**
    * Gets the gyroscope raw Z reading, as per last read() call.
@@ -120,6 +126,7 @@ public:
    * @returns The gyroscope raw Z reading.
    */
   static inline double getRawGyroZ()   {  return (gyroZ);  };
+  static inline double getFilterGyroZ()   {  return (filterGyroZ);  };
   //modif gfm
   static inline double getEarthAccelX() { return (accel_earthX);};
   static inline double getEarthAccelY() { return (accel_earthY);};
@@ -140,9 +147,9 @@ public:
    *
    * @returns The y rotation (pitch) in degrees
    */
-  static inline double getPitch()  {	return -filterPitch*RAD_TO_DEG;  };
-  static inline double getPitchRad()  {	return -filterPitch;  };
-  static inline double getYawRad()  {	return -filterYaw;  };
+  static inline double getPitch()  {	return filterPitch*RAD_TO_DEG;  };
+  static inline double getPitchRad()  {	return filterPitch;  };
+  static inline double getYawRad()  {	return filterYaw;  };
   static inline bool getInitdone() {return (initdone);};
 
 private:
@@ -152,6 +159,7 @@ private:
   static double offset_accelX, offset_accelY, offset_accelZ;
   static double accel_earthX, accel_earthY, accel_earthZ;
   static double gyroX, gyroY, gyroZ;
+  static double mX, mY, mZ;
   static double offset_gyroX, offset_gyroY, offset_gyroZ;
 
   static void MPU6050Read();
@@ -166,6 +174,12 @@ private:
   static double  filterPitch;
   static double  filterRoll;
   static double  filterYaw;
+  static double  filterAccelX;
+  static double  filterAccelY;
+  static double  filterAccelZ;
+  static double  filterGyroX;
+  static double  filterGyroY;
+  static double  filterGyroZ;
 };
 
 #endif // _ahrs_H_

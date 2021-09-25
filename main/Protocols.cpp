@@ -137,7 +137,7 @@ HDM - Heading - Magnetic
 void Protocols::sendNmeaHDM( float heading ) {
   char str[21];
   sprintf( str,"$HCHDM,%3.1f,M", heading );
-  // ESP_LOGI(FNAME,"Magnetic Heading: %3.1f", heading );
+  ESP_LOGI(FNAME,"Magnetic Heading: %3.1f", heading );
 
   int cs = calcNMEACheckSum(&str[1]);
   int i = strlen(str);
@@ -160,7 +160,7 @@ HDT - Heading - True
 void Protocols::sendNmeaHDT( float heading ) {
   char str[21];
   sprintf( str,"$HCHDT,%3.1f,T", heading );
-  // ESP_LOGI(FNAME,"True Heading: %3.1f", heading );
+  ESP_LOGI(FNAME,"True Heading: %3.1f", heading );
 
   int cs = calcNMEACheckSum(&str[1]);
   int i = strlen(str);
@@ -169,12 +169,29 @@ void Protocols::sendNmeaHDT( float heading ) {
 }
 
 
-void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
-		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz,
-		float time_gps,int gps_nav_valid,float latitude,float longitude,float estimated_altitude,float Vsz_gps,float vze_fusion,float Ground_Speed_gps){
+void Protocols::sendNMEA( proto_t proto, char* str,float baro, float dp, float te, float temp, float ias, float tas, int mc, float bugs,float aballast,int cruise,float alt,bool validTemp,
+		float time_gps,int gps_nav_valid,float latitude,float longitude,float estimated_altitude,float Vsx_gps,float Vsy_gps,float Vsz_gps,float vze_fusion,float Ground_Speed_gps,
+		float u,float v,float w,float vx,float vy,float vz){
 	if( !validTemp )
 		temp=0;
-	if( proto == P_XCVARIO_DEVEL ){
+	float roll = 0;
+	float pitch = 0;
+
+	if( proto == P_FLIGHT_TEST ){
+		double roll = IMU::getRollRad();
+		double pitch = IMU::getPitchRad();
+		double yaw = IMU::getYawRad();
+		double acc_x = IMU::getRawAccelX();
+		double acc_y = IMU::getRawAccelY();
+		double acc_z = IMU::getRawAccelZ();
+		double gx = IMU::getRawGyroX();
+		double gy = IMU::getRawGyroY();
+		double gz = IMU::getRawGyroZ();
+		float timertime = esp_timer_get_time()/1000000.0; // time in second
+		sprintf(str,"$JLD,%.6f,%3.1f,%2.1f,%.3f,%.3f,%.3f,%.3f,%3.1f,%3.1f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f", timertime, te, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp,
+				     roll*RAD_TO_DEG, pitch*RAD_TO_DEG, yaw*RAD_TO_DEG, acc_x/9.806, acc_y/9.806, acc_z/9.806, gz*RAD_TO_DEG, gy*RAD_TO_DEG, gx*RAD_TO_DEG );
+	}
+	else if( proto == P_XCVARIO_DEVEL ){
 		//modif gfm
 		/*
      	char str_loc[255];
@@ -211,9 +228,9 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		double roll = IMU::getRollRad();
 		double pitch = IMU::getPitchRad();
 		double yaw = IMU::getYawRad();
-		double aex = IMU::getEarthAccelX();
-		double aey = IMU::getEarthAccelY();
-		double aez = IMU::getEarthAccelZ();
+//		double aex = IMU::getEarthAccelX();
+//		double aey = IMU::getEarthAccelY();
+//		double aez = IMU::getEarthAccelZ();
 		double ax = IMU::getRawAccelX();
 		double ay = IMU::getRawAccelY();
 		double az = IMU::getRawAccelZ();
@@ -223,10 +240,15 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		int initdone = 0 ;
 		if (IMU::getInitdone()) initdone=1; else initdone=0;
 //		sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%6.2f,%6.2f,%4.3f,%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
-		float timertime = esp_timer_get_time()/1000000.0; // time in second
-		sprintf(str,"$PXCV,%.6f,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%.3f,%.3f,%.3f,%5.3f,%5.3f,%5.3f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%8.3f,%d,%8.6f,%8.6f,%8.6f,%3.2f,%3.2f,%6.2f",
-				timertime, te, Units::Vario2ms(mc), initdone, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp, roll, pitch, yaw,
-				ax, ay, az, gyx, gyy, gyz,aex,aey,aez, time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsz_gps,vze_fusion,Ground_Speed_gps );
+		float timertime = (float) esp_timer_get_time()/1000000.0; // time in second
+		sprintf(str,"$PXCV,%+010.3f,%+03.1f,%+04.2f,%0d,%+02.1f,%+08.3f,%+05.3f,%+05.3f,%+05.3f,%+05.3f,"
+//				"%+06.3f,%+06.3f,%+06.3f,%+06.3f,%+06.3f,%+06.3f,%+06.0f,%+06.0f,%+06.0f,%+08.3f,%0d,%+010.7f,%+010.7f,%+08.3f,%+08.3f,%+03.2f,%+03.2f,%+03.2f,%+03.2f,%+06.2f,"
+				"%+06.3f,%+06.3f,%+06.3f,%+06.3f,%+06.3f,%+06.3f,%+06.0f,%+06.0f,%+06.0f,%+08.3f,%0d,%+06.1f,%+06.1f,%+06.1f,%+08.3f,%+03.2f,%+03.2f,%+03.2f,%+03.2f,%+06.2f,"
+				"%+06.2f,%+06.2f,%+06.2f",
+				timertime, te, tas, initdone, std::roundf(temp*10.f)/10.f, baro, dp, roll, pitch, yaw,
+//				ax, ay, az, gyx, gyy, gyz,aex,aey,aez, time_gps,gps_nav_valid,latitude,longitude,gps_altitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
+				ax, ay, az, gyx, gyy, gyz,QMC5883L::mag_vector[0],QMC5883L::mag_vector[1],QMC5883L::mag_vector[2], time_gps,gps_nav_valid,QMC5883L::mag_raw[0],QMC5883L::mag_raw[1],QMC5883L::mag_raw[2],estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
+				vx,vy,vz);
 	}
 	else if( proto == P_XCVARIO ){
 		/*
@@ -251,10 +273,11 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		if( haveMPU && attitude_indicator.get() ){
 			double roll = IMU::getRoll();
 			double pitch = IMU::getPitch();
-			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f,%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
+			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f,%3.1f,%3.1f,%1.2f,%1.2f,%1.2f",
+					te, ias, mc, bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp, roll, pitch, IMU::getEarthAccelX(), IMU::getEarthAccelY(), IMU::getEarthAccelZ() );
 
 		}else{
-			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f,,,,,", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp );
+			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f,,,,,", te, ias, mc, bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp );
 		}
 	}
 	else if( proto == P_OPENVARIO ) {
@@ -278,7 +301,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		CHK = standard NMEA checksum
 		 */
 		float iaskn = Units::kmh2knots( ias );
-		sprintf(str,"$PBB50,%03d,%3.1f,%1.1f,%d,%d,%1.2f,%1d,%2d", (int)(Units::kmh2knots(tas)+0.5), Units::ms2knots(te), Units::mcval2knots(mc), (int)((iaskn*iaskn)+0.5), bugs, (aballast+100)/100.0, cruise, (int)(temp+0.5) );
+		sprintf(str,"$PBB50,%03d,%3.1f,%1.1f,%d,%1.2f,%1.2f,%1d,%2d", (int)(Units::kmh2knots(tas)+0.5), Units::ms2knots(te), Units::mcval2knots(mc), (int)((iaskn*iaskn)+0.5), bugs, (aballast+100)/100.0, cruise, (int)(temp+0.5) );
 	}
 	else if( proto == P_CAMBRIDGE ){
 		/*
@@ -335,7 +358,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 			z,
 			);
 		 */
-		sprintf(str, "$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,", roll, pitch,acc_x,acc_y,acc_z );
+		sprintf(str, "$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,", roll, pitch,IMU::getEarthAccelX(),IMU::getEarthAccelY(),IMU::getEarthAccelZ() );
 	}
 	else if( proto == P_AHRS_APENV1 ) { // experimental
 		sprintf(str, "$APENV1,%.2f,%.2f,0,0,0,%.2f,", ias,alt,te );
@@ -344,7 +367,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		sprintf(str, "$RPYL,%.2f,%.2f,0,0,,%.2f,0,",
 				IMU::getRollRad(),         // Bank == roll    (rad)           SRC
 				IMU::getPitchRad(),         // pItch           (rad)
-				acc_z
+				IMU::getEarthAccelZ()
 		);
 	}
 	else if( proto == P_GENERIC ) {

@@ -26,6 +26,7 @@ Last update: 2021-04-05
 
 #include <cassert>
 #include <cmath>
+//#include "mpu/types.hpp"
 #include "QMC5883L.h"
 
 #include "ahrs.hpp"
@@ -75,6 +76,10 @@ int QMC5883L::errors = 0;
 bool QMC5883L::calibrationRunning = false;
 
 float QMC5883L::_heading = 0;
+// modif gfm
+double QMC5883L::mag_vector[] = { 0, 0, 1 };
+double QMC5883L::mag_raw[] = { 0, 0, 1 };
+//fin modif gfm
 /*
   Creates instance for I2C connection with passing the desired parameters.
   No action is done at the bus. Note if i2cBus is not set in the constructor,
@@ -170,7 +175,9 @@ esp_err_t QMC5883L::selfTest()
 	// Try to read Register 0xD, it delivers the chip id 0xff for a QMC5883L
 	m_sensor = false;
 	for( int i=0; i< 10; i++ ){
+// modif gfm
 		esp_err_t err = m_bus->readByte( QMC5883L_ADDR, REG_CHIP_ID, &chipId );
+		ESP_LOGI( FNAME, "QMC5883L selftest i=%d QMC5883L_ADDR=0x%02X err=0x%08X chipId=0x%02X", i,QMC5883L_ADDR,err,chipId);
 		if( err == ESP_OK ){
 			m_sensor = true;
 			break;
@@ -297,7 +304,64 @@ bool QMC5883L::rawHeading()
 
 	return false;
 }
+/*
+esp_err_t QMC5883L::getMagnet(raw_axes_t* mag)
+{
+#if 1
+  // calculate last call time.
+  static uint64_t lastCall = getMsTime();
 
+  uint64_t elapsed = getMsTime() - lastCall;
+  lastCall = getMsTime();
+#endif
+
+	// Check, if data are available
+	uint8_t data[6];
+	uint8_t status = 0;
+
+	// Read status register
+	uint8_t count = readRegister( addr, REG_STATUS, 1, &status );
+
+	if( count != 1 )
+	{
+		ESP_LOGE( FNAME, "read REG_STATUS FAILED, count=%d, status=%d", count, status );
+		return false;
+	}
+	// ESP_LOGI( FNAME, "REG_STATUS: %02x", status );
+
+	if( ( status & STATUS_OVL ) == true )
+	{
+		// Magnetic X-Y-Z data overflow has occurred, give out a warning only once
+	  if( overflowWarning == false )
+	    ESP_LOGW( FNAME, "read rawHeading detected a X-Y-Z data overflow." );
+
+    overflowWarning = true;
+		return false;
+	}
+
+	// Reset overflow warning, to get a current status of it.
+	overflowWarning = false;
+
+	if( ( status & STATUS_DRDY ) || (status & STATUS_DOR ) )
+	{
+		// Data can be read in every case
+		if( readRegister( addr, REG_X_LSB, 6, data ) > 0 )
+		{
+			mag->x = (int)( (int16_t)(( data[1] << 8 ) | data[0]) );
+			mag->y = (int)( (int16_t)(( data[3] << 8 ) | data[2]) );
+			mag->z = (int)( (int16_t)(( data[5] << 8 ) | data[4]) );
+			return true;
+		}
+		ESP_LOGE( FNAME, "read Register returned <= 0" );
+	}
+	else
+	  ESP_LOGW( FNAME, "No sensor data read, Status-Reg=0x%X, last call before=%lld ms",
+	            status, elapsed );
+
+	return false;
+}
+
+*/
 /**
  * Read temperature in degree Celsius. If ok is passed, it is set to true,
  * if temperature data is valid, otherwise it is set to false.
@@ -343,9 +407,9 @@ void QMC5883L::resetCalibration()
 	compass_x_bias.set( 0 );
 	compass_y_bias.set( 0 );
 	compass_z_bias.set( 0 );
-	compass_x_scale.set( 0 );
-	compass_y_scale.set( 0 );
-	compass_z_scale.set( 0 );
+	compass_x_scale.set( 1 );
+	compass_y_scale.set( 1 );
+	compass_z_scale.set( 1 );
 	compass_calibrated.set( 0 );
 	// commit() is implicitely done in set()
 }
@@ -440,7 +504,6 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z, float xb,
 		}
 
 		uint64_t start = getMsTime();
-
 		/* Find max/min xyz values */
 		xmin = ( xraw < xmin ) ? xraw : xmin;
 		ymin = ( yraw < ymin ) ? yraw : ymin;
@@ -521,6 +584,8 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z, float xb,
 		// The sensor seems to have sometimes problems to deliver all 10ms new data
 		// Therefore we wait at least 50ms.
 		delay( wait );
+		ESP_LOGI( FNAME, "Compass: xmin=%d xmax=%d, ymin=%d ymax=%d, zmin=%d zmax=%d",
+				xmin, xmax, ymin, ymax, zmin, zmax );
 	}
 
 	ESP_LOGI( FNAME, "Read Cal-Samples=%d, OK=%d, NOK=%d",
@@ -646,4 +711,83 @@ float QMC5883L::heading( bool *ok )
 #endif
 
 	return _heading;
+}
+void  QMC5883L::getMagnet(double mag_raw[],double mag_vector[], bool *ok )
+{
+	assert( (ok != nullptr) && "Passing of NULL pointer is forbidden" );
+
+	// Holddown processing and throwing errors once sensor is gone
+	if( errors > 100 && errors % 100 )
+	{
+		*ok = false;
+		errors++;
+		return;
+	}
+
+	// Calibration is running, don't disturb it.
+	if( calibrationRunning == true )
+	{
+		return;
+	}
+
+	bool state = rawHeading();
+	if( state == false )
+	{
+		errors++;
+		if( errors > 3 )
+		{
+			ESP_LOGW(FNAME,"Magnetic sensor errors: init mag sensor" );
+			initialize();  // reinitialize once crashed
+		}
+		if( errors > 50 ){  // survive 50 samples with constant heading if no valid reading
+			*ok = false;
+			return;
+		}
+		*ok = true;
+		return;
+	}
+
+	errors = 0;
+
+	// Check if calibration data are available
+	if( compass_calibrated.get() == 0 )
+	{
+		// No calibration data available, return error because to return
+		// the raw heading is not meaningful.
+	  *ok = false;
+		return;
+	}
+
+	/* Apply corrections to the measured values. Note, due to mounting of chip
+	 * turned clockwise by 90 degrees the X-axis and the Y-axis are moved and
+	 * have to be handled in this way.
+	 */
+	/*modif gfm : calibration en dur à partir de ellipsoid fit*/
+//	double a11=0.9408571;double a12=0.1035400;double a13=-0.322595;
+//	double a21=-0.0678513;double a22=0.9904519;double a23=0.120005;
+//	double a31=0.3319400;double a32=-0.0910190;double a33=0.938899;
+//	xbias=-4673.4;ybias=-2278.2;zbias=903.24;
+//	xscale=1.076;yscale=0.996;zscale=0.870;
+	double a11=0.9443;double a12=-0.040425;double a13=0.32658;
+	double a21=-0.014776;double a22=-0.99663;double a23=-0.08064;
+	double a31=-0.32874;double a32=-0.071323;double a33=0.94172;
+	xbias=-4734;ybias=-2410;zbias=784.31;
+	xscale=1.072;yscale=1.0;zscale=0.866;
+	//mag_vector[1] = -(double) ((float( xraw ) - xbias) * xscale);
+	//mag_vector[0] = (double) ((float( yraw ) - ybias) * yscale);
+	//mag_vector[2] = (double) ((float( zraw ) - zbias) * zscale);
+	mag_raw[1] = double((float(xraw)));
+	mag_raw[0] = -double((float(yraw)));
+	mag_raw[2] = double((float(zraw)));
+	mag_raw[0] -= xbias;
+	mag_raw[1] -= ybias;
+	mag_raw[2] -= zbias;
+	double x,y,z;
+	x = (double) ((mag_raw[0]*a11+mag_raw[1]*a12+mag_raw[2]*a13)/xscale) ;
+	y = (double) ((mag_raw[0]*a21+mag_raw[1]*a22+mag_raw[2]*a23)/yscale) ;
+	z = (double) ((mag_raw[0]*a31+mag_raw[1]*a32+mag_raw[2]*a33)/zscale) ;
+	mag_vector[0] =  (x*a11+y*a21+z*a31) ;
+	mag_vector[1] =  (x*a12+y*a22+z*a32) ;
+	mag_vector[2] =  (x*a13+y*a23+z*a33) ;
+	return;
 }

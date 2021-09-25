@@ -482,6 +482,7 @@ typedef struct
     raw_axes_t gyro;   //!< gyroscope
     int16_t temp;      //!< temperature
     uint8_t* extsens;  //!< external sensor buffer
+    raw_axes_t mag;  //!< magnetometer
 #if defined CONFIG_MPU_AK89xx
     raw_axes_t mag;  //!< magnetometer
 #endif

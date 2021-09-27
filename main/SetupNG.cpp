@@ -266,8 +266,8 @@ void SetupCommon::syncEntry( int entry ){
 	// if( wireless == WL_WLAN || the_can_mode == CAN_MODE_MASTER || the_can_mode == CAN_MODE_CLIENT ) {
 		// ESP_LOGI(FNAME,"We are wireless type=%d", wireless );
 		if( entry  < entries.size() ) {
-			entries[entry]->sync();
-			delay(100);
+			if( entries[entry]->sync() )
+				delay(100);
 		}
 	// }
 }

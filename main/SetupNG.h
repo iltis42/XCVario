@@ -91,7 +91,7 @@ public:
 	virtual bool mustReset() = 0;
 	virtual const char* key() = 0;
 	virtual char typeName() = 0;
-	virtual void sync() = 0;
+	virtual bool sync() = 0;
 	static std::vector<SetupCommon *> entries;
 	static bool initSetup( bool &present );  // returns false if FLASH was completely blank
 	static char *getID();
@@ -162,11 +162,13 @@ public:
 		return ret;
 	};
 
-	void sync(){
+	bool sync(){
 		if( _sync != SYNC_NONE ){
 			ESP_LOGI( FNAME,"Now sync %s", _key );
 			sendSetup( _sync, _key, typeName(), (void *)(&_value), sizeof( _value ) );
+			return true;
 		}
+		return false;
 	};
 
 	bool commit() {

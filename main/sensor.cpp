@@ -1190,7 +1190,7 @@ void sensor(void *args){
 			display->clear();
 			display->writeText( 2, "Wait for Master XCVario" );
 			while( 1 ) {
-				if( CANbus::connected() ){
+				if( CANbus::connectedXCV() ){
 					display->writeText( 3, "Master XCVario found" );
 					display->writeText( 5, "Now start" );
 					delay( 2000 );

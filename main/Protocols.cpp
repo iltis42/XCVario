@@ -452,6 +452,11 @@ void Protocols::parseNMEA( char *astr ){
 				int vali;
 				sscanf(str, "!xsM,%[^,],%c,%d,%d", key,&type,&length, &vali );
 				ESP_LOGI(FNAME,"parseNMEA %s val=%d", str, vali );
+				SetupNG<int> *item = (SetupNG<int> *)SetupCommon::getMember( key );
+				if( item != 0 ){
+					item->set( vali );
+				}else
+					ESP_LOGW(FNAME,"Setup item with key %s not found", key );
 			}
 		}
 

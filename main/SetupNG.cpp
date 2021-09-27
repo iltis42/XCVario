@@ -95,13 +95,13 @@ SetupNG<float>  		factory_volt_adjust("FACT_VOLT_ADJ" , 0.00815, false );
 SetupNG<float>  		bugs( "BUGS", 0.0 );
 SetupNG<int>  			display_type( "DISPLAY_TYPE",  UNIVERSAL );
 SetupNG<int>  			display_orientation("DISPLAY_ORIENT" , 0 );
-SetupNG<int>  			flap_enable( "FLAP_ENABLE", 0 );
-SetupNG<float>  		flap_minus_3( "FLAP_MINUS_3", 200 );
-SetupNG<float>  		flap_minus_2( "FLAP_MINUS_2", 165 );
-SetupNG<float>  		flap_minus_1( "FLAP_MINUS_1", 105);
-SetupNG<float>  		flap_0( "FLAP_0", 88 );
-SetupNG<float>  		flap_plus_1( "FLAP_PLUS_1", 78 );
-SetupNG<float>  		flap_plus_2( "FLAP_PLUS_2", 70 );
+SetupNG<int>  			flap_enable( "FLAP_ENABLE", 0, true, SYNC_FROM_MASTER );
+SetupNG<float>  		flap_minus_3( "FLAP_MINUS_3", 200,  true, SYNC_FROM_MASTER );
+SetupNG<float>  		flap_minus_2( "FLAP_MINUS_2", 165,  true, SYNC_FROM_MASTER );
+SetupNG<float>  		flap_minus_1( "FLAP_MINUS_1", 105,  true, SYNC_FROM_MASTER );
+SetupNG<float>  		flap_0( "FLAP_0", 88,  true, SYNC_FROM_MASTER );
+SetupNG<float>  		flap_plus_1( "FLAP_PLUS_1", 78,  true, SYNC_FROM_MASTER);
+SetupNG<float>  		flap_plus_2( "FLAP_PLUS_2", 70,  true, SYNC_FROM_MASTER );
 SetupNG<int>  			alt_unit( "ALT_UNIT", 0 );
 SetupNG<int>  			ias_unit( "IAS_UNIT", 0 );
 SetupNG<int>  			vario_unit( "VARIO_UNIT", 0 );
@@ -157,9 +157,9 @@ SetupNG<float>			stall_speed( "STALL_SPEED", 70 );
 SetupNG<int>            flarm_warning( "FLARM_LEVEL", 1 );
 SetupNG<int>            flarm_sim( "FLARM_SIM", 0 );
 SetupNG<float>          flarm_volume( "FLARM_VOL", 100 );
-SetupNG<int>            flap_sensor( "FLAP_SENS", 0, false );
-SetupNG<float>          flap_pos_max("FL_POS_M", +2);
-SetupNG<float>          flap_neg_max("FL_NEG_M", -2);
+SetupNG<int>            flap_sensor( "FLAP_SENS", 0, false, SYNC_FROM_MASTER);
+SetupNG<float>          flap_pos_max("FL_POS_M", +2,  true, SYNC_FROM_MASTER);
+SetupNG<float>          flap_neg_max("FL_NEG_M", -2,  true, SYNC_FROM_MASTER);
 SetupNG<int>            compass_enable( "CP_ENABLE", 0 );
 SetupNG<float>          compass_dev_0( "CP_DEV_0", 0 );
 SetupNG<float>          compass_dev_45( "CP_DEV_45", 0 );
@@ -195,14 +195,14 @@ SetupNG<float> 			wind_max_deviation("WIND_MDEV", 30.0 );
 SetupNG<float> 			wind_as_min( "WIND_ASM", 25 );
 SetupNG<int> 			s2f_with_gload( "S2G_GLOAD", 1 );       // considering g load in S2F
 SetupNG<int> 			s2f_blockspeed( "S2G_BLOCKSPEED", 0 );  // considering netto vario and g load for S2F or not
-SetupNG<int> 			wk_label_plus_3( "WKLP3", 32);  //  L
-SetupNG<int> 			wk_label_plus_2( "WKLP2", 11);  //  2
-SetupNG<int> 			wk_label_plus_1( "WKLP1", 10);  //  1
-SetupNG<int> 			wk_label_null_0( "WKL0",   9);  //  0
-SetupNG<int> 			wk_label_minus_1( "WKLM1", 8);  // -1
-SetupNG<int> 			wk_label_minus_2( "WKLM2", 7);  // -2
-SetupNG<int> 			wk_label_minus_3( "WKLM3", 33); //  S
-SetupNG<float>       	flap_takeoff("FLAPTO", 1 );
+SetupNG<int> 			wk_label_plus_3( "WKLP3", 32,  true, SYNC_FROM_MASTER );  //  L
+SetupNG<int> 			wk_label_plus_2( "WKLP2", 11,  true, SYNC_FROM_MASTER );  //  2
+SetupNG<int> 			wk_label_plus_1( "WKLP1", 10,  true, SYNC_FROM_MASTER );  //  1
+SetupNG<int> 			wk_label_null_0( "WKL0",   9,  true, SYNC_FROM_MASTER );  //  0
+SetupNG<int> 			wk_label_minus_1( "WKLM1", 8,  true, SYNC_FROM_MASTER );  // -1
+SetupNG<int> 			wk_label_minus_2( "WKLM2", 7,  true, SYNC_FROM_MASTER );  // -2
+SetupNG<int> 			wk_label_minus_3( "WKLM3", 33,  true, SYNC_FROM_MASTER ); //  S
+SetupNG<float>       	flap_takeoff("FLAPTO", 1,  true, SYNC_FROM_MASTER );
 SetupNG<int> 			audio_disable( "AUDIS", 0 );
 SetupNG<int>			vario_mode("VAMOD", CRUISE_NETTO );  // switch to netto mode when cruising
 SetupNG<int>			airspeed_sensor_type("PTYPE", PS_NONE, false);
@@ -234,7 +234,7 @@ void SetupCommon::sendSetup( e_sync_t sync, const char *key, char type, void *va
 	ESP_LOGI(FNAME,"sendSetup(): key=%s, type=%c, len=%d", key, type, len );
 	char str[40];
 	char sender;
-	if( wireless == WL_WLAN && (sync & SYNC_FROM_MASTER) )              // or cable master tbd.
+	if( ((wireless == WL_WLAN) || (the_can_mode == CAN_MODE_MASTER)) && (sync & SYNC_FROM_MASTER) )              // or cable master tbd.
 		sender='M';
 	else if( ((wireless == WL_WLAN_CLIENT) || (the_can_mode == CAN_MODE_CLIENT)) && (sync & SYNC_FROM_CLIENT) )  // or cable client tbd.
 		sender='C';
@@ -263,13 +263,13 @@ SetupCommon * SetupCommon::getMember( const char * key ){
 
 void SetupCommon::syncEntry( int entry ){
 	// ESP_LOGI(FNAME,"SetupCommon::syncEntry( %d )", entry );
-	if( wireless == WL_WLAN || wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT ) {
+	// if( wireless == WL_WLAN || the_can_mode == CAN_MODE_MASTER || the_can_mode == CAN_MODE_CLIENT ) {
 		// ESP_LOGI(FNAME,"We are wireless type=%d", wireless );
 		if( entry  < entries.size() ) {
 			entries[entry]->sync();
 			delay(100);
 		}
-	}
+	// }
 }
 
 bool SetupCommon::factoryReset(){

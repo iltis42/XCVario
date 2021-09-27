@@ -147,10 +147,15 @@ public:
 		return _key;
 	}
 
+
 	bool set( T aval, bool save=true ) {
 		String val( aval );
 		if( save )
 			ESP_LOGI( FNAME,"set val: %s", val.c_str() );
+		if( memcmp( &_value, &aval, sizeof( aval ) ) == 0 ){
+			ESP_LOGW(FNAME,"Value already in NVS: %s", val.c_str() );
+			return( true );
+		}
 		_value = T(aval);
 		if( !open() ) {
 			ESP_LOGE(FNAME,"NVS Error open nvs handle !");

@@ -263,13 +263,13 @@ SetupCommon * SetupCommon::getMember( const char * key ){
 
 void SetupCommon::syncEntry( int entry ){
 	// ESP_LOGI(FNAME,"SetupCommon::syncEntry( %d )", entry );
-	// if( wireless == WL_WLAN || the_can_mode == CAN_MODE_MASTER || the_can_mode == CAN_MODE_CLIENT ) {
+	if( wireless == WL_WLAN || the_can_mode == CAN_MODE_MASTER  ) {
 		// ESP_LOGI(FNAME,"We are wireless type=%d", wireless );
-		if( entry  < entries.size() ) {
+		if( entry < entries.size() ) {
 			if( entries[entry]->sync() )
 				delay(100);
 		}
-	// }
+	}
 }
 
 bool SetupCommon::factoryReset(){

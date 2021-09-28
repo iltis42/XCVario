@@ -17,7 +17,7 @@ public:
 	static bool isOpen();
 	static bool cruiseMode();
 	static bool getCruiseState(){ return cruise_mode_final; };
-	static void setCruiseModeXCV( bool cm ){ _cruise_mode_xcv = cm; };
+	static void setCruiseModeXCV();
 	static void tick();   // call al least every 100 mS
 	static void setCruiseSpeed( float s ) { _cruise_speed_kmh = s; };
 private:

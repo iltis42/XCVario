@@ -452,13 +452,13 @@ void Audio::startAudio(){
 	_testmode = false;
 	evaluateChopping();
 	p_wiper = &wiper;
-	xTaskCreatePinnedToCore(&dactask, "dactask", 2048, NULL, 15, dactid, 0);
+	xTaskCreatePinnedToCore(&dactask, "dactask", 2400, NULL, 15, dactid, 0);
 }
 
 bool Audio::calcS2Fmode(){
 	bool mode = false;
 	if( !_alarm_mode ) {
-		mode =  Switch::cruiseMode();
+		mode =  cruise_mode.get();
 		if( mode )
 			p_wiper = &wiper_s2f;
 		else

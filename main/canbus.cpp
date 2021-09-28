@@ -163,18 +163,6 @@ int rx_pos=0;
 void CANbus::on_can_connect( int msg ){
 	if( !Flarm::bincom ){ // have a client to XCVario protocol connected
 		// ESP_LOGV(FNAME, "on_client_connect: Send MC, Ballast, Bugs, etc");
-		if( can_mode.get() == CAN_MODE_MASTER ){
-			if( msg == 2 )
-				OV.sendBallastChange( ballast.get(), true );
-			if( msg == 3 )
-				OV.sendBugsChange( bugs.get() );
-			if( msg == 4 )
-				OV.sendClientMcChange( MC.get() );
-			if( msg == 5 )
-				OV.sendTemperatureChange( temperature );
-			if( msg == 6 )
-				OV.sendCruiseChange( Switch::getCruiseState() );
-		}
 		SetupCommon::syncEntry(msg);
 	}
 }
@@ -191,7 +179,7 @@ void CANbus::tick(){
 		// ESP_LOGI(FNAME,"There is CAN data");
 		if( _connected_xcv ){
 			if( Router::pullMsg( can_tx_q, msg ) ){
-				ESP_LOGI(FNAME,"CAN TX len: %d bytes", msg.length() );
+				// ESP_LOGI(FNAME,"CAN TX len: %d bytes", msg.length() );
 				// ESP_LOG_BUFFER_HEXDUMP(FNAME,msg.c_str(),msg.length(), ESP_LOG_INFO);
 				if( !sendNMEA( msg.c_str() ) ){
 					_connected_timeout_xcv +=20;  // if sending fails as indication for disconnection

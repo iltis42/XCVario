@@ -22,14 +22,7 @@ public:
 	virtual ~Protocols( );
 	void sendWkChange( float wk );
 	void sendMeanClimb( float climb );
-	void sendBallastChange( float ballast, bool external=true );
-	void sendBugsChange( float bugs );
-	void sendClientBugsChange( float bugs );
-	void sendTemperatureChange( float temp );
-	void sendCruiseChange( bool cruiseMode );
 	void sendWindChange( float dir, float speed, e_windanalyser_mode_t type );
-	void sendMcChange( float mc );
-	void sendClientMcChange( float mc );  // only from client to master
     void sendNmeaHDM( float heading );
     void sendNmeaHDT( float heading );
 	void sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,

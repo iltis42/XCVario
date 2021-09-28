@@ -42,6 +42,7 @@ Switch::~Switch() {
 bool Switch::cruiseMode() {
 	if( audio_mode.get() == AM_FROM_MASTER ){
 		// just take from master and ignore setting
+		_cruise_mode_xcv = cruise_mode.get(); // updated from master
 		if( _cruise_mode_xcv != cm_xcv_prev  ){
 			cruise_mode_final = _cruise_mode_xcv;
 			cm_xcv_prev = _cruise_mode_xcv;
@@ -51,31 +52,32 @@ bool Switch::cruiseMode() {
 		if( _cruise_mode_sw != cm_switch_prev  ){
 			cm_switch_prev = _cruise_mode_sw;
 			cruise_mode_final = _cruise_mode_sw;
-			OV.sendCruiseChange( cruise_mode_final );
 		}
 		else if( _cruise_mode_speed != cm_auto_prev ){
 			cm_auto_prev = _cruise_mode_speed;
 			cruise_mode_final = _cruise_mode_speed;
-			OV.sendCruiseChange( cruise_mode_final );
 		}
 	}
 	else if( audio_mode.get() == AM_SWITCH ){
 		if( cruise_mode_final != _cruise_mode_sw ){
 			cruise_mode_final = _cruise_mode_sw;
-			OV.sendCruiseChange( cruise_mode_final );
 		}
 	}
 	else if( audio_mode.get() == AM_VARIO ) {
 		if( cruise_mode_final != false ){
 			cruise_mode_final = false;
-			OV.sendCruiseChange( cruise_mode_final );
 		}
 	}
 	else if( audio_mode.get() == AM_S2F ){
 		if( cruise_mode_final != true ){
 			cruise_mode_final = true;
-			OV.sendCruiseChange( cruise_mode_final );
 		}
+	}
+	// ESP_LOGI(FNAME,"cruise_mode_final %d", cruise_mode_final );
+
+	if( (int)cruise_mode_final != (int)cruise_mode.get() ){
+		ESP_LOGI(FNAME,"New cruise mode: %d", cruise_mode_final );
+		cruise_mode.set( (int)cruise_mode_final );
 	}
 	return cruise_mode_final;
 }
@@ -102,6 +104,9 @@ bool Switch::isOpen() {
 	return( !isClosed() );
 }
 
+void Switch::setCruiseModeXCV(){
+	_cruise_mode_xcv = cruise_mode.get();
+}
 
 
 void Switch::tick() {
@@ -160,4 +165,7 @@ void Switch::tick() {
 			}
 		}
 	}
+	if( !(_tick%20) )
+		Switch::cruiseMode();
+
 }

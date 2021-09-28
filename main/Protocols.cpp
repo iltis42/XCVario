@@ -39,20 +39,6 @@ Protocols::~Protocols() {
 
 }
 
-void Protocols::sendTemperatureChange( float temp ){
-	char str[20];
-	sprintf( str,"!xt,%2.1f\n", std::round(temp*10)/10 );
-	// ESP_LOGI(FNAME,"New Temperature: %f, cmd: %s", temp, str );
-	Router::sendXCV(str);
-}
-
-void Protocols::sendCruiseChange( bool cruiseMode ){
-	char str[20];
-	sprintf( str,"!xi,%d\n", (int)cruiseMode );
-	// ESP_LOGI(FNAME,"New Cruise Mode: %d, cnd %s", cruiseMode, str );
-	Router::sendXCV(str);
-}
-
 void Protocols::sendWkChange( float wk ){
 	char str[20];
 	sprintf( str,"!xw,%1.1f\n", wk );
@@ -64,60 +50,6 @@ void Protocols::sendWindChange( float dir, float speed, e_windanalyser_mode_t ty
 	char str[20];
 	sprintf( str,"!xd,%3.1f,%3.1f,%d\n", dir, speed, type );
 	// ESP_LOGI(FNAME,"New wind cmd: %s", str );
-	Router::sendXCV(str);
-}
-
-
-void Protocols::sendBallastChange( float ballast, bool external ){
-	char str[20];
-	ESP_LOGI(FNAME,"Send new Ballast %f ", ballast );
-	float refw = polar_wingload.get() * polar_wingarea.get();
-	ESP_LOGI(FNAME,"Reference weight: %f kg", refw);
-	float liters = (1+ (ballast/100))*refw -refw;
-	ESP_LOGI(FNAME,"New Ballast in liters: %f ", liters);
-	float max_bal = polar_max_ballast.get();
-	if( (int)(polar_max_ballast.get()) == 0 ) { // We use 100 liters as default once its not with the polar
-		max_bal = 100;
-	}
-	ESP_LOGI(FNAME,"Max ballast %f", max_bal );
-	float bal = (liters/max_bal)*10;
-	ballast_percent = bal*10;
-	if( external ){
-		sprintf( str,"!g,b%d\n\r", (int)(std::round(bal)));
-		ESP_LOGI(FNAME,"New ballast %f, cmd: %s", bal, str );
-		Router::sendXCV(str);
-	}
-	sprintf( str,"!xb,%3.1f\n", ballast);
-	ESP_LOGI(FNAME,"New ballast internal %f, cmd: %s", ballast, str );
-	Router::sendXCV(str);
-}
-
-void Protocols::sendBugsChange( float bugs ){
-	char str[20];
-	sprintf( str,"!g,u%d\n", (int)(std::round(100-bugs)));   // Cambridge protocol uses 100-%bugs notation, 25% bugs = !g,u75
-	ESP_LOGI(FNAME,"New bugs cmd: %s", str );
-	Router::sendXCV(str);
-}
-
-void Protocols::sendClientBugsChange( float bugs ){
-	char str[20];
-	sprintf( str,"!xu,%d\n", (int)(std::round(bugs)));
-	ESP_LOGI(FNAME,"New client bugs cmd: %s", str );
-	Router::sendXCV(str);
-}
-
-
-void Protocols::sendMcChange( float mc ){
-	char str[20];
-	sprintf( str,"!g,m%d\n", (int)std::round(Units::ms2knots(mc)*10) );
-	ESP_LOGI(FNAME,"New MC %f, cmd: %s", mc , str );
-	Router::sendXCV(str);
-}
-
-void Protocols::sendClientMcChange( float mc ){
-	char str[20];
-	sprintf( str,"!xm,%2.1f\n", std::roundf(mc*10)/10 );
-	ESP_LOGI(FNAME,"New Client MC %f, cmd: %s", mc , str );
 	Router::sendXCV(str);
 }
 
@@ -370,63 +302,19 @@ void Protocols::parseNMEA( char *astr ){
 				CircleWind::setWind( dir, speed );
 			}
 		}
-		else if ( strncmp( str, "!xt,", 4 ) == 0 ) {
-			float temp;
-			sscanf( str,"!xt,%f", &temp );  // directly scan into sensor variable
-			temperature = temp;
-			validTemperature=true;
-			ESP_LOGI(FNAME,"T change detected T=%2.1f", temp );
-		}
-		else if ( strncmp( str, "!xi,", 4 ) == 0 ) {
-			int cruise;
-			sscanf( str,"!xc,%d", &cruise );
-			Switch::setCruiseModeXCV( (bool)cruise );
-			ESP_LOGI(FNAME,"Cruise Mode change detected Cruise=%d", cruise );
-		}
 		else if ( strncmp( str, "!xa,", 4 ) == 0 ) {
 			float climb;
 			sscanf( str,"!xa,%f", &climb );  // directly scan into sensor variable
 			meanClimb = climb;
 			// ESP_LOGI(FNAME,"mean climb change detected mean climb=%f", climb );
 		}
-		else if ( strncmp( str, "!xm,", 4 ) == 0 ) {
-			float mc;
-			sscanf( str,"!xm,%f", &mc );
-			ESP_LOGI(FNAME,"MC change %s detected, new MC %f", str, mc );
-			if( MC.get() != mc ){
-				MC.set( mc );
-			}
-		}
-		else if ( strncmp( str, "!xu,", 4 ) == 0 ) {
-			float _bugs;
-			sscanf( str,"!xu,%f", &_bugs );
-			ESP_LOGI(FNAME,"bugs change from client detected=%f", _bugs );
-			if( bugs.get() != _bugs ){
-				bugs.set( _bugs );
-			}
-		}
 		else if ( strncmp( str, "!xc,", 4 ) == 0 ) {
-				float h;
-				sscanf( str,"!xc,%f", &h );
-				// ESP_LOGI(FNAME,"Compass heading detected=%3.1f", h );
-				Compass::setHeading( h );
+			float h;
+			sscanf( str,"!xc,%f", &h );
+			// ESP_LOGI(FNAME,"Compass heading detected=%3.1f", h );
+			Compass::setHeading( h );
 		}
-		else if ( strncmp( str, "!xq,", 4 ) == 0 ) {
-			/*
-			float qnh;
-			sscanf( str,"!xq,%f", &qnh );  // directly scan into sensor variable
-			if( QNH.get() != qnh )
-				QNH.set( qnh );
-			ESP_LOGI(FNAME,"QNH change cmd new QNH: %f, cmd: %s", qnh, str );
-			*/
-		}
-		else if ( strncmp( str, "!xb,", 4 ) == 0 ) {
-			float aballast;
-			sscanf(str, "!xb,%f", &aballast);
-			ballast.set( aballast );
-			ESP_LOGI(FNAME,"parseNMEA, internal ballast modification %s new ballast: %f", str, aballast );
-			_s2f->change_mc_bal();
-		}
+
 		else if ( strncmp( str, "!xs", 3 ) == 0 ) {
 			ESP_LOGI(FNAME,"parseNMEA %s", str );
 			char key[20];
@@ -448,7 +336,7 @@ void Protocols::parseNMEA( char *astr ){
 			else if( type == 'I' ){
 				int vali;
 				sscanf(str, "!xs%c,%[^,],%c,%d,%d", &role, key,&type,&length, &vali );
-				// ESP_LOGI(FNAME,"parseNMEA %s val=%d", str, vali );
+				ESP_LOGI(FNAME,"parseNMEA %s val=%d", str, vali );
 				SetupNG<int> *item = (SetupNG<int> *)SetupCommon::getMember( key );
 				if( item != 0 ){
 					item->set( vali, false );
@@ -472,11 +360,6 @@ void Protocols::parseNMEA( char *astr ){
 				float bal = (100.0*(liters+refw)/refw) - 100;
 				ESP_LOGI(FNAME,"Final new ballast: %f ", bal);
 				ballast.set( bal );
-				_s2f->change_mc_bal();
-				if( wireless == WL_WLAN ) {// update also client from Master
-					delay( 500 );
-					OV.sendBallastChange( ballast.get(), false );
-				}
 			}
 			if (str[3] == 'm' ) {
 				ESP_LOGI(FNAME,"parseNMEA, BORGELT, MC modification");
@@ -486,12 +369,6 @@ void Protocols::parseNMEA( char *astr ){
 				float mc_ms =  std::roundf(Units::knots2ms(mc)*10.f)/10.f; // hide rough knot resolution
 				ESP_LOGI(FNAME,"New MC: %1.1f knots, %f", mc, mc_ms );
 				MC.set( Units::Vario( mc_ms ) );  // set mc according corresponding vario units
-				_s2f->change_mc_bal();
-				if( wireless == WL_WLAN ) {// update also client from Master
-					delay( 500 );
-					OV.sendMcChange( MC.get() );
-					ESP_LOGI(FNAME,"MC BG change detected, new MC %f", mc_ms );
-				}
 			}
 			if (str[3] == 'u') {
 				int mybugs;
@@ -499,11 +376,6 @@ void Protocols::parseNMEA( char *astr ){
 				mybugs = 100-mybugs;
 				ESP_LOGI(FNAME,"New Bugs: %d %%", mybugs);
 				bugs.set( mybugs );
-				_s2f->change_mc_bal();
-				if( wireless == WL_WLAN ) {// update also client from Master
-					delay( 500 );
-					OV.sendBugsChange( bugs.get() );
-				}
 			}
 		}
 		else if( !strncmp( str, "$PXCV,", 5 ) ){   // $PXCV,-0.0,0.5,0,1.00,0,24.4,1013.2,990.8, 0.0,0.2,-29.2,-0.45,0.01,0.80*2C
@@ -538,7 +410,6 @@ void Protocols::parseNMEA( char *astr ){
 				baroP = _baro;
 				dynamicP = _pitot;
 				float iasraw= Atmosphere::pascal2kmh( dynamicP );
-				Switch::setCruiseModeXCV( _cruise );
 				ias = ias + (iasraw - ias)*0.25;
 				tas += ( Atmosphere::TAS( iasraw , _baro, _temp) - tas)*0.25;
 				alt=Atmosphere::calcAltitude( QNH.get(), _baro );

@@ -90,20 +90,6 @@ int create_socket( int port ){
 void on_client_connect( int port, int msg ){
 	if( port == 8880 && !Flarm::bincom ){ // have a client to XCVario protocol connected
 		// ESP_LOGV(FNAME, "on_client_connect: Send MC, Ballast, Bugs, etc");
-		if( msg == 2 ) {
-			if( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT )
-				OV.sendBallastChange( ballast.get(), false );
-			else
-				OV.sendBallastChange( ballast.get(), true );
-		}
-		if( msg == 3 )
-			OV.sendBugsChange( bugs.get() );
-		if( msg == 4 )
-			OV.sendClientMcChange( MC.get() );
-		if( msg == 5 )
-			OV.sendTemperatureChange( temperature );
-		if( msg == 6 )
-			OV.sendCruiseChange( Switch::getCruiseState() );
 		SetupCommon::syncEntry(msg);
 	}
 }

@@ -28,9 +28,14 @@
 #include "mpu/types.hpp"  // MPU data types and definitions
 #include "sensor.h"
 #include "Router.h"
+#include "Switch.h"
 
 std::vector<SetupCommon *> SetupCommon::entries;
 char SetupCommon::_ID[14];
+
+void change_mc_bal() {  // or bugs
+	Speed2Fly.change_mc_bal();
+}
 
 SetupNG<float>  		QNH( "QNH", 1013.25, true, SYNC_BIDIR );
 SetupNG<float> 			polar_wingload( "POLAR_WINGLOAD", 34.40, true, SYNC_FROM_MASTER );
@@ -48,13 +53,16 @@ SetupNG<float>  		vario_delay( "VARIO_DELAY", 3.0 );
 SetupNG<float>  		vario_av_delay( "VARIO_AV_DELAY", 20.0 );  // changed to 20 seconds (quasi standard) what equals to a half circle
 SetupNG<float>  		center_freq( "AUDIO_CENTER_F", 500.0 );
 SetupNG<float>  		tone_var( "OCTAVES", 2.0);
-SetupNG<int>  			dual_tone( "DUAL_TONE" , 0 );
+SetupNG<int>  			dual_tone( "DUAL_TONE", 0 );
 SetupNG<float>  		high_tone_var( "HIGH_TONE_VAR", 12.0 );
 SetupNG<float>  		deadband( "DEADBAND", 0.3 );
 SetupNG<float>  		deadband_neg("DEADBAND_NEG" , -0.3 );
 SetupNG<float>  		range( "VARIO_RANGE", 5.0 );
-SetupNG<float>  		ballast( "BALLAST" , 0.0 );
-SetupNG<float>  		MC( "MacCready", 0.5 );
+SetupNG<float>  		ballast( "BALLAST" , 0.0, true, SYNC_BIDIR, PERSISTENT, change_mc_bal );
+SetupNG<float>  		bugs( "BUGS", 0.0, true, SYNC_BIDIR, PERSISTENT, change_mc_bal  );
+SetupNG<float>  		MC( "MacCready", 0.5, true, SYNC_BIDIR, PERSISTENT, change_mc_bal );
+SetupNG<int>  			cruise_mode( "CRUISE", 0, true, SYNC_BIDIR, VOLATILE );
+SetupNG<float>  		OAT( "OAT", 0.0, true, SYNC_FROM_MASTER, VOLATILE );   // outside temperature
 SetupNG<float>  		s2f_speed( "S2F_SPEED", 100.0 );
 SetupNG<float>  		s2f_hysteresis( "S2F_HYST", 5.0 );
 
@@ -93,7 +101,7 @@ SetupNG<float>  		s2f_deadband( "DEADBAND_S2F", 10.0 );
 SetupNG<float>  		s2f_deadband_neg( "DB_S2F_NEG", -10.0 );
 SetupNG<float>  		s2f_delay( "S2F_DELAY", 5.0 );
 SetupNG<float>  		factory_volt_adjust("FACT_VOLT_ADJ" , 0.00815, false );
-SetupNG<float>  		bugs( "BUGS", 0.0 );
+
 SetupNG<int>  			display_type( "DISPLAY_TYPE",  UNIVERSAL );
 SetupNG<int>  			display_orientation("DISPLAY_ORIENT" , 0 );
 SetupNG<int>  			flap_enable( "FLAP_ENABLE", 0, true, SYNC_FROM_MASTER );
@@ -255,7 +263,7 @@ void SetupCommon::sendSetup( e_sync_t sync, const char *key, char type, void *va
 SetupCommon * SetupCommon::getMember( const char * key ){
 	for(int i = 0; i < entries.size(); i++ ) {
 		if( std::string( key ) == std::string( entries[i]->key() )){
-			ESP_LOGI(FNAME,"found key %s", entries[i]->key() );
+			// ESP_LOGI(FNAME,"found key %s", entries[i]->key() );
 			return entries[i];
 		}
 	}

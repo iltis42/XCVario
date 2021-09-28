@@ -75,7 +75,7 @@ typedef enum e_compasss_sensor_type { CS_DISABLE, CS_I2C, CS_I2C_NO_TILT, CS_CAN
 
 typedef enum e_sync { SYNC_NONE, SYNC_FROM_MASTER, SYNC_FROM_CLIENT, SYNC_BIDIR } e_sync_t;       // determines if data is synched from/to client. BIDIR means sync at commit from both sides
 typedef enum e_reset { RESET_NO, RESET_YES } e_reset_t;   // determines if data is reset to defaults on factory reset
-typedef enum e_volatility { VOLATILE, NON_VOLATILE, SEMI_VOLATILE } e_volatility_t;  // stored in RAM, FLASH, or into FLASH after a while
+typedef enum e_volatility { VOLATILE, PERSISTENT, SEMI_VOLATILE } e_volatility_t;  // stored in RAM, FLASH, or into FLASH after a while
 typedef enum e_can_speed { CAN_SPEED_OFF, CAN_SPEED_250KBIT, CAN_SPEED_500KBIT, CAN_SPEED_1MBIT } e_can_speed_t;  // stored in RAM, FLASH, or into FLASH after a while
 typedef enum e_can_mode { CAN_MODE_MASTER, CAN_MODE_CLIENT, CAN_MODE_STANDALONE } e_can_mode_t;
 typedef enum e_altimeter_select { AS_TE_SENSOR, AS_BARO_SENSOR, AS_EXTERNAL } e_altimeter_select_t;
@@ -115,17 +115,20 @@ template<typename T>
 class SetupNG: public SetupCommon
 {
 public:
-	// SetupNG() {};
-	   char typeName(void){
-	   if( typeid( T ) == typeid( float ) )
-		   return 'F';
-	   else if( typeid( T ) == typeid( int ) )
-		   return 'I';
-	   return 'U';
+	char typeName(void){
+		if( typeid( T ) == typeid( float ) )
+			return 'F';
+		else if( typeid( T ) == typeid( int ) )
+			return 'I';
+		return 'U';
 	}
-	SetupNG( const char * akey, T adefault,  // unique identification TAG
-			 bool reset=true,                // reset data on factory reset
-			 e_sync_t sync=SYNC_NONE, e_volatility vol=NON_VOLATILE )               // sync with client device is applicable
+	SetupNG( const char * akey,
+			T adefault,  				   // unique identification TAG
+			bool reset=true,               // reset data on factory reset
+			e_sync_t sync=SYNC_NONE,
+			e_volatility vol=PERSISTENT, // sync with client device is applicable
+			void (* action)()=0
+	)
 	{
 		// ESP_LOGI(FNAME,"SetupNG(%s)", akey );
 		if( strlen( akey ) > 15 )
@@ -137,6 +140,7 @@ public:
 		_reset = reset;
 		_sync = sync;
 		_volatile = vol;
+		_action = action;
 
 	};
 
@@ -156,7 +160,7 @@ public:
 
 	bool set( T aval, bool save=true ) {
 		String val( aval );
-		if( _volatile == NON_VOLATILE ){
+		if( _volatile == PERSISTENT ){
 			_value = T(aval);
 			if( save )
 				sync();
@@ -192,7 +196,10 @@ public:
 		ESP_LOGI(FNAME,"NVS commit(): ");
 		if( (isClient() && _sync == SYNC_FROM_CLIENT) || (isMaster() && _sync == SYNC_FROM_MASTER) || _sync == SYNC_BIDIR )
 			sync();
-		if( _volatile != NON_VOLATILE ){
+		if( _action != 0 )
+			(*_action)();
+
+		if( _volatile != PERSISTENT ){
 			return true;
 		}
 		if( !open() ) {
@@ -218,7 +225,7 @@ public:
 	};
 
 	bool exists() {
-		if( _volatile != NON_VOLATILE )
+		if( _volatile != PERSISTENT )
 				return true;
 		if( !open() ) {
 			ESP_LOGE(FNAME,"Error open nvs handle !");
@@ -232,7 +239,7 @@ public:
 	};
 
 	virtual bool init() {
-		if( _volatile != NON_VOLATILE ){
+		if( _volatile != PERSISTENT ){
 			ESP_LOGI(FNAME,"NVS volatile set default");
 			set( _default );
 			return true;
@@ -277,7 +284,7 @@ public:
 
 
 	virtual bool erase() {
-		if( _volatile != NON_VOLATILE ){
+		if( _volatile != PERSISTENT ){
 			return true;
 		}
 		open();
@@ -322,6 +329,7 @@ private:
 	bool _reset;
 	e_sync_t _sync;
 	e_volatility _volatile;
+	void (* _action)();
 
 	bool open() {
 		if( _nvs_handle == 0) {
@@ -407,6 +415,8 @@ extern SetupNG<float>  		s2f_deadband_neg;
 extern SetupNG<float>  		s2f_delay;
 extern SetupNG<float>  		factory_volt_adjust;
 extern SetupNG<float>  		bugs;
+extern SetupNG<int>  		cruise_mode;
+extern SetupNG<float>  		OAT;
 
 extern SetupNG<int>  		display_type;
 extern SetupNG<int>  		display_orientation;

@@ -194,7 +194,6 @@ int polar_select( SetupMenuSelect * p )
 
 int bal_adj( SetupMenuValFloat * p )
 {
-	Speed2Fly.change_mc_bal();
 	float loadinc = (ballast.get() +100.0)/100.0;
 	float newwl = polar_wingload.get() * loadinc;
 	p->ucg->setFont(ucg_font_fub25_hr);
@@ -208,29 +207,15 @@ int bal_adj( SetupMenuValFloat * p )
 	p->ucg->printf("%u liter  ", liter);
 	xSemaphoreGive(spiMutex );
 	p->ucg->setFont(ucg_font_ncenR14_hr);
-	if( wireless == WL_WLAN_CLIENT )
-		OV.sendBallastChange( ballast.get(), false );
-	else
-		OV.sendBallastChange( ballast.get(), true );
 	return 0;
 }
 
 int bug_adj( SetupMenuValFloat * p ){
-	Speed2Fly.change_mc_bal();
-	if( wireless == WL_WLAN_CLIENT )
-		OV.sendClientBugsChange( bugs.get() );
-	else
-		OV.sendBugsChange( bugs.get() );
 	return 0;
 }
 
 int mc_adj( SetupMenuValFloat * p )
 {
-	Speed2Fly.change_mc_bal();
-	if( wireless == WL_WLAN_CLIENT )
-		OV.sendClientMcChange( MC.get() );
-	else
-		OV.sendMcChange( MC.get() );
 	return 0;
 }
 
@@ -363,11 +348,7 @@ void SetupMenu::down(int count){
 		if( rot_default.get() == 1) {	 // MC Value
 			if( mc > 0.1 ) {
 				mc -= 0.1;
-				Speed2Fly.change_mc_bal();
-				if( wireless == WL_WLAN_CLIENT )
-					OV.sendClientMcChange( MC.get() );
-				else
-					OV.sendMcChange( MC.get() );
+				MC.set( mc );
 			}
 		}
 		else
@@ -397,11 +378,7 @@ void SetupMenu::up(int count){
 		if(rot_default.get() == 1) {	 // MC Value
 			if( mc < 9.9 ) {
 				mc += 0.1;
-				Speed2Fly.change_mc_bal();
-				if( wireless == WL_WLAN_CLIENT )
-					OV.sendClientMcChange( MC.get() );
-				else
-					OV.sendMcChange( MC.get() );
+				MC.set( mc );
 			}
 		}
 		else

@@ -198,7 +198,7 @@ void drawDisplay(void *pvParameters){
 	while (1) {
 		// TickType_t dLastWakeTime = xTaskGetTickCount();
 		if( inSetup != true ) {
-			float t=temperature;
+			float t=OAT.get();
 			if( validTemperature == false )
 				t = DEVICE_DISCONNECTED_C;
 			float airspeed = 0;
@@ -299,7 +299,7 @@ void drawDisplay(void *pvParameters){
 
 			// Vario Screen
 			if( !(stall_warning_active || flarmWarning || gLoadDisplay ) ) {
-				display->drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, meanClimb, Switch::cruiseMode(), standard_setting, Flap::getLever() );
+				display->drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, meanClimb, cruise_mode.get(), standard_setting, Flap::getLever() );
 			}
 		}
 		if( hold_alarm )
@@ -315,10 +315,10 @@ void doAudio(){
 	polar_sink = Speed2Fly.sink( ias );
 	float aTES2F = bmpVario.readS2FTE();
 	float netto = aTES2F - polar_sink;
-	as2f = Speed2Fly.speed( netto, !Switch::cruiseMode() );
+	as2f = Speed2Fly.speed( netto, !cruise_mode.get() );
 	s2f_delta = s2f_delta + ((as2f - ias) - s2f_delta)* (1/(s2f_delay.get()*10)); // low pass damping moved to the correct place
 	// ESP_LOGI( FNAME, "te: %f, polar_sink: %f, netto %f, s2f: %f  delta: %f", te, polar_sink, netto, as2f, s2f_delta );
-	if( vario_mode.get() == VARIO_NETTO || (Switch::cruiseMode() &&  (vario_mode.get() == CRUISE_NETTO)) ){
+	if( vario_mode.get() == VARIO_NETTO || (cruise_mode.get() &&  (vario_mode.get() == CRUISE_NETTO)) ){
 		if( netto_mode.get() == NETTO_RELATIVE )
 			Audio::setValues( TE - polar_sink + Speed2Fly.circlingSink( ias ), s2f_delta );
 		else if( netto_mode.get() == NETTO_NORMAL )
@@ -394,7 +394,7 @@ void readSensors(void *pvParameters){
 			dynamicP = p;
 		float iasraw = Atmosphere::pascal2kmh( dynamicP );
 		// ESP_LOGI("FNAME","P: %f  IAS:%f", dynamicP, iasraw );
-		float T=temperature;
+		float T=OAT.get();
 		if( !validTemperature ) {
 			T= 15 - ( (alt/100) * 0.65 );
 			// ESP_LOGW(FNAME,"T invalid, using 15 deg");
@@ -456,21 +456,21 @@ void readSensors(void *pvParameters){
 			char lb[150];
 
 			if( nmea_protocol.get() == BORGELT ) {
-				OV.sendNMEA( P_BORGELT, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), altSTD, validTemperature  );
-				OV.sendNMEA( P_GENERIC, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), altSTD, validTemperature  );
+				OV.sendNMEA( P_BORGELT, lb, baroP, dynamicP, TE, OAT.get(), ias, tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altSTD, validTemperature  );
+				OV.sendNMEA( P_GENERIC, lb, baroP, dynamicP, TE, OAT.get(), ias, tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altSTD, validTemperature  );
 			}
 			else if( nmea_protocol.get() == OPENVARIO ){
-				OV.sendNMEA( P_OPENVARIO, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature  );
+				OV.sendNMEA( P_OPENVARIO, lb, baroP, dynamicP, TE, OAT.get(), ias, tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), alt, validTemperature  );
 			}
 			else if( nmea_protocol.get() == CAMBRIDGE ){
-				OV.sendNMEA( P_CAMBRIDGE, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature  );
+				OV.sendNMEA( P_CAMBRIDGE, lb, baroP, dynamicP, TE, OAT.get(), ias, tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), alt, validTemperature  );
 			}
 			else if( nmea_protocol.get() == XCVARIO ) {
-				OV.sendNMEA( P_XCVARIO, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
+				OV.sendNMEA( P_XCVARIO, lb, baroP, dynamicP, TE, OAT.get(), ias, tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), alt, validTemperature,
 						-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
 			}
 			else if( nmea_protocol.get() == XCVARIO_DEVEL ) {
-				OV.sendNMEA( P_XCVARIO_DEVEL, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
+				OV.sendNMEA( P_XCVARIO_DEVEL, lb, baroP, dynamicP, TE, OAT.get(), ias, tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), alt, validTemperature,
 						-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
 			}
 			else
@@ -538,10 +538,11 @@ void readTemp(void *pvParameters){
 					ESP_LOGI(FNAME,"Temperatur Sensor connected, temperature valid");
 					validTemperature = true;
 				}
+				// ESP_LOGI(FNAME,"temperature=%2.1f", temperature );
 				temperature +=  (t - temperature) * 0.3; // A bit low pass as strategy against toggling
 				temperature = std::round(temperature*10)/10;
 				if( temperature != temp_prev ){
-					OV.sendTemperatureChange( temperature  );
+					OAT.set( temperature );
 					ESP_LOGI(FNAME,"NEW temperature=%2.1f, prev T=%2.1f", temperature, temp_prev );
 					temp_prev = temperature;
 				}
@@ -551,6 +552,9 @@ void readTemp(void *pvParameters){
 			Flarm::tick();
 			CircleWind::tick();
 			Compass::tick();
+		}else{
+			if( (OAT.get() > -55.0) && (OAT.get() < 85.0) )
+				validTemperature = true;
 		}
 
 		Flarm::progress();
@@ -1270,7 +1274,7 @@ void sensor(void *args){
 	if( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT ){
 		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 14, apid, 0);
 	}
-	xTaskCreatePinnedToCore(&readTemp, "readTemp", 2500, NULL, 5, tpid, 0);
+	xTaskCreatePinnedToCore(&readTemp, "readTemp", 2500, NULL, 8, tpid, 0);
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 4096, NULL, 4, dpid, 0);
 	compass.start();
 	Audio::startAudio();

@@ -122,24 +122,26 @@ void Router::sendAUX(char * s){
 void Router::routeXCV(){
 	SString xcv;
 	if( pullMsg( xcv_rx_q, xcv ) ){
-		if( wireless == WL_BLUETOOTH ) {
-			if( forwardMsg( xcv, bt_tx_q ) )
-				ESP_LOGV(FNAME,"Send to BT device, XCV received %d bytes", xcv.length() );
+		if ( strncmp( xcv.c_str(), "!xs", 3 ) != 0 ){  // those messages are XCV specific and only dedicated to XCV targets via Wifi and CAN
+			if( wireless == WL_BLUETOOTH ) {
+				if( forwardMsg( xcv, bt_tx_q ) )
+					ESP_LOGV(FNAME,"Send to BT device, XCV received %d bytes", xcv.length() );
+			}
+			if( (serial1_tx.get() & RT_XCVARIO) && serial1_speed.get() )
+				if( forwardMsg( xcv, s1_tx_q ) )
+					ESP_LOGV(FNAME,"Send to ttyS1 device, XCV %d bytes", xcv.length() );
+			if( (serial2_tx.get() & RT_XCVARIO) && serial2_speed.get() )
+				if( forwardMsg( xcv, s2_tx_q ) )
+					ESP_LOGV(FNAME,"Send to ttyS2 device, XCV %d bytes", xcv.length() );
 		}
-		else if( wireless == WL_WLAN || wireless == WL_WLAN_CLIENT )
+		if( (can_tx.get() & RT_XCVARIO) && can_speed.get() )
+			if( forwardMsg( xcv, can_tx_q ) )
+				ESP_LOGV(FNAME,"Send to CAN device, XCV %d bytes", xcv.length() );
+		if( wireless == WL_WLAN || wireless == WL_WLAN_CLIENT )
 		{
 			if( forwardMsg( xcv, wl_vario_tx_q ) )
 				ESP_LOGV(FNAME,"Send to WLAN port 8880, XCV %d bytes", xcv.length() );
 		}
-		if( (serial1_tx.get() & RT_XCVARIO) && serial1_speed.get() )
-			if( forwardMsg( xcv, s1_tx_q ) )
-				ESP_LOGV(FNAME,"Send to ttyS1 device, XCV %d bytes", xcv.length() );
-		if( (serial2_tx.get() & RT_XCVARIO) && serial2_speed.get() )
-			if( forwardMsg( xcv, s2_tx_q ) )
-				ESP_LOGV(FNAME,"Send to ttyS2 device, XCV %d bytes", xcv.length() );
-		if( (can_tx.get() & RT_XCVARIO) && can_speed.get() )
-			if( forwardMsg( xcv, can_tx_q ) )
-				ESP_LOGV(FNAME,"Send to CAN device, XCV %d bytes", xcv.length() );
 	}
 }
 

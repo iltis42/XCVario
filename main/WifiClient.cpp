@@ -193,7 +193,7 @@ void WifiClient::tcp_client(void *setup){
         SString send;
     	Router::pullMsg( *(config->txbuf), send);
         if( send.length() ){
-        	ESP_LOGI(FNAME, "have data to send");
+        	// ESP_LOGI(FNAME, "have data to send");
         	if( write(config->sock , send.c_str() , send.length() ) < 0)
         	{
         		ESP_LOGE(FNAME, "Send failed, socket %d", config->sock );
@@ -203,7 +203,7 @@ void WifiClient::tcp_client(void *setup){
         		vTaskDelay(4000 / portTICK_PERIOD_MS);
         		continue;
         	}else {
-        		ESP_LOGI(FNAME, "socket send success");
+        		// ESP_LOGI(FNAME, "socket send success");
         		timeout = 0;
         	}
         }

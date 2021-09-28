@@ -437,11 +437,11 @@ void Protocols::parseNMEA( char *astr ){
 			char type;
 			int  length;
 			sscanf(str, "!xsM,%[^,],%c", key,&type );
-			ESP_LOGI(FNAME,"parseNMEA type=%c key=%s", type , key );
+			// ESP_LOGI(FNAME,"parseNMEA type=%c key=%s", type , key );
 			if( type == 'F' ){
 				float valf;
 				sscanf(str, "!xsM,%[^,],%c,%d,%f", key,&type,&length, &valf );
-				ESP_LOGI(FNAME,"parseNMEA float value=%f", valf );
+				// ESP_LOGI(FNAME,"parseNMEA float value=%f", valf );
 				SetupNG<float> *item = (SetupNG<float> *)SetupCommon::getMember( key );
 				if( item != 0 ){
 					item->set( valf );
@@ -451,7 +451,7 @@ void Protocols::parseNMEA( char *astr ){
 			else if( type == 'I' ){
 				int vali;
 				sscanf(str, "!xsM,%[^,],%c,%d,%d", key,&type,&length, &vali );
-				ESP_LOGI(FNAME,"parseNMEA %s val=%d", str, vali );
+				// ESP_LOGI(FNAME,"parseNMEA %s val=%d", str, vali );
 				SetupNG<int> *item = (SetupNG<int> *)SetupCommon::getMember( key );
 				if( item != 0 ){
 					item->set( vali );

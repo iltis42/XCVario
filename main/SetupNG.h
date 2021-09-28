@@ -120,7 +120,7 @@ public:
 	}
 	SetupNG( const char * akey, T adefault,  // unique identification TAG
 			 bool reset=true,                // reset data on factory reset
-			 e_sync_t sync=SYNC_NONE )               // sync with client device is applicable
+			 e_sync_t sync=SYNC_NONE, e_volatility vol=NON_VOLATILE )               // sync with client device is applicable
 	{
 		// ESP_LOGI(FNAME,"SetupNG(%s)", akey );
 		if( strlen( akey ) > 15 )
@@ -131,6 +131,7 @@ public:
 		_default = adefault;
 		_reset = reset;
 		_sync = sync;
+		_volatile = vol;
 
 	};
 
@@ -150,9 +151,15 @@ public:
 
 	bool set( T aval, bool save=true ) {
 		String val( aval );
+		if( _volatile == NON_VOLATILE ){
+			_value = T(aval);
+			if( save )
+				sync();
+			return true;
+		}
 		if( save )
 			ESP_LOGI( FNAME,"set val: %s", val.c_str() );
-		if( memcmp( &_value, &aval, sizeof( aval ) ) == 0 ){
+		if( memcmp( &_value, &aval, sizeof( aval )  ) == 0 ){
 			ESP_LOGW(FNAME,"Value already in NVS: %s", val.c_str() );
 			return( true );
 		}
@@ -178,6 +185,10 @@ public:
 
 	bool commit() {
 		ESP_LOGI(FNAME,"NVS commit(): ");
+		if( _volatile != NON_VOLATILE ){
+			sync();
+			return true;
+		}
 		if( !open() ) {
 			ESP_LOGE(FNAME,"NVS error");
 			return false;
@@ -202,6 +213,8 @@ public:
 	};
 
 	bool exists() {
+		if( _volatile != NON_VOLATILE )
+				return true;
 		if( !open() ) {
 			ESP_LOGE(FNAME,"Error open nvs handle !");
 			return false;
@@ -214,6 +227,11 @@ public:
 	};
 
 	virtual bool init() {
+		if( _volatile != NON_VOLATILE ){
+			ESP_LOGI(FNAME,"NVS volatile set default");
+			set( _default );
+			return true;
+		}
 		if( !open() ) {
 			ESP_LOGE(FNAME,"Error open nvs handle !");
 			return false;
@@ -254,6 +272,9 @@ public:
 
 
 	virtual bool erase() {
+		if( _volatile != NON_VOLATILE ){
+			return true;
+		}
 		open();
 		esp_err_t _err = nvs_erase_key(_nvs_handle, _key);
 		if(_err != ESP_OK)
@@ -291,6 +312,7 @@ private:
 	nvs_handle_t  _nvs_handle;
 	bool _reset;
 	e_sync_t _sync;
+	e_volatility _volatile;
 
 	bool open() {
 		if( _nvs_handle == 0) {
@@ -367,6 +389,7 @@ extern SetupNG<float>  		core_climb_period;
 extern SetupNG<float>  		core_climb_min;
 extern SetupNG<float>  		core_climb_history;
 extern SetupNG<float>  		elevation;
+extern SetupNG<float>  		audio_volume;
 extern SetupNG<float>  		default_volume;
 extern SetupNG<float>  		frequency_response;
 extern SetupNG<float>  		max_volume;

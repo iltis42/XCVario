@@ -58,6 +58,7 @@ SetupNG<float>  		MC( "MacCready", 0.5 );
 SetupNG<float>  		s2f_speed( "S2F_SPEED", 100.0 );
 SetupNG<float>  		s2f_hysteresis( "S2F_HYST", 5.0 );
 
+SetupNG<float>  		audio_volume( "AUD_VOL", 10, true, SYNC_FROM_MASTER, VOLATILE );
 SetupNG<int>  			audio_variable_frequency( "AUD_VAFQ", 0);
 SetupNG<int>  			audio_mode( "AUDIO_MODE" ,  3 );
 SetupNG<int>  			chopping_mode( "CHOPPING_MODE",  VARIO_CHOP );
@@ -234,9 +235,9 @@ void SetupCommon::sendSetup( e_sync_t sync, const char *key, char type, void *va
 	ESP_LOGI(FNAME,"sendSetup(): key=%s, type=%c, len=%d", key, type, len );
 	char str[40];
 	char sender;
-	if( ((wireless == WL_WLAN) || (the_can_mode == CAN_MODE_MASTER)) && (sync & SYNC_FROM_MASTER) )              // or cable master tbd.
+	if( ((wireless == WL_WLAN) || (can_speed.get() != CAN_SPEED_OFF && the_can_mode == CAN_MODE_MASTER)) && (sync & SYNC_FROM_MASTER) )              // or cable master tbd.
 		sender='M';
-	else if( ((wireless == WL_WLAN_CLIENT) || (the_can_mode == CAN_MODE_CLIENT)) && (sync & SYNC_FROM_CLIENT) )  // or cable client tbd.
+	else if( ((wireless == WL_WLAN_CLIENT) || ( can_speed.get() != CAN_SPEED_OFF && the_can_mode == CAN_MODE_CLIENT)) && (sync & SYNC_FROM_CLIENT) )  // or cable client tbd.
 		sender='C';
 	else
 		sender='U';

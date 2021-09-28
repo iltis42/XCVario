@@ -30,7 +30,7 @@ MenuEntry* MenuEntry::selected = 0;
 ESPRotary* MenuEntry::_rotary = 0;
 AnalogInput* MenuEntry::_adc = 0;
 PressureSensor *MenuEntry::_bmp = 0;
-float MenuEntry::volume;
+// float MenuEntry::volume;
 bool  MenuEntry::_menu_enabled = false;
 
 

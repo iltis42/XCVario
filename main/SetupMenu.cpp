@@ -235,15 +235,23 @@ int mc_adj( SetupMenuValFloat * p )
 }
 
 int vol_adj( SetupMenuValFloat * p ){
-	Audio::setVolume( (int(p->volume*1.270)));
+	Audio::setVolume( (int)(*(p->_value)) );
 	return 0;
 }
 
 void dec_volume( int count ) {
+	int vol = (int)audio_volume.get() - count;
+	if( vol < 0 )
+		vol=0;
+	audio_volume.set( vol );
 	Audio::decVolume(count);
 }
 
 void inc_volume( int count ) {
+	int vol = (int)audio_volume.get() + count;
+	if( vol > 100 )
+		vol = 100;
+	audio_volume.set( vol );
 	Audio::incVolume(count);
 }
 
@@ -310,7 +318,7 @@ void SetupMenu::begin( IpsDisplay* display, ESPRotary * rotary, PressureSensor *
 	ucg = display->getDisplay();
 	_adc = adc;
 	setup();
-	volume = default_volume.get();
+	audio_volume.set( default_volume.get() );
 }
 
 void SetupMenu::display( int mode ){
@@ -494,7 +502,7 @@ void SetupMenu::setup( )
 	mc->setPrecision(1);
 	mm->addMenu( mc );
 
-	SetupMenuValFloat * vol = new SetupMenuValFloat( "Audio Volume", &volume, "%", 0.0, 100, 1, vol_adj, true );
+	SetupMenuValFloat * vol = new SetupMenuValFloat( "Audio Volume", 0, "%", 0.0, 100, 1, vol_adj, true, &audio_volume );
 	vol->setHelp(PROGMEM"Set audio volume");
 	mm->addMenu( vol );
 

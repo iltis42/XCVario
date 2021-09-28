@@ -43,6 +43,7 @@ extern "C" {
  *
  */
 
+
 typedef enum display_type { UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P } display_t;
 typedef enum chopping_mode { NO_CHOP, VARIO_CHOP, S2F_CHOP, BOTH_CHOP } chopping_mode_t;
 typedef enum rs232linemode { RS232_NORMAL, RS232_INVERTED } rs232lm_t;
@@ -72,15 +73,16 @@ typedef enum e_wind_reference { WR_NORTH, WR_HEADING, WR_GPS_COURSE } e_wind_ref
 typedef enum e_temperature_unit { T_CELCIUS, T_FAHRENHEIT, T_KELVIN } e_temperature_unit_t;
 typedef enum e_compasss_sensor_type { CS_DISABLE, CS_I2C, CS_I2C_NO_TILT, CS_CAN } e_compasss_sensor_type_t;
 
-typedef enum e_sync { SYNC_NONE, SYNC_FROM_MASTER, SYNC_FROM_CLIENT, SYNC_BIDIR } e_sync_t;       // determines if data is synched from/to client
+typedef enum e_sync { SYNC_NONE, SYNC_FROM_MASTER, SYNC_FROM_CLIENT, SYNC_BIDIR } e_sync_t;       // determines if data is synched from/to client. BIDIR means sync at commit from both sides
 typedef enum e_reset { RESET_NO, RESET_YES } e_reset_t;   // determines if data is reset to defaults on factory reset
 typedef enum e_volatility { VOLATILE, NON_VOLATILE, SEMI_VOLATILE } e_volatility_t;  // stored in RAM, FLASH, or into FLASH after a while
 typedef enum e_can_speed { CAN_SPEED_OFF, CAN_SPEED_250KBIT, CAN_SPEED_500KBIT, CAN_SPEED_1MBIT } e_can_speed_t;  // stored in RAM, FLASH, or into FLASH after a while
-typedef enum e_can_mode { CAN_MODE_MASTER, CAN_MODE_CLIENT } e_can_mode_t;
+typedef enum e_can_mode { CAN_MODE_MASTER, CAN_MODE_CLIENT, CAN_MODE_STANDALONE } e_can_mode_t;
 typedef enum e_altimeter_select { AS_TE_SENSOR, AS_BARO_SENSOR, AS_EXTERNAL } e_altimeter_select_t;
 
 
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
+
 
 class SetupCommon {
 public:
@@ -92,6 +94,7 @@ public:
 	virtual const char* key() = 0;
 	virtual char typeName() = 0;
 	virtual bool sync() = 0;
+	virtual e_sync getSync() = 0;
 	static std::vector<SetupCommon *> entries;
 	static bool initSetup( bool &present );  // returns false if FLASH was completely blank
 	static char *getID();
@@ -100,6 +103,8 @@ public:
 	static void syncEntry( int entry );
 	static int numEntries() { return entries.size(); };
 	static bool factoryReset();
+	static bool isMaster();
+	static bool isClient();
 private:
 	static char _ID[14];
 };
@@ -110,7 +115,7 @@ template<typename T>
 class SetupNG: public SetupCommon
 {
 public:
-	SetupNG() {};
+	// SetupNG() {};
 	   char typeName(void){
 	   if( typeid( T ) == typeid( float ) )
 		   return 'F';
@@ -185,8 +190,9 @@ public:
 
 	bool commit() {
 		ESP_LOGI(FNAME,"NVS commit(): ");
-		if( _volatile != NON_VOLATILE ){
+		if( (isClient() && _sync == SYNC_FROM_CLIENT) || (isMaster() && _sync == SYNC_FROM_MASTER) || _sync == SYNC_BIDIR )
 			sync();
+		if( _volatile != NON_VOLATILE ){
 			return true;
 		}
 		if( !open() ) {
@@ -195,7 +201,6 @@ public:
 		}
 		ESP_LOGI(FNAME,"NVS commit(key:%s , addr:%08x, len:%d, nvs_handle: %04x)", _key, (unsigned int)(&_value), sizeof( _value ), _nvs_handle);
 		esp_err_t _err = nvs_set_blob(_nvs_handle, _key, (void *)(&_value), sizeof( _value ));
-		sync();
 		if(_err != ESP_OK) {
 			ESP_LOGE(FNAME,"NVS set blob error %d", _err );
 			close();
@@ -303,6 +308,10 @@ public:
 			return true;
 		else
 			return false;
+	};
+
+	e_sync getSync(){
+		return _sync;
 	};
 
 private:
@@ -536,5 +545,9 @@ extern SetupNG<int> 		can_mode;
 
 extern int g_col_background;
 extern int g_col_highlight;
+
+
+
+
 
 #endif /* MAIN_SETUP_NG_H_ */

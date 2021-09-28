@@ -67,12 +67,6 @@ void Protocols::sendWindChange( float dir, float speed, e_windanalyser_mode_t ty
 	Router::sendXCV(str);
 }
 
-void Protocols::sendQNHChange( float qnh ){
-	char str[20];
-	sprintf( str,"!xq,%4.2f\n", qnh );
-	ESP_LOGI(FNAME,"New QNH: %4.2f, cmd: %s", qnh, str );
-	Router::sendXCV(str);
-}
 
 void Protocols::sendBallastChange( float ballast, bool external ){
 	char str[20];
@@ -418,11 +412,13 @@ void Protocols::parseNMEA( char *astr ){
 				Compass::setHeading( h );
 		}
 		else if ( strncmp( str, "!xq,", 4 ) == 0 ) {
+			/*
 			float qnh;
 			sscanf( str,"!xq,%f", &qnh );  // directly scan into sensor variable
 			if( QNH.get() != qnh )
 				QNH.set( qnh );
 			ESP_LOGI(FNAME,"QNH change cmd new QNH: %f, cmd: %s", qnh, str );
+			*/
 		}
 		else if ( strncmp( str, "!xb,", 4 ) == 0 ) {
 			float aballast;
@@ -431,30 +427,31 @@ void Protocols::parseNMEA( char *astr ){
 			ESP_LOGI(FNAME,"parseNMEA, internal ballast modification %s new ballast: %f", str, aballast );
 			_s2f->change_mc_bal();
 		}
-		else if ( strncmp( str, "!xsM,", 5 ) == 0 && ( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT ) ) {
+		else if ( strncmp( str, "!xs", 3 ) == 0 ) {
 			ESP_LOGI(FNAME,"parseNMEA %s", str );
 			char key[20];
 			char type;
 			int  length;
-			sscanf(str, "!xsM,%[^,],%c", key,&type );
-			// ESP_LOGI(FNAME,"parseNMEA type=%c key=%s", type , key );
+			char role; // M | C
+			sscanf(str, "!xs%c,%[^,],%c", &role, key,&type );
+			ESP_LOGI(FNAME,"parseNMEA role=%c type=%c key=%s", role, type , key );
 			if( type == 'F' ){
 				float valf;
-				sscanf(str, "!xsM,%[^,],%c,%d,%f", key,&type,&length, &valf );
+				sscanf(str, "!xs%c,%[^,],%c,%d,%f", &role, key,&type,&length, &valf );
 				// ESP_LOGI(FNAME,"parseNMEA float value=%f", valf );
 				SetupNG<float> *item = (SetupNG<float> *)SetupCommon::getMember( key );
 				if( item != 0 ){
-					item->set( valf );
+					item->set( valf, false );
 				}else
 					ESP_LOGW(FNAME,"Setup item with key %s not found", key );
 			}
 			else if( type == 'I' ){
 				int vali;
-				sscanf(str, "!xsM,%[^,],%c,%d,%d", key,&type,&length, &vali );
+				sscanf(str, "!xs%c,%[^,],%c,%d,%d", &role, key,&type,&length, &vali );
 				// ESP_LOGI(FNAME,"parseNMEA %s val=%d", str, vali );
 				SetupNG<int> *item = (SetupNG<int> *)SetupCommon::getMember( key );
 				if( item != 0 ){
-					item->set( vali );
+					item->set( vali, false );
 				}else
 					ESP_LOGW(FNAME,"Setup item with key %s not found", key );
 			}

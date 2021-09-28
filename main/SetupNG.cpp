@@ -32,7 +32,7 @@
 std::vector<SetupCommon *> SetupCommon::entries;
 char SetupCommon::_ID[14];
 
-SetupNG<float>  		QNH( "QNH", 1013.25 );
+SetupNG<float>  		QNH( "QNH", 1013.25, true, SYNC_BIDIR );
 SetupNG<float> 			polar_wingload( "POLAR_WINGLOAD", 34.40, true, SYNC_FROM_MASTER );
 SetupNG<float> 			polar_speed1( "POLAR_SPEED1",   80, true, SYNC_FROM_MASTER );
 SetupNG<float> 			polar_sink1( "POLAR_SINK1",    -0.66, true, SYNC_FROM_MASTER );
@@ -223,7 +223,7 @@ SetupNG<float>       	max_circle_wind_diff("CI_WINDDM", 60.0 );
 SetupNG<float>       	circle_wind_lowpass("CI_WINDLOW", 5 );
 SetupNG<int> 			can_speed( "CANSPEED", CAN_SPEED_OFF );
 SetupNG<int> 			can_tx( "CANTX", RT_XCVARIO );
-SetupNG<int> 			can_mode( "CANMOD", CAN_MODE_MASTER );
+SetupNG<int> 			can_mode( "CANMOD", CAN_MODE_STANDALONE );
 
 
 mpud::raw_axes_t zero_bias;
@@ -235,9 +235,9 @@ void SetupCommon::sendSetup( e_sync_t sync, const char *key, char type, void *va
 	ESP_LOGI(FNAME,"sendSetup(): key=%s, type=%c, len=%d", key, type, len );
 	char str[40];
 	char sender;
-	if( ((wireless == WL_WLAN) || (can_speed.get() != CAN_SPEED_OFF && the_can_mode == CAN_MODE_MASTER)) && (sync & SYNC_FROM_MASTER) )              // or cable master tbd.
+	if( isMaster()  )
 		sender='M';
-	else if( ((wireless == WL_WLAN_CLIENT) || ( can_speed.get() != CAN_SPEED_OFF && the_can_mode == CAN_MODE_CLIENT)) && (sync & SYNC_FROM_CLIENT) )  // or cable client tbd.
+	else if( isClient() )
 		sender='C';
 	else
 		sender='U';
@@ -262,13 +262,17 @@ SetupCommon * SetupCommon::getMember( const char * key ){
 	return 0;
 }
 
+// at time of connection establishment
 void SetupCommon::syncEntry( int entry ){
 	// ESP_LOGI(FNAME,"SetupCommon::syncEntry( %d )", entry );
-	if( wireless == WL_WLAN || the_can_mode == CAN_MODE_MASTER  ) {
+	if( (isMaster() && entries[entry]->getSync() == SYNC_FROM_MASTER) ||
+			(isClient() && entries[entry]->getSync() == SYNC_FROM_CLIENT) ||
+			(isMaster() && entries[entry]->getSync() == SYNC_BIDIR)
+	)
+	{
 		// ESP_LOGI(FNAME,"We are wireless type=%d", wireless );
 		if( entry < entries.size() ) {
-			if( entries[entry]->sync() )
-				delay(100);
+			entries[entry]->sync();
 		}
 	}
 }
@@ -362,5 +366,13 @@ char * SetupCommon::getID() {
 		}
 	}
 	return _ID;
+}
+
+bool SetupCommon::isMaster(){
+	return((wireless_type.get() == WL_WLAN) || (can_speed.get() != CAN_SPEED_OFF && can_mode.get() == CAN_MODE_MASTER));
+}
+
+bool SetupCommon::isClient(){
+	return((wireless_type.get() == WL_WLAN_CLIENT) || (can_speed.get() != CAN_SPEED_OFF && can_mode.get() == CAN_MODE_CLIENT));
 }
 

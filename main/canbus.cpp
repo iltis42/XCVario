@@ -34,7 +34,7 @@ bool       CANbus::_connected_xcv=false;
 int        CANbus::_connected_timeout_magsens=0;
 int        CANbus::_connected_timeout_xcv=0;
 bool       CANbus::_master_present = false; // todo, create connect event
-
+int        CANbus::dataIndex=0;
 
 static TaskHandle_t cpid;
 
@@ -107,13 +107,14 @@ void CANbus::driverUninstall(){
 
 void canTask(void *pvParameters){
 	while (true) {
+		TickType_t xLastWakeTime = xTaskGetTickCount();
 		CANbus::tick();
 		if( (CANbus::_tick % 100) == 0) {
 			// ESP_LOGI(FNAME,"Free Heap: %d bytes", heap_caps_get_free_size(MALLOC_CAP_8BIT) );
 			if( uxTaskGetStackHighWaterMark( cpid ) < 128 )
 				ESP_LOGW(FNAME,"Warning canbus task stack low: %d bytes", uxTaskGetStackHighWaterMark( cpid ) );
 		}
-		delay(2);
+		vTaskDelayUntil(&xLastWakeTime, 10/portTICK_PERIOD_MS);
 	}
 }
 
@@ -135,9 +136,7 @@ void CANbus::begin()
 	}
 	ESP_LOGI(FNAME,"CANbus::begin");
 	driverInstall( TWAI_MODE_NORMAL );
-
 	xTaskCreatePinnedToCore(&canTask, "canTask", 4096, nullptr, 8, &cpid, 0);
-
 }
 
 // receive message of corresponding ID
@@ -164,22 +163,18 @@ int rx_pos=0;
 void CANbus::on_can_connect( int msg ){
 	if( !Flarm::bincom ){ // have a client to XCVario protocol connected
 		// ESP_LOGV(FNAME, "on_client_connect: Send MC, Ballast, Bugs, etc");
-		if( msg == 1 )
-			OV.sendQNHChange( QNH.get() );
-		if( msg == 2 ) {
-			if( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT )
-				OV.sendBallastChange( ballast.get(), false );
-			else
+		if( can_mode.get() == CAN_MODE_MASTER ){
+			if( msg == 2 )
 				OV.sendBallastChange( ballast.get(), true );
+			if( msg == 3 )
+				OV.sendBugsChange( bugs.get() );
+			if( msg == 4 )
+				OV.sendClientMcChange( MC.get() );
+			if( msg == 5 )
+				OV.sendTemperatureChange( temperature );
+			if( msg == 6 )
+				OV.sendCruiseChange( Switch::getCruiseState() );
 		}
-		if( msg == 3 )
-			OV.sendBugsChange( bugs.get() );
-		if( msg == 4 )
-			OV.sendClientMcChange( MC.get() );
-		if( msg == 5 )
-			OV.sendTemperatureChange( temperature );
-		if( msg == 6 )
-			OV.sendCruiseChange( Switch::getCruiseState() );
 		SetupCommon::syncEntry(msg);
 	}
 }
@@ -197,8 +192,11 @@ void CANbus::tick(){
 		if( _connected_xcv ){
 			if( Router::pullMsg( can_tx_q, msg ) ){
 				ESP_LOGI(FNAME,"CAN TX len: %d bytes", msg.length() );
-				// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
-				sendNMEA( msg.c_str() );
+				// ESP_LOG_BUFFER_HEXDUMP(FNAME,msg.c_str(),msg.length(), ESP_LOG_INFO);
+				if( !sendNMEA( msg.c_str() ) ){
+					_connected_timeout_xcv +=20;  // if sending fails as indication for disconnection
+					ESP_LOGI(FNAME,"CAN TX NMEA failed, timeout=%d", _connected_timeout_xcv );
+				}
 			}
 		}
 	}
@@ -211,14 +209,11 @@ void CANbus::tick(){
 	if( bytes  ){ // keep alive from second XCV
 		// ESP_LOGI(FNAME,"CAN RX id:%02x, bytes:%d, connected XCV:%d Magsens: %d", id, bytes, _connected_xcv, _connected_magsens );
 		if( id == 0x11 ){ // keep alive of msg from peer XCV ?
-			ESP_LOGI(FNAME,"CAN RX Keep Alive");
+			// ESP_LOGI(FNAME,"CAN RX Keep Alive");
 			xcv_came = true;
 			_connected_timeout_xcv = 0;
 			if( !_connected_xcv ){
 				ESP_LOGI(FNAME,"CAN XCV connected");
-				for( int index=0; index< SetupCommon::numEntries(); index++ ){
-					on_can_connect( index );
-				}
 				_connected_xcv = true;
 			}
 		}
@@ -237,8 +232,9 @@ void CANbus::tick(){
 			if( _connected_magsens ){
 				ESP_LOGI(FNAME,"CAN Magsensor connection timeout");
 				_connected_magsens = false;
-				restart();
 			}
+			if( compass_enable.get() && !(_connected_timeout_magsens % 10000) )
+				restart();
 		}
 	}
 	if( !xcv_came ){
@@ -247,39 +243,59 @@ void CANbus::tick(){
 			if(  _connected_xcv ){
 				ESP_LOGI(FNAME,"CAN XCV connection timeout");
 				_connected_xcv = false;
-				restart();
+				dataIndex = 0;
 			}
+			if( (can_mode.get() != CAN_MODE_STANDALONE) && !(_connected_timeout_xcv % 10000) )
+				restart();
 		}
 	}
-	if( !(_connected_timeout_xcv%100) )
-		ESP_LOGI(FNAME,"CAN XCV connection timer: %d", _connected_timeout_xcv );
+	// Handle data sync
+	if( !(_tick%20) && _connected_xcv ){
+		if( dataIndex < SetupCommon::numEntries() ){
+			on_can_connect( dataIndex );
+			dataIndex++;
+		}
+	}
+
+	//if( !(_connected_timeout_xcv%100) )
+	//	ESP_LOGI(FNAME,"CAN XCV connection timer: %d", _connected_timeout_xcv );
 	// receive message of corresponding ID
 	static SString nmea;
 	if( id == 0x20 ) {     // start of nmea
 		// ESP_LOGI(FNAME,"CAN RX Start of frame");
 		nmea.clear();
 		nmea.append( msg.c_str(), bytes );
+		_connected_timeout_xcv = 0;
 	}
 	else if( id == 0x21 ){ // segment
 		// ESP_LOGI(FNAME,"CAN RX frame segment");
 		nmea.append( msg.c_str(), bytes );
+		_connected_timeout_xcv = 0;
 	}
 	else if( id == 0x22 ){
 		nmea.append( msg.c_str(), bytes );
-		// ESP_LOGI(FNAME,"CAN RX, msg: %s", nmea.c_str() );
+		// ESP_LOGI(FNAME,"CAN RX, end frame msg: %s", nmea.c_str() );
 		Router::forwardMsg( nmea, can_rx_q );
+		_connected_timeout_xcv = 0;
 	}
 	else if( id == 0x031 ){
 		// ESP_LOGI(FNAME,"CAN RX MagSensor, msg: %d", bytes );
 		// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), bytes, ESP_LOG_INFO);
 		QMC5883L::fromCAN( msg.c_str() );
+		_connected_timeout_magsens = 0;
 	}
 
-	if( !(_tick%4) )
-		Router::routeCAN();
+//	if( !(_tick%4) )
+	Router::routeCAN();
 	if( !(_tick%100) ){
-		msg.add( 'K' );
-		sendData( 0x11, msg.c_str(), 1 ); // keep alive
+		if( ((can_mode.get() == CAN_MODE_CLIENT)  && _connected_xcv) || can_mode.get() == CAN_MODE_MASTER ){ // sent from client only if keep alive is there
+			msg.add( "K" );
+			if( !sendData( 0x11, msg.c_str(), 1 ) )
+			{
+				_connected_timeout_xcv +=20;  // if sending fails as indication for disconnection
+				ESP_LOGI(FNAME,"CAN TX Keep Alive failed, timeout=%d", _connected_timeout_xcv );
+			}
+		}
 	}
 }
 
@@ -291,28 +307,30 @@ bool CANbus::sendNMEA( const char *msg ){
 	int len=strlen(msg);
 	// ESP_LOGI(FNAME,"send CAN NMEA len %d, msg: %s", len, msg );
 	bool ret = true;
+	const int chunk=8;
 	int id = 0x20;
-	int dlen=8;
+	int dlen=chunk;
 	int pos;
-	for( pos=0; pos < len; pos+=8 ){
-		int rest = len - pos;
-		if( !sendData( id, &msg[pos], dlen ) )
-			ret = false;
-		delay( 10 );
-		if( rest > 0 && rest <= 8 ){
-			dlen = rest;
-			break;
-		}else{
-			rest = 0;
+	for( pos=0; pos < len; pos+=chunk ){
+		if( pos+chunk >= len ){
+			dlen = len+1 - pos;
+			// ESP_LOGI(FNAME,"pos+chunk:%d  len:%d  dlen:%d", pos+chunk, len, dlen );
 		}
-		// ESP_LOGI(FNAME,"Sent id:%d pos:%d dlen %d", id, pos, dlen );
+		if( !sendData( id, &msg[pos], dlen ) ){
+			ESP_LOGI(FNAME,"send CAN chunk retry pos:%d", pos );
+			if( !sendData( id, &msg[pos], dlen ) )
+				ret = false;
+		}else
+			delay(10);
+		// ESP_LOGI(FNAME,"Sent chunk id:%d pos:%d dlen %d", id, pos, dlen );
 		id = 0x21;
 	}
 	id = 0x22;
 	// ESP_LOGI(FNAME,"Sent id:%d pos:%d dlen %d", id, pos, dlen );
-	delay( 10 );
-	if( !sendData( id, &msg[pos], dlen ) )
+	if( !sendData( id, " ", 1 ) )
 		ret = false;
+	else
+		delay(10);
 
 	return ret;
 }
@@ -354,8 +372,6 @@ bool CANbus::selfTest(){
 }
 
 bool CANbus::sendData( int id, const char* msg, int length, int self ){
-	if( id == 0x11 )
-		ESP_LOGI(FNAME,"CANbus::send ALIVE %d bytes, msg %s, self %d", length, msg, self );
 	if( !_ready_initialized ){
 		ESP_LOGI(FNAME,"CANbus not ready initialized");
 		return false;

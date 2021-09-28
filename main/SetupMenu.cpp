@@ -141,7 +141,7 @@ int qnh_adj( SetupMenuValFloat * p )
 	p->ucg->printf("%4d %s ", (int)(altp+0.5), u.c_str() );
 	p->ucg->setFont(ucg_font_ncenR14_hr);
 	xSemaphoreGive(spiMutex );
-	OV.sendQNHChange( QNH.get() );
+
 	return 0;
 }
 
@@ -1473,9 +1473,10 @@ void SetupMenu::setup( )
 
 		SetupMenuSelect * devmod = new SetupMenuSelect( PROGMEM "Mode", true , 0, false, &can_mode );
 		can->addMenu( devmod );
-		devmod->setHelp( PROGMEM "Select Master for single seater or master device in front, and for secondary device 'Client'");
+		devmod->setHelp( PROGMEM "Select 'Standalone' for single seater or 'Master' in front, for secondary device in rear 'Client'");
 		devmod->addEntry( "Master");
 		devmod->addEntry( "Client");
+		devmod->addEntry( "Standalone");
 
 		SetupMenuSelect * nmea = new SetupMenuSelect( PROGMEM "NMEA Protocol", false , 0, true, &nmea_protocol );
 		sye->addMenu( nmea );

@@ -35,4 +35,5 @@ private:
 	static int _connected_timeout_magsens;
 	static int _connected_timeout_xcv;
     static bool _master_present;
+    static int dataIndex;
 };

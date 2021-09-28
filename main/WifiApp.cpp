@@ -90,8 +90,6 @@ int create_socket( int port ){
 void on_client_connect( int port, int msg ){
 	if( port == 8880 && !Flarm::bincom ){ // have a client to XCVario protocol connected
 		// ESP_LOGV(FNAME, "on_client_connect: Send MC, Ballast, Bugs, etc");
-		if( msg == 1 )
-			OV.sendQNHChange( QNH.get() );
 		if( msg == 2 ) {
 			if( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT )
 				OV.sendBallastChange( ballast.get(), false );

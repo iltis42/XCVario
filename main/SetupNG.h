@@ -157,17 +157,22 @@ public:
 		return _key;
 	}
 
+	bool mustSync(){
+		return( ( (isClient() && _sync == SYNC_FROM_CLIENT) || (isMaster() && _sync == SYNC_FROM_MASTER) || _sync == SYNC_BIDIR ) );
+	}
 
-	bool set( T aval, bool save=true ) {
+	bool set( T aval, bool dosync=true ) {
 		String val( aval );
-		if( _volatile == PERSISTENT ){
+		ESP_LOGI( FNAME,"set val: %s %d", val.c_str(), dosync );
+		if( _volatile == VOLATILE ){
 			_value = T(aval);
-			if( save )
+			if( dosync )
 				sync();
+			if( _action != 0 )
+				(*_action)();
 			return true;
 		}
-		if( save )
-			ESP_LOGI( FNAME,"set val: %s", val.c_str() );
+
 		if( memcmp( &_value, &aval, sizeof( aval )  ) == 0 ){
 			ESP_LOGW(FNAME,"Value already in NVS: %s", val.c_str() );
 			return( true );
@@ -178,13 +183,12 @@ public:
 			return( false );
 		}
 		bool ret=true;
-		if( save )
-			ret = commit();
+		ret = commit( dosync );
 		return ret;
 	};
 
 	bool sync(){
-		if( _sync != SYNC_NONE ){
+		if( mustSync() ){
 			ESP_LOGI( FNAME,"Now sync %s", _key );
 			sendSetup( _sync, _key, typeName(), (void *)(&_value), sizeof( _value ) );
 			return true;
@@ -192,9 +196,9 @@ public:
 		return false;
 	};
 
-	bool commit() {
+	bool commit(bool dosync=true) {
 		ESP_LOGI(FNAME,"NVS commit(): ");
-		if( (isClient() && _sync == SYNC_FROM_CLIENT) || (isMaster() && _sync == SYNC_FROM_MASTER) || _sync == SYNC_BIDIR )
+		if( dosync )
 			sync();
 		if( _action != 0 )
 			(*_action)();

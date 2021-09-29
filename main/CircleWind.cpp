@@ -80,7 +80,7 @@ float CircleWind::direction = 0;
 float CircleWind::windspeed = 0;
 float CircleWind::lastWindSpeed = 0;
 float CircleWind::headingDiff = 0;
-int CircleWind::_age = 0;
+int CircleWind::_age = 9000;
 const char * CircleWind::status = "idle";
 t_circling CircleWind::flightMode = undefined;
 Vector CircleWind::windVectors[NUM_RESULTS];
@@ -213,6 +213,7 @@ bool CircleWind::getWind( int *dir, float *speed, int * age )
 }
 
 void CircleWind::resetAge(){
+	ESP_LOGI(FNAME,"resetAge");
 	_age = 0;
 }
 
@@ -295,6 +296,7 @@ void CircleWind::newWind( double angle, double speed ){
 
 void CircleWind::tick(){
 	_age++;
+	ESP_LOGI(FNAME,"age: %d CWD: %.1f CWS %.1f", _age, cwind_dir.get(), cwind_speed.get() );
 }
 
 

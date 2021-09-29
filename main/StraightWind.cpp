@@ -72,7 +72,7 @@ void StraightWind::begin(){
 		airspeedCorrection = wind_as_calibration.get();
 }
 
-int StraightWind::_age = 0;
+int StraightWind::_age = 10000;
 
 void StraightWind::tick(){
 	_age++;

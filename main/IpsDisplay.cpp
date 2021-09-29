@@ -1069,7 +1069,7 @@ void IpsDisplay::drawCompass(){
 		else if( wind_enable.get() == WA_CIRCLING ){
 			ok = CircleWind::getWind( &winddir, &wind, &ageCircling );
 		}
-		else if( wind_enable.get() == WA_BOTH ){  // dynamically change type depening on younger calculation
+		else if( wind_enable.get() == WA_BOTH ){  // dynamically change type depending on younger calculation
 			int wds, wdc;
 			float ws, wc;
 			bool oks, okc;

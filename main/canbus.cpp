@@ -148,7 +148,7 @@ void CANbus::begin()
 	}
 	ESP_LOGI(FNAME,"CANbus::begin");
 	driverInstall( TWAI_MODE_NORMAL );
-	xTaskCreatePinnedToCore(&canTask, "canTask", 4096, nullptr, 8, &cpid, 0);
+	xTaskCreatePinnedToCore(&canTask, "canTask", 4096, nullptr, 22, &cpid, 0);
 }
 
 // receive message of corresponding ID,

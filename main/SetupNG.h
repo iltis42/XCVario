@@ -417,6 +417,12 @@ extern SetupNG<float>  		factory_volt_adjust;
 extern SetupNG<float>  		bugs;
 extern SetupNG<int>  		cruise_mode;
 extern SetupNG<float>  		OAT;
+extern SetupNG<float>  		OAT;   // outside temperature
+extern SetupNG<float>  		wind_dir;   // outside temperature
+extern SetupNG<float>  		wind_speed;
+extern SetupNG<float>  		mag_hdm;
+extern SetupNG<float>  		mag_hdt;
+extern SetupNG<float>  		average_climb;
 
 extern SetupNG<int>  		display_type;
 extern SetupNG<int>  		display_orientation;

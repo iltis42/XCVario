@@ -308,12 +308,6 @@ void Protocols::parseNMEA( char *astr ){
 			meanClimb = climb;
 			// ESP_LOGI(FNAME,"mean climb change detected mean climb=%f", climb );
 		}
-		else if ( strncmp( str, "!xc,", 4 ) == 0 ) {
-			float h;
-			sscanf( str,"!xc,%f", &h );
-			// ESP_LOGI(FNAME,"Compass heading detected=%3.1f", h );
-			Compass::setHeading( h );
-		}
 
 		else if ( strncmp( str, "!xs", 3 ) == 0 ) {
 			ESP_LOGI(FNAME,"parseNMEA %s", str );

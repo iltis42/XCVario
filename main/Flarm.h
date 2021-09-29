@@ -11,12 +11,12 @@
 class Flarm {
 public:
 	static void setDisplay( Ucglib_ILI9341_18x240x320_HWSPI *theUcg ) { ucg = theUcg; };
-	static void parsePFLAU( char *pflau );
-	static void parsePFLAA( char *pflaa );
+	static void parsePFLAU( const char *pflau );
+	static void parsePFLAA( const char *pflaa );
 	static void parsePFLAX( SString &msg );
-	static void parseGPRMC( char *gprmc );
-	static void parseGPGGA( char *gpgga );
-	static void parsePGRMZ( char *pgrmz );
+	static void parseGPRMC( const char *gprmc );
+	static void parseGPGGA( const char *gpgga );
+	static void parsePGRMZ( const char *pgrmz );
 	static void drawAirplane( int x, int y, bool fromBehind=false, bool smallSize=false );
  	static inline int alarmLevel(){ return AlarmLevel; };
  	static void drawFlarmWarning();

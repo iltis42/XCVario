@@ -6,15 +6,14 @@
 #define CAN_BUS_TX_PIN GPIO_NUM_26
 #define CAN_BUS_RX_PIN GPIO_NUM_33
 
+class SString;
+
 class CANbus {
 public:
 	CANbus(){};
 	~CANbus(){};
 	static void begin();
 	static void restart();
-	static bool sendData( int id, const char* msg, int length, int self=0 );
-	static bool sendNMEA( const char* msg );
-	static int receive(  int *id, char *msg, int timeout=5);
 	static void tick();
 	static bool selfTest();
 	static int _tick;
@@ -24,6 +23,9 @@ public:
 	static bool isOkay() { return _ready_initialized; };
 
 private:
+	static bool sendData( int id, const char* msg, int length, int self=0 );
+	static bool sendNMEA( const SString& msg );
+	static int receive(  int *id, SString& msg, int timeout=5);
 	static void driverInstall( twai_mode_t mode );
 	static void on_can_connect( int msg );
 	static void driverUninstall();

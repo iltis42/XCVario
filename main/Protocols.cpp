@@ -258,15 +258,12 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 	Router::sendXCV(str);
 }
 
-int countPFLAU=0;
-
-int tickNMEA=0;
 float Protocols::_mc_prev = 0.5;
 float Protocols::_qnh_prev = 0.5;
 
 // The XCVario Protocol or Cambridge CAI302 protocol to adjust MC,Ballast,Bugs.
 
-char * mystrtok(char *s)
+const char * mystrtok(const char *s)
 {
 	int i, c;
 	for (i = 0; i < strlen(s); i++) {
@@ -278,12 +275,11 @@ char * mystrtok(char *s)
 }
 
 
-void Protocols::parseNMEA( char *astr ){
+void Protocols::parseNMEA( const char *astr ){
 	// ESP_LOGI(FNAME,"parseNMEA: %s", astr );
-	char *str = mystrtok(astr);
+	const char *str = mystrtok(astr);
 	while( str ){
 		ESP_LOGV(FNAME,"parseNMEA token: %s", str);
-		tickNMEA++;
 		if ( strncmp( str, "!xw,", 4 ) == 0 ) {
 			float wkcmd;
 			sscanf( str,"!xw,%f", &wkcmd );  // directly scan into sensor variable
@@ -486,7 +482,7 @@ void Protocols::parseNMEA( char *astr ){
 // Calculate the checksum and output it as an int
 // is required as HEX in the NMEA data set
 // between $ or! and * character
-int Protocols::calcNMEACheckSum(char * nmea) {
+int Protocols::calcNMEACheckSum(const char *nmea) {
 	int i, XOR, c;
 	for (XOR = 0, i = 0; i < strlen(nmea); i++) {
 		c = (unsigned char)nmea[i];
@@ -496,7 +492,7 @@ int Protocols::calcNMEACheckSum(char * nmea) {
 	return XOR;
 }
 
-int Protocols::getNMEACheckSum(char * nmea) {
+int Protocols::getNMEACheckSum(const char *nmea) {
 	int i, cs, c;
 	for (i = 0; i < strlen(nmea); i++) {
 		c = (unsigned char)nmea[i];
@@ -505,4 +501,3 @@ int Protocols::getNMEACheckSum(char * nmea) {
 	sscanf( &nmea[i],"*%02x", &cs );
 	return cs;
 }
-

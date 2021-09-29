@@ -156,9 +156,7 @@ void WifiClient::tcp_client(void *setup){
     tcpServerAddr.sin_addr.s_addr = inet_addr(TCPServerIP);
     tcpServerAddr.sin_family = AF_INET;
     tcpServerAddr.sin_port = htons( config->port );
-	int num = 0;
     int timeout=0;
-    SString rec;
     while(1){
         xEventGroupWaitBits(wifi_event_group,CONNECTED_BIT,false,true,portMAX_DELAY);
         timeout++;
@@ -209,18 +207,18 @@ void WifiClient::tcp_client(void *setup){
         }
         int end=100;
         while( 1 ){
-        	if( recv(config->sock, rec.c_str()+num, 1, MSG_DONTWAIT ) > 0){
-        		if( rec.c_str()[num] == '\n' || num > SSTRLEN-1 ){
-        			rec.setLen( num );
-        			ESP_LOGI(FNAME, "socket %d read %d bytes: %s", config->sock, num, rec.c_str() );
+            SString rec;
+            char c;
+        	if( recv(config->sock, &c, 1, MSG_DONTWAIT ) > 0){
+                rec.append(c);
+        		if( c == '\n' || rec.full() ){
+        			ESP_LOGI(FNAME, "socket %d read %d bytes: %s", config->sock, rec.length(), rec.c_str() );
         			Router::forwardMsg( rec, *(config->rxbuf) );
         			timeout = 0;
-        			num = 0;
         			rec.clear();
         			config->connected = true;
         			break;
         		}
-        		num++;
         	}
         	else{
         		end--;
@@ -238,7 +236,7 @@ void WifiClient::tcp_client(void *setup){
 }
 
 void WifiClient::start()
-{	
+{
 	ESP_LOGI(FNAME, "start wifi_client"  );
     initialise_wifi();
     xTaskCreate(&tcp_client,"tcp_client_xcv",4096,&XCVario,15,NULL);

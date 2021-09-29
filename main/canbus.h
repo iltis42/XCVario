@@ -14,7 +14,6 @@ public:
 	~CANbus(){};
 	static void begin();
 	static void restart();
-	static bool sendNMEA( const char* msg );
 	static void tick();
 	static bool selfTest();
 	static int _tick;
@@ -25,6 +24,7 @@ public:
 
 private:
 	static bool sendData( int id, const char* msg, int length, int self=0 );
+	static bool sendNMEA( const SString& msg );
 	static int receive(  int *id, SString& msg, int timeout=5);
 	static void driverInstall( twai_mode_t mode );
 	static void on_can_connect( int msg );

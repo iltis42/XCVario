@@ -235,7 +235,6 @@ void IpsDisplay::bootDisplay() {
 	ucg->setFont(ucg_font_fub11_tr);
 }
 
-
 void IpsDisplay::initDisplay() {
 	// ESP_LOGI(FNAME,"IpsDisplay::initDisplay()");
 	// set global color variables according to selected display_variant
@@ -1115,9 +1114,8 @@ void IpsDisplay::drawCompass(){
 				float dir=winddir;  // absolute wind related to geographic north
 				if( (wind_reference.get() & WR_HEADING) )  // wind relative to airplane, first choice compass, second is GPS true course
 				{
-					bool ok;
-					float heading = Compass::filteredTrueHeading( &ok );
-					if( !ok && Flarm::gpsStatus() )            // fall back to GPS course
+					float heading = mag_hdt.get();
+					if( (heading < 0) && Flarm::gpsStatus() )            // fall back to GPS course
 						heading = Flarm::getGndCourse();
 					dir = Vector::angleDiffDeg( winddir, heading );
 				}
@@ -1132,8 +1130,7 @@ void IpsDisplay::drawCompass(){
 		}
 	}
 	else if( wind_display.get() & WD_COMPASS ){
-		bool ok;
-		int heading = static_cast<int>(rintf(Compass::filteredTrueHeading( &ok )));
+		int heading = static_cast<int>(rintf(mag_hdt.get()));
 		if( heading >= 360 )
 			heading -= 360;
 		// ESP_LOGI(FNAME, "heading %d, valid %d", heading, Compass::headingValid() );
@@ -1142,10 +1139,10 @@ void IpsDisplay::drawCompass(){
 			ucg->setColor(  COLOR_WHITE  );
 			ucg->setFont(ucg_font_fub20_hr);
 			char s[12];
-			if( ok )
-				sprintf(s,"%3d", heading );
-			else
+			if( heading < 0 )
 				sprintf(s,"%s", "  ---" );
+			else
+				sprintf(s,"%3d", heading );
 
 			if( heading < 10 )
 				ucg->printf("%s    ", s);
@@ -1221,9 +1218,8 @@ void IpsDisplay::drawULCompass(){
 				float dir=winddir;  // absolute wind related to geographic north
 				if( (wind_reference.get() & WR_HEADING) )  // wind relative to airplane, first choice compass, second is GPS true course
 				{
-					bool ok;
-					float heading = Compass::filteredTrueHeading( &ok );
-					if( !ok && Flarm::gpsStatus() )            // fall back to GPS course
+					float heading = mag_hdt.get();
+					if( (heading < 0) && Flarm::gpsStatus() )            // fall back to GPS course
 						heading = Flarm::getGndCourse();
 					dir = Vector::angleDiffDeg( winddir, heading );
 				}
@@ -1240,8 +1236,7 @@ void IpsDisplay::drawULCompass(){
 //	else if( wind_display.get() & WD_COMPASS ){
 //	allways draw compass if possible and enabled
 	if( compass_enable.get() && compass_calibrated.get() ){
-		bool ok;
-		int heading = static_cast<int>(rintf(Compass::filteredTrueHeading( &ok )));
+		int heading = static_cast<int>(rintf(mag_hdt.get()));
 		if( heading >= 360 )
 			heading -= 360;
 		// ESP_LOGI(FNAME, "heading %d, valid %d", heading, Compass::headingValid() );
@@ -1250,7 +1245,7 @@ void IpsDisplay::drawULCompass(){
 			ucg->setColor(  COLOR_WHITE  );
 			ucg->setFont(ucg_font_fub20_hf);
 			char s[14];
-			if( ok )
+			if( heading > 0 )
 				sprintf(s,"%3d\xb0", heading );
 			else
 				sprintf(s,"%s", "  ---" );
@@ -1261,9 +1256,7 @@ void IpsDisplay::drawULCompass(){
 				ucg->printf("%s   ", s);
 			else
 				ucg->printf("%s  ", s);
-//			ucg->setFont(ucg_font_fub20_hf);
-//			ucg->setPrintPos(120+ucg->getStrWidth(s),105);
-//			ucg->printf("\xb0 ");
+
 			prev_heading = heading;
 		}
 	}

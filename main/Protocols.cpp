@@ -304,12 +304,6 @@ void Protocols::parseNMEA( const char *astr ){
 			meanClimb = climb;
 			// ESP_LOGI(FNAME,"mean climb change detected mean climb=%f", climb );
 		}
-		else if ( strncmp( str, "!xc,", 4 ) == 0 ) {
-			float h;
-			sscanf( str,"!xc,%f", &h );
-			// ESP_LOGI(FNAME,"Compass heading detected=%3.1f", h );
-			Compass::setHeading( h );
-		}
 
 		else if ( strncmp( str, "!xs", 3 ) == 0 ) {
 			ESP_LOGI(FNAME,"parseNMEA %s", str );
@@ -318,7 +312,7 @@ void Protocols::parseNMEA( const char *astr ){
 			int  length;
 			char role; // M | C
 			sscanf(str, "!xs%c,%[^,],%c", &role, key,&type );
-			ESP_LOGI(FNAME,"parseNMEA role=%c type=%c key=%s", role, type , key );
+			// ESP_LOGI(FNAME,"parseNMEA role=%c type=%c key=%s", role, type , key );
 			if( type == 'F' ){
 				float valf;
 				sscanf(str, "!xs%c,%[^,],%c,%d,%f", &role, key,&type,&length, &valf );
@@ -332,7 +326,7 @@ void Protocols::parseNMEA( const char *astr ){
 			else if( type == 'I' ){
 				int vali;
 				sscanf(str, "!xs%c,%[^,],%c,%d,%d", &role, key,&type,&length, &vali );
-				ESP_LOGI(FNAME,"parseNMEA %s val=%d", str, vali );
+				ESP_LOGI(FNAME,"parseNMEA %s", str );
 				SetupNG<int> *item = (SetupNG<int> *)SetupCommon::getMember( key );
 				if( item != 0 ){
 					item->set( vali, false );

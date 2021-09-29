@@ -152,6 +152,8 @@ void Compass::begin(){
 	if( serial2_speed.get() )
 		serial2_speed.set(0);  // switch off serial interface, we can do only alternatively
 	compass.initialize();
+	mag_hdm.set( -1 );
+	mag_hdt.set( -1 );
 }
 
 void Compass::start(){

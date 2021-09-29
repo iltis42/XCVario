@@ -343,6 +343,7 @@ bool CANbus::sendNMEA( const SString& msg ){
 		if( ! sendData(id, cptr, dlen) ) {
             ret = false;
         }
+		delay(10);
         cptr += dlen;
         len -= dlen;
     }

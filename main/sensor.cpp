@@ -480,27 +480,37 @@ void readSensors(void *pvParameters){
 		}
 		Router::routeXCV();
 		// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d ena=%d", compass.haveSensor(),  compass_nmea_hdt.get(),  compass_enable.get() );
-		if( compass_enable.get()  && !Flarm::bincom && ! Compass::calibrationIsRunning() ) {
+		if( compass_enable.get()  && !Flarm::bincom && !Compass::calibrationIsRunning() ) {
 			// Trigger heading reading and low pass filtering. That job must be
 			// done periodically.
-
-			if( (count % 5 ) == 0 && compass_nmea_hdm.get() == true ) {
-				bool ok;
-				float heading = compass.getGyroHeading( &ok );
-				if( ok ) {
+			bool ok;
+			float heading = compass.getGyroHeading( &ok );
+			if(ok){
+				if( (int)heading != (int)mag_hdm.get() && !(count%10) ){
+					mag_hdm.set( heading );
+				}
+				if( !(count%5) && compass_nmea_hdm.get() == true ) {
 					xSemaphoreTake( xMutex, portMAX_DELAY );
 					OV.sendNmeaHDM( heading );
 					xSemaphoreGive( xMutex );
 				}
 			}
-			if( (count % 5 ) == 0 && compass_nmea_hdt.get() == true ) {
-				bool ok;
-				float theading = compass.getGyroHeading( &ok, true );
-				if( ok ){
+			else{
+				mag_hdm.set( -1 );
+			}
+			float theading = Compass::filteredTrueHeading( &ok );
+			if(ok){
+				if( (int)theading != (int)mag_hdt.get() && !(count%10) ){
+					mag_hdt.set( theading );
+				}
+				if( !(count%5) && ( compass_nmea_hdt.get() == true )  ) {
 					xSemaphoreTake( xMutex, portMAX_DELAY );
 					OV.sendNmeaHDT( theading );
 					xSemaphoreGive( xMutex );
 				}
+			}
+			else{
+				mag_hdt.set( -1 );
 			}
 		}
 		if( accelG[0] > gload_pos_max.get() ){
@@ -575,34 +585,34 @@ static bool init_done=false;
 static esp_err_t
 _coredump_to_server_begin_cb(void * priv)
 {
-    ets_printf("================= CORE DUMP START =================\r\n");
-    return ESP_OK;
+	ets_printf("================= CORE DUMP START =================\r\n");
+	return ESP_OK;
 }
 
 static esp_err_t
 _coredump_to_server_end_cb(void * priv)
 {
-    ets_printf("================= CORE DUMP END ===================\r\n");
-    return ESP_OK;
+	ets_printf("================= CORE DUMP END ===================\r\n");
+	return ESP_OK;
 }
 
 static esp_err_t
 _coredump_to_server_write_cb(void * priv, char const * const str)
 {
-    ets_printf("%s\r\n", str);
-    return ESP_OK;
+	ets_printf("%s\r\n", str);
+	return ESP_OK;
 }
 
 void register_coredump() {
-	 coredump_to_server_config_t coredump_cfg = {
-	        .start = _coredump_to_server_begin_cb,
-	        .end = _coredump_to_server_end_cb,
-	        .write = _coredump_to_server_write_cb,
-	        .priv = NULL,
-	    };
-	 if( coredump_to_server(&coredump_cfg) != ESP_OK ){  // Dump to console and do not clear (will done after fetched from Webserver)
-		 ESP_LOGI( FNAME, "+++ All green, no coredump found in FLASH +++");
-	 }
+	coredump_to_server_config_t coredump_cfg = {
+			.start = _coredump_to_server_begin_cb,
+			.end = _coredump_to_server_end_cb,
+			.write = _coredump_to_server_write_cb,
+			.priv = NULL,
+	};
+	if( coredump_to_server(&coredump_cfg) != ESP_OK ){  // Dump to console and do not clear (will done after fetched from Webserver)
+		ESP_LOGI( FNAME, "+++ All green, no coredump found in FLASH +++");
+	}
 }
 
 
@@ -738,16 +748,16 @@ void sensor(void *args){
 		mpud::raw_axes_t ab = accl_bias.get();
 
 		if( (gb.isZero() || ab.isZero()) || ahrs_autozero.get() ) {
-				ESP_LOGI( FNAME,"MPU computeOffsets");
-				ahrs_autozero.set(0);
-				MPU.computeOffsets( &ab, &gb );  // returns Offsets in 16G scale
-				gyro_bias.set( gb );
-				accl_bias.set( ab );
-				MPU.setGyroOffset(gb);
-				MPU.setAccelOffset(ab);
-				ESP_LOGI( FNAME,"MPU new offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
-				if( hardwareRevision.get() != 3 )
-					hardwareRevision.set(3);
+			ESP_LOGI( FNAME,"MPU computeOffsets");
+			ahrs_autozero.set(0);
+			MPU.computeOffsets( &ab, &gb );  // returns Offsets in 16G scale
+			gyro_bias.set( gb );
+			accl_bias.set( ab );
+			MPU.setGyroOffset(gb);
+			MPU.setAccelOffset(ab);
+			ESP_LOGI( FNAME,"MPU new offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
+			if( hardwareRevision.get() != 3 )
+				hardwareRevision.set(3);
 		}else
 		{
 			MPU.setAccelOffset(ab);
@@ -1072,7 +1082,7 @@ void sensor(void *args){
 
 	if(  can_speed.get() != CAN_SPEED_OFF && resultCAN == "OK" )  // 2021 series 3, or 2022 model with new digital poti CAT5171 also features CAN bus
 	{	ESP_LOGI(FNAME, "Now start CAN Bus Interface");
-		CANbus::begin();  // start CAN tasks and driver
+	CANbus::begin();  // start CAN tasks and driver
 	}
 
 	float bat = Battery.get(true);
@@ -1101,7 +1111,7 @@ void sensor(void *args){
 		ESP_LOGI( FNAME, "Magnetic sensor enabled: initialize");
 		err = compass.selfTest();
 		if( err == ESP_OK )		{
-		// Activate working of magnetic sensor
+			// Activate working of magnetic sensor
 			ESP_LOGI( FNAME, "Magnetic sensor selftest: OKAY");
 			display->writeText( line++, "Compass: OK");
 			logged_tests += "Compass test: OK\n";

@@ -318,7 +318,7 @@ bool CANbus::sendNMEA( const SString& msg ){
 	const int chunk=8;
 	const int id = 0x20;
     const char *cptr = msg.c_str();
-    int len = msg.length();
+    int len = msg.length()+1;
 	while( len > 0 )
     {
     	int dlen = std::min(chunk, len);
@@ -328,6 +328,7 @@ bool CANbus::sendNMEA( const SString& msg ){
 			ESP_LOGW(FNAME,"send CAN chunk failed, %d remaining", len );
 			return(false);
         }
+		delay(10);
         cptr += dlen;
         len -= dlen;
     }

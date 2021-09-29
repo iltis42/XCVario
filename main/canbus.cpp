@@ -139,16 +139,16 @@ void CANbus::begin()
 	xTaskCreatePinnedToCore(&canTask, "canTask", 4096, nullptr, 8, &cpid, 0);
 }
 
-// receive message of corresponding ID
-int CANbus::receive( int *id, char *msg, int timeout ){
+// receive message of corresponding ID,
+// return a terminated SString containing exactly the received chars
+int CANbus::receive( int *id, SString& msg, int timeout ){
 	twai_message_t rx;
 	esp_err_t ret = twai_receive(&rx, pdMS_TO_TICKS(timeout) );
 	// ESP_LOGI(FNAME,"RX CAN bus message ret=%02x TO:%d", ret, _connected_timeout_xcv );
 	if(ret == ESP_OK ){
 		// ESP_LOGI(FNAME,"RX CAN bus message ret=%02x TO:%d", ret, _connected_timeout_xcv );
 		if( rx.data_length_code > 0 && rx.data_length_code <= 8 ){
-			memcpy( msg,rx.data, rx.data_length_code );
-			msg[rx.data_length_code] = 0;
+            msg.set((const char*)rx.data, rx.data_length_code);
 			// ESP_LOGI(FNAME,"RX CAN bus message ret=(%02x), id:%04x bytes:%d, data:%s", ret, rx.identifier, rx.data_length_code, msg );
 			*id = rx.identifier;
 			return rx.data_length_code;
@@ -181,17 +181,16 @@ void CANbus::tick(){
 			if( Router::pullMsg( can_tx_q, msg ) ){
 				// ESP_LOGI(FNAME,"CAN TX len: %d bytes", msg.length() );
 				// ESP_LOG_BUFFER_HEXDUMP(FNAME,msg.c_str(),msg.length(), ESP_LOG_INFO);
-				if( !sendNMEA( msg.c_str() ) ){
+				if( !sendNMEA( msg ) ){
 					_connected_timeout_xcv +=20;  // if sending fails as indication for disconnection
 					ESP_LOGI(FNAME,"CAN TX NMEA failed, timeout=%d", _connected_timeout_xcv );
 				}
 			}
 		}
 	}
-	msg.clear();
 	// Can bus receive tick
 	int id = 0;
-	int bytes = receive( &id, msg.c_str(), 10 );
+	int bytes = receive( &id, msg, 10 );
 	bool xcv_came=false;
 	bool magsens_came=false;
 	if( bytes  ){ // keep alive from second XCV
@@ -277,7 +276,7 @@ void CANbus::tick(){
 	Router::routeCAN();
 	if( !(_tick%100) ){
 		if( ((can_mode.get() == CAN_MODE_CLIENT)  && _connected_xcv) || can_mode.get() == CAN_MODE_MASTER ){ // sent from client only if keep alive is there
-			msg.add( "K" );
+			msg.set( "K" );
 			if( !sendData( 0x11, msg.c_str(), 1 ) )
 			{
 				_connected_timeout_xcv +=20;  // if sending fails as indication for disconnection
@@ -337,15 +336,15 @@ bool CANbus::selfTest(){
 			ESP_LOGW(FNAME,"CAN bus selftest TX FAILED");
 		}
 		delay(10);
-		char msg[12];
+		SString msg;
 		int rxid;
 		int bytes = receive( &rxid, msg, 5 );
-		// ESP_LOGI(FNAME,"RX CAN bus message bytes:%d, id:%04x, data:%s", bytes, id, msg );
+		// ESP_LOGI(FNAME,"RX CAN bus message bytes:%d, id:%04x, data:%s", bytes, id, msg.c_str() );
 		if( bytes == 0 || rxid != id ){
 			ESP_LOGW(FNAME,"CAN bus selftest RX call FAILED");
 			delay(10*i);
 		}
-		else if( memcmp( msg ,tx, len ) == 0 ){
+		else if( memcmp( msg.c_str() ,tx, len ) == 0 ){
 			res=true;
 			break;
 		}

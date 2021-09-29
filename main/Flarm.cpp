@@ -60,7 +60,7 @@ $PFLAA,0,-1234,1234,220,2,DD8F12,180,,30,-1.4,1*
 
 */
 
-void Flarm::parsePFLAA( char *pflaa ){
+void Flarm::parsePFLAA( const char *pflaa ){
 
 }
 
@@ -102,7 +102,7 @@ eg2. $GPRMC,225446,A,4916.45,N,12311.12,W,000.5,054.7,191194,020.3,E*68
 
 
 */
-void Flarm::parseGPRMC( char *gprmc ) {
+void Flarm::parseGPRMC( const char *gprmc ) {
 	float time;
 	int date;
 	char warn;
@@ -165,7 +165,7 @@ eg. $GPGGA,hhmmss.ss,llll.ll,a,yyyyy.yy,a,x,xx,x.x,x.x,M,x.x,M,x.x,xxxx*hh
  */
 
 
-void Flarm::parseGPGGA( char *gpgga ) {
+void Flarm::parseGPGGA( const char *gpgga ) {
 	float time;
 	float lat,lon;
 	int Q;
@@ -192,7 +192,7 @@ void Flarm::parseGPGGA( char *gpgga ) {
 }
 
 
-void Flarm::parsePFLAU( char *pflau ) {
+void Flarm::parsePFLAU( const char *pflau ) {
 	int cs;
 	int id;
 	int calc_cs=Protocols::calcNMEACheckSum( pflau );
@@ -229,7 +229,7 @@ void Flarm::tick(){
 };
 
 // $PGRMZ,880,F,2*3A  $PGRMZ,864,F,2*30
-void Flarm::parsePGRMZ( char *pgrmz ) {
+void Flarm::parsePGRMZ( const char *pgrmz ) {
 	if ( alt_select.get() != AS_EXTERNAL )
 		return;
 	int cs;
@@ -429,4 +429,3 @@ void Flarm::drawFlarmWarning(){
 
     xSemaphoreGive(spiMutex);
 }
-

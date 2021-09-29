@@ -29,9 +29,9 @@ public:
 			           float mc, int bugs, float ballast, bool cruise, float alt,
 				         bool validTemp=false, float ax=0, float ay=0, float az=0, float gx=0, float gy=0, float gz=0 );
 
-	static void parseNMEA( char *str );
-	static int calcNMEACheckSum(char * nmea);
-	static int getNMEACheckSum(char * nmea);
+	static void parseNMEA( const char *str );
+	static int calcNMEACheckSum(const char *nmea);
+	static int getNMEACheckSum(const char *nmea);
 
 
 private:

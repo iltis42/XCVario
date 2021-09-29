@@ -108,11 +108,12 @@ void Serial::serialHandler(void *pvParameters){
 			}
 			// ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
 			int numread = 0;
+            s.clear();
 			if( Flarm::bincom ){    // normally wait unit sentence has ended, or in binary mode just continue
-				numread = Serial1.read( s.c_str(), num );
+				numread = Serial1.read( s.a_str(), num );
 			}
 			else{
-				numread = Serial1.readLine( s.c_str(), SSTRLEN );
+				numread = Serial1.readLine( s.a_str(), SSTRLEN );
 			}
 			if( numread ) {
 				// ESP_LOGI(FNAME,"Serial 1 RX bytes read: %d  bincom: %d", numread,  Flarm::bincom  );
@@ -143,11 +144,12 @@ void Serial::serialHandler(void *pvParameters){
 	    			num=SSTRLEN;
 	    		}
 	    		int numread = 0;
+                s.clear();
 	    		if( Flarm::bincom ){    // normally wait unit sentence has ended, or in binary mode just continue
-	    			numread = Serial2.read( s.c_str(), num );
+	    			numread = Serial2.read( s.a_str(), num );
 	    		}
 	    		else{
-	    			numread = Serial2.readLine( s.c_str(), SSTRLEN );
+	    			numread = Serial2.readLine( s.a_str(), SSTRLEN );
 	    		}
 	    		if( numread ){
 	    			// ESP_LOGI(FNAME,"Serial 1 RX bytes read: %d  bincom: %d", numread,  Flarm::bincom  );
@@ -273,6 +275,3 @@ void Serial::taskStart(){
 	}
 	// handler S1 now serves both interfaces in one task
 }
-
-
-

@@ -148,7 +148,7 @@ void socket_server(void *setup) {
 				client_record_t &client_rec = *it;
 				// ESP_LOGI(FNAME, "read from wifi client %d", client_rec.client );
 				SString tcprx;
-				ssize_t sizeRead = recv(client_rec.client, tcprx.c_str(), SSTRLEN-1, MSG_DONTWAIT);
+				ssize_t sizeRead = recv(client_rec.client, tcprx.a_str(), SSTRLEN-1, MSG_DONTWAIT);
 				if (sizeRead > 0) {
 					tcprx.setLen( sizeRead );
 					Router::forwardMsg( tcprx, *(config->rxbuf) );
@@ -271,4 +271,3 @@ void wifi_init_softap()
 		ESP_LOGV(FNAME, "wifi_init_softap finished SUCCESS. SSID:%s password:%s channel:%d", (char *)wc.ap.ssid, (char *)wc.ap.password, wc.ap.channel );
 	}
 }
-

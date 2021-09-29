@@ -90,12 +90,7 @@ public:
 
   static void newWind( double angle, double speed );
 
-  static bool getWind( int *dir, float *speed, int * age ) { *dir=rint(direction); *speed=windspeed; *age=_age;
-  	  	  	  	  	  	  	  	  	  	  	  	  if( num_samples )
-  	  	  	  	  	  	  	  	  	  	  	  		  return true;
-  	  	  	  	  	  	  	  	  	  	  	  	  else
-  	  	  	  	  	  	  	  	  	  	  	  	  	  return false;
-  };
+  static bool getWind( int *dir, float *speed, int * age );
 
   static float getNumCircles() 	 {  return circleCount+(circleDegrees/360.0); }
   static int getSatCnt()     	 {  return satCnt; }
@@ -103,18 +98,10 @@ public:
   static float  getAngle() 		 { return result.getAngleDeg(); }
   static float  getSpeed() 		 { return result.getSpeed(); }
   static int  getAge() 			 { return _age; }
+  static void resetAge();
   static int  getQuality() 		 { return rint(jitter*20); } // 0..100 %
   static const char * getStatus()      { return status; }
-  static const char *getFlightModeStr(){
-                                   if( flightMode == straight )
-                                	   return "straight";
-                                   else if( flightMode == circlingL )
-                                	   return "circle left";
-                                   else if( flightMode == circlingR )
-                                	   return "circle right";
-                                   else
-                                	   return "undefined";
-  }
+  static const char *getFlightModeStr();
 
 private:
 

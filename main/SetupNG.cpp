@@ -29,6 +29,7 @@
 #include "sensor.h"
 #include "Router.h"
 #include "Switch.h"
+#include "CircleWind.h"
 
 std::vector<SetupCommon *> SetupCommon::entries;
 char SetupCommon::_ID[14];
@@ -36,6 +37,14 @@ char SetupCommon::_ID[14];
 void change_mc_bal() {  // or bugs
 	Speed2Fly.change_mc_bal();
 }
+
+void resetSWindAge() {
+	StraightWind::resetAge();
+}
+void resetCWindAge() {
+	CircleWind::resetAge();
+}
+
 
 SetupNG<float>  		QNH( "QNH", 1013.25, true, SYNC_BIDIR );
 SetupNG<float> 			polar_wingload( "POLAR_WINGLOAD", 34.40, true, SYNC_FROM_MASTER );
@@ -63,8 +72,10 @@ SetupNG<float>  		bugs( "BUGS", 0.0, true, SYNC_BIDIR, PERSISTENT, change_mc_bal
 SetupNG<float>  		MC( "MacCready", 0.5, true, SYNC_BIDIR, PERSISTENT, change_mc_bal );
 SetupNG<int>  			cruise_mode( "CRUISE", 0, true, SYNC_BIDIR, VOLATILE );
 SetupNG<float>  		OAT( "OAT", 0.0, true, SYNC_FROM_MASTER, VOLATILE );   // outside temperature
-SetupNG<float>  		wind_dir( "WNDD", 0.0, true, SYNC_FROM_MASTER, VOLATILE );   // outside temperature
-SetupNG<float>  		wind_speed( "WNDS", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
+SetupNG<float>  		swind_dir( "SWDD", 0.0, true, SYNC_FROM_MASTER, VOLATILE, resetSWindAge );
+SetupNG<float>  		swind_speed( "SWDS", 0.0, true, SYNC_FROM_MASTER, VOLATILE, resetSWindAge );
+SetupNG<float>  		cwind_dir( "CWDD", 0.0, true, SYNC_FROM_MASTER, VOLATILE, resetCWindAge );
+SetupNG<float>  		cwind_speed( "CWDS", 0.0, true, SYNC_FROM_MASTER, VOLATILE, resetCWindAge );
 SetupNG<float>  		mag_hdm( "HDM", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
 SetupNG<float>  		mag_hdt( "HDT", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
 SetupNG<float>  		average_climb( "AVCL", 0.0, true, SYNC_FROM_MASTER, VOLATILE );

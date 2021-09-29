@@ -55,7 +55,6 @@ circlingWindDirReverse( -1.0 ),
 circlingWindSpeed( -1.0 ),
 circlingWindAge( 0 ),
 airspeedCorrection( 1.0 ),
-_age (0),
 _tick(0),
 gpsStatus(false),
 deviation_cur(0),
@@ -72,6 +71,8 @@ void StraightWind::begin(){
 	if( compass_dev_auto.get() )
 		airspeedCorrection = wind_as_calibration.get();
 }
+
+int StraightWind::_age = 0;
 
 void StraightWind::tick(){
 	_age++;
@@ -200,6 +201,9 @@ double StraightWind::calculateAngle( double angle1, double speed1, double angle2
 	return( Vector::normalizeDeg( R2D( ang ) ) );  // convert radian to degree
 }
 
+float StraightWind::getAngle() { return swind_dir.get(); };
+float StraightWind::getSpeed() { return swind_speed.get(); };
+
 void StraightWind::calculateWind( double tc, double gs, double th, double tas  ){
 	// ESP_LOGI(FNAME,"calculateWind: TC:%3.1f GS:%3.1f TH:%3.1f TAS:%3.1f", tc, gs, th, tas );
 	// Wind correction angle WCA
@@ -274,7 +278,12 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 	ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h JI:%2.1f", windDir, windSpeed, jitter );
 	_age = 0;
 	lastWindSpeed = windSpeed;
-	OV.sendWindChange( windDir, windSpeed, WA_STRAIGHT );
+	if( (int)windDir != (int)swind_dir.get()  ){
+		swind_dir.set( windDir );
+	}
+	if( (int)windSpeed != (int)swind_speed.get() ){
+		swind_speed.set( windSpeed );
+	}
 }
 
 

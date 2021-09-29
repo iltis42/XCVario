@@ -328,7 +328,8 @@ bool CANbus::sendNMEA( const SString& msg ){
     bool ret = true;
     uint32_t alerts;
     twai_read_alerts(&alerts, 0); // read and clear alerts
-    ESP_LOGW(FNAME,"Before send alerts %X", alerts);
+    if( alerts != 0 )
+    	ESP_LOGW(FNAME,"Before send alerts %X", alerts);
 
 	// ESP_LOGI(FNAME,"send CAN NMEA len %d, msg: %s", len, msg );
 	const int chunk=8;
@@ -347,7 +348,6 @@ bool CANbus::sendNMEA( const SString& msg ){
         cptr += dlen;
         len -= dlen;
     }
-
 	return ret;
 }
 

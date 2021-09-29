@@ -558,15 +558,14 @@ void readTemp(void *pvParameters){
 				}
 			}
 			ESP_LOGV(FNAME,"temperature=%f", temperature );
-			theWind.tick();
 			Flarm::tick();
-			CircleWind::tick();
 			Compass::tick();
 		}else{
 			if( (OAT.get() > -55.0) && (OAT.get() < 85.0) )
 				validTemperature = true;
 		}
-
+		theWind.tick();
+		CircleWind::tick();
 		Flarm::progress();
 		vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS);
 

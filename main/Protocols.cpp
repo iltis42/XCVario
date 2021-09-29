@@ -39,15 +39,6 @@ Protocols::~Protocols() {
 
 }
 
-
-void Protocols::sendWindChange( float dir, float speed, e_windanalyser_mode_t type  ){
-	char str[20];
-	sprintf( str,"!xd,%3.1f,%3.1f,%d\n", dir, speed, type );
-	// ESP_LOGI(FNAME,"New wind cmd: %s", str );
-	Router::sendXCV(str);
-}
-
-
 /*
 HDM - Heading - Magnetic
 
@@ -240,9 +231,6 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 	Router::sendXCV(str);
 }
 
-float Protocols::_mc_prev = 0.5;
-float Protocols::_qnh_prev = 0.5;
-
 // The XCVario Protocol or Cambridge CAI302 protocol to adjust MC,Ballast,Bugs.
 
 const char * mystrtok(const char *s)
@@ -262,25 +250,7 @@ void Protocols::parseNMEA( const char *astr ){
 	const char *str = mystrtok(astr);
 	while( str ){
 		ESP_LOGV(FNAME,"parseNMEA token: %s", str);
-		if ( strncmp( str, "!xw,", 4 ) == 0 ) {
-			float wkcmd;
-			sscanf( str,"!xw,%f", &wkcmd );  // directly scan into sensor variable
-			Flap::setLever( wkcmd );
-			// ESP_LOGI(FNAME,"XW command detected wk=%f", wkcmd );
-		}
-		else if( strncmp( str, "!xd,", 4 ) == 0 ) {
-			float dir, speed;
-			int type;
-			sscanf( str,"!xd,%f,%f,%d", &dir,&speed, &type );
-			ESP_LOGI(FNAME,"New wind type: %d detected %3.1f/%3.1f", type, dir, speed );
-			if( type == WA_STRAIGHT ){
-				theWind.setWind( dir, speed );
-			}
-			else if( type == WA_CIRCLING ){
-				CircleWind::setWind( dir, speed );
-			}
-		}
-		else if ( strncmp( str, "!xs", 3 ) == 0 ) {
+		if ( strncmp( str, "!xs", 3 ) == 0 ) {
 			ESP_LOGI(FNAME,"parseNMEA %s", str );
 			char key[20];
 			char type;
@@ -309,7 +279,6 @@ void Protocols::parseNMEA( const char *astr ){
 					ESP_LOGW(FNAME,"Setup item with key %s not found", key );
 			}
 		}
-
 		else if ( (strncmp( str, "!g,", 3 ) == 0)    ) {
 			ESP_LOGI(FNAME,"parseNMEA, Cambridge C302 style command !g detected: %s",str);
 			if (str[3] == 'b' && wireless != WL_WLAN_CLIENT && the_can_mode != CAN_MODE_CLIENT ) {  // we run own protocol between Master and Client as of bad precision in official
@@ -437,10 +406,6 @@ void Protocols::parseNMEA( const char *astr ){
 				ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %02x != delivered CS %02x", str, calc_cs, _cs );
 			else{
 				alt = _alt-1000;
-				if( _qnh_prev != _qnh ){
-					QNH.set( _qnh );
-					_qnh_prev = _qnh;
-				}
 				tas = Units::ms2kmh( _tas )/100;    // True airspeed in 100ths of Meters per second
 				ias = Atmosphere::IAS( tas , alt, temperature );
 				TE = Units::knots2ms( _te - 200 )/10;

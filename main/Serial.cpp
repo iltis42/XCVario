@@ -1,4 +1,3 @@
-
 #include <esp_log.h>
 #include "BTSender.h"
 #include <string>
@@ -138,7 +137,7 @@ void Serial::serialHandler(void *pvParameters){
 	    	}
 	    	int num = Serial2.available();
 	    	if( num > 0 ) {
-	    		ESP_LOGI(FNAME,"Serial 2 RX avail %d bytes", num );
+	    		// ESP_LOGI(FNAME,"Serial 2 RX avail %d bytes", num );
 	    		if( num >= SSTRLEN ) {
 	    			// ESP_LOGW(FNAME,"Serial 2 RX Overrun >= %d bytes avail: %d, Bytes", SSTRLEN, num);
 	    			num=SSTRLEN;

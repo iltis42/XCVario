@@ -190,6 +190,32 @@ void CircleWind::newFlightMode( t_circling newFlightMode )
 	}
 }
 
+const char * CircleWind::getFlightModeStr(){
+	if( flightMode == straight )
+		return "straight";
+	else if( flightMode == circlingL )
+		return "circle left";
+	else if( flightMode == circlingR )
+		return "circle right";
+	else
+		return "undefined";
+}
+
+bool CircleWind::getWind( int *dir, float *speed, int * age )
+{
+	*dir=rint(cwind_dir.get());
+	*speed=cwind_speed.get();
+	*age=_age;
+	if( _age < 1800 )
+		return true;
+	else
+		return false;
+}
+
+void CircleWind::resetAge(){
+	_age = 0;
+}
+
 void CircleWind::_calcWind()
 {
 	if( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT )
@@ -225,7 +251,7 @@ void CircleWind::_calcWind()
 	// Let the world know about our measurement!
 	ESP_LOGI(FNAME,"### RAW CircleWind: %3.1f°/%.1fKm/h", result.getAngleDeg(), result.getSpeed() );
 	newWind( result.getAngleDeg(), result.getSpeed() );
-	_age = 0;
+	// _age = 0;
 }
 
 
@@ -256,7 +282,13 @@ void CircleWind::newWind( double angle, double speed ){
 	if( curVectorNum > max_samples )
 		curVectorNum=0;
 	ESP_LOGI(FNAME,"### NEW AGV CircleWind: %3.1f°/%.1fKm/h  JI:%2.1f", direction, windspeed, jitter  );
-	OV.sendWindChange( direction, windspeed, WA_CIRCLING );
+
+	if( (int)direction != (int)cwind_dir.get()  ){
+		cwind_dir.set( direction );
+	}
+	if( (int)windspeed != (int)cwind_speed.get() ){
+		cwind_speed.set( windspeed );
+	}
 	if( circleCount >= 2 )
 		theWind.newCirclingWind( direction, windspeed );
 }

@@ -20,8 +20,6 @@ class Protocols {
 public:
 	Protocols( S2F * as2f );
 	virtual ~Protocols( );
-	void sendWkChange( float wk );
-	void sendWindChange( float dir, float speed, e_windanalyser_mode_t type );
     void sendNmeaHDM( float heading );
     void sendNmeaHDT( float heading );
 	void sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,

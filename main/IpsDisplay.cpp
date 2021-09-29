@@ -1075,19 +1075,20 @@ void IpsDisplay::drawCompass(){
 			bool oks, okc;
 			oks = theWind.getWind( &wds, &ws, &ageStraight );
 			okc = CircleWind::getWind( &wdc, &wc, &ageCircling);
-			if( oks && ageStraight < ageCircling ){
+			if( oks && ageStraight <= ageCircling ){
 				wind = ws;
 				winddir = wds;
 				type = '|';
 				ok = true;
 			}
-			else if( okc && ageCircling < ageStraight )
+			else if( okc && ageCircling <= ageStraight )
 			{
 				wind = wc;
 				winddir = wdc;
 				type = '/';
 				ok = true;
 			}
+			// ESP_LOGI(FNAME, "CWIND dir %d, speed %f age %d okc: %d ok:%d", wdc, wc, ageCircling, okc, ok  );
 		}
 		// ESP_LOGI(FNAME, "WIND dir %d, speed %f, ok=%d", winddir, wind, ok );
 		if( prev_heading != winddir || !(tick%16) ){

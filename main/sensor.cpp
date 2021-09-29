@@ -169,7 +169,6 @@ float aTE = 0;
 float alt;
 float alt_external;
 float altSTD;
-float meanClimb = 0;
 float netto = 0;
 float as2f = 0;
 float s2f_delta = 0;
@@ -299,7 +298,7 @@ void drawDisplay(void *pvParameters){
 
 			// Vario Screen
 			if( !(stall_warning_active || flarmWarning || gLoadDisplay ) ) {
-				display->drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, meanClimb, cruise_mode.get(), standard_setting, Flap::getLever() );
+				display->drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, average_climb.get(), cruise_mode.get(), standard_setting, flap_pos.get() );
 			}
 		}
 		if( hold_alarm )
@@ -413,7 +412,6 @@ void readSensors(void *pvParameters){
 		// ESP_LOGI(FNAME,"count %d ccp %d", count, ccp );
 		if( !(count % ccp) ) {
 			AverageVario::recalcAvgClimb();
-			meanClimb = AverageVario::readAvgClimb();
 		}
 
 		Flap::progress();
@@ -496,7 +494,8 @@ void readSensors(void *pvParameters){
 				}
 			}
 			else{
-				mag_hdm.set( -1 );
+				if( mag_hdm.get() != -1 )
+					mag_hdm.set( -1 );
 			}
 			float theading = Compass::filteredTrueHeading( &ok );
 			if(ok){
@@ -510,7 +509,8 @@ void readSensors(void *pvParameters){
 				}
 			}
 			else{
-				mag_hdt.set( -1 );
+				if( mag_hdt.get() != -1 )
+					mag_hdt.set( -1 );
 			}
 		}
 		if( accelG[0] > gload_pos_max.get() ){

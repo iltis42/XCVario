@@ -423,6 +423,7 @@ extern SetupNG<float>  		wind_speed;
 extern SetupNG<float>  		mag_hdm;
 extern SetupNG<float>  		mag_hdt;
 extern SetupNG<float>  		average_climb;
+extern SetupNG<float>  		flap_pos;
 
 extern SetupNG<int>  		display_type;
 extern SetupNG<int>  		display_orientation;

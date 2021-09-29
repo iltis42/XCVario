@@ -8,7 +8,7 @@ public:
 	static void newSample( float te );
 	static void begin();
 	static void recalcAvgClimb();
-	static inline float readAvgClimb() { return averageClimb; };
+	static float readAvgClimb();
 
 private:
 	static float averageClimbSec;

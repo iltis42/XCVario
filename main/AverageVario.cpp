@@ -13,6 +13,10 @@ int AverageVario::avindexSec;
 int AverageVario::avindexMin;
 int AverageVario::samples;
 
+float AverageVario::readAvgClimb() {
+	return average_climb.get();
+}
+
 void AverageVario::begin(){
 	samples = 0;
 	averageClimb = 0.0;
@@ -55,7 +59,9 @@ void AverageVario::recalcAvgClimb() {
 	if( ns )
 		averageClimb = ac/ns;
 	// ESP_LOGI(FNAME,"AVGsec:%2.2f  AVG:%2.2f", ac_sec, averageClimb );
-	OV.sendMeanClimb( averageClimb );
+	if( (int)(averageClimb*10) != (int)(average_climb.get()*10) ){
+		average_climb.set( averageClimb );
+	}
 }
 
 

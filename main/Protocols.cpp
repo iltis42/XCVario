@@ -39,12 +39,6 @@ Protocols::~Protocols() {
 
 }
 
-void Protocols::sendWkChange( float wk ){
-	char str[20];
-	sprintf( str,"!xw,%1.1f\n", wk );
-	ESP_LOGI(FNAME,"New WK pos: %f, cmd: %s", wk, str );
-	Router::sendXCV(str);
-}
 
 void Protocols::sendWindChange( float dir, float speed, e_windanalyser_mode_t type  ){
 	char str[20];
@@ -53,18 +47,6 @@ void Protocols::sendWindChange( float dir, float speed, e_windanalyser_mode_t ty
 	Router::sendXCV(str);
 }
 
-int last_climb=-1000;
-
-void Protocols::sendMeanClimb( float climb ){
-	if( std::round(climb*10) != last_climb )
-	{
-		last_climb=std::round(climb*10);
-		char str[20];
-		sprintf( str,"!xa,%1.1f\n", std::roundf(climb*10)/10 );
-		ESP_LOGI(FNAME,"New mean climb cmd:%s", str );
-		Router::sendXCV(str);
-	}
-}
 
 /*
 HDM - Heading - Magnetic
@@ -298,13 +280,6 @@ void Protocols::parseNMEA( const char *astr ){
 				CircleWind::setWind( dir, speed );
 			}
 		}
-		else if ( strncmp( str, "!xa,", 4 ) == 0 ) {
-			float climb;
-			sscanf( str,"!xa,%f", &climb );  // directly scan into sensor variable
-			meanClimb = climb;
-			// ESP_LOGI(FNAME,"mean climb change detected mean climb=%f", climb );
-		}
-
 		else if ( strncmp( str, "!xs", 3 ) == 0 ) {
 			ESP_LOGI(FNAME,"parseNMEA %s", str );
 			char key[20];

@@ -21,7 +21,6 @@ public:
 	Protocols( S2F * as2f );
 	virtual ~Protocols( );
 	void sendWkChange( float wk );
-	void sendMeanClimb( float climb );
 	void sendWindChange( float dir, float speed, e_windanalyser_mode_t type );
     void sendNmeaHDM( float heading );
     void sendNmeaHDT( float heading );

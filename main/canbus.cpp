@@ -36,6 +36,7 @@ int        CANbus::_connected_timeout_magsens=0;
 int        CANbus::_connected_timeout_xcv=0;
 bool       CANbus::_master_present = false; // todo, create connect event
 int        CANbus::dataIndex=0;
+TickType_t CANbus::_tx_timeout=0;
 
 static TaskHandle_t cpid;
 
@@ -54,14 +55,24 @@ void CANbus::driverInstall( twai_mode_t mode ){
         driverUninstall();
 	}
 	twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT( _tx_io, _rx_io, mode );
+    ESP_LOGI(FNAME, "default alerts %X", g_config.alerts_enabled);
+    g_config.alerts_enabled |= TWAI_ALERT_TX_IDLE | TWAI_ALERT_TX_SUCCESS | TWAI_ALERT_TX_FAILED;
+    g_config.rx_queue_len = 15; // 1.5x the need of one NMEA sentence
+    g_config.tx_queue_len = 15;
+    ESP_LOGI(FNAME, "my alerts %X", g_config.alerts_enabled);
+
 	twai_timing_config_t t_config;
+    _tx_timeout = 1; // 111usec/chunk -> 1msec
 	if( can_speed.get() == CAN_SPEED_250KBIT ){
 		ESP_LOGI(FNAME,"CAN rate 250KBit");
 		t_config = TWAI_TIMING_CONFIG_250KBITS();
+        _tx_timeout = 2; // 444usec/chunk -> 2msec
+
 	}
 	else if( can_speed.get() == CAN_SPEED_500KBIT ){
 		ESP_LOGI(FNAME,"CAN rate 500KBit");
 		t_config = TWAI_TIMING_CONFIG_500KBITS();
+        _tx_timeout = 1; // 222usec/chunk -> 1msec
 	}
 	else if( can_speed.get() == CAN_SPEED_1MBIT ){
 		ESP_LOGI(FNAME,"CAN rate 1MBit");
@@ -80,7 +91,7 @@ void CANbus::driverInstall( twai_mode_t mode ){
 		ESP_LOGI(FNAME,"Failed to install driver");
 		return;
 	}
-	delay(10);
+
 	//Start TWAI driver
 	if (twai_start() == ESP_OK) {
 		ESP_LOGI(FNAME,"Driver started");
@@ -89,7 +100,7 @@ void CANbus::driverInstall( twai_mode_t mode ){
         // bus_off_io may operate invers, so for now set this here
       	gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);
     	gpio_set_level(GPIO_NUM_2, 0 );
-	    delay(100);
+	    delay(10);
 	} else {
         twai_driver_uninstall();
 		ESP_LOGI(FNAME,"Failed to start driver");
@@ -314,25 +325,29 @@ bool CANbus::sendNMEA( const SString& msg ){
 		return false;
     }
 
+    bool ret = true;
+    uint32_t alerts;
+    twai_read_alerts(&alerts, 0); // read and clear alerts
+    ESP_LOGW(FNAME,"Before send alerts %X", alerts);
+
 	// ESP_LOGI(FNAME,"send CAN NMEA len %d, msg: %s", len, msg );
 	const int chunk=8;
 	const int id = 0x20;
     const char *cptr = msg.c_str();
-    int len = msg.length();
+    int len = msg.length() + 1; // Including the terminating \0
 	while( len > 0 )
     {
     	int dlen = std::min(chunk, len);
         // Underlaying queue does does block until there is space,
         // only a timeout would return false.
-		if( !sendData( id, cptr, dlen ) ){
-			ESP_LOGW(FNAME,"send CAN chunk failed, %d remaining", len );
-			return(false);
+		if( ! sendData(id, cptr, dlen) ) {
+            ret = false;
         }
         cptr += dlen;
         len -= dlen;
     }
 
-	return true;
+	return ret;
 }
 
 bool CANbus::selfTest(){
@@ -348,14 +363,14 @@ bool CANbus::selfTest(){
 		if( !sendData( id, tx,len, 1 ) ){
 			ESP_LOGW(FNAME,"CAN bus selftest TX FAILED");
 		}
-		delay(10);
+		delay(1);
 		SString msg;
 		int rxid;
 		int bytes = receive( &rxid, msg, 5 );
 		// ESP_LOGI(FNAME,"RX CAN bus message bytes:%d, id:%04x, data:%s", bytes, id, msg.c_str() );
 		if( bytes == 0 || rxid != id ){
 			ESP_LOGW(FNAME,"CAN bus selftest RX call FAILED");
-			delay(10*i);
+			delay(1*i);
 		}
 		else if( memcmp( msg.c_str() ,tx, len ) == 0 ){
 			res=true;
@@ -371,6 +386,7 @@ bool CANbus::selfTest(){
     return _ready_initialized;
 }
 
+// Send, handle alerts, do max 3 retries
 bool CANbus::sendData( int id, const char* msg, int length, int self ){
 	if( !_ready_initialized ){
 		ESP_LOGI(FNAME,"CANbus not ready initialized");
@@ -387,12 +403,22 @@ bool CANbus::sendData( int id, const char* msg, int length, int self ){
 	}
 	// ESP_LOGI(FNAME,"TX CAN bus message id:%04x, bytes:%d, data:%s, self:%d", message.identifier, message.data_length_code, message.data, message.self );
 
-	//Queue message for transmission
-	esp_err_t error = twai_transmit(&message, pdMS_TO_TICKS(20));
-	if(error == ESP_OK){
+	// Queue message for transmission
+    uint32_t alerts;
+    int retry = 3;
+    esp_err_t error;
+	while( (retry-- > 0) && (ESP_OK != (error=twai_transmit(&message, 0))) ) {
+        twai_read_alerts(&alerts, pdMS_TO_TICKS(_tx_timeout));
+        ESP_LOGW(FNAME,"Tx chunk failed alerts %X", alerts );
+    }
+    if ( error == ESP_OK ) {
+        twai_read_alerts(&alerts, pdMS_TO_TICKS(_tx_timeout));
+        if ( alerts & ~(TWAI_ALERT_TX_IDLE | TWAI_ALERT_TX_SUCCESS) ) {
+            ESP_LOGW(FNAME,"Tx chunk alerts %X", alerts );
+        }
 		// ESP_LOGI(FNAME,"Send CAN bus message okay");
 		return true;
-	}
+    }
 	else{
 		ESP_LOGW(FNAME,"Send CAN bus message failed, ret:%02x", error );
 		return false;

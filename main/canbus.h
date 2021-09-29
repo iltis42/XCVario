@@ -38,4 +38,5 @@ private:
 	static int _connected_timeout_xcv;
     static bool _master_present;
     static int dataIndex;
+    static TickType_t _tx_timeout; // two times the time for 111 bit to send
 };

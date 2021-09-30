@@ -135,7 +135,7 @@ void Router::routeXCV(){
 					ESP_LOGV(FNAME,"Send to ttyS2 device, XCV %d bytes", xcv.length() );
 		}
 		if( (can_tx.get() & RT_XCVARIO) && can_speed.get() ){
-			if( (strncmp( xcv.c_str(), "!xs", 3 ) == 0) || (strncmp( xcv.c_str(), "$PXCV", 5 ) == 0) ){  // !xs is dedicated to client XCV, $PXCV for backward compatibility, will be phased out...
+			if( (strncmp( xcv.c_str(), "$WIND", 5 ) != 0) ){  // drop WIND messages
 				if( forwardMsg( xcv, can_tx_q ) )
 					ESP_LOGV(FNAME,"Send to CAN device, XCV %d bytes", xcv.length() );
 			}

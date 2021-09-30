@@ -1079,10 +1079,7 @@ void sensor(void *args){
 		}
 	}
 
-	if(  can_speed.get() != CAN_SPEED_OFF && resultCAN == "OK" )  // 2021 series 3, or 2022 model with new digital poti CAT5171 also features CAN bus
-	{	ESP_LOGI(FNAME, "Now start CAN Bus Interface");
-	CANbus::begin();  // start CAN tasks and driver
-	}
+
 
 	float bat = Battery.get(true);
 	if( bat < 1 || bat > 28.0 ){
@@ -1180,47 +1177,10 @@ void sensor(void *args){
 	Menu->begin( display, &Rotary, baroSensor, &Battery );
 
 	if ( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT ){
-		if( wireless == WL_WLAN_CLIENT ){
-			display->clear();
-			display->writeText( 2, "Wait for Master XCVario" );
-			std::string ssid = WifiClient::scan();
-			if( ssid.length() ){
-				display->writeText( 3, "Master XCVario found" );
-				char id[30];
-				sprintf( id, "Wifi ID: %s", ssid.c_str() );
-				display->writeText( 4, id );
-				display->writeText( 5, "Now start" );
-				WifiClient::start();
-				delay( 2000 );
-				inSetup = false;
-				display->clear();
-			}
-			else{
-				display->writeText( 3, "Abort Wifi Scan" );
-			}
-		}
-		else if( the_can_mode == CAN_MODE_CLIENT ){
-			display->clear();
-			display->writeText( 2, "Wait for Master XCVario" );
-			while( 1 ) {
-				if( CANbus::connectedXCV() ){
-					display->writeText( 3, "Master XCVario found" );
-					display->writeText( 5, "Now start" );
-					delay( 2000 );
-					inSetup = false;
-					display->clear();
-					break;
-				}
-				delay( 100 );
-				if( Rotary.readSwitch() ){
-					display->writeText( 3, "Abort CAN bus wait" );
-					break;
-				}
-			}
-		}
+		ESP_LOGI(FNAME,"Client Mode");
 	}
 	else if( ias < 50.0 ){
-		ESP_LOGI(FNAME,"QNH Autosetup, IAS=%3f (<50 km/h)", ias );
+		ESP_LOGI(FNAME,"Master Mode: QNH Autosetup, IAS=%3f (<50 km/h)", ias );
 		// QNH autosetup
 		float ae = elevation.get();
 		bool ok;
@@ -1277,6 +1237,54 @@ void sensor(void *args){
 	gpio_set_pull_mode(RESET_Display, GPIO_PULLUP_ONLY );
 	gpio_set_pull_mode(CS_Display, GPIO_PULLUP_ONLY );
 
+	delay( 100 );
+	if(  can_speed.get() != CAN_SPEED_OFF && resultCAN == "OK" )  // 2021 series 3, or 2022 model with new digital poti CAT5171 also features CAN bus
+	{
+		ESP_LOGI(FNAME, "Now start CAN Bus Interface");
+		CANbus::begin();  // start CAN tasks and driver
+	}
+
+	if ( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT ){
+		if( wireless == WL_WLAN_CLIENT ){
+			display->clear();
+			display->writeText( 2, "Wait for Master XCVario" );
+			std::string ssid = WifiClient::scan();
+			if( ssid.length() ){
+				display->writeText( 3, "Master XCVario found" );
+				char id[30];
+				sprintf( id, "Wifi ID: %s", ssid.c_str() );
+				display->writeText( 4, id );
+				display->writeText( 5, "Now start, sync" );
+				WifiClient::start();
+				delay( 5000 );
+				inSetup = false;
+				display->clear();
+			}
+			else{
+				display->writeText( 3, "Abort Wifi Scan" );
+			}
+		}
+		else if( the_can_mode == CAN_MODE_CLIENT ){
+			display->clear();
+			display->writeText( 2, "Wait for Master XCVario" );
+			while( 1 ) {
+				if( CANbus::connectedXCV() ){
+					display->writeText( 3, "Master XCVario found" );
+					display->writeText( 5, "Now start, sync" );
+					delay( 5000 );
+					inSetup = false;
+					display->clear();
+					break;
+				}
+				delay( 100 );
+				if( Rotary.readSwitch() ){
+					display->writeText( 3, "Abort CAN bus wait" );
+					break;
+				}
+			}
+		}
+	}
+
 	if( wireless != WL_WLAN_CLIENT &&  the_can_mode != CAN_MODE_CLIENT ) {
 		xTaskCreatePinnedToCore(&readSensors, "readSensors", 4096, NULL, 14, bpid, 0);
 	}
@@ -1285,6 +1293,7 @@ void sensor(void *args){
 	}
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 2500, NULL, 8, tpid, 0);
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 4096, NULL, 4, dpid, 0);
+
 	compass.start();
 	Audio::startAudio();
 }

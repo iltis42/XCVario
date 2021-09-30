@@ -155,6 +155,12 @@ void CANbus::begin()
 // return a terminated SString containing exactly the received chars
 int CANbus::receive( int *id, SString& msg, int timeout ){
 	twai_message_t rx;
+
+	uint32_t alerts;
+	twai_read_alerts(&alerts, pdMS_TO_TICKS(_tx_timeout));
+    if( alerts & TWAI_ALERT_RX_QUEUE_FULL )
+    	ESP_LOGW(FNAME,"receive: RX QUEUE FULL alert %X", alerts );
+
 	esp_err_t ret = twai_receive(&rx, pdMS_TO_TICKS(timeout) );
 	// ESP_LOGI(FNAME,"RX CAN bus message ret=%02x TO:%d", ret, _connected_timeout_xcv );
 	if(ret == ESP_OK ){
@@ -421,9 +427,13 @@ bool CANbus::sendData( int id, const char* msg, int length, int self ){
     }
     if ( error == ESP_OK ) {
         twai_read_alerts(&alerts, pdMS_TO_TICKS(_tx_timeout));
-        if ( alerts & ~(TWAI_ALERT_TX_IDLE | TWAI_ALERT_TX_SUCCESS) ) {
-            ESP_LOGW(FNAME,"Tx chunk alerts %X", alerts );
-        }
+        // if ( alerts & TWAI_ALERT_TX_IDLE )
+        //    ESP_LOGW(FNAME,"TX IDLE alert %X", alerts );
+        if( alerts & TWAI_ALERT_RX_QUEUE_FULL )
+		    ESP_LOGW(FNAME,"RX QUEUE FULL alert %X", alerts );
+        if( alerts & TWAI_ALERT_TX_FAILED )
+        	ESP_LOGW(FNAME,"TX_FAILED alert %X", alerts );
+
 		// ESP_LOGI(FNAME,"Send CAN bus message okay");
 		return true;
     }

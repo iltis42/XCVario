@@ -85,7 +85,7 @@ SetupNG<float>  		flap_pos( "FLPS", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
 SetupNG<float>  		s2f_speed( "S2F_SPEED", 100.0 );
 SetupNG<float>  		s2f_hysteresis( "S2F_HYST", 5.0 );
 
-SetupNG<float>  		audio_volume( "AUD_VOL", 10, true, SYNC_FROM_MASTER, VOLATILE );
+SetupNG<float>  		audio_volume( "AUD_VOL", 10, true, SYNC_BIDIR, VOLATILE );
 SetupNG<int>  			audio_variable_frequency( "AUD_VAFQ", 0);
 SetupNG<int>  			audio_mode( "AUDIO_MODE" ,  3 );
 SetupNG<int>  			chopping_mode( "CHOPPING_MODE",  VARIO_CHOP );

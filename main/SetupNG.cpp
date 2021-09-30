@@ -276,7 +276,7 @@ SetupNG<mpud::raw_axes_t>	accl_bias("ACCL_BIAS", zero_bias );
 
 
 void SetupCommon::sendSetup( e_sync_t sync, const char *key, char type, void *value, int len ){
-	ESP_LOGI(FNAME,"sendSetup(): key=%s, type=%c, len=%d", key, type, len );
+	// ESP_LOGI(FNAME,"sendSetup(): key=%s, type=%c, len=%d", key, type, len );
 	char str[40];
 	char sender;
 	if( isMaster()  )
@@ -291,7 +291,7 @@ void SetupCommon::sendSetup( e_sync_t sync, const char *key, char type, void *va
 			sprintf( str+l,"%.3f", *(float*)(value) );
 		else if( type == 'I' )
 			sprintf( str+l,"%d", *(int*)(value) );
-		ESP_LOGI(FNAME,"Setup data: %s", str );
+		// ESP_LOGI(FNAME,"Setup data: %s", str );
 		OV.sendNMEAString(str);
 	}
 }

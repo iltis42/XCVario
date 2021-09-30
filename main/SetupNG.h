@@ -163,7 +163,7 @@ public:
 
 	bool set( T aval, bool dosync=true ) {
 		String val( aval );
-		ESP_LOGI( FNAME,"set val: %s %d", val.c_str(), dosync );
+		// ESP_LOGI( FNAME,"set val: %s %d", val.c_str(), dosync );
 		if( _volatile == VOLATILE ){
 			_value = T(aval);
 		}
@@ -191,7 +191,7 @@ public:
 
 	bool sync(){
 		if( mustSync() ){
-			ESP_LOGI( FNAME,"Now sync %s", _key );
+			// ESP_LOGI( FNAME,"Now sync %s", _key );
 			sendSetup( _sync, _key, typeName(), (void *)(&_value), sizeof( _value ) );
 			return true;
 		}

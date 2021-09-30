@@ -80,6 +80,14 @@ void StraightWind::tick(){
 	_tick++;
 }
 
+bool StraightWind::getWind( int* direction, float* speed, int *age )
+{
+	*direction = int( swind_dir.get() + 0.5 );
+	*speed = float( swind_speed.get() );
+	*age = _age;
+	return ( *direction != -1.0 && *speed != -1.0 );
+}
+
 /**
  * Measurement cycle for wind calculation in straight flight. Should be
  * triggered periodically, maybe once per second.

@@ -187,15 +187,17 @@ void CANbus::tick(){
 	}
 	SString msg;
 	// CAN bus send tick
-	if ( !can_tx_q.isEmpty() ){
-		// ESP_LOGI(FNAME,"There is CAN data");
-		if( _connected_xcv ){
-			if( Router::pullMsg( can_tx_q, msg ) ){
-				// ESP_LOGI(FNAME,"CAN TX len: %d bytes", msg.length() );
-				// ESP_LOG_BUFFER_HEXDUMP(FNAME,msg.c_str(),msg.length(), ESP_LOG_INFO);
-				if( !sendNMEA( msg ) ){
-					_connected_timeout_xcv +=20;  // if sending fails as indication for disconnection
-					ESP_LOGI(FNAME,"CAN TX NMEA failed, timeout=%d", _connected_timeout_xcv );
+	if( !(_tick%4) ){
+		if ( !can_tx_q.isEmpty() ){
+			// ESP_LOGI(FNAME,"There is CAN data");
+			if( _connected_xcv ){
+				if( Router::pullMsg( can_tx_q, msg ) ){
+					// ESP_LOGI(FNAME,"CAN TX len: %d bytes", msg.length() );
+					// ESP_LOG_BUFFER_HEXDUMP(FNAME,msg.c_str(),msg.length(), ESP_LOG_INFO);
+					if( !sendNMEA( msg ) ){
+						_connected_timeout_xcv +=20;  // if sending fails as indication for disconnection
+						ESP_LOGI(FNAME,"CAN TX NMEA failed, timeout=%d", _connected_timeout_xcv );
+					}
 				}
 			}
 		}
@@ -212,6 +214,10 @@ void CANbus::tick(){
 			xcv_came = true;
 			_connected_timeout_xcv = 0;
 			if( !_connected_xcv ){
+				bool entry=false;
+				do{ // cleanup congestion at startup
+					entry = Router::pullMsg( can_tx_q, msg );
+				}while( entry );
 				ESP_LOGI(FNAME,"CAN XCV connected");
 				_connected_xcv = true;
 			}
@@ -265,6 +271,7 @@ void CANbus::tick(){
     // init w/ n_s=0   ^n_s=1      ^n_s=2...                 ^n_s=nr_of_chunks
 	if( id == 0x20 ) { // nmea
 		// ESP_LOGI(FNAME,"CAN RX NMEA frame");
+		// ESP_LOGI(FNAME,"CAN RX id:%02x len:%d", id, bytes );
 		_connected_timeout_xcv = 0;
 
         // For n_s >=1 just increase it
@@ -344,7 +351,7 @@ bool CANbus::sendNMEA( const SString& msg ){
 		if( ! sendData(id, cptr, dlen) ) {
             ret = false;
         }
-		delay(10);
+		delay(5);
         cptr += dlen;
         len -= dlen;
     }

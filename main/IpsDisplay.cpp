@@ -1088,7 +1088,7 @@ void IpsDisplay::drawCompass(){
 				type = '/';
 				ok = true;
 			}
-			// ESP_LOGI(FNAME, "CWIND dir %d, speed %f age %d okc: %d ok:%d", wdc, wc, ageCircling, okc, ok  );
+			// ESP_LOGI(FNAME, "SWIND dir=%d, SSPEED=%f ageC=%d ageS=%d okc:=%d oks=%d ok:=%d", wds, ws, ageCircling, ageStraight, okc, oks, ok  );
 		}
 		// ESP_LOGI(FNAME, "WIND dir %d, speed %f, ok=%d", winddir, wind, ok );
 		if( prev_heading != winddir || !(tick%16) ){

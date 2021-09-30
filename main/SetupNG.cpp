@@ -271,7 +271,7 @@ void SetupCommon::sendSetup( e_sync_t sync, const char *key, char type, void *va
 	if( sender != 'U' ) {
 		int l = sprintf( str,"!xs%c,%s,%c,%d,", sender, key, type, len );
 		if( type == 'F' )
-			sprintf( str+l,"%f", *(float*)(value) );
+			sprintf( str+l,"%.3f", *(float*)(value) );
 		else if( type == 'I' )
 			sprintf( str+l,"%d", *(int*)(value) );
 		ESP_LOGI(FNAME,"Setup data: %s", str );

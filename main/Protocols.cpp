@@ -288,6 +288,12 @@ void Protocols::parseNMEA( const char *astr ){
 				ESP_LOG_BUFFER_HEXDUMP(FNAME,str,32, ESP_LOG_WARN);
 			}
 		}
+		else if ( strncmp( str, "!xc,", 4 ) == 0 ) { // need this to support Wind Simulator with Compass simulation
+			float h;
+			sscanf( str,"!xc,%f", &h );
+			ESP_LOGI(FNAME,"Compass heading detected=%3.1f", h );
+			Compass::setHeading( h );
+		}
 		else if ( (strncmp( str, "!g,", 3 ) == 0)    ) {
 			ESP_LOGI(FNAME,"parseNMEA, Cambridge C302 style command !g detected: %s",str);
 			if (str[3] == 'b' && wireless != WL_WLAN_CLIENT && the_can_mode != CAN_MODE_CLIENT ) {  // we run own protocol between Master and Client as of bad precision in official

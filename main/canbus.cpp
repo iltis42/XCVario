@@ -95,6 +95,7 @@ void CANbus::driverInstall( twai_mode_t mode ){
 	//Start TWAI driver
 	if (twai_start() == ESP_OK) {
 		ESP_LOGI(FNAME,"Driver started");
+		delay(100);
         _ready_initialized = true;
         // Set RS pin
         // bus_off_io may operate invers, so for now set this here
@@ -110,10 +111,12 @@ void CANbus::driverInstall( twai_mode_t mode ){
 void CANbus::driverUninstall(){
     if( _ready_initialized ){
         _ready_initialized = false;
+        delay(100);
 		twai_stop();
+		delay(100);
 		twai_driver_uninstall();
         gpio_set_level(GPIO_NUM_2, 1 );
-		delay(10);
+		delay(100);
 	}
 }
 
@@ -244,7 +247,8 @@ void CANbus::tick(){
 				ESP_LOGI(FNAME,"CAN Magsensor connection timeout");
 				_connected_magsens = false;
 			}
-			if( compass_enable.get() && !(_connected_timeout_magsens % 10000) )
+			if( compass_enable.get() && !(_connected_timeout_magsens % 100000) && ! _connected_xcv )
+				// only restart when xcv is not connected, otherwise magsensor may be just plugged out
 				restart();
 		}
 	}

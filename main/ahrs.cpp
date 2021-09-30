@@ -303,7 +303,7 @@ void IMU::read(){
 			initdone = false;
 			IMU::init(false);
 		}
-		else {
+		else {//La période de temps est cohérente de celle qu'on attend, cette précaution a été mise en place à cause d'initialisation longue de XCVario
 			esp_err_t err = MPU.acceleration(&accelRaw);  // fetch raw data from the registers
 			if( err != ESP_OK )
 				ESP_LOGE(FNAME, "accel I2C error, X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
@@ -316,7 +316,9 @@ void IMU::read(){
 		//adj_accel(angleOfAttack);
 		adj_accel(0.1);// angleOfAttack is supposed to be 6°
 		// Acquisition du vecteur magnetomètre
-//		esp_err_t err = MPU.heading(&magRaw);  // fetch raw data from the registers
+//		esp_err_t err = MPU.heading(&magRaw);  // fetch raw data from the registers. Pas nécessaire car CalculateHeading
+		// qui est appellé régulièrement dans readBMP() rafraichit les mesures magnétomètre.
+		//Pour l'instant, les mesures magnéto ne sont ni filtrées, ni recalées dans le temps par rapport à l'IMU
 		mX = QMC5883L::mag_vector[0];
 		mY = QMC5883L::mag_vector[1];
 		mZ = QMC5883L::mag_vector[2];
@@ -324,7 +326,7 @@ void IMU::read(){
 		//MadgwickAHRSupdateIMU(dt,gyroX, gyroY, gyroZ, accelX, accelY, accelZ,&q0,&q1,&q2,&q3);
 		MadgwickAHRSupdate(dt,gyroX, gyroY, gyroZ, gravity_vector_plane[0], gravity_vector_plane[1], gravity_vector_plane[2], mX, mY, mZ,&q0,&q1,&q2,&q3);
 		//MadgwickAHRSupdateIMU(dt,gyroX, gyroY, gyroZ, accelX, accelY, accelZ, mX, mY, mZ,&q0,&q1,&q2,&q3);
-	// Intégration des anges d'Euler
+	// Calcul des anges d'Euler
 	  roll = atan2(2 * (q0 * q1 + q2 * q3), (q0*q0-q1*q1-q2*q2+q3*q3)); // phi
 	  if (abs(2*( q0 * q2-q1 * q3 ))<1.0) pitch = asin(2 * ( q0 * q2-q1 * q3 )); else pitch = 0.0; // theta
 	  yaw = atan2(2 * (q1 * q2 + q0 * q3),(q0*q0+q1*q1-q2*q2-q3*q3) ) ; // psi
@@ -370,9 +372,9 @@ void IMU::read(){
 	vy=2.0*(q1q2+q0q3)*u + (q0q0-q1q1+q2q2-q3q3)*v + 2.0*(q2q3-q0q1)*w;
 	vz=2.0*(q1q3-q0q2)*u + 2.0*(q2q3+q0q1)*v + (q0q0-q1q1-q2q2+q3q3)*w;
 
-	accel_earthX = (accelX*(q0*q0+q1*q1-q2*q2-q3*q3)+accelY*2.0*(q1*q2-q0*q3)+accelZ*2.0*(q1*q3+q0*q2));
-	accel_earthY = (accelX*2.0*(q1*q2+q0*q3)+accelY*(q0*q0-q1*q1+q2*q2-q3*q3)+accelZ*2.0*(q2*q3-q0*q1));
-	accel_earthZ = (accelX*2.0*(-q0*q2+q1*q3)+accelY*2.0*(q2*q3+q0*q1)+accelZ*(q0*q0-q1*q1-q2*q2+q3*q3)) - G;//Substract pesanteur
+	accel_earthX = (accelX*(q0q0+q1q1-q2q2-q3q3)+accelY*2.0*(q1q2-q0q3)+accelZ*2.0*(q1q3+q0q2));
+	accel_earthY = (accelX*2.0*(q1q2+q0q3)+accelY*(q0q0-q1q1+q2q2-q3q3)+accelZ*2.0*(q2q3-q0q1));
+	accel_earthZ = (accelX*2.0*(-q0q2+q1q3)+accelY*2.0*(q2q3+q0q1)+accelZ*(q0q0-q1q1-q2q2+q3q3)) - G;//Substract pesanteur
 	}
 	ESP_LOGI(FNAME, "attitude,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f ",
 				dt,filterGyroX, filterGyroY, filterGyroZ, filterAccelX, filterAccelY, filterAccelZ,roll,pitch,yaw,q0,q1,q2,q3,
@@ -384,10 +386,10 @@ void IMU::read(){
 void IMU::MPU6050Read()
 {// Les mesures sont transformées en valeur SI dès leur mise en forme
 	// et les offsets enlevés
-		accelX = (accelG[2]*G+offset_accelX);
+		accelX = (accelG[2]*G-offset_accelX);
 		accelY = (accelG[1]*G-offset_accelY);
 		accelZ = (accelG[0]*G-offset_accelZ);
-		gyroX = -(gyroDPS.z*DEG_TO_RAD+offset_gyroX);
+		gyroX = -(gyroDPS.z*DEG_TO_RAD-offset_gyroX);
 		gyroY = -(gyroDPS.y*DEG_TO_RAD-offset_gyroY);
 		gyroZ = -(gyroDPS.x*DEG_TO_RAD-offset_gyroZ);
 }

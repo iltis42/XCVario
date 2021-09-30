@@ -337,8 +337,9 @@ void SetupMenu::down(int count){
 			}
 		}
 		else{  // Volume
-			float vol = audio_volume.getRef();
+			int vol = (int)audio_volume.get();
 			vol -= count;
+			vol = std::max( vol, 0 );
 			audio_volume.set( vol );
 		}
 	}
@@ -359,6 +360,7 @@ void SetupMenu::down(int count){
 	pressed = true;
 }
 
+#include <cstring>
 void SetupMenu::up(int count){
 	if( selected == this && !_menu_enabled ) {
 		// ESP_LOGI(FNAME,"root: up");
@@ -370,9 +372,10 @@ void SetupMenu::up(int count){
 			}
 		}
 		else{  // Volume
-			float vol = audio_volume.getRef();
+			int vol = (int)audio_volume.get();
 			vol += count;
-			audio_volume.set( vol );
+			vol = std::min( vol, 100 );
+			audio_volume.set( (float)vol );
 		}
 	}
 

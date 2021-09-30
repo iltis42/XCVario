@@ -436,7 +436,7 @@ void Audio::decVolume( int steps ) {
 		steps--;
 	}
 	volume_change = 100;
-	ESP_LOGI(FNAME,"dec volume, *p_wiper: %d", (*p_wiper) );
+	// ESP_LOGI(FNAME,"dec volume, *p_wiper: %d", (*p_wiper) );
 }
 
 
@@ -451,7 +451,7 @@ void Audio::incVolume( int steps ) {
 	if( (*p_wiper) > DigitalPoti->getRange() )
 		(*p_wiper) =  DigitalPoti->getRange();
 	volume_change = 100;
-	ESP_LOGI(FNAME,"inc volume, *p_wiper: %d", (*p_wiper) );
+	// ESP_LOGI(FNAME,"inc volume, *p_wiper: %d", (*p_wiper) );
 }
 
 void Audio::startAudio(){

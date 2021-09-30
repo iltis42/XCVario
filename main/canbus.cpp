@@ -191,7 +191,7 @@ void CANbus::on_can_connect( int msg ){
 void CANbus::tick(){
 	_tick++;
 	if( !_ready_initialized ){
-		ESP_LOGI(FNAME,"CAN not initialized");
+		// ESP_LOGI(FNAME,"CAN not initialized");
 		return;
 	}
 	SString msg;
@@ -247,9 +247,11 @@ void CANbus::tick(){
 				ESP_LOGI(FNAME,"CAN Magsensor connection timeout");
 				_connected_magsens = false;
 			}
-			if( compass_enable.get() && !(_connected_timeout_magsens % 100000) && ! _connected_xcv )
+			if( compass_enable.get() && !(_connected_timeout_magsens % 10000) && !_connected_xcv ){
 				// only restart when xcv is not connected, otherwise magsensor may be just plugged out
+				ESP_LOGI(FNAME,"CAN Magnet Sensor restart timeout");
 				restart();
+			}
 		}
 	}
 	if( !xcv_came ){
@@ -260,8 +262,10 @@ void CANbus::tick(){
 				_connected_xcv = false;
 				dataIndex = 0;
 			}
-			if( (can_mode.get() != CAN_MODE_STANDALONE) && !(_connected_timeout_xcv % 10000) )
+			if( (can_mode.get() != CAN_MODE_STANDALONE) && !(_connected_timeout_xcv % 10000) ){
+				ESP_LOGI(FNAME,"CAN XCV restart timeout");
 				restart();
+			}
 		}
 	}
 	// Handle data sync
@@ -338,7 +342,7 @@ void CANbus::tick(){
 
 bool CANbus::sendNMEA( const SString& msg ){
 	if( !_ready_initialized ){
-		ESP_LOGI(FNAME,"CAN not initialized");
+		// ESP_LOGI(FNAME,"CAN not initialized");
 		return false;
     }
 

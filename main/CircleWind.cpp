@@ -296,7 +296,7 @@ void CircleWind::newWind( double angle, double speed ){
 
 void CircleWind::tick(){
 	_age++;
-	ESP_LOGI(FNAME,"age: %d CWD: %.1f CWS %.1f", _age, cwind_dir.get(), cwind_speed.get() );
+	// ESP_LOGI(FNAME,"age: %d CWD: %.1f CWS %.1f", _age, cwind_dir.get(), cwind_speed.get() );
 }
 
 

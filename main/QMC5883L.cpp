@@ -354,8 +354,8 @@ bool QMC5883L::rawHeading()
 			return true;
 		}
 		else{
-			ESP_LOGE( FNAME, "Magnet sensor data from CAN missing");
-			CANbus::restart();
+			// ESP_LOGE( FNAME, "Magnet sensor data from CAN missing");
+			// CANbus::restart();
 			return false;
 		}
 	}
@@ -638,7 +638,7 @@ float QMC5883L::heading( bool *ok )
 		// ESP_LOGI(FNAME,"Magnetic sensor error Reads:%d, Total Errors:%d  Init: %d", N, totalReadErrors, errors );
 		if( errors > 10 )
 		{
-			ESP_LOGI(FNAME,"Magnetic sensor errors > 10: init mag sensor" );
+			// ESP_LOGI(FNAME,"Magnetic sensor errors > 10: init mag sensor" );
 			//  reinitialize once crashed, one retry
 			if( compass_enable.get() != CS_CAN ){
 				if( initialize() != ESP_OK )

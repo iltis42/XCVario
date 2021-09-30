@@ -588,7 +588,7 @@ void Audio::dactask(void* arg )
 				}
 				// Blend over gracefully volume changes
 				if(  (cur_wiper != (*p_wiper)) && volume_change ){
-					ESP_LOGI(FNAME, "volume change, new wiper: %d, cur_wiper %d", (*p_wiper), cur_wiper );
+					// ESP_LOGI(FNAME, "volume change, new wiper: %d, cur_wiper %d", (*p_wiper), cur_wiper );
 					int delta = 1;
 					dacEnable();
 					if( (*p_wiper) > cur_wiper ){
@@ -610,7 +610,7 @@ void Audio::dactask(void* arg )
 					cur_wiper = (*p_wiper);
 					if( cur_wiper == 0 )
 						dacDisable();
-					ESP_LOGI(FNAME, "volume change, new wiper: %d", cur_wiper );
+					// ESP_LOGI(FNAME, "volume change, new wiper: %d", cur_wiper );
 					// ESP_LOGI(FNAME, "have sound");
 				}
 				// Fade in volume

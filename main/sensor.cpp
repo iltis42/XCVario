@@ -1100,25 +1100,7 @@ void sensor(void *args){
 		logged_tests += "Battery Voltage Sensor: PASSED\n";
 	}
 
-	compass.setBus( &i2c_0 );
-	// Check for magnetic sensor / compass
-	if( compass_enable.get() ) {
-		compass.begin();
-		ESP_LOGI( FNAME, "Magnetic sensor enabled: initialize");
-		err = compass.selfTest();
-		if( err == ESP_OK )		{
-			// Activate working of magnetic sensor
-			ESP_LOGI( FNAME, "Magnetic sensor selftest: OKAY");
-			display->writeText( line++, "Compass: OK");
-			logged_tests += "Compass test: OK\n";
-		}
-		else{
-			ESP_LOGI( FNAME, "Magnetic sensor selftest: FAILED");
-			display->writeText( line++, "Compass: FAILED");
-			logged_tests += "Compass test: FAILED\n";
-			selftestPassed = false;
-		}
-	}
+
 
 
 	Serial::begin();
@@ -1151,6 +1133,31 @@ void sensor(void *args){
 	}else if ( wireless == WL_WLAN ){
 		wifi_init_softap();
 	}
+	if(  can_speed.get() != CAN_SPEED_OFF && resultCAN == "OK" )  // 2021 series 3, or 2022 model with new digital poti CAT5171 also features CAN bus
+	{
+		ESP_LOGI(FNAME, "Now start CAN Bus Interface");
+		CANbus::begin();  // start CAN tasks and driver
+	}
+	compass.setBus( &i2c_0 );
+	// Check for magnetic sensor / compass
+	if( compass_enable.get() ) {
+		compass.begin();
+		ESP_LOGI( FNAME, "Magnetic sensor enabled: initialize");
+		err = compass.selfTest();
+		if( err == ESP_OK )		{
+			// Activate working of magnetic sensor
+			ESP_LOGI( FNAME, "Magnetic sensor selftest: OKAY");
+			display->writeText( line++, "Compass: OK");
+			logged_tests += "Compass test: OK\n";
+		}
+		else{
+			ESP_LOGI( FNAME, "Magnetic sensor selftest: FAILED");
+			display->writeText( line++, "Compass: FAILED");
+			logged_tests += "Compass test: FAILED\n";
+			selftestPassed = false;
+		}
+	}
+
 
 	Speed2Fly.change_polar();
 	Speed2Fly.change_mc_bal();
@@ -1238,11 +1245,6 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_Display, GPIO_PULLUP_ONLY );
 
 	delay( 100 );
-	if(  can_speed.get() != CAN_SPEED_OFF && resultCAN == "OK" )  // 2021 series 3, or 2022 model with new digital poti CAT5171 also features CAN bus
-	{
-		ESP_LOGI(FNAME, "Now start CAN Bus Interface");
-		CANbus::begin();  // start CAN tasks and driver
-	}
 
 	if ( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT ){
 		if( wireless == WL_WLAN_CLIENT ){

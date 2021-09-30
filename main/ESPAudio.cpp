@@ -101,6 +101,7 @@ Audio::Audio( ) {
 	wiper = 63;
 	wiper_s2f = 63;
 	cur_wiper = 63;
+	p_wiper = 0;
 }
 
 
@@ -421,10 +422,14 @@ void Audio::dac_invert_set(dac_channel_t channel, int invert)
 
 
 void Audio::setVolume( int vol ) {
+	if((p_wiper) == 0 )
+		return;
 	(*p_wiper) = vol;
 };
 
 void Audio::decVolume( int steps ) {
+	if((p_wiper) == 0 )
+		return;
 	steps = int( 1+ ( (float)(*p_wiper)/16.0 ))*steps;
 	while( steps && ((*p_wiper) > 0) ){
 		(*p_wiper)--;
@@ -436,6 +441,8 @@ void Audio::decVolume( int steps ) {
 
 
 void Audio::incVolume( int steps ) {
+	if((p_wiper) == 0 )
+		return;
 	steps = int( 1+ ( (float)(*p_wiper)/16.0 ))*steps;
 	while( steps && ((*p_wiper) <  DigitalPoti->getRange()*(max_volume.get()/100)) ){
 		(*p_wiper)++;

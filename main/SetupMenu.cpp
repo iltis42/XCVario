@@ -220,25 +220,10 @@ int mc_adj( SetupMenuValFloat * p )
 }
 
 int vol_adj( SetupMenuValFloat * p ){
-	Audio::setVolume( (int)(*(p->_value)) );
+	// Audio::setVolume( (int)(*(p->_value)) );
 	return 0;
 }
 
-void dec_volume( int count ) {
-	int vol = (int)audio_volume.get() - count;
-	if( vol < 0 )
-		vol=0;
-	audio_volume.set( vol );
-	Audio::decVolume(count);
-}
-
-void inc_volume( int count ) {
-	int vol = (int)audio_volume.get() + count;
-	if( vol > 100 )
-		vol = 100;
-	audio_volume.set( vol );
-	Audio::incVolume(count);
-}
 
 /**
  * C-Wrappers function to compass menu handlers.
@@ -351,8 +336,11 @@ void SetupMenu::down(int count){
 				MC.set( mc );
 			}
 		}
-		else
-			dec_volume( count );
+		else{  // Volume
+			float vol = audio_volume.getRef();
+			vol -= count;
+			audio_volume.set( vol );
+		}
 	}
 	if( (selected != this) || !_menu_enabled )
 		return;
@@ -381,8 +369,11 @@ void SetupMenu::up(int count){
 				MC.set( mc );
 			}
 		}
-		else
-			inc_volume( count );
+		else{  // Volume
+			float vol = audio_volume.getRef();
+			vol += count;
+			audio_volume.set( vol );
+		}
 	}
 
 	if( (selected != this) || !_menu_enabled )

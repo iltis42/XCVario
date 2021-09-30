@@ -166,10 +166,12 @@ public:
 		ESP_LOGI( FNAME,"set val: %s %d", val.c_str(), dosync );
 		if( _volatile == VOLATILE ){
 			_value = T(aval);
-			if( dosync )
-				sync();
-			if( _action != 0 )
-				(*_action)();
+		}
+		if( dosync )
+			sync();
+		if( _action != 0 )
+			(*_action)();
+		if( _volatile == VOLATILE ){
 			return true;
 		}
 
@@ -183,7 +185,7 @@ public:
 			return( false );
 		}
 		bool ret=true;
-		ret = commit( dosync );
+		ret = commit( false );
 		return ret;
 	};
 
@@ -200,8 +202,6 @@ public:
 		ESP_LOGI(FNAME,"NVS commit(): ");
 		if( dosync )
 			sync();
-		if( _action != 0 )
-			(*_action)();
 
 		if( _volatile != PERSISTENT ){
 			return true;

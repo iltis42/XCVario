@@ -30,6 +30,7 @@
 #include "Router.h"
 #include "Switch.h"
 #include "CircleWind.h"
+#include "Protocols.h"
 
 std::vector<SetupCommon *> SetupCommon::entries;
 char SetupCommon::_ID[14];
@@ -270,11 +271,11 @@ void SetupCommon::sendSetup( e_sync_t sync, const char *key, char type, void *va
 	if( sender != 'U' ) {
 		int l = sprintf( str,"!xs%c,%s,%c,%d,", sender, key, type, len );
 		if( type == 'F' )
-			sprintf( str+l,"%f\n", *(float*)(value) );
+			sprintf( str+l,"%f", *(float*)(value) );
 		else if( type == 'I' )
-			sprintf( str+l,"%d\n", *(int*)(value) );
+			sprintf( str+l,"%d", *(int*)(value) );
 		ESP_LOGI(FNAME,"Setup data: %s", str );
-		Router::sendXCV(str);
+		OV.sendNMEAString(str);
 	}
 }
 

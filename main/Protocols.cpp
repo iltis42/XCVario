@@ -85,6 +85,13 @@ void Protocols::sendNmeaHDT( float heading ) {
 	Router::sendXCV(str);
 }
 
+void Protocols::sendNMEAString( char *str ) {  // String needs space for CS at the end
+	int cs = calcNMEACheckSum(&str[1]);
+	int i = strlen(str);
+	sprintf( &str[i], "*%02X\r\n", cs );
+	ESP_LOGI(FNAME,"sendNMEAString: %s", str );
+	Router::sendXCV(str);
+}
 
 void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
 		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz  ){
@@ -256,27 +263,29 @@ void Protocols::parseNMEA( const char *astr ){
 			char type;
 			int  length;
 			char role; // M | C
-			sscanf(str, "!xs%c,%[^,],%c", &role, key,&type );
-			// ESP_LOGI(FNAME,"parseNMEA role=%c type=%c key=%s", role, type , key );
-			if( type == 'F' ){
-				float valf;
-				sscanf(str, "!xs%c,%[^,],%c,%d,%f", &role, key,&type,&length, &valf );
-				// ESP_LOGI(FNAME,"parseNMEA float value=%f", valf );
-				SetupNG<float> *item = (SetupNG<float> *)SetupCommon::getMember( key );
-				if( item != 0 ){
-					item->set( valf, false );
-				}else
-					ESP_LOGW(FNAME,"Setup item with key %s not found", key );
-			}
-			else if( type == 'I' ){
-				int vali;
-				sscanf(str, "!xs%c,%[^,],%c,%d,%d", &role, key,&type,&length, &vali );
-				ESP_LOGI(FNAME,"parseNMEA %s", str );
-				SetupNG<int> *item = (SetupNG<int> *)SetupCommon::getMember( key );
-				if( item != 0 ){
-					item->set( vali, false );
-				}else
-					ESP_LOGW(FNAME,"Setup item with key %s not found", key );
+			int cs;
+			float val;
+			sscanf(str, "!xs%c,%[^,],%c,%d,%f*%02x", &role, key, &type, &length, &val, &cs );  // !xsM,FLPS,F,4,1.500000*27
+			int calc_cs=calcNMEACheckSum( str );
+			if( cs == calc_cs ){
+				ESP_LOGI(FNAME,"parsed NMEA: role=%c type=%c key=%s len=%d val=%f vali=%d", role, type , key, length, val, (int)val );
+				if( type == 'F' ){
+					SetupNG<float> *item = (SetupNG<float> *)SetupCommon::getMember( key );
+					if( item != 0 ){
+						item->set( val, false );
+					}else
+						ESP_LOGW(FNAME,"Setup item with key %s not found", key );
+				}
+				else if( type == 'I' ){
+					SetupNG<int> *item = (SetupNG<int> *)SetupCommon::getMember( key );
+					if( item != 0 ){
+						item->set( (int)val, false );
+					}else
+						ESP_LOGW(FNAME,"Setup item with key %s not found", key );
+				}
+			}else{
+				ESP_LOGW(FNAME,"!xs messgae CS error got:%X != calculated:%X", cs, calc_cs );
+				ESP_LOG_BUFFER_HEXDUMP(FNAME,str,32, ESP_LOG_WARN);
 			}
 		}
 		else if ( (strncmp( str, "!g,", 3 ) == 0)    ) {

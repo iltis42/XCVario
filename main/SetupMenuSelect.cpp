@@ -181,6 +181,7 @@ void SetupMenuSelect::press(){
 			(*_action)( this );
 		if( _select_save != *_select )
 			if( _restart ) {
+                SetupCommon::commitNow();
 				Audio::shutdown();
 				sleep( 2 );
 				esp_restart();

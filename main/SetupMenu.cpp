@@ -427,6 +427,7 @@ void SetupMenu::press(){
 			bmpVario.setup();
 			_menu_enabled = false;
 			inSetup=false;
+            SetupCommon::commitNow();
 		}
 	}
 	// default is not pressed, so just display, but we toogle pressed state at the end

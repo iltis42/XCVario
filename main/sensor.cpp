@@ -7,6 +7,7 @@
 #include "esp_task_wdt.h"
 #include "string.h"
 #include "esp_system.h"
+#include <esp_timer.h>
 #include "nvs_flash.h"
 #include "BME280_ESP32_SPI.h"
 #include <driver/adc.h>
@@ -523,16 +524,21 @@ void readSensors(void *pvParameters){
 		}
 
         // Check on new clients connecting
-        if ( !(count%4) && CAN && CAN->GotNewClient() ) {
-            if( client_sync_dataIdx < SetupCommon::numEntries() ){
-                SetupCommon::syncEntry(client_sync_dataIdx);
-    			client_sync_dataIdx++;
+        if ( CAN && CAN->GotNewClient() ) { // todo use also for Wifi client?!
+            while( client_sync_dataIdx < SetupCommon::numEntries() ) {
+                if ( SetupCommon::syncEntry(client_sync_dataIdx++) ) {
+                    break; // Hit entry to actually sync and send data
+                }
             }
-            else {
+            if ( client_sync_dataIdx >= SetupCommon::numEntries() ) {
                 // Synch complete
                 client_sync_dataIdx = 0;
                 CAN->ResetNewClient();
             }
+        }
+        uint16_t dummy;
+        if ( xQueueReceive(SetupCommon::commitSema, &dummy, 0) ) {
+            SetupCommon::commitNow();
         }
 
 		esp_task_wdt_reset();
@@ -1318,7 +1324,11 @@ void sensor(void *args){
 	Audio::startAudio();
 }
 
-extern "C" void  app_main(void){
+extern "C" void  app_main(void)
+{
+    // Init timer infrastructure
+    esp_timer_init();
+
 	Audio::boot();
 	ESP_LOGI(FNAME,"app_main" );
 	ESP_LOGI(FNAME,"Now init all Setup elements");

@@ -5,16 +5,15 @@
  *      Author: iltis
  */
 
-#ifndef MAIN_SETUP_NG_H_
-#define MAIN_SETUP_NG_H_
+#pragma once
 
-extern "C" {
 #include "esp_partition.h"
 #include "esp_err.h"
 #include "nvs_flash.h"
 #include "nvs.h"
-}
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
 #include <string>
 #include <stdio.h>
 #include "esp_system.h"
@@ -29,7 +28,7 @@ extern "C" {
 #include "logdef.h"
 #include "MPU.hpp" // change from .h to .hpp for Windows toolchain compatibility
 #include <WString.h>
-
+#include <esp_timer.h>
 
 
 
@@ -86,7 +85,7 @@ const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
 
 class SetupCommon {
 public:
-	SetupCommon() {  memset( _ID, 0, sizeof( _ID )); };
+	SetupCommon() { memset( _ID, 0, sizeof( _ID )); }
 	virtual ~SetupCommon() {};
 	virtual bool init() = 0;
 	virtual bool erase() = 0;
@@ -105,7 +104,32 @@ public:
 	static bool factoryReset();
 	static bool isMaster();
 	static bool isClient();
+    static bool lazyCommit;
+    static bool commitNow();
+    static QueueHandle_t commitSema;
+
+protected:
+    static bool open(nvs_handle_t &h) {
+        esp_err_t err = nvs_open("SetupNG", NVS_READWRITE, &h);
+        if(err != ESP_OK){
+            ESP_LOGE(FNAME,"ESP32NVS open storage error %d", err );
+            h = 0;
+            return( false );
+        }
+        else {
+            // ESP_LOGI(FNAME,"ESP32NVS handle: %04X  OK", _nvs_handle );
+            return( true );
+        }
+	};
+	static void close(nvs_handle_t &h) {
+		if( h != 0) {
+			nvs_close(h);
+			h = 0;
+		}
+	};
 private:
+    static esp_timer_handle_t _timer;
+    static bool _dirty;
 	static char _ID[14];
 };
 
@@ -134,7 +158,6 @@ public:
 		if( strlen( akey ) > 15 )
 			ESP_LOGE(FNAME,"SetupNG(%s) key > 15 char !", akey );
 		entries.push_back( this );  // add into vector
-		_nvs_handle = 0;
 		_key = akey;
 		_default = adefault;
 		_reset = reset;
@@ -179,13 +202,7 @@ public:
 			return( true );
 		}
 		_value = T(aval);
-		if( !open() ) {
-			ESP_LOGE(FNAME,"NVS Error open nvs handle !");
-			return( false );
-		}
-		bool ret=true;
-		ret = commit( false );
-		return ret;
+		return commit( false );
 	};
 
 	bool sync(){
@@ -205,38 +222,43 @@ public:
 		if( _volatile != PERSISTENT ){
 			return true;
 		}
-		if( !open() ) {
-			ESP_LOGE(FNAME,"NVS error");
+        nvs_handle_t h = 0;
+		if( !open(h) ) {
 			return false;
 		}
-		ESP_LOGI(FNAME,"NVS commit(key:%s , addr:%08x, len:%d, nvs_handle: %04x)", _key, (unsigned int)(&_value), sizeof( _value ), _nvs_handle);
-		esp_err_t _err = nvs_set_blob(_nvs_handle, _key, (void *)(&_value), sizeof( _value ));
-		if(_err != ESP_OK) {
-			ESP_LOGE(FNAME,"NVS set blob error %d", _err );
-			close();
+		ESP_LOGI(FNAME,"NVS commit(key:%s , addr:%08x, len:%d, nvs_handle: %04x)", _key, (unsigned int)(&_value), sizeof( _value ), h);
+		esp_err_t err = nvs_set_blob(h, _key, (void *)(&_value), sizeof( _value ));
+		if(err != ESP_OK) {
+			ESP_LOGE(FNAME,"NVS set blob error %d", err );
+			close(h);
 			return( false );
 		}
-		_err = nvs_commit(_nvs_handle);
-		if(_err != ESP_OK)  {
-			ESP_LOGE(FNAME,"NVS nvs_commit error");
-			close();
+		if(lazyCommit) {
+            _dirty=true;
+            close(h);
+            return true;
+        }
+		err = nvs_commit(h);
+		close(h);
+		if(err != ESP_OK)  {
 			return false;
 		}
 		ESP_LOGI(FNAME,"success");
-		close();
 		return true;
 	};
 
 	bool exists() {
-		if( _volatile != PERSISTENT )
-				return true;
-		if( !open() ) {
-			ESP_LOGE(FNAME,"Error open nvs handle !");
+		if( _volatile != PERSISTENT ) {
+            return true;
+        }
+        nvs_handle_t h = 0;
+		if( !open(h) ) {
 			return false;
 		}
 		size_t required_size;
-		esp_err_t _err = nvs_get_blob(_nvs_handle, _key, NULL, &required_size);
-		if ( _err != ESP_OK )
+		esp_err_t err = nvs_get_blob(h, _key, NULL, &required_size);
+        close(h);
+		if ( err != ESP_OK )
 			return false;
 		return true;
 	};
@@ -247,14 +269,14 @@ public:
 			set( _default );
 			return true;
 		}
-		if( !open() ) {
-			ESP_LOGE(FNAME,"Error open nvs handle !");
+        nvs_handle_t h = 0;
+		if( !open(h) ) {
 			return false;
 		}
 		size_t required_size;
-		esp_err_t _err = nvs_get_blob(_nvs_handle, _key, NULL, &required_size);
-		if ( _err != ESP_OK ){
-			ESP_LOGE(FNAME, "NVS nvs_get_blob error: returned error ret=%d", _err );
+		esp_err_t err = nvs_get_blob(h, _key, NULL, &required_size);
+		if ( err != ESP_OK ){
+			ESP_LOGE(FNAME, "NVS nvs_get_blob error: returned error ret=%d", err );
 			set( _default );  // try to init
 		}
 		else {
@@ -262,14 +284,14 @@ public:
 				ESP_LOGE(FNAME,"NVS error: size too big: %d > %d", required_size , sizeof( T ) );
 				erase();
 				set( _default );  // try to init
-				close();
+				close(h);
 				return false;
 			}
 			else {
 				// ESP_LOGI(FNAME,"NVS size okay: %d", required_size );
-				_err = nvs_get_blob(_nvs_handle, _key, &_value, &required_size);
-				if ( _err != ESP_OK ){
-					ESP_LOGE(FNAME, "NVS nvs_get_blob returned error ret=%d", _err );
+				err = nvs_get_blob(h, _key, &_value, &required_size);
+				if ( err != ESP_OK ){
+					ESP_LOGE(FNAME, "NVS nvs_get_blob returned error ret=%d", err );
 					erase();
 					set( _default );  // try to init
 				}
@@ -281,7 +303,7 @@ public:
 				}
 			}
 		}
-		close();
+		close(h);
 		return true;
 	};
 
@@ -290,12 +312,13 @@ public:
 		if( _volatile != PERSISTENT ){
 			return true;
 		}
-		open();
-		esp_err_t _err = nvs_erase_key(_nvs_handle, _key);
-		if(_err != ESP_OK)
+        nvs_handle_t h = 0;
+		open(h);
+		esp_err_t err = nvs_erase_key(h, _key);
+		if(err != ESP_OK)
 			return false;
 		else {
-			ESP_LOGI(FNAME,"NVS erased %s by handle %d", _key, _nvs_handle );
+			ESP_LOGI(FNAME,"NVS erased %s by handle %d", _key, h );
 			if( set( _default ) )
 				return true;
 			else
@@ -307,18 +330,19 @@ public:
 		return _reset;
 	};
 
-	bool erase_all() {
-		open();
-		esp_err_t _err = nvs_erase_all(_nvs_handle);
-		if(_err != ESP_OK)
-			return false;
-		else
-			ESP_LOGI(FNAME,"NVS erased all by handle %d", _nvs_handle );
-		if( commit() )
-			return true;
-		else
-			return false;
-	};
+	// bool erase_all() {
+    //     nvs_handle_t h = 0;
+	// 	open(h);
+	// 	esp_err_t err = nvs_erase_all(h);
+	// 	if(err != ESP_OK)
+	// 		return false;
+	// 	else
+	// 		ESP_LOGI(FNAME,"NVS erased all by handle %d", h );
+	// 	if( commit() )
+	// 		return true;
+	// 	else
+	// 		return false;
+	// };
 
 	e_sync getSync(){
 		return _sync;
@@ -328,33 +352,10 @@ private:
 	T _value;
 	T _default;
 	const char * _key;
-	nvs_handle_t  _nvs_handle;
 	bool _reset;
 	e_sync_t _sync;
 	e_volatility _volatile;
 	void (* _action)();
-
-	bool open() {
-		if( _nvs_handle == 0) {
-			esp_err_t _err = nvs_open("SetupNG", NVS_READWRITE, &_nvs_handle);
-			if(_err != ESP_OK){
-				ESP_LOGE(FNAME,"ESP32NVS open storage error %d", _err );
-				_nvs_handle = 0;
-				return( false );
-			}
-			else {
-				// ESP_LOGI(FNAME,"ESP32NVS handle: %04X  OK", _nvs_handle );
-				return( true );
-			}
-		}
-		return true;
-	};
-	void close() {
-		if( _nvs_handle != 0) {
-			nvs_close(_nvs_handle);
-			_nvs_handle = 0;
-		}
-	};
 };
 
 extern SetupNG<float>  		QNH;
@@ -567,9 +568,3 @@ extern SetupNG<int> 		can_mode;
 
 extern int g_col_background;
 extern int g_col_highlight;
-
-
-
-
-
-#endif /* MAIN_SETUP_NG_H_ */

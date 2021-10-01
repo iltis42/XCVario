@@ -155,7 +155,8 @@ void SetupMenuValFloat::press(){
 				ucg->drawBox( 0,160,240,160 );
 				ucg->setPrintPos( 1, 250  );
 				ucg->setColor(COLOR_WHITE);
-				ucg->print("Now Restart" );
+				ucg->print("...rebooting now" );
+                SetupCommon::commitNow();
 				delay(1000);
 				esp_restart();
 			}

@@ -622,7 +622,7 @@ void IpsDisplay::drawFlarm( int x, int y, bool flarm ) {
 void IpsDisplay::drawWifi( int x, int y ) {
 
 	int btq=1;
-	ESP_LOGI(FNAME,"wireless %d", wireless );
+	// ESP_LOGI(FNAME,"wireless %d", wireless );
 	if( wireless == WL_WLAN_CLIENT ){
 		if( WifiClient::isConnected(8884) )
 			btq=0;

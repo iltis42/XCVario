@@ -86,7 +86,7 @@ void Flarm::progress(){  // once per second
 }
 
 bool Flarm::connected(){
-	ESP_LOGI(FNAME,"timeout=%d", timeout );
+	// ESP_LOGI(FNAME,"timeout=%d", timeout );
 	if( timeout > 0 )
 		return true;
 	else

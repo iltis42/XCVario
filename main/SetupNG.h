@@ -164,9 +164,8 @@ public:
 	bool set( T aval, bool dosync=true ) {
 		String val( aval );
 		// ESP_LOGI( FNAME,"set val: %s %d", val.c_str(), dosync );
-		if( _volatile == VOLATILE ){
-			_value = T(aval);
-		}
+		T old_val = _value;
+		_value = T(aval);
 		if( dosync )
 			sync();
 		if( _action != 0 )
@@ -175,7 +174,7 @@ public:
 			return true;
 		}
 
-		if( memcmp( &_value, &aval, sizeof( aval )  ) == 0 ){
+		if( memcmp( &_value, &old_val, sizeof( _value )  ) == 0 ){
 			ESP_LOGW(FNAME,"Value already in NVS: %s", val.c_str() );
 			return( true );
 		}

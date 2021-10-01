@@ -622,7 +622,7 @@ void SetupMenu::setup( )
 
 		SetupMenuValFloat * mv = new SetupMenuValFloat( "Max Volume", 0, "%", 0, 100, 1.0, 0, false, &max_volume );
 		audio->addMenu( mv );
-		mv->setHelp(PROGMEM"Maximum volume for Audio when volume setting is at max");
+        mv->setHelp(PROGMEM"Maximum volume for Audio when volume setting is at max. Set to 0% to mute audio entirely.");
 
 		SetupMenuSelect * abnm = new SetupMenuSelect( "Cruise Audio", false, 0 , true, &cruise_audio_mode );
 		abnm->setHelp(PROGMEM"Select either S2F command or Variometer (Netto/Brutto as selected) as audio source while cruising");

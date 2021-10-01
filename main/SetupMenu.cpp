@@ -1058,6 +1058,7 @@ void SetupMenu::setup( )
 		btm->addEntry( "Bluetooth");
 		btm->addEntry( "Wireless LAN");
 		btm->addEntry( "Wireless Client");
+		btm->addEntry( "Wireless Master");
 		wirelessM->addMenu( btm );
 
 		SetupMenuValFloat *wifip = new SetupMenuValFloat( "WIFI Power", 0, "%", 10.0, 100.0, 5.0, update_wifi_power, false, &wifi_max_power );

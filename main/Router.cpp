@@ -35,8 +35,8 @@ RingBufCPP<SString, QUEUE_SIZE> s2_rx_q;
 
 RingBufCPP<SString, QUEUE_SIZE> xcv_rx_q;
 
-RingBufCPP<SString, QUEUE_SIZE> can_rx_q;
-RingBufCPP<SString, QUEUE_SIZE> can_tx_q;
+RingBufCPP<SString, QUEUE_SIZE> client_rx_q;
+RingBufCPP<SString, QUEUE_SIZE> client_tx_q;
 
 portMUX_TYPE btmux = portMUX_INITIALIZER_UNLOCKED;
 
@@ -122,10 +122,14 @@ void Router::sendAUX(char * s){
 void Router::routeXCV(){
 	SString xcv;
 	if( pullMsg( xcv_rx_q, xcv ) ){
-		if ( strncmp( xcv.c_str(), "!xs", 3 ) != 0 ){  // those messages are XCV specific and only dedicated to XCV targets via Wifi and CAN
+		if ( strncmp( xcv.c_str(), "!xs", 3 ) != 0 ){  // !xs messages are XCV specific and must not go to BT,WiFi or serial Navi's
 			if( wireless == WL_BLUETOOTH ) {
 				if( forwardMsg( xcv, bt_tx_q ) )
 					ESP_LOGV(FNAME,"Send to BT device, XCV received %d bytes", xcv.length() );
+			}
+			if( wireless == WL_WLAN  ){
+				if( forwardMsg( xcv, wl_vario_tx_q ) )
+					ESP_LOGV(FNAME,"Send to WLAN port 8880, XCV %d bytes", xcv.length() );
 			}
 			if( (serial1_tx.get() & RT_XCVARIO) && serial1_speed.get() )
 				if( forwardMsg( xcv, s1_tx_q ) )
@@ -134,16 +138,9 @@ void Router::routeXCV(){
 				if( forwardMsg( xcv, s2_tx_q ) )
 					ESP_LOGV(FNAME,"Send to ttyS2 device, XCV %d bytes", xcv.length() );
 		}
-		if( (can_tx.get() & RT_XCVARIO) && (can_mode.get() != CAN_MODE_STANDALONE) ){
-			if( (strncmp( xcv.c_str(), "$WIND", 5 ) != 0) ){  // drop WIND messages
-				if( forwardMsg( xcv, can_tx_q ) )
-					ESP_LOGV(FNAME,"Send to CAN device, XCV %d bytes", xcv.length() );
-			}
-		}
-		if( wireless == WL_WLAN || wireless == WL_WLAN_CLIENT )
-		{
-			if( forwardMsg( xcv, wl_vario_tx_q ) )
-				ESP_LOGV(FNAME,"Send to WLAN port 8880, XCV %d bytes", xcv.length() );
+		if( (strncmp( xcv.c_str(), "!xs", 3 ) == 0) || (strncmp( xcv.c_str(), "$PXCV", 5 ) == 0) ){  // Route to XCV client, for now also $PXCV
+			if( forwardMsg( xcv, client_tx_q ) )
+				ESP_LOGV(FNAME,"Send to CAN device, XCV %d bytes", xcv.length() );
 		}
 	}
 }
@@ -251,9 +248,9 @@ void Router::routeBT(){
 }
 
 // route messages from CAN
-void Router::routeCAN(){
+void Router::routeClient(){
 	SString can;
-	if( pullMsg( can_rx_q, can ) ){
+	if( pullMsg( client_rx_q, can ) ){
 		Protocols::parseNMEA( can.c_str() );
 	}
 }

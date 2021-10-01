@@ -22,7 +22,7 @@ public:
  	static void drawFlarmWarning();
  	static void initFlarmWarning();
  	static void progress();
- 	static bool connected(){ return (bool)timeout; };
+ 	static bool connected(); // returns true if Flarm is connected
  	static inline bool getGPS( double &gndSpeedKmh, double &gndTrack ) { if( gpsOK ) {
  																			gndSpeedKmh = Units::knots2kmh(gndSpeedKnots);
  																			gndTrack = gndCourse;

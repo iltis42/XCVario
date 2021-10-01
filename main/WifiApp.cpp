@@ -51,9 +51,17 @@ typedef struct xcv_sock_server {
 	std::list<client_record_t>  clients;
 }sock_server_t;
 
-static sock_server_t XCVario = { .txbuf = &wl_vario_tx_q, .rxbuf = &wl_vario_rx_q, .port=8880, .idle = 0, .pid = 0 };
-static sock_server_t FLARM   = { .txbuf = &wl_flarm_tx_q, .rxbuf = &wl_flarm_rx_q, .port=8881, .idle = 0, .pid = 0 };
-static sock_server_t AUX     = { .txbuf = &wl_aux_tx_q,   .rxbuf = &wl_aux_rx_q,   .port=8882, .idle = 0, .pid = 0 };
+static sock_server_t XCVario   = { .txbuf = &wl_vario_tx_q, .rxbuf = &wl_vario_rx_q, .port=8880, .idle = 0, .pid = 0 };
+static sock_server_t FLARM     = { .txbuf = &wl_flarm_tx_q, .rxbuf = &wl_flarm_rx_q, .port=8881, .idle = 0, .pid = 0 };
+static sock_server_t AUX       = { .txbuf = &wl_aux_tx_q,   .rxbuf = &wl_aux_rx_q,   .port=8882, .idle = 0, .pid = 0 };
+static sock_server_t XCVarioMS = { .txbuf = &client_tx_q,   .rxbuf = &client_rx_q,   .port=8884, .idle = 0, .pid = 0 };
+
+int  WifiApp_queueFull(){
+	if( !wl_vario_tx_q.isFull() || !client_tx_q.isFull() )
+		return 0;
+	else
+		return 1;
+}
 
 int create_socket( int port ){
 	struct sockaddr_in serverAddress;
@@ -88,7 +96,7 @@ int create_socket( int port ){
 // Multi client TCP server with dynamic updated list of clients connected
 
 void on_client_connect( int port, int msg ){
-	if( port == 8880 && !Flarm::bincom ){ // have a client to XCVario protocol connected
+	if( port == 8884 && !Flarm::bincom ){ // have a client to XCVario protocol connected
 		// ESP_LOGV(FNAME, "on_client_connect: Send MC, Ballast, Bugs, etc");
 		SetupCommon::syncEntry(msg);
 	}
@@ -155,7 +163,7 @@ void socket_server(void *setup) {
 					// ESP_LOGI(FNAME, "RX wifi client port %d size: %d bincom:%d", config->port, sizeRead, Flarm::bincom );
 					// ESP_LOG_BUFFER_HEXDUMP(FNAME,tcprx.c_str(),sizeRead, ESP_LOG_INFO);
 				}
-				if( config->port == 8880 ){
+				if( config->port == 8884 ){
 					if( num_send < SetupCommon::numEntries() ){
 						on_client_connect( config->port, num_send );
 						num_send ++;
@@ -184,7 +192,7 @@ void socket_server(void *setup) {
 					ESP_LOGW(FNAME, "tcp client %d (port %d) permanent send err: %s, remove!", client_rec.client,  config->port, strerror(errno) );
 					close(client_rec.client );
 					it = clients.erase( it );
-					if( config->port == 8880 )
+					if( config->port == 8884 )
 						num_send = 0;
 				}
 			}
@@ -260,13 +268,18 @@ void wifi_init_softap()
 		ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
 
 		sleep(1);
-		ESP_LOGV(FNAME,"now esp_wifi_start");
+		ESP_LOGI(FNAME,"now start WSP wifi access point");
 		ESP_ERROR_CHECK(esp_wifi_start());
 		ESP_ERROR_CHECK(esp_wifi_set_max_tx_power( int(wifi_max_power.get()*80.0/100.0) ));
 
-		xTaskCreatePinnedToCore(&socket_server, "socket_ser_2", 3200, &AUX, 10, AUX.pid, 0);  // 10
-		xTaskCreatePinnedToCore(&socket_server, "socket_srv_0", 3200, &XCVario, 11, XCVario.pid, 0);  // 10
-		xTaskCreatePinnedToCore(&socket_server, "socket_ser_1", 4096, &FLARM, 12, FLARM.pid, 0);  // 10
+		if( serial2_speed.get() != 0 &&  serial2_tx.get() != 0 )  // makes only sense if there is data from AUX = serial interface S2
+			xTaskCreatePinnedToCore(&socket_server, "socket_ser_2", 3200, &AUX, 10, AUX.pid, 0);  // 10
+		if( wireless_type.get() == WL_WLAN ) // makes only sense if mode is WLAN, not Bluetooth
+			xTaskCreatePinnedToCore(&socket_server, "socket_srv_0", 3200, &XCVario, 11, XCVario.pid, 0);  // 10
+		if( serial1_speed.get() != 0 &&  serial1_tx.get() != 0 ) // makes only sense if there is a FLARM connected on S1
+			xTaskCreatePinnedToCore(&socket_server, "socket_ser_1", 3200, &FLARM, 12, FLARM.pid, 0);  // 10
+		if( (wireless_type.get() == WL_WLAN) || (wireless_type.get() == WL_WLAN_MASTER) ) // makes sense if we are WLAN_MASTER; for backward compatibility WLAN
+			xTaskCreatePinnedToCore(&socket_server, "socket_srv_3", 3200, &XCVarioMS, 9, XCVarioMS.pid, 0);  // 10
 
 		ESP_LOGV(FNAME, "wifi_init_softap finished SUCCESS. SSID:%s password:%s channel:%d", (char *)wc.ap.ssid, (char *)wc.ap.password, wc.ap.channel );
 	}

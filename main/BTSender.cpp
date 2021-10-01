@@ -40,10 +40,6 @@ int BTSender::queueFull() {
 		if(bt_tx_q.isFull())
 			return 1;
 	}
-	else if( wireless == WL_WLAN ){
-		if( wl_vario_tx_q.isFull() )
-			return 1;
-	}
 	return 0;
 }
 

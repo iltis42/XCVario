@@ -28,8 +28,8 @@ typedef struct xcv_sock_client {
 	int sock;
 }sock_client_t;
 
-static sock_client_t XCVario = { .txbuf = &wl_vario_tx_q, .rxbuf = &wl_vario_rx_q, .port=8880, .connected=false, .sock=-1 };
-static sock_client_t FLARM   = { .txbuf = &wl_flarm_tx_q, .rxbuf = &wl_flarm_rx_q, .port=8881, .connected=false, .sock=-1 };
+static sock_client_t XCVarioCL = { .txbuf = &wl_vario_tx_q, .rxbuf = &wl_vario_rx_q, .port=8884, .connected=false, .sock=-1 };
+static sock_client_t FLARM   =   { .txbuf = &wl_flarm_tx_q, .rxbuf = &wl_flarm_rx_q, .port=8881, .connected=false, .sock=-1 };
 
 EventGroupHandle_t WifiClient::wifi_event_group;
 esp_netif_t *WifiClient::sta_netif = 0;
@@ -37,8 +37,8 @@ std::string WifiClient::SSID;
 
 
 bool WifiClient::isConnected( int port ){
-	if( port == 8880 )
-		return( XCVario.connected );
+	if( port == 8884 )
+		return( XCVarioCL.connected );
 	else if( port == 8881 )
 		return( FLARM.connected );
 	return false;
@@ -66,10 +66,10 @@ void WifiClient::event_handler(void* arg, esp_event_base_t event_base, int32_t e
 		ESP_LOGI(FNAME,"SYSTEM_EVENT_STA_DISCONNECTED");
 		esp_wifi_connect();
 		xEventGroupClearBits( WifiClient::wifi_event_group, CONNECTED_BIT);
-		if( XCVario.sock > 0 ){
-			close( XCVario.sock );
-			XCVario.sock = -1;
-			XCVario.connected = false;
+		if( XCVarioCL.sock > 0 ){
+			close( XCVarioCL.sock );
+			XCVarioCL.sock = -1;
+			XCVarioCL.connected = false;
 		}
 		if( FLARM.sock > 0 ){
 			close( FLARM.sock );
@@ -134,11 +134,11 @@ std::string WifiClient::scan( void ){
 		for (int i = 0; (i < DEFAULT_SCAN_LIST_SIZE) && (i < ap_count); i++) {
 			if( strncmp( (char*)ap_info[i].ssid, "XCVARIO-", 8 ) == 0 )
 			ESP_LOGI(FNAME, "SSID \t%s", ap_info[i].ssid);
-			ESP_LOGI(FNAME, "RSSI \t%d", ap_info[i].rssi);
+			ESP_LOGI(FNAME, "LEVEL: \t%d SSID: \t%s", ap_info[i].rssi, ap_info[i].ssid);
 			if( strncmp( (char*)ap_info[i].ssid, "XCVario-", 8 ) == 0 ) {
 				found = true;
 				SSID = std::string( (char*)ap_info[i].ssid );
-				ESP_LOGI(FNAME,"SCAN found master XCVario: %s", SSID.c_str() );
+				ESP_LOGI(FNAME,"SCAN found master XCVarioCL: %s", SSID.c_str() );
 			}
 		}
 	}
@@ -240,6 +240,6 @@ void WifiClient::start()
 {
 	ESP_LOGI(FNAME, "start wifi_client"  );
     initialise_wifi();
-    xTaskCreate(&tcp_client,"tcp_client_xcv",4096,&XCVario,15,NULL);
+    xTaskCreate(&tcp_client,"tcp_client_xcv",4096,&XCVarioCL,15,NULL);
     xTaskCreate(&tcp_client,"tcp_client_flarm",4096,&FLARM,15,NULL);
 }

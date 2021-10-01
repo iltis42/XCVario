@@ -17,6 +17,7 @@
 #include "freertos/task.h"
 #include <logdef.h>
 #include "WifiClient.h"
+#include "WifiApp.h"
 #include "sensor.h"
 #include "Units.h"
 #include "Flap.h"
@@ -621,12 +622,13 @@ void IpsDisplay::drawFlarm( int x, int y, bool flarm ) {
 void IpsDisplay::drawWifi( int x, int y ) {
 
 	int btq=1;
+	ESP_LOGI(FNAME,"wireless %d", wireless );
 	if( wireless == WL_WLAN_CLIENT ){
-		if( WifiClient::isConnected() )
+		if( WifiClient::isConnected(8884) )
 			btq=0;
 	}
-	else if( wireless == WL_WLAN )
-		btq=BTSender::queueFull();
+	else if( wireless == WL_WLAN || wireless == WL_WLAN_MASTER )
+		btq=WifiApp_queueFull();
 	else
 		return;
 	if( btq != btqueue || Flarm::connected() != flarm_connected ){
@@ -1394,7 +1396,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	{
 		if( wireless == WL_BLUETOOTH )
 			drawBT();
-		if( wireless == WL_WLAN ||  wireless == WL_WLAN_CLIENT )
+		if( wireless == WL_WLAN ||  wireless == WL_WLAN_CLIENT  ||  wireless == WL_WLAN_MASTER )
 			drawWifi(DISPLAY_W-27, FLOGO+2 );
 	}
 

@@ -610,7 +610,7 @@ float Flap::getOptimum( float wks, int& wki )
 		g_force = 0.3; // Ignore meaningless values below 0.3g
 	}
 	float g_speed = wks / sqrt(g_force); // reduce current speed, instead of increase switch points
-	// ESP_LOGI(FNAME,"g corrected speed: %3.1f", g_speed );
+	// ESP_LOGI(FNAME,"g force: %.1f, g corrected speed: %3.1f", g_force, g_speed );
 	wki = getOptimumInt(g_speed);
 	float minv = flapSpeeds[wki+4];
 	float maxv = flapSpeeds[wki+3];

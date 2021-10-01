@@ -212,7 +212,7 @@ void WifiClient::tcp_client(void *setup){
         	if( recv(config->sock, &c, 1, MSG_DONTWAIT ) > 0){
                 rec.append(c);
         		if( c == '\n' || rec.full() ){
-        			ESP_LOGI(FNAME, "Port %d read %d bytes: %s", config->port, rec.length(), rec.c_str() );
+        			// ESP_LOGI(FNAME, "Port %d read %d bytes: %s", config->port, rec.length(), rec.c_str() );
         			// ESP_LOG_BUFFER_HEXDUMP(FNAME, rec.c_str(), rec.length(), ESP_LOG_INFO);
         			Router::forwardMsg( rec, *(config->rxbuf) );
         			timeout = 0;

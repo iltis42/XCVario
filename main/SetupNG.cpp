@@ -41,10 +41,12 @@ void change_mc_bal() {  // or bugs
 }
 
 void resetSWindAge() {
-	StraightWind::resetAge();
+	if( swind_dir.get() != 0 && swind_speed.get() != 0 )  // do not reset age at initial sync
+		StraightWind::resetAge();
 }
 void resetCWindAge() {
-	CircleWind::resetAge();
+	if( cwind_dir.get() != 0 && cwind_speed.get() != 0 )
+		CircleWind::resetAge();
 }
 
 

@@ -138,7 +138,9 @@ void Router::routeXCV(){
 				if( forwardMsg( xcv, s2_tx_q ) )
 					ESP_LOGV(FNAME,"Send to ttyS2 device, XCV %d bytes", xcv.length() );
 		}
-		if( (strncmp( xcv.c_str(), "!xs", 3 ) == 0) || (strncmp( xcv.c_str(), "$PXCV", 5 ) == 0) ){  // Route to XCV client, for now also $PXCV
+		if( (strncmp( xcv.c_str(), "!xs", 3 ) == 0) ||
+		    (strncmp( xcv.c_str(), "$PXCV", 5 ) == 0) ||
+			(strncmp( xcv.c_str(), "!w,", 3 ) == 0) ){    // Route to XCV client, for now also $PXCV and !w (cambridge)
 			if( forwardMsg( xcv, client_tx_q ) )
 				ESP_LOGV(FNAME,"Send to CAN device, XCV %d bytes", xcv.length() );
 		}

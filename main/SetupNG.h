@@ -100,7 +100,7 @@ public:
 	static char *getID();
 	static void sendSetup( e_sync_t sync, const char * key, char type, void *value, int len );
 	static SetupCommon * getMember( const char * key );
-	static void syncEntry( int entry );
+	static bool syncEntry( int entry );
 	static int numEntries() { return entries.size(); };
 	static bool factoryReset();
 	static bool isMaster();

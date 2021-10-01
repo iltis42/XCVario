@@ -309,18 +309,11 @@ SetupCommon * SetupCommon::getMember( const char * key ){
 }
 
 // at time of connection establishment
-void SetupCommon::syncEntry( int entry ){
-	// ESP_LOGI(FNAME,"SetupCommon::syncEntry( %d )", entry );
-	if( (isMaster() && entries[entry]->getSync() == SYNC_FROM_MASTER) ||
-			(isClient() && entries[entry]->getSync() == SYNC_FROM_CLIENT) ||
-			(isMaster() && entries[entry]->getSync() == SYNC_BIDIR)
-	)
-	{
-		// ESP_LOGI(FNAME,"We are wireless type=%d", wireless );
+bool SetupCommon::syncEntry( int entry ){
 		if( entry < entries.size() ) {
-			entries[entry]->sync();
+        return entries[entry]->sync();
 		}
-	}
+    return false;
 }
 
 bool SetupCommon::factoryReset(){

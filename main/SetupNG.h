@@ -174,8 +174,8 @@ public:
 			return true;
 		}
 
-		if( memcmp( &_value, &old_val, sizeof( _value )  ) == 0 ){
-			ESP_LOGW(FNAME,"Value already in NVS: %s", val.c_str() );
+		if( _value == old_val ){
+			ESP_LOGW(FNAME,"Value already in config: %s", val.c_str() );
 			return( true );
 		}
 		_value = T(aval);

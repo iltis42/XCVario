@@ -19,7 +19,7 @@ public:
 	static std::string scan();
 	static bool client_connected();
 	static void start();
-	static bool isConnected( int port=8880 );
+	static bool isConnected( int port=8884 );
 	static void wifi_connect();
 	static void event_handler(void* arg, esp_event_base_t event_base,int32_t event_id, void* event_data);
 

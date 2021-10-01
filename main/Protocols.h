@@ -36,7 +36,6 @@ private:
 	static S2F *   _s2f;
 	static float   _mc_prev;
 	static float   _qnh_prev;
-	static float   ballast_percent;
 };
 
 #endif /* PROTOCOLS_H_ */

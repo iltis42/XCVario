@@ -384,133 +384,135 @@ void readSensors(void *pvParameters){
 			gyroDPS_Prev = gyroDPS;
 			accelG_Prev = accelG;
 		}
-
-		bool ok=false;
-		float p = 0;
-		if( asSensor )
-			p = asSensor->readPascal(60, ok);
-		if( ok )
-			dynamicP = p;
-		float iasraw = Atmosphere::pascal2kmh( dynamicP );
-		// ESP_LOGI("FNAME","P: %f  IAS:%f", dynamicP, iasraw );
-		float T=OAT.get();
-		if( !validTemperature ) {
-			T= 15 - ( (alt/100) * 0.65 );
-			// ESP_LOGW(FNAME,"T invalid, using 15 deg");
-		}
-		float tasraw = 0;
-		if( baroP != 0 )
-			tasraw =  Atmosphere::TAS( iasraw , baroP, T);  // True airspeed
-		ias = ias + (iasraw - ias)*0.25;  // low pass filter
-
-		// ESP_LOGI("FNAME","P: %f  IAS:%f IASF: %d", dynamicP, iasraw, ias );
-		tas += (tasraw-tas)*0.25;       // low pass filter
-		// ESP_LOGI(FNAME,"IAS=%f, T=%f, TAS=%f baroP=%f", ias, T, tas, baroP );
-		xSemaphoreTake(xMutex,portMAX_DELAY );
-		TE = bmpVario.readTE( tasraw );  // 10x per second
-		xSemaphoreGive(xMutex);
-		// ESP_LOGI(FNAME,"count %d ccp %d", count, ccp );
-		if( !(count % ccp) ) {
-			AverageVario::recalcAvgClimb();
-		}
-
-		Flap::progress();
-		xSemaphoreTake(xMutex,portMAX_DELAY );
-		baroP = baroSensor->readPressure(ok);   // 10x per second
-		xSemaphoreGive(xMutex);
-		// ESP_LOGI(FNAME,"Baro Pressure: %4.3f", baroP );
-		float altSTD = 0;
-		if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
-			altSTD = alt_external;
-		else
-			altSTD = baroSensor->calcAVGAltitudeSTD( baroP );
-		if( alt_select.get() == AS_TE_SENSOR ) // TE
-			alt = bmpVario.readAVGalt();
-		else if( alt_select.get() == AS_BARO_SENSOR  || alt_select.get() == AS_EXTERNAL ){ // Baro or external
-			if(  alt_unit.get() == 2 ) { // FL, always standard
-				alt = altSTD;
-				standard_setting = true;
-				// ESP_LOGI(FNAME,"au: %d", alt_unit.get() );
-			}else if( (fl_auto_transition.get() == 1) && ((int)altSTD*0.0328084 + (int)(standard_setting) > transition_alt.get() ) ) {
-				alt = altSTD;
-				standard_setting = true;
-				// ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), altSTD, standard_setting, transition_alt.get() );
+		if( wireless != WL_WLAN_CLIENT &&  the_can_mode != CAN_MODE_CLIENT )
+		{
+			bool ok=false;
+			float p = 0;
+			if( asSensor )
+				p = asSensor->readPascal(60, ok);
+			if( ok )
+				dynamicP = p;
+			float iasraw = Atmosphere::pascal2kmh( dynamicP );
+			// ESP_LOGI("FNAME","P: %f  IAS:%f", dynamicP, iasraw );
+			float T=OAT.get();
+			if( !validTemperature ) {
+				T= 15 - ( (alt/100) * 0.65 );
+				// ESP_LOGW(FNAME,"T invalid, using 15 deg");
 			}
-			else {
-				if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
-					alt = altSTD + (QNH.get() - 1013.25)*8.2296;  // correct altitude according to ISA model = 27ft / hPa
-				else
-					alt = baroSensor->calcAVGAltitude( QNH.get(), baroP );
-				standard_setting = false;
-				// ESP_LOGI(FNAME,"QNH %f baro: %f alt: %f SS:%d", QNH.get(), baroP, alt, standard_setting  );
-			}
-		}
-		aTE = bmpVario.readAVGTE();
-		doAudio();
+			float tasraw = 0;
+			if( baroP != 0 )
+				tasraw =  Atmosphere::TAS( iasraw , baroP, T);  // True airspeed
+			ias = ias + (iasraw - ias)*0.25;  // low pass filter
 
-		if( !Flarm::bincom && ((count % 2) == 0 ) ){
+			// ESP_LOGI("FNAME","P: %f  IAS:%f IASF: %d", dynamicP, iasraw, ias );
+			tas += (tasraw-tas)*0.25;       // low pass filter
+			// ESP_LOGI(FNAME,"IAS=%f, T=%f, TAS=%f baroP=%f", ias, T, tas, baroP );
 			xSemaphoreTake(xMutex,portMAX_DELAY );
-			// reduce also messages from 10 per second to 5 per second to reduce load in XCSoar
-			char lb[150];
-
-			if( nmea_protocol.get() == BORGELT ) {
-				OV.sendNMEA( P_BORGELT, lb, baroP, dynamicP, TE, OAT.get(), ias, tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altSTD, validTemperature  );
-				OV.sendNMEA( P_GENERIC, lb, baroP, dynamicP, TE, OAT.get(), ias, tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altSTD, validTemperature  );
-			}
-			else if( nmea_protocol.get() == OPENVARIO ){
-				OV.sendNMEA( P_OPENVARIO, lb, baroP, dynamicP, TE, OAT.get(), ias, tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), alt, validTemperature  );
-			}
-			else if( nmea_protocol.get() == CAMBRIDGE ){
-				OV.sendNMEA( P_CAMBRIDGE, lb, baroP, dynamicP, TE, OAT.get(), ias, tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), alt, validTemperature  );
-			}
-			else if( nmea_protocol.get() == XCVARIO ) {
-				OV.sendNMEA( P_XCVARIO, lb, baroP, dynamicP, TE, OAT.get(), ias, tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), alt, validTemperature,
-						-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
-			}
-			else if( nmea_protocol.get() == XCVARIO_DEVEL ) {
-				OV.sendNMEA( P_XCVARIO_DEVEL, lb, baroP, dynamicP, TE, OAT.get(), ias, tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), alt, validTemperature,
-						-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
-			}
-			else
-				ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
+			TE = bmpVario.readTE( tasraw );  // 10x per second
 			xSemaphoreGive(xMutex);
-			vTaskDelay(2/portTICK_PERIOD_MS);
-		}
-		Router::routeXCV();
-		// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d ena=%d", compass.haveSensor(),  compass_nmea_hdt.get(),  compass_enable.get() );
-		if( compass_enable.get()  && !Flarm::bincom && !Compass::calibrationIsRunning() ) {
-			// Trigger heading reading and low pass filtering. That job must be
-			// done periodically.
-			bool ok;
-			float heading = compass.getGyroHeading( &ok );
-			if(ok){
-				if( (int)heading != (int)mag_hdm.get() && !(count%10) ){
-					mag_hdm.set( heading );
+			// ESP_LOGI(FNAME,"count %d ccp %d", count, ccp );
+			if( !(count % ccp) ) {
+				AverageVario::recalcAvgClimb();
+			}
+
+			Flap::progress();
+			xSemaphoreTake(xMutex,portMAX_DELAY );
+			baroP = baroSensor->readPressure(ok);   // 10x per second
+			xSemaphoreGive(xMutex);
+			// ESP_LOGI(FNAME,"Baro Pressure: %4.3f", baroP );
+			float altSTD = 0;
+			if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
+				altSTD = alt_external;
+			else
+				altSTD = baroSensor->calcAVGAltitudeSTD( baroP );
+			if( alt_select.get() == AS_TE_SENSOR ) // TE
+				alt = bmpVario.readAVGalt();
+			else if( alt_select.get() == AS_BARO_SENSOR  || alt_select.get() == AS_EXTERNAL ){ // Baro or external
+				if(  alt_unit.get() == 2 ) { // FL, always standard
+					alt = altSTD;
+					standard_setting = true;
+					// ESP_LOGI(FNAME,"au: %d", alt_unit.get() );
+				}else if( (fl_auto_transition.get() == 1) && ((int)altSTD*0.0328084 + (int)(standard_setting) > transition_alt.get() ) ) {
+					alt = altSTD;
+					standard_setting = true;
+					// ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), altSTD, standard_setting, transition_alt.get() );
 				}
-				if( !(count%5) && compass_nmea_hdm.get() == true ) {
-					xSemaphoreTake( xMutex, portMAX_DELAY );
-					OV.sendNmeaHDM( heading );
-					xSemaphoreGive( xMutex );
+				else {
+					if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
+						alt = altSTD + (QNH.get() - 1013.25)*8.2296;  // correct altitude according to ISA model = 27ft / hPa
+					else
+						alt = baroSensor->calcAVGAltitude( QNH.get(), baroP );
+					standard_setting = false;
+					// ESP_LOGI(FNAME,"QNH %f baro: %f alt: %f SS:%d", QNH.get(), baroP, alt, standard_setting  );
 				}
 			}
-			else{
-				if( mag_hdm.get() != -1 )
-					mag_hdm.set( -1 );
-			}
-			float theading = Compass::filteredTrueHeading( &ok );
-			if(ok){
-				if( (int)theading != (int)mag_hdt.get() && !(count%10) ){
-					mag_hdt.set( theading );
+			aTE = bmpVario.readAVGTE();
+			doAudio();
+
+			if( !Flarm::bincom && ((count % 2) == 0 ) ){
+				xSemaphoreTake(xMutex,portMAX_DELAY );
+				// reduce also messages from 10 per second to 5 per second to reduce load in XCSoar
+				char lb[150];
+
+				if( nmea_protocol.get() == BORGELT ) {
+					OV.sendNMEA( P_BORGELT, lb, baroP, dynamicP, TE, OAT.get(), ias, tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altSTD, validTemperature  );
+					OV.sendNMEA( P_GENERIC, lb, baroP, dynamicP, TE, OAT.get(), ias, tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altSTD, validTemperature  );
 				}
-				if( !(count%5) && ( compass_nmea_hdt.get() == true )  ) {
-					xSemaphoreTake( xMutex, portMAX_DELAY );
-					OV.sendNmeaHDT( theading );
-					xSemaphoreGive( xMutex );
+				else if( nmea_protocol.get() == OPENVARIO ){
+					OV.sendNMEA( P_OPENVARIO, lb, baroP, dynamicP, TE, OAT.get(), ias, tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), alt, validTemperature  );
 				}
+				else if( nmea_protocol.get() == CAMBRIDGE ){
+					OV.sendNMEA( P_CAMBRIDGE, lb, baroP, dynamicP, TE, OAT.get(), ias, tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), alt, validTemperature  );
+				}
+				else if( nmea_protocol.get() == XCVARIO ) {
+					OV.sendNMEA( P_XCVARIO, lb, baroP, dynamicP, TE, OAT.get(), ias, tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), alt, validTemperature,
+							-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
+				}
+				else if( nmea_protocol.get() == XCVARIO_DEVEL ) {
+					OV.sendNMEA( P_XCVARIO_DEVEL, lb, baroP, dynamicP, TE, OAT.get(), ias, tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), alt, validTemperature,
+							-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
+				}
+				else
+					ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
+				xSemaphoreGive(xMutex);
+				vTaskDelay(2/portTICK_PERIOD_MS);
 			}
-			else{
-				if( mag_hdt.get() != -1 )
-					mag_hdt.set( -1 );
+			Router::routeXCV();
+			// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d ena=%d", compass.haveSensor(),  compass_nmea_hdt.get(),  compass_enable.get() );
+			if( compass_enable.get()  && !Flarm::bincom && !Compass::calibrationIsRunning() ) {
+				// Trigger heading reading and low pass filtering. That job must be
+				// done periodically.
+				bool ok;
+				float heading = compass.getGyroHeading( &ok );
+				if(ok){
+					if( (int)heading != (int)mag_hdm.get() && !(count%10) ){
+						mag_hdm.set( heading );
+					}
+					if( !(count%5) && compass_nmea_hdm.get() == true ) {
+						xSemaphoreTake( xMutex, portMAX_DELAY );
+						OV.sendNmeaHDM( heading );
+						xSemaphoreGive( xMutex );
+					}
+				}
+				else{
+					if( mag_hdm.get() != -1 )
+						mag_hdm.set( -1 );
+				}
+				float theading = Compass::filteredTrueHeading( &ok );
+				if(ok){
+					if( (int)theading != (int)mag_hdt.get() && !(count%10) ){
+						mag_hdt.set( theading );
+					}
+					if( !(count%5) && ( compass_nmea_hdt.get() == true )  ) {
+						xSemaphoreTake( xMutex, portMAX_DELAY );
+						OV.sendNmeaHDT( theading );
+						xSemaphoreGive( xMutex );
+					}
+				}
+				else{
+					if( mag_hdt.get() != -1 )
+						mag_hdt.set( -1 );
+				}
 			}
 		}
 		if( accelG[0] > gload_pos_max.get() ){
@@ -1131,7 +1133,7 @@ void sensor(void *args){
 			logged_tests += "Bluetooth test: FAILED\n";
 		}
 	}else if ( wireless == WL_WLAN ){
-		wifi_init_softap();
+		WifiApp::wifi_init_softap();
 	}
 	if(  can_speed.get() != CAN_SPEED_OFF && resultCAN == "OK" )  // 2021 series 3, or 2022 model with new digital poti CAT5171 also features CAN bus
 	{
@@ -1287,9 +1289,7 @@ void sensor(void *args){
 		}
 	}
 
-	if( wireless != WL_WLAN_CLIENT &&  the_can_mode != CAN_MODE_CLIENT ) {
-		xTaskCreatePinnedToCore(&readSensors, "readSensors", 4096, NULL, 14, bpid, 0);
-	}
+	xTaskCreatePinnedToCore(&readSensors, "readSensors", 4096, NULL, 14, bpid, 0);
 	if( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT ){
 		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 14, apid, 0);
 	}

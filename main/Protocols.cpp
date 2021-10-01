@@ -29,7 +29,6 @@
 #include "CircleWind.h"
 
 S2F * Protocols::_s2f = 0;
-float Protocols::ballast_percent=0;
 
 Protocols::Protocols(S2F * s2f) {
 	_s2f = s2f;
@@ -172,7 +171,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		 *hh   Checksum, XOR of all bytes of the sentence after the ‘!’ and before the ‘*’
 		 */
 
-		sprintf(str, "!w,0,0,0,0,%d,%4.2f,%d,%d,0,0,%d,%d,%d", int(alt+1000), QNH.get(), int(Units::kmh2ms(tas)*100), int((Units::ms2knots(te)*10)+200), int( Units::mcval2knots(mc)*10 ), int( ballast_percent ), (int)(100-bugs) );
+		sprintf(str, "!w,0,0,0,0,%d,%4.2f,%d,%d,0,0,%d,%d,%d", int(alt+1000), QNH.get(), int(Units::kmh2ms(tas)*100), int((Units::ms2knots(te)*10)+200), int( Units::mcval2knots(mc)*10 ), int( S2F::getBallastPercent()+0.5 ), (int)(100-bugs) );
 	}
 	else if( proto == P_EYE_PEYA ){
 		// Static pressure from aircraft pneumatic system [hPa] (i.e. 1015.5)
@@ -268,7 +267,7 @@ void Protocols::parseNMEA( const char *astr ){
 			sscanf(str, "!xs%c,%[^,],%c,%d,%f*%02x", &role, key, &type, &length, &val, &cs );  // !xsM,FLPS,F,4,1.500000*27
 			int calc_cs=calcNMEACheckSum( str );
 			if( cs == calc_cs ){
-				ESP_LOGI(FNAME,"parsed NMEA: role=%c type=%c key=%s len=%d val=%f vali=%d", role, type , key, length, val, (int)val );
+				// ESP_LOGI(FNAME,"parsed NMEA: role=%c type=%c key=%s len=%d val=%f vali=%d", role, type , key, length, val, (int)val );
 				if( type == 'F' ){
 					SetupNG<float> *item = (SetupNG<float> *)SetupCommon::getMember( key );
 					if( item != 0 ){
@@ -316,7 +315,7 @@ void Protocols::parseNMEA( const char *astr ){
 				sscanf(str, "!g,m%f", &mc);
 				mc = mc*0.1;   // comes in knots*10, unify to knots
 				float mc_ms =  std::roundf(Units::knots2ms(mc)*10.f)/10.f; // hide rough knot resolution
-				ESP_LOGI(FNAME,"New MC: %1.1f knots, %f", mc, mc_ms );
+				ESP_LOGI(FNAME,"New MC: %1.1f knots, %f m/s", mc, mc_ms );
 				MC.set( Units::Vario( mc_ms ) );  // set mc according corresponding vario units
 			}
 			if (str[3] == 'u') {

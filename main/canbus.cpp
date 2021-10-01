@@ -197,10 +197,10 @@ void CANbus::tick(){
 	SString msg;
 	// CAN bus send tick
 	if( !(_tick%4) ){
-		if ( !can_tx_q.isEmpty() ){
+		if ( !client_tx_q.isEmpty() ){
 			// ESP_LOGI(FNAME,"There is CAN data");
 			if( _connected_xcv ){
-				if( Router::pullMsg( can_tx_q, msg ) ){
+				if( Router::pullMsg( client_tx_q, msg ) ){
 					// ESP_LOGI(FNAME,"CAN TX len: %d bytes", msg.length() );
 					// ESP_LOG_BUFFER_HEXDUMP(FNAME,msg.c_str(),msg.length(), ESP_LOG_INFO);
 					if( !sendNMEA( msg ) ){
@@ -225,7 +225,7 @@ void CANbus::tick(){
 			if( !_connected_xcv ){
 				bool entry=false;
 				do{ // cleanup congestion at startup
-					entry = Router::pullMsg( can_tx_q, msg );
+					entry = Router::pullMsg( client_tx_q, msg );
 				}while( entry );
 				ESP_LOGI(FNAME,"CAN XCV connected");
 				_connected_xcv = true;
@@ -311,7 +311,7 @@ void CANbus::tick(){
         // Check on the remaining string for the end sign
         if ( std::strchr(cptr, '\n') != nullptr ) {
             if ( nmea_state >= 1 ) {
-                Router::forwardMsg( nmea, can_rx_q ); // All good
+                Router::forwardMsg( nmea, client_rx_q ); // All good
             }
             else {
                 ESP_LOGW(FNAME, "Unexpected frame end, message dropped at %d", nmea_state);
@@ -327,7 +327,7 @@ void CANbus::tick(){
 	}
 
 //	if( !(_tick%4) )
-	Router::routeCAN();
+	Router::routeClient();
 	if( !(_tick%100) ){
 		if( ((can_mode.get() == CAN_MODE_CLIENT)  && _connected_xcv) || can_mode.get() == CAN_MODE_MASTER ){ // sent from client only if keep alive is there
 			msg.set( "K" );

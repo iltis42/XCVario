@@ -85,6 +85,14 @@ void Flarm::progress(){  // once per second
 
 }
 
+bool Flarm::connected(){
+	// ESP_LOGI(FNAME,"timeout=%d", timeout );
+	if( timeout > 0 )
+		return true;
+	else
+		return false;
+};
+
 /*
 eg1. $GPRMC,081836,A,3751.65,S,14507.36,E,000.0,360.0,130998,011.3,E*62
 eg2. $GPRMC,225446,A,4916.45,N,12311.12,W,000.5,054.7,191194,020.3,E*68
@@ -139,6 +147,7 @@ void Flarm::parseGPRMC( const char *gprmc ) {
 			ESP_LOGI(FNAME,"GPRMC, GPS not OK: %s", gprmc );
 		}
 	}
+	timeout = 10;
 	// ESP_LOGI(FNAME,"parseGPRMC() GPS: %d, Speed: %3.1f knots, Track: %3.1f° ", gpsOK, gndSpeedKnots, gndCourse );
 }
 
@@ -166,6 +175,7 @@ eg. $GPGGA,hhmmss.ss,llll.ll,a,yyyyy.yy,a,x,xx,x.x,x.x,M,x.x,M,x.x,xxxx*hh
 
 
 void Flarm::parseGPGGA( const char *gpgga ) {
+	ESP_LOGI(FNAME,"parseGPGGA");
 	float time;
 	float lat,lon;
 	int Q;
@@ -189,10 +199,12 @@ void Flarm::parseGPGGA( const char *gpgga ) {
 		_numSat = numSat;
 		CircleWind::newConstellation( numSat );
 	}
+	timeout = 10;
 }
 
 
 void Flarm::parsePFLAU( const char *pflau ) {
+	ESP_LOGI(FNAME,"parsePFLAU");
 	int cs;
 	int id;
 	int calc_cs=Protocols::calcNMEACheckSum( pflau );
@@ -209,7 +221,7 @@ void Flarm::parsePFLAU( const char *pflau ) {
 }
 
 void Flarm::parsePFLAX( SString &msg ) {
-	// ESP_LOGI(FNAME,"parsePFLAX");
+	ESP_LOGI(FNAME,"parsePFLAX");
 	// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
 	int start=0;
     if( !strncmp( msg.c_str(), "\n", 1 )  ){
@@ -218,8 +230,9 @@ void Flarm::parsePFLAX( SString &msg ) {
 	if( !strncmp( (msg.c_str())+start, "$PFLAX,", 6 ) ){
 		Flarm::bincom = 5;
 		ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
+		timeout = 10;
 	}
-	timeout = 10;
+
 }
 
 

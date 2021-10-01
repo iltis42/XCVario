@@ -75,11 +75,26 @@ void S2F::select_polar()
     change_polar();
 }
 
+float S2F::bal_percent = 0;
+
+float S2F::getBallastPercent(){ return bal_percent; }
+
 void S2F::change_mc_bal()
 {
 	ESP_LOGI(FNAME,"S2F::change_mc_bal()");
 	_MC = Units::Vario2ms( MC.get() );
 	change_polar();
+	float refw = polar_wingload.get() * polar_wingarea.get();
+	ESP_LOGI(FNAME,"Reference weight: %f kg", refw);
+	float liters = (1+ (ballast.get()/100))*refw -refw;
+	ESP_LOGI(FNAME,"New Ballast in liters: %f ", liters);
+	float max_bal = polar_max_ballast.get();
+	if( (int)(polar_max_ballast.get()) == 0 ) { // We use 100 liters as default once its not with the polar
+		max_bal = 100;
+	}
+	ESP_LOGI(FNAME,"Max ballast %f", max_bal );
+	bal_percent = (liters/max_bal)*100;
+	ESP_LOGI(FNAME,"Ballast in %% %f", bal_percent );
 }
 
 

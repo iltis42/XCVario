@@ -85,8 +85,9 @@ const char * CircleWind::status = "idle";
 t_circling CircleWind::flightMode = undefined;
 Vector CircleWind::windVectors[NUM_RESULTS];
 int CircleWind::curVectorNum = 0;
-
-
+int CircleWind::turn_left=0;
+int CircleWind::turn_right=0;
+int CircleWind::fly_straight=0;
 
 CircleWind::~CircleWind()
 {}
@@ -150,21 +151,27 @@ void CircleWind::calcFlightMode( float headingDiff, float speed ){
 	}
 	else{
 		if( headingDiff > MINTURNANGDIFF ){
-			if( flightMode != circlingR ) {
-				newFlightMode( circlingR );
-				flightMode = circlingR;
-				ESP_LOGI(FNAME,"calcFlightMode() New flightmode: circle right");
-			}
+				turn_right++;
+				fly_straight = 0;
+				if( flightMode != circlingR && turn_right > 2 ) {
+					newFlightMode( circlingR );
+					flightMode = circlingR;
+					ESP_LOGI(FNAME,"calcFlightMode() New flightmode: circle right");
+				}
 		}
 		else if( headingDiff < -MINTURNANGDIFF ) {
-			if( flightMode != circlingL ) {
+			turn_left++;
+			fly_straight = 0;
+			if( flightMode != circlingL && turn_left > 2 ){
 				newFlightMode( circlingL );
 				flightMode = circlingL;
 				ESP_LOGI(FNAME,"calcFlightMode() New flightmode: circle left");
 			}
 		}
 		else{
-			if( flightMode != straight ) {
+			turn_left = turn_right = 0;
+			fly_straight++;
+			if( flightMode != straight && fly_straight > 2 ) {
 				newFlightMode( straight );
 				flightMode = straight;
 				ESP_LOGI(FNAME,"calcFlightMode() New flightmode: straight");
@@ -206,7 +213,7 @@ bool CircleWind::getWind( int *dir, float *speed, int * age )
 	*dir=rint(cwind_dir.get());
 	*speed=cwind_speed.get();
 	*age=_age;
-	if( _age < 1800 )
+	if( _age < 1800 && !(*speed == 0) && !(*dir == 0)  )
 		return true;
 	else
 		return false;

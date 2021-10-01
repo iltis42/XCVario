@@ -369,15 +369,17 @@ void Flap::drawLever( int xpos, int ypos, int oldypos, bool warn ){
 void Flap::drawBigBar( int ypos, int xpos, float wkf, float wksens ){
 	ucg->setFont(ucg_font_profont22_mr );
 	ucg->setFontPosCenter();
-	int lfh = ucg->getFontAscent()+10;  // a bit place around number
+	int lfh = 24; // ucg->getFontAscent()+10;  // a bit place around number
 	int lfw = ucg->getStrWidth( "+2" );
 	int size = NUMPOS*lfh;
 	// draw Frame around and a triangle
 	if( !surroundingBox ) {
 		for( int wk=MINPOS; wk<=MAXPOS; wk++ ){
 			char position[6];
+			// ESP_LOG_BUFFER_HEXDUMP(FNAME, flapLabels[wk+3]->getEntry(), 4, ESP_LOG_INFO);
 			sprintf( position,"%s", flapLabels[wk+3]->getEntry());
 			int y= ypos + lfh*wk;  // negative WK eq. lower position
+			// ESP_LOGI(FNAME,"Y: %d lfh:%d wk:%d",y, lfh, wk );
 			ucg->setPrintPos(xpos+2, y+1);
 			ucg->setColor(COLOR_WHITE);
 			// print digit
@@ -608,7 +610,7 @@ float Flap::getOptimum( float wks, int& wki )
 		g_force = 0.3; // Ignore meaningless values below 0.3g
 	}
 	float g_speed = wks / sqrt(g_force); // reduce current speed, instead of increase switch points
-	// ESP_LOGI(FNAME,"g corrected speed: %3.1f", g_speed );
+	// ESP_LOGI(FNAME,"g force: %.1f, g corrected speed: %3.1f", g_force, g_speed );
 	wki = getOptimumInt(g_speed);
 	float minv = flapSpeeds[wki+4];
 	float maxv = flapSpeeds[wki+3];

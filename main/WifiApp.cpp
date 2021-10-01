@@ -32,6 +32,7 @@
 #include "esp_wifi.h"
 #include <list>
 #include "WifiClient.h"
+#include "WifiApp.h"
 #include "sensor.h"
 #include "Flarm.h"
 #include "Switch.h"
@@ -56,14 +57,14 @@ static sock_server_t FLARM     = { .txbuf = &wl_flarm_tx_q, .rxbuf = &wl_flarm_r
 static sock_server_t AUX       = { .txbuf = &wl_aux_tx_q,   .rxbuf = &wl_aux_rx_q,   .port=8882, .idle = 0, .pid = 0 };
 static sock_server_t XCVarioMS = { .txbuf = &client_tx_q,   .rxbuf = &client_rx_q,   .port=8884, .idle = 0, .pid = 0 };
 
-int  WifiApp_queueFull(){
+int  WifiApp::queueFull(){
 	if( !wl_vario_tx_q.isFull() || !client_tx_q.isFull() )
 		return 0;
 	else
 		return 1;
 }
 
-int create_socket( int port ){
+int WifiApp::create_socket( int port ){
 	struct sockaddr_in serverAddress;
 	// Create a socket that we will listen upon.
 	int mysock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -95,7 +96,7 @@ int create_socket( int port ){
 
 // Multi client TCP server with dynamic updated list of clients connected
 
-void on_client_connect( int port, int msg ){
+void WifiApp::on_client_connect( int port, int msg ){
 	if( port == 8884 && !Flarm::bincom ){ // have a client to XCVario protocol connected
 		// ESP_LOGV(FNAME, "on_client_connect: Send MC, Ballast, Bugs, etc");
 		SetupCommon::syncEntry(msg);
@@ -104,7 +105,7 @@ void on_client_connect( int port, int msg ){
 
 int tick=0;
 
-void socket_server(void *setup) {
+void WifiApp::socket_server(void *setup) {
 	sock_server_t *config = (sock_server_t *)setup;
 	struct sockaddr_in clientAddress[10];  // we support max 10 clients try to connect same time
 	socklen_t clientAddressLength = sizeof(struct sockaddr_in);
@@ -213,8 +214,7 @@ void socket_server(void *setup) {
 
  */
 
-static void wifi_event_handler(void* arg, esp_event_base_t event_base,
-		int32_t event_id, void* event_data)
+void WifiApp::wifi_event_handler(void* arg, esp_event_base_t event_base,	int32_t event_id, void* event_data)
 {
 	if (event_id == WIFI_EVENT_AP_STACONNECTED) {
 		wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*) event_data;
@@ -226,7 +226,7 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
 }
 
 
-void wifi_init_softap()
+void WifiApp::wifi_init_softap()
 {
 	if( wireless == WL_WLAN ){
 		tcpip_adapter_init();

@@ -1133,7 +1133,7 @@ void sensor(void *args){
 			logged_tests += "Bluetooth test: FAILED\n";
 		}
 	}else if ( wireless == WL_WLAN ){
-		wifi_init_softap();
+		WifiApp::wifi_init_softap();
 	}
 	if(  can_speed.get() != CAN_SPEED_OFF && resultCAN == "OK" )  // 2021 series 3, or 2022 model with new digital poti CAT5171 also features CAN bus
 	{

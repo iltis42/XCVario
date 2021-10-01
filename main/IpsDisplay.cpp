@@ -628,7 +628,7 @@ void IpsDisplay::drawWifi( int x, int y ) {
 			btq=0;
 	}
 	else if( wireless == WL_WLAN || wireless == WL_WLAN_MASTER )
-		btq=WifiApp_queueFull();
+		btq=WifiApp::queueFull();
 	else
 		return;
 	if( btq != btqueue || Flarm::connected() != flarm_connected ){

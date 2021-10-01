@@ -206,13 +206,14 @@ void WifiClient::tcp_client(void *setup){
         	}
         }
         int end=100;
+        SString rec;
         while( 1 ){
-            SString rec;
             char c;
         	if( recv(config->sock, &c, 1, MSG_DONTWAIT ) > 0){
                 rec.append(c);
         		if( c == '\n' || rec.full() ){
-        			ESP_LOGI(FNAME, "socket %d read %d bytes: %s", config->sock, rec.length(), rec.c_str() );
+        			ESP_LOGI(FNAME, "Port %d read %d bytes: %s", config->port, rec.length(), rec.c_str() );
+        			// ESP_LOG_BUFFER_HEXDUMP(FNAME, rec.c_str(), rec.length(), ESP_LOG_INFO);
         			Router::forwardMsg( rec, *(config->rxbuf) );
         			timeout = 0;
         			rec.clear();
@@ -223,7 +224,7 @@ void WifiClient::tcp_client(void *setup){
         	else{
         		end--;
         		if( !end ){
-        			ESP_LOGI(FNAME, "socket %d read timeout", config->sock );
+        			// ESP_LOGI(FNAME, "socket %d read timeout", config->sock );
         			break;
         		}
         		vTaskDelay(5 / portTICK_PERIOD_MS);

@@ -134,7 +134,7 @@ void Router::routeXCV(){
 				if( forwardMsg( xcv, s2_tx_q ) )
 					ESP_LOGV(FNAME,"Send to ttyS2 device, XCV %d bytes", xcv.length() );
 		}
-		if( (can_tx.get() & RT_XCVARIO) && can_speed.get() ){
+		if( (can_tx.get() & RT_XCVARIO) && (can_mode.get() != CAN_MODE_STANDALONE) ){
 			if( (strncmp( xcv.c_str(), "$WIND", 5 ) != 0) ){  // drop WIND messages
 				if( forwardMsg( xcv, can_tx_q ) )
 					ESP_LOGV(FNAME,"Send to CAN device, XCV %d bytes", xcv.length() );

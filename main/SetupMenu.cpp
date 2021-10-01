@@ -345,7 +345,7 @@ void SetupMenu::down(int count){
 	}
 	if( (selected != this) || !_menu_enabled )
 		return;
-	ESP_LOGI(FNAME,"down %d %d", highlight, _childs.size() );
+	// ESP_LOGI(FNAME,"down %d %d", highlight, _childs.size() );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setColor(COLOR_BLACK);
 	ucg->drawFrame( 1,(highlight+1)*25+3,238,25 );

@@ -108,7 +108,7 @@ void SetupMenuValFloat::displayVal()
 void SetupMenuValFloat::down( int count ){
 	if( (selected != this) || !_menu_enabled )
 		return;
-	ESP_LOGI(FNAME,"val down %d times ", count );
+	// ESP_LOGI(FNAME,"val down %d times ", count );
 	while( (*_value > _min) && count ) {
 		*_value -= _step;
 		count --;
@@ -123,7 +123,7 @@ void SetupMenuValFloat::down( int count ){
 void SetupMenuValFloat::up( int count ){
 	if( (selected != this) || !_menu_enabled )
 		return;
-	ESP_LOGI(FNAME,"val up %d times ", count );
+	// ESP_LOGI(FNAME,"val up %d times ", count );
 	while( (*_value < _max) && count ) {
 		*_value += _step;
 		count--;

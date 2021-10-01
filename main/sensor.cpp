@@ -159,7 +159,7 @@ int g_col_header_light_g=168-g_col_background/3;
 int g_col_header_light_b=g_col_highlight;
 
 
-bool haveMPU=false;  
+bool haveMPU=false;
 bool ahrsKeyValid=false;
 bool gload_alarm=false;
 int  ccp=60;
@@ -341,6 +341,7 @@ void audioTask(void *pvParameters){
 }
 
 void readSensors(void *pvParameters){
+    int client_sync_dataIdx = 0;
 	while (1)
 	{
 		count++;
@@ -520,6 +521,20 @@ void readSensors(void *pvParameters){
 		}else if( accelG[0] < gload_neg_max.get() ){
 			gload_neg_max.set(  (float)accelG[0] );
 		}
+
+        // Check on new clients connecting
+        if ( !(count%4) && CAN && CAN->GotNewClient() ) {
+            if( client_sync_dataIdx < SetupCommon::numEntries() ){
+                SetupCommon::syncEntry(client_sync_dataIdx);
+    			client_sync_dataIdx++;
+            }
+            else {
+                // Synch complete
+                client_sync_dataIdx = 0;
+                CAN->ResetNewClient();
+            }
+        }
+
 		esp_task_wdt_reset();
 		if( uxTaskGetStackHighWaterMark( bpid ) < 512 )
 			ESP_LOGW(FNAME,"Warning sensor task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );
@@ -1066,10 +1081,12 @@ void sensor(void *args){
 		display->writeText( line++, "Digital Poti: OK");
 	}
 
+    // 2021 series 3, or 2022 model with new digital poti CAT5171 also features CAN bus
 	String resultCAN;
-	if( Audio::haveCAT5171() )
+	if( Audio::haveCAT5171() ) // todo && CAN configured
 	{
-		if( CANbus::selfTest() ){
+        CAN = new CANbus();
+		if( CAN->selfTest() ){
 			resultCAN = "OK";
 			ESP_LOGE(FNAME,"CAN Bus selftest: OK");
 			logged_tests += "CAN Interface: OK\n";
@@ -1135,10 +1152,11 @@ void sensor(void *args){
 	}else if ( wireless == WL_WLAN ){
 		WifiApp::wifi_init_softap();
 	}
-	if(  can_speed.get() != CAN_SPEED_OFF && resultCAN == "OK" )  // 2021 series 3, or 2022 model with new digital poti CAT5171 also features CAN bus
+    // 2021 series 3, or 2022 model with new digital poti CAT5171 also features CAN bus
+	if(  can_speed.get() != CAN_SPEED_OFF && resultCAN == "OK" && CAN )
 	{
 		ESP_LOGI(FNAME, "Now start CAN Bus Interface");
-		CANbus::begin();  // start CAN tasks and driver
+		CAN->begin();  // start CAN tasks and driver
 	}
 	compass.setBus( &i2c_0 );
 	// Check for magnetic sensor / compass
@@ -1272,7 +1290,7 @@ void sensor(void *args){
 			display->clear();
 			display->writeText( 2, "Wait for Master XCVario" );
 			while( 1 ) {
-				if( CANbus::connectedXCV() ){
+				if( CAN->connectedXCV() ){
 					display->writeText( 3, "Master XCVario found" );
 					display->writeText( 5, "Now start, sync" );
 					delay( 5000 );
@@ -1317,4 +1335,3 @@ extern "C" void  app_main(void){
 	sensor( 0 );
 	vTaskDelete( NULL );
 }
-

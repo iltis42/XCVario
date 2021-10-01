@@ -416,7 +416,6 @@ void SetupMenu::press(){
 		{
 			ESP_LOGI(FNAME,"!pressed");
 			inSetup=true;
-			delay( 500 );
 			_menu_enabled = true;
 		}
 		else

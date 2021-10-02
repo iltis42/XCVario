@@ -79,7 +79,7 @@ double IMU::mZ = 0.0;
 	static double previous_tas =0;
 	bool ok=false;
 
-
+/* Functions omegaSOG() and adj_accel() are included here with William J (Bill) Premerlani permission*/
 	static double omegaSOG(double omega, double speed)
 	{
 	#define CENTRIFSAT 60 //1 rd/s * 60 m/s

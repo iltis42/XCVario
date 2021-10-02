@@ -429,7 +429,9 @@ void SetupMenu::press(){
 		{
 			ESP_LOGI(FNAME,"!pressed");
 			inSetup=true;
+			_display->doMenu(true);
 			_menu_enabled = true;
+			delay(200);  // give display task time to finish drawing
 		}
 		else
 		{
@@ -440,6 +442,7 @@ void SetupMenu::press(){
 			bmpVario.setup();
 			_menu_enabled = false;
 			inSetup=false;
+			_display->doMenu(false);
             SetupCommon::commitNow();
 		}
 	}

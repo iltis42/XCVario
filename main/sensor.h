@@ -69,4 +69,5 @@ extern xSemaphoreHandle spiMutex;
 
 extern Compass compass;
 
+
 #endif

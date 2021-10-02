@@ -274,11 +274,11 @@ void WifiApp::wifi_init_softap()
 
 		if( serial2_speed.get() != 0 &&  serial2_tx.get() != 0 )  // makes only sense if there is data from AUX = serial interface S2
 			xTaskCreatePinnedToCore(&socket_server, "socket_ser_2", 3300, &AUX, 10, AUX.pid, 0);  // 10
-		if( wireless_type.get() == WL_WLAN ) // makes only sense if mode is WLAN, not Bluetooth
+		if( wireless_type.get() == WL_WLAN ) // 8880 Wifi server makes only sense if mode is WLAN, not Bluetooth
 			xTaskCreatePinnedToCore(&socket_server, "socket_srv_0", 3300, &XCVario, 11, XCVario.pid, 0);  // 10
 		if( serial1_speed.get() != 0 &&  serial1_tx.get() != 0 ) // makes only sense if there is a FLARM connected on S1
 			xTaskCreatePinnedToCore(&socket_server, "socket_ser_1", 3300, &FLARM, 12, FLARM.pid, 0);  // 10
-		if( (wireless_type.get() == WL_WLAN) || (wireless_type.get() == WL_WLAN_MASTER) ) // makes sense if we are WLAN_MASTER; for backward compatibility WLAN
+		if( (wireless_type.get() == WL_WLAN) || (wireless_type.get() == WL_WLAN_MASTER) ) // 8884 makes sense if we are WLAN_MASTER; for backward compatibility WLAN
 			xTaskCreatePinnedToCore(&socket_server, "socket_srv_3", 3300, &XCVarioMS, 9, XCVarioMS.pid, 0);  // 10
 
 		ESP_LOGV(FNAME, "wifi_init_softap finished SUCCESS. SSID:%s password:%s channel:%d", (char *)wc.ap.ssid, (char *)wc.ap.password, wc.ap.channel );

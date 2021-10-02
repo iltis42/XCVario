@@ -19,6 +19,7 @@
 #include "sensor.h"
 #include "Router.h"
 
+int WifiClient::master_xcvario_scanned = 0; // e.g. 1234
 
 typedef struct xcv_sock_client {
 	RingBufCPP<SString, QUEUE_SIZE>* txbuf;
@@ -107,7 +108,7 @@ void WifiClient::initialise_wifi(void)
 
 #define DEFAULT_SCAN_LIST_SIZE 20
 
-std::string WifiClient::scan( void ){
+std::string WifiClient::scan(int master_xcv_num){
 	ESP_LOGI(FNAME,"wifi scan");
 	ESP_ERROR_CHECK(esp_netif_init());
 	ESP_ERROR_CHECK(esp_event_loop_create_default());
@@ -135,7 +136,11 @@ std::string WifiClient::scan( void ){
 			if( strncmp( (char*)ap_info[i].ssid, "XCVARIO-", 8 ) == 0 )
 			ESP_LOGI(FNAME, "SSID \t%s", ap_info[i].ssid);
 			ESP_LOGI(FNAME, "LEVEL: \t%d SSID: \t%s", ap_info[i].rssi, ap_info[i].ssid);
-			if( strncmp( (char*)ap_info[i].ssid, "XCVario-", 8 ) == 0 ) {
+			char mxcv[14]="XCVario-";
+			if( master_xcv_num != 0 )
+				sprintf( mxcv+strlen(mxcv),"%d", master_xcv_num );
+			ESP_LOGI(FNAME,"Hunt for %s", mxcv );
+			if( strncmp( (char*)ap_info[i].ssid, mxcv, strlen(mxcv) ) == 0 ) {
 				found = true;
 				SSID = std::string( (char*)ap_info[i].ssid );
 				ESP_LOGI(FNAME,"SCAN found master XCVarioCL: %s", SSID.c_str() );
@@ -145,6 +150,7 @@ std::string WifiClient::scan( void ){
 	ESP_ERROR_CHECK( esp_wifi_disconnect() );
 	ESP_ERROR_CHECK( esp_wifi_stop() );
 	ESP_ERROR_CHECK( esp_wifi_restore() );
+	sscanf( SSID.c_str(), "XCVario-%d", &master_xcvario_scanned );
 	return SSID;
 }
 

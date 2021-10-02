@@ -564,6 +564,10 @@ extern SetupNG<float>       circle_wind_lowpass;
 extern SetupNG<int> 		can_speed;
 extern SetupNG<int> 		can_tx;
 extern SetupNG<int> 		can_mode;
+extern SetupNG<float> 		master_xcvario;
+extern SetupNG<int> 		master_xcvario_lock;
+
+
 
 extern int g_col_background;
 extern int g_col_highlight;

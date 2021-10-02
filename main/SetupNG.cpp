@@ -270,6 +270,8 @@ SetupNG<float>       	circle_wind_lowpass("CI_WINDLOW", 5 );
 SetupNG<int> 			can_speed( "CANSPEED", CAN_SPEED_OFF );
 SetupNG<int> 			can_tx( "CANTX", RT_XCVARIO );
 SetupNG<int> 			can_mode( "CANMOD", CAN_MODE_STANDALONE );
+SetupNG<float> 			master_xcvario( "MSXCV", 0 );
+SetupNG<int> 			master_xcvario_lock( "MSXCVL", 0 );
 
 
 mpud::raw_axes_t zero_bias;

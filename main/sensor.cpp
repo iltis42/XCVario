@@ -1251,14 +1251,22 @@ void sensor(void *args){
 	if ( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT ){
 		if( wireless == WL_WLAN_CLIENT ){
 			display->clear();
-			display->writeText( 2, "Wait for Master XCVario" );
-			std::string ssid = WifiClient::scan();
+
+			int line=1;
+			display->writeText( line++, "Wait for WiFi Master" );
+			char mxcv[30] = "";
+			if( master_xcvario.get() != 0 ){
+				sprintf( mxcv+strlen(mxcv), "XCVario-%d", (int) master_xcvario.get() );
+				display->writeText( line++, mxcv );
+			}
+			line++;
+			std::string ssid = WifiClient::scan( master_xcvario.get() );
 			if( ssid.length() ){
-				display->writeText( 3, "Master XCVario found" );
+				display->writeText( line++, "Master XCVario found" );
 				char id[30];
 				sprintf( id, "Wifi ID: %s", ssid.c_str() );
-				display->writeText( 4, id );
-				display->writeText( 5, "Now start, sync" );
+				display->writeText( line++, id );
+				display->writeText( line++, "Now start, sync" );
 				WifiClient::start();
 				delay( 5000 );
 				inSetup = false;
@@ -1270,11 +1278,11 @@ void sensor(void *args){
 		}
 		else if( the_can_mode == CAN_MODE_CLIENT ){
 			display->clear();
-			display->writeText( 2, "Wait for Master XCVario" );
+			display->writeText( 1, "Wait for CAN Master" );
 			while( 1 ) {
 				if( CANbus::connectedXCV() ){
 					display->writeText( 3, "Master XCVario found" );
-					display->writeText( 5, "Now start, sync" );
+					display->writeText( 4, "Now start, sync" );
 					delay( 5000 );
 					inSetup = false;
 					display->clear();

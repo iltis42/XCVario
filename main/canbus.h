@@ -12,31 +12,36 @@ class CANbus {
 public:
 	CANbus(){};
 	~CANbus(){};
-	static void begin();
-	static void restart();
-	static void tick();
-	static bool selfTest();
-	static int _tick;
-	static bool connectedXCV() { return _connected_xcv; };
-	static bool connectedMagSens() { return _connected_magsens; };
-
-	static bool isOkay() { return _ready_initialized; };
+	void begin();
+	void restart();
+	bool selfTest();
+    bool GotNewClient() const { return _new_can_client_connected; }
+    void ResetNewClient() { _new_can_client_connected = false; }
+	bool connectedXCV() { return _connected_xcv; };
+	bool connectedMagSens() { return _connected_magsens; };
+	bool isOkay() { return _ready_initialized; };
 
 private:
-	static bool sendData( int id, const char* msg, int length, int self=0 );
-	static bool sendNMEA( const SString& msg );
-	static int receive(  int *id, SString& msg, int timeout=5);
-	static void driverInstall( twai_mode_t mode );
-	static void on_can_connect( int msg );
-	static void driverUninstall();
-	static bool _ready_initialized;
-	static gpio_num_t _tx_io;
-	static gpio_num_t _rx_io;
-	static bool _connected_magsens;
-	static bool _connected_xcv;
-	static int _connected_timeout_magsens;
-	static int _connected_timeout_xcv;
-    static bool _master_present;
-    static int dataIndex;
-    static TickType_t _tx_timeout; // two times the time for 111 bit to send
+    friend void canTxTask(void *arg);
+    friend void canRxTask(void *arg);
+	void txtick(int);
+	void rxtick(int);
+
+private:
+	bool sendData( int id, const char* msg, int length, int self=0 );
+	bool sendNMEA( const SString& msg );
+	int receive(  int *id, SString& msg, int timeout=5);
+	void driverInstall( twai_mode_t mode );
+	void driverUninstall();
+	bool _ready_initialized = false;
+	gpio_num_t _tx_io = CAN_BUS_TX_PIN;
+	gpio_num_t _rx_io = CAN_BUS_RX_PIN;
+	bool _connected_magsens = false;
+	bool _connected_xcv = false;
+    bool _new_can_client_connected = false;
+	int _connected_timeout_magsens = 0;
+	int _connected_timeout_xcv = 0;
+    TickType_t _tx_timeout = 2; // [msec] about two times the time for 111 bit to send
 };
+
+extern CANbus* CAN;

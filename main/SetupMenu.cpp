@@ -358,7 +358,7 @@ void SetupMenu::down(int count){
 	}
 	if( (selected != this) || !_menu_enabled )
 		return;
-	ESP_LOGI(FNAME,"down %d %d", highlight, _childs.size() );
+	// ESP_LOGI(FNAME,"down %d %d", highlight, _childs.size() );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setColor(COLOR_BLACK);
 	ucg->drawFrame( 1,(highlight+1)*25+3,238,25 );
@@ -429,7 +429,6 @@ void SetupMenu::press(){
 		{
 			ESP_LOGI(FNAME,"!pressed");
 			inSetup=true;
-			delay( 500 );
 			_menu_enabled = true;
 		}
 		else
@@ -441,6 +440,7 @@ void SetupMenu::press(){
 			bmpVario.setup();
 			_menu_enabled = false;
 			inSetup=false;
+            SetupCommon::commitNow();
 		}
 	}
 	// default is not pressed, so just display, but we toogle pressed state at the end
@@ -635,7 +635,7 @@ void SetupMenu::setup( )
 
 		SetupMenuValFloat * mv = new SetupMenuValFloat( "Max Volume", 0, "%", 0, 100, 1.0, 0, false, &max_volume );
 		audio->addMenu( mv );
-		mv->setHelp(PROGMEM"Maximum volume for Audio when volume setting is at max");
+        mv->setHelp(PROGMEM"Maximum volume for Audio when volume setting is at max. Set to 0% to mute audio entirely.");
 
 		SetupMenuSelect * abnm = new SetupMenuSelect( "Cruise Audio", false, 0 , true, &cruise_audio_mode );
 		abnm->setHelp(PROGMEM"Select either S2F command or Variometer (Netto/Brutto as selected) as audio source while cruising");

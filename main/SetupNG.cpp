@@ -34,7 +34,12 @@
 #include "ESPAudio.h"
 
 std::vector<SetupCommon *> SetupCommon::entries;
+bool SetupCommon::lazyCommit = true;
+QueueHandle_t SetupCommon::commitSema = nullptr;
+esp_timer_handle_t SetupCommon::_timer = nullptr;
+bool SetupCommon::_dirty = false;
 char SetupCommon::_ID[14];
+
 
 void change_mc_bal() {  // or bugs
 	Speed2Fly.change_mc_bal();
@@ -50,9 +55,8 @@ void resetCWindAge() {
 }
 
 
-static int last_volume=0;
-
 void change_volume() {
+    static int last_volume=0;
 	int delta = (int)audio_volume.get() - last_volume;
 	if( delta != 0 ){
 		if( delta > 0 ){
@@ -119,8 +123,8 @@ SetupNG<int>  			alt_select( "ALT_SELECT" , AS_BARO_SENSOR );
 SetupNG<int>  			fl_auto_transition( "FL_AUTO" , 0 );
 SetupNG<int>  			alt_display_mode( "ALT_DISP_MODE" , MODE_QNH );
 SetupNG<float>  		transition_alt( "TRANS_ALT", 50 );   // Transition Altitude
-SetupNG<int>  			glider_type( "GLIDER_TYPE", 0 );
-SetupNG<int>  			glider_type_index( "GLIDER_TYPE_IDX", 0 );
+SetupNG<int>  			glider_type( "GLIDER_TYPE", 0, true, SYNC_FROM_MASTER );
+SetupNG<int>  			glider_type_index( "GLIDER_TYPE_IDX", 0, true, SYNC_FROM_MASTER );
 SetupNG<int>  			ps_display( "PS_DISPLAY", 1 );
 
 SetupNG<float>  		as_offset( "AS_OFFSET" , -1 );
@@ -279,6 +283,14 @@ SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );
 SetupNG<mpud::raw_axes_t>	accl_bias("ACCL_BIAS", zero_bias );
 
 
+// TimeOut callback
+static void timeout(QueueHandle_t arg)
+{
+    uint32_t stat = 0;
+    xQueueSendFromISR(arg, &stat, NULL);
+}
+
+
 void SetupCommon::sendSetup( e_sync_t sync, const char *key, char type, void *value, int len ){
 	// ESP_LOGI(FNAME,"sendSetup(): key=%s, type=%c, len=%d", key, type, len );
 	char str[40];
@@ -311,18 +323,11 @@ SetupCommon * SetupCommon::getMember( const char * key ){
 }
 
 // at time of connection establishment
-void SetupCommon::syncEntry( int entry ){
-	// ESP_LOGI(FNAME,"SetupCommon::syncEntry( %d )", entry );
-	if( (isMaster() && entries[entry]->getSync() == SYNC_FROM_MASTER) ||
-			(isClient() && entries[entry]->getSync() == SYNC_FROM_CLIENT) ||
-			(isMaster() && entries[entry]->getSync() == SYNC_BIDIR)
-	)
-	{
-		// ESP_LOGI(FNAME,"We are wireless type=%d", wireless );
-		if( entry < entries.size() ) {
-			entries[entry]->sync();
-		}
-	}
+bool SetupCommon::syncEntry( int entry ){
+    if( entry < entries.size() ) {
+        return entries[entry]->sync();
+    }
+    return false;
 }
 
 bool SetupCommon::factoryReset(){
@@ -396,6 +401,22 @@ bool SetupCommon::initSetup( bool& present ) {
 			}
 		}
 	}
+
+    if ( _timer == nullptr ) {
+        // create event queue to connect to the timer callback
+        commitSema = xQueueCreate(2, sizeof(uint32_t));
+
+        esp_timer_create_args_t timer_args = {
+            .callback = (esp_timer_cb_t)timeout,
+            .arg = commitSema,
+            .dispatch_method = ESP_TIMER_TASK,
+            .name = "lazy_nvs",
+            .skip_unhandled_events = true,
+        };
+        ESP_ERROR_CHECK(esp_timer_create(&timer_args, &_timer));
+        ESP_ERROR_CHECK(esp_timer_start_periodic(_timer, 5ULL * 1000000)); // 5 sec in usec
+    }
+
 	return ret;
 };
 
@@ -424,3 +445,15 @@ bool SetupCommon::isClient(){
 	return((wireless_type.get() == WL_WLAN_CLIENT) || (can_speed.get() != CAN_SPEED_OFF && can_mode.get() == CAN_MODE_CLIENT));
 }
 
+bool SetupCommon::commitNow()
+{
+    nvs_handle_t h;
+    if( _dirty && open(h) ) {
+        esp_err_t ret = nvs_commit(h);
+		close(h);
+        _dirty = false;
+        ESP_LOGI(FNAME,"nvs commiting now!" );
+        return ret == ESP_OK;
+    }
+    return false;
+}

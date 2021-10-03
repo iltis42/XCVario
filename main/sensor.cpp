@@ -107,10 +107,10 @@ Protocols OV( &Speed2Fly );
 
 AnalogInput Battery( (22.0+1.2)/1200, ADC_ATTEN_DB_0, ADC_CHANNEL_7, ADC_UNIT_1 );
 
-TaskHandle_t *apid;
-TaskHandle_t *bpid;
-TaskHandle_t *tpid;
-TaskHandle_t *dpid;
+TaskHandle_t apid;
+TaskHandle_t bpid;
+TaskHandle_t tpid;
+TaskHandle_t dpid;
 
 e_wireless_type wireless;
 
@@ -1313,12 +1313,12 @@ void sensor(void *args){
 		}
 	}
 
-	xTaskCreatePinnedToCore(&readSensors, "readSensors", 4096, NULL, 14, bpid, 0);
+	xTaskCreatePinnedToCore(&readSensors, "readSensors", 4096, NULL, 14, &bpid, 0);
 	if( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT ){
-		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 14, apid, 0);
+		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 14, &apid, 0);
 	}
-	xTaskCreatePinnedToCore(&readTemp, "readTemp", 2500, NULL, 8, tpid, 0);
-	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 4096, NULL, 4, dpid, 0);
+	xTaskCreatePinnedToCore(&readTemp, "readTemp", 2500, NULL, 8, &tpid, 0);
+	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 4096, NULL, 4, &dpid, 0);
 
 	compass.start();
 	Audio::startAudio();

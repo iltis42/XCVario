@@ -165,17 +165,17 @@ public:
 		_volatile = vol;
 		_action = action;
 
-	};
+	}
 
 	inline T* getPtr() {
 		return &_value;
-	};
+	}
 	inline T& getRef() {
 		return _value;
-	};
+	}
 	inline T get() {
 		return _value;
-	};
+	}
 	const char * key() {
 		return _key;
 	}
@@ -212,7 +212,7 @@ public:
 			return true;
 		}
 		return false;
-	};
+	}
 
 	bool commit(bool dosync=true) {
 		ESP_LOGI(FNAME,"NVS commit(): ");
@@ -245,7 +245,7 @@ public:
 		}
 		ESP_LOGI(FNAME,"success");
 		return true;
-	};
+	}
 
 	bool exists() {
 		if( _volatile != PERSISTENT ) {
@@ -261,7 +261,7 @@ public:
 		if ( err != ESP_OK )
 			return false;
 		return true;
-	};
+	}
 
 	virtual bool init() {
 		if( _volatile != PERSISTENT ){
@@ -305,7 +305,7 @@ public:
 		}
 		close(h);
 		return true;
-	};
+	}
 
 
 	virtual bool erase() {
@@ -324,11 +324,11 @@ public:
 			else
 				return false;
 		}
-	};
+	}
 
 	virtual bool mustReset() {
 		return _reset;
-	};
+	}
 
 	// bool erase_all() {
     //     nvs_handle_t h = 0;
@@ -344,9 +344,8 @@ public:
 	// 		return false;
 	// };
 
-	e_sync getSync(){
-		return _sync;
-	};
+    inline T getDefault() const { return _default; }
+	inline e_sync_t getSync() { return _sync; }
 
 private:
 	T _value;
@@ -358,7 +357,7 @@ private:
 	void (* _action)();
 };
 
-extern SetupNG<float>  		QNH;
+extern SetupNG<float> 		QNH;
 extern SetupNG<float> 		polar_wingload;
 extern SetupNG<float> 		polar_speed1;
 extern SetupNG<float> 		polar_sink1;

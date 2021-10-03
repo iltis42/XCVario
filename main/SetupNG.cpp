@@ -92,8 +92,8 @@ SetupNG<float>  		deadband( "DEADBAND", 0.3 );
 SetupNG<float>  		deadband_neg("DEADBAND_NEG" , -0.3 );
 SetupNG<float>  		range( "VARIO_RANGE", 5.0 );
 SetupNG<float>  		ballast( "BALLAST" , 0.0, true, SYNC_BIDIR, PERSISTENT, change_mc_bal );
-SetupNG<float>  		bugs( "BUGS", 0.0, true, SYNC_BIDIR, PERSISTENT, change_mc_bal  );
-SetupNG<float>  		MC( "MacCready", 0.5, true, SYNC_BIDIR, PERSISTENT, change_mc_bal );
+SetupNG<float>  		bugs( "BUGS", 0.0, true, SYNC_BIDIR, VOLATILE, change_mc_bal  );
+SetupNG<float>  		MC( "MacCready", 0.5, true, SYNC_BIDIR, VOLATILE, change_mc_bal );
 SetupNG<int>  			cruise_mode( "CRUISE", 0, true, SYNC_BIDIR, VOLATILE );
 SetupNG<float>  		OAT( "OAT", 0.0, true, SYNC_FROM_MASTER, VOLATILE );   // outside temperature
 SetupNG<float>  		swind_dir( "SWDD", 0.0, true, SYNC_FROM_MASTER, VOLATILE, resetSWindAge );

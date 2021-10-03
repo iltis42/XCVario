@@ -135,7 +135,7 @@ SetupNG<float>  		bat_full_volt( "BAT_FULL_VOLT", 12.8 );
 SetupNG<float>  		core_climb_period( "CORE_CLIMB_P" , 60 );
 SetupNG<float>  		core_climb_min( "CORE_CLIMB_MIN" , 0.5 );
 SetupNG<float>  		core_climb_history( "CORE_CLIMB_HIST" , 45 );
-SetupNG<float>  		elevation( "ELEVATION", -1 );
+SetupNG<float>  		elevation( "ELEVATION", -1, true, SYNC_BIDIR );
 SetupNG<float>  		default_volume( "DEFAULT_VOL", 10.0 );
 SetupNG<float>  		max_volume( "MAXI_VOL", 60.0 );
 SetupNG<float>  		frequency_response( "FREQ_RES", 30.0 );

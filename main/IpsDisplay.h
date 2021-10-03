@@ -80,7 +80,7 @@ private:
 	static int s2fmode_prev;
 
 	static int wkalt;
-	static int wkposalt;
+	static int wkoptalt;
 	static int wksensoralt;
 	static int wkialt;
 

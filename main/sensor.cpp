@@ -697,7 +697,7 @@ void sensor(void *args){
 
 	wireless = (e_wireless_type)(wireless_type.get()); // we cannot change this on the fly, so get that on boot
 	AverageVario::begin();
-	Flap::initSensor();
+	Flap::initSensPos();
 
 	stall_speed_kmh = Units::Airspeed2Kmh( stall_speed.get() );
 	stall_alarm_off_kmh = stall_speed_kmh/3;

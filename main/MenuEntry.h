@@ -23,12 +23,12 @@ class MenuEntry: public RotaryObserver {
 public:
 	MenuEntry() : RotaryObserver() {
 	       _parent = 0;
-				 highlight = 0;
-				 pressed = false;
-				 y=0;
-				 helptext=0;
-				 long_pressed = false;
-				 hypos=0;
+            highlight = 0;
+            pressed = false;
+            y=0;
+            helptext=0;
+            long_pressed = false;
+            hypos=0;
 	}
 
 	virtual void display( int mode=0 ) = 0;
@@ -39,12 +39,7 @@ public:
 	MenuEntry* addMenu( MenuEntry * item );
 	void       delMenu( MenuEntry * item );
 	MenuEntry* findMenu( String title, MenuEntry* start=root  );
-	void togglePressed() {
-		if( pressed )
-			pressed = false;
-		else
-			pressed = true;
-	}
+	void togglePressed() { pressed = ! pressed; }
 	void setHelp( const char *txt, int y=180 ) { helptext = (char*)txt; hypos = y; };
 	void showhelp( int y );
 	void clear();
@@ -71,8 +66,6 @@ public:
 	int    hypos;
 	unsigned char y;
 	static Ucglib_ILI9341_18x240x320_HWSPI *ucg;
-	// static float volume;
-
 private:
 };
 

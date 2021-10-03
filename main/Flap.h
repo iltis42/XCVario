@@ -13,9 +13,9 @@
 class Flap {
 public:
 	static void  init( Ucglib_ILI9341_18x240x320_HWSPI *theUcg );
-	static float getLeverPosition( int sensorreading );
+	static float sensorToLeverPosition( int sensorreading );
 	static void  progress();
-	static void  initSensor();
+	static void  initSensPos();
 	static void  initSpeeds();
 	static inline float getLever() { return lever; }
 	static inline void setLever( float l ) { lever = l; }
@@ -23,12 +23,9 @@ public:
 	static float getOptimum( float wks, int& wki );
 	static void configureADC();
 	static inline unsigned int getSensorRaw(int oversampling=1) {
-		if( haveSensor() )
-			return sensorAdc->getRaw(oversampling);
-		else
-			return 0;
+        return haveSensor() ? sensorAdc->getRaw(oversampling) : 0;
 	}
-	static inline bool haveSensor() { if( sensorAdc != 0 ) return true; else return false; }
+	static inline bool haveSensor() { return sensorAdc != nullptr; }
 	static void drawSmallBar( int ypos, int xpos, float wkf );
 	static void drawBigBar( int ypos, int xpos, float wkf, float wksens );
 	static void drawLever( int xpos, int ypos, int oldypos, bool warn );

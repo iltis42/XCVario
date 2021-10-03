@@ -94,7 +94,7 @@ void SetupMenuSelect::display( int mode ){
 	if(mode == 1 && _save == true ){
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		ucg->setPrintPos( 1, 300 );
-		ucg->print("Saved !" );
+		ucg->print("Saved" );
 		if( _select_save != *_select )
 			if( _restart ) {
 				ucg->setColor(COLOR_BLACK);

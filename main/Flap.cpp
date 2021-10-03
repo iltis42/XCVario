@@ -57,20 +57,22 @@ void showWk(SetupMenuSelect * p){
 
 int select_flap_io(SetupMenuSelect * p){
 	Flap::configureADC();
-	p->clear();
-	p->ucg->setPrintPos(1,30);
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	p->ucg->printf("Check Sensor Reading,");
-	p->ucg->setPrintPos(1,60);
-	p->ucg->printf("Press Button to exit");
-	xSemaphoreGive(spiMutex);
-	while( !p->_rotary->readSwitch() ){
-		p->ucg->setPrintPos(1,90);
-		xSemaphoreTake(spiMutex,portMAX_DELAY );
-		p->ucg->printf("Sensor: %d       ", Flap::getSensorRaw(256) );
-		xSemaphoreGive(spiMutex);
-		delay(20);
-	}
+    if ( Flap::haveSensor() ) {
+        p->clear();
+        p->ucg->setPrintPos(1,30);
+        xSemaphoreTake(spiMutex,portMAX_DELAY );
+        p->ucg->printf("Check Sensor Reading,");
+        p->ucg->setPrintPos(1,60);
+        p->ucg->printf("Press Button to exit");
+        xSemaphoreGive(spiMutex);
+        while( !p->_rotary->readSwitch() ){
+            p->ucg->setPrintPos(1,90);
+            xSemaphoreTake(spiMutex,portMAX_DELAY );
+            p->ucg->printf("Sensor: %d       ", Flap::getSensorRaw(256) );
+            xSemaphoreGive(spiMutex);
+            delay(20);
+        }
+    }
 	return 0;
 }
 
@@ -90,7 +92,7 @@ int flap_speed_act( SetupMenuValFloat * p ){
 }
 
 int flap_pos_act( SetupMenuValFloat * p ){
-	Flap::initSensor();
+	Flap::initSensPos();
 	return 0;
 }
 
@@ -138,10 +140,10 @@ int wk_cal( SetupMenuSelect * p )
 		}
 
 		p->ucg->setPrintPos(1,60);
-		p->ucg->printf("Saved, restart");
-		Flap::initSensor();
-		delay(2000);
+		p->ucg->printf("Saved");
+		Flap::initSensPos();
 		ESP_LOGI(FNAME,"Push Button pressed");
+		delay(500);
 	}
 	return 0;
 }
@@ -177,11 +179,11 @@ void Flap::setupMenue( SetupMenu *parent ){
 	wkcal->setHelp( PROGMEM "Option to calibrate flap Sensor (WK), to indicate current flap setting: Press button after each setting" );
 	wkm->addMenu( wkcal );
 
-	SetupMenuValFloat * nflpos = new SetupMenuValFloat("Max positive Flap", 0, "", 0, 3, 1, flap_pos_act, false, &flap_pos_max, true);
+	SetupMenuValFloat * nflpos = new SetupMenuValFloat("Max positive Flap", nullptr, "", 0., 3., 1., flap_pos_act, false, &flap_pos_max);
 	nflpos->setHelp(PROGMEM"Maximum positive flap position to be displayed");
 	wkm->addMenu( nflpos );
 
-	SetupMenuValFloat * nflneg = new SetupMenuValFloat("Max negative Flap", 0, "", -3, 0, 1, flap_pos_act, false, &flap_neg_max, true  );
+	SetupMenuValFloat * nflneg = new SetupMenuValFloat("Max negative Flap", nullptr, "", -3., 0., 1., flap_pos_act, false, &flap_neg_max);
 	nflneg->setHelp(PROGMEM"Maximum negative flap position to be displayed");
 	wkm->addMenu( nflneg );
 
@@ -423,10 +425,10 @@ void Flap::drawBigBar( int ypos, int xpos, float wkf, float wksens ){
 #define FLAPLEN 14
 
 
-void Flap::drawWingSymbol( int ypos, int xpos, int wk, int wkalt, float wksens  ){
-	bool warn=false;
-	if( abs( wk - wksens) > 1 )
-		warn = true;
+void Flap::drawWingSymbol( int ypos, int xpos, int wk, int wkalt, float wksens )
+{
+	bool warn = wksens > -10 && abs( wk - wksens) > 1;
+
 	if(warn){
 		ucg->setColor( COLOR_RED );
 	}else{
@@ -449,6 +451,7 @@ void Flap::drawWingSymbol( int ypos, int xpos, int wk, int wkalt, float wksens  
 }
 
 void  Flap::initSpeeds(){
+    // Fixme needs a push after synch -> blackboard action
 	flapSpeeds[0] = 280;
 	flapSpeeds[1] = flap_minus_3.get();
 	flapSpeeds[2] = flap_minus_2.get();
@@ -461,8 +464,11 @@ void  Flap::initSpeeds(){
 
 void Flap::configureADC(){
 	ESP_LOGI( FNAME, "Flap::configureADC");
-	if( sensorAdc )
+	if( sensorAdc ) {
 		delete sensorAdc;
+        sensorAdc = nullptr;
+    }
+    flap_pos.init(); // remove display until set proterly
 	if( flap_sensor.get() == FLAP_SENSOR_GPIO_2 ) {
 		sensorAdc = new AnalogInput( -1, ADC_ATTEN_DB_0, ADC_CHANNEL_2, ADC_UNIT_2, true );
 	}else if( flap_sensor.get() == FLAP_SENSOR_GPIO_34 ) {
@@ -488,9 +494,10 @@ void  Flap::init( Ucglib_ILI9341_18x240x320_HWSPI *theUcg ){
 	ucg = theUcg;
 	configureADC();
 	initSpeeds();
+    initSensPos();
 }
 
-float Flap::getLeverPosition( int wks ){
+float Flap::sensorToLeverPosition( int wks ){
 	// ESP_LOGI(FNAME,"getSensorWkPos %d", wks);
 	int wk=0;
 	int max = ZERO_INDEX +1 + flap_pos_max.get();
@@ -512,7 +519,7 @@ float Flap::getLeverPosition( int wks ){
 }
 
 void  Flap::progress(){
-	if( sensorAdc ) {
+	if( haveSensor() && ! SetupCommon::isClient() ) {
 		int wkraw = getSensorRaw(16);
 		if( wkraw > 4096 )
 			wkraw = 4096;
@@ -524,7 +531,7 @@ void  Flap::progress(){
 		rawFiltered = rawFiltered + (wkraw - rawFiltered)/6;
 		tick++;
 		if( !(tick%4) ){
-			lever = getLeverPosition( rawFiltered );
+			lever = sensorToLeverPosition( rawFiltered );
 			// ESP_LOGI(FNAME,"wk sensor=%1.2f  raw=%d", lever, rawFiltered );
 			if( lever < flap_neg_max.get()-0.5 )
 				lever = flap_neg_max.get()-0.5;
@@ -538,8 +545,8 @@ void  Flap::progress(){
 	}
 }
 
-void  Flap::initSensor(){
-	ESP_LOGI(FNAME,"initSensor");
+void  Flap::initSensPos(){
+	ESP_LOGI(FNAME,"initSensPos");
 	if( (wk_sens_pos_0.get() - wk_sens_pos_minus_1.get()) < 0 )
 		senspos[ZERO_INDEX-4] = 4095;
 	else
@@ -647,4 +654,3 @@ int Flap::getOptimumInt( float speed )
 		return 1;
 	}
 }
-

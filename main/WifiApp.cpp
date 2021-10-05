@@ -246,6 +246,8 @@ void WifiApp::wifi_init_softap()
 		wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
 		ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
+
+
 		esp_event_loop_init( (system_event_cb_t)wifi_event_handler, 0 );
 
 		ESP_LOGV(FNAME,"now esp_wifi_set_mode");
@@ -266,6 +268,8 @@ void WifiApp::wifi_init_softap()
 
 		ESP_LOGV(FNAME,"now esp_wifi_set_storage");
 		ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+		// For further testing, may improve wifi range
+		// ESP_ERROR_CHECK(esp_wifi_set_protocol(ESP_IF_WIFI_STA, WIFI_PROTOCOL_LR ));
 
 		sleep(1);
 		ESP_LOGI(FNAME,"now start WSP wifi access point");

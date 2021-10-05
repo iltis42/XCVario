@@ -149,8 +149,9 @@ void Compass::begin(){
 	Y.reserve(40);
 	deviationReload();
 	i2c_0.begin(GPIO_NUM_4, GPIO_NUM_18, GPIO_PULLUP_DISABLE, GPIO_PULLUP_DISABLE, (int)(compass_i2c_cl.get()*1000) );
-	if( serial2_speed.get() )
-		serial2_speed.set(0);  // switch off serial interface, we can do only alternatively
+	if( (compass_enable.get() == CS_I2C) || (compass_enable.get() == CS_I2C_NO_TILT) )
+		if( serial2_speed.get() )
+			serial2_speed.set(0);  // switch off serial interface, we can do only alternatively
 	compass.initialize();
 	mag_hdm.set( -1 );
 	mag_hdt.set( -1 );

@@ -125,7 +125,7 @@ void Serial::serialHandler(void *pvParameters){
 		Router::routeBT();
 	    BTSender::progress();   // piggyback this here, saves one task for BT sender
 
-	    if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 && !compass_enable.get() ){
+	    if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 ){
 	    	// ESP_LOGI(FNAME,"Serial 2 tick");
 	    	if ( !s2_tx_q.isEmpty() && Serial2.availableForWrite() ){
 	    		if( Router::pullMsg( s2_tx_q, s ) ) {
@@ -242,7 +242,7 @@ void Serial::begin(){
 		}
 		// need this for bluetooth
 	}
-	if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 && !compass_enable.get() ){
+	if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 ){
 		ESP_LOGI(FNAME,"Serial Interface ttyS2 enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial2_speed.get(), baud[serial2_speed.get()], serial2_tx_inverted.get(), serial2_rx_inverted.get() );
 		if( serial2_pins_twisted.get() ){  //   speed, RX, TX, invRX, invTX
 			if( serial2_tx_enable.get() ){

@@ -260,14 +260,13 @@ void Protocols::parseNMEA( const char *astr ){
 			ESP_LOGI(FNAME,"parseNMEA %s", str );
 			char key[20];
 			char type;
-			int  length;
 			char role; // M | C
 			int cs;
 			float val;
-			sscanf(str, "!xs%c,%[^,],%c,%d,%f*%02x", &role, key, &type, &length, &val, &cs );  // !xsM,FLPS,F,4,1.500000*27
+			sscanf(str, "!xs%c,%[^,],%c,%f*%02x", &role, key, &type, &val, &cs );  // !xsM,FLPS,F,1.500000*27
 			int calc_cs=calcNMEACheckSum( str );
 			if( cs == calc_cs ){
-				// ESP_LOGI(FNAME,"parsed NMEA: role=%c type=%c key=%s len=%d val=%f vali=%d", role, type , key, length, val, (int)val );
+				// ESP_LOGI(FNAME,"parsed NMEA: role=%c type=%c key=%s val=%f vali=%d", role, type , key, val, (int)val );
 				if( type == 'F' ){
 					SetupNG<float> *item = (SetupNG<float> *)SetupCommon::getMember( key );
 					if( item != 0 ){
@@ -326,45 +325,6 @@ void Protocols::parseNMEA( const char *astr ){
 				bugs.set( mybugs );
 			}
 		}
-		else if( !strncmp( str, "$PXCV,", 5 ) ){   // $PXCV,-0.0,0.5,0,1.00,0,24.4,1013.2,990.8, 0.0,0.2,-29.2,-0.45,0.01,0.80*2C
-			/*
-				$PXCV,
-				BBB.B = Vario, -30 to +30 m/s, negative sign for sink,
-				C.C = MacCready 0 to 10 m/s
-				EE = bugs degradation, 0 = clean to 30 %,
-				F.FF = Ballast 1.00 to 1.60,
-				G = 0 in climb, 1 in cruise,
-				HH.H = Outside airtemp in degrees celcius ( may have leading negative sign ),
-				QQQQ.Q = QNH e.g. 1013.2,
-				PPPP.P: static pressure in hPa,
-				QQQQ.Q: dynamic pressure in Pa,
-				RRR.R: roll angle,
-				III.I: pitch angle,
-				X.XX:   acceleration in X-Axis,
-				Y.YY:   acceleration in Y-Axis,
-				Z.ZZ:   acceleration in Z-Axis,
-			 *CHK = standard NMEA checksum
-			 */
-			// tbd: checksum check
-			// ESP_LOGI(FNAME,"parseNMEA, PXCV %s", str);
-			float _te, _mc, _bugs,_ballast, _temp, _qnh, _baro, _pitot;
-			int _cs, _cruise;
-			sscanf( str, "$PXCV,%f,%f,%f,%f,%d,%f,%f,%f,%f%*[^*]*%2x", &_te, &_mc, &_bugs, &_ballast,&_cruise, &_temp, &_qnh, &_baro, &_pitot, &_cs  );
-			int calc_cs=calcNMEACheckSum( str );
-			if( _cs != calc_cs )
-				ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", str, calc_cs, _cs );
-			else{
-				TE = _te;
-				baroP = _baro;
-				dynamicP = _pitot;
-				float iasraw= Atmosphere::pascal2kmh( dynamicP );
-				ias = ias + (iasraw - ias)*0.25;
-				tas += ( Atmosphere::TAS( iasraw , _baro, _temp) - tas)*0.25;
-				alt=Atmosphere::calcAltitude( QNH.get(), _baro );
-				aTE += (TE - aTE)* (1/(10*vario_av_delay.get()));
-			}
-			// ESP_LOGI(FNAME,"parseNMEA, $PXCV TE=%2.1f T=%2.1f Baro=%4.1f Pitot=%4.1f IAS:%3.1f", _te, _temp, _baro, _pitot, ias);
-		}
 		else if( !strncmp( str, "$PFLAU,", 6 )) {
 			Flarm::parsePFLAU( str );
 			if( Flarm::bincom  ) {
@@ -391,40 +351,6 @@ void Protocols::parseNMEA( const char *astr ){
 			if( Flarm::bincom  ) {
 				Flarm::bincom--;
 				ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
-			}
-		}
-		else if( !strncmp( str, "!w,", 2 ) ){
-			/*
-			 * Cambridge 302 Format
-			!W,<1>,<2>,<3>,<4>,<5>,<6>,<7>,<8>,<9>,<10>,<11>,<12>,<13>*hh<CR><LF>
-			<1>    Vector wind direction in degrees
-			<2>    Vector wind speed in 10ths of meters per second
-			<3>    Vector wind age in seconds
-			<4>    Component wind in 10ths of Meters per second + 500 (500 = 0, 495 = 0.5 m/s tailwind)
-			<5>    True altitude in Meters + 1000
-			<6>    Instrument QNH setting
-			<7>    True airspeed in 100ths of Meters per second  ( kilometers per second )
-			<8>    Variometer reading in 10ths of knots + 200
-			<9>    Averager reading in 10ths of knots + 200
-			<10>   Relative variometer reading in 10ths of knots + 200
-			<11>   Instrument MacCready setting in 10ths of knots
-			<12>   Instrument Ballast setting in percent of capacity
-			<13>   Instrument Bug setting
-			 *hh   Checksum, XOR of all bytes of the sentence after the ‘!’ and before the ‘*’
-			 */
-			float _alt, _qnh, _tas, _te, _mc, _ballast, _bugs;
-			int _cs;
-			sscanf(str, "!w,0,0,0,0,%f,%f,%f,%f,0,0,%f,%f,%f*%02x", &_alt, &_qnh, &_tas, &_te, &_mc, &_ballast, &_bugs, &_cs );
-			int calc_cs=calcNMEACheckSum( str );
-			if( _cs != calc_cs )
-				ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %02x != delivered CS %02x", str, calc_cs, _cs );
-			else{
-				alt = _alt-1000;
-				tas = Units::ms2kmh( _tas )/100;    // True airspeed in 100ths of Meters per second
-				ias = Atmosphere::IAS( tas , alt, temperature );
-				TE = Units::knots2ms( _te - 200 )/10;
-				aTE += (TE - aTE)* (1/(10*vario_av_delay.get()));
-				// ESP_LOGI(FNAME,"parseNMEA/Cambridge %s: alt=%4.1f QNH=%4.1f TE=%2.1f TAS:%3.1f",str, alt, _qnh, TE, tas);
 			}
 		}
 		str++;

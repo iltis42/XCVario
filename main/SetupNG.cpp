@@ -104,6 +104,9 @@ SetupNG<float>  		mag_hdm( "HDM", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
 SetupNG<float>  		mag_hdt( "HDT", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
 SetupNG<float>  		average_climb( "AVCL", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
 SetupNG<float>  		flap_pos( "FLPS", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
+SetupNG<float>  		altitude( "ALTI", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
+SetupNG<float>  		ias( "IASV", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
+SetupNG<float>  		te_vario( "TEVA", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
 
 SetupNG<float>  		s2f_speed( "S2F_SPEED", 100.0 );
 SetupNG<float>  		s2f_hysteresis( "S2F_HYST", 5.0 );
@@ -302,7 +305,7 @@ void SetupCommon::sendSetup( e_sync_t sync, const char *key, char type, void *va
 	else
 		sender='U';
 	if( sender != 'U' ) {
-		int l = sprintf( str,"!xs%c,%s,%c,%d,", sender, key, type, len );
+		int l = sprintf( str,"!xs%c,%s,%c,", sender, key, type );
 		if( type == 'F' )
 			sprintf( str+l,"%.3f", *(float*)(value) );
 		else if( type == 'I' )

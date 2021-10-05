@@ -30,6 +30,12 @@ public:
 	static inline float TAS( float ias, float baro, float temp ) {
 		return( ias * sqrt( 1.225 / ( baro*100.0 / (287.058 * (273.15+temp)))));
 	};
+
+	// TAS=IAS/sqrt( 288.15/(T+273.15) * (P/1013.25) )
+	static inline float TAS2( float ias, float altitude, float temp ) {
+			return( ias / sqrt( 288.15/(temp+273.15) * ( calcPressure( altitude )/1013.25 )) );
+	};
+
 	static inline float IAS( float tas, float alti, float temp ) {
 			return( tas / sqrt( 1.225 / ( calcPressure(alti)*100.0 / (287.058 * (273.15+temp)))));
 	};

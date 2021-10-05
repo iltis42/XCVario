@@ -59,7 +59,7 @@ double BMPVario::readTE( float tas ) {
 	bmpTemp = _sensorTE->readTemperature( success );
 	// ESP_LOGI(FNAME,"BMP temp=%0.1f", bmpTemp );
 	if( te_comp_enable.get() ) {
-		_currentAlt = alt; // already read
+		_currentAlt = altitude.get(); // already read
 		if( !success )
 			_currentAlt = lastAltitude;  // ignore readout when failed
 		float mps = tas / 3.6;  // m/s

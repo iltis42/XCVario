@@ -412,7 +412,9 @@ void readSensors(void *pvParameters){
 			// ESP_LOGI(FNAME,"IAS=%f, T=%f, TAS=%f baroP=%f", ias, T, tas, baroP );
 			xSemaphoreTake(xMutex,portMAX_DELAY );
 
-			if( (int( te_vario.get()*20 +0.5 ) != int( bmpVario.readTE( tasraw )*20 +0.5)) || !(count%5) ){  // every 500 mS update
+			float te = bmpVario.readTE( tasraw );
+			ESP_LOGI(FNAME,"TE %.2f", te );
+			if( (int( te_vario.get()*20 +0.5 ) != int( te*20 +0.5)) || !(count%5) ){  // every 500 mS update
 				te_vario.set( bmpVario.readTE( tasraw ) );  // max 10x per second
 			}
 			xSemaphoreGive(xMutex);

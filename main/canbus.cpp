@@ -191,9 +191,10 @@ void CANbus::txtick(int tick){
     if ( !client_tx_q.isEmpty() ){
         // ESP_LOGI(FNAME,"There is CAN data");
         if( _connected_xcv ){
+        	// ESP_LOGI(FNAME,"CAN TX Q:%d", client_tx_q.numElements() );
             while( Router::pullMsg( client_tx_q, msg ) ){
-                // ESP_LOGI(FNAME,"CAN TX len: %d bytes", msg.length() );
-                ESP_LOG_BUFFER_HEXDUMP(FNAME,msg.c_str(),msg.length(), ESP_LOG_INFO);
+                // ESP_LOGI(FNAME,"CAN TX len: %d bytes Q:%d", msg.length(), client_tx_q.numElements() );
+                // ESP_LOG_BUFFER_HEXDUMP(FNAME,msg.c_str(),msg.length(), ESP_LOG_INFO);
                 if( !sendNMEA( msg ) ){
                     _connected_timeout_xcv +=20;  // if sending fails as indication for disconnection
                     ESP_LOGI(FNAME,"CAN TX NMEA failed, timeout=%d", _connected_timeout_xcv );
@@ -201,7 +202,6 @@ void CANbus::txtick(int tick){
             }
         }
     }
-
 	Router::routeClient();
 	if( !(tick%100) ){
 		if( ((can_mode.get() == CAN_MODE_CLIENT)  && _connected_xcv) || can_mode.get() == CAN_MODE_MASTER ){ // sent from client only if keep alive is there

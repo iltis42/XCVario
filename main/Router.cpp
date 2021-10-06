@@ -61,7 +61,7 @@ bool Router::forwardMsg( SString &s, RingBufCPP<SString, QUEUE_SIZE>& q ){
 bool Router::pullMsg( RingBufCPP<SString, QUEUE_SIZE>& q, SString& s ){
 	if( !q.isEmpty() ){
 		portENTER_CRITICAL_ISR(&btmux);
-		q.pull( &s );
+		q.pull( s );
 		portEXIT_CRITICAL_ISR(&btmux);
 		return true;
 	}
@@ -73,7 +73,7 @@ int Router::pullMsg( RingBufCPP<SString, QUEUE_SIZE>& q, char *block ){
 	if( !q.isEmpty() ){
 		SString s;
 		portENTER_CRITICAL_ISR(&btmux);
-		q.pull(  &s );
+		q.pull(  s );
 		portEXIT_CRITICAL_ISR(&btmux);
 		size = s.length();
 		memcpy( block, s.c_str(), size );
@@ -87,7 +87,7 @@ int Router::pullBlock( RingBufCPP<SString, QUEUE_SIZE>& q, char *block, int size
 	while( !q.isEmpty() ){
 		SString s;
 		portENTER_CRITICAL_ISR(&btmux);
-		q.pull(  &s );
+		q.pull(  s );
 		portEXIT_CRITICAL_ISR(&btmux);
 		memcpy( block+len, s.c_str(), s.length() );
 		len += s.length();

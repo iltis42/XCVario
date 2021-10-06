@@ -413,8 +413,7 @@ void readSensors(void *pvParameters){
 			xSemaphoreTake(xMutex,portMAX_DELAY );
 
 			float te = bmpVario.readTE( tasraw );
-			ESP_LOGI(FNAME,"TE %.2f", te );
-			if( (int( te_vario.get()*20 +0.5 ) != int( te*20 +0.5)) || !(count%5) ){  // every 500 mS update
+			if( (int( te_vario.get()*20 +0.5 ) != int( te*20 +0.5)) || !(count%10) ){  // a bit more fine granular updates than 0.1 m/s as of sound
 				te_vario.set( te );  // max 10x per second
 			}
 			xSemaphoreGive(xMutex);

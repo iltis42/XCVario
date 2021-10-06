@@ -1,21 +1,26 @@
+#include "ESPRotary.h"
+
+#include "Setup.h"
+#include "RingBufCPP.h"
+
+
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include <freertos/queue.h>
 #include "freertos/task.h"
 #include "string.h"
 #include "esp_system.h"
-#include "ESPRotary.h"
 #include <esp32/rom/ets_sys.h>
 #include <sys/time.h>
 #include <Arduino.h>
-#include "RingBufCPP.h"
 #include <logdef.h>
-#include "Setup.h"
+#include <list>
+#include <algorithm>
 
 
 gpio_num_t ESPRotary::clk, ESPRotary::dt;
 gpio_num_t ESPRotary::sw = GPIO_NUM_0;
-std::vector<RotaryObserver *> ESPRotary::observers;
+std::list<RotaryObserver *> ESPRotary::observers;
 
 pcnt_config_t ESPRotary::enc;
 pcnt_config_t ESPRotary::enc2;
@@ -29,6 +34,12 @@ static TaskHandle_t *pid;
 
 void ESPRotary::attach(RotaryObserver *obs) {
 	observers.push_back(obs);
+}
+void ESPRotary::detach(RotaryObserver *obs) {
+	auto it = std::find(observers.begin(), observers.end(), obs);
+    if ( it != observers.end() ) {
+        observers.erase(it);
+    }
 }
 
 bool ESPRotary::readSwitch() {
@@ -116,20 +127,20 @@ void ESPRotary::informObservers( void * args )
 			old_button=button;
 			if( event == RELEASE ){
 				ESP_LOGI(FNAME,"Switch released action");
-				for (int i = 0; i < observers.size(); i++)
-					observers[i]->release();
+				for (auto &observer : observers)
+					observer->release();
 				ESP_LOGI(FNAME,"End Switch released action");
 			}
 			else if ( event == PRESS ){
 				ESP_LOGI(FNAME,"Switch pressed action");
-				for (int i = 0; i < observers.size(); i++)
-					observers[i]->press();
+				for (auto &observer : observers)
+					observer->press();
 				ESP_LOGI(FNAME,"End Switch pressed action");
 			}
 			else if ( event == LONG_PRESS ){   // tbd
 				ESP_LOGI(FNAME,"Switch long pressed action");
-				for (int i = 0; i < observers.size(); i++)
-					observers[i]->longPress();
+				for (auto &observer : observers)
+					observer->longPress();
 				ESP_LOGI(FNAME,"End Switch long pressed action");
 			}
 		}
@@ -158,13 +169,13 @@ void ESPRotary::informObservers( void * args )
 			old_cnt = r_enc_count+r_enc2_count;
 			if( diff < 0 ) {
 				// ESP_LOGI(FNAME,"Rotary up %d times",abs(diff) );
-				for (int i = 0; i < observers.size(); i++)
-					observers[i]->up( abs(diff) );
+				for (auto &observer : observers)
+					observer->up( abs(diff) );
 			}
 			else{
 				// ESP_LOGI(FNAME,"Rotary down %d times", abs(diff) );
-				for (int i = 0; i < observers.size(); i++)
-					observers[i]->down( abs(diff) );
+				for (auto &observer : observers)
+					observer->down( abs(diff) );
 			}
 		}
 		if( uxTaskGetStackHighWaterMark( pid ) < 1024 )

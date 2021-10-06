@@ -436,11 +436,11 @@ void readSensors(void *pvParameters){
 			if( alt_select.get() == AS_TE_SENSOR ) // TE
 				new_alt = bmpVario.readAVGalt();
 			else if( alt_select.get() == AS_BARO_SENSOR  || alt_select.get() == AS_EXTERNAL ){ // Baro or external
-				if(  alt_unit.get() == 2 ) { // FL, always standard
+				if(  alt_unit.get() == ALT_UNIT_FL ) { // FL, always standard
 					new_alt = altSTD;
 					standard_setting = true;
 					// ESP_LOGI(FNAME,"au: %d", alt_unit.get() );
-				}else if( (fl_auto_transition.get() == 1) && ((int)altSTD*0.0328084 + (int)(standard_setting) > transition_alt.get() ) ) {
+				}else if( (fl_auto_transition.get() == 1) && ((int)altSTD*0.0328084 + (int)(standard_setting) > transition_alt.get() ) ) { // above transition altitude
 					new_alt = altSTD;
 					standard_setting = true;
 					// ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), altSTD, standard_setting, transition_alt.get() );

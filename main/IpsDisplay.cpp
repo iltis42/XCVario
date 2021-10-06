@@ -564,7 +564,6 @@ void IpsDisplay::drawMC( float mc, bool large ) {
 	ucg->printf("%1.1f", mc );
 }
 
-
 #define S2FSS 16
 #define S2FTS 6
 

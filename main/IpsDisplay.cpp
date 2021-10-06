@@ -173,6 +173,8 @@ IpsDisplay::~IpsDisplay() {
 
 
 void IpsDisplay::drawArrowBox( int x, int y, bool arightside ){
+	if( _menu )
+		return;
 	int fh = ucg->getFontAscent();
 	int fl = ucg->getStrWidth("123");
 	if( arightside )
@@ -182,6 +184,8 @@ void IpsDisplay::drawArrowBox( int x, int y, bool arightside ){
 }
 
 void IpsDisplay::drawLegend( bool onlyLines ) {
+	if( _menu )
+		return;
 	int hc=0;
 	if( onlyLines == false ){
 		ucg->setFont(ucg_font_9x15B_mf);
@@ -221,6 +225,8 @@ void IpsDisplay::clear(){
 }
 
 void IpsDisplay::bootDisplay() {
+	if( _menu )
+		return;
 	// ESP_LOGI(FNAME,"IpsDisplay::bootDisplay()");
 	setup();
 	if( display_type.get() == ST7789_2INCH_12P )
@@ -237,6 +243,8 @@ void IpsDisplay::bootDisplay() {
 }
 
 void IpsDisplay::initDisplay() {
+	if( _menu )
+		return;
 	// ESP_LOGI(FNAME,"IpsDisplay::initDisplay()");
 	// set global color variables according to selected display_variant
 	if ( display_variant.get() == DISPLAY_WHITE_ON_BLACK ) {
@@ -332,6 +340,8 @@ void IpsDisplay::initDisplay() {
 
 // Thermometer
 void IpsDisplay::drawThermometer( int x, int y) {
+	if( _menu )
+		return;
 	ucg->setColor(COLOR_WHITE);
 	ucg->drawDisc( x, y,  4, UCG_DRAW_ALL ); // white disk
 	ucg->setColor(COLOR_RED);
@@ -385,6 +395,8 @@ void IpsDisplay::setup()
 }
 
 void IpsDisplay::drawGaugeTriangle( int y, int r, int g, int b, bool s2f ) {
+	if( _menu )
+		return;
 	ucg->setColor( r,g,b );
 	if( s2f )
 		ucg->drawTriangle( DISPLAY_LEFT+4+bw+3+TRISIZE,  dmid+y,
@@ -397,6 +409,8 @@ void IpsDisplay::drawGaugeTriangle( int y, int r, int g, int b, bool s2f ) {
 }
 
 void IpsDisplay::drawAvgSymbol( int y, int r, int g, int b, int x ) {
+	if( _menu )
+		return;
 	int size = 6;
 	ucg->setColor( r,g,b );
 	ucg->drawTetragon( x+size-1,dmid-y, x,dmid-y+size, x-size,dmid-y, x,dmid-y-size );
@@ -407,6 +421,8 @@ int yusize=7;
 int ylsize=7;
 
 void IpsDisplay::drawAvg( float avclimb, float delta ){
+	if( _menu )
+		return;
 	ESP_LOGD(FNAME,"drawAvg: av=%.2f delta=%.2f", avclimb, delta );
 	int pos=130;
 	int size=7;
@@ -447,6 +463,8 @@ void IpsDisplay::drawAvg( float avclimb, float delta ){
 
 void IpsDisplay::redrawValues()
 {
+	if( _menu )
+		return;
 	// ESP_LOGI(FNAME,"IpsDisplay::redrawValues()");
 	chargealt = 101;
 	tempalt = -2000;
@@ -483,6 +501,8 @@ void IpsDisplay::redrawValues()
 }
 
 void IpsDisplay::drawTeBuf(){
+	if( _menu )
+		return;
 	for( int l=TEMIN+1; l<TEMAX; l++){
 		if( colorsalt[l].color[0] != colors[l].color[0]  || colorsalt[l].color[1] != colors[l].color[1] || colorsalt[l].color[2] != colors[l].color[2])
 		{
@@ -528,6 +548,8 @@ void IpsDisplay::setTeBuf( int y1, int h, int r, int g, int b ){
 }
 
 void IpsDisplay::drawMC( float mc, bool large ) {
+	if( _menu )
+		return;
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setPrintPos(5,DISPLAY_H-6);
 	ucg->setColor(COLOR_HEADER);
@@ -546,6 +568,8 @@ void IpsDisplay::drawMC( float mc, bool large ) {
 #define S2FTS 6
 
 void IpsDisplay::drawCircling( int x, int y, bool draw ){
+	if( _menu )
+		return;
 	if( draw )
 		ucg->setColor( COLOR_WHITE );
 	else
@@ -557,6 +581,8 @@ void IpsDisplay::drawCircling( int x, int y, bool draw ){
 }
 
 void IpsDisplay::drawCruise( int x, int y, bool draw ){
+	if( _menu )
+		return;
 	if( draw )
 		ucg->setColor( COLOR_WHITE );
 	else
@@ -566,6 +592,8 @@ void IpsDisplay::drawCruise( int x, int y, bool draw ){
 }
 
 void IpsDisplay::drawS2FMode( int x, int y, bool cruise ){
+	if( _menu )
+		return;
 	if( cruise ) {
 		drawCircling(x,y,false);
 		drawCruise(x,y,true);
@@ -578,6 +606,8 @@ void IpsDisplay::drawS2FMode( int x, int y, bool cruise ){
 }
 
 void IpsDisplay::drawBT() {
+	if( _menu )
+		return;
 	int btq=BTSender::queueFull();
 	if( btq != btqueue || Flarm::connected() != flarm_connected ){
 		ucg_int_t btx=DISPLAY_W-22;
@@ -603,6 +633,8 @@ void IpsDisplay::drawBT() {
 }
 
 void IpsDisplay::drawFlarm( int x, int y, bool flarm ) {
+	if( _menu )
+		return;
 	ucg_int_t flx=x;
 	ucg_int_t fly=y;
 	if( flarm )
@@ -620,7 +652,8 @@ void IpsDisplay::drawFlarm( int x, int y, bool flarm ) {
 }
 
 void IpsDisplay::drawWifi( int x, int y ) {
-
+	if( _menu )
+		return;
 	int btq=1;
 	// ESP_LOGI(FNAME,"wireless %d", wireless );
 	if( wireless == WL_WLAN_CLIENT ){
@@ -650,6 +683,8 @@ void IpsDisplay::drawWifi( int x, int y ) {
 }
 
 void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
+	if( _menu )
+		return;
 	if( blank ) {  // blank battery for blinking
 		// ESP_LOGI(FNAME,"blank bat");
 		if( battery_display.get() != BAT_VOLTAGE_BIG ){
@@ -710,6 +745,8 @@ void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
 }
 
 void IpsDisplay::drawTemperature( int x, int y, float t ) {
+	if( _menu )
+		return;
 	ucg->setFont(ucg_font_fur14_hf);
 	ucg->setColor( COLOR_WHITE );
 	ucg->setPrintPos(x,y);
@@ -720,6 +757,8 @@ void IpsDisplay::drawTemperature( int x, int y, float t ) {
 }
 
 void IpsDisplay::drawTetragon( float a, int x0, int y0, int l1, int l2, int w, int r, int g, int b, bool del ){
+	if( _menu )
+		return;
 	float si=sin(a);
 	float co=cos(a);
 	int w2=w;
@@ -750,6 +789,8 @@ void IpsDisplay::drawTetragon( float a, int x0, int y0, int l1, int l2, int w, i
 }
 
 void IpsDisplay::drawScaleLines( bool full, float max_pos, float max_neg ){
+	if( _menu )
+		return;
 	float modulo=1;
 	if( max_pos > 10 )
 		modulo = 2;
@@ -790,6 +831,8 @@ void IpsDisplay::drawScaleLines( bool full, float max_pos, float max_neg ){
 
 // Draw scale numbers for positive or negative value
 void IpsDisplay::drawAnalogScale( int val, int pos, float range, int offset ){
+	if( _menu )
+		return;
 	ucg->setFontPosCenter();
 	ucg->setFont(ucg_font_fub14_hn);
 	int x=AMIDX - cos((val/range)*M_PI_2)*pos;
@@ -809,6 +852,8 @@ static bool del_wind=false;
 
 // draw windsock style alike arrow white and red
 void IpsDisplay::drawWindArrow( float a, float speed, int type ){
+	if( _menu )
+		return;
 	const int X=80;
 	const int Y=220;
 	float si=sin(D2R(a));
@@ -860,6 +905,8 @@ void IpsDisplay::drawWindArrow( float a, float speed, int type ){
 }
 
 void IpsDisplay::initULDisplay(){
+	if( _menu )
+		return;
 	bootDisplay();
 	ucg->setFontPosBottom();
 	redrawValues();
@@ -889,6 +936,8 @@ void IpsDisplay::initULDisplay(){
 
 
 void IpsDisplay::initRetroDisplay(){
+	if( _menu )
+		return;
 	bootDisplay();
 	ucg->setFontPosBottom();
 	redrawValues();
@@ -935,6 +984,8 @@ void IpsDisplay::drawWarning( const char *warn, bool push ){
 }
 
 void IpsDisplay::drawAvgVario( int x, int y, float ate ){
+	if( _menu )
+		return;
 	ucg->setPrintPos(x, y );
 	ucg->setFontPosCenter();
 	ucg->setColor( COLOR_WHITE );
@@ -958,6 +1009,8 @@ void IpsDisplay::drawAvgVario( int x, int y, float ate ){
 }
 
 void IpsDisplay::drawAltitude( float altitude, int x, int y ){
+	if( _menu )
+		return;
 	int alt = (int)(altitude);
 	if( alt != prefalt || !(tick%40) ) {
 		ucg->setColor(  COLOR_WHITE  );
@@ -979,6 +1032,8 @@ void IpsDisplay::drawAltitude( float altitude, int x, int y ){
 int max_gscale = 0;
 
 void IpsDisplay::initLoadDisplay(){
+	if( _menu )
+		return;
 	ESP_LOGI(FNAME,"initLoadDisplay()");
 	ucg->setColor(  COLOR_WHITE  );
 	ucg->setFont(ucg_font_fub11_hr);
@@ -1057,6 +1112,8 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 
 // Compass or Wind Display
 void IpsDisplay::drawCompass(){
+	if( _menu )
+		return;
 	// ESP_LOGI(FNAME, "drawCompass: %d ", wind_display.get() );
 	if( (wind_display.get() & WD_DIGITS) || (wind_display.get() & WD_ARROW) ){
 		int winddir=0;
@@ -1162,6 +1219,8 @@ void IpsDisplay::drawCompass(){
 }
 // Compass or Wind Display for ULStyle
 void IpsDisplay::drawULCompass(){
+	if( _menu )
+		return;
 	// ESP_LOGI(FNAME, "drawULCompass: %d ", wind_display.get() );
 	if( (wind_display.get() & WD_DIGITS) || (wind_display.get() & WD_ARROW) ){
 		int winddir=0;
@@ -1236,8 +1295,8 @@ void IpsDisplay::drawULCompass(){
 			}
 		}
 	}
-//	else if( wind_display.get() & WD_COMPASS ){
-//	allways draw compass if possible and enabled
+	//	else if( wind_display.get() & WD_COMPASS ){
+	//	allways draw compass if possible and enabled
 	if( compass_enable.get() && compass_calibrated.get() ){
 		int heading = static_cast<int>(rintf(mag_hdt.get()));
 		if( heading >= 360 )
@@ -1854,6 +1913,8 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	float altitude = Units::Altitude( altitude_m );
 
 	vTaskDelay(3);
+	if( _menu )
+		return;
 
 	// WK-Indicator
 	if( flap_enable.get() && !(tick%7) )
@@ -1927,6 +1988,8 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		}
 	}
 	vTaskDelay(3);
+	if( _menu )
+		return;
 	// Temperature Value
 	if( (int)(temp*10) != tempalt && !(tick%11)) {
 		drawTemperature( FIELD_START+30, DISPLAY_H, temp );
@@ -1975,7 +2038,8 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/2)-3, UCG_DRAW_UPPER_RIGHT);
 		ucg->undoClipRange();
 	}
-
+	if( _menu )
+		return;
 	int s2fclip = s2fd;
 	if( s2fclip > MAXS2FTRI )
 		s2fclip = MAXS2FTRI;
@@ -2041,6 +2105,8 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		tyalt = ty;
 		pyalt = py;
 		vTaskDelay(3);
+		if( _menu )
+			return;
 
 	}
 	// AS
@@ -2081,6 +2147,8 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		as_prev = airspeed;
 	}
 	// S2F command trend triangle
+	if( _menu )
+		return;
 	if( ((int)s2fd != s2fdalt && !((tick+1)%2)) || !(tick%21) ) {
 		// Arrow pointing there
 		if( s2fmode ){

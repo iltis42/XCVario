@@ -131,14 +131,14 @@ public:
      * Remove last element from buffer, and copy it to dest
      * Return: true on success
      */
-    bool pull(Type *dest)
+    bool pull(Type &dest)
     {
         bool ret = false;
         RB_ATOMIC_START
         {
             if (!isEmpty())
             {
-                *dest = _buf[_tail];
+                dest = _buf[_tail];
                 _numElements--;
                 _tail = (_tail + 1) % MaxElements;
                 ret = true;

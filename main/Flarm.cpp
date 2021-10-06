@@ -175,7 +175,7 @@ eg. $GPGGA,hhmmss.ss,llll.ll,a,yyyyy.yy,a,x,xx,x.x,x.x,M,x.x,M,x.x,xxxx*hh
 
 
 void Flarm::parseGPGGA( const char *gpgga ) {
-	ESP_LOGI(FNAME,"parseGPGGA");
+	// ESP_LOGI(FNAME,"parseGPGGA");
 	float time;
 	float lat,lon;
 	int Q;
@@ -204,7 +204,7 @@ void Flarm::parseGPGGA( const char *gpgga ) {
 
 
 void Flarm::parsePFLAU( const char *pflau ) {
-	ESP_LOGI(FNAME,"parsePFLAU");
+	// ESP_LOGI(FNAME,"parsePFLAU");
 	int cs;
 	int id;
 	int calc_cs=Protocols::calcNMEACheckSum( pflau );
@@ -221,7 +221,7 @@ void Flarm::parsePFLAU( const char *pflau ) {
 }
 
 void Flarm::parsePFLAX( SString &msg ) {
-	ESP_LOGI(FNAME,"parsePFLAX");
+	// ESP_LOGI(FNAME,"parsePFLAX");
 	// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
 	int start=0;
     if( !strncmp( msg.c_str(), "\n", 1 )  ){

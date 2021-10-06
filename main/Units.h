@@ -7,11 +7,11 @@
 class Units {
 public:
 	static inline float Airspeed( float as ){
-		if( ias_unit.get() == 0 ) // km/h
+		if( ias_unit.get() == SPEED_UNIT_KMH ) // km/h
 			return( as );
-		else if( ias_unit.get() == 1 ) // mph
+		else if( ias_unit.get() == SPEED_UNIT_MPH ) // mph
 			return( as*0.621371 );
-		else if( ias_unit.get() == 2 ) // knots
+		else if( ias_unit.get() == SPEED_UNIT_KNOTS ) // knots
 			return( as*0.539957 );
 		else
 			ESP_LOGE(FNAME,"Wrong unit for AS");
@@ -35,11 +35,11 @@ public:
 	};
 
 	static inline float Airspeed2Kmh( float as ){
-		if( ias_unit.get() == 0 ) // km/h
+		if( ias_unit.get() == SPEED_UNIT_KMH ) // km/h
 			return( as );
-		else if( ias_unit.get() == 1 ) // mph
+		else if( ias_unit.get() == SPEED_UNIT_MPH ) // mph
 			return( as/0.621371 );
-		else if( ias_unit.get() == 2 ) // knots
+		else if( ias_unit.get() == SPEED_UNIT_KNOTS ) // knots
 			return( as/0.539957 );
 		else
 			ESP_LOGE(FNAME,"Wrong unit for AS");
@@ -74,11 +74,11 @@ public:
 	};
 
 	static inline float Vario( float te ){   // standard is m/s
-		if( vario_unit.get() == 0 )
+		if( vario_unit.get() == VARIO_UNIT_MS )
 			return( te );
-		else if(  vario_unit.get() == 1 )
+		else if(  vario_unit.get() == VARIO_UNIT_FPM )
 			return( te*1.9685 );
-		else if( vario_unit.get() == 2 )
+		else if( vario_unit.get() == VARIO_UNIT_KNOTS )
 			return( te*1.94384 );         // knots
 		else
 			ESP_LOGE(FNAME,"Wrong unit for Vario");
@@ -94,11 +94,11 @@ public:
 	};
 
 	static inline float Vario2ms( float var ){
-		if( vario_unit.get() == 0 )
+		if( vario_unit.get() == VARIO_UNIT_MS )
 			return( var );
-		else if(  vario_unit.get() == 1 )
+		else if(  vario_unit.get() == VARIO_UNIT_FPM )
 			return( var/196.85 );
-		else if( vario_unit.get() == 2 )
+		else if( vario_unit.get() == VARIO_UNIT_KNOTS )
 			return( var/1.94384 );         // knots
 		else
 			ESP_LOGE(FNAME,"Wrong unit for Vario");
@@ -106,11 +106,11 @@ public:
 	};
 
 	static inline float mcval2knots( float mc ){   // returns MC, stored according to vario setting, in knots
-		if( vario_unit.get() == 0 )             // mc is in m/s
+		if( vario_unit.get() == VARIO_UNIT_MS )             // mc is in m/s
 			return( mc*1.94384 );
-		else if(  vario_unit.get() == 1 )       // mc is stored in feet per minute
+		else if(  vario_unit.get() == VARIO_UNIT_FPM )       // mc is stored in feet per minute
 			return( mc * 0.00987472 );
-		else if( vario_unit.get() == 2 )        // knots we already have
+		else if( vario_unit.get() == VARIO_UNIT_KNOTS )        // knots we already have
 			return( mc );
 		else
 			ESP_LOGE(FNAME,"Wrong unit for Vario");
@@ -119,11 +119,11 @@ public:
 
 
 	static inline const char * VarioUnit(){
-		if( vario_unit.get() == 0 )
+		if( vario_unit.get() == VARIO_UNIT_MS )
 			return("m/s");
-		else if( vario_unit.get() == 1 )
+		else if( vario_unit.get() == VARIO_UNIT_FPM )
 			return("cft/m");
-		else if( vario_unit.get() == 2 )
+		else if( vario_unit.get() == VARIO_UNIT_KNOTS )
 			return("kt");
 		else
 			ESP_LOGE(FNAME,"Wrong unit for altitude");

@@ -27,10 +27,7 @@ extern e_wireless_type wireless;
 extern mpud::float_axes_t accelG;
 extern mpud::float_axes_t gyroDPS;
 
-extern float ias;
-
 extern float getTAS();
-extern float getTE();
 void doAudio( float te );
 
 extern I2C_t& i2c;
@@ -40,17 +37,15 @@ extern AnalogInput *AnalogInWk;
 extern float temperature;
 extern bool validTemperature;
 extern float airspeed;
-extern float TE;
 extern float aTE;
 extern float battery;
 extern float dynamicP; // Pitot
 extern float baroP;    // barometric pressure
-extern float ias,tas;
+extern float tas;
 extern float aTES2F;
 extern float as2f;
 extern float s2f_delta;
 extern float polar_sink;
-extern float alt;
 extern float alt_external;
 extern float wksensor;
 
@@ -68,5 +63,6 @@ extern ESPRotary Rotary;
 extern xSemaphoreHandle spiMutex;
 
 extern Compass compass;
+
 
 #endif

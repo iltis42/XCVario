@@ -32,6 +32,7 @@
 #include "CompassMenu.h"
 #include "esp_wifi.h"
 #include "Flarm.h"
+#include "WifiClient.h"
 
 static char rentry[25];
 SetupMenuSelect * audio_range_sm = 0;
@@ -182,6 +183,18 @@ int factv_adj( SetupMenuValFloat * p )
 int polar_adj( SetupMenuValFloat * p )
 {
 	Speed2Fly.change_polar();
+	return 0;
+}
+
+int master_xcv_lock( SetupMenuSelect * p ){
+	ESP_LOGI(FNAME,"master_xcv_lock");
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
+	p->ucg->setPrintPos(1,130);
+	int mxcv = WifiClient::getScannedMasterXCV();
+	p->ucg->printf("Scanned: XCVario-%d", mxcv );
+	xSemaphoreGive(spiMutex );
+	if( master_xcvario_lock.get() == 1 )
+		master_xcvario.set( mxcv );
 	return 0;
 }
 
@@ -416,7 +429,9 @@ void SetupMenu::press(){
 		{
 			ESP_LOGI(FNAME,"!pressed");
 			inSetup=true;
+			_display->doMenu(true);
 			_menu_enabled = true;
+			delay(200);  // give display task time to finish drawing
 		}
 		else
 		{
@@ -427,6 +442,7 @@ void SetupMenu::press(){
 			bmpVario.setup();
 			_menu_enabled = false;
 			inSetup=false;
+			_display->doMenu(false);
             SetupCommon::commitNow();
 		}
 	}
@@ -1053,12 +1069,12 @@ void SetupMenu::setup( )
 		MenuEntry* wirelessM = opt->addMenu( wireless );
 
 		SetupMenuSelect * btm = new SetupMenuSelect( "Wireless", true, 0, true, &wireless_type );
-		btm->setHelp( PROGMEM "Activate type wireless interface to connect navigation devices running e.g. XCSoar, or to another XCVario as client");
+		btm->setHelp( PROGMEM "Activate wireless interface type to connect navigation devices, or to another XCVario as client");
 		btm->addEntry( "Disable");
 		btm->addEntry( "Bluetooth");
-		btm->addEntry( "Wireless LAN");
-		btm->addEntry( "Wireless Client");
 		btm->addEntry( "Wireless Master");
+		btm->addEntry( "Wireless Client");
+		// btm->addEntry( "Wireless Master");
 		wirelessM->addMenu( btm );
 
 		SetupMenuValFloat *wifip = new SetupMenuValFloat( "WIFI Power", 0, "%", 10.0, 100.0, 5.0, update_wifi_power, false, &wifi_max_power );
@@ -1066,6 +1082,11 @@ void SetupMenu::setup( )
 		wifip->setPrecision(0);
 		wifip->setHelp(PROGMEM "Maximum Wifi Power to be used 10..100% or 2..20dBm");
 
+		SetupMenuSelect * wifimal = new SetupMenuSelect( "Lock Master", false, master_xcv_lock, true, &master_xcvario_lock );
+		wifimal->setHelp( PROGMEM "In wireless client role, lock the scanned master XCVario ID above to this client");
+		wifimal->addEntry( "Unlock");
+		wifimal->addEntry( "Lock");
+		wirelessM->addMenu( wifimal );
 
 		SetupMenu * gload = new SetupMenu( "G-Load Display" );
 		MenuEntry* gloadME = opt->addMenu( gload );

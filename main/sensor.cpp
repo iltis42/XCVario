@@ -146,7 +146,6 @@ float baroP=0;
 float temperature=15.0;
 bool  validTemperature=false;
 float battery=0.0;
-float TE=0;
 float dynamicP;
 
 // global color variables for adaptable display variant
@@ -164,10 +163,8 @@ bool haveMPU=false;
 bool ahrsKeyValid=false;
 bool gload_alarm=false;
 int  ccp=60;
-float ias = 0;
 float tas = 0;
 float aTE = 0;
-float alt;
 float alt_external;
 float altSTD;
 float netto = 0;
@@ -188,7 +185,6 @@ int hold_alarm=0;
 int the_can_mode = CAN_MODE_MASTER;
 
 float getTAS() { return tas; };
-float getTE() { return TE; };
 
 bool do_factory_reset() {
 	return( SetupCommon::factoryReset() );
@@ -203,7 +199,7 @@ void drawDisplay(void *pvParameters){
 				t = DEVICE_DISCONNECTED_C;
 			float airspeed = 0;
 			if( airspeed_mode.get() == MODE_IAS )
-				airspeed = ias;
+				airspeed = ias.get();
 			else if( airspeed_mode.get() == MODE_TAS )
 				airspeed = tas;
 			// Stall Warning Screen
@@ -213,7 +209,7 @@ void drawDisplay(void *pvParameters){
 					if( acceleration < 0.3 )
 						acceleration = 0.3;  // limit acceleration effect to minimum 30% of 1g
 					float acc_stall= stall_speed_kmh * sqrt( acceleration + (ballast.get()/100));  // accelerated and ballast(ed) stall speed
-					if( ias < acc_stall && ias > acc_stall*0.7 ){
+					if( ias.get() < acc_stall && ias.get() > acc_stall*0.7 ){
 						if( !stall_warning_active ){
 							Audio::alarm( true );
 							display->drawWarning( "! STALL !", true );
@@ -227,7 +223,7 @@ void drawDisplay(void *pvParameters){
 							stall_warning_active = false;
 						}
 					}
-					if( ias < stall_alarm_off_kmh ){
+					if( ias.get() < stall_alarm_off_kmh ){
 						stall_alarm_off_holddown++;
 						if( stall_alarm_off_holddown > 1200 ){  // ~30 seconds holddown
 							stall_warning_armed = false;
@@ -239,7 +235,7 @@ void drawDisplay(void *pvParameters){
 					}
 				}
 				else{
-					if( ias > stall_speed_kmh ){
+					if( ias.get() > stall_speed_kmh ){
 						stall_warning_armed = true;
 						stall_alarm_off_holddown=0;
 					}
@@ -296,10 +292,10 @@ void drawDisplay(void *pvParameters){
 					}
 				}
 			}
-
 			// Vario Screen
 			if( !(stall_warning_active || flarmWarning || gLoadDisplay ) ) {
-				display->drawDisplay( airspeed, TE, aTE, polar_sink, alt, t, battery, s2f_delta, as2f, average_climb.get(), cruise_mode.get(), standard_setting, flap_pos.get() );
+				// ESP_LOGI(FNAME,"TE=%2.3f", te_vario.get() );
+				display->drawDisplay( airspeed, te_vario.get(), aTE, polar_sink, altitude.get(), t, battery, s2f_delta, as2f, average_climb.get(), cruise_mode.get(), standard_setting, flap_pos.get() );
 			}
 		}
 		if( hold_alarm )
@@ -312,20 +308,20 @@ void drawDisplay(void *pvParameters){
 
 // depending on mode calculate value for Audio and set values accordingly
 void doAudio(){
-	polar_sink = Speed2Fly.sink( ias );
+	polar_sink = Speed2Fly.sink( ias.get() );
 	float aTES2F = bmpVario.readS2FTE();
 	float netto = aTES2F - polar_sink;
 	as2f = Speed2Fly.speed( netto, !cruise_mode.get() );
-	s2f_delta = s2f_delta + ((as2f - ias) - s2f_delta)* (1/(s2f_delay.get()*10)); // low pass damping moved to the correct place
+	s2f_delta = s2f_delta + ((as2f - ias.get()) - s2f_delta)* (1/(s2f_delay.get()*10)); // low pass damping moved to the correct place
 	// ESP_LOGI( FNAME, "te: %f, polar_sink: %f, netto %f, s2f: %f  delta: %f", te, polar_sink, netto, as2f, s2f_delta );
 	if( vario_mode.get() == VARIO_NETTO || (cruise_mode.get() &&  (vario_mode.get() == CRUISE_NETTO)) ){
 		if( netto_mode.get() == NETTO_RELATIVE )
-			Audio::setValues( TE - polar_sink + Speed2Fly.circlingSink( ias ), s2f_delta );
+			Audio::setValues( te_vario.get() - polar_sink + Speed2Fly.circlingSink( ias.get() ), s2f_delta );
 		else if( netto_mode.get() == NETTO_NORMAL )
-			Audio::setValues( TE - polar_sink, s2f_delta );
+			Audio::setValues( te_vario.get() - polar_sink, s2f_delta );
 	}
 	else {
-		Audio::setValues( TE, s2f_delta );
+		Audio::setValues( te_vario.get(), s2f_delta );
 	}
 }
 
@@ -340,6 +336,8 @@ void audioTask(void *pvParameters){
 		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
 	}
 }
+
+static float new_ias = 0;
 
 void readSensors(void *pvParameters){
     int client_sync_dataIdx = 0;
@@ -398,19 +396,26 @@ void readSensors(void *pvParameters){
 			// ESP_LOGI("FNAME","P: %f  IAS:%f", dynamicP, iasraw );
 			float T=OAT.get();
 			if( !validTemperature ) {
-				T= 15 - ( (alt/100) * 0.65 );
+				T= 15 - ( (altitude.get()/100) * 0.65 );
 				// ESP_LOGW(FNAME,"T invalid, using 15 deg");
 			}
 			float tasraw = 0;
 			if( baroP != 0 )
 				tasraw =  Atmosphere::TAS( iasraw , baroP, T);  // True airspeed
-			ias = ias + (iasraw - ias)*0.25;  // low pass filter
 
+			new_ias = ias.get() + (iasraw - ias.get())*0.25;
+			if( (int( ias.get()+0.5 ) != int( new_ias+0.5 ) ) || !(count%20) ){
+				ias.set( new_ias );  // low pass filter
+			}
 			// ESP_LOGI("FNAME","P: %f  IAS:%f IASF: %d", dynamicP, iasraw, ias );
 			tas += (tasraw-tas)*0.25;       // low pass filter
 			// ESP_LOGI(FNAME,"IAS=%f, T=%f, TAS=%f baroP=%f", ias, T, tas, baroP );
 			xSemaphoreTake(xMutex,portMAX_DELAY );
-			TE = bmpVario.readTE( tasraw );  // 10x per second
+
+			float te = bmpVario.readTE( tasraw );
+			if( (int( te_vario.get()*20 +0.5 ) != int( te*20 +0.5)) || !(count%10) ){  // a bit more fine granular updates than 0.1 m/s as of sound
+				te_vario.set( te );  // max 10x per second
+			}
 			xSemaphoreGive(xMutex);
 			// ESP_LOGI(FNAME,"count %d ccp %d", count, ccp );
 			if( !(count % ccp) ) {
@@ -427,27 +432,33 @@ void readSensors(void *pvParameters){
 				altSTD = alt_external;
 			else
 				altSTD = baroSensor->calcAVGAltitudeSTD( baroP );
+			float new_alt = 0;
 			if( alt_select.get() == AS_TE_SENSOR ) // TE
-				alt = bmpVario.readAVGalt();
+				new_alt = bmpVario.readAVGalt();
 			else if( alt_select.get() == AS_BARO_SENSOR  || alt_select.get() == AS_EXTERNAL ){ // Baro or external
 				if(  alt_unit.get() == 2 ) { // FL, always standard
-					alt = altSTD;
+					new_alt = altSTD;
 					standard_setting = true;
 					// ESP_LOGI(FNAME,"au: %d", alt_unit.get() );
 				}else if( (fl_auto_transition.get() == 1) && ((int)altSTD*0.0328084 + (int)(standard_setting) > transition_alt.get() ) ) {
-					alt = altSTD;
+					new_alt = altSTD;
 					standard_setting = true;
 					// ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), altSTD, standard_setting, transition_alt.get() );
 				}
 				else {
 					if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
-						alt = altSTD + (QNH.get() - 1013.25)*8.2296;  // correct altitude according to ISA model = 27ft / hPa
+						new_alt = altSTD + (QNH.get() - 1013.25)*8.2296;  // correct altitude according to ISA model = 27ft / hPa
 					else
-						alt = baroSensor->calcAVGAltitude( QNH.get(), baroP );
+						new_alt = baroSensor->calcAVGAltitude( QNH.get(), baroP );
 					standard_setting = false;
 					// ESP_LOGI(FNAME,"QNH %f baro: %f alt: %f SS:%d", QNH.get(), baroP, alt, standard_setting  );
 				}
 			}
+			if( (int( new_alt +0.5 ) != int( altitude.get() +0.5 )) || !(count%20) ){
+				ESP_LOGI(FNAME,"New Altitude: %.1f", new_alt );
+				altitude.set( new_alt );
+			}
+
 			aTE = bmpVario.readAVGTE();
 			doAudio();
 
@@ -457,21 +468,17 @@ void readSensors(void *pvParameters){
 				char lb[150];
 
 				if( nmea_protocol.get() == BORGELT ) {
-					OV.sendNMEA( P_BORGELT, lb, baroP, dynamicP, TE, OAT.get(), ias, tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altSTD, validTemperature  );
-					OV.sendNMEA( P_GENERIC, lb, baroP, dynamicP, TE, OAT.get(), ias, tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altSTD, validTemperature  );
+					OV.sendNMEA( P_BORGELT, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altSTD, validTemperature  );
+					OV.sendNMEA( P_GENERIC, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altSTD, validTemperature  );
 				}
 				else if( nmea_protocol.get() == OPENVARIO ){
-					OV.sendNMEA( P_OPENVARIO, lb, baroP, dynamicP, TE, OAT.get(), ias, tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), alt, validTemperature  );
+					OV.sendNMEA( P_OPENVARIO, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altitude.get(), validTemperature  );
 				}
 				else if( nmea_protocol.get() == CAMBRIDGE ){
-					OV.sendNMEA( P_CAMBRIDGE, lb, baroP, dynamicP, TE, OAT.get(), ias, tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), alt, validTemperature  );
+					OV.sendNMEA( P_CAMBRIDGE, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altitude.get(), validTemperature  );
 				}
 				else if( nmea_protocol.get() == XCVARIO ) {
-					OV.sendNMEA( P_XCVARIO, lb, baroP, dynamicP, TE, OAT.get(), ias, tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), alt, validTemperature,
-							-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
-				}
-				else if( nmea_protocol.get() == XCVARIO_DEVEL ) {
-					OV.sendNMEA( P_XCVARIO_DEVEL, lb, baroP, dynamicP, TE, OAT.get(), ias, tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), alt, validTemperature,
+					OV.sendNMEA( P_XCVARIO, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altitude.get(), validTemperature,
 							-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
 				}
 				else
@@ -516,6 +523,10 @@ void readSensors(void *pvParameters){
 						mag_hdt.set( -1 );
 				}
 			}
+		}else
+		{
+			tas = Atmosphere::TAS2( ias.get(), altitude.get(), OAT.get() );
+			aTE += (te_vario.get() - aTE)* (1/(10*vario_av_delay.get()));
 		}
 		if( accelG[0] > gload_pos_max.get() ){
 			gload_pos_max.set( (float)accelG[0] );
@@ -929,9 +940,9 @@ void sensor(void *args){
 		float p=asSensor->readPascal(60, ok);
 		if( ok )
 			dynamicP = p;
-		ias = Atmosphere::pascal2kmh( dynamicP );
-		ESP_LOGI(FNAME,"Aispeed sensor current speed=%f", ias );
-		if( !offset_plausible && ( ias < 50 ) ){
+		ias.set( Atmosphere::pascal2kmh( dynamicP ) );
+		ESP_LOGI(FNAME,"Aispeed sensor current speed=%f", ias.get() );
+		if( !offset_plausible && ( ias.get() < 50 ) ){
 			ESP_LOGE(FNAME,"Error: air speed presure sensor offset out of bounds, act value=%d", offset );
 			display->writeText( line++, "AS Sensor: NEED ZERO" );
 			logged_tests += "AS Sensor offset test: FAILED\n";
@@ -940,8 +951,8 @@ void sensor(void *args){
 		else {
 			ESP_LOGI(FNAME,"air speed offset test PASSED, readout value in bounds=%d", offset );
 			char s[40];
-			if( ias > 50 ) {
-				sprintf(s, "AS Sensor: %d km/h", (int)(ias+0.5) );
+			if( ias.get() > 50 ) {
+				sprintf(s, "AS Sensor: %d km/h", (int)(ias.get()+0.5) );
 				display->writeText( line++, s );
 			}
 			else
@@ -1038,7 +1049,7 @@ void sensor(void *args){
 	}
 	if( tetest && batest ) {
 		ESP_LOGI(FNAME,"Both absolute pressure sensor TESTs SUCCEEDED, now test deltas");
-		if( (abs(ba_t - te_t) >4.0)  && ( ias < 50 ) ) {   // each sensor has deviations, and new PCB has more heat sources
+		if( (abs(ba_t - te_t) >4.0)  && ( ias.get() < 50 ) ) {   // each sensor has deviations, and new PCB has more heat sources
 			selftestPassed = false;
 			ESP_LOGE(FNAME,"Severe T delta > 4 °C between Baro and TE sensor: °C %f", abs(ba_t - te_t) );
 			display->writeText( line++, "TE/Baro Temp: Unequal");
@@ -1052,7 +1063,7 @@ void sensor(void *args){
 		float delta = 2.5; // in factory we test at normal temperature, so temperature change is ignored.
 		if( abs(factory_volt_adjust.get() - 0.00815) < 0.00001 )
 			delta += 1.8; // plus 1.5 Pa per Kelvin, for 60K T range = 90 Pa or 0.9 hPa per Sensor, for both there is 2.5 plus 1.8 hPa to consider
-		if( (abs(ba_p - te_p) >delta)  && ( ias < 50 ) ) {
+		if( (abs(ba_p - te_p) >delta)  && ( ias.get() < 50 ) ) {
 			selftestPassed = false;
 			ESP_LOGI(FNAME,"Abs p sensors deviation delta > 2.5 hPa between Baro and TE sensor: %f", abs(ba_p - te_p) );
 			display->writeText( line++, "TE/Baro P: Unequal");
@@ -1212,8 +1223,8 @@ void sensor(void *args){
 	if ( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT ){
 		ESP_LOGI(FNAME,"Client Mode");
 	}
-	else if( ias < 50.0 ){
-		ESP_LOGI(FNAME,"Master Mode: QNH Autosetup, IAS=%3f (<50 km/h)", ias );
+	else if( ias.get() < 50.0 ){
+		ESP_LOGI(FNAME,"Master Mode: QNH Autosetup, IAS=%3f (<50 km/h)", ias.get() );
 		// QNH autosetup
 		float ae = elevation.get();
 		bool ok;
@@ -1275,14 +1286,22 @@ void sensor(void *args){
 	if ( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT ){
 		if( wireless == WL_WLAN_CLIENT ){
 			display->clear();
-			display->writeText( 2, "Wait for Master XCVario" );
-			std::string ssid = WifiClient::scan();
+
+			int line=1;
+			display->writeText( line++, "Wait for WiFi Master" );
+			char mxcv[30] = "";
+			if( master_xcvario.get() != 0 ){
+				sprintf( mxcv+strlen(mxcv), "XCVario-%d", (int) master_xcvario.get() );
+				display->writeText( line++, mxcv );
+			}
+			line++;
+			std::string ssid = WifiClient::scan( master_xcvario.get() );
 			if( ssid.length() ){
-				display->writeText( 3, "Master XCVario found" );
+				display->writeText( line++, "Master XCVario found" );
 				char id[30];
 				sprintf( id, "Wifi ID: %s", ssid.c_str() );
-				display->writeText( 4, id );
-				display->writeText( 5, "Now start, sync" );
+				display->writeText( line++, id );
+				display->writeText( line++, "Now start, sync" );
 				WifiClient::start();
 				delay( 5000 );
 				inSetup = false;
@@ -1294,11 +1313,11 @@ void sensor(void *args){
 		}
 		else if( the_can_mode == CAN_MODE_CLIENT ){
 			display->clear();
-			display->writeText( 2, "Wait for Master XCVario" );
+			display->writeText( 1, "Wait for CAN Master" );
 			while( 1 ) {
 				if( CAN->connectedXCV() ){
 					display->writeText( 3, "Master XCVario found" );
-					display->writeText( 5, "Now start, sync" );
+					display->writeText( 4, "Now start, sync" );
 					delay( 5000 );
 					inSetup = false;
 					display->clear();

@@ -67,6 +67,8 @@ void SetupMenuSelect::display( int mode ){
 		return;
 	ESP_LOGI(FNAME,"SetupMenuSelect display() %d %x", pressed, (int)this);
 	clear();
+	if( _action != 0 )
+		(*_action)( this );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setPrintPos(1,25);
 	ESP_LOGI(FNAME,"Title: %s y=%d", _title.c_str(),y );

@@ -61,7 +61,7 @@ bool Router::forwardMsg( SString &s, RingBufCPP<SString, QUEUE_SIZE>& q ){
 bool Router::pullMsg( RingBufCPP<SString, QUEUE_SIZE>& q, SString& s ){
 	if( !q.isEmpty() ){
 		portENTER_CRITICAL_ISR(&btmux);
-		q.pull( &s );
+		q.pull( s );
 		portEXIT_CRITICAL_ISR(&btmux);
 		return true;
 	}
@@ -73,7 +73,7 @@ int Router::pullMsg( RingBufCPP<SString, QUEUE_SIZE>& q, char *block ){
 	if( !q.isEmpty() ){
 		SString s;
 		portENTER_CRITICAL_ISR(&btmux);
-		q.pull(  &s );
+		q.pull(  s );
 		portEXIT_CRITICAL_ISR(&btmux);
 		size = s.length();
 		memcpy( block, s.c_str(), size );
@@ -87,7 +87,7 @@ int Router::pullBlock( RingBufCPP<SString, QUEUE_SIZE>& q, char *block, int size
 	while( !q.isEmpty() ){
 		SString s;
 		portENTER_CRITICAL_ISR(&btmux);
-		q.pull(  &s );
+		q.pull(  s );
 		portEXIT_CRITICAL_ISR(&btmux);
 		memcpy( block+len, s.c_str(), s.length() );
 		len += s.length();
@@ -138,9 +138,7 @@ void Router::routeXCV(){
 				if( forwardMsg( xcv, s2_tx_q ) )
 					ESP_LOGV(FNAME,"Send to ttyS2 device, XCV %d bytes", xcv.length() );
 		}
-		if( (strncmp( xcv.c_str(), "!xs", 3 ) == 0) ||
-		    (strncmp( xcv.c_str(), "$PXCV", 5 ) == 0) ||
-			(strncmp( xcv.c_str(), "!w,", 3 ) == 0) ){    // Route to XCV client, for now also $PXCV and !w (cambridge)
+		if( strncmp( xcv.c_str(), "!xs", 3 ) == 0 ) {    // Route to XCV client only internal !xs protocol from now on
 			if( forwardMsg( xcv, client_tx_q ) )
 				ESP_LOGV(FNAME,"Send to CAN device, XCV %d bytes", xcv.length() );
 		}

@@ -104,6 +104,9 @@ SetupNG<float>  		mag_hdm( "HDM", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
 SetupNG<float>  		mag_hdt( "HDT", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
 SetupNG<float>  		average_climb( "AVCL", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
 SetupNG<float>  		flap_pos( "FLPS", -100.0, true, SYNC_FROM_MASTER, VOLATILE );
+SetupNG<float>  		altitude( "ALTI", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
+SetupNG<float>  		ias( "IASV", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
+SetupNG<float>  		te_vario( "TEVA", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
 
 SetupNG<float>  		s2f_speed( "S2F_SPEED", 100.0 );
 SetupNG<float>  		s2f_hysteresis( "S2F_HYST", 5.0 );
@@ -153,9 +156,9 @@ SetupNG<float>  		flap_minus_1( "FLAP_MINUS_1", 105,  true, SYNC_FROM_MASTER );
 SetupNG<float>  		flap_0( "FLAP_0", 88,  true, SYNC_FROM_MASTER );
 SetupNG<float>  		flap_plus_1( "FLAP_PLUS_1", 78,  true, SYNC_FROM_MASTER);
 SetupNG<float>  		flap_plus_2( "FLAP_PLUS_2", 70,  true, SYNC_FROM_MASTER );
-SetupNG<int>  			alt_unit( "ALT_UNIT", 0 );
-SetupNG<int>  			ias_unit( "IAS_UNIT", 0 );
-SetupNG<int>  			vario_unit( "VARIO_UNIT", 0 );
+SetupNG<int>  			alt_unit( "ALT_UNIT", ALT_UNIT_METER );
+SetupNG<int>  			ias_unit( "IAS_UNIT", SPEED_UNIT_KMH );
+SetupNG<int>  			vario_unit( "VARIO_UNIT", VARIO_UNIT_MS );
 SetupNG<int>  			temperature_unit( "TEMP_UNIT", T_CELCIUS );
 SetupNG<int>  			rot_default( "ROTARY_DEFAULT", 0 );
 SetupNG<int>  			serial1_speed( "SERIAL2_SPEED", 3 );   // tag will stay SERIAL2 from historical reason
@@ -274,6 +277,8 @@ SetupNG<float>       	circle_wind_lowpass("CI_WINDLOW", 5 );
 SetupNG<int> 			can_speed( "CANSPEED", CAN_SPEED_OFF );
 SetupNG<int> 			can_tx( "CANTX", RT_XCVARIO );
 SetupNG<int> 			can_mode( "CANMOD", CAN_MODE_STANDALONE );
+SetupNG<float> 			master_xcvario( "MSXCV", 0 );
+SetupNG<int> 			master_xcvario_lock( "MSXCVL", 0 );
 
 
 mpud::raw_axes_t zero_bias;
@@ -300,7 +305,7 @@ void SetupCommon::sendSetup( e_sync_t sync, const char *key, char type, void *va
 	else
 		sender='U';
 	if( sender != 'U' ) {
-		int l = sprintf( str,"!xs%c,%s,%c,%d,", sender, key, type, len );
+		int l = sprintf( str,"!xs%c,%s,%c,", sender, key, type );
 		if( type == 'F' )
 			sprintf( str+l,"%.3f", *(float*)(value) );
 		else if( type == 'I' )

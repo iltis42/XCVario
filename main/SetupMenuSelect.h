@@ -31,6 +31,7 @@ public:
 	char *value() { sprintf(_val_str,"%s", getEntry() ); return _val_str; }
 	virtual ~SetupMenuSelect() {};
 	inline int getSelect() { return *_select; };
+	inline void setSelect( int sel ) { *_select = sel; };
 	inline const char * getEntry(){ return _values[ *_select ].c_str(); }
 
 private:

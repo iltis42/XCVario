@@ -179,7 +179,7 @@ void SetupMenuSelect::press(){
 		if( _nvs )
 			_nvs->commit();
 		pressed = false;
-		if( _action != 0 )
+		if( _action != 0 )  // maybe enough in display, to be tested...
 			(*_action)( this );
 		if( _select_save != *_select )
 			if( _restart ) {

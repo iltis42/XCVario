@@ -189,7 +189,7 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 {
 	ESP_LOGI( FNAME, "sensorCalibrationAction()" );
 
-	if( p->getSelect() == 1 )
+	if( p->getSelect() == 0 )
 	{
 		// Cancel is requested
 		ESP_LOGI( FNAME, "Cancel Button pressed" );
@@ -212,8 +212,8 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 	compass.calibrate( calibrationReport );
 	p->ucg->setPrintPos( 1, 250 );
 
-	delay( 2000 );
-
+	delay( 1000 );
+	p->clear();
 
 	menuPtr = nullptr;
 	return 0;

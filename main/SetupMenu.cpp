@@ -275,7 +275,11 @@ static int eval_chop( SetupMenuSelect *p )
 static int compassSensorCalibrateAction( SetupMenuSelect *p )
 {
 	ESP_LOGI(FNAME,"compassSensorCalibrateAction()");
-	return compassMenuHandler.sensorCalibrationAction( p );
+	if( p->getSelect() == 1 ){ // Start
+		compassMenuHandler.sensorCalibrationAction( p );
+	}
+	p->setSelect( 0 );
+	return 0;
 }
 
 SetupMenu::SetupMenu() : MenuEntry() {
@@ -883,8 +887,8 @@ void SetupMenu::setup( )
 
 
 		SetupMenuSelect * compSensorCal = new SetupMenuSelect( "Sensor Calibration", false, compassSensorCalibrateAction, false );
-		compSensorCal->addEntry( "Start");
 		compSensorCal->addEntry( "Cancel");
+		compSensorCal->addEntry( "Start");
 		compSensorCal->setHelp( PROGMEM "Calibrate Magnetic Sensor, mandatory for operation" );
 		compassME->addMenu( compSensorCal );
 

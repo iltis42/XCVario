@@ -91,7 +91,7 @@ void Protocols::sendNMEAString( char *str ) {  // String needs space for CS at t
 	ESP_LOGI(FNAME,"sendNMEAString: %s", str );
 	SString nmea( str );
 	if( !Router::forwardMsg( nmea, client_tx_q ) )
-		ESP_LOGW(FNAME,"Warning: Overrun in send to CAN device, XCV %d bytes", nmea.length() );
+		ESP_LOGW(FNAME,"Warning: Overrun in send to Client XCV %d bytes", nmea.length() );
 }
 
 void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,

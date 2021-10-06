@@ -24,6 +24,7 @@
 #include "Flarm.h"
 #include "Compass.h"
 #include "CircleWind.h"
+#include "canbus.h"
 
 int screens_init = INIT_DISPLAY_NULL;
 
@@ -679,6 +680,19 @@ void IpsDisplay::drawWifi( int x, int y ) {
 		ucg->drawDisc( x, y, 3, UCG_DRAW_ALL );
 		flarm_connected = Flarm::connected();
 		btqueue = btq;
+	}
+}
+
+void IpsDisplay::drawCAN( int x, int y ) {
+	if( _menu )
+		return;
+	if( can_speed.get() != CAN_SPEED_OFF ){
+		ucg->setColor(COLOR_MGREY);
+		if( CAN->connected() )
+			ucg->setColor( COLOR_LBLUE );
+		ucg->setFont(ucg_font_fub11_hr);
+		ucg->setPrintPos(x,y);
+		ucg->printf("can");
 	}
 }
 
@@ -1457,6 +1471,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			drawBT();
 		if( wireless == WL_WLAN ||  wireless == WL_WLAN_CLIENT  ||  wireless == WL_WLAN_MASTER )
 			drawWifi(DISPLAY_W-27, FLOGO+2 );
+		drawCAN(DISPLAY_W-32, FLOGO+28);
 	}
 
 	// S2F Command triangle

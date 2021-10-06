@@ -415,7 +415,7 @@ void readSensors(void *pvParameters){
 			float te = bmpVario.readTE( tasraw );
 			ESP_LOGI(FNAME,"TE %.2f", te );
 			if( (int( te_vario.get()*20 +0.5 ) != int( te*20 +0.5)) || !(count%5) ){  // every 500 mS update
-				te_vario.set( bmpVario.readTE( tasraw ) );  // max 10x per second
+				te_vario.set( te );  // max 10x per second
 			}
 			xSemaphoreGive(xMutex);
 			// ESP_LOGI(FNAME,"count %d ccp %d", count, ccp );

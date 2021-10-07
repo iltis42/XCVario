@@ -71,6 +71,7 @@ int select_flap_io(SetupMenuSelect * p){
 		xSemaphoreGive(spiMutex);
 		delay(20);
 	}
+	p->clear();
 	return 0;
 }
 

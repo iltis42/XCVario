@@ -141,6 +141,7 @@ int wk_cal( SetupMenuSelect * p )
 		p->ucg->printf("Saved, restart");
 		Flap::initSensor();
 		delay(2000);
+		p->clear();
 		ESP_LOGI(FNAME,"Push Button pressed");
 	}
 	return 0;

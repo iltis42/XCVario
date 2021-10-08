@@ -455,7 +455,7 @@ void readSensors(void *pvParameters){
 				}
 			}
 			if( (int( new_alt +0.5 ) != int( altitude.get() +0.5 )) || !(count%20) ){
-				ESP_LOGI(FNAME,"New Altitude: %.1f", new_alt );
+				// ESP_LOGI(FNAME,"New Altitude: %.1f", new_alt );
 				altitude.set( new_alt );
 			}
 

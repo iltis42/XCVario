@@ -201,7 +201,7 @@ public:
 		}
 
 		if( _value == old_val ){
-			ESP_LOGW(FNAME,"Value already in config: %s", val.c_str() );
+			ESP_LOGW(FNAME,"%s: Value already in config: %s", _key, val.c_str() );
 			return( true );
 		}
 		_value = T(aval);
@@ -266,6 +266,8 @@ public:
 		return true;
 	};
 
+
+
 	virtual bool init() {
 		if( _volatile != PERSISTENT ){
 			ESP_LOGI(FNAME,"NVS volatile set default");
@@ -279,8 +281,9 @@ public:
 		size_t required_size;
 		esp_err_t err = nvs_get_blob(h, _key, NULL, &required_size);
 		if ( err != ESP_OK ){
-			ESP_LOGE(FNAME, "NVS nvs_get_blob error: returned error ret=%d", err );
+			ESP_LOGE(FNAME, "%s: NVS nvs_get_blob error: returned error ret=%d", _key, err );
 			set( _default );  // try to init
+			commit(false);
 		}
 		else {
 			if( required_size > sizeof( T ) ) {
@@ -297,6 +300,7 @@ public:
 					ESP_LOGE(FNAME, "NVS nvs_get_blob returned error ret=%d", err );
 					erase();
 					set( _default );  // try to init
+					commit(false);
 				}
 				else {
 					String val( _value );
@@ -332,20 +336,6 @@ public:
 	virtual bool mustReset() {
 		return _reset;
 	};
-
-	// bool erase_all() {
-    //     nvs_handle_t h = 0;
-	// 	open(h);
-	// 	esp_err_t err = nvs_erase_all(h);
-	// 	if(err != ESP_OK)
-	// 		return false;
-	// 	else
-	// 		ESP_LOGI(FNAME,"NVS erased all by handle %d", h );
-	// 	if( commit() )
-	// 		return true;
-	// 	else
-	// 		return false;
-	// };
 
 	e_sync getSync(){
 		return _sync;

@@ -97,14 +97,6 @@ void SetupMenuSelect::display( int mode ){
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		ucg->setPrintPos( 1, 300 );
 		ucg->print("Saved !" );
-		if( _select_save != *_select )
-			if( _restart ) {
-				ucg->setColor(COLOR_BLACK);
-				ucg->drawBox( 0,160,240,160 );
-				ucg->setPrintPos( 20, 250  );
-				ucg->setColor(COLOR_WHITE);
-				ucg->print("...rebooting now" );
-			}
 		xSemaphoreGive(spiMutex );
 	}
 	if( mode == 1 )
@@ -183,9 +175,12 @@ void SetupMenuSelect::press(){
 		//	(*_action)( this );
 		if( _select_save != *_select )
 			if( _restart ) {
-                SetupCommon::commitNow();
 				Audio::shutdown();
-				sleep( 2 );
+				clear();
+				ucg->setPrintPos( 10, 50 );
+				ucg->print("...rebooting now" );
+		        SetupCommon::commitNow();
+				delay(2000);
 				esp_restart();
 			}
 	}

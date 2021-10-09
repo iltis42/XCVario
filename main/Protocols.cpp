@@ -327,28 +327,28 @@ void Protocols::parseNMEA( const char *astr ){
 				bugs.set( mybugs );
 			}
 		}
-		else if( !strncmp( str, "$PFLAU,", 6 )) {
+		else if( !strncmp( str, "$PFLAU,", 3 )) {
 			Flarm::parsePFLAU( str );
 			if( Flarm::bincom  ) {
 				Flarm::bincom--;
 				ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
 			}
 		}
-		else if( !strncmp( str, "$GPRMC,", 6 )) {
+		else if( !strncmp( str+3, "RMC,", 3 ) ) {
 			Flarm::parseGPRMC( str );
 			if( Flarm::bincom  ) {
 				Flarm::bincom--;
 				ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
 			}
 		}
-		else if( !strncmp( str, "$GPGGA,", 6 )) {
+		else if( !strncmp( str+3, "GGA,", 3 )) {
 			Flarm::parseGPGGA( str );
 			if( Flarm::bincom  ) {
 				Flarm::bincom--;
 				ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
 			}
 		}
-		else if( !strncmp( str, "$PGRMZ,", 6 )) {
+		else if( !strncmp( str+3, "RMZ,", 3 )) {
 			Flarm::parsePGRMZ( str );
 			if( Flarm::bincom  ) {
 				Flarm::bincom--;

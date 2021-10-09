@@ -977,6 +977,7 @@ void IpsDisplay::initRetroDisplay(){
 		drawWifi(DISPLAY_W-27, FLOGO+2 );
 	drawMC( MC.get(), true );
 	drawThermometer(  10, 30 );
+	// ucg->scrollSetMargins( 0, 0 );
 }
 
 void IpsDisplay::drawWarning( const char *warn, bool push ){
@@ -1337,6 +1338,7 @@ void IpsDisplay::drawULCompass(){
 	}
 }
 
+// static int scy=0;
 
 void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, float polar_sink_ms, float altitude_m,
 		float temp, float volt, float s2fd_ms, float s2f_ms, float acl_ms, bool s2fmode, bool standard_setting, float wksensor ){
@@ -1349,7 +1351,9 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	tick++;
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	// ESP_LOGI(FNAME,"drawRetroDisplay  TE=%0.1f IAS:%d km/h  WK=%d", te, airspeed, wksensor  );
-
+	// uncomment for scroll test
+	// scy+=10;
+	// ucg->scrollLines( scy%320 );
 	bool netto=false;
 	if( vario_mode.get() == VARIO_NETTO || (s2fmode && ( vario_mode.get() == CRUISE_NETTO )) ){
 		if( netto_mode.get() == NETTO_NORMAL ){

@@ -13,25 +13,25 @@
 #include "Setup.h"
 #include "MenuEntry.h"
 
-
-class SetupMenuSelect:  public MenuEntry {
+class SetupMenuSelect:  public MenuEntry
+{
 public:
 	SetupMenuSelect();
 	SetupMenuSelect(  String title, bool restart=false, int (*action)(SetupMenuSelect *p) = 0, bool save=true, SetupNG<int> *anvs=0 );
+	virtual ~SetupMenuSelect();
 	void display( int mode=0 );
 	bool existsEntry( String ent );
-	inline void addEntry( String ent ) {  _values.push_back( ent );
-										  _numval++;
-	};
+	inline void addEntry( const char* ent ) { addEntry( String(ent) ); }
+	void addEntry( String ent ) { _values.push_back( ent ); _numval++; }
+	void addEntry( char ent[][4] );
 	void delEntry( String ent );
-	inline void updateEntry( String ent, int num ) {  _values[ num ] = ent; };
+	inline void updateEntry( String ent, int num ) { _values[ num ] = ent; }
 	void up( int count );  // step up to parent
 	void down( int count );
 	void press();
 	char *value() { sprintf(_val_str,"%s", getEntry() ); return _val_str; }
-	virtual ~SetupMenuSelect() {};
 	inline int getSelect() { return *_select; };
-	inline const char * getEntry(){ return _values[ *_select ].c_str(); }
+	inline const char *getEntry(){ return _values[ *_select ].c_str(); }
 
 private:
 	static char _val_str[20];
@@ -43,7 +43,7 @@ private:
 	bool _save;
 	std::vector<String> _values;
 	int (*_action)( SetupMenuSelect *p );
-	SetupNG<int> * _nvs;
+	SetupNG<int> *_nvs;
 };
 
 

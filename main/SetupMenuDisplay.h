@@ -27,7 +27,7 @@ class SetupMenuDisplay: public MenuEntry
 public:
   SetupMenuDisplay( String title, int (*action)(SetupMenuDisplay *p) = nullptr );
 
-  virtual ~SetupMenuDisplay() {}
+  virtual ~SetupMenuDisplay();
 
   /**
    * Make a class derive and overload this method with your own display method
@@ -39,19 +39,18 @@ public:
 	virtual char *value() { return nullptr; }
 
 	// Ignore up calls
-	virtual void up( int count ) {};
+	virtual void up( int count ) {}
 
 	// Ignore down calls
-	virtual void down( int count ) {};
+	virtual void down( int count ) {}
 
 	// Handle press calls
 	virtual void press();
 
 	// Ignore release calls
-	virtual void release() {};
+	virtual void release() {}
 
 private:
 	// User's callback function
 	int (*_action)( SetupMenuDisplay *p );
 };
-

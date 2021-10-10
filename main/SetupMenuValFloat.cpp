@@ -44,6 +44,10 @@ SetupMenuValFloat::SetupMenuValFloat( String title, float *value, const char *un
 		_value_safe = *_value;
 	}
 }
+SetupMenuValFloat::~SetupMenuValFloat()
+{
+    _rotary->detach(this);
+}
 
 void SetupMenuValFloat::setPrecision( int prec ){
 	_precision = prec;

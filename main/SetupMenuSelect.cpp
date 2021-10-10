@@ -23,6 +23,14 @@ bool SetupMenuSelect::existsEntry( String ent ){
 	return false;
 }
 
+void SetupMenuSelect::addEntry( char ent[][4] )
+{
+    while ( *ent[0] != '\0' ) {
+        _values.push_back( String(*ent) ); _numval++;
+        ent += sizeof(char[4]);
+    }
+}
+
 void SetupMenuSelect::delEntry( String ent ) {
 	for( std::vector<String>::iterator iter = _values.begin(); iter != _values.end(); ++iter )
 		if( *iter == ent )
@@ -59,6 +67,10 @@ SetupMenuSelect::SetupMenuSelect( String title, bool restart, int (*action)(Setu
 		_select_save = _nvs->get();
 	}
 
+}
+SetupMenuSelect::~SetupMenuSelect()
+{
+    _rotary->detach(this);
 }
 
 

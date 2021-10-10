@@ -32,6 +32,7 @@
 #include "CircleWind.h"
 #include "Protocols.h"
 #include "ESPAudio.h"
+#include "Flap.h"
 
 std::vector<SetupCommon *> SetupCommon::entries;
 bool SetupCommon::lazyCommit = true;
@@ -69,6 +70,15 @@ void change_volume() {
 	}
 }
 
+void flap_act() {
+    if (flap_enable.get()) {
+        Flap::init(MYUCG);
+    }
+    else if ( FLAP ) {
+        delete FLAP;
+    }
+}
+
 
 SetupNG<float>  		QNH( "QNH", 1013.25, true, SYNC_BIDIR );
 SetupNG<float> 			polar_wingload( "POLAR_WINGLOAD", 34.40, true, SYNC_FROM_MASTER );
@@ -92,8 +102,8 @@ SetupNG<float>  		deadband( "DEADBAND", 0.3, true, SYNC_FROM_MASTER  );
 SetupNG<float>  		deadband_neg("DEADBAND_NEG" , -0.3, true, SYNC_FROM_MASTER  );
 SetupNG<float>  		range( "VARIO_RANGE", 5.0 );
 SetupNG<float>  		ballast( "BALLAST" , 0.0, true, SYNC_BIDIR, PERSISTENT, change_mc_bal );
-SetupNG<float>  		bugs( "BUGS", 0.0, true, SYNC_BIDIR, PERSISTENT, change_mc_bal  );
-SetupNG<float>  		MC( "MacCready", 0.5, true, SYNC_BIDIR, PERSISTENT, change_mc_bal );
+SetupNG<float>  		bugs( "BUGS", 0.0, true, SYNC_BIDIR, VOLATILE, change_mc_bal  );
+SetupNG<float>  		MC( "MacCready", 0.5, true, SYNC_BIDIR, VOLATILE, change_mc_bal );
 
 SetupNG<int>  			cruise_mode( "CRUISE", 0, true, SYNC_BIDIR, VOLATILE );
 SetupNG<float>  		OAT( "OAT", 0.0, true, SYNC_FROM_MASTER, VOLATILE );   // outside temperature
@@ -104,7 +114,7 @@ SetupNG<float>  		cwind_speed( "CWDS", 0.0, true, SYNC_FROM_MASTER, VOLATILE, re
 SetupNG<float>  		mag_hdm( "HDM", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
 SetupNG<float>  		mag_hdt( "HDT", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
 SetupNG<float>  		average_climb( "AVCL", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
-SetupNG<float>  		flap_pos( "FLPS", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
+SetupNG<float>  		flap_pos( "FLPS", -100.0, true, SYNC_FROM_MASTER, VOLATILE );
 SetupNG<float>  		altitude( "ALTI", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
 SetupNG<float>  		ias( "IASV", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
 SetupNG<float>  		te_vario( "TEVA", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
@@ -139,7 +149,7 @@ SetupNG<float>  		bat_full_volt( "BAT_FULL_VOLT", 12.8, true, SYNC_FROM_MASTER  
 SetupNG<float>  		core_climb_period( "CORE_CLIMB_P" , 60, true, SYNC_FROM_MASTER  );
 SetupNG<float>  		core_climb_min( "CORE_CLIMB_MIN" , 0.5, true, SYNC_FROM_MASTER  );
 SetupNG<float>  		core_climb_history( "CORE_CLIMB_HIST" , 45, true, SYNC_FROM_MASTER  );
-SetupNG<float>  		elevation( "ELEVATION", -1 );
+SetupNG<float>  		elevation( "ELEVATION", -1, true, SYNC_BIDIR );
 SetupNG<float>  		default_volume( "DEFAULT_VOL", 10.0 );
 SetupNG<float>  		max_volume( "MAXI_VOL", 60.0 );
 SetupNG<float>  		frequency_response( "FREQ_RES", 30.0 );
@@ -150,13 +160,13 @@ SetupNG<float>  		factory_volt_adjust("FACT_VOLT_ADJ" , 0.00815, false );
 
 SetupNG<int>  			display_type( "DISPLAY_TYPE",  UNIVERSAL );
 SetupNG<int>  			display_orientation("DISPLAY_ORIENT" , 0 );
-SetupNG<int>  			flap_enable( "FLAP_ENABLE", 0, true, SYNC_FROM_MASTER );
-SetupNG<float>  		flap_minus_3( "FLAP_MINUS_3", 200,  true, SYNC_FROM_MASTER );
-SetupNG<float>  		flap_minus_2( "FLAP_MINUS_2", 165,  true, SYNC_FROM_MASTER );
-SetupNG<float>  		flap_minus_1( "FLAP_MINUS_1", 105,  true, SYNC_FROM_MASTER );
-SetupNG<float>  		flap_0( "FLAP_0", 88,  true, SYNC_FROM_MASTER );
-SetupNG<float>  		flap_plus_1( "FLAP_PLUS_1", 78,  true, SYNC_FROM_MASTER);
-SetupNG<float>  		flap_plus_2( "FLAP_PLUS_2", 70,  true, SYNC_FROM_MASTER );
+SetupNG<int>  			flap_enable( "FLAP_ENABLE", 0, true, SYNC_FROM_MASTER, PERSISTENT, flap_act);
+SetupNG<float>  		flap_minus_3( "FLAP_MINUS_3", 200,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);
+SetupNG<float>  		flap_minus_2( "FLAP_MINUS_2", 165,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);
+SetupNG<float>  		flap_minus_1( "FLAP_MINUS_1", 105,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);
+SetupNG<float>  		flap_0( "FLAP_0", 88,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);
+SetupNG<float>  		flap_plus_1( "FLAP_PLUS_1", 78,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);
+SetupNG<float>  		flap_plus_2( "FLAP_PLUS_2", 70,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);
 SetupNG<int>  			alt_unit( "ALT_UNIT", ALT_UNIT_METER, true, SYNC_FROM_MASTER );
 SetupNG<int>  			ias_unit( "IAS_UNIT", SPEED_UNIT_KMH, true, SYNC_FROM_MASTER );
 SetupNG<int>  			vario_unit( "VARIO_UNIT", VARIO_UNIT_MS, true, SYNC_FROM_MASTER );
@@ -212,9 +222,9 @@ SetupNG<float>			stall_speed( "STALL_SPEED", 70 );
 SetupNG<int>            flarm_warning( "FLARM_LEVEL", 1 );
 SetupNG<int>            flarm_sim( "FLARM_SIM", 0 );
 SetupNG<float>          flarm_volume( "FLARM_VOL", 100 );
-SetupNG<int>            flap_sensor( "FLAP_SENS", 0, false, SYNC_FROM_MASTER);
-SetupNG<float>          flap_pos_max("FL_POS_M", +2,  true, SYNC_FROM_MASTER);
-SetupNG<float>          flap_neg_max("FL_NEG_M", -2,  true, SYNC_FROM_MASTER);
+SetupNG<int>            flap_sensor( "FLAP_SENS", 0, false, SYNC_FROM_MASTER, PERSISTENT, flap_act);
+SetupNG<float>          flap_pos_max("FL_POS_M", +2, true, SYNC_FROM_MASTER, PERSISTENT, flap_act);
+SetupNG<float>          flap_neg_max("FL_NEG_M", -2, true, SYNC_FROM_MASTER, PERSISTENT, flap_act);
 SetupNG<int>            compass_enable( "CP_ENABLE", 0 );
 SetupNG<float>          compass_dev_0( "CP_DEV_0", 0 );
 SetupNG<float>          compass_dev_45( "CP_DEV_45", 0 );
@@ -250,14 +260,14 @@ SetupNG<float> 			wind_max_deviation("WIND_MDEV", 30.0 );
 SetupNG<float> 			wind_as_min( "WIND_ASM", 25 );
 SetupNG<int> 			s2f_with_gload( "S2G_GLOAD", 1 );       // considering g load in S2F
 SetupNG<int> 			s2f_blockspeed( "S2G_BLOCKSPEED", 0 );  // considering netto vario and g load for S2F or not
-SetupNG<int> 			wk_label_plus_3( "WKLP3", 32,  true, SYNC_FROM_MASTER );  //  L
-SetupNG<int> 			wk_label_plus_2( "WKLP2", 11,  true, SYNC_FROM_MASTER );  //  2
-SetupNG<int> 			wk_label_plus_1( "WKLP1", 10,  true, SYNC_FROM_MASTER );  //  1
-SetupNG<int> 			wk_label_null_0( "WKL0",   9,  true, SYNC_FROM_MASTER );  //  0
-SetupNG<int> 			wk_label_minus_1( "WKLM1", 8,  true, SYNC_FROM_MASTER );  // -1
-SetupNG<int> 			wk_label_minus_2( "WKLM2", 7,  true, SYNC_FROM_MASTER );  // -2
-SetupNG<int> 			wk_label_minus_3( "WKLM3", 33,  true, SYNC_FROM_MASTER ); //  S
-SetupNG<float>       	flap_takeoff("FLAPTO", 1,  true, SYNC_FROM_MASTER );
+SetupNG<int> 			wk_label_plus_3( "WKLP3", 32,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);  //  L
+SetupNG<int> 			wk_label_plus_2( "WKLP2", 11,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);  //  2
+SetupNG<int> 			wk_label_plus_1( "WKLP1", 10,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);  //  1
+SetupNG<int> 			wk_label_null_0( "WKL0",   9,  true,SYNC_FROM_MASTER, PERSISTENT, flap_act);  //  0
+SetupNG<int> 			wk_label_minus_1( "WKLM1", 8,  true,SYNC_FROM_MASTER, PERSISTENT, flap_act);  // -1
+SetupNG<int> 			wk_label_minus_2( "WKLM2", 7,  true,SYNC_FROM_MASTER, PERSISTENT, flap_act);  // -2
+SetupNG<int> 			wk_label_minus_3( "WKLM3", 33,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act); //  S
+SetupNG<float>       	flap_takeoff("FLAPTO", 1,  true, SYNC_FROM_MASTER);
 SetupNG<int> 			audio_disable( "AUDIS", 0 );
 SetupNG<int>			vario_mode("VAMOD", CRUISE_NETTO );  // switch to netto mode when cruising
 SetupNG<int>			airspeed_sensor_type("PTYPE", PS_NONE, false);

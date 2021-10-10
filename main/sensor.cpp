@@ -107,10 +107,10 @@ Protocols OV( &Speed2Fly );
 
 AnalogInput Battery( (22.0+1.2)/1200, ADC_ATTEN_DB_0, ADC_CHANNEL_7, ADC_UNIT_1 );
 
-TaskHandle_t *apid;
-TaskHandle_t *bpid;
-TaskHandle_t *tpid;
-TaskHandle_t *dpid;
+TaskHandle_t apid;
+TaskHandle_t bpid;
+TaskHandle_t tpid;
+TaskHandle_t dpid;
 
 e_wireless_type wireless;
 
@@ -119,7 +119,7 @@ xSemaphoreHandle spiMutex=NULL;
 PressureSensor *baroSensor = 0;
 PressureSensor *teSensor = 0;
 
-Ucglib_ILI9341_18x240x320_HWSPI *myucg;  // ( SPI_DC, CS_Display, RESET_Display );
+Ucglib_ILI9341_18x240x320_HWSPI *MYUCG;  // ( SPI_DC, CS_Display, RESET_Display );
 IpsDisplay *display;
 bool topDown = false;
 
@@ -422,7 +422,7 @@ void readSensors(void *pvParameters){
 				AverageVario::recalcAvgClimb();
 			}
 
-			Flap::progress();
+			if (FLAP) { FLAP->progress(); }
 			xSemaphoreTake(xMutex,portMAX_DELAY );
 			baroP = baroSensor->readPressure(ok);   // 10x per second
 			xSemaphoreGive(xMutex);
@@ -708,7 +708,7 @@ void sensor(void *args){
 
 	wireless = (e_wireless_type)(wireless_type.get()); // we cannot change this on the fly, so get that on boot
 	AverageVario::begin();
-	Flap::initSensor();
+
 
 	stall_speed_kmh = Units::Airspeed2Kmh( stall_speed.get() );
 	stall_alarm_off_kmh = stall_speed_kmh/3;
@@ -728,9 +728,9 @@ void sensor(void *args){
 	SPI.begin( SPI_SCLK, SPI_MISO, SPI_MOSI, CS_bme280BA );
 	xSemaphoreGive(spiMutex);
 
-	myucg = new Ucglib_ILI9341_18x240x320_HWSPI( SPI_DC, CS_Display, RESET_Display );
-	display = new IpsDisplay( myucg );
-	Flarm::setDisplay( myucg );
+	MYUCG = new Ucglib_ILI9341_18x240x320_HWSPI( SPI_DC, CS_Display, RESET_Display );
+	display = new IpsDisplay( MYUCG );
+	Flarm::setDisplay( MYUCG );
 	display->begin();
 	display->bootDisplay();
 
@@ -1268,7 +1268,10 @@ void sensor(void *args){
 		display->clear();
 	}
 
-	Flap::init(myucg);
+    if ( flap_enable.get() ) {
+        Flap::init(MYUCG);
+    }
+
 
 	if( hardwareRevision.get() == 2 ){
 		Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
@@ -1332,12 +1335,12 @@ void sensor(void *args){
 		}
 	}
 
-	xTaskCreatePinnedToCore(&readSensors, "readSensors", 4096, NULL, 14, bpid, 0);
+	xTaskCreatePinnedToCore(&readSensors, "readSensors", 4096, NULL, 14, &bpid, 0);
 	if( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT ){
-		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 14, apid, 0);
+		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 14, &apid, 0);
 	}
-	xTaskCreatePinnedToCore(&readTemp, "readTemp", 2500, NULL, 8, tpid, 0);
-	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 4096, NULL, 4, dpid, 0);
+	xTaskCreatePinnedToCore(&readTemp, "readTemp", 2500, NULL, 8, &tpid, 0);
+	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 4096, NULL, 4, &dpid, 0);
 
 	compass.start();
 	Audio::startAudio();

@@ -17,9 +17,12 @@ Last update: 2021-02-25
 
  ****************************************************************************/
 
-#include "esp_log.h"
 #include "DisplayDeviations.h"
 #include "SetupNG.h"
+
+#include <Ucglib.h>
+#include <esp_log.h>
+
 
 DisplayDeviations::DisplayDeviations( String title) :
   SetupMenuDisplay( title, nullptr )

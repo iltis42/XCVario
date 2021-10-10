@@ -17,11 +17,13 @@ Last update: 2021-04-18
 
  ****************************************************************************/
 
-#include "logdef.h"
-#include "esp_log.h"
-#include "QMC5883L.h"
 #include "ShowCompassSettings.h"
 #include "SetupNG.h"
+#include "QMC5883L.h"
+
+#include <Ucglib.h>
+// #include "logdef.h"
+#include <esp_log.h>
 
 ShowCompassSettings::ShowCompassSettings( String title) :
 SetupMenuDisplay( title, nullptr )

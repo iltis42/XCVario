@@ -7,44 +7,36 @@
 
 #ifndef _MenuEntry_H_
 #define _MenuEntry_H_
-#include <string>
 #include <vector>
-#include <set>
+// #include <string>
+// #include <set>
 #include <list>
-#include <stdio.h>
-#include "IpsDisplay.h"
+// #include <cstdio>
+// #include "IpsDisplay.h"
 #include "ESPRotary.h"
 #include "Setup.h"
-#include "AnalogInput.h"
-#include "BMPVario.h"
+// #include "AnalogInput.h"
+// #include "BMPVario.h"
 
+class IpsDisplay;
+class AnalogInput;
+class PressureSensor;
+class Ucglib_ILI9341_18x240x320_HWSPI;
 
 class MenuEntry: public RotaryObserver {
 public:
-	MenuEntry() : RotaryObserver() {
-	       _parent = 0;
-				 highlight = 0;
-				 pressed = false;
-				 y=0;
-				 helptext=0;
-				 long_pressed = false;
-				 hypos=0;
-	}
-
+	MenuEntry() : RotaryObserver() {}
+	virtual ~MenuEntry();
 	virtual void display( int mode=0 ) = 0;
 	virtual void release() { display(); };
 	virtual void longPress() {};
 	virtual char* value() = 0;
-	virtual ~MenuEntry() {};
-	MenuEntry* addMenu( MenuEntry * item );
-	void       delMenu( MenuEntry * item );
+    MenuEntry* getFirst() const { return _childs.front(); }
+	MenuEntry* addEntry( MenuEntry * item );
+	MenuEntry* addEntry( MenuEntry * item, const MenuEntry* after );
+	void       delEntry( MenuEntry * item );
 	MenuEntry* findMenu( String title, MenuEntry* start=root  );
-	void togglePressed() {
-		if( pressed )
-			pressed = false;
-		else
-			pressed = true;
-	}
+	void togglePressed() { pressed = ! pressed; }
 	void setHelp( const char *txt, int y=180 ) { helptext = (char*)txt; hypos = y; };
 	void showhelp( int y );
 	void clear();
@@ -52,10 +44,10 @@ public:
 	void uprint( int x, int y, const char* str );
 	bool menuEnabled() { return _menu_enabled; };
 	void semaphoreTake();
-  void semaphoreGive();
+    void semaphoreGive();
 public:
 	std::vector<MenuEntry*>  _childs;
-	MenuEntry *_parent;
+	MenuEntry *_parent = 0;
 	String _title;
 	static MenuEntry *root;
 	static MenuEntry *selected;
@@ -65,15 +57,24 @@ public:
 	static PressureSensor *_bmp;
 	static bool _menu_enabled;
 	int    highlight;
-	bool   pressed;
-	bool   long_pressed;
-	char   *helptext;
-	int    hypos;
-	unsigned char y;
+	bool   pressed = false;
+	bool   long_pressed = false;
+	char   *helptext = 0;
+	int    hypos = 0;
+	unsigned char y = 0;
+    int    idx = 0;
 	static Ucglib_ILI9341_18x240x320_HWSPI *ucg;
-	// static float volume;
-
-private:
+// private:
+//     class MenuRotary : public RotaryObserver {
+//     public:
+//         virtual void up( int count ) { selected->up(count); }
+//         virtual void down( int count ) { selected->down(count); }
+//         virtual void press() { selected->press(); }
+//         virtual void release() { selected->release(); }
+//         virtual void longPress() { selected->longPress(); }
+//     };
+// public:
+//     static MenuRotary menu_rotary_handler;
 };
 
 #endif

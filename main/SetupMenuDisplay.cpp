@@ -30,6 +30,10 @@ SetupMenuDisplay::SetupMenuDisplay( String title,
 	_title = title;
 	_action = action;
 }
+SetupMenuDisplay::~SetupMenuDisplay()
+{
+    _rotary->detach(this);
+}
 
 void SetupMenuDisplay::display( int mode )
 {

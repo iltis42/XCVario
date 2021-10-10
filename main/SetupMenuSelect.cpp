@@ -23,6 +23,14 @@ bool SetupMenuSelect::existsEntry( String ent ){
 	return false;
 }
 
+void SetupMenuSelect::addEntry( char ent[][4] )
+{
+    while ( *ent[0] != '\0' ) {
+        _values.push_back( String(*ent) ); _numval++;
+        ent += sizeof(char[4]);
+    }
+}
+
 void SetupMenuSelect::delEntry( String ent ) {
 	for( std::vector<String>::iterator iter = _values.begin(); iter != _values.end(); ++iter )
 		if( *iter == ent )
@@ -60,6 +68,10 @@ SetupMenuSelect::SetupMenuSelect( String title, bool restart, int (*action)(Setu
 	}
 
 }
+SetupMenuSelect::~SetupMenuSelect()
+{
+    _rotary->detach(this);
+}
 
 
 void SetupMenuSelect::display( int mode ){
@@ -96,7 +108,7 @@ void SetupMenuSelect::display( int mode ){
 	if(mode == 1 && _save == true ){
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		ucg->setPrintPos( 1, 300 );
-		ucg->print("Saved !" );
+		ucg->print("Saved" );
 		xSemaphoreGive(spiMutex );
 	}
 	if( mode == 1 )

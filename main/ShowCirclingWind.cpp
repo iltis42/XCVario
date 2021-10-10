@@ -17,12 +17,15 @@ Last update: 2021-04-18
 
  ****************************************************************************/
 
-#include "logdef.h"
-#include "esp_log.h"
-#include "CircleWind.h"
 #include "ShowCirclingWind.h"
+
+#include "CircleWind.h"
 #include "SetupNG.h"
 #include "Units.h"
+
+#include <Ucglib.h>
+#include <logdef.h>
+#include <esp_log.h>
 
 ShowCirclingWind::ShowCirclingWind( String title ) :
 SetupMenuDisplay( title, nullptr )

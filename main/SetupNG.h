@@ -168,17 +168,17 @@ public:
 		_volatile = vol;
 		_action = action;
 
-	};
+	}
 
 	inline T* getPtr() {
 		return &_value;
-	};
+	}
 	inline T& getRef() {
 		return _value;
-	};
+	}
 	inline T get() {
 		return _value;
-	};
+	}
 	const char * key() {
 		return _key;
 	}
@@ -190,21 +190,18 @@ public:
 	bool set( T aval, bool dosync=true ) {
 		String val( aval );
 		// ESP_LOGI( FNAME,"set val: %s %d", val.c_str(), dosync );
-		T old_val = _value;
-		_value = T(aval);
-		if( dosync )
-			sync();
-		if( _action != 0 )
-			(*_action)();
+		if( _value == aval ){
+			// ESP_LOGI(FNAME,"Value already in config: %s", val.c_str() );
+			return( true );
+		}
+		_value = aval;
+
+		if ( dosync ) { sync(); }
+		if( _action != 0 ) { (*_action)(); }
 		if( _volatile == VOLATILE ){
 			return true;
 		}
 
-		if( _value == old_val ){
-			ESP_LOGW(FNAME,"%s: Value already in config: %s", _key, val.c_str() );
-			return( true );
-		}
-		_value = T(aval);
 		return commit( false );
 	};
 
@@ -215,7 +212,7 @@ public:
 			return true;
 		}
 		return false;
-	};
+	}
 
 	bool commit(bool dosync=true) {
 		ESP_LOGI(FNAME,"NVS commit(): ");
@@ -248,7 +245,7 @@ public:
 		}
 		ESP_LOGI(FNAME,"success");
 		return true;
-	};
+	}
 
 	bool exists() {
 		if( _volatile != PERSISTENT ) {
@@ -264,7 +261,7 @@ public:
 		if ( err != ESP_OK )
 			return false;
 		return true;
-	};
+	}
 
 
 
@@ -312,7 +309,7 @@ public:
 		}
 		close(h);
 		return true;
-	};
+	}
 
 
 	virtual bool erase() {
@@ -331,15 +328,14 @@ public:
 			else
 				return false;
 		}
-	};
+	}
 
 	virtual bool mustReset() {
 		return _reset;
-	};
+	}
 
-	e_sync getSync(){
-		return _sync;
-	};
+    inline T getDefault() const { return _default; }
+	inline e_sync_t getSync() { return _sync; }
 
 private:
 	T _value;
@@ -351,7 +347,7 @@ private:
 	void (* _action)();
 };
 
-extern SetupNG<float>  		QNH;
+extern SetupNG<float> 		QNH;
 extern SetupNG<float> 		polar_wingload;
 extern SetupNG<float> 		polar_speed1;
 extern SetupNG<float> 		polar_sink1;

@@ -131,15 +131,13 @@ int IpsDisplay::as_prev = -1;
 int IpsDisplay::yposalt = 0;
 int IpsDisplay::tyalt = 0;
 int IpsDisplay::pyalt = 0;
-int IpsDisplay::wkalt = -3;
 
 
 // Flap definitions
 #define WKSYMST DISPLAY_W-28
 ucg_color_t IpsDisplay::wkcolor;
-int IpsDisplay::wkposalt;
+int IpsDisplay::wkoptalt;
 int IpsDisplay::wksensoralt;
-int IpsDisplay::wkialt;
 
 float IpsDisplay::_range_clip = 0;
 int   IpsDisplay::_divisons = 5;
@@ -267,7 +265,7 @@ void IpsDisplay::initDisplay() {
 		g_col_header_light_r=161;
 		g_col_header_light_g=168;
 		g_col_header_light_b=255;
-	}	
+	}
 	if( display_style.get() == DISPLAY_RETRO ) {
 		initRetroDisplay();
 	}
@@ -490,13 +488,11 @@ void IpsDisplay::redrawValues()
 	}
 	average_climb = -1000;
 
-	wkalt = -4;
-	wkposalt = -100;
+	wkoptalt = -100;
 	wksensoralt = -1;
-	wkialt = -3;
 	tyalt = -1000;
 	polar_sink_prev = 0.1;
-	Flap::redraw();
+	if ( FLAP ) FLAP->redraw();
 	netto_old = false;
 	s2fmode_prev = 100;
 }
@@ -1577,27 +1573,22 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		drawTemperature( 20, 38, temp );
 		tempalt=(int)(temp*10);
 	}
-	// vTaskDelay(3);
+
 	// WK-Indicator
-	if( flap_enable.get() && !(tick%7) )
+	if( FLAP && !(tick%7) )
 	{
 		float wkspeed = airspeed * sqrt( 100.0/( ballast.get() +100.0) );
 		int wki;
-		float wkpos = Flap::getOptimum( wkspeed, wki );
-		int wk = (int)((wki - wkpos + 0.5)*10);
+		float wkopt = FLAP->getOptimum( wkspeed, wki );
+		int wk = (int)((wki - wkopt + 0.5)*10);
 		// ESP_LOGI(FNAME,"as:%d wksp:%f wki:%d wk:%d wkpos:%f", airspeed, wkspeed, wki, wk, wkpos );
-		if( wkposalt != wk || wksensoralt != (int)(wksensor*10) || !(tick%7) ) {
-			// ESP_LOGI(FNAME,"WK changed WKE=%d WKS=%f", wk, wksensor );
-			ucg->setColor(  COLOR_WHITE  );
-			Flap::drawBigBar( WKBARMID, WKSYMST-4, (float)(wk)/10, wksensor );
-			wkposalt = wk;
-			wksensoralt = (int)(wksensor*10);
-			Flap::drawWingSymbol( WKBARMID-(27*(abs(flap_neg_max.get())+1)  ), WKSYMST-3, wki, wkialt ,wksensor);
-		}
-		if( wki != wkialt ) {
-			Flap::drawWingSymbol( WKBARMID-(27*(abs(flap_neg_max.get())+1)  ), WKSYMST-3, wki, wkialt ,wksensor);
-			wkialt=wki;
-		}
+        // ESP_LOGI(FNAME,"WK changed WKE=%d WKS=%f", wk, wksensor );
+        ucg->setColor(  COLOR_WHITE  );
+        FLAP->drawBigBar( WKBARMID, WKSYMST-4, (float)(wk)/10, wksensor );
+        wkoptalt = wk;
+        wksensoralt = (int)(wksensor*10);
+
+		FLAP->drawWingSymbol( WKBARMID-(27*(abs(flap_neg_max.get())+1) ), WKSYMST-3, wki, wksensor);
 	}
 
 	// Cruise mode or circling
@@ -1808,25 +1799,20 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 	}
 
 	// WK-Indicator
-	if( flap_enable.get() && !(tick%7) )
+	if( FLAP && !(tick%7) )
 	{
 		float wkspeed = airspeed * sqrt( 100.0/( ballast.get() +100.0) );
 		int wki;
-		float wkpos=Flap::getOptimum( wkspeed, wki );
-		int wk = (int)((wki - wkpos + 0.5)*10);
+		float wkopt=FLAP->getOptimum( wkspeed, wki );
+		int wk = (int)((wki - wkopt + 0.5)*10);
 		// ESP_LOGI(FNAME,"as:%d wksp:%f wki:%d wk:%d", airspeed, wkspeed, wki, wk  );
-		if( wkposalt != wk || wksensoralt != (int)(wksensor*10) || !(tick%7) ) {
-			// ESP_LOGI(FNAME,"WK changed WKE=%d WKS=%f", wk, wksensor );
-			ucg->setColor(  COLOR_WHITE  );
-			Flap::drawBigBar( WKBARMID, WKSYMST-4, (float)(wk)/10, wksensor);
-			wkposalt = wk;
-			wksensoralt = (int)(wksensor*10);
-			Flap::drawWingSymbol( WKBARMID-(27*(abs(flap_neg_max.get())+1)  ), WKSYMST-3, wki, wkialt ,wksensor);
-		}
-		if( wki != wkialt ) {
-			Flap::drawWingSymbol( WKBARMID-(27*(abs(flap_neg_max.get())+1)  ), WKSYMST-3, wki, wkialt ,wksensor);
-			wkialt=wki;
-		}
+        // ESP_LOGI(FNAME,"WK changed WKE=%d WKS=%f", wk, wksensor );
+        ucg->setColor(  COLOR_WHITE  );
+        FLAP->drawBigBar( WKBARMID, WKSYMST-4, (float)(wk)/10, wksensor);
+        wkoptalt = wk;
+        wksensoralt = (int)(wksensor*10);
+
+		FLAP->drawWingSymbol( WKBARMID-(27*(abs(flap_neg_max.get())+1) ), WKSYMST-3, wki, wksensor);
 	}
 
 	// Medium Climb Indicator
@@ -1939,23 +1925,18 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		return;
 
 	// WK-Indicator
-	if( flap_enable.get() && !(tick%7) )
+	if( FLAP && !(tick%7) )
 	{
 		float wkspeed = airspeed * sqrt( 100.0/( ballast.get() +100.0) );
 		int wki;
-		float wkpos=Flap::getOptimum( wkspeed, wki );
-		int wk = (int)((wki - wkpos + 0.5)*10);
-		if( wkposalt != wk || wksensoralt != (int)(wksensor*10) || !(tick%7) ) {
-			// ESP_LOGI(FNAME,"ias:%d wksp:%f wki:%d wk:%d wkpos%f", airspeed, wkspeed, wki, wk, wkpos );
-			ucg->setColor(  COLOR_WHITE  );
-			Flap::drawSmallBar( YS2F-fh, WKSYMST+2, (float)(wk)/10 );
-			wkposalt = wk;
-			Flap::drawWingSymbol( YS2F-fh-25, WKSYMST+2, wki, wkialt ,wksensor);
-		}
-		if( wki != wkialt ) {
-			Flap::drawWingSymbol( YS2F-fh-25, WKSYMST+2, wki, wkialt ,wksensor);
-			wkialt=wki;
-		}
+		float wkopt=FLAP->getOptimum( wkspeed, wki );
+		int wk = (int)((wki - wkopt + 0.5)*10);
+        // ESP_LOGI(FNAME,"ias:%d wksp:%f wki:%d wk:%d wkpos%f", airspeed, wkspeed, wki, wk, wkpos );
+        ucg->setColor(  COLOR_WHITE  );
+        FLAP->drawSmallBar( YS2F-fh, WKSYMST+2, (float)(wk)/10 );
+        wkoptalt = wk;
+
+		FLAP->drawWingSymbol( YS2F-fh-25, WKSYMST+2, wki, wksensor);
 	}
 
 
@@ -2152,11 +2133,11 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 				else
 					ucg->drawBox( FIELD_START+6,dmid+(speed-airspeed)-(fh/2)-9, ASLEN-6, fh+15 );
 				if ( display_variant.get() == DISPLAY_WHITE_ON_BLACK ) {
-					col = abs(((speed-airspeed)*2));	
+					col = abs(((speed-airspeed)*2));
 				}
 				else {
-					col = abs(255 - abs(((speed-airspeed)*2)));	
-				}	
+					col = abs(255 - abs(((speed-airspeed)*2)));
+				}
 				ucg->setColor(  col,col,col  );
 				ucg->setPrintPos(FIELD_START+8,dmid+(speed-airspeed)+(fh/2));
 				ucg->printf("%3d ""-", speed);
@@ -2260,7 +2241,3 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	ucg->drawHLine( DISPLAY_LEFT+6, dmid, bw );
 	xSemaphoreGive(spiMutex);
 }
-
-
-
-

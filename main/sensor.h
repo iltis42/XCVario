@@ -64,5 +64,8 @@ extern xSemaphoreHandle spiMutex;
 
 extern Compass compass;
 
+class Ucglib_ILI9341_18x240x320_HWSPI;
+extern Ucglib_ILI9341_18x240x320_HWSPI *MYUCG;
+
 
 #endif

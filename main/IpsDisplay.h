@@ -82,8 +82,7 @@ private:
 	static int wkalt;
 	static int wkoptalt;
 	static int wksensoralt;
-	static int wkialt;
-
+	
 	static int yposalt;
 	static int tyalt;
 	static int pyalt;
@@ -139,5 +138,3 @@ private:
 
 
 #endif /* IPS_DISPLAY_H */
-
-

@@ -563,6 +563,8 @@ ucg_int_t ucg_PowerUp(ucg_t *ucg);
 void ucg_SetClipBox(ucg_t *ucg, ucg_box_t *clip_box);
 void ucg_SetClipRange(ucg_t *ucg, ucg_int_t x, ucg_int_t y, ucg_int_t w, ucg_int_t h);
 void ucg_SetMaxClipRange(ucg_t *ucg);
+void ucg_ScrollLines(ucg_t *ucg, ucg_int_t lines);
+void ucg_ScrollSetMargins(ucg_t *ucg, ucg_int_t top, ucg_int_t bottom );
 void ucg_GetDimension(ucg_t *ucg);
 void ucg_DrawPixelWithArg(ucg_t *ucg);
 void ucg_DrawL90FXWithArg(ucg_t *ucg);

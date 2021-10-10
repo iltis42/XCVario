@@ -19,6 +19,7 @@ public:
     void ResetNewClient() { _new_can_client_connected = false; }
 	bool connectedXCV() { return _connected_xcv; };
 	bool connectedMagSens() { return _connected_magsens; };
+	bool connected() { return( _connected_xcv | _connected_magsens ); };
 	bool isOkay() { return _ready_initialized; };
 
 private:

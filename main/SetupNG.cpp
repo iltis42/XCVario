@@ -94,16 +94,17 @@ SetupNG<float> 			polar_wingarea( "POLAR_WINGAREA", 10.5, true, SYNC_FROM_MASTER
 SetupNG<float>  		speedcal( "SPEEDCAL", 0.0 );
 SetupNG<float>  		vario_delay( "VARIO_DELAY", 3.0 );
 SetupNG<float>  		vario_av_delay( "VARIO_AV_DELAY", 20.0 );  // changed to 20 seconds (quasi standard) what equals to a half circle
-SetupNG<float>  		center_freq( "AUDIO_CENTER_F", 500.0 );
-SetupNG<float>  		tone_var( "OCTAVES", 2.0);
-SetupNG<int>  			dual_tone( "DUAL_TONE", 0 );
-SetupNG<float>  		high_tone_var( "HIGH_TONE_VAR", 12.0 );
-SetupNG<float>  		deadband( "DEADBAND", 0.3 );
-SetupNG<float>  		deadband_neg("DEADBAND_NEG" , -0.3 );
+SetupNG<float>  		center_freq( "AUDIO_CENTER_F", 500.0, true, SYNC_FROM_MASTER  );
+SetupNG<float>  		tone_var( "OCTAVES", 2.0, true, SYNC_FROM_MASTER );
+SetupNG<int>  			dual_tone( "DUAL_TONE", 0, true, SYNC_FROM_MASTER  );
+SetupNG<float>  		high_tone_var( "HIGH_TONE_VAR", 12.0, true, SYNC_FROM_MASTER  );
+SetupNG<float>  		deadband( "DEADBAND", 0.3, true, SYNC_FROM_MASTER  );
+SetupNG<float>  		deadband_neg("DEADBAND_NEG" , -0.3, true, SYNC_FROM_MASTER  );
 SetupNG<float>  		range( "VARIO_RANGE", 5.0 );
 SetupNG<float>  		ballast( "BALLAST" , 0.0, true, SYNC_BIDIR, PERSISTENT, change_mc_bal );
 SetupNG<float>  		bugs( "BUGS", 0.0, true, SYNC_BIDIR, VOLATILE, change_mc_bal  );
 SetupNG<float>  		MC( "MacCready", 0.5, true, SYNC_BIDIR, VOLATILE, change_mc_bal );
+
 SetupNG<int>  			cruise_mode( "CRUISE", 0, true, SYNC_BIDIR, VOLATILE );
 SetupNG<float>  		OAT( "OAT", 0.0, true, SYNC_FROM_MASTER, VOLATILE );   // outside temperature
 SetupNG<float>  		swind_dir( "SWDD", 0.0, true, SYNC_FROM_MASTER, VOLATILE, resetSWindAge );
@@ -141,13 +142,13 @@ SetupNG<int>  			glider_type_index( "GLIDER_TYPE_IDX", 0, true, SYNC_FROM_MASTER
 SetupNG<int>  			ps_display( "PS_DISPLAY", 1 );
 
 SetupNG<float>  		as_offset( "AS_OFFSET" , -1 );
-SetupNG<float>  		bat_low_volt( "BAT_LOW_VOLT" , 11.5 );
-SetupNG<float>  		bat_red_volt( "BAT_RED_VOLT", 11.75 );
-SetupNG<float>  		bat_yellow_volt( "BAT_YELLOW_VOLT" , 12.0 );
-SetupNG<float>  		bat_full_volt( "BAT_FULL_VOLT", 12.8 );
-SetupNG<float>  		core_climb_period( "CORE_CLIMB_P" , 60 );
-SetupNG<float>  		core_climb_min( "CORE_CLIMB_MIN" , 0.5 );
-SetupNG<float>  		core_climb_history( "CORE_CLIMB_HIST" , 45 );
+SetupNG<float>  		bat_low_volt( "BAT_LOW_VOLT" , 11.5, true, SYNC_FROM_MASTER );
+SetupNG<float>  		bat_red_volt( "BAT_RED_VOLT", 11.75, true, SYNC_FROM_MASTER  );
+SetupNG<float>  		bat_yellow_volt( "BAT_YELLOW_VOLT" , 12.0, true, SYNC_FROM_MASTER  );
+SetupNG<float>  		bat_full_volt( "BAT_FULL_VOLT", 12.8, true, SYNC_FROM_MASTER  );
+SetupNG<float>  		core_climb_period( "CORE_CLIMB_P" , 60, true, SYNC_FROM_MASTER  );
+SetupNG<float>  		core_climb_min( "CORE_CLIMB_MIN" , 0.5, true, SYNC_FROM_MASTER  );
+SetupNG<float>  		core_climb_history( "CORE_CLIMB_HIST" , 45, true, SYNC_FROM_MASTER  );
 SetupNG<float>  		elevation( "ELEVATION", -1, true, SYNC_BIDIR );
 SetupNG<float>  		default_volume( "DEFAULT_VOL", 10.0 );
 SetupNG<float>  		max_volume( "MAXI_VOL", 60.0 );
@@ -166,10 +167,10 @@ SetupNG<float>  		flap_minus_1( "FLAP_MINUS_1", 105,  true, SYNC_FROM_MASTER, PE
 SetupNG<float>  		flap_0( "FLAP_0", 88,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);
 SetupNG<float>  		flap_plus_1( "FLAP_PLUS_1", 78,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);
 SetupNG<float>  		flap_plus_2( "FLAP_PLUS_2", 70,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);
-SetupNG<int>  			alt_unit( "ALT_UNIT", ALT_UNIT_METER );
-SetupNG<int>  			ias_unit( "IAS_UNIT", SPEED_UNIT_KMH );
-SetupNG<int>  			vario_unit( "VARIO_UNIT", VARIO_UNIT_MS );
-SetupNG<int>  			temperature_unit( "TEMP_UNIT", T_CELCIUS );
+SetupNG<int>  			alt_unit( "ALT_UNIT", ALT_UNIT_METER, true, SYNC_FROM_MASTER );
+SetupNG<int>  			ias_unit( "IAS_UNIT", SPEED_UNIT_KMH, true, SYNC_FROM_MASTER );
+SetupNG<int>  			vario_unit( "VARIO_UNIT", VARIO_UNIT_MS, true, SYNC_FROM_MASTER );
+SetupNG<int>  			temperature_unit( "TEMP_UNIT", T_CELCIUS, true, SYNC_FROM_MASTER );
 SetupNG<int>  			rot_default( "ROTARY_DEFAULT", 0 );
 SetupNG<int>  			serial1_speed( "SERIAL2_SPEED", 3 );   // tag will stay SERIAL2 from historical reason
 SetupNG<int>  			serial1_pins_twisted( "SERIAL2_PINS", 0 );

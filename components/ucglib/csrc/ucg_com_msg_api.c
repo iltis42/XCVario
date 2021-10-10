@@ -72,6 +72,47 @@ int16_t ucg_com_template_cb(ucg_t *ucg, int16_t msg, uint32_t arg, uint8_t *data
 }
 
 
+#define ILI9341_VSCRDEF 0x33
+#define ILI9341_VSCRSADD 0x37
+
+void ucg_ScrollLines(ucg_t *ucg, ucg_int_t lines){
+	ucg_com_SetCSLineStatus(ucg, 0);
+	uint8_t data[6];
+	data[0] = 1;  // cmd mode
+	data[1] = ILI9341_VSCRSADD;
+	data[2] = 2;  // arg mode
+	data[3] = lines >> 8;
+	data[4] = 0;  // no change
+	data[5] = lines & 0xff;
+	ucg_com_SendCmdDataSequence( ucg, 6, data, 0 );
+	ucg_com_SetCSLineStatus(ucg, 1);
+}
+
+void ucg_ScrollSetMargins(ucg_t *ucg, ucg_int_t top, ucg_int_t bottom ){
+	if (top + bottom <= 320) {
+		ucg_com_SetCSLineStatus(ucg, 0);
+		uint16_t middle = 320 - (top + bottom);
+		uint8_t data[14];
+		data[0] = 1;
+		data[1] = ILI9341_VSCRDEF;
+		data[2] = 2;
+		data[3] = top >> 8;
+		data[4] = 2;
+		data[5] = top & 0xff;
+		data[6] = 2;
+		data[7] = middle >> 8;
+		data[8] = 2;
+		data[9] = middle & 0xff;
+		data[10] = 2;
+		data[11] = bottom >> 8;
+		data[12] = 2;
+		data[13] = bottom & 0xff;
+		ucg_com_SendCmdDataSequence( ucg, 8, data, 1 );
+		ucg_com_SetCSLineStatus(ucg, 1);
+	}
+}
+
+
 void ucg_com_PowerDown(ucg_t *ucg)
 {
   if ( (ucg->com_status & UCG_COM_STATUS_MASK_POWER) != 0 )

@@ -31,7 +31,8 @@ public:
 	void press();
 	char *value() { sprintf(_val_str,"%s", getEntry() ); return _val_str; }
 	inline int getSelect() { return *_select; };
-	inline const char *getEntry(){ return _values[ *_select ].c_str(); }
+	inline void setSelect( int sel ) { *_select = sel; };
+	inline const char * getEntry(){ return _values[ *_select ].c_str(); }
 
 private:
 	static char _val_str[20];

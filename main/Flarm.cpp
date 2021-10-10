@@ -124,8 +124,8 @@ void Flarm::parseGPRMC( const char *gprmc ) {
 		ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", gprmc, calc_cs, cs );
 		return;
 	}
-	// ESP_LOGI(FNAME,"parseGPRMC: %s", gprmc );
-	sscanf( gprmc, "$GPRMC,%f,%c,%f,N,%f,E,%lf,%lf,%d,%f,%c*%02x",&time,&warn,&lat,&lon,&gndSpeedKnots,&gndCourse,&date,&magvar,&dir,&cs);
+	// ESP_LOGI(FNAME,"parseG*RMC: %s", gprmc );
+	sscanf( gprmc+3, "RMC,%f,%c,%f,N,%f,E,%lf,%lf,%d,%f,%c*%02x",&time,&warn,&lat,&lon,&gndSpeedKnots,&gndCourse,&date,&magvar,&dir,&cs);
 	if( wind_enable.get() != WA_OFF ){
 		// ESP_LOGI(FNAME,"Wind enable, gpsOK %d", gpsOK );
 		if( warn == 'A' ) {
@@ -186,14 +186,14 @@ void Flarm::parseGPGGA( const char *gpgga ) {
 	float age;
 	int ID;
 	int cs;
-	ESP_LOGV(FNAME,"parseGPGGA: %s", gpgga );
+	// ESP_LOGV(FNAME,"parseG*GGA: %s", gpgga );
 	int calc_cs=Protocols::calcNMEACheckSum( gpgga );
 	cs = Protocols::getNMEACheckSum( gpgga );
 	if( cs != calc_cs ){
 		ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", gpgga, calc_cs, cs );
 		return;
 	}
-	sscanf( gpgga, "$GPGGA,%f,%f,N,%f,E,%d,%d,%f,%f,M,%f,M,%f,%d*%02x",&time,&lat,&lon,&Q,&numSat,&dilutionH, &antennaAlt, &geoidalSep, &age, &ID, &cs);
+	sscanf( gpgga+3, "GGA,%f,%f,N,%f,E,%d,%d,%f,%f,M,%f,M,%f,%d*%02x",&time,&lat,&lon,&Q,&numSat,&dilutionH, &antennaAlt, &geoidalSep, &age, &ID, &cs);
 
 	if( numSat != _numSat && wind_enable.get() != WA_OFF ){
 		_numSat = numSat;

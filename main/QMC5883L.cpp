@@ -587,7 +587,9 @@ bool QMC5883L::calibrate( bool (*reporter)( float xc, float yc, float zc, float 
 
 	calibrationRunning = false;
 
+
 	ESP_LOGI( FNAME, "calibration end" );
+
 	return true;
 }
 

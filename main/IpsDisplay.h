@@ -113,6 +113,7 @@ private:
 	static void drawBT();
 	static void drawFlarm( int x, int y, bool flarm );
 	static void drawWifi( int x, int y );
+	static void drawCAN( int x, int y );
 	static void drawBat( float volt, int x, int y, bool blank );
 	static void drawTemperature( int x, int y, float t );
 	static void drawThermometer( int x, int y );

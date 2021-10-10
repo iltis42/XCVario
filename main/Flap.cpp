@@ -51,6 +51,7 @@ static int select_flap_sens_pin(SetupMenuSelect *p){
             }
         }
     }
+    p->clear();
     Flap::setupSensorMenueEntries(p->_parent);
 
 	return 0;
@@ -128,6 +129,7 @@ static int flap_cal_act( SetupMenuSelect *p )
 		FLAP->initSensPos();
 		ESP_LOGI(FNAME,"Push Button pressed");
 		delay(500);
+		p->clear();
 	}
 	return 0;
 }

@@ -13,6 +13,7 @@
 #include <sensor.h>
 #include "Units.h"
 #include "SetupMenuValFloat.h"
+#include "ESPAudio.h"
 
 SetupMenuValFloat * SetupMenuValFloat::qnh_menu = 0;
 char SetupMenuValFloat::_val_str[20];
@@ -155,13 +156,12 @@ void SetupMenuValFloat::press(){
 			if( _nvs )
 				_nvs->commit();
 			if( _restart ) {
-				ucg->setColor(COLOR_BLACK);
-				ucg->drawBox( 0,160,240,160 );
-				ucg->setPrintPos( 1, 250  );
-				ucg->setColor(COLOR_WHITE);
+				Audio::shutdown();
+				clear();
+				ucg->setPrintPos( 10, 50 );
 				ucg->print("...rebooting now" );
-                SetupCommon::commitNow();
-				delay(1000);
+				SetupCommon::commitNow();
+				delay(2000);
 				esp_restart();
 			}
 		}

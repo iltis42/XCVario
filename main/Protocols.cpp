@@ -91,7 +91,7 @@ void Protocols::sendNMEAString( char *str ) {  // String needs space for CS at t
 	ESP_LOGI(FNAME,"sendNMEAString: %s", str );
 	SString nmea( str );
 	if( !Router::forwardMsg( nmea, client_tx_q ) )
-		ESP_LOGW(FNAME,"Warning: Overrun in send to CAN device, XCV %d bytes", nmea.length() );
+		ESP_LOGW(FNAME,"Warning: Overrun in send to Client XCV %d bytes", nmea.length() );
 }
 
 void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
@@ -327,28 +327,28 @@ void Protocols::parseNMEA( const char *astr ){
 				bugs.set( mybugs );
 			}
 		}
-		else if( !strncmp( str, "$PFLAU,", 6 )) {
+		else if( !strncmp( str, "$PFLAU,", 3 )) {
 			Flarm::parsePFLAU( str );
 			if( Flarm::bincom  ) {
 				Flarm::bincom--;
 				ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
 			}
 		}
-		else if( !strncmp( str, "$GPRMC,", 6 )) {
+		else if( !strncmp( str+3, "RMC,", 3 ) ) {
 			Flarm::parseGPRMC( str );
 			if( Flarm::bincom  ) {
 				Flarm::bincom--;
 				ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
 			}
 		}
-		else if( !strncmp( str, "$GPGGA,", 6 )) {
+		else if( !strncmp( str+3, "GGA,", 3 )) {
 			Flarm::parseGPGGA( str );
 			if( Flarm::bincom  ) {
 				Flarm::bincom--;
 				ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
 			}
 		}
-		else if( !strncmp( str, "$PGRMZ,", 6 )) {
+		else if( !strncmp( str+3, "RMZ,", 3 )) {
 			Flarm::parsePGRMZ( str );
 			if( Flarm::bincom  ) {
 				Flarm::bincom--;

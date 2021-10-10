@@ -190,21 +190,18 @@ public:
 	bool set( T aval, bool dosync=true ) {
 		String val( aval );
 		// ESP_LOGI( FNAME,"set val: %s %d", val.c_str(), dosync );
-		T old_val = _value;
-		_value = T(aval);
-		if( dosync )
-			sync();
-		if( _action != 0 )
-			(*_action)();
+		if( _value == aval ){
+			// ESP_LOGI(FNAME,"Value already in config: %s", val.c_str() );
+			return( true );
+		}
+		_value = aval;
+
+		if ( dosync ) { sync(); }
+		if( _action != 0 ) { (*_action)(); }
 		if( _volatile == VOLATILE ){
 			return true;
 		}
 
-		if( _value == old_val ){
-			ESP_LOGW(FNAME,"Value already in config: %s", val.c_str() );
-			return( true );
-		}
-		_value = T(aval);
 		return commit( false );
 	};
 

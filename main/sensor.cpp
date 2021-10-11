@@ -384,7 +384,7 @@ void readSensors(void *pvParameters){
 			gyroDPS_Prev = gyroDPS;
 			accelG_Prev = accelG;
 		}
-		if( wireless != WL_WLAN_CLIENT &&  the_can_mode != CAN_MODE_CLIENT )
+		if( !SetupCommon::isClient() )
 		{
 			bool ok=false;
 			float p = 0;
@@ -568,7 +568,7 @@ void readTemp(void *pvParameters){
 		float t=15.0;
 		battery = Battery.get();
 		// ESP_LOGI(FNAME,"Battery=%f V", battery );
-		if( wireless != WL_WLAN_CLIENT && the_can_mode != CAN_MODE_CLIENT ) {  // client Vario will get Temperature info from main Vario
+		if( !SetupCommon::isClient() ) {  // client Vario will get Temperature info from main Vario
 			t = ds18b20.getTemp();
 			if( t ==  DEVICE_DISCONNECTED_C ) {
 				if( validTemperature == true ) {
@@ -969,7 +969,7 @@ void sensor(void *args){
 	}
 	ESP_LOGI(FNAME,"Now start T sensor test");
 	// Temp Sensor test
-	if( wireless != WL_WLAN_CLIENT && the_can_mode != CAN_MODE_CLIENT  ) {
+	if( !SetupCommon::isClient()  ) {
 		ESP_LOGI(FNAME,"Now start T sensor test");
 		ds18b20.begin();
 		temperature = ds18b20.getTemp();
@@ -1166,7 +1166,7 @@ void sensor(void *args){
 			display->writeText( line++, "Bluetooth: FAILED");
 			logged_tests += "Bluetooth test: FAILED\n";
 		}
-	}else if ( wireless == WL_WLAN ){
+	}else if ( wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE ){
 		WifiApp::wifi_init_softap();
 	}
     // 2021 series 3, or 2022 model with new digital poti CAT5171 also features CAN bus
@@ -1286,7 +1286,7 @@ void sensor(void *args){
 
 	delay( 100 );
 
-	if ( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT ){
+	if ( SetupCommon::isClient() ){
 		if( wireless == WL_WLAN_CLIENT ){
 			display->clear();
 
@@ -1336,11 +1336,11 @@ void sensor(void *args){
 	}
 
 	xTaskCreatePinnedToCore(&readSensors, "readSensors", 4096, NULL, 14, &bpid, 0);
-	if( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT ){
+	if( SetupCommon::isClient() ){
 		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 14, &apid, 0);
 	}
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 2500, NULL, 8, &tpid, 0);
-	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 4096, NULL, 4, &dpid, 0);
+	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 5096, NULL, 4, &dpid, 0);
 
 	compass.start();
 	Audio::startAudio();

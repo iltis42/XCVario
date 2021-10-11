@@ -118,6 +118,8 @@ void WifiApp::socket_server(void *setup) {
 	}
 	// we have a socket
 	fcntl(sock, F_SETFL, O_NONBLOCK); // socket should not block, so we can server several clients
+	SString tcprx;
+	tcprx.resize( SSTRLEN );
 
 	while (1)
 	{
@@ -148,18 +150,18 @@ void WifiApp::socket_server(void *setup) {
 					block[0] = '\n';
 					len=1;
 					config->idle = 0;
-					ESP_LOGI(FNAME, "KEEP-ALIVE");
+					ESP_LOGI(FNAME, "KEEP-ALIVE port %d", config->port );
 				}
 			}
 			std::list<client_record_t>::iterator it;
 			for(it = clients.begin(); it != clients.end(); ++it)
 			{
 				client_record_t &client_rec = *it;
+				char r[256];
 				// ESP_LOGI(FNAME, "read from wifi client %d", client_rec.client );
-				SString tcprx;
-				ssize_t sizeRead = recv(client_rec.client, tcprx.a_str(), SSTRLEN-1, MSG_DONTWAIT);
+				ssize_t sizeRead = recv(client_rec.client, r, SSTRLEN-1, MSG_DONTWAIT);
 				if (sizeRead > 0) {
-					tcprx.setLen( sizeRead );
+					tcprx.set( r, sizeRead );
 					Router::forwardMsg( tcprx, *(config->rxbuf) );
 					// ESP_LOGI(FNAME, "RX wifi client port %d size: %d bincom:%d", config->port, sizeRead, Flarm::bincom );
 					// ESP_LOG_BUFFER_HEXDUMP(FNAME,tcprx.c_str(),sizeRead, ESP_LOG_INFO);
@@ -228,7 +230,7 @@ void WifiApp::wifi_event_handler(void* arg, esp_event_base_t event_base,	int32_t
 
 void WifiApp::wifi_init_softap()
 {
-	if( wireless == WL_WLAN ){
+	if( wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE ){
 		tcpip_adapter_init();
 		ESP_LOGV(FNAME,"now esp_netif_init");
 		ESP_ERROR_CHECK(esp_netif_init());
@@ -278,11 +280,11 @@ void WifiApp::wifi_init_softap()
 
 		if( serial2_speed.get() != 0 &&  serial2_tx.get() != 0 )  // makes only sense if there is data from AUX = serial interface S2
 			xTaskCreatePinnedToCore(&socket_server, "socket_ser_2", 3300, &AUX, 10, AUX.pid, 0);  // 10
-		if( wireless_type.get() == WL_WLAN ) // 8880 Wifi server makes only sense if mode is WLAN, not Bluetooth
+		if( wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE ) // 8880 Wifi server makes only sense if mode is WLAN, not Bluetooth
 			xTaskCreatePinnedToCore(&socket_server, "socket_srv_0", 3300, &XCVario, 11, XCVario.pid, 0);  // 10
 		if( serial1_speed.get() != 0 &&  serial1_tx.get() != 0 ) // makes only sense if there is a FLARM connected on S1
 			xTaskCreatePinnedToCore(&socket_server, "socket_ser_1", 3300, &FLARM, 12, FLARM.pid, 0);  // 10
-		if( (wireless_type.get() == WL_WLAN) || (wireless_type.get() == WL_WLAN_MASTER) ) // 8884 makes sense if we are WLAN_MASTER; for backward compatibility WLAN
+		if( wireless == WL_WLAN_MASTER ) // New port 8884 makes sense if we are WLAN_MASTER (this is backward compatible)
 			xTaskCreatePinnedToCore(&socket_server, "socket_srv_3", 3300, &XCVarioMS, 9, XCVarioMS.pid, 0);  // 10
 
 		ESP_LOGV(FNAME, "wifi_init_softap finished SUCCESS. SSID:%s password:%s channel:%d", (char *)wc.ap.ssid, (char *)wc.ap.password, wc.ap.channel );

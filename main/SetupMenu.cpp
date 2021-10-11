@@ -1084,6 +1084,7 @@ void SetupMenu::setup( )
 		btm->addEntry( "Bluetooth");
 		btm->addEntry( "Wireless Master");
 		btm->addEntry( "Wireless Client");
+		btm->addEntry( "Wireless Standalone");
 		// btm->addEntry( "Wireless Master");
 		wirelessM->addEntry( btm );
 

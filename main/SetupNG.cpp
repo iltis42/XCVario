@@ -452,7 +452,11 @@ char * SetupCommon::getID() {
 }
 
 bool SetupCommon::isMaster(){
-	return((wireless_type.get() == WL_WLAN) || (can_speed.get() != CAN_SPEED_OFF && can_mode.get() == CAN_MODE_MASTER));
+	return((wireless_type.get() == WL_WLAN_MASTER) || (can_speed.get() != CAN_SPEED_OFF && can_mode.get() == CAN_MODE_MASTER));
+}
+
+bool SetupCommon::haveWLAN(){
+	return( (wireless_type.get() == WL_WLAN_MASTER) ||  (wireless_type.get() == WL_WLAN_STANDALONE) ||  (wireless_type.get() == WL_WLAN_CLIENT ) );
 }
 
 bool SetupCommon::isClient(){

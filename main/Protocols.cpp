@@ -90,8 +90,10 @@ void Protocols::sendNMEAString( char *str ) {  // String needs space for CS at t
 	sprintf( &str[i], "*%02X\r\n", cs );
 	ESP_LOGI(FNAME,"sendNMEAString: %s", str );
 	SString nmea( str );
+	if( (wireless == WL_WLAN_MASTER) || (can_mode.get() == CAN_MODE_MASTER) ){
 	if( !Router::forwardMsg( nmea, client_tx_q ) )
 		ESP_LOGW(FNAME,"Warning: Overrun in send to Client XCV %d bytes", nmea.length() );
+	}
 }
 
 void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
@@ -296,7 +298,7 @@ void Protocols::parseNMEA( const char *astr ){
 		}
 		else if ( (strncmp( str, "!g,", 3 ) == 0)    ) {
 			ESP_LOGI(FNAME,"parseNMEA, Cambridge C302 style command !g detected: %s",str);
-			if (str[3] == 'b' && wireless != WL_WLAN_CLIENT && the_can_mode != CAN_MODE_CLIENT ) {  // we run own protocol between Master and Client as of bad precision in official
+			if (str[3] == 'b') {  // this may reach master or client with an own navi
 				ESP_LOGI(FNAME,"parseNMEA, BORGELT, ballast modification");
 				float aballast;
 				sscanf(str, "!g,b%f", &aballast);

@@ -65,11 +65,14 @@ const char *gps[] = {
 */
 
 int sim=100;
-#define HEARTBEAT_PERIOD_MS_SERIAL 40
+#define HEARTBEAT_PERIOD_MS_SERIAL 20
+#define SERIAL_STRLEN SSTRLEN
 static TaskHandle_t *pid;
+char Serial::rxbuf[SERIAL_STRLEN];
 
 // Serial Handler  ttyS1, S1, port 8881
 void Serial::serialHandler(void *pvParameters){
+	SString s;
 	while(1) {
 		if( flarm_sim.get() ){
 			sim=-3;
@@ -87,7 +90,6 @@ void Serial::serialHandler(void *pvParameters){
 			delay(2500);
 			sim++;
 		}
-		SString s;
 		// Serial Interface tty1 send
 		if ( !s1_tx_q.isEmpty() && Serial1.availableForWrite() ){
 			ESP_LOGD(FNAME,"Serial Data and avail");
@@ -101,23 +103,22 @@ void Serial::serialHandler(void *pvParameters){
 		int num = Serial1.available();
 		if( num > 0 ) {
 			// ESP_LOGI(FNAME,"Serial 1 RX avail %d bytes", num );
-			if( num >= SSTRLEN ) {
-				// ESP_LOGW(FNAME,"Serial 1 Overrun RX >= %d bytes avail: %d, Bytes", SSTRLEN, num);
-				num=SSTRLEN;
+			if( num >= SERIAL_STRLEN ) {
+				ESP_LOGW(FNAME,"Serial 1 Overrun RX >= %d bytes avail: %d, Bytes", SERIAL_STRLEN, num);
+				num=SERIAL_STRLEN;
 			}
 			// ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
 			int numread = 0;
-            s.clear();
 			if( Flarm::bincom ){    // normally wait unit sentence has ended, or in binary mode just continue
-				numread = Serial1.read( s.a_str(), num );
+				numread = Serial1.read( rxbuf, num );
 			}
 			else{
-				numread = Serial1.readLine( s.a_str(), SSTRLEN );
+				numread = Serial1.readLine( rxbuf, SERIAL_STRLEN );
 			}
 			if( numread ) {
 				// ESP_LOGI(FNAME,"Serial 1 RX bytes read: %d  bincom: %d", numread,  Flarm::bincom  );
-				// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),numread, ESP_LOG_INFO);
-				s.setLen( numread );
+				// ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.c_str(),numread, ESP_LOG_INFO);
+				s.set( rxbuf, numread );
 				Router::forwardMsg( s, s1_rx_q );
 			}
 		}
@@ -138,22 +139,23 @@ void Serial::serialHandler(void *pvParameters){
 	    	int num = Serial2.available();
 	    	if( num > 0 ) {
 	    		// ESP_LOGI(FNAME,"Serial 2 RX avail %d bytes", num );
-	    		if( num >= SSTRLEN ) {
-	    			// ESP_LOGW(FNAME,"Serial 2 RX Overrun >= %d bytes avail: %d, Bytes", SSTRLEN, num);
-	    			num=SSTRLEN;
+	    		if( num >= SERIAL_STRLEN ) {
+	    			ESP_LOGW(FNAME,"Serial 2 RX Overrun >= %d bytes avail: %d, Bytes", SERIAL_STRLEN, num);
+	    			num=SERIAL_STRLEN;
 	    		}
 	    		int numread = 0;
-                s.clear();
+
 	    		if( Flarm::bincom ){    // normally wait unit sentence has ended, or in binary mode just continue
-	    			numread = Serial2.read( s.a_str(), num );
+	    			numread = Serial2.read( rxbuf, num );
 	    		}
 	    		else{
-	    			numread = Serial2.readLine( s.a_str(), SSTRLEN );
+	    			numread = Serial2.readLine( rxbuf, SERIAL_STRLEN );
 	    		}
+
 	    		if( numread ){
-	    			// ESP_LOGI(FNAME,"Serial 1 RX bytes read: %d  bincom: %d", numread,  Flarm::bincom  );
+	    			s.set( rxbuf, numread );
+	    			// ESP_LOGI(FNAME,"Serial 2 RX bytes read: %d  bincom: %d", numread,  Flarm::bincom  );
 	    			// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),numread, ESP_LOG_INFO);
-	    			s.setLen( numread );
 	    			Router::forwardMsg( s, s2_rx_q );
 	    		}
 	    	}
@@ -219,9 +221,12 @@ void Serial::begin(){
 	if( serial1_speed.get() != 0  || wireless != 0 ){
 		int baudrate = baud[serial1_speed.get()];
 		if( baudrate != 0 ) {
+			gpio_pullup_en( GPIO_NUM_16 );
+			gpio_pullup_en( GPIO_NUM_17 );
 			ESP_LOGI(FNAME,"Serial Interface ttyS1 enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial1_speed.get(), baud[serial1_speed.get()], serial1_tx_inverted.get(), serial1_rx_inverted.get() );
 			if( serial1_pins_twisted.get() ){
 				if( serial1_tx_enable.get() ){
+
 					Serial1.begin(baudrate,SERIAL_8N1,17,16, serial1_rx_inverted.get(), serial1_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
 				}else{
 					Serial1.begin(baudrate,SERIAL_8N1,17,36, serial1_rx_inverted.get(), serial1_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
@@ -245,6 +250,8 @@ void Serial::begin(){
 	if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 ){
 		ESP_LOGI(FNAME,"Serial Interface ttyS2 enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial2_speed.get(), baud[serial2_speed.get()], serial2_tx_inverted.get(), serial2_rx_inverted.get() );
 		if( serial2_pins_twisted.get() ){  //   speed, RX, TX, invRX, invTX
+			gpio_pullup_en( GPIO_NUM_4 );
+			gpio_pullup_en( GPIO_NUM_18 );
 			if( serial2_tx_enable.get() ){
 				Serial2.begin(baud[serial2_speed.get()],SERIAL_8N1,4,18, serial2_rx_inverted.get(), serial2_tx_inverted.get());   //  IO4: RXD2,  IO18: TXD2
 			}else{

@@ -5,89 +5,73 @@
 #include "logdef.h"
 #include <cstring>
 
-#define SSTRLEN 91  // max size of NMEA
+#define SSTRLEN 256  // max size of NMEA, 80 bytes are no more hardlimit in modern receivers such as Beitian BN-80, so extend
+
+
+// wrapper class for a limited string, pre-allocation to be done resize() method
 
 class SString
 {
 public:
     SString()
     {
-        clear();
     }
-    SString(const SString& s) { set(s.c_str(), s.length()); }
+    SString(const SString& s) { str = s.str; }
+    ~SString(){ str.erase( 0, length() ); }
+
     SString(const char *s)
     {
-        len = SSTRLEN - 1;
-        if (strlen(s) < len)
-            len = strlen(s);
-        memcpy(str, s, len);
-        str[len] = 0;
+        str = std::string( s );
     }
     void set(const char *s)
     {
         // add pure strings
-        len = std::min((int)strlen(s), SSTRLEN-1);
-        memcpy(str, s, len);
-        str[len] = 0;
+    	str = std::string( s );
     }
     void set(const char *s, int alen)
     {
-        len = std::min(alen, SSTRLEN-1);
-        memcpy(str, s, len);
-        str[len] = 0;
+      str = std::string( s, alen );
     }
     SString& operator=(const SString& right)
     {
-        len = right.length();
-        memcpy(str, right.c_str(), len);
-        str[len] = 0;
-        return *this;
+       str = right.str;
+       return *this;
     }
     void append(char c)
     {
-        if (len < SSTRLEN - 1)
-            str[len++] = c;
+    	str += c;
     }
     void append(const char *s, int alen)
     {
-        int add_length = std::min(alen, rem_length());
-        memcpy(str + len, s, add_length);
-        len += add_length;
-        str[len] = 0;
+       str.append( s, alen );
     }
     SString& operator+=(const SString& right)
     {
-        int add_length = std::min(right.length(), rem_length());
-        memcpy(str + len, right.c_str(), add_length);
-        len += add_length;
-        str[len] = 0;
-        return *this;
+      str += right.str;
+      return *this;
     }
     void clear()
     {
-        str[0] = '\0'; // memset(str, 0, SSTRLEN);
-        len = 0;
+        str.erase( 0, length() );
     }
     inline void setLen(int alen)
     {
-        len = alen;
-        str[len] = '\0';
+    	str.resize( alen );
     }
     inline void addLen(int alen)
     {
-        len = std::min(alen+len, SSTRLEN-1);
-        str[len] = '\0';
+       str.append( ' ', alen );
     }
-    inline char const *c_str() const { return str; };
-    inline int length() const { return len; }
+    inline const char *c_str() const { return str.c_str(); };
+    inline int length() const { return str.length(); }
     inline int max_length() const { return SSTRLEN; }
-    inline int rem_length() const { return SSTRLEN - 1 - len; }
-    inline int full() const { return len >= SSTRLEN - 1; }
-    inline char* a_str() { return &str[len]; }
+    inline int rem_length() const { return SSTRLEN - 1 - length(); }
+    inline int full() const { return str.length() >= SSTRLEN - 1; }
+    inline const char *a_str() { return str.c_str(); }
+    inline void resize(int len) { str.resize(len); };
 
 private:
-    char str[SSTRLEN];
-    int len;
+    std::string str;
 };
 
 template <typename Type, size_t MaxElements>

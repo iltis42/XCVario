@@ -97,7 +97,7 @@ bool StraightWind::getWind( int* direction, float* speed, int *age )
 bool StraightWind::calculateWind()
 {
 	// ESP_LOGI(FNAME,"Straight wind, calculateWind()");
-	if( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT ){
+	if( SetupCommon::isClient() ){
 		ESP_LOGI(FNAME,"We are client device, get wind from master");
 		return false;
 	}

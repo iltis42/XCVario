@@ -127,7 +127,7 @@ void Router::routeXCV(){
 				if( forwardMsg( xcv, bt_tx_q ) )
 					ESP_LOGV(FNAME,"Send to BT device, XCV received %d bytes", xcv.length() );
 			}
-			if( wireless == WL_WLAN  ){
+			if( wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE  ){
 				if( forwardMsg( xcv, wl_vario_tx_q ) )
 					ESP_LOGV(FNAME,"Send to WLAN port 8880, XCV %d bytes", xcv.length() );
 			}
@@ -138,10 +138,6 @@ void Router::routeXCV(){
 				if( forwardMsg( xcv, s2_tx_q ) )
 					ESP_LOGV(FNAME,"Send to ttyS2 device, XCV %d bytes", xcv.length() );
 		}
-		if( strncmp( xcv.c_str(), "!xs", 3 ) == 0 ) {    // Route to XCV client only internal !xs protocol from now on
-			if( forwardMsg( xcv, client_tx_q ) )
-				ESP_LOGV(FNAME,"Send to CAN device, XCV %d bytes", xcv.length() );
-		}
 	}
 }
 
@@ -151,7 +147,7 @@ void Router::routeS1(){
 	if( pullMsg( s1_rx_q, s1) ){
 		// ESP_LOGD(FNAME,"ttyS1 RX len: %d bytes, Q:%d", s1.length(), bt_tx_q.isFull() );
 		// ESP_LOG_BUFFER_HEXDUMP(FNAME,s1.c_str(),s1.length(), ESP_LOG_DEBUG);
-		if( wireless == WL_WLAN )
+		if( wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE )
 			if( forwardMsg( s1, wl_flarm_tx_q ))
 				ESP_LOGV(FNAME,"ttyS1 RX bytes %d forward to wl_flarm_tx_q port 8881", s1.length() );
 		if( wireless == WL_BLUETOOTH )
@@ -173,7 +169,7 @@ void Router::routeS2(){
 	if( pullMsg( s2_rx_q, s2) ){
 		// ESP_LOGD(FNAME,"ttyS2 RX len: %d bytes, Q:%d", s2.length(), bt_tx_q.isFull() );
 		// ESP_LOG_BUFFER_HEXDUMP(FNAME,s2.c_str(),s2.length(), ESP_LOG_DEBUG);
-		if( wireless == WL_WLAN )
+		if(wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE )
 			if( forwardMsg( s2, wl_aux_tx_q ))
 				ESP_LOGV(FNAME,"ttyS2 RX bytes %d forward to wl_aux_tx_q port 8882", s2.length() );
 		if( wireless == WL_BLUETOOTH )
@@ -189,7 +185,7 @@ void Router::routeS2(){
 // route messages from WLAN
 void Router::routeWLAN(){
 	SString wlmsg;
-	if( wireless == WL_WLAN || wireless == WL_WLAN_CLIENT ){
+	if( wireless != WL_DISABLE  ){
 		// Route received data from WLAN ports
 		if( pullMsg( wl_vario_rx_q, wlmsg) ){
 			ESP_LOGV(FNAME,"From WLAN port 8880 RX NMEA %s", wlmsg.c_str() );

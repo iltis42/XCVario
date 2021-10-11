@@ -7,6 +7,8 @@
 #include "RingBufCPP.h"
 #include <string>
 
+#define SERIAL_STRLEN SSTRLEN
+
 class Serial {
 public:
   Serial() {};
@@ -16,6 +18,7 @@ public:
   static bool selfTest( int num );
 
 private:
+  static char rxbuf[SERIAL_STRLEN];
 
 };
 

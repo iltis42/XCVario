@@ -648,7 +648,9 @@ void IpsDisplay::drawFlarm( int x, int y, bool flarm ) {
 }
 
 void IpsDisplay::drawWifi( int x, int y ) {
-	if( _menu )
+	if( _menu  )
+		return;
+	if( !SetupCommon::haveWLAN() )
 		return;
 	int btq=1;
 	// ESP_LOGI(FNAME,"wireless %d", wireless );
@@ -656,7 +658,7 @@ void IpsDisplay::drawWifi( int x, int y ) {
 		if( WifiClient::isConnected(8884) )
 			btq=0;
 	}
-	else if( wireless == WL_WLAN || wireless == WL_WLAN_MASTER )
+	else if( wireless == WL_WLAN_STANDALONE || wireless == WL_WLAN_MASTER  )
 		btq=WifiApp::queueFull();
 	else
 		return;
@@ -938,7 +940,7 @@ void IpsDisplay::initULDisplay(){
 	ucg->print( Units::VarioUnit() );
 	if( wireless == WL_BLUETOOTH )
 		drawBT();
-	if( wireless == WL_WLAN  ||  wireless == WL_WLAN_CLIENT )
+	else
 		drawWifi(DISPLAY_W-27, FLOGO+2 );
 	drawThermometer(  10, 30 );
 }
@@ -969,7 +971,7 @@ void IpsDisplay::initRetroDisplay(){
 	ucg->print( Units::VarioUnit() );
 	if( wireless == WL_BLUETOOTH )
 		drawBT();
-	if( wireless == WL_WLAN  ||  wireless == WL_WLAN_CLIENT )
+	else
 		drawWifi(DISPLAY_W-27, FLOGO+2 );
 	drawMC( MC.get(), true );
 	drawThermometer(  10, 30 );
@@ -1468,7 +1470,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	{
 		if( wireless == WL_BLUETOOTH )
 			drawBT();
-		if( wireless == WL_WLAN ||  wireless == WL_WLAN_CLIENT  ||  wireless == WL_WLAN_MASTER )
+		else
 			drawWifi(DISPLAY_W-27, FLOGO+2 );
 		drawCAN(DISPLAY_W-32, FLOGO+28);
 	}
@@ -1747,7 +1749,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 	{
 		if( wireless == WL_BLUETOOTH )
 			drawBT();
-		if( wireless == WL_WLAN ||  wireless == WL_WLAN_CLIENT )
+		else
 			drawWifi(DISPLAY_W-27, FLOGO+2 );
 	}
 
@@ -2022,7 +2024,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	if( !(tick%12) ){
 		if( wireless == WL_BLUETOOTH )
 			drawBT();
-		if( wireless == WL_WLAN || wireless == WL_WLAN_CLIENT )
+		else
 			drawWifi(DISPLAY_W-25, FLOGO);
 	}
 

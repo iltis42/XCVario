@@ -215,6 +215,7 @@ void IpsDisplay::writeText( int line, String text ){
 
 
 void IpsDisplay::clear(){
+	ESP_LOGI(FNAME,"display clear()");
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setColor( COLOR_BLACK );
 	ucg->drawBox( 0,0,240,320 );
@@ -1114,7 +1115,7 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 	}
 	if( old_gmin != gload_neg_max.get() ){
 		ucg->setFont(ucg_font_fub20_hr);
-		ucg->setPrintPos(115,245);
+		ucg->setPrintPos(125,245);
 		ucg->printf("%+1.2f", gload_neg_max.get() );
 	}
 

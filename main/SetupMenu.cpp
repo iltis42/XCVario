@@ -419,32 +419,6 @@ void SetupMenu::up(int count){
 
 void SetupMenu::showMenu( bool apressed ){
 	ESP_LOGI(FNAME,"showMenu() p:%d h:%d parent:%x", pressed, highlight, (int)_parent );
-	// main menue behavior, extra class maybe
-	// for now here we catch this
-	// this is just for the main menu,
-	if( (_parent == 0) && (highlight == -1) ) // entering setup menu root
-	{
-		if( !inSetup )
-		{
-			inSetup=true;
-			ESP_LOGI(FNAME,"Start Setup Menu");
-			_display->doMenu(true);
-			// _rotary->attach(&menu_rotary_handler); // todo
-			delay(200);  // fixme give display task time to finish drawing
-		}
-		else
-		{
-			ESP_LOGI(FNAME,"End Setup Menu");
-			_display->setup();
-			_display->clear();
-			Audio::setup();
-			bmpVario.setup();
-			// _rotary->detach(&menu_rotary_handler);
-			_display->doMenu(false);
-			SetupCommon::commitNow();
-			inSetup=false;
-		}
-	}
 	// default is not pressed, so just display, but we toogle pressed state at the end
 	// so next time we either step up to parent,
 	if( pressed )
@@ -463,6 +437,26 @@ void SetupMenu::showMenu( bool apressed ){
 				selected = _childs[highlight];
 				selected->pressed = false;
 			}
+		}
+	}
+	if( (_parent == 0) && (highlight == -1) ) // entering setup menu root
+	{
+		if( !inSetup )
+		{
+			inSetup=true;
+			ESP_LOGI(FNAME,"Start Setup Menu");
+			_display->doMenu(true);
+			// _rotary->attach(&menu_rotary_handler); // todo
+			delay(200);  // fixme give display task time to finish drawing
+		}
+		else
+		{
+			ESP_LOGI(FNAME,"End Setup Menu");
+			_display->clear();
+			// _rotary->detach(&menu_rotary_handler);
+			_display->doMenu(false);
+			SetupCommon::commitNow();
+			inSetup=false;
 		}
 	}
 	ESP_LOGI(FNAME,"end showMenu()");

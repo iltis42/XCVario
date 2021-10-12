@@ -142,26 +142,27 @@ void ESPRotary::informObservers( void * args )
 			timer++;
 			released = false;
 			pressed = false;
-			longPressed = false;
+			if( timer > 20 ){  // > 400 mS
+				if( !longPressed ){
+					sendLongPress();
+					sendRelease();
+					longPressed = true;
+				}
+			}
 		}
 		else{   // Push button is being released
 			if( !released ){
 				ESP_LOGI(FNAME,"timer=%d", timer );
-				if( timer > 20 ){  // > 400 mS
-					if( !longPressed ){
-						sendLongPress();
-						longPressed = true;
-					}
-				}
-				else{
+				longPressed = false;
+				if( timer < 20 ){  // > 400 mS
 					if( !pressed ){
 						sendPress();
+						sendRelease();
 						pressed = true;
 					}
 				}
 				timer = 0;
 				released = true;
-				sendRelease();
 				delay( 20 );
 			}
 		}

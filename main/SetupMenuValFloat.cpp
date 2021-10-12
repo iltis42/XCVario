@@ -58,7 +58,7 @@ void SetupMenuValFloat::showQnhMenu(){
 	ESP_LOGI(FNAME,"SetupMenuValFloat::showQnhMenu()");
 	if( qnh_menu ) {
 		ESP_LOGI(FNAME,"qnh_menu = true");
-		_menu_enabled = true;
+		inSetup = true;
 		selected = qnh_menu;
 		inSetup=true;
 		qnh_menu->clear();
@@ -68,7 +68,7 @@ void SetupMenuValFloat::showQnhMenu(){
 }
 
 void SetupMenuValFloat::display( int mode ){
-	if( (selected != this) || !_menu_enabled )
+	if( (selected != this) || !inSetup )
 		return;
 	// ESP_LOGI(FNAME,"SetupMenuValFloat display() %d %x", pressed, (int)this);
 	uprintf( 5,25, selected->_title.c_str() );
@@ -111,7 +111,7 @@ void SetupMenuValFloat::displayVal()
 }
 
 void SetupMenuValFloat::down( int count ){
-	if( (selected != this) || !_menu_enabled )
+	if( (selected != this) || !inSetup )
 		return;
 	// ESP_LOGI(FNAME,"val down %d times ", count );
 	while( (*_value > _min) && count ) {
@@ -126,7 +126,7 @@ void SetupMenuValFloat::down( int count ){
 }
 
 void SetupMenuValFloat::up( int count ){
-	if( (selected != this) || !_menu_enabled )
+	if( (selected != this) || !inSetup )
 		return;
 	// ESP_LOGI(FNAME,"val up %d times ", count );
 	while( (*_value < _max) && count ) {

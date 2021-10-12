@@ -579,7 +579,7 @@ void Audio::dactask(void* arg )
 				// ESP_LOGI(FNAME,"Audio in DeadBand false");
 			}
 			// Optionally disable Sound when in Menu
-			if( audio_disable.get() && Menu->isActive() )
+			if( audio_disable.get() && inSetup )
 				sound = false;
 			//ESP_LOGI(FNAME, "sound %d, ht %d, te %2.1f vc:%d cw:%d ", sound, hightone, _te, volume_change, cur_wiper );
 			if( sound ){

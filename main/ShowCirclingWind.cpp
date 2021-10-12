@@ -26,6 +26,7 @@ Last update: 2021-04-18
 #include <Ucglib.h>
 #include <logdef.h>
 #include <esp_log.h>
+#include "sensor.h"
 
 ShowCirclingWind::ShowCirclingWind( String title ) :
 SetupMenuDisplay( title, nullptr )
@@ -37,7 +38,7 @@ SetupMenuDisplay( title, nullptr )
 
 void ShowCirclingWind::display( int mode )
 {
-	if( (selected != this) || !_menu_enabled )
+	if( (selected != this) || !inSetup )
 		return;
 
 	ESP_LOGI(FNAME, "display() mode=%d", mode );

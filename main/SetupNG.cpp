@@ -290,6 +290,8 @@ SetupNG<int> 			can_tx( "CANTX", RT_XCVARIO );
 SetupNG<int> 			can_mode( "CANMOD", CAN_MODE_STANDALONE );
 SetupNG<float> 			master_xcvario( "MSXCV", 0 );
 SetupNG<int> 			master_xcvario_lock( "MSXCVL", 0 );
+SetupNG<int> 			menu_long_press("MENU_LONG", 0 );
+SetupNG<int> 			menu_screens("MENU_SCR", 0 );
 
 
 mpud::raw_axes_t zero_bias;

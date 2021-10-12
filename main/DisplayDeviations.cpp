@@ -22,6 +22,7 @@ Last update: 2021-02-25
 
 #include <Ucglib.h>
 #include <esp_log.h>
+#include "sensor.h" 
 
 
 DisplayDeviations::DisplayDeviations( String title) :
@@ -32,7 +33,7 @@ DisplayDeviations::DisplayDeviations( String title) :
 
 void DisplayDeviations::display( int mode )
 {
-  if( (selected != this) || !_menu_enabled )
+  if( (selected != this) || !inSetup )
     return;
 
   ESP_LOGI(FNAME, "display() mode=%d", mode );

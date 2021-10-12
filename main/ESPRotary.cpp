@@ -1,9 +1,6 @@
 #include "ESPRotary.h"
-
 #include "Setup.h"
 #include "RingBufCPP.h"
-
-
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include <freertos/queue.h>
@@ -17,7 +14,6 @@
 #include <list>
 #include <algorithm>
 
-
 gpio_num_t ESPRotary::clk, ESPRotary::dt;
 gpio_num_t ESPRotary::sw = GPIO_NUM_0;
 std::list<RotaryObserver *> ESPRotary::observers;
@@ -26,20 +22,23 @@ pcnt_config_t ESPRotary::enc;
 pcnt_config_t ESPRotary::enc2;
 int16_t ESPRotary::r_enc_count  = 0;
 int16_t ESPRotary::r_enc2_count = 0;
+int ESPRotary::timer = 0;
+bool ESPRotary::released = true;
+bool ESPRotary::pressed = false;
+bool ESPRotary::longPressed = false;
 
 #define ROTARY_SINGLE_INC 0
 #define ROTARY_DOUBLE_INC 1
 static TaskHandle_t *pid;
-
 
 void ESPRotary::attach(RotaryObserver *obs) {
 	observers.push_back(obs);
 }
 void ESPRotary::detach(RotaryObserver *obs) {
 	auto it = std::find(observers.begin(), observers.end(), obs);
-    if ( it != observers.end() ) {
-        observers.erase(it);
-    }
+	if ( it != observers.end() ) {
+		observers.erase(it);
+	}
 }
 
 bool ESPRotary::readSwitch() {
@@ -112,43 +111,65 @@ void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
 int16_t old_cnt = 0;
 int old_button = RELEASE;
 
+void ESPRotary::sendRelease(){
+	ESP_LOGI(FNAME,"Release action");
+	for (auto &observer : observers)
+		observer->release();
+	ESP_LOGI(FNAME,"End switch release action");
+}
+
+void ESPRotary::sendPress(){
+	ESP_LOGI(FNAME,"Pressed action");
+	for (auto &observer : observers)
+		observer->press();
+	ESP_LOGI(FNAME,"End pressed action");
+
+}
+
+void ESPRotary::sendLongPress(){
+	ESP_LOGI(FNAME,"Long pressed action");
+	for (auto &observer : observers)
+		observer->longPress();
+	ESP_LOGI(FNAME,"End long pressed action");
+}
+
 void ESPRotary::informObservers( void * args )
 {
 	while( 1 ) {
 		int button = gpio_get_level((gpio_num_t)sw);
-		if( button != old_button )
-		{
-//			ESP_LOGI(FNAME,"Rotary button:%d", button);
-			int event = NONE;
-			if( button==0 )
-				event = PRESS;
-			else
-				event = RELEASE;
-			old_button=button;
-			if( event == RELEASE ){
-				ESP_LOGI(FNAME,"Switch released action");
-				for (auto &observer : observers)
-					observer->release();
-				ESP_LOGI(FNAME,"End Switch released action");
-			}
-			else if ( event == PRESS ){
-				ESP_LOGI(FNAME,"Switch pressed action");
-				for (auto &observer : observers)
-					observer->press();
-				ESP_LOGI(FNAME,"End Switch pressed action");
-			}
-			else if ( event == LONG_PRESS ){   // tbd
-				ESP_LOGI(FNAME,"Switch long pressed action");
-				for (auto &observer : observers)
-					observer->longPress();
-				ESP_LOGI(FNAME,"End Switch long pressed action");
+		int event = NONE;
+		if( button == 0 ){  // Push button is being pressed
+			timer++;
+			released = false;
+			pressed = false;
+			longPressed = false;
+		}
+		else{   // Push button is being released
+			if( !released ){
+				ESP_LOGI(FNAME,"timer=%d", timer );
+				if( timer > 20 ){  // > 400 mS
+					if( !longPressed ){
+						sendLongPress();
+						longPressed = true;
+					}
+				}
+				else{
+					if( !pressed ){
+						sendPress();
+						pressed = true;
+					}
+				}
+				timer = 0;
+				released = true;
+				sendRelease();
+				delay( 20 );
 			}
 		}
 		if( pcnt_get_counter_value(PCNT_UNIT_0, &r_enc_count) != ESP_OK ) {
-				ESP_LOGE(FNAME,"Error get counter");
+			ESP_LOGE(FNAME,"Error get counter");
 		}
 		if( pcnt_get_counter_value(PCNT_UNIT_1, &r_enc2_count) != ESP_OK ) {
-				ESP_LOGE(FNAME,"Error get counter");
+			ESP_LOGE(FNAME,"Error get counter");
 		}
 
 		if( abs( r_enc_count+r_enc2_count - old_cnt) > rotary_inc.get() )

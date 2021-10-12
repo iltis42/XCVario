@@ -21,6 +21,7 @@ Last update: 2021-02-25
 
 #include "IpsDisplay.h"
 #include "SetupMenuDisplay.h"
+#include "sensor.h"
 
 SetupMenuDisplay::SetupMenuDisplay( String title,
                                     int (*action)(SetupMenuDisplay *p) ) :
@@ -37,7 +38,7 @@ SetupMenuDisplay::~SetupMenuDisplay()
 
 void SetupMenuDisplay::display( int mode )
 {
-  if( (selected != this) || !_menu_enabled )
+  if( (selected != this) || !inSetup )
     return;
 
   if( _action != nullptr ) {

@@ -298,7 +298,7 @@ SetupMenu::SetupMenu( String title ) : MenuEntry() {
 }
 SetupMenu::~SetupMenu()
 {
-    _rotary->detach(this);
+	_rotary->detach(this);
 }
 
 void SetupMenu::begin( IpsDisplay* display, ESPRotary * rotary, PressureSensor * bmp, AnalogInput *adc ){
@@ -313,7 +313,7 @@ void SetupMenu::begin( IpsDisplay* display, ESPRotary * rotary, PressureSensor *
 }
 
 void SetupMenu::display( int mode ){
-	if( (selected != this) || !_menu_enabled )
+	if( (selected != this) || !inSetup )
 		return;
 	ESP_LOGI(FNAME,"SetupMenu display( %s)", _title.c_str() );
 	clear();
@@ -348,7 +348,7 @@ void SetupMenu::display( int mode ){
 }
 
 void SetupMenu::down(int count){
-	if( selected == this && !_menu_enabled ) {
+	if( selected == this && !inSetup ) {
 		// ESP_LOGI(FNAME,"root: down");
 		float &mc = MC.getRef();
 		if( rot_default.get() == 1) {	 // MC Value
@@ -364,7 +364,7 @@ void SetupMenu::down(int count){
 			audio_volume.set( vol );
 		}
 	}
-	if( (selected != this) || !_menu_enabled )
+	if( (selected != this) || !inSetup )
 		return;
 	// ESP_LOGI(FNAME,"down %d %d", highlight, _childs.size() );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
@@ -383,7 +383,7 @@ void SetupMenu::down(int count){
 
 #include <cstring>
 void SetupMenu::up(int count){
-	if( selected == this && !_menu_enabled ) {
+	if( selected == this && !inSetup ) {
 		// ESP_LOGI(FNAME,"root: up");
 		float &mc = MC.getRef();
 		if(rot_default.get() == 1) {	 // MC Value
@@ -400,7 +400,7 @@ void SetupMenu::up(int count){
 		}
 	}
 
-	if( (selected != this) || !_menu_enabled )
+	if( (selected != this) || !inSetup )
 		return;
 	// ESP_LOGI(FNAME,"SetupMenu::up %d %d", highlight, _childs.size() );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
@@ -417,43 +417,32 @@ void SetupMenu::up(int count){
 	xSemaphoreGive(spiMutex );
 }
 
-void SetupMenu::longPress(){
-	long_pressed = true;
-	ESP_LOGI(FNAME,"SetupMenue: longPress");
-}
-
-void SetupMenu::press(){
-	if( selected == 0 )
-		selected = root;
-	if( (selected != this) )
-		return;
-	ESP_LOGI(FNAME,"SetupMenu press p:%d h:%d parent:%x", pressed, highlight, (int)_parent );
+void SetupMenu::showMenu( bool apressed ){
+	ESP_LOGI(FNAME,"showMenu() p:%d h:%d parent:%x", pressed, highlight, (int)_parent );
 	// main menue behavior, extra class maybe
 	// for now here we catch this
 	// this is just for the main menu,
-	if( (_parent == 0) && (highlight == -1) )
+	if( (_parent == 0) && (highlight == -1) ) // entering setup menu root
 	{
-		if( !pressed )
+		if( !inSetup )
 		{
-			ESP_LOGI(FNAME,"!pressed");
 			inSetup=true;
+			ESP_LOGI(FNAME,"Start Setup Menu");
 			_display->doMenu(true);
-			_menu_enabled = true;
-            // _rotary->attach(&menu_rotary_handler); // todo
+			// _rotary->attach(&menu_rotary_handler); // todo
 			delay(200);  // fixme give display task time to finish drawing
 		}
 		else
 		{
-			ESP_LOGI(FNAME,"pressed");
+			ESP_LOGI(FNAME,"End Setup Menu");
 			_display->setup();
 			_display->clear();
 			Audio::setup();
 			bmpVario.setup();
-			_menu_enabled = false;
-            // _rotary->detach(&menu_rotary_handler);
-			inSetup=false;
+			// _rotary->detach(&menu_rotary_handler);
 			_display->doMenu(false);
-            SetupCommon::commitNow();
+			SetupCommon::commitNow();
+			inSetup=false;
 		}
 	}
 	// default is not pressed, so just display, but we toogle pressed state at the end
@@ -475,14 +464,42 @@ void SetupMenu::press(){
 				selected->pressed = false;
 			}
 		}
-		pressed = false;
 	}
-	else
-	{
-		pressed = true;
-	}
-	ESP_LOGI(FNAME,"~SetupMenu press()");
+	ESP_LOGI(FNAME,"end showMenu()");
 }
+
+void SetupMenu::press(){
+	if( selected == 0 )
+		selected = root;
+	if( (selected != this) )
+		return;
+	if( !inSetup ){
+		active_screen++;
+		active_screen = active_screen%(menu_screens.get()+1);
+		ESP_LOGI(FNAME,"short press() screen=%d", active_screen );
+	}
+	if( !menu_long_press.get() || inSetup )
+		showMenu( true );
+	if( pressed )
+		pressed = false;
+	else
+		pressed = true;
+}
+
+void SetupMenu::longPress(){
+	if( (selected != this) )
+		return;
+	// ESP_LOGI(FNAME,"longPress()");
+	if( menu_long_press.get() )
+	 	showMenu( true );
+	if( long_pressed ){
+		long_pressed = true;
+	}
+	else{
+		long_pressed = false;
+	}
+}
+
 
 void SetupMenu::setup( )
 {
@@ -648,7 +665,7 @@ void SetupMenu::setup( )
 
 		SetupMenuValFloat * mv = new SetupMenuValFloat( "Max Volume", 0, "%", 0, 100, 1.0, 0, false, &max_volume );
 		audio->addEntry( mv );
-        mv->setHelp(PROGMEM"Maximum volume for Audio when volume setting is at max. Set to 0% to mute audio entirely.");
+		mv->setHelp(PROGMEM"Maximum volume for Audio when volume setting is at max. Set to 0% to mute audio entirely.");
 
 		SetupMenuSelect * abnm = new SetupMenuSelect( "Cruise Audio", false, 0 , true, &cruise_audio_mode );
 		abnm->setHelp(PROGMEM"Select either S2F command or Variometer (Netto/Brutto as selected) as audio source while cruising");
@@ -1044,11 +1061,11 @@ void SetupMenu::setup( )
 		ShowStraightWind* ssw = new ShowStraightWind( "Straight Wind Status" );
 		strWindM->addEntry( ssw );
 
-//		sms = new SetupMenuSelect( "Reset",	false, windResetAction, false, 0 );
-//		sms->setHelp( "Reset all wind data to defaults" );
-//		sms->addEntry( "Cancel" );
-//		sms->addEntry( "Reset" );
-//		strWindM->addMenu( sms );
+		//		sms = new SetupMenuSelect( "Reset",	false, windResetAction, false, 0 );
+		//		sms->setHelp( "Reset all wind data to defaults" );
+		//		sms->addEntry( "Cancel" );
+		//		sms->addEntry( "Reset" );
+		//		strWindM->addMenu( sms );
 
 		SetupMenu * cirWindM = new SetupMenu( "Circling Wind" );
 		compassWindME->addEntry( cirWindM );
@@ -1348,12 +1365,33 @@ void SetupMenu::setup( )
 		vmax->setHelp(PROGMEM"Configure maximum speed for corresponding airplane type");
 		aia->addEntry( vmax );
 
+
+		SetupMenu * rotarya = new SetupMenu( "Rotary" );
+		sye->addEntry( rotarya );
 		// Rotary Default
-		SetupMenuSelect * rd = new SetupMenuSelect( "Rotary Default", false, 0, true, &rot_default );
-		sye->addEntry( rd );
+		SetupMenuSelect * rd = new SetupMenuSelect( "Rotation", false, 0, true, &rot_default );
+		rotarya->addEntry( rd );
 		rd->setHelp(PROGMEM "Select value to be altered at rotary movement outside of setup menu");
 		rd->addEntry( "Volume");
 		rd->addEntry( "MC Value");
+
+		SetupMenuSelect * sact = new SetupMenuSelect( "Setup Activ.", false, 0, true, &menu_long_press );
+		rotarya->addEntry( sact);
+		sact->setHelp(PROGMEM "Select Mode to activate setup menu either by short press or long press > 0.4 seconds");
+		sact->addEntry( "Short Press");
+		sact->addEntry( "Long Press");
+
+		SetupMenuSelect * screens = new SetupMenuSelect( "Screens", false, 0, true, &menu_screens );
+		rotarya->addEntry( screens );
+		screens->setHelp(PROGMEM "Select screens to be activated one after each other by short press");
+		screens->addEntry( "Variometer");
+		screens->addEntry( "+ G-Meter");
+		/*
+		screens->addEntry( "+ Traffic Alert");
+		screens->addEntry( "+ Thermal Assistant");
+		*/
+
+
 
 		// _serial1_speed
 		SetupMenu * rs232 = new SetupMenu( "RS232 Interface S1" );

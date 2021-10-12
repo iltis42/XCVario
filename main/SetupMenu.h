@@ -32,7 +32,7 @@ public:
 	void down( int count );
 	void press();
 	void longPress();
-	bool isActive() { return _menu_enabled; };
+	void showMenu( bool pressed );
 };
 
 #endif

@@ -42,6 +42,9 @@ public:
     static void readPos( void * args );
     static void informObservers( void * args );
     static void readPosInt( void * args );
+    static void sendRelease();
+    static void sendPress();
+    static void sendLongPress();
     bool readSwitch();  // returns true if pressed
 
 private:
@@ -53,6 +56,10 @@ private:
     static pcnt_config_t enc2;
     static int16_t r_enc_count;
     static int16_t r_enc2_count;
+    static int timer;
+    static bool released;
+    static bool longPressed;
+    static bool pressed;
 };
 
 #endif

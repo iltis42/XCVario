@@ -16,6 +16,7 @@
 
 extern StraightWind theWind;
 extern xSemaphoreHandle xMutex;
+extern int active_screen;
 
 extern bool haveMPU;
 extern bool ahrsKeyValid;

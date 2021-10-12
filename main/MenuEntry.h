@@ -42,7 +42,6 @@ public:
 	void clear();
 	void uprintf( int x, int y, const char* format, ...);
 	void uprint( int x, int y, const char* str );
-	bool menuEnabled() { return _menu_enabled; };
 	void semaphoreTake();
     void semaphoreGive();
 public:
@@ -55,7 +54,6 @@ public:
 	static ESPRotary* _rotary;
 	static AnalogInput* _adc;
 	static PressureSensor *_bmp;
-	static bool _menu_enabled;
 	int    highlight;
 	bool   pressed = false;
 	bool   long_pressed = false;

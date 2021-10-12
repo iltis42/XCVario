@@ -183,6 +183,7 @@ bool flarmWarning = false;
 bool gLoadDisplay = false;
 int hold_alarm=0;
 int the_can_mode = CAN_MODE_MASTER;
+int active_screen = 0;  // 0 = Vario
 
 float getTAS() { return tas; };
 
@@ -242,10 +243,11 @@ void drawDisplay(void *pvParameters){
 				}
 			}
 			// Flarm Warning Screen
-			if( flarm_warning.get() && !stall_warning_active && Flarm::alarmLevel() >= flarm_warning.get()  ){ // 0 -> Disable
+			if( flarm_warning.get() && !stall_warning_active && Flarm::alarmLevel() >= flarm_warning.get() ){ // 0 -> Disable
 				// ESP_LOGI(FNAME,"Flarm::alarmLevel: %d, flarm_warning.get() %d", Flarm::alarmLevel(), flarm_warning.get() );
 				if( !flarmWarning ) {
 					flarmWarning = true;
+					delay(100);
 					display->clear();
 					hold_alarm = 250;
 				}
@@ -261,7 +263,7 @@ void drawDisplay(void *pvParameters){
 				Flarm::drawFlarmWarning();
 			// G-Load Display
 			if( (((float)accelG[0] > gload_pos_thresh.get() || (float)accelG[0] < gload_neg_thresh.get()) && gload_mode.get() == GLOAD_DYNAMIC ) ||
-					( gload_mode.get() == GLOAD_ALWAYS_ON ) )
+					( gload_mode.get() == GLOAD_ALWAYS_ON ) || active_screen == SCREEN_GMETER  )
 			{
 				if( !gLoadDisplay ){
 					gLoadDisplay = true;
@@ -279,7 +281,7 @@ void drawDisplay(void *pvParameters){
 			}
 			// G-Load Alarm when limits reached
 			if( gload_mode.get() != GLOAD_OFF  ){
-				if( (float)accelG[0] > gload_pos_limit.get() || (float)accelG[0] < gload_neg_limit.get() ){
+				if( (float)accelG[0] > gload_pos_limit.get() || (float)accelG[0] < gload_neg_limit.get()  ){
 					if( !gload_alarm ) {
 						Audio::alarm( true );
 						gload_alarm = true;
@@ -293,7 +295,7 @@ void drawDisplay(void *pvParameters){
 				}
 			}
 			// Vario Screen
-			if( !(stall_warning_active || flarmWarning || gLoadDisplay ) ) {
+			if( !(stall_warning_active || flarmWarning || gLoadDisplay )  ) {
 				// ESP_LOGI(FNAME,"TE=%2.3f", te_vario.get() );
 				display->drawDisplay( airspeed, te_vario.get(), aTE, polar_sink, altitude.get(), t, battery, s2f_delta, as2f, average_climb.get(), cruise_mode.get(), standard_setting, flap_pos.get() );
 			}

@@ -75,7 +75,7 @@ SetupMenuSelect::~SetupMenuSelect()
 
 
 void SetupMenuSelect::display( int mode ){
-	if( (selected != this) || !_menu_enabled )
+	if( (selected != this) || !inSetup )
 		return;
 	ESP_LOGI(FNAME,"SetupMenuSelect display() %d %x", pressed, (int)this);
 	clear();
@@ -116,7 +116,7 @@ void SetupMenuSelect::display( int mode ){
 }
 
 void SetupMenuSelect::down(int count){
-	if( (selected != this) || !_menu_enabled )
+	if( (selected != this) || !inSetup )
 		return;
 
 	if( _numval > 9 ){
@@ -143,7 +143,7 @@ void SetupMenuSelect::down(int count){
 }
 
 void SetupMenuSelect::up(int count){
-	if( (selected != this) || !_menu_enabled )
+	if( (selected != this) || !inSetup )
 		return;
 	if( _numval > 9 )
 	{

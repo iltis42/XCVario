@@ -17,6 +17,7 @@
 #include "Polars.h"
 #include <logdef.h>
 #include <sensor.h>
+#include <cstring>
 #include "Cipher.h"
 #include "Units.h"
 #include "Switch.h"
@@ -350,8 +351,8 @@ void SetupMenu::display( int mode ){
 void SetupMenu::down(int count){
 	if( selected == this && !inSetup ) {
 		// ESP_LOGI(FNAME,"root: down");
-		float &mc = MC.getRef();
 		if( rot_default.get() == 1) {	 // MC Value
+			float mc = MC.get();
 			if( mc > 0.1 ) {
 				mc -= 0.1;
 				MC.set( mc );
@@ -381,11 +382,11 @@ void SetupMenu::down(int count){
 	pressed = true;
 }
 
-#include <cstring>
+
 void SetupMenu::up(int count){
 	if( selected == this && !inSetup ) {
 		// ESP_LOGI(FNAME,"root: up");
-		float &mc = MC.getRef();
+		float mc = MC.get();
 		if(rot_default.get() == 1) {	 // MC Value
 			if( mc < 9.9 ) {
 				mc += 0.1;

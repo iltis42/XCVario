@@ -259,7 +259,7 @@ void Protocols::parseNMEA( const char *astr ){
 	// ESP_LOGI(FNAME,"parseNMEA: %s", astr );
 	const char *str = mystrtok(astr);
 	while( str ){
-		ESP_LOGV(FNAME,"parseNMEA token: %s", str);
+		// ESP_LOGV(FNAME,"parseNMEA token: %s", str);
 		if ( strncmp( str, "!xs", 3 ) == 0 ) {
 			// ESP_LOGI(FNAME,"parseNMEA %s", str );
 			char key[20];

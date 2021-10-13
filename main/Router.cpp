@@ -245,9 +245,9 @@ void Router::routeBT(){
 
 // route messages from CAN
 void Router::routeClient(){
-	SString can;
-	if( pullMsg( client_rx_q, can ) ){
-		Protocols::parseNMEA( can.c_str() );
+	SString client;
+	if( pullMsg( client_rx_q, client ) ){
+		Protocols::parseNMEA( client.c_str() );
 	}
 }
 

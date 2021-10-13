@@ -197,7 +197,7 @@ void WifiClient::tcp_client(void *setup){
         SString send;
     	Router::pullMsg( *(config->txbuf), send);
         if( send.length() ){
-        	// ESP_LOGI(FNAME, "have data to send");
+        	// ESP_LOGI(FNAME, "have data to send, port: %d len: %d", config->port, send.length() );
         	if( write(config->sock , send.c_str() , send.length() ) < 0)
         	{
         		ESP_LOGE(FNAME, "Send failed, socket %d", config->sock );

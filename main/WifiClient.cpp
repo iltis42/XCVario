@@ -29,7 +29,7 @@ typedef struct xcv_sock_client {
 	int sock;
 }sock_client_t;
 
-static sock_client_t XCVarioCL = { .txbuf = &wl_vario_tx_q, .rxbuf = &wl_vario_rx_q, .port=8884, .connected=false, .sock=-1 };
+static sock_client_t XCVarioCL = { .txbuf = &client_tx_q, .rxbuf = &client_rx_q, .port=8884, .connected=false, .sock=-1 };
 static sock_client_t FLARM   =   { .txbuf = &wl_flarm_tx_q, .rxbuf = &wl_flarm_rx_q, .port=8881, .connected=false, .sock=-1 };
 
 EventGroupHandle_t WifiClient::wifi_event_group;
@@ -237,6 +237,7 @@ void WifiClient::tcp_client(void *setup){
         	}
         }
         Router::routeWLAN();
+        Router::routeClient();
         vTaskDelay(50 / portTICK_PERIOD_MS);
     }
     ESP_LOGI(FNAME, "tcp_client task closed\n");

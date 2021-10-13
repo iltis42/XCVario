@@ -1083,8 +1083,8 @@ void IpsDisplay::initLoadDisplay(){
 	ESP_LOGI(FNAME,"initLoadDisplay end");
 }
 
-float old_gmax = 0;
-float old_gmin = 0;
+float old_gmax = 100;
+float old_gmin = -100;
 
 void IpsDisplay::drawLoadDisplay( float loadFactor ){
 	// ESP_LOGI(FNAME,"drawLoadDisplay %1.1f", loadFactor );
@@ -1109,14 +1109,24 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 	}
 	// Min/Max values
 	if( old_gmax != gload_pos_max.get() ){
+		if( gload_pos_max.get() < gload_pos_limit.get() )
+			ucg->setColor(  COLOR_WHITE  );
+		else
+			ucg->setColor(  COLOR_RED  );
 		ucg->setFont(ucg_font_fub20_hr);
 		ucg->setPrintPos(120,105);
 		ucg->printf("%+1.2f   ", gload_pos_max.get() );
+		old_gmax = gload_pos_max.get();
 	}
 	if( old_gmin != gload_neg_max.get() ){
+		if( gload_neg_max.get() > gload_neg_limit.get() )
+			ucg->setColor(  COLOR_WHITE  );
+		else
+			ucg->setColor(  COLOR_RED  );
 		ucg->setFont(ucg_font_fub20_hr);
 		ucg->setPrintPos(125,245);
 		ucg->printf("%+1.2f   ", gload_neg_max.get() );
+		old_gmin = gload_neg_max.get();
 	}
 
 	xSemaphoreGive(spiMutex);

@@ -118,9 +118,6 @@ void WifiApp::socket_server(void *setup) {
 	}
 	// we have a socket
 	fcntl(sock, F_SETFL, O_NONBLOCK); // socket should not block, so we can server several clients
-	SString tcprx;
-	tcprx.resize( SSTRLEN );
-
 	while (1)
 	{
 		int new_client = accept(sock, (struct sockaddr *)&clientAddress[clients.size()], &clientAddressLength);
@@ -157,10 +154,11 @@ void WifiApp::socket_server(void *setup) {
 			for(it = clients.begin(); it != clients.end(); ++it)
 			{
 				client_record_t &client_rec = *it;
-				char r[256];
+				char r[SSTRLEN+1];
 				// ESP_LOGI(FNAME, "read from wifi client %d", client_rec.client );
 				ssize_t sizeRead = recv(client_rec.client, r, SSTRLEN-1, MSG_DONTWAIT);
 				if (sizeRead > 0) {
+					SString tcprx;
 					tcprx.set( r, sizeRead );
 					Router::forwardMsg( tcprx, *(config->rxbuf) );
 					// ESP_LOGI(FNAME, "RX wifi client port %d size: %d bincom:%d", config->port, sizeRead, Flarm::bincom );
@@ -172,9 +170,6 @@ void WifiApp::socket_server(void *setup) {
 						num_send ++;
 					}
 				}
-				//if( Flarm::bincom )
-				//	vTaskDelay(500/portTICK_PERIOD_MS); // maximize realtime throuput for flight download
-
 				// ESP_LOGI(FNAME, "loop tcp client %d, port %d", client_rec.client, config->port );
 				if ( len ){
 					// ESP_LOGI(FNAME, "TX wifi client %d, bytes %d, port %d, trials:%d", client_rec.client, len, config->port, client_rec.retries );

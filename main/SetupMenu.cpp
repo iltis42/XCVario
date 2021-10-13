@@ -352,11 +352,10 @@ void SetupMenu::down(int count){
 	if( selected == this && !inSetup ) {
 		// ESP_LOGI(FNAME,"root: down");
 		if( rot_default.get() == 1) {	 // MC Value
-			float mc = MC.get();
-			if( mc > 0.1 ) {
-				mc -= 0.1;
-				MC.set( mc );
-			}
+			int mc = (int)(MC.get()*10);
+			mc -= count;
+			mc = std::max( mc, 0 );
+			MC.set( ((float)mc)/10 );
 		}
 		else{  // Volume
 			int vol = (int)audio_volume.get();
@@ -388,10 +387,10 @@ void SetupMenu::up(int count){
 		// ESP_LOGI(FNAME,"root: up");
 		float mc = MC.get();
 		if(rot_default.get() == 1) {	 // MC Value
-			if( mc < 9.9 ) {
-				mc += 0.1;
-				MC.set( mc );
-			}
+			int mc = (int)(MC.get()*10);
+			mc += count;
+			mc = std::min( mc, 99 );
+			MC.set( ((float)mc)/10 );
 		}
 		else{  // Volume
 			int vol = (int)audio_volume.get();

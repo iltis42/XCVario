@@ -142,11 +142,11 @@ Compass compass( 0x0D, ODR_50Hz, RANGE_2GAUSS, OSR_512 );
 
 BTSender btsender;
 
-float baroP=0;
-float temperature=15.0;
-bool  validTemperature=false;
-float battery=0.0;
-float dynamicP;
+static float baroP=0; // barometric pressure
+static float temperature=15.0;
+static bool  validTemperature=false;
+static float battery=0.0;
+static float dynamicP; // Pitot
 
 // global color variables for adaptable display variant
 int g_col_background=255;
@@ -339,7 +339,137 @@ void audioTask(void *pvParameters){
 	}
 }
 
-static float new_ias = 0;
+static void grabMPU()
+{
+    mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
+    mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
+    esp_err_t err = MPU.acceleration(&accelRaw);  // fetch raw data from the registers
+    if( err != ESP_OK )
+        ESP_LOGE(FNAME, "accel I2C error, X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
+    err |= MPU.rotation(&gyroRaw);       // fetch raw data from the registers
+    if( err != ESP_OK )
+        ESP_LOGE(FNAME, "gyro I2C error, X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
+    accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
+    gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
+    // ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f  gyro X: %+.2f Y:%+.2f Z:%+.2f ABx:%d ABy:%d, ABz=%d\n", -accelG[2], accelG[1], accelG[0] ,  gyroDPS.x, gyroDPS.y, gyroDPS.z, accl_bias.get().x, accl_bias.get().y, accl_bias.get().z );
+    bool goodAccl = true;
+    if( abs( accelG.x - accelG_Prev.x ) > 1 || abs( accelG.y - accelG_Prev.y ) > 1 || abs( accelG.z - accelG_Prev.z ) > 1 ) {
+        MPU.acceleration(&accelRaw);
+        accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);
+        if( abs( accelG.x - accelG_Prev.x ) > 1 || abs( accelG.y - accelG_Prev.y ) > 1 || abs( accelG.z - accelG_Prev.z ) > 1 ){
+            goodAccl = false;
+            ESP_LOGE(FNAME, "accelaration change > g in 0.2 S:  X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
+        }
+    }
+    bool goodGyro = true;
+    if( abs( gyroDPS.x - gyroDPS_Prev.x ) > MGRPS || abs( gyroDPS.y - gyroDPS_Prev.y ) > MGRPS || abs( gyroDPS.z - gyroDPS_Prev.z ) > MGRPS ) {
+        // ESP_LOGE(FNAME, "gyro sensor out of bounds: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
+        // ESP_LOGE(FNAME, "%04x %04x %04x", gyroRaw.x, gyroRaw.y, gyroRaw.z );
+        MPU.rotation(&gyroRaw);
+        gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);
+        if( abs( gyroDPS.x - gyroDPS_Prev.x ) > MGRPS || abs( gyroDPS.y - gyroDPS_Prev.y ) > MGRPS || abs( gyroDPS.z - gyroDPS_Prev.z ) > MGRPS ) {
+            goodGyro = false;
+            ESP_LOGE(FNAME, "gyro angle >90 deg/s in 0.2 S: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
+        }
+    }
+    if( err == ESP_OK && goodAccl && goodGyro ) {
+        IMU::read();
+    }
+    gyroDPS_Prev = gyroDPS;
+    accelG_Prev = accelG;
+}
+
+static void lazyNvsCommit()
+{
+    uint16_t dummy;
+    if ( xQueueReceive(SetupCommon::commitSema, &dummy, 0) ) {
+        SetupCommon::commitNow();
+    }
+}
+
+static void toyFeed()
+{
+    xSemaphoreTake(xMutex,portMAX_DELAY );
+    // reduce also messages from 10 per second to 5 per second to reduce load in XCSoar
+    // maybe just 1 or 2 per second
+    static char lb[150];
+
+    if( nmea_protocol.get() == BORGELT ) {
+        OV.sendNMEA( P_BORGELT, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altSTD, validTemperature  );
+        OV.sendNMEA( P_GENERIC, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altSTD, validTemperature  );
+    }
+    else if( nmea_protocol.get() == OPENVARIO ){
+        OV.sendNMEA( P_OPENVARIO, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altitude.get(), validTemperature  );
+    }
+    else if( nmea_protocol.get() == CAMBRIDGE ){
+        OV.sendNMEA( P_CAMBRIDGE, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altitude.get(), validTemperature  );
+    }
+    else if( nmea_protocol.get() == XCVARIO ) {
+        OV.sendNMEA( P_XCVARIO, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altitude.get(), validTemperature,
+                -accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
+    }
+    else
+        ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
+    xSemaphoreGive(xMutex);
+}
+
+
+void clientLoop(void *pvParameters)
+{
+    int count = 0;
+    validTemperature = true;
+	while (true)
+	{
+		TickType_t xLastWakeTime = xTaskGetTickCount();
+        count++;
+
+        double tmpalt = altitude.get(); // get pressure from altitude
+        if( (fl_auto_transition.get() == 1) && ((int)(altitude.get()*0.0328084) + (int)(standard_setting) > transition_alt.get() ) ) {
+             baroP = baroSensor->calcPressure(1013.25, tmpalt); // above transition altitude
+        }
+        else {
+             baroP = baroSensor->calcPressure(QNH.get() , tmpalt);
+        }
+        dynamicP = Atmosphere::kmh2pascal(ias.get());
+
+        tas = Atmosphere::TAS2( ias.get(), altitude.get(), OAT.get() );
+        aTE += (te_vario.get() - aTE)* (1/(10*vario_av_delay.get()));
+
+        if( haveMPU ) {
+            grabMPU();
+		}
+		if( accelG[0] > gload_pos_max.get() ){
+			gload_pos_max.set( (float)accelG[0] );
+		}else if( accelG[0] < gload_neg_max.get() ){
+			gload_neg_max.set(  (float)accelG[0] );
+		}
+
+        toyFeed();
+        Router::routeXCV();
+
+        if( true && !(count%5) ) { // todo need a mag_hdm.valid() flag
+            if( compass_nmea_hdm.get() ) {
+                xSemaphoreTake( xMutex, portMAX_DELAY );
+                OV.sendNmeaHDM( mag_hdm.get() );
+                xSemaphoreGive( xMutex );
+            }
+
+            if( compass_nmea_hdt.get() ) {
+                xSemaphoreTake( xMutex, portMAX_DELAY );
+                OV.sendNmeaHDT( mag_hdt.get() );
+                xSemaphoreGive( xMutex );
+            }
+        }
+
+        lazyNvsCommit();
+
+		esp_task_wdt_reset();
+		if( uxTaskGetStackHighWaterMark( bpid ) < 512 )
+			ESP_LOGW(FNAME,"Warning sensor task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );
+
+        vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(500));
+    }
+}
 
 void readSensors(void *pvParameters){
     int client_sync_dataIdx = 0;
@@ -349,187 +479,126 @@ void readSensors(void *pvParameters){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		if( haveMPU  )  // 3th Generation HW, MPU6050 avail and feature enabled
 		{
-			mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
-			mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
-			esp_err_t err = MPU.acceleration(&accelRaw);  // fetch raw data from the registers
-			if( err != ESP_OK )
-				ESP_LOGE(FNAME, "accel I2C error, X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
-			err |= MPU.rotation(&gyroRaw);       // fetch raw data from the registers
-			if( err != ESP_OK )
-				ESP_LOGE(FNAME, "gyro I2C error, X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
-			accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
-			gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
-			// ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f  gyro X: %+.2f Y:%+.2f Z:%+.2f ABx:%d ABy:%d, ABz=%d\n", -accelG[2], accelG[1], accelG[0] ,  gyroDPS.x, gyroDPS.y, gyroDPS.z, accl_bias.get().x, accl_bias.get().y, accl_bias.get().z );
-			bool goodAccl = true;
-			if( abs( accelG.x - accelG_Prev.x ) > 1 || abs( accelG.y - accelG_Prev.y ) > 1 || abs( accelG.z - accelG_Prev.z ) > 1 ) {
-				MPU.acceleration(&accelRaw);
-				accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);
-				if( abs( accelG.x - accelG_Prev.x ) > 1 || abs( accelG.y - accelG_Prev.y ) > 1 || abs( accelG.z - accelG_Prev.z ) > 1 ){
-					goodAccl = false;
-					ESP_LOGE(FNAME, "accelaration change > g in 0.2 S:  X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
-				}
-			}
-			bool goodGyro = true;
-			if( abs( gyroDPS.x - gyroDPS_Prev.x ) > MGRPS || abs( gyroDPS.y - gyroDPS_Prev.y ) > MGRPS || abs( gyroDPS.z - gyroDPS_Prev.z ) > MGRPS ) {
-				// ESP_LOGE(FNAME, "gyro sensor out of bounds: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
-				// ESP_LOGE(FNAME, "%04x %04x %04x", gyroRaw.x, gyroRaw.y, gyroRaw.z );
-				MPU.rotation(&gyroRaw);
-				gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);
-				if( abs( gyroDPS.x - gyroDPS_Prev.x ) > MGRPS || abs( gyroDPS.y - gyroDPS_Prev.y ) > MGRPS || abs( gyroDPS.z - gyroDPS_Prev.z ) > MGRPS ) {
-					goodGyro = false;
-					ESP_LOGE(FNAME, "gyro angle >90 deg/s in 0.2 S: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
-				}
-			}
-			if( err == ESP_OK && goodAccl && goodGyro ) {
-				IMU::read();
-			}
-			gyroDPS_Prev = gyroDPS;
-			accelG_Prev = accelG;
+            grabMPU();
 		}
-		if( !SetupCommon::isClient() )
-		{
-			bool ok=false;
-			float p = 0;
-			if( asSensor )
-				p = asSensor->readPascal(60, ok);
-			if( ok )
-				dynamicP = p;
-			float iasraw = Atmosphere::pascal2kmh( dynamicP );
-			// ESP_LOGI("FNAME","P: %f  IAS:%f", dynamicP, iasraw );
-			float T=OAT.get();
-			if( !validTemperature ) {
-				T= 15 - ( (altitude.get()/100) * 0.65 );
-				// ESP_LOGW(FNAME,"T invalid, using 15 deg");
-			}
-			float tasraw = 0;
-			if( baroP != 0 )
-				tasraw =  Atmosphere::TAS( iasraw , baroP, T);  // True airspeed
+        bool ok=false;
+        float p = 0;
+        if( asSensor )
+            p = asSensor->readPascal(60, ok);
+        if( ok )
+            dynamicP = p;
+        float iasraw = Atmosphere::pascal2kmh( dynamicP );
+        // ESP_LOGI("FNAME","P: %f  IAS:%f", dynamicP, iasraw );
+        float T=OAT.get();
+        if( !validTemperature ) {
+            T= 15 - ( (altitude.get()/100) * 0.65 );
+            // ESP_LOGW(FNAME,"T invalid, using 15 deg");
+        }
+        float tasraw = 0;
+        if( baroP != 0 )
+            tasraw =  Atmosphere::TAS( iasraw , baroP, T);  // True airspeed
 
-			new_ias = ias.get() + (iasraw - ias.get())*0.25;
-			if( (int( ias.get()+0.5 ) != int( new_ias+0.5 ) ) || !(count%20) ){
-				ias.set( new_ias );  // low pass filter
-			}
-			// ESP_LOGI("FNAME","P: %f  IAS:%f IASF: %d", dynamicP, iasraw, ias );
-			tas += (tasraw-tas)*0.25;       // low pass filter
-			// ESP_LOGI(FNAME,"IAS=%f, T=%f, TAS=%f baroP=%f", ias, T, tas, baroP );
-			xSemaphoreTake(xMutex,portMAX_DELAY );
+        static float new_ias = 0;
+        new_ias = ias.get() + (iasraw - ias.get())*0.25;
+        if( (int( ias.get()+0.5 ) != int( new_ias+0.5 ) ) || !(count%20) ){
+            ias.set( new_ias );  // low pass filter
+        }
+        // ESP_LOGI("FNAME","P: %f  IAS:%f IASF: %d", dynamicP, iasraw, ias );
+        tas += (tasraw-tas)*0.25;       // low pass filter
+        // ESP_LOGI(FNAME,"IAS=%f, T=%f, TAS=%f baroP=%f", ias, T, tas, baroP );
+        xSemaphoreTake(xMutex,portMAX_DELAY );
 
-			float te = bmpVario.readTE( tasraw );
-			if( (int( te_vario.get()*20 +0.5 ) != int( te*20 +0.5)) || !(count%10) ){  // a bit more fine granular updates than 0.1 m/s as of sound
-				te_vario.set( te );  // max 10x per second
-			}
-			xSemaphoreGive(xMutex);
-			// ESP_LOGI(FNAME,"count %d ccp %d", count, ccp );
-			if( !(count % ccp) ) {
-				AverageVario::recalcAvgClimb();
-			}
+        float te = bmpVario.readTE( tasraw );
+        if( (int( te_vario.get()*20 +0.5 ) != int( te*20 +0.5)) || !(count%10) ){  // a bit more fine granular updates than 0.1 m/s as of sound
+            te_vario.set( te );  // max 10x per second
+        }
+        xSemaphoreGive(xMutex);
+        // ESP_LOGI(FNAME,"count %d ccp %d", count, ccp );
+        if( !(count % ccp) ) {
+            AverageVario::recalcAvgClimb();
+        }
 
-			if (FLAP) { FLAP->progress(); }
-			xSemaphoreTake(xMutex,portMAX_DELAY );
-			baroP = baroSensor->readPressure(ok);   // 10x per second
-			xSemaphoreGive(xMutex);
-			// ESP_LOGI(FNAME,"Baro Pressure: %4.3f", baroP );
-			float altSTD = 0;
-			if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
-				altSTD = alt_external;
-			else
-				altSTD = baroSensor->calcAVGAltitudeSTD( baroP );
-			float new_alt = 0;
-			if( alt_select.get() == AS_TE_SENSOR ) // TE
-				new_alt = bmpVario.readAVGalt();
-			else if( alt_select.get() == AS_BARO_SENSOR  || alt_select.get() == AS_EXTERNAL ){ // Baro or external
-				if(  alt_unit.get() == ALT_UNIT_FL ) { // FL, always standard
-					new_alt = altSTD;
-					standard_setting = true;
-					// ESP_LOGI(FNAME,"au: %d", alt_unit.get() );
-				}else if( (fl_auto_transition.get() == 1) && ((int)altSTD*0.0328084 + (int)(standard_setting) > transition_alt.get() ) ) { // above transition altitude
-					new_alt = altSTD;
-					standard_setting = true;
-					// ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), altSTD, standard_setting, transition_alt.get() );
-				}
-				else {
-					if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
-						new_alt = altSTD + (QNH.get() - 1013.25)*8.2296;  // correct altitude according to ISA model = 27ft / hPa
-					else
-						new_alt = baroSensor->calcAVGAltitude( QNH.get(), baroP );
-					standard_setting = false;
-					// ESP_LOGI(FNAME,"QNH %f baro: %f alt: %f SS:%d", QNH.get(), baroP, alt, standard_setting  );
-				}
-			}
-			if( (int( new_alt +0.5 ) != int( altitude.get() +0.5 )) || !(count%20) ){
-				// ESP_LOGI(FNAME,"New Altitude: %.1f", new_alt );
-				altitude.set( new_alt );
-			}
+        if (FLAP) { FLAP->progress(); }
+        xSemaphoreTake(xMutex,portMAX_DELAY );
+        baroP = baroSensor->readPressure(ok);   // 10x per second
+        xSemaphoreGive(xMutex);
+        // ESP_LOGI(FNAME,"Baro Pressure: %4.3f", baroP );
+        float altSTD = 0;
+        if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
+            altSTD = alt_external;
+        else
+            altSTD = baroSensor->calcAVGAltitudeSTD( baroP );
+        float new_alt = 0;
+        if( alt_select.get() == AS_TE_SENSOR ) // TE
+            new_alt = bmpVario.readAVGalt();
+        else if( alt_select.get() == AS_BARO_SENSOR  || alt_select.get() == AS_EXTERNAL ){ // Baro or external
+            if(  alt_unit.get() == ALT_UNIT_FL ) { // FL, always standard
+                new_alt = altSTD;
+                standard_setting = true;
+                // ESP_LOGI(FNAME,"au: %d", alt_unit.get() );
+            }else if( (fl_auto_transition.get() == 1) && ((int)altSTD*0.0328084 + (int)(standard_setting) > transition_alt.get() ) ) { // above transition altitude
+                new_alt = altSTD;
+                standard_setting = true;
+                // ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), altSTD, standard_setting, transition_alt.get() );
+            }
+            else {
+                if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
+                    new_alt = altSTD + (QNH.get() - 1013.25)*8.2296;  // correct altitude according to ISA model = 27ft / hPa
+                else
+                    new_alt = baroSensor->calcAVGAltitude( QNH.get(), baroP );
+                standard_setting = false;
+                // ESP_LOGI(FNAME,"QNH %f baro: %f alt: %f SS:%d", QNH.get(), baroP, alt, standard_setting  );
+            }
+        }
+        if( (int( new_alt +0.5 ) != int( altitude.get() +0.5 )) || !(count%20) ){
+            // ESP_LOGI(FNAME,"New Altitude: %.1f", new_alt );
+            altitude.set( new_alt );
+        }
 
-			aTE = bmpVario.readAVGTE();
-			doAudio();
+        aTE = bmpVario.readAVGTE();
+        doAudio();
 
-			if( !Flarm::bincom && ((count % 2) == 0 ) ){
-				xSemaphoreTake(xMutex,portMAX_DELAY );
-				// reduce also messages from 10 per second to 5 per second to reduce load in XCSoar
-				char lb[150];
-
-				if( nmea_protocol.get() == BORGELT ) {
-					OV.sendNMEA( P_BORGELT, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altSTD, validTemperature  );
-					OV.sendNMEA( P_GENERIC, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altSTD, validTemperature  );
-				}
-				else if( nmea_protocol.get() == OPENVARIO ){
-					OV.sendNMEA( P_OPENVARIO, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altitude.get(), validTemperature  );
-				}
-				else if( nmea_protocol.get() == CAMBRIDGE ){
-					OV.sendNMEA( P_CAMBRIDGE, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altitude.get(), validTemperature  );
-				}
-				else if( nmea_protocol.get() == XCVARIO ) {
-					OV.sendNMEA( P_XCVARIO, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altitude.get(), validTemperature,
-							-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
-				}
-				else
-					ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
-				xSemaphoreGive(xMutex);
-				vTaskDelay(2/portTICK_PERIOD_MS);
-			}
-			Router::routeXCV();
-			// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d ena=%d", compass.haveSensor(),  compass_nmea_hdt.get(),  compass_enable.get() );
-			if( compass_enable.get()  && !Flarm::bincom && !Compass::calibrationIsRunning() ) {
-				// Trigger heading reading and low pass filtering. That job must be
-				// done periodically.
-				bool ok;
-				float heading = compass.getGyroHeading( &ok );
-				if(ok){
-					if( (int)heading != (int)mag_hdm.get() && !(count%10) ){
-						mag_hdm.set( heading );
-					}
-					if( !(count%5) && compass_nmea_hdm.get() == true ) {
-						xSemaphoreTake( xMutex, portMAX_DELAY );
-						OV.sendNmeaHDM( heading );
-						xSemaphoreGive( xMutex );
-					}
-				}
-				else{
-					if( mag_hdm.get() != -1 )
-						mag_hdm.set( -1 );
-				}
-				float theading = Compass::filteredTrueHeading( &ok );
-				if(ok){
-					if( (int)theading != (int)mag_hdt.get() && !(count%10) ){
-						mag_hdt.set( theading );
-					}
-					if( !(count%5) && ( compass_nmea_hdt.get() == true )  ) {
-						xSemaphoreTake( xMutex, portMAX_DELAY );
-						OV.sendNmeaHDT( theading );
-						xSemaphoreGive( xMutex );
-					}
-				}
-				else{
-					if( mag_hdt.get() != -1 )
-						mag_hdt.set( -1 );
-				}
-			}
-		}else
-		{
-			tas = Atmosphere::TAS2( ias.get(), altitude.get(), OAT.get() );
-			aTE += (te_vario.get() - aTE)* (1/(10*vario_av_delay.get()));
-		}
+        if( !Flarm::bincom && ((count % 2) == 0 ) ){
+            toyFeed();
+            vTaskDelay(2/portTICK_PERIOD_MS);
+        }
+        Router::routeXCV();
+        // ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d ena=%d", compass.haveSensor(),  compass_nmea_hdt.get(),  compass_enable.get() );
+        if( compass_enable.get()  && !Flarm::bincom && !Compass::calibrationIsRunning() ) {
+            // Trigger heading reading and low pass filtering. That job must be
+            // done periodically.
+            bool ok;
+            float heading = compass.getGyroHeading( &ok );
+            if(ok){
+                if( (int)heading != (int)mag_hdm.get() && !(count%10) ){
+                    mag_hdm.set( heading );
+                }
+                if( !(count%5) && compass_nmea_hdm.get() == true ) {
+                    xSemaphoreTake( xMutex, portMAX_DELAY );
+                    OV.sendNmeaHDM( heading );
+                    xSemaphoreGive( xMutex );
+                }
+            }
+            else{
+                if( mag_hdm.get() != -1 )
+                    mag_hdm.set( -1 );
+            }
+            float theading = Compass::filteredTrueHeading( &ok );
+            if(ok){
+                if( (int)theading != (int)mag_hdt.get() && !(count%10) ){
+                    mag_hdt.set( theading );
+                }
+                if( !(count%5) && ( compass_nmea_hdt.get() == true )  ) {
+                    xSemaphoreTake( xMutex, portMAX_DELAY );
+                    OV.sendNmeaHDT( theading );
+                    xSemaphoreGive( xMutex );
+                }
+            }
+            else{
+                if( mag_hdt.get() != -1 )
+                    mag_hdt.set( -1 );
+            }
+        }
 		if( accelG[0] > gload_pos_max.get() ){
 			gload_pos_max.set( (float)accelG[0] );
 		}else if( accelG[0] < gload_neg_max.get() ){
@@ -549,10 +618,7 @@ void readSensors(void *pvParameters){
                 CAN->ResetNewClient();
             }
         }
-        uint16_t dummy;
-        if ( xQueueReceive(SetupCommon::commitSema, &dummy, 0) ) {
-            SetupCommon::commitNow();
-        }
+        lazyNvsCommit();
 
 		esp_task_wdt_reset();
 		if( uxTaskGetStackHighWaterMark( bpid ) < 512 )
@@ -1337,10 +1403,13 @@ void sensor(void *args){
 		}
 	}
 
-	xTaskCreatePinnedToCore(&readSensors, "readSensors", 4096, NULL, 14, &bpid, 0);
 	if( SetupCommon::isClient() ){
+        xTaskCreatePinnedToCore(&clientLoop, "clientLoop", 4096, NULL, 14, &bpid, 0);
 		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 14, &apid, 0);
 	}
+    else {
+	    xTaskCreatePinnedToCore(&readSensors, "readSensors", 4096, NULL, 14, &bpid, 0);
+    }
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 2500, NULL, 8, &tpid, 0);
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 5096, NULL, 4, &dpid, 0);
 

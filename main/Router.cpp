@@ -264,6 +264,10 @@ void Router::routeClient(){
                     ESP_LOGV(FNAME,"Send to S2 device, CAN received %d bytes", client.length() );
                 }
             }
+    		if( wireless == WL_BLUETOOTH )
+    			if( forwardMsg( client, bt_tx_q )){
+    				ESP_LOGI(FNAME,"Route Client link received NMEA to bt_tx_q", client.length() );
+    			}
         }
 		Protocols::parseNMEA( client.c_str() );
 	}

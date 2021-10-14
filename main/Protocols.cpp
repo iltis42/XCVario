@@ -84,13 +84,33 @@ void Protocols::sendNmeaHDT( float heading ) {
 	Router::sendXCV(str);
 }
 
-void Protocols::sendNMEAString( char *str ) {  // String needs space for CS at the end
+void Protocols::sendItem( const char *key, char type, void *value, int len, bool ack ){
+	ESP_LOGI(FNAME,"sendItem: %s", key );
+	char str[40];
+	char sender;
+	if( SetupCommon::isMaster()  )
+		sender='M';
+	else if( SetupCommon::isClient() ){
+		if( ack )
+			sender='A'; // ack from client
+		else
+			sender='C';
+	}
+	else
+		sender='U';
+	if( sender != 'U' ) {
+		int l = sprintf( str,"!xs%c,%s,%c,", sender, key, type );
+		if( type == 'F' )
+			sprintf( str+l,"%.3f", *(float*)(value) );
+		else if( type == 'I' )
+			sprintf( str+l,"%d", *(int*)(value) );
+
+	}
 	int cs = calcNMEACheckSum(&str[1]);
 	int i = strlen(str);
 	sprintf( &str[i], "*%02X\r\n", cs );
 	ESP_LOGI(FNAME,"sendNMEAString: %s", str );
 	SString nmea( str );
-	// if( (wireless == WL_WLAN_MASTER) || (can_mode.get() == CAN_MODE_MASTER) || (wireless == WL_WLAN_CLIENT) ){
 	if( !Router::forwardMsg( nmea, client_tx_q ) )
 		ESP_LOGW(FNAME,"Warning: Overrun in send to Client XCV %d bytes", nmea.length() );
 
@@ -267,24 +287,31 @@ void Protocols::parseNMEA( const char *astr ){
 			char role; // M | C
 			int cs;
 			float val;
-			sscanf(str, "!xs%c,%[^,],%c,%f*%02x", &role, key, &type, &val, &cs );  // !xsM,FLPS,F,1.500000*27
+			sscanf(str, "!xs%c,%[^,],%c,%f*%02x", &role, key, &type, &val, &cs );  // !xsM,FLPS,F,1.5000*27
 			int calc_cs=calcNMEACheckSum( str );
 			if( cs == calc_cs ){
 				// ESP_LOGI(FNAME,"parsed NMEA: role=%c type=%c key=%s val=%f vali=%d", role, type , key, val, (int)val );
 				if( type == 'F' ){
 					SetupNG<float> *item = (SetupNG<float> *)SetupCommon::getMember( key );
 					if( item != 0 ){
-						item->set( val, false );
+						if( role == 'A' )
+							item->ack( val );
+						else
+							item->set( val, false );
 					}else
 						ESP_LOGW(FNAME,"Setup item with key %s not found", key );
 				}
 				else if( type == 'I' ){
 					SetupNG<int> *item = (SetupNG<int> *)SetupCommon::getMember( key );
 					if( item != 0 ){
-						item->set( (int)val, false );
+						if( role == 'A' && val == item->get() )
+							item->ack( val );
+						else
+							item->set( (int)val, false );
 					}else
 						ESP_LOGW(FNAME,"Setup item with key %s not found", key );
 				}
+
 			}else{
 				ESP_LOGW(FNAME,"!xs messgae CS error got:%X != calculated:%X", cs, calc_cs );
 				ESP_LOG_BUFFER_HEXDUMP(FNAME,str,32, ESP_LOG_WARN);

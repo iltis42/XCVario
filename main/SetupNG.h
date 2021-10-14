@@ -96,11 +96,11 @@ public:
 	virtual const char* key() = 0;
 	virtual char typeName() = 0;
 	virtual bool sync() = 0;
-	virtual e_sync getSync() = 0;
+	virtual uint8_t getSync() = 0;
 	static std::vector<SetupCommon *> entries;
 	static bool initSetup( bool &present );  // returns false if FLASH was completely blank
 	static char *getID();
-	static void sendSetup( e_sync_t sync, const char * key, char type, void *value, int len );
+	static void sendSetup( uint8_t sync, const char * key, char type, void *value, int len, bool ack=false );
 	static SetupCommon * getMember( const char * key );
 	static bool syncEntry( int entry );
 	static int numEntries() { return entries.size(); };
@@ -168,7 +168,7 @@ public:
 		_sync = sync;
 		_volatile = vol;
 		_action = action;
-
+		_wait_ack = false;
 	}
 
 	inline T* getPtr() {
@@ -197,19 +197,41 @@ public:
 		}
 		_value = aval;
 
-		if ( dosync ) { sync(); }
-		if( _action != 0 ) { (*_action)(); }
+		if ( dosync ) {
+			sync();
+		}
+		else if( (_sync == SYNC_BIDIR) && isClient() ){
+			sendAck();
+		}
+
+		if( _action != 0 ) {
+			(*_action)();
+		}
+
 		if( _volatile == VOLATILE ){
 			return true;
 		}
-
 		return commit( false );
-	};
+	}
+
+	void ack( T aval ){
+		if( aval != _value ){
+			ESP_LOGI(FNAME,"sync to value client has acked");
+			_value = aval;
+			_wait_ack = false;
+		}
+	}
+
+	void sendAck(){
+		sendSetup( _sync, _key, typeName(), (void *)(&_value), sizeof( _value ), true );
+	}
 
 	bool sync(){
 		if( mustSync() ){
 			// ESP_LOGI( FNAME,"Now sync %s", _key );
 			sendSetup( _sync, _key, typeName(), (void *)(&_value), sizeof( _value ) );
+			if( isMaster() && _sync == SYNC_BIDIR )
+				_wait_ack = true;
 			return true;
 		}
 		return false;
@@ -336,15 +358,16 @@ public:
 	}
 
     inline T getDefault() const { return _default; }
-	inline e_sync_t getSync() { return _sync; }
+	inline uint8_t getSync() { return _sync; }
 
 private:
 	T _value;
 	T _default;
 	const char * _key;
-	bool _reset;
-	e_sync_t _sync;
-	e_volatility _volatile;
+	uint8_t _reset;
+	uint8_t _wait_ack;
+	uint8_t _sync;
+	uint8_t _volatile;
 	void (* _action)();
 };
 

@@ -57,6 +57,8 @@ static sock_server_t FLARM     = { .txbuf = &wl_flarm_tx_q, .rxbuf = &wl_flarm_r
 static sock_server_t AUX       = { .txbuf = &wl_aux_tx_q,   .rxbuf = &wl_aux_rx_q,   .port=8882, .idle = 0, .pid = 0 };
 static sock_server_t XCVarioMS = { .txbuf = &client_tx_q,   .rxbuf = &client_rx_q,   .port=8884, .idle = 0, .pid = 0 };
 
+char WifiApp::buffer[513];
+
 int  WifiApp::queueFull(){
 	if( !wl_vario_tx_q.isFull() || !client_tx_q.isFull() )
 		return 0;
@@ -131,20 +133,19 @@ void WifiApp::socket_server(void *setup) {
 		}
 		// ESP_LOGI(FNAME, "Number of clients %d, port %d, idle %d", clients.size(), config->port, config->idle );
 		if( clients.size() ) {
-			char block[513];
 			int size=400;
 			if( Flarm::bincom )
 				size=512;
-			int	len = Router::pullBlock( *(config->txbuf), block, size );
+			int	len = Router::pullBlock( *(config->txbuf), buffer, size );
 			if( len ){
-				// ESP_LOGI(FNAME, "port %d to sent %d: bytes, %s", config->port, len, block );
+				// ESP_LOGI(FNAME, "port %d to sent %d: bytes, %s", config->port, len, buffer );
 				config->idle = 0;
 			}
 			else
 			{
 				config->idle++;
 				if( config->idle > 10 && !Flarm::bincom ){  // if there is no data, send a \n all 2 seconds as keep alive
-					block[0] = '\n';
+					buffer[0] = '\n';
 					len=1;
 					config->idle = 0;
 					ESP_LOGI(FNAME, "KEEP-ALIVE port %d", config->port );
@@ -173,10 +174,10 @@ void WifiApp::socket_server(void *setup) {
 				// ESP_LOGI(FNAME, "loop tcp client %d, port %d", client_rec.client, config->port );
 				if ( len ){
 					// ESP_LOGI(FNAME, "TX wifi client %d, bytes %d, port %d, trials:%d", client_rec.client, len, config->port, client_rec.retries );
-					// ESP_LOG_BUFFER_HEXDUMP(FNAME,block,len, ESP_LOG_INFO);
+					// ESP_LOG_BUFFER_HEXDUMP(FNAME,buffer,len, ESP_LOG_INFO);
 					client_rec.retries++;
 					if( client_rec.client >= 0 ){
-						int num = send(client_rec.client, block, len, MSG_DONTWAIT);
+						int num = send(client_rec.client, buffer, len, MSG_DONTWAIT);
 						// ESP_LOGI(FNAME, "client %d, num send %d", client_rec.client, num );
 						if( num >= 0 ){
 							client_rec.retries = 0;

@@ -122,7 +122,7 @@ SetupNG<float>  		te_vario( "TEVA", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
 SetupNG<float>  		s2f_speed( "S2F_SPEED", 100.0 );
 SetupNG<float>  		s2f_hysteresis( "S2F_HYST", 5.0 );
 
-SetupNG<float>  		audio_volume( "AUD_VOL", 10, true, SYNC_BIDIR, VOLATILE, change_volume );
+SetupNG<float> audio_volume("AUD_VOL", 10, true, SYNC_BIDIR, VOLATILE, change_volume );
 SetupNG<int>  			audio_variable_frequency( "AUD_VAFQ", 0);
 SetupNG<int>  			audio_mode( "AUDIO_MODE" ,  3 );
 SetupNG<int>  			chopping_mode( "CHOPPING_MODE",  VARIO_CHOP );
@@ -306,26 +306,9 @@ static void timeout(QueueHandle_t arg)
     xQueueSendFromISR(arg, &stat, NULL);
 }
 
-
-void SetupCommon::sendSetup( e_sync_t sync, const char *key, char type, void *value, int len ){
-	// ESP_LOGI(FNAME,"sendSetup(): key=%s, type=%c, len=%d", key, type, len );
-	char str[40];
-	char sender;
-	if( isMaster()  )
-		sender='M';
-	else if( isClient() )
-		sender='C';
-	else
-		sender='U';
-	if( sender != 'U' ) {
-		int l = sprintf( str,"!xs%c,%s,%c,", sender, key, type );
-		if( type == 'F' )
-			sprintf( str+l,"%.3f", *(float*)(value) );
-		else if( type == 'I' )
-			sprintf( str+l,"%d", *(int*)(value) );
-		// ESP_LOGI(FNAME,"Setup data: %s", str );
-		OV.sendNMEAString(str);
-	}
+void SetupCommon::sendSetup( uint8_t sync, const char *key, char type, void *value, int len, bool ack ){
+	// ESP_LOGI(FNAME,"sendSetup(): key=%s, type=%c, len=%d, ack=%d", key, type, len, ack );
+	OV.sendItem( key, type, value, len, ack );
 }
 
 SetupCommon * SetupCommon::getMember( const char * key ){

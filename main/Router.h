@@ -1,7 +1,11 @@
 #ifndef __ROUTER_H__
 #define __ROUTER_H__
 
-// #include <btstack.h>
+#include "RingBufCPP.h"
+
+#include "freertos/FreeRTOS.h"
+#include <freertos/semphr.h>
+
 #include <esp_log.h>
 #include <string>
 

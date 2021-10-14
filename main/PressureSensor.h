@@ -2,6 +2,7 @@
 #define PressureSensor_H
 
 #include "I2Cbus.hpp"
+#include <cmath>
 #include <hal/gpio_types.h>
 
 class PressureSensor {
@@ -15,6 +16,7 @@ public:
 	virtual double readAltitude( double qnh, bool &success ) = 0;
 	virtual double calcAVGAltitudeSTD( double p ) = 0;
 	virtual double calcAVGAltitude( double qnh, double p ) = 0;
+    double calcPressure(double SeaLevel_Pres, double altitude) { return SeaLevel_Pres * pow(1.0 - (altitude / 44330.171), 5.255); }
 };
 
 #endif

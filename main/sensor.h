@@ -35,13 +35,8 @@ extern I2C_t& i2c;
 extern I2C_t& i2c_0;
 extern AnalogInput *AnalogInWk;
 
-extern float temperature;
-extern bool validTemperature;
 extern float airspeed;
 extern float aTE;
-extern float battery;
-extern float dynamicP; // Pitot
-extern float baroP;    // barometric pressure
 extern float tas;
 extern float aTES2F;
 extern float as2f;

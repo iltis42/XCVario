@@ -1462,7 +1462,7 @@ void SetupMenu::setup( )
 			s1out2->addEntry( "Wireless-XCSoar");               // 2    XCSoar Data bidir
 			s1out2->addEntry( "WL-XCSoar, XCV");            // 3
 			s1out2->addEntry( "S1");                         // 4
-			s1out2->addEntry( "XCVARIO, S1");                // 5
+			s1out2->addEntry( "XCVario, S1");                // 5
 
 			SetupMenuSelect * stxi2 = new SetupMenuSelect( PROGMEM "TX Inversion", true , 0, true, &serial2_tx_inverted );
 			rs232_2->addEntry( stxi2 );

@@ -85,7 +85,7 @@ void Protocols::sendNmeaHDT( float heading ) {
 }
 
 void Protocols::sendItem( const char *key, char type, void *value, int len, bool ack ){
-	ESP_LOGI(FNAME,"sendItem: %s", key );
+	// ESP_LOGI(FNAME,"sendItem: %s", key );
 	char str[40];
 	char sender;
 	if( SetupCommon::isMaster()  )

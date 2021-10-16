@@ -1766,22 +1766,24 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 
 	// Altitude Header
 	if( !(tick%24) ){
-		int qnh = (int)(QNH.get() +0.5 );
+		float qnh = QNH.get();
 		// ESP_LOGI(FNAME,"standard_setting:%d",standard_setting );
 		if( standard_setting )
-			qnh = 1013;
+			qnh = Units::Qnh( 1013.25 );
 		// redraw just in case the vario pointer was there
-		ucg->setFont(ucg_font_fub11_tr);
-		ucg->setPrintPos(FIELD_START,YALT-S2FFONTH-10);
-		char unit[4];
-		if( standard_setting )
-			sprintf( unit, "QNE" );
-		else
-			sprintf( unit, "QNH" );
-		ucg->setPrintPos(FIELD_START,(YALT-S2FFONTH-10));
-		ucg->setColor(0, COLOR_HEADER );
-		ucg->printf("Altitude %s %d ", unit, qnh );
-		pref_qnh = qnh;
+		if( qnh != pref_qnh ) {
+			ucg->setFont(ucg_font_fub11_tr);
+			ucg->setPrintPos(FIELD_START,YALT-S2FFONTH-10);
+			char unit[4];
+			if( standard_setting )
+				sprintf( unit, "QNE" );
+			else
+				sprintf( unit, "QNH" );
+			ucg->setPrintPos(FIELD_START,(YALT-S2FFONTH-10));
+			ucg->setColor(0, COLOR_HEADER );
+			ucg->printf("%s %.2f %s   ", unit, qnh, Units::QnhUnit( qnh_unit.get() ) );
+			pref_qnh = qnh;
+		}
 	}
 
 	// Altitude
@@ -1972,10 +1974,10 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 
 	// Altitude Header
 	if( !(tick%24) ){
-		int qnh = (int)(QNH.get() +0.5 );
+		float qnh = QNH.get();
 		// ESP_LOGI(FNAME,"standard_setting:%d",standard_setting );
 		if( standard_setting )
-			qnh = 1013;
+			qnh = Units::Qnh( 1013.25 );
 		if( qnh != pref_qnh ) {
 			ucg->setFont(ucg_font_fub11_tr);
 			ucg->setPrintPos(FIELD_START,YALT-S2FFONTH);
@@ -1984,11 +1986,9 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 				sprintf( unit, "QNE" );
 			else
 				sprintf( unit, "QNH" );
-			ucg->setColor(0, COLOR_BLACK );
-			ucg->printf("Altitude %s %d ", unit, pref_qnh );
 			ucg->setPrintPos(FIELD_START,(YALT-S2FFONTH));
 			ucg->setColor(0, COLOR_HEADER );
-			ucg->printf("Altitude %s %d ", unit, qnh );
+			ucg->printf("%s %.2f %s  ", unit, qnh,  Units::QnhUnit( qnh_unit.get() ) );
 			pref_qnh = qnh;
 		}
 	}

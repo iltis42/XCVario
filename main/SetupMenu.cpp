@@ -1502,10 +1502,13 @@ void SetupMenu::setup( )
 
 		SetupMenuSelect * canrt = new SetupMenuSelect( PROGMEM "Routing", false , 0, false, &can_tx );
 		can->addEntry( canrt );
-		canrt->setHelp( PROGMEM "Select data source that is routed from/to CAN interface");
+		canrt->setHelp( PROGMEM "Select data source that is routed to the CAN interface", 230);
 		canrt->addEntry( "Disable");
 		canrt->addEntry( "XCVario");
-
+        canrt->addEntry( "tbd.");    // 2 not yet used
+        canrt->addEntry( "tbd.");     // 3
+		canrt->addEntry( "S1");                 // 4 route Flarm on S1 to client
+        canrt->addEntry( "XCVario, S1");        // 5
 
 		SetupMenuSelect * devmod = new SetupMenuSelect( PROGMEM "Mode", true , 0, false, &can_mode );
 		can->addEntry( devmod );

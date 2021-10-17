@@ -448,6 +448,10 @@ bool SetupCommon::isClient(){
 	return((wireless == WL_WLAN_CLIENT) || (can_speed.get() != CAN_SPEED_OFF && can_mode.get() == CAN_MODE_CLIENT));
 }
 
+bool SetupCommon::isWired(){
+	return(can_speed.get() && (can_mode.get() == CAN_MODE_CLIENT || can_mode.get() == CAN_MODE_MASTER));
+}
+
 bool SetupCommon::commitNow()
 {
     nvs_handle_t h;

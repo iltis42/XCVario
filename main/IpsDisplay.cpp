@@ -55,7 +55,7 @@ const int   S2F_TRISIZE = 60; // triangle size quality up/down
 #define TRISIZE 15
 
 #define FIELD_START 85
-#define FIELD_START_UL_AS 185
+#define FIELD_START_UL 170
 #define SIGNLEN 24+4
 #define GAP 12
 
@@ -94,8 +94,8 @@ int S2FST = 45;
 
 
 int ASLEN = 0;
-#define AMIDY 160
-#define AMIDX 140
+#define AMIDY DISPLAY_H/2
+#define AMIDX (DISPLAY_W/2 + 30)
 static int fh;
 
 extern xSemaphoreHandle spiMutex;
@@ -410,15 +410,15 @@ void IpsDisplay::drawAvgSymbol( int y, int r, int g, int b, int x ) {
 	ucg->drawTetragon( x+size-1,dmid-y, x,dmid-y+size, x-size,dmid-y, x,dmid-y-size );
 }
 
-float avc_old=-1000;
-int yusize=7;
-int ylsize=7;
-
 void IpsDisplay::drawAvg( float avclimb, float delta ){
+	static float avc_old=-1000;
+	static int yusize=7;
+	static int ylsize=7;
 	if( _menu )
 		return;
+
 	ESP_LOGD(FNAME,"drawAvg: av=%.2f delta=%.2f", avclimb, delta );
-	int pos=130;
+	int pos=145;
 	int size=7;
 	if( avc_old != -1000 ){
 		ucg->setColor( COLOR_BLACK );
@@ -921,28 +921,28 @@ void IpsDisplay::drawScaleLines( bool full, float max_pos, float max_neg ){
 		lower = (int)max_neg;
 	for( float a=lower; a<=(int)max_pos; a+=modulo ) {
 		int width=1;
-		int end=135;
+		int end=150;
 		int r = (int)max_pos;
 		if( a==0 || abs(a)==r ){
 			width=2;
-			end=140;
+			end=155;
 		}
 		if((r%2) == 0) {
 			if(abs(a)==r/2){  // half scale big line
 				width = 2;
-				end=140;
+				end=155;
 			}
 		}
 		else{
 			if( abs(a) == (r-1)/2 ){  // half scale minus one for even ranges big line
 				width = 2;
-				end=140;
+				end=155;
 			}
 		}
 		if( modulo < 1 ){
 			if( fmod(a,1) == 0 ){  // every integer big line
 				width = 2;
-				end=140;
+				end=155;
 			}
 		}
 		drawPolarIndicator( ((float)a/max_pos)*M_PI_2, AMIDX, AMIDY, 140, end, width, COLOR_WHITE, false );
@@ -950,17 +950,18 @@ void IpsDisplay::drawScaleLines( bool full, float max_pos, float max_neg ){
 }
 
 // Draw scale numbers for positive or negative value
-void IpsDisplay::drawAnalogScale( int val, int pos, float range, int offset ){
+void IpsDisplay::annotateScale( int val, int pos, float range, int offset ){
 	if( _menu )
 		return;
 	ucg->setFontPosCenter();
 	ucg->setFont(ucg_font_fub14_hn);
-	int x=AMIDX - cos((val/range)*M_PI_2)*pos;
-	int y=AMIDY+1 - sin((val/range)*M_PI_2)*pos;
+	const float to_side = 1.07;
+	int x=AMIDX - cos((val*to_side/range)*M_PI_2)*pos;
+	int y=AMIDY+1 - sin((val*to_side/range)*M_PI_2)*pos;
 	if( val > 0 )
-		ucg->setPrintPos(x-15,y);
+		ucg->setPrintPos(x-17,y);
 	else
-		ucg->setPrintPos(x-8,y);
+		ucg->setPrintPos(x-10,y);
 	ucg->printf("%+d", val+offset );
 	ucg->setFontPosBottom();
 }
@@ -1032,16 +1033,16 @@ void IpsDisplay::initULDisplay(){
 	redrawValues();
 	drawScaleLines( true, _range, -_range );
 	int r = (int)_range;
-	drawAnalogScale(-r,150, _range );
-	drawAnalogScale(r,150, _range);
+	annotateScale(-r,150, _range );
+	annotateScale(r,150, _range);
 	// drawAnalogScale(0, 132);
 	if((r%2) == 0) {
-		drawAnalogScale(r/2,150, _range);
-		drawAnalogScale(-r/2,155, _range);
+		annotateScale(r/2,155, _range);
+		annotateScale(-r/2,155, _range);
 	}
 	else{
-		drawAnalogScale((r-1)/2,150, _range);
-		drawAnalogScale((-r+1)/2,155, _range);
+		annotateScale((r-1)/2,155, _range);
+		annotateScale((-r+1)/2,155, _range);
 	}
 	// Unit's
 	ucg->setFont(ucg_font_fub11_hr);
@@ -1060,20 +1061,21 @@ void IpsDisplay::initRetroDisplay(){
 	redrawValues();
 	drawScaleLines( true, _range, -_range );
 	int r = (int)_range;
-	drawAnalogScale(-r,150, _range );
-	drawAnalogScale(r,150, _range);
+	annotateScale(-r,150, _range );
+	annotateScale(r,150, _range);
 	// drawAnalogScale(0, 132);
 	if((r%2) == 0) {
-		drawAnalogScale(r/2,150, _range);
-		drawAnalogScale(-r/2,155, _range);
+		annotateScale(r/2,155, _range);
+		annotateScale(-r/2,155, _range);
 	}
 	else{
-		drawAnalogScale((r-1)/2,150, _range);
-		drawAnalogScale((-r+1)/2,155, _range);
+		annotateScale((r-1)/2,155, _range);
+		annotateScale((-r+1)/2,155, _range);
 	}
 	// Unit's
 	ucg->setFont(ucg_font_fub11_hr);
-	ucg->setPrintPos(85,15);
+	ucg->setPrintPos(5,50);
+    ucg->setColor(COLOR_HEADER);
 	ucg->print( Units::VarioUnit() );
 	drawConnection(DISPLAY_W-27, FLOGO+2 );
 	drawMC( MC.get(), true );
@@ -1228,16 +1230,16 @@ void IpsDisplay::initLoadDisplay(){
 		max_gscale = (int)( -gload_neg_limit.get()  )+1;
 	drawScaleLines( true, max_gscale, -max_gscale );
 
-	drawAnalogScale(-max_gscale,150,max_gscale, 1 );
-	drawAnalogScale(max_gscale,150,max_gscale, 1 );
+	annotateScale(-max_gscale,150,max_gscale, 1 );
+	annotateScale(max_gscale,150,max_gscale, 1 );
 	// drawAnalogScale(0, 132);
 	if((max_gscale%2) == 0) {
-		drawAnalogScale(max_gscale/2,150,max_gscale, 1);
-		drawAnalogScale(-max_gscale/2,155,max_gscale, 1);
+		annotateScale(max_gscale/2,155,max_gscale, 1);
+		annotateScale(-max_gscale/2,155,max_gscale, 1);
 	}
 	else{
-		drawAnalogScale((max_gscale-1)/2,150,max_gscale, 1);
-		drawAnalogScale((-max_gscale+1)/2,155,max_gscale, 1);
+		annotateScale((max_gscale-1)/2,155,max_gscale, 1);
+		annotateScale((-max_gscale+1)/2,155,max_gscale, 1);
 	}
 	for( float a=gload_pos_limit.get()-1; a<max_gscale; a+=0.05 ) {
 		drawPolarIndicator( ((float)a/max_gscale)*M_PI_2, AMIDX, AMIDY, 120, 130, 2, COLOR_RED, false );
@@ -1629,7 +1631,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	// average Climb
 	if( (int)(ate*30) != _ate && !(tick%3) ) {
-		drawAvgVario( 90, AMIDY+2, ate );
+		drawAvgVario( AMIDX - 50, AMIDY+2, ate );
 		_ate = (int)(ate*30);
 	}
 	// MC val
@@ -1664,7 +1666,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	if( volt < bat_red_volt.get() ){
 		if( !(tick%40) )
 			blank = true;
-		else if( !((tick+20)%40) )
+		else if( !((tick+10)%20) )
 			blank = false;
 	}
 	else
@@ -1695,7 +1697,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
         wkoptalt = wk;
         wksensoralt = (int)(wksensor*10);
 
-		FLAP->drawWingSymbol( WKBARMID-(27*(abs(flap_neg_max.get())+1) ), WKSYMST-3, wki, wksensor);
+		// FLAP->drawWingSymbol( WKBARMID-27*(abs(flap_neg_max.get()))-18, WKSYMST-3, wki, wksensor);
 	}
 
 	// Cruise mode or circling
@@ -1846,13 +1848,12 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 			qnh = 1013;
 		// redraw just in case the vario pointer was there
 		ucg->setFont(ucg_font_fub11_tr);
-		ucg->setPrintPos(FIELD_START,YALT-S2FFONTH-10);
 		char unit[4];
 		if( standard_setting )
 			sprintf( unit, "QNE" );
 		else
 			sprintf( unit, "QNH" );
-		ucg->setPrintPos(FIELD_START,(YALT-S2FFONTH-10));
+		ucg->setPrintPos(FIELD_START_UL-40,(YALT-S2FFONTH-10));
 		ucg->setColor(0, COLOR_HEADER );
 		ucg->printf("%s %d ", unit, qnh );
 		pref_qnh = qnh;
@@ -1860,7 +1861,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 
 	// Altitude
 	if(!(tick%8) ) {
-		drawAltitude( altitude, 113,YALT-4 );
+		drawAltitude( altitude, FIELD_START_UL, YALT-4 );
 	}
 
 	// Battery
@@ -1868,7 +1869,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 	if( volt < bat_red_volt.get() ){
 		if( !(tick%40) )
 			blank = true;
-		else if( !((tick+20)%40) )
+		else if( !((tick+10)%20) )
 			blank = false;
 	}
 	else
@@ -1899,7 +1900,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
         wkoptalt = wk;
         wksensoralt = (int)(wksensor*10);
 
-		FLAP->drawWingSymbol( WKBARMID-(27*(abs(flap_neg_max.get())+1) ), WKSYMST-3, wki, wksensor);
+		FLAP->drawWingSymbol( WKBARMID-27*(abs(flap_neg_max.get()))-18, WKSYMST-3, wki, wksensor);
 	}
 
 	// Medium Climb Indicator

@@ -352,6 +352,7 @@ void Flap::drawBigBar( int ypos, int xpos, float wkf, float wksens ){
 			// print digit
 			ucg->printf(position);
 			// Frame around digit
+			ucg->setColor(COLOR_HEADER);
 			ucg->drawFrame(xpos-2, y-(lfh/2), lfw+6, lfh );
 		}
 		surroundingBox = true;

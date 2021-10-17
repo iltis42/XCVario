@@ -616,7 +616,8 @@ void  Flap::initSensPos(){
 	}
 }
 
-
+// > airspeed in kmh corrected for actual wing load to match the wk setup speeds
+// < optimal wk respecting g-load, idx of wk setting
 float Flap::getOptimum( float wks, int& wki )
 {
 	// Correct for current g load

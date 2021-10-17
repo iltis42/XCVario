@@ -1695,11 +1695,11 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// WK-Indicator
 	if( FLAP && !(tick%7) )
 	{
-		float wkspeed = airspeed * sqrt( 100.0/( ballast.get() +100.0) );
+		float wkspeed = Units::ActualWingloadCorrection(airspeed_kmh);
 		int wki;
 		float wkopt = FLAP->getOptimum( wkspeed, wki );
 		int wk = (int)((wki - wkopt + 0.5)*10);
-		// ESP_LOGI(FNAME,"as:%d wksp:%f wki:%d wk:%d wkpos:%f", airspeed, wkspeed, wki, wk, wkpos );
+		// ESP_LOGI(FNAME,"as:%d wksp:%f wki:%d wk:%d wkpos:%f", airspeed_kmh, wkspeed, wki, wk, wkpos );
 		// ESP_LOGI(FNAME,"WK changed WKE=%d WKS=%f", wk, wksensor );
 		ucg->setColor(  COLOR_WHITE  );
 		FLAP->drawBigBar( WKBARMID, WKSYMST-4, (float)(wk)/10, wksensor );
@@ -1907,7 +1907,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 	// WK-Indicator
 	if( FLAP && !(tick%7) )
 	{
-		float wkspeed = airspeed * sqrt( 100.0/( ballast.get() +100.0) );
+		float wkspeed = Units::ActualWingloadCorrection(airspeed_kmh);
 		int wki;
 		float wkopt=FLAP->getOptimum( wkspeed, wki );
 		int wk = (int)((wki - wkopt + 0.5)*10);
@@ -2024,7 +2024,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	// WK-Indicator
 	if( FLAP && !(tick%7) )
 	{
-		float wkspeed = airspeed * sqrt( 100.0/( ballast.get() +100.0) );
+		float wkspeed = Units::ActualWingloadCorrection(airspeed_kmh);
 		int wki;
 		float wkopt=FLAP->getOptimum( wkspeed, wki );
 		int wk = (int)((wki - wkopt + 0.5)*10);

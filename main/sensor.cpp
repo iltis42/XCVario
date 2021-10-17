@@ -149,7 +149,7 @@ static float battery=0.0;
 static float dynamicP; // Pitot
 
 // global color variables for adaptable display variant
-int g_col_background=255; // black
+int g_col_background=255;
 int g_col_highlight=0;
 int g_col_header_r=101+g_col_background/5;
 int g_col_header_g=108+g_col_background/5;

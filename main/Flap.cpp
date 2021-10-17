@@ -352,7 +352,6 @@ void Flap::drawBigBar( int ypos, int xpos, float wkf, float wksens ){
 			// print digit
 			ucg->printf(position);
 			// Frame around digit
-			ucg->setColor(COLOR_HEADER);
 			ucg->drawFrame(xpos-2, y-(lfh/2), lfw+6, lfh );
 		}
 		surroundingBox = true;
@@ -616,8 +615,7 @@ void  Flap::initSensPos(){
 	}
 }
 
-// > airspeed in kmh corrected for actual wing load to match the wk setup speeds
-// < optimal wk respecting g-load, idx of wk setting
+
 float Flap::getOptimum( float wks, int& wki )
 {
 	// Correct for current g load

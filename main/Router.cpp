@@ -155,9 +155,9 @@ void Router::routeS1(){
 		if( serial1_rxloop.get() )  // only 0=DISABLE | 1=ENABLE
 			if( forwardMsg( s1, s1_tx_q ))
 				ESP_LOGV(FNAME,"ttyS1 RX bytes %d looped to s1_tx_q", s1.length() );
-		if( (can_tx.get() & RT_XCVARIO) && can_speed.get() )
+		if( (serial1_tx.get() & RT_XCVARIO) && can_speed.get() )
 			if( forwardMsg( s1, client_tx_q ))
-				ESP_LOGV(FNAME,"ttyS1 RX bytes %d forward to client_tx_q", s1.length() );
+				ESP_LOGV(FNAME,"ttyS2 RX bytes %d forward to client_tx_q", s2.length() );
         if( (serial2_tx.get() & RT_S1) && serial2_speed.get() )
 			if( forwardMsg( s1, s2_tx_q ))
 				ESP_LOGV(FNAME,"ttyS1 RX bytes %d looped to s2_tx_q", s1.length() );
@@ -177,12 +177,12 @@ void Router::routeS2(){
 		if( wireless == WL_BLUETOOTH )
 			if( forwardMsg( s2, bt_tx_q ))
 				ESP_LOGV(FNAME,"ttyS2 RX bytes %d forward to bt_tx_q", s2.length() );
-		if( (can_tx.get() & RT_XCVARIO) && can_speed.get() )
+		if( (serial2_tx.get() & RT_XCVARIO) && can_speed.get() )
 			if( forwardMsg( s2, client_tx_q ))
-				ESP_LOGV(FNAME,"ttyS2 RX bytes %d forward to client_tx_q", s2.length() );
-		// if( (serial1_tx.get() & RT_S2) && serial1_speed.get() )
-		// 	if( forwardMsg( s2, s1_tx_q ))
-		// 		ESP_LOGV(FNAME,"ttyS2 RX bytes %d looped to s1_tx_q", s2.length() );
+				ESP_LOGI(FNAME,"ttyS2 RX bytes %d forward to client_tx_q", s2.length() );
+		if( (serial2_tx.get() & RT_S1) && serial1_speed.get() )
+			if( forwardMsg( s2, s1_tx_q ))
+				ESP_LOGV(FNAME,"ttyS2 RX bytes %d looped to s1_tx_q", s2.length() );
 		Protocols::parseNMEA( s2.c_str() );
 	}
 }
@@ -248,7 +248,7 @@ void Router::routeBT(){
 	}
 }
 
-// route messages from master or client via CAN or Wifi
+// route messages from CAN
 void Router::routeClient(){
 	SString client;
 	if( pullMsg( client_rx_q, client ) ){
@@ -256,17 +256,17 @@ void Router::routeClient(){
         if ( strncmp( client.c_str(), "!xs", 3 ) != 0 ) {
             if( (serial1_tx.get() & RT_XCVARIO) && serial1_speed.get() ) {
                 if( forwardMsg( client, s1_tx_q ) ) {
-                    ESP_LOGV(FNAME,"Send to S1 device, client link received %d bytes NMEA", client.length() );
+                    ESP_LOGV(FNAME,"Send to S1 device, CAN received %d bytes", client.length() );
                 }
             }
             if( (serial2_tx.get() & RT_XCVARIO) && serial2_speed.get() ) {
                 if( forwardMsg( client, s2_tx_q ) ) {
-                    ESP_LOGI(FNAME,"Send to S2 device, client link received %d bytes NMEA", client.length() );
+                    ESP_LOGV(FNAME,"Send to S2 device, CAN received %d bytes", client.length() );
                 }
             }
     		if( wireless == WL_BLUETOOTH )
     			if( forwardMsg( client, bt_tx_q )){
-    				ESP_LOGI(FNAME,"Send to BT device, client link received %d bytes NMEA", client.length() );
+    				ESP_LOGI(FNAME,"Route Client link received NMEA to bt_tx_q %d bytes", client.length() );
     			}
         }
 		Protocols::parseNMEA( client.c_str() );

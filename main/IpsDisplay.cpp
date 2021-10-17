@@ -321,7 +321,7 @@ void IpsDisplay::initDisplay() {
 		ucg->drawTriangle( FIELD_START+ASLEN-1, dmid, FIELD_START+ASLEN+5, dmid-6, FIELD_START+ASLEN+5, dmid+6);
 
 		// Thermometer
-		drawThermometer(  FIELD_START+10, DISPLAY_H-4 );
+		drawThermometer(  FIELD_START+10, DISPLAY_H-6 );
 
 	}
 
@@ -542,7 +542,7 @@ void IpsDisplay::setTeBuf( int y1, int h, int r, int g, int b ){
 void IpsDisplay::drawMC( float mc, bool large ) {
 	if( _menu )
 		return;
-	ucg->setPrintPos(5, DISPLAY_H-3);
+	ucg->setPrintPos(5, DISPLAY_H-5);
 	ucg->setColor(COLOR_WHITE);
 	if( large ) {
 		ucg->setFont(ucg_font_fub20_hn);
@@ -831,7 +831,7 @@ void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
 			ucg->printf("%2.1f V", volt);
 		}
 		else if ( battery_display.get() == BAT_VOLTAGE_BIG ) {
-			ucg->setPrintPos(x-50,y+12);
+			ucg->setPrintPos(x-50,y+11);
 			ucg->setFont(ucg_font_fub14_hr);
 			ucg->printf("%2.1fV", volt);
 		}
@@ -1195,15 +1195,19 @@ void IpsDisplay::drawSpeed(int airspeed, ucg_int_t x, ucg_int_t y, bool inc_unit
 {
 	// ESP_LOGI(FNAME,"draw airspeed %d %d", airspeed, as_prev );
 	ucg->setColor( COLOR_WHITE );
-	ucg->setFont(ucg_font_fub20_hr);
+	if ( inc_unit ) { // todo shortcut
+		ucg->setFont(ucg_font_fub20_hr);
+	} else {
+		ucg->setFont(ucg_font_fub14_hn);
+	}
 	char s[10];
-	sprintf(s,"  %3d",  airspeed );
+	sprintf(s," %3d",  airspeed );
 	int fl=ucg->getStrWidth(s);
 	ucg->setPrintPos(x-fl,y);
 	ucg->printf(s);
-	ucg->setFont(ucg_font_fub11_hr);
-	ucg->setPrintPos(x,y-3);
 	if ( inc_unit ) {
+		ucg->setFont(ucg_font_fub11_hr);
+		ucg->setPrintPos(x,y-3);
 		ucg->setColor( COLOR_HEADER );
 		ucg->printf(" %s ", Units::AirspeedUnit() );
 	}
@@ -2094,7 +2098,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	}
 	// Temperature Value
 	if( (int)(temp*10) != tempalt && !(tick%11)) {
-		drawTemperature( FIELD_START, DISPLAY_H-5, temp );
+		drawTemperature( FIELD_START+20, DISPLAY_H-6, temp );
 		tempalt=(int)(temp*10);
 	}
 	// Battery Symbol
@@ -2242,10 +2246,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		}
 		ucg->undoClipRange();
 		// AS cleartext
-		ucg->setFont(ucg_font_fub14_hn);
-		ucg->setPrintPos(FIELD_START+8, YS2F-fh-3 );
-		ucg->setColor(  COLOR_WHITE  );
-		ucg->printf("%3d ", airspeed );
+		drawSpeed(airspeed, FIELD_START+35, YS2F-fh+3, false);
 		as_prev = airspeed;
 	}
 	// S2F command trend triangle
@@ -2263,71 +2264,12 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 			ucg->setColor(  COLOR_WHITE  );
 		}
 		// S2F value
-		ucg->setColor(  COLOR_WHITE  );
-		ucg->setFont(ucg_font_fub14_hn);
-		int fa=ucg->getFontAscent();
-		int fl=ucg->getStrWidth("100");
-		ucg->setPrintPos(ASVALX, YS2F-fh-3);
-		ucg->printf("%3d  ", (int)(s2falt+0.5)  );
-		// draw S2F Delta
-		// erase old
-		ucg->setColor(  COLOR_BLACK  );
-		char s[10];
-		sprintf(s,"%+3d  ",(int)(s2fdalt+0.5));
-		fl=ucg->getStrWidth(s);
-		ucg->setPrintPos( FIELD_START+S2FST+(S2F_TRISIZE/2)-fl/2-5,yposalt );
-		ucg->printf(s);
-		int ypos;
-		if( s2fd < 0 )
-			ypos = dmid+s2fclip-2;  // slower, up
-		else
-			ypos = dmid+s2fclip+12+fa;
-		// new S2F Delta val
-		if( abs(s2fd) > 10 ) {
-			ucg->setColor(  COLOR_WHITE  );
-			sprintf(s," %+3d  ",(int)(s2fd+0.5));
-			fl=ucg->getStrWidth(s);
-			ucg->setPrintPos( FIELD_START+S2FST+(S2F_TRISIZE/2)-fl/2,ypos );
-			ucg->printf(s);
-		}
-		yposalt = ypos;
-		ucg->setClipRange( FIELD_START+S2FST, dmid-MAXS2FTRI, S2F_TRISIZE, (MAXS2FTRI*2)+1 );
-		bool clear = false;
-		if( s2fd > 0 ) {
-			if ( (int)s2fd < s2fdalt || (int)s2fdalt < 0 )
-				clear = true;
-		}
-		else {
-			if ( (int)s2fd > s2fdalt || (int)s2fdalt > 0  )
-				clear = true;
-		}
-		// clear old triangle for S2F
-		if( clear ) {
-			ucg->setColor( COLOR_BLACK );
-			ucg->drawTriangle( FIELD_START+S2FST, dmid,
-					FIELD_START+S2FST+(S2F_TRISIZE/2), dmid+(int)s2fd,
-					FIELD_START+S2FST+(S2F_TRISIZE/2), dmid+(int)s2fdalt );
-			ucg->drawTriangle( FIELD_START+S2FST+S2F_TRISIZE, dmid,
-					FIELD_START+S2FST+(S2F_TRISIZE/2), dmid+(int)s2fd,
-					FIELD_START+S2FST+(S2F_TRISIZE/2), dmid+(int)s2fdalt );
-		}
-		// draw new S2F command triangle
-		if( s2fd < 0 )
-			ucg->setColor( LIGHT_GREEN );
-		else
-			ucg->setColor( COLOR_RED );
-		ucg->drawTriangle( FIELD_START+S2FST, dmid,
-				FIELD_START+S2FST+S2F_TRISIZE, dmid,
-				FIELD_START+S2FST+(S2F_TRISIZE/2), dmid+(int)s2fd );
+		drawSpeed((int)(s2f+0.5), ASVALX+30, YS2F-fh+3, false);
 
-		ucg->undoClipRange();
-		// green bar for optimum speed within tacho
-		ucg->setClipRange( FIELD_START, dmid-(MAXS2FTRI), ASLEN+6, (MAXS2FTRI*2) );
-		ucg->setColor( COLOR_BLACK );
-		ucg->drawBox( FIELD_START+1,dmid+s2fdalt-16, 6, 32 );
-		ucg->setColor( COLOR_GREEN );
-		ucg->drawBox( FIELD_START+1,dmid+s2fd-15, 6, 30 );
-		ucg->undoClipRange();
+		// draw S2F Delta
+		drawSpeed((int)(s2fd+0.5), ASVALX+30, DISPLAY_H/2+fh+3, false);
+		drawS2FBar(ASVALX+20, DISPLAY_H/2, s2fd);
+
 		s2fdalt = (int)s2fd;
 		s2falt = (int)(s2f+0.5);
 		s2fclipalt = s2fdalt;

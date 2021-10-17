@@ -969,6 +969,8 @@ void IpsDisplay::initRetroDisplay(){
 	// Unit's
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setPrintPos(85,15);
+	if( _menu )
+		return;
 	ucg->print( Units::VarioUnit() );
 	if( wireless == WL_BLUETOOTH )
 		drawBT();

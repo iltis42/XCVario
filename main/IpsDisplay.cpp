@@ -81,7 +81,7 @@ const int   S2F_TRISIZE = 60; // triangle size quality up/down
 
 #define YALT (YS2F+S2FFONTH+HEADFONTH+GAP+2*MAXS2FTRI +22 )
 
-#define BATX (DISPLAY_W-15)
+#define BATX (DISPLAY_W-10)
 #define BATY (DISPLAY_H-15)
 #define LOWBAT  11.6    // 20%  -> 0%
 #define FULLBAT 12.8    // 100%
@@ -725,6 +725,7 @@ void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
 		}
 		ucg->setColor( COLOR_WHITE );
 		if ( battery_display.get() != BAT_VOLTAGE_BIG ){
+			ucg->setColor( COLOR_HEADER );
 			ucg->drawBox( x-40,y-2, 36, 12  );  // Bat body square
 			ucg->drawBox( x-4, y+1, 3, 6  );      // Bat pluspole pimple
 			if ( charge > yellow )  // >25% grün
@@ -741,10 +742,10 @@ void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
 			ucg->drawBox( x-40+2,y, chgpos, 8  );  // Bat charge state
 			ucg->setColor( DARK_GREY );
 			ucg->drawBox( x-40+2+chgpos,y, 32-chgpos, 8 );  // Empty bat bar
-			ucg->setColor( COLOR_WHITE );
 			ucg->setFont(ucg_font_fub11_hr);
-			ucg->setPrintPos(x-40,y-7);
+			ucg->setPrintPos(x-42,y-6);
 		}
+		ucg->setColor( COLOR_HEADER );
 		if( battery_display.get() == BAT_PERCENTAGE )
 			ucg->printf("%3d%%  ", charge);
 		else if ( battery_display.get() == BAT_VOLTAGE ) {
@@ -752,7 +753,7 @@ void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
 			ucg->printf("%2.1f V", volt);
 		}
 		else if ( battery_display.get() == BAT_VOLTAGE_BIG ) {
-			ucg->setPrintPos(x-60,y+8);
+			ucg->setPrintPos(x-50,y+12);
 			ucg->setFont(ucg_font_fub14_hr);
 			ucg->printf("%2.1fV", volt);
 		}

@@ -124,6 +124,7 @@ void Serial::serialHandler(void *pvParameters){
 		}
 		Router::routeS1();
 		Router::routeBT();
+		Router::routeClient();
 	    BTSender::progress();   // piggyback this here, saves one task for BT sender
 
 	    if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 ){

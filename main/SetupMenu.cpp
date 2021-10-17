@@ -43,12 +43,24 @@ SetupMenuSelect * mpu = 0;
 
 String vunit;
 String sunit;
+String qunit;
+
 
 // Compass menu handler
 static CompassMenu compassMenuHandler( compass );
 
 void update_vunit_str( int unit ){
 	vunit = Units::VarioUnitLong( unit );
+}
+
+void update_qunit_str(int unit ){
+    qunit = Units::QnhUnit( unit );
+}
+
+int update_qunit(SetupMenuSelect * p){
+    update_qunit_str( p->getSelect() );
+    Units::recalculateQnh();
+    return 0;
 }
 
 int update_vunit(SetupMenuSelect * p) {
@@ -120,13 +132,13 @@ int qnh_adj( SetupMenuValFloat * p )
 	else{
 		for( int i=0; i<6; i++ ) {
 			bool ok;
-			alt += p->_bmp->readAltitude( *(p->_value), ok );
+			alt += p->_bmp->readAltitude( Units::Qnh( *(p->_value) ), ok );
 			sleep(0.01);
 		}
 		alt = alt/6;
 	}
 
-	ESP_LOGI(FNAME,"Setup BA alt=%f QNH=%f", alt, *(p->_value)  );
+	ESP_LOGI(FNAME,"Setup BA alt=%f QNH=%f hPa", alt, Units::Qnh( *(p->_value) )  );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->setFont(ucg_font_fub25_hr);
 	p->ucg->setPrintPos(1,120);
@@ -501,6 +513,8 @@ void SetupMenu::setup( )
 
 	update_vunit_str( vario_unit.get() );
 	update_sunit_str( ias_unit.get() );
+	update_qunit_str( qnh_unit.get() );
+	Units::recalculateQnh();
 
 	SetupMenu * root = new SetupMenu( "Setup" );
 	MenuEntry* mm = root->addEntry( root );
@@ -514,7 +528,7 @@ void SetupMenu::setup( )
 	vol->setHelp(PROGMEM"Set audio volume");
 	mm->addEntry( vol );
 
-	SetupMenuValFloat::qnh_menu = new SetupMenuValFloat( "QNH Setup", 0, "hPa", 900.0, 1100.0, 0.250, qnh_adj, true, &QNH );
+	SetupMenuValFloat::qnh_menu = new SetupMenuValFloat( "QNH Setup", 0, qunit.c_str(), Units::QnhRaw(900), Units::QnhRaw(1100.0), Units::QnhRaw(0.250) , qnh_adj, true, &QNH );
 	SetupMenuValFloat::qnh_menu->setHelp(PROGMEM"Setup QNH pressure value from next ATC. On ground you may adjust to airfield altitude above MSL.");
 	mm->addEntry( SetupMenuValFloat::qnh_menu );
 
@@ -818,6 +832,7 @@ void SetupMenu::setup( )
 		Flap::setupMenue( opt );
 		// Units
 		SetupMenu * un = new SetupMenu( "Units" );
+		opt->addEntry( un );
 		un->setHelp( PROGMEM "Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units");
 		SetupMenuSelect * alu = new SetupMenuSelect( "Altimeter", false,  0, true, &alt_unit );
 		alu->addEntry( "Meter (m)");
@@ -839,7 +854,11 @@ void SetupMenu::setup( )
 		teu->addEntry( "Fahrenheit");
 		teu->addEntry( "Kelvin");
 		un->addEntry( teu );
-		opt->addEntry( un );
+		SetupMenuSelect * qnhi = new SetupMenuSelect( "QNH", true, update_qunit, true, &qnh_unit );
+		un->addEntry( qnhi );
+		qnhi->addEntry( "Hectopascal");
+		qnhi->addEntry( "InchMercury");
+
 
 		SetupMenuSelect * amode = new SetupMenuSelect( "Airspeed Mode",	false, 0, true, &airspeed_mode );
 		opt->addEntry( amode );
@@ -1324,6 +1343,7 @@ void SetupMenu::setup( )
 		// Altimeter, IAS
 		SetupMenu * aia = new SetupMenu( "Altimeter, Airspeed" );
 		sye->addEntry( aia );
+
 		SetupMenuSelect * als = new SetupMenuSelect( "Altimeter Source", false, 0, true, &alt_select );
 		aia->addEntry( als );
 		als->setHelp( PROGMEM "Select source for barometric altitude, either TE sensor or Baro sensor (recommended) or an external source e.g. FLARM (if avail)");

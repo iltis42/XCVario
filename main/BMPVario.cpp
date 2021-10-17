@@ -31,7 +31,7 @@ float BMPVario::readS2FTE() {
 
 uint64_t lastrts = 0;
 void BMPVario::setup() {
-	_qnh = QNH.get();
+	_qnh = Units::Qnh( QNH.get() );
 	_damping = vario_delay.get();
 	_filter_len = 10;
 	lastrts = esp_timer_get_time();

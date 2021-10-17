@@ -98,7 +98,7 @@ int ASLEN = 0;
 #define AMIDX (DISPLAY_W/2 + 30)
 static int fh;
 
-extern xSemaphoreHandle spiMutex;
+extern xSemaphoreHandle spiMutex; // todo needs a better concept here
 
 #define PMLEN 24
 
@@ -138,7 +138,7 @@ float IpsDisplay::_range = 5;
 int   IpsDisplay::average_climb = -100;
 float IpsDisplay::average_climbf = 0;
 int   IpsDisplay::prev_heading = 0;
-int   IpsDisplay::pref_qnh = 0;
+float IpsDisplay::pref_qnh = 0;
 
 #define WKBARMID (AMIDY-15)
 
@@ -1579,6 +1579,10 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		drawPolarIndicator( a, AMIDX, AMIDY, 75, 130, 2, COLOR_ORANGE );
 		// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 	}
+	if( _menu ){
+		xSemaphoreGive(spiMutex);
+		return;
+	}
 	// draw green bar
 	if( !(tick%5) ){
 		if( (int)(te*10) != (int)(te_prev*10) ) {
@@ -1653,6 +1657,11 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		drawS2FBar(AMIDX, AMIDY,(int)s2fd);
 	}
 
+	if( _menu ){
+		xSemaphoreGive(spiMutex);
+		return;
+	}
+
 	// Altitude & Airspeed
 	if( !(tick%8) ) {
 		drawAltitude( altitude, 180, 250 );
@@ -1691,11 +1700,11 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		float wkopt = FLAP->getOptimum( wkspeed, wki );
 		int wk = (int)((wki - wkopt + 0.5)*10);
 		// ESP_LOGI(FNAME,"as:%d wksp:%f wki:%d wk:%d wkpos:%f", airspeed, wkspeed, wki, wk, wkpos );
-        // ESP_LOGI(FNAME,"WK changed WKE=%d WKS=%f", wk, wksensor );
-        ucg->setColor(  COLOR_WHITE  );
-        FLAP->drawBigBar( WKBARMID, WKSYMST-4, (float)(wk)/10, wksensor );
-        wkoptalt = wk;
-        wksensoralt = (int)(wksensor*10);
+		// ESP_LOGI(FNAME,"WK changed WKE=%d WKS=%f", wk, wksensor );
+		ucg->setColor(  COLOR_WHITE  );
+		FLAP->drawBigBar( WKBARMID, WKSYMST-4, (float)(wk)/10, wksensor );
+		wkoptalt = wk;
+		wksensoralt = (int)(wksensor*10);
 
 		// FLAP->drawWingSymbol( WKBARMID-27*(abs(flap_neg_max.get()))-18, WKSYMST-3, wki, wksensor);
 	}
@@ -1800,6 +1809,10 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 			te_prev = te+step;
 		}
 	}
+	if( _menu ){
+		xSemaphoreGive(spiMutex);
+		return;
+	}
 	// Polar Sink or Netto Sink
 	if( !(tick%5) ){
 		if( netto || ps_display.get() ){
@@ -1842,23 +1855,28 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 
 	// Altitude Header
 	if( !(tick%24) ){
-		int qnh = (int)(QNH.get() +0.5 );
+		float qnh = QNH.get();
 		// ESP_LOGI(FNAME,"standard_setting:%d",standard_setting );
 		if( standard_setting )
-			qnh = 1013;
+			qnh = Units::Qnh( 1013.25 );
 		// redraw just in case the vario pointer was there
-		ucg->setFont(ucg_font_fub11_tr);
-		char unit[4];
-		if( standard_setting )
-			sprintf( unit, "QNE" );
-		else
-			sprintf( unit, "QNH" );
-		ucg->setPrintPos(FIELD_START_UL-40,(YALT-S2FFONTH-10));
-		ucg->setColor(0, COLOR_HEADER );
-		ucg->printf("%s %d ", unit, qnh );
-		pref_qnh = qnh;
+		if( qnh != pref_qnh ) {
+			ucg->setFont(ucg_font_fub11_tr);
+			char unit[4];
+			if( standard_setting )
+				sprintf( unit, "QNE" );
+			else
+				sprintf( unit, "QNH" );
+			ucg->setPrintPos(FIELD_START_UL-50,(YALT-S2FFONTH-10));
+			ucg->setColor(0, COLOR_HEADER );
+			ucg->printf("%s %.2f %s   ", unit, qnh, Units::QnhUnit( qnh_unit.get() ) );
+			pref_qnh = qnh;
+		}
 	}
-
+	if( _menu ){
+		xSemaphoreGive(spiMutex);
+		return;
+	}
 	// Altitude
 	if(!(tick%8) ) {
 		drawAltitude( altitude, FIELD_START_UL, YALT-4 );
@@ -1894,11 +1912,11 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 		float wkopt=FLAP->getOptimum( wkspeed, wki );
 		int wk = (int)((wki - wkopt + 0.5)*10);
 		// ESP_LOGI(FNAME,"as:%d wksp:%f wki:%d wk:%d", airspeed, wkspeed, wki, wk  );
-        // ESP_LOGI(FNAME,"WK changed WKE=%d WKS=%f", wk, wksensor );
-        ucg->setColor(  COLOR_WHITE  );
-        FLAP->drawBigBar( WKBARMID, WKSYMST-4, (float)(wk)/10, wksensor);
-        wkoptalt = wk;
-        wksensoralt = (int)(wksensor*10);
+		// ESP_LOGI(FNAME,"WK changed WKE=%d WKS=%f", wk, wksensor );
+		ucg->setColor(  COLOR_WHITE  );
+		FLAP->drawBigBar( WKBARMID, WKSYMST-4, (float)(wk)/10, wksensor);
+		wkoptalt = wk;
+		wksensoralt = (int)(wksensor*10);
 
 		FLAP->drawWingSymbol( WKBARMID-27*(abs(flap_neg_max.get()))-18, WKSYMST-3, wki, wksensor);
 	}
@@ -1998,8 +2016,10 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	float altitude = Units::Altitude( altitude_m );
 
 	vTaskDelay(3);
-	if( _menu )
+	if( _menu ){
+		xSemaphoreGive(spiMutex);
 		return;
+	}
 
 	// WK-Indicator
 	if( FLAP && !(tick%7) )
@@ -2008,10 +2028,10 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		int wki;
 		float wkopt=FLAP->getOptimum( wkspeed, wki );
 		int wk = (int)((wki - wkopt + 0.5)*10);
-        // ESP_LOGI(FNAME,"ias:%d wksp:%f wki:%d wk:%d wkpos%f", airspeed, wkspeed, wki, wk, wkpos );
-        ucg->setColor(  COLOR_WHITE  );
-        FLAP->drawSmallBar( YS2F-fh, WKSYMST+2, (float)(wk)/10 );
-        wkoptalt = wk;
+		// ESP_LOGI(FNAME,"ias:%d wksp:%f wki:%d wk:%d wkpos%f", airspeed, wkspeed, wki, wk, wkpos );
+		ucg->setColor(  COLOR_WHITE  );
+		FLAP->drawSmallBar( YS2F-fh, WKSYMST+2, (float)(wk)/10 );
+		wkoptalt = wk;
 
 		FLAP->drawWingSymbol( YS2F-fh-25, WKSYMST+2, wki, wksensor);
 	}
@@ -2036,10 +2056,10 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 
 	// Altitude Header
 	if( !(tick%24) ){
-		int qnh = (int)(QNH.get() +0.5 );
+		float qnh = QNH.get();
 		// ESP_LOGI(FNAME,"standard_setting:%d",standard_setting );
 		if( standard_setting )
-			qnh = 1013;
+			qnh = Units::Qnh( 1013.25 );
 		if( qnh != pref_qnh ) {
 			ucg->setFont(ucg_font_fub11_tr);
 			ucg->setPrintPos(FIELD_START,YALT-S2FFONTH);
@@ -2048,11 +2068,9 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 				sprintf( unit, "QNE" );
 			else
 				sprintf( unit, "QNH" );
-			ucg->setColor(0, COLOR_BLACK );
-			ucg->printf("%s %d ", unit, pref_qnh );
 			ucg->setPrintPos(FIELD_START,(YALT-S2FFONTH));
 			ucg->setColor(0, COLOR_HEADER );
-			ucg->printf("%s %d ", unit, qnh );
+			ucg->printf("%s %.2f %s  ", unit, qnh,  Units::QnhUnit( qnh_unit.get() ) );
 			pref_qnh = qnh;
 		}
 	}
@@ -2070,8 +2088,10 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		}
 	}
 	vTaskDelay(3);
-	if( _menu )
+	if( _menu ){
+		xSemaphoreGive(spiMutex);
 		return;
+	}
 	// Temperature Value
 	if( (int)(temp*10) != tempalt && !(tick%11)) {
 		drawTemperature( FIELD_START, DISPLAY_H-5, temp );
@@ -2117,8 +2137,10 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/2)-3, UCG_DRAW_UPPER_RIGHT);
 		ucg->undoClipRange();
 	}
-	if( _menu )
+	if( _menu ){
+		xSemaphoreGive(spiMutex);
 		return;
+	}
 	int s2fclip = s2fd;
 	if( s2fclip > MAXS2FTRI )
 		s2fclip = MAXS2FTRI;
@@ -2184,9 +2206,10 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		tyalt = ty;
 		pyalt = py;
 		vTaskDelay(3);
-		if( _menu )
+		if( _menu ){
+			xSemaphoreGive(spiMutex);
 			return;
-
+		}
 	}
 	// AS
 	if( as_prev != airspeed && !(tick%2)) {
@@ -2226,8 +2249,10 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		as_prev = airspeed;
 	}
 	// S2F command trend triangle
-	if( _menu )
+	if( _menu ){
+		xSemaphoreGive(spiMutex);
 		return;
+	}
 	if( ((int)s2fd != s2fdalt && !((tick+1)%2)) || !(tick%21) ) {
 		// Arrow pointing there
 		if( s2fmode ){

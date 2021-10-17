@@ -428,7 +428,7 @@ void clientLoop(void *pvParameters)
              baroP = baroSensor->calcPressure(1013.25, tmpalt); // above transition altitude
         }
         else {
-             baroP = baroSensor->calcPressure(QNH.get() , tmpalt);
+             baroP = baroSensor->calcPressure( Units::Qnh( QNH.get() ) , tmpalt);
         }
         dynamicP = Atmosphere::kmh2pascal(ias.get());
 
@@ -543,9 +543,9 @@ void readSensors(void *pvParameters){
             }
             else {
                 if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
-                    new_alt = altSTD + (QNH.get() - 1013.25)*8.2296;  // correct altitude according to ISA model = 27ft / hPa
+                    new_alt = altSTD + ( Units::Qnh( QNH.get() ) - 1013.25)*8.2296;  // correct altitude according to ISA model = 27ft / hPa
                 else
-                    new_alt = baroSensor->calcAVGAltitude( QNH.get(), baroP );
+                    new_alt = baroSensor->calcAVGAltitude( Units::Qnh( QNH.get() ), baroP );
                 standard_setting = false;
                 // ESP_LOGI(FNAME,"QNH %f baro: %f alt: %f SS:%d", QNH.get(), baroP, alt, standard_setting  );
             }
@@ -754,7 +754,7 @@ void sensor(void *args){
 	ESP_LOGI( FNAME,"Silicon revision %d, ", chip_info.revision);
 	ESP_LOGI( FNAME,"%dMB %s flash\n", spi_flash_get_chip_size() / (1024 * 1024),
 			(chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
-	ESP_LOGI(FNAME, "QNH.get() %f", QNH.get() );
+	ESP_LOGI(FNAME, "QNH.get() %f", Units::Qnh( QNH.get() ) );
 
 	Polars::begin();
 	NVS.begin();
@@ -1300,7 +1300,7 @@ void sensor(void *args){
 		if( ae > 0 ) {
 			float step=10.0; // 80 m
 			float min=1000.0;
-			float qnh_best = 1013.2;
+			float qnh_best = 1013.25;
 			for( float qnh = 870; qnh< 1085; qnh+=step ) {
 				float alt = 0;
 				if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
@@ -1320,12 +1320,13 @@ void sensor(void *args){
 				}
 				if( diff > 1.0 ) // we are ready, values get already positive
 					break;
-				// esp_task_wdt_reset();
 				delay(50);
 			}
 			ESP_LOGI(FNAME,"Auto QNH=%4.2f\n", qnh_best);
-			float &qnh = QNH.getRef();
-			qnh = qnh_best;
+			if( qnh_unit.get() == QNH_HPA )
+				QNH.set( qnh_best );
+			else if( qnh_unit.get() == QNH_INHG )
+				QNH.set( Units::hPa2inHg( qnh_best ) );
 		}
 		display->clear();
 		SetupMenuValFloat::showQnhMenu();

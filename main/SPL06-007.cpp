@@ -60,8 +60,13 @@ bool SPL06_007::selfTest( float& t, float& p ){
 	bool ok;
 	p = (float)get_pressure(ok);
 	if( !ok ) {
-		ESP_LOGI(FNAME,"SPL06_007 selftest failed, getPressure returnd false");
-		return false;
+		ESP_LOGI(FNAME,"SPL06_007 selftest failed, getPressure returnd false, retry");
+		delay(2);
+		p = (float)get_pressure(ok);
+		if( !ok ){
+			ESP_LOGW(FNAME,"SPL06_007 selftest failed, getPressure returnd false, retry");
+			return false;
+		}
 	}
 	t = (float)get_temp_c();
 	ESP_LOGI(FNAME,"SPL06_007 selftest, p=%f t=%f", p, t );
@@ -146,6 +151,7 @@ double SPL06_007::get_pcomp(bool &ok)
 	// 	float t = (double(c0) * 0.5f) + (double(c1) * traw_sc);
 	// 	ESP_LOGI(FNAME,"P:%06x,%d  T:%06x PC:%f T:%f I2C E:%d",_praw, _praw, _traw, p/100, t , errors );
 	// }
+	ok = true;
 	return p;
 }
 

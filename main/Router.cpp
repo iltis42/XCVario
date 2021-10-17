@@ -252,7 +252,7 @@ void Router::routeBT(){
 void Router::routeClient(){
 	SString client;
 	if( pullMsg( client_rx_q, client ) ){
-        // ESP_LOGI(FNAME,"CAN received %d bytes %s", client.length(), client.c_str());
+        ESP_LOGI(FNAME,"Client received %d bytes %s", client.length(), client.c_str());
         if ( strncmp( client.c_str(), "!xs", 3 ) != 0 ) {
             if( (serial1_tx.get() & RT_XCVARIO) && serial1_speed.get() ) {
                 if( forwardMsg( client, s1_tx_q ) ) {

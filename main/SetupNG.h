@@ -73,6 +73,7 @@ typedef enum e_temperature_unit { T_CELCIUS, T_FAHRENHEIT, T_KELVIN } e_temperat
 typedef enum e_alt_unit { ALT_UNIT_METER, ALT_UNIT_FT, ALT_UNIT_FL } e_alt_unit_t;
 typedef enum e_speed_unit { SPEED_UNIT_KMH, SPEED_UNIT_MPH, SPEED_UNIT_KNOTS } e_speed_unit_t;
 typedef enum e_vario_unit { VARIO_UNIT_MS, VARIO_UNIT_FPM, VARIO_UNIT_KNOTS } e_vario_unit_t;
+typedef enum e_qnh_unit { QNH_HPA, QNH_INHG } e_qnh_unit_t;
 typedef enum e_compasss_sensor_type { CS_DISABLE, CS_I2C, CS_I2C_NO_TILT, CS_CAN } e_compasss_sensor_type_t;
 
 typedef enum e_sync { SYNC_NONE, SYNC_FROM_MASTER, SYNC_FROM_CLIENT, SYNC_BIDIR } e_sync_t;       // determines if data is synched from/to client. BIDIR means sync at commit from both sides
@@ -461,6 +462,7 @@ extern SetupNG<int>  		alt_unit;
 extern SetupNG<int>  		ias_unit;
 extern SetupNG<int>  		vario_unit;
 extern SetupNG<int>  		temperature_unit;
+extern SetupNG<int>  		qnh_unit;
 extern SetupNG<int>  		rot_default;
 
 extern SetupNG<int>  		serial1_speed;

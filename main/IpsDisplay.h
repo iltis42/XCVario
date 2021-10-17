@@ -69,7 +69,7 @@ private:
 	static int s2falt;
 	static int s2fdalt;
 	static int alt_prev;
-	static int pref_qnh;
+	static float pref_qnh;
 	static int chargealt;
 	static int btqueue;
 	static int tempalt;

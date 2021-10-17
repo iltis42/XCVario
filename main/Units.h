@@ -85,6 +85,49 @@ public:
 		return 0;
 	};
 
+	static inline float Qnh( float qnh ){   // standard is m/s
+		if( qnh_unit.get() == QNH_HPA )
+			return( qnh );
+		else if(  qnh_unit.get() == QNH_INHG )
+			return( inHg2hPa( qnh ) );
+		else
+			ESP_LOGE(FNAME,"Wrong unit for Vario");
+		return 0;
+	};
+
+	static inline float QnhRaw( float qnh ){   // standard is m/s
+		if( qnh_unit.get() == QNH_HPA )
+			return( qnh );
+		else if(  qnh_unit.get() == QNH_INHG )
+			return( hPa2inHg( qnh ) );
+		else
+			ESP_LOGE(FNAME,"Wrong unit for Vario");
+		return 0;
+	};
+
+	static inline void recalculateQnh(){
+		ESP_LOGI(FNAME,"recalculateQnh");
+		if( qnh_unit.get() == QNH_HPA ){
+			if( QNH.get() < 500 ){  // convert to hPa
+				QNH.set( inHg2hPa( QNH.get() ));
+				ESP_LOGI(FNAME,"Converted QNH to hPa %.2f", QNH.get() );
+			}
+		}
+		else if( qnh_unit.get() == QNH_INHG ){
+			if( QNH.get() > 500 ){ // convert to inHG
+				QNH.set( hPa2inHg( QNH.get() ));
+				ESP_LOGI(FNAME,"Converted QNH to inHg %.2f", QNH.get() );
+			}
+		}
+	}
+
+	static inline float hPa2inHg( float hpa ){   // standard is m/s
+		return( hpa * 0.02952998597817832 );
+	};
+	static inline float inHg2hPa( float inhg ){   // standard is m/s
+		return( inhg / 0.02952998597817832 );
+	};
+
 	static inline float knots2ms( float knots ){   // if we got it in knots
 			return( knots/1.94384 );
 	};
@@ -129,6 +172,18 @@ public:
 			ESP_LOGE(FNAME,"Wrong unit for altitude");
 		return "nan";
 	};
+
+	static inline const char * QnhUnit( int unit ){
+		if( unit == QNH_HPA )
+			return("hPa");
+		else if( unit == QNH_INHG )
+			return("inHg");
+		else
+			ESP_LOGE(FNAME,"Wrong unit for QNH");
+		return "nan";
+	};
+
+
 	static inline const char * VarioUnitLong( int unit = -1 ){
 		int u = unit;
 		if( u == -1 )

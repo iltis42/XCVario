@@ -786,12 +786,17 @@ void IpsDisplay::drawTemperature( int x, int y, float t ) {
 	if( _menu )
 		return;
 	ucg->setFont(ucg_font_fur14_hf);
-	ucg->setColor( COLOR_WHITE );
 	ucg->setPrintPos(x,y);
-	if( t != DEVICE_DISCONNECTED_C )
-		ucg->printf("%-2.1f\xb0""  ", std::roundf(t*10.f)/10.f );
-	else
-		ucg->printf(" ---   ");
+	if( t != DEVICE_DISCONNECTED_C ) {
+		ucg->setColor( COLOR_WHITE );
+		ucg->printf("%-2.1f", std::roundf(t*10.f)/10.f );
+		ucg->setColor( COLOR_HEADER );
+		ucg->printf("\xb0""C  ");
+	}
+	else {
+		ucg->setColor( COLOR_HEADER );
+		ucg->printf(" -- \xb0""C  ");
+    }
 }
 
 void IpsDisplay::drawTetragon( float a, int x0, int y0, int l1, int l2, int w, int r, int g, int b, bool del ){
@@ -995,8 +1000,6 @@ void IpsDisplay::initRetroDisplay(){
 	ucg->print( Units::VarioUnit() );
 	drawConnection(DISPLAY_W-27, FLOGO+2 );
 	drawMC( MC.get(), true );
-	drawThermometer(  10, 30 );
-	// ucg->scrollSetMargins( 0, 0 );
 }
 
 void IpsDisplay::drawWarning( const char *warn, bool push ){
@@ -1599,7 +1602,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	// Temperature Value
 	if( (int)(temp*10) != tempalt && !(tick%12)) {
-		drawTemperature( 20, 38, temp );
+		drawTemperature( 5, 25, temp );
 		tempalt=(int)(temp*10);
 	}
 
@@ -1820,7 +1823,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 
 	// Temperature Value
 	if( (int)(temp*10) != tempalt && !(tick%12)) {
-		drawTemperature( 20, 38, temp );
+		drawTemperature( 20, 30, temp );
 		tempalt=(int)(temp*10);
 	}
 
@@ -2023,7 +2026,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		return;
 	// Temperature Value
 	if( (int)(temp*10) != tempalt && !(tick%11)) {
-		drawTemperature( FIELD_START+30, DISPLAY_H, temp );
+		drawTemperature( FIELD_START, DISPLAY_H-5, temp );
 		tempalt=(int)(temp*10);
 	}
 	// Battery Symbol

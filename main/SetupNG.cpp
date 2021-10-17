@@ -167,10 +167,10 @@ SetupNG<float>  		flap_minus_1( "FLAP_MINUS_1", 105,  true, SYNC_FROM_MASTER, PE
 SetupNG<float>  		flap_0( "FLAP_0", 88,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);
 SetupNG<float>  		flap_plus_1( "FLAP_PLUS_1", 78,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);
 SetupNG<float>  		flap_plus_2( "FLAP_PLUS_2", 70,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);
-SetupNG<int>  			alt_unit( "ALT_UNIT", ALT_UNIT_METER, true, SYNC_FROM_MASTER );
-SetupNG<int>  			ias_unit( "IAS_UNIT", SPEED_UNIT_KMH, true, SYNC_FROM_MASTER );
-SetupNG<int>  			vario_unit( "VARIO_UNIT", VARIO_UNIT_MS, true, SYNC_FROM_MASTER );
-SetupNG<int>  			temperature_unit( "TEMP_UNIT", T_CELCIUS, true, SYNC_FROM_MASTER );
+SetupNG<int>  			alt_unit( "ALT_UNIT", ALT_UNIT_METER );
+SetupNG<int>  			ias_unit( "IAS_UNIT", SPEED_UNIT_KMH );
+SetupNG<int>  			vario_unit( "VARIO_UNIT", VARIO_UNIT_MS );
+SetupNG<int>  			temperature_unit( "TEMP_UNIT", T_CELCIUS );
 SetupNG<int>  			rot_default( "ROTARY_DEFAULT", 0 );
 SetupNG<int>  			serial1_speed( "SERIAL2_SPEED", 3 );   // tag will stay SERIAL2 from historical reason
 SetupNG<int>  			serial1_pins_twisted( "SERIAL2_PINS", 0 );

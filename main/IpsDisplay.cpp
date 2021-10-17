@@ -242,9 +242,9 @@ void IpsDisplay::initDisplay() {
 	if ( display_variant.get() == DISPLAY_WHITE_ON_BLACK ) {
 		g_col_background = 255;
 		g_col_highlight = 0;
-		g_col_header_r=154;
-		g_col_header_g=147;
-		g_col_header_b=0;
+		g_col_header_r=179;
+		g_col_header_g=171;
+		g_col_header_b=164;
 		g_col_header_light_r=94;
 		g_col_header_light_g=87;
 		g_col_header_light_b=0;
@@ -252,9 +252,9 @@ void IpsDisplay::initDisplay() {
 	else {
 		g_col_background = 0;
 		g_col_highlight = 255;
-		g_col_header_r=101;
-		g_col_header_g=108;
-		g_col_header_b=255;
+		g_col_header_r=179;
+		g_col_header_g=171;
+		g_col_header_b=164;
 		g_col_header_light_r=161;
 		g_col_header_light_g=168;
 		g_col_header_light_b=255;
@@ -279,13 +279,8 @@ void IpsDisplay::initDisplay() {
 		bootDisplay();
 		ucg->setFontPosBottom();
 		ucg->setPrintPos(20,YVAR-VARFONTH+7);
-		ucg->setColor(0, COLOR_HEADER );
-		if( UNITVAR == 0 ) // m/s
-			ucg->print("  m/s");
-		if( UNITVAR == 1 ) // ft/min
-			ucg->print("cft/m");
-		if( UNITVAR == 2 ) // knots
-			ucg->print("knots");
+		ucg->setColor( COLOR_HEADER );
+        ucg->print(Units::VarioUnit());
 		ucg->setPrintPos(FIELD_START,YVAR-VARFONTH);    // 65 -52 = 13
 
 		ucg->print("AV Vario");
@@ -1382,7 +1377,6 @@ void IpsDisplay::drawULCompass(){
 	}
 }
 
-// static int scy=0;
 
 void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, float polar_sink_ms, float altitude_m,
 		float temp, float volt, float s2fd_ms, float s2f_ms, float acl_ms, bool s2fmode, bool standard_setting, float wksensor ){
@@ -1396,6 +1390,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	// ESP_LOGI(FNAME,"drawRetroDisplay  TE=%0.1f IAS:%d km/h  WK=%d", te, airspeed, wksensor  );
 	// uncomment for scroll test
+	// static int scy=0;
 	// scy+=10;
 	// ucg->scrollLines( scy%320 );
 	bool netto=false;
@@ -1413,13 +1408,13 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	if( !(tick%20) ){
 		if( netto != netto_old ){
 			ucg->setFont(ucg_font_fub11_hr);
-			ucg->setPrintPos(40,15);
+			ucg->setPrintPos(70,15);
 			if( netto )
-				ucg->setColor( COLOR_WHITE );
+				ucg->setColor( COLOR_HEADER );
 			else
 				ucg->setColor( COLOR_BLACK );
 			if( netto_mode.get() == NETTO_NORMAL )
-				ucg->print( "  net" );
+				ucg->print( "net  " );
 			else
 				ucg->print( "s-net" );
 			netto_old = netto;
@@ -1445,8 +1440,6 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	if( int(a*100) != int(old_a*100) ) {
 		drawPolarIndicator( a, AMIDX, AMIDY, 75, 130, 2, COLOR_ORANGE );
 		// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
-		// Climb bar
-
 	}
 	// draw green bar
 	if( !(tick%5) ){
@@ -1808,7 +1801,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 			sprintf( unit, "QNH" );
 		ucg->setPrintPos(FIELD_START,(YALT-S2FFONTH-10));
 		ucg->setColor(0, COLOR_HEADER );
-		ucg->printf("Altitude %s %d ", unit, qnh );
+		ucg->printf("%s %d ", unit, qnh );
 		pref_qnh = qnh;
 	}
 
@@ -2013,10 +2006,10 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 			else
 				sprintf( unit, "QNH" );
 			ucg->setColor(0, COLOR_BLACK );
-			ucg->printf("Altitude %s %d ", unit, pref_qnh );
+			ucg->printf("%s %d ", unit, pref_qnh );
 			ucg->setPrintPos(FIELD_START,(YALT-S2FFONTH));
 			ucg->setColor(0, COLOR_HEADER );
-			ucg->printf("Altitude %s %d ", unit, qnh );
+			ucg->printf("%s %d ", unit, qnh );
 			pref_qnh = qnh;
 		}
 	}
@@ -2053,7 +2046,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	else
 		blank = false;
 	if ( chargealt != chargev || blank != blankold ) {
-		drawBat( volt, BATX, BATY+3, blank );
+		drawBat( volt, BATX, BATY, blank );
 		chargealt = chargev;
 		blankold = blank;
 	}

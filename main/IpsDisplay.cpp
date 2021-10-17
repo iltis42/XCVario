@@ -631,6 +631,27 @@ void IpsDisplay::drawBT() {
 		btqueue = btq;
 		flarm_connected = Flarm::connected();
 	}
+	if( SetupCommon::isWired() ) {
+		drawCable(DISPLAY_W-30, BTH + 27);
+	}
+}
+
+void IpsDisplay::drawCable(int x, int y)
+{
+    CAN->connectedXCV() ? ucg->setColor( COLOR_LBLUE ) : ucg->setColor(COLOR_MGREY);
+    ucg->setFont(ucg_font_fub11_hr);
+    ucg->setPrintPos(x-8,y);
+    if( CAN->connectedMagSens() ) {
+        ucg->setColor( COLOR_GREEN );
+    }
+    ucg->printf("C");
+    CAN->connectedMagSens() ? ucg->setColor( COLOR_LBLUE ) : ucg->setColor(COLOR_MGREY);
+    if( Flarm::connected() ) {
+        ucg->setColor( COLOR_GREEN );
+    }
+    ucg->printf("A");
+    CAN->connectedXCV() ? ucg->setColor( COLOR_LBLUE ) : ucg->setColor(COLOR_MGREY);
+    ucg->printf("N");
 }
 
 void IpsDisplay::drawFlarm( int x, int y, bool flarm ) {
@@ -683,19 +704,19 @@ void IpsDisplay::drawWifi( int x, int y ) {
 		flarm_connected = Flarm::connected();
 		btqueue = btq;
 	}
+	if( SetupCommon::isWired() ) {
+		drawCable(x-6, y+22);
+	}
 }
 
-void IpsDisplay::drawCAN( int x, int y ) {
-	if( _menu )
-		return;
-	if( can_speed.get() != CAN_SPEED_OFF ){
-		ucg->setColor(COLOR_MGREY);
-		if( CAN->connected() )
-			ucg->setColor( COLOR_LBLUE );
-		ucg->setFont(ucg_font_fub11_hr);
-		ucg->setPrintPos(x,y);
-		ucg->printf("can");
-	}
+void IpsDisplay::drawConnection( int x, int y )
+{
+	if( wireless == WL_BLUETOOTH )
+		drawBT();
+	else if( wireless != WL_DISABLE )
+		drawWifi(x, y);
+	else if( SetupCommon::isWired() )
+		drawCable(x, y);
 }
 
 void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
@@ -944,10 +965,7 @@ void IpsDisplay::initULDisplay(){
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setPrintPos(85,15);
 	ucg->print( Units::VarioUnit() );
-	if( wireless == WL_BLUETOOTH )
-		drawBT();
-	else
-		drawWifi(DISPLAY_W-27, FLOGO+2 );
+	drawConnection(DISPLAY_W-27, FLOGO+2 );
 	drawThermometer(  10, 30 );
 }
 
@@ -975,10 +993,7 @@ void IpsDisplay::initRetroDisplay(){
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setPrintPos(85,15);
 	ucg->print( Units::VarioUnit() );
-	if( wireless == WL_BLUETOOTH )
-		drawBT();
-	else
-		drawWifi(DISPLAY_W-27, FLOGO+2 );
+	drawConnection(DISPLAY_W-27, FLOGO+2 );
 	drawMC( MC.get(), true );
 	drawThermometer(  10, 30 );
 	// ucg->scrollSetMargins( 0, 0 );
@@ -1484,11 +1499,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// Bluetooth
 	if( !(tick%12) )
 	{
-		if( wireless == WL_BLUETOOTH )
-			drawBT();
-		else
-			drawWifi(DISPLAY_W-27, FLOGO+2 );
-		drawCAN(DISPLAY_W-32, FLOGO+28);
+		drawConnection(DISPLAY_W-27, FLOGO+2 );
 	}
 
 	// S2F Command triangle
@@ -1763,10 +1774,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 	// Bluetooth
 	if( !(tick%12) )
 	{
-		if( wireless == WL_BLUETOOTH )
-			drawBT();
-		else
-			drawWifi(DISPLAY_W-27, FLOGO+2 );
+		drawConnection(DISPLAY_W-27, FLOGO+2 );
 	}
 
 	// Altitude Header
@@ -2038,10 +2046,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	// Bluetooth Symbol
 
 	if( !(tick%12) ){
-		if( wireless == WL_BLUETOOTH )
-			drawBT();
-		else
-			drawWifi(DISPLAY_W-25, FLOGO);
+		drawConnection(DISPLAY_W-27, FLOGO);
 	}
 
 	bool flarm=false;

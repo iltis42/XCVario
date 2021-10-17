@@ -565,14 +565,14 @@ void IpsDisplay::drawMC( float mc, bool large ) {
 	ucg->printf(" MC");
 }
 
-#define S2FSS 16
-#define S2FTS 6
+#define S2FSS 10
+#define S2FTS 5
 
 void IpsDisplay::drawCircling( int x, int y, bool draw ){
 	if( _menu )
 		return;
 	if( draw )
-		ucg->setColor( COLOR_WHITE );
+		ucg->setColor( COLOR_HEADER );
 	else
 		ucg->setColor( COLOR_BLACK );
 	ucg->drawCircle( x, y, S2FSS,   UCG_DRAW_ALL );
@@ -585,11 +585,11 @@ void IpsDisplay::drawCruise( int x, int y, bool draw ){
 	if( _menu )
 		return;
 	if( draw )
-		ucg->setColor( COLOR_WHITE );
+		ucg->setColor( COLOR_HEADER );
 	else
 		ucg->setColor( COLOR_BLACK );
 	ucg->drawTetragon(x-S2FSS,y-5, x-S2FSS,y-1, x+S2FSS,y+5, x+S2FSS,y+1 );
-	ucg->drawTriangle( x+6, y+7, x+8, y-4, x+S2FSS, y+3 );
+	ucg->drawTriangle( x+S2FSS-10, y+7, x+S2FSS-8, y-4, x+S2FSS, y+3 );
 }
 
 void IpsDisplay::drawS2FMode( int x, int y, bool cruise ){
@@ -1610,7 +1610,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	// Cruise mode or circling
 	if( (int)s2fmode != s2fmode_prev ){
-		drawS2FMode( 180, 20, s2fmode );
+		drawS2FMode( 17, 272, s2fmode );
 		s2fmode_prev = (int)s2fmode;
 	}
 

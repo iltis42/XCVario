@@ -548,17 +548,21 @@ void IpsDisplay::setTeBuf( int y1, int h, int r, int g, int b ){
 void IpsDisplay::drawMC( float mc, bool large ) {
 	if( _menu )
 		return;
-	ucg->setFont(ucg_font_fub11_hr);
-	ucg->setPrintPos(5,DISPLAY_H-6);
-	ucg->setColor(COLOR_HEADER);
-	ucg->printf("MC:");
-	ucg->setPrintPos(5+ucg->getStrWidth("MC:"),DISPLAY_H-4);
+	ucg->setPrintPos(5, DISPLAY_H-3);
 	ucg->setColor(COLOR_WHITE);
-	if( large )
+	if( large ) {
 		ucg->setFont(ucg_font_fub20_hn);
-	else
+    } else {
 		ucg->setFont(ucg_font_fub14_hn);
-	ucg->printf("%1.1f", mc );
+    }
+    char s[10];
+	std::sprintf(s, "%1.1f", mc );
+    ucg->printf(s);
+    ucg_int_t fl = ucg->getStrWidth(s);
+	ucg->setFont(ucg_font_fub11_hr);
+	ucg->setColor(COLOR_HEADER);
+	ucg->setPrintPos(5+fl, DISPLAY_H-6);
+	ucg->printf(" MC");
 }
 
 #define S2FSS 16

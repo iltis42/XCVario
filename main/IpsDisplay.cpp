@@ -593,6 +593,69 @@ void IpsDisplay::drawS2FMode( int x, int y, bool cruise ){
 	}
 }
 
+void IpsDisplay::drawArrow(int x, int y, int level, bool del)
+{
+	const int width=40;
+	const int step=8;
+	const int gap=2;
+	int height=step;
+
+    if ( level == 0 ) return;
+
+	if( del ) {
+		ucg->setColor( COLOR_BLACK );
+	}
+	else {
+		if ( std::abs(level) == 4 ) {
+			height=3;
+			ucg->setColor( COLOR_ORANGE );
+		}
+		else {
+			if( level < 0 ) {
+				ucg->setColor( COLOR_GREEN );
+			} else {
+				ucg->setColor( COLOR_BLUE );
+			}
+		}
+	}
+	int l = level-1;
+    if ( level < 0 ) {
+        height = -height;
+        l = level+1;
+    }
+	// ucg->drawTetragon(x,y+level*(step+gap), x+width,y+level*gap, x,y+level*(step+gap)+height, x-width, y+level*gap);
+	ucg->drawTriangle(x,y+l*(step+gap), x,y+l*(step+gap)+height, x-width, y+l*gap);
+	ucg->drawTriangle(x,y+l*(step+gap), x+width,y+l*gap, x,y+l*(step+gap)+height);
+}
+
+// speed to fly delta in kmh, s2fd > 0 means speed up
+void IpsDisplay::drawS2FBar(int x, int y, int s2fd)
+{
+	static int level_old = 0;
+	int level = s2fd/10;
+
+	// draw max. three bars plus a yellow top
+	if ( level > 4 ) { level = 4; }
+	else if ( level < -4 ) { level = -4; }
+
+	if ( level == level_old ) {
+		return;
+	}
+
+	int inc = (level-level_old > 0) ? 1 : -1;
+	int i = level_old + ((level_old==0 || level_old*inc>0) ? inc : 0);
+    do {
+		if ( i != 0 ) {
+			drawArrow(x, y-2+(i>0?1:-1)*22, i, (i*inc < 0));
+        	ESP_LOGI(FNAME,"s2fbar draw %d,%d", i, (i*inc < 0));
+		}
+		if ( i == level ) break;
+		i+=inc;
+	}
+    while ( i != level );
+    level_old = level;
+}
+
 void IpsDisplay::drawBT() {
 	if( _menu )
 		return;
@@ -1511,82 +1574,16 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	// S2F Command triangle
-	if( ((int)s2fd != s2fdalt && !((tick+1)%2) ) || !(tick+3%30) ) {
-		// ESP_LOGI(FNAME,"S2F in");
-		int start=120;
-		int width=50;
-		int maxs2f=55;
-		if( compass_enable.get() && compass_enable.get() )
-			maxs2f=35;
-		ucg->setClipRange( start, dmid-maxs2f-25, width, (maxs2f*2)+1+25 );
-		bool clear = false;
-		int dmo = dmid+25;
-		if( s2fd > 0 ) {
-			if ( (int)s2fd < s2fdalt || (int)s2fdalt < 0 ){
-				clear = true;
-			}
-		}
-		else {
-			if ( (int)s2fd > s2fdalt || (int)s2fdalt > 0  ) {
-				clear = true;
-			}
-		}
-		if( int(s2fd) < 0  && (int)s2fdalt < 0 )
-			dmo = dmid-25;
-
-		if( dmo < dmid )
-			ucg->setClipRange( start, dmid-25-maxs2f, width, (maxs2f)+1 );
-		else
-			ucg->setClipRange( start, dmid+25, width, (maxs2f)+1 );
-		// clear old triangle for S2F
-		if( clear ) {
-			ucg->setColor( COLOR_BLACK );
-			ucg->drawTriangle(  start, dmo,
-					start+(width/2), dmo+(int)s2fd,
-					start+(width/2), dmo+(int)s2fdalt );
-			ucg->drawTriangle( 	start+width, dmo,
-					start+(width/2), dmo+(int)s2fd,
-					start+(width/2), dmo+(int)s2fdalt );
-		}
-		// draw new S2F command triangle
-		if( s2fd < 0 )
-			ucg->setColor( LIGHT_GREEN );
-		else
-			ucg->setColor( COLOR_RED );
-		// ESP_LOGI(FNAME,"S2F %d-%d %d-%d %d-%d", start, dmid, start+width, dmid, start+(width/2), dmid+(int)s2fd );
-		ucg->drawTriangle(  start, dmo,
-				start+width, dmo,
-				start+(width/2), dmo+(int)s2fd );
-
-		ucg->undoClipRange();
-		if( s2fd > 0 && s2fdalt < 0 ){
-			ucg->setColor( COLOR_BLACK );
-			ucg->drawBox( start, dmid-25-maxs2f, width, (maxs2f)+1 );
-		}
-		else if( s2fd < 0 && s2fdalt > 0 ){
-			ucg->setColor( COLOR_BLACK );
-			ucg->drawBox( start, dmid+25, width, (maxs2f)+1 );
-		}
-		// every 10 km/h one line
-		if( s2fd > 0 ){
-			ucg->setColor( COLOR_BLACK );
-			for( int i=0; i<s2fd && i<maxs2f; i+=10 ) {
-				ucg->drawHLine( start, dmid+25+i, width );
-				ucg->drawHLine( start, dmid+25+i+1, width );
-			}
-		}else{
-			ucg->setColor( COLOR_BLACK );
-			for( int i=0; i>s2fd && i>-maxs2f; i-=10 ) {
-				ucg->drawHLine( start, dmid-25+i, width );
-				ucg->drawHLine( start, dmid-25+i-1, width );
-			}
-		}
-		s2fdalt=(int)s2fd;
+	if( ((int)s2fd != s2fdalt && !((tick+1)%2) ) || !((tick+3)%30) ) {
+		drawS2FBar(AMIDX, AMIDY,(int)s2fd);
 	}
 
-	// Altitude
-	if(!(tick%8) ) {
-		drawAltitude( altitude, 110,282 );
+	// Altitude & Airspeed
+	if( !(tick%8) ) {
+		drawAltitude( altitude, 180, 250 );
+		if( as_prev != airspeed || !(tick%64) ) {
+			drawSpeed(airspeed, 180, 282);
+		}
 	}
 
 	// Battery

@@ -108,7 +108,6 @@ public:
 	static bool factoryReset();
 	static bool isMaster();
 	static bool isClient();
-    static bool isWired();
 	static bool haveWLAN();
     static bool lazyCommit;
     static bool commitNow();

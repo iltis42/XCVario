@@ -68,7 +68,7 @@ private:
 	static int _ate;
 	static int s2falt;
 	static int s2fdalt;
-	static int alt_prev;
+	static int prefalt;
 	static float pref_qnh;
 	static int chargealt;
 	static int btqueue;
@@ -82,7 +82,7 @@ private:
 	static int wkalt;
 	static int wkoptalt;
 	static int wksensoralt;
-
+	
 	static int yposalt;
 	static int tyalt;
 	static int pyalt;
@@ -94,41 +94,44 @@ private:
 	static int yellow;
 	static ucg_color_t wkcolor;
 	static bool netto_old;
-	static ucg_int_t char_width;
 
 	// Pointer edges and alpha for analog display
 	static float old_a;
+	static int x_0;
+	static int y_0;
+	static int x_1;
+	static int y_1;
+	static int x_2;
+	static int y_2;
+	static int x_3;
+	static int y_3;
 
 	static void drawMC( float mc, bool large=false );
 	static void drawS2FMode( int x, int y, bool cruise );
-	static void drawArrow(int x, int y, int level, bool del);
-	static void drawS2FBar(int x, int y, int s2fd);
 	static void drawCircling( int x, int y, bool draw );
 	static void drawCruise( int x, int y, bool draw );
 	static void drawBT();
-	static void drawCable(int x, int y);
 	static void drawFlarm( int x, int y, bool flarm );
 	static void drawWifi( int x, int y );
-	static void drawConnection( int x, int y );
+	static void drawCAN( int x, int y );
 	static void drawBat( float volt, int x, int y, bool blank );
 	static void drawTemperature( int x, int y, float t );
 	static void drawThermometer( int x, int y );
-	static void drawPolarIndicator( float a, int x0, int y0, int l1, int l2, int w, int r, int g, int b, bool del=true );
+	static void drawTetragon( float a, int x0, int y0, int l1, int l2, int w, int r, int g, int b, bool del=true );
 	static void initRetroDisplay();
 	static void initULDisplay();
 	static void initLoadDisplay();
 	static void drawRetroDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor );
 	static void drawULDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor );
 	static void drawAirlinerDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor );
-	static void annotateScale( int val, int pos, float range, int offset=0);
+	static void drawAnalogScale( int val, int pos, float range, int offset=0 );
 	static void drawScaleLines( bool full, float max_pos, float max_neg );
 	static void setTeBuf( int y1, int y2, int r, int g, int b );
 	static void drawTeBuf();
 	static void drawGaugeTriangle( int y, int r, int g, int b, bool s2f=false );
 	static void drawAvgSymbol( int y, int r, int g, int b, int x=DISPLAY_LEFT );
 	static void drawAvg( float mps, float delta );
-	static void drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool inc_unit = true );
-	static void drawSpeed(int speed, ucg_int_t x, ucg_int_t y, bool inc_unit=true);
+	static void drawAltitude( float altitude, int x, int y );
 	static void drawLegend( bool onlyLines=false );
 	static void drawAvgVario( int x, int y, float ate );
 

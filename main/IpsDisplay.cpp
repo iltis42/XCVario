@@ -38,6 +38,7 @@ int   IpsDisplay::yellow = 25;
 float IpsDisplay::old_a = 0;
 
 bool IpsDisplay::netto_old = false;
+ucg_int_t IpsDisplay::char_width;
 
 #define DISPLAY_H 320
 #define DISPLAY_W 240
@@ -112,7 +113,7 @@ int IpsDisplay::_ate=0;
 int IpsDisplay::s2falt=-1;
 int IpsDisplay::s2fdalt=0;
 int IpsDisplay::s2fmode_prev=100;
-int IpsDisplay::prefalt=0;
+int IpsDisplay::alt_prev=0;
 int IpsDisplay::chargealt=-1;
 int IpsDisplay::btqueue=-1;
 int IpsDisplay::tempalt = -2000;
@@ -321,7 +322,13 @@ void IpsDisplay::initDisplay() {
 
 		// Thermometer
 		drawThermometer(  FIELD_START+10, DISPLAY_H-4 );
+
 	}
+
+	// Fancy altimeter
+	ucg->setFont(ucg_font_fub20_hr);
+	char_width = ucg->getStrWidth("2");
+
 	redrawValues();
 }
 
@@ -463,7 +470,7 @@ void IpsDisplay::redrawValues()
 	mcalt = -100;
 	as_prev = -1;
 	_ate = -200;
-	prefalt = -1;
+	alt_prev = -1;
 	pref_qnh = -1;
 	tyalt = 0;
 	for( int l=TEMIN-1; l<=TEMAX; l++){
@@ -1113,26 +1120,92 @@ void IpsDisplay::drawAvgVario( int x, int y, float ate ){
 	ucg->setFontPosBottom();
 	ucg->undoClipRange();
 }
+// right-aligned to value, unit optional behind
+void IpsDisplay::drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool incl_unit )
+{
 
-void IpsDisplay::drawAltitude( float altitude, int x, int y ){
-	if( _menu )
-		return;
-	int alt = (int)(altitude);
-	if( alt != prefalt || !(tick%40) ) {
-		ucg->setColor(  COLOR_WHITE  );
-		ucg->setPrintPos(x,y);
-		ucg->setFont(ucg_font_fub25_hr);
-		if( UNITALT == 0 ) { //m
-			ucg->printf("%-4d %s   ", alt, Units::AltitudeUnit() );
-		}
-		if( UNITALT == 1 ){ //feet
-			ucg->printf("%-5d %s   ", (alt/10)*10, Units::AltitudeUnit() );
-		}
-		if( UNITALT == 2 ){ //FL
-			ucg->printf("%s %-4d   ", Units::AltitudeUnit(), alt  );
-		}
-		prefalt = alt;
+	int alt = (int)(altitude*10.); // redered value
+	if ( alt_unit.get() == ALT_UNIT_FL ) { alt /= 10; }
+
+	// check on the rendered value for change
+	if ( alt == alt_prev ) return;
+
+	char s[15];
+	ucg->setFont(ucg_font_fub20_hr);
+	ucg->setColor( COLOR_WHITE );
+	sprintf(s,"%5d", alt);
+	int fl=ucg->getStrWidth(s);
+	if ( alt_unit.get() == ALT_UNIT_FL ) {
+		ucg->setPrintPos(x-fl,y);
+        ucg->printf(s);
 	}
+    else {
+		int len = std::strlen(s);
+		int16_t fraction = len>0?s[len-1]-'0':0;
+
+		alt /= 10; // chop fraction and last actual digit
+		char ldigit = '0' + (alt%10);
+		alt /= 10; // chop last actual digit
+		// snapy second last digit
+		if ( (ldigit=='0') && fraction<3 ) { alt -= 1; }
+		if ( (ldigit=='9') && fraction>7 ) { alt += 1; }
+		sprintf(s,"%5d8", alt);
+		fl=ucg->getStrWidth(s);
+		s[std::strlen(s)-1] = '\0'; // len(s) > 0 ensured!
+		ucg->setPrintPos(x - fl, y);
+		static int altpart_prev = 0;
+		if (altpart_prev != alt) {
+			ucg->printf(s);
+			altpart_prev = alt;
+		}
+		// ESP_LOGI(FNAME,"Alti %d, fr%d - %c", alt, fraction, ldigit);
+
+		static int fraction_prev = -1;
+		if (fraction != fraction_prev)
+		{
+			// move last digit
+			int16_t char_height = ucg->getFontAscent() - ucg->getFontDescent();
+			int16_t m = (fraction / 10.f) * char_height; // to pixel offest
+			ucg->setClipRange(x - char_width, y - char_height * 1.3,
+							 char_width, char_height * 1.5);
+			// ucg->drawFrame(x - char_width, y - char_height * 1.3,
+			// 				 char_width, char_height * 1.5);
+			ucg->setPrintPos(x - char_width, y - m);
+			ucg->print(ldigit);
+			ucg->setPrintPos(x - char_width, y - m - char_height);
+			ucg->print((ldigit == '0') ? '9' : (char)(ldigit - 1)); // one above
+			ucg->setPrintPos(x - char_width, y - m + char_height);
+			ucg->print((ldigit == '9') ? '0' : (char)(ldigit + 1)); // one below
+			ucg->undoClipRange();
+			fraction_prev = fraction;
+		}
+	}
+	if ( incl_unit ) {
+		ucg->setFont(ucg_font_fub11_hr);
+		ucg->setColor( COLOR_HEADER );
+		ucg->setPrintPos(x, y-3);
+		ucg->printf(" %s ", Units::AltitudeUnit() );
+	}
+	alt_prev = alt;
+}
+// right-aligned to value, unit optional behind
+void IpsDisplay::drawSpeed(int airspeed, ucg_int_t x, ucg_int_t y, bool inc_unit)
+{
+	// ESP_LOGI(FNAME,"draw airspeed %d %d", airspeed, as_prev );
+	ucg->setColor( COLOR_WHITE );
+	ucg->setFont(ucg_font_fub20_hr);
+	char s[10];
+	sprintf(s,"  %3d",  airspeed );
+	int fl=ucg->getStrWidth(s);
+	ucg->setPrintPos(x-fl,y);
+	ucg->printf(s);
+	ucg->setFont(ucg_font_fub11_hr);
+	ucg->setPrintPos(x,y-3);
+	if ( inc_unit ) {
+		ucg->setColor( COLOR_HEADER );
+		ucg->printf(" %s ", Units::AirspeedUnit() );
+	}
+	as_prev = airspeed;
 }
 
 int max_gscale = 0;
@@ -1553,7 +1626,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			}
 		}
 	}
-	// vTaskDelay(3);
+
 	// average Climb
 	if( (int)(ate*30) != _ate && !(tick%3) ) {
 		drawAvgVario( 90, AMIDY+2, ate );
@@ -1637,23 +1710,6 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		drawAvg( acl, acl-average_climbf );
 		average_climb = (int)(acl*10);
 		average_climbf = acl;
-	}
-	// Airspeed
-	if( !(tick%7) ){
-		if( as_prev != airspeed || !(tick%70) ) {
-			// ESP_LOGI(FNAME,"draw airspeed %d %d", airspeed, as_prev );
-			ucg->setColor(  COLOR_WHITE  );
-			ucg->setPrintPos(113,73);
-			ucg->setFont(ucg_font_fub20_hr);
-			char s[10];
-			sprintf(s,"%3d",  airspeed );
-			int fl=ucg->getStrWidth(s);
-			ucg->printf("%s  ", s);
-			ucg->setPrintPos(113+fl,70);
-			ucg->setFont(ucg_font_fub11_hr);
-			ucg->printf(" %s  ", Units::AirspeedUnit() );
-			as_prev = airspeed;
-		}
 	}
 	// Compass
 	if( !(tick%8) ){
@@ -1856,18 +1912,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 	// Airspeed
 	if( !(tick%7) ){
 		if( as_prev != airspeed || !(tick%49) ) {
-			ucg->setColor(  COLOR_WHITE  );
-			ucg->setPrintPos(113,73);
-			ucg->setFont(ucg_font_fub25_hr);
-			char s[10];
-			sprintf(s,"%3d",  airspeed );
-			int fl=ucg->getStrWidth(s);
-			ucg->printf("%s  ", s);
-			ucg->setPrintPos(113+fl,70);
-			ucg->setFont(ucg_font_fub20_hr);
-			ucg->printf(" %s  ", Units::AirspeedUnit() );
-			as_prev = airspeed;
-
+			drawSpeed(airspeed, FIELD_START_UL, 73);
 		}
 	}
 	// Compass
@@ -2013,7 +2058,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 
 	// Altitude
 	if(!(tick%8) ) {
-		drawAltitude( altitude, FIELD_START,YALT+6 );
+		drawAltitude( altitude, FIELD_START+80, YALT+6 );
 	}
 	// MC Value
 	if(  !(tick%8) ) {

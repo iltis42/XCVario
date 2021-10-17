@@ -68,7 +68,7 @@ private:
 	static int _ate;
 	static int s2falt;
 	static int s2fdalt;
-	static int prefalt;
+	static int alt_prev;
 	static int pref_qnh;
 	static int chargealt;
 	static int btqueue;
@@ -94,6 +94,7 @@ private:
 	static int yellow;
 	static ucg_color_t wkcolor;
 	static bool netto_old;
+	static ucg_int_t char_width;
 
 	// Pointer edges and alpha for analog display
 	static float old_a;
@@ -126,7 +127,7 @@ private:
 	static void drawGaugeTriangle( int y, int r, int g, int b, bool s2f=false );
 	static void drawAvgSymbol( int y, int r, int g, int b, int x=DISPLAY_LEFT );
 	static void drawAvg( float mps, float delta );
-	static void drawAltitude( float altitude, int x, int y );
+	static void drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool inc_unit = true );
 	static void drawSpeed(int speed, ucg_int_t x, ucg_int_t y, bool inc_unit=true);
 	static void drawLegend( bool onlyLines=false );
 	static void drawAvgVario( int x, int y, float ate );

@@ -6,7 +6,7 @@
 
 class Units {
 public:
-	static inline float Airspeed( float as ){
+	static float Airspeed( float as ){
 		if( ias_unit.get() == SPEED_UNIT_KMH ) // km/h
 			return( as );
 		else if( ias_unit.get() == SPEED_UNIT_MPH ) // mph
@@ -18,23 +18,36 @@ public:
 		return 0;
 	};
 
-	static inline float kmh2knots( float kmh ){
+	static int AirspeedRounded( float as ){
+        float ret = 0;
+		if( ias_unit.get() == SPEED_UNIT_KMH ) { // km/h
+			ret = as; }
+		else if( ias_unit.get() == SPEED_UNIT_MPH ) { // mph
+			ret = as*0.621371; }
+		else if( ias_unit.get() == SPEED_UNIT_KNOTS ) { // knots
+			ret = as*0.539957; }
+		else {
+			ESP_LOGE(FNAME,"Wrong unit for AS"); }
+		return (int)roundf(ret);
+	};
+
+	static float kmh2knots( float kmh ){
 			return( kmh / 1.852 );
 	};
 
-	static inline float kmh2ms( float kmh ){
+	static float kmh2ms( float kmh ){
 			return( kmh * 0.277778 );
 	};
 
-	static inline float ms2kmh( float ms ){
+	static float ms2kmh( float ms ){
 			return( ms * 3.6 );
 	};
 
-	static inline float knots2kmh( float knots ){
+	static float knots2kmh( float knots ){
 				return( knots * 1.852 );
 	};
 
-	static inline float Airspeed2Kmh( float as ){
+	static float Airspeed2Kmh( float as ){
 		if( ias_unit.get() == SPEED_UNIT_KMH ) // km/h
 			return( as );
 		else if( ias_unit.get() == SPEED_UNIT_MPH ) // mph
@@ -46,7 +59,11 @@ public:
 		return 0;
 	};
 
-	static inline float TemperatureUnit( float t ){
+    static float ActualWingloadCorrection( float v ) {
+        return v * sqrt( 100.0/( ballast.get() + 100.0) );
+    }
+
+	static float TemperatureUnit( float t ){
 		if( temperature_unit.get() == T_CELCIUS ) // °C
 			return( t );
 		if( temperature_unit.get() == T_FAHRENHEIT ) // °C
@@ -58,7 +75,7 @@ public:
 		}
 	}
 
-	static inline const char * AirspeedUnit( int unit = -1 ){
+	static const char * AirspeedUnit( int unit = -1 ){
 		int u = unit;
 		if( u == -1 )
 			u=ias_unit.get();
@@ -73,7 +90,7 @@ public:
 		return "nan";
 	};
 
-	static inline float Vario( float te ){   // standard is m/s
+	static float Vario( float te ){   // standard is m/s
 		if( vario_unit.get() == VARIO_UNIT_MS )
 			return( te );
 		else if(  vario_unit.get() == VARIO_UNIT_FPM )
@@ -85,7 +102,7 @@ public:
 		return 0;
 	};
 
-	static inline float Qnh( float qnh ){   // standard is m/s
+	static float Qnh( float qnh ){   // standard is m/s
 		if( qnh_unit.get() == QNH_HPA )
 			return( qnh );
 		else if(  qnh_unit.get() == QNH_INHG )
@@ -95,7 +112,7 @@ public:
 		return 0;
 	};
 
-	static inline float QnhRaw( float qnh ){   // standard is m/s
+	static float QnhRaw( float qnh ){   // standard is m/s
 		if( qnh_unit.get() == QNH_HPA )
 			return( qnh );
 		else if(  qnh_unit.get() == QNH_INHG )
@@ -105,7 +122,7 @@ public:
 		return 0;
 	};
 
-	static inline void recalculateQnh(){
+	static void recalculateQnh(){
 		ESP_LOGI(FNAME,"recalculateQnh");
 		if( qnh_unit.get() == QNH_HPA ){
 			if( QNH.get() < 500 ){  // convert to hPa
@@ -121,22 +138,22 @@ public:
 		}
 	}
 
-	static inline float hPa2inHg( float hpa ){   // standard is m/s
+	static float hPa2inHg( float hpa ){   // standard is m/s
 		return( hpa * 0.02952998597817832 );
 	};
-	static inline float inHg2hPa( float inhg ){   // standard is m/s
+	static float inHg2hPa( float inhg ){   // standard is m/s
 		return( inhg / 0.02952998597817832 );
 	};
 
-	static inline float knots2ms( float knots ){   // if we got it in knots
+	static float knots2ms( float knots ){   // if we got it in knots
 			return( knots/1.94384 );
 	};
 
-	static inline float ms2knots( float knots ){   // if we got it in knots
+	static float ms2knots( float knots ){   // if we got it in knots
 			return( knots*1.94384 );
 	};
 
-	static inline float Vario2ms( float var ){
+	static float Vario2ms( float var ){
 		if( vario_unit.get() == VARIO_UNIT_MS )
 			return( var );
 		else if(  vario_unit.get() == VARIO_UNIT_FPM )
@@ -148,7 +165,7 @@ public:
 		return 0;
 	};
 
-	static inline float mcval2knots( float mc ){   // returns MC, stored according to vario setting, in knots
+	static float mcval2knots( float mc ){   // returns MC, stored according to vario setting, in knots
 		if( vario_unit.get() == VARIO_UNIT_MS )             // mc is in m/s
 			return( mc*1.94384 );
 		else if(  vario_unit.get() == VARIO_UNIT_FPM )       // mc is stored in feet per minute
@@ -161,7 +178,7 @@ public:
 	};
 
 
-	static inline const char * VarioUnit(){
+	static const char * VarioUnit(){
 		if( vario_unit.get() == VARIO_UNIT_MS )
 			return("m/s");
 		else if( vario_unit.get() == VARIO_UNIT_FPM )
@@ -173,7 +190,7 @@ public:
 		return "nan";
 	};
 
-	static inline const char * QnhUnit( int unit ){
+	static const char * QnhUnit( int unit ){
 		if( unit == QNH_HPA )
 			return("hPa");
 		else if( unit == QNH_INHG )
@@ -184,7 +201,7 @@ public:
 	};
 
 
-	static inline const char * VarioUnitLong( int unit = -1 ){
+	static const char * VarioUnitLong( int unit = -1 ){
 		int u = unit;
 		if( u == -1 )
 			u=vario_unit.get();
@@ -199,7 +216,7 @@ public:
 		return "nan";
 	};
 
-	static inline float Altitude( float alt ){
+	static float Altitude( float alt ){
 		if( alt_unit.get() == 0 )  //m
 			return( alt );
 		else if( alt_unit.get() == 1 ) //feet
@@ -211,15 +228,15 @@ public:
 		return 0;
 	};
 
-	static inline float meters2feet( float m ){
+	static float meters2feet( float m ){
 			return( m*3.28084 );
 	};
 
-	static inline float feet2meters( float f ){
+	static float feet2meters( float f ){
 			return( f/3.28084 );
 	};
 
-	static inline const char * AltitudeUnit(){
+	static const char * AltitudeUnit(){
 		if( alt_unit.get() == 0 )  //m
 			return( "m" );
 		else if( alt_unit.get() == 1 ) //feet

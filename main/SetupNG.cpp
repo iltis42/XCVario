@@ -167,10 +167,10 @@ SetupNG<float>  		flap_minus_1( "FLAP_MINUS_1", 105,  true, SYNC_FROM_MASTER, PE
 SetupNG<float>  		flap_0( "FLAP_0", 88,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);
 SetupNG<float>  		flap_plus_1( "FLAP_PLUS_1", 78,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);
 SetupNG<float>  		flap_plus_2( "FLAP_PLUS_2", 70,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);
-SetupNG<int>  			alt_unit( "ALT_UNIT", ALT_UNIT_METER, true, SYNC_FROM_MASTER );
-SetupNG<int>  			ias_unit( "IAS_UNIT", SPEED_UNIT_KMH, true, SYNC_FROM_MASTER );
-SetupNG<int>  			vario_unit( "VARIO_UNIT", VARIO_UNIT_MS, true, SYNC_FROM_MASTER );
-SetupNG<int>  			temperature_unit( "TEMP_UNIT", T_CELCIUS, true, SYNC_FROM_MASTER );
+SetupNG<int>  			alt_unit( "ALT_UNIT", ALT_UNIT_METER );
+SetupNG<int>  			ias_unit( "IAS_UNIT", SPEED_UNIT_KMH );
+SetupNG<int>  			vario_unit( "VARIO_UNIT", VARIO_UNIT_MS );
+SetupNG<int>  			temperature_unit( "TEMP_UNIT", T_CELCIUS );
 SetupNG<int>  			qnh_unit("QNH_UNIT", QNH_HPA, true, SYNC_FROM_MASTER );
 SetupNG<int>  			rot_default( "ROTARY_DEFAULT", 0 );
 SetupNG<int>  			serial1_speed( "SERIAL2_SPEED", 3 );   // tag will stay SERIAL2 from historical reason
@@ -447,6 +447,10 @@ bool SetupCommon::haveWLAN(){
 
 bool SetupCommon::isClient(){
 	return((wireless == WL_WLAN_CLIENT) || (can_speed.get() != CAN_SPEED_OFF && can_mode.get() == CAN_MODE_CLIENT));
+}
+
+bool SetupCommon::isWired(){
+	return(can_speed.get() && (can_mode.get() == CAN_MODE_CLIENT || can_mode.get() == CAN_MODE_MASTER));
 }
 
 bool SetupCommon::commitNow()

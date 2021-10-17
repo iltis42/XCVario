@@ -97,14 +97,6 @@ private:
 
 	// Pointer edges and alpha for analog display
 	static float old_a;
-	static int x_0;
-	static int y_0;
-	static int x_1;
-	static int y_1;
-	static int x_2;
-	static int y_2;
-	static int x_3;
-	static int y_3;
 
 	static void drawMC( float mc, bool large=false );
 	static void drawS2FMode( int x, int y, bool cruise );
@@ -117,7 +109,7 @@ private:
 	static void drawBat( float volt, int x, int y, bool blank );
 	static void drawTemperature( int x, int y, float t );
 	static void drawThermometer( int x, int y );
-	static void drawTetragon( float a, int x0, int y0, int l1, int l2, int w, int r, int g, int b, bool del=true );
+	static void drawPolarIndicator( float a, int x0, int y0, int l1, int l2, int w, int r, int g, int b, bool del=true );
 	static void initRetroDisplay();
 	static void initULDisplay();
 	static void initLoadDisplay();

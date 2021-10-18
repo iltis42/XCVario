@@ -1779,10 +1779,10 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 
 	// Altitude Header
 	if( !(tick%24) ){
-		float qnh = QNH.get();
+		float qnh = Units::QnhRaw( QNH.get() );
 		// ESP_LOGI(FNAME,"standard_setting:%d",standard_setting );
 		if( standard_setting )
-			qnh = Units::Qnh( 1013.25 );
+			qnh = Units::QnhRaw( 1013.25 );
 		// redraw just in case the vario pointer was there
 		if( qnh != pref_qnh ) {
 			ucg->setFont(ucg_font_fub11_tr);
@@ -1992,10 +1992,10 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 
 	// Altitude Header
 	if( !(tick%24) ){
-		float qnh = QNH.get();
+		float qnh = Units::QnhRaw( QNH.get() );
 		// ESP_LOGI(FNAME,"standard_setting:%d",standard_setting );
 		if( standard_setting )
-			qnh = Units::Qnh( 1013.25 );
+			qnh = Units::QnhRaw( 1013.25 );
 		if( qnh != pref_qnh ) {
 			ucg->setFont(ucg_font_fub11_tr);
 			ucg->setPrintPos(FIELD_START,YALT-S2FFONTH);

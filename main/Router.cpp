@@ -244,7 +244,6 @@ void Router::routeBT(){
 			ESP_LOGV(FNAME,"BT RX Matched a Borgelt command %s", bt.c_str() );
 			Protocols::parseNMEA( bt.c_str() );
 		}
-        ESP_LOGI(FNAME,"BT received: %s", bt.c_str() );
 		bt.clear();
 	}
 }
@@ -253,23 +252,25 @@ void Router::routeBT(){
 void Router::routeClient(){
 	SString client;
 	if( pullMsg( client_rx_q, client ) ){
-        // ESP_LOGI(FNAME,"Client received %d bytes %s", client.length(), client.c_str());
-        if ( strncmp( client.c_str(), "!xs", 3 ) != 0 ) {
-            if( (serial1_tx.get() & RT_XCVARIO) && serial1_speed.get() ) {
-                if( forwardMsg( client, s1_tx_q ) ) {
-                    ESP_LOGV(FNAME,"Send to S1 device, client link received %d bytes NMEA", client.length() );
-                }
-            }
-            if( (serial2_tx.get() & RT_XCVARIO) && serial2_speed.get() ) {
-                if( forwardMsg( client, s2_tx_q ) ) {
-                    ESP_LOGI(FNAME,"Send to S2 device, client link received %d bytes NMEA", client.length() );
-                }
-            }
-    		if( wireless == WL_BLUETOOTH )
-    			if( forwardMsg( client, bt_tx_q )){
-    				ESP_LOGI(FNAME,"Send to BT device, client link received %d bytes NMEA", client.length() );
+		// ESP_LOGI(FNAME,"Client received %d bytes %s", client.length(), client.c_str());
+		if (strncmp(client.c_str(), "!xs", 3) != 0)
+		{
+			if ((serial1_tx.get() & RT_XCVARIO) && serial1_speed.get()) {
+				if (forwardMsg(client, s1_tx_q)) {
+					ESP_LOGV(FNAME, "Send to S1 device, client link received %d bytes NMEA", client.length());
+				}
+			}
+			if ((serial2_tx.get() & RT_XCVARIO) && serial2_speed.get()) {
+				if (forwardMsg(client, s2_tx_q)) {
+					ESP_LOGV(FNAME, "Send to S2 device, client link received %d bytes NMEA", client.length());
+				}
+			}
+			if( wireless == WL_BLUETOOTH ) {
+    			if( forwardMsg( client, bt_tx_q )) {
+    				ESP_LOGV(FNAME,"Send to BT device, client link received %d bytes NMEA", client.length() );
     			}
-        }
+			}
+		}
 		Protocols::parseNMEA( client.c_str() );
 	}
 }

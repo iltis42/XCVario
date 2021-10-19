@@ -43,7 +43,6 @@ SetupMenuSelect * mpu = 0;
 
 String vunit;
 String sunit;
-String qunit;
 
 
 // Compass menu handler
@@ -51,16 +50,6 @@ static CompassMenu compassMenuHandler( compass );
 
 void update_vunit_str( int unit ){
 	vunit = Units::VarioUnitLong( unit );
-}
-
-void update_qunit_str(int unit ){
-    qunit = Units::QnhUnit( unit );
-}
-
-int update_qunit(SetupMenuSelect * p){
-    update_qunit_str( p->getSelect() );
-    Units::recalculateQnh();
-    return 0;
 }
 
 int update_vunit(SetupMenuSelect * p) {
@@ -141,7 +130,7 @@ int qnh_adj( SetupMenuValFloat * p )
 	ESP_LOGI(FNAME,"Setup BA alt=%f QNH=%f hPa", alt, Units::Qnh( *(p->_value) )  );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->setFont(ucg_font_fub25_hr);
-	p->ucg->setPrintPos(1,120);
+	p->ucg->setPrintPos(1,110);
 	String u;
 	float altp;
 	if( alt_unit.get() == 0 ){ // m
@@ -152,10 +141,18 @@ int qnh_adj( SetupMenuValFloat * p )
 		u = "ft";
 		altp = Units::meters2feet( alt );
 	}
-	p->ucg->printf("%4d %s ", (int)(altp+0.5), u.c_str() );
+	if( qnh_unit.get() == QNH_INHG ){
+		p->ucg->setPrintPos(1,150);
+	}else
+		p->ucg->setPrintPos(1,120);
+	p->ucg->printf("%5d %s ", (int)(altp+0.5), u.c_str() );
+
+	if( qnh_unit.get() == QNH_INHG ){
+		p->ucg->setPrintPos(40,110);
+		p->ucg->printf("%.2f inHg", Units::hPa2inHg( *(p->_value) ));
+	}
 	p->ucg->setFont(ucg_font_ncenR14_hr);
 	xSemaphoreGive(spiMutex );
-
 	return 0;
 }
 
@@ -513,8 +510,6 @@ void SetupMenu::setup( )
 
 	update_vunit_str( vario_unit.get() );
 	update_sunit_str( ias_unit.get() );
-	update_qunit_str( qnh_unit.get() );
-	Units::recalculateQnh();
 
 	SetupMenu * root = new SetupMenu( "Setup" );
 	MenuEntry* mm = root->addEntry( root );
@@ -528,8 +523,8 @@ void SetupMenu::setup( )
 	vol->setHelp(PROGMEM"Set audio volume");
 	mm->addEntry( vol );
 
-	SetupMenuValFloat::qnh_menu = new SetupMenuValFloat( "QNH Setup", 0, qunit.c_str(), Units::QnhRaw(900), Units::QnhRaw(1100.0), Units::QnhRaw(0.250) , qnh_adj, true, &QNH );
-	SetupMenuValFloat::qnh_menu->setHelp(PROGMEM"Setup QNH pressure value from next ATC. On ground you may adjust to airfield altitude above MSL.");
+	SetupMenuValFloat::qnh_menu = new SetupMenuValFloat( "QNH Setup", 0, "hPa", 900, 1100.0, 0.250, qnh_adj, true, &QNH );
+	SetupMenuValFloat::qnh_menu->setHelp(PROGMEM"Setup QNH pressure value from next ATC. On ground you may adjust to airfield altitude above MSL.", 180 );
 	mm->addEntry( SetupMenuValFloat::qnh_menu );
 
 	SetupMenuValFloat * bal = new SetupMenuValFloat( "Ballast", 0, "%", 0.0, 100, 0.2, bal_adj, true, &ballast  );
@@ -860,7 +855,7 @@ void SetupMenu::setup( )
 		teu->addEntry( "Fahrenheit");
 		teu->addEntry( "Kelvin");
 		un->addEntry( teu );
-		SetupMenuSelect * qnhi = new SetupMenuSelect( "QNH", true, update_qunit, true, &qnh_unit );
+		SetupMenuSelect * qnhi = new SetupMenuSelect( "QNH", false, 0, true, &qnh_unit );
 		un->addEntry( qnhi );
 		qnhi->addEntry( "Hectopascal");
 		qnhi->addEntry( "InchMercury");
@@ -1528,13 +1523,10 @@ void SetupMenu::setup( )
 
 		SetupMenuSelect * canrt = new SetupMenuSelect( PROGMEM "Routing", false , 0, false, &can_tx );
 		can->addEntry( canrt );
-		canrt->setHelp( PROGMEM "Select data source that is routed to the CAN interface", 230);
+		canrt->setHelp( PROGMEM "Select data source that is routed from/to CAN interface");
 		canrt->addEntry( "Disable");
 		canrt->addEntry( "XCVario");
-        canrt->addEntry( "tbd.");    // 2 not yet used
-        canrt->addEntry( "tbd.");     // 3
-		canrt->addEntry( "S1");                 // 4 route Flarm on S1 to client
-        canrt->addEntry( "XCVario, S1");        // 5
+
 
 		SetupMenuSelect * devmod = new SetupMenuSelect( PROGMEM "Mode", true , 0, false, &can_mode );
 		can->addEntry( devmod );

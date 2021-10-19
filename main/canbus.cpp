@@ -107,16 +107,15 @@ void CANbus::driverUninstall(){
 }
 
 void canTxTask(void *arg){
-    int tick = 0;
+    unsigned int tick = 0;
 	while (true) {
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		static_cast<CANbus*>(arg)->txtick(tick);
-		if( ! (tick % 100) ) {
+		if( (tick++ % 100) == 0) {
 			// ESP_LOGI(FNAME,"Free Heap: %d bytes", heap_caps_get_free_size(MALLOC_CAP_8BIT) );
 			if( uxTaskGetStackHighWaterMark( nullptr ) < 128 )
 				ESP_LOGW(FNAME,"Warning canbus txtask stack low: %d bytes", uxTaskGetStackHighWaterMark( nullptr ) );
 		}
-        tick++;
 		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(10));
 	}
 }
@@ -126,15 +125,11 @@ void canRxTask(void *arg){
 	while (true) {
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		static_cast<CANbus*>(arg)->rxtick(tick);
-		if( ! (tick % 100) ) {
+		if( (tick++ % 100) == 0) {
 			// ESP_LOGI(FNAME,"Free Heap: %d bytes", heap_caps_get_free_size(MALLOC_CAP_8BIT) );
 			if( uxTaskGetStackHighWaterMark( nullptr ) < 128 )
 				ESP_LOGW(FNAME,"Warning canbus rxtask stack low: %d bytes", uxTaskGetStackHighWaterMark( nullptr ) );
 		}
-        if ( ! (tick % 4) ) {
-            Router::routeClient();
-        }
-        tick++;
 		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(5));
 	}
 }
@@ -207,6 +202,7 @@ void CANbus::txtick(int tick){
             }
         }
     }
+	Router::routeClient();
 	if( !(tick%100) ){
 		if( ((can_mode.get() == CAN_MODE_CLIENT)  && _connected_xcv) || can_mode.get() == CAN_MODE_MASTER ){ // sent from client only if keep alive is there
 			msg.set( "K" );
@@ -333,6 +329,7 @@ void CANbus::rxtick(int tick){
 		QMC5883L::fromCAN( msg.c_str() );
 		_connected_timeout_magsens = 0;
 	}
+
 }
 
 bool CANbus::sendNMEA( const SString& msg ){

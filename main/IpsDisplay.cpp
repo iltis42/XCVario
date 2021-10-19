@@ -2108,11 +2108,6 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	if( _ate != (int)(ate*10) && !(tick%3) ) {
 		// draw numeric value
 		drawAvgVario( FIELD_START, YVAR-20, ate );
-		// draw Unit
-		ucg->setFont(ucg_font_fub11_hr);
-		int mslen = ucg->getStrWidth( Units::VarioUnit() );
-		ucg->setPrintPos(DISPLAY_W-mslen,YVAR-10);
-		ucg->print( Units::VarioUnit() );
 
 		_ate = (int)(ate)*10;
 	}

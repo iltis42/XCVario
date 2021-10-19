@@ -68,6 +68,7 @@ private:
 	static int _ate;
 	static int s2falt;
 	static int s2fdalt;
+    static int s2f_level_prev;
 	static int alt_prev;
 	static float pref_qnh;
 	static int chargealt;
@@ -101,8 +102,8 @@ private:
 
 	static void drawMC( float mc, bool large=false );
 	static void drawS2FMode( int x, int y, bool cruise );
-	static void drawArrow(int x, int y, int level, bool del);
-	static void drawS2FBar(int x, int y, int s2fd);
+	static void drawArrow(int16_t x, int16_t y, int level, bool del);
+	static void drawS2FBar(int16_t x, int16_t y, int s2fd);
 	static void drawCircling( int x, int y, bool draw );
 	static void drawCruise( int x, int y, bool draw );
 	static void drawBT();

@@ -112,6 +112,7 @@ int IpsDisplay::_te=0;
 int IpsDisplay::_ate=0;
 int IpsDisplay::s2falt=-1;
 int IpsDisplay::s2fdalt=0;
+int IpsDisplay::s2f_level_prev=0;
 int IpsDisplay::s2fmode_prev=100;
 int IpsDisplay::alt_prev=0;
 int IpsDisplay::chargealt=-1;
@@ -600,14 +601,14 @@ void IpsDisplay::drawS2FMode( int x, int y, bool cruise ){
 	}
 }
 
-void IpsDisplay::drawArrow(int x, int y, int level, bool del)
+void IpsDisplay::drawArrow(int16_t x, int16_t y, int level, bool del)
 {
 	const int width=40;
 	const int step=8;
 	const int gap=2;
 	int height=step;
 
-    if ( level == 0 ) return;
+	if ( level == 0 ) return;
 
 	if( del ) {
 		ucg->setColor( COLOR_BLACK );
@@ -635,32 +636,32 @@ void IpsDisplay::drawArrow(int x, int y, int level, bool del)
 	ucg->drawTriangle(x,y+l*(step+gap), x+width,y+l*gap, x,y+l*(step+gap)+height);
 }
 
-// speed to fly delta in kmh, s2fd > 0 means speed up
-void IpsDisplay::drawS2FBar(int x, int y, int s2fd)
+// speed to fly delta given in any kmh, s2fd > 0 means speed up
+// bars dice up 10 delta units, ignoring the actual speed unit
+void IpsDisplay::drawS2FBar(int16_t x, int16_t y, int s2fd)
 {
-	static int level_old = 0;
-	int level = s2fd/10;
+	int level = s2fd/10; // dice up by 10
 
 	// draw max. three bars plus a yellow top
 	if ( level > 4 ) { level = 4; }
 	else if ( level < -4 ) { level = -4; }
 
-	if ( level == level_old ) {
+	if ( level == s2f_level_prev ) {
 		return;
 	}
 
-	int inc = (level-level_old > 0) ? 1 : -1;
-	int i = level_old + ((level_old==0 || level_old*inc>0) ? inc : 0);
-    do {
+	int inc = (level-s2f_level_prev > 0) ? 1 : -1;
+	int i = s2f_level_prev + ((s2f_level_prev==0 || s2f_level_prev*inc>0) ? inc : 0);
+	do {
 		if ( i != 0 ) {
 			drawArrow(x, y-2+(i>0?1:-1)*22, i, (i*inc < 0));
-        	ESP_LOGI(FNAME,"s2fbar draw %d,%d", i, (i*inc < 0));
+			// ESP_LOGI(FNAME,"s2fbar draw %d,%d", i, (i*inc < 0));
 		}
 		if ( i == level ) break;
 		i+=inc;
 	}
-    while ( i != level );
-    level_old = level;
+	while ( i != level );
+	s2f_level_prev = level;
 }
 
 void IpsDisplay::drawBT() {

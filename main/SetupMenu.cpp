@@ -587,29 +587,6 @@ void SetupMenu::setup( )
 		nemod->addEntry( "Relative");
 		vae->addEntry( nemod );
 
-		SetupMenuValFloat * vda = new SetupMenuValFloat( 	"Damping", 0, "sec", 2.0, 10.0, 0.1, 0, false, &vario_delay );
-		vda->setHelp(PROGMEM"Response time, time constant of Vario low pass kalman filter");
-		vae->addEntry( vda );
-
-		SetupMenuValFloat * vdav = new SetupMenuValFloat( 	"Averager", 0, "sec", 2.0, 60.0,	0.1, 0, false, &vario_av_delay );
-		vdav->setHelp(PROGMEM"Response time, time constant of digital Average Vario Display");
-		vae->addEntry( vdav );
-
-		SetupMenu * meancl = new SetupMenu( "Mean Climb" );
-		MenuEntry* meanclm = vae->addEntry( meancl );
-
-		SetupMenuValFloat * vccm = new SetupMenuValFloat( "Minimum climb", 0, "m/s",	0.0, 2.0, 0.1, 0, false, &core_climb_min );
-		vccm->setHelp(PROGMEM"Minimum climb rate that counts for arithmetic mean climb value (red rhombus left of TE bar)");
-		meanclm->addEntry( vccm );
-
-		SetupMenuValFloat * vcch = new SetupMenuValFloat( "Duration", 0,	"min", 1, 300, 1, 0, false, &core_climb_history );
-		vcch->setHelp(PROGMEM"Duration in minutes where samples for mean climb value are regarded, default is last 3 thermals or 45 min");
-		meanclm->addEntry( vcch );
-
-		SetupMenuValFloat * vcp = new SetupMenuValFloat( "Cycle", 0,	"sec", 10, 60, 1, 0, false, &core_climb_period );
-		vcp->setHelp(PROGMEM"Cycle in number of seconds when mean climb value is recalculated, default is last 60 seconds");
-		meanclm->addEntry( vcp);
-
 		SetupMenuSelect * sink = new SetupMenuSelect( 	"Polar Sink", false, 0 , true, &ps_display );
 		sink->setHelp(PROGMEM"Show polar sink rate together with TE in Vario bar when Vario is in Brutto Mode (else disabled)");
 		sink->addEntry( "DISABLE");
@@ -621,6 +598,36 @@ void SetupMenu::setup( )
 		gsink->addEntry( "DISABLE");
 		gsink->addEntry( "ENABLE");
 		vae->addEntry( gsink );
+
+		SetupMenuSelect * ncolor = new SetupMenuSelect( "Needle Color", false, 0 , true, &needle_color );
+		ncolor->setHelp(PROGMEM"Choose the color of the vario needle");
+		ncolor->addEntry( "White");
+		ncolor->addEntry( "Orange");
+		ncolor->addEntry( "Red");
+		vae->addEntry( ncolor );
+
+		SetupMenu * vdamp = new SetupMenu( "Vario Damping" );
+		MenuEntry* vdampm = vae->addEntry( vdamp );
+
+		SetupMenuValFloat * vda = new SetupMenuValFloat( 	"Damping", 0, "sec", 2.0, 10.0, 0.1, 0, false, &vario_delay );
+		vda->setHelp(PROGMEM"Response time, time constant of Vario low pass kalman filter");
+		vdampm->addEntry( vda );
+
+		SetupMenuValFloat * vdav = new SetupMenuValFloat( 	"Averager", 0, "sec", 2.0, 60.0,	0.1, 0, false, &vario_av_delay );
+		vdav->setHelp(PROGMEM"Response time, time constant of digital Average Vario Display");
+		vdampm->addEntry( vdav );
+
+		SetupMenuValFloat * vccm = new SetupMenuValFloat( "Minimum climb", 0, "m/s",	0.0, 2.0, 0.1, 0, false, &core_climb_min );
+		vccm->setHelp(PROGMEM"Minimum climb rate that counts for arithmetic mean climb value (red rhombus left of TE bar)");
+		vdampm->addEntry( vccm );
+
+		SetupMenuValFloat * vcch = new SetupMenuValFloat( "Duration", 0,	"min", 1, 300, 1, 0, false, &core_climb_history );
+		vcch->setHelp(PROGMEM"Duration in minutes where samples for mean climb value are regarded, default is last 3 thermals or 45 min");
+		vdampm->addEntry( vcch );
+
+		SetupMenuValFloat * vcp = new SetupMenuValFloat( "Cycle", 0,	"sec", 10, 60, 1, 0, false, &core_climb_period );
+		vcp->setHelp(PROGMEM"Cycle in number of seconds when mean climb value is recalculated, default is last 60 seconds");
+		vdampm->addEntry( vcp);
 
 		SetupMenu * s2fs = new SetupMenu( "S2F Settings" );
 		MenuEntry* s2fse = vae->addEntry( s2fs );

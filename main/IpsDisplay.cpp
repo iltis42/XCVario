@@ -151,6 +151,7 @@ bool blankold = false;
 bool blank = false;
 bool flarm_connected=false;
 static int max_gscale = 0;
+static ucg_color_t needlecolor[3] = { {COLOR_WHITE}, {COLOR_ORANGE}, {COLOR_RED} };
 
 IpsDisplay::IpsDisplay( Ucglib_ILI9341_18x240x320_HWSPI *aucg ) {
 	ucg = aucg;
@@ -903,7 +904,7 @@ void IpsDisplay::drawOneScaleLine( float a, int16_t x0, int16_t y0, int16_t l1, 
 }
 
 // -pi/2 < val < pi/2, center x, y, start radius, end radius, width, r,g,b
-void IpsDisplay::drawPolarIndicator( float a, int16_t x0, int16_t y0, int16_t l1, int16_t l2, int16_t w, uint8_t r, uint8_t g, uint8_t b)
+void IpsDisplay::drawPolarIndicator( float a, int16_t x0, int16_t y0, int16_t l1, int16_t l2, int16_t w, ucg_color_t color)
 {
 	static ucg_int_t x_0 = 0;
 	static ucg_int_t y_0 = 0;
@@ -934,7 +935,7 @@ void IpsDisplay::drawPolarIndicator( float a, int16_t x0, int16_t y0, int16_t l1
 	x_2 = xn_2;
 	y_2 = yn_2;
 	old_a = a;
-	ucg->setColor( r,g,b  );
+	ucg->setColor( color.color[0], color.color[1], color.color[2] );
 	ucg->drawTriangle(xn_0,yn_0,xn_1,yn_1,xn_2,yn_2);
 }
 
@@ -1328,7 +1329,7 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 	// draw G pointer
 	float a = (loadFactor-1)/max_gscale * (M_PI_2);
 	if( int(a*100) != int(old_a*100) ) {
-		drawPolarIndicator( a, AMIDX, AMIDY, 60, 120, 3, COLOR_WHITE );
+		drawPolarIndicator( a, AMIDX, AMIDY, 60, 120, 3, needlecolor[0] );
 		// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 	}
 	// G load digital
@@ -1733,7 +1734,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// draw TE pointer
 	float a = (*_gauge)(te);
 	if( int(a*100) != int(old_a*100) ) {
-		drawPolarIndicator( a, AMIDX, AMIDY, 90, 132, 7, COLOR_ORANGE );
+		drawPolarIndicator( a, AMIDX, AMIDY, 90, 132, 7, needlecolor[needle_color.get()] );
 		// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 	}
 
@@ -1847,7 +1848,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 	// draw TE pointer
 	float a = (*_gauge)(te);
 	if( int(a*100) != int(old_a*100) ) {
-		drawPolarIndicator( a, AMIDX, AMIDY, 60, 120, 3, COLOR_RED );
+		drawPolarIndicator( a, AMIDX, AMIDY, 60, 120, 3, needlecolor[needle_color.get()] );
 		// ESP_LOGI(FNAME,"IpsDisplay::drawULDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 		// Climb bar
 

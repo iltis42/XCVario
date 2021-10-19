@@ -786,7 +786,7 @@ void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
 			ucg->drawBox( x-40,y-2, 40, 12  );
 		}else{
 			ucg->setColor( COLOR_BLACK );
-			ucg->drawBox( x-60,y-16, 70, 22  );
+			ucg->drawBox( x-55,y-12, 65, 22  );
 		}
 	}
 	else
@@ -801,7 +801,6 @@ void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
 			yellow =  (int)(( bat_yellow_volt.get() - bat_low_volt.get() )*100)/( bat_full_volt.get() - bat_low_volt.get() );
 			red = (int)(( bat_red_volt.get() - bat_low_volt.get() )*100)/( bat_full_volt.get() - bat_low_volt.get() );
 		}
-		ucg->setColor( COLOR_WHITE );
 		if ( battery_display.get() != BAT_VOLTAGE_BIG ){
 			ucg->setColor( COLOR_HEADER );
 			ucg->drawBox( x-40,y-2, 36, 12  );  // Bat body square
@@ -823,17 +822,24 @@ void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
 			ucg->setFont(ucg_font_fub11_hr);
 			ucg->setPrintPos(x-42,y-6);
 		}
-		ucg->setColor( COLOR_HEADER );
-		if( battery_display.get() == BAT_PERCENTAGE )
-			ucg->printf("%3d%%  ", charge);
+		ucg->setColor( COLOR_WHITE );
+		if( battery_display.get() == BAT_PERCENTAGE ) {
+			ucg->printf("%3d", charge);
+			ucg->setColor( COLOR_HEADER );
+			ucg->printf("%%  ");
+		}
 		else if ( battery_display.get() == BAT_VOLTAGE ) {
-			ucg->setPrintPos(x-50,y-8);
-			ucg->printf("%2.1f V", volt);
+			// ucg->setPrintPos(x-40,y-8);
+			ucg->printf("%2.1f", volt);
+			ucg->setColor( COLOR_HEADER );
+			ucg->printf("V ");
 		}
 		else if ( battery_display.get() == BAT_VOLTAGE_BIG ) {
 			ucg->setPrintPos(x-50,y+11);
 			ucg->setFont(ucg_font_fub14_hr);
-			ucg->printf("%2.1fV", volt);
+			ucg->printf("%2.1f", volt);
+			ucg->setColor( COLOR_HEADER );
+			ucg->printf("V ");
 		}
 
 	}

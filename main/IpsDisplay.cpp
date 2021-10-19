@@ -1794,7 +1794,11 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 				sprintf( unit, "QNH" );
 			ucg->setPrintPos(FIELD_START,(YALT-S2FFONTH-10));
 			ucg->setColor(0, COLOR_HEADER );
-			ucg->printf("%s %.2f %s   ", unit, qnh, Units::QnhUnit( qnh_unit.get() ) );
+			if( qnh_unit.get() == QNH_HPA ) {
+			  	ucg->printf("%s %.0f %s   ", unit, qnh, Units::QnhUnit( qnh_unit.get() ) );
+			} else {
+ 				ucg->printf("%s %.2f %s   ", unit, qnh, Units::QnhUnit( qnh_unit.get() ) );
+			}
 			pref_qnh = qnh;
 		}
 	}

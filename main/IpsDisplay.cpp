@@ -150,6 +150,7 @@ float te_prev = 0;
 bool blankold = false;
 bool blank = false;
 bool flarm_connected=false;
+static int max_gscale = 0;
 
 IpsDisplay::IpsDisplay( Ucglib_ILI9341_18x240x320_HWSPI *aucg ) {
 	ucg = aucg;
@@ -415,22 +416,24 @@ void IpsDisplay::drawAvgSymbol( int y, int r, int g, int b, int x ) {
 
 void IpsDisplay::drawAvg( float avclimb, float delta ){
 	static float avc_old=-1000;
-	static int yusize=7;
-	static int ylsize=7;
+	static int yusize=6;
+	static int ylsize=6;
 	if( _menu )
 		return;
 
 	ESP_LOGD(FNAME,"drawAvg: av=%.2f delta=%.2f", avclimb, delta );
 	int pos=145;
 	int size=7;
+	float a;
 	if( avc_old != -1000 ){
 		ucg->setColor( COLOR_BLACK );
-		int x=AMIDX - cos((avc_old/_range)*M_PI_2)*pos;
-		int y=AMIDY - sin((avc_old/_range)*M_PI_2)*pos;
+		a = (_gauge)(avc_old);
+		int x=AMIDX - cos(a)*pos;
+		int y=AMIDY - sin(a)*pos;
 		ucg->drawTetragon( x+size, y, x,y+ylsize, x-size,y, x,y-yusize );
+
+		drawScale( _range, -_range, 140, 0, avc_old*10.f );
 	}
-	drawScaleLines( false, _range, -_range );
-	// drawAnalogScale(0, 132);
 	if( delta > 0 )
 		ucg->setColor( COLOR_GREEN );
 	else
@@ -451,8 +454,9 @@ void IpsDisplay::drawAvg( float avclimb, float delta ){
 
 	if( avclimb > _range ) // clip values off weeds
 		avclimb = _range;
-	int x=AMIDX - cos((avclimb/_range)*M_PI_2)*pos;
-	int y=AMIDY - sin((avclimb/_range)*M_PI_2)*pos;
+	a = (_gauge)(avclimb);
+	int x=AMIDX - cos(a)*pos;
+	int y=AMIDY - sin(a)*pos;
 	ESP_LOGD(FNAME,"drawAvg: x=%d  y=%d", x,y );
 	ucg->drawTetragon( x+size,y, x, y+ylsize, x-size,y, x,y-yusize );
 	avc_old=avclimb;
@@ -467,6 +471,7 @@ void IpsDisplay::redrawValues()
 	tempalt = -2000;
 	s2falt = -1;
 	s2fdalt = -1;
+	s2f_level_prev = 0;
 	btqueue = -1;
 	_te=-200;
 	old_a=-1000;
@@ -875,125 +880,164 @@ void IpsDisplay::drawTemperature( int x, int y, float t ) {
     }
 }
 
-// val, center x, y, start radius, end radius, width, r,g,b, clenaup
-void IpsDisplay::drawPolarIndicator( float a, int x0, int y0, int l1, int l2, int w, int r, int g, int b, bool del )
+// val, center x, y, start radius, end radius, width, r,g,b
+void IpsDisplay::drawOneScaleLine( float a, int16_t x0, int16_t y0, int16_t l1, int16_t l2, int16_t w, uint8_t r, uint8_t g, uint8_t b)
+{
+	if( _menu ) return;
+
+	float si=sin(a);
+	float co=cos(a);
+	int16_t w0 = w/2;
+	w = w - w0; // total width := w + w0
+	ucg_int_t xn_0 = x0-l1*co+w0*si;
+	ucg_int_t yn_0 = y0-l1*si-w0*co;
+	ucg_int_t xn_1 = x0-l1*co-w*si;
+	ucg_int_t yn_1 = y0-l1*si+w*co;
+	ucg_int_t xn_2 = x0-l2*co-w*si;
+	ucg_int_t yn_2 = y0-l2*si+w*co;
+	ucg_int_t xn_3 = x0-l2*co+w0*si;
+	ucg_int_t yn_3 = y0-l2*si-w0*co;
+	// ESP_LOGI(FNAME,"IpsDisplay::drawTetragon  x0:%d y0:%d x1:%d y1:%d x2:%d y2:%d x3:%d y3:%d", (int)xn_0, (int)yn_0, (int)xn_1 ,(int)yn_1, (int)xn_2, (int)yn_2, (int)xn_3 ,(int)yn_3 );
+	ucg->setColor( r,g,b  );
+	ucg->drawTetragon(xn_0,yn_0,xn_1,yn_1,xn_2,yn_2,xn_3,yn_3);
+}
+
+// -pi/2 < val < pi/2, center x, y, start radius, end radius, width, r,g,b
+void IpsDisplay::drawPolarIndicator( float a, int16_t x0, int16_t y0, int16_t l1, int16_t l2, int16_t w, uint8_t r, uint8_t g, uint8_t b)
 {
 	static ucg_int_t x_0 = 0;
 	static ucg_int_t y_0 = 0;
-	static ucg_int_t x_1 = 0;
-	static ucg_int_t y_1 = 0;
-	static ucg_int_t x_2 = 0;
-	static ucg_int_t y_2 = 0;
-	static ucg_int_t x_3 = 0;
-	static ucg_int_t y_3 = 0;
-	static ucg_int_t x_tip = 0;
-	static ucg_int_t y_tip = 0;
+	static ucg_int_t x_1 = 1;
+	static ucg_int_t y_1 = 1;
+	static ucg_int_t x_2 = 1;
+	static ucg_int_t y_2 = -1;
 
 	if( _menu ) return;
 
-	ucg_int_t w0 = del?w+2:w;
 	float si=sin(a);
 	float co=cos(a);
-	ucg_int_t xn_0 = x0-l1*co+w0*si;
-	ucg_int_t yn_0 = y0-l1*si-w0*co;
-	ucg_int_t xn_1 = x0-l1*co-w0*si;
-	ucg_int_t yn_1 = y0-l1*si+w0*co;
-	ucg_int_t xn_2 = x0-l2*co-w*si;
-	ucg_int_t yn_2 = y0-l2*si+w*co;
-	ucg_int_t xn_3 = x0-l2*co+w*si;
-	ucg_int_t yn_3 = y0-l2*si-w*co;
-	ucg_int_t x_ntip = x0-(l2+2)*co;
-	ucg_int_t y_ntip = y0-(l2+2)*si;
+	ucg_int_t xn_0 = x0-l1*co+w*si;
+	ucg_int_t yn_0 = y0-l1*si-w*co;
+	ucg_int_t xn_1 = x0-l1*co-w*si;
+	ucg_int_t yn_1 = y0-l1*si+w*co;
+	ucg_int_t xn_2 = x0-l2*co;
+	ucg_int_t yn_2 = y0-l2*si;
 	// ESP_LOGI(FNAME,"IpsDisplay::drawTetragon  x0:%d y0:%d x1:%d y1:%d x2:%d y2:%d x3:%d y3:%d", (int)xn_0, (int)yn_0, (int)xn_1 ,(int)yn_1, (int)xn_2, (int)yn_2, (int)xn_3 ,(int)yn_3 );
-	if( del ) {
-		// cleanup previous incarnation
-		ucg->setColor(  COLOR_BLACK  );
-		ucg->drawTetragon(x_0,y_0,x_1,y_1,x_2,y_2,x_3,y_3);
-		ucg->drawDisc(x_tip, y_tip, 2*w, UCG_DRAW_ALL);
-		x_0 = xn_0;
-		y_0 = yn_0;
-		x_1 = xn_1;
-		y_1 = yn_1;
-		x_2 = xn_2;
-		y_2 = yn_2;
-		x_3 = xn_3;
-		y_3 = yn_3;
-		x_tip = x_ntip;
-		y_tip = y_ntip;
-		old_a = a;
-	}
+
+	// cleanup previous incarnation
+	ucg->setColor( COLOR_BLACK );
+	ucg->drawTriangle(x_0,y_0,x_1,y_1,x_2,y_2);
+	x_0 = xn_0;
+	y_0 = yn_0;
+	x_1 = xn_1;
+	y_1 = yn_1;
+	x_2 = xn_2;
+	y_2 = yn_2;
+	old_a = a;
 	ucg->setColor( r,g,b  );
-	ucg->drawTetragon(xn_0,yn_0,xn_1,yn_1,xn_2,yn_2,xn_3,yn_3);
-	if ( del ) ucg->drawDisc(x_ntip, y_ntip, 2*w, UCG_DRAW_ALL);
+	ucg->drawTriangle(xn_0,yn_0,xn_1,yn_1,xn_2,yn_2);
 }
 
-void IpsDisplay::drawScaleLines( bool full, float max_pos, float max_neg ){
-	if( _menu )
-		return;
-	float modulo=1;
-	if( max_pos > 10 )
-		modulo = 2;
-	if( max_pos < 5 )
-		modulo = 0.5;
-	int lower = 0;
-	if( full )
-		lower = (int)max_neg;
-	for( float a=lower; a<=(int)max_pos; a+=modulo ) {
-		int width=1;
-		int end=150;
-		int r = (int)max_pos;
-		if( a==0 || abs(a)==r ){
-			width=2;
-			end=155;
-		}
-		if((r%2) == 0) {
-			if(abs(a)==r/2){  // half scale big line
-				width = 2;
-				end=155;
-			}
-		}
-		else{
-			if( abs(a) == (r-1)/2 ){  // half scale minus one for even ranges big line
-				width = 2;
-				end=155;
-			}
-		}
-		if( modulo < 1 ){
-			if( fmod(a,1) == 0 ){  // every integer big line
-				width = 2;
-				end=155;
-			}
-		}
-		drawPolarIndicator( ((float)a/max_pos)*M_PI_2, AMIDX, AMIDY, 140, end, width, COLOR_WHITE, false );
+// +/- range, radius to AMID [pixel], opt. small area refresh at [scale*10]
+void IpsDisplay::drawScale( int16_t max_pos, int16_t max_neg, int16_t pos, int16_t offset, int16_t at ) {
+	if( _menu ) return;
+
+	int modulo = 10;
+	if( max_pos > 10 ) {
+		modulo = 20;
+	} else if( max_pos < 6 ) {
+		modulo = 5;
 	}
-}
 
-// Draw scale numbers for positive or negative value
-void IpsDisplay::annotateScale( int val, int pos, float range, int offset ){
-	if( _menu )
-		return;
+	// for larger ranges put at least on extra labl in the middle of the scale
+	int16_t mid_lpos = (int)(gaugePosFromIdx(0.5*M_PI_2)+.5) * 10;
+    mid_lpos /= modulo;
+    mid_lpos *= modulo; // round down to the next modulo hit
 	ucg->setFontPosCenter();
+	ucg->setFontMode(UCG_FONT_MODE_TRANSPARENT);
 	ucg->setFont(ucg_font_fub14_hn);
-	const float to_side = 1.07;
-	int x=AMIDX - cos((val*to_side/range)*M_PI_2)*pos;
-	int y=AMIDY+1 - sin((val*to_side/range)*M_PI_2)*pos;
-	if( val > 0 )
-		ucg->setPrintPos(x-17,y);
-	else
-		ucg->setPrintPos(x-10,y);
-	ucg->printf("%+d", val+offset );
+
+	// calc pixel dist for interval 0.5-1
+	int16_t dist = (int)(((*_gauge)(1.) - (*_gauge)(0.5)) * pos); // in pixel
+	ESP_LOGI(FNAME, "lines go m%d %d %d", modulo, dist, mid_lpos);
+	int16_t start=max_pos*10, stop=0;
+	if ( at != -1000 ) {
+		start = at+4;
+		stop = at-4;
+		if ( start <= 10 ) {
+			modulo = (dist>24)?1:(dist>16)?2:(dist>8)?5:10;
+		}
+	}
+	bool draw_label = start == max_pos*10;
+	for( int a=start; a>=stop; a-- ) {
+		int width=0;
+		int end=pos+5;
+
+		if ( a == 10 ) {
+			draw_label = true;
+			modulo = (dist>24)?1:(dist>16)?2:(dist>8)?5:10;
+		}
+
+		if ( ! (a%modulo) ) {
+			// any line
+			width = 1;
+
+			if ( ! (a%5) ) {
+				// .5 lines
+				width = 2;
+				end = pos+10;
+			}
+
+			if ( ! (a%10) ) {
+				// every integer big line
+				if ( (modulo < 11)
+					|| (a == start || a == mid_lpos) ) {
+					width = 3;
+					end = pos+15;
+				}
+				draw_label = a!=0 && (draw_label || modulo<11 || a==mid_lpos);
+			}
+
+			ESP_LOGI(FNAME, "lines a %d %d %d", a, end, draw_label);
+
+			float val = (*_gauge)((float)a/10.);
+			drawOneScaleLine( val, AMIDX, AMIDY, pos, end, width, COLOR_WHITE );
+			if ( draw_label ) { drawOneLabel(val, a/10, pos+12, offset); }
+			if ( (-a/10) >= max_neg && at < max_neg ) {
+				drawOneScaleLine( -val, AMIDX, AMIDY, pos, end, width, COLOR_WHITE );
+				if ( draw_label ) { drawOneLabel(-val, a/10, pos+12, offset); }
+			}
+			draw_label = false;
+		}
+	}
+	ucg->setFontMode(UCG_FONT_MODE_SOLID);
 	ucg->setFontPosBottom();
 }
 
+// Draw scale label numbers for -pi/2 to pi/2 w/o sign
+void IpsDisplay::drawOneLabel( float val, int16_t labl, int16_t pos, int16_t offset ) {
+	if( _menu )
+		return;
 
-static int wx0,wy0,wx1,wy1,wx2,wy2,wx3,wy3;
-static bool del_wind=false;
+	const float to_side = 1.02;
+	int x, y;
+    pos += (M_PI_2-std::abs(val))/M_PI_2 * 10; // increase pos towards 0
+	x=AMIDX   - cos(val*to_side)*pos;
+	y=AMIDY+1 - sin(val*to_side)*pos;
+	ucg->setColor(COLOR_HEADER);
+	ucg->setPrintPos(x,y);
+	ucg->printf("%d", abs(labl+offset) );
+}
 
 
 // draw windsock style alike arrow white and red
 void IpsDisplay::drawWindArrow( float a, float speed, int type ){
+	static int wx0,wy0,wx1,wy1,wx2,wy2,wx3,wy3;
+	static bool del_wind=false;
+
 	if( _menu )
 		return;
+
 	const int X=80;
 	const int Y=220;
 	float si=sin(D2R(a));
@@ -1050,19 +1094,8 @@ void IpsDisplay::initULDisplay(){
 	bootDisplay();
 	ucg->setFontPosBottom();
 	redrawValues();
-	drawScaleLines( true, _range, -_range );
-	int r = (int)_range;
-	annotateScale(-r,150, _range );
-	annotateScale(r,150, _range);
-	// drawAnalogScale(0, 132);
-	if((r%2) == 0) {
-		annotateScale(r/2,155, _range);
-		annotateScale(-r/2,155, _range);
-	}
-	else{
-		annotateScale((r-1)/2,155, _range);
-		annotateScale((-r+1)/2,155, _range);
-	}
+	drawScale( _range, -_range, 140, 0 );
+
 	// Unit's
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setPrintPos(85,15);
@@ -1106,19 +1139,9 @@ void IpsDisplay::initRetroDisplay(){
 	bootDisplay();
 	ucg->setFontPosBottom();
 	redrawValues();
-	drawScaleLines( true, _range, -_range );
-	int r = (int)_range;
-	annotateScale(-r,150, _range );
-	annotateScale(r,150, _range);
-	// drawAnalogScale(0, 132);
-	if((r%2) == 0) {
-		annotateScale(r/2,155, _range);
-		annotateScale(-r/2,155, _range);
-	}
-	else{
-		annotateScale((r-1)/2,155, _range);
-		annotateScale((-r+1)/2,155, _range);
-	}
+	initGauge(_range);
+	drawScale( _range, -_range, 140, 0);
+
 	// Unit's
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setPrintPos(5,50);
@@ -1261,8 +1284,6 @@ void IpsDisplay::drawSpeed(int airspeed, ucg_int_t x, ucg_int_t y, bool inc_unit
 	as_prev = airspeed;
 }
 
-int max_gscale = 0;
-
 void IpsDisplay::initLoadDisplay(){
 	if( _menu )
 		return;
@@ -1276,27 +1297,16 @@ void IpsDisplay::initLoadDisplay(){
 	ucg->print( "MAX POS" );
 	ucg->setPrintPos(130,210);
 	ucg->print( "MAX NEG" );
-	max_gscale = (int)( gload_pos_limit.get() )+1;
+	int max_gscale = (int)( gload_pos_limit.get() )+1;
 	if( -gload_neg_limit.get() >= max_gscale )
 		max_gscale = (int)( -gload_neg_limit.get()  )+1;
-	drawScaleLines( true, max_gscale, -max_gscale );
+	drawScale( max_gscale, -max_gscale, 140, 1 );
 
-	annotateScale(-max_gscale,150,max_gscale, 1 );
-	annotateScale(max_gscale,150,max_gscale, 1 );
-	// drawAnalogScale(0, 132);
-	if((max_gscale%2) == 0) {
-		annotateScale(max_gscale/2,155,max_gscale, 1);
-		annotateScale(-max_gscale/2,155,max_gscale, 1);
-	}
-	else{
-		annotateScale((max_gscale-1)/2,155,max_gscale, 1);
-		annotateScale((-max_gscale+1)/2,155,max_gscale, 1);
-	}
 	for( float a=gload_pos_limit.get()-1; a<max_gscale; a+=0.05 ) {
-		drawPolarIndicator( ((float)a/max_gscale)*M_PI_2, AMIDX, AMIDY, 120, 130, 2, COLOR_RED, false );
+		drawOneScaleLine( ((float)a/max_gscale)*M_PI_2, AMIDX, AMIDY, 120, 130, 4, COLOR_RED );
 	}
 	for( float a=gload_neg_limit.get()-1; a>(-max_gscale); a-=0.05 ) {
-		drawPolarIndicator( ((float)a/max_gscale)*M_PI_2, AMIDX, AMIDY, 120, 130, 2, COLOR_RED, false );
+		drawOneScaleLine( ((float)a/max_gscale)*M_PI_2, AMIDX, AMIDY, 120, 130, 4, COLOR_RED );
 	}
 
 	ESP_LOGI(FNAME,"initLoadDisplay end");
@@ -1603,7 +1613,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			else
 				ucg->setColor( COLOR_BLACK );
 			if( netto_mode.get() == NETTO_NORMAL )
-				ucg->print( "net  " );
+				ucg->print( "  net" );
 			else
 				ucg->print( "s-net" );
 			netto_old = netto;
@@ -1624,12 +1634,6 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	int airspeed =  (int)(Units::Airspeed( airspeed_kmh ) + 0.5);
 	float altitude = Units::Altitude( altitude_m );
 
-	// draw TE pointer
-	float a = (te)/(_range) * (M_PI_2);
-	if( int(a*100) != int(old_a*100) ) {
-		drawPolarIndicator( a, AMIDX, AMIDY, 75, 130, 2, COLOR_ORANGE );
-		// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
-	}
 	if( _menu ){
 		xSemaphoreGive(spiMutex);
 		return;
@@ -1641,14 +1645,14 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			if( te > te_prev && te > 0 ){  // draw green what's missing
 				for( float a=te_prev; a<te && a<_range; a+=step ) {
 					if( a >= step*2 ) // don't overwrite the '0'
-						drawPolarIndicator( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 135, 140, 2, COLOR_GREEN, false );
+						drawOneScaleLine( (*_gauge)(a), AMIDX, AMIDY, 135, 140, 4, COLOR_GREEN );
 				}
 			}
 			else{   // delete what's too much
 				ESP_LOGD(FNAME,"delete te:%0.2f prev:%0.2f", te, te_prev );
 				for( float a=te_prev+step; a>=te && a >= step; a-=step ) {
 					ESP_LOGD(FNAME,"delete %0.2f", a );
-					drawPolarIndicator( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 134, 141, 2, COLOR_BLACK, false );
+					drawOneScaleLine( (*_gauge)(a), AMIDX, AMIDY, 134, 141, 4, COLOR_BLACK );
 				}
 			}
 			te_prev = te+step;
@@ -1667,16 +1671,16 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 						ESP_LOGD(FNAME,"blue a=%f",a);
 						if( a <= -step*2 ){ // don't overwrite the '0'
 							if( netto )
-								drawPolarIndicator( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 135, 140, 2, COLOR_RED, false );
+								drawOneScaleLine( (*_gauge)(a), AMIDX, AMIDY, 135, 140, 4, COLOR_RED );
 							else
-								drawPolarIndicator( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 135, 140, 2, COLOR_BLUE, false );
+								drawOneScaleLine( (*_gauge)(a), AMIDX, AMIDY, 135, 140, 4, COLOR_BLUE );
 						}
 					}
 				}
 				else{   // delete what's too much
 					for( float a=polar_sink_prev-step; a<=val && a <= -step; a+=step ) {
 						ESP_LOGD(FNAME,"black a=%f",a);
-						drawPolarIndicator( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 134, 141, 2, COLOR_BLACK, false );
+						drawOneScaleLine( (*_gauge)(a), AMIDX, AMIDY, 134, 141, 4, COLOR_BLACK );
 					}
 				}
 				polar_sink_prev = val + step;
@@ -1719,6 +1723,18 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		if( as_prev != airspeed || !(tick%64) ) {
 			drawSpeed(airspeed, 180, 282);
 		}
+	}
+
+	// Compass
+	if( !(tick%8) ){
+		drawCompass();
+	}
+
+	// draw TE pointer
+	float a = (*_gauge)(te);
+	if( int(a*100) != int(old_a*100) ) {
+		drawPolarIndicator( a, AMIDX, AMIDY, 90, 132, 7, COLOR_ORANGE );
+		// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 	}
 
 	// Battery
@@ -1772,10 +1788,6 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		drawAvg( acl, acl-average_climbf );
 		average_climb = (int)(acl*10);
 		average_climbf = acl;
-	}
-	// Compass
-	if( !(tick%8) ){
-		drawCompass();
 	}
 	xSemaphoreGive(spiMutex);
 }
@@ -1833,7 +1845,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 	float altitude = Units::Altitude( altitude_m );
 
 	// draw TE pointer
-	float a = (te)/(_range) * (M_PI_2);
+	float a = (*_gauge)(te);
 	if( int(a*100) != int(old_a*100) ) {
 		drawPolarIndicator( a, AMIDX, AMIDY, 60, 120, 3, COLOR_RED );
 		// ESP_LOGI(FNAME,"IpsDisplay::drawULDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
@@ -1847,14 +1859,14 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 			if( te > te_prev && te > 0 ){  // draw green what's missing
 				for( float a=te_prev; a<te && a<_range; a+=step ) {
 					if( a >= step*2 ) // don't overwrite the '0'
-						drawPolarIndicator( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 120, 125, 2, COLOR_GREEN, false );
+						drawOneScaleLine( (*_gauge)(a), AMIDX, AMIDY, 120, 125, 4, COLOR_GREEN );
 				}
 			}
 			else{   // delete what's too much
 				ESP_LOGD(FNAME,"delete te:%0.2f prev:%0.2f", te, te_prev );
 				for( float a=te_prev+step; a>=te && a >= step; a-=step ) {
 					ESP_LOGD(FNAME,"delete %0.2f", a );
-					drawPolarIndicator( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 119, 126, 2, COLOR_BLACK, false );
+					drawOneScaleLine( (*_gauge)(a), AMIDX, AMIDY, 119, 126, 4, COLOR_BLACK );
 				}
 			}
 			te_prev = te+step;
@@ -1877,16 +1889,16 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 						ESP_LOGD(FNAME,"blue a=%f",a);
 						if( a <= -step*2 ){ // don't overwrite the '0'
 							if( netto )
-								drawPolarIndicator( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 120, 125, 2, COLOR_RED, false );
+								drawOneScaleLine( (*_gauge)(a), AMIDX, AMIDY, 120, 125, 4, COLOR_RED );
 							else
-								drawPolarIndicator( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 120, 125, 2, COLOR_BLUE, false );
+								drawOneScaleLine( (*_gauge)(a), AMIDX, AMIDY, 120, 125, 4, COLOR_BLUE );
 						}
 					}
 				}
 				else{   // delete what's too much
 					for( float a=polar_sink_prev-step; a<=val && a <= -step; a+=step ) {
 						ESP_LOGD(FNAME,"black a=%f",a);
-						drawPolarIndicator( ((float)a/_range)*M_PI_2, AMIDX, AMIDY, 119, 126, 2, COLOR_BLACK, false );
+						drawOneScaleLine( (*_gauge)(a), AMIDX, AMIDY, 119, 126, 4, COLOR_BLACK );
 					}
 				}
 				polar_sink_prev = val + step;

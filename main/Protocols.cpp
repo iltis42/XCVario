@@ -355,6 +355,12 @@ void Protocols::parseNMEA( const char *astr ){
 				ESP_LOGI(FNAME,"New Bugs: %d %%", mybugs);
 				bugs.set( mybugs );
 			}
+			if (str[3] == 'q') {  // nonstandard CAI 302 extension for QNH setting in XCVario in int or float e.g. 1013 or 1020.20
+				float qnh;
+				sscanf(str, "!g,q%f", &qnh);
+				ESP_LOGI(FNAME,"New QNH: %.2f", qnh);
+				QNH.set( qnh );
+			}
 		}
 		else if( !strncmp( str, "$PFLAU,", 3 )) {
 			Flarm::parsePFLAU( str );

@@ -872,11 +872,11 @@ void IpsDisplay::drawTemperature( int x, int y, float t ) {
 		ucg->setColor( COLOR_WHITE );
 		ucg->printf("%-2.1f", std::roundf(t*10.f)/10.f );
 		ucg->setColor( COLOR_HEADER );
-		ucg->printf("\xb0""C  ");
+		ucg->printf("\xb0""C ");
 	}
 	else {
 		ucg->setColor( COLOR_HEADER );
-		ucg->printf(" -- \xb0""C  ");
+		ucg->printf(" -- \xb0""C ");
     }
 }
 

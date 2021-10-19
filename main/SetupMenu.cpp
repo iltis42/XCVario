@@ -573,6 +573,12 @@ void SetupMenu::setup( )
 		vga->setPrecision( 0 );
 		vae->addEntry( vga );
 
+		SetupMenuSelect *vlogscale = new SetupMenuSelect( "Log. Scale", false, 0, true, &log_scale );
+		vlogscale->setHelp(PROGMEM"Use a logarithmic scale to the vario gauge");
+		vlogscale->addEntry( "DISABLE" );
+		vlogscale->addEntry( "ENABLE" );
+		vae->addEntry( vlogscale );
+
 		SetupMenuSelect * vamod = new SetupMenuSelect( 	"Mode", false, 0 , true, &vario_mode );
 		vamod->setHelp(PROGMEM"Controls if vario considers polar sink (=Netto), or not (=Brutto), or if Netto vario applies only in Cruise Mode");
 		vamod->addEntry( "Brutto");

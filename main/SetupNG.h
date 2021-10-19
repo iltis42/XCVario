@@ -394,6 +394,7 @@ extern SetupNG<float>  		high_tone_var;
 extern SetupNG<float>  		deadband;
 extern SetupNG<float>  		deadband_neg;
 extern SetupNG<float>  		range;
+extern SetupNG<int>			log_scale;
 extern SetupNG<float>  		ballast;
 extern SetupNG<float>  		MC;
 extern SetupNG<float>  		s2f_speed;
@@ -591,5 +592,5 @@ extern SetupNG<int> 		menu_screens;
 
 
 
-extern int g_col_background;
-extern int g_col_highlight;
+extern uint8_t g_col_background;
+extern uint8_t g_col_highlight;

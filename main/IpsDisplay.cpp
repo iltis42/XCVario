@@ -135,11 +135,13 @@ int IpsDisplay::wksensoralt;
 
 float IpsDisplay::_range_clip = 0;
 int   IpsDisplay::_divisons = 5;
-float IpsDisplay::_range = 5;
+float IpsDisplay::_scale_k = M_PI_2 / 5.;
+float IpsDisplay::_range = 5.;
 int   IpsDisplay::average_climb = -100;
 float IpsDisplay::average_climbf = 0;
 int   IpsDisplay::prev_heading = 0;
 float IpsDisplay::pref_qnh = 0;
+float (*IpsDisplay::_gauge)(float) = &linGaugeIdx;
 
 #define WKBARMID (AMIDY-15)
 
@@ -1069,6 +1071,34 @@ void IpsDisplay::initULDisplay(){
 	drawThermometer(  10, 30 );
 }
 
+// calculate a gauge indicator position in rad (-pi/2 .. pi/2) for a value
+float IpsDisplay::logGaugeIdx(const float val)
+{
+	return log2f(std::abs(val)+1.f) * _scale_k * (std::signbit(val)?-1.:1.);
+}
+float IpsDisplay::linGaugeIdx(const float val)
+{
+	return val * _scale_k;
+}
+void IpsDisplay::initGauge(const float max)
+{
+	if ( log_scale.get() ) {
+		_scale_k = M_PI_2 / log2f(max+1.);
+		_gauge = &logGaugeIdx;
+	} else {
+		_scale_k = M_PI_2 / max;
+		_gauge = &linGaugeIdx;
+	}
+}
+// inverse to xxGaugeIdx. Get the value for an indicator position
+float IpsDisplay::gaugePosFromIdx(const float rad)
+{
+	if ( _gauge == &logGaugeIdx ) {
+		return (pow(2., std::abs(rad))-1.f) / _scale_k * (std::signbit(rad)?-1.:1.);
+	} else {
+		return rad / _scale_k;
+	}
+}
 
 void IpsDisplay::initRetroDisplay(){
 	if( _menu )

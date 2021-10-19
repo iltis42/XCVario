@@ -54,8 +54,10 @@ private:
 	static float _range;
 	static int prev_heading;
 	static int _divisons;
+    static float _scale_k;
 	static float _range_clip;
 	static int _pixpmd;
+	static float (*_gauge)(float);
 
 	static bool _menu;
 	enum ips_display _dtype;
@@ -132,7 +134,10 @@ private:
 	static void drawSpeed(int speed, ucg_int_t x, ucg_int_t y, bool inc_unit=true);
 	static void drawLegend( bool onlyLines=false );
 	static void drawAvgVario( int x, int y, float ate );
-
+	static float logGaugeIdx(const float val);
+	static float linGaugeIdx(const float val);
+	static void  initGauge(const float max);
+	static float gaugePosFromIdx(const float val);
 };
 
 

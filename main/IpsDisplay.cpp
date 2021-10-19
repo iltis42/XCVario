@@ -668,7 +668,7 @@ void IpsDisplay::drawBT() {
 		return;
 	int btq=BTSender::queueFull();
 	if( btq != btqueue || Flarm::connected() != flarm_connected ){
-		ucg_int_t btx=DISPLAY_W-22;
+		ucg_int_t btx=DISPLAY_W-20;
 		ucg_int_t bty=(BTH/2) + 8;
 		if( btq )
 			ucg->setColor( COLOR_MGREY );
@@ -689,26 +689,36 @@ void IpsDisplay::drawBT() {
 		flarm_connected = Flarm::connected();
 	}
 	if( SetupCommon::isWired() ) {
-		drawCable(DISPLAY_W-30, BTH + 27);
+		drawCable(DISPLAY_W-20, BTH + 22);
 	}
 }
 
-void IpsDisplay::drawCable(int x, int y)
+void IpsDisplay::drawCable(int16_t x, int16_t y)
 {
-    CAN->connectedXCV() ? ucg->setColor( COLOR_LBLUE ) : ucg->setColor(COLOR_MGREY);
-    ucg->setFont(ucg_font_fub11_hr);
-    ucg->setPrintPos(x-8,y);
-    if( CAN->connectedMagSens() ) {
-        ucg->setColor( COLOR_GREEN );
-    }
-    ucg->printf("C");
-    CAN->connectedMagSens() ? ucg->setColor( COLOR_LBLUE ) : ucg->setColor(COLOR_MGREY);
-    if( Flarm::connected() ) {
-        ucg->setColor( COLOR_GREEN );
-    }
-    ucg->printf("A");
-    CAN->connectedXCV() ? ucg->setColor( COLOR_LBLUE ) : ucg->setColor(COLOR_MGREY);
-    ucg->printf("N");
+	const int16_t CANH = 8;
+	const int16_t CANW = 14;
+	CAN->connectedXCV() ? ucg->setColor(COLOR_LBLUE) : ucg->setColor(COLOR_MGREY);
+	// ucg->setFont(ucg_font_fub11_hr);
+	// ucg->setPrintPos(x - 8, y);
+	if (CAN->connectedMagSens()) {
+		ucg->setColor(COLOR_GREEN);
+	}
+	ucg->drawLine( x-CANW/2, y+CANH/2, x+3, y+CANH/2 );
+	ucg->drawLine( x-CANW/2, y+CANH/2-1, x+3, y+CANH/2-1 );
+	ucg->drawDisc( x-CANW/2, y+CANH/2, 2, UCG_DRAW_ALL);
+	// ucg->printf("c");
+	CAN->connectedMagSens() ? ucg->setColor(COLOR_LBLUE) : ucg->setColor(COLOR_MGREY);
+	if (Flarm::connected()) {
+		ucg->setColor(COLOR_GREEN);
+	}
+	ucg->drawLine( x+2, y+CANH/2, x-4, y-CANH/2 );
+	ucg->drawLine( x+3, y+CANH/2-1, x-3, y-CANH/2-1 );
+	// ucg->printf("a");
+	CAN->connectedXCV() ? ucg->setColor(COLOR_LBLUE) : ucg->setColor(COLOR_MGREY);
+	ucg->drawLine( x-3, y-CANH/2, x+CANW/2, y-CANH/2 );
+	ucg->drawLine( x-3, y-CANH/2-1, x+CANW/2, y-CANH/2-1 );
+	ucg->drawDisc( x+CANW/2, y-CANH/2, 2, UCG_DRAW_ALL);
+	// ucg->printf("n");
 }
 
 void IpsDisplay::drawFlarm( int x, int y, bool flarm ) {
@@ -762,18 +772,18 @@ void IpsDisplay::drawWifi( int x, int y ) {
 		btqueue = btq;
 	}
 	if( SetupCommon::isWired() ) {
-		drawCable(x-6, y+22);
+		drawCable(x, y+18);
 	}
 }
 
-void IpsDisplay::drawConnection( int x, int y )
+void IpsDisplay::drawConnection( int16_t x, int16_t y )
 {
 	if( wireless == WL_BLUETOOTH )
 		drawBT();
 	else if( wireless != WL_DISABLE )
 		drawWifi(x, y);
 	else if( SetupCommon::isWired() )
-		drawCable(x, y);
+		drawCable(x+10, y);
 }
 
 void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {

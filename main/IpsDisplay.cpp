@@ -332,7 +332,7 @@ void IpsDisplay::initDisplay() {
 	}
 
 	// Fancy altimeter
-	ucg->setFont(ucg_font_fub20_hr);
+	ucg->setFont(ucg_font_fub25_hr);
 	char_width = ucg->getStrWidth("2");
 
 	redrawValues();

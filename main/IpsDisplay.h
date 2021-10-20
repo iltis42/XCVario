@@ -41,7 +41,7 @@ public:
 	void doMenu( bool menu=true ) { _menu = menu; };
 	static void drawArrowBox( int x, int y, bool are=true );
 	static void redrawValues();
-	static void drawCompass();
+	static void drawCompass(int16_t x, int16_t y);
 	static void drawULCompass();
 	static void drawWindArrow( float dir, float speed, int type );
 	static inline Ucglib_ILI9341_18x240x320_HWSPI *getDisplay() { return ucg; };
@@ -131,7 +131,7 @@ private:
 	static void drawGaugeTriangle( int y, int r, int g, int b, bool s2f=false );
 	static void drawAvgSymbol( int y, int r, int g, int b, int x=DISPLAY_LEFT );
 	static void drawAvg( float mps, float delta );
-	static void drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool inc_unit = true );
+	static void drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool dirty, bool inc_unit = true );
 	static void drawSpeed(int speed, ucg_int_t x, ucg_int_t y, bool inc_unit=true);
 	static void drawLegend( bool onlyLines=false );
 	static void drawAvgVario( int x, int y, float ate );

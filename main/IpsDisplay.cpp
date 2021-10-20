@@ -96,6 +96,7 @@ int S2FST = 45;
 int ASLEN = 0;
 #define AMIDY DISPLAY_H/2
 #define AMIDX (DISPLAY_W/2 + 30)
+static const int16_t INNER_RIGHT_ALIGN = 175;
 static int fh;
 
 extern xSemaphoreHandle spiMutex; // todo needs a better concept here
@@ -1193,24 +1194,26 @@ void IpsDisplay::drawAvgVario( int x, int y, float ate ){
 	ucg->setFontPosBottom();
 	ucg->undoClipRange();
 }
+
 // right-aligned to value, unit optional behind
-void IpsDisplay::drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool incl_unit )
+void IpsDisplay::drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool dirty, bool incl_unit )
 {
 
 	int alt = (int)(altitude*10.); // redered value
 	if ( alt_unit.get() == ALT_UNIT_FL ) { alt /= 10; }
 
 	// check on the rendered value for change
-	if ( alt == alt_prev ) return;
+    dirty = dirty || alt == alt_prev;
+	if ( ! dirty ) return;
 
 	char s[15];
-	ucg->setFont(ucg_font_fub20_hr);
+	ucg->setFont(ucg_font_fub25_hr);
 	ucg->setColor( COLOR_WHITE );
 	sprintf(s,"%5d", alt);
 	int fl=ucg->getStrWidth(s);
 	if ( alt_unit.get() == ALT_UNIT_FL ) {
 		ucg->setPrintPos(x-fl,y);
-        ucg->printf(s);
+		ucg->print(s);
 	}
     else {
 		int len = std::strlen(s);
@@ -1227,8 +1230,8 @@ void IpsDisplay::drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool in
 		s[std::strlen(s)-1] = '\0'; // len(s) > 0 ensured!
 		ucg->setPrintPos(x - fl, y);
 		static int altpart_prev = 0;
-		if (altpart_prev != alt) {
-			ucg->printf(s);
+		if (dirty) {
+			ucg->print(s);
 			altpart_prev = alt;
 		}
 		// ESP_LOGI(FNAME,"Alti %d, fr%d - %c", alt, fraction, ldigit);
@@ -1256,31 +1259,35 @@ void IpsDisplay::drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool in
 	if ( incl_unit ) {
 		ucg->setFont(ucg_font_fub11_hr);
 		ucg->setColor( COLOR_HEADER );
-		ucg->setPrintPos(x, y-3);
-		ucg->printf(" %s ", Units::AltitudeUnit() );
+		ucg->setPrintPos(x+1, y-17);
+		ucg->printf("%dQNH", (int)(Units::QnhRaw(QNH.get())+0.5) ); // todo and QFE?
+		ucg->setPrintPos(x+1, y-3);
+		ucg->print(Units::AltitudeUnit() );
 	}
 	alt_prev = alt;
 }
+
 // right-aligned to value, unit optional behind
 void IpsDisplay::drawSpeed(int airspeed, ucg_int_t x, ucg_int_t y, bool inc_unit)
 {
 	// ESP_LOGI(FNAME,"draw airspeed %d %d", airspeed, as_prev );
 	ucg->setColor( COLOR_WHITE );
-	if ( inc_unit ) { // todo shortcut
-		ucg->setFont(ucg_font_fub20_hr);
+	if ( inc_unit ) { // todo proper parameter for size
+		ucg->setFont(ucg_font_fub25_hr);
 	} else {
 		ucg->setFont(ucg_font_fub14_hn);
 	}
 	char s[10];
 	sprintf(s," %3d",  airspeed );
-	int fl=ucg->getStrWidth(s);
-	ucg->setPrintPos(x-fl,y);
-	ucg->printf(s);
+	ucg->setPrintPos(x-ucg->getStrWidth(s), y);
+	ucg->print(s);
 	if ( inc_unit ) {
 		ucg->setFont(ucg_font_fub11_hr);
-		ucg->setPrintPos(x,y-3);
 		ucg->setColor( COLOR_HEADER );
-		ucg->printf(" %s ", Units::AirspeedUnit() );
+		ucg->setPrintPos(x+1,y-3);
+		ucg->print(Units::AirspeedUnit() );
+		ucg->setPrintPos(x+1,y-17);
+		ucg->print("IAS"); // todo and TAS?
 	}
 	as_prev = airspeed;
 }
@@ -1364,7 +1371,7 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 
 
 // Compass or Wind Display
-void IpsDisplay::drawCompass(){
+void IpsDisplay::drawCompass(int16_t x, int16_t y) {
 	if( _menu )
 		return;
 	// ESP_LOGI(FNAME, "drawCompass: %d ", wind_display.get() );
@@ -1448,24 +1455,19 @@ void IpsDisplay::drawCompass(){
 			heading -= 360;
 		// ESP_LOGI(FNAME, "heading %d, valid %d", heading, Compass::headingValid() );
 		if( prev_heading != heading || !(tick%16) ){
-			ucg->setPrintPos(105,104);
-			ucg->setColor(  COLOR_WHITE  );
-			ucg->setFont(ucg_font_fub20_hr);
 			char s[12];
 			if( heading < 0 )
-				sprintf(s,"%s", "  ---" );
+				sprintf(s,"%4s", "---" );
 			else
-				sprintf(s,"%3d", heading );
-
-			if( heading < 10 )
-				ucg->printf("%s    ", s);
-			else if( heading < 100 )
-				ucg->printf("%s   ", s);
-			else
-				ucg->printf("%s  ", s);
+				sprintf(s,"%4d", heading );
+			ucg->setColor( COLOR_WHITE );
+			ucg->setFont(ucg_font_fub20_hr);
+			ucg->setPrintPos(x-ucg->getStrWidth(s), y);
+			ucg->print(s);
+			ucg->setColor( COLOR_HEADER );
 			ucg->setFont(ucg_font_fub20_hf);
-			ucg->setPrintPos(120+ucg->getStrWidth(s),105);
-			ucg->printf("\xb0 ");
+			ucg->setPrintPos(x+1, y);
+			ucg->print("\xb0 ");
 			prev_heading = heading;
 		}
 	}
@@ -1720,15 +1722,16 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	// Altitude & Airspeed
 	if( !(tick%8) ) {
-		drawAltitude( altitude, 180, 250 );
+		bool dirty = needle_pos_old > -M_PI_2*75./90.; // ca. below 75°
+		drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, dirty );
 		if( as_prev != airspeed || !(tick%64) ) {
-			drawSpeed(airspeed, 180, 282);
+			drawSpeed(airspeed, INNER_RIGHT_ALIGN, 75);
 		}
 	}
 
 	// Compass
 	if( !(tick%8) ){
-		drawCompass();
+		drawCompass(INNER_RIGHT_ALIGN, 105);
 	}
 
 	// draw TE pointer
@@ -1943,7 +1946,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 	}
 	// Altitude
 	if(!(tick%8) ) {
-		drawAltitude( altitude, FIELD_START_UL, YALT-4 );
+		drawAltitude( altitude, FIELD_START_UL, YALT-4, false, false );
 	}
 
 	// Battery
@@ -2136,7 +2139,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 
 	// Altitude
 	if(!(tick%8) ) {
-		drawAltitude( altitude, FIELD_START+80, YALT+6 );
+		drawAltitude( altitude, FIELD_START+80, YALT+6, false, false );
 	}
 	// MC Value
 	if(  !(tick%8) ) {
@@ -2322,8 +2325,8 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		drawSpeed((int)(s2f+0.5), ASVALX+30, YS2F-fh+3, false);
 
 		// draw S2F Delta
-		drawSpeed((int)(s2fd+0.5), ASVALX+30, DISPLAY_H/2+fh+3, false);
-		drawS2FBar(ASVALX+20, DISPLAY_H/2, s2fd);
+		drawSpeed((int)(s2fd+0.5), ASVALX+30, DISPLAY_H/2+fh+7, false);
+		drawS2FBar(ASVALX+20, DISPLAY_H/2 + 10, s2fd);
 
 		s2fdalt = (int)s2fd;
 		s2falt = (int)(s2f+0.5);

@@ -112,7 +112,7 @@ public:
 		return 0;
 	};
 
-	static float QnhRaw( float qnh ){   // standard is m/s
+	static float QnhRaw( float qnh ){   // standard is hPa
 		if( qnh_unit.get() == QNH_HPA )
 			return( qnh );
 		else if(  qnh_unit.get() == QNH_INHG )

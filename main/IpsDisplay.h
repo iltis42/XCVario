@@ -134,7 +134,7 @@ private:
 	static void drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool dirty, bool inc_unit = true );
 	static void drawSpeed(int speed, ucg_int_t x, ucg_int_t y, bool inc_unit=true);
 	static void drawLegend( bool onlyLines=false );
-	static void drawAvgVario( int x, int y, float ate );
+	static void drawAvgVario( int16_t x, int16_t y, float ate );
 	static float logGaugeIdx(const float val);
 	static float linGaugeIdx(const float val);
 	static void  initGauge(const float max);

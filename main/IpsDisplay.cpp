@@ -561,12 +561,12 @@ void IpsDisplay::drawMC( float mc, bool large ) {
     }
     char s[10];
 	std::sprintf(s, "%1.1f", mc );
-    ucg->printf(s);
+    ucg->print(s);
     ucg_int_t fl = ucg->getStrWidth(s);
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setColor(COLOR_HEADER);
 	ucg->setPrintPos(5+fl, DISPLAY_H-6);
-	ucg->printf(" MC");
+	ucg->print(" MC");
 }
 
 #define S2FSS 10
@@ -716,19 +716,19 @@ void IpsDisplay::drawCable(int16_t x, int16_t y)
 	ucg->drawLine( x-CANW/2, y+CANH/2, x+3, y+CANH/2 );
 	ucg->drawLine( x-CANW/2, y+CANH/2-1, x+3, y+CANH/2-1 );
 	ucg->drawDisc( x-CANW/2, y+CANH/2, 2, UCG_DRAW_ALL);
-	// ucg->printf("c");
+	// ucg->print("c");
 	CAN->connectedMagSens() ? ucg->setColor(COLOR_LBLUE) : ucg->setColor(COLOR_MGREY);
 	if (Flarm::connected()) {
 		ucg->setColor(COLOR_GREEN);
 	}
 	ucg->drawLine( x+2, y+CANH/2, x-4, y-CANH/2 );
 	ucg->drawLine( x+3, y+CANH/2-1, x-3, y-CANH/2-1 );
-	// ucg->printf("a");
+	// ucg->print("a");
 	CAN->connectedXCV() ? ucg->setColor(COLOR_LBLUE) : ucg->setColor(COLOR_MGREY);
 	ucg->drawLine( x-3, y-CANH/2, x+CANW/2, y-CANH/2 );
 	ucg->drawLine( x-3, y-CANH/2-1, x+CANW/2, y-CANH/2-1 );
 	ucg->drawDisc( x+CANW/2, y-CANH/2, 2, UCG_DRAW_ALL);
-	// ucg->printf("n");
+	// ucg->print("n");
 }
 
 void IpsDisplay::drawFlarm( int x, int y, bool flarm ) {
@@ -846,20 +846,20 @@ void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
 		if( battery_display.get() == BAT_PERCENTAGE ) {
 			ucg->printf("%3d", charge);
 			ucg->setColor( COLOR_HEADER );
-			ucg->printf("%%  ");
+			ucg->print("% ");
 		}
 		else if ( battery_display.get() == BAT_VOLTAGE ) {
 			// ucg->setPrintPos(x-40,y-8);
 			ucg->printf("%2.1f", volt);
 			ucg->setColor( COLOR_HEADER );
-			ucg->printf("V ");
+			ucg->print("V ");
 		}
 		else if ( battery_display.get() == BAT_VOLTAGE_BIG ) {
 			ucg->setPrintPos(x-50,y+11);
 			ucg->setFont(ucg_font_fub14_hr);
 			ucg->printf("%2.1f", volt);
 			ucg->setColor( COLOR_HEADER );
-			ucg->printf("V ");
+			ucg->print("V ");
 		}
 
 	}
@@ -874,11 +874,11 @@ void IpsDisplay::drawTemperature( int x, int y, float t ) {
 		ucg->setColor( COLOR_WHITE );
 		ucg->printf("%-2.1f", std::roundf(t*10.f)/10.f );
 		ucg->setColor( COLOR_HEADER );
-		ucg->printf("\xb0""C ");
+		ucg->print("\xb0""C ");
 	}
 	else {
 		ucg->setColor( COLOR_HEADER );
-		ucg->printf(" -- \xb0""C ");
+		ucg->print(" -- \xb0""C ");
     }
 }
 
@@ -961,7 +961,7 @@ void IpsDisplay::drawScale( int16_t max_pos, int16_t max_neg, int16_t pos, int16
 
 	// calc pixel dist for interval 0.5-1
 	int16_t dist = (int)(((*_gauge)(1.) - (*_gauge)(0.5)) * pos); // in pixel
-	ESP_LOGI(FNAME, "lines go m%d %d %d", modulo, dist, mid_lpos);
+	// ESP_LOGI(FNAME, "lines go m%d %d %d", modulo, dist, mid_lpos);
 	int16_t start=max_pos*10, stop=0;
 	if ( at != -1000 ) {
 		start = at+4;
@@ -999,8 +999,7 @@ void IpsDisplay::drawScale( int16_t max_pos, int16_t max_neg, int16_t pos, int16
 				}
 				draw_label = a!=0 && (draw_label || modulo<11 || a==mid_lpos);
 			}
-
-			ESP_LOGI(FNAME, "lines a %d %d %d", a, end, draw_label);
+			// ESP_LOGI(FNAME, "lines a %d %d %d", a, end, draw_label);
 
 			float val = (*_gauge)((float)a/10.);
 			drawOneScaleLine( val, AMIDX, AMIDY, pos, end, width, COLOR_WHITE );
@@ -1165,12 +1164,12 @@ void IpsDisplay::drawWarning( const char *warn, bool push ){
 	ucg->setFontPosCenter();
 	ucg->setColor( COLOR_RED );
 	ucg->setFont(ucg_font_fub35_hr);
-	ucg->printf(warn);
+	ucg->print(warn);
 	ucg->setFontPosBottom();
 	xSemaphoreGive(spiMutex);
 }
 
-void IpsDisplay::drawAvgVario( int x, int y, float ate ){
+void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float ate ){
 	if( _menu )
 		return;
 	ucg->setPrintPos(x, y );
@@ -1203,7 +1202,7 @@ void IpsDisplay::drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool di
 	if ( alt_unit.get() == ALT_UNIT_FL ) { alt /= 10; }
 
 	// check on the rendered value for change
-    dirty = dirty || alt == alt_prev;
+    dirty = dirty || alt != alt_prev;
 	if ( ! dirty ) return;
 
 	char s[15];
@@ -1260,9 +1259,10 @@ void IpsDisplay::drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool di
 		ucg->setFont(ucg_font_fub11_hr);
 		ucg->setColor( COLOR_HEADER );
 		ucg->setPrintPos(x+1, y-17);
-		ucg->printf("%dQNH", (int)(Units::QnhRaw(QNH.get())+0.5) ); // todo and QFE?
+		ucg->printf("%d", (int)(Units::QnhRaw(QNH.get())+0.5) );
 		ucg->setPrintPos(x+1, y-3);
 		ucg->print(Units::AltitudeUnit() );
+		ucg->print(" QNH"); // todo and QFE?
 	}
 	alt_prev = alt;
 }
@@ -1608,17 +1608,19 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		netto=true;
 	}
 	if( !(tick%20) ){
-		if( netto != netto_old ){
-			ucg->setFont(ucg_font_fub11_hr);
-			ucg->setPrintPos(70,15);
+		if( netto != netto_old ) {
 			if( netto )
 				ucg->setColor( COLOR_HEADER );
 			else
 				ucg->setColor( COLOR_BLACK );
+			char s[10];
 			if( netto_mode.get() == NETTO_NORMAL )
-				ucg->print( "  net" );
+				sprintf(s, "net");
 			else
-				ucg->print( "s-net" );
+				sprintf(s, "s-net");
+			ucg->setFont(ucg_font_fub11_hr);
+			ucg->setPrintPos(120-ucg->getStrWidth(s), DISPLAY_H/2-30);
+			ucg->print(s);
 			netto_old = netto;
 		}
 	}
@@ -1931,9 +1933,9 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 			ucg->setFont(ucg_font_fub11_tr);
 			char unit[4];
 			if( standard_setting )
-				sprintf( unit, "QNE" );
+				strcpy( unit, "QNE" );
 			else
-				sprintf( unit, "QNH" );
+				strcpy( unit, "QNH" );
 			ucg->setPrintPos(FIELD_START_UL-50,(YALT-S2FFONTH-10));
 			ucg->setColor(0, COLOR_HEADER );
 			ucg->printf("%s %.2f %s   ", unit, qnh, Units::QnhUnit( qnh_unit.get() ) );
@@ -2127,9 +2129,9 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 			ucg->setPrintPos(FIELD_START,YALT-S2FFONTH);
 			char unit[4];
 			if( standard_setting )
-				sprintf( unit, "QNE" );
+				strcpy( unit, "QNE" );
 			else
-				sprintf( unit, "QNH" );
+				strcpy( unit, "QNH" );
 			ucg->setPrintPos(FIELD_START,(YALT-S2FFONTH));
 			ucg->setColor(0, COLOR_HEADER );
 			ucg->printf("%s %.2f %s  ", unit, qnh,  Units::QnhUnit( qnh_unit.get() ) );

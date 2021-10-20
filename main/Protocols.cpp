@@ -346,7 +346,7 @@ void Protocols::parseNMEA( const char *astr ){
 				mc = mc*0.1;   // comes in knots*10, unify to knots
 				float mc_ms =  std::roundf(Units::knots2ms(mc)*10.f)/10.f; // hide rough knot resolution
 				ESP_LOGI(FNAME,"New MC: %1.1f knots, %f m/s", mc, mc_ms );
-				MC.set( Units::Vario( mc_ms ) );  // set mc according corresponding vario units
+				MC.set( mc_ms );  // set mc in m/s
 			}
 			if (str[3] == 'u') {
 				int mybugs;

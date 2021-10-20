@@ -66,13 +66,21 @@ public:
 	static float TemperatureUnit( float t ){
 		if( temperature_unit.get() == T_CELCIUS ) // °C
 			return( t );
-		if( temperature_unit.get() == T_FAHRENHEIT ) // °C
+		if( temperature_unit.get() == T_FAHRENHEIT ) // °F
 			return( (t * 1.8) + 32 );
-		if( temperature_unit.get() == T_KELVIN ) // °C
+		if( temperature_unit.get() == T_KELVIN ) // °K
 			return( t +  273.15 );
 		else{
 			return( t ); // default °C
 		}
+	}
+
+	static const char* TemperatureUnitStr( int idx ){
+		if( idx == T_FAHRENHEIT ) // °F
+			return "\xb0""F";
+		if( idx == T_KELVIN ) // °F
+			return "\xb0""K";
+		return "\xb0""C"; // default °C
 	}
 
 	static const char * AirspeedUnit( int unit = -1 ){

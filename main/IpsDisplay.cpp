@@ -865,21 +865,23 @@ void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
 	}
 }
 
+// accept temperature in deg C and display in configured unit
+// left-aligned to x incl. unit
 void IpsDisplay::drawTemperature( int x, int y, float t ) {
 	if( _menu )
 		return;
 	ucg->setFont(ucg_font_fur14_hf);
 	ucg->setPrintPos(x,y);
 	if( t != DEVICE_DISCONNECTED_C ) {
+		float temp_unit = Units::TemperatureUnit( t );
 		ucg->setColor( COLOR_WHITE );
-		ucg->printf("%-2.1f", std::roundf(t*10.f)/10.f );
-		ucg->setColor( COLOR_HEADER );
-		ucg->print("\xb0""C ");
+		ucg->printf("%-4.1f", std::roundf(temp_unit*10.f)/10.f );
 	}
 	else {
-		ucg->setColor( COLOR_HEADER );
-		ucg->print(" -- \xb0""C ");
-    }
+		ucg->print(" - ");
+	}
+	ucg->setColor( COLOR_HEADER );
+	ucg->print(Units::TemperatureUnitStr(temperature_unit.get()));
 }
 
 // val, center x, y, start radius, end radius, width, r,g,b
@@ -2019,14 +2021,13 @@ void IpsDisplay::drawDisplay( int airspeed, float te, float ate, float polar_sin
 	if ( alt_display_mode.get() == MODE_QFE ) {
 		altitude -= elevation.get();
 	}
-	float temp_unit = Units::TemperatureUnit( temp );
 
 	if( display_style.get() == DISPLAY_AIRLINER )
-		drawAirlinerDisplay( airspeed,te,ate, polar_sink, altitude, temp_unit, volt, s2fd, s2f, acl, s2fmode, standard_setting, wksensor );
+		drawAirlinerDisplay( airspeed,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_setting, wksensor );
 	else if( display_style.get() == DISPLAY_RETRO )
-		drawRetroDisplay( airspeed,te,ate, polar_sink, altitude, temp_unit, volt, s2fd, s2f, acl, s2fmode, standard_setting, wksensor );
+		drawRetroDisplay( airspeed,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_setting, wksensor );
 	else if( display_style.get() == DISPLAY_UL )
-		drawULDisplay( airspeed,te,ate, polar_sink, altitude, temp_unit, volt, s2fd, s2f, acl, s2fmode, standard_setting, wksensor );
+		drawULDisplay( airspeed,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_setting, wksensor );
 
 }
 

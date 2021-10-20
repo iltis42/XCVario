@@ -100,7 +100,7 @@ private:
 	static ucg_int_t char_width;
 
 	// Pointer edges and alpha for analog display
-	static float old_a;
+	static float needle_pos_old;
 
 	static void drawMC( float mc, bool large=false );
 	static void drawS2FMode( int x, int y, bool cruise );

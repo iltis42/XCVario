@@ -35,7 +35,7 @@ int   IpsDisplay::charge = 100;
 int   IpsDisplay::red = 10;
 int   IpsDisplay::yellow = 25;
 
-float IpsDisplay::old_a = 0;
+float IpsDisplay::needle_pos_old = 0; // -pi/2 .. pi/2
 
 bool IpsDisplay::netto_old = false;
 ucg_int_t IpsDisplay::char_width;
@@ -476,7 +476,7 @@ void IpsDisplay::redrawValues()
 	s2f_level_prev = 0;
 	btqueue = -1;
 	_te=-200;
-	old_a=-1000;
+	needle_pos_old=-1000;
 	mcalt = -100;
 	as_prev = -1;
 	_ate = -200;
@@ -935,7 +935,7 @@ void IpsDisplay::drawPolarIndicator( float a, int16_t x0, int16_t y0, int16_t l1
 	y_1 = yn_1;
 	x_2 = xn_2;
 	y_2 = yn_2;
-	old_a = a;
+	needle_pos_old = a;
 	ucg->setColor( color.color[0], color.color[1], color.color[2] );
 	ucg->drawTriangle(xn_0,yn_0,xn_1,yn_1,xn_2,yn_2);
 }
@@ -1335,7 +1335,7 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 	}
 	// draw G pointer
 	float a = (loadFactor-1)/max_gscale * (M_PI_2);
-	if( int(a*100) != int(old_a*100) ) {
+	if( int(a*100) != int(needle_pos_old*100) ) {
 		drawPolarIndicator( a, AMIDX, AMIDY, 60, 120, 3, needlecolor[0] );
 		// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 	}
@@ -1735,9 +1735,9 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	// draw TE pointer
-	float a = (*_gauge)(te);
-	if( int(a*100) != int(old_a*100) ) {
-		drawPolarIndicator( a, AMIDX, AMIDY, 90, 132, 7, needlecolor[needle_color.get()] );
+	float needle_pos = (*_gauge)(te);
+	if( int(needle_pos*100) != int(needle_pos_old*100) ) {
+		drawPolarIndicator( needle_pos, AMIDX, AMIDY, 80, 132, 9, needlecolor[needle_color.get()] );
 		// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 	}
 
@@ -1850,7 +1850,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 
 	// draw TE pointer
 	float a = (*_gauge)(te);
-	if( int(a*100) != int(old_a*100) ) {
+	if( int(a*100) != int(needle_pos_old*100) ) {
 		drawPolarIndicator( a, AMIDX, AMIDY, 60, 120, 3, needlecolor[needle_color.get()] );
 		// ESP_LOGI(FNAME,"IpsDisplay::drawULDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 		// Climb bar

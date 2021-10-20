@@ -101,6 +101,7 @@ SetupNG<float>  		high_tone_var( "HIGH_TONE_VAR", 12.0, true, SYNC_FROM_MASTER  
 SetupNG<float>  		deadband( "DEADBAND", 0.3, true, SYNC_FROM_MASTER  );
 SetupNG<float>  		deadband_neg("DEADBAND_NEG" , -0.3, true, SYNC_FROM_MASTER  );
 SetupNG<float>  		range( "VARIO_RANGE", 5.0 );
+SetupNG<int>			log_scale( "LOG_SCALE", 0 );
 SetupNG<float>  		ballast( "BALLAST" , 0.0, true, SYNC_BIDIR, PERSISTENT, change_mc_bal );
 SetupNG<float>  		bugs( "BUGS", 0.0, true, SYNC_BIDIR, VOLATILE, change_mc_bal  );
 SetupNG<float>  		MC( "MacCready", 0.5, true, SYNC_BIDIR, VOLATILE, change_mc_bal );
@@ -167,10 +168,10 @@ SetupNG<float>  		flap_minus_1( "FLAP_MINUS_1", 105,  true, SYNC_FROM_MASTER, PE
 SetupNG<float>  		flap_0( "FLAP_0", 88,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);
 SetupNG<float>  		flap_plus_1( "FLAP_PLUS_1", 78,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);
 SetupNG<float>  		flap_plus_2( "FLAP_PLUS_2", 70,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);
-SetupNG<int>  			alt_unit( "ALT_UNIT", ALT_UNIT_METER, true, SYNC_FROM_MASTER );
-SetupNG<int>  			ias_unit( "IAS_UNIT", SPEED_UNIT_KMH, true, SYNC_FROM_MASTER );
-SetupNG<int>  			vario_unit( "VARIO_UNIT", VARIO_UNIT_MS, true, SYNC_FROM_MASTER );
-SetupNG<int>  			temperature_unit( "TEMP_UNIT", T_CELCIUS, true, SYNC_FROM_MASTER );
+SetupNG<int>  			alt_unit( "ALT_UNIT", ALT_UNIT_METER );
+SetupNG<int>  			ias_unit( "IAS_UNIT", SPEED_UNIT_KMH );
+SetupNG<int>  			vario_unit( "VARIO_UNIT", VARIO_UNIT_MS );
+SetupNG<int>  			temperature_unit( "TEMP_UNIT", T_CELCIUS );
 SetupNG<int>  			qnh_unit("QNH_UNIT", QNH_HPA );
 SetupNG<int>  			rot_default( "ROTARY_DEFAULT", 0 );
 SetupNG<int>  			serial1_speed( "SERIAL2_SPEED", 3 );   // tag will stay SERIAL2 from historical reason
@@ -261,6 +262,7 @@ SetupNG<float> 			wind_max_deviation("WIND_MDEV", 30.0 );
 SetupNG<float> 			wind_as_min( "WIND_ASM", 25 );
 SetupNG<int> 			s2f_with_gload( "S2G_GLOAD", 1 );       // considering g load in S2F
 SetupNG<int> 			s2f_blockspeed( "S2G_BLOCKSPEED", 0 );  // considering netto vario and g load for S2F or not
+SetupNG<int> 			needle_color("NEEDLE_COLOR", 0);
 SetupNG<int> 			wk_label_plus_3( "WKLP3", 32,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);  //  L
 SetupNG<int> 			wk_label_plus_2( "WKLP2", 11,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);  //  2
 SetupNG<int> 			wk_label_plus_1( "WKLP1", 10,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);  //  1
@@ -447,6 +449,10 @@ bool SetupCommon::haveWLAN(){
 
 bool SetupCommon::isClient(){
 	return((wireless == WL_WLAN_CLIENT) || (can_speed.get() != CAN_SPEED_OFF && can_mode.get() == CAN_MODE_CLIENT));
+}
+
+bool SetupCommon::isWired(){
+	return(can_speed.get() && (can_mode.get() == CAN_MODE_CLIENT || can_mode.get() == CAN_MODE_MASTER));
 }
 
 bool SetupCommon::commitNow()

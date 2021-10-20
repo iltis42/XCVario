@@ -149,14 +149,14 @@ static float battery=0.0;
 static float dynamicP; // Pitot
 
 // global color variables for adaptable display variant
-int g_col_background=255;
-int g_col_highlight=0;
-int g_col_header_r=101+g_col_background/5;
-int g_col_header_g=108+g_col_background/5;
-int g_col_header_b=g_col_highlight;
-int g_col_header_light_r=161-g_col_background/4;
-int g_col_header_light_g=168-g_col_background/3;
-int g_col_header_light_b=g_col_highlight;
+uint8_t g_col_background=255; // black
+uint8_t g_col_highlight=0;
+uint8_t g_col_header_r=101+g_col_background/5;
+uint8_t g_col_header_g=108+g_col_background/5;
+uint8_t g_col_header_b=g_col_highlight;
+uint8_t g_col_header_light_r=161-g_col_background/4;
+uint8_t g_col_header_light_g=168-g_col_background/3;
+uint8_t g_col_header_light_b=g_col_highlight;
 
 
 bool haveMPU=false;

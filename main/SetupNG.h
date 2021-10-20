@@ -108,6 +108,7 @@ public:
 	static bool factoryReset();
 	static bool isMaster();
 	static bool isClient();
+    static bool isWired();
 	static bool haveWLAN();
     static bool lazyCommit;
     static bool commitNow();
@@ -393,6 +394,7 @@ extern SetupNG<float>  		high_tone_var;
 extern SetupNG<float>  		deadband;
 extern SetupNG<float>  		deadband_neg;
 extern SetupNG<float>  		range;
+extern SetupNG<int>			log_scale;
 extern SetupNG<float>  		ballast;
 extern SetupNG<float>  		MC;
 extern SetupNG<float>  		s2f_speed;
@@ -545,6 +547,7 @@ extern SetupNG<int>         compass_nmea_hdt;
 extern SetupNG<float>		compass_i2c_cl;
 extern SetupNG<int> 		s2f_with_gload;
 extern SetupNG<int> 		s2f_blockspeed;
+extern SetupNG<int>			needle_color;
 extern SetupNG<float>  		s2f_hysteresis;
 extern SetupNG<int> 		wk_label_plus_3;
 extern SetupNG<int> 		wk_label_plus_2;
@@ -590,5 +593,5 @@ extern SetupNG<int> 		menu_screens;
 
 
 
-extern int g_col_background;
-extern int g_col_highlight;
+extern uint8_t g_col_background;
+extern uint8_t g_col_highlight;

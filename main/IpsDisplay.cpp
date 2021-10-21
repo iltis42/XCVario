@@ -863,21 +863,24 @@ void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
 }
 
 // accept temperature in deg C and display in configured unit
-// left-aligned to x incl. unit
+// right-aligned value to x, incl. unit right of x
 void IpsDisplay::drawTemperature( int x, int y, float t ) {
 	if( _menu )
 		return;
 	ucg->setFont(ucg_font_fur14_hf);
-	ucg->setPrintPos(x,y);
+	char s[10];
 	if( t != DEVICE_DISCONNECTED_C ) {
 		float temp_unit = Units::TemperatureUnit( t );
-		ucg->setColor( COLOR_WHITE );
-		ucg->printf("%-4.1f", std::roundf(temp_unit*10.f)/10.f );
+		sprintf(s, " %4.1f", std::roundf(temp_unit*10.f)/10.f );
 	}
 	else {
-		ucg->print(" - ");
+		strcpy(s, " - ");
 	}
+	ucg->setColor( COLOR_WHITE );
+	ucg->setPrintPos(x-ucg->getStrWidth(s),y);
+	ucg->print(s);
 	ucg->setColor( COLOR_HEADER );
+	ucg->setPrintPos(x+3,y);
 	ucg->print(Units::TemperatureUnitStr(temperature_unit.get()));
 }
 
@@ -1783,7 +1786,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	// Temperature Value
 	if( (int)(temp*10) != tempalt && !(tick%12)) {
-		drawTemperature( 5, 25, temp );
+		drawTemperature( 50, 25, temp );
 		tempalt=(int)(temp*10);
 	}
 
@@ -1995,7 +1998,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 
 	// Temperature Value
 	if( (int)(temp*10) != tempalt && !(tick%12)) {
-		drawTemperature( 20, 30, temp );
+		drawTemperature( 50, 25, temp );
 		tempalt=(int)(temp*10);
 	}
 
@@ -2181,7 +2184,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	}
 	// Temperature Value
 	if( (int)(temp*10) != tempalt && !(tick%11)) {
-		drawTemperature( FIELD_START+20, DISPLAY_H-6, temp );
+		drawTemperature( FIELD_START+65, DISPLAY_H-5, temp );
 		tempalt=(int)(temp*10);
 	}
 	// Battery Symbol

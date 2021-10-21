@@ -1238,7 +1238,7 @@ void IpsDisplay::drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool di
 		// ESP_LOGI(FNAME,"Alti %d, fr%d - %c", alt, fraction, ldigit);
 
 		static int fraction_prev = -1;
-		if (fraction != fraction_prev)
+		if (dirty || fraction != fraction_prev)
 		{
 			// move last digit
 			int16_t char_height = ucg->getFontAscent() - ucg->getFontDescent();

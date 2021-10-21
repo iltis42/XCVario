@@ -96,7 +96,7 @@ int S2FST = 45;
 int ASLEN = 0;
 #define AMIDY DISPLAY_H/2
 #define AMIDX (DISPLAY_W/2 + 30)
-static const int16_t INNER_RIGHT_ALIGN = 175;
+static const int16_t INNER_RIGHT_ALIGN = 170;
 static int fh;
 
 extern xSemaphoreHandle spiMutex; // todo needs a better concept here
@@ -863,21 +863,24 @@ void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
 }
 
 // accept temperature in deg C and display in configured unit
-// left-aligned to x incl. unit
+// right-aligned value to x, incl. unit right of x
 void IpsDisplay::drawTemperature( int x, int y, float t ) {
 	if( _menu )
 		return;
 	ucg->setFont(ucg_font_fur14_hf);
-	ucg->setPrintPos(x,y);
+	char s[10];
 	if( t != DEVICE_DISCONNECTED_C ) {
 		float temp_unit = Units::TemperatureUnit( t );
-		ucg->setColor( COLOR_WHITE );
-		ucg->printf("%-4.1f", std::roundf(temp_unit*10.f)/10.f );
+		sprintf(s, " %4.1f", std::roundf(temp_unit*10.f)/10.f );
 	}
 	else {
-		ucg->print(" - ");
+		strcpy(s, " - ");
 	}
+	ucg->setColor( COLOR_WHITE );
+	ucg->setPrintPos(x-ucg->getStrWidth(s),y);
+	ucg->print(s);
 	ucg->setColor( COLOR_HEADER );
+	ucg->setPrintPos(x+3,y);
 	ucg->print(Units::TemperatureUnitStr(temperature_unit.get()));
 }
 
@@ -996,7 +999,7 @@ void IpsDisplay::drawScale( int16_t max_pos, int16_t max_neg, int16_t pos, int16
 					width = 3;
 					end = pos+15;
 				}
-				draw_label = a!=0 && (draw_label || modulo<11 || a==mid_lpos);
+				draw_label = a!=0 && (draw_label || max_pos<5 || a==mid_lpos);
 			}
 			// ESP_LOGI(FNAME, "lines a %d %d %d", a, end, draw_label);
 
@@ -1024,7 +1027,7 @@ void IpsDisplay::drawOneLabel( float val, int16_t labl, int16_t pos, int16_t off
     pos += (M_PI_2-std::abs(val))/M_PI_2 * 10; // increase pos towards 0
 	x=AMIDX   - cos(val*to_side)*pos;
 	y=AMIDY+1 - sin(val*to_side)*pos;
-	ucg->setColor(COLOR_HEADER);
+	ucg->setColor(COLOR_LBLUE);
 	ucg->setPrintPos(x,y);
 	ucg->printf("%d", abs(labl+offset) );
 }
@@ -1235,7 +1238,7 @@ void IpsDisplay::drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool di
 		// ESP_LOGI(FNAME,"Alti %d, fr%d - %c", alt, fraction, ldigit);
 
 		static int fraction_prev = -1;
-		if (fraction != fraction_prev)
+		if (dirty || fraction != fraction_prev)
 		{
 			// move last digit
 			int16_t char_height = ucg->getFontAscent() - ucg->getFontDescent();
@@ -1257,9 +1260,9 @@ void IpsDisplay::drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool di
 	if ( incl_unit ) {
 		ucg->setFont(ucg_font_fub11_hr);
 		ucg->setColor( COLOR_HEADER );
-		ucg->setPrintPos(x+1, y-17);
+		ucg->setPrintPos(x+5, y-17);
 		ucg->printf("%d", (int)(Units::QnhRaw(QNH.get())+0.5) );
-		ucg->setPrintPos(x+1, y-3);
+		ucg->setPrintPos(x+5, y-3);
 		ucg->print(Units::AltitudeUnit() );
 		ucg->print(" QNH"); // todo and QFE?
 	}
@@ -1303,9 +1306,9 @@ void IpsDisplay::drawSpeed(float v_kmh, ucg_int_t x, ucg_int_t y, bool dirty, bo
 	if ( inc_unit ) {
 		ucg->setFont(ucg_font_fub11_hr);
 		ucg->setColor( COLOR_HEADER );
-		ucg->setPrintPos(x+1,y-3);
+		ucg->setPrintPos(x+5,y-3);
 		ucg->print(Units::AirspeedUnitStr() );
-		ucg->setPrintPos(x+1,y-17);
+		ucg->setPrintPos(x+5,y-17);
 		ucg->print(Units::AirspeedModeStr());
 	}
 	as_prev = airspeed;
@@ -1485,7 +1488,7 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y) {
 			ucg->print(s);
 			ucg->setColor( COLOR_HEADER );
 			ucg->setFont(ucg_font_fub20_hf);
-			ucg->setPrintPos(x+1, y);
+			ucg->setPrintPos(x+5, y);
 			ucg->print("\xb0 ");
 			prev_heading = heading;
 		}
@@ -1783,7 +1786,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	// Temperature Value
 	if( (int)(temp*10) != tempalt && !(tick%12)) {
-		drawTemperature( 5, 25, temp );
+		drawTemperature( 50, 25, temp );
 		tempalt=(int)(temp*10);
 	}
 
@@ -1806,7 +1809,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	// Cruise mode or circling
 	if( (int)s2fmode != s2fmode_prev ){
-		drawS2FMode( DISPLAY_W-50, FLOGO-2, s2fmode );
+		drawS2FMode( DISPLAY_W-50, FLOGO-4, s2fmode );
 		s2fmode_prev = (int)s2fmode;
 	}
 
@@ -1995,7 +1998,7 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 
 	// Temperature Value
 	if( (int)(temp*10) != tempalt && !(tick%12)) {
-		drawTemperature( 20, 30, temp );
+		drawTemperature( 50, 25, temp );
 		tempalt=(int)(temp*10);
 	}
 
@@ -2181,7 +2184,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	}
 	// Temperature Value
 	if( (int)(temp*10) != tempalt && !(tick%11)) {
-		drawTemperature( FIELD_START+20, DISPLAY_H-6, temp );
+		drawTemperature( FIELD_START+65, DISPLAY_H-5, temp );
 		tempalt=(int)(temp*10);
 	}
 	// Battery Symbol

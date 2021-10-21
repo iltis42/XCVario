@@ -83,20 +83,27 @@ public:
 		return "\xb0""C"; // default °C
 	}
 
-	static const char * AirspeedUnit( int unit = -1 ){
-		int u = unit;
+	static const char * AirspeedUnitStr( int u = -1 ){
 		if( u == -1 )
 			u=ias_unit.get();
-		if( u == 0 ) // km/h
+		if( u == SPEED_UNIT_KMH ) // km/h
 			return("kmh");
-		if( u == 1 ) // mph
+		if( u == SPEED_UNIT_MPH ) // mph
 			return("mph");
-		if( u == 2 ) // knots
+		if( u == SPEED_UNIT_KNOTS ) // knots
 			return("kt");
 		else
 			ESP_LOGE(FNAME,"Wrong unit for airspeed");
-		return "nan";
+		return "none";
 	};
+
+	static const char* AirspeedModeStr(){
+		if ( airspeed_mode.get() == MODE_IAS ) {
+			return "IAS";
+		} else {
+			return "TAS";
+		}
+	}
 
 	static float Vario( float te ){   // standard is m/s
 		if( vario_unit.get() == VARIO_UNIT_MS )

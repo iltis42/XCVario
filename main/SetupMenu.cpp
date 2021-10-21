@@ -58,7 +58,7 @@ int update_vunit(SetupMenuSelect * p) {
 }
 
 void update_sunit_str( int unit ){
-	sunit = Units::AirspeedUnit( unit );
+	sunit = Units::AirspeedUnitStr( unit );
 }
 
 int update_sunit(SetupMenuSelect * p) {

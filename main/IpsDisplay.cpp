@@ -38,7 +38,8 @@ int   IpsDisplay::yellow = 25;
 float IpsDisplay::needle_pos_old = 0; // -pi/2 .. pi/2
 
 bool IpsDisplay::netto_old = false;
-ucg_int_t IpsDisplay::char_width;
+ucg_int_t IpsDisplay::char_width; // for roling altimeter
+ucg_int_t IpsDisplay::char_height;
 
 #define DISPLAY_H 320
 #define DISPLAY_W 240
@@ -331,6 +332,7 @@ void IpsDisplay::initDisplay() {
 	// Fancy altimeter
 	ucg->setFont(ucg_font_fub25_hr);
 	char_width = ucg->getStrWidth("2");
+	char_height = ucg->getFontAscent() - ucg->getFontDescent();
 
 	redrawValues();
 }
@@ -1196,77 +1198,104 @@ void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float ate ){
 	ucg->undoClipRange();
 }
 
+// draw a rolling digit according to the fraction of the digit right of this one
+void IpsDisplay::drawRollingDigit( int16_t fraction, char digit, ucg_int_t x, ucg_int_t y )
+{
+	// move last digit
+	int16_t m = (fraction * char_height/ 100) - char_height/2; // to pixel offest
+	ucg->setClipRange(x, y - char_height * 1.25,
+						char_width, char_height * 1.4);
+	ucg->setPrintPos(x, y - m - char_height);
+	ucg->print((digit == '0') ? '9' : (char)(digit - 1)); // one above
+	ucg->setPrintPos(x, y - m); // this one last to avoid clipped tops
+	ucg->print(digit);
+	ucg->setPrintPos(x, y - m + char_height);
+	ucg->print((digit == '9') ? '0' : (char)(digit + 1)); // one below
+	ucg->undoClipRange();
+}
+
 // right-aligned to value, unit optional behind
+// altidude >=0 are displayed correctly with last two digits rolling accoring to their fraction to the right
 void IpsDisplay::drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool dirty, bool incl_unit )
 {
+	const int16_t nr_rolldigits = 2;
+	if( _menu ) return;
 
-	int alt = (int)(altitude*10.); // redered value
+	int alt = (int)(altitude*10.); // rendered value
 	if ( alt_unit.get() == ALT_UNIT_FL ) { alt /= 10; }
 
 	// check on the rendered value for change
     dirty = dirty || alt != alt_prev;
 	if ( ! dirty ) return;
+	alt_prev = alt;
 
-	char s[15];
+	char s[20];
 	ucg->setFont(ucg_font_fub25_hr);
 	ucg->setColor( COLOR_WHITE );
-	sprintf(s,"%5d", alt);
+	sprintf(s," %5d", alt);
 	int fl=ucg->getStrWidth(s);
 	if ( alt_unit.get() == ALT_UNIT_FL ) {
 		ucg->setPrintPos(x-fl,y);
 		ucg->print(s);
 	}
     else {
-		int len = std::strlen(s);
-		int16_t fraction = len>0?s[len-1]-'0':0;
+		int16_t len = std::strlen(s);
+		int16_t fraction1 = (len>0?s[len-1]-'0':0) * 10; // %
 
-		alt /= 10; // chop fraction and last actual digit
-		char ldigit = '0' + (alt%10);
+		alt /= 10; // chop fraction
+		s[len-1] = '\0'; len--;
+		char lastdigit = s[len-1]; // alias alt%10
+		// ESP_LOGI(FNAME,"Alti %d.%d - %c", alt, fraction1, lastdigit);
+
+		static int16_t fraction_prev1 = -1;
+		int16_t rd = 1;
+		if (dirty || fraction1 != fraction_prev1)
+		{
+			drawRollingDigit(fraction1, lastdigit, x-char_width, y);
+			fraction_prev1 = fraction1;
+		}
 		alt /= 10; // chop last actual digit
-		// snapy second last digit
-		if ( (ldigit=='0') && fraction<3 ) { alt -= 1; }
-		if ( (ldigit=='9') && fraction>7 ) { alt += 1; }
-		sprintf(s,"%5d8", alt);
-		fl=ucg->getStrWidth(s);
-		s[std::strlen(s)-1] = '\0'; // len(s) > 0 ensured!
-		ucg->setPrintPos(x - fl, y);
+
+		if ( nr_rolldigits>1 && alt > 10 ) { // more digits to roll
+			int16_t fraction2 = (lastdigit-'0') * 10; // %
+			s[len-1] = '\0'; len--;
+			lastdigit = s[len-1];
+
+			static int16_t fraction_prev2 = -1;
+			if ( dirty || fraction2 != fraction_prev2 )
+			{
+				drawRollingDigit(fraction2, lastdigit, x-2*char_width, y);
+				fraction_prev2 = fraction2;
+			}
+			fraction1 = fraction2; // treat the next left digit correctly
+			rd++;
+		}
+		else {
+			// clear the entire block
+			ucg->setColor( COLOR_BLACK );
+			ucg->drawBox(x - 2*char_width, y - char_height * 1.25, char_width, char_height * 1.4);
+			ucg->setColor( COLOR_WHITE );
+		}
+		alt /= 10; // chop another digit
+		sprintf(s," %5d", alt);
+		ucg->setPrintPos(x - ucg->getStrWidth(s) - rd*char_width , y);
 		static int altpart_prev = 0;
-		if (dirty) {
+		if (dirty || altpart_prev != alt) {
 			ucg->print(s);
 			altpart_prev = alt;
-		}
-		// ESP_LOGI(FNAME,"Alti %d, fr%d - %c", alt, fraction, ldigit);
-
-		static int fraction_prev = -1;
-		if (dirty || fraction != fraction_prev)
-		{
-			// move last digit
-			int16_t char_height = ucg->getFontAscent() - ucg->getFontDescent();
-			int16_t m = (fraction / 10.f) * char_height; // to pixel offest
-			ucg->setClipRange(x - char_width, y - char_height * 1.3,
-							 char_width, char_height * 1.5);
-			// ucg->drawFrame(x - char_width, y - char_height * 1.3,
-			// 				 char_width, char_height * 1.5);
-			ucg->setPrintPos(x - char_width, y - m);
-			ucg->print(ldigit);
-			ucg->setPrintPos(x - char_width, y - m - char_height);
-			ucg->print((ldigit == '0') ? '9' : (char)(ldigit - 1)); // one above
-			ucg->setPrintPos(x - char_width, y - m + char_height);
-			ucg->print((ldigit == '9') ? '0' : (char)(ldigit + 1)); // one below
-			ucg->undoClipRange();
-			fraction_prev = fraction;
 		}
 	}
 	if ( incl_unit ) {
 		ucg->setFont(ucg_font_fub11_hr);
 		ucg->setColor( COLOR_HEADER );
-		ucg->setPrintPos(x+5, y-17);
-		ucg->printf("%d", (int)(Units::QnhRaw(QNH.get())+0.5) );
 		ucg->setPrintPos(x+5, y-3);
-		ucg->print(Units::AltitudeUnit() );
-		ucg->print(" QNH"); // todo and QFE?
+		sprintf(s, "%s QNH", Units::AltitudeUnit()); // todo and QFE?
+		ucg->print(s);
+		int16_t qnh_x = x+5+ucg->getStrWidth(s);
+		sprintf(s, "%d", Units::QnhRounded(QNH.get()));
+		ucg->setPrintPos(qnh_x - ucg->getStrWidth(s), y-17);
+		ucg->print(s);
 	}
-	alt_prev = alt;
 }
 
 
@@ -1748,6 +1777,9 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	if( !(tick%8) ) {
 		static int alternate = 0;
 		if ( alternate & 1 ) {
+			// static float s=0; // test the rolling numbers
+			// altitude = 9990. + sin(s) * 11.;
+			// s+=0.03;
 			drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, needle_pos_old < -M_PI_2*70./90. );
 		}
 		else {
@@ -1809,7 +1841,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	// Cruise mode or circling
 	if( (int)s2fmode != s2fmode_prev ){
-		drawS2FMode( DISPLAY_W-50, FLOGO-4, s2fmode );
+		drawS2FMode( 102, DISPLAY_H/2+30+S2FSS, s2fmode );
 		s2fmode_prev = (int)s2fmode;
 	}
 
@@ -1949,10 +1981,10 @@ void IpsDisplay::drawULDisplay( int airspeed_kmh, float te_ms, float ate_ms, flo
 
 	// Altitude Header
 	if( !(tick%24) ){
-		float qnh = Units::QnhRaw( QNH.get() );
+		float qnh = Units::Qnh( QNH.get() );
 		// ESP_LOGI(FNAME,"standard_setting:%d",standard_setting );
 		if( standard_setting )
-			qnh = Units::QnhRaw( 1013.25 );
+			qnh = Units::Qnh( 1013.25 );
 		// redraw just in case the vario pointer was there
 		if( qnh != pref_qnh ) {
 			ucg->setFont(ucg_font_fub11_tr);
@@ -2146,10 +2178,10 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 
 	// Altitude Header
 	if( !(tick%24) ){
-		float qnh = Units::QnhRaw( QNH.get() );
+		float qnh = Units::Qnh( QNH.get() );
 		// ESP_LOGI(FNAME,"standard_setting:%d",standard_setting );
 		if( standard_setting )
-			qnh = Units::QnhRaw( 1013.25 );
+			qnh = Units::Qnh( 1013.25 );
 		if( qnh != pref_qnh ) {
 			ucg->setFont(ucg_font_fub11_tr);
 			ucg->setPrintPos(FIELD_START,YALT-S2FFONTH);

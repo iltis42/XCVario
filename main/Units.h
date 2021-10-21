@@ -117,7 +117,7 @@ public:
 		return 0;
 	};
 
-	static float Qnh( float qnh ){   // standard is m/s
+	static float Qnh( float qnh ){   // standard is hPa
 		if( qnh_unit.get() == QNH_HPA )
 			return( qnh );
 		else if(  qnh_unit.get() == QNH_INHG )
@@ -127,14 +127,12 @@ public:
 		return 0;
 	};
 
-	static float QnhRaw( float qnh ){   // standard is hPa
-		if( qnh_unit.get() == QNH_HPA )
-			return( qnh );
-		else if(  qnh_unit.get() == QNH_INHG )
-			return( hPa2inHg( qnh ) );
-		else
-			ESP_LOGE(FNAME,"Wrong unit for Vario");
-		return 0;
+	static int QnhRounded( float qnh ){   // standard is hPa
+		float qnh_value = qnh;
+		if( qnh_unit.get() == QNH_INHG ) {
+			qnh_value = hPa2inHg(qnh);
+		}
+		return (int)(qnh_value+0.5);
 	};
 
 	static void recalculateQnh(){

@@ -98,6 +98,7 @@ private:
 	static ucg_color_t wkcolor;
 	static bool netto_old;
 	static ucg_int_t char_width;
+	static ucg_int_t char_height;
 
 	// Pointer edges and alpha for analog display
 	static float needle_pos_old;
@@ -131,6 +132,7 @@ private:
 	static void drawGaugeTriangle( int y, int r, int g, int b, bool s2f=false );
 	static void drawAvgSymbol( int y, int r, int g, int b, int x=DISPLAY_LEFT );
 	static void drawAvg( float mps, float delta );
+    static void drawRollingDigit( int16_t fraction, char digit, ucg_int_t x, ucg_int_t y );
 	static void drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool dirty, bool inc_unit = true );
     static void drawSmallSpeed(float v_kmh, ucg_int_t x, ucg_int_t y);
 	static void drawSpeed(float speed, ucg_int_t x, ucg_int_t y, bool dirty, bool inc_unit=true);

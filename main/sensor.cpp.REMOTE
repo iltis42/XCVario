@@ -496,48 +496,46 @@ void readBMP(void *pvParameters){
 		xSemaphoreGive(xMutex);
 		doAudio();
 
-		if( (inSetup != true) && !Flarm::bincom  ) {
+		if( (inSetup != true) && !Flarm::bincom && ((count % 2) == 0 ) ){
 			xSemaphoreTake(xMutex,portMAX_DELAY );
-
+			// reduce also messages from 10 per second to 5 per second to reduce load in XCSoar
 			char lb[510];
 			if( nmea_protocol.get() == FLIGHT_TEST ) {
 				OV.sendNMEA( P_FLIGHT_TEST, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
 						time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
 						u,v,w,vx,vy,vz);
-						
-			} else if ((count % 2) == 0 ) {
-			// reduce messages from 10 per second to 5 per second to reduce load in XCSoar
-				if( nmea_protocol.get() == BORGELT ) {
-					OV.sendNMEA( P_BORGELT, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-							time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
-							u,v,w,vx,vy,vz);
-					OV.sendNMEA( P_GENERIC, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-							time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
-							u,v,w,vx,vy,vz);
-				}
-				else if( nmea_protocol.get() == OPENVARIO ){
-					OV.sendNMEA( P_OPENVARIO, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-							time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
-							u,v,w,vx,vy,vz  );
-				}
-				else if( nmea_protocol.get() == CAMBRIDGE ){
-					OV.sendNMEA( P_CAMBRIDGE, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-							time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
-							u,v,w,vx,vy,vz );
-				}
-				else if( nmea_protocol.get() == XCVARIO ) {
-					OV.sendNMEA( P_XCVARIO,lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-							time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
-							u,v,w,vx,vy,vz );
-				}
-				else if( nmea_protocol.get() == XCVARIO_DEVEL ) {
-					OV.sendNMEA( P_XCVARIO_DEVEL, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-							time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
-							u,v,w,vx,vy,vz);
-				}
-				else
-					ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
-				}
+			}
+			else if( nmea_protocol.get() == BORGELT ) {
+				OV.sendNMEA( P_BORGELT, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
+						time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
+						u,v,w,vx,vy,vz);
+				OV.sendNMEA( P_GENERIC, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
+						time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
+						u,v,w,vx,vy,vz);
+			}
+			else if( nmea_protocol.get() == OPENVARIO ){
+				OV.sendNMEA( P_OPENVARIO, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
+						time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
+						u,v,w,vx,vy,vz  );
+			}
+			else if( nmea_protocol.get() == CAMBRIDGE ){
+				OV.sendNMEA( P_CAMBRIDGE, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
+						time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
+						u,v,w,vx,vy,vz );
+			}
+			else if( nmea_protocol.get() == XCVARIO ) {
+				OV.sendNMEA( P_XCVARIO,lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
+						time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
+						u,v,w,vx,vy,vz );
+			}
+			else if( nmea_protocol.get() == XCVARIO_DEVEL ) {
+				OV.sendNMEA( P_XCVARIO_DEVEL, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
+						time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
+						u,v,w,vx,vy,vz);
+			}
+			else
+				ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
+
 			vTaskDelay(2/portTICK_PERIOD_MS);
 			xSemaphoreGive(xMutex);
 		}

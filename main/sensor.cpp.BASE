@@ -48,6 +48,7 @@
 #include "mpu/math.hpp"   // math helper for dealing with MPU data
 #include "mpu/types.hpp"  // MPU data types and definitions
 #include "I2Cbus.hpp"
+#include "KalmanMPU6050.h"
 #include "WifiApp.h"
 #include "WifiClient.h"
 #include "Serial.h"
@@ -63,22 +64,7 @@
 #include "CircleWind.h"
 
 // #include "sound.h"
-// modif gfm
-#include "../components/gps/include/UBX_Parser.h"
-#include "ahrs.hpp" /*"KalmanMPU6050.h"*/
-#include "deadReckoning.h"
-#include "estAltitude.h"
-float estimated_altitude = 0;
-float vze_fusion = 0;
-int gps_nav_valid = 0;
-int dead_reckon_clock = 0;
-float Ground_Speed_gps = 0;
-float Vsx_gps = 0;
-float Vsy_gps = 0;
-float Vsz_gps = 0;
-float u,v,w;
-float vx,vy,vz;
-// fin modif gfm
+
 /*
 BMP:
     SCK - This is the SPI Clock pin, its an input to the chip
@@ -101,9 +87,6 @@ BMP:
 
 #define SPL06_007_BARO 0x77
 #define SPL06_007_TE   0x76
-//Modif JLD
-TaskHandle_t *apid;
-// fin modif JLD
 
 MCP3221 *MCP=0;
 DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 standard, alternative  GPIO_NUM_17
@@ -155,7 +138,6 @@ float temperature=15.0;
 bool  validTemperature=false;
 float battery=0.0;
 float TE=0;
-float rawdynamicP;
 float dynamicP;
 
 // global color variables for adaptable display variant
@@ -333,50 +315,7 @@ void doAudio(){
 		Audio::setValues( TE, s2f_delta );
 	}
 }
-//modif JLD
-static int atick = 0;
 
-void readAHRS(void *pvParameters){
-
-while (1) {
-                      		TickType_t xLastWakeTime = xTaskGetTickCount();
-                      		xSemaphoreTake(xMutex,portMAX_DELAY );
-
-                      		if( haveMPU && IMU::getInitdone() )  // 3th Generation HW, MPU6050 avail and feature enabled
-                      		{
-                      			mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
-                      			mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
-                      			esp_err_t err = MPU.acceleration(&accelRaw);  // fetch raw data from the registers
-                      			if( err != ESP_OK )
-                      				ESP_LOGE(FNAME, "accel I2C error, X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
-                      			err |= MPU.rotation(&gyroRaw);       // fetch raw data from the registers
-                      			if( err != ESP_OK )
-                      				ESP_LOGE(FNAME, "gyro I2C error, X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
-                      			accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
-                      			gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
-
-                    			if( err == ESP_OK ) {
-                    				IMU::read();
-                    				dead_reckon();
-                    				estAltitude();
-                    			}
-                      		}
-
-                    		esp_task_wdt_reset();
-                              vTaskDelayUntil(&xLastWakeTime, 10/portTICK_PERIOD_MS);  // 10 for 10 ms = 100 Hz loop
-
-                              if( (atick++ % 100) == 0) {  // toutes les secondes on teste l’état du stack
-
-                                            if( uxTaskGetStackHighWaterMark( apid ) < 1024 )
-
-                                                           ESP_LOGW(FNAME,"Warning AHRS task stack low: %d bytes", uxTaskGetStackHighWaterMark( apid ) );
-
-                              }
-
-               }
-
-}
-//fin modif JLD
 void audioTask(void *pvParameters){
 	while (1)
 	{
@@ -392,7 +331,7 @@ void readBMP(void *pvParameters){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		xSemaphoreTake(xMutex,portMAX_DELAY );
 
-		if( haveMPU && IMU::getInitdone() )  // 3th Generation HW, MPU6050 avail and feature enabled
+		if( haveMPU  )  // 3th Generation HW, MPU6050 avail and feature enabled
 		{
 			mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
 			mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
@@ -425,12 +364,8 @@ void readBMP(void *pvParameters){
 					ESP_LOGE(FNAME, "gyro angle >90 deg/s in 0.2 S: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
 				}
 			}
-			//modif gfm : suppression dest tests goodgyros & goodaccel pour appeler l'AHRS
-			//if( err == ESP_OK && goodAccl && goodGyro ) {
-			if( err == ESP_OK ) {
+			if( err == ESP_OK && goodAccl && goodGyro ) {
 				IMU::read();
-				dead_reckon();
-				estAltitude();
 			}
 			gyroDPS_Prev = gyroDPS;
 			accelG_Prev = accelG;
@@ -439,12 +374,9 @@ void readBMP(void *pvParameters){
 		bool ok=false;
 		float p = 0;
 		if( asSensor )
-			p = asSensor->readPascal(0, ok); // removed minimum Dp test to allow use of rawdynamicP
-		if( ok ) {
-			rawdynamicP = p;
+			p = asSensor->readPascal(60, ok);
+		if( ok )
 			dynamicP = p;
-		}
-		if( dynamicP < 60 ) dynamicP = 0;
 		float iasraw = Atmosphere::pascal2kmh( dynamicP );
 		// ESP_LOGI("FNAME","P: %f  IAS:%f", dynamicP, iasraw );
 		float T=temperature;
@@ -496,48 +428,31 @@ void readBMP(void *pvParameters){
 		xSemaphoreGive(xMutex);
 		doAudio();
 
-		if( (inSetup != true) && !Flarm::bincom  ) {
+		if( (inSetup != true) && !Flarm::bincom && ((count % 2) == 0 ) ){
 			xSemaphoreTake(xMutex,portMAX_DELAY );
+			// reduce also messages from 10 per second to 5 per second to reduce load in XCSoar
+			char lb[150];
+			if( nmea_protocol.get() == BORGELT ) {
+				OV.sendNMEA( P_BORGELT, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), altSTD, validTemperature  );
+				OV.sendNMEA( P_GENERIC, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), altSTD, validTemperature  );
+			}
+			else if( nmea_protocol.get() == OPENVARIO ){
+				OV.sendNMEA( P_OPENVARIO, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature  );
+			}
+			else if( nmea_protocol.get() == CAMBRIDGE ){
+				OV.sendNMEA( P_CAMBRIDGE, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature  );
+			}
+			else if( nmea_protocol.get() == XCVARIO ) {
+				OV.sendNMEA( P_XCVARIO, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
+						-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
+			}
+			else if( nmea_protocol.get() == XCVARIO_DEVEL ) {
+				OV.sendNMEA( P_XCVARIO_DEVEL, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
+						-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
+			}
+			else
+				ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
 
-			char lb[510];
-			if( nmea_protocol.get() == FLIGHT_TEST ) {
-				OV.sendNMEA( P_FLIGHT_TEST, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-						time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
-						u,v,w,vx,vy,vz);
-						
-			} else if ((count % 2) == 0 ) {
-			// reduce messages from 10 per second to 5 per second to reduce load in XCSoar
-				if( nmea_protocol.get() == BORGELT ) {
-					OV.sendNMEA( P_BORGELT, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-							time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
-							u,v,w,vx,vy,vz);
-					OV.sendNMEA( P_GENERIC, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-							time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
-							u,v,w,vx,vy,vz);
-				}
-				else if( nmea_protocol.get() == OPENVARIO ){
-					OV.sendNMEA( P_OPENVARIO, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-							time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
-							u,v,w,vx,vy,vz  );
-				}
-				else if( nmea_protocol.get() == CAMBRIDGE ){
-					OV.sendNMEA( P_CAMBRIDGE, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-							time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
-							u,v,w,vx,vy,vz );
-				}
-				else if( nmea_protocol.get() == XCVARIO ) {
-					OV.sendNMEA( P_XCVARIO,lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-							time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
-							u,v,w,vx,vy,vz );
-				}
-				else if( nmea_protocol.get() == XCVARIO_DEVEL ) {
-					OV.sendNMEA( P_XCVARIO_DEVEL, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-							time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
-							u,v,w,vx,vy,vz);
-				}
-				else
-					ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
-				}
 			vTaskDelay(2/portTICK_PERIOD_MS);
 			xSemaphoreGive(xMutex);
 		}
@@ -600,7 +515,7 @@ void readTemp(void *pvParameters){
 					}
 					temperature = t;
 					if( rint(temperature*10) != temp_prev ){
-//modif gfm						OV.sendTemperatureChange( temperature  );
+						OV.sendTemperatureChange( temperature  );
 						temp_prev = rint(temperature*10);
 						ESP_LOGI(FNAME,"NEW temperature=%f  rint10: %d", temperature, temp_prev );
 					}
@@ -666,7 +581,7 @@ void sensor(void *args){
 	NVS.begin();
 	if( display_orientation.get() ){
 		ESP_LOGI( FNAME, "TopDown display mode flag set");
-		topDown = false;
+		topDown = true;
 	}
 
 	AverageVario::begin();
@@ -733,12 +648,14 @@ void sensor(void *args){
 		haveMPU = true;
 		ESP_LOGI( FNAME,"MPU initialize");
 		MPU.initialize();  // this will initialize the chip and set default configurations
-		MPU.setSampleRate(250);  // in (Hz)
+		MPU.setSampleRate(50);  // in (Hz)
 		MPU.setAccelFullScale(mpud::ACCEL_FS_8G);
 		MPU.setGyroFullScale(mpud::GYRO_FS_500DPS);
-		MPU.setDigitalLowPassFilter(mpud::DLPF_98HZ);  // smoother data
+		MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
 		display->writeText( line++, "AHRS Sensor: OK");
 		logged_tests += "MPU6050 AHRS test: PASSED\n";
+		IMU::init();
+		IMU::read();
 		// BIAS MPU6050
 		mpud::raw_axes_t gb = gyro_bias.get();
 		mpud::raw_axes_t ab = accl_bias.get();
@@ -759,11 +676,6 @@ void sensor(void *args){
 			MPU.setAccelOffset(ab);
 			MPU.setGyroOffset(gb);
 		}
-		// modif gfm pour mettre les offsets accéléro à zéro
-		ab.x=0;
-		ab.y=0;
-		ab.z=0;
-		MPU.setAccelOffset(ab);
 	}
 	else{
 		ESP_LOGI( FNAME,"MPU reset failed, check HW revision: %d",hardwareRevision.get() );
@@ -1193,29 +1105,15 @@ void sensor(void *args){
 	gpio_set_pull_mode(CS_bme280TE, GPIO_PULLUP_ONLY );
 
 	if( blue_enable.get() != WL_WLAN_CLIENT ) {
-		xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096*4, NULL, 30, bpid, 0);
+		xTaskCreatePinnedToCore(&readBMP, "readBMP", 4096*2, NULL, 30, bpid, 0);
 	}
 	if( blue_enable.get() == WL_WLAN_CLIENT ){
 		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 30, bpid, 0);
 	}
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 4096, NULL, 6, tpid, 0);
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 13, dpid, 0);
-	// modif JLD
-	//xTaskCreatePinnedToCore(&readAHRS, "readAHRS", 4096, NULL, 35, apid, 0);
-	// 4096: taille du stack en octets. A ajuster en fonction des besoins. Plus on a de déclarations globales et moins d’appels avec paramètres et moins on a besoin de se soucier du stack.
-	// 35 : haute priorité
-	// 0 : core utilisé (un seul core utilisable pour le moment L)
-	 // fin modif JLD
 
 	Audio::startAudio();
-	//modif gfm
-		Init_UBX_Parser();
-		IMU::init(true);
-		logged_tests += "MPU6050 AHRS init: PASSED\n";
-		IMU::read();
-		logged_tests += "MPU6050 AHRS read: PASSED\n";
-		altimeter_calibrate();
-		// fin modif gfm
 }
 
 

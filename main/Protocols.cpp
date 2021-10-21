@@ -361,6 +361,12 @@ void Protocols::parseNMEA( const char *astr ){
 				ESP_LOGI(FNAME,"New QNH: %.2f", qnh);
 				QNH.set( qnh );
 			}
+			if (str[3] == 's') {  // nonstandard CAI 302 extension for S2F mode switch, e.g. for XCNav remote stick
+				int mode;
+				sscanf(str, "!g,s%d", &mode);
+				ESP_LOGI(FNAME,"New S2F mode: %d", mode );
+				cruise_mode.set( mode );
+			}
 		}
 		else if( !strncmp( str, "$PFLAU,", 3 )) {
 			Flarm::parsePFLAU( str );

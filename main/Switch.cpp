@@ -46,12 +46,15 @@ bool Switch::cruiseMode() {
 		if( _cruise_mode_xcv != cm_xcv_prev  ){
 			cruise_mode_final = _cruise_mode_xcv;
 			cm_xcv_prev = _cruise_mode_xcv;
+			ESP_LOGI(FNAME,"cruise_mode from change from Peer: %d", cruise_mode_final );
 		}
 	}
 	else if( audio_mode.get() == AM_AUTOSPEED ){        // Let autospeed mode merge both states
 		if( _cruise_mode_sw != cm_switch_prev  ){
+			ESP_LOGI(FNAME,"cruise_mode change %d", cruise_mode_final );
 			cm_switch_prev = _cruise_mode_sw;
 			cruise_mode_final = _cruise_mode_sw;
+			ESP_LOGI(FNAME,"cruise_mode change from Switch: %d", cruise_mode_final );
 		}
 		else if( _cruise_mode_speed != cm_auto_prev ){
 			cm_auto_prev = _cruise_mode_speed;

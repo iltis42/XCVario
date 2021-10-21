@@ -96,7 +96,7 @@ int S2FST = 45;
 int ASLEN = 0;
 #define AMIDY DISPLAY_H/2
 #define AMIDX (DISPLAY_W/2 + 30)
-static const int16_t INNER_RIGHT_ALIGN = 175;
+static const int16_t INNER_RIGHT_ALIGN = 170;
 static int fh;
 
 extern xSemaphoreHandle spiMutex; // todo needs a better concept here
@@ -1257,9 +1257,9 @@ void IpsDisplay::drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool di
 	if ( incl_unit ) {
 		ucg->setFont(ucg_font_fub11_hr);
 		ucg->setColor( COLOR_HEADER );
-		ucg->setPrintPos(x+1, y-17);
+		ucg->setPrintPos(x+5, y-17);
 		ucg->printf("%d", (int)(Units::QnhRaw(QNH.get())+0.5) );
-		ucg->setPrintPos(x+1, y-3);
+		ucg->setPrintPos(x+5, y-3);
 		ucg->print(Units::AltitudeUnit() );
 		ucg->print(" QNH"); // todo and QFE?
 	}
@@ -1303,9 +1303,9 @@ void IpsDisplay::drawSpeed(float v_kmh, ucg_int_t x, ucg_int_t y, bool dirty, bo
 	if ( inc_unit ) {
 		ucg->setFont(ucg_font_fub11_hr);
 		ucg->setColor( COLOR_HEADER );
-		ucg->setPrintPos(x+1,y-3);
+		ucg->setPrintPos(x+5,y-3);
 		ucg->print(Units::AirspeedUnitStr() );
-		ucg->setPrintPos(x+1,y-17);
+		ucg->setPrintPos(x+5,y-17);
 		ucg->print(Units::AirspeedModeStr());
 	}
 	as_prev = airspeed;
@@ -1485,7 +1485,7 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y) {
 			ucg->print(s);
 			ucg->setColor( COLOR_HEADER );
 			ucg->setFont(ucg_font_fub20_hf);
-			ucg->setPrintPos(x+1, y);
+			ucg->setPrintPos(x+5, y);
 			ucg->print("\xb0 ");
 			prev_heading = heading;
 		}

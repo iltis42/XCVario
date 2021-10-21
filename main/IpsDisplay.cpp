@@ -996,7 +996,7 @@ void IpsDisplay::drawScale( int16_t max_pos, int16_t max_neg, int16_t pos, int16
 					width = 3;
 					end = pos+15;
 				}
-				draw_label = a!=0 && (draw_label || modulo<11 || a==mid_lpos);
+				draw_label = a!=0 && (draw_label || max_pos<5 || a==mid_lpos);
 			}
 			// ESP_LOGI(FNAME, "lines a %d %d %d", a, end, draw_label);
 
@@ -1024,7 +1024,7 @@ void IpsDisplay::drawOneLabel( float val, int16_t labl, int16_t pos, int16_t off
     pos += (M_PI_2-std::abs(val))/M_PI_2 * 10; // increase pos towards 0
 	x=AMIDX   - cos(val*to_side)*pos;
 	y=AMIDY+1 - sin(val*to_side)*pos;
-	ucg->setColor(COLOR_HEADER);
+	ucg->setColor(COLOR_LBLUE);
 	ucg->setPrintPos(x,y);
 	ucg->printf("%d", abs(labl+offset) );
 }

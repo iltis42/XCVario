@@ -555,17 +555,17 @@ void IpsDisplay::drawMC( float mc, bool large ) {
 	ucg->setColor(COLOR_WHITE);
 	if( large ) {
 		ucg->setFont(ucg_font_fub20_hn);
-    } else {
+	} else {
 		ucg->setFont(ucg_font_fub14_hn);
-    }
-    char s[10];
-	std::sprintf(s, "%1.1f", mc );
-    ucg->print(s);
-    ucg_int_t fl = ucg->getStrWidth(s);
+	}
+	char s[10];
+	std::sprintf(s, "%1.1f", Units::Vario(mc) );
+	ucg->print(s);
+	ucg_int_t fl = ucg->getStrWidth(s);
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setColor(COLOR_HEADER);
-	ucg->setPrintPos(5+fl, DISPLAY_H-6);
-	ucg->print(" MC");
+	ucg->setPrintPos(5+fl+2, DISPLAY_H-6);
+	ucg->print("MC");
 }
 
 #define S2FSS 10

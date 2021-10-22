@@ -642,13 +642,13 @@ void SetupMenu::setup( )
 		blck->addEntry( "ENABLE");
 		s2fse->addEntry( blck );
 
-		SetupMenuSelect * s2fmod = new SetupMenuSelect( "Mode", false, 0 , true, &audio_mode );
-		s2fmod->setHelp( PROGMEM"Select either fixed Vario, or S2F mode, or let transition control only by an external switch or by switch and speed 'AutoSpeed' or get from master" );
-		s2fmod->addEntry( "Vario (Circling)");
-		s2fmod->addEntry( "S2F (Cruise)");
+		SetupMenuSelect * s2fmod = new SetupMenuSelect( "S2F Mode", false, 0 , true, &audio_mode );
+		s2fmod->setHelp( PROGMEM"Select S2F mode either fixed, or controled by local switch or switch & airspeed combined or from external source" );
+		s2fmod->addEntry( "Vario fix");
+		s2fmod->addEntry( "Cruise fix");
 		s2fmod->addEntry( "Switch");
 		s2fmod->addEntry( "AutoSpeed");
-		s2fmod->addEntry( "From Master");
+		s2fmod->addEntry( "External");
 		s2fse->addEntry( s2fmod );
 
 		SetupMenuValFloat * autospeed = new SetupMenuValFloat( "S2F AutoSpeed", 0, sunit.c_str(), 20.0, 250.0, 1.0, update_s2f_speed, false, &s2f_speed );

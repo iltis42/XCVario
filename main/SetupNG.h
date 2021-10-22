@@ -460,6 +460,7 @@ extern SetupNG<float>  		flap_0;
 extern SetupNG<float>  		flap_plus_1;
 extern SetupNG<float>  		flap_plus_2;
 extern SetupNG<int>  		alt_unit;
+extern SetupNG<int>  		alt_quant;
 extern SetupNG<int>  		ias_unit;
 extern SetupNG<int>  		vario_unit;
 extern SetupNG<int>  		temperature_unit;

@@ -1198,31 +1198,13 @@ void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float ate ){
 	ucg->undoClipRange();
 }
 
-// draw a rolling digit according to the fraction of the digit right of this one
-void IpsDisplay::drawRollingDigit( int16_t fraction, char digit, ucg_int_t x, ucg_int_t y )
-{
-	// move last digit
-	int16_t m = (fraction * char_height/ 100) - char_height/2; // to pixel offest
-	ucg->setClipRange(x, y - char_height * 1.25,
-						char_width, char_height * 1.4);
-	ucg->setPrintPos(x, y - m - char_height);
-	ucg->print((digit == '0') ? '9' : (char)(digit - 1)); // one above
-	ucg->setPrintPos(x, y - m); // this one last to avoid clipped tops
-	ucg->print(digit);
-	ucg->setPrintPos(x, y - m + char_height);
-	ucg->print((digit == '9') ? '0' : (char)(digit + 1)); // one below
-	ucg->undoClipRange();
-}
-
 // right-aligned to value, unit optional behind
 // altidude >=0 are displayed correctly with last two digits rolling accoring to their fraction to the right
 void IpsDisplay::drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool dirty, bool incl_unit )
 {
-	const int16_t nr_rolldigits = 2;
 	if( _menu ) return;
 
-	int alt = (int)(altitude*10.); // rendered value
-	if ( alt_unit.get() == ALT_UNIT_FL ) { alt /= 10; }
+	int alt = (int)(altitude); // rendered value
 
 	// check on the rendered value for change
     dirty = dirty || alt != alt_prev;
@@ -1232,54 +1214,54 @@ void IpsDisplay::drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool di
 	char s[20];
 	ucg->setFont(ucg_font_fub25_hr);
 	ucg->setColor( COLOR_WHITE );
-	sprintf(s," %5d", alt);
-	int fl=ucg->getStrWidth(s);
+	sprintf(s,"  %02d", alt);
 	if ( alt_unit.get() == ALT_UNIT_FL ) {
-		ucg->setPrintPos(x-fl,y);
+		ucg->setPrintPos(x-ucg->getStrWidth(s),y);
+		ucg->print(s);
+	}
+	else if ( ! alt_quant.get() ) {
+		sprintf(s,"  %d", alt);
+		ucg->setPrintPos(x-ucg->getStrWidth(s),y);
 		ucg->print(s);
 	}
     else {
 		int16_t len = std::strlen(s);
-		int16_t fraction1 = (len>0?s[len-1]-'0':0) * 10; // %
+		int16_t quant = 10;
+		if ( alt_unit.get() == ALT_UNIT_FT ) {
+			quant = 20;
+		}
+		alt = ((alt+quant/2)/quant)*quant;
+		int16_t fraction = (altitude+quant/2 - alt) * 100/quant;
 
-		alt /= 10; // chop fraction
-		s[len-1] = '\0'; len--;
-		char lastdigit = s[len-1]; // alias alt%10
-		// ESP_LOGI(FNAME,"Alti %d.%d - %c", alt, fraction1, lastdigit);
+		int16_t lastdigit = (alt%100)/10;
+		// ESP_LOGI(FNAME,"Alti %f: %d - %d>%d %d", altitude, fraction, alt, lastdigit);
 
-		static int16_t fraction_prev1 = -1;
-		int16_t rd = 1;
-		if (dirty || fraction1 != fraction_prev1)
+		static int16_t fraction_prev = -1;
+		if (dirty || fraction != fraction_prev)
 		{
-			drawRollingDigit(fraction1, lastdigit, x-char_width, y);
-			fraction_prev1 = fraction1;
-		}
-		alt /= 10; // chop last actual digit
+			// move last digit
+			int16_t m = (fraction * char_height/ 100) - char_height/2; // to pixel offest
+			int16_t q = quant/10;
+			int16_t xp = x - 2*char_width;
+			char tmp[3] = {'0', '0', 0};
+			ucg->setClipRange(xp, y - char_height * 1.25, char_width*2, char_height * 1.4);
+			ucg->setPrintPos(xp, y - m - char_height);
+			tmp[0] = (lastdigit+10-q)%10 + '0';
+			ucg->print(tmp); // one above
+			ucg->setPrintPos(xp, y - m); // this one last to avoid clipped tops
+			tmp[0] = lastdigit%10 + '0';
+			ucg->print(tmp);
+			ucg->setPrintPos(xp, y - m + char_height);
+			tmp[0] = (lastdigit+q)%10 + '0';
+			ucg->print(tmp); // one below
+			ucg->undoClipRange();
 
-		if ( nr_rolldigits>1 && alt > 10 ) { // more digits to roll
-			int16_t fraction2 = (lastdigit-'0') * 10; // %
-			s[len-1] = '\0'; len--;
-			lastdigit = s[len-1];
-
-			static int16_t fraction_prev2 = -1;
-			if ( dirty || fraction2 != fraction_prev2 )
-			{
-				drawRollingDigit(fraction2, lastdigit, x-2*char_width, y);
-				fraction_prev2 = fraction2;
-			}
-			fraction1 = fraction2; // treat the next left digit correctly
-			rd++;
+			fraction_prev = fraction;
 		}
-		else {
-			// clear the entire block
-			ucg->setColor( COLOR_BLACK );
-			ucg->drawBox(x - 2*char_width, y - char_height * 1.25, char_width, char_height * 1.4);
-			ucg->setColor( COLOR_WHITE );
-		}
-		alt /= 10; // chop another digit
-		sprintf(s," %5d", alt);
-		ucg->setPrintPos(x - ucg->getStrWidth(s) - rd*char_width , y);
+		s[len-2] = '\0'; // chop 2 digits
+		ucg->setPrintPos(x - ucg->getStrWidth(s) - 2*char_width , y);
 		static int altpart_prev = 0;
+		alt/=100;
 		if (dirty || altpart_prev != alt) {
 			ucg->print(s);
 			altpart_prev = alt;
@@ -1778,8 +1760,8 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		static int alternate = 0;
 		if ( alternate & 1 ) {
 			// static float s=0; // test the rolling numbers
-			// altitude = 9990. + sin(s) * 11.;
-			// s+=0.03;
+			// altitude = 9990. + sin(s) * 33.;
+			// s+=0.04;
 			drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, needle_pos_old < -M_PI_2*70./90. );
 		}
 		else {

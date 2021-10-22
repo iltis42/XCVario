@@ -847,6 +847,10 @@ void SetupMenu::setup( )
 		alu->addEntry( "Foot  (ft)");
 		alu->addEntry( "FL    (FL)");
 		un->addEntry( alu );
+		SetupMenuSelect * alq = new SetupMenuSelect( "Alt. Quantization", false,  0, true, &alt_quant );
+		alq->addEntry( "Disable");
+		alq->addEntry( "Enable");
+		un->addEntry( alq );
 		SetupMenuSelect * iau = new SetupMenuSelect( "Airspeed", false , update_sunit, true, &ias_unit );
 		iau->addEntry( "Kilom. (Km/h)");
 		iau->addEntry( "Miles  (mph)");

@@ -105,7 +105,7 @@ private:
 
 	static void drawMC( float mc, bool large=false );
 	static void drawS2FMode( int x, int y, bool cruise );
-	static void drawArrow(int16_t x, int16_t y, int level, bool del);
+	static void drawArrow(int16_t x, int16_t y, int level, int16_t color);
 	static void drawS2FBar(int16_t x, int16_t y, int s2fd);
 	static void drawCircling( int x, int y, bool draw );
 	static void drawCruise( int x, int y, bool draw );

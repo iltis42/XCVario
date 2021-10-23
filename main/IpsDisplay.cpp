@@ -1823,7 +1823,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	// Cruise mode or circling
 	if( (int)s2fmode != s2fmode_prev ){
-		drawS2FMode( 102, DISPLAY_H/2+30+S2FSS, s2fmode );
+		drawS2FMode( 190, 18, s2fmode );
 		s2fmode_prev = (int)s2fmode;
 	}
 

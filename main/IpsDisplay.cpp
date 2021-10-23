@@ -144,6 +144,10 @@ float IpsDisplay::average_climbf = 0;
 int   IpsDisplay::prev_heading = 0;
 float IpsDisplay::pref_qnh = 0;
 float (*IpsDisplay::_gauge)(float) = &linGaugeIdx;
+const int16_t SINCOS_OVER_2PI = 128; // need to be a power of 2
+const float sincosScale = SINCOS_OVER_2PI/M_PI_2;
+static float precalc_sin[SINCOS_OVER_2PI];
+static float precalc_cos[SINCOS_OVER_2PI];
 
 #define WKBARMID (AMIDY-15)
 
@@ -918,7 +922,7 @@ void IpsDisplay::drawOneScaleLine( float a, int16_t x0, int16_t y0, int16_t l1, 
 }
 
 // -pi/2 < val < pi/2, center x, y, start radius, end radius, width, r,g,b
-void IpsDisplay::drawPolarIndicator( float a, int16_t x0, int16_t y0, int16_t l1, int16_t l2, int16_t w, ucg_color_t color)
+void IpsDisplay::drawPolarIndicator( float a, int16_t l1, int16_t l2, int16_t w, ucg_color_t color)
 {
 	static ucg_int_t x_0 = 0;
 	static ucg_int_t y_0 = 0;
@@ -931,12 +935,15 @@ void IpsDisplay::drawPolarIndicator( float a, int16_t x0, int16_t y0, int16_t l1
 
 	float si=sin(a);
 	float co=cos(a);
-	ucg_int_t xn_0 = x0-l1*co+w*si;
-	ucg_int_t yn_0 = y0-l1*si-w*co;
-	ucg_int_t xn_1 = x0-l1*co-w*si;
-	ucg_int_t yn_1 = y0-l1*si+w*co;
-	ucg_int_t xn_2 = x0-l2*co;
-	ucg_int_t yn_2 = y0-l2*si;
+	float psi=gaugeSin(a,l1);
+	float pco=gaugeCos(a,l1);
+
+	ucg_int_t xn_0 = pco+w*si;
+	ucg_int_t yn_0 = psi-w*co;
+	ucg_int_t xn_1 = pco-w*si;
+	ucg_int_t yn_1 = psi+w*co;
+	ucg_int_t xn_2 = gaugeCos(a, l2);
+	ucg_int_t yn_2 = gaugeSin(a, l2);
 	// ESP_LOGI(FNAME,"IpsDisplay::drawTetragon  x0:%d y0:%d x1:%d y1:%d x2:%d y2:%d x3:%d y3:%d", (int)xn_0, (int)yn_0, (int)xn_1 ,(int)yn_1, (int)xn_2, (int)yn_2, (int)xn_3 ,(int)yn_3 );
 
 	// cleanup previous incarnation
@@ -1111,6 +1118,16 @@ float IpsDisplay::linGaugeIdx(const float val)
 {
 	return val * _scale_k;
 }
+// get sin/cos position from gauge index in rad
+inline int16_t IpsDisplay::gaugeSin(const float idx, const int16_t len)
+{
+	int16_t i = (int16_t)(abs(idx)*sincosScale)&(SINCOS_OVER_2PI-1);
+	return AMIDY - precalc_sin[(int16_t)(abs(idx)*sincosScale)&(SINCOS_OVER_2PI-1)] * len * (std::signbit(idx)?-1:1);
+}
+inline int16_t IpsDisplay::gaugeCos(const float idx, const int16_t len)
+{
+	return AMIDX - precalc_cos[(int16_t)(abs(idx)*sincosScale)&(SINCOS_OVER_2PI-1)] * len;
+}
 void IpsDisplay::initGauge(const float max)
 {
 	if ( log_scale.get() ) {
@@ -1119,6 +1136,10 @@ void IpsDisplay::initGauge(const float max)
 	} else {
 		_scale_k = M_PI_2 / max;
 		_gauge = &linGaugeIdx;
+	}
+	for ( int i=0; i<SINCOS_OVER_2PI; i++ ) {
+		precalc_sin[i] = sin(M_PI_2*i/SINCOS_OVER_2PI);
+		precalc_cos[i] = cos(M_PI_2*i/SINCOS_OVER_2PI);
 	}
 }
 // inverse to xxGaugeIdx. Get the value for an indicator position
@@ -1364,7 +1385,7 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 	// draw G pointer
 	float a = (loadFactor-1)/max_gscale * (M_PI_2);
 	if( int(a*100) != int(needle_pos_old*100) ) {
-		drawPolarIndicator( a, AMIDX, AMIDY, 60, 120, 3, needlecolor[0] );
+		drawPolarIndicator( a, 60, 120, 3, needlecolor[0] );
 		// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 	}
 	// G load digital
@@ -1669,7 +1690,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	float needle_pos = (*_gauge)(te);
 	// draw TE pointer
 	if( int(needle_pos*100) != int(needle_pos_old*100) ) {
-		drawPolarIndicator( needle_pos, AMIDX, AMIDY, 80, 132, 9, needlecolor[needle_color.get()] );
+		drawPolarIndicator( needle_pos, 80, 132, 9, needlecolor[needle_color.get()] );
 		// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 	}
 

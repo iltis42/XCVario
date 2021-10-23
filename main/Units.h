@@ -105,7 +105,7 @@ public:
 		}
 	}
 
-	static float Vario( float te ){   // standard is m/s
+	static float Vario( const float te ){   // standard is m/s
 		if( vario_unit.get() == VARIO_UNIT_MS )
 			return( te );
 		else if(  vario_unit.get() == VARIO_UNIT_FPM )

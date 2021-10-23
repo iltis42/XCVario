@@ -6,16 +6,9 @@
  *
  */
 
-#include <cmath>
-#include "sdkconfig.h"
-#include <stdio.h>
-#include <string.h>
-#include <Ucglib.h>
 #include "IpsDisplay.h"
 #include "BTSender.h"
 #include "DallasRmt.h"
-#include "freertos/task.h"
-#include <logdef.h>
 #include "WifiClient.h"
 #include "WifiApp.h"
 #include "sensor.h"
@@ -25,6 +18,17 @@
 #include "Compass.h"
 #include "CircleWind.h"
 #include "canbus.h"
+#include "Blackboard.h"
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include <Ucglib.h>
+#include <logdef.h>
+
+#include "sdkconfig.h"
+#include <cmath>
+#include <cstdio>
+#include <cstring>
 
 int screens_init = INIT_DISPLAY_NULL;
 

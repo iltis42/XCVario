@@ -25,6 +25,7 @@
 #include "Units.h"
 #include "Flap.h"
 #include "Switch.h"
+#include "Blackboard.h"
 #include "SetupNG.h"
 #include "CircleWind.h"
 

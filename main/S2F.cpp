@@ -11,7 +11,7 @@
 #include "logdef.h"
 #include "sensor.h"
 #include "Units.h"
-#include "SetupNG.h"
+#include "Blackboard.h"
 
 S2F::S2F() {
     a0=a1=a2=0;
@@ -195,4 +195,3 @@ void S2F::test( void )
 		ESP_LOGI(FNAME, "S2F %g km/h vario %g m/s", speed( (double)st/10 ), (double)st/10 );
 	}
 }
-

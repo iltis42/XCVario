@@ -179,12 +179,14 @@ public:
 	inline T& getRef() {
 		return _value;
 	}
-	inline T get() {
+	inline T get() const {
 		return _value;
 	}
 	const char * key() {
 		return _key;
 	}
+	virtual T getGui() const { return get(); } // tb. overloaded for blackboard
+	virtual const char* unit() const { return ""; } // tb. overloaded for blackboard
 
 	bool mustSync(){
 		return( ( (isClient() && _sync == SYNC_FROM_CLIENT) || (isMaster() && _sync == SYNC_FROM_MASTER) || _sync == SYNC_BIDIR ) );
@@ -396,7 +398,6 @@ extern SetupNG<float>  		deadband_neg;
 extern SetupNG<float>  		range;
 extern SetupNG<int>			log_scale;
 extern SetupNG<float>  		ballast;
-extern SetupNG<float>  		MC;
 extern SetupNG<float>  		s2f_speed;
 
 extern SetupNG<int>  		audio_variable_frequency;
@@ -596,3 +597,5 @@ extern SetupNG<int> 		menu_screens;
 
 extern uint8_t g_col_background;
 extern uint8_t g_col_highlight;
+
+extern void change_mc_bal();

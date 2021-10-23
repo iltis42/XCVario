@@ -599,31 +599,29 @@ void IpsDisplay::drawS2FMode( int x, int y, bool cruise ){
 	}
 }
 
-void IpsDisplay::drawArrow(int16_t x, int16_t y, int level, bool del)
+void IpsDisplay::drawArrow(int16_t x, int16_t y, int level, int16_t color)
 {
 	const int width=40;
 	const int step=8;
 	const int gap=2;
 	int height=step;
 
-	if ( level == 0 ) return;
+	if ( level == 0 || std::abs(level) == 4 ) return;
 
-	if( del ) {
-		ucg->setColor( COLOR_BLACK );
-	}
-	else {
-		if ( std::abs(level) == 4 ) {
-			height=3;
+	switch ( color ) {
+		case 0:
+			ucg->setColor( COLOR_BLACK );
+			break;
+		case -1:
+			ucg->setColor( COLOR_GREEN );
+			break;
+		case 1:
+			ucg->setColor( COLOR_BBLUE );
+			break;
+		default:
 			ucg->setColor( COLOR_ORANGE );
-		}
-		else {
-			if( level < 0 ) {
-				ucg->setColor( COLOR_GREEN );
-			} else {
-				ucg->setColor( COLOR_BLUE );
-			}
-		}
 	}
+
 	int l = level-1;
 	if ( level < 0 ) {
 		height = -height;
@@ -634,31 +632,52 @@ void IpsDisplay::drawArrow(int16_t x, int16_t y, int level, bool del)
 	ucg->drawTriangle(x,y+l*(step+gap), x+width,y+l*gap, x,y+l*(step+gap)+height);
 }
 
-// speed to fly delta given in any kmh, s2fd > 0 means speed up
-// bars dice up 10 delta units, ignoring the actual speed unit
+// speed to fly delta given in kmh, s2fd > 0 means speed up
+// bars dice up 10 kmh steps
 void IpsDisplay::drawS2FBar(int16_t x, int16_t y, int s2fd)
 {
-	int level = s2fd/10; // dice up by 10
+	if( _menu ) return;
+
+	int level = s2fd/10; // dice up into 10 kmh steps
 
 	// draw max. three bars plus a yellow top
 	if ( level > 4 ) { level = 4; }
 	else if ( level < -4 ) { level = -4; }
 
+	// ESP_LOGI(FNAME,"s2fbar %d %d", s2fd, level);
 	if ( level == s2f_level_prev ) {
 		return;
 	}
 
-	int inc = (level-s2f_level_prev > 0) ? 1 : -1;
-	int i = s2f_level_prev + ((s2f_level_prev==0 || s2f_level_prev*inc>0) ? inc : 0);
-	do {
-		if ( i != 0 ) {
-			drawArrow(x, y-2+(i>0?1:-1)*22, i, (i*inc < 0));
-			// ESP_LOGI(FNAME,"s2fbar draw %d,%d", i, (i*inc < 0));
+	if ( std::abs(level) == 4 ) {
+		// redraw all three bars with a different color .. assert(level x prev > 0)
+		int16_t inc = (level > 0) ? -1 : 1;
+		for ( int16_t i = level+inc; i!=0; i+=inc ) {
+			drawArrow(x, y-2+(i>0?1:-1)*22, i, 3);
 		}
-		if ( i == level ) break;
-		i+=inc;
+		s2f_level_prev = level;
+		return;
 	}
-	while ( i != level );
+	else if ( std::abs(s2f_level_prev) == 4 ) {
+		// |level| < |prev|
+		if (std::abs(level) < 3 ) {
+			// erase some bars
+			int16_t inc = (s2f_level_prev > 0) ? -1 : 1;
+			for ( int16_t i = s2f_level_prev+inc; i!=level+inc; i+=inc ) {
+				drawArrow(x, y-2+(i>0?1:-1)*22, i, 0);
+			}
+		}
+		s2f_level_prev = 0;
+	}
+	int16_t inc = (level-s2f_level_prev > 0) ? 1 : -1;
+	for ( int16_t i = s2f_level_prev + ((s2f_level_prev==0 || s2f_level_prev*inc>0) ? inc : 0);
+			i != level+((i*inc < 0)?0:inc); i+=inc ) {
+		if ( i != 0 ) {
+			drawArrow(x, y-2+(i>0?1:-1)*22, i, (i*inc < 0)?0:inc);
+			// ESP_LOGI(FNAME,"s2fbar draw %d,%d", i, (i*inc < 0)?0:inc);
+		}
+	}
+
 	s2f_level_prev = level;
 }
 
@@ -1615,6 +1634,9 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	// S2F Command triangle
 	if( (((int)s2fd != s2fdalt && !((tick+1)%2) ) || !((tick+3)%30)) && !ulmode ) {
+		// static float s=0;
+		// s2fd = sin(s) * 42.;
+		// s+=0.1;
 		drawS2FBar(AMIDX, AMIDY,(int)s2fd);
 	}
 
@@ -1630,7 +1652,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			// static float s=0; // test the rolling numbers
 			// altitude = 9990. + sin(s) * 33.;
 			// s+=0.04;
-			drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, needle_pos_old < -M_PI_2*70./90. );
+			drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, needle_pos_old < -M_PI_2*60./90. );
 		}
 		else {
 			drawSpeed(airspeed_kmh, INNER_RIGHT_ALIGN, 75, needle_pos_old > M_PI_2*75./90.);
@@ -1643,8 +1665,9 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		drawCompass(INNER_RIGHT_ALIGN, 105);
 	}
 
-	// draw TE pointer
+	// get TE pointer position in rad
 	float needle_pos = (*_gauge)(te);
+	// draw TE pointer
 	if( int(needle_pos*100) != int(needle_pos_old*100) ) {
 		drawPolarIndicator( needle_pos, AMIDX, AMIDY, 80, 132, 9, needlecolor[needle_color.get()] );
 		// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );

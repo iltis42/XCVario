@@ -26,7 +26,7 @@ public:
 	void display( int mode=0 );
 	void displayVal();
 	void setPrecision( int prec );
-	char *value() {  sprintf(_val_str,"%0.*f %s", _precision, *_value, _unit ); return _val_str; };
+	char *value() {  sprintf(_val_str,"%0.*f %s", _precision, _nvs?_nvs->getGui():*_value, _unit ); return _val_str; };
 	static void showQnhMenu();
 	void up( int count );  // step up to parent
 	void down( int count );

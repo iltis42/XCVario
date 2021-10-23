@@ -98,8 +98,8 @@ void SetupMenuValFloat::displayVal()
 	ucg->setPrintPos( 1, 70 );
 	ucg->setFont(ucg_font_fub25_hf);
 	char val[20];
-	sprintf(val, "%0.*f", _precision, *_value );
-	ucg->printf("%s",val);
+	sprintf(val, "%0.*f", _precision, _nvs?_nvs->getGui():*_value );
+	ucg->print(val);
 	if( _unit ) {
 		ucg->setFont(ucg_font_fur25_hf);   // use different font for unit as of ° special char
 		ucg->setPrintPos( 1+ ucg->getStrWidth(val), 70 );

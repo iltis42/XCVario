@@ -6,16 +6,9 @@
  *
  */
 
-#include <cmath>
-#include "sdkconfig.h"
-#include <stdio.h>
-#include <string.h>
-#include <Ucglib.h>
 #include "IpsDisplay.h"
 #include "BTSender.h"
 #include "DallasRmt.h"
-#include "freertos/task.h"
-#include <logdef.h>
 #include "WifiClient.h"
 #include "WifiApp.h"
 #include "sensor.h"
@@ -25,6 +18,17 @@
 #include "Compass.h"
 #include "CircleWind.h"
 #include "canbus.h"
+#include "Blackboard.h"
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include <Ucglib.h>
+#include <logdef.h>
+
+#include "sdkconfig.h"
+#include <cmath>
+#include <cstdio>
+#include <cstring>
 
 int screens_init = INIT_DISPLAY_NULL;
 
@@ -115,6 +119,7 @@ int IpsDisplay::_ate=0;
 int IpsDisplay::s2falt=-1;
 int IpsDisplay::s2fdalt=0;
 int IpsDisplay::s2f_level_prev=0;
+int16_t IpsDisplay::bow_level_prev=0;
 int IpsDisplay::s2fmode_prev=100;
 int IpsDisplay::alt_prev=0;
 int IpsDisplay::chargealt=-1;
@@ -144,6 +149,10 @@ float IpsDisplay::average_climbf = 0;
 int   IpsDisplay::prev_heading = 0;
 float IpsDisplay::pref_qnh = 0;
 float (*IpsDisplay::_gauge)(float) = &linGaugeIdx;
+const int16_t SINCOS_OVER_110 = 256; // need to be a power of 2
+const float sincosScale = SINCOS_OVER_110/M_PI_2*90./110.;
+static float precalc_sin[SINCOS_OVER_110];
+static float precalc_cos[SINCOS_OVER_110];
 
 #define WKBARMID (AMIDY-15)
 
@@ -154,6 +163,7 @@ bool blank = false;
 bool flarm_connected=false;
 static int max_gscale = 0;
 static ucg_color_t needlecolor[3] = { {COLOR_WHITE}, {COLOR_ORANGE}, {COLOR_RED} };
+static ucg_color_t bowcolor[3] = { {COLOR_GREEN}, {COLOR_BLUE}, {COLOR_RED} };
 
 IpsDisplay::IpsDisplay( Ucglib_ILI9341_18x240x320_HWSPI *aucg ) {
 	ucg = aucg;
@@ -419,8 +429,8 @@ void IpsDisplay::drawAvg( float avclimb, float delta ){
 	if( avc_old != -1000 ){
 		ucg->setColor( COLOR_BLACK );
 		a = (_gauge)(avc_old);
-		int x=AMIDX - cos(a)*pos;
-		int y=AMIDY - sin(a)*pos;
+		int x=gaugeCos(a, pos);
+		int y=gaugeSin(a, pos);
 		ucg->drawTetragon( x+size, y, x,y+ylsize, x-size,y, x,y-yusize );
 
 		drawScale( _range, -_range, 140, 0, avc_old*10.f );
@@ -446,8 +456,8 @@ void IpsDisplay::drawAvg( float avclimb, float delta ){
 	if( avclimb > _range ) // clip values off weeds
 		avclimb = _range;
 	a = (_gauge)(avclimb);
-	int x=AMIDX - cos(a)*pos;
-	int y=AMIDY - sin(a)*pos;
+	int x=gaugeCos(a, pos);
+	int y=gaugeSin(a, pos);
 	ESP_LOGD(FNAME,"drawAvg: x=%d  y=%d", x,y );
 	ucg->drawTetragon( x+size,y, x, y+ylsize, x-size,y, x,y-yusize );
 	avc_old=avclimb;
@@ -896,7 +906,7 @@ void IpsDisplay::drawTemperature( int x, int y, float t ) {
 }
 
 // val, center x, y, start radius, end radius, width, r,g,b
-void IpsDisplay::drawOneScaleLine( float a, int16_t x0, int16_t y0, int16_t l1, int16_t l2, int16_t w, uint8_t r, uint8_t g, uint8_t b)
+void IpsDisplay::drawOneScaleLine( float a, int16_t l1, int16_t l2, int16_t w, uint8_t r, uint8_t g, uint8_t b)
 {
 	if( _menu ) return;
 
@@ -904,21 +914,21 @@ void IpsDisplay::drawOneScaleLine( float a, int16_t x0, int16_t y0, int16_t l1, 
 	float co=cos(a);
 	int16_t w0 = w/2;
 	w = w - w0; // total width := w + w0
-	ucg_int_t xn_0 = x0-l1*co+w0*si;
-	ucg_int_t yn_0 = y0-l1*si-w0*co;
-	ucg_int_t xn_1 = x0-l1*co-w*si;
-	ucg_int_t yn_1 = y0-l1*si+w*co;
-	ucg_int_t xn_2 = x0-l2*co-w*si;
-	ucg_int_t yn_2 = y0-l2*si+w*co;
-	ucg_int_t xn_3 = x0-l2*co+w0*si;
-	ucg_int_t yn_3 = y0-l2*si-w0*co;
+	ucg_int_t xn_0 = AMIDX-l1*co+w0*si;
+	ucg_int_t yn_0 = AMIDY-l1*si-w0*co;
+	ucg_int_t xn_1 = AMIDX-l1*co-w*si;
+	ucg_int_t yn_1 = AMIDY-l1*si+w*co;
+	ucg_int_t xn_2 = AMIDX-l2*co-w*si;
+	ucg_int_t yn_2 = AMIDY-l2*si+w*co;
+	ucg_int_t xn_3 = AMIDX-l2*co+w0*si;
+	ucg_int_t yn_3 = AMIDY-l2*si-w0*co;
 	// ESP_LOGI(FNAME,"IpsDisplay::drawTetragon  x0:%d y0:%d x1:%d y1:%d x2:%d y2:%d x3:%d y3:%d", (int)xn_0, (int)yn_0, (int)xn_1 ,(int)yn_1, (int)xn_2, (int)yn_2, (int)xn_3 ,(int)yn_3 );
 	ucg->setColor( r,g,b  );
 	ucg->drawTetragon(xn_0,yn_0,xn_1,yn_1,xn_2,yn_2,xn_3,yn_3);
 }
 
 // -pi/2 < val < pi/2, center x, y, start radius, end radius, width, r,g,b
-void IpsDisplay::drawPolarIndicator( float a, int16_t x0, int16_t y0, int16_t l1, int16_t l2, int16_t w, ucg_color_t color)
+void IpsDisplay::drawPolarIndicator( float a, int16_t l1, int16_t l2, int16_t w, ucg_color_t color)
 {
 	static ucg_int_t x_0 = 0;
 	static ucg_int_t y_0 = 0;
@@ -931,12 +941,15 @@ void IpsDisplay::drawPolarIndicator( float a, int16_t x0, int16_t y0, int16_t l1
 
 	float si=sin(a);
 	float co=cos(a);
-	ucg_int_t xn_0 = x0-l1*co+w*si;
-	ucg_int_t yn_0 = y0-l1*si-w*co;
-	ucg_int_t xn_1 = x0-l1*co-w*si;
-	ucg_int_t yn_1 = y0-l1*si+w*co;
-	ucg_int_t xn_2 = x0-l2*co;
-	ucg_int_t yn_2 = y0-l2*si;
+	float psi=gaugeSin(a,l1);
+	float pco=gaugeCos(a,l1);
+
+	ucg_int_t xn_0 = pco+w*si;
+	ucg_int_t yn_0 = psi-w*co;
+	ucg_int_t xn_1 = pco-w*si;
+	ucg_int_t yn_1 = psi+w*co;
+	ucg_int_t xn_2 = gaugeCos(a, l2);
+	ucg_int_t yn_2 = gaugeSin(a, l2);
 	// ESP_LOGI(FNAME,"IpsDisplay::drawTetragon  x0:%d y0:%d x1:%d y1:%d x2:%d y2:%d x3:%d y3:%d", (int)xn_0, (int)yn_0, (int)xn_1 ,(int)yn_1, (int)xn_2, (int)yn_2, (int)xn_3 ,(int)yn_3 );
 
 	// cleanup previous incarnation
@@ -951,6 +964,49 @@ void IpsDisplay::drawPolarIndicator( float a, int16_t x0, int16_t y0, int16_t l1
 	needle_pos_old = a;
 	ucg->setColor( color.color[0], color.color[1], color.color[2] );
 	ucg->drawTriangle(xn_0,yn_0,xn_1,yn_1,xn_2,yn_2);
+}
+
+// draw incremental bow up to indicator given in rad, pos, netto
+void IpsDisplay::drawBow( float a, int16_t l1, bool netto)
+{
+	int16_t level = (int16_t)(a*sincosScale); // dice up into discrete steps
+
+	if ( _menu ) return;
+
+	if ( level == bow_level_prev ) {
+		return;
+	}
+
+	int16_t c = 0; // the color to draw
+	if ( level < 0 ) {
+		if ( netto ) {
+			c = 2;
+		} else {
+			c = 1;
+		}
+	}
+	// potentially clean first
+	if ( std::abs(level) < std::abs(bow_level_prev)
+		|| level*bow_level_prev < 0 ) {
+		ucg->setColor(COLOR_BLACK);
+	}
+	else {
+		ucg->setColor(bowcolor[c].color[0], bowcolor[c].color[1], bowcolor[c].color[2]);
+	}
+	// ESP_LOGI(FNAME,"bow lev %d", level);
+
+	int16_t inc = (level-bow_level_prev > 0) ? 1 : -1;
+	for ( int16_t i = bow_level_prev + ((bow_level_prev==0 || bow_level_prev*inc>0) ? inc : 0);
+			i != level+((i*inc < 0)?0:inc); i+=inc ) {
+		if ( i != 0 ) {
+			int16_t x = gaugeCos(i, l1);
+			int16_t y = gaugeSin(i, l1);
+			ucg->drawLine(x, y, x - precalc_cos[abs(i)&(SINCOS_OVER_110-1)] * 5, y - precalc_sin[abs(i)&(SINCOS_OVER_110-1)] * 5 * (std::signbit(i)?-1:1));
+		}
+		else ucg->setColor(bowcolor[c].color[0], bowcolor[c].color[1], bowcolor[c].color[2]);
+	}
+
+	bow_level_prev = level;
 }
 
 // +/- range, radius to AMID [pixel], opt. small area refresh at [scale*10]
@@ -1015,10 +1071,10 @@ void IpsDisplay::drawScale( int16_t max_pos, int16_t max_neg, int16_t pos, int16
 			// ESP_LOGI(FNAME, "lines a %d %d %d", a, end, draw_label);
 
 			float val = (*_gauge)((float)a/10.);
-			drawOneScaleLine( val, AMIDX, AMIDY, pos, end, width, COLOR_WHITE );
+			drawOneScaleLine( val, pos, end, width, COLOR_WHITE );
 			if ( draw_label ) { drawOneLabel(val, a/10, pos+12, offset); }
 			if ( (-a/10) >= max_neg && at < max_neg ) {
-				drawOneScaleLine( -val, AMIDX, AMIDY, pos, end, width, COLOR_WHITE );
+				drawOneScaleLine( -val, pos, end, width, COLOR_WHITE );
 				if ( draw_label ) { drawOneLabel(-val, a/10, pos+12, offset); }
 			}
 			draw_label = false;
@@ -1036,8 +1092,8 @@ void IpsDisplay::drawOneLabel( float val, int16_t labl, int16_t pos, int16_t off
 	const float to_side = 1.02;
 	int x, y;
 	pos += (M_PI_2-std::abs(val))/M_PI_2 * 10; // increase pos towards 0
-	x=AMIDX   - cos(val*to_side)*pos;
-	y=AMIDY+1 - sin(val*to_side)*pos;
+	x=gaugeCos(val*to_side, pos);
+	y=gaugeSin(val*to_side, pos) +1;
 	ucg->setColor(COLOR_LBLUE);
 	ucg->setPrintPos(x,y);
 	ucg->printf("%d", abs(labl+offset) );
@@ -1111,6 +1167,23 @@ float IpsDisplay::linGaugeIdx(const float val)
 {
 	return val * _scale_k;
 }
+// get sin/cos position from gauge index in rad
+inline int16_t IpsDisplay::gaugeSin(const float idx, const int16_t len)
+{
+	return AMIDY - precalc_sin[(int16_t)(abs(idx)*sincosScale)&(SINCOS_OVER_110-1)] * len * (std::signbit(idx)?-1:1);
+}
+inline int16_t IpsDisplay::gaugeCos(const float idx, const int16_t len)
+{
+	return AMIDX - precalc_cos[(int16_t)(abs(idx)*sincosScale)&(SINCOS_OVER_110-1)] * len;
+}
+inline int16_t IpsDisplay::gaugeSin(const int16_t idx, const int16_t len)
+{
+	return AMIDY - precalc_sin[abs(idx)&(SINCOS_OVER_110-1)] * len * (std::signbit(idx)?-1:1);
+}
+inline int16_t IpsDisplay::gaugeCos(const int16_t idx, const int16_t len)
+{
+	return AMIDX - precalc_cos[abs(idx)&(SINCOS_OVER_110-1)] * len;
+}
 void IpsDisplay::initGauge(const float max)
 {
 	if ( log_scale.get() ) {
@@ -1119,6 +1192,10 @@ void IpsDisplay::initGauge(const float max)
 	} else {
 		_scale_k = M_PI_2 / max;
 		_gauge = &linGaugeIdx;
+	}
+	for ( int i=0; i<SINCOS_OVER_110; i++ ) {
+		precalc_sin[i] = sin(i/sincosScale);
+		precalc_cos[i] = cos(i/sincosScale);
 	}
 }
 // inverse to xxGaugeIdx. Get the value for an indicator position
@@ -1339,10 +1416,10 @@ void IpsDisplay::initLoadDisplay(){
 	drawScale( max_gscale, -max_gscale, 140, 1 );
 
 	for( float a=gload_pos_limit.get()-1; a<max_gscale; a+=0.05 ) {
-		drawOneScaleLine( ((float)a/max_gscale)*M_PI_2, AMIDX, AMIDY, 120, 130, 4, COLOR_RED );
+		drawOneScaleLine( ((float)a/max_gscale)*M_PI_2, 120, 130, 4, COLOR_RED );
 	}
 	for( float a=gload_neg_limit.get()-1; a>(-max_gscale); a-=0.05 ) {
-		drawOneScaleLine( ((float)a/max_gscale)*M_PI_2, AMIDX, AMIDY, 120, 130, 4, COLOR_RED );
+		drawOneScaleLine( ((float)a/max_gscale)*M_PI_2, 120, 130, 4, COLOR_RED );
 	}
 
 	ESP_LOGI(FNAME,"initLoadDisplay end");
@@ -1364,7 +1441,7 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 	// draw G pointer
 	float a = (loadFactor-1)/max_gscale * (M_PI_2);
 	if( int(a*100) != int(needle_pos_old*100) ) {
-		drawPolarIndicator( a, AMIDX, AMIDY, 60, 120, 3, needlecolor[0] );
+		drawPolarIndicator( a, 60, 120, 3, needlecolor[0] );
 		// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 	}
 	// G load digital
@@ -1527,22 +1604,20 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		}
 		netto=true;
 	}
-	if( !(tick%20) ){
-		if( netto != netto_old ) {
-			if( netto )
-				ucg->setColor( COLOR_HEADER );
-			else
-				ucg->setColor( COLOR_BLACK );
-			char s[10];
-			if( netto_mode.get() == NETTO_NORMAL )
-				sprintf(s, "net");
-			else
-				sprintf(s, "s-net");
-			ucg->setFont(ucg_font_fub11_hr);
-			ucg->setPrintPos(120-ucg->getStrWidth(s), DISPLAY_H/2-30);
-			ucg->print(s);
-			netto_old = netto;
-		}
+	if( netto != netto_old ) {
+		if( netto )
+			ucg->setColor( COLOR_HEADER );
+		else
+			ucg->setColor( COLOR_BLACK );
+		char s[10];
+		if( netto_mode.get() == NETTO_NORMAL )
+			sprintf(s, "net");
+		else
+			sprintf(s, "s-net");
+		ucg->setFont(ucg_font_fub11_hr);
+		ucg->setPrintPos(120-ucg->getStrWidth(s), DISPLAY_H/2-30);
+		ucg->print(s);
+		netto_old = netto;
 	}
 
 	// Unit adaption for mph and knots
@@ -1562,55 +1637,6 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	if( _menu ){
 		xSemaphoreGive(spiMutex);
 		return;
-	}
-	// draw green vario bar
-	if( !(tick%5) ){
-		if( (int)(te*10) != (int)(te_prev*10) ) {
-			float step= (M_PI_2/150) * _range;
-			if( te > te_prev && te > 0 ){  // draw green what's missing
-				for( float a=te_prev; a<te && a<_range; a+=step ) {
-					if( a >= step*2 ) // don't overwrite the '0'
-						drawOneScaleLine( (*_gauge)(a), AMIDX, AMIDY, 135, 140, 4, COLOR_GREEN );
-				}
-			}
-			else{   // delete what's too much
-				ESP_LOGD(FNAME,"delete te:%0.2f prev:%0.2f", te, te_prev );
-				for( float a=te_prev+step; a>=te && a >= step; a-=step ) {
-					ESP_LOGD(FNAME,"delete %0.2f", a );
-					drawOneScaleLine( (*_gauge)(a), AMIDX, AMIDY, 134, 141, 4, COLOR_BLACK );
-				}
-			}
-			te_prev = te+step;
-		}
-	}
-	// Polar Sink or Netto Sink
-	if( !(tick%5) ){
-		if( netto || ps_display.get() ){
-			float val = polar_sink;
-			if( netto )
-				val = te;
-			if( (int)(val*10) != (int)(polar_sink_prev*10) ) {  // tbd: rename polar_sink_prev
-				float step= (M_PI_2/150) * _range;
-				if( val < polar_sink_prev && val < 0 ){  // draw what's missing
-					for( float a=polar_sink_prev; a>val && a>-_range; a-=step ) {
-						ESP_LOGD(FNAME,"blue a=%f",a);
-						if( a <= -step*2 ){ // don't overwrite the '0'
-							if( netto )
-								drawOneScaleLine( (*_gauge)(a), AMIDX, AMIDY, 135, 140, 4, COLOR_RED );
-							else
-								drawOneScaleLine( (*_gauge)(a), AMIDX, AMIDY, 135, 140, 4, COLOR_BLUE );
-						}
-					}
-				}
-				else{   // delete what's too much
-					for( float a=polar_sink_prev-step; a<=val && a <= -step; a+=step ) {
-						ESP_LOGD(FNAME,"black a=%f",a);
-						drawOneScaleLine( (*_gauge)(a), AMIDX, AMIDY, 134, 141, 4, COLOR_BLACK );
-					}
-				}
-				polar_sink_prev = val + step;
-			}
-		}
 	}
 
 	// average Climb
@@ -1668,9 +1694,23 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// get TE pointer position in rad
 	float needle_pos = (*_gauge)(te);
 	// draw TE pointer
-	if( int(needle_pos*100) != int(needle_pos_old*100) ) {
-		drawPolarIndicator( needle_pos, AMIDX, AMIDY, 80, 132, 9, needlecolor[needle_color.get()] );
+	if( int(needle_pos*1000.) != int(needle_pos_old*1000.) ) {
+		drawPolarIndicator( needle_pos, 80, 132, 9, needlecolor[needle_color.get()] );
 		// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
+
+		float val = needle_pos;
+		if ( val > 0. ) {
+			// draw green vario bar
+			drawBow(val, 134, false);
+		}
+		else {
+			if( ! netto && ps_display.get() ) {
+				val = (*_gauge)(polar_sink);
+			}
+			if ( netto || ps_display.get() ) {
+				drawBow(val, 134, netto);
+			}
+		}
 	}
 
 	// Battery

@@ -34,6 +34,7 @@
 #include "esp_wifi.h"
 #include "Flarm.h"
 #include "WifiClient.h"
+#include "Blackboard.h"
 
 static char rentry[25];
 SetupMenuSelect * audio_range_sm = 0;
@@ -514,7 +515,7 @@ void SetupMenu::setup( )
 	SetupMenu * root = new SetupMenu( "Setup" );
 	MenuEntry* mm = root->addEntry( root );
 
-	SetupMenuValFloat * mc = new SetupMenuValFloat( "MC", 0, vunit.c_str(),	0.0, 9.9, 0.1, mc_adj, true, &MC );
+	SetupMenuValFloat * mc = new SetupMenuValFloat( "MC", nullptr, vunit.c_str(),	0.0, 9.9, 0.1, mc_adj, true, &MC );
 	mc->setHelp(PROGMEM"Default Mac Cready value for optimum cruise speed, or average climb rate to be provided in same units as variometer setting");
 	mc->setPrecision(1);
 	mm->addEntry( mc );

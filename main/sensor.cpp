@@ -36,6 +36,7 @@
 #include "Version.h"
 #include "Polars.h"
 #include "Flarm.h"
+#include "Blackboard.h"
 
 #include <SPI.h>
 #include <Ucglib.h>

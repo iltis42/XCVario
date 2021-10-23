@@ -70,6 +70,7 @@ private:
 	static int s2falt;
 	static int s2fdalt;
     static int s2f_level_prev;
+    static int16_t bow_level_prev;
 	static int alt_prev;
 	static float pref_qnh;
 	static int chargealt;
@@ -116,8 +117,9 @@ private:
 	static void drawBat( float volt, int x, int y, bool blank );
 	static void drawTemperature( int x, int y, float t );
 	static void drawThermometer( int x, int y );
-	static void drawOneScaleLine(float a, int16_t x0, int16_t y0, int16_t l1, int16_t l2, int16_t w, uint8_t r, uint8_t g, uint8_t b);
-	static void drawPolarIndicator(float a, int16_t x0, int16_t y0, int16_t l1, int16_t l2, int16_t w, ucg_color_t color);
+	static void drawOneScaleLine(float a, int16_t l1, int16_t l2, int16_t w, uint8_t r, uint8_t g, uint8_t b);
+	static void drawPolarIndicator(float a, int16_t l1, int16_t l2, int16_t w, ucg_color_t color);
+    static void drawBow( float a, int16_t l1, bool netto);
 	static void initRetroDisplay( bool ulmode );
 	static void initLoadDisplay();
 	static void drawRetroDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor, bool ulmode );
@@ -137,6 +139,10 @@ private:
 	static float logGaugeIdx(const float val);
 	static float linGaugeIdx(const float val);
 	static void  initGauge(const float max);
+    static int16_t gaugeSin(const float idx, const int16_t len);
+    static int16_t gaugeCos(const float idx, const int16_t len);
+    static int16_t gaugeSin(const int16_t idx, const int16_t len);
+    static int16_t gaugeCos(const int16_t idx, const int16_t len);
 	static float gaugePosFromIdx(const float val);
 };
 

@@ -575,7 +575,7 @@ void IpsDisplay::drawCircling( int x, int y, bool draw ){
 	if( _menu )
 		return;
 	if( draw )
-		ucg->setColor( COLOR_HEADER );
+		ucg->setColor( COLOR_WHITE );
 	else
 		ucg->setColor( COLOR_BLACK );
 	ucg->drawCircle( x, y, S2FSS,   UCG_DRAW_ALL );
@@ -588,7 +588,7 @@ void IpsDisplay::drawCruise( int x, int y, bool draw ){
 	if( _menu )
 		return;
 	if( draw )
-		ucg->setColor( COLOR_HEADER );
+		ucg->setColor( COLOR_WHITE );
 	else
 		ucg->setColor( COLOR_BLACK );
 	ucg->drawTetragon(x-S2FSS,y-5, x-S2FSS,y-1, x+S2FSS,y+5, x+S2FSS,y+1 );
@@ -1276,6 +1276,7 @@ void IpsDisplay::drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool di
 		int16_t qnh_x = x+5+ucg->getStrWidth(s);
 		sprintf(s, "%d", Units::QnhRounded(QNH.get()));
 		ucg->setPrintPos(qnh_x - ucg->getStrWidth(s), y-17);
+		ucg->setColor( COLOR_WHITE );
 		ucg->print(s);
 	}
 }

@@ -900,7 +900,7 @@ void IpsDisplay::drawTemperature( int x, int y, float t ) {
 }
 
 // val, center x, y, start radius, end radius, width, r,g,b
-void IpsDisplay::drawOneScaleLine( float a, int16_t x0, int16_t y0, int16_t l1, int16_t l2, int16_t w, uint8_t r, uint8_t g, uint8_t b)
+void IpsDisplay::drawOneScaleLine( float a, int16_t l1, int16_t l2, int16_t w, uint8_t r, uint8_t g, uint8_t b)
 {
 	if( _menu ) return;
 
@@ -908,14 +908,14 @@ void IpsDisplay::drawOneScaleLine( float a, int16_t x0, int16_t y0, int16_t l1, 
 	float co=cos(a);
 	int16_t w0 = w/2;
 	w = w - w0; // total width := w + w0
-	ucg_int_t xn_0 = x0-l1*co+w0*si;
-	ucg_int_t yn_0 = y0-l1*si-w0*co;
-	ucg_int_t xn_1 = x0-l1*co-w*si;
-	ucg_int_t yn_1 = y0-l1*si+w*co;
-	ucg_int_t xn_2 = x0-l2*co-w*si;
-	ucg_int_t yn_2 = y0-l2*si+w*co;
-	ucg_int_t xn_3 = x0-l2*co+w0*si;
-	ucg_int_t yn_3 = y0-l2*si-w0*co;
+	ucg_int_t xn_0 = AMIDX-l1*co+w0*si;
+	ucg_int_t yn_0 = AMIDY-l1*si-w0*co;
+	ucg_int_t xn_1 = AMIDX-l1*co-w*si;
+	ucg_int_t yn_1 = AMIDY-l1*si+w*co;
+	ucg_int_t xn_2 = AMIDX-l2*co-w*si;
+	ucg_int_t yn_2 = AMIDY-l2*si+w*co;
+	ucg_int_t xn_3 = AMIDX-l2*co+w0*si;
+	ucg_int_t yn_3 = AMIDY-l2*si-w0*co;
 	// ESP_LOGI(FNAME,"IpsDisplay::drawTetragon  x0:%d y0:%d x1:%d y1:%d x2:%d y2:%d x3:%d y3:%d", (int)xn_0, (int)yn_0, (int)xn_1 ,(int)yn_1, (int)xn_2, (int)yn_2, (int)xn_3 ,(int)yn_3 );
 	ucg->setColor( r,g,b  );
 	ucg->drawTetragon(xn_0,yn_0,xn_1,yn_1,xn_2,yn_2,xn_3,yn_3);
@@ -1022,10 +1022,10 @@ void IpsDisplay::drawScale( int16_t max_pos, int16_t max_neg, int16_t pos, int16
 			// ESP_LOGI(FNAME, "lines a %d %d %d", a, end, draw_label);
 
 			float val = (*_gauge)((float)a/10.);
-			drawOneScaleLine( val, AMIDX, AMIDY, pos, end, width, COLOR_WHITE );
+			drawOneScaleLine( val, pos, end, width, COLOR_WHITE );
 			if ( draw_label ) { drawOneLabel(val, a/10, pos+12, offset); }
 			if ( (-a/10) >= max_neg && at < max_neg ) {
-				drawOneScaleLine( -val, AMIDX, AMIDY, pos, end, width, COLOR_WHITE );
+				drawOneScaleLine( -val, pos, end, width, COLOR_WHITE );
 				if ( draw_label ) { drawOneLabel(-val, a/10, pos+12, offset); }
 			}
 			draw_label = false;
@@ -1360,10 +1360,10 @@ void IpsDisplay::initLoadDisplay(){
 	drawScale( max_gscale, -max_gscale, 140, 1 );
 
 	for( float a=gload_pos_limit.get()-1; a<max_gscale; a+=0.05 ) {
-		drawOneScaleLine( ((float)a/max_gscale)*M_PI_2, AMIDX, AMIDY, 120, 130, 4, COLOR_RED );
+		drawOneScaleLine( ((float)a/max_gscale)*M_PI_2, 120, 130, 4, COLOR_RED );
 	}
 	for( float a=gload_neg_limit.get()-1; a>(-max_gscale); a-=0.05 ) {
-		drawOneScaleLine( ((float)a/max_gscale)*M_PI_2, AMIDX, AMIDY, 120, 130, 4, COLOR_RED );
+		drawOneScaleLine( ((float)a/max_gscale)*M_PI_2, 120, 130, 4, COLOR_RED );
 	}
 
 	ESP_LOGI(FNAME,"initLoadDisplay end");
@@ -1591,14 +1591,14 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			if( te > te_prev && te > 0 ){  // draw green what's missing
 				for( float a=te_prev; a<te && a<_range; a+=step ) {
 					if( a >= step*2 ) // don't overwrite the '0'
-						drawOneScaleLine( (*_gauge)(a), AMIDX, AMIDY, 135, 140, 4, COLOR_GREEN );
+						drawOneScaleLine( (*_gauge)(a), 135, 140, 4, COLOR_GREEN );
 				}
 			}
 			else{   // delete what's too much
 				ESP_LOGD(FNAME,"delete te:%0.2f prev:%0.2f", te, te_prev );
 				for( float a=te_prev+step; a>=te && a >= step; a-=step ) {
 					ESP_LOGD(FNAME,"delete %0.2f", a );
-					drawOneScaleLine( (*_gauge)(a), AMIDX, AMIDY, 134, 141, 4, COLOR_BLACK );
+					drawOneScaleLine( (*_gauge)(a), 134, 141, 4, COLOR_BLACK );
 				}
 			}
 			te_prev = te+step;
@@ -1617,16 +1617,16 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 						ESP_LOGD(FNAME,"blue a=%f",a);
 						if( a <= -step*2 ){ // don't overwrite the '0'
 							if( netto )
-								drawOneScaleLine( (*_gauge)(a), AMIDX, AMIDY, 135, 140, 4, COLOR_RED );
+								drawOneScaleLine( (*_gauge)(a), 135, 140, 4, COLOR_RED );
 							else
-								drawOneScaleLine( (*_gauge)(a), AMIDX, AMIDY, 135, 140, 4, COLOR_BLUE );
+								drawOneScaleLine( (*_gauge)(a), 135, 140, 4, COLOR_BLUE );
 						}
 					}
 				}
 				else{   // delete what's too much
 					for( float a=polar_sink_prev-step; a<=val && a <= -step; a+=step ) {
 						ESP_LOGD(FNAME,"black a=%f",a);
-						drawOneScaleLine( (*_gauge)(a), AMIDX, AMIDY, 134, 141, 4, COLOR_BLACK );
+						drawOneScaleLine( (*_gauge)(a), 134, 141, 4, COLOR_BLACK );
 					}
 				}
 				polar_sink_prev = val + step;

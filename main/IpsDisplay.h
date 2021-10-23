@@ -116,7 +116,7 @@ private:
 	static void drawBat( float volt, int x, int y, bool blank );
 	static void drawTemperature( int x, int y, float t );
 	static void drawThermometer( int x, int y );
-	static void drawOneScaleLine(float a, int16_t x0, int16_t y0, int16_t l1, int16_t l2, int16_t w, uint8_t r, uint8_t g, uint8_t b);
+	static void drawOneScaleLine(float a, int16_t l1, int16_t l2, int16_t w, uint8_t r, uint8_t g, uint8_t b);
 	static void drawPolarIndicator(float a, int16_t l1, int16_t l2, int16_t w, ucg_color_t color);
 	static void initRetroDisplay( bool ulmode );
 	static void initLoadDisplay();

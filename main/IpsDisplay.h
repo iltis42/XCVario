@@ -42,7 +42,6 @@ public:
 	static void drawArrowBox( int x, int y, bool are=true );
 	static void redrawValues();
 	static void drawCompass(int16_t x, int16_t y);
-	static void drawULCompass();
 	static void drawWindArrow( float dir, float speed, int type );
 	static inline Ucglib_ILI9341_18x240x320_HWSPI *getDisplay() { return ucg; };
 
@@ -119,11 +118,9 @@ private:
 	static void drawThermometer( int x, int y );
 	static void drawOneScaleLine(float a, int16_t x0, int16_t y0, int16_t l1, int16_t l2, int16_t w, uint8_t r, uint8_t g, uint8_t b);
 	static void drawPolarIndicator(float a, int16_t x0, int16_t y0, int16_t l1, int16_t l2, int16_t w, ucg_color_t color);
-	static void initRetroDisplay();
-	static void initULDisplay();
+	static void initRetroDisplay( bool ulmode );
 	static void initLoadDisplay();
-	static void drawRetroDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor );
-	static void drawULDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor );
+	static void drawRetroDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor, bool ulmode );
 	static void drawAirlinerDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor );
 	static void drawScale( int16_t max_pos, int16_t max_neg, int16_t pos, int16_t offset, int16_t at=-1000 );
 	static void drawOneLabel( float val, int16_t labl, int16_t pos, int16_t offset );

@@ -16,19 +16,19 @@ Author: Axel Pauli, February 2021
 Last update: 2021-02-25
 
  ****************************************************************************/
-#include "esp_log.h"
-#include "esp_system.h"
-
 #include "IpsDisplay.h"
 #include "SetupMenuDisplay.h"
 #include "sensor.h"
 
-SetupMenuDisplay::SetupMenuDisplay( String title,
+#include <esp_log.h>
+#include <esp_system.h>
+
+SetupMenuDisplay::SetupMenuDisplay( std::string title,
                                     int (*action)(SetupMenuDisplay *p) ) :
   MenuEntry()
 {
 	_rotary->attach( this );
-	_title = title;
+	_title = std::move(title);
 	_action = action;
 }
 SetupMenuDisplay::~SetupMenuDisplay()

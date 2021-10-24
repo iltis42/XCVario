@@ -111,7 +111,7 @@ void MenuEntry::delEntry( MenuEntry * item ) {
 	}
 }
 
-MenuEntry* MenuEntry::findMenu( String title, MenuEntry* start )
+MenuEntry* MenuEntry::findMenu( std::string title, MenuEntry* start )
 {
 	ESP_LOGI(FNAME,"MenuEntry findMenu() %s %x", title.c_str(), (uint32_t)start );
 	if( start->_title == title ) {

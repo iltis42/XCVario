@@ -7,17 +7,11 @@
 
 #include "SetupMenu.h"
 #include "IpsDisplay.h"
-#include <inttypes.h>
-#include <iterator>
-#include <algorithm>
 #include "ESPAudio.h"
 #include "BMPVario.h"
 #include "S2F.h"
 #include "Version.h"
 #include "Polars.h"
-#include <logdef.h>
-#include <sensor.h>
-#include <cstring>
 #include "Cipher.h"
 #include "Units.h"
 #include "Switch.h"
@@ -36,14 +30,22 @@
 #include "WifiClient.h"
 #include "Blackboard.h"
 
+#include <inttypes.h>
+#include <iterator>
+#include <algorithm>
+#include <logdef.h>
+#include <sensor.h>
+#include <cstring>
+#include <string>
+
 static char rentry[25];
 SetupMenuSelect * audio_range_sm = 0;
 SetupMenuSelect * mpu = 0;
 
 // Menu for flap setup
 
-String vunit;
-String sunit;
+std::string vunit;
+std::string sunit;
 
 
 // Compass menu handler
@@ -301,7 +303,7 @@ SetupMenu::SetupMenu() : MenuEntry() {
 	long_pressed = false;
 }
 
-SetupMenu::SetupMenu( String title ) : MenuEntry() {
+SetupMenu::SetupMenu( std::string title ) : MenuEntry() {
 	// ESP_LOGI(FNAME,"SetupMenu::SetupMenu( %s ) ", title.c_str() );
 	_rotary->attach(this);
 	_title = title;
@@ -395,7 +397,6 @@ void SetupMenu::down(int count){
 void SetupMenu::up(int count){
 	if( selected == this && !inSetup ) {
 		// ESP_LOGI(FNAME,"root: up");
-		float mc = MC.get();
 		if(rot_default.get() == 1) {	 // MC Value
 			int mc = (int)(MC.get()*10);
 			mc += count;
@@ -842,7 +843,7 @@ void SetupMenu::setup( )
 		// Units
 		SetupMenu * un = new SetupMenu( "Units" );
 		opt->addEntry( un );
-		un->setHelp( PROGMEM "Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units");
+		un->setHelp( PROGMEM "Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units", 200);
 		SetupMenuSelect * alu = new SetupMenuSelect( "Altimeter", false,  0, true, &alt_unit );
 		alu->addEntry( "Meter (m)");
 		alu->addEntry( "Foot  (ft)");
@@ -1538,7 +1539,6 @@ void SetupMenu::setup( )
 		canrt->setHelp( PROGMEM "Select data source that is routed from/to CAN interface");
 		canrt->addEntry( "Disable");
 		canrt->addEntry( "XCVario");
-
 
 		SetupMenuSelect * devmod = new SetupMenuSelect( PROGMEM "Mode", true , 0, false, &can_mode );
 		can->addEntry( devmod );

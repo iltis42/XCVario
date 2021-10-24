@@ -1,10 +1,10 @@
 #pragma once
 
+#include "AnalogInput.h"
 
 class Ucglib_ILI9341_18x240x320_HWSPI;
 class SetupMenu;
 class SetupMenuSelect;
-class AnalogInput;
 class SetupMenuValFloat;
 
 static int select_flap_sens_pin(SetupMenuSelect *p);
@@ -32,11 +32,13 @@ public:
 	// recommendations
 	float getOptimum( float wks, int& wki );
 	inline bool haveSensor() { return sensorAdc != nullptr; }
-	void drawSmallBar( int ypos, int xpos, float wkf );
-	void drawBigBar( int ypos, int xpos, float wkf, float wksens );
-	void drawLever( int xpos, int ypos, int oldypos, bool warn );
-	void drawWingSymbol( int ypos, int xpos, int wk, float wksens);
-	void redraw() { sensorOldY = -1000; surroundingBox=false; };
+    void setBarPosition(int16_t x, int16_t y);
+    void setSymbolPosition(int16_t x, int16_t y);
+	void drawSmallBar( float wkf );
+	void drawBigBar( float wkf, float wksens );
+	void drawLever( int16_t xpos, int16_t ypos, int16_t oldypos, bool warn );
+	void drawWingSymbol(int16_t wk, float wksens);
+	void redraw() { sensorOldY = -1000; dirty=true; };
 	// void redrawLever() { sensorOldY = -1000; };
 	static void setupMenue( SetupMenu *parent );
     static inline Flap* FLAP() { return _instance; }
@@ -69,17 +71,21 @@ private:
 	AnalogInput *sensorAdc = nullptr;
 	float lever = -1.;
 	int   senspos[MAX_NR_POS];
-	int   leverold = -2.;
+	int16_t leverold = -2.;
 	int   flapSpeeds[MAX_NR_POS];
-    char *flapLabels[MAX_NR_POS];
-	bool  surroundingBox = false;
-	int   optPosOldY = 0;
-	int   sensorOldY = 0;
+	char *flapLabels[MAX_NR_POS];
+	bool  dirty = true;
+	int16_t optPosOldY = 0;
+	int16_t sensorOldY = 0;
 	int   rawFiltered = 0;
 	int   tick = 0;
 	int   tickopt = 0;
 	bool  warn_color = false;
 	float g_force = 1.;
+	int16_t barpos_x = 0;
+	int16_t barpos_y = 0;
+	int16_t symbolpos_x = 0;
+	int16_t symbolpos_y = 0;
 };
 
 #define FLAP Flap::FLAP()

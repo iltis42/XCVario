@@ -138,12 +138,12 @@ private:
 	static void drawAvgVario( int16_t x, int16_t y, float ate );
 	static float logGaugeIdx(const float val);
 	static float linGaugeIdx(const float val);
-	static void  initGauge(const float max);
+	static void  initGauge(const float max, const bool log);
     static int16_t gaugeSin(const float idx, const int16_t len);
     static int16_t gaugeCos(const float idx, const int16_t len);
     static int16_t gaugeSin(const int16_t idx, const int16_t len);
     static int16_t gaugeCos(const int16_t idx, const int16_t len);
-	static float gaugePosFromIdx(const float val);
+	static float gaugeValueFromIdx(const float val);
 };
 
 

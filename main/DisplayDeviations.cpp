@@ -19,13 +19,13 @@ Last update: 2021-02-25
 
 #include "DisplayDeviations.h"
 #include "SetupNG.h"
+#include "sensor.h"
 
 #include <Ucglib.h>
 #include <esp_log.h>
-#include "sensor.h" 
 
 
-DisplayDeviations::DisplayDeviations( String title) :
+DisplayDeviations::DisplayDeviations( std::string title) :
   SetupMenuDisplay( title, nullptr )
 {
 	ESP_LOGI(FNAME, "DisplayDeviations(): title='%s'", title.c_str() );

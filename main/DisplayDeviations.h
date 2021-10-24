@@ -25,10 +25,9 @@ class DisplayDeviations: public SetupMenuDisplay
 {
   public:
 
-  DisplayDeviations( String title );
+  DisplayDeviations( std::string title );
 
   virtual ~DisplayDeviations() {}
 
 	virtual void display( int mode=0 );
 };
-

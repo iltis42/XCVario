@@ -17,8 +17,6 @@ Last update: 2021-04-18
 
  ****************************************************************************/
 
-#include "logdef.h"
-#include "esp_log.h"
 #include "StraightWind.h"
 #include "ShowStraightWind.h"
 #include "SetupNG.h"
@@ -26,7 +24,10 @@ Last update: 2021-04-18
 #include "sensor.h"
 #include "Compass.h"
 
-ShowStraightWind::ShowStraightWind( String title ) :
+#include <esp_log.h>
+
+
+ShowStraightWind::ShowStraightWind( std::string title ) :
 SetupMenuDisplay( title, nullptr )
 {
 	ESP_LOGI(FNAME, "ShowStraightWind(): title='%s'", title.c_str() );

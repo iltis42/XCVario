@@ -25,7 +25,7 @@ class ShowCompassSettings: public SetupMenuDisplay
 {
   public:
 
-  ShowCompassSettings( String title );
+  ShowCompassSettings( std::string title );
 
   virtual ~ShowCompassSettings() {}
 

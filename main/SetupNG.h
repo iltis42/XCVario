@@ -7,28 +7,27 @@
 
 #pragma once
 
-#include "esp_partition.h"
-#include "esp_err.h"
-#include "nvs_flash.h"
-#include "nvs.h"
-
-#include <freertos/FreeRTOS.h>
-#include <freertos/queue.h>
-#include <string>
-#include <stdio.h>
-#include "esp_system.h"
-#include "stdio.h"
-#include <esp_log.h>
-#include <string>
-#include "string.h"
 #include "BTSender.h"
 #include "Polars.h"
+#include "MPU.hpp" // change from .h to .hpp for Windows toolchain compatibility
+
+#include <esp_partition.h>
+#include <esp_err.h>
+#include <nvs_flash.h>
+#include <nvs.h>
+
+#include <freertos/FreeRTOS.h>
+#include <esp_timer.h>
+#include <freertos/queue.h>
+#include <esp_system.h>
+#include <esp_log.h>
+
+#include <string>
+#include <stdio.h>
+#include <cstdio>
+#include <cstring>
 #include <iostream>
 #include <vector>
-#include "logdef.h"
-#include "MPU.hpp" // change from .h to .hpp for Windows toolchain compatibility
-#include <WString.h>
-#include <esp_timer.h>
 
 
 
@@ -193,10 +192,8 @@ public:
 	}
 
 	bool set( T aval, bool dosync=true ) {
-		String val( aval );
-		// ESP_LOGI( FNAME,"set val: %s %d", val.c_str(), dosync );
 		if( _value == aval ){
-			// ESP_LOGI(FNAME,"Value already in config: %s", val.c_str() );
+			// ESP_LOGI(FNAME,"Value already in config: %s", _key );
 			return( true );
 		}
 		_value = aval;
@@ -327,10 +324,7 @@ public:
 					commit(false);
 				}
 				else {
-					String val( _value );
-					ESP_LOGI(FNAME,"NVS key %s exists len: %d value: %s", _key, required_size, val.c_str() );
-					// std::cout << _value << "\n";
-
+					ESP_LOGI(FNAME,"NVS key %s exists len: %d", _key, required_size );
 				}
 			}
 		}

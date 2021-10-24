@@ -16,8 +16,8 @@
 
 char SetupMenuSelect::_val_str[20];
 
-bool SetupMenuSelect::existsEntry( String ent ){
-	for( std::vector<String>::iterator iter = _values.begin(); iter != _values.end(); ++iter )
+bool SetupMenuSelect::existsEntry( std::string ent ){
+	for( std::vector<std::string>::iterator iter = _values.begin(); iter != _values.end(); ++iter )
 		if( *iter == ent )
 			return true;
 	return false;
@@ -26,13 +26,13 @@ bool SetupMenuSelect::existsEntry( String ent ){
 void SetupMenuSelect::addEntry( char ent[][4] )
 {
     while ( *ent[0] != '\0' ) {
-        _values.push_back( String(*ent) ); _numval++;
+        _values.push_back( std::string(*ent) ); _numval++;
         ent += sizeof(char[4]);
     }
 }
 
-void SetupMenuSelect::delEntry( String ent ) {
-	for( std::vector<String>::iterator iter = _values.begin(); iter != _values.end(); ++iter )
+void SetupMenuSelect::delEntry( std::string ent ) {
+	for( std::vector<std::string>::iterator iter = _values.begin(); iter != _values.end(); ++iter )
 		if( *iter == ent )
 		{
 			_values.erase( iter );
@@ -43,7 +43,7 @@ void SetupMenuSelect::delEntry( String ent ) {
 		}
 }
 
-SetupMenuSelect::SetupMenuSelect( String title, bool restart, int (*action)(SetupMenuSelect *p), bool save, SetupNG<int> *anvs ) {
+SetupMenuSelect::SetupMenuSelect( std::string title, bool restart, int (*action)(SetupMenuSelect *p), bool save, SetupNG<int> *anvs ) {
 	ESP_LOGI(FNAME,"SetupMenuSelect( %s ) ", title.c_str() );
 	_rotary->attach(this);
 	_title = title;

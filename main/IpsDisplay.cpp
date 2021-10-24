@@ -1307,7 +1307,7 @@ void IpsDisplay::drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool di
 	char s[20];
 	ucg->setFont(ucg_font_fub25_hr);
 	ucg->setColor( COLOR_WHITE );
-	sprintf(s,"  %02d", alt);
+	sprintf(s,"  %03d", alt); // need the string with at least three digits !!
 	if ( alt_unit.get() == ALT_UNIT_FL ) {
 		ucg->setPrintPos(x-ucg->getStrWidth(s),y);
 		ucg->print(s);
@@ -1324,24 +1324,25 @@ void IpsDisplay::drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool di
 			quant = 20;
 		}
 		alt = ((alt+quant/2)/quant)*quant;
-		int16_t fraction = (altitude+quant/2 - alt) * 100/quant;
+		int16_t fraction = (altitude+quant/2 - alt) * 100/quant; // %  0..100
 
 		int16_t lastdigit = (alt%100)/10;
-		// ESP_LOGI(FNAME,"Alti %f: %d - %d>%d %d", altitude, fraction, alt, lastdigit);
+		s[len-2] = '\0'; len-=2; // chop 2 digits
+		int16_t nr_rolling = 2;
 
 		static int16_t fraction_prev = -1;
 		if (dirty || fraction != fraction_prev)
 		{
 			// move last digit
 			int16_t m = (fraction * char_height/ 100) - char_height/2; // to pixel offest
-			int16_t q = quant/10;
+			int16_t q = quant/10; // here either 1 (for m) or 2 (for ft)
 			int16_t xp = x - 2*char_width;
 			char tmp[3] = {'0', '0', 0};
 			ucg->setClipRange(xp, y - char_height * 1.25, char_width*2, char_height * 1.4);
 			ucg->setPrintPos(xp, y - m - char_height);
 			tmp[0] = (lastdigit+10-q)%10 + '0';
 			ucg->print(tmp); // one above
-			ucg->setPrintPos(xp, y - m); // this one last to avoid clipped tops
+			ucg->setPrintPos(xp, y - m);
 			tmp[0] = lastdigit%10 + '0';
 			ucg->print(tmp);
 			ucg->setPrintPos(xp, y - m + char_height);
@@ -1350,9 +1351,23 @@ void IpsDisplay::drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool di
 			ucg->undoClipRange();
 
 			fraction_prev = fraction;
+
+			if ( m < 0 && lastdigit < q ) { // hdigit in disharmonie with digit of altitude to display
+				int16_t hdigit = (alt%1000)/100;
+				// ESP_LOGI(FNAME,"Alti %f: %d - %dm%d %d.%d", altitude, fraction, alt, m, hdigit, lastdigit);
+				nr_rolling++;
+				xp -= char_width; // one to the left
+				// ucg->drawFrame(xp, y - char_height, char_width, char_height);
+				ucg->setClipRange(xp, y - char_height, char_width, char_height);
+				ucg->setPrintPos(xp, y - m);
+				ucg->print(hdigit);
+				ucg->setPrintPos(xp, y - m - char_height); // one above
+				ucg->print((hdigit+10-q)%10);
+				ucg->undoClipRange();
+				s[len-1] = '\0'; len--; // chop another digits
+			}
 		}
-		s[len-2] = '\0'; // chop 2 digits
-		ucg->setPrintPos(x - ucg->getStrWidth(s) - 2*char_width , y);
+		ucg->setPrintPos(x - ucg->getStrWidth(s) - nr_rolling*char_width , y);
 		static int altpart_prev = 0;
 		alt/=100;
 		if (dirty || altpart_prev != alt) {
@@ -1619,6 +1634,8 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// static int scy=0;
 	// scy+=10;
 	// ucg->scrollLines( scy%320 );
+	static bool alt_dirty = false;
+	static bool speed_dirty = false;
 	bool netto=false;
 	if( vario_mode.get() == VARIO_NETTO || (s2fmode && ( vario_mode.get() == CRUISE_NETTO )) ){
 		if( netto_mode.get() == NETTO_NORMAL ){
@@ -1701,14 +1718,13 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// Altitude & Airspeed
 	if( !(tick%8) ) {
 		static int alternate = 0;
-		if ( alternate & 1 ) {
+		if ( alternate&1 ) {
 			// static float s=0; // test the rolling numbers
-			// altitude = 9990. + sin(s) * 33.;
+			// altitude = 800. + sin(s) * 123.;
 			// s+=0.04;
-			drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, needle_pos_old < -M_PI_2*60./90. );
-		}
-		else {
-			drawSpeed(airspeed_kmh, INNER_RIGHT_ALIGN, 75, needle_pos_old > M_PI_2*75./90.);
+			drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, alt_dirty ); alt_dirty = false;
+		} else {
+			drawSpeed(airspeed_kmh, INNER_RIGHT_ALIGN, 75, speed_dirty ); speed_dirty = false;
 		}
 		alternate++;
 	}
@@ -1725,6 +1741,11 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		drawPolarIndicator( needle_pos, 80, 132, 9, needlecolor[needle_color.get()] );
 		// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 
+		// Check overlap on inner values
+		if ( needle_pos < -M_PI_2*60./90. ) alt_dirty = true;
+		if ( needle_pos > M_PI_2*75./90. ) speed_dirty = true;
+
+		// Draw colored bow
 		float val = needle_pos;
 		if ( val > 0. ) {
 			// draw green vario bar
@@ -1738,6 +1759,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 				drawBow(val, 134, netto);
 			}
 		}
+		needle_pos_old = needle_pos;
 	}
 
 	// Battery

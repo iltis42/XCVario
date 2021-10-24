@@ -843,7 +843,7 @@ void SetupMenu::setup( )
 		// Units
 		SetupMenu * un = new SetupMenu( "Units" );
 		opt->addEntry( un );
-		un->setHelp( PROGMEM "Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units");
+		un->setHelp( PROGMEM "Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units", 200);
 		SetupMenuSelect * alu = new SetupMenuSelect( "Altimeter", false,  0, true, &alt_unit );
 		alu->addEntry( "Meter (m)");
 		alu->addEntry( "Foot  (ft)");

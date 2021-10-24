@@ -1771,7 +1771,9 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		wkoptalt = wk;
 		wksensoralt = (int)(wksensor*10);
 
-		// FLAP->drawWingSymbol( WKBARMID-27*(abs(flap_neg_max.get()))-18, WKSYMST-3, wki, wksensor);
+		if ( flap_neg_max.get() > -3 ) {
+			FLAP->drawWingSymbol( WKBARMID-27*(abs(flap_neg_max.get()))-18, WKSYMST-3, wki, wksensor);
+		}
 	}
 
 	// Cruise mode or circling

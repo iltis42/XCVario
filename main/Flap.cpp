@@ -286,6 +286,7 @@ void Flap::drawSmallBar( int ypos, int xpos, float wkf ){
 	int lfw = ucg->getStrWidth( "+2" );
 	int top = ypos-lfh/2;
 	if( !surroundingBox ) {
+		ucg->setColor(COLOR_HEADER);
 		ucg->drawFrame(xpos-5, top-3, lfw+4, 2*lfh);
 		int tri = ypos+lfh/2-3;
 		ucg->setColor(COLOR_GREEN);
@@ -350,8 +351,9 @@ void Flap::drawBigBar( int ypos, int xpos, float wkf, float wksens ){
 			ucg->setPrintPos(xpos+2, y+1);
 			ucg->setColor(COLOR_WHITE);
 			// print digit
-			ucg->printf(position);
+			ucg->print(position);
 			// Frame around digit
+			ucg->setColor(COLOR_HEADER);
 			ucg->drawFrame(xpos-2, y-(lfh/2), lfw+6, lfh );
 		}
 		surroundingBox = true;
@@ -402,7 +404,7 @@ void Flap::drawWingSymbol( int ypos, int xpos, int wk, float wksens )
 	if(warn){
 		ucg->setColor( COLOR_RED );
 	}else{
-		ucg->setColor( COLOR_WHITE );
+		ucg->setColor( COLOR_HEADER );
 	}
 	ucg->drawDisc( xpos, ypos, DISCRAD, UCG_DRAW_ALL );
 	ucg->drawBox( xpos, ypos-DISCRAD, BOXLEN, DISCRAD*2+1  );

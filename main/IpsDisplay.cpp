@@ -1914,13 +1914,12 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 			qnh = Units::Qnh( 1013.25 );
 		if( qnh != pref_qnh ) {
 			ucg->setFont(ucg_font_fub11_tr);
-			ucg->setPrintPos(FIELD_START,YALT-S2FFONTH);
 			char unit[4];
 			if( standard_setting )
 				strcpy( unit, "QNE" );
 			else
 				strcpy( unit, "QNH" );
-			ucg->setPrintPos(FIELD_START,(YALT-S2FFONTH));
+			ucg->setPrintPos(FIELD_START,YALT-S2FFONTH-10);
 			ucg->setColor(0, COLOR_HEADER );
 			ucg->printf("%s %.2f %s  ", unit, qnh,  Units::QnhUnit( qnh_unit.get() ) );
 			pref_qnh = qnh;

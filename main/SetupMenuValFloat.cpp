@@ -5,20 +5,20 @@
  *      Author: iltis
  */
 
-// #include "SetupMenu.h"
+#include "SetupMenuValFloat.h"
+
 #include "IpsDisplay.h"
 #include "BMPVario.h"
 #include "Polars.h"
-#include <logdef.h>
-#include <sensor.h>
-#include "Units.h"
-#include "SetupMenuValFloat.h"
+#include "sensor.h"
 #include "ESPAudio.h"
+
+#include <esp_log.h>
 
 SetupMenuValFloat * SetupMenuValFloat::qnh_menu = 0;
 char SetupMenuValFloat::_val_str[20];
 
-SetupMenuValFloat::SetupMenuValFloat( String title, float *value, const char *unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs, bool restart, bool sync ) {
+SetupMenuValFloat::SetupMenuValFloat( std::string title, float *value, const char *unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs, bool restart, bool sync ) {
 	// ESP_LOGI(FNAME,"SetupMenuValFloat( %s ) ", title.c_str() );
 	_rotary->attach(this);
 	_title = title;

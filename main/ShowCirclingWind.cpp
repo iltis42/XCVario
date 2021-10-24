@@ -22,13 +22,12 @@ Last update: 2021-04-18
 #include "CircleWind.h"
 #include "SetupNG.h"
 #include "Units.h"
-
-#include <Ucglib.h>
-#include <logdef.h>
-#include <esp_log.h>
 #include "sensor.h"
 
-ShowCirclingWind::ShowCirclingWind( String title ) :
+#include <Ucglib.h>
+#include <esp_log.h>
+
+ShowCirclingWind::ShowCirclingWind( std::string title ) :
 SetupMenuDisplay( title, nullptr )
 {
 	ESP_LOGI(FNAME, "ShowCirclingWind(): title='%s'", title.c_str() );

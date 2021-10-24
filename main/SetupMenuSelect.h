@@ -7,32 +7,30 @@
 
 #ifndef _SetupMenuSelect_H_
 #define _SetupMenuSelect_H_
-#include <string>
-#include <vector>
-#include <stdio.h>
-#include "Setup.h"
+#include "SetupNG.h"
 #include "MenuEntry.h"
+
 
 class SetupMenuSelect:  public MenuEntry
 {
 public:
 	SetupMenuSelect();
-	SetupMenuSelect(  String title, bool restart=false, int (*action)(SetupMenuSelect *p) = 0, bool save=true, SetupNG<int> *anvs=0 );
+	SetupMenuSelect( std::string title, bool restart=false, int (*action)(SetupMenuSelect *p) = 0, bool save=true, SetupNG<int> *anvs=0 );
 	virtual ~SetupMenuSelect();
 	void display( int mode=0 );
-	bool existsEntry( String ent );
-	inline void addEntry( const char* ent ) { addEntry( String(ent) ); }
-	void addEntry( String ent ) { _values.push_back( ent ); _numval++; }
+	bool existsEntry( std::string ent );
+	inline void addEntry( const char* ent ) { addEntry( std::string(ent) ); }
+	void addEntry( std::string ent ) { _values.push_back( ent ); _numval++; }
 	void addEntry( char ent[][4] );
-	void delEntry( String ent );
-	inline void updateEntry( String ent, int num ) { _values[ num ] = ent; }
+	void delEntry( std::string ent );
+	inline void updateEntry( std::string ent, int num ) { _values[ num ] = ent; }
 	void up( int count );  // step up to parent
 	void down( int count );
 	void press();
-	char *value() { sprintf(_val_str,"%s", getEntry() ); return _val_str; }
+	const char *value() const override { sprintf(_val_str,"%s", getEntry() ); return _val_str; }
 	inline int getSelect() { return *_select; };
 	inline void setSelect( int sel ) { *_select = sel; };
-	inline const char * getEntry(){ return _values[ *_select ].c_str(); }
+	inline const char * getEntry() const { return _values[ *_select ].c_str(); }
 
 private:
 	static char _val_str[20];
@@ -42,7 +40,7 @@ private:
 	int  _numval;
 	bool _restart;
 	bool _save;
-	std::vector<String> _values;
+	std::vector<std::string> _values;
 	int (*_action)( SetupMenuSelect *p );
 	SetupNG<int> *_nvs;
 };

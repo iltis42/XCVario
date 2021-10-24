@@ -19,13 +19,13 @@ Last update: 2021-02-25
 
 #pragma once
 
-#include <string>
 #include "MenuEntry.h"
+
 
 class SetupMenuDisplay: public MenuEntry
 {
 public:
-  SetupMenuDisplay( String title, int (*action)(SetupMenuDisplay *p) = nullptr );
+  SetupMenuDisplay( std::string title, int (*action)(SetupMenuDisplay *p) = nullptr );
 
   virtual ~SetupMenuDisplay();
 
@@ -36,7 +36,7 @@ public:
 	virtual void display( int mode=0 );
 
 	// No value support
-	virtual char *value() { return nullptr; }
+	virtual const char *value() const override { return nullptr; }
 
 	// Ignore up calls
 	virtual void up( int count ) {}

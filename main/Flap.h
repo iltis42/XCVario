@@ -1,10 +1,10 @@
 #pragma once
 
+#include "AnalogInput.h"
 
 class Ucglib_ILI9341_18x240x320_HWSPI;
 class SetupMenu;
 class SetupMenuSelect;
-class AnalogInput;
 class SetupMenuValFloat;
 
 static int select_flap_sens_pin(SetupMenuSelect *p);

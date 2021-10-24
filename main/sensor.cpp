@@ -1,14 +1,7 @@
-#include <string>
-#include "sdkconfig.h"
-#include <stdio.h>
+
+#include "sensor.h"
+
 #include "Cipher.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_task_wdt.h"
-#include "string.h"
-#include "esp_system.h"
-#include <esp_timer.h>
-#include "nvs_flash.h"
 #include "BME280_ESP32_SPI.h"
 #include <driver/adc.h>
 #include <driver/gpio.h>
@@ -23,26 +16,23 @@
 #include "Protocols.h"
 #include "DS18B20.h"
 #include "Setup.h"
-#include "esp_sleep.h"
 #include "ESPAudio.h"
-#include <esp_wifi.h>
 #include "SetupMenu.h"
 #include "ESPRotary.h"
 #include "AnalogInput.h"
 #include "Atmosphere.h"
 #include "IpsDisplay.h"
-#include "sensor.h"
 #include "S2F.h"
 #include "Version.h"
 #include "Polars.h"
 #include "Flarm.h"
 #include "Blackboard.h"
+#include "SetupMenuValFloat.h"
 
 #include <SPI.h>
 #include <Ucglib.h>
 #include <OTA.h>
 #include "SetupNG.h"
-#include <logdef.h>
 #include "Switch.h"
 #include "AverageVario.h"
 
@@ -54,10 +44,6 @@
 #include "WifiApp.h"
 #include "WifiClient.h"
 #include "Serial.h"
-#include "Cipher.h"
-#include <esp32/rom/miniz.h>
-#include "esp32-hal-adc.h" // needed for adc pin reset
-#include "soc/sens_reg.h" // needed for adc pin reset
 #include "LeakTest.h"
 #include "Units.h"
 #include "Flap.h"
@@ -67,6 +53,23 @@
 #include <coredump_to_server.h>
 #include "canbus.h"
 #include "Router.h"
+
+#include "sdkconfig.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <esp_task_wdt.h>
+#include <esp_log.h>
+#include <esp32/rom/miniz.h>
+#include <esp32-hal-adc.h> // needed for adc pin reset
+#include <soc/sens_reg.h> // needed for adc pin reset
+#include <esp_sleep.h>
+#include <esp_wifi.h>
+#include <esp_system.h>
+#include <esp_timer.h>
+#include <nvs_flash.h>
+#include <string>
+#include <cstdio>
+#include <cstring>
 
 // #include "sound.h"
 

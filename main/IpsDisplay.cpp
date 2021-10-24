@@ -161,7 +161,6 @@ float te_prev = 0;
 bool blankold = false;
 bool blank = false;
 bool flarm_connected=false;
-static int max_gscale = 0;
 static ucg_color_t needlecolor[3] = { {COLOR_WHITE}, {COLOR_ORANGE}, {COLOR_RED} };
 static ucg_color_t bowcolor[3] = { {COLOR_GREEN}, {COLOR_BLUE}, {COLOR_RED} };
 
@@ -1110,7 +1109,7 @@ void IpsDisplay::drawOneLabel( float val, int16_t labl, int16_t pos, int16_t off
 
 // draw windsock style alike arrow white and red
 void IpsDisplay::drawWindArrow( float a, float speed, int type ){
-	static int wx0,wy0,wx1,wy1,wx2,wy2,wx3,wy3;
+	static int wx0,wy0,wx1,wy1,wx3,wy3;
 	static bool del_wind=false;
 
 	if( _menu )
@@ -1150,8 +1149,6 @@ void IpsDisplay::drawWindArrow( float a, float speed, int type ){
 		wy0 = yn_0;
 		wx1 = xn_1;
 		wy1 = yn_1;
-		wx2 = xn_2;
-		wy2 = yn_2;
 		wx3 = xn_3;
 		wy3 = yn_3;
 	}

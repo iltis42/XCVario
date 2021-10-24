@@ -5,18 +5,13 @@
  *      Author: iltis
  */
 
-#ifndef _MenuEntry_H_
-#define _MenuEntry_H_
-#include <vector>
-// #include <string>
-// #include <set>
-#include <list>
-// #include <cstdio>
-// #include "IpsDisplay.h"
+#pragma once
+
 #include "ESPRotary.h"
-#include "Setup.h"
-// #include "AnalogInput.h"
-// #include "BMPVario.h"
+#include "SetupNG.h"
+
+#include <vector>
+#include <string>
 
 class IpsDisplay;
 class AnalogInput;
@@ -30,12 +25,12 @@ public:
 	virtual void display( int mode=0 ) = 0;
 	virtual void release() { display(); };
 	virtual void longPress() {};
-	virtual char* value() = 0;
+	virtual const char* value() const = 0;
     MenuEntry* getFirst() const { return _childs.front(); }
 	MenuEntry* addEntry( MenuEntry * item );
 	MenuEntry* addEntry( MenuEntry * item, const MenuEntry* after );
 	void       delEntry( MenuEntry * item );
-	MenuEntry* findMenu( String title, MenuEntry* start=root  );
+	MenuEntry* findMenu( std::string title, MenuEntry* start=root  );
 	void togglePressed() { pressed = ! pressed; }
 	void setHelp( const char *txt, int y=180 ) { helptext = (char*)txt; hypos = y; };
 	void showhelp( int y );
@@ -47,7 +42,7 @@ public:
 public:
 	std::vector<MenuEntry*>  _childs;
 	MenuEntry *_parent = 0;
-	String _title;
+	std::string _title;
 	static MenuEntry *root;
 	static MenuEntry *selected;
 	static IpsDisplay* _display;
@@ -74,5 +69,3 @@ public:
 // public:
 //     static MenuRotary menu_rotary_handler;
 };
-
-#endif

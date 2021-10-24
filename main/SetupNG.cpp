@@ -33,6 +33,7 @@
 #include "Protocols.h"
 #include "ESPAudio.h"
 #include "Flap.h"
+#include "DallasRmt.h"
 
 std::vector<SetupCommon *> SetupCommon::entries;
 bool SetupCommon::lazyCommit = true;
@@ -106,7 +107,7 @@ SetupNG<float>  		ballast( "BALLAST" , 0.0, true, SYNC_BIDIR, PERSISTENT, change
 SetupNG<float>  		bugs( "BUGS", 0.0, true, SYNC_BIDIR, VOLATILE, change_mc_bal  );
 
 SetupNG<int>  			cruise_mode( "CRUISE", 0, true, SYNC_BIDIR, VOLATILE );
-SetupNG<float>  		OAT( "OAT", 0.0, true, SYNC_FROM_MASTER, VOLATILE );   // outside temperature
+SetupNG<float>  		OAT( "OAT", DEVICE_DISCONNECTED_C, true, SYNC_FROM_MASTER, VOLATILE );   // outside temperature
 SetupNG<float>  		swind_dir( "SWDD", 0.0, true, SYNC_FROM_MASTER, VOLATILE, resetSWindAge );
 SetupNG<float>  		swind_speed( "SWDS", 0.0, true, SYNC_FROM_MASTER, VOLATILE, resetSWindAge );
 SetupNG<float>  		cwind_dir( "CWDD", 0.0, true, SYNC_FROM_MASTER, VOLATILE, resetCWindAge );

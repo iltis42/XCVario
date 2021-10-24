@@ -327,6 +327,10 @@ void IpsDisplay::initDisplay() {
 		// Thermometer
 		drawThermometer(  FIELD_START+10, DISPLAY_H-6 );
 
+		if ( FLAP ) {
+			FLAP->setBarPosition( WKSYMST+2, YS2F-fh );
+			FLAP->setSymbolPosition( WKSYMST+2, YS2F-fh-25 );
+		}
 	}
 
 	// Fancy altimeter
@@ -1242,6 +1246,10 @@ void IpsDisplay::initRetroDisplay( bool ulmode ){
 	drawConnection(DISPLAY_W-27, FLOGO+2 );
 	if( !ulmode )
 		drawMC( MC.get(), true );
+	if ( FLAP ) {
+		FLAP->setBarPosition( WKSYMST-4, WKBARMID);
+		FLAP->setSymbolPosition( WKSYMST-3, WKBARMID-27*(abs(flap_neg_max.get()))-18 );
+	}
 }
 
 void IpsDisplay::drawWarning( const char *warn, bool push ){
@@ -1767,12 +1775,12 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		// ESP_LOGI(FNAME,"as:%d wksp:%f wki:%d wk:%d wkpos:%f", airspeed_kmh, wkspeed, wki, wk, wkpos );
 		// ESP_LOGI(FNAME,"WK changed WKE=%d WKS=%f", wk, wksensor );
 		ucg->setColor(  COLOR_WHITE  );
-		FLAP->drawBigBar( WKBARMID, WKSYMST-4, (float)(wk)/10, wksensor );
+		FLAP->drawBigBar( (float)(wk)/10, wksensor );
 		wkoptalt = wk;
 		wksensoralt = (int)(wksensor*10);
 
 		if ( flap_neg_max.get() > -3 ) {
-			FLAP->drawWingSymbol( WKBARMID-27*(abs(flap_neg_max.get()))-18, WKSYMST-3, wki, wksensor);
+			FLAP->drawWingSymbol( wki, wksensor);
 		}
 	}
 
@@ -1879,10 +1887,10 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		int wk = (int)((wki - wkopt + 0.5)*10);
 		// ESP_LOGI(FNAME,"ias:%d wksp:%f wki:%d wk:%d wkpos%f", airspeed_kmh, wkspeed, wki, wk, wkpos );
 		ucg->setColor(  COLOR_WHITE  );
-		FLAP->drawSmallBar( YS2F-fh, WKSYMST+2, (float)(wk)/10 );
+		FLAP->drawSmallBar( (float)(wk)/10 );
 		wkoptalt = wk;
 
-		FLAP->drawWingSymbol( YS2F-fh-25, WKSYMST+2, wki, wksensor);
+		FLAP->drawWingSymbol( wki, wksensor);
 	}
 
 

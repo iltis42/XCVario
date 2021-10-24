@@ -280,21 +280,22 @@ void Flap::setupMenue( SetupMenu *parent ){
 }
 
 
-void Flap::drawSmallBar( int ypos, int xpos, float wkf ){
+void Flap::drawSmallBar( float wkf ){
 	ucg->setFont(ucg_font_profont22_mr );
 	int	lfh = ucg->getFontAscent()+4;
 	int lfw = ucg->getStrWidth( "+2" );
-	int top = ypos-lfh/2;
-	if( !surroundingBox ) {
+	int top = barpos_y-lfh/2;
+	if( dirty ) {
 		ucg->setColor(COLOR_HEADER);
-		ucg->drawFrame(xpos-5, top-3, lfw+4, 2*lfh);
-		int tri = ypos+lfh/2-3;
+		ucg->drawFrame(barpos_x-5, top-3, lfw+4, 2*lfh);
+		int tri = barpos_y+lfh/2-3;
 		ucg->setColor(COLOR_GREEN);
-		ucg->drawTriangle( xpos-10, tri-5,  xpos-10,tri+5, xpos-5, tri );
+		ucg->drawTriangle( barpos_x-10, tri-5,  barpos_x-10,tri+5, barpos_x-5, tri );
 		ucg->setColor(COLOR_WHITE);
-		surroundingBox = true;
+        drawWingSymbol(wkf, 0);
+		dirty = false;
 	}
-	ucg->setClipRange( xpos-2, top-2, lfw, 2*lfh-2 );
+	ucg->setClipRange( barpos_x-2, top-2, lfw, 2*lfh-2 );
 	for( int wk=int(wkf-1); wk<=int(wkf+1) && wk<=2; wk++ ){
 		char position[6];
 		if(wk<-3)
@@ -302,17 +303,17 @@ void Flap::drawSmallBar( int ypos, int xpos, float wkf ){
 
 		sprintf( position,"%s", flapLabels[wk+3]);
 		int y=top+(lfh+4)*(5-(wk+2))+(int)((wkf-2)*(lfh+4));
-		ucg->setPrintPos(xpos-2, y );
+		ucg->setPrintPos(barpos_x-2, y );
 		ucg->setColor(COLOR_WHITE);
 		ucg->printf(position);
 		if( wk != -3 ) {
-			ucg->drawHLine(xpos-5, y+3, lfw+4 );
+			ucg->drawHLine(barpos_x-5, y+3, lfw+4 );
 		}
 	}
 	ucg->undoClipRange();
 }
 
-void Flap::drawLever( int xpos, int ypos, int oldypos, bool warn ){
+void Flap::drawLever( int16_t xpos, int16_t ypos, int16_t oldypos, bool warn ){
 	ucg->setColor(COLOR_BLACK);
 	ucg->drawBox( xpos-25, oldypos-4, 19, 8 );
 	ucg->drawBox( xpos-6, oldypos-2, 4, 4 );
@@ -334,43 +335,44 @@ void Flap::drawLever( int xpos, int ypos, int oldypos, bool warn ){
 	ucg->drawBox( xpos-6, ypos-2, 4, 4 );
 }
 
-void Flap::drawBigBar( int ypos, int xpos, float wkf, float wksens ){
+void Flap::drawBigBar( float wkf, float wksens ){
 	ucg->setFont(ucg_font_profont22_mr );
 	ucg->setFontPosCenter();
-	int lfh = 24; // ucg->getFontAscent()+10;  // a bit place around number
-	int lfw = ucg->getStrWidth( "+2" );
-	int size = NUMPOS*lfh;
+	int16_t lfh = 24; // ucg->getFontAscent()+10;  // a bit place around number
+	int16_t lfw = ucg->getStrWidth( "+2" );
+	int16_t size = NUMPOS*lfh;
 	// draw Frame around and a triangle
-	if( !surroundingBox ) {
+	if( dirty ) {
 		for( int wk=MINPOS; wk<=MAXPOS; wk++ ){
 			char position[6];
 			// ESP_LOG_BUFFER_HEXDUMP(FNAME, flapLabels[wk+3], 4, ESP_LOG_INFO);
 			sprintf( position,"%s", flapLabels[wk+3]);
-			int y= ypos + lfh*wk;  // negative WK eq. lower position
+			int y= barpos_y + lfh*wk;  // negative WK eq. lower position
 			// ESP_LOGI(FNAME,"Y: %d lfh:%d wk:%d",y, lfh, wk );
-			ucg->setPrintPos(xpos+2, y+1);
+			ucg->setPrintPos(barpos_x+2, y+1);
 			ucg->setColor(COLOR_WHITE);
 			// print digit
 			ucg->print(position);
 			// Frame around digit
 			ucg->setColor(COLOR_HEADER);
-			ucg->drawFrame(xpos-2, y-(lfh/2), lfw+6, lfh );
+			ucg->drawFrame(barpos_x-2, y-(lfh/2), lfw+6, lfh );
 		}
-		surroundingBox = true;
+		if ( MINPOS > -3 ) { drawWingSymbol(wkf, wksens); }
+		dirty = false;
 	}
 	// ESP_LOGI(FNAME,"np: %d size: %d",  NUMPOS, size );
-	int yclip = ypos+MINPOS*lfh-(lfh/2);
-	ucg->setClipRange( xpos-15, yclip, 15, size );
-	int y = ypos + (int)((wkf)*(lfh) + 0.5 );
-	int ys = ypos + (int)(( wksens )*(lfh) + 0.5 );
+	int16_t yclip = barpos_y+MINPOS*lfh-(lfh/2);
+	ucg->setClipRange( barpos_x-15, yclip, 15, size );
+	int16_t y = barpos_y + (int)((wkf)*(lfh) + 0.5 );
+	int16_t ys = barpos_y + (int)(( wksens )*(lfh) + 0.5 );
 	// ESP_LOGI(FNAME,"wkf: %f", wkf);
 
 	tickopt++;
 	if( optPosOldY != y || !(tickopt%10)) {  // redraw on change or when wklever is near
 		ucg->setColor(COLOR_BLACK);
-		ucg->drawTriangle( xpos-15,optPosOldY-5,  xpos-15,optPosOldY+5,  xpos-2,optPosOldY );
+		ucg->drawTriangle( barpos_x-15,optPosOldY-5,  barpos_x-15,optPosOldY+5,  barpos_x-2,optPosOldY );
 		ucg->setColor(COLOR_GREEN);
-		ucg->drawTriangle( xpos-15,y-5,       xpos-15,y+5,       xpos-2,y );
+		ucg->drawTriangle( barpos_x-15,y-5,       barpos_x-15,y+5,       barpos_x-2,y );
 		optPosOldY = y;
 	}
 	bool warn=false;
@@ -379,7 +381,7 @@ void Flap::drawBigBar( int ypos, int xpos, float wkf, float wksens ){
 	if( sensorOldY != ys || warn ) {  // redraw on change or when wklever is near
 		if( flap_sensor.get() ) {
 			// ESP_LOGI(FNAME,"wk lever redraw, old=%d", sensorOldY );
-			drawLever( xpos, ys, sensorOldY, warn );
+			drawLever( barpos_x, ys, sensorOldY, warn );
 			sensorOldY = ys;
 		}
 	}
@@ -392,34 +394,34 @@ void Flap::drawBigBar( int ypos, int xpos, float wkf, float wksens ){
 #define FLAPLEN 14
 
 
-void Flap::drawWingSymbol( int ypos, int xpos, int wk, float wksens )
+void Flap::drawWingSymbol( int16_t wk, float wksens )
 {
     static bool warn_old = false;
-    static int wk_old = 0; // warn on either warn or wkopt change
+    static int16_t wk_old = 0; // warn on either warn or wkopt change
 
-	bool warn = wksens > -10 && abs( wk - wksens) > 1;
+	bool warn = wksens > -10. && abs( wk - wksens) > 1.;
 
-    if ( warn == warn_old && wk == wk_old ) return;
+    if ( warn == warn_old && wk == wk_old && ! dirty ) return;
 
 	if(warn){
 		ucg->setColor( COLOR_RED );
 	}else{
 		ucg->setColor( COLOR_HEADER );
 	}
-	ucg->drawDisc( xpos, ypos, DISCRAD, UCG_DRAW_ALL );
-	ucg->drawBox( xpos, ypos-DISCRAD, BOXLEN, DISCRAD*2+1  );
+	ucg->drawDisc( symbolpos_x, symbolpos_y, DISCRAD, UCG_DRAW_ALL );
+	ucg->drawBox( symbolpos_x, symbolpos_y-DISCRAD, BOXLEN, DISCRAD*2+1  );
 	ucg->setColor( COLOR_BLACK );
-	ucg->drawTriangle( xpos+DISCRAD+BOXLEN-2, ypos-DISCRAD,
-			xpos+DISCRAD+BOXLEN-2, ypos+DISCRAD+1,
-			xpos+DISCRAD+BOXLEN-2+FLAPLEN, ypos+wk_old*4 );
+	ucg->drawTriangle( symbolpos_x+DISCRAD+BOXLEN-2, symbolpos_y-DISCRAD,
+			symbolpos_x+DISCRAD+BOXLEN-2, symbolpos_y+DISCRAD+1,
+			symbolpos_x+DISCRAD+BOXLEN-2+FLAPLEN, symbolpos_y+wk_old*4 );
 	if(warn){
 		ucg->setColor( COLOR_RED );
 	}else{
 		ucg->setColor( COLOR_GREEN );
 	}
-	ucg->drawTriangle( xpos+DISCRAD+BOXLEN-2, ypos-DISCRAD,
-			xpos+DISCRAD+BOXLEN-2, ypos+DISCRAD+1,
-			xpos+DISCRAD+BOXLEN-2+FLAPLEN, ypos+wk*4 );
+	ucg->drawTriangle( symbolpos_x+DISCRAD+BOXLEN-2, symbolpos_y-DISCRAD,
+			symbolpos_x+DISCRAD+BOXLEN-2, symbolpos_y+DISCRAD+1,
+			symbolpos_x+DISCRAD+BOXLEN-2+FLAPLEN, symbolpos_y+wk*4 );
 
     wk_old = wk;
     warn_old = warn;
@@ -639,6 +641,17 @@ float Flap::getOptimum( float wks, int& wki )
 		return 0.5;
 	return 0.5;
 }
+void Flap::setBarPosition(int16_t x, int16_t y)
+{
+    barpos_x = x;
+    barpos_y = y;
+}
+void Flap::setSymbolPosition(int16_t x, int16_t y)
+{
+    symbolpos_x = x;
+    symbolpos_y = y;
+}
+
 
 int Flap::getOptimumInt( float speed )
 {

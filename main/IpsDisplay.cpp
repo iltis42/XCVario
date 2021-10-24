@@ -1021,7 +1021,7 @@ void IpsDisplay::drawScale( int16_t max_pos, int16_t max_neg, int16_t pos, int16
 	}
 
 	// for larger ranges put at least on extra labl in the middle of the scale
-	int16_t mid_lpos = (int)(gaugePosFromIdx(0.5*M_PI_2)+.5) * 10;
+	int16_t mid_lpos = (int)(gaugeValueFromIdx(0.5*M_PI_2)+.5) * 10;
 	mid_lpos /= modulo;
 	mid_lpos *= modulo; // round down to the next modulo hit
 	ucg->setFontPosCenter();
@@ -1075,7 +1075,7 @@ void IpsDisplay::drawScale( int16_t max_pos, int16_t max_neg, int16_t pos, int16
 			if ( draw_label ) { drawOneLabel(val, a/10, pos+12, offset); }
 			if ( (-a/10) >= max_neg && at < max_neg ) {
 				drawOneScaleLine( -val, pos, end, width, COLOR_WHITE );
-				if ( draw_label ) { drawOneLabel(-val, a/10, pos+12, offset); }
+				if ( draw_label ) { drawOneLabel(-val, a/10, pos+12, -offset); }
 			}
 			draw_label = false;
 		}
@@ -1096,7 +1096,11 @@ void IpsDisplay::drawOneLabel( float val, int16_t labl, int16_t pos, int16_t off
 	y=gaugeSin(val*to_side, pos) +1;
 	ucg->setColor(COLOR_LBLUE);
 	ucg->setPrintPos(x,y);
-	ucg->printf("%d", abs(labl+offset) );
+	if ( offset != 0 ) {
+		ucg->printf("%+d", labl+offset );
+	} else  {
+		ucg->printf("%d", abs(labl) );
+	}
 }
 
 
@@ -1184,22 +1188,35 @@ inline int16_t IpsDisplay::gaugeCos(const int16_t idx, const int16_t len)
 {
 	return AMIDX - precalc_cos[abs(idx)&(SINCOS_OVER_110-1)] * len;
 }
-void IpsDisplay::initGauge(const float max)
+// Or just simple the plain trigenometric function rad(-110) < idx < rad(110)
+inline float mySin(const float idx)
 {
-	if ( log_scale.get() ) {
+	return precalc_sin[(int16_t)(abs(idx)*sincosScale)&(SINCOS_OVER_110-1)] * (std::signbit(idx)?-1:1);
+}
+inline float myCos(const float idx)
+{
+	return precalc_cos[(int16_t)(abs(idx)*sincosScale)&(SINCOS_OVER_110-1)];
+}
+void IpsDisplay::initGauge(const float max, const bool log)
+{
+	if ( log ) {
 		_scale_k = M_PI_2 / log2f(max+1.);
 		_gauge = &logGaugeIdx;
 	} else {
 		_scale_k = M_PI_2 / max;
 		_gauge = &linGaugeIdx;
 	}
+	static bool initialized = false;
+	if ( initialized ) return;
+
 	for ( int i=0; i<SINCOS_OVER_110; i++ ) {
 		precalc_sin[i] = sin(i/sincosScale);
 		precalc_cos[i] = cos(i/sincosScale);
 	}
+	initialized = true;
 }
 // inverse to xxGaugeIdx. Get the value for an indicator position
-float IpsDisplay::gaugePosFromIdx(const float rad)
+float IpsDisplay::gaugeValueFromIdx(const float rad)
 {
 	if ( _gauge == &logGaugeIdx ) {
 		return (pow(2., std::abs(rad))-1.f) / _scale_k * (std::signbit(rad)?-1.:1.);
@@ -1214,7 +1231,7 @@ void IpsDisplay::initRetroDisplay( bool ulmode ){
 	bootDisplay();
 	ucg->setFontPosBottom();
 	redrawValues();
-	initGauge(_range);
+	initGauge(_range, log_scale.get());
 	drawScale( _range, -_range, 140, 0);
 
 	// Unit's
@@ -1397,11 +1414,13 @@ void IpsDisplay::drawSpeed(float v_kmh, ucg_int_t x, ucg_int_t y, bool dirty, bo
 	as_prev = airspeed;
 }
 
+//////////////////////////////////////////////
+// The load display
 void IpsDisplay::initLoadDisplay(){
 	if( _menu )
 		return;
 	ESP_LOGI(FNAME,"initLoadDisplay()");
-	ucg->setColor(  COLOR_WHITE  );
+	ucg->setColor( COLOR_HEADER );
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setPrintPos(40,15);
 	ucg->print( "G-Force" );
@@ -1413,22 +1432,25 @@ void IpsDisplay::initLoadDisplay(){
 	int max_gscale = (int)( gload_pos_limit.get() )+1;
 	if( -gload_neg_limit.get() >= max_gscale )
 		max_gscale = (int)( -gload_neg_limit.get()  )+1;
-	drawScale( max_gscale, -max_gscale, 140, 1 );
 
 	for( float a=gload_pos_limit.get()-1; a<max_gscale; a+=0.05 ) {
-		drawOneScaleLine( ((float)a/max_gscale)*M_PI_2, 120, 130, 4, COLOR_RED );
+		drawOneScaleLine( ((float)a/max_gscale)*M_PI_2, 140, 150, 2, COLOR_RED );
 	}
-	for( float a=gload_neg_limit.get()-1; a>(-max_gscale); a-=0.05 ) {
-		drawOneScaleLine( ((float)a/max_gscale)*M_PI_2, 120, 130, 4, COLOR_RED );
+	for( float a=gload_neg_limit.get()-1; a>-max_gscale; a-=0.05 ) {
+		drawOneScaleLine( ((float)a/max_gscale)*M_PI_2, 140, 150, 2, COLOR_RED );
 	}
+
+	initGauge(max_gscale, false); // no logarithmic gauge for g-load
+	drawScale( max_gscale, -max_gscale, 140, 1 );
 
 	ESP_LOGI(FNAME,"initLoadDisplay end");
 }
 
-float old_gmax = 100;
-float old_gmin = -100;
 
 void IpsDisplay::drawLoadDisplay( float loadFactor ){
+	static float old_gmax = 100;
+	static float old_gmin = -100;
+
 	// ESP_LOGI(FNAME,"drawLoadDisplay %1.1f", loadFactor );
 	if( _menu )
 		return;
@@ -1439,9 +1461,9 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 		screens_init |= INIT_DISPLAY_GLOAD;
 	}
 	// draw G pointer
-	float a = (loadFactor-1)/max_gscale * (M_PI_2);
+	float a = (*_gauge)(loadFactor-1.);
 	if( int(a*100) != int(needle_pos_old*100) ) {
-		drawPolarIndicator( a, 60, 120, 3, needlecolor[0] );
+		drawPolarIndicator( a, 70, 129, 7, needlecolor[0] );
 		// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 	}
 	// G load digital

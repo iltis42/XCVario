@@ -613,33 +613,34 @@ void IpsDisplay::drawS2FMode( int x, int y, bool cruise ){
 	}
 }
 
-void IpsDisplay::drawArrow(int16_t x, int16_t y, int level, int16_t color)
+void IpsDisplay::drawArrow(int16_t x, int16_t y, int16_t level, bool del)
 {
 	const int width=40;
 	const int step=8;
 	const int gap=2;
 	int height=step;
 
-	if ( level == 0 || std::abs(level) == 4 ) return;
+	if ( level == 0 ) return;
 
-	switch ( color ) {
-		case 0:
-			ucg->setColor( COLOR_BLACK );
-			break;
-		case -1:
-		case 1:
-			ucg->setColor( COLOR_BBLUE );
-			break;
-		default:
-			ucg->setColor( COLOR_RED );
+	int init = 1;
+	if ( std::abs(level) == 4 ) {
+		init = 2;
+		if ( del ) { ucg->setColor( COLOR_BBLUE ); }
+		else { ucg->setColor( COLOR_RED ); }
+	}
+	else if ( del ) {
+		ucg->setColor( COLOR_BLACK );
+	}
+	else {
+		ucg->setColor( COLOR_BBLUE );
 	}
 
-	int l = level-1;
+
+	int l = level-init;
 	if ( level < 0 ) {
 		height = -height;
-		l = level+1;
+		l = level+init;
 	}
-	// ucg->drawTetragon(x,y+level*(step+gap), x+width,y+level*gap, x,y+level*(step+gap)+height, x-width, y+level*gap);
 	ucg->drawTriangle(x,y+l*(step+gap), x,y+l*(step+gap)+height, x-width, y+l*gap);
 	ucg->drawTriangle(x,y+l*(step+gap), x+width,y+l*gap, x,y+l*(step+gap)+height);
 }
@@ -661,24 +662,11 @@ void IpsDisplay::drawS2FBar(int16_t x, int16_t y, int s2fd)
 		return;
 	}
 
-	if ( std::abs(level) == 4 ) {
-		// redraw the last bar with a different color .. assert(level x prev > 0)
-		int i = (level > 0) ? 3 : -3;
-		drawArrow(x, y-2+(i>0?1:-1)*22, i, 3);
-		s2f_level_prev = level;
-		return;
-	}
-	else if ( std::abs(s2f_level_prev) == 4 ) {
-		// |level| < |prev|
-		int i = (level > 0) ? 3 : -3;
-		drawArrow(x, y-2+(i>0?1:-1)*22, i, (i>0)?1:-1);
-		s2f_level_prev = i;
-	}
 	int inc = (level-s2f_level_prev > 0) ? 1 : -1;
 	for ( int i = s2f_level_prev + ((s2f_level_prev==0 || s2f_level_prev*inc>0) ? inc : 0);
 			i != level+((i*inc < 0)?0:inc); i+=inc ) {
 		if ( i != 0 ) {
-			drawArrow(x, y-2+(i>0?1:-1)*22, i, (i*inc < 0)?0:inc);
+			drawArrow(x, y-2+(i>0?1:-1)*22, i, i*inc < 0);
 			// ESP_LOGI(FNAME,"s2fbar draw %d,%d", i, (i*inc < 0)?0:inc);
 		}
 	}
@@ -1317,24 +1305,17 @@ void IpsDisplay::drawWarning( const char *warn, bool push ){
 void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float ate ){
 	if( _menu )
 		return;
-	ucg->setPrintPos(x, y );
+	// ucg->setPrintPos(x, y );
 	ucg->setFontPosCenter();
 	ucg->setColor( COLOR_WHITE );
 	ucg->setFont(ucg_font_fub35_hn);
-	ucg->setClipRange( x, y-30, 95, 50 );
+	ucg->setClipRange( x-88, y-30, 95, 50 );
 	ucg->setFont(ucg_font_fub35_hn);
-	if( ate > 0 ){
-		if ( ate < 10 )
-			ucg->printf(" %2.1f   ", ate );
-		else
-			ucg->printf(" %2.0f   ", ate);
-	}
-	else{
-		if ( ate > -10 )
-			ucg->printf("%2.1f   ", ate );
-		else
-			ucg->printf("%2.0f   ", ate);
-	}
+	char s[15];
+	static char* format[2] = {" %2.1f", "  %2.0f"};
+	sprintf(s, format[std::abs(ate)>10], ate);
+	ucg->setPrintPos(x - ucg->getStrWidth(s), y);
+	ucg->print(s);
 	ucg->setFontPosBottom();
 	ucg->undoClipRange();
 }
@@ -1733,7 +1714,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	// average Climb
 	if( (int)(ate*30) != _ate && !(tick%3) ) {
-		drawAvgVario( AMIDX - 50, AMIDY+2, ate );
+		drawAvgVario( AMIDX + 38, AMIDY+2, ate );
 		_ate = (int)(ate*30);
 	}
 	// MC val
@@ -1752,9 +1733,9 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	// S2F Command triangle
 	if( (((int)s2fd != s2fdalt && !((tick+1)%2) ) || !((tick+3)%30)) && !ulmode ) {
-		// static float s=0;
+		// static float s=0; && check he bar code
 		// s2fd = sin(s) * 42.;
-		// s+=0.1;
+		// s+=0.04;
 		drawS2FBar(AMIDX, AMIDY,(int)s2fd);
 	}
 

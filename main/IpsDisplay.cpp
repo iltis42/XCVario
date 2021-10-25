@@ -627,13 +627,11 @@ void IpsDisplay::drawArrow(int16_t x, int16_t y, int level, int16_t color)
 			ucg->setColor( COLOR_BLACK );
 			break;
 		case -1:
-			ucg->setColor( COLOR_GREEN );
-			break;
 		case 1:
 			ucg->setColor( COLOR_BBLUE );
 			break;
 		default:
-			ucg->setColor( COLOR_ORANGE );
+			ucg->setColor( COLOR_RED );
 	}
 
 	int l = level-1;
@@ -654,7 +652,7 @@ void IpsDisplay::drawS2FBar(int16_t x, int16_t y, int s2fd)
 
 	int level = s2fd/10; // dice up into 10 kmh steps
 
-	// draw max. three bars plus a yellow top
+	// draw max. three bars, then change color of the last one to red
 	if ( level > 4 ) { level = 4; }
 	else if ( level < -4 ) { level = -4; }
 
@@ -664,27 +662,20 @@ void IpsDisplay::drawS2FBar(int16_t x, int16_t y, int s2fd)
 	}
 
 	if ( std::abs(level) == 4 ) {
-		// redraw all three bars with a different color .. assert(level x prev > 0)
-		int16_t inc = (level > 0) ? -1 : 1;
-		for ( int16_t i = level+inc; i!=0; i+=inc ) {
-			drawArrow(x, y-2+(i>0?1:-1)*22, i, 3);
-		}
+		// redraw the last bar with a different color .. assert(level x prev > 0)
+		int i = (level > 0) ? 3 : -3;
+		drawArrow(x, y-2+(i>0?1:-1)*22, i, 3);
 		s2f_level_prev = level;
 		return;
 	}
 	else if ( std::abs(s2f_level_prev) == 4 ) {
 		// |level| < |prev|
-		if (std::abs(level) < 3 ) {
-			// erase some bars
-			int16_t inc = (s2f_level_prev > 0) ? -1 : 1;
-			for ( int16_t i = s2f_level_prev+inc; i!=level+inc; i+=inc ) {
-				drawArrow(x, y-2+(i>0?1:-1)*22, i, 0);
-			}
-		}
-		s2f_level_prev = 0;
+		int i = (level > 0) ? 3 : -3;
+		drawArrow(x, y-2+(i>0?1:-1)*22, i, (i>0)?1:-1);
+		s2f_level_prev = i;
 	}
-	int16_t inc = (level-s2f_level_prev > 0) ? 1 : -1;
-	for ( int16_t i = s2f_level_prev + ((s2f_level_prev==0 || s2f_level_prev*inc>0) ? inc : 0);
+	int inc = (level-s2f_level_prev > 0) ? 1 : -1;
+	for ( int i = s2f_level_prev + ((s2f_level_prev==0 || s2f_level_prev*inc>0) ? inc : 0);
 			i != level+((i*inc < 0)?0:inc); i+=inc ) {
 		if ( i != 0 ) {
 			drawArrow(x, y-2+(i>0?1:-1)*22, i, (i*inc < 0)?0:inc);

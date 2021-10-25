@@ -70,7 +70,8 @@ private:
 	static int s2falt;
 	static int s2fdalt;
     static int s2f_level_prev;
-    static int16_t bow_level_prev;
+	static int16_t bow_level_prev;
+	static int16_t psink_level_prev;
 	static int alt_prev;
 	static float pref_qnh;
 	static int chargealt;
@@ -105,7 +106,7 @@ private:
 
 	static void drawMC( float mc, bool large=false );
 	static void drawS2FMode( int x, int y, bool cruise );
-	static void drawArrow(int16_t x, int16_t y, int level, int16_t color);
+	static void drawArrow(int16_t x, int16_t y, int16_t level, bool del);
 	static void drawS2FBar(int16_t x, int16_t y, int s2fd);
 	static void drawCircling( int x, int y, bool draw );
 	static void drawCruise( int x, int y, bool draw );
@@ -119,7 +120,8 @@ private:
 	static void drawThermometer( int x, int y );
 	static void drawOneScaleLine(float a, int16_t l1, int16_t l2, int16_t w, uint8_t r, uint8_t g, uint8_t b);
 	static void drawPolarIndicator(float a, int16_t l1, int16_t l2, int16_t w, ucg_color_t color);
-    static void drawBow( float a, int16_t l1, bool netto);
+	static void drawBow( float a, int16_t l1);
+	static void drawPolarSinkBow( float a, int16_t l1);
 	static void initRetroDisplay( bool ulmode );
 	static void initLoadDisplay();
 	static void drawRetroDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor, bool ulmode );
@@ -139,10 +141,12 @@ private:
 	static float logGaugeIdx(const float val);
 	static float linGaugeIdx(const float val);
 	static void  initGauge(const float max, const bool log);
-    static int16_t gaugeSin(const float idx, const int16_t len);
-    static int16_t gaugeCos(const float idx, const int16_t len);
-    static int16_t gaugeSin(const int16_t idx, const int16_t len);
-    static int16_t gaugeCos(const int16_t idx, const int16_t len);
+	static int gaugeSin(const float idx, const int len);
+	static int gaugeCos(const float idx, const int len);
+	static int gaugeSin(const int idx, const int len);
+	static int gaugeCos(const int idx, const int len);
+	static int sinIncr(const int idx, const int len);
+	static int cosIncr(const int idx, const int len);
 	static float gaugeValueFromIdx(const float val);
 };
 

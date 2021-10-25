@@ -120,6 +120,7 @@ int IpsDisplay::s2falt=-1;
 int IpsDisplay::s2fdalt=0;
 int IpsDisplay::s2f_level_prev=0;
 int16_t IpsDisplay::bow_level_prev=0;
+int16_t IpsDisplay::psink_level_prev=0;
 int IpsDisplay::s2fmode_prev=100;
 int IpsDisplay::alt_prev=0;
 int IpsDisplay::chargealt=-1;
@@ -162,7 +163,7 @@ bool blankold = false;
 bool blank = false;
 bool flarm_connected=false;
 static ucg_color_t needlecolor[3] = { {COLOR_WHITE}, {COLOR_ORANGE}, {COLOR_RED} };
-static ucg_color_t bowcolor[3] = { {COLOR_GREEN}, {COLOR_BLUE}, {COLOR_RED} };
+static ucg_color_t bowcolor[2] = { {COLOR_GREEN}, {COLOR_RED} };
 
 IpsDisplay::IpsDisplay( Ucglib_ILI9341_18x240x320_HWSPI *aucg ) {
 	ucg = aucg;
@@ -612,35 +613,34 @@ void IpsDisplay::drawS2FMode( int x, int y, bool cruise ){
 	}
 }
 
-void IpsDisplay::drawArrow(int16_t x, int16_t y, int level, int16_t color)
+void IpsDisplay::drawArrow(int16_t x, int16_t y, int16_t level, bool del)
 {
 	const int width=40;
 	const int step=8;
 	const int gap=2;
 	int height=step;
 
-	if ( level == 0 || std::abs(level) == 4 ) return;
+	if ( level == 0 ) return;
 
-	switch ( color ) {
-		case 0:
-			ucg->setColor( COLOR_BLACK );
-			break;
-		case -1:
-			ucg->setColor( COLOR_GREEN );
-			break;
-		case 1:
-			ucg->setColor( COLOR_BBLUE );
-			break;
-		default:
-			ucg->setColor( COLOR_ORANGE );
+	int init = 1;
+	if ( std::abs(level) == 4 ) {
+		init = 2;
+		if ( del ) { ucg->setColor( COLOR_BBLUE ); }
+		else { ucg->setColor( COLOR_RED ); }
+	}
+	else if ( del ) {
+		ucg->setColor( COLOR_BLACK );
+	}
+	else {
+		ucg->setColor( COLOR_BBLUE );
 	}
 
-	int l = level-1;
+
+	int l = level-init;
 	if ( level < 0 ) {
 		height = -height;
-		l = level+1;
+		l = level+init;
 	}
-	// ucg->drawTetragon(x,y+level*(step+gap), x+width,y+level*gap, x,y+level*(step+gap)+height, x-width, y+level*gap);
 	ucg->drawTriangle(x,y+l*(step+gap), x,y+l*(step+gap)+height, x-width, y+l*gap);
 	ucg->drawTriangle(x,y+l*(step+gap), x+width,y+l*gap, x,y+l*(step+gap)+height);
 }
@@ -653,7 +653,7 @@ void IpsDisplay::drawS2FBar(int16_t x, int16_t y, int s2fd)
 
 	int level = s2fd/10; // dice up into 10 kmh steps
 
-	// draw max. three bars plus a yellow top
+	// draw max. three bars, then change color of the last one to red
 	if ( level > 4 ) { level = 4; }
 	else if ( level < -4 ) { level = -4; }
 
@@ -662,31 +662,11 @@ void IpsDisplay::drawS2FBar(int16_t x, int16_t y, int s2fd)
 		return;
 	}
 
-	if ( std::abs(level) == 4 ) {
-		// redraw all three bars with a different color .. assert(level x prev > 0)
-		int16_t inc = (level > 0) ? -1 : 1;
-		for ( int16_t i = level+inc; i!=0; i+=inc ) {
-			drawArrow(x, y-2+(i>0?1:-1)*22, i, 3);
-		}
-		s2f_level_prev = level;
-		return;
-	}
-	else if ( std::abs(s2f_level_prev) == 4 ) {
-		// |level| < |prev|
-		if (std::abs(level) < 3 ) {
-			// erase some bars
-			int16_t inc = (s2f_level_prev > 0) ? -1 : 1;
-			for ( int16_t i = s2f_level_prev+inc; i!=level+inc; i+=inc ) {
-				drawArrow(x, y-2+(i>0?1:-1)*22, i, 0);
-			}
-		}
-		s2f_level_prev = 0;
-	}
-	int16_t inc = (level-s2f_level_prev > 0) ? 1 : -1;
-	for ( int16_t i = s2f_level_prev + ((s2f_level_prev==0 || s2f_level_prev*inc>0) ? inc : 0);
+	int inc = (level-s2f_level_prev > 0) ? 1 : -1;
+	for ( int i = s2f_level_prev + ((s2f_level_prev==0 || s2f_level_prev*inc>0) ? inc : 0);
 			i != level+((i*inc < 0)?0:inc); i+=inc ) {
 		if ( i != 0 ) {
-			drawArrow(x, y-2+(i>0?1:-1)*22, i, (i*inc < 0)?0:inc);
+			drawArrow(x, y-2+(i>0?1:-1)*22, i, i*inc < 0);
 			// ESP_LOGI(FNAME,"s2fbar draw %d,%d", i, (i*inc < 0)?0:inc);
 		}
 	}
@@ -969,8 +949,52 @@ void IpsDisplay::drawPolarIndicator( float a, int16_t l1, int16_t l2, int16_t w,
 	ucg->drawTriangle(xn_0,yn_0,xn_1,yn_1,xn_2,yn_2);
 }
 
-// draw incremental bow up to indicator given in rad, pos, netto
-void IpsDisplay::drawBow( float a, int16_t l1, bool netto)
+// draw incremental bow up to indicator given in rad, pos
+void IpsDisplay::drawPolarSinkBow( float a, int16_t l1)
+{
+	int16_t level = (int16_t)(a*sincosScale); // dice up into discrete steps
+
+	if ( _menu ) return;
+
+	if ( level == psink_level_prev ) {
+		return;
+	}
+
+	// potentially clean first
+	if ( std::abs(level) < std::abs(psink_level_prev)
+		|| level*psink_level_prev < 0 ) {
+		ucg->setColor(COLOR_BLACK);
+	}
+	else {
+		ucg->setColor(COLOR_BLUE);
+	}
+	// ESP_LOGI(FNAME,"bow lev %d", level);
+
+	int inc = (level-psink_level_prev > 0) ? 1 : -1;
+	for ( int i = psink_level_prev + ((psink_level_prev==0 || psink_level_prev*inc>0) ? inc : 0);
+			i != level+((i*inc < 0)?0:inc); i+=inc ) {
+		if ( i != 0 ) {
+			int16_t x = gaugeCos(i, l1);
+			int16_t y = gaugeSin(i, l1);
+			int16_t xe = x - cosIncr(i, 5);
+			int16_t ye = y - sinIncr(i, 5);
+			ucg->drawLine(x, y, xe, ye);
+			int d = std::signbit(i)?-1:1;
+			if ( std::abs(i) < sincosScale ) {
+				ucg->drawLine(x, y+d, xe, ye+d);
+			}
+			else {
+				ucg->drawLine(x-1, y, xe-1, ye);
+			}
+		}
+		else ucg->setColor(COLOR_BLUE);
+	}
+
+	psink_level_prev = level;
+}
+
+// draw incremental bow up to indicator given in rad, pos
+void IpsDisplay::drawBow( float a, int16_t l1)
 {
 	int16_t level = (int16_t)(a*sincosScale); // dice up into discrete steps
 
@@ -980,33 +1004,37 @@ void IpsDisplay::drawBow( float a, int16_t l1, bool netto)
 		return;
 	}
 
-	int16_t c = 0; // the color to draw
-	if ( level < 0 ) {
-		if ( netto ) {
-			c = 2;
-		} else {
-			c = 1;
-		}
-	}
+	// the color to draw
+	ucg_color_t c = bowcolor[level<0];
+
 	// potentially clean first
 	if ( std::abs(level) < std::abs(bow_level_prev)
 		|| level*bow_level_prev < 0 ) {
 		ucg->setColor(COLOR_BLACK);
 	}
 	else {
-		ucg->setColor(bowcolor[c].color[0], bowcolor[c].color[1], bowcolor[c].color[2]);
+		ucg->setColor(c.color[0], c.color[1], c.color[2]); // green-up, red-down
 	}
 	// ESP_LOGI(FNAME,"bow lev %d", level);
 
-	int16_t inc = (level-bow_level_prev > 0) ? 1 : -1;
-	for ( int16_t i = bow_level_prev + ((bow_level_prev==0 || bow_level_prev*inc>0) ? inc : 0);
+	int inc = (level-bow_level_prev > 0) ? 1 : -1;
+	for ( int i = bow_level_prev + ((bow_level_prev==0 || bow_level_prev*inc>0) ? inc : 0);
 			i != level+((i*inc < 0)?0:inc); i+=inc ) {
 		if ( i != 0 ) {
 			int16_t x = gaugeCos(i, l1);
 			int16_t y = gaugeSin(i, l1);
-			ucg->drawLine(x, y, x - precalc_cos[abs(i)&(SINCOS_OVER_110-1)] * 5, y - precalc_sin[abs(i)&(SINCOS_OVER_110-1)] * 5 * (std::signbit(i)?-1:1));
+			int16_t xe = x - cosIncr(i, 5);
+			int16_t ye = y - sinIncr(i, 5);
+			ucg->drawLine(x, y, xe, ye);
+			int d = std::signbit(i)?-1:1;
+			if ( std::abs(i) < sincosScale ) {
+				ucg->drawLine(x, y+d, xe, ye+d);
+			}
+			else {
+				ucg->drawLine(x-1, y, xe-1, ye);
+			}
 		}
-		else ucg->setColor(bowcolor[c].color[0], bowcolor[c].color[1], bowcolor[c].color[2]);
+		else ucg->setColor(c.color[0], c.color[1], c.color[2]);
 	}
 
 	bow_level_prev = level;
@@ -1173,30 +1201,38 @@ float IpsDisplay::linGaugeIdx(const float val)
 	return val * _scale_k;
 }
 // get sin/cos position from gauge index in rad
-inline int16_t IpsDisplay::gaugeSin(const float idx, const int16_t len)
+inline int IpsDisplay::gaugeSin(const float idx, const int len)
 {
-	return AMIDY - precalc_sin[(int16_t)(abs(idx)*sincosScale)&(SINCOS_OVER_110-1)] * len * (std::signbit(idx)?-1:1);
+	return AMIDY - precalc_sin[(int)(abs(idx)*sincosScale)&(SINCOS_OVER_110-1)] * len * (std::signbit(idx)?-1:1);
 }
-inline int16_t IpsDisplay::gaugeCos(const float idx, const int16_t len)
+inline int IpsDisplay::gaugeCos(const float idx, const int len)
 {
-	return AMIDX - precalc_cos[(int16_t)(abs(idx)*sincosScale)&(SINCOS_OVER_110-1)] * len;
+	return AMIDX - precalc_cos[(int)(abs(idx)*sincosScale)&(SINCOS_OVER_110-1)] * len;
 }
-inline int16_t IpsDisplay::gaugeSin(const int16_t idx, const int16_t len)
+inline int IpsDisplay::gaugeSin(const int idx, const int len)
 {
 	return AMIDY - precalc_sin[abs(idx)&(SINCOS_OVER_110-1)] * len * (std::signbit(idx)?-1:1);
 }
-inline int16_t IpsDisplay::gaugeCos(const int16_t idx, const int16_t len)
+inline int IpsDisplay::gaugeCos(const int idx, const int len)
 {
 	return AMIDX - precalc_cos[abs(idx)&(SINCOS_OVER_110-1)] * len;
+}
+inline int IpsDisplay::sinIncr(const int idx, const int len)
+{
+	return precalc_sin[abs(idx)&(SINCOS_OVER_110-1)] * len * (std::signbit(idx)?-1:1);
+}
+inline int IpsDisplay::cosIncr(const int idx, const int len)
+{
+	return precalc_cos[abs(idx)&(SINCOS_OVER_110-1)] * len;
 }
 // Or just simple the plain trigenometric function rad(-110) < idx < rad(110)
 inline float mySin(const float idx)
 {
-	return precalc_sin[(int16_t)(abs(idx)*sincosScale)&(SINCOS_OVER_110-1)] * (std::signbit(idx)?-1:1);
+	return precalc_sin[(int)(abs(idx)*sincosScale)&(SINCOS_OVER_110-1)] * (std::signbit(idx)?-1:1);
 }
 inline float myCos(const float idx)
 {
-	return precalc_cos[(int16_t)(abs(idx)*sincosScale)&(SINCOS_OVER_110-1)];
+	return precalc_cos[(int)(abs(idx)*sincosScale)&(SINCOS_OVER_110-1)];
 }
 void IpsDisplay::initGauge(const float max, const bool log)
 {
@@ -1269,24 +1305,17 @@ void IpsDisplay::drawWarning( const char *warn, bool push ){
 void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float ate ){
 	if( _menu )
 		return;
-	ucg->setPrintPos(x, y );
+	// ucg->setPrintPos(x, y );
 	ucg->setFontPosCenter();
 	ucg->setColor( COLOR_WHITE );
 	ucg->setFont(ucg_font_fub35_hn);
-	ucg->setClipRange( x, y-30, 95, 50 );
+	ucg->setClipRange( x-88, y-30, 95, 50 );
 	ucg->setFont(ucg_font_fub35_hn);
-	if( ate > 0 ){
-		if ( ate < 10 )
-			ucg->printf(" %2.1f   ", ate );
-		else
-			ucg->printf(" %2.0f   ", ate);
-	}
-	else{
-		if ( ate > -10 )
-			ucg->printf("%2.1f   ", ate );
-		else
-			ucg->printf("%2.0f   ", ate);
-	}
+	char s[15];
+	static char* format[2] = {" %2.1f", "  %2.0f"};
+	sprintf(s, format[std::abs(ate)>10], ate);
+	ucg->setPrintPos(x - ucg->getStrWidth(s), y);
+	ucg->print(s);
 	ucg->setFontPosBottom();
 	ucg->undoClipRange();
 }
@@ -1685,7 +1714,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	// average Climb
 	if( (int)(ate*30) != _ate && !(tick%3) ) {
-		drawAvgVario( AMIDX - 50, AMIDY+2, ate );
+		drawAvgVario( AMIDX + 38, AMIDY+2, ate );
 		_ate = (int)(ate*30);
 	}
 	// MC val
@@ -1704,9 +1733,9 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	// S2F Command triangle
 	if( (((int)s2fd != s2fdalt && !((tick+1)%2) ) || !((tick+3)%30)) && !ulmode ) {
-		// static float s=0;
+		// static float s=0; && check he bar code
 		// s2fd = sin(s) * 42.;
-		// s+=0.1;
+		// s+=0.04;
 		drawS2FBar(AMIDX, AMIDY,(int)s2fd);
 	}
 
@@ -1746,18 +1775,12 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		if ( needle_pos > M_PI_2*75./90. ) speed_dirty = true;
 
 		// Draw colored bow
-		float val = needle_pos;
-		if ( val > 0. ) {
-			// draw green vario bar
-			drawBow(val, 134, false);
-		}
-		else {
-			if( ! netto && ps_display.get() ) {
-				val = (*_gauge)(polar_sink);
-			}
-			if ( netto || ps_display.get() ) {
-				drawBow(val, 134, netto);
-			}
+		float val = (needle_pos>0.) ? needle_pos : 0.;
+		// draw green/red vario bar
+		drawBow(val, 134);
+
+		if( ! netto && ps_display.get() ) {
+			drawPolarSinkBow((*_gauge)(polar_sink), 134);
 		}
 		needle_pos_old = needle_pos;
 	}

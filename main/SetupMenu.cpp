@@ -595,12 +595,6 @@ void SetupMenu::setup( )
 		sink->addEntry( "ENABLE");
 		vae->addEntry( sink );
 
-		SetupMenuSelect * gsink = new SetupMenuSelect( 	"Polar Sink G", false, 0 , true, &s2f_with_gload );
-		gsink->setHelp(PROGMEM"Polar Sink considers G load acceleration (when AHRS option enabled)");
-		gsink->addEntry( "DISABLE");
-		gsink->addEntry( "ENABLE");
-		vae->addEntry( gsink );
-
 		SetupMenuSelect * ncolor = new SetupMenuSelect( "Needle Color", false, 0 , true, &needle_color );
 		ncolor->setHelp(PROGMEM"Choose the color of the vario needle");
 		ncolor->addEntry( "White");

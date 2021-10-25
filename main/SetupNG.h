@@ -541,7 +541,6 @@ extern SetupNG<float>		compass_damping;
 extern SetupNG<int>         compass_nmea_hdm;
 extern SetupNG<int>         compass_nmea_hdt;
 extern SetupNG<float>		compass_i2c_cl;
-extern SetupNG<int> 		s2f_with_gload;
 extern SetupNG<int> 		s2f_blockspeed;
 extern SetupNG<int>			needle_color;
 extern SetupNG<float>  		s2f_hysteresis;

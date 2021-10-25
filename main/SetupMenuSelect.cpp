@@ -169,6 +169,10 @@ void SetupMenuSelect::up(int count){
 	}
 }
 
+void SetupMenuSelect::longPress(){
+	press();
+}
+
 void SetupMenuSelect::press(){
 	if( selected != this )
 		return;

@@ -27,6 +27,7 @@ public:
 	void up( int count );  // step up to parent
 	void down( int count );
 	void press();
+	void longPress();
 	const char *value() const override { sprintf(_val_str,"%s", getEntry() ); return _val_str; }
 	inline int getSelect() { return *_select; };
 	inline void setSelect( int sel ) { *_select = sel; };

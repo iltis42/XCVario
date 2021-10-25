@@ -140,6 +140,10 @@ void SetupMenuValFloat::up( int count ){
 		(*_action)( this );
 }
 
+void SetupMenuValFloat::longPress(){
+	press(); // implicit trigger also on long press actions when in Setup menu.
+}
+
 void SetupMenuValFloat::press(){
 	if( selected != this )
 		return;

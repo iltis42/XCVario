@@ -29,18 +29,18 @@ public:
 	void press();
 	void longPress();
 	const char *value() const override { sprintf(_val_str,"%s", getEntry() ); return _val_str; }
-	inline int getSelect() { return *_select; };
-	inline void setSelect( int sel ) { *_select = sel; };
-	inline const char * getEntry() const { return _values[ *_select ].c_str(); }
+	inline int getSelect() { return (int)_select; };
+	inline void setSelect( int sel ) { _select = (int16_t)sel; };
+	inline const char * getEntry() const { return _values[ _select ].c_str(); }
 
 private:
 	static char _val_str[20];
-	int  *_select;
-	int  select_intern;
-	int  _select_save;
-	int  _numval;
-	bool _restart;
-	bool _save;
+	int16_t  _select;
+	int16_t  select_intern;
+	int16_t  _select_save;
+	int16_t  _numval;
+	int8_t   _restart;
+	int8_t   _save;
 	std::vector<std::string> _values;
 	int (*_action)( SetupMenuSelect *p );
 	SetupNG<int> *_nvs;

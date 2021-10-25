@@ -37,8 +37,8 @@ void SetupMenuSelect::delEntry( std::string ent ) {
 		{
 			_values.erase( iter );
 			_numval--;
-			if( *_select >= _numval )
-				*_select = _numval-1;
+			if( _select >= _numval )
+				_select = _numval-1;
 			break;
 		}
 }
@@ -53,7 +53,7 @@ SetupMenuSelect::SetupMenuSelect( std::string title, bool restart, int (*action)
 	highlight = -1;
 	select_intern = 0;
 	if( !anvs ) {
-		_select = &select_intern;
+		_select = select_intern;
 		_select_save = select_intern;
 	}
 	_numval = 0;
@@ -63,8 +63,8 @@ SetupMenuSelect::SetupMenuSelect( std::string title, bool restart, int (*action)
 	if( anvs ) {
 		_nvs = anvs;
 		ESP_LOGI(FNAME,"_nvs->key(): %s val: %d", _nvs->key(), (int)(_nvs->get()) );
-		_select = _nvs->getPtr();
-		_select_save = _nvs->get();
+		_select = (int16_t)(*(int *)(_nvs->getPtr()));
+		_select_save = (int16_t)_nvs->get();
 	}
 
 }
@@ -86,11 +86,11 @@ void SetupMenuSelect::display( int mode ){
 	ESP_LOGI(FNAME,"Title: %s y=%d", _title.c_str(),y );
 	ucg->printf("<< %s",_title.c_str());
 	xSemaphoreGive(spiMutex );
-	ESP_LOGI(FNAME,"select=%d numval=%d size=%d val=%s", *_select, _numval, _values.size(), _values[*_select].c_str() );
+	ESP_LOGI(FNAME,"select=%d numval=%d size=%d val=%s", _select, _numval, _values.size(), _values[_select].c_str() );
 	if( _numval > 9 ){
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		ucg->setPrintPos( 1, 50 );
-		ucg->printf( "%s                ", _values[*_select].c_str() );
+		ucg->printf( "%s                ", _values[_select].c_str() );
 		xSemaphoreGive(spiMutex );
 	}else
 	{
@@ -99,7 +99,7 @@ void SetupMenuSelect::display( int mode ){
 			ucg->setPrintPos( 1, 50+25*i );
 			ucg->print( _values[i].c_str() );
 		}
-		ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );
+		ucg->drawFrame( 1,(_select+1)*25+3,238,25 );
 		xSemaphoreGive(spiMutex );
 	}
 
@@ -122,22 +122,22 @@ void SetupMenuSelect::down(int count){
 	if( _numval > 9 ){
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		while( count ) {
-			if( (*_select) > 0 )
-				(*_select)--;
+			if( (_select) > 0 )
+				(_select)--;
 			count--;
 		}
 		ucg->setPrintPos( 1, 50 );
-		ucg->printf("%s                  ",_values[*_select].c_str());
+		ucg->printf("%s                  ",_values[_select].c_str());
 		xSemaphoreGive(spiMutex );
 	}else {
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		ucg->setColor(COLOR_BLACK);
-		ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // blank old frame
+		ucg->drawFrame( 1,(_select+1)*25+3,238,25 );  // blank old frame
 		ucg->setColor(COLOR_WHITE);
-		if( (*_select) >  0 )
-			(*_select)--;
-		ESP_LOGI(FNAME,"val down %d", *_select );
-		ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // draw new frame
+		if( (_select) >  0 )
+			(_select)--;
+		ESP_LOGI(FNAME,"val down %d", _select );
+		ucg->drawFrame( 1,(_select+1)*25+3,238,25 );  // draw new frame
 		xSemaphoreGive(spiMutex );
 	}
 }
@@ -149,22 +149,22 @@ void SetupMenuSelect::up(int count){
 	{
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		while( count ) {
-			if( (*_select) <  _numval-1 )
-				(*_select)++;
+			if( (_select) <  _numval-1 )
+				(_select)++;
 			count--;
 		}
 		ucg->setPrintPos( 1, 50 );
-		ucg->printf("%s                   ", _values[*_select].c_str());
+		ucg->printf("%s                   ", _values[_select].c_str());
 		xSemaphoreGive(spiMutex );
 	}else {
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		ucg->setColor(COLOR_BLACK);
-		ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // blank old frame
+		ucg->drawFrame( 1,(_select+1)*25+3,238,25 );  // blank old frame
 		ucg->setColor(COLOR_WHITE);
-		if ( (*_select) < _numval-1 )
-			(*_select)++;
-		ESP_LOGI(FNAME,"val up %d", *_select );
-		ucg->drawFrame( 1,(*_select+1)*25+3,238,25 );  // draw new frame
+		if ( (_select) < _numval-1 )
+			(_select)++;
+		ESP_LOGI(FNAME,"val up %d", _select );
+		ucg->drawFrame( 1,(_select+1)*25+3,238,25 );  // draw new frame
 		xSemaphoreGive(spiMutex );
 	}
 }
@@ -184,12 +184,14 @@ void SetupMenuSelect::press(){
 			_parent->highlight = -1;  // to topmost selection when back
 		}
 		selected->pressed = true;
-		if( _nvs )
+		if( _nvs ){
+			_nvs->set((int)_select, false ); // do sync in next step
 			_nvs->commit();
+		}
 		pressed = false;
 		//if( _action != 0 )  // maybe enough in display, to be tested...
 		//	(*_action)( this );
-		if( _select_save != *_select )
+		if( _select_save != _select )
 			if( _restart ) {
 				Audio::shutdown();
 				clear();

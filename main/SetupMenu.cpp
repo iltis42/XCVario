@@ -849,10 +849,7 @@ void SetupMenu::setup( )
 		alu->addEntry( "Foot  (ft)");
 		alu->addEntry( "FL    (FL)");
 		un->addEntry( alu );
-		SetupMenuSelect * alq = new SetupMenuSelect( "Alt. Quantization", false,  0, true, &alt_quant );
-		alq->addEntry( "Disable");
-		alq->addEntry( "Enable");
-		un->addEntry( alq );
+
 		SetupMenuSelect * iau = new SetupMenuSelect( "Airspeed", false , update_sunit, true, &ias_unit );
 		iau->addEntry( "Kilom. (Km/h)");
 		iau->addEntry( "Miles  (mph)");
@@ -1374,6 +1371,12 @@ void SetupMenu::setup( )
 		auze->setHelp( PROGMEM "Recalculate zero point for airspeed sensor on next power on");
 		auze->addEntry( "Cancel");
 		auze->addEntry( "Start");
+
+		SetupMenuSelect * alq = new SetupMenuSelect( "Alt. Quantization", false,  0, true, &alt_quant );
+		alq->setHelp( PROGMEM "Set altimeter mode with discrete steps and rolling wheel in the last digits");
+		alq->addEntry( "Disable");
+		alq->addEntry( "Enable");
+		aia->addEntry( alq );
 
 		SetupMenu * stallwa = new SetupMenu( "Stall Warning");
 		aia->addEntry( stallwa );

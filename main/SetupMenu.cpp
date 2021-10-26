@@ -1442,9 +1442,10 @@ void SetupMenu::setup( )
 		rs232->addEntry( s1out );
 		s1out->setHelp( "Select devices routed to serial interface S1");
 		s1out->addEntry( "Disable all");
-		s1out->addEntry( "XCVario");                 // 1    XCVario NMEA Data
-		s1out->addEntry( "Wireless-XCSoar");         // 2    XCSoar Data
-		s1out->addEntry( "WL-XCSoar, XCV");      // 3
+		s1out->addEntry( "XCVario");                // 1    XCVario NMEA Data
+		s1out->addEntry( "Wireless-XCSoar");        // 2    XCSoar Data
+		s1out->addEntry( "WL-XCSoar, XCV");         // 3
+		s1out->addEntry( "S2-XCSoar");              // 4
 
 		SetupMenuSelect * stxi = new SetupMenuSelect( PROGMEM "TX Inversion", true , 0, true, &serial1_tx_inverted );
 		rs232->addEntry( stxi );

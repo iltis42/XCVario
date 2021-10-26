@@ -39,8 +39,6 @@ int   IpsDisplay::charge = 100;
 int   IpsDisplay::red = 10;
 int   IpsDisplay::yellow = 25;
 
-float IpsDisplay::needle_pos_old = 0; // -pi/2 .. pi/2
-
 bool IpsDisplay::netto_old = false;
 ucg_int_t IpsDisplay::char_width; // for roling altimeter
 ucg_int_t IpsDisplay::char_height;
@@ -143,13 +141,12 @@ int IpsDisplay::wksensoralt;
 
 float IpsDisplay::_range_clip = 0;
 int   IpsDisplay::_divisons = 5;
-float IpsDisplay::_scale_k = M_PI_2 / 5.;
 float IpsDisplay::_range = 5.;
 int   IpsDisplay::average_climb = -100;
 float IpsDisplay::average_climbf = 0;
 int   IpsDisplay::prev_heading = 0;
 float IpsDisplay::pref_qnh = 0;
-float (*IpsDisplay::_gauge)(float) = &linGaugeIdx;
+
 const int16_t SINCOS_OVER_110 = 256; // need to be a power of 2
 const float sincosScale = SINCOS_OVER_110/M_PI_2*90./110.;
 static float precalc_sin[SINCOS_OVER_110];
@@ -165,6 +162,97 @@ bool flarm_connected=false;
 static ucg_color_t needlecolor[3] = { {COLOR_WHITE}, {COLOR_ORANGE}, {COLOR_RED} };
 static ucg_color_t bowcolor[2] = { {COLOR_GREEN}, {COLOR_RED} };
 
+////////////////////////////
+// trigenometric helpers for gauge painters
+
+// calculate a gauge indicator position in rad (-pi/2 .. pi/2) for a value
+static float _scale_k = M_PI_2 / 5.;
+static float logGaugeIdx(const float val)
+{
+	return log2f(std::abs(val)+1.f) * _scale_k * (std::signbit(val)?-1.:1.);
+}
+static float linGaugeIdx(const float val)
+{
+	return val * _scale_k;
+}
+static float (*_gauge)(float) = &linGaugeIdx;
+static int   needle_pos_old = 0; // -pi/2 .. pi/2
+
+// get sin/cos position from gauge index in rad
+static inline int precal_scaled_idx(const float val) { return (int)(abs(val)*sincosScale)&(SINCOS_OVER_110-1); }
+static inline int precal_idx(const int ival) { return abs(ival)&(SINCOS_OVER_110-1); }
+
+static inline int gaugeSin(const float val, const int len)
+{
+	return AMIDY - precalc_sin[precal_scaled_idx(val)] * len * (std::signbit(val)?-1:1);
+}
+static inline int gaugeCos(const float val, const int len)
+{
+	return AMIDX - precalc_cos[precal_scaled_idx(val)] * len;
+}
+static inline int gaugeSin(const int val, const int len)
+{
+	return AMIDY - precalc_sin[precal_idx(val)] * len * (std::signbit(val)?-1:1);
+}
+static inline int gaugeCos(const int val, const int len)
+{
+	return AMIDX - precalc_cos[precal_idx(val)] * len;
+}
+static inline int sinIncr(const int val, const int len)
+{
+	return precalc_sin[precal_idx(val)] * len * (std::signbit(val)?-1:1);
+}
+static inline int cosIncr(const int val, const int len)
+{
+	return precalc_cos[precal_idx(val)] * len;
+}
+// Or just simple the plain trigenometric function rad(-110) < idx < rad(110)
+static inline float mySin(const float val)
+{
+	return precalc_sin[precal_scaled_idx(val)] * (std::signbit(val)?-1:1);
+}
+static inline float myCos(const float val)
+{
+	return precalc_cos[precal_scaled_idx(val)];
+}
+static inline float mySin(const int ival)
+{
+	return precalc_sin[precal_idx(ival)] * (std::signbit(ival)?-1:1);
+}
+static inline float myCos(const int ival)
+{
+	return precalc_cos[precal_idx(ival)];
+}
+static void initGauge(const float max, const bool log)
+{
+	if ( log ) {
+		_scale_k = M_PI_2 / log2f(max+1.);
+		_gauge = &logGaugeIdx;
+	} else {
+		_scale_k = M_PI_2 / max;
+		_gauge = &linGaugeIdx;
+	}
+	static bool initialized = false;
+	if ( initialized ) return;
+
+	for ( int i=0; i<SINCOS_OVER_110; i++ ) {
+		precalc_sin[i] = sin(i/sincosScale);
+		precalc_cos[i] = cos(i/sincosScale);
+	}
+	initialized = true;
+}
+// inverse to xxGaugeIdx. Get the value for an indicator position
+static float gaugeValueFromIdx(const float rad)
+{
+	if ( _gauge == &logGaugeIdx ) {
+		return (pow(2., std::abs(rad))-1.f) / _scale_k * (std::signbit(rad)?-1.:1.);
+	} else {
+		return rad / _scale_k;
+	}
+}
+
+////////////////////////////
+// IpsDisplay implementation
 IpsDisplay::IpsDisplay( Ucglib_ILI9341_18x240x320_HWSPI *aucg ) {
 	ucg = aucg;
 	_dtype = ILI9341;
@@ -922,37 +1010,38 @@ void IpsDisplay::drawPolarIndicator( float a, int16_t l1, int16_t l2, int16_t w,
 
 	if( _menu ) return;
 
-	float si=sin(a);
-	float co=cos(a);
-	float psi=gaugeSin(a,l1);
-	float pco=gaugeCos(a,l1);
+	int val = (int)(a*sincosScale); // discrete steps
+	float si=mySin(val);
+	float co=myCos(val);
+	float psi=gaugeSin(val,l1);
+	float pco=gaugeCos(val,l1);
 
 	ucg_int_t xn_0 = pco+w*si;
 	ucg_int_t yn_0 = psi-w*co;
 	ucg_int_t xn_1 = pco-w*si;
 	ucg_int_t yn_1 = psi+w*co;
-	ucg_int_t xn_2 = gaugeCos(a, l2);
-	ucg_int_t yn_2 = gaugeSin(a, l2);
+	ucg_int_t xn_2 = gaugeCos(val, l2);
+	ucg_int_t yn_2 = gaugeSin(val, l2);
 	// ESP_LOGI(FNAME,"IpsDisplay::drawTetragon  x0:%d y0:%d x1:%d y1:%d x2:%d y2:%d x3:%d y3:%d", (int)xn_0, (int)yn_0, (int)xn_1 ,(int)yn_1, (int)xn_2, (int)yn_2, (int)xn_3 ,(int)yn_3 );
 
 	// cleanup previous incarnation
 	ucg->setColor( COLOR_BLACK );
 	ucg->drawTriangle(x_0,y_0,x_1,y_1,x_2,y_2);
+	ucg->setColor( color.color[0], color.color[1], color.color[2] );
+	ucg->drawTriangle(xn_0,yn_0,xn_1,yn_1,xn_2,yn_2);
 	x_0 = xn_0;
 	y_0 = yn_0;
 	x_1 = xn_1;
 	y_1 = yn_1;
 	x_2 = xn_2;
 	y_2 = yn_2;
-	needle_pos_old = a;
-	ucg->setColor( color.color[0], color.color[1], color.color[2] );
-	ucg->drawTriangle(xn_0,yn_0,xn_1,yn_1,xn_2,yn_2);
+	needle_pos_old = val;
 }
 
 // draw incremental bow up to indicator given in rad, pos
 void IpsDisplay::drawPolarSinkBow( float a, int16_t l1)
 {
-	int16_t level = (int16_t)(a*sincosScale); // dice up into discrete steps
+	int level = (int)(a*sincosScale); // dice up into discrete steps
 
 	if ( _menu ) return;
 
@@ -974,10 +1063,10 @@ void IpsDisplay::drawPolarSinkBow( float a, int16_t l1)
 	for ( int i = psink_level_prev + ((psink_level_prev==0 || psink_level_prev*inc>0) ? inc : 0);
 			i != level+((i*inc < 0)?0:inc); i+=inc ) {
 		if ( i != 0 ) {
-			int16_t x = gaugeCos(i, l1);
-			int16_t y = gaugeSin(i, l1);
-			int16_t xe = x - cosIncr(i, 5);
-			int16_t ye = y - sinIncr(i, 5);
+			int x = gaugeCos(i, l1);
+			int y = gaugeSin(i, l1);
+			int xe = x - cosIncr(i, 5);
+			int ye = y - sinIncr(i, 5);
 			ucg->drawLine(x, y, xe, ye);
 			int d = std::signbit(i)?-1:1;
 			if ( std::abs(i) < sincosScale ) {
@@ -996,7 +1085,7 @@ void IpsDisplay::drawPolarSinkBow( float a, int16_t l1)
 // draw incremental bow up to indicator given in rad, pos
 void IpsDisplay::drawBow( float a, int16_t l1)
 {
-	int16_t level = (int16_t)(a*sincosScale); // dice up into discrete steps
+	int level = (int)(a*sincosScale); // dice up into discrete steps
 
 	if ( _menu ) return;
 
@@ -1021,10 +1110,10 @@ void IpsDisplay::drawBow( float a, int16_t l1)
 	for ( int i = bow_level_prev + ((bow_level_prev==0 || bow_level_prev*inc>0) ? inc : 0);
 			i != level+((i*inc < 0)?0:inc); i+=inc ) {
 		if ( i != 0 ) {
-			int16_t x = gaugeCos(i, l1);
-			int16_t y = gaugeSin(i, l1);
-			int16_t xe = x - cosIncr(i, 5);
-			int16_t ye = y - sinIncr(i, 5);
+			int x = gaugeCos(i, l1);
+			int y = gaugeSin(i, l1);
+			int xe = x - cosIncr(i, 5);
+			int ye = y - sinIncr(i, 5);
 			ucg->drawLine(x, y, xe, ye);
 			int d = std::signbit(i)?-1:1;
 			if ( std::abs(i) < sincosScale ) {
@@ -1189,77 +1278,6 @@ void IpsDisplay::drawWindArrow( float a, float speed, int type ){
 		ucg->drawTriangle(xn_2,yn_2,xn_1,yn_1,xn_3,yn_3);
 	}
 	del_wind = true;
-}
-
-// calculate a gauge indicator position in rad (-pi/2 .. pi/2) for a value
-float IpsDisplay::logGaugeIdx(const float val)
-{
-	return log2f(std::abs(val)+1.f) * _scale_k * (std::signbit(val)?-1.:1.);
-}
-float IpsDisplay::linGaugeIdx(const float val)
-{
-	return val * _scale_k;
-}
-// get sin/cos position from gauge index in rad
-inline int IpsDisplay::gaugeSin(const float idx, const int len)
-{
-	return AMIDY - precalc_sin[(int)(abs(idx)*sincosScale)&(SINCOS_OVER_110-1)] * len * (std::signbit(idx)?-1:1);
-}
-inline int IpsDisplay::gaugeCos(const float idx, const int len)
-{
-	return AMIDX - precalc_cos[(int)(abs(idx)*sincosScale)&(SINCOS_OVER_110-1)] * len;
-}
-inline int IpsDisplay::gaugeSin(const int idx, const int len)
-{
-	return AMIDY - precalc_sin[abs(idx)&(SINCOS_OVER_110-1)] * len * (std::signbit(idx)?-1:1);
-}
-inline int IpsDisplay::gaugeCos(const int idx, const int len)
-{
-	return AMIDX - precalc_cos[abs(idx)&(SINCOS_OVER_110-1)] * len;
-}
-inline int IpsDisplay::sinIncr(const int idx, const int len)
-{
-	return precalc_sin[abs(idx)&(SINCOS_OVER_110-1)] * len * (std::signbit(idx)?-1:1);
-}
-inline int IpsDisplay::cosIncr(const int idx, const int len)
-{
-	return precalc_cos[abs(idx)&(SINCOS_OVER_110-1)] * len;
-}
-// Or just simple the plain trigenometric function rad(-110) < idx < rad(110)
-inline float mySin(const float idx)
-{
-	return precalc_sin[(int)(abs(idx)*sincosScale)&(SINCOS_OVER_110-1)] * (std::signbit(idx)?-1:1);
-}
-inline float myCos(const float idx)
-{
-	return precalc_cos[(int)(abs(idx)*sincosScale)&(SINCOS_OVER_110-1)];
-}
-void IpsDisplay::initGauge(const float max, const bool log)
-{
-	if ( log ) {
-		_scale_k = M_PI_2 / log2f(max+1.);
-		_gauge = &logGaugeIdx;
-	} else {
-		_scale_k = M_PI_2 / max;
-		_gauge = &linGaugeIdx;
-	}
-	static bool initialized = false;
-	if ( initialized ) return;
-
-	for ( int i=0; i<SINCOS_OVER_110; i++ ) {
-		precalc_sin[i] = sin(i/sincosScale);
-		precalc_cos[i] = cos(i/sincosScale);
-	}
-	initialized = true;
-}
-// inverse to xxGaugeIdx. Get the value for an indicator position
-float IpsDisplay::gaugeValueFromIdx(const float rad)
-{
-	if ( _gauge == &logGaugeIdx ) {
-		return (pow(2., std::abs(rad))-1.f) / _scale_k * (std::signbit(rad)?-1.:1.);
-	} else {
-		return rad / _scale_k;
-	}
 }
 
 void IpsDisplay::initRetroDisplay( bool ulmode ){

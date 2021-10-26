@@ -53,10 +53,8 @@ private:
 	static float _range;
 	static int prev_heading;
 	static int _divisons;
-    static float _scale_k;
 	static float _range_clip;
 	static int _pixpmd;
-	static float (*_gauge)(float);
 
 	static bool _menu;
 	enum ips_display _dtype;
@@ -101,9 +99,6 @@ private:
 	static ucg_int_t char_width;
 	static ucg_int_t char_height;
 
-	// Pointer edges and alpha for analog display
-	static float needle_pos_old;
-
 	static void drawMC( float mc, bool large=false );
 	static void drawS2FMode( int x, int y, bool cruise );
 	static void drawArrow(int16_t x, int16_t y, int16_t level, bool del);
@@ -138,16 +133,6 @@ private:
 	static void drawSpeed(float speed, ucg_int_t x, ucg_int_t y, bool dirty, bool inc_unit=true);
 	static void drawLegend( bool onlyLines=false );
 	static void drawAvgVario( int16_t x, int16_t y, float ate );
-	static float logGaugeIdx(const float val);
-	static float linGaugeIdx(const float val);
-	static void  initGauge(const float max, const bool log);
-	static int gaugeSin(const float idx, const int len);
-	static int gaugeCos(const float idx, const int len);
-	static int gaugeSin(const int idx, const int len);
-	static int gaugeCos(const int idx, const int len);
-	static int sinIncr(const int idx, const int len);
-	static int cosIncr(const int idx, const int len);
-	static float gaugeValueFromIdx(const float val);
 };
 
 

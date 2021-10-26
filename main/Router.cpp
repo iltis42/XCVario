@@ -180,9 +180,9 @@ void Router::routeS2(){
 		if( (can_tx.get() & RT_XCVARIO) && can_speed.get() )
 			if( forwardMsg( s2, client_tx_q ))
 				ESP_LOGV(FNAME,"ttyS2 RX bytes %d forward to client_tx_q", s2.length() );
-		// if( (serial1_tx.get() & RT_S2) && serial1_speed.get() )
-		// 	if( forwardMsg( s2, s1_tx_q ))
-		// 		ESP_LOGV(FNAME,"ttyS2 RX bytes %d looped to s1_tx_q", s2.length() );
+		if( (serial1_tx.get() & RT_S1) && serial1_speed.get() ) // RT_S1 could be renamed to RT_SERIAL
+			if( forwardMsg( s2, s1_tx_q )) // This might connect XCSoar on S2 with Flarm on S1
+				ESP_LOGV(FNAME,"ttyS2 RX bytes %d forward to s1_tx_q", s2.length() );
 		Protocols::parseNMEA( s2.c_str() );
 	}
 }

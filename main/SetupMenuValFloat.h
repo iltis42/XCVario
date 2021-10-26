@@ -24,6 +24,7 @@ public:
 	void up( int count );  // step up to parent
 	void down( int count );
 	void press();
+	void longPress();
     float *_value;
     static SetupMenuValFloat * qnh_menu;
 

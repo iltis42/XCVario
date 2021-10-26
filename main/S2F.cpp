@@ -112,15 +112,10 @@ double S2F::sink( double v_in ) {
 	double s=0;
 	if ( v_in > Units::Airspeed2Kmh( stall_speed.get() * 0.9 )){
 		double v=v_in/3.6;   // meters per second
-		if( s2f_with_gload.get() ){
-			double n=getN();
-			double sqn = sqrt(n);
-			s = a0*pow(sqn,3) + a1*v*n + a2*pow(v,2)*sqn;
-			// if( !(tick++%2) )
-			//	ESP_LOGI(FNAME,"S2F::sink() V:%0.1f sink:%2.2f G-Load:%1.2f", v_in, s, n );
-		}
-		else
-			s = a0 + a1*v + a2*pow(v,2);
+		double n=getN();
+		double sqn = sqrt(n);
+		s = a0*pow(sqn,3) + a1*v*n + a2*pow(v,2)*sqn;
+		//	ESP_LOGI(FNAME,"S2F::sink() V:%0.1f sink:%2.2f G-Load:%1.2f", v_in, s, n );
 	}
 	return s;
 }

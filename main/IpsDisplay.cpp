@@ -1007,7 +1007,6 @@ void IpsDisplay::drawPolarIndicator( float a, int16_t l1, int16_t l2, int16_t w,
 	static ucg_int_t y_1 = 1;
 	static ucg_int_t x_2 = 1;
 	static ucg_int_t y_2 = -1;
-
 	if( _menu ) return;
 
 	int val = (int)(a*sincosScale); // discrete steps
@@ -1022,20 +1021,19 @@ void IpsDisplay::drawPolarIndicator( float a, int16_t l1, int16_t l2, int16_t w,
 	ucg_int_t yn_1 = psi+w*co;
 	ucg_int_t xn_2 = gaugeCos(val, l2);
 	ucg_int_t yn_2 = gaugeSin(val, l2);
-	// ESP_LOGI(FNAME,"IpsDisplay::drawTetragon  x0:%d y0:%d x1:%d y1:%d x2:%d y2:%d x3:%d y3:%d", (int)xn_0, (int)yn_0, (int)xn_1 ,(int)yn_1, (int)xn_2, (int)yn_2, (int)xn_3 ,(int)yn_3 );
 
-	// cleanup previous incarnation
-	ucg->setColor( COLOR_BLACK );
-	ucg->drawTriangle(x_0,y_0,x_1,y_1,x_2,y_2);
-	ucg->setColor( color.color[0], color.color[1], color.color[2] );
-	ucg->drawTriangle(xn_0,yn_0,xn_1,yn_1,xn_2,yn_2);
-	x_0 = xn_0;
-	y_0 = yn_0;
-	x_1 = xn_1;
-	y_1 = yn_1;
-	x_2 = xn_2;
-	y_2 = yn_2;
-	needle_pos_old = val;
+	if( x_0 != xn_0 || y_0 != yn_0 || x_1 != xn_1 || y_1 != yn_1 || x_2 != xn_2 || y_2 != yn_2 ){
+		ucg->setColor( COLOR_BLACK );
+		ucg->drawTriangle(x_0,y_0,x_1,y_1,x_2,y_2); // cleanup previous incarnation
+		ucg->setColor( color.color[0], color.color[1], color.color[2] );
+		ucg->drawTriangle(xn_0,yn_0,xn_1,yn_1,xn_2,yn_2);
+		x_0 = xn_0;
+		y_0 = yn_0;
+		x_1 = xn_1;
+		y_1 = yn_1;
+		x_2 = xn_2;
+		y_2 = yn_2;
+	}
 }
 
 // draw incremental bow up to indicator given in rad, pos
@@ -1531,6 +1529,7 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 	float a = (*_gauge)(loadFactor-1.);
 	if( int(a*100) != int(needle_pos_old*100) ) {
 		drawPolarIndicator( a, 70, 129, 7, needlecolor[0] );
+		needle_pos_old = a;
 		// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 	}
 	// G load digital

@@ -1725,6 +1725,8 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	if( te < -_range )
 		te = -_range;
 	float polar_sink = Units::Vario( polar_sink_ms );
+	if( polar_sink < -_range )
+		polar_sink = -_range;
 	//  float s2f = Units::Airspeed( s2f_ms );   not used for now
 	float s2fd = Units::Airspeed( s2fd_ms );
 	// int airspeed =  (int)(Units::Airspeed( airspeed_kmh ) + 0.5);
@@ -1804,7 +1806,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		needle_pos_old = needle_pos;
 	}
 	// ESP_LOGI(FNAME,"polar-sink:%f Old:%f int:%d old:%d", polar_sink, old_polar_sink, int( polar_sink*100.), int( old_polar_sink*100. ) );
-	if( ps_display.get() ){
+	if( ps_display.get() && !(tick%3) ){
 		if( int( polar_sink*100.) != int( old_polar_sink*100. ) ){
 			drawPolarSinkBow( (*_gauge)(polar_sink), 134);
 			old_polar_sink = polar_sink;

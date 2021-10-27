@@ -163,6 +163,13 @@ bool flarm_connected=false;
 static ucg_color_t needlecolor[3] = { {COLOR_WHITE}, {COLOR_ORANGE}, {COLOR_RED} };
 static ucg_color_t bowcolor[2] = { {COLOR_GREEN}, {COLOR_RED} };
 
+static ucg_int_t x_0 = 0;
+static ucg_int_t y_0 = 0;
+static ucg_int_t x_1 = 1;
+static ucg_int_t y_1 = 1;
+static ucg_int_t x_2 = 1;
+static ucg_int_t y_2 = -1;
+
 ////////////////////////////
 // trigenometric helpers for gauge painters
 
@@ -595,6 +602,7 @@ void IpsDisplay::redrawValues()
 	old_polar_sink = -100;
 	psink_level_prev = 0; // redraw from zero
 	bow_level_prev = 0;
+	x_0 = -1000;
 }
 
 void IpsDisplay::drawTeBuf(){
@@ -1003,14 +1011,8 @@ void IpsDisplay::drawOneScaleLine( float a, int16_t l1, int16_t l2, int16_t w, u
 }
 
 // -pi/2 < val < pi/2, center x, y, start radius, end radius, width, r,g,b
-void IpsDisplay::drawPolarIndicator( float a, int16_t l1, int16_t l2, int16_t w, ucg_color_t color)
+void IpsDisplay::drawPolarIndicator( float a, int16_t l1, int16_t l2, int16_t w, ucg_color_t color )
 {
-	static ucg_int_t x_0 = 0;
-	static ucg_int_t y_0 = 0;
-	static ucg_int_t x_1 = 1;
-	static ucg_int_t y_1 = 1;
-	static ucg_int_t x_2 = 1;
-	static ucg_int_t y_2 = -1;
 	if( _menu ) return;
 
 	int val = (int)(a*sincosScale); // discrete steps

@@ -146,6 +146,7 @@ int   IpsDisplay::average_climb = -100;
 float IpsDisplay::average_climbf = 0;
 int   IpsDisplay::prev_heading = 0;
 float IpsDisplay::pref_qnh = 0;
+float IpsDisplay::old_polar_sink = 0;
 
 const int16_t SINCOS_OVER_110 = 256; // need to be a power of 2
 const float sincosScale = SINCOS_OVER_110/M_PI_2*90./110.;
@@ -591,6 +592,9 @@ void IpsDisplay::redrawValues()
 	if ( FLAP ) FLAP->redraw();
 	netto_old = false;
 	s2fmode_prev = 100;
+	old_polar_sink = -100;
+	psink_level_prev = 0; // redraw from zero
+	bow_level_prev = 0;
 }
 
 void IpsDisplay::drawTeBuf(){
@@ -1039,6 +1043,7 @@ void IpsDisplay::drawPolarIndicator( float a, int16_t l1, int16_t l2, int16_t w,
 // draw incremental bow up to indicator given in rad, pos
 void IpsDisplay::drawPolarSinkBow( float a, int16_t l1)
 {
+	// ESP_LOGI(FNAME,"drawPolarSinkBow %f", a );
 	int level = (int)(a*sincosScale); // dice up into discrete steps
 
 	if ( _menu ) return;
@@ -1667,6 +1672,7 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y) {
 
 void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, float polar_sink_ms, float altitude_m,
 		float temp, float volt, float s2fd_ms, float s2f_ms, float acl_ms, bool s2fmode, bool standard_setting, float wksensor, bool ulmode ){
+	// ESP_LOGI(FNAME,"drawRetroDisplay polar_sink: %f", polar_sink_ms );
 	if( _menu )
 		return;
 	if( !(screens_init & INIT_DISPLAY_RETRO) ){
@@ -1689,8 +1695,8 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			ate_ms = ate_ms - polar_sink_ms;
 		}
 		else if( netto_mode.get() == NETTO_RELATIVE ){  // Super Netto, considering circling sink
-			te_ms = te_ms - polar_sink_ms + Speed2Fly.circlingSink( airspeed_kmh );
-			ate_ms = ate_ms - polar_sink_ms + Speed2Fly.circlingSink( airspeed_kmh );
+			te_ms = te_ms - polar_sink_ms + Speed2Fly.circlingSink( ias.get() );
+			ate_ms = ate_ms - polar_sink_ms + Speed2Fly.circlingSink( ias.get() );
 		}
 		netto=true;
 	}
@@ -1795,11 +1801,14 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		float val = (needle_pos>0.) ? needle_pos : 0.;
 		// draw green/red vario bar
 		drawBow(val, 134);
-
-		if( ! netto && ps_display.get() ) {
-			drawPolarSinkBow((*_gauge)(polar_sink), 134);
-		}
 		needle_pos_old = needle_pos;
+	}
+	// ESP_LOGI(FNAME,"polar-sink:%f Old:%f int:%d old:%d", polar_sink, old_polar_sink, int( polar_sink*100.), int( old_polar_sink*100. ) );
+	if( ps_display.get() ){
+		if( int( polar_sink*100.) != int( old_polar_sink*100. ) ){
+			drawPolarSinkBow( (*_gauge)(polar_sink), 134);
+			old_polar_sink = polar_sink;
+		}
 	}
 
 	// Battery
@@ -1897,8 +1906,8 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 			ate_ms = ate_ms - polar_sink_ms;
 		}
 		else if( netto_mode.get() == NETTO_RELATIVE ){  // Super Netto, considering circling sink
-			te_ms = te_ms - polar_sink_ms + Speed2Fly.circlingSink( airspeed_kmh );
-			ate_ms = ate_ms - polar_sink_ms + Speed2Fly.circlingSink( airspeed_kmh );
+			te_ms = te_ms - polar_sink_ms + Speed2Fly.circlingSink( ias.get() );
+			ate_ms = ate_ms - polar_sink_ms + Speed2Fly.circlingSink( ias.get() );
 		}
 		netto=true;
 	}

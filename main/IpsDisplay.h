@@ -98,6 +98,7 @@ private:
 	static bool netto_old;
 	static ucg_int_t char_width;
 	static ucg_int_t char_height;
+	static float old_polar_sink;
 
 	static void drawMC( float mc, bool large=false );
 	static void drawS2FMode( int x, int y, bool cruise );

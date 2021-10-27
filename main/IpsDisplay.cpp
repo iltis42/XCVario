@@ -1074,12 +1074,7 @@ void IpsDisplay::drawBow( float a, int16_t &old_a_level, int16_t l1, ucg_color_t
 			int ye = y - sinIncr(i, 5);
 			ucg->drawLine(x, y, xe, ye);
 			int d = std::signbit(i)?-1:1;
-			if ( std::abs(i) < sincosScale ) {
-				ucg->drawLine(x, y+d, xe, ye+d);
-			}
-			else {
-				ucg->drawLine(x-1, y, xe-1, ye);
-			}
+			ucg->drawLine(x, y+d, xe, ye+d);
 		}
 		else ucg->setColor(c.color[0], c.color[1], c.color[2]);
 	}

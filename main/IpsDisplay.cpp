@@ -109,7 +109,6 @@ extern xSemaphoreHandle spiMutex; // todo needs a better concept here
 ucg_color_t IpsDisplay::colors[TEMAX+1+TEGAP];
 ucg_color_t IpsDisplay::colorsalt[TEMAX+1+TEGAP];
 
-
 Ucglib_ILI9341_18x240x320_HWSPI *IpsDisplay::ucg = 0;
 
 int IpsDisplay::_te=0;
@@ -117,8 +116,6 @@ int IpsDisplay::_ate=0;
 int IpsDisplay::s2falt=-1;
 int IpsDisplay::s2fdalt=0;
 int IpsDisplay::s2f_level_prev=0;
-int16_t IpsDisplay::bow_level_prev=0;
-int16_t IpsDisplay::psink_level_prev=0;
 int IpsDisplay::s2fmode_prev=100;
 int IpsDisplay::alt_prev=0;
 int IpsDisplay::chargealt=-1;
@@ -131,7 +128,6 @@ int IpsDisplay::as_prev = -1;
 int IpsDisplay::yposalt = 0;
 int IpsDisplay::tyalt = 0;
 int IpsDisplay::pyalt = 0;
-
 
 // Flap definitions
 #define WKSYMST DISPLAY_W-28
@@ -152,6 +148,9 @@ const int16_t SINCOS_OVER_110 = 256; // need to be a power of 2
 const float sincosScale = SINCOS_OVER_110/M_PI_2*90./110.;
 static float precalc_sin[SINCOS_OVER_110];
 static float precalc_cos[SINCOS_OVER_110];
+static int16_t old_vario_bar_val = 0;
+static int16_t old_sink_bar_val = 0;
+
 
 #define WKBARMID (AMIDY-15)
 
@@ -160,8 +159,9 @@ float te_prev = 0;
 bool blankold = false;
 bool blank = false;
 bool flarm_connected=false;
-static ucg_color_t needlecolor[3] = { {COLOR_WHITE}, {COLOR_ORANGE}, {COLOR_RED} };
-static ucg_color_t bowcolor[2] = { {COLOR_GREEN}, {COLOR_RED} };
+const static ucg_color_t needlecolor[3] = { {COLOR_WHITE}, {COLOR_ORANGE}, {COLOR_RED} };
+typedef enum e_bow_color { BC_GREEN, BC_RED, BC_BLUE } t_bow_color;
+const static ucg_color_t bowcolor[3] = { {COLOR_GREEN}, {COLOR_RED}, {COLOR_BLUE} };
 
 static ucg_int_t x_0 = 0;
 static ucg_int_t y_0 = 0;
@@ -600,8 +600,8 @@ void IpsDisplay::redrawValues()
 	netto_old = false;
 	s2fmode_prev = 100;
 	old_polar_sink = -100;
-	psink_level_prev = 0; // redraw from zero
-	bow_level_prev = 0;
+	old_vario_bar_val = 0;
+	old_sink_bar_val = 0;
 	x_0 = -1000;
 }
 
@@ -1042,68 +1042,21 @@ void IpsDisplay::drawPolarIndicator( float a, int16_t l1, int16_t l2, int16_t w,
 	}
 }
 
+
 // draw incremental bow up to indicator given in rad, pos
-void IpsDisplay::drawPolarSinkBow( float a, int16_t l1)
+void IpsDisplay::drawBow( float a, int16_t &old_a_level, int16_t l1, ucg_color_t c)
 {
-	// ESP_LOGI(FNAME,"drawPolarSinkBow %f", a );
-	int level = (int)(a*sincosScale); // dice up into discrete steps
+	int16_t level = (int16_t)(a*sincosScale); // dice up into discrete steps
 
 	if ( _menu ) return;
 
-	if ( level == psink_level_prev ) {
+	if ( level == old_a_level ) {
 		return;
 	}
 
 	// potentially clean first
-	if ( std::abs(level) < std::abs(psink_level_prev)
-		|| level*psink_level_prev < 0 ) {
-		ucg->setColor(COLOR_BLACK);
-	}
-	else {
-		ucg->setColor(COLOR_BLUE);
-	}
-	// ESP_LOGI(FNAME,"bow lev %d", level);
-
-	int inc = (level-psink_level_prev > 0) ? 1 : -1;
-	for ( int i = psink_level_prev + ((psink_level_prev==0 || psink_level_prev*inc>0) ? inc : 0);
-			i != level+((i*inc < 0)?0:inc); i+=inc ) {
-		if ( i != 0 ) {
-			int x = gaugeCos(i, l1);
-			int y = gaugeSin(i, l1);
-			int xe = x - cosIncr(i, 5);
-			int ye = y - sinIncr(i, 5);
-			ucg->drawLine(x, y, xe, ye);
-			int d = std::signbit(i)?-1:1;
-			if ( std::abs(i) < sincosScale ) {
-				ucg->drawLine(x, y+d, xe, ye+d);
-			}
-			else {
-				ucg->drawLine(x-1, y, xe-1, ye);
-			}
-		}
-		else ucg->setColor(COLOR_BLUE);
-	}
-
-	psink_level_prev = level;
-}
-
-// draw incremental bow up to indicator given in rad, pos
-void IpsDisplay::drawBow( float a, int16_t l1)
-{
-	int level = (int)(a*sincosScale); // dice up into discrete steps
-
-	if ( _menu ) return;
-
-	if ( level == bow_level_prev ) {
-		return;
-	}
-
-	// the color to draw
-	ucg_color_t c = bowcolor[level<0];
-
-	// potentially clean first
-	if ( std::abs(level) < std::abs(bow_level_prev)
-		|| level*bow_level_prev < 0 ) {
+	if ( std::abs(level) < std::abs(old_a_level)
+		|| level*old_a_level < 0 ) {
 		ucg->setColor(COLOR_BLACK);
 	}
 	else {
@@ -1111,8 +1064,8 @@ void IpsDisplay::drawBow( float a, int16_t l1)
 	}
 	// ESP_LOGI(FNAME,"bow lev %d", level);
 
-	int inc = (level-bow_level_prev > 0) ? 1 : -1;
-	for ( int i = bow_level_prev + ((bow_level_prev==0 || bow_level_prev*inc>0) ? inc : 0);
+	int inc = (level-old_a_level > 0) ? 1 : -1;
+	for ( int i = old_a_level + ((old_a_level==0 || old_a_level*inc>0) ? inc : 0);
 			i != level+((i*inc < 0)?0:inc); i+=inc ) {
 		if ( i != 0 ) {
 			int x = gaugeCos(i, l1);
@@ -1130,8 +1083,7 @@ void IpsDisplay::drawBow( float a, int16_t l1)
 		}
 		else ucg->setColor(c.color[0], c.color[1], c.color[2]);
 	}
-
-	bow_level_prev = level;
+	old_a_level = level;
 }
 
 // +/- range, radius to AMID [pixel], opt. small area refresh at [scale*10]
@@ -1802,15 +1754,15 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		if ( needle_pos > M_PI_2*75./90. ) speed_dirty = true;
 
 		// Draw colored bow
-		float val = (needle_pos>0.) ? needle_pos : 0.;
+		float bar_val = (needle_pos>0.) ? needle_pos : 0.;
 		// draw green/red vario bar
-		drawBow(val, 134);
+		drawBow(bar_val, old_vario_bar_val, 134, bowcolor[BC_GREEN] );
 		needle_pos_old = needle_pos;
 	}
 	// ESP_LOGI(FNAME,"polar-sink:%f Old:%f int:%d old:%d", polar_sink, old_polar_sink, int( polar_sink*100.), int( old_polar_sink*100. ) );
 	if( ps_display.get() && !(tick%3) ){
 		if( int( polar_sink*100.) != int( old_polar_sink*100. ) ){
-			drawPolarSinkBow( (*_gauge)(polar_sink), 134);
+			drawBow(  (*_gauge)(polar_sink), old_sink_bar_val, 134, bowcolor[BC_BLUE] );
 			old_polar_sink = polar_sink;
 		}
 	}

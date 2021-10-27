@@ -116,8 +116,7 @@ private:
 	static void drawThermometer( int x, int y );
 	static void drawOneScaleLine(float a, int16_t l1, int16_t l2, int16_t w, uint8_t r, uint8_t g, uint8_t b);
 	static void drawPolarIndicator(float a, int16_t l1, int16_t l2, int16_t w, ucg_color_t color);
-	static void drawBow( float a, int16_t l1);
-	static void drawPolarSinkBow( float a, int16_t l1);
+	static void drawBow( float a, int16_t &old_a_level, int16_t l1, ucg_color_t color );
 	static void initRetroDisplay( bool ulmode );
 	static void initLoadDisplay();
 	static void drawRetroDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor, bool ulmode );

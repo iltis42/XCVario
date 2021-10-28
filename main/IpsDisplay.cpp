@@ -1506,7 +1506,7 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 
 	// G load digital
 	if( (int)(loadFactor*30) != _ate && !(tick%3) ) {
-		drawAvgVario( 90, AMIDY+2, loadFactor );
+		drawAvgVario( AMIDX+38, AMIDY+2, loadFactor );
 		_ate = (int)(loadFactor*30);
 	}
 	// Min/Max values
@@ -1940,7 +1940,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	// Average Vario
 	if( _ate != (int)(ate*10) && !(tick%3) ) {
 		// draw numeric value
-		drawAvgVario( FIELD_START, YVAR-20, ate );
+		drawAvgVario( FIELD_START+88, YVAR-20, ate );
 
 		_ate = (int)(ate)*10;
 	}

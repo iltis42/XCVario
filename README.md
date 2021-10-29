@@ -59,27 +59,27 @@ The Vario Prototype with 550 nits 2.4 inch IPS Technology LCD Display features a
 
 The Soft- and Hardware features:
 
-- QNH and McCready Adjustment
-- Audio-Generator with adjustable Volume and Deadband plus setup option for frequency tone style and range
-- Integrated Loudspeaker, 2 Watt Audio power (loud and clear)
-- Optimum Flap Position Indicator with Flap Sensor (optional)
+- QNH Ballast, Bugs and McCready adjustment and many other options configurable
+- Audio-Generator with adjustable Volume and Deadband plus setup option for frequency, tone style and range
+- Integrated Loudspeaker, 2 Watt Audio power
+- Optimum Flap Position Indicator with Flap Position Sensor (optional)
 - S2F (Speed2Fly) Indicator with configurable MC Ballast and Bugs based on customizable Polar
-- Around 100 Polars are already included ( list in https://github.com/iltis42/XCVario/blob/master/main/Polars.cpp )
-- IAS (Indicated Airspeed) and TAS Indicator
-- Outside Temperatur Sensor
-- Battery Charge Indicator
+- Around 130 Polars are included in installed polar library ( list in https://github.com/iltis42/XCVario/blob/master/main/Polars.cpp )
+- IAS or TAS airspeed indication
+- OAT (Outside Air Temperature) Sensor
+- Battery Charge Indicator, adaptable to battery type
 - Variometer display with adjustable range (1 m/s - 30 m/s), and damping ( 1s - 10s )
-- Bluetooth, Wifi or serial Interface to navigation devices (XCSoar, LK8000, etc).
-- Biderectional Sync of MacCready Value, Ballast and Bugs
-- Sync QNH from device
-- High precision barometric Altimeter 1 hPa (8 meter) absolute accuracy
+- Bluetooth, Wifi and two serial interfaces to external devices (XCSoar, LK8000, FLARM, Sensors, etc)
+- Biderectional Sync of QNH, MacCready Value, Ballast and Bugs with secondary variometer and navi
+- High precision barometric Altimeter 1 hPa (8 meter) absolute accuracy, and 0.1 meter resolution
 - Sunlight readable high contrast 550 nits 2.4 inch IPS Technology Display
 - Battery Voltage Indicator
-- Audio Switch for Vario/S2F Audio
-- Detailed Setup Menu
-- Serial to Bluetooth Bridge e.g. for FLARM and FLARM alert screen
-- Serial Output of OpenVarion Format NMEA data
-- Software Update OverTheAir (OTA) via WiFi Access Point
-- Attitude and Heading Reference System (AHRS) available in this hardware revision
+- Switch for S2F/Vario Mode (Audio and Netto-Mode)
+- Detailed Setup Menu to customise Vario for various applications (Standalone, Twin-Seater, etc.)
+- Option to connect navi to secondary device
+- Serial to wirless (Bluetooth or WiFi Bridge) e.g. for FLARM and FLARM alert screen
+- Output of NMEA data in OpenVario,Borgelt,Cambridge or XCVario format
+- OTA (Over The Air) Software Update via WiFi and Browser
+- Attitude and Heading Reference System (AHRS) available since 2021 hardware revision
 - Wind calculation in circling (with a Flarm) and in straight flight by magnet sensor extension
 

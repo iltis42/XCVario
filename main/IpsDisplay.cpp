@@ -525,7 +525,7 @@ void IpsDisplay::drawAvg( float avclimb, float delta ){
 		int x=gaugeCos(a, pos);
 		int y=gaugeSin(a, pos);
 		ucg->drawTetragon( x+size, y, x,y+ylsize, x-size,y, x,y-yusize );
-
+		// refresh scale around old AVG icon
 		drawScale( _range, -_range, 140, 0, avc_old*10.f );
 	}
 	if( delta > 0 )
@@ -1302,8 +1302,8 @@ void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float ate ){
 	ucg->setClipRange( x-88, y-30, 95, 50 );
 	ucg->setFont(ucg_font_fub35_hn);
 	char s[15];
-	static char* format[2] = {" %2.1f", "  %2.0f"};
-	sprintf(s, format[std::abs(ate)>10], ate);
+	static char* format[2] = {"  %2.1f", "  %2.0f"};
+	sprintf(s, format[std::abs(ate)>10], round(ate*10.)/10.); // Avoid "-" sign because of not sown mantissa
 	ucg->setPrintPos(x - ucg->getStrWidth(s), y);
 	ucg->print(s);
 	ucg->setFontPosBottom();

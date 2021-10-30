@@ -115,7 +115,7 @@ private:
 	static void drawTemperature( int x, int y, float t );
 	static void drawThermometer( int x, int y );
 	static void drawOneScaleLine(float a, int16_t l1, int16_t l2, int16_t w, uint8_t r, uint8_t g, uint8_t b);
-	static void drawPolarIndicator(float a, int16_t l1, int16_t l2, int16_t w, ucg_color_t color);
+	static bool drawPolarIndicator(float a, int16_t l1, int16_t l2, int16_t w, ucg_color_t color, bool dirty=false);
 	static void drawBow( float a, int16_t &old_a_level, int16_t l1, ucg_color_t color );
 	static void initRetroDisplay( bool ulmode );
 	static void initLoadDisplay();
@@ -128,9 +128,9 @@ private:
 	static void drawGaugeTriangle( int y, int r, int g, int b, bool s2f=false );
 	static void drawAvgSymbol( int y, int r, int g, int b, int x=DISPLAY_LEFT );
 	static void drawAvg( float mps, float delta );
-	static void drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool dirty, bool inc_unit = true );
+	static bool drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool dirty, bool inc_unit=false );
 	static void drawSmallSpeed(float v_kmh, ucg_int_t x, ucg_int_t y);
-	static void drawSpeed(float speed, ucg_int_t x, ucg_int_t y, bool dirty, bool inc_unit=true);
+	static bool drawSpeed(float speed, ucg_int_t x, ucg_int_t y, bool dirty, bool inc_unit=false);
 	static void drawLegend( bool onlyLines=false );
 	static void drawAvgVario( int16_t x, int16_t y, float ate );
 };

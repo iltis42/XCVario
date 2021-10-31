@@ -705,6 +705,20 @@ void IpsDisplay::drawS2FMode( int x, int y, bool cruise ){
 	}
 }
 
+
+void IpsDisplay::setArrowColor( bool lower ){
+	if( s2f_arrow_color.get() == AC_BLUE_BLUE )
+		ucg->setColor( COLOR_BBLUE );
+	if( s2f_arrow_color.get() == AC_WHITE_WHITE )
+		ucg->setColor( COLOR_WHITE );
+	if( s2f_arrow_color.get() == AC_GREEN_RED ){
+		if( lower )
+			ucg->setColor( COLOR_RED );
+		else
+			ucg->setColor( COLOR_GREEN );
+	}
+}
+
 void IpsDisplay::drawArrow(int16_t x, int16_t y, int16_t level, bool del)
 {
 	const int width=40;
@@ -717,16 +731,21 @@ void IpsDisplay::drawArrow(int16_t x, int16_t y, int16_t level, bool del)
 	int init = 1;
 	if ( std::abs(level) == 4 ) {
 		init = 2;
-		if ( del ) { ucg->setColor( COLOR_BBLUE ); }
-		else { ucg->setColor( COLOR_RED ); }
+		if ( del )
+			setArrowColor( level < 0 );
+		else{
+			if( s2f_arrow_color.get() == AC_GREEN_RED  )
+				ucg->setColor( COLOR_WHITE );
+			else
+				ucg->setColor( COLOR_RED );
+		}
 	}
 	else if ( del ) {
 		ucg->setColor( COLOR_BLACK );
 	}
 	else {
-		ucg->setColor( COLOR_BBLUE );
+		setArrowColor( level < 0 );
 	}
-
 
 	int l = level-init;
 	if ( level < 0 ) {
@@ -1052,7 +1071,7 @@ void IpsDisplay::drawBow( float a, int16_t &old_a_level, int16_t l1, ucg_color_t
 
 	// potentially clean first
 	if ( std::abs(level) < std::abs(old_a_level)
-		|| level*old_a_level < 0 ) {
+			|| level*old_a_level < 0 ) {
 		ucg->setColor(COLOR_BLACK);
 	}
 	else {

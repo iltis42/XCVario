@@ -655,6 +655,14 @@ void SetupMenu::setup( )
 		s2fhy->setHelp(PROGMEM"Hysteresis for auto S2F transition at autospeed +- this value");
 		s2fse->addEntry( s2fhy );
 
+		SetupMenuSelect * s2fnc = new SetupMenuSelect( "Arrow Color", false, 0 , true, &s2f_arrow_color );
+		s2fnc->setHelp( PROGMEM"Select color of the S2F arrow's when painted in Up/Down position" );
+		s2fnc->addEntry( "White/White");
+		s2fnc->addEntry( "Blue/Blue");
+		s2fnc->addEntry( "Green/Red");
+		s2fse->addEntry( s2fnc );
+
+
 		SetupMenu * elco = new SetupMenu( "Electronic Compensation" );
 		vae->addEntry( elco );
 		SetupMenuSelect * enac = new SetupMenuSelect( "eCompensation", false, 0 , false, &te_comp_enable );

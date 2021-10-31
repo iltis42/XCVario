@@ -262,7 +262,8 @@ SetupNG<int> 			wind_reference( "WIND_REF", WR_HEADING );
 SetupNG<float> 			wind_max_deviation("WIND_MDEV", 30.0 );
 SetupNG<float> 			wind_as_min( "WIND_ASM", 25 );
 SetupNG<int> 			s2f_blockspeed( "S2G_BLOCKSPEED", 0 );  // considering netto vario and g load for S2F or not
-SetupNG<int> 			needle_color("NEEDLE_COLOR", 0);
+SetupNG<int> 			needle_color("NEEDLE_COLOR", VN_COLOR_WHITE );
+SetupNG<int>			s2f_arrow_color("S2F_ARRCOL", AC_WHITE_WHITE );
 SetupNG<int> 			wk_label_plus_3( "WKLP3", 32,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);  //  L
 SetupNG<int> 			wk_label_plus_2( "WKLP2", 11,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);  //  2
 SetupNG<int> 			wk_label_plus_1( "WKLP1", 10,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);  //  1

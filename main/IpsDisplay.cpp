@@ -1711,6 +1711,9 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// Check overlap on inner figures
 	bool alt_overlap = needle_pos < -M_PI_2*60./90.;
 	bool speed_overlap = needle_pos > M_PI_2*75./90.;
+	static bool alt_overlap_old = false;
+	static bool speed_overlap_old = false;
+	// ESP_LOGI(FNAME,"alt %d speed %d", alt_overlap, speed_overlap );
 
 	if( _menu ){
 		xSemaphoreGive(spiMutex);
@@ -1751,22 +1754,20 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	// Altitude & Airspeed
 	if( !(tick%8) ) {
-		static int alternate = 0;
-		if ( alternate&1 ) {
-			// static float s=0; // test the rolling numbers
-			// altitude = 800. + sin(s) * 123.;
-			// s+=0.04;
-			if ( drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, alt_dirty ) ) {
-				needle_dirty = alt_overlap;
+		if ( drawSpeed( airspeed_kmh, INNER_RIGHT_ALIGN, 75, speed_dirty ) ) {
+			if( speed_overlap ){
+				needle_dirty = true;
 			}
-			alt_dirty = false;
-		} else {
-			if ( drawSpeed(airspeed_kmh, INNER_RIGHT_ALIGN, 75, speed_dirty ) ) {
-				needle_dirty = speed_overlap;
-			}
-			speed_dirty = false;
 		}
-		alternate++;
+		speed_dirty = false;
+	}
+	if( !(tick%11) ) {
+		if ( drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, alt_dirty ) ) {
+			if( alt_overlap ){
+				needle_dirty = true;
+			}
+		}
+		alt_dirty = false;
 	}
 
 	// Compass
@@ -1780,9 +1781,11 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// if ( s > M_PI_2 ) inc=-0.01;
 	// needle_pos = s+=inc;
 	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
-	if ( drawPolarIndicator(needle_pos, 80, 132, 9, needlecolor[needle_color.get()], needle_dirty) ) {
-		alt_dirty = alt_overlap;
-		speed_dirty = speed_overlap;
+	if( drawPolarIndicator(needle_pos, 80, 132, 9, needlecolor[needle_color.get()], needle_dirty) ) {
+		alt_dirty = alt_overlap_old;
+		speed_dirty = speed_overlap_old;
+		alt_overlap_old = alt_overlap;
+		speed_overlap_old = speed_overlap;
 
 		// Draw colored bow
 		float bar_val = (needle_pos>0.) ? needle_pos : 0.;

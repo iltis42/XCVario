@@ -1753,7 +1753,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	// Altitude & Airspeed
-	if( !(tick%8) ) {
+	if( !(tick%8) || speed_dirty ) {
 		if ( drawSpeed( airspeed_kmh, INNER_RIGHT_ALIGN, 75, speed_dirty ) ) {
 			if( speed_overlap ){
 				needle_dirty = true;
@@ -1761,7 +1761,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		}
 		speed_dirty = false;
 	}
-	if( !(tick%11) ) {
+	if( !(tick%11) || alt_dirty ) {
 		if ( drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, alt_dirty ) ) {
 			if( alt_overlap ){
 				needle_dirty = true;

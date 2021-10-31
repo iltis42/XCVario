@@ -1014,6 +1014,8 @@ bool IpsDisplay::drawPolarIndicator( float a, int16_t l1, int16_t l2, int16_t w,
 	if( _menu ) return false;
 
 	int val = (int)(a*sincosScale + 0.5 ); // descrete indicator position
+	bool change = val != needle_pos_old;
+	if ( ! change && ! dirty ) return false; // nothing painted
 
 	float si=mySin(val);
 	float co=myCos(val);
@@ -1027,15 +1029,13 @@ bool IpsDisplay::drawPolarIndicator( float a, int16_t l1, int16_t l2, int16_t w,
 	n.x_2 = gaugeCos(val, l2); // tip
 	n.y_2 = gaugeSin(val, l2);
 	// ESP_LOGI(FNAME,"IpsDisplay::drawTetragon  x0:%d y0:%d x1:%d y1:%d x2:%d y2:%d x3:%d y3:%d", (int)xn_0, (int)yn_0, (int)xn_1 ,(int)yn_1, (int)xn_2, (int)yn_2, (int)xn_3 ,(int)yn_3 );
-	if( n.x_0 != o.x_0 || n.x_1 != o.x_1 || n.x_2 != o.x_2 || n.y_0 != o.y_0 || n.y_1 != o.y_1 || n.y_2 != o.y_2 ){
-		ucg->setColor( COLOR_BLACK );
-		ucg->drawTriangle(o.x_0,o.y_0,o.x_1,o.y_1,o.x_2,o.y_2);
-		ucg->setColor( color.color[0], color.color[1], color.color[2] );
-		ucg->drawTriangle(n.x_0,n.y_0, n.x_1,n.y_1, n.x_2,n.y_2);
-		o = n;
-		return true;
-	}
-	return false;
+	ucg->setColor( COLOR_BLACK );
+	ucg->drawTriangle(o.x_0,o.y_0,o.x_1,o.y_1,o.x_2,o.y_2);
+	ucg->setColor( color.color[0], color.color[1], color.color[2] );
+	ucg->drawTriangle(n.x_0,n.y_0, n.x_1,n.y_1, n.x_2,n.y_2);
+	o = n;
+	needle_pos_old = val;
+	return change;
 }
 
 

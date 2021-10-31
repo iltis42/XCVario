@@ -60,7 +60,7 @@ public:
 	};
 
     static float ActualWingloadCorrection( float v ) {
-        return v * sqrt( 100.0/( ballast.get() + 100.0) );
+        return v * sqrt( 100.0/( (ballast.get() + fixed_ballast.get()) + 100.0) );
     }
 
 	static float TemperatureUnit( float t ){

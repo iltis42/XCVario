@@ -47,7 +47,7 @@ void S2F::change_polar()
 	a2= ((v2-v3)*(w1-w3)+(v3-v1)*(w2-w3)) / (pow(v1,2)*(v2-v3)+pow(v2,2)*(v3-v1)+ pow(v3,2)*(v1-v2));
 	a1= (w2-w3-a2*(pow(v2,2)-pow(v3,2))) / (v2-v3);
 	a0= w3 -a2*pow(v3,2) - a1*v3;
-    a2 = a2/sqrt( ( ballast.get() +100.0)/100.0   );   // wingload  e.g. 100l @ 500 kg = 1.2 and G-Force
+    a2 = a2/sqrt( ( (ballast.get() + fixed_ballast.get()) +100.0)/100.0   );   // wingload  e.g. 100l @ 500 kg = 1.2 and G-Force
     a0 = a0 * ((bugs.get() + 100.0) / 100.0);
     a1 = a1 * ((bugs.get() + 100.0) / 100.0);
     a2 = a2 * ((bugs.get() + 100.0) / 100.0);
@@ -86,7 +86,7 @@ void S2F::change_mc_bal()
 	change_polar();
 	float refw = polar_wingload.get() * polar_wingarea.get();
 	ESP_LOGI(FNAME,"Reference weight: %f kg", refw);
-	float liters = (1+ (ballast.get()/100))*refw -refw;
+	float liters = (1+ ((ballast.get() + fixed_ballast.get())/100))*refw -refw;
 	ESP_LOGI(FNAME,"New Ballast in liters: %f ", liters);
 	float max_bal = polar_max_ballast.get();
 	if( (int)(polar_max_ballast.get()) == 0 ) { // We use 100 liters as default once its not with the polar
@@ -184,7 +184,7 @@ void S2F::test( void )
 	ESP_LOGI(FNAME, "Sink %f @ %s km/h ", sink( 150.0 ), "150");
 	ESP_LOGI(FNAME, "Sink %f @ %s km/h ", sink( 180.0 ), "180");
 	ESP_LOGI(FNAME, "Sink %f @ %s km/h ", sink( 220.0 ), "220");
-    ESP_LOGI(FNAME,"MC %f  Ballast %f", _MC, ballast.get() );
+    ESP_LOGI(FNAME,"MC %f  Ballast %f", _MC, (ballast.get() + fixed_ballast.get()) );
 	for( int st=20; st >= -20; st-=5 )
 	{
 		ESP_LOGI(FNAME, "S2F %g km/h vario %g m/s", speed( (double)st/10 ), (double)st/10 );

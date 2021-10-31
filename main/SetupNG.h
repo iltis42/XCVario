@@ -394,6 +394,7 @@ extern SetupNG<float>  		deadband_neg;
 extern SetupNG<float>  		range;
 extern SetupNG<int>			log_scale;
 extern SetupNG<float>  		ballast;
+extern SetupNG<float>  		fixed_ballast;
 extern SetupNG<float>  		s2f_speed;
 
 extern SetupNG<int>  		audio_variable_frequency;

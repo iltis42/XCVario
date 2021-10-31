@@ -220,7 +220,7 @@ int polar_select( SetupMenuSelect * p )
 
 int bal_adj( SetupMenuValFloat * p )
 {
-	float loadinc = (ballast.get() +100.0)/100.0;
+	float loadinc = ((ballast.get() + fixed_ballast.get()) +100.0)/100.0;
 	float newwl = polar_wingload.get() * loadinc;
 	p->ucg->setFont(ucg_font_fub25_hr);
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
@@ -531,6 +531,7 @@ void SetupMenu::setup( )
 
 	SetupMenuValFloat * bal = new SetupMenuValFloat( "Ballast", 0, "%", 0.0, 100, 0.2, bal_adj, true, &ballast  );
 	bal->setHelp(PROGMEM"Percent wing load increase by ballast");
+	bal->setPrecision(1);
 	mm->addEntry( bal );
 
 	SetupMenuValFloat * bgs = new SetupMenuValFloat( "Bugs", 0, "%", 0.0, 50, 1, bug_adj, true, &bugs  );
@@ -831,6 +832,11 @@ void SetupMenu::setup( )
 		wingarea->setHelp(PROGMEM"Wingarea for the selected glider, to allow adjustments to support wing extensions or new types in square meters");
 		poe->addEntry( wingarea );
 
+		SetupMenuValFloat * fixball = new SetupMenuValFloat( "Fixed Ballast", 0, "%", 0, 100, 0.2, bal_adj, false, &fixed_ballast );
+		fixball->setPrecision(1);
+		fixball->setHelp(PROGMEM"Add here fixed a fixed weight to your glider, once empty glider is more heavy than given the reference polar wingload");
+		poe->addEntry( fixball );
+
 		SetupMenu * opt = new SetupMenu( "Options" );
 
 		mm->addEntry( opt );
@@ -1014,8 +1020,8 @@ void SetupMenu::setup( )
 		nmeaMenu->addEntry( nmeaHdt );
 
 		SetupMenuValFloat * compdamp = new SetupMenuValFloat( "Damping", 0, "sec", 0.1, 10.0, 0.1, 0, false, &compass_damping );
-		compassME->addEntry( compdamp );
 		compdamp->setPrecision(1);
+		compassME->addEntry( compdamp );
 		compdamp->setHelp(PROGMEM "Compass or magnetic heading damping factor in seconds");
 
 		SetupMenuValFloat * compi2c = new SetupMenuValFloat( "I2C Clock", 0, "KHz", 10.0, 400.0, 10, 0, false, &compass_i2c_cl, true );
@@ -1064,23 +1070,23 @@ void SetupMenu::setup( )
 		strWindM->addEntry( smdev );
 
 		SetupMenuValFloat *smgsm = new SetupMenuValFloat( "Airspeed Lowpass", nullptr, "", 0, 1.0, 0.001, nullptr, false, &wind_as_filter );
-		strWindM->addEntry( smgsm );
 		smgsm->setPrecision(3);
+		strWindM->addEntry( smgsm );
 		smgsm->setHelp(PROGMEM "Lowpass factor for airspeed correction from reverse wind calculation");
 
 		SetupMenuValFloat *devlp = new SetupMenuValFloat( "Deviation Lowpass", nullptr, "", 0, 1.0, 0.001, nullptr, false, &wind_dev_filter );
-		strWindM->addEntry( devlp );
 		devlp->setPrecision(3);
+		strWindM->addEntry( devlp );
 		devlp->setHelp(PROGMEM "Lowpass factor for deviation table correction from reverse wind calculation");
 
 		SetupMenuValFloat *wlpf = new SetupMenuValFloat( "Averager", nullptr, "", 5, 300, 1, nullptr, false, &wind_filter_lowpass );
-		strWindM->addEntry( wlpf );
 		wlpf->setPrecision(0);
+		strWindM->addEntry( wlpf );
 		wlpf->setHelp(PROGMEM "Number of measurements used for straight flight live wind averager");
 
 		SetupMenuValFloat *smgps = new SetupMenuValFloat( "GPS Lowpass", nullptr, "sec", 0.1, 10.0, 0.1, nullptr, false, &wind_gps_lowpass );
-		strWindM->addEntry( smgps );
 		smgps->setPrecision(1);
+		strWindM->addEntry( smgps );
 		smgps->setHelp(PROGMEM "Lowpass factor for GPS info TC and GS, should correlate with compass lowpass less GPS latency");
 
 
@@ -1106,8 +1112,8 @@ void SetupMenu::setup( )
 
 
 		SetupMenuValFloat *cirlp = new SetupMenuValFloat( "Averager", nullptr, "", 1, 10, 1, nullptr, false, &circle_wind_lowpass );
-		cirWindM->addEntry( cirlp );
 		cirlp->setPrecision(0);
+		cirWindM->addEntry( cirlp );
 		cirlp->setHelp(PROGMEM "Number of circles used for circling wind averager. A value of 1 means no average");
 
 
@@ -1132,8 +1138,8 @@ void SetupMenu::setup( )
 		wirelessM->addEntry( btm );
 
 		SetupMenuValFloat *wifip = new SetupMenuValFloat( "WIFI Power", 0, "%", 10.0, 100.0, 5.0, update_wifi_power, false, &wifi_max_power );
-		wirelessM->addEntry( wifip );
 		wifip->setPrecision(0);
+		wirelessM->addEntry( wifip );
 		wifip->setHelp(PROGMEM "Maximum Wifi Power to be used 10..100% or 2..20dBm");
 
 		SetupMenuSelect * wifimal = new SetupMenuSelect( "Lock Master", false, master_xcv_lock, true, &master_xcvario_lock );

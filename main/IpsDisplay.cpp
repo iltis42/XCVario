@@ -706,16 +706,16 @@ void IpsDisplay::drawS2FMode( int x, int y, bool cruise ){
 }
 
 
-void IpsDisplay::setArrowColor( bool lower ){
+void IpsDisplay::setArrowColor( bool upper ){
 	if( s2f_arrow_color.get() == AC_BLUE_BLUE )
 		ucg->setColor( COLOR_BBLUE );
 	if( s2f_arrow_color.get() == AC_WHITE_WHITE )
 		ucg->setColor( COLOR_WHITE );
 	if( s2f_arrow_color.get() == AC_GREEN_RED ){
-		if( lower )
-			ucg->setColor( COLOR_RED );
-		else
+		if( upper )
 			ucg->setColor( COLOR_GREEN );
+		else
+			ucg->setColor( COLOR_RED );
 	}
 }
 

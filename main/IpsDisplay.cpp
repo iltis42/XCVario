@@ -159,7 +159,6 @@ float te_prev = 0;
 bool blankold = false;
 bool blank = false;
 bool flarm_connected=false;
-const static ucg_color_t needlecolor[3] = { {COLOR_WHITE}, {COLOR_ORANGE}, {COLOR_RED} };
 typedef enum e_bow_color { BC_GREEN, BC_RED, BC_BLUE } t_bow_color;
 const static ucg_color_t bowcolor[3] = { {COLOR_GREEN}, {COLOR_RED}, {COLOR_BLUE} };
 
@@ -1270,6 +1269,10 @@ void IpsDisplay::initRetroDisplay( bool ulmode ){
 		FLAP->setBarPosition( WKSYMST-4, WKBARMID);
 		FLAP->setSymbolPosition( WKSYMST-3, WKBARMID-27*(abs(flap_neg_max.get()))-18 );
 	}
+	if (ulmode){
+// Thermometer
+		drawThermometer(10, 25 );
+	}
 }
 
 void IpsDisplay::drawWarning( const char *warn, bool push ){
@@ -1505,6 +1508,7 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 	}
 	// draw G pointer
 	float a = (*_gauge)(loadFactor-1.);
+        ucg_color_t needlecolor[3] = { {COLOR_WHITE}, {COLOR_ORANGE}, {COLOR_RED} };
 	drawPolarIndicator( a, 70, 129, 7, needlecolor[0] );
 	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 
@@ -1781,6 +1785,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// if ( s > M_PI_2 ) inc=-0.01;
 	// needle_pos = s+=inc;
 	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
+	ucg_color_t needlecolor[3] = { {COLOR_WHITE}, {COLOR_ORANGE}, {COLOR_RED} };
 	if( drawPolarIndicator(needle_pos, 80, 132, 9, needlecolor[needle_color.get()], needle_dirty) ) {
 		alt_dirty = alt_overlap_old;
 		speed_dirty = speed_overlap_old;

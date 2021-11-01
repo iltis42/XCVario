@@ -1823,8 +1823,9 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	// Temperature Value
+
 	if( (int)(temp*10) != tempalt && !(tick%12)) {
-		drawTemperature( 50, 25, temp );
+		drawTemperature( ulmode?60:50, 25, temp );
 		tempalt=(int)(temp*10);
 	}
 

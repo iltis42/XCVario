@@ -1547,6 +1547,7 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y) {
 	if( _menu )
 		return;
 	// ESP_LOGI(FNAME, "drawCompass: %d ", wind_display.get() );
+	bool compass_done=false;
 	if( (wind_display.get() & WD_DIGITS) || (wind_display.get() & WD_ARROW) ){
 		int winddir=0;
 		float wind=0;
@@ -1622,6 +1623,7 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y) {
 		}
 	}
 	else if( wind_display.get() & WD_COMPASS ){
+		compass_done = true;
 		int heading = static_cast<int>(rintf(mag_hdt.get()));
 		if( heading >= 360 )
 			heading -= 360;
@@ -1640,6 +1642,25 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y) {
 			ucg->setFont(ucg_font_fub20_hf);
 			ucg->setPrintPos(x+5, y);
 			ucg->print("\xb0 ");
+			prev_heading = heading;
+		}
+	}
+	if( !compass_done && compass_enable.get() && compass_calibrated.get() && (display_style.get() == DISPLAY_UL)){
+		compass_done = true;
+		int heading = static_cast<int>(rintf(mag_hdt.get()));
+		if( heading >= 360 )
+			heading -= 360;
+		// ESP_LOGI(FNAME, "heading %d, valid %d", heading, Compass::headingValid() );
+		if( prev_heading != heading || !(tick%16) ){
+			char s[15];
+			if( heading < 0 )
+				sprintf(s,"%4s", "---" );
+			else
+				sprintf(s,"%3d\xb0  ", heading );
+			ucg->setColor( COLOR_WHITE );
+			ucg->setFont(ucg_font_fub20_hf);
+			ucg->setPrintPos(113, 220);
+			ucg->print(s);
 			prev_heading = heading;
 		}
 	}

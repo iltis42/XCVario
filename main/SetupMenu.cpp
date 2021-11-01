@@ -614,17 +614,21 @@ void SetupMenu::setup( )
 		vdav->setHelp(PROGMEM"Response time, time constant of digital Average Vario Display");
 		vdampm->addEntry( vdav );
 
+		SetupMenu * meanclimb = new SetupMenu( "Mean Climb" );
+		meanclimb->setHelp(PROGMEM"Mean Climb or MC recommendation by green/red rhombus displayed in vario scale adjustment");
+		MenuEntry* meanclimbm = vae->addEntry( meanclimb );
+
 		SetupMenuValFloat * vccm = new SetupMenuValFloat( "Minimum climb", 0, "m/s",	0.0, 2.0, 0.1, 0, false, &core_climb_min );
-		vccm->setHelp(PROGMEM"Minimum climb rate that counts for arithmetic mean climb value (red rhombus left of TE bar)");
-		vdampm->addEntry( vccm );
+		vccm->setHelp(PROGMEM"Minimum climb rate that counts for arithmetic mean climb value");
+		meanclimbm->addEntry( vccm );
 
 		SetupMenuValFloat * vcch = new SetupMenuValFloat( "Duration", 0,	"min", 1, 300, 1, 0, false, &core_climb_history );
 		vcch->setHelp(PROGMEM"Duration in minutes where samples for mean climb value are regarded, default is last 3 thermals or 45 min");
-		vdampm->addEntry( vcch );
+		meanclimbm->addEntry( vcch );
 
 		SetupMenuValFloat * vcp = new SetupMenuValFloat( "Cycle", 0,	"sec", 10, 60, 1, 0, false, &core_climb_period );
 		vcp->setHelp(PROGMEM"Cycle in number of seconds when mean climb value is recalculated, default is last 60 seconds");
-		vdampm->addEntry( vcp);
+		meanclimbm->addEntry( vcp);
 
 		SetupMenu * s2fs = new SetupMenu( "S2F Settings" );
 		MenuEntry* s2fse = vae->addEntry( s2fs );
@@ -881,7 +885,7 @@ void SetupMenu::setup( )
 
 		SetupMenuSelect * amode = new SetupMenuSelect( "Airspeed Mode",	false, 0, true, &airspeed_mode );
 		opt->addEntry( amode );
-		amode->setHelp( PROGMEM "Select mode of Airspeed indicator to display IAS (Indicated AirSpeed, default) or TAS (True AirSpeed) considering air density");
+		amode->setHelp( PROGMEM "Select mode of Airspeed indicator to display IAS (Indicated AirSpeed, default) or TAS (True AirSpeed) considering air density", 130 );
 		amode->addEntry( "IAS");
 		amode->addEntry( "TAS");
 
@@ -898,7 +902,7 @@ void SetupMenu::setup( )
 		altDisplayMode->addEntry( "QFE");
 
 		SetupMenuValFloat * tral = new SetupMenuValFloat( "Transition Altitude", 0, "FL", 0, 400, 10, 0, false, &transition_alt  );
-		tral->setHelp(PROGMEM"Transition altitude (or transition height, when using QFE) is the altitude/height above which standard pressure (QNE) is set (1013.2 mb/hPa)");
+		tral->setHelp(PROGMEM"Transition altitude (or transition height, when using QFE) is the altitude/height above which standard pressure (QNE) is set (1013.2 mb/hPa)", 100 );
 		opt->addEntry( tral );
 
 		SetupMenu * flarm = new SetupMenu( "FLARM" );
@@ -1007,16 +1011,16 @@ void SetupMenu::setup( )
 		SetupMenu * nmeaMenu = new SetupMenu( "Setup NMEA" );
 		compassME->addEntry( nmeaMenu );
 
-		SetupMenuSelect * nmeaHdm = new SetupMenuSelect( "$HCHDM", false, 0, true, &compass_nmea_hdm );
+		SetupMenuSelect * nmeaHdm = new SetupMenuSelect( "Magnetic Heading", false, 0, true, &compass_nmea_hdm );
 		nmeaHdm->addEntry( "Disable");
 		nmeaHdm->addEntry( "Enable");
-		nmeaHdm->setHelp( PROGMEM "Enable/disable NMEA '$HCHDM' sentence (magnetic heading)" );
+		nmeaHdm->setHelp( PROGMEM "Enable/disable NMEA '$HCHDM' sentence generation for magnetic heading" );
 		nmeaMenu->addEntry( nmeaHdm );
 
-		SetupMenuSelect * nmeaHdt = new SetupMenuSelect( "$HCHDT", false, 0, true, &compass_nmea_hdt );
+		SetupMenuSelect * nmeaHdt = new SetupMenuSelect( "True Heading", false, 0, true, &compass_nmea_hdt );
 		nmeaHdt->addEntry( "Disable");
 		nmeaHdt->addEntry( "Enable");
-		nmeaHdt->setHelp( PROGMEM "Enable/disable NMEA '$HCHDT' sentence (magnetic true heading)" );
+		nmeaHdt->setHelp( PROGMEM "Enable/disable NMEA '$HCHDT' sentence generation for true heading" );
 		nmeaMenu->addEntry( nmeaHdt );
 
 		SetupMenuValFloat * compdamp = new SetupMenuValFloat( "Damping", 0, "sec", 0.1, 10.0, 0.1, 0, false, &compass_damping );
@@ -1031,8 +1035,6 @@ void SetupMenu::setup( )
 		// Show compass settings
 		ShowCompassSettings* scs = new ShowCompassSettings( "Show Settings" );
 		compassME->addEntry( scs );
-
-
 
 		// Wind speed observation window
 		SetupMenuSelect * windcal = new SetupMenuSelect( "Wind Calculation", false, 0, true, &wind_enable );
@@ -1234,7 +1236,7 @@ void SetupMenu::setup( )
 		bat->addEntry( batv );
 
 		SetupMenu * hardware = new SetupMenu( "Hardware Setup" );
-		hardware->setHelp( PROGMEM "Setup variometer hardware like display, rotary, AHRS sensor");
+		hardware->setHelp( PROGMEM "Setup variometer hardware like display, rotary, AHRS sensor", 200 );
 		sye->addEntry( hardware );
 
 		SetupMenu * display = new SetupMenu( "DISPLAY Setup" );
@@ -1291,6 +1293,32 @@ void SetupMenu::setup( )
 		roinc->addEntry( "2 Indent");
 		roinc->addEntry( "3 Indent");
 		roinc->addEntry( "4 Indent");
+
+		SetupMenu * rotarya = new SetupMenu( "Rotary Actions" );
+		hardware->addEntry( rotarya );
+		// Rotary Default
+		SetupMenuSelect * rd = new SetupMenuSelect( "Rotation", false, 0, true, &rot_default );
+		rotarya->addEntry( rd );
+		rd->setHelp(PROGMEM "Select value to be altered at rotary movement outside of setup menu");
+		rd->addEntry( "Volume");
+		rd->addEntry( "MC Value");
+
+		SetupMenuSelect * sact = new SetupMenuSelect( "Setup Activ.", false, 0, true, &menu_long_press );
+		rotarya->addEntry( sact);
+		sact->setHelp(PROGMEM "Select Mode to activate setup menu either by short press or long press > 0.4 seconds");
+		sact->addEntry( "Short Press");
+		sact->addEntry( "Long Press");
+
+		SetupMenuSelect * screens = new SetupMenuSelect( "Screens", false, 0, true, &menu_screens );
+		rotarya->addEntry( screens );
+		screens->setHelp(PROGMEM "Select screens to be activated one after each other by short press");
+		screens->addEntry( "Variometer");
+		screens->addEntry( "+ G-Meter");
+		/*
+				screens->addEntry( "+ Traffic Alert");
+				screens->addEntry( "+ Thermal Assistant");
+		 */
+
 
 		SetupMenuSelect * s2fsw = new SetupMenuSelect( "S2F Switch", false , 0, false, &s2f_switch_type );
 		hardware->addEntry( s2fsw );
@@ -1403,33 +1431,6 @@ void SetupMenu::setup( )
 		SetupMenuValFloat * vmax = new SetupMenuValFloat( "Maximum Speed", 0, sunit.c_str(), 70, 450, 1, 0, false, &v_max  );
 		vmax->setHelp(PROGMEM"Configure maximum speed for corresponding airplane type");
 		aia->addEntry( vmax );
-
-
-		SetupMenu * rotarya = new SetupMenu( "Rotary" );
-		sye->addEntry( rotarya );
-		// Rotary Default
-		SetupMenuSelect * rd = new SetupMenuSelect( "Rotation", false, 0, true, &rot_default );
-		rotarya->addEntry( rd );
-		rd->setHelp(PROGMEM "Select value to be altered at rotary movement outside of setup menu");
-		rd->addEntry( "Volume");
-		rd->addEntry( "MC Value");
-
-		SetupMenuSelect * sact = new SetupMenuSelect( "Setup Activ.", false, 0, true, &menu_long_press );
-		rotarya->addEntry( sact);
-		sact->setHelp(PROGMEM "Select Mode to activate setup menu either by short press or long press > 0.4 seconds");
-		sact->addEntry( "Short Press");
-		sact->addEntry( "Long Press");
-
-		SetupMenuSelect * screens = new SetupMenuSelect( "Screens", false, 0, true, &menu_screens );
-		rotarya->addEntry( screens );
-		screens->setHelp(PROGMEM "Select screens to be activated one after each other by short press");
-		screens->addEntry( "Variometer");
-		screens->addEntry( "+ G-Meter");
-		/*
-		screens->addEntry( "+ Traffic Alert");
-		screens->addEntry( "+ Thermal Assistant");
-		*/
-
 
 
 		// _serial1_speed

@@ -46,23 +46,6 @@ const char *flarm[] = {
 		"$PFLAU,3,1,2,1,1,90,2,80,855,1234*\n",
 		"$PFLAU,3,1,2,1,1,90,2,80,1555,1234*\n"
 };
-/*
-const char *gps[] = {
-		"$PFLAA,0,11461,-9272,1436,1,AFFFFF,51,0,257,0.0,0*7A\n",
-		"$PFLAA,0,2784,3437,216,1,AFFFFE,141,0,77,0.0,0*56\n",
-		"$PFLAA,1,-1375,1113,64,1,AFFFFD,231,0,30,0.0,0*43\n",
-		"$PFLAA,0,-3158,3839,1390,1,A858F3,302,0,123,-12.4,0*6B\n",
-		"$GPRMC,084854.40,A,44xx.xxx38,N,093xx.xxx15,W,0.0,0.0,300116,,,D*43\n",
-		"$PFLAA,0,11621,-9071,1437,1,AFFFFF,52,0,257,0.0,0*7F\n",
-		"$PFLAA,0,2724,3485,218,1,AFFFFE,142,0,77,0.0,0*58\n",
-		"$PFLAA,1,-1394,1089,65,1,AFFFFD,232,0,30,0.0,0*4C\n",
-		"$PFLAA,0,-3158,3839,1384,1,A858F3,302,0,123,-12.4,0*6E\n",
-		"$GPRMC,084855.40,A,44xx.xxx38,N,093xx.xxx15,W,0.0,0.0,300116,,,D*42\n",
-		"$GPGGA,152011.934,4850.555,N,00839.186,E,1,12,1.0,0.0,M,0.0,M,,*67\n",
-		"$GPGSA,A,3,01,02,03,04,05,06,07,08,09,10,11,12,1.0,1.0,1.0*30\n",
-		"$GPRMC,152949.571,A,4846.973,N,00843.677,E,,,220620,000.0,W*75\n",
-};
-*/
 
 int sim=100;
 #define HEARTBEAT_PERIOD_MS_SERIAL 20
@@ -97,6 +80,7 @@ void Serial::serialHandler(void *pvParameters){
 				// ESP_LOGD(FNAME,"Serial 1 TX len: %d bytes", s.length() );
 				// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
 				int wr = Serial1.write( s.c_str(), s.length() );
+				DM.monitorString( MON_S1, DIR_TX, s.c_str() );
 				ESP_LOGD(FNAME,"Serial 1 TX written: %d", wr);
 			}
 		}
@@ -120,6 +104,7 @@ void Serial::serialHandler(void *pvParameters){
 				// ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.c_str(),numread, ESP_LOG_INFO);
 				s.set( rxbuf, numread );
 				Router::forwardMsg( s, s1_rx_q );
+				DM.monitorString( MON_S1, DIR_RX, s.c_str() );
 			}
 		}
 		Router::routeS1();
@@ -134,6 +119,7 @@ void Serial::serialHandler(void *pvParameters){
 	    			// ESP_LOGD(FNAME,"Serial 2 TX len: %d bytes", s.length() );
 	    			// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
 	    			int wr = Serial2.write( s.c_str(), s.length() );
+	    			DM.monitorString( MON_S2, DIR_TX, s.c_str() );
 	    			ESP_LOGD(FNAME,"Serial 2 TX written: %d", wr);
 	    		}
 	    	}
@@ -158,6 +144,7 @@ void Serial::serialHandler(void *pvParameters){
 	    			// ESP_LOGI(FNAME,"Serial 2 RX bytes read: %d  bincom: %d", numread,  Flarm::bincom  );
 	    			// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),numread, ESP_LOG_INFO);
 	    			Router::forwardMsg( s, s2_rx_q );
+	    			DM.monitorString( MON_S2, DIR_TX, s.c_str() );
 	    		}
 	    	}
 	    	Router::routeS2();

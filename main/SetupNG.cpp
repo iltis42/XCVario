@@ -297,7 +297,7 @@ SetupNG<float> 			master_xcvario( "MSXCV", 0 );
 SetupNG<int> 			master_xcvario_lock( "MSXCVL", 0 );
 SetupNG<int> 			menu_long_press("MENU_LONG", 0 );
 SetupNG<int> 			menu_screens("MENU_SCR", 0 );
-
+SetupNG<int> 			data_monitor("DATAMON", MON_OFF, true, SYNC_NONE, VOLATILE  );
 
 mpud::raw_axes_t zero_bias;
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );

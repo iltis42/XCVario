@@ -53,7 +53,7 @@ void DataMonitor::monitorString( int ch, e_dir_t dir, const char *str ){
 		ucg->setPrintPos( 0, scrollpos );
 		ucg->print( hunk.c_str() );
 		total+=hunklen;
-		ESP_LOGI(FNAME,"hunklen: %d total: %d hunk %s", hunklen, total, hunk.c_str() );
+		// ESP_LOGI(FNAME,"hunklen: %d total: %d hunk %s", hunklen, total, hunk.c_str() );
 		scrollpos+=scroll;
 		if( scrollpos > 320 )
 			scrollpos = 0;

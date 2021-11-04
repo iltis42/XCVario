@@ -38,9 +38,9 @@ void DataMonitor::monitorString( int ch, e_dir_t dir, const char *str ){
 	const int scroll = 20;
 	std::string S;
 	if( dir == DIR_RX )
-		S = std::string("  RX>");
+		S = std::string("RX>");
 	else
-		S = std::string("  TX<");
+		S = std::string("TX<");
 	S += s;
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setFont(ucg_font_fub11_tr);
@@ -49,6 +49,7 @@ void DataMonitor::monitorString( int ch, e_dir_t dir, const char *str ){
 		int hunklen = maxChar( S.c_str(), total );
 		std::string hunk = S.substr( total, hunklen );
 		ucg->setColor( COLOR_WHITE );
+		ucg->setPrintPos( 0, scrollpos );
 		ucg->print( hunk.c_str() );
 		total+=hunklen;
 		ESP_LOGI(FNAME,"hunklen: %d total: %d hunk %s", hunklen, total, hunk.c_str() );

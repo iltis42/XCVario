@@ -15,10 +15,11 @@ int DataMonitor::maxChar( const char *str, int pos ){
 	int N=0;
 	int i=0;
 	char s[2] = { 0 };
-	while( N < 240 ){
+	while( N <= 240 ){
 		s[0] = str[i+pos];
-		i++;
 		N += ucg->getStrWidth( s );
+		if( N<240 )
+			i++;
 	}
 	return i;
 }

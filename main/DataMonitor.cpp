@@ -39,9 +39,9 @@ void DataMonitor::monitorString( int ch, e_dir_t dir, const char *str ){
 	const int scroll = 20;
 	std::string S;
 	if( dir == DIR_RX )
-		S = std::string("RX>");
+		S = std::string(">");
 	else
-		S = std::string("TX<");
+		S = std::string("<");
 	S += s;
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setFont(ucg_font_fub11_tr);

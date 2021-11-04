@@ -70,6 +70,7 @@
 #include <string>
 #include <cstdio>
 #include <cstring>
+#include "DataMonitor.h"
 
 // #include "sound.h"
 
@@ -123,7 +124,7 @@ xSemaphoreHandle spiMutex=NULL;
 PressureSensor *baroSensor = 0;
 PressureSensor *teSensor = 0;
 
-Ucglib_ILI9341_18x240x320_HWSPI *MYUCG;  // ( SPI_DC, CS_Display, RESET_Display );
+Ucglib_ILI9341_18x240x320_HWSPI *MYUCG = 0;  // ( SPI_DC, CS_Display, RESET_Display );
 IpsDisplay *display;
 bool topDown = false;
 
@@ -131,6 +132,7 @@ OTA *ota = 0;
 
 ESPRotary Rotary;
 SetupMenu  *Menu = 0;
+DataMonitor DM;
 
 // Gyro and acceleration sensor
 I2C_t& i2c = i2c1;  // i2c0 or i2c1
@@ -800,6 +802,7 @@ void sensor(void *args){
 	MYUCG = new Ucglib_ILI9341_18x240x320_HWSPI( SPI_DC, CS_Display, RESET_Display );
 	display = new IpsDisplay( MYUCG );
 	Flarm::setDisplay( MYUCG );
+	DM.begin( MYUCG, &Rotary );
 	display->begin();
 	display->bootDisplay();
 

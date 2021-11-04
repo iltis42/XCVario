@@ -36,7 +36,7 @@
 #include "sensor.h"
 #include "Flarm.h"
 #include "Switch.h"
-
+#include "DataMonitor.h"
 
 typedef struct client_record {
 	int client;
@@ -140,6 +140,7 @@ void WifiApp::socket_server(void *setup) {
 			if( len ){
 				// ESP_LOGI(FNAME, "port %d to sent %d: bytes, %s", config->port, len, buffer );
 				config->idle = 0;
+				DM.monitorString( MON_WIFI_8880+config->port-8880, DIR_TX, buffer );
 			}
 			else
 			{
@@ -162,6 +163,7 @@ void WifiApp::socket_server(void *setup) {
 					SString tcprx;
 					tcprx.set( r, sizeRead );
 					Router::forwardMsg( tcprx, *(config->rxbuf) );
+					DM.monitorString( MON_WIFI_8880+config->port-8880, DIR_RX, r );
 					// ESP_LOGI(FNAME, "RX wifi client port %d size: %d bincom:%d", config->port, sizeRead, Flarm::bincom );
 					// ESP_LOG_BUFFER_HEXDUMP(FNAME,tcprx.c_str(),sizeRead, ESP_LOG_INFO);
 				}

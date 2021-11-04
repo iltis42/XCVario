@@ -32,6 +32,7 @@ public:
 	void press();
 	void longPress();
 	void showMenu( bool pressed );
+	static void catchFocus( bool activate );
 };
 
 #endif

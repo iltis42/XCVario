@@ -29,6 +29,7 @@
 #include "Flarm.h"
 #include "WifiClient.h"
 #include "Blackboard.h"
+#include "DataMonitor.h"
 
 #include <inttypes.h>
 #include <iterator>
@@ -46,6 +47,8 @@ SetupMenuSelect * mpu = 0;
 
 std::string vunit;
 std::string sunit;
+
+static bool focus = false;
 
 
 // Compass menu handler
@@ -98,6 +101,14 @@ int update_rentry(SetupMenuValFloat * p)
 int update_wifi_power(SetupMenuValFloat * p)
 {
 	ESP_ERROR_CHECK(esp_wifi_set_max_tx_power( int(wifi_max_power.get()*80.0/100.0) ));
+	return 0;
+}
+
+int data_mon( SetupMenuSelect * p ){
+	ESP_LOGI(FNAME,"data_mon( %d ) ", p->getSelect() );
+	if( p->getSelect() != MON_OFF ){
+		DM.start();
+	}
 	return 0;
 }
 
@@ -325,8 +336,12 @@ void SetupMenu::begin( IpsDisplay* display, ESPRotary * rotary, PressureSensor *
 	audio_volume.set( default_volume.get() );
 }
 
+void SetupMenu::catchFocus( bool activate ){
+	focus = activate;
+}
+
 void SetupMenu::display( int mode ){
-	if( (selected != this) || !inSetup )
+	if( (selected != this) || !inSetup || focus )
 		return;
 	ESP_LOGI(FNAME,"SetupMenu display( %s)", _title.c_str() );
 	clear();
@@ -476,7 +491,7 @@ void SetupMenu::showMenu( bool apressed ){
 void SetupMenu::press(){
 	if( selected == 0 )
 		selected = root;
-	if( (selected != this) )
+	if( (selected != this) || focus )
 		return;
 	if( !inSetup ){
 		active_screen++;
@@ -1149,6 +1164,18 @@ void SetupMenu::setup( )
 		wifimal->addEntry( "Unlock");
 		wifimal->addEntry( "Lock");
 		wirelessM->addEntry( wifimal );
+
+		SetupMenuSelect * datamon = new SetupMenuSelect( "Monitor", false, data_mon, true, &data_monitor );
+		datamon->setHelp( PROGMEM "Short press button to pause, long press for stop data monitor", 260);
+		datamon->addEntry( "Disable");
+		datamon->addEntry( "Bluetooth");
+		datamon->addEntry( "Wifi 8880");
+		datamon->addEntry( "Wifi 8881");
+		datamon->addEntry( "Wifi 8882");
+		datamon->addEntry( "S1");
+		datamon->addEntry( "S2");
+		datamon->addEntry( "CAN");
+		wirelessM->addEntry( datamon );
 
 		SetupMenu * gload = new SetupMenu( "G-Load Display" );
 		MenuEntry* gloadME = opt->addEntry( gload );

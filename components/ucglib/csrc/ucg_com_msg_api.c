@@ -82,7 +82,7 @@ void ucg_ScrollLines(ucg_t *ucg, ucg_int_t lines){
 	data[1] = ILI9341_VSCRSADD;
 	data[2] = 2;  // arg mode
 	data[3] = lines >> 8;
-	data[4] = 0;  // no change
+	data[4] = 2;  // no change
 	data[5] = lines & 0xff;
 	ucg_com_SendCmdDataSequence( ucg, 6, data, 0 );
 	ucg_com_SetCSLineStatus(ucg, 1);
@@ -91,7 +91,7 @@ void ucg_ScrollLines(ucg_t *ucg, ucg_int_t lines){
 void ucg_ScrollSetMargins(ucg_t *ucg, ucg_int_t top, ucg_int_t bottom ){
 	if (top + bottom <= 320) {
 		ucg_com_SetCSLineStatus(ucg, 0);
-		uint16_t middle = 320 - (top + bottom);
+		uint16_t middle = 320 - top -bottom;
 		uint8_t data[14];
 		data[0] = 1;
 		data[1] = ILI9341_VSCRDEF;
@@ -107,7 +107,7 @@ void ucg_ScrollSetMargins(ucg_t *ucg, ucg_int_t top, ucg_int_t bottom ){
 		data[11] = bottom >> 8;
 		data[12] = 2;
 		data[13] = bottom & 0xff;
-		ucg_com_SendCmdDataSequence( ucg, 8, data, 1 );
+		ucg_com_SendCmdDataSequence( ucg, 14, data, 1 );
 		ucg_com_SetCSLineStatus(ucg, 1);
 	}
 }

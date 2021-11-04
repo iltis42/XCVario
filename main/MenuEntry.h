@@ -57,15 +57,5 @@ public:
 	unsigned char y = 0;
     int    idx = 0;
 	static Ucglib_ILI9341_18x240x320_HWSPI *ucg;
-// private:
-//     class MenuRotary : public RotaryObserver {
-//     public:
-//         virtual void up( int count ) { selected->up(count); }
-//         virtual void down( int count ) { selected->down(count); }
-//         virtual void press() { selected->press(); }
-//         virtual void release() { selected->release(); }
-//         virtual void longPress() { selected->longPress(); }
-//     };
-// public:
-//     static MenuRotary menu_rotary_handler;
+
 };

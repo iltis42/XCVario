@@ -1166,7 +1166,7 @@ void SetupMenu::setup( )
 		wirelessM->addEntry( wifimal );
 
 		SetupMenuSelect * datamon = new SetupMenuSelect( "Monitor", false, data_mon, true, &data_monitor );
-		datamon->setHelp( PROGMEM "Short press button to pause, long press for stop data monitor", 260);
+		datamon->setHelp( PROGMEM "Short press button to start/pause, long press to terminate data monitor", 260);
 		datamon->addEntry( "Disable");
 		datamon->addEntry( "Bluetooth");
 		datamon->addEntry( "Wifi 8880");

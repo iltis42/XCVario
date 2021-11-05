@@ -1172,9 +1172,9 @@ void SetupMenu::setup( )
 		datamon->addEntry( "Wifi 8880");
 		datamon->addEntry( "Wifi 8881");
 		datamon->addEntry( "Wifi 8882");
-		datamon->addEntry( "S1");
-		datamon->addEntry( "S2");
-		datamon->addEntry( "CAN");
+		datamon->addEntry( "RS232 S1");
+		datamon->addEntry( "RS232 S2");
+		datamon->addEntry( "CAN Bus");
 		wirelessM->addEntry( datamon );
 
 		SetupMenu * gload = new SetupMenu( "G-Load Display" );

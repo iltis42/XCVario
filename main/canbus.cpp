@@ -17,6 +17,8 @@
 #include "esp_err.h"
 
 #include <cstring>
+#include "DataMonitor.h"
+
 
 
 /*
@@ -195,6 +197,7 @@ void CANbus::txtick(int tick){
             while( Router::pullMsg( client_tx_q, msg ) ){
                 // ESP_LOGI(FNAME,"CAN TX len: %d bytes Q:%d", msg.length(), client_tx_q.numElements() );
                 // ESP_LOG_BUFFER_HEXDUMP(FNAME,msg.c_str(),msg.length(), ESP_LOG_INFO);
+            	DM.monitorString( MON_CAN, DIR_TX, msg.c_str() );
                 if( !sendNMEA( msg ) ){
                     _connected_timeout_xcv +=20;  // if sending fails as indication for disconnection
                     ESP_LOGI(FNAME,"CAN TX NMEA failed, timeout=%d", _connected_timeout_xcv );
@@ -316,6 +319,7 @@ void CANbus::rxtick(int tick){
         if ( std::strchr(cptr, '\n') != nullptr ) {
             if ( nmea_state >= 1 ) {
                 Router::forwardMsg( nmea, client_rx_q ); // All good
+                DM.monitorString( MON_CAN, DIR_RX, nmea.c_str() );
             }
             else {
                 ESP_LOGW(FNAME, "Unexpected frame end, message dropped at %d", nmea_state);

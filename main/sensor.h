@@ -13,6 +13,7 @@
 #include "SetupMenu.h"
 #include "S2F.h"
 #include "StraightWind.h"
+#include "DataMonitor.h"
 
 extern StraightWind theWind;
 extern xSemaphoreHandle xMutex;
@@ -55,6 +56,8 @@ extern int the_can_mode;
 extern IpsDisplay *display;
 
 extern ESPRotary Rotary;
+
+extern DataMonitor DM;
 
 extern xSemaphoreHandle spiMutex;
 

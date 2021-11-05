@@ -84,6 +84,7 @@ typedef enum e_altimeter_select { AS_TE_SENSOR, AS_BARO_SENSOR, AS_EXTERNAL } e_
 typedef enum e_menu_screens { SCREEN_VARIO, SCREEN_GMETER, SCREEN_FLARM, SCREEN_THERMAL_ASSISTANT } e_menu_screens_t;
 typedef enum e_s2f_arrow_color { AC_WHITE_WHITE, AC_BLUE_BLUE, AC_GREEN_RED } e_s2f_arrow_color_t;
 typedef enum e_vario_needle_color { VN_COLOR_WHITE, VN_COLOR_ORANGE, VN_COLOR_RED }  e_vario_needle_color_t;
+typedef enum e_data_monitor { MON_OFF, MON_BLUETOOTH, MON_WIFI_8880, MON_WIFI_8881, MON_WIFI_8882, MON_S1, MON_S2, MON_CAN  }  e_data_monitor_t;
 
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
 
@@ -589,7 +590,7 @@ extern SetupNG<float> 		master_xcvario;
 extern SetupNG<int> 		master_xcvario_lock;
 extern SetupNG<int> 		menu_long_press;
 extern SetupNG<int> 		menu_screens;
-
+extern SetupNG<int> 		data_monitor;
 
 
 extern uint8_t g_col_background;

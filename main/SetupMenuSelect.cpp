@@ -44,7 +44,7 @@ void SetupMenuSelect::delEntry( std::string ent ) {
 }
 
 SetupMenuSelect::SetupMenuSelect( std::string title, bool restart, int (*action)(SetupMenuSelect *p), bool save, SetupNG<int> *anvs ) {
-	ESP_LOGI(FNAME,"SetupMenuSelect( %s ) ", title.c_str() );
+	ESP_LOGI(FNAME,"SetupMenuSelect( %s ) action: %x", title.c_str(), (int)action );
 	_rotary->attach(this);
 	_title = title;
 	_nvs = 0;
@@ -77,10 +77,12 @@ SetupMenuSelect::~SetupMenuSelect()
 void SetupMenuSelect::display( int mode ){
 	if( (selected != this) || !inSetup )
 		return;
-	ESP_LOGI(FNAME,"SetupMenuSelect display() %d %x", pressed, (int)this);
+	ESP_LOGI(FNAME,"display() pressed:%d title:%s action: %x", pressed, _title.c_str(), (int)(_action) );
 	clear();
-	if( _action != 0 )
+	if( _action != 0 ){
+		ESP_LOGI(FNAME,"calling action");
 		(*_action)( this );
+	}
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setPrintPos(1,25);
 	ESP_LOGI(FNAME,"Title: %s y=%d", _title.c_str(),y );

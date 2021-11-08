@@ -346,7 +346,7 @@ void SetupMenu::display( int mode ){
 	ESP_LOGI(FNAME,"SetupMenu display( %s)", _title.c_str() );
 	clear();
 	y=25;
-	ESP_LOGI(FNAME,"Title: %s y=%d", selected->_title.c_str(),y );
+	ESP_LOGI(FNAME,"Title: %s y=%d child size:%d", selected->_title.c_str(),y, _childs.size()  );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setPrintPos(1,y);
 	ucg->setFontPosBottom();
@@ -357,6 +357,7 @@ void SetupMenu::display( int mode ){
 		ucg->setPrintPos(1,(i+1)*25+25);
 		ucg->setColor( COLOR_HEADER_LIGHT );
 		ucg->printf("%s",child->_title.c_str());
+		ESP_LOGI(FNAME,"Child Title: %s", child->_title.c_str() );
 		if( child->value() ){
 			int fl=ucg->getStrWidth( child->_title.c_str());
 			ucg->setPrintPos(1+fl,(i+1)*25+25);

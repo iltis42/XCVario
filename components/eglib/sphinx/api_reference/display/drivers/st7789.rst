@@ -1,0 +1,17 @@
+ST7789
+======
+
+.. contents::
+    :depth: 3
+
+.. code:: c
+
+    #include <eglib/display/st7789.h>
+
+.. c:autodoc:: top_srcdir/eglib/display/st7789.h
+
+Example
+-------
+
+.. literalinclude:: ../../../examples/libopencm3_stm32f4/st7789-four_wire_spi.c
+   :language: C

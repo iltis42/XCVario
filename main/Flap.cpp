@@ -13,14 +13,15 @@ Flap* Flap::_instance = nullptr;
 #define MAXPOS  flap_pos_max.get()
 
 
-// predefined flap labels         // -9,.,-2,-1,+0,+1,+2,.,+9
-static char flap_labels[][4] = { "-9", "-8", "-7", "-6", ".-5", "-4", "-3", "-2", "-1", "+0",
-                                    "+1", "+2", "+3", "+4", "+5", "+6", "+7", "+8", "+9",
-                                    // 0,1,2,3,.,20
-                                    " 0", " 1", " 2", " 3", " 4", " 5", " 6", " 7", " 8", " 9", "10",
-                                    "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",
-                                    // N,L,S
-                                    " N", " L", " S", "3a", "3b", " A", "" };
+// predefined flap labels         // -9,..,-2,-1,+0,+1,+2,..,+9
+static char flap_labels[][4] = { "-9", "-8", "-7", "-6", "-5", "-4", "-3", "-2", "-1", "+0",  // 9
+                                    "+1", "+2", "+3", "+4", "+5", "+6", "+7", "+8", "+9",     // 18
+                                    // 0,1,2,3,..,20
+                                    " 0", " 1", " 2", " 3", " 4", " 5", " 6", " 7", " 8", " 9", "10",  // 29
+                                    "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",   // 39
+                                    // N,L,S,3a,3b,A,21,..,27
+                                    " N", " L", " S", "3a", "3b", " A", "21", "22", "23", "24", "25", "26", "27" };  // L=41  S=42
+
 
 static void showWk(SetupMenuSelect *p){
 	p->ucg->setPrintPos(1,140);
@@ -226,25 +227,25 @@ void Flap::setupIndicatorMenueEntries(MenuEntry *wkm)
 
         SetupMenuSelect *flab = new SetupMenuSelect( "Flap Label +3",	false, flap_lab_act, false, &wk_label_plus_3 );
         flapls->addEntry( flab );
-        flab->addEntry( *flap_labels ); // Initialize Flap Label Entries
+        flab->addEntryList( flap_labels, sizeof(flap_labels)/4 ); // Initialize Flap Label Entries
         flab = new SetupMenuSelect( "Flap Label +2",	false, flap_lab_act, false, &wk_label_plus_2 );
         flapls->addEntry( flab );
-        flab->addEntry( *flap_labels );
+        flab->addEntryList( flap_labels, sizeof(flap_labels)/4 );
         flab = new SetupMenuSelect( "Flap Label +1",	false, flap_lab_act, false, &wk_label_plus_1 );
         flapls->addEntry( flab );
-        flab->addEntry( *flap_labels );
+        flab->addEntryList( flap_labels, sizeof(flap_labels)/4 );
         flab = new SetupMenuSelect( "Flap Label  0",	false, flap_lab_act, false, &wk_label_null_0 );
         flapls->addEntry( flab );
-        flab->addEntry( *flap_labels );
+        flab->addEntryList( flap_labels, sizeof(flap_labels)/4 );
         flab = new SetupMenuSelect( "Flap Label -1",	false, flap_lab_act, false, &wk_label_minus_1 );
         flapls->addEntry( flab );
-        flab->addEntry( *flap_labels );
+        flab->addEntryList( flap_labels, sizeof(flap_labels)/4 );
         flab = new SetupMenuSelect( "Flap Label -2",	false, flap_lab_act, false, &wk_label_minus_2 );
         flapls->addEntry( flab );
-        flab->addEntry( *flap_labels );
+        flab->addEntryList( flap_labels, sizeof(flap_labels)/4  );
         flab = new SetupMenuSelect( "Flap Label -3",	false, flap_lab_act, false, &wk_label_minus_3 );
         flapls->addEntry( flab );
-        flab->addEntry( *flap_labels );
+        flab->addEntryList( flap_labels, sizeof(flap_labels)/4  );
     }
     // else if ( nflpos && (!flap_sensor.get() || SetupCommon::isClient()) ) { // todo
     //     ESP_LOGI(FNAME,"Flap Indicator Menue>>del");

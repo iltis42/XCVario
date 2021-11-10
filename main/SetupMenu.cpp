@@ -346,7 +346,7 @@ void SetupMenu::display( int mode ){
 	ESP_LOGI(FNAME,"SetupMenu display( %s)", _title.c_str() );
 	clear();
 	y=25;
-	ESP_LOGI(FNAME,"Title: %s y=%d", selected->_title.c_str(),y );
+	ESP_LOGI(FNAME,"Title: %s y=%d child size:%d", selected->_title.c_str(),y, _childs.size()  );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setPrintPos(1,y);
 	ucg->setFontPosBottom();
@@ -357,6 +357,7 @@ void SetupMenu::display( int mode ){
 		ucg->setPrintPos(1,(i+1)*25+25);
 		ucg->setColor( COLOR_HEADER_LIGHT );
 		ucg->printf("%s",child->_title.c_str());
+		ESP_LOGI(FNAME,"Child Title: %s", child->_title.c_str() );
 		if( child->value() ){
 			int fl=ucg->getStrWidth( child->_title.c_str());
 			ucg->setPrintPos(1+fl,(i+1)*25+25);
@@ -1166,15 +1167,15 @@ void SetupMenu::setup( )
 		wirelessM->addEntry( wifimal );
 
 		SetupMenuSelect * datamon = new SetupMenuSelect( "Monitor", false, data_mon, true, &data_monitor );
-		datamon->setHelp( PROGMEM "Short press button to pause, long press for stop data monitor", 260);
+		datamon->setHelp( PROGMEM "Short press button to start/pause, long press to terminate data monitor", 260);
 		datamon->addEntry( "Disable");
 		datamon->addEntry( "Bluetooth");
 		datamon->addEntry( "Wifi 8880");
 		datamon->addEntry( "Wifi 8881");
 		datamon->addEntry( "Wifi 8882");
-		datamon->addEntry( "S1");
-		datamon->addEntry( "S2");
-		datamon->addEntry( "CAN");
+		datamon->addEntry( "RS232 S1");
+		datamon->addEntry( "RS232 S2");
+		datamon->addEntry( "CAN Bus");
 		wirelessM->addEntry( datamon );
 
 		SetupMenu * gload = new SetupMenu( "G-Load Display" );

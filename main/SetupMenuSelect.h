@@ -21,17 +21,17 @@ public:
 	bool existsEntry( std::string ent );
 	inline void addEntry( const char* ent ) { addEntry( std::string(ent) ); }
 	void addEntry( std::string ent ) { _values.push_back( ent ); _numval++; }
-	void addEntry( char ent[][4] );
+	void addEntryList( char ent[][4], int size );
 	void delEntry( std::string ent );
 	inline void updateEntry( std::string ent, int num ) { _values[ num ] = ent; }
 	void up( int count );  // step up to parent
 	void down( int count );
 	void press();
 	void longPress();
-	const char *value() const override { sprintf(_val_str,"%s", getEntry() ); return _val_str; }
+	const char *value() const override;
 	inline int getSelect() { return (int)_select; };
 	inline void setSelect( int sel ) { _select = (int16_t)sel; };
-	inline const char * getEntry() const { return _values[ _select ].c_str(); }
+	const char * getEntry() const ;
 
 private:
 	static char _val_str[20];

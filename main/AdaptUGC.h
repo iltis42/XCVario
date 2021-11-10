@@ -16,8 +16,10 @@ public:
 	}
 
 	inline void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1)  { eglib_DrawLine(eglib, x0, y0, x1, y1); }   // inline
-
-	void drawDisc(int16_t x, int16_t y, int16_t radius, uint8_t options){                                                                        // adapter
+	inline void drawBox(int16_t x, int16_t y, int16_t w, int16_t h)  { eglib_DrawBox(eglib, x, y, w, h); }
+	inline void drawFrame(int16_t x, int16_t y, int16_t w, int16_t h)  { eglib_DrawFrame(eglib, x, y, w, h); }	
+	
+	void drawCircle(int16_t x, int16_t y, int16_t radius, uint8_t options){                                                                        // adapter
 		switch( options ){
 		case UCG_DRAW_ALL:
 			eglib_DrawCircle(eglib, x, y, radius);
@@ -36,13 +38,33 @@ public:
 			break;
 
 		}
+	void drawDisc(int16_t x, int16_t y, int16_t radius, uint8_t options){                                                                        // adapter
+		switch( options ){
+		case UCG_DRAW_ALL:
+			eglib_DrawFilledArc(eglib, x, y, radius);
+			break;
+		case UCG_DRAW_UPPER_RIGHT:
+			eglib_DrawFilledArc(eglib, x, y, radius, 0.0, 90.0);
+			break;
+		case UCG_DRAW_UPPER_LEFT:
+			eglib_DrawFilledArc(eglib, x, y, radius, 0.0, -90.0);
+			break;
+		case UCG_DRAW_LOWER_RIGHT:
+			eglib_DrawFilledArc(eglib, x, y, radius,90.0, 180.0);
+			break;
+		case UCG_DRAW_LOWER_LEFT:
+			eglib_DrawFilledArc(eglib, x, y, radius, 180.0, 270.0);
+			break;
+
+		}
 	}
 
+
+	
 	// two things done above, rest tbd:
 	/*
-	ucg->drawBox
-	ucg->drawCircle
-	ucg->drawFrame
+	
+
 	ucg->drawHLine
 	ucg->drawPixel
 	ucg->drawRBox

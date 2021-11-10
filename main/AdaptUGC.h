@@ -43,6 +43,7 @@ public:
 			break;
 
 		}
+	}
 	void drawDisc(int16_t x, int16_t y, int16_t radius, uint8_t options){                                                                        // adapter
 		switch( options ){
 		case UCG_DRAW_ALL:

@@ -1,0 +1,158 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Driver Development &#8212; eglib master documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Display" href="display.html" />
+    <link rel="prev" title="eglib" href="../index.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="driver-development">
+<h1>Driver Development<a class="headerlink" href="#driver-development" title="Permalink to this headline">¶</a></h1>
+<p>eglib can be easily extended to support new display controllers and platforms. Doing so is easier than what you may think.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="display.html">Display</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="display.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="display.html#scaffold-the-code">Scaffold the Code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="display.html#add-an-example">Add An Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="display.html#add-documentation">Add Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="display.html#add-unit-tests">Add Unit Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="display.html#send-a-pull-request">Send A Pull Request</a></li>
+<li class="toctree-l2"><a class="reference internal" href="display.html#questions">Questions?</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="hal.html">HAL</a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="../index.html" title="Previous document">eglib</a>
+        </li>
+        <li>
+          <a href="display.html" title="Next document">Display</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../index.html">
+    <img class="logo" src="../_static/logo.png" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+
+
+<p>
+	<a class="badge" href="https://github.com/fornellas/eglib/actions?query=workflow%3Abuild+branch%3Amaster" target="_blank">
+	  <img src="https://github.com/fornellas/eglib/workflows/build/badge.svg?branch=master"/>
+	</a>
+	<a class="badge" href="https://github.com/fornellas/eglib/pulls" target="_blank">
+	  <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg"/>
+	</a>
+	<br>
+	<a class="badge" href="https://www.paypal.com/donate?hosted_button_id=AX26JVRT2GS2Q" target="_blank">
+	  <img src="https://img.shields.io/badge/donate-%E2%9D%A4%C2%A0-ff69b4.svg?style=flat"/>
+	</a>
+</p>
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Driver Development</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="display.html">Display</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hal.html">HAL</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../api_reference/index.html">API Reference</a></li>
+</ul>
+
+
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Fabio Pugliese Ornellas.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.4.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/driver_development/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+    <a href="https://github.com/fornellas/eglib" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

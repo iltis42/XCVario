@@ -14,6 +14,8 @@
 #include "S2F.h"
 #include "StraightWind.h"
 #include "DataMonitor.h"
+#include "AdaptUGC.h"
+
 
 extern StraightWind theWind;
 extern xSemaphoreHandle xMutex;

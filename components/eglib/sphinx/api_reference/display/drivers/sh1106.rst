@@ -1,0 +1,26 @@
+SH1106
+======
+
+.. contents::
+    :depth: 3
+
+.. code:: c
+
+    #include <eglib/display/sh1106.h>
+
+.. c:autodoc:: top_srcdir/eglib/display/sh1106.h
+
+Examples
+--------
+
+4-Wire SPI
+**********
+
+.. literalinclude:: ../../../examples/libopencm3_stm32f4/sh1106-four_wire_spi.c
+   :language: C
+
+I2C
+***
+
+.. literalinclude:: ../../../examples/libopencm3_stm32f4/sh1106-i2c.c
+   :language: C

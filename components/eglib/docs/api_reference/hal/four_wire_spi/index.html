@@ -1,0 +1,175 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>4-Wire SPI Drivers &#8212; eglib master documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="libopencm3 STM32F4" href="libopencm3_stm32f4.html" />
+    <link rel="prev" title="HAL Interface" href="../interface.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="wire-spi-drivers">
+<h1>4-Wire SPI Drivers<a class="headerlink" href="#wire-spi-drivers" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="libopencm3_stm32f4.html">libopencm3 STM32F4</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="libopencm3_stm32f4.html#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="libopencm3_stm32f4.html#driver">Driver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="libopencm3_stm32f4.html#example">Example</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="none.html">None</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="none.html#driver">Driver</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="stream.html">stream</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="stream.html#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stream.html#driver">Driver</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="../interface.html" title="Previous document">HAL Interface</a>
+        </li>
+        <li>
+          <a href="libopencm3_stm32f4.html" title="Next document">libopencm3 STM32F4</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../../../index.html">
+    <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+
+
+<p>
+	<a class="badge" href="https://github.com/fornellas/eglib/actions?query=workflow%3Abuild+branch%3Amaster" target="_blank">
+	  <img src="https://github.com/fornellas/eglib/workflows/build/badge.svg?branch=master"/>
+	</a>
+	<a class="badge" href="https://github.com/fornellas/eglib/pulls" target="_blank">
+	  <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg"/>
+	</a>
+	<br>
+	<a class="badge" href="https://www.paypal.com/donate?hosted_button_id=AX26JVRT2GS2Q" target="_blank">
+	  <img src="https://img.shields.io/badge/donate-%E2%9D%A4%C2%A0-ff69b4.svg?style=flat"/>
+	</a>
+</p>
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../driver_development/index.html">Driver Development</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../eglib.html">eglib</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../drawing/index.html">Drawing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../display/index.html">Display</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html">HAL</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../interface.html">HAL Interface</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">4-Wire SPI Drivers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="libopencm3_stm32f4.html">libopencm3 STM32F4</a></li>
+<li class="toctree-l4"><a class="reference internal" href="none.html">None</a></li>
+<li class="toctree-l4"><a class="reference internal" href="stream.html">stream</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../i2c/index.html">I2C Drivers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../parallel_8_bit_8080/index.html">Parallel 8-bit 8080 Drivers</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Fabio Pugliese Ornellas.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.4.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../../_sources/api_reference/hal/four_wire_spi/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+    <a href="https://github.com/fornellas/eglib" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

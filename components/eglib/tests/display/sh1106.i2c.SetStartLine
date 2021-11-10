@@ -1,0 +1,1245 @@
+init
+set_reset 0
+delay_ns 10000000
+set_reset 1
+delay_ns 2000000
+comm_begin
+send
+  slave address 60
+  byte 0
+  byte 161
+  byte 168
+  byte 47
+  byte 218
+  byte 18
+  byte 192
+  byte 211
+  byte 0
+  byte 217
+  byte 241
+  byte 219
+  byte 64
+  byte 213
+  byte 128
+comm_begin
+send
+  slave address 60
+  byte 128
+  byte 173
+send
+  byte 128
+  byte 139
+send
+  byte 128
+  byte 50
+send
+  byte 128
+  byte 176
+send
+  byte 128
+  byte 16
+  byte 128
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 128
+  byte 177
+send
+  byte 128
+  byte 16
+  byte 128
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 128
+  byte 178
+send
+  byte 128
+  byte 16
+  byte 128
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 128
+  byte 179
+send
+  byte 128
+  byte 16
+  byte 128
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 128
+  byte 180
+send
+  byte 128
+  byte 16
+  byte 128
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 128
+  byte 181
+send
+  byte 128
+  byte 16
+  byte 128
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 192
+  byte 0
+send
+  byte 128
+  byte 175
+delay_ns 100000000
+comm_end
+comm_begin
+send
+  slave address 60
+  byte 128
+  byte 88
+comm_end

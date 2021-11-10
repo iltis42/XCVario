@@ -47,7 +47,7 @@ public:
 	void drawDisc(int16_t x, int16_t y, int16_t radius, uint8_t options){                                                                        // adapter
 		switch( options ){
 		case UCG_DRAW_ALL:
-			eglib_DrawFilledArc(eglib, x, y, radius);
+			eglib_DrawDisc(eglib, x, y, radius);
 			break;
 		case UCG_DRAW_UPPER_RIGHT:
 			eglib_DrawFilledArc(eglib, x, y, radius, 0.0, 90.0);

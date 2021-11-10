@@ -6,7 +6,6 @@
 **/*.trs
 **/.deps/
 **/.dirstamp
-**/config.h
 **/config.h.in
 **/Makefile
 **/Makefile.in
@@ -16,7 +15,6 @@ _build/
 aclocal.m4
 autom4te.cache/
 build-aux/
-confdefs.h
 config.log
 config.status
 configure

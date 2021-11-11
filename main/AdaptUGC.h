@@ -75,11 +75,11 @@ public:
  	ucg->drawGlyph
     	ucg->drawString
     
-	ucg->invertDisplay
+	ucg->invertDisplay  // Treiberfunktion
 	ucg->print
 	ucg->printf
-	ucg->scrollLines
-	ucg->scrollSetMargins
+	ucg->scrollLines     // Treiberfunktion
+	ucg->scrollSetMargins  // Treiberfunktion
 	ucg->setClipRange
 	ucg->setColor
 	ucg->setFont
@@ -87,7 +87,7 @@ public:
 	ucg->setFontPosBottom
 	ucg->setFontPosCenter
 	ucg->setPrintPos
-	ucg->setRedBlueTwist
+	ucg->setRedBlueTwist  // Treiberfunktion
 	ucg->setRotate180
 	ucg->undoClipRange
 

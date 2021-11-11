@@ -72,7 +72,9 @@ public:
 	
 	// two things done above, rest tbd:
 	/*
-
+ 	ucg->drawGlyph
+    	ucg->drawString
+    
 	ucg->invertDisplay
 	ucg->print
 	ucg->printf

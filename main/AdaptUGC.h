@@ -78,15 +78,15 @@ public:
 	void setPrintDir(uint8_t d) {
 		eglib_print_dir = d;
 	}
-size_t ADAPTUGC::write(uint8_t c) { 
-//  ucg_int_t delta;
-//  delta = ucg_DrawGlyph(get_ucg(), get_tx(), get_ty(), get_tdir(), c); 
-  switch(eglib_print_dir) {
-    case 0: eglib_print_xpos += delta; break;
-    case 1: eglib_print_ypos += delta; break;
-    case 2: eglib_print_xpos -= delta; break;
-    default: case 3: eglib_print_ypos -= delta; break;
-  }
+	size_t AdaptUGC::write(uint8_t c) { 
+	//  ucg_int_t delta;
+	//  delta = ucg_DrawGlyph(get_ucg(), get_tx(), get_ty(), get_tdir(), c); 
+ 	switch(eglib_print_dir) {
+    		case 0: eglib_print_xpos += delta; break;
+    		case 1: eglib_print_ypos += delta; break;
+    		case 2: eglib_print_xpos -= delta; break;
+    		default: case 3: eglib_print_ypos -= delta; break;
+  	}
 private:
 	int16_t eglib_print_xpos = 0, eglib_print_ypos = 0;
 	uint8_t eglib_print_dir = UCG_PRINT_DIR_LR;

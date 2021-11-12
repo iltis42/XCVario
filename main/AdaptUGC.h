@@ -81,7 +81,7 @@ public:
 
 private:
 	int16_t eglib_print_xpos = 0, eglib_print_ypos = 0;
-	uint8_t eglib_print_dir = UCG_PRIN_DIR_LR;
+	uint8_t eglib_print_dir = UCG_PRINT_DIR_LR;
 	
 	// two things done above, rest tbd:
 	/*

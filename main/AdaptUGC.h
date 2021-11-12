@@ -79,7 +79,7 @@ public:
 		eglib_print_dir = d;
 	}
 	size_t write(uint8_t c) { 
-	//  ucg_int_t delta;
+		int8_t delta;
 	//  delta = ucg_DrawGlyph(get_ucg(), get_tx(), get_ty(), get_tdir(), c); 
  		switch(eglib_print_dir) {
     			case 0: eglib_print_xpos += delta; break;

@@ -87,6 +87,7 @@ public:
     			case 2: eglib_print_xpos -= delta; break;
     			default: case 3: eglib_print_ypos -= delta; break;
   		}
+		return 1;
 	}
 private:
 	int16_t eglib_print_xpos = 0, eglib_print_ypos = 0;

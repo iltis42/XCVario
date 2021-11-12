@@ -7,6 +7,10 @@
 #define UCG_DRAW_UPPER_LEFT  0x02
 #define UCG_DRAW_LOWER_LEFT 0x04
 #define UCG_DRAW_LOWER_RIGHT  0x08
+#define UCG_PRINT_DIR_LR 0x00
+#define UCG_PRINT_DIR_TD 0x01
+#define UCG_PRINT_DIR_RL 0x02
+#define UCG_PRINT_DIR_BU 0x03
 
 class AdaptUGC {
 public:
@@ -67,8 +71,17 @@ public:
 
 		}
 	}
+	void setPrintPos(int16_t x, int16_t y) {
+		eglib_print_xpos = x;
+		eglib_print_ypos = y;
+	}
+	void setPrintDir(uint8_t d) {
+		eglib_print_dir = d;
+	}
 
-
+private:
+	int16_t eglib_print_xpos = 0, eglib_print_ypos = 0;
+	unit8_t eglib_print_dir = UCG_PRIN_DIR_LR;
 	
 	// two things done above, rest tbd:
 	/*

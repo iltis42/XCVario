@@ -82,7 +82,7 @@ public:
  	//	eglib_DrawWChar(eglib, eglib_print_xpos, eglib_print_ypos, wchar_t (c) );
 		const struct glyph_t * g;
 		g = eglib_GetGlyph(eglib, wchar_t (c));
-		eglib_DrawGlyph(eglib, eglib_print_xpos, eglib_print_ypos, g)
+		eglib_DrawGlyph(eglib, eglib_print_xpos, eglib_print_ypos, g);
 		delta = g.advance;
 		switch(eglib_print_dir) {
     			case 0: eglib_print_xpos += delta; break;

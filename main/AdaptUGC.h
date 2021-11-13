@@ -30,7 +30,7 @@ public:
 	inline void drawRFrame(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r)  { eglib_DrawRoundFrame(eglib, x, y, w, h, r); }
 	inline void drawTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2)  { eglib_DrawTriangle(eglib, x0, y0, x1, y1, x2, y2); }	
 	inline void drawTetragon(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t x3, int16_t y3)  { eglib_DrawTriangle(eglib, x0, y0, x1, y1, x2, y2); eglib_DrawTriangle(eglib, x0, y0, x2, y2, x3, y3); }	
-	inline void setColor(uint8_t idx, uint8_t r, uint8_t g, uint8_t b) { eglib_SetIndexColor(eglib, idx, r, g, b)  }
+	inline void setColor(uint8_t idx, uint8_t r, uint8_t g, uint8_t b) { eglib_SetIndexColor(eglib, idx, r, g, b); }
 	
 	void drawCircle(int16_t x, int16_t y, int16_t radius, uint8_t options){                                                                        // adapter
 		switch( options ){
@@ -72,24 +72,22 @@ public:
 
 		}
 	}
+	
 	inline void setPrintPos(ucg_int_t x, ucg_int_t y) { eglib_print_xpos = x; eglib_print_ypos = y; }
 	inline void setPrintDir(uint8_t d) { eglib_print_dir = d; }
 	
 	size_t write(uint8_t c) { 
 		int8_t delta;
-	//  delta = ucg_DrawGlyph(get_ucg(), get_tx(), get_ty(), get_tdir(), c); 
-	// eglib_DrawGlyph(eglib_t * eglib, coordinate_t x, coordinate_t y, const struct glyph_t * glyph)
- 	//	eglib_DrawWChar(eglib, eglib_print_xpos, eglib_print_ypos, wchar_t (c) );
 		const struct glyph_t * g;
 		g = eglib_GetGlyph(eglib, wchar_t (c));
 		if ( g == NULL) { return 0) }
 		eglib_DrawGlyph(eglib, eglib_print_xpos, eglib_print_ypos, g);
 		delta = g->advance;
 		switch(eglib_print_dir) {
-    			case 0: eglib_print_xpos += delta; break;
-    			case 1: eglib_print_ypos += delta; break;
-    			case 2: eglib_print_xpos -= delta; break;
-    			default: case 3: eglib_print_ypos -= delta; break;
+    			case UCG_PRINT_DIR_LR: eglib_print_xpos += delta; break;
+    			case UCG_PRINT_DIR_TD: eglib_print_ypos += delta; break;
+    			case UCG_PRINT_DIR_RL: eglib_print_xpos -= delta; break;
+    			default: case UCG_PRINT_DIR_BU: eglib_print_ypos -= delta; break;
   		}
 		return 1;
 	}

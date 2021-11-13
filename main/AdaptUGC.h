@@ -30,7 +30,7 @@ public:
 	inline void drawRFrame(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r)  { eglib_DrawRoundFrame(eglib, x, y, w, h, r); }
 	inline void drawTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2)  { eglib_DrawTriangle(eglib, x0, y0, x1, y1, x2, y2); }	
 	inline void drawTetragon(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t x3, int16_t y3)  { eglib_DrawTriangle(eglib, x0, y0, x1, y1, x2, y2); eglib_DrawTriangle(eglib, x0, y0, x2, y2, x3, y3); }	
-	
+	inline void setColor(uint8_t idx, uint8_t r, uint8_t g, uint8_t b) { eglib_SetIndexColor(eglib, idx, r, g, b)  }
 	
 	void drawCircle(int16_t x, int16_t y, int16_t radius, uint8_t options){                                                                        // adapter
 		switch( options ){
@@ -99,24 +99,17 @@ private:
 	
 	// two things done above, rest tbd:
 	/*
- 	ucg->drawGlyph
-    	ucg->drawString
-    
-	ucg->invertDisplay  // Treiberfunktion
-	ucg->print
-	ucg->printf
-	ucg->scrollLines     // Treiberfunktion
-	ucg->scrollSetMargins  // Treiberfunktion
-	ucg->setClipRange
-	ucg->setColor
-	ucg->setFont
+	ucg->invertDisplay  	// display driver function
+	ucg->scrollLines     	// display driver function
+	ucg->scrollSetMargins  // display driver function
+	ucg->setClipRange	// seems there no clipping concept in eglib
+	ucg->setFont		
 	ucg->setFontMode
 	ucg->setFontPosBottom
 	ucg->setFontPosCenter
-	ucg->setPrintPos
-	ucg->setRedBlueTwist  // Treiberfunktion
-	ucg->setRotate180
-	ucg->undoClipRange
+	ucg->setRedBlueTwist  	// display driver function
+	ucg->setRotate180	// Same as clipping, missing fundamental concept in eglib
+	ucg->undoClipRange	// seems there no clipping concept in eglib
 
 */
 	eglib_t * eglib;

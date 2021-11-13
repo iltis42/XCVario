@@ -78,6 +78,7 @@ public:
 	size_t write(uint8_t c) { 
 		int8_t delta;
 	//  delta = ucg_DrawGlyph(get_ucg(), get_tx(), get_ty(), get_tdir(), c); 
+	// eglib_DrawGlyph(eglib_t * eglib, coordinate_t x, coordinate_t y, const struct glyph_t * glyph)
  		switch(eglib_print_dir) {
     			case 0: eglib_print_xpos += delta; break;
     			case 1: eglib_print_ypos += delta; break;

@@ -80,7 +80,7 @@ public:
 		int8_t delta;
 		const struct glyph_t * g;
 		g = eglib_GetGlyph(eglib, wchar_t (c));
-		if ( g == NULL) { return 0); }
+		if ( g == NULL) { return (0); }
 		eglib_DrawGlyph(eglib, eglib_print_xpos, eglib_print_ypos, g);
 		delta = g->advance;
 		switch(eglib_print_dir) {

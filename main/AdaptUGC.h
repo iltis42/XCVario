@@ -1,5 +1,6 @@
 #include "eglib.h"
 #include "inttypes.h"
+#include "Arduino.h"
 
 // later we want to get rid of UGC, so lets add all needed API definitions here
 
@@ -12,7 +13,7 @@
 #define UCG_PRINT_DIR_RL 0x02
 #define UCG_PRINT_DIR_BU 0x03
 
-class AdaptUGC {
+class AdaptUGC : public Print{
 public:
 
 	void begin() {

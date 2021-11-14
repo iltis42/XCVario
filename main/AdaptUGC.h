@@ -109,7 +109,8 @@ public:
 	void setFont(uint8_t *f){                                                                        // adapter
 		switch( f[0] ){
 			case UCG_FONT_9x15B_MF:
-			
+			eglib_SetFont(eglib, &font_FreeFont_FreeMonoBold_15px);
+			eglib_AddUnicodeBlockToFont(&font_FreeFontMonoBold_15px, &unicode_block_FreeFont_FreeMonoBold_15px_Latin1Supplement);	
 			break;
 			case UCG_FONT_NCENR14_HR:
 			

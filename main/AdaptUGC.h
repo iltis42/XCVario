@@ -29,6 +29,8 @@
 #define UCG_FONT_FUB35_HN 0x0C
 #define UCG_FONT_FUB35_HR 0x0D
 
+/* to be activated as soon as ucg.h is replaced by AdaptUGC.h
+
 const uint8_t ucg_font_9x15B_mf[] = { UCG_FONT_9x15B_MF };
 const uint8_t ucg_font_ncenR14_hr[] = { UCG_FONT_NCENR14_HR };
 const uint8_t ucg_font_fub11_tr[] = { UCG_FONT_FUB11_TR };
@@ -43,7 +45,7 @@ const uint8_t ucg_font_fub20_hf[] = { UCG_FONT_FUB20_HF };
 const uint8_t ucg_font_fub25_hr[] = { UCG_FONT_FUB25_HR };
 const uint8_t ucg_font_fub35_hn[] = { UCG_FONT_FUB35_HN };
 const uint8_t ucg_font_fub35_hr[] = { UCG_FONT_FUB35_HR };
-
+*/
 
 class AdaptUGC : public Print{
 public:

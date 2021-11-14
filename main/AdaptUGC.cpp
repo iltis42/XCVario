@@ -6,9 +6,11 @@
 
 #define HSPI 2
 
+static eglib_t myeglib;
+
 void  AdaptUGC::begin() {
 	// eglib = ... tbd.
-	static st7789_config_t st7789_config = {
+	st7789_config_t st7789_config = {
 			.width = 240,
 			.height = 320,
 			.color = ST7789_COLOR_16_BIT,
@@ -19,7 +21,7 @@ void  AdaptUGC::begin() {
 			.horizontal_refresh = ST7789_HORIZONTAL_REFRESH_LEFT_TO_RIGHT,
 	};
 
-	static esp32_hal_config_t esp32_ili9341_config = {
+	esp32_hal_config_t esp32_ili9341_config = {
 		.spi_num = 	HSPI,
 		.freq = 	13111111*3,  // max 40 MHz
 		.dataMode = SPI_MODE3,
@@ -29,10 +31,10 @@ void  AdaptUGC::begin() {
 		.gpio_sdi = SPI_MISO,
 		.gpio_cs  = CS_Display,
 		.gpio_dc  = SPI_DC,
+		.gpio_rs  = RESET_Display,
 	};
 
-	eglib = new eglib_t;  // allocated memory for eglib
-	eglib_Init( eglib, &esp32_ili9341, &esp32_ili9341_config, &st7789, &st7789_config );
+	eglib_Init( &myeglib, &esp32_ili9341, &esp32_ili9341_config, &st7789, &st7789_config );
 
 };
 

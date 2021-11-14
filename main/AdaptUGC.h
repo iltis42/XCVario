@@ -117,43 +117,43 @@ public:
 				eglib_SetFont(&font_Adobe_NewCenturySchoolbookRoman_14px);
 				break;		
 			case UCG_FONT_FUB11_TR:
-				eglib_SetFont(font_t &font_FreeFont_FreeSans_11px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_11px);
 				break;	
 			case UCG_FONT_FUB11_HR:
-				eglib_SetFont(font_t &font_FreeFont_FreeSans_11px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_11px);
 				break;	
 			case UCG_FONT_FUB14_HN:
-				eglib_SetFont(font_t &font_FreeFont_FreeSans_14px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_14px);
 				break;
 			case UCG_FONT_FUB14_HR:
-				eglib_SetFont(font_t &font_FreeFont_FreeSans_14px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_14px);
 				break;	
 			case UCG_FONT_FUB14_HF:
-				eglib_SetFont(font_t &font_FreeFont_FreeSans_14px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_14px);
 				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_14px, &unicode_block_FreeFont_FreeMonoBold_14px_Latin1Supplement);	
 			break;	
 			case UCG_FONT_FUB17_HF:
-				eglib_SetFont(font_t &font_FreeFont_FreeSans_18px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_18px);
 				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_18px, &unicode_block_FreeFont_FreeMonoBold_18px_Latin1Supplement);	
 			break;	
 			case UCG_FONT_FUB20_HN:
-				eglib_SetFont(font_t &font_FreeFont_FreeSans_20px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_20px);
 				break;	
 			case UCG_FONT_FUB20_HR:
-				eglib_SetFont(font_t &font_FreeFont_FreeSans_20px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_20px);
 				break;				
 			case UCG_FONT_FUB20_HF:
-				eglib_SetFont(font_t &font_FreeFont_FreeSans_20px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_20px);
 				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_20px, &unicode_block_FreeFont_FreeMonoBold_20px_Latin1Supplement);	
 				break;	
 			case UCG_FONT_FUB25_HR:
-				eglib_SetFont(font_t &font_FreeFont_FreeSans_26px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_26px);
 				break;	
 			case UCG_FONT_FUB35_HN:
-				eglib_SetFont(font_t &font_FreeFont_FreeSans_36px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_36px);
 				break;	
 			default: case UCG_FONT_FUB35_HR:
-				eglib_SetFont(font_t &font_FreeFont_FreeSans_36px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_36px);
 			break;	
 		}
 	}

@@ -1,4 +1,7 @@
+extern "C"
+{
 #include "eglib.h"
+}
 #include "inttypes.h"
 
 #pragma once
@@ -38,6 +41,8 @@ public:
 
 		}
 	}
+	void setColor( uint8_t idx, uint8_t r, uint8_t g, uint8_t b ) { eglib_SetIndexColor(eglib, idx, r, g, b); }
+	void setColor( uint8_t r, uint8_t g, uint8_t b ) { eglib_SetIndexColor(eglib, 1, r, g, b); }
 
 	// two things done above, rest tbd:
 	/*

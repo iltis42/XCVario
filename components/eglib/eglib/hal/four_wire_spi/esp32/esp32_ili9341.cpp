@@ -18,9 +18,8 @@ static esp32_hal_config_t *config;
 */
 
 static void init(eglib_t *eglib) {
-	SPI.begin( config->gpio_scl, config->gpio_sdi, config->gpio_sda, config->gpio_cs );
-	(void)eglib;
 	config = (esp32_hal_config_t *)eglib_GetHalConfig(eglib);
+	SPI.begin( config->gpio_scl, config->gpio_sdi, config->gpio_sda, config->gpio_cs );
 	// init GPIO pins of 4 WIRE SPI bus
 	gpio_set_direction(config->gpio_sdi, GPIO_MODE_INPUT);
 	gpio_set_direction(config->gpio_sda, GPIO_MODE_OUTPUT);

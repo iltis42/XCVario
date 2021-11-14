@@ -794,6 +794,13 @@ void sensor(void *args){
 	SPI.begin( SPI_SCLK, SPI_MISO, SPI_MOSI, CS_bme280BA );
 	xSemaphoreGive(spiMutex);
 
+	AdaptUGC *egl = new AdaptUGC();
+	egl->begin();
+	egl->setColor( 0, 255, 0 );
+	egl->drawLine( 1,1, 200,200 );
+
+	delay( 10000 );
+
 	MYUCG = new Ucglib_ILI9341_18x240x320_HWSPI( SPI_DC, CS_Display, RESET_Display );
 	display = new IpsDisplay( MYUCG );
 	Flarm::setDisplay( MYUCG );

@@ -4,6 +4,7 @@
 #include <eglib/hal/four_wire_spi/esp32/esp32_ili9341.h>
 #include "sensor.h"
 
+#define HSPI 2
 
 void  AdaptUGC::begin() {
 	// eglib = ... tbd.
@@ -19,8 +20,8 @@ void  AdaptUGC::begin() {
 	};
 
 	esp32_hal_config_t esp32_ili9341_config = {
-		.spi_num = 2,
-		.freq = 10000000,  // 10 MHz
+		.spi_num = 	HSPI,
+		.freq = 	10000000,  // 10 MHz
 		.dataMode = SPI_MODE3,
 		.bitOrder = MSBFIRST,
 		.gpio_scl = SPI_SCLK,

@@ -114,7 +114,7 @@ public:
 				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeMonoBold_15px, &unicode_block_FreeFont_FreeMonoBold_15px_Latin1Supplement);	
 				break;
 			case UCG_FONT_NCENR14_HR:
-				eglib_SetFont(&font_Adobe_NewCenturySchoolbookRoman_14px);
+				eglib_SetFont(eglib, &font_Adobe_NewCenturySchoolbookRoman_14px);
 				break;		
 			case UCG_FONT_FUB11_TR:
 				eglib_SetFont(eglib, &font_FreeFont_FreeSans_11px);

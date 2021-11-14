@@ -29,20 +29,20 @@
 #define UCG_FONT_FUB35_HN 0x0C
 #define UCG_FONT_FUB35_HR 0x0D
 
-const uint8_t ucg_font_9x15B_mf = UCG_FONT_9x15B_MF;
-const uint8_t ucg_font_ncenR14_hr = UCG_FONT_NCENR14_HR;
-const uint8_t ucg_font_fub11_tr = UCG_FONT_FUB11_TR;
-const uint8_t ucg_font_fub11_hr = UCG_FONT_FUB11_HR;
-const uint8_t ucg_font_fub14_hn = UCG_FONT_FUB14_HN;
-const uint8_t ucg_font_fub14_hr = UCG_FONT_FUB14_HR;
-const uint8_t ucg_font_fub14_hf = UCG_FONT_FUB14_HF;
-const uint8_t ucg_font_fub17_hf = UCG_FONT_FUB17_HF;
-const uint8_t ucg_font_fub20_hn = UCG_FONT_FUB20_HN;
-const uint8_t ucg_font_fub20_hr = UCG_FONT_FUB20_HR;
-const uint8_t ucg_font_fub20_hf = UCG_FONT_FUB20_HF;
-const uint8_t ucg_font_fub25_hr = UCG_FONT_FUB25_HR;
-const uint8_t ucg_font_fub35_hn = UCG_FONT_FUB35_HN;
-const uint8_t ucg_font_fub35_hr = UCG_FONT_FUB35_HR;
+const uint8_t ucg_font_9x15B_mf[] = { UCG_FONT_9x15B_MF };
+const uint8_t ucg_font_ncenR14_hr[] = { UCG_FONT_NCENR14_HR };
+const uint8_t ucg_font_fub11_tr[] = { UCG_FONT_FUB11_TR };
+const uint8_t ucg_font_fub11_hr[] = { UCG_FONT_FUB11_HR };
+const uint8_t ucg_font_fub14_hn[] = { UCG_FONT_FUB14_HN };
+const uint8_t ucg_font_fub14_hr[] = { UCG_FONT_FUB14_HR };
+const uint8_t ucg_font_fub14_hf[] = { UCG_FONT_FUB14_HF };
+const uint8_t ucg_font_fub17_hf[] = { UCG_FONT_FUB17_HF };
+const uint8_t ucg_font_fub20_hn[] = { UCG_FONT_FUB20_HN };
+const uint8_t ucg_font_fub20_hr[] = { UCG_FONT_FUB20_HR };
+const uint8_t ucg_font_fub20_hf[] = { UCG_FONT_FUB20_HF };
+const uint8_t ucg_font_fub25_hr[] = { UCG_FONT_FUB25_HR };
+const uint8_t ucg_font_fub35_hn[] = { UCG_FONT_FUB35_HN };
+const uint8_t ucg_font_fub35_hr[] = { UCG_FONT_FUB35_HR };
 
 
 class AdaptUGC : public Print{
@@ -103,24 +103,53 @@ public:
 			break;
 
 		}
-	void setFont(int16_t x, int16_t y, int16_t radius, uint8_t options){                                                                        // adapter
-		switch( options ){
-		case UCG_DRAW_ALL:
-			eglib_DrawDisc(eglib, x, y, radius);
+	void setFont(unit8_t *f){                                                                        // adapter
+		switch( f[0] ){
+			case UCG_FONT_9x15B_MF:
+			
 			break;
-		case UCG_DRAW_UPPER_RIGHT:
-			eglib_DrawFilledArc(eglib, x, y, radius, 0.0, 90.0);
-			break;
-		case UCG_DRAW_UPPER_LEFT:
-			eglib_DrawFilledArc(eglib, x, y, radius, 0.0, -90.0);
-			break;
-		case UCG_DRAW_LOWER_RIGHT:
-			eglib_DrawFilledArc(eglib, x, y, radius,90.0, 180.0);
-			break;
-		case UCG_DRAW_LOWER_LEFT:
-			eglib_DrawFilledArc(eglib, x, y, radius, 180.0, 270.0);
-			break;
-
+			case UCG_FONT_NCENR14_HR:
+			
+			break;		
+			case UCG_FONT_FUB11_TR:
+			
+			break;	
+			case UCG_FONT_FUB11_TR:
+			
+			break;	
+			case UCG_FONT_FUB11_HR:
+			
+			break;	
+			case UCG_FONT_FUB14_HN:
+			
+			break;	
+			case UCG_FONT_FUB14_HR:
+			
+			break;	
+			case UCG_FONT_FUB14_HF:
+			
+			break;	
+			case UCG_FONT_FUB17_HF:
+			
+			break;	
+			case UCG_FONT_FUB20_HN:
+			
+			break;	
+			case UCG_FONT_FUB20_HR:
+			
+			break;	
+			case UCG_FONT_FUB20_HF:
+			
+			break;	
+			case UCG_FONT_FUB25_HR:
+			
+			break;	
+			case UCG_FONT_FUB35_HN:
+			
+			break;	
+			default: case UCG_FONT_FUB35_HR:
+			
+			break;	
 		}
 	}
 	

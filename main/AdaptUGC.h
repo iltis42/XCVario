@@ -104,7 +104,7 @@ public:
 
 		}
 	}
-	void setFont(unit8_t *f){                                                                        // adapter
+	void setFont(uint8_t *f){                                                                        // adapter
 		switch( f[0] ){
 			case UCG_FONT_9x15B_MF:
 			

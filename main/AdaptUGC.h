@@ -102,6 +102,25 @@ public:
 			break;
 
 		}
+	void setFont(int16_t x, int16_t y, int16_t radius, uint8_t options){                                                                        // adapter
+		switch( options ){
+		case UCG_DRAW_ALL:
+			eglib_DrawDisc(eglib, x, y, radius);
+			break;
+		case UCG_DRAW_UPPER_RIGHT:
+			eglib_DrawFilledArc(eglib, x, y, radius, 0.0, 90.0);
+			break;
+		case UCG_DRAW_UPPER_LEFT:
+			eglib_DrawFilledArc(eglib, x, y, radius, 0.0, -90.0);
+			break;
+		case UCG_DRAW_LOWER_RIGHT:
+			eglib_DrawFilledArc(eglib, x, y, radius,90.0, 180.0);
+			break;
+		case UCG_DRAW_LOWER_LEFT:
+			eglib_DrawFilledArc(eglib, x, y, radius, 180.0, 270.0);
+			break;
+
+		}
 	}
 	
 	inline void setPrintPos(ucg_int_t x, ucg_int_t y) { eglib_print_xpos = x; eglib_print_ypos = y; }
@@ -141,6 +160,7 @@ private:
 	ucg->undoClipRange	// seems there no clipping concept in eglib
 
 // proposed font assignments
+// looks like there is no transparent font type available in eglib...
 
 // ucg_font_ncenR14_hr
 // extern struct font_t font_Adobe_NewCenturySchoolbookRoman_14px;

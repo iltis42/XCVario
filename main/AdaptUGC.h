@@ -109,12 +109,14 @@ private:
 	ucg->setRotate180	// Same as clipping, missing fundamental concept in eglib
 	ucg->undoClipRange	// seems there no clipping concept in eglib
 
-// ucg_font_ncenR14_hr =
+// proposed font assignments
+
+// ucg_font_ncenR14_hr
 // extern struct font_t font_Adobe_NewCenturySchoolbookRoman_14px;
 
 // ucg_font_9x15B_mf
 // extern struct font_t font_FreeFont_FreeMonoBold_15px;
-//can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
+// can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
 // extra unicode blocks defined below. Creates a set equivalent to the f suffix
 // extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_15px_Latin1Supplement;
 
@@ -126,14 +128,14 @@ private:
 // ucg_font_fub14_hn
 // extern struct font_t font_FreeFont_FreeSans_14px;
 // ucg_font_fub14_hr
-//can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
+// can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
 // extra unicode blocks defined below. Creates a set equivalent to the f suffix
 // extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_14px_Latin1Supplement;
 // ucg_font_fub14_hf
 
 // ucg_font_fub17_hf
 // extern struct font_t font_FreeFont_FreeSans_18px;
-//can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
+// can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
 // extra unicode blocks defined below. Creates a set equivalent to the f suffix
 // extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_18px_Latin1Supplement;
 
@@ -141,7 +143,7 @@ private:
 // extern struct font_t font_FreeFont_FreeSans_20px;
 // ucg_font_fub20_hr
 // ucg_font_fub20_hf
-//can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
+// can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
 // extra unicode blocks defined below. Creates a set equivalent to the f suffix
 // extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_20px_Latin1Supplement;
 

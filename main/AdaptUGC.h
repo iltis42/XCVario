@@ -110,19 +110,34 @@ private:
 	ucg->undoClipRange	// seems there no clipping concept in eglib
 
 // ucg_font_ncenR14_hr =
+// extern struct font_t font_Adobe_NewCenturySchoolbookRoman_14px;
 // extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbookRoman_14px_BasicLatin;
 // ucg_font_9x15B_mf
+// extern struct font_t font_FreeFont_FreeMonoBold_15px;
+// extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_15px_BasicLatin;
 // ucg_font_fub11_tr
+// extern struct font_t font_FreeFont_FreeSans_11px;
+// extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_11px_BasicLatin;
 // ucg_font_fub11_hr
 // ucg_font_fub14_hn
+// extern struct font_t font_FreeFont_FreeSans_14px;
+// extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_14px_BasicLatin;
 // ucg_font_fub14_hr
 // ucg_font_fub14_hf
 // ucg_font_fub17_hf
+// extern struct font_t font_FreeFont_FreeSans_18px;
+// extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_18px_BasicLatin;
 // ucg_font_fub20_hn
+// extern struct font_t font_FreeFont_FreeSans_20px;
+// extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_20px_BasicLatin;
 // ucg_font_fub20_hr
 // ucg_font_fub20_hf
 // ucg_font_fub25_hr
+// extern struct font_t font_FreeFont_FreeSans_26px;
+// extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_26px_BasicLatin;
 // ucg_font_fub35_hn
+// extern struct font_t font_FreeFont_FreeSans_36px;
+// extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_36px_BasicLatin;
 // ucg_font_fub35_hr
 
 

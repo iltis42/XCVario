@@ -1,4 +1,5 @@
 #include "hal.h"
+#include <stdio.h>
 
 void eglib_CommBegin(eglib_t *eglib) {
 	eglib->hal.comm_active = true;
@@ -12,11 +13,13 @@ void eglib_Send(
 	uint8_t *bytes,
 	uint32_t length
 ) {
+	printf("eglib_Send() &eglib:%x &bytes:%x len:%d  dc:%d hal-driv:%x hds:%x\n", (unsigned int)eglib, (unsigned int)bytes, length, dc, (unsigned int)eglib->hal.driver, (unsigned int)eglib->hal.driver->send );
 	uint8_t prev_hal_i2c_send_slave_addr;
 
 	prev_hal_i2c_send_slave_addr = eglib->hal.i2c_send_slave_addr;
 
 	eglib->hal.driver->send(eglib, dc, bytes, length);
+
 	if(eglib->hal.i2c_send_slave_addr == prev_hal_i2c_send_slave_addr) {
 		if(eglib->hal.i2c_send_slave_addr)
 			eglib->hal.i2c_send_slave_addr--;

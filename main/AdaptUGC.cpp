@@ -3,6 +3,7 @@
 #include <eglib/display/st7789.h>
 #include <eglib/hal/four_wire_spi/esp32/esp32_ili9341.h>
 #include "sensor.h"
+#include "logdef.h"
 
 #define HSPI 2
 
@@ -32,6 +33,9 @@ void  AdaptUGC::begin() {
 			.gpio_dc  = SPI_DC,
 			.gpio_rs  = RESET_Display,
 	};
+
+	ESP_LOGI(FNAME, "eglib_Send() &eglib:%x  hal-driv:%x hds:%x\n", (unsigned int)eglib, (unsigned int)&esp32_ili9341, (unsigned int)esp32_ili9341.send  );
+
 	eglib_Init( &myeglib, &esp32_ili9341, &esp32_ili9341_config, &st7789, &st7789_config );
 };
 

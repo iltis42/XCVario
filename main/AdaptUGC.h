@@ -110,47 +110,50 @@ public:
 	void setFont(uint8_t *f){                                                                        // adapter
 		switch( f[0] ){
 			case UCG_FONT_9x15B_MF:
-			eglib_SetFont(eglib, &font_FreeFont_FreeMonoBold_15px);
-			eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeMonoBold_15px, &unicode_block_FreeFont_FreeMonoBold_15px_Latin1Supplement);	
-			break;
+				eglib_SetFont(eglib, &font_FreeFont_FreeMonoBold_15px);
+				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeMonoBold_15px, &unicode_block_FreeFont_FreeMonoBold_15px_Latin1Supplement);	
+				break;
 			case UCG_FONT_NCENR14_HR:
-			
-			break;		
+				eglib_SetFont(&font_Adobe_NewCenturySchoolbookRoman_14px);
+				break;		
 			case UCG_FONT_FUB11_TR:
-			
-			break;	
+				eglib_SetFont(font_t &font_FreeFont_FreeSans_11px);
+				break;	
 			case UCG_FONT_FUB11_HR:
-			
-			break;	
+				eglib_SetFont(font_t &font_FreeFont_FreeSans_11px);
+				break;	
 			case UCG_FONT_FUB14_HN:
-			
-			break;	
+				eglib_SetFont(font_t &font_FreeFont_FreeSans_14px);
+				break;
 			case UCG_FONT_FUB14_HR:
-			
-			break;	
+				eglib_SetFont(font_t &font_FreeFont_FreeSans_14px);
+				break;	
 			case UCG_FONT_FUB14_HF:
-			
+				eglib_SetFont(font_t &font_FreeFont_FreeSans_14px);
+				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_14px, &unicode_block_FreeFont_FreeMonoBold_14px_Latin1Supplement);	
 			break;	
 			case UCG_FONT_FUB17_HF:
-			
+				eglib_SetFont(font_t &font_FreeFont_FreeSans_18px);
+				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_18px, &unicode_block_FreeFont_FreeMonoBold_18px_Latin1Supplement);	
 			break;	
 			case UCG_FONT_FUB20_HN:
-			
-			break;	
+				eglib_SetFont(font_t &font_FreeFont_FreeSans_20px);
+				break;	
 			case UCG_FONT_FUB20_HR:
-			
-			break;	
+				eglib_SetFont(font_t &font_FreeFont_FreeSans_20px);
+				break;				
 			case UCG_FONT_FUB20_HF:
-			
-			break;	
+				eglib_SetFont(font_t &font_FreeFont_FreeSans_20px);
+				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_20px, &unicode_block_FreeFont_FreeMonoBold_20px_Latin1Supplement);	
+				break;	
 			case UCG_FONT_FUB25_HR:
-			
-			break;	
+				eglib_SetFont(font_t &font_FreeFont_FreeSans_26px);
+				break;	
 			case UCG_FONT_FUB35_HN:
-			
-			break;	
+				eglib_SetFont(font_t &font_FreeFont_FreeSans_36px);
+				break;	
 			default: case UCG_FONT_FUB35_HR:
-			
+				eglib_SetFont(font_t &font_FreeFont_FreeSans_36px);
 			break;	
 		}
 	}
@@ -183,7 +186,7 @@ private:
 	ucg->scrollLines     	// display driver function
 	ucg->scrollSetMargins  // display driver function
 	ucg->setClipRange	// seems there no clipping concept in eglib
-	ucg->setFont		
+		
 	ucg->setFontMode
 	ucg->setFontPosBottom
 	ucg->setFontPosCenter

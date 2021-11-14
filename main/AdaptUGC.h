@@ -1,19 +1,20 @@
 #include "eglib.h"
 #include "inttypes.h"
 
+#pragma once
+
 // later we want to get rid of UGC, so lets add all needed API definitions here
 
 #define UCG_DRAW_UPPER_RIGHT 0x01
 #define UCG_DRAW_UPPER_LEFT  0x02
 #define UCG_DRAW_LOWER_LEFT 0x04
 #define UCG_DRAW_LOWER_RIGHT  0x08
+#define UCG_DRAW_ALL (UCG_DRAW_UPPER_RIGHT|UCG_DRAW_UPPER_LEFT|UCG_DRAW_LOWER_RIGHT|UCG_DRAW_LOWER_LEFT)
 
 class AdaptUGC {
 public:
 
-	void begin() {
-		// eglib = ... tbd.
-	}
+	void begin(); // move to .cpp
 
 	inline void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1)  { eglib_DrawLine(eglib, x0, y0, x1, y1); }   // inline
 

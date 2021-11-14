@@ -16,6 +16,14 @@
 #include "DataMonitor.h"
 #include "AdaptUGC.h"
 
+// Display 4 Wire SPI and Display CS
+#define RESET_Display  GPIO_NUM_5       // Reset pin for Display
+#define CS_Display     GPIO_NUM_13      // CS pin 13 is for Display
+#define SPI_SCLK       GPIO_NUM_14      // SPI Clock pin 14
+#define SPI_DC         GPIO_NUM_15      // SPI Data/Command pin 15
+#define SPI_MOSI       GPIO_NUM_27      // SPI SDO Master Out Slave In pin
+#define SPI_MISO       GPIO_NUM_32      // SPI SDI Master In Slave Out
+
 
 extern StraightWind theWind;
 extern xSemaphoreHandle xMutex;

@@ -71,6 +71,7 @@
 #include <cstdio>
 #include <cstring>
 #include "DataMonitor.h"
+#include "AdaptUGC.h"
 
 // #include "sound.h"
 
@@ -82,16 +83,10 @@ BMP:
     CS - this is the Chip Select pin, drop it low to start an SPI transaction. Its an input to the chip
  */
 
-#define SPI_SCLK GPIO_NUM_14  // SPI Clock pin 14
-#define SPI_DC   GPIO_NUM_15  // SPI Data/Command pin 15
-#define SPI_MOSI GPIO_NUM_27  // SPI SDO Master Out Slave In pin
-#define SPI_MISO GPIO_NUM_32  // SPI SDI Master In Slave Out ESP32=Master,BME280=slave pin
-
 #define CS_bme280BA GPIO_NUM_26   // before CS pin 33
 #define CS_bme280TE GPIO_NUM_33   // before CS pin 26
 
-#define CS_Display GPIO_NUM_13    // CS pin 13 for Display
-#define RESET_Display GPIO_NUM_5  // Reset pin for Display
+
 #define FREQ_BMP_SPI 13111111/2
 
 #define SPL06_007_BARO 0x77

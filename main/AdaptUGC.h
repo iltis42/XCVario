@@ -187,9 +187,9 @@ private:
 	ucg->scrollSetMargins  // display driver function
 	ucg->setClipRange	// seems there no clipping concept in eglib
 		
-	ucg->setFontMode
-	ucg->setFontPosBottom
-	ucg->setFontPosCenter
+	ucg->setFontMode	// no concept for transparent fonts in eglib, as it appears
+	ucg->setFontPosBottom	// same as clipping, no equivalent concept in eglib
+	ucg->setFontPosCenter	//	"
 	ucg->setRedBlueTwist  	// display driver function
 	ucg->setRotate180	// Same as clipping, missing fundamental concept in eglib
 	ucg->undoClipRange	// seems there no clipping concept in eglib

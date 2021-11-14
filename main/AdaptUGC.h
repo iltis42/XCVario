@@ -109,6 +109,24 @@ private:
 	ucg->setRotate180	// Same as clipping, missing fundamental concept in eglib
 	ucg->undoClipRange	// seems there no clipping concept in eglib
 
+// ucg_font_ncenR14_hr =
+// extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbookRoman_14px_BasicLatin;
+// ucg_font_9x15B_mf
+// ucg_font_fub11_tr
+// ucg_font_fub11_hr
+// ucg_font_fub14_hn
+// ucg_font_fub14_hr
+// ucg_font_fub14_hf
+// ucg_font_fub17_hf
+// ucg_font_fub20_hn
+// ucg_font_fub20_hr
+// ucg_font_fub20_hf
+// ucg_font_fub25_hr
+// ucg_font_fub35_hn
+// ucg_font_fub35_hr
+
+
+
 */
 	eglib_t * eglib;
 };

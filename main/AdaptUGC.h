@@ -1,6 +1,7 @@
 #include "eglib.h"
 #include "inttypes.h"
 #include "Arduino.h"
+#include "font.h"
 
 // later we want to get rid of UGC, so lets add all needed API definitions here
 
@@ -110,7 +111,7 @@ public:
 		switch( f[0] ){
 			case UCG_FONT_9x15B_MF:
 			eglib_SetFont(eglib, &font_FreeFont_FreeMonoBold_15px);
-			eglib_AddUnicodeBlockToFont(&font_FreeFontMonoBold_15px, &unicode_block_FreeFont_FreeMonoBold_15px_Latin1Supplement);	
+			eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeMonoBold_15px, &unicode_block_FreeFont_FreeMonoBold_15px_Latin1Supplement);	
 			break;
 			case UCG_FONT_NCENR14_HR:
 			

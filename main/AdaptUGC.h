@@ -115,9 +115,6 @@ public:
 			case UCG_FONT_FUB11_TR:
 			
 			break;	
-			case UCG_FONT_FUB11_TR:
-			
-			break;	
 			case UCG_FONT_FUB11_HR:
 			
 			break;	

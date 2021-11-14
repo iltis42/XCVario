@@ -13,6 +13,37 @@
 #define UCG_PRINT_DIR_RL 0x02
 #define UCG_PRINT_DIR_BU 0x03
 
+#define UCG_FONT_9x15B_MF 0x00
+#define UCG_FONT_NCENR14_HR 0x01
+#define UCG_FONT_FUB11_TR 0x02
+#define UCG_FONT_FUB11_HR 0x03
+#define UCG_FONT_FUB14_HN 0x04
+#define UCG_FONT_FUB14_HR 0x05
+#define UCG_FONT_FUB14_HF 0x06
+#define UCG_FONT_FUB17_HF 0x07
+#define UCG_FONT_FUB20_HN 0x08
+#define UCG_FONT_FUB20_HR 0x09
+#define UCG_FONT_FUB20_HF 0x0A
+#define UCG_FONT_FUB25_HR 0x0B
+#define UCG_FONT_FUB35_HN 0x0C
+#define UCG_FONT_FUB35_HR 0x0D
+
+const uint8_t ucg_font_9x15B_mf = UCG_FONT_9x15B_MF;
+const uint8_t ucg_font_ncenR14_hr = UCG_FONT_NCENR14_HR;
+const uint8_t ucg_font_fub11_tr = UCG_FONT_FUB11_TR;
+const uint8_t ucg_font_fub11_hr = UCG_FONT_FUB11_HR;
+const uint8_t ucg_font_fub14_hn = UCG_FONT_FUB14_HN;
+const uint8_t ucg_font_fub14_hr = UCG_FONT_FUB14_HR;
+const uint8_t ucg_font_fub14_hf = UCG_FONT_FUB14_HF;
+const uint8_t ucg_font_fub17_hf = UCG_FONT_FUB17_HF;
+const uint8_t ucg_font_fub20_hn = UCG_FONT_FUB20_HN;
+const uint8_t ucg_font_fub20_hr = UCG_FONT_FUB20_HR;
+const uint8_t ucg_font_fub20_hf = UCG_FONT_FUB20_HF;
+const uint8_t ucg_font_fub25_hr = UCG_FONT_FUB25_HR;
+const uint8_t ucg_font_fub35_hn = UCG_FONT_FUB35_HN;
+const uint8_t ucg_font_fub35_hr = UCG_FONT_FUB35_HR;
+
+
 class AdaptUGC : public Print{
 public:
 

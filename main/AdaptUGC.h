@@ -4,6 +4,7 @@
 
 // later we want to get rid of UGC, so lets add all needed API definitions here
 
+#define UCG_DRAW_ALL 0x00
 #define UCG_DRAW_UPPER_RIGHT 0x01
 #define UCG_DRAW_UPPER_LEFT  0x02
 #define UCG_DRAW_LOWER_LEFT 0x04

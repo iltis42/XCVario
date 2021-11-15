@@ -23,7 +23,7 @@
 #include "Flap.h"
 #include "MenuEntry.h"
 
-Ucglib_ILI9341_18x240x320_HWSPI *MenuEntry::ucg = 0;
+AdaptUGC *MenuEntry::ucg = 0;
 IpsDisplay* MenuEntry::_display = 0;
 MenuEntry* MenuEntry::root = 0;
 MenuEntry* MenuEntry::selected = 0;

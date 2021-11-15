@@ -22,7 +22,7 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include <Ucglib.h>
+#include <AdaptUGC.h>
 #include <logdef.h>
 
 #include "sdkconfig.h"
@@ -40,8 +40,8 @@ int   IpsDisplay::red = 10;
 int   IpsDisplay::yellow = 25;
 
 bool IpsDisplay::netto_old = false;
-ucg_int_t IpsDisplay::char_width; // for roling altimeter
-ucg_int_t IpsDisplay::char_height;
+int16_t IpsDisplay::char_width; // for roling altimeter
+int16_t IpsDisplay::char_height;
 
 #define DISPLAY_H 320
 #define DISPLAY_W 240
@@ -109,7 +109,7 @@ extern xSemaphoreHandle spiMutex; // todo needs a better concept here
 ucg_color_t IpsDisplay::colors[TEMAX+1+TEGAP];
 ucg_color_t IpsDisplay::colorsalt[TEMAX+1+TEGAP];
 
-Ucglib_ILI9341_18x240x320_HWSPI *IpsDisplay::ucg = 0;
+AdaptUGC *IpsDisplay::ucg = 0;
 
 int IpsDisplay::_te=0;
 int IpsDisplay::_ate=0;
@@ -253,7 +253,7 @@ static float gaugeValueFromIdx(const float rad)
 
 ////////////////////////////
 // IpsDisplay implementation
-IpsDisplay::IpsDisplay( Ucglib_ILI9341_18x240x320_HWSPI *aucg ) {
+IpsDisplay::IpsDisplay( AdaptUGC *aucg ) {
 	ucg = aucg;
 	_dtype = ILI9341;
 	_divisons = 5;
@@ -448,7 +448,7 @@ void IpsDisplay::drawThermometer( int x, int y) {
 
 void IpsDisplay::begin() {
 	ESP_LOGI(FNAME,"IpsDisplay::begin");
-	ucg->begin(UCG_FONT_MODE_SOLID);
+	ucg->begin();
 	setup();
 }
 
@@ -656,7 +656,7 @@ void IpsDisplay::drawMC( float mc, bool large ) {
 	char s[10];
 	std::sprintf(s, "%1.1f", Units::Vario(mc) );
 	ucg->print(s);
-	ucg_int_t fl = ucg->getStrWidth(s);
+	int16_t fl = ucg->getStrWidth(s);
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setColor(COLOR_HEADER);
 	ucg->setPrintPos(5+fl+2, DISPLAY_H-6);
@@ -789,8 +789,8 @@ void IpsDisplay::drawBT() {
 		return;
 	int btq=BTSender::queueFull();
 	if( btq != btqueue || Flarm::connected() != flarm_connected ){
-		ucg_int_t btx=DISPLAY_W-20;
-		ucg_int_t bty=(BTH/2) + 8;
+		int16_t btx=DISPLAY_W-20;
+		int16_t bty=(BTH/2) + 8;
 		if( btq )
 			ucg->setColor( COLOR_MGREY );
 		else
@@ -845,8 +845,8 @@ void IpsDisplay::drawCable(int16_t x, int16_t y)
 void IpsDisplay::drawFlarm( int x, int y, bool flarm ) {
 	if( _menu )
 		return;
-	ucg_int_t flx=x;
-	ucg_int_t fly=y;
+	int16_t flx=x;
+	int16_t fly=y;
 	if( flarm )
 		ucg->setColor(COLOR_RED);
 	else
@@ -1007,14 +1007,14 @@ void IpsDisplay::drawOneScaleLine( float a, int16_t l1, int16_t l2, int16_t w, u
 	float co=cos(a);
 	int16_t w0 = w/2;
 	w = w - w0; // total width := w + w0
-	ucg_int_t xn_0 = AMIDX-l1*co+w0*si;
-	ucg_int_t yn_0 = AMIDY-l1*si-w0*co;
-	ucg_int_t xn_1 = AMIDX-l1*co-w*si;
-	ucg_int_t yn_1 = AMIDY-l1*si+w*co;
-	ucg_int_t xn_2 = AMIDX-l2*co-w*si;
-	ucg_int_t yn_2 = AMIDY-l2*si+w*co;
-	ucg_int_t xn_3 = AMIDX-l2*co+w0*si;
-	ucg_int_t yn_3 = AMIDY-l2*si-w0*co;
+	int16_t xn_0 = AMIDX-l1*co+w0*si;
+	int16_t yn_0 = AMIDY-l1*si-w0*co;
+	int16_t xn_1 = AMIDX-l1*co-w*si;
+	int16_t yn_1 = AMIDY-l1*si+w*co;
+	int16_t xn_2 = AMIDX-l2*co-w*si;
+	int16_t yn_2 = AMIDY-l2*si+w*co;
+	int16_t xn_3 = AMIDX-l2*co+w0*si;
+	int16_t yn_3 = AMIDY-l2*si-w0*co;
 	// ESP_LOGI(FNAME,"IpsDisplay::drawTetragon  x0:%d y0:%d x1:%d y1:%d x2:%d y2:%d x3:%d y3:%d", (int)xn_0, (int)yn_0, (int)xn_1 ,(int)yn_1, (int)xn_2, (int)yn_2, (int)xn_3 ,(int)yn_3 );
 	ucg->setColor( r,g,b  );
 	ucg->drawTetragon(xn_0,yn_0,xn_1,yn_1,xn_2,yn_2,xn_3,yn_3);
@@ -1025,7 +1025,7 @@ void IpsDisplay::drawOneScaleLine( float a, int16_t l1, int16_t l2, int16_t w, u
 bool IpsDisplay::drawPolarIndicator( float a, int16_t l1, int16_t l2, int16_t w, ucg_color_t color, bool dirty )
 {
 	typedef struct Triangle {
-		ucg_int_t x_0=0, y_0=0, x_1=0, y_1=1, x_2=1, y_2=0;
+		int16_t x_0=0, y_0=0, x_1=0, y_1=1, x_2=1, y_2=0;
 	} Triangle_t;
 	static Triangle_t o;
 	Triangle_t n;
@@ -1312,7 +1312,7 @@ void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float ate ){
 
 // right-aligned to value, unit optional behind
 // altidude >=0 are displayed correctly with last two digits rolling accoring to their fraction to the right
-bool IpsDisplay::drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool dirty, bool incl_unit )
+bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty, bool incl_unit )
 {
 	if( _menu ) return false;
 
@@ -1415,7 +1415,7 @@ bool IpsDisplay::drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool di
 
 // Accepts speed in kmh IAS/TAS, translates into configured unit
 // right-aligned to value in 25 font size, no unit
-void IpsDisplay::drawSmallSpeed(float v_kmh, ucg_int_t x, ucg_int_t y)
+void IpsDisplay::drawSmallSpeed(float v_kmh, int16_t x, int16_t y)
 {
 	int airspeed = Units::AirspeedRounded(v_kmh);
 	ucg->setColor( COLOR_WHITE );
@@ -1431,7 +1431,7 @@ void IpsDisplay::drawSmallSpeed(float v_kmh, ucg_int_t x, ucg_int_t y)
 // Accepts speed in kmh IAS/TAS, translates into configured unit
 // set dirty, when obscured from vario needle
 // right-aligned to value, unit optional behind
-bool IpsDisplay::drawSpeed(float v_kmh, ucg_int_t x, ucg_int_t y, bool dirty, bool inc_unit)
+bool IpsDisplay::drawSpeed(float v_kmh, int16_t x, int16_t y, bool dirty, bool inc_unit)
 {
 	if( _menu ) return false;
 
@@ -2037,8 +2037,8 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 
 	bool flarm=false;
 	if( flarm ){
-		ucg_int_t flx=DISPLAY_W-58;
-		ucg_int_t fly=FLOGO-7;
+		int16_t flx=DISPLAY_W-58;
+		int16_t fly=FLOGO-7;
 		if( flarm )
 			ucg->setColor(COLOR_RED);
 		else

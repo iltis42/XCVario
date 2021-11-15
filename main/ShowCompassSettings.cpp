@@ -23,7 +23,7 @@ Last update: 2021-04-18
 #include "QMC5883L.h"
 #include "sensor.h"
 
-#include <Ucglib.h>
+#include <AdaptUGC.h>
 #include <esp_log.h>
 
 ShowCompassSettings::ShowCompassSettings( std::string title) :

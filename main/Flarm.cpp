@@ -21,7 +21,7 @@ double Flarm::gndCourse = 0;
 bool Flarm::gpsOK = false;
 char Flarm::ID[8] = "";
 int Flarm::bincom = 0;
-Ucglib_ILI9341_18x240x320_HWSPI* Flarm::ucg;
+AdaptUGC* Flarm::ucg;
 
 extern xSemaphoreHandle spiMutex;
 

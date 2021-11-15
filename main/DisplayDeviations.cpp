@@ -21,7 +21,7 @@ Last update: 2021-02-25
 #include "SetupNG.h"
 #include "sensor.h"
 
-#include <Ucglib.h>
+#include <AdaptUGC.h>
 #include <esp_log.h>
 
 

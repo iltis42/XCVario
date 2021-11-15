@@ -482,7 +482,7 @@ void Flap::configureADC(){
 
 }
 
-Flap::Flap(Ucglib_ILI9341_18x240x320_HWSPI *theUcg) :
+Flap::Flap(AdaptUGC *theUcg) :
 	ucg(theUcg)
 {}
 Flap::~Flap()
@@ -493,7 +493,7 @@ Flap::~Flap()
     }
     _instance = nullptr;
 }
-Flap*  Flap::init(Ucglib_ILI9341_18x240x320_HWSPI *ucg)
+Flap*  Flap::init(AdaptUGC *ucg)
 {
     if ( ! _instance ) {
         _instance = new Flap(ucg);

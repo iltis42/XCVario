@@ -16,7 +16,7 @@
 class IpsDisplay;
 class AnalogInput;
 class PressureSensor;
-class Ucglib_ILI9341_18x240x320_HWSPI;
+class AdaptUGC;
 
 class MenuEntry: public RotaryObserver {
 public:
@@ -56,6 +56,6 @@ public:
 	int    hypos = 0;
 	unsigned char y = 0;
     int    idx = 0;
-	static Ucglib_ILI9341_18x240x320_HWSPI *ucg;
+	static AdaptUGC *ucg;
 
 };

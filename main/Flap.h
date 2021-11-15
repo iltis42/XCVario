@@ -2,7 +2,7 @@
 
 #include "AnalogInput.h"
 
-class Ucglib_ILI9341_18x240x320_HWSPI;
+class AdaptUGC;
 class SetupMenu;
 class SetupMenuSelect;
 class SetupMenuValFloat;
@@ -22,10 +22,10 @@ static int flap_enable_act( SetupMenuSelect *p );
 
 class Flap {
 private:
-    Flap(Ucglib_ILI9341_18x240x320_HWSPI *theUcg);
+    Flap(AdaptUGC *theUcg);
 public:
     ~Flap();
-	static Flap* init(Ucglib_ILI9341_18x240x320_HWSPI *ucg);
+	static Flap* init(AdaptUGC *ucg);
 	void  progress();
 	// inline float getLever() { return lever; }
 	// inline void setLever( float l ) { lever = l; }
@@ -67,7 +67,7 @@ private: // helper
 
 private:
     static Flap* _instance;
-	Ucglib_ILI9341_18x240x320_HWSPI* ucg = nullptr;
+	AdaptUGC* ucg = nullptr;
 	AnalogInput *sensorAdc = nullptr;
 	float lever = -1.;
 	int   senspos[MAX_NR_POS];

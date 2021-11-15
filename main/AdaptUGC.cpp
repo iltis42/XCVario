@@ -9,6 +9,30 @@
 
 static eglib_t myeglib;
 
+uint8_t ucg_font_9x15B_mf[] = { UCG_FONT_9x15B_MF };
+uint8_t ucg_font_ncenR14_hr[] = { UCG_FONT_NCENR14_HR };
+uint8_t ucg_font_fub11_tr[] = { UCG_FONT_FUB11_TR };
+uint8_t ucg_font_fub11_hr[] = { UCG_FONT_FUB11_HR };
+uint8_t ucg_font_fub14_hn[] = { UCG_FONT_FUB14_HN };
+uint8_t ucg_font_fub14_hr[] = { UCG_FONT_FUB14_HR };
+uint8_t ucg_font_fub14_hf[] = { UCG_FONT_FUB14_HF };
+uint8_t ucg_font_fur14_hf[] = { UCG_FONT_FUR14_HF };
+uint8_t ucg_font_fub17_hf[] = { UCG_FONT_FUB17_HF };
+uint8_t ucg_font_fub20_hn[] = { UCG_FONT_FUB20_HN };
+uint8_t ucg_font_fub20_hr[] = { UCG_FONT_FUB20_HR };
+uint8_t ucg_font_fub20_hf[] = { UCG_FONT_FUB20_HF };
+uint8_t ucg_font_fur20_hf[] = { UCG_FONT_FUR20_HF };
+uint8_t ucg_font_fub25_hr[] = { UCG_FONT_FUB25_HR };
+uint8_t ucg_font_fub25_hf[] = { UCG_FONT_FUB25_HF };
+uint8_t ucg_font_fur25_hf[] = { UCG_FONT_FUR25_HF };
+uint8_t ucg_font_fub35_hn[] = { UCG_FONT_FUB35_HN };
+uint8_t ucg_font_fub35_hr[] = { UCG_FONT_FUB35_HR };
+
+uint8_t ucg_font_profont22_mr[] = {  UCG_FONT_PROFONT22_MR };
+uint8_t ucg_font_fub25_hn[] = { UCG_FONT_FUB25_HN };
+uint8_t ucg_font_fub11_hn[] = { UCG_FONT_FUB11_HN };
+
+
 void  AdaptUGC::begin() {
 	st7789_config_t st7789_config = {
 			.width = 240,
@@ -37,6 +61,7 @@ void  AdaptUGC::begin() {
 	ESP_LOGI(FNAME, "eglib_Send() &eglib:%x  hal-driv:%x hds:%x\n", (unsigned int)eglib, (unsigned int)&esp32_ili9341, (unsigned int)esp32_ili9341.send  );
 
 	eglib_Init( &myeglib, &esp32_ili9341, &esp32_ili9341_config, &st7789, &st7789_config );
+
 };
 
 

@@ -30,7 +30,7 @@
 #include "SetupMenuValFloat.h"
 
 #include <SPI.h>
-#include <Ucglib.h>
+#include <AdaptUGC.h>
 #include <OTA.h>
 #include "SetupNG.h"
 #include "Switch.h"
@@ -119,7 +119,7 @@ xSemaphoreHandle spiMutex=NULL;
 PressureSensor *baroSensor = 0;
 PressureSensor *teSensor = 0;
 
-Ucglib_ILI9341_18x240x320_HWSPI *MYUCG = 0;  // ( SPI_DC, CS_Display, RESET_Display );
+AdaptUGC *MYUCG = 0;  // ( SPI_DC, CS_Display, RESET_Display );
 IpsDisplay *display;
 bool topDown = false;
 
@@ -801,7 +801,7 @@ void sensor(void *args){
 
 	delay( 10000 );
 
-	MYUCG = new Ucglib_ILI9341_18x240x320_HWSPI( SPI_DC, CS_Display, RESET_Display );
+	MYUCG = new AdaptUGC(); // new AdaptUGC( SPI_DC, CS_Display, RESET_Display );
 	display = new IpsDisplay( MYUCG );
 	Flarm::setDisplay( MYUCG );
 	DM.begin( MYUCG, &Rotary );

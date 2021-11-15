@@ -51,9 +51,9 @@ const uint8_t ucg_font_fub35_hr[] = { UCG_FONT_FUB35_HR };
 class AdaptUGC : public Print{
 public:
 
-	void begin() {
-		// eglib = ... tbd.
-	}
+//	void begin() {
+//		// eglib = ... tbd.
+//	}
 
 	inline void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1)  { eglib_DrawLine(eglib, x0, y0, x1, y1); }   // inline
 	inline void drawBox(int16_t x, int16_t y, int16_t w, int16_t h)  { eglib_DrawBox(eglib, x, y, w, h); }

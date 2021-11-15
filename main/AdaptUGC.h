@@ -159,7 +159,7 @@ public:
 		}
 	}
 	
-	inline void setPrintPos(int16_t x, ucg_int_t y) { eglib_print_xpos = x; eglib_print_ypos = y; }
+	inline void setPrintPos(int16_t x, int16_t y) { eglib_print_xpos = x; eglib_print_ypos = y; }
 	inline void setPrintDir(uint8_t d) { eglib_print_dir = d; }
 	
 	size_t write(uint8_t c) { 

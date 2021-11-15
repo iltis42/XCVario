@@ -268,7 +268,7 @@ struct hal_struct {
 	 *
 	 * :See also: :c:func:`eglib_Send`.
 	 */
-	void (*send)(eglib_t *eglib, enum hal_dc_t dc, uint8_t *bytes, uint32_t length);
+	void (*send)(eglib_t *eglib, uint32_t dc, uint8_t *bytes, uint32_t length);
 	/**
 	 * Ends communication. The meaning of this function varies depending on the
 	 * bus:

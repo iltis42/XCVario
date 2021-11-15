@@ -2,14 +2,16 @@
 #include "inttypes.h"
 #include "Arduino.h"
 
+#pragma once
 
 // later we want to get rid of UGC, so lets add all needed API definitions here
 
 
 #define UCG_DRAW_UPPER_RIGHT 0x01
 #define UCG_DRAW_UPPER_LEFT  0x02
-#define UCG_DRAW_LOWER_LEFT 0x04
-#define UCG_DRAW_LOWER_RIGHT  0x08
+#define UCG_DRAW_LOWER_LEFT  0x04
+#define UCG_DRAW_LOWER_RIGHT 0x08
+#define UCG_DRAW_ALL         0x0F
 
 #define UCG_PRINT_DIR_LR 0x00
 #define UCG_PRINT_DIR_TD 0x01
@@ -52,11 +54,10 @@ const uint8_t ucg_font_fub35_hr[] = { UCG_FONT_FUB35_HR };
 class AdaptUGC : public Print{
 public:
 
-//	void begin() {
-//		// eglib = ... tbd.
-//	}
-
-	inline void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1)  { eglib_DrawLine(eglib, x0, y0, x1, y1); }   // inline
+	void begin();
+	inline void setColor( uint8_t idx, uint8_t r, uint8_t g, uint8_t b ) { eglib_SetIndexColor(eglib, idx, r, g, b); }
+	inline void setColor( uint8_t r, uint8_t g, uint8_t b ) { eglib_SetIndexColor(eglib, 1, r, g, b); }
+	inline void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1)  { eglib_DrawLine(eglib, x0, y0, x1, y1); }
 	inline void drawBox(int16_t x, int16_t y, int16_t w, int16_t h)  { eglib_DrawBox(eglib, x, y, w, h); }
 	inline void drawFrame(int16_t x, int16_t y, int16_t w, int16_t h)  { eglib_DrawFrame(eglib, x, y, w, h); }	
 	inline void drawHLine(int16_t x, int16_t y, int16_t len)  { eglib_DrawHLine(eglib, x, y, len); }	
@@ -66,7 +67,6 @@ public:
 	inline void drawRFrame(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r)  { eglib_DrawRoundFrame(eglib, x, y, w, h, r); }
 	inline void drawTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2)  { eglib_DrawTriangle(eglib, x0, y0, x1, y1, x2, y2); }	
 	inline void drawTetragon(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t x3, int16_t y3)  { eglib_DrawTriangle(eglib, x0, y0, x1, y1, x2, y2); eglib_DrawTriangle(eglib, x0, y0, x2, y2, x3, y3); }	
-	inline void setColor(uint8_t idx, uint8_t r, uint8_t g, uint8_t b) { eglib_SetIndexColor(eglib, idx, r, g, b); }
 	
 	void drawCircle(int16_t x, int16_t y, int16_t radius, uint8_t options){                                                                        // adapter
 		switch( options ){
@@ -177,6 +177,19 @@ public:
   		}
 		return 1;
 	}
+
+	void invertDisplay( bool inv ) {};  	        // display driver function
+	void scrollLines(int16_t lines) {};     	    // display driver function
+	void scrollSetMargins( int16_t top, int16_t bottom ) {};                 // display driver function
+	void setClipRange( int16_t x, int16_t y, int16_t w, int16_t h ) {};	 // seems there no clipping concept in eglib
+	void setFontMode( uint8_t is_transparent ) {};  // no concept for transparent fonts in eglib, as it appears
+	void setFontPosBottom() {};	                    // same as clipping, no equivalent concept in eglib
+	void setFontPosCenter() {};	                    //	"
+	void setRedBlueTwist( bool twist ) {};   	    // display driver function
+	void setRotate180() {};	                        // Same as clipping, missing fundamental concept in eglib
+	void undoClipRange() {};	                    // seems there no clipping concept in eglib
+
+
 private:
 	int16_t eglib_print_xpos = 0, eglib_print_ypos = 0;
 	uint8_t eglib_print_dir = UCG_PRINT_DIR_LR;

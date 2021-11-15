@@ -1,5 +1,3 @@
-#include "hal.h"
-#include "driver/gpio.h"
 
 #pragma once
 
@@ -16,7 +14,11 @@
  */
 extern "C" {
 
-extern const hal_t esp32_ili9341;
+#include "hal.h"
+#include "driver/gpio.h"
+
+
+extern hal_t esp32_ili9341;
 
 typedef struct esp32_hal_config{
 	uint8_t spi_num;

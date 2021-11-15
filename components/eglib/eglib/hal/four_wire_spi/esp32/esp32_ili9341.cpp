@@ -52,7 +52,8 @@ static void ecomm_begin(eglib_t *_eglib) {
 
 static void egsend(
 	eglib_t *_eglib,
-	enum hal_dc_t dc,
+	// enum hal_dc_t dc,
+	uint32_t dc,
 	uint8_t *bytes,
 	uint32_t length )
 {
@@ -70,7 +71,7 @@ static void ecomm_end(eglib_t *_eglib) {
 	gpio_set_level(config->gpio_cs, 1 );
 }
 
-const hal_t esp32_ili9341 = {
+hal_t esp32_ili9341 = {
 	.init = einit,
 	.sleep_in = esleep_in,
 	.sleep_out = esleep_out,

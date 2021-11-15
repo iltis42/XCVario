@@ -18,7 +18,7 @@ void eglib_Send(
 
 	prev_hal_i2c_send_slave_addr = eglib->hal.i2c_send_slave_addr;
 
-	eglib->hal.driver->send(eglib, dc, bytes, length);
+	eglib->hal.driver->send(eglib, (uint32_t)dc, bytes, length);
 
 	if(eglib->hal.i2c_send_slave_addr == prev_hal_i2c_send_slave_addr) {
 		if(eglib->hal.i2c_send_slave_addr)

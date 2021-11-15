@@ -10,6 +10,7 @@
 #define UCG_DRAW_UPPER_LEFT  0x02
 #define UCG_DRAW_LOWER_LEFT 0x04
 #define UCG_DRAW_LOWER_RIGHT  0x08
+#define UCG_DRAW_ALL 0x0F
 #define UCG_PRINT_DIR_LR 0x00
 #define UCG_PRINT_DIR_TD 0x01
 #define UCG_PRINT_DIR_RL 0x02
@@ -158,7 +159,7 @@ public:
 		}
 	}
 	
-	inline void setPrintPos(ucg_int_t x, ucg_int_t y) { eglib_print_xpos = x; eglib_print_ypos = y; }
+	inline void setPrintPos(int16_t x, ucg_int_t y) { eglib_print_xpos = x; eglib_print_ypos = y; }
 	inline void setPrintDir(uint8_t d) { eglib_print_dir = d; }
 	
 	size_t write(uint8_t c) { 

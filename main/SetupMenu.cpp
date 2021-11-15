@@ -1426,7 +1426,7 @@ void SetupMenu::setup( )
 		als->addEntry( "Baro Sensor");
 		als->addEntry( "External");
 
-		SetupMenuValFloat * spc = new SetupMenuValFloat( "AS Calibration", 0, "%", -60, 60, 1, 0, false, &speedcal  );
+		SetupMenuValFloat * spc = new SetupMenuValFloat( "AS Calibration", 0, "%", -100, 100, 1, 0, false, &speedcal  );
 		spc->setHelp(PROGMEM"Calibration of airspeed sensor (AS). Normally not needed, hence pressure probes may have systematic error");
 		aia->addEntry( spc );
 

@@ -49,7 +49,7 @@ void  AdaptUGC::begin() {
 	esp32_hal_config_t esp32_ili9341_config = {
 			.spi_num = 	HSPI,
 			.freq = 	13111111*3,  // max 40 MHz
-			.dataMode = SPI_MODE3,
+			.dataMode = SPI_MODE0,
 			.bitOrder = MSBFIRST,
 			.gpio_scl = SPI_SCLK,
 			.gpio_sda = SPI_MOSI,

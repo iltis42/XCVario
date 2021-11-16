@@ -34,6 +34,7 @@ uint8_t ucg_font_fub11_hn[] = { UCG_FONT_FUB11_HN };
 
 
 void  AdaptUGC::begin() {
+	eglib = &myeglib;
 	st7789_config_t st7789_config = {
 			.width = 240,
 			.height = 320,

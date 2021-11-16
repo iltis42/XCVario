@@ -1,4 +1,3 @@
-
 #pragma once
 
 /**
@@ -12,11 +11,10 @@
  *
  * :See also: :c:func:`eglib_Init`.
  */
-extern "C" {
+
 
 #include "hal.h"
 #include "driver/gpio.h"
-
 
 extern hal_t esp32_ili9341;
 
@@ -33,5 +31,4 @@ typedef struct esp32_hal_config{
 	gpio_num_t gpio_rs;
 }esp32_hal_config_t;
 
-}
-
+// void send( eglib_t *_eglib, enum hal_dc_t dc, uint8_t *bytes, uint32_t length );

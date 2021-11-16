@@ -1,11 +1,11 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_system.h"
-#include "esp32_ili9341.h"
 #include "SPI.h"
 #include "driver/gpio.h"
 
 extern "C" {
+#include "esp32_ili9341.h"
 
 static esp32_hal_config_t *config;
 
@@ -50,19 +50,15 @@ static void ecomm_begin(eglib_t *_eglib) {
 	SPI.beginTransaction(SPISettings( config->freq, config->bitOrder, config->dataMode ));  // *3
 }
 
-static void egsend(
+void esend(
 	eglib_t *_eglib,
-	// enum hal_dc_t dc,
-	uint32_t dc,
+	enum hal_dc_t dc,
 	uint8_t *bytes,
 	uint32_t length )
 {
 	config = (esp32_hal_config_t *)eglib_GetHalConfig(_eglib);
 	gpio_set_level(config->gpio_dc, dc );
-	while( length ){
-		SPI.transfer( *bytes );
-		bytes++;
-	}
+	SPI.transfer( bytes, length );
 }
 
 static void ecomm_end(eglib_t *_eglib) {
@@ -79,7 +75,7 @@ hal_t esp32_ili9341 = {
 	.set_reset = eset_reset,
 	.get_busy = eget_busy,
 	.comm_begin = ecomm_begin,
-	.send = egsend,
+	.send = esend,
 	.comm_end = ecomm_end,
 };
 }

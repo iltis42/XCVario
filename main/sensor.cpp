@@ -791,15 +791,20 @@ void sensor(void *args){
 
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ccp = (int)(core_climb_period.get()*10);
+
 	SPI.begin( SPI_SCLK, SPI_MISO, SPI_MOSI, CS_bme280BA );
 	xSemaphoreGive(spiMutex);
 
 	AdaptUGC *egl = new AdaptUGC();
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	egl->begin();
+	ESP_LOGI( FNAME, "setColor" );
 	egl->setColor( 0, 255, 0 );
-	egl->drawLine( 1,1, 200,200 );
-
-	delay( 10000 );
+	ESP_LOGI( FNAME, "drawLine" );
+	egl->drawLine( 20,20, 20,80 );
+	xSemaphoreGive(spiMutex);
+	ESP_LOGI( FNAME, "finish Draw" );
+	delay( 10000000 );
 
 	MYUCG = new AdaptUGC(); // new AdaptUGC( SPI_DC, CS_Display, RESET_Display );
 	display = new IpsDisplay( MYUCG );

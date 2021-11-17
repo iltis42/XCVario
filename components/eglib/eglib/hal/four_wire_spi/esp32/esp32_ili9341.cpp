@@ -68,7 +68,7 @@ void esend(
 	uint8_t *bytes,
 	uint32_t length )
 {
-	ESP_LOGI("ILI9341", "esend() dc:%d len:%d\n", dc, length );
+	ESP_LOGI("ILI9341", "esend() dc:%s len:%d\n", dc?"DAT":"CMD", length );
     ESP_LOG_BUFFER_HEXDUMP("ILI9341", bytes, length, ESP_LOG_INFO);
 	gpio_set_level(config->gpio_dc, dc );
 	SPI.transfer( bytes, length );

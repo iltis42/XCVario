@@ -38,7 +38,7 @@ void  AdaptUGC::begin() {
 	st7789_config_t st7789_config = {
 			.width = 240,
 			.height = 320,
-			.color = ST7789_COLOR_16_BIT,
+			.color = ST7789_COLOR_18_BIT,
 			.page_address = ST7789_PAGE_ADDRESS_TOP_TO_BOTTOM,
 			.colum_address = ST7789_COLUMN_ADDRESS_LEFT_TO_RIGHT,
 			.page_column_order = ST7789_PAGE_COLUMN_ORDER_NORMAL,
@@ -47,7 +47,7 @@ void  AdaptUGC::begin() {
 	};
 
 	esp32_hal_config_t esp32_ili9341_config = {
-			.spi_num = 	HSPI,
+			.spi_num = 	VSPI,
 			.freq = 	13111111*3,  // max 40 MHz
 			.dataMode = SPI_MODE0,
 			.bitOrder = MSBFIRST,

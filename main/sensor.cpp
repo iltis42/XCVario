@@ -806,7 +806,7 @@ void sensor(void *args){
 	ESP_LOGI( FNAME, "finish Draw" );
 	delay( 10000000 );
 
-	MYUCG = new AdaptUGC(); // new AdaptUGC( SPI_DC, CS_Display, RESET_Display );
+	MYUCG = egl; // new AdaptUGC( SPI_DC, CS_Display, RESET_Display );
 	display = new IpsDisplay( MYUCG );
 	Flarm::setDisplay( MYUCG );
 	DM.begin( MYUCG, &Rotary );

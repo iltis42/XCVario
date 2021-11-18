@@ -186,6 +186,9 @@ int hold_alarm=0;
 int the_can_mode = CAN_MODE_MASTER;
 int active_screen = 0;  // 0 = Vario
 
+
+AdaptUGC *egl = 0;
+
 float getTAS() { return tas; };
 
 bool do_factory_reset() {
@@ -795,7 +798,7 @@ void sensor(void *args){
 	SPI.begin( SPI_SCLK, SPI_MISO, SPI_MOSI, CS_bme280BA );
 	xSemaphoreGive(spiMutex);
 
-	AdaptUGC *egl = new AdaptUGC();
+	egl = new AdaptUGC();
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	egl->begin();
 	ESP_LOGI( FNAME, "setColor" );
@@ -804,7 +807,7 @@ void sensor(void *args){
 	egl->drawLine( 20,20, 20,80 );
 	xSemaphoreGive(spiMutex);
 	ESP_LOGI( FNAME, "finish Draw" );
-	delay( 2000 );
+	delay( 2000000 );
 
 	MYUCG = egl; // new AdaptUGC( SPI_DC, CS_Display, RESET_Display );
 	display = new IpsDisplay( MYUCG );

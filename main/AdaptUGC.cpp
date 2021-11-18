@@ -32,10 +32,7 @@ uint8_t ucg_font_profont22_mr[] = {  UCG_FONT_PROFONT22_MR };
 uint8_t ucg_font_fub25_hn[] = { UCG_FONT_FUB25_HN };
 uint8_t ucg_font_fub11_hn[] = { UCG_FONT_FUB11_HN };
 
-
-void  AdaptUGC::begin() {
-	eglib = &myeglib;
-	st7789_config_t st7789_config = {
+static st7789_config_t st7789_config = {
 			.width = 240,
 			.height = 320,
 			.color = ST7789_COLOR_18_BIT,
@@ -44,9 +41,9 @@ void  AdaptUGC::begin() {
 			.page_column_order = ST7789_PAGE_COLUMN_ORDER_NORMAL,
 			.vertical_refresh = ST7789_VERTICAL_REFRESH_TOP_TO_BOTTOM,
 			.horizontal_refresh = ST7789_HORIZONTAL_REFRESH_LEFT_TO_RIGHT,
-	};
+};
 
-	esp32_hal_config_t esp32_ili9341_config = {
+static esp32_hal_config_t esp32_ili9341_config = {
 			.spi_num = 	VSPI,
 			.freq = 	13111111*3,  // max 40 MHz
 			.dataMode = SPI_MODE0,
@@ -57,7 +54,11 @@ void  AdaptUGC::begin() {
 			.gpio_cs  = CS_Display,
 			.gpio_dc  = SPI_DC,
 			.gpio_rs  = RESET_Display,
-	};
+};
+
+
+void  AdaptUGC::begin() {
+	eglib = &myeglib;
 
 	ESP_LOGI(FNAME, "eglib_Send() &eglib:%x  hal-driv:%x config:%x\n", (unsigned int)eglib, (unsigned int)&esp32_ili9341, (unsigned int)&esp32_ili9341_config );
 

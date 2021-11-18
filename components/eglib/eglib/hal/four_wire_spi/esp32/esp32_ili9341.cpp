@@ -29,7 +29,7 @@ static void einit(eglib_t *eglib) {
 	gpio_set_level(config->gpio_sda, 1 );
 
 	// hal_four_wire_spi_config_t * fwc = eglib_GetHalFourWireSpiConfigComm(eglib);
-	SPI.setClockDivider( SPI_CLOCK_DIV8 );
+	SPI.setClockDivider( SPI_CLOCK_DIV2 );
 }
 
 static void esleep_in(eglib_t *_eglib) {
@@ -48,7 +48,7 @@ static void edelay_ns(eglib_t *_eglib, uint32_t ns) {
 }
 
 static void eset_reset(eglib_t *_eglib, bool state) {
-	ESP_LOGI("ILI9341","reset state=%d", state );
+	ESP_LOGI("ILI9341","reset IO:%d state=%d", config->gpio_rs, state );
 	gpio_set_level(config->gpio_rs, (unsigned int)state );
 }
 
@@ -57,8 +57,7 @@ static bool eget_busy(eglib_t *_eglib) {
 }
 
 static void ecomm_begin(eglib_t *_eglib) {
-	ESP_LOGI("ILI9341","comm begin()");
-	ESP_LOGI("ecomm_begin", "eglib:%x config:%x CS-PIN:%d", (unsigned int)_eglib, (unsigned int)config, (unsigned int)config->gpio_cs );
+	ESP_LOGI("ILI9341", "comm begin(): eglib:%x config:%x CS-PIN:%d", (unsigned int)_eglib, (unsigned int)config, (unsigned int)config->gpio_cs );
 	gpio_set_level(config->gpio_cs, 0 );
 	SPI.beginTransaction(SPISettings( config->freq, config->bitOrder, config->dataMode ));  // *3
 }
@@ -69,7 +68,7 @@ void esend(
 	uint8_t *bytes,
 	uint32_t length )
 {
-	ESP_LOGI("ILI9341", "esend() dc:%s len:%d\n", dc?"DAT":"CMD", length );
+	ESP_LOGI("ILI9341", "esend() DC-IO:%d dc:%s len:%d\n",config->gpio_dc,  dc?"DAT":"CMD", length );
     ESP_LOG_BUFFER_HEXDUMP("ILI9341", bytes, length, ESP_LOG_INFO);
 	gpio_set_level(config->gpio_dc, dc );
 	SPI.transfer( bytes, length );

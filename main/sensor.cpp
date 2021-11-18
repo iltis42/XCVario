@@ -804,7 +804,7 @@ void sensor(void *args){
 	egl->drawLine( 20,20, 20,80 );
 	xSemaphoreGive(spiMutex);
 	ESP_LOGI( FNAME, "finish Draw" );
-	delay( 10000000 );
+	delay( 2000 );
 
 	MYUCG = egl; // new AdaptUGC( SPI_DC, CS_Display, RESET_Display );
 	display = new IpsDisplay( MYUCG );

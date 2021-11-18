@@ -59,7 +59,7 @@ void  AdaptUGC::begin() {
 			.gpio_rs  = RESET_Display,
 	};
 
-	ESP_LOGI(FNAME, "eglib_Send() &eglib:%x  hal-driv:%x hds:%x\n", (unsigned int)eglib, (unsigned int)&esp32_ili9341, (unsigned int)esp32_ili9341.send  );
+	ESP_LOGI(FNAME, "eglib_Send() &eglib:%x  hal-driv:%x config:%x\n", (unsigned int)eglib, (unsigned int)&esp32_ili9341, (unsigned int)&esp32_ili9341_config );
 
 	eglib_Init( &myeglib, &esp32_ili9341, &esp32_ili9341_config, &st7789, &st7789_config );
 

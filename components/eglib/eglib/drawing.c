@@ -2,6 +2,8 @@
 #include "display.h"
 #include <math.h>
 #include <stdlib.h>
+#include <esp_log.h>
+
 
 #define degrees_to_radians(degrees) ((degrees) * M_PI / 180.0)
 
@@ -21,7 +23,6 @@ void eglib_SetIndexColor(
   eglib->drawing.color_index[idx].b = b;
 }
 
-//
 // Pixel
 //
 
@@ -188,6 +189,7 @@ static void draw_generic_line(
   coordinate_t x2, coordinate_t y2,
   color_t (*get_next_color)(eglib_t *eglib)
 ) {
+  ESP_LOGI("draw_generic_line", "x1:%d y1:%d x2:%d y2:%d", x1,x2,y1,y2 );
   coordinate_t tmp;
   coordinate_t x,y;
   coordinate_t dx, dy;
@@ -250,6 +252,7 @@ static void draw_line(
   coordinate_t x2, coordinate_t y2,
   color_t (*get_next_color)(eglib_t *eglib)
 ) {
+  ESP_LOGI("draw_line", "x1:%d y1:%d x2:%d y2:%d", x1,x2,y1,y2 );
   if((x1 == x2) || (y1 == y2))
     draw_fast_90_line(eglib, x1, y1, x2, y2, get_next_color);
   else
@@ -261,6 +264,7 @@ void eglib_DrawLine(
   coordinate_t x1, coordinate_t y1,
   coordinate_t x2, coordinate_t y2
 ) {
+  ESP_LOGI("eglib_DrawLine", "x1:%d y1:%d x2:%d y2:%d", x1,x2,y1,y2 );
   draw_line(eglib, x1, y1, x2, y2, get_color_index_0);
 }
 

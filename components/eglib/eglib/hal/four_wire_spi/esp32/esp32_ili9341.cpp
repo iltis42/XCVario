@@ -34,12 +34,12 @@ static void einit(eglib_t *eglib) {
 
 static void esleep_in(eglib_t *_eglib) {
 	ESP_LOGI("ILI9341","sleep in");
-	// we are not using this, ESP32 SPI sleep is not helpful for XCVario
+	vTaskDelay( 120 / portTICK_PERIOD_MS);
 }
 
 static void esleep_out(eglib_t *_eglib) {
 	ESP_LOGI("ILI9341","sleep out");
-	// dito
+	vTaskDelay( 120 / portTICK_PERIOD_MS);
 }
 
 static void edelay_ns(eglib_t *_eglib, uint32_t ns) {
@@ -58,6 +58,7 @@ static bool eget_busy(eglib_t *_eglib) {
 
 static void ecomm_begin(eglib_t *_eglib) {
 	ESP_LOGI("ILI9341","comm begin()");
+	ESP_LOGI("ecomm_begin", "eglib:%x config:%x CS-PIN:%d", (unsigned int)_eglib, (unsigned int)config, (unsigned int)config->gpio_cs );
 	gpio_set_level(config->gpio_cs, 0 );
 	SPI.beginTransaction(SPISettings( config->freq, config->bitOrder, config->dataMode ));  // *3
 }

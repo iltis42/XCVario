@@ -1,5 +1,7 @@
 #include "st7789.h"
 #include "frame_buffer.h"
+#include <esp_log.h>
+
 
 //
 // Timings
@@ -262,18 +264,22 @@ static uint8_t get_bits_per_pixel(eglib_t *eglib) {
 }
 
 static void clear_memory(eglib_t *eglib) {
+	return; // +++++++++++++++++++++++++++++++++++++++++ return to help debugging
 	st7789_config_t *display_config;
 	uint32_t memory_size;
-
 	display_config = eglib_GetDisplayConfig(eglib);
 
-	memory_size = display_config->width * display_config->height * get_bits_per_pixel(eglib) / 8;
+	memory_size = (display_config->width * display_config->height * get_bits_per_pixel(eglib)) / 8;
+	ESP_LOGI("st7789", "memory size: %d %d %d %d", memory_size, display_config->width, display_config->height, get_bits_per_pixel(eglib) );
 
 	set_column_address(eglib, 0, display_config->width - 1);
 	set_row_address(eglib, 0, display_config->height - 1);
 	eglib_SendCommandByte(eglib, ST7789_MEMORY_WRITE);
-	for(uint32_t addr=0 ; addr < memory_size ; addr++)
-		eglib_SendDataByte(eglib, 0x00);
+	uint8_t buf[256] = { 0 };
+	for(uint32_t addr=0 ; addr < memory_size ; addr+= 256 ){
+		ESP_LOGI("st7789", "addr: %d", addr );
+		eglib_SendData(eglib, buf, 256 );
+	}
 }
 
 static void send_pixel(eglib_t *eglib, color_t color) {
@@ -427,6 +433,7 @@ static void draw_line(
 	coordinate_t length,
 	color_t (*get_next_color)(eglib_t *eglib)
 ) {
+	ESP_LOGI("drawLine","x:%d y:%d dir:%d", x, y, direction );
 	if(direction == DISPLAY_LINE_DIRECTION_RIGHT) {
 		eglib_CommBegin(eglib);
 

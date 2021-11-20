@@ -275,7 +275,7 @@ static void clear_memory(eglib_t *eglib) {
 	set_column_address(eglib, 0, display_config->width - 1);
 	set_row_address(eglib, 0, display_config->height - 1);
 	eglib_SendCommandByte(eglib, ILI9341_MEMORY_WRITE);
-	uint8_t buf[256] = { 0 };
+	uint8_t buf[256] = { 255 };
 	for(uint32_t addr=0 ; addr < memory_size ; addr+= 256 ){
 		ESP_LOGI("ili9341", "addr: %d", addr );
 		eglib_SendData(eglib, buf, 256 );
@@ -346,6 +346,7 @@ static void init(eglib_t *eglib) {
 	// Memory Data Access Control
 	set_memory_data_access_control(eglib);
 
+	// we need invers, datasheet says oposite
 	eglib_SendCommandByte(eglib, ILI9341_DISPLAY_INVERSION_OFF);
 	// after sw reset, but unless we explicitly set it,
 	// ILI9341_DISPLAY_INVERSION_ON will have no effect.
@@ -403,10 +404,6 @@ static void init(eglib_t *eglib) {
 	// UCG_C10(0x029),                               /* display on */
 	eglib_SendCommandByte(eglib, ILI9341_DISPLAY_ON );
 
-	//   UCG_C11( 0x036, 0x008),
-	eglib_SendCommandByte(eglib, ILI9341_MEMORY_DATA_ACCESS_CONTROL );
-	eglib_SendDataByte(eglib, 0x08 );
-
 	//  UCG_C14(  0x02a, 0x000, 0x000, 0x000, 0x0ef),              /* Horizontal GRAM Address Set */
 	eglib_SendCommandByte(eglib, ILI9341_COLUMN_ADDRESS_SET );
 	uint8_t seqga[] = { 0x000, 0x000, 0x000, 0x0ef };
@@ -421,7 +418,7 @@ static void init(eglib_t *eglib) {
 	eglib_SendCommandByte(eglib, ILI9341_MEMORY_WRITE );
 
 	// Clear RAM
-	clear_memory(eglib);
+	// clear_memory(eglib);
 
 	// Main screen turn on
 	// eglib_SendCommandByte(eglib, ILI9341_DISPLAY_ON);
@@ -499,7 +496,7 @@ static void draw_line(
 	coordinate_t length,
 	color_t (*get_next_color)(eglib_t *eglib)
 ) {
-	ESP_LOGI("drawLine","x:%d y:%d dir:%d", x, y, direction );
+	// ESP_LOGI("drawLine","x:%d y:%d dir:%d", x, y, direction );
 	if(direction == DISPLAY_LINE_DIRECTION_RIGHT) {
 		eglib_CommBegin(eglib);
 

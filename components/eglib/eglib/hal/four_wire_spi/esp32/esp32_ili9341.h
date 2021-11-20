@@ -25,7 +25,7 @@ typedef struct esp32_hal_config{
 	uint8_t bitOrder;
 	gpio_num_t gpio_scl;
 	gpio_num_t gpio_sda;
-	gpio_num_t gpio_sdi;
+	gpio_num_t gpio_sdo;
 	gpio_num_t gpio_cs;
 	gpio_num_t gpio_dc;
 	gpio_num_t gpio_rs;

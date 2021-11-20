@@ -799,15 +799,15 @@ void sensor(void *args){
 	xSemaphoreGive(spiMutex);
 
 	egl = new AdaptUGC();
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	egl->begin();
+
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ESP_LOGI( FNAME, "setColor" );
 	egl->setColor( 0, 255, 0 );
 	ESP_LOGI( FNAME, "drawLine" );
 	egl->drawLine( 20,20, 20,80 );
-	xSemaphoreGive(spiMutex);
 	ESP_LOGI( FNAME, "finish Draw" );
-	delay( 2000000 );
+	xSemaphoreGive(spiMutex);
 
 	MYUCG = egl; // new AdaptUGC( SPI_DC, CS_Display, RESET_Display );
 	display = new IpsDisplay( MYUCG );
@@ -1364,8 +1364,8 @@ void sensor(void *args){
 		gpio_pullup_en( GPIO_NUM_34 );
 	}
 
-	gpio_set_pull_mode(RESET_Display, GPIO_PULLUP_ONLY );
-	gpio_set_pull_mode(CS_Display, GPIO_PULLUP_ONLY );
+	// gpio_set_pull_mode(RESET_Display, GPIO_PULLUP_ONLY );
+	// gpio_set_pull_mode(CS_Display, GPIO_PULLUP_ONLY );
 
 	delay( 100 );
 

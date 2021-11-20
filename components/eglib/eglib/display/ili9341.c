@@ -208,7 +208,7 @@ static void set_memory_data_access_control(eglib_t *eglib) {
 			memory_data_access_control |= ILI9341_MEMORY_DATA_ACCESS_CONTROL_LINE_ADDRESS_ORDER_LCD_REFRESH_BOTTOM_TO_TOP;
 			break;
 	}
-	memory_data_access_control |= ILI9341_MEMORY_DATA_ACCESS_CONTROL_RGB;
+	memory_data_access_control |= ILI9341_MEMORY_DATA_ACCESS_CONTROL_BGR;
 	switch(display_config->horizontal_refresh) {
 		case ILI9341_HORIZONTAL_REFRESH_LEFT_TO_RIGHT:
 			memory_data_access_control |= ILI9341_MEMORY_DATA_ACCESS_CONTROL_DISPLAY_DATA_LATCH_DATA_ORDER_LCD_REFRESH_LEFT_TO_RIGHT;

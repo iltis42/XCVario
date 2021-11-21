@@ -198,6 +198,9 @@ public:
 			case UCG_FONT_FUB35_HR:
 				eglib_SetFont(eglib, &font_FreeFont_FreeSans_36px);
 			break;	
+			case UCG_FONT_PROFONT22_MR:
+				eglib_SetFont(eglib, &font_FreeFont_FreeMono_14px);
+			break;	
 			default:
 				printf("No Font found !\n");
 		}

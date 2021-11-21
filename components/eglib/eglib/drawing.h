@@ -727,6 +727,24 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
  * .. image:: eglib_DrawWChar.png
  *   :width: 200
  */
+/**
+ * Draw given :c:type:`glyph_t`, similar to :c:func:`eglib_DrawWChar`.
+ */
+void eglib_DrawFilledGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struct glyph_t *glyph);
+
+/**
+ * Draw given unicode character glyph at ``(x, y)`` filling the backgroud as well with index color 1.
+ *
+ * Example:
+ *
+ * .. literalinclude:: eglib_DrawWChar.c
+ *   :language: C
+ *
+ * Output:
+ *
+ * .. image:: eglib_DrawWChar.png
+ *   :width: 200
+ */
 void eglib_DrawWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wchar_t unicode_char);
 
 /**

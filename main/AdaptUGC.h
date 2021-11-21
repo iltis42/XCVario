@@ -198,6 +198,9 @@ public:
 			case UCG_FONT_FUB35_HR:
 				eglib_SetFont(eglib, &font_FreeFont_FreeSans_36px);
 			break;	
+			case UCG_FONT_PROFONT22_MR:
+				eglib_SetFont(eglib, &font_FreeFont_FreeMono_14px);
+			break;	
 			default:
 				printf("No Font found !\n");
 		}
@@ -211,7 +214,7 @@ public:
 		const struct glyph_t * g;
 		g = eglib_GetGlyph(eglib, wchar_t (c));
 		if ( g == NULL) { return (0); }
-		eglib_DrawGlyph(eglib, eglib_print_xpos, eglib_print_ypos, g);
+		eglib_DrawFilledGlyph(eglib, eglib_print_xpos, eglib_print_ypos, g);
 		delta = g->advance;
 		switch(eglib_print_dir) {
     			case UCG_PRINT_DIR_LR: eglib_print_xpos += delta; break;
@@ -232,13 +235,8 @@ public:
 	void setRedBlueTwist( bool twist ) {};   	    // display driver function
 	void setRotate180() {};	                        // Same as clipping, missing fundamental concept in eglib
 	void undoClipRange() {};	                    // seems there no clipping concept in eglib
-	int16_t getStrWidth( const char * s ) {
-		/* get from glyph
-		uint8_t advance
-		    Distance to increment the pen position after rendering this glyph.
-         */
-		return 20;
-	};							// tbd
+	int16_t getStrWidth( const char * s ) { return ( eglib_GetTextWidth(eglib, s) );}	
+	// tbd
 	int16_t getFontAscent() { return 20; };
 	int16_t getFontDescent() { return 20; };
 

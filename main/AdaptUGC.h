@@ -218,10 +218,10 @@ public:
 		eglib_DrawFilledWChar(eglib, eglib_print_xpos, eglib_print_ypos, c);
 //		delta = g->left + g->advance;
 
- 		if(glyph == NULL)
+ 		if(g == NULL)
       			delta = eglib->drawing.font->pixel_size;
     else
-     			delta = glyph->advance;		
+     			delta = g->advance;		
 		switch(eglib_print_dir) {
     			case UCG_PRINT_DIR_LR: eglib_print_xpos += delta; break;
     			case UCG_PRINT_DIR_TD: eglib_print_ypos += delta; break;

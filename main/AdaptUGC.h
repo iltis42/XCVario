@@ -240,7 +240,8 @@ public:
 		uint8_t advance
 		    Distance to increment the pen position after rendering this glyph.
          */
-		return 20;
+		 return ( eglib_GetTextWidth(eglib, s) );
+	
 	};							// tbd
 	int16_t getFontAscent() { return 20; };
 	int16_t getFontDescent() { return 20; };

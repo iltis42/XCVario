@@ -237,14 +237,8 @@ public:
 	void setRedBlueTwist( bool twist ) {};   	    // display driver function
 	void setRotate180() {};	                        // Same as clipping, missing fundamental concept in eglib
 	void undoClipRange() {};	                    // seems there no clipping concept in eglib
-	int16_t getStrWidth( const char * s ) {
-		/* get from glyph
-		uint8_t advance
-		    Distance to increment the pen position after rendering this glyph.
-         */
-		 return ( eglib_GetTextWidth(eglib, s) );
-	
-	};							// tbd
+	int16_t getStrWidth( const char * s ) { return ( eglib_GetTextWidth(eglib, s) );}	
+	// tbd
 	int16_t getFontAscent() { return 20; };
 	int16_t getFontDescent() { return 20; };
 

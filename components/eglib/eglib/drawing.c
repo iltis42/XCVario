@@ -742,6 +742,42 @@ static wchar_t utf8_nextchar(const char *utf8_text, uint16_t *index) {
 
     return c;
 }
+void eglib_DrawFilledWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wchar_t unicode_char) {
+  color_channel_t old_r0, old_g0, old_b0;
+  const struct font_t *font;
+  const struct glyph_t *glyph;
+  coordinate_t box_x, box_width;
+
+  old_r0 = eglib->drawing.color_index[0].r;
+  old_g0 = eglib->drawing.color_index[0].g;
+  old_b0 = eglib->drawing.color_index[0].b;
+
+  eglib_SetIndexColor(
+    eglib, 0,
+    eglib->drawing.color_index[1].r,
+    eglib->drawing.color_index[1].g,
+    eglib->drawing.color_index[1].b
+  );
+
+  font = eglib->drawing.font;
+  glyph = eglib_GetGlyph(eglib, unicode_char);
+
+  if(glyph == NULL)
+    return;
+
+  eglib_DrawBox(
+    eglib,
+    x - glyph->left,
+    y - font->ascent,
+    glyph->left + glyph->width + glyph->advance,
+    font->ascent - font->descent
+  );
+
+  eglib_SetIndexColor(eglib, 0, old_r0, old_g0, old_b0);
+
+  eglib_DrawGlyph(eglib, x, y, glyph);
+}
+
 
 void eglib_DrawText(eglib_t *eglib, coordinate_t x, coordinate_t y, const char *utf8_text) {
   const struct glyph_t *glyph;

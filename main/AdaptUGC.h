@@ -209,21 +209,7 @@ public:
 	void setPrintPos(int16_t x, int16_t y) { eglib_print_xpos = x; eglib_print_ypos = y; }
 	void setPrintDir(uint8_t d) { eglib_print_dir = d; }
 	
-	size_t write(uint8_t c) { 
-		int8_t delta;
-		const struct glyph_t * g;
-		g = eglib_GetGlyph(eglib, wchar_t (c));
-		if ( g == NULL) { return (0); }
-		eglib_DrawFilledGlyph(eglib, eglib_print_xpos, eglib_print_ypos, g);
-		delta = g->advance;
-		switch(eglib_print_dir) {
-    			case UCG_PRINT_DIR_LR: eglib_print_xpos += delta; break;
-    			case UCG_PRINT_DIR_TD: eglib_print_ypos += delta; break;
-    			case UCG_PRINT_DIR_RL: eglib_print_xpos -= delta; break;
-    			default: case UCG_PRINT_DIR_BU: eglib_print_ypos -= delta; break;
-  		}
-		return 1;
-	}
+	size_t write(uint8_t c);
 
 	void invertDisplay( bool inv ) {};  	        // display driver function
 	void scrollLines(int16_t lines) {};     	    // display driver function

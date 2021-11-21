@@ -222,7 +222,7 @@ public:
     			case UCG_PRINT_DIR_RL: eglib_print_xpos -= delta; break;
     			default: case UCG_PRINT_DIR_BU: eglib_print_ypos -= delta; break;
   		}
-		return 1;
+		return delta;
 	}
 
 	void invertDisplay( bool inv ) {};  	        // display driver function

@@ -746,6 +746,21 @@ void eglib_DrawFilledGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const
  *   :width: 200
  */
 void eglib_DrawWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wchar_t unicode_char);
+/**
+ * Similar to :c:func:`eglib_DrawWChar`, but fills the background using color from index 1.
+ *
+ * Example:
+ *
+ * .. literalinclude:: eglib_DrawFilledWChar.c
+ *   :language: C
+ *
+ * Output:
+ *
+ * .. image:: eglib_DrawFilledWChar.png
+ *   :width: 200
+ */
+void eglib_DrawFilledWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wchar_t unicode_char);
+
 
 /**
  * Draw given UTF-8 text starting at ``(x, y)``.

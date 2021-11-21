@@ -687,7 +687,35 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
         );
     }
 }
+void eglib_DrawFilledGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struct glyph_t *glyph) {
+  if(glyph == NULL) {
+    uint8_t pixel_size;
 
+    pixel_size = eglib->drawing.font->pixel_size;
+    eglib_DrawFrame(eglib, x, y - pixel_size, pixel_size, pixel_size);
+    eglib_DrawLine(eglib, x, y, x + pixel_size, y - pixel_size);
+    eglib_DrawLine(eglib, x, y - pixel_size, x + pixel_size, y);
+    return;
+  }
+
+  for(coordinate_t v=0 ; v < glyph->height ; v++)
+    for(coordinate_t u=0 ; u < glyph->width ; u++) {
+      bool pixel;
+
+      pixel = get_bit(glyph->data, (v * glyph->width) + u);
+
+      if(pixel){
+        eglib_DrawPixel( eglib, x + glyph->left + u, y - glyph->top + v );
+      }
+      else{
+        eglib_DrawPixelColor( eglib, x + glyph->left + u, y - glyph->top + v, (color_t){
+		.r = eglib->drawing.color_index[1].r,
+		.g = eglib->drawing.color_index[1].g,
+		.b = eglib->drawing.color_index[1].b,
+	} );
+      }
+    }
+}
 void eglib_DrawWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wchar_t unicode_char) {
   eglib_DrawGlyph(eglib, x, y, eglib_GetGlyph(eglib, unicode_char));
 }

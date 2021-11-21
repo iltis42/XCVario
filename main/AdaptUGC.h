@@ -212,7 +212,7 @@ public:
 	size_t write(uint8_t c) { 
 		int8_t delta;
 		const struct glyph_t * g;
-		eglib_DrawWChar(eglib, eglib_print_xpos, eglib_print_ypos, wchar_t 0x20);
+		eglib_DrawWChar(eglib, eglib_print_xpos, eglib_print_ypos, 0x20);
 		g = eglib_GetGlyph(eglib, wchar_t (c));
 		if ( g == NULL) { return (0); }
 		eglib_DrawGlyph(eglib, eglib_print_xpos, eglib_print_ypos, g);

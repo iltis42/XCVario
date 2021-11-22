@@ -14,11 +14,11 @@ typedef struct _ucg_color_t
 }ucg_color_t;
 
 
-#define UCG_DRAW_UPPER_RIGHT 0x01
-#define UCG_DRAW_UPPER_LEFT  0x02
-#define UCG_DRAW_LOWER_LEFT  0x04
-#define UCG_DRAW_LOWER_RIGHT 0x08
-#define UCG_DRAW_ALL         0x0F
+#define UCG_DRAW_UPPER_RIGHT EGLIB_DRAW_UPPER_RIGHT
+#define UCG_DRAW_UPPER_LEFT  EGLIB_DRAW_UPPER_LEFT
+#define UCG_DRAW_LOWER_LEFT  EGLIB_DRAW_LOWER_LEFT
+#define UCG_DRAW_LOWER_RIGHT EGLIB_DRAW_LOWER_RIGHT
+#define UCG_DRAW_ALL         EGLIB_DRAW_ALL
 
 #define UCG_PRINT_DIR_LR 0x00
 #define UCG_PRINT_DIR_TD 0x01
@@ -91,11 +91,11 @@ public:
 	 void drawPixel(int16_t x, int16_t y)  { eglib_DrawPixel(eglib, x, y); }
 	 void drawRBox(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r)  { eglib_DrawRoundBox(eglib, x, y, w, h, r); }
 	 void drawRFrame(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r)  { eglib_DrawRoundFrame(eglib, x, y, w, h, r); }
-	 void drawTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2)  { eglib_DrawTriangle(eglib, x0, y0, x1, y1, x2, y2); }
-	 void drawTetragon(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t x3, int16_t y3)  { eglib_DrawTriangle(eglib, x0, y0, x1, y1, x2, y2); eglib_DrawTriangle(eglib, x0, y0, x2, y2, x3, y3); }
+	 void drawTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2)  { eglib_DrawFilledTriangle(eglib, x0, y0, x1, y1, x2, y2); }
+	 void drawTetragon(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t x3, int16_t y3)  { eglib_DrawTetragon(eglib, x0, y0, x1, y1, x2, y2, x3, y3); }
 	
 	void drawCircle(int16_t x, int16_t y, int16_t radius, uint8_t options){                                                                        // adapter
-		switch( options ){
+/*		switch( options ){
 		case UCG_DRAW_ALL:
 			eglib_DrawCircle(eglib, x, y, radius);
 			break;
@@ -111,11 +111,11 @@ public:
 		case UCG_DRAW_LOWER_LEFT:
 			eglib_DrawArc(eglib, x, y, radius, 180.0, 270.0);
 			break;
-
-		}
+*/
+		eglib_DrawCircle(eglib, x, y, radius, options);
 	}
 	void drawDisc(int16_t x, int16_t y, int16_t radius, uint8_t options){                                                                        // adapter
-		switch( options ){
+/*		switch( options ){
 		case UCG_DRAW_ALL:
 			eglib_DrawDisc(eglib, x, y, radius);
 			break;
@@ -131,8 +131,8 @@ public:
 		case UCG_DRAW_LOWER_LEFT:
 			eglib_DrawFilledArc(eglib, x, y, radius, 180.0, 270.0);
 			break;
-
-		}
+*/
+		eglib_DrawDisc(eglib, x, y, radius, options);
 	}
 	void setFont(uint8_t *f){                                                                        // adapter
 		switch( f[0] ){
@@ -141,65 +141,65 @@ public:
 				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeMonoBold_15px, &unicode_block_FreeFont_FreeMonoBold_15px_Latin1Supplement);	
 				break;
 			case UCG_FONT_NCENR14_HR:
-				eglib_SetFont(eglib, &font_Adobe_NewCenturySchoolbookRoman_14px);
+				eglib_SetFont(eglib, &font_Adobe_NewCenturySchoolbookRoman_20px);
 				break;		
 			case UCG_FONT_FUB11_TR:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_11px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_16px);
 				break;	
 			case UCG_FONT_FUB11_HN:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_11px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_16px);
 				break;
 			case UCG_FONT_FUB11_HR:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_11px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_16px);
 				break;	
 			case UCG_FONT_FUB14_HN:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_14px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_20px);
 				break;
 			case UCG_FONT_FUB14_HR:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_14px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_20px);
 				break;	
 			case UCG_FONT_FUB14_HF:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_14px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_20px);
 				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_14px, &unicode_block_FreeFont_FreeMonoBold_14px_Latin1Supplement);	
 			break;	
 			case UCG_FONT_FUR14_HF:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_14px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_20px);
 				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_14px, &unicode_block_FreeFont_FreeMonoBold_14px_Latin1Supplement);
 			break;
 			case UCG_FONT_FUB17_HF:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_18px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_24px);
 				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_18px, &unicode_block_FreeFont_FreeMonoBold_18px_Latin1Supplement);	
 			break;	
 			case UCG_FONT_FUB20_HN:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_20px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_28px);
 				break;	
 			case UCG_FONT_FUB20_HR:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_20px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_28px);
 				break;				
 			case UCG_FONT_FUB20_HF:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_20px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_28px);
 				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_20px, &unicode_block_FreeFont_FreeMonoBold_20px_Latin1Supplement);	
 				break;	
 			case UCG_FONT_FUB25_HR:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_26px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_36px);
 				break;	
 			case UCG_FONT_FUB25_HF:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_26px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_36px);
 				break;
 			case UCG_FONT_FUR25_HF:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_26px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_36px);
 				break;
 			case UCG_FONT_FUB25_HN:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_26px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_36px);
 				break;
 			case UCG_FONT_FUB35_HN:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_36px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_54px);
 				break;	
 			case UCG_FONT_FUB35_HR:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_36px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_54px);
 			break;	
 			case UCG_FONT_PROFONT22_MR:
-				eglib_SetFont(eglib, &font_FreeFont_FreeMono_14px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeMono_20px);
 			break;	
 			default:
 				printf("No Font found !\n");
@@ -208,9 +208,9 @@ public:
 	
 	void setPrintPos(int16_t x, int16_t y) { eglib_print_xpos = x; eglib_print_ypos = y; }
 	void setPrintDir(uint8_t d) { eglib_print_dir = d; }
-	
+  
 	size_t write(uint8_t c);
-
+  
 	void invertDisplay( bool inv ) {};  	        // display driver function
 	void scrollLines(int16_t lines) {};     	    // display driver function
 	void scrollSetMargins( int16_t top, int16_t bottom ) {};                 // display driver function

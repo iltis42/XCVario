@@ -5,6 +5,7 @@
 
 #define degrees_to_radians(degrees) ((degrees) * M_PI / 180.0)
 
+
 //
 // Color
 //
@@ -277,6 +278,264 @@ void eglib_DrawGradientLine(
   draw_line(eglib, x1, y1, x2, y2, get_next_gradient_color_eglib);
 }
 
+//pg_Polygon Functions
+
+/*===========================================*/
+/* procedures, which should not be inlined (save as much flash ROM as possible) */
+
+static uint8_t pge_Next(struct pg_edge_struct *pge) PG_NOINLINE;
+static uint8_t pg_inc(pg_struct *pg, uint8_t i) PG_NOINLINE;
+static uint8_t pg_dec(pg_struct *pg, uint8_t i) PG_NOINLINE;
+static void pg_expand_min_y(pg_struct *pg, pg_word_t min_y, uint8_t pge_idx) PG_NOINLINE;
+static void pg_line_init(pg_struct * const pg, uint8_t pge_index) PG_NOINLINE;
+
+/*===========================================*/
+/* line draw algorithm */
+
+static uint8_t pge_Next(struct pg_edge_struct *pge)
+{
+  if ( pge->current_y >= pge->max_y )
+    return 0;
+  
+  pge->current_x += pge->current_x_offset;
+  pge->error += pge->error_offset;
+  if ( pge->error > 0 )
+  {
+    pge->current_x += pge->x_direction;
+    pge->error -= pge->height;
+  }  
+  
+  pge->current_y++;
+  return 1;
+}
+
+/* assumes y2 > y1 */
+static void pge_Init(struct pg_edge_struct *pge, pg_word_t x1, pg_word_t y1, pg_word_t x2, pg_word_t y2)
+{
+  pg_word_t dx = x2 - x1;
+  pg_word_t width;
+
+  pge->height = y2 - y1;
+  pge->max_y = y2;
+  pge->current_y = y1;
+  pge->current_x = x1;
+
+  if ( dx >= 0 )
+  {
+    pge->x_direction = 1;
+    width = dx;
+    pge->error = 0;
+  }
+  else
+  {
+    pge->x_direction = -1;
+    width = -dx;
+    pge->error = 1 - pge->height;
+  }
+  
+  pge->current_x_offset = dx / pge->height;
+  pge->error_offset = width % pge->height;
+}
+
+/*===========================================*/
+/* convex polygon algorithm */
+
+static uint8_t pg_inc(pg_struct *pg, uint8_t i)
+{
+    i++;
+    if ( i >= pg->cnt )
+      i = 0;
+    return i;
+}
+
+static uint8_t pg_dec(pg_struct *pg, uint8_t i)
+{
+    i--;
+    if ( i >= pg->cnt )
+      i = pg->cnt-1;
+    return i;
+}
+
+static void pg_expand_min_y(pg_struct *pg, pg_word_t min_y, uint8_t pge_idx)
+{
+  uint8_t i = pg->pge[pge_idx].curr_idx;
+  for(;;)
+  {
+    i = pg->pge[pge_idx].next_idx_fn(pg, i);
+    if ( pg->list[i].y != min_y )
+      break;	
+    pg->pge[pge_idx].curr_idx = i;
+  }
+}
+
+static uint8_t pg_prepare(pg_struct *pg)
+{
+  pg_word_t max_y;
+  pg_word_t min_y;
+  uint8_t i;
+
+  /* setup the next index procedures */
+  pg->pge[PG_RIGHT].next_idx_fn = pg_inc;
+  pg->pge[PG_LEFT].next_idx_fn = pg_dec;
+  
+  /* search for highest and lowest point */
+  max_y = pg->list[0].y;
+  min_y = pg->list[0].y;
+  pg->pge[PG_LEFT].curr_idx = 0;
+  for( i = 1; i < pg->cnt; i++ )
+  {
+    if ( max_y < pg->list[i].y )
+    {
+      max_y = pg->list[i].y;
+    }
+    if ( min_y > pg->list[i].y )
+    {
+      pg->pge[PG_LEFT].curr_idx = i;
+      min_y = pg->list[i].y;
+    }
+  }
+
+  /* calculate total number of scan lines */
+  pg->total_scan_line_cnt = max_y;
+  pg->total_scan_line_cnt -= min_y;
+  
+  /* exit if polygon height is zero */
+  if ( pg->total_scan_line_cnt == 0 )
+    return 0;
+  
+  /* if the minimum y side is flat, try to find the lowest and highest x points */
+  pg->pge[PG_RIGHT].curr_idx = pg->pge[PG_LEFT].curr_idx;  
+  pg_expand_min_y(pg, min_y, PG_RIGHT);
+  pg_expand_min_y(pg, min_y, PG_LEFT);
+  
+  /* check if the min side is really flat (depends on the x values) */
+  pg->is_min_y_not_flat = 1;
+  if ( pg->list[pg->pge[PG_LEFT].curr_idx].x != pg->list[pg->pge[PG_RIGHT].curr_idx].x )
+  {
+    pg->is_min_y_not_flat = 0;
+  }
+  else
+  {
+    pg->total_scan_line_cnt--;
+    if ( pg->total_scan_line_cnt == 0 )
+      return 0;
+  }
+
+  return 1;
+}
+
+static void pg_hline(pg_struct *pg, eglib_t *eglib)
+{
+  pg_word_t x1, x2, y;
+  x1 = pg->pge[PG_LEFT].current_x;
+  x2 = pg->pge[PG_RIGHT].current_x;
+  y = pg->pge[PG_RIGHT].current_y;
+  
+  if ( y < 0 )
+    return;
+  if ( y >= eglib_GetHeight(eglib) )
+    return;
+  if ( x1 < x2 )
+  {
+    if ( x2 < 0 )
+      return;
+    if ( x1 >= eglib_GetWidth(eglib) )
+      return;
+    if ( x1 < 0 )
+      x1 = 0;
+    if ( x2 >= eglib_GetWidth(eglib) )
+      x2 = eglib_GetWidth(eglib);
+    eglib_DrawHLine(eglib, x1, y, x2 - x1);
+  }
+  else
+  {
+    if ( x1 < 0 )
+      return;
+    if ( x2 >= eglib_GetWidth(eglib) )
+      return;
+    if ( x2 < 0 )
+      x1 = 0;
+    if ( x1 >= eglib_GetWidth(eglib) )
+      x1 = eglib_GetWidth(eglib);
+    eglib_DrawHLine(eglib, x2, y, x1 - x2);
+  }
+}
+
+static void pg_line_init(pg_struct * pg, uint8_t pge_index)
+{
+  struct pg_edge_struct  *pge = pg->pge+pge_index;
+  uint8_t idx;  
+  pg_word_t x1;
+  pg_word_t y1;
+  pg_word_t x2;
+  pg_word_t y2;
+
+  idx = pge->curr_idx;  
+  y1 = pg->list[idx].y;
+  x1 = pg->list[idx].x;
+  idx = pge->next_idx_fn(pg, idx);
+  y2 = pg->list[idx].y;
+  x2 = pg->list[idx].x; 
+  pge->curr_idx = idx;
+  
+  pge_Init(pge, x1, y1, x2, y2);
+}
+
+static void pg_exec(pg_struct *pg, eglib_t *eglib)
+{
+  pg_word_t i = pg->total_scan_line_cnt;
+
+  /* first line is skipped if the min y line is not flat */
+  pg_line_init(pg, PG_LEFT);		
+  pg_line_init(pg, PG_RIGHT);
+  
+  if ( pg->is_min_y_not_flat != 0 )
+  {
+    pge_Next(&(pg->pge[PG_LEFT])); 
+    pge_Next(&(pg->pge[PG_RIGHT]));
+  }
+
+  do
+  {
+    pg_hline(pg, eglib);
+    while ( pge_Next(&(pg->pge[PG_LEFT])) == 0 )
+    {
+      pg_line_init(pg, PG_LEFT);
+    }
+    while ( pge_Next(&(pg->pge[PG_RIGHT])) == 0 )
+    {
+      pg_line_init(pg, PG_RIGHT);
+    }
+    i--;
+  } while( i > 0 );
+}
+
+/*===========================================*/
+/* API procedures */
+
+void pg_ClearPolygonXY(pg_struct *pg)
+{
+  pg->cnt = 0;
+}
+
+void pg_AddPolygonXY(pg_struct *pg, eglib_t *eglib, int16_t x, int16_t y)
+{
+  if ( pg->cnt < PG_MAX_POINTS )
+  {
+    pg->list[pg->cnt].x = x;
+    pg->list[pg->cnt].y = y;
+    pg->cnt++;
+  }
+}
+
+void pg_DrawPolygon(pg_struct *pg, eglib_t *eglib)
+{
+  if ( pg_prepare(pg) == 0 )
+    return;
+  pg_exec(pg, eglib);
+}
+
+
 //
 // Triangle
 //
@@ -292,6 +551,36 @@ void eglib_DrawTriangle(
   eglib_DrawLine(eglib, x3, y3, x1, y1);
 }
 
+//
+// Filled Triangle
+//
+
+void eglib_DrawFilledTriangle(
+  eglib_t *eglib,
+  coordinate_t x1, coordinate_t y1,
+  coordinate_t x2, coordinate_t y2,
+  coordinate_t x3, coordinate_t y3
+) {
+  pg_struct eglib_pg;
+
+  pg_ClearPolygonXY(&eglib_pg);
+  pg_AddPolygonXY(&eglib_pg, eglib, x1, y1);
+  pg_AddPolygonXY(&eglib_pg, eglib, x2, y2);
+  pg_AddPolygonXY(&eglib_pg, eglib, x3, y3);
+  
+  pg_DrawPolygon(&eglib_pg, eglib);
+}
+
+void eglib_DrawTetragon(eglib_t *eglib, int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t x3, int16_t y3)
+{
+  pg_struct eglib_pg;
+  pg_ClearPolygonXY(&eglib_pg);
+  pg_AddPolygonXY(&eglib_pg, eglib, x0, y0);
+  pg_AddPolygonXY(&eglib_pg, eglib, x1, y1);
+  pg_AddPolygonXY(&eglib_pg, eglib, x2, y3);
+  pg_AddPolygonXY(&eglib_pg, eglib, x3, y3);
+  pg_DrawPolygon(&eglib_pg, eglib);
+}
 //
 // Frames
 //
@@ -580,6 +869,152 @@ void eglib_DrawGradientFilledArc(
 static inline bool get_bit(const uint8_t *data, uint16_t bit) {
   return (*(data + bit / 8)) & (1<<(7-(bit % 8)));
 }
+/*
+* Disc and Circle functions
+*/
+
+
+static void eglib_draw_circle_section(eglib_t *eglib, int16_t x, int16_t y, int16_t x0, int16_t y0, uint8_t option) PG_NOINLINE;
+
+static void eglib_draw_circle_section(eglib_t *eglib, int16_t x, int16_t y, int16_t x0, int16_t y0, uint8_t option)
+{
+    /* upper right */
+    if ( option & EGLIB_DRAW_UPPER_RIGHT )
+    {
+      eglib_DrawPixel(eglib, x0 + x, y0 - y);
+      eglib_DrawPixel(eglib, x0 + y, y0 - x);
+    }
+    
+    /* upper left */
+    if ( option & EGLIB_DRAW_UPPER_LEFT )
+    {
+      eglib_DrawPixel(eglib, x0 - x, y0 - y);
+      eglib_DrawPixel(eglib, x0 - y, y0 - x);
+    }
+    
+    /* lower right */
+    if ( option & EGLIB_DRAW_LOWER_RIGHT )
+    {
+      eglib_DrawPixel(eglib, x0 + x, y0 + y);
+      eglib_DrawPixel(eglib, x0 + y, y0 + x);
+    }
+    
+    /* lower left */
+    if ( option & EGLIB_DRAW_LOWER_LEFT )
+    {
+      eglib_DrawPixel(eglib, x0 - x, y0 + y);
+      eglib_DrawPixel(eglib, x0 - y, y0 + x);
+    }
+}
+
+
+
+void eglib_DrawCircle(eglib_t *eglib, int16_t x0, int16_t y0, int16_t rad, uint8_t option)
+{
+    int16_t f;
+    int16_t ddF_x;
+    int16_t ddF_y;
+    int16_t x;
+    int16_t y;
+
+    f = 1;
+    f -= rad;
+    ddF_x = 1;
+    ddF_y = 0;
+    ddF_y -= rad;
+    ddF_y *= 2;
+    x = 0;
+    y = rad;
+
+    eglib_draw_circle_section(eglib, x, y, x0, y0, option);
+    
+    while ( x < y )
+    {
+      if (f >= 0) 
+      {
+        y--;
+        ddF_y += 2;
+        f += ddF_y;
+      }
+      x++;
+      ddF_x += 2;
+      f += ddF_x;
+
+      eglib_draw_circle_section(eglib, x, y, x0, y0, option);    
+    }
+}
+
+static void eglib_draw_disc_section(eglib_t *eglib, int16_t x, int16_t y, int16_t x0, int16_t y0, uint8_t option) PG_NOINLINE;
+
+static void eglib_draw_disc_section(eglib_t *eglib, int16_t x, int16_t y, int16_t x0, int16_t y0, uint8_t option)
+{
+    /* upper right */
+    if ( option & EGLIB_DRAW_UPPER_RIGHT )
+    {
+      eglib_DrawVLine(eglib, x0+x, y0-y, y+1);
+      eglib_DrawVLine(eglib, x0+y, y0-x, x+1);
+    }
+    
+    /* upper left */
+    if ( option & EGLIB_DRAW_UPPER_LEFT )
+    {
+      eglib_DrawVLine(eglib, x0-x, y0-y, y+1);
+      eglib_DrawVLine(eglib, x0-y, y0-x, x+1);
+    }
+    
+    /* lower right */
+    if ( option & EGLIB_DRAW_LOWER_RIGHT )
+    {
+      eglib_DrawVLine(eglib, x0+x, y0, y+1);
+      eglib_DrawVLine(eglib, x0+y, y0, x+1);
+    }
+    
+    /* lower left */
+    if ( option & EGLIB_DRAW_LOWER_LEFT )
+    {
+      eglib_DrawVLine(eglib, x0-x, y0, y+1);
+      eglib_DrawVLine(eglib, x0-y, y0, x+1);
+    }
+}
+
+
+
+void eglib_DrawDisc(eglib_t *eglib, int16_t x0, int16_t y0, int16_t rad, uint8_t option)
+{
+ int16_t f;
+  int16_t ddF_x;
+  int16_t ddF_y;
+  int16_t x;
+  int16_t y;
+
+  f = 1;
+  f -= rad;
+  ddF_x = 1;
+  ddF_y = 0;
+  ddF_y -= rad;
+  ddF_y *= 2;
+  x = 0;
+  y = rad;
+
+  eglib_draw_disc_section(eglib, x, y, x0, y0, option);
+  
+  while ( x < y )
+  {
+    if (f >= 0) 
+    {
+      y--;
+      ddF_y += 2;
+      f += ddF_y;
+    }
+    x++;
+    ddF_x += 2;
+    f += ddF_x;
+
+    eglib_draw_disc_section(eglib, x, y, x0, y0, option);    
+  }
+}
+
+
 
 void eglib_DrawBitmap(
   eglib_t *eglib,
@@ -767,6 +1202,43 @@ static wchar_t utf8_nextchar(const char *utf8_text, uint16_t *index) {
 
     return c;
 }
+size_t eglib_DrawFilledWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wchar_t unicode_char) {
+  color_channel_t old_r0, old_g0, old_b0;
+  const struct font_t *font;
+  const struct glyph_t *glyph;
+  coordinate_t box_x, box_width;
+
+  old_r0 = eglib->drawing.color_index[0].r;
+  old_g0 = eglib->drawing.color_index[0].g;
+  old_b0 = eglib->drawing.color_index[0].b;
+
+  eglib_SetIndexColor(
+    eglib, 0,
+    eglib->drawing.color_index[1].r,
+    eglib->drawing.color_index[1].g,
+    eglib->drawing.color_index[1].b
+  );
+
+  font = eglib->drawing.font;
+  glyph = eglib_GetGlyph(eglib, unicode_char);
+
+  if(glyph == NULL)
+    return;
+
+  eglib_DrawBox(
+    eglib,
+    x - glyph->left,
+    y - font->ascent,
+    glyph->left + glyph->width + glyph->advance,
+    font->ascent - font->descent
+  );
+
+  eglib_SetIndexColor(eglib, 0, old_r0, old_g0, old_b0);
+
+  eglib_DrawGlyph(eglib, x, y, glyph);
+  return glyph->advance;
+}
+
 
 void eglib_DrawText(eglib_t *eglib, coordinate_t x, coordinate_t y, const char *utf8_text) {
   const struct glyph_t *glyph;

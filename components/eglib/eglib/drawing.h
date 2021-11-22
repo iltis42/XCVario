@@ -4,6 +4,13 @@
 #include "../eglib.h"
 #include <wchar.h>
 
+/* eglib Circle and Disc options */
+#define EGLIB_DRAW_UPPER_RIGHT 0x01
+#define EGLIB_DRAW_UPPER_LEFT  0x02
+#define EGLIB_DRAW_LOWER_LEFT 0x04
+#define EGLIB_DRAW_LOWER_RIGHT  0x08
+#define EGLIB_DRAW_ALL (EGLIB_DRAW_UPPER_RIGHT|EGLIB_DRAW_UPPER_LEFT|EGLIB_DRAW_LOWER_RIGHT|EGLIB_DRAW_LOWER_LEFT)
+
 /**
  * These are generic drawing functions.
  *
@@ -189,6 +196,64 @@ void eglib_DrawGradientLine(
 	x, y + len - 1 \
 )
 
+/*================================================*/
+/* eglib_polygon */
+
+typedef int16_t pg_word_t;
+
+//#define PG_NOINLINE UCG_NOINLINE
+#define PG_NOINLINE __attribute__((noinline))
+
+struct pg_point_struct
+{
+  pg_word_t x;
+  pg_word_t y;
+};
+
+typedef struct _pg_struct pg_struct;	/* forward declaration */
+
+struct pg_edge_struct
+{
+  pg_word_t x_direction;	/* 1, if x2 is greater than x1, -1 otherwise */
+  pg_word_t height;
+  pg_word_t current_x_offset;
+  pg_word_t error_offset;
+  
+  /* --- line loop --- */
+  pg_word_t current_y;
+  pg_word_t max_y;
+  pg_word_t current_x;
+  pg_word_t error;
+
+  /* --- outer loop --- */
+  uint8_t (*next_idx_fn)(pg_struct *pg, uint8_t i);
+  uint8_t curr_idx;
+};
+
+/* maximum number of points in the polygon */
+/* can be redefined, but highest possible value is 254 */
+#define PG_MAX_POINTS 4
+
+/* index numbers for the pge structures below */
+#define PG_LEFT 0
+#define PG_RIGHT 1
+
+
+struct _pg_struct
+{
+  struct pg_point_struct list[PG_MAX_POINTS];
+  uint8_t cnt;
+  uint8_t is_min_y_not_flat;
+  pg_word_t total_scan_line_cnt;
+  struct pg_edge_struct pge[2];	/* left and right line draw structures */
+};
+
+void pg_ClearPolygonXY(pg_struct *pg);
+void pg_AddPolygonXY(pg_struct *pg, eglib_t *eglib, int16_t x, int16_t y);
+void pg_DrawPolygon(pg_struct *pg, eglib_t *eglib);
+
+
+
 /**
  * Triangles
  * =========
@@ -212,6 +277,53 @@ void eglib_DrawGradientLine(
  */
 void eglib_DrawTriangle(
 	eglib_t *eglib,
+	coordinate_t x1, coordinate_t y1,
+	coordinate_t x2, coordinate_t y2,
+	coordinate_t x3, coordinate_t y3
+);
+
+/**
+ * Draw filled Triangle for coordinates (`x1`, `y1`), (`x2`, `y2`) and (`x3`, `y3`)
+ * using color from index 0.
+ *
+ * Example:
+ *
+ * .. literalinclude:: eglib_DrawFilledTriangle.c
+ *   :language: C
+ *
+ * Output:
+ *
+ * .. image:: eglib_DrawFilledTriangle.png
+ *   :width: 200
+ *
+ * :See also: :c:func:`eglib_SetIndexColor`.
+ */
+void eglib_DrawFilledTriangle(
+	eglib_t *eglib,
+	coordinate_t x1, coordinate_t y1,
+	coordinate_t x2, coordinate_t y2,
+	coordinate_t x3, coordinate_t y3
+);
+
+/**
+ * Draw (filled) Tetragon for coordinates (`x0`, `y0`), (`x1`, `y1`), (`x2`, `y2`) and (`x3`, `y3`)
+ * using color from index 0.
+ *
+ * Example:
+ *
+ * .. literalinclude:: eglib_DrawTetragon.c
+ *   :language: C
+ *
+ * Output:
+ *
+ * .. image:: eglib_DrawTetragon.png
+ *   :width: 200
+ *
+ * :See also: :c:func:`eglib_SetIndexColor`.
+ */
+void eglib_DrawTetragon(
+	eglib_t *eglib,
+	coordinate_t x0, coordinate_t y0,
 	coordinate_t x1, coordinate_t y1,
 	coordinate_t x2, coordinate_t y2,
 	coordinate_t x3, coordinate_t y3
@@ -470,7 +582,41 @@ void eglib_DrawGradientArc(
  * .. image:: eglib_DrawCircle.png
  *   :width: 200
  */
-#define eglib_DrawCircle(eglib, x, y, radius) eglib_DrawArc(eglib, x, y, radius, 0, 360);
+//#define eglib_DrawCircle(eglib, x, y, radius) eglib_DrawArc(eglib, x, y, radius, 0, 360);
+
+/**
+ * Draw a circle with color from index 0
+ *
+ * :param x: Center x.
+ * :param y: Center y.
+ * :param radius: Radius.
+ * :param option being binary coding of the 4 quadrants 
+ * eglib Circle and Disc options *
+ * EGLIB_DRAW_UPPER_RIGHT 
+ * EGLIB_DRAW_UPPER_LEFT  
+ * EGLIB_DRAW_LOWER_LEFT 
+ * EGLIB_DRAW_LOWER_RIGHT  
+ * EGLIB_DRAW_ALL 
+ */
+void eglib_DrawCircle(eglib_t *eglib, int16_t x0, int16_t y0, int16_t rad, uint8_t option);
+
+//#define eglib_DrawDisc(eglib, x, y, radius) eglib_DrawArc(eglib, x, y, radius, 0, 360);
+
+/**
+ * Draw a filled disc with color from index 0
+ *
+ * :param x: Center x.
+ * :param y: Center y.
+ * :param radius: Radius.
+ * :param option being binary coding of the 4 quadrants 
+ * eglib Circle and Disc options *
+ * EGLIB_DRAW_UPPER_RIGHT 
+ * EGLIB_DRAW_UPPER_LEFT  
+ * EGLIB_DRAW_LOWER_LEFT 
+ * EGLIB_DRAW_LOWER_RIGHT  
+ * EGLIB_DRAW_ALL 
+ */
+void eglib_DrawDisc(eglib_t *eglib, int16_t x0, int16_t y0, int16_t rad, uint8_t option);
 
 /**
  * Draw a filled arc with color from index 0
@@ -544,7 +690,7 @@ void eglib_DrawGradientFilledArc(
  * .. image:: eglib_DrawDisc.png
  *   :width: 200
  */
-#define eglib_DrawDisc(eglib, x, y, radius) eglib_DrawFilledArc(eglib, x, y, radius, 0, 360)
+//#define eglib_DrawDisc(eglib, x, y, radius) eglib_DrawFilledArc(eglib, x, y, radius, 0, 360)
 
 /**
  * Draw a disc with color gradient from index 0 at the center and index 1 at the
@@ -748,6 +894,20 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
  *   :width: 200
  */
 void eglib_DrawWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wchar_t unicode_char);
+
+/**
+ * Similar to :c:func:`eglib_DrawWChar`, but fills the background using color from index 1.
+ *
+ * Example:
+ *
+ * .. literalinclude:: eglib_DrawFilledWChar.c
+ *   :language: C
+ *
+ * Output:
+ *
+ * .. image:: eglib_DrawFilledWChar.png
+ *   :width: 200
+ */
 
 /**
  * Similar to :c:func:`eglib_DrawWChar`, but fills the background using color from index 1.

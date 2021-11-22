@@ -195,6 +195,7 @@ void eglib_DrawGradientLine(
 typedef int16_t pg_word_t;
 
 //#define PG_NOINLINE UCG_NOINLINE
+#define PG_NOINLINE __attribute__((noinline))
 
 struct pg_point_struct
 {

@@ -208,9 +208,9 @@ public:
 	
 	void setPrintPos(int16_t x, int16_t y) { eglib_print_xpos = x; eglib_print_ypos = y; }
 	void setPrintDir(uint8_t d) { eglib_print_dir = d; }
-	
+  
 	size_t write(uint8_t c);
-	
+  
 	void invertDisplay( bool inv ) {};  	        // display driver function
 	void scrollLines(int16_t lines) {};     	    // display driver function
 	void scrollSetMargins( int16_t top, int16_t bottom ) {};                 // display driver function

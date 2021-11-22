@@ -841,6 +841,16 @@ void eglib_SetFont(eglib_t *eglib, const struct font_t *font);
  *
  * Returns `true` in case of error, `false` on success.
  *
+ * Example:
+ *
+ * .. literalinclude:: eglib_AddUnicodeBlockToFont.c
+ *   :language: C
+ *
+ * Output:
+ *
+ * .. image:: eglib_AddUnicodeBlockToFont.png
+ *   :width: 200
+ *
  * :See also: :doc:`fonts`
  * :See also: :c:func:`eglib_SetFont`.
  */
@@ -856,7 +866,17 @@ bool eglib_AddUnicodeBlockToFont(
 const struct glyph_t *eglib_GetGlyph(eglib_t *eglib, wchar_t unicode_char);
 
 /**
- * Draw given :c:type:`glyph_t`, similar to :c:func:`eglib_DrawWChar`.
+ * Draw given :c:type:`glyph_t` at ``(x, y)``.
+ *
+ * Example:
+ *
+ * .. literalinclude:: eglib_DrawGlyph.c
+ *   :language: C
+ *
+ * Output:
+ *
+ * .. image:: eglib_DrawGlyph.png
+ *   :width: 200
  */
 void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struct glyph_t *glyph);
 
@@ -873,25 +893,22 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
  * .. image:: eglib_DrawWChar.png
  *   :width: 200
  */
-/**
- * Draw given :c:type:`glyph_t`, similar to :c:func:`eglib_DrawWChar`.
- */
-void eglib_DrawFilledGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struct glyph_t *glyph);
+void eglib_DrawWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wchar_t unicode_char);
 
 /**
- * Draw given unicode character glyph at ``(x, y)`` filling the backgroud as well with index color 1.
+ * Similar to :c:func:`eglib_DrawWChar`, but fills the background using color from index 1.
  *
  * Example:
  *
- * .. literalinclude:: eglib_DrawWChar.c
+ * .. literalinclude:: eglib_DrawFilledWChar.c
  *   :language: C
  *
  * Output:
  *
- * .. image:: eglib_DrawWChar.png
+ * .. image:: eglib_DrawFilledWChar.png
  *   :width: 200
  */
-void eglib_DrawWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wchar_t unicode_char);
+
 /**
  * Similar to :c:func:`eglib_DrawWChar`, but fills the background using color from index 1.
  *
@@ -906,7 +923,6 @@ void eglib_DrawWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wchar_t uni
  *   :width: 200
  */
 size_t eglib_DrawFilledWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wchar_t unicode_char);
-
 
 /**
  * Draw given UTF-8 text starting at ``(x, y)``.

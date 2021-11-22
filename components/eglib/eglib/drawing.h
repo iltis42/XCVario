@@ -4,6 +4,13 @@
 #include "../eglib.h"
 #include <wchar.h>
 
+/* eglib Circle and Disc options */
+#define EGLIB_DRAW_UPPER_RIGHT 0x01
+#define EGLIB_DRAW_UPPER_LEFT  0x02
+#define EGLIB_DRAW_LOWER_LEFT 0x04
+#define EGLIB_DRAW_LOWER_RIGHT  0x08
+#define EGLIB_DRAW_ALL (EGLIB_DRAW_UPPER_RIGHT|EGLIB_DRAW_UPPER_LEFT|EGLIB_DRAW_LOWER_RIGHT|EGLIB_DRAW_LOWER_LEFT)
+
 /**
  * These are generic drawing functions.
  *

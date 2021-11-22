@@ -591,7 +591,12 @@ void eglib_DrawGradientArc(
  * :param y: Center y.
  * :param radius: Radius.
  * :param option being binary coding of the 4 quadrants 
- *
+ * eglib Circle and Disc options *
+ * EGLIB_DRAW_UPPER_RIGHT 
+ * EGLIB_DRAW_UPPER_LEFT  
+ * EGLIB_DRAW_LOWER_LEFT 
+ * EGLIB_DRAW_LOWER_RIGHT  
+ * EGLIB_DRAW_ALL 
  */
 void eglib_DrawCircle(eglib_t *eglib, int16_t x0, int16_t y0, int16_t rad, uint8_t option);
 
@@ -604,7 +609,12 @@ void eglib_DrawCircle(eglib_t *eglib, int16_t x0, int16_t y0, int16_t rad, uint8
  * :param y: Center y.
  * :param radius: Radius.
  * :param option being binary coding of the 4 quadrants 
- *
+ * eglib Circle and Disc options *
+ * EGLIB_DRAW_UPPER_RIGHT 
+ * EGLIB_DRAW_UPPER_LEFT  
+ * EGLIB_DRAW_LOWER_LEFT 
+ * EGLIB_DRAW_LOWER_RIGHT  
+ * EGLIB_DRAW_ALL 
  */
 void eglib_DrawDisc(eglib_t *eglib, int16_t x0, int16_t y0, int16_t rad, uint8_t option);
 

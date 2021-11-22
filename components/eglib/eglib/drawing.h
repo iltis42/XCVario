@@ -575,7 +575,31 @@ void eglib_DrawGradientArc(
  * .. image:: eglib_DrawCircle.png
  *   :width: 200
  */
-#define eglib_DrawCircle(eglib, x, y, radius) eglib_DrawArc(eglib, x, y, radius, 0, 360);
+//#define eglib_DrawCircle(eglib, x, y, radius) eglib_DrawArc(eglib, x, y, radius, 0, 360);
+
+/**
+ * Draw a circle with color from index 0
+ *
+ * :param x: Center x.
+ * :param y: Center y.
+ * :param radius: Radius.
+ * :param option being binary coding of the 4 quadrants 
+ *
+ */
+void eglib_DrawCircle(eglib_t *eglib, int16_t x0, int16_t y0, int16_t rad, uint8_t option);
+
+//#define eglib_DrawDisc(eglib, x, y, radius) eglib_DrawArc(eglib, x, y, radius, 0, 360);
+
+/**
+ * Draw a filled disc with color from index 0
+ *
+ * :param x: Center x.
+ * :param y: Center y.
+ * :param radius: Radius.
+ * :param option being binary coding of the 4 quadrants 
+ *
+ */
+void eglib_DrawDisc(eglib_t *eglib, int16_t x0, int16_t y0, int16_t rad, uint8_t option);
 
 /**
  * Draw a filled arc with color from index 0

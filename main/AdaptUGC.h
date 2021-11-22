@@ -167,7 +167,7 @@ public:
 				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_14px, &unicode_block_FreeFont_FreeMonoBold_14px_Latin1Supplement);
 			break;
 			case UCG_FONT_FUB17_HF:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_25px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_24px);
 				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_18px, &unicode_block_FreeFont_FreeMonoBold_18px_Latin1Supplement);	
 			break;	
 			case UCG_FONT_FUB20_HN:

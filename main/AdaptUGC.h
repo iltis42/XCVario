@@ -113,7 +113,6 @@ public:
 			break;
 */
 		eglib_DrawCircle(eglib, x, y, radius, options);
-		}
 	}
 	void drawDisc(int16_t x, int16_t y, int16_t radius, uint8_t options){                                                                        // adapter
 /*		switch( options ){
@@ -134,7 +133,6 @@ public:
 			break;
 */
 		eglib_DrawDisc(eglib, x, y, radius, options);
-		}
 	}
 	void setFont(uint8_t *f){                                                                        // adapter
 		switch( f[0] ){

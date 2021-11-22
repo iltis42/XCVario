@@ -864,7 +864,7 @@ void eglib_DrawWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wchar_t uni
  * .. image:: eglib_DrawFilledWChar.png
  *   :width: 200
  */
-void eglib_DrawFilledWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wchar_t unicode_char);
+size_t eglib_DrawFilledWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wchar_t unicode_char);
 
 
 /**

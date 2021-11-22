@@ -554,6 +554,42 @@ void eglib_DrawTriangle(
   eglib_DrawLine(eglib, x2, y2, x3, y3);
   eglib_DrawLine(eglib, x3, y3, x1, y1);
 }
+//
+// Filled Triangle
+//
+
+void eglib_DrawFilledTriangle(
+  eglib_t *eglib,
+  coordinate_t x1, coordinate_t y1,
+  coordinate_t x2, coordinate_t y2,
+  coordinate_t x3, coordinate_t y3
+) {
+  pg_struct eglib_pg;
+/*  void ucg_ClearPolygonXY(void)
+{
+  pg_ClearPolygonXY(&ucg_pg);
+}
+
+void ucg_AddPolygonXY(ucg_t *ucg, int16_t x, int16_t y)
+{
+  pg_AddPolygonXY(&ucg_pg, ucg, x, y);
+}
+
+void ucg_DrawPolygon(ucg_t *ucg)
+{
+  pg_DrawPolygon(&ucg_pg, ucg);
+}
+*/
+void ucg_DrawTriangle(eglib_t *eglib, int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2)
+{
+  pg_ClearPolygonXY(&eglib_pg);
+  pg_AddPolygonXY(&eglib_pg, eglib, x0, y0);
+  pg_AddPolygonXY(&eglib_pg, eglib, x1, y1);
+  pg_AddPolygonXY(&eglib_pg, eglib, x2, y2);
+  
+  pg_DrawPolygon(&eglib_pg, eglib);
+}
+}
 
 //
 // Frames

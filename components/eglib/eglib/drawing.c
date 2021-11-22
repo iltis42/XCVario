@@ -873,6 +873,152 @@ void eglib_DrawGradientFilledArc(
 static inline bool get_bit(const uint8_t *data, uint16_t bit) {
   return (*(data + bit / 8)) & (1<<(7-(bit % 8)));
 }
+/*
+* Disc and Circle functions
+*/
+
+
+static void eglib_draw_circle_section(eglib_t *eglib, int16_t x, int16_t y, int16_t x0, int16_t y0, uint8_t option) PG_NOINLINE;
+
+static void eglib_draw_circle_section(eglib_t *eglib, int16_t x, int16_t y, int16_t x0, int16_t y0, uint8_t option)
+{
+    /* upper right */
+    if ( option & eglib_DRAW_UPPER_RIGHT )
+    {
+      eglib_DrawPixel(eglib, x0 + x, y0 - y);
+      eglib_DrawPixel(eglib, x0 + y, y0 - x);
+    }
+    
+    /* upper left */
+    if ( option & eglib_DRAW_UPPER_LEFT )
+    {
+      eglib_DrawPixel(eglib, x0 - x, y0 - y);
+      eglib_DrawPixel(eglib, x0 - y, y0 - x);
+    }
+    
+    /* lower right */
+    if ( option & eglib_DRAW_LOWER_RIGHT )
+    {
+      eglib_DrawPixel(eglib, x0 + x, y0 + y);
+      eglib_DrawPixel(eglib, x0 + y, y0 + x);
+    }
+    
+    /* lower left */
+    if ( option & eglib_DRAW_LOWER_LEFT )
+    {
+      eglib_DrawPixel(eglib, x0 - x, y0 + y);
+      eglib_DrawPixel(eglib, x0 - y, y0 + x);
+    }
+}
+
+
+
+void eglib_DrawCircle(eglib_t *eglib, int16_t x0, int16_t y0, int16_t rad, uint8_t option)
+{
+    int16_t f;
+    int16_t ddF_x;
+    int16_t ddF_y;
+    int16_t x;
+    int16_t y;
+
+    f = 1;
+    f -= rad;
+    ddF_x = 1;
+    ddF_y = 0;
+    ddF_y -= rad;
+    ddF_y *= 2;
+    x = 0;
+    y = rad;
+
+    eglib_draw_circle_section(eglib, x, y, x0, y0, option);
+    
+    while ( x < y )
+    {
+      if (f >= 0) 
+      {
+        y--;
+        ddF_y += 2;
+        f += ddF_y;
+      }
+      x++;
+      ddF_x += 2;
+      f += ddF_x;
+
+      eglib_draw_circle_section(eglib, x, y, x0, y0, option);    
+    }
+}
+
+static void eglib_draw_disc_section(eglib_t *eglib, int16_t x, int16_t y, int16_t x0, int16_t y0, uint8_t option) PG_NOINLINE;
+
+static void eglib_draw_disc_section(eglib_t *eglib, int16_t x, int16_t y, int16_t x0, int16_t y0, uint8_t option)
+{
+    /* upper right */
+    if ( option & eglib_DRAW_UPPER_RIGHT )
+    {
+      eglib_DrawVLine(eglib, x0+x, y0-y, y+1);
+      eglib_DrawVLine(eglib, x0+y, y0-x, x+1);
+    }
+    
+    /* upper left */
+    if ( option & eglib_DRAW_UPPER_LEFT )
+    {
+      eglib_DrawVLine(eglib, x0-x, y0-y, y+1);
+      eglib_DrawVLine(eglib, x0-y, y0-x, x+1);
+    }
+    
+    /* lower right */
+    if ( option & eglib_DRAW_LOWER_RIGHT )
+    {
+      eglib_DrawVLine(eglib, x0+x, y0, y+1);
+      eglib_DrawVLine(eglib, x0+y, y0, x+1);
+    }
+    
+    /* lower left */
+    if ( option & eglib_DRAW_LOWER_LEFT )
+    {
+      eglib_DrawVLine(eglib, x0-x, y0, y+1);
+      eglib_DrawVLine(eglib, x0-y, y0, x+1);
+    }
+}
+
+
+
+void eglib_DrawDisc(eglib_t *eglib, int16_t x0, int16_t y0, int16_t rad, uint8_t option)
+{
+ int16_t f;
+  int16_t ddF_x;
+  int16_t ddF_y;
+  int16_t x;
+  int16_t y;
+
+  f = 1;
+  f -= rad;
+  ddF_x = 1;
+  ddF_y = 0;
+  ddF_y -= rad;
+  ddF_y *= 2;
+  x = 0;
+  y = rad;
+
+  eglib_draw_disc_section(eglib, x, y, x0, y0, option);
+  
+  while ( x < y )
+  {
+    if (f >= 0) 
+    {
+      y--;
+      ddF_y += 2;
+      f += ddF_y;
+    }
+    x++;
+    ddF_x += 2;
+    f += ddF_x;
+
+    eglib_draw_disc_section(eglib, x, y, x0, y0, option);    
+  }
+}
+
+
 
 void eglib_DrawBitmap(
   eglib_t *eglib,

@@ -690,7 +690,7 @@ void eglib_DrawGradientFilledArc(
  * .. image:: eglib_DrawDisc.png
  *   :width: 200
  */
-#define eglib_DrawDisc(eglib, x, y, radius) eglib_DrawFilledArc(eglib, x, y, radius, 0, 360)
+//#define eglib_DrawDisc(eglib, x, y, radius) eglib_DrawFilledArc(eglib, x, y, radius, 0, 360)
 
 /**
  * Draw a disc with color gradient from index 0 at the center and index 1 at the

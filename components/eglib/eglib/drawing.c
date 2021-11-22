@@ -448,7 +448,7 @@ static void pg_hline(pg_struct *pg, eglib_t *eglib)
       x1 = 0;
     if ( x2 >= eglib_GetWidth(eglib) )
       x2 = eglib_GetWidth(eglib);
-    eglib_DrawHLine(ucg, x1, y, x2 - x1);
+    eglib_DrawHLine(eglib, x1, y, x2 - x1);
   }
   else
   {

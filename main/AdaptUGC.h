@@ -141,65 +141,65 @@ public:
 				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeMonoBold_15px, &unicode_block_FreeFont_FreeMonoBold_15px_Latin1Supplement);	
 				break;
 			case UCG_FONT_NCENR14_HR:
-				eglib_SetFont(eglib, &font_Adobe_NewCenturySchoolbookRoman_14px);
+				eglib_SetFont(eglib, &font_Adobe_NewCenturySchoolbookRoman_20px);
 				break;		
 			case UCG_FONT_FUB11_TR:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_11px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_16px);
 				break;	
 			case UCG_FONT_FUB11_HN:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_11px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_16px);
 				break;
 			case UCG_FONT_FUB11_HR:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_11px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_16px);
 				break;	
 			case UCG_FONT_FUB14_HN:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_14px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_20px);
 				break;
 			case UCG_FONT_FUB14_HR:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_14px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_20px);
 				break;	
 			case UCG_FONT_FUB14_HF:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_14px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_20px);
 				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_14px, &unicode_block_FreeFont_FreeMonoBold_14px_Latin1Supplement);	
 			break;	
 			case UCG_FONT_FUR14_HF:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_14px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_20px);
 				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_14px, &unicode_block_FreeFont_FreeMonoBold_14px_Latin1Supplement);
 			break;
 			case UCG_FONT_FUB17_HF:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_18px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_25px);
 				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_18px, &unicode_block_FreeFont_FreeMonoBold_18px_Latin1Supplement);	
 			break;	
 			case UCG_FONT_FUB20_HN:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_20px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_28px);
 				break;	
 			case UCG_FONT_FUB20_HR:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_20px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_28px);
 				break;				
 			case UCG_FONT_FUB20_HF:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_20px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_28px);
 				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_20px, &unicode_block_FreeFont_FreeMonoBold_20px_Latin1Supplement);	
 				break;	
 			case UCG_FONT_FUB25_HR:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_26px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_36px);
 				break;	
 			case UCG_FONT_FUB25_HF:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_26px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_36px);
 				break;
 			case UCG_FONT_FUR25_HF:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_26px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_36px);
 				break;
 			case UCG_FONT_FUB25_HN:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_26px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_36px);
 				break;
 			case UCG_FONT_FUB35_HN:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_36px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_54px);
 				break;	
 			case UCG_FONT_FUB35_HR:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_36px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_54px);
 			break;	
 			case UCG_FONT_PROFONT22_MR:
-				eglib_SetFont(eglib, &font_FreeFont_FreeMono_14px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeMono_20px);
 			break;	
 			default:
 				printf("No Font found !\n");

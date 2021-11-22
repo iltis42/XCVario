@@ -14,11 +14,11 @@ typedef struct _ucg_color_t
 }ucg_color_t;
 
 
-#define UCG_DRAW_UPPER_RIGHT 0x01
-#define UCG_DRAW_UPPER_LEFT  0x02
-#define UCG_DRAW_LOWER_LEFT  0x04
-#define UCG_DRAW_LOWER_RIGHT 0x08
-#define UCG_DRAW_ALL         0x0F
+#define UCG_DRAW_UPPER_RIGHT EGLIB_DRAW_UPPER_RIGHT
+#define UCG_DRAW_UPPER_LEFT  EGLIB_DRAW_UPPER_LEFT
+#define UCG_DRAW_LOWER_LEFT  EGLIB_DRAW_LOWER_LEFT
+#define UCG_DRAW_LOWER_RIGHT EGLIB_DRAW_LOWER_RIGHT
+#define UCG_DRAW_ALL         EGLIB_DRAW_ALL
 
 #define UCG_PRINT_DIR_LR 0x00
 #define UCG_PRINT_DIR_TD 0x01
@@ -95,7 +95,7 @@ public:
 	 void drawTetragon(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t x3, int16_t y3)  { eglib_DrawTetragon(eglib, x0, y0, x1, y1, x2, y2, x3, y3); }
 	
 	void drawCircle(int16_t x, int16_t y, int16_t radius, uint8_t options){                                                                        // adapter
-		switch( options ){
+/*		switch( options ){
 		case UCG_DRAW_ALL:
 			eglib_DrawCircle(eglib, x, y, radius);
 			break;
@@ -111,11 +111,12 @@ public:
 		case UCG_DRAW_LOWER_LEFT:
 			eglib_DrawArc(eglib, x, y, radius, 180.0, 270.0);
 			break;
-
+*/
+		eglib_DrawCircle(eglib, x, y, radius, options);
 		}
 	}
 	void drawDisc(int16_t x, int16_t y, int16_t radius, uint8_t options){                                                                        // adapter
-		switch( options ){
+/*		switch( options ){
 		case UCG_DRAW_ALL:
 			eglib_DrawDisc(eglib, x, y, radius);
 			break;
@@ -131,7 +132,8 @@ public:
 		case UCG_DRAW_LOWER_LEFT:
 			eglib_DrawFilledArc(eglib, x, y, radius, 180.0, 270.0);
 			break;
-
+*/
+		eglib_DrawDisc(eglib, x, y, radius, options);
 		}
 	}
 	void setFont(uint8_t *f){                                                                        // adapter

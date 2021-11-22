@@ -1148,7 +1148,6 @@ void eglib_DrawWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wchar_t uni
 }
 
 
-
 #define isutf(c) (((c)&0xC0)!=0x80)
 
 static wchar_t utf8_nextchar(const char *utf8_text, uint16_t *index) {

@@ -70,7 +70,7 @@ size_t AdaptUGC::write(uint8_t c) {
 		case UCG_PRINT_DIR_TD: eglib_print_ypos += delta; break;
 		case UCG_PRINT_DIR_RL: eglib_print_xpos -= delta; break;
 		default: case UCG_PRINT_DIR_BU: eglib_print_ypos -= delta; break;
-	};
+	}
 	return 1;
 };
 

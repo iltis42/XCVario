@@ -567,9 +567,9 @@ void eglib_DrawFilledTriangle(
   pg_struct eglib_pg;
 
   pg_ClearPolygonXY(&eglib_pg);
-  pg_AddPolygonXY(&eglib_pg, eglib, x0, y0);
   pg_AddPolygonXY(&eglib_pg, eglib, x1, y1);
   pg_AddPolygonXY(&eglib_pg, eglib, x2, y2);
+  pg_AddPolygonXY(&eglib_pg, eglib, x3, y3);
   
   pg_DrawPolygon(&eglib_pg, eglib);
 }

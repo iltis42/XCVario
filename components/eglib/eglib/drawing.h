@@ -274,24 +274,49 @@ void eglib_DrawTriangle(
 	coordinate_t x2, coordinate_t y2,
 	coordinate_t x3, coordinate_t y3
 );
+
 /**
- * Draw filled riangle for coordinates (`x1`, `y1`), (`x2`, `y2`) and (`x3`, `y3`)
+ * Draw filled Triangle for coordinates (`x1`, `y1`), (`x2`, `y2`) and (`x3`, `y3`)
  * using color from index 0.
  *
  * Example:
  *
- * .. literalinclude:: eglib_DrawTriangle.c
+ * .. literalinclude:: eglib_DrawFilledTriangle.c
  *   :language: C
  *
  * Output:
  *
- * .. image:: eglib_DrawTriangle.png
+ * .. image:: eglib_DrawFilledTriangle.png
  *   :width: 200
  *
  * :See also: :c:func:`eglib_SetIndexColor`.
  */
 void eglib_DrawFilledTriangle(
 	eglib_t *eglib,
+	coordinate_t x1, coordinate_t y1,
+	coordinate_t x2, coordinate_t y2,
+	coordinate_t x3, coordinate_t y3
+);
+
+/**
+ * Draw (filled) Tetragon for coordinates (`x0`, `y0`), (`x1`, `y1`), (`x2`, `y2`) and (`x3`, `y3`)
+ * using color from index 0.
+ *
+ * Example:
+ *
+ * .. literalinclude:: eglib_DrawTetragon.c
+ *   :language: C
+ *
+ * Output:
+ *
+ * .. image:: eglib_DrawTetragon.png
+ *   :width: 200
+ *
+ * :See also: :c:func:`eglib_SetIndexColor`.
+ */
+void eglib_DrawTetragon(
+	eglib_t *eglib,
+	coordinate_t x0, coordinate_t y0,
 	coordinate_t x1, coordinate_t y1,
 	coordinate_t x2, coordinate_t y2,
 	coordinate_t x3, coordinate_t y3

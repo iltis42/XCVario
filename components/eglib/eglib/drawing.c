@@ -883,28 +883,28 @@ static void eglib_draw_circle_section(eglib_t *eglib, int16_t x, int16_t y, int1
 static void eglib_draw_circle_section(eglib_t *eglib, int16_t x, int16_t y, int16_t x0, int16_t y0, uint8_t option)
 {
     /* upper right */
-    if ( option & eglib_DRAW_UPPER_RIGHT )
+    if ( option & EGLIB_DRAW_UPPER_RIGHT )
     {
       eglib_DrawPixel(eglib, x0 + x, y0 - y);
       eglib_DrawPixel(eglib, x0 + y, y0 - x);
     }
     
     /* upper left */
-    if ( option & eglib_DRAW_UPPER_LEFT )
+    if ( option & EGLIB_DRAW_UPPER_LEFT )
     {
       eglib_DrawPixel(eglib, x0 - x, y0 - y);
       eglib_DrawPixel(eglib, x0 - y, y0 - x);
     }
     
     /* lower right */
-    if ( option & eglib_DRAW_LOWER_RIGHT )
+    if ( option & EGLIB_DRAW_LOWER_RIGHT )
     {
       eglib_DrawPixel(eglib, x0 + x, y0 + y);
       eglib_DrawPixel(eglib, x0 + y, y0 + x);
     }
     
     /* lower left */
-    if ( option & eglib_DRAW_LOWER_LEFT )
+    if ( option & EGLIB_DRAW_LOWER_LEFT )
     {
       eglib_DrawPixel(eglib, x0 - x, y0 + y);
       eglib_DrawPixel(eglib, x0 - y, y0 + x);
@@ -953,28 +953,28 @@ static void eglib_draw_disc_section(eglib_t *eglib, int16_t x, int16_t y, int16_
 static void eglib_draw_disc_section(eglib_t *eglib, int16_t x, int16_t y, int16_t x0, int16_t y0, uint8_t option)
 {
     /* upper right */
-    if ( option & eglib_DRAW_UPPER_RIGHT )
+    if ( option & EGLIB_DRAW_UPPER_RIGHT )
     {
       eglib_DrawVLine(eglib, x0+x, y0-y, y+1);
       eglib_DrawVLine(eglib, x0+y, y0-x, x+1);
     }
     
     /* upper left */
-    if ( option & eglib_DRAW_UPPER_LEFT )
+    if ( option & EGLIB_DRAW_UPPER_LEFT )
     {
       eglib_DrawVLine(eglib, x0-x, y0-y, y+1);
       eglib_DrawVLine(eglib, x0-y, y0-x, x+1);
     }
     
     /* lower right */
-    if ( option & eglib_DRAW_LOWER_RIGHT )
+    if ( option & EGLIB_DRAW_LOWER_RIGHT )
     {
       eglib_DrawVLine(eglib, x0+x, y0, y+1);
       eglib_DrawVLine(eglib, x0+y, y0, x+1);
     }
     
     /* lower left */
-    if ( option & eglib_DRAW_LOWER_LEFT )
+    if ( option & EGLIB_DRAW_LOWER_LEFT )
     {
       eglib_DrawVLine(eglib, x0-x, y0, y+1);
       eglib_DrawVLine(eglib, x0-y, y0, x+1);

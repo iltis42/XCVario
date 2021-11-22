@@ -554,6 +554,7 @@ void eglib_DrawTriangle(
   eglib_DrawLine(eglib, x2, y2, x3, y3);
   eglib_DrawLine(eglib, x3, y3, x1, y1);
 }
+
 //
 // Filled Triangle
 //
@@ -574,6 +575,16 @@ void eglib_DrawFilledTriangle(
   pg_DrawPolygon(&eglib_pg, eglib);
 }
 
+void eglib_DrawTetragon(eglib_t *eglib, int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t x3, int16_t y3)
+{
+  pg_struct eglib_pg;
+  pg_ClearPolygonXY(&eglib_pg);
+  pg_AddPolygonXY(&eglib_pg, eglib, x0, y0);
+  pg_AddPolygonXY(&eglib_pg, eglib, x1, y1);
+  pg_AddPolygonXY(&eglib_pg, eglib, x2, y3);
+  pg_AddPolygonXY(&eglib_pg, eglib, x3, y3);
+  pg_DrawPolygon(&eglib_pg, eglib);
+}
 //
 // Frames
 //

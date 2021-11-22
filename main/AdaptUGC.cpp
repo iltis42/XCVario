@@ -61,6 +61,16 @@ void  AdaptUGC::begin() {
 	eglib = &myeglib;
 	ESP_LOGI(FNAME, "eglib_Send() &eglib:%x  hal-driv:%x config:%x\n", (unsigned int)eglib, (unsigned int)&esp32_ili9341, (unsigned int)&esp32_ili9341_config );
 	eglib_Init( &myeglib, &esp32_ili9341, &esp32_ili9341_config, &ili9341, &ili9341_config );
+	size_t AdaptUGC::write(uint8_t c) {
+	
+	size_t delta = eglib_DrawFilledWChar(eglib, eglib_print_xpos, eglib_print_ypos, wchar_t (c));
+	switch(eglib_print_dir) {
+		case UCG_PRINT_DIR_LR: eglib_print_xpos += delta; break;
+		case UCG_PRINT_DIR_TD: eglib_print_ypos += delta; break;
+		case UCG_PRINT_DIR_RL: eglib_print_xpos -= delta; break;
+		default: case UCG_PRINT_DIR_BU: eglib_print_ypos -= delta; break;
+	}
+	return 1;
 };
 
 

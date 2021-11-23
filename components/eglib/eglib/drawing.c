@@ -1145,7 +1145,7 @@ size_t eglib_DrawWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wchar_t u
     return glyph->advance;
   } else {
     draw_missing_glyph(eglib, x, y);
-    return glyph->advance;
+    return 0;
   }
 }
 

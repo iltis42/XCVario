@@ -631,16 +631,15 @@ void eglib_DrawRoundFrame(
   coordinate_t diameter;
 
   diameter = 2 * radius;
-
-  eglib_DrawArc(eglib, x + radius, y + radius, radius, 270, 360);
-  eglib_DrawHLine(eglib, x + radius, y, width - diameter);
-  eglib_DrawArc(eglib, x + width - radius, y + radius, radius, 0, 90);
-  eglib_DrawVLine(eglib, x + width, y + radius, height - diameter);
-  eglib_DrawArc(eglib, x + width - radius, y + height - radius, radius, 90, 180);
-  eglib_DrawHLine(eglib, x + radius, y + height, width - diameter);
-  eglib_DrawArc(eglib, x + radius, y + height - radius, radius, 180, 270);
-  eglib_DrawVLine(eglib, x, y + radius, height - diameter);
-}
+  eglib_DrawCircle(eglib, x + radius, y + radius, radius, EGLIB_DRAW_UPPER_LEFT );
+    eglib_DrawHLine(eglib, x + radius, y, width - diameter);
+  eglib_DrawCircle(eglib, x + width - radius, y + radius, radius, EGLIB_DRAW_UPPER_RIGHT );
+    eglib_DrawVLine(eglib, x + width, y + radius, height - diameter);
+  eglib_DrawCircle(eglib, x + radius, y + height - radius, radius, EGLIB_DRAW_LOWER_RIGHT);
+    eglib_DrawHLine(eglib, x + radius, y + height, width - diameter);
+  eglib_DrawCircle(eglib, x + width - radius, y + height - radius, radius, EGLIB_DRAW_LOWER_LEFT);
+    eglib_DrawVLine(eglib, x, y + radius, height - diameter);
+  }
 
 //
 // Boxes
@@ -700,19 +699,15 @@ void eglib_DrawRoundBox(
 
   diameter = 2 * radius;
 
- // eglib_DrawFilledArc(eglib, x + radius, y + radius, radius, 270, 360);
- eglib_DrawDisc(eglib, x + radius, y + radius, radius, EGLIB_DRAW_UPPER_LEFT );
+  eglib_DrawDisc(eglib, x + radius, y + radius, radius, EGLIB_DRAW_UPPER_LEFT );
   for(v=y ; v <= y + radius ; v++)
     eglib_DrawHLine(eglib, x + radius, v, width - diameter);
-  //eglib_DrawFilledArc(eglib, x + width - radius, y + radius, radius, 0, 90);
   eglib_DrawDisc(eglib, x + width - radius, y + radius, radius, EGLIB_DRAW_UPPER_RIGHT );
   for(v=y + radius ; v <= y + height - radius ; v++)
     eglib_DrawHLine(eglib, x, v, width);
-  //eglib_DrawFilledArc(eglib, x + radius, y + height - radius, radius, 180, 270);
   eglib_DrawDisc(eglib, x + radius, y + height - radius, radius, EGLIB_DRAW_LOWER_LEFT);
   for(v=y + height - radius ; v <= y + width ; v++)
     eglib_DrawHLine(eglib, x + radius, v, width - diameter);
-  //eglib_DrawFilledArc(eglib, x + width - radius, y + height - radius, radius, 90, 180);
   eglib_DrawDisc(eglib, x + width - radius, y + height - radius, radius, EGLIB_DRAW_LOWER_RIGHT);
 }
 

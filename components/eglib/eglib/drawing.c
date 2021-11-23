@@ -1136,7 +1136,7 @@ void draw_missing_glyph(eglib_t *eglib, coordinate_t x, coordinate_t y) {
   eglib_DrawLine(eglib, box_x, box_y + box_height, box_x + box_width, box_y);
 }
 
-void eglib_DrawWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wchar_t unicode_char) {
+size_t eglib_DrawWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wchar_t unicode_char) {
   const struct glyph_t *glyph;
 
   glyph = eglib_GetGlyph(eglib, unicode_char);

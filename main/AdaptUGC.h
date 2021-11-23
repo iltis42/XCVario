@@ -134,7 +134,8 @@ public:
 */
 		eglib_DrawDisc(eglib, x, y, radius, options);
 	}
-	void setFont(uint8_t *f){                                                                        // adapter
+	void setFont(uint8_t *f){  // adapter
+		eglib_font_transparent = false; //default
 		switch( f[0] ){
 			case UCG_FONT_9x15B_MF:
 				eglib_SetFont(eglib, &font_FreeFont_FreeMonoBold_15px);
@@ -145,6 +146,7 @@ public:
 				break;		
 			case UCG_FONT_FUB11_TR:
 				eglib_SetFont(eglib, &font_FreeFont_FreeSans_16px);
+				eglib_font_transparent = true;
 				break;	
 			case UCG_FONT_FUB11_HN:
 				eglib_SetFont(eglib, &font_FreeFont_FreeSans_16px);
@@ -228,6 +230,7 @@ public:
 
 private:
 	int16_t eglib_print_xpos = 0, eglib_print_ypos = 0;
+	bool eglib_font_transparent = false;
 	uint8_t eglib_print_dir = UCG_PRINT_DIR_LR;
 	
 	// two things done above, rest tbd:

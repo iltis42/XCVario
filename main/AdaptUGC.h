@@ -95,43 +95,11 @@ public:
 	 void drawTetragon(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t x3, int16_t y3)  { eglib_DrawTetragon(eglib, x0, y0, x1, y1, x2, y2, x3, y3); }
 	
 	void drawCircle(int16_t x, int16_t y, int16_t radius, uint8_t options){                                                                        // adapter
-/*		switch( options ){
-		case UCG_DRAW_ALL:
-			eglib_DrawCircle(eglib, x, y, radius);
-			break;
-		case UCG_DRAW_UPPER_RIGHT:
-			eglib_DrawArc(eglib, x, y, radius, 0.0, 90.0);
-			break;
-		case UCG_DRAW_UPPER_LEFT:
-			eglib_DrawArc(eglib, x, y, radius, 0.0, -90.0);
-			break;
-		case UCG_DRAW_LOWER_RIGHT:
-			eglib_DrawArc(eglib, x, y, radius,90.0, 180.0);
-			break;
-		case UCG_DRAW_LOWER_LEFT:
-			eglib_DrawArc(eglib, x, y, radius, 180.0, 270.0);
-			break;
-*/
+
 		eglib_DrawCircle(eglib, x, y, radius, options);
 	}
 	void drawDisc(int16_t x, int16_t y, int16_t radius, uint8_t options){                                                                        // adapter
-/*		switch( options ){
-		case UCG_DRAW_ALL:
-			eglib_DrawDisc(eglib, x, y, radius);
-			break;
-		case UCG_DRAW_UPPER_RIGHT:
-			eglib_DrawFilledArc(eglib, x, y, radius, 0.0, 90.0);
-			break;
-		case UCG_DRAW_UPPER_LEFT:
-			eglib_DrawFilledArc(eglib, x, y, radius, 0.0, -90.0);
-			break;
-		case UCG_DRAW_LOWER_RIGHT:
-			eglib_DrawFilledArc(eglib, x, y, radius,90.0, 180.0);
-			break;
-		case UCG_DRAW_LOWER_LEFT:
-			eglib_DrawFilledArc(eglib, x, y, radius, 180.0, 270.0);
-			break;
-*/
+
 		eglib_DrawDisc(eglib, x, y, radius, options);
 	}
 	void setFont(uint8_t *f){  // adapter
@@ -162,7 +130,7 @@ public:
 				break;	
 			case UCG_FONT_FUB14_HF:
 				eglib_SetFont(eglib, &font_FreeFont_FreeSans_20px);
-				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_14px, &unicode_block_FreeFont_FreeMonoBold_14px_Latin1Supplement);	
+				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_20px, &unicode_block_FreeFont_FreeMonoBold_20px_Latin1Supplement);	
 				eglib_font_transparent = false;
 			break;	
 			case UCG_FONT_FUR14_HF:

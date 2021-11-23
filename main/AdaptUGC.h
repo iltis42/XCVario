@@ -135,7 +135,7 @@ public:
 		eglib_DrawDisc(eglib, x, y, radius, options);
 	}
 	void setFont(uint8_t *f){  // adapter
-		eglib_font_transparent = false; //default
+		eglib_font_transparent = true; //default
 		switch( f[0] ){
 			case UCG_FONT_9x15B_MF:
 				eglib_SetFont(eglib, &font_FreeFont_FreeMonoBold_15px);
@@ -163,6 +163,7 @@ public:
 			case UCG_FONT_FUB14_HF:
 				eglib_SetFont(eglib, &font_FreeFont_FreeSans_20px);
 				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_14px, &unicode_block_FreeFont_FreeMonoBold_14px_Latin1Supplement);	
+				eglib_font_transparent = false;
 			break;	
 			case UCG_FONT_FUR14_HF:
 				eglib_SetFont(eglib, &font_FreeFont_FreeSans_20px);
@@ -184,6 +185,7 @@ public:
 				break;	
 			case UCG_FONT_FUB25_HR:
 				eglib_SetFont(eglib, &font_FreeFont_FreeSans_36px);
+				eglib_font_transparent = false;
 				break;	
 			case UCG_FONT_FUB25_HF:
 				eglib_SetFont(eglib, &font_FreeFont_FreeSans_36px);
@@ -193,9 +195,11 @@ public:
 				break;
 			case UCG_FONT_FUB25_HN:
 				eglib_SetFont(eglib, &font_FreeFont_FreeSans_36px);
+				eglib_font_transparent = false;
 				break;
 			case UCG_FONT_FUB35_HN:
 				eglib_SetFont(eglib, &font_FreeFont_FreeSans_54px);
+				eglib_font_transparent = false;
 				break;	
 			case UCG_FONT_FUB35_HR:
 				eglib_SetFont(eglib, &font_FreeFont_FreeSans_54px);

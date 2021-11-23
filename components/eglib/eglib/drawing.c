@@ -1142,8 +1142,10 @@ void eglib_DrawWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wchar_t uni
   glyph = eglib_GetGlyph(eglib, unicode_char);
   if(glyph != NULL) {
     eglib_DrawGlyph(eglib, x, y, glyph);
+    return glyph->advance;
   } else {
     draw_missing_glyph(eglib, x, y);
+    return glyph->advance;
   }
 }
 

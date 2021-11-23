@@ -65,8 +65,8 @@ void  AdaptUGC::begin() {
 
 size_t AdaptUGC::write(uint8_t c) {
 	size_t delta;
-//	if (eglib_font_transparent){
-	if (false){
+	if (eglib_font_transparent){
+
 		delta = eglib_DrawWChar(eglib, eglib_print_xpos, eglib_print_ypos, wchar_t (c));
 	}
 	else{	

@@ -43,7 +43,7 @@ public:
 		return sqrt( 2*pascal / 1.225 )*3.6;
 	};
 	static float kmh2pascal( float kmh ){
-		return (kmh*kmh/3.6*3.6) * 1.225/2.;
+		return ((kmh/3.6)*(kmh/3.6)) * 1.225/2.;
 	};
 	static inline double calcAltitude(double SeaLevel_Pres, double pressure) {
 			return ( 44330.0 * (1.0 - pow(pressure / SeaLevel_Pres, (1.0/5.255))) );

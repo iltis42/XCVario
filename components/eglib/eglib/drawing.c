@@ -2,6 +2,8 @@
 #include "display.h"
 #include <math.h>
 #include <stdlib.h>
+#include <esp_log.h>
+
 
 #define degrees_to_radians(degrees) ((degrees) * M_PI / 180.0)
 
@@ -116,6 +118,7 @@ static void draw_fast_90_line(
         direction = DISPLAY_LINE_DIRECTION_UP;
     } else if(y1==y2) {  // horizontal
       length = x2 > x1 ? x2 - x1 : x1 - x2;
+      length += 1;
       if(x2 > x1)
         direction = DISPLAY_LINE_DIRECTION_RIGHT;
       else
@@ -1176,28 +1179,28 @@ size_t eglib_DrawFilledWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wch
   const struct glyph_t *glyph;
   coordinate_t box_x, box_width;
 
+  font = eglib->drawing.font;
+  glyph = eglib_GetGlyph(eglib, unicode_char);
+
+  if(glyph == NULL)
+    return 0;
+
   old_r0 = eglib->drawing.color_index[0].r;
   old_g0 = eglib->drawing.color_index[0].g;
   old_b0 = eglib->drawing.color_index[0].b;
 
   eglib_SetIndexColor(
-    eglib, 0,
-    eglib->drawing.color_index[1].r,
-    eglib->drawing.color_index[1].g,
-    eglib->drawing.color_index[1].b
+		  eglib, 0,
+		  eglib->drawing.color_index[1].r,
+		  eglib->drawing.color_index[1].g,
+		  eglib->drawing.color_index[1].b
   );
-
-  font = eglib->drawing.font;
-  glyph = eglib_GetGlyph(eglib, unicode_char);
-
-  if(glyph == NULL)
-    return;
 
   eglib_DrawBox(
     eglib,
-    x - glyph->left,
+    x,
     y - font->ascent,
-    glyph->left + glyph->width + glyph->advance,
+    glyph->advance,
     font->ascent - font->descent
   );
 

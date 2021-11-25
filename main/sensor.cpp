@@ -437,7 +437,6 @@ void clientLoop(void *pvParameters)
 				baroP = baroSensor->calcPressure( Units::Qnh( QNH.get() ) , tmpalt);
 			}
 			dynamicP = Atmosphere::kmh2pascal(ias.get());
-
 			tas = Atmosphere::TAS2( ias.get(), altitude.get(), OAT.get() );
 
 			if( haveMPU ) {

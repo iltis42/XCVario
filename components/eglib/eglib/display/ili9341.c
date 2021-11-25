@@ -519,6 +519,8 @@ static void draw_pixel_color(
 	eglib_CommEnd(eglib);
 };
 
+static uint8_t buffer[1024];
+
 static void draw_line(
 	eglib_t *eglib,
 	coordinate_t x,
@@ -529,18 +531,21 @@ static void draw_line(
 ) {
 	// ESP_LOGI("drawLine","x:%d y:%d dir:%d", x, y, direction );
 	if(direction == DISPLAY_LINE_DIRECTION_RIGHT) {
+		// ESP_LOGI("drawLine", "RIGHT");
 		eglib_CommBegin(eglib);
-
-		set_column_address(eglib, x, x + length);
+		set_column_address(eglib, x, x + length );
 		set_row_address(eglib, y, y);
-
 		eglib_SendCommandByte(eglib, ILI9341_MEMORY_WRITE);
-
-		for(length++ ; length-- ; )
-			send_pixel(eglib, get_next_color(eglib));
-
+		color_t c = eglib->drawing.color_index[0];
+		for( int i=0; i<length*3; i+=3 ){
+			buffer[i]   = c.r;
+			buffer[i+1] = c.g;
+			buffer[i+2] = c.b;
+		}
+		eglib_SendData(eglib, buffer, length*3  );
 		eglib_CommEnd(eglib);
-	} else {
+	}
+	else {
 		display_default_draw_line(
 			eglib,
 			x, y,

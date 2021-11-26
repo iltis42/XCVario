@@ -285,7 +285,7 @@ void IpsDisplay::drawLegend( bool onlyLines ) {
 		return;
 	int hc=0;
 	if( onlyLines == false ){
-		ucg->setFont(ucg_font_9x15B_mf);
+		ucg->setFont(ucg_font_9x15B_mf, true);
 		hc = ucg->getFontAscent()/2;
 	}
 	ucg->setColor(COLOR_WHITE);
@@ -422,7 +422,7 @@ void IpsDisplay::initDisplay() {
 	}
 
 	// Fancy altimeter
-	ucg->setFont(ucg_font_fub25_hr);
+	ucg->setFont(ucg_font_fub25_hr, true);
 	char_width = ucg->getStrWidth("2");
 	char_height = ucg->getFontAscent() - ucg->getFontDescent();
 
@@ -649,15 +649,15 @@ void IpsDisplay::drawMC( float mc, bool large ) {
 	ucg->setPrintPos(5, DISPLAY_H-5);
 	ucg->setColor(COLOR_WHITE);
 	if( large ) {
-		ucg->setFont(ucg_font_fub20_hn);
+		ucg->setFont(ucg_font_fub20_hn, true);
 	} else {
-		ucg->setFont(ucg_font_fub14_hn);
+		ucg->setFont(ucg_font_fub14_hn, true);
 	}
 	char s[10];
 	std::sprintf(s, "%1.1f", Units::Vario(mc) );
 	ucg->print(s);
 	int16_t fl = ucg->getStrWidth(s);
-	ucg->setFont(ucg_font_fub11_hr);
+	ucg->setFont(ucg_font_fub11_hr, true);
 	ucg->setColor(COLOR_HEADER);
 	ucg->setPrintPos(5+fl+2, DISPLAY_H-6);
 	ucg->print("MC");
@@ -950,7 +950,7 @@ void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
 			ucg->drawBox( x-40+2,y, chgpos, 8  );  // Bat charge state
 			ucg->setColor( DARK_GREY );
 			ucg->drawBox( x-40+2+chgpos,y, 32-chgpos, 8 );  // Empty bat bar
-			ucg->setFont(ucg_font_fub11_hr);
+			ucg->setFont(ucg_font_fub11_hr, true);
 			ucg->setPrintPos(x-42,y-6);
 		}
 		ucg->setColor( COLOR_WHITE );
@@ -967,7 +967,7 @@ void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
 		}
 		else if ( battery_display.get() == BAT_VOLTAGE_BIG ) {
 			ucg->setPrintPos(x-50,y+11);
-			ucg->setFont(ucg_font_fub14_hr);
+			ucg->setFont(ucg_font_fub14_hr, true);
 			ucg->printf("%2.1f", volt);
 			ucg->setColor( COLOR_HEADER );
 			ucg->print("V ");
@@ -981,7 +981,7 @@ void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
 void IpsDisplay::drawTemperature( int x, int y, float t ) {
 	if( _menu )
 		return;
-	ucg->setFont(ucg_font_fur14_hf);
+	ucg->setFont(ucg_font_fur14_hf, true);
 	char s[10];
 	if( t != DEVICE_DISCONNECTED_C ) {
 		float temp_unit = Units::TemperatureUnit( t );
@@ -1111,7 +1111,7 @@ void IpsDisplay::drawScale( int16_t max_pos, int16_t max_neg, int16_t pos, int16
 	mid_lpos /= modulo;
 	mid_lpos *= modulo; // round down to the next modulo hit
 	ucg->setFontPosCenter();
-	ucg->setFontMode(UCG_FONT_MODE_TRANSPARENT);
+	// ucg->setFontMode(UCG_FONT_MODE_TRANSPARENT);  is default
 	ucg->setFont(ucg_font_fub14_hn);
 
 	// calc pixel dist for interval 0.5-1
@@ -1166,7 +1166,7 @@ void IpsDisplay::drawScale( int16_t max_pos, int16_t max_neg, int16_t pos, int16
 			draw_label = false;
 		}
 	}
-	ucg->setFontMode(UCG_FONT_MODE_SOLID);
+	// ucg->setFontMode(UCG_FONT_MODE_SOLID);
 	ucg->setFontPosBottom();
 }
 
@@ -1395,7 +1395,7 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 	}
 	if ( incl_unit ) {
 		// unit todo needs further refinment to not draw the unit every time to just have the QNH updated
-		ucg->setFont(ucg_font_fub11_hr);
+		ucg->setFont(ucg_font_fub11_hr, true);
 		ucg->setColor( COLOR_HEADER );
 		ucg->setPrintPos(x+5, y-3);
 		sprintf(s, "%s QNH", Units::AltitudeUnit()); // todo and QFE?
@@ -1441,7 +1441,7 @@ bool IpsDisplay::drawSpeed(float v_kmh, int16_t x, int16_t y, bool dirty, bool i
 	// ESP_LOGI(FNAME,"draw airspeed %f %d", v_kmh, as_prev );
 
 	ucg->setColor( COLOR_WHITE );
-	ucg->setFont(ucg_font_fub25_hn);
+	ucg->setFont(ucg_font_fub25_hn, true);
 
 	char s[10];
 	sprintf(s," %3d",  airspeed );
@@ -1522,7 +1522,7 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 			ucg->setColor(  COLOR_WHITE  );
 		else
 			ucg->setColor(  COLOR_RED  );
-		ucg->setFont(ucg_font_fub20_hr);
+		ucg->setFont(ucg_font_fub20_hr, true);
 		ucg->setPrintPos(120,105);
 		ucg->printf("%+1.2f   ", gload_pos_max.get() );
 		old_gmax = gload_pos_max.get();
@@ -1532,7 +1532,7 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 			ucg->setColor(  COLOR_WHITE  );
 		else
 			ucg->setColor(  COLOR_RED  );
-		ucg->setFont(ucg_font_fub20_hr);
+		ucg->setFont(ucg_font_fub20_hr, true);
 		ucg->setPrintPos(125,245);
 		ucg->printf("%+1.2f   ", gload_neg_max.get() );
 		old_gmin = gload_neg_max.get();
@@ -1585,7 +1585,7 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y) {
 			ucg->setPrintPos(85,104);
 			ucg->setColor(  COLOR_WHITE  );
 			// ucg->setFont(ucg_font_fub20_hr);
-			ucg->setFont(ucg_font_fub17_hf);
+			ucg->setFont(ucg_font_fub17_hf, true);
 			char s[12];
 			int windspeed = (int)( Units::Airspeed(wind)+0.5 );
 			if( wind_display.get() & WD_DIGITS ){
@@ -1632,11 +1632,11 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y) {
 			else
 				sprintf(s,"%4d", heading );
 			ucg->setColor( COLOR_WHITE );
-			ucg->setFont(ucg_font_fub20_hr);
+			ucg->setFont(ucg_font_fub20_hr, true);
 			ucg->setPrintPos(x-ucg->getStrWidth(s), y);
 			ucg->print(s);
 			ucg->setColor( COLOR_HEADER );
-			ucg->setFont(ucg_font_fub20_hf);
+			ucg->setFont(ucg_font_fub20_hf, true);
 			ucg->setPrintPos(x+5, y);
 			ucg->print("\xb0 ");
 			prev_heading = heading;
@@ -1686,7 +1686,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			sprintf(s, "net");
 		else
 			sprintf(s, "s-net");
-		ucg->setFont(ucg_font_fub11_hr);
+		ucg->setFont(ucg_font_fub11_hr, true);
 		ucg->setPrintPos(120-ucg->getStrWidth(s), DISPLAY_H/2-30);
 		ucg->print(s);
 		netto_old = netto;
@@ -1908,7 +1908,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	}
 	if( !(tick%20) ){
 		if( netto != netto_old ){
-			ucg->setFont(ucg_font_fub11_hr);
+			ucg->setFont(ucg_font_fub11_hr, true);
 			ucg->setPrintPos(165,15);
 			if( netto )
 				ucg->setColor( COLOR_WHITE );
@@ -1958,7 +1958,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 
 
 
-	ucg->setFont(ucg_font_fub35_hn);  // 52 height
+	ucg->setFont(ucg_font_fub35_hn, true);  // 52 height
 	ucg->setColor(  COLOR_WHITE  );
 
 	// Average Vario
@@ -1976,7 +1976,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		if( standard_setting )
 			qnh = Units::Qnh( 1013.25 );
 		if( qnh != pref_qnh ) {
-			ucg->setFont(ucg_font_fub11_tr);
+			ucg->setFont(ucg_font_fub11_tr, true);
 			char unit[4];
 			if( standard_setting )
 				strcpy( unit, "QNE" );
@@ -2130,7 +2130,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		// draw new
 		ucg->setColor(  COLOR_WHITE  );
 		// print speed values bar
-		ucg->setFont(ucg_font_fub11_hn);
+		ucg->setFont(ucg_font_fub11_hn, true);
 		ucg->drawFrame( FIELD_START, dmid-(MAXS2FTRI)-4, ASLEN+6, (MAXS2FTRI*2)+8 );
 		ucg->setClipRange( FIELD_START, dmid-(MAXS2FTRI), ASLEN+6, (MAXS2FTRI*2) );
 		for( int speed = airspeed-MAXS2FTRI-(fh); speed<airspeed+MAXS2FTRI+(fh); speed++ )

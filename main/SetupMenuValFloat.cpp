@@ -96,12 +96,12 @@ void SetupMenuValFloat::displayVal()
 {
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setPrintPos( 1, 70 );
-	ucg->setFont(ucg_font_fub25_hf);
+	ucg->setFont(ucg_font_fub25_hf, true);
 	char val[20];
 	sprintf(val, "%0.*f", _precision, _nvs?_nvs->getGui():*_value );
 	ucg->print(val);
 	if( _unit ) {
-		ucg->setFont(ucg_font_fur25_hf);   // use different font for unit as of ° special char
+		ucg->setFont(ucg_font_fur25_hf, true);   // use different font for unit as of ° special char
 		ucg->setPrintPos( 1+ ucg->getStrWidth(val), 70 );
 		ucg->printf(" %s   ", _unit);
 	}

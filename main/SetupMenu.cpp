@@ -143,7 +143,7 @@ int qnh_adj( SetupMenuValFloat * p )
 
 	ESP_LOGI(FNAME,"Setup BA alt=%f QNH=%f hPa", alt, Units::Qnh( *(p->_value) )  );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	p->ucg->setFont(ucg_font_fub25_hr);
+	p->ucg->setFont(ucg_font_fub25_hr, true);
 	p->ucg->setPrintPos(1,110);
 	String u;
 	float altp;
@@ -174,7 +174,7 @@ int elev_adj( SetupMenuValFloat * p )
 {
 	// ESP_LOGI(FNAME,"elev_adj");
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	p->ucg->setFont(ucg_font_fub25_hr);
+	p->ucg->setFont(ucg_font_fub25_hr, true);
 	p->ucg->setPrintPos(1,120);
 	String u;
 	float elevp = elevation.get();
@@ -233,7 +233,7 @@ int bal_adj( SetupMenuValFloat * p )
 {
 	float loadinc = ((ballast.get() + fixed_ballast.get()) +100.0)/100.0;
 	float newwl = polar_wingload.get() * loadinc;
-	p->ucg->setFont(ucg_font_fub25_hr);
+	p->ucg->setFont(ucg_font_fub25_hr, true);
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->setPrintPos(1,110);
 	p->ucg->printf("%0.2f kg/m2  ", newwl);

@@ -44,6 +44,7 @@ struct _eglib_struct {
 		color_t color_index[4];
 		struct _gradient_t gradient;
 		const struct font_t *font;
+		bool filled_mode;
 	} drawing;
 };
 

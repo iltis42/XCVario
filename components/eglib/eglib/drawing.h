@@ -507,6 +507,21 @@ void eglib_DrawRoundBox(
 void eglib_ClearScreen(eglib_t *eglib);
 
 /**
+ * Set filled mode in drawing text glyphs
+ *
+ * Example:
+ *
+ * .. literalinclude:: eglib_setFilledMode.c
+ *   :language: C
+ *
+ * Output:
+ *
+ *
+ */
+void eglib_setFilledMode(eglib_t *eglib, bool fill );
+
+
+/**
  * Round things
  * ============
  */

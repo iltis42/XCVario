@@ -1185,27 +1185,14 @@ size_t eglib_DrawFilledWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wch
   if(glyph == NULL)
     return 0;
 
-  old_r0 = eglib->drawing.color_index[0].r;
-  old_g0 = eglib->drawing.color_index[0].g;
-  old_b0 = eglib->drawing.color_index[0].b;
-
-  eglib_SetIndexColor(
-		  eglib, 0,
-		  eglib->drawing.color_index[1].r,
-		  eglib->drawing.color_index[1].g,
-		  eglib->drawing.color_index[1].b
-  );
-
-  eglib_DrawBox(
-    eglib,
-    x,
-    y - font->ascent,
-    glyph->advance,
-    font->ascent - font->descent
-  );
-
-  eglib_SetIndexColor(eglib, 0, old_r0, old_g0, old_b0);
-
+  if( eglib->drawing.filled_mode ){
+	  old_r0 = eglib->drawing.color_index[0].r;
+	  old_g0 = eglib->drawing.color_index[0].g;
+	  old_b0 = eglib->drawing.color_index[0].b;
+	  eglib_SetIndexColor( eglib, 0, eglib->drawing.color_index[1].r, eglib->drawing.color_index[1].g, eglib->drawing.color_index[1].b );
+	  eglib_DrawBox( eglib, x, y - font->ascent, glyph->advance, font->ascent - font->descent );
+	  eglib_SetIndexColor(eglib, 0, old_r0, old_g0, old_b0);
+  }
   eglib_DrawGlyph(eglib, x, y, glyph);
   return glyph->advance;
 }
@@ -1243,3 +1230,8 @@ coordinate_t eglib_GetTextWidth(eglib_t *eglib, const char *utf8_text) {
 
   return width;
 }
+
+void eglib_setFilledMode(eglib_t *eglib, bool fill ) {
+	eglib->drawing.filled_mode = fill;
+};
+

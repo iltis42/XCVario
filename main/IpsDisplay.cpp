@@ -1298,9 +1298,8 @@ void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float ate ){
 	// ucg->setPrintPos(x, y );
 	ucg->setFontPosCenter();
 	ucg->setColor( COLOR_WHITE );
-	ucg->setFont(ucg_font_fub35_hn);
 	ucg->setClipRange( x-88, y-30, 95, 50 );
-	ucg->setFont(ucg_font_fub35_hn);
+	ucg->setFont(ucg_font_fub35_hn, true);
 	char s[15];
 	static char* format[2] = {"  %2.1f", "  %2.0f"};
 	sprintf(s, format[std::abs(ate)>10], round(ate*10.)/10.); // Avoid "-" sign because of not sown mantissa
@@ -1324,7 +1323,7 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 	alt_prev = alt;
 
 	char s[20];
-	ucg->setFont(ucg_font_fub25_hr);
+	ucg->setFont(ucg_font_fub25_hr, true);
 	ucg->setColor( COLOR_WHITE );
 	sprintf(s,"  %03d", alt); // need the string with at least three digits !!
 	if ( alt_unit.get() == ALT_UNIT_FL ) {
@@ -1419,7 +1418,7 @@ void IpsDisplay::drawSmallSpeed(float v_kmh, int16_t x, int16_t y)
 {
 	int airspeed = Units::AirspeedRounded(v_kmh);
 	ucg->setColor( COLOR_WHITE );
-	ucg->setFont(ucg_font_fub14_hr);
+	ucg->setFont(ucg_font_fub14_hr, true);
 	char s[10];
 	sprintf(s," %3d",  airspeed );
 	ucg->setPrintPos(x-ucg->getStrWidth(s), y);

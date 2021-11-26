@@ -134,7 +134,8 @@ public:
 */
 		eglib_DrawDisc(eglib, x, y, radius, options);
 	}
-	void setFont(uint8_t *f){                                                                        // adapter
+	void setFont(uint8_t *f, bool filled=false ){    // adapter
+		eglib_setFilledMode( eglib, filled );
 		switch( f[0] ){
 			case UCG_FONT_9x15B_MF:
 				eglib_SetFont(eglib, &font_FreeFont_FreeMonoBold_15px);

@@ -17,6 +17,8 @@ void eglib_Init(
 	eglib->display.config_ptr = display_config_ptr;
 	eglib->display.refreshing = false;
 
+	eglib->drawing.filled_mode = false;
+
 	for(size_t i=0 ; i < sizeof(eglib->drawing.color_index) / sizeof(*eglib->drawing.color_index) ; i++) {
 		eglib->drawing.color_index[i].r = 0;
 		eglib->drawing.color_index[i].g = 0;

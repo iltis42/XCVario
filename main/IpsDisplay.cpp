@@ -1087,6 +1087,7 @@ void IpsDisplay::drawBow( float a, int16_t &old_a_level, int16_t l1, ucg_color_t
 			int y = gaugeSin(i, l1);
 			int xe = x - cosIncr(i, 5);
 			int ye = y - sinIncr(i, 5);
+			// ESP_LOGI(FNAME,"drawLine x1:%d y1:%d x2:%d y2:%d", x,y,xe,ye );
 			ucg->drawLine(x, y, xe, ye);
 			int d = std::signbit(i)?-1:1;
 			ucg->drawLine(x, y+d, xe, ye+d);

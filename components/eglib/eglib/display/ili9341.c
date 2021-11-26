@@ -529,7 +529,7 @@ static void draw_line(
 	coordinate_t length,
 	color_t (*get_next_color)(eglib_t *eglib)
 ) {
-	// ESP_LOGI("drawLine","x:%d y:%d dir:%d", x, y, direction );
+	// ESP_LOGI("ili DL","x:%d y:%d dir:%d len:%d", x, y, direction, length );
 	eglib_CommBegin(eglib);
 	if(direction == DISPLAY_LINE_DIRECTION_RIGHT) {
 		// ESP_LOGI("DL","x:%d y:%d RIGHT %d", x, y, length  );
@@ -539,17 +539,20 @@ static void draw_line(
 	else if(direction == DISPLAY_LINE_DIRECTION_DOWN) {
 		// ESP_LOGI("DL","x:%d y:%d DOWN %d", x, y, length  );
 		set_column_address(eglib, x, x );
-		set_row_address(eglib, y, y + length );
+		set_row_address(eglib, y, y+length );
 	}
 	else if(direction == DISPLAY_LINE_DIRECTION_UP) {
 		// ESP_LOGI("DL","x:%d y:%d UP %d", x, y, length  );
 		set_column_address(eglib, x, x );
-		set_row_address(eglib, y, y+length );
+		set_row_address(eglib, y-length, y );
 	}
 	else if(direction == DISPLAY_LINE_DIRECTION_LEFT) {
 		// ESP_LOGI("DL","x:%d y:%d LEFT %d", x, y, length );
-		set_column_address(eglib, x, x+length );
+		set_column_address(eglib, x-length, x );  // fake right direction
 		set_row_address(eglib, y, y );
+	}
+	else{
+		ESP_LOGW("draw_line","draw_line method not implemented");
 	}
 	eglib_SendCommandByte(eglib, ILI9341_MEMORY_WRITE);
 	color_t c = eglib->drawing.color_index[0];

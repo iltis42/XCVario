@@ -96,7 +96,7 @@ static int flap_cal_act( SetupMenuSelect *p )
 	}
 	if( p->getSelect() ){
 		p->clear();
-		p->ucg->setFont(ucg_font_fub25_hr);
+		p->ucg->setFont(ucg_font_fub25_hr, true );
 		if( flap_pos_max.get() > 2 ){
 			wk_cal_show( p,3 );
 			wk_sens_pos_plus_3.set( FLAP->getSensorRaw(256) );

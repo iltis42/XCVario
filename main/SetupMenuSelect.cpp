@@ -129,6 +129,7 @@ void SetupMenuSelect::down(int count){
 			count--;
 		}
 		ucg->setPrintPos( 1, 50 );
+		ucg->setFont(ucg_font_ncenR14_hr, true );
 		ucg->printf("%s                  ",_values[_select].c_str());
 		xSemaphoreGive(spiMutex );
 	}else {
@@ -156,6 +157,7 @@ void SetupMenuSelect::up(int count){
 			count--;
 		}
 		ucg->setPrintPos( 1, 50 );
+		ucg->setFont(ucg_font_ncenR14_hr, true );
 		ucg->printf("%s                   ", _values[_select].c_str());
 		xSemaphoreGive(spiMutex );
 	}else {

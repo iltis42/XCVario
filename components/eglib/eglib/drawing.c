@@ -693,30 +693,25 @@ void eglib_DrawGradientBox(
 }
 
 void eglib_DrawRoundBox(
-  eglib_t *eglib,
-  coordinate_t x, coordinate_t y,
-  coordinate_t width, coordinate_t height,
-  coordinate_t radius
+		eglib_t *eglib,
+		coordinate_t x, coordinate_t y,
+		coordinate_t width, coordinate_t height,
+		coordinate_t radius
 ) {
-  coordinate_t diameter;
-  coordinate_t v;
+	coordinate_t diameter;
+	coordinate_t v;
 
-  diameter = 2 * radius;
-
- // eglib_DrawFilledArc(eglib, x + radius, y + radius, radius, 270, 360);
- eglib_DrawDisc(eglib, x + radius, y + radius, radius, EGLIB_DRAW_UPPER_LEFT );
-  for(v=y ; v <= y + radius ; v++)
-    eglib_DrawHLine(eglib, x + radius, v, width - diameter);
-  //eglib_DrawFilledArc(eglib, x + width - radius, y + radius, radius, 0, 90);
-  eglib_DrawDisc(eglib, x + width - radius, y + radius, radius, EGLIB_DRAW_UPPER_RIGHT );
-  for(v=y + radius ; v <= y + height - radius ; v++)
-    eglib_DrawHLine(eglib, x, v, width);
-  //eglib_DrawFilledArc(eglib, x + radius, y + height - radius, radius, 180, 270);
-  eglib_DrawDisc(eglib, x + radius, y + height - radius, radius, EGLIB_DRAW_LOWER_LEFT);
-  for(v=y + height - radius ; v <= y + width ; v++)
-    eglib_DrawHLine(eglib, x + radius, v, width - diameter);
-  //eglib_DrawFilledArc(eglib, x + width - radius, y + height - radius, radius, 90, 180);
-  eglib_DrawDisc(eglib, x + width - radius, y + height - radius, radius, EGLIB_DRAW_LOWER_RIGHT);
+	diameter = 2 * radius;
+	eglib_DrawDisc(eglib, x + radius, y + radius, radius, EGLIB_DRAW_UPPER_LEFT );
+	for(v=y ; v <= y + radius ; v++)
+		eglib_DrawHLine(eglib, x + radius, v, width - diameter);
+	eglib_DrawDisc(eglib, x + width - radius-1, y + radius, radius, EGLIB_DRAW_UPPER_RIGHT );
+	for(v=y + radius ; v <= y + height - radius ; v++)
+		eglib_DrawHLine(eglib, x, v, width);
+	eglib_DrawDisc(eglib, x + radius, y + height - radius +1, radius, EGLIB_DRAW_LOWER_LEFT);
+	for(v=y + height - radius ; v <= y + height ; v++)
+		eglib_DrawHLine(eglib, x + radius, v, width - diameter);
+	eglib_DrawDisc(eglib, x + width - radius-1, y + height - radius +1, radius, EGLIB_DRAW_LOWER_RIGHT);
 }
 
 void eglib_ClearScreen(eglib_t *eglib) {
@@ -988,7 +983,7 @@ static void eglib_draw_disc_section(eglib_t *eglib, int16_t x, int16_t y, int16_
 
 void eglib_DrawDisc(eglib_t *eglib, int16_t x0, int16_t y0, int16_t rad, uint8_t option)
 {
- int16_t f;
+  int16_t f;
   int16_t ddF_x;
   int16_t ddF_y;
   int16_t x;

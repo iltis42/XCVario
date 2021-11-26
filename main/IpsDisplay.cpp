@@ -806,6 +806,7 @@ void IpsDisplay::drawBT() {
 		ucg->drawTriangle( btx, bty, btx+BTSIZE, bty+BTSIZE, btx, bty+2*BTSIZE );
 		ucg->drawLine( btx, bty, btx-BTSIZE, bty-BTSIZE );
 		ucg->drawLine( btx, bty, btx-BTSIZE, bty+BTSIZE );
+
 		btqueue = btq;
 		flarm_connected = Flarm::connected();
 	}
@@ -1581,7 +1582,7 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y) {
 			// ESP_LOGI(FNAME, "SWIND dir=%d, SSPEED=%f ageC=%d ageS=%d okc:=%d oks=%d ok:=%d", wds, ws, ageCircling, ageStraight, okc, oks, ok  );
 		}
 		// ESP_LOGI(FNAME, "WIND dir %d, speed %f, ok=%d", winddir, wind, ok );
-		if( prev_heading != winddir || !(tick%16) ){
+		if( prev_heading != winddir || !(tick%64) ){
 			ucg->setPrintPos(85,104);
 			ucg->setColor(  COLOR_WHITE  );
 			// ucg->setFont(ucg_font_fub20_hr);
@@ -1625,7 +1626,7 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y) {
 		if( heading >= 360 )
 			heading -= 360;
 		// ESP_LOGI(FNAME, "heading %d, valid %d", heading, Compass::headingValid() );
-		if( prev_heading != heading || !(tick%16) ){
+		if( prev_heading != heading || !(tick%64) ){
 			char s[12];
 			if( heading < 0 )
 				sprintf(s,"%4s", "---" );

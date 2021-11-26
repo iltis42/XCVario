@@ -37,6 +37,7 @@ static int select_flap_sens_pin(SetupMenuSelect *p){
         FLAP->configureADC();
         if ( FLAP->haveSensor() ) {
             p->ucg->setPrintPos(1,30);
+            p->ucg->setFont(ucg_font_ncenR14_hr, true );
             xSemaphoreTake(spiMutex,portMAX_DELAY );
             p->ucg->printf("Check Sensor Reading,");
             p->ucg->setPrintPos(1,60);

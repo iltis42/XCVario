@@ -265,13 +265,13 @@ SetupNG<float> 			wind_as_min( "WIND_ASM", 25 );
 SetupNG<int> 			s2f_blockspeed( "S2G_BLOCKSPEED", 0 );  // considering netto vario and g load for S2F or not
 SetupNG<int> 			needle_color("NEEDLE_COLOR", VN_COLOR_WHITE );
 SetupNG<int>			s2f_arrow_color("S2F_ARRCOL", AC_WHITE_WHITE );
-SetupNG<int> 			wk_label_plus_3( "WKLP3", 32,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);  //  L
+SetupNG<int> 			wk_label_plus_3( "WKLP3", 41,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);  //  L
 SetupNG<int> 			wk_label_plus_2( "WKLP2", 11,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);  //  2
 SetupNG<int> 			wk_label_plus_1( "WKLP1", 10,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);  //  1
 SetupNG<int> 			wk_label_null_0( "WKL0",   9,  true,SYNC_FROM_MASTER, PERSISTENT, flap_act);  //  0
 SetupNG<int> 			wk_label_minus_1( "WKLM1", 8,  true,SYNC_FROM_MASTER, PERSISTENT, flap_act);  // -1
 SetupNG<int> 			wk_label_minus_2( "WKLM2", 7,  true,SYNC_FROM_MASTER, PERSISTENT, flap_act);  // -2
-SetupNG<int> 			wk_label_minus_3( "WKLM3", 33,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act); //  S
+SetupNG<int> 			wk_label_minus_3( "WKLM3", 42,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act); //  S
 SetupNG<float>       	flap_takeoff("FLAPTO", 1,  true, SYNC_FROM_MASTER);
 SetupNG<int> 			audio_disable( "AUDIS", 0 );
 SetupNG<int>			vario_mode("VAMOD", CRUISE_NETTO );  // switch to netto mode when cruising

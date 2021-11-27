@@ -1174,18 +1174,27 @@ void IpsDisplay::drawScale( int16_t max_pos, int16_t max_neg, int16_t pos, int16
 
 // Draw scale label numbers for -pi/2 to pi/2 w/o sign
 void IpsDisplay::drawOneLabel( float val, int16_t labl, int16_t pos, int16_t offset ) {
+	ESP_LOGI( FNAME,"drawOneLabel val %.2f, label %d", val, labl );
 	if( _menu )
 		return;
+	float to_side = 0.05;
+	float incr = (M_PI_2-std::abs(val)) * 2; // increase pos towards 0
+	pos += (int)incr;
+	if( val > 0 ){
+		to_side += incr/(M_PI_2*80);
+	}
+	else{
+		to_side = -to_side;
+		to_side -= incr/(M_PI_2*80);
+	}
+	// ESP_LOGI( FNAME,"drawOneLabel val:%.2f label:%d  toside:%.2f inc:%.2f", val, labl, to_side, incr );
+	int x=gaugeCos(val+to_side, pos);
+	int y=gaugeSin(val+to_side, pos) +3;
 
-	const float to_side = 1.02;
-	int x, y;
-	pos += (M_PI_2-std::abs(val))/M_PI_2 * 10; // increase pos towards 0
-	x=gaugeCos(val*to_side, pos);
-	y=gaugeSin(val*to_side, pos) +1;
 	ucg->setColor(COLOR_BBLUE);
 	ucg->setPrintPos(x,y);
 	if ( offset != 0 ) {
-		ucg->printf("%+d", labl+offset );
+		ucg->printf("%d", labl+offset );
 	} else  {
 		ucg->printf("%d", abs(labl) );
 	}

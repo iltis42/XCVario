@@ -16,6 +16,20 @@
 
 char SetupMenuSelect::_val_str[20];
 
+
+const char * SetupMenuSelect::getEntry() const
+{
+	ESP_LOGI(FNAME,"getEntry() select:%d", _select );
+	return _values[ _select ].c_str();
+}
+
+const char *SetupMenuSelect::value() const {
+	ESP_LOGI(FNAME,"value()");
+	sprintf(_val_str,"%s", getEntry() );
+	return _val_str;
+}
+
+
 bool SetupMenuSelect::existsEntry( std::string ent ){
 	for( std::vector<std::string>::iterator iter = _values.begin(); iter != _values.end(); ++iter )
 		if( *iter == ent )
@@ -23,11 +37,12 @@ bool SetupMenuSelect::existsEntry( std::string ent ){
 	return false;
 }
 
-void SetupMenuSelect::addEntry( char ent[][4] )
+void SetupMenuSelect::addEntryList( char ent[][4], int size )
 {
-    while ( *ent[0] != '\0' ) {
-        _values.push_back( std::string(*ent) ); _numval++;
-        ent += sizeof(char[4]);
+	ESP_LOGI(FNAME,"SetupMenuSelect::addEntryList() char ent[][4]");
+    for( int i=0; i<size; i++ ) {
+    	ESP_LOGI(FNAME,"add ent:%s  num:%d", std::string(ent[i]).c_str(), _numval );
+        _values.push_back( std::string(ent[i]) ); _numval++;
     }
 }
 

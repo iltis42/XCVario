@@ -24,6 +24,10 @@ typedef struct _ucg_color_t
 #define UCG_PRINT_DIR_TD 0x01
 #define UCG_PRINT_DIR_RL 0x02
 #define UCG_PRINT_DIR_BU 0x03
+#define UCG_FONT_POS_BASE 0x01
+#define UCG_FONT_POS_BOTTOM 0x02
+#define UCG_FONT_POS_CENTER 0x03
+#define UCG_FONT_POS_TOP 0x04
 
 typedef enum _e_font_mode { UCG_FONT_MODE_TRANSPARENT, UCG_FONT_MODE_SOLID } e_font_mode;
 
@@ -95,43 +99,11 @@ public:
 	 void drawTetragon(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t x3, int16_t y3)  { eglib_DrawTetragon(eglib, x0, y0, x1, y1, x2, y2, x3, y3); }
 	
 	void drawCircle(int16_t x, int16_t y, int16_t radius, uint8_t options){                                                                        // adapter
-/*		switch( options ){
-		case UCG_DRAW_ALL:
-			eglib_DrawCircle(eglib, x, y, radius);
-			break;
-		case UCG_DRAW_UPPER_RIGHT:
-			eglib_DrawArc(eglib, x, y, radius, 0.0, 90.0);
-			break;
-		case UCG_DRAW_UPPER_LEFT:
-			eglib_DrawArc(eglib, x, y, radius, 0.0, -90.0);
-			break;
-		case UCG_DRAW_LOWER_RIGHT:
-			eglib_DrawArc(eglib, x, y, radius,90.0, 180.0);
-			break;
-		case UCG_DRAW_LOWER_LEFT:
-			eglib_DrawArc(eglib, x, y, radius, 180.0, 270.0);
-			break;
-*/
+
 		eglib_DrawCircle(eglib, x, y, radius, options);
 	}
 	void drawDisc(int16_t x, int16_t y, int16_t radius, uint8_t options){                                                                        // adapter
-/*		switch( options ){
-		case UCG_DRAW_ALL:
-			eglib_DrawDisc(eglib, x, y, radius);
-			break;
-		case UCG_DRAW_UPPER_RIGHT:
-			eglib_DrawFilledArc(eglib, x, y, radius, 0.0, 90.0);
-			break;
-		case UCG_DRAW_UPPER_LEFT:
-			eglib_DrawFilledArc(eglib, x, y, radius, 0.0, -90.0);
-			break;
-		case UCG_DRAW_LOWER_RIGHT:
-			eglib_DrawFilledArc(eglib, x, y, radius,90.0, 180.0);
-			break;
-		case UCG_DRAW_LOWER_LEFT:
-			eglib_DrawFilledArc(eglib, x, y, radius, 180.0, 270.0);
-			break;
-*/
+
 		eglib_DrawDisc(eglib, x, y, radius, options);
 	}
 	void setFont(uint8_t *f, bool filled=false ){    // adapter
@@ -217,8 +189,8 @@ public:
 	void scrollSetMargins( int16_t top, int16_t bottom ) {};                 // display driver function
 	void setClipRange( int16_t x, int16_t y, int16_t w, int16_t h ) {};	 // seems there no clipping concept in eglib
 	void setFontMode( uint8_t is_transparent ) {};  // no concept for transparent fonts in eglib, as it appears
-	void setFontPosBottom() {};	                    // same as clipping, no equivalent concept in eglib
-	void setFontPosCenter() {};	                    //	"
+	void setFontPosBottom() {eglib_font_pos = UCG_FONT_POS_BOTTOM;};
+	void setFontPosCenter() {eglib_font_pos = UCG_FONT_POS_CENTER;};
 	void setRedBlueTwist( bool twist ) {};   	    // display driver function
 	void setRotate180() {};	                        // Same as clipping, missing fundamental concept in eglib
 	void undoClipRange() {};	                    // seems there no clipping concept in eglib
@@ -229,6 +201,7 @@ public:
 
 private:
 	int16_t eglib_print_xpos = 0, eglib_print_ypos = 0;
+    int8_t eglib_font_pos = UCG_FONT_POS_BOTTOM;
 	uint8_t eglib_print_dir = UCG_PRINT_DIR_LR;
 	
 	// two things done above, rest tbd:

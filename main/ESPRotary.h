@@ -11,9 +11,9 @@
 #include <inttypes.h>
 #include "esp_system.h"
 #include <string>
-#include <vector>
+#include <list>
+#include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
-#include "freertos/FreeRTOS.h"
 #include "esp_system.h"
 #include "driver/pcnt.h"
 
@@ -38,20 +38,28 @@ public:
     ESPRotary() {};
     void begin(gpio_num_t clk, gpio_num_t dt, gpio_num_t sw );
     void attach( RotaryObserver *obs);
+    void detach( RotaryObserver *obs);
     static void readPos( void * args );
     static void informObservers( void * args );
     static void readPosInt( void * args );
+    static void sendRelease();
+    static void sendPress();
+    static void sendLongPress();
     bool readSwitch();  // returns true if pressed
 
 private:
     xSemaphoreHandle swMutex;
 
-	static std::vector<RotaryObserver *> observers;
+	static std::list<RotaryObserver *> observers;
     static gpio_num_t clk, dt, sw;
     static pcnt_config_t enc;
     static pcnt_config_t enc2;
     static int16_t r_enc_count;
     static int16_t r_enc2_count;
+    static int timer;
+    static bool released;
+    static bool longPressed;
+    static bool pressed;
 };
 
 #endif

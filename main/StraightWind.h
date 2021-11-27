@@ -12,6 +12,8 @@
 #include <sys/time.h>
 #include "vector.h"
 
+#define NUM_STRAIGHT_RESULTS 50
+
 class StraightWind
 {
 public:
@@ -33,11 +35,6 @@ public:
 	}
 
 	/**
-	 * Starts a new wind measurment cycle.
-	 */
-	void start();
-
-	/**
 	 * Measurement cycle for wind calculation in straight flight. Should be
 	 * triggered periodically, maybe once per second.
 	 *
@@ -49,13 +46,7 @@ public:
 	 * Return the last calculated wind. If return result is true, the wind data
 	 * are valid otherwise false.
 	 */
-	bool getWind( int* direction, float* speed, int *age )
-	{
-		*direction = int( windDir + 0.5 );
-		*speed = float( windSpeed );
-		*age = _age;
-		return ( windDir != -1.0 && windSpeed != -1.0 );
-	}
+	bool getWind( int* direction, float* speed, int *age );
 
 	void setWind( float direction, float speed ){
 		windDir = direction;
@@ -69,11 +60,10 @@ public:
 	void newCirclingWind( float angle, float speed );
 	void test();
 	int getAge() { return _age; }
+	static void resetAge() { _age = 0; }
 	float getAsCorrection() { return airspeedCorrection; }
-	float getAngle() { return windDir; };
-	float getSpeed() { return windSpeed; };
-	float getAsJitter() { return airspeed_jitter; }
-	float getGsJitter() { return groundspeed_jitter; }
+	float getAngle();
+	float getSpeed();
 	float getDeviation() { return deviation_cur; }
 	bool  getGpsStatus() { return gpsStatus; }
 	float getMH() { return magneticHeading; }
@@ -81,41 +71,29 @@ public:
 
 private:
 
-	/**
-	 * Return the elapsed time in milliseconds
-	 */
-	uint64_t elapsed()
-	{
-		return getMsTime() - measurementStart;
-	}
-
-	uint16_t nunberOfSamples;  // current number of samples
-	uint64_t measurementStart; // measurement start in milliseconds
-	double tas;                // TAS in km/h
-	double groundSpeed;        // GS in km/h
-	double trueCourse;         // GPS course
-	double trueHeading;        // Compass heading
-	double sumTas;             // TAS in km/h
-	double sumGroundSpeed;     // sum of GS in km/h
+	int    nunberOfSamples;  // current number of samples
+	double averageTas;             // TAS in km/h
 	double averageTH;          // sum of Compass true heading
 	double averageTC;          // sum of GPS heading (true course)
 	double averageGS;		   // average ground speed
-	double tcStart;            // start value of true course observation window
-	double mhStart;			   // magnetic heading start value for observation window
 	double windDir;            // calculated wind direction
 	double windSpeed;          // calculated wind speed in Km/h
+	double lastWindSpeed;          // calculated wind speed in Km/h
 	bool   lowAirspeed;
 	float  circlingWindDir;
+	float  circlingWindDirReverse;
 	float  circlingWindSpeed;
 	int    circlingWindAge;
 	float  airspeedCorrection;
-	int    _age;
-	float  airspeed_jitter;
-	float  groundspeed_jitter;
-	float  airspeed_jitter_tmp;
-	float  groundspeed_jitter_tmp;
+	static int    _age;
+	int    _tick;
 	bool   gpsStatus;
 	float  deviation_cur;
 	float  magneticHeading;
 	const char *status;
+	float  jitter;
+	int curVectorNum;
+	static Vector windVectors[NUM_STRAIGHT_RESULTS];
+	float newWindSpeed;
+	float newWindDir;
 };

@@ -22,6 +22,7 @@ public:
 	double sink( double v );
 	inline double minsink() { return _speedMinSink; };
 	void recalc();
+	static float getBallastPercent();
 	inline double circlingSink(double v) {
 		if( v > Units::Airspeed2Kmh( stall_speed.get())*0.6 )
 			return _circling_sink;
@@ -34,6 +35,7 @@ public:
 	float getVn( float v );
 
 private:
+	static float bal_percent;
 	double a0,a1,a2;
 	double w0,w1,w2;
 	double _MC;

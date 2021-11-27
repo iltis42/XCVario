@@ -17,13 +17,16 @@ Last update: 2021-04-18
 
  ****************************************************************************/
 
-#include "logdef.h"
-#include "esp_log.h"
-#include "QMC5883L.h"
 #include "ShowCompassSettings.h"
-#include "SetupNG.h"
 
-ShowCompassSettings::ShowCompassSettings( String title) :
+#include "SetupNG.h"
+#include "QMC5883L.h"
+#include "sensor.h"
+
+#include <Ucglib.h>
+#include <esp_log.h>
+
+ShowCompassSettings::ShowCompassSettings( std::string title) :
 SetupMenuDisplay( title, nullptr )
 {
 	ESP_LOGI(FNAME, "ShowCompassSettings(): title='%s'", title.c_str() );
@@ -31,7 +34,7 @@ SetupMenuDisplay( title, nullptr )
 
 void ShowCompassSettings::display( int mode )
 {
-	if( (selected != this) || !_menu_enabled )
+	if( (selected != this) || !inSetup )
 		return;
 
 	ESP_LOGI(FNAME, "display() mode=%d", mode );

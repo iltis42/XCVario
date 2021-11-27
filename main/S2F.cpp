@@ -11,7 +11,7 @@
 #include "logdef.h"
 #include "sensor.h"
 #include "Units.h"
-#include "SetupNG.h"
+#include "Blackboard.h"
 
 S2F::S2F() {
     a0=a1=a2=0;
@@ -47,7 +47,7 @@ void S2F::change_polar()
 	a2= ((v2-v3)*(w1-w3)+(v3-v1)*(w2-w3)) / (pow(v1,2)*(v2-v3)+pow(v2,2)*(v3-v1)+ pow(v3,2)*(v1-v2));
 	a1= (w2-w3-a2*(pow(v2,2)-pow(v3,2))) / (v2-v3);
 	a0= w3 -a2*pow(v3,2) - a1*v3;
-    a2 = a2/sqrt( ( ballast.get() +100.0)/100.0   );   // wingload  e.g. 100l @ 500 kg = 1.2 and G-Force
+    a2 = a2/sqrt( ( (ballast.get() + fixed_ballast.get()) +100.0)/100.0   );   // wingload  e.g. 100l @ 500 kg = 1.2 and G-Force
     a0 = a0 * ((bugs.get() + 100.0) / 100.0);
     a1 = a1 * ((bugs.get() + 100.0) / 100.0);
     a2 = a2 * ((bugs.get() + 100.0) / 100.0);
@@ -75,11 +75,26 @@ void S2F::select_polar()
     change_polar();
 }
 
+float S2F::bal_percent = 0;
+
+float S2F::getBallastPercent(){ return bal_percent; }
+
 void S2F::change_mc_bal()
 {
 	ESP_LOGI(FNAME,"S2F::change_mc_bal()");
 	_MC = Units::Vario2ms( MC.get() );
 	change_polar();
+	float refw = polar_wingload.get() * polar_wingarea.get();
+	ESP_LOGI(FNAME,"Reference weight: %f kg", refw);
+	float liters = (1+ ((ballast.get() + fixed_ballast.get())/100))*refw -refw;
+	ESP_LOGI(FNAME,"New Ballast in liters: %f ", liters);
+	float max_bal = polar_max_ballast.get();
+	if( (int)(polar_max_ballast.get()) == 0 ) { // We use 100 liters as default once its not with the polar
+		max_bal = 100;
+	}
+	ESP_LOGI(FNAME,"Max ballast %f", max_bal );
+	bal_percent = (liters/max_bal)*100;
+	ESP_LOGI(FNAME,"Ballast in %% %f", bal_percent );
 }
 
 
@@ -97,15 +112,10 @@ double S2F::sink( double v_in ) {
 	double s=0;
 	if ( v_in > Units::Airspeed2Kmh( stall_speed.get() * 0.9 )){
 		double v=v_in/3.6;   // meters per second
-		if( s2f_with_gload.get() ){
-			double n=getN();
-			double sqn = sqrt(n);
-			s = a0*pow(sqn,3) + a1*v*n + a2*pow(v,2)*sqn;
-			// if( !(tick++%2) )
-			//	ESP_LOGI(FNAME,"S2F::sink() V:%0.1f sink:%2.2f G-Load:%1.2f", v_in, s, n );
-		}
-		else
-			s = a0 + a1*v + a2*pow(v,2);
+		double n=getN();
+		double sqn = sqrt(n);
+		s = a0*pow(sqn,3) + a1*v*n + a2*pow(v,2)*sqn;
+		//	ESP_LOGI(FNAME,"S2F::sink() V:%0.1f sink:%2.2f G-Load:%1.2f", v_in, s, n );
 	}
 	return s;
 }
@@ -174,10 +184,9 @@ void S2F::test( void )
 	ESP_LOGI(FNAME, "Sink %f @ %s km/h ", sink( 150.0 ), "150");
 	ESP_LOGI(FNAME, "Sink %f @ %s km/h ", sink( 180.0 ), "180");
 	ESP_LOGI(FNAME, "Sink %f @ %s km/h ", sink( 220.0 ), "220");
-    ESP_LOGI(FNAME,"MC %f  Ballast %f", _MC, ballast.get() );
+    ESP_LOGI(FNAME,"MC %f  Ballast %f", _MC, (ballast.get() + fixed_ballast.get()) );
 	for( int st=20; st >= -20; st-=5 )
 	{
 		ESP_LOGI(FNAME, "S2F %g km/h vario %g m/s", speed( (double)st/10 ), (double)st/10 );
 	}
 }
-

@@ -30,6 +30,10 @@ Last update: 2021-04-05
 #include "KalmanMPU6050.h"
 #include "SetupNG.h"
 #include "MenuEntry.h"
+#include "Router.h"
+#include "vector.h"
+#include "sensor_processing_lib.h"
+#include "canbus.h"
 
 /* Register numbers */
 #define REG_X_LSB 0         // Output Data Registers for magnetic sensor.
@@ -63,19 +67,28 @@ Last update: 2021-04-05
 
 // Sensor state
 bool QMC5883L::m_sensor = false;
-
 // Sensor overflow flag.
 bool QMC5883L::overflowWarning = false;
-
 // Error counter
 int QMC5883L::errors = 0;
-
 // Calibration flag
 bool QMC5883L::calibrationRunning = false;
-
 float QMC5883L::_heading = 0;
-
 int QMC5883L::totalReadErrors = 0;
+Average<20> QMC5883L::filterX;
+Average<20> QMC5883L::filterY;
+Average<20> QMC5883L::filterZ;
+Average<20, float, float> QMC5883L::filterRoll;
+Average<20, float, float> QMC5883L::filterPitch;
+
+float QMC5883L::pitch = 0;
+float QMC5883L::roll = 0;
+
+int16_t QMC5883L::can_x = 0;
+int16_t QMC5883L::can_y = 0;
+int16_t QMC5883L::can_z = 0;
+int QMC5883L::age = 100;
+
 /*
   Creates instance for I2C connection with passing the desired parameters.
   No action is done at the bus. Note if i2cBus is not set in the constructor,
@@ -86,12 +99,7 @@ QMC5883L::QMC5883L( const uint8_t addrIn,
 		const uint8_t odrIn,
 		const uint8_t rangeIn,
 		const uint16_t osrIn,
-		I2C_t *i2cBus ) :
-										  m_bus( i2cBus ),
-										  addr( addrIn ),
-										  odr( odrIn ),
-										  range( rangeIn ),
-										  osr( osrIn )
+		I2C_t *i2cBus ) : m_bus( i2cBus ), addr( addrIn ), odr( odrIn ), range( rangeIn ), osr( osrIn )
 {
 	ESP_LOGI( FNAME, "QMC5883L( %02X )", addrIn );
 
@@ -101,13 +109,22 @@ QMC5883L::QMC5883L( const uint8_t addrIn,
 		addr = QMC5883L_ADDR;
 	}
 
-  overflowWarning = false;
+	overflowWarning = false;
 	resetClassCalibration();
 }
+
 
 QMC5883L::~QMC5883L()
 {
 }
+
+float QMC5883L::cur_heading( bool *ok ) {
+	*ok = true;
+	if( age > 10 )
+		*ok = false;
+	return _heading;
+};
+
 
 /** Write with data part. */
 esp_err_t QMC5883L::writeRegister( const uint8_t addr,
@@ -138,7 +155,7 @@ uint8_t QMC5883L::readRegister( const uint8_t addr,
 	if( checkBus() == false )
 		return 0;
 	// read bytes from chip
-	for( int i=0; i<=20; i++ ){
+	for( int i=0; i<=100; i++ ){
 		esp_err_t err = m_bus->readBytes( addr, reg, count, data );
 		if( err == ESP_OK && count == 6 ){
 			return count;
@@ -146,16 +163,18 @@ uint8_t QMC5883L::readRegister( const uint8_t addr,
 		else
 		{
 			// ESP_LOGW( FNAME,"readRegister( 0x%02X, 0x%02X, %d ) FAILED N:%d", addr, reg, count, i );
-			if( i == 10 ){
-				ESP_LOGW( FNAME,"10 retries read mag sensor failed also, now try to reinitialize chip");
+			if( i == 100 ){
+				ESP_LOGW( FNAME,"100 retries read mag sensor failed also, now try to reinitialize chip");
 				if( initialize() != ESP_OK )
 					initialize();  // one retry
 				err = m_bus->readBytes( addr, reg, count, data );
 				if( err == ESP_OK && count == 6 ){
+					// ESP_LOGI( FNAME,"Read after reinit ok");
 					return count;
 				}
 			}
-			delay(10);
+			// ESP_LOGW( FNAME,"retry #%d reg=%02X err=%d", i, reg, err );
+			delay(2);
 		}
 	}
 	ESP_LOGW( FNAME,"Read after init and retry failed also, return with no data, len=0");
@@ -170,6 +189,9 @@ esp_err_t QMC5883L::selfTest()
 		m_sensor = false;
 		return ESP_FAIL;
 	}
+	// load last known calibration.
+	loadCalibration();
+	if( compass_enable.get() == CS_I2C || compass_enable.get() == CS_I2C_NO_TILT ){
 	uint8_t chipId = 0;
 	// Try to read Register 0xD, it delivers the chip id 0xff for a QMC5883L
 	m_sensor = false;
@@ -192,10 +214,14 @@ esp_err_t QMC5883L::selfTest()
 	}
 	ESP_LOGI( FNAME, "QMC5883L selftest PASSED");
 	m_sensor = true;
-
-	// load last known calibration.
-	loadCalibration();
 	return ESP_OK;
+	}
+	else if( compass_enable.get() == CS_CAN ){
+		if( age < 5 ){
+			return ESP_OK;
+		}
+	}
+	return ESP_FAIL;
 }
 
 /**
@@ -227,11 +253,14 @@ esp_err_t QMC5883L::initialize( int a_odr, int a_osr )
 	// ESP_LOGI( FNAME, "initialize() dataRate: %d Oversampling: %d", used_odr, used_osr );
 
 	e4 = writeRegister( addr, REG_CONTROL1,	(used_osr << 6) | (range <<4) | (used_odr <<2) | MODE_CONTINUOUS );
-	if( (e1 + e2 + e3 + e4) == 0 ) {
+	if( e1 == ESP_OK || e2 == ESP_OK || e3 == ESP_OK || e4 == ESP_OK ) {
 		// ESP_LOGI( FNAME, "initialize() OK");
 		return ESP_OK;
 	}
-	// ESP_LOGE( FNAME, "initialize() ERROR");
+	else{
+		ESP_LOGE( FNAME, "initialize() ERROR %d %d %d %d", e1,e2,e3,e4 );
+		return ESP_FAIL;
+	}
 	return ESP_FAIL;
 }
 
@@ -243,61 +272,93 @@ esp_err_t QMC5883L::initialize( int a_odr, int a_osr )
  *
  * Returns true in case of success otherwise false.
  */
+
+void QMC5883L::fromCAN( const char * msg ){
+
+	can_x = (msg[0] & 0xff) | ((msg[1] << 8) & 0xff00 );
+	can_y = (msg[2] & 0xff) | ((msg[3] << 8) & 0xff00 );
+	can_z = (msg[4] & 0xff) | ((msg[5] << 8) & 0xff00 );
+	// hESP_LOGI(FNAME,"from CAN bus magn X=%d Y=%d Z=%d", can_x, can_y, can_z );
+	age = 0;
+}
+
 bool QMC5883L::rawHeading()
 {
-	uint8_t data[6];
-	uint8_t status = 0;
-	// Check, if data are available
-	// as sensor is outside the housing, there may be I2C noise, so we need retries
-	bool okay = false;
-	// Poll status until RDY or DOR
-	for( int i=1; i<10; i++ ){
-		esp_err_t ret = m_bus->readByte( addr, REG_STATUS, &status );
-		if( ret == ESP_OK ){
-			if( (status & STATUS_DRDY) || (status & STATUS_DOR )  ){
-				okay = true;
-				break;
+	if( compass_enable.get() == CS_I2C || compass_enable.get() == CS_I2C_NO_TILT ){
+		uint8_t data[6];
+		uint8_t status = 0;
+		// Check, if data are available
+		// as sensor is outside the housing, there may be I2C noise, so we need retries
+		bool okay = false;
+		// Poll status until RDY or DOR
+		esp_err_t ret = ESP_OK;
+		for( int i=1; i<30; i++ ){
+			ret = m_bus->readByte( addr, REG_STATUS, &status );
+			if( ret == ESP_OK ){
+				if( (status & STATUS_DRDY) || (status & STATUS_DOR )  ){
+					okay = true;
+					break;
+				}
+				// else
+				// 	ESP_LOGW( FNAME, "No new data,  N=%d  RDY%d  DOR%d REG:%02X", i, status & STATUS_DRDY, status & STATUS_DOR, status );
 			}
-			else
-				ESP_LOGW( FNAME, "No new data,  N=%d  RDY%d  DOR%d REG:%02X", i, status & STATUS_DRDY, status & STATUS_DOR, status );
+			else{
+				delay( 2 );
+				// ESP_LOGW( FNAME, "read REG_STATUS failed, N=%d  RDY%d  DOR%d", i, status & STATUS_DRDY, status & STATUS_DOR );
+			}
+		}
+		if( okay == false )
+		{
+			// ESP_LOGE( FNAME, "read REG_STATUS FAILED %d", ret );
+			return false;
+		}
+
+		if( ( status & STATUS_OVL ) == true )
+		{
+			// Magnetic X-Y-Z data overflow has occurred, give out a warning only once
+			if( overflowWarning == false ){
+				ESP_LOGW( FNAME, "read rawHeading detected a X-Y-Z data overflow." );
+				overflowWarning = true;
+				return false;
+			}
+		}
+		// Reset overflow warning, to get a current status of it.
+
+		overflowWarning = false;
+
+		// Precondition already checked in loop before, point only reached if there is RDY or DOR
+		int count = readRegister( addr, REG_X_LSB, 6, data );
+		// Data can be read in every case
+		if( count == 6 )
+		{
+			int x = (int)( (int16_t)(( data[1] << 8 ) | data[0]) );
+			int y = (int)( (int16_t)(( data[3] << 8 ) | data[2]) );
+			int z = (int)( (int16_t)(( data[5] << 8 ) | data[4]) );
+
+			xraw = filterX( x );
+			yraw = filterY( y );
+			zraw = filterZ( z );
+			age = 0;
+			// ESP_LOGI( FNAME, "X:%d Y:%d Z:%d  RDY:%d DOR:%d", xraw, yraw,zraw, status & STATUS_DRDY, status & STATUS_DOR );
+			return true;
+		}
+		ESP_LOGE( FNAME, "read Register REG_X_LSB returned count != 6, count: %d", count );
+		return false;
+	}
+	else if( compass_enable.get() == CS_CAN ){  // we get compass raw data via CAN interface
+		if( age < 10 ){
+			xraw = can_x;
+			yraw = can_y;
+			zraw = can_z;
+			// ESP_LOGI( FNAME, "X:%d Y:%d Z:%d  Age:%d", xraw, yraw, zraw, age );
+			return true;
 		}
 		else{
-			// ESP_LOGW( FNAME, "read REG_STATUS failed, N=%d  RDY%d  DOR%d", i, status & STATUS_DRDY, status & STATUS_DOR );
+			// ESP_LOGE( FNAME, "Magnet sensor data from CAN missing");
+			// CANbus::restart();
+			return false;
 		}
-		delay( 10 );
-		//uint8_t count = readRegister( addr, REG_STATUS, 1, &status );
 	}
-	if( okay == false )
-	{
-		// ESP_LOGE( FNAME, "read REG_STATUS FAILED");
-		return false;
-	}
-
-	if( ( status & STATUS_OVL ) == true )
-	{
-		// Magnetic X-Y-Z data overflow has occurred, give out a warning only once
-	  if( overflowWarning == false )
-	    ESP_LOGW( FNAME, "read rawHeading detected a X-Y-Z data overflow." );
-        overflowWarning = true;
-		return false;
-	}
-
-	// Reset overflow warning, to get a current status of it.
-	overflowWarning = false;
-
-    // Precondition already checked in loop before, point only reached if there is RDY or DOR
-	int count = readRegister( addr, REG_X_LSB, 6, data );
-	// Data can be read in every case
-	if( count == 6 )
-	{
-		xraw = (int)( (int16_t)(( data[1] << 8 ) | data[0]) );
-		yraw = (int)( (int16_t)(( data[3] << 8 ) | data[2]) );
-		zraw = (int)( (int16_t)(( data[5] << 8 ) | data[4]) );
-		// ESP_LOGI( FNAME, "X:%d Y:%d Z:%d  RDY:%d DOR:%d", xraw, yraw,zraw, status & STATUS_DRDY, status & STATUS_DOR );
-		return true;
-	}
-	ESP_LOGE( FNAME, "read Register REG_X_LSB returned count != 6, count: %d", count );
-
 	return false;
 }
 
@@ -307,7 +368,7 @@ bool QMC5883L::rawHeading()
  */
 int16_t QMC5883L::temperature( bool *ok )
 {
-  assert( (ok != nullptr) && "Passing of NULL pointer is forbidden" );
+	assert( (ok != nullptr) && "Passing of NULL pointer is forbidden" );
 
 	uint8_t data[2];
 	if( readRegister( addr, REG_TEMP_LSB, 2, data ) == 0 ){
@@ -399,25 +460,12 @@ bool QMC5883L::loadCalibration()
  * stopped by the reporter function which displays intermediate results of the
  * calibration action.
  */
-bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z, float xb, float yb, float zb ) )
+bool QMC5883L::calibrate( bool (*reporter)( float xc, float yc, float zc, float xscale, float yscale, float zscale, float xb, float yb, float zb ) )
 {
 	// reset all old calibration data
 	ESP_LOGI( FNAME, "calibrate magnetic sensor" );
-	resetCalibration();
-
 	calibrationRunning = true;
-
-	// Switch on continues mode
-	if( initialize( ODR_100Hz, OSR_512 ) != ESP_OK )
-	{
-		// retry
-		if( initialize(  ODR_100Hz, OSR_512 ) != ESP_OK ){
-			calibrationRunning = false;
-			return false;
-		}
-	}
-	// wait a moment after measurement start.
-	delay( 100 );
+	resetCalibration();
 
 	ESP_LOGI( FNAME, "calibrate min-max xyz");
 
@@ -438,13 +486,16 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z, float xb,
 	while( true )
 	{
 		i++;
-
 		if( rawHeading() == false )
 		{
-			// errors++;
+			errors++;
+			if( errors > 10 ){
+				initialize();
+				errors = 0;
+			}
+			continue;
 		}
-
-		uint64_t start = getMsTime();
+		// uint64_t start = getMsTime();
 
 		/* Find max/min xyz values */
 		xmin = ( xraw < xmin ) ? xraw : xmin;
@@ -502,30 +553,13 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z, float xb,
 		yscale = cord_avgerage / ychord;
 		zscale = cord_avgerage / zchord;
 
-		if( (getMsTime() - lastReport) >= 500 )
+		if( !(i%4) )
 		{
-			lastReport = getMsTime();
 			// Send a calibration report to the subscriber every 500ms
-			reporter( xscale, yscale, zscale, xbias, ybias, zbias );
+			reporter( xraw,yraw,zraw, xscale, yscale, zscale, xbias, ybias, zbias );
 		}
 		if( MenuEntry::_rotary->readSwitch() == true  )  // more responsive to query every loop
 			break;
-
-		uint64_t stop = getMsTime();
-		uint64_t elapsed = stop - start;
-
-		if( elapsed >= 50 )
-		{
-			// ESP_LOGI( FNAME, "Elapsed=%llu > 50 ms -> no delay", elapsed );
-			continue;
-		}
-
-		// calculate time to wait
-		int wait = 50 - elapsed;
-
-		// The sensor seems to have sometimes problems to deliver all 10ms new data
-		// Therefore we wait at least 50ms.
-		delay( wait );
 	}
 
 	ESP_LOGI( FNAME, "Read Cal-Samples=%d, OK=%d, NOK=%d",
@@ -551,11 +585,11 @@ bool QMC5883L::calibrate( bool (*reporter)( float x, float y, float z, float xb,
 	ESP_LOGI( FNAME, "Compass soft-iron: xscale=%.3f, yscale=%.3f, zscale=%.3f",
 			xscale, yscale, zscale );
 
-	// restart continuous mode given at construction time
-	if( initialize() != ESP_OK )
-		initialize();
 	calibrationRunning = false;
+
+
 	ESP_LOGI( FNAME, "calibration end" );
+
 	return true;
 }
 
@@ -569,12 +603,20 @@ bool holddown=false;
 float QMC5883L::heading( bool *ok )
 {
 	assert( (ok != nullptr) && "Passing of NULL pointer is forbidden" );
+
+	if( calibrationRunning == true )
+	{
+		*ok = false;
+		// ESP_LOGI(FNAME,"Calibration running, return 0");
+		return 0.0;
+	}
 	// ESP_LOGI(FNAME,"QMC5883L::heading() errors:%d, N:%d", errors, N );
 	// Holddown processing and throwing errors once sensor is gone
 	if( errors > 100 && errors % 100 )
 	{
 		*ok = false;
 		errors++;
+		// ESP_LOGI(FNAME,"Errors overrun, return 0");
 		return 0.0;
 	}
 	if( errors > 100 ){
@@ -587,37 +629,33 @@ float QMC5883L::heading( bool *ok )
 			holddown = false;
 		}
 	}
-
-	// Calibration is running, don't disturb it.
-	if( calibrationRunning == true )
-	{
-		return 0.0;
-	}
-
 	bool state = rawHeading();
+	// ESP_LOGI(FNAME,"state %d", state );
 	N++;
 	if( state == false )
 	{
 		errors++;
 		totalReadErrors++;
-		ESP_LOGI(FNAME,"Magnetic sensor error Reads:%d, Errors:%d", N, totalReadErrors );
+		//if( !(totalReadErrors%100) )
+		// ESP_LOGI(FNAME,"Magnetic sensor error Reads:%d, Total Errors:%d  Init: %d", N, totalReadErrors, errors );
 		if( errors > 10 )
 		{
 			// ESP_LOGI(FNAME,"Magnetic sensor errors > 10: init mag sensor" );
 			//  reinitialize once crashed, one retry
-			if( initialize() != ESP_OK )
-				initialize();
+			if( compass_enable.get() != CS_CAN ){
+				if( initialize() != ESP_OK )
+					initialize();
+			}
 			*ok=false;
 			return 0.0;
 		}
-		if( errors > 50 ){  // survive 50 samples with constant heading if no valid reading
+		if( errors > 100 ){  // survive 100 samples with constant heading if no valid reading
 			*ok = false;
 			return 0.0;
 		}
 		*ok = true;
 		return _heading;
 	}
-
 	errors = 0;
 
 	// Check if calibration data are available
@@ -625,7 +663,8 @@ float QMC5883L::heading( bool *ok )
 	{
 		// No calibration data available, return error because to return
 		// the raw heading is not meaningful.
-	  *ok = false;
+		*ok = false;
+		// ESP_LOGI(FNAME,"Not calibrated" );
 		return 0.0;
 	}
 
@@ -633,43 +672,43 @@ float QMC5883L::heading( bool *ok )
 	 * turned clockwise by 90 degrees the X-axis and the Y-axis are moved and
 	 * have to be handled in this way.
 	 */
+	// ESP_LOGI( FNAME, "heading: X:%d Y:%d Z:%d xs:%f ys:%f zs:%f", xraw, yraw, zraw, xscale, yscale, zscale);
+
 	double fy = (double) ((float( xraw ) - xbias) * xscale);
 	double fx = -(double) ((float( yraw ) - ybias) * yscale);
 	double fz = (double) ((float( zraw ) - zbias) * zscale);
 
+	roll = filterRoll( IMU::getRollRad() );      // equal filter with equal delay to raw compass data for pitch and roll
+	pitch = filterPitch( IMU::getPitchRad() );
+
+	double tcx = fx * cos( -pitch ) + fy * sin( -roll ) * sin( -pitch) - fz * cos( -roll) * sin( -pitch);
+	double tcy = fy * cos( -roll) + fz * sin( -roll);
+	if( isnan(tcx) || isnan(tcy) ){
+		*ok = true;
+		return _heading;  // deliver old value in case of gimbal lock
+	}
+
+	if( compass_enable.get() == CS_CAN || compass_enable.get() == CS_I2C ){
+		_heading = -RAD_TO_DEG * atan2( tcy, tcx );
+		// ESP_LOGI(FNAME,"tcy %03.2f tcx %03.2f  heading:%03.1f", tcy, tcx, _heading );
+	}
+	else if ( compass_enable.get() == CS_I2C_NO_TILT )
+		_heading = -RAD_TO_DEG * atan2( fy, fx );
+
+    // float heading_nt = -RAD_TO_DEG * atan2( fy, fx );
+	// heading_nt = Vector::normalizeDeg( heading_nt );
+
+	_heading = Vector::normalizeDeg( _heading );
+
+	// ESP_LOGI(FNAME,"CR: %.1f TC:%.1f Roll:%0.1f Pitch:%.1f", heading_nt, _heading, R2D(roll*2)+180, R2D(pitch*2)+180  );
 #if 0
-	double headingc = -RAD_TO_DEG * atan2( fx, fy );
-
-	if( headingc < 0.0 )
-		headingc += 360.0;
-
-	static uint8_t out = 0;
-
-	if( out % 10 )
-		ESP_LOGI( FNAME, "fX=%f fY=%f fZ=%f C-Heading=%.1f", fx, fy, fz, headingc );
+	if( wind_logging.get() ){
+		char log[120];
+		sprintf( log, "$COMPASS;%d;%d;%d;%.1f;%.1f;%.1f;%d\n", xraw, yraw, zraw, IMU::getPitch(), IMU::getRoll(),  _heading,  totalReadErrors );
+		Router::sendXCV( log );
+	}
 #endif
-
-	// Xhorizontal = X*cos(pitch) + Y*sin(roll)*sin(pitch) – Z*cos(roll)*sin(pitch)
-	double tcx = fx * cos( -IMU::getPitchRad() ) + fy * sin( -IMU::getRollRad() ) * sin( -IMU::getPitchRad()) - fz * cos( -IMU::getRollRad()) * sin( -IMU::getPitchRad());
-	// Yhorizontal = Y*cos(roll) + Z*sin(roll)
-	double tcy = fy * cos( -IMU::getRollRad()) + fz * sin( -IMU::getRollRad());
-
-	_heading = -RAD_TO_DEG * atan2( tcy, tcx );
-
-	if( _heading < 0.0 )
-		_heading += 360.0;
 
 	*ok = true;
-
-// #define DEBUG_COMP1
-#ifdef DEBUG_COMP1
-	double headingc = -RAD_TO_DEG * atan2( fy, fx );
-	if( headingc < 0.0 )
-			headingc += 360.0;
-	ESP_LOGI( FNAME,
-			"rawHeading, x:%d y:%d z:%d, roll: %f  pitch: %f  tcx:%f tcy:%f mh:%f mh_nc:%f",
-			xraw, yraw, zraw, IMU::getRoll(), IMU::getPitch(), (float)tcx, (float)tcy, _heading, headingc );
-#endif
-
 	return _heading;
 }

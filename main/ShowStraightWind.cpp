@@ -17,8 +17,6 @@ Last update: 2021-04-18
 
  ****************************************************************************/
 
-#include "logdef.h"
-#include "esp_log.h"
 #include "StraightWind.h"
 #include "ShowStraightWind.h"
 #include "SetupNG.h"
@@ -26,7 +24,10 @@ Last update: 2021-04-18
 #include "sensor.h"
 #include "Compass.h"
 
-ShowStraightWind::ShowStraightWind( String title ) :
+#include <esp_log.h>
+
+
+ShowStraightWind::ShowStraightWind( std::string title ) :
 SetupMenuDisplay( title, nullptr )
 {
 	ESP_LOGI(FNAME, "ShowStraightWind(): title='%s'", title.c_str() );
@@ -36,7 +37,7 @@ SetupMenuDisplay( title, nullptr )
 
 void ShowStraightWind::display( int mode )
 {
-	if( (selected != this) || !_menu_enabled )
+	if( (selected != this) || !inSetup )
 		return;
 
 	ESP_LOGI(FNAME, "display() mode=%d", mode );
@@ -66,17 +67,12 @@ void ShowStraightWind::display( int mode )
 	y += 25;
 
 	ucg->setPrintPos( 0, y );
-	sprintf( buffer, "AS cor : %+3.3f %%    ", (theWind.getAsCorrection()-1.0)*100 );
+	sprintf( buffer, "AS C/F: %+3.3f %%/%3.3f %%  ", (theWind.getAsCorrection()-1.0)*100, (wind_as_calibration.get()-1.0)*100 );
 	ucg->printf( "%s", buffer );
 	y += 25;
 
 	ucg->setPrintPos( 0, y );
 	sprintf( buffer, "Last Wind : %3.1f\xb0/%2.1f   ", theWind.getAngle(), Units::Airspeed( theWind.getSpeed()) );
-	ucg->printf( "%s", buffer );
-	y += 25;
-
-	ucg->setPrintPos( 0, y );
-	sprintf( buffer, "AS/GS Jitter : %3.2f/%3.2f   ", theWind.getAsJitter(),  theWind.getGsJitter() );
 	ucg->printf( "%s", buffer );
 	y += 25;
 

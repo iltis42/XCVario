@@ -6,6 +6,7 @@
 #include <logdef.h>
 #include "S2F.h"
 #include "AverageVario.h"
+#include "sensor.h"
 
 const double sigmaAdjust = 255 * 2.0/33;  // 2 Vss
 int BMPVario::holddown = 0;
@@ -30,7 +31,7 @@ float BMPVario::readS2FTE() {
 
 uint64_t lastrts = 0;
 void BMPVario::setup() {
-	_qnh = QNH.get();
+	_qnh = Units::Qnh( QNH.get() );
 	_damping = vario_delay.get();
 	_filter_len = 10;
 	lastrts = esp_timer_get_time();
@@ -58,7 +59,7 @@ double BMPVario::readTE( float tas ) {
 	bmpTemp = _sensorTE->readTemperature( success );
 	// ESP_LOGI(FNAME,"BMP temp=%0.1f", bmpTemp );
 	if( te_comp_enable.get() ) {
-		_currentAlt = _sensorBARO->readAltitude(_qnh, success );
+		_currentAlt = altitude.get(); // already read
 		if( !success )
 			_currentAlt = lastAltitude;  // ignore readout when failed
 		float mps = tas / 3.6;  // m/s
@@ -128,7 +129,7 @@ double BMPVario::readTE( float tas ) {
 	}
 	// Bird catcher
 	// if( (TE > 0.1) || (TE < -0.1) ){
-	// 	ESP_LOGI(FNAME,"Vario alt: %f, Vario: %f, t-delta=%2.3f sec", _currentAlt, TE, delta );
+	// ESP_LOGI(FNAME,"Vario alt: %f, Vario: %f, t-delta=%2.3f sec", _currentAlt, TE, delta );
 	//}
 	return _TEF;
 }

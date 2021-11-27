@@ -18,6 +18,7 @@
 #include "Router.h"
 #include "Flarm.h"
 #include "BluetoothSerial.h"
+#include "DataMonitor.h"
 
 bool BTSender::selfTest(){
 	ESP_LOGI(FNAME,"SerialBT::selfTest");
@@ -40,10 +41,6 @@ int BTSender::queueFull() {
 		if(bt_tx_q.isFull())
 			return 1;
 	}
-	else if( wireless == WL_WLAN ){
-		if( wl_vario_tx_q.isFull() )
-			return 1;
-	}
 	return 0;
 }
 
@@ -64,13 +61,15 @@ void BTSender::progress(){
 			rx.append( &byte, 1 );
 		}
 		Router::forwardMsg( rx, bt_rx_q );
+		DM.monitorString( MON_BLUETOOTH, DIR_RX, rx.c_str() );
 	}
 
 	if( SerialBT->hasClient() ) {
 		SString msg;
 		if ( Router::pullMsg( bt_tx_q, msg ) ){
-			ESP_LOGV(FNAME,"data avail for BT send %d bytes: %s", msg.length(), msg.c_str() );
+			// ESP_LOGI(FNAME,"data avail for BT send %d bytes: %s", msg.length(), msg.c_str() );
 			SerialBT->write( (const uint8_t *)msg.c_str(), msg.length() );
+			DM.monitorString( MON_BLUETOOTH, DIR_TX, msg.c_str() );
 		}
 	}
 }

@@ -1,4 +1,3 @@
-
 #include <esp_log.h>
 #include "BTSender.h"
 #include <string>
@@ -21,6 +20,7 @@
 #include "Serial.h"
 #include "Flarm.h"
 #include "Protocols.h"
+#include "canbus.h"
 
 /* Note that the standard NMEA 0183 baud rate is only 4.8 kBaud.
 Nevertheless, a lot of NMEA-compatible devices can properly work with
@@ -46,30 +46,16 @@ const char *flarm[] = {
 		"$PFLAU,3,1,2,1,1,90,2,80,855,1234*\n",
 		"$PFLAU,3,1,2,1,1,90,2,80,1555,1234*\n"
 };
-/*
-const char *gps[] = {
-		"$PFLAA,0,11461,-9272,1436,1,AFFFFF,51,0,257,0.0,0*7A\n",
-		"$PFLAA,0,2784,3437,216,1,AFFFFE,141,0,77,0.0,0*56\n",
-		"$PFLAA,1,-1375,1113,64,1,AFFFFD,231,0,30,0.0,0*43\n",
-		"$PFLAA,0,-3158,3839,1390,1,A858F3,302,0,123,-12.4,0*6B\n",
-		"$GPRMC,084854.40,A,44xx.xxx38,N,093xx.xxx15,W,0.0,0.0,300116,,,D*43\n",
-		"$PFLAA,0,11621,-9071,1437,1,AFFFFF,52,0,257,0.0,0*7F\n",
-		"$PFLAA,0,2724,3485,218,1,AFFFFE,142,0,77,0.0,0*58\n",
-		"$PFLAA,1,-1394,1089,65,1,AFFFFD,232,0,30,0.0,0*4C\n",
-		"$PFLAA,0,-3158,3839,1384,1,A858F3,302,0,123,-12.4,0*6E\n",
-		"$GPRMC,084855.40,A,44xx.xxx38,N,093xx.xxx15,W,0.0,0.0,300116,,,D*42\n",
-		"$GPGGA,152011.934,4850.555,N,00839.186,E,1,12,1.0,0.0,M,0.0,M,,*67\n",
-		"$GPGSA,A,3,01,02,03,04,05,06,07,08,09,10,11,12,1.0,1.0,1.0*30\n",
-		"$GPRMC,152949.571,A,4846.973,N,00843.677,E,,,220620,000.0,W*75\n",
-};
-*/
 
 int sim=100;
-#define HEARTBEAT_PERIOD_MS_SERIAL 15
+#define HEARTBEAT_PERIOD_MS_SERIAL 20
+#define SERIAL_STRLEN SSTRLEN
 static TaskHandle_t *pid;
+char Serial::rxbuf[SERIAL_STRLEN];
 
 // Serial Handler  ttyS1, S1, port 8881
 void Serial::serialHandler(void *pvParameters){
+	SString s;
 	while(1) {
 		if( flarm_sim.get() ){
 			sim=-3;
@@ -87,82 +73,87 @@ void Serial::serialHandler(void *pvParameters){
 			delay(2500);
 			sim++;
 		}
-		SString s;
 		// Serial Interface tty1 send
 		if ( !s1_tx_q.isEmpty() && Serial1.availableForWrite() ){
 			ESP_LOGD(FNAME,"Serial Data and avail");
 			while( Router::pullMsg( s1_tx_q, s ) ) {
-				ESP_LOGD(FNAME,"Serial 1 TX len: %d bytes", s.length() );
+				// ESP_LOGD(FNAME,"Serial 1 TX len: %d bytes", s.length() );
 				// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
 				int wr = Serial1.write( s.c_str(), s.length() );
+				DM.monitorString( MON_S1, DIR_TX, s.c_str() );
 				ESP_LOGD(FNAME,"Serial 1 TX written: %d", wr);
 			}
 		}
 		int num = Serial1.available();
 		if( num > 0 ) {
 			// ESP_LOGI(FNAME,"Serial 1 RX avail %d bytes", num );
-			if( num >= SSTRLEN ) {
-				// ESP_LOGW(FNAME,"Serial 1 Overrun RX >= %d bytes avail: %d, Bytes", SSTRLEN, num);
-				num=SSTRLEN;
+			if( num >= SERIAL_STRLEN ) {
+				ESP_LOGW(FNAME,"Serial 1 Overrun RX >= %d bytes avail: %d, Bytes", SERIAL_STRLEN, num);
+				num=SERIAL_STRLEN;
 			}
 			// ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
 			int numread = 0;
 			if( Flarm::bincom ){    // normally wait unit sentence has ended, or in binary mode just continue
-				numread = Serial1.read( s.c_str(), num );
+				numread = Serial1.read( rxbuf, num );
 			}
 			else{
-				numread = Serial1.readLine( s.c_str(), SSTRLEN );
+				numread = Serial1.readLine( rxbuf, SERIAL_STRLEN );
 			}
 			if( numread ) {
 				// ESP_LOGI(FNAME,"Serial 1 RX bytes read: %d  bincom: %d", numread,  Flarm::bincom  );
-				// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),numread, ESP_LOG_INFO);
-				s.setLen( numread );
+				// ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.c_str(),numread, ESP_LOG_INFO);
+				s.set( rxbuf, numread );
 				Router::forwardMsg( s, s1_rx_q );
+				DM.monitorString( MON_S1, DIR_RX, s.c_str() );
 			}
 		}
 		Router::routeS1();
 		Router::routeBT();
-		Router::routeWLAN();
+		Router::routeClient();
 	    BTSender::progress();   // piggyback this here, saves one task for BT sender
 
-	    if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 && !compass_enable.get() ){
+	    if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 ){
+	    	// ESP_LOGI(FNAME,"Serial 2 tick");
 	    	if ( !s2_tx_q.isEmpty() && Serial2.availableForWrite() ){
 	    		if( Router::pullMsg( s2_tx_q, s ) ) {
-	    			ESP_LOGD(FNAME,"Serial 2 TX len: %d bytes", s.length() );
-	    			ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
+	    			// ESP_LOGD(FNAME,"Serial 2 TX len: %d bytes", s.length() );
+	    			// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
 	    			int wr = Serial2.write( s.c_str(), s.length() );
+	    			DM.monitorString( MON_S2, DIR_TX, s.c_str() );
 	    			ESP_LOGD(FNAME,"Serial 2 TX written: %d", wr);
 	    		}
 	    	}
 	    	int num = Serial2.available();
 	    	if( num > 0 ) {
-	    		ESP_LOGI(FNAME,"Serial 2 RX avail %d bytes", num );
-	    		if( num >= SSTRLEN ) {
-	    			// ESP_LOGW(FNAME,"Serial 2 RX Overrun >= %d bytes avail: %d, Bytes", SSTRLEN, num);
-	    			num=SSTRLEN;
+	    		// ESP_LOGI(FNAME,"Serial 2 RX avail %d bytes", num );
+	    		if( num >= SERIAL_STRLEN ) {
+	    			ESP_LOGW(FNAME,"Serial 2 RX Overrun >= %d bytes avail: %d, Bytes", SERIAL_STRLEN, num);
+	    			num=SERIAL_STRLEN;
 	    		}
 	    		int numread = 0;
+
 	    		if( Flarm::bincom ){    // normally wait unit sentence has ended, or in binary mode just continue
-	    			numread = Serial2.read( s.c_str(), num );
+	    			numread = Serial2.read( rxbuf, num );
 	    		}
 	    		else{
-	    			numread = Serial2.readLine( s.c_str(), SSTRLEN );
+	    			numread = Serial2.readLine( rxbuf, SERIAL_STRLEN );
 	    		}
+
 	    		if( numread ){
-	    			// ESP_LOGI(FNAME,"Serial 1 RX bytes read: %d  bincom: %d", numread,  Flarm::bincom  );
+	    			s.set( rxbuf, numread );
+	    			// ESP_LOGI(FNAME,"Serial 2 RX bytes read: %d  bincom: %d", numread,  Flarm::bincom  );
 	    			// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),numread, ESP_LOG_INFO);
-	    			s.setLen( numread );
 	    			Router::forwardMsg( s, s2_rx_q );
+	    			DM.monitorString( MON_S2, DIR_TX, s.c_str() );
 	    		}
 	    	}
 	    	Router::routeS2();
 	    	Router::routeBT();
-	    	Router::routeWLAN();
 	    }
 	    esp_task_wdt_reset();
 	    if( uxTaskGetStackHighWaterMark( pid ) < 256 )
 	    	ESP_LOGW(FNAME,"Warning serial task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid ) );
-	    vTaskDelay( HEARTBEAT_PERIOD_MS_SERIAL/portTICK_PERIOD_MS );
+    	vTaskDelay( HEARTBEAT_PERIOD_MS_SERIAL/portTICK_PERIOD_MS );
 	}
 }
 
@@ -218,9 +209,12 @@ void Serial::begin(){
 	if( serial1_speed.get() != 0  || wireless != 0 ){
 		int baudrate = baud[serial1_speed.get()];
 		if( baudrate != 0 ) {
+			gpio_pullup_en( GPIO_NUM_16 );
+			gpio_pullup_en( GPIO_NUM_17 );
 			ESP_LOGI(FNAME,"Serial Interface ttyS1 enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial1_speed.get(), baud[serial1_speed.get()], serial1_tx_inverted.get(), serial1_rx_inverted.get() );
 			if( serial1_pins_twisted.get() ){
 				if( serial1_tx_enable.get() ){
+
 					Serial1.begin(baudrate,SERIAL_8N1,17,16, serial1_rx_inverted.get(), serial1_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
 				}else{
 					Serial1.begin(baudrate,SERIAL_8N1,17,36, serial1_rx_inverted.get(), serial1_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
@@ -237,13 +231,15 @@ void Serial::begin(){
 					gpio_pullup_dis( GPIO_NUM_17 );
 				}
 			}
-			Serial1.setRxBufferSize(256);
+			Serial1.setRxBufferSize(512);
 		}
 		// need this for bluetooth
 	}
-	if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 && !compass_enable.get() ){
+	if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 ){
 		ESP_LOGI(FNAME,"Serial Interface ttyS2 enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial2_speed.get(), baud[serial2_speed.get()], serial2_tx_inverted.get(), serial2_rx_inverted.get() );
 		if( serial2_pins_twisted.get() ){  //   speed, RX, TX, invRX, invTX
+			gpio_pullup_en( GPIO_NUM_4 );
+			gpio_pullup_en( GPIO_NUM_18 );
 			if( serial2_tx_enable.get() ){
 				Serial2.begin(baud[serial2_speed.get()],SERIAL_8N1,4,18, serial2_rx_inverted.get(), serial2_tx_inverted.get());   //  IO4: RXD2,  IO18: TXD2
 			}else{
@@ -262,17 +258,14 @@ void Serial::begin(){
 				gpio_pullup_dis( GPIO_NUM_4 );
 			}
 		}
-		Serial2.setRxBufferSize(256);
+		Serial2.setRxBufferSize(512);
 	}
 }
 
 void Serial::taskStart(){
 	ESP_LOGI(FNAME,"Serial::taskStart()" );
-	if( serial1_speed.get() != 0  || wireless != 0 ){
-		xTaskCreatePinnedToCore(&Serial::serialHandler, "serialHandler", 4096, NULL, 10, pid, 0);
+	if( serial1_speed.get() != 0  || wireless != 0 || serial2_speed.get() != 0 ){
+		xTaskCreatePinnedToCore(&Serial::serialHandler, "serialHandler", 4096, NULL, 11, pid, 0);  // stay below compass task
 	}
 	// handler S1 now serves both interfaces in one task
 }
-
-
-

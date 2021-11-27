@@ -20,6 +20,7 @@
 #define _KalmanMPU6050_H_
 
 #include "Arduino.h"
+#include "quaternion.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265359
@@ -47,6 +48,9 @@ typedef struct kalman_t
 	double y;       // Angle difference
 	double S;       // Estimate error
 } Kalman;
+
+void Kalman_Init(Kalman *kalPointer, double qang=0.001, double qbias=0.003, double rmeas=0.03 );
+double Kalman_GetAngle(Kalman *kalPointer, double newAngle, double newRate, double dt);
 
 #define SERIAL_KalmanMPU6050_DEBUG 0 // 1 Enables, 0 Disables
 
@@ -122,7 +126,7 @@ public:
    * @returns The x rotation (roll) in degrees
    */
   static inline double getRoll() {  return filterRoll;  };
-  static inline double getRollRad() {  return filterRoll*DEG_TO_RAD;  };
+  static double getRollRad();
 
   /**
    * Gets the pitch (Y rotation) in degrees from the Kalman Filter.\
@@ -130,14 +134,15 @@ public:
    * @returns The y rotation (pitch) in degrees
    */
   static inline double getPitch()  {	return -filterPitch;  }
-  static inline double getPitchRad()  {	return -filterPitch*DEG_TO_RAD;  }
+  static double getPitchRad();
 
 
 private:
   static uint32_t lastProcessed;
   static Kalman kalmanX; // Create the Kalman instances
   static Kalman kalmanY;
-  static double gyroXAngle, gyroYAngle; // Angle calculate using the gyro only
+  static Kalman kalmanZ;
+  static double gyroXAngle, gyroYAngle, gyroZAngle; // Angle calculate using the gyro only
 
   static double accelX, accelY, accelZ;
   static double gyroX, gyroY, gyroZ;
@@ -153,6 +158,14 @@ private:
   static double  mypitch;
   static double  filterPitch;
   static double  filterRoll;
+  static float   pitchfilter;
+  static float   rollfilter;
+  static float   filterAccRoll;
+  static float   filterGyroRoll;
+
+  static Quaternion att_quat;
+  static vector_ijk att_vector;
+  static euler_angles euler;
 
 };
 

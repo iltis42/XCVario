@@ -60,7 +60,7 @@ $PFLAA,0,-1234,1234,220,2,DD8F12,180,,30,-1.4,1*
 
 */
 
-void Flarm::parsePFLAA( char *pflaa ){
+void Flarm::parsePFLAA( const char *pflaa ){
 
 }
 
@@ -74,8 +74,9 @@ int Flarm::oldDist = 0;
 int Flarm::oldVertical = 0;
 int Flarm::oldBear = 0;
 int Flarm::alarmOld=0;
-int Flarm::tick=0;
+int Flarm::_tick=0;
 int Flarm::timeout=0;
+int Flarm::ext_alt_timer=0;
 int Flarm::_numSat=0;
 
 void Flarm::progress(){  // once per second
@@ -83,6 +84,14 @@ void Flarm::progress(){  // once per second
 		timeout--;
 
 }
+
+bool Flarm::connected(){
+	// ESP_LOGI(FNAME,"timeout=%d", timeout );
+	if( timeout > 0 )
+		return true;
+	else
+		return false;
+};
 
 /*
 eg1. $GPRMC,081836,A,3751.65,S,14507.36,E,000.0,360.0,130998,011.3,E*62
@@ -101,7 +110,7 @@ eg2. $GPRMC,225446,A,4916.45,N,12311.12,W,000.5,054.7,191194,020.3,E*68
 
 
 */
-void Flarm::parseGPRMC( char *gprmc ) {
+void Flarm::parseGPRMC( const char *gprmc ) {
 	float time;
 	int date;
 	char warn;
@@ -115,8 +124,8 @@ void Flarm::parseGPRMC( char *gprmc ) {
 		ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", gprmc, calc_cs, cs );
 		return;
 	}
-	// ESP_LOGI(FNAME,"parseGPRMC: %s", gprmc );
-	sscanf( gprmc, "$GPRMC,%f,%c,%f,N,%f,E,%lf,%lf,%d,%f,%c*%02x",&time,&warn,&lat,&lon,&gndSpeedKnots,&gndCourse,&date,&magvar,&dir,&cs);
+	// ESP_LOGI(FNAME,"parseG*RMC: %s", gprmc );
+	sscanf( gprmc+3, "RMC,%f,%c,%f,N,%f,E,%lf,%lf,%d,%f,%c*%02x",&time,&warn,&lat,&lon,&gndSpeedKnots,&gndCourse,&date,&magvar,&dir,&cs);
 	if( wind_enable.get() != WA_OFF ){
 		// ESP_LOGI(FNAME,"Wind enable, gpsOK %d", gpsOK );
 		if( warn == 'A' ) {
@@ -138,6 +147,7 @@ void Flarm::parseGPRMC( char *gprmc ) {
 			ESP_LOGI(FNAME,"GPRMC, GPS not OK: %s", gprmc );
 		}
 	}
+	timeout = 10;
 	// ESP_LOGI(FNAME,"parseGPRMC() GPS: %d, Speed: %3.1f knots, Track: %3.1f° ", gpsOK, gndSpeedKnots, gndCourse );
 }
 
@@ -164,7 +174,8 @@ eg. $GPGGA,hhmmss.ss,llll.ll,a,yyyyy.yy,a,x,xx,x.x,x.x,M,x.x,M,x.x,xxxx*hh
  */
 
 
-void Flarm::parseGPGGA( char *gpgga ) {
+void Flarm::parseGPGGA( const char *gpgga ) {
+	// ESP_LOGI(FNAME,"parseGPGGA");
 	float time;
 	float lat,lon;
 	int Q;
@@ -175,23 +186,25 @@ void Flarm::parseGPGGA( char *gpgga ) {
 	float age;
 	int ID;
 	int cs;
-	ESP_LOGV(FNAME,"parseGPGGA: %s", gpgga );
+	// ESP_LOGV(FNAME,"parseG*GGA: %s", gpgga );
 	int calc_cs=Protocols::calcNMEACheckSum( gpgga );
 	cs = Protocols::getNMEACheckSum( gpgga );
 	if( cs != calc_cs ){
 		ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", gpgga, calc_cs, cs );
 		return;
 	}
-	sscanf( gpgga, "$GPGGA,%f,%f,N,%f,E,%d,%d,%f,%f,M,%f,M,%f,%d*%02x",&time,&lat,&lon,&Q,&numSat,&dilutionH, &antennaAlt, &geoidalSep, &age, &ID, &cs);
+	sscanf( gpgga+3, "GGA,%f,%f,N,%f,E,%d,%d,%f,%f,M,%f,M,%f,%d*%02x",&time,&lat,&lon,&Q,&numSat,&dilutionH, &antennaAlt, &geoidalSep, &age, &ID, &cs);
 
 	if( numSat != _numSat && wind_enable.get() != WA_OFF ){
 		_numSat = numSat;
 		CircleWind::newConstellation( numSat );
 	}
+	timeout = 10;
 }
 
 
-void Flarm::parsePFLAU( char *pflau ) {
+void Flarm::parsePFLAU( const char *pflau ) {
+	// ESP_LOGI(FNAME,"parsePFLAU");
 	int cs;
 	int id;
 	int calc_cs=Protocols::calcNMEACheckSum( pflau );
@@ -203,7 +216,7 @@ void Flarm::parsePFLAU( char *pflau ) {
 	sscanf( pflau, "$PFLAU,%d,%d,%d,%d,%d,%d,%d,%d,%d,%x*%02x",&RX,&TX,&GPS,&Power,&AlarmLevel,&RelativeBearing,&AlarmType,&RelativeVertical,&RelativeDistance,&id,&cs);
 	// ESP_LOGI(FNAME,"parsePFLAU() RB: %d ALT:%d  DIST %d",RelativeBearing,RelativeVertical, RelativeDistance );
 	sprintf( ID,"%06x", id );
-	tick=0;
+	_tick=0;
 	timeout = 10;
 }
 
@@ -217,9 +230,37 @@ void Flarm::parsePFLAX( SString &msg ) {
 	if( !strncmp( (msg.c_str())+start, "$PFLAX,", 6 ) ){
 		Flarm::bincom = 5;
 		ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
+		timeout = 10;
 	}
-	timeout = 10;
+
 }
+
+
+void Flarm::tick(){
+	if( ext_alt_timer )
+		ext_alt_timer--;
+};
+
+// $PGRMZ,880,F,2*3A  $PGRMZ,864,F,2*30
+void Flarm::parsePGRMZ( const char *pgrmz ) {
+	if ( alt_select.get() != AS_EXTERNAL )
+		return;
+	int cs;
+	int alt1013_ft;
+	int calc_cs=Protocols::calcNMEACheckSum( pgrmz );
+	cs = Protocols::getNMEACheckSum( pgrmz );
+	if( cs != calc_cs ){
+		ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", pgrmz, calc_cs, cs );
+		return;
+	}
+	sscanf( pgrmz, "$PGRMZ,%d,F,2",&alt1013_ft );
+
+	alt_external = Units::feet2meters( (float)(alt1013_ft + 0.5) );
+	ESP_LOGI(FNAME,"parsePGRMZ() %s: ALT(1013):%5.0f m", pgrmz, alt_external );
+	timeout = 10;
+	ext_alt_timer = 10;  // Fall back to internal Barometer after 10 seconds
+}
+
 
 int rbOld = -500; // outside normal range
 
@@ -309,8 +350,8 @@ void Flarm::drawFlarmWarning(){
 		screens_init |= INIT_DISPLAY_FLARM;
 		ESP_LOGI(FNAME,"init drawFlarmWarning");
 	}
-	tick++;
-	if( tick > 500 ) // age FLARM alarm in case there is no more input  50 per second = 10 sec
+	_tick++;
+	if( _tick > 500 ) // age FLARM alarm in case there is no more input  50 per second = 10 sec
 		AlarmLevel = 0;
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	int volume=0;
@@ -336,7 +377,7 @@ void Flarm::drawFlarmWarning(){
 		Audio::alarm( false );
 
     if( AlarmLevel != alarmOld ) {
-    	ucg->setPrintPos(200, 15 );
+    	ucg->setPrintPos(200, 20 );
     	ucg->setFontPosCenter();
     	ucg->setColor( COLOR_WHITE );
     	ucg->setFont(ucg_font_fub20_hr);
@@ -345,22 +386,28 @@ void Flarm::drawFlarmWarning(){
     	alarmOld = AlarmLevel;
     }
     if( oldDist !=  RelativeDistance ) {
-		ucg->setPrintPos(130, 135 );
+		ucg->setPrintPos(130, 140 );
 		ucg->setFontPosCenter();
 		ucg->setColor( COLOR_WHITE );
-		ucg->setFont(ucg_font_fub20_hr);
+		ucg->setFont(ucg_font_fub25_hr);
 		char d[16];
 		sprintf(d,"%d m   ", RelativeDistance );
 		ucg->printf( d );
 		oldDist = RelativeDistance;
 	}
     if( oldVertical !=  RelativeVertical ) {
-    	ucg->setPrintPos(130, 215 );
+    	ucg->setPrintPos(130, 220 );
     	ucg->setFontPosCenter();
     	ucg->setColor( COLOR_WHITE );
-    	ucg->setFont(ucg_font_fub20_hr);
+    	ucg->setFont(ucg_font_fub25_hr);
     	char v[16];
-    	sprintf(v,"%d m   ", RelativeVertical );
+    	int vdiff = RelativeVertical;
+    	char *unit = "m";
+    	if( alt_unit.get() != 0 ){  // then its ft or FL -> feet
+    		unit = "ft";
+    		vdiff = (vdiff/10)*10;
+    	}
+    	sprintf(v,"%d %s   ",  vdiff, unit );
     	ucg->printf( v );
     	double relDist =  (double)RelativeDistance;
     	if( RelativeBearing < 0 )
@@ -374,10 +421,10 @@ void Flarm::drawFlarmWarning(){
     	oldVertical = RelativeVertical;
     }
     if( oldBear != RelativeBearing ){
-    	ucg->setPrintPos(130, 75 );
+    	ucg->setPrintPos(130, 80 );
     	ucg->setFontPosCenter();
     	ucg->setColor( COLOR_WHITE );
-    	ucg->setFont(ucg_font_fub20_hr);
+    	ucg->setFont(ucg_font_fub25_hr);
     	char b[16];
     	int quant=15;
     	if( RelativeBearing < 0 )
@@ -395,4 +442,3 @@ void Flarm::drawFlarmWarning(){
 
     xSemaphoreGive(spiMutex);
 }
-

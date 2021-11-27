@@ -19,6 +19,7 @@
 #include "sensor.h"
 #include "Router.h"
 
+int WifiClient::master_xcvario_scanned = 0; // e.g. 1234
 
 typedef struct xcv_sock_client {
 	RingBufCPP<SString, QUEUE_SIZE>* txbuf;
@@ -28,8 +29,8 @@ typedef struct xcv_sock_client {
 	int sock;
 }sock_client_t;
 
-static sock_client_t XCVario = { .txbuf = &wl_vario_tx_q, .rxbuf = &wl_vario_rx_q, .port=8880, .connected=false, .sock=-1 };
-static sock_client_t FLARM   = { .txbuf = &wl_flarm_tx_q, .rxbuf = &wl_flarm_rx_q, .port=8881, .connected=false, .sock=-1 };
+static sock_client_t XCVarioCL = { .txbuf = &client_tx_q, .rxbuf = &client_rx_q, .port=8884, .connected=false, .sock=-1 };
+static sock_client_t FLARM   =   { .txbuf = &wl_flarm_tx_q, .rxbuf = &wl_flarm_rx_q, .port=8881, .connected=false, .sock=-1 };
 
 EventGroupHandle_t WifiClient::wifi_event_group;
 esp_netif_t *WifiClient::sta_netif = 0;
@@ -37,8 +38,8 @@ std::string WifiClient::SSID;
 
 
 bool WifiClient::isConnected( int port ){
-	if( port == 8880 )
-		return( XCVario.connected );
+	if( port == 8884 )
+		return( XCVarioCL.connected );
 	else if( port == 8881 )
 		return( FLARM.connected );
 	return false;
@@ -66,10 +67,10 @@ void WifiClient::event_handler(void* arg, esp_event_base_t event_base, int32_t e
 		ESP_LOGI(FNAME,"SYSTEM_EVENT_STA_DISCONNECTED");
 		esp_wifi_connect();
 		xEventGroupClearBits( WifiClient::wifi_event_group, CONNECTED_BIT);
-		if( XCVario.sock > 0 ){
-			close( XCVario.sock );
-			XCVario.sock = -1;
-			XCVario.connected = false;
+		if( XCVarioCL.sock > 0 ){
+			close( XCVarioCL.sock );
+			XCVarioCL.sock = -1;
+			XCVarioCL.connected = false;
 		}
 		if( FLARM.sock > 0 ){
 			close( FLARM.sock );
@@ -107,7 +108,7 @@ void WifiClient::initialise_wifi(void)
 
 #define DEFAULT_SCAN_LIST_SIZE 20
 
-std::string WifiClient::scan( void ){
+std::string WifiClient::scan(int master_xcv_num){
 	ESP_LOGI(FNAME,"wifi scan");
 	ESP_ERROR_CHECK(esp_netif_init());
 	ESP_ERROR_CHECK(esp_event_loop_create_default());
@@ -134,17 +135,22 @@ std::string WifiClient::scan( void ){
 		for (int i = 0; (i < DEFAULT_SCAN_LIST_SIZE) && (i < ap_count); i++) {
 			if( strncmp( (char*)ap_info[i].ssid, "XCVARIO-", 8 ) == 0 )
 			ESP_LOGI(FNAME, "SSID \t%s", ap_info[i].ssid);
-			ESP_LOGI(FNAME, "RSSI \t%d", ap_info[i].rssi);
-			if( strncmp( (char*)ap_info[i].ssid, "XCVario-", 8 ) == 0 ) {
+			ESP_LOGI(FNAME, "LEVEL: \t%d SSID: \t%s", ap_info[i].rssi, ap_info[i].ssid);
+			char mxcv[14]="XCVario-";
+			if( master_xcv_num != 0 )
+				sprintf( mxcv+strlen(mxcv),"%d", master_xcv_num );
+			ESP_LOGI(FNAME,"Hunt for %s", mxcv );
+			if( strncmp( (char*)ap_info[i].ssid, mxcv, strlen(mxcv) ) == 0 ) {
 				found = true;
 				SSID = std::string( (char*)ap_info[i].ssid );
-				ESP_LOGI(FNAME,"SCAN found master XCVario: %s", SSID.c_str() );
+				ESP_LOGI(FNAME,"SCAN found master XCVarioCL: %s", SSID.c_str() );
 			}
 		}
 	}
 	ESP_ERROR_CHECK( esp_wifi_disconnect() );
 	ESP_ERROR_CHECK( esp_wifi_stop() );
 	ESP_ERROR_CHECK( esp_wifi_restore() );
+	sscanf( SSID.c_str(), "XCVario-%d", &master_xcvario_scanned );
 	return SSID;
 }
 
@@ -156,9 +162,7 @@ void WifiClient::tcp_client(void *setup){
     tcpServerAddr.sin_addr.s_addr = inet_addr(TCPServerIP);
     tcpServerAddr.sin_family = AF_INET;
     tcpServerAddr.sin_port = htons( config->port );
-	int num = 0;
     int timeout=0;
-    SString rec;
     while(1){
         xEventGroupWaitBits(wifi_event_group,CONNECTED_BIT,false,true,portMAX_DELAY);
         timeout++;
@@ -193,7 +197,7 @@ void WifiClient::tcp_client(void *setup){
         SString send;
     	Router::pullMsg( *(config->txbuf), send);
         if( send.length() ){
-        	ESP_LOGI(FNAME, "have data to send");
+        	// ESP_LOGI(FNAME, "have data to send, port: %d len: %d", config->port, send.length() );
         	if( write(config->sock , send.c_str() , send.length() ) < 0)
         	{
         		ESP_LOGE(FNAME, "Send failed, socket %d", config->sock );
@@ -203,43 +207,46 @@ void WifiClient::tcp_client(void *setup){
         		vTaskDelay(4000 / portTICK_PERIOD_MS);
         		continue;
         	}else {
-        		ESP_LOGI(FNAME, "socket send success");
+        		// ESP_LOGI(FNAME, "socket send success");
         		timeout = 0;
         	}
         }
         int end=100;
+        SString rec;
         while( 1 ){
-        	if( recv(config->sock, rec.c_str()+num, 1, MSG_DONTWAIT ) > 0){
-        		if( rec.c_str()[num] == '\n' || num > SSTRLEN-1 ){
-        			rec.setLen( num );
-        			ESP_LOGI(FNAME, "socket %d read %d bytes: %s", config->sock, num, rec.c_str() );
+            char c;
+        	if( recv(config->sock, &c, 1, MSG_DONTWAIT ) > 0){
+                rec.append(c);
+        		if( c == '\n' || rec.full() ){
+        			// ESP_LOGI(FNAME, "Port %d read %d bytes: %s", config->port, rec.length(), rec.c_str() );
+        			// ESP_LOG_BUFFER_HEXDUMP(FNAME, rec.c_str(), rec.length(), ESP_LOG_INFO);
         			Router::forwardMsg( rec, *(config->rxbuf) );
         			timeout = 0;
-        			num = 0;
         			rec.clear();
         			config->connected = true;
         			break;
         		}
-        		num++;
         	}
         	else{
         		end--;
         		if( !end ){
-        			ESP_LOGI(FNAME, "socket %d read timeout", config->sock );
+        			// ESP_LOGI(FNAME, "socket %d read timeout", config->sock );
         			break;
         		}
         		vTaskDelay(5 / portTICK_PERIOD_MS);
         	}
         }
+        Router::routeWLAN();
+        Router::routeClient();
         vTaskDelay(50 / portTICK_PERIOD_MS);
     }
     ESP_LOGI(FNAME, "tcp_client task closed\n");
 }
 
 void WifiClient::start()
-{	
+{
 	ESP_LOGI(FNAME, "start wifi_client"  );
     initialise_wifi();
-    xTaskCreate(&tcp_client,"tcp_client_xcv",4096,&XCVario,15,NULL);
+    xTaskCreate(&tcp_client,"tcp_client_xcv",4096,&XCVarioCL,15,NULL);
     xTaskCreate(&tcp_client,"tcp_client_flarm",4096,&FLARM,15,NULL);
 }

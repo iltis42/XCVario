@@ -11,17 +11,18 @@
 class Flarm {
 public:
 	static void setDisplay( Ucglib_ILI9341_18x240x320_HWSPI *theUcg ) { ucg = theUcg; };
-	static void parsePFLAU( char *pflau );
-	static void parsePFLAA( char *pflaa );
+	static void parsePFLAU( const char *pflau );
+	static void parsePFLAA( const char *pflaa );
 	static void parsePFLAX( SString &msg );
-	static void parseGPRMC( char *gprmc );
-	static void parseGPGGA( char *gpgga );
+	static void parseGPRMC( const char *gprmc );
+	static void parseGPGGA( const char *gpgga );
+	static void parsePGRMZ( const char *pgrmz );
 	static void drawAirplane( int x, int y, bool fromBehind=false, bool smallSize=false );
  	static inline int alarmLevel(){ return AlarmLevel; };
  	static void drawFlarmWarning();
  	static void initFlarmWarning();
  	static void progress();
- 	static bool connected(){ return (bool)timeout; };
+ 	static bool connected(); // returns true if Flarm is connected
  	static inline bool getGPS( double &gndSpeedKmh, double &gndTrack ) { if( gpsOK ) {
  																			gndSpeedKmh = Units::knots2kmh(gndSpeedKnots);
  																			gndTrack = gndCourse;
@@ -34,6 +35,12 @@ public:
     static double getGndSpeedKnots() { return gndSpeedKnots; }
     static double getGndCourse() { return gndCourse; }
  	static int bincom;
+ 	static void tick();
+ 	static bool validExtAlt() { if( ext_alt_timer )
+ 									return true;
+ 								else
+ 									return false;
+ 	}
 
 private:
  	static void drawClearTriangle( int x, int y, int rb, int dist, int size, int factor );
@@ -53,8 +60,9 @@ private:
 	static int oldVertical;
 	static int oldBear;
 	static int alarmOld;
-	static int tick;
+	static int _tick;
 	static int timeout;
+	static int ext_alt_timer;
 	static int _numSat;
 };
 

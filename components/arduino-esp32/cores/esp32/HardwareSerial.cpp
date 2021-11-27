@@ -162,6 +162,7 @@ size_t HardwareSerial::readLine(uint8_t *buffer, size_t size)
 	int timeout = 10;
 	while( count < size ) {
 		if( available() ){
+			timeout = 10;
 			char c = uartRead(_uart);
 			*buffer = c;
 			buffer++;
@@ -172,8 +173,10 @@ size_t HardwareSerial::readLine(uint8_t *buffer, size_t size)
 			delay(5);  // wait 5 mS until next data avail check
 			timeout--; // increase timeout
 		}
-		if( timeout == 0 )
+		if( timeout == 0 ){
 			break;    // do not block when data has stopped
+			log_e("Timeout in readLine");
+		}
 	}
     return count;
 }

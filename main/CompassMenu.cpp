@@ -43,8 +43,7 @@ SetupNG<float>* CompassMenu::deviations[8] = {
  * Creates a compass menu instance with an active compass object.
  */
 CompassMenu::CompassMenu( Compass& compassIn ) :
-						 compass( compassIn ),
-						 filter( 0.1 )
+						 compass( compassIn )
 {
 }
 
@@ -190,7 +189,7 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 {
 	ESP_LOGI( FNAME, "sensorCalibrationAction()" );
 
-	if( p->getSelect() == 1 )
+	if( p->getSelect() == 0 )
 	{
 		// Cancel is requested
 		ESP_LOGI( FNAME, "Cancel Button pressed" );
@@ -207,37 +206,80 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 	p->ucg->setPrintPos( 1, 220 );
 	p->ucg->printf( "Now rotate sensor until" );
 	p->ucg->setPrintPos( 1, 245 );
-	p->ucg->printf( "numbers are stable." );
+	p->ucg->printf( "first numbers are stable." );
 	p->ucg->setPrintPos( 1, 270 );
 	p->ucg->printf( "Press button to finish" );
 	compass.calibrate( calibrationReport );
 	p->ucg->setPrintPos( 1, 250 );
 
-	delay( 2000 );
-
+	delay( 1000 );
+	p->clear();
 
 	menuPtr = nullptr;
 	return 0;
 }
 
+float CompassMenu::x_back = 0;
+float CompassMenu::y_back = 0;
+float CompassMenu::z_back = 0;
+float CompassMenu::xscale_back = 0;
+float CompassMenu::yscale_back = 0;
+float CompassMenu::zscale_back = 0;
+float CompassMenu::xbias_back = 0;
+float CompassMenu::ybias_back = 0;
+float CompassMenu::zbias_back = 0;
+
 /** Method for receiving intermediate calibration results. */
-bool CompassMenu::calibrationReport( float xscale, float yscale, float zscale, float xbias, float ybias, float zbias )
+bool CompassMenu::calibrationReport( float x, float y, float z, float xscale, float yscale, float zscale, float xbias, float ybias, float zbias )
 {
 	if( menuPtr == nullptr )
 		return false;
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	menuPtr->ucg->setPrintPos( 1, 60 );
-	menuPtr->ucg->printf( "X-Scale=%3.1f %%  ", xscale * 100 );
-	menuPtr->ucg->setPrintPos( 1, 85 );
-	menuPtr->ucg->printf( "Y-Scale=%3.1f %%  ", yscale * 100 );
-	menuPtr->ucg->setPrintPos( 1, 110 );
-	menuPtr->ucg->printf( "Z-Scale=%3.1f %%  ", zscale * 100 );
-	menuPtr->ucg->setPrintPos( 1, 135 );
-	menuPtr->ucg->printf( "X-Bias=%3.1f %%  ", xbias/32768 *100 );
-	menuPtr->ucg->setPrintPos( 1, 160 );
-	menuPtr->ucg->printf( "Y-Bias=%3.1f %%  ", ybias/32768 *100 );
-	menuPtr->ucg->setPrintPos( 1, 185 );
-	menuPtr->ucg->printf( "Z-Bias=%3.1f %%  ", zbias/32768 *100 );
+	if( xscale != xscale_back ){
+		menuPtr->ucg->setPrintPos( 1, 60 );
+		menuPtr->ucg->printf( "X-Scale=%3.1f  ", xscale * 100 );
+		xscale_back = xscale;
+	}
+	if( x_back != x  ){
+			menuPtr->ucg->setPrintPos( 160, 60 );
+			menuPtr->ucg->printf( "(%.1f)  ", x/32768 *100 );
+			x_back = x;
+		}
+	if(yscale != yscale_back ){
+		menuPtr->ucg->setPrintPos( 1, 85 );
+		menuPtr->ucg->printf( "Y-Scale=%3.1f  ", yscale * 100);
+		yscale_back = yscale;
+	}
+	if( y_back != y ){
+			menuPtr->ucg->setPrintPos( 160, 85 );
+			menuPtr->ucg->printf( "(%.1f)  ", y/32768 *100 );
+			y_back = y;
+	}
+	if( zscale != zscale_back ){
+		menuPtr->ucg->setPrintPos( 1, 110 );
+		menuPtr->ucg->printf( "Z-Scale=%3.1f  ", zscale * 100 );
+		zscale_back = zscale;
+	}
+	if( z_back != z ){
+		menuPtr->ucg->setPrintPos( 160, 110 );
+		menuPtr->ucg->printf( "(%.1f)  ", z/32768 *100 );
+		z_back = z;
+	}
+	if( xbias != xbias_back ){
+		menuPtr->ucg->setPrintPos( 1, 135 );
+		menuPtr->ucg->printf( "X-Bias=%3.1f  ", xbias/32768 *100 );
+		xbias_back = xbias;
+	}
+	if( ybias != ybias_back ){
+		menuPtr->ucg->setPrintPos( 1, 160 );
+		menuPtr->ucg->printf( "Y-Bias=%3.1f  ", ybias/32768 *100 );
+		ybias_back = ybias;
+	}
+	if( zbias != zbias_back ){
+		menuPtr->ucg->setPrintPos( 1, 185 );
+		menuPtr->ucg->printf( "Z-Bias=%3.1f  ", zbias/32768 *100 );
+		zbias_back = zbias;
+	}
 	xSemaphoreGive(spiMutex);
 	// Stop further reporting.
 	return true;

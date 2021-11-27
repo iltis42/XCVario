@@ -30,9 +30,17 @@ MenuEntry* MenuEntry::selected = 0;
 ESPRotary* MenuEntry::_rotary = 0;
 AnalogInput* MenuEntry::_adc = 0;
 PressureSensor *MenuEntry::_bmp = 0;
-float MenuEntry::volume;
-bool  MenuEntry::_menu_enabled = false;
+// float MenuEntry::volume;
+// MenuEntry::MenuRotary MenuEntry::menu_rotary_handler;
 
+MenuEntry::~MenuEntry()
+{
+    ESP_LOGI(FNAME,"del menu %s",_title.c_str() );
+    for ( MenuEntry* c : _childs ) {
+        delete c;
+        c = nullptr;
+    }
+}
 
 void MenuEntry::uprintf( int x, int y, const char* format, ...) {
 	if( ucg == 0 ) {
@@ -59,7 +67,7 @@ void MenuEntry::uprint( int x, int y, const char* str ) {
 	xSemaphoreGive(spiMutex );
 }
 
-MenuEntry* MenuEntry::addMenu( MenuEntry * item ) {
+MenuEntry* MenuEntry::addEntry( MenuEntry * item ) {
 	// ESP_LOGI(FNAME,"MenuEntry addMenu() title %s", item->_title.c_str() );
 	if( root == 0 ){
 		ESP_LOGI(FNAME,"Init root menu");
@@ -76,16 +84,34 @@ MenuEntry* MenuEntry::addMenu( MenuEntry * item ) {
 	}
 }
 
-void MenuEntry::delMenu( MenuEntry * item ) {
+MenuEntry* MenuEntry::addEntry( MenuEntry * item, const MenuEntry* after ) {
+	// ESP_LOGI(FNAME,"AddMenuEntry title %s after %s", item->_title.c_str(), after->_title.c_str() );
+	if( root == 0 ){
+		return addEntry(item);
+	}
+	else{
+        std::vector<MenuEntry *>::iterator position = std::find(_childs.begin(), _childs.end(), after );
+        if (position != _childs.end()) {
+            item->_parent = this;
+            _childs.insert( ++position, item );
+            return item;
+        }
+        else { return addEntry(item); }
+	}
+}
+
+
+void MenuEntry::delEntry( MenuEntry * item ) {
 	ESP_LOGI(FNAME,"MenuEntry delMenu() title %s", item->_title.c_str() );
 	std::vector<MenuEntry *>::iterator position = std::find(_childs.begin(), _childs.end(), item );
 	if (position != _childs.end()) { // == myVector.end() means the element was not found
 		ESP_LOGI(FNAME,"found entry, now erase" );
 		_childs.erase(position);
+        delete *position;
 	}
 }
 
-MenuEntry* MenuEntry::findMenu( String title, MenuEntry* start )
+MenuEntry* MenuEntry::findMenu( std::string title, MenuEntry* start )
 {
 	ESP_LOGI(FNAME,"MenuEntry findMenu() %s %x", title.c_str(), (uint32_t)start );
 	if( start->_title == title ) {
@@ -161,4 +187,3 @@ void MenuEntry::semaphoreGive()
 {
   xSemaphoreGive( spiMutex );
 }
-

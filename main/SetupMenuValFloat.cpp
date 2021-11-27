@@ -5,19 +5,20 @@
  *      Author: iltis
  */
 
-// #include "SetupMenu.h"
+#include "SetupMenuValFloat.h"
+
 #include "IpsDisplay.h"
 #include "BMPVario.h"
 #include "Polars.h"
-#include <logdef.h>
-#include <sensor.h>
-#include "Units.h"
-#include "SetupMenuValFloat.h"
+#include "sensor.h"
+#include "ESPAudio.h"
+
+#include <esp_log.h>
 
 SetupMenuValFloat * SetupMenuValFloat::qnh_menu = 0;
 char SetupMenuValFloat::_val_str[20];
 
-SetupMenuValFloat::SetupMenuValFloat( String title, float *value, const char *unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs, bool restart, bool sync ) {
+SetupMenuValFloat::SetupMenuValFloat( std::string title, float *value, const char *unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs, bool restart, bool sync ) {
 	// ESP_LOGI(FNAME,"SetupMenuValFloat( %s ) ", title.c_str() );
 	_rotary->attach(this);
 	_title = title;
@@ -44,6 +45,10 @@ SetupMenuValFloat::SetupMenuValFloat( String title, float *value, const char *un
 		_value_safe = *_value;
 	}
 }
+SetupMenuValFloat::~SetupMenuValFloat()
+{
+    _rotary->detach(this);
+}
 
 void SetupMenuValFloat::setPrecision( int prec ){
 	_precision = prec;
@@ -53,7 +58,7 @@ void SetupMenuValFloat::showQnhMenu(){
 	ESP_LOGI(FNAME,"SetupMenuValFloat::showQnhMenu()");
 	if( qnh_menu ) {
 		ESP_LOGI(FNAME,"qnh_menu = true");
-		_menu_enabled = true;
+		inSetup = true;
 		selected = qnh_menu;
 		inSetup=true;
 		qnh_menu->clear();
@@ -63,7 +68,7 @@ void SetupMenuValFloat::showQnhMenu(){
 }
 
 void SetupMenuValFloat::display( int mode ){
-	if( (selected != this) || !_menu_enabled )
+	if( (selected != this) || !inSetup )
 		return;
 	// ESP_LOGI(FNAME,"SetupMenuValFloat display() %d %x", pressed, (int)this);
 	uprintf( 5,25, selected->_title.c_str() );
@@ -93,8 +98,8 @@ void SetupMenuValFloat::displayVal()
 	ucg->setPrintPos( 1, 70 );
 	ucg->setFont(ucg_font_fub25_hf);
 	char val[20];
-	sprintf(val, "%0.*f", _precision, *_value );
-	ucg->printf("%s",val);
+	sprintf(val, "%0.*f", _precision, _nvs?_nvs->getGui():*_value );
+	ucg->print(val);
 	if( _unit ) {
 		ucg->setFont(ucg_font_fur25_hf);   // use different font for unit as of ° special char
 		ucg->setPrintPos( 1+ ucg->getStrWidth(val), 70 );
@@ -106,9 +111,9 @@ void SetupMenuValFloat::displayVal()
 }
 
 void SetupMenuValFloat::down( int count ){
-	if( (selected != this) || !_menu_enabled )
+	if( (selected != this) || !inSetup )
 		return;
-	ESP_LOGI(FNAME,"val down %d times ", count );
+	// ESP_LOGI(FNAME,"val down %d times ", count );
 	while( (*_value > _min) && count ) {
 		*_value -= _step;
 		count --;
@@ -121,9 +126,9 @@ void SetupMenuValFloat::down( int count ){
 }
 
 void SetupMenuValFloat::up( int count ){
-	if( (selected != this) || !_menu_enabled )
+	if( (selected != this) || !inSetup )
 		return;
-	ESP_LOGI(FNAME,"val up %d times ", count );
+	// ESP_LOGI(FNAME,"val up %d times ", count );
 	while( (*_value < _max) && count ) {
 		*_value += _step;
 		count--;
@@ -133,6 +138,10 @@ void SetupMenuValFloat::up( int count ){
 	displayVal();
 	if( _action != 0 )
 		(*_action)( this );
+}
+
+void SetupMenuValFloat::longPress(){
+	press(); // implicit trigger also on long press actions when in Setup menu.
 }
 
 void SetupMenuValFloat::press(){
@@ -151,12 +160,12 @@ void SetupMenuValFloat::press(){
 			if( _nvs )
 				_nvs->commit();
 			if( _restart ) {
-				ucg->setColor(COLOR_BLACK);
-				ucg->drawBox( 0,160,240,160 );
-				ucg->setPrintPos( 1, 250  );
-				ucg->setColor(COLOR_WHITE);
-				ucg->print("Now Restart" );
-				delay(1000);
+				Audio::shutdown();
+				clear();
+				ucg->setPrintPos( 10, 50 );
+				ucg->print("...rebooting now" );
+				SetupCommon::commitNow();
+				delay(2000);
 				esp_restart();
 			}
 		}

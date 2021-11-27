@@ -19,6 +19,7 @@
 #include "CircleWind.h"
 #include "logdef.h"
 #include "sensor.h"
+#include "SetupNG.h"
 
 
 /*
@@ -28,7 +29,7 @@
   ground speeds measured while flying a circle. The direction of the wind is taken
   to be the direction in which the speed reaches it's maximum value, the speed
   is half the difference between the maximum and the minimum speeds measured.
-  A quality parameter, based on the number of circles already flown (the first
+  A jitter parameter, based on the number of circles already flown (the first
   circles are taken to be less accurate) and the angle between the headings at
   minimum and maximum speeds, is calculated in order to be able to weigh the
   resulting measurement. This method do not more work for wind speeds < 5Km/h.
@@ -41,13 +42,13 @@
   changes in airspeed, resulting in better measurements. We are now assuming
   the pilot flies in perfect circles with constant airspeed, which is of course
   not a safe assumption.
-  The quality indication we are calculation can also be approached differently,
+  The jitter indication we are calculation can also be approached differently,
   by calculating how constant the speed in the circle would be if corrected for
   the wind speed we just derived. The more constant, the better. This is again
   more CPU intensive, but may produce better results.
 
   Some of the errors made here will be averaged-out by the WindStore, which keeps
-  a number of wind measurements and calculates a weighted average based on quality.
+  a number of wind measurements and calculates a weighted average based on jitter.
 
  */
 
@@ -73,16 +74,20 @@ int  CircleWind::gpsStatus = false;
 Vector CircleWind::minVector;
 Vector CircleWind::maxVector;
 Vector CircleWind::result;
-float CircleWind::quality = 0;
+float CircleWind::jitter = 0;
 int CircleWind::num_samples = 0;
 float CircleWind::direction = 0;
 float CircleWind::windspeed = 0;
-int CircleWind::_age = 0;
+float CircleWind::lastWindSpeed = 0;
+float CircleWind::headingDiff = 0;
+int CircleWind::_age = 9000;
 const char * CircleWind::status = "idle";
-
 t_circling CircleWind::flightMode = undefined;
-
-
+Vector CircleWind::windVectors[NUM_RESULTS];
+int CircleWind::curVectorNum = 0;
+int CircleWind::turn_left=0;
+int CircleWind::turn_right=0;
+int CircleWind::fly_straight=0;
 
 CircleWind::~CircleWind()
 {}
@@ -90,15 +95,15 @@ CircleWind::~CircleWind()
 /** Called if a new sample is available in the sample list. */
 void CircleWind::newSample( Vector curVec )
 {
-	if( wireless == WL_WLAN_CLIENT )
+	if( SetupCommon::isClient() )
 		return;
 	// circle detection
 	if( lastHeading != -1 )
 	{
-		float diff = Vector::angleDiffDeg( curVec.getAngleDeg(), lastHeading );
-		calcFlightMode( diff, curVec.getSpeed() );
+		headingDiff += ( Vector::angleDiffDeg( curVec.getAngleDeg(), lastHeading ) - headingDiff) * 0.3;  // filter a bit jittering headings
+		calcFlightMode( headingDiff, curVec.getSpeed() );
 		if( flightMode == circlingL || flightMode == circlingR )
-			circleDegrees += abs(diff);
+			circleDegrees += abs(headingDiff);
 	}
 	lastHeading = curVec.getAngleDeg();
 
@@ -109,7 +114,7 @@ void CircleWind::newSample( Vector curVec )
 		return;
 	}
 	status = "Sampling";
-	ESP_LOGI(FNAME,"GPS Sample, dir:%3.2f° speed:%3.2f, Circling:%d", curVec.getAngleDeg(), curVec.getSpeed(), (flightMode == circlingL || flightMode == circlingR) );
+	ESP_LOGI(FNAME,"GPS Sample, dir:%3.2f° speed:%3.2f", curVec.getAngleDeg(), curVec.getSpeed() );
 
 	if( curVec.getSpeed() < minVector.getSpeed() )
 	{
@@ -128,7 +133,7 @@ void CircleWind::newSample( Vector curVec )
 	if( circleDegrees > 361 )  // a bit more than one circle to ensure both ends are in
 	{
 		status = "Calculating";
-		circleCount++;  // increase the number of circles flown (used to determine the quality)
+		circleCount++;  // increase the number of circles flown (used to determine the jitter)
 		ESP_LOGI(FNAME,"full circle made, circles %d last circle had %d °", circleCount, circleDegrees );
 		_calcWind(); 	// calculate the wind for this circle
 		restartCycle( false );
@@ -146,21 +151,27 @@ void CircleWind::calcFlightMode( float headingDiff, float speed ){
 	}
 	else{
 		if( headingDiff > MINTURNANGDIFF ){
-			if( flightMode != circlingR ) {
-				newFlightMode( circlingR );
-				flightMode = circlingR;
-				ESP_LOGI(FNAME,"calcFlightMode() New flightmode: circle right");
-			}
+				turn_right++;
+				fly_straight = 0;
+				if( flightMode != circlingR && turn_right > 2 ) {
+					newFlightMode( circlingR );
+					flightMode = circlingR;
+					ESP_LOGI(FNAME,"calcFlightMode() New flightmode: circle right");
+				}
 		}
 		else if( headingDiff < -MINTURNANGDIFF ) {
-			if( flightMode != circlingL ) {
+			turn_left++;
+			fly_straight = 0;
+			if( flightMode != circlingL && turn_left > 2 ){
 				newFlightMode( circlingL );
 				flightMode = circlingL;
 				ESP_LOGI(FNAME,"calcFlightMode() New flightmode: circle left");
 			}
 		}
 		else{
-			if( flightMode != straight ) {
+			turn_left = turn_right = 0;
+			fly_straight++;
+			if( flightMode != straight && fly_straight > 2 ) {
 				newFlightMode( straight );
 				flightMode = straight;
 				ESP_LOGI(FNAME,"calcFlightMode() New flightmode: straight");
@@ -173,7 +184,7 @@ void CircleWind::calcFlightMode( float headingDiff, float speed ){
 /** Called if the flight mode changes */
 void CircleWind::newFlightMode( t_circling newFlightMode )
 {
-	if( wireless == WL_WLAN_CLIENT )
+	if( SetupCommon::isClient() )
 		return;
 	// Reset the circle counter for each flight mode change. The important thing
 	// to measure is the number of turns in a thermal per turn direction.
@@ -186,9 +197,36 @@ void CircleWind::newFlightMode( t_circling newFlightMode )
 	}
 }
 
+const char * CircleWind::getFlightModeStr(){
+	if( flightMode == straight )
+		return "straight";
+	else if( flightMode == circlingL )
+		return "circle left";
+	else if( flightMode == circlingR )
+		return "circle right";
+	else
+		return "undefined";
+}
+
+bool CircleWind::getWind( int *dir, float *speed, int * age )
+{
+	*dir=rint(cwind_dir.get());
+	*speed=cwind_speed.get();
+	*age=_age;
+	if( _age < 1800 && !(*speed == 0) && !(*dir == 0)  )
+		return true;
+	else
+		return false;
+}
+
+void CircleWind::resetAge(){
+	ESP_LOGI(FNAME,"resetAge");
+	_age = 0;
+}
+
 void CircleWind::_calcWind()
 {
-	if( wireless == WL_WLAN_CLIENT )
+	if( SetupCommon::isClient() )
 		return;
 
 	// Invert maxVector angle
@@ -197,34 +235,19 @@ void CircleWind::_calcWind()
 	float aDiff = Vector::angleDiffDeg( minVector.getAngleDeg(), maxVector.getAngleDeg() );
 	ESP_LOGI(FNAME,"calcWind, min/max diff %3.2f", aDiff );
 
-	/*
-    Determine quality.
+	float delta = abs( aDiff );   // 90 degree diff is considered zero jitter
 
-    Currently, we are using the question how well the min and the max vectors
-    are on opposing sides of the circle to determine the quality. 140 degrees is
-    the minimum separation, 180 is ideal.
-    Furthermore, the first two circles are considered to be of lesser quality.
-
-    Display e.g. -40% (Q*20) %, ->  Q(final) = -2;
-    @ 1 Circle Q = -1.
-    abs( aDiff ) / 8 = 6 -> aDiff = 48°
-
-
-	 */
-
-	quality = 5.0 - (abs( aDiff ) / max_circle_wind_diff.get() ) * 5.0;   // 90 degree diff is considered zero quality
-
-	if( quality < 1 )
+	if( delta > (max_circle_wind_diff.get()) )
 	{
-		ESP_LOGI(FNAME,"quality bad %3.1f < 1: Abort ", quality );
+		ESP_LOGI(FNAME,"true course jitter bad %3.1f > %3.1f: Drop Sample ", delta, max_circle_wind_diff.get() );
 		status = "Too Low Qual";
-		return; // Measurement quality too low
+		return; // Measurement jitter too low
 	}
 
 	// take both directions for min and max vector into account
-	ESP_LOGI(FNAME, "maxAngle=%3.1f°/%.0f   minAngle=%3.1f°/%.0f Quality=%3.1f",
+	ESP_LOGI(FNAME, "maxAngle=%3.1f°/%.0f   minAngle=%3.1f°/%.0f Jitter=%2.1f°",
 			maxVector.getAngleDeg(), maxVector.getSpeed(),
-			minVector.getAngleDeg(), minVector.getSpeed(), quality );
+			minVector.getAngleDeg(), minVector.getSpeed(), aDiff  );
 
 
 	// the direction of the wind is the direction where the greatest speed occurred
@@ -234,32 +257,53 @@ void CircleWind::_calcWind()
 	result.setSpeedKmh( (maxVector.getSpeed() - minVector.getSpeed()) / 2.0 );
 
 	// Let the world know about our measurement!
-	ESP_LOGI(FNAME,"### RAW CircleWind: %3.1f°/%.1fKm/h  Q:%f", result.getAngleDeg(), result.getSpeed(), quality );
-	newWind( result.getAngleDeg(), result.getSpeed(), quality );
-	_age = 0;
+	ESP_LOGI(FNAME,"### RAW CircleWind: %3.1f°/%.1fKm/h", result.getAngleDeg(), result.getSpeed() );
+	newWind( result.getAngleDeg(), result.getSpeed() );
+	// _age = 0;
 }
 
-void CircleWind::newWind( double angle, double speed, float q ){
+
+// Jitter in the signal leads to higher windspeed measures as delta's grow
+// The new algorithm considers jitter and corrects windspeed according to measured jitter value
+void CircleWind::newWind( double angle, double speed ){
 	num_samples++;
-	float kq = 0;
-	if( num_samples == 1 ){
-		direction = angle;
-		windspeed = speed;
+	windVectors[curVectorNum].setAngle( angle );
+	windVectors[curVectorNum].setSpeedKmh( speed );
+	ESP_LOGI(FNAME,"New Wind Vector angle %.1f speed %.1f", windVectors[curVectorNum].getAngleDeg(), windVectors[curVectorNum].getSpeed() );
+
+	int max_samples = (int)circle_wind_lowpass.get();
+
+	Vector result;
+	for( int i=0; (i<max_samples) && (i<num_samples); i++ ){
+		result.add( windVectors[i] );
+		// ESP_LOGI(FNAME,"i=%d, angle %.1f speed %.1f", i, result.getAngleDeg(), result.getSpeed() );
 	}
-	else{
-		kq = q/10.0;
-		direction += Vector::angleDiffDeg(angle,(double)direction) * kq;
-		windspeed += (speed - windspeed) * kq;
-		direction = Vector::normalizeDeg( direction );
+	int cur_samples=num_samples;
+	if( cur_samples  > max_samples )
+		cur_samples = max_samples;
+
+	direction = result.getAngleDeg(); // Vector::normalizeDeg( result.getAngleDeg()/circle_wind_lowpass.get() );
+	windspeed = result.getSpeed() / cur_samples;
+
+	lastWindSpeed = windspeed;
+	curVectorNum++;
+	if( curVectorNum > max_samples )
+		curVectorNum=0;
+	ESP_LOGI(FNAME,"### NEW AGV CircleWind: %3.1f°/%.1fKm/h  JI:%2.1f", direction, windspeed, jitter  );
+
+	if( (int)direction != (int)cwind_dir.get()  ){
+		cwind_dir.set( direction );
 	}
-	ESP_LOGI(FNAME,"### NEW AGV CircleWind: %3.1f°/%.1fKm/h  KQ:%1.3f", direction, windspeed, kq );
-	OV.sendWindChange( direction, windspeed, WA_CIRCLING );
-	if( q > min_circle_wind_quality.get() && circleCount >= 2 )
+	if( (int)windspeed != (int)cwind_speed.get() ){
+		cwind_speed.set( windspeed );
+	}
+	if( circleCount >= 2 )
 		theWind.newCirclingWind( direction, windspeed );
 }
 
 void CircleWind::tick(){
 	_age++;
+	// ESP_LOGI(FNAME,"age: %d CWD: %.1f CWS %.1f", _age, cwind_dir.get(), cwind_speed.get() );
 }
 
 
@@ -275,7 +319,7 @@ void CircleWind::restartCycle( bool clean ){
 
 void CircleWind::newConstellation( int numSat )
 {
-	if( wireless == WL_WLAN_CLIENT )
+	if( SetupCommon::isClient()  )
 		return;
 	ESP_LOGI(FNAME,"newConstellation num sat:%d", numSat );
 	satCnt = numSat;
@@ -291,7 +335,7 @@ void CircleWind::newConstellation( int numSat )
 
 void CircleWind::gpsStatusChange( bool newStatus )
 {
-	if( wireless == WL_WLAN_CLIENT )
+	if( SetupCommon::isClient() )
 		return;
 	ESP_LOGI(FNAME,"gpsStatusChange status:%d", newStatus );
 	if( gpsStatus != newStatus  )

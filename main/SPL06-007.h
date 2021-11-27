@@ -17,7 +17,7 @@ public:
 	SPL06_007( char slave_adr );
 	virtual ~SPL06_007() {};
 	bool  begin();
-	bool  selfTest( float &p, float &t );
+	bool  selfTest( float &t, float &p );
 	bool  setBus( I2C_t *theBus ) {  bus = theBus; return true; };
 	bool  setSPIBus(gpio_num_t _sclk, gpio_num_t _mosi, gpio_num_t _miso, gpio_num_t _cs, uint32_t _freq ) { return true; };
 	double get_altitude(double pressure, double seaLevelhPa);	// get altitude in meters

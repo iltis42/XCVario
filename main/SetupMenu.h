@@ -7,32 +7,32 @@
 
 #ifndef _SetupMenu_H_
 #define _SetupMenu_H_
-#include "IpsDisplay.h"
-#include "ESPRotary.h"
-#include "Setup.h"
-#include "AnalogInput.h"
-#include "PressureSensor.h"
 #include "MenuEntry.h"
-#include "SetupMenuValFloat.h"
+#include <string>
 
-extern String vunit;
-extern String sunit;
+extern std::string vunit;
+extern std::string sunit;
 
+class IpsDisplay;
+class ESPRotary;
+class PressureSensor;
+class AnalogInput;
 
 class SetupMenu:  public MenuEntry {
 public:
 	SetupMenu();
-	SetupMenu(  String title );
+	SetupMenu( std::string title );
+	virtual ~SetupMenu();
 	void begin( IpsDisplay* display, ESPRotary * rotary, PressureSensor * bmp, AnalogInput *adc );
 	void setup();
 	void display( int mode=0 );
-	char *value() { return 0; };
+	const char *value() const override { return 0; };
 	void up( int count );  // step up to parent
 	void down( int count );
 	void press();
 	void longPress();
-	bool isActive() { return _menu_enabled; };
-	virtual ~SetupMenu() {};
+	void showMenu( bool pressed );
+	static void catchFocus( bool activate );
 };
 
 #endif

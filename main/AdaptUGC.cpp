@@ -64,12 +64,52 @@ void  AdaptUGC::begin() {
 };
 
 size_t AdaptUGC::write(uint8_t c) {
-	size_t delta = eglib_DrawFilledWChar(eglib, eglib_print_xpos, eglib_print_ypos, wchar_t (c));
-	switch(eglib_print_dir) {
+    size_t delta = 0;
+    switch (eglib_font_pos) {
+        case UCG_FONT_POS_BOTTOM: {
+            const struct font_t *font;
+            font = eglib->drawing.font;
+            int16_t ypos = eglib_print_ypos + font->descent; // descent is negativ value!
+            delta = eglib_DrawFilledWChar(eglib, eglib_print_xpos, ypos, wchar_t (c));
+            break;
+        }
+        case UCG_FONT_POS_CENTER: {
+            const struct font_t *font;
+            font = eglib->drawing.font;
+            int16_t ypos = eglib_print_ypos+(font->ascent/2)+(font->descent);
+            delta = eglib_DrawFilledWChar(eglib, eglib_print_xpos, ypos, wchar_t (c));
+            break;
+        }
+        case UCG_FONT_POS_TOP: {
+            const struct font_t *font;
+            font = eglib->drawing.font;
+            int16_t ypos = eglib_print_ypos+font->ascent;
+            delta = eglib_DrawFilledWChar(eglib, eglib_print_xpos, ypos, wchar_t (c));
+            break;
+        }
+        default: case UCG_FONT_POS_BASE: {
+            delta = eglib_DrawFilledWChar(eglib, eglib_print_xpos, eglib_print_ypos, wchar_t (c));
+            break;
+        }
+    }
+ 
+    switch(eglib_print_dir) {
 		case UCG_PRINT_DIR_LR: eglib_print_xpos += delta; break;
-		case UCG_PRINT_DIR_TD: eglib_print_ypos += delta; break;
 		case UCG_PRINT_DIR_RL: eglib_print_xpos -= delta; break;
-		default: case UCG_PRINT_DIR_BU: eglib_print_ypos -= delta; break;
+        case UCG_PRINT_DIR_TD: {
+            const struct font_t *font;
+            font = eglib->drawing.font;
+            delta = font->ascent-font->descent;
+            eglib_print_ypos += delta;
+            break;
+        }
+        default: case UCG_PRINT_DIR_BU: {
+            const struct font_t *font;
+            font = eglib->drawing.font;
+            delta = font->ascent-font->descent;
+            eglib_print_ypos -= delta;
+            break;
+        }
 	}
 	return 1;
 };

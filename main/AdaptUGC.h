@@ -115,65 +115,65 @@ public:
 				break;
 			case UCG_FONT_NCENR14_HR:
 				eglib_SetFont(eglib, &font_Adobe_NewCenturySchoolbookRoman_20px);
-				break;		
+				break;
 			case UCG_FONT_FUB11_TR:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_16px);
-				break;	
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_14px);
+				break;
 			case UCG_FONT_FUB11_HN:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_16px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_14px);
 				break;
 			case UCG_FONT_FUB11_HR:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_16px);
-				break;	
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_14px);
+				break;
 			case UCG_FONT_FUB14_HN:
 				eglib_SetFont(eglib, &font_FreeFont_FreeSans_20px);
 				break;
 			case UCG_FONT_FUB14_HR:
 				eglib_SetFont(eglib, &font_FreeFont_FreeSans_20px);
-				break;	
+				break;
 			case UCG_FONT_FUB14_HF:
 				eglib_SetFont(eglib, &font_FreeFont_FreeSans_20px);
-				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_14px, &unicode_block_FreeFont_FreeMonoBold_14px_Latin1Supplement);	
-			break;	
+				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_20px, &unicode_block_FreeFont_FreeMonoBold_14px_Latin1Supplement);	
+                break;
 			case UCG_FONT_FUR14_HF:
 				eglib_SetFont(eglib, &font_FreeFont_FreeSans_20px);
-				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_14px, &unicode_block_FreeFont_FreeMonoBold_14px_Latin1Supplement);
-			break;
+				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_20px, &unicode_block_FreeFont_FreeMonoBold_14px_Latin1Supplement);
+                break;
 			case UCG_FONT_FUB17_HF:
 				eglib_SetFont(eglib, &font_FreeFont_FreeSans_24px);
-				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_18px, &unicode_block_FreeFont_FreeMonoBold_18px_Latin1Supplement);	
-			break;	
+				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_24px, &unicode_block_FreeFont_FreeMonoBold_18px_Latin1Supplement);	
+                break;
 			case UCG_FONT_FUB20_HN:
 				eglib_SetFont(eglib, &font_FreeFont_FreeSans_28px);
-				break;	
+				break;
 			case UCG_FONT_FUB20_HR:
 				eglib_SetFont(eglib, &font_FreeFont_FreeSans_28px);
-				break;				
+				break;
 			case UCG_FONT_FUB20_HF:
 				eglib_SetFont(eglib, &font_FreeFont_FreeSans_28px);
-				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_20px, &unicode_block_FreeFont_FreeMonoBold_20px_Latin1Supplement);	
-				break;	
+				eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_28px, &unicode_block_FreeFont_FreeMonoBold_20px_Latin1Supplement);	
+				break;
 			case UCG_FONT_FUB25_HR:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_36px);
-				break;	
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_32px);
+				break;
 			case UCG_FONT_FUB25_HF:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_36px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_32px);
 				break;
 			case UCG_FONT_FUR25_HF:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_36px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_32px);
 				break;
 			case UCG_FONT_FUB25_HN:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_36px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_32px);
 				break;
 			case UCG_FONT_FUB35_HN:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_54px);
-				break;	
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_44px);
+                break;
 			case UCG_FONT_FUB35_HR:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_54px);
-			break;	
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_44px);
+                break;
 			case UCG_FONT_PROFONT22_MR:
 				eglib_SetFont(eglib, &font_FreeFont_FreeMono_20px);
-			break;	
+                break;
 			default:
 				printf("No Font found !\n");
 		}
@@ -187,85 +187,31 @@ public:
 	void invertDisplay( bool inv ) {};  	        // display driver function
 	void scrollLines(int16_t lines) {};     	    // display driver function
 	void scrollSetMargins( int16_t top, int16_t bottom ) {};                 // display driver function
-	void setClipRange( int16_t x, int16_t y, int16_t w, int16_t h ) {};	 // seems there no clipping concept in eglib
+	void setClipRange( int16_t x, int16_t y, int16_t w, int16_t h ) { eglib_setClipRange(eglib, x, y, w, h );};
 	void setFontMode( uint8_t is_transparent ) {};  // no concept for transparent fonts in eglib, as it appears
 	void setFontPosBottom() {eglib_font_pos = UCG_FONT_POS_BOTTOM;};
 	void setFontPosCenter() {eglib_font_pos = UCG_FONT_POS_CENTER;};
 	void setRedBlueTwist( bool twist ) {};   	    // display driver function
 	void setRotate180() {};	                        // Same as clipping, missing fundamental concept in eglib
-	void undoClipRange() {};	                    // seems there no clipping concept in eglib
+	void undoClipRange() { eglib_undoClipRange(eglib);};
 	int16_t getStrWidth( const char * s ) { return ( eglib_GetTextWidth(eglib, s) );}	
-	// tbd
-	int16_t getFontAscent() { return 20; };
-	int16_t getFontDescent() { return 20; };
+
+	int16_t getFontAscent() {
+        const struct font_t *font;
+        font = eglib->drawing.font;
+        return font->ascent;
+    };
+	int16_t getFontDescent() {
+        const struct font_t *font;
+        font = eglib->drawing.font;
+        return font->descent;
+    };
 
 private:
 	int16_t eglib_print_xpos = 0, eglib_print_ypos = 0;
     int8_t eglib_font_pos = UCG_FONT_POS_BOTTOM;
 	uint8_t eglib_print_dir = UCG_PRINT_DIR_LR;
 	
-	// two things done above, rest tbd:
-	/*
-	ucg->invertDisplay  	// display driver function
-	ucg->scrollLines     	// display driver function
-	ucg->scrollSetMargins  // display driver function
-	ucg->setClipRange	// seems there no clipping concept in eglib
-		
-	ucg->setFontMode	// no concept for transparent fonts in eglib, as it appears
-	ucg->setFontPosBottom	// same as clipping, no equivalent concept in eglib
-	ucg->setFontPosCenter	//	"
-	ucg->setRedBlueTwist  	// display driver function
-	ucg->setRotate180	// Same as clipping, missing fundamental concept in eglib
-	ucg->undoClipRange	// seems there no clipping concept in eglib
 
-// proposed font assignments
-// looks like there is no transparent font type available in eglib...
-
-// ucg_font_ncenR14_hr
-// extern struct font_t font_Adobe_NewCenturySchoolbookRoman_14px;
-
-// ucg_font_9x15B_mf
-// extern struct font_t font_FreeFont_FreeMonoBold_15px;
-// can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
-// extra unicode blocks defined below. Creates a set equivalent to the f suffix
-// extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_15px_Latin1Supplement;
-
-// ucg_font_fub11_tr
-// extern struct font_t font_FreeFont_FreeSans_11px;
-// ucg_font_fub11_hr
-// extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_11px_BasicLatin;
-
-// ucg_font_fub14_hn
-// extern struct font_t font_FreeFont_FreeSans_14px;
-// ucg_font_fub14_hr
-// can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
-// extra unicode blocks defined below. Creates a set equivalent to the f suffix
-// extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_14px_Latin1Supplement;
-// ucg_font_fub14_hf
-
-// ucg_font_fub17_hf
-// extern struct font_t font_FreeFont_FreeSans_18px;
-// can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
-// extra unicode blocks defined below. Creates a set equivalent to the f suffix
-// extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_18px_Latin1Supplement;
-
-// ucg_font_fub20_hn
-// extern struct font_t font_FreeFont_FreeSans_20px;
-// ucg_font_fub20_hr
-// ucg_font_fub20_hf
-// can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
-// extra unicode blocks defined below. Creates a set equivalent to the f suffix
-// extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_20px_Latin1Supplement;
-
-// ucg_font_fub25_hr
-// extern struct font_t font_FreeFont_FreeSans_26px;
-
-// ucg_font_fub35_hn
-// extern struct font_t font_FreeFont_FreeSans_36px;
-// ucg_font_fub35_hr
-
-
-
-*/
 	eglib_t * eglib;
 };

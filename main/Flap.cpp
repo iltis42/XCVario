@@ -283,7 +283,7 @@ void Flap::setupMenue( SetupMenu *parent ){
 
 
 void Flap::drawSmallBar( float wkf ){
-	ucg->setFont(ucg_font_profont22_mr );
+	ucg->setFont(ucg_font_profont22_mr, true);
 	int	lfh = ucg->getFontAscent()+4;
 	int lfw = ucg->getStrWidth( "+2" );
 	int top = barpos_y-lfh/2;
@@ -298,6 +298,12 @@ void Flap::drawSmallBar( float wkf ){
 		dirty = false;
 	}
 	ucg->setClipRange( barpos_x-2, top-2, lfw, 2*lfh-2 );
+    if ((int)((wkf-2)*(lfh+4)) != (int)((wkf_old-2)*(lfh+4))) {
+        wkf_old = wkf;
+        ucg->setColor(COLOR_BLACK);
+        ucg->drawBox( barpos_x-2, top-2, lfw, 2*lfh-2 );
+        }
+ 
 	for( int wk=int(wkf-1); wk<=int(wkf+1) && wk<=2; wk++ ){
 		char position[6];
 		if(wk<-3)
@@ -338,7 +344,7 @@ void Flap::drawLever( int16_t xpos, int16_t ypos, int16_t oldypos, bool warn ){
 }
 
 void Flap::drawBigBar( float wkf, float wksens ){
-	ucg->setFont(ucg_font_profont22_mr );
+	ucg->setFont(ucg_font_profont22_mr, true);
 	ucg->setFontPosCenter();
 	int16_t lfh = 24; // ucg->getFontAscent()+10;  // a bit place around number
 	int16_t lfw = ucg->getStrWidth( "+2" );

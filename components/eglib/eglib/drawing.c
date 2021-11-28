@@ -6,6 +6,45 @@
 
 
 #define degrees_to_radians(degrees) ((degrees) * M_PI / 180.0)
+/**
+ * Clipping
+ * =====
+ *
+ * Define a clipping range or box. All subsequent operations will be restricted to that area
+ */
+
+void eglib_setClipRange(
+    eglib_t *eglib,
+    coordinate_t x,
+    coordinate_t y,
+    coordinate_t w,
+    coordinate_t h
+) {
+    eglib->drawing.clip_xmax = eglib_GetHeight(eglib);
+    eglib->drawing.clip_xmin = 0;
+    eglib->drawing.clip_ymax = eglib_GetHeight(eglib);
+    eglib->drawing.clip_ymin = 0;
+    if ( (x >= eglib->drawing.clip_xmin) & (x < eglib->drawing.clip_xmax)) eglib->drawing.clip_xmin = x;
+    if ( ((x+w) >= eglib->drawing.clip_xmin) & ((x+w) < eglib->drawing.clip_xmax)) eglib->drawing.clip_xmax = x+w;
+    if ( (y >= eglib->drawing.clip_ymin) & (y < eglib->drawing.clip_ymax)) eglib->drawing.clip_ymin = y;
+    if ( ((y+h) >= eglib->drawing.clip_ymin) & ((y+h) < eglib->drawing.clip_ymax)) eglib->drawing.clip_ymax = y+h;
+    return;
+};
+
+/**
+ * Clipping
+ * =====
+ *
+ * Undefine a clipping range or box. All subsequent operations will operate on full screen
+ */
+
+void eglib_undoClipRange( eglib_t *eglib){
+    eglib->drawing.clip_xmax = eglib_GetWidth(eglib);
+    eglib->drawing.clip_xmin = 0;
+    eglib->drawing.clip_ymax = eglib_GetHeight(eglib);
+    eglib->drawing.clip_ymin = 0;
+    return;
+};
 
 
 //
@@ -29,16 +68,15 @@ void eglib_SetIndexColor(
 //
 
 void eglib_DrawPixelColor(eglib_t *eglib, coordinate_t x, coordinate_t y, color_t color) {
-  if(x < 0 || x >= eglib_GetWidth(eglib))
-    return;
-  if(y < 0 || y >= eglib_GetHeight(eglib))
-    return;
-
-  eglib->display.driver->draw_pixel_color(eglib, x, y, color);
+    if(x < eglib->drawing.clip_xmin || x >= eglib->drawing.clip_xmax)
+        return;
+    if(y < eglib->drawing.clip_ymin || y >= eglib->drawing.clip_ymax)
+        return;
+    eglib->display.driver->draw_pixel_color(eglib, x, y, color);
 }
 
 void eglib_DrawPixel(eglib_t *eglib, coordinate_t x, coordinate_t y) {
-	eglib_DrawPixelColor(eglib, x, y, eglib->drawing.color_index[0]);
+    eglib_DrawPixelColor(eglib, x, y, eglib->drawing.color_index[0]);
 }
 
 //
@@ -126,26 +164,32 @@ static void draw_fast_90_line(
     } else
       while(true);
 
-    if(x1 >= eglib_GetWidth(eglib))
-      return;
-    if(y1 >= eglib_GetHeight(eglib))
-      return;
     switch(direction) {
       case DISPLAY_LINE_DIRECTION_RIGHT:
-        if(x1 + length > eglib_GetWidth(eglib))
-          length = eglib_GetWidth(eglib) - x1;
+        if((y1 >= eglib->drawing.clip_ymax) | (y1 < eglib->drawing.clip_ymin))
+            return;
+        if (x1 < eglib->drawing.clip_xmin) x1 = eglib->drawing.clip_xmin;
+        if(x1 + length > eglib->drawing.clip_xmax)
+          length = eglib->drawing.clip_xmax - x1;
         break;
       case DISPLAY_LINE_DIRECTION_LEFT:
-        if(x1 - length < -1)
-          length = x1 + 1;
+        if((y1 >= eglib->drawing.clip_ymax) | (y1 < eglib->drawing.clip_ymin))
+            return;
+        if (x1 > eglib->drawing.clip_xmax) x1 = eglib->drawing.clip_xmax;
+        if(x1 - length < eglib->drawing.clip_xmin - 1)
+          length = x1 - eglib->drawing.clip_xmin + 1;
         break;
       case DISPLAY_LINE_DIRECTION_DOWN:
-        if(y1 + length > eglib_GetHeight(eglib))
-          length = eglib_GetHeight(eglib) - y1;
+        if((x1 >= eglib->drawing.clip_xmax) | (x1 < eglib->drawing.clip_xmin))
+            return;
+        if(y1 + length > eglib->drawing.clip_ymax)
+          length = eglib->drawing.clip_ymax - y1;
         break;
       case DISPLAY_LINE_DIRECTION_UP:
-        if(y1 - length < -1)
-          length = y1 + 1;
+        if((x1 >= eglib->drawing.clip_xmax) | (x1 < eglib->drawing.clip_xmin))
+            return;
+        if(y1 - length < eglib->drawing.clip_ymin - 1)
+          length = y1 - eglib->drawing.clip_ymin + 1;
         break;
     }
 

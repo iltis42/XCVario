@@ -45,6 +45,7 @@ struct _eglib_struct {
 		struct _gradient_t gradient;
 		const struct font_t *font;
 		bool filled_mode;
+        coordinate_t clip_xmin, clip_xmax, clip_ymin, clip_ymax;
 	} drawing;
 };
 

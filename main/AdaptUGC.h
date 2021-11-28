@@ -117,13 +117,13 @@ public:
 				eglib_SetFont(eglib, &font_Adobe_NewCenturySchoolbookRoman_20px);
 				break;
 			case UCG_FONT_FUB11_TR:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_16px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_14px);
 				break;
 			case UCG_FONT_FUB11_HN:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_16px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_14px);
 				break;
 			case UCG_FONT_FUB11_HR:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSans_16px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSans_14px);
 				break;
 			case UCG_FONT_FUB14_HN:
 				eglib_SetFont(eglib, &font_FreeFont_FreeSans_20px);

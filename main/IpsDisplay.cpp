@@ -62,12 +62,12 @@ const int   S2F_TRISIZE = 60; // triangle size quality up/down
 #define SIGNLEN 24+4
 #define GAP 12
 
-#define HEADFONTH 16
-#define VARFONTH  45  // fub35_hn
+#define HEADFONTH 14
+#define VARFONTH  54 // fub35_hn
 #define YVAR HEADFONTH+VARFONTH
 #define YVARMID (YVAR - (VARFONTH/2))
 
-#define S2FFONTH 31
+#define S2FFONTH 35 //31
 #define YS2F YVAR+S2FFONTH+HEADFONTH+GAP-8
 
 
@@ -2002,7 +2002,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 
 	// Altitude
 	if(!(tick%8) ) {
-		drawAltitude( altitude, FIELD_START+80, YALT+6, false, false );
+		drawAltitude( altitude, FIELD_START+80, YALT-6, false, false );
 	}
 	// MC Value
 	if(  !(tick%8) ) {
@@ -2017,7 +2017,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		xSemaphoreGive(spiMutex);
 		return;
 	}
-	// Temperature Value
+	// Temperature ValueAirliner
 	if( (int)(temp*10) != tempalt && !(tick%11)) {
 		drawTemperature( FIELD_START+65, DISPLAY_H-5, temp );
 		tempalt=(int)(temp*10);

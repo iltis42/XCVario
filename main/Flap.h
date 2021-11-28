@@ -82,6 +82,7 @@ private:
 	int   tickopt = 0;
 	bool  warn_color = false;
 	float g_force = 1.;
+    float wkf_old = 0.;
 	int16_t barpos_x = 0;
 	int16_t barpos_y = 0;
 	int16_t symbolpos_x = 0;

@@ -298,6 +298,12 @@ void Flap::drawSmallBar( float wkf ){
 		dirty = false;
 	}
 	ucg->setClipRange( barpos_x-2, top-2, lfw, 2*lfh-2 );
+    if ((int)((wkf-2)*(lfh+4)) != (int)((wkf_old-2)*(lfh+4))) {
+        wkf_old = wkf;
+        ucg->setColor(COLOR_BLACK);
+        ucg->drawBox( barpos_x-2, top-2, lfw, 2*lfh-2 );
+        }
+ 
 	for( int wk=int(wkf-1); wk<=int(wkf+1) && wk<=2; wk++ ){
 		char position[6];
 		if(wk<-3)

@@ -283,7 +283,7 @@ void Flap::setupMenue( SetupMenu *parent ){
 
 
 void Flap::drawSmallBar( float wkf ){
-	ucg->setFont(ucg_font_profont22_mr );
+	ucg->setFont(ucg_font_profont22_mr, true);
 	int	lfh = ucg->getFontAscent()+4;
 	int lfw = ucg->getStrWidth( "+2" );
 	int top = barpos_y-lfh/2;
@@ -338,7 +338,7 @@ void Flap::drawLever( int16_t xpos, int16_t ypos, int16_t oldypos, bool warn ){
 }
 
 void Flap::drawBigBar( float wkf, float wksens ){
-	ucg->setFont(ucg_font_profont22_mr );
+	ucg->setFont(ucg_font_profont22_mr, true);
 	ucg->setFontPosCenter();
 	int16_t lfh = 24; // ucg->getFontAscent()+10;  // a bit place around number
 	int16_t lfw = ucg->getStrWidth( "+2" );

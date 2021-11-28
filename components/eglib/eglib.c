@@ -1,5 +1,6 @@
 #include "eglib.h"
 #include "eglib/display.h"
+#include "eglib/drawing.h"
 
 void eglib_Init(
 	eglib_t *eglib,
@@ -27,6 +28,12 @@ void eglib_Init(
 
 	eglib->hal.driver->init(eglib);
 	eglib->display.driver->init(eglib);
+    coordinate_t width, height;
+    eglib->display.driver->get_dimension(eglib, &width, &height);
+    eglib->drawing.clip_xmin = 0;
+    eglib->drawing.clip_xmax = width;
+    eglib->drawing.clip_ymin = 0;
+    eglib->drawing.clip_ymax = height;
 }
 
 void eglib_SleepIn(eglib_t *eglib) {

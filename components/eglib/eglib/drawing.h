@@ -35,6 +35,37 @@ void eglib_SetIndexColor(
 );
 
 /**
+ * These are generic drawing functions.
+ *
+ * :See also: :c:func:`eglib_Init` or :c:func:`eglib_Init_FrameBuffer`.
+ */
+
+/**
+ * Clipping
+ * =====
+ *
+ * Define a clipping range or box. All subsequent operations will be restricted to that area
+ */
+
+void eglib_setClipRange(
+    eglib_t *eglib,
+    coordinate_t x,
+    coordinate_t y,
+    coordinate_t w,
+    coordinate_t h
+);
+
+
+/**
+ * Clipping
+ * =====
+ *
+ * Undefine a clipping range or box. All subsequent operations will operate on full screen
+ */
+
+void eglib_undoClipRange(eglib_t *eglib);
+
+/**
  * Pixel
  * =====
  */

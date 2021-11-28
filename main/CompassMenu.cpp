@@ -200,7 +200,7 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 
 	menuPtr = p;
 	p->clear();
-	p->ucg->setFont( ucg_font_fur14_hf );
+	p->ucg->setFont( ucg_font_fur14_hf, true );
 	p->ucg->setPrintPos( 1, 30 );
 	p->ucg->printf( "Calibration is running" );
 	p->ucg->setPrintPos( 1, 220 );

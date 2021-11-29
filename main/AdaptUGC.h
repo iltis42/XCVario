@@ -126,7 +126,7 @@ public:
 				eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_14px);
 				break;
 			case UCG_FONT_FUB14_HN:
-				eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_20px);
+				eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_18px);
 				break;
 			case UCG_FONT_FUB14_HR:
 				eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_20px);

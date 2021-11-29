@@ -639,7 +639,7 @@ void eglib_DrawFrame(
 ) {
   eglib_DrawHLine(eglib, x, y, width);
   eglib_DrawHLine(eglib, x, y + height, width);
-  eglib_DrawVLine(eglib, x, y, height);
+  eglib_DrawVLine(eglib, x, y, height + 1);
   eglib_DrawVLine(eglib, x + width, y, height + 1);
 }
 

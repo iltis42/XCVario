@@ -649,9 +649,9 @@ void IpsDisplay::drawMC( float mc, bool large ) {
 	ucg->setPrintPos(5, DISPLAY_H-5);
 	ucg->setColor(COLOR_WHITE);
 	if( large ) {
-		ucg->setFont(ucg_font_fub20_hn, true);
+		ucg->setFont(ucg_font_fub20_hn, false);
 	} else {
-		ucg->setFont(ucg_font_fub14_hn, true);
+		ucg->setFont(ucg_font_fub14_hn, false);
 	}
 	char s[10];
 	std::sprintf(s, "%1.1f", Units::Vario(mc) );
@@ -2008,7 +2008,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	if(  !(tick%8) ) {
 		int aMC = MC.get() * 10;
 		if( aMC != mcalt && !(tick%4) ) {
-			drawMC( MC.get() );
+			drawMC( MC.get(), false );
 			mcalt=aMC;
 		}
 	}

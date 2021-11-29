@@ -52,11 +52,13 @@ int sim=100;
 #define SERIAL_STRLEN SSTRLEN
 static TaskHandle_t *pid;
 char Serial::rxbuf[SERIAL_STRLEN];
+bool Serial::_selfTest = false;
 
 // Serial Handler  ttyS1, S1, port 8881
 void Serial::serialHandler(void *pvParameters){
 	SString s;
 	while(1) {
+		if( !_selfTest ){
 		if( flarm_sim.get() ){
 			sim=-3;
 			flarm_sim.set( 0 );
@@ -150,6 +152,7 @@ void Serial::serialHandler(void *pvParameters){
 	    	Router::routeS2();
 	    	Router::routeBT();
 	    }
+		}
 	    esp_task_wdt_reset();
 	    if( uxTaskGetStackHighWaterMark( pid ) < 256 )
 	    	ESP_LOGW(FNAME,"Warning serial task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid ) );
@@ -168,6 +171,7 @@ bool Serial::selfTest(int num){
 		return false;
 	ESP_LOGI(FNAME,"Serial %d selftest", num );
 	delay(100);  // wait for serial hardware init
+	_selfTest = true;
 	std::string test( PROGMEM "The quick brown fox jumps over the lazy dog" );
 	int tx = 0;
 	if( mySerial->availableForWrite() ) {
@@ -179,6 +183,7 @@ bool Serial::selfTest(int num){
 		return false;
 	}
 	char recv[50];
+	memset(recv,0,50);
 	int numread = 0;
 	for( int i=1; i<10; i++ ){
 			int avail = mySerial->available();
@@ -192,6 +197,7 @@ bool Serial::selfTest(int num){
 		delay( 30 );
 		ESP_LOGI(FNAME,"Serial bytes avail: %d", numread );
 	}
+	_selfTest = false;
 	std::string r( recv );
 	if( r.find( test ) != std::string::npos )  {
 		ESP_LOGI(FNAME,"Serial Test PASSED");

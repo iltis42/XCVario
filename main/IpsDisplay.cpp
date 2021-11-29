@@ -388,7 +388,7 @@ void IpsDisplay::initDisplay() {
 		ucg->drawVLine( DISPLAY_LEFT+5,      VARBARGAP , DISPLAY_H-(VARBARGAP*2) );
 		ucg->drawHLine( DISPLAY_LEFT+5, VARBARGAP , bw+1 );
 		ucg->drawVLine( DISPLAY_LEFT+5+bw+1, VARBARGAP, DISPLAY_H-(VARBARGAP*2) );
-		ucg->drawHLine( DISPLAY_LEFT+5, DISPLAY_H-(VARBARGAP), bw+1 );
+		ucg->drawHLine( DISPLAY_LEFT+5, DISPLAY_H-(VARBARGAP)-1, bw+1 );
 
 		// Sollfahrt Text
 		ucg->setFont(ucg_font_fub11_tr);

@@ -373,22 +373,23 @@ bool CANbus::selfTest(){
 	bool res=false;
 	int id=0x100;
 	delay(100);
-	for( int i=0; i<10; i++ ){
-		char tx[10] = { "18273645" };
+	twai_clear_receive_queue();
+	for( int i=0; i<100; i++ ){
+		char tx[10] = { "1827364" };
 		int len = strlen(tx);
-		ESP_LOGI(FNAME,"strlen %d", len );
-		twai_clear_receive_queue();  // there might be data from a remote device
+		  // there might be data from a remote device
 		if( !sendData( id, tx,len, 1 ) ){
 			ESP_LOGW(FNAME,"CAN bus selftest TX FAILED");
 		}
+		delay(2);
 		SString msg;
 		int rxid;
-		int bytes = receive( &rxid, msg, 5 );
+		int bytes = receive( &rxid, msg, 10 );
 		ESP_LOGI(FNAME,"RX CAN bus message bytes:%d, id:%04x, data:%s", bytes, id, msg.c_str() );
-		if( bytes == 0 || rxid != id ){
-			ESP_LOGW(FNAME,"CAN bus selftest RX call FAILED bytes:%d rxid%d", bytes, rxid );
-			delay(1*i);
-			delay(500);
+		if( bytes != 7 || rxid != id ){
+			ESP_LOGW(FNAME,"CAN bus selftest RX call FAILED bytes:%d rxid%d recm:%s", bytes, rxid, msg.c_str() );
+			delay(i);
+			twai_clear_receive_queue();
 		}
 		else if( memcmp( msg.c_str() ,tx, len ) == 0 ){
 			ESP_LOGI(FNAME,"RX CAN bus OKAY");
@@ -396,13 +397,13 @@ bool CANbus::selfTest(){
 			break;
 		}
 	}
-    if( res ){
-    	ESP_LOGW(FNAME,"CAN bus selftest TX/RX OKAY");
-    }else{
-    	ESP_LOGW(FNAME,"CAN bus selftest TX/RX FAILED");
-    	driverUninstall();
-    }
-    return _ready_initialized;
+	if( res ){
+		ESP_LOGW(FNAME,"CAN bus selftest TX/RX OKAY");
+	}else{
+		ESP_LOGW(FNAME,"CAN bus selftest TX/RX FAILED");
+		driverUninstall();
+	}
+	return _ready_initialized;
 }
 
 // Send, handle alerts, do max 3 retries

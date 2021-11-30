@@ -217,8 +217,8 @@ esp_err_t QMC5883L::selfTest()
 	return ESP_OK;
 	}
 	else if( compass_enable.get() == CS_CAN ){
-		for( int i=0; i<50; i++ ){ // give 5 second's chance for module to send data with the corresponding CAN data rate
-			if( age < 5 ){
+		for( int i=0; i<300; i++ ){ // give 30 second's chance for module to send data with the corresponding CAN data rate
+			if( age < 5 ){          // CAN bus sensor probes next speed after 13 seconds and starts with new speed, so max 26 seconds all 3 speeds are probed
 				return ESP_OK;
 			}
 			delay(100);

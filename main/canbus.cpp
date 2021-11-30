@@ -372,6 +372,7 @@ bool CANbus::selfTest(){
 	driverInstall( TWAI_MODE_NO_ACK );
 	bool res=false;
 	int id=0x100;
+	delay(100);
 	for( int i=0; i<10; i++ ){
 		char tx[10] = { "18273645" };
 		int len = strlen(tx);
@@ -383,12 +384,14 @@ bool CANbus::selfTest(){
 		SString msg;
 		int rxid;
 		int bytes = receive( &rxid, msg, 5 );
-		// ESP_LOGI(FNAME,"RX CAN bus message bytes:%d, id:%04x, data:%s", bytes, id, msg.c_str() );
+		ESP_LOGI(FNAME,"RX CAN bus message bytes:%d, id:%04x, data:%s", bytes, id, msg.c_str() );
 		if( bytes == 0 || rxid != id ){
-			ESP_LOGW(FNAME,"CAN bus selftest RX call FAILED");
+			ESP_LOGW(FNAME,"CAN bus selftest RX call FAILED bytes:%d rxid%d", bytes, rxid );
 			delay(1*i);
+			delay(500);
 		}
 		else if( memcmp( msg.c_str() ,tx, len ) == 0 ){
+			ESP_LOGI(FNAME,"RX CAN bus OKAY");
 			res=true;
 			break;
 		}

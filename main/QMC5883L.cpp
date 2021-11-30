@@ -217,8 +217,11 @@ esp_err_t QMC5883L::selfTest()
 	return ESP_OK;
 	}
 	else if( compass_enable.get() == CS_CAN ){
-		if( age < 5 ){
-			return ESP_OK;
+		for( int i=0; i<50; i++ ){ // give 5 second's chance for module to send data with the corresponding CAN data rate
+			if( age < 5 ){
+				return ESP_OK;
+			}
+			delay(100);
 		}
 	}
 	return ESP_FAIL;

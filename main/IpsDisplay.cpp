@@ -1431,7 +1431,7 @@ void IpsDisplay::drawSmallSpeed(float v_kmh, int16_t x, int16_t y)
 	ucg->setColor( COLOR_WHITE );
 	ucg->setFont(ucg_font_fub14_hr, true);
 	char s[10];
-	sprintf(s," %3d",  airspeed );
+	sprintf(s,"  %3d",  airspeed ); //additional blank to avoid artefacts
 	ucg->setPrintPos(x-ucg->getStrWidth(s), y);
 	ucg->print(s);
 }
@@ -1987,7 +1987,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		if( standard_setting )
 			qnh = Units::Qnh( 1013.25 );
 		if( qnh != pref_qnh ) {
-			ucg->setFont(ucg_font_fub11_tr, true);
+			ucg->setFont(ucg_font_fub11_tr, false);
 			char unit[4];
 			if( standard_setting )
 				strcpy( unit, "QNE" );

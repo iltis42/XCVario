@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <esp_log.h>
 
-
+static const char* FNAME = "drawing.c";
 #define degrees_to_radians(degrees) ((degrees) * M_PI / 180.0)
 /**
  * Clipping
@@ -156,7 +156,7 @@ static void draw_fast_90_line(
         direction = DISPLAY_LINE_DIRECTION_UP;
     } else if(y1==y2) {  // horizontal
       length = x2 > x1 ? x2 - x1 : x1 - x2;
-      length += 1;
+
       if(x2 > x1)
         direction = DISPLAY_LINE_DIRECTION_RIGHT;
       else
@@ -176,8 +176,8 @@ static void draw_fast_90_line(
         if((y1 >= eglib->drawing.clip_ymax) | (y1 < eglib->drawing.clip_ymin))
             return;
         if (x1 > eglib->drawing.clip_xmax) x1 = eglib->drawing.clip_xmax;
-        if(x1 - length < eglib->drawing.clip_xmin - 1)
-          length = x1 - eglib->drawing.clip_xmin + 1;
+        if(x1 - length < eglib->drawing.clip_xmin)
+          length = x1 - eglib->drawing.clip_xmin;
         break;
       case DISPLAY_LINE_DIRECTION_DOWN:
         if((x1 >= eglib->drawing.clip_xmax) | (x1 < eglib->drawing.clip_xmin))
@@ -188,8 +188,8 @@ static void draw_fast_90_line(
       case DISPLAY_LINE_DIRECTION_UP:
         if((x1 >= eglib->drawing.clip_xmax) | (x1 < eglib->drawing.clip_xmin))
             return;
-        if(y1 - length < eglib->drawing.clip_ymin - 1)
-          length = y1 - eglib->drawing.clip_ymin + 1;
+        if(y1 - length < eglib->drawing.clip_ymin)
+          length = y1 - eglib->drawing.clip_ymin;
         break;
     }
 
@@ -698,6 +698,7 @@ void eglib_DrawBox(
   coordinate_t x, coordinate_t y,
   coordinate_t width, coordinate_t height
 ) {
+    if (width !=0)
   for( ; height ; height--, y++)
     eglib_DrawHLine(eglib, x, y, width);
 }
@@ -1157,6 +1158,31 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
         );
     }
 }
+void eglib_DrawFilledGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struct glyph_t *glyph) {
+  if(glyph == NULL)
+    return;
+
+  for(coordinate_t v=0 ; v < glyph->height ; v++)
+    for(coordinate_t u=0 ; u < glyph->width ; u++) {
+      bool pixel;
+
+      pixel = get_bit(glyph->data, (v * glyph->width) + u);
+
+      if(pixel){
+        eglib_DrawPixel(
+          eglib,
+          x + glyph->left + u, y - glyph->top + v
+        );
+      }
+      else {
+          eglib_DrawPixelColor(
+          eglib,
+          x + glyph->left + u, y - glyph->top + v,
+          eglib->drawing.color_index[1]
+        );
+      }
+    }
+}
 
 #define MISSING_GLYPH_ADVANCE eglib->drawing.font->pixel_size
 
@@ -1212,6 +1238,7 @@ static wchar_t utf8_nextchar(const char *utf8_text, uint16_t *index) {
 
     return c;
 }
+
 size_t eglib_DrawFilledWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wchar_t unicode_char) {
   color_channel_t old_r0, old_g0, old_b0;
   const struct font_t *font;
@@ -1223,16 +1250,24 @@ size_t eglib_DrawFilledWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wch
 
   if(glyph == NULL)
     return 0;
-
+/*
+  ESP_LOGI(FNAME,"Char:0x%02x, glyph->left: %d, glyph->width:%d, glyph->advance:%d", unicode_char, glyph->left, glyph->width, glyph->advance);
+   */
   if( eglib->drawing.filled_mode ){
-	  old_r0 = eglib->drawing.color_index[0].r;
+      //fill space outside glyph inside font box
+      old_r0 = eglib->drawing.color_index[0].r;
 	  old_g0 = eglib->drawing.color_index[0].g;
 	  old_b0 = eglib->drawing.color_index[0].b;
 	  eglib_SetIndexColor( eglib, 0, eglib->drawing.color_index[1].r, eglib->drawing.color_index[1].g, eglib->drawing.color_index[1].b );
-	  eglib_DrawBox( eglib, x, y - font->ascent, glyph->advance, font->ascent - font->descent );
+      eglib_DrawBox( eglib, x, y-font->ascent, glyph->left, font->ascent-font->descent );
+ 	  eglib_DrawBox( eglib, x + glyph->left, y - font->ascent, glyph->width, font->ascent - glyph->top );
+	  eglib_DrawBox( eglib, x + glyph->left + glyph->width, y-font->ascent, glyph->advance - glyph->left - glyph->width, font->ascent - font->descent );
+      eglib_DrawBox( eglib, x + glyph->left, y - (glyph->top - glyph->height), glyph->width, -font->descent + (glyph->top-glyph->height));
 	  eglib_SetIndexColor(eglib, 0, old_r0, old_g0, old_b0);
+      eglib_DrawFilledGlyph(eglib, x, y, glyph);
   }
-  eglib_DrawGlyph(eglib, x, y, glyph);
+  else
+      eglib_DrawGlyph(eglib, x, y, glyph);
   return glyph->advance;
 }
 

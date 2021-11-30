@@ -141,7 +141,7 @@ void eglib_DrawLine(eglib_t *eglib, coordinate_t x1, coordinate_t y1, coordinate
  *
  * :See also: :c:func:`eglib_SetIndexColor`.
  */
-#define eglib_DrawHLine(eglib, x, y, len) eglib_DrawLine(eglib, x, y, x + len - 1, y);
+#define eglib_DrawHLine(eglib, x, y, len) eglib_DrawLine(eglib, x, y, x + len, y);
 
 /**
  * Draw vertical line starting at (`x`, `y`) with length `len` using color from
@@ -159,7 +159,7 @@ void eglib_DrawLine(eglib_t *eglib, coordinate_t x1, coordinate_t y1, coordinate
  *
  * :See also: :c:func:`eglib_SetIndexColor`.
  */
-#define eglib_DrawVLine(eglib, x, y, len) eglib_DrawLine(eglib, x, y, x, y + len - 1);
+#define eglib_DrawVLine(eglib, x, y, len) eglib_DrawLine(eglib, x, y, x, y + len);
 
 /**
  * Draw line from coordinates (`x1`, `y1`) to (`x2`, `y2`).
@@ -925,6 +925,21 @@ const struct glyph_t *eglib_GetGlyph(eglib_t *eglib, wchar_t unicode_char);
  *   :width: 200
  */
 void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struct glyph_t *glyph);
+
+/**
+ * Draw given :c:type:`glyph_t` with solid background at ``(x, y)``.
+ *
+ * Example:
+ *
+ * .. literalinclude:: eglib_DrawGlyph.c
+ *   :language: C
+ *
+ * Output:
+ *
+ * .. image:: eglib_DrawGlyph.png
+ *   :width: 200
+ */
+void eglib_DrawFilledGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struct glyph_t *glyph);
 
 /**
  * Draw given unicode character glyph at ``(x, y)``.

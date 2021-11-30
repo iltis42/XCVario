@@ -310,7 +310,7 @@ void Flap::drawSmallBar( float wkf ){
 			continue;
 
 		sprintf( position,"%s", flapLabels[wk+3]);
-		int y=top+(lfh+4)*(5-(wk+2))+(int)((wkf-2)*(lfh+4));
+		int y=top+(lfh+4)*(5-(wk+2))+(int)((wkf-2)*(lfh+4)+3);
 		ucg->setPrintPos(barpos_x-2, y );
 		ucg->setColor(COLOR_WHITE);
 		ucg->printf(position);

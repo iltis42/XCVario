@@ -303,9 +303,10 @@ void IpsDisplay::drawLegend( bool onlyLines ) {
 	}
 }
 // draw all that does not need refresh when values change
+// also used by OTA screen with updteing sekonds...
 
 void IpsDisplay::writeText( int line, String text ){
-	ucg->setFont(ucg_font_ncenR14_hr);
+	ucg->setFont(ucg_font_ncenR14_hr, true );
 	ucg->setPrintPos( 1, 26*line );
 	ucg->setColor(COLOR_WHITE);
 	ucg->printf("%s",text.c_str());
@@ -393,17 +394,17 @@ void IpsDisplay::initDisplay() {
 		// Sollfahrt Text
 		ucg->setFont(ucg_font_fub11_tr);
 		fh = ucg->getFontAscent();
-		ucg->setPrintPos(FIELD_START+6,YS2F-(2*fh)-11);
+		ucg->setPrintPos(FIELD_START+6,YS2F-(2*fh) - 8);
 		ucg->setColor(0, COLOR_HEADER );
 
 		ucg->printf("%s %s", Units::AirspeedModeStr(), Units::AirspeedUnitStr() );
 
-		ucg->setPrintPos(ASVALX,YS2F-(2*fh)-11);
+		ucg->setPrintPos(ASVALX,YS2F-(2*fh) - 8);
 		ucg->print(" S2F");
 
 		ucg->setColor(0, COLOR_WHITE );
 		// AS Box
-		int fl = 45; // ucg->getStrWidth("200-");
+		int fl = ucg->getStrWidth(" 200-    ");
 
 		ASLEN = fl;
 		S2FST = ASLEN+16;
@@ -1431,7 +1432,7 @@ void IpsDisplay::drawSmallSpeed(float v_kmh, int16_t x, int16_t y)
 	ucg->setColor( COLOR_WHITE );
 	ucg->setFont(ucg_font_fub14_hr, true);
 	char s[10];
-	sprintf(s," %3d",  airspeed );
+	sprintf(s,"  %3d",  airspeed ); //additional blank to avoid artefacts
 	ucg->setPrintPos(x-ucg->getStrWidth(s), y);
 	ucg->print(s);
 }
@@ -1987,13 +1988,13 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		if( standard_setting )
 			qnh = Units::Qnh( 1013.25 );
 		if( qnh != pref_qnh ) {
-			ucg->setFont(ucg_font_fub11_tr, true);
+			ucg->setFont(ucg_font_fub11_tr, false);
 			char unit[4];
 			if( standard_setting )
 				strcpy( unit, "QNE" );
 			else
 				strcpy( unit, "QNH" );
-			ucg->setPrintPos(FIELD_START,YALT-S2FFONTH-10);
+			ucg->setPrintPos(FIELD_START,YALT-S2FFONTH-15);
 			ucg->setColor(0, COLOR_HEADER );
 			ucg->printf("%s %.2f %s  ", unit, qnh,  Units::QnhUnit( qnh_unit.get() ) );
 			pref_qnh = qnh;
@@ -2143,18 +2144,18 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		// print speed values bar
 		ucg->setFont(ucg_font_fub11_hn, true);
 		ucg->drawFrame( FIELD_START, dmid-(MAXS2FTRI)-4, ASLEN+6, (MAXS2FTRI*2)+8 );
-		ucg->setClipRange( FIELD_START, dmid-(MAXS2FTRI), ASLEN+6, (MAXS2FTRI*2) );
+		ucg->setClipRange( FIELD_START, dmid-(MAXS2FTRI), ASLEN, (MAXS2FTRI*2) );
 		for( int speed = airspeed-MAXS2FTRI-(fh); speed<airspeed+MAXS2FTRI+(fh); speed++ )
 		{
 			if( (speed%20) == 0 && (speed >= 0) ) {
 				// blank old values
-				ucg->setColor( COLOR_BLACK );
+                ucg->setColor( COLOR_BLACK );
 				int col = 0;
 				if( speed == 0 )
 					ucg->drawBox( FIELD_START+6,dmid+(speed-airspeed)-(fh/2)-19, ASLEN-6, fh+25 );
 				else
 					ucg->drawBox( FIELD_START+6,dmid+(speed-airspeed)-(fh/2)-9, ASLEN-6, fh+15 );
-				if ( display_variant.get() == DISPLAY_WHITE_ON_BLACK ) {
+                if ( display_variant.get() == DISPLAY_WHITE_ON_BLACK ) {
 					col = abs(((speed-airspeed)*2));
 				}
 				else {
@@ -2162,7 +2163,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 				}
 				ucg->setColor(  col,col,col  );
 				ucg->setPrintPos(FIELD_START+8,dmid+(speed-airspeed)+(fh/2));
-				ucg->printf("%3d ""-", speed);
+				ucg->printf("%3d ""- ", speed);
 			}
 		}
 		ucg->undoClipRange();

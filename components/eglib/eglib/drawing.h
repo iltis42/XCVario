@@ -1,8 +1,10 @@
 #ifndef EGLIB_DRAWING_H
 #define EGLIB_DRAWING_H
 
-#include "../eglib.h"
+
 #include <wchar.h>
+#include <types.h>
+
 
 /* eglib Circle and Disc options */
 #define EGLIB_DRAW_UPPER_RIGHT 0x01
@@ -10,6 +12,19 @@
 #define EGLIB_DRAW_LOWER_LEFT 0x04
 #define EGLIB_DRAW_LOWER_RIGHT  0x08
 #define EGLIB_DRAW_ALL (EGLIB_DRAW_UPPER_RIGHT|EGLIB_DRAW_UPPER_LEFT|EGLIB_DRAW_LOWER_RIGHT|EGLIB_DRAW_LOWER_LEFT)
+
+
+typedef enum _font_origin {  FONT_BOTTOM, FONT_MIDDLE, FONT_TOP } e_font_origin;
+
+typedef struct s_drawing{
+		color_t color_index[4];
+		struct _gradient_t gradient;
+		const struct font_t *font;
+		bool filled_mode;
+		e_font_origin font_origin;
+        coordinate_t clip_xmin, clip_xmax, clip_ymin, clip_ymax;
+} drawing_t;
+
 
 /**
  * These are generic drawing functions.
@@ -55,6 +70,13 @@ void eglib_setClipRange(
     coordinate_t h
 );
 
+/**
+ * Font Alignement
+ * =====
+ *
+ * Bottom, Middle, Top font alignment
+ */
+void eglib_setFontOrigin( eglib_t *eglib, e_font_origin origin );
 
 /**
  * Clipping

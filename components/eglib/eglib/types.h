@@ -10,11 +10,40 @@
  */
 
 /**
+ * Data type for each color channel: red, green, blue.
+ *
+ * All :doc:`drawing functions <drawing/index>` use this fixed 8-bit color depth and
+ * :doc:`display drivers <display/index>` do
+ * `color quantization <https://en.wikipedia.org/wiki/Color_quantization>`_ when
+ * they only support a lower color depth.
+ */
+typedef uint8_t color_channel_t;
+
+/** Data type for display coordinates used by :doc:`drawing functions <drawing/index>`. */
+typedef int16_t coordinate_t;
+
+// Internal: state for gradient drawing functions
+struct _gradient_channel_t {
+	color_channel_t color_channel;
+	coordinate_t count;
+	double step;
+};
+
+// Internal: state for gradient drawing functions
+struct _gradient_t {
+	struct _gradient_channel_t r;
+	struct _gradient_channel_t g;
+	struct _gradient_channel_t b;
+};
+
+
+/**
  * Pixel format used in-memory by displays.
  *
  * :note: some formats have a difference between the color depth and the bit
  *  depth in memory!
  */
+
 enum pixel_format_t {
 	/**
 	 * 1bit per pixel where each number of bytes equal to the display width
@@ -63,15 +92,6 @@ enum pixel_format_t {
 	PIXEL_FORMAT_COUNT,
 };
 
-/**
- * Data type for each color channel: red, green, blue.
- *
- * All :doc:`drawing functions <drawing/index>` use this fixed 8-bit color depth and
- * :doc:`display drivers <display/index>` do
- * `color quantization <https://en.wikipedia.org/wiki/Color_quantization>`_ when
- * they only support a lower color depth.
- */
-typedef uint8_t color_channel_t;
 
 /**
  * Color used by :doc:`drawing functions <drawing/index>`.
@@ -85,8 +105,7 @@ typedef struct {
 	color_channel_t b;
 } color_t;
 
-/** Data type for display coordinates used by :doc:`drawing functions <drawing/index>`. */
-typedef int16_t coordinate_t;
+
 
 struct _eglib_struct;
 

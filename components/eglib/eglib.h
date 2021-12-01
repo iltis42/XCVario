@@ -5,24 +5,13 @@
 #include "eglib/types.h"
 #include "eglib/drawing.h"
 
+
 /**
  * These functions initialize :c:type:`eglib_t` and control sleep status of
  * the hardware.
  */
 
-// Internal: state for gradient drawing functions
-struct _gradient_channel_t {
-	color_channel_t color_channel;
-	coordinate_t count;
-	double step;
-};
 
-// Internal: state for gradient drawing functions
-struct _gradient_t {
-	struct _gradient_channel_t r;
-	struct _gradient_channel_t g;
-	struct _gradient_channel_t b;
-};
 
 struct _eglib_struct {
 	struct {
@@ -40,13 +29,7 @@ struct _eglib_struct {
 		bool refreshing : 1;
 	} display;
 
-	struct {
-		color_t color_index[4];
-		struct _gradient_t gradient;
-		const struct font_t *font;
-		bool filled_mode;
-        coordinate_t clip_xmin, clip_xmax, clip_ymin, clip_ymax;
-	} drawing;
+	drawing_t drawing;
 };
 
 /**

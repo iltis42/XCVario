@@ -1316,6 +1316,7 @@ void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float ate ){
 	static char* format[2] = {"  %2.1f", "  %2.0f"};
 	sprintf(s, format[std::abs(ate)>10], round(ate*10.)/10.); // Avoid "-" sign because of not sown mantissa
 	ucg->setPrintPos(x - ucg->getStrWidth(s), y);
+	// ESP_LOGI(FNAME,"drawAvgVario x:%d y:%d, %s", x,y,s );
 	ucg->print(s);
 	ucg->setFontPosBottom();
 	ucg->undoClipRange();
@@ -1456,7 +1457,7 @@ bool IpsDisplay::drawSpeed(float v_kmh, int16_t x, int16_t y, bool dirty, bool i
 	ucg->setFont(ucg_font_fub25_hn, true);
 
 	char s[10];
-	sprintf(s," %3d",  airspeed );
+	sprintf(s,"  %3d",  airspeed );
 	ucg->setPrintPos(x-ucg->getStrWidth(s), y);
 	ucg->print(s);
 	if ( inc_unit ) {
@@ -1525,7 +1526,7 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 
 	// G load digital
 	if( (int)(loadFactor*30) != _ate && !(tick%3) ) {
-		drawAvgVario( AMIDX+38, AMIDY+2, loadFactor );
+		drawAvgVario( AMIDX+38, AMIDY, loadFactor );
 		_ate = (int)(loadFactor*30);
 	}
 	// Min/Max values
@@ -1737,7 +1738,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	// average Climb
 	if( (int)(ate*30) != _ate && !(tick%3) ) {
-		drawAvgVario( AMIDX + 38, AMIDY+2, ate );
+		drawAvgVario( AMIDX + 38, AMIDY, ate );
 		_ate = (int)(ate*30);
 	}
 	// MC val

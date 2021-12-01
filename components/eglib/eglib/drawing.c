@@ -67,11 +67,18 @@ void eglib_SetIndexColor(
 // Pixel
 //
 
+inline bool eglib_inClipArea(eglib_t * eglib, coordinate_t x, coordinate_t y ){
+	if( x <  eglib->drawing.clip_xmin ||
+		x >= eglib->drawing.clip_xmax ||
+		y <  eglib->drawing.clip_ymin ||
+		y >= eglib->drawing.clip_ymax )
+		return false;
+	return true;
+}
+
 void eglib_DrawPixelColor(eglib_t *eglib, coordinate_t x, coordinate_t y, color_t color) {
-    if(x < eglib->drawing.clip_xmin || x >= eglib->drawing.clip_xmax)
-        return;
-    if(y < eglib->drawing.clip_ymin || y >= eglib->drawing.clip_ymax)
-        return;
+    if( !eglib_inClipArea( eglib, x,y ) )
+    		return;
     eglib->display.driver->draw_pixel_color(eglib, x, y, color);
 }
 
@@ -1146,9 +1153,35 @@ static uint8_t buffer[3048];
 void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struct glyph_t *glyph) {
 	if(glyph == NULL)
 		return;
+	int oocp = 0;
+	int ascent = eglib->drawing.font->ascent;
+	int descent = eglib->drawing.font->descent;
+	int alignment = ascent+descent;
+
+	int pixmax = (glyph->width*glyph->height)/2;
+
+	if( eglib->drawing.font_origin == FONT_BOTTOM )
+		alignment = 0;
+	else if( eglib->drawing.font_origin == FONT_MIDDLE )
+		alignment -= ascent/2;
+	else if( eglib->drawing.font_origin == FONT_TOP )
+		alignment -= ascent;
+
+	int width = glyph->width;
+	int height = glyph->height;
+	if(width == 1){
+		width = glyph->height; // space has width 1, so use a bigger one
+		height = ascent;
+	}
+	// ESP_LOGI("DrawGlyph","font origin: %d alignment %d", eglib->drawing.font_origin, alignment );
 	for(coordinate_t v=0 ; v < glyph->height ; v++){
-		for(coordinate_t u=0 ; u < glyph->width; u++) {
-			uint32_t pos = (v*glyph->width)+u;
+		for(coordinate_t u=0 ; u < width; u++) {
+			if( !eglib_inClipArea(eglib, x+u, y-v -(glyph->height/2)) ){
+				oocp++;
+				//if( oocp > pixmax )  // more than half is out of view
+				//	return;
+			}
+			uint32_t pos = (v*width)+u;
 			uint32_t pos3 = 3*pos;
 			if( pos > 3048 )
 				break;
@@ -1161,8 +1194,8 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
 			buffer[pos3+2] = c.b;
 		}
 	}
-	// ESP_LOGI("eglib_DrawGlyph","x:%d, y:%d, left:%d adv:%d hei:%d top:%d wid:%d", x,y, glyph->left, glyph->advance, glyph->height, glyph->top, glyph->width );
-	eglib->display.driver->send_buffer( eglib, buffer, x+glyph->left, y+(glyph->height-glyph->top), glyph->width, glyph->height );
+	// ESP_LOGI("eglib_DrawGlyph","x:%d, y:%d, left:%d adv:%d hei:%d top:%d wid:%d ori:%d ali:%d fa:%d fd:%d", x,y, glyph->left, glyph->advance, glyph->height, glyph->top, glyph->width, eglib->drawing.font_origin, alignment, eglib->drawing.font->ascent, eglib->drawing.font->descent );
+	eglib->display.driver->send_buffer( eglib, buffer, x+glyph->left, y+alignment-(glyph->top-glyph->height), width, glyph->height );
 }
 
 #define MISSING_GLYPH_ADVANCE eglib->drawing.font->pixel_size
@@ -1255,5 +1288,9 @@ coordinate_t eglib_GetTextWidth(eglib_t *eglib, const char *utf8_text) {
 
 void eglib_setFilledMode(eglib_t *eglib, bool fill ) {
 	eglib->drawing.filled_mode = fill;
+};
+
+void eglib_setFontOrigin( eglib_t *eglib, e_font_origin origin ) {
+	eglib->drawing.font_origin = origin;
 };
 

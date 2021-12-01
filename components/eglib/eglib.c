@@ -19,6 +19,8 @@ void eglib_Init(
 	eglib->display.refreshing = false;
 
 	eglib->drawing.filled_mode = false;
+	eglib->drawing.font_origin = FONT_BOTTOM;
+
 
 	for(size_t i=0 ; i < sizeof(eglib->drawing.color_index) / sizeof(*eglib->drawing.color_index) ; i++) {
 		eglib->drawing.color_index[i].r = 0;

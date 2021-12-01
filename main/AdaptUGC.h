@@ -190,8 +190,8 @@ public:
 	void scrollSetMargins( int16_t top, int16_t bottom ) {};                 // display driver function
 	void setClipRange( int16_t x, int16_t y, int16_t w, int16_t h ) { eglib_setClipRange(eglib, x, y, w, h );};
 	void setFontMode( uint8_t is_transparent ) {};  // no concept for transparent fonts in eglib, as it appears
-	void setFontPosBottom() {eglib_font_pos = UCG_FONT_POS_BOTTOM;};
-	void setFontPosCenter() {eglib_font_pos = UCG_FONT_POS_CENTER;};
+	void setFontPosBottom() {  eglib_setFontOrigin( eglib, FONT_BOTTOM ); };
+	void setFontPosCenter() {   eglib_setFontOrigin( eglib, FONT_MIDDLE ); };
 	void setRedBlueTwist( bool twist ) {};   	    // display driver function
 	void setRotate180() {};	                        // Same as clipping, missing fundamental concept in eglib
 	void undoClipRange() { eglib_undoClipRange(eglib);};

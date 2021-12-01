@@ -573,25 +573,14 @@ static void send_buffer(
 ) {
 	ili9341_config_t *display_config;
 	uint8_t *buffer = (uint8_t *)buffer_ptr;
-
 	display_config = eglib_GetDisplayConfig(eglib);
-
-	if((uint32_t)x * get_bits_per_pixel(eglib) % 8)
-		x -= 1;
-
+	// if((uint32_t)x * get_bits_per_pixel(eglib) % 8)
+	//	x -= 1;
 	eglib_CommBegin(eglib);
-	set_column_address(eglib, x, x + width);
-	for(coordinate_t v=y ; v < y + height ; v++) {
-		set_row_address(eglib, v, v);
-		eglib_SendCommandByte(eglib, ILI9341_MEMORY_WRITE);
-		eglib_SendData(
-			eglib,
-			buffer + (
-				display_config->width * v + x
-			) * get_bits_per_pixel(eglib) / 8,
-			(uint32_t)width * get_bits_per_pixel(eglib) / 8
-		);
-	}
+    set_column_address(eglib, x, x + width -1);
+    set_row_address(eglib, y-height -1, y );
+    eglib_SendCommandByte(eglib, ILI9341_MEMORY_WRITE);
+    eglib_SendData( eglib, buffer, width*height*3 );
 	eglib_CommEnd(eglib);
 }
 

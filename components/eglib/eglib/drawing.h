@@ -927,21 +927,6 @@ const struct glyph_t *eglib_GetGlyph(eglib_t *eglib, wchar_t unicode_char);
 void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struct glyph_t *glyph);
 
 /**
- * Draw given :c:type:`glyph_t` with solid background at ``(x, y)``.
- *
- * Example:
- *
- * .. literalinclude:: eglib_DrawGlyph.c
- *   :language: C
- *
- * Output:
- *
- * .. image:: eglib_DrawGlyph.png
- *   :width: 200
- */
-void eglib_DrawFilledGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struct glyph_t *glyph);
-
-/**
  * Draw given unicode character glyph at ``(x, y)``.
  *
  * Example:
@@ -954,36 +939,7 @@ void eglib_DrawFilledGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const
  * .. image:: eglib_DrawWChar.png
  *   :width: 200
  */
-void eglib_DrawWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wchar_t unicode_char);
-
-/**
- * Similar to :c:func:`eglib_DrawWChar`, but fills the background using color from index 1.
- *
- * Example:
- *
- * .. literalinclude:: eglib_DrawFilledWChar.c
- *   :language: C
- *
- * Output:
- *
- * .. image:: eglib_DrawFilledWChar.png
- *   :width: 200
- */
-
-/**
- * Similar to :c:func:`eglib_DrawWChar`, but fills the background using color from index 1.
- *
- * Example:
- *
- * .. literalinclude:: eglib_DrawFilledWChar.c
- *   :language: C
- *
- * Output:
- *
- * .. image:: eglib_DrawFilledWChar.png
- *   :width: 200
- */
-size_t eglib_DrawFilledWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wchar_t unicode_char);
+size_t eglib_DrawWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wchar_t unicode_char);
 
 /**
  * Draw given UTF-8 text starting at ``(x, y)``.

@@ -70,25 +70,25 @@ size_t AdaptUGC::write(uint8_t c) {
             const struct font_t *font;
             font = eglib->drawing.font;
             int16_t ypos = eglib_print_ypos + font->descent; // descent is negativ value!
-            delta = eglib_DrawFilledWChar(eglib, eglib_print_xpos, ypos, wchar_t (c));
+            delta = eglib_DrawWChar(eglib, eglib_print_xpos, ypos, wchar_t (c));
             break;
         }
         case UCG_FONT_POS_CENTER: {
             const struct font_t *font;
             font = eglib->drawing.font;
             int16_t ypos = eglib_print_ypos+(font->ascent/2)+(font->descent);
-            delta = eglib_DrawFilledWChar(eglib, eglib_print_xpos, ypos, wchar_t (c));
+            delta = eglib_DrawWChar(eglib, eglib_print_xpos, ypos, wchar_t (c));
             break;
         }
         case UCG_FONT_POS_TOP: {
             const struct font_t *font;
             font = eglib->drawing.font;
             int16_t ypos = eglib_print_ypos+font->ascent;
-            delta = eglib_DrawFilledWChar(eglib, eglib_print_xpos, ypos, wchar_t (c));
+            delta = eglib_DrawWChar(eglib, eglib_print_xpos, ypos, wchar_t (c));
             break;
         }
         default: case UCG_FONT_POS_BASE: {
-            delta = eglib_DrawFilledWChar(eglib, eglib_print_xpos, eglib_print_ypos, wchar_t (c));
+            delta = eglib_DrawWChar(eglib, eglib_print_xpos, eglib_print_ypos, wchar_t (c));
             break;
         }
     }

@@ -1148,7 +1148,7 @@ const struct glyph_t *eglib_GetGlyph(eglib_t *eglib, wchar_t unicode_char) {
   return NULL;
 }
 
-static uint8_t buffer[3048];
+static uint8_t buffer[4096];
 
 void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struct glyph_t *glyph) {
 	if(glyph == NULL)
@@ -1162,38 +1162,55 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
 	if( eglib->drawing.font_origin == FONT_BOTTOM )
 		alignment = 0;
 	else if( eglib->drawing.font_origin == FONT_MIDDLE )
-		alignment -= ascent/2;
+		alignment -= alignment/2;
 	else if( eglib->drawing.font_origin == FONT_TOP )
-		alignment -= ascent;
+		alignment -= alignment;
 
-	int width = glyph->width;
-	int height = glyph->height;
-	if(height == 1){
+	int width = glyph->advance+2; // glyph->advance;
+	int height = glyph->height+2;
+	if(glyph->height == 1){
 		height = ascent;
 	}
+	uint32_t pos3 = 0;
 	// ESP_LOGI("DrawGlyph","font origin: %d alignment %d", eglib->drawing.font_origin, alignment );
-	for(coordinate_t v=0 ; v < glyph->height ; v++){
+	for(coordinate_t v=0 ; v < height ; v++){
 		for(coordinate_t u=0 ; u < width; u++) {
-			if( !eglib_inClipArea(eglib, x+u, y-v -(glyph->height/2)) ){
-				oocp++;
-				//if( oocp > pixmax )  // more than half is out of view
-				//	return;
+			if( (u < glyph->width) && (v < glyph->height) ){
+				if( !eglib_inClipArea(eglib, x+u, y-v -(glyph->height/2)) ){
+					oocp++;
+					//if( oocp > pixmax )  // more than half is out of view
+					//	return;
+				}
+				uint32_t pos = (v*glyph->width)+u;
+				// uint32_t pos3 = 3*pos;
+				if( pos3 > 4096 ){
+					ESP_LOGI("DrawGlyph","buffer overrun");
+					break;
+				}
+				color_t c = eglib->drawing.color_index[1];
+				if( get_bit( glyph->data, pos ) ){
+					c = eglib->drawing.color_index[0];
+				}
+				buffer[pos3] = c.r;
+				pos3++;
+				buffer[pos3] = c.g;
+				pos3++;
+				buffer[pos3] = c.b;
+				pos3++;
 			}
-			uint32_t pos = (v*width)+u;
-			uint32_t pos3 = 3*pos;
-			if( pos > 3048 )
-				break;
-			color_t c = eglib->drawing.color_index[1];
-			if( get_bit( glyph->data, pos )  ){
-				c = eglib->drawing.color_index[0];
+			else{
+				buffer[pos3] = eglib->drawing.color_index[1].r;
+				pos3++;
+				buffer[pos3] = eglib->drawing.color_index[1].g;
+				pos3++;
+				buffer[pos3] = eglib->drawing.color_index[1].b;
+				pos3++;
 			}
-			buffer[pos3]   = c.r;
-			buffer[pos3+1] = c.g;
-			buffer[pos3+2] = c.b;
 		}
 	}
+
 	// ESP_LOGI("eglib_DrawGlyph","x:%d, y:%d, left:%d adv:%d hei:%d top:%d wid:%d ori:%d ali:%d fa:%d fd:%d", x,y, glyph->left, glyph->advance, glyph->height, glyph->top, glyph->width, eglib->drawing.font_origin, alignment, eglib->drawing.font->ascent, eglib->drawing.font->descent );
-	eglib->display.driver->send_buffer( eglib, buffer, x+glyph->left, y+alignment-(glyph->top-glyph->height), width, glyph->height );
+	eglib->display.driver->send_buffer( eglib, buffer, x+glyph->left, y+alignment-(glyph->top-glyph->height), width, height );
 }
 
 #define MISSING_GLYPH_ADVANCE eglib->drawing.font->pixel_size
@@ -1267,20 +1284,24 @@ void eglib_DrawText(eglib_t *eglib, coordinate_t x, coordinate_t y, const char *
 }
 
 coordinate_t eglib_GetTextWidth(eglib_t *eglib, const char *utf8_text) {
+  // ESP_LOGI( "getWidth",">%s<",utf8_text );
   coordinate_t width;
-
   width = 0;
 
-  for(uint16_t index=0 ; utf8_text[index] ; ) {
+  for(uint16_t index=0 ; utf8_text[index]; index++ ) {
     const struct glyph_t *glyph;
-
-    glyph = eglib_GetGlyph(eglib, utf8_nextchar(utf8_text, &index));
-    if(glyph == NULL)
+    glyph = eglib_GetGlyph(eglib, utf8_text[index] );
+    // glyph = eglib_GetGlyph(eglib, utf8_nextchar(utf8_text, &index));
+    if(glyph == NULL){
       width += eglib->drawing.font->pixel_size;
-    else
+      // ESP_LOGI( "getWidth","NULL Glyph W: %c, w:%d", utf8_text[index], eglib->drawing.font->pixel_size  );
+    }
+    else{
+    	// ESP_LOGI( "getWidth","Glyph W: %c, w:%d", utf8_text[index], glyph->advance  );
       width += glyph->advance;
+    }
   }
-
+  // ESP_LOGI( "getWidth","RET: w:%d", width );
   return width;
 }
 

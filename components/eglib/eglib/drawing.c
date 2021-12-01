@@ -1157,7 +1157,6 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
 	int ascent = eglib->drawing.font->ascent;
 	int descent = eglib->drawing.font->descent;
 	int alignment = ascent+descent;
-
 	int pixmax = (glyph->width*glyph->height)/2;
 
 	if( eglib->drawing.font_origin == FONT_BOTTOM )
@@ -1169,8 +1168,7 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
 
 	int width = glyph->width;
 	int height = glyph->height;
-	if(width == 1){
-		width = glyph->height; // space has width 1, so use a bigger one
+	if(height == 1){
 		height = ascent;
 	}
 	// ESP_LOGI("DrawGlyph","font origin: %d alignment %d", eglib->drawing.font_origin, alignment );

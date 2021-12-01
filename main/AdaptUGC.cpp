@@ -63,6 +63,12 @@ void  AdaptUGC::begin() {
 	eglib_Init( &myeglib, &esp32_ili9341, &esp32_ili9341_config, &ili9341, &ili9341_config );
 };
 
+size_t AdaptUGC::write(const uint8_t *buffer, size_t size){
+	eglib_DrawText(eglib, eglib_print_xpos, eglib_print_ypos, (const char *)buffer );
+	return size;
+}
+
+
 size_t AdaptUGC::write(uint8_t c) {
     size_t delta = 0;
     switch (eglib_font_pos) {

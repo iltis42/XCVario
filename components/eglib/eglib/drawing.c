@@ -1223,7 +1223,6 @@ static wchar_t utf8_nextchar(const char *utf8_text, uint16_t *index) {
 
 void eglib_DrawText(eglib_t *eglib, coordinate_t x, coordinate_t y, const char *utf8_text) {
   const struct glyph_t *glyph;
-
   for(uint16_t index=0 ; utf8_text[index] ; ) {
     glyph = eglib_GetGlyph(eglib, utf8_nextchar(utf8_text, &index));
     if(glyph == NULL) {

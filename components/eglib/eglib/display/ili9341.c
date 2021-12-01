@@ -428,7 +428,7 @@ static void init(eglib_t *eglib) {
 	eglib_Send(eglib, HAL_DATA, seqca, sizeof(seqca) );
 
 	// UCG_C12(0x0ea, 0x066, 0x000),         /* timer driving control B (POR values) */
-	eglib_SendCommandByte(eglib, 0xe8 );
+	eglib_SendCommandByte(eglib, 0xea );
 	uint8_t seqcp[] = { 0x066, 0x000  };
 	eglib_Send(eglib, HAL_DATA, seqcp, sizeof(seqcp) );
 

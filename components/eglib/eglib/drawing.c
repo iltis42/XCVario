@@ -1148,7 +1148,29 @@ const struct glyph_t *eglib_GetGlyph(eglib_t *eglib, wchar_t unicode_char) {
   return NULL;
 }
 
-static uint8_t buffer[4096];
+static uint8_t buffer[8000];
+
+/*
+struct glyph_t {
+        uint8_t width : 7;   // Bitmap width
+        uint8_t height : 7;  // Bitmap height.
+        int8_t left : 6;     // Left padding before bitmap.
+        uint8_t advance : 7; // Distance to increment the pen position after rendering this glyph.
+        int8_t top;          // Distance from baseline to glyph's highest pixel.
+        const uint8_t *data; // Bitmap data.
+};
+
+struct font_t {
+        uint8_t pixel_size;   // Font pixel size
+        int16_t ascent;       // The distance from the baseline to the highest or upper grid coordinate used to place an outline point
+        int16_t descent;      // The distance from the baseline to the lowest grid coordinate used to place an outline point
+        uint16_t line_space;  // The distance that must be placed between two lines of text
+        const struct glyph_unicode_block_t *unicode_blocks[FONT_MAX_UNICODE_BLOCKS];   // Array of glyph unicode blocks
+        uint8_t unicode_blocks_count;   // Number of ``unicode_blocks``
+};
+*/
+
+
 
 void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struct glyph_t *glyph) {
 	if(glyph == NULL)
@@ -1165,27 +1187,24 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
 		alignment -= alignment/2;
 	else if( eglib->drawing.font_origin == FONT_TOP )
 		alignment -= alignment;
-
-	int width = glyph->advance+2; // glyph->advance;
-	int height = glyph->height+2;
-	if(glyph->height == 1){
-		height = ascent;
-	}
+	int width = glyph->advance; // glyph->advance;
+	int height = eglib->drawing.font->pixel_size; // glyph->height+2;
+	int top = glyph->top;
+	int head = ascent - top;
 	uint32_t pos3 = 0;
-	// ESP_LOGI("DrawGlyph","font origin: %d alignment %d", eglib->drawing.font_origin, alignment );
-	for(coordinate_t v=0 ; v < height ; v++){
+	for(coordinate_t v1=0 ; v1 < height ; v1++){
 		for(coordinate_t u=0 ; u < width; u++) {
-			if( (u < glyph->width) && (v < glyph->height) ){
+			coordinate_t v = v1 - head;
+			if( (u < glyph->width) && (v < glyph->height) && v>=0 ){
 				if( !eglib_inClipArea(eglib, x+u, y-v -(glyph->height/2)) ){
 					oocp++;
-					//if( oocp > pixmax )  // more than half is out of view
-					//	return;
+					// if( oocp > pixmax )  // more than half is out of view
+					   //return;
 				}
 				uint32_t pos = (v*glyph->width)+u;
-				// uint32_t pos3 = 3*pos;
-				if( pos3 > 4096 ){
+				if( pos3 > sizeof(buffer) ){
 					ESP_LOGI("DrawGlyph","buffer overrun");
-					break;
+					return;
 				}
 				color_t c = eglib->drawing.color_index[1];
 				if( get_bit( glyph->data, pos ) ){
@@ -1209,8 +1228,8 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
 		}
 	}
 
-	// ESP_LOGI("eglib_DrawGlyph","x:%d, y:%d, left:%d adv:%d hei:%d top:%d wid:%d ori:%d ali:%d fa:%d fd:%d", x,y, glyph->left, glyph->advance, glyph->height, glyph->top, glyph->width, eglib->drawing.font_origin, alignment, eglib->drawing.font->ascent, eglib->drawing.font->descent );
-	eglib->display.driver->send_buffer( eglib, buffer, x+glyph->left, y+alignment-(glyph->top-glyph->height), width, height );
+	// ESP_LOGI("eglib_DrawGlyph","x:%d, y:%d, left:%d adv:%d ghei:%d gtop:%d gwid:%d ori:%d ali:%d fa:%d fd:%d hei:%d wid:%d", x,y, glyph->left, glyph->advance, glyph->height, glyph->top, glyph->width, eglib->drawing.font_origin, alignment, eglib->drawing.font->ascent, eglib->drawing.font->descent, height, width );
+	eglib->display.driver->send_buffer( eglib, buffer, x, y+alignment /* -(glyph->top-glyph->height) */, width, height );
 }
 
 #define MISSING_GLYPH_ADVANCE eglib->drawing.font->pixel_size

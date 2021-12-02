@@ -159,11 +159,11 @@ int qnh_adj( SetupMenuValFloat * p )
 		p->ucg->setPrintPos(1,150);
 	}else
 		p->ucg->setPrintPos(1,120);
-	p->ucg->printf("%5d %s ", (int)(altp+0.5), u.c_str() );
+	p->ucg->printf("%5d %s  ", (int)(altp+0.5), u.c_str() );
 
 	if( qnh_unit.get() == QNH_INHG ){
 		p->ucg->setPrintPos(40,110);
-		p->ucg->printf("%.2f inHg", Units::hPa2inHg( *(p->_value) ));
+		p->ucg->printf("%.2f inHg  ", Units::hPa2inHg( *(p->_value) ));
 	}
 	p->ucg->setFont(ucg_font_ncenR14_hr);
 	xSemaphoreGive(spiMutex );

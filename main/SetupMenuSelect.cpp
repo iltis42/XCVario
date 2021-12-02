@@ -41,7 +41,7 @@ void SetupMenuSelect::addEntryList( char ent[][4], int size )
 {
 	ESP_LOGI(FNAME,"SetupMenuSelect::addEntryList() char ent[][4]");
     for( int i=0; i<size; i++ ) {
-    	ESP_LOGI(FNAME,"add ent:%s  num:%d", std::string(ent[i]).c_str(), _numval );
+    	// ESP_LOGI(FNAME,"add ent:%s  num:%d", std::string(ent[i]).c_str(), _numval );
         _values.push_back( std::string(ent[i]) ); _numval++;
     }
 }

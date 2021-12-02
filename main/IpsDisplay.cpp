@@ -425,7 +425,7 @@ void IpsDisplay::initDisplay() {
 	// Fancy altimeter
 	ucg->setFont(ucg_font_fub25_hr, true);
 	char_width = ucg->getStrWidth("2");
-	char_height = ucg->getFontAscent() - ucg->getFontDescent();
+	char_height = ucg->getFontAscent() - ucg->getFontDescent() - 4;
 
 	redrawValues();
 }

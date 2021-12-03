@@ -51,7 +51,7 @@ public:
 	static float filteredHeading( bool *okIn );
 	static float filteredTrueHeading( bool *okIn );
 	static void setGyroHeading( float hd );
-	static float getGyroHeading( bool *ok, bool addDeclination=false );
+	static float getGyroHeading( bool *ok, bool addDeclination=true );
 	//  Returns the heading valid flag.
 	static inline bool headingValid() {	return m_headingValid;	}
 	static void setHeading( float h );

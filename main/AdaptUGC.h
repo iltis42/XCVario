@@ -85,6 +85,7 @@ extern uint8_t ucg_font_fub11_hn[];
 class AdaptUGC : public Print{
 public:
 	 void begin();
+	 void advanceCursor( size_t delta );
 	 size_t write(const uint8_t *buffer, size_t size);  // override default implementation
 	 void setColor( uint8_t idx, uint8_t r, uint8_t g, uint8_t b ) { eglib_SetIndexColor(eglib, idx, r, g, b); }
 	 void setColor( uint8_t r, uint8_t g, uint8_t b ) { eglib_SetIndexColor(eglib, 0, r, g, b); }

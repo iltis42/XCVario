@@ -976,7 +976,7 @@ size_t eglib_DrawWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wchar_t u
  * .. image:: eglib_DrawText.png
  *   :width: 200
  */
-void eglib_DrawText(eglib_t *eglib, coordinate_t x, coordinate_t y, const char *utf8_text);
+size_t eglib_DrawText(eglib_t *eglib, coordinate_t x, coordinate_t y, const char *utf8_text);
 
 /**
  * Similar to :c:func:`eglib_DrawText`, but centers text horizontally at given

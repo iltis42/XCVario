@@ -1294,7 +1294,7 @@ static wchar_t utf8_nextchar(const char *utf8_text, uint16_t *index) {
     return c;
 }
 
-void eglib_DrawText(eglib_t *eglib, coordinate_t x, coordinate_t y, const char *utf8_text) {
+size_t eglib_DrawText(eglib_t *eglib, coordinate_t x, coordinate_t y, const char *utf8_text) {
   const struct glyph_t *glyph;
   for(uint16_t index=0 ; utf8_text[index] ; ) {
     glyph = eglib_GetGlyph(eglib, utf8_nextchar(utf8_text, &index));
@@ -1306,13 +1306,13 @@ void eglib_DrawText(eglib_t *eglib, coordinate_t x, coordinate_t y, const char *
       x += glyph->advance;
     }
   }
+  return x;
 }
 
 coordinate_t eglib_GetTextWidth(eglib_t *eglib, const char *utf8_text) {
   // ESP_LOGI( "getWidth",">%s<",utf8_text );
   coordinate_t width;
   width = 0;
-
   for(uint16_t index=0 ; utf8_text[index]; index++ ) {
     const struct glyph_t *glyph;
     glyph = eglib_GetGlyph(eglib, utf8_text[index] );

@@ -63,11 +63,29 @@ void  AdaptUGC::begin() {
 	eglib_Init( &myeglib, &esp32_ili9341, &esp32_ili9341_config, &ili9341, &ili9341_config );
 };
 
-size_t AdaptUGC::write(const uint8_t *buffer, size_t size){
-	eglib_DrawText(eglib, eglib_print_xpos, eglib_print_ypos, (const char *)buffer );
-	return size;
+void AdaptUGC::advanceCursor( size_t delta ){
+	switch(eglib_print_dir) {
+	case UCG_PRINT_DIR_LR:
+		eglib_print_xpos += delta;
+		break;
+	case UCG_PRINT_DIR_RL:
+		eglib_print_xpos -= delta;
+		break;
+	case UCG_PRINT_DIR_TD:
+		delta = eglib->drawing.font->ascent - eglib->drawing.font->descent;
+		eglib_print_ypos += delta;
+		break;
+	default: case UCG_PRINT_DIR_BU:
+		delta = eglib->drawing.font->ascent - eglib->drawing.font->descent;
+		eglib_print_ypos -= delta;
+	}
 }
 
+size_t AdaptUGC::write(const uint8_t *buffer, size_t size){
+	size_t delta = eglib_DrawText(eglib, eglib_print_xpos, eglib_print_ypos, (const char *)buffer );
+	advanceCursor( delta );
+	return size;
+}
 
 size_t AdaptUGC::write(uint8_t c) {
     size_t delta = 0;
@@ -98,25 +116,7 @@ size_t AdaptUGC::write(uint8_t c) {
             break;
         }
     }
- 
-    switch(eglib_print_dir) {
-		case UCG_PRINT_DIR_LR: eglib_print_xpos += delta; break;
-		case UCG_PRINT_DIR_RL: eglib_print_xpos -= delta; break;
-        case UCG_PRINT_DIR_TD: {
-            const struct font_t *font;
-            font = eglib->drawing.font;
-            delta = font->ascent-font->descent;
-            eglib_print_ypos += delta;
-            break;
-        }
-        default: case UCG_PRINT_DIR_BU: {
-            const struct font_t *font;
-            font = eglib->drawing.font;
-            delta = font->ascent-font->descent;
-            eglib_print_ypos -= delta;
-            break;
-        }
-	}
+    advanceCursor( delta );
 	return 1;
 };
 

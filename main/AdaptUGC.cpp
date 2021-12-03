@@ -79,6 +79,7 @@ void AdaptUGC::advanceCursor( size_t delta ){
 		delta = eglib->drawing.font->ascent - eglib->drawing.font->descent;
 		eglib_print_ypos -= delta;
 	}
+	// ESP_LOGI(FNAME, "advanceCursor() delta: %d newc:%d", delta,  eglib_print_xpos );
 }
 
 size_t AdaptUGC::write(const uint8_t *buffer, size_t size){

@@ -1296,17 +1296,22 @@ static wchar_t utf8_nextchar(const char *utf8_text, uint16_t *index) {
 
 size_t eglib_DrawText(eglib_t *eglib, coordinate_t x, coordinate_t y, const char *utf8_text) {
   const struct glyph_t *glyph;
+  // ESP_LOGI( "DrawText()",">%s<  X:%d Y:%d",utf8_text, x,y );
+  size_t total_advance = 0;
   for(uint16_t index=0 ; utf8_text[index] ; ) {
     glyph = eglib_GetGlyph(eglib, utf8_nextchar(utf8_text, &index));
     if(glyph == NULL) {
       draw_missing_glyph(eglib, x, y);
       x += MISSING_GLYPH_ADVANCE;
+      total_advance += MISSING_GLYPH_ADVANCE;
+
     } else {
       eglib_DrawGlyph(eglib, x, y, glyph);
       x += glyph->advance;
+      total_advance += glyph->advance;
     }
   }
-  return x;
+  return total_advance;
 }
 
 coordinate_t eglib_GetTextWidth(eglib_t *eglib, const char *utf8_text) {

@@ -33,29 +33,101 @@ uint8_t ucg_font_fub25_hn[] = { UCG_FONT_FUB25_HN };
 uint8_t ucg_font_fub11_hn[] = { UCG_FONT_FUB11_HN };
 
 static ili9341_config_t ili9341_config = {
-			.width = 240,
-			.height = 320,
-			.color = ILI9341_COLOR_18_BIT,
-			.page_address = ILI9341_PAGE_ADDRESS_TOP_TO_BOTTOM,
-			.colum_address = ILI9341_COLUMN_ADDRESS_LEFT_TO_RIGHT,
-			.page_column_order = ILI9341_PAGE_COLUMN_ORDER_NORMAL,
-			.vertical_refresh = ILI9341_VERTICAL_REFRESH_TOP_TO_BOTTOM,
-			.horizontal_refresh = ILI9341_HORIZONTAL_REFRESH_LEFT_TO_RIGHT,
+		.width = 240,
+		.height = 320,
+		.color = ILI9341_COLOR_18_BIT,
+		.page_address = ILI9341_PAGE_ADDRESS_TOP_TO_BOTTOM,
+		.colum_address = ILI9341_COLUMN_ADDRESS_LEFT_TO_RIGHT,
+		.page_column_order = ILI9341_PAGE_COLUMN_ORDER_NORMAL,
+		.vertical_refresh = ILI9341_VERTICAL_REFRESH_TOP_TO_BOTTOM,
+		.horizontal_refresh = ILI9341_HORIZONTAL_REFRESH_LEFT_TO_RIGHT,
 };
 
 static esp32_hal_config_t esp32_ili9341_config = {
-			.spi_num = 	VSPI,
-			.freq = 	13111111*3,  // max 40 MHz
-			.dataMode = SPI_MODE0,
-			.bitOrder = MSBFIRST,
-			.gpio_scl = SPI_SCLK,
-			.gpio_sda = SPI_MOSI, // I/O Pin 27
-			.gpio_sdo = SPI_MISO, // I/O Pin 32
-			.gpio_cs  = CS_Display,
-			.gpio_dc  = SPI_DC,
-			.gpio_rs  = RESET_Display,
+		.spi_num = 	VSPI,
+		.freq = 	13111111*3,  // max 40 MHz
+		.dataMode = SPI_MODE0,
+		.bitOrder = MSBFIRST,
+		.gpio_scl = SPI_SCLK,
+		.gpio_sda = SPI_MOSI, // I/O Pin 27
+		.gpio_sdo = SPI_MISO, // I/O Pin 32
+		.gpio_cs  = CS_Display,
+		.gpio_dc  = SPI_DC,
+		.gpio_rs  = RESET_Display,
 };
 
+void AdaptUGC::setFont(uint8_t *f, bool filled ){    // adapter
+	eglib_setFilledMode( eglib, filled );
+	switch( f[0] ){
+	case UCG_FONT_9x15B_MF:
+		eglib_SetFont(eglib, &font_FreeFont_FreeMonoBold_15px);
+		eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeMonoBold_15px, &unicode_block_FreeFont_FreeMonoBold_15px_Latin1Supplement);
+		break;
+	case UCG_FONT_NCENR14_HR:
+		eglib_SetFont(eglib, &font_Adobe_NewCenturySchoolbookRoman_20px);
+		break;
+	case UCG_FONT_FUB11_TR:
+		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_15px);
+		break;
+	case UCG_FONT_FUB11_HN:
+		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_18px);
+		break;
+	case UCG_FONT_FUB11_HR:
+		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_15px);
+		break;
+	case UCG_FONT_FUB14_HN:
+		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_18px);
+		break;
+	case UCG_FONT_FUB14_HR:
+		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_20px);
+		break;
+	case UCG_FONT_FUB14_HF:
+		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_20px);
+		eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSansBold_20px, &unicode_block_FreeFont_FreeSansBold_20px_Latin1Supplement);
+		break;
+	case UCG_FONT_FUR14_HF:
+		eglib_SetFont(eglib, &font_FreeFont_FreeSans_20px);
+		eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_20px, &unicode_block_FreeFont_FreeSans_20px_Latin1Supplement);
+		break;
+	case UCG_FONT_FUB17_HF:
+		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_24px);
+		eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSansBold_24px, &unicode_block_FreeFont_FreeSansBold_24px_Latin1Supplement);
+		break;
+	case UCG_FONT_FUB20_HN:
+		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_28px);
+		break;
+	case UCG_FONT_FUB20_HR:
+		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_28px);
+		break;
+	case UCG_FONT_FUB20_HF:
+		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_28px);
+		eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSansBold_28px, &unicode_block_FreeFont_FreeSansBold_28px_Latin1Supplement);
+		break;
+	case UCG_FONT_FUB25_HR:
+		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_32px);
+		break;
+	case UCG_FONT_FUB25_HF:
+		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_32px);
+		break;
+	case UCG_FONT_FUR25_HF:
+		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_32px);
+		break;
+	case UCG_FONT_FUB25_HN:
+		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_32px);
+		break;
+	case UCG_FONT_FUB35_HN:
+		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_54px);
+		break;
+	case UCG_FONT_FUB35_HR:
+		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_54px);
+		break;
+	case UCG_FONT_PROFONT22_MR:
+		eglib_SetFont(eglib, &font_FreeFont_FreeMonoBold_20px);
+		break;
+	default:
+		printf("No Font found !\n");
+	}
+};
 
 void  AdaptUGC::begin() {
 	eglib = &myeglib;
@@ -89,35 +161,35 @@ size_t AdaptUGC::write(const uint8_t *buffer, size_t size){
 }
 
 size_t AdaptUGC::write(uint8_t c) {
-    size_t delta = 0;
-    switch (eglib_font_pos) {
-        case UCG_FONT_POS_BOTTOM: {
-            const struct font_t *font;
-            font = eglib->drawing.font;
-            int16_t ypos = eglib_print_ypos + font->descent; // descent is negativ value!
-            delta = eglib_DrawWChar(eglib, eglib_print_xpos, ypos, wchar_t (c));
-            break;
-        }
-        case UCG_FONT_POS_CENTER: {
-            const struct font_t *font;
-            font = eglib->drawing.font;
-            int16_t ypos = eglib_print_ypos+(font->ascent/2)+(font->descent);
-            delta = eglib_DrawWChar(eglib, eglib_print_xpos, ypos, wchar_t (c));
-            break;
-        }
-        case UCG_FONT_POS_TOP: {
-            const struct font_t *font;
-            font = eglib->drawing.font;
-            int16_t ypos = eglib_print_ypos+font->ascent;
-            delta = eglib_DrawWChar(eglib, eglib_print_xpos, ypos, wchar_t (c));
-            break;
-        }
-        default: case UCG_FONT_POS_BASE: {
-            delta = eglib_DrawWChar(eglib, eglib_print_xpos, eglib_print_ypos, wchar_t (c));
-            break;
-        }
-    }
-    advanceCursor( delta );
+	size_t delta = 0;
+	switch (eglib_font_pos) {
+	case UCG_FONT_POS_BOTTOM: {
+		const struct font_t *font;
+		font = eglib->drawing.font;
+		int16_t ypos = eglib_print_ypos + font->descent; // descent is negativ value!
+		delta = eglib_DrawWChar(eglib, eglib_print_xpos, ypos, wchar_t (c));
+		break;
+	}
+	case UCG_FONT_POS_CENTER: {
+		const struct font_t *font;
+		font = eglib->drawing.font;
+		int16_t ypos = eglib_print_ypos+(font->ascent/2)+(font->descent);
+		delta = eglib_DrawWChar(eglib, eglib_print_xpos, ypos, wchar_t (c));
+		break;
+	}
+	case UCG_FONT_POS_TOP: {
+		const struct font_t *font;
+		font = eglib->drawing.font;
+		int16_t ypos = eglib_print_ypos+font->ascent;
+		delta = eglib_DrawWChar(eglib, eglib_print_xpos, ypos, wchar_t (c));
+		break;
+	}
+	default: case UCG_FONT_POS_BASE: {
+		delta = eglib_DrawWChar(eglib, eglib_print_xpos, eglib_print_ypos, wchar_t (c));
+		break;
+	}
+	}
+	advanceCursor( delta );
 	return 1;
 };
 

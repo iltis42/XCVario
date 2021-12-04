@@ -2557,7 +2557,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_CourierBoldOblique_8px_La
   },
 };
 
-struct font_t font_Adobe_CourierBoldOblique_8px = {
+const struct font_t font_Adobe_CourierBoldOblique_8px = {
   .pixel_size = 8,
   .ascent = 7,
   .descent = -2,
@@ -5125,7 +5125,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_CourierBoldOblique_10px_L
   },
 };
 
-struct font_t font_Adobe_CourierBoldOblique_10px = {
+const struct font_t font_Adobe_CourierBoldOblique_10px = {
   .pixel_size = 10,
   .ascent = 8,
   .descent = -2,
@@ -7693,7 +7693,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_CourierBoldOblique_11px_L
   },
 };
 
-struct font_t font_Adobe_CourierBoldOblique_11px = {
+const struct font_t font_Adobe_CourierBoldOblique_11px = {
   .pixel_size = 11,
   .ascent = 8,
   .descent = -2,
@@ -10261,7 +10261,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_CourierBoldOblique_12px_L
   },
 };
 
-struct font_t font_Adobe_CourierBoldOblique_12px = {
+const struct font_t font_Adobe_CourierBoldOblique_12px = {
   .pixel_size = 12,
   .ascent = 10,
   .descent = -3,
@@ -12829,7 +12829,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_CourierBoldOblique_14px_L
   },
 };
 
-struct font_t font_Adobe_CourierBoldOblique_14px = {
+const struct font_t font_Adobe_CourierBoldOblique_14px = {
   .pixel_size = 14,
   .ascent = 11,
   .descent = -4,
@@ -15397,7 +15397,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_CourierBoldOblique_17px_L
   },
 };
 
-struct font_t font_Adobe_CourierBoldOblique_17px = {
+const struct font_t font_Adobe_CourierBoldOblique_17px = {
   .pixel_size = 17,
   .ascent = 12,
   .descent = -3,
@@ -17965,7 +17965,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_CourierBoldOblique_18px_L
   },
 };
 
-struct font_t font_Adobe_CourierBoldOblique_18px = {
+const struct font_t font_Adobe_CourierBoldOblique_18px = {
   .pixel_size = 18,
   .ascent = 14,
   .descent = -4,
@@ -20533,7 +20533,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_CourierBoldOblique_20px_L
   },
 };
 
-struct font_t font_Adobe_CourierBoldOblique_20px = {
+const struct font_t font_Adobe_CourierBoldOblique_20px = {
   .pixel_size = 20,
   .ascent = 13,
   .descent = -5,
@@ -23101,7 +23101,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_CourierBoldOblique_24px_L
   },
 };
 
-struct font_t font_Adobe_CourierBoldOblique_24px = {
+const struct font_t font_Adobe_CourierBoldOblique_24px = {
   .pixel_size = 24,
   .ascent = 19,
   .descent = -5,
@@ -25669,7 +25669,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_CourierBoldOblique_25px_L
   },
 };
 
-struct font_t font_Adobe_CourierBoldOblique_25px = {
+const struct font_t font_Adobe_CourierBoldOblique_25px = {
   .pixel_size = 25,
   .ascent = 18,
   .descent = -5,
@@ -28237,7 +28237,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_CourierBoldOblique_34px_L
   },
 };
 
-struct font_t font_Adobe_CourierBoldOblique_34px = {
+const struct font_t font_Adobe_CourierBoldOblique_34px = {
   .pixel_size = 34,
   .ascent = 23,
   .descent = -7,

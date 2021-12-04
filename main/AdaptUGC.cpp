@@ -9,30 +9,30 @@
 
 static eglib_t myeglib;
 
-uint8_t ucg_font_9x15B_mf[] = { UCG_FONT_9x15B_MF };
-uint8_t ucg_font_ncenR14_hr[] = { UCG_FONT_NCENR14_HR };
-uint8_t ucg_font_fub11_tr[] = { UCG_FONT_FUB11_TR };
-uint8_t ucg_font_fub11_hr[] = { UCG_FONT_FUB11_HR };
-uint8_t ucg_font_fub14_hn[] = { UCG_FONT_FUB14_HN };
-uint8_t ucg_font_fub14_hr[] = { UCG_FONT_FUB14_HR };
-uint8_t ucg_font_fub14_hf[] = { UCG_FONT_FUB14_HF };
-uint8_t ucg_font_fur14_hf[] = { UCG_FONT_FUR14_HF };
-uint8_t ucg_font_fub17_hf[] = { UCG_FONT_FUB17_HF };
-uint8_t ucg_font_fub20_hn[] = { UCG_FONT_FUB20_HN };
-uint8_t ucg_font_fub20_hr[] = { UCG_FONT_FUB20_HR };
-uint8_t ucg_font_fub20_hf[] = { UCG_FONT_FUB20_HF };
-uint8_t ucg_font_fur20_hf[] = { UCG_FONT_FUR20_HF };
-uint8_t ucg_font_fub25_hr[] = { UCG_FONT_FUB25_HR };
-uint8_t ucg_font_fub25_hf[] = { UCG_FONT_FUB25_HF };
-uint8_t ucg_font_fur25_hf[] = { UCG_FONT_FUR25_HF };
-uint8_t ucg_font_fub35_hn[] = { UCG_FONT_FUB35_HN };
-uint8_t ucg_font_fub35_hr[] = { UCG_FONT_FUB35_HR };
+uint8_t PROGMEM ucg_font_9x15B_mf[] = { UCG_FONT_9x15B_MF };
+uint8_t PROGMEM ucg_font_ncenR14_hr[] = { UCG_FONT_NCENR14_HR };
+uint8_t PROGMEM ucg_font_fub11_tr[] = { UCG_FONT_FUB11_TR };
+uint8_t PROGMEM ucg_font_fub11_hr[] = { UCG_FONT_FUB11_HR };
+uint8_t PROGMEM ucg_font_fub14_hn[] = { UCG_FONT_FUB14_HN };
+uint8_t PROGMEM ucg_font_fub14_hr[] = { UCG_FONT_FUB14_HR };
+uint8_t PROGMEM ucg_font_fub14_hf[] = { UCG_FONT_FUB14_HF };
+uint8_t PROGMEM ucg_font_fur14_hf[] = { UCG_FONT_FUR14_HF };
+uint8_t PROGMEM ucg_font_fub17_hf[] = { UCG_FONT_FUB17_HF };
+uint8_t PROGMEM ucg_font_fub20_hn[] = { UCG_FONT_FUB20_HN };
+uint8_t PROGMEM ucg_font_fub20_hr[] = { UCG_FONT_FUB20_HR };
+uint8_t PROGMEM ucg_font_fub20_hf[] = { UCG_FONT_FUB20_HF };
+uint8_t PROGMEM ucg_font_fur20_hf[] = { UCG_FONT_FUR20_HF };
+uint8_t PROGMEM ucg_font_fub25_hr[] = { UCG_FONT_FUB25_HR };
+uint8_t PROGMEM ucg_font_fub25_hf[] = { UCG_FONT_FUB25_HF };
+uint8_t PROGMEM ucg_font_fur25_hf[] = { UCG_FONT_FUR25_HF };
+uint8_t PROGMEM ucg_font_fub35_hn[] = { UCG_FONT_FUB35_HN };
+uint8_t PROGMEM ucg_font_fub35_hr[] = { UCG_FONT_FUB35_HR };
 
-uint8_t ucg_font_profont22_mr[] = {  UCG_FONT_PROFONT22_MR };
-uint8_t ucg_font_fub25_hn[] = { UCG_FONT_FUB25_HN };
-uint8_t ucg_font_fub11_hn[] = { UCG_FONT_FUB11_HN };
+uint8_t PROGMEM ucg_font_profont22_mr[] = {  UCG_FONT_PROFONT22_MR };
+uint8_t PROGMEM ucg_font_fub25_hn[] = { UCG_FONT_FUB25_HN };
+uint8_t PROGMEM ucg_font_fub11_hn[] = { UCG_FONT_FUB11_HN };
 
-static ili9341_config_t ili9341_config = {
+static PROGMEM ili9341_config_t ili9341_config = {
 		.width = 240,
 		.height = 320,
 		.color = ILI9341_COLOR_18_BIT,
@@ -43,7 +43,7 @@ static ili9341_config_t ili9341_config = {
 		.horizontal_refresh = ILI9341_HORIZONTAL_REFRESH_LEFT_TO_RIGHT,
 };
 
-static esp32_hal_config_t esp32_ili9341_config = {
+static PROGMEM esp32_hal_config_t esp32_ili9341_config = {
 		.spi_num = 	VSPI,
 		.freq = 	13111111*3,  // max 40 MHz
 		.dataMode = SPI_MODE0,
@@ -61,7 +61,6 @@ void AdaptUGC::setFont(uint8_t *f, bool filled ){    // adapter
 	switch( f[0] ){
 	case UCG_FONT_9x15B_MF:
 		eglib_SetFont(eglib, &font_FreeFont_FreeMonoBold_15px);
-		eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeMonoBold_15px, &unicode_block_FreeFont_FreeMonoBold_15px_Latin1Supplement);
 		break;
 	case UCG_FONT_NCENR14_HR:
 		eglib_SetFont(eglib, &font_Adobe_NewCenturySchoolbookRoman_20px);
@@ -83,15 +82,12 @@ void AdaptUGC::setFont(uint8_t *f, bool filled ){    // adapter
 		break;
 	case UCG_FONT_FUB14_HF:
 		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_20px);
-		eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSansBold_20px, &unicode_block_FreeFont_FreeSansBold_20px_Latin1Supplement);
 		break;
 	case UCG_FONT_FUR14_HF:
 		eglib_SetFont(eglib, &font_FreeFont_FreeSans_20px);
-		eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSans_20px, &unicode_block_FreeFont_FreeSans_20px_Latin1Supplement);
 		break;
 	case UCG_FONT_FUB17_HF:
 		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_24px);
-		eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSansBold_24px, &unicode_block_FreeFont_FreeSansBold_24px_Latin1Supplement);
 		break;
 	case UCG_FONT_FUB20_HN:
 		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_28px);
@@ -101,7 +97,6 @@ void AdaptUGC::setFont(uint8_t *f, bool filled ){    // adapter
 		break;
 	case UCG_FONT_FUB20_HF:
 		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_28px);
-		eglib_AddUnicodeBlockToFont(&font_FreeFont_FreeSansBold_28px, &unicode_block_FreeFont_FreeSansBold_28px_Latin1Supplement);
 		break;
 	case UCG_FONT_FUB25_HR:
 		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_32px);

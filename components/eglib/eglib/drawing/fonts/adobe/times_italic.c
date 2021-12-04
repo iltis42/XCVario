@@ -2557,7 +2557,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesItalic_8px_LatinExte
   },
 };
 
-struct font_t font_Adobe_TimesItalic_8px = {
+const struct font_t font_Adobe_TimesItalic_8px = {
   .pixel_size = 8,
   .ascent = 7,
   .descent = -2,
@@ -5125,7 +5125,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesItalic_10px_LatinExt
   },
 };
 
-struct font_t font_Adobe_TimesItalic_10px = {
+const struct font_t font_Adobe_TimesItalic_10px = {
   .pixel_size = 10,
   .ascent = 9,
   .descent = -3,
@@ -7693,7 +7693,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesItalic_11px_LatinExt
   },
 };
 
-struct font_t font_Adobe_TimesItalic_11px = {
+const struct font_t font_Adobe_TimesItalic_11px = {
   .pixel_size = 11,
   .ascent = 8,
   .descent = -3,
@@ -10261,7 +10261,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesItalic_12px_LatinExt
   },
 };
 
-struct font_t font_Adobe_TimesItalic_12px = {
+const struct font_t font_Adobe_TimesItalic_12px = {
   .pixel_size = 12,
   .ascent = 11,
   .descent = -3,
@@ -12829,7 +12829,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesItalic_14px_LatinExt
   },
 };
 
-struct font_t font_Adobe_TimesItalic_14px = {
+const struct font_t font_Adobe_TimesItalic_14px = {
   .pixel_size = 14,
   .ascent = 12,
   .descent = -3,
@@ -15397,7 +15397,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesItalic_17px_LatinExt
   },
 };
 
-struct font_t font_Adobe_TimesItalic_17px = {
+const struct font_t font_Adobe_TimesItalic_17px = {
   .pixel_size = 17,
   .ascent = 13,
   .descent = -4,
@@ -17965,7 +17965,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesItalic_18px_LatinExt
   },
 };
 
-struct font_t font_Adobe_TimesItalic_18px = {
+const struct font_t font_Adobe_TimesItalic_18px = {
   .pixel_size = 18,
   .ascent = 15,
   .descent = -4,
@@ -20533,7 +20533,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesItalic_20px_LatinExt
   },
 };
 
-struct font_t font_Adobe_TimesItalic_20px = {
+const struct font_t font_Adobe_TimesItalic_20px = {
   .pixel_size = 20,
   .ascent = 15,
   .descent = -4,
@@ -23101,7 +23101,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesItalic_24px_LatinExt
   },
 };
 
-struct font_t font_Adobe_TimesItalic_24px = {
+const struct font_t font_Adobe_TimesItalic_24px = {
   .pixel_size = 24,
   .ascent = 20,
   .descent = -5,
@@ -25669,7 +25669,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesItalic_25px_LatinExt
   },
 };
 
-struct font_t font_Adobe_TimesItalic_25px = {
+const struct font_t font_Adobe_TimesItalic_25px = {
   .pixel_size = 25,
   .ascent = 20,
   .descent = -5,
@@ -28237,7 +28237,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesItalic_34px_LatinExt
   },
 };
 
-struct font_t font_Adobe_TimesItalic_34px = {
+const struct font_t font_Adobe_TimesItalic_34px = {
   .pixel_size = 34,
   .ascent = 27,
   .descent = -7,

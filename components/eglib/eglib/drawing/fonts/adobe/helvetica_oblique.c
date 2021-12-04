@@ -2557,7 +2557,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaOblique_8px_Lati
   },
 };
 
-struct font_t font_Adobe_HelveticaOblique_8px = {
+const struct font_t font_Adobe_HelveticaOblique_8px = {
   .pixel_size = 8,
   .ascent = 8,
   .descent = -2,
@@ -5125,7 +5125,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaOblique_10px_Lat
   },
 };
 
-struct font_t font_Adobe_HelveticaOblique_10px = {
+const struct font_t font_Adobe_HelveticaOblique_10px = {
   .pixel_size = 10,
   .ascent = 10,
   .descent = -2,
@@ -7693,7 +7693,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaOblique_11px_Lat
   },
 };
 
-struct font_t font_Adobe_HelveticaOblique_11px = {
+const struct font_t font_Adobe_HelveticaOblique_11px = {
   .pixel_size = 11,
   .ascent = 10,
   .descent = -2,
@@ -10261,7 +10261,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaOblique_12px_Lat
   },
 };
 
-struct font_t font_Adobe_HelveticaOblique_12px = {
+const struct font_t font_Adobe_HelveticaOblique_12px = {
   .pixel_size = 12,
   .ascent = 11,
   .descent = -3,
@@ -12829,7 +12829,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaOblique_14px_Lat
   },
 };
 
-struct font_t font_Adobe_HelveticaOblique_14px = {
+const struct font_t font_Adobe_HelveticaOblique_14px = {
   .pixel_size = 14,
   .ascent = 13,
   .descent = -3,
@@ -15397,7 +15397,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaOblique_17px_Lat
   },
 };
 
-struct font_t font_Adobe_HelveticaOblique_17px = {
+const struct font_t font_Adobe_HelveticaOblique_17px = {
   .pixel_size = 17,
   .ascent = 14,
   .descent = -4,
@@ -17965,7 +17965,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaOblique_18px_Lat
   },
 };
 
-struct font_t font_Adobe_HelveticaOblique_18px = {
+const struct font_t font_Adobe_HelveticaOblique_18px = {
   .pixel_size = 18,
   .ascent = 16,
   .descent = -5,
@@ -20533,7 +20533,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaOblique_20px_Lat
   },
 };
 
-struct font_t font_Adobe_HelveticaOblique_20px = {
+const struct font_t font_Adobe_HelveticaOblique_20px = {
   .pixel_size = 20,
   .ascent = 16,
   .descent = -5,
@@ -23101,7 +23101,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaOblique_24px_Lat
   },
 };
 
-struct font_t font_Adobe_HelveticaOblique_24px = {
+const struct font_t font_Adobe_HelveticaOblique_24px = {
   .pixel_size = 24,
   .ascent = 22,
   .descent = -5,
@@ -25669,7 +25669,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaOblique_25px_Lat
   },
 };
 
-struct font_t font_Adobe_HelveticaOblique_25px = {
+const struct font_t font_Adobe_HelveticaOblique_25px = {
   .pixel_size = 25,
   .ascent = 22,
   .descent = -5,
@@ -28237,7 +28237,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaOblique_34px_Lat
   },
 };
 
-struct font_t font_Adobe_HelveticaOblique_34px = {
+const struct font_t font_Adobe_HelveticaOblique_34px = {
   .pixel_size = 34,
   .ascent = 28,
   .descent = -7,

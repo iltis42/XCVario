@@ -1652,6 +1652,7 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y) {
 			ucg->setFont(ucg_font_fub20_hf, true);
 			ucg->setPrintPos(x+5, y);
 			ucg->print("\xb0 ");
+			// ucg->print("° ");
 			prev_heading = heading;
 		}
 	}

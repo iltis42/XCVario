@@ -2557,7 +2557,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_NewCentuySchoolbookBold_1
   },
 };
 
-struct font_t font_Adobe_NewCentuySchoolbookBold_12px = {
+const struct font_t font_Adobe_NewCentuySchoolbookBold_12px = {
   .pixel_size = 12,
   .ascent = 11,
   .descent = -3,

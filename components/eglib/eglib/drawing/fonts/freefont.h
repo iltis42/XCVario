@@ -28,7 +28,7 @@
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_7px;
+extern const struct font_t font_FreeFont_FreeMono_7px;
 
 /**
  * Unicode blocks
@@ -65,7 +65,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_7px_Su
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_8px;
+extern const struct font_t font_FreeFont_FreeMono_8px;
 
 /**
  * Unicode blocks
@@ -102,7 +102,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_8px_Su
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_9px;
+extern const struct font_t font_FreeFont_FreeMono_9px;
 
 /**
  * Unicode blocks
@@ -139,7 +139,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_9px_Su
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_10px;
+extern const struct font_t font_FreeFont_FreeMono_10px;
 
 /**
  * Unicode blocks
@@ -176,7 +176,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_10px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_11px;
+extern const struct font_t font_FreeFont_FreeMono_11px;
 
 /**
  * Unicode blocks
@@ -213,7 +213,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_11px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_12px;
+extern const struct font_t font_FreeFont_FreeMono_12px;
 
 /**
  * Unicode blocks
@@ -250,7 +250,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_12px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_13px;
+extern const struct font_t font_FreeFont_FreeMono_13px;
 
 /**
  * Unicode blocks
@@ -287,7 +287,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_13px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_14px;
+extern const struct font_t font_FreeFont_FreeMono_14px;
 
 /**
  * Unicode blocks
@@ -324,7 +324,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_14px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_15px;
+extern const struct font_t font_FreeFont_FreeMono_15px;
 
 /**
  * Unicode blocks
@@ -361,7 +361,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_15px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_16px;
+extern const struct font_t font_FreeFont_FreeMono_16px;
 
 /**
  * Unicode blocks
@@ -398,7 +398,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_16px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_18px;
+extern const struct font_t font_FreeFont_FreeMono_18px;
 
 /**
  * Unicode blocks
@@ -435,7 +435,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_18px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_20px;
+extern const struct font_t font_FreeFont_FreeMono_20px;
 
 /**
  * Unicode blocks
@@ -472,7 +472,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_20px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_22px;
+extern const struct font_t font_FreeFont_FreeMono_22px;
 
 /**
  * Unicode blocks
@@ -509,7 +509,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_22px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_24px;
+extern const struct font_t font_FreeFont_FreeMono_24px;
 
 /**
  * Unicode blocks
@@ -546,7 +546,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_24px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_26px;
+extern const struct font_t font_FreeFont_FreeMono_26px;
 
 /**
  * Unicode blocks
@@ -583,7 +583,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_26px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_28px;
+extern const struct font_t font_FreeFont_FreeMono_28px;
 
 /**
  * Unicode blocks
@@ -620,7 +620,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_28px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_32px;
+extern const struct font_t font_FreeFont_FreeMono_32px;
 
 /**
  * Unicode blocks
@@ -657,7 +657,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_32px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_36px;
+extern const struct font_t font_FreeFont_FreeMono_36px;
 
 /**
  * Unicode blocks
@@ -694,7 +694,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_36px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_40px;
+extern const struct font_t font_FreeFont_FreeMono_40px;
 
 /**
  * Unicode blocks
@@ -731,7 +731,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_40px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_44px;
+extern const struct font_t font_FreeFont_FreeMono_44px;
 
 /**
  * Unicode blocks
@@ -768,7 +768,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_44px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_48px;
+extern const struct font_t font_FreeFont_FreeMono_48px;
 
 /**
  * Unicode blocks
@@ -805,7 +805,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_48px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_54px;
+extern const struct font_t font_FreeFont_FreeMono_54px;
 
 /**
  * Unicode blocks
@@ -842,7 +842,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_54px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_60px;
+extern const struct font_t font_FreeFont_FreeMono_60px;
 
 /**
  * Unicode blocks
@@ -879,7 +879,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_60px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_66px;
+extern const struct font_t font_FreeFont_FreeMono_66px;
 
 /**
  * Unicode blocks
@@ -916,7 +916,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_66px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_72px;
+extern const struct font_t font_FreeFont_FreeMono_72px;
 
 /**
  * Unicode blocks
@@ -953,7 +953,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_72px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_80px;
+extern const struct font_t font_FreeFont_FreeMono_80px;
 
 /**
  * Unicode blocks
@@ -990,7 +990,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_80px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_83px;
+extern const struct font_t font_FreeFont_FreeMono_83px;
 
 /**
  * Unicode blocks
@@ -1027,7 +1027,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_83px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_88px;
+extern const struct font_t font_FreeFont_FreeMono_88px;
 
 /**
  * Unicode blocks
@@ -1064,7 +1064,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_88px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMono_96px;
+extern const struct font_t font_FreeFont_FreeMono_96px;
 
 /**
  * Unicode blocks
@@ -1106,7 +1106,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_96px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_7px;
+extern const struct font_t font_FreeFont_FreeMonoBold_7px;
 
 /**
  * Unicode blocks
@@ -1143,7 +1143,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_7p
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_8px;
+extern const struct font_t font_FreeFont_FreeMonoBold_8px;
 
 /**
  * Unicode blocks
@@ -1180,7 +1180,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_8p
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_9px;
+extern const struct font_t font_FreeFont_FreeMonoBold_9px;
 
 /**
  * Unicode blocks
@@ -1217,7 +1217,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_9p
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_10px;
+extern const struct font_t font_FreeFont_FreeMonoBold_10px;
 
 /**
  * Unicode blocks
@@ -1254,7 +1254,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_10
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_11px;
+extern const struct font_t font_FreeFont_FreeMonoBold_11px;
 
 /**
  * Unicode blocks
@@ -1291,7 +1291,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_11
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_12px;
+extern const struct font_t font_FreeFont_FreeMonoBold_12px;
 
 /**
  * Unicode blocks
@@ -1328,7 +1328,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_12
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_13px;
+extern const struct font_t font_FreeFont_FreeMonoBold_13px;
 
 /**
  * Unicode blocks
@@ -1365,7 +1365,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_13
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_14px;
+extern const struct font_t font_FreeFont_FreeMonoBold_14px;
 
 /**
  * Unicode blocks
@@ -1402,7 +1402,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_14
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_15px;
+extern const struct font_t font_FreeFont_FreeMonoBold_15px;
 
 /**
  * Unicode blocks
@@ -1439,7 +1439,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_15
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_16px;
+extern const struct font_t font_FreeFont_FreeMonoBold_16px;
 
 /**
  * Unicode blocks
@@ -1476,7 +1476,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_16
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_18px;
+extern const struct font_t font_FreeFont_FreeMonoBold_18px;
 
 /**
  * Unicode blocks
@@ -1513,7 +1513,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_18
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_20px;
+extern const struct font_t font_FreeFont_FreeMonoBold_20px;
 
 /**
  * Unicode blocks
@@ -1550,7 +1550,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_20
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_22px;
+extern const struct font_t font_FreeFont_FreeMonoBold_22px;
 
 /**
  * Unicode blocks
@@ -1587,7 +1587,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_22
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_24px;
+extern const struct font_t font_FreeFont_FreeMonoBold_24px;
 
 /**
  * Unicode blocks
@@ -1624,7 +1624,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_24
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_26px;
+extern const struct font_t font_FreeFont_FreeMonoBold_26px;
 
 /**
  * Unicode blocks
@@ -1661,7 +1661,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_26
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_28px;
+extern const struct font_t font_FreeFont_FreeMonoBold_28px;
 
 /**
  * Unicode blocks
@@ -1698,7 +1698,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_28
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_32px;
+extern const struct font_t font_FreeFont_FreeMonoBold_32px;
 
 /**
  * Unicode blocks
@@ -1735,7 +1735,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_32
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_36px;
+extern const struct font_t font_FreeFont_FreeMonoBold_36px;
 
 /**
  * Unicode blocks
@@ -1772,7 +1772,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_36
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_40px;
+extern const struct font_t font_FreeFont_FreeMonoBold_40px;
 
 /**
  * Unicode blocks
@@ -1809,7 +1809,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_40
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_44px;
+extern const struct font_t font_FreeFont_FreeMonoBold_44px;
 
 /**
  * Unicode blocks
@@ -1846,7 +1846,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_44
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_48px;
+extern const struct font_t font_FreeFont_FreeMonoBold_48px;
 
 /**
  * Unicode blocks
@@ -1883,7 +1883,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_48
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_54px;
+extern const struct font_t font_FreeFont_FreeMonoBold_54px;
 
 /**
  * Unicode blocks
@@ -1920,7 +1920,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_54
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_60px;
+extern const struct font_t font_FreeFont_FreeMonoBold_60px;
 
 /**
  * Unicode blocks
@@ -1957,7 +1957,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_60
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_66px;
+extern const struct font_t font_FreeFont_FreeMonoBold_66px;
 
 /**
  * Unicode blocks
@@ -1994,7 +1994,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_66
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_72px;
+extern const struct font_t font_FreeFont_FreeMonoBold_72px;
 
 /**
  * Unicode blocks
@@ -2031,7 +2031,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_72
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_80px;
+extern const struct font_t font_FreeFont_FreeMonoBold_80px;
 
 /**
  * Unicode blocks
@@ -2068,7 +2068,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_80
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_83px;
+extern const struct font_t font_FreeFont_FreeMonoBold_83px;
 
 /**
  * Unicode blocks
@@ -2105,7 +2105,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_83
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_88px;
+extern const struct font_t font_FreeFont_FreeMonoBold_88px;
 
 /**
  * Unicode blocks
@@ -2142,7 +2142,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_88
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBold_96px;
+extern const struct font_t font_FreeFont_FreeMonoBold_96px;
 
 /**
  * Unicode blocks
@@ -2184,7 +2184,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBold_96
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_7px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_7px;
 
 /**
  * Unicode blocks
@@ -2221,7 +2221,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_8px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_8px;
 
 /**
  * Unicode blocks
@@ -2258,7 +2258,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_9px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_9px;
 
 /**
  * Unicode blocks
@@ -2295,7 +2295,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_10px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_10px;
 
 /**
  * Unicode blocks
@@ -2332,7 +2332,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_11px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_11px;
 
 /**
  * Unicode blocks
@@ -2369,7 +2369,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_12px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_12px;
 
 /**
  * Unicode blocks
@@ -2406,7 +2406,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_13px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_13px;
 
 /**
  * Unicode blocks
@@ -2443,7 +2443,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_14px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_14px;
 
 /**
  * Unicode blocks
@@ -2480,7 +2480,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_15px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_15px;
 
 /**
  * Unicode blocks
@@ -2517,7 +2517,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_16px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_16px;
 
 /**
  * Unicode blocks
@@ -2554,7 +2554,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_18px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_18px;
 
 /**
  * Unicode blocks
@@ -2591,7 +2591,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_20px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_20px;
 
 /**
  * Unicode blocks
@@ -2628,7 +2628,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_22px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_22px;
 
 /**
  * Unicode blocks
@@ -2665,7 +2665,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_24px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_24px;
 
 /**
  * Unicode blocks
@@ -2702,7 +2702,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_26px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_26px;
 
 /**
  * Unicode blocks
@@ -2739,7 +2739,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_28px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_28px;
 
 /**
  * Unicode blocks
@@ -2776,7 +2776,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_32px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_32px;
 
 /**
  * Unicode blocks
@@ -2813,7 +2813,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_36px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_36px;
 
 /**
  * Unicode blocks
@@ -2850,7 +2850,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_40px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_40px;
 
 /**
  * Unicode blocks
@@ -2887,7 +2887,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_44px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_44px;
 
 /**
  * Unicode blocks
@@ -2924,7 +2924,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_48px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_48px;
 
 /**
  * Unicode blocks
@@ -2961,7 +2961,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_54px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_54px;
 
 /**
  * Unicode blocks
@@ -2998,7 +2998,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_60px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_60px;
 
 /**
  * Unicode blocks
@@ -3035,7 +3035,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_66px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_66px;
 
 /**
  * Unicode blocks
@@ -3072,7 +3072,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_72px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_72px;
 
 /**
  * Unicode blocks
@@ -3109,7 +3109,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_80px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_80px;
 
 /**
  * Unicode blocks
@@ -3146,7 +3146,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_83px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_83px;
 
 /**
  * Unicode blocks
@@ -3183,7 +3183,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_88px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_88px;
 
 /**
  * Unicode blocks
@@ -3220,7 +3220,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoBoldOblique_96px;
+extern const struct font_t font_FreeFont_FreeMonoBoldOblique_96px;
 
 /**
  * Unicode blocks
@@ -3262,7 +3262,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_7px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_7px;
 
 /**
  * Unicode blocks
@@ -3299,7 +3299,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_8px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_8px;
 
 /**
  * Unicode blocks
@@ -3336,7 +3336,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_9px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_9px;
 
 /**
  * Unicode blocks
@@ -3373,7 +3373,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_10px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_10px;
 
 /**
  * Unicode blocks
@@ -3410,7 +3410,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_11px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_11px;
 
 /**
  * Unicode blocks
@@ -3447,7 +3447,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_12px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_12px;
 
 /**
  * Unicode blocks
@@ -3484,7 +3484,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_13px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_13px;
 
 /**
  * Unicode blocks
@@ -3521,7 +3521,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_14px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_14px;
 
 /**
  * Unicode blocks
@@ -3558,7 +3558,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_15px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_15px;
 
 /**
  * Unicode blocks
@@ -3595,7 +3595,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_16px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_16px;
 
 /**
  * Unicode blocks
@@ -3632,7 +3632,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_18px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_18px;
 
 /**
  * Unicode blocks
@@ -3669,7 +3669,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_20px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_20px;
 
 /**
  * Unicode blocks
@@ -3706,7 +3706,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_22px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_22px;
 
 /**
  * Unicode blocks
@@ -3743,7 +3743,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_24px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_24px;
 
 /**
  * Unicode blocks
@@ -3780,7 +3780,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_26px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_26px;
 
 /**
  * Unicode blocks
@@ -3817,7 +3817,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_28px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_28px;
 
 /**
  * Unicode blocks
@@ -3854,7 +3854,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_32px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_32px;
 
 /**
  * Unicode blocks
@@ -3891,7 +3891,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_36px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_36px;
 
 /**
  * Unicode blocks
@@ -3928,7 +3928,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_40px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_40px;
 
 /**
  * Unicode blocks
@@ -3965,7 +3965,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_44px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_44px;
 
 /**
  * Unicode blocks
@@ -4002,7 +4002,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_48px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_48px;
 
 /**
  * Unicode blocks
@@ -4039,7 +4039,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_54px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_54px;
 
 /**
  * Unicode blocks
@@ -4076,7 +4076,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_60px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_60px;
 
 /**
  * Unicode blocks
@@ -4113,7 +4113,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_66px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_66px;
 
 /**
  * Unicode blocks
@@ -4150,7 +4150,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_72px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_72px;
 
 /**
  * Unicode blocks
@@ -4187,7 +4187,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_80px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_80px;
 
 /**
  * Unicode blocks
@@ -4224,7 +4224,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_83px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_83px;
 
 /**
  * Unicode blocks
@@ -4261,7 +4261,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_88px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_88px;
 
 /**
  * Unicode blocks
@@ -4298,7 +4298,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeMonoOblique_96px;
+extern const struct font_t font_FreeFont_FreeMonoOblique_96px;
 
 /**
  * Unicode blocks
@@ -4340,7 +4340,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMonoOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_7px;
+extern const struct font_t font_FreeFont_FreeSans_7px;
 
 /**
  * Unicode blocks
@@ -4377,7 +4377,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_7px_Su
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_8px;
+extern const struct font_t font_FreeFont_FreeSans_8px;
 
 /**
  * Unicode blocks
@@ -4414,7 +4414,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_8px_Su
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_9px;
+extern const struct font_t font_FreeFont_FreeSans_9px;
 
 /**
  * Unicode blocks
@@ -4451,7 +4451,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_9px_Su
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_10px;
+extern const struct font_t font_FreeFont_FreeSans_10px;
 
 /**
  * Unicode blocks
@@ -4488,7 +4488,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_10px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_11px;
+extern const struct font_t font_FreeFont_FreeSans_11px;
 
 /**
  * Unicode blocks
@@ -4525,7 +4525,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_11px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_12px;
+extern const struct font_t font_FreeFont_FreeSans_12px;
 
 /**
  * Unicode blocks
@@ -4562,7 +4562,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_12px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_13px;
+extern const struct font_t font_FreeFont_FreeSans_13px;
 
 /**
  * Unicode blocks
@@ -4599,7 +4599,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_13px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_14px;
+extern const struct font_t font_FreeFont_FreeSans_14px;
 
 /**
  * Unicode blocks
@@ -4636,7 +4636,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_14px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_15px;
+extern const struct font_t font_FreeFont_FreeSans_15px;
 
 /**
  * Unicode blocks
@@ -4673,7 +4673,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_15px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_16px;
+extern const struct font_t font_FreeFont_FreeSans_16px;
 
 /**
  * Unicode blocks
@@ -4710,7 +4710,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_16px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_18px;
+extern const struct font_t font_FreeFont_FreeSans_18px;
 
 /**
  * Unicode blocks
@@ -4747,7 +4747,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_18px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_20px;
+extern const struct font_t font_FreeFont_FreeSans_20px;
 
 /**
  * Unicode blocks
@@ -4784,7 +4784,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_20px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_22px;
+extern const struct font_t font_FreeFont_FreeSans_22px;
 
 /**
  * Unicode blocks
@@ -4821,7 +4821,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_22px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_24px;
+extern const struct font_t font_FreeFont_FreeSans_24px;
 
 /**
  * Unicode blocks
@@ -4858,7 +4858,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_24px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_26px;
+extern const struct font_t font_FreeFont_FreeSans_26px;
 
 /**
  * Unicode blocks
@@ -4895,7 +4895,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_26px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_28px;
+extern const struct font_t font_FreeFont_FreeSans_28px;
 
 /**
  * Unicode blocks
@@ -4932,7 +4932,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_28px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_32px;
+extern const struct font_t font_FreeFont_FreeSans_32px;
 
 /**
  * Unicode blocks
@@ -4969,7 +4969,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_32px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_36px;
+extern const struct font_t font_FreeFont_FreeSans_36px;
 
 /**
  * Unicode blocks
@@ -5006,7 +5006,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_36px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_40px;
+extern const struct font_t font_FreeFont_FreeSans_40px;
 
 /**
  * Unicode blocks
@@ -5043,7 +5043,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_40px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_44px;
+extern const struct font_t font_FreeFont_FreeSans_44px;
 
 /**
  * Unicode blocks
@@ -5080,7 +5080,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_44px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_48px;
+extern const struct font_t font_FreeFont_FreeSans_48px;
 
 /**
  * Unicode blocks
@@ -5117,7 +5117,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_48px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_54px;
+extern const struct font_t font_FreeFont_FreeSans_54px;
 
 /**
  * Unicode blocks
@@ -5154,7 +5154,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_54px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_60px;
+extern const struct font_t font_FreeFont_FreeSans_60px;
 
 /**
  * Unicode blocks
@@ -5191,7 +5191,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_60px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_66px;
+extern const struct font_t font_FreeFont_FreeSans_66px;
 
 /**
  * Unicode blocks
@@ -5228,7 +5228,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_66px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_72px;
+extern const struct font_t font_FreeFont_FreeSans_72px;
 
 /**
  * Unicode blocks
@@ -5265,7 +5265,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_72px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_80px;
+extern const struct font_t font_FreeFont_FreeSans_80px;
 
 /**
  * Unicode blocks
@@ -5302,7 +5302,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_80px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_83px;
+extern const struct font_t font_FreeFont_FreeSans_83px;
 
 /**
  * Unicode blocks
@@ -5339,7 +5339,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_83px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_88px;
+extern const struct font_t font_FreeFont_FreeSans_88px;
 
 /**
  * Unicode blocks
@@ -5376,7 +5376,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_88px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSans_96px;
+extern const struct font_t font_FreeFont_FreeSans_96px;
 
 /**
  * Unicode blocks
@@ -5418,7 +5418,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSans_96px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_7px;
+extern const struct font_t font_FreeFont_FreeSansBold_7px;
 
 /**
  * Unicode blocks
@@ -5455,7 +5455,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_7p
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_8px;
+extern const struct font_t font_FreeFont_FreeSansBold_8px;
 
 /**
  * Unicode blocks
@@ -5492,7 +5492,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_8p
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_9px;
+extern const struct font_t font_FreeFont_FreeSansBold_9px;
 
 /**
  * Unicode blocks
@@ -5529,7 +5529,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_9p
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_10px;
+extern const struct font_t font_FreeFont_FreeSansBold_10px;
 
 /**
  * Unicode blocks
@@ -5566,7 +5566,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_10
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_11px;
+extern const struct font_t font_FreeFont_FreeSansBold_11px;
 
 /**
  * Unicode blocks
@@ -5603,7 +5603,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_11
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_12px;
+extern const struct font_t font_FreeFont_FreeSansBold_12px;
 
 /**
  * Unicode blocks
@@ -5640,7 +5640,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_12
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_13px;
+extern const struct font_t font_FreeFont_FreeSansBold_13px;
 
 /**
  * Unicode blocks
@@ -5677,7 +5677,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_13
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_14px;
+extern const struct font_t font_FreeFont_FreeSansBold_14px;
 
 /**
  * Unicode blocks
@@ -5714,7 +5714,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_14
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_15px;
+extern const struct font_t font_FreeFont_FreeSansBold_15px;
 
 /**
  * Unicode blocks
@@ -5751,7 +5751,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_15
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_16px;
+extern const struct font_t font_FreeFont_FreeSansBold_16px;
 
 /**
  * Unicode blocks
@@ -5788,7 +5788,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_16
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_18px;
+extern const struct font_t font_FreeFont_FreeSansBold_18px;
 
 /**
  * Unicode blocks
@@ -5825,7 +5825,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_18
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_20px;
+extern const struct font_t font_FreeFont_FreeSansBold_20px;
 
 /**
  * Unicode blocks
@@ -5862,7 +5862,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_20
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_22px;
+extern const struct font_t font_FreeFont_FreeSansBold_22px;
 
 /**
  * Unicode blocks
@@ -5899,7 +5899,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_22
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_24px;
+extern const struct font_t font_FreeFont_FreeSansBold_24px;
 
 /**
  * Unicode blocks
@@ -5936,7 +5936,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_24
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_26px;
+extern const struct font_t font_FreeFont_FreeSansBold_26px;
 
 /**
  * Unicode blocks
@@ -5973,7 +5973,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_26
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_28px;
+extern const struct font_t font_FreeFont_FreeSansBold_28px;
 
 /**
  * Unicode blocks
@@ -6010,7 +6010,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_28
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_32px;
+extern const struct font_t font_FreeFont_FreeSansBold_32px;
 
 /**
  * Unicode blocks
@@ -6047,7 +6047,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_32
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_36px;
+extern const struct font_t font_FreeFont_FreeSansBold_36px;
 
 /**
  * Unicode blocks
@@ -6084,7 +6084,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_36
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_40px;
+extern const struct font_t font_FreeFont_FreeSansBold_40px;
 
 /**
  * Unicode blocks
@@ -6121,7 +6121,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_40
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_44px;
+extern const struct font_t font_FreeFont_FreeSansBold_44px;
 
 /**
  * Unicode blocks
@@ -6158,7 +6158,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_44
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_48px;
+extern const struct font_t font_FreeFont_FreeSansBold_48px;
 
 /**
  * Unicode blocks
@@ -6195,7 +6195,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_48
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_54px;
+extern const struct font_t font_FreeFont_FreeSansBold_54px;
 
 /**
  * Unicode blocks
@@ -6232,7 +6232,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_54
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_60px;
+extern const struct font_t font_FreeFont_FreeSansBold_60px;
 
 /**
  * Unicode blocks
@@ -6269,7 +6269,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_60
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_66px;
+extern const struct font_t font_FreeFont_FreeSansBold_66px;
 
 /**
  * Unicode blocks
@@ -6306,7 +6306,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_66
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_72px;
+extern const struct font_t font_FreeFont_FreeSansBold_72px;
 
 /**
  * Unicode blocks
@@ -6343,7 +6343,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_72
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_80px;
+extern const struct font_t font_FreeFont_FreeSansBold_80px;
 
 /**
  * Unicode blocks
@@ -6380,7 +6380,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_80
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_83px;
+extern const struct font_t font_FreeFont_FreeSansBold_83px;
 
 /**
  * Unicode blocks
@@ -6417,7 +6417,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_83
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_88px;
+extern const struct font_t font_FreeFont_FreeSansBold_88px;
 
 /**
  * Unicode blocks
@@ -6454,7 +6454,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_88
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBold_96px;
+extern const struct font_t font_FreeFont_FreeSansBold_96px;
 
 /**
  * Unicode blocks
@@ -6496,7 +6496,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBold_96
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_7px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_7px;
 
 /**
  * Unicode blocks
@@ -6533,7 +6533,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_8px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_8px;
 
 /**
  * Unicode blocks
@@ -6570,7 +6570,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_9px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_9px;
 
 /**
  * Unicode blocks
@@ -6607,7 +6607,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_10px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_10px;
 
 /**
  * Unicode blocks
@@ -6644,7 +6644,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_11px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_11px;
 
 /**
  * Unicode blocks
@@ -6681,7 +6681,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_12px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_12px;
 
 /**
  * Unicode blocks
@@ -6718,7 +6718,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_13px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_13px;
 
 /**
  * Unicode blocks
@@ -6755,7 +6755,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_14px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_14px;
 
 /**
  * Unicode blocks
@@ -6792,7 +6792,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_15px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_15px;
 
 /**
  * Unicode blocks
@@ -6829,7 +6829,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_16px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_16px;
 
 /**
  * Unicode blocks
@@ -6866,7 +6866,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_18px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_18px;
 
 /**
  * Unicode blocks
@@ -6903,7 +6903,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_20px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_20px;
 
 /**
  * Unicode blocks
@@ -6940,7 +6940,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_22px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_22px;
 
 /**
  * Unicode blocks
@@ -6977,7 +6977,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_24px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_24px;
 
 /**
  * Unicode blocks
@@ -7014,7 +7014,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_26px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_26px;
 
 /**
  * Unicode blocks
@@ -7051,7 +7051,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_28px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_28px;
 
 /**
  * Unicode blocks
@@ -7088,7 +7088,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_32px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_32px;
 
 /**
  * Unicode blocks
@@ -7125,7 +7125,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_36px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_36px;
 
 /**
  * Unicode blocks
@@ -7162,7 +7162,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_40px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_40px;
 
 /**
  * Unicode blocks
@@ -7199,7 +7199,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_44px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_44px;
 
 /**
  * Unicode blocks
@@ -7236,7 +7236,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_48px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_48px;
 
 /**
  * Unicode blocks
@@ -7273,7 +7273,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_54px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_54px;
 
 /**
  * Unicode blocks
@@ -7310,7 +7310,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_60px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_60px;
 
 /**
  * Unicode blocks
@@ -7347,7 +7347,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_66px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_66px;
 
 /**
  * Unicode blocks
@@ -7384,7 +7384,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_72px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_72px;
 
 /**
  * Unicode blocks
@@ -7421,7 +7421,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_80px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_80px;
 
 /**
  * Unicode blocks
@@ -7458,7 +7458,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_83px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_83px;
 
 /**
  * Unicode blocks
@@ -7495,7 +7495,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_88px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_88px;
 
 /**
  * Unicode blocks
@@ -7532,7 +7532,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansBoldOblique_96px;
+extern const struct font_t font_FreeFont_FreeSansBoldOblique_96px;
 
 /**
  * Unicode blocks
@@ -7574,7 +7574,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansBoldObl
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_7px;
+extern const struct font_t font_FreeFont_FreeSansOblique_7px;
 
 /**
  * Unicode blocks
@@ -7611,7 +7611,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_8px;
+extern const struct font_t font_FreeFont_FreeSansOblique_8px;
 
 /**
  * Unicode blocks
@@ -7648,7 +7648,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_9px;
+extern const struct font_t font_FreeFont_FreeSansOblique_9px;
 
 /**
  * Unicode blocks
@@ -7685,7 +7685,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_10px;
+extern const struct font_t font_FreeFont_FreeSansOblique_10px;
 
 /**
  * Unicode blocks
@@ -7722,7 +7722,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_11px;
+extern const struct font_t font_FreeFont_FreeSansOblique_11px;
 
 /**
  * Unicode blocks
@@ -7759,7 +7759,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_12px;
+extern const struct font_t font_FreeFont_FreeSansOblique_12px;
 
 /**
  * Unicode blocks
@@ -7796,7 +7796,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_13px;
+extern const struct font_t font_FreeFont_FreeSansOblique_13px;
 
 /**
  * Unicode blocks
@@ -7833,7 +7833,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_14px;
+extern const struct font_t font_FreeFont_FreeSansOblique_14px;
 
 /**
  * Unicode blocks
@@ -7870,7 +7870,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_15px;
+extern const struct font_t font_FreeFont_FreeSansOblique_15px;
 
 /**
  * Unicode blocks
@@ -7907,7 +7907,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_16px;
+extern const struct font_t font_FreeFont_FreeSansOblique_16px;
 
 /**
  * Unicode blocks
@@ -7944,7 +7944,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_18px;
+extern const struct font_t font_FreeFont_FreeSansOblique_18px;
 
 /**
  * Unicode blocks
@@ -7981,7 +7981,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_20px;
+extern const struct font_t font_FreeFont_FreeSansOblique_20px;
 
 /**
  * Unicode blocks
@@ -8018,7 +8018,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_22px;
+extern const struct font_t font_FreeFont_FreeSansOblique_22px;
 
 /**
  * Unicode blocks
@@ -8055,7 +8055,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_24px;
+extern const struct font_t font_FreeFont_FreeSansOblique_24px;
 
 /**
  * Unicode blocks
@@ -8092,7 +8092,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_26px;
+extern const struct font_t font_FreeFont_FreeSansOblique_26px;
 
 /**
  * Unicode blocks
@@ -8129,7 +8129,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_28px;
+extern const struct font_t font_FreeFont_FreeSansOblique_28px;
 
 /**
  * Unicode blocks
@@ -8166,7 +8166,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_32px;
+extern const struct font_t font_FreeFont_FreeSansOblique_32px;
 
 /**
  * Unicode blocks
@@ -8203,7 +8203,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_36px;
+extern const struct font_t font_FreeFont_FreeSansOblique_36px;
 
 /**
  * Unicode blocks
@@ -8240,7 +8240,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_40px;
+extern const struct font_t font_FreeFont_FreeSansOblique_40px;
 
 /**
  * Unicode blocks
@@ -8277,7 +8277,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_44px;
+extern const struct font_t font_FreeFont_FreeSansOblique_44px;
 
 /**
  * Unicode blocks
@@ -8314,7 +8314,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_48px;
+extern const struct font_t font_FreeFont_FreeSansOblique_48px;
 
 /**
  * Unicode blocks
@@ -8351,7 +8351,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_54px;
+extern const struct font_t font_FreeFont_FreeSansOblique_54px;
 
 /**
  * Unicode blocks
@@ -8388,7 +8388,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_60px;
+extern const struct font_t font_FreeFont_FreeSansOblique_60px;
 
 /**
  * Unicode blocks
@@ -8425,7 +8425,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_66px;
+extern const struct font_t font_FreeFont_FreeSansOblique_66px;
 
 /**
  * Unicode blocks
@@ -8462,7 +8462,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_72px;
+extern const struct font_t font_FreeFont_FreeSansOblique_72px;
 
 /**
  * Unicode blocks
@@ -8499,7 +8499,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_80px;
+extern const struct font_t font_FreeFont_FreeSansOblique_80px;
 
 /**
  * Unicode blocks
@@ -8536,7 +8536,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_83px;
+extern const struct font_t font_FreeFont_FreeSansOblique_83px;
 
 /**
  * Unicode blocks
@@ -8573,7 +8573,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_88px;
+extern const struct font_t font_FreeFont_FreeSansOblique_88px;
 
 /**
  * Unicode blocks
@@ -8610,7 +8610,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSansOblique_96px;
+extern const struct font_t font_FreeFont_FreeSansOblique_96px;
 
 /**
  * Unicode blocks
@@ -8652,7 +8652,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSansOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_7px;
+extern const struct font_t font_FreeFont_FreeSerif_7px;
 
 /**
  * Unicode blocks
@@ -8689,7 +8689,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_7px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_8px;
+extern const struct font_t font_FreeFont_FreeSerif_8px;
 
 /**
  * Unicode blocks
@@ -8726,7 +8726,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_8px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_9px;
+extern const struct font_t font_FreeFont_FreeSerif_9px;
 
 /**
  * Unicode blocks
@@ -8763,7 +8763,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_9px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_10px;
+extern const struct font_t font_FreeFont_FreeSerif_10px;
 
 /**
  * Unicode blocks
@@ -8800,7 +8800,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_10px_
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_11px;
+extern const struct font_t font_FreeFont_FreeSerif_11px;
 
 /**
  * Unicode blocks
@@ -8837,7 +8837,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_11px_
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_12px;
+extern const struct font_t font_FreeFont_FreeSerif_12px;
 
 /**
  * Unicode blocks
@@ -8874,7 +8874,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_12px_
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_13px;
+extern const struct font_t font_FreeFont_FreeSerif_13px;
 
 /**
  * Unicode blocks
@@ -8911,7 +8911,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_13px_
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_14px;
+extern const struct font_t font_FreeFont_FreeSerif_14px;
 
 /**
  * Unicode blocks
@@ -8948,7 +8948,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_14px_
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_15px;
+extern const struct font_t font_FreeFont_FreeSerif_15px;
 
 /**
  * Unicode blocks
@@ -8985,7 +8985,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_15px_
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_16px;
+extern const struct font_t font_FreeFont_FreeSerif_16px;
 
 /**
  * Unicode blocks
@@ -9022,7 +9022,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_16px_
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_18px;
+extern const struct font_t font_FreeFont_FreeSerif_18px;
 
 /**
  * Unicode blocks
@@ -9059,7 +9059,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_18px_
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_20px;
+extern const struct font_t font_FreeFont_FreeSerif_20px;
 
 /**
  * Unicode blocks
@@ -9096,7 +9096,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_20px_
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_22px;
+extern const struct font_t font_FreeFont_FreeSerif_22px;
 
 /**
  * Unicode blocks
@@ -9133,7 +9133,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_22px_
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_24px;
+extern const struct font_t font_FreeFont_FreeSerif_24px;
 
 /**
  * Unicode blocks
@@ -9170,7 +9170,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_24px_
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_26px;
+extern const struct font_t font_FreeFont_FreeSerif_26px;
 
 /**
  * Unicode blocks
@@ -9207,7 +9207,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_26px_
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_28px;
+extern const struct font_t font_FreeFont_FreeSerif_28px;
 
 /**
  * Unicode blocks
@@ -9244,7 +9244,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_28px_
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_32px;
+extern const struct font_t font_FreeFont_FreeSerif_32px;
 
 /**
  * Unicode blocks
@@ -9281,7 +9281,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_32px_
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_36px;
+extern const struct font_t font_FreeFont_FreeSerif_36px;
 
 /**
  * Unicode blocks
@@ -9318,7 +9318,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_36px_
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_40px;
+extern const struct font_t font_FreeFont_FreeSerif_40px;
 
 /**
  * Unicode blocks
@@ -9355,7 +9355,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_40px_
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_44px;
+extern const struct font_t font_FreeFont_FreeSerif_44px;
 
 /**
  * Unicode blocks
@@ -9392,7 +9392,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_44px_
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_48px;
+extern const struct font_t font_FreeFont_FreeSerif_48px;
 
 /**
  * Unicode blocks
@@ -9429,7 +9429,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_48px_
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_54px;
+extern const struct font_t font_FreeFont_FreeSerif_54px;
 
 /**
  * Unicode blocks
@@ -9466,7 +9466,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_54px_
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_60px;
+extern const struct font_t font_FreeFont_FreeSerif_60px;
 
 /**
  * Unicode blocks
@@ -9503,7 +9503,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_60px_
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_66px;
+extern const struct font_t font_FreeFont_FreeSerif_66px;
 
 /**
  * Unicode blocks
@@ -9540,7 +9540,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_66px_
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_72px;
+extern const struct font_t font_FreeFont_FreeSerif_72px;
 
 /**
  * Unicode blocks
@@ -9577,7 +9577,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_72px_
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_80px;
+extern const struct font_t font_FreeFont_FreeSerif_80px;
 
 /**
  * Unicode blocks
@@ -9614,7 +9614,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_80px_
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_83px;
+extern const struct font_t font_FreeFont_FreeSerif_83px;
 
 /**
  * Unicode blocks
@@ -9651,7 +9651,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_83px_
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_88px;
+extern const struct font_t font_FreeFont_FreeSerif_88px;
 
 /**
  * Unicode blocks
@@ -9688,7 +9688,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_88px_
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerif_96px;
+extern const struct font_t font_FreeFont_FreeSerif_96px;
 
 /**
  * Unicode blocks
@@ -9730,7 +9730,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerif_96px_
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_7px;
+extern const struct font_t font_FreeFont_FreeSerifBold_7px;
 
 /**
  * Unicode blocks
@@ -9767,7 +9767,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_7
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_8px;
+extern const struct font_t font_FreeFont_FreeSerifBold_8px;
 
 /**
  * Unicode blocks
@@ -9804,7 +9804,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_8
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_9px;
+extern const struct font_t font_FreeFont_FreeSerifBold_9px;
 
 /**
  * Unicode blocks
@@ -9841,7 +9841,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_9
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_10px;
+extern const struct font_t font_FreeFont_FreeSerifBold_10px;
 
 /**
  * Unicode blocks
@@ -9878,7 +9878,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_1
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_11px;
+extern const struct font_t font_FreeFont_FreeSerifBold_11px;
 
 /**
  * Unicode blocks
@@ -9915,7 +9915,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_1
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_12px;
+extern const struct font_t font_FreeFont_FreeSerifBold_12px;
 
 /**
  * Unicode blocks
@@ -9952,7 +9952,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_1
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_13px;
+extern const struct font_t font_FreeFont_FreeSerifBold_13px;
 
 /**
  * Unicode blocks
@@ -9989,7 +9989,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_1
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_14px;
+extern const struct font_t font_FreeFont_FreeSerifBold_14px;
 
 /**
  * Unicode blocks
@@ -10026,7 +10026,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_1
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_15px;
+extern const struct font_t font_FreeFont_FreeSerifBold_15px;
 
 /**
  * Unicode blocks
@@ -10063,7 +10063,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_1
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_16px;
+extern const struct font_t font_FreeFont_FreeSerifBold_16px;
 
 /**
  * Unicode blocks
@@ -10100,7 +10100,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_1
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_18px;
+extern const struct font_t font_FreeFont_FreeSerifBold_18px;
 
 /**
  * Unicode blocks
@@ -10137,7 +10137,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_1
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_20px;
+extern const struct font_t font_FreeFont_FreeSerifBold_20px;
 
 /**
  * Unicode blocks
@@ -10174,7 +10174,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_2
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_22px;
+extern const struct font_t font_FreeFont_FreeSerifBold_22px;
 
 /**
  * Unicode blocks
@@ -10211,7 +10211,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_2
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_24px;
+extern const struct font_t font_FreeFont_FreeSerifBold_24px;
 
 /**
  * Unicode blocks
@@ -10248,7 +10248,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_2
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_26px;
+extern const struct font_t font_FreeFont_FreeSerifBold_26px;
 
 /**
  * Unicode blocks
@@ -10285,7 +10285,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_2
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_28px;
+extern const struct font_t font_FreeFont_FreeSerifBold_28px;
 
 /**
  * Unicode blocks
@@ -10322,7 +10322,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_2
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_32px;
+extern const struct font_t font_FreeFont_FreeSerifBold_32px;
 
 /**
  * Unicode blocks
@@ -10359,7 +10359,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_3
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_36px;
+extern const struct font_t font_FreeFont_FreeSerifBold_36px;
 
 /**
  * Unicode blocks
@@ -10396,7 +10396,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_3
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_40px;
+extern const struct font_t font_FreeFont_FreeSerifBold_40px;
 
 /**
  * Unicode blocks
@@ -10433,7 +10433,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_4
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_44px;
+extern const struct font_t font_FreeFont_FreeSerifBold_44px;
 
 /**
  * Unicode blocks
@@ -10470,7 +10470,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_4
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_48px;
+extern const struct font_t font_FreeFont_FreeSerifBold_48px;
 
 /**
  * Unicode blocks
@@ -10507,7 +10507,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_4
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_54px;
+extern const struct font_t font_FreeFont_FreeSerifBold_54px;
 
 /**
  * Unicode blocks
@@ -10544,7 +10544,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_5
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_60px;
+extern const struct font_t font_FreeFont_FreeSerifBold_60px;
 
 /**
  * Unicode blocks
@@ -10581,7 +10581,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_6
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_66px;
+extern const struct font_t font_FreeFont_FreeSerifBold_66px;
 
 /**
  * Unicode blocks
@@ -10618,7 +10618,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_6
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_72px;
+extern const struct font_t font_FreeFont_FreeSerifBold_72px;
 
 /**
  * Unicode blocks
@@ -10655,7 +10655,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_7
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_80px;
+extern const struct font_t font_FreeFont_FreeSerifBold_80px;
 
 /**
  * Unicode blocks
@@ -10692,7 +10692,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_8
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_83px;
+extern const struct font_t font_FreeFont_FreeSerifBold_83px;
 
 /**
  * Unicode blocks
@@ -10729,7 +10729,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_8
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_88px;
+extern const struct font_t font_FreeFont_FreeSerifBold_88px;
 
 /**
  * Unicode blocks
@@ -10766,7 +10766,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_8
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBold_96px;
+extern const struct font_t font_FreeFont_FreeSerifBold_96px;
 
 /**
  * Unicode blocks
@@ -10808,7 +10808,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBold_9
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_7px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_7px;
 
 /**
  * Unicode blocks
@@ -10845,7 +10845,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_8px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_8px;
 
 /**
  * Unicode blocks
@@ -10882,7 +10882,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_9px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_9px;
 
 /**
  * Unicode blocks
@@ -10919,7 +10919,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_10px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_10px;
 
 /**
  * Unicode blocks
@@ -10956,7 +10956,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_11px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_11px;
 
 /**
  * Unicode blocks
@@ -10993,7 +10993,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_12px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_12px;
 
 /**
  * Unicode blocks
@@ -11030,7 +11030,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_13px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_13px;
 
 /**
  * Unicode blocks
@@ -11067,7 +11067,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_14px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_14px;
 
 /**
  * Unicode blocks
@@ -11104,7 +11104,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_15px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_15px;
 
 /**
  * Unicode blocks
@@ -11141,7 +11141,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_16px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_16px;
 
 /**
  * Unicode blocks
@@ -11178,7 +11178,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_18px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_18px;
 
 /**
  * Unicode blocks
@@ -11215,7 +11215,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_20px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_20px;
 
 /**
  * Unicode blocks
@@ -11252,7 +11252,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_22px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_22px;
 
 /**
  * Unicode blocks
@@ -11289,7 +11289,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_24px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_24px;
 
 /**
  * Unicode blocks
@@ -11326,7 +11326,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_26px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_26px;
 
 /**
  * Unicode blocks
@@ -11363,7 +11363,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_28px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_28px;
 
 /**
  * Unicode blocks
@@ -11400,7 +11400,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_32px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_32px;
 
 /**
  * Unicode blocks
@@ -11437,7 +11437,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_36px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_36px;
 
 /**
  * Unicode blocks
@@ -11474,7 +11474,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_40px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_40px;
 
 /**
  * Unicode blocks
@@ -11511,7 +11511,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_44px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_44px;
 
 /**
  * Unicode blocks
@@ -11548,7 +11548,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_48px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_48px;
 
 /**
  * Unicode blocks
@@ -11585,7 +11585,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_54px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_54px;
 
 /**
  * Unicode blocks
@@ -11622,7 +11622,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_60px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_60px;
 
 /**
  * Unicode blocks
@@ -11659,7 +11659,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_66px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_66px;
 
 /**
  * Unicode blocks
@@ -11696,7 +11696,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_72px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_72px;
 
 /**
  * Unicode blocks
@@ -11733,7 +11733,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_80px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_80px;
 
 /**
  * Unicode blocks
@@ -11770,7 +11770,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_83px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_83px;
 
 /**
  * Unicode blocks
@@ -11807,7 +11807,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_88px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_88px;
 
 /**
  * Unicode blocks
@@ -11844,7 +11844,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifBoldItalic_96px;
+extern const struct font_t font_FreeFont_FreeSerifBoldItalic_96px;
 
 /**
  * Unicode blocks
@@ -11886,7 +11886,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifBoldIt
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_7px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_7px;
 
 /**
  * Unicode blocks
@@ -11923,7 +11923,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifItalic
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_8px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_8px;
 
 /**
  * Unicode blocks
@@ -11960,7 +11960,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifItalic
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_9px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_9px;
 
 /**
  * Unicode blocks
@@ -11997,7 +11997,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifItalic
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_10px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_10px;
 
 /**
  * Unicode blocks
@@ -12034,7 +12034,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifItalic
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_11px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_11px;
 
 /**
  * Unicode blocks
@@ -12071,7 +12071,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifItalic
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_12px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_12px;
 
 /**
  * Unicode blocks
@@ -12108,7 +12108,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifItalic
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_13px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_13px;
 
 /**
  * Unicode blocks
@@ -12145,7 +12145,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifItalic
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_14px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_14px;
 
 /**
  * Unicode blocks
@@ -12182,7 +12182,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifItalic
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_15px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_15px;
 
 /**
  * Unicode blocks
@@ -12219,7 +12219,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifItalic
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_16px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_16px;
 
 /**
  * Unicode blocks
@@ -12256,7 +12256,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifItalic
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_18px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_18px;
 
 /**
  * Unicode blocks
@@ -12293,7 +12293,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifItalic
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_20px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_20px;
 
 /**
  * Unicode blocks
@@ -12330,7 +12330,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifItalic
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_22px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_22px;
 
 /**
  * Unicode blocks
@@ -12367,7 +12367,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifItalic
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_24px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_24px;
 
 /**
  * Unicode blocks
@@ -12404,7 +12404,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifItalic
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_26px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_26px;
 
 /**
  * Unicode blocks
@@ -12441,7 +12441,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifItalic
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_28px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_28px;
 
 /**
  * Unicode blocks
@@ -12478,7 +12478,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifItalic
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_32px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_32px;
 
 /**
  * Unicode blocks
@@ -12515,7 +12515,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifItalic
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_36px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_36px;
 
 /**
  * Unicode blocks
@@ -12552,7 +12552,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifItalic
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_40px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_40px;
 
 /**
  * Unicode blocks
@@ -12589,7 +12589,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifItalic
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_44px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_44px;
 
 /**
  * Unicode blocks
@@ -12626,7 +12626,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifItalic
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_48px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_48px;
 
 /**
  * Unicode blocks
@@ -12663,7 +12663,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifItalic
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_54px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_54px;
 
 /**
  * Unicode blocks
@@ -12700,7 +12700,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifItalic
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_60px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_60px;
 
 /**
  * Unicode blocks
@@ -12737,7 +12737,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifItalic
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_66px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_66px;
 
 /**
  * Unicode blocks
@@ -12774,7 +12774,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifItalic
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_72px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_72px;
 
 /**
  * Unicode blocks
@@ -12811,7 +12811,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifItalic
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_80px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_80px;
 
 /**
  * Unicode blocks
@@ -12848,7 +12848,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifItalic
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_83px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_83px;
 
 /**
  * Unicode blocks
@@ -12885,7 +12885,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifItalic
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_88px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_88px;
 
 /**
  * Unicode blocks
@@ -12922,7 +12922,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeSerifItalic
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_FreeFont_FreeSerifItalic_96px;
+extern const struct font_t font_FreeFont_FreeSerifItalic_96px;
 
 /**
  * Unicode blocks

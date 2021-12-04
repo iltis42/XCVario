@@ -2557,7 +2557,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesBold_8px_LatinExtend
   },
 };
 
-struct font_t font_Adobe_TimesBold_8px = {
+const struct font_t font_Adobe_TimesBold_8px = {
   .pixel_size = 8,
   .ascent = 7,
   .descent = -2,
@@ -5125,7 +5125,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesBold_10px_LatinExten
   },
 };
 
-struct font_t font_Adobe_TimesBold_10px = {
+const struct font_t font_Adobe_TimesBold_10px = {
   .pixel_size = 10,
   .ascent = 9,
   .descent = -3,
@@ -7693,7 +7693,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesBold_11px_LatinExten
   },
 };
 
-struct font_t font_Adobe_TimesBold_11px = {
+const struct font_t font_Adobe_TimesBold_11px = {
   .pixel_size = 11,
   .ascent = 8,
   .descent = -3,
@@ -10261,7 +10261,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesBold_12px_LatinExten
   },
 };
 
-struct font_t font_Adobe_TimesBold_12px = {
+const struct font_t font_Adobe_TimesBold_12px = {
   .pixel_size = 12,
   .ascent = 11,
   .descent = -3,
@@ -12829,7 +12829,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesBold_14px_LatinExten
   },
 };
 
-struct font_t font_Adobe_TimesBold_14px = {
+const struct font_t font_Adobe_TimesBold_14px = {
   .pixel_size = 14,
   .ascent = 12,
   .descent = -3,
@@ -15397,7 +15397,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesBold_17px_LatinExten
   },
 };
 
-struct font_t font_Adobe_TimesBold_17px = {
+const struct font_t font_Adobe_TimesBold_17px = {
   .pixel_size = 17,
   .ascent = 14,
   .descent = -4,
@@ -17965,7 +17965,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesBold_18px_LatinExten
   },
 };
 
-struct font_t font_Adobe_TimesBold_18px = {
+const struct font_t font_Adobe_TimesBold_18px = {
   .pixel_size = 18,
   .ascent = 15,
   .descent = -4,
@@ -20533,7 +20533,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesBold_20px_LatinExten
   },
 };
 
-struct font_t font_Adobe_TimesBold_20px = {
+const struct font_t font_Adobe_TimesBold_20px = {
   .pixel_size = 20,
   .ascent = 15,
   .descent = -4,
@@ -23101,7 +23101,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesBold_24px_LatinExten
   },
 };
 
-struct font_t font_Adobe_TimesBold_24px = {
+const struct font_t font_Adobe_TimesBold_24px = {
   .pixel_size = 24,
   .ascent = 20,
   .descent = -6,
@@ -25669,7 +25669,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesBold_25px_LatinExten
   },
 };
 
-struct font_t font_Adobe_TimesBold_25px = {
+const struct font_t font_Adobe_TimesBold_25px = {
   .pixel_size = 25,
   .ascent = 20,
   .descent = -6,
@@ -28237,7 +28237,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesBold_34px_LatinExten
   },
 };
 
-struct font_t font_Adobe_TimesBold_34px = {
+const struct font_t font_Adobe_TimesBold_34px = {
   .pixel_size = 34,
   .ascent = 27,
   .descent = -7,

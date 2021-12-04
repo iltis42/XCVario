@@ -2557,7 +2557,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbookItali
   },
 };
 
-struct font_t font_Adobe_NewCenturySchoolbookItalic_8px = {
+const struct font_t font_Adobe_NewCenturySchoolbookItalic_8px = {
   .pixel_size = 8,
   .ascent = 7,
   .descent = -2,
@@ -5125,7 +5125,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbookItali
   },
 };
 
-struct font_t font_Adobe_NewCenturySchoolbookItalic_10px = {
+const struct font_t font_Adobe_NewCenturySchoolbookItalic_10px = {
   .pixel_size = 10,
   .ascent = 10,
   .descent = -2,
@@ -7693,7 +7693,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbookItali
   },
 };
 
-struct font_t font_Adobe_NewCenturySchoolbookItalic_11px = {
+const struct font_t font_Adobe_NewCenturySchoolbookItalic_11px = {
   .pixel_size = 11,
   .ascent = 10,
   .descent = -2,
@@ -10261,7 +10261,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbookItali
   },
 };
 
-struct font_t font_Adobe_NewCenturySchoolbookItalic_12px = {
+const struct font_t font_Adobe_NewCenturySchoolbookItalic_12px = {
   .pixel_size = 12,
   .ascent = 11,
   .descent = -3,
@@ -12829,7 +12829,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbookItali
   },
 };
 
-struct font_t font_Adobe_NewCenturySchoolbookItalic_14px = {
+const struct font_t font_Adobe_NewCenturySchoolbookItalic_14px = {
   .pixel_size = 14,
   .ascent = 13,
   .descent = -3,
@@ -15397,7 +15397,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbookItali
   },
 };
 
-struct font_t font_Adobe_NewCenturySchoolbookItalic_17px = {
+const struct font_t font_Adobe_NewCenturySchoolbookItalic_17px = {
   .pixel_size = 17,
   .ascent = 14,
   .descent = -3,
@@ -17965,7 +17965,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbookItali
   },
 };
 
-struct font_t font_Adobe_NewCenturySchoolbookItalic_18px = {
+const struct font_t font_Adobe_NewCenturySchoolbookItalic_18px = {
   .pixel_size = 18,
   .ascent = 16,
   .descent = -4,
@@ -20533,7 +20533,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbookItali
   },
 };
 
-struct font_t font_Adobe_NewCenturySchoolbookItalic_20px = {
+const struct font_t font_Adobe_NewCenturySchoolbookItalic_20px = {
   .pixel_size = 20,
   .ascent = 16,
   .descent = -4,
@@ -23101,7 +23101,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbookItali
   },
 };
 
-struct font_t font_Adobe_NewCenturySchoolbookItalic_24px = {
+const struct font_t font_Adobe_NewCenturySchoolbookItalic_24px = {
   .pixel_size = 24,
   .ascent = 21,
   .descent = -5,
@@ -25669,7 +25669,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbookItali
   },
 };
 
-struct font_t font_Adobe_NewCenturySchoolbookItalic_25px = {
+const struct font_t font_Adobe_NewCenturySchoolbookItalic_25px = {
   .pixel_size = 25,
   .ascent = 21,
   .descent = -5,
@@ -28237,7 +28237,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbookItali
   },
 };
 
-struct font_t font_Adobe_NewCenturySchoolbookItalic_34px = {
+const struct font_t font_Adobe_NewCenturySchoolbookItalic_34px = {
   .pixel_size = 34,
   .ascent = 29,
   .descent = -7,

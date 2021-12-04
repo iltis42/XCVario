@@ -2557,7 +2557,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesBoldItalic_8px_Latin
   },
 };
 
-struct font_t font_Adobe_TimesBoldItalic_8px = {
+const struct font_t font_Adobe_TimesBoldItalic_8px = {
   .pixel_size = 8,
   .ascent = 7,
   .descent = -2,
@@ -5125,7 +5125,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesBoldItalic_10px_Lati
   },
 };
 
-struct font_t font_Adobe_TimesBoldItalic_10px = {
+const struct font_t font_Adobe_TimesBoldItalic_10px = {
   .pixel_size = 10,
   .ascent = 9,
   .descent = -3,
@@ -7693,7 +7693,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesBoldItalic_11px_Lati
   },
 };
 
-struct font_t font_Adobe_TimesBoldItalic_11px = {
+const struct font_t font_Adobe_TimesBoldItalic_11px = {
   .pixel_size = 11,
   .ascent = 8,
   .descent = -3,
@@ -10261,7 +10261,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesBoldItalic_12px_Lati
   },
 };
 
-struct font_t font_Adobe_TimesBoldItalic_12px = {
+const struct font_t font_Adobe_TimesBoldItalic_12px = {
   .pixel_size = 12,
   .ascent = 11,
   .descent = -3,
@@ -12829,7 +12829,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesBoldItalic_14px_Lati
   },
 };
 
-struct font_t font_Adobe_TimesBoldItalic_14px = {
+const struct font_t font_Adobe_TimesBoldItalic_14px = {
   .pixel_size = 14,
   .ascent = 12,
   .descent = -3,
@@ -15397,7 +15397,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesBoldItalic_17px_Lati
   },
 };
 
-struct font_t font_Adobe_TimesBoldItalic_17px = {
+const struct font_t font_Adobe_TimesBoldItalic_17px = {
   .pixel_size = 17,
   .ascent = 13,
   .descent = -3,
@@ -17965,7 +17965,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesBoldItalic_18px_Lati
   },
 };
 
-struct font_t font_Adobe_TimesBoldItalic_18px = {
+const struct font_t font_Adobe_TimesBoldItalic_18px = {
   .pixel_size = 18,
   .ascent = 15,
   .descent = -4,
@@ -20533,7 +20533,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesBoldItalic_20px_Lati
   },
 };
 
-struct font_t font_Adobe_TimesBoldItalic_20px = {
+const struct font_t font_Adobe_TimesBoldItalic_20px = {
   .pixel_size = 20,
   .ascent = 16,
   .descent = -4,
@@ -23101,7 +23101,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesBoldItalic_24px_Lati
   },
 };
 
-struct font_t font_Adobe_TimesBoldItalic_24px = {
+const struct font_t font_Adobe_TimesBoldItalic_24px = {
   .pixel_size = 24,
   .ascent = 20,
   .descent = -5,
@@ -25669,7 +25669,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesBoldItalic_25px_Lati
   },
 };
 
-struct font_t font_Adobe_TimesBoldItalic_25px = {
+const struct font_t font_Adobe_TimesBoldItalic_25px = {
   .pixel_size = 25,
   .ascent = 20,
   .descent = -6,
@@ -28237,7 +28237,7 @@ const struct glyph_unicode_block_t unicode_block_Adobe_TimesBoldItalic_34px_Lati
   },
 };
 
-struct font_t font_Adobe_TimesBoldItalic_34px = {
+const struct font_t font_Adobe_TimesBoldItalic_34px = {
   .pixel_size = 34,
   .ascent = 27,
   .descent = -7,

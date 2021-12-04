@@ -49,7 +49,7 @@
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_Courier_8px;
+extern const struct font_t font_Adobe_Courier_8px;
 
 /**
  * Unicode blocks
@@ -81,7 +81,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_Courier_8px_LatinE
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_Courier_10px;
+extern const struct font_t font_Adobe_Courier_10px;
 
 /**
  * Unicode blocks
@@ -113,7 +113,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_Courier_10px_Latin
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_Courier_11px;
+extern const struct font_t font_Adobe_Courier_11px;
 
 /**
  * Unicode blocks
@@ -145,7 +145,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_Courier_11px_Latin
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_Courier_12px;
+extern const struct font_t font_Adobe_Courier_12px;
 
 /**
  * Unicode blocks
@@ -177,7 +177,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_Courier_12px_Latin
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_Courier_14px;
+extern const struct font_t font_Adobe_Courier_14px;
 
 /**
  * Unicode blocks
@@ -209,7 +209,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_Courier_14px_Latin
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_Courier_17px;
+extern const struct font_t font_Adobe_Courier_17px;
 
 /**
  * Unicode blocks
@@ -241,7 +241,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_Courier_17px_Latin
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_Courier_18px;
+extern const struct font_t font_Adobe_Courier_18px;
 
 /**
  * Unicode blocks
@@ -273,7 +273,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_Courier_18px_Latin
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_Courier_20px;
+extern const struct font_t font_Adobe_Courier_20px;
 
 /**
  * Unicode blocks
@@ -305,7 +305,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_Courier_20px_Latin
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_Courier_24px;
+extern const struct font_t font_Adobe_Courier_24px;
 
 /**
  * Unicode blocks
@@ -337,7 +337,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_Courier_24px_Latin
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_Courier_25px;
+extern const struct font_t font_Adobe_Courier_25px;
 
 /**
  * Unicode blocks
@@ -369,7 +369,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_Courier_25px_Latin
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_Courier_34px;
+extern const struct font_t font_Adobe_Courier_34px;
 
 /**
  * Unicode blocks
@@ -406,7 +406,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_Courier_34px_Latin
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierBold_8px;
+extern const struct font_t font_Adobe_CourierBold_8px;
 
 /**
  * Unicode blocks
@@ -438,7 +438,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierBold_8px_La
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierBold_10px;
+extern const struct font_t font_Adobe_CourierBold_10px;
 
 /**
  * Unicode blocks
@@ -470,7 +470,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierBold_10px_L
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierBold_11px;
+extern const struct font_t font_Adobe_CourierBold_11px;
 
 /**
  * Unicode blocks
@@ -502,7 +502,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierBold_11px_L
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierBold_12px;
+extern const struct font_t font_Adobe_CourierBold_12px;
 
 /**
  * Unicode blocks
@@ -534,7 +534,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierBold_12px_L
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierBold_14px;
+extern const struct font_t font_Adobe_CourierBold_14px;
 
 /**
  * Unicode blocks
@@ -566,7 +566,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierBold_14px_L
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierBold_17px;
+extern const struct font_t font_Adobe_CourierBold_17px;
 
 /**
  * Unicode blocks
@@ -598,7 +598,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierBold_17px_L
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierBold_18px;
+extern const struct font_t font_Adobe_CourierBold_18px;
 
 /**
  * Unicode blocks
@@ -630,7 +630,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierBold_18px_L
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierBold_20px;
+extern const struct font_t font_Adobe_CourierBold_20px;
 
 /**
  * Unicode blocks
@@ -662,7 +662,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierBold_20px_L
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierBold_24px;
+extern const struct font_t font_Adobe_CourierBold_24px;
 
 /**
  * Unicode blocks
@@ -694,7 +694,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierBold_24px_L
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierBold_25px;
+extern const struct font_t font_Adobe_CourierBold_25px;
 
 /**
  * Unicode blocks
@@ -726,7 +726,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierBold_25px_L
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierBold_34px;
+extern const struct font_t font_Adobe_CourierBold_34px;
 
 /**
  * Unicode blocks
@@ -763,7 +763,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierBold_34px_L
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierBoldOblique_8px;
+extern const struct font_t font_Adobe_CourierBoldOblique_8px;
 
 /**
  * Unicode blocks
@@ -795,7 +795,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierBoldOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierBoldOblique_10px;
+extern const struct font_t font_Adobe_CourierBoldOblique_10px;
 
 /**
  * Unicode blocks
@@ -827,7 +827,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierBoldOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierBoldOblique_11px;
+extern const struct font_t font_Adobe_CourierBoldOblique_11px;
 
 /**
  * Unicode blocks
@@ -859,7 +859,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierBoldOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierBoldOblique_12px;
+extern const struct font_t font_Adobe_CourierBoldOblique_12px;
 
 /**
  * Unicode blocks
@@ -891,7 +891,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierBoldOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierBoldOblique_14px;
+extern const struct font_t font_Adobe_CourierBoldOblique_14px;
 
 /**
  * Unicode blocks
@@ -923,7 +923,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierBoldOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierBoldOblique_17px;
+extern const struct font_t font_Adobe_CourierBoldOblique_17px;
 
 /**
  * Unicode blocks
@@ -955,7 +955,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierBoldOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierBoldOblique_18px;
+extern const struct font_t font_Adobe_CourierBoldOblique_18px;
 
 /**
  * Unicode blocks
@@ -987,7 +987,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierBoldOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierBoldOblique_20px;
+extern const struct font_t font_Adobe_CourierBoldOblique_20px;
 
 /**
  * Unicode blocks
@@ -1019,7 +1019,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierBoldOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierBoldOblique_24px;
+extern const struct font_t font_Adobe_CourierBoldOblique_24px;
 
 /**
  * Unicode blocks
@@ -1051,7 +1051,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierBoldOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierBoldOblique_25px;
+extern const struct font_t font_Adobe_CourierBoldOblique_25px;
 
 /**
  * Unicode blocks
@@ -1083,7 +1083,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierBoldOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierBoldOblique_34px;
+extern const struct font_t font_Adobe_CourierBoldOblique_34px;
 
 /**
  * Unicode blocks
@@ -1120,7 +1120,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierBoldOblique
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierOblique_8px;
+extern const struct font_t font_Adobe_CourierOblique_8px;
 
 /**
  * Unicode blocks
@@ -1152,7 +1152,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierOblique_8px
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierOblique_10px;
+extern const struct font_t font_Adobe_CourierOblique_10px;
 
 /**
  * Unicode blocks
@@ -1184,7 +1184,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierOblique_10p
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierOblique_11px;
+extern const struct font_t font_Adobe_CourierOblique_11px;
 
 /**
  * Unicode blocks
@@ -1216,7 +1216,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierOblique_11p
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierOblique_12px;
+extern const struct font_t font_Adobe_CourierOblique_12px;
 
 /**
  * Unicode blocks
@@ -1248,7 +1248,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierOblique_12p
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierOblique_14px;
+extern const struct font_t font_Adobe_CourierOblique_14px;
 
 /**
  * Unicode blocks
@@ -1280,7 +1280,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierOblique_14p
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierOblique_17px;
+extern const struct font_t font_Adobe_CourierOblique_17px;
 
 /**
  * Unicode blocks
@@ -1312,7 +1312,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierOblique_17p
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierOblique_18px;
+extern const struct font_t font_Adobe_CourierOblique_18px;
 
 /**
  * Unicode blocks
@@ -1344,7 +1344,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierOblique_18p
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierOblique_20px;
+extern const struct font_t font_Adobe_CourierOblique_20px;
 
 /**
  * Unicode blocks
@@ -1376,7 +1376,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierOblique_20p
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierOblique_24px;
+extern const struct font_t font_Adobe_CourierOblique_24px;
 
 /**
  * Unicode blocks
@@ -1408,7 +1408,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierOblique_24p
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierOblique_25px;
+extern const struct font_t font_Adobe_CourierOblique_25px;
 
 /**
  * Unicode blocks
@@ -1440,7 +1440,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierOblique_25p
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_CourierOblique_34px;
+extern const struct font_t font_Adobe_CourierOblique_34px;
 
 /**
  * Unicode blocks
@@ -1477,7 +1477,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_CourierOblique_34p
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_Helvetica_8px;
+extern const struct font_t font_Adobe_Helvetica_8px;
 
 /**
  * Unicode blocks
@@ -1509,7 +1509,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_Helvetica_8px_Lati
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_Helvetica_10px;
+extern const struct font_t font_Adobe_Helvetica_10px;
 
 /**
  * Unicode blocks
@@ -1541,7 +1541,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_Helvetica_10px_Lat
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_Helvetica_11px;
+extern const struct font_t font_Adobe_Helvetica_11px;
 
 /**
  * Unicode blocks
@@ -1573,7 +1573,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_Helvetica_11px_Lat
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_Helvetica_12px;
+extern const struct font_t font_Adobe_Helvetica_12px;
 
 /**
  * Unicode blocks
@@ -1605,7 +1605,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_Helvetica_12px_Lat
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_Helvetica_14px;
+extern const struct font_t font_Adobe_Helvetica_14px;
 
 /**
  * Unicode blocks
@@ -1637,7 +1637,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_Helvetica_14px_Lat
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_Helvetica_17px;
+extern const struct font_t font_Adobe_Helvetica_17px;
 
 /**
  * Unicode blocks
@@ -1669,7 +1669,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_Helvetica_17px_Lat
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_Helvetica_18px;
+extern const struct font_t font_Adobe_Helvetica_18px;
 
 /**
  * Unicode blocks
@@ -1701,7 +1701,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_Helvetica_18px_Lat
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_Helvetica_20px;
+extern const struct font_t font_Adobe_Helvetica_20px;
 
 /**
  * Unicode blocks
@@ -1733,7 +1733,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_Helvetica_20px_Lat
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_Helvetica_24px;
+extern const struct font_t font_Adobe_Helvetica_24px;
 
 /**
  * Unicode blocks
@@ -1765,7 +1765,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_Helvetica_24px_Lat
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_Helvetica_25px;
+extern const struct font_t font_Adobe_Helvetica_25px;
 
 /**
  * Unicode blocks
@@ -1797,7 +1797,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_Helvetica_25px_Lat
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_Helvetica_34px;
+extern const struct font_t font_Adobe_Helvetica_34px;
 
 /**
  * Unicode blocks
@@ -1834,7 +1834,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_Helvetica_34px_Lat
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaBold_8px;
+extern const struct font_t font_Adobe_HelveticaBold_8px;
 
 /**
  * Unicode blocks
@@ -1866,7 +1866,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaBold_8px_
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaBold_10px;
+extern const struct font_t font_Adobe_HelveticaBold_10px;
 
 /**
  * Unicode blocks
@@ -1898,7 +1898,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaBold_10px
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaBold_11px;
+extern const struct font_t font_Adobe_HelveticaBold_11px;
 
 /**
  * Unicode blocks
@@ -1930,7 +1930,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaBold_11px
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaBold_12px;
+extern const struct font_t font_Adobe_HelveticaBold_12px;
 
 /**
  * Unicode blocks
@@ -1962,7 +1962,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaBold_12px
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaBold_14px;
+extern const struct font_t font_Adobe_HelveticaBold_14px;
 
 /**
  * Unicode blocks
@@ -1994,7 +1994,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaBold_14px
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaBold_17px;
+extern const struct font_t font_Adobe_HelveticaBold_17px;
 
 /**
  * Unicode blocks
@@ -2026,7 +2026,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaBold_17px
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaBold_18px;
+extern const struct font_t font_Adobe_HelveticaBold_18px;
 
 /**
  * Unicode blocks
@@ -2058,7 +2058,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaBold_18px
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaBold_20px;
+extern const struct font_t font_Adobe_HelveticaBold_20px;
 
 /**
  * Unicode blocks
@@ -2090,7 +2090,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaBold_20px
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaBold_24px;
+extern const struct font_t font_Adobe_HelveticaBold_24px;
 
 /**
  * Unicode blocks
@@ -2122,7 +2122,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaBold_24px
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaBold_25px;
+extern const struct font_t font_Adobe_HelveticaBold_25px;
 
 /**
  * Unicode blocks
@@ -2154,7 +2154,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaBold_25px
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaBold_34px;
+extern const struct font_t font_Adobe_HelveticaBold_34px;
 
 /**
  * Unicode blocks
@@ -2191,7 +2191,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaBold_34px
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaBoldOblique_8px;
+extern const struct font_t font_Adobe_HelveticaBoldOblique_8px;
 
 /**
  * Unicode blocks
@@ -2223,7 +2223,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaBoldObliq
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaBoldOblique_10px;
+extern const struct font_t font_Adobe_HelveticaBoldOblique_10px;
 
 /**
  * Unicode blocks
@@ -2255,7 +2255,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaBoldObliq
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaBoldOblique_11px;
+extern const struct font_t font_Adobe_HelveticaBoldOblique_11px;
 
 /**
  * Unicode blocks
@@ -2287,7 +2287,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaBoldObliq
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaBoldOblique_12px;
+extern const struct font_t font_Adobe_HelveticaBoldOblique_12px;
 
 /**
  * Unicode blocks
@@ -2319,7 +2319,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaBoldObliq
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaBoldOblique_14px;
+extern const struct font_t font_Adobe_HelveticaBoldOblique_14px;
 
 /**
  * Unicode blocks
@@ -2351,7 +2351,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaBoldObliq
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaBoldOblique_17px;
+extern const struct font_t font_Adobe_HelveticaBoldOblique_17px;
 
 /**
  * Unicode blocks
@@ -2383,7 +2383,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaBoldObliq
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaBoldOblique_18px;
+extern const struct font_t font_Adobe_HelveticaBoldOblique_18px;
 
 /**
  * Unicode blocks
@@ -2415,7 +2415,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaBoldObliq
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaBoldOblique_20px;
+extern const struct font_t font_Adobe_HelveticaBoldOblique_20px;
 
 /**
  * Unicode blocks
@@ -2447,7 +2447,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaBoldObliq
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaBoldOblique_24px;
+extern const struct font_t font_Adobe_HelveticaBoldOblique_24px;
 
 /**
  * Unicode blocks
@@ -2479,7 +2479,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaBoldObliq
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaBoldOblique_25px;
+extern const struct font_t font_Adobe_HelveticaBoldOblique_25px;
 
 /**
  * Unicode blocks
@@ -2511,7 +2511,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaBoldObliq
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaBoldOblique_34px;
+extern const struct font_t font_Adobe_HelveticaBoldOblique_34px;
 
 /**
  * Unicode blocks
@@ -2548,7 +2548,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaBoldObliq
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaOblique_8px;
+extern const struct font_t font_Adobe_HelveticaOblique_8px;
 
 /**
  * Unicode blocks
@@ -2580,7 +2580,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaOblique_8
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaOblique_10px;
+extern const struct font_t font_Adobe_HelveticaOblique_10px;
 
 /**
  * Unicode blocks
@@ -2612,7 +2612,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaOblique_1
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaOblique_11px;
+extern const struct font_t font_Adobe_HelveticaOblique_11px;
 
 /**
  * Unicode blocks
@@ -2644,7 +2644,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaOblique_1
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaOblique_12px;
+extern const struct font_t font_Adobe_HelveticaOblique_12px;
 
 /**
  * Unicode blocks
@@ -2676,7 +2676,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaOblique_1
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaOblique_14px;
+extern const struct font_t font_Adobe_HelveticaOblique_14px;
 
 /**
  * Unicode blocks
@@ -2708,7 +2708,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaOblique_1
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaOblique_17px;
+extern const struct font_t font_Adobe_HelveticaOblique_17px;
 
 /**
  * Unicode blocks
@@ -2740,7 +2740,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaOblique_1
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaOblique_18px;
+extern const struct font_t font_Adobe_HelveticaOblique_18px;
 
 /**
  * Unicode blocks
@@ -2772,7 +2772,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaOblique_1
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaOblique_20px;
+extern const struct font_t font_Adobe_HelveticaOblique_20px;
 
 /**
  * Unicode blocks
@@ -2804,7 +2804,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaOblique_2
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaOblique_24px;
+extern const struct font_t font_Adobe_HelveticaOblique_24px;
 
 /**
  * Unicode blocks
@@ -2836,7 +2836,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaOblique_2
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaOblique_25px;
+extern const struct font_t font_Adobe_HelveticaOblique_25px;
 
 /**
  * Unicode blocks
@@ -2868,7 +2868,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaOblique_2
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_HelveticaOblique_34px;
+extern const struct font_t font_Adobe_HelveticaOblique_34px;
 
 /**
  * Unicode blocks
@@ -2905,7 +2905,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_HelveticaOblique_3
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookBold_8px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookBold_8px;
 
 /**
  * Unicode blocks
@@ -2937,7 +2937,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookBold_10px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookBold_10px;
 
 /**
  * Unicode blocks
@@ -2969,7 +2969,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookBold_11px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookBold_11px;
 
 /**
  * Unicode blocks
@@ -3001,7 +3001,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookBold_14px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookBold_14px;
 
 /**
  * Unicode blocks
@@ -3033,7 +3033,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookBold_17px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookBold_17px;
 
 /**
  * Unicode blocks
@@ -3065,7 +3065,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookBold_18px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookBold_18px;
 
 /**
  * Unicode blocks
@@ -3097,7 +3097,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookBold_20px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookBold_20px;
 
 /**
  * Unicode blocks
@@ -3129,7 +3129,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookBold_24px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookBold_24px;
 
 /**
  * Unicode blocks
@@ -3161,7 +3161,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookBold_25px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookBold_25px;
 
 /**
  * Unicode blocks
@@ -3193,7 +3193,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookBold_34px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookBold_34px;
 
 /**
  * Unicode blocks
@@ -3230,7 +3230,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookBoldItalic_8px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookBoldItalic_8px;
 
 /**
  * Unicode blocks
@@ -3262,7 +3262,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookBoldItalic_10px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookBoldItalic_10px;
 
 /**
  * Unicode blocks
@@ -3294,7 +3294,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookBoldItalic_11px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookBoldItalic_11px;
 
 /**
  * Unicode blocks
@@ -3326,7 +3326,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookBoldItalic_12px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookBoldItalic_12px;
 
 /**
  * Unicode blocks
@@ -3358,7 +3358,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookBoldItalic_14px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookBoldItalic_14px;
 
 /**
  * Unicode blocks
@@ -3390,7 +3390,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookBoldItalic_17px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookBoldItalic_17px;
 
 /**
  * Unicode blocks
@@ -3422,7 +3422,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookBoldItalic_18px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookBoldItalic_18px;
 
 /**
  * Unicode blocks
@@ -3454,7 +3454,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookBoldItalic_20px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookBoldItalic_20px;
 
 /**
  * Unicode blocks
@@ -3486,7 +3486,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookBoldItalic_24px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookBoldItalic_24px;
 
 /**
  * Unicode blocks
@@ -3518,7 +3518,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookBoldItalic_25px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookBoldItalic_25px;
 
 /**
  * Unicode blocks
@@ -3550,7 +3550,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookBoldItalic_34px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookBoldItalic_34px;
 
 /**
  * Unicode blocks
@@ -3587,7 +3587,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookItalic_8px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookItalic_8px;
 
 /**
  * Unicode blocks
@@ -3619,7 +3619,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookItalic_10px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookItalic_10px;
 
 /**
  * Unicode blocks
@@ -3651,7 +3651,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookItalic_11px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookItalic_11px;
 
 /**
  * Unicode blocks
@@ -3683,7 +3683,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookItalic_12px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookItalic_12px;
 
 /**
  * Unicode blocks
@@ -3715,7 +3715,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookItalic_14px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookItalic_14px;
 
 /**
  * Unicode blocks
@@ -3747,7 +3747,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookItalic_17px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookItalic_17px;
 
 /**
  * Unicode blocks
@@ -3779,7 +3779,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookItalic_18px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookItalic_18px;
 
 /**
  * Unicode blocks
@@ -3811,7 +3811,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookItalic_20px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookItalic_20px;
 
 /**
  * Unicode blocks
@@ -3843,7 +3843,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookItalic_24px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookItalic_24px;
 
 /**
  * Unicode blocks
@@ -3875,7 +3875,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookItalic_25px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookItalic_25px;
 
 /**
  * Unicode blocks
@@ -3907,7 +3907,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookItalic_34px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookItalic_34px;
 
 /**
  * Unicode blocks
@@ -3944,7 +3944,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookRoman_8px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookRoman_8px;
 
 /**
  * Unicode blocks
@@ -3976,7 +3976,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookRoman_10px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookRoman_10px;
 
 /**
  * Unicode blocks
@@ -4008,7 +4008,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookRoman_11px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookRoman_11px;
 
 /**
  * Unicode blocks
@@ -4040,7 +4040,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookRoman_14px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookRoman_14px;
 
 /**
  * Unicode blocks
@@ -4072,7 +4072,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookRoman_17px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookRoman_17px;
 
 /**
  * Unicode blocks
@@ -4104,7 +4104,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookRoman_18px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookRoman_18px;
 
 /**
  * Unicode blocks
@@ -4136,7 +4136,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookRoman_20px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookRoman_20px;
 
 /**
  * Unicode blocks
@@ -4168,7 +4168,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookRoman_24px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookRoman_24px;
 
 /**
  * Unicode blocks
@@ -4200,7 +4200,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookRoman_25px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookRoman_25px;
 
 /**
  * Unicode blocks
@@ -4232,7 +4232,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenturySchoolbookRoman_34px;
+extern const struct font_t font_Adobe_NewCenturySchoolbookRoman_34px;
 
 /**
  * Unicode blocks
@@ -4269,7 +4269,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCentuySchoolbookBold_12px;
+extern const struct font_t font_Adobe_NewCentuySchoolbookBold_12px;
 
 /**
  * Unicode blocks
@@ -4306,7 +4306,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCentuySchoolboo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_NewCenurySchoolbookRoman_12px;
+extern const struct font_t font_Adobe_NewCenurySchoolbookRoman_12px;
 
 /**
  * Unicode blocks
@@ -4343,7 +4343,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_NewCenurySchoolboo
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesBold_8px;
+extern const struct font_t font_Adobe_TimesBold_8px;
 
 /**
  * Unicode blocks
@@ -4375,7 +4375,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesBold_8px_Lati
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesBold_10px;
+extern const struct font_t font_Adobe_TimesBold_10px;
 
 /**
  * Unicode blocks
@@ -4407,7 +4407,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesBold_10px_Lat
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesBold_11px;
+extern const struct font_t font_Adobe_TimesBold_11px;
 
 /**
  * Unicode blocks
@@ -4439,7 +4439,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesBold_11px_Lat
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesBold_12px;
+extern const struct font_t font_Adobe_TimesBold_12px;
 
 /**
  * Unicode blocks
@@ -4471,7 +4471,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesBold_12px_Lat
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesBold_14px;
+extern const struct font_t font_Adobe_TimesBold_14px;
 
 /**
  * Unicode blocks
@@ -4503,7 +4503,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesBold_14px_Lat
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesBold_17px;
+extern const struct font_t font_Adobe_TimesBold_17px;
 
 /**
  * Unicode blocks
@@ -4535,7 +4535,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesBold_17px_Lat
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesBold_18px;
+extern const struct font_t font_Adobe_TimesBold_18px;
 
 /**
  * Unicode blocks
@@ -4567,7 +4567,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesBold_18px_Lat
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesBold_20px;
+extern const struct font_t font_Adobe_TimesBold_20px;
 
 /**
  * Unicode blocks
@@ -4599,7 +4599,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesBold_20px_Lat
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesBold_24px;
+extern const struct font_t font_Adobe_TimesBold_24px;
 
 /**
  * Unicode blocks
@@ -4631,7 +4631,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesBold_24px_Lat
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesBold_25px;
+extern const struct font_t font_Adobe_TimesBold_25px;
 
 /**
  * Unicode blocks
@@ -4663,7 +4663,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesBold_25px_Lat
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesBold_34px;
+extern const struct font_t font_Adobe_TimesBold_34px;
 
 /**
  * Unicode blocks
@@ -4700,7 +4700,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesBold_34px_Lat
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesBoldItalic_8px;
+extern const struct font_t font_Adobe_TimesBoldItalic_8px;
 
 /**
  * Unicode blocks
@@ -4732,7 +4732,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesBoldItalic_8p
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesBoldItalic_10px;
+extern const struct font_t font_Adobe_TimesBoldItalic_10px;
 
 /**
  * Unicode blocks
@@ -4764,7 +4764,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesBoldItalic_10
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesBoldItalic_11px;
+extern const struct font_t font_Adobe_TimesBoldItalic_11px;
 
 /**
  * Unicode blocks
@@ -4796,7 +4796,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesBoldItalic_11
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesBoldItalic_12px;
+extern const struct font_t font_Adobe_TimesBoldItalic_12px;
 
 /**
  * Unicode blocks
@@ -4828,7 +4828,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesBoldItalic_12
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesBoldItalic_14px;
+extern const struct font_t font_Adobe_TimesBoldItalic_14px;
 
 /**
  * Unicode blocks
@@ -4860,7 +4860,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesBoldItalic_14
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesBoldItalic_17px;
+extern const struct font_t font_Adobe_TimesBoldItalic_17px;
 
 /**
  * Unicode blocks
@@ -4892,7 +4892,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesBoldItalic_17
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesBoldItalic_18px;
+extern const struct font_t font_Adobe_TimesBoldItalic_18px;
 
 /**
  * Unicode blocks
@@ -4924,7 +4924,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesBoldItalic_18
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesBoldItalic_20px;
+extern const struct font_t font_Adobe_TimesBoldItalic_20px;
 
 /**
  * Unicode blocks
@@ -4956,7 +4956,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesBoldItalic_20
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesBoldItalic_24px;
+extern const struct font_t font_Adobe_TimesBoldItalic_24px;
 
 /**
  * Unicode blocks
@@ -4988,7 +4988,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesBoldItalic_24
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesBoldItalic_25px;
+extern const struct font_t font_Adobe_TimesBoldItalic_25px;
 
 /**
  * Unicode blocks
@@ -5020,7 +5020,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesBoldItalic_25
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesBoldItalic_34px;
+extern const struct font_t font_Adobe_TimesBoldItalic_34px;
 
 /**
  * Unicode blocks
@@ -5057,7 +5057,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesBoldItalic_34
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesItalic_8px;
+extern const struct font_t font_Adobe_TimesItalic_8px;
 
 /**
  * Unicode blocks
@@ -5089,7 +5089,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesItalic_8px_La
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesItalic_10px;
+extern const struct font_t font_Adobe_TimesItalic_10px;
 
 /**
  * Unicode blocks
@@ -5121,7 +5121,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesItalic_10px_L
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesItalic_11px;
+extern const struct font_t font_Adobe_TimesItalic_11px;
 
 /**
  * Unicode blocks
@@ -5153,7 +5153,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesItalic_11px_L
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesItalic_12px;
+extern const struct font_t font_Adobe_TimesItalic_12px;
 
 /**
  * Unicode blocks
@@ -5185,7 +5185,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesItalic_12px_L
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesItalic_14px;
+extern const struct font_t font_Adobe_TimesItalic_14px;
 
 /**
  * Unicode blocks
@@ -5217,7 +5217,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesItalic_14px_L
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesItalic_17px;
+extern const struct font_t font_Adobe_TimesItalic_17px;
 
 /**
  * Unicode blocks
@@ -5249,7 +5249,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesItalic_17px_L
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesItalic_18px;
+extern const struct font_t font_Adobe_TimesItalic_18px;
 
 /**
  * Unicode blocks
@@ -5281,7 +5281,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesItalic_18px_L
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesItalic_20px;
+extern const struct font_t font_Adobe_TimesItalic_20px;
 
 /**
  * Unicode blocks
@@ -5313,7 +5313,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesItalic_20px_L
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesItalic_24px;
+extern const struct font_t font_Adobe_TimesItalic_24px;
 
 /**
  * Unicode blocks
@@ -5345,7 +5345,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesItalic_24px_L
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesItalic_25px;
+extern const struct font_t font_Adobe_TimesItalic_25px;
 
 /**
  * Unicode blocks
@@ -5377,7 +5377,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesItalic_25px_L
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesItalic_34px;
+extern const struct font_t font_Adobe_TimesItalic_34px;
 
 /**
  * Unicode blocks
@@ -5414,7 +5414,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesItalic_34px_L
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesRoman_8px;
+extern const struct font_t font_Adobe_TimesRoman_8px;
 
 /**
  * Unicode blocks
@@ -5446,7 +5446,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesRoman_8px_Lat
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesRoman_10px;
+extern const struct font_t font_Adobe_TimesRoman_10px;
 
 /**
  * Unicode blocks
@@ -5478,7 +5478,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesRoman_10px_La
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesRoman_11px;
+extern const struct font_t font_Adobe_TimesRoman_11px;
 
 /**
  * Unicode blocks
@@ -5510,7 +5510,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesRoman_11px_La
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesRoman_12px;
+extern const struct font_t font_Adobe_TimesRoman_12px;
 
 /**
  * Unicode blocks
@@ -5542,7 +5542,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesRoman_12px_La
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesRoman_14px;
+extern const struct font_t font_Adobe_TimesRoman_14px;
 
 /**
  * Unicode blocks
@@ -5574,7 +5574,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesRoman_14px_La
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesRoman_17px;
+extern const struct font_t font_Adobe_TimesRoman_17px;
 
 /**
  * Unicode blocks
@@ -5606,7 +5606,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesRoman_17px_La
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesRoman_18px;
+extern const struct font_t font_Adobe_TimesRoman_18px;
 
 /**
  * Unicode blocks
@@ -5638,7 +5638,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesRoman_18px_La
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesRoman_20px;
+extern const struct font_t font_Adobe_TimesRoman_20px;
 
 /**
  * Unicode blocks
@@ -5670,7 +5670,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesRoman_20px_La
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesRoman_24px;
+extern const struct font_t font_Adobe_TimesRoman_24px;
 
 /**
  * Unicode blocks
@@ -5702,7 +5702,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesRoman_24px_La
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesRoman_25px;
+extern const struct font_t font_Adobe_TimesRoman_25px;
 
 /**
  * Unicode blocks
@@ -5734,7 +5734,7 @@ extern const struct glyph_unicode_block_t unicode_block_Adobe_TimesRoman_25px_La
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern struct font_t font_Adobe_TimesRoman_34px;
+extern const struct font_t font_Adobe_TimesRoman_34px;
 
 /**
  * Unicode blocks

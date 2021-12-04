@@ -1313,7 +1313,7 @@ void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float ate ){
 	// ucg->setClipRange( x-88, y-30, 95, 50 );
 	ucg->setFont(ucg_font_fub35_hn, true);
 	char s[15];
-	static char* format[2] = {"  %2.1f", "  %2.0f"};
+	static const char* format[2] = {"  %2.1f", "  %2.0f"};
 	sprintf(s, format[std::abs(ate)>10], round(ate*10.)/10.); // Avoid "-" sign because of not sown mantissa
 	ucg->setPrintPos(x - ucg->getStrWidth(s), y);
 	// ESP_LOGI(FNAME,"drawAvgVario x:%d y:%d, %s", x,y,s );
@@ -1690,7 +1690,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// indicate vario mode
 	if( netto != netto_old ) {
 		if( netto )
-			ucg->setColor( COLOR_HEADER );
+			ucg->setColor( COLOR_WHITE );
 		else
 			ucg->setColor( COLOR_BLACK );
 		char s[10];
@@ -1699,7 +1699,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		else
 			sprintf(s, "s-net");
 		ucg->setFont(ucg_font_fub11_hr, true);
-		ucg->setPrintPos(120-ucg->getStrWidth(s), DISPLAY_H/2-30);
+		ucg->setPrintPos(120-ucg->getStrWidth(s), DISPLAY_H/2-40);
 		ucg->print(s);
 		netto_old = netto;
 	}

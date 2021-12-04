@@ -79,7 +79,7 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->setFont( ucg_font_fur14_hf );
 	p->ucg->setPrintPos( 1, 60 );
-	p->ucg->printf( "Turn airplane to %s\260  ", p->getEntry() );
+	p->ucg->printf( "Turn airplane to %s°  ", p->getEntry() );
 	p->ucg->setPrintPos( 1, 90 );
 	p->ucg->printf( "and push button when done" );
 	xSemaphoreGive(spiMutex);
@@ -105,12 +105,12 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		p->ucg->setFont( ucg_font_fur20_hf );
 		p->ucg->setPrintPos( 1, 180 );
-		p->ucg->printf( "Heading:   %d\260    ", hi );
+		p->ucg->printf( "Heading:   %d°    ", hi );
 		p->ucg->setPrintPos( 1, 230 );
 		deviation = direction - hi;
 		if( deviation < -180 )
 			deviation += 360;
-		p->ucg->printf( "Deviation: %3.2f\260    ", deviation );
+		p->ucg->printf( "Deviation: %3.2f°    ", deviation );
 		xSemaphoreGive(spiMutex);
 		delay( 100 );
 	}

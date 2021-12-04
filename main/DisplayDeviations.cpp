@@ -65,10 +65,10 @@ void DisplayDeviations::display( int mode )
       ucg->printf( "%s",  skydirdev[i] );
       x += 42;
       ucg->setPrintPos( x, y );
-      ucg->printf( "%03d\260", i * 45 );
+      ucg->printf( "%03d°", i * 45 );
       x += 50;
       ucg->setPrintPos( x, y );
-      ucg->printf( "Deviation %3.1f\260",  deviations[i]->get() );
+      ucg->printf( "Deviation %3.1f°",  deviations[i]->get() );
     }
 
   ucg->setPrintPos( 5, 290 );

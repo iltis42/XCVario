@@ -71,7 +71,7 @@ void ShowCompassSettings::display( int mode )
 	y += 25;
 
 	ucg->setPrintPos( 0, y );
-	sprintf( buffer, "Compass declination: %d\260",
+	sprintf( buffer, "Compass declination: %d°",
 			static_cast<int>(compass_declination.get()) );
 	ucg->printf( "%s", buffer );
 	y += 25;

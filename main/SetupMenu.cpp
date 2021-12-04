@@ -969,7 +969,7 @@ void SetupMenu::setup( )
 
 		SetupMenuValFloat *cd = new SetupMenuValFloat( "Setup Declination",
 				0,
-				"\260",
+				"°",
 				-180,
 				180,
 				1.0,
@@ -1124,7 +1124,7 @@ void SetupMenu::setup( )
 		ShowCirclingWind* scw = new ShowCirclingWind( "Circling Wind Status" );
 		cirWindM->addEntry( scw );
 
-		SetupMenuValFloat *cirwd = new SetupMenuValFloat( "Max Delta", nullptr, "\260", 0, 90.0, 1.0, nullptr, false, &max_circle_wind_diff );
+		SetupMenuValFloat *cirwd = new SetupMenuValFloat( "Max Delta", nullptr, "°", 0, 90.0, 1.0, nullptr, false, &max_circle_wind_diff );
 		cirWindM->addEntry( cirwd );
 		cirwd->setHelp(PROGMEM "Maximum accepted delta accepted value for heading error in circling wind calculation");
 

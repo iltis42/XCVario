@@ -24,10 +24,10 @@ void eglib_setClipRange(
     eglib->drawing.clip_xmin = 0;
     eglib->drawing.clip_ymax = eglib_GetHeight(eglib);
     eglib->drawing.clip_ymin = 0;
-    if ( (x >= eglib->drawing.clip_xmin) & (x < eglib->drawing.clip_xmax)) eglib->drawing.clip_xmin = x;
-    if ( ((x+w) >= eglib->drawing.clip_xmin) & ((x+w) < eglib->drawing.clip_xmax)) eglib->drawing.clip_xmax = x+w;
-    if ( (y >= eglib->drawing.clip_ymin) & (y < eglib->drawing.clip_ymax)) eglib->drawing.clip_ymin = y;
-    if ( ((y+h) >= eglib->drawing.clip_ymin) & ((y+h) < eglib->drawing.clip_ymax)) eglib->drawing.clip_ymax = y+h;
+    if ( (x >= eglib->drawing.clip_xmin) && (x < eglib->drawing.clip_xmax)) eglib->drawing.clip_xmin = x;
+    if ( ((x+w) >= eglib->drawing.clip_xmin) && ((x+w) < eglib->drawing.clip_xmax)) eglib->drawing.clip_xmax = x+w;
+    if ( (y >= eglib->drawing.clip_ymin) && (y < eglib->drawing.clip_ymax)) eglib->drawing.clip_ymin = y;
+    if ( ((y+h) >= eglib->drawing.clip_ymin) && ((y+h) < eglib->drawing.clip_ymax)) eglib->drawing.clip_ymax = y+h;
     return;
 };
 
@@ -173,27 +173,27 @@ static void draw_fast_90_line(
 
     switch(direction) {
       case DISPLAY_LINE_DIRECTION_RIGHT:
-        if((y1 >= eglib->drawing.clip_ymax) | (y1 < eglib->drawing.clip_ymin))
+        if((y1 >= eglib->drawing.clip_ymax) || (y1 < eglib->drawing.clip_ymin))
             return;
         if (x1 < eglib->drawing.clip_xmin) x1 = eglib->drawing.clip_xmin;
         if(x1 + length > eglib->drawing.clip_xmax)
           length = eglib->drawing.clip_xmax - x1;
         break;
       case DISPLAY_LINE_DIRECTION_LEFT:
-        if((y1 >= eglib->drawing.clip_ymax) | (y1 < eglib->drawing.clip_ymin))
+        if((y1 >= eglib->drawing.clip_ymax) || (y1 < eglib->drawing.clip_ymin))
             return;
         if (x1 > eglib->drawing.clip_xmax) x1 = eglib->drawing.clip_xmax;
         if(x1 - length < eglib->drawing.clip_xmin)
           length = x1 - eglib->drawing.clip_xmin;
         break;
       case DISPLAY_LINE_DIRECTION_DOWN:
-        if((x1 >= eglib->drawing.clip_xmax) | (x1 < eglib->drawing.clip_xmin))
+        if((x1 >= eglib->drawing.clip_xmax) || (x1 < eglib->drawing.clip_xmin))
             return;
         if(y1 + length > eglib->drawing.clip_ymax)
           length = eglib->drawing.clip_ymax - y1;
         break;
       case DISPLAY_LINE_DIRECTION_UP:
-        if((x1 >= eglib->drawing.clip_xmax) | (x1 < eglib->drawing.clip_xmin))
+        if((x1 >= eglib->drawing.clip_xmax) || (x1 < eglib->drawing.clip_xmin))
             return;
         if(y1 - length < eglib->drawing.clip_ymin)
           length = y1 - eglib->drawing.clip_ymin;
@@ -1170,8 +1170,55 @@ struct font_t {
 };
 */
 
+void eglib_Clip_Buffer(eglib_t *eglib, drawbuffer_t *drawbuffer) 
+{
+    if ((drawbuffer->x > eglib->drawing.clip_xmax) ||
+        ((drawbuffer->x+drawbuffer->w) < eglib->drawing.clip_xmin) ||
+        (drawbuffer->y > eglib->drawing.clip_ymax) ||
+        (drawbuffer->y+drawbuffer->h) < eglib->drawing.clip_ymin)
+        {
+             ESP_LOGI("eglib_ClipBuffer","x:%d, w:%d, xmin %d, xmax %d",drawbuffer->x, drawbuffer->w, eglib->drawing.clip_xmin, eglib->drawing.clip_xmax);
+             ESP_LOGI("eglib_ClipBuffer","y:%d, h:%d, ymin %d, ymax %d\n",drawbuffer->y, drawbuffer->h, eglib->drawing.clip_ymin, eglib->drawing.clip_ymax);
+            drawbuffer->w = 0;
+            drawbuffer->h = 0;
+            return;
+        }
+//   ESP_LOGI("eglib_ClipBuffer","x:%d, y:%d, w:%d, h:%d",drawbuffer->x, drawbuffer->y, drawbuffer->w, drawbuffer->h);
+//     eglib_Clip_Buffer_Top(eglib, drawbuffer);
+//   ESP_LOGI("nach eglib_ClipBuffer_Top","x:%d, y:%d, w:%d, h:%d",drawbuffer->x, drawbuffer->y, drawbuffer->w, drawbuffer->h);
+//     eglib_Clip_Buffer_Bottom(eglib, drawbuffer);
+//   ESP_LOGI("nach eglib_ClipBuffer_Bottom","x:%d, y:%d, w:%d, h:%d",drawbuffer->x, drawbuffer->y, drawbuffer->w, drawbuffer->h);
+     eglib_Clip_Buffer_Left(eglib, drawbuffer);
+     eglib_Clip_Buffer_Right(eglib, drawbuffer);
+};
 
+void eglib_Clip_Buffer_Top(eglib_t *eglib, drawbuffer_t *drawbuffer)
+{
+    if (((drawbuffer->y - drawbuffer->h) < eglib->drawing.clip_ymin) && 
+        (drawbuffer->y > eglib->drawing.clip_ymin)){
+        coordinate_t clip_height = eglib->drawing.clip_ymin - (drawbuffer->y-drawbuffer->h);
+        drawbuffer->buffer = &buffer[3*drawbuffer->w*clip_height];
+  //      drawbuffer->x = drawbuffer->x;
+  //      drawbuffer->y = drawbuffer->y;
+  //      drawbuffer->w = drawbuffer->w;
+        drawbuffer->h = drawbuffer->h - clip_height;
+    };
+}
 
+void eglib_Clip_Buffer_Bottom(eglib_t *eglib, drawbuffer_t *drawbuffer)
+{
+        if (((drawbuffer->y) > eglib->drawing.clip_ymax) &&
+        ((drawbuffer->y - drawbuffer->h) < eglib->drawing.clip_ymax)){
+        coordinate_t clip_height = drawbuffer->y-eglib->drawing.clip_ymax;
+  //      drawbuffer->x = drawbuffer->x;
+        drawbuffer->y = eglib->drawing.clip_ymax;
+  //      drawbuffer->w = drawbuffer->w;
+        drawbuffer->h = drawbuffer->h -clip_height;
+   };
+}    
+    void eglib_Clip_Buffer_Left(eglib_t *eglib, drawbuffer_t *drawbuffer){};
+    void eglib_Clip_Buffer_Right(eglib_t *eglib, drawbuffer_t *drawbuffer){}; 
+     
 void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struct glyph_t *glyph) {
 	if(glyph == NULL)
 		return;
@@ -1185,9 +1232,8 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
 	if( eglib->drawing.font_origin == FONT_BOTTOM )
 		alignment = 0;
 	else if( eglib->drawing.font_origin == FONT_MIDDLE )
-		alignment -= alignment/2;
-	else if( eglib->drawing.font_origin == FONT_TOP )
-		alignment -= alignment;
+		alignment /= 2;
+	else if( eglib->drawing.font_origin == FONT_TOP );//		alignment -= alignment;
 	int width = glyph->advance; // glyph->advance;
 	int height = eglib->drawing.font->pixel_size; // glyph->height+2;
 	int top = glyph->top;
@@ -1196,9 +1242,8 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
 	for(coordinate_t v1=0 ; v1 < height ; v1++){
 		for(coordinate_t u=0 ; u < width; u++) {
 			coordinate_t v = v1 - head;
-			bool inClip = eglib_inClipArea(eglib, x+u, y+v1-height );
 			bool inWindow = (u < glyph->width) && (v < glyph->height) && v>=0;
-			if( inWindow && inClip )
+			if( inWindow /*&& inClip */)
 			{
 				uint32_t pos = (v*glyph->width)+u;
 				if( pos3 > sizeof(buffer) ){
@@ -1226,21 +1271,33 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
 			}
 			if( inWindow ){
 				pixels++;
-				if( !inClip )
-					pixels_off++;
+	//			if( !inClip )
+	//				pixels_off++;
 			}
 		}
 	}
-	if( pixels_off > 0 && pixels == pixels_off )  // all is off clipping area
-	 	return;
-
+// do clipping
+        static drawbuffer_t drawbuffer;
+        drawbuffer.buffer = buffer;
+        drawbuffer.x = x;
+        drawbuffer.y = y + alignment;
+        drawbuffer.w = width;
+        drawbuffer.h = height;
+    
+        eglib_Clip_Buffer(eglib, &drawbuffer);
+   
 	// ESP_LOGI("eglib_DrawGlyph","x:%d, y:%d, left:%d adv:%d ghei:%d gtop:%d gwid:%d ori:%d ali:%d fa:%d fd:%d hei:%d wid:%d", x,y, glyph->left, glyph->advance, glyph->height, glyph->top, glyph->width, eglib->drawing.font_origin, alignment, eglib->drawing.font->ascent, eglib->drawing.font->descent, height, width );
-	eglib->display.driver->send_buffer( eglib, buffer, x, y+alignment /* -(glyph->top-glyph->height) */, width, height );
+	eglib->display.driver->send_buffer(     eglib, 
+                                            drawbuffer.buffer, 
+                                            drawbuffer.x, 
+                                            drawbuffer.y, 
+                                            drawbuffer.w, 
+                                            drawbuffer.h );
 }
+
 
 #define MISSING_GLYPH_ADVANCE eglib->drawing.font->pixel_size
 
-void draw_missing_glyph(eglib_t *eglib, coordinate_t x, coordinate_t y);
 
 void draw_missing_glyph(eglib_t *eglib, coordinate_t x, coordinate_t y) {
   const struct font_t *font;

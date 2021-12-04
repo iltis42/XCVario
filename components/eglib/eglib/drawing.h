@@ -16,6 +16,8 @@
 
 typedef enum _font_origin {  FONT_BOTTOM, FONT_MIDDLE, FONT_TOP } e_font_origin;
 
+
+
 typedef struct s_drawing{
 		color_t color_index[4];
 		struct _gradient_t gradient;
@@ -993,7 +995,22 @@ void eglib_DrawText(eglib_t *eglib, coordinate_t x, coordinate_t y, const char *
  *   :width: 200
  */
 #define eglib_DrawTextCentered(eglib, x, y, utf8_text) eglib_DrawText(eglib, x - eglib_GetTextWidth(eglib, utf8_text) / 2, y, utf8_text)
+/**
+ * Clip given struct drawbuffer against clip-range
+ */
+typedef struct s_drawbuffer{
+        uint8_t *buffer;
+        coordinate_t x;
+        coordinate_t y;
+        coordinate_t w;
+        coordinate_t h;
+}drawbuffer_t;
 
+void eglib_Clip_Buffer(eglib_t *eglib, drawbuffer_t *drawbuffer);
+void eglib_Clip_Buffer_Top(eglib_t *eglib, drawbuffer_t *drawbuffer);
+void eglib_Clip_Buffer_Bottom(eglib_t *eglib, drawbuffer_t *drawbuffer);
+void eglib_Clip_Buffer_Left(eglib_t *eglib, drawbuffer_t *drawbuffer);
+void eglib_Clip_Buffer_Right(eglib_t*eglib, drawbuffer_t *drawbuffer);
 /**
  * Return the width in pixels of the given UTF-8 text.
  *

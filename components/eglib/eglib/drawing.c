@@ -24,10 +24,10 @@ void eglib_setClipRange(
     eglib->drawing.clip_xmin = 0;
     eglib->drawing.clip_ymax = eglib_GetHeight(eglib);
     eglib->drawing.clip_ymin = 0;
-    if ( (x >= eglib->drawing.clip_xmin) & (x < eglib->drawing.clip_xmax)) eglib->drawing.clip_xmin = x;
-    if ( ((x+w) >= eglib->drawing.clip_xmin) & ((x+w) < eglib->drawing.clip_xmax)) eglib->drawing.clip_xmax = x+w;
-    if ( (y >= eglib->drawing.clip_ymin) & (y < eglib->drawing.clip_ymax)) eglib->drawing.clip_ymin = y;
-    if ( ((y+h) >= eglib->drawing.clip_ymin) & ((y+h) < eglib->drawing.clip_ymax)) eglib->drawing.clip_ymax = y+h;
+    if ( (x >= eglib->drawing.clip_xmin) && (x < eglib->drawing.clip_xmax)) eglib->drawing.clip_xmin = x;
+    if ( ((x+w) >= eglib->drawing.clip_xmin) && ((x+w) < eglib->drawing.clip_xmax)) eglib->drawing.clip_xmax = x+w;
+    if ( (y >= eglib->drawing.clip_ymin) && (y < eglib->drawing.clip_ymax)) eglib->drawing.clip_ymin = y;
+    if ( ((y+h) >= eglib->drawing.clip_ymin) && ((y+h) < eglib->drawing.clip_ymax)) eglib->drawing.clip_ymax = y+h;
     return;
 };
 
@@ -173,27 +173,27 @@ static void draw_fast_90_line(
 
     switch(direction) {
       case DISPLAY_LINE_DIRECTION_RIGHT:
-        if((y1 >= eglib->drawing.clip_ymax) | (y1 < eglib->drawing.clip_ymin))
+        if((y1 >= eglib->drawing.clip_ymax) || (y1 < eglib->drawing.clip_ymin))
             return;
         if (x1 < eglib->drawing.clip_xmin) x1 = eglib->drawing.clip_xmin;
         if(x1 + length > eglib->drawing.clip_xmax)
           length = eglib->drawing.clip_xmax - x1;
         break;
       case DISPLAY_LINE_DIRECTION_LEFT:
-        if((y1 >= eglib->drawing.clip_ymax) | (y1 < eglib->drawing.clip_ymin))
+        if((y1 >= eglib->drawing.clip_ymax) || (y1 < eglib->drawing.clip_ymin))
             return;
         if (x1 > eglib->drawing.clip_xmax) x1 = eglib->drawing.clip_xmax;
         if(x1 - length < eglib->drawing.clip_xmin)
           length = x1 - eglib->drawing.clip_xmin;
         break;
       case DISPLAY_LINE_DIRECTION_DOWN:
-        if((x1 >= eglib->drawing.clip_xmax) | (x1 < eglib->drawing.clip_xmin))
+        if((x1 >= eglib->drawing.clip_xmax) || (x1 < eglib->drawing.clip_xmin))
             return;
         if(y1 + length > eglib->drawing.clip_ymax)
           length = eglib->drawing.clip_ymax - y1;
         break;
       case DISPLAY_LINE_DIRECTION_UP:
-        if((x1 >= eglib->drawing.clip_xmax) | (x1 < eglib->drawing.clip_xmin))
+        if((x1 >= eglib->drawing.clip_xmax) || (x1 < eglib->drawing.clip_xmin))
             return;
         if(y1 - length < eglib->drawing.clip_ymin)
           length = y1 - eglib->drawing.clip_ymin;

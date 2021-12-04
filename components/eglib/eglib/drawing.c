@@ -1148,8 +1148,6 @@ const struct glyph_t *eglib_GetGlyph(eglib_t *eglib, wchar_t unicode_char) {
   return NULL;
 }
 
-static uint8_t buffer[8000];
-
 /*
 struct glyph_t {
         uint8_t width : 7;   // Bitmap width
@@ -1170,11 +1168,10 @@ struct font_t {
 };
 */
 
-
-
 void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struct glyph_t *glyph) {
 	if(glyph == NULL)
 		return;
+	uint8_t *buffer;
 	int pixels_off = 0;
 	int pixels     = 0;
 	int ascent = eglib->drawing.font->ascent;
@@ -1193,6 +1190,7 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
 	int top = glyph->top;
 	int head = ascent - top;
 	uint32_t pos3 = 0;
+	buffer = malloc( height*width*3 );
 	for(coordinate_t v1=0 ; v1 < height ; v1++){
 		for(coordinate_t u=0 ; u < width; u++) {
 			coordinate_t v = v1 - head;
@@ -1201,8 +1199,9 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
 			if( inWindow && inClip )
 			{
 				uint32_t pos = (v*glyph->width)+u;
-				if( pos3 > sizeof(buffer) ){
+				if( pos3 > (height*width*3) ){
 					ESP_LOGI("DrawGlyph","buffer overrun");
+					free( buffer );
 					return;
 				}
 				color_t c = eglib->drawing.color_index[1];
@@ -1231,11 +1230,14 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
 			}
 		}
 	}
-	if( pixels_off > 0 && pixels == pixels_off )  // all is off clipping area
-	 	return;
 
+	if( pixels_off > 0 && pixels == pixels_off ){  // all is off clipping area
+		free( buffer );
+	 	return;
+	}
 	// ESP_LOGI("eglib_DrawGlyph","x:%d, y:%d, left:%d adv:%d ghei:%d gtop:%d gwid:%d ori:%d ali:%d fa:%d fd:%d hei:%d wid:%d", x,y, glyph->left, glyph->advance, glyph->height, glyph->top, glyph->width, eglib->drawing.font_origin, alignment, eglib->drawing.font->ascent, eglib->drawing.font->descent, height, width );
 	eglib->display.driver->send_buffer( eglib, buffer, x, y+alignment /* -(glyph->top-glyph->height) */, width, height );
+	free( buffer );
 }
 
 #define MISSING_GLYPH_ADVANCE eglib->drawing.font->pixel_size

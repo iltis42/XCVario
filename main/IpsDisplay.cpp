@@ -1603,7 +1603,7 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y) {
 			int windspeed = (int)( Units::Airspeed(wind)+0.5 );
 			if( wind_display.get() & WD_DIGITS ){
 				if( ok )
-					sprintf(s,"%3d\xb0%c%2d", winddir, type, windspeed );
+					sprintf(s,"%3d°%c%2d", winddir, type, windspeed );
 				else
 					sprintf(s,"%s", "    --/--" );
 				if( windspeed < 10 )
@@ -1649,10 +1649,8 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y) {
 			ucg->setPrintPos(x-ucg->getStrWidth(s), y);
 			ucg->print(s);
 			ucg->setColor( COLOR_HEADER );
-			ucg->setFont(ucg_font_fub20_hf, true);
 			ucg->setPrintPos(x+5, y);
-			ucg->print("\xb0 ");
-			// ucg->print("° ");
+			ucg->print("° ");
 			prev_heading = heading;
 		}
 	}

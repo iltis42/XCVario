@@ -1177,7 +1177,6 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
 	int ascent = eglib->drawing.font->ascent;
 	int descent = eglib->drawing.font->descent;
 	int alignment = ascent+descent;
-	int pixmax = (glyph->width*glyph->height)/2;
 
 	if( eglib->drawing.font_origin == FONT_BOTTOM )
 		alignment = 0;
@@ -1185,6 +1184,7 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
 		alignment -= alignment/2;
 	else if( eglib->drawing.font_origin == FONT_TOP )
 		alignment -= alignment;
+
 	int width = glyph->advance; // glyph->advance;
 	int height = eglib->drawing.font->pixel_size; // glyph->height+2;
 	int top = glyph->top;
@@ -1208,21 +1208,12 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
 				if( get_bit( glyph->data, pos ) ){
 					c = eglib->drawing.color_index[0];
 				}
-				buffer[pos3] = c.r;
-				pos3++;
-				buffer[pos3] = c.g;
-				pos3++;
-				buffer[pos3] = c.b;
-				pos3++;
+				*(color_t *)(buffer+pos3) = c;
 			}
 			else{
-				buffer[pos3] = eglib->drawing.color_index[1].r;
-				pos3++;
-				buffer[pos3] = eglib->drawing.color_index[1].g;
-				pos3++;
-				buffer[pos3] = eglib->drawing.color_index[1].b;
-				pos3++;
+				*(color_t *)(buffer+pos3) = eglib->drawing.color_index[1];
 			}
+			pos3 +=3;
 			if( inWindow ){
 				pixels++;
 				if( !inClip )

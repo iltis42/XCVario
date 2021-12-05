@@ -19,7 +19,7 @@ public:
 
 private:
   static char rxbuf[SERIAL_STRLEN];
-
+  static bool _selfTest;
 };
 
 #endif

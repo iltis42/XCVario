@@ -401,9 +401,9 @@ void IpsDisplay::initDisplay() {
 
 		ucg->setColor(0, COLOR_WHITE );
 		// AS Box
-		int fl = ucg->getStrWidth(" 200-    ");
+		int fl = ucg->getStrWidth(" 200- ");
 
-		ASLEN = fl;
+		ASLEN = fl+3;
 		S2FST = ASLEN+16;
 
 		// S2F Zero
@@ -657,7 +657,7 @@ void IpsDisplay::drawMC( float mc, bool large ) {
 	int16_t fl = ucg->getStrWidth(s);
 	ucg->setFont(ucg_font_fub11_hr, true);
 	ucg->setColor(COLOR_HEADER);
-	ucg->setPrintPos(5+fl+2, DISPLAY_H-6);
+	ucg->setPrintPos(5+fl+2, DISPLAY_H-4);
 	ucg->print("MC");
 }
 
@@ -1964,9 +1964,6 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 
 		FLAP->drawWingSymbol( wki, wksensor);
 	}
-
-
-
 	ucg->setFont(ucg_font_fub35_hn, true);  // 52 height
 	ucg->setColor(  COLOR_WHITE  );
 

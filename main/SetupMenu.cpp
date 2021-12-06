@@ -348,6 +348,7 @@ void SetupMenu::display( int mode ){
 	y=25;
 	ESP_LOGI(FNAME,"Title: %s y=%d child size:%d", selected->_title.c_str(),y, _childs.size()  );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
+	ucg->setFont(ucg_font_ncenR14_hr);
 	ucg->setPrintPos(1,y);
 	ucg->setFontPosBottom();
 	ucg->printf("<< %s",selected->_title.c_str());
@@ -362,11 +363,9 @@ void SetupMenu::display( int mode ){
 			int fl=ucg->getStrWidth( child->_title.c_str());
 			ucg->setPrintPos(1+fl,(i+1)*25+25);
 			ucg->printf(": ");
-			ucg->setPrintPos(1+fl+ucg->getStrWidth( ": " ),(i+1)*25+25);
+			ucg->setPrintPos(1+fl+ucg->getStrWidth( ":" ),(i+1)*25+25);
 			ucg->setColor( COLOR_WHITE );
-			ucg->setFont(ucg_font_fur14_hf);
-			ucg->printf("%s",child->value());
-			ucg->setFont(ucg_font_ncenR14_hr);
+			ucg->printf(" %s",child->value());
 		}
 		ucg->setColor( COLOR_WHITE );
 		// ESP_LOGI(FNAME,"Child: %s y=%d",child->_title.c_str() ,y );

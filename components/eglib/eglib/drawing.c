@@ -1244,11 +1244,14 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
 	free( buffer );
 }
 
+
 #define MISSING_GLYPH_ADVANCE eglib->drawing.font->pixel_size
 
-void draw_missing_glyph(eglib_t *eglib, coordinate_t x, coordinate_t y);
+size_t draw_missing_glyph(eglib_t *eglib, wchar_t w, coordinate_t x, coordinate_t y);
 
-void draw_missing_glyph(eglib_t *eglib, coordinate_t x, coordinate_t y) {
+size_t draw_missing_glyph(eglib_t *eglib, wchar_t w, coordinate_t x, coordinate_t y) {
+  if( w == 0x0a || w == 0x0d ) // no reason to draw CR/LF
+	  return 0;
   const struct font_t *font;
   coordinate_t box_x, box_y, box_width, box_height;
 
@@ -1262,6 +1265,7 @@ void draw_missing_glyph(eglib_t *eglib, coordinate_t x, coordinate_t y) {
   eglib_DrawFrame(eglib, box_x, box_y, box_width, box_height);
   eglib_DrawLine(eglib, box_x, box_y, box_x + box_width, box_y + box_height);
   eglib_DrawLine(eglib, box_x, box_y + box_height, box_x + box_width, box_y);
+  return MISSING_GLYPH_ADVANCE;
 }
 
 size_t eglib_DrawWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wchar_t unicode_char) {
@@ -1271,8 +1275,7 @@ size_t eglib_DrawWChar(eglib_t *eglib, coordinate_t x, coordinate_t y, wchar_t u
     eglib_DrawGlyph(eglib, x, y, glyph);
     return glyph->advance;
   } else {
-    draw_missing_glyph(eglib, x, y);
-    return MISSING_GLYPH_ADVANCE;
+    return draw_missing_glyph(eglib, unicode_char, x, y);
   }
 }
 
@@ -1305,12 +1308,11 @@ size_t eglib_DrawText(eglib_t *eglib, coordinate_t x, coordinate_t y, const char
   // ESP_LOGI( "DrawText()",">%s<  X:%d Y:%d",utf8_text, x,y );
   size_t total_advance = 0;
   for(uint16_t index=0 ; utf8_text[index] ; ) {
-    glyph = eglib_GetGlyph(eglib, utf8_nextchar(utf8_text, &index));
+	wchar_t w = utf8_nextchar(utf8_text, &index);
+    glyph = eglib_GetGlyph(eglib, w );
     if(glyph == NULL) {
-      draw_missing_glyph(eglib, x, y);
-      x += MISSING_GLYPH_ADVANCE;
-      total_advance += MISSING_GLYPH_ADVANCE;
-
+      x += draw_missing_glyph(eglib, w, x, y);
+      total_advance += x;
     } else {
       eglib_DrawGlyph(eglib, x, y, glyph);
       x += glyph->advance;
@@ -1348,4 +1350,13 @@ void eglib_setFilledMode(eglib_t *eglib, bool fill ) {
 void eglib_setFontOrigin( eglib_t *eglib, e_font_origin origin ) {
 	eglib->drawing.font_origin = origin;
 };
+
+void eglib_setScrollMargins( eglib_t *eglib, coordinate_t top, coordinate_t bottom ){
+	eglib->display.driver->set_scroll_margins( eglib, top, bottom );
+};
+
+void eglib_scrollScreen( eglib_t *eglib, coordinate_t num_lines ){
+	eglib->display.driver->scroll( eglib, num_lines );
+};
+
 

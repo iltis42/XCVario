@@ -590,6 +590,39 @@ static bool refresh(eglib_t *eglib) {
 	return false;
 }
 
+/*
+ *   set scroll margins for hardware scroll function
+ */
+void set_scroll_margins( eglib_t *eglib, coordinate_t top, coordinate_t bottom ){
+	if (top + bottom <= 320) {
+		eglib_CommBegin(eglib);
+		uint16_t middle = 320 - top -bottom;
+		uint8_t data[6];
+		eglib_SendCommandByte(eglib, ILI9341_VERTICAL_SCROLLING_DEFINITION );
+		data[0] = top >> 8;
+		data[1] = top & 0xff;
+		data[2] = middle >> 8;
+		data[3] = middle & 0xff;
+		data[4] = bottom >> 8;
+		data[5] = bottom & 0xff;
+		eglib_SendData( eglib, data, 6 );
+		eglib_CommEnd(eglib);
+	}
+}
+
+/*
+ *   scroll display by the number of row lines as given
+ */
+void scroll( eglib_t *eglib, coordinate_t lines ){
+	eglib_CommBegin(eglib);
+	eglib_SendCommandByte(eglib, ILI9341_VERTICAL_SCROLL_START_ADDRESS_OF_RAM );
+	uint8_t data[2];
+	data[0] = lines >> 8;
+	data[1] = lines & 0xff;
+	eglib_SendData( eglib, data, 2 );
+	eglib_CommEnd(eglib);
+}
+
 const display_t ili9341 = {
 	.comm = {
 		.four_wire_spi = &((hal_four_wire_spi_config_t){
@@ -623,6 +656,8 @@ const display_t ili9341 = {
 	.draw_line = draw_line,
 	.send_buffer = send_buffer,
 	.refresh = refresh,
+	.set_scroll_margins = set_scroll_margins,
+	.scroll = scroll
 };
 
 //

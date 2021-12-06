@@ -5,13 +5,10 @@
 #include "eglib/types.h"
 #include "eglib/drawing.h"
 
-
 /**
  * These functions initialize :c:type:`eglib_t` and control sleep status of
  * the hardware.
  */
-
-
 
 struct _eglib_struct {
 	struct {
@@ -59,5 +56,11 @@ void eglib_SleepIn(eglib_t *eglib);
 
 /** Takes both HAL and display out of sleep. See :c:func:`eglib_SleepIn` */
 void eglib_SleepOut(eglib_t *eglib);
+
+// Define scroll area, usually there is some space for a footer (bottom) or a header (top) on the screen to indicate what's inside
+void eglib_setScrollMargins( eglib_t *eglib, coordinate_t top, coordinate_t bottom );
+
+// scroll by number of lines (pixels)
+void eglib_scrollScreen( eglib_t *eglib, coordinate_t num_lines );
 
 #endif

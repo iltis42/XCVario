@@ -24,6 +24,8 @@ int DataMonitor::maxChar( const char *str, int pos ){
 	return i;
 }
 
+static bool first=true;
+
 void DataMonitor::monitorString( int ch, e_dir_t dir, const char *str ){
 	// ESP_LOGI(FNAME,"monitorString ch:%d dir:%d string:%s", ch, dir, str );
 	if( !mon_started || paused ){
@@ -44,8 +46,14 @@ void DataMonitor::monitorString( int ch, e_dir_t dir, const char *str ){
 		S = std::string("<");
 	S += s;
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
+	if( first ){
+		first = false;
+		ucg->setColor( COLOR_BLACK );
+		ucg->drawBox( 0,0,240,320 );
+	}
 	ucg->setFont(ucg_font_fub11_tr);
 	ucg->setColor( COLOR_WHITE );
+
 	while( total <= S.length() ){
 		int hunklen = maxChar( S.c_str(), total );
 		std::string hunk = S.substr( total, hunklen );

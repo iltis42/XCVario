@@ -225,6 +225,23 @@ struct display_struct {
 	 * :return: ``true`` when refresh is ongoing and ``false`` when refresh finished.
 	 */
 	bool (*refresh)(eglib_t *eglib);
+
+	/*
+	 *   set scroll margins for hardware scroll function
+	 */
+	void (*set_scroll_margins)(
+			eglib_t *eglib,
+			coordinate_t top, coordinate_t bottom
+	);
+
+	/*
+	 *   scroll display by the number of row lines as given
+	 */
+	void (*scroll)(
+			eglib_t *eglib,
+			coordinate_t num_lines
+	);
+
 };
 
 /**
@@ -350,5 +367,6 @@ bool eglib_Refresh(eglib_t *eglib);
 
 /** Whether a display refresh initiated by :c:func:`eglib_Refresh` is ongoing */
 #define eglib_IsRefreshing(eglib) ((eglib)->display.refreshing)
+
 
 #endif

@@ -1366,7 +1366,7 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 			int16_t q = quant/10; // here either 1 (for m) or 2 (for ft)
 			int16_t xp = x - 2*char_width;
 			char tmp[3] = {'0', '0', 0};
-			ucg->setClipRange(xp, y - char_height * 1.25, char_width*2, char_height * 1.4);
+			ucg->setClipRange(xp, y - char_height * 1.25, char_width*2, char_height * 1.45);
 			ucg->setPrintPos(xp, y - m - char_height);
 			tmp[0] = (lastdigit+10-q)%10 + '0';
 			ucg->print(tmp); // one above
@@ -1386,7 +1386,7 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 				nr_rolling++;
 				xp -= char_width; // one to the left
 				// ucg->drawFrame(xp, y - char_height, char_width, char_height);
-				ucg->setClipRange(xp, y - char_height, char_width, char_height);
+				ucg->setClipRange(xp, y - char_height, char_width, char_height-1);  // to be crosschecked by hjr
 				ucg->setPrintPos(xp, y - m);
 				ucg->print(hdigit);
 				ucg->setPrintPos(xp, y - m - char_height); // one above

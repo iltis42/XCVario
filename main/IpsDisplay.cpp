@@ -333,9 +333,6 @@ void IpsDisplay::bootDisplay() {
 	if( display_type.get() == ILI9341_TFT_18P )
 		ucg->invertDisplay( true );
 	clear();
-	if( display_orientation.get() == 1 )
-		ucg->setRotate180();
-
 	ucg->setColor(1, COLOR_BLACK );
 	ucg->setColor(0, COLOR_WHITE );
 	ucg->setFont(ucg_font_fub11_tr);

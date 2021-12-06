@@ -4,6 +4,7 @@
 #include <eglib/hal/four_wire_spi/esp32/esp32_ili9341.h>
 #include "sensor.h"
 #include "logdef.h"
+#include "Setup.h"
 
 #define HSPI 2
 
@@ -32,7 +33,7 @@ uint8_t PROGMEM ucg_font_profont22_mr[] = {  UCG_FONT_PROFONT22_MR };
 uint8_t PROGMEM ucg_font_fub25_hn[] = { UCG_FONT_FUB25_HN };
 uint8_t PROGMEM ucg_font_fub11_hn[] = { UCG_FONT_FUB11_HN };
 
-static PROGMEM ili9341_config_t ili9341_config = {
+static ili9341_config_t ili9341_config = {
 		.width = 240,
 		.height = 320,
 		.color = ILI9341_COLOR_18_BIT,
@@ -126,6 +127,10 @@ void AdaptUGC::setFont(uint8_t *f, bool filled ){    // adapter
 
 void  AdaptUGC::begin() {
 	eglib = &myeglib;
+	if( display_orientation.get() == DISPLAY_TOPDOWN ){  // default is DISPLAY_NORMAL
+		ili9341_config.page_address =  ILI9341_PAGE_ADDRESS_BOTTOM_TO_TOP;
+		ili9341_config.colum_address = ILI9341_COLUMN_ADDRESS_RIGHT_TO_LEFT;
+	}
 	ESP_LOGI(FNAME, "eglib_Send() &eglib:%x  hal-driv:%x config:%x\n", (unsigned int)eglib, (unsigned int)&esp32_ili9341, (unsigned int)&esp32_ili9341_config );
 	eglib_Init( &myeglib, &esp32_ili9341, &esp32_ili9341_config, &ili9341, &ili9341_config );
 };

@@ -85,9 +85,8 @@ class AdaptUGC : public Print{
 public:
 	// init
 	void begin();
-	void invertDisplay( bool inv ) {};  	        // display driver function  tbd.
-	void setRedBlueTwist( bool twist ) {};   	    // display driver function
-	void setRotate180() {};	                        // Same as clipping, missing fundamental concept in eglib
+	void invertDisplay( bool inv ) {};  	        // solved in grafic layer
+	void setRedBlueTwist( bool twist ) {};   	    // no more needed, type of displays phased out
 	inline void undoClipRange() { eglib_undoClipRange(eglib);};
 	// color
 	inline void setColor( uint8_t idx, uint8_t r, uint8_t g, uint8_t b ) { eglib_SetIndexColor(eglib, idx, r, g, b); }

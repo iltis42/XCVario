@@ -1307,7 +1307,7 @@ void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float ate ){
 	// ucg->setPrintPos(x, y );
 	ucg->setFontPosCenter();
 	ucg->setColor( COLOR_WHITE );
-	// ucg->setClipRange( x-88, y-30, 95, 50 );
+	ucg->setClipRange( x-90, y-50, 90, 50 );
 	ucg->setFont(ucg_font_fub35_hn, true);
 	char s[15];
 	static const char* format[2] = {"  %2.1f", "  %2.0f"};

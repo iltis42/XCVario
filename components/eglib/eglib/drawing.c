@@ -1240,7 +1240,7 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
 	}
 	// ESP_LOGI("eglib_DrawGlyph","Window start: x:%d y:%d len x:%d y:%d", startx, starty, lenx, leny );
 	// ESP_LOGI("send Glyph","x:%d, y:%d, sx:%d sy:%d, wid:%d hei:%d", x,y, x+startx, y+alignment+starty, lenx, leny );
-	eglib->display.driver->send_buffer( eglib, buffer, x+startx -(width-lenx), y+alignment+starty -(height-leny), lenx, leny );
+	eglib->display.driver->send_buffer( eglib, buffer, x+startx, y+alignment+starty -(height-leny), lenx, leny );
 	free( buffer );
 }
 

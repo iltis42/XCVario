@@ -76,7 +76,6 @@ extern uint8_t ucg_font_fub25_hf[];
 extern uint8_t ucg_font_fur25_hf[];
 extern uint8_t ucg_font_fub35_hn[];
 extern uint8_t ucg_font_fub35_hr[];
-
 extern uint8_t ucg_font_profont22_mr[];
 extern uint8_t ucg_font_fub25_hn[];
 extern uint8_t ucg_font_fub11_hn[];
@@ -89,49 +88,48 @@ public:
 	void invertDisplay( bool inv ) {};  	        // display driver function  tbd.
 	void setRedBlueTwist( bool twist ) {};   	    // display driver function
 	void setRotate180() {};	                        // Same as clipping, missing fundamental concept in eglib
-	void undoClipRange() { eglib_undoClipRange(eglib);};
+	inline void undoClipRange() { eglib_undoClipRange(eglib);};
 	// color
-	void setColor( uint8_t idx, uint8_t r, uint8_t g, uint8_t b ) { eglib_SetIndexColor(eglib, idx, r, g, b); }
-	void setColor( uint8_t r, uint8_t g, uint8_t b ) { eglib_SetIndexColor(eglib, 0, r, g, b); }
+	inline void setColor( uint8_t idx, uint8_t r, uint8_t g, uint8_t b ) { eglib_SetIndexColor(eglib, idx, r, g, b); }
+	inline void setColor( uint8_t r, uint8_t g, uint8_t b ) { eglib_SetIndexColor(eglib, 0, r, g, b); }
 	// graphics
-	void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1)  { eglib_DrawLine(eglib, x0, y0, x1, y1); }
-	void drawBox(int16_t x, int16_t y, int16_t w, int16_t h)  { eglib_DrawBox(eglib, x, y, w, h); }
-	void drawFrame(int16_t x, int16_t y, int16_t w, int16_t h)  { eglib_DrawFrame(eglib, x, y, w, h); }
-	void drawHLine(int16_t x, int16_t y, int16_t len)  { eglib_DrawHLine(eglib, x, y, len); }
-	void drawVLine(int16_t x, int16_t y, int16_t len)  { eglib_DrawVLine(eglib, x, y, len); }
-	void drawPixel(int16_t x, int16_t y)  { eglib_DrawPixel(eglib, x, y); }
-	void drawRBox(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r)  { eglib_DrawRoundBox(eglib, x, y, w, h, r); }
-	void drawRFrame(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r)  { eglib_DrawRoundFrame(eglib, x, y, w, h, r); }
-	void drawTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2)  { eglib_DrawFilledTriangle(eglib, x0, y0, x1, y1, x2, y2); }
-	void drawTetragon(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t x3, int16_t y3)  { eglib_DrawTetragon(eglib, x0, y0, x1, y1, x2, y2, x3, y3); }
-	void drawCircle(int16_t x, int16_t y, int16_t radius, uint8_t options){ eglib_DrawCircle(eglib, x, y, radius, options); }
-	void drawDisc(int16_t x, int16_t y, int16_t radius, uint8_t options){	eglib_DrawDisc(eglib, x, y, radius, options);	}
+	inline void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1)  { eglib_DrawLine(eglib, x0, y0, x1, y1); }
+	inline void drawBox(int16_t x, int16_t y, int16_t w, int16_t h)  { eglib_DrawBox(eglib, x, y, w, h); }
+	inline void drawFrame(int16_t x, int16_t y, int16_t w, int16_t h)  { eglib_DrawFrame(eglib, x, y, w, h); }
+	inline void drawHLine(int16_t x, int16_t y, int16_t len)  { eglib_DrawHLine(eglib, x, y, len); }
+	inline void drawVLine(int16_t x, int16_t y, int16_t len)  { eglib_DrawVLine(eglib, x, y, len); }
+	inline void drawPixel(int16_t x, int16_t y)  { eglib_DrawPixel(eglib, x, y); }
+	inline void drawRBox(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r)  { eglib_DrawRoundBox(eglib, x, y, w, h, r); }
+	inline void drawRFrame(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r)  { eglib_DrawRoundFrame(eglib, x, y, w, h, r); }
+	inline void drawTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2)  { eglib_DrawFilledTriangle(eglib, x0, y0, x1, y1, x2, y2); }
+	inline void drawTetragon(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t x3, int16_t y3)  { eglib_DrawTetragon(eglib, x0, y0, x1, y1, x2, y2, x3, y3); }
+	inline void drawCircle(int16_t x, int16_t y, int16_t radius, uint8_t options){ eglib_DrawCircle(eglib, x, y, radius, options); }
+	inline void drawDisc(int16_t x, int16_t y, int16_t radius, uint8_t options){	eglib_DrawDisc(eglib, x, y, radius, options);	}
 
 	// Text Printing
 	size_t write(uint8_t c);
 	size_t write(const uint8_t *buffer, size_t size);
-	void setPrintPos(int16_t x, int16_t y) { eglib_print_xpos = x; eglib_print_ypos = y; };
-	void setPrintDir(uint8_t d) { eglib_print_dir = d; }
-	int16_t getStrWidth( const char * s ) { return ( eglib_GetTextWidth(eglib, s) ); };
+	inline void setPrintPos(int16_t x, int16_t y) { eglib_print_xpos = x; eglib_print_ypos = y; };
+	inline void setPrintDir(uint8_t d) { eglib_print_dir = d; }
+	inline int16_t getStrWidth( const char * s ) { return ( eglib_GetTextWidth(eglib, s) ); };
 	// Font related
 	void setFont(uint8_t *f, bool filled=false );
 	void setFontMode( uint8_t is_transparent ) {};  // no concept for transparent fonts in eglib, as it appears
-	void setFontPosBottom() {  eglib_setFontOrigin( eglib, FONT_BOTTOM ); };
-	void setFontPosCenter() {   eglib_setFontOrigin( eglib, FONT_MIDDLE ); };
-	int16_t getFontAscent() { const struct font_t *font; font = eglib->drawing.font;  return font->ascent;  };
-	int16_t getFontDescent() { const struct font_t *font; font = eglib->drawing.font; return font->descent; };
+	inline void setFontPosBottom() {  eglib_setFontOrigin( eglib, FONT_BOTTOM ); };
+	inline void setFontPosCenter() {   eglib_setFontOrigin( eglib, FONT_MIDDLE ); };
+	inline int16_t getFontAscent() { const struct font_t *font; font = eglib->drawing.font;  return font->ascent;  };
+	inline int16_t getFontDescent() { const struct font_t *font; font = eglib->drawing.font; return font->descent; };
 
 	// scrolling, clipping
 	void scrollLines(int16_t lines) {};     	    // display driver function  tbd.
 	void scrollSetMargins( int16_t top, int16_t bottom ) {};                 // display driver function
-	void setClipRange( int16_t x, int16_t y, int16_t w, int16_t h ) { eglib_setClipRange(eglib, x, y, w, h );};
+	inline void setClipRange( int16_t x, int16_t y, int16_t w, int16_t h ) { eglib_setClipRange(eglib, x, y, w, h );};
 
 private:
-	void advanceCursor( size_t delta );
+	inline void advanceCursor( size_t delta );
+
 	int16_t eglib_print_xpos = 0, eglib_print_ypos = 0;
 	int8_t eglib_font_pos = UCG_FONT_POS_BOTTOM;
 	uint8_t eglib_print_dir = UCG_PRINT_DIR_LR;
-
-
 	eglib_t * eglib;
 };

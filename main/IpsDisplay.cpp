@@ -1180,7 +1180,7 @@ void IpsDisplay::drawOneLabel( float val, int16_t labl, int16_t pos, int16_t off
 		return;
 	float to_side = 0.05;
 	float incr = (M_PI_2-std::abs(val)) * 2; // increase pos towards 0
-	pos += (int)incr;
+	pos += (int)incr -3;
 	if( val > 0 ){
 		to_side += incr/(M_PI_2*80);
 	}

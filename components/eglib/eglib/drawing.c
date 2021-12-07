@@ -764,10 +764,10 @@ void eglib_DrawRoundBox(
 	eglib_DrawDisc(eglib, x + width - radius-1, y + radius, radius, EGLIB_DRAW_UPPER_RIGHT );
 	for(v=y + radius ; v <= y + height - radius ; v++)
 		eglib_DrawHLine(eglib, x, v, width);
-	eglib_DrawDisc(eglib, x + radius, y + height - radius +1, radius, EGLIB_DRAW_LOWER_LEFT);
+	eglib_DrawDisc(eglib, x + radius, y + height - radius /*+1*/, radius, EGLIB_DRAW_LOWER_LEFT);
 	for(v=y + height - radius ; v <= y + height ; v++)
 		eglib_DrawHLine(eglib, x + radius, v, width - diameter);
-	eglib_DrawDisc(eglib, x + width - radius-1, y + height - radius +1, radius, EGLIB_DRAW_LOWER_RIGHT);
+	eglib_DrawDisc(eglib, x + width - radius-1, y + height - radius /*+1*/, radius, EGLIB_DRAW_LOWER_RIGHT);
 }
 
 void eglib_ClearScreen(eglib_t *eglib) {

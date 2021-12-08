@@ -289,7 +289,7 @@ void Flap::drawSmallBar( float wkf ){
 	int top = barpos_y-lfh/2;
 	if( dirty ) {
 		ucg->setColor(COLOR_HEADER);
-		ucg->drawFrame(barpos_x-5, top-3, lfw+4, 2*lfh);
+		ucg->drawFrame(barpos_x-5, top-4, lfw+4, 2*lfh);
 		int tri = barpos_y+lfh/2-3;
 		ucg->setColor(COLOR_GREEN);
 		ucg->drawTriangle( barpos_x-10, tri-5,  barpos_x-10,tri+5, barpos_x-5, tri );

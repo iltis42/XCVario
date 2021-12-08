@@ -3,6 +3,8 @@
 #include <math.h>
 #include <stdlib.h>
 #include <esp_log.h>
+#include <string.h>
+
 
 static const char* FNAME = "drawing.c";
 #define degrees_to_radians(degrees) ((degrees) * M_PI / 180.0)
@@ -159,54 +161,55 @@ static void draw_fast_90_line(
     enum display_line_direction_t direction;
     coordinate_t length;
 
-    if(x1==x2) {  // vertical
-      length = y2 > y1 ? y2 - y1 : y1 - y2;
+    if(x1==x2) {         // vertical
+      length = abs(y1-y2);
       if(y2 > y1)
         direction = DISPLAY_LINE_DIRECTION_DOWN;
       else
         direction = DISPLAY_LINE_DIRECTION_UP;
-    } else if(y1==y2) {  // horizontal
-      length = x2 > x1 ? x2 - x1 : x1 - x2;
-
+    }
+    else if(y1==y2) {  // horizontal
+      length = abs(x1-x2);
       if(x2 > x1)
         direction = DISPLAY_LINE_DIRECTION_RIGHT;
       else
         direction = DISPLAY_LINE_DIRECTION_LEFT;
-    } else
-      while(true);
+    }else
+    	return;
 
     switch(direction) {
       case DISPLAY_LINE_DIRECTION_RIGHT:
-        if((y1 >= eglib->drawing.clip_ymax) || (y1 < eglib->drawing.clip_ymin))
+        if((y1 > eglib->drawing.clip_ymax) || (y1 < eglib->drawing.clip_ymin))
             return;
         if (x1 < eglib->drawing.clip_xmin) x1 = eglib->drawing.clip_xmin;
         if(x1 + length > eglib->drawing.clip_xmax)
-          length = eglib->drawing.clip_xmax - x1;
+          length = eglib->drawing.clip_xmax - x1 +1;
         break;
       case DISPLAY_LINE_DIRECTION_LEFT:
-        if((y1 >= eglib->drawing.clip_ymax) || (y1 < eglib->drawing.clip_ymin))
+        if((y1 > eglib->drawing.clip_ymax) || (y1 < eglib->drawing.clip_ymin))
             return;
         if (x1 > eglib->drawing.clip_xmax) x1 = eglib->drawing.clip_xmax;
         if(x1 - length < eglib->drawing.clip_xmin)
-          length = x1 - eglib->drawing.clip_xmin;
+          length = x1 - eglib->drawing.clip_xmin +1;
         break;
       case DISPLAY_LINE_DIRECTION_DOWN:
-        if((x1 >= eglib->drawing.clip_xmax) || (x1 < eglib->drawing.clip_xmin))
+        if((x1 > eglib->drawing.clip_xmax) || (x1 < eglib->drawing.clip_xmin))
             return;
         if(y1 + length > eglib->drawing.clip_ymax)
-          length = eglib->drawing.clip_ymax - y1;
+          length = eglib->drawing.clip_ymax - y1 +1;
         break;
       case DISPLAY_LINE_DIRECTION_UP:
-        if((x1 >= eglib->drawing.clip_xmax) || (x1 < eglib->drawing.clip_xmin))
+        if((x1 > eglib->drawing.clip_xmax) || (x1 < eglib->drawing.clip_xmin))
             return;
         if(y1 - length < eglib->drawing.clip_ymin)
-          length = y1 - eglib->drawing.clip_ymin;
+          length = y1 - eglib->drawing.clip_ymin +1;
         break;
     }
 
     if(length < 1)
       return;
 
+    // ESP_LOGI( "dl1", "x:%d y:%d, len:%d", x1, y1, length );
     eglib->display.driver->draw_line(
       eglib,
       x1, y1,
@@ -1181,8 +1184,7 @@ struct font_t {
 void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struct glyph_t *glyph) {
 	if(glyph == NULL)
 		return;
-	// ESP_LOGI("eglib_DrawGlyph","x:%d, y:%d, adv:%d hei:%d", x,y, glyph->advance, eglib->drawing.font->pixel_size );
-
+	// ESP_LOGI("eglib_DrawGlyph 1","x:%d, y:%d, gly width:%d adv:%d hei:%d", x,y, glyph->width, glyph->advance, eglib->drawing.font->pixel_size );
 	uint8_t *buffer;
 	int pixels_off = 0;
 	int pixels     = 0;
@@ -1231,15 +1233,17 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
 				pos3 +=3;
 			}
 		}
+		// ESP_LOGI("Bitmap","L-%02d: %s", v1, line);
 	}
-	lenx +=1;  // number of pixels is end-start plus one
-	leny +=1;
+	lenx += 1;
+	leny += 1;
+
 	if( startx >= MAX || starty >= MAX ){ // glyph is off clip area
 		free( buffer );
 		return;
 	}
-	// ESP_LOGI("eglib_DrawGlyph","Window start: x:%d y:%d len x:%d y:%d", startx, starty, lenx, leny );
-	// ESP_LOGI("send Glyph","x:%d, y:%d, sx:%d sy:%d, wid:%d hei:%d", x,y, x+startx, y+alignment+starty, lenx, leny );
+	// ESP_LOGI("eglib_DrawGlyph 2","Window starts x:%d y:%d len x:%d y:%d", startx, starty, lenx, leny );
+	// ESP_LOGI("eglib_DrawGlyph 3","x:%d, y:%d, sx:%d sy:%d, wid:%d hei:%d", x,y, x+startx, y+alignment+starty -(height-leny), lenx, leny );
 	eglib->display.driver->send_buffer( eglib, buffer, x+startx, y+alignment+starty -(height-leny), lenx, leny );
 	free( buffer );
 }

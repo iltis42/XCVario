@@ -17972,8 +17972,9 @@ const struct font_t font_Adobe_NewCenturySchoolbookRoman_20px = {
   .line_space = 20,
   .unicode_blocks = (const struct glyph_unicode_block_t *[FONT_MAX_UNICODE_BLOCKS]){
     &unicode_block_Adobe_NewCenturySchoolbookRoman_20px_BasicLatin,
+	&unicode_block_Adobe_NewCenturySchoolbookRoman_20px_Latin1Supplement
   },
-  .unicode_blocks_count = 1,
+  .unicode_blocks_count = 2,
 };
 
 const struct glyph_unicode_block_t unicode_block_Adobe_NewCenturySchoolbookRoman_24px_BasicLatin = {

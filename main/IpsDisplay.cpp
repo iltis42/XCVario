@@ -402,9 +402,9 @@ void IpsDisplay::initDisplay() {
 		ucg->setColor(0, COLOR_WHITE );
 		// AS Box
 		int fl = ucg->getStrWidth(" 200- ");
-
 		ASLEN = fl+3;
 		S2FST = ASLEN+16;
+		ucg->drawFrame( FIELD_START, dmid-(MAXS2FTRI)-4, ASLEN+6, (MAXS2FTRI*2)+8 );
 
 		// S2F Zero
 		// ucg->drawTriangle( FIELD_START, dmid+5, FIELD_START, dmid-5, FIELD_START+5, dmid);
@@ -2137,27 +2137,25 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		ucg->setColor(  COLOR_WHITE  );
 		// print speed values bar
 		ucg->setFont(ucg_font_fub11_hn, true);
-		ucg->drawFrame( FIELD_START, dmid-(MAXS2FTRI)-4, ASLEN+6, (MAXS2FTRI*2)+8 );
 		ucg->setClipRange( FIELD_START, dmid-(MAXS2FTRI), ASLEN, (MAXS2FTRI*2) );
-		for( int speed = airspeed-MAXS2FTRI-(fh); speed<airspeed+MAXS2FTRI+(fh); speed++ )
+		for( int speed = airspeed-MAXS2FTRI-(fh)-20; speed<airspeed+MAXS2FTRI+(fh); speed++ )
 		{
-			if( (speed%20) == 0 && (speed >= 0) ) {
+			if( ((speed%20) == 0 && (speed >= 0)) || speed == -20 ) {
 				// blank old values
                 ucg->setColor( COLOR_BLACK );
+				ucg->drawBox( FIELD_START+6,dmid+(speed-airspeed)-(fh/2)-9, ASLEN-6, fh+15 );
 				int col = 0;
-				if( speed == 0 )
-					ucg->drawBox( FIELD_START+6,dmid+(speed-airspeed)-(fh/2)-19, ASLEN-6, fh+25 );
-				else
-					ucg->drawBox( FIELD_START+6,dmid+(speed-airspeed)-(fh/2)-9, ASLEN-6, fh+15 );
                 if ( display_variant.get() == DISPLAY_WHITE_ON_BLACK ) {
 					col = abs(((speed-airspeed)*2));
 				}
 				else {
 					col = abs(255 - abs(((speed-airspeed)*2)));
 				}
-				ucg->setColor(  col,col,col  );
-				ucg->setPrintPos(FIELD_START+8,dmid+(speed-airspeed)+(fh/2));
-				ucg->printf("%3d ""- ", speed);
+                if( speed >= 0 ){
+                	ucg->setColor(  col,col,col  );
+                	ucg->setPrintPos(FIELD_START+8,dmid+(speed-airspeed)+(fh/2));
+                	ucg->printf("%3d ""- ", speed);
+                }
 			}
 		}
 		ucg->undoClipRange();

@@ -26,10 +26,10 @@ Last update: 2021-04-18
 #include <AdaptUGC.h>
 #include <esp_log.h>
 
-ShowCompassSettings::ShowCompassSettings( std::string title) :
+ShowCompassSettings::ShowCompassSettings( const char* title) :
 SetupMenuDisplay( title, nullptr )
 {
-	ESP_LOGI(FNAME, "ShowCompassSettings(): title='%s'", title.c_str() );
+	ESP_LOGI(FNAME, "ShowCompassSettings(): title='%s'", title );
 }
 
 void ShowCompassSettings::display( int mode )
@@ -41,7 +41,7 @@ void ShowCompassSettings::display( int mode )
 
 	clear();
 	ucg->setFont( ucg_font_fur14_hf );
-	uprintf( 5, 25, selected->_title.c_str() );
+	uprintf( 5, 25, selected->_title );
 
 	uint16_t y = 75;
 	uint16_t y1 = 75;

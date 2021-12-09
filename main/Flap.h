@@ -7,13 +7,13 @@ class SetupMenu;
 class SetupMenuSelect;
 class SetupMenuValFloat;
 
-static int select_flap_sens_pin(SetupMenuSelect *p);
-static void showWk(SetupMenuSelect * p);
-static int flap_speed_act(SetupMenuValFloat *p);
-static int flap_lab_act(SetupMenuSelect *p);
-static int flap_pos_act(SetupMenuValFloat *p);
-static int flap_cal_act(SetupMenuSelect *p);
-static int flap_enable_act( SetupMenuSelect *p );
+int select_flap_sens_pin(SetupMenuSelect *p);
+void showWk(SetupMenuSelect * p);
+int flap_speed_act(SetupMenuValFloat *p);
+int flap_lab_act(SetupMenuSelect *p);
+int flap_pos_act(SetupMenuValFloat *p);
+int flap_cal_act(SetupMenuSelect *p);
+int flap_enable_act( SetupMenuSelect *p );
 
 /*
  * This class handels flap display and Flap sensor

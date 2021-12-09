@@ -342,10 +342,13 @@ bool QMC5883L::rawHeading()
 			yraw = filterY( y );
 			zraw = filterZ( z );
 			age = 0;
+			m_sensor = true;
 			// ESP_LOGI( FNAME, "X:%d Y:%d Z:%d  RDY:%d DOR:%d", xraw, yraw,zraw, status & STATUS_DRDY, status & STATUS_DOR );
 			return true;
 		}
 		ESP_LOGE( FNAME, "read Register REG_X_LSB returned count != 6, count: %d", count );
+		if( age > 10 )
+			m_sensor = false;
 		return false;
 	}
 	else if( compass_enable.get() == CS_CAN ){  // we get compass raw data via CAN interface
@@ -354,11 +357,13 @@ bool QMC5883L::rawHeading()
 			yraw = can_y;
 			zraw = can_z;
 			// ESP_LOGI( FNAME, "X:%d Y:%d Z:%d  Age:%d", xraw, yraw, zraw, age );
+			m_sensor = true;
 			return true;
 		}
 		else{
 			// ESP_LOGE( FNAME, "Magnet sensor data from CAN missing");
 			// CANbus::restart();
+			m_sensor = false;
 			return false;
 		}
 	}

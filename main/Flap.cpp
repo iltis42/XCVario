@@ -14,7 +14,7 @@ Flap* Flap::_instance = nullptr;
 
 
 // predefined flap labels         // -9,..,-2,-1,+0,+1,+2,..,+9
-static char flap_labels[][4] = { "-9", "-8", "-7", "-6", "-5", "-4", "-3", "-2", "-1", "+0",  // 9
+static const char flap_labels[][4] = { "-9", "-8", "-7", "-6", "-5", "-4", "-3", "-2", "-1", "+0",  // 9
                                     "+1", "+2", "+3", "+4", "+5", "+6", "+7", "+8", "+9",     // 18
                                     // 0,1,2,3,..,20
                                     " 0", " 1", " 2", " 3", " 4", " 5", " 6", " 7", " 8", " 9", "10",  // 29
@@ -23,7 +23,7 @@ static char flap_labels[][4] = { "-9", "-8", "-7", "-6", "-5", "-4", "-3", "-2",
                                     " N", " L", " S", "3a", "3b", " A", "21", "22", "23", "24", "25", "26", "27" };  // L=41  S=42
 
 
-static void showWk(SetupMenuSelect *p){
+void showWk(SetupMenuSelect *p){
 	p->ucg->setPrintPos(1,140);
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->printf("Sensor: %d    ", FLAP->getSensorRaw(256) );
@@ -32,7 +32,7 @@ static void showWk(SetupMenuSelect *p){
 }
 
 // Action Routines
-static int select_flap_sens_pin(SetupMenuSelect *p){
+int select_flap_sens_pin(SetupMenuSelect *p){
     p->clear();
     if( FLAP ) {
         FLAP->configureADC();
@@ -59,7 +59,7 @@ static int select_flap_sens_pin(SetupMenuSelect *p){
 	return 0;
 }
 
-static void wk_cal_show( SetupMenuSelect *p, int wk ){
+void wk_cal_show( SetupMenuSelect *p, int wk ){
 	p->ucg->setPrintPos(1,60);
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->printf("Set Flap %+d   ", wk );
@@ -69,22 +69,22 @@ static void wk_cal_show( SetupMenuSelect *p, int wk ){
 		showWk(p);
 }
 
-static int flap_speed_act( SetupMenuValFloat *p ){
+int flap_speed_act( SetupMenuValFloat *p ){
 	FLAP->initSpeeds();
 	return 0;
 }
 
-static int flap_lab_act( SetupMenuSelect *p ){
+int flap_lab_act( SetupMenuSelect *p ){
 	FLAP->initLabels();
 	return 0;
 }
 
-static int flap_pos_act( SetupMenuValFloat *p ){
+int flap_pos_act( SetupMenuValFloat *p ){
 	FLAP->initSensPos();
 	return 0;
 }
 
-static int flap_cal_act( SetupMenuSelect *p )
+int flap_cal_act( SetupMenuSelect *p )
 {
 	ESP_LOGI(FNAME,"WK calibration ( %d ) ", p->getSelect() );
 	if( !FLAP->haveSensor() ){
@@ -136,7 +136,7 @@ static int flap_cal_act( SetupMenuSelect *p )
 	return 0;
 }
 
-static int flap_enable_act( SetupMenuSelect *p ){
+int flap_enable_act( SetupMenuSelect *p ){
 	Flap::setupIndicatorMenueEntries(p->_parent);
 	return 0;
 }
@@ -163,14 +163,7 @@ void Flap::setupSensorMenueEntries(MenuEntry *wkm)
             wkm->addEntry( wkcal, wkes );
         }
     }
-    // else if ( wkes && !flap_enable.get() ) { // todo nice to have
-    //     wkm->delEntry( wkes );
-    //     wkes = 0;
-    // }
-    // if ( wkcal && (!wkes || SetupCommon::isClient()) ) {
-    //     wkm->delEntry( wkcal );
-    //     wkcal = 0;
-    // }
+
 }
 
 void Flap::setupIndicatorMenueEntries(MenuEntry *wkm)
@@ -248,15 +241,6 @@ void Flap::setupIndicatorMenueEntries(MenuEntry *wkm)
         flapls->addEntry( flab );
         flab->addEntryList( flap_labels, sizeof(flap_labels)/4  );
     }
-    // else if ( nflpos && (!flap_sensor.get() || SetupCommon::isClient()) ) { // todo
-    //     ESP_LOGI(FNAME,"Flap Indicator Menue>>del");
-    //     wkm->delEntry( flapls );
-    //     wkm->delEntry( flapss );
-    //     wkm->delEntry( flgnd );
-    //     wkm->delEntry( nflneg );
-    //     wkm->delEntry( nflpos );
-    //     nflpos = 0;
-    // }
 
     setupSensorMenueEntries(wkm);
 }
@@ -449,13 +433,13 @@ void  Flap::initSpeeds(){
 
 void  Flap::initLabels(){
     // Fixme needs a refresh after synch from master -> blackboard action
-    flapLabels[0] = flap_labels[wk_label_minus_3.get()];
-    flapLabels[1] = flap_labels[wk_label_minus_2.get()];
-    flapLabels[2] = flap_labels[wk_label_minus_1.get()];
-    flapLabels[3] = flap_labels[wk_label_null_0.get()];
-    flapLabels[4] = flap_labels[wk_label_plus_1.get()];
-    flapLabels[5] = flap_labels[wk_label_plus_2.get()];
-    flapLabels[6] = flap_labels[wk_label_plus_3.get()];
+    flapLabels[0] = (char*)flap_labels[wk_label_minus_3.get()];
+    flapLabels[1] = (char*)flap_labels[wk_label_minus_2.get()];
+    flapLabels[2] = (char*)flap_labels[wk_label_minus_1.get()];
+    flapLabels[3] = (char*)flap_labels[wk_label_null_0.get()];
+    flapLabels[4] = (char*)flap_labels[wk_label_plus_1.get()];
+    flapLabels[5] = (char*)flap_labels[wk_label_plus_2.get()];
+    flapLabels[6] = (char*)flap_labels[wk_label_plus_3.get()];
 }
 
 void Flap::configureADC(){

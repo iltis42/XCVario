@@ -25,10 +25,10 @@ Last update: 2021-02-25
 #include <esp_log.h>
 
 
-DisplayDeviations::DisplayDeviations( std::string title) :
+DisplayDeviations::DisplayDeviations( const char * title ) :
   SetupMenuDisplay( title, nullptr )
 {
-	ESP_LOGI(FNAME, "DisplayDeviations(): title='%s'", title.c_str() );
+	ESP_LOGI(FNAME, "DisplayDeviations(): title='%s'", title );
 }
 
 void DisplayDeviations::display( int mode )
@@ -40,7 +40,7 @@ void DisplayDeviations::display( int mode )
 
   clear();
   ucg->setFont( ucg_font_fur14_hf );
-  uprintf( 5, 25, selected->_title.c_str() );
+  uprintf( 5, 25, selected->_title );
 
   const char* skydirdev[8] =
     { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };

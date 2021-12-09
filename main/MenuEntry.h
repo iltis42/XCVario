@@ -20,7 +20,7 @@ class AdaptUGC;
 
 class MenuEntry: public RotaryObserver {
 public:
-	MenuEntry() : RotaryObserver() {}
+	MenuEntry() : RotaryObserver() {};
 	virtual ~MenuEntry();
 	virtual void display( int mode=0 ) = 0;
 	virtual void release() { display(); };
@@ -42,20 +42,19 @@ public:
 public:
 	std::vector<MenuEntry*>  _childs;
 	MenuEntry *_parent = 0;
-	std::string _title;
+	const char * _title;
 	static MenuEntry *root;
 	static MenuEntry *selected;
 	static IpsDisplay* _display;
 	static ESPRotary* _rotary;
 	static AnalogInput* _adc;
 	static PressureSensor *_bmp;
-	int    highlight;
-	bool   pressed = false;
-	bool   long_pressed = false;
-	char   *helptext = 0;
-	int    hypos = 0;
+	int16_t   highlight;
+	uint8_t   pressed = false;
+	uint8_t   long_pressed = false;
+	char      *helptext = 0;
+	int16_t    hypos = 0;
 	unsigned char y = 0;
-    int    idx = 0;
+	int16_t    idx = 0;
 	static AdaptUGC *ucg;
-
 };

@@ -35,7 +35,7 @@ PressureSensor *MenuEntry::_bmp = 0;
 
 MenuEntry::~MenuEntry()
 {
-    ESP_LOGI(FNAME,"del menu %s",_title.c_str() );
+    ESP_LOGI(FNAME,"del menu %s",_title );
     for ( MenuEntry* c : _childs ) {
         delete c;
         c = nullptr;
@@ -68,7 +68,7 @@ void MenuEntry::uprint( int x, int y, const char* str ) {
 }
 
 MenuEntry* MenuEntry::addEntry( MenuEntry * item ) {
-	// ESP_LOGI(FNAME,"MenuEntry addMenu() title %s", item->_title.c_str() );
+	// ESP_LOGI(FNAME,"MenuEntry addMenu() title %s", item->_title );
 	if( root == 0 ){
 		ESP_LOGI(FNAME,"Init root menu");
 		root = item;
@@ -85,7 +85,7 @@ MenuEntry* MenuEntry::addEntry( MenuEntry * item ) {
 }
 
 MenuEntry* MenuEntry::addEntry( MenuEntry * item, const MenuEntry* after ) {
-	// ESP_LOGI(FNAME,"AddMenuEntry title %s after %s", item->_title.c_str(), after->_title.c_str() );
+	// ESP_LOGI(FNAME,"AddMenuEntry title %s after %s", item->_title, after->_title );
 	if( root == 0 ){
 		return addEntry(item);
 	}
@@ -102,7 +102,7 @@ MenuEntry* MenuEntry::addEntry( MenuEntry * item, const MenuEntry* after ) {
 
 
 void MenuEntry::delEntry( MenuEntry * item ) {
-	ESP_LOGI(FNAME,"MenuEntry delMenu() title %s", item->_title.c_str() );
+	ESP_LOGI(FNAME,"MenuEntry delMenu() title %s", item->_title );
 	std::vector<MenuEntry *>::iterator position = std::find(_childs.begin(), _childs.end(), item );
 	if (position != _childs.end()) { // == myVector.end() means the element was not found
 		ESP_LOGI(FNAME,"found entry, now erase" );
@@ -114,12 +114,12 @@ void MenuEntry::delEntry( MenuEntry * item ) {
 MenuEntry* MenuEntry::findMenu( std::string title, MenuEntry* start )
 {
 	ESP_LOGI(FNAME,"MenuEntry findMenu() %s %x", title.c_str(), (uint32_t)start );
-	if( start->_title == title ) {
+	if( std::string(start->_title) == title ) {
 		ESP_LOGI(FNAME,"Menu entry found for start %s", title.c_str() );
 		return start;
 	}
 	for(MenuEntry* child : start->_childs) {
-		if( child->_title == title )
+		if( std::string(start->_title) == title )
 			return child;
 		MenuEntry* m = child->findMenu( title, child );
 		if( m != 0 ) {

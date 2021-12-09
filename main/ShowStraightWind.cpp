@@ -27,10 +27,10 @@ Last update: 2021-04-18
 #include <esp_log.h>
 
 
-ShowStraightWind::ShowStraightWind( std::string title ) :
+ShowStraightWind::ShowStraightWind( const char* title ) :
 SetupMenuDisplay( title, nullptr )
 {
-	ESP_LOGI(FNAME, "ShowStraightWind(): title='%s'", title.c_str() );
+	ESP_LOGI(FNAME, "ShowStraightWind(): title='%s'", title );
 }
 
 
@@ -44,7 +44,7 @@ void ShowStraightWind::display( int mode )
 	if( mode != 5 )
 		clear();
 	ucg->setFont( ucg_font_fur14_hf );
-	uprintf( 5, 25, selected->_title.c_str() );
+	uprintf( 5, 25, selected->_title );
 
 	uint16_t y = 70;
 	char buffer[32];

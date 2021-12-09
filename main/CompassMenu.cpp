@@ -60,8 +60,8 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 	if( compass.haveSensor() == false )
 	{
 		p->clear();
-		p->ucg->setFont( ucg_font_fur14_hf );
-		p->ucg->setPrintPos( 1, 60 );
+		p->ucg->setFont( ucg_font_ncenR14_hr );
+		p->ucg->setPrintPos( 1, 100 );
 		p->ucg->printf( "No magnetic Sensor, Abort" );
 		delay( 2000 );
 		ESP_LOGI( FNAME, "Abort calibration, no sensor signal" );
@@ -72,12 +72,11 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 	short diridx = direction / 45;
 
 	// Calibration menu is requested
-	const unsigned short skydirs[8] =
-	{ 0, 45, 90, 135, 180, 225, 270, 315 };
+	const unsigned short skydirs[8] = { 0, 45, 90, 135, 180, 225, 270, 315 };
 
 	p->clear();
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	p->ucg->setFont( ucg_font_fur14_hf );
+	p->ucg->setFont( ucg_font_ncenR14_hr );
 	p->ucg->setPrintPos( 1, 60 );
 	p->ucg->printf( "Turn airplane to %s°  ", p->getEntry() );
 	p->ucg->setPrintPos( 1, 90 );
@@ -103,18 +102,17 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 		if( hi >= 360 )
 			hi -= 360;
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
-		p->ucg->setFont( ucg_font_fur20_hf );
+		// p->ucg->setFont( ucg_font_fur20_hf );
 		p->ucg->setPrintPos( 1, 180 );
 		p->ucg->printf( "Heading:   %d°    ", hi );
 		p->ucg->setPrintPos( 1, 230 );
 		deviation = direction - hi;
 		if( deviation < -180 )
 			deviation += 360;
-		p->ucg->printf( "Deviation: %3.2f°    ", deviation );
+		p->ucg->printf( "Deviation: %3.2f°  ", deviation );
 		xSemaphoreGive(spiMutex);
 		delay( 100 );
 	}
-
 	while( p->_rotary->readSwitch() )
 	{
 		// wait so long while rotary is pressed to avoid unwanted actions
@@ -124,13 +122,15 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 
 	// Save deviation value
 	deviations[diridx]->set( deviation );
-
+	p->ucg->setPrintPos( 1, 300 );
+	p->ucg->printf( "Saved" );
+	delay( 1000 );
+	p->clear();
 	// Update compass interpolation data
 	Compass::deviationReload();
 
-	ESP_LOGI( FNAME, "Compass deviation action for %s is finished",
-			p->getEntry() );
-	return 1;
+	ESP_LOGI( FNAME, "Compass deviation action for %s is finished",	p->getEntry() );
+	return 0;
 }
 
 /** Compass Menu Action method to reset all deviations to 0. */
@@ -144,7 +144,7 @@ int CompassMenu::resetDeviationAction( SetupMenuSelect *p )
 	else if( p->getSelect() == 1 )
 	{
 		p->clear();
-		p->ucg->setFont( ucg_font_fur14_hf );
+		p->ucg->setFont( ucg_font_ncenR14_hr );
 		p->ucg->setPrintPos( 1, 60 );
 		p->ucg->printf( "Reset all compass" );
 		p->ucg->setPrintPos( 1, 90 );
@@ -166,7 +166,7 @@ int CompassMenu::resetDeviationAction( SetupMenuSelect *p )
 	Compass::deviationReload();
 
 	p->clear();
-	p->ucg->setFont( ucg_font_fur14_hf );
+	p->ucg->setFont( ucg_font_ncenR14_hr );
 	p->ucg->setPrintPos( 1, 300 );
 	p->ucg->printf( "Saved        " );
 	delay( 2000 );
@@ -200,7 +200,7 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 
 	menuPtr = p;
 	p->clear();
-	p->ucg->setFont( ucg_font_fur14_hf, true );
+	p->ucg->setFont( ucg_font_ncenR14_hr, true );
 	p->ucg->setPrintPos( 1, 30 );
 	p->ucg->printf( "Calibration is running" );
 	p->ucg->setPrintPos( 1, 220 );

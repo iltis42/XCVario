@@ -267,7 +267,10 @@ int vol_adj( SetupMenuValFloat * p ){
  */
 static int compassDeviationAction( SetupMenuSelect *p )
 {
-	return compassMenuHandler.deviationAction( p );
+	if( p->getSelect() == 0 ){
+		compassMenuHandler.deviationAction( p );
+	}
+	return 0;
 }
 
 static int compassResetDeviationAction( SetupMenuSelect *p )
@@ -314,7 +317,7 @@ SetupMenu::SetupMenu() : MenuEntry() {
 	long_pressed = false;
 }
 
-SetupMenu::SetupMenu( std::string title ) : MenuEntry() {
+SetupMenu::SetupMenu( const char *title ) : MenuEntry() {
 	// ESP_LOGI(FNAME,"SetupMenu::SetupMenu( %s ) ", title.c_str() );
 	_rotary->attach(this);
 	_title = title;
@@ -343,24 +346,24 @@ void SetupMenu::catchFocus( bool activate ){
 void SetupMenu::display( int mode ){
 	if( (selected != this) || !inSetup || focus )
 		return;
-	ESP_LOGI(FNAME,"SetupMenu display( %s)", _title.c_str() );
+	ESP_LOGI(FNAME,"SetupMenu display( %s)", _title );
 	clear();
 	y=25;
-	ESP_LOGI(FNAME,"Title: %s y=%d child size:%d", selected->_title.c_str(),y, _childs.size()  );
+	ESP_LOGI(FNAME,"Title: %s y=%d child size:%d", selected->_title,y, _childs.size()  );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setFont(ucg_font_ncenR14_hr);
 	ucg->setPrintPos(1,y);
 	ucg->setFontPosBottom();
-	ucg->printf("<< %s",selected->_title.c_str());
+	ucg->printf("<< %s",selected->_title);
 	ucg->drawFrame( 1,3,238,25 );
 	for (int i=0; i<_childs.size(); i++ ){
 		MenuEntry * child = _childs[i];
 		ucg->setPrintPos(1,(i+1)*25+25);
 		ucg->setColor( COLOR_HEADER_LIGHT );
-		ucg->printf("%s",child->_title.c_str());
-		ESP_LOGI(FNAME,"Child Title: %s", child->_title.c_str() );
+		ucg->printf("%s",child->_title);
+		ESP_LOGI(FNAME,"Child Title: %s", child->_title );
 		if( child->value() ){
-			int fl=ucg->getStrWidth( child->_title.c_str());
+			int fl=ucg->getStrWidth( child->_title );
 			ucg->setPrintPos(1+fl,(i+1)*25+25);
 			ucg->printf(": ");
 			ucg->setPrintPos(1+fl+ucg->getStrWidth( ":" ),(i+1)*25+25);
@@ -368,7 +371,7 @@ void SetupMenu::display( int mode ){
 			ucg->printf(" %s",child->value());
 		}
 		ucg->setColor( COLOR_WHITE );
-		// ESP_LOGI(FNAME,"Child: %s y=%d",child->_title.c_str() ,y );
+		// ESP_LOGI(FNAME,"Child: %s y=%d",child->_title ,y );
 	}
 	y+=170;
 	xSemaphoreGive(spiMutex );
@@ -990,21 +993,12 @@ void SetupMenu::setup( )
 		MenuEntry* dme = compassMenu->addEntry( devMenu );
 
 		// Calibration menu is requested
-		const short skydirs[8] =
-		{ 0, 45, 90, 135, 180, 225, 270, 315 };
-
+		const char *skydirs[8] = { "0", "45", "90", "135", "180", "225", "270", "315" };
 		for( int i = 0; i < 8; i++ )
 		{
-			char buffer[20];
-			SetupMenuSelect* sms = new SetupMenuSelect( "Direction ",
-					false,
-					compassDeviationAction,
-					false,
-					0 );
-
+			SetupMenuSelect* sms = new SetupMenuSelect( "Direction ", false, compassDeviationAction, false, 0, true );
 			sms->setHelp( "Push button to start deviation action" );
-			sprintf( buffer, "%03d", skydirs[i] );
-			sms->addEntry( buffer );
+			sms->addEntry( skydirs[i] );
 			dme->addEntry( sms );
 		}
 
@@ -1109,12 +1103,6 @@ void SetupMenu::setup( )
 
 		ShowStraightWind* ssw = new ShowStraightWind( "Straight Wind Status" );
 		strWindM->addEntry( ssw );
-
-		//		sms = new SetupMenuSelect( "Reset",	false, windResetAction, false, 0 );
-		//		sms->setHelp( "Reset all wind data to defaults" );
-		//		sms->addEntry( "Cancel" );
-		//		sms->addEntry( "Reset" );
-		//		strWindM->addMenu( sms );
 
 		SetupMenu * cirWindM = new SetupMenu( "Circling Wind" );
 		compassWindME->addEntry( cirWindM );

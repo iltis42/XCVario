@@ -51,7 +51,7 @@ int sim=100;
 #define HEARTBEAT_PERIOD_MS_SERIAL 20
 #define SERIAL_STRLEN SSTRLEN
 static TaskHandle_t *pid;
-char Serial::rxbuf[SERIAL_STRLEN];
+// char Serial::rxbuf[SERIAL_STRLEN];
 bool Serial::_selfTest = false;
 
 // Serial Handler  ttyS1, S1, port 8881
@@ -88,11 +88,13 @@ void Serial::serialHandler(void *pvParameters){
 		}
 		int num = Serial1.available();
 		if( num > 0 ) {
+
 			// ESP_LOGI(FNAME,"Serial 1 RX avail %d bytes", num );
 			if( num >= SERIAL_STRLEN ) {
 				ESP_LOGW(FNAME,"Serial 1 Overrun RX >= %d bytes avail: %d, Bytes", SERIAL_STRLEN, num);
 				num=SERIAL_STRLEN;
 			}
+			char *rxbuf = (char*)malloc( num < SERIAL_STRLEN ? SERIAL_STRLEN : num );
 			// ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
 			int numread = 0;
 			if( Flarm::bincom ){    // normally wait unit sentence has ended, or in binary mode just continue
@@ -108,6 +110,7 @@ void Serial::serialHandler(void *pvParameters){
 				Router::forwardMsg( s, s1_rx_q );
 				DM.monitorString( MON_S1, DIR_RX, s.c_str() );
 			}
+			free( rxbuf );
 		}
 		Router::routeS1();
 		Router::routeBT();
@@ -133,7 +136,7 @@ void Serial::serialHandler(void *pvParameters){
 	    			num=SERIAL_STRLEN;
 	    		}
 	    		int numread = 0;
-
+	    		char *rxbuf = (char*)malloc( num < SERIAL_STRLEN ? SERIAL_STRLEN : num );
 	    		if( Flarm::bincom ){    // normally wait unit sentence has ended, or in binary mode just continue
 	    			numread = Serial2.read( rxbuf, num );
 	    		}
@@ -148,6 +151,7 @@ void Serial::serialHandler(void *pvParameters){
 	    			Router::forwardMsg( s, s2_rx_q );
 	    			DM.monitorString( MON_S2, DIR_TX, s.c_str() );
 	    		}
+	    		free( rxbuf );
 	    	}
 	    	Router::routeS2();
 	    	Router::routeBT();

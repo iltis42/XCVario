@@ -14,41 +14,37 @@
 #include "SetupMenuSelect.h"
 #include "ESPAudio.h"
 
-char SetupMenuSelect::_val_str[20];
-
 
 const char * SetupMenuSelect::getEntry() const
 {
 	ESP_LOGI(FNAME,"getEntry() select:%d", _select );
-	return _values[ _select ].c_str();
+	return _values[ _select ];
 }
 
 const char *SetupMenuSelect::value() const {
-	ESP_LOGI(FNAME,"value()");
-	sprintf(_val_str,"%s", getEntry() );
-	return _val_str;
+	return getEntry();
 }
 
 
 bool SetupMenuSelect::existsEntry( std::string ent ){
-	for( std::vector<std::string>::iterator iter = _values.begin(); iter != _values.end(); ++iter )
-		if( *iter == ent )
+	for( std::vector<const char*>::iterator iter = _values.begin(); iter != _values.end(); ++iter )
+		if( std::string(*iter) == ent )
 			return true;
 	return false;
 }
 
-void SetupMenuSelect::addEntryList( char ent[][4], int size )
+void SetupMenuSelect::addEntryList( const char ent[][4], int size )
 {
 	ESP_LOGI(FNAME,"SetupMenuSelect::addEntryList() char ent[][4]");
     for( int i=0; i<size; i++ ) {
-    	// ESP_LOGI(FNAME,"add ent:%s  num:%d", std::string(ent[i]).c_str(), _numval );
-        _values.push_back( std::string(ent[i]) ); _numval++;
+    	// ESP_LOGI(FNAME,"add ent:%s  num:%d", std::string(ent[i]), _numval );
+        _values.push_back( (char *)ent[i] ); _numval++;
     }
 }
 
-void SetupMenuSelect::delEntry( std::string ent ) {
-	for( std::vector<std::string>::iterator iter = _values.begin(); iter != _values.end(); ++iter )
-		if( *iter == ent )
+void SetupMenuSelect::delEntry( const char* ent ) {
+	for( std::vector<const char *>::iterator iter = _values.begin(); iter != _values.end(); ++iter )
+		if( std::string(*iter) == std::string(ent) )
 		{
 			_values.erase( iter );
 			_numval--;
@@ -58,9 +54,10 @@ void SetupMenuSelect::delEntry( std::string ent ) {
 		}
 }
 
-SetupMenuSelect::SetupMenuSelect( std::string title, bool restart, int (*action)(SetupMenuSelect *p), bool save, SetupNG<int> *anvs ) {
-	ESP_LOGI(FNAME,"SetupMenuSelect( %s ) action: %x", title.c_str(), (int)action );
+SetupMenuSelect::SetupMenuSelect( const char* title, bool restart, int (*action)(SetupMenuSelect *p), bool save, SetupNG<int> *anvs, bool end_menu ) {
+	ESP_LOGI(FNAME,"SetupMenuSelect( %s ) action: %x", title, (int)action );
 	_rotary->attach(this);
+	_end_menu = end_menu;
 	_title = title;
 	_nvs = 0;
 	_select = 0;
@@ -92,7 +89,7 @@ SetupMenuSelect::~SetupMenuSelect()
 void SetupMenuSelect::display( int mode ){
 	if( (selected != this) || !inSetup )
 		return;
-	ESP_LOGI(FNAME,"display() pressed:%d title:%s action: %x", pressed, _title.c_str(), (int)(_action) );
+	ESP_LOGI(FNAME,"display() pressed:%d title:%s action: %x", pressed, _title, (int)(_action) );
 	clear();
 	if( _action != 0 ){
 		ESP_LOGI(FNAME,"calling action");
@@ -100,21 +97,21 @@ void SetupMenuSelect::display( int mode ){
 	}
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setPrintPos(1,25);
-	ESP_LOGI(FNAME,"Title: %s y=%d", _title.c_str(),y );
-	ucg->printf("<< %s",_title.c_str());
+	ESP_LOGI(FNAME,"Title: %s y=%d", _title,y );
+	ucg->printf("<< %s",_title);
 	xSemaphoreGive(spiMutex );
-	ESP_LOGI(FNAME,"select=%d numval=%d size=%d val=%s", _select, _numval, _values.size(), _values[_select].c_str() );
+	ESP_LOGI(FNAME,"select=%d numval=%d size=%d val=%s", _select, _numval, _values.size(), _values[_select] );
 	if( _numval > 9 ){
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		ucg->setPrintPos( 1, 50 );
-		ucg->printf( "%s                ", _values[_select].c_str() );
+		ucg->printf( "%s                ", _values[_select] );
 		xSemaphoreGive(spiMutex );
 	}else
 	{
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		for( int i=0; i<_numval && i<+10; i++ )	{
 			ucg->setPrintPos( 1, 50+25*i );
-			ucg->print( _values[i].c_str() );
+			ucg->print( _values[i] );
 		}
 		ucg->drawFrame( 1,(_select+1)*25+3,238,25 );
 		xSemaphoreGive(spiMutex );
@@ -145,7 +142,7 @@ void SetupMenuSelect::down(int count){
 		}
 		ucg->setPrintPos( 1, 50 );
 		ucg->setFont(ucg_font_ncenR14_hr, true );
-		ucg->printf("%s                  ",_values[_select].c_str());
+		ucg->printf("%s                  ",_values[_select] );
 		xSemaphoreGive(spiMutex );
 	}else {
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
@@ -173,7 +170,7 @@ void SetupMenuSelect::up(int count){
 		}
 		ucg->setPrintPos( 1, 50 );
 		ucg->setFont(ucg_font_ncenR14_hr, true );
-		ucg->printf("%s                   ", _values[_select].c_str());
+		ucg->printf("%s                   ", _values[_select] );
 		xSemaphoreGive(spiMutex );
 	}else {
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
@@ -208,15 +205,13 @@ void SetupMenuSelect::press(){
 			_nvs->commit();
 		}
 		pressed = false;
-		//if( _action != 0 )  // maybe enough in display, to be tested...
-		//	(*_action)( this );
 		if( _select_save != _select )
 			if( _restart ) {
 				Audio::shutdown();
 				clear();
 				ucg->setPrintPos( 10, 50 );
 				ucg->print("...rebooting now" );
-		        SetupCommon::commitNow();
+				SetupCommon::commitNow();
 				delay(2000);
 				esp_restart();
 			}

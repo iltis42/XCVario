@@ -27,10 +27,10 @@ Last update: 2021-04-18
 #include <AdaptUGC.h>
 #include <esp_log.h>
 
-ShowCirclingWind::ShowCirclingWind( std::string title ) :
+ShowCirclingWind::ShowCirclingWind( const char* title ) :
 SetupMenuDisplay( title, nullptr )
 {
-	ESP_LOGI(FNAME, "ShowCirclingWind(): title='%s'", title.c_str() );
+	ESP_LOGI(FNAME, "ShowCirclingWind(): title='%s'", title );
 }
 
 
@@ -44,7 +44,7 @@ void ShowCirclingWind::display( int mode )
 	if( mode != 5 )
 		clear();
 	ucg->setFont( ucg_font_fur14_hf );
-	uprintf( 5, 25, selected->_title.c_str() );
+	uprintf( 5, 25, selected->_title );
 
 	uint16_t y = 55;
 	char buffer[32];

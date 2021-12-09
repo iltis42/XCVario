@@ -18,7 +18,7 @@
 SetupMenuValFloat * SetupMenuValFloat::qnh_menu = 0;
 char SetupMenuValFloat::_val_str[20];
 
-SetupMenuValFloat::SetupMenuValFloat( std::string title, float *value, const char *unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs, bool restart, bool sync ) {
+SetupMenuValFloat::SetupMenuValFloat( const char* title, float *value, const char *unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs, bool restart, bool sync ) {
 	// ESP_LOGI(FNAME,"SetupMenuValFloat( %s ) ", title.c_str() );
 	_rotary->attach(this);
 	_title = title;
@@ -71,7 +71,7 @@ void SetupMenuValFloat::display( int mode ){
 	if( (selected != this) || !inSetup )
 		return;
 	// ESP_LOGI(FNAME,"SetupMenuValFloat display() %d %x", pressed, (int)this);
-	uprintf( 5,25, selected->_title.c_str() );
+	uprintf( 5,25, selected->_title );
 	displayVal();
 	y= 75;
 	if( _action != 0 )

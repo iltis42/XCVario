@@ -24,7 +24,7 @@ class ShowStraightWind: public SetupMenuDisplay
 {
 public:
 
-	ShowStraightWind( std::string title );
+	ShowStraightWind( const char* title );
 
 	virtual ~ShowStraightWind() {}
 

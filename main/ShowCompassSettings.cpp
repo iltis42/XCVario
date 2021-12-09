@@ -40,7 +40,7 @@ void ShowCompassSettings::display( int mode )
 	ESP_LOGI(FNAME, "display() mode=%d", mode );
 
 	clear();
-	ucg->setFont( ucg_font_fur14_hf );
+	ucg->setFont( ucg_font_ncenR14_hr );
 	uprintf( 5, 25, selected->_title );
 
 	uint16_t y = 75;

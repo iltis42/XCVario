@@ -43,7 +43,7 @@ void ShowStraightWind::display( int mode )
 	ESP_LOGI(FNAME, "display() mode=%d", mode );
 	if( mode != 5 )
 		clear();
-	ucg->setFont( ucg_font_fur14_hf );
+	ucg->setFont( ucg_font_ncenR14_hr );
 	uprintf( 5, 25, selected->_title );
 
 	uint16_t y = 70;
@@ -72,7 +72,7 @@ void ShowStraightWind::display( int mode )
 	y += 25;
 
 	ucg->setPrintPos( 0, y );
-	sprintf( buffer, "Last Wind : %3.1f\xb0/%2.1f   ", theWind.getAngle(), Units::Airspeed( theWind.getSpeed()) );
+	sprintf( buffer, "Last Wind : %3.1f°/%2.1f   ", theWind.getAngle(), Units::Airspeed( theWind.getSpeed()) );
 	ucg->printf( "%s", buffer );
 	y += 25;
 
@@ -80,7 +80,7 @@ void ShowStraightWind::display( int mode )
 	sprintf( buffer, "MH/Dev: %3.2f/%+3.2f   ", theWind.getMH(), theWind.getDeviation() );
 	ucg->printf( "%s", buffer );
 	y += 25;
-
+/*
 	float minDev = 400.0;
 	float maxDev = 0.0;
 	for( int i=0; i<360; i++ ){
@@ -95,7 +95,7 @@ void ShowStraightWind::display( int mode )
 	sprintf( buffer, "Min/Max Dev: %+3.2f/%+3.2f   ", minDev, maxDev );
 	ucg->printf( "%s", buffer );
 	y += 25;
-
+*/
 	ucg->setPrintPos( 0, y );
 	sprintf( buffer, "Wind Age : %d sec   ", theWind.getAge() );
 	ucg->printf( "%s", buffer );

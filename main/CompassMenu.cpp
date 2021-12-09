@@ -26,6 +26,7 @@ Last update: 2021-02-26
 #include "CompassMenu.h"
 #include "MenuEntry.h"
 #include "sensor.h"  // we need spiMutex
+#include "vector.h"
 
 SetupMenuSelect* CompassMenu::menuPtr = nullptr;
 
@@ -78,40 +79,35 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->setFont( ucg_font_ncenR14_hr );
 	p->ucg->setPrintPos( 1, 60 );
-	p->ucg->printf( "Turn airplane to %s°  ", p->getEntry() );
+	p->ucg->printf( "Turn airplane to %s  ", p->getEntry() );
 	p->ucg->setPrintPos( 1, 90 );
 	p->ucg->printf( "and push button when done" );
 	xSemaphoreGive(spiMutex);
 	delay( 500 );
 
 	float heading = 0.0;
-	short hi = 0;
 	float deviation = 0;
 
 	while( !p->_rotary->readSwitch() )
 	{
 		bool ok = true;
-		heading = Compass::rawHeading( &ok );
+		if( heading == 0.0 )
+			heading = Compass::rawHeading( &ok );
+		else
+			heading = heading + (Compass::rawHeading( &ok ) -heading)*0.05; // a bit low pass
 		if( ok == false )
 		{
 			// in case of error deviation is set to 0
 			heading = static_cast<float>( skydirs[diridx] );
 		}
-
-		hi = static_cast<short>(rintf( heading ));
-		if( hi >= 360 )
-			hi -= 360;
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
-		// p->ucg->setFont( ucg_font_fur20_hf );
 		p->ucg->setPrintPos( 1, 180 );
-		p->ucg->printf( "Heading:   %d°    ", hi );
+		p->ucg->printf( "Heading:  %d° ", (int)(heading+0.5) );
 		p->ucg->setPrintPos( 1, 230 );
-		deviation = direction - hi;
-		if( deviation < -180 )
-			deviation += 360;
-		p->ucg->printf( "Deviation: %3.2f°  ", deviation );
+		deviation = Vector::normalizeDeg( direction - heading );
+		p->ucg->printf( "Deviation: %3.1f°  ", deviation );
 		xSemaphoreGive(spiMutex);
-		delay( 100 );
+		delay( 50 );
 	}
 	while( p->_rotary->readSwitch() )
 	{
@@ -122,10 +118,16 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 
 	// Save deviation value
 	deviations[diridx]->set( deviation );
-	p->ucg->setPrintPos( 1, 300 );
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
+	p->ucg->setPrintPos( 1, 270 );
 	p->ucg->printf( "Saved" );
-	delay( 1000 );
-	p->clear();
+	delay(500);
+	p->ucg->setPrintPos( 1, 300 );
+	p->_parent->highlight++;
+	if(p->_parent->highlight > 7 )
+		p->_parent->highlight = -1;
+	p->ucg->printf( "Press key for next" );
+	xSemaphoreGive(spiMutex);
 	// Update compass interpolation data
 	Compass::deviationReload();
 
@@ -144,12 +146,13 @@ int CompassMenu::resetDeviationAction( SetupMenuSelect *p )
 	else if( p->getSelect() == 1 )
 	{
 		p->clear();
+		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		p->ucg->setFont( ucg_font_ncenR14_hr );
 		p->ucg->setPrintPos( 1, 60 );
 		p->ucg->printf( "Reset all compass" );
 		p->ucg->setPrintPos( 1, 90 );
 		p->ucg->printf( "deviation data" );
-
+		xSemaphoreGive(spiMutex);
 		// Reset calibration
 		for( int i = 0; i < 8; i++ )
 		{

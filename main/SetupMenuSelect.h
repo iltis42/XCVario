@@ -15,7 +15,7 @@ class SetupMenuSelect:  public MenuEntry
 {
 public:
 	SetupMenuSelect();
-	SetupMenuSelect( const char* title, bool restart=false, int (*action)(SetupMenuSelect *p) = 0, bool save=true, SetupNG<int> *anvs=0, bool end_menu=false);
+	SetupMenuSelect( const char* title, bool restart=false, int (*action)(SetupMenuSelect *p) = 0, bool save=true, SetupNG<int> *anvs=0, bool ext_handler=false);
 	virtual ~SetupMenuSelect();
 	void display( int mode=0 );
 	bool existsEntry( std::string ent );
@@ -40,7 +40,7 @@ private:
 	int16_t  _numval;
 	int8_t   _restart;
 	int8_t   _save;
-	int8_t   _end_menu;
+	int8_t   _ext_handler;
 	std::vector<const char *> _values;
 	int (*_action)( SetupMenuSelect *p );
 	SetupNG<int> *_nvs;

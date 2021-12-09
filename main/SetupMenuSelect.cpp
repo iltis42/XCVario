@@ -35,7 +35,7 @@ bool SetupMenuSelect::existsEntry( std::string ent ){
 
 void SetupMenuSelect::addEntryList( const char ent[][4], int size )
 {
-	ESP_LOGI(FNAME,"SetupMenuSelect::addEntryList() char ent[][4]");
+	ESP_LOGI(FNAME,"addEntryList() char ent[][4]");
     for( int i=0; i<size; i++ ) {
     	// ESP_LOGI(FNAME,"add ent:%s  num:%d", std::string(ent[i]), _numval );
         _values.push_back( (char *)ent[i] ); _numval++;
@@ -54,10 +54,10 @@ void SetupMenuSelect::delEntry( const char* ent ) {
 		}
 }
 
-SetupMenuSelect::SetupMenuSelect( const char* title, bool restart, int (*action)(SetupMenuSelect *p), bool save, SetupNG<int> *anvs, bool end_menu ) {
-	ESP_LOGI(FNAME,"SetupMenuSelect( %s ) action: %x", title, (int)action );
+SetupMenuSelect::SetupMenuSelect( const char* title, bool restart, int (*action)(SetupMenuSelect *p), bool save, SetupNG<int> *anvs, bool ext_handler ) {
+	// ESP_LOGI(FNAME,"SetupMenuSelect( %s ) action: %x", title, (int)action );
 	_rotary->attach(this);
-	_end_menu = end_menu;
+	_ext_handler = ext_handler;
 	_title = title;
 	_nvs = 0;
 	_select = 0;
@@ -89,11 +89,16 @@ SetupMenuSelect::~SetupMenuSelect()
 void SetupMenuSelect::display( int mode ){
 	if( (selected != this) || !inSetup )
 		return;
-	ESP_LOGI(FNAME,"display() pressed:%d title:%s action: %x", pressed, _title, (int)(_action) );
+	ESP_LOGI(FNAME,"display() pressed:%d title:%s action: %x hl:%d", pressed, _title, (int)(_action), highlight );
 	clear();
-	if( _action != 0 ){
+	if( _action != 0 && mode < 2 ){
 		ESP_LOGI(FNAME,"calling action");
 		(*_action)( this );
+	}
+	if( _ext_handler ){  // handling is done only in action method
+		ESP_LOGI(FNAME,"ext handler");
+		selected = _parent;
+		return;
 	}
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setPrintPos(1,25);
@@ -192,10 +197,11 @@ void SetupMenuSelect::longPress(){
 void SetupMenuSelect::press(){
 	if( selected != this )
 		return;
-	ESP_LOGI(FNAME,"SetupMenuSelect press");
+	ESP_LOGI(FNAME,"press() ext handler: %d press: %d", _ext_handler, pressed );
 	if ( pressed ){
 		display( 1 );
 		if( _parent != 0) {
+			ESP_LOGI(FNAME,"go to parent");
 			selected = _parent;
 			_parent->highlight = -1;  // to topmost selection when back
 		}

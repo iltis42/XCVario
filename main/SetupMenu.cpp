@@ -355,7 +355,7 @@ void SetupMenu::display( int mode ){
 	ucg->setPrintPos(1,y);
 	ucg->setFontPosBottom();
 	ucg->printf("<< %s",selected->_title);
-	ucg->drawFrame( 1,3,238,25 );
+	ucg->drawFrame( 1,(selected->highlight+1)*25+3,238,25 );
 	for (int i=0; i<_childs.size(); i++ ){
 		MenuEntry * child = _childs[i];
 		ucg->setPrintPos(1,(i+1)*25+25);
@@ -993,10 +993,10 @@ void SetupMenu::setup( )
 		MenuEntry* dme = compassMenu->addEntry( devMenu );
 
 		// Calibration menu is requested
-		const char *skydirs[8] = { "0", "45", "90", "135", "180", "225", "270", "315" };
+		const char *skydirs[8] = { "0°", "45°", "90°", "135°", "180°", "225°", "270°", "315°" };
 		for( int i = 0; i < 8; i++ )
 		{
-			SetupMenuSelect* sms = new SetupMenuSelect( "Direction ", false, compassDeviationAction, false, 0, true );
+			SetupMenuSelect* sms = new SetupMenuSelect( "Direction", false, compassDeviationAction, false, 0, true );
 			sms->setHelp( "Push button to start deviation action" );
 			sms->addEntry( skydirs[i] );
 			dme->addEntry( sms );
@@ -1076,7 +1076,7 @@ void SetupMenu::setup( )
 		compassWindME->addEntry( strWindM );
 		strWindM->setHelp( PROGMEM "Straight flight wind calculation needs compass module active", 250 );
 
-		SetupMenuValFloat *smdev = new SetupMenuValFloat( "Deviation tolerance", nullptr, "\xb0", 0.0, 180.0, 1.0,	nullptr, false, &wind_max_deviation );
+		SetupMenuValFloat *smdev = new SetupMenuValFloat( "Deviation tolerance", nullptr, "°", 0.0, 180.0, 1.0,	nullptr, false, &wind_max_deviation );
 		smdev->setHelp( PROGMEM "Setup maximum deviation accepted for a wind measurement" );
 		strWindM->addEntry( smdev );
 

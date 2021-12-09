@@ -39,11 +39,10 @@ void DisplayDeviations::display( int mode )
   ESP_LOGI(FNAME, "display() mode=%d", mode );
 
   clear();
-  ucg->setFont( ucg_font_fur14_hf );
+  ucg->setFont( ucg_font_ncenR14_hr );
   uprintf( 5, 25, selected->_title );
 
-  const char* skydirdev[8] =
-    { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
+  const char* skydirdev[8] = { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
 
   // Stored deviation data
   SetupNG<float>* deviations[8] = { &compass_dev_0,

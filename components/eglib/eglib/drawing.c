@@ -1201,6 +1201,8 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
 
 	int width = glyph->advance;
 	int height = eglib->drawing.font->pixel_size;
+	int pixels_size = eglib->drawing.font->pixel_size;
+
 	int top = glyph->top;
 	int head = ascent - top;
 	uint32_t pos3 = 0;
@@ -1211,7 +1213,13 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
 	int leny = 0;
 
 	buffer = malloc( height*width*3 );
-	for(coordinate_t v1=0; v1 < height ; v1++){
+	int y1 = 0;
+	if( eglib->drawing.filled_mode == false ){
+		y1 =  pixels_size/8;   // WA as fonts bounding boxes to high over the top
+	}
+
+	for(coordinate_t v1=y1; v1 < height ; v1++){
+		// char line[width];
 		for(coordinate_t u=0 ; u < width; u++) {
 			coordinate_t v = v1 - head;  // read glyph from right row
 			if( eglib_inClipArea( eglib, u+x, v1-height+y ) ){
@@ -1224,16 +1232,19 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
 				if( leny < v1-starty )
 					leny = v1-starty;
 				*(color_t *)(buffer+pos3) = eglib->drawing.color_index[1];  // preinitialize with background
+				// line[u] = '.';
 				if( (u < glyph->width) && (v < glyph->height) && v>=0 && u>=0  )
 				{
 					if( get_bit2( glyph, u, v ) ){
 						*(color_t *)(buffer+pos3) = eglib->drawing.color_index[0];
+						// line[u] = 'X';
 					}
 				}
 				pos3 +=3;
 			}
 		}
-		// ESP_LOGI("Bitmap","L-%02d: %s", v1, line);
+		// line[width] = 0;
+		// ESP_LOGI("Bitmap","L-%02d: %s", v1, line);   // debug bitmap
 	}
 	lenx += 1;
 	leny += 1;

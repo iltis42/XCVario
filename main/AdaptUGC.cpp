@@ -112,10 +112,10 @@ void AdaptUGC::setFont(uint8_t *f, bool filled ){    // adapter
 		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_32px);
 		break;
 	case UCG_FONT_FUB35_HN:
-		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_54px);
+		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_48px);
 		break;
 	case UCG_FONT_FUB35_HR:
-		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_54px);
+		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_48px);
 		break;
 	case UCG_FONT_PROFONT22_MR:
 		eglib_SetFont(eglib, &font_FreeFont_FreeMonoBold_20px);

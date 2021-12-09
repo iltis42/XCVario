@@ -594,9 +594,10 @@ static bool refresh(eglib_t *eglib) {
  *   set scroll margins for hardware scroll function
  */
 void set_scroll_margins( eglib_t *eglib, coordinate_t top, coordinate_t bottom ){
-	if (top + bottom <= 320) {
+	ili9341_config_t *display_config = eglib_GetDisplayConfig(eglib);
+	if (top + bottom <= display_config->height ) {
 		eglib_CommBegin(eglib);
-		uint16_t middle = 320 - top -bottom;
+		uint16_t middle = display_config->height - top -bottom;
 		uint8_t data[6];
 		eglib_SendCommandByte(eglib, ILI9341_VERTICAL_SCROLLING_DEFINITION );
 		data[0] = top >> 8;

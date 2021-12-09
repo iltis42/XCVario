@@ -1301,22 +1301,19 @@ void IpsDisplay::drawWarning( const char *warn, bool push ){
 	xSemaphoreGive(spiMutex);
 }
 
+
 void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float ate ){
 	if( _menu )
 		return;
-	// ucg->setPrintPos(x, y );
-	ucg->setFontPosCenter();
-	ucg->setColor( COLOR_WHITE );
-	ucg->setClipRange( x-90, y-50, 90, 50 );
-	ucg->setFont(ucg_font_fub35_hn, true);
 	char s[15];
-	static const char* format[2] = {"  %2.1f", "  %2.0f"};
+	ucg->setFont(ucg_font_fub35_hn, false );
+	ucg->setFontPosCenter();
+	static const char* format[2] = {"   %2.1f", "   %2.0f"};
+	ucg->setColor( COLOR_WHITE );
 	sprintf(s, format[std::abs(ate)>10], round(ate*10.)/10.); // Avoid "-" sign because of not sown mantissa
-	ucg->setPrintPos(x - ucg->getStrWidth(s), y);
-	// ESP_LOGI(FNAME,"drawAvgVario x:%d y:%d, %s", x,y,s );
+	ucg->setPrintPos(x - ucg->getStrWidth(s), y + 3);
 	ucg->print(s);
 	ucg->setFontPosBottom();
-	ucg->undoClipRange();
 }
 
 // right-aligned to value, unit optional behind
@@ -1635,10 +1632,10 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y) {
 		if( heading >= 360 )
 			heading -= 360;
 		// ESP_LOGI(FNAME, "heading %d, valid %d", heading, Compass::headingValid() );
-		if( prev_heading != heading || !(tick%64) ){
+		if( prev_heading != heading ){
 			char s[12];
 			if( heading < 0 )
-				sprintf(s,"%4s", "---" );
+				sprintf(s,"%s", "  ---" );
 			else
 				sprintf(s,"%4d", heading );
 			ucg->setColor( COLOR_WHITE );
@@ -1665,10 +1662,6 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	tick++;
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	// ESP_LOGI(FNAME,"drawRetroDisplay  TE=%0.1f IAS:%d km/h  WK=%d", te, airspeed, wksensor  );
-	// uncomment for scroll test
-	// static int scy=0;
-	// scy+=10;
-	// ucg->scrollLines( scy%320 );
 	static bool alt_dirty = false; // looped status
 	static bool speed_dirty = false;
 	bool netto=false;
@@ -1696,7 +1689,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		else
 			sprintf(s, "s-net");
 		ucg->setFont(ucg_font_fub11_hr, true);
-		ucg->setPrintPos(120-ucg->getStrWidth(s), DISPLAY_H/2-40);
+		ucg->setPrintPos(120-ucg->getStrWidth(s), DISPLAY_H/2-30);
 		ucg->print(s);
 		netto_old = netto;
 	}
@@ -1731,12 +1724,17 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		xSemaphoreGive(spiMutex);
 		return;
 	}
-
 	// average Climb
 	if( (int)(ate*30) != _ate && !(tick%3) ) {
 		drawAvgVario( AMIDX + 38, AMIDY, ate );
 		_ate = (int)(ate*30);
 	}
+
+	// S2F Command triangle
+	if( (((int)s2fd != s2fdalt && !((tick+1)%2) ) || !((tick+3)%30) )  && !ulmode )  {
+		drawS2FBar(AMIDX, AMIDY,(int)s2fd);
+	}
+
 	// MC val
 	if(  !(tick%8) && !ulmode ) {
 		int aMC = MC.get() * 10;
@@ -1745,18 +1743,11 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			mcalt=aMC;
 		}
 	}
+
 	// Bluetooth
 	if( !(tick%12) )
 	{
 		drawConnection(DISPLAY_W-27, FLOGO+2 );
-	}
-
-	// S2F Command triangle
-	if( (((int)s2fd != s2fdalt && !((tick+1)%2) ) || !((tick+3)%30)) && !ulmode ) {
-		// static float s=0; // check the bar code
-		// s2fd = sin(s) * 42.;
-		// s+=0.04;
-		drawS2FBar(AMIDX, AMIDY,(int)s2fd);
 	}
 
 	if( _menu ){
@@ -1787,11 +1778,6 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		drawCompass(INNER_RIGHT_ALIGN, 105);
 	}
 
-	// draw TE pointer
-	// static float s=0, inc=0.01;
-	// if ( s < -M_PI_2 ) inc=0.01;
-	// if ( s > M_PI_2 ) inc=-0.01;
-	// needle_pos = s+=inc;
 	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 	ucg_color_t needlecolor[3] = { {COLOR_WHITE}, {COLOR_ORANGE}, {COLOR_RED} };
 	if( drawPolarIndicator(needle_pos, 80, 132, 9, needlecolor[needle_color.get()], needle_dirty) ) {

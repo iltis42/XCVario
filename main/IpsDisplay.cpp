@@ -141,6 +141,7 @@ float IpsDisplay::_range = 5.;
 int   IpsDisplay::average_climb = -100;
 float IpsDisplay::average_climbf = 0;
 int   IpsDisplay::prev_heading = 0;
+int   IpsDisplay::prev_windspeed = 0;
 float IpsDisplay::pref_qnh = 0;
 float IpsDisplay::old_polar_sink = 0;
 
@@ -1548,8 +1549,11 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 	xSemaphoreGive(spiMutex);
 }
 
+
+
+
 // Compass or Wind Display
-void IpsDisplay::drawCompass(int16_t x, int16_t y) {
+void IpsDisplay::drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass_dirty) {
 	if( _menu )
 		return;
 	// ESP_LOGI(FNAME, "drawCompass: %d ", wind_display.get() );
@@ -1588,13 +1592,13 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y) {
 			// ESP_LOGI(FNAME, "SWIND dir=%d, SSPEED=%f ageC=%d ageS=%d okc:=%d oks=%d ok:=%d", wds, ws, ageCircling, ageStraight, okc, oks, ok  );
 		}
 		// ESP_LOGI(FNAME, "WIND dir %d, speed %f, ok=%d", winddir, wind, ok );
-		if( prev_heading != winddir || !(tick%64) ){
+		int windspeed = (int)( Units::Airspeed(wind)+0.5 );
+		if( prev_heading != winddir || prev_windspeed != windspeed || compass_dirty ){
 			ucg->setPrintPos(85,104);
 			ucg->setColor(  COLOR_WHITE  );
 			// ucg->setFont(ucg_font_fub20_hr);
 			ucg->setFont(ucg_font_fub17_hf, true);
 			char s[12];
-			int windspeed = (int)( Units::Airspeed(wind)+0.5 );
 			if( wind_display.get() & WD_DIGITS ){
 				if( ok )
 					sprintf(s,"%3d°%c%2d", winddir, type, windspeed );
@@ -1607,6 +1611,8 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y) {
 				else
 					ucg->printf("%s  ", s);
 			}
+		}
+		if( prev_heading != winddir || prev_windspeed != windspeed || wind_dirty ){
 			prev_heading = winddir;
 			if( wind_display.get() & WD_ARROW  ){
 				float dir=winddir;  // absolute wind related to geographic north
@@ -1625,6 +1631,7 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y) {
 				}
 				drawWindArrow( dir, windspeed, 0 );
 			}
+			prev_windspeed = windspeed;
 		}
 	}
 	else if( wind_display.get() & WD_COMPASS ){
@@ -1632,7 +1639,7 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y) {
 		if( heading >= 360 )
 			heading -= 360;
 		// ESP_LOGI(FNAME, "heading %d, valid %d", heading, Compass::headingValid() );
-		if( prev_heading != heading ){
+		if( prev_heading != heading || compass_dirty ){
 			char s[12];
 			if( heading < 0 )
 				sprintf(s,"%s", "  ---" );
@@ -1664,6 +1671,9 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// ESP_LOGI(FNAME,"drawRetroDisplay  TE=%0.1f IAS:%d km/h  WK=%d", te, airspeed, wksensor  );
 	static bool alt_dirty = false; // looped status
 	static bool speed_dirty = false;
+	static bool compass_dirty = false;
+	static bool wind_dirty = false;
+
 	bool netto=false;
 	if( vario_mode.get() == VARIO_NETTO || (s2fmode && ( vario_mode.get() == CRUISE_NETTO )) ){
 		// todo this calulation belongs to the blackboard that keeps hosted values consitent
@@ -1716,8 +1726,14 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// Check overlap on inner figures
 	bool alt_overlap = needle_pos < -M_PI_2*60./90.;
 	bool speed_overlap = needle_pos > M_PI_2*75./90.;
+	bool wind_overlap = needle_pos < -M_PI_2*25./90. && needle_pos > -M_PI_2*55./90.;
+	bool compass_overlap = needle_pos > M_PI_2*35./90. && needle_pos < M_PI_2*75./90.;
+	// ESP_LOGI(FNAME,"NP: %f wd: %d", R2D(needle_pos), wind_dirty );
+
 	static bool alt_overlap_old = false;
 	static bool speed_overlap_old = false;
+	static bool wind_overlap_old = false;
+	static bool compass_overlap_old = false;
 	// ESP_LOGI(FNAME,"alt %d speed %d", alt_overlap, speed_overlap );
 
 	if( _menu ){
@@ -1774,17 +1790,30 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	// Compass
-	if( !(tick%8) ){
-		drawCompass(INNER_RIGHT_ALIGN, 105);
+	if( !(tick%8) || wind_dirty || compass_dirty){
+		drawCompass(INNER_RIGHT_ALIGN, 105, wind_dirty, compass_dirty );
+		if( compass_overlap )
+			needle_dirty = true;
+		if( wind_overlap )
+			needle_dirty = true;
+		compass_dirty = false;
+		wind_dirty = false;
 	}
 
 	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 	ucg_color_t needlecolor[3] = { {COLOR_WHITE}, {COLOR_ORANGE}, {COLOR_RED} };
 	if( drawPolarIndicator(needle_pos, 80, 132, 9, needlecolor[needle_color.get()], needle_dirty) ) {
 		alt_dirty = alt_overlap_old;
-		speed_dirty = speed_overlap_old;
 		alt_overlap_old = alt_overlap;
+
+		speed_dirty = speed_overlap_old;
 		speed_overlap_old = speed_overlap;
+
+		wind_dirty = wind_overlap_old;
+		wind_overlap_old = wind_overlap;
+
+		compass_dirty = compass_overlap_old;
+		compass_overlap_old = compass_overlap;
 
 		// Draw colored bow
 		float bar_val = (needle_pos>0.) ? needle_pos : 0.;

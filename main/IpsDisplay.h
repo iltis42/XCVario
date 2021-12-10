@@ -41,7 +41,7 @@ public:
 	void doMenu( bool menu=true ) { _menu = menu; };
 	static void drawArrowBox( int x, int y, bool are=true );
 	static void redrawValues();
-	static void drawCompass(int16_t x, int16_t y);
+	static void drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass_dirty );
 	static void drawWindArrow( float dir, float speed, int type );
 	static inline AdaptUGC *getDisplay() { return ucg; };
 
@@ -52,6 +52,7 @@ private:
 	gpio_num_t _dc;
 	static float _range;
 	static int prev_heading;
+	static int prev_windspeed;
 	static int _divisons;
 	static float _range_clip;
 	static int _pixpmd;

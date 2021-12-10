@@ -281,7 +281,7 @@ void QMC5883L::fromCAN( const char * msg ){
 	can_x = (msg[0] & 0xff) | ((msg[1] << 8) & 0xff00 );
 	can_y = (msg[2] & 0xff) | ((msg[3] << 8) & 0xff00 );
 	can_z = (msg[4] & 0xff) | ((msg[5] << 8) & 0xff00 );
-	// hESP_LOGI(FNAME,"from CAN bus magn X=%d Y=%d Z=%d", can_x, can_y, can_z );
+	// ESP_LOGI(FNAME,"from CAN bus magn X=%d Y=%d Z=%d", can_x, can_y, can_z );
 	age = 0;
 }
 
@@ -698,7 +698,7 @@ float QMC5883L::heading( bool *ok )
 
 	if( compass_enable.get() == CS_CAN || compass_enable.get() == CS_I2C ){
 		_heading = -RAD_TO_DEG * atan2( tcy, tcx );
-		// ESP_LOGI(FNAME,"tcy %03.2f tcx %03.2f  heading:%03.1f", tcy, tcx, _heading );
+		// ESP_LOGI(FNAME,"tcy %03.2f tcx %03.2f  heading:%03.1f pi:%.1f ro:%.1f", tcy, tcx, _heading, pitch, roll );
 	}
 	else if ( compass_enable.get() == CS_I2C_NO_TILT )
 		_heading = -RAD_TO_DEG * atan2( fy, fx );

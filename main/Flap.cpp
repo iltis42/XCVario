@@ -44,7 +44,7 @@ int select_flap_sens_pin(SetupMenuSelect *p){
             p->ucg->setPrintPos(1,60);
             p->ucg->printf("Press Button to exit");
             xSemaphoreGive(spiMutex);
-            while( !p->_rotary->readSwitch() ){
+            while( !p->readSwitch() ){
                 p->ucg->setPrintPos(1,90);
                 xSemaphoreTake(spiMutex,portMAX_DELAY );
                 p->ucg->printf("Sensor: %d       ", FLAP->getSensorRaw(256) );
@@ -65,7 +65,7 @@ void wk_cal_show( SetupMenuSelect *p, int wk ){
 	p->ucg->printf("Set Flap %+d   ", wk );
 	xSemaphoreGive(spiMutex);
 	delay(500);
-	while( !p->_rotary->readSwitch() )
+	while( !p->readSwitch() )
 		showWk(p);
 }
 

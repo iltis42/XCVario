@@ -27,11 +27,8 @@ AdaptUGC *MenuEntry::ucg = 0;
 IpsDisplay* MenuEntry::_display = 0;
 MenuEntry* MenuEntry::root = 0;
 MenuEntry* MenuEntry::selected = 0;
-ESPRotary* MenuEntry::_rotary = 0;
 AnalogInput* MenuEntry::_adc = 0;
 PressureSensor *MenuEntry::_bmp = 0;
-// float MenuEntry::volume;
-// MenuEntry::MenuRotary MenuEntry::menu_rotary_handler;
 
 MenuEntry::~MenuEntry()
 {

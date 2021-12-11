@@ -566,7 +566,7 @@ bool QMC5883L::calibrate( bool (*reporter)( float xc, float yc, float zc, float 
 			// Send a calibration report to the subscriber every 500ms
 			reporter( xraw,yraw,zraw, xscale, yscale, zscale, xbias, ybias, zbias );
 		}
-		if( MenuEntry::_rotary->readSwitch() == true  )  // more responsive to query every loop
+		if( ESPRotary::readSwitch() == true  )  // more responsive to query every loop
 			break;
 	}
 

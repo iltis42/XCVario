@@ -811,7 +811,7 @@ void sensor(void *args){
 	MYUCG = egl; // new AdaptUGC( SPI_DC, CS_Display, RESET_Display );
 	display = new IpsDisplay( MYUCG );
 	Flarm::setDisplay( MYUCG );
-	DM.begin( MYUCG, &Rotary );
+	DM.begin( MYUCG );
 	display->begin();
 	display->bootDisplay();
 
@@ -839,7 +839,7 @@ void sensor(void *args){
 
 		}
 		ota = new OTA();
-		ota->begin( &Rotary );
+		ota->begin();
 		ota->doSoftwareUpdate( display );
 	}
 
@@ -1299,7 +1299,7 @@ void sensor(void *args){
 	{
 		LeakTest::start( baroSensor, teSensor, asSensor );
 	}
-	Menu->begin( display, &Rotary, baroSensor, &Battery );
+	Menu->begin( display, baroSensor, &Battery );
 
 	if ( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT ){
 		ESP_LOGI(FNAME,"Client Mode");

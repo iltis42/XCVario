@@ -105,7 +105,7 @@ void ShowCompassSettings::display( int mode )
 
 	uint32_t counter = 0;
 
-	while( _rotary->readSwitch() == false )
+	while( readSwitch() == false )
 	{
 		counter++;
 

@@ -8,7 +8,6 @@ DataMonitor::DataMonitor(){
 	ucg = 0;
 	scrollpos = 0;
 	paused = true;
-	_rotary = 0;
 }
 
 int DataMonitor::maxChar( const char *str, int pos ){
@@ -94,7 +93,7 @@ void DataMonitor::longPress(){
 void DataMonitor::start(){
 	ESP_LOGI(FNAME,"start");
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	_rotary->attach( this );
+	attach( this );
 	SetupMenu::catchFocus( true );
 	ucg->scrollSetMargins( 0, 0 );
 	ucg->setColor( COLOR_BLACK );
@@ -109,7 +108,6 @@ void DataMonitor::start(){
 
 void DataMonitor::stop(){
 	ESP_LOGI(FNAME,"stop");
-	// _rotary->detach( this );
 	mon_started = false;
 	delay(1000);
 	ucg->scrollLines( 0 );

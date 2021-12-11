@@ -319,18 +319,18 @@ SetupMenu::SetupMenu() : MenuEntry() {
 
 SetupMenu::SetupMenu( const char *title ) : MenuEntry() {
 	// ESP_LOGI(FNAME,"SetupMenu::SetupMenu( %s ) ", title.c_str() );
-	_rotary->attach(this);
+	attach(this);
 	_title = title;
 	highlight = -1;
 }
+
 SetupMenu::~SetupMenu()
 {
-	_rotary->detach(this);
+	detach(this);
 }
 
-void SetupMenu::begin( IpsDisplay* display, ESPRotary * rotary, PressureSensor * bmp, AnalogInput *adc ){
+void SetupMenu::begin( IpsDisplay* display, PressureSensor * bmp, AnalogInput *adc ){
 	ESP_LOGI(FNAME,"SetupMenu() begin");
-	_rotary = rotary;
 	_bmp = bmp;
 	_display = display;
 	ucg = display->getDisplay();
@@ -475,14 +475,12 @@ void SetupMenu::showMenu( bool apressed ){
 			inSetup=true;
 			ESP_LOGI(FNAME,"Start Setup Menu");
 			_display->doMenu(true);
-			// _rotary->attach(&menu_rotary_handler); // todo
 			delay(200);  // fixme give display task time to finish drawing
 		}
 		else
 		{
 			ESP_LOGI(FNAME,"End Setup Menu");
 			_display->clear();
-			// _rotary->detach(&menu_rotary_handler);
 			_display->doMenu(false);
 			SetupCommon::commitNow();
 			inSetup=false;

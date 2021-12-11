@@ -20,7 +20,7 @@ char SetupMenuValFloat::_val_str[20];
 
 SetupMenuValFloat::SetupMenuValFloat( const char* title, float *value, const char *unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs, bool restart, bool sync ) {
 	// ESP_LOGI(FNAME,"SetupMenuValFloat( %s ) ", title.c_str() );
-	_rotary->attach(this);
+	attach(this);
 	_title = title;
 	highlight = -1;
 	_nvs = 0;
@@ -47,7 +47,7 @@ SetupMenuValFloat::SetupMenuValFloat( const char* title, float *value, const cha
 }
 SetupMenuValFloat::~SetupMenuValFloat()
 {
-    _rotary->detach(this);
+    detach(this);
 }
 
 void SetupMenuValFloat::setPrecision( int prec ){

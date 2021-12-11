@@ -88,7 +88,7 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 	float heading = 0.0;
 	float deviation = 0;
 
-	while( !p->_rotary->readSwitch() )
+	while( !p->readSwitch() )
 	{
 		bool ok = true;
 		if( heading == 0.0 )
@@ -109,7 +109,7 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 		xSemaphoreGive(spiMutex);
 		delay( 50 );
 	}
-	while( p->_rotary->readSwitch() )
+	while( p->readSwitch() )
 	{
 		// wait so long while rotary is pressed to avoid unwanted actions
 		delay( 50 );

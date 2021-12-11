@@ -56,7 +56,7 @@ void SetupMenuSelect::delEntry( const char* ent ) {
 
 SetupMenuSelect::SetupMenuSelect( const char* title, bool restart, int (*action)(SetupMenuSelect *p), bool save, SetupNG<int> *anvs, bool ext_handler ) {
 	// ESP_LOGI(FNAME,"SetupMenuSelect( %s ) action: %x", title, (int)action );
-	_rotary->attach(this);
+	attach(this);
 	_ext_handler = ext_handler;
 	_title = title;
 	_nvs = 0;
@@ -82,7 +82,7 @@ SetupMenuSelect::SetupMenuSelect( const char* title, bool restart, int (*action)
 }
 SetupMenuSelect::~SetupMenuSelect()
 {
-    _rotary->detach(this);
+    detach(this);
 }
 
 

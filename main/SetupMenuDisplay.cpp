@@ -25,13 +25,13 @@ Last update: 2021-02-25
 
 SetupMenuDisplay::SetupMenuDisplay( const char* title, int (*action)(SetupMenuDisplay *p) ) : MenuEntry()
 {
-	_rotary->attach( this );
+	attach( this );
 	_title = title;
 	_action = action;
 }
 SetupMenuDisplay::~SetupMenuDisplay()
 {
-    _rotary->detach(this);
+    detach(this);
 }
 
 void SetupMenuDisplay::display( int mode )

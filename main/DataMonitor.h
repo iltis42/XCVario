@@ -26,13 +26,12 @@ public:
 	void down( int count ) {};
 	void longPress();
 	int maxChar( const char *s, int pos );
-	void begin(AdaptUGC *theUcg, ESPRotary * aRotary ) { ucg = theUcg; _rotary = aRotary; };
+	void begin(AdaptUGC *theUcg) { ucg = theUcg; };
 	bool active() { return mon_started; };
 
 private:
 	bool mon_started;
 	AdaptUGC *ucg;
-	ESPRotary * _rotary;
 	int scrollpos;
 	bool paused;
 };

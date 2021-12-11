@@ -46,7 +46,6 @@ public:
 	static MenuEntry *root;
 	static MenuEntry *selected;
 	static IpsDisplay* _display;
-	static ESPRotary* _rotary;
 	static AnalogInput* _adc;
 	static PressureSensor *_bmp;
 	int16_t   highlight;

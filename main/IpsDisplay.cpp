@@ -1640,7 +1640,7 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass
 			heading -= 360;
 		// ESP_LOGI(FNAME, "heading %d, valid %d", heading, Compass::headingValid() );
 		if( prev_heading != heading || compass_dirty ){
-			char s[12];
+			char s[20];
 			if( heading < 0 )
 				sprintf(s,"%s", "  ---" );
 			else

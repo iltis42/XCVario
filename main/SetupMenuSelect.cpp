@@ -102,7 +102,7 @@ void SetupMenuSelect::display( int mode ){
 	}
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setPrintPos(1,25);
-	ESP_LOGI(FNAME,"Title: %s y=%d", _title,y );
+	ESP_LOGI(FNAME,"Title: %s ", _title );
 	ucg->printf("<< %s",_title);
 	xSemaphoreGive(spiMutex );
 	ESP_LOGI(FNAME,"select=%d numval=%d size=%d val=%s", _select, _numval, _values.size(), _values[_select] );
@@ -122,7 +122,7 @@ void SetupMenuSelect::display( int mode ){
 		xSemaphoreGive(spiMutex );
 	}
 
-	y=_numval*25+50;
+	int y=_numval*25+50;
 	showhelp( y );
 	if(mode == 1 && _save == true ){
 		xSemaphoreTake(spiMutex,portMAX_DELAY );

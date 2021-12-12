@@ -312,9 +312,7 @@ static int compassSensorCalibrateAction( SetupMenuSelect *p )
 SetupMenu::SetupMenu() : MenuEntry() {
 	highlight = -1;
 	_parent = 0;
-	y = 0;
 	helptext = 0;
-	long_pressed = false;
 }
 
 SetupMenu::SetupMenu( const char *title ) : MenuEntry() {
@@ -348,7 +346,7 @@ void SetupMenu::display( int mode ){
 		return;
 	ESP_LOGI(FNAME,"SetupMenu display( %s)", _title );
 	clear();
-	y=25;
+	int y=25;
 	ESP_LOGI(FNAME,"Title: %s y=%d child size:%d", selected->_title,y, _childs.size()  );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setFont(ucg_font_ncenR14_hr);
@@ -513,12 +511,6 @@ void SetupMenu::longPress(){
 	// ESP_LOGI(FNAME,"longPress()");
 	if( menu_long_press.get() )
 	 	showMenu( true );
-	if( long_pressed ){
-		long_pressed = true;
-	}
-	else{
-		long_pressed = false;
-	}
 }
 
 

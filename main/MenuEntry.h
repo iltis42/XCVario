@@ -50,10 +50,7 @@ public:
 	static PressureSensor *_bmp;
 	int16_t   highlight;
 	uint8_t   pressed = false;
-	uint8_t   long_pressed = false;
 	char      *helptext = 0;
 	int16_t    hypos = 0;
-	unsigned char y = 0;
-	int16_t    idx = 0;
 	static AdaptUGC *ucg;
 };

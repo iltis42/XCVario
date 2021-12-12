@@ -73,7 +73,7 @@ void SetupMenuValFloat::display( int mode ){
 	// ESP_LOGI(FNAME,"SetupMenuValFloat display() %d %x", pressed, (int)this);
 	uprintf( 5,25, selected->_title );
 	displayVal();
-	y= 75;
+	int y= 75;
 	if( _action != 0 )
 		(*_action)( this );
 

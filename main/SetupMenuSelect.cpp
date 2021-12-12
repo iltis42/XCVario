@@ -1,6 +1,3 @@
-
-
-
 /*
  * SetupMenu.cpp
  *
@@ -14,7 +11,6 @@
 #include "SetupMenuSelect.h"
 #include "ESPAudio.h"
 
-
 const char * SetupMenuSelect::getEntry() const
 {
 	ESP_LOGI(FNAME,"getEntry() select:%d", _select );
@@ -25,7 +21,6 @@ const char *SetupMenuSelect::value() const {
 	return getEntry();
 }
 
-
 bool SetupMenuSelect::existsEntry( std::string ent ){
 	for( std::vector<const char*>::iterator iter = _values.begin(); iter != _values.end(); ++iter )
 		if( std::string(*iter) == ent )
@@ -33,12 +28,31 @@ bool SetupMenuSelect::existsEntry( std::string ent ){
 	return false;
 }
 
+#ifdef DEBUG_MAX_ENTRIES
+// static int num_max = 0;
+#endif
+
+void SetupMenuSelect::addEntry( const char* ent ) {
+	_values.push_back( ent ); _numval++;
+#ifdef DEBUG_MAX_ENTRIES
+	 if( num_max < _numval ){
+		 ESP_LOGI(FNAME,"add ent:%s  num:%d", ent, _numval );
+		 num_max = _numval;
+	 }
+#endif
+}
+
 void SetupMenuSelect::addEntryList( const char ent[][4], int size )
 {
 	ESP_LOGI(FNAME,"addEntryList() char ent[][4]");
     for( int i=0; i<size; i++ ) {
-    	// ESP_LOGI(FNAME,"add ent:%s  num:%d", std::string(ent[i]), _numval );
         _values.push_back( (char *)ent[i] ); _numval++;
+#ifdef DEBUG_MAX_ENTRIES
+   	   if( num_max < _numval ){
+           ESP_LOGI(FNAME,"addEntryList:%s  num:%d", (char *)ent[i], _numval );
+           num_max = _numval;
+   	   }
+#endif
     }
 }
 
@@ -57,21 +71,19 @@ void SetupMenuSelect::delEntry( const char* ent ) {
 SetupMenuSelect::SetupMenuSelect( const char* title, bool restart, int (*action)(SetupMenuSelect *p), bool save, SetupNG<int> *anvs, bool ext_handler ) {
 	// ESP_LOGI(FNAME,"SetupMenuSelect( %s ) action: %x", title, (int)action );
 	attach(this);
-	_ext_handler = ext_handler;
+	bits._ext_handler = ext_handler;
 	_title = title;
 	_nvs = 0;
 	_select = 0;
 	_select_save = 0;
 	highlight = -1;
-	select_intern = 0;
 	if( !anvs ) {
-		_select = select_intern;
-		_select_save = select_intern;
+		_select_save = _select;
 	}
 	_numval = 0;
-	_restart = restart;
+	bits._restart = restart;
 	_action = action;
-	_save = save;
+	bits._save = save;
 	if( anvs ) {
 		_nvs = anvs;
 		ESP_LOGI(FNAME,"_nvs->key(): %s val: %d", _nvs->key(), (int)(_nvs->get()) );
@@ -85,7 +97,6 @@ SetupMenuSelect::~SetupMenuSelect()
     detach(this);
 }
 
-
 void SetupMenuSelect::display( int mode ){
 	if( (selected != this) || !inSetup )
 		return;
@@ -95,7 +106,7 @@ void SetupMenuSelect::display( int mode ){
 		ESP_LOGI(FNAME,"calling action");
 		(*_action)( this );
 	}
-	if( _ext_handler ){  // handling is done only in action method
+	if( bits._ext_handler ){  // handling is done only in action method
 		ESP_LOGI(FNAME,"ext handler");
 		selected = _parent;
 		return;
@@ -124,7 +135,7 @@ void SetupMenuSelect::display( int mode ){
 
 	int y=_numval*25+50;
 	showhelp( y );
-	if(mode == 1 && _save == true ){
+	if(mode == 1 && bits._save == true ){
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		ucg->setPrintPos( 1, 300 );
 		ucg->print("Saved" );
@@ -197,7 +208,7 @@ void SetupMenuSelect::longPress(){
 void SetupMenuSelect::press(){
 	if( selected != this )
 		return;
-	ESP_LOGI(FNAME,"press() ext handler: %d press: %d", _ext_handler, pressed );
+	ESP_LOGI(FNAME,"press() ext handler: %d press: %d", bits._ext_handler, pressed );
 	if ( pressed ){
 		display( 1 );
 		if( _parent != 0) {
@@ -212,7 +223,7 @@ void SetupMenuSelect::press(){
 		}
 		pressed = false;
 		if( _select_save != _select )
-			if( _restart ) {
+			if( bits._restart ) {
 				Audio::shutdown();
 				clear();
 				ucg->setPrintPos( 10, 50 );
@@ -222,8 +233,7 @@ void SetupMenuSelect::press(){
 				esp_restart();
 			}
 	}
-	else
-	{
+	else{
 		pressed = true;
 	}
 }

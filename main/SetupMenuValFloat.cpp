@@ -24,7 +24,7 @@ SetupMenuValFloat::SetupMenuValFloat( const char* title, float *value, const cha
 	_title = title;
 	highlight = -1;
 	_nvs = 0;
-	_restart = restart;
+	bits._restart = restart;
 	if( value )
 		_value = value;
 	if( unit != 0 )
@@ -35,10 +35,10 @@ SetupMenuValFloat::SetupMenuValFloat( const char* title, float *value, const cha
 	_max = max;
 	_step = step;
 	_action = action;
-	_end_menu = end_menu;
-	_precision = 2;
+	bits._end_menu = end_menu;
+	bits._precision = 2;
 	if( step >= 1 )
-		_precision = 0;
+		bits._precision = 0;
 	if( anvs ) {
 		_nvs = anvs;
 		_value = _nvs->getPtr();
@@ -51,7 +51,7 @@ SetupMenuValFloat::~SetupMenuValFloat()
 }
 
 void SetupMenuValFloat::setPrecision( int prec ){
-	_precision = prec;
+	bits._precision = prec;
 }
 
 void SetupMenuValFloat::showQnhMenu(){
@@ -89,7 +89,6 @@ void SetupMenuValFloat::display( int mode ){
 
 	if( mode == 1 )
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
-	ESP_LOGI(FNAME,"~SetupMenuValFloat display");
 }
 
 void SetupMenuValFloat::displayVal()
@@ -98,7 +97,7 @@ void SetupMenuValFloat::displayVal()
 	ucg->setPrintPos( 1, 70 );
 	ucg->setFont(ucg_font_fub25_hf, true);
 	char val[20];
-	sprintf(val, "%0.*f", _precision, _nvs?_nvs->getGui():*_value );
+	sprintf(val, "%0.*f", bits._precision, _nvs?_nvs->getGui():*_value );
 	ucg->print(val);
 	if( _unit ) {
 		ucg->setFont(ucg_font_fur25_hf, true);   // use different font for unit as of ° special char
@@ -150,7 +149,7 @@ void SetupMenuValFloat::press(){
 	ESP_LOGI(FNAME,"SetupMenuValFloat press");
 	if ( pressed ){
 		display( 1 );
-		if( _end_menu )
+		if( bits._end_menu )
 			selected = root;
 		else if( _parent != 0 )
 			selected = _parent;
@@ -159,7 +158,7 @@ void SetupMenuValFloat::press(){
 		if( *_value != _value_safe ){
 			if( _nvs )
 				_nvs->commit();
-			if( _restart ) {
+			if( bits._restart ) {
 				Audio::shutdown();
 				clear();
 				ucg->setPrintPos( 10, 50 );
@@ -171,7 +170,7 @@ void SetupMenuValFloat::press(){
 		}
 		pressed = false;
 		BMPVario::setHolddown( 150 );  // so seconds stop average
-		if( _end_menu )
+		if( bits._end_menu )
 			selected->press();
 	}
 	else

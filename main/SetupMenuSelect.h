@@ -10,6 +10,11 @@
 #include "SetupNG.h"
 #include "MenuEntry.h"
 
+struct bitfield_select {
+   bool _restart      :1;
+   bool _ext_handler  :1;
+   bool _save         :1;
+};
 
 class SetupMenuSelect:  public MenuEntry
 {
@@ -19,8 +24,7 @@ public:
 	virtual ~SetupMenuSelect();
 	void display( int mode=0 );
 	bool existsEntry( std::string ent );
-	inline void addEntry( const char* ent ) { _values.push_back( ent ); _numval++;  }
-	// void addEntry( std::string ent ) { _values.push_back( ent.c_str() ); _numval++; }
+    void addEntry( const char* ent );
 	void addEntryList( const char ent[][4], int size );
 	void delEntry( const char * ent );
 	inline void updateEntry( const char * ent, int num ) { _values[ num ] = ent; }
@@ -34,17 +38,13 @@ public:
 	const char * getEntry() const ;
 
 private:
-	int16_t  _select;
-	int16_t  select_intern;
-	int16_t  _select_save;
-	int16_t  _numval;
-	int8_t   _restart;
-	int8_t   _save;
-	int8_t   _ext_handler;
+	int8_t  _select;       // limit to maximum 255 entries, as of today there are e.g. 134 different polars
+	int8_t  _select_save;
+	int8_t  _numval;
+	bitfield_select bits;
 	std::vector<const char *> _values;
 	int (*_action)( SetupMenuSelect *p );
 	SetupNG<int> *_nvs;
 };
-
 
 #endif

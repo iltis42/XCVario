@@ -368,6 +368,13 @@ void Protocols::parseNMEA( const char *astr ){
 				ESP_LOGI(FNAME,"New S2F mode: %d", mode );
 				cruise_mode.set( mode );
 			}
+			if (str[3] == 'v') {  // nonstandard CAI 302 extension for volume Up/Down, e.g. for XCNav remote stick
+				int steps;
+				sscanf(str, "!g,v%d", &steps);
+				float v = audio_volume.get() + steps;
+				audio_volume.set( v );
+				ESP_LOGI(FNAME,"Volume change: %d steps, new volume %.0f", steps, v );
+			}
 		}
 		else if( !strncmp( str, "$PFLAU,", 3 )) {
 			Flarm::parsePFLAU( str );

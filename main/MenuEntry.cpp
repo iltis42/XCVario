@@ -131,7 +131,7 @@ MenuEntry* MenuEntry::findMenu( std::string title, MenuEntry* start )
 void MenuEntry::showhelp( int y ){
 	if( helptext != 0 ){
 		int w=0;
-		char buf[512];
+		char *buf = (char *)malloc(512);
 		memset(buf, 0, 512);
 		memcpy( buf, helptext, strlen(helptext));
 		char *p = strtok (buf, " ");
@@ -159,6 +159,7 @@ void MenuEntry::showhelp( int y ){
 			xSemaphoreGive(spiMutex );
 			x+=len+5;
 		}
+		free( buf );
 	}
 }
 

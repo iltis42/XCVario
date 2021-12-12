@@ -102,7 +102,7 @@ public:
 	inline void drawRFrame(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r)  { eglib_DrawRoundFrame(eglib, x, y, w, h, r); }
 	inline void drawTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2)  { eglib_DrawFilledTriangle(eglib, x0, y0, x1, y1, x2, y2); }
 	inline void drawTetragon(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t x3, int16_t y3)  { eglib_DrawTetragon(eglib, x0, y0, x1, y1, x2, y2, x3, y3); }
-	inline void drawCircle(int16_t x, int16_t y, int16_t radius, uint8_t options){ eglib_DrawCircle(eglib, x, y, radius, options); }
+	inline void drawCircle(int16_t x, int16_t y, int16_t radius, uint8_t options=EGLIB_DRAW_ALL){ eglib_DrawCircle(eglib, x, y, radius, options); }
 	inline void drawDisc(int16_t x, int16_t y, int16_t radius, uint8_t options){	eglib_DrawDisc(eglib, x, y, radius, options);	}
 
 	// Text Printing

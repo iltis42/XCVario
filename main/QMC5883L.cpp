@@ -353,9 +353,9 @@ bool QMC5883L::rawHeading()
 	}
 	else if( compass_enable.get() == CS_CAN ){  // we get compass raw data via CAN interface
 		if( age < 10 ){
-			xraw = can_x;
-			yraw = can_y;
-			zraw = can_z;
+			xraw = filterX( can_x );
+			yraw = filterY( can_y );
+			zraw = filterZ( can_z );
 			// ESP_LOGI( FNAME, "X:%d Y:%d Z:%d  Age:%d", xraw, yraw, zraw, age );
 			m_sensor = true;
 			return true;
@@ -463,22 +463,23 @@ bool QMC5883L::loadCalibration()
 	return true;
 }
 
+static bitfield_compass bits = { false, false, false, false, false, false };
 /**
  * Calibrate compass by using the read x, y, z raw values. The calibration is
  * stopped by the reporter function which displays intermediate results of the
  * calibration action.
  */
-bool QMC5883L::calibrate( bool (*reporter)( float xc, float yc, float zc, float xscale, float yscale, float zscale, float xb, float yb, float zb ) )
+bool QMC5883L::calibrate( bool (*reporter)( float xc, float yc, float zc, float xscale, float yscale, float zscale, float xb, float yb, float zb, bitfield_compass b ) )
 {
 	// reset all old calibration data
 	ESP_LOGI( FNAME, "calibrate magnetic sensor" );
 	calibrationRunning = true;
 	resetCalibration();
+	bits = { false, false, false, false, false, false };
 
 	ESP_LOGI( FNAME, "calibrate min-max xyz");
 
 	int i = 0;
-	uint64_t lastReport = 0;
 
 	// #define MAX_MIN_LOGGING
 
@@ -540,6 +541,20 @@ bool QMC5883L::calibrate( bool (*reporter)( float xc, float yc, float zc, float 
 		}
 #endif
 
+		const int16_t minval = (32768/100)*1; // 1%
+		if( abs(xraw) < minval && abs(yraw) < minval && zraw > 0  )
+			bits.zmax_green = true;
+		if( abs(xraw) < minval && abs(yraw) < minval && zraw < 0  )
+			bits.zmin_green = true;
+		if( abs(xraw) < minval && abs(zraw) < minval && yraw < 0  )
+			bits.ymin_green = true;
+		if( abs(xraw) < minval && abs(zraw) < minval && yraw > 0  )
+			bits.ymax_green = true;
+		if( abs(yraw) < minval && abs(zraw) < minval && xraw < 0  )
+			bits.xmin_green = true;
+		if( abs(yraw) < minval && abs(zraw) < minval && xraw > 0  )
+			bits.xmax_green = true;
+
 		if( i < 2 )
 			continue;
 
@@ -564,7 +579,7 @@ bool QMC5883L::calibrate( bool (*reporter)( float xc, float yc, float zc, float 
 		if( !(i%4) )
 		{
 			// Send a calibration report to the subscriber every 500ms
-			reporter( xraw,yraw,zraw, xscale, yscale, zscale, xbias, ybias, zbias );
+			reporter( xraw,yraw,zraw, xscale, yscale, zscale, xbias, ybias, zbias, bits );
 		}
 		if( ESPRotary::readSwitch() == true  )  // more responsive to query every loop
 			break;

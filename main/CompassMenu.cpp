@@ -27,6 +27,8 @@ Last update: 2021-02-26
 #include "MenuEntry.h"
 #include "sensor.h"  // we need spiMutex
 #include "vector.h"
+#include "Colors.h"
+#include "logdef.h"
 
 SetupMenuSelect* CompassMenu::menuPtr = nullptr;
 
@@ -232,12 +234,17 @@ float CompassMenu::xbias_back = 0;
 float CompassMenu::ybias_back = 0;
 float CompassMenu::zbias_back = 0;
 
+static int xm,ym,zm = 0;
+static int xi,yi,zi = 0;
+
+
 /** Method for receiving intermediate calibration results. */
-bool CompassMenu::calibrationReport( float x, float y, float z, float xscale, float yscale, float zscale, float xbias, float ybias, float zbias )
+bool CompassMenu::calibrationReport( float x, float y, float z, float xscale, float yscale, float zscale, float xbias, float ybias, float zbias, bitfield_compass b )
 {
 	if( menuPtr == nullptr )
 		return false;
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
+	menuPtr->ucg->setColor( COLOR_WHITE );
 	if( xscale != xscale_back ){
 		menuPtr->ucg->setPrintPos( 1, 60 );
 		menuPtr->ucg->printf( "X-Scale=%3.1f  ", xscale * 100 );
@@ -283,6 +290,72 @@ bool CompassMenu::calibrationReport( float x, float y, float z, float xscale, fl
 		menuPtr->ucg->printf( "Z-Bias=%3.1f  ", zbias/32768 *100 );
 		zbias_back = zbias;
 	}
+	const uint16_t X = 180;
+	const uint16_t Y = 155;
+
+	int16_t xp = int16_t(x*160/32768);
+	int16_t yp = int16_t(y*160/32768);
+	int16_t zp = int16_t(z*114/32768);
+
+	xm = xm > xp ? xm : xp;
+	ym = ym > yp ? ym : yp;
+	zm = zm > zp ? zm : zp;
+	xi = xi < xp ? xi : xp;
+	yi = yi < yp ? yi : yp;
+	zi = zi < zp ? zi : zp;
+
+	// ESP_LOGI(FNAME,"Max X: %d Y: %d Z: %d  Min P: %d %d %d", xm, ym, zm, xi, yi, zi );
+
+	if( b.ymax_green )
+		menuPtr->ucg->setColor( COLOR_GREEN );
+	else
+		menuPtr->ucg->setColor( COLOR_RED );
+	menuPtr->ucg->drawLine( X, Y, X, Y+ym );
+
+	if( b.ymin_green )
+		menuPtr->ucg->setColor( COLOR_GREEN );
+	else
+		menuPtr->ucg->setColor( COLOR_RED );
+	menuPtr->ucg->drawLine( X, Y, X, Y+yi );
+
+	if( b.xmax_green )
+		menuPtr->ucg->setColor( COLOR_GREEN );
+	else
+		menuPtr->ucg->setColor( COLOR_RED );
+	menuPtr->ucg->drawLine( X, Y, X+xm, Y );
+
+	if( b.xmin_green )
+		menuPtr->ucg->setColor( COLOR_GREEN );
+	else
+		menuPtr->ucg->setColor( COLOR_RED );
+	menuPtr->ucg->drawLine( X, Y, X+xi, Y );
+
+	if( b.zmax_green )
+		menuPtr->ucg->setColor( COLOR_GREEN );
+	else
+		menuPtr->ucg->setColor( COLOR_RED );
+	menuPtr->ucg->drawLine( X, Y, X+zm, Y-zm );    // 45 degree
+
+	if( b.zmin_green )
+		menuPtr->ucg->setColor( COLOR_GREEN );
+	else
+		menuPtr->ucg->setColor( COLOR_RED );
+	menuPtr->ucg->drawLine( X, Y, X+zi, Y-zi );    // 45 degree
+
+	static uint16_t x_old, y_old, z_old = 0;
+	menuPtr->ucg->setColor( COLOR_BLACK );
+	menuPtr->ucg->drawCircle( X, Y+y_old, 2 );
+	menuPtr->ucg->drawCircle( X+x_old, Y, 2 );
+	menuPtr->ucg->drawCircle( X+z_old, Y-z_old,2 );
+	menuPtr->ucg->setColor( COLOR_WHITE );
+	menuPtr->ucg->drawCircle( X, Y+yp, 2 );
+	menuPtr->ucg->drawCircle( X+xp, Y, 2);
+	menuPtr->ucg->drawCircle( X+zp, Y-zp, 2 );
+
+	y_old = yp;
+	x_old = xp;
+	z_old = zp;
+
 	xSemaphoreGive(spiMutex);
 	// Stop further reporting.
 	return true;

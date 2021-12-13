@@ -369,7 +369,7 @@ void Protocols::parseNMEA( const char *astr ){
 				cruise_mode.set( mode );
 			}
 		}
-		else if( !strncmp( str, "$PFLAU,", 3 )) {
+		else if( !strncmp( str, "$PFLAU,", 6 )) {
 			Flarm::parsePFLAU( str );
 			if( Flarm::bincom  ) {
 				Flarm::bincom--;

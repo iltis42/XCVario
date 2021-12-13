@@ -51,13 +51,13 @@ int sim=100;
 #define HEARTBEAT_PERIOD_MS_SERIAL 20
 #define SERIAL_STRLEN SSTRLEN
 static TaskHandle_t *pid;
-char Serial::rxbuf[SERIAL_STRLEN];
+// char Serial::rxbuf[SERIAL_STRLEN];
 bool Serial::_selfTest = false;
 
 // Serial Handler  ttyS1, S1, port 8881
 void Serial::serialHandler(void *pvParameters){
 	SString s;
-	while(1) {
+	while(true) {
 		if( !_selfTest ){
 		if( flarm_sim.get() ){
 			sim=-3;
@@ -86,77 +86,112 @@ void Serial::serialHandler(void *pvParameters){
 				ESP_LOGD(FNAME,"Serial 1 TX written: %d", wr);
 			}
 		}
-		int num = Serial1.available();
-		if( num > 0 ) {
-			// ESP_LOGI(FNAME,"Serial 1 RX avail %d bytes", num );
-			if( num >= SERIAL_STRLEN ) {
-				ESP_LOGW(FNAME,"Serial 1 Overrun RX >= %d bytes avail: %d, Bytes", SERIAL_STRLEN, num);
+
+		int available = Serial1.available();
+
+		// Due to delays the receiver buffer can contain more than one NMEA sentence
+		while( available > 0 ) {
+			ESP_LOGI(FNAME,"Serial 1 RX avail %d bytes", available );
+		  int num = available;
+			if( available > SERIAL_STRLEN ) {
+				ESP_LOGW(FNAME,"Serial 1 Overrun RX >= %d bytes avail: %d, Bytes", SERIAL_STRLEN, available);
 				num=SERIAL_STRLEN;
 			}
+      char *rxbuf = (char*)malloc( num + 1 );
 			// ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
 			int numread = 0;
 			if( Flarm::bincom ){    // normally wait unit sentence has ended, or in binary mode just continue
 				numread = Serial1.read( rxbuf, num );
 			}
 			else{
-				numread = Serial1.readLine( rxbuf, SERIAL_STRLEN );
+				numread = Serial1.readLine( rxbuf, num );
 			}
 			if( numread ) {
 				// ESP_LOGI(FNAME,"Serial 1 RX bytes read: %d  bincom: %d", numread,  Flarm::bincom  );
 				// ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.c_str(),numread, ESP_LOG_INFO);
 				s.set( rxbuf, numread );
+
+				rxbuf[numread] = '\0';
+				ESP_LOGI(FNAME,"S1: '%s'", rxbuf );
+
 				Router::forwardMsg( s, s1_rx_q );
+		    Router::routeS1();
+		    Router::routeBT();
+		    Router::routeClient();
+		    BTSender::progress();   // piggyback this here, saves one task for BT sender
 				DM.monitorString( MON_S1, DIR_RX, s.c_str() );
+
+				// Note there could be more NMEA sentences contained in the receiver
+				// due to delays.
+				available -= numread;
+				if( available ) {
+				    continue;
+				}
 			}
+			free( rxbuf );
+			break;
 		}
-		Router::routeS1();
-		Router::routeBT();
-		Router::routeClient();
-	    BTSender::progress();   // piggyback this here, saves one task for BT sender
 
-	    if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 ){
-	    	// ESP_LOGI(FNAME,"Serial 2 tick");
-	    	if ( !s2_tx_q.isEmpty() && Serial2.availableForWrite() ){
-	    		if( Router::pullMsg( s2_tx_q, s ) ) {
-	    			// ESP_LOGD(FNAME,"Serial 2 TX len: %d bytes", s.length() );
-	    			// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
-	    			int wr = Serial2.write( s.c_str(), s.length() );
-	    			DM.monitorString( MON_S2, DIR_TX, s.c_str() );
-	    			ESP_LOGD(FNAME,"Serial 2 TX written: %d", wr);
-	    		}
-	    	}
-	    	int num = Serial2.available();
-	    	if( num > 0 ) {
-	    		// ESP_LOGI(FNAME,"Serial 2 RX avail %d bytes", num );
-	    		if( num >= SERIAL_STRLEN ) {
-	    			ESP_LOGW(FNAME,"Serial 2 RX Overrun >= %d bytes avail: %d, Bytes", SERIAL_STRLEN, num);
-	    			num=SERIAL_STRLEN;
-	    		}
-	    		int numread = 0;
+  if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 ){
+    // ESP_LOGI(FNAME,"Serial 2 tick");
+    if ( !s2_tx_q.isEmpty() && Serial2.availableForWrite() ){
+      if( Router::pullMsg( s2_tx_q, s ) ) {
+        // ESP_LOGD(FNAME,"Serial 2 TX len: %d bytes", s.length() );
+        // ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
+        int wr = Serial2.write( s.c_str(), s.length() );
+        DM.monitorString( MON_S2, DIR_TX, s.c_str() );
+        ESP_LOGD(FNAME,"Serial 2 TX written: %d", wr);
+      }
+    }
 
-	    		if( Flarm::bincom ){    // normally wait unit sentence has ended, or in binary mode just continue
-	    			numread = Serial2.read( rxbuf, num );
-	    		}
-	    		else{
-	    			numread = Serial2.readLine( rxbuf, SERIAL_STRLEN );
-	    		}
+    int available = Serial2.available();
 
-	    		if( numread ){
-	    			s.set( rxbuf, numread );
-	    			// ESP_LOGI(FNAME,"Serial 2 RX bytes read: %d  bincom: %d", numread,  Flarm::bincom  );
-	    			// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),numread, ESP_LOG_INFO);
-	    			Router::forwardMsg( s, s2_rx_q );
-	    			DM.monitorString( MON_S2, DIR_TX, s.c_str() );
-	    		}
-	    	}
-	    	Router::routeS2();
-	    	Router::routeBT();
-	    }
-		}
-	    esp_task_wdt_reset();
-	    if( uxTaskGetStackHighWaterMark( pid ) < 256 )
-	    	ESP_LOGW(FNAME,"Warning serial task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid ) );
-    	vTaskDelay( HEARTBEAT_PERIOD_MS_SERIAL/portTICK_PERIOD_MS );
+    // Due to delays the receiver buffer can contain more than one NMEA sentence
+     while( available > 0 ) {
+       ESP_LOGI(FNAME,"Serial 2 RX avail %d bytes", available );
+       int num = available;
+       if( available > SERIAL_STRLEN ) {
+         ESP_LOGW(FNAME,"Serial 2 Overrun RX >= %d bytes avail: %d, Bytes", SERIAL_STRLEN, available);
+         num=SERIAL_STRLEN;
+       }
+       char *rxbuf = (char*)malloc( num + 1 );
+       // ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
+       int numread = 0;
+       if( Flarm::bincom ){    // normally wait unit sentence has ended, or in binary mode just continue
+         numread = Serial2.read( rxbuf, num );
+       }
+       else{
+         numread = Serial2.readLine( rxbuf, num );
+       }
+       if( numread ) {
+         // ESP_LOGI(FNAME,"Serial 2 RX bytes read: %d  bincom: %d", numread,  Flarm::bincom  );
+         // ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.c_str(),numread, ESP_LOG_INFO);
+         s.set( rxbuf, numread );
+
+         rxbuf[numread] = '\0';
+         ESP_LOGI(FNAME,"S2: '%s'", rxbuf );
+
+         Router::forwardMsg( s, s2_rx_q );
+         Router::routeS2();
+         Router::routeBT();
+         DM.monitorString( MON_S2, DIR_RX, s.c_str() );
+
+         // Note there could be more NMEA sentences contained in the receiver
+         // due to delays.
+         available -= numread;
+         if( available ) {
+             continue;
+         }
+       }
+       free( rxbuf );
+       break;
+     }
+  }
+}
+    esp_task_wdt_reset();
+    if( uxTaskGetStackHighWaterMark( pid ) < 256 )
+      ESP_LOGW(FNAME,"Warning serial task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid ) );
+    vTaskDelay( HEARTBEAT_PERIOD_MS_SERIAL/portTICK_PERIOD_MS );
 	}
 }
 

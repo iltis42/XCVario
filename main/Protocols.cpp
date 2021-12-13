@@ -88,7 +88,7 @@ void Protocols::sendNmeaHDT( float heading ) {
 void Protocols::sendItem( const char *key, char type, void *value, int len, bool ack ){
 	// ESP_LOGI(FNAME,"sendItem: %s", key );
 	char str[40];
-	char sender;
+	char sender = 'U';
 	if( SetupCommon::isMaster()  )
 		sender='M';
 	else if( SetupCommon::isClient() ){
@@ -97,8 +97,7 @@ void Protocols::sendItem( const char *key, char type, void *value, int len, bool
 		else
 			sender='C';
 	}
-	else
-		sender='U';
+	// ESP_LOGI(FNAME,"sender: %c", sender );
 	if( sender != 'U' ) {
 		int l = sprintf( str,"!xs%c,%s,%c,", sender, key, type );
 		if( type == 'F' )
@@ -106,15 +105,15 @@ void Protocols::sendItem( const char *key, char type, void *value, int len, bool
 		else if( type == 'I' )
 			sprintf( str+l,"%d", *(int*)(value) );
 
+		int cs = calcNMEACheckSum(&str[1]);
+		int i = strlen(str);
+		sprintf( &str[i], "*%02X\r\n", cs );
+		// ESP_LOGI(FNAME,"sendNMEAString: %s", str );
+		SString nmea( str );
+		if( !Router::forwardMsg( nmea, client_tx_q ) ){
+			ESP_LOGW(FNAME,"Warning: Overrun in send to Client XCV %d bytes", nmea.length() );
+		}
 	}
-	int cs = calcNMEACheckSum(&str[1]);
-	int i = strlen(str);
-	sprintf( &str[i], "*%02X\r\n", cs );
-	ESP_LOGI(FNAME,"sendNMEAString: %s", str );
-	SString nmea( str );
-	if( !Router::forwardMsg( nmea, client_tx_q ) )
-		ESP_LOGW(FNAME,"Warning: Overrun in send to Client XCV %d bytes", nmea.length() );
-
 }
 
 void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,

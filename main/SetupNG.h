@@ -113,6 +113,7 @@ public:
 	static bool isMaster();
 	static bool isClient();
     static bool isWired();
+    static bool mustSync( uint8_t sync);
 	static bool haveWLAN();
     static bool lazyCommit;
     static bool commitNow();
@@ -192,10 +193,6 @@ public:
 	virtual T getGui() const { return get(); } // tb. overloaded for blackboard
 	virtual const char* unit() const { return ""; } // tb. overloaded for blackboard
 
-	bool mustSync(){
-		return( ( (isClient() && _sync == SYNC_FROM_CLIENT) || (isMaster() && _sync == SYNC_FROM_MASTER) || _sync == SYNC_BIDIR ) );
-	}
-
 	bool set( T aval, bool dosync=true ) {
 		if( _value == aval ){
 			// ESP_LOGI(FNAME,"Value already in config: %s", _key );
@@ -233,7 +230,7 @@ public:
 	}
 
 	bool sync(){
-		if( mustSync() ){
+		if( SetupCommon::mustSync( _sync ) ){
 			// ESP_LOGI( FNAME,"Now sync %s", _key );
 			sendSetup( _sync, _key, typeName(), (void *)(&_value), sizeof( _value ) );
 			if( isMaster() && _sync == SYNC_BIDIR )

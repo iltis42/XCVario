@@ -444,7 +444,16 @@ char * SetupCommon::getID() {
 }
 
 bool SetupCommon::isMaster(){
-	return((wireless == WL_WLAN_MASTER) || (can_speed.get() != CAN_SPEED_OFF && can_mode.get() == CAN_MODE_MASTER));
+	bool ret = (wireless == WL_WLAN_MASTER) || ((can_speed.get() != CAN_SPEED_OFF) && (can_mode.get() == CAN_MODE_MASTER));
+	// ESP_LOGI(FNAME,"isMaster ret:%d", ret );
+	return( ret );
+}
+
+bool SetupCommon::mustSync( uint8_t sync ){
+	if( !isClient() && !isMaster() )
+		return false;
+	else
+		return( ( (isClient() && sync == SYNC_FROM_CLIENT) || (isMaster() && sync == SYNC_FROM_MASTER) || sync == SYNC_BIDIR ) );
 }
 
 bool SetupCommon::haveWLAN(){
@@ -452,7 +461,8 @@ bool SetupCommon::haveWLAN(){
 }
 
 bool SetupCommon::isClient(){
-	return((wireless == WL_WLAN_CLIENT) || (can_speed.get() != CAN_SPEED_OFF && can_mode.get() == CAN_MODE_CLIENT));
+	// ESP_LOGI(FNAME,"wireless:%d can_speed: %d can_mode: %d", wireless, can_speed.get(), can_mode.get() );
+	return((wireless == WL_WLAN_CLIENT) || ((can_speed.get() != CAN_SPEED_OFF) && (can_mode.get() == CAN_MODE_CLIENT) ));
 }
 
 bool SetupCommon::isWired(){

@@ -224,8 +224,10 @@ int master_xcv_lock( SetupMenuSelect * p ){
 
 int polar_select( SetupMenuSelect * p )
 {
-	Speed2Fly.select_polar();
-	glider_type_index.set( Polars::getPolar( glider_type.get() ).index );
+	int index = Polars::getPolar( p->getSelect() ).index;
+	ESP_LOGI(FNAME,"glider-index %d, glider num %d", index, p->getSelect() );
+	glider_type_index.set( index );
+	Speed2Fly.select_polar( p->getSelect() );
 	return 0;
 }
 

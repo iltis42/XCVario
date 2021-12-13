@@ -756,9 +756,10 @@ void sensor(void *args){
 			(chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 	ESP_LOGI(FNAME, "QNH.get() %f", Units::Qnh( QNH.get() ) );
 
-	Polars::begin();
 	NVS.begin();
 	register_coredump();
+	Polars::begin();
+
 	the_can_mode = can_mode.get(); // initialize variable for CAN mode
 
 	if( hardwareRevision.get() != 2 ){

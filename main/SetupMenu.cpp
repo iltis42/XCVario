@@ -806,6 +806,7 @@ void SetupMenu::setup( )
 		poe->addEntry( glt );
 
 		ESP_LOGI(FNAME, "Number of Polars installed: %d", Polars::numPolars() );
+
 		for( int x=0; x< Polars::numPolars(); x++ ){
 			glt->addEntry( Polars::getPolar(x).type );
 		}

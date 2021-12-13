@@ -38,9 +38,9 @@ public:
 	const char * getEntry() const ;
 
 private:
-	int8_t  _select;       // limit to maximum 255 entries, as of today there are e.g. 134 different polars
-	int8_t  _select_save;
-	int8_t  _numval;
+	uint8_t  _select;       // limit to maximum 255 entries, as of today there are e.g. 134 different polars
+	uint8_t  _select_save;
+	uint8_t  _numval;
 	bitfield_select bits;
 	std::vector<const char *> _values;
 	int (*_action)( SetupMenuSelect *p );

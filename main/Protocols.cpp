@@ -372,8 +372,11 @@ void Protocols::parseNMEA( const char *astr ){
 				int steps;
 				sscanf(str, "!g,v%d", &steps);
 				float v = audio_volume.get() + steps;
-				audio_volume.set( v );
-				ESP_LOGI(FNAME,"Volume change: %d steps, new volume %.0f", steps, v );
+				if( v<=100.0 && v >= 0.0 ){
+					audio_volume.set( v );
+					ESP_LOGI(FNAME,"Volume change: %d steps, new volume: %.0f", steps, v );
+				}else
+					ESP_LOGI(FNAME,"Volume change limit reached steps: %d volume: %.0f", steps, v );
 			}
 		}
 		else if( !strncmp( str, "$PFLAU,", 3 )) {

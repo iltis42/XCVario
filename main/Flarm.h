@@ -19,6 +19,7 @@ public:
 	static void parsePGRMZ( const char *pgrmz );
 	static void drawAirplane( int x, int y, bool fromBehind=false, bool smallSize=false );
  	static inline int alarmLevel(){ return AlarmLevel; };
+ 	static void drawDownloadInfo();
  	static void drawFlarmWarning();
  	static void initFlarmWarning();
  	static void progress();

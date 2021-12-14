@@ -227,14 +227,33 @@ void Flarm::parsePFLAX( SString &msg ) {
     if( !strncmp( msg.c_str(), "\n", 1 )  ){
     	start=1;
     }
-	if( !strncmp( (msg.c_str())+start, "$PFLAX,", 6 ) ){
+  // Note, if the Flarm switch to binary mode was accepted, Flarm will answer
+  // with $PFLAX,A*2E. In error case you will get as answer $PFLAX,A,<error>*
+  // and the Flarm stays in text mode.
+  const char* pflax = "$PFLAX,A*2E";
+  const unsigned short lenPflax = strlen(pflax);
+
+	if( strlen((msg.c_str()) + start) >= lenPflax &&
+	    !strncmp( (msg.c_str()) + start, pflax, lenPflax ) ){
 		Flarm::bincom = 5;
 		ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
 		timeout = 10;
 	}
-
 }
 
+void Flarm::drawDownloadInfo() {
+  // ESP_LOGI(FNAME,"---> Flarm::drawDownloadInfo is called"  );
+  xSemaphoreTake(spiMutex, portMAX_DELAY );
+  ucg->setColor( COLOR_WHITE );
+  ucg->setFont(ucg_font_fub20_hr);
+  ucg->setPrintPos(60, 140);
+  ucg->printf("Flarm IGC");
+  ucg->setPrintPos(60, 170);
+  ucg->printf("download");
+  ucg->setPrintPos(60, 200);
+  ucg->printf("is running");
+  xSemaphoreGive(spiMutex);
+}
 
 void Flarm::tick(){
 	if( ext_alt_timer )
@@ -402,7 +421,7 @@ void Flarm::drawFlarmWarning(){
     	ucg->setFont(ucg_font_fub25_hr);
     	char v[16];
     	int vdiff = RelativeVertical;
-    	char *unit = "m";
+    	const char *unit = "m";
     	if( alt_unit.get() != 0 ){  // then its ft or FL -> feet
     		unit = "ft";
     		vdiff = (vdiff/10)*10;

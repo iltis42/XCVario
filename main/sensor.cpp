@@ -190,6 +190,7 @@ bool gLoadDisplay = false;
 int hold_alarm=0;
 int the_can_mode = CAN_MODE_MASTER;
 int active_screen = 0;  // 0 = Vario
+bool flarmDownload = false; // Flarm IGC download flag
 
 float getTAS() { return tas; };
 
@@ -199,6 +200,21 @@ bool do_factory_reset() {
 
 void drawDisplay(void *pvParameters){
 	while (1) {
+	  if( Flarm::bincom ) {
+	      if( flarmDownload == false ) {
+	        flarmDownload = true;
+	        display->clear();
+	        Flarm::drawDownloadInfo();
+	      }
+	      // Flarm IGC download is running, display will be blocked, give Flarm
+	      // download all cpu power.
+	      vTaskDelay(20/portTICK_PERIOD_MS);
+	      continue;
+	  }
+	  else if( flarmDownload == true ) {
+	    flarmDownload = false;
+	    display->clear();
+	  }
 		// TickType_t dLastWakeTime = xTaskGetTickCount();
 		if( inSetup != true ) {
 			float t=OAT.get();
@@ -336,7 +352,13 @@ void doAudio(){
 void audioTask(void *pvParameters){
 	while (1)
 	{
-		TickType_t xLastWakeTime = xTaskGetTickCount();
+	  TickType_t xLastWakeTime = xTaskGetTickCount();
+	  if( Flarm::bincom ) {
+      // Flarm IGC download is running, audio will be blocked, give Flarm
+      // download all cpu power.
+	    vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
+	    continue;
+	  }
 		doAudio();
 		Router::routeXCV();
 		if( uxTaskGetStackHighWaterMark( apid )  < 512 )

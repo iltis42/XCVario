@@ -83,12 +83,12 @@ void Serial::serialHandler(void *pvParameters){
           // ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
           int wr = Serial1.write( s.c_str(), s.length() );
           DM.monitorString( MON_S1, DIR_TX, s.c_str() );
-          ESP_LOGD(FNAME,"Serial 1 TX written: %d", wr);
+          // ESP_LOGD(FNAME,"Serial 1 TX written: %d", wr);
         }
       }
       int num = Serial1.available();
       if( num > 0 ) {
-        ESP_LOGI(FNAME,"Serial 1 RX avail %d bytes", num );
+        // ESP_LOGI(FNAME,"FBC=%d, Serial RX1=%d bytes", Flarm::bincom, num );
         if( num >= SERIAL_STRLEN ) {
           ESP_LOGW(FNAME,"Serial 1 Overrun RX >= %d bytes avail: %d, Bytes", SERIAL_STRLEN, num);
           num=SERIAL_STRLEN;
@@ -100,7 +100,7 @@ void Serial::serialHandler(void *pvParameters){
           numread = Serial1.read( rxbuf, num );
         }
         else{
-          // Note! You will only read one NMEA sentence from the buffer not more.
+          // Note from AP! You will only read one NMEA sentence from the buffer not more.
           // But in delay you can have more sentences in the buffer, which are
           // fist read in the next polling cycle. Furthermore the readline() method
           // can read more bytes as reported by the available() method and can
@@ -111,7 +111,7 @@ void Serial::serialHandler(void *pvParameters){
         if( numread ) {
           // ESP_LOGI(FNAME,"Serial 1 RX bytes read: %d  bincom: %d", numread,  Flarm::bincom  );
           // ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.c_str(),numread, ESP_LOG_INFO);
-          if( Flarm::bincom || rxbuf[numread-1] == '\n' ) {
+            if( Flarm::bincom || (! Flarm::bincom && rxbuf[numread-1] == '\n' ) ) {
             // Do not forward incomplete NMEA sentence. Maybe we should check
             // also the beginning of a NMEA sentence with $ or ! or ...
             s.set( rxbuf, numread );
@@ -139,7 +139,7 @@ void Serial::serialHandler(void *pvParameters){
         }
         int num = Serial2.available();
         if( num > 0 ) {
-          // ESP_LOGI(FNAME,"Serial 2 RX avail %d bytes", num );
+          // ESP_LOGI(FNAME,"FBC=%d, Serial RX2=%d bytes", Flarm::bincom, num );
           if( num >= SERIAL_STRLEN ) {
             ESP_LOGW(FNAME,"Serial 2 RX Overrun >= %d bytes avail: %d, Bytes", SERIAL_STRLEN, num);
             num=SERIAL_STRLEN;
@@ -150,7 +150,7 @@ void Serial::serialHandler(void *pvParameters){
             numread = Serial2.read( rxbuf, num );
           }
           else{
-            // Note! You will only read one NMEA sentence from the buffer not more.
+            // Note from APgrowatt! You will only read one NMEA sentence from the buffer not more.
             // But in delay you can have more sentences in the buffer, which are
             // fist read in the next polling cycle. Furthermore the readline() method
             // can read more bytes as reported by the available() method and can
@@ -162,7 +162,7 @@ void Serial::serialHandler(void *pvParameters){
           if( numread ){
             // ESP_LOGI(FNAME,"Serial 2 RX bytes read: %d  bincom: %d", numread,  Flarm::bincom  );
             // ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),numread, ESP_LOG_INFO);
-            if( Flarm::bincom || rxbuf[numread-1] == '\n' ) {
+            if( Flarm::bincom || (! Flarm::bincom && rxbuf[numread-1] == '\n' ) ) {
               // Do not forward incomplete NMEA sentence. Maybe we should check
               // also the beginning of a NMEA sentence with $ or ! or ...
               s.set( rxbuf, numread );

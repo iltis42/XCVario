@@ -1,5 +1,5 @@
 alabaster==0.7.12
-Babel==2.9.0
+Babel==2.9.1
 certifi==2020.11.8
 chardet==3.0.4
 clang==10.0.1

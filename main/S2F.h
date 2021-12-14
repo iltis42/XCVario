@@ -16,7 +16,7 @@ public:
 	S2F( );
 	virtual ~S2F();
 	void change_polar();
-	void select_polar();
+	void select_polar( int num );
 	void change_mc_bal();
 	double speed( double st, bool circling=false );
 	double sink( double v );

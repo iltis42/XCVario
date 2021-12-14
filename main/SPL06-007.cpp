@@ -169,7 +169,7 @@ double SPL06_007::get_pressure( bool &ok )
 
 double SPL06_007::get_scale_factor( int reg )
 {
-	double k;
+	double k = 0;
 	uint8_t tmp_Byte;
 	tmp_Byte = i2c_read_uint8( reg );   // MSB
 	tmp_Byte = tmp_Byte & 0B00000111;   // Focus on 2-0 oversampling rate

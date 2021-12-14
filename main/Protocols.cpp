@@ -88,7 +88,7 @@ void Protocols::sendNmeaHDT( float heading ) {
 void Protocols::sendItem( const char *key, char type, void *value, int len, bool ack ){
 	// ESP_LOGI(FNAME,"sendItem: %s", key );
 	char str[40];
-	char sender;
+	char sender = 'U';
 	if( SetupCommon::isMaster()  )
 		sender='M';
 	else if( SetupCommon::isClient() ){
@@ -97,8 +97,7 @@ void Protocols::sendItem( const char *key, char type, void *value, int len, bool
 		else
 			sender='C';
 	}
-	else
-		sender='U';
+	// ESP_LOGI(FNAME,"sender: %c", sender );
 	if( sender != 'U' ) {
 		int l = sprintf( str,"!xs%c,%s,%c,", sender, key, type );
 		if( type == 'F' )
@@ -106,15 +105,15 @@ void Protocols::sendItem( const char *key, char type, void *value, int len, bool
 		else if( type == 'I' )
 			sprintf( str+l,"%d", *(int*)(value) );
 
+		int cs = calcNMEACheckSum(&str[1]);
+		int i = strlen(str);
+		sprintf( &str[i], "*%02X\r\n", cs );
+		// ESP_LOGI(FNAME,"sendNMEAString: %s", str );
+		SString nmea( str );
+		if( !Router::forwardMsg( nmea, client_tx_q ) ){
+			ESP_LOGW(FNAME,"Warning: Overrun in send to Client XCV %d bytes", nmea.length() );
+		}
 	}
-	int cs = calcNMEACheckSum(&str[1]);
-	int i = strlen(str);
-	sprintf( &str[i], "*%02X\r\n", cs );
-	ESP_LOGI(FNAME,"sendNMEAString: %s", str );
-	SString nmea( str );
-	if( !Router::forwardMsg( nmea, client_tx_q ) )
-		ESP_LOGW(FNAME,"Warning: Overrun in send to Client XCV %d bytes", nmea.length() );
-
 }
 
 void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
@@ -367,6 +366,16 @@ void Protocols::parseNMEA( const char *astr ){
 				sscanf(str, "!g,s%d", &mode);
 				ESP_LOGI(FNAME,"New S2F mode: %d", mode );
 				cruise_mode.set( mode );
+			}
+			if (str[3] == 'v') {  // nonstandard CAI 302 extension for volume Up/Down, e.g. for XCNav remote stick
+				int steps;
+				sscanf(str, "!g,v%d", &steps);
+				float v = audio_volume.get() + steps;
+				if( v<=100.0 && v >= 0.0 ){
+					audio_volume.set( v );
+					ESP_LOGI(FNAME,"Volume change: %d steps, new volume: %.0f", steps, v );
+				}else
+					ESP_LOGI(FNAME,"Volume change limit reached steps: %d volume: %.0f", steps, v );
 			}
 		}
 		else if( !strncmp( str, "$PFLAU,", 6 )) {

@@ -56,9 +56,9 @@ void resetCWindAge() {
 		CircleWind::resetAge();
 }
 
+static int last_volume=0;
 
 void change_volume() {
-    static int last_volume=0;
 	int delta = (int)audio_volume.get() - last_volume;
 	if( delta != 0 ){
 		if( delta > 0 ){
@@ -67,7 +67,8 @@ void change_volume() {
 		if( delta < 0 ){
 			Audio::decVolume(abs(delta));
 		}
-		last_volume = (int)audio_volume.get();
+		last_volume += delta;
+		ESP_LOGI(FNAME,"change_volume, delta=%d last_vol: %d", delta, last_volume );
 	}
 }
 
@@ -124,7 +125,7 @@ SetupNG<float>  		te_vario( "TEVA", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
 SetupNG<float>  		s2f_speed( "S2F_SPEED", 100.0 );
 SetupNG<float>  		s2f_hysteresis( "S2F_HYST", 5.0 );
 
-SetupNG<float> audio_volume("AUD_VOL", 10, true, SYNC_BIDIR, VOLATILE, change_volume );
+SetupNG<float> 			audio_volume("AUD_VOL", 10, true, SYNC_BIDIR, VOLATILE, change_volume );
 SetupNG<int>  			audio_variable_frequency( "AUD_VAFQ", 0);
 SetupNG<int>  			audio_mode( "AUDIO_MODE" ,  3 );
 SetupNG<int>  			chopping_mode( "CHOPPING_MODE",  VARIO_CHOP );
@@ -405,6 +406,7 @@ bool SetupCommon::initSetup( bool& present ) {
 			}
 		}
 	}
+	last_volume = (int)default_volume.get();
 
     if ( _timer == nullptr ) {
         // create event queue to connect to the timer callback
@@ -442,7 +444,16 @@ char * SetupCommon::getID() {
 }
 
 bool SetupCommon::isMaster(){
-	return((wireless == WL_WLAN_MASTER) || (can_speed.get() != CAN_SPEED_OFF && can_mode.get() == CAN_MODE_MASTER));
+	bool ret = (wireless == WL_WLAN_MASTER) || ((can_speed.get() != CAN_SPEED_OFF) && (can_mode.get() == CAN_MODE_MASTER));
+	// ESP_LOGI(FNAME,"isMaster ret:%d", ret );
+	return( ret );
+}
+
+bool SetupCommon::mustSync( uint8_t sync ){
+	if( !isClient() && !isMaster() )
+		return false;
+	else
+		return( ( (isClient() && sync == SYNC_FROM_CLIENT) || (isMaster() && sync == SYNC_FROM_MASTER) || sync == SYNC_BIDIR ) );
 }
 
 bool SetupCommon::haveWLAN(){
@@ -450,7 +461,8 @@ bool SetupCommon::haveWLAN(){
 }
 
 bool SetupCommon::isClient(){
-	return((wireless == WL_WLAN_CLIENT) || (can_speed.get() != CAN_SPEED_OFF && can_mode.get() == CAN_MODE_CLIENT));
+	// ESP_LOGI(FNAME,"wireless:%d can_speed: %d can_mode: %d", wireless, can_speed.get(), can_mode.get() );
+	return((wireless == WL_WLAN_CLIENT) || ((can_speed.get() != CAN_SPEED_OFF) && (can_mode.get() == CAN_MODE_CLIENT) ));
 }
 
 bool SetupCommon::isWired(){

@@ -18,7 +18,6 @@ public:
 	static void wifi_init_softap();
 
 private:
-	static char buffer[513];
 
 };
 

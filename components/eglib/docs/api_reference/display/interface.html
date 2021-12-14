@@ -1,0 +1,589 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Interface &#8212; eglib master documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Drivers" href="drivers/index.html" />
+    <link rel="prev" title="Display" href="index.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="interface">
+<h1><a class="toc-backref" href="#id1">Interface</a><a class="headerlink" href="#interface" title="Permalink to this headline">¶</a></h1>
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#interface" id="id1">Interface</a></p>
+<ul>
+<li><p><a class="reference internal" href="#types" id="id2">Types</a></p></li>
+<li><p><a class="reference internal" href="#display-driver" id="id3">Display driver</a></p>
+<ul>
+<li><p><a class="reference internal" href="#display-driver-helper-functions" id="id4">Display Driver Helper Functions</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#hal-driver-helper-functions" id="id5">HAL Driver Helper Functions</a></p></li>
+<li><p><a class="reference internal" href="#display-functions" id="id6">Display Functions</a></p></li>
+</ul>
+</li>
+</ul>
+</div>
+<p>Display drivers implement the interface <a class="reference internal" href="#c.display_struct" title="display_struct"><code class="xref c c-type docutils literal notranslate"><span class="pre">display_struct</span></code></a> defined here.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;eglib/display.h&gt;</span><span class="cp"></span>
+</pre></div>
+</div>
+<div class="section" id="types">
+<h2><a class="toc-backref" href="#id2">Types</a><a class="headerlink" href="#types" title="Permalink to this headline">¶</a></h2>
+<dl class="type">
+<dt id="c.display_line_direction_t">
+enum <code class="sig-name descname">display_line_direction_t</code><a class="headerlink" href="#c.display_line_direction_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>Line direction to draw.</p>
+<dl class="macro">
+<dt id="c.DISPLAY_LINE_DIRECTION_RIGHT">
+<code class="sig-name descname">DISPLAY_LINE_DIRECTION_RIGHT</code><a class="headerlink" href="#c.DISPLAY_LINE_DIRECTION_RIGHT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Right: x increments.</p>
+</dd></dl>
+
+<dl class="macro">
+<dt id="c.DISPLAY_LINE_DIRECTION_LEFT">
+<code class="sig-name descname">DISPLAY_LINE_DIRECTION_LEFT</code><a class="headerlink" href="#c.DISPLAY_LINE_DIRECTION_LEFT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Right: x decrements.</p>
+</dd></dl>
+
+<dl class="macro">
+<dt id="c.DISPLAY_LINE_DIRECTION_DOWN">
+<code class="sig-name descname">DISPLAY_LINE_DIRECTION_DOWN</code><a class="headerlink" href="#c.DISPLAY_LINE_DIRECTION_DOWN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Right: y increments.</p>
+</dd></dl>
+
+<dl class="macro">
+<dt id="c.DISPLAY_LINE_DIRECTION_UP">
+<code class="sig-name descname">DISPLAY_LINE_DIRECTION_UP</code><a class="headerlink" href="#c.DISPLAY_LINE_DIRECTION_UP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Right: y decrements.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="type">
+<dt id="c.display_comm_struct">
+struct <code class="sig-name descname">display_comm_struct</code><a class="headerlink" href="#c.display_comm_struct" title="Permalink to this definition">¶</a></dt>
+<dd><p>Communication bus configuration required by the display.</p>
+<p>Buses not supported by the display can be set to <code class="docutils literal notranslate"><span class="pre">NULL</span></code>.</p>
+<dl class="member">
+<dt id="c.display_comm_struct.four_wire_spi">
+<a class="reference internal" href="../hal/interface.html#c.hal_four_wire_spi_config_t" title="hal_four_wire_spi_config_t">hal_four_wire_spi_config_t</a> * <code class="sig-name descname">four_wire_spi</code><a class="headerlink" href="#c.display_comm_struct.four_wire_spi" title="Permalink to this definition">¶</a></dt>
+<dd><p>4-Wire SPI</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.display_comm_struct.i2c">
+<a class="reference internal" href="../hal/interface.html#c.hal_i2c_config_t" title="hal_i2c_config_t">hal_i2c_config_t</a> * <code class="sig-name descname">i2c</code><a class="headerlink" href="#c.display_comm_struct.i2c" title="Permalink to this definition">¶</a></dt>
+<dd><p>I2C</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.display_comm_struct.parallel_8_bit_8080">
+<a class="reference internal" href="../hal/interface.html#c.hal_parallel_8_bit_8080_config_t" title="hal_parallel_8_bit_8080_config_t">hal_parallel_8_bit_8080_config_t</a> * <code class="sig-name descname">parallel_8_bit_8080</code><a class="headerlink" href="#c.display_comm_struct.parallel_8_bit_8080" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parallel 8-bit 8080</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="display-driver">
+<h2><a class="toc-backref" href="#id3">Display driver</a><a class="headerlink" href="#display-driver" title="Permalink to this headline">¶</a></h2>
+<dl class="type">
+<dt id="c.display_struct">
+struct <code class="sig-name descname">display_struct</code><a class="headerlink" href="#c.display_struct" title="Permalink to this definition">¶</a></dt>
+<dd><p>Display driver definition.</p>
+<p>Communication with the data bus can be done using the
+<a class="reference internal" href="../hal/interface.html#display-driver-hal-interface-functions"><span class="std std-ref">display driver HAL interface functions</span></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Note</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.eglib_GetDisplayConfig" title="eglib_GetDisplayConfig"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_GetDisplayConfig()</span></code></a> can be used to retrieve the HAL driver
+configuration.</p>
+</dd>
+</dl>
+<p>Aliased as <a class="reference internal" href="../eglib.html#c.display_t" title="display_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">display_t</span></code></a>.</p>
+<dl class="member">
+<dt id="c.display_struct.comm">
+struct <a class="reference internal" href="#c.display_comm_struct" title="display_comm_struct">display_comm_struct</a> <code class="sig-name descname">comm</code><a class="headerlink" href="#c.display_struct.comm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Communication bus configuration required by the display.</p>
+</dd></dl>
+
+<dl class="member">
+<dt>
+<code class="sig-name descname">void (*)(eglib_t *) init</code></dt>
+<dd><p>Pointer to a function that initializes the display based on the driver
+configuration (<a class="reference internal" href="#c.eglib_GetDisplayConfig" title="eglib_GetDisplayConfig"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_GetDisplayConfig()</span></code></a>).</p>
+<p>It must initialize the display memory to all black pixels.</p>
+</dd></dl>
+
+<dl class="member">
+<dt>
+<code class="sig-name descname">void (*)(eglib_t *) sleep_in</code></dt>
+<dd><p>Pointer to a function that puts the display in sleep mode.</p>
+</dd></dl>
+
+<dl class="member">
+<dt>
+<code class="sig-name descname">void (*)(eglib_t *) sleep_out</code></dt>
+<dd><p>Pointer to a function that puts the display out of sleep mode.</p>
+</dd></dl>
+
+<dl class="member">
+<dt>
+<code class="sig-name descname">void (*)(eglib_t *, coordinate_t *, coordinate_t *) get_dimension</code></dt>
+<dd><p>Pointer to a function that returns the display dimensions:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>eglib</strong> – <a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">eglib_t</span></code></a> handle.</p></li>
+<li><p><strong>width</strong> – Pointer where to write display width to.</p></li>
+<li><p><strong>height</strong> – Pointer where to write display height to.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">void</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="member">
+<dt>
+<code class="sig-name descname">void (*)(eglib_t *, enum pixel_format_t *) get_pixel_format</code></dt>
+<dd><p>Pointer to a function that returns the pixel format used in-memory by
+the display.</p>
+<p>This is used by the frame buffer (<a class="reference internal" href="drivers/frame_buffer.html#c.eglib_Init_FrameBuffer" title="eglib_Init_FrameBuffer"><code class="xref c c-type docutils literal notranslate"><span class="pre">eglib_Init_FrameBuffer</span></code></a>) to
+decide how to write pixels to the buffer, which will then be handled by
+the <code class="docutils literal notranslate"><span class="pre">send_buffer</span></code> function from <a class="reference internal" href="#c.display_struct" title="display_struct"><code class="xref c c-type docutils literal notranslate"><span class="pre">display_struct</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>eglib</strong> – <a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">eglib_t</span></code></a> handle.</p></li>
+<li><p><strong>pixel_format</strong> – Pointer to <a class="reference internal" href="../eglib.html#c.pixel_format_t" title="pixel_format_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">pixel_format_t</span></code></a> where to write
+pixel format to.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><a class="reference internal" href="../eglib.html#c.pixel_format_t" title="pixel_format_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">pixel_format_t</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="member">
+<dt>
+<code class="sig-name descname">void (*)(eglib_t *, coordinate_t, coordinate_t, color_t) draw_pixel_color</code></dt>
+<dd><p>Pointer to a function that that draws directly to the display memory at
+<code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">y)</span></code> using given <code class="docutils literal notranslate"><span class="pre">color</span></code>.</p>
+<p>Some displays can not support this method. Eg: black and white displays,
+where each bit is a pixel, requires reading a whole byte from the display
+memory, changing the required bit and sending it back to the display
+memory. As Eglib does not support reading the display memory, such
+displays must implement this as an empty function:
+<a class="reference internal" href="drivers/frame_buffer.html#c.eglib_Init_FrameBuffer" title="eglib_Init_FrameBuffer"><code class="xref c c-type docutils literal notranslate"><span class="pre">eglib_Init_FrameBuffer</span></code></a> can be used to interface with the
+display using a frame buffer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>eglib</strong> – <a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">eglib_t</span></code></a> handle.</p></li>
+<li><p><strong>x</strong> – X <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">coordinate_t</span></code></a>.</p></li>
+<li><p><strong>y</strong> – Y <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">coordinate_t</span></code></a>.</p></li>
+<li><p><strong>color</strong> – Color <a class="reference internal" href="../eglib.html#c.color_t" title="color_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">color_t</span></code></a>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="member">
+<dt>
+<code class="sig-name descname">void (*)(eglib_t *, coordinate_t, coordinate_t, enum display_line_direction_t, coordinate_t, color_t (*)(eglib_t *)) draw_line</code></dt>
+<dd><p>Pointer to a function that draws a line directly to the display memory.</p>
+<p>This is meant to be an accelerator for drawing lines for displays that
+support auto increment/decrement of the memory address written.</p>
+<p>A typical implementation should roughly look like:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">eglib_CommBegin</span><span class="p">(</span><span class="n">eglib</span><span class="p">);</span>
+<span class="k">switch</span><span class="p">(</span><span class="n">direction</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="nl">DISPLAY_LINE_DIRECTION_RIGHT</span><span class="p">:</span>
+        <span class="n">set_display_memory_address_auto_increment_x</span><span class="p">(</span><span class="n">eglib</span><span class="p">);</span>
+        <span class="k">break</span><span class="p">;</span>
+    <span class="k">case</span> <span class="nl">DISPLAY_LINE_DIRECTION_LEFT</span><span class="p">:</span>
+        <span class="n">set_display_memory_address_auto_decrement_x</span><span class="p">(</span><span class="n">eglib</span><span class="p">);</span>
+        <span class="k">break</span><span class="p">;</span>
+    <span class="k">case</span> <span class="nl">DISPLAY_LINE_DIRECTION_DOWN</span><span class="p">:</span>
+        <span class="n">set_display_memory_address_auto_increment_y</span><span class="p">(</span><span class="n">eglib</span><span class="p">);</span>
+        <span class="k">break</span><span class="p">;</span>
+    <span class="k">case</span> <span class="nl">DISPLAY_LINE_DIRECTION_UP</span><span class="p">:</span>
+        <span class="n">set_display_memory_address_auto_decrement_y</span><span class="p">(</span><span class="n">eglib</span><span class="p">);</span>
+        <span class="k">break</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="n">set_display_memory_address</span><span class="p">(</span><span class="n">eglib</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">);</span>
+<span class="k">while</span><span class="p">(</span><span class="n">length</span><span class="o">--</span><span class="p">)</span>
+    <span class="n">send_pixel_to_memory</span><span class="p">(</span><span class="n">eglib</span><span class="p">,</span> <span class="n">get_next_color</span><span class="p">(</span><span class="n">eglib</span><span class="p">));</span>
+<span class="n">eglib_CommEnd</span><span class="p">(</span><span class="n">eglib</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>For displays that <strong>do not</strong> support auto increment/decrement of x/y
+(for all or some cases) the implementation can be set to
+<a class="reference internal" href="#c.display_default_draw_line" title="display_default_draw_line"><code class="xref c c-func docutils literal notranslate"><span class="pre">display_default_draw_line()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>eglib</strong> – <a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">eglib_t</span></code></a> handle.</p></li>
+<li><p><strong>x</strong> – line x start.</p></li>
+<li><p><strong>y</strong> – line y start.</p></li>
+<li><p><strong>direction</strong> – Line <code class="xref c c-type docutils literal notranslate"><span class="pre">enum</span> <span class="pre">display_line_direction_t</span></code> (right, left, down up).</p></li>
+<li><p><strong>length</strong> – Line length in pixels.</p></li>
+<li><p><strong>get_next_color</strong> – Pointer to a function that must be called for each
+line pixel to get its color.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="member">
+<dt>
+<code class="sig-name descname">void (*)(eglib_t *, void *, coordinate_t, coordinate_t, coordinate_t, coordinate_t) send_buffer</code></dt>
+<dd><p>Pointer to a function that sends given buffer to display memory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>eglib</strong> – <a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">eglib_t</span></code></a> handle.</p></li>
+<li><p><strong>buffer</strong> – Pointer to the memory buffer to be sent. The format is
+dependent on both <a class="reference internal" href="../eglib.html#c.pixel_format_t" title="pixel_format_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">pixel_format_t</span></code></a> from <code class="docutils literal notranslate"><span class="pre">get_pixel_format</span></code>
+and the display dimensions from <code class="docutils literal notranslate"><span class="pre">get_dimension</span></code>.</p></li>
+<li><p><strong>x</strong> – X <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">coordinate_t</span></code></a> of data to be sent: X pixels lower
+than <code class="docutils literal notranslate"><span class="pre">x</span></code> must not be sent to the display.</p></li>
+<li><p><strong>y</strong> – Y <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">coordinate_t</span></code></a> of data to be sent: Y pixels lower
+than <code class="docutils literal notranslate"><span class="pre">y</span></code> must not be sent to the display.</p></li>
+<li><p><strong>width</strong> – Width of data to be sent: X pixels greater than
+<code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">+</span> <span class="pre">width</span></code> must not be sent to the display.</p></li>
+<li><p><strong>height</strong> – Height of data to be sent: Y pixels greater than
+<code class="docutils literal notranslate"><span class="pre">y</span> <span class="pre">+</span> <span class="pre">height</span></code> must not be sent to the display.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="member">
+<dt>
+<code class="sig-name descname">_Bool (*)(eglib_t *) refresh</code></dt>
+<dd><p>Pointer to a function that refreshes the display image.</p>
+<p>This method is only relevant to displays such as e-ink / e-paper, where
+writing to the display memory (<code class="docutils literal notranslate"><span class="pre">draw_pixel_color</span></code> / <code class="docutils literal notranslate"><span class="pre">send_buffer</span></code>)
+does not affect the displayed image: it needs to be sent a <em>refresh</em>
+command to do so. Other displays (eg: LCD, OLED) can implement this
+function with an empty body returning <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p>
+<p>A typical implementation of this function will issue the refresh command
+to the display when first called and then poll the busy data line to
+return <code class="docutils literal notranslate"><span class="pre">true</span></code> when refresh is ongoing and <code class="docutils literal notranslate"><span class="pre">false</span></code> when refresh finished:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">if</span><span class="p">(</span><span class="n">eglib_IsRefreshing</span><span class="p">(</span><span class="n">eglib</span><span class="p">))</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nf">eglib_GetBusy</span><span class="p">(</span><span class="n">eglib</span><span class="p">);</span>
+<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="n">send_refresh_command_to_display</span><span class="p">(</span><span class="n">eglib</span><span class="p">);</span>
+        <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="#c.eglib_IsRefreshing" title="eglib_IsRefreshing"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_IsRefreshing()</span></code></a> queries the current state of refresh (that
+eglib keeps track) and <a class="reference internal" href="../hal/interface.html#c.eglib_GetBusy" title="eglib_GetBusy"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_GetBusy()</span></code></a> can be used no read the
+state of the busy data line.</p>
+<p>User code can then refresh the display with:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">while</span><span class="p">(</span><span class="n">eglib_Refresh</span><span class="p">(</span><span class="n">eglib</span><span class="p">));</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>eglib</strong> – <a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">eglib_t</span></code></a> handle.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">true</span></code> when refresh is ongoing and <code class="docutils literal notranslate"><span class="pre">false</span></code> when refresh finished.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<div class="section" id="display-driver-helper-functions">
+<h3><a class="toc-backref" href="#id4">Display Driver Helper Functions</a><a class="headerlink" href="#display-driver-helper-functions" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.display_default_draw_line">
+void <code class="sig-name descname">display_default_draw_line</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> x</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> y</em>, enum <a class="reference internal" href="#c.display_line_direction_t" title="display_line_direction_t">display_line_direction_t</a><em> direction</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> length</em>, <a class="reference internal" href="../eglib.html#c.color_t" title="color_t">color_t</a> (*)(<a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *)<em> get_next_color</em><span class="sig-paren">)</span><a class="headerlink" href="#c.display_default_draw_line" title="Permalink to this definition">¶</a></dt>
+<dd><p>Not accelerated implementation of <a class="reference internal" href="#c.display_struct" title="display_struct"><code class="xref c c-type docutils literal notranslate"><span class="pre">display_struct</span></code></a> <code class="docutils literal notranslate"><span class="pre">draw_line</span></code>
+based on <code class="docutils literal notranslate"><span class="pre">draw_pixel_color</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_GetDisplayConfig">
+<code class="sig-name descname">eglib_GetDisplayConfig</code><span class="sig-paren">(</span>eglib<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_GetDisplayConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a pointer to the display driver configuration that was passed to
+<a class="reference internal" href="../eglib.html#c.eglib_Init" title="eglib_Init"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_Init()</span></code></a>.</p>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="hal-driver-helper-functions">
+<h2><a class="toc-backref" href="#id5">HAL Driver Helper Functions</a><a class="headerlink" href="#hal-driver-helper-functions" title="Permalink to this headline">¶</a></h2>
+<p>These functions are used by <a class="reference internal" href="../hal/index.html"><span class="doc">HAL Drivers</span></a> to interface with the HAL definitions
+<a class="reference internal" href="#c.display_comm_struct" title="display_comm_struct"><code class="xref c c-type docutils literal notranslate"><span class="pre">display_comm_struct</span></code></a> from the display driver <a class="reference internal" href="#c.display_struct" title="display_struct"><code class="xref c c-type docutils literal notranslate"><span class="pre">display_struct</span></code></a>.</p>
+<dl class="function">
+<dt id="c.eglib_GetHalFourWireSpiConfigComm">
+<code class="sig-name descname">eglib_GetHalFourWireSpiConfigComm</code><span class="sig-paren">(</span>eglib<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_GetHalFourWireSpiConfigComm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns <a class="reference internal" href="../hal/interface.html#c.hal_four_wire_spi_config_t" title="hal_four_wire_spi_config_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">hal_four_wire_spi_config_t</span></code></a> for <a class="reference internal" href="#c.display_struct" title="display_struct"><code class="xref c c-type docutils literal notranslate"><span class="pre">display_struct</span></code></a>
+from given <a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">eglib_t</span></code></a>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_GetHalI2cConfigComm">
+<code class="sig-name descname">eglib_GetHalI2cConfigComm</code><span class="sig-paren">(</span>eglib<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_GetHalI2cConfigComm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns <a class="reference internal" href="../hal/interface.html#c.hal_i2c_config_t" title="hal_i2c_config_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">hal_i2c_config_t</span></code></a> for <a class="reference internal" href="#c.display_struct" title="display_struct"><code class="xref c c-type docutils literal notranslate"><span class="pre">display_struct</span></code></a>
+from given <a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">eglib_t</span></code></a>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_GetHalParallel8bit8080ConfigComm">
+<code class="sig-name descname">eglib_GetHalParallel8bit8080ConfigComm</code><span class="sig-paren">(</span>eglib<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_GetHalParallel8bit8080ConfigComm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns <code class="xref c c-type docutils literal notranslate"><span class="pre">hal_parallel_8_bit_8080_t</span></code> for <a class="reference internal" href="#c.display_struct" title="display_struct"><code class="xref c c-type docutils literal notranslate"><span class="pre">display_struct</span></code></a>
+from given <a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">eglib_t</span></code></a>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_GetI2c7bitSlaveAddr">
+<code class="sig-name descname">eglib_GetI2c7bitSlaveAddr</code><span class="sig-paren">(</span>eglib, dc<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_GetI2c7bitSlaveAddr" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>See <a class="reference internal" href="../hal/interface.html#c.hal_i2c_config_t" title="hal_i2c_config_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">hal_i2c_config_t</span></code></a> <code class="docutils literal notranslate"><span class="pre">get_7bit_slave_addr</span></code> for details on this</dt><dd><p>function.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_I2cSend">
+<code class="sig-name descname">eglib_I2cSend</code><span class="sig-paren">(</span>eglib, i2c_write, dc, bytes, length<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_I2cSend" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../hal/interface.html#c.hal_i2c_config_t" title="hal_i2c_config_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">hal_i2c_config_t</span></code></a> <code class="docutils literal notranslate"><span class="pre">send</span></code> for details on this
+function.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="display-functions">
+<h2><a class="toc-backref" href="#id6">Display Functions</a><a class="headerlink" href="#display-functions" title="Permalink to this headline">¶</a></h2>
+<p>These functions can be used by end users to query and send commands to the
+display driver.</p>
+<dl class="function">
+<dt id="c.eglib_GetDimension">
+<code class="sig-name descname">eglib_GetDimension</code><span class="sig-paren">(</span>eglib, width, height<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_GetDimension" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get display dimensions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>eglib</strong> – <a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">eglib_t</span></code></a> handle.</p></li>
+<li><p><strong>width</strong> – Pointer where to write display width to.</p></li>
+<li><p><strong>height</strong> – Pointer where to write display height to.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_GetPixelFormat">
+<code class="sig-name descname">eglib_GetPixelFormat</code><span class="sig-paren">(</span>eglib, pixel_format<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_GetPixelFormat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the pixel format used in-memory by the display.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>eglib</strong> – <a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">eglib_t</span></code></a> handle.</p></li>
+<li><p><strong>pixel_format</strong> – Pointer to <a class="reference internal" href="../eglib.html#c.pixel_format_t" title="pixel_format_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">pixel_format_t</span></code></a> where to write
+pixel format to.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><a class="reference internal" href="../eglib.html#c.pixel_format_t" title="pixel_format_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">pixel_format_t</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_GetWidth">
+<a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a> <code class="sig-name descname">eglib_GetWidth</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_GetWidth" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns display width as <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">coordinate_t</span></code></a>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_GetHeight">
+<a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a> <code class="sig-name descname">eglib_GetHeight</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_GetHeight" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns display height as <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">coordinate_t</span></code></a>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_Refresh">
+_Bool <code class="sig-name descname">eglib_Refresh</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_Refresh" title="Permalink to this definition">¶</a></dt>
+<dd><p>Refreshes the display image. Only applicable to some displays (eg: e-ink /
+e-paper). Typical usage:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">while</span><span class="p">(</span><span class="n">eglib_Refresh</span><span class="p">(</span><span class="n">eglib</span><span class="p">));</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>eglib</strong> – <a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">eglib_t</span></code></a> handle.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">true</span></code> when refresh is ongoing and <code class="docutils literal notranslate"><span class="pre">false</span></code> when refresh finished.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_IsRefreshing">
+<code class="sig-name descname">eglib_IsRefreshing</code><span class="sig-paren">(</span>eglib<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_IsRefreshing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether a display refresh initiated by <a class="reference internal" href="#c.eglib_Refresh" title="eglib_Refresh"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_Refresh()</span></code></a> is ongoing</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="index.html" title="Previous document">Display</a>
+        </li>
+        <li>
+          <a href="drivers/index.html" title="Next document">Drivers</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../../index.html">
+    <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+
+
+<p>
+	<a class="badge" href="https://github.com/fornellas/eglib/actions?query=workflow%3Abuild+branch%3Amaster" target="_blank">
+	  <img src="https://github.com/fornellas/eglib/workflows/build/badge.svg?branch=master"/>
+	</a>
+	<a class="badge" href="https://github.com/fornellas/eglib/pulls" target="_blank">
+	  <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg"/>
+	</a>
+	<br>
+	<a class="badge" href="https://www.paypal.com/donate?hosted_button_id=AX26JVRT2GS2Q" target="_blank">
+	  <img src="https://img.shields.io/badge/donate-%E2%9D%A4%C2%A0-ff69b4.svg?style=flat"/>
+	</a>
+</p>
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../driver_development/index.html">Driver Development</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../eglib.html">eglib</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../drawing/index.html">Drawing</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Display</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Interface</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#types">Types</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#display-driver">Display driver</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#hal-driver-helper-functions">HAL Driver Helper Functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#display-functions">Display Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="drivers/index.html">Drivers</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../hal/index.html">HAL</a></li>
+</ul>
+</li>
+</ul>
+
+
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Fabio Pugliese Ornellas.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.4.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../_sources/api_reference/display/interface.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+    <a href="https://github.com/fornellas/eglib" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

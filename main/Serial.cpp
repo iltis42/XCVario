@@ -181,6 +181,7 @@ void Serial::serialHandler(void *pvParameters){
       ESP_LOGW(FNAME,"Warning serial task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid ) );
     vTaskDelay( HEARTBEAT_PERIOD_MS_SERIAL/portTICK_PERIOD_MS );
   }
+
 }
 
 

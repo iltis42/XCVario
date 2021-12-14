@@ -143,7 +143,7 @@ int qnh_adj( SetupMenuValFloat * p )
 
 	ESP_LOGI(FNAME,"Setup BA alt=%f QNH=%f hPa", alt, Units::Qnh( *(p->_value) )  );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	p->ucg->setFont(ucg_font_fub25_hr);
+	p->ucg->setFont(ucg_font_fub25_hr, true);
 	p->ucg->setPrintPos(1,110);
 	String u;
 	float altp;
@@ -159,11 +159,11 @@ int qnh_adj( SetupMenuValFloat * p )
 		p->ucg->setPrintPos(1,150);
 	}else
 		p->ucg->setPrintPos(1,120);
-	p->ucg->printf("%5d %s ", (int)(altp+0.5), u.c_str() );
+	p->ucg->printf("%5d %s  ", (int)(altp+0.5), u.c_str() );
 
 	if( qnh_unit.get() == QNH_INHG ){
 		p->ucg->setPrintPos(40,110);
-		p->ucg->printf("%.2f inHg", Units::hPa2inHg( *(p->_value) ));
+		p->ucg->printf("%.2f inHg  ", Units::hPa2inHg( *(p->_value) ));
 	}
 	p->ucg->setFont(ucg_font_ncenR14_hr);
 	xSemaphoreGive(spiMutex );
@@ -174,7 +174,7 @@ int elev_adj( SetupMenuValFloat * p )
 {
 	// ESP_LOGI(FNAME,"elev_adj");
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	p->ucg->setFont(ucg_font_fub25_hr);
+	p->ucg->setFont(ucg_font_fub25_hr, true);
 	p->ucg->setPrintPos(1,120);
 	String u;
 	float elevp = elevation.get();
@@ -235,7 +235,7 @@ int bal_adj( SetupMenuValFloat * p )
 {
 	float loadinc = ((ballast.get() + fixed_ballast.get()) +100.0)/100.0;
 	float newwl = polar_wingload.get() * loadinc;
-	p->ucg->setFont(ucg_font_fub25_hr);
+	p->ucg->setFont(ucg_font_fub25_hr, true);
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->setPrintPos(1,110);
 	p->ucg->printf("%0.2f kg/m2  ", newwl);
@@ -269,7 +269,10 @@ int vol_adj( SetupMenuValFloat * p ){
  */
 static int compassDeviationAction( SetupMenuSelect *p )
 {
-	return compassMenuHandler.deviationAction( p );
+	if( p->getSelect() == 0 ){
+		compassMenuHandler.deviationAction( p );
+	}
+	return 0;
 }
 
 static int compassResetDeviationAction( SetupMenuSelect *p )
@@ -311,25 +314,23 @@ static int compassSensorCalibrateAction( SetupMenuSelect *p )
 SetupMenu::SetupMenu() : MenuEntry() {
 	highlight = -1;
 	_parent = 0;
-	y = 0;
 	helptext = 0;
-	long_pressed = false;
 }
 
-SetupMenu::SetupMenu( std::string title ) : MenuEntry() {
+SetupMenu::SetupMenu( const char *title ) : MenuEntry() {
 	// ESP_LOGI(FNAME,"SetupMenu::SetupMenu( %s ) ", title.c_str() );
-	_rotary->attach(this);
+	attach(this);
 	_title = title;
 	highlight = -1;
 }
+
 SetupMenu::~SetupMenu()
 {
-	_rotary->detach(this);
+	detach(this);
 }
 
-void SetupMenu::begin( IpsDisplay* display, ESPRotary * rotary, PressureSensor * bmp, AnalogInput *adc ){
+void SetupMenu::begin( IpsDisplay* display, PressureSensor * bmp, AnalogInput *adc ){
 	ESP_LOGI(FNAME,"SetupMenu() begin");
-	_rotary = rotary;
 	_bmp = bmp;
 	_display = display;
 	ucg = display->getDisplay();
@@ -345,33 +346,32 @@ void SetupMenu::catchFocus( bool activate ){
 void SetupMenu::display( int mode ){
 	if( (selected != this) || !inSetup || focus )
 		return;
-	ESP_LOGI(FNAME,"SetupMenu display( %s)", _title.c_str() );
+	ESP_LOGI(FNAME,"SetupMenu display( %s)", _title );
 	clear();
-	y=25;
-	ESP_LOGI(FNAME,"Title: %s y=%d child size:%d", selected->_title.c_str(),y, _childs.size()  );
+	int y=25;
+	ESP_LOGI(FNAME,"Title: %s y=%d child size:%d", selected->_title,y, _childs.size()  );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
+	ucg->setFont(ucg_font_ncenR14_hr);
 	ucg->setPrintPos(1,y);
 	ucg->setFontPosBottom();
-	ucg->printf("<< %s",selected->_title.c_str());
-	ucg->drawFrame( 1,3,238,25 );
+	ucg->printf("<< %s",selected->_title);
+	ucg->drawFrame( 1,(selected->highlight+1)*25+3,238,25 );
 	for (int i=0; i<_childs.size(); i++ ){
 		MenuEntry * child = _childs[i];
 		ucg->setPrintPos(1,(i+1)*25+25);
 		ucg->setColor( COLOR_HEADER_LIGHT );
-		ucg->printf("%s",child->_title.c_str());
-		ESP_LOGI(FNAME,"Child Title: %s", child->_title.c_str() );
+		ucg->printf("%s",child->_title);
+		ESP_LOGI(FNAME,"Child Title: %s", child->_title );
 		if( child->value() ){
-			int fl=ucg->getStrWidth( child->_title.c_str());
+			int fl=ucg->getStrWidth( child->_title );
 			ucg->setPrintPos(1+fl,(i+1)*25+25);
 			ucg->printf(": ");
-			ucg->setPrintPos(1+fl+ucg->getStrWidth( ": " ),(i+1)*25+25);
+			ucg->setPrintPos(1+fl+ucg->getStrWidth( ":" ),(i+1)*25+25);
 			ucg->setColor( COLOR_WHITE );
-			ucg->setFont(ucg_font_fur14_hf);
-			ucg->printf("%s",child->value());
-			ucg->setFont(ucg_font_ncenR14_hr);
+			ucg->printf(" %s",child->value());
 		}
 		ucg->setColor( COLOR_WHITE );
-		// ESP_LOGI(FNAME,"Child: %s y=%d",child->_title.c_str() ,y );
+		// ESP_LOGI(FNAME,"Child: %s y=%d",child->_title ,y );
 	}
 	y+=170;
 	xSemaphoreGive(spiMutex );
@@ -475,14 +475,12 @@ void SetupMenu::showMenu( bool apressed ){
 			inSetup=true;
 			ESP_LOGI(FNAME,"Start Setup Menu");
 			_display->doMenu(true);
-			// _rotary->attach(&menu_rotary_handler); // todo
 			delay(200);  // fixme give display task time to finish drawing
 		}
 		else
 		{
 			ESP_LOGI(FNAME,"End Setup Menu");
 			_display->clear();
-			// _rotary->detach(&menu_rotary_handler);
 			_display->doMenu(false);
 			SetupCommon::commitNow();
 			inSetup=false;
@@ -515,12 +513,6 @@ void SetupMenu::longPress(){
 	// ESP_LOGI(FNAME,"longPress()");
 	if( menu_long_press.get() )
 	 	showMenu( true );
-	if( long_pressed ){
-		long_pressed = true;
-	}
-	else{
-		long_pressed = false;
-	}
 }
 
 
@@ -816,6 +808,7 @@ void SetupMenu::setup( )
 		poe->addEntry( glt );
 
 		ESP_LOGI(FNAME, "Number of Polars installed: %d", Polars::numPolars() );
+
 		for( int x=0; x< Polars::numPolars(); x++ ){
 			glt->addEntry( Polars::getPolar(x).type );
 		}
@@ -971,7 +964,7 @@ void SetupMenu::setup( )
 
 		SetupMenuValFloat *cd = new SetupMenuValFloat( "Setup Declination",
 				0,
-				"\260",
+				"°",
 				-180,
 				180,
 				1.0,
@@ -993,21 +986,12 @@ void SetupMenu::setup( )
 		MenuEntry* dme = compassMenu->addEntry( devMenu );
 
 		// Calibration menu is requested
-		const short skydirs[8] =
-		{ 0, 45, 90, 135, 180, 225, 270, 315 };
-
+		const char *skydirs[8] = { "0°", "45°", "90°", "135°", "180°", "225°", "270°", "315°" };
 		for( int i = 0; i < 8; i++ )
 		{
-			char buffer[20];
-			SetupMenuSelect* sms = new SetupMenuSelect( "Direction ",
-					false,
-					compassDeviationAction,
-					false,
-					0 );
-
+			SetupMenuSelect* sms = new SetupMenuSelect( "Direction", false, compassDeviationAction, false, 0, true );
 			sms->setHelp( "Push button to start deviation action" );
-			sprintf( buffer, "%03d", skydirs[i] );
-			sms->addEntry( buffer );
+			sms->addEntry( skydirs[i] );
 			dme->addEntry( sms );
 		}
 
@@ -1085,7 +1069,7 @@ void SetupMenu::setup( )
 		compassWindME->addEntry( strWindM );
 		strWindM->setHelp( PROGMEM "Straight flight wind calculation needs compass module active", 250 );
 
-		SetupMenuValFloat *smdev = new SetupMenuValFloat( "Deviation tolerance", nullptr, "\xb0", 0.0, 180.0, 1.0,	nullptr, false, &wind_max_deviation );
+		SetupMenuValFloat *smdev = new SetupMenuValFloat( "Deviation tolerance", nullptr, "°", 0.0, 180.0, 1.0,	nullptr, false, &wind_max_deviation );
 		smdev->setHelp( PROGMEM "Setup maximum deviation accepted for a wind measurement" );
 		strWindM->addEntry( smdev );
 
@@ -1113,12 +1097,6 @@ void SetupMenu::setup( )
 		ShowStraightWind* ssw = new ShowStraightWind( "Straight Wind Status" );
 		strWindM->addEntry( ssw );
 
-		//		sms = new SetupMenuSelect( "Reset",	false, windResetAction, false, 0 );
-		//		sms->setHelp( "Reset all wind data to defaults" );
-		//		sms->addEntry( "Cancel" );
-		//		sms->addEntry( "Reset" );
-		//		strWindM->addMenu( sms );
-
 		SetupMenu * cirWindM = new SetupMenu( "Circling Wind" );
 		compassWindME->addEntry( cirWindM );
 
@@ -1126,7 +1104,7 @@ void SetupMenu::setup( )
 		ShowCirclingWind* scw = new ShowCirclingWind( "Circling Wind Status" );
 		cirWindM->addEntry( scw );
 
-		SetupMenuValFloat *cirwd = new SetupMenuValFloat( "Max Delta", nullptr, "\260", 0, 90.0, 1.0, nullptr, false, &max_circle_wind_diff );
+		SetupMenuValFloat *cirwd = new SetupMenuValFloat( "Max Delta", nullptr, "°", 0, 90.0, 1.0, nullptr, false, &max_circle_wind_diff );
 		cirWindM->addEntry( cirwd );
 		cirwd->setHelp(PROGMEM "Maximum accepted delta accepted value for heading error in circling wind calculation");
 

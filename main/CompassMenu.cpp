@@ -26,6 +26,9 @@ Last update: 2021-02-26
 #include "CompassMenu.h"
 #include "MenuEntry.h"
 #include "sensor.h"  // we need spiMutex
+#include "vector.h"
+#include "Colors.h"
+#include "logdef.h"
 
 SetupMenuSelect* CompassMenu::menuPtr = nullptr;
 
@@ -60,8 +63,8 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 	if( compass.haveSensor() == false )
 	{
 		p->clear();
-		p->ucg->setFont( ucg_font_fur14_hf );
-		p->ucg->setPrintPos( 1, 60 );
+		p->ucg->setFont( ucg_font_ncenR14_hr );
+		p->ucg->setPrintPos( 1, 100 );
 		p->ucg->printf( "No magnetic Sensor, Abort" );
 		delay( 2000 );
 		ESP_LOGI( FNAME, "Abort calibration, no sensor signal" );
@@ -72,50 +75,43 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 	short diridx = direction / 45;
 
 	// Calibration menu is requested
-	const unsigned short skydirs[8] =
-	{ 0, 45, 90, 135, 180, 225, 270, 315 };
+	const unsigned short skydirs[8] = { 0, 45, 90, 135, 180, 225, 270, 315 };
 
 	p->clear();
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	p->ucg->setFont( ucg_font_fur14_hf );
+	p->ucg->setFont( ucg_font_ncenR14_hr );
 	p->ucg->setPrintPos( 1, 60 );
-	p->ucg->printf( "Turn airplane to %s\260  ", p->getEntry() );
+	p->ucg->printf( "Turn airplane to %s  ", p->getEntry() );
 	p->ucg->setPrintPos( 1, 90 );
 	p->ucg->printf( "and push button when done" );
 	xSemaphoreGive(spiMutex);
 	delay( 500 );
 
 	float heading = 0.0;
-	short hi = 0;
 	float deviation = 0;
 
-	while( !p->_rotary->readSwitch() )
+	while( !p->readSwitch() )
 	{
 		bool ok = true;
-		heading = Compass::rawHeading( &ok );
+		if( heading == 0.0 )
+			heading = Compass::rawHeading( &ok );
+		else
+			heading = heading + (Compass::rawHeading( &ok ) -heading)*0.05; // a bit low pass
 		if( ok == false )
 		{
 			// in case of error deviation is set to 0
 			heading = static_cast<float>( skydirs[diridx] );
 		}
-
-		hi = static_cast<short>(rintf( heading ));
-		if( hi >= 360 )
-			hi -= 360;
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
-		p->ucg->setFont( ucg_font_fur20_hf );
 		p->ucg->setPrintPos( 1, 180 );
-		p->ucg->printf( "Heading:   %d\260    ", hi );
+		p->ucg->printf( "Heading:  %d° ", (int)(heading+0.5) );
 		p->ucg->setPrintPos( 1, 230 );
-		deviation = direction - hi;
-		if( deviation < -180 )
-			deviation += 360;
-		p->ucg->printf( "Deviation: %3.2f\260    ", deviation );
+		deviation = Vector::normalizeDeg( direction - heading );
+		p->ucg->printf( "Deviation: %3.1f°  ", deviation );
 		xSemaphoreGive(spiMutex);
-		delay( 100 );
+		delay( 50 );
 	}
-
-	while( p->_rotary->readSwitch() )
+	while( p->readSwitch() )
 	{
 		// wait so long while rotary is pressed to avoid unwanted actions
 		delay( 50 );
@@ -124,13 +120,21 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 
 	// Save deviation value
 	deviations[diridx]->set( deviation );
-
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
+	p->ucg->setPrintPos( 1, 270 );
+	p->ucg->printf( "Saved" );
+	delay(500);
+	p->ucg->setPrintPos( 1, 300 );
+	p->_parent->highlight++;
+	if(p->_parent->highlight > 7 )
+		p->_parent->highlight = -1;
+	p->ucg->printf( "Press key for next" );
+	xSemaphoreGive(spiMutex);
 	// Update compass interpolation data
 	Compass::deviationReload();
 
-	ESP_LOGI( FNAME, "Compass deviation action for %s is finished",
-			p->getEntry() );
-	return 1;
+	ESP_LOGI( FNAME, "Compass deviation action for %s is finished",	p->getEntry() );
+	return 0;
 }
 
 /** Compass Menu Action method to reset all deviations to 0. */
@@ -144,12 +148,13 @@ int CompassMenu::resetDeviationAction( SetupMenuSelect *p )
 	else if( p->getSelect() == 1 )
 	{
 		p->clear();
-		p->ucg->setFont( ucg_font_fur14_hf );
+		xSemaphoreTake(spiMutex,portMAX_DELAY );
+		p->ucg->setFont( ucg_font_ncenR14_hr );
 		p->ucg->setPrintPos( 1, 60 );
 		p->ucg->printf( "Reset all compass" );
 		p->ucg->setPrintPos( 1, 90 );
 		p->ucg->printf( "deviation data" );
-
+		xSemaphoreGive(spiMutex);
 		// Reset calibration
 		for( int i = 0; i < 8; i++ )
 		{
@@ -166,7 +171,7 @@ int CompassMenu::resetDeviationAction( SetupMenuSelect *p )
 	Compass::deviationReload();
 
 	p->clear();
-	p->ucg->setFont( ucg_font_fur14_hf );
+	p->ucg->setFont( ucg_font_ncenR14_hr );
 	p->ucg->setPrintPos( 1, 300 );
 	p->ucg->printf( "Saved        " );
 	delay( 2000 );
@@ -200,7 +205,7 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 
 	menuPtr = p;
 	p->clear();
-	p->ucg->setFont( ucg_font_fur14_hf );
+	p->ucg->setFont( ucg_font_ncenR14_hr, true );
 	p->ucg->setPrintPos( 1, 30 );
 	p->ucg->printf( "Calibration is running" );
 	p->ucg->setPrintPos( 1, 220 );
@@ -229,12 +234,17 @@ float CompassMenu::xbias_back = 0;
 float CompassMenu::ybias_back = 0;
 float CompassMenu::zbias_back = 0;
 
+static int xm,ym,zm = 0;
+static int xi,yi,zi = 0;
+
+
 /** Method for receiving intermediate calibration results. */
-bool CompassMenu::calibrationReport( float x, float y, float z, float xscale, float yscale, float zscale, float xbias, float ybias, float zbias )
+bool CompassMenu::calibrationReport( float x, float y, float z, float xscale, float yscale, float zscale, float xbias, float ybias, float zbias, bitfield_compass b )
 {
 	if( menuPtr == nullptr )
 		return false;
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
+	menuPtr->ucg->setColor( COLOR_WHITE );
 	if( xscale != xscale_back ){
 		menuPtr->ucg->setPrintPos( 1, 60 );
 		menuPtr->ucg->printf( "X-Scale=%3.1f  ", xscale * 100 );
@@ -280,6 +290,72 @@ bool CompassMenu::calibrationReport( float x, float y, float z, float xscale, fl
 		menuPtr->ucg->printf( "Z-Bias=%3.1f  ", zbias/32768 *100 );
 		zbias_back = zbias;
 	}
+	const uint16_t X = 180;
+	const uint16_t Y = 155;
+
+	int16_t xp = int16_t(x*160/32768);
+	int16_t yp = int16_t(y*160/32768);
+	int16_t zp = int16_t(z*114/32768);
+
+	xm = xm > xp ? xm : xp;
+	ym = ym > yp ? ym : yp;
+	zm = zm > zp ? zm : zp;
+	xi = xi < xp ? xi : xp;
+	yi = yi < yp ? yi : yp;
+	zi = zi < zp ? zi : zp;
+
+	// ESP_LOGI(FNAME,"Max X: %d Y: %d Z: %d  Min P: %d %d %d", xm, ym, zm, xi, yi, zi );
+
+	if( b.ymax_green )
+		menuPtr->ucg->setColor( COLOR_GREEN );
+	else
+		menuPtr->ucg->setColor( COLOR_RED );
+	menuPtr->ucg->drawLine( X, Y, X, Y+ym );
+
+	if( b.ymin_green )
+		menuPtr->ucg->setColor( COLOR_GREEN );
+	else
+		menuPtr->ucg->setColor( COLOR_RED );
+	menuPtr->ucg->drawLine( X, Y, X, Y+yi );
+
+	if( b.xmax_green )
+		menuPtr->ucg->setColor( COLOR_GREEN );
+	else
+		menuPtr->ucg->setColor( COLOR_RED );
+	menuPtr->ucg->drawLine( X, Y, X+xm, Y );
+
+	if( b.xmin_green )
+		menuPtr->ucg->setColor( COLOR_GREEN );
+	else
+		menuPtr->ucg->setColor( COLOR_RED );
+	menuPtr->ucg->drawLine( X, Y, X+xi, Y );
+
+	if( b.zmax_green )
+		menuPtr->ucg->setColor( COLOR_GREEN );
+	else
+		menuPtr->ucg->setColor( COLOR_RED );
+	menuPtr->ucg->drawLine( X, Y, X+zm, Y-zm );    // 45 degree
+
+	if( b.zmin_green )
+		menuPtr->ucg->setColor( COLOR_GREEN );
+	else
+		menuPtr->ucg->setColor( COLOR_RED );
+	menuPtr->ucg->drawLine( X, Y, X+zi, Y-zi );    // 45 degree
+
+	static uint16_t x_old, y_old, z_old = 0;
+	menuPtr->ucg->setColor( COLOR_BLACK );
+	menuPtr->ucg->drawCircle( X, Y+y_old, 2 );
+	menuPtr->ucg->drawCircle( X+x_old, Y, 2 );
+	menuPtr->ucg->drawCircle( X+z_old, Y-z_old,2 );
+	menuPtr->ucg->setColor( COLOR_WHITE );
+	menuPtr->ucg->drawCircle( X, Y+yp, 2 );
+	menuPtr->ucg->drawCircle( X+xp, Y, 2);
+	menuPtr->ucg->drawCircle( X+zp, Y-zp, 2 );
+
+	y_old = yp;
+	x_old = xp;
+	z_old = zp;
+
 	xSemaphoreGive(spiMutex);
 	// Stop further reporting.
 	return true;

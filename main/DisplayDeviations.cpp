@@ -21,14 +21,14 @@ Last update: 2021-02-25
 #include "SetupNG.h"
 #include "sensor.h"
 
-#include <Ucglib.h>
+#include <AdaptUGC.h>
 #include <esp_log.h>
 
 
-DisplayDeviations::DisplayDeviations( std::string title) :
+DisplayDeviations::DisplayDeviations( const char * title ) :
   SetupMenuDisplay( title, nullptr )
 {
-	ESP_LOGI(FNAME, "DisplayDeviations(): title='%s'", title.c_str() );
+	ESP_LOGI(FNAME, "DisplayDeviations(): title='%s'", title );
 }
 
 void DisplayDeviations::display( int mode )
@@ -39,11 +39,10 @@ void DisplayDeviations::display( int mode )
   ESP_LOGI(FNAME, "display() mode=%d", mode );
 
   clear();
-  ucg->setFont( ucg_font_fur14_hf );
-  uprintf( 5, 25, selected->_title.c_str() );
+  ucg->setFont( ucg_font_ncenR14_hr );
+  uprintf( 5, 25, selected->_title );
 
-  const char* skydirdev[8] =
-    { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
+  const char* skydirdev[8] = { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
 
   // Stored deviation data
   SetupNG<float>* deviations[8] = { &compass_dev_0,
@@ -65,10 +64,10 @@ void DisplayDeviations::display( int mode )
       ucg->printf( "%s",  skydirdev[i] );
       x += 42;
       ucg->setPrintPos( x, y );
-      ucg->printf( "%03d\260", i * 45 );
+      ucg->printf( "%03d°", i * 45 );
       x += 50;
       ucg->setPrintPos( x, y );
-      ucg->printf( "Deviation %3.1f\260",  deviations[i]->get() );
+      ucg->printf( "Deviation %3.1f°",  deviations[i]->get() );
     }
 
   ucg->setPrintPos( 5, 290 );

@@ -1,0 +1,1082 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Drawing Functions &#8212; eglib master documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Fonts" href="fonts.html" />
+    <link rel="prev" title="Drawing" href="index.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="drawing-functions">
+<h1><a class="toc-backref" href="#id1">Drawing Functions</a><a class="headerlink" href="#drawing-functions" title="Permalink to this headline">¶</a></h1>
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#drawing-functions" id="id1">Drawing Functions</a></p>
+<ul>
+<li><p><a class="reference internal" href="#color" id="id2">Color</a></p></li>
+<li><p><a class="reference internal" href="#pixel" id="id3">Pixel</a></p></li>
+<li><p><a class="reference internal" href="#lines" id="id4">Lines</a></p></li>
+<li><p><a class="reference internal" href="#triangles" id="id5">Triangles</a></p></li>
+<li><p><a class="reference internal" href="#frames" id="id6">Frames</a></p></li>
+<li><p><a class="reference internal" href="#boxes" id="id7">Boxes</a></p></li>
+<li><p><a class="reference internal" href="#round-things" id="id8">Round things</a></p></li>
+<li><p><a class="reference internal" href="#bitmaps" id="id9">Bitmaps</a></p></li>
+<li><p><a class="reference internal" href="#text" id="id10">Text</a></p></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;eglib/drawing.h&gt;</span><span class="cp"></span>
+</pre></div>
+</div>
+<p>These are generic drawing functions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../eglib.html#c.eglib_Init" title="eglib_Init"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_Init()</span></code></a> or <a class="reference internal" href="../display/drivers/frame_buffer.html#c.eglib_Init_FrameBuffer" title="eglib_Init_FrameBuffer"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_Init_FrameBuffer()</span></code></a>.</p>
+</dd>
+</dl>
+<div class="section" id="color">
+<h2><a class="toc-backref" href="#id2">Color</a><a class="headerlink" href="#color" title="Permalink to this headline">¶</a></h2>
+<p>Various drawing functions do not take a color argument and instead use the
+color from a previously defined index.</p>
+<dl class="function">
+<dt id="c.eglib_SetIndexColor">
+void <code class="sig-name descname">eglib_SetIndexColor</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em>, size_t<em> idx</em>, <a class="reference internal" href="../eglib.html#c.color_channel_t" title="color_channel_t">color_channel_t</a><em> r</em>, <a class="reference internal" href="../eglib.html#c.color_channel_t" title="color_channel_t">color_channel_t</a><em> g</em>, <a class="reference internal" href="../eglib.html#c.color_channel_t" title="color_channel_t">color_channel_t</a><em> b</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_SetIndexColor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set color for given index, which other drawing functions may use.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="pixel">
+<h2><a class="toc-backref" href="#id3">Pixel</a><a class="headerlink" href="#pixel" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="c.eglib_DrawPixelColor">
+void <code class="sig-name descname">eglib_DrawPixelColor</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> x</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> y</em>, <a class="reference internal" href="../eglib.html#c.color_t" title="color_t">color_t</a><em> color</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DrawPixelColor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw given pixel coordinates with given color.</p>
+<p>Example:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">eglib_DrawPixelColor</span><span class="p">(</span>
+	<span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span>
+	<span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span>
+	<span class="p">(</span><span class="n">color_t</span><span class="p">){</span>
+		<span class="p">.</span><span class="n">r</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">g</span> <span class="o">=</span> <span class="mi">255</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">b</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+	<span class="p">}</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<a class="reference internal image-reference" href="../../_images/eglib_DrawPixelColor.png"><img alt="../../_images/eglib_DrawPixelColor.png" src="../../_images/eglib_DrawPixelColor.png" style="width: 200px;" /></a>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_DrawPixel">
+void <code class="sig-name descname">eglib_DrawPixel</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> x</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> y</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DrawPixel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw given pixel coordinates using color from index 0.</p>
+<p>Example:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">eglib_DrawPixel</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<a class="reference internal image-reference" href="../../_images/eglib_DrawPixel.png"><img alt="../../_images/eglib_DrawPixel.png" src="../../_images/eglib_DrawPixel.png" style="width: 200px;" /></a>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.eglib_SetIndexColor" title="eglib_SetIndexColor"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_SetIndexColor()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="lines">
+<h2><a class="toc-backref" href="#id4">Lines</a><a class="headerlink" href="#lines" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="c.eglib_DrawLine">
+void <code class="sig-name descname">eglib_DrawLine</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> x1</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> y1</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> x2</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> y2</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DrawLine" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw line from coordinates (<cite>x1</cite>, <cite>y1</cite>) to (<cite>x2</cite>, <cite>y2</cite>) using color from
+index 0.</p>
+<p>Example:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+
+<span class="n">eglib_DrawLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">99</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">eglib_DrawLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">50</span><span class="p">);</span>
+<span class="n">eglib_DrawLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">99</span><span class="p">);</span>
+
+<span class="n">eglib_DrawLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">99</span><span class="p">,</span> <span class="mi">99</span><span class="p">,</span> <span class="mi">99</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">eglib_DrawLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">99</span><span class="p">,</span> <span class="mi">99</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">50</span><span class="p">);</span>
+<span class="n">eglib_DrawLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">99</span><span class="p">,</span> <span class="mi">99</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">99</span><span class="p">);</span>
+
+<span class="n">eglib_DrawLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">99</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">50</span><span class="p">);</span>
+<span class="n">eglib_DrawLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">99</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">50</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<a class="reference internal image-reference" href="../../_images/eglib_DrawLine.png"><img alt="../../_images/eglib_DrawLine.png" src="../../_images/eglib_DrawLine.png" style="width: 200px;" /></a>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.eglib_SetIndexColor" title="eglib_SetIndexColor"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_SetIndexColor()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_DrawHLine">
+<code class="sig-name descname">eglib_DrawHLine</code><span class="sig-paren">(</span>eglib, x, y, len<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DrawHLine" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw horizontal line starting at (<cite>x</cite>, <cite>y</cite>) with length <cite>len</cite> using color from
+index 0.</p>
+<p>Example:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">eglib_DrawHLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<a class="reference internal image-reference" href="../../_images/eglib_DrawHLine.png"><img alt="../../_images/eglib_DrawHLine.png" src="../../_images/eglib_DrawHLine.png" style="width: 200px;" /></a>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.eglib_SetIndexColor" title="eglib_SetIndexColor"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_SetIndexColor()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_DrawVLine">
+<code class="sig-name descname">eglib_DrawVLine</code><span class="sig-paren">(</span>eglib, x, y, len<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DrawVLine" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw vertical line starting at (<cite>x</cite>, <cite>y</cite>) with length <cite>len</cite> using color from
+index 0.</p>
+<p>Example:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">eglib_DrawVLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<a class="reference internal image-reference" href="../../_images/eglib_DrawVLine.png"><img alt="../../_images/eglib_DrawVLine.png" src="../../_images/eglib_DrawVLine.png" style="width: 200px;" /></a>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.eglib_SetIndexColor" title="eglib_SetIndexColor"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_SetIndexColor()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_DrawGradientLine">
+void <code class="sig-name descname">eglib_DrawGradientLine</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> x1</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> y1</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> x2</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> y2</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DrawGradientLine" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw line from coordinates (<cite>x1</cite>, <cite>y1</cite>) to (<cite>x2</cite>, <cite>y2</cite>).</p>
+<p>Line color will be a gradient from index 0 at (<cite>x1</cite>, <cite>y1</cite>) to color from index
+1 at (<cite>x2</cite>, <cite>y2</cite>).</p>
+<p>Example:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">);</span>
+
+<span class="n">eglib_DrawGradientLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">99</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">eglib_DrawGradientLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">50</span><span class="p">);</span>
+<span class="n">eglib_DrawGradientLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">99</span><span class="p">);</span>
+
+<span class="n">eglib_DrawGradientLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">99</span><span class="p">,</span> <span class="mi">99</span><span class="p">,</span> <span class="mi">99</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">eglib_DrawGradientLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">99</span><span class="p">,</span> <span class="mi">99</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">50</span><span class="p">);</span>
+<span class="n">eglib_DrawGradientLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">99</span><span class="p">,</span> <span class="mi">99</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">99</span><span class="p">);</span>
+
+<span class="n">eglib_DrawGradientLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">99</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">50</span><span class="p">);</span>
+<span class="n">eglib_DrawGradientLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">99</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">50</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<a class="reference internal image-reference" href="../../_images/eglib_DrawGradientLine.png"><img alt="../../_images/eglib_DrawGradientLine.png" src="../../_images/eglib_DrawGradientLine.png" style="width: 200px;" /></a>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.eglib_SetIndexColor" title="eglib_SetIndexColor"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_SetIndexColor()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_DrawGradientHLine">
+<code class="sig-name descname">eglib_DrawGradientHLine</code><span class="sig-paren">(</span>eglib, x, y, len<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DrawGradientHLine" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw horizontal gradient line from coordinates (<cite>x</cite>, <cite>y</cite>) to (<cite>x + len</cite>, <cite>y</cite>).</p>
+<p>Example:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">);</span>
+<span class="n">eglib_DrawGradientHLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<a class="reference internal image-reference" href="../../_images/eglib_DrawGradientHLine.png"><img alt="../../_images/eglib_DrawGradientHLine.png" src="../../_images/eglib_DrawGradientHLine.png" style="width: 200px;" /></a>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.eglib_DrawGradientLine" title="eglib_DrawGradientLine"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_DrawGradientLine()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_DrawGradientVLine">
+<code class="sig-name descname">eglib_DrawGradientVLine</code><span class="sig-paren">(</span>eglib, x, y, len<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DrawGradientVLine" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw vertical gradient line from coordinates (<cite>x</cite>, <cite>y</cite>) to (<cite>x</cite>, <cite>y + len</cite>).</p>
+<p>Example:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">);</span>
+<span class="n">eglib_DrawGradientVLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<a class="reference internal image-reference" href="../../_images/eglib_DrawGradientVLine.png"><img alt="../../_images/eglib_DrawGradientVLine.png" src="../../_images/eglib_DrawGradientVLine.png" style="width: 200px;" /></a>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.eglib_DrawGradientLine" title="eglib_DrawGradientLine"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_DrawGradientLine()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="triangles">
+<h2><a class="toc-backref" href="#id5">Triangles</a><a class="headerlink" href="#triangles" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="c.eglib_DrawTriangle">
+void <code class="sig-name descname">eglib_DrawTriangle</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> x1</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> y1</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> x2</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> y2</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> x3</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> y3</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DrawTriangle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw triangle for coordinates (<cite>x1</cite>, <cite>y1</cite>), (<cite>x2</cite>, <cite>y2</cite>) and (<cite>x3</cite>, <cite>y3</cite>)
+using color from index 0.</p>
+<p>Example:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">eglib_DrawTriangle</span><span class="p">(</span>
+	<span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span>
+	<span class="mi">50</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span>
+	<span class="mi">0</span><span class="p">,</span> <span class="mi">99</span><span class="p">,</span>
+	<span class="mi">99</span><span class="p">,</span> <span class="mi">99</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<a class="reference internal image-reference" href="../../_images/eglib_DrawTriangle.png"><img alt="../../_images/eglib_DrawTriangle.png" src="../../_images/eglib_DrawTriangle.png" style="width: 200px;" /></a>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.eglib_SetIndexColor" title="eglib_SetIndexColor"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_SetIndexColor()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="frames">
+<h2><a class="toc-backref" href="#id6">Frames</a><a class="headerlink" href="#frames" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="c.eglib_DrawFrame">
+void <code class="sig-name descname">eglib_DrawFrame</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> x</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> y</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> width</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> height</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DrawFrame" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw frame starting at <code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">y)</span></code> with <code class="docutils literal notranslate"><span class="pre">width</span></code> and <code class="docutils literal notranslate"><span class="pre">height</span></code> using color
+from index 0.</p>
+<p>Example:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">eglib_DrawFrame</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">80</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<a class="reference internal image-reference" href="../../_images/eglib_DrawFrame.png"><img alt="../../_images/eglib_DrawFrame.png" src="../../_images/eglib_DrawFrame.png" style="width: 200px;" /></a>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.eglib_SetIndexColor" title="eglib_SetIndexColor"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_SetIndexColor()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_DrawGradientFrame">
+void <code class="sig-name descname">eglib_DrawGradientFrame</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> x</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> y</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> width</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> height</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DrawGradientFrame" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw frame starting at <code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">y)</span></code> with <code class="docutils literal notranslate"><span class="pre">width</span></code> and <code class="docutils literal notranslate"><span class="pre">height</span></code>.</p>
+<p>Its colors will be a gradient:</p>
+<ul class="simple">
+<li><p>Top left: color index 0.</p></li>
+<li><p>Top right: color index 1.</p></li>
+<li><p>Bottom left: color index 2.</p></li>
+<li><p>Bottom right: color index 3.</p></li>
+</ul>
+<p>Example:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">);</span>
+<span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">);</span>
+<span class="n">eglib_DrawGradientFrame</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">80</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<a class="reference internal image-reference" href="../../_images/eglib_DrawGradientFrame.png"><img alt="../../_images/eglib_DrawGradientFrame.png" src="../../_images/eglib_DrawGradientFrame.png" style="width: 200px;" /></a>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.eglib_SetIndexColor" title="eglib_SetIndexColor"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_SetIndexColor()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_DrawRoundFrame">
+void <code class="sig-name descname">eglib_DrawRoundFrame</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> x</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> y</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> width</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> height</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> radius</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DrawRoundFrame" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw frame starting at <code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">y)</span></code>, with <code class="docutils literal notranslate"><span class="pre">width</span></code> and <code class="docutils literal notranslate"><span class="pre">height</span></code> and rounded
+edges with <code class="docutils literal notranslate"><span class="pre">radius</span></code>, using color from index 0.</p>
+<p>Both <code class="docutils literal notranslate"><span class="pre">width</span></code> and <code class="docutils literal notranslate"><span class="pre">height</span></code> must be greater than <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">*</span> <span class="pre">radius</span></code>.</p>
+<p>Example:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">eglib_DrawRoundFrame</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">10</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<a class="reference internal image-reference" href="../../_images/eglib_DrawRoundFrame.png"><img alt="../../_images/eglib_DrawRoundFrame.png" src="../../_images/eglib_DrawRoundFrame.png" style="width: 200px;" /></a>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.eglib_SetIndexColor" title="eglib_SetIndexColor"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_SetIndexColor()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="boxes">
+<h2><a class="toc-backref" href="#id7">Boxes</a><a class="headerlink" href="#boxes" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="c.eglib_DrawBox">
+void <code class="sig-name descname">eglib_DrawBox</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> x</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> y</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> width</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> height</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DrawBox" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw box starting at <code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">y)</span></code> with <code class="docutils literal notranslate"><span class="pre">width</span></code> and <code class="docutils literal notranslate"><span class="pre">height</span></code> using color
+from index 0.</p>
+<p>Example:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">eglib_DrawBox</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">80</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<a class="reference internal image-reference" href="../../_images/eglib_DrawBox.png"><img alt="../../_images/eglib_DrawBox.png" src="../../_images/eglib_DrawBox.png" style="width: 200px;" /></a>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.eglib_SetIndexColor" title="eglib_SetIndexColor"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_SetIndexColor()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_DrawGradientBox">
+void <code class="sig-name descname">eglib_DrawGradientBox</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> x</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> y</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> width</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> height</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DrawGradientBox" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw box starting at <code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">y)</span></code> with <code class="docutils literal notranslate"><span class="pre">width</span></code> and <code class="docutils literal notranslate"><span class="pre">height</span></code>.</p>
+<p>Its colors will be a gradient:</p>
+<ul class="simple">
+<li><p>Top left: color index 0.</p></li>
+<li><p>Top right: color index 1.</p></li>
+<li><p>Bottom left: color index 2.</p></li>
+<li><p>Bottom right: color index 3.</p></li>
+</ul>
+<p>Example:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">);</span>
+<span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">);</span>
+<span class="n">eglib_DrawGradientBox</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">80</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<a class="reference internal image-reference" href="../../_images/eglib_DrawGradientBox.png"><img alt="../../_images/eglib_DrawGradientBox.png" src="../../_images/eglib_DrawGradientBox.png" style="width: 200px;" /></a>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.eglib_SetIndexColor" title="eglib_SetIndexColor"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_SetIndexColor()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_DrawRoundBox">
+void <code class="sig-name descname">eglib_DrawRoundBox</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> x</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> y</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> width</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> height</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> radius</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DrawRoundBox" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw frame starting at <code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">y)</span></code>, with <code class="docutils literal notranslate"><span class="pre">width</span></code> and <code class="docutils literal notranslate"><span class="pre">height</span></code> and rounded
+edges with <code class="docutils literal notranslate"><span class="pre">radius</span></code>, using color from index 0.</p>
+<p>Both <code class="docutils literal notranslate"><span class="pre">width</span></code> and <code class="docutils literal notranslate"><span class="pre">height</span></code> must be greater than <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">*</span> <span class="pre">radius</span></code>.</p>
+<p>Example:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">eglib_DrawRoundBox</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">10</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<a class="reference internal image-reference" href="../../_images/eglib_DrawRoundBox.png"><img alt="../../_images/eglib_DrawRoundBox.png" src="../../_images/eglib_DrawRoundBox.png" style="width: 200px;" /></a>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.eglib_SetIndexColor" title="eglib_SetIndexColor"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_SetIndexColor()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_ClearScreen">
+void <code class="sig-name descname">eglib_ClearScreen</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_ClearScreen" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set all pixels to the color from index 0.</p>
+<p>Example:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">eglib_DrawBox</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">80</span><span class="p">);</span>
+<span class="n">eglib_ClearScreen</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<a class="reference internal image-reference" href="../../_images/eglib_ClearScreen.png"><img alt="../../_images/eglib_ClearScreen.png" src="../../_images/eglib_ClearScreen.png" style="width: 200px;" /></a>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.eglib_SetIndexColor" title="eglib_SetIndexColor"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_SetIndexColor()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="round-things">
+<h2><a class="toc-backref" href="#id8">Round things</a><a class="headerlink" href="#round-things" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="c.eglib_DrawArc">
+void <code class="sig-name descname">eglib_DrawArc</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> x</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> y</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> radius</em>, float<em> start_angle</em>, float<em> end_angle</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DrawArc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw an arc with color from index 0</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – Center x.</p></li>
+<li><p><strong>y</strong> – Center y.</p></li>
+<li><p><strong>radius</strong> – Radius.</p></li>
+<li><p><strong>start_angle</strong> – Start angle from 0 to 360, where 0 is “up” and 90 is “right”.</p></li>
+<li><p><strong>end_angle</strong> – End angle, bigger than <code class="docutils literal notranslate"><span class="pre">start_angle</span></code> and less or equal to 360.</p></li>
+</ul>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">eglib_DrawArc</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">135</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<a class="reference internal image-reference" href="../../_images/eglib_DrawArc.png"><img alt="../../_images/eglib_DrawArc.png" src="../../_images/eglib_DrawArc.png" style="width: 200px;" /></a>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_DrawGradientArc">
+void <code class="sig-name descname">eglib_DrawGradientArc</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> x</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> y</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> radius</em>, float<em> start_angle</em>, float<em> end_angle</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DrawGradientArc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw an arc with color gradient from index 0 to index 1.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – Center x.</p></li>
+<li><p><strong>y</strong> – Center y.</p></li>
+<li><p><strong>radius</strong> – Radius.</p></li>
+<li><p><strong>start_angle</strong> – Start angle from 0 to 360, where 0 is “up” and 90 is “right”.</p></li>
+<li><p><strong>end_angle</strong> – End angle, bigger than <code class="docutils literal notranslate"><span class="pre">start_angle</span></code> and less or equal to 360.</p></li>
+</ul>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">);</span>
+<span class="n">eglib_DrawGradientArc</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">135</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<a class="reference internal image-reference" href="../../_images/eglib_DrawGradientArc.png"><img alt="../../_images/eglib_DrawGradientArc.png" src="../../_images/eglib_DrawGradientArc.png" style="width: 200px;" /></a>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_DrawCircle">
+<code class="sig-name descname">eglib_DrawCircle</code><span class="sig-paren">(</span>eglib, x, y, radius<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DrawCircle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw an arc with color from index 0</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – Center x.</p></li>
+<li><p><strong>y</strong> – Center y.</p></li>
+<li><p><strong>radius</strong> – Radius.</p></li>
+</ul>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">eglib_DrawCircle</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">25</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<a class="reference internal image-reference" href="../../_images/eglib_DrawCircle.png"><img alt="../../_images/eglib_DrawCircle.png" src="../../_images/eglib_DrawCircle.png" style="width: 200px;" /></a>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_DrawFilledArc">
+void <code class="sig-name descname">eglib_DrawFilledArc</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> x</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> y</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> radius</em>, float<em> start_angle</em>, float<em> end_angle</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DrawFilledArc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw a filled arc with color from index 0</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – Center x.</p></li>
+<li><p><strong>y</strong> – Center y.</p></li>
+<li><p><strong>radius</strong> – Radius.</p></li>
+<li><p><strong>start_angle</strong> – Start angle from 0 to 360, where 0 is “up” and 90 is “right”.</p></li>
+<li><p><strong>end_angle</strong> – End angle, bigger than <code class="docutils literal notranslate"><span class="pre">start_angle</span></code> and less or equal to 360.</p></li>
+</ul>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">eglib_DrawFilledArc</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">135</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<a class="reference internal image-reference" href="../../_images/eglib_DrawFilledArc.png"><img alt="../../_images/eglib_DrawFilledArc.png" src="../../_images/eglib_DrawFilledArc.png" style="width: 200px;" /></a>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_DrawGradientFilledArc">
+void <code class="sig-name descname">eglib_DrawGradientFilledArc</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> x</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> y</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> radius</em>, float<em> start_angle</em>, float<em> end_angle</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DrawGradientFilledArc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw a filled arc with color gradient from index 0 at the center and index 1
+at the radius.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – Center x.</p></li>
+<li><p><strong>y</strong> – Center y.</p></li>
+<li><p><strong>radius</strong> – Radius.</p></li>
+<li><p><strong>start_angle</strong> – Start angle from 0 to 360, where 0 is “up” and 90 is “right”.</p></li>
+<li><p><strong>end_angle</strong> – End angle, bigger than <code class="docutils literal notranslate"><span class="pre">start_angle</span></code> and less or equal to 360.</p></li>
+</ul>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">);</span>
+<span class="n">eglib_DrawGradientFilledArc</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">135</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<a class="reference internal image-reference" href="../../_images/eglib_DrawGradientFilledArc.png"><img alt="../../_images/eglib_DrawGradientFilledArc.png" src="../../_images/eglib_DrawGradientFilledArc.png" style="width: 200px;" /></a>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_DrawDisc">
+<code class="sig-name descname">eglib_DrawDisc</code><span class="sig-paren">(</span>eglib, x, y, radius<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DrawDisc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw a disc with color from index 0</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – Center x.</p></li>
+<li><p><strong>y</strong> – Center y.</p></li>
+<li><p><strong>radius</strong> – Radius.</p></li>
+</ul>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">eglib_DrawDisc</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">25</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<a class="reference internal image-reference" href="../../_images/eglib_DrawDisc.png"><img alt="../../_images/eglib_DrawDisc.png" src="../../_images/eglib_DrawDisc.png" style="width: 200px;" /></a>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_DrawGradientDisc">
+<code class="sig-name descname">eglib_DrawGradientDisc</code><span class="sig-paren">(</span>eglib, x, y, radius<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DrawGradientDisc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw a disc with color gradient from index 0 at the center and index 1 at the
+radius.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – Center x.</p></li>
+<li><p><strong>y</strong> – Center y.</p></li>
+<li><p><strong>radius</strong> – Radius.</p></li>
+</ul>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">);</span>
+<span class="n">eglib_DrawGradientDisc</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">25</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<a class="reference internal image-reference" href="../../_images/eglib_DrawGradientDisc.png"><img alt="../../_images/eglib_DrawGradientDisc.png" src="../../_images/eglib_DrawGradientDisc.png" style="width: 200px;" /></a>
+</dd></dl>
+
+</div>
+<div class="section" id="bitmaps">
+<h2><a class="toc-backref" href="#id9">Bitmaps</a><a class="headerlink" href="#bitmaps" title="Permalink to this headline">¶</a></h2>
+<dl class="type">
+<dt id="c.bitmap_format_t">
+enum <code class="sig-name descname">bitmap_format_t</code><a class="headerlink" href="#c.bitmap_format_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>Format of bitmap data.</p>
+<dl class="macro">
+<dt id="c.BITMAP_BW">
+<code class="sig-name descname">BITMAP_BW</code><a class="headerlink" href="#c.BITMAP_BW" title="Permalink to this definition">¶</a></dt>
+<dd><p>1 bit per pixel black and white.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Tip</dt>
+<dd class="field-odd"><p>this is the same data format as <a class="reference external" href="https://en.wikipedia.org/wiki/X_BitMap">XBM</a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="macro">
+<dt id="c.BITMAP_RGB24">
+<code class="sig-name descname">BITMAP_RGB24</code><a class="headerlink" href="#c.BITMAP_RGB24" title="Permalink to this definition">¶</a></dt>
+<dd><p>8bit per channel RGB</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="type">
+<dt id="c.bitmap_t">
+struct <code class="sig-name descname">bitmap_t</code><a class="headerlink" href="#c.bitmap_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>A bitmap definition.</p>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.eglib_DrawBitmap" title="eglib_DrawBitmap"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_DrawBitmap()</span></code></a>.</p>
+</dd>
+</dl>
+<dl class="member">
+<dt id="c.bitmap_t.width">
+<a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a> <code class="sig-name descname">width</code><a class="headerlink" href="#c.bitmap_t.width" title="Permalink to this definition">¶</a></dt>
+<dd><p>Width</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.bitmap_t.height">
+<a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a> <code class="sig-name descname">height</code><a class="headerlink" href="#c.bitmap_t.height" title="Permalink to this definition">¶</a></dt>
+<dd><p>Height</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.bitmap_t.format">
+enum <a class="reference internal" href="#c.bitmap_format_t" title="bitmap_format_t">bitmap_format_t</a> <code class="sig-name descname">format</code><a class="headerlink" href="#c.bitmap_t.format" title="Permalink to this definition">¶</a></dt>
+<dd><p>Data format</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.bitmap_t.data">
+uint8_t * <code class="sig-name descname">data</code><a class="headerlink" href="#c.bitmap_t.data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pointer to bitmap data</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_DrawBitmap">
+void <code class="sig-name descname">eglib_DrawBitmap</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> x</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> y</em>, const struct <a class="reference internal" href="#c.bitmap_t" title="bitmap_t">bitmap_t</a> *<em> bitmap</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DrawBitmap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw given bitmap at <code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">y)</span></code>.</p>
+<p>Example:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="k">const</span> <span class="k">struct</span> <span class="nc">bitmap_t</span> <span class="n">bitmap_bw</span> <span class="o">=</span> <span class="p">{</span>
+	<span class="p">.</span><span class="n">width</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
+	<span class="p">.</span><span class="n">height</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span>
+	<span class="p">.</span><span class="n">format</span> <span class="o">=</span> <span class="n">BITMAP_BW</span><span class="p">,</span>
+	<span class="p">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">(</span><span class="kt">uint8_t</span> <span class="p">[]){</span><span class="mh">0x0f</span><span class="p">,</span> <span class="mh">0x0f</span><span class="p">,</span> <span class="mh">0x0f</span><span class="p">,</span> <span class="mh">0x0f</span><span class="p">,</span> <span class="mh">0x0f</span><span class="p">,</span> <span class="mh">0x0f</span><span class="p">,</span> <span class="mh">0x0f</span><span class="p">,</span> <span class="mh">0x0f</span><span class="p">,</span> <span class="mh">0x0f</span><span class="p">,</span> <span class="mh">0x0f</span><span class="p">,</span> <span class="mh">0x0f</span><span class="p">,</span> <span class="mh">0x0f</span><span class="p">},</span>
+<span class="p">};</span>
+
+<span class="k">const</span> <span class="k">struct</span> <span class="nc">bitmap_t</span> <span class="n">bitmap_rgb</span> <span class="o">=</span> <span class="p">{</span>
+	<span class="p">.</span><span class="n">width</span> <span class="o">=</span> <span class="mi">9</span><span class="p">,</span>
+	<span class="p">.</span><span class="n">height</span> <span class="o">=</span> <span class="mi">9</span><span class="p">,</span>
+	<span class="p">.</span><span class="n">format</span> <span class="o">=</span> <span class="n">BITMAP_RGB24</span><span class="p">,</span>
+	<span class="p">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">(</span><span class="kt">uint8_t</span> <span class="p">[]){</span>
+		<span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>  <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>  <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>   <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>  <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>  <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>
+		<span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>  <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>  <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>   <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>  <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>  <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>
+		<span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>  <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>  <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>   <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>  <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>  <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>
+		<span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>  <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>  <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>   <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>  <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>  <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>
+		<span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>  <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>  <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>   <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>  <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>  <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>
+		<span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>  <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>  <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>   <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>  <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>  <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span>
+		<span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span>  <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span>  <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span>   <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span>  <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span>  <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span>
+		<span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span>  <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span>  <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span>   <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span>  <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span>  <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span>
+		<span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span>  <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span>  <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span>   <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span>  <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span>  <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xff</span><span class="p">,</span>
+	<span class="p">},</span>
+<span class="p">};</span>
+
+<span class="n">eglib_DrawBitmap</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">44</span><span class="p">,</span> <span class="mi">26</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">bitmap_bw</span><span class="p">);</span>
+<span class="n">eglib_DrawBitmap</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">46</span><span class="p">,</span> <span class="mi">57</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">bitmap_rgb</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<a class="reference internal image-reference" href="../../_images/eglib_DrawBitmap.png"><img alt="../../_images/eglib_DrawBitmap.png" src="../../_images/eglib_DrawBitmap.png" style="width: 200px;" /></a>
+</dd></dl>
+
+</div>
+<div class="section" id="text">
+<h2><a class="toc-backref" href="#id10">Text</a><a class="headerlink" href="#text" title="Permalink to this headline">¶</a></h2>
+<dl class="type">
+<dt id="c.glyph_t">
+struct <code class="sig-name descname">glyph_t</code><a class="headerlink" href="#c.glyph_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>A glyph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><code class="xref c c-type docutils literal notranslate"><span class="pre">glyph_block_t</span></code>.</p>
+</dd>
+</dl>
+<dl class="member">
+<dt id="c.glyph_t.width">
+uint8_t <code class="sig-name descname">width</code><a class="headerlink" href="#c.glyph_t.width" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bitmap width.</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.glyph_t.height">
+uint8_t <code class="sig-name descname">height</code><a class="headerlink" href="#c.glyph_t.height" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bitmap height.</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.glyph_t.left">
+int8_t <code class="sig-name descname">left</code><a class="headerlink" href="#c.glyph_t.left" title="Permalink to this definition">¶</a></dt>
+<dd><p>Left padding before bitmap.</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.glyph_t.advance">
+uint8_t <code class="sig-name descname">advance</code><a class="headerlink" href="#c.glyph_t.advance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Distance to increment the pen position after rendering this glyph.</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.glyph_t.top">
+int8_t <code class="sig-name descname">top</code><a class="headerlink" href="#c.glyph_t.top" title="Permalink to this definition">¶</a></dt>
+<dd><p>Distance from baseline to glyph’s highest pixel.</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.glyph_t.data">
+const uint8_t * <code class="sig-name descname">data</code><a class="headerlink" href="#c.glyph_t.data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bitmap data.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="type">
+<dt id="c.glyph_unicode_block_t">
+struct <code class="sig-name descname">glyph_unicode_block_t</code><a class="headerlink" href="#c.glyph_unicode_block_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>Glyphs for a <a class="reference external" href="https://en.wikipedia.org/wiki/Unicode_block">Unicode block</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.font_t" title="font_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">font_t</span></code></a>.</p>
+</dd>
+</dl>
+<dl class="member">
+<dt id="c.glyph_unicode_block_t.charcode_start">
+wchar_t <code class="sig-name descname">charcode_start</code><a class="headerlink" href="#c.glyph_unicode_block_t.charcode_start" title="Permalink to this definition">¶</a></dt>
+<dd><p>First unicode character code this font supports.</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.glyph_unicode_block_t.charcode_end">
+wchar_t <code class="sig-name descname">charcode_end</code><a class="headerlink" href="#c.glyph_unicode_block_t.charcode_end" title="Permalink to this definition">¶</a></dt>
+<dd><p>Last unicode character code this font supports.</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.glyph_unicode_block_t.glyphs">
+const struct <a class="reference internal" href="#c.glyph_t" title="glyph_t">glyph_t</a> ** <code class="sig-name descname">glyphs</code><a class="headerlink" href="#c.glyph_unicode_block_t.glyphs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Array of glyphs for each supported unicode character.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="type">
+<dt id="c.font_t">
+struct <code class="sig-name descname">font_t</code><a class="headerlink" href="#c.font_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>A Font definition.</p>
+<dl class="member">
+<dt id="c.font_t.pixel_size">
+uint8_t <code class="sig-name descname">pixel_size</code><a class="headerlink" href="#c.font_t.pixel_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Font pixel size.</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.font_t.ascent">
+int16_t <code class="sig-name descname">ascent</code><a class="headerlink" href="#c.font_t.ascent" title="Permalink to this definition">¶</a></dt>
+<dd><p>The distance from the baseline to the highest or upper grid coordinate used to place an outline point.</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.font_t.descent">
+int16_t <code class="sig-name descname">descent</code><a class="headerlink" href="#c.font_t.descent" title="Permalink to this definition">¶</a></dt>
+<dd><p>The distance from the baseline to the lowest grid coordinate used to place an outline point.</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.font_t.line_space">
+uint16_t <code class="sig-name descname">line_space</code><a class="headerlink" href="#c.font_t.line_space" title="Permalink to this definition">¶</a></dt>
+<dd><p>The distance that must be placed between two lines of text.</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.font_t.unicode_blocks">
+const struct <a class="reference internal" href="#c.glyph_unicode_block_t" title="glyph_unicode_block_t">glyph_unicode_block_t</a> *[5] <code class="sig-name descname">unicode_blocks</code><a class="headerlink" href="#c.font_t.unicode_blocks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Array of glyph unicode blocks.</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.font_t.unicode_blocks_count">
+uint8_t <code class="sig-name descname">unicode_blocks_count</code><a class="headerlink" href="#c.font_t.unicode_blocks_count" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of <code class="docutils literal notranslate"><span class="pre">unicode_blocks</span></code>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_SetFont">
+void <code class="sig-name descname">eglib_SetFont</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em>, const struct <a class="reference internal" href="#c.font_t" title="font_t">font_t</a> *<em> font</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_SetFont" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set font to be used by other font functions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="fonts.html"><span class="doc">Fonts</span></a>.</p>
+</dd>
+<dt class="field-even">See also</dt>
+<dd class="field-even"><p><a class="reference internal" href="#c.eglib_AddUnicodeBlockToFont" title="eglib_AddUnicodeBlockToFont"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_AddUnicodeBlockToFont()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_AddUnicodeBlockToFont">
+_Bool <code class="sig-name descname">eglib_AddUnicodeBlockToFont</code><span class="sig-paren">(</span>struct <a class="reference internal" href="#c.font_t" title="font_t">font_t</a> *<em> font</em>, const struct <a class="reference internal" href="#c.glyph_unicode_block_t" title="glyph_unicode_block_t">glyph_unicode_block_t</a> *<em> unicode_block</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_AddUnicodeBlockToFont" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add given unicode block to font.</p>
+<p>Returns <cite>true</cite> in case of error, <cite>false</cite> on success.</p>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="fonts.html"><span class="doc">Fonts</span></a></p>
+</dd>
+<dt class="field-even">See also</dt>
+<dd class="field-even"><p><a class="reference internal" href="#c.eglib_SetFont" title="eglib_SetFont"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_SetFont()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_GetGlyph">
+const struct <a class="reference internal" href="#c.glyph_t" title="glyph_t">glyph_t</a> * <code class="sig-name descname">eglib_GetGlyph</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em>, wchar_t<em> unicode_char</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_GetGlyph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return given unicode character’s <a class="reference internal" href="#c.glyph_t" title="glyph_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">glyph_t</span></code></a> or <cite>NULL</cite> if unsupported
+by font.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_DrawGlyph">
+void <code class="sig-name descname">eglib_DrawGlyph</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> x</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> y</em>, const struct <a class="reference internal" href="#c.glyph_t" title="glyph_t">glyph_t</a> *<em> glyph</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DrawGlyph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw given <a class="reference internal" href="#c.glyph_t" title="glyph_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">glyph_t</span></code></a>, similar to <a class="reference internal" href="#c.eglib_DrawWChar" title="eglib_DrawWChar"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_DrawWChar()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_DrawWChar">
+void <code class="sig-name descname">eglib_DrawWChar</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> x</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> y</em>, wchar_t<em> unicode_char</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DrawWChar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw given unicode character glyph at <code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">y)</span></code>.</p>
+<p>Example:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">coordinate_t</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">;</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="mi">50</span> <span class="o">-</span> <span class="mi">14</span><span class="p">;</span>
+<span class="n">y</span> <span class="o">=</span> <span class="mi">30</span> <span class="o">+</span> <span class="mi">14</span> <span class="o">/</span> <span class="mi">2</span><span class="p">;</span>
+
+<span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">128</span><span class="p">);</span>
+<span class="n">eglib_DrawLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="n">y</span><span class="p">);</span>
+<span class="n">eglib_DrawLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">y</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="n">y</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span>
+<span class="n">eglib_DrawLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="mi">100</span><span class="p">);</span>
+
+<span class="n">eglib_SetFont</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">font_Liberation_SansRegular_20px</span><span class="p">);</span>
+<span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">);</span>
+<span class="n">eglib_DrawWChar</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="sc">&#39;g&#39;</span><span class="p">);</span>
+<span class="n">eglib_DrawWChar</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">9999</span><span class="p">);</span>  <span class="c1">// Unsupported by font</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<a class="reference internal image-reference" href="../../_images/eglib_DrawWChar.png"><img alt="../../_images/eglib_DrawWChar.png" src="../../_images/eglib_DrawWChar.png" style="width: 200px;" /></a>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_DrawText">
+void <code class="sig-name descname">eglib_DrawText</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> x</em>, <a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a><em> y</em>, const char *<em> utf8_text</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DrawText" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw given UTF-8 text starting at <code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">y)</span></code>.</p>
+<p>Example:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">coordinate_t</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">;</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="mi">50</span> <span class="o">-</span> <span class="mi">20</span><span class="p">;</span>
+<span class="n">y</span> <span class="o">=</span> <span class="mi">50</span> <span class="o">+</span> <span class="mi">14</span> <span class="o">/</span> <span class="mi">2</span><span class="p">;</span>
+
+<span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">128</span><span class="p">);</span>
+<span class="n">eglib_DrawLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="mi">99</span><span class="p">,</span> <span class="n">y</span><span class="p">);</span>
+<span class="n">eglib_DrawLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="mi">99</span><span class="p">);</span>
+
+<span class="n">eglib_SetFont</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">font_Liberation_SansRegular_20px</span><span class="p">);</span>
+<span class="n">eglib_AddUnicodeBlockToFont</span><span class="p">(</span>
+  <span class="o">&amp;</span><span class="n">font_Liberation_SansRegular_20px</span><span class="p">,</span>
+  <span class="o">&amp;</span><span class="n">unicode_block_Liberation_SansRegular_20px_Latin1Supplement</span>
+<span class="p">);</span>
+<span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">);</span>
+<span class="n">eglib_DrawText</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s">&quot;Olá!&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<a class="reference internal image-reference" href="../../_images/eglib_DrawText.png"><img alt="../../_images/eglib_DrawText.png" src="../../_images/eglib_DrawText.png" style="width: 200px;" /></a>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_DrawTextCentered">
+<code class="sig-name descname">eglib_DrawTextCentered</code><span class="sig-paren">(</span>eglib, x, y, utf8_text<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DrawTextCentered" title="Permalink to this definition">¶</a></dt>
+<dd><p>Similar to <a class="reference internal" href="#c.eglib_DrawText" title="eglib_DrawText"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_DrawText()</span></code></a>, but centers text horizontally at given
+coordinates</p>
+<p>Example:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">coordinate_t</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">;</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="mi">50</span> <span class="o">-</span> <span class="mi">20</span><span class="p">;</span>
+<span class="n">y</span> <span class="o">=</span> <span class="mi">50</span> <span class="o">+</span> <span class="mi">14</span> <span class="o">/</span> <span class="mi">2</span><span class="p">;</span>
+
+<span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">128</span><span class="p">);</span>
+<span class="n">eglib_DrawLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="mi">99</span><span class="p">,</span> <span class="n">y</span><span class="p">);</span>
+<span class="n">eglib_DrawLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="mi">99</span><span class="p">);</span>
+
+<span class="n">eglib_SetFont</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">font_Liberation_SansRegular_20px</span><span class="p">);</span>
+<span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">);</span>
+<span class="n">eglib_DrawTextCentered</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s">&quot;Hello!&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<a class="reference internal image-reference" href="../../_images/eglib_DrawTextCentered.png"><img alt="../../_images/eglib_DrawTextCentered.png" src="../../_images/eglib_DrawTextCentered.png" style="width: 200px;" /></a>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_GetTextWidth">
+<a class="reference internal" href="../eglib.html#c.coordinate_t" title="coordinate_t">coordinate_t</a> <code class="sig-name descname">eglib_GetTextWidth</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em>, const char *<em> utf8_text</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_GetTextWidth" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the width in pixels of the given UTF-8 text.</p>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.eglib_SetFont" title="eglib_SetFont"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_SetFont()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="index.html" title="Previous document">Drawing</a>
+        </li>
+        <li>
+          <a href="fonts.html" title="Next document">Fonts</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../../index.html">
+    <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+
+
+<p>
+	<a class="badge" href="https://github.com/fornellas/eglib/actions?query=workflow%3Abuild+branch%3Amaster" target="_blank">
+	  <img src="https://github.com/fornellas/eglib/workflows/build/badge.svg?branch=master"/>
+	</a>
+	<a class="badge" href="https://github.com/fornellas/eglib/pulls" target="_blank">
+	  <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg"/>
+	</a>
+	<br>
+	<a class="badge" href="https://www.paypal.com/donate?hosted_button_id=AX26JVRT2GS2Q" target="_blank">
+	  <img src="https://img.shields.io/badge/donate-%E2%9D%A4%C2%A0-ff69b4.svg?style=flat"/>
+	</a>
+</p>
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../driver_development/index.html">Driver Development</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../eglib.html">eglib</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Drawing</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Drawing Functions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#color">Color</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pixel">Pixel</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#lines">Lines</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#triangles">Triangles</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#frames">Frames</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#boxes">Boxes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#round-things">Round things</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bitmaps">Bitmaps</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#text">Text</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fonts.html">Fonts</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../display/index.html">Display</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../hal/index.html">HAL</a></li>
+</ul>
+</li>
+</ul>
+
+
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Fabio Pugliese Ornellas.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.4.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../_sources/api_reference/drawing/functions.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+    <a href="https://github.com/fornellas/eglib" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

@@ -42,7 +42,7 @@
  */
 
 
-typedef enum display_type { UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P } display_t;
+typedef enum display_type { UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P } xcv_display_t;
 typedef enum chopping_mode { NO_CHOP, VARIO_CHOP, S2F_CHOP, BOTH_CHOP } chopping_mode_t;
 typedef enum rs232linemode { RS232_NORMAL, RS232_INVERTED } rs232lm_t;
 typedef enum nmea_protocol  { OPENVARIO, BORGELT, CAMBRIDGE, XCVARIO, XCVARIO_DEVEL, GENERIC } nmea_proto_t;
@@ -85,6 +85,8 @@ typedef enum e_menu_screens { SCREEN_VARIO, SCREEN_GMETER, SCREEN_FLARM, SCREEN_
 typedef enum e_s2f_arrow_color { AC_WHITE_WHITE, AC_BLUE_BLUE, AC_GREEN_RED } e_s2f_arrow_color_t;
 typedef enum e_vario_needle_color { VN_COLOR_WHITE, VN_COLOR_ORANGE, VN_COLOR_RED }  e_vario_needle_color_t;
 typedef enum e_data_monitor { MON_OFF, MON_BLUETOOTH, MON_WIFI_8880, MON_WIFI_8881, MON_WIFI_8882, MON_S1, MON_S2, MON_CAN  }  e_data_monitor_t;
+typedef enum e_display_orientation { DISPLAY_NORMAL, DISPLAY_TOPDOWN } e_display_orientation_t;
+
 
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
 
@@ -111,6 +113,7 @@ public:
 	static bool isMaster();
 	static bool isClient();
     static bool isWired();
+    static bool mustSync( uint8_t sync);
 	static bool haveWLAN();
     static bool lazyCommit;
     static bool commitNow();
@@ -190,10 +193,6 @@ public:
 	virtual T getGui() const { return get(); } // tb. overloaded for blackboard
 	virtual const char* unit() const { return ""; } // tb. overloaded for blackboard
 
-	bool mustSync(){
-		return( ( (isClient() && _sync == SYNC_FROM_CLIENT) || (isMaster() && _sync == SYNC_FROM_MASTER) || _sync == SYNC_BIDIR ) );
-	}
-
 	bool set( T aval, bool dosync=true ) {
 		if( _value == aval ){
 			// ESP_LOGI(FNAME,"Value already in config: %s", _key );
@@ -231,7 +230,7 @@ public:
 	}
 
 	bool sync(){
-		if( mustSync() ){
+		if( SetupCommon::mustSync( _sync ) ){
 			// ESP_LOGI( FNAME,"Now sync %s", _key );
 			sendSetup( _sync, _key, typeName(), (void *)(&_value), sizeof( _value ) );
 			if( isMaster() && _sync == SYNC_BIDIR )

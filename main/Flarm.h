@@ -3,14 +3,14 @@
 #include <cstdlib> // abs
 #include <string> // std::string
 #include <locale> // std::locale, std::toupper
-#include <Ucglib.h>
+#include <AdaptUGC.h>
 #include "RingBufCPP.h"  // SString, tbd: extra header
 #include "Units.h"
 
 
 class Flarm {
 public:
-	static void setDisplay( Ucglib_ILI9341_18x240x320_HWSPI *theUcg ) { ucg = theUcg; };
+	static void setDisplay( AdaptUGC *theUcg ) { ucg = theUcg; };
 	static void parsePFLAU( const char *pflau );
 	static void parsePFLAA( const char *pflaa );
 	static void parsePFLAX( SString &msg );
@@ -48,7 +48,7 @@ private:
  	static void drawClearVerticalTriangle( int x, int y, int rb, int dist, int size, int factor );
  	static void drawTriangle( int x, int y, int rb, int dist, int size=15, int factor=2, bool erase=false );
 
- 	static Ucglib_ILI9341_18x240x320_HWSPI* ucg;
+ 	static AdaptUGC* ucg;
 	static int RX,TX,GPS,Power;
 	static int AlarmLevel;
 	static int RelativeBearing,RelativeVertical,RelativeDistance;

@@ -21,9 +21,9 @@ class AnalogInput;
 class SetupMenu:  public MenuEntry {
 public:
 	SetupMenu();
-	SetupMenu( std::string title );
+	SetupMenu( const char* title );
 	virtual ~SetupMenu();
-	void begin( IpsDisplay* display, ESPRotary * rotary, PressureSensor * bmp, AnalogInput *adc );
+	void begin( IpsDisplay* display, PressureSensor * bmp, AnalogInput *adc );
 	void setup();
 	void display( int mode=0 );
 	const char *value() const override { return 0; };

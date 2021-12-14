@@ -23,13 +23,13 @@ Last update: 2021-04-18
 #include "QMC5883L.h"
 #include "sensor.h"
 
-#include <Ucglib.h>
+#include <AdaptUGC.h>
 #include <esp_log.h>
 
-ShowCompassSettings::ShowCompassSettings( std::string title) :
+ShowCompassSettings::ShowCompassSettings( const char* title) :
 SetupMenuDisplay( title, nullptr )
 {
-	ESP_LOGI(FNAME, "ShowCompassSettings(): title='%s'", title.c_str() );
+	ESP_LOGI(FNAME, "ShowCompassSettings(): title='%s'", title );
 }
 
 void ShowCompassSettings::display( int mode )
@@ -40,8 +40,8 @@ void ShowCompassSettings::display( int mode )
 	ESP_LOGI(FNAME, "display() mode=%d", mode );
 
 	clear();
-	ucg->setFont( ucg_font_fur14_hf );
-	uprintf( 5, 25, selected->_title.c_str() );
+	ucg->setFont( ucg_font_ncenR14_hr );
+	uprintf( 5, 25, selected->_title );
 
 	uint16_t y = 75;
 	uint16_t y1 = 75;
@@ -71,7 +71,7 @@ void ShowCompassSettings::display( int mode )
 	y += 25;
 
 	ucg->setPrintPos( 0, y );
-	sprintf( buffer, "Compass declination: %d\260",
+	sprintf( buffer, "Compass declination: %d°",
 			static_cast<int>(compass_declination.get()) );
 	ucg->printf( "%s", buffer );
 	y += 25;
@@ -105,7 +105,7 @@ void ShowCompassSettings::display( int mode )
 
 	uint32_t counter = 0;
 
-	while( _rotary->readSwitch() == false )
+	while( readSwitch() == false )
 	{
 		counter++;
 

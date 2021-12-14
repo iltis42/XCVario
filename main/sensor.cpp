@@ -30,7 +30,7 @@
 #include "SetupMenuValFloat.h"
 
 #include <SPI.h>
-#include <Ucglib.h>
+#include <AdaptUGC.h>
 #include <OTA.h>
 #include "SetupNG.h"
 #include "Switch.h"
@@ -71,6 +71,7 @@
 #include <cstdio>
 #include <cstring>
 #include "DataMonitor.h"
+#include "AdaptUGC.h"
 
 // #include "sound.h"
 
@@ -82,16 +83,10 @@ BMP:
     CS - this is the Chip Select pin, drop it low to start an SPI transaction. Its an input to the chip
  */
 
-#define SPI_SCLK GPIO_NUM_14  // SPI Clock pin 14
-#define SPI_DC   GPIO_NUM_15  // SPI Data/Command pin 15
-#define SPI_MOSI GPIO_NUM_27  // SPI SDO Master Out Slave In pin
-#define SPI_MISO GPIO_NUM_32  // SPI SDI Master In Slave Out ESP32=Master,BME280=slave pin
-
 #define CS_bme280BA GPIO_NUM_26   // before CS pin 33
 #define CS_bme280TE GPIO_NUM_33   // before CS pin 26
 
-#define CS_Display GPIO_NUM_13    // CS pin 13 for Display
-#define RESET_Display GPIO_NUM_5  // Reset pin for Display
+
 #define FREQ_BMP_SPI 13111111/2
 
 #define SPL06_007_BARO 0x77
@@ -124,7 +119,7 @@ xSemaphoreHandle spiMutex=NULL;
 PressureSensor *baroSensor = 0;
 PressureSensor *teSensor = 0;
 
-Ucglib_ILI9341_18x240x320_HWSPI *MYUCG = 0;  // ( SPI_DC, CS_Display, RESET_Display );
+AdaptUGC *MYUCG = 0;  // ( SPI_DC, CS_Display, RESET_Display );
 IpsDisplay *display;
 bool topDown = false;
 
@@ -191,6 +186,9 @@ int hold_alarm=0;
 int the_can_mode = CAN_MODE_MASTER;
 int active_screen = 0;  // 0 = Vario
 bool flarmDownload = false; // Flarm IGC download flag
+
+
+AdaptUGC *egl = 0;
 
 float getTAS() { return tas; };
 
@@ -461,7 +459,6 @@ void clientLoop(void *pvParameters)
 				baroP = baroSensor->calcPressure( Units::Qnh( QNH.get() ) , tmpalt);
 			}
 			dynamicP = Atmosphere::kmh2pascal(ias.get());
-
 			tas = Atmosphere::TAS2( ias.get(), altitude.get(), OAT.get() );
 
 			if( haveMPU ) {
@@ -784,6 +781,7 @@ void sensor(void *args){
 	NVS.begin();
 	register_coredump();
 	Polars::begin();
+
 	the_can_mode = can_mode.get(); // initialize variable for CAN mode
 
 	if( hardwareRevision.get() != 2 ){
@@ -818,13 +816,25 @@ void sensor(void *args){
 
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ccp = (int)(core_climb_period.get()*10);
+
 	SPI.begin( SPI_SCLK, SPI_MISO, SPI_MOSI, CS_bme280BA );
 	xSemaphoreGive(spiMutex);
 
-	MYUCG = new Ucglib_ILI9341_18x240x320_HWSPI( SPI_DC, CS_Display, RESET_Display );
+	egl = new AdaptUGC();
+	egl->begin();
+
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
+	ESP_LOGI( FNAME, "setColor" );
+	egl->setColor( 0, 255, 0 );
+	ESP_LOGI( FNAME, "drawLine" );
+	egl->drawLine( 20,20, 20,80 );
+	ESP_LOGI( FNAME, "finish Draw" );
+	xSemaphoreGive(spiMutex);
+
+	MYUCG = egl; // new AdaptUGC( SPI_DC, CS_Display, RESET_Display );
 	display = new IpsDisplay( MYUCG );
 	Flarm::setDisplay( MYUCG );
-	DM.begin( MYUCG, &Rotary );
+	DM.begin( MYUCG );
 	display->begin();
 	display->bootDisplay();
 
@@ -852,7 +862,7 @@ void sensor(void *args){
 
 		}
 		ota = new OTA();
-		ota->begin( &Rotary );
+		ota->begin();
 		ota->doSoftwareUpdate( display );
 	}
 
@@ -1312,7 +1322,7 @@ void sensor(void *args){
 	{
 		LeakTest::start( baroSensor, teSensor, asSensor );
 	}
-	Menu->begin( display, &Rotary, baroSensor, &Battery );
+	Menu->begin( display, baroSensor, &Battery );
 
 	if ( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT ){
 		ESP_LOGI(FNAME,"Client Mode");
@@ -1376,8 +1386,8 @@ void sensor(void *args){
 		gpio_pullup_en( GPIO_NUM_34 );
 	}
 
-	gpio_set_pull_mode(RESET_Display, GPIO_PULLUP_ONLY );
-	gpio_set_pull_mode(CS_Display, GPIO_PULLUP_ONLY );
+	// gpio_set_pull_mode(RESET_Display, GPIO_PULLUP_ONLY );
+	// gpio_set_pull_mode(CS_Display, GPIO_PULLUP_ONLY );
 
 	delay( 100 );
 

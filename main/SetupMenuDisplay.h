@@ -25,7 +25,7 @@ Last update: 2021-02-25
 class SetupMenuDisplay: public MenuEntry
 {
 public:
-  SetupMenuDisplay( std::string title, int (*action)(SetupMenuDisplay *p) = nullptr );
+  SetupMenuDisplay( const char* title, int (*action)(SetupMenuDisplay *p) = nullptr );
 
   virtual ~SetupMenuDisplay();
 

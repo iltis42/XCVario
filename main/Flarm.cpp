@@ -21,7 +21,7 @@ double Flarm::gndCourse = 0;
 bool Flarm::gpsOK = false;
 char Flarm::ID[8] = "";
 int Flarm::bincom = 0;
-Ucglib_ILI9341_18x240x320_HWSPI* Flarm::ucg;
+AdaptUGC* Flarm::ucg;
 
 extern xSemaphoreHandle spiMutex;
 
@@ -399,7 +399,7 @@ void Flarm::drawFlarmWarning(){
     	ucg->setPrintPos(200, 20 );
     	ucg->setFontPosCenter();
     	ucg->setColor( COLOR_WHITE );
-    	ucg->setFont(ucg_font_fub20_hr);
+    	ucg->setFont(ucg_font_fub20_hr, true);
 
     	ucg->printf( "%d ", AlarmLevel );
     	alarmOld = AlarmLevel;
@@ -408,7 +408,7 @@ void Flarm::drawFlarmWarning(){
 		ucg->setPrintPos(130, 140 );
 		ucg->setFontPosCenter();
 		ucg->setColor( COLOR_WHITE );
-		ucg->setFont(ucg_font_fub25_hr);
+		ucg->setFont(ucg_font_fub25_hr, true );
 		char d[16];
 		sprintf(d,"%d m   ", RelativeDistance );
 		ucg->printf( d );
@@ -418,7 +418,7 @@ void Flarm::drawFlarmWarning(){
     	ucg->setPrintPos(130, 220 );
     	ucg->setFontPosCenter();
     	ucg->setColor( COLOR_WHITE );
-    	ucg->setFont(ucg_font_fub25_hr);
+    	ucg->setFont(ucg_font_fub25_hr, true);
     	char v[16];
     	int vdiff = RelativeVertical;
     	const char *unit = "m";
@@ -443,7 +443,7 @@ void Flarm::drawFlarmWarning(){
     	ucg->setPrintPos(130, 80 );
     	ucg->setFontPosCenter();
     	ucg->setColor( COLOR_WHITE );
-    	ucg->setFont(ucg_font_fub25_hr);
+    	ucg->setFont(ucg_font_fub25_hr, true );
     	char b[16];
     	int quant=15;
     	if( RelativeBearing < 0 )

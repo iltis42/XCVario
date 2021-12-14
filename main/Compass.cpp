@@ -84,10 +84,10 @@ float Compass::getGyroHeading( bool *ok, bool addDecl ){
 		*ok = true;
 		_external_data--;  // age external data
 	}
-	if( (compass_declination.get() != 0.0) && addDecl )
-	{
-		float true_gryro_heading = Vector::normalizeDeg( m_gyro_fused_heading + compass_declination.get() );  // Correct true heading in case of over/underflow
-	}
+	// if( (compass_declination.get() != 0.0) && addDecl )
+	// {
+		// true_gryro_heading = Vector::normalizeDeg( m_gyro_fused_heading + compass_declination.get() );  // Correct true heading in case of over/underflow
+	// }
 	// ESP_LOGI( FNAME, "Heading: %3.2f age: %d ext: %d", m_gyro_fused_heading, gyro_age, _external_data );
 	return m_gyro_fused_heading;
 }

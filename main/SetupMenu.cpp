@@ -946,7 +946,7 @@ void SetupMenu::setup( )
 		MenuEntry* compassME = compassWindME->addEntry( compassMenu );
 
 
-		SetupMenuSelect * compSensor = new SetupMenuSelect( "Sensor Option", false, compass_ena, true, &compass_enable);
+		SetupMenuSelect * compSensor = new SetupMenuSelect( "Sensor Option", true, compass_ena, true, &compass_enable);
 		compSensor->addEntry( "Disable");
 		compSensor->addEntry( "Enable I2C");
 		compSensor->addEntry( "Enable I2C, no Tilt Corr.");

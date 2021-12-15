@@ -1173,7 +1173,7 @@ void IpsDisplay::drawScale( int16_t max_pos, int16_t max_neg, int16_t pos, int16
 
 // Draw scale label numbers for -pi/2 to pi/2 w/o sign
 void IpsDisplay::drawOneLabel( float val, int16_t labl, int16_t pos, int16_t offset ) {
-	ESP_LOGI( FNAME,"drawOneLabel val %.2f, label %d", val, labl );
+	// ESP_LOGI( FNAME,"drawOneLabel val %.2f, label %d", val, labl );
 	if( _menu )
 		return;
 	float to_side = 0.05;

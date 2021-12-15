@@ -264,7 +264,7 @@ void CANbus::rxtick(int tick){
 				ESP_LOGI(FNAME,"CAN Magsensor connection timeout");
 				_connected_magsens = false;
 			}
-			if( compass_enable.get() && !(_connected_timeout_magsens % 10000) && !_connected_xcv ){
+			if( compass_enable.get() == CS_CAN && !(_connected_timeout_magsens % 10000) && !_connected_xcv ){
 				// only restart when xcv is not connected, otherwise magsensor may be just plugged out
 				ESP_LOGI(FNAME,"CAN Magnet Sensor restart timeout");
 				restart();

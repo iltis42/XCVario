@@ -185,38 +185,39 @@ uint8_t QMC5883L::readRegister( const uint8_t addr,
 esp_err_t QMC5883L::selfTest()
 {
 	ESP_LOGI( FNAME, "QMC5883L selftest");
-	if( !checkBus() )	{
-		m_sensor = false;
-		return ESP_FAIL;
-	}
+
 	// load last known calibration.
 	loadCalibration();
 	if( compass_enable.get() == CS_I2C || compass_enable.get() == CS_I2C_NO_TILT ){
-	uint8_t chipId = 0;
-	// Try to read Register 0xD, it delivers the chip id 0xff for a QMC5883L
-	m_sensor = false;
-	for( int i=0; i< 10; i++ ){
-		esp_err_t err = m_bus->readByte( QMC5883L_ADDR, REG_CHIP_ID, &chipId );
-		if( err == ESP_OK ){
-			m_sensor = true;
-			break;
+		if( !checkBus() )	{
+			m_sensor = false;
+			return ESP_FAIL;
 		}
-		delay(20);
-	}
-	if( !m_sensor ){
-		ESP_LOGE( FNAME,"Scan for I2C address 0x%02X FAILED", QMC5883L_ADDR );
-		return ESP_FAIL;
-	}
-	if( chipId != 0xff ){
+		uint8_t chipId = 0;
+		// Try to read Register 0xD, it delivers the chip id 0xff for a QMC5883L
 		m_sensor = false;
-		ESP_LOGE( FNAME, "QMC5883L self-test, detected chip ID 0x%02X is unsupported, expected 0xFF",	chipId );
-		return ESP_FAIL;
+		for( int i=0; i< 10; i++ ){
+			esp_err_t err = m_bus->readByte( QMC5883L_ADDR, REG_CHIP_ID, &chipId );
+			if( err == ESP_OK ){
+				m_sensor = true;
+				break;
+			}
+			delay(20);
+		}
+		if( !m_sensor ){
+			ESP_LOGE( FNAME,"Scan for I2C address 0x%02X FAILED", QMC5883L_ADDR );
+			return ESP_FAIL;
+		}
+		if( chipId != 0xff ){
+			m_sensor = false;
+			ESP_LOGE( FNAME, "QMC5883L self-test, detected chip ID 0x%02X is unsupported, expected 0xFF",	chipId );
+			return ESP_FAIL;
+		}
+		ESP_LOGI( FNAME, "QMC5883L selftest PASSED");
+		m_sensor = true;
+		return ESP_OK;
 	}
-	ESP_LOGI( FNAME, "QMC5883L selftest PASSED");
-	m_sensor = true;
-	return ESP_OK;
-	}
-	else if( compass_enable.get() == CS_CAN ){
+	else if( compass_enable.get() == CS_CAN && can_speed.get() != CAN_SPEED_OFF ){
 		for( int i=0; i<300; i++ ){ // give 30 second's chance for module to send data with the corresponding CAN data rate
 			if( age < 5 ){          // CAN bus sensor probes next speed after 13 seconds and starts with new speed, so max 26 seconds all 3 speeds are probed
 				return ESP_OK;
@@ -718,7 +719,7 @@ float QMC5883L::heading( bool *ok )
 	else if ( compass_enable.get() == CS_I2C_NO_TILT )
 		_heading = -RAD_TO_DEG * atan2( fy, fx );
 
-    // float heading_nt = -RAD_TO_DEG * atan2( fy, fx );
+	// float heading_nt = -RAD_TO_DEG * atan2( fy, fx );
 	// heading_nt = Vector::normalizeDeg( heading_nt );
 
 	_heading = Vector::normalizeDeg( _heading );

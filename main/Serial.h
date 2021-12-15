@@ -14,7 +14,8 @@ public:
   Serial() {};
   static void begin();
   static void taskStart();
-  static void serialHandler(void *pvParameters);
+  static void serialHandler1(void *pvParameters);
+  static void serialHandler2(void *pvParameters);
   static bool selfTest( int num );
 
 private:

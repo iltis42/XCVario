@@ -50,12 +50,13 @@ const char *flarm[] = {
 int sim=100;
 #define HEARTBEAT_PERIOD_MS_SERIAL 20
 #define SERIAL_STRLEN SSTRLEN
-static TaskHandle_t *pid;
-// char Serial::rxbuf[SERIAL_STRLEN];
+static TaskHandle_t *pid1;
+static TaskHandle_t *pid2;
+
 bool Serial::_selfTest = false;
 
 // Serial Handler  ttyS1, S1, port 8881
-void Serial::serialHandler(void *pvParameters){
+void Serial::serialHandler1(void *pvParameters){
 	SString s;
 	while(1) {
 		if( !_selfTest ){
@@ -122,10 +123,20 @@ void Serial::serialHandler(void *pvParameters){
 				free( rxbuf );
 			}
 			Router::routeS1();
-			Router::routeBT();
-			Router::routeClient();
-			BTSender::progress();   // piggyback this here, saves one task for BT sender
+		}
+		esp_task_wdt_reset();
+		if( uxTaskGetStackHighWaterMark( pid1 ) < 256 )
+			ESP_LOGW(FNAME,"Warning serial 1 task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid1 ) );
+		vTaskDelay( HEARTBEAT_PERIOD_MS_SERIAL/portTICK_PERIOD_MS );
+	}
+}
 
+// Serial Handler  ttyS2, S2, port 8882
+void Serial::serialHandler2(void *pvParameters){
+	SString s;
+	while(1) {
+		if( !_selfTest ){
+			// Serial Interface tty1 send
 			if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 ){
 				// ESP_LOGI(FNAME,"Serial 2 tick");
 				if ( !s2_tx_q.isEmpty() && Serial2.availableForWrite() ){
@@ -158,7 +169,6 @@ void Serial::serialHandler(void *pvParameters){
 						// the end !!!
 						numread = Serial2.readLine( rxbuf, SERIAL_STRLEN );
 					}
-
 					if( numread ){
 						// ESP_LOGI(FNAME,"Serial 2 RX bytes read: %d  bincom: %d", numread,  Flarm::bincom  );
 						// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),numread, ESP_LOG_INFO);
@@ -173,16 +183,16 @@ void Serial::serialHandler(void *pvParameters){
 					free( rxbuf );
 				}
 				Router::routeS2();
-				Router::routeBT();
 			}
 		}
 		esp_task_wdt_reset();
-		if( uxTaskGetStackHighWaterMark( pid ) < 256 )
-			ESP_LOGW(FNAME,"Warning serial task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid ) );
+		if( uxTaskGetStackHighWaterMark( pid2 ) < 256 )
+			ESP_LOGW(FNAME,"Warning serial 2 task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid2 ) );
 		vTaskDelay( HEARTBEAT_PERIOD_MS_SERIAL/portTICK_PERIOD_MS );
 	}
 
 }
+
 
 
 bool Serial::selfTest(int num){
@@ -263,7 +273,6 @@ void Serial::begin(){
 			}
 			Serial1.setRxBufferSize(512);
 		}
-		// need this for bluetooth
 	}
 	if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 ){
 		ESP_LOGI(FNAME,"Serial Interface ttyS2 enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial2_speed.get(), baud[serial2_speed.get()], serial2_tx_inverted.get(), serial2_rx_inverted.get() );
@@ -294,8 +303,11 @@ void Serial::begin(){
 
 void Serial::taskStart(){
 	ESP_LOGI(FNAME,"Serial::taskStart()" );
-	if( serial1_speed.get() != 0  || wireless != 0 || serial2_speed.get() != 0 ){
-		xTaskCreatePinnedToCore(&Serial::serialHandler, "serialHandler", 4096, NULL, 11, pid, 0);  // stay below compass task
+	if( serial1_speed.get() != 0  || wireless != 0  ){
+		xTaskCreatePinnedToCore(&serialHandler1, "serialHandler1", 3072, NULL, 11, pid1, 0);  // stay below compass task
+	}
+	if( serial2_speed.get() != 0 ){
+		xTaskCreatePinnedToCore(&serialHandler2, "serialHandler2", 3072, NULL, 10, pid2, 0);  // stay below compass task and task for S1
 	}
 	// handler S1 now serves both interfaces in one task
 }

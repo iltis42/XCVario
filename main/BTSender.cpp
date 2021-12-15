@@ -20,6 +20,8 @@
 #include "BluetoothSerial.h"
 #include "DataMonitor.h"
 
+static TaskHandle_t *pid;
+
 bool BTSender::selfTest(){
 	ESP_LOGI(FNAME,"SerialBT::selfTest");
 	if( !SerialBT ){
@@ -42,6 +44,16 @@ int BTSender::queueFull() {
 			return 1;
 	}
 	return 0;
+}
+
+void BTSender::btTask(void *pvParameters){
+	while(1) {
+		progress();
+		Router::routeBT();
+		if( uxTaskGetStackHighWaterMark( pid ) < 256 )
+			ESP_LOGW(FNAME,"Warning BT task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid ) );
+		vTaskDelay( 20/portTICK_PERIOD_MS );
+	}
 }
 
 void BTSender::progress(){
@@ -74,16 +86,20 @@ void BTSender::progress(){
 	}
 }
 
+
 void BTSender::begin(){
 	ESP_LOGI(FNAME,"BTSender::begin()" );
 	if( wireless == WL_BLUETOOTH ) {
-		 ESP_LOGI(FNAME,"BT on, create BT master object" );
-		 SerialBT = new BluetoothSerial();
-		 SerialBT->begin(SetupCommon::getID() );
+		ESP_LOGI(FNAME,"BT on, create BT master object" );
+		SerialBT = new BluetoothSerial();
+		SerialBT->begin( SetupCommon::getID() );
+		xTaskCreatePinnedToCore(&btTask, "btTask", 3072, NULL, 10, pid, 0);  // stay below compass task
 	}
 }
 
 
 // dummy, we don't implement BLE right now
 extern "C" void btsnd_hcic_ble_update_adv_report_flow_control( int ignore ) {};
+
+
 

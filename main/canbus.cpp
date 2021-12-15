@@ -326,6 +326,7 @@ void CANbus::rxtick(int tick){
             }
             nmea_state = 0;
         }
+		Router::routeClient();  // guess in TX tick we don't need, but here
 	}
 	else if( id == 0x031 ){ // magnet sensor
 		// ESP_LOGI(FNAME,"CAN RX MagSensor, msg: %d", bytes );

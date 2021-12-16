@@ -28,7 +28,7 @@
 #include <cstring>
 #include <iostream>
 #include <vector>
-
+#include "QMC5883L.h"
 
 
 /*
@@ -590,6 +590,7 @@ extern SetupNG<int> 		master_xcvario_lock;
 extern SetupNG<int> 		menu_long_press;
 extern SetupNG<int> 		menu_screens;
 extern SetupNG<int> 		data_monitor;
+extern SetupNG<t_bitfield_compass> 	calibration_bits;
 
 
 extern uint8_t g_col_background;

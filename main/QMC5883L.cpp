@@ -470,149 +470,120 @@ static bitfield_compass bits = { false, false, false, false, false, false };
  * stopped by the reporter function which displays intermediate results of the
  * calibration action.
  */
-bool QMC5883L::calibrate( bool (*reporter)( float xc, float yc, float zc, float xscale, float yscale, float zscale, float xb, float yb, float zb, bitfield_compass b ) )
+bool QMC5883L::calibrate( bool (*reporter)( float xc, float yc, float zc, float xscale, float yscale, float zscale, float xb, float yb, float zb, bitfield_compass b, bool print ), bool only_show  )
 {
 	// reset all old calibration data
-	ESP_LOGI( FNAME, "calibrate magnetic sensor" );
+	ESP_LOGI( FNAME, "calibrate/show magnetic sensor, only_show=%d ", only_show );
 	calibrationRunning = true;
-	resetCalibration();
-	bits = { false, false, false, false, false, false };
+	if( !only_show )
+		resetCalibration();
 
 	ESP_LOGI( FNAME, "calibrate min-max xyz");
-
 	int i = 0;
 
-	// #define MAX_MIN_LOGGING
-
-#ifdef MAX_MIN_LOGGING
-	int xmin_old = 0;
-	int xmax_old = 0;
-	int ymin_old = 0;
-	int ymax_old = 0;
-	int zmin_old = 0;
-	int zmax_old = 0;
-#endif
-
-	while( true )
-	{
-		i++;
-		if( rawHeading() == false )
+	if( !only_show ){
+		bits = { false, false, false, false, false, false };
+		while( true )
 		{
-			errors++;
-			if( errors > 10 ){
-				initialize();
-				errors = 0;
+			i++;
+			if( rawHeading() == false )
+			{
+				errors++;
+				if( errors > 10 ){
+					initialize();
+					errors = 0;
+				}
+				continue;
 			}
-			continue;
-		}
-		// uint64_t start = getMsTime();
+			// uint64_t start = getMsTime();
 
-		/* Find max/min xyz values */
-		xmin = ( xraw < xmin ) ? xraw : xmin;
-		ymin = ( yraw < ymin ) ? yraw : ymin;
-		zmin = ( zraw < zmin ) ? zraw : zmin;
-		xmax = ( xraw > xmax ) ? xraw : xmax;
-		ymax = ( yraw > ymax ) ? yraw : ymax;
-		zmax = ( zraw > zmax ) ? zraw : zmax;
+			/* Find max/min xyz values */
+			xmin = ( xraw < xmin ) ? xraw : xmin;
+			ymin = ( yraw < ymin ) ? yraw : ymin;
+			zmin = ( zraw < zmin ) ? zraw : zmin;
+			xmax = ( xraw > xmax ) ? xraw : xmax;
+			ymax = ( yraw > ymax ) ? yraw : ymax;
+			zmax = ( zraw > zmax ) ? zraw : zmax;
 
-#ifdef MAX_MIN_LOGGING
-		if( xmin_old != xmin ){
-			ESP_LOGI( FNAME, "New X-Min: %d", xmin );
-			xmin_old = xmin;
-		}
-		if( xmax_old != xmax ){
-			ESP_LOGI( FNAME, "New X-Max: %d", xmax );
-			xmax_old = xmax;
-		}
-		if( ymin_old != ymin ){
-			ESP_LOGI( FNAME, "New Y-Min: %d", ymin );
-			ymin_old = ymin;
-		}
-		if( ymax_old != ymax ){
-			ESP_LOGI( FNAME, "New Y-Max: %d", ymax );
-			ymax_old = ymax;
-		}
-		if( zmin_old != zmin ){
-			ESP_LOGI( FNAME, "New Z-Min: %d", zmin );
-			zmin_old = zmin;
-		}
-		if( zmax_old != zmax ){
-			ESP_LOGI( FNAME, "New Z-Max: %d", zmax );
-			zmax_old = zmax;
-		}
-#endif
+			const int16_t minval = (32768/100)*1; // 1%
+			if( abs(xraw) < minval && abs(yraw) < minval && zraw > 0  )
+				bits.zmax_green = true;
+			if( abs(xraw) < minval && abs(yraw) < minval && zraw < 0  )
+				bits.zmin_green = true;
+			if( abs(xraw) < minval && abs(zraw) < minval && yraw < 0  )
+				bits.ymin_green = true;
+			if( abs(xraw) < minval && abs(zraw) < minval && yraw > 0  )
+				bits.ymax_green = true;
+			if( abs(yraw) < minval && abs(zraw) < minval && xraw < 0  )
+				bits.xmin_green = true;
+			if( abs(yraw) < minval && abs(zraw) < minval && xraw > 0  )
+				bits.xmax_green = true;
 
-		const int16_t minval = (32768/100)*1; // 1%
-		if( abs(xraw) < minval && abs(yraw) < minval && zraw > 0  )
-			bits.zmax_green = true;
-		if( abs(xraw) < minval && abs(yraw) < minval && zraw < 0  )
-			bits.zmin_green = true;
-		if( abs(xraw) < minval && abs(zraw) < minval && yraw < 0  )
-			bits.ymin_green = true;
-		if( abs(xraw) < minval && abs(zraw) < minval && yraw > 0  )
-			bits.ymax_green = true;
-		if( abs(yraw) < minval && abs(zraw) < minval && xraw < 0  )
-			bits.xmin_green = true;
-		if( abs(yraw) < minval && abs(zraw) < minval && xraw > 0  )
-			bits.xmax_green = true;
+			if( i < 2 )
+				continue;
+
+			// Calculate hard iron correction
+			// calculate average x, y, z magnetic bias in counts
+			xbias = ( (float)xmax + xmin ) / 2;
+			ybias = ( (float)ymax + ymin ) / 2;
+			zbias = ( (float)zmax + zmin ) / 2;
+
+			// Calculate soft-iron scale factors
+			// calculate average x, y, z axis max chord length in counts
+			float xchord = ( (float)xmax - xmin ) / 2;
+			float ychord = ( (float)ymax - ymin ) / 2;
+			float zchord = ( (float)zmax - zmin ) / 2;
+
+			float cord_avgerage = ( xchord + ychord + zchord ) / 3.;
+
+			xscale = cord_avgerage / xchord;
+			yscale = cord_avgerage / ychord;
+			zscale = cord_avgerage / zchord;
+
+			if( !(i%4) )
+			{
+				// Send a calibration report to the subscriber every 500ms
+				reporter( xraw,yraw,zraw, xscale, yscale, zscale, xbias, ybias, zbias, bits, false );
+			}
+			if( ESPRotary::readSwitch() == true  )  // more responsive to query every loop
+				break;
+		}
+	}else{
+		ESP_LOGI( FNAME, "Show Calibration");
+		bits = calibration_bits.get();
+		reporter( xraw,yraw,zraw, xscale, yscale, zscale, xbias, ybias, zbias, bits, true );
+		while( ESPRotary::readSwitch() == true  )
+			delay(100);
+	}
+
+	if( !only_show ){
+		ESP_LOGI( FNAME, "Read Cal-Samples=%d, OK=%d, NOK=%d",
+				i, i-errors, errors );
 
 		if( i < 2 )
-			continue;
-
-		// Calculate hard iron correction
-		// calculate average x, y, z magnetic bias in counts
-		xbias = ( (float)xmax + xmin ) / 2;
-		ybias = ( (float)ymax + ymin ) / 2;
-		zbias = ( (float)zmax + zmin ) / 2;
-
-		// Calculate soft-iron scale factors
-		// calculate average x, y, z axis max chord length in counts
-		float xchord = ( (float)xmax - xmin ) / 2;
-		float ychord = ( (float)ymax - ymin ) / 2;
-		float zchord = ( (float)zmax - zmin ) / 2;
-
-		float cord_avgerage = ( xchord + ychord + zchord ) / 3.;
-
-		xscale = cord_avgerage / xchord;
-		yscale = cord_avgerage / ychord;
-		zscale = cord_avgerage / zchord;
-
-		if( !(i%4) )
 		{
-			// Send a calibration report to the subscriber every 500ms
-			reporter( xraw,yraw,zraw, xscale, yscale, zscale, xbias, ybias, zbias, bits );
+			// Too less samples to start calibration
+			ESP_LOGI( FNAME, "calibrate min-max xyz not enough samples");
+			calibrationRunning = false;
+			return false;
 		}
-		if( ESPRotary::readSwitch() == true  )  // more responsive to query every loop
-			break;
+
+		// save calibration
+		saveCalibration();
+		calibration_bits.set( bits );
+
+		ESP_LOGI( FNAME, "Compass: xmin=%d xmax=%d, ymin=%d ymax=%d, zmin=%d zmax=%d",
+				xmin, xmax, ymin, ymax, zmin, zmax );
+
+		ESP_LOGI( FNAME, "Compass hard-iron: xbias=%.3f, ybias=%.3f, zbias=%.3f",
+				xbias, ybias, zbias );
+
+		ESP_LOGI( FNAME, "Compass soft-iron: xscale=%.3f, yscale=%.3f, zscale=%.3f",
+				xscale, yscale, zscale );
+
+		ESP_LOGI( FNAME, "calibration end" );
 	}
-
-	ESP_LOGI( FNAME, "Read Cal-Samples=%d, OK=%d, NOK=%d",
-			i, i-errors, errors );
-
-	if( i < 2 )
-	{
-		// Too less samples to start calibration
-		ESP_LOGI( FNAME, "calibrate min-max xyz not enough samples");
-		calibrationRunning = false;
-		return false;
-	}
-
-	// save calibration
-	saveCalibration();
-
-	ESP_LOGI( FNAME, "Compass: xmin=%d xmax=%d, ymin=%d ymax=%d, zmin=%d zmax=%d",
-			xmin, xmax, ymin, ymax, zmin, zmax );
-
-	ESP_LOGI( FNAME, "Compass hard-iron: xbias=%.3f, ybias=%.3f, zbias=%.3f",
-			xbias, ybias, zbias );
-
-	ESP_LOGI( FNAME, "Compass soft-iron: xscale=%.3f, yscale=%.3f, zscale=%.3f",
-			xscale, yscale, zscale );
-
 	calibrationRunning = false;
-
-
-	ESP_LOGI( FNAME, "calibration end" );
 
 	return true;
 }

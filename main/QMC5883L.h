@@ -30,6 +30,8 @@ Last update: 2021-03-28
 #include "esp_log.h"
 #include "I2Cbus.hpp"
 #include "average.h"
+#include "WString.h"
+
 
 /* The default I2C address of this chip */
 #define QMC5883L_ADDR 0x0D
@@ -38,14 +40,32 @@ typedef enum e_oversampling { OSR_512=0, OSR_256=1, OSR_128=2, OSR_64=3 } e_over
 typedef enum e_datarate { ODR_10Hz=0, ODR_50Hz=1, ODR_100Hz=2, ODR_200Hz=3 } e_datarate_t;
 typedef enum e_magn_range { RANGE_2GAUSS=0, RANGE_8GAUSS=1 } e_mag_range_t;
 
-struct bitfield_compass{
+typedef struct bitfield_compass{
 	bool xmax_green :1;
 	bool xmin_green :1;
 	bool ymax_green :1;
 	bool ymin_green :1;
 	bool zmax_green :1;
 	bool zmin_green :1;
-};
+	// type_t& operator[](int i) { return xyz[i]; }
+	struct bitfield_compass operator = ( const struct bitfield_compass &other ) {
+		xmax_green = other.xmax_green; xmin_green = other.xmin_green;
+		ymax_green = other.ymax_green; ymin_green = other.ymin_green;
+		zmax_green = other.zmax_green; zmin_green = other.zmin_green;
+	    return *this;
+	};
+	bool operator == ( const struct bitfield_compass &other ) const {
+		return( xmax_green == other.xmax_green && xmin_green == other.xmin_green &&
+			    ymax_green == other.ymax_green && ymin_green == other.ymin_green &&
+			    zmax_green == other.zmax_green && zmin_green == other.zmin_green  );
+	};
+	// bool isZero() { return bool( !(x|y|z) ); }
+	operator String  () {
+	   	return( String(xmax_green) + " " + String(xmin_green) +
+	   			String(ymax_green) + " " + String(ymin_green) +
+				String(zmax_green) + " " + String(zmin_green) );
+	 };
+}t_bitfield_compass;
 
 
 class QMC5883L
@@ -88,7 +108,7 @@ public:
 
 	// Calibration releated methods
 	// Calibrate compass by using the read x, y, z raw values.
-	bool calibrate( bool (*reporter)( float xc, float yc, float zc,float xs, float ys, float zs, float xbias, float ybias, float zbias, bitfield_compass b ) );
+	bool calibrate( bool (*reporter)( float xc, float yc, float zc,float xs, float ys, float zs, float xbias, float ybias, float zbias, bitfield_compass b, bool print ), bool only_show );
 	 // Resets the whole compass calibration, also the saved configuration.
 	void resetCalibration();
 	// Saves a done compass calibration.

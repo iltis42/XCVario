@@ -46,7 +46,7 @@ SetupNG<float>* CompassMenu::deviations[8] = {
  * Creates a compass menu instance with an active compass object.
  */
 CompassMenu::CompassMenu( Compass& compassIn ) :
-						 compass( compassIn )
+										 compass( compassIn )
 {
 }
 
@@ -57,8 +57,7 @@ CompassMenu::~CompassMenu()
 // Compass Menu Action Routine
 int CompassMenu::deviationAction( SetupMenuSelect *p )
 {
-	ESP_LOGI( FNAME, "Compass deviation setup for direction '%s'",
-			p->getEntry() );
+	ESP_LOGI( FNAME, "Compass deviation setup for direction '%s'",	p->getEntry() );
 
 	if( compass.haveSensor() == false )
 	{
@@ -193,6 +192,7 @@ int CompassMenu::declinationAction( SetupMenuValFloat *p )
 int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 {
 	ESP_LOGI( FNAME, "sensorCalibrationAction()" );
+	bool only_show = (p->getSelect() == 2);  // Show
 
 	if( p->getSelect() == 0 )
 	{
@@ -204,21 +204,27 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 	ESP_LOGI( FNAME, "Start magnetic sensor calibration" );
 
 	menuPtr = p;
-	p->clear();
-	p->ucg->setFont( ucg_font_ncenR14_hr, true );
-	p->ucg->setPrintPos( 1, 30 );
-	p->ucg->printf( "Calibration is running" );
-	p->ucg->setPrintPos( 1, 220 );
-	p->ucg->printf( "Now rotate sensor until" );
-	p->ucg->setPrintPos( 1, 245 );
-	p->ucg->printf( "first numbers are stable." );
-	p->ucg->setPrintPos( 1, 270 );
-	p->ucg->printf( "Press button to finish" );
-	compass.calibrate( calibrationReport );
-	p->ucg->setPrintPos( 1, 250 );
 
-	delay( 1000 );
 	p->clear();
+	if( only_show ){
+		compass.calibrate( calibrationReport, true );
+		while( !p->readSwitch() )
+			delay( 100 );
+	}else{
+		p->ucg->setFont( ucg_font_ncenR14_hr, true );
+		p->ucg->setPrintPos( 1, 30 );
+		p->ucg->printf( "Calibration is started" );
+		p->ucg->setPrintPos( 1, 220 );
+		p->ucg->printf( "Now rotate sensor until" );
+		p->ucg->setPrintPos( 1, 245 );
+		p->ucg->printf( "all numbers are green" );
+		p->ucg->setPrintPos( 1, 270 );
+		p->ucg->printf( "Press button to finish" );
+		compass.calibrate( calibrationReport, false);
+		p->ucg->setPrintPos( 1, 250 );
+		delay( 1000 );
+		p->clear();
+	}
 
 	menuPtr = nullptr;
 	return 0;
@@ -237,124 +243,145 @@ float CompassMenu::zbias_back = 0;
 static int xm,ym,zm = 0;
 static int xi,yi,zi = 0;
 
+static bitfield_compass bits_old = { false, false, false, false, false, false };
 
 /** Method for receiving intermediate calibration results. */
-bool CompassMenu::calibrationReport( float x, float y, float z, float xscale, float yscale, float zscale, float xbias, float ybias, float zbias, bitfield_compass b )
+bool CompassMenu::calibrationReport( float x, float y, float z, float xscale, float yscale, float zscale, float xbias, float ybias, float zbias, bitfield_compass b, bool print )
 {
 	if( menuPtr == nullptr )
 		return false;
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	menuPtr->ucg->setColor( COLOR_WHITE );
-	if( xscale != xscale_back ){
+
+	// X
+	if( b.xmax_green && b.xmin_green )
+		menuPtr->ucg->setColor( COLOR_GREEN );
+	else
+		menuPtr->ucg->setColor( COLOR_WHITE );
+	if( xscale != xscale_back || print || !(bits_old == b) ){
 		menuPtr->ucg->setPrintPos( 1, 60 );
 		menuPtr->ucg->printf( "X-Scale=%3.1f  ", xscale * 100 );
 		xscale_back = xscale;
 	}
-	if( x_back != x  ){
-			menuPtr->ucg->setPrintPos( 160, 60 );
-			menuPtr->ucg->printf( "(%.1f)  ", x/32768 *100 );
-			x_back = x;
-		}
-	if(yscale != yscale_back ){
-		menuPtr->ucg->setPrintPos( 1, 85 );
-		menuPtr->ucg->printf( "Y-Scale=%3.1f  ", yscale * 100);
-		yscale_back = yscale;
+	if( (x_back != x || !(bits_old == b)) && !print ){
+		menuPtr->ucg->setPrintPos( 160, 60 );
+		menuPtr->ucg->printf( "(%.1f)  ", x/32768 *100 );
+		x_back = x;
 	}
-	if( y_back != y ){
-			menuPtr->ucg->setPrintPos( 160, 85 );
-			menuPtr->ucg->printf( "(%.1f)  ", y/32768 *100 );
-			y_back = y;
-	}
-	if( zscale != zscale_back ){
-		menuPtr->ucg->setPrintPos( 1, 110 );
-		menuPtr->ucg->printf( "Z-Scale=%3.1f  ", zscale * 100 );
-		zscale_back = zscale;
-	}
-	if( z_back != z ){
-		menuPtr->ucg->setPrintPos( 160, 110 );
-		menuPtr->ucg->printf( "(%.1f)  ", z/32768 *100 );
-		z_back = z;
-	}
-	if( xbias != xbias_back ){
+	if( xbias != xbias_back || print || !(bits_old == b) ){
 		menuPtr->ucg->setPrintPos( 1, 135 );
 		menuPtr->ucg->printf( "X-Bias=%3.1f  ", xbias/32768 *100 );
 		xbias_back = xbias;
 	}
-	if( ybias != ybias_back ){
+	// Y
+	if( b.ymax_green && b.ymin_green )
+		menuPtr->ucg->setColor( COLOR_GREEN );
+	else
+		menuPtr->ucg->setColor( COLOR_WHITE );
+	if(yscale != yscale_back || print || !(bits_old == b) ){
+		menuPtr->ucg->setPrintPos( 1, 85 );
+		menuPtr->ucg->printf( "Y-Scale=%3.1f  ", yscale * 100);
+		yscale_back = yscale;
+	}
+	if( (y_back != y || !(bits_old == b) ) && !print  ){
+		menuPtr->ucg->setPrintPos( 160, 85 );
+		menuPtr->ucg->printf( "(%.1f)  ", y/32768 *100 );
+		y_back = y;
+	}
+	if( ybias != ybias_back || print || !(bits_old == b) ){
 		menuPtr->ucg->setPrintPos( 1, 160 );
 		menuPtr->ucg->printf( "Y-Bias=%3.1f  ", ybias/32768 *100 );
 		ybias_back = ybias;
 	}
-	if( zbias != zbias_back ){
+	// Z
+	if( b.zmax_green && b.zmin_green )
+		menuPtr->ucg->setColor( COLOR_GREEN );
+	else
+		menuPtr->ucg->setColor( COLOR_WHITE );
+	if( zscale != zscale_back || print || !(bits_old == b) ){
+		menuPtr->ucg->setPrintPos( 1, 110 );
+		menuPtr->ucg->printf( "Z-Scale=%3.1f  ", zscale * 100 );
+		zscale_back = zscale;
+	}
+	if( (z_back != z || !(bits_old == b)) && !print ){
+		menuPtr->ucg->setPrintPos( 160, 110 );
+		menuPtr->ucg->printf( "(%.1f)  ", z/32768 *100 );
+		z_back = z;
+	}
+	if( zbias != zbias_back || print || !(bits_old == b) ){
 		menuPtr->ucg->setPrintPos( 1, 185 );
 		menuPtr->ucg->printf( "Z-Bias=%3.1f  ", zbias/32768 *100 );
 		zbias_back = zbias;
 	}
-	const uint16_t X = 180;
-	const uint16_t Y = 155;
 
-	int16_t xp = int16_t(x*160/32768);
-	int16_t yp = int16_t(y*160/32768);
-	int16_t zp = int16_t(z*114/32768);
-
-	xm = xm > xp ? xm : xp;
-	ym = ym > yp ? ym : yp;
-	zm = zm > zp ? zm : zp;
-	xi = xi < xp ? xi : xp;
-	yi = yi < yp ? yi : yp;
-	zi = zi < zp ? zi : zp;
 
 	// ESP_LOGI(FNAME,"Max X: %d Y: %d Z: %d  Min P: %d %d %d", xm, ym, zm, xi, yi, zi );
 
-	if( b.ymax_green )
-		menuPtr->ucg->setColor( COLOR_GREEN );
-	else
-		menuPtr->ucg->setColor( COLOR_RED );
-	menuPtr->ucg->drawLine( X, Y, X, Y+ym );
+	if( !print ){
+		const uint16_t X = 180;
+		const uint16_t Y = 155;
 
-	if( b.ymin_green )
-		menuPtr->ucg->setColor( COLOR_GREEN );
-	else
-		menuPtr->ucg->setColor( COLOR_RED );
-	menuPtr->ucg->drawLine( X, Y, X, Y+yi );
+		int16_t xp = int16_t(x*160/32768);
+		int16_t yp = int16_t(y*160/32768);
+		int16_t zp = int16_t(z*114/32768);
 
-	if( b.xmax_green )
-		menuPtr->ucg->setColor( COLOR_GREEN );
-	else
-		menuPtr->ucg->setColor( COLOR_RED );
-	menuPtr->ucg->drawLine( X, Y, X+xm, Y );
+		xm = xm > xp ? xm : xp;
+		ym = ym > yp ? ym : yp;
+		zm = zm > zp ? zm : zp;
+		xi = xi < xp ? xi : xp;
+		yi = yi < yp ? yi : yp;
+		zi = zi < zp ? zi : zp;
+		if( b.ymax_green )
+			menuPtr->ucg->setColor( COLOR_GREEN );
+		else
+			menuPtr->ucg->setColor( COLOR_RED );
+		menuPtr->ucg->drawLine( X, Y, X, Y+ym );
 
-	if( b.xmin_green )
-		menuPtr->ucg->setColor( COLOR_GREEN );
-	else
-		menuPtr->ucg->setColor( COLOR_RED );
-	menuPtr->ucg->drawLine( X, Y, X+xi, Y );
+		if( b.ymin_green )
+			menuPtr->ucg->setColor( COLOR_GREEN );
+		else
+			menuPtr->ucg->setColor( COLOR_RED );
+		menuPtr->ucg->drawLine( X, Y, X, Y+yi );
 
-	if( b.zmax_green )
-		menuPtr->ucg->setColor( COLOR_GREEN );
-	else
-		menuPtr->ucg->setColor( COLOR_RED );
-	menuPtr->ucg->drawLine( X, Y, X+zm, Y-zm );    // 45 degree
+		if( b.xmax_green )
+			menuPtr->ucg->setColor( COLOR_GREEN );
+		else
+			menuPtr->ucg->setColor( COLOR_RED );
+		menuPtr->ucg->drawLine( X, Y, X+xm, Y );
 
-	if( b.zmin_green )
-		menuPtr->ucg->setColor( COLOR_GREEN );
-	else
-		menuPtr->ucg->setColor( COLOR_RED );
-	menuPtr->ucg->drawLine( X, Y, X+zi, Y-zi );    // 45 degree
+		if( b.xmin_green )
+			menuPtr->ucg->setColor( COLOR_GREEN );
+		else
+			menuPtr->ucg->setColor( COLOR_RED );
+		menuPtr->ucg->drawLine( X, Y, X+xi, Y );
 
-	static uint16_t x_old, y_old, z_old = 0;
-	menuPtr->ucg->setColor( COLOR_BLACK );
-	menuPtr->ucg->drawCircle( X, Y+y_old, 2 );
-	menuPtr->ucg->drawCircle( X+x_old, Y, 2 );
-	menuPtr->ucg->drawCircle( X+z_old, Y-z_old,2 );
-	menuPtr->ucg->setColor( COLOR_WHITE );
-	menuPtr->ucg->drawCircle( X, Y+yp, 2 );
-	menuPtr->ucg->drawCircle( X+xp, Y, 2);
-	menuPtr->ucg->drawCircle( X+zp, Y-zp, 2 );
+		if( b.zmax_green )
+			menuPtr->ucg->setColor( COLOR_GREEN );
+		else
+			menuPtr->ucg->setColor( COLOR_RED );
+		menuPtr->ucg->drawLine( X, Y, X+zm, Y-zm );    // 45 degree
 
-	y_old = yp;
-	x_old = xp;
-	z_old = zp;
+		if( b.zmin_green )
+			menuPtr->ucg->setColor( COLOR_GREEN );
+		else
+			menuPtr->ucg->setColor( COLOR_RED );
+		menuPtr->ucg->drawLine( X, Y, X+zi, Y-zi );    // 45 degree
+
+		static uint16_t x_old, y_old, z_old = 0;
+		menuPtr->ucg->setColor( COLOR_BLACK );
+		menuPtr->ucg->drawCircle( X, Y+y_old, 2 );
+		menuPtr->ucg->drawCircle( X+x_old, Y, 2 );
+		menuPtr->ucg->drawCircle( X+z_old, Y-z_old,2 );
+		menuPtr->ucg->setColor( COLOR_WHITE );
+		menuPtr->ucg->drawCircle( X, Y+yp, 2 );
+		menuPtr->ucg->drawCircle( X+xp, Y, 2);
+		menuPtr->ucg->drawCircle( X+zp, Y-zp, 2 );
+		y_old = yp;
+		x_old = xp;
+		z_old = zp;
+		bits_old = b;
+
+	}
+
 
 	xSemaphoreGive(spiMutex);
 	// Stop further reporting.

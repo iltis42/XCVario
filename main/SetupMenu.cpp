@@ -304,7 +304,7 @@ static int eval_chop( SetupMenuSelect *p )
 static int compassSensorCalibrateAction( SetupMenuSelect *p )
 {
 	ESP_LOGI(FNAME,"compassSensorCalibrateAction()");
-	if( p->getSelect() == 1 ){ // Start
+	if( p->getSelect() != 0 ){ // Start, Show
 		compassMenuHandler.sensorCalibrationAction( p );
 	}
 	p->setSelect( 0 );
@@ -963,18 +963,11 @@ void SetupMenu::setup( )
 		SetupMenuSelect * compSensorCal = new SetupMenuSelect( "Sensor Calibration", false, compassSensorCalibrateAction, false );
 		compSensorCal->addEntry( "Cancel");
 		compSensorCal->addEntry( "Start");
+		compSensorCal->addEntry( "Show");
 		compSensorCal->setHelp( PROGMEM "Calibrate Magnetic Sensor, mandatory for operation" );
 		compassME->addEntry( compSensorCal );
 
-		SetupMenuValFloat *cd = new SetupMenuValFloat( "Setup Declination",
-				0,
-				"°",
-				-180,
-				180,
-				1.0,
-				compassDeclinationAction,
-				false,
-				&compass_declination );
+		SetupMenuValFloat *cd = new SetupMenuValFloat( "Setup Declination",	0, "°",	-180, 180, 1.0, compassDeclinationAction, false, &compass_declination );
 
 		cd->setHelp( PROGMEM "Set compass declination in degrees" );
 		compassME->addEntry( cd );

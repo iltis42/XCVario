@@ -35,25 +35,25 @@ bool SetupMenuSelect::existsEntry( std::string ent ){
 void SetupMenuSelect::addEntry( const char* ent ) {
 	_values.push_back( ent ); _numval++;
 #ifdef DEBUG_MAX_ENTRIES
-	 if( num_max < _numval ){
-		 ESP_LOGI(FNAME,"add ent:%s  num:%d", ent, _numval );
-		 num_max = _numval;
-	 }
+	if( num_max < _numval ){
+		ESP_LOGI(FNAME,"add ent:%s  num:%d", ent, _numval );
+		num_max = _numval;
+	}
 #endif
 }
 
 void SetupMenuSelect::addEntryList( const char ent[][4], int size )
 {
 	ESP_LOGI(FNAME,"addEntryList() char ent[][4]");
-    for( int i=0; i<size; i++ ) {
-        _values.push_back( (char *)ent[i] ); _numval++;
+	for( int i=0; i<size; i++ ) {
+		_values.push_back( (char *)ent[i] ); _numval++;
 #ifdef DEBUG_MAX_ENTRIES
-   	   if( num_max < _numval ){
-           ESP_LOGI(FNAME,"addEntryList:%s  num:%d", (char *)ent[i], _numval );
-           num_max = _numval;
-   	   }
+		if( num_max < _numval ){
+			ESP_LOGI(FNAME,"addEntryList:%s  num:%d", (char *)ent[i], _numval );
+			num_max = _numval;
+		}
 #endif
-    }
+	}
 }
 
 void SetupMenuSelect::delEntry( const char* ent ) {
@@ -94,55 +94,58 @@ SetupMenuSelect::SetupMenuSelect( const char* title, bool restart, int (*action)
 }
 SetupMenuSelect::~SetupMenuSelect()
 {
-    detach(this);
+	detach(this);
 }
 
 void SetupMenuSelect::display( int mode ){
-	if( (selected != this) || !inSetup )
+	if( (selected != this) || !inSetup  )
 		return;
 	ESP_LOGI(FNAME,"display() pressed:%d title:%s action: %x hl:%d", pressed, _title, (int)(_action), highlight );
 	clear();
+	if( bits._ext_handler ){  // handling is done only in action method
+		ESP_LOGI(FNAME,"ext handler");
+		selected = _parent;
+	}else
+	{
+		xSemaphoreTake(spiMutex,portMAX_DELAY );
+		ucg->setPrintPos(1,25);
+		ESP_LOGI(FNAME,"Title: %s ", _title );
+		ucg->printf("<< %s",_title);
+		xSemaphoreGive(spiMutex );
+		ESP_LOGI(FNAME,"select=%d numval=%d size=%d val=%s", _select, _numval, _values.size(), _values[_select] );
+		if( _numval > 9 ){
+			xSemaphoreTake(spiMutex,portMAX_DELAY );
+			ucg->setPrintPos( 1, 50 );
+			ucg->printf( "%s                ", _values[_select] );
+			xSemaphoreGive(spiMutex );
+		}else
+		{
+			xSemaphoreTake(spiMutex,portMAX_DELAY );
+			for( int i=0; i<_numval && i<+10; i++ )	{
+				ucg->setPrintPos( 1, 50+25*i );
+				ucg->print( _values[i] );
+			}
+			ucg->drawFrame( 1,(_select+1)*25+3,238,25 );
+			xSemaphoreGive(spiMutex );
+		}
+
+		int y=_numval*25+50;
+		showhelp( y );
+		if(mode == 1 && bits._save == true ){
+			xSemaphoreTake(spiMutex,portMAX_DELAY );
+			ucg->setColor( COLOR_BLACK );
+			ucg->drawBox( 0,280,240,40 );
+			ucg->setPrintPos( 1, 300 );
+			ucg->print("Saved" );
+			xSemaphoreGive(spiMutex );
+		}
+		if( mode == 1 )
+			delay(1000);
+	}
 	if( _action != 0 && mode < 2 ){
 		ESP_LOGI(FNAME,"calling action");
 		(*_action)( this );
 	}
-	if( bits._ext_handler ){  // handling is done only in action method
-		ESP_LOGI(FNAME,"ext handler");
-		selected = _parent;
-		return;
-	}
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	ucg->setPrintPos(1,25);
-	ESP_LOGI(FNAME,"Title: %s ", _title );
-	ucg->printf("<< %s",_title);
-	xSemaphoreGive(spiMutex );
-	ESP_LOGI(FNAME,"select=%d numval=%d size=%d val=%s", _select, _numval, _values.size(), _values[_select] );
-	if( _numval > 9 ){
-		xSemaphoreTake(spiMutex,portMAX_DELAY );
-		ucg->setPrintPos( 1, 50 );
-		ucg->printf( "%s                ", _values[_select] );
-		xSemaphoreGive(spiMutex );
-	}else
-	{
-		xSemaphoreTake(spiMutex,portMAX_DELAY );
-		for( int i=0; i<_numval && i<+10; i++ )	{
-			ucg->setPrintPos( 1, 50+25*i );
-			ucg->print( _values[i] );
-		}
-		ucg->drawFrame( 1,(_select+1)*25+3,238,25 );
-		xSemaphoreGive(spiMutex );
-	}
-
-	int y=_numval*25+50;
-	showhelp( y );
-	if(mode == 1 && bits._save == true ){
-		xSemaphoreTake(spiMutex,portMAX_DELAY );
-		ucg->setPrintPos( 1, 300 );
-		ucg->print("Saved" );
-		xSemaphoreGive(spiMutex );
-	}
-	if( mode == 1 )
-		delay(1000);
 }
 
 void SetupMenuSelect::down(int count){

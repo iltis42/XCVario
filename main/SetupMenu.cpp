@@ -48,7 +48,7 @@ SetupMenuSelect * mpu = 0;
 std::string vunit;
 std::string sunit;
 
-static bool focus = false;
+bool SetupMenu::focus = false;
 
 
 // Compass menu handler
@@ -107,7 +107,7 @@ int update_wifi_power(SetupMenuValFloat * p)
 int data_mon( SetupMenuSelect * p ){
 	ESP_LOGI(FNAME,"data_mon( %d ) ", p->getSelect() );
 	if( p->getSelect() != MON_OFF ){
-		DM.start();
+		DM.start(p);
 	}
 	return 0;
 }

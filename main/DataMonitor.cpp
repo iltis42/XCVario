@@ -1,6 +1,7 @@
 #include "DataMonitor.h"
 #include "sensor.h"
 #include "logdef.h"
+#include "Flarm.h"
 
 #define START_SCROLL 20
 #define POS_INIT  320
@@ -14,15 +15,21 @@ DataMonitor::DataMonitor(){
 	channel = MON_OFF;
 }
 
-int DataMonitor::maxChar( const char *str, int pos ){
+int DataMonitor::maxChar( const char *str, int pos, bool binary ){
 	int N=0;
 	int i=0;
-	char s[2] = { 0 };
+	char s[4] = { 0 };
 	while( N <= 240 ){
-		s[0] = str[i+pos];
+		if( binary ){
+			sprintf( s, "%02x ", str[i+pos] );
+		}
+		else{
+			s[0] = str[i+pos];
+		}
 		N += ucg->getStrWidth( s );
-		if( N<240 )
+		if( N<240 ){
 			i++;
+		}
 	}
 	return i;
 }
@@ -31,7 +38,7 @@ static bool first=true;
 static int rx_total = 0;
 static int tx_total = 0;
 
-void DataMonitor::header( int ch ){
+void DataMonitor::header( int ch, bool binary ){
 	const char * what;
 	switch( ch ) {
 		case MON_BLUETOOTH: what = "BT"; break;
@@ -43,23 +50,30 @@ void DataMonitor::header( int ch ){
 		case MON_CAN: what = "CAN"; break;
 		default:      what = "OFF"; break;
 	}
+	const char * b;
+	if( binary )
+		b = "B-";
+	else
+		b = "";
 	ucg->setPrintPos( 20, START_SCROLL );
-	ucg->printf("%s: RX:%d TX:%d bytes   ", what, rx_total, tx_total );
+	ucg->printf("%s%s: RX:%d TX:%d bytes   ", b, what, rx_total, tx_total );
 }
 
-void DataMonitor::monitorString( int ch, e_dir_t dir, const char *str ){
+void DataMonitor::monitorString( int ch, e_dir_t dir, const char *str, bool binary ){
 	if( !mon_started || paused || (ch != channel) ){
 		// ESP_LOGI(FNAME,"not active, return started:%d paused:%d", mon_started, paused );
 		return;
 	}
-	printString( ch, dir, str );
+	if( !binary ){
+		if( Flarm::bincom )
+			binary = true;
+	}
+	printString( ch, dir, str, binary );
 }
 
-
-void DataMonitor::printString( int ch, e_dir_t dir, const char *str ){
+void DataMonitor::printString( int ch, e_dir_t dir, const char *str, bool binary ){
 	ESP_LOGI(FNAME,"DM ch:%d dir:%d string:%s", ch, dir, str );
 	std::string s( str );
-	const int ypos = 318;
 	const int scroll = 20;
 	int len = strlen( str );
 	std::string S;
@@ -79,20 +93,31 @@ void DataMonitor::printString( int ch, e_dir_t dir, const char *str ){
 		ucg->drawBox( 0,START_SCROLL,240,320 );
 	}
 	ucg->setColor( COLOR_WHITE );
-    header( ch );
-
+    header( ch, binary );
     int rest = len;
 	int pos = 0;
 	while( rest > 1 ){  // ignore the \n
 		// ESP_LOGI(FNAME,"DM 1 rest: %d pos: %d", rest, pos );
-		int hunklen = maxChar( S.c_str(), pos );
+		int hunklen = maxChar( S.c_str(), pos, binary );
 		std::string hunk = S.substr( pos, hunklen );
 		// ESP_LOGI(FNAME,"DM 2 rest: %d hunklen: %d pos: %d  h:%s", rest, hunklen, pos, hunk.c_str()  );
 		ucg->setColor( COLOR_BLACK );
 		ucg->drawBox( 0, scrollpos, 240,scroll );
 		ucg->setColor( COLOR_WHITE );
 		ucg->setPrintPos( 0, scrollpos+scroll );
-		ucg->print( hunk.c_str() );
+		ucg->setFont(ucg_font_fub11_tr, true );
+		if( binary ){
+			std::string binstr;
+			for( int i=0; i<hunklen; i++ ){
+				char bin[4];
+				sprintf( bin, "%02x ", hunk[i] );
+				binstr += std::string(bin);
+			}
+			ucg->print( binstr.c_str() );
+		}
+		else{
+			ucg->print( hunk.c_str() );
+		}
 		pos+=hunklen;
 		rest -= hunklen;
 		// ESP_LOGI(FNAME,"DM 3 rest: %d pos: %d", rest, pos );
@@ -101,6 +126,8 @@ void DataMonitor::printString( int ch, e_dir_t dir, const char *str ){
 			scrollpos = POS_INIT;
 		ucg->scrollLines( scrollpos );  // set frame origin
 	}
+	if( binary )
+		scrollpos-=scroll;  // newline after each sentence
 	xSemaphoreGive(spiMutex);
 }
 

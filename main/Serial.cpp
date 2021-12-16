@@ -117,7 +117,7 @@ void Serial::serialHandler1(void *pvParameters){
 						// also the beginning of a NMEA sentence with $ or ! or ...
 						s.set( rxbuf, numread );
 						Router::forwardMsg( s, s1_rx_q );
-						DM.monitorString( MON_S1, DIR_RX, s.c_str() );
+						DM.monitorString( MON_S1, DIR_RX, s.c_str(), Flarm::bincom );
 					}
 				}
 				free( rxbuf );

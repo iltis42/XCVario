@@ -332,6 +332,7 @@ void CANbus::rxtick(int tick){
 		// ESP_LOGI(FNAME,"CAN RX MagSensor, msg: %d", bytes );
 		// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), bytes, ESP_LOG_INFO);
 		QMC5883L::fromCAN( msg.c_str() );
+		DM.monitorString( MON_CAN, DIR_RX, msg.c_str(), true );
 		_connected_timeout_magsens = 0;
 	}
 

@@ -1985,7 +1985,10 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	// Average Vario
 	if( _ate != (int)(ate*10) && !(tick%3) ) {
 		// draw numeric value
+        // set coarse clipbox to avoid overwriting Vario Skale and pointer
+        ucg->setClipRange(DISPLAY_LEFT+bw+22,1,120,100);
 		drawAvgVario( FIELD_START+88, YVAR-20, ate );
+        ucg->undoClipRange();
 
 		_ate = (int)(ate)*10;
 	}

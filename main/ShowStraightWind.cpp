@@ -84,7 +84,7 @@ void ShowStraightWind::display( int mode )
 	float minDev = 400.0;
 	float maxDev = 0.0;
 	for( int i=0; i<360; i++ ){
-		float d = Compass::getDeviation((float)i);
+		float d = compass->getDeviation((float)i);
 		if( minDev > d )
 			minDev = d;
 		if( maxDev < d )

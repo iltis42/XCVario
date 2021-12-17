@@ -321,7 +321,7 @@ void Protocols::parseNMEA( const char *astr ){
 			float h;
 			sscanf( str,"!xc,%f", &h );
 			ESP_LOGI(FNAME,"Compass heading detected=%3.1f", h );
-			Compass::setHeading( h );
+			compass->setHeading( h );
 		}
 		else if ( (strncmp( str, "!g,", 3 ) == 0)    ) {
 			ESP_LOGI(FNAME,"parseNMEA, Cambridge C302 style command !g detected: %s",str);

@@ -139,7 +139,7 @@ mpud::float_axes_t accelG_Prev;
 mpud::float_axes_t gyroDPS_Prev;
 
 // Magnetic sensor / compass
-Compass compass( 0x0D, ODR_50Hz, RANGE_2GAUSS, OSR_512 );
+Compass *compass;
 
 BTSender btsender;
 
@@ -585,12 +585,12 @@ void readSensors(void *pvParameters){
 			vTaskDelay(2/portTICK_PERIOD_MS);
 		}
 		Router::routeXCV();
-		// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d ena=%d", compass.haveSensor(),  compass_nmea_hdt.get(),  compass_enable.get() );
-		if( compass_enable.get()  && !Flarm::bincom && !Compass::calibrationIsRunning() ) {
+		// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d ena=%d", compass->haveSensor(),  compass_nmea_hdt.get(),  compass_enable.get() );
+		if( compass  && !Flarm::bincom && ! compass->calibrationIsRunning() ) {
 			// Trigger heading reading and low pass filtering. That job must be
 			// done periodically.
 			bool ok;
-			float heading = compass.getGyroHeading( &ok );
+			float heading = compass->getGyroHeading( &ok );
 			if(ok){
 				if( (int)heading != (int)mag_hdm.get() && !(count%10) ){
 					mag_hdm.set( heading );
@@ -605,7 +605,7 @@ void readSensors(void *pvParameters){
 				if( mag_hdm.get() != -1 )
 					mag_hdm.set( -1 );
 			}
-			float theading = Compass::filteredTrueHeading( &ok );
+			float theading = compass->filteredTrueHeading( &ok );
 			if(ok){
 				if( (int)theading != (int)mag_hdt.get() && !(count%10) ){
 					mag_hdt.set( theading );
@@ -683,7 +683,7 @@ void readTemp(void *pvParameters){
 			}
 			ESP_LOGV(FNAME,"temperature=%f", temperature );
 			Flarm::tick();
-			Compass::tick();
+			compass->tick();
 		}else{
 			if( (OAT.get() > -55.0) && (OAT.get() < 85.0) )
 				validTemperature = true;
@@ -1279,12 +1279,20 @@ void sensor(void *args){
 		ESP_LOGI(FNAME, "Now start CAN Bus Interface");
 		CAN->begin();  // start CAN tasks and driver
 	}
-	compass.setBus( &i2c_0 );
-	// Check for magnetic sensor / compass
-	if( compass_enable.get() ) {
-		compass.begin();
+
+	if( compass_enable.get() == CS_CAN ){
+		ESP_LOGI( FNAME, "Magnetic sensor type CAN");
+		compass = new Compass( 0 );  // I2C addr 0 -> instantiate without I2C bus and local sensor
+	}
+	else if( compass_enable.get() == CS_I2C || compass_enable.get() == CS_I2C_NO_TILT  ){
+		ESP_LOGI( FNAME, "Magnetic sensor type I2C");
+		compass = new Compass( 0x0D, ODR_50Hz, RANGE_2GAUSS, OSR_512, &i2c_0 );
+	}
+	// magnetic sensor / compass selftest
+	if( compass_enable.get() != CS_DISABLE ) {
+		compass->begin();
 		ESP_LOGI( FNAME, "Magnetic sensor enabled: initialize");
-		err = compass.selfTest();
+		err = compass->selfTest();
 		if( err == ESP_OK )		{
 			// Activate working of magnetic sensor
 			ESP_LOGI( FNAME, "Magnetic sensor selftest: OKAY");
@@ -1297,8 +1305,8 @@ void sensor(void *args){
 			logged_tests += "Compass test: FAILED\n";
 			selftestPassed = false;
 		}
+		compass->start();  // start task
 	}
-
 
 	Speed2Fly.change_polar();
 	Speed2Fly.change_mc_bal();
@@ -1450,7 +1458,6 @@ void sensor(void *args){
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 2500, NULL, 8, &tpid, 0);
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 5096, NULL, 4, &dpid, 0);
 
-	compass.start();
 	Audio::startAudio();
 }
 

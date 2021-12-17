@@ -4,7 +4,7 @@
 #include "sensor.h"
 #include "RingBufCPP.h"
 #include "Router.h"
-#include "QMC5883L.h"
+#include "QMCMagCAN.h"
 #include "Flarm.h"
 #include "Switch.h"
 
@@ -331,7 +331,7 @@ void CANbus::rxtick(int tick){
 	else if( id == 0x031 ){ // magnet sensor
 		// ESP_LOGI(FNAME,"CAN RX MagSensor, msg: %d", bytes );
 		// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), bytes, ESP_LOG_INFO);
-		QMC5883L::fromCAN( msg.c_str() );
+		QMCMagCAN::fromCAN( msg.c_str() );
 		DM.monitorString( MON_CAN, DIR_RX, msg.c_str(), true );
 		_connected_timeout_magsens = 0;
 	}

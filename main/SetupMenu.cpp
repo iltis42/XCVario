@@ -50,10 +50,6 @@ std::string sunit;
 
 bool SetupMenu::focus = false;
 
-
-// Compass menu handler
-static CompassMenu compassMenuHandler( compass );
-
 void update_vunit_str( int unit ){
 	vunit = Units::VarioUnitLong( unit );
 }
@@ -79,8 +75,6 @@ int gload_reset( SetupMenuSelect * p ){
 }
 
 int compass_ena( SetupMenuSelect * p ){
-	if( compass_enable.get() )
-		compass.begin();
 	return 0;
 }
 
@@ -270,19 +264,19 @@ int vol_adj( SetupMenuValFloat * p ){
 static int compassDeviationAction( SetupMenuSelect *p )
 {
 	if( p->getSelect() == 0 ){
-		compassMenuHandler.deviationAction( p );
+		CompassMenu::deviationAction( p );
 	}
 	return 0;
 }
 
 static int compassResetDeviationAction( SetupMenuSelect *p )
 {
-	return compassMenuHandler.resetDeviationAction( p );
+	return CompassMenu::resetDeviationAction( p );
 }
 
 static int compassDeclinationAction( SetupMenuValFloat *p )
 {
-	return compassMenuHandler.declinationAction( p );
+	return CompassMenu::declinationAction( p );
 }
 
 static int windResetAction( SetupMenuSelect *p )
@@ -305,7 +299,7 @@ static int compassSensorCalibrateAction( SetupMenuSelect *p )
 {
 	ESP_LOGI(FNAME,"compassSensorCalibrateAction()");
 	if( p->getSelect() != 0 ){ // Start, Show
-		compassMenuHandler.sensorCalibrationAction( p );
+		CompassMenu::sensorCalibrationAction( p );
 	}
 	p->setSelect( 0 );
 	return 0;

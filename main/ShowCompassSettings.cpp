@@ -67,7 +67,7 @@ void ShowCompassSettings::display( int mode )
 	ucg->setPrintPos( 0, y );
 	ucg->printf( "%s", soText );
 	ucg->setPrintPos( sotw, y );
-	ucg->printf( "%s", (QMC5883L::overflowFlag() == false) ? "No" : "Yes" );
+	ucg->printf( "%s", (compass->overflowFlag() == false) ? "No" : "Yes" );
 	y += 25;
 
 	ucg->setPrintPos( 0, y );
@@ -118,7 +118,7 @@ void ShowCompassSettings::display( int mode )
 		// Ca. after a second make an update of the overflow flag display.
 		semaphoreTake();
 		ucg->setPrintPos( sotw, y1 );
-		ucg->printf( "%s", (QMC5883L::overflowFlag() == false) ? "No  " : "Yes" );
+		ucg->printf( "%s", (compass->overflowFlag() == false) ? "No  " : "Yes" );
 		semaphoreGive();
 		continue;
 	}

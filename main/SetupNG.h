@@ -28,7 +28,7 @@
 #include <cstring>
 #include <iostream>
 #include <vector>
-#include "QMC5883L.h"
+#include "Compass.h"
 
 
 /*

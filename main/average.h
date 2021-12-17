@@ -1,3 +1,4 @@
+#pragma once
 
 template <int N, typename T=int, typename Total=int >
 class Average

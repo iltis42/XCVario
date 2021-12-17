@@ -71,7 +71,7 @@ extern DataMonitor DM;
 
 extern xSemaphoreHandle spiMutex;
 
-extern Compass compass;
+extern Compass *compass;
 
 class AdaptUGC;
 extern AdaptUGC *MYUCG;

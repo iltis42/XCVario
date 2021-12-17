@@ -214,10 +214,11 @@ void IMU::read()
 		euler.pitch = -80.0;
 
 	bool ok;
-	float curh = Compass::cur_heading( &ok );
+	float curh = compass->cur_heading( &ok );
 	if( ok ){
+		// ESP_LOGI( FNAME,"cur head %.1f", curh );
 		fused_yaw +=  Vector::angleDiffDeg( curh ,fused_yaw )*0.05 + (getGyroYawDelta())*0.95;
-		Compass::setGyroHeading( Vector::normalizeDeg( fused_yaw ) );
+		compass->setGyroHeading( Vector::normalizeDeg( fused_yaw ) );
 	}
 	if( ahrs_gyro_factor.get() > 0.1  ){
 		filterRoll =  euler.roll;

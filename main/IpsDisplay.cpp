@@ -1638,7 +1638,7 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass
 		int heading = static_cast<int>(rintf(mag_hdt.get()));
 		if( heading >= 360 )
 			heading -= 360;
-		// ESP_LOGI(FNAME, "heading %d, valid %d", heading, Compass::headingValid() );
+		// ESP_LOGI(FNAME, "heading %d", heading );
 		if( prev_heading != heading || compass_dirty ){
 			char s[20];
 			if( heading < 0 )

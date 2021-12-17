@@ -7,9 +7,13 @@
  *                                                                         *
  ****************************************************************************
 
-I2C driver for the chip QMC5883L, 3-Axis Magnetic Sensor.
+I2C driver for the chip QMCMagCAN, 3-Axis Magnetic Sensor.
 
-File: QMC5883L.h
+QMCMagCAN data sheet:
+
+https://datasheetspdf.com/pdf-file/1309218/QST/QMCMagCAN/1
+
+File: QMCMagCAN.h
 
 Author: Axel Pauli, January 2021
 		Eckhard Völlm, September 2021 (rework for can bus device and gyro fusion)
@@ -30,11 +34,7 @@ Last update: 2021-03-28
 #include "MagnetSensor.h"
 
 
-/* The default I2C address of this chip */
-#define QMC5883L_ADDR 0x0D
-
-
-class QMC5883L: public MagnetSensor
+class QMCMagCAN: public MagnetSensor
 {
 public:
 	/*
@@ -43,47 +43,32 @@ public:
     you have to set it by calling method setBus(). The default address of the
     chip is 0x0D.
 	 */
-	QMC5883L( const uint8_t addr, const uint8_t odr, const uint8_t range, const uint16_t osr, I2C_t *i2cBus );
-	~QMC5883L();
+	QMCMagCAN();
+	~QMCMagCAN();
 
 	// Returns true, if the self test has been passed successfully, otherwise
 	bool haveSensor() {  return m_sensor; }
 	// operation related methods
 	void tick() { age++; }
+
+	esp_err_t initialize() { return ESP_OK; };
+
 	// Check for reply with I2C bus address
 	esp_err_t selfTest();
 
-	esp_err_t initialize();
+	bool overflowFlag()	{ return false; }  // no support
 
-	//  Write with data part
-	bool overflowFlag()	{ return overflowWarning; }
 	// Read out the registers X, Y, Z (0...5) in raw format into variables, return true if success
 	bool rawAxes( t_magn_axes &axes );
 
+	// If device is connected via CAN, just get X,Y,Z data from there
+	static void fromCAN( const char * msg );
+
 private:
-	// Configure the device with the set parameters and set the mode to continuous.
-	esp_err_t initialize2( int a_odr=0, int a_osr=0 );
-
-	/** Check, if the bus pointer is valid. */
-	bool checkBus();
-
-	// Read temperature in degree Celsius.
-	short temperature( bool *ok );
-
-	// Low level device access methods
-	esp_err_t writeRegister( const uint8_t addr, const uint8_t reg, const uint8_t value );
-	// Return the overflow status flag. It is set to true, if any data of three * axis magnetic sensor channels is out of range.
-	uint8_t readRegister( const uint8_t addr, const uint8_t reg, const uint8_t count, uint8_t *data );
-
 	bool m_sensor;
-	I2C_t* m_bus;
-	uint8_t addr; // chip adress
-	uint8_t odr;  // output data rate
-	uint8_t range; // magnetic resolution of sensor
-	uint8_t osr; // over sample ratio
-	bool overflowWarning;
 	Average<20> filterX;
 	Average<20> filterY;
 	Average<20> filterZ;
-	int age;
+	static t_magn_axes can;
+	static int age;
 };

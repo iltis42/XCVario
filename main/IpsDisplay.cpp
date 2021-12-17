@@ -593,6 +593,7 @@ void IpsDisplay::redrawValues()
 	old_polar_sink = -100;
 	old_vario_bar_val = 0;
 	old_sink_bar_val = 0;
+	prev_heading = -1000;
 }
 
 void IpsDisplay::drawTeBuf(){

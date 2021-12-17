@@ -68,13 +68,10 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 		ESP_LOGI( FNAME, "Abort calibration, no sensor signal" );
 		return 0;
 	}
-
 	short direction = strtol( p->getEntry(), nullptr, 10 );
 	short diridx = direction / 45;
-
 	// Calibration menu is requested
 	const unsigned short skydirs[8] = { 0, 45, 90, 135, 180, 225, 270, 315 };
-
 	p->clear();
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->setFont( ucg_font_ncenR14_hr );
@@ -85,27 +82,27 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 	xSemaphoreGive(spiMutex);
 	delay( 500 );
 
-	float heading = 0.0;
+	static float heading = 0.0;
 	float deviation = 0;
+	static float last_heading = 0.0;
 
 	while( !p->readSwitch() )
 	{
 		bool ok = true;
-		if( heading == 0.0 )
-			heading = compass->rawHeading( &ok );
-		else
-			heading = heading + (compass->rawHeading( &ok ) -heading)*0.05; // a bit low pass
+		heading += Vector::angleDiffDeg( compass->rawHeading( &ok ), last_heading )*0.05;
+		heading = Vector::normalizeDeg( heading );
+		last_heading = heading;
 		if( ok == false )
 		{
-			// in case of error deviation is set to 0
-			heading = static_cast<float>( skydirs[diridx] );
+			continue;
 		}
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
-		p->ucg->setPrintPos( 1, 180 );
-		p->ucg->printf( "Heading:  %d° ", (int)(heading+0.5) );
-		p->ucg->setPrintPos( 1, 230 );
-		deviation = Vector::normalizeDeg( direction - heading );
-		p->ucg->printf( "Deviation: %3.1f°  ", deviation );
+		p->ucg->setPrintPos( 1, 150 );
+		p->ucg->setFont( ucg_font_fub25_hf );
+		p->ucg->printf( "Heading: %.1f°  ", heading );
+		p->ucg->setPrintPos( 1, 200 );
+		deviation = Vector::angleDiffDeg( direction, heading );
+		p->ucg->printf( "Deviation: %.1f°  ", deviation );
 		xSemaphoreGive(spiMutex);
 		delay( 50 );
 	}
@@ -120,6 +117,7 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 	deviations[diridx]->set( deviation );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->setPrintPos( 1, 270 );
+	p->ucg->setFont( ucg_font_ncenR14_hr );
 	p->ucg->printf( "Saved" );
 	delay(500);
 	p->ucg->setPrintPos( 1, 300 );

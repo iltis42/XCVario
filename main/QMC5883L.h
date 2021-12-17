@@ -33,6 +33,9 @@ Last update: 2021-03-28
 /* The default I2C address of this chip */
 #define QMC5883L_ADDR 0x0D
 
+typedef enum e_oversampling { OSR_512=0, OSR_256=1, OSR_128=2, OSR_64=3 } e_oversampling_t;
+typedef enum e_datarate { ODR_10Hz=0, ODR_50Hz=1, ODR_100Hz=2, ODR_200Hz=3 } e_datarate_t;
+typedef enum e_magn_range { RANGE_2GAUSS=0, RANGE_8GAUSS=1 } e_mag_range_t;
 
 class QMC5883L: public MagnetSensor
 {

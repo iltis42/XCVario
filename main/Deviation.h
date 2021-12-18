@@ -39,7 +39,7 @@ public:
 	float getDeviation( float heading );
 	void saveDeviation();
 	void resetDeviation();
-	bool newDeviation( float for_heading, float steer );
+	bool newDeviation( float for_heading, float steer, bool force=false );
 	// Return the calibration flag. Set to true, if a calibration is running.
 	void loadDeviationMap();
 	void deviationReload();

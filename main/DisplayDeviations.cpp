@@ -35,28 +35,13 @@ void DisplayDeviations::display( int mode )
 {
   if( (selected != this) || !inSetup )
     return;
-
   ESP_LOGI(FNAME, "display() mode=%d", mode );
-
   clear();
   ucg->setFont( ucg_font_ncenR14_hr );
   uprintf( 5, 25, selected->_title );
-
   const char* skydirdev[8] = { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
-
-  // Stored deviation data
-  SetupNG<float>* deviations[8] = { &compass_dev_0,
-      &compass_dev_45,
-      &compass_dev_90,
-      &compass_dev_135,
-      &compass_dev_180,
-      &compass_dev_225,
-      &compass_dev_270,
-      &compass_dev_315 };
-
   uint16_t y = 25;
   semaphoreTake();
-
   for( int i = 0; i < 8; i++ )
     {
       uint16_t x = 0; y += 20;
@@ -69,7 +54,7 @@ void DisplayDeviations::display( int mode )
       x += 50;
       ucg->setColor( COLOR_WHITE );
       ucg->setPrintPos( x, y );
-      ucg->printf( "Deviation %3.1f°",  deviations[i]->get() );
+      ucg->printf( "Deviation %3.1f°",  compass->getDeviation(i*45) );
     }
 
   // draw graph

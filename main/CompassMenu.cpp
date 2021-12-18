@@ -113,9 +113,8 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 		continue;
 	}
 
-	// Save deviation value
-	compass->newDeviation( direction, heading );
-	// deviations[diridx]->set( deviation );
+	// Save and update deviation value
+	compass->newDeviation( heading, direction, true );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->setPrintPos( 1, 270 );
 	p->ucg->setFont( ucg_font_ncenR14_hr );
@@ -127,9 +126,6 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 		p->_parent->highlight = -1;
 	p->ucg->printf( "Press key for next" );
 	xSemaphoreGive(spiMutex);
-	// Update compass interpolation data
-	compass->deviationReload();
-
 	ESP_LOGI( FNAME, "Compass deviation action for %s is finished",	p->getEntry() );
 	return 0;
 }

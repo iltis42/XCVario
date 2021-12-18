@@ -304,10 +304,10 @@ void Serial::begin(){
 void Serial::taskStart(){
 	ESP_LOGI(FNAME,"Serial::taskStart()" );
 	if( serial1_speed.get() != 0  || wireless != 0  ){
-		xTaskCreatePinnedToCore(&serialHandler1, "serialHandler1", 3072, NULL, 11, pid1, 0);  // stay below compass task
+		xTaskCreatePinnedToCore(&serialHandler1, "serialHandler1", 4096, NULL, 11, pid1, 0);  // stay below compass task
 	}
 	if( serial2_speed.get() != 0 ){
-		xTaskCreatePinnedToCore(&serialHandler2, "serialHandler2", 3072, NULL, 10, pid2, 0);  // stay below compass task and task for S1
+		xTaskCreatePinnedToCore(&serialHandler2, "serialHandler2", 4096, NULL, 10, pid2, 0);  // stay below compass task and task for S1
 	}
 	// handler S1 now serves both interfaces in one task
 }

@@ -73,8 +73,17 @@ float Deviation::getDeviation( float heading )
 	return( dev );
 }
 
+void Deviation::resetDeviation( )
+{
+	ESP_LOGI( FNAME,"resetDeviation()");
+	readInterpolationData();
+	recalcInterpolationSpline();
+}
+
+
+
 // new Deviation from reverse calculated TAWC Wind measurement
-bool Deviation::newDeviation( float measured_heading, float desired_heading, float airspeedCalibration ){
+bool Deviation::newDeviation( float measured_heading, float desired_heading ){
 	double deviation = Vector::angleDiffDeg( desired_heading , measured_heading );
 	// ESP_LOGI( FNAME, "newDeviation Measured Head: %3.2f Desired Head: %3.2f => Deviation=%3.2f, Samples:%d", measured_heading, desired_heading, deviation, samples );
 	if( abs(deviation) > wind_max_deviation.get() ){ // data is not plausible/useful
@@ -125,8 +134,6 @@ bool Deviation::newDeviation( float measured_heading, float desired_heading, flo
 		saveDeviation();
 		_devHolddown = 1800; // maximum every half hour
 		samples = 0;
-		if( abs( wind_as_calibration.get() - airspeedCalibration )*100 > 0.5 )
-			wind_as_calibration.set( airspeedCalibration );
 	}
 	return true;
 }

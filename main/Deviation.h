@@ -38,7 +38,8 @@ public:
 	// Deviatiation related methods
 	float getDeviation( float heading );
 	void saveDeviation();
-	bool newDeviation( float for_heading, float steer, float airspeedCalibration );
+	void resetDeviation();
+	bool newDeviation( float for_heading, float steer );
 	// Return the calibration flag. Set to true, if a calibration is running.
 	void loadDeviationMap();
 	void deviationReload();

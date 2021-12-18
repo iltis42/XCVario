@@ -114,7 +114,8 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 	}
 
 	// Save deviation value
-	deviations[diridx]->set( deviation );
+	compass->newDeviation( direction, heading );
+	// deviations[diridx]->set( deviation );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->setPrintPos( 1, 270 );
 	p->ucg->setFont( ucg_font_ncenR14_hr );
@@ -151,20 +152,17 @@ int CompassMenu::resetDeviationAction( SetupMenuSelect *p )
 		p->ucg->setPrintPos( 1, 90 );
 		p->ucg->printf( "deviation data" );
 		xSemaphoreGive(spiMutex);
-		// Reset calibration
+		// Reset deviation
 		for( int i = 0; i < 8; i++ )
 		{
 			deviations[i]->set( 0.0 );
 		}
-
+		SetupCommon::commitNow();
 		ESP_LOGI( FNAME, "All compass deviations values were reset" );
 		delay( 1000 );
 	}
-	// Reset also AS calibration
-	wind_as_calibration.set( 1.0 );
 	// Reload compass interpolation data
-	compass->loadDeviationMap();
-	compass->deviationReload();
+	compass->resetDeviation();
 
 	p->clear();
 	p->ucg->setFont( ucg_font_ncenR14_hr );

@@ -72,7 +72,32 @@ void DisplayDeviations::display( int mode )
       ucg->printf( "Deviation %3.1f°",  deviations[i]->get() );
     }
 
-  ucg->setPrintPos( 5, 315 );
+  // draw graph
+  const int Y=245;
+  ucg->drawHLine( 10, Y, 215 );   // X-Axis
+  ucg->drawHLine( 15, Y-50, 5 );  // Scale
+  ucg->drawHLine( 15, Y+50, 5 );
+  ucg->drawVLine( 20, Y-50, 100 );
+  for( int x=20; x<=220; x+=25 ){
+	  if( !((x-20)%100) )
+		  ucg->drawVLine( x, Y-6, 12 );
+	  else
+		  ucg->drawVLine( x, Y-3, 6 );
+  }
+  ucg->setColor( COLOR_GREEN );
+  for( int x=0; x<360; x++ ){
+ 	  ucg->drawPixel( 20+(x*200./360.), Y-(int)compass->getDeviation((float)(x)) );
+  }
+  ucg->setColor( COLOR_HEADER_LIGHT );
+  ucg->setFont(ucg_font_fub11_hr, true);
+  ucg->setFontPosCenter();
+  ucg->setPrintPos(23,Y-50+7);  // Scale Labels
+  ucg->print("50");
+  ucg->setPrintPos(23,Y+50+7);
+  ucg->print("-50");
+
+  ucg->setColor( COLOR_WHITE );
+  ucg->setPrintPos( 40, 317 );
   ucg->printf( "Press button to exit" );
   semaphoreGive();
 }

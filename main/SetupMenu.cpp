@@ -990,11 +990,7 @@ void SetupMenu::setup( )
 		DisplayDeviations* smd = new DisplayDeviations( "Show Deviations" );
 		compassME->addEntry( smd );
 
-		SetupMenuSelect* sms = new SetupMenuSelect( "Reset Deviations ",
-				false,
-				compassResetDeviationAction,
-				false,
-				0 );
+		SetupMenuSelect* sms = new SetupMenuSelect( "Reset Deviations ", false, compassResetDeviationAction, false,	0 );
 
 		sms->setHelp( "Reset all deviation data to zero" );
 		sms->addEntry( "Cancel" );

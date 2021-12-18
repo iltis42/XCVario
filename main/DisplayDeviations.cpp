@@ -54,23 +54,25 @@ void DisplayDeviations::display( int mode )
       &compass_dev_270,
       &compass_dev_315 };
 
-  uint16_t y = 50;
+  uint16_t y = 25;
   semaphoreTake();
 
   for( int i = 0; i < 8; i++ )
     {
-      uint16_t x = 0; y += 25;
+      uint16_t x = 0; y += 20;
       ucg->setPrintPos( x, y );
+      ucg->setColor( COLOR_HEADER_LIGHT );
       ucg->printf( "%s",  skydirdev[i] );
       x += 42;
       ucg->setPrintPos( x, y );
       ucg->printf( "%03d°", i * 45 );
       x += 50;
+      ucg->setColor( COLOR_WHITE );
       ucg->setPrintPos( x, y );
       ucg->printf( "Deviation %3.1f°",  deviations[i]->get() );
     }
 
-  ucg->setPrintPos( 5, 290 );
+  ucg->setPrintPos( 5, 315 );
   ucg->printf( "Press button to exit" );
   semaphoreGive();
 }

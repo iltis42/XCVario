@@ -683,7 +683,8 @@ void readTemp(void *pvParameters){
 			}
 			ESP_LOGV(FNAME,"temperature=%f", temperature );
 			Flarm::tick();
-			compass->tick();
+			if( compass )
+				compass->tick();
 		}else{
 			if( (OAT.get() > -55.0) && (OAT.get() < 85.0) )
 				validTemperature = true;

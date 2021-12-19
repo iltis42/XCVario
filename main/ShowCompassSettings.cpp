@@ -36,7 +36,14 @@ void ShowCompassSettings::display( int mode )
 {
 	if( (selected != this) || !inSetup )
 		return;
-
+	if( !compass )
+	{
+		clear();
+		ucg->setFont( ucg_font_ncenR14_hr );
+		ucg->setPrintPos( 1, 30 );
+		ucg->printf( "No magnetic Sensor, Abort" );
+		delay( 2000 );
+	}
 	ESP_LOGI(FNAME, "display() mode=%d", mode );
 
 	clear();

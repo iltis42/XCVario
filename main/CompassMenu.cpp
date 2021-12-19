@@ -58,13 +58,12 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 {
 	ESP_LOGI( FNAME, "Compass deviation setup for direction '%s'",	p->getEntry() );
 
-	if( compass->haveSensor() == false )
+	if( !compass || !(compass->haveSensor()) )
 	{
 		p->clear();
 		p->ucg->setFont( ucg_font_ncenR14_hr );
-		p->ucg->setPrintPos( 1, 100 );
+		p->ucg->setPrintPos( 1, 30 );
 		p->ucg->printf( "No magnetic Sensor, Abort" );
-		delay( 2000 );
 		ESP_LOGI( FNAME, "Abort calibration, no sensor signal" );
 		return 0;
 	}
@@ -158,13 +157,19 @@ int CompassMenu::resetDeviationAction( SetupMenuSelect *p )
 		delay( 1000 );
 	}
 	// Reload compass interpolation data
-	compass->resetDeviation();
+
 
 	p->clear();
 	p->ucg->setFont( ucg_font_ncenR14_hr );
 	p->ucg->setPrintPos( 1, 300 );
-	p->ucg->printf( "Saved        " );
+	if( compass ){
+		compass->resetDeviation();
+		p->ucg->printf( "Saved        " );
+	}
+	else
+		p->ucg->printf( "Compass not configured" );
 	delay( 2000 );
+
 	return 0;
 }
 
@@ -189,6 +194,14 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 	{
 		// Cancel is requested
 		ESP_LOGI( FNAME, "Cancel Button pressed" );
+		return 0;
+	}
+	if( !compass ){
+		p->clear();
+		p->ucg->setFont( ucg_font_ncenR14_hr, true );
+		p->ucg->setPrintPos( 1, 30 );
+		p->ucg->printf( "Compass not configured" );
+		delay(2000);
 		return 0;
 	}
 

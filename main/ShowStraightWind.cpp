@@ -80,22 +80,7 @@ void ShowStraightWind::display( int mode )
 	sprintf( buffer, "MH/Dev: %3.2f/%+3.2f   ", theWind.getMH(), theWind.getDeviation() );
 	ucg->printf( "%s", buffer );
 	y += 25;
-/*
-	float minDev = 400.0;
-	float maxDev = 0.0;
-	for( int i=0; i<360; i++ ){
-		float d = compass->getDeviation((float)i);
-		if( minDev > d )
-			minDev = d;
-		if( maxDev < d )
-			maxDev = d;
-	}
 
-	ucg->setPrintPos( 0, y );
-	sprintf( buffer, "Min/Max Dev: %+3.2f/%+3.2f   ", minDev, maxDev );
-	ucg->printf( "%s", buffer );
-	y += 25;
-*/
 	ucg->setPrintPos( 0, y );
 	sprintf( buffer, "Wind Age : %d sec   ", theWind.getAge() );
 	ucg->printf( "%s", buffer );

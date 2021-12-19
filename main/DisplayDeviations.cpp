@@ -34,7 +34,15 @@ DisplayDeviations::DisplayDeviations( const char * title ) :
 void DisplayDeviations::display( int mode )
 {
   if( (selected != this) || !inSetup )
-    return;
+	  return;
+  if( !compass )
+  {
+	  clear();
+	  ucg->setFont( ucg_font_ncenR14_hr );
+	  ucg->setPrintPos( 1, 30 );
+	  ucg->printf( "No magnetic Sensor, Abort" );
+	  return;
+  }
   ESP_LOGI(FNAME, "display() mode=%d", mode );
   clear();
   ucg->setFont( ucg_font_ncenR14_hr );

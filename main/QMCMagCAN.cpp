@@ -33,7 +33,7 @@ int QMCMagCAN::age = 100;
 QMCMagCAN::QMCMagCAN()
 {
 	ESP_LOGI( FNAME, "QMCMagCAN()");
-	age = 0;
+	age = 100;
 	can = { 0,0,0 };
 	m_sensor = false;
 }

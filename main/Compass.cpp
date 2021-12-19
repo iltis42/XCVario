@@ -34,8 +34,9 @@ TaskHandle_t *ctid = 0;
  */
 Compass::Compass( const uint8_t addr, const uint8_t odr, const uint8_t range, const uint16_t osr , I2C_t *i2cBus  )
 {
-	ESP_LOGI(FNAME,"Compass( I2C )");
+	ESP_LOGI(FNAME,"Compass() I2C addr=%02x", addr );
 	if( addr == 0 ){
+
 		sensor = new QMCMagCAN();
 	}
 	else{

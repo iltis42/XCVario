@@ -78,17 +78,29 @@ void DisplayDeviations::display( int mode )
 		  ucg->drawVLine( x, Y-3, 6 );
   }
   ucg->setColor( COLOR_GREEN );
+  float avg=0;
   for( int x=0; x<360; x++ ){
- 	  ucg->drawPixel( 20+(x*200./360.), Y-(int)compass->getDeviation((float)(x)) );
+	  float dev=compass->getDeviation((float)(x));
+ 	  ucg->drawPixel( 20+(x*200./360.), Y-(int)dev);
+ 	  avg +=dev;
   }
-  ucg->setColor( COLOR_HEADER_LIGHT );
-  ucg->setFont(ucg_font_fub11_hr, true);
+  avg = avg/360;
+  ucg->setColor( COLOR_WHITE );
+  for( int x=0; x<360; x++ ){
+	  if( !(x%10) )
+		  ucg->drawPixel( 20+(x*200./360.), Y-(int)(avg+0.5) );
+  }
   ucg->setFontPosCenter();
+  ucg->setColor( COLOR_HEADER_LIGHT );
+  ucg->drawHLine( 15, Y-(int)avg, 5 );  // average
+  ucg->setPrintPos( 23, Y-(int)avg+7 );
+  ucg->printf("%d", (int)(avg+0.5));
+  ucg->setFont(ucg_font_fub11_hr, true);
   ucg->setPrintPos(23,Y-50+7);  // Scale Labels
   ucg->print("50");
   ucg->setPrintPos(23,Y+50+7);
   ucg->print("-50");
-
+  ucg->setPrintPos( 40, 317 );
   ucg->setColor( COLOR_WHITE );
   ucg->setPrintPos( 40, 317 );
   ucg->printf( "Press button to exit" );

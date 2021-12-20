@@ -1200,12 +1200,11 @@ void IpsDisplay::drawOneLabel( float val, int16_t labl, int16_t pos, int16_t off
 	}
 }
 
+static bool del_wind=true;
 
 // draw windsock style alike arrow white and red
 void IpsDisplay::drawWindArrow( float a, float speed, int type ){
 	static int wx0,wy0,wx1,wy1,wx3,wy3;
-	static bool del_wind=false;
-
 	if( _menu )
 		return;
 
@@ -1237,8 +1236,8 @@ void IpsDisplay::drawWindArrow( float a, float speed, int type ){
 	if( del_wind ) {  // cleanup previous incarnation
 		ucg->setColor(  COLOR_BLACK  );
 		ucg->drawTriangle(wx0,wy0,wx1,wy1,wx3,wy3);
-		if( wind_reference.get() != WR_NORTH )
-			Flarm::drawAirplane( wx0, wy0, false, true ); // clear small airplane symbol
+		// if( wind_reference.get() != WR_NORTH )
+		Flarm::drawAirplane( wx0, wy0, false, true ); // clear small airplane symbol, need to clear anytime as it moves...
 		wx0 = xn_0;
 		wy0 = yn_0;
 		wx1 = xn_1;

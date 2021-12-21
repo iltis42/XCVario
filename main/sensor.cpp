@@ -1309,8 +1309,7 @@ void sensor(void *args){
 		compass->start();  // start task
 	}
 
-	Speed2Fly.change_polar();
-	Speed2Fly.change_mc_bal();
+	Speed2Fly.begin();
 	Version myVersion;
 	ESP_LOGI(FNAME,"Program Version %s", myVersion.version() );
 	ESP_LOGI(FNAME,"%s", logged_tests.c_str());

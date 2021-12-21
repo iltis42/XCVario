@@ -601,4 +601,5 @@ extern SetupNG<t_bitfield_compass> 	calibration_bits;
 extern uint8_t g_col_background;
 extern uint8_t g_col_highlight;
 
-extern void change_mc_bal();
+void change_ballast();
+void change_mc();

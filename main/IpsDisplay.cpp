@@ -1411,7 +1411,7 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 		// QNH
 		int16_t qnh_x = x+5+ucg->getStrWidth(s);
 		sprintf(s, "%d", Units::QnhRounded(QNH.get()));
-		ucg->setPrintPos(qnh_x - ucg->getStrWidth(s), y-17);
+		ucg->setPrintPos(qnh_x - ucg->getStrWidth(s), y-19);
 		ucg->setColor( COLOR_WHITE );
 		ucg->print(s);
 	}

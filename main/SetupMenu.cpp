@@ -227,17 +227,12 @@ int polar_select( SetupMenuSelect * p )
 
 int bal_adj( SetupMenuValFloat * p )
 {
-	float loadinc = ((ballast.get() + fixed_ballast.get()) +100.0)/100.0;
-	float newwl = polar_wingload.get() * loadinc;
+	change_bal();
+	float wingload = gross_weight.get() / polar_wingarea.get();
 	p->ucg->setFont(ucg_font_fub25_hr, true);
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->setPrintPos(1,110);
-	p->ucg->printf("%0.2f kg/m2  ", newwl);
-	p->ucg->setPrintPos(1,150);
-	float refw=polar_wingload.get() * polar_wingarea.get();
-	float curw=newwl * polar_wingarea.get();
-	unsigned int liter=(curw-refw) + 0.5;
-	p->ucg->printf("%u liter  ", liter);
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
+	p->ucg->printf("%0.2f kg/m2  ", wingload );
 	xSemaphoreGive(spiMutex );
 	p->ucg->setFont(ucg_font_ncenR14_hr);
 	return 0;
@@ -331,6 +326,9 @@ void SetupMenu::begin( IpsDisplay* display, PressureSensor * bmp, AnalogInput *a
 	_adc = adc;
 	setup();
 	audio_volume.set( default_volume.get() );
+	if( empty_weight.get() == 0 )
+		empty_weight.set( (polar_wingload.get() * polar_wingarea.get()) - crew_weight.get() ); // get a useful default for empty mass
+	change_bal(); // initially set volatile data e.g. ballast
 }
 
 void SetupMenu::catchFocus( bool activate ){
@@ -537,9 +535,9 @@ void SetupMenu::setup( )
 	SetupMenuValFloat::qnh_menu->setHelp(PROGMEM"Setup QNH pressure value from next ATC. On ground you may adjust to airfield altitude above MSL.", 180 );
 	mm->addEntry( SetupMenuValFloat::qnh_menu );
 
-	SetupMenuValFloat * bal = new SetupMenuValFloat( "Ballast", 0, "%", 0.0, 100, 0.2, bal_adj, true, &ballast  );
-	bal->setHelp(PROGMEM"Percent wing load increase by ballast");
-	bal->setPrecision(1);
+	SetupMenuValFloat * bal = new SetupMenuValFloat( "Ballast", 0, "litre", 0.0, 500, 1, bal_adj, true, &ballast_kg  );
+	bal->setHelp(PROGMEM"Enter here the number of litres of water ballast added before flight");
+	bal->setPrecision(0);
 	mm->addEntry( bal );
 
 	SetupMenuValFloat * bgs = new SetupMenuValFloat( "Bugs", 0, "%", 0.0, 50, 1, bug_adj, true, &bugs  );
@@ -798,8 +796,8 @@ void SetupMenu::setup( )
 		audio->addEntry( frqr );
 
 		// Polar Setup
-		SetupMenu * po = new SetupMenu( "Polar" );
-		po->setHelp( PROGMEM"Polar setup to match performance of glider");
+		SetupMenu * po = new SetupMenu( "Weight/Polar" );
+		po->setHelp( PROGMEM"Weight and Polar setup for best match with performance of glider", 220 );
 		MenuEntry* poe = mm->addEntry( po );
 
 		SetupMenuSelect * glt = new SetupMenuSelect( "Glider-Type",	false, polar_select, true, &glider_type );
@@ -845,10 +843,17 @@ void SetupMenu::setup( )
 		wingarea->setHelp(PROGMEM"Wingarea for the selected glider, to allow adjustments to support wing extensions or new types in square meters");
 		poe->addEntry( wingarea );
 
-		SetupMenuValFloat * fixball = new SetupMenuValFloat( "Fixed Ballast", 0, "%", 0, 100, 0.2, bal_adj, false, &fixed_ballast );
-		fixball->setPrecision(1);
-		fixball->setHelp(PROGMEM"Add here fixed a fixed weight to your glider, once empty glider is more heavy than given the reference polar wingload");
+		SetupMenuValFloat * fixball = new SetupMenuValFloat( "Empty Weight", 0, "kg", 0, 1000, 1, bal_adj, false, &empty_weight );
+		fixball->setPrecision(0);
+		fixball->setHelp(PROGMEM"Asjust here the empty weight of your glider, according to your weight an balance plan");
 		poe->addEntry( fixball );
+
+		SetupMenuValFloat * crewball = new SetupMenuValFloat( "Crew Weight", 0, "kg", 0, 300, 1, bal_adj, false, &crew_weight );
+		crewball->setPrecision(0);
+		crewball->setHelp(PROGMEM"Adjust here the weight of the pilot including the parachute, in twin seaters, both pilots");
+		poe->addEntry( crewball );
+
+
 
 		SetupMenu * opt = new SetupMenu( "Options" );
 

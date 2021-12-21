@@ -47,6 +47,12 @@ void change_mc_bal() {  // or bugs
 	Speed2Fly.change_mc_bal();
 }
 
+void change_bal() {  // or bugs
+	gross_weight.set( empty_weight.get() + crew_weight.get() + ballast_kg.get() );
+	ballast.set( 100*gross_weight.get() / (polar_wingload.get()*polar_wingarea.get()) );
+	ESP_LOGI(FNAME,"new ballast overweight: %.2f", ballast.get() );
+}
+
 void resetSWindAge() {
 	if( swind_dir.get() != 0 && swind_speed.get() != 0 )  // do not reset age at initial sync
 		StraightWind::resetAge();
@@ -104,8 +110,13 @@ SetupNG<float>  		deadband( "DEADBAND", 0.3, true, SYNC_FROM_MASTER  );
 SetupNG<float>  		deadband_neg("DEADBAND_NEG" , -0.3, true, SYNC_FROM_MASTER  );
 SetupNG<float>  		range( "VARIO_RANGE", 5.0 );
 SetupNG<int>			log_scale( "LOG_SCALE", 0 );
-SetupNG<float>  		ballast( "BALLAST" , 0.0, true, SYNC_BIDIR, PERSISTENT, change_mc_bal );
-SetupNG<float>  		fixed_ballast( "FIXBALL" , 0.0, true, SYNC_FROM_MASTER, PERSISTENT, change_mc_bal );
+SetupNG<float>  		ballast( "BALLAST" , 0.0, true, SYNC_NONE, VOLATILE );  // ballast increase from reference weight in %
+SetupNG<float>  		ballast_kg( "BAL_KG" , 0.0, true, SYNC_BIDIR, PERSISTENT, change_mc_bal );
+SetupNG<float>			empty_weight( "EMPTY_WGT", 80, true, SYNC_BIDIR, PERSISTENT, change_bal );
+SetupNG<float>			crew_weight( "CREW_WGT", 80, true, SYNC_BIDIR, PERSISTENT, change_bal );
+SetupNG<float>			gross_weight( "CREW_WGT", 350, true, SYNC_NONE, VOLATILE );
+
+
 SetupNG<float>  		bugs( "BUGS", 0.0, true, SYNC_BIDIR, VOLATILE, change_mc_bal  );
 
 SetupNG<int>  			cruise_mode( "CRUISE", 0, true, SYNC_BIDIR, VOLATILE );

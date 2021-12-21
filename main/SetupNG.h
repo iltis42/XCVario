@@ -90,6 +90,7 @@ typedef enum e_display_orientation { DISPLAY_NORMAL, DISPLAY_TOPDOWN } e_display
 
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
 
+void change_bal();
 
 class SetupCommon {
 public:
@@ -394,7 +395,11 @@ extern SetupNG<float>  		deadband_neg;
 extern SetupNG<float>  		range;
 extern SetupNG<int>			log_scale;
 extern SetupNG<float>  		ballast;
-extern SetupNG<float>  		fixed_ballast;
+extern SetupNG<float>  		ballast_kg;
+extern SetupNG<float>		empty_weight;
+extern SetupNG<float>		crew_weight;
+extern SetupNG<float>		gross_weight;
+
 extern SetupNG<float>  		s2f_speed;
 
 extern SetupNG<int>  		audio_variable_frequency;

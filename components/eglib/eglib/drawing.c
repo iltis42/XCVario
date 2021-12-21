@@ -1184,13 +1184,14 @@ struct font_t {
 void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struct glyph_t *glyph) {
 	if(glyph == NULL)
 		return;
-	// ESP_LOGI("eglib_DrawGlyph 1","x:%d, y:%d, gly width:%d adv:%d hei:%d", x,y, glyph->width, glyph->advance, eglib->drawing.font->pixel_size );
 	uint8_t *buffer;
 	int pixels_off = 0;
 	int pixels     = 0;
 	int ascent = eglib->drawing.font->ascent;
 	int descent = eglib->drawing.font->descent;
+	int ascheight = ascent - descent;
 	int alignment = ascent+descent;
+	// ESP_LOGI("eglib_DrawGlyph 1","x:%d, y:%d, gly width:%d adv:%d hei:%d asc:%d dec:%d", x,y, glyph->width, glyph->advance, eglib->drawing.font->pixel_size, ascent, descent );
 
 	if( eglib->drawing.font_origin == FONT_BOTTOM )
 		alignment = 0;
@@ -1200,8 +1201,7 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
 		alignment -= alignment;
 
 	int width = glyph->advance;
-	int height = eglib->drawing.font->pixel_size;
-	int pixels_size = eglib->drawing.font->pixel_size;
+	int height = eglib->drawing.font->pixel_size > ascheight ? eglib->drawing.font->pixel_size : ascheight;
 
 	int top = glyph->top;
 	int head = ascent - top;
@@ -1215,7 +1215,7 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
 	buffer = malloc( height*width*3 );
 	int y1 = 0;
 	if( eglib->drawing.filled_mode == false ){
-		y1 =  pixels_size/8;   // WA as fonts bounding boxes to high over the top
+		y1 =  height/8;   // WA as fonts bounding boxes to high over the top
 	}
 
 	for(coordinate_t v1=y1; v1 < height ; v1++){
@@ -1237,14 +1237,14 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
 				{
 					if( get_bit2( glyph, u, v ) ){
 						*(color_t *)(buffer+pos3) = eglib->drawing.color_index[0];
-						// line[u] = 'X';
+						//line[u] = 'X';
 					}
 				}
 				pos3 +=3;
 			}
 		}
-		// line[width] = 0;
-		// ESP_LOGI("Bitmap","L-%02d: %s", v1, line);   // debug bitmap
+		//line[width] = 0;
+		//ESP_LOGI("Bitmap","L-%02d: %s", v1, line);   // debug bitmap
 	}
 	lenx += 1;
 	leny += 1;

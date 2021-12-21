@@ -24,7 +24,7 @@ public:
 	void display( int mode=0 );
 	void displayVal();
 	void setPrecision( int prec );
-	const char *value() const override;
+	const char *value();
 	static void showQnhMenu();
 	void up( int count );  // step up to parent
 	void down( int count );

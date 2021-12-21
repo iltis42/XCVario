@@ -36,7 +36,7 @@ public:
 	virtual void display( int mode=0 );
 
 	// No value support
-	virtual const char *value() const override { return nullptr; }
+	virtual const char *value() { return nullptr; }
 
 	// Ignore up calls
 	virtual void up( int count ) {}

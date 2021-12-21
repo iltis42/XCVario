@@ -18,15 +18,13 @@
 SetupMenuValFloat * SetupMenuValFloat::qnh_menu = 0;
 char SetupMenuValFloat::_val_str[20];
 
-SetupMenuValFloat::SetupMenuValFloat( const char* title, float *value, const char *unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs, bool restart, bool sync ) {
+SetupMenuValFloat::SetupMenuValFloat( const char* title, const char *unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs, bool restart, bool sync ) {
 	// ESP_LOGI(FNAME,"SetupMenuValFloat( %s ) ", title.c_str() );
 	attach(this);
 	_title = title;
 	highlight = -1;
 	_nvs = 0;
 	bits._restart = restart;
-	if( value )
-		_value = value;
 	if( unit != 0 )
 		_unit = unit;
 	else
@@ -41,13 +39,19 @@ SetupMenuValFloat::SetupMenuValFloat( const char* title, float *value, const cha
 		bits._precision = 0;
 	if( anvs ) {
 		_nvs = anvs;
-		_value = _nvs->getPtr();
-		_value_safe = *_value;
+		_value = _nvs->get();
+		_value_safe = _value;
 	}
 }
+
 SetupMenuValFloat::~SetupMenuValFloat()
 {
     detach(this);
+}
+
+const char *SetupMenuValFloat::value() const {
+	sprintf(_val_str,"%0.*f %s", bits._precision, _value, _unit );
+	return _val_str;
 }
 
 void SetupMenuValFloat::setPrecision( int prec ){
@@ -97,7 +101,7 @@ void SetupMenuValFloat::displayVal()
 	ucg->setPrintPos( 1, 70 );
 	ucg->setFont(ucg_font_fub25_hf, true);
 	char val[20];
-	sprintf(val, "%0.*f", bits._precision, _nvs?_nvs->getGui():*_value );
+	sprintf(val, "%0.*f", bits._precision, _value );
 	ucg->print(val);
 	if( _unit ) {
 		ucg->setFont(ucg_font_fur25_hf, true);   // use different font for unit as of ° special char
@@ -113,12 +117,12 @@ void SetupMenuValFloat::down( int count ){
 	if( (selected != this) || !inSetup )
 		return;
 	// ESP_LOGI(FNAME,"val down %d times ", count );
-	while( (*_value > _min) && count ) {
-		*_value -= _step;
+	while( (_value > _min) && count ) {
+		_value -= _step;
 		count --;
 	}
-	if( *_value < _min )
-		*_value = _min;
+	if( _value < _min )
+		_value = _min;
 	displayVal();
 	if( _action != 0 )
 		(*_action)( this );
@@ -128,12 +132,12 @@ void SetupMenuValFloat::up( int count ){
 	if( (selected != this) || !inSetup )
 		return;
 	// ESP_LOGI(FNAME,"val up %d times ", count );
-	while( (*_value < _max) && count ) {
-		*_value += _step;
+	while( (_value < _max) && count ) {
+		_value += _step;
 		count--;
 	}
-	if( *_value > _max )
-		*_value = _max;
+	if( _value > _max )
+		_value = _max;
 	displayVal();
 	if( _action != 0 )
 		(*_action)( this );
@@ -148,6 +152,8 @@ void SetupMenuValFloat::press(){
 		return;
 	ESP_LOGI(FNAME,"SetupMenuValFloat press");
 	if ( pressed ){
+		ESP_LOGI(FNAME,"pressed, value: %f", _value );
+		_nvs->set( _value );
 		display( 1 );
 		if( bits._end_menu )
 			selected = root;
@@ -155,7 +161,7 @@ void SetupMenuValFloat::press(){
 			selected = _parent;
 		selected->highlight = -1;  // to topmost selection when back
 		selected->pressed = true;
-		if( *_value != _value_safe ){
+		if( _value != _value_safe ){
 			if( _nvs )
 				_nvs->commit();
 			if( bits._restart ) {

@@ -15,13 +15,17 @@ class S2F {
 public:
 	S2F( );
 	virtual ~S2F();
-	void change_polar();
-	void select_polar( int num );
-	void change_mc_bal();
+	void begin();
+	void calculateOverweight();
+	void modifyPolar();
+	void recalculatePolar();
+	void change_ballast();
+	void change_mc();
+	void setPolar();
 	double speed( double st, bool circling=false );
 	double sink( double v );
 	inline double minsink() { return _speedMinSink; };
-	void recalc();
+	void recalcSinkNSpeeds();
 	static float getBallastPercent();
 	inline double circlingSink(double v) {
 		if( v > Units::Airspeed2Kmh( stall_speed.get())*0.6 )

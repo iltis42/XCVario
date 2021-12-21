@@ -177,42 +177,42 @@ void Flap::setupIndicatorMenueEntries(MenuEntry *wkm)
     ESP_LOGI(FNAME,"Flap Indicator Menue");
     if ( ! nflpos && flap_enable.get() && !SetupCommon::isClient() ) {
 
-        nflpos = new SetupMenuValFloat("Max positive Flap", nullptr, "", 0., 3., 1., flap_pos_act, false, &flap_pos_max);
+        nflpos = new SetupMenuValFloat("Max positive Flap", "", 0., 3., 1., flap_pos_act, false, &flap_pos_max);
         nflpos->setHelp(PROGMEM"Maximum positive flap position to be displayed");
         wkm->addEntry( nflpos, wkm->getFirst() );
 
-        nflneg = new SetupMenuValFloat("Max negative Flap", nullptr, "", -3., 0., 1., flap_pos_act, false, &flap_neg_max);
+        nflneg = new SetupMenuValFloat("Max negative Flap", "", -3., 0., 1., flap_pos_act, false, &flap_neg_max);
         nflneg->setHelp(PROGMEM"Maximum negative flap position to be displayed");
         wkm->addEntry( nflneg, nflpos );
 
-        flgnd = new SetupMenuValFloat("Takeoff Flap", 0, "", -3, 3, 1, 0, false, &flap_takeoff  );
+        flgnd = new SetupMenuValFloat("Takeoff Flap","", -3, 3, 1, 0, false, &flap_takeoff  );
         flgnd->setHelp(PROGMEM"Flap position to be set on ground for takeoff, when there is no airspeed");
         wkm->addEntry( flgnd, nflneg );
 
         flapss = new SetupMenu( "Flap Speeds Setup" );
         wkm->addEntry( flapss, flgnd );
 
-        SetupMenuValFloat *plus3 = new SetupMenuValFloat("Speed +3 to +2", 0, sunit.c_str(),  20, 150, 1, flap_speed_act, false, &flap_plus_2  );
+        SetupMenuValFloat *plus3 = new SetupMenuValFloat("Speed +3 to +2", sunit.c_str(),  20, 150, 1, flap_speed_act, false, &flap_plus_2  );
         plus3->setHelp(PROGMEM"Speed for transition from +3 to +3 flap setting");
         flapss->addEntry( plus3 );
 
-        SetupMenuValFloat *plus2 = new SetupMenuValFloat("Speed +2 to +1", 0, sunit.c_str(),  20, 150, 1, flap_speed_act, false, &flap_plus_1  );
+        SetupMenuValFloat *plus2 = new SetupMenuValFloat("Speed +2 to +1", sunit.c_str(),  20, 150, 1, flap_speed_act, false, &flap_plus_1  );
         plus2->setHelp(PROGMEM"Speed for transition from +2 to +1 flap setting");
         flapss->addEntry( plus2 );
 
-        SetupMenuValFloat *plus1 = new SetupMenuValFloat("Speed +1 to 0", 0, sunit.c_str(),  20, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_0  );
+        SetupMenuValFloat *plus1 = new SetupMenuValFloat("Speed +1 to 0", sunit.c_str(),  20, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_0  );
         plus1->setHelp(PROGMEM"Speed for transition from +1 to 0 flap setting");
         flapss->addEntry( plus1 );
 
-        SetupMenuValFloat *min1 = new SetupMenuValFloat("Speed 0 to -1", 0, sunit.c_str(),   20, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_minus_1  );
+        SetupMenuValFloat *min1 = new SetupMenuValFloat("Speed 0 to -1", sunit.c_str(),   20, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_minus_1  );
         min1->setHelp(PROGMEM"Speed for transition from 0 to -1 flap setting");
         flapss->addEntry( min1 );
 
-        SetupMenuValFloat *min2 = new SetupMenuValFloat("Speed -1 to -2", 0, sunit.c_str(),  50, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_minus_2  );
+        SetupMenuValFloat *min2 = new SetupMenuValFloat("Speed -1 to -2", sunit.c_str(),  50, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_minus_2  );
         min2->setHelp(PROGMEM"Speed for transition from -1 to -2 flap setting");
         flapss->addEntry( min2 );
 
-        SetupMenuValFloat *min3 = new SetupMenuValFloat("Speed -2 to -3", 0, sunit.c_str(),  50, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_minus_3  );
+        SetupMenuValFloat *min3 = new SetupMenuValFloat("Speed -2 to -3", sunit.c_str(),  50, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_minus_3  );
         min3->setHelp(PROGMEM"Speed for transition from -2 to -3 flap setting");
         flapss->addEntry( min3 );
 

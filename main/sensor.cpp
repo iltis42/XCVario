@@ -229,7 +229,7 @@ void drawDisplay(void *pvParameters){
 					float acceleration=accelG[0];
 					if( acceleration < 0.3 )
 						acceleration = 0.3;  // limit acceleration effect to minimum 30% of 1g
-					float acc_stall= stall_speed_kmh * sqrt( acceleration + ((ballast.get() + fixed_ballast.get())/100));  // accelerated and ballast(ed) stall speed
+					float acc_stall= stall_speed_kmh * sqrt( acceleration + ( ballast.get()/100));  // accelerated and ballast(ed) stall speed
 					if( ias.get() < acc_stall && ias.get() > acc_stall*0.7 ){
 						if( !stall_warning_active ){
 							Audio::alarm( true );
@@ -1309,8 +1309,7 @@ void sensor(void *args){
 		compass->start();  // start task
 	}
 
-	Speed2Fly.change_polar();
-	Speed2Fly.change_mc_bal();
+	Speed2Fly.begin();
 	Version myVersion;
 	ESP_LOGI(FNAME,"Program Version %s", myVersion.version() );
 	ESP_LOGI(FNAME,"%s", logged_tests.c_str());

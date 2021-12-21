@@ -24,4 +24,4 @@ Copyright_License {
 
 
 
-Vario MC( "MacCready", 0.5, SYNC_BIDIR, change_mc_bal );
+Vario MC( "MacCready", 0.5, SYNC_BIDIR, change_mc );

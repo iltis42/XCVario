@@ -331,14 +331,10 @@ void Protocols::parseNMEA( const char *astr ){
 				float aballast;
 				sscanf(str, "!g,b%f", &aballast);
 				aballast = aballast * 10; // Its obviously only possible to change in fraction's by 10% in CA302 (issue: 464)
-				ESP_LOGI(FNAME,"New Ballast: %f %% of max ", aballast);
+				ESP_LOGI(FNAME,"New Ballast: %.1f %% of max ", aballast);
 				float liters = (aballast/100.0) * polar_max_ballast.get();
-				ESP_LOGI(FNAME,"New Ballast in liters: %f ", liters);
-				float refw = polar_wingload.get() * polar_wingarea.get();
-				ESP_LOGI(FNAME,"Reference weight: %f ", refw);
-				float bal = (100.0*(liters+refw)/refw) - 100;
-				ESP_LOGI(FNAME,"Final new ballast: %f ", bal);
-				ballast.set( bal );
+				ESP_LOGI(FNAME,"New Ballast in liters/kg: %.1f ", liters);
+				ballast_kg.set( liters );
 			}
 			if (str[3] == 'm' ) {
 				ESP_LOGI(FNAME,"parseNMEA, BORGELT, MC modification");

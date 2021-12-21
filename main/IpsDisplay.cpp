@@ -1469,6 +1469,10 @@ bool IpsDisplay::drawSpeed(float v_kmh, int16_t x, int16_t y, bool dirty, bool i
 
 //////////////////////////////////////////////
 // The load display
+
+static float old_gmax = 100;
+static float old_gmin = -100;
+
 void IpsDisplay::initLoadDisplay(){
 	if( _menu )
 		return;
@@ -1495,15 +1499,13 @@ void IpsDisplay::initLoadDisplay(){
 
 	initGauge(max_gscale, false); // no logarithmic gauge for g-load
 	drawScale( max_gscale, -max_gscale, 140, 1 );
-
+	old_gmax = 100;
+	old_gmin = -100;
 	ESP_LOGI(FNAME,"initLoadDisplay end");
 }
 
 
 void IpsDisplay::drawLoadDisplay( float loadFactor ){
-	static float old_gmax = 100;
-	static float old_gmin = -100;
-
 	// ESP_LOGI(FNAME,"drawLoadDisplay %1.1f", loadFactor );
 	if( _menu )
 		return;

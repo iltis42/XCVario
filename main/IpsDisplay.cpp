@@ -1479,7 +1479,7 @@ void IpsDisplay::initLoadDisplay(){
 	ESP_LOGI(FNAME,"initLoadDisplay()");
 	ucg->setColor( COLOR_HEADER );
 	ucg->setFont(ucg_font_fub11_hr);
-	ucg->setPrintPos(40,15);
+	ucg->setPrintPos(20,20);
 	ucg->print( "G-Force" );
 	ucg->setPrintPos(130,70);
 	ucg->setColor(  COLOR_HEADER_LIGHT  );

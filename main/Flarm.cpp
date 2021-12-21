@@ -342,7 +342,7 @@ void Flarm::drawAirplane( int x, int y, bool fromBehind, bool smallSize ){
 }
 
 void Flarm::initFlarmWarning(){
-	ucg->setPrintPos(15, 20 );
+	ucg->setPrintPos(15, 25 );
 	ucg->setFontPosCenter();
 	ucg->setColor( COLOR_WHITE );
 	ucg->setFont(ucg_font_fub20_hr);
@@ -396,7 +396,7 @@ void Flarm::drawFlarmWarning(){
 		Audio::alarm( false );
 
     if( AlarmLevel != alarmOld ) {
-    	ucg->setPrintPos(200, 20 );
+    	ucg->setPrintPos(200, 25 );
     	ucg->setFontPosCenter();
     	ucg->setColor( COLOR_WHITE );
     	ucg->setFont(ucg_font_fub20_hr, true);

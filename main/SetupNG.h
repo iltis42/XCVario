@@ -1,5 +1,5 @@
 /*
- * Setup.h
+ * SetupNG.h
  *
  *  Created on: August 23, 2020
  *      Author: iltis
@@ -29,6 +29,7 @@
 #include <iostream>
 #include <vector>
 #include "Compass.h"
+#include "SetupCommon.h"
 
 
 /*
@@ -89,65 +90,9 @@ typedef enum e_display_orientation { DISPLAY_NORMAL, DISPLAY_TOPDOWN } e_display
 
 
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
-
 void change_bal();
 
-class SetupCommon {
-public:
-	SetupCommon() { memset( _ID, 0, sizeof( _ID )); }
-	virtual ~SetupCommon() {};
-	virtual bool init() = 0;
-	virtual bool erase() = 0;
-	virtual bool mustReset() = 0;
-	virtual const char* key() = 0;
-	virtual char typeName() = 0;
-	virtual bool sync() = 0;
-	virtual uint8_t getSync() = 0;
-	static std::vector<SetupCommon *> entries;
-	static bool initSetup( bool &present );  // returns false if FLASH was completely blank
-	static char *getID();
-	static void sendSetup( uint8_t sync, const char * key, char type, void *value, int len, bool ack=false );
-	static SetupCommon * getMember( const char * key );
-	static bool syncEntry( int entry );
-	static int numEntries() { return entries.size(); };
-	static bool factoryReset();
-	static bool isMaster();
-	static bool isClient();
-    static bool isWired();
-    static bool mustSync( uint8_t sync);
-	static bool haveWLAN();
-    static bool lazyCommit;
-    static bool commitNow();
-    static QueueHandle_t commitSema;
-
-protected:
-    static bool open(nvs_handle_t &h) {
-        esp_err_t err = nvs_open("SetupNG", NVS_READWRITE, &h);
-        if(err != ESP_OK){
-            ESP_LOGE(FNAME,"ESP32NVS open storage error %d", err );
-            h = 0;
-            return( false );
-        }
-        else {
-            // ESP_LOGI(FNAME,"ESP32NVS handle: %04X  OK", _nvs_handle );
-            return( true );
-        }
-	};
-	static void close(nvs_handle_t &h) {
-		if( h != 0) {
-			nvs_close(h);
-			h = 0;
-		}
-	};
-private:
-    static esp_timer_handle_t _timer;
-    static bool _dirty;
-	static char _ID[14];
-};
-
-
 template<typename T>
-
 class SetupNG: public SetupCommon
 {
 public:
@@ -600,6 +545,8 @@ extern SetupNG<t_bitfield_compass> 	calibration_bits;
 
 extern uint8_t g_col_background;
 extern uint8_t g_col_highlight;
+
+extern int last_volume;
 
 void change_ballast();
 void change_mc();

@@ -44,6 +44,18 @@ void SetupMenuSelect::addEntry( const char* ent ) {
 #endif
 }
 
+void SetupMenuSelect::setSelect( int sel ) {
+	_select = (int16_t)sel;
+	if( _nvs )
+		_select = _nvs->set( sel );
+}
+
+int SetupMenuSelect::getSelect() {
+	if( _nvs )
+		_select = _nvs->get();
+	return (int)_select;
+}
+
 void SetupMenuSelect::addEntryList( const char ent[][4], int size )
 {
 	ESP_LOGI(FNAME,"addEntryList() char ent[][4]");
@@ -144,16 +156,17 @@ void SetupMenuSelect::display( int mode ){
 		if( mode == 1 )
 			delay(1000);
 	}
+	/*
 	if( _action != 0 && mode < 2 ){
 		ESP_LOGI(FNAME,"calling action");
 		(*_action)( this );
 	}
+	*/
 }
 
 void SetupMenuSelect::down(int count){
 	if( (selected != this) || !inSetup )
 		return;
-
 	if( _numval > 9 ){
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		while( count ) {
@@ -213,7 +226,7 @@ void SetupMenuSelect::longPress(){
 void SetupMenuSelect::press(){
 	if( selected != this )
 		return;
-	ESP_LOGI(FNAME,"press() ext handler: %d press: %d", bits._ext_handler, pressed );
+	ESP_LOGI(FNAME,"press() ext handler: %d press: %d _select: %d", bits._ext_handler, pressed, _select );
 	if ( pressed ){
 		display( 1 );
 		if( _parent != 0) {
@@ -227,6 +240,10 @@ void SetupMenuSelect::press(){
 			_nvs->commit();
 		}
 		pressed = false;
+		if( _action != 0 ){
+			ESP_LOGI(FNAME,"calling action in press %d", _select );
+			(*_action)( this );
+		}
 		if( _select_save != _select )
 			if( bits._restart ) {
 				Audio::shutdown();

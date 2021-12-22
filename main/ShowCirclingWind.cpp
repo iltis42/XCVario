@@ -43,7 +43,7 @@ void ShowCirclingWind::display( int mode )
 	ESP_LOGI(FNAME, "display() mode=%d", mode );
 	if( mode != 5 )
 		clear();
-	ucg->setFont( ucg_font_fur14_hf );
+	ucg->setFont( ucg_font_ncenR14_hr  );
 	uprintf( 5, 25, selected->_title );
 
 	uint16_t y = 55;
@@ -74,7 +74,7 @@ void ShowCirclingWind::display( int mode )
 	y += 25;
 
 	ucg->setPrintPos( 0, y );
-	sprintf( buffer, "Last Wind : %3.1f\xb0/%2.1f  ", CircleWind::getAngle(), Units::Airspeed( CircleWind::getSpeed()) );
+	sprintf( buffer, "Last Wind : %3.1f°/%2.1f  ", CircleWind::getAngle(), Units::Airspeed( CircleWind::getSpeed()) );
 	ucg->printf( "%s", buffer );
 	y += 25;
 

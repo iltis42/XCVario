@@ -99,8 +99,8 @@ int update_wifi_power(SetupMenuValFloat * p)
 }
 
 int data_mon( SetupMenuSelect * p ){
-	ESP_LOGI(FNAME,"data_mon( %d ) ", p->getSelect() );
-	if( p->getSelect() != MON_OFF ){
+	ESP_LOGI(FNAME,"data_mon( %d ) ", data_monitor.get() );
+	if( data_monitor.get() != MON_OFF ){
 		DM.start(p);
 	}
 	return 0;
@@ -994,7 +994,7 @@ void SetupMenu::setup( )
 		const char *skydirs[8] = { "0°", "45°", "90°", "135°", "180°", "225°", "270°", "315°" };
 		for( int i = 0; i < 8; i++ )
 		{
-			SetupMenuSelect* sms = new SetupMenuSelect( "Direction", false, compassDeviationAction, false, 0, true );
+			SetupMenuSelect* sms = new SetupMenuSelect( "Direction", false, compassDeviationAction, false, 0 );
 			sms->setHelp( "Push button to start deviation action" );
 			sms->addEntry( skydirs[i] );
 			dme->addEntry( sms );

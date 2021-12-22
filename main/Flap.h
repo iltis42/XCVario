@@ -36,7 +36,7 @@ public:
     void setSymbolPosition(int16_t x, int16_t y);
 	void drawSmallBar( float wkf );
 	void drawBigBar( float wkf, float wksens );
-	void drawLever( int16_t xpos, int16_t ypos, int16_t oldypos, bool warn );
+	void drawLever( int16_t xpos, int16_t ypos, int16_t oldypos, bool warn, bool good );
 	void drawWingSymbol(int16_t wk, float wksens);
 	void redraw() { sensorOldY = -1000; dirty=true; };
 	// void redrawLever() { sensorOldY = -1000; };
@@ -62,7 +62,7 @@ private: // helper
 	void  initSpeeds();
     void  initLabels();
 	void  initSensPos();
-	void  configureADC();
+	void  configureADC( int port );
 	int   getOptimumInt( float wks );
 
 private:

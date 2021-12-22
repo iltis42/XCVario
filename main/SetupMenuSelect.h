@@ -33,8 +33,8 @@ public:
 	void press();
 	void longPress();
 	const char *value();
-	inline int getSelect() { return (int)_select; };
-	inline void setSelect( int sel ) { _select = (int16_t)sel; };
+	int getSelect();
+	void setSelect( int sel );
 	const char * getEntry() const ;
 
 private:

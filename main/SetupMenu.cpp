@@ -122,20 +122,20 @@ int add_key( SetupMenuSelect * p )
 
 int qnh_adj( SetupMenuValFloat * p )
 {
-	// ESP_LOGI(FNAME,"qnh_adj");
+	ESP_LOGI(FNAME,"qnh_adj %f", p->_value );
 	float alt=0;
 	if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
 		alt = alt_external + ( ((p->_value)) - 1013.25)*8.2296;  // correct altitude according to ISA model = 27ft / hPa
 	else{
 		for( int i=0; i<6; i++ ) {
 			bool ok;
-			alt += p->_bmp->readAltitude( Units::Qnh( (p->_value) ), ok );
+			alt += p->_bmp->readAltitude( p->_value, ok );
 			sleep(0.01);
 		}
 		alt = alt/6;
 	}
 
-	ESP_LOGI(FNAME,"Setup BA alt=%f QNH=%f hPa", alt, Units::Qnh( (p->_value) )  );
+	ESP_LOGI(FNAME,"Setup BA alt=%f QNH=%f hPa", alt, p->_value  );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->setFont(ucg_font_fub25_hr, true);
 	p->ucg->setPrintPos(1,110);

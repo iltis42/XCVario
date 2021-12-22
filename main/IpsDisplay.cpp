@@ -526,20 +526,18 @@ void IpsDisplay::drawAvg( float avclimb, float delta ){
 		// refresh scale around old AVG icon
 		drawScale( _range, -_range, 140, 0, avc_old*10.f );
 	}
-	if( delta > 0 )
-		ucg->setColor( COLOR_GREEN );
-	else
-		ucg->setColor( COLOR_RED );
-
 	if( delta > 0.2 ){
+		ucg->setColor( COLOR_GREEN );
 		yusize=size*2;
 		ylsize=size;
 	}
 	else if ( delta < -0.2 ){
+		ucg->setColor( COLOR_RED );
 		ylsize=size*2;
 		yusize=size;
 	}
 	else{
+		ucg->setColor( COLOR_BLUE );
 		ylsize=size;
 		yusize=size;
 	}
@@ -1410,7 +1408,10 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 		ucg->print(s);
 		// QNH
 		int16_t qnh_x = x+5+ucg->getStrWidth(s);
-		sprintf(s, "%d", Units::QnhRounded(QNH.get()));
+		if( qnh_unit.get() == QNH_INHG )
+			sprintf(s, "%.2f", Units::Qnh(QNH.get()));
+		else
+			sprintf(s, "%d", Units::QnhRounded(QNH.get()));
 		ucg->setPrintPos(qnh_x - ucg->getStrWidth(s), y-19);
 		ucg->setColor( COLOR_WHITE );
 		ucg->print(s);

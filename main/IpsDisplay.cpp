@@ -1311,8 +1311,8 @@ void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float ate ){
 	ucg->setFontPosCenter();
 	static const char* format[2] = {"   %2.1f", "   %2.0f"};
 	ucg->setColor( COLOR_WHITE );
-	sprintf(s, format[std::abs(ate)>10], round(ate*10.)/10.); // Avoid "-" sign because of not sown mantissa
-	ucg->setPrintPos(x - ucg->getStrWidth(s), y + 3);
+	sprintf(s, format[std::abs(ate)>10], round(ate*10.)/10.); // Avoid "-" sign because of not owns mantissa
+	ucg->setPrintPos(x - ucg->getStrWidth(s), y + 7);
 	ucg->print(s);
 	ucg->setFontPosBottom();
 }

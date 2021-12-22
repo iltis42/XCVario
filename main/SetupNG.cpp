@@ -59,10 +59,6 @@ void modifyPolar() {
 	Speed2Fly.modifyPolar();
 }
 
-void recalc_ballast() {
-	Speed2Fly.calculateOverweight();
-}
-
 void resetSWindAge() {
 	if( swind_dir.get() != 0 && swind_speed.get() != 0 )  // do not reset age at initial sync
 		StraightWind::resetAge();
@@ -99,15 +95,15 @@ void flap_act() {
 
 
 SetupNG<float>  		QNH( "QNH", 1013.25, true, SYNC_BIDIR );
-SetupNG<float> 			polar_wingload( "POLAR_WINGLOAD", 34.40, true, SYNC_FROM_MASTER, PERSISTENT, recalc_ballast );
+SetupNG<float> 			polar_wingload( "POLAR_WINGLOAD", 34.40, true, SYNC_FROM_MASTER, PERSISTENT, change_ballast );
 SetupNG<float> 			polar_speed1( "POLAR_SPEED1",   80, true, SYNC_FROM_MASTER, PERSISTENT, modifyPolar );
 SetupNG<float> 			polar_sink1( "POLAR_SINK1",    -0.66, true, SYNC_FROM_MASTER, PERSISTENT, modifyPolar );
 SetupNG<float> 			polar_speed2( "POLAR_SPEED2",   125, true, SYNC_FROM_MASTER, PERSISTENT, modifyPolar );
 SetupNG<float> 			polar_sink2( "POLAR_SINK2",    -0.97, true, SYNC_FROM_MASTER, PERSISTENT, modifyPolar );
 SetupNG<float> 			polar_speed3( "POLAR_SPEED3",   175, true, SYNC_FROM_MASTER, PERSISTENT, modifyPolar );
 SetupNG<float> 			polar_sink3( "POLAR_SINK3",    -2.24, true, SYNC_FROM_MASTER, PERSISTENT, modifyPolar );
-SetupNG<float> 			polar_max_ballast( "POLAR_MAX_BAL",  160, true, SYNC_FROM_MASTER, PERSISTENT, recalc_ballast );
-SetupNG<float> 			polar_wingarea( "POLAR_WINGAREA", 10.5, true, SYNC_FROM_MASTER, PERSISTENT, recalc_ballast );
+SetupNG<float> 			polar_max_ballast( "POLAR_MAX_BAL",  160, true, SYNC_FROM_MASTER, PERSISTENT, change_ballast );
+SetupNG<float> 			polar_wingarea( "POLAR_WINGAREA", 10.5, true, SYNC_FROM_MASTER, PERSISTENT, change_ballast );
 
 SetupNG<float>  		speedcal( "SPEEDCAL", 0.0 );
 SetupNG<float>  		vario_delay( "VARIO_DELAY", 3.0 );
@@ -121,9 +117,9 @@ SetupNG<float>  		deadband_neg("DEADBAND_NEG" , -0.3, true, SYNC_FROM_MASTER  );
 SetupNG<float>  		range( "VARIO_RANGE", 5.0 );
 SetupNG<int>			log_scale( "LOG_SCALE", 0 );
 SetupNG<float>  		ballast( "BALLAST" , 0.0, true, SYNC_NONE, VOLATILE, change_ballast );  // ballast increase from reference weight in %
-SetupNG<float>  		ballast_kg( "BAL_KG" , 0.0, true, SYNC_BIDIR, PERSISTENT, recalc_ballast );
-SetupNG<float>			empty_weight( "EMPTY_WGT", 80, true, SYNC_BIDIR, PERSISTENT, recalc_ballast );
-SetupNG<float>			crew_weight( "CREW_WGT", 80, true, SYNC_BIDIR, PERSISTENT, recalc_ballast );
+SetupNG<float>  		ballast_kg( "BAL_KG" , 0.0, true, SYNC_BIDIR, PERSISTENT, change_ballast );
+SetupNG<float>			empty_weight( "EMPTY_WGT", 80, true, SYNC_BIDIR, PERSISTENT, change_ballast );
+SetupNG<float>			crew_weight( "CREW_WGT", 80, true, SYNC_BIDIR, PERSISTENT, change_ballast );
 SetupNG<float>			gross_weight( "CREW_WGT", 350, true, SYNC_NONE, VOLATILE );
 SetupNG<float>  		bugs( "BUGS", 0.0, true, SYNC_BIDIR, VOLATILE, modifyPolar  );
 

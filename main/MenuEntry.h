@@ -32,7 +32,7 @@ public:
 	virtual void display( int mode=0 ) = 0;
 	virtual void release() { display(); };
 	virtual void longPress() {};
-	virtual const char* value() const = 0;
+	virtual const char* value() = 0;
     MenuEntry* getFirst() const { return _childs.front(); }
 	MenuEntry* addEntry( MenuEntry * item );
 	MenuEntry* addEntry( MenuEntry * item, const MenuEntry* after );

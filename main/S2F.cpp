@@ -42,7 +42,6 @@ void S2F::begin(){
 }
 
 void S2F::modifyPolar(){
-	calculateOverweight();
 	recalculatePolar();
 	recalcSinkNSpeeds();
 }
@@ -64,11 +63,11 @@ void S2F::recalculatePolar()
 	a2= ((v2-v3)*(w1-w3)+(v3-v1)*(w2-w3)) / (pow(v1,2)*(v2-v3)+pow(v2,2)*(v3-v1)+ pow(v3,2)*(v1-v2));
 	a1= (w2-w3-a2*(pow(v2,2)-pow(v3,2))) / (v2-v3);
 	a0= w3 -a2*pow(v3,2) - a1*v3;
-    a2 = a2/sqrt( (ballast.get() +100.0)/100.0 );   // wingload  e.g. 100l @ 500 kg = 1.2 and G-Force
+    a2 = a2/sqrt( (myballast +100.0)/100.0 );   // wingload  e.g. 100l @ 500 kg = 1.2 and G-Force
     a0 = a0 * ((bugs.get() + 100.0) / 100.0);
     a1 = a1 * ((bugs.get() + 100.0) / 100.0);
     a2 = a2 * ((bugs.get() + 100.0) / 100.0);
-    ESP_LOGI(FNAME,"bugs:%d balo:%.1f%% a0=%f a1=%f  a2=%f s(80)=%f, s(160)=%f", (int)bugs.get(), ballast.get(), a0, a1, a2, sink(80), sink(160) );
+    ESP_LOGI(FNAME,"bugs:%d balo:%.1f%% a0=%f a1=%f  a2=%f s(80)=%f, s(160)=%f", (int)bugs.get(), myballast, a0, a1, a2, sink(80), sink(160) );
     _stall_speed_ms = stall_speed.get()/3.6;
 }
 
@@ -102,8 +101,8 @@ void S2F::calculateOverweight()
 {
 	ESP_LOGI(FNAME,"S2F::calculateOverweight()" );
 	gross_weight.set( empty_weight.get() + crew_weight.get() + ballast_kg.get() );
-	ballast.set( ((100*gross_weight.get()) / (polar_wingload.get()*polar_wingarea.get())) - 100.0 );
-	ESP_LOGI(FNAME,"New ballast overweight: %.2f %%", ballast.get() );
+	myballast = ( ((100*gross_weight.get()) / (polar_wingload.get()*polar_wingarea.get())) - 100.0 );
+	ESP_LOGI(FNAME,"New ballast overweight: %.2f %%", myballast );
 }
 
 void S2F::change_ballast()
@@ -145,7 +144,7 @@ double S2F::sink( double v_in ) {
 	double v_stall = Units::Airspeed2Kmh( stall_speed.get() * 0.9 );
 	if ( v_in < v_stall ){
 		// ESP_LOGI(FNAME,"S2F::sink, warning, airspeed %.1f below minimum speed", v_in );
-		v = v_stall;
+		return 0.0;
 	}
 	v = v/3.6; // airspeed in meters per second
 	double n=getN();
@@ -217,7 +216,7 @@ void S2F::test( void )
 	ESP_LOGI(FNAME, "Sink %f @ %s km/h ", sink( 150.0 ), "150");
 	ESP_LOGI(FNAME, "Sink %f @ %s km/h ", sink( 180.0 ), "180");
 	ESP_LOGI(FNAME, "Sink %f @ %s km/h ", sink( 220.0 ), "220");
-    ESP_LOGI(FNAME,"MC %f  Ballast %f", _MC, ballast.get()  );
+    ESP_LOGI(FNAME,"MC %f  Ballast %f", _MC, myballast );
 	for( int st=20; st >= -20; st-=5 )
 	{
 		ESP_LOGI(FNAME, "S2F %g km/h vario %g m/s", speed( (double)st/10 ), (double)st/10 );

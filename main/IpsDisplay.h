@@ -130,7 +130,7 @@ private:
 	static void drawGaugeTriangle( int y, int r, int g, int b, bool s2f=false );
 	static void drawAvgSymbol( int y, int r, int g, int b, int x=DISPLAY_LEFT );
 	static void drawAvg( float mps, float delta );
-	static bool drawAltitude( float altitude, int16_t x, int16_t y, bool dirty, bool inc_unit=false );
+	static bool drawAltitude( float altitude, int16_t x, int16_t y, bool dirty, bool inc_unit=true );
 	static void drawSmallSpeed(float v_kmh, int16_t x, int16_t y);
 	static bool drawSpeed(float speed, int16_t x, int16_t y, bool dirty, bool inc_unit=false);
 	static void drawLegend( bool onlyLines=false );

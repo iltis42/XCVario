@@ -39,6 +39,7 @@ public:
 	float getVn( float v );
 
 private:
+	double myballast;
 	static float bal_percent;
 	double a0,a1,a2;
 	double w0,w1,w2;

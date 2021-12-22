@@ -49,7 +49,8 @@ SetupMenuValFloat::~SetupMenuValFloat()
     detach(this);
 }
 
-const char *SetupMenuValFloat::value() const {
+const char *SetupMenuValFloat::value(){
+	_value = _nvs->get();
 	sprintf(_val_str,"%0.*f %s", bits._precision, _value, _unit );
 	return _val_str;
 }

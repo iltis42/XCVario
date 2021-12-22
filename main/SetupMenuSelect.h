@@ -32,7 +32,7 @@ public:
 	void down( int count );
 	void press();
 	void longPress();
-	const char *value() const override;
+	const char *value();
 	inline int getSelect() { return (int)_select; };
 	inline void setSelect( int sel ) { _select = (int16_t)sel; };
 	const char * getEntry() const ;

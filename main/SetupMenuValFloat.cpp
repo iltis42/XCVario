@@ -75,25 +75,23 @@ void SetupMenuValFloat::showQnhMenu(){
 void SetupMenuValFloat::display( int mode ){
 	if( (selected != this) || !inSetup )
 		return;
-	// ESP_LOGI(FNAME,"SetupMenuValFloat display() %d %x", pressed, (int)this);
-	uprintf( 5,25, selected->_title );
-	displayVal();
+	ESP_LOGI(FNAME,"SetupMenuValFloat display() pressed=%d instance=%x mode=%d", pressed, (int)this, mode );
 	int y= 75;
-	if( _action != 0 )
-		(*_action)( this );
-
-	showhelp( y );
-	if(mode == 1){
+	if( mode == 0 ){ // normal mode
+		uprintf( 5,25, selected->_title );
+		displayVal();
+		if( _action != 0 )
+			(*_action)( this );
+		showhelp( y );
+	}
+	else if (mode == 1){   // save mode, do show only "Saved"
 		y+=24;
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		ucg->setPrintPos( 1, 300 );
 		ucg->print("Saved");
 		xSemaphoreGive(spiMutex );
-	}
-	y=0;
-
-	if( mode == 1 )
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
+	}
 }
 
 void SetupMenuValFloat::displayVal()
@@ -151,9 +149,9 @@ void SetupMenuValFloat::longPress(){
 void SetupMenuValFloat::press(){
 	if( selected != this )
 		return;
-	ESP_LOGI(FNAME,"SetupMenuValFloat press");
+	// ESP_LOGI(FNAME,"SetupMenuValFloat press");
 	if ( pressed ){
-		ESP_LOGI(FNAME,"pressed, value: %f", _value );
+		// ESP_LOGI(FNAME,"pressed, value: %f", _value );
 		_nvs->set( _value );
 		display( 1 );
 		if( bits._end_menu )
@@ -182,6 +180,7 @@ void SetupMenuValFloat::press(){
 	}
 	else
 	{
+		// ESP_LOGI(FNAME,"NOT pressed, value: %f", _value );
 		pressed = true;
 		clear();
 		display();

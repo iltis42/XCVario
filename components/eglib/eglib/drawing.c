@@ -1219,7 +1219,7 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
 	}
 
 	for(coordinate_t v1=y1; v1 < height ; v1++){
-		// char line[width];
+		//char line[width+1];
 		for(coordinate_t u=0 ; u < width; u++) {
 			coordinate_t v = v1 - head;  // read glyph from right row
 			if( eglib_inClipArea( eglib, u+x, v1-height+y ) ){
@@ -1237,14 +1237,14 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
 				{
 					if( get_bit2( glyph, u, v ) ){
 						*(color_t *)(buffer+pos3) = eglib->drawing.color_index[0];
-						//line[u] = 'X';
+						// line[u] = 'X';
 					}
 				}
 				pos3 +=3;
 			}
 		}
-		//line[width] = 0;
-		//ESP_LOGI("Bitmap","L-%02d: %s", v1, line);   // debug bitmap
+		// line[width] = 0;
+		// ESP_LOGI("Bitmap","L-%02d: %s", v1, line);   // debug bitmap
 	}
 	lenx += 1;
 	leny += 1;

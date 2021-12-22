@@ -1189,7 +1189,7 @@ void IpsDisplay::drawOneLabel( float val, int16_t labl, int16_t pos, int16_t off
 	}
 	// ESP_LOGI( FNAME,"drawOneLabel val:%.2f label:%d  toside:%.2f inc:%.2f", val, labl, to_side, incr );
 	int x=gaugeCos(val+to_side, pos);
-	int y=gaugeSin(val+to_side, pos) +3;
+	int y=gaugeSin(val+to_side, pos) +5;
 
 	ucg->setColor(COLOR_BBLUE);
 	ucg->setPrintPos(x,y);

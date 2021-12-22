@@ -121,7 +121,7 @@ public:
 		if( qnh_unit.get() == QNH_HPA )
 			return( qnh );
 		else if(  qnh_unit.get() == QNH_INHG )
-			return( inHg2hPa( qnh ) );
+			return( hPa2inHg( qnh ) );
 		else
 			ESP_LOGE(FNAME,"Wrong unit for Vario");
 		return 0;
@@ -134,22 +134,6 @@ public:
 		}
 		return (int)(qnh_value+0.5);
 	};
-
-	static void recalculateQnh(){
-		ESP_LOGI(FNAME,"recalculateQnh");
-		if( qnh_unit.get() == QNH_HPA ){
-			if( QNH.get() < 500 ){  // convert to hPa
-				QNH.set( inHg2hPa( QNH.get() ));
-				ESP_LOGI(FNAME,"Converted QNH to hPa %.2f", QNH.get() );
-			}
-		}
-		else if( qnh_unit.get() == QNH_INHG ){
-			if( QNH.get() > 500 ){ // convert to inHG
-				QNH.set( hPa2inHg( QNH.get() ));
-				ESP_LOGI(FNAME,"Converted QNH to inHg %.2f", QNH.get() );
-			}
-		}
-	}
 
 	static float hPa2inHg( float hpa ){   // standard is m/s
 		return( hpa * 0.02952998597817832 );

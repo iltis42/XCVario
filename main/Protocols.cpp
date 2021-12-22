@@ -141,7 +141,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 				Z.ZZ:   acceleration in Z-Axis,
 		 *CHK = standard NMEA checksum
 		 */
-		sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, Units::Qnh( QNH.get() ), baro, dp );
+		sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get() , baro, dp );
 		int append_idx = strlen(str);
 		if( haveMPU && attitude_indicator.get() ){
 			float roll = IMU::getRoll();
@@ -195,7 +195,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		 *hh   Checksum, XOR of all bytes of the sentence after the ‘!’ and before the ‘*’
 		 */
 
-		sprintf(str, "!w,0,0,0,0,%d,%4.2f,%d,%d,0,0,%d,%d,%d", int(alt+1000), Units::Qnh( QNH.get() ), int(Units::kmh2ms(tas)*100), int((Units::ms2knots(te)*10)+200), int( Units::mcval2knots(mc)*10 ), int( S2F::getBallastPercent()+0.5 ), (int)(100-bugs) );
+		sprintf(str, "!w,0,0,0,0,%d,%4.2f,%d,%d,0,0,%d,%d,%d", int(alt+1000), QNH.get(), int(Units::kmh2ms(tas)*100), int((Units::ms2knots(te)*10)+200), int( Units::mcval2knots(mc)*10 ), int( S2F::getBallastPercent()+0.5 ), (int)(100-bugs) );
 	}
 	else if( proto == P_EYE_PEYA ){
 		// Static pressure from aircraft pneumatic system [hPa] (i.e. 1015.5)
@@ -208,13 +208,13 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		// Vertical speed from anemometry (m/s) (i.e. +05.4)
 		// Outside Air Temperature (?C) (i.e. +15.2)
 		// Relative humidity [%] (i.e. 095)
-		float pa = alt - 8.92*( Units::Qnh( QNH.get() ) - 1013.25);
+		float pa = alt - 8.92*( QNH.get() - 1013.25);
 
 
 		if( validTemp )
-			sprintf(str, "$PEYA,%.2f,%.2f,%.2f,%.2f,,,%.2f,%.2f,%.2f,,", baro, baro+(dp/100),pa, Units::Qnh( QNH.get() ),tas,te,temp);
+			sprintf(str, "$PEYA,%.2f,%.2f,%.2f,%.2f,,,%.2f,%.2f,%.2f,,", baro, baro+(dp/100),pa, QNH.get(),tas,te,temp);
 		else
-			sprintf(str, "$PEYA,%.2f,%.2f,%.2f,%.2f,,,%.2f,%.2f,0,,", baro, baro+(dp/100),alt, Units::Qnh( QNH.get() ),tas,te);
+			sprintf(str, "$PEYA,%.2f,%.2f,%.2f,%.2f,,,%.2f,%.2f,0,,", baro, baro+(dp/100),alt, QNH.get(),tas,te);
 
 	}
 	else if( proto == P_EYE_PEYI ){

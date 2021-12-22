@@ -456,7 +456,7 @@ void clientLoop(void *pvParameters)
 				baroP = baroSensor->calcPressure(1013.25, tmpalt); // above transition altitude
 			}
 			else {
-				baroP = baroSensor->calcPressure( Units::Qnh( QNH.get() ) , tmpalt);
+				baroP = baroSensor->calcPressure( QNH.get(), tmpalt);
 			}
 			dynamicP = Atmosphere::kmh2pascal(ias.get());
 			tas = Atmosphere::TAS2( ias.get(), altitude.get(), OAT.get() );
@@ -565,9 +565,9 @@ void readSensors(void *pvParameters){
 			}
 			else {
 				if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
-					new_alt = altSTD + ( Units::Qnh( QNH.get() ) - 1013.25)*8.2296;  // correct altitude according to ISA model = 27ft / hPa
+					new_alt = altSTD + ( QNH.get()- 1013.25)*8.2296;  // correct altitude according to ISA model = 27ft / hPa
 				else
-					new_alt = baroSensor->calcAVGAltitude( Units::Qnh( QNH.get() ), baroP );
+					new_alt = baroSensor->calcAVGAltitude( QNH.get(), baroP );
 				standard_setting = false;
 				// ESP_LOGI(FNAME,"QNH %f baro: %f alt: %f SS:%d", QNH.get(), baroP, alt, standard_setting  );
 			}
@@ -777,7 +777,7 @@ void sensor(void *args){
 	ESP_LOGI( FNAME,"Silicon revision %d, ", chip_info.revision);
 	ESP_LOGI( FNAME,"%dMB %s flash\n", spi_flash_get_chip_size() / (1024 * 1024),
 			(chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
-	ESP_LOGI(FNAME, "QNH.get() %f", Units::Qnh( QNH.get() ) );
+	ESP_LOGI(FNAME, "QNH.get() %.1f hPa", QNH.get() );
 
 	NVS.begin();
 	register_coredump();

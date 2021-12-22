@@ -526,20 +526,18 @@ void IpsDisplay::drawAvg( float avclimb, float delta ){
 		// refresh scale around old AVG icon
 		drawScale( _range, -_range, 140, 0, avc_old*10.f );
 	}
-	if( delta > 0 )
-		ucg->setColor( COLOR_GREEN );
-	else
-		ucg->setColor( COLOR_RED );
-
 	if( delta > 0.2 ){
+		ucg->setColor( COLOR_GREEN );
 		yusize=size*2;
 		ylsize=size;
 	}
 	else if ( delta < -0.2 ){
+		ucg->setColor( COLOR_RED );
 		ylsize=size*2;
 		yusize=size;
 	}
 	else{
+		ucg->setColor( COLOR_BLUE );
 		ylsize=size;
 		yusize=size;
 	}

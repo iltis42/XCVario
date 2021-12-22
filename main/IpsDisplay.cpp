@@ -1189,7 +1189,7 @@ void IpsDisplay::drawOneLabel( float val, int16_t labl, int16_t pos, int16_t off
 	}
 	// ESP_LOGI( FNAME,"drawOneLabel val:%.2f label:%d  toside:%.2f inc:%.2f", val, labl, to_side, incr );
 	int x=gaugeCos(val+to_side, pos);
-	int y=gaugeSin(val+to_side, pos) +3;
+	int y=gaugeSin(val+to_side, pos) +5;
 
 	ucg->setColor(COLOR_BBLUE);
 	ucg->setPrintPos(x,y);
@@ -1411,7 +1411,7 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 		// QNH
 		int16_t qnh_x = x+5+ucg->getStrWidth(s);
 		sprintf(s, "%d", Units::QnhRounded(QNH.get()));
-		ucg->setPrintPos(qnh_x - ucg->getStrWidth(s), y-17);
+		ucg->setPrintPos(qnh_x - ucg->getStrWidth(s), y-19);
 		ucg->setColor( COLOR_WHITE );
 		ucg->print(s);
 	}

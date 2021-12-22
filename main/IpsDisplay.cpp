@@ -646,7 +646,7 @@ void IpsDisplay::setTeBuf( int y1, int h, int r, int g, int b ){
 void IpsDisplay::drawMC( float mc, bool large ) {
 	if( _menu )
 		return;
-	ucg->setPrintPos(5, DISPLAY_H-5);
+	ucg->setPrintPos(5, DISPLAY_H-2);
 	ucg->setColor(COLOR_WHITE);
 	if( large ) {
 		ucg->setFont(ucg_font_fub20_hn, false);
@@ -659,7 +659,7 @@ void IpsDisplay::drawMC( float mc, bool large ) {
 	int16_t fl = ucg->getStrWidth(s);
 	ucg->setFont(ucg_font_fub11_hr, true);
 	ucg->setColor(COLOR_HEADER);
-	ucg->setPrintPos(5+fl+2, DISPLAY_H-4);
+	ucg->setPrintPos(5+fl+2, DISPLAY_H-2);
 	ucg->print("MC");
 }
 
@@ -1989,7 +1989,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		// draw numeric value
         // set coarse clipbox to avoid overwriting Vario Skale and pointer
         ucg->setClipRange(DISPLAY_LEFT+bw+22,1,120,100);
-		drawAvgVario( FIELD_START+88, YVAR-20, ate );
+		drawAvgVario( FIELD_START+88, YVAR-23, ate );
         ucg->undoClipRange();
 
 		_ate = (int)(ate)*10;

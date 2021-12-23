@@ -49,6 +49,8 @@
 
 #include "Stream.h"
 #include "esp32-hal.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/event_groups.h"
 
 class HardwareSerial: public Stream
 {
@@ -108,6 +110,18 @@ public:
     
     void setRxInvert(bool);
     void setTxInvert(bool);
+
+    // enable uart RX interrupt
+    void enableInterrupt();
+
+    // disable uart RX interupt
+    void disableInterrupt();
+
+    // Event group handler to signal RX events to clients waiting for characters.
+    void setRxNotifier( EventGroupHandle_t* egh )
+    {
+      uartRxEventHandler( egh );
+    }
 
 protected:
     int _uart_nr;

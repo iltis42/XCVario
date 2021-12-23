@@ -54,6 +54,7 @@ static TaskHandle_t *pid1;
 static TaskHandle_t *pid2;
 
 bool Serial::_selfTest = false;
+EventGroupHandle_t Serial::rxTxNotifier;
 
 // Serial Handler  ttyS1, S1, port 8881
 void Serial::serialHandler1(void *pvParameters){
@@ -193,7 +194,10 @@ void Serial::serialHandler2(void *pvParameters){
 
 }
 
-
+void Serial::setRxTxNotifier( const uint8_t eventMask )
+{
+  xEventGroupSetBits( rxTxNotifier, eventMask );
+}
 
 bool Serial::selfTest(int num){
 	HardwareSerial *mySerial;

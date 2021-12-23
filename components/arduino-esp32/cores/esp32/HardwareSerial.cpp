@@ -4,6 +4,7 @@
 #include <inttypes.h>
 
 #include "pins_arduino.h"
+#include "esp32-hal-uart.h"
 #include "HardwareSerial.h"
 
 #ifndef RX1
@@ -81,6 +82,20 @@ void HardwareSerial::begin(unsigned long baud, uint32_t config, int8_t rxPin, in
 void HardwareSerial::updateBaudRate(unsigned long baud)
 {
 	uartSetBaudRate(_uart, baud);
+}
+
+// enable uart RX interrupt
+void HardwareSerial::enableInterrupt()
+{
+  // Make sure that the previous interrupt_info is not used anymore
+  uartDisableInterrupt( _uart );
+  uartEnableInterrupt( _uart );
+}
+
+// disable uart RX interupt
+void HardwareSerial::disableInterrupt()
+{
+  uartDisableInterrupt( _uart );
 }
 
 void HardwareSerial::end()

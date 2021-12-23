@@ -47,6 +47,9 @@ struct uart_struct_t {
     intr_handle_t intr_handle;
 };
 
+// Can be triggered by the ISR routine, when something was received.
+static EventGroupHandle_t *rxEventGroup = NULL;
+
 #if CONFIG_DISABLE_HAL_LOCKS
 #define UART_MUTEX_LOCK()
 #define UART_MUTEX_UNLOCK()
@@ -72,8 +75,12 @@ static void uart_on_apb_change(void * arg, apb_change_ev_t ev_type, uint32_t old
 static void IRAM_ATTR _uart_isr(void *arg)
 {
     uint8_t i, c;
-    BaseType_t xHigherPriorityTaskWoken;
+    BaseType_t xHigherPriorityTaskWoken, xHigherPriorityTaskWoken1;
     uart_t* uart;
+    uint8_t eventMask = 0;
+
+    // xHigherPriorityTaskWoken must be initialised to pdFALSE.
+    xHigherPriorityTaskWoken = pdFALSE;
 
     for(i=0;i<3;i++){
         uart = &_uart_bus_array[i];
@@ -87,13 +94,27 @@ static void IRAM_ATTR _uart_isr(void *arg)
             c = uart->dev->fifo.rw_byte;
             if(uart->queue != NULL)  {
                 xQueueSendFromISR(uart->queue, &c, &xHigherPriorityTaskWoken);
+                eventMask |= (1 << i);
             }
         }
     }
 
-    if (xHigherPriorityTaskWoken) {
+    // xHigherPriorityTaskWoken must be initialised to pdFALSE.
+    xHigherPriorityTaskWoken1 = pdFALSE;
+
+    if( rxEventGroup != NULL && eventMask != 0 ) {
+        // Set event group RX bits
+        xEventGroupSetBitsFromISR( *rxEventGroup, eventMask, &xHigherPriorityTaskWoken1 );
+    }
+
+    if( xHigherPriorityTaskWoken || xHigherPriorityTaskWoken1 ) {
         portYIELD_FROM_ISR();
     }
+}
+
+void uartRxEventHandler( EventGroupHandle_t* egh )
+{
+  rxEventGroup = egh;
 }
 
 void uartEnableInterrupt(uart_t* uart)
@@ -258,7 +279,7 @@ size_t uartResizeRxBuffer(uart_t * uart, size_t new_size) {
         uart->queue = xQueueCreate(new_size, sizeof(uint8_t));
         if(uart->queue == NULL) {
             UART_MUTEX_UNLOCK();
-            return NULL;
+            return 0;
         }
     }
     UART_MUTEX_UNLOCK();

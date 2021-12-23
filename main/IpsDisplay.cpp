@@ -372,11 +372,12 @@ void IpsDisplay::initDisplay() {
 	}
 	if( display_style.get() == DISPLAY_AIRLINER ) {
 		bootDisplay();
+		ucg->setFont(ucg_font_fub11_tr);
 		ucg->setFontPosBottom();
-		ucg->setPrintPos(20,YVAR-VARFONTH+7);
+		ucg->setPrintPos(DISPLAY_LEFT+5,YVAR-VARFONTH+7);
 		ucg->setColor( COLOR_HEADER );
 		ucg->print(Units::VarioUnit());
-		ucg->setPrintPos(FIELD_START,YVAR-VARFONTH);    // 65 -52 = 13
+		ucg->setPrintPos(FIELD_START,YVAR-VARFONTH+7);
 
 		ucg->print("AV Vario");
 		ucg->setColor(0, COLOR_WHITE );
@@ -412,7 +413,7 @@ void IpsDisplay::initDisplay() {
 		ucg->drawTriangle( FIELD_START+ASLEN-1, dmid, FIELD_START+ASLEN+5, dmid-6, FIELD_START+ASLEN+5, dmid+6);
 
 		// Thermometer
-		drawThermometer(  FIELD_START+10, DISPLAY_H-6 );
+		drawThermometer(  FIELD_START+5, DISPLAY_H-6 );
 
 		if ( FLAP ) {
 			FLAP->setBarPosition( WKSYMST+2, YS2F-fh );
@@ -1997,7 +1998,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	}
 
 	// Altitude Header
-	if( !(tick%24) ){
+/*	if( !(tick%24) ){
 		float qnh = Units::Qnh( QNH.get() );
 		// ESP_LOGI(FNAME,"standard_setting:%d",standard_setting );
 		if( standard_setting )
@@ -2015,10 +2016,10 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 			pref_qnh = qnh;
 		}
 	}
-
+*/
 	// Altitude
 	if(!(tick%8) ) {
-		drawAltitude( altitude, FIELD_START+80, YALT-6, false, false );
+		drawAltitude( altitude, FIELD_START+80, YALT-6, false, true );
 	}
 	// MC Value
 	if(  !(tick%8) ) {

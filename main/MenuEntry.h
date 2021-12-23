@@ -16,16 +16,23 @@
 class IpsDisplay;
 class AnalogInput;
 class PressureSensor;
-class Ucglib_ILI9341_18x240x320_HWSPI;
+class AdaptUGC;
 
 class MenuEntry: public RotaryObserver {
 public:
-	MenuEntry() : RotaryObserver() {}
+	MenuEntry() : RotaryObserver() {
+		highlight = 0;
+		_parent = 0;
+		pressed = false;
+		helptext = 0;
+		hypos = 0;
+		_title = 0;
+	};
 	virtual ~MenuEntry();
 	virtual void display( int mode=0 ) = 0;
 	virtual void release() { display(); };
 	virtual void longPress() {};
-	virtual const char* value() const = 0;
+	virtual const char* value() = 0;
     MenuEntry* getFirst() const { return _childs.front(); }
 	MenuEntry* addEntry( MenuEntry * item );
 	MenuEntry* addEntry( MenuEntry * item, const MenuEntry* after );
@@ -41,21 +48,16 @@ public:
     void semaphoreGive();
 public:
 	std::vector<MenuEntry*>  _childs;
-	MenuEntry *_parent = 0;
-	std::string _title;
+	MenuEntry *_parent;
+	const char * _title;
+	int8_t    highlight;
+	uint8_t   pressed;
+	char      *helptext;
+	int16_t    hypos;
+	static AdaptUGC *ucg;
 	static MenuEntry *root;
 	static MenuEntry *selected;
 	static IpsDisplay* _display;
-	static ESPRotary* _rotary;
 	static AnalogInput* _adc;
 	static PressureSensor *_bmp;
-	int    highlight;
-	bool   pressed = false;
-	bool   long_pressed = false;
-	char   *helptext = 0;
-	int    hypos = 0;
-	unsigned char y = 0;
-    int    idx = 0;
-	static Ucglib_ILI9341_18x240x320_HWSPI *ucg;
-
 };

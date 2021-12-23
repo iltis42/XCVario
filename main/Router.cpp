@@ -161,6 +161,7 @@ void Router::routeS1(){
         if( (serial2_tx.get() & RT_S1) && serial2_speed.get() )
 			if( forwardMsg( s1, s2_tx_q ))
 				ESP_LOGV(FNAME,"ttyS1 RX bytes %d looped to s2_tx_q", s1.length() );
+    Flarm::parsePFLAX( s1 );
 		Protocols::parseNMEA( s1.c_str() );
 	}
 }
@@ -183,6 +184,7 @@ void Router::routeS2(){
 		if( (serial1_tx.get() & RT_S1) && serial1_speed.get() ) // RT_S1 could be renamed to RT_SERIAL
 			if( forwardMsg( s2, s1_tx_q )) // This might connect XCSoar on S2 with Flarm on S1
 				ESP_LOGV(FNAME,"ttyS2 RX bytes %d forward to s1_tx_q", s2.length() );
+		Flarm::parsePFLAX( s2 );
 		Protocols::parseNMEA( s2.c_str() );
 	}
 }
@@ -240,7 +242,7 @@ void Router::routeBT(){
 			if( forwardMsg( bt, s2_tx_q ) )
 				ESP_LOGV(FNAME,"Send to S2 device, BT received %d bytes", bt.length() );
 		// always check if it is a command to ourselves
-		if( strncmp( bt.c_str(), "!g,", 3 )  == 0 ) {
+		if( !strncmp( bt.c_str(), "!g,", 3 ) || !strncmp( bt.c_str(), "$g,", 3 ) ) {
 			ESP_LOGV(FNAME,"BT RX Matched a Borgelt command %s", bt.c_str() );
 			Protocols::parseNMEA( bt.c_str() );
 		}

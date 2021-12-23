@@ -1,0 +1,410 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>libopencm3 STM32F4 &#8212; eglib master documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="None" href="none.html" />
+    <link rel="prev" title="4-Wire SPI Drivers" href="index.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="libopencm3-stm32f4">
+<h1><a class="toc-backref" href="#id2">libopencm3 STM32F4</a><a class="headerlink" href="#libopencm3-stm32f4" title="Permalink to this headline">¶</a></h1>
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#libopencm3-stm32f4" id="id2">libopencm3 STM32F4</a></p>
+<ul>
+<li><p><a class="reference internal" href="#configuration" id="id3">Configuration</a></p></li>
+<li><p><a class="reference internal" href="#driver" id="id4">Driver</a></p></li>
+<li><p><a class="reference internal" href="#example" id="id5">Example</a></p></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;eglib/hal/four_wire_spi/libopencm3_stm32f4.h&gt;</span><span class="cp"></span>
+</pre></div>
+</div>
+<div class="section" id="configuration">
+<h2><a class="toc-backref" href="#id3">Configuration</a><a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h2>
+<dl class="type">
+<dt id="c.four_wire_spi_libopencm3_stm32f4_config_t">
+<code class="sig-name descname">four_wire_spi_libopencm3_stm32f4_config_t</code><a class="headerlink" href="#c.four_wire_spi_libopencm3_stm32f4_config_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>Configuration for <a class="reference internal" href="#c.four_wire_spi_libopencm3_stm32f4" title="four_wire_spi_libopencm3_stm32f4"><code class="xref c c-data docutils literal notranslate"><span class="pre">four_wire_spi_libopencm3_stm32f4</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../../eglib.html#c.eglib_Init" title="eglib_Init"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_Init()</span></code></a>.</p>
+</dd>
+<dt class="field-even">See also</dt>
+<dd class="field-even"><p><a class="reference external" href="http://libopencm3.org/">libopencm3</a> documentation.</p>
+</dd>
+</dl>
+<dl class="member">
+<dt id="c.four_wire_spi_libopencm3_stm32f4_config_t.rcc_rst">
+enum rcc_periph_clken <code class="sig-name descname">rcc_rst</code><a class="headerlink" href="#c.four_wire_spi_libopencm3_stm32f4_config_t.rcc_rst" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional: reset line RCC (eg: <code class="docutils literal notranslate"><span class="pre">RCC_GPIOA</span></code>).</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.four_wire_spi_libopencm3_stm32f4_config_t.port_rst">
+uint32_t <code class="sig-name descname">port_rst</code><a class="headerlink" href="#c.four_wire_spi_libopencm3_stm32f4_config_t.port_rst" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional: reset line PORT (eg: <code class="docutils literal notranslate"><span class="pre">GPIOA</span></code>).</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.four_wire_spi_libopencm3_stm32f4_config_t.gpio_rst">
+uint16_t <code class="sig-name descname">gpio_rst</code><a class="headerlink" href="#c.four_wire_spi_libopencm3_stm32f4_config_t.gpio_rst" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional: reset line GPIO (eg: <code class="docutils literal notranslate"><span class="pre">GPIO4</span></code>).</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.four_wire_spi_libopencm3_stm32f4_config_t.rcc_busy">
+enum rcc_periph_clken <code class="sig-name descname">rcc_busy</code><a class="headerlink" href="#c.four_wire_spi_libopencm3_stm32f4_config_t.rcc_busy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional: busy line RCC (eg: <code class="docutils literal notranslate"><span class="pre">RCC_GPIOA</span></code>).</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.four_wire_spi_libopencm3_stm32f4_config_t.port_busy">
+uint32_t <code class="sig-name descname">port_busy</code><a class="headerlink" href="#c.four_wire_spi_libopencm3_stm32f4_config_t.port_busy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional: busy line PORT (eg: <code class="docutils literal notranslate"><span class="pre">GPIOA</span></code>).</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.four_wire_spi_libopencm3_stm32f4_config_t.gpio_busy">
+uint16_t <code class="sig-name descname">gpio_busy</code><a class="headerlink" href="#c.four_wire_spi_libopencm3_stm32f4_config_t.gpio_busy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional: busy line GPIO (eg: <code class="docutils literal notranslate"><span class="pre">GPIO4</span></code>).</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.four_wire_spi_libopencm3_stm32f4_config_t.rcc_dc">
+enum rcc_periph_clken <code class="sig-name descname">rcc_dc</code><a class="headerlink" href="#c.four_wire_spi_libopencm3_stm32f4_config_t.rcc_dc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Data / command line RCC GPIO (eg: <code class="docutils literal notranslate"><span class="pre">RCC_GPIOA</span></code>).</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.four_wire_spi_libopencm3_stm32f4_config_t.port_dc">
+uint32_t <code class="sig-name descname">port_dc</code><a class="headerlink" href="#c.four_wire_spi_libopencm3_stm32f4_config_t.port_dc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Data / command line PORT (eg: <code class="docutils literal notranslate"><span class="pre">GPIOA</span></code>).</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.four_wire_spi_libopencm3_stm32f4_config_t.gpio_dc">
+uint16_t <code class="sig-name descname">gpio_dc</code><a class="headerlink" href="#c.four_wire_spi_libopencm3_stm32f4_config_t.gpio_dc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Data / command line GPIO (eg: <code class="docutils literal notranslate"><span class="pre">GPIO3</span></code>).</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.four_wire_spi_libopencm3_stm32f4_config_t.rcc_cs">
+enum rcc_periph_clken <code class="sig-name descname">rcc_cs</code><a class="headerlink" href="#c.four_wire_spi_libopencm3_stm32f4_config_t.rcc_cs" title="Permalink to this definition">¶</a></dt>
+<dd><p>SPI CS line RCC GPIO (eg: <code class="docutils literal notranslate"><span class="pre">RCC_GPIOA</span></code>).</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.four_wire_spi_libopencm3_stm32f4_config_t.port_cs">
+uint32_t <code class="sig-name descname">port_cs</code><a class="headerlink" href="#c.four_wire_spi_libopencm3_stm32f4_config_t.port_cs" title="Permalink to this definition">¶</a></dt>
+<dd><p>SPI CS line PORT (eg: <code class="docutils literal notranslate"><span class="pre">GPIOA</span></code>).</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.four_wire_spi_libopencm3_stm32f4_config_t.gpio_cs">
+uint16_t <code class="sig-name descname">gpio_cs</code><a class="headerlink" href="#c.four_wire_spi_libopencm3_stm32f4_config_t.gpio_cs" title="Permalink to this definition">¶</a></dt>
+<dd><p>SPI CS line GPIO (eg: <code class="docutils literal notranslate"><span class="pre">GPIO2</span></code>).</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.four_wire_spi_libopencm3_stm32f4_config_t.rcc_spi">
+enum rcc_periph_clken <code class="sig-name descname">rcc_spi</code><a class="headerlink" href="#c.four_wire_spi_libopencm3_stm32f4_config_t.rcc_spi" title="Permalink to this definition">¶</a></dt>
+<dd><p>SPI RCC (eg: <code class="docutils literal notranslate"><span class="pre">RCC_SPI1</span></code>).</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.four_wire_spi_libopencm3_stm32f4_config_t.spi">
+uint32_t <code class="sig-name descname">spi</code><a class="headerlink" href="#c.four_wire_spi_libopencm3_stm32f4_config_t.spi" title="Permalink to this definition">¶</a></dt>
+<dd><p>SPI peripheral (eg: <code class="docutils literal notranslate"><span class="pre">SPI1</span></code>).</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.four_wire_spi_libopencm3_stm32f4_config_t.rcc_sck">
+enum rcc_periph_clken <code class="sig-name descname">rcc_sck</code><a class="headerlink" href="#c.four_wire_spi_libopencm3_stm32f4_config_t.rcc_sck" title="Permalink to this definition">¶</a></dt>
+<dd><p>SPI SCK line RCC GPIO (eg: <code class="docutils literal notranslate"><span class="pre">RCC_GPIOA</span></code>).</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.four_wire_spi_libopencm3_stm32f4_config_t.port_sck">
+uint32_t <code class="sig-name descname">port_sck</code><a class="headerlink" href="#c.four_wire_spi_libopencm3_stm32f4_config_t.port_sck" title="Permalink to this definition">¶</a></dt>
+<dd><p>SPI SCK line PORT (eg: <code class="docutils literal notranslate"><span class="pre">GPIOA</span></code>).</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.four_wire_spi_libopencm3_stm32f4_config_t.gpio_sck">
+uint16_t <code class="sig-name descname">gpio_sck</code><a class="headerlink" href="#c.four_wire_spi_libopencm3_stm32f4_config_t.gpio_sck" title="Permalink to this definition">¶</a></dt>
+<dd><p>SPI SCK line GPIO (eg: <code class="docutils literal notranslate"><span class="pre">GPIO5</span></code>).</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.four_wire_spi_libopencm3_stm32f4_config_t.rcc_mosi">
+enum rcc_periph_clken <code class="sig-name descname">rcc_mosi</code><a class="headerlink" href="#c.four_wire_spi_libopencm3_stm32f4_config_t.rcc_mosi" title="Permalink to this definition">¶</a></dt>
+<dd><p>SPI MOSI line RCC GPIO (eg: <code class="docutils literal notranslate"><span class="pre">RCC_GPIOA</span></code>).</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.four_wire_spi_libopencm3_stm32f4_config_t.port_mosi">
+uint32_t <code class="sig-name descname">port_mosi</code><a class="headerlink" href="#c.four_wire_spi_libopencm3_stm32f4_config_t.port_mosi" title="Permalink to this definition">¶</a></dt>
+<dd><p>SPI MOSI line PORT (eg: <code class="docutils literal notranslate"><span class="pre">GPIOA</span></code>).</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.four_wire_spi_libopencm3_stm32f4_config_t.gpio_mosi">
+uint16_t <code class="sig-name descname">gpio_mosi</code><a class="headerlink" href="#c.four_wire_spi_libopencm3_stm32f4_config_t.gpio_mosi" title="Permalink to this definition">¶</a></dt>
+<dd><p>SPI MOSI line GPIO (eg: <code class="docutils literal notranslate"><span class="pre">GPIO7</span></code>).</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="driver">
+<h2><a class="toc-backref" href="#id4">Driver</a><a class="headerlink" href="#driver" title="Permalink to this headline">¶</a></h2>
+<dl class="var">
+<dt id="c.four_wire_spi_libopencm3_stm32f4">
+const <a class="reference internal" href="../../eglib.html#c.hal_t" title="hal_t">hal_t</a> <code class="sig-name descname">four_wire_spi_libopencm3_stm32f4</code><a class="headerlink" href="#c.four_wire_spi_libopencm3_stm32f4" title="Permalink to this definition">¶</a></dt>
+<dd><p>4-Wire SPI HAL driver for <a class="reference external" href="http://libopencm3.org/">libopencm3</a> STM32F4 targets.</p>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../../eglib.html#c.eglib_Init" title="eglib_Init"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_Init()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="example">
+<h2><a class="toc-backref" href="#id5">Example</a><a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;eglib.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;eglib/hal/four_wire_spi/libopencm3_stm32f4.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;eglib/display/frame_buffer.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;eglib/display/sh1106.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;libopencm3/stm32/rcc.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;libopencm3/stm32/gpio.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;libopencm3/stm32/spi.h&gt;</span><span class="cp"></span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="p">{</span>
+	<span class="n">eglib_t</span> <span class="n">eglib</span><span class="p">;</span>
+	<span class="n">eglib_t</span> <span class="o">*</span><span class="n">eglib_sh1106</span><span class="p">;</span>
+
+	<span class="n">sh1106_config_t</span> <span class="n">sh1106_config</span> <span class="o">=</span> <span class="p">{</span>
+		<span class="c1">// Display physical construction</span>
+		<span class="p">.</span><span class="n">width</span> <span class="o">=</span> <span class="mi">128</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">height</span> <span class="o">=</span> <span class="mi">64</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">segment_remap</span> <span class="o">=</span> <span class="n">SH1106_SEGMENT_REMAP_REVERSE</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">common_pads_hardware_configuration</span> <span class="o">=</span> <span class="n">SH1106_COMMON_PADS_HARDWARE_CONFIGURATION_ALTERNATIVE</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">common_output_scan_direction</span> <span class="o">=</span> <span class="n">SH1106_COMMON_OUTPUT_SCAN_DIRECTION_DESC</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">display_offset</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">column_offset</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+
+		<span class="c1">// Change period</span>
+		<span class="p">.</span><span class="n">pre_charge_period</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">dis_charge_period</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+
+		<span class="c1">// VCOM deselect</span>
+		<span class="p">.</span><span class="n">vcom_deselect_level</span> <span class="o">=</span> <span class="mh">0x35</span><span class="p">,</span>
+
+		<span class="c1">// Internal display clocks</span>
+		<span class="p">.</span><span class="n">clock_divide</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">oscillator_frequency</span> <span class="o">=</span> <span class="n">SH1106_OSCILLATOR_FREQUENCY_PLUS_50_PCT</span><span class="p">,</span>
+
+		<span class="c1">// Charge Pump Regulator</span>
+		<span class="p">.</span><span class="n">dc_dc_enable</span> <span class="o">=</span> <span class="nb">true</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">dc_dc_voltage</span> <span class="o">=</span> <span class="n">SHH1106_DC_DC_8_0_V</span><span class="p">,</span>
+	<span class="p">};</span>
+
+	<span class="n">frame_buffer_config_t</span> <span class="n">frame_buffer_config</span><span class="p">;</span>
+
+	<span class="n">four_wire_spi_libopencm3_stm32f4_config_t</span>  <span class="n">four_wire_spi_libopencm3_stm32f4_config</span> <span class="o">=</span> <span class="p">{</span>
+		<span class="c1">// rst</span>
+		<span class="p">.</span><span class="n">rcc_rst</span> <span class="o">=</span> <span class="n">RCC_GPIOA</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">port_rst</span> <span class="o">=</span> <span class="n">GPIOA</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">gpio_rst</span> <span class="o">=</span> <span class="n">GPIO4</span><span class="p">,</span>
+		<span class="c1">// dc</span>
+		<span class="p">.</span><span class="n">rcc_dc</span> <span class="o">=</span> <span class="n">RCC_GPIOA</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">port_dc</span> <span class="o">=</span> <span class="n">GPIOA</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">gpio_dc</span> <span class="o">=</span> <span class="n">GPIO3</span><span class="p">,</span>
+		<span class="c1">// cs</span>
+		<span class="p">.</span><span class="n">rcc_cs</span> <span class="o">=</span> <span class="n">RCC_GPIOA</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">port_cs</span> <span class="o">=</span> <span class="n">GPIOA</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">gpio_cs</span> <span class="o">=</span> <span class="n">GPIO2</span><span class="p">,</span>
+		<span class="c1">// spi</span>
+		<span class="p">.</span><span class="n">rcc_spi</span> <span class="o">=</span> <span class="n">RCC_SPI1</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">spi</span> <span class="o">=</span> <span class="n">SPI1</span><span class="p">,</span>
+		<span class="c1">// sck</span>
+		<span class="p">.</span><span class="n">rcc_sck</span> <span class="o">=</span> <span class="n">RCC_GPIOA</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">port_sck</span> <span class="o">=</span> <span class="n">GPIOA</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">gpio_sck</span> <span class="o">=</span> <span class="n">GPIO5</span><span class="p">,</span>
+		<span class="c1">// mosi</span>
+		<span class="p">.</span><span class="n">rcc_mosi</span> <span class="o">=</span> <span class="n">RCC_GPIOA</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">port_mosi</span> <span class="o">=</span> <span class="n">GPIOA</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">gpio_mosi</span> <span class="o">=</span> <span class="n">GPIO7</span><span class="p">,</span>
+	<span class="p">};</span>
+
+	<span class="n">rcc_clock_setup_pll</span><span class="p">(</span><span class="o">&amp;</span><span class="n">rcc_hse_25mhz_3v3</span><span class="p">[</span><span class="n">RCC_CLOCK_3V3_84MHZ</span><span class="p">]);</span>
+
+	<span class="n">eglib_sh1106</span> <span class="o">=</span> <span class="n">eglib_Init_FrameBuffer</span><span class="p">(</span>
+		<span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">frame_buffer_config</span><span class="p">,</span>
+		<span class="o">&amp;</span><span class="n">four_wire_spi_libopencm3_stm32f4</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">four_wire_spi_libopencm3_stm32f4_config</span><span class="p">,</span>
+		<span class="o">&amp;</span><span class="n">sh1106_vdd1_2_4_v</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">sh1106_config</span>
+	<span class="p">);</span>
+
+	<span class="n">eglib_SetIndexColor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mh">0xFF</span><span class="p">,</span> <span class="mh">0xFF</span><span class="p">,</span> <span class="mh">0xFF</span><span class="p">);</span>
+
+	<span class="n">eglib_DrawLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">sh1106_config</span><span class="p">.</span><span class="n">width</span><span class="mi">-1</span><span class="p">,</span> <span class="n">sh1106_config</span><span class="p">.</span><span class="n">height</span><span class="mi">-1</span><span class="p">);</span>
+	<span class="n">eglib_DrawLine</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span> <span class="n">sh1106_config</span><span class="p">.</span><span class="n">height</span><span class="mi">-1</span><span class="p">,</span> <span class="n">sh1106_config</span><span class="p">.</span><span class="n">width</span><span class="mi">-1</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+
+	<span class="n">eglib_FrameBuffer_Send</span><span class="p">(</span><span class="o">&amp;</span><span class="n">eglib</span><span class="p">);</span>
+
+	<span class="n">sh1106_Reverse</span><span class="p">(</span><span class="n">eglib_sh1106</span><span class="p">,</span> <span class="nb">true</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="index.html" title="Previous document">4-Wire SPI Drivers</a>
+        </li>
+        <li>
+          <a href="none.html" title="Next document">None</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../../../index.html">
+    <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+
+
+<p>
+	<a class="badge" href="https://github.com/fornellas/eglib/actions?query=workflow%3Abuild+branch%3Amaster" target="_blank">
+	  <img src="https://github.com/fornellas/eglib/workflows/build/badge.svg?branch=master"/>
+	</a>
+	<a class="badge" href="https://github.com/fornellas/eglib/pulls" target="_blank">
+	  <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg"/>
+	</a>
+	<br>
+	<a class="badge" href="https://www.paypal.com/donate?hosted_button_id=AX26JVRT2GS2Q" target="_blank">
+	  <img src="https://img.shields.io/badge/donate-%E2%9D%A4%C2%A0-ff69b4.svg?style=flat"/>
+	</a>
+</p>
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../driver_development/index.html">Driver Development</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../eglib.html">eglib</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../drawing/index.html">Drawing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../display/index.html">Display</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html">HAL</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../interface.html">HAL Interface</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">4-Wire SPI Drivers</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">libopencm3 STM32F4</a></li>
+<li class="toctree-l4"><a class="reference internal" href="none.html">None</a></li>
+<li class="toctree-l4"><a class="reference internal" href="stream.html">stream</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../i2c/index.html">I2C Drivers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../parallel_8_bit_8080/index.html">Parallel 8-bit 8080 Drivers</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Fabio Pugliese Ornellas.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.4.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../../_sources/api_reference/hal/four_wire_spi/libopencm3_stm32f4.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+    <a href="https://github.com/fornellas/eglib" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

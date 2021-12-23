@@ -21,57 +21,88 @@ Last update: 2021-02-25
 #include "SetupNG.h"
 #include "sensor.h"
 
-#include <Ucglib.h>
+#include <AdaptUGC.h>
 #include <esp_log.h>
 
 
-DisplayDeviations::DisplayDeviations( std::string title) :
+DisplayDeviations::DisplayDeviations( const char * title ) :
   SetupMenuDisplay( title, nullptr )
 {
-	ESP_LOGI(FNAME, "DisplayDeviations(): title='%s'", title.c_str() );
+	ESP_LOGI(FNAME, "DisplayDeviations(): title='%s'", title );
 }
 
 void DisplayDeviations::display( int mode )
 {
   if( (selected != this) || !inSetup )
-    return;
-
+	  return;
+  if( !compass )
+  {
+	  clear();
+	  ucg->setFont( ucg_font_ncenR14_hr );
+	  ucg->setPrintPos( 1, 30 );
+	  ucg->printf( "No magnetic Sensor, Abort" );
+	  return;
+  }
   ESP_LOGI(FNAME, "display() mode=%d", mode );
-
   clear();
-  ucg->setFont( ucg_font_fur14_hf );
-  uprintf( 5, 25, selected->_title.c_str() );
-
-  const char* skydirdev[8] =
-    { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
-
-  // Stored deviation data
-  SetupNG<float>* deviations[8] = { &compass_dev_0,
-      &compass_dev_45,
-      &compass_dev_90,
-      &compass_dev_135,
-      &compass_dev_180,
-      &compass_dev_225,
-      &compass_dev_270,
-      &compass_dev_315 };
-
-  uint16_t y = 50;
+  ucg->setFont( ucg_font_ncenR14_hr );
+  uprintf( 5, 25, selected->_title );
+  const char* skydirdev[8] = { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
+  uint16_t y = 25;
   semaphoreTake();
-
   for( int i = 0; i < 8; i++ )
     {
-      uint16_t x = 0; y += 25;
+      uint16_t x = 0; y += 20;
       ucg->setPrintPos( x, y );
+      ucg->setColor( COLOR_HEADER_LIGHT );
       ucg->printf( "%s",  skydirdev[i] );
       x += 42;
       ucg->setPrintPos( x, y );
-      ucg->printf( "%03d\260", i * 45 );
+      ucg->printf( "%03d°", i * 45 );
       x += 50;
+      ucg->setColor( COLOR_WHITE );
       ucg->setPrintPos( x, y );
-      ucg->printf( "Deviation %3.1f\260",  deviations[i]->get() );
+      ucg->printf( "Deviation %3.1f°",  compass->getDeviation(i*45) );
     }
 
-  ucg->setPrintPos( 5, 290 );
+  // draw graph
+  const int Y=245;
+  ucg->drawHLine( 10, Y, 215 );   // X-Axis
+  ucg->drawHLine( 15, Y-50, 5 );  // Scale
+  ucg->drawHLine( 15, Y+50, 5 );
+  ucg->drawVLine( 20, Y-50, 100 );
+  for( int x=20; x<=220; x+=25 ){
+	  if( !((x-20)%100) )
+		  ucg->drawVLine( x, Y-6, 12 );
+	  else
+		  ucg->drawVLine( x, Y-3, 6 );
+  }
+  ucg->setColor( COLOR_GREEN );
+  float avg=0;
+  for( int x=0; x<360; x++ ){
+	  float dev=compass->getDeviation((float)(x));
+ 	  ucg->drawPixel( 20+(x*200./360.), Y-(int)dev);
+ 	  avg +=dev;
+  }
+  avg = avg/360;
+  ucg->setColor( COLOR_WHITE );
+  for( int x=0; x<360; x++ ){
+	  if( !(x%10) )
+		  ucg->drawPixel( 20+(x*200./360.), Y-(int)(avg+0.5) );
+  }
+  ucg->setFontPosCenter();
+  ucg->setColor( COLOR_HEADER_LIGHT );
+  ucg->drawHLine( 15, Y-(int)avg, 5 );  // average
+  ucg->setPrintPos( 23, Y-(int)avg+7 );
+  ucg->printf("%d", (int)(avg+0.5));
+  ucg->setFont(ucg_font_fub11_hr, true);
+  ucg->setPrintPos(23,Y-50+7);  // Scale Labels
+  ucg->print("50");
+  ucg->setPrintPos(23,Y+50+7);
+  ucg->print("-50");
+  ucg->setPrintPos( 40, 317 );
+  ucg->setColor( COLOR_WHITE );
+  ucg->setPrintPos( 40, 317 );
   ucg->printf( "Press button to exit" );
   semaphoreGive();
 }

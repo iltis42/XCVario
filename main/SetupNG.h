@@ -1,5 +1,5 @@
 /*
- * Setup.h
+ * SetupNG.h
  *
  *  Created on: August 23, 2020
  *      Author: iltis
@@ -28,7 +28,8 @@
 #include <cstring>
 #include <iostream>
 #include <vector>
-
+#include "Compass.h"
+#include "SetupCommon.h"
 
 
 /*
@@ -42,7 +43,7 @@
  */
 
 
-typedef enum display_type { UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P } display_t;
+typedef enum display_type { UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P } xcv_display_t;
 typedef enum chopping_mode { NO_CHOP, VARIO_CHOP, S2F_CHOP, BOTH_CHOP } chopping_mode_t;
 typedef enum rs232linemode { RS232_NORMAL, RS232_INVERTED } rs232lm_t;
 typedef enum nmea_protocol  { OPENVARIO, BORGELT, CAMBRIDGE, XCVARIO, XCVARIO_DEVEL, GENERIC } nmea_proto_t;
@@ -85,65 +86,21 @@ typedef enum e_menu_screens { SCREEN_VARIO, SCREEN_GMETER, SCREEN_FLARM, SCREEN_
 typedef enum e_s2f_arrow_color { AC_WHITE_WHITE, AC_BLUE_BLUE, AC_GREEN_RED } e_s2f_arrow_color_t;
 typedef enum e_vario_needle_color { VN_COLOR_WHITE, VN_COLOR_ORANGE, VN_COLOR_RED }  e_vario_needle_color_t;
 typedef enum e_data_monitor { MON_OFF, MON_BLUETOOTH, MON_WIFI_8880, MON_WIFI_8881, MON_WIFI_8882, MON_S1, MON_S2, MON_CAN  }  e_data_monitor_t;
+typedef enum e_display_orientation { DISPLAY_NORMAL, DISPLAY_TOPDOWN } e_display_orientation_t;
+
 
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
+void change_bal();
 
-
-class SetupCommon {
-public:
-	SetupCommon() { memset( _ID, 0, sizeof( _ID )); }
-	virtual ~SetupCommon() {};
-	virtual bool init() = 0;
-	virtual bool erase() = 0;
-	virtual bool mustReset() = 0;
-	virtual const char* key() = 0;
-	virtual char typeName() = 0;
-	virtual bool sync() = 0;
-	virtual uint8_t getSync() = 0;
-	static std::vector<SetupCommon *> entries;
-	static bool initSetup( bool &present );  // returns false if FLASH was completely blank
-	static char *getID();
-	static void sendSetup( uint8_t sync, const char * key, char type, void *value, int len, bool ack=false );
-	static SetupCommon * getMember( const char * key );
-	static bool syncEntry( int entry );
-	static int numEntries() { return entries.size(); };
-	static bool factoryReset();
-	static bool isMaster();
-	static bool isClient();
-    static bool isWired();
-	static bool haveWLAN();
-    static bool lazyCommit;
-    static bool commitNow();
-    static QueueHandle_t commitSema;
-
-protected:
-    static bool open(nvs_handle_t &h) {
-        esp_err_t err = nvs_open("SetupNG", NVS_READWRITE, &h);
-        if(err != ESP_OK){
-            ESP_LOGE(FNAME,"ESP32NVS open storage error %d", err );
-            h = 0;
-            return( false );
-        }
-        else {
-            // ESP_LOGI(FNAME,"ESP32NVS handle: %04X  OK", _nvs_handle );
-            return( true );
-        }
-	};
-	static void close(nvs_handle_t &h) {
-		if( h != 0) {
-			nvs_close(h);
-			h = 0;
-		}
-	};
-private:
-    static esp_timer_handle_t _timer;
-    static bool _dirty;
-	static char _ID[14];
-};
+typedef struct setup_flags{
+	bool _reset    :1;
+	bool _wait_ack :1;
+	bool _volatile :1;
+	uint8_t _sync  :2;
+} t_setup_flags;
 
 
 template<typename T>
-
 class SetupNG: public SetupCommon
 {
 public:
@@ -165,14 +122,14 @@ public:
 		// ESP_LOGI(FNAME,"SetupNG(%s)", akey );
 		if( strlen( akey ) > 15 )
 			ESP_LOGE(FNAME,"SetupNG(%s) key > 15 char !", akey );
-		entries.push_back( this );  // add into vector
+		instances->push_back( this );  // add into vector
 		_key = akey;
 		_default = adefault;
-		_reset = reset;
-		_sync = sync;
-		_volatile = vol;
+		flags._reset = reset;
+		flags._sync = sync;
+		flags._volatile = vol;
+		flags._wait_ack = false;
 		_action = action;
-		_wait_ack = false;
 	}
 
 	inline T* getPtr() {
@@ -190,10 +147,6 @@ public:
 	virtual T getGui() const { return get(); } // tb. overloaded for blackboard
 	virtual const char* unit() const { return ""; } // tb. overloaded for blackboard
 
-	bool mustSync(){
-		return( ( (isClient() && _sync == SYNC_FROM_CLIENT) || (isMaster() && _sync == SYNC_FROM_MASTER) || _sync == SYNC_BIDIR ) );
-	}
-
 	bool set( T aval, bool dosync=true ) {
 		if( _value == aval ){
 			// ESP_LOGI(FNAME,"Value already in config: %s", _key );
@@ -204,7 +157,7 @@ public:
 		if ( dosync ) {
 			sync();
 		}
-		else if( (_sync == SYNC_BIDIR) && isClient() ){
+		else if( (flags._sync == SYNC_BIDIR) && isClient() ){
 			sendAck();
 		}
 
@@ -212,7 +165,7 @@ public:
 			(*_action)();
 		}
 
-		if( _volatile == VOLATILE ){
+		if( flags._volatile == VOLATILE ){
 			return true;
 		}
 		return commit( false );
@@ -222,20 +175,20 @@ public:
 		if( aval != _value ){
 			ESP_LOGI(FNAME,"sync to value client has acked");
 			_value = aval;
-			_wait_ack = false;
+			flags._wait_ack = false;
 		}
 	}
 
 	void sendAck(){
-		sendSetup( _sync, _key, typeName(), (void *)(&_value), sizeof( _value ), true );
+		sendSetup( flags._sync, _key, typeName(), (void *)(&_value), sizeof( _value ), true );
 	}
 
 	bool sync(){
-		if( mustSync() ){
+		if( SetupCommon::mustSync( flags._sync ) ){
 			// ESP_LOGI( FNAME,"Now sync %s", _key );
-			sendSetup( _sync, _key, typeName(), (void *)(&_value), sizeof( _value ) );
-			if( isMaster() && _sync == SYNC_BIDIR )
-				_wait_ack = true;
+			sendSetup( flags._sync, _key, typeName(), (void *)(&_value), sizeof( _value ) );
+			if( isMaster() && flags._sync == SYNC_BIDIR )
+				flags._wait_ack = true;
 			return true;
 		}
 		return false;
@@ -246,7 +199,7 @@ public:
 		if( dosync )
 			sync();
 
-		if( _volatile != PERSISTENT ){
+		if( flags._volatile != PERSISTENT ){
 			return true;
 		}
         nvs_handle_t h = 0;
@@ -275,7 +228,7 @@ public:
 	}
 
 	bool exists() {
-		if( _volatile != PERSISTENT ) {
+		if( flags._volatile != PERSISTENT ) {
             return true;
         }
         nvs_handle_t h = 0;
@@ -293,7 +246,7 @@ public:
 
 
 	virtual bool init() {
-		if( _volatile != PERSISTENT ){
+		if( flags._volatile != PERSISTENT ){
 			ESP_LOGI(FNAME,"NVS volatile set default");
 			set( _default );
 			return true;
@@ -337,7 +290,7 @@ public:
 
 
 	virtual bool erase() {
-		if( _volatile != PERSISTENT ){
+		if( flags._volatile != PERSISTENT ){
 			return true;
 		}
         nvs_handle_t h = 0;
@@ -355,20 +308,17 @@ public:
 	}
 
 	virtual bool mustReset() {
-		return _reset;
+		return flags._reset;
 	}
 
     inline T getDefault() const { return _default; }
-	inline uint8_t getSync() { return _sync; }
+	inline uint8_t getSync() { return flags._sync; }
 
 private:
 	T _value;
 	T _default;
 	const char * _key;
-	uint8_t _reset;
-	uint8_t _wait_ack;
-	uint8_t _sync;
-	uint8_t _volatile;
+	t_setup_flags flags;
 	void (* _action)();
 };
 
@@ -395,7 +345,11 @@ extern SetupNG<float>  		deadband_neg;
 extern SetupNG<float>  		range;
 extern SetupNG<int>			log_scale;
 extern SetupNG<float>  		ballast;
-extern SetupNG<float>  		fixed_ballast;
+extern SetupNG<float>  		ballast_kg;
+extern SetupNG<float>		empty_weight;
+extern SetupNG<float>		crew_weight;
+extern SetupNG<float>		gross_weight;
+
 extern SetupNG<float>  		s2f_speed;
 
 extern SetupNG<int>  		audio_variable_frequency;
@@ -591,9 +545,13 @@ extern SetupNG<int> 		master_xcvario_lock;
 extern SetupNG<int> 		menu_long_press;
 extern SetupNG<int> 		menu_screens;
 extern SetupNG<int> 		data_monitor;
+extern SetupNG<t_bitfield_compass> 	calibration_bits;
 
 
 extern uint8_t g_col_background;
 extern uint8_t g_col_highlight;
 
-extern void change_mc_bal();
+extern int last_volume;
+
+void change_ballast();
+void change_mc();

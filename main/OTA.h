@@ -14,7 +14,7 @@ class OTA: public RotaryObserver
 public:
 	OTA();
 	~OTA() {};
-	void begin( ESPRotary * aRotary );
+	void begin();
 	void press();
 	void release();
 	void up( int count ) {};
@@ -23,7 +23,6 @@ public:
 	void doSoftwareUpdate( IpsDisplay *p );
 private:
     bool pressed;
-    ESPRotary * _rotary;
 };
 
 #endif /* MAIN_SWITCH_H_ */

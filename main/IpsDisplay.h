@@ -12,7 +12,7 @@
 #include "esp_system.h"
 #include "Setup.h"
 #include <SPI.h>
-#include <Ucglib.h>
+#include <AdaptUGC.h>
 #include "Colors.h"
 
 #define TEGAP 26
@@ -27,7 +27,7 @@ extern int screens_init;
 
 class IpsDisplay {
 public:
-	IpsDisplay( Ucglib_ILI9341_18x240x320_HWSPI *aucg );
+	IpsDisplay( AdaptUGC *aucg );
 	virtual ~IpsDisplay();
 	static void begin();
 	static void setup();
@@ -41,17 +41,18 @@ public:
 	void doMenu( bool menu=true ) { _menu = menu; };
 	static void drawArrowBox( int x, int y, bool are=true );
 	static void redrawValues();
-	static void drawCompass(int16_t x, int16_t y);
+	static void drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass_dirty );
 	static void drawWindArrow( float dir, float speed, int type );
-	static inline Ucglib_ILI9341_18x240x320_HWSPI *getDisplay() { return ucg; };
+	static inline AdaptUGC *getDisplay() { return ucg; };
 
 private:
-	static Ucglib_ILI9341_18x240x320_HWSPI *ucg;
+	static AdaptUGC *ucg;
 	gpio_num_t _reset;
 	gpio_num_t _cs;
 	gpio_num_t _dc;
 	static float _range;
 	static int prev_heading;
+	static int prev_windspeed;
 	static int _divisons;
 	static float _range_clip;
 	static int _pixpmd;
@@ -96,8 +97,8 @@ private:
 	static int yellow;
 	static ucg_color_t wkcolor;
 	static bool netto_old;
-	static ucg_int_t char_width;
-	static ucg_int_t char_height;
+	static int16_t char_width;
+	static int16_t char_height;
 	static float old_polar_sink;
 
 	static void drawMC( float mc, bool large=false );
@@ -129,9 +130,9 @@ private:
 	static void drawGaugeTriangle( int y, int r, int g, int b, bool s2f=false );
 	static void drawAvgSymbol( int y, int r, int g, int b, int x=DISPLAY_LEFT );
 	static void drawAvg( float mps, float delta );
-	static bool drawAltitude( float altitude, ucg_int_t x, ucg_int_t y, bool dirty, bool inc_unit=false );
-	static void drawSmallSpeed(float v_kmh, ucg_int_t x, ucg_int_t y);
-	static bool drawSpeed(float speed, ucg_int_t x, ucg_int_t y, bool dirty, bool inc_unit=false);
+	static bool drawAltitude( float altitude, int16_t x, int16_t y, bool dirty, bool inc_unit=true );
+	static void drawSmallSpeed(float v_kmh, int16_t x, int16_t y);
+	static bool drawSpeed(float speed, int16_t x, int16_t y, bool dirty, bool inc_unit=false);
 	static void drawLegend( bool onlyLines=false );
 	static void drawAvgVario( int16_t x, int16_t y, float ate );
 };

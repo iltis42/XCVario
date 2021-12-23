@@ -1,11 +1,11 @@
 /*
- * Setup.cpp
+ * SetupNG.cpp
  *
  *  Created on: Dec 23, 2017
  *      Author: iltis
  */
 
-#include "Setup.h"
+#include "SetupNG.h"
 #include <string>
 #include <stdio.h>
 #include "esp_system.h"
@@ -35,16 +35,20 @@
 #include "Flap.h"
 #include "DallasRmt.h"
 
-std::vector<SetupCommon *> SetupCommon::entries;
-bool SetupCommon::lazyCommit = true;
-QueueHandle_t SetupCommon::commitSema = nullptr;
-esp_timer_handle_t SetupCommon::_timer = nullptr;
-bool SetupCommon::_dirty = false;
-char SetupCommon::_ID[14];
+void change_mc() {
+	Speed2Fly.change_mc();
+}
 
+void change_ballast() {
+	Speed2Fly.change_ballast();
+}
 
-void change_mc_bal() {  // or bugs
-	Speed2Fly.change_mc_bal();
+void polar_set(){
+	Speed2Fly.setPolar();
+}
+
+void modifyPolar() {
+	Speed2Fly.modifyPolar();
 }
 
 void resetSWindAge() {
@@ -56,9 +60,9 @@ void resetCWindAge() {
 		CircleWind::resetAge();
 }
 
+int last_volume=0;
 
 void change_volume() {
-    static int last_volume=0;
 	int delta = (int)audio_volume.get() - last_volume;
 	if( delta != 0 ){
 		if( delta > 0 ){
@@ -67,7 +71,8 @@ void change_volume() {
 		if( delta < 0 ){
 			Audio::decVolume(abs(delta));
 		}
-		last_volume = (int)audio_volume.get();
+		last_volume += delta;
+		ESP_LOGI(FNAME,"change_volume, delta=%d last_vol: %d", delta, last_volume );
 	}
 }
 
@@ -80,17 +85,16 @@ void flap_act() {
     }
 }
 
-
 SetupNG<float>  		QNH( "QNH", 1013.25, true, SYNC_BIDIR );
-SetupNG<float> 			polar_wingload( "POLAR_WINGLOAD", 34.40, true, SYNC_FROM_MASTER );
-SetupNG<float> 			polar_speed1( "POLAR_SPEED1",   80, true, SYNC_FROM_MASTER );
-SetupNG<float> 			polar_sink1( "POLAR_SINK1",    -0.66, true, SYNC_FROM_MASTER );
-SetupNG<float> 			polar_speed2( "POLAR_SPEED2",   125, true, SYNC_FROM_MASTER );
-SetupNG<float> 			polar_sink2( "POLAR_SINK2",    -0.97, true, SYNC_FROM_MASTER );
-SetupNG<float> 			polar_speed3( "POLAR_SPEED3",   175, true, SYNC_FROM_MASTER );
-SetupNG<float> 			polar_sink3( "POLAR_SINK3",    -2.24, true, SYNC_FROM_MASTER );
-SetupNG<float> 			polar_max_ballast( "POLAR_MAX_BAL",  160, true, SYNC_FROM_MASTER );
-SetupNG<float> 			polar_wingarea( "POLAR_WINGAREA", 10.5, true, SYNC_FROM_MASTER );
+SetupNG<float> 			polar_wingload( "POLAR_WINGLOAD", 34.40, true, SYNC_FROM_MASTER, PERSISTENT, change_ballast );
+SetupNG<float> 			polar_speed1( "POLAR_SPEED1",   80, true, SYNC_FROM_MASTER, PERSISTENT, modifyPolar );
+SetupNG<float> 			polar_sink1( "POLAR_SINK1",    -0.66, true, SYNC_FROM_MASTER, PERSISTENT, modifyPolar );
+SetupNG<float> 			polar_speed2( "POLAR_SPEED2",   125, true, SYNC_FROM_MASTER, PERSISTENT, modifyPolar );
+SetupNG<float> 			polar_sink2( "POLAR_SINK2",    -0.97, true, SYNC_FROM_MASTER, PERSISTENT, modifyPolar );
+SetupNG<float> 			polar_speed3( "POLAR_SPEED3",   175, true, SYNC_FROM_MASTER, PERSISTENT, modifyPolar );
+SetupNG<float> 			polar_sink3( "POLAR_SINK3",    -2.24, true, SYNC_FROM_MASTER, PERSISTENT, modifyPolar );
+SetupNG<float> 			polar_max_ballast( "POLAR_MAX_BAL",  160, true, SYNC_FROM_MASTER, PERSISTENT, change_ballast );
+SetupNG<float> 			polar_wingarea( "POLAR_WINGAREA", 10.5, true, SYNC_FROM_MASTER, PERSISTENT, change_ballast );
 
 SetupNG<float>  		speedcal( "SPEEDCAL", 0.0 );
 SetupNG<float>  		vario_delay( "VARIO_DELAY", 3.0 );
@@ -103,9 +107,12 @@ SetupNG<float>  		deadband( "DEADBAND", 0.3, true, SYNC_FROM_MASTER  );
 SetupNG<float>  		deadband_neg("DEADBAND_NEG" , -0.3, true, SYNC_FROM_MASTER  );
 SetupNG<float>  		range( "VARIO_RANGE", 5.0 );
 SetupNG<int>			log_scale( "LOG_SCALE", 0 );
-SetupNG<float>  		ballast( "BALLAST" , 0.0, true, SYNC_BIDIR, PERSISTENT, change_mc_bal );
-SetupNG<float>  		fixed_ballast( "FIXBALL" , 0.0, true, SYNC_FROM_MASTER, PERSISTENT, change_mc_bal );
-SetupNG<float>  		bugs( "BUGS", 0.0, true, SYNC_BIDIR, VOLATILE, change_mc_bal  );
+SetupNG<float>  		ballast( "BALLAST" , 0.0, true, SYNC_NONE, VOLATILE, change_ballast );  // ballast increase from reference weight in %
+SetupNG<float>  		ballast_kg( "BAL_KG" , 0.0, true, SYNC_BIDIR, PERSISTENT, change_ballast );
+SetupNG<float>			empty_weight( "EMPTY_WGT", 80, true, SYNC_BIDIR, PERSISTENT, change_ballast );
+SetupNG<float>			crew_weight( "CREW_WGT", 80, true, SYNC_BIDIR, PERSISTENT, change_ballast );
+SetupNG<float>			gross_weight( "CREW_WGT", 350, true, SYNC_NONE, VOLATILE );
+SetupNG<float>  		bugs( "BUGS", 0.0, true, SYNC_BIDIR, VOLATILE, modifyPolar  );
 
 SetupNG<int>  			cruise_mode( "CRUISE", 0, true, SYNC_BIDIR, VOLATILE );
 SetupNG<float>  		OAT( "OAT", DEVICE_DISCONNECTED_C, true, SYNC_FROM_MASTER, VOLATILE );   // outside temperature
@@ -124,7 +131,7 @@ SetupNG<float>  		te_vario( "TEVA", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
 SetupNG<float>  		s2f_speed( "S2F_SPEED", 100.0 );
 SetupNG<float>  		s2f_hysteresis( "S2F_HYST", 5.0 );
 
-SetupNG<float> audio_volume("AUD_VOL", 10, true, SYNC_BIDIR, VOLATILE, change_volume );
+SetupNG<float> 			audio_volume("AUD_VOL", 10, true, SYNC_BIDIR, VOLATILE, change_volume );
 SetupNG<int>  			audio_variable_frequency( "AUD_VAFQ", 0);
 SetupNG<int>  			audio_mode( "AUDIO_MODE" ,  3 );
 SetupNG<int>  			chopping_mode( "CHOPPING_MODE",  VARIO_CHOP );
@@ -139,7 +146,7 @@ SetupNG<int>  			alt_select( "ALT_SELECT" , AS_BARO_SENSOR );
 SetupNG<int>  			fl_auto_transition( "FL_AUTO" , 0 );
 SetupNG<int>  			alt_display_mode( "ALT_DISP_MODE" , MODE_QNH );
 SetupNG<float>  		transition_alt( "TRANS_ALT", 50 );   // Transition Altitude
-SetupNG<int>  			glider_type( "GLIDER_TYPE", 0, true, SYNC_FROM_MASTER );
+SetupNG<int>  			glider_type( "GLIDER_TYPE", 0, true, SYNC_FROM_MASTER, PERSISTENT,  polar_set );
 SetupNG<int>  			glider_type_index( "GLIDER_TYPE_IDX", 0, true, SYNC_FROM_MASTER );
 SetupNG<int>  			ps_display( "PS_DISPLAY", 1 );
 
@@ -241,9 +248,9 @@ SetupNG<float>          compass_dev_315( "CP_DEV_315", 0 );
 SetupNG<float>          compass_x_bias( "CP_X_BIAS", 0 );
 SetupNG<float>          compass_y_bias( "CP_Y_BIAS", 0 );
 SetupNG<float>          compass_z_bias( "CP_Z_BIAS", 0 );
-SetupNG<float>          compass_x_scale( "CP_X_SCALE", 0 );
-SetupNG<float>          compass_y_scale( "CP_Y_SCALE", 0 );
-SetupNG<float>          compass_z_scale( "CP_Z_SCALE", 0 );
+SetupNG<float>          compass_x_scale( "CP_X_SCALE", 1.0 );
+SetupNG<float>          compass_y_scale( "CP_Y_SCALE", 1.0 );
+SetupNG<float>          compass_z_scale( "CP_Z_SCALE", 1.0 );
 SetupNG<int>            compass_calibrated( "CP_CALIBRATED", 0 );
 SetupNG<float>          compass_declination( "CP_DECL", 0 );
 SetupNG<int>            compass_declination_valid( "CP_DECL_VALID", 0 );
@@ -298,174 +305,8 @@ SetupNG<int> 			master_xcvario_lock( "MSXCVL", 0 );
 SetupNG<int> 			menu_long_press("MENU_LONG", 0 );
 SetupNG<int> 			menu_screens("MENU_SCR", 0 );
 SetupNG<int> 			data_monitor("DATAMON", MON_OFF, true, SYNC_NONE, VOLATILE  );
+SetupNG<t_bitfield_compass>  calibration_bits("CALBIT", { 0,0,0,0,0,0 } );
 
 mpud::raw_axes_t zero_bias;
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );
 SetupNG<mpud::raw_axes_t>	accl_bias("ACCL_BIAS", zero_bias );
-
-
-// TimeOut callback
-static void timeout(QueueHandle_t arg)
-{
-    uint32_t stat = 0;
-    xQueueSendFromISR(arg, &stat, NULL);
-}
-
-void SetupCommon::sendSetup( uint8_t sync, const char *key, char type, void *value, int len, bool ack ){
-	// ESP_LOGI(FNAME,"sendSetup(): key=%s, type=%c, len=%d, ack=%d", key, type, len, ack );
-	OV.sendItem( key, type, value, len, ack );
-}
-
-SetupCommon * SetupCommon::getMember( const char * key ){
-	for(int i = 0; i < entries.size(); i++ ) {
-		if( std::string( key ) == std::string( entries[i]->key() )){
-			// ESP_LOGI(FNAME,"found key %s", entries[i]->key() );
-			return entries[i];
-		}
-	}
-	return 0;
-}
-
-// at time of connection establishment
-bool SetupCommon::syncEntry( int entry ){
-    if( entry < entries.size() ) {
-        return entries[entry]->sync();
-    }
-    return false;
-}
-
-bool SetupCommon::factoryReset(){
-	ESP_LOGI(FNAME,"\n\n******  FACTORY RESET ******");
-	bool retsum = true;
-	for(int i = 0; i < entries.size(); i++ ) {
-		ESP_LOGI(FNAME,"i=%d %s erase", i, entries[i]->key() );
-		if( entries[i]->mustReset() ){
-			bool ret = entries[i]->erase();
-			if( ret != true ) {
-				ESP_LOGE(FNAME,"Error erasing %s", entries[i]->key() );
-				retsum = false;
-			}
-			ret = entries[i]->init();
-			if( ret != true ) {
-				ESP_LOGE(FNAME,"Error init with default %s", entries[i]->key() );
-				retsum = false;
-			}
-			else
-				ESP_LOGI(FNAME,"%s successfully initialized with default", entries[i]->key() );
-		}
-	}
-	if( retsum )
-		ESP_LOGI(FNAME,"Factory reset SUCCESS");
-	else
-		ESP_LOGI(FNAME,"Factory reset FAILED!");
-	return retsum;
-}
-
-bool SetupCommon::initSetup( bool& present ) {
-	bool ret=true;
-	ESP_LOGI(FNAME,"SetupCommon::initSetup()");
-	esp_err_t _err = nvs_flash_init();
-	if (_err == ESP_ERR_NVS_NO_FREE_PAGES) {
-		ESP_LOGE(FNAME,"Error no more space in NVS: erase partition");
-		const esp_partition_t* nvs_partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_NVS, NULL);
-		_err = (esp_partition_erase_range(nvs_partition, 0, nvs_partition->size));
-		if ( _err != ESP_OK ){
-			ESP_LOGE(FNAME, "partition erase returned error ret=%d", _err );
-			ret = false;
-		}
-	}
-	if( ahrs_licence_dig1.exists() )
-		present = true;
-	else
-		present = false;
-
-	for(int i = 0; i < entries.size(); i++ ) {
-			bool ret = entries[i]->init();
-			if( ret != true )
-				ESP_LOGE(FNAME,"Error init with default NVS: %s", entries[i]->key() );
-	}
-
-	if( factory_reset.get() ) {
-		ESP_LOGI(FNAME,"\n\n******  FACTORY RESET ******");
-		for(int i = 0; i < entries.size(); i++ ) {
-			ESP_LOGI(FNAME,"i=%d %s erase", i, entries[i]->key() );
-			if( entries[i]->mustReset() ){
-				bool ret = entries[i]->erase();
-				if( ret != true ) {
-					ESP_LOGE(FNAME,"Error erasing %s", entries[i]->key() );
-					ret = false;
-				}
-				ret = entries[i]->init();
-				if( ret != true ) {
-					ESP_LOGE(FNAME,"Error init with default %s", entries[i]->key() );
-					ret = false;
-				}
-				else
-					ESP_LOGI(FNAME,"%s successfully initialized with default", entries[i]->key() );
-			}
-		}
-	}
-
-    if ( _timer == nullptr ) {
-        // create event queue to connect to the timer callback
-        commitSema = xQueueCreate(2, sizeof(uint32_t));
-
-        esp_timer_create_args_t timer_args = {
-            .callback = (esp_timer_cb_t)timeout,
-            .arg = commitSema,
-            .dispatch_method = ESP_TIMER_TASK,
-            .name = "lazy_nvs",
-            .skip_unhandled_events = true,
-        };
-        ESP_ERROR_CHECK(esp_timer_create(&timer_args, &_timer));
-        ESP_ERROR_CHECK(esp_timer_start_periodic(_timer, 5ULL * 1000000)); // 5 sec in usec
-    }
-
-	return ret;
-};
-
-char * SetupCommon::getID() {
-	if( strlen( _ID ) == 0 ) {
-		uint8_t mac[6];
-		unsigned long  crc = 0;
-		if ( esp_efuse_mac_get_default(mac) == ESP_OK ){
-			crc = mz_crc32(0L, mac, 6);
-		}
-		if( hardwareRevision.get() >= 3 ){
-			sprintf( _ID, "XCVario-%04d", int(crc % 10000) );
-		}
-		else{
-			sprintf( _ID, "iVario-%03d", int(crc % 1000));
-		}
-	}
-	return _ID;
-}
-
-bool SetupCommon::isMaster(){
-	return((wireless == WL_WLAN_MASTER) || (can_speed.get() != CAN_SPEED_OFF && can_mode.get() == CAN_MODE_MASTER));
-}
-
-bool SetupCommon::haveWLAN(){
-	return( (wireless == WL_WLAN_MASTER) ||  (wireless == WL_WLAN_STANDALONE) ||  (wireless == WL_WLAN_CLIENT ) );
-}
-
-bool SetupCommon::isClient(){
-	return((wireless == WL_WLAN_CLIENT) || (can_speed.get() != CAN_SPEED_OFF && can_mode.get() == CAN_MODE_CLIENT));
-}
-
-bool SetupCommon::isWired(){
-	return(can_speed.get() && (can_mode.get() == CAN_MODE_CLIENT || can_mode.get() == CAN_MODE_MASTER));
-}
-
-bool SetupCommon::commitNow()
-{
-    nvs_handle_t h;
-    if( _dirty && open(h) ) {
-        esp_err_t ret = nvs_commit(h);
-		close(h);
-        _dirty = false;
-        ESP_LOGI(FNAME,"nvs commiting now!" );
-        return ret == ESP_OK;
-    }
-    return false;
-}

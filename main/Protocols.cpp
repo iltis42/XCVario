@@ -88,7 +88,7 @@ void Protocols::sendNmeaHDT( float heading ) {
 void Protocols::sendItem( const char *key, char type, void *value, int len, bool ack ){
 	// ESP_LOGI(FNAME,"sendItem: %s", key );
 	char str[40];
-	char sender;
+	char sender = 'U';
 	if( SetupCommon::isMaster()  )
 		sender='M';
 	else if( SetupCommon::isClient() ){
@@ -97,8 +97,7 @@ void Protocols::sendItem( const char *key, char type, void *value, int len, bool
 		else
 			sender='C';
 	}
-	else
-		sender='U';
+	// ESP_LOGI(FNAME,"sender: %c", sender );
 	if( sender != 'U' ) {
 		int l = sprintf( str,"!xs%c,%s,%c,", sender, key, type );
 		if( type == 'F' )
@@ -106,15 +105,15 @@ void Protocols::sendItem( const char *key, char type, void *value, int len, bool
 		else if( type == 'I' )
 			sprintf( str+l,"%d", *(int*)(value) );
 
+		int cs = calcNMEACheckSum(&str[1]);
+		int i = strlen(str);
+		sprintf( &str[i], "*%02X\r\n", cs );
+		// ESP_LOGI(FNAME,"sendNMEAString: %s", str );
+		SString nmea( str );
+		if( !Router::forwardMsg( nmea, client_tx_q ) ){
+			ESP_LOGW(FNAME,"Warning: Overrun in send to Client XCV %d bytes", nmea.length() );
+		}
 	}
-	int cs = calcNMEACheckSum(&str[1]);
-	int i = strlen(str);
-	sprintf( &str[i], "*%02X\r\n", cs );
-	ESP_LOGI(FNAME,"sendNMEAString: %s", str );
-	SString nmea( str );
-	if( !Router::forwardMsg( nmea, client_tx_q ) )
-		ESP_LOGW(FNAME,"Warning: Overrun in send to Client XCV %d bytes", nmea.length() );
-
 }
 
 void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
@@ -142,7 +141,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 				Z.ZZ:   acceleration in Z-Axis,
 		 *CHK = standard NMEA checksum
 		 */
-		sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, Units::Qnh( QNH.get() ), baro, dp );
+		sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get() , baro, dp );
 		int append_idx = strlen(str);
 		if( haveMPU && attitude_indicator.get() ){
 			float roll = IMU::getRoll();
@@ -196,7 +195,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		 *hh   Checksum, XOR of all bytes of the sentence after the ‘!’ and before the ‘*’
 		 */
 
-		sprintf(str, "!w,0,0,0,0,%d,%4.2f,%d,%d,0,0,%d,%d,%d", int(alt+1000), Units::Qnh( QNH.get() ), int(Units::kmh2ms(tas)*100), int((Units::ms2knots(te)*10)+200), int( Units::mcval2knots(mc)*10 ), int( S2F::getBallastPercent()+0.5 ), (int)(100-bugs) );
+		sprintf(str, "!w,0,0,0,0,%d,%4.2f,%d,%d,0,0,%d,%d,%d", int(alt+1000), QNH.get(), int(Units::kmh2ms(tas)*100), int((Units::ms2knots(te)*10)+200), int( Units::mcval2knots(mc)*10 ), int( S2F::getBallastPercent()+0.5 ), (int)(100-bugs) );
 	}
 	else if( proto == P_EYE_PEYA ){
 		// Static pressure from aircraft pneumatic system [hPa] (i.e. 1015.5)
@@ -209,13 +208,13 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		// Vertical speed from anemometry (m/s) (i.e. +05.4)
 		// Outside Air Temperature (?C) (i.e. +15.2)
 		// Relative humidity [%] (i.e. 095)
-		float pa = alt - 8.92*( Units::Qnh( QNH.get() ) - 1013.25);
+		float pa = alt - 8.92*( QNH.get() - 1013.25);
 
 
 		if( validTemp )
-			sprintf(str, "$PEYA,%.2f,%.2f,%.2f,%.2f,,,%.2f,%.2f,%.2f,,", baro, baro+(dp/100),pa, Units::Qnh( QNH.get() ),tas,te,temp);
+			sprintf(str, "$PEYA,%.2f,%.2f,%.2f,%.2f,,,%.2f,%.2f,%.2f,,", baro, baro+(dp/100),pa, QNH.get(),tas,te,temp);
 		else
-			sprintf(str, "$PEYA,%.2f,%.2f,%.2f,%.2f,,,%.2f,%.2f,0,,", baro, baro+(dp/100),alt, Units::Qnh( QNH.get() ),tas,te);
+			sprintf(str, "$PEYA,%.2f,%.2f,%.2f,%.2f,,,%.2f,%.2f,0,,", baro, baro+(dp/100),alt, QNH.get(),tas,te);
 
 	}
 	else if( proto == P_EYE_PEYI ){
@@ -280,7 +279,7 @@ void Protocols::parseNMEA( const char *astr ){
 	// ESP_LOGI(FNAME,"parseNMEA: %s", astr );
 	const char *str = mystrtok(astr);
 	while( str ){
-		// ESP_LOGV(FNAME,"parseNMEA token: %s", str);
+		// ESP_LOGI(FNAME,"parseNMEA token: %s", str);
 		if ( strncmp( str, "!xs", 3 ) == 0 ) {
 			// ESP_LOGI(FNAME,"parseNMEA %s", str );
 			char key[20];
@@ -322,7 +321,8 @@ void Protocols::parseNMEA( const char *astr ){
 			float h;
 			sscanf( str,"!xc,%f", &h );
 			ESP_LOGI(FNAME,"Compass heading detected=%3.1f", h );
-			Compass::setHeading( h );
+			if( compass )
+				compass->setHeading( h );
 		}
 		else if ( (strncmp( str, "!g,", 3 ) == 0)    ) {
 			ESP_LOGI(FNAME,"parseNMEA, Cambridge C302 style command !g detected: %s",str);
@@ -331,14 +331,10 @@ void Protocols::parseNMEA( const char *astr ){
 				float aballast;
 				sscanf(str, "!g,b%f", &aballast);
 				aballast = aballast * 10; // Its obviously only possible to change in fraction's by 10% in CA302 (issue: 464)
-				ESP_LOGI(FNAME,"New Ballast: %f %% of max ", aballast);
+				ESP_LOGI(FNAME,"New Ballast: %.1f %% of max ", aballast);
 				float liters = (aballast/100.0) * polar_max_ballast.get();
-				ESP_LOGI(FNAME,"New Ballast in liters: %f ", liters);
-				float refw = polar_wingload.get() * polar_wingarea.get();
-				ESP_LOGI(FNAME,"Reference weight: %f ", refw);
-				float bal = (100.0*(liters+refw)/refw) - 100;
-				ESP_LOGI(FNAME,"Final new ballast: %f ", bal);
-				ballast.set( bal );
+				ESP_LOGI(FNAME,"New Ballast in liters/kg: %.1f ", liters);
+				ballast_kg.set( liters );
 			}
 			if (str[3] == 'm' ) {
 				ESP_LOGI(FNAME,"parseNMEA, BORGELT, MC modification");
@@ -362,14 +358,43 @@ void Protocols::parseNMEA( const char *astr ){
 				ESP_LOGI(FNAME,"New QNH: %.2f", qnh);
 				QNH.set( qnh );
 			}
+		}
+		else if( strncmp( str, "$g,", 3 ) == 0 ) {
+			ESP_LOGI(FNAME,"New XCNAV cmd %s", str );
 			if (str[3] == 's') {  // nonstandard CAI 302 extension for S2F mode switch, e.g. for XCNav remote stick
+				ESP_LOGI(FNAME,"New XCNAV Volume cmd");
 				int mode;
-				sscanf(str, "!g,s%d", &mode);
-				ESP_LOGI(FNAME,"New S2F mode: %d", mode );
-				cruise_mode.set( mode );
+				int cs;
+				sscanf(str, "$g,s%d*%02x", &mode, &cs);
+				int calc_cs=calcNMEACheckSum( str );
+				if( calc_cs != cs ){
+					ESP_LOGW(FNAME,"CS Error in %s; %d != %d", str, cs, calc_cs );
+				}
+				else{
+					ESP_LOGI(FNAME,"New S2F mode: %d", mode );
+					cruise_mode.set( mode );
+				}
+			}
+			if (str[3] == 'v') {  // nonstandard CAI 302 extension for volume Up/Down, e.g. for XCNav remote stick
+				int steps;
+				int cs;
+				ESP_LOGI(FNAME,"Volume message: %s", str );
+				sscanf(str, "$g,v%d*%02x", &steps, &cs);
+				int calc_cs=calcNMEACheckSum( str );
+				if( calc_cs != cs ){
+					ESP_LOGW(FNAME,"CS Error: in %s; %d != %d", str, cs, calc_cs );
+				}
+				else{
+					float v = audio_volume.get() + steps;
+					if( v<=100.0 && v >= 0.0 ){
+						audio_volume.set( v );
+						ESP_LOGI(FNAME,"Volume change: %d steps, new volume: %.0f", steps, v );
+					}else
+						ESP_LOGI(FNAME,"Volume change limit reached steps: %d volume: %.0f", steps, v );
+				}
 			}
 		}
-		else if( !strncmp( str, "$PFLAU,", 3 )) {
+		else if( !strncmp( str, "$PFLAU,", 6 )) {
 			Flarm::parsePFLAU( str );
 			if( Flarm::bincom  ) {
 				Flarm::bincom--;

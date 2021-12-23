@@ -21,7 +21,7 @@ double Flarm::gndCourse = 0;
 bool Flarm::gpsOK = false;
 char Flarm::ID[8] = "";
 int Flarm::bincom = 0;
-Ucglib_ILI9341_18x240x320_HWSPI* Flarm::ucg;
+AdaptUGC* Flarm::ucg;
 
 extern xSemaphoreHandle spiMutex;
 
@@ -227,14 +227,33 @@ void Flarm::parsePFLAX( SString &msg ) {
     if( !strncmp( msg.c_str(), "\n", 1 )  ){
     	start=1;
     }
-	if( !strncmp( (msg.c_str())+start, "$PFLAX,", 6 ) ){
+  // Note, if the Flarm switch to binary mode was accepted, Flarm will answer
+  // with $PFLAX,A*2E. In error case you will get as answer $PFLAX,A,<error>*
+  // and the Flarm stays in text mode.
+  const char* pflax = "$PFLAX,A*2E";
+  const unsigned short lenPflax = strlen(pflax);
+
+	if( strlen((msg.c_str()) + start) >= lenPflax &&
+	    !strncmp( (msg.c_str()) + start, pflax, lenPflax ) ){
 		Flarm::bincom = 5;
 		ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
 		timeout = 10;
 	}
-
 }
 
+void Flarm::drawDownloadInfo() {
+  // ESP_LOGI(FNAME,"---> Flarm::drawDownloadInfo is called"  );
+  xSemaphoreTake(spiMutex, portMAX_DELAY );
+  ucg->setColor( COLOR_WHITE );
+  ucg->setFont(ucg_font_fub20_hr);
+  ucg->setPrintPos(60, 140);
+  ucg->printf("Flarm IGC");
+  ucg->setPrintPos(60, 170);
+  ucg->printf("download");
+  ucg->setPrintPos(60, 200);
+  ucg->printf("is running");
+  xSemaphoreGive(spiMutex);
+}
 
 void Flarm::tick(){
 	if( ext_alt_timer )
@@ -323,7 +342,7 @@ void Flarm::drawAirplane( int x, int y, bool fromBehind, bool smallSize ){
 }
 
 void Flarm::initFlarmWarning(){
-	ucg->setPrintPos(15, 20 );
+	ucg->setPrintPos(15, 25 );
 	ucg->setFontPosCenter();
 	ucg->setColor( COLOR_WHITE );
 	ucg->setFont(ucg_font_fub20_hr);
@@ -377,10 +396,10 @@ void Flarm::drawFlarmWarning(){
 		Audio::alarm( false );
 
     if( AlarmLevel != alarmOld ) {
-    	ucg->setPrintPos(200, 20 );
+    	ucg->setPrintPos(200, 25 );
     	ucg->setFontPosCenter();
     	ucg->setColor( COLOR_WHITE );
-    	ucg->setFont(ucg_font_fub20_hr);
+    	ucg->setFont(ucg_font_fub20_hr, true);
 
     	ucg->printf( "%d ", AlarmLevel );
     	alarmOld = AlarmLevel;
@@ -389,7 +408,7 @@ void Flarm::drawFlarmWarning(){
 		ucg->setPrintPos(130, 140 );
 		ucg->setFontPosCenter();
 		ucg->setColor( COLOR_WHITE );
-		ucg->setFont(ucg_font_fub25_hr);
+		ucg->setFont(ucg_font_fub25_hr, true );
 		char d[16];
 		sprintf(d,"%d m   ", RelativeDistance );
 		ucg->printf( d );
@@ -399,10 +418,10 @@ void Flarm::drawFlarmWarning(){
     	ucg->setPrintPos(130, 220 );
     	ucg->setFontPosCenter();
     	ucg->setColor( COLOR_WHITE );
-    	ucg->setFont(ucg_font_fub25_hr);
+    	ucg->setFont(ucg_font_fub25_hr, true);
     	char v[16];
     	int vdiff = RelativeVertical;
-    	char *unit = "m";
+    	const char *unit = "m";
     	if( alt_unit.get() != 0 ){  // then its ft or FL -> feet
     		unit = "ft";
     		vdiff = (vdiff/10)*10;
@@ -424,7 +443,7 @@ void Flarm::drawFlarmWarning(){
     	ucg->setPrintPos(130, 80 );
     	ucg->setFontPosCenter();
     	ucg->setColor( COLOR_WHITE );
-    	ucg->setFont(ucg_font_fub25_hr);
+    	ucg->setFont(ucg_font_fub25_hr, true );
     	char b[16];
     	int quant=15;
     	if( RelativeBearing < 0 )

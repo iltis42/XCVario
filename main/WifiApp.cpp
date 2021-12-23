@@ -57,7 +57,8 @@ static sock_server_t FLARM     = { .txbuf = &wl_flarm_tx_q, .rxbuf = &wl_flarm_r
 static sock_server_t AUX       = { .txbuf = &wl_aux_tx_q,   .rxbuf = &wl_aux_rx_q,   .port=8882, .idle = 0, .pid = 0 };
 static sock_server_t XCVarioMS = { .txbuf = &client_tx_q,   .rxbuf = &client_rx_q,   .port=8884, .idle = 0, .pid = 0 };
 
-char WifiApp::buffer[513];
+#define WIFI_BUFFER_SIZE 513
+// char WifiApp::buffer[WIFI_BUFFER_SIZE];
 
 int  WifiApp::queueFull(){
 	if( !wl_vario_tx_q.isFull() || !client_tx_q.isFull() )
@@ -135,7 +136,8 @@ void WifiApp::socket_server(void *setup) {
 		if( clients.size() ) {
 			int size=400;
 			if( Flarm::bincom )
-				size=512;
+				size=WIFI_BUFFER_SIZE-1;
+			char *buffer = (char*)malloc( WIFI_BUFFER_SIZE );
 			int	len = Router::pullBlock( *(config->txbuf), buffer, size );
 			if( len ){
 				// ESP_LOGI(FNAME, "port %d to sent %d: bytes, %s", config->port, len, buffer );
@@ -197,6 +199,7 @@ void WifiApp::socket_server(void *setup) {
 						num_send = 0;
 				}
 			}
+			free( buffer );
 		}
 		Router::routeWLAN();
 		Router::routeClient();

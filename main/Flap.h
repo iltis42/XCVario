@@ -2,18 +2,18 @@
 
 #include "AnalogInput.h"
 
-class Ucglib_ILI9341_18x240x320_HWSPI;
+class AdaptUGC;
 class SetupMenu;
 class SetupMenuSelect;
 class SetupMenuValFloat;
 
-static int select_flap_sens_pin(SetupMenuSelect *p);
-static void showWk(SetupMenuSelect * p);
-static int flap_speed_act(SetupMenuValFloat *p);
-static int flap_lab_act(SetupMenuSelect *p);
-static int flap_pos_act(SetupMenuValFloat *p);
-static int flap_cal_act(SetupMenuSelect *p);
-static int flap_enable_act( SetupMenuSelect *p );
+int select_flap_sens_pin(SetupMenuSelect *p);
+void showWk(SetupMenuSelect * p);
+int flap_speed_act(SetupMenuValFloat *p);
+int flap_lab_act(SetupMenuSelect *p);
+int flap_pos_act(SetupMenuValFloat *p);
+int flap_cal_act(SetupMenuSelect *p);
+int flap_enable_act( SetupMenuSelect *p );
 
 /*
  * This class handels flap display and Flap sensor
@@ -22,10 +22,10 @@ static int flap_enable_act( SetupMenuSelect *p );
 
 class Flap {
 private:
-    Flap(Ucglib_ILI9341_18x240x320_HWSPI *theUcg);
+    Flap(AdaptUGC *theUcg);
 public:
     ~Flap();
-	static Flap* init(Ucglib_ILI9341_18x240x320_HWSPI *ucg);
+	static Flap* init(AdaptUGC *ucg);
 	void  progress();
 	// inline float getLever() { return lever; }
 	// inline void setLever( float l ) { lever = l; }
@@ -36,7 +36,7 @@ public:
     void setSymbolPosition(int16_t x, int16_t y);
 	void drawSmallBar( float wkf );
 	void drawBigBar( float wkf, float wksens );
-	void drawLever( int16_t xpos, int16_t ypos, int16_t oldypos, bool warn );
+	void drawLever( int16_t xpos, int16_t ypos, int16_t oldypos, bool warn, bool good );
 	void drawWingSymbol(int16_t wk, float wksens);
 	void redraw() { sensorOldY = -1000; dirty=true; };
 	// void redrawLever() { sensorOldY = -1000; };
@@ -62,12 +62,12 @@ private: // helper
 	void  initSpeeds();
     void  initLabels();
 	void  initSensPos();
-	void  configureADC();
+	void  configureADC( int port );
 	int   getOptimumInt( float wks );
 
 private:
     static Flap* _instance;
-	Ucglib_ILI9341_18x240x320_HWSPI* ucg = nullptr;
+	AdaptUGC* ucg = nullptr;
 	AnalogInput *sensorAdc = nullptr;
 	float lever = -1.;
 	int   senspos[MAX_NR_POS];
@@ -82,6 +82,7 @@ private:
 	int   tickopt = 0;
 	bool  warn_color = false;
 	float g_force = 1.;
+    float wkf_old = 0.;
 	int16_t barpos_x = 0;
 	int16_t barpos_y = 0;
 	int16_t symbolpos_x = 0;

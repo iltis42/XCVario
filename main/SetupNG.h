@@ -114,7 +114,7 @@ public:
 		// ESP_LOGI(FNAME,"SetupNG(%s)", akey );
 		if( strlen( akey ) > 15 )
 			ESP_LOGE(FNAME,"SetupNG(%s) key > 15 char !", akey );
-		entries.push_back( this );  // add into vector
+		instances->push_back( this );  // add into vector
 		_key = akey;
 		_default = adefault;
 		_reset = reset;

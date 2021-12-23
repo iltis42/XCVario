@@ -85,9 +85,6 @@ void flap_act() {
     }
 }
 
-// instantiate first
-std::vector<SetupCommon *> SetupCommon::entries;
-
 SetupNG<float>  		QNH( "QNH", 1013.25, true, SYNC_BIDIR );
 SetupNG<float> 			polar_wingload( "POLAR_WINGLOAD", 34.40, true, SYNC_FROM_MASTER, PERSISTENT, change_ballast );
 SetupNG<float> 			polar_speed1( "POLAR_SPEED1",   80, true, SYNC_FROM_MASTER, PERSISTENT, modifyPolar );

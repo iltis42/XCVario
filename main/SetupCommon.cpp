@@ -36,10 +36,22 @@ QueueHandle_t SetupCommon::commitSema = nullptr;
 esp_timer_handle_t SetupCommon::_timer = nullptr;
 bool SetupCommon::_dirty = false;
 char SetupCommon::_ID[14];
+std::vector<SetupCommon *> *SetupCommon::instances = 0;
 
+
+SetupCommon::SetupCommon() {
+	memset( _ID, 0, sizeof( _ID ));
+	if( !instances )  // instantiate first
+		instances = new std::vector<SetupCommon *>;
+}
+
+SetupCommon::~SetupCommon() {
+	if( !instances->size() )
+		delete instances;
+}
 
 // TimeOut callback
-static void timeout(QueueHandle_t arg)
+void SetupCommon::timeout(QueueHandle_t arg)
 {
     uint32_t stat = 0;
     xQueueSendFromISR(arg, &stat, NULL);
@@ -51,10 +63,10 @@ void SetupCommon::sendSetup( uint8_t sync, const char *key, char type, void *val
 }
 
 SetupCommon * SetupCommon::getMember( const char * key ){
-	for(int i = 0; i < entries.size(); i++ ) {
-		if( std::string( key ) == std::string( entries[i]->key() )){
-			// ESP_LOGI(FNAME,"found key %s", entries[i]->key() );
-			return entries[i];
+	for(int i = 0; i < instances->size(); i++ ) {
+		if( std::string( key ) == std::string( (*instances)[i]->key() )){
+			// ESP_LOGI(FNAME,"found key %s", (*instances)[i]->key() );
+			return (*instances)[i];
 		}
 	}
 	return 0;
@@ -62,8 +74,8 @@ SetupCommon * SetupCommon::getMember( const char * key ){
 
 // at time of connection establishment
 bool SetupCommon::syncEntry( int entry ){
-    if( entry < entries.size() ) {
-        return entries[entry]->sync();
+    if( entry < instances->size() ) {
+        return (*instances)[entry]->sync();
     }
     return false;
 }
@@ -71,21 +83,21 @@ bool SetupCommon::syncEntry( int entry ){
 bool SetupCommon::factoryReset(){
 	ESP_LOGI(FNAME,"\n\n******  FACTORY RESET ******");
 	bool retsum = true;
-	for(int i = 0; i < entries.size(); i++ ) {
-		ESP_LOGI(FNAME,"i=%d %s erase", i, entries[i]->key() );
-		if( entries[i]->mustReset() ){
-			bool ret = entries[i]->erase();
+	for(int i = 0; i < instances->size(); i++ ) {
+		ESP_LOGI(FNAME,"i=%d %s erase", i, (*instances)[i]->key() );
+		if( (*instances)[i]->mustReset() ){
+			bool ret = (*instances)[i]->erase();
 			if( ret != true ) {
-				ESP_LOGE(FNAME,"Error erasing %s", entries[i]->key() );
+				ESP_LOGE(FNAME,"Error erasing %s", (*instances)[i]->key() );
 				retsum = false;
 			}
-			ret = entries[i]->init();
+			ret = (*instances)[i]->init();
 			if( ret != true ) {
-				ESP_LOGE(FNAME,"Error init with default %s", entries[i]->key() );
+				ESP_LOGE(FNAME,"Error init with default %s", (*instances)[i]->key() );
 				retsum = false;
 			}
 			else
-				ESP_LOGI(FNAME,"%s successfully initialized with default", entries[i]->key() );
+				ESP_LOGI(FNAME,"%s successfully initialized with default", (*instances)[i]->key() );
 		}
 	}
 	if( retsum )
@@ -113,29 +125,29 @@ bool SetupCommon::initSetup( bool& present ) {
 	else
 		present = false;
 
-	for(int i = 0; i < entries.size(); i++ ) {
-			bool ret = entries[i]->init();
+	for(int i = 0; i < instances->size(); i++ ) {
+			bool ret = (*instances)[i]->init();
 			if( ret != true )
-				ESP_LOGE(FNAME,"Error init with default NVS: %s", entries[i]->key() );
+				ESP_LOGE(FNAME,"Error init with default NVS: %s", (*instances)[i]->key() );
 	}
 
 	if( factory_reset.get() ) {
 		ESP_LOGI(FNAME,"\n\n******  FACTORY RESET ******");
-		for(int i = 0; i < entries.size(); i++ ) {
-			ESP_LOGI(FNAME,"i=%d %s erase", i, entries[i]->key() );
-			if( entries[i]->mustReset() ){
-				bool ret = entries[i]->erase();
+		for(int i = 0; i < instances->size(); i++ ) {
+			ESP_LOGI(FNAME,"i=%d %s erase", i, (*instances)[i]->key() );
+			if( (*instances)[i]->mustReset() ){
+				bool ret = (*instances)[i]->erase();
 				if( ret != true ) {
-					ESP_LOGE(FNAME,"Error erasing %s", entries[i]->key() );
+					ESP_LOGE(FNAME,"Error erasing %s", (*instances)[i]->key() );
 					ret = false;
 				}
-				ret = entries[i]->init();
+				ret = (*instances)[i]->init();
 				if( ret != true ) {
-					ESP_LOGE(FNAME,"Error init with default %s", entries[i]->key() );
+					ESP_LOGE(FNAME,"Error init with default %s", (*instances)[i]->key() );
 					ret = false;
 				}
 				else
-					ESP_LOGI(FNAME,"%s successfully initialized with default", entries[i]->key() );
+					ESP_LOGI(FNAME,"%s successfully initialized with default", (*instances)[i]->key() );
 			}
 		}
 	}
@@ -213,4 +225,28 @@ bool SetupCommon::commitNow()
         return ret == ESP_OK;
     }
     return false;
+}
+
+int SetupCommon::numEntries() {
+	return instances->size();
+};
+
+bool SetupCommon::open(nvs_handle_t &h) {
+	esp_err_t err = nvs_open("SetupNG", NVS_READWRITE, &h);
+	if(err != ESP_OK){
+		ESP_LOGE(FNAME,"ESP32NVS open storage error %d", err );
+		h = 0;
+		return( false );
+	}
+	else {
+		// ESP_LOGI(FNAME,"ESP32NVS handle: %04X  OK", _nvs_handle );
+		return( true );
+	}
+}
+
+void SetupCommon::close(nvs_handle_t &h) {
+	if( h != 0) {
+		nvs_close(h);
+		h = 0;
+	}
 }

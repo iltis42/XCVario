@@ -169,7 +169,7 @@ size_t HardwareSerial::read(uint8_t *buffer, size_t size)
     return count;
 }
 
-// read serial interface until '\n' newline character
+// read serial interface until '\n' newline character via polling.
 size_t HardwareSerial::readLine(uint8_t *buffer, size_t size)
 {
 	bool newline=false;
@@ -185,7 +185,7 @@ size_t HardwareSerial::readLine(uint8_t *buffer, size_t size)
 			if( c == '\n' )
 				break;
 		}else{
-			delay(5);  // wait 5 mS until next data avail check
+			delay(5);  // wait 5 ms until next data avail check
 			timeout--; // increase timeout
 		}
 		if( timeout == 0 ){
@@ -194,6 +194,37 @@ size_t HardwareSerial::readLine(uint8_t *buffer, size_t size)
 		}
 	}
     return count;
+}
+
+// Read serial interface receiver queue until '\n' newline character or
+// queue is empty.
+size_t HardwareSerial::readLineFromQueue(uint8_t *buffer, size_t size)
+{
+  size_t count = 0;
+
+  while( count < size ) {
+    unsigned char c;
+
+    uint8_t res = uartReadCharFromQueue( _uart, &c );
+
+    if( res == 0 ) {
+        // no more characters available
+        return count;
+    }
+
+    *buffer = c;
+    buffer++;
+    count++;
+    if( c == '\n' )
+      break;
+  }
+
+  return count;
+}
+
+uint8_t HardwareSerial::readCharFromQueue( uint8_t* c )
+{
+  return uartReadCharFromQueue( _uart, c );
 }
 
 void HardwareSerial::flush(void)

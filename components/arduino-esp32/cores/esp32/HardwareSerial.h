@@ -74,6 +74,8 @@ public:
     {
     	return readLine((uint8_t*) buffer, size );
     }
+    size_t readLineFromQueue(uint8_t *buffer, size_t size);
+    uint8_t readCharFromQueue( uint8_t* c );
     void flush(void);
     void flush( bool txOnly);
     size_t write(uint8_t);
@@ -118,7 +120,7 @@ public:
     void disableInterrupt();
 
     // Event group handler to signal RX events to clients waiting for characters.
-    void setRxNotifier( EventGroupHandle_t* egh )
+    static void setRxNotifier( EventGroupHandle_t* egh )
     {
       uartRxEventHandler( egh );
     }

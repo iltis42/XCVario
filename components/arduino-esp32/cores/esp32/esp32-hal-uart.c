@@ -82,7 +82,7 @@ static void IRAM_ATTR _uart_isr(void *arg)
     // xHigherPriorityTaskWoken must be initialised to pdFALSE.
     xHigherPriorityTaskWoken = pdFALSE;
 
-    for(i=0;i<3;i++){
+    for(i=0; i<3; i++){
         uart = &_uart_bus_array[i];
         if(uart->intr_handle == NULL){
             continue;
@@ -94,7 +94,12 @@ static void IRAM_ATTR _uart_isr(void *arg)
             c = uart->dev->fifo.rw_byte;
             if(uart->queue != NULL)  {
                 xQueueSendFromISR(uart->queue, &c, &xHigherPriorityTaskWoken);
-                eventMask |= (1 << i);
+                // Set character flag
+                eventMask |= (1 << (i * 2));
+                if( c == '\n' ) {
+                    // Set NL flag
+                    eventMask |= (1 << ((i * 2) + 1));
+                }
             }
         }
     }
@@ -328,7 +333,7 @@ uint32_t uartAvailableForWrite(uart_t* uart)
 void uartRxFifoToQueue(uart_t* uart)
 {
 	uint8_t c;
-    UART_MUTEX_LOCK();
+  UART_MUTEX_LOCK();
 	//disable interrupts
 	uart->dev->int_ena.val = 0;
 	uart->dev->int_clr.val = 0xffffffff;
@@ -341,7 +346,7 @@ void uartRxFifoToQueue(uart_t* uart)
 	uart->dev->int_ena.frm_err = 1;
 	uart->dev->int_ena.rxfifo_tout = 1;
 	uart->dev->int_clr.val = 0xffffffff;
-    UART_MUTEX_UNLOCK();
+  UART_MUTEX_UNLOCK();
 }
 
 uint8_t uartRead(uart_t* uart)
@@ -357,6 +362,25 @@ uint8_t uartRead(uart_t* uart)
     if(xQueueReceive(uart->queue, &c, 0)) {
         return c;
     }
+    return 0;
+}
+
+/**
+ * Reads a character from the receiver queue. Use this function, if the uart
+ * receiver works in interrupt mode.
+ *
+ * Returns true, if a character could be read otherwise 0.
+ */
+uint8_t uartReadCharFromQueue( uart_t* uart, uint8_t* c )
+{
+    if(uart == NULL || uart->queue == NULL) {
+        return 0;
+    }
+
+    if(xQueueReceive(uart->queue, c, 0)) {
+        return 1;
+    }
+
     return 0;
 }
 

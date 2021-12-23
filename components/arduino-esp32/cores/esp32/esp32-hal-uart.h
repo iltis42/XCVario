@@ -63,6 +63,7 @@ uint32_t uartAvailable(uart_t* uart);
 uint32_t uartAvailableForWrite(uart_t* uart);
 uint8_t uartRead(uart_t* uart);
 uint8_t uartPeek(uart_t* uart);
+uint8_t uartReadCharFromQueue( uart_t* uart, uint8_t* c );
 
 void uartWrite(uart_t* uart, uint8_t c);
 void uartWriteBuf(uart_t* uart, const uint8_t * data, size_t len);

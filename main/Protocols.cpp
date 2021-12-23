@@ -358,21 +358,40 @@ void Protocols::parseNMEA( const char *astr ){
 				ESP_LOGI(FNAME,"New QNH: %.2f", qnh);
 				QNH.set( qnh );
 			}
+		}
+		else if( strncmp( str, "$g,", 3 ) == 0 ) {
+			ESP_LOGI(FNAME,"New XCNAV cmd %s", str );
 			if (str[3] == 's') {  // nonstandard CAI 302 extension for S2F mode switch, e.g. for XCNav remote stick
+				ESP_LOGI(FNAME,"New XCNAV Volume cmd");
 				int mode;
-				sscanf(str, "!g,s%d", &mode);
-				ESP_LOGI(FNAME,"New S2F mode: %d", mode );
-				cruise_mode.set( mode );
+				int cs;
+				sscanf(str, "$g,s%d*%02x", &mode, &cs);
+				int calc_cs=calcNMEACheckSum( str );
+				if( calc_cs != cs ){
+					ESP_LOGW(FNAME,"CS Error in %s; %d != %d", str, cs, calc_cs );
+				}
+				else{
+					ESP_LOGI(FNAME,"New S2F mode: %d", mode );
+					cruise_mode.set( mode );
+				}
 			}
 			if (str[3] == 'v') {  // nonstandard CAI 302 extension for volume Up/Down, e.g. for XCNav remote stick
 				int steps;
-				sscanf(str, "!g,v%d", &steps);
-				float v = audio_volume.get() + steps;
-				if( v<=100.0 && v >= 0.0 ){
-					audio_volume.set( v );
-					ESP_LOGI(FNAME,"Volume change: %d steps, new volume: %.0f", steps, v );
-				}else
-					ESP_LOGI(FNAME,"Volume change limit reached steps: %d volume: %.0f", steps, v );
+				int cs;
+				ESP_LOGI(FNAME,"Volume message: %s", str );
+				sscanf(str, "$g,v%d*%02x", &steps, &cs);
+				int calc_cs=calcNMEACheckSum( str );
+				if( calc_cs != cs ){
+					ESP_LOGW(FNAME,"CS Error: in %s; %d != %d", str, cs, calc_cs );
+				}
+				else{
+					float v = audio_volume.get() + steps;
+					if( v<=100.0 && v >= 0.0 ){
+						audio_volume.set( v );
+						ESP_LOGI(FNAME,"Volume change: %d steps, new volume: %.0f", steps, v );
+					}else
+						ESP_LOGI(FNAME,"Volume change limit reached steps: %d volume: %.0f", steps, v );
+				}
 			}
 		}
 		else if( !strncmp( str, "$PFLAU,", 6 )) {

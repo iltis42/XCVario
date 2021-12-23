@@ -92,6 +92,14 @@ typedef enum e_display_orientation { DISPLAY_NORMAL, DISPLAY_TOPDOWN } e_display
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
 void change_bal();
 
+typedef struct setup_flags{
+	bool _reset    :1;
+	bool _wait_ack :1;
+	bool _volatile :1;
+	uint8_t _sync  :2;
+} t_setup_flags;
+
+
 template<typename T>
 class SetupNG: public SetupCommon
 {
@@ -117,11 +125,11 @@ public:
 		instances->push_back( this );  // add into vector
 		_key = akey;
 		_default = adefault;
-		_reset = reset;
-		_sync = sync;
-		_volatile = vol;
+		flags._reset = reset;
+		flags._sync = sync;
+		flags._volatile = vol;
+		flags._wait_ack = false;
 		_action = action;
-		_wait_ack = false;
 	}
 
 	inline T* getPtr() {
@@ -149,7 +157,7 @@ public:
 		if ( dosync ) {
 			sync();
 		}
-		else if( (_sync == SYNC_BIDIR) && isClient() ){
+		else if( (flags._sync == SYNC_BIDIR) && isClient() ){
 			sendAck();
 		}
 
@@ -157,7 +165,7 @@ public:
 			(*_action)();
 		}
 
-		if( _volatile == VOLATILE ){
+		if( flags._volatile == VOLATILE ){
 			return true;
 		}
 		return commit( false );
@@ -167,20 +175,20 @@ public:
 		if( aval != _value ){
 			ESP_LOGI(FNAME,"sync to value client has acked");
 			_value = aval;
-			_wait_ack = false;
+			flags._wait_ack = false;
 		}
 	}
 
 	void sendAck(){
-		sendSetup( _sync, _key, typeName(), (void *)(&_value), sizeof( _value ), true );
+		sendSetup( flags._sync, _key, typeName(), (void *)(&_value), sizeof( _value ), true );
 	}
 
 	bool sync(){
-		if( SetupCommon::mustSync( _sync ) ){
+		if( SetupCommon::mustSync( flags._sync ) ){
 			// ESP_LOGI( FNAME,"Now sync %s", _key );
-			sendSetup( _sync, _key, typeName(), (void *)(&_value), sizeof( _value ) );
-			if( isMaster() && _sync == SYNC_BIDIR )
-				_wait_ack = true;
+			sendSetup( flags._sync, _key, typeName(), (void *)(&_value), sizeof( _value ) );
+			if( isMaster() && flags._sync == SYNC_BIDIR )
+				flags._wait_ack = true;
 			return true;
 		}
 		return false;
@@ -191,7 +199,7 @@ public:
 		if( dosync )
 			sync();
 
-		if( _volatile != PERSISTENT ){
+		if( flags._volatile != PERSISTENT ){
 			return true;
 		}
         nvs_handle_t h = 0;
@@ -220,7 +228,7 @@ public:
 	}
 
 	bool exists() {
-		if( _volatile != PERSISTENT ) {
+		if( flags._volatile != PERSISTENT ) {
             return true;
         }
         nvs_handle_t h = 0;
@@ -238,7 +246,7 @@ public:
 
 
 	virtual bool init() {
-		if( _volatile != PERSISTENT ){
+		if( flags._volatile != PERSISTENT ){
 			ESP_LOGI(FNAME,"NVS volatile set default");
 			set( _default );
 			return true;
@@ -282,7 +290,7 @@ public:
 
 
 	virtual bool erase() {
-		if( _volatile != PERSISTENT ){
+		if( flags._volatile != PERSISTENT ){
 			return true;
 		}
         nvs_handle_t h = 0;
@@ -300,20 +308,17 @@ public:
 	}
 
 	virtual bool mustReset() {
-		return _reset;
+		return flags._reset;
 	}
 
     inline T getDefault() const { return _default; }
-	inline uint8_t getSync() { return _sync; }
+	inline uint8_t getSync() { return flags._sync; }
 
 private:
 	T _value;
 	T _default;
 	const char * _key;
-	uint8_t _reset;
-	uint8_t _wait_ack;
-	uint8_t _sync;
-	uint8_t _volatile;
+	t_setup_flags flags;
 	void (* _action)();
 };
 

@@ -983,9 +983,9 @@ void IpsDisplay::drawTemperature( int x, int y, float t ) {
 		return;
 	ucg->setFont(ucg_font_fur14_hf, true);
 	char s[10];
-	if( t != DEVICE_DISCONNECTED_C ) {
+    if( t != DEVICE_DISCONNECTED_C ) {
 		float temp_unit = Units::TemperatureUnit( t );
-		sprintf(s, " %4.1f", std::roundf(temp_unit*10.f)/10.f );
+		sprintf(s, "   %4.1f", std::roundf(temp_unit*10.f)/10.f );
 	}
 	else {
 		strcpy(s, " - ");
@@ -1852,7 +1852,9 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// Temperature Value
 
 	if( (int)(temp*10) != tempalt && !(tick%12)) {
-		drawTemperature( ulmode?60:50, 25, temp );
+        ucg->setClipRange(ulmode?15:5,1,120,100); // avoid overwriting thermometer
+		drawTemperature( ulmode?65:55, 25, temp );
+        ucg->undoClipRange();
 		tempalt=(int)(temp*10);
 	}
 
@@ -2036,7 +2038,9 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	}
 	// Temperature ValueAirliner
 	if( (int)(temp*10) != tempalt && !(tick%11)) {
+        ucg->setClipRange(FIELD_START+10, 1,500,500); // avoid overwriting thermometer
 		drawTemperature( FIELD_START+65, DISPLAY_H-5, temp );
+        ucg->undoClipRange();
 		tempalt=(int)(temp*10);
 	}
 	// Battery Symbol

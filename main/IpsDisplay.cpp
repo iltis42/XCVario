@@ -1998,7 +1998,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	}
 
 	// Altitude Header
-	if( !(tick%24) ){
+/*	if( !(tick%24) ){
 		float qnh = Units::Qnh( QNH.get() );
 		// ESP_LOGI(FNAME,"standard_setting:%d",standard_setting );
 		if( standard_setting )
@@ -2016,10 +2016,10 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 			pref_qnh = qnh;
 		}
 	}
-
+*/
 	// Altitude
 	if(!(tick%8) ) {
-		drawAltitude( altitude, FIELD_START+80, YALT-6, false, false );
+		drawAltitude( altitude, FIELD_START+80, YALT-6, false, true );
 	}
 	// MC Value
 	if(  !(tick%8) ) {

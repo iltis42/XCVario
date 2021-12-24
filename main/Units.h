@@ -3,6 +3,7 @@
 
 #include "logdef.h"
 #include "Setup.h"
+#pragma once
 
 class Units {
 public:
@@ -75,12 +76,14 @@ public:
 		}
 	}
 
-	static const char* TemperatureUnitStr( int idx ){
+	static const char* TemperatureUnitStr( int idx = -1 ){
+		if( idx == -1 )
+			idx = temperature_unit.get();
 		if( idx == T_FAHRENHEIT ) // °F
-			return "\xb0""F";
+			return "°F";
 		if( idx == T_KELVIN ) // °F
-			return "\xb0""K";
-		return "\xb0""C"; // default °C
+			return "°K";
+		return "°C"; // default °C
 	}
 
 	static const char * AirspeedUnitStr( int u = -1 ){
@@ -195,7 +198,9 @@ public:
 		return "nan";
 	};
 
-	static const char * QnhUnit( int unit ){
+	static const char * QnhUnit( int unit = -1 ){
+		if( unit == -1 )
+			unit = qnh_unit.get();
 		if( unit == QNH_HPA )
 			return("hPa");
 		else if( unit == QNH_INHG )
@@ -254,6 +259,44 @@ public:
 		else
 			ESP_LOGE(FNAME,"Wrong unit for altitude %d", u );
 		return "nan";
+	};
+
+	static float value( float val, e_unit_type_t u ){
+		switch( u ){
+		case UNIT_NONE:
+			return val;
+		case UNIT_TEMPERATURE:
+			return TemperatureUnit( val );
+		case UNIT_ALT:
+			return Altitude( val );
+		case UNIT_SPEED:
+			return Airspeed( val );
+		case UNIT_VARIO:
+			return Vario( val );
+		case UNIT_QNH:
+			return Qnh( val );
+		default:
+			return val;
+		}
+	};
+
+	static const char * unit( e_unit_type_t u ){
+		switch( u ){
+		case UNIT_NONE:
+			return "";
+		case UNIT_TEMPERATURE:
+			return TemperatureUnitStr();
+		case UNIT_ALT:
+			return AltitudeUnit();
+		case UNIT_SPEED:
+			return AirspeedUnitStr();
+		case UNIT_VARIO:
+			return VarioUnit();
+		case UNIT_QNH:
+			return QnhUnit();
+		default:
+			return "";
+		}
 	};
 
 };

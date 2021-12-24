@@ -12,7 +12,6 @@
 #include "Polars.h"
 #include "sensor.h"
 #include "ESPAudio.h"
-
 #include <esp_log.h>
 
 SetupMenuValFloat * SetupMenuValFloat::qnh_menu = 0;
@@ -50,8 +49,12 @@ SetupMenuValFloat::~SetupMenuValFloat()
 }
 
 const char *SetupMenuValFloat::value(){
-	_value = _nvs->get();
-	sprintf(_val_str,"%0.*f %s", bits._precision, _value, _unit );
+	float uval = Units::value( _value, _nvs->unitType() );
+	// ESP_LOGI(FNAME,"value() ulen: %d val: %f, utype: %d unitval: %f", strlen( _unit ), _nvs->get(), _nvs->unitType(), uval  );
+	const char * final_unit = _unit;
+	if( strlen( _unit ) == 0 )
+		final_unit = Units::unit( _nvs->unitType() );
+	sprintf(_val_str,"%0.*f %s   ", bits._precision, uval, final_unit );
 	return _val_str;
 }
 
@@ -60,7 +63,7 @@ void SetupMenuValFloat::setPrecision( int prec ){
 }
 
 void SetupMenuValFloat::showQnhMenu(){
-	ESP_LOGI(FNAME,"SetupMenuValFloat::showQnhMenu()");
+	ESP_LOGI(FNAME,"showQnhMenu()");
 	if( qnh_menu ) {
 		ESP_LOGI(FNAME,"qnh_menu = true");
 		inSetup = true;
@@ -75,7 +78,7 @@ void SetupMenuValFloat::showQnhMenu(){
 void SetupMenuValFloat::display( int mode ){
 	if( (selected != this) || !inSetup )
 		return;
-	ESP_LOGI(FNAME,"SetupMenuValFloat display() pressed=%d instance=%x mode=%d", pressed, (int)this, mode );
+	ESP_LOGI(FNAME,"display() pressed=%d instance=%x mode=%d", pressed, (int)this, mode );
 	int y= 75;
 	if( mode == 0 ){ // normal mode
 		uprintf( 5,25, selected->_title );
@@ -96,20 +99,23 @@ void SetupMenuValFloat::display( int mode ){
 
 void SetupMenuValFloat::displayVal()
 {
+	ESP_LOGI(FNAME,"displayVal %s", value() );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setPrintPos( 1, 70 );
 	ucg->setFont(ucg_font_fub25_hf, true);
-	char val[20];
-	sprintf(val, "%0.*f", bits._precision, _value );
-	ucg->print(val);
-	if( _unit ) {
-		ucg->setFont(ucg_font_fur25_hf, true);   // use different font for unit as of ° special char
-		ucg->setPrintPos( 1+ ucg->getStrWidth(val), 70 );
-		ucg->printf(" %s   ", _unit);
-	}
-
+	ucg->print( value() );
 	xSemaphoreGive(spiMutex );
 	ucg->setFont(ucg_font_ncenR14_hr);
+}
+
+float SetupMenuValFloat::step( float instep ){
+	float step = 1.0;
+	if( _nvs->unitType() == UNIT_ALT && alt_unit.get() == ALT_UNIT_FT )
+		step = 5.0;
+	else
+		step = instep;
+	// ESP_LOGI(FNAME,"instep: %f, ut:%d ostep: %f", instep, _nvs->unitType(), step );
+	return step;
 }
 
 void SetupMenuValFloat::down( int count ){
@@ -117,7 +123,8 @@ void SetupMenuValFloat::down( int count ){
 		return;
 	// ESP_LOGI(FNAME,"val down %d times ", count );
 	while( (_value > _min) && count ) {
-		_value -= _step;
+
+		_value -= step( _step );
 		count --;
 	}
 	if( _value < _min )
@@ -132,7 +139,7 @@ void SetupMenuValFloat::up( int count ){
 		return;
 	// ESP_LOGI(FNAME,"val up %d times ", count );
 	while( (_value < _max) && count ) {
-		_value += _step;
+		_value += step( _step );
 		count--;
 	}
 	if( _value > _max )

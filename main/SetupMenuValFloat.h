@@ -35,6 +35,7 @@ public:
     static SetupMenuValFloat * qnh_menu;
 
 private:
+    float step( float instep );
     static char _val_str[20];
 	float _min, _max, _step;
 	bitfield bits;

@@ -10,10 +10,6 @@
 #include "MenuEntry.h"
 #include <string>
 
-extern const char* vunit;
-extern const char *sunit;
-extern const char *aunit;
-
 class IpsDisplay;
 class ESPRotary;
 class PressureSensor;

@@ -10,8 +10,9 @@
 #include "MenuEntry.h"
 #include <string>
 
-extern std::string vunit;
-extern std::string sunit;
+extern const char* vunit;
+extern const char *sunit;
+extern const char *aunit;
 
 class IpsDisplay;
 class ESPRotary;

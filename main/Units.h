@@ -233,15 +233,18 @@ public:
 			return( f/3.28084 );
 	};
 
-	static const char * AltitudeUnit(){
-		if( alt_unit.get() == 0 )  //m
+	static const char * AltitudeUnit( int unit = -1 ){
+		int u=unit;
+		if( u == -1 )
+			u=alt_unit.get();
+		if( u == 0 )  //m
 			return( "m" );
-		else if( alt_unit.get() == 1 ) //feet
+		else if( u == 1 ) //feet
 			return( "ft" );
-		else if( alt_unit.get() == 2 ) //FL
+		else if( u == 2 ) //FL
 			return( "FL" );
 		else
-			ESP_LOGE(FNAME,"Wrong unit for altitude");
+			ESP_LOGE(FNAME,"Wrong unit for altitude %d", u );
 		return "nan";
 	};
 

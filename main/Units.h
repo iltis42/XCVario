@@ -150,6 +150,14 @@ public:
 			return( knots*1.94384 );
 	};
 
+	static float ms2mph( float ms ){   // if we got it in knots
+				return( ms*2.23694 );
+	};
+
+	static float ms2fpm( float ms ){   // if we got it in knots
+					return( ms*196.85 );
+	};
+
 	static float Vario2ms( float var ){
 		if( vario_unit.get() == VARIO_UNIT_MS )
 			return( var );

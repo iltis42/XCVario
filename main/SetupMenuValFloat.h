@@ -30,6 +30,7 @@ public:
 	void down( int count );
 	void press();
 	void longPress();
+	void setStep( float val ) { _step = val; };
     float _value;
     static SetupMenuValFloat * qnh_menu;
 

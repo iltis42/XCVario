@@ -153,21 +153,22 @@ int qnh_adj( SetupMenuValFloat * p )
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->setFont(ucg_font_fub25_hr, true);
 	p->ucg->setPrintPos(1,110);
-	String u;
 	float altp;
+	const char *u = "m";
 	if( alt_unit.get() == 0 ){ // m
-		u = "m";
 		altp = alt;
 	}
 	else {
 		u = "ft";
 		altp = Units::meters2feet( alt );
 	}
+
 	if( qnh_unit.get() == QNH_INHG ){
 		p->ucg->setPrintPos(1,150);
+		p->ucg->printf("%5d %s  ", (int)(altp+0.5), u );
 	}else
 		p->ucg->setPrintPos(1,120);
-	p->ucg->printf("%5d %s  ", (int)(altp+0.5), u.c_str() );
+	p->ucg->printf("%5d %s  ", (int)(altp+0.5), u );
 
 	if( qnh_unit.get() == QNH_INHG ){
 		p->ucg->setPrintPos(1,110);
@@ -264,6 +265,24 @@ int bug_adj( SetupMenuValFloat * p ){
 
 int mc_adj( SetupMenuValFloat * p )
 {
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
+	p->ucg->setFont(ucg_font_fub25_hr, true);
+	p->ucg->setPrintPos(1,110);
+	if( vario_unit.get() == VARIO_UNIT_KNOTS ){
+		p->setStep( Units::knots2ms( 0.1 ) );
+		float mc = Units::ms2knots( p->_value );
+		p->ucg->printf("%.2f %s  ", mc, vunit );
+	}else if( vario_unit.get() == VARIO_UNIT_FPM ){
+		p->setStep( Units::knots2ms( 0.1 ) );
+		float mc = Units::ms2fpm( p->_value );
+		p->ucg->printf("%.2f %s  ", mc, vunit );
+	}
+	p->ucg->setFont(ucg_font_ncenR14_hr);
+	xSemaphoreGive(spiMutex );
+	return 0;
+
+
+
 	return 0;
 }
 
@@ -539,7 +558,7 @@ void SetupMenu::setup( )
 	SetupMenu * root = new SetupMenu( "Setup" );
 	MenuEntry* mm = root->addEntry( root );
 
-	SetupMenuValFloat * mc = new SetupMenuValFloat( "MC", vunit,	0.0, 9.9, 0.1, mc_adj, true, &MC );
+	SetupMenuValFloat * mc = new SetupMenuValFloat( "MC", "m/s",	0.0, 9.9, 0.1, mc_adj, true, &MC );
 	mc->setHelp(PROGMEM"Default Mac Cready value for optimum cruise speed, or average climb rate to be provided in same units as variometer setting");
 	mc->setPrecision(1);
 	mm->addEntry( mc );

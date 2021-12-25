@@ -10,9 +10,6 @@
 #include "MenuEntry.h"
 #include <string>
 
-extern std::string vunit;
-extern std::string sunit;
-
 class IpsDisplay;
 class ESPRotary;
 class PressureSensor;

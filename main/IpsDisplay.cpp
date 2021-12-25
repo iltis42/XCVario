@@ -372,11 +372,12 @@ void IpsDisplay::initDisplay() {
 	}
 	if( display_style.get() == DISPLAY_AIRLINER ) {
 		bootDisplay();
+		ucg->setFont(ucg_font_fub11_tr);
 		ucg->setFontPosBottom();
-		ucg->setPrintPos(20,YVAR-VARFONTH+7);
+		ucg->setPrintPos(DISPLAY_LEFT+5,YVAR-VARFONTH+7);
 		ucg->setColor( COLOR_HEADER );
 		ucg->print(Units::VarioUnit());
-		ucg->setPrintPos(FIELD_START,YVAR-VARFONTH);    // 65 -52 = 13
+		ucg->setPrintPos(FIELD_START,YVAR-VARFONTH+7);
 
 		ucg->print("AV Vario");
 		ucg->setColor(0, COLOR_WHITE );
@@ -412,7 +413,7 @@ void IpsDisplay::initDisplay() {
 		ucg->drawTriangle( FIELD_START+ASLEN-1, dmid, FIELD_START+ASLEN+5, dmid-6, FIELD_START+ASLEN+5, dmid+6);
 
 		// Thermometer
-		drawThermometer(  FIELD_START+10, DISPLAY_H-6 );
+		drawThermometer(  FIELD_START+5, DISPLAY_H-6 );
 
 		if ( FLAP ) {
 			FLAP->setBarPosition( WKSYMST+2, YS2F-fh );
@@ -982,9 +983,9 @@ void IpsDisplay::drawTemperature( int x, int y, float t ) {
 		return;
 	ucg->setFont(ucg_font_fur14_hf, true);
 	char s[10];
-	if( t != DEVICE_DISCONNECTED_C ) {
+    if( t != DEVICE_DISCONNECTED_C ) {
 		float temp_unit = Units::TemperatureUnit( t );
-		sprintf(s, " %4.1f", std::roundf(temp_unit*10.f)/10.f );
+		sprintf(s, "   %4.1f", std::roundf(temp_unit*10.f)/10.f );
 	}
 	else {
 		strcpy(s, " - ");
@@ -1851,7 +1852,9 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// Temperature Value
 
 	if( (int)(temp*10) != tempalt && !(tick%12)) {
-		drawTemperature( ulmode?60:50, 25, temp );
+        ucg->setClipRange(ulmode?15:5,1,120,100); // avoid overwriting thermometer
+		drawTemperature( ulmode?65:55, 25, temp );
+        ucg->undoClipRange();
 		tempalt=(int)(temp*10);
 	}
 
@@ -1997,7 +2000,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	}
 
 	// Altitude Header
-	if( !(tick%24) ){
+/*	if( !(tick%24) ){
 		float qnh = Units::Qnh( QNH.get() );
 		// ESP_LOGI(FNAME,"standard_setting:%d",standard_setting );
 		if( standard_setting )
@@ -2015,10 +2018,10 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 			pref_qnh = qnh;
 		}
 	}
-
+*/
 	// Altitude
 	if(!(tick%8) ) {
-		drawAltitude( altitude, FIELD_START+80, YALT-6, false, false );
+		drawAltitude( altitude, FIELD_START+80, YALT-6, false, true );
 	}
 	// MC Value
 	if(  !(tick%8) ) {
@@ -2035,7 +2038,9 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	}
 	// Temperature ValueAirliner
 	if( (int)(temp*10) != tempalt && !(tick%11)) {
+        ucg->setClipRange(FIELD_START+10, 1,500,500); // avoid overwriting thermometer
 		drawTemperature( FIELD_START+65, DISPLAY_H-5, temp );
+        ucg->undoClipRange();
 		tempalt=(int)(temp*10);
 	}
 	// Battery Symbol

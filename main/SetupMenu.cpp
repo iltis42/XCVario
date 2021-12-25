@@ -39,34 +39,15 @@
 #include <cstring>
 #include <string>
 
-static char rentry[25];
+
 SetupMenuSelect * audio_range_sm = 0;
 SetupMenuSelect * mpu = 0;
 
 // Menu for flap setup
 
-std::string vunit;
-std::string sunit;
+float elev_step = 1;
 
 bool SetupMenu::focus = false;
-
-void update_vunit_str( int unit ){
-	vunit = Units::VarioUnitLong( unit );
-}
-
-int update_vunit(SetupMenuSelect * p) {
-	update_vunit_str( p->getSelect() );
-	return 0;
-}
-
-void update_sunit_str( int unit ){
-	sunit = Units::AirspeedUnitStr( unit );
-}
-
-int update_sunit(SetupMenuSelect * p) {
-	update_sunit_str( p->getSelect() );
-	return 0;
-}
 
 int gload_reset( SetupMenuSelect * p ){
 	gload_pos_max.set(0);
@@ -84,11 +65,35 @@ int update_s2f_speed(SetupMenuValFloat * p)
 	return 0;
 }
 
-int update_rentry(SetupMenuValFloat * p)
+
+int update_rentryf(SetupMenuValFloat * p)
 {
-	char rentry[25];
-	sprintf( rentry, "Variable (%d m/s)", (int)(range.get()) );
-	audio_range_sm->updateEntry( rentry, 1 );
+	ESP_LOGI(FNAME,"update_rentry() entries: %d, vu:%s ", audio_range_sm->numEntries(), Units::VarioUnit() );
+	static char rentry1[20];
+	static char rentry2[20];
+	static char rentry3[25];
+	sprintf( rentry1, "Fix (5  %s)", Units::VarioUnit() );
+	bool entry_in = audio_range_sm->numEntries() == 3 ? true : false;
+	if( !entry_in )
+		audio_range_sm->addEntry( rentry1  );
+	else
+		audio_range_sm->updateEntry( rentry1, 1 );
+	sprintf( rentry2, "Fix (10 %s)", Units::VarioUnit() );
+	if( !entry_in )
+		audio_range_sm->addEntry( rentry2 );
+	else
+		audio_range_sm->updateEntry( rentry2, 2 );
+	sprintf( rentry3, "Variable (%d %s)", (int)(range.get()), Units::VarioUnit() );
+	if( !entry_in )
+		audio_range_sm->addEntry( rentry3 );
+	else
+		audio_range_sm->updateEntry( rentry3, 3 );
+	entry_in = true;
+	return 0;
+}
+
+int update_rentrys(SetupMenuSelect * p){
+	update_rentryf(0);
 	return 0;
 }
 
@@ -134,57 +139,26 @@ int qnh_adj( SetupMenuValFloat * p )
 		}
 		alt = alt/6;
 	}
-
 	ESP_LOGI(FNAME,"Setup BA alt=%f QNH=%f hPa", alt, p->_value  );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->setFont(ucg_font_fub25_hr, true);
-	p->ucg->setPrintPos(1,110);
-	String u;
 	float altp;
+	const char *u = "m";
 	if( alt_unit.get() == 0 ){ // m
-		u = "m";
 		altp = alt;
 	}
 	else {
 		u = "ft";
 		altp = Units::meters2feet( alt );
 	}
-	if( qnh_unit.get() == QNH_INHG ){
-		p->ucg->setPrintPos(1,150);
-	}else
-		p->ucg->setPrintPos(1,120);
-	p->ucg->printf("%5d %s  ", (int)(altp+0.5), u.c_str() );
-
-	if( qnh_unit.get() == QNH_INHG ){
-		p->ucg->setPrintPos(40,110);
-		p->ucg->printf("%.2f inHg  ", Units::hPa2inHg( (p->_value) ));
-	}
-	p->ucg->setFont(ucg_font_ncenR14_hr);
-	xSemaphoreGive(spiMutex );
-	return 0;
-}
-
-int elev_adj( SetupMenuValFloat * p )
-{
-	// ESP_LOGI(FNAME,"elev_adj");
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	p->ucg->setFont(ucg_font_fub25_hr, true);
 	p->ucg->setPrintPos(1,120);
-	String u;
-	float elevp = elevation.get();
-	if( alt_unit.get() == 0 ){ // m
-		u = "m";
-		p->ucg->printf("%4d %s ", (int)(elevp+0.5), u.c_str() );
-	}
-	else {
-		u = "ft";
-		elevp = Units::meters2feet(elevp);
-		p->ucg->printf("%4d %s ", ((int)((elevp+2.5)/5))*5, u.c_str() );
-	}
+	p->ucg->printf("%5d %s  ", (int)(altp+0.5), u );
+
 	p->ucg->setFont(ucg_font_ncenR14_hr);
 	xSemaphoreGive(spiMutex );
 	return 0;
 }
+
 
 // Battery Voltage Meter Calibration
 int factv_adj( SetupMenuValFloat * p )
@@ -255,10 +229,6 @@ int bug_adj( SetupMenuValFloat * p ){
 	return 0;
 }
 
-int mc_adj( SetupMenuValFloat * p )
-{
-	return 0;
-}
 
 int vol_adj( SetupMenuValFloat * p ){
 	// Audio::setVolume( (int)(*(p->_value)) );
@@ -414,7 +384,6 @@ void SetupMenu::down(int count){
 	pressed = true;
 }
 
-
 void SetupMenu::up(int count){
 	if( selected == this && !inSetup ) {
 		// ESP_LOGI(FNAME,"root: up");
@@ -431,7 +400,6 @@ void SetupMenu::up(int count){
 			audio_volume.set( (float)vol );
 		}
 	}
-
 	if( (selected != this) || !inSetup )
 		return;
 	// ESP_LOGI(FNAME,"SetupMenu::up %d %d", highlight, _childs.size() );
@@ -525,13 +493,10 @@ void SetupMenu::setup( )
 {
 	ESP_LOGI(FNAME,"SetupMenu setup()");
 
-	update_vunit_str( vario_unit.get() );
-	update_sunit_str( ias_unit.get() );
-
 	SetupMenu * root = new SetupMenu( "Setup" );
 	MenuEntry* mm = root->addEntry( root );
 
-	SetupMenuValFloat * mc = new SetupMenuValFloat( "MC", vunit.c_str(),	0.0, 9.9, 0.1, mc_adj, true, &MC );
+	SetupMenuValFloat * mc = new SetupMenuValFloat( "MC", "",	0.0, 9.9, 0.1, 0, true, &MC );
 	mc->setHelp(PROGMEM"Default Mac Cready value for optimum cruise speed, or average climb rate to be provided in same units as variometer setting");
 	mc->setPrecision(1);
 	mm->addEntry( mc );
@@ -540,7 +505,7 @@ void SetupMenu::setup( )
 	vol->setHelp(PROGMEM"Set audio volume");
 	mm->addEntry( vol );
 
-	SetupMenuValFloat::qnh_menu = new SetupMenuValFloat( "QNH Setup", "hPa", 900, 1100.0, 0.250, qnh_adj, true, &QNH );
+	SetupMenuValFloat::qnh_menu = new SetupMenuValFloat( "QNH Setup", "", 900, 1100.0, 0.250, qnh_adj, true, &QNH );
 	SetupMenuValFloat::qnh_menu->setHelp(PROGMEM"Setup QNH pressure value from next ATC. On ground you may adjust to airfield altitude above MSL.", 180 );
 	mm->addEntry( SetupMenuValFloat::qnh_menu );
 
@@ -553,13 +518,7 @@ void SetupMenu::setup( )
 	bgs->setHelp(PROGMEM"Percent of bugs contamination to indicate degradation of gliding performance");
 	mm->addEntry( bgs );
 
-	String elev_unit = "m";
-	float step = 1;
-	if( alt_unit.get() == 1 ){ // ft
-		step = 5.0/Units::meters2feet(1);
-	}
-
-	SetupMenuValFloat * afe = new SetupMenuValFloat( "Airfield Elevation", "m", -1, 3000, step, elev_adj, true, &elevation );
+	SetupMenuValFloat * afe = new SetupMenuValFloat( "Airfield Elevation", "", -1, 3000, 1, 0, true, &elevation );
 	afe->setHelp(PROGMEM"Set airfield elevation in meters for QNH auto adjust on ground according to this setting");
 	mm->addEntry( afe );
 
@@ -581,7 +540,7 @@ void SetupMenu::setup( )
 		// Vario
 		SetupMenu * va = new SetupMenu( "Vario and S2F" );
 		MenuEntry* vae = mm->addEntry( va );
-		SetupMenuValFloat * vga = new SetupMenuValFloat( 	"Range", vunit.c_str(),	1.0, 30.0, 1, update_rentry, true, &range );
+		SetupMenuValFloat * vga = new SetupMenuValFloat( "Range", "",	1.0, 30.0, 1, update_rentryf, true, &range );
 		vga->setHelp(PROGMEM"Upper and lower value for Vario graphic display region");
 		vga->setPrecision( 0 );
 		vae->addEntry( vga );
@@ -633,7 +592,7 @@ void SetupMenu::setup( )
 		meanclimb->setHelp(PROGMEM"Mean Climb or MC recommendation by green/red rhombus displayed in vario scale adjustment");
 		MenuEntry* meanclimbm = vae->addEntry( meanclimb );
 
-		SetupMenuValFloat * vccm = new SetupMenuValFloat( "Minimum climb", "m/s",	0.0, 2.0, 0.1, 0, false, &core_climb_min );
+		SetupMenuValFloat * vccm = new SetupMenuValFloat( "Minimum climb", "",	0.0, 2.0, 0.1, 0, false, &core_climb_min );
 		vccm->setHelp(PROGMEM"Minimum climb rate that counts for arithmetic mean climb value");
 		meanclimbm->addEntry( vccm );
 
@@ -667,11 +626,11 @@ void SetupMenu::setup( )
 		s2fmod->addEntry( "External");
 		s2fse->addEntry( s2fmod );
 
-		SetupMenuValFloat * autospeed = new SetupMenuValFloat( "S2F AutoSpeed", sunit.c_str(), 20.0, 250.0, 1.0, update_s2f_speed, false, &s2f_speed );
+		SetupMenuValFloat * autospeed = new SetupMenuValFloat( "S2F AutoSpeed", "", 20.0, 250.0, 1.0, update_s2f_speed, false, &s2f_speed );
 		s2fse->addEntry( autospeed );
 		autospeed->setHelp(PROGMEM"Transition speed when in AutoSpeed mode for audio to change from Vario to S2F mode");
 
-		SetupMenuValFloat * s2fhy = new SetupMenuValFloat( "Hysteresis", sunit.c_str(),	-20, 20, 1, 0, false, &s2f_hysteresis );
+		SetupMenuValFloat * s2fhy = new SetupMenuValFloat( "Hysteresis", "",	-20, 20, 1, 0, false, &s2f_hysteresis );
 		s2fhy->setHelp(PROGMEM"Hysteresis for auto S2F transition at autospeed +- this value");
 		s2fse->addEntry( s2fhy );
 
@@ -757,10 +716,7 @@ void SetupMenu::setup( )
 
 		SetupMenuSelect * ar = new SetupMenuSelect( "Range", false, 0 , true, &audio_range  );
 		audio_range_sm = ar;
-		sprintf( rentry, "Variable (=%d m/s)", (int)(range.get()) );
-		ar->addEntry( "Fix 5 m/s");
-		ar->addEntry( "Fix 10 m/s");
-		ar->addEntry( rentry );
+		update_rentrys(0);
 		ar->setHelp(PROGMEM"Select either fixed or variable Audio range according to current Vario setting");
 		audio->addEntry( ar );
 
@@ -768,19 +724,19 @@ void SetupMenu::setup( )
 		MenuEntry* dbe = audio->addEntry( db );
 		dbe->setHelp(PROGMEM"Audio dead band limits within Audio remains silent in metric scale. 0,1 m/s equals roughly 20 ft/min or 0.2 knots");
 
-		SetupMenuValFloat * dbminlv = new SetupMenuValFloat( "Lower Vario", "m/s", -5.0, 0, 0.1, 0 , false, &deadband_neg  );
+		SetupMenuValFloat * dbminlv = new SetupMenuValFloat( "Lower Vario", "", -5.0, 0, 0.1, 0 , false, &deadband_neg );
 		dbminlv->setHelp(PROGMEM"Lower deadband limit (sink) for Audio mute function when in Vario mode");
 		dbe->addEntry( dbminlv );
 
-		SetupMenuValFloat * dbmaxlv = new SetupMenuValFloat( "Upper Vario", "m/s", 0, 5.0, 0.1, 0 , false, &deadband );
+		SetupMenuValFloat * dbmaxlv = new SetupMenuValFloat( "Upper Vario", "", 0, 5.0, 0.1, 0 , false, &deadband );
 		dbmaxlv->setHelp(PROGMEM"Upper deadband limit (climb) for Audio mute function when in Vario mode");
 		dbe->addEntry( dbmaxlv );
 
-		SetupMenuValFloat * dbmaxls2fn = new SetupMenuValFloat(	"Lower S2F", "km/h", -25.0, 0, 1, 0 , false, &s2f_deadband_neg );
+		SetupMenuValFloat * dbmaxls2fn = new SetupMenuValFloat(	"Lower S2F", "", -25.0, 0, 1, 0 , false, &s2f_deadband_neg );
 		dbmaxls2fn->setHelp(PROGMEM"Negative deadband limit in speed (too slow) deviation when in S2F mode");
 		dbe->addEntry( dbmaxls2fn );
 
-		SetupMenuValFloat * dbmaxls2f = new SetupMenuValFloat( "Upper S2F", "km/h", 0, 25.0, 1, 0 , false, &s2f_deadband );
+		SetupMenuValFloat * dbmaxls2f = new SetupMenuValFloat( "Upper S2F", "", 0, 25.0, 1, 0 , false, &s2f_deadband );
 		dbmaxls2f->setHelp(PROGMEM"Positive deadband limit in speed (too high) deviation when in S2F mode");
 		dbe->addEntry( dbmaxls2f );
 
@@ -879,18 +835,18 @@ void SetupMenu::setup( )
 		SetupMenu * un = new SetupMenu( "Units" );
 		opt->addEntry( un );
 		un->setHelp( PROGMEM "Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units", 200);
-		SetupMenuSelect * alu = new SetupMenuSelect( "Altimeter", false,  0, true, &alt_unit );
+		SetupMenuSelect * alu = new SetupMenuSelect( "Altimeter", false, 0, true, &alt_unit );
 		alu->addEntry( "Meter (m)");
 		alu->addEntry( "Foot  (ft)");
 		alu->addEntry( "FL    (FL)");
 		un->addEntry( alu );
 
-		SetupMenuSelect * iau = new SetupMenuSelect( "Airspeed", false , update_sunit, true, &ias_unit );
+		SetupMenuSelect * iau = new SetupMenuSelect( "Airspeed", false , 0, true, &ias_unit );
 		iau->addEntry( "Kilom. (Km/h)");
 		iau->addEntry( "Miles  (mph)");
 		iau->addEntry( "Knots  (kt)");
 		un->addEntry( iau );
-		SetupMenuSelect * vau = new SetupMenuSelect( "Vario", false , update_vunit, true, &vario_unit );
+		SetupMenuSelect * vau = new SetupMenuSelect( "Vario", false , update_rentrys, true, &vario_unit );
 		vau->addEntry( "Meters/sec (m/s)");
 		vau->addEntry( "100ft/min (cft/min)");
 		vau->addEntry( "Knots     (knots)");
@@ -1218,7 +1174,7 @@ void SetupMenu::setup( )
 		upd->addEntry( "Start");
 
 		SetupMenuSelect * fa = new SetupMenuSelect( "Factory Reset", true, 0, false, &factory_reset );
-		fa->setHelp(PROGMEM "Option to reset all settings to factory defaults, means metric system, 5m/s vario range and more");
+		fa->setHelp(PROGMEM "Option to reset all settings to factory defaults, means metric system, 5 m/s vario range and more");
 		fa->addEntry( "Cancel");
 		fa->addEntry( "ResetAll");
 		sye->addEntry( fa );
@@ -1433,11 +1389,11 @@ void SetupMenu::setup( )
 		stawaen->addEntry( "Disable");
 		stawaen->addEntry( "Enable");
 
-		SetupMenuValFloat * staspe = new SetupMenuValFloat( "Stall Speed", sunit.c_str(), 20, 200, 1, 0, true, &stall_speed  );
+		SetupMenuValFloat * staspe = new SetupMenuValFloat( "Stall Speed", "", 20, 200, 1, 0, true, &stall_speed  );
 		staspe->setHelp(PROGMEM"Configure stalling speed for corresponding airplane type and reboot");
 		stallwa->addEntry( staspe );
 
-		SetupMenuValFloat * vmax = new SetupMenuValFloat( "Maximum Speed", sunit.c_str(), 70, 450, 1, 0, false, &v_max  );
+		SetupMenuValFloat * vmax = new SetupMenuValFloat( "Maximum Speed", "", 70, 450, 1, 0, false, &v_max  );
 		vmax->setHelp(PROGMEM"Configure maximum speed for corresponding airplane type");
 		aia->addEntry( vmax );
 

@@ -1369,8 +1369,6 @@ void sensor(void *args){
 			ESP_LOGI(FNAME,"Auto QNH=%4.2f\n", qnh_best);
 			if( qnh_unit.get() == QNH_HPA )
 				QNH.set( qnh_best );
-			else if( qnh_unit.get() == QNH_INHG )
-				QNH.set( Units::hPa2inHg( qnh_best ) );
 		}
 		display->clear();
 		SetupMenuValFloat::showQnhMenu();

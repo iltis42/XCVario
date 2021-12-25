@@ -30,10 +30,12 @@ public:
 	void down( int count );
 	void press();
 	void longPress();
+	void setStep( float val ) { _step = val; };
     float _value;
     static SetupMenuValFloat * qnh_menu;
 
 private:
+    float step( float instep );
     static char _val_str[20];
 	float _min, _max, _step;
 	bitfield bits;

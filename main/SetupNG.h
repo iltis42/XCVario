@@ -69,6 +69,7 @@ typedef enum e_windanalyser_mode { WA_OFF=0, WA_STRAIGHT=1, WA_CIRCLING=2, WA_BO
 typedef enum e_battery_display { BAT_PERCENTAGE, BAT_VOLTAGE, BAT_VOLTAGE_BIG } e_battery_display_t;
 typedef enum e_wind_display { WD_NONE, WD_DIGITS, WD_ARROW, WD_BOTH, WD_COMPASS } e_wind_display_t;
 typedef enum e_wind_reference { WR_NORTH, WR_HEADING, WR_GPS_COURSE } e_wind_reference_t;
+typedef enum e_unit_type{ UNIT_NONE, UNIT_TEMPERATURE, UNIT_ALT, UNIT_SPEED, UNIT_VARIO, UNIT_QNH } e_unit_type_t;
 typedef enum e_temperature_unit { T_CELCIUS, T_FAHRENHEIT, T_KELVIN } e_temperature_unit_t;
 typedef enum e_alt_unit { ALT_UNIT_METER, ALT_UNIT_FT, ALT_UNIT_FL } e_alt_unit_t;
 typedef enum e_speed_unit { SPEED_UNIT_KMH, SPEED_UNIT_MPH, SPEED_UNIT_KNOTS } e_speed_unit_t;
@@ -97,6 +98,7 @@ typedef struct setup_flags{
 	bool _wait_ack :1;
 	bool _volatile :1;
 	uint8_t _sync  :2;
+	uint8_t _unit  :3;
 } t_setup_flags;
 
 
@@ -116,7 +118,8 @@ public:
 			bool reset=true,               // reset data on factory reset
 			e_sync_t sync=SYNC_NONE,
 			e_volatility vol=PERSISTENT, // sync with client device is applicable
-			void (* action)()=0
+			void (* action)()=0,
+			e_unit_type_t unit = UNIT_NONE
 	)
 	{
 		// ESP_LOGI(FNAME,"SetupNG(%s)", akey );
@@ -129,6 +132,7 @@ public:
 		flags._sync = sync;
 		flags._volatile = vol;
 		flags._wait_ack = false;
+		flags._unit = unit;
 		_action = action;
 	}
 
@@ -169,6 +173,10 @@ public:
 			return true;
 		}
 		return commit( false );
+	}
+
+	e_unit_type_t unitType() {
+		return (e_unit_type_t)flags._unit;
 	}
 
 	void ack( T aval ){

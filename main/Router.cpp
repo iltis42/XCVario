@@ -254,7 +254,7 @@ void Router::routeBT(){
 			  Serial::setRxTxNotifier( TX2_REQ );
 				ESP_LOGV(FNAME,"Send to S2 device, BT received %d bytes", bt.length() );
 		// always check if it is a command to ourselves
-		if( strncmp( bt.c_str(), "!g,", 3 )  == 0 ) {
+		if( !strncmp( bt.c_str(), "!g,", 3 ) || !strncmp( bt.c_str(), "$g,", 3 ) ) {
 			ESP_LOGV(FNAME,"BT RX Matched a Borgelt command %s", bt.c_str() );
 			Protocols::parseNMEA( bt.c_str() );
 		}

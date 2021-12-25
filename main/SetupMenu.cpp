@@ -39,7 +39,7 @@
 #include <cstring>
 #include <string>
 
-static char rentry[25];
+
 SetupMenuSelect * audio_range_sm = 0;
 SetupMenuSelect * mpu = 0;
 
@@ -65,11 +65,35 @@ int update_s2f_speed(SetupMenuValFloat * p)
 	return 0;
 }
 
-int update_rentry(SetupMenuValFloat * p)
+
+int update_rentryf(SetupMenuValFloat * p)
 {
-	char rentry[25];
-	sprintf( rentry, "Variable (%d m/s)", (int)(range.get()) );
-	audio_range_sm->updateEntry( rentry, 1 );
+	ESP_LOGI(FNAME,"update_rentry() entries: %d, vu:%s ", audio_range_sm->numEntries(), Units::VarioUnit() );
+	static char rentry1[20];
+	static char rentry2[20];
+	static char rentry3[25];
+	sprintf( rentry1, "Fix (5  %s)", Units::VarioUnit() );
+	bool entry_in = audio_range_sm->numEntries() == 3 ? true : false;
+	if( !entry_in )
+		audio_range_sm->addEntry( rentry1  );
+	else
+		audio_range_sm->updateEntry( rentry1, 1 );
+	sprintf( rentry2, "Fix (10 %s)", Units::VarioUnit() );
+	if( !entry_in )
+		audio_range_sm->addEntry( rentry2 );
+	else
+		audio_range_sm->updateEntry( rentry2, 2 );
+	sprintf( rentry3, "Variable (%d %s)", (int)(range.get()), Units::VarioUnit() );
+	if( !entry_in )
+		audio_range_sm->addEntry( rentry3 );
+	else
+		audio_range_sm->updateEntry( rentry3, 3 );
+	entry_in = true;
+	return 0;
+}
+
+int update_rentrys(SetupMenuSelect * p){
+	update_rentryf(0);
 	return 0;
 }
 
@@ -516,7 +540,7 @@ void SetupMenu::setup( )
 		// Vario
 		SetupMenu * va = new SetupMenu( "Vario and S2F" );
 		MenuEntry* vae = mm->addEntry( va );
-		SetupMenuValFloat * vga = new SetupMenuValFloat( "Range", "",	1.0, 30.0, 1, update_rentry, true, &range );
+		SetupMenuValFloat * vga = new SetupMenuValFloat( "Range", "",	1.0, 30.0, 1, update_rentryf, true, &range );
 		vga->setHelp(PROGMEM"Upper and lower value for Vario graphic display region");
 		vga->setPrecision( 0 );
 		vae->addEntry( vga );
@@ -568,7 +592,7 @@ void SetupMenu::setup( )
 		meanclimb->setHelp(PROGMEM"Mean Climb or MC recommendation by green/red rhombus displayed in vario scale adjustment");
 		MenuEntry* meanclimbm = vae->addEntry( meanclimb );
 
-		SetupMenuValFloat * vccm = new SetupMenuValFloat( "Minimum climb", "m/s",	0.0, 2.0, 0.1, 0, false, &core_climb_min );
+		SetupMenuValFloat * vccm = new SetupMenuValFloat( "Minimum climb", "",	0.0, 2.0, 0.1, 0, false, &core_climb_min );
 		vccm->setHelp(PROGMEM"Minimum climb rate that counts for arithmetic mean climb value");
 		meanclimbm->addEntry( vccm );
 
@@ -692,10 +716,7 @@ void SetupMenu::setup( )
 
 		SetupMenuSelect * ar = new SetupMenuSelect( "Range", false, 0 , true, &audio_range  );
 		audio_range_sm = ar;
-		sprintf( rentry, "Variable (=%d m/s)", (int)(range.get()) );
-		ar->addEntry( "Fix 5 m/s");
-		ar->addEntry( "Fix 10 m/s");
-		ar->addEntry( rentry );
+		update_rentrys(0);
 		ar->setHelp(PROGMEM"Select either fixed or variable Audio range according to current Vario setting");
 		audio->addEntry( ar );
 
@@ -703,19 +724,19 @@ void SetupMenu::setup( )
 		MenuEntry* dbe = audio->addEntry( db );
 		dbe->setHelp(PROGMEM"Audio dead band limits within Audio remains silent in metric scale. 0,1 m/s equals roughly 20 ft/min or 0.2 knots");
 
-		SetupMenuValFloat * dbminlv = new SetupMenuValFloat( "Lower Vario", "m/s", -5.0, 0, 0.1, 0 , false, &deadband_neg  );
+		SetupMenuValFloat * dbminlv = new SetupMenuValFloat( "Lower Vario", "", -5.0, 0, 0.1, 0 , false, &deadband_neg );
 		dbminlv->setHelp(PROGMEM"Lower deadband limit (sink) for Audio mute function when in Vario mode");
 		dbe->addEntry( dbminlv );
 
-		SetupMenuValFloat * dbmaxlv = new SetupMenuValFloat( "Upper Vario", "m/s", 0, 5.0, 0.1, 0 , false, &deadband );
+		SetupMenuValFloat * dbmaxlv = new SetupMenuValFloat( "Upper Vario", "", 0, 5.0, 0.1, 0 , false, &deadband );
 		dbmaxlv->setHelp(PROGMEM"Upper deadband limit (climb) for Audio mute function when in Vario mode");
 		dbe->addEntry( dbmaxlv );
 
-		SetupMenuValFloat * dbmaxls2fn = new SetupMenuValFloat(	"Lower S2F", "km/h", -25.0, 0, 1, 0 , false, &s2f_deadband_neg );
+		SetupMenuValFloat * dbmaxls2fn = new SetupMenuValFloat(	"Lower S2F", "", -25.0, 0, 1, 0 , false, &s2f_deadband_neg );
 		dbmaxls2fn->setHelp(PROGMEM"Negative deadband limit in speed (too slow) deviation when in S2F mode");
 		dbe->addEntry( dbmaxls2fn );
 
-		SetupMenuValFloat * dbmaxls2f = new SetupMenuValFloat( "Upper S2F", "km/h", 0, 25.0, 1, 0 , false, &s2f_deadband );
+		SetupMenuValFloat * dbmaxls2f = new SetupMenuValFloat( "Upper S2F", "", 0, 25.0, 1, 0 , false, &s2f_deadband );
 		dbmaxls2f->setHelp(PROGMEM"Positive deadband limit in speed (too high) deviation when in S2F mode");
 		dbe->addEntry( dbmaxls2f );
 
@@ -825,7 +846,7 @@ void SetupMenu::setup( )
 		iau->addEntry( "Miles  (mph)");
 		iau->addEntry( "Knots  (kt)");
 		un->addEntry( iau );
-		SetupMenuSelect * vau = new SetupMenuSelect( "Vario", false , 0, true, &vario_unit );
+		SetupMenuSelect * vau = new SetupMenuSelect( "Vario", false , update_rentrys, true, &vario_unit );
 		vau->addEntry( "Meters/sec (m/s)");
 		vau->addEntry( "100ft/min (cft/min)");
 		vau->addEntry( "Knots     (knots)");
@@ -1153,7 +1174,7 @@ void SetupMenu::setup( )
 		upd->addEntry( "Start");
 
 		SetupMenuSelect * fa = new SetupMenuSelect( "Factory Reset", true, 0, false, &factory_reset );
-		fa->setHelp(PROGMEM "Option to reset all settings to factory defaults, means metric system, 5m/s vario range and more");
+		fa->setHelp(PROGMEM "Option to reset all settings to factory defaults, means metric system, 5 m/s vario range and more");
 		fa->addEntry( "Cancel");
 		fa->addEntry( "ResetAll");
 		sye->addEntry( fa );

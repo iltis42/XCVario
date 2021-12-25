@@ -36,6 +36,7 @@ public:
 	int getSelect();
 	void setSelect( int sel );
 	const char * getEntry() const ;
+	int numEntries() { return _numval; };
 
 private:
 	uint8_t  _select;       // limit to maximum 255 entries, as of today there are e.g. 134 different polars

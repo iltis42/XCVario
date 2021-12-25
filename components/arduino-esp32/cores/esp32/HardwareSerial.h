@@ -148,7 +148,27 @@ public:
       return uartGetNlCounter( _uart_nr );
     }
 
+    void clearFlarmTx()
+    {
+      for( int i=0; i < sizeof(flarmTx); i++ ) {
+        flarmTx[i] = 0;
+      }
+    }
+
+    bool checkFlarmTx( const char* buffer, int length, uint8_t* seq );
+
+    void clearFlarmRx()
+    {
+      for( int i=0; i < sizeof(flarmRx); i++ ) {
+        flarmRx[i] = 0;
+      }
+    }
+
+    bool checkFlarmRx( const char* buffer, int length, uint8_t* seq, int* start );
+
 protected:
+    uint8_t flarmTx[9];
+    uint8_t flarmRx[11];
     int _uart_nr;
     uart_t* _uart;
     uint8_t _tx_pin;

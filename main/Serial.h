@@ -42,7 +42,10 @@ public:
    * Bit 6: Uart 1 TX characters to send
    * Bit 7: Uart 1 TX characters to send
    */
-  static void setRxTxNotifier( const uint8_t eventMask );
+  static void setRxTxNotifier( const uint8_t eventMask )
+  {
+    xEventGroupSetBits( rxTxNotifier, eventMask );
+  }
 
 private:
   static bool _selfTest;

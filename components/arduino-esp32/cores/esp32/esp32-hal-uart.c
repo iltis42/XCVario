@@ -476,7 +476,6 @@ void uartFlushTxOnly(uart_t* uart, bool txOnly)
     if(uart == NULL) {
         return;
     }
-
     UART_MUTEX_LOCK();
     while(uart->dev->status.txfifo_cnt || uart->dev->status.st_utx_out);
     
@@ -490,8 +489,8 @@ void uartFlushTxOnly(uart_t* uart, bool txOnly)
         }
 
         xQueueReset(uart->queue);
+        uartClearNlCounter( uart->num );
     }
-    
     UART_MUTEX_UNLOCK();
 }
 

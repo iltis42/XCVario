@@ -11,7 +11,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
+//
+// 24.12.2021 Axel Pauli: added RX interrupt handling stuff.
+#include "esp_log.h"
 #include "esp32-hal-uart.h"
 #include "esp32-hal.h"
 #include "freertos/FreeRTOS.h"
@@ -48,7 +50,16 @@ struct uart_struct_t {
 };
 
 // Can be triggered by the ISR routine, when something was received.
-static EventGroupHandle_t *rxEventGroup = NULL;
+static EventGroupHandle_t rxEventGroup = NULL;
+
+// counter for newlines in uart queues
+static uint16_t nlCounter[3];
+
+// Semaphore for newline counters access
+static SemaphoreHandle_t nlCountersLock = NULL;;
+
+#define UART_NLC_LOCK()    do {} while ( xSemaphoreTake( nlCountersLock, portMAX_DELAY) != pdPASS )
+#define UART_NLC_UNLOCK()  xSemaphoreGive( nlCountersLock )
 
 #if CONFIG_DISABLE_HAL_LOCKS
 #define UART_MUTEX_LOCK()
@@ -71,6 +82,7 @@ static uart_t _uart_bus_array[3] = {
 #endif
 
 static void uart_on_apb_change(void * arg, apb_change_ev_t ev_type, uint32_t old_apb, uint32_t new_apb);
+static void _uartIncNlCounterFromIsr( uint8_t uart_nr );
 
 static void IRAM_ATTR _uart_isr(void *arg)
 {
@@ -82,16 +94,19 @@ static void IRAM_ATTR _uart_isr(void *arg)
     // xHigherPriorityTaskWoken must be initialised to pdFALSE.
     xHigherPriorityTaskWoken = pdFALSE;
 
-    for(i=0; i<3; i++){
+    for( i=0; i<3; i++) {
         uart = &_uart_bus_array[i];
         if(uart->intr_handle == NULL){
             continue;
         }
+
         uart->dev->int_clr.rxfifo_full = 1;
         uart->dev->int_clr.frm_err = 1;
         uart->dev->int_clr.rxfifo_tout = 1;
+
         while(uart->dev->status.rxfifo_cnt || (uart->dev->mem_rx_status.wr_addr != uart->dev->mem_rx_status.rd_addr)) {
             c = uart->dev->fifo.rw_byte;
+
             if(uart->queue != NULL)  {
                 xQueueSendFromISR(uart->queue, &c, &xHigherPriorityTaskWoken);
                 // Set character flag
@@ -99,6 +114,8 @@ static void IRAM_ATTR _uart_isr(void *arg)
                 if( c == '\n' ) {
                     // Set NL flag
                     eventMask |= (1 << ((i * 2) + 1));
+                    // increment NL counter
+                    _uartIncNlCounterFromIsr( i );
                 }
             }
         }
@@ -109,7 +126,7 @@ static void IRAM_ATTR _uart_isr(void *arg)
 
     if( rxEventGroup != NULL && eventMask != 0 ) {
         // Set event group RX bits
-        xEventGroupSetBitsFromISR( *rxEventGroup, eventMask, &xHigherPriorityTaskWoken1 );
+        xEventGroupSetBitsFromISR( rxEventGroup, eventMask, &xHigherPriorityTaskWoken1 );
     }
 
     if( xHigherPriorityTaskWoken || xHigherPriorityTaskWoken1 ) {
@@ -117,13 +134,18 @@ static void IRAM_ATTR _uart_isr(void *arg)
     }
 }
 
-void uartRxEventHandler( EventGroupHandle_t* egh )
+void uartRxEventHandler( EventGroupHandle_t egh )
 {
-  rxEventGroup = egh;
+    ESP_LOGI( "UART", "uartRxEventHandler: %X", (unsigned int) egh );
+    rxEventGroup = egh;
 }
 
 void uartEnableInterrupt(uart_t* uart)
 {
+    ESP_LOGI( "UART", "uartEnableInterrupt: %d", uart->num );
+    if(uart == NULL) {
+        return;
+    }
     UART_MUTEX_LOCK();
     uart->dev->conf1.rxfifo_full_thrhd = 112;
     uart->dev->conf1.rx_tout_thrhd = 2;
@@ -139,13 +161,19 @@ void uartEnableInterrupt(uart_t* uart)
 
 void uartDisableInterrupt(uart_t* uart)
 {
+    ESP_LOGI( "UART", "uartDisableInterrupt: %d", uart->num );
+    if(uart == NULL) {
+        return;
+    }
     UART_MUTEX_LOCK();
     uart->dev->conf1.val = 0;
     uart->dev->int_ena.val = 0;
     uart->dev->int_clr.val = 0xffffffff;
 
-    esp_intr_free(uart->intr_handle);
-    uart->intr_handle = NULL;
+    if( uart->intr_handle != NULL ) {
+      esp_intr_free(uart->intr_handle);
+      uart->intr_handle = NULL;
+    }
 
     UART_MUTEX_UNLOCK();
 }
@@ -174,7 +202,6 @@ void uartAttachRx(uart_t* uart, uint8_t rxPin, bool inverted)
     }
     pinMode(rxPin, INPUT_PULLUP);
     pinMatrixInAttach(rxPin, UART_RXD_IDX(uart->num), inverted);
-    uartEnableInterrupt(uart);
 }
 
 void uartAttachTx(uart_t* uart, uint8_t txPin, bool inverted)
@@ -195,6 +222,20 @@ uart_t* uartBegin(uint8_t uart_nr, uint32_t baudrate, uint32_t config, int8_t rx
     if(rxPin == -1 && txPin == -1) {
         return NULL;
     }
+
+    nlCountersLock = xSemaphoreCreateBinary();
+
+    if( nlCountersLock == NULL ) {
+        ESP_LOGE( "UART", "Cannot create nlCountersLock!" );
+        return NULL;
+    }
+
+    if( xSemaphoreGive( nlCountersLock ) != pdTRUE ) {
+        // We would expect this call to fail because we cannot give
+        // a semaphore without first "taking" it!
+    }
+
+    uartClearNlCounters();
 
     uart_t* uart = &_uart_bus_array[uart_nr];
 
@@ -689,3 +730,70 @@ uartDetectBaudrate(uart_t *uart)
 bool uartRxActive(uart_t* uart) {
     return uart->dev->status.st_urx_out != 0;
 }
+
+void uartIncNlCounter( uint8_t uart_nr )
+{
+  if(uart_nr > 2)
+      return;
+
+  UART_NLC_LOCK();
+  nlCounter[uart_nr]++;
+  UART_NLC_UNLOCK();
+}
+
+static void _uartIncNlCounterFromIsr( uint8_t uart_nr )
+{
+  if(uart_nr > 2)
+      return;
+
+  while( 1 )
+    {
+      if( xSemaphoreTakeFromISR( nlCountersLock, NULL ) == pdTRUE ) {
+          break;
+      }
+    }
+
+  nlCounter[uart_nr]++;
+  xSemaphoreGiveFromISR( nlCountersLock, NULL );
+}
+
+void uartDecNlCounter( uint8_t uart_nr )
+{
+  if(uart_nr > 2)
+      return;
+
+  UART_NLC_LOCK();
+  nlCounter[uart_nr]--;
+  UART_NLC_UNLOCK();
+}
+void uartClearNlCounter( uint8_t uart_nr )
+{
+  if(uart_nr > 2)
+      return;
+
+  UART_NLC_LOCK();
+  nlCounter[uart_nr] = 0;
+  UART_NLC_UNLOCK();
+}
+
+void uartClearNlCounters()
+{
+  UART_NLC_LOCK();
+  nlCounter[0] = 0;
+  nlCounter[1] = 0;
+  nlCounter[2] = 0;
+  UART_NLC_UNLOCK();
+}
+
+uint16_t uartGetNlCounter( uint8_t uart_nr )
+{
+  if(uart_nr > 2)
+      return 0;
+
+  uint16_t nlc;
+  UART_NLC_LOCK();
+  nlc = nlCounter[uart_nr];
+  UART_NLC_UNLOCK();
+  return nlc;
+}
+

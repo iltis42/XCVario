@@ -11,6 +11,16 @@
 
 #define SERIAL_STRLEN SSTRLEN
 
+// Event mask definitions
+#define RX0_CHAR 1
+#define RX0_NL 2
+#define RX1_CHAR 4
+#define RX1_NL 8
+#define RX2_CHAR 16
+#define RX2_NL 32
+#define TX1_REQ 64
+#define TX2_REQ 128
+
 class Serial {
 public:
   Serial() {
@@ -35,8 +45,6 @@ public:
   static void setRxTxNotifier( const uint8_t eventMask );
 
 private:
-  static unsigned char* flarmBuf;
-  static unsigned short flarmBufFilled;
   static bool _selfTest;
   static EventGroupHandle_t rxTxNotifier;
 };

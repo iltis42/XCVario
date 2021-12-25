@@ -40,6 +40,8 @@
    }
 
  Pay attention: the baudrate returned by baudRate() may be rounded, eg 115200 returns 115201
+
+ 24.12.2021 Axel Pauli: added RX interrupt handling stuff.
  */
 
 #ifndef HardwareSerial_h
@@ -120,9 +122,30 @@ public:
     void disableInterrupt();
 
     // Event group handler to signal RX events to clients waiting for characters.
-    static void setRxNotifier( EventGroupHandle_t* egh )
+    static void setRxNotifier( EventGroupHandle_t egh )
     {
       uartRxEventHandler( egh );
+    }
+
+    // Functions for handling of newline counter
+    void incNlCounter()
+    {
+      uartIncNlCounter( _uart_nr );
+    }
+
+    void decNlCounter()
+    {
+      uartDecNlCounter( _uart_nr );
+    }
+
+    void clearNlCounter()
+    {
+      uartClearNlCounter( _uart_nr );
+    }
+
+    uint16_t getNlCounter()
+    {
+      return uartGetNlCounter( _uart_nr );
     }
 
 protected:

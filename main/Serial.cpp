@@ -31,7 +31,9 @@ any sentence might take up to 171 ms (at 4.8k Baud), 85 ms (at 9.6 kBaud) or 43 
 This limits the overall channel capacity to 5 sentences per second (at 4.8k Baud), 11 msg/s (at 9.6 kBaud) or 23 msg/s (at 19.2 kBaud).
 If  too  many  sentences  are  produced  with  regard  to  the  available  transmission  speed,
 some sentences might be lost or truncated.
- */
+
+24.12.2021 Axel Pauli: added some RX/TX handling stuff.
+*/
 
 // Option to simulate FLARM sentences
 const char *flarm[] = {
@@ -55,24 +57,26 @@ static TaskHandle_t *pid2;
 
 bool Serial::_selfTest = false;
 EventGroupHandle_t Serial::rxTxNotifier;
-unsigned char* Serial::flarmBuf = nullptr;
-unsigned short Serial::flarmBufFilled = 0;
 
-
-#define RX1_CHAR 1
-#define RX1_NL 2
-#define RX2_CHAR 4
-#define RX2_NL 8
+#define RX0_CHAR 1
+#define RX0_NL 2
+#define RX1_CHAR 4
+#define RX1_NL 8
+#define RX2_CHAR 16
+#define RX2_NL 32
 #define TX1_REQ 64
 #define TX2_REQ 128
 
-// Serial Handler  ttyS1, S1, port 8881
+// Serial Handler ttyS1, S1, port 8881
 void Serial::serialHandler1(void *pvParameters)
 {
 	SString s;
+  unsigned char* flarmBuf = nullptr;
+  unsigned short flarmBufFilled = 0;
 
 	while( true ) {
 	  esp_task_wdt_reset();
+
 	  if( uxTaskGetStackHighWaterMark( pid1 ) < 256 )
 	    ESP_LOGW(FNAME,"Warning serial 1 task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid1 ) );
 
@@ -94,6 +98,8 @@ void Serial::serialHandler1(void *pvParameters)
 				sim++;
 			}
 
+			// Define expected event bits. They can come from the Uart RX ISR or from
+			// the Serial 1 TX queue
 			EventBits_t bitsToWaitFor = TX1_REQ;
 
 			if( Flarm::bincom )
@@ -106,9 +112,13 @@ void Serial::serialHandler1(void *pvParameters)
 
 			if( Flarm::bincom ) {
 			    uint32_t br = Serial1.baudRate();
-			    // define timeout after 10 missing bytes in Flarm binary mode.
+			    // Define timeout after 10 missing bytes in Flarm binary mode to
+			    // forward received and queued bytes.
 			    ticksToWait = (br / 100) / portTICK_PERIOD_MS;
 			}
+
+			ESP_LOGI(FNAME, "Serial ticksToWait=%d", ticksToWait );
+
 
 			// We do wait for events from RX or TX side
 			EventBits_t ebits = xEventGroupWaitBits( rxTxNotifier,
@@ -117,16 +127,19 @@ void Serial::serialHandler1(void *pvParameters)
 			                                         pdFALSE,
 			                                         ticksToWait );
 
+			ESP_LOGI(FNAME, "Flarm::bincom=%d, EventBits=%X, RXA=%d, NLC=%d",
+			         Flarm::bincom, ebits, Serial1.available(), Serial1.getNlCounter() );
+
 			if( ! Flarm::bincom && ebits == 0 ) {
 			  // Timeout occurred, that is ignored in this case.
 			  continue;
 			}
 
 			// Check, if Serial Interface tty1 has something to send
-			if ( !s1_tx_q.isEmpty() && Serial1.availableForWrite() ) {
-				ESP_LOGD(FNAME,"Serial Data and avail");
+			if( ebits & TX1_REQ && Serial1.availableForWrite() ) {
+				ESP_LOGI(FNAME,"Serial TX and available");
 				while( Router::pullMsg( s1_tx_q, s ) ) {
-					// ESP_LOGD(FNAME,"Serial 1 TX len: %d bytes", s.length() );
+					ESP_LOGD(FNAME,"Serial 1 TX len: %d bytes", s.length() );
 					// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
 					int wr = Serial1.write( s.c_str(), s.length() );
 					DM.monitorString( MON_S1, DIR_TX, s.c_str() );
@@ -141,26 +154,36 @@ void Serial::serialHandler1(void *pvParameters)
 			  if( (ebits & RX1_NL) ) {
           // a nl is available in the receiver buffer
           rxbuf = (uint8_t *) malloc( SERIAL_STRLEN );
-          size_t bytes = Serial1.readLineFromQueue( rxbuf, SERIAL_STRLEN );
 
-          if( bytes > 0 ) {
-            s.set( (char *) rxbuf, bytes );
+          // Due to delay several NLs can be in the RX buffer
+          uint16_t nlc = Serial1.getNlCounter();
 
-            const char* pflax = "$PFLAX,A*2E\r\n";
-            // check Flarm response to $PFLAX, if it is ok
-            if( strcmp( s.c_str(), pflax ) == 0 ) {
-              Flarm::bincom = 5;
+          while( nlc > 0 ) {
+            size_t bytes = Serial1.readLineFromQueue( rxbuf, SERIAL_STRLEN );
+            nlc--;
+            Serial1.decNlCounter();
+
+            if( bytes > 0 ) {
+              s.set( (char *) rxbuf, bytes );
+
+              const char* pflax = "$PFLAX,A*2E\r\n";
+              // check Flarm response to $PFLAX, if it is ok. If yes, switch
+              // to binary mode
+              if( strcmp( s.c_str(), pflax ) == 0 ) {
+                Flarm::bincom = 5;
+                ESP_LOGI(FNAME, "S1 switching to Flarm::bincom" );
+              }
+
+              Router::forwardMsg( s, s1_rx_q );
+              DM.monitorString( MON_S1, DIR_RX, s.c_str(), Flarm::bincom );
+              Router::routeS1();
             }
-
-            Router::forwardMsg( s, s1_rx_q );
-            DM.monitorString( MON_S1, DIR_RX, s.c_str(), Flarm::bincom );
-            Router::routeS1();
           }
 
           free( rxbuf );
           continue;
         }
-			  else{
+			  else {
 			    // wait for a newline
 			    continue;
 			  }
@@ -169,6 +192,7 @@ void Serial::serialHandler1(void *pvParameters)
 			// Check for timeout in Flarm binary mode. In this case all stored data
 			// must be forwarded.
 			if( Flarm::bincom && ebits == 0 && flarmBufFilled > 0 ) {
+			  ESP_LOGI(FNAME, "S1 Flarm::bincom timoout, send data" );
         s.set( (char *) flarmBuf, flarmBufFilled );
         Router::forwardMsg( s, s1_rx_q );
         DM.monitorString( MON_S1, DIR_RX, s.c_str(), Flarm::bincom );
@@ -194,6 +218,7 @@ void Serial::serialHandler1(void *pvParameters)
           flarmBufFilled++;
 
           if( flarmBufFilled == SERIAL_STRLEN ) {
+            ESP_LOGI(FNAME, "S1 Flarm::bincom buffer full and is sent" );
             s.set( (char *) flarmBuf, flarmBufFilled );
             Router::forwardMsg( s, s1_rx_q );
             DM.monitorString( MON_S1, DIR_RX, s.c_str(), Flarm::bincom );
@@ -352,6 +377,11 @@ void Serial::begin(){
 			}
 			Serial1.setRxBufferSize(512);
 		}
+
+		// Enable Uart RX interrupt
+    ESP_LOGI(FNAME,"Serial1 enable RX ISR" );
+		Serial1.clearNlCounter();
+		Serial1.enableInterrupt();
 	}
 	if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 ){
 		ESP_LOGI(FNAME,"Serial Interface ttyS2 enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial2_speed.get(), baud[serial2_speed.get()], serial2_tx_inverted.get(), serial2_rx_inverted.get() );
@@ -382,19 +412,27 @@ void Serial::begin(){
 
 void Serial::taskStart(){
 	ESP_LOGI(FNAME,"Serial::taskStart()" );
-	bool taskStarted = false;
 
-	if( serial1_speed.get() != 0  || wireless != 0  ){
+	bool serial1 = (serial1_speed.get() != 0 || wireless != 0);
+	bool serial2 = (serial2_speed.get() != 0 );
+
+	if( serial1 || serial2 ) {
+    // Create event notifier, when serial 1 or serial 2 are enabled
+    rxTxNotifier = xEventGroupCreate();
+
+    if( rxTxNotifier == nullptr ) {
+      ESP_LOGI( FNAME, "Cannot create EventGroupHandle" );
+    }
+    else {
+      // Set event notifier in uart interrupt routine.
+      HardwareSerial::setRxNotifier( rxTxNotifier );
+    }
+	}
+
+	if( serial1 ){
 		xTaskCreatePinnedToCore(&serialHandler1, "serialHandler1", 4096, NULL, 11, pid1, 0);  // stay below compass task
-		taskStarted = true;
 	}
-	if( serial2_speed.get() != 0 ){
+	if( serial2 ){
 		xTaskCreatePinnedToCore(&serialHandler2, "serialHandler2", 4096, NULL, 10, pid2, 0);  // stay below compass task and task for S1
-    taskStarted = true;
-	}
-
-	if( taskStarted ) {
-	    // Set event notifier in uart interrupt routine.
-	    HardwareSerial::setRxNotifier( &rxTxNotifier );
 	}
 }

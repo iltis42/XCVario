@@ -11,6 +11,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
+// 24.12.2021 Axel Pauli: added RX interrupt handling stuff.
 
 #ifndef MAIN_ESP32_HAL_UART_H_
 #define MAIN_ESP32_HAL_UART_H_
@@ -88,7 +90,14 @@ unsigned long uartDetectBaudrate(uart_t *uart);
 bool uartRxActive(uart_t* uart);
 
 // Event group handler to signal RX events to clients waiting for characters.
-void uartRxEventHandler( EventGroupHandle_t* egh );
+void uartRxEventHandler( EventGroupHandle_t egh );
+
+// Functions for handling of newline counter
+void uartIncNlCounter( uint8_t uart_nr );
+void uartDecNlCounter( uint8_t uart_nr );
+void uartClearNlCounter( uint8_t uart_nr );
+void uartClearNlCounters();
+uint16_t uartGetNlCounter( uint8_t uart_nr );
 
 #ifdef __cplusplus
 }

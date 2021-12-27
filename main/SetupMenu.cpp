@@ -1374,9 +1374,12 @@ void SetupMenu::setup( )
 		auze->addEntry( "Start");
 
 		SetupMenuSelect * alq = new SetupMenuSelect( "Alt. Quantization", false,  0, true, &alt_quant );
-		alq->setHelp( PROGMEM "Set altimeter mode with discrete steps and rolling wheel in the last digits");
+		alq->setHelp( PROGMEM "Set altimeter mode with discrete steps and rolling last digits");
 		alq->addEntry( "Disable");
-		alq->addEntry( "Enable");
+		alq->addEntry( "1");
+		alq->addEntry( "5");
+		alq->addEntry( "10");
+		alq->addEntry( "20");
 		aia->addEntry( alq );
 
 		SetupMenu * stallwa = new SetupMenu( "Stall Warning");

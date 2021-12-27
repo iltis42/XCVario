@@ -1201,7 +1201,7 @@ void SetupMenu::setup( )
 		bat->addEntry( batv );
 
 		SetupMenu * hardware = new SetupMenu( "Hardware Setup" );
-		hardware->setHelp( PROGMEM "Setup variometer hardware like display, rotary, AHRS sensor", 200 );
+		hardware->setHelp( PROGMEM "Setup variometer hardware e.g. display, rotary, AS and AHRS sensor, voltmeter, etc", 240 );
 		sye->addEntry( hardware );
 
 		SetupMenu * display = new SetupMenu( "DISPLAY Setup" );
@@ -1321,15 +1321,11 @@ void SetupMenu::setup( )
 			ahrslc->addEntry( ahrslc2 );
 			ahrslc->addEntry( ahrslc3 );
 			ahrslc->addEntry( ahrslc4 );
-			for( int x=48; x<= 90; x++ ){
-				char e[2];
-				e[0]=char(x);
-				e[1]='\0';
-				ahrslc1->addEntry( e );
-				ahrslc2->addEntry( e );
-				ahrslc3->addEntry( e );
-				ahrslc4->addEntry( e );
-			}
+			static const char keys[][4] { "0","1","2","3","4","5","6","7","8","9",":",";","<","=",">","?","@","A","B","C","D","E","F","G","H","I","J","K","L","M","M","O","P","Q","R","S","T","U","V","W","X","Y","Z"};
+			ahrslc1->addEntryList( keys, sizeof(keys)/4 );
+			ahrslc2->addEntryList( keys, sizeof(keys)/4 );
+			ahrslc3->addEntryList( keys, sizeof(keys)/4 );
+			ahrslc4->addEntryList( keys, sizeof(keys)/4 );
 			SetupMenuValFloat * ahrsgf = new SetupMenuValFloat( "AHRS Gyro", "%", 0, 100, 0.1, 0, false, &ahrs_gyro_factor  );
 			ahrsgf->setHelp(PROGMEM"Gyro factor in artifical horizont bank and pitch (more instant movement), zero disables Gyro");
 			ahrs->addEntry( ahrsgf );
@@ -1344,13 +1340,9 @@ void SetupMenu::setup( )
 		pstype->addEntry( "MP5004");
 		pstype->addEntry( "Autodetect");
 
-		float fva = factory_volt_adjust.get();
-		if( abs(fva - 0.00815) < 0.00001 ) {
-			ESP_LOGI(FNAME,"Add option to Factory adjust ADC; not yet done");
-			SetupMenuValFloat * fvoltadj = new SetupMenuValFloat( 	"Factory Voltmeter Adj", "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust );
-			fvoltadj->setHelp(PROGMEM "Option to fine factory adjust voltmeter");
-			sye->addEntry( fvoltadj );
-		}
+		SetupMenuValFloat * fvoltadj = new SetupMenuValFloat( "Voltmeter Adjust", "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust,  false, false, true);
+		fvoltadj->setHelp(PROGMEM "Option to fine factory adjust voltmeter");
+		hardware->addEntry( fvoltadj );
 
 		// Altimeter, IAS
 		SetupMenu * aia = new SetupMenu( "Altimeter, Airspeed" );

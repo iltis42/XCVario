@@ -176,7 +176,6 @@ bool  standard_setting = false;
 bool inSetup=true;
 bool stall_warning_active=false;
 bool stall_warning_armed=false;
-float stall_speed_kmh=0;
 float stall_alarm_off_kmh=0;
 int   stall_alarm_off_holddown=0;
 int count=0;
@@ -229,7 +228,7 @@ void drawDisplay(void *pvParameters){
 					float acceleration=accelG[0];
 					if( acceleration < 0.3 )
 						acceleration = 0.3;  // limit acceleration effect to minimum 30% of 1g
-					float acc_stall= stall_speed_kmh * sqrt( acceleration + ( ballast.get()/100));  // accelerated and ballast(ed) stall speed
+					float acc_stall= stall_speed.get() * sqrt( acceleration + ( ballast.get()/100));  // accelerated and ballast(ed) stall speed
 					if( ias.get() < acc_stall && ias.get() > acc_stall*0.7 ){
 						if( !stall_warning_active ){
 							Audio::alarm( true );
@@ -256,7 +255,7 @@ void drawDisplay(void *pvParameters){
 					}
 				}
 				else{
-					if( ias.get() > stall_speed_kmh ){
+					if( ias.get() > stall_speed.get() ){
 						stall_warning_armed = true;
 						stall_alarm_off_holddown=0;
 					}
@@ -802,8 +801,7 @@ void sensor(void *args){
 	AverageVario::begin();
 
 
-	stall_speed_kmh = Units::Airspeed2Kmh( stall_speed.get() );
-	stall_alarm_off_kmh = stall_speed_kmh/3;
+	stall_alarm_off_kmh = stall_speed.get()/3;
 
 	if( Cipher::checkKeyAHRS() ){
 		ESP_LOGI( FNAME, "AHRS key valid=%d", ahrsKeyValid );

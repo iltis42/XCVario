@@ -17,7 +17,7 @@
 SetupMenuValFloat * SetupMenuValFloat::qnh_menu = 0;
 char SetupMenuValFloat::_val_str[20];
 
-SetupMenuValFloat::SetupMenuValFloat( const char* title, const char *unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs, bool restart, bool sync ) {
+SetupMenuValFloat::SetupMenuValFloat( const char* title, const char *unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs, bool restart, bool sync, bool live_update ) {
 	// ESP_LOGI(FNAME,"SetupMenuValFloat( %s ) ", title.c_str() );
 	attach(this);
 	_title = title;
@@ -34,6 +34,7 @@ SetupMenuValFloat::SetupMenuValFloat( const char* title, const char *unit, float
 	_action = action;
 	bits._end_menu = end_menu;
 	bits._precision = 2;
+	bits._live_update = live_update;
 	if( step >= 1 )
 		bits._precision = 0;
 	if( anvs ) {
@@ -130,6 +131,8 @@ void SetupMenuValFloat::down( int count ){
 	if( _value < _min )
 		_value = _min;
 	displayVal();
+	if( bits._live_update )
+		_nvs->set( _value );
 	if( _action != 0 )
 		(*_action)( this );
 }
@@ -145,6 +148,8 @@ void SetupMenuValFloat::up( int count ){
 	if( _value > _max )
 		_value = _max;
 	displayVal();
+	if( bits._live_update )
+		_nvs->set( _value );
 	if( _action != 0 )
 		(*_action)( this );
 }

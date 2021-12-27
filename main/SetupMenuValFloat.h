@@ -13,13 +13,14 @@
 struct bitfield {
    bool _restart      :1;
    bool _end_menu     :1;
-   uint8_t _precision :6;
+   bool _live_update  :1;
+   uint8_t _precision :5;
 };
 
 class SetupMenuValFloat:  public MenuEntry {
 public:
 	SetupMenuValFloat() { _unit = ""; };
-	SetupMenuValFloat(  const char *title, const char *unit, float min, float max, float step, int (*action)(SetupMenuValFloat *p) = 0, bool end_menu=false, SetupNG<float> *anvs = 0, bool restart=false, bool sync=false );
+	SetupMenuValFloat(  const char *title, const char *unit, float min, float max, float step, int (*action)(SetupMenuValFloat *p) = 0, bool end_menu=false, SetupNG<float> *anvs = 0, bool restart=false, bool sync=false, bool life_update=false );
 	virtual ~SetupMenuValFloat();
 	void display( int mode=0 );
 	void displayVal();

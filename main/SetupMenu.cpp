@@ -1321,15 +1321,11 @@ void SetupMenu::setup( )
 			ahrslc->addEntry( ahrslc2 );
 			ahrslc->addEntry( ahrslc3 );
 			ahrslc->addEntry( ahrslc4 );
-			for( int x=48; x<= 90; x++ ){
-				char e[2];
-				e[0]=char(x);
-				e[1]='\0';
-				ahrslc1->addEntry( e );
-				ahrslc2->addEntry( e );
-				ahrslc3->addEntry( e );
-				ahrslc4->addEntry( e );
-			}
+			static const char keys[][4] { "0","1","2","3","4","5","6","7","8","9",":",";","<","=",">","?","@","A","B","C","D","E","F","G","H","I","J","K","L","M","M","O","P","Q","R","S","T","U","V","W","X","Y","Z"};
+			ahrslc1->addEntryList( keys, sizeof(keys)/4 );
+			ahrslc2->addEntryList( keys, sizeof(keys)/4 );
+			ahrslc3->addEntryList( keys, sizeof(keys)/4 );
+			ahrslc4->addEntryList( keys, sizeof(keys)/4 );
 			SetupMenuValFloat * ahrsgf = new SetupMenuValFloat( "AHRS Gyro", "%", 0, 100, 0.1, 0, false, &ahrs_gyro_factor  );
 			ahrsgf->setHelp(PROGMEM"Gyro factor in artifical horizont bank and pitch (more instant movement), zero disables Gyro");
 			ahrs->addEntry( ahrsgf );

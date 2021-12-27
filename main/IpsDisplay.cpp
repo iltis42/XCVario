@@ -1358,36 +1358,36 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 		static int16_t fraction_prev = -1;
 		if (dirty || fraction != fraction_prev)
 		{
-			// move last digit
-			int16_t m = (fraction * char_height/ 100) - char_height/2; // to pixel offest
+			// move last quant digit(s)
+			int16_t m = ((100-fraction) * char_height/ 100) - char_height/2; // to pixel offest
 			int16_t q = quant/10; // here either 1 (for m) or 2 (for ft)
 			int16_t xp = x - 2*char_width;
 			char tmp[3] = {'0', '0', 0};
 			ucg->setClipRange(xp, y - char_height * 1.25, char_width*2, char_height * 1.45);
 			ucg->setPrintPos(xp, y - m - char_height);
-			tmp[0] = (lastdigit+10-q)%10 + '0';
+			tmp[0] = (lastdigit+q)%10 + '0';
 			ucg->print(tmp); // one above
 			ucg->setPrintPos(xp, y - m);
 			tmp[0] = lastdigit%10 + '0';
 			ucg->print(tmp);
 			ucg->setPrintPos(xp, y - m + char_height);
-			tmp[0] = (lastdigit+q)%10 + '0';
+			tmp[0] = (lastdigit+10-q)%10 + '0';
 			ucg->print(tmp); // one below
 			ucg->undoClipRange();
 
 			fraction_prev = fraction;
 
-			if ( m < 0 && lastdigit < q ) { // hdigit in disharmonie with digit of altitude to display
+			if ( m <= 0 && lastdigit < q ) { // hdigit in disharmonie with digit of altitude to display
 				int16_t hdigit = (alt%1000)/100;
 				// ESP_LOGI(FNAME,"Alti %f: %d - %dm%d %d.%d", altitude, fraction, alt, m, hdigit, lastdigit);
 				nr_rolling++;
 				xp -= char_width; // one to the left
-				// ucg->drawFrame(xp, y - char_height, char_width, char_height);
-				ucg->setClipRange(xp, y - char_height, char_width, char_height-1);  // to be crosschecked by hjr
+				//ucg->drawFrame(xp-1, y - char_height-1, char_width+1, char_height+1);
+				ucg->setClipRange(xp, y - char_height, char_width-1, char_height-1);  // to be crosschecked by hjr
 				ucg->setPrintPos(xp, y - m);
-				ucg->print(hdigit);
-				ucg->setPrintPos(xp, y - m - char_height); // one above
 				ucg->print((hdigit+10-q)%10);
+				ucg->setPrintPos(xp, y - m - char_height); // one above
+				ucg->print(hdigit);
 				ucg->undoClipRange();
 				s[len-1] = '\0'; len--; // chop another digits
 			}

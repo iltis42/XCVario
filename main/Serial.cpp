@@ -3,7 +3,7 @@
 #include "BTSender.h"
 #include <cstring>
 #include "sdkconfig.h"
-#include <stdio.h>
+#include <cstdio>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_task_wdt.h"
@@ -11,8 +11,6 @@
 #include <algorithm>
 #include <HardwareSerial.h>
 #include "RingBufCPP.h"
-#include <driver/uart.h>
-#include "Protocols.h"
 #include <logdef.h>
 #include "Switch.h"
 #include "sensor.h"
@@ -56,6 +54,8 @@ static TaskHandle_t *pid2;
 
 bool Serial::_selfTest = false;
 EventGroupHandle_t Serial::rxTxNotifier;
+bool Serial::stopRxRouting = false;
+bool Serial::flarmExitCmd = false;
 
 #define RX0_CHAR 1
 #define RX0_NL 2
@@ -72,10 +72,11 @@ void Serial::serialHandler1(void *pvParameters)
 	SString s;
   unsigned char* flarmBuf = nullptr;
   unsigned short flarmBufFilled = 0;
-  bool flarmExitCmd = false;
   uint8_t flarmAckExitSeq[2];
 
-  // Clear Uart RX receiver buffer to get a clean start state.
+  vTaskDelay( 100 / portTICK_PERIOD_MS );
+
+  // Clear Uart RX receiver buffer to get a clean start point.
   Serial1.flush( false );
 
   // Enable Uart RX interrupt
@@ -107,19 +108,17 @@ void Serial::serialHandler1(void *pvParameters)
 			}
 
 			// Define expected event bits. They can come from the Uart RX ISR or from
-			// the Serial 1 TX queue
-			EventBits_t bitsToWaitFor = TX1_REQ;
+			// the Serial 1 TX router queue.
+      // In Flarm text mode we may get informed only for newlines in the Uart
+      // RX queue. We tolerate that also in binary mode to get reset this bit
+      // in the event bit mask after a read.
+			EventBits_t bitsToWaitFor = TX1_REQ | RX1_NL;
 
 			if( Flarm::bincom ) {
 			  // In Flarm binary mode, we may get informed for every available
 			  // character in the RX queue.
 			  bitsToWaitFor |= RX1_CHAR;
 			}
-
-			// In Flarm text mode we may get informed only for newlines in the
-			// RX queue. We tolerate that also in binary mode to get reset this bit
-			// in the event bit mask after a read.
-			bitsToWaitFor |= RX1_NL;
 
 			// define timeout of 5s in Flarm text mode
 			TickType_t ticksToWait = 5000 / portTICK_PERIOD_MS;
@@ -131,38 +130,36 @@ void Serial::serialHandler1(void *pvParameters)
 			    ticksToWait = (br / 10000 * 3) / portTICK_PERIOD_MS;
 			}
 
-			ESP_LOGI(FNAME, "Serial ticksToWait=%d", ticksToWait );
-
-			// We do wait for events from RX or TX side
+			// We do wait for events from Uart RX, router TX side or timeout
 			EventBits_t ebits = xEventGroupWaitBits( rxTxNotifier,
 			                                         bitsToWaitFor,
 			                                         pdTRUE,
 			                                         pdFALSE,
 			                                         ticksToWait );
 
-			ESP_LOGI( FNAME, "Flarm::bincom=%d, EventBits=%X, RXA=%d, NLC=%d",
-			          Flarm::bincom, ebits, Serial1.available(), Serial1.getNlCounter() );
+			if( ebits != 0  )
+        ESP_LOGI( FNAME, "S1: EVTO=%dms, bincom=%d, EventBits=%X, RXA=%d, NLC=%d",
+                  ticksToWait, Flarm::bincom, ebits, Serial1.available(), Serial1.getNlCounter() );
 
 			if( ! Flarm::bincom && ebits == 0 ) {
-			  // Timeout occurred, that is always ignored.
+			  // Timeout occurred, that is always ignored in Flarm text mode.
 			  continue;
 			}
 
 			// Check, if Serial Interface tty1 has something to send
 			if( ebits & TX1_REQ && Serial1.availableForWrite() ) {
-				ESP_LOGI(FNAME,"Serial TX and available");
+				// ESP_LOGI(FNAME,"S1: TX and available");
 				while( Router::pullMsg( s1_tx_q, s ) ) {
-					ESP_LOGD(FNAME,"Serial 1 TX len: %d bytes", s.length() );
+					ESP_LOGD(FNAME,"S1: TX len: %d bytes", s.length() );
           // ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
           ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
-					int wr = Serial1.write( s.c_str(), s.length() );
+					Serial1.write( s.c_str(), s.length() );
 					DM.monitorString( MON_S1, DIR_TX, s.c_str() );
-					// ESP_LOGD(FNAME,"Serial 1 TX written: %d", wr);
+					// ESP_LOGD(FNAME,"S1: TX written: %d", wr);
 
 					// Look, if a Flarm exit command has been sent in binary mode.
 					if( Flarm::bincom && flarmExitCmd == false ) {
 					  flarmExitCmd = Serial1.checkFlarmTx( s.c_str(), s.length(), flarmAckExitSeq );
-
 					  if( flarmExitCmd ) {
 					    ESP_LOGI( FNAME, "S1: Flarm Exit Cmd detected" );
 					  }
@@ -170,136 +167,159 @@ void Serial::serialHandler1(void *pvParameters)
 				}
 			}
 
+      // Flarm works in text mode, check if NL is reported.
 			if( ! Flarm::bincom ) {
-			  // Flarm works in text mode
 			  if( (ebits & RX1_NL) ) {
-          // NLs are available in the receiver buffer
-          uint16_t nlc = Serial1.getNlCounter();
-
-          // get byte count from queue
-          int bc = Serial1.available();
-
-          if( bc == 0 ) {
-            // should normally not happens, clear RX buffer for a new synchronization.
-            Serial1.flush( false );
-            continue;
-          }
-
-          uint8_t *rxbuf = (uint8_t *) malloc( bc );
-
-          while( nlc > 0 ) {
-            size_t bytes = Serial1.readLineFromQueue( rxbuf, bc );
-            nlc--;
-            Serial1.decNlCounter();
-
-            if( bytes > 0 ) {
-              s.set( (char *) rxbuf, bytes );
-
-              const char* pflax = "$PFLAX,A*2E\r\n";
-              // check Flarm response to $PFLAX, if it is ok. If yes, switch
-              // to binary mode
-              if( strcmp( s.c_str(), pflax ) == 0 ) {
-                Flarm::bincom = 5;
-                Serial1.clearFlarmTx();
-                Serial1.clearFlarmRx();
-                flarmExitCmd = false;
-                ESP_LOGI(FNAME, "S1: $PFLAX,A*2E --> switching to binary mode" );
-              }
-              Router::forwardMsg( s, s1_rx_q );
-              DM.monitorString( MON_S1, DIR_RX, s.c_str(), Flarm::bincom );
-              Router::routeS1();
-            }
-          }
-          free( rxbuf );
+			    handleS1TextMode();
         }
 			  // wait for the next newline
 			  continue;
 			}
 
-			// Check for timeout in Flarm binary mode. In this case all stored data
-			// must be forwarded.
-			if( Flarm::bincom && ! Serial1.available() && flarmBufFilled > 0 ) {
-			  ESP_LOGI(FNAME, "S1: Flarm::bincom timeout, forward data" );
-        s.set( (char *) flarmBuf, flarmBufFilled );
-        Router::forwardMsg( s, s1_rx_q );
-        DM.monitorString( MON_S1, DIR_RX, s.c_str(), Flarm::bincom );
-        Router::routeS1();
-        free( flarmBuf );
-        flarmBuf = nullptr;
-        flarmBufFilled = 0;
-        // Clear NL counter
-        Serial1.clearNlCounter();
-        ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
-        continue;
-			}
-
-			if( Flarm::bincom && ebits & RX1_CHAR ) {
-			  // Flarm is in binary mode and we can read bytes.
-        if( flarmBuf == nullptr ) {
-          flarmBuf = (unsigned char *) malloc( 65 );
+			// Handle Flarm binary mode
+			if( Flarm::bincom ) {
+        // Check for timeout. In this case all stored RX data must be forwarded.
+        if( ! Serial1.available() && flarmBufFilled > 0 ) {
+          ESP_LOGI(FNAME, "S1: Flarm::bincom timeout, forward data" );
+          s.set( (char *) flarmBuf, flarmBufFilled );
+          routeS1RxData( s );
+          free( flarmBuf );
+          flarmBuf = nullptr;
           flarmBufFilled = 0;
+          // ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
+          continue;
         }
 
-        // Due to delays we can have more than one character in the RX queue
-        int available = Serial1.available();
-        bool flarmAckExit = false;
+#define FLARM_BUF_SIZE 128
 
-        while( available > 0 ) {
-          // read out all characters from the RX queue
-          uint8_t c;
-          uint8_t res = Serial1.readCharFromQueue( &c );
-          available--;
-
-          if( res == 0 ) // Nothing has read, break loop
-            break;
-
-          flarmBuf[flarmBufFilled] = c;
-          flarmBufFilled++;
-
-          // Check, if Flarm has sent an acknowledge to the exit command.
-          if( flarmExitCmd == true ) {
-            int start;
-            flarmAckExit = Serial1.checkFlarmRx( (const char* ) flarmBuf, flarmBufFilled, flarmAckExitSeq, &start );
-            if( flarmAckExit )
-              ESP_LOGI( FNAME, "S1: Flarm Ack Exit detected" );
-          }
-
-          if( flarmBufFilled == 64 || flarmAckExit == true ) {
-            ESP_LOGI(FNAME, "S1: Flarm::bincom buffer is full or AckExit, forward data" );
-            s.set( (char *) flarmBuf, flarmBufFilled );
-            Router::forwardMsg( s, s1_rx_q );
-            DM.monitorString( MON_S1, DIR_RX, s.c_str(), Flarm::bincom );
-            Router::routeS1();
+        if( ebits & RX1_CHAR ) {
+          // Flarm is in binary mode and we can read bytes.
+          if( flarmBuf == nullptr ) {
+            flarmBuf = (unsigned char *) malloc( FLARM_BUF_SIZE + 1 );
             flarmBufFilled = 0;
-            ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
           }
 
-          // Fall back check, if Flarm is self exited from the binary mode. A
-          // classic Flarm will never do that but a PowerFlarm after 60s.
-          const char *pflau = "$PFLAU,";
+          // Due to delays we can have more than one character in the RX queue
+          int available = Serial1.available();
+          bool flarmAckExit = false;
 
-          if( flarmBufFilled > strlen(pflau) ) {
-              flarmBuf[flarmBufFilled] = '\0';
-              if( strstr( (const char *) flarmBuf, pflau) != nullptr ) {
-                // we assume a Flarm switch to text mode.
-                flarmAckExit = true;
-                ESP_LOGI(FNAME, "S1: $PFLAU found, Flarm is self switched to text mode" );
-              }
-          }
+          while( available > 0 ) {
+            // read out all characters from the RX queue
+            uint8_t c;
+            uint8_t res = Serial1.readCharFromQueue( &c );
+            available--;
 
-          // Reset binary mode, if Flarm ACK Exit has received.
-          if( flarmAckExit == true ) {
-              Flarm::bincom = 0;
-              Serial1.flush( false );
-              ESP_LOGI(FNAME, "S1: Flarm Ack Exit received --> switch Flarm to text mode" );
-          }
-        } // end while
-        // Clear NL counter
-        Serial1.clearNlCounter();
+            if( res == 0 ) // Nothing has read, break loop
+              break;
+
+            flarmBuf[flarmBufFilled] = c;
+            flarmBufFilled++;
+
+            // Check, if Flarm has sent an acknowledge to the exit command.
+            if( flarmExitCmd == true ) {
+              int start;
+              flarmAckExit = Serial1.checkFlarmRx( (const char* ) flarmBuf, flarmBufFilled, flarmAckExitSeq, &start );
+              if( flarmAckExit )
+                ESP_LOGI( FNAME, "S1: Flarm Ack Exit detected" );
+            }
+
+            if( flarmBufFilled == FLARM_BUF_SIZE || flarmAckExit == true ) {
+              ESP_LOGI(FNAME, "S1: Flarm::bincom buffer is full or AckExit, forward data" );
+              s.set( (char *) flarmBuf, flarmBufFilled );
+              routeS1RxData( s );
+              flarmBufFilled = 0;
+              // ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
+            }
+
+            // Fall back check, if Flarm is self exited from the binary mode. A
+            // classic Flarm will never do that but a PowerFlarm after 60s.
+            const char *pflau = "$PFLAU,";
+            if( flarmAckExit == false && flarmBufFilled > strlen(pflau) ) {
+                flarmBuf[flarmBufFilled] = '\0';
+                if( strstr( (const char *) flarmBuf, pflau) != nullptr ) {
+                  // we assume a Flarm switch to text mode.
+                  flarmAckExit = true;
+                  ESP_LOGI(FNAME, "S1: $PFLAU found, Flarm is self switched to text mode" );
+                }
+            }
+
+            // Reset binary mode, if Flarm ACK Exit has received.
+            if( flarmAckExit == true ) {
+                  if( flarmBuf ) {
+                  free( flarmBuf );
+                  flarmBuf = nullptr;
+                  flarmBufFilled = 0;
+                }
+                Flarm::bincom = 0;
+                flarmExitCmd = false;
+                Serial2.setStopRxRouting( false );
+                Serial1.flush( false );
+                ESP_LOGI(FNAME, "S1: Flarm Ack Exit received --> switch Flarm to text mode" );
+                break;
+            }
+          } // end while while( available > 0 )
+        }
 			}
-		} // if( !_selfTest )
+		} // end if( !_selfTest )
 		// vTaskDelay( HEARTBEAT_PERIOD_MS_SERIAL/portTICK_PERIOD_MS );
+  } // end while( true )
+}
+
+/**
+ * Handle Serial1 RX data, if Flarm text mode is set.
+ */
+void Serial::handleS1TextMode() {
+  // Check available NLs in the receiver buffer.
+  uint16_t nlc = Serial1.getNlCounter();
+
+  if( nlc == 0 )
+    return;
+
+  // get byte count from RX queue
+  int bc = Serial1.available();
+
+  if( bc == 0 ) {
+    // should normally not happens, clear RX buffer for a new synchronization.
+    Serial1.flush( false );
+    return;
   }
+
+  uint8_t *rxbuf = (uint8_t *) malloc( bc );
+  SString s;
+
+  while( nlc > 0 ) {
+    size_t bytes = Serial1.readLineFromQueue( rxbuf, bc );
+    nlc--;
+    Serial1.decNlCounter();
+
+    if( bytes > 0 ) {
+      s.set( (char *) rxbuf, bytes );
+
+      const char* pflax = "$PFLAX,A*2E\r\n";
+      // check Flarm response to $PFLAX, if it is ok. If yes, switch
+      // to binary mode
+      if( strcmp( s.c_str(), pflax ) == 0 ) {
+        Flarm::bincom = 5;
+        Serial1.clearFlarmTx();
+        Serial1.clearFlarmRx();
+        flarmExitCmd = false;
+        // Stop routing of RX data in Serial S2
+        Serial2.setStopRxRouting( true );
+        ESP_LOGI(FNAME, "S1: $PFLAX,A*2E --> switching to binary mode" );
+      }
+      routeS1RxData( s );
+    }
+  }
+  free( rxbuf );
+}
+
+void Serial::routeS1RxData( SString& s ) {
+  if( Serial1.stopRxRouting() == true )
+    return;
+
+  Router::forwardMsg( s, s1_rx_q );
+  DM.monitorString( MON_S1, DIR_RX, s.c_str(), Flarm::bincom );
+  Router::routeS1();
 }
 
 // Serial Handler  ttyS2, S2, port 8882
@@ -362,6 +382,15 @@ void Serial::serialHandler2(void *pvParameters){
 			ESP_LOGW(FNAME,"Warning serial 2 task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid2 ) );
 		vTaskDelay( HEARTBEAT_PERIOD_MS_SERIAL/portTICK_PERIOD_MS );
 	}
+}
+
+void Serial::routeS2RxData( SString& s ) {
+  if( Serial2.stopRxRouting() == true )
+    return;
+
+  Router::forwardMsg( s, s2_rx_q );
+  DM.monitorString( MON_S2, DIR_TX, s.c_str() );
+  Router::routeS2();
 }
 
 bool Serial::selfTest(int num){

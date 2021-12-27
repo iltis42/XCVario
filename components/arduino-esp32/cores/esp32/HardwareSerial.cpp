@@ -1,7 +1,12 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <inttypes.h>
+/**
+ * HardwareSerial.cpp
+ *
+ * 24.12.2021 Axel Pauli: added RX interrupt handling stuff.
+ */
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
+#include <cinttypes>
 
 #include "pins_arduino.h"
 #include "esp32-hal-uart.h"
@@ -29,7 +34,7 @@ HardwareSerial Serial1(1);
 HardwareSerial Serial2(2);
 #endif
 
-HardwareSerial::HardwareSerial(int uart_nr) : _uart_nr(uart_nr), _uart(NULL) {}
+HardwareSerial::HardwareSerial(int uart_nr) : _uart_nr(uart_nr), _uart(nullptr) {}
 
 void HardwareSerial::begin(unsigned long baud, uint32_t config, int8_t rxPin, int8_t txPin, bool rxinvert, bool txinvert, unsigned long timeout_ms)
 {
@@ -37,7 +42,7 @@ void HardwareSerial::begin(unsigned long baud, uint32_t config, int8_t rxPin, in
         log_e("Serial number is invalid, please use 0, 1 or 2");
         return;
     }
-
+    _stopRxRouting = false;
     clearFlarmTx();
     clearFlarmRx();
 

@@ -55,12 +55,6 @@ static EventGroupHandle_t rxEventGroup = NULL;
 // counter for newlines in uart queues
 static uint16_t nlCounter[3];
 
-// Semaphore for newline counters access
-static SemaphoreHandle_t nlCountersLock = NULL;;
-
-#define UART_NLC_LOCK()    do {} while ( xSemaphoreTake( nlCountersLock, portMAX_DELAY) != pdPASS )
-#define UART_NLC_UNLOCK()  xSemaphoreGive( nlCountersLock )
-
 #if CONFIG_DISABLE_HAL_LOCKS
 #define UART_MUTEX_LOCK()
 #define UART_MUTEX_UNLOCK()
@@ -82,7 +76,6 @@ static uart_t _uart_bus_array[3] = {
 #endif
 
 static void uart_on_apb_change(void * arg, apb_change_ev_t ev_type, uint32_t old_apb, uint32_t new_apb);
-static void _uartIncNlCounterFromIsr( uint8_t uart_nr );
 
 static void IRAM_ATTR _uart_isr(void *arg)
 {
@@ -100,10 +93,6 @@ static void IRAM_ATTR _uart_isr(void *arg)
             continue;
         }
 
-        uart->dev->int_clr.rxfifo_full = 1;
-        uart->dev->int_clr.frm_err = 1;
-        uart->dev->int_clr.rxfifo_tout = 1;
-
         while(uart->dev->status.rxfifo_cnt || (uart->dev->mem_rx_status.wr_addr != uart->dev->mem_rx_status.rd_addr)) {
             c = uart->dev->fifo.rw_byte;
 
@@ -115,10 +104,15 @@ static void IRAM_ATTR _uart_isr(void *arg)
                     // Set NL flag
                     eventMask |= (1 << ((i * 2) + 1));
                     // increment NL counter
-                    _uartIncNlCounterFromIsr( i );
+                    nlCounter[i]++;
                 }
             }
         }
+
+        // Clear interrupts
+        uart->dev->int_clr.rxfifo_full = 1;
+        uart->dev->int_clr.frm_err = 1;
+        uart->dev->int_clr.rxfifo_tout = 1;
     }
 
     // xHigherPriorityTaskWoken must be initialised to pdFALSE.
@@ -150,10 +144,10 @@ void uartEnableInterrupt(uart_t* uart)
     uart->dev->conf1.rxfifo_full_thrhd = 112;
     uart->dev->conf1.rx_tout_thrhd = 2;
     uart->dev->conf1.rx_tout_en = 1;
+    uart->dev->int_clr.val = 0xffffffff;
     uart->dev->int_ena.rxfifo_full = 1;
     uart->dev->int_ena.frm_err = 1;
     uart->dev->int_ena.rxfifo_tout = 1;
-    uart->dev->int_clr.val = 0xffffffff;
 
     esp_intr_alloc(UART_INTR_SOURCE(uart->num), (int)ESP_INTR_FLAG_IRAM, _uart_isr, NULL, &uart->intr_handle);
     UART_MUTEX_UNLOCK();
@@ -166,15 +160,14 @@ void uartDisableInterrupt(uart_t* uart)
         return;
     }
     UART_MUTEX_LOCK();
-    uart->dev->conf1.val = 0;
     uart->dev->int_ena.val = 0;
+    uart->dev->conf1.val = 0;
     uart->dev->int_clr.val = 0xffffffff;
 
     if( uart->intr_handle != NULL ) {
       esp_intr_free(uart->intr_handle);
       uart->intr_handle = NULL;
     }
-
     UART_MUTEX_UNLOCK();
 }
 
@@ -221,18 +214,6 @@ uart_t* uartBegin(uint8_t uart_nr, uint32_t baudrate, uint32_t config, int8_t rx
 
     if(rxPin == -1 && txPin == -1) {
         return NULL;
-    }
-
-    nlCountersLock = xSemaphoreCreateBinary();
-
-    if( nlCountersLock == NULL ) {
-        ESP_LOGE( "UART", "Cannot create nlCountersLock!" );
-        return NULL;
-    }
-
-    if( xSemaphoreGive( nlCountersLock ) != pdTRUE ) {
-        // We would expect this call to fail because we cannot give
-        // a semaphore without first "taking" it!
     }
 
     uartClearNlCounters();
@@ -489,7 +470,7 @@ void uartFlushTxOnly(uart_t* uart, bool txOnly)
         }
 
         xQueueReset(uart->queue);
-        uartClearNlCounter( uart->num );
+        uartClearNlCounter( uart );
     }
     UART_MUTEX_UNLOCK();
 }
@@ -511,7 +492,7 @@ static void uart_on_apb_change(void * arg, apb_change_ev_t ev_type, uint32_t old
     uart_t* uart = (uart_t*)arg;
     if(ev_type == APB_BEFORE_CHANGE){
         UART_MUTEX_LOCK();
-        //disabple interrupt
+        //disable interrupt
         uart->dev->int_ena.val = 0;
         uart->dev->int_clr.val = 0xffffffff;
         // read RX fifo
@@ -730,69 +711,42 @@ bool uartRxActive(uart_t* uart) {
     return uart->dev->status.st_urx_out != 0;
 }
 
-void uartIncNlCounter( uint8_t uart_nr )
+void uartIncNlCounter( uart_t *uart )
 {
-  if(uart_nr > 2)
-      return;
+  if( uart == NULL )
+    return;
 
-  UART_NLC_LOCK();
-  nlCounter[uart_nr]++;
-  UART_NLC_UNLOCK();
+  nlCounter[uart->num]++;
 }
 
-static void _uartIncNlCounterFromIsr( uint8_t uart_nr )
+void uartDecNlCounter( uart_t *uart )
 {
-  if(uart_nr > 2)
-      return;
+  if( uart == NULL )
+    return;
 
-  while( 1 )
-    {
-      if( xSemaphoreTakeFromISR( nlCountersLock, NULL ) == pdTRUE ) {
-          break;
-      }
-    }
-
-  nlCounter[uart_nr]++;
-  xSemaphoreGiveFromISR( nlCountersLock, NULL );
+  nlCounter[uart->num]--;
 }
-
-void uartDecNlCounter( uint8_t uart_nr )
+void uartClearNlCounter( uart_t *uart )
 {
-  if(uart_nr > 2)
-      return;
+  if( uart == NULL )
+    return;
 
-  UART_NLC_LOCK();
-  nlCounter[uart_nr]--;
-  UART_NLC_UNLOCK();
-}
-void uartClearNlCounter( uint8_t uart_nr )
-{
-  if(uart_nr > 2)
-      return;
-
-  UART_NLC_LOCK();
-  nlCounter[uart_nr] = 0;
-  UART_NLC_UNLOCK();
+  nlCounter[uart->num] = 0;
 }
 
 void uartClearNlCounters()
 {
-  UART_NLC_LOCK();
   nlCounter[0] = 0;
   nlCounter[1] = 0;
   nlCounter[2] = 0;
-  UART_NLC_UNLOCK();
 }
 
-uint16_t uartGetNlCounter( uint8_t uart_nr )
+int uartGetNlCounter( uart_t *uart )
 {
-  if(uart_nr > 2)
-      return 0;
+  if( uart == NULL )
+      return -1;
 
   uint16_t nlc;
-  UART_NLC_LOCK();
-  nlc = nlCounter[uart_nr];
-  UART_NLC_UNLOCK();
+  nlc = nlCounter[uart->num];
   return nlc;
 }
-

@@ -2,10 +2,10 @@
 #define __SERIAL_H__
 
 #include <cstring>
+#include "SString.h"
 #include "driver/gpio.h"
 #include <esp_log.h>
 #include "RingBufCPP.h"
-#include <string>
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 
@@ -47,9 +47,28 @@ public:
     xEventGroupSetBits( rxTxNotifier, eventMask );
   }
 
+  /**
+   * Handle Serial1 RX data, if Flarm text mode is set.
+   */
+  static void handleS1TextMode();
+
+  /**
+   * Handle Serial2 RX data, if Flarm text mode is set.
+   */
+  static void handleS2TextMode();
+
+  static void routeS1RxData( SString& s );
+  static void routeS2RxData( SString& s );
+
 private:
   static bool _selfTest;
   static EventGroupHandle_t rxTxNotifier;
+
+  // Stop routing of RX data.
+  static bool stopRxRouting;
+
+  // Flag that Flarm exit command has been send.
+  static bool flarmExitCmd;
 };
 
 #endif

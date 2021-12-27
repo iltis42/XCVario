@@ -93,11 +93,11 @@ bool uartRxActive(uart_t* uart);
 void uartRxEventHandler( EventGroupHandle_t egh );
 
 // Functions for handling of newline counter
-void uartIncNlCounter( uint8_t uart_nr );
-void uartDecNlCounter( uint8_t uart_nr );
-void uartClearNlCounter( uint8_t uart_nr );
+void uartIncNlCounter( uart_t *uart );
+void uartDecNlCounter( uart_t *uart );
+void uartClearNlCounter( uart_t *uart );
 void uartClearNlCounters();
-uint16_t uartGetNlCounter( uint8_t uart_nr );
+int uartGetNlCounter( uart_t *uart );
 
 #ifdef __cplusplus
 }

@@ -204,15 +204,15 @@ void print_fb( SetupMenuValFloat * p, float wingload ){
 
 int water_adj( SetupMenuValFloat * p )
 {
-	float wingload = (empty_weight.get() + crew_weight.get()+ p->_value) / polar_wingarea.get();
-	ESP_LOGI(FNAME,"water_adj() wingload:%.1f empty: %.1f cw:%.1f water:%.1f", wingload, empty_weight.get(), crew_weight.get(), p->_value  );
+	float wingload = (ballast_kg.get() + crew_weight.get()+ empty_weight.get()) / polar_wingarea.get();
+	ESP_LOGI(FNAME,"water_adj() wingload:%.1f empty: %.1f cw:%.1f water:%.1f", wingload, empty_weight.get(), crew_weight.get(), ballast_kg.get() );
 	print_fb( p, wingload );
 	return 0;
 }
 
 int empty_weight_adj( SetupMenuValFloat * p )
 {
-	float wingload = (ballast_kg.get() + crew_weight.get()+ p->_value) / polar_wingarea.get();
+	float wingload = (ballast_kg.get() + crew_weight.get()+ empty_weight.get()) / polar_wingarea.get();
 	print_fb( p, wingload );
 	return 0;
 }
@@ -220,7 +220,7 @@ int empty_weight_adj( SetupMenuValFloat * p )
 
 int crew_weight_adj( SetupMenuValFloat * p )
 {
-	float wingload = (ballast_kg.get() + empty_weight.get()+ p->_value) / polar_wingarea.get();
+	float wingload = (ballast_kg.get() + empty_weight.get()+ crew_weight.get()) / polar_wingarea.get();
 	print_fb( p, wingload );
 	return 0;
 }
@@ -778,7 +778,7 @@ void SetupMenu::setup( )
 		pa->setHelp(PROGMEM "Adjust Polar at 3 points of selected polar in commonly used metric system for Polars", 230 );
 		poe->addEntry( pa );
 
-		SetupMenuValFloat * wil = new SetupMenuValFloat( "Wingload", "kg/m2", 10.0, 100.0, 0.1, 0, false, &polar_wingload );
+		SetupMenuValFloat * wil = new SetupMenuValFloat( "Ref Wingload", "kg/m2", 10.0, 100.0, 0.1, 0, false, &polar_wingload );
 		wil->setHelp(PROGMEM"Wingload that corresponds to the 3 value pairs for speed/sink of polar");
 		pa->addEntry( wil );
 		SetupMenuValFloat * pov1 = new SetupMenuValFloat( "Speed 1", "km/h", 50.0, 120.0, 1, 0, false, &polar_speed1);
@@ -1201,7 +1201,7 @@ void SetupMenu::setup( )
 		bat->addEntry( batv );
 
 		SetupMenu * hardware = new SetupMenu( "Hardware Setup" );
-		hardware->setHelp( PROGMEM "Setup variometer hardware like display, rotary, AHRS sensor", 200 );
+		hardware->setHelp( PROGMEM "Setup variometer hardware e.g. display, rotary, AS and AHRS sensor, voltmeter, etc", 240 );
 		sye->addEntry( hardware );
 
 		SetupMenu * display = new SetupMenu( "DISPLAY Setup" );
@@ -1340,13 +1340,9 @@ void SetupMenu::setup( )
 		pstype->addEntry( "MP5004");
 		pstype->addEntry( "Autodetect");
 
-		float fva = factory_volt_adjust.get();
-		if( abs(fva - 0.00815) < 0.00001 ) {
-			ESP_LOGI(FNAME,"Add option to Factory adjust ADC; not yet done");
-			SetupMenuValFloat * fvoltadj = new SetupMenuValFloat( 	"Factory Voltmeter Adj", "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust );
-			fvoltadj->setHelp(PROGMEM "Option to fine factory adjust voltmeter");
-			sye->addEntry( fvoltadj );
-		}
+		SetupMenuValFloat * fvoltadj = new SetupMenuValFloat( "Voltmeter Adjust", "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust,  false, false, true);
+		fvoltadj->setHelp(PROGMEM "Option to fine factory adjust voltmeter");
+		hardware->addEntry( fvoltadj );
 
 		// Altimeter, IAS
 		SetupMenu * aia = new SetupMenu( "Altimeter, Airspeed" );

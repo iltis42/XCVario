@@ -17,7 +17,7 @@
 SetupMenuValFloat * SetupMenuValFloat::qnh_menu = 0;
 char SetupMenuValFloat::_val_str[20];
 
-SetupMenuValFloat::SetupMenuValFloat( const char* title, const char *unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs, bool restart, bool sync ) {
+SetupMenuValFloat::SetupMenuValFloat( const char* title, const char *unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs, bool restart, bool sync, bool live_update ) {
 	// ESP_LOGI(FNAME,"SetupMenuValFloat( %s ) ", title.c_str() );
 	attach(this);
 	_title = title;
@@ -34,6 +34,7 @@ SetupMenuValFloat::SetupMenuValFloat( const char* title, const char *unit, float
 	_action = action;
 	bits._end_menu = end_menu;
 	bits._precision = 2;
+	bits._live_update = live_update;
 	if( step >= 1 )
 		bits._precision = 0;
 	if( anvs ) {
@@ -49,7 +50,7 @@ SetupMenuValFloat::~SetupMenuValFloat()
 }
 
 const char *SetupMenuValFloat::value(){
-	float uval = Units::value( _value, _nvs->unitType() );
+	float uval = Units::value( _nvs->get(), _nvs->unitType() );
 	// ESP_LOGI(FNAME,"value() ulen: %d val: %f, utype: %d unitval: %f", strlen( _unit ), _nvs->get(), _nvs->unitType(), uval  );
 	const char * final_unit = _unit;
 	if( strlen( _unit ) == 0 )
@@ -129,7 +130,10 @@ void SetupMenuValFloat::down( int count ){
 	}
 	if( _value < _min )
 		_value = _min;
+	_nvs->set(_value );
 	displayVal();
+	if( bits._live_update )
+		_nvs->set( _value );
 	if( _action != 0 )
 		(*_action)( this );
 }
@@ -144,7 +148,10 @@ void SetupMenuValFloat::up( int count ){
 	}
 	if( _value > _max )
 		_value = _max;
+	_nvs->set(_value );
 	displayVal();
+	if( bits._live_update )
+		_nvs->set( _value );
 	if( _action != 0 )
 		(*_action)( this );
 }
@@ -168,8 +175,9 @@ void SetupMenuValFloat::press(){
 		selected->highlight = -1;  // to topmost selection when back
 		selected->pressed = true;
 		if( _value != _value_safe ){
-			if( _nvs )
-				_nvs->commit();
+			// ESP_LOGI(FNAME,"_value: %f != _value_safe: %f ", _value, _value_safe );
+			_value_safe = _value;
+			_nvs->commit();
 			if( bits._restart ) {
 				Audio::shutdown();
 				clear();
@@ -187,7 +195,7 @@ void SetupMenuValFloat::press(){
 	}
 	else
 	{
-		// ESP_LOGI(FNAME,"NOT pressed, value: %f", _value );
+		ESP_LOGI(FNAME,"NOT pressed, value: %f", _value );
 		pressed = true;
 		clear();
 		display();

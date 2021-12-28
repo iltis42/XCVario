@@ -151,7 +151,7 @@ public:
 	virtual T getGui() const { return get(); } // tb. overloaded for blackboard
 	virtual const char* unit() const { return ""; } // tb. overloaded for blackboard
 
-	bool set( T aval, bool dosync=true ) {
+	bool set( T aval, bool dosync=true, bool doAct=true ) {
 		if( _value == aval ){
 			// ESP_LOGI(FNAME,"Value already in config: %s", _key );
 			return( true );
@@ -164,11 +164,11 @@ public:
 		else if( (flags._sync == SYNC_BIDIR) && isClient() ){
 			sendAck();
 		}
-
-		if( _action != 0 ) {
-			(*_action)();
+		if( doAct ){
+			if( _action != 0 ) {
+				(*_action)();
+			}
 		}
-
 		if( flags._volatile == VOLATILE ){
 			return true;
 		}

@@ -35,8 +35,8 @@ float S2F::getN() {
 
 void S2F::begin(){
 	if( empty_weight.get() == 0 )
-		empty_weight.set( (polar_wingload.get() * polar_wingarea.get())- crew_weight.get() );
-    setPolar();
+		empty_weight.set( (polar_wingload.get() * polar_wingarea.get())- 80.0 );
+	calculateOverweight();
 	recalculatePolar();
 	change_ballast();
 }
@@ -85,11 +85,9 @@ void S2F::setPolar()
 	polar_sink3.set( p.sink3 );
 	polar_wingload.set( p.wingload );
 	polar_max_ballast.set( p.max_ballast );
-	polar_wingarea.set( p.wingarea );
-	empty_weight.set( (p.wingload * p.wingarea) - crew_weight.get() ); // Calculate a default dor emtpy mass
-	ESP_LOGI(FNAME,"New empty_weight %.1f", empty_weight.get() );
-	gross_weight.set( empty_weight.get() + crew_weight.get() + ballast_kg.get() );
-	ESP_LOGI(FNAME,"now change polar");
+	polar_wingarea.set( p.wingarea, true, false );
+	empty_weight.set( (p.wingload * p.wingarea) - 80.0, true, false ); // Calculate default for emtpy mass
+	ESP_LOGI(FNAME,"Referelce weight:%.1f, new empty_weight: %.1f", (p.wingload * p.wingarea), empty_weight.get() );
 	modifyPolar();
 }
 

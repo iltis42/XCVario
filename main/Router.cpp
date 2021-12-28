@@ -13,7 +13,7 @@
 #include "Switch.h"
 #include "sensor.h"
 #include "Flarm.h"
-#include "Serial.h""
+#include "Serial.h"
 
 RingBufCPP<SString, QUEUE_SIZE> wl_vario_tx_q;
 RingBufCPP<SString, QUEUE_SIZE> wl_flarm_tx_q;
@@ -164,7 +164,6 @@ void Router::routeS1(){
 			if( forwardMsg( s1, s2_tx_q ))
 			  Serial::setRxTxNotifier( TX2_REQ );
 				ESP_LOGV(FNAME,"ttyS1 RX bytes %d looped to s2_tx_q", s1.length() );
-    Flarm::parsePFLAX( s1 );
 		Protocols::parseNMEA( s1.c_str() );
 	}
 }
@@ -188,7 +187,6 @@ void Router::routeS2(){
 			if( forwardMsg( s2, s1_tx_q )) // This might connect XCSoar on S2 with Flarm on S1
 			  Serial::setRxTxNotifier( TX1_REQ );
 				ESP_LOGV(FNAME,"ttyS2 RX bytes %d forward to s1_tx_q", s2.length() );
-		Flarm::parsePFLAX( s2 );
 		Protocols::parseNMEA( s2.c_str() );
 	}
 }
@@ -219,7 +217,6 @@ void Router::routeWLAN(){
 				if( forwardMsg( wlmsg, s2_tx_q ) )
 				  Serial::setRxTxNotifier( TX2_REQ );
 					ESP_LOGV(FNAME,"Send to ttyS2 device, TCP port 8881 received %d bytes", wlmsg.length() );
-			Flarm::parsePFLAX( wlmsg );
 			Protocols::parseNMEA( wlmsg.c_str() );
 		}
 		if( pullMsg( wl_aux_rx_q, wlmsg ) ){
@@ -231,8 +228,7 @@ void Router::routeWLAN(){
 				if( forwardMsg( wlmsg, s2_tx_q ) )
 				  Serial::setRxTxNotifier( TX2_REQ );
 					ESP_LOGV(FNAME,"Send to ttyS2 device, TCP port 8882 received %d bytes", wlmsg.length() );
-			Flarm::parsePFLAX( wlmsg );
-			Protocols::parseNMEA( wlmsg.c_str() );
+		Protocols::parseNMEA( wlmsg.c_str() );
 		}
 	}
 }
@@ -244,7 +240,6 @@ void Router::routeBT(){
 		return;
 	SString bt;
 	if( pullMsg( bt_rx_q, bt ) ){
-		Flarm::parsePFLAX( bt );
 		if( (serial1_tx.get() & RT_WIRELESS) && serial1_speed.get() )  // Serial data TX from bluetooth enabled ?
 			if( forwardMsg( bt, s1_tx_q ) )
 			  Serial::setRxTxNotifier( TX1_REQ );

@@ -1803,6 +1803,9 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		speed_dirty = false;
 	}
 	if( !(tick%11) || alt_dirty ) {
+		// { // Enable those line, comment previous condition, for a drawAltimeter simulation
+		// static float alt = 300, rad = 0.0; 
+		// altitude = alt + sin(rad) * (2*alt_quant+2); rad += 0.001*alt_quant;
 		if ( drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, alt_dirty ) ) {
 			if( alt_overlap ){
 				needle_dirty = true;

@@ -151,6 +151,7 @@ static float precalc_sin[SINCOS_OVER_110];
 static float precalc_cos[SINCOS_OVER_110];
 static int16_t old_vario_bar_val = 0;
 static int16_t old_sink_bar_val = 0;
+static int16_t alt_quant = 1;
 
 
 #define WKBARMID (AMIDY-15)
@@ -593,6 +594,23 @@ void IpsDisplay::redrawValues()
 	old_vario_bar_val = 0;
 	old_sink_bar_val = 0;
 	prev_heading = -1000;
+	 
+	switch ( alt_quantization.get() ) {
+		case 0:
+			alt_quant = 0;
+			break;
+		case 2:
+			alt_quant = 5;
+			break;
+		case 3:
+			alt_quant = 10;
+			break;
+		case 4:
+			alt_quant = 20;
+			break;
+		default:
+			alt_quant = 1;
+	}
 }
 
 void IpsDisplay::drawTeBuf(){
@@ -1337,7 +1355,7 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 		ucg->setPrintPos(x-ucg->getStrWidth(s),y);
 		ucg->print(s);
 	}
-	else if ( ! alt_quant.get() ) {
+	else if ( ! alt_quant ) {
 		sprintf(s,"  %d", alt);
 		ucg->setPrintPos(x-ucg->getStrWidth(s),y);
 		ucg->print(s);

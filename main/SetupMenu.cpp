@@ -1369,7 +1369,7 @@ void SetupMenu::setup( )
 		auze->addEntry( "Cancel");
 		auze->addEntry( "Start");
 
-		SetupMenuSelect * alq = new SetupMenuSelect( "Alt. Quantization", false,  0, true, &alt_quant );
+		SetupMenuSelect * alq = new SetupMenuSelect( "Alt. Quantization", false,  0, true, &alt_quantization );
 		alq->setHelp( PROGMEM "Set altimeter mode with discrete steps and rolling last digits");
 		alq->addEntry( "Disable");
 		alq->addEntry( "1");

@@ -53,9 +53,9 @@ public:
   static void handleS1TextMode();
 
   /**
-   * Handle Serial2 RX data, if Flarm text mode is set.
+   * Handle Serial 1/2 RX data, if Flarm works in text mode.
    */
-  static void handleS2TextMode();
+  static void handleTextMode( uint8_t uartNum, bool &flarmExitCmd );
 
   static void routeS1RxData( SString& s );
   static void routeS2RxData( SString& s );
@@ -63,12 +63,6 @@ public:
 private:
   static bool _selfTest;
   static EventGroupHandle_t rxTxNotifier;
-
-  // Stop routing of RX data.
-  static bool stopRxRouting;
-
-  // Flag that Flarm exit command has been send.
-  static bool flarmExitCmd;
 };
 
 #endif

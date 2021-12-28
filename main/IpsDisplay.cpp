@@ -151,6 +151,7 @@ static float precalc_sin[SINCOS_OVER_110];
 static float precalc_cos[SINCOS_OVER_110];
 static int16_t old_vario_bar_val = 0;
 static int16_t old_sink_bar_val = 0;
+static int16_t alt_quant = 1;
 
 
 #define WKBARMID (AMIDY-15)
@@ -593,6 +594,23 @@ void IpsDisplay::redrawValues()
 	old_vario_bar_val = 0;
 	old_sink_bar_val = 0;
 	prev_heading = -1000;
+	 
+	switch ( alt_quantization.get() ) {
+		case 0:
+			alt_quant = 0;
+			break;
+		case 2:
+			alt_quant = 5;
+			break;
+		case 3:
+			alt_quant = 10;
+			break;
+		case 4:
+			alt_quant = 20;
+			break;
+		default:
+			alt_quant = 1;
+	}
 }
 
 void IpsDisplay::drawTeBuf(){
@@ -1279,7 +1297,7 @@ void IpsDisplay::initRetroDisplay( bool ulmode ){
 		FLAP->setSymbolPosition( WKSYMST-3, WKBARMID-27*(abs(flap_neg_max.get()))-18 );
 	}
 	if (ulmode){
-// Thermometer
+		// Thermometer
 		drawThermometer(10, 25 );
 	}
 }
@@ -1322,12 +1340,16 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 {
 	if( _menu ) return false;
 
-	int alt = (int)(altitude); // rendered value
-
 	// check on the rendered value for change
+	int alt = (int)(altitude);
+	if ( alt_quant == 1 && alt_unit.get() != ALT_UNIT_FL ) {
+		alt = (int)(altitude*10.); // respect tenth
+	}
+
 	dirty = dirty || alt != alt_prev;
 	if ( ! dirty ) return false;
 	alt_prev = alt;
+	alt = (int)roundf(altitude);
 
 	char s[20];
 	ucg->setFont(ucg_font_fub25_hr, true);
@@ -1337,64 +1359,68 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 		ucg->setPrintPos(x-ucg->getStrWidth(s),y);
 		ucg->print(s);
 	}
-	else if ( ! alt_quant.get() ) {
+	else if ( ! alt_quant ) {
 		sprintf(s,"  %d", alt);
 		ucg->setPrintPos(x-ucg->getStrWidth(s),y);
 		ucg->print(s);
 	}
 	else {
 		int16_t len = std::strlen(s);
-		int16_t quant = 10;
-		if ( alt_unit.get() == ALT_UNIT_FT ) {
-			quant = 20;
-		}
-		alt = ((alt+quant/2)/quant)*quant;
-		int16_t fraction = (altitude+quant/2 - alt) * 100/quant; // %  0..100
+		int16_t nr_rolling_digits = (alt_quant>9)? 2 : 1; // maxium two rolling last digits
 
-		int16_t lastdigit = (alt%100)/10;
-		s[len-2] = '\0'; len-=2; // chop 2 digits
-		int16_t nr_rolling = 2;
+		// Quantized altitude 
+		alt = (int)(altitude); // start from truncated value
+		alt = ((alt+alt_quant/2)/alt_quant)*alt_quant;
+		float fraction = (altitude+alt_quant/2 - alt) / alt_quant;
+		int16_t mod = (nr_rolling_digits==2)? 100 : 10; // mod = pow10(nr_rolling_digits);
+		s[len-nr_rolling_digits] = '\0'; len -= nr_rolling_digits; // chop nr_rolling_digits digits
 
-		static int16_t fraction_prev = -1;
-		if (dirty || fraction != fraction_prev)
+		static float fraction_prev = 1.;
+		if (dirty || std::abs(fraction - fraction_prev) > 0.01 )
 		{
-			// move last digit
-			int16_t m = (fraction * char_height/ 100) - char_height/2; // to pixel offest
-			int16_t q = quant/10; // here either 1 (for m) or 2 (for ft)
-			int16_t xp = x - 2*char_width;
-			char tmp[3] = {'0', '0', 0};
-			ucg->setClipRange(xp, y - char_height * 1.25, char_width*2, char_height * 1.45);
+			// move last alt_quant digit(s)
+			int16_t base = mod/10;
+			int16_t lastdigit = alt%mod;
+			int16_t m = (1.-fraction) * char_height - char_height/2; // to pixel offest
+			// ESP_LOGI(FNAME,"Last %f/%d: %f m%d .%d", altitude, (int)(altitude)%alt_quant, fraction, m, lastdigit);
+			int16_t xp = x - nr_rolling_digits*char_width;
+			ucg->setClipRange(xp, y - char_height * 1.25, char_width*nr_rolling_digits-1, char_height * 1.45);
 			ucg->setPrintPos(xp, y - m - char_height);
-			tmp[0] = (lastdigit+10-q)%10 + '0';
+			char tmp[10];
+			sprintf(tmp, "%0*u", nr_rolling_digits, (lastdigit+alt_quant)%mod);
 			ucg->print(tmp); // one above
 			ucg->setPrintPos(xp, y - m);
-			tmp[0] = lastdigit%10 + '0';
+			sprintf(tmp, "%0*u", nr_rolling_digits, lastdigit);
 			ucg->print(tmp);
 			ucg->setPrintPos(xp, y - m + char_height);
-			tmp[0] = (lastdigit+q)%10 + '0';
+			sprintf(tmp, "%0*u", nr_rolling_digits, (lastdigit+mod-alt_quant)%mod);
 			ucg->print(tmp); // one below
-			ucg->undoClipRange();
 
 			fraction_prev = fraction;
 
-			if ( m < 0 && lastdigit < q ) { // hdigit in disharmonie with digit of altitude to display
-				int16_t hdigit = (alt%1000)/100;
-				// ESP_LOGI(FNAME,"Alti %f: %d - %dm%d %d.%d", altitude, fraction, alt, m, hdigit, lastdigit);
-				nr_rolling++;
+			// Roll leading digit independant of quant setting in 2 * (mod/10) range
+			int16_t lead_quant = 2 * base; // eg. 2 for Q=1 and Q=5 
+			int16_t rollover = ((int)(altitude)%mod)/base;
+			if ( (rollover < 1) || (rollover > 8) ) { // [9.1,..,0.9]: roll-over needs clarification on leading digit
+				// Re-Quantized altitude 
+				fraction = (float)((int)((altitude+base)*10)%(mod*10)) / (lead_quant*10);
+				int16_t m = fraction * char_height; // to pixel offest
+				int16_t hdigit = (((int)(altitude)+lead_quant)/mod)%10;
+				nr_rolling_digits++; // one less digit remains to print
 				xp -= char_width; // one to the left
-				// ucg->drawFrame(xp, y - char_height, char_width, char_height);
-				ucg->setClipRange(xp, y - char_height, char_width, char_height-1);  // to be crosschecked by hjr
-				ucg->setPrintPos(xp, y - m);
-				ucg->print(hdigit);
-				ucg->setPrintPos(xp, y - m - char_height); // one above
-				ucg->print((hdigit+10-q)%10);
-				ucg->undoClipRange();
+				//ucg->drawFrame(xp-1, y - char_height-1, char_width+1, char_height+1);
+				ucg->setClipRange(xp, y - char_height, char_width-1, char_height-1);
+				ucg->setPrintPos(xp, y + m - char_height);
+				ucg->print(hdigit); // one above
+				ucg->setPrintPos(xp, y + m );
+				ucg->print((hdigit+9)%10);
 				s[len-1] = '\0'; len--; // chop another digits
 			}
+			ucg->undoClipRange();
 		}
-		ucg->setPrintPos(x - ucg->getStrWidth(s) - nr_rolling*char_width , y);
+		ucg->setPrintPos(x - ucg->getStrWidth(s) - nr_rolling_digits*char_width , y);
 		static int altpart_prev = 0;
-		alt/=100;
+		alt/=(mod*10);
 		if (dirty || altpart_prev != alt) {
 			ucg->print(s);
 			altpart_prev = alt;
@@ -1785,6 +1811,9 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		speed_dirty = false;
 	}
 	if( !(tick%11) || alt_dirty ) {
+		// { // Enable those line, comment previous condition, for a drawAltimeter simulation
+		// static float alt = 300, rad = 0.0; 
+		// altitude = alt + sin(rad) * (2*alt_quant+2); rad += 0.001*alt_quant;
 		if ( drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, alt_dirty ) ) {
 			if( alt_overlap ){
 				needle_dirty = true;

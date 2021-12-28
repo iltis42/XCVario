@@ -77,54 +77,57 @@ static uart_t _uart_bus_array[3] = {
 
 static void uart_on_apb_change(void * arg, apb_change_ev_t ev_type, uint32_t old_apb, uint32_t new_apb);
 
-static void IRAM_ATTR _uart_isr(void *arg)
+static void IRAM_ATTR _uart_isr( void *arg )
 {
-    uint8_t i, c;
+    uint8_t c;
     BaseType_t xHigherPriorityTaskWoken, xHigherPriorityTaskWoken1;
-    uart_t* uart;
+    uint8_t* uart_arg = (uint8_t *) arg;
+    uart_t* uart = NULL;
     uint8_t eventMask = 0;
 
     // xHigherPriorityTaskWoken must be initialised to pdFALSE.
     xHigherPriorityTaskWoken = pdFALSE;
 
-    for( i=0; i<3; i++) {
-        uart = &_uart_bus_array[i];
-        if(uart->intr_handle == NULL){
-            continue;
-        }
+    if( uart_arg != NULL && *uart_arg < 3 ) {
+        uint8_t uart_num = *uart_arg;
+        uart = &_uart_bus_array[uart_num];
 
-        while(uart->dev->status.rxfifo_cnt || (uart->dev->mem_rx_status.wr_addr != uart->dev->mem_rx_status.rd_addr)) {
-            c = uart->dev->fifo.rw_byte;
+        if( uart->intr_handle != NULL ) {
+            while(uart->dev->status.rxfifo_cnt || (uart->dev->mem_rx_status.wr_addr != uart->dev->mem_rx_status.rd_addr)) {
+                c = uart->dev->fifo.rw_byte;
 
-            if(uart->queue != NULL)  {
-                xQueueSendFromISR(uart->queue, &c, &xHigherPriorityTaskWoken);
-                // Set character flag
-                eventMask |= (1 << (i * 2));
-                if( c == '\n' ) {
-                    // Set NL flag
-                    eventMask |= (1 << ((i * 2) + 1));
-                    // increment NL counter
-                    nlCounter[i]++;
+                if(uart->queue != NULL)  {
+                    xQueueSendFromISR(uart->queue, &c, &xHigherPriorityTaskWoken);
+                    // Set character flag
+                    eventMask |= (1 << (uart_num * 2));
+                    if( c == '\n' ) {
+                        // Set NL flag
+                        eventMask |= (1 << ((uart_num * 2) + 1));
+                        // increment NL counter
+                        nlCounter[uart_num]++;
+                    }
                 }
             }
-        }
+       }
+    }
 
-        // Clear interrupts
-        uart->dev->int_clr.rxfifo_full = 1;
-        uart->dev->int_clr.frm_err = 1;
-        uart->dev->int_clr.rxfifo_tout = 1;
+    if( uart ) {
+      // Clear interrupts
+      uart->dev->int_clr.rxfifo_full = 1;
+      uart->dev->int_clr.frm_err = 1;
+      uart->dev->int_clr.rxfifo_tout = 1;
     }
 
     // xHigherPriorityTaskWoken must be initialised to pdFALSE.
     xHigherPriorityTaskWoken1 = pdFALSE;
 
     if( rxEventGroup != NULL && eventMask != 0 ) {
-        // Set event group RX bits
-        xEventGroupSetBitsFromISR( rxEventGroup, eventMask, &xHigherPriorityTaskWoken1 );
+      // Set event group RX bits
+      xEventGroupSetBitsFromISR( rxEventGroup, eventMask, &xHigherPriorityTaskWoken1 );
     }
 
     if( xHigherPriorityTaskWoken || xHigherPriorityTaskWoken1 ) {
-        portYIELD_FROM_ISR();
+      portYIELD_FROM_ISR();
     }
 }
 
@@ -149,7 +152,8 @@ void uartEnableInterrupt(uart_t* uart)
     uart->dev->int_ena.frm_err = 1;
     uart->dev->int_ena.rxfifo_tout = 1;
 
-    esp_intr_alloc(UART_INTR_SOURCE(uart->num), (int)ESP_INTR_FLAG_IRAM, _uart_isr, NULL, &uart->intr_handle);
+    // esp_intr_alloc(UART_INTR_SOURCE(uart->num), (int)ESP_INTR_FLAG_IRAM, _uart_isr, NULL, &uart->intr_handle);
+    esp_intr_alloc(UART_INTR_SOURCE(uart->num), (int)ESP_INTR_FLAG_IRAM, _uart_isr, &uart->num, &uart->intr_handle);
     UART_MUTEX_UNLOCK();
 }
 

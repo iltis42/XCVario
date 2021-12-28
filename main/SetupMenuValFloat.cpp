@@ -50,7 +50,7 @@ SetupMenuValFloat::~SetupMenuValFloat()
 }
 
 const char *SetupMenuValFloat::value(){
-	float uval = Units::value( _value, _nvs->unitType() );
+	float uval = Units::value( _nvs->get(), _nvs->unitType() );
 	// ESP_LOGI(FNAME,"value() ulen: %d val: %f, utype: %d unitval: %f", strlen( _unit ), _nvs->get(), _nvs->unitType(), uval  );
 	const char * final_unit = _unit;
 	if( strlen( _unit ) == 0 )
@@ -130,6 +130,7 @@ void SetupMenuValFloat::down( int count ){
 	}
 	if( _value < _min )
 		_value = _min;
+	_nvs->set(_value );
 	displayVal();
 	if( bits._live_update )
 		_nvs->set( _value );
@@ -147,6 +148,7 @@ void SetupMenuValFloat::up( int count ){
 	}
 	if( _value > _max )
 		_value = _max;
+	_nvs->set(_value );
 	displayVal();
 	if( bits._live_update )
 		_nvs->set( _value );
@@ -173,8 +175,9 @@ void SetupMenuValFloat::press(){
 		selected->highlight = -1;  // to topmost selection when back
 		selected->pressed = true;
 		if( _value != _value_safe ){
-			if( _nvs )
-				_nvs->commit();
+			// ESP_LOGI(FNAME,"_value: %f != _value_safe: %f ", _value, _value_safe );
+			_value_safe = _value;
+			_nvs->commit();
 			if( bits._restart ) {
 				Audio::shutdown();
 				clear();
@@ -192,7 +195,7 @@ void SetupMenuValFloat::press(){
 	}
 	else
 	{
-		// ESP_LOGI(FNAME,"NOT pressed, value: %f", _value );
+		ESP_LOGI(FNAME,"NOT pressed, value: %f", _value );
 		pressed = true;
 		clear();
 		display();

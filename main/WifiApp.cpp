@@ -204,8 +204,8 @@ void WifiApp::socket_server(void *setup) {
 		Router::routeWLAN();
 		Router::routeClient();
 
-		if( uxTaskGetStackHighWaterMark( &config->pid ) < 128 )
-			ESP_LOGW(FNAME,"Warning wifi task stack low: %d bytes, port %d", uxTaskGetStackHighWaterMark( &config->pid ), config->port );
+		if( uxTaskGetStackHighWaterMark( config->pid ) < 128 )
+			ESP_LOGW(FNAME,"Warning wifi task stack low: %d bytes, port %d", uxTaskGetStackHighWaterMark( config->pid ), config->port );
 		if( Flarm::bincom )
 			vTaskDelay(5/portTICK_PERIOD_MS);  // maximize realtime throuput for flight download
 		else

@@ -35,7 +35,7 @@
 #include "Poti.h"
 
 
-TaskHandle_t dactid;
+static TaskHandle_t dactid = NULL;
 
 uint8_t Audio::_tonemode;
 uint16_t *Audio::p_wiper;
@@ -665,8 +665,8 @@ void Audio::dactask(void* arg )
 			}
 		}
 		// ESP_LOGI(FNAME, "Audio delay %d", _delay );
-		if( uxTaskGetStackHighWaterMark( &dactid ) < 256 )
-			ESP_LOGW(FNAME,"Warning Audio dac task stack low: %d bytes", uxTaskGetStackHighWaterMark( &dactid ) );
+		if( uxTaskGetStackHighWaterMark( dactid ) < 256 )
+			ESP_LOGW(FNAME,"Warning Audio dac task stack low: %d bytes", uxTaskGetStackHighWaterMark( dactid ) );
 		vTaskDelayUntil(&xLastWakeTime, 10/portTICK_PERIOD_MS);
 		if( volume_change )
 			volume_change--;

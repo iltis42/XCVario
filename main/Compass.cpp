@@ -26,7 +26,7 @@ Author: Axel Pauli, deviation and refactoring by Eckhard Völlm Dec 2021
 #include "QMCMagCAN.h"
 #include "QMC5883L.h"
 
-TaskHandle_t *ctid = 0;
+TaskHandle_t ctid = 0;
 
 /*
   Creates instance for I2C connection with passing the desired parameters.
@@ -141,8 +141,8 @@ void Compass:: progress(){
 				m_headingValid = true;
 			}
 		}
-		if( uxTaskGetStackHighWaterMark( ctid  ) < 256 )
-			ESP_LOGW(FNAME,"Warning Compass task stack low: %d bytes", uxTaskGetStackHighWaterMark( ctid ) );
+		if( uxTaskGetStackHighWaterMark( &ctid  ) < 256 )
+			ESP_LOGW(FNAME,"Warning Compass task stack low: %d bytes", uxTaskGetStackHighWaterMark( &ctid ) );
 		float diff = Vector::angleDiffDeg( m_gyro_fused_heading, _heading_average );
 		if( _heading_average == -1000 )
 			_heading_average = m_gyro_fused_heading;
@@ -166,7 +166,7 @@ void Compass::begin(){
 }
 
 void Compass::start(){
-	xTaskCreatePinnedToCore(&compassT, "compassT", 2600, NULL, 12, ctid, 0);
+	xTaskCreatePinnedToCore(&compassT, "compassT", 2600, NULL, 12, &ctid, 0);
 }
 
 float Compass::filteredHeading( bool *okIn )

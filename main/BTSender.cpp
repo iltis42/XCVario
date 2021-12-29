@@ -1,4 +1,3 @@
-
 #include <esp_log.h>
 #include "BTSender.h"
 #include <string>
@@ -20,7 +19,7 @@
 #include "BluetoothSerial.h"
 #include "DataMonitor.h"
 
-static TaskHandle_t *pid;
+static TaskHandle_t pid;
 
 bool BTSender::selfTest(){
 	ESP_LOGI(FNAME,"SerialBT::selfTest");
@@ -50,8 +49,8 @@ void BTSender::btTask(void *pvParameters){
 	while(1) {
 		progress();
 		Router::routeBT();
-		if( uxTaskGetStackHighWaterMark( pid ) < 256 )
-			ESP_LOGW(FNAME,"Warning BT task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid ) );
+		if( uxTaskGetStackHighWaterMark( &pid ) < 256 )
+			ESP_LOGW(FNAME,"Warning BT task stack low: %d bytes", uxTaskGetStackHighWaterMark( &pid ) );
 		vTaskDelay( 20/portTICK_PERIOD_MS );
 	}
 }
@@ -93,7 +92,7 @@ void BTSender::begin(){
 		ESP_LOGI(FNAME,"BT on, create BT master object" );
 		SerialBT = new BluetoothSerial();
 		SerialBT->begin( SetupCommon::getID() );
-		xTaskCreatePinnedToCore(&btTask, "btTask", 3072, NULL, 10, pid, 0);  // stay below compass task
+		xTaskCreatePinnedToCore(&btTask, "btTask", 3072, NULL, 10, &pid, 0);  // stay below compass task
 	}
 }
 

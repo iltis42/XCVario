@@ -1810,7 +1810,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		}
 		speed_dirty = false;
 	}
-	if( !(tick%11) || alt_dirty ) {
+	if( !(tick%2) || alt_dirty ) {
 		// { // Enable those line, comment previous condition, for a drawAltimeter simulation
 		// static float alt = 300, rad = 0.0; 
 		// altitude = alt + sin(rad) * (2*alt_quant+2); rad += 0.001*alt_quant;
@@ -2049,7 +2049,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	}
 */
 	// Altitude
-	if(!(tick%8) ) {
+	if(!(tick%2) ) {
 		drawAltitude( altitude, FIELD_START+80, YALT-6, false, true );
 	}
 	// MC Value

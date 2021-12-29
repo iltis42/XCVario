@@ -107,10 +107,10 @@ Protocols OV( &Speed2Fly );
 
 AnalogInput Battery( (22.0+1.2)/1200, ADC_ATTEN_DB_0, ADC_CHANNEL_7, ADC_UNIT_1 );
 
-TaskHandle_t apid;
-TaskHandle_t bpid;
-TaskHandle_t tpid;
-TaskHandle_t dpid;
+TaskHandle_t apid = NULL;
+TaskHandle_t bpid = NULL;
+TaskHandle_t tpid = NULL;
+TaskHandle_t dpid = NULL;
 
 e_wireless_type wireless;
 

@@ -19,7 +19,7 @@
 #include "BluetoothSerial.h"
 #include "DataMonitor.h"
 
-static TaskHandle_t pid;
+static TaskHandle_t pid = NULL;
 
 bool BTSender::selfTest(){
 	ESP_LOGI(FNAME,"SerialBT::selfTest");
@@ -49,8 +49,8 @@ void BTSender::btTask(void *pvParameters){
 	while(1) {
 		progress();
 		Router::routeBT();
-		if( uxTaskGetStackHighWaterMark( &pid ) < 256 )
-			ESP_LOGW(FNAME,"Warning BT task stack low: %d bytes", uxTaskGetStackHighWaterMark( &pid ) );
+		if( uxTaskGetStackHighWaterMark( pid ) < 256 )
+			ESP_LOGW(FNAME,"Warning BT task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid ) );
 		vTaskDelay( 20/portTICK_PERIOD_MS );
 	}
 }

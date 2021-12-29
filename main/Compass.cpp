@@ -141,8 +141,8 @@ void Compass:: progress(){
 				m_headingValid = true;
 			}
 		}
-		if( uxTaskGetStackHighWaterMark( &ctid  ) < 256 )
-			ESP_LOGW(FNAME,"Warning Compass task stack low: %d bytes", uxTaskGetStackHighWaterMark( &ctid ) );
+		if( uxTaskGetStackHighWaterMark( ctid  ) < 256 )
+			ESP_LOGW(FNAME,"Warning Compass task stack low: %d bytes", uxTaskGetStackHighWaterMark( ctid ) );
 		float diff = Vector::angleDiffDeg( m_gyro_fused_heading, _heading_average );
 		if( _heading_average == -1000 )
 			_heading_average = m_gyro_fused_heading;

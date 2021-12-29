@@ -13,6 +13,7 @@
 // limitations under the License.
 //
 // 24.12.2021 Axel Pauli: added RX interrupt handling stuff.
+
 #include "esp_log.h"
 #include "esp32-hal-uart.h"
 #include "esp32-hal.h"
@@ -139,7 +140,7 @@ void uartRxEventHandler( EventGroupHandle_t egh )
 
 void uartEnableInterrupt(uart_t* uart)
 {
-    ESP_LOGI( "UART", "uartEnableInterrupt: %d", uart->num );
+    ESP_LOGI( "UART", "uartEnableInterrupt: S%d", uart->num );
     if(uart == NULL) {
         return;
     }
@@ -159,7 +160,7 @@ void uartEnableInterrupt(uart_t* uart)
 
 void uartDisableInterrupt(uart_t* uart)
 {
-    ESP_LOGI( "UART", "uartDisableInterrupt: %d", uart->num );
+    ESP_LOGI( "UART", "uartDisableInterrupt: S%d", uart->num );
     if(uart == NULL) {
         return;
     }

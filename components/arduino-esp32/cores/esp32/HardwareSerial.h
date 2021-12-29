@@ -166,14 +166,14 @@ public:
 
     bool checkFlarmRx( const char* buffer, int length, uint8_t* seq, int* start );
 
-    void setStopRxRouting( bool flag )
+    void setStopRouting( bool flag )
     {
-      _stopRxRouting = flag;
+      _stopRouting = flag;
     }
 
-    bool stopRxRouting()
+    bool stopRouting()
     {
-      return _stopRxRouting;
+      return _stopRouting;
     }
 
 protected:
@@ -183,8 +183,8 @@ protected:
     uart_t* _uart;
     uint8_t _tx_pin;
     uint8_t _rx_pin;
-    // Stop routing of RX data. That is used in case of Flarm binary download.
-    bool _stopRxRouting;
+    // Stop routing of TX/RX data. That is used in case of Flarm binary download.
+    bool _stopRouting;
 };
 
 extern void serialEventRun(void) __attribute__((weak));

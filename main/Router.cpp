@@ -98,7 +98,7 @@ int Router::pullBlock( RingBufCPP<SString, QUEUE_SIZE>& q, char *block, int size
 
 // XCVario Router
 void Router::sendXCV(char * s){
-	// ESP_LOGV( FNAME,"XCVario message %s",s);
+	ESP_LOGV( FNAME,"XCVario message %s",s);
 	if(  !Flarm::bincom  ){
 		SString xcv( s );
 		if( forwardMsg( xcv, xcv_rx_q ) )

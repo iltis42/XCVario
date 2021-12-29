@@ -1,3 +1,9 @@
+/**
+ * Serial.h
+ *
+ * 24.12.2021 Axel Pauli: added some RX/TX handling stuff.
+ */
+
 #ifndef __SERIAL_H__
 #define __SERIAL_H__
 

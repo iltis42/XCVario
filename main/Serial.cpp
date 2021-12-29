@@ -1,3 +1,8 @@
+/**
+ * Serial.cpp
+ *
+ * 24.12.2021 Axel Pauli: added some RX/TX handling stuff.
+ */
 
 #include <esp_log.h>
 #include "BTSender.h"
@@ -28,8 +33,6 @@ any sentence might take up to 171 ms (at 4.8k Baud), 85 ms (at 9.6 kBaud) or 43 
 This limits the overall channel capacity to 5 sentences per second (at 4.8k Baud), 11 msg/s (at 9.6 kBaud) or 23 msg/s (at 19.2 kBaud).
 If  too  many  sentences  are  produced  with  regard  to  the  available  transmission  speed,
 some sentences might be lost or truncated.
-
-24.12.2021 Axel Pauli: added some RX/TX handling stuff.
 */
 
 // Option to simulate FLARM sentences
@@ -49,8 +52,8 @@ const char *flarm[] = {
 int sim=100;
 #define HEARTBEAT_PERIOD_MS_SERIAL 20
 #define SERIAL_STRLEN SSTRLEN
-static TaskHandle_t *pid1;
-static TaskHandle_t *pid2;
+static TaskHandle_t pid1 = nullptr;
+static TaskHandle_t pid2 = nullptr;
 
 bool Serial::_selfTest = false;
 EventGroupHandle_t Serial::rxTxNotifier;
@@ -133,14 +136,15 @@ void Serial::serialHandler1(void *pvParameters)
     ESP_LOGI( FNAME, "S1: EVTO=%dms, bincom=%d, EventBits=%X, RXA=%d, NLC=%d",
               ticksToWait, Flarm::bincom, ebits, Serial1.available(), Serial1.getNlCounter() );
 
-
-    // Check, if Serial Interface tty1 has something to send
+    // Check, if Serial Interface 1 has something to send
     if( ebits & TX1_REQ && Serial1.availableForWrite() ) {
       // ESP_LOGI(FNAME,"S1: TX and available");
       while( Router::pullMsg( s1_tx_q, s ) ) {
         ESP_LOGD(FNAME,"S1: TX len: %d bytes", s.length() );
         // ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
         ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
+        if( Serial1.stopRouting() )  // Flarm download of other Serial is running
+          continue;
         Serial1.write( s.c_str(), s.length() );
         if( ! Flarm::bincom )
           DM.monitorString( MON_S1, DIR_TX, s.c_str() );
@@ -154,6 +158,10 @@ void Serial::serialHandler1(void *pvParameters)
           }
         }
       }
+    }
+    if( Serial1.stopRouting() == true ) {
+      // Other Serial works in Flarm binary mode, do not process any data.
+      continue;
     }
     if( ! Flarm::bincom ) {
       // Flarm works in text mode, check if NL is reported.
@@ -223,7 +231,12 @@ void Serial::serialHandler1(void *pvParameters)
       if( flarmAckExit == true ) {
           Flarm::bincom = 0;
           flarmExitCmd = false;
-          Serial2.setStopRxRouting( false );
+          if( pid2 != nullptr ) {
+            ESP_LOGI(FNAME, "S1: Activate S2 after Flarm download." );
+            Serial2.flush( false );
+            Serial2.enableInterrupt();
+          }
+          Serial2.setStopRouting( false );
           Serial1.flush( false );
           ESP_LOGI(FNAME, "S1: Flarm Ack Exit received --> switched Flarm to text mode" );
       }
@@ -279,12 +292,15 @@ void Serial::handleTextMode( uint8_t uartNum, bool &flarmExitCmd ) {
       // check Flarm response to $PFLAX, if it is ok. If yes, switch
       // to binary mode.
       if( strcmp( s.c_str(), pflax ) == 0 ) {
-        Flarm::bincom = 5;
         u1->clearFlarmTx();
         u1->clearFlarmRx();
         flarmExitCmd = false;
-        // Stop routing of RX data in Serial S2
-        u2->setStopRxRouting( true );
+        // Stop routing of TX/RX data in other Serial
+        u2->setStopRouting( true );
+        u2->disableInterrupt();
+        Flarm::bincom = 5;
+        // Wait a little bit for queues cleaning.
+        delay( 50 );
         ESP_LOGI(FNAME, "S%d: $PFLAX,A*2E --> switching to binary mode", uartNum );
       }
       if( uartNum == 1 )
@@ -297,7 +313,7 @@ void Serial::handleTextMode( uint8_t uartNum, bool &flarmExitCmd ) {
 }
 
 void Serial::routeS1RxData( SString& s ) {
-  if( Serial1.stopRxRouting() == true )
+  if( Serial1.stopRouting() == true )
     return;
 
   Router::forwardMsg( s, s1_rx_q );
@@ -375,6 +391,8 @@ void Serial::serialHandler2(void *pvParameters)
         ESP_LOGD(FNAME,"S2: TX len: %d bytes", s.length() );
         // ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
         ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
+        if( Serial2.stopRouting() )  // Flarm download of other Serial is running
+          continue;
         Serial2.write( s.c_str(), s.length() );
         if( ! Flarm::bincom )
           DM.monitorString( MON_S2, DIR_TX, s.c_str() );
@@ -389,6 +407,10 @@ void Serial::serialHandler2(void *pvParameters)
         }
       }
     }
+    if( Serial2.stopRouting() == true ) {
+      // Other Serial works in Flarm binary mode, do not process any data.
+      continue;
+    }
     if( ! Flarm::bincom ) {
       // Flarm works in text mode, check if NL is reported.
       if( ebits & RX2_NL ) {
@@ -397,7 +419,6 @@ void Serial::serialHandler2(void *pvParameters)
       // wait for the next newline
       continue;
     }
-
     if( ebits & RX2_CHAR ) {
       // Flarm is in binary mode and we can read bytes.
       // Due to delays we can have more than one character in the RX queue.
@@ -457,7 +478,12 @@ void Serial::serialHandler2(void *pvParameters)
       if( flarmAckExit == true ) {
           Flarm::bincom = 0;
           flarmExitCmd = false;
-          Serial1.setStopRxRouting( false );
+           if( pid1 != nullptr ) {
+             ESP_LOGI(FNAME, "S2: Activate S1 after Flarm download." );
+            Serial1.flush( false );
+            Serial1.enableInterrupt();
+          }
+          Serial1.setStopRouting( false );
           Serial2.flush( false );
           ESP_LOGI(FNAME, "S2: Flarm Ack Exit received --> switched Flarm to text mode" );
       }
@@ -466,7 +492,7 @@ void Serial::serialHandler2(void *pvParameters)
 }
 
 void Serial::routeS2RxData( SString& s ) {
-  if( Serial2.stopRxRouting() == true )
+  if( Serial2.stopRouting() == true )
     return;
 
   Router::forwardMsg( s, s2_rx_q );
@@ -602,9 +628,9 @@ void Serial::taskStart(){
 	}
 
 	if( serial1 ){
-		xTaskCreatePinnedToCore(&serialHandler1, "serialHandler1", 4096, NULL, 11, pid1, 0);  // stay below compass task
+		xTaskCreatePinnedToCore(&serialHandler1, "serialHandler1", 4096, NULL, 11, &pid1, 0);  // stay below compass task
 	}
 	if( serial2 ){
-		xTaskCreatePinnedToCore(&serialHandler2, "serialHandler2", 4096, NULL, 10, pid2, 0);  // stay below compass task and task for S1
+		xTaskCreatePinnedToCore(&serialHandler2, "serialHandler2", 4096, NULL, 10, &pid2, 0);  // stay below compass task and task for S1
 	}
 }

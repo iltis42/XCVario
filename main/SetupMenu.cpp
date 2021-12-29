@@ -618,17 +618,22 @@ void SetupMenu::setup( )
 		s2fse->addEntry( blck );
 
 		SetupMenuSelect * s2fmod = new SetupMenuSelect( "S2F Mode", false, 0 , true, &audio_mode );
-		s2fmod->setHelp( PROGMEM"Select S2F mode either fixed, or controled by local switch or switch & airspeed combined or from external source" );
+		s2fmod->setHelp( PROGMEM"Select S2F mode either fixed, or controled by local switch or switch & airspeed combined or from external source", 220 );
 		s2fmod->addEntry( "Vario fix");
 		s2fmod->addEntry( "Cruise fix");
 		s2fmod->addEntry( "Switch");
 		s2fmod->addEntry( "AutoSpeed");
 		s2fmod->addEntry( "External");
+		s2fmod->addEntry( "Flap");
 		s2fse->addEntry( s2fmod );
 
 		SetupMenuValFloat * autospeed = new SetupMenuValFloat( "S2F AutoSpeed", "", 20.0, 250.0, 1.0, update_s2f_speed, false, &s2f_speed );
 		s2fse->addEntry( autospeed );
-		autospeed->setHelp(PROGMEM"Transition speed when in AutoSpeed mode for audio to change from Vario to S2F mode");
+		autospeed->setHelp(PROGMEM"Transition speed in AutoSpeed mode to change from Vario to Cruise (S2F) mode");
+
+		SetupMenuValFloat * s2f_flap = new SetupMenuValFloat( "S2F Flap Pos", "", -3, 3, 0.1, 0 , false, &s2f_flap_pos );
+		s2fse->addEntry( s2f_flap );
+		s2f_flap->setHelp(PROGMEM"Precise flap position in Flap mode to change from Vario to Cruise (S2F) mode");
 
 		SetupMenuValFloat * s2fhy = new SetupMenuValFloat( "Hysteresis", "",	-20, 20, 1, 0, false, &s2f_hysteresis );
 		s2fhy->setHelp(PROGMEM"Hysteresis for auto S2F transition at autospeed +- this value");

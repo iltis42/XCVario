@@ -31,7 +31,6 @@ public:
  																		else
  																			return false;
  	                                                                   }
-
  	static bool gpsStatus() { return gpsOK; }
     static double getGndSpeedKnots() { return gndSpeedKnots; }
     static double getGndCourse() { return gndCourse; }

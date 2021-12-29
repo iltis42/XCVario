@@ -18,6 +18,7 @@
 #include <logdef.h>
 #include "Setup.h"
 #include "sensor.h"
+#include "Flap.h"
 
 bool Switch::_cruise_mode_sw = false;
 bool Switch::_cruise_mode_speed = false;
@@ -40,7 +41,7 @@ Switch::~Switch() {
 }
 
 bool Switch::cruiseMode() {
-	if( audio_mode.get() == AM_FROM_MASTER ){
+	if( audio_mode.get() == AM_EXTERNAL ){
 		// just take from master and ignore setting
 		_cruise_mode_xcv = cruise_mode.get(); // updated from master
 		if( _cruise_mode_xcv != cm_xcv_prev  ){
@@ -60,6 +61,12 @@ bool Switch::cruiseMode() {
 			cm_auto_prev = _cruise_mode_speed;
 			cruise_mode_final = _cruise_mode_speed;
 		}
+	}
+	else if( audio_mode.get() == AM_FLAP ){
+		if( FLAP->getFlapPosition() > s2f_flap_pos.get() )
+			cruise_mode_final = true;
+		else
+			cruise_mode_final = false;
 	}
 	else if( audio_mode.get() == AM_SWITCH ){
 		if( cruise_mode_final != _cruise_mode_sw ){

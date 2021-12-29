@@ -136,6 +136,12 @@ void Serial::serialHandler1(void *pvParameters)
     ESP_LOGI( FNAME, "S1: EVTO=%dms, bincom=%d, EventBits=%X, RXA=%d, NLC=%d",
               ticksToWait, Flarm::bincom, ebits, Serial1.available(), Serial1.getNlCounter() );
 
+    if( Serial1.stopRouting() ) {
+      // Flarm download of other Serial is running, stop RX processing and empty TX queue.
+      s1_tx_q.clear();
+      continue;
+    }
+
     // Check, if Serial Interface 1 has something to send
     if( ebits & TX1_REQ && Serial1.availableForWrite() ) {
       // ESP_LOGI(FNAME,"S1: TX and available");
@@ -143,8 +149,6 @@ void Serial::serialHandler1(void *pvParameters)
         ESP_LOGD(FNAME,"S1: TX len: %d bytes", s.length() );
         // ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
         ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
-        if( Serial1.stopRouting() )  // Flarm download of other Serial is running
-          continue;
         Serial1.write( s.c_str(), s.length() );
         if( ! Flarm::bincom )
           DM.monitorString( MON_S1, DIR_TX, s.c_str() );
@@ -159,10 +163,7 @@ void Serial::serialHandler1(void *pvParameters)
         }
       }
     }
-    if( Serial1.stopRouting() == true ) {
-      // Other Serial works in Flarm binary mode, do not process any data.
-      continue;
-    }
+
     if( ! Flarm::bincom ) {
       // Flarm works in text mode, check if NL is reported.
       if( ebits & RX1_NL ) {
@@ -299,8 +300,12 @@ void Serial::handleTextMode( uint8_t uartNum, bool &flarmExitCmd ) {
         u2->setStopRouting( true );
         u2->disableInterrupt();
         Flarm::bincom = 5;
-        // Wait a little bit for queues cleaning.
-        delay( 50 );
+        // Wait so long until second RX queue is empty.
+        delay( 10 );
+        if( uartNum == 1 )
+          while( ! s2_rx_q.isEmpty() ) delay( 10 );
+        else
+          while( ! s1_rx_q.isEmpty() ) delay( 10 );
         ESP_LOGI(FNAME, "S%d: $PFLAX,A*2E --> switching to binary mode", uartNum );
       }
       if( uartNum == 1 )
@@ -384,6 +389,12 @@ void Serial::serialHandler2(void *pvParameters)
     ESP_LOGI( FNAME, "S2: EVTO=%dms, bincom=%d, EventBits=%X, RXA=%d, NLC=%d",
               ticksToWait, Flarm::bincom, ebits, Serial2.available(), Serial2.getNlCounter() );
 
+    if( Serial2.stopRouting() ) {
+      // Flarm download of other Serial is running, stop RX processing and empty TX queue.
+      s2_tx_q.clear();
+      continue;
+    }
+
     // Check, if Serial Interface 2 has something to send
     if( ebits & TX2_REQ && Serial2.availableForWrite() ) {
       // ESP_LOGI(FNAME,"S2: TX and available");
@@ -391,8 +402,6 @@ void Serial::serialHandler2(void *pvParameters)
         ESP_LOGD(FNAME,"S2: TX len: %d bytes", s.length() );
         // ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
         ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
-        if( Serial2.stopRouting() )  // Flarm download of other Serial is running
-          continue;
         Serial2.write( s.c_str(), s.length() );
         if( ! Flarm::bincom )
           DM.monitorString( MON_S2, DIR_TX, s.c_str() );
@@ -407,10 +416,7 @@ void Serial::serialHandler2(void *pvParameters)
         }
       }
     }
-    if( Serial2.stopRouting() == true ) {
-      // Other Serial works in Flarm binary mode, do not process any data.
-      continue;
-    }
+
     if( ! Flarm::bincom ) {
       // Flarm works in text mode, check if NL is reported.
       if( ebits & RX2_NL ) {

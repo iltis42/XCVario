@@ -31,6 +31,7 @@ public:
 	// inline void setLever( float l ) { lever = l; }
 	// recommendations
 	float getOptimum( float wks, int& wki );
+	float getFlapPosition() { return lever; };
 	inline bool haveSensor() { return sensorAdc != nullptr; }
     void setBarPosition(int16_t x, int16_t y);
     void setSymbolPosition(int16_t x, int16_t y);

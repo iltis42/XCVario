@@ -124,7 +124,7 @@ void S2F::change_ballast()
 
 void S2F::change_mc()
 {
-	_MC = Units::Vario2ms( MC.get() );
+	_MC = MC.get();
 	ESP_LOGI(FNAME,"S2F::change_mc_bal(), MC: %.1f", _MC );
 	recalcSinkNSpeeds();
 }

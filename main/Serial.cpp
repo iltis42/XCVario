@@ -51,7 +51,6 @@ const char *flarm[] = {
 
 int sim=100;
 #define HEARTBEAT_PERIOD_MS_SERIAL 20
-#define SERIAL_STRLEN SSTRLEN
 static TaskHandle_t pid1 = nullptr;
 static TaskHandle_t pid2 = nullptr;
 
@@ -133,9 +132,10 @@ void Serial::serialHandler1(void *pvParameters)
       continue;
     }
 
+#if 0
     ESP_LOGI( FNAME, "S1: EVTO=%dms, bincom=%d, EventBits=%X, RXA=%d, NLC=%d",
               ticksToWait, Flarm::bincom, ebits, Serial1.available(), Serial1.getNlCounter() );
-
+#endif
     if( Serial1.stopRouting() ) {
       // Flarm download of other Serial is running, stop RX processing and empty TX queue.
       s1_tx_q.clear();
@@ -146,9 +146,9 @@ void Serial::serialHandler1(void *pvParameters)
     if( ebits & TX1_REQ && Serial1.availableForWrite() ) {
       // ESP_LOGI(FNAME,"S1: TX and available");
       while( Router::pullMsg( s1_tx_q, s ) ) {
-        ESP_LOGD(FNAME,"S1: TX len: %d bytes", s.length() );
+        // ESP_LOGD(FNAME,"S1: TX len: %d bytes", s.length() );
+        ESP_LOGI(FNAME,"S1: TX len: %d bytes", s.length() );
         // ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
-        ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
         Serial1.write( s.c_str(), s.length() );
         if( ! Flarm::bincom )
           DM.monitorString( MON_S1, DIR_TX, s.c_str() );
@@ -233,7 +233,7 @@ void Serial::serialHandler1(void *pvParameters)
           Flarm::bincom = 0;
           flarmExitCmd = false;
           if( pid2 != nullptr ) {
-            ESP_LOGI(FNAME, "S1: Activate S2 after Flarm download." );
+            ESP_LOGI(FNAME, "S1: Activate S2 after Flarm download end." );
             Serial2.flush( false );
             Serial2.enableInterrupt();
           }
@@ -296,7 +296,7 @@ void Serial::handleTextMode( uint8_t uartNum, bool &flarmExitCmd ) {
         u1->clearFlarmTx();
         u1->clearFlarmRx();
         flarmExitCmd = false;
-        // Stop routing of TX/RX data in other Serial
+        // Stop routing of TX/RX data of other Serial channel
         u2->setStopRouting( true );
         u2->disableInterrupt();
         Flarm::bincom = 5;
@@ -385,12 +385,12 @@ void Serial::serialHandler2(void *pvParameters)
       // Timeout occurred, that is used to reset the watchdog.
       continue;
     }
-
+#if 0
     ESP_LOGI( FNAME, "S2: EVTO=%dms, bincom=%d, EventBits=%X, RXA=%d, NLC=%d",
               ticksToWait, Flarm::bincom, ebits, Serial2.available(), Serial2.getNlCounter() );
-
+#endif
     if( Serial2.stopRouting() ) {
-      // Flarm download of other Serial is running, stop RX processing and empty TX queue.
+      // Flarm download of other Serial is running, stop RX processing and empty always the TX queue.
       s2_tx_q.clear();
       continue;
     }
@@ -399,9 +399,9 @@ void Serial::serialHandler2(void *pvParameters)
     if( ebits & TX2_REQ && Serial2.availableForWrite() ) {
       // ESP_LOGI(FNAME,"S2: TX and available");
       while( Router::pullMsg( s2_tx_q, s ) ) {
-        ESP_LOGD(FNAME,"S2: TX len: %d bytes", s.length() );
+        //ESP_LOGD(FNAME,"S2: TX len: %d bytes", s.length() );
+        ESP_LOGI(FNAME,"S2: TX len: %d bytes", s.length() );
         // ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
-        ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
         Serial2.write( s.c_str(), s.length() );
         if( ! Flarm::bincom )
           DM.monitorString( MON_S2, DIR_TX, s.c_str() );
@@ -485,7 +485,7 @@ void Serial::serialHandler2(void *pvParameters)
           Flarm::bincom = 0;
           flarmExitCmd = false;
            if( pid1 != nullptr ) {
-             ESP_LOGI(FNAME, "S2: Activate S1 after Flarm download." );
+             ESP_LOGI(FNAME, "S2: Activate S1 after Flarm download end." );
             Serial1.flush( false );
             Serial1.enableInterrupt();
           }

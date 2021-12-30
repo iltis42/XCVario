@@ -1,10 +1,14 @@
+/**
+ * Serial.cpp
+ *
+ * 24.12.2021 Axel Pauli: added some RX/TX handling stuff.
+ */
 
 #include <esp_log.h>
 #include "BTSender.h"
-#include <string>
+#include <cstring>
 #include "sdkconfig.h"
-#include <stdio.h>
-#include <string>
+#include <cstdio>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_task_wdt.h"
@@ -12,8 +16,6 @@
 #include <algorithm>
 #include <HardwareSerial.h>
 #include "RingBufCPP.h"
-#include <driver/uart.h>
-#include "Protocols.h"
 #include <logdef.h>
 #include "Switch.h"
 #include "sensor.h"
@@ -31,7 +33,7 @@ any sentence might take up to 171 ms (at 4.8k Baud), 85 ms (at 9.6 kBaud) or 43 
 This limits the overall channel capacity to 5 sentences per second (at 4.8k Baud), 11 msg/s (at 9.6 kBaud) or 23 msg/s (at 19.2 kBaud).
 If  too  many  sentences  are  produced  with  regard  to  the  available  transmission  speed,
 some sentences might be lost or truncated.
- */
+*/
 
 // Option to simulate FLARM sentences
 const char *flarm[] = {
@@ -49,151 +51,459 @@ const char *flarm[] = {
 
 int sim=100;
 #define HEARTBEAT_PERIOD_MS_SERIAL 20
-#define SERIAL_STRLEN SSTRLEN
-static TaskHandle_t *pid1;
-static TaskHandle_t *pid2;
+static TaskHandle_t pid1 = nullptr;
+static TaskHandle_t pid2 = nullptr;
 
 bool Serial::_selfTest = false;
+EventGroupHandle_t Serial::rxTxNotifier;
 
-// Serial Handler  ttyS1, S1, port 8881
-void Serial::serialHandler1(void *pvParameters){
+// Serial Handler ttyS1, S1, port 8881
+void Serial::serialHandler1(void *pvParameters)
+{
 	SString s;
-	while(1) {
-		if( !_selfTest ){
-			if( flarm_sim.get() ){
-				sim=-3;
-				flarm_sim.set( 0 );
-			}
-			if( sim < 10 ){
-				if( sim >= 0 ){
-					int cs = Protocols::calcNMEACheckSum( (char *)flarm[sim] );
-					char str[80];
-					sprintf( str, "%s%02X\r\n", flarm[sim], cs );
-					SString sf( str );
-					Router::forwardMsg( sf, s1_rx_q );
-					ESP_LOGI(FNAME,"Serial FLARM SIM: %s",  sf.c_str() );
-				}
-				delay(2500);
-				sim++;
-			}
-			// Serial Interface tty1 send
-			if ( !s1_tx_q.isEmpty() && Serial1.availableForWrite() ){
-				ESP_LOGD(FNAME,"Serial Data and avail");
-				while( Router::pullMsg( s1_tx_q, s ) ) {
-					// ESP_LOGD(FNAME,"Serial 1 TX len: %d bytes", s.length() );
-					// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
-					int wr = Serial1.write( s.c_str(), s.length() );
-					DM.monitorString( MON_S1, DIR_TX, s.c_str() );
-					// ESP_LOGD(FNAME,"Serial 1 TX written: %d", wr);
-				}
-			}
-			int num = Serial1.available();
-			if( num > 0 ) {
-				// ESP_LOGI(FNAME,"FBC=%d, Serial RX1=%d bytes", Flarm::bincom, num );
-				if( num >= SERIAL_STRLEN ) {
-					ESP_LOGW(FNAME,"Serial 1 Overrun RX >= %d bytes avail: %d, Bytes", SERIAL_STRLEN, num);
-					num=SERIAL_STRLEN;
-				}
-				char *rxbuf = (char*)malloc( num < SERIAL_STRLEN ? SERIAL_STRLEN : num );
-				// ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
-				int numread = 0;
-				if( Flarm::bincom ){ // in binary mode read the whole buffer
-					numread = Serial1.read( rxbuf, num );
-				}
-				else{
-					// Note from AP! You will only read one NMEA sentence from the buffer not more.
-					// But in delay you can have more sentences in the buffer, which are
-					// fist read in the next polling cycle. Furthermore the readline() method
-					// can read more bytes as reported by the available() method and can
-					// also return after a timeout with an incomplete line, no \r\n at
-					// the end !!!
-					numread = Serial1.readLine( rxbuf, SERIAL_STRLEN );
-				}
-				if( numread ) {
-					// ESP_LOGI(FNAME,"Serial 1 RX bytes read: %d  bincom: %d", numread,  Flarm::bincom  );
-					// ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.c_str(),numread, ESP_LOG_INFO);
-					if( Flarm::bincom || (! Flarm::bincom && rxbuf[numread-1] == '\n' ) ) {
-						// Do not forward incomplete NMEA sentence. Maybe we should check
-						// also the beginning of a NMEA sentence with $ or ! or ...
-						s.set( rxbuf, numread );
-						Router::forwardMsg( s, s1_rx_q );
-						DM.monitorString( MON_S1, DIR_RX, s.c_str(), Flarm::bincom );
-					}
-				}
-				free( rxbuf );
-			}
-			Router::routeS1();
+  // Flag that Flarm exit command has been sent.
+  bool flarmExitCmd = false;
+  // Flarm exit command sequence counter
+  uint8_t flarmAckExitSeq[2];
+
+  // Make a pause, that has avoided core dumps during enable interrupt.
+  delay( 100 );
+
+  // Clear Uart RX receiver buffer to get a clean start point.
+  Serial1.flush( false );
+
+  // Enable Uart RX interrupt
+  ESP_LOGI(FNAME,"S1: enable RX by Interrupt" );
+  Serial1.enableInterrupt();
+
+	while( true ) {
+	  esp_task_wdt_reset();
+
+	  if( uxTaskGetStackHighWaterMark( pid1 ) < 256 )
+	    ESP_LOGW(FNAME,"Warning serial 1 task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid1 ) );
+
+		if( _selfTest ) {
+		  vTaskDelay( HEARTBEAT_PERIOD_MS_SERIAL / portTICK_PERIOD_MS );
+		  continue;
 		}
-		esp_task_wdt_reset();
-		if( uxTaskGetStackHighWaterMark( pid1 ) < 256 )
-			ESP_LOGW(FNAME,"Warning serial 1 task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid1 ) );
-		vTaskDelay( HEARTBEAT_PERIOD_MS_SERIAL/portTICK_PERIOD_MS );
-	}
+
+    if( flarm_sim.get() ){
+      sim=-3;
+      flarm_sim.set( 0 );
+    }
+    if( sim < 10 ){
+      if( sim >= 0 ){
+        int cs = Protocols::calcNMEACheckSum( (char *)flarm[sim] );
+        char str[80];
+        sprintf( str, "%s%02X\r\n", flarm[sim], cs );
+        SString sf( str );
+        Router::forwardMsg( sf, s1_rx_q );
+        ESP_LOGI(FNAME,"Serial FLARM SIM: %s",  sf.c_str() );
+      }
+      delay(2500);
+      sim++;
+    }
+
+    // Define expected event bits. They can come from the Uart RX ISR or from
+    // the Serial 1 TX router queue.
+    // In Flarm text mode we may get informed only for newlines in the Uart
+    // RX queue. We tolerate that also in binary mode to get reset this bit
+    // in the event bit mask after a read.
+    EventBits_t bitsToWaitFor = TX1_REQ | RX1_NL;
+
+    if( Flarm::bincom ) {
+      // In Flarm binary mode, we may get informed for every available
+      // character in the RX queue.
+      bitsToWaitFor |= RX1_CHAR;
+    }
+
+    // Define timeout of 5s that the watchdog becaomes not active.
+    TickType_t ticksToWait = 5000 / portTICK_PERIOD_MS;
+
+    // We do wait for events from Uart RX, router TX side or timeout
+    EventBits_t ebits = xEventGroupWaitBits( rxTxNotifier,
+                                             bitsToWaitFor,
+                                             pdTRUE,
+                                             pdFALSE,
+                                             ticksToWait );
+
+    if( (ebits & bitsToWaitFor ) == 0 ) {
+      // Timeout occurred, that is used to reset the watchdog.
+      continue;
+    }
+
+#if 0
+    ESP_LOGI( FNAME, "S1: EVTO=%dms, bincom=%d, EventBits=%X, RXA=%d, NLC=%d",
+              ticksToWait, Flarm::bincom, ebits, Serial1.available(), Serial1.getNlCounter() );
+#endif
+    if( Serial1.stopRouting() ) {
+      // Flarm download of other Serial is running, stop RX processing and empty TX queue.
+      s1_tx_q.clear();
+      continue;
+    }
+
+    // Check, if Serial Interface 1 has something to send
+    if( ebits & TX1_REQ && Serial1.availableForWrite() ) {
+      // ESP_LOGI(FNAME,"S1: TX and available");
+      while( Router::pullMsg( s1_tx_q, s ) ) {
+        // ESP_LOGD(FNAME,"S1: TX len: %d bytes", s.length() );
+        ESP_LOGI(FNAME,"S1: TX len: %d bytes", s.length() );
+        // ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
+        Serial1.write( s.c_str(), s.length() );
+        if( ! Flarm::bincom )
+          DM.monitorString( MON_S1, DIR_TX, s.c_str() );
+        // ESP_LOGD(FNAME,"S1: TX written: %d", wr);
+
+        // Look, if a Flarm exit command has been sent in binary mode.
+        if( Flarm::bincom && flarmExitCmd == false ) {
+          flarmExitCmd = Serial1.checkFlarmTx( s.c_str(), s.length(), flarmAckExitSeq );
+          if( flarmExitCmd ) {
+            ESP_LOGI( FNAME, "S1: Flarm Exit Cmd detected" );
+          }
+        }
+      }
+    }
+
+    if( ! Flarm::bincom ) {
+      // Flarm works in text mode, check if NL is reported.
+      if( ebits & RX1_NL ) {
+        handleTextMode( 1, flarmExitCmd );
+      }
+      // wait for the next newline
+      continue;
+    }
+
+    if( ebits & RX1_CHAR ) {
+      // Flarm is in binary mode and we can read bytes.
+      // Due to delays we can have more than one character in the RX queue.
+      int available = Serial1.available();
+
+      if( available == 0 ) {
+          // Nothing contained in RX queue
+          continue;
+      }
+
+      uint8_t* flarmBuf = (uint8_t *) malloc( available + 1 );
+      uint16_t flarmBufFilled = 0;
+      bool flarmAckExit = false;
+
+      while( available > 0 ) {
+        // read out all characters from the RX queue
+        uint8_t c;
+        uint8_t res = Serial1.readCharFromQueue( &c );
+        available--;
+
+        if( res == 0 ) // Nothing has read, break loop
+          break;
+
+        flarmBuf[flarmBufFilled] = c;
+        flarmBufFilled++;
+
+        // Check, if Flarm has sent an acknowledge to the exit command.
+        if( flarmExitCmd == true ) {
+          int start;
+          flarmAckExit = Serial1.checkFlarmRx( (const char* ) flarmBuf, flarmBufFilled, flarmAckExitSeq, &start );
+          if( flarmAckExit ) {
+            ESP_LOGI( FNAME, "S1: Flarm Ack Exit detected" );
+            break;
+          }
+        }
+      }
+
+      // ESP_LOGI(FNAME, "S1: Flarm::bincom forward %d RX data", flarmBufFilled );
+      s.set( (char *) flarmBuf, flarmBufFilled );
+      routeS1RxData( s );
+
+      // Fall back check, if Flarm has self exited from the binary mode. A
+      // classic Flarm will never do that but a PowerFlarm after 60s of no
+      // traffic.
+      const char *pflau = "$PFLAU,";
+      if( flarmAckExit == false && flarmBufFilled > strlen(pflau) ) {
+          flarmBuf[flarmBufFilled] = '\0';
+          if( strstr( (const char *) flarmBuf, pflau) != nullptr ) {
+            // we assume a Flarm self switch to text mode.
+            flarmAckExit = true;
+            ESP_LOGI(FNAME, "S1: $PFLAU found --> Flarm has self switched to text mode" );
+          }
+      }
+      free( flarmBuf );
+
+      // Reset binary mode, if Flarm ACK Exit has received.
+      if( flarmAckExit == true ) {
+          Flarm::bincom = 0;
+          flarmExitCmd = false;
+          if( pid2 != nullptr ) {
+            ESP_LOGI(FNAME, "S1: Activate S2 after Flarm download end." );
+            Serial2.flush( false );
+            Serial2.enableInterrupt();
+          }
+          Serial2.setStopRouting( false );
+          Serial1.flush( false );
+          ESP_LOGI(FNAME, "S1: Flarm Ack Exit received --> switched Flarm to text mode" );
+      }
+    }
+  } // end while( true )
 }
 
+/**
+ * Handle Serial 1/2 RX data, if Flarm works in text mode.
+ */
+void Serial::handleTextMode( uint8_t uartNum, bool &flarmExitCmd ) {
+  HardwareSerial *u1 = 0;
+  HardwareSerial *u2 = 0;
+
+  if( uartNum == 1 ) {
+    u1 = &Serial1;
+    u2 = &Serial2;
+  }
+  else if( uartNum == 2 ) {
+    u1 = &Serial2;
+    u2 = &Serial1;
+  }
+  else
+    return;
+
+  // Check available NLs in the receiver buffer.
+  uint16_t nlc = u1->getNlCounter();
+
+  if( nlc == 0 )
+    return;
+
+  // get byte count from RX queue
+  int bc = u1->available();
+
+  if( bc == 0 ) {
+    // should normally not happens, clear RX buffer for a new synchronization.
+    u1->flush( false );
+    return;
+  }
+
+  uint8_t *rxbuf = (uint8_t *) malloc( bc );
+  while( nlc > 0 ) {
+    size_t bytes = u1->readLineFromQueue( rxbuf, bc );
+    nlc--;
+    u1->decNlCounter();
+
+    if( bytes > 0 ) {
+      SString s;
+      s.set( (char *) rxbuf, bytes );
+      const char* pflax = "$PFLAX,A*2E\r\n";
+      // check Flarm response to $PFLAX, if it is ok. If yes, switch
+      // to binary mode.
+      if( strcmp( s.c_str(), pflax ) == 0 ) {
+        u1->clearFlarmTx();
+        u1->clearFlarmRx();
+        flarmExitCmd = false;
+        // Stop routing of TX/RX data of other Serial channel
+       	u2->setStopRouting( true );
+       	u2->disableInterrupt();
+        Flarm::bincom = 5;
+        // Wait so long until second RX queue is empty.
+        delay( 10 );
+        if( uartNum == 1 )
+          while( ! s2_rx_q.isEmpty() ) delay( 10 );
+        else
+          while( ! s1_rx_q.isEmpty() ) delay( 10 );
+        ESP_LOGI(FNAME, "S%d: $PFLAX,A*2E --> switching to binary mode", uartNum );
+      }
+      if( uartNum == 1 )
+        routeS1RxData( s );
+      else
+        routeS2RxData( s );
+    }
+  }
+  free( rxbuf );
+}
+
+void Serial::routeS1RxData( SString& s ) {
+  if( Serial1.stopRouting() == true )
+    return;
+
+  Router::forwardMsg( s, s1_rx_q );
+  Router::routeS1();
+  if( ! Flarm::bincom )
+    DM.monitorString( MON_S1, DIR_RX, s.c_str(), Flarm::bincom );
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Serial Handler  ttyS2, S2, port 8882
-void Serial::serialHandler2(void *pvParameters){
-	SString s;
-	while(1) {
-		if( !_selfTest ){
-			// Serial Interface tty1 send
-			if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 ){
-				// ESP_LOGI(FNAME,"Serial 2 tick");
-				if ( !s2_tx_q.isEmpty() && Serial2.availableForWrite() ){
-					if( Router::pullMsg( s2_tx_q, s ) ) {
-						// ESP_LOGD(FNAME,"Serial 2 TX len: %d bytes", s.length() );
-						// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
-						int wr = Serial2.write( s.c_str(), s.length() );
-						DM.monitorString( MON_S2, DIR_TX, s.c_str() );
-						ESP_LOGD(FNAME,"Serial 2 TX written: %d", wr);
-					}
-				}
-				int num = Serial2.available();
-				if( num > 0 ) {
-					// ESP_LOGI(FNAME,"FBC=%d, Serial RX2=%d bytes", Flarm::bincom, num );
-					if( num >= SERIAL_STRLEN ) {
-						ESP_LOGW(FNAME,"Serial 2 RX Overrun >= %d bytes avail: %d, Bytes", SERIAL_STRLEN, num);
-						num=SERIAL_STRLEN;
-					}
-					int numread = 0;
-					char *rxbuf = (char*)malloc( num < SERIAL_STRLEN ? SERIAL_STRLEN : num );
-					if( Flarm::bincom ){    // normally wait unit sentence has ended, or in binary mode just continue
-						numread = Serial2.read( rxbuf, num );
-					}
-					else{
-						// Note from APgrowatt! You will only read one NMEA sentence from the buffer not more.
-						// But in delay you can have more sentences in the buffer, which are
-						// fist read in the next polling cycle. Furthermore the readline() method
-						// can read more bytes as reported by the available() method and can
-						// also return after a timeout with an incomplete line, no \r\n at
-						// the end !!!
-						numread = Serial2.readLine( rxbuf, SERIAL_STRLEN );
-					}
-					if( numread ){
-						// ESP_LOGI(FNAME,"Serial 2 RX bytes read: %d  bincom: %d", numread,  Flarm::bincom  );
-						// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),numread, ESP_LOG_INFO);
-						if( Flarm::bincom || (! Flarm::bincom && rxbuf[numread-1] == '\n' ) ) {
-							// Do not forward incomplete NMEA sentence. Maybe we should check
-							// also the beginning of a NMEA sentence with $ or ! or ...
-							s.set( rxbuf, numread );
-							Router::forwardMsg( s, s2_rx_q );
-							DM.monitorString( MON_S2, DIR_TX, s.c_str() );
-						}
-					}
-					free( rxbuf );
-				}
-				Router::routeS2();
-			}
-		}
-		esp_task_wdt_reset();
-		if( uxTaskGetStackHighWaterMark( pid2 ) < 256 )
-			ESP_LOGW(FNAME,"Warning serial 2 task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid2 ) );
-		vTaskDelay( HEARTBEAT_PERIOD_MS_SERIAL/portTICK_PERIOD_MS );
-	}
+void Serial::serialHandler2(void *pvParameters)
+{
+  SString s;
+  // Flag that Flarm exit command has been sent.
+  bool flarmExitCmd = false;
+  // Flarm exit command sequence counter
+  uint8_t flarmAckExitSeq[2];
 
+  // Make a pause, that has avoided core dumps during enable interrupt.
+  delay( 100 );
+
+  // Clear Uart RX receiver buffer to get a clean start point.
+  Serial2.flush( false );
+
+  // Enable Uart RX interrupt
+  ESP_LOGI(FNAME,"S2: enable RX by Interrupt" );
+  Serial2.enableInterrupt();
+
+  while( true ) {
+    esp_task_wdt_reset();
+
+    if( uxTaskGetStackHighWaterMark( pid1 ) < 256 )
+      ESP_LOGW(FNAME,"Warning serial 2 task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid2 ) );
+
+    if( _selfTest ) {
+      vTaskDelay( HEARTBEAT_PERIOD_MS_SERIAL / portTICK_PERIOD_MS );
+      continue;
+    }
+
+    // Define expected event bits. They can come from the Uart RX ISR or from
+    // the Serial 2 TX router queue.
+    // In Flarm text mode we may get informed only for newlines in the Uart
+    // RX queue. We tolerate that also in binary mode to get reset this bit
+    // in the event bit mask after a read.
+    EventBits_t bitsToWaitFor = TX2_REQ | RX2_NL;
+
+    if( Flarm::bincom ) {
+      // In Flarm binary mode, we may get informed for every available
+      // character in the RX queue.
+      bitsToWaitFor |= RX2_CHAR;
+    }
+
+    // Define timeout of 5s that the watchdog becaomes not active.
+    TickType_t ticksToWait = 5000 / portTICK_PERIOD_MS;
+
+    // We do wait for events from Uart RX, router TX side or timeout
+    EventBits_t ebits = xEventGroupWaitBits( rxTxNotifier,
+                                             bitsToWaitFor,
+                                             pdTRUE,
+                                             pdFALSE,
+                                             ticksToWait );
+
+    if( (ebits & bitsToWaitFor ) == 0 ) {
+      // Timeout occurred, that is used to reset the watchdog.
+      continue;
+    }
+#if 0
+    ESP_LOGI( FNAME, "S2: EVTO=%dms, bincom=%d, EventBits=%X, RXA=%d, NLC=%d",
+              ticksToWait, Flarm::bincom, ebits, Serial2.available(), Serial2.getNlCounter() );
+#endif
+    if( Serial2.stopRouting() ) {
+      // Flarm download of other Serial is running, stop RX processing and empty always the TX queue.
+      s2_tx_q.clear();
+      continue;
+    }
+
+    // Check, if Serial Interface 2 has something to send
+    if( ebits & TX2_REQ && Serial2.availableForWrite() ) {
+      // ESP_LOGI(FNAME,"S2: TX and available");
+      while( Router::pullMsg( s2_tx_q, s ) ) {
+        //ESP_LOGD(FNAME,"S2: TX len: %d bytes", s.length() );
+        ESP_LOGI(FNAME,"S2: TX len: %d bytes", s.length() );
+        // ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_DEBUG);
+        Serial2.write( s.c_str(), s.length() );
+        if( ! Flarm::bincom )
+          DM.monitorString( MON_S2, DIR_TX, s.c_str() );
+        // ESP_LOGD(FNAME,"S2: TX written: %d", wr);
+
+        // Look, if a Flarm exit command has been sent in binary mode.
+        if( Flarm::bincom && flarmExitCmd == false ) {
+          flarmExitCmd = Serial2.checkFlarmTx( s.c_str(), s.length(), flarmAckExitSeq );
+          if( flarmExitCmd ) {
+            ESP_LOGI( FNAME, "S2: Flarm Exit Cmd detected" );
+          }
+        }
+      }
+    }
+
+    if( ! Flarm::bincom ) {
+      // Flarm works in text mode, check if NL is reported.
+      if( ebits & RX2_NL ) {
+        handleTextMode( 2, flarmExitCmd );
+      }
+      // wait for the next newline
+      continue;
+    }
+    if( ebits & RX2_CHAR ) {
+      // Flarm is in binary mode and we can read bytes.
+      // Due to delays we can have more than one character in the RX queue.
+      int available = Serial2.available();
+
+      if( available == 0 ) {
+          // Nothing contained in RX queue
+          continue;
+      }
+
+      uint8_t* flarmBuf = (uint8_t *) malloc( available + 1 );
+      uint16_t flarmBufFilled = 0;
+      bool flarmAckExit = false;
+
+      while( available > 0 ) {
+        // read out all characters from the RX queue
+        uint8_t c;
+        uint8_t res = Serial2.readCharFromQueue( &c );
+        available--;
+
+        if( res == 0 ) // Nothing has read, break loop
+          break;
+
+        flarmBuf[flarmBufFilled] = c;
+        flarmBufFilled++;
+
+        // Check, if Flarm has sent an acknowledge to the exit command.
+        if( flarmExitCmd == true ) {
+          int start;
+          flarmAckExit = Serial2.checkFlarmRx( (const char* ) flarmBuf, flarmBufFilled, flarmAckExitSeq, &start );
+          if( flarmAckExit ) {
+            ESP_LOGI( FNAME, "S2: Flarm Ack Exit detected" );
+            break;
+          }
+        }
+      }
+
+      // ESP_LOGI(FNAME, "S2: Flarm::bincom forward %d RX data", flarmBufFilled );
+      s.set( (char *) flarmBuf, flarmBufFilled );
+      routeS2RxData( s );
+
+      // Fall back check, if Flarm has self exited from the binary mode. A
+      // classic Flarm will never do that but a PowerFlarm after 60s of no
+      // traffic.
+      const char *pflau = "$PFLAU,";
+      if( flarmAckExit == false && flarmBufFilled > strlen(pflau) ) {
+          flarmBuf[flarmBufFilled] = '\0';
+          if( strstr( (const char *) flarmBuf, pflau) != nullptr ) {
+            // we assume a Flarm self switch to text mode.
+            flarmAckExit = true;
+            ESP_LOGI(FNAME, "S2: $PFLAU found --> Flarm has self switched to text mode" );
+          }
+      }
+      free( flarmBuf );
+
+      // Reset binary mode, if Flarm ACK Exit has received.
+      if( flarmAckExit == true ) {
+          Flarm::bincom = 0;
+          flarmExitCmd = false;
+           if( pid1 != nullptr ) {
+             ESP_LOGI(FNAME, "S2: Activate S1 after Flarm download end." );
+            Serial1.flush( false );
+            Serial1.enableInterrupt();
+          }
+          Serial1.setStopRouting( false );
+          Serial2.flush( false );
+          ESP_LOGI(FNAME, "S2: Flarm Ack Exit received --> switched Flarm to text mode" );
+      }
+    }
+  } // end while( true )
 }
 
+void Serial::routeS2RxData( SString& s ) {
+  if( Serial2.stopRouting() == true )
+    return;
 
+  Router::forwardMsg( s, s2_rx_q );
+  Router::routeS2();
+  if( ! Flarm::bincom )
+    DM.monitorString( MON_S2, DIR_RX, s.c_str() );
+}
 
 bool Serial::selfTest(int num){
 	HardwareSerial *mySerial;
@@ -274,6 +584,7 @@ void Serial::begin(){
 			Serial1.setRxBufferSize(512);
 		}
 	}
+
 	if( serial2_speed.get() != 0  && hardwareRevision.get() >= 3 ){
 		ESP_LOGI(FNAME,"Serial Interface ttyS2 enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial2_speed.get(), baud[serial2_speed.get()], serial2_tx_inverted.get(), serial2_rx_inverted.get() );
 		if( serial2_pins_twisted.get() ){  //   speed, RX, TX, invRX, invTX
@@ -303,11 +614,27 @@ void Serial::begin(){
 
 void Serial::taskStart(){
 	ESP_LOGI(FNAME,"Serial::taskStart()" );
-	if( serial1_speed.get() != 0  || wireless != 0  ){
-		xTaskCreatePinnedToCore(&serialHandler1, "serialHandler1", 4096, NULL, 11, pid1, 0);  // stay below compass task
+
+	bool serial1 = (serial1_speed.get() != 0 || wireless != 0);
+	bool serial2 = (serial2_speed.get() != 0 && hardwareRevision.get() >= 3);
+
+	if( serial1 || serial2 ) {
+    // Create event notifier, when serial 1 or serial 2 are enabled
+    rxTxNotifier = xEventGroupCreate();
+
+    if( rxTxNotifier == nullptr ) {
+      ESP_LOGI( FNAME, "Cannot create EventGroupHandle" );
+    }
+    else {
+      // Set event notifier in uart interrupt routine.
+      HardwareSerial::setRxNotifier( rxTxNotifier );
+    }
 	}
-	if( serial2_speed.get() != 0 ){
-		xTaskCreatePinnedToCore(&serialHandler2, "serialHandler2", 4096, NULL, 10, pid2, 0);  // stay below compass task and task for S1
+
+	if( serial1 ){
+		xTaskCreatePinnedToCore(&serialHandler1, "serialHandler1", 4096, NULL, 11, &pid1, 0);  // stay below compass task
 	}
-	// handler S1 now serves both interfaces in one task
+	if( serial2 ){
+		xTaskCreatePinnedToCore(&serialHandler2, "serialHandler2", 4096, NULL, 10, &pid2, 0);  // stay below compass task and task for S1
+	}
 }

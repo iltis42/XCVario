@@ -11,6 +11,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
+// 24.12.2021 Axel Pauli: added RX interrupt handling stuff.
 
 #ifndef MAIN_ESP32_HAL_UART_H_
 #define MAIN_ESP32_HAL_UART_H_
@@ -22,6 +24,8 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/event_groups.h"
 
 #define SERIAL_5N1 0x8000010
 #define SERIAL_6N1 0x8000014
@@ -54,10 +58,14 @@ typedef struct uart_struct_t uart_t;
 uart_t* uartBegin(uint8_t uart_nr, uint32_t baudrate, uint32_t config, int8_t rxPin, int8_t txPin, uint16_t queueLen, bool rxinverted, bool txinverted);
 void uartEnd(uart_t* uart, uint8_t rxPin, uint8_t txPin);
 
+void uartEnableInterrupt(uart_t* uart);
+void uartDisableInterrupt(uart_t* uart);
+
 uint32_t uartAvailable(uart_t* uart);
 uint32_t uartAvailableForWrite(uart_t* uart);
 uint8_t uartRead(uart_t* uart);
 uint8_t uartPeek(uart_t* uart);
+uint8_t uartReadCharFromQueue( uart_t* uart, uint8_t* c );
 
 void uartWrite(uart_t* uart, uint8_t c);
 void uartWriteBuf(uart_t* uart, const uint8_t * data, size_t len);
@@ -80,6 +88,16 @@ void uartStartDetectBaudrate(uart_t *uart);
 unsigned long uartDetectBaudrate(uart_t *uart);
 
 bool uartRxActive(uart_t* uart);
+
+// Event group handler to signal RX events to clients waiting for characters.
+void uartRxEventHandler( EventGroupHandle_t egh );
+
+// Functions for handling of newline counter
+void uartIncNlCounter( uart_t *uart );
+void uartDecNlCounter( uart_t *uart );
+void uartClearNlCounter( uart_t *uart );
+void uartClearNlCounters();
+int uartGetNlCounter( uart_t *uart );
 
 #ifdef __cplusplus
 }

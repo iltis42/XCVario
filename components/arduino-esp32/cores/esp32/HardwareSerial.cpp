@@ -1,9 +1,15 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <inttypes.h>
+/**
+ * HardwareSerial.cpp
+ *
+ * 24.12.2021 Axel Pauli: added RX interrupt handling stuff.
+ */
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
+#include <cinttypes>
 
 #include "pins_arduino.h"
+#include "esp32-hal-uart.h"
 #include "HardwareSerial.h"
 
 #ifndef RX1
@@ -28,7 +34,7 @@ HardwareSerial Serial1(1);
 HardwareSerial Serial2(2);
 #endif
 
-HardwareSerial::HardwareSerial(int uart_nr) : _uart_nr(uart_nr), _uart(NULL) {}
+HardwareSerial::HardwareSerial(int uart_nr) : _uart_nr(uart_nr), _uart(nullptr) {}
 
 void HardwareSerial::begin(unsigned long baud, uint32_t config, int8_t rxPin, int8_t txPin, bool rxinvert, bool txinvert, unsigned long timeout_ms)
 {
@@ -36,6 +42,10 @@ void HardwareSerial::begin(unsigned long baud, uint32_t config, int8_t rxPin, in
         log_e("Serial number is invalid, please use 0, 1 or 2");
         return;
     }
+    _stopRouting = false;
+    clearFlarmTx();
+    clearFlarmRx();
+
     if(_uart) {
         end();
     }
@@ -81,6 +91,24 @@ void HardwareSerial::begin(unsigned long baud, uint32_t config, int8_t rxPin, in
 void HardwareSerial::updateBaudRate(unsigned long baud)
 {
 	uartSetBaudRate(_uart, baud);
+}
+
+// enable uart RX interrupt
+void HardwareSerial::enableInterrupt()
+{
+  // Make sure that the previous interrupt_info is not used anymore
+  if( _uart ){
+	  uartDisableInterrupt( _uart );
+	  uartEnableInterrupt( _uart );
+  }
+}
+
+// disable uart RX interupt
+void HardwareSerial::disableInterrupt()
+{
+  if( _uart ){
+	  uartDisableInterrupt( _uart );
+  }
 }
 
 void HardwareSerial::end()
@@ -154,10 +182,9 @@ size_t HardwareSerial::read(uint8_t *buffer, size_t size)
     return count;
 }
 
-// read serial interface until '\n' newline character
+// read serial interface until '\n' newline character via polling.
 size_t HardwareSerial::readLine(uint8_t *buffer, size_t size)
 {
-	bool newline=false;
 	int count = 0;
 	int timeout = 10;
 	while( count < size ) {
@@ -170,7 +197,7 @@ size_t HardwareSerial::readLine(uint8_t *buffer, size_t size)
 			if( c == '\n' )
 				break;
 		}else{
-			delay(5);  // wait 5 mS until next data avail check
+			delay(5);  // wait 5 ms until next data avail check
 			timeout--; // increase timeout
 		}
 		if( timeout == 0 ){
@@ -179,6 +206,37 @@ size_t HardwareSerial::readLine(uint8_t *buffer, size_t size)
 		}
 	}
     return count;
+}
+
+// Read serial interface receiver queue until '\n' newline character or
+// queue is empty.
+size_t HardwareSerial::readLineFromQueue(uint8_t *buffer, size_t size)
+{
+  size_t count = 0;
+
+  while( count < size ) {
+    unsigned char c;
+
+    uint8_t res = uartReadCharFromQueue( _uart, &c );
+
+    if( res == 0 ) {
+        // no more characters available
+        return count;
+    }
+
+    *buffer = c;
+    buffer++;
+    count++;
+    if( c == '\n' )
+      break;
+  }
+
+  return count;
+}
+
+uint8_t HardwareSerial::readCharFromQueue( uint8_t* c )
+{
+  return uartReadCharFromQueue( _uart, c );
 }
 
 void HardwareSerial::flush(void)
@@ -222,3 +280,69 @@ void HardwareSerial::setTxInvert(bool invert)
     uartSetTxInvert(_uart, invert);
 }
 
+/*
+ * Check the buffer, if the Flarm Exit command can be found. If yes, return
+ * true and give back the sequence number of the command.
+ */
+bool HardwareSerial::checkFlarmTx( const char* buffer, int length, uint8_t* seq )
+{
+  for( int i=0; i < length; i++ ) {
+      // add byte to shift register
+      for( int j=1; j < sizeof(flarmTx); j++ ) {
+          flarmTx[j-1] = flarmTx[j];
+      }
+
+      flarmTx[sizeof(flarmTx)-1] = buffer[i];
+
+      // The Flarm binary exit command has the following content:
+      // S: "73 08 00 01 2c 00  12 22 ba" Exit bin mode
+      //     |  |---|    |----| |  |---|
+      // Start  length   SEQ-NR MSG CRC
+      if( flarmTx[0] == 0x73 && // Startframe
+          flarmTx[1] == 8 &&    // length 0
+          flarmTx[2] == 0 &&    // length 1
+          flarmTx[6] == 0x12 ) { // Exit
+          // Flarm Exit Sequence found
+          seq[0] = flarmTx[4];
+          seq[1] = flarmTx[5];
+          clearFlarmTx();
+          return true;
+      }
+  }
+  return false;
+}
+
+/*
+ * Check the buffer, if the Flarm Exit command is acknowledged. If yes, return
+ * true and give back the buffer position, where the answer starts.
+ */
+bool HardwareSerial::checkFlarmRx( const char* buffer,
+                                   int length,
+                                   uint8_t* seq,
+                                   int* start )
+{
+  for( int i=0; i < length; i++ ) {
+      // add byte to shift register
+      for( int j=1; j < sizeof(flarmRx); j++ ) {
+          flarmRx[j-1] = flarmRx[j];
+      }
+
+      flarmRx[sizeof(flarmRx)-1] = buffer[i];
+
+      // R: "73 0a 00 01 5e 12 a0 9e 06 2c 00" Quittung exit bin mode
+      //     |  |---|          | |---| |---|
+      // Start  length         MSG CRC SEQ-NR-von-S
+      if( flarmRx[0] == 0x73 && // Startframe
+          flarmRx[1] == 0xa &&  // length 0
+          flarmRx[2] == 0 &&    // length 1
+          flarmRx[6] == 0xa0 && // ACK
+          flarmRx[9] == seq[0] &&
+          flarmRx[10] == seq[1] ) {
+          // Flarm positive ACK to Exit command found
+          *start = i;
+          clearFlarmRx();
+          return true;
+      }
+  }
+  return false;
+}

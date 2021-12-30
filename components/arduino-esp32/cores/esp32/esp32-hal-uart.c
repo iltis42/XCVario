@@ -11,7 +11,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
+// 24.12.2021 Axel Pauli: added RX interrupt handling stuff.
 
+#include "esp_log.h"
 #include "esp32-hal-uart.h"
 #include "esp32-hal.h"
 #include "freertos/FreeRTOS.h"
@@ -47,6 +50,12 @@ struct uart_struct_t {
     intr_handle_t intr_handle;
 };
 
+// Can be triggered by the ISR routine, when something was received.
+static EventGroupHandle_t rxEventGroup = NULL;
+
+// counter for newlines in uart queues
+static uint16_t nlCounter[3];
+
 #if CONFIG_DISABLE_HAL_LOCKS
 #define UART_MUTEX_LOCK()
 #define UART_MUTEX_UNLOCK()
@@ -69,58 +78,101 @@ static uart_t _uart_bus_array[3] = {
 
 static void uart_on_apb_change(void * arg, apb_change_ev_t ev_type, uint32_t old_apb, uint32_t new_apb);
 
-static void IRAM_ATTR _uart_isr(void *arg)
+static void IRAM_ATTR _uart_isr( void *arg )
 {
-    uint8_t i, c;
-    BaseType_t xHigherPriorityTaskWoken;
-    uart_t* uart;
+    uint8_t c;
+    BaseType_t xHigherPriorityTaskWoken, xHigherPriorityTaskWoken1;
+    uint8_t* uart_arg = (uint8_t *) arg;
+    uart_t* uart = NULL;
+    uint8_t eventMask = 0;
 
-    for(i=0;i<3;i++){
-        uart = &_uart_bus_array[i];
-        if(uart->intr_handle == NULL){
-            continue;
-        }
-        uart->dev->int_clr.rxfifo_full = 1;
-        uart->dev->int_clr.frm_err = 1;
-        uart->dev->int_clr.rxfifo_tout = 1;
-        while(uart->dev->status.rxfifo_cnt || (uart->dev->mem_rx_status.wr_addr != uart->dev->mem_rx_status.rd_addr)) {
-            c = uart->dev->fifo.rw_byte;
-            if(uart->queue != NULL)  {
-                xQueueSendFromISR(uart->queue, &c, &xHigherPriorityTaskWoken);
+    // xHigherPriorityTaskWoken must be initialised to pdFALSE.
+    xHigherPriorityTaskWoken = pdFALSE;
+
+    if( uart_arg != NULL && *uart_arg < 3 ) {
+        uint8_t uart_num = *uart_arg;
+        uart = &_uart_bus_array[uart_num];
+
+        if( uart->intr_handle != NULL ) {
+            while(uart->dev->status.rxfifo_cnt || (uart->dev->mem_rx_status.wr_addr != uart->dev->mem_rx_status.rd_addr)) {
+                c = uart->dev->fifo.rw_byte;
+
+                if(uart->queue != NULL)  {
+                    xQueueSendFromISR(uart->queue, &c, &xHigherPriorityTaskWoken);
+                    // Set character flag
+                    eventMask |= (1 << (uart_num * 2));
+                    if( c == '\n' ) {
+                        // Set NL flag
+                        eventMask |= (1 << ((uart_num * 2) + 1));
+                        // increment NL counter
+                        nlCounter[uart_num]++;
+                    }
+                }
             }
-        }
+       }
     }
 
-    if (xHigherPriorityTaskWoken) {
-        portYIELD_FROM_ISR();
+    if( uart ) {
+      // Clear interrupts
+      uart->dev->int_clr.rxfifo_full = 1;
+      uart->dev->int_clr.frm_err = 1;
+      uart->dev->int_clr.rxfifo_tout = 1;
     }
+
+    // xHigherPriorityTaskWoken must be initialised to pdFALSE.
+    xHigherPriorityTaskWoken1 = pdFALSE;
+
+    if( rxEventGroup != NULL && eventMask != 0 ) {
+      // Set event group RX bits
+      xEventGroupSetBitsFromISR( rxEventGroup, eventMask, &xHigherPriorityTaskWoken1 );
+    }
+
+    if( xHigherPriorityTaskWoken || xHigherPriorityTaskWoken1 ) {
+      portYIELD_FROM_ISR();
+    }
+}
+
+void uartRxEventHandler( EventGroupHandle_t egh )
+{
+    ESP_LOGI( "UART", "uartRxEventHandler: %X", (unsigned int) egh );
+    rxEventGroup = egh;
 }
 
 void uartEnableInterrupt(uart_t* uart)
 {
+    ESP_LOGI( "UART", "uartEnableInterrupt: S%d", uart->num );
+    if(uart == NULL) {
+        return;
+    }
     UART_MUTEX_LOCK();
     uart->dev->conf1.rxfifo_full_thrhd = 112;
     uart->dev->conf1.rx_tout_thrhd = 2;
     uart->dev->conf1.rx_tout_en = 1;
+    uart->dev->int_clr.val = 0xffffffff;
     uart->dev->int_ena.rxfifo_full = 1;
     uart->dev->int_ena.frm_err = 1;
     uart->dev->int_ena.rxfifo_tout = 1;
-    uart->dev->int_clr.val = 0xffffffff;
 
-    esp_intr_alloc(UART_INTR_SOURCE(uart->num), (int)ESP_INTR_FLAG_IRAM, _uart_isr, NULL, &uart->intr_handle);
+    // esp_intr_alloc(UART_INTR_SOURCE(uart->num), (int)ESP_INTR_FLAG_IRAM, _uart_isr, NULL, &uart->intr_handle);
+    esp_intr_alloc(UART_INTR_SOURCE(uart->num), (int)ESP_INTR_FLAG_IRAM, _uart_isr, &uart->num, &uart->intr_handle);
     UART_MUTEX_UNLOCK();
 }
 
 void uartDisableInterrupt(uart_t* uart)
 {
+    ESP_LOGI( "UART", "uartDisableInterrupt: S%d", uart->num );
+    if(uart == NULL) {
+        return;
+    }
     UART_MUTEX_LOCK();
-    uart->dev->conf1.val = 0;
     uart->dev->int_ena.val = 0;
+    uart->dev->conf1.val = 0;
     uart->dev->int_clr.val = 0xffffffff;
 
-    esp_intr_free(uart->intr_handle);
-    uart->intr_handle = NULL;
-
+    if( uart->intr_handle != NULL ) {
+      esp_intr_free(uart->intr_handle);
+      uart->intr_handle = NULL;
+    }
     UART_MUTEX_UNLOCK();
 }
 
@@ -148,7 +200,6 @@ void uartAttachRx(uart_t* uart, uint8_t rxPin, bool inverted)
     }
     pinMode(rxPin, INPUT_PULLUP);
     pinMatrixInAttach(rxPin, UART_RXD_IDX(uart->num), inverted);
-    uartEnableInterrupt(uart);
 }
 
 void uartAttachTx(uart_t* uart, uint8_t txPin, bool inverted)
@@ -169,6 +220,8 @@ uart_t* uartBegin(uint8_t uart_nr, uint32_t baudrate, uint32_t config, int8_t rx
     if(rxPin == -1 && txPin == -1) {
         return NULL;
     }
+
+    uartClearNlCounters();
 
     uart_t* uart = &_uart_bus_array[uart_nr];
 
@@ -258,7 +311,7 @@ size_t uartResizeRxBuffer(uart_t * uart, size_t new_size) {
         uart->queue = xQueueCreate(new_size, sizeof(uint8_t));
         if(uart->queue == NULL) {
             UART_MUTEX_UNLOCK();
-            return NULL;
+            return 0;
         }
     }
     UART_MUTEX_UNLOCK();
@@ -307,7 +360,7 @@ uint32_t uartAvailableForWrite(uart_t* uart)
 void uartRxFifoToQueue(uart_t* uart)
 {
 	uint8_t c;
-    UART_MUTEX_LOCK();
+  UART_MUTEX_LOCK();
 	//disable interrupts
 	uart->dev->int_ena.val = 0;
 	uart->dev->int_clr.val = 0xffffffff;
@@ -320,7 +373,7 @@ void uartRxFifoToQueue(uart_t* uart)
 	uart->dev->int_ena.frm_err = 1;
 	uart->dev->int_ena.rxfifo_tout = 1;
 	uart->dev->int_clr.val = 0xffffffff;
-    UART_MUTEX_UNLOCK();
+  UART_MUTEX_UNLOCK();
 }
 
 uint8_t uartRead(uart_t* uart)
@@ -336,6 +389,25 @@ uint8_t uartRead(uart_t* uart)
     if(xQueueReceive(uart->queue, &c, 0)) {
         return c;
     }
+    return 0;
+}
+
+/**
+ * Reads a character from the receiver queue. Use this function, if the uart
+ * receiver works in interrupt mode.
+ *
+ * Returns true, if a character could be read otherwise 0.
+ */
+uint8_t uartReadCharFromQueue( uart_t* uart, uint8_t* c )
+{
+    if(uart == NULL || uart->queue == NULL) {
+        return 0;
+    }
+
+    if(xQueueReceive(uart->queue, c, 0)) {
+        return 1;
+    }
+
     return 0;
 }
 
@@ -390,7 +462,6 @@ void uartFlushTxOnly(uart_t* uart, bool txOnly)
     if(uart == NULL) {
         return;
     }
-
     UART_MUTEX_LOCK();
     while(uart->dev->status.txfifo_cnt || uart->dev->status.st_utx_out);
     
@@ -404,8 +475,8 @@ void uartFlushTxOnly(uart_t* uart, bool txOnly)
         }
 
         xQueueReset(uart->queue);
+        uartClearNlCounter( uart );
     }
-    
     UART_MUTEX_UNLOCK();
 }
 
@@ -426,7 +497,7 @@ static void uart_on_apb_change(void * arg, apb_change_ev_t ev_type, uint32_t old
     uart_t* uart = (uart_t*)arg;
     if(ev_type == APB_BEFORE_CHANGE){
         UART_MUTEX_LOCK();
-        //disabple interrupt
+        //disable interrupt
         uart->dev->int_ena.val = 0;
         uart->dev->int_clr.val = 0xffffffff;
         // read RX fifo
@@ -643,4 +714,44 @@ uartDetectBaudrate(uart_t *uart)
  */
 bool uartRxActive(uart_t* uart) {
     return uart->dev->status.st_urx_out != 0;
+}
+
+void uartIncNlCounter( uart_t *uart )
+{
+  if( uart == NULL )
+    return;
+
+  nlCounter[uart->num]++;
+}
+
+void uartDecNlCounter( uart_t *uart )
+{
+  if( uart == NULL )
+    return;
+
+  nlCounter[uart->num]--;
+}
+void uartClearNlCounter( uart_t *uart )
+{
+  if( uart == NULL )
+    return;
+
+  nlCounter[uart->num] = 0;
+}
+
+void uartClearNlCounters()
+{
+  nlCounter[0] = 0;
+  nlCounter[1] = 0;
+  nlCounter[2] = 0;
+}
+
+int uartGetNlCounter( uart_t *uart )
+{
+  if( uart == NULL )
+      return -1;
+
+  uint16_t nlc;
+  nlc = nlCounter[uart->num];
+  return nlc;
 }

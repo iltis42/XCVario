@@ -40,6 +40,8 @@
    }
 
  Pay attention: the baudrate returned by baudRate() may be rounded, eg 115200 returns 115201
+
+ 24.12.2021 Axel Pauli: added RX interrupt handling stuff.
  */
 
 #ifndef HardwareSerial_h
@@ -49,6 +51,8 @@
 
 #include "Stream.h"
 #include "esp32-hal.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/event_groups.h"
 
 class HardwareSerial: public Stream
 {
@@ -72,6 +76,8 @@ public:
     {
     	return readLine((uint8_t*) buffer, size );
     }
+    size_t readLineFromQueue(uint8_t *buffer, size_t size);
+    uint8_t readCharFromQueue( uint8_t* c );
     void flush(void);
     void flush( bool txOnly);
     size_t write(uint8_t);
@@ -109,11 +115,76 @@ public:
     void setRxInvert(bool);
     void setTxInvert(bool);
 
+    // enable uart RX interrupt
+    void enableInterrupt();
+
+    // disable uart RX interupt
+    void disableInterrupt();
+
+    // Event group handler to signal RX events to clients waiting for characters.
+    static void setRxNotifier( EventGroupHandle_t egh )
+    {
+      uartRxEventHandler( egh );
+    }
+
+    // Functions for handling of newline counter
+    void incNlCounter()
+    {
+      uartIncNlCounter( _uart );
+    }
+
+    void decNlCounter()
+    {
+      uartDecNlCounter( _uart );
+    }
+
+    void clearNlCounter()
+    {
+      uartClearNlCounter( _uart );
+    }
+
+    uint16_t getNlCounter()
+    {
+      return uartGetNlCounter( _uart );
+    }
+
+    void clearFlarmTx()
+    {
+      for( int i=0; i < sizeof(flarmTx); i++ ) {
+        flarmTx[i] = 0;
+      }
+    }
+
+    bool checkFlarmTx( const char* buffer, int length, uint8_t* seq );
+
+    void clearFlarmRx()
+    {
+      for( int i=0; i < sizeof(flarmRx); i++ ) {
+        flarmRx[i] = 0;
+      }
+    }
+
+    bool checkFlarmRx( const char* buffer, int length, uint8_t* seq, int* start );
+
+    void setStopRouting( bool flag )
+    {
+      _stopRouting = flag;
+    }
+
+    bool stopRouting()
+    {
+      return _stopRouting;
+    }
+
 protected:
+    uint8_t flarmTx[9];
+    uint8_t flarmRx[11];
     int _uart_nr;
     uart_t* _uart;
     uint8_t _tx_pin;
     uint8_t _rx_pin;
+    // Stop routing of TX/RX data. That is used in case of Flarm binary download.
+    bool _stopRouting;
 };
 
 extern void serialEventRun(void) __attribute__((weak));

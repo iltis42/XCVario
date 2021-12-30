@@ -143,7 +143,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		 */
 		float bal = (aballast+100)/100.0;
 		// ESP_LOGW(FNAME,"Ballast: %f %1.2f", bal, bal );
-		sprintf(str,"$PXCV,%3.1f,%1.2f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f", te, mc, bugs, bal, !cruise, std::roundf(temp*10.f)/10.f, QNH.get() , baro, dp );
+		sprintf(str,"$PXCV,%3.1f,%1.2f,%d,%1.3f,%d,%2.1f,%4.1f,%4.1f,%.1f", te, mc, bugs, bal, !cruise, std::roundf(temp*10.f)/10.f, QNH.get() , baro, dp );
 		int append_idx = strlen(str);
 		if( haveMPU && attitude_indicator.get() ){
 			float roll = IMU::getRoll();

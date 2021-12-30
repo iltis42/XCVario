@@ -141,7 +141,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 				Z.ZZ:   acceleration in Z-Axis,
 		 *CHK = standard NMEA checksum
 		 */
-		sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, !cruise, std::roundf(temp*10.f)/10.f, QNH.get() , baro, dp );
+		sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f", te, mc, bugs, (aballast+100)/100.0, !cruise, std::roundf(temp*10.f)/10.f, QNH.get() , baro, dp );
 		int append_idx = strlen(str);
 		if( haveMPU && attitude_indicator.get() ){
 			float roll = IMU::getRoll();

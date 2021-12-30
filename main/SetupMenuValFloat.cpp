@@ -115,6 +115,8 @@ float SetupMenuValFloat::step( float instep ){
 		step = 5.0;
 	else
 		step = instep;
+	if( _nvs->unitType() == UNIT_VARIO && vario_unit.get() == VARIO_UNIT_KNOTS )
+		step = Units::Vario2ms( instep*2 );
 	// ESP_LOGI(FNAME,"instep: %f, ut:%d ostep: %f", instep, _nvs->unitType(), step );
 	return step;
 }
@@ -123,6 +125,7 @@ void SetupMenuValFloat::down( int count ){
 	if( (selected != this) || !inSetup )
 		return;
 	// ESP_LOGI(FNAME,"val down %d times ", count );
+	_value = _nvs->get();
 	while( (_value > _min) && count ) {
 
 		_value -= step( _step );
@@ -132,8 +135,6 @@ void SetupMenuValFloat::down( int count ){
 		_value = _min;
 	_nvs->set(_value );
 	displayVal();
-	if( bits._live_update )
-		_nvs->set( _value );
 	if( _action != 0 )
 		(*_action)( this );
 }
@@ -142,6 +143,7 @@ void SetupMenuValFloat::up( int count ){
 	if( (selected != this) || !inSetup )
 		return;
 	// ESP_LOGI(FNAME,"val up %d times ", count );
+	_value = _nvs->get();
 	while( (_value < _max) && count ) {
 		_value += step( _step );
 		count--;
@@ -150,8 +152,6 @@ void SetupMenuValFloat::up( int count ){
 		_value = _max;
 	_nvs->set(_value );
 	displayVal();
-	if( bits._live_update )
-		_nvs->set( _value );
 	if( _action != 0 )
 		(*_action)( this );
 }

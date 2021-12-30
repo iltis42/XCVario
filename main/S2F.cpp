@@ -101,6 +101,7 @@ void S2F::calculateOverweight()
 	gross_weight.set( empty_weight.get() + crew_weight.get() + ballast_kg.get() );
 	myballast = ( ((100*gross_weight.get()) / (polar_wingload.get()*polar_wingarea.get())) - 100.0 );
 	ESP_LOGI(FNAME,"New ballast overweight: %.2f %%", myballast );
+	ballast.set( myballast );
 }
 
 void S2F::change_ballast()

@@ -141,7 +141,9 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 				Z.ZZ:   acceleration in Z-Axis,
 		 *CHK = standard NMEA checksum
 		 */
-		sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f", te, mc, bugs, (aballast+100)/100.0, !cruise, std::roundf(temp*10.f)/10.f, QNH.get() , baro, dp );
+		float bal = (aballast+100)/100.0;
+		// ESP_LOGW(FNAME,"Ballast: %f %1.2f", bal, bal );
+		sprintf(str,"$PXCV,%3.1f,%1.2f,%d,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f", te, mc, bugs, bal, !cruise, std::roundf(temp*10.f)/10.f, QNH.get() , baro, dp );
 		int append_idx = strlen(str);
 		if( haveMPU && attitude_indicator.get() ){
 			float roll = IMU::getRoll();
@@ -342,6 +344,8 @@ void Protocols::parseNMEA( const char *astr ){
 				sscanf(str, "!g,m%f", &mc);
 				mc = mc*0.1;   // comes in knots*10, unify to knots
 				float mc_ms =  std::roundf(Units::knots2ms(mc)*10.f)/10.f; // hide rough knot resolution
+				if( vario_unit.get() == VARIO_UNIT_KNOTS )
+					mc_ms =  std::roundf(Units::knots2ms(mc)*100.f)/100.f; // higher resolution for knots
 				ESP_LOGI(FNAME,"New MC: %1.1f knots, %f m/s", mc, mc_ms );
 				MC.set( mc_ms );  // set mc in m/s
 			}

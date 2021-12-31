@@ -14,6 +14,7 @@
 #include "RingBufCPP.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
+#include "Router.h"
 
 #define SERIAL_STRLEN SSTRLEN
 
@@ -27,6 +28,19 @@
 #define TX1_REQ 64
 #define TX2_REQ 128
 
+
+typedef struct xcv_serial {
+	RingBufCPP<SString, QUEUE_SIZE>* tx_q;
+	RingBufCPP<SString, QUEUE_SIZE>* rx_q;
+	HardwareSerial *uart;
+	uint8_t uart_nr;
+	uint8_t rx_char;
+	uint8_t rx_nl;
+	uint8_t tx_req;
+	uint8_t monitor;
+	TaskHandle_t pid;
+}xcv_serial_t;
+
 class Serial {
 public:
   Serial() {
@@ -34,8 +48,7 @@ public:
 
   static void begin();
   static void taskStart();
-  static void serialHandler1(void *pvParameters);
-  static void serialHandler2(void *pvParameters);
+  static void serialHandler(void *pvParameters);
   static bool selfTest( int num );
   /*
    * Uart event bits
@@ -61,10 +74,9 @@ public:
   /**
    * Handle Serial 1/2 RX data, if Flarm works in text mode.
    */
-  static void handleTextMode( uint8_t uartNum, bool &flarmExitCmd );
+  static void handleTextMode( bool &flarmExitCmd, xcv_serial_t *cfg );
 
-  static void routeS1RxData( SString& s );
-  static void routeS2RxData( SString& s );
+  static void routeRxData( SString& s, xcv_serial_t *cfg );
 
 private:
   static bool _selfTest;

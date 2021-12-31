@@ -258,17 +258,16 @@ void Serial::handleTextMode( uint8_t uartNum, bool &flarmExitCmd ) {
 		if( bytes > 0 ) {
 			SString s;
 			s.set( (char *) rxbuf, bytes );
-			const char* pflax = "$PFLAX,A*2E\r\n";
+			Flarm::parsePFLAX( s );
 			// check Flarm response to $PFLAX, if it is ok. If yes, switch
 			// to binary mode.
-			if( strcmp( s.c_str(), pflax ) == 0 ) {
+			if( Flarm::bincom ) {
 				u1->clearFlarmTx();
 				u1->clearFlarmRx();
 				flarmExitCmd = false;
 				// Stop routing of TX/RX data of other Serial channel
 				u2->setStopRouting( true );
 				u2->disableInterrupt();
-				Flarm::bincom = 5;
 				// Wait so long until second RX queue is empty.
 				delay( 10 );
 				if( uartNum == 1 )

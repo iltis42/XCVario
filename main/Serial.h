@@ -80,9 +80,32 @@ public:
 
   static void routeRxData( SString& s, xcv_serial_t *cfg );
 
+  static void setStopRouting( const uint8_t uart_nr, bool flag )
+  {
+    if( uart_nr > 2 )
+      return;
+    _stopRouting[uart_nr] = flag;
+  }
+
+  static bool stopRouting( const uint8_t uart_nr )
+  {
+    if( uart_nr > 2 )
+      return false;
+    return _stopRouting[uart_nr];
+  }
+
+  static void clearStopRouting()
+  {
+    _stopRouting[0] = false;
+    _stopRouting[1] = false;
+    _stopRouting[2] = false;
+  }
+
 private:
   static bool _selfTest;
   static EventGroupHandle_t rxTxNotifier;
+  // Stop routing of TX/RX data. That is used in case of Flarm binary download.
+  static bool _stopRouting[3];
 };
 
 #endif

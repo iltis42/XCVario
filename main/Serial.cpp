@@ -35,7 +35,6 @@ If  too  many  sentences  are  produced  with  regard  to  the  available  trans
 some sentences might be lost or truncated.
  */
 
-
 #define HEARTBEAT_PERIOD_MS_SERIAL 20
 
 bool Serial::_selfTest = false;
@@ -52,9 +51,10 @@ EventGroupHandle_t Serial::rxTxNotifier;
 #define RX2_CHAR 16
 #define RX2_NL 32
 
-
 static xcv_serial_t S1 = { .name="S1", .tx_q = &s1_tx_q, .rx_q = &s1_rx_q, .route=Router::routeS1, .uart=&Serial1, .uart_nr = 1, .rx_char = RX1_CHAR, .rx_nl = RX1_NL, .tx_req = TX1_REQ, .monitor=MON_S1, .pid = 0 };
 static xcv_serial_t S2 = { .name="S2", .tx_q = &s2_tx_q, .rx_q = &s2_rx_q, .route=Router::routeS2, .uart=&Serial2, .uart_nr = 2, .rx_char = RX2_CHAR, .rx_nl = RX2_NL, .tx_req = TX2_REQ, .monitor=MON_S2, .pid = 0 };
+
+bool Serial::_stopRouting[3] = { false, false, false };
 
 // Serial Handler ttyS1, S1, port 8881
 void Serial::serialHandler(void *pvParameters)
@@ -113,7 +113,7 @@ void Serial::serialHandler(void *pvParameters)
 		ESP_LOGI( FNAME, "%s: EVTO=%dms, bincom=%d, EventBits=%X, RXA=%d, NLC=%d",
 				cfg->name, ticksToWait, Flarm::bincom, ebits, cfg->uart->available(), cfg->uart->getNlCounter() );
 #endif
-		if( cfg->uart->stopRouting() ) {
+		if( stopRouting( cfg->uart_nr ) ) {
 			// Flarm download of other Serial is running, stop RX processing and empty TX queue.
 			cfg->tx_q->clear();
 			continue;
@@ -216,7 +216,7 @@ void Serial::serialHandler(void *pvParameters)
 					Serial2.flush( false );
 					Serial2.enableInterrupt();
 				}
-				Serial2.setStopRouting( false );
+				setStopRouting( cfg->uart_nr, false );
 				cfg->uart->flush( false );
 				ESP_LOGI(FNAME, "%s: Flarm Ack Exit received --> switched Flarm to text mode", cfg->name );
 			}
@@ -230,6 +230,7 @@ void Serial::serialHandler(void *pvParameters)
 void Serial::handleTextMode( bool &flarmExitCmd, xcv_serial_t *cfg ) {
 	HardwareSerial *u1 = 0;
 	HardwareSerial *u2 = 0;
+	uint8_t u2_nr = 2;
 
 	if( cfg->uart_nr == 1 ) {   // TBD, more generic way to select other interface, maybe just add second interface to cfg ?
 		u1 = S1.uart;
@@ -238,6 +239,7 @@ void Serial::handleTextMode( bool &flarmExitCmd, xcv_serial_t *cfg ) {
 	else if( cfg->uart_nr == 2 ) { // dito
 		u1 = S2.uart;
 		u2 = S1.uart;
+		u2_nr = 1;
 	}
 	else
 		return;
@@ -276,7 +278,7 @@ void Serial::handleTextMode( bool &flarmExitCmd, xcv_serial_t *cfg ) {
 				u1->clearFlarmRx();
 				flarmExitCmd = false;
 				// Stop routing of TX/RX data of other Serial channel
-				u2->setStopRouting( true );
+				setStopRouting( u2_nr, true );
 				u2->disableInterrupt();
 				// Wait so long until second RX queue is empty.
 				delay( 10 );
@@ -293,7 +295,7 @@ void Serial::handleTextMode( bool &flarmExitCmd, xcv_serial_t *cfg ) {
 }
 
 void Serial::routeRxData( SString& s, xcv_serial_t *cfg ) {
-	if( cfg->uart->stopRouting() == true )
+	if( stopRouting( cfg->uart_nr ) == true )
 		return;
 	Router::forwardMsg( s, *(cfg->rx_q) );
 	cfg->route();
@@ -415,6 +417,7 @@ void Serial::taskStart(){
 	bool serial2 = (serial2_speed.get() != 0 && hardwareRevision.get() >= 3);
 
 	if( serial1 || serial2 ) {
+	  clearStopRouting();
 		// Create event notifier, when serial 1 or serial 2 are enabled
 		rxTxNotifier = xEventGroupCreate();
 

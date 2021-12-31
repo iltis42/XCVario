@@ -42,7 +42,6 @@ void HardwareSerial::begin(unsigned long baud, uint32_t config, int8_t rxPin, in
         log_e("Serial number is invalid, please use 0, 1 or 2");
         return;
     }
-    _stopRouting = false;
     clearFlarmTx();
     clearFlarmRx();
 

@@ -30,8 +30,10 @@
 
 
 typedef struct xcv_serial {
+  const char* name;
 	RingBufCPP<SString, QUEUE_SIZE>* tx_q;
 	RingBufCPP<SString, QUEUE_SIZE>* rx_q;
+	void (*route)();
 	HardwareSerial *uart;
 	uint8_t uart_nr;
 	uint8_t rx_char;

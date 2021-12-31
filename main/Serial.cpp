@@ -53,8 +53,8 @@ EventGroupHandle_t Serial::rxTxNotifier;
 #define RX2_NL 32
 
 
-static xcv_serial_t S1  = { .tx_q = &s1_tx_q, .rx_q = &s1_rx_q, .uart=&Serial1, .uart_nr = 1, .rx_char = RX1_CHAR, .rx_nl = RX1_NL, .tx_req = TX1_REQ, .monitor=MON_S1, .pid = 0 };
-static xcv_serial_t S2  = { .tx_q = &s2_tx_q, .rx_q = &s2_rx_q, .uart=&Serial2, .uart_nr = 2, .rx_char = RX2_CHAR, .rx_nl = RX2_NL, .tx_req = TX2_REQ, .monitor=MON_S2, .pid = 0 };
+static xcv_serial_t S1 = { .name="S1", .tx_q = &s1_tx_q, .rx_q = &s1_rx_q, .route=Router::routeS1, .uart=&Serial1, .uart_nr = 1, .rx_char = RX1_CHAR, .rx_nl = RX1_NL, .tx_req = TX1_REQ, .monitor=MON_S1, .pid = 0 };
+static xcv_serial_t S2 = { .name="S2", .tx_q = &s2_tx_q, .rx_q = &s2_rx_q, .route=Router::routeS2, .uart=&Serial2, .uart_nr = 2, .rx_char = RX2_CHAR, .rx_nl = RX2_NL, .tx_req = TX2_REQ, .monitor=MON_S2, .pid = 0 };
 
 // Serial Handler ttyS1, S1, port 8881
 void Serial::serialHandler(void *pvParameters)
@@ -73,14 +73,14 @@ void Serial::serialHandler(void *pvParameters)
 	cfg->uart->flush( false );
 
 	// Enable Uart RX interrupt
-	ESP_LOGI(FNAME,"S1: enable RX by Interrupt" );
+	ESP_LOGI(FNAME,"%s: enable RX by Interrupt", cfg->name );
 	cfg->uart->enableInterrupt();
 
 	while( true ) {
 		esp_task_wdt_reset();
 
 		if( uxTaskGetStackHighWaterMark( cfg->pid ) < 256 )
-			ESP_LOGW(FNAME,"Warning serial 1 task stack low: %d bytes", uxTaskGetStackHighWaterMark( cfg->pid ) );
+			ESP_LOGW(FNAME,"Warning serial %d task stack low: %d bytes", cfg->uart_nr, uxTaskGetStackHighWaterMark( cfg->pid ) );
 
 		if( _selfTest ) {
 			vTaskDelay( HEARTBEAT_PERIOD_MS_SERIAL / portTICK_PERIOD_MS );
@@ -110,8 +110,8 @@ void Serial::serialHandler(void *pvParameters)
 		}
 
 #if 1
-		ESP_LOGI( FNAME, "S%d: EVTO=%dms, bincom=%d, EventBits=%X, RXA=%d, NLC=%d",
-				cfg->uart_nr, ticksToWait, Flarm::bincom, ebits, cfg->uart->available(), cfg->uart->getNlCounter() );
+		ESP_LOGI( FNAME, "%s: EVTO=%dms, bincom=%d, EventBits=%X, RXA=%d, NLC=%d",
+				cfg->name, ticksToWait, Flarm::bincom, ebits, cfg->uart->available(), cfg->uart->getNlCounter() );
 #endif
 		if( cfg->uart->stopRouting() ) {
 			// Flarm download of other Serial is running, stop RX processing and empty TX queue.
@@ -135,7 +135,7 @@ void Serial::serialHandler(void *pvParameters)
 				if( Flarm::bincom && flarmExitCmd == false ) {
 					flarmExitCmd = cfg->uart->checkFlarmTx( s.c_str(), s.length(), flarmAckExitSeq );
 					if( flarmExitCmd ) {
-						ESP_LOGI( FNAME, "S%d: Flarm Exit Cmd detected", cfg->uart_nr );
+						ESP_LOGI( FNAME, "%s: Flarm Exit Cmd detected", cfg->name );
 					}
 				}
 			}
@@ -168,6 +168,8 @@ void Serial::serialHandler(void *pvParameters)
 				// read out all characters from the RX queue
 				uint8_t c;
 				uint8_t res = cfg->uart->readCharFromQueue( &c );   // TBD, do we need char wise reading here ? propose uart->readBuffer( flarmBuf, available );
+				                                                    // Der Uart Treiber schreibt zeichenweise in die Queue und readBuffer holt es zeichenweise raus.
+				                                                    // Damit ist es egal, wo man das tut.
 				available--;
 
 				if( res == 0 ) // Nothing has read, break loop
@@ -181,12 +183,12 @@ void Serial::serialHandler(void *pvParameters)
 					int start;
 					flarmAckExit = cfg->uart->checkFlarmRx( (const char* ) flarmBuf, flarmBufFilled, flarmAckExitSeq, &start );
 					if( flarmAckExit ) {
-						ESP_LOGI( FNAME, "S%d: Flarm Ack Exit detected", cfg->uart_nr );
+						ESP_LOGI( FNAME, "%s: Flarm Ack Exit detected", cfg->name );
 						break;
 					}
 				}
 			}
-			ESP_LOGI(FNAME, "S%d: Flarm::bincom forward %d RX data", cfg->uart_nr, flarmBufFilled );
+			ESP_LOGI(FNAME, "%s: Flarm::bincom forward %d RX data", cfg->name, flarmBufFilled );
 			s.set( (char *) flarmBuf, flarmBufFilled );
 			routeRxData( s, cfg );
 			ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
@@ -199,7 +201,7 @@ void Serial::serialHandler(void *pvParameters)
 				if( strstr( (const char *) flarmBuf, pflau) != nullptr ) {
 					// we assume a Flarm self switch to text mode.
 					flarmAckExit = true;
-					ESP_LOGI(FNAME, "S1: $PFLAU found --> Flarm has self switched to text mode" );
+					ESP_LOGI(FNAME, "%s: $PFLAU found --> Flarm has self switched to text mode", cfg->name );
 				}
 			}
 			free( flarmBuf );
@@ -210,13 +212,13 @@ void Serial::serialHandler(void *pvParameters)
 				Flarm::bincom = 0;
 				flarmExitCmd = false;
 				if( S2.pid != nullptr ) {
-					ESP_LOGI(FNAME, "S1: Activate S2 after Flarm download end." );
+					ESP_LOGI(FNAME, "%s: Activate S2 after Flarm download end.", cfg->name );
 					Serial2.flush( false );
 					Serial2.enableInterrupt();
 				}
 				Serial2.setStopRouting( false );
 				cfg->uart->flush( false );
-				ESP_LOGI(FNAME, "S1: Flarm Ack Exit received --> switched Flarm to text mode" );
+				ESP_LOGI(FNAME, "%s: Flarm Ack Exit received --> switched Flarm to text mode", cfg->name );
 			}
 		}
 	} // end while( true )
@@ -282,7 +284,7 @@ void Serial::handleTextMode( bool &flarmExitCmd, xcv_serial_t *cfg ) {
 					while( ! S2.rx_q->isEmpty() ) delay( 10 );
 				else
 					while( ! S1.rx_q->isEmpty() ) delay( 10 );
-				ESP_LOGI(FNAME, "S%d: $PFLAX,A*2E --> switching to binary mode", cfg->uart_nr );
+				ESP_LOGI(FNAME, "%s: $PFLAX,A*2E --> switching to binary mode", cfg->name );
 			}
 			routeRxData( s, cfg );
 		}
@@ -293,9 +295,8 @@ void Serial::handleTextMode( bool &flarmExitCmd, xcv_serial_t *cfg ) {
 void Serial::routeRxData( SString& s, xcv_serial_t *cfg ) {
 	if( cfg->uart->stopRouting() == true )
 		return;
-
 	Router::forwardMsg( s, *(cfg->rx_q) );
-	Router::routeS1();
+	cfg->route();
 	if( !Flarm::bincom ){
 		DM.monitorString( cfg->monitor, DIR_RX, s.c_str(), Flarm::bincom );
 	}

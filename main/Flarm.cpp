@@ -6,6 +6,7 @@
 #include "IpsDisplay.h"
 #include "sensor.h"
 #include "CircleWind.h"
+#include "Router.h"
 
 int Flarm::RX = 0;
 int Flarm::TX = 0;
@@ -24,6 +25,27 @@ int Flarm::bincom = 0;
 AdaptUGC* Flarm::ucg;
 
 extern xSemaphoreHandle spiMutex;
+
+// Option to simulate FLARM sentences
+const char *flarm[] = {
+		"$PFLAU,3,1,2,1,1,-60,2,-100,755,1234*\n",
+		"$PFLAU,3,1,2,1,1,-20,2,-100,655,1234*\n",
+		"$PFLAU,3,1,2,1,1,-10,2,-80,455,1234*\n",
+		"$PFLAU,3,1,2,1,2,10,2,-40,155,1234*\n",
+		"$PFLAU,3,1,2,1,2,20,2,-20,155,1234*\n",
+		"$PFLAU,3,1,2,1,3,30,2,0,155,1234*\n",
+		"$PFLAU,3,1,2,1,3,60,2,20,255,1234*\n",
+		"$PFLAU,3,1,2,1,2,80,2,40,455,1234*\n",
+		"$PFLAU,3,1,2,1,1,90,2,80,855,1234*\n",
+		"$PFLAU,3,1,2,1,1,90,2,80,1555,1234*\n"
+};
+
+int sim=100;
+
+
+
+
+
 
 /* PFLAU,<RX>,<TX>,<GPS>,<Power>,<AlarmLevel>,<RelativeBearing>,<AlarmType>,<RelativeVertical>,<RelativeDistance>,<ID>
 		$PFLAU,3,1,2,1,2,-30,2,-32,755*FLARM is working properly and currently receives 3 other aircraft.
@@ -59,7 +81,6 @@ e.g.
 $PFLAA,0,-1234,1234,220,2,DD8F12,180,,30,-1.4,1*
 
 */
-
 void Flarm::parsePFLAA( const char *pflaa ){
 
 }
@@ -79,10 +100,33 @@ int Flarm::timeout=0;
 int Flarm::ext_alt_timer=0;
 int Flarm::_numSat=0;
 
+void Flarm::flarmSim(){
+	if( flarm_sim.get() ){
+		sim=-3;
+		flarm_sim.set( 0 );
+	}
+	if( sim < 10 ){
+		if( sim >= 0 ){
+			int cs = Protocols::calcNMEACheckSum( (char *)flarm[sim] );
+			char str[80];
+			sprintf( str, "%s%02X\r\n", flarm[sim], cs );
+			SString sf( str );
+			Router::forwardMsg( sf, s1_rx_q );
+			ESP_LOGI(FNAME,"Serial FLARM SIM: %s",  sf.c_str() );
+		}
+		sim++;
+	}
+
+}
+
+
 void Flarm::progress(){  // once per second
 	if( timeout )
 		timeout--;
 
+	if( !(timeout%2) ){  // every other second
+		flarmSim();
+	}
 }
 
 bool Flarm::connected(){

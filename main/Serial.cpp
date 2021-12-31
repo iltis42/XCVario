@@ -35,21 +35,7 @@ If  too  many  sentences  are  produced  with  regard  to  the  available  trans
 some sentences might be lost or truncated.
  */
 
-// Option to simulate FLARM sentences
-const char *flarm[] = {
-		"$PFLAU,3,1,2,1,1,-60,2,-100,755,1234*\n",
-		"$PFLAU,3,1,2,1,1,-20,2,-100,655,1234*\n",
-		"$PFLAU,3,1,2,1,1,-10,2,-80,455,1234*\n",
-		"$PFLAU,3,1,2,1,2,10,2,-40,155,1234*\n",
-		"$PFLAU,3,1,2,1,2,20,2,-20,155,1234*\n",
-		"$PFLAU,3,1,2,1,3,30,2,0,155,1234*\n",
-		"$PFLAU,3,1,2,1,3,60,2,20,255,1234*\n",
-		"$PFLAU,3,1,2,1,2,80,2,40,455,1234*\n",
-		"$PFLAU,3,1,2,1,1,90,2,80,855,1234*\n",
-		"$PFLAU,3,1,2,1,1,90,2,80,1555,1234*\n"
-};
 
-int sim=100;
 #define HEARTBEAT_PERIOD_MS_SERIAL 20
 static TaskHandle_t pid1 = nullptr;
 static TaskHandle_t pid2 = nullptr;
@@ -87,22 +73,7 @@ void Serial::serialHandler1(void *pvParameters)
 			continue;
 		}
 
-		if( flarm_sim.get() ){
-			sim=-3;
-			flarm_sim.set( 0 );
-		}
-		if( sim < 10 ){
-			if( sim >= 0 ){
-				int cs = Protocols::calcNMEACheckSum( (char *)flarm[sim] );
-				char str[80];
-				sprintf( str, "%s%02X\r\n", flarm[sim], cs );
-				SString sf( str );
-				Router::forwardMsg( sf, s1_rx_q );
-				ESP_LOGI(FNAME,"Serial FLARM SIM: %s",  sf.c_str() );
-			}
-			delay(2500);
-			sim++;
-		}
+
 
 		// Define expected event bits. They can come from the Uart RX ISR or from
 		// the Serial 1 TX router queue.

@@ -48,7 +48,7 @@ public:
     }
   }
 
-  static bool checkFlarmTx( uint8_t flarmTx[9], const char* stream, int length, uint8_t* seq );
+  static bool checkFlarmTx( uint8_t flarmTx[9], const uint8_t* stream, int length, uint8_t* seq );
 
   static void clearFlarmRx( uint8_t flarmRx[11] ) {
     for( int i=0; i < 11; i++ ) {
@@ -56,7 +56,7 @@ public:
     }
   }
 
-  static bool checkFlarmRx( uint8_t flarmRx[11], const char* stream, int length, uint8_t* seq, int* start );
+  static bool checkFlarmRx( uint8_t flarmRx[11], const uint8_t* stream, int length, uint8_t* seq, int* start );
 
 private:
  	static void drawClearTriangle( int x, int y, int rb, int dist, int size, int factor );

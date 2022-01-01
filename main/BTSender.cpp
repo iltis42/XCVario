@@ -65,12 +65,16 @@ void BTSender::progress(){
 	if (SerialBT->available() ) {
 		ESP_LOGI(FNAME,"BT RFCOMM RX");
 		SString rx;
-		while (SerialBT->available() && (rx.length() < SSTRLEN-1) ){
-			Router::pullMsg( bt_rx_q , rx );
+		int avail = SerialBT->available();
+		ESP_LOGI(FNAME,"BT data received %d bytes", avail );
+		while ( avail && (rx.length() < SSTRLEN-1) ){
 			char byte = (char)SerialBT->read();
-			// ESP_LOGI(FNAME,"BT RFCOMM RX %c", byte );
 			rx.append( &byte, 1 );
+			avail--;
 		}
+		rx.append( "\0", 1 );
+
+		ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.c_str(),rx.length(), ESP_LOG_INFO);
 		Router::forwardMsg( rx, bt_rx_q );
 		DM.monitorString( MON_BLUETOOTH, DIR_RX, rx.c_str() );
 	}
@@ -92,7 +96,7 @@ void BTSender::begin(){
 		ESP_LOGI(FNAME,"BT on, create BT master object" );
 		SerialBT = new BluetoothSerial();
 		SerialBT->begin( SetupCommon::getID() );
-		xTaskCreatePinnedToCore(&btTask, "btTask", 3072, NULL, 10, &pid, 0);  // stay below compass task
+		xTaskCreatePinnedToCore(&btTask, "btTask", 4096, NULL, 15, &pid, 0);  // stay below compass task
 	}
 }
 

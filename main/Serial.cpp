@@ -174,16 +174,19 @@ void Serial::serialHandler(void *pvParameters)
 			uint8_t* flarmBuf = (uint8_t *) malloc( available + 1 );
 			bool flarmAckExit = false;
 
-      // read out all characters from the RX queue
+			// read out all characters from the RX queue
 			uint16_t flarmBufFilled = cfg->uart->readBufFromQueue( flarmBuf, available );
+			flarmBuf[flarmBufFilled] = 0;
+			ESP_LOGI( FNAME, "%s RX bincom, available %d bytes, flarmBufFilled: %d bytes", cfg->name, available, flarmBufFilled  );
+			ESP_LOG_BUFFER_HEXDUMP(FNAME,flarmBuf,flarmBufFilled, ESP_LOG_INFO);
 
-      // Check, if Flarm has sent an acknowledge to the exit command.
-      if( flarmExitCmd == true ) {   // TBD, move FLARM exit handling to upper layer
-        int start;
-        flarmAckExit = Flarm::checkFlarmRx( flarmRx, flarmBuf, flarmBufFilled, flarmAckExitSeq, &start );
-        if( flarmAckExit )
-          ESP_LOGI( FNAME, "%s: Flarm Ack Exit detected", cfg->name );
-      }
+			// Check, if Flarm has sent an acknowledge to the exit command.
+			if( flarmExitCmd == true ) {   // TBD, move FLARM exit handling to upper layer
+				int start;
+				flarmAckExit = Flarm::checkFlarmRx( flarmRx, flarmBuf, flarmBufFilled, flarmAckExitSeq, &start );
+				if( flarmAckExit )
+					ESP_LOGI( FNAME, "%s: Flarm Ack Exit detected", cfg->name );
+			}
 
 			ESP_LOGI(FNAME, "%s: Flarm::bincom forward %d RX data", cfg->name, flarmBufFilled );
 			s.set( (char *) flarmBuf, flarmBufFilled );

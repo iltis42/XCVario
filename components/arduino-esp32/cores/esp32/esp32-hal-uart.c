@@ -15,6 +15,8 @@
 // 24.12.2021 Axel Pauli: added RX interrupt handling stuff.
 // 31.12.2021 Axel Pauli: EI and DI function, log message moved after pointer
 //                        check to avoid core dumps.
+// 01.01.2022 Axel Pauli: added function uartReadBufFromQueue
+//                        uartEnableInterrupt --> uartEnableRxInterrupt
 
 #include "esp_log.h"
 #include "esp32-hal-uart.h"
@@ -140,12 +142,12 @@ void uartRxEventHandler( EventGroupHandle_t egh )
     rxEventGroup = egh;
 }
 
-void uartEnableInterrupt(uart_t* uart)
+void uartEnableRxInterrupt(uart_t* uart)
 {
     if(uart == NULL) {
         return;
     }
-    ESP_LOGI( "UART", "uartEnableInterrupt: S%d", uart->num );
+    ESP_LOGI( "UART", "uartEnableRxInterrupt: S%d", uart->num );
     UART_MUTEX_LOCK();
     uart->dev->conf1.rxfifo_full_thrhd = 112;
     uart->dev->conf1.rx_tout_thrhd = 2;
@@ -395,8 +397,8 @@ uint8_t uartRead(uart_t* uart)
 }
 
 /**
- * Reads a character from the receiver queue. Use this function, if the uart
- * receiver works in interrupt mode.
+ * Reads a character from the receiver queue. Use this function only, if the
+ * uart receiver works in interrupt mode.
  *
  * Returns true, if a character could be read otherwise 0.
  */
@@ -411,6 +413,32 @@ uint8_t uartReadCharFromQueue( uart_t* uart, uint8_t* c )
     }
 
     return 0;
+}
+
+/**
+ * Reads a block of character from the receiver queue. Use this function only,
+ * if the uart receiver works in interrupt mode.
+ *
+ * Returns true, if a character could be read otherwise 0.
+ */
+uint16_t uartReadBufFromQueue( uart_t* uart, uint8_t* buffer, const size_t len)
+{
+    if(uart == NULL || uart->queue == NULL) {
+        return 0;
+    }
+
+  uint8_t c;
+  uint16_t read = 0;
+
+  while( read < len ) {
+      if(xQueueReceive(uart->queue, &c, 0)) {
+          buffer[read] = c;
+          read++;
+          continue;
+      }
+      break;
+  }
+  return read;
 }
 
 uint8_t uartPeek(uart_t* uart)

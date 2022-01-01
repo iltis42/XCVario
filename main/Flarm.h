@@ -32,8 +32,8 @@ public:
  																			return false;
  	                                                                   }
  	static bool gpsStatus() { return gpsOK; }
-    static double getGndSpeedKnots() { return gndSpeedKnots; }
-    static double getGndCourse() { return gndCourse; }
+  static double getGndSpeedKnots() { return gndSpeedKnots; }
+  static double getGndCourse() { return gndCourse; }
  	static int bincom;
  	static void tick();
  	static bool validExtAlt() { if( ext_alt_timer )
@@ -41,6 +41,22 @@ public:
  								else
  									return false;
  	}
+
+  static void clearFlarmTx( uint8_t flarmTx[9] ) {
+    for( int i=0; i < 9; i++ ) {
+      flarmTx[i] = 0;
+    }
+  }
+
+  static bool checkFlarmTx( uint8_t flarmTx[9], const char* stream, int length, uint8_t* seq );
+
+  static void clearFlarmRx( uint8_t flarmRx[11] ) {
+    for( int i=0; i < 11; i++ ) {
+      flarmRx[i] = 0;
+    }
+  }
+
+  static bool checkFlarmRx( uint8_t flarmRx[11], const char* stream, int length, uint8_t* seq, int* start );
 
 private:
  	static void drawClearTriangle( int x, int y, int rb, int dist, int size, int factor );

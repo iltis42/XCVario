@@ -73,6 +73,7 @@ public:
   // add messages to WIFI AUX port 8882
   static void sendAUX(char * s);
 
+  static void clearQueue( RingBufCPP<SString, QUEUE_SIZE>& q );
 
 private:
 

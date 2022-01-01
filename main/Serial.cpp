@@ -129,8 +129,8 @@ void Serial::serialHandler(void *pvParameters)
 			// ESP_LOGI(FNAME,"S%d: TX and available", cfg->uart_nr );
 			while( Router::pullMsg( *(cfg->tx_q), s ) ) {
 				// ESP_LOGD(FNAME,"S%d: TX len: %d bytes", cfg->uart_nr, s.length() );
-				ESP_LOGI(FNAME,"S%d: TX len: %d bytes", cfg->uart_nr, s.length() );
-				ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
+				// ESP_LOGI(FNAME,"S%d: TX len: %d bytes", cfg->uart_nr, s.length() );
+				// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
 				cfg->uart->write( s.c_str(), s.length() );
 				if( ! Flarm::bincom )
 					DM.monitorString( cfg->monitor, DIR_TX, s.c_str() );
@@ -178,8 +178,7 @@ void Serial::serialHandler(void *pvParameters)
 			uint16_t flarmBufFilled = cfg->uart->readBufFromQueue( flarmBuf, available );
 			flarmBuf[flarmBufFilled] = 0;
 			ESP_LOGI( FNAME, "%s RX bincom, available %d bytes, flarmBufFilled: %d bytes", cfg->name, available, flarmBufFilled  );
-			ESP_LOG_BUFFER_HEXDUMP(FNAME,flarmBuf,flarmBufFilled, ESP_LOG_INFO);
-
+			// ESP_LOG_BUFFER_HEXDUMP(FNAME,flarmBuf,flarmBufFilled, ESP_LOG_INFO);
 			// Check, if Flarm has sent an acknowledge to the exit command.
 			if( flarmExitCmd == true ) {   // TBD, move FLARM exit handling to upper layer
 				int start;
@@ -188,10 +187,8 @@ void Serial::serialHandler(void *pvParameters)
 					ESP_LOGI( FNAME, "%s: Flarm Ack Exit detected", cfg->name );
 			}
 
-			ESP_LOGI(FNAME, "%s: Flarm::bincom forward %d RX data", cfg->name, flarmBufFilled );
 			s.set( (char *) flarmBuf, flarmBufFilled );
 			routeRxData( s, cfg );
-			ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
 			// Fall back check, if Flarm has self exited from the binary mode. A
 			// classic Flarm will never do that but a PowerFlarm after 60s of no
 			// traffic.
@@ -268,16 +265,21 @@ void Serial::handleTextMode( const xcv_serial_t *cfg ) {
 		if( bytes > 0 ) {
 			SString s;
 			s.set( (char *) rxbuf, bytes );
-      // check Flarm response to $PFLAX, if it is ok. If yes, switch to binary mode.
+			// ESP_LOGI( FNAME, "%s RX, available %d bytes", cfg->name, bytes );
+			// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxbuf,bytes, ESP_LOG_INFO);
+
+			// check Flarm response to $PFLAX, if it is ok. If yes, switch to binary mode.
 			Flarm::parsePFLAX( s );   // TBD: better we move this to upper layer, upper layer knows when there is no bincom
-			                          // Another idea to make things easy: Just end download mode by a restart as like FLARM does.
-			                          // AP: Only a ClassicFlarm makes a restart not a PowerFlarm!!!
+			// Another idea to make things easy: Just end download mode by a restart as like FLARM does.
+			// AP: Only a ClassicFlarm makes a restart not a PowerFlarm!!!
 			if( Flarm::bincom ) {
 				// Stop routing of TX/RX data of other Serial channel
 				setStopRouting( u2_nr, true );
 				u2->disableInterrupt();
 				// Wait so long until second RX queue is empty.
 				delay( 10 );
+				Router::clearQueue( bt_tx_q );
+
 				if( cfg->uart_nr == 1 )
 					while( ! S2.rx_q->isEmpty() ) delay( 10 );
 				else
@@ -291,8 +293,10 @@ void Serial::handleTextMode( const xcv_serial_t *cfg ) {
 }
 
 void Serial::routeRxData( SString& s, const xcv_serial_t *cfg ) {
-	if( stopRouting( cfg->uart_nr ) == true )
+	if( stopRouting( cfg->uart_nr ) == true ){
+		ESP_LOGI(FNAME,"routing stopped for %s", cfg->name );
 		return;
+	}
 	Router::forwardMsg( s, *(cfg->rx_q) );
 	cfg->route();
 	if( !Flarm::bincom ){

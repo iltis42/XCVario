@@ -41,6 +41,7 @@
 
  Pay attention: the baudrate returned by baudRate() may be rounded, eg 115200 returns 115201
 
+ 01.01.2022 Axel Pauli: Flarm stuff moved to Flarm.
  24.12.2021 Axel Pauli: added RX interrupt handling stuff.
  */
 
@@ -148,27 +149,7 @@ public:
       return uartGetNlCounter( _uart );
     }
 
-    void clearFlarmTx()
-    {
-      for( int i=0; i < sizeof(flarmTx); i++ ) {
-        flarmTx[i] = 0;
-      }
-    }
-
-    bool checkFlarmTx( const char* buffer, int length, uint8_t* seq );
-
-    void clearFlarmRx()
-    {
-      for( int i=0; i < sizeof(flarmRx); i++ ) {
-        flarmRx[i] = 0;
-      }
-    }
-
-    bool checkFlarmRx( const char* buffer, int length, uint8_t* seq, int* start );
-
 protected:
-    uint8_t flarmTx[9];
-    uint8_t flarmRx[11];
     int _uart_nr;
     uart_t* _uart;
     uint8_t _tx_pin;

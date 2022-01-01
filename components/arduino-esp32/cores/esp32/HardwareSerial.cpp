@@ -42,8 +42,6 @@ void HardwareSerial::begin(unsigned long baud, uint32_t config, int8_t rxPin, in
         log_e("Serial number is invalid, please use 0, 1 or 2");
         return;
     }
-    clearFlarmTx();
-    clearFlarmRx();
 
     if(_uart) {
         end();
@@ -277,71 +275,4 @@ void HardwareSerial::setRxInvert(bool invert)
 void HardwareSerial::setTxInvert(bool invert)
 {
     uartSetTxInvert(_uart, invert);
-}
-
-/*
- * Check the buffer, if the Flarm Exit command can be found. If yes, return
- * true and give back the sequence number of the command.
- */
-bool HardwareSerial::checkFlarmTx( const char* buffer, int length, uint8_t* seq )
-{
-  for( int i=0; i < length; i++ ) {
-      // add byte to shift register
-      for( int j=1; j < sizeof(flarmTx); j++ ) {
-          flarmTx[j-1] = flarmTx[j];
-      }
-
-      flarmTx[sizeof(flarmTx)-1] = buffer[i];
-
-      // The Flarm binary exit command has the following content:
-      // S: "73 08 00 01 2c 00  12 22 ba" Exit bin mode
-      //     |  |---|    |----| |  |---|
-      // Start  length   SEQ-NR MSG CRC
-      if( flarmTx[0] == 0x73 && // Startframe
-          flarmTx[1] == 8 &&    // length 0
-          flarmTx[2] == 0 &&    // length 1
-          flarmTx[6] == 0x12 ) { // Exit
-          // Flarm Exit Sequence found
-          seq[0] = flarmTx[4];
-          seq[1] = flarmTx[5];
-          clearFlarmTx();
-          return true;
-      }
-  }
-  return false;
-}
-
-/*
- * Check the buffer, if the Flarm Exit command is acknowledged. If yes, return
- * true and give back the buffer position, where the answer starts.
- */
-bool HardwareSerial::checkFlarmRx( const char* buffer,
-                                   int length,
-                                   uint8_t* seq,
-                                   int* start )
-{
-  for( int i=0; i < length; i++ ) {
-      // add byte to shift register
-      for( int j=1; j < sizeof(flarmRx); j++ ) {
-          flarmRx[j-1] = flarmRx[j];
-      }
-
-      flarmRx[sizeof(flarmRx)-1] = buffer[i];
-
-      // R: "73 0a 00 01 5e 12 a0 9e 06 2c 00" Quittung exit bin mode
-      //     |  |---|          | |---| |---|
-      // Start  length         MSG CRC SEQ-NR-von-S
-      if( flarmRx[0] == 0x73 && // Startframe
-          flarmRx[1] == 0xa &&  // length 0
-          flarmRx[2] == 0 &&    // length 1
-          flarmRx[6] == 0xa0 && // ACK
-          flarmRx[9] == seq[0] &&
-          flarmRx[10] == seq[1] ) {
-          // Flarm positive ACK to Exit command found
-          *start = i;
-          clearFlarmRx();
-          return true;
-      }
-  }
-  return false;
 }

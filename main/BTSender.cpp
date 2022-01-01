@@ -64,17 +64,16 @@ void BTSender::progress(){
 	}
 	if (SerialBT->available() ) {
 		ESP_LOGI(FNAME,"BT RFCOMM RX");
-		SString rx;
 		int avail = SerialBT->available();
+		char *buf = (char*)malloc( avail+1 );
 		ESP_LOGI(FNAME,"BT data received %d bytes", avail );
-		while ( avail && (rx.length() < SSTRLEN-1) ){
+		for( int i=0; i<avail; i++ ){
 			char byte = (char)SerialBT->read();
-			rx.append( &byte, 1 );
-			avail--;
+			buf[i] = byte;
 		}
-		rx.append( "\0", 1 );
-
-		ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.c_str(),rx.length(), ESP_LOG_INFO);
+		SString rx;
+		rx.set( buf, avail );
+		ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.c_str(),avail, ESP_LOG_INFO);
 		Router::forwardMsg( rx, bt_rx_q );
 		DM.monitorString( MON_BLUETOOTH, DIR_RX, rx.c_str() );
 	}

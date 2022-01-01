@@ -1,6 +1,9 @@
 /**
  * HardwareSerial.cpp
  *
+ * 01.01.2022 Axel Pauli: Flarm stuff moved to Flarm.
+ *                        added readBufFromQueue() and made some single line
+ *                        methods to inline.
  * 24.12.2021 Axel Pauli: added RX interrupt handling stuff.
  */
 #include <cstdlib>
@@ -85,22 +88,17 @@ void HardwareSerial::begin(unsigned long baud, uint32_t config, int8_t rxPin, in
     }
 }
 
-void HardwareSerial::updateBaudRate(unsigned long baud)
-{
-	uartSetBaudRate(_uart, baud);
-}
-
 // enable uart RX interrupt
-void HardwareSerial::enableInterrupt()
+void HardwareSerial::enableRxInterrupt()
 {
   // Make sure that the previous interrupt_info is not used anymore
   if( _uart ){
 	  uartDisableInterrupt( _uart );
-	  uartEnableInterrupt( _uart );
+	  uartEnableRxInterrupt( _uart );
   }
 }
 
-// disable uart RX interupt
+// disables all uart interupts
 void HardwareSerial::disableInterrupt()
 {
   if( _uart ){
@@ -134,15 +132,6 @@ void HardwareSerial::setDebugOutput(bool en)
             uartSetDebug(0);
         }
     }
-}
-
-int HardwareSerial::available(void)
-{
-    return uartAvailable(_uart);
-}
-int HardwareSerial::availableForWrite(void)
-{
-    return uartAvailableForWrite(_uart);
 }
 
 int HardwareSerial::peek(void)
@@ -227,23 +216,7 @@ size_t HardwareSerial::readLineFromQueue(uint8_t *buffer, size_t size)
     if( c == '\n' )
       break;
   }
-
   return count;
-}
-
-uint8_t HardwareSerial::readCharFromQueue( uint8_t* c )
-{
-  return uartReadCharFromQueue( _uart, c );
-}
-
-void HardwareSerial::flush(void)
-{
-    uartFlush(_uart);
-}
-
-void HardwareSerial::flush(bool txOnly)
-{
-    uartFlushTxOnly(_uart, txOnly);
 }
 
 size_t HardwareSerial::write(uint8_t c)

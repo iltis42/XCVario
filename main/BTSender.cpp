@@ -81,7 +81,7 @@ void BTSender::progress(){
 	if( SerialBT->hasClient() ) {
 		SString msg;
 		if ( Router::pullMsg( bt_tx_q, msg ) ){
-			ESP_LOGI(FNAME,"data avail for BT send %d bytes: %s", msg.length(), msg.c_str() );
+			// ESP_LOGI(FNAME,"data avail for BT send %d bytes: %s", msg.length(), msg.c_str() );
 			SerialBT->write( (const uint8_t *)msg.c_str(), msg.length() );
 			DM.monitorString( MON_BLUETOOTH, DIR_TX, msg.c_str() );
 		}

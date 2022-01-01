@@ -41,6 +41,9 @@
 
  Pay attention: the baudrate returned by baudRate() may be rounded, eg 115200 returns 115201
 
+ 01.01.2022 Axel Pauli: Flarm stuff moved to Flarm.
+                        added readBufFromQueue() and made some single line
+                        methods to inline.
  24.12.2021 Axel Pauli: added RX interrupt handling stuff.
  */
 
@@ -61,9 +64,18 @@ public:
 
     void begin(unsigned long baud, uint32_t config=SERIAL_8N1, int8_t rxPin=-1, int8_t txPin=-1, bool rxinvert=false, bool txinvert=false, unsigned long timeout_ms = 20000UL);
     void end();
-    void updateBaudRate(unsigned long baud);
-    int available(void);
-    int availableForWrite(void);
+    void updateBaudRate(unsigned long baud)
+    {
+      uartSetBaudRate(_uart, baud);
+    }
+    int available(void)
+    {
+      return uartAvailable(_uart);
+    }
+    int availableForWrite(void)
+    {
+      return uartAvailableForWrite(_uart);
+    }
     int peek(void);
     int read(void);
     size_t read(uint8_t *buffer, size_t size);
@@ -77,9 +89,23 @@ public:
     	return readLine((uint8_t*) buffer, size );
     }
     size_t readLineFromQueue(uint8_t *buffer, size_t size);
-    uint8_t readCharFromQueue( uint8_t* c );
-    void flush(void);
-    void flush( bool txOnly);
+
+    uint8_t readCharFromQueue( uint8_t* c )
+    {
+      return uartReadCharFromQueue( _uart, c );
+    }
+    uint16_t readBufFromQueue( uint8_t* buffer, const size_t len)
+    {
+      return uartReadBufFromQueue( _uart, buffer, len);
+    }
+    void flush(void)
+    {
+      uartFlush(_uart);
+    }
+    void flush( bool txOnly)
+    {
+      uartFlushTxOnly(_uart, txOnly);
+    }
     size_t write(uint8_t);
     size_t write(const uint8_t *buffer, size_t size);
     inline size_t write(const char * buffer, size_t size)
@@ -116,7 +142,7 @@ public:
     void setTxInvert(bool);
 
     // enable uart RX interrupt
-    void enableInterrupt();
+    void enableRxInterrupt();
 
     // disable uart RX interupt
     void disableInterrupt();
@@ -148,43 +174,11 @@ public:
       return uartGetNlCounter( _uart );
     }
 
-    void clearFlarmTx()
-    {
-      for( int i=0; i < sizeof(flarmTx); i++ ) {
-        flarmTx[i] = 0;
-      }
-    }
-
-    bool checkFlarmTx( const char* buffer, int length, uint8_t* seq );
-
-    void clearFlarmRx()
-    {
-      for( int i=0; i < sizeof(flarmRx); i++ ) {
-        flarmRx[i] = 0;
-      }
-    }
-
-    bool checkFlarmRx( const char* buffer, int length, uint8_t* seq, int* start );
-
-    void setStopRouting( bool flag )
-    {
-      _stopRouting = flag;
-    }
-
-    bool stopRouting()
-    {
-      return _stopRouting;
-    }
-
 protected:
-    uint8_t flarmTx[9];
-    uint8_t flarmRx[11];
     int _uart_nr;
     uart_t* _uart;
     uint8_t _tx_pin;
     uint8_t _rx_pin;
-    // Stop routing of TX/RX data. That is used in case of Flarm binary download.
-    bool _stopRouting;
 };
 
 extern void serialEventRun(void) __attribute__((weak));

@@ -1,6 +1,7 @@
 /**
  * Serial.h
  *
+ * 01.01.2022 Axel Pauli: updates after first delivery.
  * 24.12.2021 Axel Pauli: added some RX/TX handling stuff.
  */
 
@@ -27,7 +28,6 @@
 #define RX2_NL 32
 #define TX1_REQ 64
 #define TX2_REQ 128
-
 
 typedef struct xcv_serial {
   const char* name;
@@ -69,20 +69,50 @@ public:
   }
 
   /**
-   * Handle Serial1 RX data, if Flarm text mode is set.
-   */
-  static void handleS1TextMode();
-
-  /**
    * Handle Serial 1/2 RX data, if Flarm works in text mode.
    */
-  static void handleTextMode( bool &flarmExitCmd, xcv_serial_t *cfg );
+  static void handleTextMode( const xcv_serial_t *cfg );
 
-  static void routeRxData( SString& s, xcv_serial_t *cfg );
+  /**
+   * Route S1/S2 RX data.
+   */
+  static void routeRxData( SString& s, const xcv_serial_t *cfg );
+
+  /**
+   * Stop data routing of the Uart channel.
+   */
+  static void setStopRouting( const uint8_t uart_nr, bool flag )
+  {
+    if( uart_nr > 2 )
+      return;
+    _stopRouting[uart_nr] = flag;
+  }
+
+  /**
+   * Query the stop routing flag.
+   */
+  static bool stopRouting( const uint8_t uart_nr )
+  {
+    if( uart_nr > 2 )
+      return false;
+    return _stopRouting[uart_nr];
+  }
+
+  /**
+   * Reset all stop routing flags.
+   */
+  static void clearStopRouting()
+  {
+    _stopRouting[0] = false;
+    _stopRouting[1] = false;
+    _stopRouting[2] = false;
+  }
 
 private:
   static bool _selfTest;
   static EventGroupHandle_t rxTxNotifier;
+  // Stop routing of TX/RX data. That is used in case of Flarm binary download.
+  static bool _stopRouting[3];
 };
 
 #endif

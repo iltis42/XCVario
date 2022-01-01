@@ -1,6 +1,7 @@
 /**
  * Serial.cpp
  *
+ * 01.01.2022 Axel Pauli: updates after first delivery.
  * 24.12.2021 Axel Pauli: added some RX/TX handling stuff.
  */
 
@@ -35,12 +36,12 @@ If  too  many  sentences  are  produced  with  regard  to  the  available  trans
 some sentences might be lost or truncated.
  */
 
-
 #define HEARTBEAT_PERIOD_MS_SERIAL 20
 
 bool Serial::_selfTest = false;
 EventGroupHandle_t Serial::rxTxNotifier;
 
+// Event group bits
 #define RX0_CHAR 1
 #define RX0_NL 2
 
@@ -52,9 +53,10 @@ EventGroupHandle_t Serial::rxTxNotifier;
 #define RX2_CHAR 16
 #define RX2_NL 32
 
-
 static xcv_serial_t S1 = { .name="S1", .tx_q = &s1_tx_q, .rx_q = &s1_rx_q, .route=Router::routeS1, .uart=&Serial1, .uart_nr = 1, .rx_char = RX1_CHAR, .rx_nl = RX1_NL, .tx_req = TX1_REQ, .monitor=MON_S1, .pid = 0 };
 static xcv_serial_t S2 = { .name="S2", .tx_q = &s2_tx_q, .rx_q = &s2_rx_q, .route=Router::routeS2, .uart=&Serial2, .uart_nr = 2, .rx_char = RX2_CHAR, .rx_nl = RX2_NL, .tx_req = TX2_REQ, .monitor=MON_S2, .pid = 0 };
+
+bool Serial::_stopRouting[3] = { false, false, false };
 
 // Serial Handler ttyS1, S1, port 8881
 void Serial::serialHandler(void *pvParameters)
@@ -66,6 +68,9 @@ void Serial::serialHandler(void *pvParameters)
 	// Flarm exit command sequence counter
 	uint8_t flarmAckExitSeq[2];
 
+  uint8_t flarmTx[9];
+  uint8_t flarmRx[11];
+
 	// Make a pause, that has avoided core dumps during enable interrupt.
 	delay( 100 );
 
@@ -74,7 +79,7 @@ void Serial::serialHandler(void *pvParameters)
 
 	// Enable Uart RX interrupt
 	ESP_LOGI(FNAME,"%s: enable RX by Interrupt", cfg->name );
-	cfg->uart->enableInterrupt();
+	cfg->uart->enableRxInterrupt();
 
 	while( true ) {
 		esp_task_wdt_reset();
@@ -113,7 +118,7 @@ void Serial::serialHandler(void *pvParameters)
 		ESP_LOGI( FNAME, "%s: EVTO=%dms, bincom=%d, EventBits=%X, RXA=%d, NLC=%d",
 				cfg->name, ticksToWait, Flarm::bincom, ebits, cfg->uart->available(), cfg->uart->getNlCounter() );
 #endif
-		if( cfg->uart->stopRouting() ) {
+		if( stopRouting( cfg->uart_nr ) ) {
 			// Flarm download of other Serial is running, stop RX processing and empty TX queue.
 			cfg->tx_q->clear();
 			continue;
@@ -133,7 +138,7 @@ void Serial::serialHandler(void *pvParameters)
 
 				// Look, if a Flarm exit command has been sent in binary mode.
 				if( Flarm::bincom && flarmExitCmd == false ) {
-					flarmExitCmd = cfg->uart->checkFlarmTx( s.c_str(), s.length(), flarmAckExitSeq );
+					flarmExitCmd = Flarm::checkFlarmTx( flarmTx, s.c_str(), s.length(), flarmAckExitSeq );
 					if( flarmExitCmd ) {
 						ESP_LOGI( FNAME, "%s: Flarm Exit Cmd detected", cfg->name );
 					}
@@ -144,7 +149,13 @@ void Serial::serialHandler(void *pvParameters)
 		if( ! Flarm::bincom ) {
 			// Flarm works in text mode, check if NL is reported.
 			if( ebits & cfg->rx_nl ) {
-				handleTextMode( flarmExitCmd, cfg );
+				handleTextMode( cfg );
+	      if( Flarm::bincom ) {
+	        // There was a switch to Flarm's binary mode
+	        Flarm::clearFlarmTx( flarmTx );
+	        Flarm::clearFlarmRx( flarmRx );
+	        flarmExitCmd = false;
+	      }
 			}
 			// wait for the next newline
 			continue;
@@ -161,33 +172,19 @@ void Serial::serialHandler(void *pvParameters)
 			}
 
 			uint8_t* flarmBuf = (uint8_t *) malloc( available + 1 );
-			uint16_t flarmBufFilled = 0;
 			bool flarmAckExit = false;
 
-			while( available > 0 ) {
-				// read out all characters from the RX queue
-				uint8_t c;
-				uint8_t res = cfg->uart->readCharFromQueue( &c );   // TBD, do we need char wise reading here ? propose uart->readBuffer( flarmBuf, available );
-				                                                    // Der Uart Treiber schreibt zeichenweise in die Queue und readBuffer holt es zeichenweise raus.
-				                                                    // Damit ist es egal, wo man das tut.
-				available--;
+      // read out all characters from the RX queue
+			uint16_t flarmBufFilled = cfg->uart->readBufFromQueue( flarmBuf, available );
 
-				if( res == 0 ) // Nothing has read, break loop
-					break;
+      // Check, if Flarm has sent an acknowledge to the exit command.
+      if( flarmExitCmd == true ) {   // TBD, move FLARM exit handling to upper layer
+        int start;
+        flarmAckExit = Flarm::checkFlarmRx( flarmRx, flarmBuf, flarmBufFilled, flarmAckExitSeq, &start );
+        if( flarmAckExit )
+          ESP_LOGI( FNAME, "%s: Flarm Ack Exit detected", cfg->name );
+      }
 
-				flarmBuf[flarmBufFilled] = c;
-				flarmBufFilled++;
-
-				// Check, if Flarm has sent an acknowledge to the exit command.
-				if( flarmExitCmd == true ) {   // TBD, move FLARM exit handling to upper layer
-					int start;
-					flarmAckExit = cfg->uart->checkFlarmRx( (const char* ) flarmBuf, flarmBufFilled, flarmAckExitSeq, &start );
-					if( flarmAckExit ) {
-						ESP_LOGI( FNAME, "%s: Flarm Ack Exit detected", cfg->name );
-						break;
-					}
-				}
-			}
 			ESP_LOGI(FNAME, "%s: Flarm::bincom forward %d RX data", cfg->name, flarmBufFilled );
 			s.set( (char *) flarmBuf, flarmBufFilled );
 			routeRxData( s, cfg );
@@ -214,9 +211,9 @@ void Serial::serialHandler(void *pvParameters)
 				if( S2.pid != nullptr ) {
 					ESP_LOGI(FNAME, "%s: Activate S2 after Flarm download end.", cfg->name );
 					Serial2.flush( false );
-					Serial2.enableInterrupt();
+					Serial2.enableRxInterrupt();
 				}
-				Serial2.setStopRouting( false );
+				setStopRouting( cfg->uart_nr, false );
 				cfg->uart->flush( false );
 				ESP_LOGI(FNAME, "%s: Flarm Ack Exit received --> switched Flarm to text mode", cfg->name );
 			}
@@ -227,9 +224,10 @@ void Serial::serialHandler(void *pvParameters)
 /**
  * Handle Serial 1/2 RX data, if Flarm works in text mode.
  */
-void Serial::handleTextMode( bool &flarmExitCmd, xcv_serial_t *cfg ) {
+void Serial::handleTextMode( const xcv_serial_t *cfg ) {
 	HardwareSerial *u1 = 0;
 	HardwareSerial *u2 = 0;
+	uint8_t u2_nr = 2;
 
 	if( cfg->uart_nr == 1 ) {   // TBD, more generic way to select other interface, maybe just add second interface to cfg ?
 		u1 = S1.uart;
@@ -238,6 +236,7 @@ void Serial::handleTextMode( bool &flarmExitCmd, xcv_serial_t *cfg ) {
 	else if( cfg->uart_nr == 2 ) { // dito
 		u1 = S2.uart;
 		u2 = S1.uart;
+		u2_nr = 1;
 	}
 	else
 		return;
@@ -266,17 +265,13 @@ void Serial::handleTextMode( bool &flarmExitCmd, xcv_serial_t *cfg ) {
 		if( bytes > 0 ) {
 			SString s;
 			s.set( (char *) rxbuf, bytes );
+      // check Flarm response to $PFLAX, if it is ok. If yes, switch to binary mode.
 			Flarm::parsePFLAX( s );   // TBD: better we move this to upper layer, upper layer knows when there is no bincom
 			                          // Another idea to make things easy: Just end download mode by a restart as like FLARM does.
 			                          // AP: Only a ClassicFlarm makes a restart not a PowerFlarm!!!
-			// check Flarm response to $PFLAX, if it is ok. If yes, switch
-			// to binary mode.
 			if( Flarm::bincom ) {
-				u1->clearFlarmTx();         // TBD, migrate End detection to next upper layer
-				u1->clearFlarmRx();
-				flarmExitCmd = false;
 				// Stop routing of TX/RX data of other Serial channel
-				u2->setStopRouting( true );
+				setStopRouting( u2_nr, true );
 				u2->disableInterrupt();
 				// Wait so long until second RX queue is empty.
 				delay( 10 );
@@ -292,8 +287,8 @@ void Serial::handleTextMode( bool &flarmExitCmd, xcv_serial_t *cfg ) {
 	free( rxbuf );
 }
 
-void Serial::routeRxData( SString& s, xcv_serial_t *cfg ) {
-	if( cfg->uart->stopRouting() == true )
+void Serial::routeRxData( SString& s, const xcv_serial_t *cfg ) {
+	if( stopRouting( cfg->uart_nr ) == true )
 		return;
 	Router::forwardMsg( s, *(cfg->rx_q) );
 	cfg->route();
@@ -415,6 +410,7 @@ void Serial::taskStart(){
 	bool serial2 = (serial2_speed.get() != 0 && hardwareRevision.get() >= 3);
 
 	if( serial1 || serial2 ) {
+	  clearStopRouting();
 		// Create event notifier, when serial 1 or serial 2 are enabled
 		rxTxNotifier = xEventGroupCreate();
 

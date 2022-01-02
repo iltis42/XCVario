@@ -19,7 +19,7 @@
 #include "BluetoothSerial.h"
 #include "DataMonitor.h"
 
-static TaskHandle_t pid = NULL;
+static TaskHandle_t pid = nullptr;
 
 bool BTSender::selfTest(){
 	ESP_LOGI(FNAME,"SerialBT::selfTest");
@@ -63,10 +63,9 @@ void BTSender::progress(){
 		return;
 	}
 	if (SerialBT->available() ) {
-		ESP_LOGI(FNAME,"BT RFCOMM RX");
 		int avail = SerialBT->available();
 		char *buf = (char*)malloc( avail+1 );
-		ESP_LOGI(FNAME,"BT data received %d bytes", avail );
+		ESP_LOGI(FNAME,"BT-RX: received %d bytes", avail );
 		for( int i=0; i<avail; i++ ){
 			char byte = (char)SerialBT->read();
 			buf[i] = byte;
@@ -88,7 +87,6 @@ void BTSender::progress(){
 	}
 }
 
-
 void BTSender::begin(){
 	ESP_LOGI(FNAME,"BTSender::begin()" );
 	if( wireless == WL_BLUETOOTH ) {
@@ -99,9 +97,5 @@ void BTSender::begin(){
 	}
 }
 
-
 // dummy, we don't implement BLE right now
 extern "C" void btsnd_hcic_ble_update_adv_report_flow_control( int ignore ) {};
-
-
-

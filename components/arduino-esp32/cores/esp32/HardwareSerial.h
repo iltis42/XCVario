@@ -41,6 +41,7 @@
 
  Pay attention: the baudrate returned by baudRate() may be rounded, eg 115200 returns 115201
 
+ 02.01.2022 Axel Pauli: method number() added.
  01.01.2022 Axel Pauli: Flarm stuff moved to Flarm.
                         added readBufFromQueue() and made some single line
                         methods to inline.
@@ -172,6 +173,12 @@ public:
     uint16_t getNlCounter()
     {
       return uartGetNlCounter( _uart );
+    }
+
+    // return the number of the Uart.
+    int number() const
+    {
+      return _uart_nr;
     }
 
 protected:

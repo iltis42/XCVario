@@ -42,11 +42,6 @@ const char *flarm[] = {
 
 int sim=100;
 
-
-
-
-
-
 /* PFLAU,<RX>,<TX>,<GPS>,<Power>,<AlarmLevel>,<RelativeBearing>,<AlarmType>,<RelativeVertical>,<RelativeDistance>,<ID>
 		$PFLAU,3,1,2,1,2,-30,2,-32,755*FLARM is working properly and currently receives 3 other aircraft.
 		The most dangerous of these aircraft is at 11 o’clock, position 32m below and 755m away. It is a level 2 alarm
@@ -279,8 +274,9 @@ void Flarm::parsePFLAX( SString &msg ) {
 
 	if( strlen((msg.c_str()) + start) >= lenPflax &&
 	    !strncmp( (msg.c_str()) + start, pflax, lenPflax ) ){
+	  int old = Flarm::bincom ;
 		Flarm::bincom = 5;
-		ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
+		ESP_LOGI(FNAME,"Flarm::bincom: %d --> %d", old, Flarm::bincom  );
 		timeout = 10;
 	}
 }
@@ -507,8 +503,8 @@ void Flarm::drawFlarmWarning(){
 }
 
 /*
- * Check the buffer, if the Flarm Exit command can be found. If yes, return
- * true and give back the sequence number of the command.
+ * Check the stream, if the binary Flarm Exit command can be found. If yes,
+ * return true and give back the sequence number of the command.
  */
 bool Flarm::checkFlarmTx( uint8_t flarmTx[9], const char* stream, int length, uint8_t* seq )
 {
@@ -539,8 +535,8 @@ bool Flarm::checkFlarmTx( uint8_t flarmTx[9], const char* stream, int length, ui
 }
 
 /*
- * Check the stream, if the Flarm Exit command is acknowledged. If yes, return
- * true and give back the stream position, where the answer starts.
+ * Check the stream, if the binary Flarm Exit command is acknowledged. If yes,
+ * return true and give back the stream position, where the answer starts.
  */
 bool Flarm::checkFlarmRx( uint8_t flarmRx[11],
                           uint8_t* stream,

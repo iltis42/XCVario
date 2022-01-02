@@ -1,6 +1,7 @@
 /**
  * Serial.cpp
  *
+ * 02.01.2022 Axel Pauli: handling of 2 uart channels in one method accomplished.
  * 01.01.2022 Axel Pauli: updates after first delivery.
  * 24.12.2021 Axel Pauli: added some RX/TX handling stuff.
  */
@@ -53,8 +54,8 @@ EventGroupHandle_t Serial::rxTxNotifier;
 #define RX2_CHAR 16
 #define RX2_NL 32
 
-static xcv_serial_t S1 = { .name="S1", .tx_q = &s1_tx_q, .rx_q = &s1_rx_q, .route=Router::routeS1, .uart=&Serial1, .uart_nr = 1, .rx_char = RX1_CHAR, .rx_nl = RX1_NL, .tx_req = TX1_REQ, .monitor=MON_S1, .pid = 0 };
-static xcv_serial_t S2 = { .name="S2", .tx_q = &s2_tx_q, .rx_q = &s2_rx_q, .route=Router::routeS2, .uart=&Serial2, .uart_nr = 2, .rx_char = RX2_CHAR, .rx_nl = RX2_NL, .tx_req = TX2_REQ, .monitor=MON_S2, .pid = 0 };
+static xcv_serial_t S1 = { .name="S1", .tx_q = &s1_tx_q, .rx_q = &s1_rx_q, .route=Router::routeS1, .uart=&Serial1, .rx_char = RX1_CHAR, .rx_nl = RX1_NL, .tx_req = TX1_REQ, .monitor=MON_S1, .pid = 0, .cfg2 = nullptr };
+static xcv_serial_t S2 = { .name="S2", .tx_q = &s2_tx_q, .rx_q = &s2_rx_q, .route=Router::routeS2, .uart=&Serial2, .rx_char = RX2_CHAR, .rx_nl = RX2_NL, .tx_req = TX2_REQ, .monitor=MON_S2, .pid = 0, .cfg2 = nullptr };
 
 bool Serial::_stopRouting[3] = { false, false, false };
 
@@ -71,7 +72,7 @@ void Serial::serialHandler(void *pvParameters)
   uint8_t flarmTx[9];
   uint8_t flarmRx[11];
 
-	// Make a pause, that has avoided core dumps during enable interrupt.
+	// Make a pause, that has avoided core dumps during enable the RX interrupt.
 	delay( 100 );
 
 	// Clear Uart RX receiver buffer to get a clean start point.
@@ -85,14 +86,14 @@ void Serial::serialHandler(void *pvParameters)
 		esp_task_wdt_reset();
 
 		if( uxTaskGetStackHighWaterMark( cfg->pid ) < 256 )
-			ESP_LOGW(FNAME,"Warning serial %d task stack low: %d bytes", cfg->uart_nr, uxTaskGetStackHighWaterMark( cfg->pid ) );
+			ESP_LOGW(FNAME,"Warning serial %d task stack low: %d bytes", cfg->uart->number(), uxTaskGetStackHighWaterMark( cfg->pid ) );
 
 		if( _selfTest ) {
 			vTaskDelay( HEARTBEAT_PERIOD_MS_SERIAL / portTICK_PERIOD_MS );
 			continue;
 		}
 		// Define expected event bits. They can come from the Uart RX ISR or from
-		// the Serial 1 TX router queue.
+		// the Serial TX router queue.
 		// In Flarm text mode we may get informed only for newlines in the Uart
 		// RX queue. We tolerate that also in binary mode to get reset this bit
 		// in the event bit mask after a read.
@@ -113,28 +114,26 @@ void Serial::serialHandler(void *pvParameters)
 			// Timeout occurred, that is used to reset the watchdog.
 			continue;
 		}
-
-#if 1
+#if 0
 		ESP_LOGI( FNAME, "%s: EVTO=%dms, bincom=%d, EventBits=%X, RXA=%d, NLC=%d",
 				cfg->name, ticksToWait, Flarm::bincom, ebits, cfg->uart->available(), cfg->uart->getNlCounter() );
 #endif
-		if( stopRouting( cfg->uart_nr ) ) {
+		if( stopRouting( cfg->uart->number()) ) {
 			// Flarm download of other Serial is running, stop RX processing and empty TX queue.
 			cfg->tx_q->clear();
 			continue;
 		}
 
-		// Check, if Serial Interface 1 has something to send
-		if( ebits & TX1_REQ && cfg->uart->availableForWrite() ) {
-			// ESP_LOGI(FNAME,"S%d: TX and available", cfg->uart_nr );
+		// Check, if Serial Interface has something to send
+		if( ebits & cfg->tx_req && cfg->uart->availableForWrite() ) {
+			// ESP_LOGI(FNAME,"S%d: TX and available", cfg->uart->number() );
 			while( Router::pullMsg( *(cfg->tx_q), s ) ) {
-				// ESP_LOGD(FNAME,"S%d: TX len: %d bytes", cfg->uart_nr, s.length() );
-				// ESP_LOGI(FNAME,"S%d: TX len: %d bytes", cfg->uart_nr, s.length() );
+				// ESP_LOGD(FNAME,"S%d: TX len: %d bytes", cfg->uart->number(), s.length() );
 				// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
 				cfg->uart->write( s.c_str(), s.length() );
 				if( ! Flarm::bincom )
 					DM.monitorString( cfg->monitor, DIR_TX, s.c_str() );
-				// ESP_LOGD(FNAME,"S%d: TX written: %d", cfg->uart_nr, wr);
+				// ESP_LOGD(FNAME,"S%d: TX written: %d", cfg->uart->number(), wr);
 
 				// Look, if a Flarm exit command has been sent in binary mode.
 				if( Flarm::bincom && flarmExitCmd == false ) {
@@ -177,10 +176,13 @@ void Serial::serialHandler(void *pvParameters)
 			// read out all characters from the RX queue
 			uint16_t flarmBufFilled = cfg->uart->readBufFromQueue( flarmBuf, available );
 			flarmBuf[flarmBufFilled] = 0;
-			ESP_LOGI( FNAME, "%s RX bincom, available %d bytes, flarmBufFilled: %d bytes", cfg->name, available, flarmBufFilled  );
+			// ESP_LOGI( FNAME, "%s RX bincom, available %d bytes, flarmBufFilled: %d bytes", cfg->name, available, flarmBufFilled  );
 			// ESP_LOG_BUFFER_HEXDUMP(FNAME,flarmBuf,flarmBufFilled, ESP_LOG_INFO);
 			// Check, if Flarm has sent an acknowledge to the exit command.
-			if( flarmExitCmd == true ) {   // TBD, move FLARM exit handling to upper layer
+			if( flarmExitCmd == true ) {
+			  // TBD, move FLARM exit handling to upper layer --> AP: moving to upper layer make it more complex, e.g. debugging.
+			  // You have to observe the exit command, send by the App and the reply, send by the Flarm.
+			  // That are two different things.
 				int start;
 				flarmAckExit = Flarm::checkFlarmRx( flarmRx, flarmBuf, flarmBufFilled, flarmAckExitSeq, &start );
 				if( flarmAckExit )
@@ -191,11 +193,12 @@ void Serial::serialHandler(void *pvParameters)
 			routeRxData( s, cfg );
 			// Fall back check, if Flarm has self exited from the binary mode. A
 			// classic Flarm will never do that but a PowerFlarm after 60s of no
-			// traffic.
-			const char *pflau = "$PFLAU,";  // tbd. move to appl layer
-			if( flarmAckExit == false && flarmBufFilled > strlen(pflau) ) {  //TBD, move exit handling to upper layer, its not so time critical
+			// traffic. This works only, if the Flarm is programmed to send NMEA
+			// sentences. See Flarm configuration specification, item NMEAOUT.
+			if( flarmAckExit == false ) {
 				flarmBuf[flarmBufFilled] = '\0';
-				if( strstr( (const char *) flarmBuf, pflau) != nullptr ) {
+				Protocols::parseNMEA( (const char *) flarmBuf );
+				if( ! Flarm::bincom ) {
 					// we assume a Flarm self switch to text mode.
 					flarmAckExit = true;
 					ESP_LOGI(FNAME, "%s: $PFLAU found --> Flarm has self switched to text mode", cfg->name );
@@ -204,16 +207,15 @@ void Serial::serialHandler(void *pvParameters)
 			free( flarmBuf );
 
 			// Reset binary mode, if Flarm ACK Exit has received.
-			// TBD if binmode was with S2, reset must be S1
-			if( flarmAckExit == true ) {   // TBD move to upper layer
+			if( flarmAckExit == true ) { // TBD move to upper layer --> AP: moving to upper layer make it more complex, e.g. debugging.
 				Flarm::bincom = 0;
 				flarmExitCmd = false;
-				if( S2.pid != nullptr ) {
-					ESP_LOGI(FNAME, "%s: Activate S2 after Flarm download end.", cfg->name );
-					Serial2.flush( false );
-					Serial2.enableRxInterrupt();
+				if( cfg->cfg2->pid != nullptr ) {
+					ESP_LOGI(FNAME, "%s: Activate %s after Flarm download end.", cfg->name, cfg->cfg2->name );
+					cfg->cfg2->uart->flush( false );
+					cfg->cfg2->uart->enableRxInterrupt();
 				}
-				setStopRouting( cfg->uart_nr, false );
+				setStopRouting( cfg->cfg2->uart->number(), false );
 				cfg->uart->flush( false );
 				ESP_LOGI(FNAME, "%s: Flarm Ack Exit received --> switched Flarm to text mode", cfg->name );
 			}
@@ -225,21 +227,8 @@ void Serial::serialHandler(void *pvParameters)
  * Handle Serial 1/2 RX data, if Flarm works in text mode.
  */
 void Serial::handleTextMode( const xcv_serial_t *cfg ) {
-	HardwareSerial *u1 = 0;
-	HardwareSerial *u2 = 0;
-	uint8_t u2_nr = 2;
-
-	if( cfg->uart_nr == 1 ) {   // TBD, more generic way to select other interface, maybe just add second interface to cfg ?
-		u1 = S1.uart;
-		u2 = S2.uart;
-	}
-	else if( cfg->uart_nr == 2 ) { // dito
-		u1 = S2.uart;
-		u2 = S1.uart;
-		u2_nr = 1;
-	}
-	else
-		return;
+	HardwareSerial *u1 = cfg->uart;
+	HardwareSerial *u2 = cfg->cfg2->uart;
 
 	// Check available NLs in the receiver buffer.
 	uint16_t nlc = u1->getNlCounter();
@@ -268,22 +257,18 @@ void Serial::handleTextMode( const xcv_serial_t *cfg ) {
 			// ESP_LOGI( FNAME, "%s RX, available %d bytes", cfg->name, bytes );
 			// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxbuf,bytes, ESP_LOG_INFO);
 
-			// check Flarm response to $PFLAX, if it is ok. If yes, switch to binary mode.
-			Flarm::parsePFLAX( s );   // TBD: better we move this to upper layer, upper layer knows when there is no bincom
-			// Another idea to make things easy: Just end download mode by a restart as like FLARM does.
-			// AP: Only a ClassicFlarm makes a restart not a PowerFlarm!!!
+			// check if Flarm has send a response to $PFLAX. If yes, the call will switch to the binary mode.
+			Flarm::parsePFLAX( s );
 			if( Flarm::bincom ) {
 				// Stop routing of TX/RX data of other Serial channel
-				setStopRouting( u2_nr, true );
+				setStopRouting( u2->number(), true );
+				// Stop RX interrupt of other serial channel
 				u2->disableInterrupt();
-				// Wait so long until second RX queue is empty.
+				// Wait so long until BT TX queue and second RX queue are empty.
 				delay( 10 );
-				Router::clearQueue( bt_tx_q );
-
-				if( cfg->uart_nr == 1 )
-					while( ! S2.rx_q->isEmpty() ) delay( 10 );
-				else
-					while( ! S1.rx_q->isEmpty() ) delay( 10 );
+				// Router::clearQueue( bt_tx_q );
+				while( ! cfg->cfg2->rx_q->isEmpty() ) delay( 5 );
+        while( ! bt_tx_q.isEmpty() ) delay( 5 );
 				ESP_LOGI(FNAME, "%s: $PFLAX,A*2E --> switching to binary mode", cfg->name );
 			}
 			routeRxData( s, cfg );
@@ -293,8 +278,8 @@ void Serial::handleTextMode( const xcv_serial_t *cfg ) {
 }
 
 void Serial::routeRxData( SString& s, const xcv_serial_t *cfg ) {
-	if( stopRouting( cfg->uart_nr ) == true ){
-		ESP_LOGI(FNAME,"routing stopped for %s", cfg->name );
+	if( stopRouting( cfg->uart->number() ) == true ){
+		ESP_LOGI(FNAME,"routing is stopped for %s", cfg->name );
 		return;
 	}
 	Router::forwardMsg( s, *(cfg->rx_q) );
@@ -355,6 +340,10 @@ bool Serial::selfTest(int num){
 
 void Serial::begin(){
 	ESP_LOGI(FNAME,"Serial::begin()" );
+	// Initialize static configuration
+  S1.cfg2 = &S2;
+  S2.cfg2 = &S1;
+
 	if( serial1_speed.get() != 0  || wireless != 0 ){
 		int baudrate = baud[serial1_speed.get()];
 		if( baudrate != 0 ) {

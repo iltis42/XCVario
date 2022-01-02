@@ -1,6 +1,7 @@
 /**
  * Serial.h
  *
+ * 02.01.2022 Axel Pauli: handling of 2 uart channels in one method accomplished.
  * 01.01.2022 Axel Pauli: updates after first delivery.
  * 24.12.2021 Axel Pauli: added some RX/TX handling stuff.
  */
@@ -29,23 +30,24 @@
 #define TX1_REQ 64
 #define TX2_REQ 128
 
+// All data of one Uart channel
 typedef struct xcv_serial {
   const char* name;
 	RingBufCPP<SString, QUEUE_SIZE>* tx_q;
 	RingBufCPP<SString, QUEUE_SIZE>* rx_q;
 	void (*route)();
 	HardwareSerial *uart;
-	uint8_t uart_nr;
 	uint8_t rx_char;
 	uint8_t rx_nl;
 	uint8_t tx_req;
 	uint8_t monitor;
 	TaskHandle_t pid;
-}xcv_serial_t;
+	xcv_serial *cfg2; // configuration of other Uart
+} xcv_serial_t;
 
 class Serial {
 public:
-  Serial() {
+  Serial(){
   }
 
   static void begin();
@@ -81,7 +83,7 @@ public:
   /**
    * Stop data routing of the Uart channel.
    */
-  static void setStopRouting( const uint8_t uart_nr, bool flag )
+  static void setStopRouting( const uint8_t uart_nr, const bool flag )
   {
     if( uart_nr > 2 )
       return;

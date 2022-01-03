@@ -69,9 +69,6 @@ void Serial::serialHandler(void *pvParameters)
 	// Flarm exit command sequence counter
 	uint8_t flarmAckExitSeq[2];
 
-  uint8_t flarmTx[9];
-  uint8_t flarmRx[11];
-
 	// Make a pause, that has avoided core dumps during enable the RX interrupt.
 	delay( 100 );
 
@@ -136,8 +133,8 @@ void Serial::serialHandler(void *pvParameters)
 				// ESP_LOGD(FNAME,"S%d: TX written: %d", cfg->uart->number(), wr);
 
 				// Look, if a Flarm exit command has been sent in binary mode.
-				if( Flarm::bincom && flarmExitCmd == false ) {
-					flarmExitCmd = Flarm::checkFlarmTx( flarmTx, s.c_str(), s.length(), flarmAckExitSeq );
+				if( Flarm::bincom && flarmExitCmd == false ) {     // TBD: move this to method txFlarmExitCheck();
+					flarmExitCmd = Flarm::checkFlarmTx( s.c_str(), s.length(), flarmAckExitSeq );
 					if( flarmExitCmd ) {
 						ESP_LOGI( FNAME, "%s: Flarm Exit Cmd detected", cfg->name );
 					}
@@ -149,12 +146,12 @@ void Serial::serialHandler(void *pvParameters)
 			// Flarm works in text mode, check if NL is reported.
 			if( ebits & cfg->rx_nl ) {
 				handleTextMode( cfg );
-	      if( Flarm::bincom ) {
-	        // There was a switch to Flarm's binary mode
-	        Flarm::clearFlarmTx( flarmTx );
-	        Flarm::clearFlarmRx( flarmRx );
-	        flarmExitCmd = false;
-	      }
+				if( Flarm::bincom ) {
+					// There was a switch to Flarm's binary mode
+					Flarm::clearFlarmTx();
+					Flarm::clearFlarmRx();
+					flarmExitCmd = false;
+				}
 			}
 			// wait for the next newline
 			continue;
@@ -170,44 +167,47 @@ void Serial::serialHandler(void *pvParameters)
 				continue;
 			}
 
-			uint8_t* flarmBuf = (uint8_t *) malloc( available + 1 );
+			uint8_t* rxBuf = (uint8_t *) malloc( available + 1 );
 			bool flarmAckExit = false;
 
 			// read out all characters from the RX queue
-			uint16_t flarmBufFilled = cfg->uart->readBufFromQueue( flarmBuf, available );
-			flarmBuf[flarmBufFilled] = 0;
-			// ESP_LOGI( FNAME, "%s RX bincom, available %d bytes, flarmBufFilled: %d bytes", cfg->name, available, flarmBufFilled  );
-			// ESP_LOG_BUFFER_HEXDUMP(FNAME,flarmBuf,flarmBufFilled, ESP_LOG_INFO);
+			uint16_t rxBytes = cfg->uart->readBufFromQueue( rxBuf, available );
+			rxBuf[rxBytes] = 0;
+			// ESP_LOGI( FNAME, "%s RX bincom, available %d bytes, rxBytes: %d bytes", cfg->name, available, rxBytes  );
+			// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuf,rxBytes, ESP_LOG_INFO);
 			// Check, if Flarm has sent an acknowledge to the exit command.
+
 			if( flarmExitCmd == true ) {
-			  // TBD, move FLARM exit handling to upper layer --> AP: moving to upper layer make it more complex, e.g. debugging.
-			  // You have to observe the exit command, send by the App and the reply, send by the Flarm.
-			  // That are two different things.
+				// TBD, move FLARM exit handling to upper layer --> AP: moving to upper layer make it more complex, e.g. debugging.
+				// You have to observe the exit command, send by the App and the reply, send by the Flarm.
+				// That are two different things.
+				// EV -> The more we could move out here the better ;)
+				//       As a compromise for now: Lets at least wrap all rx flarm exit handling to Serial::rxFlarmExitCheck(..) ?
 				int start;
-				flarmAckExit = Flarm::checkFlarmRx( flarmRx, flarmBuf, flarmBufFilled, flarmAckExitSeq, &start );
+				flarmAckExit = Flarm::checkFlarmRx( rxBuf, rxBytes, flarmAckExitSeq, &start );
 				if( flarmAckExit )
 					ESP_LOGI( FNAME, "%s: Flarm Ack Exit detected", cfg->name );
 			}
 
-			s.set( (char *) flarmBuf, flarmBufFilled );
+			s.set( (char *) rxBuf, rxBytes );  // guess this can be moved after next if block
 			routeRxData( s, cfg );
 			// Fall back check, if Flarm has self exited from the binary mode. A
 			// classic Flarm will never do that but a PowerFlarm after 60s of no
 			// traffic. This works only, if the Flarm is programmed to send NMEA
 			// sentences. See Flarm configuration specification, item NMEAOUT.
-			if( flarmAckExit == false ) {
-				flarmBuf[flarmBufFilled] = '\0';
-				Protocols::parseNMEA( (const char *) flarmBuf );
+			if( flarmAckExit == false ) {   // TBD: move to wrapper rxFlarmExitHandler( .. )
+				rxBuf[rxBytes] = '\0';
+				Protocols::parseNMEA( (const char *) rxBuf );
 				if( ! Flarm::bincom ) {
 					// we assume a Flarm self switch to text mode.
 					flarmAckExit = true;
 					ESP_LOGI(FNAME, "%s: $PFLAU found --> Flarm has self switched to text mode", cfg->name );
 				}
 			}
-			free( flarmBuf );
+			free( rxBuf );  // TBD: Guess we can move this free() after the next block ?
 
 			// Reset binary mode, if Flarm ACK Exit has received.
-			if( flarmAckExit == true ) { // TBD move to upper layer --> AP: moving to upper layer make it more complex, e.g. debugging.
+			if( flarmAckExit == true ) {  // TBD and if free() is behind, also this to rxFlarmExitHandler(...)
 				Flarm::bincom = 0;
 				flarmExitCmd = false;
 				if( cfg->cfg2->pid != nullptr ) {
@@ -268,7 +268,7 @@ void Serial::handleTextMode( const xcv_serial_t *cfg ) {
 				delay( 10 );
 				// Router::clearQueue( bt_tx_q );
 				while( ! cfg->cfg2->rx_q->isEmpty() ) delay( 5 );
-        while( ! bt_tx_q.isEmpty() ) delay( 5 );
+				while( ! bt_tx_q.isEmpty() ) delay( 5 );
 				ESP_LOGI(FNAME, "%s: $PFLAX,A*2E --> switching to binary mode", cfg->name );
 			}
 			routeRxData( s, cfg );
@@ -341,8 +341,8 @@ bool Serial::selfTest(int num){
 void Serial::begin(){
 	ESP_LOGI(FNAME,"Serial::begin()" );
 	// Initialize static configuration
-  S1.cfg2 = &S2;
-  S2.cfg2 = &S1;
+	S1.cfg2 = &S2;
+	S2.cfg2 = &S1;
 
 	if( serial1_speed.get() != 0  || wireless != 0 ){
 		int baudrate = baud[serial1_speed.get()];
@@ -406,7 +406,7 @@ void Serial::taskStart(){
 	bool serial2 = (serial2_speed.get() != 0 && hardwareRevision.get() >= 3);
 
 	if( serial1 || serial2 ) {
-	  clearStopRouting();
+		clearStopRouting();
 		// Create event notifier, when serial 1 or serial 2 are enabled
 		rxTxNotifier = xEventGroupCreate();
 

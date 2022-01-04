@@ -18,53 +18,53 @@ public:
 	static void parseGPGGA( const char *gpgga );
 	static void parsePGRMZ( const char *pgrmz );
 	static void drawAirplane( int x, int y, bool fromBehind=false, bool smallSize=false );
- 	static inline int alarmLevel(){ return AlarmLevel; };
- 	static void drawDownloadInfo();
- 	static void drawFlarmWarning();
- 	static void initFlarmWarning();
- 	static void progress();
- 	static bool connected(); // returns true if Flarm is connected
- 	static inline bool getGPS( double &gndSpeedKmh, double &gndTrack ) { if( gpsOK ) {
- 																			gndSpeedKmh = Units::knots2kmh(gndSpeedKnots);
- 																			gndTrack = gndCourse;
- 																			return true; }
- 																		else
- 																			return false;
- 	                                                                   }
- 	static bool gpsStatus() { return gpsOK; }
-  static double getGndSpeedKnots() { return gndSpeedKnots; }
-  static double getGndCourse() { return gndCourse; }
- 	static int bincom;
- 	static void tick();
- 	static bool validExtAlt() { if( ext_alt_timer )
- 									return true;
- 								else
- 									return false;
- 	}
+	static inline int alarmLevel(){ return AlarmLevel; };
+	static void drawDownloadInfo();
+	static void drawFlarmWarning();
+	static void initFlarmWarning();
+	static void progress();
+	static bool connected(); // returns true if Flarm is connected
+	static inline bool getGPS( double &gndSpeedKmh, double &gndTrack ) { if( gpsOK ) {
+		gndSpeedKmh = Units::knots2kmh(gndSpeedKnots);
+		gndTrack = gndCourse;
+		return true; }
+	else
+		return false;
+	}
+	static bool gpsStatus() { return gpsOK; }
+	static double getGndSpeedKnots() { return gndSpeedKnots; }
+	static double getGndCourse() { return gndCourse; }
+	static int bincom;
+	static void tick();
+	static bool validExtAlt() { if( ext_alt_timer )
+		return true;
+	else
+		return false;
+	}
 
-  static void clearFlarmTx( uint8_t flarmTx[9] ) {
-    for( int i=0; i < 9; i++ ) {
-      flarmTx[i] = 0;
-    }
-  }
+	static void clearFlarmTx() {
+		for( int i=0; i < 9; i++ ) {
+			flarmTx[i] = 0;
+		}
+	}
 
-  static bool checkFlarmTx( uint8_t flarmTx[9], const char* stream, int length, uint8_t* seq );
+	static bool checkFlarmTx( const char* stream, int length, uint8_t* seq );
 
-  static void clearFlarmRx( uint8_t flarmRx[11] ) {
-    for( int i=0; i < 11; i++ ) {
-      flarmRx[i] = 0;
-    }
-  }
+	static void clearFlarmRx() {
+		for( int i=0; i < 11; i++ ) {
+			flarmRx[i] = 0;
+		}
+	}
 
-  static bool checkFlarmRx( uint8_t flarmRx[11], uint8_t* stream, int length, uint8_t* seq, int* start );
+	static bool checkFlarmRx( uint8_t* stream, int length, uint8_t* seq, int* start );
 
 private:
- 	static void drawClearTriangle( int x, int y, int rb, int dist, int size, int factor );
- 	static void drawClearVerticalTriangle( int x, int y, int rb, int dist, int size, int factor );
- 	static void drawTriangle( int x, int y, int rb, int dist, int size=15, int factor=2, bool erase=false );
- 	static void flarmSim();
+	static void drawClearTriangle( int x, int y, int rb, int dist, int size, int factor );
+	static void drawClearVerticalTriangle( int x, int y, int rb, int dist, int size, int factor );
+	static void drawTriangle( int x, int y, int rb, int dist, int size=15, int factor=2, bool erase=false );
+	static void flarmSim();
 
- 	static AdaptUGC* ucg;
+	static AdaptUGC* ucg;
 	static int RX,TX,GPS,Power;
 	static int AlarmLevel;
 	static int RelativeBearing,RelativeVertical,RelativeDistance;
@@ -81,6 +81,8 @@ private:
 	static int timeout;
 	static int ext_alt_timer;
 	static int _numSat;
+	static uint8_t flarmTx[9];
+	static uint8_t flarmRx[11];
 };
 
 #endif

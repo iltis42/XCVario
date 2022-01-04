@@ -10,6 +10,8 @@
 
 int Flarm::RX = 0;
 int Flarm::TX = 0;
+uint8_t Flarm::flarmTx[9];
+uint8_t Flarm::flarmRx[11];
 int Flarm::GPS = 0;
 int Flarm::Power = 0;
 int Flarm::AlarmLevel = 0;
@@ -506,7 +508,7 @@ void Flarm::drawFlarmWarning(){
  * Check the stream, if the binary Flarm Exit command can be found. If yes,
  * return true and give back the sequence number of the command.
  */
-bool Flarm::checkFlarmTx( uint8_t flarmTx[9], const char* stream, int length, uint8_t* seq )
+bool Flarm::checkFlarmTx( const char* stream, int length, uint8_t* seq )
 {
   for( int i=0; i < length; i++ ) {
       // add byte to shift register
@@ -527,7 +529,7 @@ bool Flarm::checkFlarmTx( uint8_t flarmTx[9], const char* stream, int length, ui
           // Flarm Exit Sequence found
           seq[0] = flarmTx[4];
           seq[1] = flarmTx[5];
-          clearFlarmTx( flarmTx );
+          clearFlarmTx();
           return true;
       }
   }
@@ -538,8 +540,7 @@ bool Flarm::checkFlarmTx( uint8_t flarmTx[9], const char* stream, int length, ui
  * Check the stream, if the binary Flarm Exit command is acknowledged. If yes,
  * return true and give back the stream position, where the answer starts.
  */
-bool Flarm::checkFlarmRx( uint8_t flarmRx[11],
-                          uint8_t* stream,
+bool Flarm::checkFlarmRx( uint8_t* stream,
                           int length,
                           uint8_t* seq,
                           int* start )
@@ -563,7 +564,7 @@ bool Flarm::checkFlarmRx( uint8_t flarmRx[11],
           flarmRx[10] == seq[1] ) {
           // Flarm positive ACK to Exit command found
           *start = i;
-          clearFlarmRx( flarmRx );
+          clearFlarmRx();
           return true;
       }
   }

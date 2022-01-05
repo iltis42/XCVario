@@ -79,6 +79,7 @@ enum state_t {
 char nmeaBuf[128]; // NMEA standard max size is 82 byte including termination cr lf but provision is make to allow 128 byte in case of proprietary sentences.
 char chkA = 0; // checksum variables
 char chkB = 0;
+char chkBuf = 0;
 uint8_t pos = 0; // pointer for NMEA or UBX payload
 
 const struct GNSS_DATA_T getGNSSData() {
@@ -130,6 +131,10 @@ void parse_NMEA_UBX(const char c) {
     break;
 
   case GOT_NMEA_DOLLAR:
+    if (c < 0x20 || c > 0x7e) {
+      ESP_LOGE(FNAME, "Invalid NMEA character");
+      state = INIT;
+    }
     if (pos == sizeof(nmeaBuf) - 1) {
       ESP_LOGE(FNAME, "NMEA buffer not large enough");
       state = INIT;
@@ -143,23 +148,31 @@ void parse_NMEA_UBX(const char c) {
     break;
   case GOT_NMEA_FRAME:
     break;
-  
+
   case GOT_UBX_SYNC1:
-    if (c == 0x62) {
-      state = GOT_UBX_SYNC2;
+    if (c != 0x62) {
+      state = INIT;
+      break;
     }
+    state = GOT_UBX_SYNC2;
     break;
   case GOT_UBX_SYNC2:
-     if (c == 0x01) {
-      addChk(c);
-      state = GOT_UBX_CLASS;
+    if (c != 0x01) {
+      ESP_LOGW(FNAME, "Unexpected UBX class");
+      state = INIT;
+      break;
     }
+    addChk(c);
+    state = GOT_UBX_CLASS;
     break;
   case GOT_UBX_CLASS:
-    if (c == 0x07) {
-      addChk(c);
-      state = GOT_UBX_ID;
+    if (c != 0x07) {
+      ESP_LOGW(FNAME, "Unexpected UBX ID");
+      state = INIT;
+      break;
     }
+    addChk(c);
+    state = GOT_UBX_ID;
     break;
   case GOT_UBX_ID:
     addChk(c);
@@ -178,15 +191,11 @@ void parse_NMEA_UBX(const char c) {
     pos++;
     break;
   case GOT_UBX_PAYLOAD:
-    if (c == chkA) {
-      state = GOT_UBX_CHKA;
-    } else {
-      ESP_LOGE(FNAME, "Checksum does not match");
-      state = INIT;
-    }
+    chkBuf = c;
+    state = GOT_UBX_CHKA;
     break;
   case GOT_UBX_CHKA:
-    if (c == chkB) {
+    if (chkBuf == chkA && c == chkB) {
       processNavPvtFrame();
     } else {
       ESP_LOGE(FNAME, "Checksum does not match");

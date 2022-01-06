@@ -80,7 +80,6 @@ void Serial::serialHandler(void *pvParameters)
 	TickType_t ticksToWait = 5000 / portTICK_PERIOD_MS;
 
 	while( true ) {
-		esp_task_wdt_reset();  // TBD don't need to reset at multiple tasks, audio task runs always, maybe better there, or in low prio temperature task ?
 		// Stack supervision
 		if( uxTaskGetStackHighWaterMark( cfg->pid ) < 256 )
 			ESP_LOGW(FNAME,"Warning serial %d task stack low: %d bytes", cfg->uart->number(), uxTaskGetStackHighWaterMark( cfg->pid ) );

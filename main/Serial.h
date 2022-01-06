@@ -32,7 +32,7 @@
 
 // All data of one Uart channel
 typedef struct xcv_serial {
-  const char* name;
+	const char* name;
 	RingBufCPP<SString, QUEUE_SIZE>* tx_q;
 	RingBufCPP<SString, QUEUE_SIZE>* rx_q;
 	void (*route)();
@@ -43,78 +43,74 @@ typedef struct xcv_serial {
 	uint8_t monitor;
 	TaskHandle_t pid;
 	xcv_serial *cfg2; // configuration of other Uart
+	bool route_disable;
 } xcv_serial_t;
 
 class Serial {
 public:
-  Serial(){
-  }
+	Serial(){
+	}
 
-  static void begin();
-  static void taskStart();
-  static void serialHandler(void *pvParameters);
-  static bool selfTest( int num );
-  /*
-   * Uart event bits
-   * Bit 0: Uart 0 RX any character received
-   * Bit 1: Uart 0 RX nl received
-   * Bit 2: Uart 1 RX any character received
-   * Bit 3: Uart 1 RX nl received
-   * Bit 4: Uart 2 RX RX any character received
-   * Bit 5: Uart 2 RX nl received
-   * Bit 6: Uart 1 TX characters to send
-   * Bit 7: Uart 1 TX characters to send
-   */
-  static void setRxTxNotifier( const uint8_t eventMask )
-  {
-    xEventGroupSetBits( rxTxNotifier, eventMask );
-  }
+	static void begin();
+	static void taskStart();
+	static void serialHandler(void *pvParameters);
+	static bool selfTest( int num );
+	/*
+	 * Uart event bits
+	 * Bit 0: Uart 0 RX any character received
+	 * Bit 1: Uart 0 RX nl received
+	 * Bit 2: Uart 1 RX any character received
+	 * Bit 3: Uart 1 RX nl received
+	 * Bit 4: Uart 2 RX RX any character received
+	 * Bit 5: Uart 2 RX nl received
+	 * Bit 6: Uart 1 TX characters to send
+	 * Bit 7: Uart 1 TX characters to send
+	 */
+	static void setRxTxNotifier( const uint8_t eventMask )
+	{
+		if( rxTxNotifier )
+			xEventGroupSetBits( rxTxNotifier, eventMask );
+	};
 
-  /**
-   * Handle Serial 1/2 RX data, if Flarm works in text mode.
-   */
-  static void handleTextMode( const xcv_serial_t *cfg );
+	/*
+	 *  Pacing for second serial interface, disable interrupt, clear queue, etc.
+	 */
+	static void enterBincomMode( xcv_serial_t *cfg );
 
-  /**
-   * Route S1/S2 RX data.
-   */
-  static void routeRxData( SString& s, const xcv_serial_t *cfg );
+	/*
+	 *  Exit binary mode
+	 */
+	static void exitBincomMode( xcv_serial_t *cfg );
 
-  /**
-   * Stop data routing of the Uart channel.
-   */
-  static void setStopRouting( const uint8_t uart_nr, const bool flag )
-  {
-    if( uart_nr > 2 )
-      return;
-    _stopRouting[uart_nr] = flag;
-  }
+	/**
+	 * Route S1/S2 RX data.
+	 */
+	static void routeRxData( SString& s, xcv_serial_t *cfg );
 
-  /**
-   * Query the stop routing flag.
-   */
-  static bool stopRouting( const uint8_t uart_nr )
-  {
-    if( uart_nr > 2 )
-      return false;
-    return _stopRouting[uart_nr];
-  }
+	/**
+	 * Stop data routing of the Uart channel.
+	 */
+	static void setroutingStopped( xcv_serial_t *cfg, const bool flag )
+	{
+		cfg->route_disable = flag;
+	};
 
-  /**
-   * Reset all stop routing flags.
-   */
-  static void clearStopRouting()
-  {
-    _stopRouting[0] = false;
-    _stopRouting[1] = false;
-    _stopRouting[2] = false;
-  }
+	/**
+	 * Query the stop routing flag.
+	 */
+	static bool routingStopped( xcv_serial_t *cfg )
+	{
+		return cfg->route_disable;
+	};
+
 
 private:
-  static bool _selfTest;
-  static EventGroupHandle_t rxTxNotifier;
-  // Stop routing of TX/RX data. That is used in case of Flarm binary download.
-  static bool _stopRouting[3];
+	static bool _selfTest;
+	static EventGroupHandle_t rxTxNotifier;
+	// Stop routing of TX/RX data. That is used in case of Flarm binary download.
+	static bool bincom_mode;
+	static xcv_serial_t S1;
+	static xcv_serial_t S2;
 };
 
 #endif

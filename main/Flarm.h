@@ -11,9 +11,10 @@
 class Flarm {
 public:
 	static void setDisplay( AdaptUGC *theUcg ) { ucg = theUcg; };
+	static void parsePFLAE( const char *pflaa );
 	static void parsePFLAU( const char *pflau );
 	static void parsePFLAA( const char *pflaa );
-	static void parsePFLAX( SString &msg );
+	static void parsePFLAX( const char *pflax );
 	static void parseGPRMC( const char *gprmc );
 	static void parseGPGGA( const char *gpgga );
 	static void parsePGRMZ( const char *pgrmz );
@@ -42,22 +43,6 @@ public:
 		return false;
 	}
 
-	static void clearFlarmTx() {
-		for( int i=0; i < 9; i++ ) {
-			flarmTx[i] = 0;
-		}
-	}
-
-	static bool checkFlarmTx( const char* stream, int length, uint8_t* seq );
-
-	static void clearFlarmRx() {
-		for( int i=0; i < 11; i++ ) {
-			flarmRx[i] = 0;
-		}
-	}
-
-	static bool checkFlarmRx( uint8_t* stream, int length, uint8_t* seq, int* start );
-
 private:
 	static void drawClearTriangle( int x, int y, int rb, int dist, int size, int factor );
 	static void drawClearVerticalTriangle( int x, int y, int rb, int dist, int size, int factor );
@@ -81,8 +66,6 @@ private:
 	static int timeout;
 	static int ext_alt_timer;
 	static int _numSat;
-	static uint8_t flarmTx[9];
-	static uint8_t flarmRx[11];
 };
 
 #endif

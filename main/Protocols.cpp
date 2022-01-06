@@ -86,6 +86,8 @@ void Protocols::sendNmeaHDT( float heading ) {
 }
 
 void Protocols::sendItem( const char *key, char type, void *value, int len, bool ack ){
+	if( Flarm::bincom )  // do not sent to client in case
+		return;
 	// ESP_LOGI(FNAME,"sendItem: %s", key );
 	char str[40];
 	char sender = 'U';
@@ -398,6 +400,13 @@ void Protocols::parseNMEA( const char *astr ){
 				}
 			}
 		}
+		else if( !strncmp( str, "$PFLAE,", 6 )) {  // Flarm restart only
+			Flarm::parsePFLAE( str );
+			if( Flarm::bincom  ) {
+				Flarm::bincom--;
+				ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
+			}
+		}
 		else if( !strncmp( str, "$PFLAU,", 6 )) {
 			Flarm::parsePFLAU( str );
 			if( Flarm::bincom  ) {
@@ -425,6 +434,9 @@ void Protocols::parseNMEA( const char *astr ){
 				Flarm::bincom--;
 				ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
 			}
+		}
+		else if( !strncmp( str, "$PFLAX,", 6 )) {
+			Flarm::parsePFLAX( str );  // take care for bincom mode enable
 		}
 		str++;
 		str = mystrtok(str);

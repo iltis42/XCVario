@@ -170,7 +170,7 @@ void Router::routeS1(){
 		// process Ublox UBX sentence and pass through NMEA sentence
 		if( !Flarm::bincom ){  // binary IGC download mode from Flarm needed to skip this part
 		if ( !s1UbloxGnssDecoder.process( s1 ) ) {
-				ESP_LOGI(FNAME,"S1 received UBX or unknown frame");
+				// ESP_LOGI(FNAME,"S1 received UBX or unknown frame");
 				return;
 			}
 		}
@@ -212,7 +212,7 @@ void Router::routeS2(){
 		// process Ublox UBX sentence and pass through NMEA sentence
 		if( !Flarm::bincom ){
 		if ( !s2UbloxGnssDecoder.process( s2 ) ) {
-				ESP_LOGI(FNAME,"S2 received UBX or unknown frame");
+				// ESP_LOGI(FNAME,"S2 received UBX or unknown frame");
 				return;
 			}
 		}

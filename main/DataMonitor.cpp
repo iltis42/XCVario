@@ -121,13 +121,15 @@ void DataMonitor::printString( int ch, e_dir_t dir, const char *str, bool binary
 		pos+=hunklen;
 		rest -= hunklen;
 		// ESP_LOGI(FNAME,"DM 3 rest: %d pos: %d", rest, pos );
-		scrollpos-=scroll;
-		if( scrollpos <= 0 )
-			scrollpos = POS_INIT;
+		scrollpos+=scroll;
+		if( scrollpos >= POS_INIT )
+			scrollpos = 20;
 		ucg->scrollLines( scrollpos );  // set frame origin
 	}
 	if( binary )
-		scrollpos-=scroll;  // newline after each sentence
+		scrollpos+=scroll;  // newline after each sentence
+	if( scrollpos >= POS_INIT )
+			scrollpos = 20;
 	xSemaphoreGive(spiMutex);
 }
 

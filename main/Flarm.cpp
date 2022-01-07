@@ -270,7 +270,6 @@ void Flarm::parsePFLAU( const char *pflau ) {
 	// ESP_LOGI(FNAME,"parsePFLAU() RB: %d ALT:%d  DIST %d",RelativeBearing,RelativeVertical, RelativeDistance );
 	sprintf( ID,"%06x", id );
 	_tick=0;
-	bincom = false;
 	timeout = 10;
 }
 

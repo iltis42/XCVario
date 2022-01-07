@@ -121,15 +121,28 @@ void DataMonitor::printString( int ch, e_dir_t dir, const char *str, bool binary
 		pos+=hunklen;
 		rest -= hunklen;
 		// ESP_LOGI(FNAME,"DM 3 rest: %d pos: %d", rest, pos );
-		scrollpos+=scroll;
-		if( scrollpos >= POS_INIT )
-			scrollpos = 20;
+		if( display_orientation.get() == DISPLAY_TOPDOWN ){
+			scrollpos-=scroll;
+			if( scrollpos < 20 )
+				scrollpos = POS_INIT;
+		}else{
+			scrollpos+=scroll;
+			if( scrollpos >= POS_INIT )
+				scrollpos = 20;
+		}
 		ucg->scrollLines( scrollpos );  // set frame origin
 	}
-	if( binary )
-		scrollpos+=scroll;  // newline after each sentence
-	if( scrollpos >= POS_INIT )
-			scrollpos = 20;
+	if( binary ){
+		if( display_orientation.get() == DISPLAY_TOPDOWN ){
+			scrollpos-=scroll;  // newline after each sentence
+			if( scrollpos < 20 )
+				scrollpos = POS_INIT;
+		}else{
+			scrollpos+=scroll;  // newline after each sentence
+			if( scrollpos >= POS_INIT )
+				scrollpos = 20;
+		}
+	}
 	xSemaphoreGive(spiMutex);
 }
 
@@ -169,8 +182,11 @@ void DataMonitor::start(SetupMenuSelect * p){
 	ucg->setColor( COLOR_WHITE );
 	ucg->setFont(ucg_font_fub11_tr, true );
 	header( channel );
-	ucg->setPrintPos( 10,START_SCROLL );
-	ucg->scrollSetMargins( START_SCROLL, 0 );
+	// ucg->setPrintPos( 10,START_SCROLL );
+	if( display_orientation.get() == DISPLAY_TOPDOWN )
+		ucg->scrollSetMargins( 0, 20 );
+	else
+		ucg->scrollSetMargins( 20, 0 );
 	mon_started = true;
 	paused = true; // will resume with press()
 	xSemaphoreGive(spiMutex);

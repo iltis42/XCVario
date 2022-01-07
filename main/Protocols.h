@@ -13,7 +13,7 @@
 #include "SetupNG.h"
 
 // Supported Protocols
-typedef enum protocol_t  { P_OPENVARIO, P_BORGELT, P_CAMBRIDGE, P_EYE_PEYA, P_EYE_PEYI, P_AHRS_RPYL, P_AHRS_APENV1, P_GENERIC, P_XCVARIO, P_XCVARIO_DEVEL } proto_t;
+typedef enum protocol_t  { P_OPENVARIO, P_BORGELT, P_CAMBRIDGE, P_EYE_PEYA, P_EYE_PEYI, P_AHRS_RPYL, P_AHRS_APENV1, P_GENERIC, P_XCVARIO, P_XCVARIOFT, P_XCVARIO_DEVEL } proto_t;
 
 
 class Protocols {
@@ -24,8 +24,10 @@ public:
     void sendNmeaHDT( float heading );
     void sendItem( const char *key, char type, void *value, int len, bool ack=false );
 	void sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
-			           float mc, int bugs, float ballast, bool cruise, float alt,
-				         bool validTemp=false, float ax=0, float ay=0, float az=0, float gx=0, float gy=0, float gz=0 );
+                  float mc, int bugs, float ballast, bool cruise, float alt,
+                  bool validTemp=false, float ax=0, float ay=0, float az=0, float gx=0, float gy=0, float gz=0,
+                  float accelTime=0, float gyroTime=0, float statP=0, float statTime=0, float teP=0, float teTime=0, float dynP=0, float dynTime=0, float OATemp=0,
+                  int fix=0, float gnsstime=0, float gnssaltitude=0, float gnssgroundspeed=0, float gnssspeedx=0, float gnssspeedy=0, float gnssspeedz=0 );
 
 	static void parseNMEA( const char *str );
 	static int calcNMEACheckSum(const char *nmea);

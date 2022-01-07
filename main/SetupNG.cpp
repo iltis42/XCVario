@@ -170,7 +170,7 @@ SetupNG<float>  		s2f_delay( "S2F_DELAY", 5.0 );
 SetupNG<float>  		factory_volt_adjust("FACT_VOLT_ADJ" , 0.00815, false );
 
 SetupNG<int>  			display_type( "DISPLAY_TYPE",  UNIVERSAL );
-SetupNG<int>  			display_orientation("DISPLAY_ORIENT" , 0 );
+SetupNG<int>  			display_orientation("DISPLAY_ORIENT" , DISPLAY_NORMAL );
 SetupNG<int>  			flap_enable( "FLAP_ENABLE", 0, true, SYNC_FROM_MASTER, PERSISTENT, flap_act);
 SetupNG<float>  		flap_minus_3( "FLAP_MINUS_3", 200,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act, UNIT_SPEED );
 SetupNG<float>  		flap_minus_2( "FLAP_MINUS_2", 165,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act, UNIT_SPEED );

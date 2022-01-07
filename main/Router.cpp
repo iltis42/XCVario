@@ -14,7 +14,7 @@
 #include "Switch.h"
 #include "sensor.h"
 #include "Flarm.h"
-
+#include "UbloxGNSSdecode.h"
 
 RingBufCPP<SString, QUEUE_SIZE> wl_vario_tx_q;
 RingBufCPP<SString, QUEUE_SIZE> wl_flarm_tx_q;
@@ -38,6 +38,11 @@ RingBufCPP<SString, QUEUE_SIZE> client_rx_q;
 RingBufCPP<SString, QUEUE_SIZE> client_tx_q;
 
 portMUX_TYPE btmux = portMUX_INITIALIZER_UNLOCKED;
+
+
+// declare the two instances of UBX NMEA decoder for S1 and S2
+UbloxGnssDecoder s1UbloxGnssDecoder(1);
+UbloxGnssDecoder s2UbloxGnssDecoder(2);
 
 // Utility methods to push and pull data into/from queues
 
@@ -146,6 +151,14 @@ void Router::routeS1(){
 	if( pullMsg( s1_rx_q, s1) ){
 		// ESP_LOGD(FNAME,"ttyS1 RX len: %d bytes, Q:%d", s1.length(), bt_tx_q.isFull() );
 		// ESP_LOG_BUFFER_HEXDUMP(FNAME,s1.c_str(),s1.length(), ESP_LOG_DEBUG);
+
+		// process Ublox UBX sentence and pass through NMEA sentence
+		if( !Flarm::bincom ){  // binary IGC download mode from Flarm needed to skip this part
+		if ( !s1UbloxGnssDecoder.process( s1 ) ) {
+				// ESP_LOGI(FNAME,"S1 received UBX or unknown frame");
+				return;
+			}
+		}
 		if( wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE )
 			if( forwardMsg( s1, wl_flarm_tx_q ))
 				ESP_LOGV(FNAME,"ttyS1 RX bytes %d forward to wl_flarm_tx_q port 8881", s1.length() );
@@ -172,6 +185,13 @@ void Router::routeS2(){
 	if( pullMsg( s2_rx_q, s2) ){
 		// ESP_LOGD(FNAME,"ttyS2 RX len: %d bytes, Q:%d", s2.length(), bt_tx_q.isFull() );
 		// ESP_LOG_BUFFER_HEXDUMP(FNAME,s2.c_str(),s2.length(), ESP_LOG_DEBUG);
+
+		// process Ublox UBX sentence and pass through NMEA sentence
+		if( !Flarm::bincom ){
+		if ( !s2UbloxGnssDecoder.process( s2 ) ) {
+				// ESP_LOGI(FNAME,"S2 received UBX or unknown frame");
+				return;
+			}
 		if(wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE )
 			if( forwardMsg( s2, wl_aux_tx_q ))
 				ESP_LOGV(FNAME,"ttyS2 RX bytes %d forward to wl_aux_tx_q port 8882", s2.length() );

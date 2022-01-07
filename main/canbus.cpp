@@ -18,6 +18,7 @@
 
 #include <cstring>
 #include "DataMonitor.h"
+#include "Flarm.h"
 
 
 
@@ -112,7 +113,9 @@ void canTxTask(void *arg){
     unsigned int tick = 0;
 	while (true) {
 		TickType_t xLastWakeTime = xTaskGetTickCount();
-		static_cast<CANbus*>(arg)->txtick(tick);
+		if( !Flarm::bincom ){
+			static_cast<CANbus*>(arg)->txtick(tick);
+		}
 		if( (tick++ % 100) == 0) {
 			// ESP_LOGI(FNAME,"Free Heap: %d bytes", heap_caps_get_free_size(MALLOC_CAP_8BIT) );
 			if( uxTaskGetStackHighWaterMark( nullptr ) < 128 )
@@ -126,7 +129,9 @@ void canRxTask(void *arg){
     int tick = 0;
 	while (true) {
 		TickType_t xLastWakeTime = xTaskGetTickCount();
-		static_cast<CANbus*>(arg)->rxtick(tick);
+		if( !Flarm::bincom ){
+			static_cast<CANbus*>(arg)->rxtick(tick);
+		}
 		if( (tick++ % 100) == 0) {
 			// ESP_LOGI(FNAME,"Free Heap: %d bytes", heap_caps_get_free_size(MALLOC_CAP_8BIT) );
 			if( uxTaskGetStackHighWaterMark( nullptr ) < 128 )

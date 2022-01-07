@@ -30,7 +30,6 @@ public:
 	void begin(AdaptUGC *theUcg) { ucg = theUcg; };
 	bool active() { return mon_started; };
 
-
 private:
 	void printString( int ch, e_dir_t dir, const char *s, bool binary );
 	void header( int ch, bool binary=false );
@@ -40,4 +39,8 @@ private:
 	bool paused;
 	SetupMenuSelect * setup;
 	int channel;
+	bool first;
+	int rx_total;
+	int tx_total;
+	static xSemaphoreHandle mutex;
 };

@@ -10,8 +10,6 @@
 
 int Flarm::RX = 0;
 int Flarm::TX = 0;
-uint8_t Flarm::flarmTx[9];
-uint8_t Flarm::flarmRx[11];
 int Flarm::GPS = 0;
 int Flarm::Power = 0;
 int Flarm::AlarmLevel = 0;
@@ -49,7 +47,7 @@ int sim=100;
 		The most dangerous of these aircraft is at 11 o’clock, position 32m below and 755m away. It is a level 2 alarm
 
 
-*/
+ */
 
 /*  <AcftType>
  *
@@ -69,7 +67,7 @@ C = airship
 D = unmanned aerial vehicle (UAV)
 E = unknown
 F = static object
-*/
+ */
 
 
 /*
@@ -77,7 +75,7 @@ PFLAA,<AlarmLevel>,<RelativeNorth>,<RelativeEast>,<RelativeVertical>,<IDType>,<I
 e.g.
 $PFLAA,0,-1234,1234,220,2,DD8F12,180,,30,-1.4,1*
 
-*/
+ */
 void Flarm::parsePFLAA( const char *pflaa ){
 
 }
@@ -147,10 +145,10 @@ eg2. $GPRMC,225446,A,4916.45,N,12311.12,W,000.5,054.7,191194,020.3,E*68
            054.7        Course Made Good, True
            191194       Date of fix  19 November 1994
            020.3,E      Magnetic variation 20.3 deg East
-           *68          mandatory checksum
+ *68          mandatory checksum
 
 
-*/
+ */
 void Flarm::parseGPRMC( const char *gprmc ) {
 	float time;
 	int date;
@@ -244,6 +242,20 @@ void Flarm::parseGPGGA( const char *gpgga ) {
 }
 
 
+
+void Flarm::parsePFLAE( const char *pflae ) {
+	ESP_LOGI(FNAME,"parsePFLAE");
+	int cs;
+	int calc_cs=Protocols::calcNMEACheckSum( pflae );
+	cs = Protocols::getNMEACheckSum( pflae );
+	if( cs != calc_cs ){
+		ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", pflae, calc_cs, cs );
+		return;
+	}
+	timeout = 10;
+}
+
+
 void Flarm::parsePFLAU( const char *pflau ) {
 	// ESP_LOGI(FNAME,"parsePFLAU");
 	int cs;
@@ -261,43 +273,45 @@ void Flarm::parsePFLAU( const char *pflau ) {
 	timeout = 10;
 }
 
-void Flarm::parsePFLAX( SString &msg ) {
+
+
+void Flarm::parsePFLAX( const char *msg ) {
 	// ESP_LOGI(FNAME,"parsePFLAX");
 	// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
 	int start=0;
-    if( !strncmp( msg.c_str(), "\n", 1 )  ){
-    	start=1;
-    }
-  // Note, if the Flarm switch to binary mode was accepted, Flarm will answer
-  // with $PFLAX,A*2E. In error case you will get as answer $PFLAX,A,<error>*
-  // and the Flarm stays in text mode.
-  const char* pflax = "$PFLAX,A*2E";
-  const unsigned short lenPflax = strlen(pflax);
+	if( !strncmp( msg, "\n", 1 )  ){  // catch case when serial.cpp does not correctly dissect at '\n', needs further evaluation, maybe multiple '\n' sent ?
+		start=1;
+	}
+	// Note, if the Flarm switch to binary mode was accepted, Flarm will answer
+	// with $PFLAX,A*2E. In error case you will get as answer $PFLAX,A,<error>*
+	// and the Flarm stays in text mode.
+	const char* pflax = "$PFLAX,A*2E";
+	const unsigned short lenPflax = strlen(pflax);
 
-	if( strlen((msg.c_str()) + start) >= lenPflax &&
-	    !strncmp( (msg.c_str()) + start, pflax, lenPflax ) ){
-	  int old = Flarm::bincom ;
-		Flarm::bincom = 5;
-		ESP_LOGI(FNAME,"Flarm::bincom: %d --> %d", old, Flarm::bincom  );
+	if( strlen(msg + start) >= lenPflax && !strncmp(  msg + start, pflax, lenPflax ) ){
+		int old = bincom ;
+		bincom = 5;
+		ESP_LOGI(FNAME,"bincom: %d --> %d", old, bincom  );
 		timeout = 10;
 	}
 }
 
 void Flarm::drawDownloadInfo() {
-  // ESP_LOGI(FNAME,"---> Flarm::drawDownloadInfo is called"  );
-  xSemaphoreTake(spiMutex, portMAX_DELAY );
-  ucg->setColor( COLOR_WHITE );
-  ucg->setFont(ucg_font_fub20_hr);
-  ucg->setPrintPos(60, 140);
-  ucg->printf("Flarm IGC");
-  ucg->setPrintPos(60, 170);
-  ucg->printf("download");
-  ucg->setPrintPos(60, 200);
-  ucg->printf("is running");
-  xSemaphoreGive(spiMutex);
+	// ESP_LOGI(FNAME,"---> Flarm::drawDownloadInfo is called"  );
+	xSemaphoreTake(spiMutex, portMAX_DELAY );
+	ucg->setColor( COLOR_WHITE );
+	ucg->setFont(ucg_font_fub20_hr);
+	ucg->setPrintPos(60, 140);
+	ucg->printf("Flarm IGC");
+	ucg->setPrintPos(60, 170);
+	ucg->printf("download");
+	ucg->setPrintPos(60, 200);
+	ucg->printf("is running");
+	xSemaphoreGive(spiMutex);
 }
 
 void Flarm::tick(){
+	// ESP_LOGI(FNAME,"Flarm tick, bincom: %d", bincom );
 	if( ext_alt_timer )
 		ext_alt_timer--;
 };
@@ -437,16 +451,16 @@ void Flarm::drawFlarmWarning(){
 	else
 		Audio::alarm( false );
 
-    if( AlarmLevel != alarmOld ) {
-    	ucg->setPrintPos(200, 25 );
-    	ucg->setFontPosCenter();
-    	ucg->setColor( COLOR_WHITE );
-    	ucg->setFont(ucg_font_fub20_hr, true);
+	if( AlarmLevel != alarmOld ) {
+		ucg->setPrintPos(200, 25 );
+		ucg->setFontPosCenter();
+		ucg->setColor( COLOR_WHITE );
+		ucg->setFont(ucg_font_fub20_hr, true);
 
-    	ucg->printf( "%d ", AlarmLevel );
-    	alarmOld = AlarmLevel;
-    }
-    if( oldDist !=  RelativeDistance ) {
+		ucg->printf( "%d ", AlarmLevel );
+		alarmOld = AlarmLevel;
+	}
+	if( oldDist !=  RelativeDistance ) {
 		ucg->setPrintPos(130, 140 );
 		ucg->setFontPosCenter();
 		ucg->setColor( COLOR_WHITE );
@@ -456,117 +470,50 @@ void Flarm::drawFlarmWarning(){
 		ucg->printf( d );
 		oldDist = RelativeDistance;
 	}
-    if( oldVertical !=  RelativeVertical ) {
-    	ucg->setPrintPos(130, 220 );
-    	ucg->setFontPosCenter();
-    	ucg->setColor( COLOR_WHITE );
-    	ucg->setFont(ucg_font_fub25_hr, true);
-    	char v[16];
-    	int vdiff = RelativeVertical;
-    	const char *unit = "m";
-    	if( alt_unit.get() != 0 ){  // then its ft or FL -> feet
-    		unit = "ft";
-    		vdiff = (vdiff/10)*10;
-    	}
-    	sprintf(v,"%d %s   ",  vdiff, unit );
-    	ucg->printf( v );
-    	double relDist =  (double)RelativeDistance;
-    	if( RelativeBearing < 0 )
-    		relDist = -relDist;
-    	float horizontalAngle = RTD( atan2( relDist, (double)RelativeVertical) );
-    	ESP_LOGI(FNAME,"horizontalAngle: %f  vert:%d", horizontalAngle, RelativeVertical );
+	if( oldVertical !=  RelativeVertical ) {
+		ucg->setPrintPos(130, 220 );
+		ucg->setFontPosCenter();
+		ucg->setColor( COLOR_WHITE );
+		ucg->setFont(ucg_font_fub25_hr, true);
+		char v[16];
+		int vdiff = RelativeVertical;
+		const char *unit = "m";
+		if( alt_unit.get() != 0 ){  // then its ft or FL -> feet
+			unit = "ft";
+			vdiff = (vdiff/10)*10;
+		}
+		sprintf(v,"%d %s   ",  vdiff, unit );
+		ucg->printf( v );
+		double relDist =  (double)RelativeDistance;
+		if( RelativeBearing < 0 )
+			relDist = -relDist;
+		float horizontalAngle = RTD( atan2( relDist, (double)RelativeVertical) );
+		ESP_LOGI(FNAME,"horizontalAngle: %f  vert:%d", horizontalAngle, RelativeVertical );
 
-    	drawClearVerticalTriangle( 70, 220, horizontalAngle, 0, 50, 6 );
-    	ucg->setColor( COLOR_WHITE );
-    	drawAirplane( 70, 220, true );
-    	oldVertical = RelativeVertical;
-    }
-    if( oldBear != RelativeBearing ){
-    	ucg->setPrintPos(130, 80 );
-    	ucg->setFontPosCenter();
-    	ucg->setColor( COLOR_WHITE );
-    	ucg->setFont(ucg_font_fub25_hr, true );
-    	char b[16];
-    	int quant=15;
-    	if( RelativeBearing < 0 )
-    		quant=-15;
-    	int clock = int((RelativeBearing+quant)/30);
-    	if( clock <= 0 )
-    		clock += 12;
-    	sprintf(b,"  %d  ", clock );
-    	ucg->printf( b );
-    	drawClearTriangle( 70,120, RelativeBearing, 0, 50, 4 );
-    	ucg->setColor( COLOR_WHITE );
-    	drawAirplane( 70, 120 );
-    	oldBear = RelativeBearing;
-    }
+		drawClearVerticalTriangle( 70, 220, horizontalAngle, 0, 50, 6 );
+		ucg->setColor( COLOR_WHITE );
+		drawAirplane( 70, 220, true );
+		oldVertical = RelativeVertical;
+	}
+	if( oldBear != RelativeBearing ){
+		ucg->setPrintPos(130, 80 );
+		ucg->setFontPosCenter();
+		ucg->setColor( COLOR_WHITE );
+		ucg->setFont(ucg_font_fub25_hr, true );
+		char b[16];
+		int quant=15;
+		if( RelativeBearing < 0 )
+			quant=-15;
+		int clock = int((RelativeBearing+quant)/30);
+		if( clock <= 0 )
+			clock += 12;
+		sprintf(b,"  %d  ", clock );
+		ucg->printf( b );
+		drawClearTriangle( 70,120, RelativeBearing, 0, 50, 4 );
+		ucg->setColor( COLOR_WHITE );
+		drawAirplane( 70, 120 );
+		oldBear = RelativeBearing;
+	}
 
-    xSemaphoreGive(spiMutex);
-}
-
-/*
- * Check the stream, if the binary Flarm Exit command can be found. If yes,
- * return true and give back the sequence number of the command.
- */
-bool Flarm::checkFlarmTx( const char* stream, int length, uint8_t* seq )
-{
-  for( int i=0; i < length; i++ ) {
-      // add byte to shift register
-      for( int j=1; j < 9; j++ ) {
-          flarmTx[j-1] = flarmTx[j];
-      }
-
-      flarmTx[8] = stream[i];
-
-      // The Flarm binary exit command has the following content:
-      // S: "73 08 00 01 2c 00  12 22 ba" Exit bin mode
-      //     |  |---|    |----| |  |---|
-      // Start  length   SEQ-NR MSG CRC
-      if( flarmTx[0] == 0x73 && // Startframe
-          flarmTx[1] == 8 &&    // length 0
-          flarmTx[2] == 0 &&    // length 1
-          flarmTx[6] == 0x12 ) { // Exit
-          // Flarm Exit Sequence found
-          seq[0] = flarmTx[4];
-          seq[1] = flarmTx[5];
-          clearFlarmTx();
-          return true;
-      }
-  }
-  return false;
-}
-
-/*
- * Check the stream, if the binary Flarm Exit command is acknowledged. If yes,
- * return true and give back the stream position, where the answer starts.
- */
-bool Flarm::checkFlarmRx( uint8_t* stream,
-                          int length,
-                          uint8_t* seq,
-                          int* start )
-{
-  for( int i=0; i < length; i++ ) {
-      // add byte to shift register
-      for( int j=1; j < 11; j++ ) {
-          flarmRx[j-1] = flarmRx[j];
-      }
-
-      flarmRx[10] = stream[i];
-
-      // R: "73 0a 00 01 5e 12 a0 9e 06 2c 00" Quittung exit bin mode
-      //     |  |---|          | |---| |---|
-      // Start  length         MSG CRC SEQ-NR-von-S
-      if( flarmRx[0] == 0x73 && // Startframe
-          flarmRx[1] == 0xa &&  // length 0
-          flarmRx[2] == 0 &&    // length 1
-          flarmRx[6] == 0xa0 && // ACK
-          flarmRx[9] == seq[0] &&
-          flarmRx[10] == seq[1] ) {
-          // Flarm positive ACK to Exit command found
-          *start = i;
-          clearFlarmRx();
-          return true;
-      }
-  }
-  return false;
+	xSemaphoreGive(spiMutex);
 }

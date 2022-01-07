@@ -158,8 +158,7 @@ void Serial::serialHandler(void *pvParameters)
 			}
 			if( ebits & cfg->rx_nl ) { // wait for the next newline
 				while( cfg->uart->getNlCounter() > 1 ) {  // TBD: reading down to zero obviously not possible with the current driver below, clarifiy why we ran into core trying this.
-				    cfg->uart->decNlCounter();            // AP: The decrement of the NL counter was missing here. Therefore an endless loop has caused the core dumps!
-				    uint8_t rxbuf[128];                   // NMEA size is limited to 80 bytes, 128 is far enough.
+				  uint8_t rxbuf[128];                   // NMEA size is limited to 80 bytes, 128 is far enough.
 					                                      // TDB: available() from driver returns size of whole byte queue containing multiple newlines, so malloc based on this was allocating far to much
 				                                        // AP: That is right but afterwards all was freed again. The maximum NL counter what I saw in my tests was 2.
 					                                      //      May need better concept here, e.g. place frames in Queue of 128 byte length, or pointer to allocated memory

@@ -39,6 +39,10 @@ RingBufCPP<SString, QUEUE_SIZE> client_tx_q;
 
 portMUX_TYPE btmux = portMUX_INITIALIZER_UNLOCKED;
 
+// declare the two instances of UBX NMEA decoder for S1 and S2
+UbloxGnssDecoder s1UbloxGnssDecoder(1);
+UbloxGnssDecoder s2UbloxGnssDecoder(2);
+
 // Utility methods to push and pull data into/from queues
 
 
@@ -165,8 +169,8 @@ void Router::routeS1(){
 
 		// process Ublox UBX sentence and pass through NMEA sentence
 		if( !Flarm::bincom ){  // binary IGC download mode from Flarm needed to skip this part
-			if ( !processGNSS( s1 ) ){
-				ESP_LOGI(FNAME,"S1 received UBX or unknown frame");
+		if ( !s1UbloxGnssDecoder.process( s1 ) ) {
+				// ESP_LOGI(FNAME,"S1 received UBX or unknown frame");
 				return;
 			}
 		}
@@ -207,8 +211,8 @@ void Router::routeS2(){
 
 		// process Ublox UBX sentence and pass through NMEA sentence
 		if( !Flarm::bincom ){
-			if ( !processGNSS( s2 ) ){
-				ESP_LOGI(FNAME,"S2 received UBX or unknown frame");
+		if ( !s2UbloxGnssDecoder.process( s2 ) ) {
+				// ESP_LOGI(FNAME,"S2 received UBX or unknown frame");
 				return;
 			}
 		}

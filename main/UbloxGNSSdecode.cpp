@@ -1,12 +1,12 @@
 /**
- *
- * UbloxGNSSdecode.cpp
- * This software parses a data stream to extract UBX NAV-PVT frame information. Key informationtion can be accessed with getGNSSData() using GNSS_DATA_T type.
- * This software also captures NMEA sentences and return them through the exchange buffer so that they can be further processed by the calling software.
- * This feature allows to mix UBX and NMEA sentences
- * Aurelien & Jean-Luc Derouineau 2022
- *
- */
+  *
+  * UbloxGNSSdecode.cpp 
+  * This software parses a data stream to extract UBX NAV-PVT frame information. Key informationtion can be accessed with getGNSSData() using gnss_data_t type.
+  * This software also captures NMEA sentences and return them through the exchange buffer so that they can be further processed by the calling function.
+  * This feature allows to mix UBX and NMEA sentences on both S1 and S2 ports
+  * Aurelien & Jean-Luc Derouineau 2022
+  *
+  */
 
 #include <stdint.h>
 #include <endian.h>
@@ -17,10 +17,26 @@
 
 #include "UbloxGNSSdecode.h"
 
+// UBX SYNC
+const uint8_t UBX_SYNC1 = 0xb5;
+const uint8_t UBX_SYNC2 = 0x62;
+// UBX NAV PVT CLASS/ID
+const uint8_t UBX_CLASS = 0x01;
+const uint8_t UBX_ID = 0x07;
+// NMEA SYNC
+const uint8_t NMEA_START1 = '$';
+const uint8_t NMEA_START2 = '!';
+// NMEA stream
+const uint8_t NMEA_MIN = 0x20;
+const uint8_t NMEA_MAX = 0x7e;
+// NMEA End of Line
+const uint8_t NMEA_CR = '\r';
+const uint8_t NMEA_LF = '\n';
+
 // NAV_PVT structure definition
-struct NAV_PVT_PAYLOAD { // offset in UBX frame:
+struct nav_pvt_payload_t { // offset in UBX frame:
 	uint32_t iTOW;         // 00: GPS time of week of the navigation epoch (ms)
-	uint16_t year;         // 04: Year (UTC)
+	uint16_t year;         // 04: Year (UTC) 
 	uint8_t month;         // 06: Month, range 1..12 (UTC)
 	uint8_t day;           // 07: Day of month, range 1..31 (UTC)
 	uint8_t hour;          // 08: Hour of day, range 0..23 (UTC)
@@ -52,178 +68,207 @@ struct NAV_PVT_PAYLOAD { // offset in UBX frame:
 	int32_t headVeh;       // 84: Heading of vehicue 2-D
 	int16_t magDec; 		   // 88: Magnetic declination
 	uint16_t magAcc;       // 90: Magnetic declination accuracy
-} payload;
+};
 
-const size_t PVT_PAYLOAD_SIZE = sizeof(struct NAV_PVT_PAYLOAD);
-
-// GNSS data from UBX sentence
-struct GNSS_DATA_T GNSS_DATA;
+const size_t PVT_PAYLOAD_SIZE = sizeof(struct nav_pvt_payload_t);
 
 // state machine definition 
-static enum state_t {
-	INIT,
+enum state_t {
+	GET_NMEA_UBX_SYNC,
 
-	GOT_NMEA_DOLLAR,
+	GET_NMEA_STREAM,
 	GOT_NMEA_FRAME,
 
-	GOT_UBX_SYNC1,
-	GOT_UBX_SYNC2,
-	GOT_UBX_CLASS,
-	GOT_UBX_ID,
-	GOT_UBX_LENGTH1,
-	GOT_UBX_LENGTH2,
-	GOT_UBX_PAYLOAD,
-	GOT_UBX_CHKA
-} state = INIT;
+	GET_UBX_SYNC2,
+	GET_UBX_CLASS,
+	GET_UBX_ID,
+	GET_UBX_LENGTH1,
+	GET_UBX_LENGTH2,
+	GET_UBX_PAYLOAD,
+	GET_UBX_CHKA,
+	GET_UBX_CHKB
+};
 
-char nmeaBuf[128]; // NMEA standard max size is 82 byte including termination cr lf but provision is make to allow 128 byte in case of proprietary sentences.
-char chkA = 0; // checksum variables
-char chkB = 0;
-char chkBuf = 0;
-uint8_t pos = 0; // pointer for NMEA or UBX payload
+// UBX NMEA class decoder declaration
+class UbloxGnssDecoder::Impl {
+	friend class UbloxGnssDecoder;
 
-const struct GNSS_DATA_T getGNSSData() {
-	return GNSS_DATA;
+	const uint8_t portId;
+
+	char nmeaBuf[128]; // NMEA standard max size is 82 byte including termination cr lf but provision is make to allow 128 byte in case of proprietary sentences.
+	char chkA = 0; // checksum variables
+	char chkB = 0;
+	char chkBuf = 0;
+	uint8_t pos = 0; // pointer for NMEA or UBX payload
+	struct nav_pvt_payload_t payload;
+	enum state_t state = GET_NMEA_UBX_SYNC;
+	struct gnss_data_t GNSS_DATA{};
+
+	// process all byte from frame (buffer) method declaration
+	bool processGNSS(SString& frame);
+	// state machine to parse NMEA and UBX sentences method declaration
+	void parse_NMEA_UBX(const char c);
+	// allocate NAV PVT data to GNSS_DATA method declaration
+	void processNavPvtFrame();
+	// checksum method declaration
+	void addChk(const char c);
+
+	Impl(const uint8_t portId);
+};
+
+UbloxGnssDecoder::Impl::Impl(const uint8_t portId) : portId(portId) {
 }
 
-// compute checksum
-void addChk(const char c) {
-	chkA += c;
-	chkB += chkA;
+bool UbloxGnssDecoder::Impl::processGNSS(SString& frame) {
+	const char* cf = frame.c_str();
+	// process every frame byte through state machine
+	for (size_t i = 0; i < frame.length(); i++) {
+		this->parse_NMEA_UBX(cf[i]);
+		// if NMEA sentence send it back to Router through frame
+		if (this->state == GOT_NMEA_FRAME) {
+		frame.set(this->nmeaBuf, pos);
+		this->state = GET_NMEA_UBX_SYNC;
+		return true;
+		}
+  	}
+	return false;
 }
 
-void processNavPvtFrame() {
-	// nav fix must be 3D or 3D diff to accept new data
-	GNSS_DATA.fix = false;
-	if ( payload.fixType != 3 && payload.fixType != 4 ) return;
-
-	GNSS_DATA.coordinates.latitude = payload.lat * 1e-7f;
-	GNSS_DATA.coordinates.longitude = payload.lon * 1e-7f;
-	GNSS_DATA.coordinates.altitude = payload.hMSL * 0.001f;
-	GNSS_DATA.speed.ground = payload.gSpeed * 0.001f;
-	GNSS_DATA.speed.x = payload.velN * 0.001f;
-	GNSS_DATA.speed.y = payload.velE * 0.001f;
-	GNSS_DATA.speed.z = payload.velD * 0.001f;
-	GNSS_DATA.date = payload.day;
-	GNSS_DATA.time = payload.iTOW * 0.001f;
-	GNSS_DATA.fix = true;
-	ESP_LOGE(FNAME, "GNSS UBX ground speed %f : ",GNSS_DATA.speed.ground);
-}
-
-// state machine to parse NMEA and UBX sentences
-void parse_NMEA_UBX(const char c) {
-	switch(state) {
-	case INIT:
+void UbloxGnssDecoder::Impl::parse_NMEA_UBX(const char c) {
+	switch(this->state) {
+	case GET_NMEA_UBX_SYNC:
 		switch(c) {
-		case '$':
-			pos = 0;
-			nmeaBuf[pos] = c;
-			pos++;
-			state = GOT_NMEA_DOLLAR;
+		case NMEA_START1:
+		case NMEA_START2:
+			this->pos = 0;
+			this->nmeaBuf[pos] = c;
+			this->pos++;
+			this->state = GET_NMEA_STREAM;
 			break;
-		case '!':
-			pos = 0;
-			nmeaBuf[pos] = c;
-			pos++;
-			state = GOT_NMEA_DOLLAR;
-			break;
-		case 0xb5:
-			chkA = 0;
-			chkB = 0;
-			pos = 0;
-			state = GOT_UBX_SYNC1;
+		case UBX_SYNC1:
+			this->chkA = 0;
+			this->chkB = 0;
+			this->pos = 0;
+			this->state = GET_UBX_SYNC2;
 			break;
 		}
 		break;
 
-		case GOT_NMEA_DOLLAR:
-			if ( ( c < 0x20 || c > 0x7e ) && c != 0x0d  && c != 0x0a ) {  // accept both closing chars, NMEA is defined with to end message by <CR><LF> == 0d 0a
-				ESP_LOGE(FNAME, "Invalid NMEA character outside [20..7e] + 0x0d : %x", c);
-				state = INIT;
-			}
-			if (pos == sizeof(nmeaBuf) - 1) {
-				ESP_LOGE(FNAME, "NMEA buffer not large enough");
-				state = INIT;
-			}
-			nmeaBuf[pos] = c;
-			pos++;
-			if(c == 0x0a) {
-				nmeaBuf[pos] = 0;
-				state = GOT_NMEA_FRAME;
-			}
-			break;
+	case GET_NMEA_STREAM:
+		if ((c < NMEA_MIN || c > NMEA_MAX) && (c != NMEA_CR && c != NMEA_LF)) {
+		ESP_LOGE(FNAME, "Port S%1d: Invalid NMEA character", this->portId);
+		this->state = GET_NMEA_UBX_SYNC;
+		break;
+		}
+		if (pos == sizeof(nmeaBuf) - 1) {
+		ESP_LOGE(FNAME, "Port S%1d NMEA buffer not large enough", this->portId);
+		this->state = GET_NMEA_UBX_SYNC;
+		}
+		this->nmeaBuf[pos] = c;
+		this->pos++;
+		if (c == NMEA_LF) {
+		this->nmeaBuf[pos] = 0;
+		this->state = GOT_NMEA_FRAME;
+		}
+		break;
 
-		case GOT_NMEA_FRAME:
-			break;
+	case GOT_NMEA_FRAME:
+		break;
 
-		case GOT_UBX_SYNC1:
-			if (c != 0x62) {
-				state = INIT;
-				break;
-			}
-			state = GOT_UBX_SYNC2;
-			break;
-		case GOT_UBX_SYNC2:
-			if (c != 0x01) {
-				ESP_LOGW(FNAME, "Unexpected UBX class");
-				state = INIT;
-				break;
-			}
-			addChk(c);
-			state = GOT_UBX_CLASS;
-			break;
-		case GOT_UBX_CLASS:
-			if (c != 0x07) {
-				ESP_LOGW(FNAME, "Unexpected UBX ID");
-				state = INIT;
-				break;
-			}
-			addChk(c);
-			state = GOT_UBX_ID;
-			break;
-		case GOT_UBX_ID:
-			addChk(c);
-			state = GOT_UBX_LENGTH1;
-			break;
-		case GOT_UBX_LENGTH1:
-			addChk(c);
-			state = GOT_UBX_LENGTH2;
-			break;
-		case GOT_UBX_LENGTH2:
-			addChk(c);
-			((char*)(&payload))[pos] = c;
-			if (pos == PVT_PAYLOAD_SIZE - 1) {
-				state = GOT_UBX_PAYLOAD;
-			}
-			pos++;
-			break;
-		case GOT_UBX_PAYLOAD:
-			chkBuf = c;
-			state = GOT_UBX_CHKA;
-			break;
-		case GOT_UBX_CHKA:
-			if (chkBuf == chkA && c == chkB) {
-				processNavPvtFrame();
-			} else {
-				ESP_LOGE(FNAME, "Checksum does not match");
-			}
-			state = INIT;
-			break;
+	case GET_UBX_SYNC2:
+		if (c != UBX_SYNC2) {
+		this->state = GET_NMEA_UBX_SYNC;
+		break;
+		}
+		this->state = GET_UBX_CLASS;
+		break;
+
+	case GET_UBX_CLASS:
+		if (c != UBX_CLASS) {
+		ESP_LOGW(FNAME, "Port S%1d Unexpected UBX class", this->portId);
+		this->state = GET_NMEA_UBX_SYNC;
+		break;
+		}
+		this->addChk(c);
+		this->state = GET_UBX_ID;
+		break;
+
+	case GET_UBX_ID:
+		if (c != UBX_ID) {
+		ESP_LOGW(FNAME, "Port S%1d Unexpected UBX ID", this->portId);
+		this->state = GET_NMEA_UBX_SYNC;
+		break;
+		}
+		this->addChk(c);
+		this->state = GET_UBX_LENGTH1;
+		break;
+
+	case GET_UBX_LENGTH1:
+		this->addChk(c);
+		this->state = GET_UBX_LENGTH2;
+		break;
+
+	case GET_UBX_LENGTH2:
+		this->addChk(c);
+		this->state = GET_UBX_PAYLOAD;
+		break;
+
+	case GET_UBX_PAYLOAD:
+		this->addChk(c);
+		((char*)(&this->payload))[this->pos] = c;
+		if (this->pos == PVT_PAYLOAD_SIZE - 1) {
+		this->state = GET_UBX_CHKA;
+		}
+		this->pos++;
+		break;
+
+	case GET_UBX_CHKA:
+		this->chkBuf = c;
+		this->state = GET_UBX_CHKB;
+		break;
+
+	case GET_UBX_CHKB:
+		if (this->chkBuf == this->chkA && c == this->chkB) {
+		this->processNavPvtFrame();
+		} else {
+		ESP_LOGE(FNAME, "Port S%1d: Checksum does not match", this->portId);
+		}
+		this->state = GET_NMEA_UBX_SYNC;
+		break;
 	}
 }
 
-bool processGNSS( SString& frame ) {
-	const char* cf = frame.c_str();
-	// process every frame byte through state machine
-	for (size_t i = 0; i < frame.length(); i++) {
-		parse_NMEA_UBX(cf[i]);
-		// if NMEA sentence send it back to Router through frame
-		if (state == GOT_NMEA_FRAME) {
-			// ESP_LOGI(FNAME,"GOT_NMEA_FRAME return pos: %d", pos );
-			frame.set(nmeaBuf, pos);
-			state = INIT;
-			return true;
-		}
-	}
-	return false;
+void UbloxGnssDecoder::Impl::processNavPvtFrame() {
+	// nav fix must be 3D or 3D diff to accept new data
+	this->GNSS_DATA.fix = this->payload.fixType;
+	if ( this->payload.fixType != 3 && this->payload.fixType != 4 ) return;
+
+	this->GNSS_DATA.coordinates.latitude = this->payload.lat * 1e-7f;
+	this->GNSS_DATA.coordinates.longitude = this->payload.lon * 1e-7f;
+	this->GNSS_DATA.coordinates.altitude = this->payload.hMSL * 0.001f;
+	this->GNSS_DATA.speed.ground = this->payload.gSpeed * 0.001f;
+	this->GNSS_DATA.speed.x = this->payload.velN * 0.001f;
+	this->GNSS_DATA.speed.y = this->payload.velE * 0.001f;
+	this->GNSS_DATA.speed.z = this->payload.velD * 0.001f;
+	this->GNSS_DATA.date = this->payload.day;
+	this->GNSS_DATA.time = this->payload.iTOW * 0.001f;
+}
+
+void UbloxGnssDecoder::Impl::addChk(const char c) {
+	this->chkA += c;
+	this->chkB += chkA;
+}
+
+UbloxGnssDecoder::UbloxGnssDecoder(const uint8_t portId) : pImpl(new UbloxGnssDecoder::Impl(portId)) {
+}
+
+UbloxGnssDecoder::~UbloxGnssDecoder() {
+}
+
+bool UbloxGnssDecoder::process(SString& frame) {
+	return this->pImpl->processGNSS(frame);
+}
+
+const struct gnss_data_t UbloxGnssDecoder::getGNSSData() const {
+	return this->pImpl->GNSS_DATA;
 }

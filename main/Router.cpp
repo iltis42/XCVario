@@ -314,9 +314,9 @@ void Router::routeBT(){
 		// always check if it is a command to ourselves
 		if( !strncmp( bt.c_str(), "!g,", 3 ) || !strncmp( bt.c_str(), "$g,", 3 ) ) {
 			// ESP_LOGI(FNAME,"BT RX Matched a Borgelt command %s", bt.c_str() );
-			Protocols::parseNMEA( bt.c_str() );
 		}
 		bt.clear();
+		Protocols::parseNMEA( bt.c_str() );
 	}
 }
 

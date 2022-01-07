@@ -1,12 +1,12 @@
 /**
-  *
-  * UbloxGNSSdecode.cpp 
-  * This software parses a data stream to extract UBX NAV-PVT frame information. Key informationtion can be accessed with getGNSSData() using gnss_data_t type.
-  * This software also captures NMEA sentences and return them through the exchange buffer so that they can be further processed by the calling function.
-  * This feature allows to mix UBX and NMEA sentences on both S1 and S2 ports
-  * Aurelien & Jean-Luc Derouineau 2022
-  *
-  */
+ *
+ * UbloxGNSSdecode.cpp
+ * This software parses a data stream to extract UBX NAV-PVT frame information. Key informationtion can be accessed with getGNSSData() using gnss_data_t type.
+ * This software also captures NMEA sentences and return them through the exchange buffer so that they can be further processed by the calling function.
+ * This feature allows to mix UBX and NMEA sentences on both S1 and S2 ports
+ * Aurelien & Jean-Luc Derouineau 2022
+ *
+ */
 
 #include <stdint.h>
 #include <endian.h>
@@ -123,140 +123,140 @@ bool UbloxGnssDecoder::Impl::processGNSS(SString& frame) {
 	const char* cf = frame.c_str();
 	// process every frame byte through state machine
 	for (size_t i = 0; i < frame.length(); i++) {
-		this->parse_NMEA_UBX(cf[i]);
+		parse_NMEA_UBX(cf[i]);
 		// if NMEA sentence send it back to Router through frame
-		if (this->state == GOT_NMEA_FRAME) {
-		frame.set(this->nmeaBuf, pos);
-		this->state = GET_NMEA_UBX_SYNC;
-		return true;
+		if (state == GOT_NMEA_FRAME) {
+			frame.set(nmeaBuf, pos);
+			state = GET_NMEA_UBX_SYNC;
+			return true;
 		}
-  	}
+	}
 	return false;
 }
 
 void UbloxGnssDecoder::Impl::parse_NMEA_UBX(const char c) {
-	switch(this->state) {
+	switch(state) {
 	case GET_NMEA_UBX_SYNC:
 		switch(c) {
 		case NMEA_START1:
 		case NMEA_START2:
-			this->pos = 0;
-			this->nmeaBuf[pos] = c;
-			this->pos++;
-			this->state = GET_NMEA_STREAM;
+			pos = 0;
+			nmeaBuf[pos] = c;
+			pos++;
+			state = GET_NMEA_STREAM;
 			break;
 		case UBX_SYNC1:
-			this->chkA = 0;
-			this->chkB = 0;
-			this->pos = 0;
-			this->state = GET_UBX_SYNC2;
+			chkA = 0;
+			chkB = 0;
+			pos = 0;
+			state = GET_UBX_SYNC2;
 			break;
 		}
 		break;
 
-	case GET_NMEA_STREAM:
-		if ((c < NMEA_MIN || c > NMEA_MAX) && (c != NMEA_CR && c != NMEA_LF)) {
-		ESP_LOGE(FNAME, "Port S%1d: Invalid NMEA character", this->portId);
-		this->state = GET_NMEA_UBX_SYNC;
-		break;
-		}
-		if (pos == sizeof(nmeaBuf) - 1) {
-		ESP_LOGE(FNAME, "Port S%1d NMEA buffer not large enough", this->portId);
-		this->state = GET_NMEA_UBX_SYNC;
-		}
-		this->nmeaBuf[pos] = c;
-		this->pos++;
-		if (c == NMEA_LF) {
-		this->nmeaBuf[pos] = 0;
-		this->state = GOT_NMEA_FRAME;
-		}
-		break;
+		case GET_NMEA_STREAM:
+			if ((c < NMEA_MIN || c > NMEA_MAX) && (c != NMEA_CR && c != NMEA_LF)) {
+				ESP_LOGE(FNAME, "Port S%1d: Invalid NMEA character", portId);
+				state = GET_NMEA_UBX_SYNC;
+				break;
+			}
+			if (pos == sizeof(nmeaBuf) - 1) {
+				ESP_LOGE(FNAME, "Port S%1d NMEA buffer not large enough", portId);
+				state = GET_NMEA_UBX_SYNC;
+			}
+			nmeaBuf[pos] = c;
+			pos++;
+			if (c == NMEA_LF) {
+				nmeaBuf[pos] = 0;
+				state = GOT_NMEA_FRAME;
+			}
+			break;
 
-	case GOT_NMEA_FRAME:
-		break;
+		case GOT_NMEA_FRAME:
+			break;
 
-	case GET_UBX_SYNC2:
-		if (c != UBX_SYNC2) {
-		this->state = GET_NMEA_UBX_SYNC;
-		break;
-		}
-		this->state = GET_UBX_CLASS;
-		break;
+		case GET_UBX_SYNC2:
+			if (c != UBX_SYNC2) {
+				state = GET_NMEA_UBX_SYNC;
+				break;
+			}
+			state = GET_UBX_CLASS;
+			break;
 
-	case GET_UBX_CLASS:
-		if (c != UBX_CLASS) {
-		ESP_LOGW(FNAME, "Port S%1d Unexpected UBX class", this->portId);
-		this->state = GET_NMEA_UBX_SYNC;
-		break;
-		}
-		this->addChk(c);
-		this->state = GET_UBX_ID;
-		break;
+		case GET_UBX_CLASS:
+			if (c != UBX_CLASS) {
+				ESP_LOGW(FNAME, "Port S%1d Unexpected UBX class", portId);
+				state = GET_NMEA_UBX_SYNC;
+				break;
+			}
+			addChk(c);
+			state = GET_UBX_ID;
+			break;
 
-	case GET_UBX_ID:
-		if (c != UBX_ID) {
-		ESP_LOGW(FNAME, "Port S%1d Unexpected UBX ID", this->portId);
-		this->state = GET_NMEA_UBX_SYNC;
-		break;
-		}
-		this->addChk(c);
-		this->state = GET_UBX_LENGTH1;
-		break;
+		case GET_UBX_ID:
+			if (c != UBX_ID) {
+				ESP_LOGW(FNAME, "Port S%1d Unexpected UBX ID", portId);
+				state = GET_NMEA_UBX_SYNC;
+				break;
+			}
+			addChk(c);
+			state = GET_UBX_LENGTH1;
+			break;
 
-	case GET_UBX_LENGTH1:
-		this->addChk(c);
-		this->state = GET_UBX_LENGTH2;
-		break;
+		case GET_UBX_LENGTH1:
+			addChk(c);
+			state = GET_UBX_LENGTH2;
+			break;
 
-	case GET_UBX_LENGTH2:
-		this->addChk(c);
-		this->state = GET_UBX_PAYLOAD;
-		break;
+		case GET_UBX_LENGTH2:
+			addChk(c);
+			state = GET_UBX_PAYLOAD;
+			break;
 
-	case GET_UBX_PAYLOAD:
-		this->addChk(c);
-		((char*)(&this->payload))[this->pos] = c;
-		if (this->pos == PVT_PAYLOAD_SIZE - 1) {
-		this->state = GET_UBX_CHKA;
-		}
-		this->pos++;
-		break;
+		case GET_UBX_PAYLOAD:
+			addChk(c);
+			((char*)(&payload))[pos] = c;
+			if (pos == PVT_PAYLOAD_SIZE - 1) {
+				state = GET_UBX_CHKA;
+			}
+			pos++;
+			break;
 
-	case GET_UBX_CHKA:
-		this->chkBuf = c;
-		this->state = GET_UBX_CHKB;
-		break;
+		case GET_UBX_CHKA:
+			chkBuf = c;
+			state = GET_UBX_CHKB;
+			break;
 
-	case GET_UBX_CHKB:
-		if (this->chkBuf == this->chkA && c == this->chkB) {
-		this->processNavPvtFrame();
-		} else {
-		ESP_LOGE(FNAME, "Port S%1d: Checksum does not match", this->portId);
-		}
-		this->state = GET_NMEA_UBX_SYNC;
-		break;
+		case GET_UBX_CHKB:
+			if (chkBuf == chkA && c == chkB) {
+				processNavPvtFrame();
+			} else {
+				ESP_LOGE(FNAME, "Port S%1d: Checksum does not match", portId);
+			}
+			state = GET_NMEA_UBX_SYNC;
+			break;
 	}
 }
 
 void UbloxGnssDecoder::Impl::processNavPvtFrame() {
 	// nav fix must be 3D or 3D diff to accept new data
-	this->GNSS_DATA.fix = this->payload.fixType;
-	if ( this->payload.fixType != 3 && this->payload.fixType != 4 ) return;
+	GNSS_DATA.fix = payload.fixType;
+	if ( payload.fixType != 3 && payload.fixType != 4 ) return;
 
-	this->GNSS_DATA.coordinates.latitude = this->payload.lat * 1e-7f;
-	this->GNSS_DATA.coordinates.longitude = this->payload.lon * 1e-7f;
-	this->GNSS_DATA.coordinates.altitude = this->payload.hMSL * 0.001f;
-	this->GNSS_DATA.speed.ground = this->payload.gSpeed * 0.001f;
-	this->GNSS_DATA.speed.x = this->payload.velN * 0.001f;
-	this->GNSS_DATA.speed.y = this->payload.velE * 0.001f;
-	this->GNSS_DATA.speed.z = this->payload.velD * 0.001f;
-	this->GNSS_DATA.date = this->payload.day;
-	this->GNSS_DATA.time = this->payload.iTOW * 0.001f;
+	GNSS_DATA.coordinates.latitude = payload.lat * 1e-7f;
+	GNSS_DATA.coordinates.longitude = payload.lon * 1e-7f;
+	GNSS_DATA.coordinates.altitude = payload.hMSL * 0.001f;
+	GNSS_DATA.speed.ground = payload.gSpeed * 0.001f;
+	GNSS_DATA.speed.x = payload.velN * 0.001f;
+	GNSS_DATA.speed.y = payload.velE * 0.001f;
+	GNSS_DATA.speed.z = payload.velD * 0.001f;
+	GNSS_DATA.date = payload.day;
+	GNSS_DATA.time = payload.iTOW * 0.001f;
 }
 
 void UbloxGnssDecoder::Impl::addChk(const char c) {
-	this->chkA += c;
-	this->chkB += chkA;
+	chkA += c;
+	chkB += chkA;
 }
 
 UbloxGnssDecoder::UbloxGnssDecoder(const uint8_t portId) : pImpl(new UbloxGnssDecoder::Impl(portId)) {
@@ -266,9 +266,9 @@ UbloxGnssDecoder::~UbloxGnssDecoder() {
 }
 
 bool UbloxGnssDecoder::process(SString& frame) {
-	return this->pImpl->processGNSS(frame);
+	return pImpl->processGNSS(frame);
 }
 
 const struct gnss_data_t UbloxGnssDecoder::getGNSSData() const {
-	return this->pImpl->GNSS_DATA;
+	return pImpl->GNSS_DATA;
 }

@@ -280,7 +280,7 @@ const char * mystrtok(const char *s)
 
 
 void Protocols::parseNMEA( const char *astr ){
-	// ESP_LOGI(FNAME,"parseNMEA: %s", astr );
+	// ESP_LOGI(FNAME,"parseNMEA: %s, len: %d", astr,  strlen(astr) );
 	const char *str = mystrtok(astr);
 	while( str ){
 		// ESP_LOGI(FNAME,"parseNMEA token: %s", str);

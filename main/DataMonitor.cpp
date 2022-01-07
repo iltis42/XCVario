@@ -62,17 +62,15 @@ void DataMonitor::header( int ch, bool binary ){
 }
 
 void DataMonitor::monitorString( int ch, e_dir_t dir, const char *str, bool binary ){
-	if( !mon_started || paused || (ch != channel) ){
-		// ESP_LOGI(FNAME,"not active, return started:%d paused:%d", mon_started, paused );
-		return;
+	if( xSemaphoreTake(mutex,portMAX_DELAY ) ){
+		if( !mon_started || paused || (ch != channel) ){
+			// ESP_LOGI(FNAME,"not active, return started:%d paused:%d", mon_started, paused );
+			xSemaphoreGive(mutex);
+			return;
+		}
+		printString( ch, dir, str, binary );
+		xSemaphoreGive(mutex);
 	}
-	xSemaphoreTake(mutex,portMAX_DELAY );
-	if( !binary ){
-		if( Flarm::bincom )
-			binary = true;
-	}
-	printString( ch, dir, str, binary );
-	xSemaphoreGive(mutex);
 }
 
 void DataMonitor::printString( int ch, e_dir_t dir, const char *str, bool binary ){

@@ -47,7 +47,7 @@ UbloxGnssDecoder s2UbloxGnssDecoder(2);
 // Utility methods to push and pull data into/from queues
 
 #undef ESP_LOGV
-#define ESP_LOGV(x,y,z);  ;
+#define ESP_LOGV(x,y,z);  
 
 // checks if Queue is full, otherwise appends SString
 bool Router::forwardMsg( SString &s, RingBufCPP<SString, QUEUE_SIZE>& q ){
@@ -192,6 +192,7 @@ void Router::routeS2(){
 				// ESP_LOGI(FNAME,"S2 received UBX or unknown frame");
 				return;
 			}
+		}
 		if(wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE )
 			if( forwardMsg( s2, wl_aux_tx_q ))
 				ESP_LOGV(FNAME,"ttyS2 RX bytes %d forward to wl_aux_tx_q port 8882", s2.length() );

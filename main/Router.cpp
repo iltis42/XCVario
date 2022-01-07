@@ -45,6 +45,8 @@ UbloxGnssDecoder s2UbloxGnssDecoder(2);
 
 // Utility methods to push and pull data into/from queues
 
+// #define UBX_TESTS
+
 
 // checks if Queue is full, otherwise appends SString
 bool Router::forwardMsg( SString &s, RingBufCPP<SString, QUEUE_SIZE>& q ){
@@ -166,6 +168,14 @@ void Router::routeS1(){
 	if( pullMsg( s1_rx_q, s1) ){
 		// ESP_LOGI(FNAME,"S1 RX len: %d bytes, Q:%d  B:%d", s1.length(), bt_tx_q.isFull(), Flarm::bincom );
 		// ESP_LOG_BUFFER_HEXDUMP(FNAME,s1.c_str(),s1.length(), ESP_LOG_INFO);
+#ifdef UBX_TESTS
+		if( !Flarm::bincom ){
+			if ( !s1UbloxGnssDecoder.process( s1 ) ) {
+				// ESP_LOGI(FNAME,"S2 received UBX or unknown frame");
+				return;
+			}
+		}
+#endif
 
 		if( wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE ){
 			if( forwardMsg( s1, wl_flarm_tx_q )){
@@ -204,7 +214,14 @@ void Router::routeS2(){
 	if( pullMsg( s2_rx_q, s2) ){
 		// ESP_LOGI(FNAME,"S2 RX len: %d bytes, Q:%d BC:%d", s2.length(), bt_tx_q.isFull(), Flarm::bincom  );
 		// ESP_LOG_BUFFER_HEXDUMP(FNAME,s2.c_str(),s2.length(), ESP_LOG_INFO);
-
+#ifdef UBX_TESTS
+		if( !Flarm::bincom ){
+			if ( !s2UbloxGnssDecoder.process( s2 ) ) {
+				// ESP_LOGI(FNAME,"S2 received UBX or unknown frame");
+				return;
+			}
+		}
+#endif
 		if(wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE )
 			if( forwardMsg( s2, wl_aux_tx_q )){
 				// ESP_LOGI(FNAME,"S2 RX bytes %d forward to wl_aux_tx_q port 8882", s2.length() );

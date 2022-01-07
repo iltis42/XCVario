@@ -239,6 +239,7 @@ void UbloxGnssDecoder::Impl::parse_NMEA_UBX(const char c) {
 }
 
 void UbloxGnssDecoder::Impl::processNavPvtFrame() {
+
 	// nav fix must be 3D or 3D diff to accept new data
 	GNSS_DATA.fix = payload.fixType;
 	if ( payload.fixType != 3 && payload.fixType != 4 ) return;
@@ -252,6 +253,7 @@ void UbloxGnssDecoder::Impl::processNavPvtFrame() {
 	GNSS_DATA.speed.z = payload.velD * 0.001f;
 	GNSS_DATA.date = payload.day;
 	GNSS_DATA.time = payload.iTOW * 0.001f;
+	ESP_LOGI(FNAME,"GPS epoch: %d, lat:%f, lon:%f ", payload.iTOW, GNSS_DATA.coordinates.latitude, GNSS_DATA.coordinates.longitude );
 }
 
 void UbloxGnssDecoder::Impl::addChk(const char c) {

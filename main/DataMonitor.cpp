@@ -130,12 +130,6 @@ void DataMonitor::printString( int ch, e_dir_t dir, const char *str, bool binary
 			scrollpos = 20;
 		ucg->scrollLines( scrollpos );  // set frame origin
 	}
-	if( 0 /*binary */ ){
-		scrollpos+=scroll;  // newline after each sentence
-		if( scrollpos >= SCROLL_BOTTOM )
-			scrollpos = 20;
-		ucg->scrollLines( scrollpos );
-	}
 	xSemaphoreGive(spiMutex);
 }
 

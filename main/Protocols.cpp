@@ -117,146 +117,176 @@ void Protocols::sendItem( const char *key, char type, void *value, int len, bool
 }
 
 void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
-		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz  ){
+		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz,
+		float accelTime, float gyroTime, float statP, float statTime, float teP, float teTime, float dynP, float dynTime, float OATemp,
+    int fix, float gnsstime, float gnssaltitude, float gnssgroundspeed, float gnssspeedx, float gnssspeedy, float gnssspeedz ){
 	if( !validTemp )
 		temp=0;
 
-	if( proto == P_XCVARIO ){
-		/*
-				Sentence has following format:
-				$PXCV,
-				BBB.B = Vario, -30 to +30 m/s, negative sign for sink,
-				C.C = MacCready 0 to 10 m/s
-				EE = bugs degradation, 0 = clean to 30 %,
-				F.FF = Ballast 1.00 to 1.60,
-				G = 0 in climb, 1 in cruise,
-				HH.H = Outside airtemp in degrees celcius ( may have leading negative sign ),
-				QQQQ.Q = QNH e.g. 1013.2,
-				PPPP.P: static pressure in hPa,
-				QQQQ.Q: dynamic pressure in Pa,
-				RRR.R: roll angle,
-				III.I: pitch angle,
-				X.XX:   acceleration in X-Axis,
-				Y.YY:   acceleration in Y-Axis,
-				Z.ZZ:   acceleration in Z-Axis,
-		 *CHK = standard NMEA checksum
-		 */
-		float bal = (aballast+100)/100.0;
-		// ESP_LOGW(FNAME,"Ballast: %f %1.2f", bal, bal );
-		sprintf(str,"$PXCV,%3.1f,%1.2f,%d,%1.3f,%d,%2.1f,%4.1f,%4.1f,%.1f", te, mc, bugs, bal, !cruise, std::roundf(temp*10.f)/10.f, QNH.get() , baro, dp );
-		int append_idx = strlen(str);
-		if( haveMPU && attitude_indicator.get() ){
+	if( proto == P_XCVARIOFT ) {
+	// send NMEA Fligth Test sentence at 10 Hz
+	/* Sentence has following format:
+					$XCVFT,
+					X.XXXX:     acceleration in X-Axis in G,
+					Y.YYYY:     acceleration in Y-Axis in G,
+					Z.ZZZZ:     acceleration in Z-Axis in G,
+          T-T.TTTTTT: acel time in second with micro second resolution (before IMU measurement)
+					XXX.X:      rotation X-Axis °/s,
+					YYY.Y:      rotation Y-Axis °/s,
+					ZZZ.Z:      rotation Z-Axis °/s,
+          T-T.TTTTTT: gyro time in second with micro second resolution (before IMU measurement)
+					PPPP.P:     satic pressure hPa
+					T-T.TTTTTT  static time in second with micro second resolution (before static measurement)
+					PPPP.P:     TE pressure hPa
+					T-T.TTTTTT  TE time in second with micro second resolution (before TE measurement)		
+					PPPP.P:     Dynamic Pa
+					T-T.TTTTTT  Dyn time in second with micro second resolution (before dynamic measurement)
+					XX.X:	      Outside Air Tamperature °C
+          X:          fix 0 to 5   3=3D   4= 3D diff
+          T-T.TTT     GNSS time in second with mili second resolution (corresponds to satelitte data acquisition time)
+          AAAA.A      GNSS altitude in meter
+          VV.VV       GNSS ground speed m/s
+          VV.VV       GNSS speed x or north
+          VV.VV       GNSS speed y or east
+          VV.VV       GNSS speed z or down
+	*/
+	sprintf(str,"$XCVFT,%.6f,%1.4f,%1.4f,%1.4f,%.6f,%3.1f,%3.1f,%3.1f,%.6f,%3.1f,%.6f,%3.1f,%.6f,%3.1f,%2.1f,%1d,%.3f,%4.1f,%2.2f,%2.2f,%2.2f,%2.2f", 
+  accelTime, acc_x, acc_y, acc_z , gyroTime, gx, gy, gz, statTime, statP, teTime, teP, dynTime, dynP,  OATemp, fix, gnsstime ,gnssaltitude, gnssgroundspeed, gnssspeedx, gnssspeedy, gnssspeedz);
+
+	} else if( proto == P_XCVARIO ){
+			/*
+					Sentence has following format:
+					$PXCV,
+					BBB.B = Vario, -30 to +30 m/s, negative sign for sink,
+					C.C = MacCready 0 to 10 m/s
+					EE = bugs degradation, 0 = clean to 30 %,
+					F.FF = Ballast 1.00 to 1.60,
+					G = 0 in climb, 1 in cruise,
+					HH.H = Outside airtemp in degrees celcius ( may have leading negative sign ),
+					QQQQ.Q = QNH e.g. 1013.2,
+					PPPP.P: static pressure in hPa,
+					QQQQ.Q: dynamic pressure in Pa,
+					RRR.R: roll angle,
+					III.I: pitch angle,
+					X.XX:   acceleration in X-Axis,
+					Y.YY:   acceleration in Y-Axis,
+					Z.ZZ:   acceleration in Z-Axis,
+			 *CHK = standard NMEA checksum
+			 */
+			float bal = (aballast+100)/100.0;
+			// ESP_LOGW(FNAME,"Ballast: %f %1.2f", bal, bal );
+			sprintf(str,"$PXCV,%3.1f,%1.2f,%d,%1.3f,%d,%2.1f,%4.1f,%4.1f,%.1f", te, mc, bugs, bal, !cruise, std::roundf(temp*10.f)/10.f, QNH.get() , baro, dp );
+			int append_idx = strlen(str);
+			if( haveMPU && attitude_indicator.get() ){
+				float roll = IMU::getRoll();
+				float pitch = IMU::getPitch();
+				sprintf(str+append_idx,",%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", roll, pitch, acc_x, acc_y, acc_z );
+			}else{
+				sprintf(str+append_idx,",,,,,");
+			}
+		}
+		else if( proto == P_OPENVARIO ) {
+			if( validTemp )
+				sprintf(str,"$POV,P,%0.1f,Q,%0.1f,E,%0.1f,T,%0.1f",baro,dp,te,temp);
+			else
+				sprintf(str,"$POV,P,%0.1f,Q,%0.1f,E,%0.1f",baro,dp,te);
+		}
+		else if ( proto == P_BORGELT ) {
+			/*
+			Sentence has following format:
+			$PBB50,AAA,BBB.B,C.C,DDDDD,EE,F.FF,G,HH*CHK crlf
+			AAA = TAS 0 to 150 knots
+			BBB.B = Vario, -10 to +15 knots, negative sign for sink
+			C.C = MacCready 0 to 8.0 knots
+			DDDDD = IAS squared 0 to 22500
+			EE = bugs degradation, 0 = clean to 30 %
+			F.FF = Ballast 1.00 to 1.60
+			G = 0 in climb, 1 in cruise
+			HH = Outside airtemp in degrees celcius ( may have leading negative sign )
+			CHK = standard NMEA checksum
+			 */
+			float iaskn = Units::kmh2knots( ias );
+			sprintf(str,"$PBB50,%03d,%3.1f,%1.1f,%d,%d,%1.2f,%1d,%2d", (int)(Units::kmh2knots(tas)+0.5), Units::ms2knots(te), Units::mcval2knots(mc), (int)((iaskn*iaskn)+0.5), bugs, (aballast+100)/100.0, !cruise, (int)(temp+0.5) );
+		}
+		else if( proto == P_CAMBRIDGE ){
+			/*
+			 * Cambridge 302 Format
+			!W,<1>,<2>,<3>,<4>,<5>,<6>,<7>,<8>,<9>,<10>,<11>,<12>,<13>*hh<CR><LF>
+			<1>    Vector wind direction in degrees
+			<2>    Vector wind speed in 10ths of meters per second
+			<3>    Vector wind age in seconds
+			<4>    Component wind in 10ths of Meters per second + 500 (500 = 0, 495 = 0.5 m/s tailwind)
+			<5>    True altitude in Meters + 1000
+			<6>    Instrument QNH setting
+			<7>    True airspeed in 100ths of Meters per second
+			<8>    Variometer reading in 10ths of knots + 200
+			<9>    Averager reading in 10ths of knots + 200
+			<10>   Relative variometer reading in 10ths of knots + 200
+			<11>   Instrument MacCready setting in 10ths of knots
+			<12>   Instrument Ballast setting in percent of capacity
+			<13>   Instrument Bug setting
+			 *hh   Checksum, XOR of all bytes of the sentence after the ‘!’ and before the ‘*’
+			 */
+
+			sprintf(str, "!w,0,0,0,0,%d,%4.2f,%d,%d,0,0,%d,%d,%d", int(alt+1000), QNH.get(), int(Units::kmh2ms(tas)*100), int((Units::ms2knots(te)*10)+200), int( Units::mcval2knots(mc)*10 ), int( S2F::getBallastPercent()+0.5 ), (int)(100-bugs) );
+		}
+		else if( proto == P_EYE_PEYA ){
+			// Static pressure from aircraft pneumatic system [hPa] (i.e. 1015.5)
+			// Total pressure from aircraft pneumatic system [hPA] (i.e. 1015.5)
+			// Pressure altitude [m] (i.e. 10260)
+			// Calculated local QNH [mbar] (i.e. 1013.2)
+			// Direction from were the wind blows [°] (0 - 359)
+			// Wind speed [km/h]
+			// True air speed [km/h] (i.e. 183)
+			// Vertical speed from anemometry (m/s) (i.e. +05.4)
+			// Outside Air Temperature (?C) (i.e. +15.2)
+			// Relative humidity [%] (i.e. 095)
+			float pa = alt - 8.92*( QNH.get() - 1013.25);
+
+
+			if( validTemp )
+				sprintf(str, "$PEYA,%.2f,%.2f,%.2f,%.2f,,,%.2f,%.2f,%.2f,,", baro, baro+(dp/100),pa, QNH.get(),tas,te,temp);
+			else
+				sprintf(str, "$PEYA,%.2f,%.2f,%.2f,%.2f,,,%.2f,%.2f,0,,", baro, baro+(dp/100),alt, QNH.get(),tas,te);
+		}
+		else if( proto == P_EYE_PEYI ){
 			float roll = IMU::getRoll();
 			float pitch = IMU::getPitch();
-			sprintf(str+append_idx,",%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", roll, pitch, acc_x, acc_y, acc_z );
-
-		}else{
-			sprintf(str+append_idx,",,,,,");
+			// ESP_LOGI(FNAME,"roll %.2f pitch %.2f yaw %.2f", roll, pitch, yaw  );
+			/*
+				$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,%.2f,
+				lbank,         // Bank == roll    (deg)           SRC
+				lpitch,         // pItch           (deg)
+				x,
+				y,
+				z,
+				);
+			 */
+			sprintf(str, "$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,", roll, pitch,acc_x,acc_y,acc_z );
 		}
-	}
-	else if( proto == P_OPENVARIO ) {
-		if( validTemp )
-			sprintf(str,"$POV,P,%0.1f,Q,%0.1f,E,%0.1f,T,%0.1f",baro,dp,te,temp);
-		else
-			sprintf(str,"$POV,P,%0.1f,Q,%0.1f,E,%0.1f",baro,dp,te);
-	}
-	else if ( proto == P_BORGELT ) {
-		/*
-		Sentence has following format:
-		$PBB50,AAA,BBB.B,C.C,DDDDD,EE,F.FF,G,HH*CHK crlf
-		AAA = TAS 0 to 150 knots
-		BBB.B = Vario, -10 to +15 knots, negative sign for sink
-		C.C = MacCready 0 to 8.0 knots
-		DDDDD = IAS squared 0 to 22500
-		EE = bugs degradation, 0 = clean to 30 %
-		F.FF = Ballast 1.00 to 1.60
-		G = 0 in climb, 1 in cruise
-		HH = Outside airtemp in degrees celcius ( may have leading negative sign )
-		CHK = standard NMEA checksum
-		 */
-		float iaskn = Units::kmh2knots( ias );
-		sprintf(str,"$PBB50,%03d,%3.1f,%1.1f,%d,%d,%1.2f,%1d,%2d", (int)(Units::kmh2knots(tas)+0.5), Units::ms2knots(te), Units::mcval2knots(mc), (int)((iaskn*iaskn)+0.5), bugs, (aballast+100)/100.0, !cruise, (int)(temp+0.5) );
-	}
-	else if( proto == P_CAMBRIDGE ){
-		/*
-		 * Cambridge 302 Format
-		!W,<1>,<2>,<3>,<4>,<5>,<6>,<7>,<8>,<9>,<10>,<11>,<12>,<13>*hh<CR><LF>
-		<1>    Vector wind direction in degrees
-		<2>    Vector wind speed in 10ths of meters per second
-		<3>    Vector wind age in seconds
-		<4>    Component wind in 10ths of Meters per second + 500 (500 = 0, 495 = 0.5 m/s tailwind)
-		<5>    True altitude in Meters + 1000
-		<6>    Instrument QNH setting
-		<7>    True airspeed in 100ths of Meters per second
-		<8>    Variometer reading in 10ths of knots + 200
-		<9>    Averager reading in 10ths of knots + 200
-		<10>   Relative variometer reading in 10ths of knots + 200
-		<11>   Instrument MacCready setting in 10ths of knots
-		<12>   Instrument Ballast setting in percent of capacity
-		<13>   Instrument Bug setting
-		 *hh   Checksum, XOR of all bytes of the sentence after the ‘!’ and before the ‘*’
-		 */
-
-		sprintf(str, "!w,0,0,0,0,%d,%4.2f,%d,%d,0,0,%d,%d,%d", int(alt+1000), QNH.get(), int(Units::kmh2ms(tas)*100), int((Units::ms2knots(te)*10)+200), int( Units::mcval2knots(mc)*10 ), int( S2F::getBallastPercent()+0.5 ), (int)(100-bugs) );
-	}
-	else if( proto == P_EYE_PEYA ){
-		// Static pressure from aircraft pneumatic system [hPa] (i.e. 1015.5)
-		// Total pressure from aircraft pneumatic system [hPA] (i.e. 1015.5)
-		// Pressure altitude [m] (i.e. 10260)
-		// Calculated local QNH [mbar] (i.e. 1013.2)
-		// Direction from were the wind blows [°] (0 - 359)
-		// Wind speed [km/h]
-		// True air speed [km/h] (i.e. 183)
-		// Vertical speed from anemometry (m/s) (i.e. +05.4)
-		// Outside Air Temperature (?C) (i.e. +15.2)
-		// Relative humidity [%] (i.e. 095)
-		float pa = alt - 8.92*( QNH.get() - 1013.25);
-
-
-		if( validTemp )
-			sprintf(str, "$PEYA,%.2f,%.2f,%.2f,%.2f,,,%.2f,%.2f,%.2f,,", baro, baro+(dp/100),pa, QNH.get(),tas,te,temp);
-		else
-			sprintf(str, "$PEYA,%.2f,%.2f,%.2f,%.2f,,,%.2f,%.2f,0,,", baro, baro+(dp/100),alt, QNH.get(),tas,te);
-
-	}
-	else if( proto == P_EYE_PEYI ){
-		float roll = IMU::getRoll();
-		float pitch = IMU::getPitch();
-		// ESP_LOGI(FNAME,"roll %.2f pitch %.2f yaw %.2f", roll, pitch, yaw  );
-		/*
-			$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,%.2f,
-			lbank,         // Bank == roll    (deg)           SRC
-			lpitch,         // pItch           (deg)
-			x,
-			y,
-			z,
+		else if( proto == P_AHRS_APENV1 ) { // experimental
+			sprintf(str, "$APENV1,%.2f,%.2f,0,0,0,%.2f,", ias,alt,te );
+		}
+		else if( proto == P_AHRS_RPYL ) {   // experimental
+			sprintf(str, "$RPYL,%.2f,%.2f,0,0,,%.2f,0,",
+					IMU::getRoll(),         // Bank == roll    (deg)           SRC
+					IMU::getPitch(),         // pItch           (deg)
+					acc_z
 			);
-		 */
-		sprintf(str, "$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,", roll, pitch,acc_x,acc_y,acc_z );
-	}
-	else if( proto == P_AHRS_APENV1 ) { // experimental
-		sprintf(str, "$APENV1,%.2f,%.2f,0,0,0,%.2f,", ias,alt,te );
-	}
-	else if( proto == P_AHRS_RPYL ) {   // experimental
-		sprintf(str, "$RPYL,%.2f,%.2f,0,0,,%.2f,0,",
-				IMU::getRoll(),         // Bank == roll    (deg)           SRC
-				IMU::getPitch(),         // pItch           (deg)
-				acc_z
-		);
-	}
-	else if( proto == P_GENERIC ) {
-		/*
-		 * $PTAS1,xxx,yyy,zzzzz,aaa*CS<CR><LF>
-		 * xxx:   CV or current vario. =vario*10+200 range 0-400(display +/-20.0 knots)
-		 * yyy:   AV or average vario. =vario*10+200 range 0-400(display +/-20.0 knots)
-		 * zzzzz: Barometric altitude in feet +2000
-		 * aaa:   TAS knots 0-200
-		 */
-		sprintf(str, "$PTAS1,%d,%d,%d,%d", int((Units::ms2knots(te)*10)+200), 0, int(Units::meters2feet(alt)+2000), int(Units::kmh2knots(tas)+0.5) );
-	}
-	else {
-		ESP_LOGW(FNAME,"Not supported protocol %d", nmea_protocol.get() );
-	}
+		}
+		else if( proto == P_GENERIC ) {
+			/*
+			 * $PTAS1,xxx,yyy,zzzzz,aaa*CS<CR><LF>
+			 * xxx:   CV or current vario. =vario*10+200 range 0-400(display +/-20.0 knots)
+			 * yyy:   AV or average vario. =vario*10+200 range 0-400(display +/-20.0 knots)
+			 * zzzzz: Barometric altitude in feet +2000
+			 * aaa:   TAS knots 0-200
+			 */
+			sprintf(str, "$PTAS1,%d,%d,%d,%d", int((Units::ms2knots(te)*10)+200), 0, int(Units::meters2feet(alt)+2000), int(Units::kmh2knots(tas)+0.5) );
+		}
+		else {
+			ESP_LOGW(FNAME,"Not supported protocol %d", nmea_protocol.get() );
+		}
 	int cs = calcNMEACheckSum(&str[1]);
 	int i = strlen(str);
 	sprintf( &str[i], "*%02X\r\n", cs );

@@ -154,7 +154,7 @@ void Serial::serialHandler(void *pvParameters)
 				exitBincomMode(cfg);
 			}
 			if( ebits & cfg->rx_nl ) { // wait for the next newline
-				uint8_t rxbuf[128]; // NMEA size is limited to 80 bytes, 128 is far enough.
+				uint8_t rxbuf[512]; // NMEA size is limited to 80 bytes, hence frames might overrun...
 				size_t bytes = cfg->uart->readLineFromQueue( rxbuf, sizeof( rxbuf ) );
 				while( bytes ) {
 					s.set( (char *) rxbuf, bytes );

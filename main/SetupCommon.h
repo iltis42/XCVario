@@ -51,6 +51,8 @@ public:
 	// housekeeping supporters
 	static bool isMaster();
 	static bool isClient();
+	static bool isCanClient();
+	static bool isCanMaster();
     static bool isWired();
 
     static bool mustSync( uint8_t sync);

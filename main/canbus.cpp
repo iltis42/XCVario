@@ -308,9 +308,9 @@ void CANbus::rxtick(int tick){
         if ( (cptr=std::strchr(msg.c_str(), '$')) != nullptr
             || (cptr=std::strchr(msg.c_str(), '!')) != nullptr ) {
             if ( nmea_state != 0 ) {
-                ESP_LOGW(FNAME, "%d: %s\nUnexpected frame start: %s", nmea.length(), nmea.c_str(), msg.c_str());
+                ESP_LOGW(FNAME, "%d: %s, Unexpected NMEA frame start: %s", nmea.length(), nmea.c_str(), msg.c_str());
             }
-            nmea = msg; // Ok copy
+            nmea = SString( cptr ); // Ok copy start of frame from where starting symbol found
             nmea_state = 1;
         }
         else cptr = msg.c_str();

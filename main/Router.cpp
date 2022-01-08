@@ -327,6 +327,10 @@ void Router::routeBT(){
 			// ESP_LOGI(FNAME,"BT RX Matched a Borgelt command %s", bt.c_str() );
 			Protocols::parseNMEA( bt.c_str() );
 		}
+		if( SetupCommon::isCanClient() && (serial2_tx.get() & RT_WIRELESS) ){
+			// ESP_LOGI(FNAME,"Send to CAN bus, BT received %d bytes", bt.length() );
+			CAN->sendNMEA( bt );
+		}
 		bt.clear();
 	}
 }
@@ -339,10 +343,10 @@ void Router::routeClient(){
 		// ESP_LOG_BUFFER_HEXDUMP(FNAME,client.c_str(),client.length(), ESP_LOG_INFO);
 		if (strncmp(client.c_str(), "!xs", 3) != 0)
 		{
-			if ((serial1_tx.get() & RT_XCVARIO) && serial1_speed.get()) {
+			if ( ((serial1_tx.get() & RT_XCVARIO) && serial1_speed.get()) || (SetupCommon::isCanMaster() && serial1_speed.get()) ) {
 				if (forwardMsg(client, s1_tx_q)) {
 					Serial::setRxTxNotifier( TX1_REQ );
-					// ESP_LOGI(FNAME, "Send to S1 device, client link received %d bytes NMEA", client.length());
+					ESP_LOGI(FNAME, "Send to S1 device, CAN link received %d bytes NMEA", client.length());
 				}
 			}
 			if ((serial2_tx.get() & RT_XCVARIO) && serial2_speed.get()) {

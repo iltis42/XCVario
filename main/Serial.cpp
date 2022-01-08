@@ -161,7 +161,7 @@ void Serial::serialHandler(void *pvParameters)
 				size_t bytes = cfg->uart->readLineFromQueue( rxbuf, sizeof( rxbuf ) );
 				while( bytes ) {     // Reverted to bytes, NL counting doesn't work with binary frames
 					s.set( (char *) rxbuf, bytes );
-					// ESP_LOGI( FNAME, "%s RX, available: %d bytes, read: %d, postNLC: %d", cfg->name, bc, bytes, cfg->uart->getNlCounter() );
+					// ESP_LOGI( FNAME, "%s RX, available: %d bytes", cfg->name, bytes );
 					// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxbuf,bytes, ESP_LOG_INFO);
 					routeRxData( s, cfg );
 					bytes = cfg->uart->readLineFromQueue( rxbuf, sizeof( rxbuf ) );

@@ -62,7 +62,7 @@ void HardwareSerial::begin(unsigned long baud, uint32_t config, int8_t rxPin, in
 		txPin = TX2;
 	}
 
-	_uart = uartBegin(_uart_nr, baud ? baud : 9600, config, rxPin, txPin, 256, rxinvert, txinvert );
+	_uart = uartBegin(_uart_nr, baud ? baud : 9600, config, rxPin, txPin, 512, rxinvert, txinvert );
 	_tx_pin = txPin;
 	_rx_pin = rxPin;
 
@@ -78,7 +78,7 @@ void HardwareSerial::begin(unsigned long baud, uint32_t config, int8_t rxPin, in
 
 		if(detectedBaudRate) {
 			delay(100); // Give some time...
-			_uart = uartBegin(_uart_nr, detectedBaudRate, config, rxPin, txPin, 256, rxinvert, txinvert );
+			_uart = uartBegin(_uart_nr, detectedBaudRate, config, rxPin, txPin, 512, rxinvert, txinvert );
 		} else {
 			log_e("Could not detect baudrate. Serial data at the port must be present within the timeout for detection to be possible");
 			_uart = NULL;

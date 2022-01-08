@@ -45,6 +45,8 @@ UbloxGnssDecoder s2UbloxGnssDecoder(2);
 
 // Utility methods to push and pull data into/from queues
 
+// #define UBX_TESTS
+
 
 // checks if Queue is full, otherwise appends SString
 bool Router::forwardMsg( SString &s, RingBufCPP<SString, QUEUE_SIZE>& q ){
@@ -164,23 +166,27 @@ void Router::routeXCV(){
 void Router::routeS1(){
 	SString s1;
 	if( pullMsg( s1_rx_q, s1) ){
-		// ESP_LOGI(FNAME,"S1 RX len: %d bytes, Q:%d BC:%d", s1.length(), bt_tx_q.isFull(), Flarm::bincom );
+		// ESP_LOGI(FNAME,"S1 RX len: %d bytes, Q:%d  B:%d", s1.length(), bt_tx_q.isFull(), Flarm::bincom );
 		// ESP_LOG_BUFFER_HEXDUMP(FNAME,s1.c_str(),s1.length(), ESP_LOG_INFO);
-
-		// process Ublox UBX sentence and pass through NMEA sentence
-		if( !Flarm::bincom ){  // binary IGC download mode from Flarm needed to skip this part
-		if ( !s1UbloxGnssDecoder.process( s1 ) ) {
-				// ESP_LOGI(FNAME,"S1 received UBX or unknown frame");
+#ifdef UBX_TESTS
+		if( !Flarm::bincom ){
+			if ( !s1UbloxGnssDecoder.process( s1 ) ) {
+				// ESP_LOGI(FNAME,"S2 received UBX or unknown frame");
 				return;
 			}
 		}
-		if( wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE )
+#endif
+
+		if( wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE ){
 			if( forwardMsg( s1, wl_flarm_tx_q )){
 				// ESP_LOGI(FNAME,"S1 RX bytes %d forward to wl_flarm_tx_q port 8881", s1.length() );
 			}
-		if( wireless == WL_BLUETOOTH )
-			if( forwardMsg( s1, bt_tx_q ))
+		}
+		if( wireless == WL_BLUETOOTH ){
+			if( forwardMsg( s1, bt_tx_q )){
 				// ESP_LOGI(FNAME,"S1 RX bytes %d forward to bt_tx_q", s1.length() );
+			}
+		}
 		if( serial1_rxloop.get() ){  // only 0=DISABLE | 1=ENABLE
 			if( forwardMsg( s1, s1_tx_q )){
 				Serial::setRxTxNotifier( TX1_REQ );
@@ -207,27 +213,29 @@ void Router::routeS2(){
 	SString s2;
 	if( pullMsg( s2_rx_q, s2) ){
 		// ESP_LOGI(FNAME,"S2 RX len: %d bytes, Q:%d BC:%d", s2.length(), bt_tx_q.isFull(), Flarm::bincom  );
-		// ESP_LOG_BUFFER_HEXDUMP(FNAME,s2.c_str(),s2.length(), ESP_LOG_DEBUG);
-
-		// process Ublox UBX sentence and pass through NMEA sentence
+		// ESP_LOG_BUFFER_HEXDUMP(FNAME,s2.c_str(),s2.length(), ESP_LOG_INFO);
+#ifdef UBX_TESTS
 		if( !Flarm::bincom ){
-		if ( !s2UbloxGnssDecoder.process( s2 ) ) {
+			if ( !s2UbloxGnssDecoder.process( s2 ) ) {
 				// ESP_LOGI(FNAME,"S2 received UBX or unknown frame");
 				return;
 			}
 		}
+#endif
 		if(wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE )
 			if( forwardMsg( s2, wl_aux_tx_q )){
 				// ESP_LOGI(FNAME,"S2 RX bytes %d forward to wl_aux_tx_q port 8882", s2.length() );
 			}
-		if( wireless == WL_BLUETOOTH )
+		if( wireless == WL_BLUETOOTH ){
 			if( forwardMsg( s2, bt_tx_q )){
 				// ESP_LOGI(FNAME,"S2 RX bytes %d forward to bt_tx_q", s2.length() );
 			}
-		if( (can_tx.get() & RT_XCVARIO) && can_speed.get() )
+		}
+		if( (can_tx.get() & RT_XCVARIO) && can_speed.get() ){
 			if( forwardMsg( s2, client_tx_q )){
 				// ESP_LOGI(FNAME,"S2 RX bytes %d forward to client_tx_q", s2.length() );
 			}
+		}
 		if( (serial1_tx.get() & RT_S1) && serial1_speed.get() ){ // RT_S1 could be renamed to RT_SERIAL
 			if( forwardMsg( s2, s1_tx_q )){  // This might connect XCSoar on S2 with Flarm on S1
 				Serial::setRxTxNotifier( TX1_REQ );
@@ -299,6 +307,9 @@ void Router::routeBT(){
 		return;
 	SString bt;
 	if( pullMsg( bt_rx_q, bt ) ){
+		// ESP_LOGI(FNAME,"BT RX %s, len: %d bytes", bt.c_str(), bt.length() );
+		// ESP_LOG_BUFFER_HEXDUMP(FNAME,bt.c_str(),bt.length(), ESP_LOG_INFO);
+
 		if( (serial1_tx.get() & RT_WIRELESS) && serial1_speed.get() ){  // Serial data TX from bluetooth enabled ?
 			if( forwardMsg( bt, s1_tx_q ) ){
 				Serial::setRxTxNotifier( TX1_REQ );
@@ -314,9 +325,9 @@ void Router::routeBT(){
 		// always check if it is a command to ourselves
 		if( !strncmp( bt.c_str(), "!g,", 3 ) || !strncmp( bt.c_str(), "$g,", 3 ) ) {
 			// ESP_LOGI(FNAME,"BT RX Matched a Borgelt command %s", bt.c_str() );
+			Protocols::parseNMEA( bt.c_str() );
 		}
 		bt.clear();
-		Protocols::parseNMEA( bt.c_str() );
 	}
 }
 
@@ -325,6 +336,7 @@ void Router::routeClient(){
 	SString client;
 	if( pullMsg( client_rx_q, client ) ){
 		// ESP_LOGI(FNAME,"Client received %d bytes %s", client.length(), client.c_str());
+		// ESP_LOG_BUFFER_HEXDUMP(FNAME,client.c_str(),client.length(), ESP_LOG_INFO);
 		if (strncmp(client.c_str(), "!xs", 3) != 0)
 		{
 			if ((serial1_tx.get() & RT_XCVARIO) && serial1_speed.get()) {

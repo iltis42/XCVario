@@ -288,8 +288,8 @@ void Flarm::parsePFLAX( const char *msg ) {
 	const char* pflax = "$PFLAX,A*2E";
 	const unsigned short lenPflax = strlen(pflax);
 
-	if( strlen(msg + start) >= lenPflax && !strncmp(  msg + start, pflax, lenPflax ) ){
-		int old = bincom ;
+	if( strlen(msg + start) >= lenPflax && !strncmp(  msg + start, pflax, lenPflax )  && !SetupCommon::isClient() ){
+		int old = bincom;
 		bincom = 5;
 		ESP_LOGI(FNAME,"bincom: %d --> %d", old, bincom  );
 		timeout = 10;
@@ -307,6 +307,9 @@ void Flarm::drawDownloadInfo() {
 	ucg->printf("download");
 	ucg->setPrintPos(60, 200);
 	ucg->printf("is running");
+	ucg->setFont(ucg_font_fub11_hr);
+	ucg->setPrintPos(20, 280);
+	ucg->printf("(restarts on end download)");
 	xSemaphoreGive(spiMutex);
 }
 

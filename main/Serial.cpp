@@ -138,7 +138,10 @@ void Serial::serialHandler(void *pvParameters)
 			}
 			if( ebits & cfg->rx_char ) {
 				// Flarm is in binary mode and we can read bytes.
-				// Due to delays we can have more than one character in the RX queue.
+				// AP Note: The Uart driver can read up to 112 bytes in its queue, if no pause
+			  // is in its input stream before sending an event. If a pause of 2 characters
+			  // is in the input stream we will also get an event.
+			  // Therefore the number of characters in the RX queue can be different.
 				int available = cfg->uart->available();
 				if( available ){
 					uint8_t* rxBuf = (uint8_t *) malloc( available );
@@ -154,14 +157,18 @@ void Serial::serialHandler(void *pvParameters)
 				exitBincomMode(cfg);
 			}
 			if( ebits & cfg->rx_nl ) { // wait for the next newline
-				uint8_t rxbuf[512]; // NMEA size is limited to 80 bytes, hence frames might overrun...
-				size_t bytes = cfg->uart->readLineFromQueue( rxbuf, sizeof( rxbuf ) );
-				while( bytes ) {
+				while( cfg->uart->getNlCounter() > 1 ) {  // TBD: reading down to zero obviously not possible with the current driver below, clarifiy why we ran into core trying this.
+				  uint8_t rxbuf[128];                   // NMEA size is limited to 80 bytes, 128 is far enough.
+					                                      // TDB: available() from driver returns size of whole byte queue containing multiple newlines, so malloc based on this was allocating far to much
+				                                        // AP: That is right but afterwards all was freed again. The maximum NL counter what I saw in my tests was 2.
+					                                      //      May need better concept here, e.g. place frames in Queue of 128 byte length, or pointer to allocated memory
+					                                      //      Alternatively, text mode may vanish here when generic state machine may handle all frame types.
+				                                        // Advantage of NL counting is, it is done by the interrupt routine during character read and not again later on in other code parts.
+					size_t bytes = cfg->uart->readLineFromQueue( rxbuf, sizeof( rxbuf ) );  // read out until NL and decrement NL count
 					s.set( (char *) rxbuf, bytes );
-					// ESP_LOGI( FNAME, "%s RX, available: %d bytes, postNLC: %d", cfg->name, bytes, cfg->uart->getNlCounter() );
+					// ESP_LOGI( FNAME, "%s RX, available: %d bytes, read: %d, postNLC: %d", cfg->name, bc, bytes, cfg->uart->getNlCounter() );
 					// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxbuf,bytes, ESP_LOG_INFO);
 					routeRxData( s, cfg );
-					bytes = cfg->uart->readLineFromQueue( rxbuf, sizeof( rxbuf ) );  // read out until NL and decrement NL count
 				}
 			}
 		}

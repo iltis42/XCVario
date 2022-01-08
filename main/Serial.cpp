@@ -158,8 +158,8 @@ void Serial::serialHandler(void *pvParameters)
 				size_t bytes = cfg->uart->readLineFromQueue( rxbuf, sizeof( rxbuf ) );
 				while( bytes ) {
 					s.set( (char *) rxbuf, bytes );
-					// ESP_LOGI( FNAME, "%s RX, available: %d bytes, postNLC: %d", cfg->name, bytes, cfg->uart->getNlCounter() );
-					// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxbuf,bytes, ESP_LOG_INFO);
+					ESP_LOGI( FNAME, "%s RX, available: %d bytes, postNLC: %d", cfg->name, bytes, cfg->uart->getNlCounter() );
+					ESP_LOG_BUFFER_HEXDUMP(FNAME,rxbuf,bytes, ESP_LOG_INFO);
 					routeRxData( s, cfg );
 					bytes = cfg->uart->readLineFromQueue( rxbuf, sizeof( rxbuf ) );  // read out until NL and decrement NL count
 				}

@@ -596,16 +596,16 @@ void IpsDisplay::redrawValues()
 	prev_heading = -1000;
 	 
 	switch ( alt_quantization.get() ) {
-		case 0:
+		case ALT_QUANT_DISABLE:
 			alt_quant = 0;
 			break;
-		case 2:
+		case ALT_QUANT_5:
 			alt_quant = 5;
 			break;
-		case 3:
+		case ALT_QUANT_10:
 			alt_quant = 10;
 			break;
-		case 4:
+		case ALT_QUANT_20:
 			alt_quant = 20;
 			break;
 		default:

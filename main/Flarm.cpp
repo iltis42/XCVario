@@ -150,12 +150,7 @@ eg2. $GPRMC,225446,A,4916.45,N,12311.12,W,000.5,054.7,191194,020.3,E*68
 
  */
 void Flarm::parseGPRMC( const char *gprmc ) {
-	float time;
-	int date;
 	char warn;
-	float lat,lon;
-	float magvar;
-	char dir;
 	int cs;
 	int calc_cs=Protocols::calcNMEACheckSum( gprmc );
 	cs = Protocols::getNMEACheckSum( gprmc );
@@ -164,7 +159,7 @@ void Flarm::parseGPRMC( const char *gprmc ) {
 		return;
 	}
 	// ESP_LOGI(FNAME,"parseG*RMC: %s", gprmc );
-	sscanf( gprmc+3, "RMC,%f,%c,%f,N,%f,E,%lf,%lf,%d,%f,%c*%02x",&time,&warn,&lat,&lon,&gndSpeedKnots,&gndCourse,&date,&magvar,&dir,&cs);
+	sscanf( gprmc+3, "RMC,%*f,%c,%*f,%*c,%*f,%*c,%lf,%lf,%*d,%*f,%*c*%*02x", &warn, &gndSpeedKnots, &gndCourse);
 	if( wind_enable.get() != WA_OFF ){
 		// ESP_LOGI(FNAME,"Wind enable, gpsOK %d", gpsOK );
 		if( warn == 'A' ) {
@@ -215,15 +210,7 @@ eg. $GPGGA,hhmmss.ss,llll.ll,a,yyyyy.yy,a,x,xx,x.x,x.x,M,x.x,M,x.x,xxxx*hh
 
 void Flarm::parseGPGGA( const char *gpgga ) {
 	// ESP_LOGI(FNAME,"parseGPGGA");
-	float time;
-	float lat,lon;
-	int Q;
 	int numSat;
-	float dilutionH;
-	float antennaAlt;
-	float geoidalSep;
-	float age;
-	int ID;
 	int cs;
 	// ESP_LOGV(FNAME,"parseG*GGA: %s", gpgga );
 	int calc_cs=Protocols::calcNMEACheckSum( gpgga );
@@ -232,7 +219,7 @@ void Flarm::parseGPGGA( const char *gpgga ) {
 		ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", gpgga, calc_cs, cs );
 		return;
 	}
-	sscanf( gpgga+3, "GGA,%f,%f,N,%f,E,%d,%d,%f,%f,M,%f,M,%f,%d*%02x",&time,&lat,&lon,&Q,&numSat,&dilutionH, &antennaAlt, &geoidalSep, &age, &ID, &cs);
+	sscanf( gpgga+3, "GGA,%*f,%*f,%*c,%*f,%*c,%*d,%d,%*f,%*f,M,%*f,M,%*f,%*d*%*02x", &numSat);
 
 	if( numSat != _numSat && wind_enable.get() != WA_OFF ){
 		_numSat = numSat;

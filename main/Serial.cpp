@@ -116,8 +116,8 @@ void Serial::serialHandler(void *pvParameters)
 		if( ebits & cfg->tx_req && cfg->uart->availableForWrite() ) {
 			// ESP_LOGI(FNAME,"S%d: TX and available", cfg->uart->number() );
 			while( Router::pullMsg( *(cfg->tx_q), s ) ) {
-				ESP_LOGI(FNAME,"S%d: TX len: %d bytes", cfg->uart->number(), s.length() );
-				ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
+				// ESP_LOGI(FNAME,"S%d: TX len: %d bytes", cfg->uart->number(), s.length() );
+				// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
 				cfg->uart->write( s.c_str(),s.length() );
 				if( !bincom_mode )
 					DM.monitorString( cfg->monitor, DIR_TX, s.c_str() );

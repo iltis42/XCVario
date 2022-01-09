@@ -54,13 +54,16 @@ EventGroupHandle_t Serial::rxTxNotifier = 0;
 #define RX2_CHAR 16
 #define RX2_NL 32
 
+DataLink dl1;
+DataLink dl2;
+
 xcv_serial_t Serial::S1 = { .name="S1", .tx_q = &s1_tx_q, .rx_q = &s1_rx_q, .route=Router::routeS1, .uart=&Serial1,
 		                    .rx_char = RX1_CHAR, .rx_nl = RX1_NL, .tx_req = TX1_REQ,
-		                    .monitor=MON_S1, .pid = 0, .cfg2 = nullptr, .route_disable = true
+		                    .monitor=MON_S1, .pid = 0, .cfg2 = nullptr, .route_disable = true, .dl = &dl1, .port = 1
 };
 xcv_serial_t Serial::S2 = { .name="S2", .tx_q = &s2_tx_q, .rx_q = &s2_rx_q, .route=Router::routeS2, .uart=&Serial2,
 		                    .rx_char = RX2_CHAR, .rx_nl = RX2_NL, .tx_req = TX2_REQ,
-		                    .monitor=MON_S2, .pid = 0, .cfg2 = nullptr, .route_disable = true
+		                    .monitor=MON_S2, .pid = 0, .cfg2 = nullptr, .route_disable = true, .dl = &dl2, .port = 2
 };
 
 bool Serial::bincom_mode = false;  // we start with bincom timer inactive
@@ -91,20 +94,13 @@ void Serial::serialHandler(void *pvParameters)
 		if( routingStopped( cfg ) ) {
 			// Flarm download of other Serial is running, stop RX processing and empty TX queue.
 			cfg->tx_q->clear();
+			cfg->rx_q->clear();
 			delay( 1000 );
 			continue;
 		}
-		// Define expected event bits. They can come from the Uart RX ISR or from
-		// the Serial TX router queue.
-		// In Flarm text mode we may get informed only for newlines in the Uart
-		// RX queue. We tolerate that also in binary mode to get reset this bit
-		// in the event bit mask after a read.
-		EventBits_t bitsToWaitFor = cfg->tx_req | cfg->rx_nl;
-		if( Flarm::bincom ) {
-			// In Flarm binary mode, we may get informed for every available
-			// character in the RX queue.
-			bitsToWaitFor |= cfg->rx_char;
-		}
+		// Define expected event bits. They can come from the Uart RX ISR or from the Serial TX router queue.
+		EventBits_t bitsToWaitFor = cfg->tx_req | cfg->rx_nl | cfg->rx_char;
+
 		// We do wait for events from Uart RX, router TX side or timeout
 		EventBits_t ebits = xEventGroupWaitBits( rxTxNotifier, bitsToWaitFor, pdTRUE, pdFALSE, ticksToWait );
 		if( (ebits & bitsToWaitFor ) == 0 ) {
@@ -120,8 +116,8 @@ void Serial::serialHandler(void *pvParameters)
 		if( ebits & cfg->tx_req && cfg->uart->availableForWrite() ) {
 			// ESP_LOGI(FNAME,"S%d: TX and available", cfg->uart->number() );
 			while( Router::pullMsg( *(cfg->tx_q), s ) ) {
-				// ESP_LOGD(FNAME,"S%d: TX len: %d bytes", cfg->uart->number(), tx.length() );
-				// ESP_LOG_BUFFER_HEXDUMP(FNAME,tx.c_str(),tx.length(), ESP_LOG_INFO);
+				ESP_LOGI(FNAME,"S%d: TX len: %d bytes", cfg->uart->number(), s.length() );
+				ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
 				cfg->uart->write( s.c_str(),s.length() );
 				if( !bincom_mode )
 					DM.monitorString( cfg->monitor, DIR_TX, s.c_str() );
@@ -129,43 +125,30 @@ void Serial::serialHandler(void *pvParameters)
 			}
 		}
 		// RX part
-		// TBD: Unify bincom mode along with parseNMEA and binary UBX message parsing in one state machine
-		//      Current solution is resource intensive (mainly CPU), as we got 3 places where frames are
-		//      dissected analyzed.
-		if( Flarm::bincom ){
-			if( !bincom_mode ) {   // we are in bincom mode, stop this mode if Flarm has detected otherwise
-				enterBincomMode(cfg);
-			}
-			if( ebits & cfg->rx_char ) {
-				// Flarm is in binary mode and we can read bytes.
-				// AP Note: The Uart driver can read up to 112 bytes in its queue, if no pause
-			  // is in its input stream before sending an event. If a pause of 2 characters
-			  // is in the input stream we will also get an event.
-			  // Therefore the number of characters in the RX queue can be different.
-				int available = cfg->uart->available();
-				if( available ){
-					uint8_t* rxBuf = (uint8_t *) malloc( available );
-					uint16_t rxBytes = cfg->uart->readBufFromQueue( rxBuf, available );  // read out all characters from the RX queue
-					s.set( (char *)rxBuf, rxBytes );
-					routeRxData( s, cfg );
-					free( rxBuf );
+		if( (ebits & cfg->rx_char) ) { // only one transparent mode from now on, frame slicing in upper layer for UBX and NMEA
+			int available = cfg->uart->available();
+			if( available ){
+				char* rxBuf = (char *)malloc( available );
+				uint16_t rxBytes = cfg->uart->readBufFromQueue( (uint8_t*)rxBuf, available );  // read out all characters from the RX queue
+				// ESP_LOGI(FNAME,"S%d: RX len: %d bytes", cfg->uart->number(), rxBytes );
+				// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuf, available, ESP_LOG_INFO);
+				cfg->dl->process( rxBuf, rxBytes, cfg->port );
+				if( !Flarm::bincom ){
+					DM.monitorString( cfg->monitor, DIR_RX, rxBuf, Flarm::bincom );
 				}
+				free( rxBuf );
 			}
 		}
-		else{ // Flarm works in text mode, check if NL is reported.
-			if( bincom_mode ){  // Flarm says we are in textmode, exit serial bincom mode if not yet done
-				exitBincomMode(cfg);
+		if( Flarm::bincom ){
+			if( !bincom_mode ) {   // we are in bincom mode, stop this mode if Flarm has detected otherwise
+				if(cfg->port == Flarm::bincom_port)
+					enterBincomMode(cfg);
 			}
-			if( ebits & cfg->rx_nl ) { // wait for the next newline
-				uint8_t rxbuf[512];  // NMEA size is limited to 80 bytes, 128 should be enough, hence binary frames might be longer
-				size_t bytes = cfg->uart->readLineFromQueue( rxbuf, sizeof( rxbuf ) );
-				while( bytes ) {     // Reverted to bytes, NL counting doesn't work with binary frames
-					s.set( (char *) rxbuf, bytes );
-					// ESP_LOGI( FNAME, "%s RX, available: %d bytes", cfg->name, bytes );
-					// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxbuf,bytes, ESP_LOG_INFO);
-					routeRxData( s, cfg );
-					bytes = cfg->uart->readLineFromQueue( rxbuf, sizeof( rxbuf ) );
-				}
+		}
+		else{
+			if( bincom_mode ){  // Flarm says we are in textmode, exit serial bincom mode if not yet done
+				if(cfg->port == Flarm::bincom_port)
+					exitBincomMode(cfg);
 			}
 		}
 	} // end while( true )
@@ -176,9 +159,7 @@ void Serial::enterBincomMode( xcv_serial_t *cfg ){
 	setroutingStopped( cfg->cfg2, true );
 	// Stop RX interrupt of other serial channel
 	cfg->cfg2->uart->disableInterrupt();
-	// Wait so long until BT TX queue and second RX queue are empty.
-	while( ! cfg->cfg2->rx_q->isEmpty() ) delay( 5 );
-	while( ! bt_tx_q.isEmpty() ) delay( 5 );
+	delay( 100 );
 	bincom_mode = true;
 	ESP_LOGI(FNAME, "%s: --> Switching to binary mode", cfg->name );
 }
@@ -189,18 +170,6 @@ void Serial::exitBincomMode( xcv_serial_t *cfg ){
 	Audio::shutdown();
 	delay(100);
 	esp_restart();
-}
-
-void Serial::routeRxData( SString& s, xcv_serial_t *cfg ) {
-	if( routingStopped( cfg ) == true ){
-		ESP_LOGI(FNAME,"routing is stopped for %s", cfg->name );
-		return;
-	}
-	Router::forwardMsg( s, *(cfg->rx_q) );
-	cfg->route();
-	if( !Flarm::bincom ){
-		DM.monitorString( cfg->monitor, DIR_RX, s.c_str(), Flarm::bincom );
-	}
 }
 
 bool Serial::selfTest(int num){

@@ -72,7 +72,7 @@ void BTSender::progress(){
 			buf[i] = byte;
 		}
 		rx.set( buf, avail );
-		// ESP_LOGI(FNAME,">BT RX: %d bytes: %s", avail, rx.c_str() );
+		// ESP_LOGI(FNAME,">BT RX: %d bytes", avail );
 		// ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.c_str(),avail, ESP_LOG_INFO);
 		Router::forwardMsg( rx, bt_rx_q );
 		free( buf );
@@ -82,8 +82,8 @@ void BTSender::progress(){
 	if( SerialBT->hasClient() ) {
 		SString msg;
 		if ( Router::pullMsg( bt_tx_q, msg ) ){
-			// ESP_LOGI(FNAME,"<BT TX %d bytes: %s", msg.length(), msg.c_str() );
-			// ESP_LOG_BUFFER_HEXDUMP(FNAME,msg.c_str(),msg.gength(), ESP_LOG_INFO);
+			// ESP_LOGI(FNAME,"<BT TX %d bytes", msg.length() );
+			// ESP_LOG_BUFFER_HEXDUMP(FNAME,msg.c_str(),msg.length(), ESP_LOG_INFO);
 			SerialBT->write( (const uint8_t *)msg.c_str(), msg.length() );
 			DM.monitorString( MON_BLUETOOTH, DIR_TX, msg.c_str() );
 		}

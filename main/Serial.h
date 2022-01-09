@@ -17,6 +17,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 #include "Router.h"
+#include "HardwareSerial.h"
+#include "DataLink.h"
 
 #define SERIAL_STRLEN SSTRLEN
 
@@ -44,6 +46,8 @@ typedef struct xcv_serial {
 	TaskHandle_t pid;
 	xcv_serial *cfg2; // configuration of other Uart
 	bool route_disable;
+	DataLink *dl;
+	int port;
 } xcv_serial_t;
 
 class Serial {
@@ -81,11 +85,6 @@ public:
 	 *  Exit binary mode
 	 */
 	static void exitBincomMode( xcv_serial_t *cfg );
-
-	/**
-	 * Route S1/S2 RX data.
-	 */
-	static void routeRxData( SString& s, xcv_serial_t *cfg );
 
 	/**
 	 * Stop data routing of the Uart channel.

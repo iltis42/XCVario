@@ -94,6 +94,7 @@ int Flarm::_tick=0;
 int Flarm::timeout=0;
 int Flarm::ext_alt_timer=0;
 int Flarm::_numSat=0;
+int Flarm::bincom_port=0;
 
 void Flarm::flarmSim(){
 	if( flarm_sim.get() ){
@@ -111,7 +112,6 @@ void Flarm::flarmSim(){
 		}
 		sim++;
 	}
-
 }
 
 
@@ -275,7 +275,7 @@ void Flarm::parsePFLAU( const char *pflau ) {
 
 
 
-void Flarm::parsePFLAX( const char *msg ) {
+void Flarm::parsePFLAX( const char *msg, int port ) {
 	// ESP_LOGI(FNAME,"parsePFLAX");
 	// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
 	int start=0;
@@ -289,6 +289,7 @@ void Flarm::parsePFLAX( const char *msg ) {
 	const unsigned short lenPflax = strlen(pflax);
 
 	if( strlen(msg + start) >= lenPflax && !strncmp(  msg + start, pflax, lenPflax )  && !SetupCommon::isClient() ){
+		bincom_port = port;
 		int old = bincom;
 		bincom = 5;
 		ESP_LOGI(FNAME,"bincom: %d --> %d", old, bincom  );

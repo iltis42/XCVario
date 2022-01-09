@@ -14,7 +14,7 @@ public:
 	static void parsePFLAE( const char *pflaa );
 	static void parsePFLAU( const char *pflau );
 	static void parsePFLAA( const char *pflaa );
-	static void parsePFLAX( const char *pflax );
+	static void parsePFLAX( const char *pflax, int port );
 	static void parseGPRMC( const char *gprmc );
 	static void parseGPGGA( const char *gpgga );
 	static void parsePGRMZ( const char *pgrmz );
@@ -36,6 +36,7 @@ public:
 	static double getGndSpeedKnots() { return gndSpeedKnots; }
 	static double getGndCourse() { return gndCourse; }
 	static int bincom;
+	static int bincom_port;
 	static void tick();
 	static bool validExtAlt() { if( ext_alt_timer )
 		return true;

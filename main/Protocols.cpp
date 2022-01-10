@@ -119,44 +119,10 @@ void Protocols::sendItem( const char *key, char type, void *value, int len, bool
 }
 
 void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
-		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz,
-		float accelTime, float gyroTime, float statP, float statTime, float teP, float teTime, float dynP, float dynTime, float OATemp,
-		int fix, float gnsstime, float gnssaltitude, float gnssgroundspeed, float gnssspeedx, float gnssspeedy, float gnssspeedz ){
+		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz ){
 	if( !validTemp )
 		temp=0;
-
-	if( proto == P_XCVARIOFT ) {
-		// send NMEA Fligth Test sentence at 10 Hz
-		/* Sentence has following format:
-		$XCVFT,
-		T..T.TTTTTT:	accel time in second with micro second resolution (before IMU measurement)
-		X.XXXX:			acceleration in X-Axis in G,
-		Y.YYYY:			acceleration in Y-Axis in G,
-		Z.ZZZZ:			acceleration in Z-Axis in G,
-		T..T.TTTTTT:	gyro time in second with micro second resolution (before IMU measurement)
-		XXX.X:			rotation X-Axis °/s,
-		YYY.Y:			rotation Y-Axis °/s,
-		ZZZ.Z:			rotation Z-Axis °/s,
-		T..T.TTTTTT:	static time in second with micro second resolution (before static measurement)
-		PPPP.P:			static pressure hPa
-		T..T.TTTTTT:	TE time in second with micro second resolution (before TE measurement)
-		PPPP.P:			TE pressure hPa
-		T..T.TTTTTT:	Dyn time in second with micro second resolution (before dynamic measurement)		
-		PPPP.P:			Dynamic Pa
-		XX.X:				Outside Air Temperature °C
-		X:					fix 0 to 5   3=3D   4= 3D diff
-		T..T.TTT:		GNSS time in second with mili second resolution (corresponds to satellite data acquisition time)
-		AAAA.A:			GNSS altitude in meter
-		VV.VV:			GNSS ground speed m/s
-		VV.VV:			GNSS speed x or north
-		VV.VV:			GNSS speed y or east
-		VV.VV:			GNSS speed z or down
-		 */
-
-		sprintf(str,"$XCVFT,%.6f,%1.4f,%1.4f,%1.4f,%.6f,%3.1f,%3.1f,%3.1f,%.6f,%3.1f,%.6f,%3.1f,%.6f,%3.1f,%2.1f,%1d,%.3f,%4.1f,%2.2f,%2.2f,%2.2f,%2.2f",
-				accelTime, acc_x, acc_y, acc_z , gyroTime, gx, gy, gz, statTime, statP, teTime, teP, dynTime, dynP,  OATemp, fix, gnsstime ,gnssaltitude, gnssgroundspeed, gnssspeedx, gnssspeedy, gnssspeedz);
-
-	} else if( proto == P_XCVARIO ){
+	if( proto == P_XCVARIO ){
 		/*
 					Sentence has following format:
 					$PXCV,

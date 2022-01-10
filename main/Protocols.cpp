@@ -397,6 +397,33 @@ void Protocols::parseNMEA( const char *astr ){
 						ESP_LOGI(FNAME,"Volume change limit reached steps: %d volume: %.0f", steps, v );
 				}
 			}
+			if (str[3] == 'r') {  // nonstandard CAI 302 extension for Rotary Movement, e.g. for XCNav remote stick to navigate
+				char func;
+				int cs;
+				ESP_LOGI(FNAME,"Rotary move message: %s", str );
+				sscanf(str, "$g,r%c*%02x", &func, &cs);
+				int calc_cs=calcNMEACheckSum( str );
+				if( calc_cs != cs ){
+					ESP_LOGW(FNAME,"CS Error: in %s; %x != %x", str, cs, calc_cs );
+				}
+				else{
+					if( func == 's' ){
+						ESP_LOGI(FNAME,"Short Press");
+						ESPRotary::sendPress();
+						ESPRotary::sendRelease();
+					}else if( func == 'l' ){
+						ESP_LOGI(FNAME,"Long Press" );
+						ESPRotary::sendLongPress();
+						ESPRotary::sendRelease();
+					}else if( func == 'u' ){
+						ESP_LOGI(FNAME,"Up");
+						ESPRotary::sendUp(1);
+					}else if( func == 'd' ){
+						ESP_LOGI(FNAME,"Down");
+						ESPRotary::sendDown(1);
+					}
+				}
+			}
 		}
 		else if( !strncmp( str, "$PFLAU,", 6 )) {
 			Flarm::parsePFLAU( str );

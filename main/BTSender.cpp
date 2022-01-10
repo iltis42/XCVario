@@ -63,7 +63,7 @@ void BTSender::progress(){
 		return;
 	}
 	if (SerialBT->available() ) {
-		ESP_LOGI(FNAME,"BT RFCOMM RX");
+		// ESP_LOGI(FNAME,"BT RFCOMM RX");
 		SString rx;
 		while (SerialBT->available() && (rx.length() < SSTRLEN-1) ){
 			Router::pullMsg( bt_rx_q , rx );

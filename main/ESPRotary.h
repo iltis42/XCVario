@@ -35,6 +35,8 @@ public:
     static void sendRelease();
     static void sendPress();
     static void sendLongPress();
+    static void sendUp( int diff );
+    static void sendDown( int diff );
     static bool readSwitch();  // returns true if pressed
 
 private:

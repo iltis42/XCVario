@@ -424,15 +424,20 @@ static void grabMPU()
 
 static void grabMPU()
 {
-	err = MPU.acceleration(&accelRaw);  // fetch raw accel data from the registers
+	mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
+	mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
+	esp_err_t erracc = MPU.acceleration(&accelRaw);  // fetch raw accel data from the registers
 	if( err == ESP_OK ){
 		accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
 		accelTime = esp_timer_get_time()/1000000.0; // time in second
 	}
-	err = MPU.rotation(&gyroRaw);       // fetch raw gyro data from the registers
+	esp_err_t errgyr = MPU.rotation(&gyroRaw);       // fetch raw gyro data from the registers
 	if( err == ESP_OK ){
 		gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
 		gyroTime = esp_timer_get_time()/1000000.0; // time in second
+	}
+		if( erracc == ESP_OK && errgyr == ESP_OK) {
+		IMU::read();
 	}
 }
 

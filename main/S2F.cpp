@@ -48,27 +48,29 @@ void S2F::modifyPolar(){
 
 void S2F::recalculatePolar()
 {
-	ESP_LOGI(FNAME,"S2F::recalculatePolar() bugs: %f ", bugs.get() );
-    double v1=polar_speed1.get() / 3.6;
-    double v2=polar_speed2.get() / 3.6;
-    double v3=polar_speed3.get() / 3.6;
-    double w1=polar_sink1.get();
-    double w2=polar_sink2.get();
-    double w3=polar_sink3.get();
-    ESP_LOGI(FNAME,"v1/s1 %.1f/%.1f", v1*3.6, w1 );
-    ESP_LOGI(FNAME,"v2/s2 %.1f/%.1f", v2*3.6, w2 );
-    ESP_LOGI(FNAME,"v3/s3 %.1f/%.1f", v3*3.6, w3 );
-    // w= a0 + a1*v + a2*v^2   from ilec
-    // w=  c +  b*v +  a*v^2   from wiki
-	a2= ((v2-v3)*(w1-w3)+(v3-v1)*(w2-w3)) / (pow(v1,2)*(v2-v3)+pow(v2,2)*(v3-v1)+ pow(v3,2)*(v1-v2));
-	a1= (w2-w3-a2*(pow(v2,2)-pow(v3,2))) / (v2-v3);
-	a0= w3 -a2*pow(v3,2) - a1*v3;
-    a2 = a2/sqrt( (myballast +100.0)/100.0 );   // wingload  e.g. 100l @ 500 kg = 1.2 and G-Force
-    a0 = a0 * ((bugs.get() + 100.0) / 100.0);
-    a1 = a1 * ((bugs.get() + 100.0) / 100.0);
-    a2 = a2 * ((bugs.get() + 100.0) / 100.0);
-    ESP_LOGI(FNAME,"bugs:%d balo:%.1f%% a0=%f a1=%f  a2=%f s(80)=%f, s(160)=%f", (int)bugs.get(), myballast, a0, a1, a2, sink(80), sink(160) );
-    _stall_speed_ms = stall_speed.get()/3.6;
+	ESP_LOGI(FNAME, "S2F::recalculatePolar() bugs: %f ", bugs.get());
+	double v1 = polar_speed1.get() / 3.6;
+	double v2 = polar_speed2.get() / 3.6;
+	double v3 = polar_speed3.get() / 3.6;
+	double w1 = polar_sink1.get();
+	double w2 = polar_sink2.get();
+	double w3 = polar_sink3.get();
+	ESP_LOGI(FNAME, "v1/s1 %.1f/%.1f", v1 * 3.6, w1);
+	ESP_LOGI(FNAME, "v2/s2 %.1f/%.1f", v2 * 3.6, w2);
+	ESP_LOGI(FNAME, "v3/s3 %.1f/%.1f", v3 * 3.6, w3);
+	// w= a0 + a1*v + a2*v^2   from ilec
+	// w=  c +  b*v +  a*v^2   from wiki
+	a2 = ((v2 - v3) * (w1 - w3) + (v3 - v1) * (w2 - w3)) / (pow(v1, 2) * (v2 - v3) + pow(v2, 2) * (v3 - v1) + pow(v3, 2) * (v1 - v2));
+	a1 = (w2 - w3 - a2 * (pow(v2, 2) - pow(v3, 2))) / (v2 - v3);
+	a0 = w3 - a2 * pow(v3, 2) - a1 * v3;
+	const double loading_factor = sqrt((myballast + 100.0) / 100.0);
+	a0 = a0 * loading_factor;
+	a2 = a2 / loading_factor; // wingload  e.g. 100l @ 500 kg = 1.2 and G-Force
+	a0 = a0 * ((bugs.get() + 100.0) / 100.0);
+	a1 = a1 * ((bugs.get() + 100.0) / 100.0);
+	a2 = a2 * ((bugs.get() + 100.0) / 100.0);
+	ESP_LOGI(FNAME, "bugs:%d balo:%.1f%% a0=%f a1=%f  a2=%f s(80)=%f, s(160)=%f", (int)bugs.get(), myballast, a0, a1, a2, sink(80), sink(160));
+	_stall_speed_ms = stall_speed.get() / 3.6;
 }
 
 void S2F::setPolar()

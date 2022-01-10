@@ -53,7 +53,6 @@
 #include <coredump_to_server.h>
 #include "canbus.h"
 #include "Router.h"
-#include "UbloxGNSSdecode.h"
 
 #include "sdkconfig.h"
 #include <freertos/FreeRTOS.h>
@@ -134,9 +133,6 @@ DataMonitor DM;
 I2C_t& i2c = i2c1;  // i2c0 or i2c1
 I2C_t& i2c_0 = i2c0;  // i2c0 or i2c1
 MPU_t MPU;         // create an object
-mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
-mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
-esp_err_t err;				   // holds mpu reading status
 mpud::float_axes_t accelG;
 mpud::float_axes_t gyroDPS;
 mpud::float_axes_t accelG_Prev;
@@ -147,21 +143,11 @@ Compass *compass;
 
 BTSender btsender;
 
-static float accelTime; // time stamp for accels
-static float gyroTime;  // time stamp for gyros
-static float statTime; // time stamp for statP
-static float statP=0; // raw static pressure
-static float teTime; // time stamp for teP
-static float teP=0; // raw te pressure
-static float dynTime; // time stamp for dynP
-static float dynP=0; // raw dynamic pressure
-static float baroP=0; // filtered static pressure
-static float dynamicP; // filtered dynamic pressure
-static float OATemp; // OAT for pressure corrections (real or from standard atmosphere) 
+static float baroP=0; // barometric pressure
 static float temperature=15.0;
 static bool  validTemperature=false;
 static float battery=0.0;
-static char lb[250];
+static float dynamicP; // Pitot
 
 // global color variables for adaptable display variant
 uint8_t g_col_background=255; // black
@@ -200,9 +186,6 @@ int the_can_mode = CAN_MODE_MASTER;
 int active_screen = 0;  // 0 = Vario
 bool flarmDownload = false; // Flarm IGC download flag
 
-extern UbloxGnssDecoder s1UbloxGnssDecoder;
-extern UbloxGnssDecoder s2UbloxGnssDecoder;
-
 
 AdaptUGC *egl = 0;
 
@@ -214,21 +197,21 @@ bool do_factory_reset() {
 
 void drawDisplay(void *pvParameters){
 	while (1) {
-		if( Flarm::bincom ) {
-			if( flarmDownload == false ) {
-				flarmDownload = true;
-				display->clear();
-				Flarm::drawDownloadInfo();
-			}
-			// Flarm IGC download is running, display will be blocked, give Flarm
-			// download all cpu power.
-			vTaskDelay(20/portTICK_PERIOD_MS);
-			continue;
-		}
-		else if( flarmDownload == true ) {
-			flarmDownload = false;
-			display->clear();
-		}
+	  if( Flarm::bincom ) {
+	      if( flarmDownload == false ) {
+	        flarmDownload = true;
+	        display->clear();
+	        Flarm::drawDownloadInfo();
+	      }
+	      // Flarm IGC download is running, display will be blocked, give Flarm
+	      // download all cpu power.
+	      vTaskDelay(20/portTICK_PERIOD_MS);
+	      continue;
+	  }
+	  else if( flarmDownload == true ) {
+	    flarmDownload = false;
+	    display->clear();
+	  }
 		// TickType_t dLastWakeTime = xTaskGetTickCount();
 		if( inSetup != true ) {
 			float t=OAT.get();
@@ -366,13 +349,13 @@ void doAudio(){
 void audioTask(void *pvParameters){
 	while (1)
 	{
-		TickType_t xLastWakeTime = xTaskGetTickCount();
-		if( Flarm::bincom ) {
-			// Flarm IGC download is running, audio will be blocked, give Flarm
-			// download all cpu power.
-			vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
-			continue;
-		}
+	  TickType_t xLastWakeTime = xTaskGetTickCount();
+	  if( Flarm::bincom ) {
+      // Flarm IGC download is running, audio will be blocked, give Flarm
+      // download all cpu power.
+	    vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
+	    continue;
+	  }
 		doAudio();
 		Router::routeXCV();
 		if( uxTaskGetStackHighWaterMark( apid )  < 512 )
@@ -380,7 +363,7 @@ void audioTask(void *pvParameters){
 		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
 	}
 }
-/*
+
 static void grabMPU()
 {
 	mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
@@ -420,22 +403,6 @@ static void grabMPU()
 	gyroDPS_Prev = gyroDPS;
 	accelG_Prev = accelG;
 }
- */
-
-static void grabMPU()
-{
-	err = MPU.acceleration(&accelRaw);  // fetch raw accel data from the registers
-	if( err == ESP_OK ){
-		accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
-		accelTime = esp_timer_get_time()/1000000.0; // time in second
-	}
-	err = MPU.rotation(&gyroRaw);       // fetch raw gyro data from the registers
-	if( err == ESP_OK ){
-		gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
-		gyroTime = esp_timer_get_time()/1000000.0; // time in second
-	}
-}
-
 
 static void lazyNvsCommit()
 {
@@ -448,6 +415,9 @@ static void lazyNvsCommit()
 static void toyFeed()
 {
 	xSemaphoreTake(xMutex,portMAX_DELAY );
+	// reduce also messages from 10 per second to 5 per second to reduce load in XCSoar
+	// maybe just 1 or 2 per second
+	static char lb[150];
 
 	if( nmea_protocol.get() == BORGELT ) {
 		OV.sendNMEA( P_BORGELT, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altSTD, validTemperature  );
@@ -463,7 +433,7 @@ static void toyFeed()
 		OV.sendNMEA( P_XCVARIO, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altitude.get(), validTemperature,
 				-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
 	}
-	else if (nmea_protocol.get() != XCVARIOFT )
+	else
 		ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
 	xSemaphoreGive(xMutex);
 }
@@ -528,68 +498,23 @@ void readSensors(void *pvParameters){
 	{
 		count++;
 		TickType_t xLastWakeTime = xTaskGetTickCount();
-
-		xSemaphoreTake(xMutex,portMAX_DELAY );	
-
-		// get accels and gyros raw data
-		if( haveMPU )
+		if( haveMPU  )  // 3th Generation HW, MPU6050 avail and feature enabled
+		{
 			grabMPU();
-
+		}
 		bool ok=false;
 		float p = 0;
-
-		// get raw static pressure
-		p = baroSensor->readPressure(ok);
-		if ( ok ) {
-			statP = p;
-			statTime = esp_timer_get_time()/1000000.0; // time in second
-			baroP = p;
-		}
-
-		// get raw te pressure
-		p = teSensor->readPressure(ok);
-
-		if ( ok ) {
-			teP = p;
-			teTime = esp_timer_get_time()/1000000.0; // time in second
-		}
-
-		// get raw dynamic pressure
 		if( asSensor )
-			p = asSensor->readPascal(0, ok);
-		if( ok ) {
-			dynP = p;
-			dynTime = esp_timer_get_time()/1000000.0; // time in second
-			dynamicP = 0;
-			if (p > 60 )
-				dynamicP = p;
-		}
-
+			p = asSensor->readPascal(60, ok);
+		if( ok )
+			dynamicP = p;
+		float iasraw = Atmosphere::pascal2kmh( dynamicP );
+		// ESP_LOGI("FNAME","P: %f  IAS:%f", dynamicP, iasraw );
 		float T=OAT.get();
 		if( !validTemperature ) {
 			T= 15 - ( (altitude.get()/100) * 0.65 );
 			// ESP_LOGW(FNAME,"T invalid, using 15 deg");
 		}
-		OATemp = T;
-
-		// GNSS data from S1 interface
-		const gnss_data_t *gnss1 = s1UbloxGnssDecoder.getGNSSData(1);
-		// GNSS data from S2 interface
-		const gnss_data_t *gnss2 = s2UbloxGnssDecoder.getGNSSData(2);
-
-		const gnss_data_t *chosenGnss = (gnss2->fix >= gnss1->fix) ? gnss2 : gnss1;
-
-		// broadcast raw sensor data
-		if( nmea_protocol.get() == XCVARIOFT ) {
-			OV.sendNMEA( P_XCVARIOFT, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altitude.get(), validTemperature,
-					-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z, accelTime, gyroTime, statP, statTime, teP, teTime, dynP, dynTime, OATemp,
-					chosenGnss->fix, chosenGnss->time, chosenGnss->coordinates.altitude, chosenGnss->speed.ground, chosenGnss->speed.x, chosenGnss->speed.y, chosenGnss->speed.z );
-		}
-		xSemaphoreGive(xMutex);		
-
-		float iasraw = Atmosphere::pascal2kmh( dynamicP );
-		// ESP_LOGI("FNAME","P: %f  IAS:%f", dynamicP, iasraw );		
-
 		float tasraw = 0;
 		if( baroP != 0 )
 			tasraw =  Atmosphere::TAS( iasraw , baroP, T);  // True airspeed
@@ -615,7 +540,9 @@ void readSensors(void *pvParameters){
 		}
 
 		if (FLAP) { FLAP->progress(); }
-
+		xSemaphoreTake(xMutex,portMAX_DELAY );
+		baroP = baroSensor->readPressure(ok);   // 10x per second
+		xSemaphoreGive(xMutex);
 		// ESP_LOGI(FNAME,"Baro Pressure: %4.3f", baroP );
 		float altSTD = 0;
 		if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
@@ -624,7 +551,7 @@ void readSensors(void *pvParameters){
 			altSTD = baroSensor->calcAVGAltitudeSTD( baroP );
 		float new_alt = 0;
 		if( alt_select.get() == AS_TE_SENSOR ) // TE
-			new_alt = bmpVario.readAVGalt();
+				new_alt = bmpVario.readAVGalt();
 		else if( alt_select.get() == AS_BARO_SENSOR  || alt_select.get() == AS_EXTERNAL ){ // Baro or external
 			if(  alt_unit.get() == ALT_UNIT_FL ) { // FL, always standard
 				new_alt = altSTD;
@@ -951,7 +878,7 @@ void sensor(void *args){
 		MPU.setSampleRate(50);  // in (Hz)
 		MPU.setAccelFullScale(mpud::ACCEL_FS_8G);
 		MPU.setGyroFullScale(mpud::GYRO_FS_500DPS);
-		MPU.setDigitalLowPassFilter(mpud::DLPF_10HZ);  // smoother data
+		MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
 
 		mpud::raw_axes_t gb = gyro_bias.get();
 		mpud::raw_axes_t ab = accl_bias.get();

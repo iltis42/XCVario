@@ -188,16 +188,24 @@ SetupNG<int>  			rot_default( "ROTARY_DEFAULT", 0 );
 SetupNG<int>  			serial1_speed( "SERIAL2_SPEED", 3 );   // tag will stay SERIAL2 from historical reason
 SetupNG<int>  			serial1_pins_twisted( "SERIAL2_PINS", 0 );
 SetupNG<int>  			serial1_rxloop( "SERIAL2_RXLOOP", 0 );
-SetupNG<int>  			serial1_tx( "SERIAL2_TX", RT_WIRELESS );      // Just BT device = XCSoar to control FLARM
+SetupNG<int>  			serial1_tx( "SERIAL2_TX", (1UL << RT_XCVARIO) | (1UL << RT_WIRELESS) );   //  Default Wireless and local XCVario for Flarm Warnings, bincom
+SetupNG<int>  			serial1_tx_xcv( "S2_TX_XCV", 1, false, SYNC_NONE, VOLATILE  );
+SetupNG<int>  			serial1_tx_wireless( "S2_TX_WL", 1, false, SYNC_NONE, VOLATILE );
+SetupNG<int>  			serial1_tx_S2( "S2_TX_S2", 0, false, SYNC_NONE, VOLATILE );
+SetupNG<int>  			serial1_tx_CAN( "S2_TX_CAN", 0, false, SYNC_NONE, VOLATILE );
 SetupNG<int>  			serial1_tx_inverted( "SERIAL2_TX_INV", RS232_INVERTED );
 SetupNG<int>  			serial1_rx_inverted( "SERIAL2_RX_INV", RS232_INVERTED );
-SetupNG<int>  			serial1_tx_enable( "SER1_TX_ENA", RT_XCVARIO );
+SetupNG<int>  			serial1_tx_enable( "SER1_TX_ENA", 1 );
 SetupNG<int>  			serial2_speed( "SERIAL1_SPEED", 3 );
 SetupNG<int>  			serial2_pins_twisted( "SERIAL1_PINS", 0 );
-SetupNG<int>  			serial2_tx( "SERIAL1_TX", RT_XCVARIO );     //  BT device and XCVario, Serial2 is foreseen for Protocols or Kobo
+SetupNG<int>  			serial2_tx( "SERIAL1_TX", (1UL << RT_XCVARIO) | (1UL << RT_WIRELESS) );     //  BT device and XCVario, Serial2 is foreseen for Protocols or Kobo
+SetupNG<int>  			serial2_tx_xcv( "S1_TX_XCV", 1, false, SYNC_NONE, VOLATILE );
+SetupNG<int>  			serial2_tx_wireless( "S1_TX_WL", 0, false, SYNC_NONE, VOLATILE );
+SetupNG<int>  			serial2_tx_S1( "S1_TX_S1", 0, false, SYNC_NONE, VOLATILE );
+SetupNG<int>  			serial2_tx_CAN( "S1_TX_CAN", 0,false, SYNC_NONE, VOLATILE );
 SetupNG<int>  			serial2_tx_inverted( "SERIAL1_TX_INV", RS232_INVERTED );
 SetupNG<int>  			serial2_rx_inverted( "SERIAL1_RX_INV", RS232_INVERTED );
-SetupNG<int>  			serial2_tx_enable( "SER2_TX_ENA", RT_XCVARIO );
+SetupNG<int>  			serial2_tx_enable( "SER2_TX_ENA", 1 );
 SetupNG<int>  			software_update( "SOFTWARE_UPDATE", 0 );
 SetupNG<int>  			battery_display( "BAT_DISPLAY", 0 );
 SetupNG<int>  			airspeed_mode( "AIRSPEED_MODE", MODE_IAS );
@@ -300,7 +308,9 @@ SetupNG<int>        	compass_dev_auto("COMPASS_DEV", 0 );
 SetupNG<float>       	max_circle_wind_diff("CI_WINDDM", 60.0 );
 SetupNG<float>       	circle_wind_lowpass("CI_WINDLOW", 5 );
 SetupNG<int> 			can_speed( "CANSPEED", CAN_SPEED_OFF );
-SetupNG<int> 			can_tx( "CANTX", RT_XCVARIO );
+SetupNG<int> 			can_tx_xcv( "CANTX_XC", 0 );
+SetupNG<int> 			wl_tx_xcv( "WLTX_XC", 1 );
+SetupNG<int> 			wl_tx_CAN( "WLTX_CAN", 0 );
 SetupNG<int> 			can_mode( "CANMOD", CAN_MODE_STANDALONE );
 SetupNG<float> 			master_xcvario( "MSXCV", 0 );
 SetupNG<int> 			master_xcvario_lock( "MSXCVL", 0 );

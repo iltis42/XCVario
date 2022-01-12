@@ -38,6 +38,7 @@
 #include <sensor.h>
 #include <cstring>
 #include <string>
+#include "SetupNG.h"
 
 
 SetupMenuSelect * audio_range_sm = 0;
@@ -59,6 +60,39 @@ int compass_ena( SetupMenuSelect * p ){
 	return 0;
 }
 
+void init_routing(){
+	uint32_t s1rt = (uint32_t)serial1_tx.get();
+	serial1_tx_xcv.set( (s1rt >> (RT_XCVARIO))& 1 );
+	serial1_tx_wireless.set( (s1rt >> (RT_WIRELESS))& 1 );
+	serial1_tx_S2.set( (s1rt >> (RT_S2))& 1 );
+	serial1_tx_CAN.set( (s1rt >> (RT_CAN))& 1 );
+
+	uint32_t s2rt = (uint32_t)serial2_tx.get();
+	serial2_tx_xcv.set( (s2rt >> (RT_XCVARIO))& 1 );
+	serial2_tx_wireless.set( (s2rt >> (RT_WIRELESS))& 1 );
+	serial2_tx_S1.set( (s2rt >> (RT_S2))& 1 );
+	serial2_tx_CAN.set( (s2rt >> (RT_CAN))& 1 );
+}
+
+int update_routing_s1( SetupMenuSelect * p ){
+	uint32_t routing =  (uint32_t)serial1_tx_xcv.get()       << (RT_XCVARIO) |
+			           ( (uint32_t)serial1_tx_wireless.get() << (RT_WIRELESS) ) |
+					   ( (uint32_t)serial1_tx_S2.get()       << (RT_S2) ) |
+					   ( (uint32_t)serial1_tx_CAN.get()      << (RT_CAN) );
+	serial1_tx.set( routing );
+	return 0;
+}
+
+int update_routing_s2( SetupMenuSelect * p ){
+	uint32_t routing =  (uint32_t)serial2_tx_xcv.get()       << (RT_XCVARIO) |
+			           ( (uint32_t)serial2_tx_wireless.get() << (RT_WIRELESS) ) |
+					   ( (uint32_t)serial2_tx_S1.get()       << (RT_S1) ) |
+					   ( (uint32_t)serial2_tx_CAN.get()      << (RT_CAN) );
+	serial2_tx.set( routing );
+	return 0;
+}
+
+
 int update_s2f_speed(SetupMenuValFloat * p)
 {
 	Switch::setCruiseSpeed( Units::Airspeed2Kmh( s2f_speed.get() ) );
@@ -66,7 +100,7 @@ int update_s2f_speed(SetupMenuValFloat * p)
 }
 
 
-int update_rentryf(SetupMenuValFloat * p)
+int update_rentry(SetupMenuValFloat * p)
 {
 	ESP_LOGI(FNAME,"update_rentry() entries: %d, vu:%s ", audio_range_sm->numEntries(), Units::VarioUnit() );
 	static char rentry1[20];
@@ -93,7 +127,7 @@ int update_rentryf(SetupMenuValFloat * p)
 }
 
 int update_rentrys(SetupMenuSelect * p){
-	update_rentryf(0);
+	update_rentry(0);
 	return 0;
 }
 
@@ -308,6 +342,7 @@ void SetupMenu::begin( IpsDisplay* display, PressureSensor * bmp, AnalogInput *a
 	_adc = adc;
 	setup();
 	audio_volume.set( default_volume.get() );
+	init_routing();
 }
 
 void SetupMenu::catchFocus( bool activate ){
@@ -546,7 +581,7 @@ void SetupMenu::setup( )
 		// Vario
 		SetupMenu * va = new SetupMenu( "Vario and S2F" );
 		MenuEntry* vae = mm->addEntry( va );
-		SetupMenuValFloat * vga = new SetupMenuValFloat( "Range", "",	1.0, 30.0, 1, update_rentryf, true, &range );
+		SetupMenuValFloat * vga = new SetupMenuValFloat( "Range", "",	1.0, 30.0, 1, update_rentry, true, &range );
 		vga->setHelp(PROGMEM"Upper and lower value for Vario graphic display region");
 		vga->setPrecision( 0 );
 		vae->addEntry( vga );
@@ -1090,10 +1125,10 @@ void SetupMenu::setup( )
 		compassWindME->addEntry( windlog );
 
 
-		SetupMenu * wireless = new SetupMenu( "Wireless" );
+		SetupMenu * wireless = new SetupMenu( PROGMEM "Wireless" );
 		MenuEntry* wirelessM = opt->addEntry( wireless );
 
-		SetupMenuSelect * btm = new SetupMenuSelect( "Wireless", true, 0, true, &wireless_type );
+		SetupMenuSelect * btm = new SetupMenuSelect( PROGMEM "Wireless", true, 0, true, &wireless_type );
 		btm->setHelp( PROGMEM "Activate wireless interface type to connect navigation devices, or to another XCVario as client");
 		btm->addEntry( "Disable");
 		btm->addEntry( "Bluetooth");
@@ -1103,18 +1138,39 @@ void SetupMenu::setup( )
 		// btm->addEntry( "Wireless Master");
 		wirelessM->addEntry( btm );
 
-		SetupMenuValFloat *wifip = new SetupMenuValFloat( "WIFI Power", "%", 10.0, 100.0, 5.0, update_wifi_power, false, &wifi_max_power );
+		SetupMenu * wlrt = new SetupMenu( PROGMEM "WL Routing" );
+		wirelessM->addEntry( wlrt );
+		wlrt->setHelp( PROGMEM "Select data source that is routed from/to Wireless BT or WIFI interface");
+
+		SetupMenuSelect * wloutxcv = new SetupMenuSelect( PROGMEM "XCVario", false, 0, true, &wl_tx_xcv );
+		wloutxcv->addEntry( PROGMEM "Disable");
+		wloutxcv->addEntry( PROGMEM "Enable");
+		wlrt->addEntry( wloutxcv );
+		SetupMenuSelect * wloutxs1 = new SetupMenuSelect( PROGMEM "S1-RS232", false, update_routing_s1, true, &serial1_tx_wireless );
+		wloutxs1->addEntry( PROGMEM "Disable");
+		wloutxs1->addEntry( PROGMEM "Enable");
+		wlrt->addEntry( wloutxs1 );
+		SetupMenuSelect * wloutxs2 = new SetupMenuSelect( PROGMEM "S2-RS233", false, update_routing_s2, true, &serial2_tx_wireless );
+		wloutxs2->addEntry( PROGMEM "Disable");
+		wloutxs2->addEntry( PROGMEM "Enable");
+		wlrt->addEntry( wloutxs2 );
+		SetupMenuSelect * wloutxcan = new SetupMenuSelect( PROGMEM "S2-CAN", false, 0, true, &wl_tx_CAN );
+		wloutxcan->addEntry( PROGMEM "Disable");
+		wloutxcan->addEntry( PROGMEM "Enable");
+		wlrt->addEntry( wloutxcan );
+
+		SetupMenuValFloat *wifip = new SetupMenuValFloat( PROGMEM "WIFI Power", "%", 10.0, 100.0, 5.0, update_wifi_power, false, &wifi_max_power );
 		wifip->setPrecision(0);
 		wirelessM->addEntry( wifip );
 		wifip->setHelp(PROGMEM "Maximum Wifi Power to be used 10..100% or 2..20dBm");
 
-		SetupMenuSelect * wifimal = new SetupMenuSelect( "Lock Master", false, master_xcv_lock, true, &master_xcvario_lock );
+		SetupMenuSelect * wifimal = new SetupMenuSelect( PROGMEM "Lock Master", false, master_xcv_lock, true, &master_xcvario_lock );
 		wifimal->setHelp( PROGMEM "In wireless client role, lock the scanned master XCVario ID above to this client");
 		wifimal->addEntry( "Unlock");
 		wifimal->addEntry( "Lock");
 		wirelessM->addEntry( wifimal );
 
-		SetupMenuSelect * datamon = new SetupMenuSelect( "Monitor", false, data_mon, true, &data_monitor );
+		SetupMenuSelect * datamon = new SetupMenuSelect( PROGMEM "Monitor", false, data_mon, true, &data_monitor );
 		datamon->setHelp( PROGMEM "Short press button to start/pause, long press to terminate data monitor", 260);
 		datamon->addEntry( "Disable");
 		datamon->addEntry( "Bluetooth");
@@ -1424,14 +1480,26 @@ void SetupMenu::setup( )
 		s1in->addEntry( "Disable");     // 0
 		s1in->addEntry( "Enable");      // 1
 
-		SetupMenuSelect * s1out = new SetupMenuSelect( PROGMEM "Routing", false, 0, true, &serial1_tx );
+		SetupMenu * s1out = new SetupMenu( PROGMEM "S1 Routing");
 		rs232->addEntry( s1out );
-		s1out->setHelp( "Select devices routed to serial interface S1");
-		s1out->addEntry( "Disable all");
-		s1out->addEntry( "XCVario");                // 1    XCVario NMEA Data
-		s1out->addEntry( "Wireless-XCSoar");        // 2    XCSoar Data
-		s1out->addEntry( "WL-XCSoar, XCV");         // 3
-		s1out->addEntry( "S2-XCSoar");              // 4
+		s1out->setHelp( PROGMEM "Select data source to be routed from/to serial interface S1");
+
+		SetupMenuSelect * s1outxcv = new SetupMenuSelect( PROGMEM "XCVario", false, update_routing_s1, true, &serial1_tx_xcv );
+		s1outxcv->addEntry( "Disable");
+		s1outxcv->addEntry( "Enable");
+		s1out->addEntry( s1outxcv );
+		SetupMenuSelect * s1outwl = new SetupMenuSelect( PROGMEM  "Wireless", false, update_routing_s1, true, &serial1_tx_wireless );
+		s1outwl->addEntry( "Disable");
+		s1outwl->addEntry( "Enable");
+		s1out->addEntry( s1outwl );
+		SetupMenuSelect * s1outs1 = new SetupMenuSelect( PROGMEM  "S2-RS232", false, update_routing_s1, true, &serial1_tx_S2 );
+		s1outs1->addEntry( "Disable");
+		s1outs1->addEntry( "Enable");
+		s1out->addEntry( s1outs1 );
+		SetupMenuSelect * s1outcan = new SetupMenuSelect( PROGMEM "S2-CAN", false, update_routing_s1, true, &serial1_tx_CAN );
+		s1outcan->addEntry( "Disable");
+		s1outcan->addEntry( "Enable");
+		s1out->addEntry( s1outcan );
 
 		SetupMenuSelect * stxi = new SetupMenuSelect( PROGMEM "TX Inversion", true , 0, true, &serial1_tx_inverted );
 		rs232->addEntry( stxi );
@@ -1472,15 +1540,27 @@ void SetupMenu::setup( )
 			s2sp2->addEntry( "57600 baud");
 			s2sp2->addEntry( "115200 baud");
 
-			SetupMenuSelect * s1out2 = new SetupMenuSelect( PROGMEM "Routing", false, 0, true, &serial2_tx );
-			rs232_2->addEntry( s1out2 );
-			s1out2->setHelp( "Select devices routed to serial interface S2", 220 );
-			s1out2->addEntry( "Disable all");
-			s1out2->addEntry( "XCVario");                       // 1    XCVario NMEA Data bidir
-			s1out2->addEntry( "Wireless-XCSoar");               // 2    XCSoar Data bidir
-			s1out2->addEntry( "WL-XCSoar, XCV");            // 3
-			s1out2->addEntry( "S1");                         // 4
-			s1out2->addEntry( "XCVario, S1");                // 5
+			SetupMenu * s2out = new SetupMenu( PROGMEM "S2 Routing" );
+			s2out->setHelp( PROGMEM "Select data source to be routed from/to serial interface S2");
+			rs232_2->addEntry( s2out );
+
+			SetupMenuSelect * s2outxcv = new SetupMenuSelect( PROGMEM "XCVario", false, update_routing_s2, true, &serial2_tx_xcv );
+			s2outxcv->addEntry( "Disable");
+			s2outxcv->addEntry( "Enable");
+			s2out->addEntry( s2outxcv );
+			SetupMenuSelect * s2outwl = new SetupMenuSelect( PROGMEM  "Wireless", false, update_routing_s2, true, &serial2_tx_wireless );
+			s2outwl->addEntry( "Disable");
+			s2outwl->addEntry( "Enable");
+			s2out->addEntry( s2outwl );
+			SetupMenuSelect * s2outs2 = new SetupMenuSelect( PROGMEM  "S1-RS232", false, update_routing_s2, true, &serial2_tx_S1 );
+			s2outs2->addEntry( "Disable");
+			s2outs2->addEntry( "Enable");
+			s2out->addEntry( s2outs2 );
+			SetupMenuSelect * s2outcan = new SetupMenuSelect( PROGMEM "S2-CAN", false, update_routing_s2, true, &serial2_tx_CAN );
+			s2outcan->addEntry( "Disable");
+			s2outcan->addEntry( "Enable");
+			s2out->addEntry( s2outcan );
+
 
 			SetupMenuSelect * stxi2 = new SetupMenuSelect( PROGMEM "TX Inversion", true , 0, true, &serial2_tx_inverted );
 			rs232_2->addEntry( stxi2 );
@@ -1518,11 +1598,26 @@ void SetupMenu::setup( )
 		canmode->addEntry( "500 kbit");
 		canmode->addEntry( "1000 kbit");
 
-		SetupMenuSelect * canrt = new SetupMenuSelect( PROGMEM "Routing", false , 0, false, &can_tx );
+		SetupMenu * canrt = new SetupMenu( PROGMEM "CAN Routing" );
 		can->addEntry( canrt );
 		canrt->setHelp( PROGMEM "Select data source that is routed from/to CAN interface");
-		canrt->addEntry( "Disable");
-		canrt->addEntry( "XCVario");
+
+		SetupMenuSelect * canoutxcv = new SetupMenuSelect( PROGMEM "XCVario", false, 0, true, &can_tx_xcv );
+		canoutxcv->addEntry( "Disable");
+		canoutxcv->addEntry( "Enable");
+		canrt->addEntry( canoutxcv );
+		SetupMenuSelect * canoutwl = new SetupMenuSelect( PROGMEM "Wireless", false, 0, true, &wl_tx_CAN );
+		canoutwl->addEntry( "Disable");
+		canoutwl->addEntry( "Enable");
+		canrt->addEntry( canoutwl );
+		SetupMenuSelect * canouts1 = new SetupMenuSelect( PROGMEM "S1-RS232", false, update_routing_s1, true, &serial1_tx_CAN );
+		canouts1->addEntry( "Disable");
+		canouts1->addEntry( "Enable");
+		canrt->addEntry( canouts1 );
+		SetupMenuSelect * canouts2 = new SetupMenuSelect( PROGMEM "S2-RS232", false, update_routing_s2, true, &serial2_tx_CAN );
+		canouts2->addEntry( "Disable");
+		canouts2->addEntry( "Enable");
+		canrt->addEntry( canouts2 );
 
 		SetupMenuSelect * devmod = new SetupMenuSelect( PROGMEM "Mode", true , 0, false, &can_mode );
 		can->addEntry( devmod );

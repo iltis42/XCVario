@@ -11,7 +11,7 @@
 class Flarm {
 public:
 	static void setDisplay( AdaptUGC *theUcg ) { ucg = theUcg; };
-	static void parsePFLAE( const char *pflaa );
+	static void parsePFLAE( const char *pflae );
 	static void parsePFLAU( const char *pflau );
 	static void parsePFLAA( const char *pflaa );
 	static void parsePFLAX( const char *pflax, int port );

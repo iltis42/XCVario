@@ -152,7 +152,7 @@ void Router::routeXCV(){
 					// ESP_LOGI(FNAME,"XCV data forwarded to S2 device, %d bytes", xcv.length() );
 				}
 			}
-			if( rt_can_xcv.get() && can_speed.get() ){
+			if( rt_can_xcv.get() && can_speed.get() && (strncmp( xcv.c_str(), "$PXCV", 5 ) != 0) ){ // don't route PXCV to master, has its own
 				if( forwardMsg( xcv, can_tx_q ) ){
 					// ESP_LOGI(FNAME,"XCV data forwarded to CAN bus, %d bytes", xcv.length() );
 				}
@@ -165,7 +165,7 @@ void Router::routeXCV(){
 void Router::routeS1(){
 	SString s1;
 	while( pullMsg( s1_rx_q, s1) ){
-		ESP_LOGI(FNAME,"routeS1 RX %d bytes, Q:%d  B:%d", s1.length(), s1_rx_q.numElements(), Flarm::bincom );
+		// ESP_LOGI(FNAME,"routeS1 RX %d bytes, Q:%d  B:%d", s1.length(), s1_rx_q.numElements(), Flarm::bincom );
 		// ESP_LOG_BUFFER_HEXDUMP(FNAME,s1.c_str(),s1.length(), ESP_LOG_INFO);
 
 		if( rt_s1_wl.get() && (wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE) ){
@@ -180,7 +180,7 @@ void Router::routeS1(){
 		}
 		if( rt_s1_can.get() && can_speed.get() ){
 			if( forwardMsg( s1, can_tx_q )){
-				ESP_LOGI(FNAME,"S1 RX %d bytes forwarded to CAN bus", s1.length() );
+				// ESP_LOGI(FNAME,"S1 RX %d bytes forwarded to CAN bus", s1.length() );
 			}
 		}
 		if( rt_s1_s2.get() && serial2_speed.get() ){

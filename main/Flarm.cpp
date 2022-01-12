@@ -228,10 +228,11 @@ void Flarm::parseGPGGA( const char *gpgga ) {
 	timeout = 10;
 }
 
+// parsePFLAE $PFLAE,A,0,0*33
 
 
 void Flarm::parsePFLAE( const char *pflae ) {
-	ESP_LOGI(FNAME,"parsePFLAE");
+	ESP_LOGI(FNAME,"parsePFLAE %s", pflae );
 	int cs;
 	int calc_cs=Protocols::calcNMEACheckSum( pflae );
 	cs = Protocols::getNMEACheckSum( pflae );
@@ -240,6 +241,11 @@ void Flarm::parsePFLAE( const char *pflae ) {
 		return;
 	}
 	timeout = 10;
+	const char* pf = "$PFLAE,A,0,0";
+	const unsigned short len = strlen(pf);
+	if( !strncmp( pflae, pf, len )  && !SetupCommon::isClient() ){
+		ESP_LOGI(FNAME,"got PFLAE");
+	}
 }
 
 
@@ -259,8 +265,6 @@ void Flarm::parsePFLAU( const char *pflau ) {
 	_tick=0;
 	timeout = 10;
 }
-
-
 
 void Flarm::parsePFLAX( const char *msg, int port ) {
 	// ESP_LOGI(FNAME,"parsePFLAX");

@@ -32,8 +32,8 @@ public:
 	static int calcNMEACheckSum(const char *nmea);
 	static int getNMEACheckSum(const char *nmea);
 
-
 private:
+	static void ageBincom();
 	static S2F *   _s2f;
 	static float   _mc_prev;
 	static float   _qnh_prev;

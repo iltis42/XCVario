@@ -62,32 +62,32 @@ int compass_ena( SetupMenuSelect * p ){
 
 void init_routing(){
 	uint32_t s1rt = (uint32_t)serial1_tx.get();
-	serial1_tx_xcv.set( (s1rt >> (RT_XCVARIO))& 1 );
-	serial1_tx_wireless.set( (s1rt >> (RT_WIRELESS))& 1 );
-	serial1_tx_S2.set( (s1rt >> (RT_S2))& 1 );
-	serial1_tx_CAN.set( (s1rt >> (RT_CAN))& 1 );
+	rt_s1_xcv.set( (s1rt >> (RT_XCVARIO))& 1 );
+	rt_s1_wl.set( (s1rt >> (RT_WIRELESS))& 1 );
+	rt_s1_s2.set( (s1rt >> (RT_S2))& 1 );
+	rt_s1_can.set( (s1rt >> (RT_CAN))& 1 );
 
 	uint32_t s2rt = (uint32_t)serial2_tx.get();
-	serial2_tx_xcv.set( (s2rt >> (RT_XCVARIO))& 1 );
-	serial2_tx_wireless.set( (s2rt >> (RT_WIRELESS))& 1 );
-	serial2_tx_S1.set( (s2rt >> (RT_S2))& 1 );
-	serial2_tx_CAN.set( (s2rt >> (RT_CAN))& 1 );
+	rt_s2_xcv.set( (s2rt >> (RT_XCVARIO))& 1 );
+	rt_s2_wl.set( (s2rt >> (RT_WIRELESS))& 1 );
+	rt_s1_s2.set( (s2rt >> (RT_S2))& 1 );
+	rt_s2_can.set( (s2rt >> (RT_CAN))& 1 );
 }
 
 int update_routing_s1( SetupMenuSelect * p ){
-	uint32_t routing =  (uint32_t)serial1_tx_xcv.get()       << (RT_XCVARIO) |
-			           ( (uint32_t)serial1_tx_wireless.get() << (RT_WIRELESS) ) |
-					   ( (uint32_t)serial1_tx_S2.get()       << (RT_S2) ) |
-					   ( (uint32_t)serial1_tx_CAN.get()      << (RT_CAN) );
+	uint32_t routing =  (uint32_t)rt_s1_xcv.get()       << (RT_XCVARIO) |
+			           ( (uint32_t)rt_s1_wl.get() << (RT_WIRELESS) ) |
+					   ( (uint32_t)rt_s1_s2.get()       << (RT_S2) ) |
+					   ( (uint32_t)rt_s1_can.get()      << (RT_CAN) );
 	serial1_tx.set( routing );
 	return 0;
 }
 
 int update_routing_s2( SetupMenuSelect * p ){
-	uint32_t routing =  (uint32_t)serial2_tx_xcv.get()       << (RT_XCVARIO) |
-			           ( (uint32_t)serial2_tx_wireless.get() << (RT_WIRELESS) ) |
-					   ( (uint32_t)serial2_tx_S1.get()       << (RT_S1) ) |
-					   ( (uint32_t)serial2_tx_CAN.get()      << (RT_CAN) );
+	uint32_t routing =  (uint32_t)rt_s2_xcv.get()       << (RT_XCVARIO) |
+			           ( (uint32_t)rt_s2_wl.get() << (RT_WIRELESS) ) |
+					   ( (uint32_t)rt_s1_s2.get()       << (RT_S1) ) |
+					   ( (uint32_t)rt_s2_can.get()      << (RT_CAN) );
 	serial2_tx.set( routing );
 	return 0;
 }
@@ -1142,19 +1142,19 @@ void SetupMenu::setup( )
 		wirelessM->addEntry( wlrt );
 		wlrt->setHelp( PROGMEM "Select data source that is routed from/to Wireless BT or WIFI interface");
 
-		SetupMenuSelect * wloutxcv = new SetupMenuSelect( PROGMEM "XCVario", false, 0, true, &wl_tx_xcv );
+		SetupMenuSelect * wloutxcv = new SetupMenuSelect( PROGMEM "XCVario", false, 0, true, &rt_xcv_wl );
 		wloutxcv->addEntry( PROGMEM "Disable");
 		wloutxcv->addEntry( PROGMEM "Enable");
 		wlrt->addEntry( wloutxcv );
-		SetupMenuSelect * wloutxs1 = new SetupMenuSelect( PROGMEM "S1-RS232", false, update_routing_s1, true, &serial1_tx_wireless );
+		SetupMenuSelect * wloutxs1 = new SetupMenuSelect( PROGMEM "S1-RS232", false, update_routing_s1, true, &rt_s1_wl );
 		wloutxs1->addEntry( PROGMEM "Disable");
 		wloutxs1->addEntry( PROGMEM "Enable");
 		wlrt->addEntry( wloutxs1 );
-		SetupMenuSelect * wloutxs2 = new SetupMenuSelect( PROGMEM "S2-RS233", false, update_routing_s2, true, &serial2_tx_wireless );
+		SetupMenuSelect * wloutxs2 = new SetupMenuSelect( PROGMEM "S2-RS233", false, update_routing_s2, true, &rt_s2_wl );
 		wloutxs2->addEntry( PROGMEM "Disable");
 		wloutxs2->addEntry( PROGMEM "Enable");
 		wlrt->addEntry( wloutxs2 );
-		SetupMenuSelect * wloutxcan = new SetupMenuSelect( PROGMEM "S2-CAN", false, 0, true, &wl_tx_CAN );
+		SetupMenuSelect * wloutxcan = new SetupMenuSelect( PROGMEM "S2-CAN", false, 0, true, &rt_wl_can );
 		wloutxcan->addEntry( PROGMEM "Disable");
 		wloutxcan->addEntry( PROGMEM "Enable");
 		wlrt->addEntry( wloutxcan );
@@ -1484,19 +1484,19 @@ void SetupMenu::setup( )
 		rs232->addEntry( s1out );
 		s1out->setHelp( PROGMEM "Select data source to be routed from/to serial interface S1");
 
-		SetupMenuSelect * s1outxcv = new SetupMenuSelect( PROGMEM "XCVario", false, update_routing_s1, true, &serial1_tx_xcv );
+		SetupMenuSelect * s1outxcv = new SetupMenuSelect( PROGMEM "XCVario", false, update_routing_s1, true, &rt_s1_xcv );
 		s1outxcv->addEntry( "Disable");
 		s1outxcv->addEntry( "Enable");
 		s1out->addEntry( s1outxcv );
-		SetupMenuSelect * s1outwl = new SetupMenuSelect( PROGMEM  "Wireless", false, update_routing_s1, true, &serial1_tx_wireless );
+		SetupMenuSelect * s1outwl = new SetupMenuSelect( PROGMEM  "Wireless", false, update_routing_s1, true, &rt_s1_wl );
 		s1outwl->addEntry( "Disable");
 		s1outwl->addEntry( "Enable");
 		s1out->addEntry( s1outwl );
-		SetupMenuSelect * s1outs1 = new SetupMenuSelect( PROGMEM  "S2-RS232", false, update_routing_s1, true, &serial1_tx_S2 );
+		SetupMenuSelect * s1outs1 = new SetupMenuSelect( PROGMEM  "S2-RS232", false, update_routing_s1, true, &rt_s1_s2 );
 		s1outs1->addEntry( "Disable");
 		s1outs1->addEntry( "Enable");
 		s1out->addEntry( s1outs1 );
-		SetupMenuSelect * s1outcan = new SetupMenuSelect( PROGMEM "S2-CAN", false, update_routing_s1, true, &serial1_tx_CAN );
+		SetupMenuSelect * s1outcan = new SetupMenuSelect( PROGMEM "S2-CAN", false, update_routing_s1, true, &rt_s1_can );
 		s1outcan->addEntry( "Disable");
 		s1outcan->addEntry( "Enable");
 		s1out->addEntry( s1outcan );
@@ -1544,19 +1544,19 @@ void SetupMenu::setup( )
 			s2out->setHelp( PROGMEM "Select data source to be routed from/to serial interface S2");
 			rs232_2->addEntry( s2out );
 
-			SetupMenuSelect * s2outxcv = new SetupMenuSelect( PROGMEM "XCVario", false, update_routing_s2, true, &serial2_tx_xcv );
+			SetupMenuSelect * s2outxcv = new SetupMenuSelect( PROGMEM "XCVario", false, update_routing_s2, true, &rt_s2_xcv );
 			s2outxcv->addEntry( "Disable");
 			s2outxcv->addEntry( "Enable");
 			s2out->addEntry( s2outxcv );
-			SetupMenuSelect * s2outwl = new SetupMenuSelect( PROGMEM  "Wireless", false, update_routing_s2, true, &serial2_tx_wireless );
+			SetupMenuSelect * s2outwl = new SetupMenuSelect( PROGMEM  "Wireless", false, update_routing_s2, true, &rt_s2_wl );
 			s2outwl->addEntry( "Disable");
 			s2outwl->addEntry( "Enable");
 			s2out->addEntry( s2outwl );
-			SetupMenuSelect * s2outs2 = new SetupMenuSelect( PROGMEM  "S1-RS232", false, update_routing_s2, true, &serial2_tx_S1 );
+			SetupMenuSelect * s2outs2 = new SetupMenuSelect( PROGMEM  "S1-RS232", false, update_routing_s2, true, &rt_s1_s2 );
 			s2outs2->addEntry( "Disable");
 			s2outs2->addEntry( "Enable");
 			s2out->addEntry( s2outs2 );
-			SetupMenuSelect * s2outcan = new SetupMenuSelect( PROGMEM "S2-CAN", false, update_routing_s2, true, &serial2_tx_CAN );
+			SetupMenuSelect * s2outcan = new SetupMenuSelect( PROGMEM "S2-CAN", false, update_routing_s2, true, &rt_s2_can );
 			s2outcan->addEntry( "Disable");
 			s2outcan->addEntry( "Enable");
 			s2out->addEntry( s2outcan );
@@ -1602,19 +1602,19 @@ void SetupMenu::setup( )
 		can->addEntry( canrt );
 		canrt->setHelp( PROGMEM "Select data source that is routed from/to CAN interface");
 
-		SetupMenuSelect * canoutxcv = new SetupMenuSelect( PROGMEM "XCVario", false, 0, true, &can_tx_xcv );
+		SetupMenuSelect * canoutxcv = new SetupMenuSelect( PROGMEM "XCVario", false, 0, true, &rt_can_xcv );
 		canoutxcv->addEntry( "Disable");
 		canoutxcv->addEntry( "Enable");
 		canrt->addEntry( canoutxcv );
-		SetupMenuSelect * canoutwl = new SetupMenuSelect( PROGMEM "Wireless", false, 0, true, &wl_tx_CAN );
+		SetupMenuSelect * canoutwl = new SetupMenuSelect( PROGMEM "Wireless", false, 0, true, &rt_wl_can );
 		canoutwl->addEntry( "Disable");
 		canoutwl->addEntry( "Enable");
 		canrt->addEntry( canoutwl );
-		SetupMenuSelect * canouts1 = new SetupMenuSelect( PROGMEM "S1-RS232", false, update_routing_s1, true, &serial1_tx_CAN );
+		SetupMenuSelect * canouts1 = new SetupMenuSelect( PROGMEM "S1-RS232", false, update_routing_s1, true, &rt_s1_can );
 		canouts1->addEntry( "Disable");
 		canouts1->addEntry( "Enable");
 		canrt->addEntry( canouts1 );
-		SetupMenuSelect * canouts2 = new SetupMenuSelect( PROGMEM "S2-RS232", false, update_routing_s2, true, &serial2_tx_CAN );
+		SetupMenuSelect * canouts2 = new SetupMenuSelect( PROGMEM "S2-RS232", false, update_routing_s2, true, &rt_s2_can );
 		canouts2->addEntry( "Disable");
 		canouts2->addEntry( "Enable");
 		canrt->addEntry( canouts2 );

@@ -55,13 +55,13 @@ typedef struct xcv_sock_server {
 static sock_server_t XCVario   = { .txbuf = &wl_vario_tx_q, .rxbuf = &wl_vario_rx_q, .port=8880, .idle = 0, .pid = 0 };
 static sock_server_t FLARM     = { .txbuf = &wl_flarm_tx_q, .rxbuf = &wl_flarm_rx_q, .port=8881, .idle = 0, .pid = 0 };
 static sock_server_t AUX       = { .txbuf = &wl_aux_tx_q,   .rxbuf = &wl_aux_rx_q,   .port=8882, .idle = 0, .pid = 0 };
-static sock_server_t XCVarioMS = { .txbuf = &client_tx_q,   .rxbuf = &client_rx_q,   .port=8884, .idle = 0, .pid = 0 };
+static sock_server_t XCVarioMS = { .txbuf = &can_tx_q,   .rxbuf = &can_rx_q,   .port=8884, .idle = 0, .pid = 0 };
 
 #define WIFI_BUFFER_SIZE 513
 // char WifiApp::buffer[WIFI_BUFFER_SIZE];
 
 int  WifiApp::queueFull(){
-	if( !wl_vario_tx_q.isFull() || !client_tx_q.isFull() )
+	if( !wl_vario_tx_q.isFull() || !can_tx_q.isFull() )
 		return 0;
 	else
 		return 1;
@@ -202,7 +202,7 @@ void WifiApp::socket_server(void *setup) {
 			free( buffer );
 		}
 		Router::routeWLAN();
-		Router::routeClient();
+		Router::routeCAN();
 
 		if( uxTaskGetStackHighWaterMark( config->pid ) < 128 )
 			ESP_LOGW(FNAME,"Warning wifi task stack low: %d bytes, port %d", uxTaskGetStackHighWaterMark( config->pid ), config->port );

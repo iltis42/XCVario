@@ -34,8 +34,8 @@ RingBufCPP<SString, QUEUE_SIZE> s2_rx_q;
 
 RingBufCPP<SString, QUEUE_SIZE> xcv_rx_q;
 
-RingBufCPP<SString, QUEUE_SIZE> client_rx_q;
-RingBufCPP<SString, QUEUE_SIZE> client_tx_q;
+RingBufCPP<SString, QUEUE_SIZE> can_rx_q;
+RingBufCPP<SString, QUEUE_SIZE> can_tx_q;
 
 portMUX_TYPE btmux = portMUX_INITIALIZER_UNLOCKED;
 
@@ -180,8 +180,8 @@ void Router::routeS1(){
 			}
 		}
 		if( (can_tx.get() & RT_XCVARIO) && can_speed.get() ){
-			if( forwardMsg( s1, client_tx_q )){
-				// ESP_LOGI(FNAME,"S1 RX bytes %d forward to client_tx_q", s1.length() );
+			if( forwardMsg( s1, can_tx_q )){
+				// ESP_LOGI(FNAME,"S1 RX bytes %d forward to can_tx_q", s1.length() );
 			}
 		}
 		if( (serial2_tx.get() & RT_S1) && serial2_speed.get() ){
@@ -211,8 +211,8 @@ void Router::routeS2(){
 			}
 		}
 		if( (can_tx.get() & RT_XCVARIO) && can_speed.get() ){
-			if( forwardMsg( s2, client_tx_q )){
-				// ESP_LOGI(FNAME,"S2 RX bytes %d forward to client_tx_q", s2.length() );
+			if( forwardMsg( s2, can_tx_q )){
+				// ESP_LOGI(FNAME,"S2 RX bytes %d forward to can_tx_q", s2.length() );
 			}
 		}
 		if( (serial1_tx.get() & RT_S1) && serial1_speed.get() ){ // RT_S1 could be renamed to RT_SERIAL
@@ -306,7 +306,7 @@ void Router::routeBT(){
 			// ESP_LOGI(FNAME,"BT RX Matched a Borgelt command %s", bt.c_str() );
 			Protocols::parseNMEA( bt.c_str() );
 		}
-		if( SetupCommon::isCanClient() && (serial2_tx.get() & RT_WIRELESS) ){
+		if( SetupCommon::isClient() && (serial2_tx.get() & RT_WIRELESS) ){
 			// ESP_LOGI(FNAME,"Send to CAN bus, BT received %d bytes", bt.length() );
 			CAN->sendNMEA( bt );
 		}
@@ -314,32 +314,32 @@ void Router::routeBT(){
 	}
 }
 
-// route messages from master or client via CAN or Wifi
-void Router::routeClient(){
-	SString client;
-	while( pullMsg( client_rx_q, client ) ){
-		// ESP_LOGI(FNAME,"Client received %d bytes %s", client.length(), client.c_str());
-		// ESP_LOG_BUFFER_HEXDUMP(FNAME,client.c_str(),client.length(), ESP_LOG_INFO);
-		if (strncmp(client.c_str(), "!xs", 3) != 0)
+// route messages from master or can via CAN or Wifi
+void Router::routeCAN(){
+	SString can;
+	while( pullMsg( can_rx_q, can ) ){
+		// ESP_LOGI(FNAME,"can received %d bytes %s", can.length(), can.c_str());
+		// ESP_LOG_BUFFER_HEXDUMP(FNAME,can.c_str(),can.length(), ESP_LOG_INFO);
+		if (strncmp(can.c_str(), "!xs", 3) != 0)
 		{
 			if( ((serial1_tx.get() & RT_XCVARIO) && serial1_speed.get()) || (SetupCommon::isCanMaster() && serial1_speed.get()) ) {
-				if (forwardMsg(client, s1_tx_q)) {
+				if (forwardMsg(can, s1_tx_q)) {
 					Serial::setRxTxNotifier( TX1_REQ );
-					ESP_LOGI(FNAME, "Send to S1 device, CAN link received %d bytes NMEA", client.length());
+					ESP_LOGI(FNAME, "Send to S1 device, CAN link received %d bytes NMEA", can.length());
 				}
 			}
 			if( (serial2_tx.get() & RT_XCVARIO) && serial2_speed.get()) {
-				if (forwardMsg(client, s2_tx_q)) {
+				if (forwardMsg(can, s2_tx_q)) {
 					Serial::setRxTxNotifier( TX2_REQ );
-					// ESP_LOGI(FNAME, "Send to S2 device, client link received %d bytes NMEA", client.length());
+					// ESP_LOGI(FNAME, "Send to S2 device, can link received %d bytes NMEA", can.length());
 				}
 			}
 			if( wireless == WL_BLUETOOTH ) {
-				if( forwardMsg( client, bt_tx_q )) {
-					// ESP_LOGI(FNAME,"Send to BT device, client link received %d bytes NMEA", client.length() );
+				if( forwardMsg( can, bt_tx_q )) {
+					// ESP_LOGI(FNAME,"Send to BT device, can link received %d bytes NMEA", can.length() );
 				}
 			}
 		}
-		Protocols::parseNMEA( client.c_str() );
+		Protocols::parseNMEA( can.c_str() );
 	}
 }

@@ -38,9 +38,9 @@ extern RingBufCPP<SString, QUEUE_SIZE> s2_rx_q;
 extern RingBufCPP<SString, QUEUE_SIZE> xcv_rx_q;
 extern RingBufCPP<SString, QUEUE_SIZE> xcv_tx_q;
 
-extern RingBufCPP<SString, QUEUE_SIZE> client_rx_q;  // for secondary variometer
+extern RingBufCPP<SString, QUEUE_SIZE> can_rx_q;  // for secondary variometer
 
-extern RingBufCPP<SString, QUEUE_SIZE> client_tx_q;
+extern RingBufCPP<SString, QUEUE_SIZE> can_tx_q;
 
 extern portMUX_TYPE btmux;
 
@@ -67,7 +67,7 @@ public:
   // route messages coming in from Bluetooth
   static void routeBT();
   // route messages coming in from CAN interface
-  static void routeClient();
+  static void routeCAN();
   // add messages from XCVario to Router
   static void sendXCV(char * s);
   // add messages to WIFI AUX port 8882

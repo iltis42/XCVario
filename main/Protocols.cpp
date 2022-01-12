@@ -112,7 +112,7 @@ void Protocols::sendItem( const char *key, char type, void *value, int len, bool
 		sprintf( &str[i], "*%02X\r\n", cs );
 		// ESP_LOGI(FNAME,"sendNMEAString: %s", str );
 		SString nmea( str );
-		if( !Router::forwardMsg( nmea, client_tx_q ) ){
+		if( !Router::forwardMsg( nmea, can_tx_q ) ){
 			ESP_LOGW(FNAME,"Warning: Overrun in send to Client XCV %d bytes", nmea.length() );
 		}
 	}

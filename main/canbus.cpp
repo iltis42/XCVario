@@ -195,12 +195,12 @@ void CANbus::txtick(int tick){
 	}
 	SString msg;
 	// CAN bus send
-    if ( !client_tx_q.isEmpty() ){
+    if ( !can_tx_q.isEmpty() ){
         // ESP_LOGI(FNAME,"There is CAN data");
         if( _connected_xcv ){
-        	// ESP_LOGI(FNAME,"CAN TX Q:%d", client_tx_q.numElements() );
-            while( Router::pullMsg( client_tx_q, msg ) ){
-                // ESP_LOGI(FNAME,"CAN TX len: %d bytes Q:%d", msg.length(), client_tx_q.numElements() );
+        	// ESP_LOGI(FNAME,"CAN TX Q:%d", can_tx_q.numElements() );
+            while( Router::pullMsg( can_tx_q, msg ) ){
+                // ESP_LOGI(FNAME,"CAN TX len: %d bytes Q:%d", msg.length(), can_tx_q.numElements() );
                 // ESP_LOG_BUFFER_HEXDUMP(FNAME,msg.c_str(),msg.length(), ESP_LOG_INFO);
             	DM.monitorString( MON_CAN, DIR_TX, msg.c_str() );
                 if( !sendNMEA( msg ) ){
@@ -210,7 +210,7 @@ void CANbus::txtick(int tick){
             }
         }
     }
-	Router::routeClient();
+	Router::routeCAN();
 	if( !(tick%100) ){
 		if( ((can_mode.get() == CAN_MODE_CLIENT)  && _connected_xcv) || can_mode.get() == CAN_MODE_MASTER ){ // sent from client only if keep alive is there
 			msg.set( "K" );
@@ -246,7 +246,7 @@ void CANbus::rxtick(int tick){
 			if( !_connected_xcv ){
 				bool entry=false;
 				do{ // cleanup congestion at startup
-					entry = Router::pullMsg( client_tx_q, msg );
+					entry = Router::pullMsg( can_tx_q, msg );
 				}while( entry );
 				ESP_LOGI(FNAME,"CAN XCV connected");
 				_connected_xcv = true;
@@ -323,7 +323,7 @@ void CANbus::rxtick(int tick){
         // Check on the remaining string for the end sign
         if ( std::strchr(cptr, '\n') != nullptr ) {
             if ( nmea_state >= 1 ) {
-                Router::forwardMsg( nmea, client_rx_q ); // All good
+                Router::forwardMsg( nmea, can_rx_q ); // All good
                 DM.monitorString( MON_CAN, DIR_RX, nmea.c_str() );
             }
             else {
@@ -331,7 +331,7 @@ void CANbus::rxtick(int tick){
             }
             nmea_state = 0;
         }
-		Router::routeClient();  // guess in TX tick we don't need, but here
+		Router::routeCAN();  // guess in TX tick we don't need, but here
 	}
 	else if( id == 0x031 ){ // magnet sensor
 		// ESP_LOGI(FNAME,"CAN RX MagSensor, msg: %d", bytes );

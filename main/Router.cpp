@@ -129,6 +129,7 @@ void Router::sendAUX(char * s){
 void Router::routeXCV(){
 	SString xcv;
 	while( pullMsg( xcv_tx_q, xcv ) ){
+		// ESP_LOGI(FNAME,"XCV data to be forwarded %d bytes", xcv.length() );
 		if ( strncmp( xcv.c_str(), "!xs", 3 ) != 0 ){  // !xs messages are XCV specific and must not go to BT,WiFi or serial Navi's
 			if( rt_xcv_wl.get() && (wireless == WL_BLUETOOTH) ) {
 				if( forwardMsg( xcv, bt_tx_q ) ){
@@ -147,6 +148,7 @@ void Router::routeXCV(){
 					// ESP_LOGI(FNAME,"XCV data forwarded to S1 device, %d bytes", xcv.length() );
 				}
 			}
+			// ESP_LOGI(FNAME,"XCV data for S1 device, %d bytes ena:%d speed:%d", xcv.length(), rt_s2_xcv.get(), serial2_speed.get() );
 			if( rt_s2_xcv.get() && serial2_speed.get() ){
 				if( forwardMsg( xcv, s2_tx_q ) ){
 					Serial::setRxTxNotifier( TX2_REQ );
@@ -356,7 +358,7 @@ void Router::routeCAN(){
 			}
 			if( rt_wl_can.get() && (wireless == WL_BLUETOOTH) ) {
 				if( forwardMsg( can, bt_tx_q )) {
-					ESP_LOGI(FNAME,"Send to BT device, can link received %d NMEA bytes", can.length() );
+					// ESP_LOGI(FNAME,"Send to BT device, can link received %d NMEA bytes", can.length() );
 				}
 			}
 			if( rt_wl_can.get() && (wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE) ) {

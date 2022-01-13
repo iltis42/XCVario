@@ -62,23 +62,23 @@ void BTSender::progress(){
 		ESP_LOGI(FNAME,"SerialBT not initialized");
 		return;
 	}
-	if (SerialBT->available() ) {
-		int avail = SerialBT->available();
-		SString rx;
-		char *buf = (char*)malloc( avail+1 );
+	char buf[256];
+	int pos = 0;
+	while(SerialBT->available() && (pos < 128) ) {
+		char byte = (char)SerialBT->read();
+		buf[pos] = byte;
+		pos++;
 
-		for( int i=0; i<avail; i++ ){
-			char byte = (char)SerialBT->read();
-			buf[i] = byte;
-		}
-		rx.set( buf, avail );
-		// ESP_LOGI(FNAME,">BT RX: %d bytes", avail );
-		// ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.c_str(),avail, ESP_LOG_INFO);
-		Router::forwardMsg( rx, bt_rx_q );
-		free( buf );
-		DM.monitorString( MON_BLUETOOTH, DIR_RX, rx.c_str() );
 	}
+	if( pos ){
+		SString rx;
+		rx.set( buf, pos );
+		Router::forwardMsg( rx, bt_rx_q );
+		DM.monitorString( MON_BLUETOOTH, DIR_RX, rx.c_str() );
+		ESP_LOGI(FNAME,">BT RX: %d bytes", pos );
+		ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.c_str(),pos, ESP_LOG_INFO);
 
+	}
 	if( SerialBT->hasClient() ) {
 		SString msg;
 		if ( Router::pullMsg( bt_tx_q, msg ) ){

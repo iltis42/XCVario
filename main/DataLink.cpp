@@ -46,7 +46,7 @@ void DataLink::process( char *packet, int len, int port ) {
 		routeSerialData(packet, len, port, false );
 	}else{
 		for (int i = 0; i < len; i++) {
-			parse_NMEA_UBX(packet[i], port);
+			parse_NMEA_UBX(packet[i], port, i == len-1);
 		}
 	}
 }
@@ -76,7 +76,7 @@ void DataLink::processNMEA( char * buffer, int len, int port ){
 	routeSerialData(buffer, len, port, true );
 }
 
-void DataLink::parse_NMEA_UBX( char c, int port ){
+void DataLink::parse_NMEA_UBX( char c, int port, bool last ){
 	// ESP_LOGI(FNAME, "Port S%1d: char=%c pos=%d  state=%d", port, c, pos, state );
 	switch(state) {
 	case GET_NMEA_UBX_SYNC:
@@ -112,8 +112,8 @@ void DataLink::parse_NMEA_UBX( char c, int port ){
 			}
 			framebuffer[pos] = c;
 			pos++;
-			if ( (c == NMEA_LF) || (c == NMEA_CR) ) {
-				framebuffer[pos] = 0;  // TBD, really needed, s.set() may cover this
+			if ( (c == NMEA_LF) || (last && (c == NMEA_CR) ) ) { // catch case when CR is last char, e.g. commands from BT
+				framebuffer[pos] = 0;  // framebuffer is zero terminated
 				processNMEA( framebuffer, pos, port );
 				state = GET_NMEA_UBX_SYNC;
 				pos = 0;

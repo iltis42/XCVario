@@ -64,20 +64,20 @@ void init_routing(){
 	uint32_t s1rt = (uint32_t)serial1_tx.get();
 	rt_s1_xcv.set( (s1rt >> (RT_XCVARIO))& 1 );
 	rt_s1_wl.set( (s1rt >> (RT_WIRELESS))& 1 );
-	rt_s1_s2.set( (s1rt >> (RT_S2))& 1 );
+	rt_s1_s2.set( (s1rt >> (RT_S1))& 1 );
 	rt_s1_can.set( (s1rt >> (RT_CAN))& 1 );
 
 	uint32_t s2rt = (uint32_t)serial2_tx.get();
 	rt_s2_xcv.set( (s2rt >> (RT_XCVARIO))& 1 );
 	rt_s2_wl.set( (s2rt >> (RT_WIRELESS))& 1 );
-	rt_s1_s2.set( (s2rt >> (RT_S2))& 1 );
+	rt_s1_s2.set( (s2rt >> (RT_S1))& 1 );
 	rt_s2_can.set( (s2rt >> (RT_CAN))& 1 );
 }
 
 int update_routing_s1( SetupMenuSelect * p ){
 	uint32_t routing =  (uint32_t)rt_s1_xcv.get()       << (RT_XCVARIO) |
 			           ( (uint32_t)rt_s1_wl.get() << (RT_WIRELESS) ) |
-					   ( (uint32_t)rt_s1_s2.get()       << (RT_S2) ) |
+					   ( (uint32_t)rt_s1_s2.get()       << (RT_S1) ) |
 					   ( (uint32_t)rt_s1_can.get()      << (RT_CAN) );
 	serial1_tx.set( routing );
 	return 0;

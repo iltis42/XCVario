@@ -32,7 +32,7 @@ RingBufCPP<SString, QUEUE_SIZE> s2_tx_q;
 RingBufCPP<SString, QUEUE_SIZE> s1_rx_q;
 RingBufCPP<SString, QUEUE_SIZE> s2_rx_q;
 
-RingBufCPP<SString, QUEUE_SIZE> xcv_rx_q;
+RingBufCPP<SString, QUEUE_SIZE> xcv_tx_q;
 
 RingBufCPP<SString, QUEUE_SIZE> can_rx_q;
 RingBufCPP<SString, QUEUE_SIZE> can_tx_q;
@@ -105,10 +105,10 @@ int Router::pullBlock( RingBufCPP<SString, QUEUE_SIZE>& q, char *block, int size
 
 // XCVario Router
 void Router::sendXCV(char * s){
-	// ESP_LOGI( FNAME,"XCVario message %s",s);
+	ESP_LOGI( FNAME,"XCVario message %s",s);
 	if(  !Flarm::bincom  ){
 		SString xcv( s );
-		if( forwardMsg( xcv, xcv_rx_q ) ){
+		if( forwardMsg( xcv, xcv_tx_q ) ){
 			// ESP_LOGI(FNAME,"Received %d bytes from XCV", xcv.length() );
 		}
 	}
@@ -128,7 +128,7 @@ void Router::sendAUX(char * s){
 // Route XCVario messages
 void Router::routeXCV(){
 	SString xcv;
-	while( pullMsg( xcv_rx_q, xcv ) ){
+	while( pullMsg( xcv_tx_q, xcv ) ){
 		if ( strncmp( xcv.c_str(), "!xs", 3 ) != 0 ){  // !xs messages are XCV specific and must not go to BT,WiFi or serial Navi's
 			if( rt_xcv_wl.get() && (wireless == WL_BLUETOOTH) ) {
 				if( forwardMsg( xcv, bt_tx_q ) ){
@@ -140,10 +140,11 @@ void Router::routeXCV(){
 					// ESP_LOGI(FNAME,"XCV data forwarded to WLAN port 8880, %d bytes", xcv.length() );
 				}
 			}
+			ESP_LOGI(FNAME,"XCV data for S1 device, %d bytes ena:%d speed:%d", xcv.length(), rt_s1_xcv.get(), serial1_speed.get() );
 			if( rt_s1_xcv.get() && serial1_speed.get() ){
 				if( forwardMsg( xcv, s1_tx_q ) ){
 					Serial::setRxTxNotifier( TX1_REQ );
-					// ESP_LOGI(FNAME,"XCV data forwarded to S1 device, %d bytes", xcv.length() );
+					ESP_LOGI(FNAME,"XCV data forwarded to S1 device, %d bytes", xcv.length() );
 				}
 			}
 			if( rt_s2_xcv.get() && serial2_speed.get() ){

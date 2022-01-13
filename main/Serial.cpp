@@ -107,11 +107,7 @@ void Serial::serialHandler(void *pvParameters)
 			// Timeout occurred, that is used to reset the watchdog.
 			continue;
 		}
-#if 0
-		ESP_LOGI( FNAME, "%s: EVTO=%dms, bincom=%d, EventBits=%X, RXA=%d, NLC=%d",
-				cfg->name, ticksToWait, Flarm::bincom, ebits, cfg->uart->available(), cfg->uart->getNlCounter() );
-#endif
-
+		// ESP_LOGI( FNAME, "%s: EVTO=%dms, bincom=%d, EventBits=%X, RXA=%d, NLC=%d", cfg->name, ticksToWait, Flarm::bincom, ebits, cfg->uart->available(), cfg->uart->getNlCounter() );
 		// TX part, check if there is data for Serial Interface to send
 		if( ebits & cfg->tx_req && cfg->uart->availableForWrite() ) {
 			// ESP_LOGI(FNAME,"S%d: TX and available", cfg->uart->number() );

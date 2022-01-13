@@ -35,7 +35,6 @@ extern RingBufCPP<SString, QUEUE_SIZE> s2_tx_q;
 extern RingBufCPP<SString, QUEUE_SIZE> s1_rx_q;
 extern RingBufCPP<SString, QUEUE_SIZE> s2_rx_q;
 
-extern RingBufCPP<SString, QUEUE_SIZE> xcv_rx_q;
 extern RingBufCPP<SString, QUEUE_SIZE> xcv_tx_q;
 
 extern RingBufCPP<SString, QUEUE_SIZE> can_rx_q;  // for secondary variometer

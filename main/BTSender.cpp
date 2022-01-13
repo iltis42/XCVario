@@ -75,8 +75,8 @@ void BTSender::progress(){
 		rx.set( buf, pos );
 		Router::forwardMsg( rx, bt_rx_q );
 		DM.monitorString( MON_BLUETOOTH, DIR_RX, rx.c_str() );
-		ESP_LOGI(FNAME,">BT RX: %d bytes", pos );
-		ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.c_str(),pos, ESP_LOG_INFO);
+		// ESP_LOGI(FNAME,">BT RX: %d bytes", pos );
+		// ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.c_str(),pos, ESP_LOG_INFO);
 
 	}
 	if( SerialBT->hasClient() ) {

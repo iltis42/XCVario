@@ -105,7 +105,7 @@ int Router::pullBlock( RingBufCPP<SString, QUEUE_SIZE>& q, char *block, int size
 
 // XCVario Router
 void Router::sendXCV(char * s){
-	ESP_LOGI( FNAME,"XCVario message %s",s);
+	// ESP_LOGI( FNAME,"XCVario message %s",s);
 	if(  !Flarm::bincom  ){
 		SString xcv( s );
 		if( forwardMsg( xcv, xcv_tx_q ) ){
@@ -140,11 +140,11 @@ void Router::routeXCV(){
 					// ESP_LOGI(FNAME,"XCV data forwarded to WLAN port 8880, %d bytes", xcv.length() );
 				}
 			}
-			ESP_LOGI(FNAME,"XCV data for S1 device, %d bytes ena:%d speed:%d", xcv.length(), rt_s1_xcv.get(), serial1_speed.get() );
+			// ESP_LOGI(FNAME,"XCV data for S1 device, %d bytes ena:%d speed:%d", xcv.length(), rt_s1_xcv.get(), serial1_speed.get() );
 			if( rt_s1_xcv.get() && serial1_speed.get() ){
 				if( forwardMsg( xcv, s1_tx_q ) ){
 					Serial::setRxTxNotifier( TX1_REQ );
-					ESP_LOGI(FNAME,"XCV data forwarded to S1 device, %d bytes", xcv.length() );
+					// ESP_LOGI(FNAME,"XCV data forwarded to S1 device, %d bytes", xcv.length() );
 				}
 			}
 			if( rt_s2_xcv.get() && serial2_speed.get() ){
@@ -337,7 +337,7 @@ void Router::routeBT(){
 void Router::routeCAN(){
 	SString can;
 	while( pullMsg( can_rx_q, can ) ){
-		ESP_LOGI(FNAME,"can received %d bytes %s", can.length(), can.c_str());
+		// ESP_LOGI(FNAME,"can received %d bytes %s", can.length(), can.c_str());
 		// ESP_LOG_BUFFER_HEXDUMP(FNAME,can.c_str(),can.length(), ESP_LOG_INFO);
 		if (strncmp(can.c_str(), "!xs", 3) != 0)
 		{

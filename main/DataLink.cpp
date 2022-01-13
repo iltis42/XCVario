@@ -22,8 +22,8 @@ const uint8_t NMEA_START2 = '!';
 const uint8_t NMEA_MIN = 0x20;
 const uint8_t NMEA_MAX = 0x7e;
 // NMEA End of Line
-const uint8_t NMEA_CR = '\r';
-const uint8_t NMEA_LF = '\n';
+const uint8_t NMEA_CR = '\r';  // 13 0d
+const uint8_t NMEA_LF = '\n';  // 10 0a
 
 DataLink::DataLink(){
 	state = GET_NMEA_UBX_SYNC;
@@ -112,7 +112,7 @@ void DataLink::parse_NMEA_UBX( char c, int port ){
 			}
 			framebuffer[pos] = c;
 			pos++;
-			if (c == NMEA_LF) {
+			if ( (c == NMEA_LF) || (c == NMEA_CR) ) {
 				framebuffer[pos] = 0;  // TBD, really needed, s.set() may cover this
 				processNMEA( framebuffer, pos, port );
 				state = GET_NMEA_UBX_SYNC;

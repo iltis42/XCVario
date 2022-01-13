@@ -1126,7 +1126,7 @@ void sensor(void *args){
 	bool batest=true;
 	delay(200);
 
-	if( ! baroSensor->selfTest( ba_t, ba_p)  ) {
+	if( !baroSensor->selfTest( ba_t, ba_p)  ) {
 		ESP_LOGE(FNAME,"HW Error: Self test Barometric Pressure Sensor failed!");
 		display->writeText( line++, "Baro Sensor: NOT FOUND");
 		selftestPassed = false;

@@ -85,10 +85,7 @@ BMP:
 
 #define CS_bme280BA GPIO_NUM_26   // before CS pin 33
 #define CS_bme280TE GPIO_NUM_33   // before CS pin 26
-
-
 #define FREQ_BMP_SPI 13111111/2
-
 #define SPL06_007_BARO 0x77
 #define SPL06_007_TE   0x76
 
@@ -140,7 +137,6 @@ mpud::float_axes_t gyroDPS_Prev;
 
 // Magnetic sensor / compass
 Compass *compass;
-
 BTSender btsender;
 
 static float baroP=0; // barometric pressure
@@ -158,7 +154,6 @@ uint8_t g_col_header_b=g_col_highlight;
 uint8_t g_col_header_light_r=161-g_col_background/4;
 uint8_t g_col_header_light_g=168-g_col_background/3;
 uint8_t g_col_header_light_b=g_col_highlight;
-
 
 bool haveMPU=false;
 bool ahrsKeyValid=false;
@@ -185,7 +180,6 @@ int hold_alarm=0;
 int the_can_mode = CAN_MODE_MASTER;
 int active_screen = 0;  // 0 = Vario
 bool flarmDownload = false; // Flarm IGC download flag
-
 
 AdaptUGC *egl = 0;
 
@@ -441,14 +435,14 @@ static void toyFeed()
 
 void clientLoop(void *pvParameters)
 {
-	int count = 0;
+	int ccount = 0;
 	validTemperature = true;
 	while (true)
 	{
 		TickType_t xLastWakeTime = xTaskGetTickCount();
-		count++;
+		ccount++;
 		aTE += (te_vario.get() - aTE)* (1/(10*vario_av_delay.get()));
-		if( !(count%5) )
+		if( !(ccount%5) )
 		{
 			double tmpalt = altitude.get(); // get pressure from altitude
 			if( (fl_auto_transition.get() == 1) && ((int)(altitude.get()*0.0328084) + (int)(standard_setting) > transition_alt.get() ) ) {
@@ -470,7 +464,7 @@ void clientLoop(void *pvParameters)
 			}
 			toyFeed();
 			Router::routeXCV();
-			if( true && !(count%5) ) { // todo need a mag_hdm.valid() flag
+			if( true && !(ccount%5) ) { // todo need a mag_hdm.valid() flag
 				if( compass_nmea_hdm.get() ) {
 					xSemaphoreTake( xMutex, portMAX_DELAY );
 					OV.sendNmeaHDM( mag_hdm.get() );
@@ -703,24 +697,19 @@ void readTemp(void *pvParameters){
 	}
 }
 
-static bool init_done=false;
-
-static esp_err_t
-_coredump_to_server_begin_cb(void * priv)
+static esp_err_t _coredump_to_server_begin_cb(void * priv)
 {
 	ets_printf("================= CORE DUMP START =================\r\n");
 	return ESP_OK;
 }
 
-static esp_err_t
-_coredump_to_server_end_cb(void * priv)
+static esp_err_t _coredump_to_server_end_cb(void * priv)
 {
 	ets_printf("================= CORE DUMP END ===================\r\n");
 	return ESP_OK;
 }
 
-static esp_err_t
-_coredump_to_server_write_cb(void * priv, char const * const str)
+static esp_err_t _coredump_to_server_write_cb(void * priv, char const * const str)
 {
 	ets_printf("%s\r\n", str);
 	return ESP_OK;
@@ -740,22 +729,17 @@ void register_coredump() {
 
 
 // Sensor board init method. Herein all functions that make the XCVario are launched and tested.
-void sensor(void *args){
+void system_startup(void *args){
 	accelG[0] = 1;  // earth gravity default = 1 g
 	accelG[1] = 0;
 	accelG[2] = 0;
 	gyroDPS.x = 0;
 	gyroDPS.y = 0;
 	gyroDPS.z = 0;
-
 	bool selftestPassed=true;
-	if( init_done )
-		ESP_LOGI( FNAME, "sensor init already called");
-	init_done=true;
 	int line = 1;
 	ESP_LOGI( FNAME, "Now setup I2C bus IO 21/22");
 	i2c.begin(GPIO_NUM_21, GPIO_NUM_22, 100000 );
-
 	theWind.begin();
 
 	MCP = new MCP3221();
@@ -777,32 +761,23 @@ void sensor(void *args){
 	ESP_LOGI( FNAME,"%dMB %s flash\n", spi_flash_get_chip_size() / (1024 * 1024),
 			(chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 	ESP_LOGI(FNAME, "QNH.get() %.1f hPa", QNH.get() );
-
 	NVS.begin();
 	register_coredump();
 	Polars::begin();
 
 	the_can_mode = can_mode.get(); // initialize variable for CAN mode
-
 	if( hardwareRevision.get() != 2 ){
 		gpio_set_direction(GPIO_NUM_2, GPIO_MODE_INPUT);     // 2020 series 1, analog in default
 		gpio_pullup_en( GPIO_NUM_2 );
 	}
-
 	if( display_orientation.get() ){
 		ESP_LOGI( FNAME, "TopDown display mode flag set");
 		topDown = true;
 	}
 
-	if( nmea_protocol.get() == XCVARIO_DEVEL )
-		nmea_protocol.set( XCVARIO );
-
 	wireless = (e_wireless_type)(wireless_type.get()); // we cannot change this on the fly, so get that on boot
 	AverageVario::begin();
-
-
 	stall_alarm_off_kmh = stall_speed.get()/3;
-
 	if( Cipher::checkKeyAHRS() ){
 		ESP_LOGI( FNAME, "AHRS key valid=%d", ahrsKeyValid );
 	}else{
@@ -812,16 +787,13 @@ void sensor(void *args){
 	}
 	Battery.begin();  // for battery voltage
 	xMutex=xSemaphoreCreateMutex();
-
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ccp = (int)(core_climb_period.get()*10);
-
 	SPI.begin( SPI_SCLK, SPI_MISO, SPI_MOSI, CS_bme280BA );
 	xSemaphoreGive(spiMutex);
 
 	egl = new AdaptUGC();
 	egl->begin();
-
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ESP_LOGI( FNAME, "setColor" );
 	egl->setColor( 0, 255, 0 );
@@ -864,7 +836,6 @@ void sensor(void *args){
 		ota->begin();
 		ota->doSoftwareUpdate( display );
 	}
-
 	esp_err_t err=ESP_ERR_NOT_FOUND;
 	MPU.setBus(i2c);  // set communication bus, for SPI -> pass 'hspi'
 	MPU.setAddr(mpud::MPU_I2CADDRESS_AD0_LOW);  // set address or handle, for SPI -> pass 'mpu_spi_handle'
@@ -879,7 +850,6 @@ void sensor(void *args){
 		MPU.setAccelFullScale(mpud::ACCEL_FS_8G);
 		MPU.setGyroFullScale(mpud::GYRO_FS_500DPS);
 		MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
-
 		mpud::raw_axes_t gb = gyro_bias.get();
 		mpud::raw_axes_t ab = accl_bias.get();
 
@@ -894,8 +864,7 @@ void sensor(void *args){
 			ESP_LOGI( FNAME,"MPU new offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
 			if( hardwareRevision.get() != 3 )
 				hardwareRevision.set(3);
-		}else
-		{
+		}else{
 			MPU.setAccelOffset(ab);
 			MPU.setGyroOffset(gb);
 		}
@@ -918,11 +887,7 @@ void sensor(void *args){
 		logged_tests += "MPU6050 AHRS test: PASSED\n";
 		IMU::init();
 		IMU::read();
-		// BIAS MPU6050
-
 		ESP_LOGI( FNAME,"MPU current offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
-
-
 	}
 	else{
 		ESP_LOGI( FNAME,"MPU reset failed, check HW revision: %d",hardwareRevision.get() );
@@ -936,7 +901,6 @@ void sensor(void *args){
 			logged_tests += "MPU6050 AHRS test: NOT FOUND\n";
 		}
 	}
-
 	String wireless_id;
 	if( wireless == WL_BLUETOOTH ) {
 		wireless_id="Bluetooth ID: ";
@@ -946,8 +910,6 @@ void sensor(void *args){
 		wireless_id="WLAN SID: ";
 	wireless_id += SetupCommon::getID();
 	display->writeText(line++, wireless_id.c_str() );
-
-
 
 	ESP_LOGI(FNAME,"Airspeed sensor init..  type configured: %d", airspeed_sensor_type.get() );
 	int offset;
@@ -1034,7 +996,6 @@ void sensor(void *args){
 		else
 			ESP_LOGI(FNAME,"MP5004DP selfTest FAILED");
 	}
-
 	if( found ){
 		ESP_LOGI(FNAME,"AS Speed sensors self test PASSED, offset=%d", offset);
 		asSensor->doOffset();
@@ -1094,7 +1055,6 @@ void sensor(void *args){
 	ESP_LOGI(FNAME,"Absolute pressure sensors init, detect type of sensor type..");
 
 	float ba_t, ba_p, te_t, te_p;
-
 	SPL06_007 *splBA = new SPL06_007( SPL06_007_BARO );
 	SPL06_007 *splTE = new SPL06_007( SPL06_007_TE );
 	splBA->setBus( &i2c );
@@ -1181,8 +1141,6 @@ void sensor(void *args){
 	else
 		ESP_LOGI(FNAME,"Absolute pressure sensor TESTs failed");
 
-
-
 	bmpVario.begin( teSensor, baroSensor, &Speed2Fly );
 	bmpVario.setup();
 	esp_task_wdt_reset();
@@ -1218,8 +1176,6 @@ void sensor(void *args){
 		}
 	}
 
-
-
 	float bat = Battery.get(true);
 	if( bat < 1 || bat > 28.0 ){
 		ESP_LOGE(FNAME,"Error: Battery voltage metering out of bounds, act value=%f", bat );
@@ -1238,9 +1194,6 @@ void sensor(void *args){
 			display->writeText( line++, "Bat Meter: OK");
 		logged_tests += "Battery Voltage Sensor: PASSED\n";
 	}
-
-
-
 
 	Serial::begin();
 	// Factory test for serial interface plus cable
@@ -1389,12 +1342,7 @@ void sensor(void *args){
 		Rotary.begin( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);
 		gpio_pullup_en( GPIO_NUM_34 );
 	}
-
-	// gpio_set_pull_mode(RESET_Display, GPIO_PULLUP_ONLY );
-	// gpio_set_pull_mode(CS_Display, GPIO_PULLUP_ONLY );
-
 	delay( 100 );
-
 	if ( SetupCommon::isClient() ){
 		if( wireless == WL_WLAN_CLIENT ){
 			display->clear();
@@ -1443,7 +1391,6 @@ void sensor(void *args){
 			}
 		}
 	}
-
 	if( SetupCommon::isClient() ){
 		xTaskCreatePinnedToCore(&clientLoop, "clientLoop", 4096, NULL, 14, &bpid, 0);
 		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 14, &apid, 0);
@@ -1475,6 +1422,6 @@ extern "C" void  app_main(void)
 		ESP_LOGI(FNAME,"Setup already present");
 	esp_log_level_set("*", ESP_LOG_INFO);
 
-	sensor( 0 );
+	system_startup( 0 );
 	vTaskDelete( NULL );
 }

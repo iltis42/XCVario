@@ -64,7 +64,7 @@ void BTSender::progress(){
 	}
 	char buf[256];
 	int pos = 0;
-	while(SerialBT->available() && (pos < 128) ) {
+	while(SerialBT->available() && (pos < 256) ) {
 		char byte = (char)SerialBT->read();
 		buf[pos] = byte;
 		pos++;

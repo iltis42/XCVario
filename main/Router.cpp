@@ -109,7 +109,7 @@ void Router::sendXCV(char * s){
 	if(  !Flarm::bincom  ){
 		SString xcv( s );
 		if( forwardMsg( xcv, xcv_tx_q ) ){
-			// ESP_LOGI(FNAME,"Received %d bytes from XCV", xcv.length() );
+			// ----------------(FNAME,"Received %d bytes from XCV", xcv.length() );
 		}
 	}
 }
@@ -168,6 +168,7 @@ void Router::routeXCV(){
 void Router::routeS1(){
 	SString s1;
 	while( pullMsg( s1_rx_q, s1) ){
+		// ESP_LOGI(FNAME,"S1 RX %d bytes: %s", s1.length(), s1.c_str() );
 		// ESP_LOGI(FNAME,"routeS1 RX %d bytes, Q:%d  B:%d", s1.length(), s1_rx_q.numElements(), Flarm::bincom );
 		// ESP_LOG_BUFFER_HEXDUMP(FNAME,s1.c_str(),s1.length(), ESP_LOG_INFO);
 

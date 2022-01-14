@@ -30,13 +30,13 @@ enum state_t {
 class DataLink {
 	public:
 		DataLink();
-		void process( char *packet, int len, int port );
+		void process( const char *packet, int len, int port );
 
 	private:
 		void parse_NMEA_UBX( char c, int port, bool last );
 		void processNMEA( char * buffer, int len, int port );
 		void addChk(const char c);
-		void routeSerialData( char *data, int len, int port, bool nmea );
+		void routeSerialData( const char *data, int len, int port, bool nmea );
 		enum state_t state;
 		char framebuffer[128];
 		int pos;

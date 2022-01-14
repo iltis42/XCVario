@@ -19,8 +19,9 @@
 #include <cstring>
 #include "DataMonitor.h"
 #include "Flarm.h"
+#include "DataLink.h"
 
-
+DataLink dlink;
 
 /*
  *  Code for a 1:1 connection between two XCVario with a fixed message ID
@@ -161,7 +162,7 @@ void CANbus::begin()
 	}
 	ESP_LOGI(FNAME,"CANbus::begin");
 	driverInstall( TWAI_MODE_NORMAL );
-	xTaskCreatePinnedToCore(&canTxTask, "canTxTask", 4096, this, 22, 0, 0);
+	xTaskCreatePinnedToCore(&canTxTask, "canTxTask", 4096, this, 23, 0, 0);
 	xTaskCreatePinnedToCore(&canRxTask, "canRxTask", 4096, this, 23, 0, 0);
 }
 
@@ -207,7 +208,7 @@ void CANbus::txtick(int tick){
 				DM.monitorString( MON_CAN, DIR_TX, msg.c_str() );
 				if( !sendNMEA( msg ) ){
 					_connected_timeout_xcv +=20;  // if sending fails as indication for disconnection
-					ESP_LOGI(FNAME,"CAN TX NMEA failed, timeout=%d", _connected_timeout_xcv );
+					ESP_LOGW(FNAME,"CAN TX NMEA failed, timeout=%d", _connected_timeout_xcv );
 				}
 			}
 		}
@@ -292,50 +293,12 @@ void CANbus::rxtick(int tick){
 			}
 		}
 
-		// receive message of corresponding ID
-		static SString nmea;
-		static int nmea_state = 0; // poor man's nmea chunk counter and receiver state machine
-		// nmea sentence: "$/! some content, some more, ... *5e\r\n" -> note * and checksum is by NMEA0183 spec optional
-		// init w/ n_s=0   ^n_s=1      ^n_s=2...                 ^n_s=nr_of_chunks
-		if( id == 0x20 ) { // nmea
-			// ESP_LOGI(FNAME,"CAN RX NMEA frame");
-			// ESP_LOGI(FNAME,"CAN RX id:%02x len:%d", id, bytes );
+		// receive NMEA message of corresponding ID 0x20
+		if( id == 0x20 ) {
+			// ESP_LOGI(FNAME,"CAN RX NMEA len:%d msg: %s", bytes, msg.c_str() );
+			// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
 			_connected_timeout_xcv = 0;
-
-			// For n_s >=1 just increase it
-			if ( nmea_state >= 1 ) nmea_state++;
-
-			// Check always on sentence start signs
-			const char* cptr = nullptr;
-			if ( (cptr=std::strchr(msg.c_str(), '$')) != nullptr
-					|| (cptr=std::strchr(msg.c_str(), '!')) != nullptr ) {
-				if ( nmea_state != 0 ) {
-					ESP_LOGW(FNAME, "%d: %s : Unexpected NMEA frame start: %s", nmea.length(), nmea.c_str(), msg.c_str());
-				}
-				nmea = SString( cptr ); // Ok copy start of frame from where starting symbol found
-				nmea_state = 1;
-			}
-			else cptr = msg.c_str();
-
-			// Append follow-up chunks w/o extra condition
-			if ( nmea_state > 1 ) {
-				nmea += msg; // Append further chunks
-			}
-
-			// Check on the remaining string for the end sign
-			if ( std::strchr(cptr, '\n') != nullptr ) {
-				if ( nmea_state >= 1 ) {
-					int len = nmea.length();
-					nmea.setLen( len-1 );
-					Router::forwardMsg( nmea, can_rx_q ); // All good
-					DM.monitorString( MON_CAN, DIR_RX, nmea.c_str() );
-				}
-				else {
-					ESP_LOGW(FNAME, "Unexpected frame end, message dropped at %d", nmea_state);
-				}
-				nmea_state = 0;
-			}
-			Router::routeCAN();  // guess in TX tick we don't need, but here
+			dlink.process( msg.c_str(), msg.length(), 3 );  // (char *packet, int len, int port );
 		}
 		else if( id == 0x031 ){ // magnet sensor
 			// ESP_LOGI(FNAME,"CAN RX MagSensor, msg: %d", bytes );
@@ -346,7 +309,6 @@ void CANbus::rxtick(int tick){
 		}
 		bytes = receive( &id, msg, 10 );
 	}
-
 }
 
 bool CANbus::sendNMEA( const SString& msg ){
@@ -362,7 +324,9 @@ bool CANbus::sendNMEA( const SString& msg ){
 	if( alerts != 0 )
 		ESP_LOGW(FNAME,"Before send alerts %X", alerts);
 
-	// ESP_LOGI(FNAME,"send CAN NMEA len %d, msg: %s", len, msg );
+	// ESP_LOGI(FNAME,"send CAN NMEA len %d msg: %s ", msg.length(), msg.c_str() );
+	// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
+
 	const int chunk=8;
 	const int id = 0x20;
 	const char *cptr = msg.c_str();

@@ -8,6 +8,7 @@
 #include "SString.h"
 #include "Serial.h"
 #include "Flarm.h"
+#include "DataMonitor.h"
 
 // UBX SYNC
 const uint8_t UBX_SYNC1 = 0xb5;
@@ -35,7 +36,7 @@ DataLink::DataLink(){
 	ubxFound = false;
 }
 
-void DataLink::process( char *packet, int len, int port ) {
+void DataLink::process( const char *packet, int len, int port ) {
 	// process every frame byte through state machine
 	// ESP_LOGI(FNAME,"S%d: RX len: %d bytes", port, len );
 	// ESP_LOG_BUFFER_HEXDUMP(FNAME,packet, len, ESP_LOG_INFO);
@@ -56,16 +57,22 @@ void DataLink::addChk(const char c) {
 	chkB += chkA;
 }
 
-void DataLink::routeSerialData( char *data, int len, int port, bool nmea ){
+void DataLink::routeSerialData( const char *data, int len, int port, bool nmea ){
 	SString tx;
 	tx.set( data, len );
-	if( port == 1 ){
+	if( port == 1 ){      // S1
 		Router::forwardMsg( tx, s1_rx_q, nmea );
 		Router::routeS1();
 	}
-	else if( port == 2 ){
+	else if( port == 2 ){  // S2
 		Router::forwardMsg( tx, s2_rx_q, nmea  );
 		Router::routeS2();
+	}
+	else if( port == 3 ){  // CAN
+		Router::forwardMsg( tx, can_rx_q, nmea  );
+		Router::routeCAN();
+		DM.monitorString( MON_CAN, DIR_RX, tx.c_str(), false );
+		// ESP_LOG_BUFFER_HEXDUMP(FNAME, tx.c_str(), tx.length(), ESP_LOG_INFO);
 	}
 }
 

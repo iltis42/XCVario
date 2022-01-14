@@ -22,6 +22,7 @@
 #include "DataLink.h"
 
 DataLink dlink;
+DataLink dlinkXs;  // use a second CAN id and dataling to avoid checksum errors by mixed up messages
 
 /*
  *  Code for a 1:1 connection between two XCVario with a fixed message ID
@@ -295,10 +296,16 @@ void CANbus::rxtick(int tick){
 
 		// receive NMEA message of corresponding ID 0x20
 		if( id == 0x20 ) {
-			// ESP_LOGI(FNAME,"CAN RX NMEA len:%d msg: %s", bytes, msg.c_str() );
+			// ESP_LOGI(FNAME,"CAN RX NMEA chunk, len:%d msg: %s", bytes, msg.c_str() );
 			// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
 			_connected_timeout_xcv = 0;
 			dlink.process( msg.c_str(), msg.length(), 3 );  // (char *packet, int len, int port );
+		}
+		if( id == 0x21 ) {  // now clearly confirmed by traces: chunks from !xs and other sources may mix up. Fixed now by a second ID
+			// ESP_LOGI(FNAME,"CAN RX NMEA chunk, len:%d msg: %s", bytes, msg.c_str() );
+			// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
+			_connected_timeout_xcv = 0;
+			dlinkXs.process( msg.c_str(), msg.length(), 3 );  // (char *packet, int len, int port );
 		}
 		else if( id == 0x031 ){ // magnet sensor
 			// ESP_LOGI(FNAME,"CAN RX MagSensor, msg: %d", bytes );
@@ -328,15 +335,18 @@ bool CANbus::sendNMEA( const SString& msg ){
 	// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
 
 	const int chunk=8;
-	const int id = 0x20;
+	int id = 0x20;
+	if( !strncmp( msg.c_str(), "!xs", 3) )  // segregate internal NMEA by different id for !xs
+		id = 0x21;
 	const char *cptr = msg.c_str();
-	int len = msg.length() + 1; // Including the terminating \0 -> need to remove this one byte at RX from strlen
+	int len = msg.length(); // Including the terminating \0 -> need to remove this one byte at RX from strlen
 	while( len > 0 )
 	{
 		int dlen = std::min(chunk, len);
 		// Underlaying queue does block until there is space,
 		// only a timeout would return false.
-		if( ! sendData(id, cptr, dlen) ) {
+		if( !sendData(id, cptr, dlen) ) {
+			ESP_LOGW(FNAME,"send CAN NMEA failed msg: %s chunk: %s", msg.c_str(), cptr );
 			ret = false;
 		}
 		cptr += dlen;
@@ -404,11 +414,13 @@ bool CANbus::sendData( int id, const char* msg, int length, int self ){
 		message.data[i] = msg[i];
 	}
 	// ESP_LOGI(FNAME,"TX CAN bus message id:%04x, bytes:%d, data:%s, self:%d", message.identifier, message.data_length_code, message.data, message.self );
+	// ESP_LOGI(FNAME,"send CAN chunk len %d msg: %s ", length, msg );
+	// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg, length, ESP_LOG_INFO);
 
 	// Queue message for transmission
 	uint32_t alerts;
 	int retry = 3;
-	esp_err_t error;
+	esp_err_t error = ESP_OK;
 	while( (retry-- > 0) && (ESP_OK != (error=twai_transmit(&message, 0))) ) {
 		twai_read_alerts(&alerts, pdMS_TO_TICKS(_tx_timeout));
 		ESP_LOGW(FNAME,"Tx chunk failed alerts %X", alerts );

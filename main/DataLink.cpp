@@ -108,7 +108,8 @@ void DataLink::parse_NMEA_UBX( char c, int port, bool last ){
 
 		case GET_NMEA_STREAM:
 			if ((c < NMEA_MIN || c > NMEA_MAX) && (c != NMEA_CR && c != NMEA_LF)) {
-				ESP_LOGE(FNAME, "Port S%1d: Invalid NMEA character, restart", port);
+				ESP_LOGE(FNAME, "Port S%1d: Invalid NMEA character %x, restart, pos: %d, state: %d", port, (int)c, pos, state );
+				ESP_LOG_BUFFER_HEXDUMP(FNAME, framebuffer, pos+1, ESP_LOG_INFO);
 				state = GET_NMEA_UBX_SYNC;
 				break;
 			}

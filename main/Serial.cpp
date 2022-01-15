@@ -99,7 +99,7 @@ void Serial::serialHandler(void *pvParameters)
 			continue;
 		}
 		// Define expected event bits. They can come from the Uart RX ISR or from the Serial TX router queue.
-		EventBits_t bitsToWaitFor = cfg->tx_req | cfg->rx_nl | cfg->rx_char;
+		EventBits_t bitsToWaitFor = cfg->tx_req | cfg->rx_char;
 
 		// We do wait for events from Uart RX, router TX side or timeout
 		EventBits_t ebits = xEventGroupWaitBits( rxTxNotifier, bitsToWaitFor, pdTRUE, pdFALSE, ticksToWait );

@@ -199,10 +199,7 @@ void Router::routeS1(){
 				// ESP_LOGI(FNAME,"S1 RX bytes %d looped to s1_tx_q", s1.length() );
 			}
 		}
-		if( rt_s1_xcv.get() ){
-			Protocols::parseNMEA( s1.c_str() );
-			// ESP_LOGI(FNAME,"S1 RX %d bytes forwarded to local XCVario", s1.length() );
-		}
+		Protocols::parseNMEA( s1.c_str() );
 	}
 }
 
@@ -233,11 +230,7 @@ void Router::routeS2(){
 				// ESP_LOGI(FNAME,"S2 RX %d bytes forwarded to S1", s2.length() );
 			}
 		}
-		if( rt_s2_xcv.get() ){
-			Protocols::parseNMEA( s2.c_str() );
-			// ESP_LOGI(FNAME,"S2 RX %d bytes forwarded to local XCVario", s2.length() );
-		}
-
+		Protocols::parseNMEA( s2.c_str() );
 	}
 }
 
@@ -260,15 +253,12 @@ void Router::routeWLAN(){
 					// ESP_LOGI(FNAME,"Send to S2 device, TCP port 8880 received %d bytes", wlmsg.length() );
 				}
 			}
-			if( rt_xcv_wl.get() ){
-				// ESP_LOGI(FNAME,"Send to XCV processing, TCP port 8880 received %d bytes", wlmsg.length() );
-				Protocols::parseNMEA( wlmsg.c_str() );
-			}
 			if( rt_wl_can.get() ){
 				if( forwardMsg( wlmsg, can_tx_q ) ){
 					// ESP_LOGI(FNAME,"Send to XCV processing, TCP port 8880 received %d bytes", wlmsg.length() );
 				}
 			}
+			Protocols::parseNMEA( wlmsg.c_str() );
 		}
 		while( pullMsg( wl_flarm_rx_q, wlmsg ) ){
 			if( rt_s1_wl.get() && serial1_speed.get() ){
@@ -328,10 +318,7 @@ void Router::routeBT(){
 			// ESP_LOGI(FNAME,"Send to CAN bus, BT received %d bytes", bt.length() );
 			CAN->sendNMEA( bt );
 		}
-		if( rt_xcv_wl.get() ){
-			// ESP_LOGI(FNAME,"BT RX Matched a Borgelt command %s", bt.c_str() );
-			Protocols::parseNMEA( bt.c_str() );
-		}
+		Protocols::parseNMEA( bt.c_str() );
 		bt.clear();
 	}
 }

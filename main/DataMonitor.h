@@ -44,3 +44,5 @@ private:
 	int tx_total;
 	static xSemaphoreHandle mutex;
 };
+
+extern DataMonitor DM;

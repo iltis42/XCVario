@@ -46,13 +46,13 @@
 typedef enum display_type { UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P } xcv_display_t;
 typedef enum chopping_mode { NO_CHOP, VARIO_CHOP, S2F_CHOP, BOTH_CHOP } chopping_mode_t;
 typedef enum rs232linemode { RS232_NORMAL, RS232_INVERTED } rs232lm_t;
-typedef enum nmea_protocol  { OPENVARIO, BORGELT, CAMBRIDGE, XCVARIO, XCVARIO_DEVEL, GENERIC } nmea_proto_t;
+typedef enum nmea_protocol  { OPENVARIO, BORGELT, CAMBRIDGE, XCVARIO, XCVARIOFT, XCVARIO_DEVEL, GENERIC } nmea_proto_t;
 typedef enum airspeed_mode  { MODE_IAS, MODE_TAS } airspeed_mode_t;
 typedef enum altitude_display_mode  { MODE_QNH, MODE_QFE } altitude_display_mode_t;
 typedef enum e_display_style  { DISPLAY_AIRLINER, DISPLAY_RETRO, DISPLAY_UL } display_style_t;
 typedef enum e_display_variant { DISPLAY_WHITE_ON_BLACK, DISPLAY_BLACK_ON_WHITE } display_variant_t;
 typedef enum e_s2f_type  { S2F_HW_SWITCH, S2F_HW_PUSH_BUTTON, S2F_HW_SWITCH_INVERTED } e_s2f_type;
-typedef enum e_serial_route_type { RT_DISABLE = 0, RT_XCVARIO = 1, RT_WIRELESS = 2, RT_S1 = 4, RT_XCVARIO_S1 = 5  } e_serial_routing_t;
+typedef enum e_serial_route_type { RT_XCVARIO, RT_WIRELESS, RT_S1, RT_S2, RT_CAN } e_serial_routing_t;
 typedef enum e_wireless_type { WL_DISABLE, WL_BLUETOOTH, WL_WLAN_MASTER, WL_WLAN_CLIENT, WL_WLAN_STANDALONE } e_wireless_t;
 typedef enum e_audiomode_type { AM_VARIO, AM_S2F, AM_SWITCH, AM_AUTOSPEED, AM_EXTERNAL, AM_FLAP } e_audiomode_t;
 typedef enum e_audio_tone_mode { ATM_SINGLE_TONE, ATM_DUAL_TONE } e_audio_tone_mode_t;
@@ -76,6 +76,7 @@ typedef enum e_speed_unit { SPEED_UNIT_KMH, SPEED_UNIT_MPH, SPEED_UNIT_KNOTS } e
 typedef enum e_vario_unit { VARIO_UNIT_MS, VARIO_UNIT_FPM, VARIO_UNIT_KNOTS } e_vario_unit_t;
 typedef enum e_qnh_unit { QNH_HPA, QNH_INHG } e_qnh_unit_t;
 typedef enum e_compasss_sensor_type { CS_DISABLE, CS_I2C, CS_I2C_NO_TILT, CS_CAN } e_compasss_sensor_type_t;
+typedef enum e_alt_quantisation { ALT_QUANT_DISABLE, ALT_QUANT_1, ALT_QUANT_5, ALT_QUANT_10, ALT_QUANT_20 } e_alt_quantisation_t;
 
 typedef enum e_sync { SYNC_NONE, SYNC_FROM_MASTER, SYNC_FROM_CLIENT, SYNC_BIDIR } e_sync_t;       // determines if data is synched from/to client. BIDIR means sync at commit from both sides
 typedef enum e_reset { RESET_NO, RESET_YES } e_reset_t;   // determines if data is reset to defaults on factory reset
@@ -427,16 +428,22 @@ extern SetupNG<int>  		vario_unit;
 extern SetupNG<int>  		temperature_unit;
 extern SetupNG<int>  		qnh_unit;
 extern SetupNG<int>  		rot_default;
-
 extern SetupNG<int>  		serial1_speed;
 extern SetupNG<int>  		serial1_rxloop;
 extern SetupNG<int>  		serial1_tx;
+extern SetupNG<int>  		rt_s1_xcv;
+extern SetupNG<int>  		rt_s1_wl;
+extern SetupNG<int>  		rt_s1_s2;
+extern SetupNG<int>  		rt_s1_can;
 extern SetupNG<int>			serial1_pins_twisted;
 extern SetupNG<int>  		serial1_tx_inverted;
 extern SetupNG<int>  		serial1_rx_inverted;
 extern SetupNG<int>  		serial1_tx_enable;
 extern SetupNG<int>  		serial2_speed;
 extern SetupNG<int>  		serial2_tx;
+extern SetupNG<int>  		rt_s2_xcv;
+extern SetupNG<int>  		rt_s2_wl;
+extern SetupNG<int>  		rt_s2_can;
 extern SetupNG<int>			serial2_pins_twisted;
 extern SetupNG<int>  		serial2_tx_inverted;
 extern SetupNG<int>  		serial2_rx_inverted;
@@ -547,7 +554,9 @@ extern SetupNG<float> 		wind_max_deviation;
 extern SetupNG<float>       max_circle_wind_diff;
 extern SetupNG<float>       circle_wind_lowpass;
 extern SetupNG<int> 		can_speed;
-extern SetupNG<int> 		can_tx;
+extern SetupNG<int> 		rt_can_xcv;
+extern SetupNG<int> 		rt_xcv_wl;
+extern SetupNG<int> 		rt_wl_can;
 extern SetupNG<int> 		can_mode;
 extern SetupNG<float> 		master_xcvario;
 extern SetupNG<int> 		master_xcvario_lock;

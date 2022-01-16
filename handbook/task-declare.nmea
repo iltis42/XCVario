@@ -1,0 +1,32 @@
+I (00:02:42.348) BTSender.cpp: >BT RX: 58 bytes: s
+I (00:02:42.358) Flarm.cpp: parsePFLAE
+I (00:02:42.368) BTSender.cpp: <BT TX 17 bytes: $PFLAE,A,0,0*33
+I (00:02:42.388) BTSender.cpp: <BT TX 24 bytes: $PFLAV,A,3.00,7.03,*0B
+I (00:02:42.409) BTSender.cpp: <BT TX 20 bytes: $PFLAC,A,PILOT,*7B
+I (00:02:42.451) BTSender.cpp: >BT RX: 28 bytes: $PFLAC,S,GLIDERID,1234*3F
+I (00:02:42.512) BTSender.cpp: <BT TX 27 bytes: $PFLAC,A,GLIDERID,1234*2D
+I (00:02:42.532) BTSender.cpp: >BT RX: 34 bytes: $PFLAC,S,GLIDERTYPE,Nimbus 2*12
+I (00:02:42.654) BTSender.cpp: <BT TX 33 bytes: $PFLAC,A,GLIDERTYPE,Nimbus 2*00
+I (00:02:42.695) BTSender.cpp: >BT RX: 27 bytes: $PFLAC,S,NEWTASK,Task*5B
+I (00:02:42.716) BTSender.cpp: <BT TX 26 bytes: $PFLAU,0,0,0,1,0,,0,,*63
+I (00:02:42.876) BTSender.cpp: <BT TX 26 bytes: $PFLAC,A,NEWTASK,Task*49
+I (00:02:42.896) BTSender.cpp: >BT RX: 41 bytes: $PFLAC,S,ADDWP,0000000N,00000000E,T*0E
+I (00:02:43.117) BTSender.cpp: <BT TX 40 bytes: $PFLAC,A,ADDWP,0000000N,00000000E,T*1C
+I (00:02:43.159) BTSender.cpp: >BT RX: 41 bytes: $PFLAC,S,ADDWP,4855967N,00848917E,1*64
+I (00:02:43.341) BTSender.cpp: <BT TX 40 bytes: $PFLAC,A,ADDWP,4855967N,00848917E,1*76
+I (00:02:43.364) BTSender.cpp: >BT RX: 41 bytes: $PFLAC,S,ADDWP,4852617N,01110900E,2*6B
+I (00:02:43.545) BTSender.cpp: <BT TX 40 bytes: $PFLAC,A,ADDWP,4852617N,01110900E,2*79
+I (00:02:43.586) BTSender.cpp: >BT RX: 41 bytes: $PFLAC,S,ADDWP,4855967N,00848917E,3*66
+I (00:02:43.767) BTSender.cpp: <BT TX 40 bytes: $PFLAC,A,ADDWP,4855967N,00848917E,3*74
+I (00:02:43.787) BTSender.cpp: >BT RX: 41 bytes: $PFLAC,S,ADDWP,0000000N,00000000E,L*16
+I (00:02:43.788) BTSender.cpp: <BT TX 26 bytes: $PFLAU,0,0,0,1,0,,0,,*63
+I (00:02:43.972) BTSender.cpp: <BT TX 40 bytes: $PFLAC,A,ADDWP,0000000N,00000000E,L*04
+I (00:02:44.014) BTSender.cpp: >BT RX: 14 bytes: $PFLAR,0*55
+I (00:02:44.035) BTSender.cpp: <BT TX 13 bytes: $PFLAR,A*24
+I (00:02:45.662) BTSender.cpp: <BT TX 3 bytes: 
+I (00:02:45.683) BTSender.cpp: <BT TX 2 bytes: 
+I (00:02:45.703) BTSender.cpp: <BT TX 16 bytes: Selftest start
+I (00:02:45.724) BTSender.cpp: <BT TX 2 bytes: 
+I (00:02:45.745) BTSender.cpp: <BT TX 31 bytes: Startup: After clean shutdown
+I (00:02:46.226) BTSender.cpp: <BT TX 36 bytes: o.k. 16 Mbit internal FLASH memory
+

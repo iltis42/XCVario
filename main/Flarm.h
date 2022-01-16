@@ -11,43 +11,46 @@
 class Flarm {
 public:
 	static void setDisplay( AdaptUGC *theUcg ) { ucg = theUcg; };
+	static void parsePFLAE( const char *pflae );
 	static void parsePFLAU( const char *pflau );
 	static void parsePFLAA( const char *pflaa );
-	static void parsePFLAX( SString &msg );
+	static void parsePFLAX( const char *pflax, int port );
 	static void parseGPRMC( const char *gprmc );
 	static void parseGPGGA( const char *gpgga );
 	static void parsePGRMZ( const char *pgrmz );
 	static void drawAirplane( int x, int y, bool fromBehind=false, bool smallSize=false );
- 	static inline int alarmLevel(){ return AlarmLevel; };
- 	static void drawDownloadInfo();
- 	static void drawFlarmWarning();
- 	static void initFlarmWarning();
- 	static void progress();
- 	static bool connected(); // returns true if Flarm is connected
- 	static inline bool getGPS( double &gndSpeedKmh, double &gndTrack ) { if( gpsOK ) {
- 																			gndSpeedKmh = Units::knots2kmh(gndSpeedKnots);
- 																			gndTrack = gndCourse;
- 																			return true; }
- 																		else
- 																			return false;
- 	                                                                   }
- 	static bool gpsStatus() { return gpsOK; }
-    static double getGndSpeedKnots() { return gndSpeedKnots; }
-    static double getGndCourse() { return gndCourse; }
- 	static int bincom;
- 	static void tick();
- 	static bool validExtAlt() { if( ext_alt_timer )
- 									return true;
- 								else
- 									return false;
- 	}
+	static inline int alarmLevel(){ return AlarmLevel; };
+	static void drawDownloadInfo();
+	static void drawFlarmWarning();
+	static void initFlarmWarning();
+	static void progress();
+	static bool connected(); // returns true if Flarm is connected
+	static inline bool getGPS( double &gndSpeedKmh, double &gndTrack ) { if( gpsOK ) {
+		gndSpeedKmh = Units::knots2kmh(gndSpeedKnots);
+		gndTrack = gndCourse;
+		return true; }
+	else
+		return false;
+	}
+	static bool gpsStatus() { return gpsOK; }
+	static double getGndSpeedKnots() { return gndSpeedKnots; }
+	static double getGndCourse() { return gndCourse; }
+	static int bincom;
+	static int bincom_port;
+	static void tick();
+	static bool validExtAlt() { if( ext_alt_timer )
+		return true;
+	else
+		return false;
+	}
 
 private:
- 	static void drawClearTriangle( int x, int y, int rb, int dist, int size, int factor );
- 	static void drawClearVerticalTriangle( int x, int y, int rb, int dist, int size, int factor );
- 	static void drawTriangle( int x, int y, int rb, int dist, int size=15, int factor=2, bool erase=false );
+	static void drawClearTriangle( int x, int y, int rb, int dist, int size, int factor );
+	static void drawClearVerticalTriangle( int x, int y, int rb, int dist, int size, int factor );
+	static void drawTriangle( int x, int y, int rb, int dist, int size=15, int factor=2, bool erase=false );
+	static void flarmSim();
 
- 	static AdaptUGC* ucg;
+	static AdaptUGC* ucg;
 	static int RX,TX,GPS,Power;
 	static int AlarmLevel;
 	static int RelativeBearing,RelativeVertical,RelativeDistance;

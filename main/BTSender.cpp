@@ -19,7 +19,7 @@
 #include "BluetoothSerial.h"
 #include "DataMonitor.h"
 
-static TaskHandle_t pid = NULL;
+static TaskHandle_t pid = nullptr;
 
 bool BTSender::selfTest(){
 	ESP_LOGI(FNAME,"SerialBT::selfTest");
@@ -62,29 +62,31 @@ void BTSender::progress(){
 		ESP_LOGI(FNAME,"SerialBT not initialized");
 		return;
 	}
-	if (SerialBT->available() ) {
-		// ESP_LOGI(FNAME,"BT RFCOMM RX");
+	char buf[256];
+	int pos = 0;
+	while(SerialBT->available() && (pos < 256) ) {
+		char byte = (char)SerialBT->read();
+		buf[pos] = byte;
+		pos++;
+	}
+	if( pos ){
 		SString rx;
-		while (SerialBT->available() && (rx.length() < SSTRLEN-1) ){
-			Router::pullMsg( bt_rx_q , rx );
-			char byte = (char)SerialBT->read();
-			// ESP_LOGI(FNAME,"BT RFCOMM RX %c", byte );
-			rx.append( &byte, 1 );
-		}
+		rx.set( buf, pos );
 		Router::forwardMsg( rx, bt_rx_q );
 		DM.monitorString( MON_BLUETOOTH, DIR_RX, rx.c_str() );
+		// ESP_LOGI(FNAME,">BT RX: %d bytes", pos );
+		// ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.c_str(),pos, ESP_LOG_INFO);
 	}
-
 	if( SerialBT->hasClient() ) {
 		SString msg;
 		if ( Router::pullMsg( bt_tx_q, msg ) ){
-			// ESP_LOGI(FNAME,"data avail for BT send %d bytes: %s", msg.length(), msg.c_str() );
+			// ESP_LOGI(FNAME,"<BT TX %d bytes", msg.length() );
+			// ESP_LOG_BUFFER_HEXDUMP(FNAME,msg.c_str(),msg.length(), ESP_LOG_INFO);
 			SerialBT->write( (const uint8_t *)msg.c_str(), msg.length() );
 			DM.monitorString( MON_BLUETOOTH, DIR_TX, msg.c_str() );
 		}
 	}
 }
-
 
 void BTSender::begin(){
 	ESP_LOGI(FNAME,"BTSender::begin()" );
@@ -92,13 +94,9 @@ void BTSender::begin(){
 		ESP_LOGI(FNAME,"BT on, create BT master object" );
 		SerialBT = new BluetoothSerial();
 		SerialBT->begin( SetupCommon::getID() );
-		xTaskCreatePinnedToCore(&btTask, "btTask", 3072, NULL, 10, &pid, 0);  // stay below compass task
+		xTaskCreatePinnedToCore(&btTask, "btTask", 4096, NULL, 15, &pid, 0);  // stay below compass task
 	}
 }
 
-
 // dummy, we don't implement BLE right now
 extern "C" void btsnd_hcic_ble_update_adv_report_flow_control( int ignore ) {};
-
-
-

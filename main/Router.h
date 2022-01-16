@@ -35,12 +35,11 @@ extern RingBufCPP<SString, QUEUE_SIZE> s2_tx_q;
 extern RingBufCPP<SString, QUEUE_SIZE> s1_rx_q;
 extern RingBufCPP<SString, QUEUE_SIZE> s2_rx_q;
 
-extern RingBufCPP<SString, QUEUE_SIZE> xcv_rx_q;
 extern RingBufCPP<SString, QUEUE_SIZE> xcv_tx_q;
 
-extern RingBufCPP<SString, QUEUE_SIZE> client_rx_q;  // for secondary variometer
+extern RingBufCPP<SString, QUEUE_SIZE> can_rx_q;  // for secondary variometer
 
-extern RingBufCPP<SString, QUEUE_SIZE> client_tx_q;
+extern RingBufCPP<SString, QUEUE_SIZE> can_tx_q;
 
 extern portMUX_TYPE btmux;
 
@@ -50,7 +49,7 @@ class Router {
 public:
   Router() { };
   // add message to queue and return true if succeeded
-  static bool forwardMsg( SString &s, RingBufCPP<SString, QUEUE_SIZE>& q );
+  static bool forwardMsg( SString &s, RingBufCPP<SString, QUEUE_SIZE>& q, bool nmea=false );
   // gets last message from ringbuffer FIFO, return true if succeeded
   static bool pullMsg( RingBufCPP<SString, QUEUE_SIZE>& q, SString& s );
   static int  pullMsg( RingBufCPP<SString, QUEUE_SIZE>& q, char * block );
@@ -67,12 +66,13 @@ public:
   // route messages coming in from Bluetooth
   static void routeBT();
   // route messages coming in from CAN interface
-  static void routeClient();
+  static void routeCAN();
   // add messages from XCVario to Router
   static void sendXCV(char * s);
   // add messages to WIFI AUX port 8882
   static void sendAUX(char * s);
 
+  static void clearQueue( RingBufCPP<SString, QUEUE_SIZE>& q );
 
 private:
 

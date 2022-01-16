@@ -15,6 +15,7 @@
 #include "StraightWind.h"
 #include "DataMonitor.h"
 #include "AdaptUGC.h"
+#include "canbus.h"
 
 // Display 4 Wire SPI and Display CS
 #define RESET_Display  GPIO_NUM_5       // Reset pin for Display
@@ -24,7 +25,7 @@
 #define SPI_MOSI       GPIO_NUM_27      // SPI SDO Master Out Slave In pin
 #define SPI_MISO       GPIO_NUM_32      // SPI SDI Master In Slave Out
 
-
+extern CANbus* CAN;
 extern StraightWind theWind;
 extern xSemaphoreHandle xMutex;
 extern int active_screen;

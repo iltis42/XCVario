@@ -13,7 +13,7 @@ Class to handle compass data and actions.
 
 Author: Axel Pauli, February 2021
 
-Last update: 2021-02-26
+Last update: 2021-12-30
 
  **************************************************************************/
 
@@ -68,9 +68,7 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 		return 0;
 	}
 	short direction = strtol( p->getEntry(), nullptr, 10 );
-	short diridx = direction / 45;
 	// Calibration menu is requested
-	const unsigned short skydirs[8] = { 0, 45, 90, 135, 180, 225, 270, 315 };
 	p->clear();
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->setFont( ucg_font_ncenR14_hr );

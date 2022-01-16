@@ -86,6 +86,8 @@ void Protocols::sendNmeaHDT( float heading ) {
 }
 
 void Protocols::sendItem( const char *key, char type, void *value, int len, bool ack ){
+	if( Flarm::bincom )  // do not sent to client in case
+		return;
 	// ESP_LOGI(FNAME,"sendItem: %s", key );
 	char str[40];
 	char sender = 'U';
@@ -110,35 +112,34 @@ void Protocols::sendItem( const char *key, char type, void *value, int len, bool
 		sprintf( &str[i], "*%02X\r\n", cs );
 		// ESP_LOGI(FNAME,"sendNMEAString: %s", str );
 		SString nmea( str );
-		if( !Router::forwardMsg( nmea, client_tx_q ) ){
+		if( !Router::forwardMsg( nmea, can_tx_q ) ){
 			ESP_LOGW(FNAME,"Warning: Overrun in send to Client XCV %d bytes", nmea.length() );
 		}
 	}
 }
 
 void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
-		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz  ){
+		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz ){
 	if( !validTemp )
 		temp=0;
-
 	if( proto == P_XCVARIO ){
 		/*
-				Sentence has following format:
-				$PXCV,
-				BBB.B = Vario, -30 to +30 m/s, negative sign for sink,
-				C.C = MacCready 0 to 10 m/s
-				EE = bugs degradation, 0 = clean to 30 %,
-				F.FF = Ballast 1.00 to 1.60,
-				G = 0 in climb, 1 in cruise,
-				HH.H = Outside airtemp in degrees celcius ( may have leading negative sign ),
-				QQQQ.Q = QNH e.g. 1013.2,
-				PPPP.P: static pressure in hPa,
-				QQQQ.Q: dynamic pressure in Pa,
-				RRR.R: roll angle,
-				III.I: pitch angle,
-				X.XX:   acceleration in X-Axis,
-				Y.YY:   acceleration in Y-Axis,
-				Z.ZZ:   acceleration in Z-Axis,
+					Sentence has following format:
+					$PXCV,
+					BBB.B = Vario, -30 to +30 m/s, negative sign for sink,
+					C.C = MacCready 0 to 10 m/s
+					EE = bugs degradation, 0 = clean to 30 %,
+					F.FF = Ballast 1.00 to 1.60,
+					G = 0 in climb, 1 in cruise,
+					HH.H = Outside airtemp in degrees celcius ( may have leading negative sign ),
+					QQQQ.Q = QNH e.g. 1013.2,
+					PPPP.P: static pressure in hPa,
+					QQQQ.Q: dynamic pressure in Pa,
+					RRR.R: roll angle,
+					III.I: pitch angle,
+					X.XX:   acceleration in X-Axis,
+					Y.YY:   acceleration in Y-Axis,
+					Z.ZZ:   acceleration in Z-Axis,
 		 *CHK = standard NMEA checksum
 		 */
 		float bal = (aballast+100)/100.0;
@@ -149,7 +150,6 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 			float roll = IMU::getRoll();
 			float pitch = IMU::getPitch();
 			sprintf(str+append_idx,",%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", roll, pitch, acc_x, acc_y, acc_z );
-
 		}else{
 			sprintf(str+append_idx,",,,,,");
 		}
@@ -162,17 +162,17 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 	}
 	else if ( proto == P_BORGELT ) {
 		/*
-		Sentence has following format:
-		$PBB50,AAA,BBB.B,C.C,DDDDD,EE,F.FF,G,HH*CHK crlf
-		AAA = TAS 0 to 150 knots
-		BBB.B = Vario, -10 to +15 knots, negative sign for sink
-		C.C = MacCready 0 to 8.0 knots
-		DDDDD = IAS squared 0 to 22500
-		EE = bugs degradation, 0 = clean to 30 %
-		F.FF = Ballast 1.00 to 1.60
-		G = 0 in climb, 1 in cruise
-		HH = Outside airtemp in degrees celcius ( may have leading negative sign )
-		CHK = standard NMEA checksum
+			Sentence has following format:
+			$PBB50,AAA,BBB.B,C.C,DDDDD,EE,F.FF,G,HH*CHK crlf
+			AAA = TAS 0 to 150 knots
+			BBB.B = Vario, -10 to +15 knots, negative sign for sink
+			C.C = MacCready 0 to 8.0 knots
+			DDDDD = IAS squared 0 to 22500
+			EE = bugs degradation, 0 = clean to 30 %
+			F.FF = Ballast 1.00 to 1.60
+			G = 0 in climb, 1 in cruise
+			HH = Outside airtemp in degrees celcius ( may have leading negative sign )
+			CHK = standard NMEA checksum
 		 */
 		float iaskn = Units::kmh2knots( ias );
 		sprintf(str,"$PBB50,%03d,%3.1f,%1.1f,%d,%d,%1.2f,%1d,%2d", (int)(Units::kmh2knots(tas)+0.5), Units::ms2knots(te), Units::mcval2knots(mc), (int)((iaskn*iaskn)+0.5), bugs, (aballast+100)/100.0, !cruise, (int)(temp+0.5) );
@@ -180,20 +180,20 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 	else if( proto == P_CAMBRIDGE ){
 		/*
 		 * Cambridge 302 Format
-		!W,<1>,<2>,<3>,<4>,<5>,<6>,<7>,<8>,<9>,<10>,<11>,<12>,<13>*hh<CR><LF>
-		<1>    Vector wind direction in degrees
-		<2>    Vector wind speed in 10ths of meters per second
-		<3>    Vector wind age in seconds
-		<4>    Component wind in 10ths of Meters per second + 500 (500 = 0, 495 = 0.5 m/s tailwind)
-		<5>    True altitude in Meters + 1000
-		<6>    Instrument QNH setting
-		<7>    True airspeed in 100ths of Meters per second
-		<8>    Variometer reading in 10ths of knots + 200
-		<9>    Averager reading in 10ths of knots + 200
-		<10>   Relative variometer reading in 10ths of knots + 200
-		<11>   Instrument MacCready setting in 10ths of knots
-		<12>   Instrument Ballast setting in percent of capacity
-		<13>   Instrument Bug setting
+			!W,<1>,<2>,<3>,<4>,<5>,<6>,<7>,<8>,<9>,<10>,<11>,<12>,<13>*hh<CR><LF>
+			<1>    Vector wind direction in degrees
+			<2>    Vector wind speed in 10ths of meters per second
+			<3>    Vector wind age in seconds
+			<4>    Component wind in 10ths of Meters per second + 500 (500 = 0, 495 = 0.5 m/s tailwind)
+			<5>    True altitude in Meters + 1000
+			<6>    Instrument QNH setting
+			<7>    True airspeed in 100ths of Meters per second
+			<8>    Variometer reading in 10ths of knots + 200
+			<9>    Averager reading in 10ths of knots + 200
+			<10>   Relative variometer reading in 10ths of knots + 200
+			<11>   Instrument MacCready setting in 10ths of knots
+			<12>   Instrument Ballast setting in percent of capacity
+			<13>   Instrument Bug setting
 		 *hh   Checksum, XOR of all bytes of the sentence after the ‘!’ and before the ‘*’
 		 */
 
@@ -217,20 +217,19 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 			sprintf(str, "$PEYA,%.2f,%.2f,%.2f,%.2f,,,%.2f,%.2f,%.2f,,", baro, baro+(dp/100),pa, QNH.get(),tas,te,temp);
 		else
 			sprintf(str, "$PEYA,%.2f,%.2f,%.2f,%.2f,,,%.2f,%.2f,0,,", baro, baro+(dp/100),alt, QNH.get(),tas,te);
-
 	}
 	else if( proto == P_EYE_PEYI ){
 		float roll = IMU::getRoll();
 		float pitch = IMU::getPitch();
 		// ESP_LOGI(FNAME,"roll %.2f pitch %.2f yaw %.2f", roll, pitch, yaw  );
 		/*
-			$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,%.2f,
-			lbank,         // Bank == roll    (deg)           SRC
-			lpitch,         // pItch           (deg)
-			x,
-			y,
-			z,
-			);
+				$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,%.2f,
+				lbank,         // Bank == roll    (deg)           SRC
+				lpitch,         // pItch           (deg)
+				x,
+				y,
+				z,
+				);
 		 */
 		sprintf(str, "$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,", roll, pitch,acc_x,acc_y,acc_z );
 	}
@@ -265,199 +264,155 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 
 // The XCVario Protocol or Cambridge CAI302 protocol to adjust MC,Ballast,Bugs.
 
-const char * mystrtok(const char *s)
-{
-	int i, c;
-	for (i = 0; i < strlen(s); i++) {
-		c = (unsigned char)s[i];
-		if (c == '$' || c == '!')
-			return &s[i];
+void Protocols::parseXS( const char *str ){
+	// ESP_LOGI(FNAME,"parseXS %s", str );
+	char key[20];
+	char type;
+	char role; // M | C
+	int cs;
+	float val;
+	sscanf(str, "!xs%c,%[^,],%c,%f*%02x", &role, key, &type, &val, &cs );  // !xsM,FLPS,F,1.5000*27
+	int calc_cs=calcNMEACheckSum( str );
+	if( cs == calc_cs ){
+		// ESP_LOGI(FNAME,"parsed NMEA: role=%c type=%c key=%s val=%f vali=%d", role, type , key, val, (int)val );
+		if( type == 'F' ){
+			SetupNG<float> *item = (SetupNG<float> *)SetupCommon::getMember( key );
+			if( item != 0 ){
+				if( role == 'A' )
+					item->ack( val );
+				else
+					item->set( val, false );
+			}else
+				ESP_LOGW(FNAME,"Setup item with key %s not found", key );
+		}
+		else if( type == 'I' ){
+			SetupNG<int> *item = (SetupNG<int> *)SetupCommon::getMember( key );
+			if( item != 0 ){
+				if( role == 'A' && val == item->get() )
+					item->ack( val );
+				else
+					item->set( (int)val, false );
+			}else
+				ESP_LOGW(FNAME,"Setup item with key %s not found", key );
+		}
+
+	}else{
+		ESP_LOGW(FNAME,"!xs messgae CS error got:%X != calculated:%X", cs, calc_cs );
+		ESP_LOG_BUFFER_HEXDUMP(FNAME,str,32, ESP_LOG_WARN);
 	}
-	return 0;
 }
 
 
-void Protocols::parseNMEA( const char *astr ){
-	// ESP_LOGI(FNAME,"parseNMEA: %s", astr );
-	const char *str = mystrtok(astr);
-	while( str ){
-		// ESP_LOGI(FNAME,"parseNMEA token: %s", str);
-		if ( strncmp( str, "!xs", 3 ) == 0 ) {
-			// ESP_LOGI(FNAME,"parseNMEA %s", str );
-			char key[20];
-			char type;
-			char role; // M | C
+void Protocols::parseNMEA( const char *str ){
+	// ESP_LOGI(FNAME,"parseNMEA: %s, len: %d", astr,  strlen(astr) );
+
+	if ( strncmp( str, "!xc,", 4 ) == 0 ) { // need this to support Wind Simulator with Compass simulation
+		float h;
+		sscanf( str,"!xc,%f", &h );
+		ESP_LOGI(FNAME,"Compass heading detected=%3.1f", h );
+		if( compass )
+			compass->setHeading( h );
+	}
+	else if ( (strncmp( str, "!g,", 3 ) == 0)    ) {
+		ESP_LOGI(FNAME,"parseNMEA, Cambridge C302 style command !g detected: %s",str);
+		if (str[3] == 'b') {  // this may reach master or client with an own navi
+			ESP_LOGI(FNAME,"parseNMEA, BORGELT, ballast modification");
+			float aballast;
+			sscanf(str, "!g,b%f", &aballast);
+			aballast = aballast * 10; // Its obviously only possible to change in fraction's by 10% in CA302 (issue: 464)
+			ESP_LOGI(FNAME,"New Ballast: %.1f %% of max ", aballast);
+			float liters = (aballast/100.0) * polar_max_ballast.get();
+			ESP_LOGI(FNAME,"New Ballast in liters/kg: %.1f ", liters);
+			ballast_kg.set( liters );
+		}
+		if (str[3] == 'm' ) {
+			ESP_LOGI(FNAME,"parseNMEA, BORGELT, MC modification");
+			float mc;
+			sscanf(str, "!g,m%f", &mc);
+			mc = mc*0.1;   // comes in knots*10, unify to knots
+			float mc_ms =  std::roundf(Units::knots2ms(mc)*10.f)/10.f; // hide rough knot resolution
+			if( vario_unit.get() == VARIO_UNIT_KNOTS )
+				mc_ms =  std::roundf(Units::knots2ms(mc)*100.f)/100.f; // higher resolution for knots
+			ESP_LOGI(FNAME,"New MC: %1.1f knots, %f m/s", mc, mc_ms );
+			MC.set( mc_ms );  // set mc in m/s
+		}
+		if (str[3] == 'u') {
+			int mybugs;
+			sscanf(str, "!g,u%d", &mybugs);
+			mybugs = 100-mybugs;
+			ESP_LOGI(FNAME,"New Bugs: %d %%", mybugs);
+			bugs.set( mybugs );
+		}
+		if (str[3] == 'q') {  // nonstandard CAI 302 extension for QNH setting in XCVario in int or float e.g. 1013 or 1020.20
+			float qnh;
+			sscanf(str, "!g,q%f", &qnh);
+			ESP_LOGI(FNAME,"New QNH: %.2f", qnh);
+			QNH.set( qnh );
+		}
+	}
+	else if( strncmp( str, "$g,", 3 ) == 0 ) {
+		ESP_LOGI(FNAME,"New XCNAV cmd %s", str );
+		if (str[3] == 's') {  // nonstandard CAI 302 extension for S2F mode switch, e.g. for XCNav remote stick
+			ESP_LOGI(FNAME,"New XCNAV Volume cmd");
+			int mode;
 			int cs;
-			float val;
-			sscanf(str, "!xs%c,%[^,],%c,%f*%02x", &role, key, &type, &val, &cs );  // !xsM,FLPS,F,1.5000*27
+			sscanf(str, "$g,s%d*%02x", &mode, &cs);
 			int calc_cs=calcNMEACheckSum( str );
-			if( cs == calc_cs ){
-				// ESP_LOGI(FNAME,"parsed NMEA: role=%c type=%c key=%s val=%f vali=%d", role, type , key, val, (int)val );
-				if( type == 'F' ){
-					SetupNG<float> *item = (SetupNG<float> *)SetupCommon::getMember( key );
-					if( item != 0 ){
-						if( role == 'A' )
-							item->ack( val );
-						else
-							item->set( val, false );
-					}else
-						ESP_LOGW(FNAME,"Setup item with key %s not found", key );
-				}
-				else if( type == 'I' ){
-					SetupNG<int> *item = (SetupNG<int> *)SetupCommon::getMember( key );
-					if( item != 0 ){
-						if( role == 'A' && val == item->get() )
-							item->ack( val );
-						else
-							item->set( (int)val, false );
-					}else
-						ESP_LOGW(FNAME,"Setup item with key %s not found", key );
-				}
-
-			}else{
-				ESP_LOGW(FNAME,"!xs messgae CS error got:%X != calculated:%X", cs, calc_cs );
-				ESP_LOG_BUFFER_HEXDUMP(FNAME,str,32, ESP_LOG_WARN);
+			if( calc_cs != cs ){
+				ESP_LOGW(FNAME,"CS Error in %s; %d != %d", str, cs, calc_cs );
+			}
+			else{
+				ESP_LOGI(FNAME,"New S2F mode: %d", mode );
+				cruise_mode.set( mode );
 			}
 		}
-		else if ( strncmp( str, "!xc,", 4 ) == 0 ) { // need this to support Wind Simulator with Compass simulation
-			float h;
-			sscanf( str,"!xc,%f", &h );
-			ESP_LOGI(FNAME,"Compass heading detected=%3.1f", h );
-			if( compass )
-				compass->setHeading( h );
-		}
-		else if ( (strncmp( str, "!g,", 3 ) == 0)    ) {
-			ESP_LOGI(FNAME,"parseNMEA, Cambridge C302 style command !g detected: %s",str);
-			if (str[3] == 'b') {  // this may reach master or client with an own navi
-				ESP_LOGI(FNAME,"parseNMEA, BORGELT, ballast modification");
-				float aballast;
-				sscanf(str, "!g,b%f", &aballast);
-				aballast = aballast * 10; // Its obviously only possible to change in fraction's by 10% in CA302 (issue: 464)
-				ESP_LOGI(FNAME,"New Ballast: %.1f %% of max ", aballast);
-				float liters = (aballast/100.0) * polar_max_ballast.get();
-				ESP_LOGI(FNAME,"New Ballast in liters/kg: %.1f ", liters);
-				ballast_kg.set( liters );
+		if (str[3] == 'v') {  // nonstandard CAI 302 extension for volume Up/Down, e.g. for XCNav remote stick
+			int steps;
+			int cs;
+			ESP_LOGI(FNAME,"Volume message: %s", str );
+			sscanf(str, "$g,v%d*%02x", &steps, &cs);
+			int calc_cs=calcNMEACheckSum( str );
+			if( calc_cs != cs ){
+				ESP_LOGW(FNAME,"CS Error: in %s; %d != %d", str, cs, calc_cs );
 			}
-			if (str[3] == 'm' ) {
-				ESP_LOGI(FNAME,"parseNMEA, BORGELT, MC modification");
-				float mc;
-				sscanf(str, "!g,m%f", &mc);
-				mc = mc*0.1;   // comes in knots*10, unify to knots
-				float mc_ms =  std::roundf(Units::knots2ms(mc)*10.f)/10.f; // hide rough knot resolution
-				if( vario_unit.get() == VARIO_UNIT_KNOTS )
-					mc_ms =  std::roundf(Units::knots2ms(mc)*100.f)/100.f; // higher resolution for knots
-				ESP_LOGI(FNAME,"New MC: %1.1f knots, %f m/s", mc, mc_ms );
-				MC.set( mc_ms );  // set mc in m/s
-			}
-			if (str[3] == 'u') {
-				int mybugs;
-				sscanf(str, "!g,u%d", &mybugs);
-				mybugs = 100-mybugs;
-				ESP_LOGI(FNAME,"New Bugs: %d %%", mybugs);
-				bugs.set( mybugs );
-			}
-			if (str[3] == 'q') {  // nonstandard CAI 302 extension for QNH setting in XCVario in int or float e.g. 1013 or 1020.20
-				float qnh;
-				sscanf(str, "!g,q%f", &qnh);
-				ESP_LOGI(FNAME,"New QNH: %.2f", qnh);
-				QNH.set( qnh );
+			else{
+				float v = audio_volume.get() + steps;
+				if( v<=100.0 && v >= 0.0 ){
+					audio_volume.set( v );
+					ESP_LOGI(FNAME,"Volume change: %d steps, new volume: %.0f", steps, v );
+				}else
+					ESP_LOGI(FNAME,"Volume change limit reached steps: %d volume: %.0f", steps, v );
 			}
 		}
-		else if( strncmp( str, "$g,", 3 ) == 0 ) {
-			ESP_LOGI(FNAME,"New XCNAV cmd %s", str );
-			if (str[3] == 's') {  // nonstandard CAI 302 extension for S2F mode switch, e.g. for XCNav remote stick
-				ESP_LOGI(FNAME,"New XCNAV Volume cmd");
-				int mode;
-				int cs;
-				sscanf(str, "$g,s%d*%02x", &mode, &cs);
-				int calc_cs=calcNMEACheckSum( str );
-				if( calc_cs != cs ){
-					ESP_LOGW(FNAME,"CS Error in %s; %d != %d", str, cs, calc_cs );
-				}
-				else{
-					ESP_LOGI(FNAME,"New S2F mode: %d", mode );
-					cruise_mode.set( mode );
-				}
-			}
-			if (str[3] == 'v') {  // nonstandard CAI 302 extension for volume Up/Down, e.g. for XCNav remote stick
-				int steps;
-				int cs;
-				ESP_LOGI(FNAME,"Volume message: %s", str );
-				sscanf(str, "$g,v%d*%02x", &steps, &cs);
-				int calc_cs=calcNMEACheckSum( str );
-				if( calc_cs != cs ){
-					ESP_LOGW(FNAME,"CS Error: in %s; %d != %d", str, cs, calc_cs );
-				}
-				else{
-					float v = audio_volume.get() + steps;
-					if( v<=100.0 && v >= 0.0 ){
-						audio_volume.set( v );
-						ESP_LOGI(FNAME,"Volume change: %d steps, new volume: %.0f", steps, v );
-					}else
-						ESP_LOGI(FNAME,"Volume change limit reached steps: %d volume: %.0f", steps, v );
-				}
-			}
-			if (str[3] == 'r') {  // nonstandard CAI 302 extension for Rotary Movement, e.g. for XCNav remote stick to navigate
-				char func;
-				int cs;
-				ESP_LOGI(FNAME,"Rotary move message: %s", str );
-				sscanf(str, "$g,r%c*%02x", &func, &cs);
-				int calc_cs=calcNMEACheckSum( str );
-				if( calc_cs != cs ){
-					ESP_LOGW(FNAME,"CS Error: in %s; %x != %x", str, cs, calc_cs );
-				}
-				else{
-					if( func == 's' ){
-						ESP_LOGI(FNAME,"Short Press");
-						ESPRotary::sendPress();
-						ESPRotary::sendRelease();
-					}else if( func == 'l' ){
-						ESP_LOGI(FNAME,"Long Press" );
-						ESPRotary::sendLongPress();
-						ESPRotary::sendRelease();
-					}else if( func == 'u' ){
-						ESP_LOGI(FNAME,"Up");
-						ESPRotary::sendUp(1);
-					}else if( func == 'd' ){
-						ESP_LOGI(FNAME,"Down");
-						ESPRotary::sendDown(1);
-					}
-				}
-			}
-		}
-		else if( !strncmp( str, "$PFLAU,", 6 )) {
-			Flarm::parsePFLAU( str );
-			if( Flarm::bincom  ) {
-				Flarm::bincom--;
-				ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
-			}
-		}
-		else if( !strncmp( str+3, "RMC,", 3 ) ) {
-			Flarm::parseGPRMC( str );
-			if( Flarm::bincom  ) {
-				Flarm::bincom--;
-				ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
-			}
-		}
-		else if( !strncmp( str+3, "GGA,", 3 )) {
-			Flarm::parseGPGGA( str );
-			if( Flarm::bincom  ) {
-				Flarm::bincom--;
-				ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
-			}
-		}
-		else if( !strncmp( str+3, "RMZ,", 3 )) {
-			Flarm::parsePGRMZ( str );
-			if( Flarm::bincom  ) {
-				Flarm::bincom--;
-				ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
-			}
-		}
-		str++;
-		str = mystrtok(str);
+	}
+	else if( !strncmp( str+1, "PFLAE,", 5 )) {  // On Task declaration or re-connect
+		Flarm::parsePFLAE( str );
+		ageBincom();
+	}
+	else if( !strncmp( str+1, "PFLAU,", 5 )) {
+		Flarm::parsePFLAU( str );
+		ageBincom();
+	}
+	else if( !strncmp( str+3, "RMC,", 3 ) ) {
+		Flarm::parseGPRMC( str );
+		ageBincom();
+	}
+	else if( !strncmp( str+3, "GGA,", 3 )) {
+		Flarm::parseGPGGA( str );
+		ageBincom();
+	}
+	else if( !strncmp( str+3, "RMZ,", 3 )) {
+		Flarm::parsePGRMZ( str );
+		ageBincom();
 	}
 }
 
+void Protocols::ageBincom(){
+	if( Flarm::bincom  ) {
+		Flarm::bincom--;
+		ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
+	}
+}
 
 // Calculate the checksum and output it as an int
 // is required as HEX in the NMEA data set

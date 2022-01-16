@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include "RingBufHelpers.h"
@@ -79,6 +78,18 @@ public:
         }
         RB_ATOMIC_END
         return ret;
+    }
+
+    /**
+     * Removes all items from the queue.
+     */
+    void clear()
+    {
+      RB_ATOMIC_START
+      _numElements = 0;
+      _head = 0;
+      _tail = 0;
+      RB_ATOMIC_END
     }
 
     /**

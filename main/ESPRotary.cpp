@@ -125,8 +125,9 @@ void ESPRotary::sendRelease(){
 
 void ESPRotary::sendPress(){
 	ESP_LOGI(FNAME,"Pressed action");
-  if( Flarm::bincom )
-    return;
+	pressed = true;
+	if( Flarm::bincom )
+		return;
 	for (auto &observer : observers)
 		observer->press();
 	ESP_LOGI(FNAME,"End pressed action");
@@ -135,11 +136,29 @@ void ESPRotary::sendPress(){
 
 void ESPRotary::sendLongPress(){
 	ESP_LOGI(FNAME,"Long pressed action");
-  if( Flarm::bincom )
-    return;
+	longPressed = true;
+	if( Flarm::bincom )
+		return;
 	for (auto &observer : observers)
 		observer->longPress();
 	ESP_LOGI(FNAME,"End long pressed action");
+}
+
+void ESPRotary::sendDown( int diff ){
+	// ESP_LOGI(FNAME,"Rotary up action");
+	if( Flarm::bincom )
+		return;
+	for (auto &observer : observers)
+		observer->up( diff );   // tbd, clean up, this is named wrong in observers, shoud be down()
+}
+
+
+void ESPRotary::sendUp( int diff ){
+	// ESP_LOGI(FNAME,"Rotary down action");
+	if( Flarm::bincom )
+		return;
+	for (auto &observer : observers)
+		observer->down( diff );   // tbd, dito
 }
 
 void ESPRotary::informObservers( void * args )
@@ -158,7 +177,7 @@ void ESPRotary::informObservers( void * args )
 				if( !longPressed ){
 					sendLongPress();
 					sendRelease();
-					longPressed = true;
+
 				}
 			}
 		}
@@ -170,7 +189,6 @@ void ESPRotary::informObservers( void * args )
 					if( !pressed ){
 						sendPress();
 						sendRelease();
-						pressed = true;
 					}
 				}
 				timer = 0;
@@ -202,14 +220,12 @@ void ESPRotary::informObservers( void * args )
 			}
 			old_cnt = r_enc_count+r_enc2_count;
 			if( diff < 0 ) {
-				// ESP_LOGI(FNAME,"Rotary up %d times",abs(diff) );
-				for (auto &observer : observers)
-					observer->up( abs(diff) );
+				// ESP_LOGI(FNAME,"Rotary down %d times",abs(diff) );
+				sendDown( abs(diff) );
 			}
 			else{
-				// ESP_LOGI(FNAME,"Rotary down %d times", abs(diff) );
-				for (auto &observer : observers)
-					observer->down( abs(diff) );
+				// ESP_LOGI(FNAME,"Rotary up %d times", abs(diff) );
+				sendUp( abs(diff) );
 			}
 		}
 		if( uxTaskGetStackHighWaterMark( pid ) < 256 )

@@ -108,7 +108,7 @@ SetupNG<float>  		deadband( "DEADBAND", 0.3, true, SYNC_FROM_MASTER, PERSISTENT,
 SetupNG<float>  		deadband_neg("DEADBAND_NEG" , -0.3, true, SYNC_FROM_MASTER, PERSISTENT, 0, UNIT_VARIO );
 SetupNG<float>  		range( "VARIO_RANGE", 5.0, true, SYNC_FROM_MASTER, PERSISTENT, 0, UNIT_VARIO );
 SetupNG<int>			log_scale( "LOG_SCALE", 0 );
-SetupNG<float>  		ballast( "BALLAST" , 0.0, true, SYNC_NONE, VOLATILE, change_ballast );  // ballast increase from reference weight in %
+SetupNG<float>  		ballast( "BALLAST" , 0.0, true, SYNC_NONE, VOLATILE, 0 );  // ballast increase from reference weight in %
 SetupNG<float>  		ballast_kg( "BAL_KG" , 0.0, true, SYNC_BIDIR, PERSISTENT, change_ballast );
 SetupNG<float>			empty_weight( "EMPTY_WGT", 250, true, SYNC_BIDIR, PERSISTENT, change_ballast );
 SetupNG<float>			crew_weight( "CREW_WGT", 80, true, SYNC_BIDIR, PERSISTENT, change_ballast );

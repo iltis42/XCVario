@@ -354,10 +354,7 @@ void Router::routeCAN(){
 					// ESP_LOGI(FNAME,"Send to WiFi device, can link received %d NMEA bytes", can.length() );
 				}
 			}
-			if( rt_can_xcv.get() ) {
-				// ESP_LOGI(FNAME,"Send to local XCV, can link received %d NMEA bytes", can.length() );
-				Protocols::parseNMEA( can.c_str() );
-			}
+			Protocols::parseNMEA( can.c_str() );
 		}
 		else{ // got !xs frame
 			Protocols::parseXS( can.c_str() );

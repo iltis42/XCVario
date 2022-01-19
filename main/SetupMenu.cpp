@@ -41,6 +41,7 @@
 #include "SetupNG.h"
 
 
+
 SetupMenuSelect * audio_range_sm = 0;
 SetupMenuSelect * mpu = 0;
 
@@ -352,6 +353,7 @@ void SetupMenu::catchFocus( bool activate ){
 void SetupMenu::display( int mode ){
 	if( (selected != this) || !inSetup || focus )
 		return;
+	xSemaphoreTake(display_mutex,portMAX_DELAY);
 	ESP_LOGI(FNAME,"SetupMenu display( %s)", _title );
 	clear();
 	int y=25;
@@ -382,6 +384,7 @@ void SetupMenu::display( int mode ){
 	y+=170;
 	xSemaphoreGive(spiMutex );
 	showhelp( y );
+	xSemaphoreGive(display_mutex);
 }
 
 void SetupMenu::down(int count){
@@ -515,6 +518,7 @@ void SetupMenu::press(){
 	}
 	if( !menu_long_press.get() || inSetup )
 		showMenu();
+
 	if( pressed )
 		pressed = false;
 	else

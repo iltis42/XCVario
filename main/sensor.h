@@ -33,6 +33,7 @@ extern int active_screen;
 extern bool haveMPU;
 extern bool ahrsKeyValid;
 extern SetupMenu  *Menu;
+extern xSemaphoreHandle display_mutex;
 
 extern e_wireless_type wireless;
 

@@ -102,7 +102,8 @@ int ASLEN = 0;
 static const int16_t INNER_RIGHT_ALIGN = 170;
 static int fh;
 
-extern xSemaphoreHandle spiMutex; // todo needs a better concept here
+extern xSemaphoreHandle spiMutex;
+xSemaphoreHandle display_mutex=NULL;
 
 #define PMLEN 24
 
@@ -265,6 +266,7 @@ IpsDisplay::IpsDisplay( AdaptUGC *aucg ) {
 	_dc = GPIO_NUM_MAX;
 	_reset = GPIO_NUM_MAX;
 	_cs = GPIO_NUM_MAX;
+	display_mutex = xSemaphoreCreateMutex();
 }
 
 IpsDisplay::~IpsDisplay() {
@@ -1283,6 +1285,8 @@ void IpsDisplay::initRetroDisplay( bool ulmode ){
 	drawScale( _range, -_range, 140, 0);
 
 	// Unit's
+	if( _menu )
+		return;
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setPrintPos(5,50);
 	ucg->setColor(COLOR_HEADER);
@@ -1930,13 +1934,14 @@ void IpsDisplay::drawDisplay( int airspeed, float te, float ate, float polar_sin
 	if ( alt_display_mode.get() == MODE_QFE ) {
 		altitude -= elevation.get();
 	}
-
+	xSemaphoreTake(display_mutex,portMAX_DELAY);
 	if( display_style.get() == DISPLAY_AIRLINER )
 		drawAirlinerDisplay( airspeed,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_setting, wksensor );
 	else if( display_style.get() == DISPLAY_RETRO )
 		drawRetroDisplay( airspeed,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_setting, wksensor, false );
 	else if( display_style.get() == DISPLAY_UL )
 		drawRetroDisplay( airspeed,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_setting, wksensor, true );
+	xSemaphoreGive(display_mutex);
 
 }
 

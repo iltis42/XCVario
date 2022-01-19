@@ -212,20 +212,22 @@ void Flarm::parseGPGGA( const char *gpgga ) {
 	// ESP_LOGI(FNAME,"parseGPGGA");
 	int numSat;
 	int cs;
-	// ESP_LOGV(FNAME,"parseG*GGA: %s", gpgga );
+	// ESP_LOGI(FNAME,"parseG*GGA: %s", gpgga );
 	int calc_cs=Protocols::calcNMEACheckSum( gpgga );
 	cs = Protocols::getNMEACheckSum( gpgga );
 	if( cs != calc_cs ){
 		ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", gpgga, calc_cs, cs );
 		return;
 	}
-	sscanf( gpgga+3, "GGA,%*f,%*f,%*c,%*f,%*c,%*d,%d,%*f,%*f,M,%*f,M,%*f,%*d*%*02x", &numSat);
-
-	if( numSat != _numSat && wind_enable.get() != WA_OFF ){
-		_numSat = numSat;
-		CircleWind::newConstellation( numSat );
+	int ret=sscanf( gpgga+3, "GGA,%*f,%*f,%*c,%*f,%*c,%*d,%d,%*f,%*f,M,%*f,M,%*f,%*d*%*02x", &numSat);
+	// ESP_LOGI(FNAME,"parseG*GGA: %s numSat=%d ssf_ret=%d", gpgga, numSat, ret );
+	if( ret >=1 ){
+		if( (numSat != _numSat) && (wind_enable.get() != WA_OFF) ){
+			_numSat = numSat;
+			CircleWind::newConstellation( numSat );
+		}
+		timeout = 10;
 	}
-	timeout = 10;
 }
 
 // parsePFLAE $PFLAE,A,0,0*33

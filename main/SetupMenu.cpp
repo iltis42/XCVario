@@ -507,8 +507,6 @@ void SetupMenu::showMenu(){
 }
 
 void SetupMenu::press(){
-	if( selected == 0 )
-		selected = root;
 	if( (selected != this) || focus )
 		return;
 	if( !inSetup ){
@@ -534,8 +532,6 @@ void SetupMenu::longPress(){
 }
 
 void SetupMenu::escape(){
-	if( selected == 0 )
-		selected = root;
 	if( inSetup ){
 		ESP_LOGI(FNAME,"escape now Setup Menu");
 		_display->clear();
@@ -550,6 +546,7 @@ void SetupMenu::setup( )
 	ESP_LOGI(FNAME,"SetupMenu setup()");
 
 	SetupMenu * root = new SetupMenu( "Setup" );
+	root->setRoot( root );
 	MenuEntry* mm = root->addEntry( root );
 
 	if ( rot_default.get() == 0 ) {

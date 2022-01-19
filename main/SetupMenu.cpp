@@ -539,36 +539,36 @@ void SetupMenu::setup( )
 
 	if ( rot_default.get() == 0 ) {
 		SetupMenuValFloat * mc = new SetupMenuValFloat( "MC", "",	0.0, 9.9, 0.1, 0, true, &MC );
-		mc->setHelp(PROGMEM"Default Mac Cready value for optimum cruise speed, or average climb rate to be provided in same units as variometer setting");
+		mc->setHelp(PROGMEM"Mac Cready value for optimum cruise speed, or average climb rate to be provided in same unit as the variometer");
 		mc->setPrecision(1);
 		mm->addEntry( mc );
 	}
 	else {
 		SetupMenuValFloat * vol = new SetupMenuValFloat( "Audio Volume", "%", 0.0, 100, 1, vol_adj, true, &audio_volume );
-		vol->setHelp(PROGMEM"Set audio volume");
+		vol->setHelp(PROGMEM"Audio volume level for variometer tone on internal and external speaker");
 		mm->addEntry( vol );
 	}
-
-	SetupMenuValFloat::qnh_menu = new SetupMenuValFloat( "QNH Setup", "", 900, 1100.0, 0.250, qnh_adj, true, &QNH );
-	SetupMenuValFloat::qnh_menu->setHelp(PROGMEM"Setup QNH pressure value from next ATC. On ground you may adjust to airfield altitude above MSL.", 180 );
-	mm->addEntry( SetupMenuValFloat::qnh_menu );
-
-	SetupMenuValFloat * bal = new SetupMenuValFloat( "Ballast", "litre", 0.0, 500, 1, water_adj, true, &ballast_kg  );
-	bal->setHelp(PROGMEM"Enter here the number of litres of water ballast added before flight");
-	bal->setPrecision(0);
-	mm->addEntry( bal );
-
-	SetupMenuValFloat * crewball = new SetupMenuValFloat( "Crew Weight", "kg", 0, 300, 1, crew_weight_adj, false, &crew_weight );
-	crewball->setPrecision(0);
-	crewball->setHelp(PROGMEM"The weight of the pilot(s) including parachute (everything on top of the Empty Weight apart from ballast)");
-	mm->addEntry( crewball );
 
 	SetupMenuValFloat * bgs = new SetupMenuValFloat( "Bugs", "%", 0.0, 50, 1, bug_adj, true, &bugs  );
 	bgs->setHelp(PROGMEM"Percent of bugs contamination to indicate degradation of gliding performance");
 	mm->addEntry( bgs );
 
+	SetupMenuValFloat * bal = new SetupMenuValFloat( "Ballast", "litre", 0.0, 500, 1, water_adj, true, &ballast_kg  );
+	bal->setHelp(PROGMEM"Amount of water ballast added to the over all weight");
+	bal->setPrecision(0);
+	mm->addEntry( bal );
+
+	SetupMenuValFloat * crewball = new SetupMenuValFloat( "Crew Weight", "kg", 0, 300, 1, crew_weight_adj, false, &crew_weight );
+	crewball->setPrecision(0);
+	crewball->setHelp(PROGMEM"Weight of the pilot(s) including parachute (everything on top of the Empty Weight apart from ballast)");
+	mm->addEntry( crewball );
+
+	SetupMenuValFloat::qnh_menu = new SetupMenuValFloat( "QNH", "", 900, 1100.0, 0.250, qnh_adj, true, &QNH );
+	SetupMenuValFloat::qnh_menu->setHelp(PROGMEM"QNH pressure value from next ATC. On ground you may adjust to airfield altitude above MSL", 180 );
+	mm->addEntry( SetupMenuValFloat::qnh_menu );
+
 	SetupMenuValFloat * afe = new SetupMenuValFloat( "Airfield Elevation", "", -1, 3000, 1, 0, true, &elevation );
-	afe->setHelp(PROGMEM"Set airfield elevation in meters for QNH auto adjust on ground according to this setting");
+	afe->setHelp(PROGMEM"Airfield elevation in meters for QNH auto adjust on ground according to this elevation");
 	mm->addEntry( afe );
 
 	if( (int)(password.get()) == 271 ) {
@@ -587,7 +587,7 @@ void SetupMenu::setup( )
 	else
 	{
 		// Vario
-		SetupMenu * va = new SetupMenu( "Vario and S2F" );
+		SetupMenu * va = new SetupMenu( "Vario and Speed 2 Fly" );
 		MenuEntry* vae = mm->addEntry( va );
 		SetupMenuValFloat * vga = new SetupMenuValFloat( "Range", "",	1.0, 30.0, 1, update_rentry, true, &range );
 		vga->setHelp(PROGMEM"Upper and lower value for Vario graphic display region");
@@ -815,7 +815,7 @@ void SetupMenu::setup( )
 		audio->addEntry( frqr );
 
 		// Polar Setup
-		SetupMenu * po = new SetupMenu( "Weight/Polar" );
+		SetupMenu * po = new SetupMenu( "Glider Details" );
 		po->setHelp( PROGMEM"Weight and Polar setup for best match with performance of glider", 220 );
 		MenuEntry* poe = mm->addEntry( po );
 
@@ -864,7 +864,7 @@ void SetupMenu::setup( )
 
 		SetupMenuValFloat * fixball = new SetupMenuValFloat( "Empty Weight", "kg", 0, 1000, 1, empty_weight_adj, false, &empty_weight );
 		fixball->setPrecision(0);
-		fixball->setHelp(PROGMEM"Asjust here the empty weight of your glider, according to your weight an balance plan");
+		fixball->setHelp(PROGMEM"Net rigged weight of the glider, according to the weight an balance plan");
 		poe->addEntry( fixball );
 
 		SetupMenu * opt = new SetupMenu( "Options" );

@@ -351,9 +351,9 @@ void Protocols::parseNMEA( const char *str ){
 		}
 	}
 	else if( strncmp( str, "$g,", 3 ) == 0 ) {
-		ESP_LOGI(FNAME,"New XCNAV cmd %s", str );
+		ESP_LOGI(FNAME,"Remote cmd %s", str );
 		if (str[3] == 's') {  // nonstandard CAI 302 extension for S2F mode switch, e.g. for XCNav remote stick
-			ESP_LOGI(FNAME,"New XCNAV Volume cmd");
+			ESP_LOGI(FNAME,"Detected S2F cmd");
 			int mode;
 			int cs;
 			sscanf(str, "$g,s%d*%02x", &mode, &cs);
@@ -369,7 +369,7 @@ void Protocols::parseNMEA( const char *str ){
 		if (str[3] == 'v') {  // nonstandard CAI 302 extension for volume Up/Down, e.g. for XCNav remote stick
 			int steps;
 			int cs;
-			ESP_LOGI(FNAME,"Volume message: %s", str );
+			ESP_LOGI(FNAME,"Detected volume cmd");
 			sscanf(str, "$g,v%d*%02x", &steps, &cs);
 			int calc_cs=calcNMEACheckSum( str );
 			if( calc_cs != cs ){
@@ -387,7 +387,7 @@ void Protocols::parseNMEA( const char *str ){
 		if (str[3] == 'r') {  // nonstandard CAI 302 extension for Rotary Movement, e.g. for XCNav remote stick to navigate
 			char func;
 			int cs;
-			ESP_LOGI(FNAME,"Rotary remote message: %s", str );
+			ESP_LOGI(FNAME,"Detected rotary message");
 			sscanf(str, "$g,r%c*%02x", &func, &cs);
 			int calc_cs=calcNMEACheckSum( str );
 			if( calc_cs != cs ){
@@ -408,6 +408,10 @@ void Protocols::parseNMEA( const char *str ){
 				}else if( func == 'd' ){
 					ESP_LOGI(FNAME,"Down");
 					ESPRotary::sendDown(1);
+				}
+				else if( func == 'x' ){
+					ESP_LOGI(FNAME,"Escape");
+					ESPRotary::sendEsc();
 				}
 			}
 		}

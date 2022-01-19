@@ -37,6 +37,7 @@ public:
     static void sendLongPress();
     static void sendUp( int diff );
     static void sendDown( int diff );
+    static void sendEsc();
     static bool readSwitch();  // returns true if pressed
 
 private:
@@ -61,6 +62,7 @@ public:
 	virtual void press() = 0;
 	virtual void release() = 0;
 	virtual void longPress() = 0;
+	virtual void escape() = 0;
 	virtual ~RotaryObserver() {};
 	void attach( RotaryObserver *instance) { ESPRotary::attach( instance ); }
 	void detach( RotaryObserver *instance) { ESPRotary::detach( instance ); }

@@ -31,6 +31,7 @@ public:
 	void down( int count );
 	void press();
 	void longPress();
+	void escape() {}; // ignore, base class takes care
 	void setStep( float val ) { _step = val; };
     float _value;
     static SetupMenuValFloat * qnh_menu;

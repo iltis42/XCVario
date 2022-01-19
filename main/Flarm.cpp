@@ -165,7 +165,7 @@ void Flarm::parseGPRMC( const char *gprmc ) {
 		if( warn == 'A' ) {
 			if( gpsOK == false ){
 				gpsOK = true;
-				ESP_LOGI(FNAME,"GPRMC, GPS status changed to good: %s", gprmc );
+				// ESP_LOGI(FNAME,"GPRMC, GPS status changed to good: %s", gprmc );
 				CircleWind::gpsStatusChange( true);
 			}
 			theWind.calculateWind();
@@ -175,10 +175,10 @@ void Flarm::parseGPRMC( const char *gprmc ) {
 		else{
 			if( gpsOK == true  ){
 				gpsOK = false;
-				ESP_LOGI(FNAME,"GPRMC, GPS status changed to bad: %s", gprmc );
+				// ESP_LOGI(FNAME,"GPRMC, GPS status changed to bad: %s", gprmc );
 				CircleWind::gpsStatusChange( false );
+				ESP_LOGW(FNAME,"GPRMC, GPS not OK: %s", gprmc );
 			}
-			ESP_LOGI(FNAME,"GPRMC, GPS not OK: %s", gprmc );
 		}
 	}
 	timeout = 10;

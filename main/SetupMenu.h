@@ -28,6 +28,7 @@ public:
 	void down( int count );
 	void press();
 	void longPress();
+	void escape();
 	void showMenu( bool pressed );
 	static void catchFocus( bool activate );
 	static bool focus;

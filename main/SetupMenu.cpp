@@ -503,6 +503,8 @@ void SetupMenu::showMenu( bool apressed ){
 	ESP_LOGI(FNAME,"end showMenu()");
 }
 
+
+
 void SetupMenu::press(){
 	if( selected == 0 )
 		selected = root;
@@ -528,6 +530,19 @@ void SetupMenu::longPress(){
 	if( menu_long_press.get() )
 	 	showMenu( true );
 }
+
+void SetupMenu::escape(){
+        if( selected == 0 )
+                selected = root;
+        if( inSetup ){
+                ESP_LOGI(FNAME,"escape now Setup Menu");
+                _display->clear();
+                _display->doMenu(false);
+                SetupCommon::commitNow();
+                inSetup=false;
+        }
+}
+
 
 
 void SetupMenu::setup( )

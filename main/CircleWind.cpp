@@ -337,9 +337,9 @@ void CircleWind::gpsStatusChange( bool newStatus )
 {
 	if( SetupCommon::isClient() )
 		return;
-	ESP_LOGI(FNAME,"gpsStatusChange status:%d", newStatus );
 	if( gpsStatus != newStatus  )
 	{
+		ESP_LOGI(FNAME,"gpsStatusChange status:%d", newStatus );
 		// we are not active because we had no GPS fix but that has been
 		// changed now. So we become active.
 		// Initialize analyzer-parameters

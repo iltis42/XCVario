@@ -152,6 +152,13 @@ void ESPRotary::sendDown( int diff ){
 		observer->up( diff );   // tbd, clean up, this is named wrong in observers, shoud be down()
 }
 
+void ESPRotary::sendEsc(){
+	// ESP_LOGI(FNAME,"Rotary up action");
+	if( Flarm::bincom )
+		return;
+	for (auto &observer : observers)
+		observer->escape();
+}
 
 void ESPRotary::sendUp( int diff ){
 	// ESP_LOGI(FNAME,"Rotary down action");

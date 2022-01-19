@@ -32,6 +32,7 @@ public:
 	void down( int count );
 	void press();
 	void longPress();
+	void escape() {};
 	const char *value();
 	int getSelect();
 	void setSelect( int sel );

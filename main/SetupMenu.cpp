@@ -537,14 +537,17 @@ void SetupMenu::setup( )
 	SetupMenu * root = new SetupMenu( "Setup" );
 	MenuEntry* mm = root->addEntry( root );
 
-	SetupMenuValFloat * mc = new SetupMenuValFloat( "MC", "",	0.0, 9.9, 0.1, 0, true, &MC );
-	mc->setHelp(PROGMEM"Default Mac Cready value for optimum cruise speed, or average climb rate to be provided in same units as variometer setting");
-	mc->setPrecision(1);
-	mm->addEntry( mc );
-
-	SetupMenuValFloat * vol = new SetupMenuValFloat( "Audio Volume", "%", 0.0, 100, 1, vol_adj, true, &audio_volume );
-	vol->setHelp(PROGMEM"Set audio volume");
-	mm->addEntry( vol );
+	if ( rot_default.get() == 0 ) {
+		SetupMenuValFloat * mc = new SetupMenuValFloat( "MC", "",	0.0, 9.9, 0.1, 0, true, &MC );
+		mc->setHelp(PROGMEM"Default Mac Cready value for optimum cruise speed, or average climb rate to be provided in same units as variometer setting");
+		mc->setPrecision(1);
+		mm->addEntry( mc );
+	}
+	else {
+		SetupMenuValFloat * vol = new SetupMenuValFloat( "Audio Volume", "%", 0.0, 100, 1, vol_adj, true, &audio_volume );
+		vol->setHelp(PROGMEM"Set audio volume");
+		mm->addEntry( vol );
+	}
 
 	SetupMenuValFloat::qnh_menu = new SetupMenuValFloat( "QNH Setup", "", 900, 1100.0, 0.250, qnh_adj, true, &QNH );
 	SetupMenuValFloat::qnh_menu->setHelp(PROGMEM"Setup QNH pressure value from next ATC. On ground you may adjust to airfield altitude above MSL.", 180 );
@@ -554,6 +557,11 @@ void SetupMenu::setup( )
 	bal->setHelp(PROGMEM"Enter here the number of litres of water ballast added before flight");
 	bal->setPrecision(0);
 	mm->addEntry( bal );
+
+	SetupMenuValFloat * crewball = new SetupMenuValFloat( "Crew Weight", "kg", 0, 300, 1, crew_weight_adj, false, &crew_weight );
+	crewball->setPrecision(0);
+	crewball->setHelp(PROGMEM"The weight of the pilot(s) including parachute (everything on top of the Empty Weight apart from ballast)");
+	mm->addEntry( crewball );
 
 	SetupMenuValFloat * bgs = new SetupMenuValFloat( "Bugs", "%", 0.0, 50, 1, bug_adj, true, &bugs  );
 	bgs->setHelp(PROGMEM"Percent of bugs contamination to indicate degradation of gliding performance");
@@ -858,13 +866,6 @@ void SetupMenu::setup( )
 		fixball->setPrecision(0);
 		fixball->setHelp(PROGMEM"Asjust here the empty weight of your glider, according to your weight an balance plan");
 		poe->addEntry( fixball );
-
-		SetupMenuValFloat * crewball = new SetupMenuValFloat( "Crew Weight", "kg", 0, 300, 1, crew_weight_adj, false, &crew_weight );
-		crewball->setPrecision(0);
-		crewball->setHelp(PROGMEM"Adjust here the weight of the pilot including the parachute, in twin seaters, both pilots");
-		poe->addEntry( crewball );
-
-
 
 		SetupMenu * opt = new SetupMenu( "Options" );
 
@@ -1329,7 +1330,7 @@ void SetupMenu::setup( )
 		SetupMenu * rotarya = new SetupMenu( "Rotary Actions" );
 		hardware->addEntry( rotarya );
 		// Rotary Default
-		SetupMenuSelect * rd = new SetupMenuSelect( "Rotation", false, 0, true, &rot_default );
+		SetupMenuSelect * rd = new SetupMenuSelect( "Rotation", true, 0, true, &rot_default );
 		rotarya->addEntry( rd );
 		rd->setHelp(PROGMEM "Select value to be altered at rotary movement outside of setup menu");
 		rd->addEntry( "Volume");

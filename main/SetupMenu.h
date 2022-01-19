@@ -29,7 +29,7 @@ public:
 	void press();
 	void longPress();
 	void escape();
-	void showMenu( bool pressed );
+	void showMenu();
 	static void catchFocus( bool activate );
 	static bool focus;
 };

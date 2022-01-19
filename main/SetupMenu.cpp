@@ -76,18 +76,18 @@ void init_routing(){
 
 int update_routing_s1( SetupMenuSelect * p ){
 	uint32_t routing =  (uint32_t)rt_s1_xcv.get()       << (RT_XCVARIO) |
-			           ( (uint32_t)rt_s1_wl.get() << (RT_WIRELESS) ) |
-					   ( (uint32_t)rt_s1_s2.get()       << (RT_S1) ) |
-					   ( (uint32_t)rt_s1_can.get()      << (RT_CAN) );
+			( (uint32_t)rt_s1_wl.get() << (RT_WIRELESS) ) |
+			( (uint32_t)rt_s1_s2.get()       << (RT_S1) ) |
+			( (uint32_t)rt_s1_can.get()      << (RT_CAN) );
 	serial1_tx.set( routing );
 	return 0;
 }
 
 int update_routing_s2( SetupMenuSelect * p ){
 	uint32_t routing =  (uint32_t)rt_s2_xcv.get()       << (RT_XCVARIO) |
-			           ( (uint32_t)rt_s2_wl.get() << (RT_WIRELESS) ) |
-					   ( (uint32_t)rt_s1_s2.get()       << (RT_S1) ) |
-					   ( (uint32_t)rt_s2_can.get()      << (RT_CAN) );
+			( (uint32_t)rt_s2_wl.get() << (RT_WIRELESS) ) |
+			( (uint32_t)rt_s1_s2.get()       << (RT_S1) ) |
+			( (uint32_t)rt_s2_can.get()      << (RT_CAN) );
 	serial2_tx.set( routing );
 	return 0;
 }
@@ -460,7 +460,7 @@ void SetupMenu::up(int count){
 	xSemaphoreGive(spiMutex );
 }
 
-void SetupMenu::showMenu( bool apressed ){
+void SetupMenu::showMenu(){
 	ESP_LOGI(FNAME,"showMenu() p:%d h:%d parent:%x", pressed, highlight, (int)_parent );
 	// default is not pressed, so just display, but we toogle pressed state at the end
 	// so next time we either step up to parent,
@@ -503,8 +503,6 @@ void SetupMenu::showMenu( bool apressed ){
 	ESP_LOGI(FNAME,"end showMenu()");
 }
 
-
-
 void SetupMenu::press(){
 	if( selected == 0 )
 		selected = root;
@@ -516,7 +514,7 @@ void SetupMenu::press(){
 		ESP_LOGI(FNAME,"short press() screen=%d", active_screen );
 	}
 	if( !menu_long_press.get() || inSetup )
-		showMenu( true );
+		showMenu();
 	if( pressed )
 		pressed = false;
 	else
@@ -528,22 +526,20 @@ void SetupMenu::longPress(){
 		return;
 	// ESP_LOGI(FNAME,"longPress()");
 	if( menu_long_press.get() )
-	 	showMenu( true );
+		showMenu();
 }
 
 void SetupMenu::escape(){
-        if( selected == 0 )
-                selected = root;
-        if( inSetup ){
-                ESP_LOGI(FNAME,"escape now Setup Menu");
-                _display->clear();
-                _display->doMenu(false);
-                SetupCommon::commitNow();
-                inSetup=false;
-        }
+	if( selected == 0 )
+		selected = root;
+	if( inSetup ){
+		ESP_LOGI(FNAME,"escape now Setup Menu");
+		_display->clear();
+		_display->doMenu(false);
+		SetupCommon::commitNow();
+		inSetup=false;
+	}
 }
-
-
 
 void SetupMenu::setup( )
 {

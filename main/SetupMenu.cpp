@@ -1167,7 +1167,7 @@ void SetupMenu::setup( )
 		wloutxs2->addEntry( PROGMEM "Disable");
 		wloutxs2->addEntry( PROGMEM "Enable");
 		wlrt->addEntry( wloutxs2 );
-		SetupMenuSelect * wloutxcan = new SetupMenuSelect( PROGMEM "S2-CAN", false, 0, true, &rt_wl_can );
+		SetupMenuSelect * wloutxcan = new SetupMenuSelect( PROGMEM "CAN-bus", false, 0, true, &rt_wl_can );
 		wloutxcan->addEntry( PROGMEM "Disable");
 		wloutxcan->addEntry( PROGMEM "Enable");
 		wlrt->addEntry( wloutxcan );
@@ -1509,7 +1509,7 @@ void SetupMenu::setup( )
 		s1outs1->addEntry( "Disable");
 		s1outs1->addEntry( "Enable");
 		s1out->addEntry( s1outs1 );
-		SetupMenuSelect * s1outcan = new SetupMenuSelect( PROGMEM "S2-CAN", false, update_routing_s1, true, &rt_s1_can );
+		SetupMenuSelect * s1outcan = new SetupMenuSelect( PROGMEM "CAN-bus", false, update_routing_s1, true, &rt_s1_can );
 		s1outcan->addEntry( "Disable");
 		s1outcan->addEntry( "Enable");
 		s1out->addEntry( s1outcan );
@@ -1569,7 +1569,7 @@ void SetupMenu::setup( )
 			s2outs2->addEntry( "Disable");
 			s2outs2->addEntry( "Enable");
 			s2out->addEntry( s2outs2 );
-			SetupMenuSelect * s2outcan = new SetupMenuSelect( PROGMEM "S2-CAN", false, update_routing_s2, true, &rt_s2_can );
+			SetupMenuSelect * s2outcan = new SetupMenuSelect( PROGMEM "CAN-bus", false, update_routing_s2, true, &rt_s2_can );
 			s2outcan->addEntry( "Disable");
 			s2outcan->addEntry( "Enable");
 			s2out->addEntry( s2outcan );

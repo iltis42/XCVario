@@ -42,6 +42,7 @@ public:
 	void redraw() { sensorOldY = -1000; dirty=true; };
 	// void redrawLever() { sensorOldY = -1000; };
 	static void setupMenue( SetupMenu *parent );
+	unsigned int getSensorRaw(int oversampling=1);
     static inline Flap* FLAP() { return _instance; }
     static const int MAX_NR_POS = 9;
     static const int ZERO_INDEX = 4;
@@ -56,9 +57,7 @@ private: // helper
     friend int flap_enable_act( SetupMenuSelect *p );
 	static void setupSensorMenueEntries(MenuEntry *wkm);
     static void setupIndicatorMenueEntries(MenuEntry *wkm);
-	inline unsigned int getSensorRaw(int oversampling=1) {
-        return haveSensor() ? sensorAdc->getRaw(oversampling) : 0;
-	}
+
 	float sensorToLeverPosition( int sensorreading );
 	void  initSpeeds();
     void  initLabels();

@@ -85,7 +85,7 @@ void flap_act() {
     }
 }
 
-SetupNG<float>          MC( "MacCready", 0.5, true, SYNC_BIDIR, PERSISTENT, 0, UNIT_VARIO  );
+SetupNG<float>          MC(  "MacCready", 0.5, true, SYNC_BIDIR, PERSISTENT, change_mc, UNIT_VARIO );
 SetupNG<float>  		QNH( "QNH", 1013.25, true, SYNC_BIDIR, PERSISTENT, 0, UNIT_QNH );
 SetupNG<float> 			polar_wingload( "POLAR_WINGLOAD", 34.40, true, SYNC_FROM_MASTER, PERSISTENT, change_ballast );
 SetupNG<float> 			polar_speed1( "POLAR_SPEED1",   80, true, SYNC_FROM_MASTER, PERSISTENT );

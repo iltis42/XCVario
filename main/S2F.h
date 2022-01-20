@@ -43,7 +43,6 @@ private:
 	static float bal_percent;
 	double a0,a1,a2;
 	double w0,w1,w2;
-	double _MC;
 	double _minimumSink;
 	double _speedMinSink;
 	double _circling_speed;

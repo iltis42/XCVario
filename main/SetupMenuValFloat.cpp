@@ -179,13 +179,7 @@ void SetupMenuValFloat::press(){
 			_value_safe = _value;
 			_nvs->commit();
 			if( bits._restart ) {
-				Audio::shutdown();
-				clear();
-				ucg->setPrintPos( 10, 50 );
-				ucg->print("...rebooting now" );
-				SetupCommon::commitNow();
-				delay(2000);
-				esp_restart();
+				restart();
 			}
 		}
 		pressed = false;

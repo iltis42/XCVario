@@ -179,7 +179,7 @@ double S2F::speed( double netto_vario, bool circling )
 	   else
 		   stf = 3.6*sqrt( (a0-MC.get()+netto_vario) / a2 );
    }
-   ESP_LOGI(FNAME,"speed() S2F: %f netto_vario: %f circ: %d, a0: %f, MC %f", stf, netto_vario, circling, a0, MC.get() );
+   // ESP_LOGI(FNAME,"speed() S2F: %f netto_vario: %f circ: %d, a0: %f, MC %f", stf, netto_vario, circling, a0, MC.get() );
    if( (stf < _speedMinSink) or isnan(stf) )
 	   return _speedMinSink;
    if( stf > Units::Airspeed2Kmh(v_max.get()) or isinf( stf) )

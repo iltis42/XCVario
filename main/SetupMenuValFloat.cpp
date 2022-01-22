@@ -63,7 +63,7 @@ void SetupMenuValFloat::setPrecision( int prec ){
 	bits._precision = prec;
 }
 
-void SetupMenuValFloat::showQnhMenu(){
+void SetupMenuValFloat::showQnhMenu( float qnh ){
 	ESP_LOGI(FNAME,"showQnhMenu()");
 	if( qnh_menu ) {
 		ESP_LOGI(FNAME,"qnh_menu = true");
@@ -73,6 +73,7 @@ void SetupMenuValFloat::showQnhMenu(){
 		qnh_menu->clear();
 		qnh_menu->display();
 		qnh_menu->pressed = true;
+		qnh_menu->_value = qnh;
 	}
 }
 
@@ -163,7 +164,7 @@ void SetupMenuValFloat::longPress(){
 void SetupMenuValFloat::press(){
 	if( selected != this )
 		return;
-	// ESP_LOGI(FNAME,"SetupMenuValFloat press");
+	ESP_LOGI(FNAME,"SetupMenuValFloat press %d", pressed );
 	if ( pressed ){
 		// ESP_LOGI(FNAME,"pressed, value: %f", _value );
 		_nvs->set( _value );
@@ -174,8 +175,9 @@ void SetupMenuValFloat::press(){
 			selected = _parent;
 		selected->highlight = -1;  // to topmost selection when back
 		selected->pressed = true;
+		ESP_LOGI(FNAME,"_value: %f != _value_safe: %f ??", _value, _value_safe );
 		if( _value != _value_safe ){
-			// ESP_LOGI(FNAME,"_value: %f != _value_safe: %f ", _value, _value_safe );
+			ESP_LOGI(FNAME,"_value: %f != _value_safe: %f ", _value, _value_safe );
 			_value_safe = _value;
 			_nvs->commit();
 			if( bits._restart ) {

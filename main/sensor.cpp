@@ -1290,12 +1290,12 @@ void system_startup(void *args){
 		ESP_LOGI(FNAME,"Master Mode: QNH Autosetup, IAS=%3f (<50 km/h)", ias.get() );
 		// QNH autosetup
 		float ae = elevation.get();
+		float qnh_best = 1013.25;
 		bool ok;
 		baroP = baroSensor->readPressure(ok);
 		if( ae > 0 ) {
 			float step=10.0; // 80 m
 			float min=1000.0;
-			float qnh_best = 1013.25;
 			for( float qnh = 870; qnh< 1085; qnh+=step ) {
 				float alt = 0;
 				if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
@@ -1318,11 +1318,10 @@ void system_startup(void *args){
 				delay(50);
 			}
 			ESP_LOGI(FNAME,"Auto QNH=%4.2f\n", qnh_best);
-			if( qnh_unit.get() == QNH_HPA )
-				QNH.set( qnh_best );
+			QNH.set( qnh_best );
 		}
 		display->clear();
-		SetupMenuValFloat::showQnhMenu();
+		SetupMenuValFloat::showQnhMenu( qnh_best );
 	}
 	else
 	{

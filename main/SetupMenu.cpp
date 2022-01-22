@@ -679,13 +679,14 @@ void SetupMenu::setup( )
 		s2fse->addEntry( blck );
 
 		SetupMenuSelect * s2fmod = new SetupMenuSelect( "S2F Mode", false, 0 , true, &audio_mode );
-		s2fmod->setHelp( PROGMEM"Select S2F mode either fixed, or controled by local switch or switch & airspeed combined or from external source", 220 );
+		s2fmod->setHelp( PROGMEM"Select source for S2F <-> Vario change, that supports multiple ways", 230 );
 		s2fmod->addEntry( "Vario fix");
 		s2fmod->addEntry( "Cruise fix");
 		s2fmod->addEntry( "Switch");
 		s2fmod->addEntry( "AutoSpeed");
 		s2fmod->addEntry( "External");
 		s2fmod->addEntry( "Flap");
+		s2fmod->addEntry( "AHRS-Gyro");
 		s2fse->addEntry( s2fmod );
 
 		SetupMenuValFloat * autospeed = new SetupMenuValFloat( "S2F AutoSpeed", "", 20.0, 250.0, 1.0, update_s2f_speed, false, &s2f_speed );

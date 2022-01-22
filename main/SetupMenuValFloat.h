@@ -26,7 +26,7 @@ public:
 	void displayVal();
 	void setPrecision( int prec );
 	const char *value();
-	static void showQnhMenu();
+	static void showQnhMenu( float qnh );
 	void up( int count );  // step up to parent
 	void down( int count );
 	void press();

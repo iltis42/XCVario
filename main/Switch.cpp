@@ -19,6 +19,9 @@
 #include "Setup.h"
 #include "sensor.h"
 #include "Flap.h"
+#include "KalmanMPU6050.h"
+#include "average.h"
+#include "vector.h"
 
 bool Switch::_cruise_mode_sw = false;
 bool Switch::_cruise_mode_speed = false;
@@ -31,6 +34,7 @@ bool Switch::cm_auto_prev = false;
 bool Switch::cruise_mode_final = false;
 bool Switch::_cruise_mode_xcv = false;
 bool Switch::cm_xcv_prev = false;
+Average<GYRO_FILTER_SAMPLES, float, float> Switch::filter;
 
 gpio_num_t Switch::_sw = GPIO_NUM_0;
 
@@ -64,6 +68,14 @@ bool Switch::cruiseMode() {
 	}
 	else if( audio_mode.get() == AM_FLAP ){
 		if( FLAP->getFlapPosition() > s2f_flap_pos.get() )
+			cruise_mode_final = true;
+		else
+			cruise_mode_final = false;
+	}
+	else if( audio_mode.get() == AM_AHRS ){
+		float gr = (float)filter( (float)IMU::getGyroRate() );
+		// ESP_LOGI( FNAME,"Gyro-Rate %.2f", gr );
+		if( gr < 12.0 )  // 20 deg per second 360° / 30 sec = 12° / sec
 			cruise_mode_final = true;
 		else
 			cruise_mode_final = false;
@@ -175,7 +187,7 @@ void Switch::tick() {
 			}
 		}
 	}
-	if( !(_tick%20) )
+	if( !(_tick%10) )
 		Switch::cruiseMode();
 
 }

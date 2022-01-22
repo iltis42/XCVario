@@ -75,7 +75,7 @@ bool Switch::cruiseMode() {
 	else if( audio_mode.get() == AM_AHRS ){
 		float gr = (float)filter( (float)IMU::getGyroRate() );
 		// ESP_LOGI( FNAME,"Gyro-Rate %.2f", gr );
-		if( gr < 12.0 )  // 20 deg per second 360° / 30 sec = 12° / sec
+		if( gr < s2f_gyro_deg.get() )  // 20 deg per second 360° / 30 sec = 12° / sec
 			cruise_mode_final = true;
 		else
 			cruise_mode_final = false;

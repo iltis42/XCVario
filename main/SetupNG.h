@@ -519,6 +519,7 @@ extern SetupNG<int>			needle_color;
 extern SetupNG<int>			s2f_arrow_color;
 extern SetupNG<float>  		s2f_hysteresis;
 extern SetupNG<float>  		s2f_flap_pos;
+extern SetupNG<float>  		s2f_gyro_deg;
 extern SetupNG<int> 		wk_label_plus_3;
 extern SetupNG<int> 		wk_label_plus_2;
 extern SetupNG<int> 		wk_label_plus_1;

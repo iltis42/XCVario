@@ -691,11 +691,15 @@ void SetupMenu::setup( )
 
 		SetupMenuValFloat * autospeed = new SetupMenuValFloat( "S2F AutoSpeed", "", 20.0, 250.0, 1.0, update_s2f_speed, false, &s2f_speed );
 		s2fse->addEntry( autospeed );
-		autospeed->setHelp(PROGMEM"Transition speed in AutoSpeed mode to change from Vario to Cruise (S2F) mode");
+		autospeed->setHelp(PROGMEM"Transition speed in AutoSpeed mode to switch Vario <-> Cruise (S2F) mode");
 
 		SetupMenuValFloat * s2f_flap = new SetupMenuValFloat( "S2F Flap Pos", "", -3, 3, 0.1, 0 , false, &s2f_flap_pos );
 		s2fse->addEntry( s2f_flap );
-		s2f_flap->setHelp(PROGMEM"Precise flap position in Flap mode to change from Vario to Cruise (S2F) mode");
+		s2f_flap->setHelp(PROGMEM"Precise flap position in Flap mode to switch Vario <-> Cruise (S2F) mode");
+
+		SetupMenuValFloat * s2f_gyro = new SetupMenuValFloat( "S2F AHRS Deg", "°", 0, 100, 1, 0 , false, &s2f_gyro_deg );
+		s2fse->addEntry( s2f_gyro );
+		s2f_gyro->setHelp(PROGMEM"Attitude change in degree per second to switch Vario <-> Cruise (S2F) mode");
 
 		SetupMenuValFloat * s2fhy = new SetupMenuValFloat( "Hysteresis", "",	-20, 20, 1, 0, false, &s2f_hysteresis );
 		s2fhy->setHelp(PROGMEM"Hysteresis for auto S2F transition at autospeed +- this value");

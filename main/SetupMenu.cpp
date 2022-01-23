@@ -572,7 +572,7 @@ void SetupMenu::setup( )
 
 	SetupMenuValFloat * crewball = new SetupMenuValFloat( "Crew Weight", "kg", 0, 300, 1, crew_weight_adj, false, &crew_weight );
 	crewball->setPrecision(0);
-	crewball->setHelp(PROGMEM"Weight of the pilot(s) including parachute (everything on top of the Empty Weight apart from ballast)");
+	crewball->setHelp(PROGMEM"Weight of the pilot(s) including parachute (everything on top of the empty weight apart from ballast)");
 	mm->addEntry( crewball );
 
 	SetupMenuValFloat::qnh_menu = new SetupMenuValFloat( "QNH", "", 900, 1100.0, 0.250, qnh_adj, true, &QNH );
@@ -833,7 +833,7 @@ void SetupMenu::setup( )
 
 		// Polar Setup
 		SetupMenu * po = new SetupMenu( "Glider Details" );
-		po->setHelp( PROGMEM"Weight and Polar setup for best match with performance of glider", 220 );
+		po->setHelp( PROGMEM"Weight and polar setup for best match with performance of glider", 220 );
 		MenuEntry* poe = mm->addEntry( po );
 
 		SetupMenuSelect * glt = new SetupMenuSelect( "Glider-Type",	false, polar_select, true, &glider_type );
@@ -845,8 +845,8 @@ void SetupMenu::setup( )
 			glt->addEntry( Polars::getPolar(x).type );
 		}
 
-		SetupMenu * pa = new SetupMenu( "PolarAdjust" );
-		pa->setHelp(PROGMEM "Adjust Polar at 3 points of selected polar in commonly used metric system for Polars", 230 );
+		SetupMenu * pa = new SetupMenu( "Polar Points" );
+		pa->setHelp(PROGMEM "Adjust polar at 3 points of selected polar in commonly used metric system for polars", 230 );
 		poe->addEntry( pa );
 
 		SetupMenuValFloat * wil = new SetupMenuValFloat( "Ref Wingload", "kg/m2", 10.0, 100.0, 0.1, 0, false, &polar_wingload );
@@ -881,7 +881,7 @@ void SetupMenu::setup( )
 
 		SetupMenuValFloat * fixball = new SetupMenuValFloat( "Empty Weight", "kg", 0, 1000, 1, empty_weight_adj, false, &empty_weight );
 		fixball->setPrecision(0);
-		fixball->setHelp(PROGMEM"Net rigged weight of the glider, according to the weight an balance plan");
+		fixball->setHelp(PROGMEM"Net rigged weight of the glider, according to the weight and balance plan");
 		poe->addEntry( fixball );
 
 		SetupMenu * opt = new SetupMenu( "Options" );

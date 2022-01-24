@@ -141,6 +141,7 @@ int   IpsDisplay::_divisons = 5;
 float IpsDisplay::_range = 5.;
 int   IpsDisplay::average_climb = -100;
 float IpsDisplay::average_climbf = 0;
+int   IpsDisplay::prev_winddir = 0;
 int   IpsDisplay::prev_heading = 0;
 int   IpsDisplay::prev_windspeed = 0;
 float IpsDisplay::pref_qnh = 0;
@@ -595,7 +596,7 @@ void IpsDisplay::redrawValues()
 	old_polar_sink = -100;
 	old_vario_bar_val = 0;
 	old_sink_bar_val = 0;
-	prev_heading = -1000;
+	prev_winddir = -1000;
 	 
 	switch ( alt_quantization.get() ) {
 		case ALT_QUANT_DISABLE:
@@ -1584,7 +1585,21 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 }
 
 
-
+float IpsDisplay::getHeading(){
+	float heading = 0;
+	if( (wind_reference.get() & WR_HEADING) )  // wind relative to airplane, first choice compass, second is GPS true course
+	{
+		heading = mag_hdt.get();
+		if( (heading < 0) && Flarm::gpsStatus() )            // fall back to GPS course
+			heading = Flarm::getGndCourse();
+	}
+	else if( (wind_reference.get() & WR_GPS_COURSE) ){
+		if( Flarm::gpsStatus() ){
+			heading = Flarm::getGndCourse();
+		}
+	}
+	return heading;
+}
 
 // Compass or Wind Display
 void IpsDisplay::drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass_dirty) {
@@ -1627,7 +1642,7 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass
 		}
 		// ESP_LOGI(FNAME, "WIND dir %d, speed %f, ok=%d", winddir, wind, ok );
 		int windspeed = (int)( Units::Airspeed(wind)+0.5 );
-		if( prev_heading != winddir || prev_windspeed != windspeed || compass_dirty ){
+		if( prev_winddir != winddir || prev_windspeed != windspeed || compass_dirty ){
 			ucg->setPrintPos(85,104);
 			ucg->setColor(  COLOR_WHITE  );
 			// ucg->setFont(ucg_font_fub20_hr);
@@ -1646,23 +1661,12 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass
 					ucg->printf("%s  ", s);
 			}
 		}
-		if( prev_heading != winddir || prev_windspeed != windspeed || wind_dirty ){
-			prev_heading = winddir;
-			if( wind_display.get() & WD_ARROW  ){
-				float dir=winddir;  // absolute wind related to geographic north
-				if( (wind_reference.get() & WR_HEADING) )  // wind relative to airplane, first choice compass, second is GPS true course
-				{
-					float heading = mag_hdt.get();
-					if( (heading < 0) && Flarm::gpsStatus() )            // fall back to GPS course
-						heading = Flarm::getGndCourse();
-					dir = Vector::angleDiffDeg( winddir, heading );
-				}
-				else if( (wind_reference.get() & WR_GPS_COURSE) ){
-					if( Flarm::gpsStatus() ){
-						float heading = Flarm::getGndCourse();
-						dir = Vector::angleDiffDeg( winddir, heading );
-					}
-				}
+		float heading = getHeading();
+		if( (prev_winddir != winddir) || (prev_windspeed != windspeed) || wind_dirty || (int)heading != (int)prev_heading ){
+			prev_winddir = winddir;  // absolute windir related to geographic north
+			prev_heading = heading;  // two things to consider here, heading and wind direction
+			if( wind_display.get() & WD_ARROW  ){ // draw wind arror
+				float dir = Vector::angleDiffDeg( winddir, heading );
 				drawWindArrow( dir, windspeed, 0 );
 			}
 			prev_windspeed = windspeed;

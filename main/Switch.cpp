@@ -74,11 +74,16 @@ bool Switch::cruiseMode() {
 	}
 	else if( audio_mode.get() == AM_AHRS ){
 		float gr = (float)filter( (float)IMU::getGyroRate() );
-		// ESP_LOGI( FNAME,"Gyro-Rate %.2f", gr );
-		if( gr < s2f_gyro_deg.get() )  // 20 deg per second 360° / 30 sec = 12° / sec
+		ESP_LOGI( FNAME,"Gyro-Rate %.2f", gr );
+		float ref = s2f_gyro_deg.get();
+		if( cruise_mode_final )
+			ref = ref*1.2;  // 20% hysteresis
+		// ESP_LOGI( FNAME,"Gyro-Rate: %.2f  thres: %.2f", gr, ref );
+		if( gr < ref )   // default 12° per second
 			cruise_mode_final = true;
 		else
 			cruise_mode_final = false;
+		// ESP_LOGI( FNAME,"Gyro-Rate: %.2f  thres: %.2f cmf: %d", gr, ref, cruise_mode_final  );
 	}
 	else if( audio_mode.get() == AM_SWITCH ){
 		if( cruise_mode_final != _cruise_mode_sw ){

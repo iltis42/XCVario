@@ -316,6 +316,9 @@ SetupNG<float> 			master_xcvario( "MSXCV", 0 );
 SetupNG<int> 			master_xcvario_lock( "MSXCVL", 0 );
 SetupNG<int> 			menu_long_press("MENU_LONG", 0 );
 SetupNG<int> 			menu_screens("MENU_SCR", 0 );
+SetupNG<int> 			screen_gmeter("SCR_GMET", 0, false, SYNC_NONE, VOLATILE );
+SetupNG<int> 			screen_flarm("SCR_FLARM", 0, false, SYNC_NONE, VOLATILE );
+SetupNG<int> 			screen_centeraid("SCR_CA", 0, false, SYNC_NONE, VOLATILE );
 SetupNG<int> 			data_monitor("DATAMON", MON_OFF, true, SYNC_NONE, VOLATILE  );
 SetupNG<t_bitfield_compass>  calibration_bits("CALBIT", { 0,0,0,0,0,0 } );
 

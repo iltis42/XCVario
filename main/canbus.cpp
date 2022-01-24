@@ -413,7 +413,7 @@ bool CANbus::sendData( int id, const char* msg, int length, int self ){
 	esp_err_t error = ESP_OK;
 	while( (retry-- > 0) && (ESP_OK != (error=twai_transmit(&message, 0))) ) {
 		twai_read_alerts(&alerts, pdMS_TO_TICKS(_tx_timeout));
-		ESP_LOGW(FNAME,"Tx chunk failed alerts %X", alerts );
+		// ESP_LOGW(FNAME,"Tx chunk failed alerts %X", alerts );
 	}
 	if ( error == ESP_OK ) {
 		twai_read_alerts(&alerts, pdMS_TO_TICKS(_tx_timeout));

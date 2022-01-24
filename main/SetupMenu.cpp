@@ -45,9 +45,11 @@
 SetupMenuSelect * audio_range_sm = 0;
 SetupMenuSelect * mpu = 0;
 
+
 // Menu for flap setup
 
 float elev_step = 1;
+static uint8_t screen_mask_len = 1;
 
 bool SetupMenu::focus = false;
 
@@ -76,11 +78,35 @@ void init_routing(){
 }
 
 int update_routing_s1( SetupMenuSelect * p ){
-	uint32_t routing =  (uint32_t)rt_s1_xcv.get()       << (RT_XCVARIO) |
-			( (uint32_t)rt_s1_wl.get() << (RT_WIRELESS) ) |
-			( (uint32_t)rt_s1_s2.get()       << (RT_S1) ) |
-			( (uint32_t)rt_s1_can.get()      << (RT_CAN) );
+	uint32_t routing =
+			( (uint32_t)rt_s1_xcv.get() << (RT_XCVARIO) ) |
+			( (uint32_t)rt_s1_wl.get()  << (RT_WIRELESS) ) |
+			( (uint32_t)rt_s1_s2.get()  << (RT_S1) ) |
+			( (uint32_t)rt_s1_can.get() << (RT_CAN) );
 	serial1_tx.set( routing );
+	return 0;
+}
+
+void init_screens(){
+	uint32_t scr = menu_screens.get();
+	screen_gmeter.set( (scr >> SCREEN_GMETER) & 1);
+	screen_centeraid.set( (scr >> SCREEN_THERMAL_ASSISTANT) & 1);
+	screen_flarm.set( (scr >> SCREEN_FLARM) & 1);
+	screen_mask_len = 1; // default vario
+	while( scr ){
+		scr = scr >> 1;
+		screen_mask_len++;
+	}
+	ESP_LOGI(FNAME,"screens mask len: %d, screens: %d", screen_mask_len, menu_screens.get() );
+}
+
+int upd_screens( SetupMenuSelect * p ){
+	uint32_t screens =
+			( (uint32_t)screen_gmeter.get() << (SCREEN_GMETER)  |
+			( (uint32_t)screen_centeraid.get() << (SCREEN_THERMAL_ASSISTANT) ) |
+			( (uint32_t)screen_flarm.get() << (SCREEN_FLARM) )
+			);
+	menu_screens.set( screens );
 	return 0;
 }
 
@@ -344,6 +370,7 @@ void SetupMenu::begin( IpsDisplay* display, PressureSensor * bmp, AnalogInput *a
 	setup();
 	audio_volume.set( default_volume.get() );
 	init_routing();
+	init_screens();
 }
 
 void SetupMenu::catchFocus( bool activate ){
@@ -506,21 +533,34 @@ void SetupMenu::showMenu(){
 	ESP_LOGI(FNAME,"end showMenu()");
 }
 
+
+static int screen_index = 0;
 void SetupMenu::press(){
 	if( (selected != this) || focus )
 		return;
 	if( !inSetup ){
-		active_screen++;
-		active_screen = active_screen%(menu_screens.get()+1);
-		ESP_LOGI(FNAME,"short press() screen=%d", active_screen );
+		active_screen = 0;
+		while( !active_screen && (screen_index < screen_mask_len) ){
+			if( menu_screens.get() & (1 << screen_index) ){
+				active_screen = ( 1 << screen_index );
+				ESP_LOGI(FNAME,"New active_screen: %d", active_screen );
+			}
+			screen_index++;
+		}
+		if( screen_index >= screen_mask_len ){
+			ESP_LOGI(FNAME,"select vario screen");
+			screen_index = 0;
+			active_screen = 0; // fall back into default vario screen after optional screens
+		}
 	}
-	if( !menu_long_press.get() || inSetup )
-		showMenu();
-
-	if( pressed )
-		pressed = false;
-	else
-		pressed = true;
+	if( !active_screen ){
+		if( !menu_long_press.get() || inSetup )
+			showMenu();
+		if( pressed )
+			pressed = false;
+		else
+			pressed = true;
+	}
 }
 
 void SetupMenu::longPress(){
@@ -1359,17 +1399,25 @@ void SetupMenu::setup( )
 		sact->addEntry( "Short Press");
 		sact->addEntry( "Long Press");
 
-		SetupMenuSelect * screens = new SetupMenuSelect( "Screens", false, 0, true, &menu_screens );
+		SetupMenu * screens = new SetupMenu( "Screens");
 		rotarya->addEntry( screens );
 		screens->setHelp(PROGMEM "Select screens to be activated one after each other by short press");
-		screens->addEntry( "Variometer");
-		screens->addEntry( "+ G-Meter");
+
+		SetupMenuSelect * scrgmet = new SetupMenuSelect( "G-Meter", false, upd_screens, true, &screen_gmeter );
+		scrgmet->addEntry( "Disable");
+		scrgmet->addEntry( "Enable");
+		screens->addEntry(scrgmet);
+
+		SetupMenuSelect * scrcaid = new SetupMenuSelect( "Center-Aid", false, upd_screens, true, &screen_centeraid );
+		scrcaid->addEntry( "Disable");
+		scrcaid->addEntry( "Enable");
+		screens->addEntry(scrcaid);
 		/*
-				screens->addEntry( "+ Traffic Alert");
-				screens->addEntry( "+ Thermal Assistant");
-		 */
-
-
+		SetupMenuSelect * scrfltr = new SetupMenuSelect( "Flarm Traffic", false, 0, true, &screen_flarm );
+		scrfltr->addEntry( "Disable");
+		scrfltr->addEntry( "Enable");
+		screens->addEntry(scrfltr);
+		*/
 		SetupMenuSelect * s2fsw = new SetupMenuSelect( "S2F Switch", false , 0, false, &s2f_switch_type );
 		hardware->addEntry( s2fsw );
 		s2fsw->setHelp( PROGMEM "Select S2F hardware switch type, what can be an normal switch or a push button without lock toggling S2F mode any time pressed");

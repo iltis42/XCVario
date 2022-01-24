@@ -275,8 +275,9 @@ void drawDisplay(void *pvParameters){
 			if( flarmWarning )
 				Flarm::drawFlarmWarning();
 			// G-Load Display
+			// ESP_LOGI(FNAME,"Active Screen = %d", active_screen );
 			if( (((float)accelG[0] > gload_pos_thresh.get() || (float)accelG[0] < gload_neg_thresh.get()) && gload_mode.get() == GLOAD_DYNAMIC ) ||
-					( gload_mode.get() == GLOAD_ALWAYS_ON ) || active_screen == SCREEN_GMETER  )
+					( gload_mode.get() == GLOAD_ALWAYS_ON ) || ((active_screen << SCREEN_GMETER) & 1)  )
 			{
 				if( !gLoadDisplay ){
 					gLoadDisplay = true;

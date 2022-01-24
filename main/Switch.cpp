@@ -74,7 +74,7 @@ bool Switch::cruiseMode() {
 	}
 	else if( audio_mode.get() == AM_AHRS ){
 		float gr = (float)filter( (float)IMU::getGyroRate() );
-		ESP_LOGI( FNAME,"Gyro-Rate %.2f", gr );
+		// ESP_LOGI( FNAME,"Gyro-Rate %.2f", gr );
 		float ref = s2f_gyro_deg.get();
 		if( cruise_mode_final )
 			ref = ref*1.2;  // 20% hysteresis

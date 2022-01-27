@@ -192,7 +192,7 @@ void Switch::tick() {
 			}
 		}
 	}
-	if( !(_tick%10) )
+	if( !(_tick%100) )  // called every 10 mS, once in a second switch mode
 		Switch::cruiseMode();
 
 }

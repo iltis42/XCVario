@@ -514,8 +514,7 @@ void Audio::dactask(void* arg )
 	while(1){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		tick++;
-		if( !(tick%10) )
-			Switch::tick();    // we hook switch sceduling here to save extra task
+		Switch::tick();    // we hook switch sceduling here to save extra task
 
 		// Chopping or dual tone modulation
 		if( millis() > next_scedule ){

@@ -1517,7 +1517,7 @@ void SetupMenu::setup( )
 		stawaen->addEntry( "Disable");
 		stawaen->addEntry( "Enable");
 
-		SetupMenuValFloat * staspe = new SetupMenuValFloat( "Stall Speed", "", 20, 200, 1, 0, true, &stall_speed  );
+		SetupMenuValFloat * staspe = new SetupMenuValFloat( "Stall Speed", "", 20, 200, 1, 0, true, &stall_speed, true  );
 		staspe->setHelp(PROGMEM"Configure stalling speed for corresponding airplane type and reboot");
 		stallwa->addEntry( staspe );
 

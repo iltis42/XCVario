@@ -175,9 +175,9 @@ void SetupMenuValFloat::press(){
 			selected = _parent;
 		selected->highlight = -1;  // to topmost selection when back
 		selected->pressed = true;
-		ESP_LOGI(FNAME,"_value: %f != _value_safe: %f ??", _value, _value_safe );
+		ESP_LOGI(FNAME,"Check if _value: %f != _value_safe: %f", _value, _value_safe );
 		if( _value != _value_safe ){
-			ESP_LOGI(FNAME,"_value: %f != _value_safe: %f ", _value, _value_safe );
+			ESP_LOGI(FNAME,"Yes restart:%d", bits._restart);
 			_value_safe = _value;
 			_nvs->commit();
 			if( bits._restart ) {

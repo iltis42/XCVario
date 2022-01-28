@@ -1680,7 +1680,7 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass
 		if( prev_heading != heading || compass_dirty ){
 			char s[20];
 			if( heading < 0 )
-				sprintf(s,"%s", "  ---" );
+				sprintf(s,"%s", "   ---" );
 			else
 				sprintf(s," %4d", heading );
 			ucg->setColor( COLOR_WHITE );

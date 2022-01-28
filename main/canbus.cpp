@@ -66,6 +66,7 @@ void CANbus::driverInstall( twai_mode_t mode ){
 		ESP_LOGI(FNAME,"CAN rate 1MBit for selftest");
 		t_config = TWAI_TIMING_CONFIG_1MBITS();
 	}
+	// t_config.triple_sampling = true; // improved sampling incoming bits, no effect in test
 
 	twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
 	//Install TWAI driver
@@ -140,8 +141,10 @@ void CANbus::restart(){
 	if( can_speed.get() == CAN_SPEED_OFF ){
 		return;
 	}
+	ESP_LOGW(FNAME,"CANbus restart");
 	driverUninstall();
 	driverInstall( TWAI_MODE_NORMAL );
+	_connected_timeout_xcv = 0;
 }
 
 // begin CANbus, start selfTest and launch driver in normal (bidir) mode afterwards
@@ -201,6 +204,8 @@ void CANbus::txtick(int tick){
 				if( !sendNMEA( msg ) ){
 					_connected_timeout_xcv +=20;  // if sending fails as indication for disconnection
 					ESP_LOGW(FNAME,"CAN TX NMEA failed, timeout=%d", _connected_timeout_xcv );
+					if( _connected_timeout_xcv > 200 )
+						restart();
 				}
 			}
 		}
@@ -213,6 +218,8 @@ void CANbus::txtick(int tick){
 			{
 				_connected_timeout_xcv +=20;  // if sending fails as indication for disconnection
 				ESP_LOGI(FNAME,"CAN TX Keep Alive failed, timeout=%d", _connected_timeout_xcv );
+				if( _connected_timeout_xcv > 200 )
+					restart();
 			}
 		}
 	}
@@ -279,7 +286,7 @@ void CANbus::rxtick(int tick){
 					_connected_xcv = false;
 				}
 				if( (can_mode.get() != CAN_MODE_STANDALONE) && !(_connected_timeout_xcv % 10000) ){
-					ESP_LOGI(FNAME,"CAN XCV restart timeout");
+					ESP_LOGI(FNAME,"CAN restart timeout");
 					restart();
 				}
 			}

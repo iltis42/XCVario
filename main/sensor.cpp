@@ -257,7 +257,7 @@ void drawDisplay(void *pvParameters){
 				}
 			}
 			if( gear_warning.get() ){
-				if( digitalRead( GPIO_NUM_34 ) && !stall_warning_active ){
+				if( digitalRead( SetupMenu::getGearWarningIO() ) && !stall_warning_active ){
 					if( !gear_warning_active ){
 						Audio::alarm( true );
 						display->drawWarning( "! GEAR !", false );

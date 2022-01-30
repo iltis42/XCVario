@@ -101,14 +101,18 @@ void init_screens(){
 }
 
 void initGearWarning(){
-	if( gear_warning.get() ){
-		ESP_LOGI(FNAME,"Gear Warning activated");
-		gpio_set_direction(GPIO_NUM_34, GPIO_MODE_INPUT);
-		gpio_set_pull_mode(GPIO_NUM_34, GPIO_PULLUP_ONLY);
-		gpio_pullup_en( GPIO_NUM_34 );
+	gpio_num_t io = GPIO_NUM_0;
+	if( gear_warning.get() == GW_FLAP_SENSOR ){
+		io = GPIO_NUM_34;
 	}
-	else
-		ESP_LOGI(FNAME,"Gear Warning disable");
+	else if( gear_warning.get() == GW_S2_RS232_RX ){
+		io = GPIO_NUM_18;
+	}
+	if( io != GPIO_NUM_0 ){
+		gpio_set_direction(io, GPIO_MODE_INPUT);
+		gpio_set_pull_mode(io, GPIO_PULLUP_ONLY);
+		gpio_pullup_en( io );
+	}
 }
 
 int config_gear_warning( SetupMenuSelect * p ){
@@ -1440,11 +1444,12 @@ void SetupMenu::setup( )
 		s2fsw->addEntry( "Push Button");
 		s2fsw->addEntry( "Switch Inverted");
 
-		SetupMenuSelect * gear = new SetupMenuSelect( "Gear Warning", false , config_gear_warning, false, &gear_warning );
+		SetupMenuSelect * gear = new SetupMenuSelect( "Gear Warn", false , config_gear_warning, false, &gear_warning );
 		hardware->addEntry( gear );
-		gear->setHelp( PROGMEM "Enable gear warning in case Flap Sensor is not equipped");
+		gear->setHelp( PROGMEM "Enable gear warning in case Flap Sensor (Pin 6) or Serial RS232 (Pin 4) is not equipped in S2");
 		gear->addEntry( "Disable");
-		gear->addEntry( "Enable");
+		gear->addEntry( "S2 Flap");
+		gear->addEntry( "S2 RS232");
 
 		if( hardwareRevision.get() >= 3 ){
 			SetupMenu * ahrs = new SetupMenu( "AHRS Setup" );

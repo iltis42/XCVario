@@ -100,6 +100,22 @@ void init_screens(){
 	ESP_LOGI(FNAME,"screens mask len: %d, screens: %d", screen_mask_len, menu_screens.get() );
 }
 
+void initGearWarning(){
+	if( gear_warning.get() ){
+		ESP_LOGI(FNAME,"Gear Warning activated");
+		gpio_set_direction(GPIO_NUM_34, GPIO_MODE_INPUT);
+		gpio_set_pull_mode(GPIO_NUM_34, GPIO_PULLUP_ONLY);
+		gpio_pullup_en( GPIO_NUM_34 );
+	}
+	else
+		ESP_LOGI(FNAME,"Gear Warning disable");
+}
+
+int config_gear_warning( SetupMenuSelect * p ){
+	initGearWarning();
+	return 0;
+}
+
 int upd_screens( SetupMenuSelect * p ){
 	uint32_t screens =
 			( (uint32_t)screen_gmeter.get() << (SCREEN_GMETER)  |
@@ -371,6 +387,7 @@ void SetupMenu::begin( IpsDisplay* display, PressureSensor * bmp, AnalogInput *a
 	audio_volume.set( default_volume.get() );
 	init_routing();
 	init_screens();
+	initGearWarning();
 }
 
 void SetupMenu::catchFocus( bool activate ){
@@ -1384,23 +1401,21 @@ void SetupMenu::setup( )
 		roinc->addEntry( "3 Indent");
 		roinc->addEntry( "4 Indent");
 
-		SetupMenu * rotarya = new SetupMenu( "Rotary Actions" );
-		hardware->addEntry( rotarya );
 		// Rotary Default
 		SetupMenuSelect * rd = new SetupMenuSelect( "Rotation", true, 0, true, &rot_default );
-		rotarya->addEntry( rd );
+		rotary->addEntry( rd );
 		rd->setHelp(PROGMEM "Select value to be altered at rotary movement outside of setup menu");
 		rd->addEntry( "Volume");
 		rd->addEntry( "MC Value");
 
-		SetupMenuSelect * sact = new SetupMenuSelect( "Setup Activ.", false, 0, true, &menu_long_press );
-		rotarya->addEntry( sact);
+		SetupMenuSelect * sact = new SetupMenuSelect( "Setup Menu by", false, 0, true, &menu_long_press );
+		rotary->addEntry( sact);
 		sact->setHelp(PROGMEM "Select Mode to activate setup menu either by short press or long press > 0.4 seconds");
 		sact->addEntry( "Short Press");
 		sact->addEntry( "Long Press");
 
 		SetupMenu * screens = new SetupMenu( "Screens");
-		rotarya->addEntry( screens );
+		rotary->addEntry( screens );
 		screens->setHelp(PROGMEM "Select screens to be activated one after each other by short press");
 
 		SetupMenuSelect * scrgmet = new SetupMenuSelect( "G-Meter", false, upd_screens, true, &screen_gmeter );
@@ -1425,6 +1440,11 @@ void SetupMenu::setup( )
 		s2fsw->addEntry( "Push Button");
 		s2fsw->addEntry( "Switch Inverted");
 
+		SetupMenuSelect * gear = new SetupMenuSelect( "Gear Warning", false , config_gear_warning, false, &gear_warning );
+		hardware->addEntry( gear );
+		gear->setHelp( PROGMEM "Enable gear warning in case Flap Sensor is not equipped");
+		gear->addEntry( "Disable");
+		gear->addEntry( "Enable");
 
 		if( hardwareRevision.get() >= 3 ){
 			SetupMenu * ahrs = new SetupMenu( "AHRS Setup" );

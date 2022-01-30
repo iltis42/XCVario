@@ -176,6 +176,7 @@ int   stall_alarm_off_holddown=0;
 int count=0;
 bool flarmWarning = false;
 bool gLoadDisplay = false;
+bool gear_warning_active = false;
 int hold_alarm=0;
 int the_can_mode = CAN_MODE_MASTER;
 int active_screen = 0;  // 0 = Vario
@@ -191,21 +192,21 @@ bool do_factory_reset() {
 
 void drawDisplay(void *pvParameters){
 	while (1) {
-	  if( Flarm::bincom ) {
-	      if( flarmDownload == false ) {
-	        flarmDownload = true;
-	        display->clear();
-	        Flarm::drawDownloadInfo();
-	      }
-	      // Flarm IGC download is running, display will be blocked, give Flarm
-	      // download all cpu power.
-	      vTaskDelay(20/portTICK_PERIOD_MS);
-	      continue;
-	  }
-	  else if( flarmDownload == true ) {
-	    flarmDownload = false;
-	    display->clear();
-	  }
+		if( Flarm::bincom ) {
+			if( flarmDownload == false ) {
+				flarmDownload = true;
+				display->clear();
+				Flarm::drawDownloadInfo();
+			}
+			// Flarm IGC download is running, display will be blocked, give Flarm
+			// download all cpu power.
+			vTaskDelay(20/portTICK_PERIOD_MS);
+			continue;
+		}
+		else if( flarmDownload == true ) {
+			flarmDownload = false;
+			display->clear();
+		}
 		// TickType_t dLastWakeTime = xTaskGetTickCount();
 		if( inSetup != true ) {
 			float t=OAT.get();
@@ -255,6 +256,22 @@ void drawDisplay(void *pvParameters){
 					}
 				}
 			}
+			if( gear_warning.get() ){
+				if( digitalRead( GPIO_NUM_34 ) && !stall_warning_active ){
+					if( !gear_warning_active ){
+						Audio::alarm( true );
+						display->drawWarning( "! GEAR !", false );
+						gear_warning_active = true;
+					}
+				}else{
+					if( gear_warning_active ){
+						Audio::alarm( false );
+						display->clear();
+						gear_warning_active = false;
+					}
+				}
+			}
+
 			// Flarm Warning Screen
 			if( flarm_warning.get() && !stall_warning_active && Flarm::alarmLevel() >= flarm_warning.get() ){ // 0 -> Disable
 				// ESP_LOGI(FNAME,"Flarm::alarmLevel: %d, flarm_warning.get() %d", Flarm::alarmLevel(), flarm_warning.get() );
@@ -309,7 +326,7 @@ void drawDisplay(void *pvParameters){
 				}
 			}
 			// Vario Screen
-			if( !(stall_warning_active || flarmWarning || gLoadDisplay )  ) {
+			if( !(stall_warning_active || gear_warning_active || flarmWarning || gLoadDisplay )  ) {
 				// ESP_LOGI(FNAME,"TE=%2.3f", te_vario.get() );
 				display->drawDisplay( airspeed, te_vario.get(), aTE, polar_sink, altitude.get(), t, battery, s2f_delta, as2f, average_climb.get(), cruise_mode.get(), standard_setting, flap_pos.get() );
 			}
@@ -344,13 +361,13 @@ void doAudio(){
 void audioTask(void *pvParameters){
 	while (1)
 	{
-	  TickType_t xLastWakeTime = xTaskGetTickCount();
-	  if( Flarm::bincom ) {
-      // Flarm IGC download is running, audio will be blocked, give Flarm
-      // download all cpu power.
-	    vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
-	    continue;
-	  }
+		TickType_t xLastWakeTime = xTaskGetTickCount();
+		if( Flarm::bincom ) {
+			// Flarm IGC download is running, audio will be blocked, give Flarm
+			// download all cpu power.
+			vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
+			continue;
+		}
 		doAudio();
 		Router::routeXCV();
 		if( uxTaskGetStackHighWaterMark( apid )  < 512 )
@@ -546,7 +563,7 @@ void readSensors(void *pvParameters){
 			altSTD = baroSensor->calcAVGAltitudeSTD( baroP );
 		float new_alt = 0;
 		if( alt_select.get() == AS_TE_SENSOR ) // TE
-				new_alt = bmpVario.readAVGalt();
+			new_alt = bmpVario.readAVGalt();
 		else if( alt_select.get() == AS_BARO_SENSOR  || alt_select.get() == AS_EXTERNAL ){ // Baro or external
 			if(  alt_unit.get() == ALT_UNIT_FL ) { // FL, always standard
 				new_alt = altSTD;

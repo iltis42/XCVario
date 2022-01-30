@@ -321,6 +321,7 @@ SetupNG<int> 			screen_flarm("SCR_FLARM", 0, false, SYNC_NONE, VOLATILE );
 SetupNG<int> 			screen_centeraid("SCR_CA", 0, false, SYNC_NONE, VOLATILE );
 SetupNG<int> 			data_monitor("DATAMON", MON_OFF, true, SYNC_NONE, VOLATILE  );
 SetupNG<t_bitfield_compass>  calibration_bits("CALBIT", { 0,0,0,0,0,0 } );
+SetupNG<int> 			gear_warning("GEARWA", 0 );
 
 mpud::raw_axes_t zero_bias;
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );

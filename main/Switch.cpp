@@ -66,11 +66,13 @@ bool Switch::cruiseMode() {
 			cruise_mode_final = _cruise_mode_speed;
 		}
 	}
-	else if( audio_mode.get() == AM_FLAP ){
-		if( FLAP->getFlapPosition() > s2f_flap_pos.get() )
-			cruise_mode_final = false;
-		else
-			cruise_mode_final = true;
+	else if( flap_enable.get() ){
+		if( audio_mode.get() == AM_FLAP ){
+			if( FLAP->getFlapPosition() > s2f_flap_pos.get() )
+				cruise_mode_final = false;
+			else
+				cruise_mode_final = true;
+		}
 	}
 	else if( audio_mode.get() == AM_AHRS ){
 		float gr = (float)filter( (float)IMU::getGyroRate() );

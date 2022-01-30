@@ -568,6 +568,7 @@ extern SetupNG<int> 		screen_flarm;
 extern SetupNG<int> 		screen_centeraid;
 extern SetupNG<int> 		data_monitor;
 extern SetupNG<t_bitfield_compass> 	calibration_bits;
+extern SetupNG<int> 		gear_warning;
 
 extern uint8_t g_col_background;
 extern uint8_t g_col_highlight;

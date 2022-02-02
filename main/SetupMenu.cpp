@@ -1321,7 +1321,7 @@ void SetupMenu::setup( )
 
 		SetupMenuSelect * upd = new SetupMenuSelect( "Software Update", true, 0, true, &software_update );
 		soft->addEntry( upd );
-		upd->setHelp(PROGMEM "Software Update over the air (OTA). Start Wifi AP, then connect to Wifi 'ESP32 OTA' and open http://192.168.0.1 to upload firmware");
+		upd->setHelp(PROGMEM "Software Update over the air (OTA). Start Wifi AP, then connect to Wifi 'ESP32 OTA' and open http://192.168.4.1 to upload firmware");
 		upd->addEntry( "Cancel");
 		upd->addEntry( "Start");
 

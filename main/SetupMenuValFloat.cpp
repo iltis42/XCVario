@@ -15,6 +15,7 @@
 #include <esp_log.h>
 
 SetupMenuValFloat * SetupMenuValFloat::qnh_menu = 0;
+SetupMenuValFloat * SetupMenuValFloat::meter_adj_menu = 0;
 char SetupMenuValFloat::_val_str[20];
 
 SetupMenuValFloat::SetupMenuValFloat( const char* title, const char *unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs, bool restart, bool sync, bool live_update ) {
@@ -63,17 +64,17 @@ void SetupMenuValFloat::setPrecision( int prec ){
 	bits._precision = prec;
 }
 
-void SetupMenuValFloat::showQnhMenu( float qnh ){
-	ESP_LOGI(FNAME,"showQnhMenu()");
-	if( qnh_menu ) {
-		ESP_LOGI(FNAME,"qnh_menu = true");
+void SetupMenuValFloat::showMenu( float val, SetupMenuValFloat * menu ){
+	ESP_LOGI(FNAME,"showMenu()");
+	if( menu ) {
+		ESP_LOGI(FNAME,"menu found");
 		inSetup = true;
-		selected = qnh_menu;
+		selected = menu;
 		inSetup=true;
-		qnh_menu->clear();
-		qnh_menu->display();
-		qnh_menu->pressed = true;
-		qnh_menu->_value = qnh;
+		menu->clear();
+		menu->display();
+		menu->pressed = true;
+		menu->_value = val;
 	}
 }
 

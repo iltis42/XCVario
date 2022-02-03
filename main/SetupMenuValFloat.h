@@ -26,7 +26,7 @@ public:
 	void displayVal();
 	void setPrecision( int prec );
 	const char *value();
-	static void showQnhMenu( float qnh );
+	static void showMenu( float val, SetupMenuValFloat *menu  );
 	void up( int count );  // step up to parent
 	void down( int count );
 	void press();
@@ -35,6 +35,7 @@ public:
 	void setStep( float val ) { _step = val; };
     float _value;
     static SetupMenuValFloat * qnh_menu;
+    static SetupMenuValFloat * meter_adj_menu;
 
 private:
     float step( float instep );

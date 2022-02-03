@@ -1504,9 +1504,9 @@ void SetupMenu::setup( )
 		pstype->addEntry( "MP5004");
 		pstype->addEntry( "Autodetect");
 
-		SetupMenuValFloat * fvoltadj = new SetupMenuValFloat( "Voltmeter Adjust", "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust,  false, false, true);
-		fvoltadj->setHelp(PROGMEM "Option to fine factory adjust voltmeter");
-		hardware->addEntry( fvoltadj );
+		SetupMenuValFloat::meter_adj_menu = new SetupMenuValFloat( "Voltmeter Adjust", "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust,  true, false, true);
+		SetupMenuValFloat::meter_adj_menu->setHelp(PROGMEM "Option to fine factory adjust voltmeter");
+		hardware->addEntry( SetupMenuValFloat::meter_adj_menu );
 
 		// Altimeter, IAS
 		SetupMenu * aia = new SetupMenu( "Altimeter, Airspeed" );

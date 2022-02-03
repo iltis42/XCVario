@@ -1339,7 +1339,12 @@ void system_startup(void *args){
 			QNH.set( qnh_best );
 		}
 		display->clear();
-		SetupMenuValFloat::showQnhMenu( qnh_best );
+		if( abs(factory_volt_adjust.get() - 0.00815) < 0.00001 ){
+			ESP_LOGI(FNAME,"Do Factory Voltmeter adj");
+			SetupMenuValFloat::showMenu( 0.0, SetupMenuValFloat::meter_adj_menu );
+		}else{
+			SetupMenuValFloat::showMenu( qnh_best, SetupMenuValFloat::qnh_menu );
+		}
 	}
 	else
 	{

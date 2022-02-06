@@ -29,6 +29,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include "CenterAid.h"
 
 int screens_init = INIT_DISPLAY_NULL;
 
@@ -1601,6 +1602,8 @@ float IpsDisplay::getHeading(){
 	return heading;
 }
 
+
+
 // Compass or Wind Display
 void IpsDisplay::drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass_dirty) {
 	if( _menu )
@@ -1839,6 +1842,11 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			needle_dirty = true;
 		compass_dirty = false;
 		wind_dirty = false;
+	}
+
+	// Center Aid around grafic wind
+	if( (centeraid && !(tick % 9)) || (centeraid && wind_dirty)  ){
+		centeraid->drawCenterAid();
 	}
 
 	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );

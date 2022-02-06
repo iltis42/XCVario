@@ -309,7 +309,7 @@ void Protocols::parseNMEA( const char *str ){
 	if ( strncmp( str, "!xc,", 4 ) == 0 ) { // need this to support Wind Simulator with Compass simulation
 		float h;
 		sscanf( str,"!xc,%f", &h );
-		ESP_LOGI(FNAME,"Compass heading detected=%3.1f", h );
+		// ESP_LOGI(FNAME,"Compass heading detected=%3.1f", h );
 		if( compass )
 			compass->setHeading( h );
 	}

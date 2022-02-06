@@ -90,7 +90,7 @@ int update_routing_s1( SetupMenuSelect * p ){
 void init_screens(){
 	uint32_t scr = menu_screens.get();
 	screen_gmeter.set( (scr >> SCREEN_GMETER) & 1);
-	screen_centeraid.set( (scr >> SCREEN_THERMAL_ASSISTANT) & 1);
+// 	screen_centeraid.set( (scr >> SCREEN_THERMAL_ASSISTANT) & 1);
 	screen_flarm.set( (scr >> SCREEN_FLARM) & 1);
 	screen_mask_len = 1; // default vario
 	while( scr ){
@@ -129,7 +129,7 @@ int config_gear_warning( SetupMenuSelect * p ){
 int upd_screens( SetupMenuSelect * p ){
 	uint32_t screens =
 			( (uint32_t)screen_gmeter.get() << (SCREEN_GMETER)  |
-			( (uint32_t)screen_centeraid.get() << (SCREEN_THERMAL_ASSISTANT) ) |
+	//		( (uint32_t)screen_centeraid.get() << (SCREEN_THERMAL_ASSISTANT) ) |
 			( (uint32_t)screen_flarm.get() << (SCREEN_FLARM) )
 			);
 	menu_screens.set( screens );

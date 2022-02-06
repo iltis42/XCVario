@@ -72,6 +72,7 @@
 #include <cstring>
 #include "DataMonitor.h"
 #include "AdaptUGC.h"
+#include "CenterAid.h"
 
 // #include "sound.h"
 
@@ -117,7 +118,9 @@ PressureSensor *baroSensor = 0;
 PressureSensor *teSensor = 0;
 
 AdaptUGC *MYUCG = 0;  // ( SPI_DC, CS_Display, RESET_Display );
-IpsDisplay *display;
+IpsDisplay *display = 0;
+CenterAid  *centeraid = 0;
+
 bool topDown = false;
 
 OTA *ota = 0;
@@ -652,7 +655,10 @@ void readSensors(void *pvParameters){
 			}
 		}
 		lazyNvsCommit();
-
+		if( screen_centeraid.get() ){
+			if( centeraid )
+				centeraid->tick();
+		}
 		esp_task_wdt_reset();
 		if( uxTaskGetStackHighWaterMark( bpid ) < 512 )
 			ESP_LOGW(FNAME,"Warning sensor task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );
@@ -1412,6 +1418,9 @@ void system_startup(void *args){
 				}
 			}
 		}
+	}
+	if( screen_centeraid.get() ){
+		centeraid = new CenterAid( MYUCG );
 	}
 	if( SetupCommon::isClient() ){
 		xTaskCreatePinnedToCore(&clientLoop, "clientLoop", 4096, NULL, 14, &bpid, 0);

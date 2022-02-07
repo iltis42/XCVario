@@ -66,8 +66,8 @@ bool Switch::cruiseMode() {
 			cruise_mode_final = _cruise_mode_speed;
 		}
 	}
-	else if( flap_enable.get() ){
-		if( audio_mode.get() == AM_FLAP ){
+	else if( audio_mode.get() == AM_FLAP  ){
+		if( flap_enable.get() ){
 			if( FLAP->getFlapPosition() > s2f_flap_pos.get() )
 				cruise_mode_final = false;
 			else
@@ -162,16 +162,22 @@ void Switch::tick() {
 
 	if( audio_mode.get() == AM_AUTOSPEED || audio_mode.get() == AM_SWITCH ){   // both of this modes consider switch
 		if( s2f_switch_type.get() == S2F_HW_SWITCH || s2f_switch_type.get() == S2F_HW_SWITCH_INVERTED ){
-			if( isClosed() )
-				if( s2f_switch_type.get() == S2F_HW_SWITCH_INVERTED )
+			if( isClosed() ){
+				if( s2f_switch_type.get() == S2F_HW_SWITCH_INVERTED ){
 					_cruise_mode_sw = false;
-				else
+				}
+				else{
 					_cruise_mode_sw = true;
-			else
-				if( s2f_switch_type.get() == S2F_HW_SWITCH_INVERTED )
+				}
+			}
+			else{
+				if( s2f_switch_type.get() == S2F_HW_SWITCH_INVERTED ){
 					_cruise_mode_sw = true;
-				else
+				}
+				else{
 					_cruise_mode_sw = false;
+				}
+			}
 		}
 		else if( s2f_switch_type.get() == S2F_HW_PUSH_BUTTON ){
 			if( _holddown ){   // debouncing

@@ -11,8 +11,9 @@ https://github.com/iltis42/XCVario/blob/master/.github/workflows/cmake.yml
 Here the instructions to build the binary locally:
 
 1)  Clone, install, activate esp-idf and get cmake (obviously cmake is missing from install.sh)
-mkdir -p ~/esp; cd ~/esp; git clone --recursive https://github.com/espressif/esp-idf.git;
-cd ~/esp/esp-idf; ./install.sh; . ./export.sh;
+mkdir -p ~/esp; cd ~/esp; 
+git clone -b v4.3 --recursive https://github.com/espressif/esp-idf.git esp-idf-v4.3
+cd esp-idf-v4.3/; ./install.sh; . ./export.sh;
 pip install cmake;
 
 This will get you the lates state of esp-idf plus compiler (at this time is: esp-2020r3-8.4.0).
@@ -25,12 +26,12 @@ patch the esp-idf as shown below in the Appendix, and build the hello world exam
 The software is build using cmake, and flashed and monitored by calling e.g. "idf.py build" 
 from the directory of the software to be build. The workflow for each is shown here below:
 
-cd ~/esp/esp-idf/examples/get-started/hello_world;
+cd ~/esp/esp-idf-v4.3/examples/get-started/hello_world;
 idf.py build
 WARNING: Support for Python 2 is deprecated and will be removed in future versions.
 Executing action: all (aliases: build)
-Running cmake in directory /home/gittest2/esp/esp-idf/examples/get-started/hello_world/build
-Executing "cmake -G 'Unix Makefiles' -DPYTHON_DEPS_CHECKED=1 -DESP_PLATFORM=1 -DCCACHE_ENABLE=0 /home/gittest2/esp/esp-idf/examples/get-started/hello_world"...
+Running cmake in directory /home/gittest2/esp/esp-idf-v4.3/examples/get-started/hello_world/build
+Executing "cmake -G 'Unix Makefiles' -DPYTHON_DEPS_CHECKED=1 -DESP_PLATFORM=1 -DCCACHE_ENABLE=0 /home/gittest2/esp/esp-idf-v4.3/examples/get-started/hello_world"...
 -- Found Git: /usr/bin/git (found version "2.17.1") 
 -- IDF_TARGET not set, using default target: esp32
 -- The C compiler identification is GNU 8.4.0
@@ -56,7 +57,7 @@ $ idf.py -p /dev/ttyUSB0 monitor
 WARNING: Support for Python 2 is deprecated and will be removed in future versions.
 Executing action: monitor
 Running idf_monitor in directory /home/gittest2/esp/esp-idf/examples/get-started/hello_world
-Executing "/home/gittest2/.espressif/python_env/idf4.3_py2.7_env/bin/python /home/gittest2/esp/esp-idf/tools/idf_monitor.py -p /dev/ttyUSB0 -b 115200 --toolchain-prefix xtensa-esp32-elf- /home/gittest2/esp/esp-idf/examples/get-started/hello_world/build/hello-world.elf -m '/home/gittest2/.espressif/python_env/idf4.3_py2.7_env/bin/python' '/home/gittest2/esp/esp-idf/tools/idf.py' '-p' '/dev/ttyUSB0'"...
+Executing "/home/gittest2/.espressif/python_env/idf4.3_py2.7_env/bin/python /home/gittest2/esp/esp-idf/tools/idf_monitor.py -p /dev/ttyUSB0 -b 115200 --toolchain-prefix xtensa-esp32-elf- /home/gittest2/esp/esp-idf-v4.3/examples/get-started/hello_world/build/hello-world.elf -m '/home/gittest2/.espressif/python_env/idf4.3_py2.7_env/bin/python' '/home/gittest2/esp/esp-idf-v4.3/tools/idf.py' '-p' '/dev/ttyUSB0'"...
 --- idf_monitor on /dev/ttyUSB0 115200 ---
 --- Quit: Ctrl+] | Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H ---
 I (30) boot: ESP-IDF v4.3-dev-2586-g526f68239 2nd stage bootloader
@@ -70,7 +71,7 @@ I (51) boot.esp32: SPI Flash Size : 2MB
 After this is done successfully, then clone the XCVario into the examples directory, parallel to the example directory hello_world, and do the same from there, and voila the control is yours:
 
 A) Clone XCVario repository:
-cd ~/esp/esp-idf/examples/get-started/; git clone https://github.com/iltis42/XCVario.git
+cd ~/esp/esp-idf-v4.3/examples/get-started/; git clone https://github.com/iltis42/XCVario.git
 
 B) Build software and flash XCVario Software, e.g. shown as here via USB cable, or use OTA
 cd XCVario
@@ -87,5 +88,5 @@ idf.py -p /dev/ttyUSB0 monitor
 
 C) Flashing via OTA
 Start OTA Software download Wifi AP at XCVario and
-upload through this webpage binary image: ~/esp/esp-idf/examples/get-started/XCVario/build/sensor.bin
+upload through this webpage binary image: ~/esp/esp-idf-v4.3/examples/get-started/XCVario/build/sensor.bin
 

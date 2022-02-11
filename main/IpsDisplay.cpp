@@ -1230,8 +1230,8 @@ void IpsDisplay::drawWindArrow( float a, float speed, int type ){
 	if( _menu )
 		return;
 
-	const int X=80;
-	const int Y=220;
+	const int X=75;
+	const int Y=215;
 	float si=sin(D2R(a));
 	float co=cos(D2R(a));
 	const int b=9; // width of the arrow

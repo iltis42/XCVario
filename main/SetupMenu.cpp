@@ -716,7 +716,7 @@ void SetupMenu::setup( )
 		ncolor->addEntry( "Red");
 		vae->addEntry( ncolor );
 
-		SetupMenuSelect * scrcaid = new SetupMenuSelect( "Center-Aid", false, upd_screens, true, &screen_centeraid );
+		SetupMenuSelect * scrcaid = new SetupMenuSelect( "Center-Aid", true, 0, true, &screen_centeraid );
 		scrcaid->addEntry( "Disable");
 		scrcaid->addEntry( "Enable");
 		vae->addEntry(scrcaid);

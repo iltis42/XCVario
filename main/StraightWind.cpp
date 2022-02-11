@@ -97,18 +97,21 @@ bool StraightWind::getWind( int* direction, float* speed, int *age )
 bool StraightWind::calculateWind()
 {
 	// ESP_LOGI(FNAME,"Straight wind, calculateWind()");
-	if( SetupCommon::isClient() ){
+	if( SetupCommon::isClient()  ){
 		ESP_LOGI(FNAME,"We are client device, get wind from master");
 		return false;
 	}
 
 	if( Flarm::gpsStatus() == false ) {
 		// GPS status not valid
-		ESP_LOGI(FNAME,"Restart Cycle: GPS Status invalid");
+		if( (wind_enable.get() == WA_STRAIGHT) || (wind_enable.get() == WA_BOTH) ){
+			ESP_LOGI(FNAME,"Restart Cycle: GPS Status invalid");
+		}
 		status="Bad GPS";
 		gpsStatus = false;
+	}else{
+		gpsStatus = true;
 	}
-	gpsStatus = true;
 	// ESP_LOGI(FNAME,"calculateWind flightMode: %d", CircleStraightWind::getFlightMode() );
 
 	// Check if wind requirements are fulfilled
@@ -153,7 +156,9 @@ bool StraightWind::calculateWind()
 	if( THok == false ) {
 		// No valid heading available
 		status="No Compass";
-		ESP_LOGI(FNAME,"Restart Cycle: No magnetic heading");
+		if( (wind_enable.get() == WA_STRAIGHT) || (wind_enable.get() == WA_BOTH) ){
+			ESP_LOGI(FNAME,"Restart Cycle: No magnetic heading");
+		}
 	}
 
 	// Get current true course from GPS

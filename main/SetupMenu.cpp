@@ -133,6 +133,7 @@ int upd_screens( SetupMenuSelect * p ){
 			( (uint32_t)screen_flarm.get() << (SCREEN_FLARM) )
 			);
 	menu_screens.set( screens );
+	init_screens();
 	return 0;
 }
 
@@ -551,7 +552,6 @@ void SetupMenu::showMenu(){
 		else
 		{
 			ESP_LOGI(FNAME,"End Setup Menu");
-			_display->clear();
 			_display->doMenu(false);
 			SetupCommon::commitNow();
 			inSetup=false;

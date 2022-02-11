@@ -552,6 +552,7 @@ void SetupMenu::showMenu(){
 		else
 		{
 			ESP_LOGI(FNAME,"End Setup Menu");
+			screens_init = INIT_DISPLAY_NULL;
 			_display->doMenu(false);
 			SetupCommon::commitNow();
 			inSetup=false;
@@ -565,6 +566,7 @@ static int screen_index = 0;
 void SetupMenu::press(){
 	if( (selected != this) || focus )
 		return;
+	ESP_LOGI(FNAME,"press() active_srceen %d, pressed %d inSet %d", active_screen, pressed, inSetup );
 	if( !inSetup ){
 		active_screen = 0;
 		while( !active_screen && (screen_index < screen_mask_len) ){
@@ -580,7 +582,8 @@ void SetupMenu::press(){
 			active_screen = 0; // fall back into default vario screen after optional screens
 		}
 	}
-	if( !active_screen ){
+	if( !active_screen || inSetup ){
+		ESP_LOGI(FNAME,"press() inSetup");
 		if( !menu_long_press.get() || inSetup )
 			showMenu();
 		if( pressed )
@@ -594,8 +597,16 @@ void SetupMenu::longPress(){
 	if( (selected != this) )
 		return;
 	// ESP_LOGI(FNAME,"longPress()");
-	if( menu_long_press.get() )
+	ESP_LOGI(FNAME,"longPress() active_srceen %d, pressed %d inSet %d", active_screen, pressed, inSetup );
+	if( menu_long_press.get() && !inSetup ){
 		showMenu();
+	}
+	if( pressed ){
+		pressed = false;
+	}
+	else{
+		pressed = true;
+	}
 }
 
 void SetupMenu::escape(){

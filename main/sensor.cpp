@@ -301,7 +301,6 @@ void drawDisplay(void *pvParameters){
 			{
 				if( !gLoadDisplay ){
 					gLoadDisplay = true;
-					display->clear();
 				}
 			}
 			else{

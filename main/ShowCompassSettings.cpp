@@ -43,6 +43,8 @@ void ShowCompassSettings::display( int mode )
 		ucg->setPrintPos( 1, 30 );
 		ucg->printf( "No magnetic Sensor, Abort" );
 		delay( 2000 );
+		clear();
+		return;
 	}
 	ESP_LOGI(FNAME, "display() mode=%d", mode );
 

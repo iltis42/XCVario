@@ -705,6 +705,11 @@ void SetupMenu::setup( )
 		ncolor->addEntry( "Red");
 		vae->addEntry( ncolor );
 
+		SetupMenuSelect * scrcaid = new SetupMenuSelect( "Center-Aid", false, upd_screens, true, &screen_centeraid );
+		scrcaid->addEntry( "Disable");
+		scrcaid->addEntry( "Enable");
+		vae->addEntry(scrcaid);
+
 		SetupMenu * vdamp = new SetupMenu( "Vario Damping" );
 		MenuEntry* vdampm = vae->addEntry( vdamp );
 
@@ -1031,7 +1036,7 @@ void SetupMenu::setup( )
 		flarmv->setHelp(PROGMEM "Maximum volume FLARM alarm audio warning");
 		flarm->addEntry( flarmv );
 
-		SetupMenuSelect * flarms = new SetupMenuSelect( "FLARM Simulation",	false, 0, true, &flarm_sim );
+		SetupMenuSelect * flarms = new SetupMenuSelect( "FLARM Simulation",	false, 0, true, &flarm_sim, false, true );
 		flarm->addEntry( flarms );
 		flarms->setHelp( PROGMEM "Simulate an airplane crossing from left to right with different alarm levels and vertical distance 5 seconds after pressed (leave setup!)");
 		flarms->addEntry( "Disable");
@@ -1433,10 +1438,6 @@ void SetupMenu::setup( )
 		scrgmet->addEntry( "Enable");
 		screens->addEntry(scrgmet);
 
-		SetupMenuSelect * scrcaid = new SetupMenuSelect( "Center-Aid", false, upd_screens, true, &screen_centeraid );
-		scrcaid->addEntry( "Disable");
-		scrcaid->addEntry( "Enable");
-		screens->addEntry(scrcaid);
 		/*
 		SetupMenuSelect * scrfltr = new SetupMenuSelect( "Flarm Traffic", false, 0, true, &screen_flarm );
 		scrfltr->addEntry( "Disable");

@@ -14,8 +14,8 @@
 #include "AdaptUGC.h"
 
 
-static const int X=80;
-static const int Y=220;
+static const int X=75;
+static const int Y=215;
 
 #define SCALE_DOWN 4
 

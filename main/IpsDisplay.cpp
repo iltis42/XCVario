@@ -338,6 +338,7 @@ void IpsDisplay::bootDisplay() {
 		ucg->setRedBlueTwist( true );
 	if( display_type.get() == ILI9341_TFT_18P )
 		ucg->invertDisplay( true );
+	ESP_LOGI(FNAME,"clear boot");
 	clear();
 	ucg->setColor(1, COLOR_BLACK );
 	ucg->setColor(0, COLOR_WHITE );
@@ -1229,8 +1230,8 @@ void IpsDisplay::drawWindArrow( float a, float speed, int type ){
 	if( _menu )
 		return;
 
-	const int X=80;
-	const int Y=220;
+	const int X=75;
+	const int Y=215;
 	float si=sin(D2R(a));
 	float co=cos(D2R(a));
 	const int b=9; // width of the arrow
@@ -1511,6 +1512,7 @@ void IpsDisplay::initLoadDisplay(){
 	if( _menu )
 		return;
 	ESP_LOGI(FNAME,"initLoadDisplay()");
+	xSemaphoreTake(spiMutex,portMAX_DELAY);
 	ucg->setColor( COLOR_HEADER );
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setPrintPos(20,20);
@@ -1535,6 +1537,7 @@ void IpsDisplay::initLoadDisplay(){
 	drawScale( max_gscale, -max_gscale, 140, 1 );
 	old_gmax = 100;
 	old_gmin = -100;
+	xSemaphoreGive(spiMutex);
 	ESP_LOGI(FNAME,"initLoadDisplay end");
 }
 
@@ -1544,11 +1547,13 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 	if( _menu )
 		return;
 	tick++;
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
+
 	if( !(screens_init & INIT_DISPLAY_GLOAD) ){
+		clear();
 		initLoadDisplay();
 		screens_init |= INIT_DISPLAY_GLOAD;
 	}
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	// draw G pointer
 	float a = (*_gauge)(loadFactor-1.);
         ucg_color_t needlecolor[3] = { {COLOR_WHITE}, {COLOR_ORANGE}, {COLOR_RED} };

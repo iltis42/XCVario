@@ -103,6 +103,9 @@ private:
 	static int16_t char_height;
 	static float old_polar_sink;
 
+	static char last_s[20];
+	static int  x_start;
+
 	static void drawMC( float mc, bool large=false );
 	static void drawS2FMode( int x, int y, bool cruise );
 	static void setArrowColor( bool upper );

@@ -1804,9 +1804,9 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		return;
 	}
 	// average Climb
-	if( ((int)(ate*10) != _ate) && !(tick%10) ) {
+	if( ((int)(ate*30) != _ate) && !(tick%10) ) {
 		drawAvgVario( AMIDX + 38, AMIDY, ate );
-		_ate = (int)(ate*10);
+		_ate = (int)(ate*30);
 	}
 
 	// S2F Command triangle

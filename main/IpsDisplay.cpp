@@ -1333,6 +1333,7 @@ void IpsDisplay::drawWarning( const char *warn, bool push ){
 	xSemaphoreGive(spiMutex);
 }
 
+
 void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float val ){
 	if( _menu )
 		return;

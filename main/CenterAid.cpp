@@ -17,7 +17,7 @@
 static const int X=75;
 static const int Y=215;
 
-#define SCALE_DOWN 4
+#define SCALE_DOWN 4.0
 
 CenterAid::CenterAid( AdaptUGC *display ) {
 	ucg = display;
@@ -39,12 +39,12 @@ void CenterAid::drawThermal( int th, int idir, bool draw_sink ){
 	short int cx = X+sin(D2R(idir*CA_STEP))*30;
 	if( drawn_thermals[idir] && (th <  drawn_thermals[idir]) ){
 		ucg->setColor( COLOR_BLACK );
-		int td = drawn_thermals[idir]/SCALE_DOWN;
+		int td = rint(drawn_thermals[idir]/SCALE_DOWN);
 		td = td > MAX_DISK_RAD ? MAX_DISK_RAD : td;
 		ucg->drawDisc(cx,cy, td, UCG_DRAW_ALL );
 	}
 	if( th > 0 ){
-		int td = th/SCALE_DOWN;
+		int td = rint(th/SCALE_DOWN);
 		td = td > MAX_DISK_RAD ? MAX_DISK_RAD : td;
 		if( td > 0 ){
 			ucg->setColor( COLOR_GREEN );

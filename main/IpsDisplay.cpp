@@ -44,6 +44,10 @@ bool IpsDisplay::netto_old = false;
 int16_t IpsDisplay::char_width; // for roling altimeter
 int16_t IpsDisplay::char_height;
 
+// Average Vario data
+char IpsDisplay::last_s[20] = { "\0" };
+int IpsDisplay::x_start = 240;
+
 #define DISPLAY_H 320
 #define DISPLAY_W 240
 
@@ -114,7 +118,7 @@ ucg_color_t IpsDisplay::colorsalt[TEMAX+1+TEGAP];
 AdaptUGC *IpsDisplay::ucg = 0;
 
 int IpsDisplay::_te=0;
-int IpsDisplay::_ate=0;
+int IpsDisplay::_ate=-1000;
 int IpsDisplay::s2falt=-1;
 int IpsDisplay::s2fdalt=0;
 int IpsDisplay::s2f_level_prev=0;
@@ -574,7 +578,10 @@ void IpsDisplay::redrawValues()
 	needle_pos_old=-1000;
 	mcalt = -100;
 	as_prev = -1;
-	_ate = -200;
+	_ate = -2000;
+	last_s[0] = '\0';
+	x_start = 240;
+
 	alt_prev = -1;
 	pref_qnh = -1;
 	tyalt = 0;
@@ -798,7 +805,7 @@ void IpsDisplay::drawS2FBar(int16_t x, int16_t y, int s2fd)
 	for ( int i = s2f_level_prev + ((s2f_level_prev==0 || s2f_level_prev*inc>0) ? inc : 0);
 			i != level+((i*inc < 0)?0:inc); i+=inc ) {
 		if ( i != 0 ) {
-			drawArrow(x, y-2+(i>0?1:-1)*22, i, i*inc < 0);
+			drawArrow(x, y+(i>0?1:-1)*24, i, i*inc < 0);
 			// ESP_LOGI(FNAME,"s2fbar draw %d,%d", i, (i*inc < 0)?0:inc);
 		}
 	}
@@ -1327,17 +1334,28 @@ void IpsDisplay::drawWarning( const char *warn, bool push ){
 }
 
 
-void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float ate ){
+void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float val ){
 	if( _menu )
 		return;
-	char s[15];
+	char s[20];
+	int ival = rint(val*10);  // integer value in steps of 10th
 	ucg->setFont(ucg_font_fub35_hn, false );
 	ucg->setFontPosCenter();
-	static const char* format[2] = {"  %2.1f", "  %2.0f"};
-	ucg->setColor( COLOR_WHITE );
-	sprintf(s, format[std::abs(ate)>10], round(ate*10.)/10.); // Avoid "-" sign because of not owns mantissa
-	ucg->setPrintPos(x - ucg->getStrWidth(s), y + 7);
-	ucg->print(s);
+	static const char* format[2] = {"%2.1f","%2.0f"};
+	sprintf(s, format[std::abs(ival)>100], float(ival/10.) );
+	if( strcmp( s, last_s ) != 0 ){  // only print if there a change in rounded numeric string
+		int new_x_start = x - ucg->getStrWidth(s);
+		if( new_x_start > x_start ){      // do we have a shorter string stating at higer x position
+			ucg->setColor( COLOR_BLACK );    // yes -> so blank exact prepending area
+			int fh = ucg->getFontAscent();   // height of blanking box
+			ucg->drawBox( x_start, y-fh/2, new_x_start-x_start, fh );  // draw blanking box
+		}
+		ucg->setColor( COLOR_WHITE );
+		ucg->setPrintPos(new_x_start, y + 7);
+		ucg->print(s);
+		strcpy( last_s, s );
+		x_start = new_x_start;
+	}
 	ucg->setFontPosBottom();
 }
 
@@ -1787,7 +1805,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		return;
 	}
 	// average Climb
-	if( (int)(ate*30) != _ate && !(tick%3) ) {
+	if( ((int)(ate*30) != _ate) && !(tick%10) ) {
 		drawAvgVario( AMIDX + 38, AMIDY, ate );
 		_ate = (int)(ate*30);
 	}

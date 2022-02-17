@@ -477,7 +477,7 @@ float Compass::heading( bool *ok )
 
 	_heading = Vector::normalizeDeg( _heading );
 
-	// ESP_LOGI(FNAME,"CR: %.1f TC:%.1f Roll:%0.1f Pitch:%.1f", heading_nt, _heading, R2D(roll*2)+180, R2D(pitch*2)+180  );
+	// ESP_LOGI(FNAME,"Magn heading: %.1f Roll: %0.1f Pitch: %.1f  Raw head: %.1f Gyro(%.1f/%.1f/%.1f) Acc(%.2f/%.2f/%.2f)", _heading, R2D(roll*2), R2D(pitch*2), -RAD_TO_DEG * atan2( fy, fx ), -gyroDPS.z, gyroDPS.y, gyroDPS.x, -accelG[2],accelG[1],accelG[0]  );
 #if 0
 	if( wind_logging.get() ){
 		char log[120];

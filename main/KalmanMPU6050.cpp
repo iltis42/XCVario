@@ -217,9 +217,10 @@ void IMU::read()
 	if( compass ){
 		float curh = compass->cur_heading( &ok );
 		if( ok ){
-			// ESP_LOGI( FNAME,"cur head %.1f", curh );
-			fused_yaw +=  Vector::angleDiffDeg( curh ,fused_yaw )*0.05 + (getGyroYawDelta())*0.95;
-			compass->setGyroHeading( Vector::normalizeDeg( fused_yaw ) );
+			fused_yaw +=  Vector::angleDiffDeg( curh ,fused_yaw )* (1.0-(ahrs_gyro_factor.get()/100)) + (getGyroYawDelta())* (ahrs_gyro_factor.get()/100);
+			float gh=Vector::normalizeDeg( fused_yaw );
+			compass->setGyroHeading( gh );
+			//ESP_LOGI( FNAME,"cur magn head %.1f gyro yaw: %.1f fused: %.1f", curh, getGyroYawDelta(), gh );
 		}
 	}
 	if( ahrs_gyro_factor.get() > 0.1  ){

@@ -606,6 +606,7 @@ void IpsDisplay::redrawValues()
 	old_vario_bar_val = 0;
 	old_sink_bar_val = 0;
 	prev_winddir = -1000;
+	prev_heading = -1000;
 	 
 	switch ( alt_quantization.get() ) {
 		case ALT_QUANT_DISABLE:

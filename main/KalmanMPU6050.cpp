@@ -219,7 +219,7 @@ void IMU::read()
 		if( ok ){
 			float gyroYaw = getGyroYawDelta();
 			// tuned to plus 17% what gave the best timing swing in response, 2% for compass is far enough
-			// gyro and compass are time displaced, gyro comes immediate, compas a second later
+			// gyro and compass are time displaced, gyro comes immediate, compass a second later
 			fused_yaw +=  Vector::angleDiffDeg( curh ,fused_yaw )*0.02 + gyroYaw * 1.17;
 			float gh=Vector::normalizeDeg( fused_yaw );
 			compass->setGyroHeading( gh );

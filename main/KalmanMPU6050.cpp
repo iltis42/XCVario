@@ -217,10 +217,13 @@ void IMU::read()
 	if( compass ){
 		float curh = compass->cur_heading( &ok );
 		if( ok ){
-			fused_yaw +=  Vector::angleDiffDeg( curh ,fused_yaw )* (1.0-(ahrs_gyro_factor.get()/100)) + (getGyroYawDelta())* (ahrs_gyro_factor.get()/100);
+			float gyroYaw = getGyroYawDelta();
+			// tuned to plus 17% what gave the best timing swing in response, 2% for compass is far enough
+			// gyro and compass are time displaced, gyro comes immediate, compas a second later
+			fused_yaw +=  Vector::angleDiffDeg( curh ,fused_yaw )*0.02 + gyroYaw * 1.17;
 			float gh=Vector::normalizeDeg( fused_yaw );
 			compass->setGyroHeading( gh );
-			//ESP_LOGI( FNAME,"cur magn head %.1f gyro yaw: %.1f fused: %.1f", curh, getGyroYawDelta(), gh );
+			ESP_LOGI( FNAME,"cur magn head %.2f gyro yaw: %.4f fused: %.1f Gyro(%.3f/%.3f/%.3f)", curh, gyroYaw, gh, gyroX, gyroY, gyroZ  );
 		}
 	}
 	if( ahrs_gyro_factor.get() > 0.1  ){
@@ -243,9 +246,10 @@ void IMU::MPU6050Read()
 	accelX = -accelG[2];
 	accelY = accelG[1];
 	accelZ = accelG[0];
-	gyroX = -(gyroDPS.z);
-	gyroY = gyroDPS.y;
-	gyroZ = gyroDPS.x;
+	// Gating ignores Gyro drift < 1 deg per second
+	gyroX = abs(gyroDPS.z) < 1.0 ? 0.0 : -(gyroDPS.z);
+	gyroY = abs(gyroDPS.y) < 1.0 ? 0.0 :   gyroDPS.y;
+	gyroZ = abs(gyroDPS.x) < 1.0 ? 0.0 :   gyroDPS.x;
 }
 
 void IMU::PitchFromAccel(double *pitch)

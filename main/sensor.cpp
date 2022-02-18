@@ -187,6 +187,8 @@ bool flarmDownload = false; // Flarm IGC download flag
 
 AdaptUGC *egl = 0;
 
+#define GYRO_FS (mpud::GYRO_FS_250DPS)
+
 float getTAS() { return tas; };
 
 bool do_factory_reset() {
@@ -388,7 +390,7 @@ static void grabMPU()
 	if( err != ESP_OK )
 		ESP_LOGE(FNAME, "gyro I2C error, X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
 	accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
-	gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
+	gyroDPS = mpud::gyroDegPerSec(gyroRaw, GYRO_FS);  // raw data to º/s
 	// ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f  gyro X: %+.2f Y:%+.2f Z:%+.2f ABx:%d ABy:%d, ABz=%d\n", -accelG[2], accelG[1], accelG[0] ,  gyroDPS.x, gyroDPS.y, gyroDPS.z, accl_bias.get().x, accl_bias.get().y, accl_bias.get().z );
 	bool goodAccl = true;
 	if( abs( accelG.x - accelG_Prev.x ) > 1 || abs( accelG.y - accelG_Prev.y ) > 1 || abs( accelG.z - accelG_Prev.z ) > 1 ) {
@@ -396,7 +398,7 @@ static void grabMPU()
 		accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);
 		if( abs( accelG.x - accelG_Prev.x ) > 1 || abs( accelG.y - accelG_Prev.y ) > 1 || abs( accelG.z - accelG_Prev.z ) > 1 ){
 			goodAccl = false;
-			ESP_LOGE(FNAME, "accelaration change > g in 0.2 S:  X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
+			ESP_LOGE(FNAME, "accelaration change > 1 g in 0.2 S:  X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
 		}
 	}
 	bool goodGyro = true;
@@ -404,7 +406,7 @@ static void grabMPU()
 		// ESP_LOGE(FNAME, "gyro sensor out of bounds: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
 		// ESP_LOGE(FNAME, "%04x %04x %04x", gyroRaw.x, gyroRaw.y, gyroRaw.z );
 		MPU.rotation(&gyroRaw);
-		gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);
+		gyroDPS = mpud::gyroDegPerSec(gyroRaw, GYRO_FS );
 		if( abs( gyroDPS.x - gyroDPS_Prev.x ) > MGRPS || abs( gyroDPS.y - gyroDPS_Prev.y ) > MGRPS || abs( gyroDPS.z - gyroDPS_Prev.z ) > MGRPS ) {
 			goodGyro = false;
 			ESP_LOGE(FNAME, "gyro angle >90 deg/s in 0.2 S: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
@@ -870,7 +872,7 @@ void system_startup(void *args){
 		MPU.initialize();  // this will initialize the chip and set default configurations
 		MPU.setSampleRate(50);  // in (Hz)
 		MPU.setAccelFullScale(mpud::ACCEL_FS_8G);
-		MPU.setGyroFullScale(mpud::GYRO_FS_500DPS);
+		MPU.setGyroFullScale( GYRO_FS );
 		MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
 		mpud::raw_axes_t gb = gyro_bias.get();
 		mpud::raw_axes_t ab = accl_bias.get();

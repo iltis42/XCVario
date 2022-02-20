@@ -30,7 +30,6 @@ Quaternion quaternion_initialize(float a, float b, float c, float d);
 Quaternion quaternion_product(Quaternion q1, Quaternion q2);
 Quaternion quaternion_conjugate(Quaternion q);
 Quaternion quaternion_normalize(Quaternion q);
-Quaternion quaternion_between_vectors(vector_ijk v1, vector_ijk v2);
 vector_ijk quaternion_rotate_vector(vector_ijk v, Quaternion q);
 euler_angles quaternion_to_euler_angles(Quaternion q);
 

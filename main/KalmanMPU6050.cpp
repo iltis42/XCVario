@@ -139,7 +139,7 @@ void IMU::init()
 
 	lastProcessed = micros();
 	att_quat = quaternion_initialize(1.0,0.0,0.0,0.0);
-	att_vector = vector_3d_initialize(0.0,0.0,-1.0);
+	att_vector = vector_ijk(0.0,0.0,-1.0);
 	euler = { 0,0,0 };
 	ESP_LOGD(FNAME, "Finished IMU setup  gyroYAngle:%f ", gyroYAngle);
 }
@@ -213,8 +213,9 @@ void IMU::read()
 	if( euler.pitch < -80.0 )
 		euler.pitch = -80.0;
 
-	bool ok;
+
 	if( compass ){
+		bool ok;
 		float curh = compass->cur_heading( &ok );
 		if( ok ){
 			float gyroYaw = getGyroYawDelta();
@@ -224,7 +225,25 @@ void IMU::read()
 			float gh=Vector::normalizeDeg( fused_yaw );
 			compass->setGyroHeading( gh );
 			// ESP_LOGI( FNAME,"cur magn head %.2f gyro yaw: %.4f fused: %.1f Gyro(%.3f/%.3f/%.3f)", curh, gyroYaw, gh, gyroX, gyroY, gyroZ  );
+/*
+ * Work for quaternion -> euler based compass
+			float x=compass->rawX();
+			float y=compass->rawY();
+			float z=compass->rawZ();
+			float max = abs(x);
+			if(max < abs(y))
+				max = abs(y);
+			if(max < abs(z))
+				max = abs(z);
+
+			vector_ijk v( x,y,z );
+			v.normalize();
+			Quaternion q = quaternion_from_accelerometer( v.a, v.b, v.c );
+			euler_angles compass_euler = quaternion_to_euler_angles(q);
+			ESP_LOGI( FNAME,"cur magn head %.2f gyro yaw: %.4f fused: %.1f XYZ(%.3f/%.3f/%.3f) CEY:%.2f P:%.2f R:%.2f", curh, gyroYaw, gh, v.a, v.b, v.c, compass_euler.yaw, compass_euler.pitch, compass_euler.roll );
+*/
 		}
+
 	}
 	if( ahrs_gyro_factor.get() > 0.1  ){
 		filterRoll =  euler.roll;

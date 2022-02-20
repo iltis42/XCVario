@@ -77,6 +77,9 @@ public:
 	// Heading related methods
 	float cur_heading( bool *ok );
 	float rawHeading( bool *okIn );      //  Returns the low pass filtered magnetic heading without deviation
+	float rawX() { return fx; };
+	float rawY() { return fy; };
+	float rawZ() { return fz; };
 	float filteredHeading( bool *okIn );
 	float filteredTrueHeading( bool *okIn );
 	void setGyroHeading( float hd );
@@ -133,4 +136,7 @@ private:
 	int age;
 	MagnetSensor *sensor;
 	t_magn_axes can;
+	double fx;
+	double fy;
+	double fz;
 };

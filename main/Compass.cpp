@@ -453,9 +453,9 @@ float Compass::heading( bool *ok )
 	 */
 	// ESP_LOGI( FNAME, "heading: X:%d Y:%d Z:%d xs:%f ys:%f zs:%f", raw.x, raw.y, raw.z, scale.x, scale.y, scale.z);
 
-	double fy = (double) ((float( raw.x ) - bias.x) * scale.x);
-	double fx = -(double) ((float( raw.y ) - bias.y) * scale.y);
-	double fz = (double) ((float( raw.z ) - bias.z) * scale.z);
+	fy = (double) ((float( raw.x ) - bias.x) * scale.x);
+	fx = -(double) ((float( raw.y ) - bias.y) * scale.y);
+	fz = (double) ((float( raw.z ) - bias.z) * scale.z);
 
 	double roll = filterRoll( IMU::getRollRad() );      // equal filter with equal delay to raw compass data for pitch and roll
 	double pitch = filterPitch( IMU::getPitchRad() );

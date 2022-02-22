@@ -225,23 +225,19 @@ void IMU::read()
 			float gh=Vector::normalizeDeg( fused_yaw );
 			compass->setGyroHeading( gh );
 			// ESP_LOGI( FNAME,"cur magn head %.2f gyro yaw: %.4f fused: %.1f Gyro(%.3f/%.3f/%.3f)", curh, gyroYaw, gh, gyroX, gyroY, gyroZ  );
-/*
- * Work for quaternion -> euler based compass
+#ifdef QUAT_COMPASS
+			// Work for quaternion -> euler based compass
 			float x=compass->rawX();
 			float y=compass->rawY();
 			float z=compass->rawZ();
-			float max = abs(x);
-			if(max < abs(y))
-				max = abs(y);
-			if(max < abs(z))
-				max = abs(z);
-
 			vector_ijk v( x,y,z );
 			v.normalize();
-			Quaternion q = quaternion_from_accelerometer( v.a, v.b, v.c );
+			Quaternion q = quaternion_from_compass( v.a, v.b, v.c );
+			// q = quaternion_normalize( q );
 			euler_angles compass_euler = quaternion_to_euler_angles(q);
-			ESP_LOGI( FNAME,"cur magn head %.2f gyro yaw: %.4f fused: %.1f XYZ(%.3f/%.3f/%.3f) CEY:%.2f P:%.2f R:%.2f", curh, gyroYaw, gh, v.a, v.b, v.c, compass_euler.yaw, compass_euler.pitch, compass_euler.roll );
-*/
+			ESP_LOGI( FNAME,"MH %.2f gyaw: %.4f fused: %.1f Mxyz(%.3f/%.3f/%.3f) Eul(Y:%.2f P:%.2f R:%.2f) Q(%.3f/%.3f/%.3f/%.3f) Q2(%.3f/%.3f/%.3f/%.3f)", curh, gyroYaw, gh, v.a, v.b, v.c, compass_euler.yaw, compass_euler.pitch, compass_euler.roll, q.a, q.b, q.c, q.d, att_quat.a, att_quat.b, att_quat.c, att_quat.d );
+#endif
+
 		}
 
 	}

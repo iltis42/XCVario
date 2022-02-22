@@ -1,11 +1,5 @@
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#ifndef QUATERNION_INCLUDED
-#define QUATERNION_INCLUDED
-
 #include "vector_3d.h"
+#pragma once
 
 typedef struct Quaternion {
 
@@ -33,8 +27,3 @@ Quaternion quaternion_normalize(Quaternion q);
 vector_ijk quaternion_rotate_vector(vector_ijk v, Quaternion q);
 euler_angles quaternion_to_euler_angles(Quaternion q);
 
-#endif
-
-#ifdef __cplusplus
-}
-#endif

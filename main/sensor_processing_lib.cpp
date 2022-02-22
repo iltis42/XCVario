@@ -38,14 +38,15 @@ Quaternion quaternion_from_gyro(float wx, float wy, float wz, float time)
 
 Quaternion quaternion_from_compass(float wx, float wy, float wz )
 {
-    // wx,wy,wz in radians
-    float a,b,c,d;
-    b = (-wx);
-    c = (-wy);
-    d = (-wz);
-    a = 1 - 0.5*(b*b+c*c+d*d);
-    Quaternion result = quaternion_initialize(a,b,c,d);
-    return result;
+	float alpha = 1;
+	float a,b,c,d;
+	b = alpha*(-wz);
+	c = alpha*(wy);
+	d = alpha*(wx);
+	a = 1;
+	Quaternion result = quaternion_initialize(a,b,c,d);
+	return result;
+
 }
 
 float fusion_coeffecient(vector_ijk virtual_gravity, vector_ijk sensor_gravity)

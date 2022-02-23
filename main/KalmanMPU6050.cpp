@@ -38,6 +38,7 @@ float 	IMU::myaccroll = 0;
 double  IMU::mypitch = 0;
 double  IMU::filterPitch = 0;
 double  IMU::filterRoll = 0;
+double  IMU::filterYaw = 0;
 
 uint64_t IMU::last_rts=0;
 double IMU::accelX = 0.0;
@@ -222,8 +223,8 @@ void IMU::read()
 			// tuned to plus 17% what gave the best timing swing in response, 2% for compass is far enough
 			// gyro and compass are time displaced, gyro comes immediate, compass a second later
 			fused_yaw +=  Vector::angleDiffDeg( curh ,fused_yaw )*0.02 + gyroYaw * 1.17;
-			float gh=Vector::normalizeDeg( fused_yaw );
-			compass->setGyroHeading( gh );
+			filterYaw=Vector::normalizeDeg( fused_yaw );
+			compass->setGyroHeading( filterYaw );
 			// ESP_LOGI( FNAME,"cur magn head %.2f gyro yaw: %.4f fused: %.1f Gyro(%.3f/%.3f/%.3f)", curh, gyroYaw, gh, gyroX, gyroY, gyroZ  );
 #ifdef QUAT_COMPASS
 			// Work for quaternion -> euler based compass

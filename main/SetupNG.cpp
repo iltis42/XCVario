@@ -221,6 +221,7 @@ SetupNG<int>		    student_mode( "STUD_MOD", 0 );
 SetupNG<float>		    password( "PASSWORD", 0 );
 SetupNG<int>		    autozero( "AUTOZERO", 0 );
 SetupNG<int>		    attitude_indicator("AHRS", 1 );
+SetupNG<int>		    ahrs_rpyl_dataset("RPYL", 0 );
 SetupNG<int>		    ahrs_autozero("AHRSAZ", 0 );
 SetupNG<float>		    ahrs_gyro_factor("AHRSGF", 90 );
 SetupNG<int>		    display_style("DISPLAY_STYLE", 1 );

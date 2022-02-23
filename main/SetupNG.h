@@ -46,7 +46,7 @@
 typedef enum display_type { UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P } xcv_display_t;
 typedef enum chopping_mode { NO_CHOP, VARIO_CHOP, S2F_CHOP, BOTH_CHOP } chopping_mode_t;
 typedef enum rs232linemode { RS232_NORMAL, RS232_INVERTED } rs232lm_t;
-typedef enum nmea_protocol  { OPENVARIO, BORGELT, CAMBRIDGE, XCVARIO, XCVARIOFT, XCVARIO_DEVEL, GENERIC } nmea_proto_t;
+typedef enum nmea_protocol  { OPENVARIO, BORGELT, CAMBRIDGE, XCVARIO, NMEA_OFF } nmea_proto_t;
 typedef enum airspeed_mode  { MODE_IAS, MODE_TAS } airspeed_mode_t;
 typedef enum altitude_display_mode  { MODE_QNH, MODE_QFE } altitude_display_mode_t;
 typedef enum e_display_style  { DISPLAY_AIRLINER, DISPLAY_RETRO, DISPLAY_UL } display_style_t;
@@ -463,6 +463,7 @@ extern SetupNG<int>		    student_mode;
 extern SetupNG<float>		password;
 extern SetupNG<int>		    autozero;
 extern SetupNG<int>		    attitude_indicator;
+extern SetupNG<int>		    ahrs_rpyl_dataset;
 extern SetupNG<int>		    ahrs_autozero;
 extern SetupNG<float>		ahrs_gyro_factor;
 extern SetupNG<int>		    display_style;

@@ -233,14 +233,15 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		 */
 		sprintf(str, "$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,", roll, pitch,acc_x,acc_y,acc_z );
 	}
-	else if( proto == P_AHRS_APENV1 ) { // experimental
-		sprintf(str, "$APENV1,%.2f,%.2f,0,0,0,%.2f,", ias,alt,te );
+	else if( haveMPU && attitude_indicator.get() && (proto == P_AHRS_APENV1) ) {  // LEVIL_AHRS
+		sprintf(str, "$APENV1,%d,%d,0,0,0,%d", (int)(Units::kmh2knots(ias)+0.5),(int)(Units::meters2feet(alt)+0.5),(int)(Units::ms2fpm(te)+0.5));
 	}
-	else if( proto == P_AHRS_RPYL ) {   // experimental
-		sprintf(str, "$RPYL,%.2f,%.2f,0,0,,%.2f,0,",
-				IMU::getRoll(),         // Bank == roll    (deg)           SRC
-				IMU::getPitch(),         // pItch           (deg)
-				acc_z
+	else if( haveMPU && attitude_indicator.get() && (proto == P_AHRS_RPYL) ) {   // LEVIL_AHRS  $RPYL,Roll,Pitch,MagnHeading,SideSlip,YawRate,G,errorcode,
+		sprintf(str, "$RPYL,%d,%d,%d,0,0,%d,0",
+				(int)(IMU::getRoll()*10+0.5),         // Bank == roll     (deg)
+				(int)(IMU::getPitch()*10+0.5),        // Pitch            (deg)
+				(int)(IMU::getYaw()*10+0.5),          // Magnetic Heading (deg)
+				(int)(acc_z*1000.0+0.5)
 		);
 	}
 	else if( proto == P_GENERIC ) {

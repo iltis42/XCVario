@@ -1506,6 +1506,11 @@ void SetupMenu::setup( )
 			ahrsgf->setHelp(PROGMEM"Gyro factor in artifical horizont bank and pitch (more instant movement), zero disables Gyro");
 			ahrs->addEntry( ahrsgf );
 
+			SetupMenuSelect * rpyl = new SetupMenuSelect( "AHRS RPYL Sentence", false , 0, true, &ahrs_rpyl_dataset );
+			ahrs->addEntry( rpyl );
+			rpyl->setHelp( PROGMEM "Send LEVIL AHRS like $RPYL sentence for artifical horizon");
+			rpyl->addEntry( "Disable");
+			rpyl->addEntry( "Enable");
 		}
 
 		SetupMenuSelect * pstype = new SetupMenuSelect( "AS Sensor type", true , 0, false, &airspeed_sensor_type );
@@ -1742,6 +1747,7 @@ void SetupMenu::setup( )
 		nmea->addEntry( "Borgelt");
 		nmea->addEntry( "Cambridge");
 		nmea->addEntry( "XCVario");
+		nmea->addEntry( "Disable");
 
 	}
 	SetupMenu::display();

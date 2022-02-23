@@ -434,6 +434,12 @@ static void toyFeed()
 	// maybe just 1 or 2 per second
 	static char lb[150];
 
+	if( ahrs_rpyl_dataset.get() ){
+		OV.sendNMEA( P_AHRS_RPYL, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altitude.get(), validTemperature,
+				-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
+		OV.sendNMEA( P_AHRS_APENV1, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altitude.get(), validTemperature,
+				-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
+	}
 	if( nmea_protocol.get() == BORGELT ) {
 		OV.sendNMEA( P_BORGELT, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altSTD, validTemperature  );
 		OV.sendNMEA( P_GENERIC, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altSTD, validTemperature  );
@@ -447,6 +453,9 @@ static void toyFeed()
 	else if( nmea_protocol.get() == XCVARIO ) {
 		OV.sendNMEA( P_XCVARIO, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altitude.get(), validTemperature,
 				-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
+	}
+	else if( nmea_protocol.get() == NMEA_OFF ) {
+		;
 	}
 	else
 		ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );

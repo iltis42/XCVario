@@ -299,7 +299,9 @@ SetupNG<int>			netto_mode("NETMOD", NETTO_RELATIVE );  // regard polar sink
 SetupNG<float>			v_max("VMAX", 270, true, SYNC_FROM_MASTER, PERSISTENT, 0, UNIT_SPEED  );
 SetupNG<int>			gload_mode("GLMOD", GLOAD_OFF );
 SetupNG<float>			gload_pos_thresh("GLOADPT", 4 );
-SetupNG<float>			gload_neg_thresh("GLOADNT", -2 );
+SetupNG<float>			gload_neg_thresh("GLOADNT", -3 );
+SetupNG<float>			gload_pos_limit_low("GLOADPLL", 3 );
+SetupNG<float>			gload_neg_limit_low("GLOADNLL", -2 );
 SetupNG<float>			gload_pos_limit("GLOADPL", 5 );
 SetupNG<float>			gload_neg_limit("GLOADNL", -3 );
 SetupNG<float>			gload_pos_max("GLOADPM", 1 );

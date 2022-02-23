@@ -538,6 +538,8 @@ extern SetupNG<float>		v_max;
 extern SetupNG<int>			gload_mode;
 extern SetupNG<float>		gload_pos_thresh;
 extern SetupNG<float>		gload_neg_thresh;
+extern SetupNG<float>		gload_pos_limit_low;
+extern SetupNG<float>		gload_neg_limit_low;
 extern SetupNG<float>		gload_pos_limit;
 extern SetupNG<float>		gload_neg_limit;
 extern SetupNG<float>		gload_pos_max;

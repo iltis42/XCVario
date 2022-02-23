@@ -1301,13 +1301,22 @@ void SetupMenu::setup( )
 		gloadME->addEntry( gtneg );
 		gtneg->setHelp(PROGMEM "Negative threshold to launch G-Load display");
 
-		SetupMenuValFloat * glpos = new SetupMenuValFloat( "Positive Limit", "", 1.0, 8.0, 0.1, 0, false, &gload_pos_limit );
+		SetupMenuValFloat * glpos = new SetupMenuValFloat( "Red positive limit", "", 1.0, 8.0, 0.1, 0, false, &gload_pos_limit );
 		gloadME->addEntry( glpos );
-		glpos->setHelp(PROGMEM "Positive g load factor limit the structure of airplane is able to handle according to manual");
+		glpos->setHelp(PROGMEM "Positive g load factor limit the airplane is able to handle according to manual below manoevering speed");
 
-		SetupMenuValFloat * glneg = new SetupMenuValFloat( "Negative Limit", "", -8.0, 1.0, 0.1, 0, false, &gload_neg_limit );
+		SetupMenuValFloat * glposl = new SetupMenuValFloat( "Yellow pos. Limit", "", 1.0, 8.0, 0.1, 0, false, &gload_pos_limit_low );
+		gloadME->addEntry( glposl );
+		glposl->setHelp(PROGMEM "Positive g load factor limit the structure of airplane is able to handle, see manual, above manoevering speed");
+
+		SetupMenuValFloat * glneg = new SetupMenuValFloat( "Red negative limit", "", -8.0, 1.0, 0.1, 0, false, &gload_neg_limit );
 		gloadME->addEntry( glneg );
-		glneg->setHelp(PROGMEM "Negative g load factor limit the structure of airplane is able to handle according to manual");
+		glneg->setHelp(PROGMEM "Negative g load factor limit the airplane is able to handle according to manual below manoevering speed");
+
+		SetupMenuValFloat * glnegl = new SetupMenuValFloat( "Yellow neg. Limit", "", -8.0, 1.0, 0.1, 0, false, &gload_neg_limit_low );
+		gloadME->addEntry( glnegl );
+		glnegl->setHelp(PROGMEM "Negative g load factor limit the structure of airplane is able to handle, see manual, below manoevering speed");
+
 
 		SetupMenuValFloat * gmpos = new SetupMenuValFloat( "Max Positive", "", 0.0, 0.0, 0.0, 0, false, &gload_pos_max );
 		gloadME->addEntry( gmpos );

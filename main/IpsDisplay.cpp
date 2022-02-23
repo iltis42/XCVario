@@ -1551,6 +1551,12 @@ void IpsDisplay::initLoadDisplay(){
 	for( float a=gload_neg_limit.get()-1; a>-max_gscale; a-=0.05 ) {
 		drawOneScaleLine( ((float)a/max_gscale)*M_PI_2, 140, 150, 2, COLOR_RED );
 	}
+	for( float a=gload_pos_limit_low.get()-1; a<gload_pos_limit.get()-1; a+=0.05 ) {
+		drawOneScaleLine( ((float)a/max_gscale)*M_PI_2, 140, 150, 2, COLOR_ORANGE );
+	}
+	for( float a=gload_neg_limit_low.get()-1; a>gload_neg_limit.get()-1; a-=0.05 ) {
+		drawOneScaleLine( ((float)a/max_gscale)*M_PI_2, 140, 150, 2, COLOR_ORANGE );
+	}
 
 	initGauge(max_gscale, false); // no logarithmic gauge for g-load
 	drawScale( max_gscale, -max_gscale, 140, 1 );

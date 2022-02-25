@@ -1295,35 +1295,43 @@ void SetupMenu::setup( )
 
 		SetupMenuValFloat * gtpos = new SetupMenuValFloat( "Positive Threshold", "", 1.0, 8.0, 0.1, 0, false, &gload_pos_thresh );
 		gloadME->addEntry( gtpos );
+		gtpos->setPrecision( 1 );
 		gtpos->setHelp(PROGMEM "Positive threshold to launch G-Load display");
 
 		SetupMenuValFloat * gtneg = new SetupMenuValFloat( "Negative Threshold", "", -8.0, 1.0, 0.1, 0, false, &gload_neg_thresh );
 		gloadME->addEntry( gtneg );
+		gtneg->setPrecision( 1 );
 		gtneg->setHelp(PROGMEM "Negative threshold to launch G-Load display");
 
 		SetupMenuValFloat * glpos = new SetupMenuValFloat( "Red positive limit", "", 1.0, 8.0, 0.1, 0, false, &gload_pos_limit );
 		gloadME->addEntry( glpos );
+		glpos->setPrecision( 1 );
 		glpos->setHelp(PROGMEM "Positive g load factor limit the airplane is able to handle according to manual below manoevering speed");
 
 		SetupMenuValFloat * glposl = new SetupMenuValFloat( "Yellow pos. Limit", "", 1.0, 8.0, 0.1, 0, false, &gload_pos_limit_low );
 		gloadME->addEntry( glposl );
+		glposl->setPrecision( 1 );
 		glposl->setHelp(PROGMEM "Positive g load factor limit the structure of airplane is able to handle, see manual, above manoevering speed");
 
 		SetupMenuValFloat * glneg = new SetupMenuValFloat( "Red negative limit", "", -8.0, 1.0, 0.1, 0, false, &gload_neg_limit );
 		gloadME->addEntry( glneg );
+		glneg->setPrecision( 1 );
 		glneg->setHelp(PROGMEM "Negative g load factor limit the airplane is able to handle according to manual below manoevering speed");
 
 		SetupMenuValFloat * glnegl = new SetupMenuValFloat( "Yellow neg. Limit", "", -8.0, 1.0, 0.1, 0, false, &gload_neg_limit_low );
 		gloadME->addEntry( glnegl );
+		glnegl->setPrecision( 1 );
 		glnegl->setHelp(PROGMEM "Negative g load factor limit the structure of airplane is able to handle, see manual, below manoevering speed");
 
 
 		SetupMenuValFloat * gmpos = new SetupMenuValFloat( "Max Positive", "", 0.0, 0.0, 0.0, 0, false, &gload_pos_max );
 		gloadME->addEntry( gmpos );
+		gmpos->setPrecision( 1 );
 		gmpos->setHelp(PROGMEM "Maximum positive G-Load measured since last reset");
 
 		SetupMenuValFloat * gmneg = new SetupMenuValFloat( "Max Negative", "", 0.0, 0.0, 0.0, 0, false, &gload_neg_max );
 		gloadME->addEntry( gmneg );
+		gmneg->setPrecision( 1 );
 		gmneg->setHelp(PROGMEM "Maximum negative G-Load measured since last reset");
 
 		SetupMenuSelect * gloadres = new SetupMenuSelect( "G-Load reset", false, gload_reset, false, 0 );

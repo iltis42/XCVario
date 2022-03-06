@@ -279,9 +279,11 @@ void Flarm::parsePFLAX( const char *msg, int port ) {
 	// ESP_LOGI(FNAME,"parsePFLAX");
 	// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
 	int start=0;
+	/* Solved now by DataLink frame recognition
 	if( !strncmp( msg, "\n", 1 )  ){  // catch case when serial.cpp does not correctly dissect at '\n', needs further evaluation, maybe multiple '\n' sent ?
 		start=1;
 	}
+	*/
 	// Note, if the Flarm switch to binary mode was accepted, Flarm will answer
 	// with $PFLAX,A*2E. In error case you will get as answer $PFLAX,A,<error>*
 	// and the Flarm stays in text mode.

@@ -23,7 +23,10 @@ enum state_t {
 	GET_UBX_LENGTH2,
 	GET_UBX_PAYLOAD,
 	GET_UBX_CHKA,
-	GET_UBX_CHKB
+	GET_UBX_CHKB,
+	GET_FB_LEN1,
+	GET_FB_LEN2,
+	GET_FB_DATA
 };
 
 
@@ -39,7 +42,8 @@ class DataLink {
 		void routeSerialData( const char *data, int len, int port, bool nmea );
 		enum state_t state;
 		char framebuffer[128];
-		int pos;
+		int  pos;
+		int  len;
 		char chkA; // checksum variables
 		char chkB;
 		char chkBuf;

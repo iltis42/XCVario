@@ -18,8 +18,11 @@
 #include "Flarm.h"
 #include "BluetoothSerial.h"
 #include "DataMonitor.h"
+#include "DataLink.h"
 
 static TaskHandle_t pid = nullptr;
+
+DataLink *dlb;
 
 bool BTSender::selfTest(){
 	ESP_LOGI(FNAME,"SerialBT::selfTest");
@@ -72,7 +75,7 @@ void BTSender::progress(){
 	if( pos ){
 		SString rx;
 		rx.set( buf, pos );
-		Router::forwardMsg( rx, bt_rx_q );
+		dlb->process( buf, pos, 7 );
 		DM.monitorString( MON_BLUETOOTH, DIR_RX, rx.c_str() );
 		// ESP_LOGI(FNAME,">BT RX: %d bytes", pos );
 		// ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.c_str(),pos, ESP_LOG_INFO);
@@ -92,6 +95,7 @@ void BTSender::begin(){
 	ESP_LOGI(FNAME,"BTSender::begin()" );
 	if( wireless == WL_BLUETOOTH ) {
 		ESP_LOGI(FNAME,"BT on, create BT master object" );
+		dlb = new DataLink();
 		SerialBT = new BluetoothSerial();
 		SerialBT->begin( SetupCommon::getID() );
 		xTaskCreatePinnedToCore(&btTask, "btTask", 4096, NULL, 15, &pid, 0);  // stay below compass task

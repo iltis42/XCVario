@@ -1235,7 +1235,7 @@ void system_startup(void *args){
 		result += "S1 OK";
 	else
 		result += "S1 FAIL";
-	if( hardwareRevision.get() >= 3 ){
+	if( (hardwareRevision.get() >= 3) && serial2_speed.get() ){
 		if( Serial::selfTest( 2 ) )
 			result += ",S2 OK";
 		else

@@ -53,7 +53,7 @@ double IMU::kalXAngle = 0.0;
 double IMU::kalYAngle = 0.0;
 float IMU::filterAccRoll = 0.0;
 float IMU::filterGyroRoll = 0.0;
-Quaternion IMU::att_quat;
+Quaternion IMU::att_quat(0,0,0,0);
 vector_ijk IMU::att_vector;
 euler_angles IMU::euler;
 
@@ -139,7 +139,7 @@ void IMU::init()
 	gyroYAngle = pitch;
 
 	lastProcessed = micros();
-	att_quat = quaternion_initialize(1.0,0.0,0.0,0.0);
+	att_quat = Quaternion(1.0,0.0,0.0,0.0);
 	att_vector = vector_ijk(0.0,0.0,-1.0);
 	euler = { 0,0,0 };
 	ESP_LOGD(FNAME, "Finished IMU setup  gyroYAngle:%f ", gyroYAngle);
@@ -203,7 +203,7 @@ void IMU::read()
 
 	att_vector = update_fused_vector(att_vector,ax, ay, az,D2R(gyroX),D2R(gyroY),D2R(gyroZ),dt);
 	att_quat = quaternion_from_accelerometer(att_vector.a,att_vector.b,att_vector.c);
-	euler = quaternion_to_euler_angles(att_quat);
+	euler = att_quat.to_euler_angles();
 	// treat gimbal lock, limit to 80 deg
 	if( euler.roll > 80.0 )
 		euler.roll = 80.0;

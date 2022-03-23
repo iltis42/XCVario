@@ -23,7 +23,8 @@ public:
 
     static Quaternion product(Quaternion q1, Quaternion q2);
     static Quaternion normalize(Quaternion q);
-    static vector_ijk   rotate_vector(vector_ijk v, Quaternion q);
+    static vector_ijk rotate_vector(vector_ijk v, Quaternion q);
+    static Quaternion slerp(Quaternion q1, Quaternion q2, double lambda);
 
     euler_angles to_euler_angles();
     Quaternion conjugate();

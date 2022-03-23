@@ -13,7 +13,9 @@ public:
 	void difference(vector_ijk v2);
 	float dot_product(const vector_ijk v2);
 	void cross_product(const vector_ijk v2 );
+	vector_ijk cross(const vector_ijk &v2 );
 	void normalize();
+	float get_norm2();
 	void scale(float scale);
 	// tbd: private
 	float a;

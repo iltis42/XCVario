@@ -1,6 +1,5 @@
 #include "vector_3d.h"
-#include <stdint.h>
-
+#include <cstdint>
 
 
 vector_ijk::vector_ijk(float _a, float _b, float _c)
@@ -37,6 +36,15 @@ void vector_ijk::cross_product(const vector_ijk v2)
     c = a*v2.b - b*v2.a;
 }
 
+vector_ijk vector_ijk::cross(const vector_ijk &v2)
+{
+    vector_ijk tmp;
+    tmp.a = b*v2.c - c*v2.b;
+    tmp.b = c*v2.a - a*v2.c;
+    tmp.c = a*v2.b - b*v2.a;
+    return tmp;
+}
+
 void vector_ijk::normalize()
 {
     float one_by_sqrt;
@@ -44,6 +52,11 @@ void vector_ijk::normalize()
     a = a*one_by_sqrt;
     b = b*one_by_sqrt;
     c = c*one_by_sqrt;
+}
+
+float vector_ijk::get_norm2()
+{
+    return a*a + b*b + c*c;
 }
 
 void vector_ijk::scale(float scale)

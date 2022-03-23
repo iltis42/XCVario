@@ -1,4 +1,5 @@
 #include "quaternion.h"
+#include "logdef.h"
 
 
 Quaternion::Quaternion(float _a, float _b, float _c, float _d)
@@ -30,6 +31,7 @@ Quaternion Quaternion::normalize(Quaternion q1)
     float one_by_sqrt;
     one_by_sqrt = InvSqrt(q1.a*q1.a + q1.b*q1.b + q1.c*q1.c + q1.d*q1.d);
     Quaternion q2( q1.a*one_by_sqrt, q1.b*one_by_sqrt, q1.c*one_by_sqrt, q1.d*one_by_sqrt );
+    // ESP_LOGI(FNAME,"Q1: a=%.3f b=%.3f c=%.3f d=%.3f  Q2: a=%.3f b=%.3f c=%.3f d=%.3f obs:%f", q1.a, q1.b, q1.c, q1.d, q2.a, q2.b, q2.c, q2.d, one_by_sqrt );
     return q2;
 }
 

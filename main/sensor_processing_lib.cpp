@@ -10,7 +10,7 @@ Quaternion quaternion_from_accelerometer(float ax, float ay, float az)
     Quaternion orientation = between_vectors(gravity,accelerometer);
     return orientation;*/
     // float norm_u_norm_v = 1.0;
-    float cos_theta = -1.0*az;
+    float cos_theta = -az;
     //float half_cos = sqrt(0.5*(1.0 + cos_theta));
     float half_cos = 0.7071*sqrt(1.0 + cos_theta);
     float temp = 0.5/half_cos;
@@ -33,15 +33,11 @@ Quaternion quaternion_from_gyro(float wx, float wy, float wz, float time)
 
 Quaternion quaternion_from_compass(float wx, float wy, float wz )
 {
-	float alpha = 1;
-	float a,b,c,d;
-	b = alpha*(-wz);
-	c = alpha*(wy);
-	d = alpha*(wx);
-	a = 1;
-	Quaternion result(a,b,c,d);
-	return result;
+	float a = 1;
+	// - 0.5*(wx*wx+wy*wy+wz*wz);
 
+	Quaternion result(0,wx,wy,wz);
+	return result;
 }
 
 float fusion_coeffecient(vector_ijk virtual_gravity, vector_ijk sensor_gravity)

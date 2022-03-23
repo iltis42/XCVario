@@ -226,17 +226,20 @@ void IMU::read()
 			filterYaw=Vector::normalizeDeg( fused_yaw );
 			compass->setGyroHeading( filterYaw );
 			// ESP_LOGI( FNAME,"cur magn head %.2f gyro yaw: %.4f fused: %.1f Gyro(%.3f/%.3f/%.3f)", curh, gyroYaw, gh, gyroX, gyroY, gyroZ  );
+#define QUAT_COMPASS
 #ifdef QUAT_COMPASS
 			// Work for quaternion -> euler based compass
-			float x=compass->rawX();
-			float y=compass->rawY();
-			float z=compass->rawZ();
-			vector_ijk v( x,y,z );
-			v.normalize();
-			Quaternion q = quaternion_from_compass( v.a, v.b, v.c );
-			// q = quaternion_normalize( q );
-			euler_angles compass_euler = quaternion_to_euler_angles(q);
-			ESP_LOGI( FNAME,"MH %.2f gyaw: %.4f fused: %.1f Mxyz(%.3f/%.3f/%.3f) Eul(Y:%.2f P:%.2f R:%.2f) Q(%.3f/%.3f/%.3f/%.3f) Q2(%.3f/%.3f/%.3f/%.3f)", curh, gyroYaw, gh, v.a, v.b, v.c, compass_euler.yaw, compass_euler.pitch, compass_euler.roll, q.a, q.b, q.c, q.d, att_quat.a, att_quat.b, att_quat.c, att_quat.d );
+			float x=compass->rawX(); //  / 32768.0;
+			float y=compass->rawY(); //  / 32768.0;
+			float z=compass->rawZ(); //  / 32768.0;
+			// vector_ijk v( x,y,z );
+			// v.normalize();
+			Quaternion q( 0,y,x,z );
+			q = Quaternion::normalize( q );
+			// q.a = 1; // 1- 0.5*( q.a*q.a + q.b*q.b + q.c*q.c );
+			// vector_ijk c = Quaternion::rotate_vector(att_vector, q);
+			euler_angles compass_euler = q.to_euler_angles();
+			ESP_LOGI( FNAME,"MH %.2f FYaw: %.4f  Q/Eul(Y:%.2f P:%.2f R:%.2f) Quat(%.3f/%.3f/%.3f/%.3f)", curh, filterYaw, compass_euler.yaw, compass_euler.pitch, compass_euler.roll, q.a, q.b, q.c, q.d );
 #endif
 
 		}

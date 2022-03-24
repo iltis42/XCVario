@@ -1,6 +1,7 @@
 #include "vector_3d.h"
 #include <cstdint>
-
+#include <limits>
+#include <cassert>
 
 vector_ijk::vector_ijk(float _a, float _b, float _c)
 {
@@ -36,7 +37,7 @@ void vector_ijk::cross_product(const vector_ijk v2)
     c = a*v2.b - b*v2.a;
 }
 
-vector_ijk vector_ijk::cross(const vector_ijk &v2)
+vector_ijk vector_ijk::cross(const vector_ijk &v2) const
 {
     vector_ijk tmp;
     tmp.a = b*v2.c - c*v2.b;
@@ -54,6 +55,14 @@ void vector_ijk::normalize()
     c = c*one_by_sqrt;
 }
 
+void vector_ijk::normalize_f()
+{
+    float len = sqrt(a*a + b*b + c*c);
+    a = a/len;
+    b = b/len;
+    c = c/len;
+}
+
 float vector_ijk::get_norm2()
 {
     return a*a + b*b + c*c;
@@ -68,7 +77,22 @@ void vector_ijk::scale(float scale)
 
 float InvSqrt(float x)
 {
-   uint32_t i = 0x5F1F1412 - (*(uint32_t*)&x >> 1);
+    static_assert(std::numeric_limits<float>::is_iec559); // (enable only on IEEE 754)
+
+    uint32_t i = 0x5F1F1412 - (*(uint32_t*)&x >> 1);
+    float tmp = *(float*)&i;
+    return tmp * (1.69000231f - 0.714158168f * x * tmp * tmp);
+}
+
+
+float iSqrt(float x)
+{
+   uint32_t i = 0x5f3759df - (*(uint32_t*)&x >> 1);
    float tmp = *(float*)&i;
-   return tmp * (1.69000231f - 0.714158168f * x * tmp * tmp);
+   return tmp * (1.5f - 0.5f * x * tmp * tmp);
+}
+
+float rsqrt(float number) noexcept
+{
+    return sqrt(number);
 }

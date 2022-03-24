@@ -233,7 +233,7 @@ void IMU::read()
 			float y=compass->rawY(); //  / 32768.0;
 			float z=-compass->rawZ(); //  / 32768.0;
 			Quaternion q( 0,y,x,z );
-			q = Quaternion::normalize( q );
+			q.normalize();
 			euler_angles compass_euler = q.to_euler_angles();
 			ESP_LOGI( FNAME,"MH %.2f FYaw: %.4f  Q/Eul(Y:%.2f P:%.2f R:%.2f) Quat(%.3f/%.3f/%.3f/%.3f)", curh, filterYaw, compass_euler.yaw, compass_euler.pitch, compass_euler.roll, q.a, q.b, q.c, q.d );
 #endif

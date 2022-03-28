@@ -120,7 +120,7 @@ void Protocols::sendItem( const char *key, char type, void *value, int len, bool
 
 void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
 		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz,
-		float accelTime, float gyroTime, float statP, float statTime, float teP, float teTime, float dynP, float dynTime, float OATemp,
+		float accelTime, float gyroTime, float statP, float statTime, float teP, float teTime, float dynP, float dynTime, float OATemp, float MPUtempcel,
 		int fix, float gnsstime, float gnssaltitude, float gnssgroundspeed, float gnssspeedx, float gnssspeedy, float gnssspeedz ){
 	if( !validTemp )
 		temp=0;

@@ -158,6 +158,7 @@ static float dynP=0; // raw dynamic pressure
 static float baroP=0; // filtered static pressure
 static float dynamicP; // filtered dynamic pressure
 static float OATemp; // OAT for pressure corrections (real or from standard atmosphere) 
+static float MPUtempcel; // MPU chip temperature
 static float temperature=15.0;
 static bool  validTemperature=false;
 static float battery=0.0;
@@ -427,18 +428,22 @@ static void grabMPU()
 	mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
 	mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
 	esp_err_t erracc = MPU.acceleration(&accelRaw);  // fetch raw accel data from the registers
-	if( err == ESP_OK ){
+	if( erracc == ESP_OK ){
 		accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
 		accelTime = esp_timer_get_time()/1000000.0; // time in second
 	}
 	esp_err_t errgyr = MPU.rotation(&gyroRaw);       // fetch raw gyro data from the registers
-	if( err == ESP_OK ){
+	if( erracc == ESP_OK ){
 		gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
 		gyroTime = esp_timer_get_time()/1000000.0; // time in second
 	}
-		if( erracc == ESP_OK && errgyr == ESP_OK) {
+	if( erracc == ESP_OK && errgyr == ESP_OK) {
 		IMU::read();
 	}
+	int16_t MPUtempraw;
+	esp_err_t errtemp = MPU.temperature(&MPUtempraw);
+	if( errtemp == ESP_OK )
+		MPUtempcel = mpud::tempCelsius(MPUtempraw);
 }
 
 
@@ -587,7 +592,7 @@ void readSensors(void *pvParameters){
 		// broadcast raw sensor data
 		if( nmea_protocol.get() == XCVARIOFT ) {
 			OV.sendNMEA( P_XCVARIOFT, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altitude.get(), validTemperature,
-					-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z, accelTime, gyroTime, statP, statTime, teP, teTime, dynP, dynTime, OATemp,
+					-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z, accelTime, gyroTime, statP, statTime, teP, teTime, dynP, dynTime, OATemp, MPUtempcel,
 					chosenGnss->fix, chosenGnss->time, chosenGnss->coordinates.altitude, chosenGnss->speed.ground, chosenGnss->speed.x, chosenGnss->speed.y, chosenGnss->speed.z );
 		}
 		xSemaphoreGive(xMutex);		

@@ -20,6 +20,7 @@
 
 
 #include "deadReckoning.h"
+#include "UBX_Parser.h"
 
 #include "ahrs.hpp"
 //#include "estWind.h"
@@ -28,41 +29,21 @@
 
 // seconds
 #define DR_TIMESTEP (1.0/HEARTBEAT_HZ)		// Inverse of HeartBeat
-#define GPS_RATE 10							// Rate of GPS data flux
-#define DR_PERIOD HEARTBEAT_HZ/GPS_RATE+16	// GPS Period
-// seconds
-#define DR_TAU 0.5
-#define DR_FILTER_GAIN DR_TIMESTEP/DR_TAU
-#define DR_I_GAIN DR_FILTER_GAIN/DR_TAU
-
-// seconds * (cm/sec^2 / count) ??? is G always represented as cm/sec^2 ?
-// GRAVITYM is 980 cm/sec^2, GRAVITY is 2000 counts
-// dx/dt^2 * ACCEL2DELTAV = cm/sec
-#define G 9.806
-
-
 // dimensionless
+#define DR_TAU 1
 #define DR_FILTER_GAIN DR_TIMESTEP/DR_TAU
+#define DR_FILTER_GAIN_Z DR_TIMESTEP/DR_TAU*2.0
+// seconds
+#define DR_I_GAIN DR_FILTER_GAIN/DR_TAU
+#define DR_I_GAIN_Z DR_FILTER_GAIN_Z/DR_TAU*2.0
+// Gravity
+#define G 9.807
 
-// 1/seconds
-#define ONE_OVER_TAU 1.0/DR_TAU
+//float forward_ground_speed = 0 ;
+//float IMU_climb = 0 ;
 
-// velocity, as estimated by the IMU: high word is cm/sec
-float IMUvelocityx = 0;
-float IMUvelocityy = 0;
-float IMUvelocityz = 0;
-float IMUlocationz = 0;
-
-float forward_ground_speed = 0 ;
-float IMU_climb = 0 ;
-
-// integral of acceleration
-float IMUintegralAccelerationx = 0;
-float IMUintegralAccelerationy = 0;
-float IMUintegralAccelerationz = 0;
-
-float air_speed_3DIMU = 0;
-float total_energy = 0;
+//float air_speed_3DIMU = 0;
+//float total_energy = 0;
 
 // GPSvelocity - IMUvelocity
 float velocityErrorEarth[] = { 0, 0, 0 };
@@ -90,37 +71,35 @@ void dead_reckon(void)
 	if( ret )
 		return;
 
+	// use fusion for altitude whatever the GPS is
+	locationErrorEarth[2] = estimated_altitude - IMUlocationz;
+	velocityErrorEarth[2] = vze_fusion - IMUvelocityz;
+
+	// compensate for velocity error ;
+	IMUintegralAccelerationz += DR_I_GAIN_Z * velocityErrorEarth[2];
+
+	// integrate the raw acceleration m/s
+	IMUvelocityz += IMU::getEarthAccelZ()*dt;
+
+	// apply the proportional term for the acceleration bias compensation
+	IMUvelocityz += 2*DR_FILTER_GAIN_Z * velocityErrorEarth[2];
+
+	// apply the integral term for the acceleration bias compensation
+	IMUvelocityz += IMUintegralAccelerationz*dt;
+	// integrate IMU velocity to update the IMU location
+	IMUlocationz += IMUvelocityz * dt;
+
+	// apply the location bias compensation
+	IMUlocationz += DR_FILTER_GAIN_Z * locationErrorEarth[2];
+
 	if(dead_reckon_clock>0)
     {
 		dead_reckon_clock--;
 		if (gps_nav_valid == 1)
 		{
-				// use fusion for altitude
-			locationErrorEarth[2] = estimated_altitude - IMUlocationz;
-			velocityErrorEarth[2] = vze_fusion - IMUvelocityz;
-
-//			velocityErrorEarth[0] = velE - IMUvelocityx;
-//			velocityErrorEarth[1] = velN - IMUvelocityy;
-
-
-		// compensate for velocity error ;
-		IMUintegralAccelerationz += DR_I_GAIN * velocityErrorEarth[2];
-
-		// integrate the raw acceleration m/s
-		IMUvelocityz += IMU::getEarthAccelZ()*dt;
-
-		// apply the proportional term for the acceleration bias compensation
-		IMUvelocityz += 2*DR_FILTER_GAIN * velocityErrorEarth[2];
-	
-		// apply the integral term for the acceleration bias compensation
-		IMUvelocityz += DR_TIMESTEP * IMUintegralAccelerationz;
-		// integrate IMU velocity to update the IMU location
-		IMUlocationz += IMUvelocityz * dt;
-
-		// apply the location bias compensation
-		IMUlocationz += DR_FILTER_GAIN * locationErrorEarth[2];
-
-		// compute the integral term for the acceleration bias compensation
+			velocityErrorEarth[0] = Vsx_gps - IMUvelocityx;
+			velocityErrorEarth[1] = Vsy_gps - IMUvelocityy;
+			// compute the integral term for the acceleration bias compensation
 			IMUintegralAccelerationx += DR_I_GAIN * velocityErrorEarth[0];
 			IMUintegralAccelerationy += DR_I_GAIN * velocityErrorEarth[1];
 
@@ -133,14 +112,14 @@ void dead_reckon(void)
 			IMUvelocityy += 2*DR_FILTER_GAIN * velocityErrorEarth[1];
 		
 			// apply the integral term for the acceleration bias compensation
-			IMUvelocityx += DR_TIMESTEP *IMUintegralAccelerationx;
-			IMUvelocityy += DR_TIMESTEP *IMUintegralAccelerationy;
+			IMUvelocityx += IMUintegralAccelerationx*dt;
+			IMUvelocityy += IMUintegralAccelerationy*dt;
 		
 		}
 	}
 	else  // GPS has gotten disconnected
 	{
-		gps_nav_valid = 0 ;
+		//gps_nav_valid = 0 ;//Not needed if gps_nav_valid were set to -1 in the GPS parser
 		// integrate the raw acceleration
 		IMUvelocityx += IMU::getEarthAccelX()*dt;
 		IMUvelocityy += IMU::getEarthAccelY()*dt;

@@ -4,6 +4,20 @@
 #include "Cipher.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+/*modif gfm task duration
+#include "freertos/semphr.h"
+#define NUM_OF_SPIN_TASKS   2
+#define SPIN_ITER           500  //Actual CPU cycles used will depend on compiler optimization
+#define SPIN_TASK_PRIO      2
+#define STATS_TASK_PRIO     3
+#define STATS_TICKS         pdMS_TO_TICKS(1000)
+#define ARRAY_SIZE_OFFSET   5   //Increase this if print_real_time_stats returns ESP_ERR_INVALID_SIZE
+
+static char task_names[NUM_OF_SPIN_TASKS][configMAX_TASK_NAME_LEN];
+static SemaphoreHandle_t sync_spin_task;
+static SemaphoreHandle_t sync_stats_task;
+fin modif gfm */
+
 #include "esp_task_wdt.h"
 #include "string.h"
 #include "esp_system.h"
@@ -68,6 +82,21 @@
 #include "ahrs.hpp" /*"KalmanMPU6050.h"*/
 #include "deadReckoning.h"
 #include "estAltitude.h"
+// velocity, as estimated by the IMU m/sec
+float IMUvelocityx = 0;
+float IMUvelocityy = 0;
+float IMUvelocityz = 0;
+
+// position
+float IMUlocationx = 0;
+float IMUlocationy = 0;
+float IMUlocationz = 0;
+
+// integral of acceleration
+float IMUintegralAccelerationx = 0;
+float IMUintegralAccelerationy = 0;
+float IMUintegralAccelerationz = 0;
+
 float estimated_altitude = 0;
 float vze_fusion = 0;
 int gps_nav_valid = 0;
@@ -76,8 +105,6 @@ float Ground_Speed_gps = 0;
 float Vsx_gps = 0;
 float Vsy_gps = 0;
 float Vsz_gps = 0;
-float u,v,w;
-float vx,vy,vz;
 // fin modif gfm
 /*
 BMP:
@@ -198,6 +225,132 @@ int hold_alarm=0;
 float getTAS() { return tas; };
 float getTE() { return TE; };
 
+/*modif gfm task duration
+static esp_err_t print_real_time_stats(TickType_t xTicksToWait)
+{
+//    TaskStatus_t *start_array = NULL, *end_array = NULL;
+    UBaseType_t start_array_size, end_array_size;
+    uint32_t start_run_time, end_run_time;
+    esp_err_t ret;
+
+    //Allocate array to store current task states
+    start_array_size = uxTaskGetNumberOfTasks() + ARRAY_SIZE_OFFSET;
+    TaskStatus_t start_array[start_array_size];
+//    start_array = malloc(sizeof(TaskStatus_t) * start_array_size);
+    if (start_array == NULL) {
+        ret = ESP_ERR_NO_MEM;
+        free(start_array);
+        return ret;
+    }
+    //Get current task states
+    start_array_size = uxTaskGetSystemState(start_array, start_array_size, &start_run_time);
+    if (start_array_size == 0) {
+        ret = ESP_ERR_INVALID_SIZE;
+        free(start_array);
+        return ret;
+    }
+
+    vTaskDelay(xTicksToWait);
+
+    //Allocate array to store tasks states post delay
+    end_array_size = uxTaskGetNumberOfTasks() + ARRAY_SIZE_OFFSET;
+    TaskStatus_t end_array[end_array_size];
+//    end_array = malloc(sizeof(TaskStatus_t) * end_array_size);
+    if (end_array == NULL) {
+        ret = ESP_ERR_NO_MEM;
+        free(end_array);
+        return ret;
+    }
+    //Get post delay task states
+    end_array_size = uxTaskGetSystemState(end_array, end_array_size, &end_run_time);
+    if (end_array_size == 0) {
+        ret = ESP_ERR_INVALID_SIZE;
+        free(end_array);
+        return ret;
+    }
+
+    //Calculate total_elapsed_time in units of run time stats clock period.
+    uint32_t total_elapsed_time = (end_run_time - start_run_time);
+    if (total_elapsed_time == 0) {
+        ret = ESP_ERR_INVALID_STATE;
+        free(start_array);
+        free(end_array);
+        return ret;
+    }
+
+    printf("| Task | Run Time | Percentage\n");
+    //Match each task in start_array to those in the end_array
+    for (int i = 0; i < start_array_size; i++) {
+        int k = -1;
+        for (int j = 0; j < end_array_size; j++) {
+            if (start_array[i].xHandle == end_array[j].xHandle) {
+                k = j;
+                //Mark that task have been matched by overwriting their handles
+                start_array[i].xHandle = NULL;
+                end_array[j].xHandle = NULL;
+                break;
+            }
+        }
+        //Check if matching task found
+        if (k >= 0) {
+            uint32_t task_elapsed_time = end_array[k].ulRunTimeCounter - start_array[i].ulRunTimeCounter;
+            uint32_t percentage_time = (task_elapsed_time * 100UL) / (total_elapsed_time * portNUM_PROCESSORS);
+            printf("| %s | %d | %d%%\n", start_array[i].pcTaskName, task_elapsed_time, percentage_time);
+        }
+    }
+
+    //Print unmatched tasks
+    for (int i = 0; i < start_array_size; i++) {
+        if (start_array[i].xHandle != NULL) {
+            printf("| %s | Deleted\n", start_array[i].pcTaskName);
+        }
+    }
+    for (int i = 0; i < end_array_size; i++) {
+        if (end_array[i].xHandle != NULL) {
+            printf("| %s | Created\n", end_array[i].pcTaskName);
+        }
+    }
+    ret = ESP_OK;
+    free(start_array);
+    free(end_array);
+    return ret;
+
+}
+
+static void spin_task(void *arg)
+{
+    xSemaphoreTake(sync_spin_task, portMAX_DELAY);
+    while (1) {
+        //Consume CPU cycles
+        for (int i = 0; i < SPIN_ITER; i++) {
+            __asm__ __volatile__("NOP");
+        }
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+}
+
+static void stats_task(void *arg)
+{
+    xSemaphoreTake(sync_stats_task, portMAX_DELAY);
+
+    //Start all the spin tasks
+    for (int i = 0; i < NUM_OF_SPIN_TASKS; i++) {
+        xSemaphoreGive(sync_spin_task);
+    }
+
+    //Print real time stats periodically
+    while (1) {
+        printf("\n\nGetting real time stats over %d ticks\n", STATS_TICKS);
+        if (print_real_time_stats(STATS_TICKS) == ESP_OK) {
+            printf("Real time stats obtained\n");
+        } else {
+            printf("Error getting real time stats\n");
+        }
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+}
+
+fin modif gfm */
 
 void drawDisplay(void *pvParameters){
 	while (1) {
@@ -333,50 +486,29 @@ void doAudio(){
 		Audio::setValues( TE, s2f_delta );
 	}
 }
-//modif JLD
+//modif gfm AHRS
 static int atick = 0;
+TickType_t xLastWakeTime_ahrs =xTaskGetTickCount();
 
 void readAHRS(void *pvParameters){
 
 while (1) {
-                      		TickType_t xLastWakeTime = xTaskGetTickCount();
-                      		xSemaphoreTake(xMutex,portMAX_DELAY );
+    if( haveMPU && IMU::getInitdone() )  // 3th Generation HW, MPU6050 avail and feature enabled
+      {
+       IMU::read();
+       estAltitude();
+       dead_reckon();
+        }
 
-                      		if( haveMPU && IMU::getInitdone() )  // 3th Generation HW, MPU6050 avail and feature enabled
-                      		{
-                      			mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
-                      			mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
-                      			esp_err_t err = MPU.acceleration(&accelRaw);  // fetch raw data from the registers
-                      			if( err != ESP_OK )
-                      				ESP_LOGE(FNAME, "accel I2C error, X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
-                      			err |= MPU.rotation(&gyroRaw);       // fetch raw data from the registers
-                      			if( err != ESP_OK )
-                      				ESP_LOGE(FNAME, "gyro I2C error, X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
-                      			accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
-                      			gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
-
-                    			if( err == ESP_OK ) {
-                    				IMU::read();
-                    				dead_reckon();
-                    				estAltitude();
-                    			}
-                      		}
-
-                    		esp_task_wdt_reset();
-                              vTaskDelayUntil(&xLastWakeTime, 10/portTICK_PERIOD_MS);  // 10 for 10 ms = 100 Hz loop
-
-                              if( (atick++ % 100) == 0) {  // toutes les secondes on teste l’état du stack
-
-                                            if( uxTaskGetStackHighWaterMark( apid ) < 1024 )
-
-                                                           ESP_LOGW(FNAME,"Warning AHRS task stack low: %d bytes", uxTaskGetStackHighWaterMark( apid ) );
-
-                              }
-
-               }
-
+    esp_task_wdt_reset();
+    vTaskDelayUntil(&xLastWakeTime_ahrs, 25/portTICK_PERIOD_MS);  // 25 for 25 ms = 40 Hz loop
+    if( (atick++ % 40) == 0) {  // toutes les secondes on teste l’état du stack
+        if( uxTaskGetStackHighWaterMark( apid ) < 1024 )
+            ESP_LOGW(FNAME,"Warning AHRS task stack low: %d bytes", uxTaskGetStackHighWaterMark( apid ) );
+        }
+     }
 }
-//fin modif JLD
+//fin modif gfm AHRS
 void audioTask(void *pvParameters){
 	while (1)
 	{
@@ -391,50 +523,6 @@ void readBMP(void *pvParameters){
 		count++;
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		xSemaphoreTake(xMutex,portMAX_DELAY );
-
-		if( haveMPU && IMU::getInitdone() )  // 3th Generation HW, MPU6050 avail and feature enabled
-		{
-			mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
-			mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
-			esp_err_t err = MPU.acceleration(&accelRaw);  // fetch raw data from the registers
-			if( err != ESP_OK )
-				ESP_LOGE(FNAME, "accel I2C error, X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
-			err |= MPU.rotation(&gyroRaw);       // fetch raw data from the registers
-			if( err != ESP_OK )
-				ESP_LOGE(FNAME, "gyro I2C error, X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
-			accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
-			gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
-			// ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f  gyro X: %+.2f Y:%+.2f Z:%+.2f\n", -accelG[2], accelG[1], accelG[0] ,  gyroDPS.x, gyroDPS.y, gyroDPS.z);
-			bool goodAccl = true;
-			if( abs( accelG.x - accelG_Prev.x ) > 1 || abs( accelG.y - accelG_Prev.y ) > 1 || abs( accelG.z - accelG_Prev.z ) > 1 ) {
-				MPU.acceleration(&accelRaw);
-				accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);
-				if( abs( accelG.x - accelG_Prev.x ) > 1 || abs( accelG.y - accelG_Prev.y ) > 1 || abs( accelG.z - accelG_Prev.z ) > 1 ){
-					goodAccl = false;
-					ESP_LOGE(FNAME, "accelaration change > g in 0.2 S:  X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
-				}
-			}
-			bool goodGyro = true;
-			if( abs( gyroDPS.x - gyroDPS_Prev.x ) > 90 || abs( gyroDPS.y - gyroDPS_Prev.y ) > 90 || abs( gyroDPS.z - gyroDPS_Prev.z ) > 90 ) {
-				// ESP_LOGE(FNAME, "gyro sensor out of bounds: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
-				// ESP_LOGE(FNAME, "%04x %04x %04x", gyroRaw.x, gyroRaw.y, gyroRaw.z );
-				MPU.rotation(&gyroRaw);
-				gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);
-				if( abs( gyroDPS.x - gyroDPS_Prev.x ) > 90 || abs( gyroDPS.y - gyroDPS_Prev.y ) > 90 || abs( gyroDPS.z - gyroDPS_Prev.z ) > 90 ) {
-					goodGyro = false;
-					ESP_LOGE(FNAME, "gyro angle >90 deg/s in 0.2 S: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
-				}
-			}
-			//modif gfm : suppression dest tests goodgyros & goodaccel pour appeler l'AHRS
-			//if( err == ESP_OK && goodAccl && goodGyro ) {
-			if( err == ESP_OK ) {
-				IMU::read();
-				dead_reckon();
-				estAltitude();
-			}
-			gyroDPS_Prev = gyroDPS;
-			accelG_Prev = accelG;
-		}
 
 		bool ok=false;
 		float p = 0;
@@ -491,6 +579,7 @@ void readBMP(void *pvParameters){
 				standard_setting = false;
 				// ESP_LOGI(FNAME,"QNH %f baro: %f alt: %f SS:%d", QNH.get(), baroP, alt, standard_setting  );
 			}
+			if(  IMU::getInitdone() == false ) altimeter_calibrate();
 		}
 		aTE = bmpVario.readAVGTE();
 		xSemaphoreGive(xMutex);
@@ -502,38 +591,31 @@ void readBMP(void *pvParameters){
 			char lb[510];
 			if( nmea_protocol.get() == FLIGHT_TEST ) {
 				OV.sendNMEA( P_FLIGHT_TEST, lb, baroP, dynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-						time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
-						u,v,w,vx,vy,vz);
+						time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps);
 						
-			} else if ((count % 2) == 0 ) {
+			} else if ((count % 1) == 0 ) {
 			// reduce messages from 10 per second to 5 per second to reduce load in XCSoar
 				if( nmea_protocol.get() == BORGELT ) {
 					OV.sendNMEA( P_BORGELT, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-							time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
-							u,v,w,vx,vy,vz);
+							time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps);
 					OV.sendNMEA( P_GENERIC, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-							time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
-							u,v,w,vx,vy,vz);
+							time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps);
 				}
 				else if( nmea_protocol.get() == OPENVARIO ){
 					OV.sendNMEA( P_OPENVARIO, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-							time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
-							u,v,w,vx,vy,vz  );
+							time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps);
 				}
 				else if( nmea_protocol.get() == CAMBRIDGE ){
 					OV.sendNMEA( P_CAMBRIDGE, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-							time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
-							u,v,w,vx,vy,vz );
+							time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps);
 				}
 				else if( nmea_protocol.get() == XCVARIO ) {
 					OV.sendNMEA( P_XCVARIO,lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-							time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
-							u,v,w,vx,vy,vz );
+							time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps);
 				}
 				else if( nmea_protocol.get() == XCVARIO_DEVEL ) {
 					OV.sendNMEA( P_XCVARIO_DEVEL, lb, baroP, rawdynamicP, TE, temperature, ias, tas, MC.get(), bugs.get(), ballast.get(), Switch::cruiseMode(), alt, validTemperature,
-							time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
-							u,v,w,vx,vy,vz);
+							time_gps,gps_nav_valid,latitude,longitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps);
 				}
 				else
 					ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
@@ -1200,12 +1282,12 @@ void sensor(void *args){
 	}
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 4096, NULL, 6, tpid, 0);
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 8000, NULL, 13, dpid, 0);
-	// modif JLD
-	//xTaskCreatePinnedToCore(&readAHRS, "readAHRS", 4096, NULL, 35, apid, 0);
+	// modif gfm
+	xTaskCreatePinnedToCore(&readAHRS, "readAHRS", 4096, NULL, 40, apid, 0);
 	// 4096: taille du stack en octets. A ajuster en fonction des besoins. Plus on a de déclarations globales et moins d’appels avec paramètres et moins on a besoin de se soucier du stack.
-	// 35 : haute priorité
+	// 40 : haute priorité
 	// 0 : core utilisé (un seul core utilisable pour le moment L)
-	 // fin modif JLD
+	 // fin modif gfm
 
 	Audio::startAudio();
 	//modif gfm
@@ -1216,6 +1298,25 @@ void sensor(void *args){
 		logged_tests += "MPU6050 AHRS read: PASSED\n";
 		altimeter_calibrate();
 		// fin modif gfm
+/*modif gfm task duration
+	    //Allow other core to finish initialization
+	    vTaskDelay(pdMS_TO_TICKS(100));
+
+	    //Create semaphores to synchronize
+	    sync_spin_task = xSemaphoreCreateCounting(NUM_OF_SPIN_TASKS, 0);
+	    sync_stats_task = xSemaphoreCreateBinary();
+
+	    //Create spin tasks
+	    for (int i = 0; i < NUM_OF_SPIN_TASKS; i++) {
+	        snprintf(task_names[i], configMAX_TASK_NAME_LEN, "spin%d", i);
+	        xTaskCreatePinnedToCore(spin_task, task_names[i], 1024, NULL, SPIN_TASK_PRIO, NULL, tskNO_AFFINITY);
+	    }
+
+	    //Create and start stats task
+	    xTaskCreatePinnedToCore(stats_task, "stats", 4096, NULL, STATS_TASK_PRIO, NULL, tskNO_AFFINITY);
+	    xSemaphoreGive(sync_stats_task);
+// fin modif gfm task duration
+ */
 }
 
 

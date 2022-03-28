@@ -29,7 +29,9 @@ S2F * Protocols::_s2f = 0;
 //modif gfm
 #include "UBX_Parser.h"
 #include "estAltitude.h"
-#include "ahrs.hpp"
+#include "deadReckoning.h"
+
+//extern float IMUlocationz;
 extern float Vsz_gps;
 extern float Ground_Speed_gps;
 float time_gps;
@@ -38,6 +40,7 @@ float latitude,longitude,gps_altitude;
 extern float vze_fusion;
 extern float estimated_altitude;
 extern int gps_nav_valid;
+extern PressureSensor *baroSensor;
 // fin modif gfm
 float Protocols::ballast_percent=0;
 
@@ -170,23 +173,21 @@ void Protocols::sendNmeaHDT( float heading ) {
 
 
 void Protocols::sendNMEA( proto_t proto, char* str,float baro, float dp, float te, float temp, float ias, float tas, int mc, float bugs,float aballast,int cruise,float alt,bool validTemp,
-		float time_gps,int gps_nav_valid,float latitude,float longitude,float estimated_altitude,float Vsx_gps,float Vsy_gps,float Vsz_gps,float vze_fusion,float Ground_Speed_gps,
-		float u,float v,float w,float vx,float vy,float vz){
+		float time_gps,int gps_nav_valid,float latitude,float longitude,float estimated_altitude,float Vsx_gps,float Vsy_gps,float Vsz_gps,float vze_fusion,float Ground_Speed_gps)
+{
 	if( !validTemp )
 		temp=0;
-	float roll = 0;
-	float pitch = 0;
 
 	if( proto == P_FLIGHT_TEST ){
-		double roll = IMU::getRollRad();
-		double pitch = IMU::getPitchRad();
-		double yaw = IMU::getYawRad();
-		double acc_x = IMU::getRawAccelX();
-		double acc_y = IMU::getRawAccelY();
-		double acc_z = IMU::getRawAccelZ();
-		double gx = IMU::getRawGyroX();
-		double gy = IMU::getRawGyroY();
-		double gz = IMU::getRawGyroZ();
+		float roll = IMU::getRollRad();
+		float pitch = IMU::getPitchRad();
+		float yaw = IMU::getYawRad();
+		float acc_x = IMU::getRawAccelX();
+		float acc_y = IMU::getRawAccelY();
+		float acc_z = IMU::getRawAccelZ();
+		float gx = IMU::getRawGyroX();
+		float gy = IMU::getRawGyroY();
+		float gz = IMU::getRawGyroZ();
 		float timertime = esp_timer_get_time()/1000000.0; // time in second
 		sprintf(str,"$JLD,%.6f,%3.1f,%2.1f,%.3f,%.3f,%.3f,%.3f,%3.1f,%3.1f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f,%1.4f", timertime, te, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp,
 				     roll*RAD_TO_DEG, pitch*RAD_TO_DEG, yaw*RAD_TO_DEG, acc_x/9.806, acc_y/9.806, acc_z/9.806, gz*RAD_TO_DEG, gy*RAD_TO_DEG, gx*RAD_TO_DEG );
@@ -225,30 +226,34 @@ void Protocols::sendNMEA( proto_t proto, char* str,float baro, float dp, float t
 		//		bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z,gx,gy,gz,aex,aey,aez );
 
 //fin modif gfm*/
-		double roll = IMU::getRollRad();
-		double pitch = IMU::getPitchRad();
-		double yaw = IMU::getYawRad();
-//		double aex = IMU::getEarthAccelX();
-//		double aey = IMU::getEarthAccelY();
-//		double aez = IMU::getEarthAccelZ();
-		double ax = IMU::getRawAccelX();
-		double ay = IMU::getRawAccelY();
-		double az = IMU::getRawAccelZ();
-		double gyx = IMU::getRawGyroX();
-		double gyy = IMU::getRawGyroY();
-		double gyz = IMU::getRawGyroZ();
+		float roll = IMU::getRollRad();
+		float pitch = IMU::getPitchRad();
+		float yaw = IMU::getYawRad();
+//		float aex = IMU::getEarthAccelX();
+//		float aey = IMU::getEarthAccelY();
+//		float aez = IMU::getEarthAccelZ();
+		float ax = IMU::getRawAccelX();
+		float ay = IMU::getRawAccelY();
+		float az = IMU::getRawAccelZ();
+		float gyx = IMU::getRawGyroX();
+		float gyy = IMU::getRawGyroY();
+		float gyz = IMU::getRawGyroZ();
+		float mx = QMC5883L::mag_raw[0];
+		float my = QMC5883L::mag_raw[1];
+		float mz = QMC5883L::mag_raw[2];
 		int initdone = 0 ;
+		bool ok;
 		if (IMU::getInitdone()) initdone=1; else initdone=0;
 //		sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%d,%2.1f,%6.2f,%6.2f,%4.3f,%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", te, Units::Vario2ms(mc), bugs, (aballast+100)/100.0, cruise, temp, QNH.get(), baro, dp, roll, pitch, acc_x, acc_y, acc_z );
 		float timertime = (float) esp_timer_get_time()/1000000.0; // time in second
 		sprintf(str,"$PXCV,%+010.3f,%+03.1f,%+04.2f,%0d,%+02.1f,%+08.3f,%+05.3f,%+05.3f,%+05.3f,%+05.3f,"
 //				"%+06.3f,%+06.3f,%+06.3f,%+06.3f,%+06.3f,%+06.3f,%+06.0f,%+06.0f,%+06.0f,%+08.3f,%0d,%+010.7f,%+010.7f,%+08.3f,%+08.3f,%+03.2f,%+03.2f,%+03.2f,%+03.2f,%+06.2f,"
-				"%+06.3f,%+06.3f,%+06.3f,%+06.3f,%+06.3f,%+06.3f,%+06.0f,%+06.0f,%+06.0f,%+08.3f,%0d,%+06.1f,%+06.1f,%+06.1f,%+08.3f,%+03.2f,%+03.2f,%+03.2f,%+03.2f,%+06.2f,"
+				"%+06.3f,%+06.3f,%+06.3f,%+06.3f,%+06.3f,%+06.3f,%+05.0f,%+05.2f,%+05.2f,%+08.3f,%0d,%+010.7f,%+010.7f,%+08.3f,%+08.3f,%+03.2f,%+03.2f,%+03.2f,%+03.2f,%+06.2f,"
 				"%+06.2f,%+06.2f,%+06.2f",
 				timertime, te, tas, initdone, std::roundf(temp*10.f)/10.f, baro, dp, roll, pitch, yaw,
 //				ax, ay, az, gyx, gyy, gyz,aex,aey,aez, time_gps,gps_nav_valid,latitude,longitude,gps_altitude,estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
-				ax, ay, az, gyx, gyy, gyz,QMC5883L::mag_vector[0],QMC5883L::mag_vector[1],QMC5883L::mag_vector[2], time_gps,gps_nav_valid,QMC5883L::mag_raw[0],QMC5883L::mag_raw[1],QMC5883L::mag_raw[2],estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,
-				vx,vy,vz);
+				ax, ay, az, gyx, gyy, gyz,mx,-baroSensor->readAltitude( QNH.get(), ok ),IMUlocationz, time_gps,gps_nav_valid,latitude,longitude,gps_altitude,
+				estimated_altitude,Vsx_gps,Vsy_gps,Vsz_gps,vze_fusion,Ground_Speed_gps,	IMUvelocityx,IMUvelocityy,IMUvelocityz);
 	}
 	else if( proto == P_XCVARIO ){
 		/*
@@ -271,8 +276,8 @@ void Protocols::sendNMEA( proto_t proto, char* str,float baro, float dp, float t
 				*CHK = standard NMEA checksum
 		*/
 		if( haveMPU && attitude_indicator.get() ){
-			double roll = IMU::getRoll();
-			double pitch = IMU::getPitch();
+			float roll = IMU::getRoll();
+			float pitch = IMU::getPitch();
 			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f,%3.1f,%3.1f,%1.2f,%1.2f,%1.2f",
 					te, ias, mc, bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp, roll, pitch, IMU::getEarthAccelX(), IMU::getEarthAccelY(), IMU::getEarthAccelZ() );
 

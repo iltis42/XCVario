@@ -37,28 +37,11 @@
 #endif // DEG_TO_RAD
 //modif gfm
 #ifndef G
-#define G 9.806
+#define G 9.807
 #endif // G
 //fin modif gfm
-/*typedef struct kalman_t
-{
-	double Q_angle;   // Process noise variance for the accelerometer
-	double Q_bias;    // Process noise variance for the gyro bias
-	double R_measure; // Measurement noise variance - this is actually the variance of the measurement noise
 
-	double angle; // The angle calculated by the Kalman filter - part of the 2x1 state vector
-	double bias;  // The gyro bias calculated by the Kalman filter - part of the 2x1 state vector
-	double rate;  // Unbiased rate calculated from the rate and the calculated bias - you have to call getAngle to update the rate
-
-	double P[2][2]; // Error covariance matrix - This is a 2x2 matrix
-	double K[2];    // Kalman gain - This is a 2x1 vector
-	double y;       // Angle difference
-	double S;       // Estimate error
-} Kalman;
-*/
-//#define SERIAL_KalmanMPU6050_DEBUG 0 // 1 Enables, 0 Disables
-
-#define RESTRICT_PITCH     // Comment out to restrict roll to ±90deg instead please read: http://www.freescale.com/files/sensors/doc/app_note/AN3461.pdf
+//#define RESTRICT_PITCH     // Comment out to restrict roll to ±90deg instead please read: http://www.freescale.com/files/sensors/doc/app_note/AN3461.pdf
 
 class IMU
 {
@@ -85,52 +68,52 @@ public:
    *
    * @returns The accelerometer raw X reading
    */
-  static inline double getRawAccelX()  {  return (accelX);  };
-  static inline double getFilterAccelX()  {  return (filterAccelX);  };
+  static inline float getRawAccelX()  {  return (accelX);  };
+  static inline float getFilterAccelX()  {  return (filterAccelX);  };
 
   /**
    * Gets the accelerometer raw Y reading, as per last read() call.
    *
    * @returns The accelerometer raw Y reading
    */
-  static inline double getRawAccelY()   {   return (accelY);   };
-  static inline double getFilterAccelY()   {   return (filterAccelY);   };
+  static inline float getRawAccelY()   {   return (accelY);   };
+  static inline float getFilterAccelY()   {   return (filterAccelY);   };
 
   /**
    * Gets the accelerometer raw Z reading, as per last read() call.
    *
    * @returns The accelerometer raw Z reading
    */
-  static inline double getRawAccelZ()  {  	return (accelZ);  };
-  static inline double getFilterAccelZ()  {  	return (filterAccelZ);  };
+  static inline float getRawAccelZ()  {  	return (accelZ);  };
+  static inline float getFilterAccelZ()  {  	return (filterAccelZ);  };
 
   /**
    * Gets the gyroscope raw X reading, as per last read() call.
    *
    * @returns The gyroscope raw X reading.
    */
-  static inline double getRawGyroX()   {  	return (gyroX);  };
-  static inline double getFilterGyroX()   {  	return (filterGyroX);  };
+  static inline float getRawGyroX()   {  	return (gyroX);  };
+  static inline float getFilterGyroX()   {  	return (filterGyroX);  };
 
   /**
    * Gets the gyroscope raw Y reading, as per last read() call.
    *
    * @returns The gyroscope raw Y reading.
    */
-  static inline double getRawGyroY()   {  	return (gyroY);  };
-  static inline double getFilterGyroY()   {  	return (filterGyroY);  };
+  static inline float getRawGyroY()   {  	return (gyroY);  };
+  static inline float getFilterGyroY()   {  	return (filterGyroY);  };
 
   /**
    * Gets the gyroscope raw Z reading, as per last read() call.
    *
    * @returns The gyroscope raw Z reading.
    */
-  static inline double getRawGyroZ()   {  return (gyroZ);  };
-  static inline double getFilterGyroZ()   {  return (filterGyroZ);  };
+  static inline float getRawGyroZ()   {  return (gyroZ);  };
+  static inline float getFilterGyroZ()   {  return (filterGyroZ);  };
   //modif gfm
-  static inline double getEarthAccelX() { return (accel_earthX);};
-  static inline double getEarthAccelY() { return (accel_earthY);};
-  static inline double getEarthAccelZ() { return (accel_earthZ);};
+  static inline float getEarthAccelX() { return (accel_earthX);};
+  static inline float getEarthAccelY() { return (accel_earthY);};
+  static inline float getEarthAccelZ() { return (accel_earthZ);};
 //fin modif gfm
 
   /**
@@ -139,47 +122,47 @@ public:
    *
    * @returns The x rotation (roll) in degrees
    */
-  static inline double getRoll() {  return filterRoll*RAD_TO_DEG;  };
-  static inline double getRollRad() {  return filterRoll;  };
+  static inline float getRoll() {  return filterRoll*RAD_TO_DEG;  };
+  static inline float getRollRad() {  return filterRoll;  };
 
   /**
    * Gets the pitch (Y rotation) in degrees from the Kalman Filter.\
    *
    * @returns The y rotation (pitch) in degrees
    */
-  static inline double getPitch()  {	return filterPitch*RAD_TO_DEG;  };
-  static inline double getPitchRad()  {	return filterPitch;  };
-  static inline double getYawRad()  {	return filterYaw;  };
+  static inline float getPitch()  {	return filterPitch*RAD_TO_DEG;  };
+  static inline float getPitchRad()  {	return filterPitch;  };
+  static inline float getYawRad()  {	return filterYaw;  };
   static inline bool getInitdone() {return (initdone);};
 
 private:
   static uint32_t lastProcessed;
 
-  static double accelX, accelY, accelZ;
-  static double offset_accelX, offset_accelY, offset_accelZ;
-  static double accel_earthX, accel_earthY, accel_earthZ;
-  static double gyroX, gyroY, gyroZ;
-  static double mX, mY, mZ;
-  static double offset_gyroX, offset_gyroY, offset_gyroZ;
+  static float accelX, accelY, accelZ;
+  static float offset_accelX, offset_accelY, offset_accelZ;
+  static float accel_earthX, accel_earthY, accel_earthZ;
+  static float gyroX, gyroY, gyroZ;
+  static float mX, mY, mZ;
+  static float offset_gyroX, offset_gyroY, offset_gyroZ;
 
   static void MPU6050Read();
-  static void RollPitchFromAccel(double *roll, double *pitch);
-  static void PitchFromAccel(double *pitch);
+  static void RollPitchFromAccel(float *roll, float *pitch);
+  static void PitchFromAccel(float *pitch);
   static uint64_t last_rts;
 
-  static double  offset_roll;
-  static double  offset_pitch;
-  static double  offset_yaw;
+  static float  offset_roll;
+  static float  offset_pitch;
+  static float  offset_yaw;
   static bool initdone;
-  static double  filterPitch;
-  static double  filterRoll;
-  static double  filterYaw;
-  static double  filterAccelX;
-  static double  filterAccelY;
-  static double  filterAccelZ;
-  static double  filterGyroX;
-  static double  filterGyroY;
-  static double  filterGyroZ;
+  static float  filterPitch;
+  static float  filterRoll;
+  static float  filterYaw;
+  static float  filterAccelX;
+  static float  filterAccelY;
+  static float  filterAccelZ;
+  static float  filterGyroX;
+  static float  filterGyroY;
+  static float  filterGyroZ;
 };
 
 #endif // _ahrs_H_

@@ -17,6 +17,8 @@
 #include "Flarm.h"
 //Modif gfm
 #include "UBX_Parser.h"
+#include "Protocols.h"
+proto_t proto;
 //fin modif gfm
 
 RingBufCPP<SString, QUEUE_SIZE> wl_vario_tx_q;
@@ -96,25 +98,26 @@ void Router::routeXCV(){
 					ESP_LOGV(FNAME,"Send to ttyS2 device, XCV received %d bytes", xcv.length() );
 	}
 }
-
 // Route messages from serial interface S1
 void Router::routeS1(){
 	SString s1;
 	//modif gfm : S1 sera dédié au GPS : tous les messages qui arrivent seront envoyer à UBX_parser
 	int i;
 	if( pullMsg( s1_rx_q, s1) ){
-		if( !strcmp(s1.c_str(),"µb")){ // if message is from GNSS in UBX format
-		/*  // Send it immediately to check the test "if( !strcmp(s1.c_str(),"µb"))" of the upper line (to be removed if check OK)
-			ESP_LOGD(FNAME,"ttyS1 RX len: %d bytes, Q:%d", s1.length(), bt_tx_q.isFull() );
-			ESP_LOG_BUFFER_HEXDUMP(FNAME,s1.c_str(),s1.length(), ESP_LOG_DEBUG);
+		if( (s1.c_str()[0]=181) && (s1.c_str()[1]=98)){ // if message is from GNSS in UBX format, beginning with "µb"
+			//ESP_LOG_BUFFER_HEXDUMP(FNAME,s1.c_str(),8, ESP_LOG_INFO);
+			//ESP_LOG_BUFFER_HEXDUMP(FNAME,s1.c_str(),s1.length(), ESP_LOG_INFO);
+		  // Send it immediately to check the test "if( !strcmp(s1.c_str(),"µb"))" of the upper line (to be removed if check OK)
+		/*	ESP_LOGI(FNAME,"ttyS1 RX len: %d bytes, Q:%d,%s", s1.length(), bt_tx_q.isFull(),s1.c_str() );
+			ESP_LOGI(FNAME,"ttyS1 RX len: %d bytes, Q:%d,%s ,cmp=%d", s1.length(), bt_tx_q.isFull(),s1.c_str(),strncmp(s1.c_str(),"µb",2) );
 			if( blue_enable.get() == WL_WLAN )
 				if( forwardMsg( s1, wl_flarm_tx_q ))
 					ESP_LOGV(FNAME,"ttyS1 RX bytes %d forward to wl_flarm_tx_q port 8881", s1.length() );
 			if( blue_enable.get() == WL_BLUETOOTH )
 				if( forwardMsg( s1, bt_tx_q ))
 					ESP_LOGV(FNAME,"ttyS1 RX bytes %d forward to bt_tx_q", s1.length() );*/
-	    for(i=0;i<s1.length();i++) parse(s1.c_str()[i]); // decode it
-	  } else {// fin modif gfm
+		    for(i=0;i<s1.length();i++) parse(s1.c_str()[i]); // decode it
+/*	  } else {// fin modif gfm
 		ESP_LOGD(FNAME,"ttyS1 RX len: %d bytes, Q:%d", s1.length(), bt_tx_q.isFull() );
 		ESP_LOG_BUFFER_HEXDUMP(FNAME,s1.c_str(),s1.length(), ESP_LOG_DEBUG);
 		if( blue_enable.get() == WL_WLAN )
@@ -129,7 +132,7 @@ void Router::routeS1(){
 		if( serial2_tx.get() & RT_S1 )
 			if( forwardMsg( s1, s2_tx_q ))
 				ESP_LOGV(FNAME,"ttyS1 RX bytes %d looped to s2_tx_q", s1.length() );
-	  }
+*/	  }
 	}
 }
 

@@ -21,13 +21,13 @@ extern "C" {
 //----------------------------------------------------------------------------------------------------
 // Variable declaration
 
-extern double q0, q1, q2, q3;	// quaternion of sensor frame relative to auxiliary frame
+extern float q0, q1, q2, q3;	// quaternion of sensor frame relative to auxiliary frame
 
 //---------------------------------------------------------------------------------------------------
 // Function declarations
 
-void MadgwickAHRSupdate(double dt,double gx, double gy, double gz, double ax, double ay, double az, double mx, double my, double mz, double *pq0, double *pq1, double *pq2, double *pq3);
-void MadgwickAHRSupdateIMU(double dt,double gx, double gy, double gz, double ax, double ay, double az, double *pq0, double *pq1, double *pq2, double *pq3);
+void MadgwickAHRSupdate(float dt,float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz, float *pq0, float *pq1, float *pq2, float *pq3);
+void MadgwickAHRSupdateIMU(float dt,float gx, float gy, float gz, float ax, float ay, float az, float *pq0, float *pq1, float *pq2, float *pq3);
 
 #ifdef __cplusplus
 }

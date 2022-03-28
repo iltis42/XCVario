@@ -177,7 +177,7 @@ esp_err_t QMC5883L::selfTest()
 	for( int i=0; i< 10; i++ ){
 // modif gfm
 		esp_err_t err = m_bus->readByte( QMC5883L_ADDR, REG_CHIP_ID, &chipId );
-		ESP_LOGI( FNAME, "QMC5883L selftest i=%d QMC5883L_ADDR=0x%02X err=0x%08X chipId=0x%02X", i,QMC5883L_ADDR,err,chipId);
+		//ESP_LOGI( FNAME, "QMC5883L selftest i=%d QMC5883L_ADDR=0x%02X err=0x%08X chipId=0x%02X", i,QMC5883L_ADDR,err,chipId);
 		if( err == ESP_OK ){
 			m_sensor = true;
 			break;
@@ -185,12 +185,12 @@ esp_err_t QMC5883L::selfTest()
 		delay(20);
 	}
 	if( !m_sensor ){
-		ESP_LOGE( FNAME,"Scan for I2C address 0x%02X FAILED", QMC5883L_ADDR );
+		//ESP_LOGE( FNAME,"Scan for I2C address 0x%02X FAILED", QMC5883L_ADDR );
 		return ESP_FAIL;
 	}
 	if( chipId != 0xff ){
 		m_sensor = false;
-		ESP_LOGE( FNAME, "QMC5883L self-test, detected chip ID 0x%02X is unsupported, expected 0xFF",	chipId );
+		//ESP_LOGE( FNAME, "QMC5883L self-test, detected chip ID 0x%02X is unsupported, expected 0xFF",	chipId );
 		return ESP_FAIL;
 	}
 	ESP_LOGI( FNAME, "QMC5883L selftest PASSED");
@@ -234,7 +234,7 @@ esp_err_t QMC5883L::initialize( int a_odr, int a_osr )
 	e4 = writeRegister( addr, REG_CONTROL1,	(used_osr << 6) | (range <<4) | (used_odr <<2) | MODE_CONTINUOUS );
 
 	if( (e1 + e2 + e3 + e4) == 0 ) {
-      ESP_LOGI( FNAME, "initialize() OK");
+      //ESP_LOGI( FNAME, "initialize() OK");
       return ESP_OK;
 		}
 
@@ -268,7 +268,7 @@ bool QMC5883L::rawHeading()
 
 	if( count != 1 )
 	{
-		ESP_LOGE( FNAME, "read REG_STATUS FAILED, count=%d, status=%d", count, status );
+		//ESP_LOGE( FNAME, "read REG_STATUS FAILED, count=%d, status=%d", count, status );
 		return false;
 	}
 	// ESP_LOGI( FNAME, "REG_STATUS: %02x", status );
@@ -286,7 +286,7 @@ bool QMC5883L::rawHeading()
 	// Reset overflow warning, to get a current status of it.
 	overflowWarning = false;
 
-	if( ( status & STATUS_DRDY ) || (status & STATUS_DOR ) )
+	if( ( status & STATUS_DRDY ) && (status & STATUS_DOR ) )//modif gfm pour ne lire que si toutes les data sont là
 	{
 		// Data can be read in every case
 		if( readRegister( addr, REG_X_LSB, 6, data ) > 0 )
@@ -298,9 +298,9 @@ bool QMC5883L::rawHeading()
 		}
 		ESP_LOGE( FNAME, "read Register returned <= 0" );
 	}
-	else
-	  ESP_LOGW( FNAME, "No sensor data read, Status-Reg=0x%X, last call before=%lld ms",
-	            status, elapsed );
+	//else
+	  //ESP_LOGW( FNAME, "No sensor data read, Status-Reg=0x%X, last call before=%lld ms",
+	 //           status, elapsed );
 
 	return false;
 }
@@ -763,11 +763,6 @@ void  QMC5883L::getMagnet(double mag_raw[],double mag_vector[], bool *ok )
 	 * have to be handled in this way.
 	 */
 	/*modif gfm : calibration en dur à partir de ellipsoid fit*/
-//	double a11=0.9408571;double a12=0.1035400;double a13=-0.322595;
-//	double a21=-0.0678513;double a22=0.9904519;double a23=0.120005;
-//	double a31=0.3319400;double a32=-0.0910190;double a33=0.938899;
-//	xbias=-4673.4;ybias=-2278.2;zbias=903.24;
-//	xscale=1.076;yscale=0.996;zscale=0.870;
 	double a11=0.9443;double a12=-0.040425;double a13=0.32658;
 	double a21=-0.014776;double a22=-0.99663;double a23=-0.08064;
 	double a31=-0.32874;double a32=-0.071323;double a33=0.94172;

@@ -29,8 +29,7 @@ public:
     void sendNmeaHDM( float heading );
     void sendNmeaHDT( float heading );
 	void sendNMEA( proto_t proto, char* str, float baro,float dp,float te,float temp,float ias,float tas,int mc,float bugs,float aballast,int cruise,float alt,bool validTemp,
-			float time_gps,int gps_nav_valid,float latitude,float longitude,float estimated_altitude,float Vsx_gps,float Vsy_gps,float Vsz_gps,float vze_fusion,float Ground_Speed_gps,
-			float u,float v,float w,float vx,float vy,float vz);
+			float time_gps,int gps_nav_valid,float latitude,float longitude,float estimated_altitude,float Vsx_gps,float Vsy_gps,float Vsz_gps,float vze_fusion,float Ground_Speed_gps);
 
 	static void parseNMEA( char *str );
 	static int calcNMEACheckSum(char * nmea);

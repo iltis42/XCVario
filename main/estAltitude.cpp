@@ -24,19 +24,20 @@
 #include <math.h>
 #include <stdlib.h>
 #include "BMPVario.h"
-//#include "PressureSensor.h"
+#include <logdef.h>
+#include "PressureSensor.h"
 #include "UBX_Parser.h"
 #include "deadReckoning.h"
 
-#define ALPHA_CONSTANTE 2
-#define BETA_CONSTANTE 6
+#define ALPHA_CONSTANTE 2.0
+#define BETA_CONSTANTE 6.0
 //Qualities definition : the greater the quality is, the more the data is filtered
-#define QUAL_IMU_MAX 4
-#define QUAL_IMU_MIN 2
-#define QUAL_GPS_MAX 8
-#define QUAL_GPS_MIN 2
-#define QUAL_BARO_MAX 60
-#define QUAL_BARO_MIN 20
+#define QUAL_IMU_MAX 4.0
+#define QUAL_IMU_MIN 2.0
+#define QUAL_GPS_MAX 8.0
+#define QUAL_GPS_MIN 4.0
+#define QUAL_BARO_MAX 10.0
+#define QUAL_BARO_MIN 5.0
 // seconds
 #define DR_TIMESTEP (1.0/HEARTBEAT_HZ)
 /*
@@ -46,24 +47,24 @@
 				// ESP_LOGI(FNAME,"Baro Pressure: %4.3f", baroP );
 				float altSTD = baroSensor->calcAVGAltitudeSTD( baroP );
 */
-//extern PressureSensor *baroSensor;
+extern PressureSensor *baroSensor;
 //extern PressureSensor *teSensor;
 static float barometer_agl_altitude_pred;// previous above ground level altitude - AGL
-static long barometer_altitude;          // above sea level altitude - ASL (meters)
+static float barometer_altitude;          // above sea level altitude - ASL (meters)
 float barometer_agl_altitude;
 
 extern float gps_altitude;              // previous above airfield height (meters)
-static float gps0=0;                    //  altitude recorded during power up for height (meters)
+static float gps0=0.0;                    //  altitude recorded during power up for height (meters)
 static float gps_altitude_pred;         // predicted above ground height (meters)
 static float IMU_altitude;              // previous above ground height (meters)
 static float IMU_altitude_pred;         // predicted above ground height (meters)
 static float vze_baro,vze_gps,vze_IMU;  // Altitude speeds in m/s
 static int qual_baro,qual_gps,qual_IMU; // altitudes qualities
 float        alpha,beta;                // filter coefficients
-static int val_baro,val_gps,val_IMU;    // altitude validities
-static int baro_confiance=2;            //Altitudes confidences
-static int gps_confiance=10;
-static int IMU_confiance=0;
+static float val_baro,val_gps,val_IMU;    // altitude validities
+static float baro_confiance=100.0;            //Altitudes confidences
+static float gps_confiance=100.0;
+static float IMU_confiance=10.0;
 float vze;
 extern float vze_fusion;                   // Vertical speed fusion output (in m/s)
 extern float estimated_altitude;               // Altitude fusion output (in m)
@@ -71,24 +72,28 @@ extern int gps_nav_valid;
 extern float Vsz_gps;
 void altimeter_calibrate(void)
 {
-	barometer_altitude = bmpVario.readAVGalt();
-    qual_IMU = 2;
+	float baroP=0;
+	bool ok=false;
+	baroP = baroSensor->readPressure(ok);   // 5x per second
+	// ESP_LOGI(FNAME,"Baro Pressure: %4.3f", baroP );
+	barometer_altitude = -1.0f*baroSensor->calcAVGAltitude( QNH.get(), baroP );
+    qual_IMU = QUAL_IMU_MIN;
     IMU_altitude = barometer_altitude;
-    vze_IMU = 0;
+    vze_IMU = 0.0;
     IMU_altitude_pred = barometer_altitude;
-    vze_baro = 0;
-    qual_baro = 10;
+    vze_baro = 0.0;
+    qual_baro = QUAL_BARO_MIN;
     barometer_agl_altitude_pred = barometer_altitude;
-    vze_gps = 0;
-    vze_fusion = 0;
-    qual_gps = 2;
-    gps_altitude_pred = gps_altitude;
-    qual_baro = 0;
-    val_baro = 0;
-    val_gps = 0;
-    val_IMU = 0;
-    if (gps_nav_valid) gps0 = gps_altitude; else gps0=barometer_altitude;
+    vze_gps = 0.0;
+    vze_fusion = 0.0;
+    qual_gps = QUAL_GPS_MIN;
+    val_baro = 0.0;
+    val_gps = 0.0;
+    val_IMU = 0.0;
+    if (gps_nav_valid==1) gps0 = gps_altitude-barometer_altitude; else gps0=0.0;
     estimated_altitude = barometer_altitude;
+    gps_altitude_pred = gps0;
+    IMUlocationz=barometer_altitude;
     //if (gps0 ==0) gps0 = gps_altitude;
     //  else gps0 = (15*gps0 + gps_altitude)/16;// If altimeter_calibrate is called many times at power up
 }
@@ -97,21 +102,26 @@ void altimeter_calibrate(void)
 
 void estAltitude(void)
 {
-	if( alt_select.get() == 0 ) {// TE is the only baro sensor for the moment
-		barometer_altitude = bmpVario.readAVGalt();
-/*	else { // Baro
-		if(  alt_unit.get() == 2 ) { // FL, always standard
+	bool ok=false;
+	float baroRatio = baroSensor->readPressure(ok)/QNH.get();   // 5x per second
+	// ESP_LOGI(FNAME,"Baro Pressure: %4.3f", baroP );
+	if( alt_select.get() == 0 ) // TE
+		barometer_altitude = -1.0f*bmpVario.readAVGalt();
+	else { // Baro
+		/*if(  alt_unit.get() == 2 ) { // FL, always standard
 			barometer_altitude = altSTD;
-			// ESP_LOGI(FNAME,"au: %d", alt_unit.get() );
+			ESP_LOGI(FNAME,"au: %d", alt_unit.get() );
 		}else if( (fl_auto_transition.get() == 1) && ((int)altSTD*0.0328084 + (int)(standard_setting) > transition_alt.get() ) ) {
 			barometer_altitude = altSTD;
-			// ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), altSTD, standard_setting, transition_alt.get() );
+			ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), altSTD, standard_setting, transition_alt.get() );
 		}
-		else {
-			barometer_altitude = baroSensor->calcAVGAltitude( QNH.get(), baroP );
-			// ESP_LOGI(FNAME,"QNH %f baro: %f alt: %f SS:%d", QNH.get(), baroP, alt, standard_setting  );
-*/
-	}
+		else {*/
+		//barometer_altitude = -1.0f*baroSensor->readAltitude( QNH.get(), ok );
+		barometer_altitude = -(4184*baroRatio*baroRatio*baroRatio+15330*baroRatio*baroRatio-26596*baroRatio+15450);
+			// ESP_LOGI(FNAME,"QNH %f baro: %f barometer_altitude: %f ", QNH.get(), baroP, barometer_altitude  );
+		}
+
+
 
 // Beginning alti_fusion gfm
       /*======================================================================*/
@@ -121,7 +131,7 @@ void estAltitude(void)
       IMU_altitude = IMUlocationz;
 
       // Update qualities
-      if (abs(IMU_altitude - estimated_altitude)<10)
+      if (abs(IMU_altitude - estimated_altitude)>10.0)
       {         
           if (qual_IMU <QUAL_IMU_MAX ) qual_IMU=qual_IMU+1;
       }
@@ -130,7 +140,7 @@ void estAltitude(void)
           if (qual_IMU>QUAL_IMU_MIN)  qual_IMU=qual_IMU-1;
       }
        
-      if (abs(barometer_altitude - estimated_altitude)<100)
+      if (abs(barometer_altitude - estimated_altitude)>100.0)
       {          
           if (qual_baro <QUAL_BARO_MAX ) qual_baro=qual_baro+1;
       }
@@ -138,7 +148,7 @@ void estAltitude(void)
       {          
           if (qual_baro>QUAL_BARO_MIN) qual_baro=qual_baro-1;
       }
-      if (abs(gps_altitude - estimated_altitude)<15)
+      if (abs(gps_altitude - estimated_altitude)>15.0)
       {          
           if (qual_gps <QUAL_GPS_MAX ) qual_gps=qual_gps+1;
       }
@@ -146,43 +156,42 @@ void estAltitude(void)
       {         
           if (qual_gps>QUAL_GPS_MIN) qual_gps=qual_gps-1;
       }
-//         gps_confiance=10;
-//         IMU_confiance=0;
       
       // Compute filter alpha beta parameters for IMU
-      alpha = ALPHA_CONSTANTE * (2*qual_IMU-1)/ qual_IMU/(qual_IMU+1);
-      beta = BETA_CONSTANTE / qual_IMU / (qual_IMU+1);
+      alpha = (float)(ALPHA_CONSTANTE * (2.0*qual_IMU-1)/ qual_IMU/(qual_IMU+1));
+      beta =  (float)(BETA_CONSTANTE / qual_IMU / (qual_IMU+1));
 
       vze_IMU += beta * (IMU_altitude-IMU_altitude_pred) ;
-      IMU_altitude_pred +=  alpha * (IMU_altitude-IMU_altitude_pred) + vze_IMU * DR_TIMESTEP;
+      IMU_altitude_pred +=  alpha * (IMU_altitude-IMU_altitude_pred) + vze_IMU;
 
       // Compute filter alpha beta parameters for Baro
-      alpha = ALPHA_CONSTANTE * (2*qual_baro-1) / qual_baro / (qual_baro+1);
-      beta = BETA_CONSTANTE / qual_baro /(qual_baro+1);
+      alpha =  (float)(ALPHA_CONSTANTE * (2*qual_baro-1) / qual_baro / (qual_baro+1));
+      beta =  (float)(BETA_CONSTANTE / qual_baro /(qual_baro+1));
 
       vze_baro +=  beta * (barometer_altitude-barometer_agl_altitude_pred);
-      barometer_agl_altitude_pred += alpha * (barometer_altitude-barometer_agl_altitude_pred) +vze_baro*DR_TIMESTEP;
+      barometer_agl_altitude_pred += alpha * (barometer_altitude-barometer_agl_altitude_pred) +vze_baro;
 
       if (gps_nav_valid == 1){
       // Compute filter alpha beta parameters for GNSS
-      alpha = ALPHA_CONSTANTE *(2*qual_gps-1)/qual_gps/(qual_gps+1);
-      beta = BETA_CONSTANTE / qual_gps / (qual_gps+1);
+      alpha =  (float)(ALPHA_CONSTANTE *(2*qual_gps-1)/qual_gps/(qual_gps+1));
+      beta =  (float)(BETA_CONSTANTE / qual_gps / (qual_gps+1));
 
-      vze_gps = Vsz_gps ;
-      gps_altitude_pred += alpha * (gps_altitude-gps_altitude_pred-gps0)+vze_gps*DR_TIMESTEP ;
+      vze_gps += beta * (gps_altitude-gps_altitude_pred-gps0) ;
+      gps_altitude_pred += alpha * (gps_altitude-gps_altitude_pred-gps0)+vze_gps ;
       // update confidences according to some heuristic rules
-      val_gps = qual_gps * gps_confiance;      // val_gps max = 8*10=80
-      if ((abs(gps_altitude_pred - estimated_altitude)>60)) val_gps = 0;
+      val_gps =  gps_confiance/qual_gps;      // val_gps max = 100/4=25
+      if ((abs(gps_altitude_pred - estimated_altitude)>60.0)) val_gps = 0.0;
       }
       else {
-           val_gps = 0;
-           gps_altitude_pred = gps_altitude;
+           val_gps = 0.0;
+           //vze_gps = 0.0 ;
+           //gps_altitude_pred = gps_altitude;
       }
       // update confidences according to some heuristic rules
-      val_IMU = qual_IMU * IMU_confiance  ;    //val_IMU max = 4*5=20
-      if (( IMU_altitude_pred < -100) || (abs(IMU_altitude_pred - estimated_altitude)>40)|| (val_gps>10))  val_IMU = 0;
-      val_baro = qual_baro * baro_confiance;   //val_baro max = 60
-      if (( barometer_agl_altitude_pred < -4000) || (abs(barometer_agl_altitude_pred - estimated_altitude)>100)) val_baro = 0;
+      val_IMU = (float)( IMU_confiance/qual_IMU)  ;    //val_IMU max = 100/2=50
+      if (( IMU_altitude_pred > 100.0) || (abs(IMU_altitude_pred - estimated_altitude)>100.0)|| (val_gps>10.0))  val_IMU = 0.0;
+      val_baro = (float)( baro_confiance/qual_baro);   //val_baro max = 100/5=20
+      if (( barometer_agl_altitude_pred > 4000.0) || (abs(barometer_agl_altitude_pred - estimated_altitude)>100.0)) val_baro = 0.0;
 
 
       // compute fusion
@@ -193,7 +202,7 @@ void estAltitude(void)
  
         vze = val_baro*vze_baro + val_gps*vze_gps + val_IMU*vze_IMU  ;
         vze /= (val_baro+val_gps+val_IMU);
-        vze_fusion = vze;// room for some filtrage
+        vze_fusion = vze / DR_TIMESTEP;// room for some filtrage
       }
       else// if no sensor validated, use IMU only
       {

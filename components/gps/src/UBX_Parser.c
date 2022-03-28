@@ -289,23 +289,23 @@ void handle_NAV_PVT(unsigned long iTOW, /* ms*/
 				short magDec,			/* Magnetic declination 1e-2 deg */
                 unsigned short magAcc) /* Magnetic declination accuracy 1e-2 deg */
 	{
-    if((fixType==3) || (fixType==4)) 	/* Si les données GPS sont valides */
+    if((fixType==3) || (fixType==4)) 	/* If GPS data valid  */
     { 	gps_nav_valid = 1;
-    	dead_reckon_clock = 26; 		/* il faudrait faire revenir DR_PERIOD ici */
+    	dead_reckon_clock = DR_PERIOD; 		/* fading max duration */
     	Vsx_gps=velN*0.001f;
-    	Vsy_gps=-velE*0.001f;
-    	Vsz_gps=-velD*0.001f;
+    	Vsy_gps=velE*0.001f;
+    	Vsz_gps=velD*0.001f;
     	Ground_Speed_gps = gSpeed*0.001f;
         time_gps = iTOW*0.001f;
         latitude = lat*1e-7f;
         longitude = lon*1e-7f;
-        gps_altitude = hMSL*0.001f;
+        gps_altitude = -hMSL*0.001f;
         date_gps = day;
     }
     else{/* Just to recognize bad parsing*/
     	gps_nav_valid = -1;
-    	Vsz_gps=1.23;
-        Ground_Speed_gps = 3.45;
+    	Vsz_gps=0.123;
+        Ground_Speed_gps = 0.345;
         time_gps=0.0;
     }
 
@@ -337,7 +337,7 @@ void Init_UBX_Parser()
           */
 void parse(char b)
         {
-            if (b == 0xB5) {
+            if (b == 0xB5)  {
 
                 state = GOT_SYNC1;
             }

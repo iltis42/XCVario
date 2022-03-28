@@ -28,6 +28,9 @@
 extern "C" {
 #endif
 //modif gfm
+#define GPS_RATE 10.0							// Rate of GPS data flux
+#define HEARTBEAT_HZ 10.0							// Rate of GPS data flux
+#define DR_PERIOD HEARTBEAT_HZ/GPS_RATE+16	// GPS Period
 extern float Vsx_gps;
 extern float Vsy_gps;
 extern float Vsz_gps;

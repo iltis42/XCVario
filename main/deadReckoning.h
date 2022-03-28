@@ -42,7 +42,7 @@ extern float forward_ground_speed;
 
 void dead_reckon(void);
 
-#define HEARTBEAT_HZ 10
+#define HEARTBEAT_HZ 10.0
 
 #ifdef __cplusplus
 }

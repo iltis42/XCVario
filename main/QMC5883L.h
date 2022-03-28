@@ -76,7 +76,7 @@ public:
 	 * you max give output datarate (odr) and oversampling rate (osr)
 	 * if not given defaults are as from constructor
 	 */
-	esp_err_t initialize( int a_odr=0, int a_osr=0 );
+	esp_err_t initialize( int a_odr=1, int a_osr=0 );
 
 	/**
 	 * Reads the heading in degrees of 0...359. Ok is set to true,
@@ -155,7 +155,7 @@ public:
 	static double mag_vector[3] ;
 	static double mag_raw[3] ;
 
-		void getMagnet(double mag_raw[],double mag_vector[], bool *ok);
+	void getMagnet(double mag_raw[],double mag_vector[], bool *ok);
 	//fin modif gfm
 
 private:

@@ -24,4 +24,3 @@ void altimeter_calibrate(void);
 void estAltitude(void);
 extern float estimated_altitude;        // previous above ground height (millimeters)
 extern float vze_fusion;                // Altitude speed fusion output (in mm/s)
-

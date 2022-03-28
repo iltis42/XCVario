@@ -232,10 +232,31 @@ void IMU::read()
 			float x=compass->rawX(); //  / 32768.0;
 			float y=compass->rawY(); //  / 32768.0;
 			float z=-compass->rawZ(); //  / 32768.0;
-			Quaternion q( 0,y,x,z );
-			q.normalize();
-			euler_angles compass_euler = q.to_euler_angles();
-			ESP_LOGI( FNAME,"MH %.2f FYaw: %.4f  Q/Eul(Y:%.2f P:%.2f R:%.2f) Quat(%.3f/%.3f/%.3f/%.3f)", curh, filterYaw, compass_euler.yaw, compass_euler.pitch, compass_euler.roll, q.a, q.b, q.c, q.d );
+
+			vector_ijk gv(att_vector.a,att_vector.b,att_vector.c);
+			gv.normalize(); // guess we need this, even not mentioned in pseudo code
+			ESP_LOGI( FNAME,"G-Vector norm: %f %f %f", gv.a, gv.b, gv.c );
+			vector_ijk gvr( 0,0,-1 );  // Gravity Vector, pointing down to ground: Z = -1
+
+			// create quaternion from gravity vector aligned to glider
+			Quaternion q = Quaternion::AlignVectors( gv, gvr ) ;
+			ESP_LOGI(FNAME,"Q: %f %f %f %f a:%f", q.a, q.b, q.c, q.d, R2D(q.getAngle()) );
+
+			// Magnetic vector, relative to glider from raw hall sensor x/y/z data
+			vector_ijk mv( x,y,z );
+			mv.normalize(); // guess we need this
+			ESP_LOGI( FNAME,"M-Vector norm: %f %f %f", mv.a, mv.b, mv.c );
+			// rotate quaternion by magnetic vector
+			vector_ijk mev = Quaternion::rotate_vector(mv, q);
+			mev.normalize();
+			ESP_LOGI(FNAME,"mev: %f %f %f", mev.a, mev.b, mev.c );
+			mev.c = 0;
+			vector_ijk frv( 1,0,0 ); // Fuselage reference vector, pointing in front to nose: X = 1
+
+			Quaternion q2 = Quaternion::AlignVectors( mev, frv ) ;
+
+			euler_angles ce = q2.to_euler_angles();
+			ESP_LOGI( FNAME,"MH %.2f FYaw: %.4f  Quat-Compass(Yaw:%.2f Pit:%.2f Rol:%.2f)", curh, filterYaw, ce.yaw, ce.pitch, ce.roll );
 #endif
 
 		}

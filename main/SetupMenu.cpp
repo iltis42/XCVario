@@ -1514,7 +1514,7 @@ void SetupMenu::setup( )
 			ahrslc->addEntry( ahrslc2 );
 			ahrslc->addEntry( ahrslc3 );
 			ahrslc->addEntry( ahrslc4 );
-			static const char keys[][4] { "0","1","2","3","4","5","6","7","8","9",":",";","<","=",">","?","@","A","B","C","D","E","F","G","H","I","J","K","L","M","M","O","P","Q","R","S","T","U","V","W","X","Y","Z"};
+			static const char keys[][4] { "0","1","2","3","4","5","6","7","8","9",":",";","<","=",">","?","@","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"};
 			ahrslc1->addEntryList( keys, sizeof(keys)/4 );
 			ahrslc2->addEntryList( keys, sizeof(keys)/4 );
 			ahrslc3->addEntryList( keys, sizeof(keys)/4 );

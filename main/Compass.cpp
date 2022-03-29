@@ -457,19 +457,18 @@ float Compass::heading( bool *ok )
 	fx = -(double) ((float( raw.y ) - bias.y) * scale.y);
 	fz = (double) ((float( raw.z ) - bias.z) * scale.z);
 
-	double roll = filterRoll( IMU::getRollRad() );      // equal filter with equal delay to raw compass data for pitch and roll
-	double pitch = filterPitch( IMU::getPitchRad() );
-
-	double tcx = fx * cos( -pitch ) + fy * sin( -roll ) * sin( -pitch) - fz * cos( -roll) * sin( -pitch);
-	double tcy = fy * cos( -roll) + fz * sin( -roll);
-	if( isnan(tcx) || isnan(tcy) ){
-		*ok = true;
-		ESP_LOGI(FNAME,"gimbal lock, cannot determine heading");
-		return _heading;  // deliver old value in case of gimbal lock
-	}
+	vector_ijk gvr( 0,0,-1 );  // gravity vector direction, pointing down to ground: Z = -1
+	Quaternion q = Quaternion::AlignVectors( gravity_vector, gvr ) ; // create quaternion from gravity vector aligned to glider
+	vector_ijk mv( fx,fy,fz ); // magnetic vector, relative to glider from raw hall sensor x/y/z data
+	mv.normalize(); // normalize vector
+	vector_ijk mev = Quaternion::rotate_vector(mv,q);  // rotate quaternion by magnetic vector
+	mev.normalize();
+	vector_ijk frv( 1,0,0 ); // Fuselage reference vector, pointing in front to nose: X = 1
+	Quaternion q2 = Quaternion::AlignVectors( mev, frv ) ;
+	euler_angles ce = q2.to_euler_angles();
 
 	if( compass_enable.get() == CS_CAN || compass_enable.get() == CS_I2C ){
-		_heading = -RAD_TO_DEG * atan2( tcy, tcx );
+		_heading = ce.yaw;
 		// ESP_LOGI(FNAME,"tcy %03.2f tcx %03.2f  heading:%03.1f pi:%.1f ro:%.1f", tcy, tcx, _heading, pitch, roll );
 	}
 	else if ( compass_enable.get() == CS_I2C_NO_TILT )

@@ -57,6 +57,8 @@ Quaternion IMU::att_quat(0,0,0,0);
 vector_ijk IMU::att_vector;
 euler_angles IMU::euler;
 
+vector_ijk gravity_vector( 0,0,-1 );
+
 // Kalman Function Definition
 
 void Kalman_Init(Kalman *kalPointer, double qang, double qbias, double rmeas )
@@ -217,6 +219,11 @@ void IMU::read()
 
 	if( compass ){
 		bool ok;
+		float x=compass->rawX();
+		float y=compass->rawY();
+		float z=-compass->rawZ();
+		gravity_vector = vector_ijk(att_vector.a,-att_vector.b,att_vector.c);
+		gravity_vector.normalize();
 		float curh = compass->cur_heading( &ok );
 		if( ok ){
 			float gyroYaw = getGyroYawDelta();
@@ -226,39 +233,7 @@ void IMU::read()
 			filterYaw=Vector::normalizeDeg( fused_yaw );
 			compass->setGyroHeading( filterYaw );
 			// ESP_LOGI( FNAME,"cur magn head %.2f gyro yaw: %.4f fused: %.1f Gyro(%.3f/%.3f/%.3f)", curh, gyroYaw, gh, gyroX, gyroY, gyroZ  );
-#define QUAT_COMPASS
-#ifdef QUAT_COMPASS
-			// Work for quaternion -> euler based compass
-			float x=compass->rawX(); //  / 32768.0;
-			float y=compass->rawY(); //  / 32768.0;
-			float z=-compass->rawZ(); //  / 32768.0;
-
-			vector_ijk gv(att_vector.a,-att_vector.b,att_vector.c);
-			// this is done in AlignVectors gv.normalize(); // guess we need this, even not mentioned in pseudo code
-			ESP_LOGI( FNAME,"G-Vector norm: %f %f %f", gv.a, gv.b, gv.c );
-			vector_ijk gvr( 0,0,-1 );  // Gravity Vector, pointing down to ground: Z = -1
-
-			// create quaternion from gravity vector aligned to glider
-			Quaternion q = Quaternion::AlignVectors( gv, gvr ) ;
-			ESP_LOGI(FNAME,"Q: %f %f %f %f a:%f", q.a, q.b, q.c, q.d, R2D(q.getAngle()) );
-
-			// Magnetic vector, relative to glider from raw hall sensor x/y/z data
-			vector_ijk mv( x,y,z );
-			mv.normalize(); // guess we need this
-			ESP_LOGI( FNAME,"M-Vector norm: %f %f %f", mv.a, mv.b, mv.c );
-			// rotate quaternion by magnetic vector
-			vector_ijk mev = Quaternion::rotate_vector(mv,q);
-			ESP_LOGI(FNAME,"mev: %f %f %f", mev.a, mev.b, mev.c );
-			// mev.c = 0.; // drop z-axes portion
-			mev.normalize();
-			vector_ijk frv( 1,0,0 ); // Fuselage reference vector, pointing in front to nose: X = 1
-			Quaternion q2 = Quaternion::AlignVectors( mev, frv ) ;
-			euler_angles ce = q2.to_euler_angles();
-			ESP_LOGI( FNAME,"MH %.2f FYaw: %.4f  Quat-Compass(Yaw:%.2f Pit:%.2f Rol:%.2f)", curh, filterYaw, Vector::normalizeDeg(ce.yaw), ce.pitch, ce.roll );
-#endif
-
 		}
-
 	}
 	if( ahrs_gyro_factor.get() > 0.1  ){
 		filterRoll =  euler.roll;

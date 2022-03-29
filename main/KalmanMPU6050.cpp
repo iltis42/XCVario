@@ -233,8 +233,8 @@ void IMU::read()
 			float y=compass->rawY(); //  / 32768.0;
 			float z=-compass->rawZ(); //  / 32768.0;
 
-			vector_ijk gv(att_vector.a,att_vector.b,att_vector.c);
-			gv.normalize(); // guess we need this, even not mentioned in pseudo code
+			vector_ijk gv(att_vector.a,-att_vector.b,att_vector.c);
+			// this is done in AlignVectors gv.normalize(); // guess we need this, even not mentioned in pseudo code
 			ESP_LOGI( FNAME,"G-Vector norm: %f %f %f", gv.a, gv.b, gv.c );
 			vector_ijk gvr( 0,0,-1 );  // Gravity Vector, pointing down to ground: Z = -1
 
@@ -247,16 +247,14 @@ void IMU::read()
 			mv.normalize(); // guess we need this
 			ESP_LOGI( FNAME,"M-Vector norm: %f %f %f", mv.a, mv.b, mv.c );
 			// rotate quaternion by magnetic vector
-			vector_ijk mev = Quaternion::rotate_vector(mv, q);
-			mev.normalize();
+			vector_ijk mev = Quaternion::rotate_vector(mv,q);
 			ESP_LOGI(FNAME,"mev: %f %f %f", mev.a, mev.b, mev.c );
-			mev.c = 0;
+			// mev.c = 0.; // drop z-axes portion
+			mev.normalize();
 			vector_ijk frv( 1,0,0 ); // Fuselage reference vector, pointing in front to nose: X = 1
-
 			Quaternion q2 = Quaternion::AlignVectors( mev, frv ) ;
-
 			euler_angles ce = q2.to_euler_angles();
-			ESP_LOGI( FNAME,"MH %.2f FYaw: %.4f  Quat-Compass(Yaw:%.2f Pit:%.2f Rol:%.2f)", curh, filterYaw, ce.yaw, ce.pitch, ce.roll );
+			ESP_LOGI( FNAME,"MH %.2f FYaw: %.4f  Quat-Compass(Yaw:%.2f Pit:%.2f Rol:%.2f)", curh, filterYaw, Vector::normalizeDeg(ce.yaw), ce.pitch, ce.roll );
 #endif
 
 		}

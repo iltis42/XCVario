@@ -454,7 +454,7 @@ float Compass::heading( bool *ok )
 	// ESP_LOGI( FNAME, "heading: X:%d Y:%d Z:%d xs:%f ys:%f zs:%f", raw.x, raw.y, raw.z, scale.x, scale.y, scale.z);
 
 	fy = (double) ((float( raw.x ) - bias.x) * scale.x);
-	fx = -(double) ((float( raw.y ) - bias.y) * scale.y);
+	fx = -(double) ((float( raw.y ) - bias.y) * scale.y);  // mounting correction
 	fz = (double) ((float( raw.z ) - bias.z) * scale.z);
 
 	vector_ijk gvr( 0,0,-1 );  // gravity vector direction, pointing down to ground: Z = -1
@@ -463,8 +463,9 @@ float Compass::heading( bool *ok )
 	mv.normalize(); // normalize vector
 	vector_ijk mev = Quaternion::rotate_vector(mv,q);  // rotate quaternion by magnetic vector
 	mev.normalize();
+	// ESP_LOGI(FNAME,"mev.a %.2f °", mev.a * 180/M_PI );
 	vector_ijk frv( 1,0,0 ); // Fuselage reference vector, pointing in front to nose: X = 1
-	Quaternion q2 = Quaternion::AlignVectors( mev, frv ) ;
+	Quaternion q2 = Quaternion::AlignVectors( mev, frv );  // ( 0, mev.a, mev.b, mev.c )
 	euler_angles ce = q2.to_euler_angles();
 
 	if( compass_enable.get() == CS_CAN || compass_enable.get() == CS_I2C ){
@@ -476,7 +477,7 @@ float Compass::heading( bool *ok )
 
 	_heading = Vector::normalizeDeg( _heading );
 
-	// ESP_LOGI(FNAME,"Magn heading: %.1f Roll: %0.1f Pitch: %.1f  Raw head: %.1f Gyro(%.1f/%.1f/%.1f) Acc(%.2f/%.2f/%.2f)", _heading, R2D(roll*2), R2D(pitch*2), -RAD_TO_DEG * atan2( fy, fx ), -gyroDPS.z, gyroDPS.y, gyroDPS.x, -accelG[2],accelG[1],accelG[0]  );
+	ESP_LOGI(FNAME,"quat heading %.2f Mag(%.2f %.2f %.2f) Gyro(%.2f/%.2f/%.2f) Acc(%.2f/%.2f/%.2f)", _heading, mv.a, mv.b, mv.c, gyroDPS.z, gyroDPS.y, gyroDPS.x, accelG[2],accelG[1],accelG[0]  );
 #if 0
 	if( wind_logging.get() ){
 		char log[120];

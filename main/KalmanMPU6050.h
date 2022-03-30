@@ -133,7 +133,7 @@ public:
    * 
    * @returns The y rotation (pitch) in degrees
    */
-  static inline double getPitch()  { return -filterPitch;  }
+  static inline double getPitch()  { return filterPitch;  }
   static inline double getYaw()  { return filterYaw;  }
   static double getPitchRad();
 

@@ -200,8 +200,8 @@ void IMU::read()
 
 	// to get pitch and roll independent of circling, image sensor values into quaternion format
 	uint16_t ax=(UINT16_MAX/2)*sin(D2R(pitch));
-	uint16_t ay=(-(UINT16_MAX/2)*sin(D2R(roll))) * cos( D2R(pitch) );
-	uint16_t az=(int16_t)(-(UINT16_MAX/2)*cos(D2R(roll))) * cos( D2R(pitch) );
+	uint16_t ay=((UINT16_MAX/2)*sin(D2R(roll))) * cos( D2R(pitch) );
+	uint16_t az=(int16_t)((UINT16_MAX/2)*cos(D2R(roll))) * cos( D2R(pitch) );
 
 	att_vector = update_fused_vector(att_vector,ax, ay, az,D2R(gyroX),D2R(gyroY),D2R(gyroZ),dt);
 	att_quat = quaternion_from_accelerometer(att_vector.a,att_vector.b,att_vector.c);
@@ -222,14 +222,14 @@ void IMU::read()
 		float x=compass->rawX();
 		float y=compass->rawY();
 		float z=-compass->rawZ();
-		gravity_vector = vector_ijk(att_vector.a,-att_vector.b,att_vector.c);
+		gravity_vector = vector_ijk(att_vector.a,att_vector.b,att_vector.c);
 		gravity_vector.normalize();
 		float curh = compass->cur_heading( &ok );
 		if( ok ){
 			float gyroYaw = getGyroYawDelta();
 			// tuned to plus 17% what gave the best timing swing in response, 2% for compass is far enough
 			// gyro and compass are time displaced, gyro comes immediate, compass a second later
-			fused_yaw +=  Vector::angleDiffDeg( curh ,fused_yaw )*0.02 + gyroYaw * 1.17;
+			fused_yaw +=  Vector::angleDiffDeg( curh ,fused_yaw )*0.02 - gyroYaw * 1.17;
 			filterYaw=Vector::normalizeDeg( fused_yaw );
 			compass->setGyroHeading( filterYaw );
 			// ESP_LOGI( FNAME,"cur magn head %.2f gyro yaw: %.4f fused: %.1f Gyro(%.3f/%.3f/%.3f)", curh, gyroYaw, gh, gyroX, gyroY, gyroZ  );
@@ -245,20 +245,20 @@ void IMU::read()
 		kalYAngle = Kalman_GetAngle(&kalmanY, pitch, 0, dt);
 		filterPitch += (kalYAngle - filterPitch) * 0.2;   // addittional low pass filter
 	}
-	// ESP_LOGI( FNAME,"ACC Pitch=%.1f Roll=%.1f GX:%.3f GY:%.3f GZ:%.3f:  FP:%.1f FR:%.1f", pitch, roll, gyroX,gyroY,gyroZ, filterPitch, filterRoll  );
+	//ESP_LOGI( FNAME,"ACC Pitch=%.1f Roll=%.1f GX:%.3f GY:%.3f GZ:%.3f AX:%.3f AY:%.3f AZ:%.3f  FP:%.1f FR:%.1f", pitch, roll, gyroX,gyroY,gyroZ, accelX, accelY, accelZ, filterPitch, filterRoll  );
 }
 
 // IMU Function Definition
 
 void IMU::MPU6050Read()
 {
-	accelX = -accelG[2];
+	accelX = accelG[2];
 	accelY = accelG[1];
-	accelZ = accelG[0];
+	accelZ = -accelG[0];
 	// Gating ignores Gyro drift < 1 deg per second
-	gyroX = abs(gyroDPS.z) < 1.0 ? 0.0 : -(gyroDPS.z);
-	gyroY = abs(gyroDPS.y) < 1.0 ? 0.0 :   gyroDPS.y;
-	gyroZ = abs(gyroDPS.x) < 1.0 ? 0.0 :   gyroDPS.x;
+	gyroX = abs(gyroDPS.z) < 1.0 ? 0.0 :  -(gyroDPS.z);
+	gyroY = abs(gyroDPS.y) < 1.0 ? 0.0 :  -(gyroDPS.y);
+	gyroZ = abs(gyroDPS.x) < 1.0 ? 0.0 :  -(gyroDPS.x);
 }
 
 void IMU::PitchFromAccel(double *pitch)

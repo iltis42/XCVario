@@ -178,15 +178,15 @@ void IMU::read()
 	if( getTAS() > 10 ){
 		// This part is a deterministic and noise resistant approach for centrifugal force removal
 		// 1: exstimate roll angle from Z axis omega plus airspeed
-		myrollz = R2D(atan(  (gyroZ *PI/180 * (getTAS()/3.6) ) / 9.81 ));
+		myrollz = R2D(atan(  ( D2R(gyroZ) * (getTAS()/3.6) ) / 9.81 ));
 		// 2: estimate angle of bank from increased acceleration in Z axis
 		float posacc=accelZ;
-		// only positive G-force is to be considered, curve at negative G is not define
+		// only positive G-force is to be considered, curve at negative G is not defined
 		if( posacc < 1 )
 			posacc = 1;
-		float aroll = acos( 1 / posacc )*180/PI;
+		float accroll = R2D(acos( 1 / posacc ));
 		// estimate sign of acceleration angle from gyro
-		float sign_accroll=aroll;
+		float sign_accroll=accroll;
 		if( myrollz < 0 )
 			sign_accroll = -sign_accroll;
 		roll = -(myrollz + sign_accroll)/2;
@@ -198,7 +198,7 @@ void IMU::read()
 		IMU::RollPitchFromAccel(&roll, &pitch);
 	}
 
-	// to get pitch and roll independent of circling, image sensor values into quaternion format
+	// to get pitch and roll independent of circling, image pitch and roll values into 3D vector
 	uint16_t ax=(UINT16_MAX/2)*sin(D2R(pitch));
 	uint16_t ay=((UINT16_MAX/2)*sin(D2R(roll))) * cos( D2R(pitch) );
 	uint16_t az=(int16_t)((UINT16_MAX/2)*cos(D2R(roll))) * cos( D2R(pitch) );
@@ -215,7 +215,6 @@ void IMU::read()
 		euler.roll = -80.0;
 	if( euler.pitch < -80.0 )
 		euler.pitch = -80.0;
-
 
 	if( compass ){
 		bool ok;

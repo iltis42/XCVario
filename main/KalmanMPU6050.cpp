@@ -172,9 +172,9 @@ void IMU::read()
 	last_rts = rts;
 	if( ret )
 		return;
-	uint16_t ax=0;
-	uint16_t ay=0;
-	uint16_t az=0;
+	float ax=0;
+	float ay=0;
+	float az=0;
 
 	if( getTAS() > 10 ){
 		// This part is a deterministic and noise resistant approach for centrifugal force removal
@@ -198,8 +198,8 @@ void IMU::read()
 		// Calculate Pitch from Gyro and acceleration
 		// PitchFromAccel(&pitch);
 		ax=(UINT16_MAX/2)*sin(D2R(pitch));
-		ay=((UINT16_MAX/2)*sin(D2R(roll))) * cos( D2R(pitch) );
-		az=(int16_t)((UINT16_MAX/2)*cos(D2R(roll))) * cos( D2R(pitch) );
+		ay=(UINT16_MAX/2)*sin(D2R(roll)) * cos( D2R(pitch));
+		az=(UINT16_MAX/2)*cos(D2R(roll)) * cos( D2R(pitch));
 	}
 	else{ // Case when on ground, get accelerations from sensor directly
 		ax=accelX;
@@ -220,6 +220,7 @@ void IMU::read()
 	if( euler.pitch < -80.0 )
 		euler.pitch = -80.0;
 
+	float curh = 0;
 	if( compass ){
 		bool ok;
 		float x=compass->rawX();
@@ -227,7 +228,7 @@ void IMU::read()
 		float z=-compass->rawZ();
 		gravity_vector = vector_ijk(att_vector.a,att_vector.b,att_vector.c);
 		gravity_vector.normalize();
-		float curh = compass->cur_heading( &ok );
+		curh = compass->cur_heading( &ok );
 		if( ok ){
 			float gyroYaw = getGyroYawDelta();
 			// tuned to plus 7% what gave the best timing swing in response, 2% for compass is far enough
@@ -250,7 +251,7 @@ void IMU::read()
 		kalYAngle = Kalman_GetAngle(&kalmanY, pitch, 0, dt);
 		filterPitch += (kalYAngle - filterPitch) * 0.2;   // addittional low pass filter
 	}
-	ESP_LOGI( FNAME,"GV-Pitch=%.1f  GV-Roll=%.1f filterYaw: %.2f GX:%.3f GY:%.3f GZ:%.3f AX:%.3f AY:%.3f AZ:%.3f  FP:%.1f FR:%.1f", euler.pitch, euler.roll, filterYaw, gyroX,gyroY,gyroZ, accelX, accelY, accelZ, filterPitch, filterRoll  );
+	// ESP_LOGI( FNAME,"GV-Pitch=%.1f  GV-Roll=%.1f filterYaw: %.2f curh: %.2f GX:%.3f GY:%.3f GZ:%.3f AX:%.3f AY:%.3f AZ:%.3f  FP:%.1f FR:%.1f", euler.pitch, euler.roll, filterYaw, curh, gyroX,gyroY,gyroZ, accelX, accelY, accelZ, filterPitch, filterRoll  );
 }
 
 // IMU Function Definition

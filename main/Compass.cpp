@@ -455,7 +455,7 @@ float Compass::heading( bool *ok )
 
 	fy = (double) ((float( raw.x ) - bias.x) * scale.x);
 	fx = -(double) ((float( raw.y ) - bias.y) * scale.y);  // mounting correction
-	fz = (double) ((float( raw.z ) - bias.z) * scale.z);
+	fz = -(double) ((float( raw.z ) - bias.z) * scale.z);
 
 	vector_ijk gvr( 0,0,-1 );  // gravity vector direction, pointing down to ground: Z = -1
 	Quaternion q = Quaternion::AlignVectors( gravity_vector, gvr ) ; // create quaternion from gravity vector aligned to glider
@@ -477,7 +477,7 @@ float Compass::heading( bool *ok )
 
 	_heading = Vector::normalizeDeg( _heading );
 
-	// ESP_LOGI(FNAME,"Quat heading %.2f Mag(%.2f %.2f %.2f) Gyro(%.2f/%.2f/%.2f) Acc(%.2f/%.2f/%.2f)", _heading, mv.a, mv.b, mv.c, gyroDPS.z, gyroDPS.y, gyroDPS.x, accelG[2],accelG[1],accelG[0]  );
+	ESP_LOGI(FNAME,"Quat heading %.2f Mag(%.2f %.2f %.2f) Gyro(%.2f/%.2f/%.2f) Acc(%.2f/%.2f/%.2f)", _heading, mv.a, mv.b, mv.c, gyroDPS.z, gyroDPS.y, gyroDPS.x, accelG[2],accelG[1],accelG[0]  );
 #if 0
 	if( wind_logging.get() ){
 		char log[120];

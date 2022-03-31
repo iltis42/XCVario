@@ -51,7 +51,7 @@ float fusion_coeffecient(vector_ijk virtual_gravity, vector_ijk sensor_gravity)
     return ahrs_gyro_factor.get()/4;
 }
 
-vector_ijk sensor_gravity_normalized(int16_t ax, int16_t ay, int16_t az)
+vector_ijk sensor_gravity_normalized(float ax, float ay, float az)
 {
     vector_ijk result;
     result.a = ax;
@@ -88,7 +88,7 @@ vector_ijk update_gravity_vector(vector_ijk gravity_vector,float wx,float wy,flo
     return gravity_vector;
 }
 
-vector_ijk update_fused_vector(vector_ijk fused_vector, int16_t ax, int16_t ay, int16_t az,float wx,float wy,float wz,float delta)
+vector_ijk update_fused_vector(vector_ijk fused_vector, float ax, float ay, float az,float wx,float wy,float wz,float delta)
 {
 	// ESP_LOGI(FNAME,"ax=%d ay=%d az=%d", ax, ay, az);
     vector_ijk virtual_gravity = update_gravity_vector(fused_vector,wx,wy,wz,delta);

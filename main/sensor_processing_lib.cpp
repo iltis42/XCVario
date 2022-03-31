@@ -23,9 +23,9 @@ Quaternion quaternion_from_gyro(float wx, float wy, float wz, float time)
     // wx,wy,wz in radians per second: time in seconds
     float alpha = 0.5*time;
     float a,b,c,d;
-    b = alpha*(-wx);
-    c = alpha*(-wy);
-    d = alpha*(-wz);
+    b = alpha*(wx);
+    c = alpha*(wy);
+    d = alpha*(wz);
     a = 1 - 0.5*(b*b+c*c+d*d);
     Quaternion result(a,b,c,d);
     return result;

@@ -172,12 +172,16 @@ void IMU::read()
 	last_rts = rts;
 	if( ret )
 		return;
+	uint16_t ax=0;
+	uint16_t ay=0;
+	uint16_t az=0;
 
-	double roll;
-	double pitch;
 	if( getTAS() > 10 ){
 		// This part is a deterministic and noise resistant approach for centrifugal force removal
 		// 1: exstimate roll angle from Z axis omega plus airspeed
+		double roll=0;
+		double pitch=0;
+		IMU::RollPitchFromAccel(&roll, &pitch);
 		myrollz = R2D(atan(  ( D2R(gyroZ) * (getTAS()/3.6) ) / 9.81 ));
 		// 2: estimate angle of bank from increased acceleration in Z axis
 		float posacc=accelZ;
@@ -192,17 +196,17 @@ void IMU::read()
 		roll = -(myrollz + sign_accroll)/2;
 
 		// Calculate Pitch from Gyro and acceleration
-		PitchFromAccel(&pitch);
+		// PitchFromAccel(&pitch);
+		ax=(UINT16_MAX/2)*sin(D2R(pitch));
+		ay=((UINT16_MAX/2)*sin(D2R(roll))) * cos( D2R(pitch) );
+		az=(int16_t)((UINT16_MAX/2)*cos(D2R(roll))) * cos( D2R(pitch) );
 	}
 	else{ // Case when on ground, get accelerations from sensor directly
-		IMU::RollPitchFromAccel(&roll, &pitch);
+		ax=accelX;
+		az=accelZ;
+		ay=accelY;
 	}
-
 	// to get pitch and roll independent of circling, image pitch and roll values into 3D vector
-	uint16_t ax=(UINT16_MAX/2)*sin(D2R(pitch));
-	uint16_t ay=((UINT16_MAX/2)*sin(D2R(roll))) * cos( D2R(pitch) );
-	uint16_t az=(int16_t)((UINT16_MAX/2)*cos(D2R(roll))) * cos( D2R(pitch) );
-
 	att_vector = update_fused_vector(att_vector,ax, ay, az,D2R(gyroX),D2R(gyroY),D2R(gyroZ),dt);
 	att_quat = quaternion_from_accelerometer(att_vector.a,att_vector.b,att_vector.c);
 	euler = att_quat.to_euler_angles();
@@ -226,9 +230,9 @@ void IMU::read()
 		float curh = compass->cur_heading( &ok );
 		if( ok ){
 			float gyroYaw = getGyroYawDelta();
-			// tuned to plus 17% what gave the best timing swing in response, 2% for compass is far enough
+			// tuned to plus 7% what gave the best timing swing in response, 2% for compass is far enough
 			// gyro and compass are time displaced, gyro comes immediate, compass a second later
-			fused_yaw +=  Vector::angleDiffDeg( curh ,fused_yaw )*0.02 - gyroYaw * 1.17;
+			fused_yaw +=  Vector::angleDiffDeg( curh ,fused_yaw )*0.02 - gyroYaw * 1.07;
 			filterYaw=Vector::normalizeDeg( fused_yaw );
 			compass->setGyroHeading( filterYaw );
 			// ESP_LOGI( FNAME,"cur magn head %.2f gyro yaw: %.4f fused: %.1f Gyro(%.3f/%.3f/%.3f)", curh, gyroYaw, gh, gyroX, gyroY, gyroZ  );
@@ -239,12 +243,14 @@ void IMU::read()
 		filterPitch =  euler.pitch;
 	}
 	else{
+		double roll=0;
+		double pitch=0;
 		kalXAngle = Kalman_GetAngle(&kalmanX, roll, 0, dt);
 		filterRoll = kalXAngle;
 		kalYAngle = Kalman_GetAngle(&kalmanY, pitch, 0, dt);
 		filterPitch += (kalYAngle - filterPitch) * 0.2;   // addittional low pass filter
 	}
-	//ESP_LOGI( FNAME,"ACC Pitch=%.1f Roll=%.1f GX:%.3f GY:%.3f GZ:%.3f AX:%.3f AY:%.3f AZ:%.3f  FP:%.1f FR:%.1f", pitch, roll, gyroX,gyroY,gyroZ, accelX, accelY, accelZ, filterPitch, filterRoll  );
+	ESP_LOGI( FNAME,"GV-Pitch=%.1f  GV-Roll=%.1f filterYaw: %.2f GX:%.3f GY:%.3f GZ:%.3f AX:%.3f AY:%.3f AZ:%.3f  FP:%.1f FR:%.1f", euler.pitch, euler.roll, filterYaw, gyroX,gyroY,gyroZ, accelX, accelY, accelZ, filterPitch, filterRoll  );
 }
 
 // IMU Function Definition
@@ -256,8 +262,8 @@ void IMU::MPU6050Read()
 	accelZ = -accelG[0];
 	// Gating ignores Gyro drift < 1 deg per second
 	gyroX = abs(gyroDPS.z) < 1.0 ? 0.0 :  -(gyroDPS.z);
-	gyroY = abs(gyroDPS.y) < 1.0 ? 0.0 :  -(gyroDPS.y);
-	gyroZ = abs(gyroDPS.x) < 1.0 ? 0.0 :  -(gyroDPS.x);
+	gyroY = abs(gyroDPS.y) < 1.0 ? 0.0 :   (gyroDPS.y);
+	gyroZ = abs(gyroDPS.x) < 1.0 ? 0.0 :   (gyroDPS.x);
 }
 
 void IMU::PitchFromAccel(double *pitch)
@@ -272,7 +278,7 @@ void IMU::RollPitchFromAccel(double *roll, double *pitch)
 	// It is then converted from radians to degrees
 
 	*roll = atan((double)accelY / hypotenuse((double)accelX, (double)accelZ)) * RAD_TO_DEG;
-	*pitch = atan2((double)-accelX, (double)accelZ) * RAD_TO_DEG;
+	*pitch = atan2((double)accelX, (double)accelZ) * RAD_TO_DEG;
 
 	// ESP_LOGI( FNAME,"Accelerometer Roll: %f  Pitch: %f  (y:%f x:%f)", *roll, *pitch, (double)accelY, (double)accelX );
 

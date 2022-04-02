@@ -32,9 +32,6 @@ double IMU::gyroYAngle = 0; // Angle calculate using the gyro only
 double IMU::gyroZAngle = 0; // Angle calculate using the gyro only
 uint32_t IMU::lastProcessed = 0;
 
-float 	IMU::myrolly = 0;
-float 	IMU::myrollz = 0;
-float 	IMU::myaccroll = 0;
 double  IMU::mypitch = 0;
 double  IMU::filterPitch = 0;
 double  IMU::filterRoll = 0;
@@ -51,7 +48,6 @@ double IMU::gyroY = 0.0;
 double IMU::gyroZ = 0.0;
 double IMU::kalXAngle = 0.0;
 double IMU::kalYAngle = 0.0;
-float IMU::filterAccRoll = 0.0;
 float IMU::filterGyroRoll = 0.0;
 Quaternion IMU::att_quat(0,0,0,0);
 vector_ijk IMU::att_vector;
@@ -182,25 +178,24 @@ void IMU::read()
 		double roll=0;
 		double pitch=0;
 		IMU::RollPitchFromAccel(&roll, &pitch);
-		// Z/Y cross axis rotation in 3D space
-		myrollz = R2D(atan( ( sqrt( D2R(gyroZ)*D2R(gyroZ) + D2R(gyroY)*D2R(gyroY)) * (getTAS()/3.6) ) / 9.81 ));
+		// Z cross axis rotation in 3D space with roll angle correction freedback
+		float omega = R2D(atan( ( D2R(gyroZ) * (getTAS()/3.6) ) / 9.80665 ));
 		// 2: estimate angle of bank from increased acceleration in Z axis
-		float posacc=accelZ;
+		float positiveG=-accelZ;
 		// only positive G-force is to be considered, curve at negative G is not defined
-		if( posacc < 1 )
-			posacc = 1;
-		float accroll = R2D(acos( 1 / posacc ));
+		if( positiveG < 1 )
+			positiveG = 1;
+		float groll = R2D(acos( 1 / positiveG ));
 		// estimate sign of acceleration angle from gyro
-		float sign_accroll=accroll;
-		if( myrollz < 0 )
-			sign_accroll = -sign_accroll;
-		roll = -(myrollz + sign_accroll)/2;  // positive or left turn comes with negative roll in right handed system
-
+		if( omega < 0 )
+			groll = -groll;
+		roll = -(omega + groll)/2; // left turn is left wing down so negative roll
 		// Calculate Pitch from Gyro and acceleration
 		// PitchFromAccel(&pitch);
-		ax=(UINT16_MAX/2)*sin(D2R(pitch));
-		ay=(UINT16_MAX/2)*sin(D2R(roll)) * cos( D2R(pitch));
-		az=(UINT16_MAX/2)*cos(D2R(roll)) * cos( D2R(pitch));
+		ax=(UINT16_MAX/2)*sin(D2R(pitch));  // Nose down positive pitch needs positive X
+		ay=(UINT16_MAX/2)*sin(D2R(roll)) * cos( D2R(pitch));  // Right wing down and positive pitch needs negative Y
+		az=(UINT16_MAX/2)*cos(D2R(roll)) * cos( D2R(pitch));  // Roll or Pitch makes less negative Z
+		ESP_LOGI( FNAME,"omega-roll:%f g-roll:%f roll:%f  AZ:%f", omega, groll, roll, positiveG );
 	}
 	else{ // Case when on ground, get accelerations from sensor directly
 		ax=accelX;
@@ -260,7 +255,7 @@ void IMU::read()
 void IMU::MPU6050Read()
 {
 	accelX = accelG[2];
-	accelY = accelG[1];
+	accelY = -accelG[1];
 	accelZ = -accelG[0];
 	// Gating ignores Gyro drift < 1 deg per second
 	gyroX = abs(gyroDPS.z) < 1.0 ? 0.0 :  -(gyroDPS.z);

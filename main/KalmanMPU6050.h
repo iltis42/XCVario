@@ -154,9 +154,6 @@ private:
   static void RollPitchFromAccel(double *roll, double *pitch);
   static void PitchFromAccel(double *pitch);
   static uint64_t last_rts;
-  static float   myrolly;
-  static float   myrollz;
-  static float   myaccroll;
   static double  mypitch;
   static double  filterPitch;
   static double  filterRoll;

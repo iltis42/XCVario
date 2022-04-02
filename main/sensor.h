@@ -80,5 +80,7 @@ extern Compass *compass;
 class AdaptUGC;
 extern AdaptUGC *MYUCG;
 
+extern bool IMUstream;
+extern bool SENstream;
 
 #endif

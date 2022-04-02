@@ -22,6 +22,9 @@ public:
 	virtual ~Protocols( );
 	void sendNmeaHDM( float heading );
 	void sendNmeaHDT( float heading );
+	void sendNmeaIMU( float accelTime=0, float ax=0, float ay=0, float az=0, float gyroTime=0,float gx=0, float gy=0, float gz=0 );
+	void sendNmeaSEN( float statTime=0, float statP=0, float teTime=0, float teP=0, float dynTime=0, float dynP=0, float OATemp=0, float MPUtempcel=0,
+			int fix=0, int numSV=0, float gnsstime=0, float gnssaltitude=0, float gnssgroundspeed=0, float gnssspeedx=0, float gnssspeedy=0, float gnssspeedz=0 );
 	void sendItem( const char *key, char type, void *value, int len, bool ack=false );
 	void sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
 			float mc, int bugs, float ballast, bool cruise, float alt,

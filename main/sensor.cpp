@@ -53,6 +53,7 @@
 #include <coredump_to_server.h>
 #include "canbus.h"
 #include "Router.h"
+#include "UbloxGNSSdecode.h"
 
 #include "sdkconfig.h"
 #include <freertos/FreeRTOS.h>
@@ -133,6 +134,9 @@ DataMonitor DM;
 I2C_t& i2c = i2c1;  // i2c0 or i2c1
 I2C_t& i2c_0 = i2c0;  // i2c0 or i2c1
 MPU_t MPU;         // create an object
+mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
+mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
+esp_err_t err;				   // holds mpu reading status
 mpud::float_axes_t accelG;
 mpud::float_axes_t gyroDPS;
 mpud::float_axes_t accelG_Prev;
@@ -142,11 +146,24 @@ mpud::float_axes_t gyroDPS_Prev;
 Compass *compass;
 BTSender btsender;
 
-static float baroP=0; // barometric pressure
+bool	IMUstream = false; // triggers IMU data stream
+bool	SENstream = false; // triggers sensors data stream
+
+static float accelTime; // time stamp for accels
+static float gyroTime;  // time stamp for gyros
+static float statTime; // time stamp for statP
+static float statP=0; // raw static pressure
+static float teTime; // time stamp for teP
+static float teP=0; // raw te pressure
+static float dynTime; // time stamp for dynP
+static float dynP=0; // raw dynamic pressure
+static float baroP=0; // filtered static pressure
+static float dynamicP; // filtered dynamic pressure
+static float OATemp; // OAT for pressure corrections (real or from standard atmosphere) 
+static float MPUtempcel; // MPU chip temperature
 static float temperature=15.0;
 static bool  validTemperature=false;
 static float battery=0.0;
-static float dynamicP; // Pitot
 
 // global color variables for adaptable display variant
 uint8_t g_col_background=255; // black
@@ -177,6 +194,7 @@ bool stall_warning_armed=false;
 float stall_alarm_off_kmh=0;
 int   stall_alarm_off_holddown=0;
 int count=0;
+int count1=0;
 bool flarmWarning = false;
 bool gLoadDisplay = false;
 bool gear_warning_active = false;
@@ -184,6 +202,9 @@ int hold_alarm=0;
 int the_can_mode = CAN_MODE_MASTER;
 int active_screen = 0;  // 0 = Vario
 bool flarmDownload = false; // Flarm IGC download flag
+
+extern UbloxGnssDecoder s1UbloxGnssDecoder;
+extern UbloxGnssDecoder s2UbloxGnssDecoder;
 
 AdaptUGC *egl = 0;
 
@@ -518,30 +539,89 @@ void clientLoop(void *pvParameters)
 
 void readSensors(void *pvParameters){
 	int client_sync_dataIdx = 0;
+	count = 0;
+	count1 = 0;
+	
 	while (1)
 	{
-		count++;
+		count1++;
+
 		TickType_t xLastWakeTime = xTaskGetTickCount();
-		if( haveMPU  )  // 3th Generation HW, MPU6050 avail and feature enabled
-		{
+
+		xSemaphoreTake(xMutex,portMAX_DELAY );	
+		// get accels and gyros raw data
+		if( haveMPU )
 			grabMPU();
+
+		if( IMUstream ) {
+			OV.sendNmeaIMU(accelTime,-accelG[2],accelG[1],accelG[0],gyroTime,gyroDPS.x,gyroDPS.y, gyroDPS.z); 
 		}
-		bool ok=false;
-		float p = 0;
-		if( asSensor )
-			p = asSensor->readPascal(60, ok);
-		if( ok )
-			dynamicP = p;
-		float iasraw = Atmosphere::pascal2kmh( dynamicP );
-		// ESP_LOGI("FNAME","P: %f  IAS:%f", dynamicP, iasraw );
-		float T=OAT.get();
-		if( !validTemperature ) {
-			T= 15 - ( (altitude.get()/100) * 0.65 );
-			// ESP_LOGW(FNAME,"T invalid, using 15 deg");
-		}
-		float tasraw = 0;
-		if( baroP != 0 )
-			tasraw =  Atmosphere::TAS( iasraw , baroP, T);  // True airspeed
+		xSemaphoreGive(xMutex);	
+
+		if ((count1 % 4 ) == 0) {
+		
+			bool ok=false;
+			float p = 0;
+
+			xSemaphoreTake(xMutex,portMAX_DELAY );
+			// get raw static pressure
+			p = baroSensor->readPressure(ok);
+			if ( ok ) {
+				statP = p;
+				statTime = esp_timer_get_time()/1000000.0; // time in second
+				baroP = p;
+			}
+
+			// get raw te pressure
+			p = teSensor->readPressure(ok);
+
+			if ( ok ) {
+				teP = p;
+				teTime = esp_timer_get_time()/1000000.0; // time in second
+			}
+
+			// get raw dynamic pressure
+			if( asSensor )
+				p = asSensor->readPascal(0, ok);
+			if( ok ) {
+				dynP = p;
+				dynTime = esp_timer_get_time()/1000000.0; // time in second
+				dynamicP = 0;
+				if (p > 60 )
+					dynamicP = p;
+			}
+			
+			// get OAT
+			float T=OAT.get();
+			if( !validTemperature ) {
+				T= 15 - ( (altitude.get()/100) * 0.65 );
+				// ESP_LOGW(FNAME,"T invalid, using 15 deg");
+			}
+			OATemp = T;
+
+
+
+			// broadcast raw sensor data
+			if( SENstream ) {
+				// GNSS data from S1 interface
+				const gnss_data_t *gnss1 = s1UbloxGnssDecoder.getGNSSData(1);
+				// GNSS data from S2 interface
+				const gnss_data_t *gnss2 = s2UbloxGnssDecoder.getGNSSData(2);
+				// select gnss with better fix
+				const gnss_data_t *chosenGnss = (gnss2->fix >= gnss1->fix) ? gnss2 : gnss1;
+				OV.sendNmeaSEN( statTime, statP, teTime, teP, dynTime, dynP, OATemp, MPUtempcel,
+									chosenGnss->fix, chosenGnss->numSV, chosenGnss->time, chosenGnss->coordinates.altitude, chosenGnss->speed.ground, 
+									chosenGnss->speed.x, chosenGnss->speed.y, chosenGnss->speed.z );
+			}
+			xSemaphoreGive(xMutex);
+			
+			count++;
+			float iasraw = Atmosphere::pascal2kmh( dynamicP );
+			// ESP_LOGI("FNAME","P: %f  IAS:%f", dynamicP, iasraw );		
+
+			float tasraw = 0;
+			if( baroP != 0 )
+				tasraw =  Atmosphere::TAS( iasraw , baroP, T);  // True airspeed
 
 		static float new_ias = 0;
 		new_ias = ias.get() + (iasraw - ias.get())*0.25;
@@ -563,42 +643,40 @@ void readSensors(void *pvParameters){
 			AverageVario::recalcAvgClimb();
 		}
 
-		if (FLAP) { FLAP->progress(); }
-		xSemaphoreTake(xMutex,portMAX_DELAY );
-		baroP = baroSensor->readPressure(ok);   // 10x per second
-		xSemaphoreGive(xMutex);
-		// ESP_LOGI(FNAME,"Baro Pressure: %4.3f", baroP );
-		float altSTD = 0;
-		if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
-			altSTD = alt_external;
-		else
-			altSTD = baroSensor->calcAVGAltitudeSTD( baroP );
-		float new_alt = 0;
-		if( alt_select.get() == AS_TE_SENSOR ) // TE
-			new_alt = bmpVario.readAVGalt();
-		else if( alt_select.get() == AS_BARO_SENSOR  || alt_select.get() == AS_EXTERNAL ){ // Baro or external
-			if(  alt_unit.get() == ALT_UNIT_FL ) { // FL, always standard
-				new_alt = altSTD;
-				standard_setting = true;
-				// ESP_LOGI(FNAME,"au: %d", alt_unit.get() );
-			}else if( (fl_auto_transition.get() == 1) && ((int)altSTD*0.0328084 + (int)(standard_setting) > transition_alt.get() ) ) { // above transition altitude
-				new_alt = altSTD;
-				standard_setting = true;
-				// ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), altSTD, standard_setting, transition_alt.get() );
+			if (FLAP) { FLAP->progress(); }
+
+			// ESP_LOGI(FNAME,"Baro Pressure: %4.3f", baroP );
+			float altSTD = 0;
+			if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
+				altSTD = alt_external;
+			else
+				altSTD = baroSensor->calcAVGAltitudeSTD( baroP );
+			float new_alt = 0;
+			if( alt_select.get() == AS_TE_SENSOR ) // TE
+				new_alt = bmpVario.readAVGalt();
+			else if( alt_select.get() == AS_BARO_SENSOR  || alt_select.get() == AS_EXTERNAL ){ // Baro or external
+				if(  alt_unit.get() == ALT_UNIT_FL ) { // FL, always standard
+					new_alt = altSTD;
+					standard_setting = true;
+					// ESP_LOGI(FNAME,"au: %d", alt_unit.get() );
+				}else if( (fl_auto_transition.get() == 1) && ((int)altSTD*0.0328084 + (int)(standard_setting) > transition_alt.get() ) ) { // above transition altitude
+					new_alt = altSTD;
+					standard_setting = true;
+					// ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), altSTD, standard_setting, transition_alt.get() );
+				}
+				else {
+					if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
+						new_alt = altSTD + ( QNH.get()- 1013.25)*8.2296;  // correct altitude according to ISA model = 27ft / hPa
+					else
+						new_alt = baroSensor->calcAVGAltitude( QNH.get(), baroP );
+					standard_setting = false;
+					// ESP_LOGI(FNAME,"QNH %f baro: %f alt: %f SS:%d", QNH.get(), baroP, alt, standard_setting  );
+				}
 			}
-			else {
-				if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
-					new_alt = altSTD + ( QNH.get()- 1013.25)*8.2296;  // correct altitude according to ISA model = 27ft / hPa
-				else
-					new_alt = baroSensor->calcAVGAltitude( QNH.get(), baroP );
-				standard_setting = false;
-				// ESP_LOGI(FNAME,"QNH %f baro: %f alt: %f SS:%d", QNH.get(), baroP, alt, standard_setting  );
+			if( (int( new_alt +0.5 ) != int( altitude.get() +0.5 )) || !(count%20) ){
+				// ESP_LOGI(FNAME,"New Altitude: %.1f", new_alt );
+				altitude.set( new_alt );
 			}
-		}
-		if( (int( new_alt +0.5 ) != int( altitude.get() +0.5 )) || !(count%20) ){
-			// ESP_LOGI(FNAME,"New Altitude: %.1f", new_alt );
-			altitude.set( new_alt );
-		}
 
 		aTE = bmpVario.readAVGTE();
 		doAudio();
@@ -671,7 +749,8 @@ void readSensors(void *pvParameters){
 		esp_task_wdt_reset();
 		if( uxTaskGetStackHighWaterMark( bpid ) < 512 )
 			ESP_LOGW(FNAME,"Warning sensor task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );
-		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&xLastWakeTime, 25/portTICK_PERIOD_MS);
+
 	}
 }
 
@@ -879,10 +958,10 @@ void system_startup(void *args){
 		haveMPU = true;
 		ESP_LOGI( FNAME,"MPU initialize");
 		MPU.initialize();  // this will initialize the chip and set default configurations
-		MPU.setSampleRate(50);  // in (Hz)
+		MPU.setSampleRate(400);  // in (Hz)
 		MPU.setAccelFullScale(mpud::ACCEL_FS_8G);
 		MPU.setGyroFullScale( GYRO_FS );
-		MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
+		MPU.setDigitalLowPassFilter(mpud::DLPF_42HZ);  // smoother data
 		mpud::raw_axes_t gb = gyro_bias.get();
 		mpud::raw_axes_t ab = accl_bias.get();
 

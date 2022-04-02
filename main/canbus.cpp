@@ -66,6 +66,7 @@ void CANbus::driverInstall( twai_mode_t mode ){
 		ESP_LOGI(FNAME,"CAN rate 1MBit for selftest");
 		t_config = TWAI_TIMING_CONFIG_1MBITS();
 	}
+	// t_config.triple_sampling = true; // improved sampling incoming bits, no effect in test
 
 	twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
 	//Install TWAI driver
@@ -140,8 +141,21 @@ void CANbus::restart(){
 	if( can_speed.get() == CAN_SPEED_OFF ){
 		return;
 	}
+	ESP_LOGW(FNAME,"CANbus restart");
 	driverUninstall();
 	driverInstall( TWAI_MODE_NORMAL );
+}
+
+void CANbus::recover(){
+	if( can_speed.get() == CAN_SPEED_OFF ){
+		return;
+	}
+	ESP_LOGW(FNAME,"CANbus recover");
+	twai_stop();
+	delay(100);
+	twai_start();
+	delay(100);
+	twai_initiate_recovery();
 }
 
 // begin CANbus, start selfTest and launch driver in normal (bidir) mode afterwards
@@ -201,6 +215,8 @@ void CANbus::txtick(int tick){
 				if( !sendNMEA( msg ) ){
 					_connected_timeout_xcv +=20;  // if sending fails as indication for disconnection
 					ESP_LOGW(FNAME,"CAN TX NMEA failed, timeout=%d", _connected_timeout_xcv );
+					if( !(_connected_timeout_xcv % 100) )
+						recover();
 				}
 			}
 		}
@@ -213,10 +229,11 @@ void CANbus::txtick(int tick){
 			{
 				_connected_timeout_xcv +=20;  // if sending fails as indication for disconnection
 				ESP_LOGI(FNAME,"CAN TX Keep Alive failed, timeout=%d", _connected_timeout_xcv );
+				if( !(_connected_timeout_xcv % 100) )
+					recover();
 			}
 		}
 	}
-
 }
 
 void CANbus::rxtick(int tick){
@@ -279,7 +296,7 @@ void CANbus::rxtick(int tick){
 					_connected_xcv = false;
 				}
 				if( (can_mode.get() != CAN_MODE_STANDALONE) && !(_connected_timeout_xcv % 10000) ){
-					ESP_LOGI(FNAME,"CAN XCV restart timeout");
+					ESP_LOGI(FNAME,"CAN restart timeout");
 					restart();
 				}
 			}
@@ -361,6 +378,7 @@ bool CANbus::selfTest(){
 		// there might be data from a remote device
 		if( !sendData( id, tx,len, 1 ) ){
 			ESP_LOGW(FNAME,"CAN bus selftest TX FAILED");
+			recover();
 		}
 		delay(2);
 		SString msg;
@@ -382,9 +400,9 @@ bool CANbus::selfTest(){
 		ESP_LOGW(FNAME,"CAN bus selftest TX/RX OKAY");
 	}else{
 		ESP_LOGW(FNAME,"CAN bus selftest TX/RX FAILED");
-		driverUninstall();
 	}
-	return _ready_initialized;
+	restart();
+	return res;
 }
 
 // Send, handle alerts, do max 3 retries
@@ -413,8 +431,9 @@ bool CANbus::sendData( int id, const char* msg, int length, int self ){
 	esp_err_t error = ESP_OK;
 	while( (retry-- > 0) && (ESP_OK != (error=twai_transmit(&message, 0))) ) {
 		twai_read_alerts(&alerts, pdMS_TO_TICKS(_tx_timeout));
-		ESP_LOGW(FNAME,"Tx chunk failed alerts %X", alerts );
+		// ESP_LOGW(FNAME,"Tx chunk failed alerts %X", alerts );
 	}
+	bool ret=false;
 	if ( error == ESP_OK ) {
 		twai_read_alerts(&alerts, pdMS_TO_TICKS(_tx_timeout));
 		// if ( alerts & TWAI_ALERT_TX_IDLE )
@@ -423,14 +442,12 @@ bool CANbus::sendData( int id, const char* msg, int length, int self ){
 			ESP_LOGW(FNAME,"RX QUEUE FULL alert %X", alerts );
 		if( alerts & TWAI_ALERT_TX_FAILED )
 			ESP_LOGW(FNAME,"TX_FAILED alert %X", alerts );
-
 		// ESP_LOGI(FNAME,"Send CAN bus message okay");
-		xSemaphoreGive(sendMutex);
-		return true;
+		ret = true;
 	}
 	else{
 		ESP_LOGW(FNAME,"Send CAN bus message failed, ret:%02x", error );
-		xSemaphoreGive(sendMutex);
-		return false;
 	}
+	xSemaphoreGive(sendMutex);
+	return ret;
 }

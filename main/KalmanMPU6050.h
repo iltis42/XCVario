@@ -133,9 +133,11 @@ public:
    * 
    * @returns The y rotation (pitch) in degrees
    */
-  static inline double getPitch()  {	return -filterPitch;  }
+  static inline double getPitch()  { return -filterPitch;  }
+  static inline double getYaw()  { return filterYaw;  }
   static double getPitchRad();
 
+  static inline double getGyroRate()  {	return abs(gyroX)+abs(gyroY)+abs(gyroZ); }
 
 private:
   static uint32_t lastProcessed;
@@ -158,6 +160,7 @@ private:
   static double  mypitch;
   static double  filterPitch;
   static double  filterRoll;
+  static double  filterYaw;
   static float   pitchfilter;
   static float   rollfilter;
   static float   filterAccRoll;

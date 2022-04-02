@@ -195,7 +195,7 @@ void Compass::setHeading( float h ) {
 	m_magn_heading = h;
 	m_headingValid=true;
 	_external_data=100;
-	// ESP_LOGI( FNAME, "NEW external heading %.1f", h );
+	ESP_LOGI( FNAME, "NEW external heading %.1f", h );
 };
 
 
@@ -453,9 +453,9 @@ float Compass::heading( bool *ok )
 	 */
 	// ESP_LOGI( FNAME, "heading: X:%d Y:%d Z:%d xs:%f ys:%f zs:%f", raw.x, raw.y, raw.z, scale.x, scale.y, scale.z);
 
-	double fy = (double) ((float( raw.x ) - bias.x) * scale.x);
-	double fx = -(double) ((float( raw.y ) - bias.y) * scale.y);
-	double fz = (double) ((float( raw.z ) - bias.z) * scale.z);
+	fy = (double) ((float( raw.x ) - bias.x) * scale.x);
+	fx = -(double) ((float( raw.y ) - bias.y) * scale.y);
+	fz = (double) ((float( raw.z ) - bias.z) * scale.z);
 
 	double roll = filterRoll( IMU::getRollRad() );      // equal filter with equal delay to raw compass data for pitch and roll
 	double pitch = filterPitch( IMU::getPitchRad() );
@@ -477,7 +477,7 @@ float Compass::heading( bool *ok )
 
 	_heading = Vector::normalizeDeg( _heading );
 
-	// ESP_LOGI(FNAME,"CR: %.1f TC:%.1f Roll:%0.1f Pitch:%.1f", heading_nt, _heading, R2D(roll*2)+180, R2D(pitch*2)+180  );
+	// ESP_LOGI(FNAME,"Magn heading: %.1f Roll: %0.1f Pitch: %.1f  Raw head: %.1f Gyro(%.1f/%.1f/%.1f) Acc(%.2f/%.2f/%.2f)", _heading, R2D(roll*2), R2D(pitch*2), -RAD_TO_DEG * atan2( fy, fx ), -gyroDPS.z, gyroDPS.y, gyroDPS.x, -accelG[2],accelG[1],accelG[0]  );
 #if 0
 	if( wind_logging.get() ){
 		char log[120];

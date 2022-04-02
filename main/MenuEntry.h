@@ -46,6 +46,8 @@ public:
 	void uprint( int x, int y, const char* str );
 	void semaphoreTake();
     void semaphoreGive();
+    void restart();
+    static void setRoot( MenuEntry *root ) { selected = root; };
 public:
 	std::vector<MenuEntry*>  _childs;
 	MenuEntry *_parent;

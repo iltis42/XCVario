@@ -53,6 +53,16 @@ void MenuEntry::uprintf( int x, int y, const char* format, ...) {
 	va_end(argptr);
 }
 
+void MenuEntry::restart(){
+	Audio::shutdown();
+	clear();
+	ucg->setPrintPos( 10, 50 );
+	ucg->print("...rebooting now" );
+	SetupCommon::commitNow();
+	delay(2000);
+	esp_restart();
+}
+
 void MenuEntry::uprint( int x, int y, const char* str ) {
 	if( ucg == 0 ) {
 		ESP_LOGE(FNAME,"Error UCG not initialized !");

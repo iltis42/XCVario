@@ -1,67 +1,56 @@
 #include "vector_3d.h"
 #include <stdint.h>
 
-vector_ijk vector_3d_initialize(float a, float b, float c)
+
+
+vector_ijk::vector_ijk(float _a, float _b, float _c)
 {
-    vector_ijk v;
-    v.a = a;
-    v.b = b;
-    v.c = c;
-    return v;
+    a = _a;
+    b = _b;
+    c = _c;
 }
 
-vector_ijk vector_3d_sum(vector_ijk v1, vector_ijk v2)
+void vector_ijk::sum(const vector_ijk v2)
 {
-    vector_ijk v;
-    v.a = v1.a + v2.a;
-    v.b = v1.b + v2.b;
-    v.c = v1.c + v2.c;
-    return v;
+    a = a + v2.a;
+    b = b + v2.b;
+    c = c + v2.c;
 }
 
-vector_ijk vector_3d_difference(vector_ijk v1, vector_ijk v2)
+void vector_ijk::difference(const vector_ijk v2)
 {
-    vector_ijk v;
-    v.a = v1.a - v2.a;
-    v.b = v1.b - v2.b;
-    v.c = v1.c - v2.c;
-    return v;
+    a = a - v2.a;
+    b = b - v2.b;
+    c = c - v2.c;
 }
 
-float vector_3d_dot_product(vector_ijk v1, vector_ijk v2)
+float vector_ijk::dot_product(const vector_ijk v2)
 {
-    return (v1.a*v2.a + v1.b*v2.b + v1.c*v2.c);
-
+    return (a*v2.a + b*v2.b + c*v2.c);
 }
 
 
-vector_ijk vector_3d_cross_product(vector_ijk v1, vector_ijk v2)
+void vector_ijk::cross_product(const vector_ijk v2)
 {
-    vector_ijk v;
-    v.a = v1.b*v2.c - v1.c*v2.b;
-    v.b = v1.c*v2.a - v1.a*v2.c;
-    v.c = v1.a*v2.b - v1.b*v2.a;
-    return v;
+    a = b*v2.c - c*v2.b;
+    b = c*v2.a - a*v2.c;
+    c = a*v2.b - b*v2.a;
 }
 
-vector_ijk vector_3d_normalize(vector_ijk v1)
+void vector_ijk::normalize()
 {
-    vector_ijk v2;
     float one_by_sqrt;
-    one_by_sqrt = InvSqrt(v1.a*v1.a + v1.b*v1.b + v1.c*v1.c);
-    v2.a = v1.a*one_by_sqrt;
-    v2.b = v1.b*one_by_sqrt;
-    v2.c = v1.c*one_by_sqrt;
-    return v2;
+    one_by_sqrt = InvSqrt(a*a + b*b + c*c);
+    a = a*one_by_sqrt;
+    b = b*one_by_sqrt;
+    c = c*one_by_sqrt;
 }
 
-vector_ijk vector_3d_scale(vector_ijk v1, float scale)
+void vector_ijk::scale(float scale)
 {
-    vector_ijk v2;
-    v2.a = v1.a*scale;
-    v2.b = v1.b*scale;
-    v2.c = v1.c*scale;
-    return v2;
+    a = a*scale;
+    b = b*scale;
+    c = c*scale;
 }
 
 float InvSqrt(float x)

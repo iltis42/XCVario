@@ -82,7 +82,7 @@ void SetupMenuSelect::delEntry( const char* ent ) {
 		}
 }
 
-SetupMenuSelect::SetupMenuSelect( const char* title, bool restart, int (*action)(SetupMenuSelect *p), bool save, SetupNG<int> *anvs, bool ext_handler ) {
+SetupMenuSelect::SetupMenuSelect( const char* title, bool restart, int (*action)(SetupMenuSelect *p), bool save, SetupNG<int> *anvs, bool ext_handler, bool end_menu ) {
 	// ESP_LOGI(FNAME,"SetupMenuSelect( %s ) action: %x", title, (int)action );
 	attach(this);
 	bits._ext_handler = ext_handler;
@@ -90,6 +90,7 @@ SetupMenuSelect::SetupMenuSelect( const char* title, bool restart, int (*action)
 	_nvs = 0;
 	_select = 0;
 	_select_save = 0;
+	bits._end_menu = end_menu;
 	highlight = -1;
 	if( !anvs ) {
 		_select_save = _select;
@@ -156,12 +157,6 @@ void SetupMenuSelect::display( int mode ){
 		if( mode == 1 )
 			delay(1000);
 	}
-	/*
-	if( _action != 0 && mode < 2 ){
-		ESP_LOGI(FNAME,"calling action");
-		(*_action)( this );
-	}
-	*/
 }
 
 void SetupMenuSelect::down(int count){
@@ -229,11 +224,15 @@ void SetupMenuSelect::press(){
 	ESP_LOGI(FNAME,"press() ext handler: %d press: %d _select: %d", bits._ext_handler, pressed, _select );
 	if ( pressed ){
 		display( 1 );
-		if( _parent != 0) {
+		if( bits._end_menu ){
+			ESP_LOGI(FNAME,"press() end_menu");
+			selected = root;
+		}
+		else if( _parent != 0) {
 			ESP_LOGI(FNAME,"go to parent");
 			selected = _parent;
-			_parent->highlight = -1;  // to topmost selection when back
 		}
+		selected->highlight = -1;
 		selected->pressed = true;
 		if( _nvs ){
 			_nvs->set((int)_select, false ); // do sync in next step
@@ -246,14 +245,11 @@ void SetupMenuSelect::press(){
 		}
 		if( _select_save != _select )
 			if( bits._restart ) {
-				Audio::shutdown();
-				clear();
-				ucg->setPrintPos( 10, 50 );
-				ucg->print("...rebooting now" );
-				SetupCommon::commitNow();
-				delay(2000);
-				esp_restart();
+				restart();
 			}
+		if( bits._end_menu ){
+			selected->press();
+		}
 	}
 	else{
 		pressed = true;

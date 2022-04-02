@@ -196,8 +196,8 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 			<13>   Instrument Bug setting
 		 *hh   Checksum, XOR of all bytes of the sentence after the ‘!’ and before the ‘*’
 		 */
-
-		sprintf(str, "!w,0,0,0,0,%d,%4.2f,%d,%d,0,0,%d,%d,%d", int(alt+1000), QNH.get(), int(Units::kmh2ms(tas)*100), int((Units::ms2knots(te)*10)+200), int( Units::mcval2knots(mc)*10 ), int( S2F::getBallastPercent()+0.5 ), (int)(100-bugs) );
+		int cballast = int((100*ballast_kg.get() / polar_max_ballast.get()));
+		sprintf(str, "!w,0,0,0,0,%d,%4.2f,%d,%d,0,0,%d,%d,%d", int(alt+1000), QNH.get(), int(Units::kmh2ms(tas)*100), int((Units::ms2knots(te)*10)+200), int( Units::mcval2knots(mc)*10 ), cballast, (int)(100-bugs) );
 	}
 	else if( proto == P_EYE_PEYA ){
 		// Static pressure from aircraft pneumatic system [hPa] (i.e. 1015.5)
@@ -233,14 +233,15 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		 */
 		sprintf(str, "$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,", roll, pitch,acc_x,acc_y,acc_z );
 	}
-	else if( proto == P_AHRS_APENV1 ) { // experimental
-		sprintf(str, "$APENV1,%.2f,%.2f,0,0,0,%.2f,", ias,alt,te );
+	else if( haveMPU && attitude_indicator.get() && (proto == P_AHRS_APENV1) ) {  // LEVIL_AHRS
+		sprintf(str, "$APENV1,%d,%d,0,0,0,%d", (int)(Units::kmh2knots(ias)+0.5),(int)(Units::meters2feet(alt)+0.5),(int)(Units::ms2fpm(te)+0.5));
 	}
-	else if( proto == P_AHRS_RPYL ) {   // experimental
-		sprintf(str, "$RPYL,%.2f,%.2f,0,0,,%.2f,0,",
-				IMU::getRoll(),         // Bank == roll    (deg)           SRC
-				IMU::getPitch(),         // pItch           (deg)
-				acc_z
+	else if( haveMPU && attitude_indicator.get() && (proto == P_AHRS_RPYL) ) {   // LEVIL_AHRS  $RPYL,Roll,Pitch,MagnHeading,SideSlip,YawRate,G,errorcode,
+		sprintf(str, "$RPYL,%d,%d,%d,0,0,%d,0",
+				(int)(IMU::getRoll()*10+0.5),         // Bank == roll     (deg)
+				(int)(IMU::getPitch()*10+0.5),        // Pitch            (deg)
+				(int)(IMU::getYaw()*10+0.5),          // Magnetic Heading (deg)
+				(int)(acc_z*1000.0+0.5)
 		);
 	}
 	else if( proto == P_GENERIC ) {
@@ -304,12 +305,12 @@ void Protocols::parseXS( const char *str ){
 
 
 void Protocols::parseNMEA( const char *str ){
-	// ESP_LOGI(FNAME,"parseNMEA: %s, len: %d", astr,  strlen(astr) );
+	// ESP_LOGI(FNAME,"parseNMEA: %s, len: %d", str,  strlen(str) );
 
 	if ( strncmp( str, "!xc,", 4 ) == 0 ) { // need this to support Wind Simulator with Compass simulation
 		float h;
 		sscanf( str,"!xc,%f", &h );
-		ESP_LOGI(FNAME,"Compass heading detected=%3.1f", h );
+		// ESP_LOGI(FNAME,"Compass heading detected=%3.1f", h );
 		if( compass )
 			compass->setHeading( h );
 	}
@@ -351,9 +352,9 @@ void Protocols::parseNMEA( const char *str ){
 		}
 	}
 	else if( strncmp( str, "$g,", 3 ) == 0 ) {
-		ESP_LOGI(FNAME,"New XCNAV cmd %s", str );
+		ESP_LOGI(FNAME,"Remote cmd %s", str );
 		if (str[3] == 's') {  // nonstandard CAI 302 extension for S2F mode switch, e.g. for XCNav remote stick
-			ESP_LOGI(FNAME,"New XCNAV Volume cmd");
+			ESP_LOGI(FNAME,"Detected S2F cmd");
 			int mode;
 			int cs;
 			sscanf(str, "$g,s%d*%02x", &mode, &cs);
@@ -369,7 +370,7 @@ void Protocols::parseNMEA( const char *str ){
 		if (str[3] == 'v') {  // nonstandard CAI 302 extension for volume Up/Down, e.g. for XCNav remote stick
 			int steps;
 			int cs;
-			ESP_LOGI(FNAME,"Volume message: %s", str );
+			ESP_LOGI(FNAME,"Detected volume cmd");
 			sscanf(str, "$g,v%d*%02x", &steps, &cs);
 			int calc_cs=calcNMEACheckSum( str );
 			if( calc_cs != cs ){
@@ -382,6 +383,37 @@ void Protocols::parseNMEA( const char *str ){
 					ESP_LOGI(FNAME,"Volume change: %d steps, new volume: %.0f", steps, v );
 				}else
 					ESP_LOGI(FNAME,"Volume change limit reached steps: %d volume: %.0f", steps, v );
+			}
+		}
+		if (str[3] == 'r') {  // nonstandard CAI 302 extension for Rotary Movement, e.g. for XCNav remote stick to navigate
+			char func;
+			int cs;
+			ESP_LOGI(FNAME,"Detected rotary message");
+			sscanf(str, "$g,r%c*%02x", &func, &cs);
+			int calc_cs=calcNMEACheckSum( str );
+			if( calc_cs != cs ){
+				ESP_LOGW(FNAME,"CS Error: in %s; %x != %x", str, cs, calc_cs );
+			}
+			else{
+				if( func == 'p' ){
+					ESP_LOGI(FNAME,"Short Press");
+					ESPRotary::sendPress();
+					ESPRotary::sendRelease();
+				}else if( func == 'l' ){
+					ESP_LOGI(FNAME,"Long Press" );
+					ESPRotary::sendLongPress();
+					ESPRotary::sendRelease();
+				}else if( func == 'u' ){
+					ESP_LOGI(FNAME,"Up");
+					ESPRotary::sendUp(1);
+				}else if( func == 'd' ){
+					ESP_LOGI(FNAME,"Down");
+					ESPRotary::sendDown(1);
+				}
+				else if( func == 'x' ){
+					ESP_LOGI(FNAME,"Escape");
+					ESPRotary::sendEsc();
+				}
 			}
 		}
 	}

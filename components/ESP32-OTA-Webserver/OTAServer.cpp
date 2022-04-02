@@ -393,7 +393,7 @@ httpd_handle_t start_OTA_webserver(void)
 	
 	
 	// Start the httpd server
-	printf("Starting server on port: '%d'", config.server_port);
+	printf("Starting http server on port: '%d'", config.server_port);
 	
 
 	if (httpd_start(&OTA_server, &config) == ESP_OK) 
@@ -410,7 +410,7 @@ httpd_handle_t start_OTA_webserver(void)
 		return OTA_server;
 	}
 
-	printf("Error starting server!");
+	printf("Error starting http server!");
 	return NULL;
 }
 

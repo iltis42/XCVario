@@ -1,10 +1,10 @@
 # XCVario
-Software for ESP32 based lean Variometer system with data interface in OpenVario, Cambridge, Borgelt or (new) XCVario format, running on dedicated XCVario hardware
+Software for ESP32 based lean Variometer system with open data interface featuring OpenVario, Cambridge, Borgelt and XCVario format, running on dedicated XCVario hardware
 
 ![Vario]( https://raw.githubusercontent.com/iltis42/XCVario/master/images/Vario3D/vario-perspectiv.png )
 ![Vario Back]( https://github.com/iltis42/XCVario/blob/master/images/Vario3D/backviev-xcv-21.png )
 
-The project is dedicated to my open source and open hardware flight computer development using ESP32 WROOM development board plus modern sensors such as BMP280, DS1820b, MP5004DP. 
+The project is dedicated to my open source and open hardware flight computer development using ESP32 WROOM development board supporting modern digital sensors such as BMP280, SPL06-007, DS1820b, TE4525, ABPMRR, MP5004DP, CAN, AHRS MPU6050, and QMC5883L magnet sensor.
 
 * Evolution
 The history of the project is is available within branches and is listed below. 

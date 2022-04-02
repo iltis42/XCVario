@@ -50,6 +50,9 @@ public:
 	// Ignore release calls
 	virtual void release() {}
 
+	// Ignore escape calls
+	void escape() {};
+
 private:
 	// User's callback function
 	int (*_action)( SetupMenuDisplay *p );

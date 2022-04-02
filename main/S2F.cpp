@@ -16,12 +16,12 @@
 S2F::S2F() {
     a0=a1=a2=0;
     w0=w1=w2=0;
-    _MC = 0;
-    _speedMinSink = 0;
+    _min_speed = 0;
     _circling_speed = 0;
 	_circling_sink = 0;
-	_minimumSink = 0;
+	_min_sink = 0;
 	_stall_speed_ms = 0;
+	myballast = 1.0;
 }
 
 S2F::~S2F() {
@@ -46,6 +46,11 @@ void S2F::modifyPolar(){
 	recalcSinkNSpeeds();
 }
 
+bool S2F::IsValid() const
+{
+	return (a2 < 0 && a1 > 0 && a0 < 0);
+}
+
 void S2F::recalculatePolar()
 {
 	ESP_LOGI(FNAME, "S2F::recalculatePolar() bugs: %f ", bugs.get());
@@ -60,9 +65,11 @@ void S2F::recalculatePolar()
 	ESP_LOGI(FNAME, "v3/s3 %.1f/%.1f", v3 * 3.6, w3);
 	// w= a0 + a1*v + a2*v^2   from ilec
 	// w=  c +  b*v +  a*v^2   from wiki
-	a2 = ((v2 - v3) * (w1 - w3) + (v3 - v1) * (w2 - w3)) / (pow(v1, 2) * (v2 - v3) + pow(v2, 2) * (v3 - v1) + pow(v3, 2) * (v1 - v2));
-	a1 = (w2 - w3 - a2 * (pow(v2, 2) - pow(v3, 2))) / (v2 - v3);
-	a0 = w3 - a2 * pow(v3, 2) - a1 * v3;
+	double d = v1 * v1 * (v2 - v3) + v2 * v2 * (v3 - v1) + v3 * v3 * (v1 - v2);
+	a2 = d == 0. ? 0. : ((v2 - v3) * (w1 - w3) + (v3 - v1) * (w2 - w3)) / d;
+	d = v2 - v3;
+	a1 = d == 0. ? 0. : (w2 - w3 - a2 * (v2 * v2 - v3 * v3)) / d;
+	a0 = w3 - a2 * v3 * v3 - a1 * v3;
 	const double loading_factor = sqrt((myballast + 100.0) / 100.0);
 	a0 = a0 * loading_factor;
 	a2 = a2 / loading_factor; // wingload  e.g. 100l @ 500 kg = 1.2 and G-Force
@@ -127,8 +134,7 @@ void S2F::change_ballast()
 
 void S2F::change_mc()
 {
-	_MC = MC.get();
-	ESP_LOGI(FNAME,"S2F::change_mc_bal(), MC: %.1f", _MC );
+	ESP_LOGI(FNAME,"S2F::change_mc(), MC: %.1f", MC.get() );
 	recalcSinkNSpeeds();
 }
 
@@ -143,14 +149,14 @@ float S2F::getVn( float v ){
 double S2F::sink( double v_in ) {
 	double v = v_in;
 	double v_stall = Units::Airspeed2Kmh( stall_speed.get() * 0.9 );
-	if ( v_in < v_stall ){
+	if ( v_in < v_stall || !IsValid() ){
 		// ESP_LOGI(FNAME,"S2F::sink, warning, airspeed %.1f below minimum speed", v_in );
 		return 0.0;
 	}
 	v = v/3.6; // airspeed in meters per second
 	double n=getN();
 	double sqn = sqrt(n);
-	double s = a0*pow(sqn,3) + a1*v*n + a2*pow(v,2)*sqn;
+	double s = a0*n*sqn + a1*v*n + a2*v*v*sqn;
 	// ESP_LOGI(FNAME,"S2F::sink() V:%0.1f sink:%2.2f G-Load:%1.2f", v_in, s, n );
 	return s;
 }
@@ -176,13 +182,13 @@ double S2F::speed( double netto_vario, bool circling )
 	   stf = _circling_speed;
    }else{
 	   if( s2f_blockspeed.get() )
-		   stf = 3.6*sqrt( ((a0-_MC)) / a2 );  // no netto vario, no G impact
+		   stf = 3.6*sqrt( ((a0-MC.get())) / a2 );  // no netto vario, no G impact
 	   else
-		   stf = 3.6*sqrt( ((a0-_MC+netto_vario)*getN()) / a2 );
+		   stf = 3.6*sqrt( (a0-MC.get()+netto_vario) / a2 );
    }
-   // ESP_LOGI(FNAME,"speed()  %f", stf );
-   if( (stf < _speedMinSink) or isnan(stf) )
-	   return _speedMinSink;
+   // ESP_LOGI(FNAME,"speed() S2F: %f netto_vario: %f circ: %d, a0: %f, MC %f", stf, netto_vario, circling, a0, MC.get() );
+   if( (stf < _min_speed) or isnan(stf) )
+	   return _min_speed;
    if( stf > Units::Airspeed2Kmh(v_max.get()) or isinf( stf) )
 	   return Units::Airspeed2Kmh(v_max.get());
    else
@@ -192,16 +198,23 @@ double S2F::speed( double netto_vario, bool circling )
 // minimum sink, circling sink, best circling speed
 void S2F::recalcSinkNSpeeds()
 {
+	if (!IsValid()) {
+		_min_speed = 
+		_min_sink = 
+		_circling_speed = 
+		_circling_sink = 0.;
+		return;
+	}
    // 2*a2*v + a1 = 0
-   _speedMinSink = (3.6*-a1)/(2*a2);
-   if ( _speedMinSink < Units::Airspeed2Kmh( stall_speed.get() ) )
-		_speedMinSink = Units::Airspeed2Kmh( stall_speed.get() );
-   _minimumSink = sink( _speedMinSink );
-	_circling_speed = 1.2*_speedMinSink;
+   _min_speed = (3.6*-a1)/(2*a2);
+   if ( _min_speed < Units::Airspeed2Kmh( stall_speed.get() ) )
+		_min_speed = Units::Airspeed2Kmh( stall_speed.get() );
+	_min_sink = sink( _min_speed );
+	_circling_speed = 1.2*_min_speed;
 	_circling_sink = sink( _circling_speed );
-   	ESP_LOGI(FNAME,"Airspeed @ min Sink =%3.1f kmh", _speedMinSink );
-   	ESP_LOGI(FNAME,"          min Sink  =%2.3f m/s", _minimumSink );
-   	ESP_LOGI(FNAME,"Circling Speed      =%3.1f kmh", _circling_speed );
+	ESP_LOGI(FNAME,"Airspeed @ min Sink =%3.1f kmh", _min_speed );
+	ESP_LOGI(FNAME,"          min Sink  =%2.3f m/s", _min_sink );
+	ESP_LOGI(FNAME,"Circling Speed      =%3.1f kmh", _circling_speed );
 	ESP_LOGI(FNAME,"Circling Sink       =%2.3f",     _circling_sink );
 }
 
@@ -217,7 +230,7 @@ void S2F::test( void )
 	ESP_LOGI(FNAME, "Sink %f @ %s km/h ", sink( 150.0 ), "150");
 	ESP_LOGI(FNAME, "Sink %f @ %s km/h ", sink( 180.0 ), "180");
 	ESP_LOGI(FNAME, "Sink %f @ %s km/h ", sink( 220.0 ), "220");
-    ESP_LOGI(FNAME,"MC %f  Ballast %f", _MC, myballast );
+    ESP_LOGI(FNAME,"MC %f  Ballast %f", MC.get(), myballast );
 	for( int st=20; st >= -20; st-=5 )
 	{
 		ESP_LOGI(FNAME, "S2F %g km/h vario %g m/s", speed( (double)st/10 ), (double)st/10 );

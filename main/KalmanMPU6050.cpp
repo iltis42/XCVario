@@ -38,6 +38,7 @@ float 	IMU::myaccroll = 0;
 double  IMU::mypitch = 0;
 double  IMU::filterPitch = 0;
 double  IMU::filterRoll = 0;
+double  IMU::filterYaw = 0;
 
 uint64_t IMU::last_rts=0;
 double IMU::accelX = 0.0;
@@ -52,7 +53,7 @@ double IMU::kalXAngle = 0.0;
 double IMU::kalYAngle = 0.0;
 float IMU::filterAccRoll = 0.0;
 float IMU::filterGyroRoll = 0.0;
-Quaternion IMU::att_quat;
+Quaternion IMU::att_quat(0,0,0,0);
 vector_ijk IMU::att_vector;
 euler_angles IMU::euler;
 
@@ -138,8 +139,8 @@ void IMU::init()
 	gyroYAngle = pitch;
 
 	lastProcessed = micros();
-	att_quat = quaternion_initialize(1.0,0.0,0.0,0.0);
-	att_vector = vector_3d_initialize(0.0,0.0,-1.0);
+	att_quat = Quaternion(1.0,0.0,0.0,0.0);
+	att_vector = vector_ijk(0.0,0.0,-1.0);
 	euler = { 0,0,0 };
 	ESP_LOGD(FNAME, "Finished IMU setup  gyroYAngle:%f ", gyroYAngle);
 }
@@ -202,7 +203,7 @@ void IMU::read()
 
 	att_vector = update_fused_vector(att_vector,ax, ay, az,D2R(gyroX),D2R(gyroY),D2R(gyroZ),dt);
 	att_quat = quaternion_from_accelerometer(att_vector.a,att_vector.b,att_vector.c);
-	euler = quaternion_to_euler_angles(att_quat);
+	euler = att_quat.to_euler_angles();
 	// treat gimbal lock, limit to 80 deg
 	if( euler.roll > 80.0 )
 		euler.roll = 80.0;
@@ -213,14 +214,33 @@ void IMU::read()
 	if( euler.pitch < -80.0 )
 		euler.pitch = -80.0;
 
-	bool ok;
+
 	if( compass ){
+		bool ok;
 		float curh = compass->cur_heading( &ok );
 		if( ok ){
-			// ESP_LOGI( FNAME,"cur head %.1f", curh );
-			fused_yaw +=  Vector::angleDiffDeg( curh ,fused_yaw )*0.05 + (getGyroYawDelta())*0.95;
-			compass->setGyroHeading( Vector::normalizeDeg( fused_yaw ) );
+			float gyroYaw = getGyroYawDelta();
+			// tuned to plus 17% what gave the best timing swing in response, 2% for compass is far enough
+			// gyro and compass are time displaced, gyro comes immediate, compass a second later
+			fused_yaw +=  Vector::angleDiffDeg( curh ,fused_yaw )*0.02 + gyroYaw * 1.17;
+			filterYaw=Vector::normalizeDeg( fused_yaw );
+			compass->setGyroHeading( filterYaw );
+			// ESP_LOGI( FNAME,"cur magn head %.2f gyro yaw: %.4f fused: %.1f Gyro(%.3f/%.3f/%.3f)", curh, gyroYaw, gh, gyroX, gyroY, gyroZ  );
+#ifdef QUAT_COMPASS
+			// Work for quaternion -> euler based compass
+			float x=compass->rawX();
+			float y=compass->rawY();
+			float z=compass->rawZ();
+			vector_ijk v( x,y,z );
+			v.normalize();
+			Quaternion q = quaternion_from_compass( v.a, v.b, v.c );
+			// q = quaternion_normalize( q );
+			euler_angles compass_euler = quaternion_to_euler_angles(q);
+			ESP_LOGI( FNAME,"MH %.2f gyaw: %.4f fused: %.1f Mxyz(%.3f/%.3f/%.3f) Eul(Y:%.2f P:%.2f R:%.2f) Q(%.3f/%.3f/%.3f/%.3f) Q2(%.3f/%.3f/%.3f/%.3f)", curh, gyroYaw, gh, v.a, v.b, v.c, compass_euler.yaw, compass_euler.pitch, compass_euler.roll, q.a, q.b, q.c, q.d, att_quat.a, att_quat.b, att_quat.c, att_quat.d );
+#endif
+
 		}
+
 	}
 	if( ahrs_gyro_factor.get() > 0.1  ){
 		filterRoll =  euler.roll;
@@ -242,9 +262,10 @@ void IMU::MPU6050Read()
 	accelX = -accelG[2];
 	accelY = accelG[1];
 	accelZ = accelG[0];
-	gyroX = -(gyroDPS.z);
-	gyroY = gyroDPS.y;
-	gyroZ = gyroDPS.x;
+	// Gating ignores Gyro drift < 1 deg per second
+	gyroX = abs(gyroDPS.z) < 1.0 ? 0.0 : -(gyroDPS.z);
+	gyroY = abs(gyroDPS.y) < 1.0 ? 0.0 :   gyroDPS.y;
+	gyroZ = abs(gyroDPS.x) < 1.0 ? 0.0 :   gyroDPS.x;
 }
 
 void IMU::PitchFromAccel(double *pitch)

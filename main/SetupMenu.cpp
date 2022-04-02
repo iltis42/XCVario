@@ -41,12 +41,15 @@
 #include "SetupNG.h"
 
 
+
 SetupMenuSelect * audio_range_sm = 0;
 SetupMenuSelect * mpu = 0;
+
 
 // Menu for flap setup
 
 float elev_step = 1;
+static uint8_t screen_mask_len = 1;
 
 bool SetupMenu::focus = false;
 
@@ -75,19 +78,70 @@ void init_routing(){
 }
 
 int update_routing_s1( SetupMenuSelect * p ){
-	uint32_t routing =  (uint32_t)rt_s1_xcv.get()       << (RT_XCVARIO) |
-			           ( (uint32_t)rt_s1_wl.get() << (RT_WIRELESS) ) |
-					   ( (uint32_t)rt_s1_s2.get()       << (RT_S1) ) |
-					   ( (uint32_t)rt_s1_can.get()      << (RT_CAN) );
+	uint32_t routing =
+			( (uint32_t)rt_s1_xcv.get() << (RT_XCVARIO) ) |
+			( (uint32_t)rt_s1_wl.get()  << (RT_WIRELESS) ) |
+			( (uint32_t)rt_s1_s2.get()  << (RT_S1) ) |
+			( (uint32_t)rt_s1_can.get() << (RT_CAN) );
 	serial1_tx.set( routing );
+	return 0;
+}
+
+void init_screens(){
+	uint32_t scr = menu_screens.get();
+	screen_gmeter.set( (scr >> SCREEN_GMETER) & 1);
+// 	screen_centeraid.set( (scr >> SCREEN_THERMAL_ASSISTANT) & 1);
+	screen_flarm.set( (scr >> SCREEN_FLARM) & 1);
+	screen_mask_len = 1; // default vario
+	while( scr ){
+		scr = scr >> 1;
+		screen_mask_len++;
+	}
+	ESP_LOGI(FNAME,"screens mask len: %d, screens: %d", screen_mask_len, menu_screens.get() );
+}
+
+gpio_num_t SetupMenu::getGearWarningIO(){
+	gpio_num_t io = GPIO_NUM_0;
+	if( gear_warning.get() == GW_FLAP_SENSOR ){
+		io = GPIO_NUM_34;
+	}
+	else if( gear_warning.get() == GW_S2_RS232_RX ){
+		io = GPIO_NUM_18;
+	}
+	return io;
+}
+
+void initGearWarning(){
+	gpio_num_t io = SetupMenu::getGearWarningIO();
+	if( io != GPIO_NUM_0 ){
+		gpio_reset_pin( io );
+		gpio_set_direction(io, GPIO_MODE_INPUT);
+		gpio_set_pull_mode(io, GPIO_PULLUP_ONLY);
+		gpio_pullup_en( io );
+	}
+}
+
+int config_gear_warning( SetupMenuSelect * p ){
+	initGearWarning();
+	return 0;
+}
+
+int upd_screens( SetupMenuSelect * p ){
+	uint32_t screens =
+			( (uint32_t)screen_gmeter.get() << (SCREEN_GMETER)  |
+	//		( (uint32_t)screen_centeraid.get() << (SCREEN_THERMAL_ASSISTANT) ) |
+			( (uint32_t)screen_flarm.get() << (SCREEN_FLARM) )
+			);
+	menu_screens.set( screens );
+	init_screens();
 	return 0;
 }
 
 int update_routing_s2( SetupMenuSelect * p ){
 	uint32_t routing =  (uint32_t)rt_s2_xcv.get()       << (RT_XCVARIO) |
-			           ( (uint32_t)rt_s2_wl.get() << (RT_WIRELESS) ) |
-					   ( (uint32_t)rt_s1_s2.get()       << (RT_S1) ) |
-					   ( (uint32_t)rt_s2_can.get()      << (RT_CAN) );
+			( (uint32_t)rt_s2_wl.get() << (RT_WIRELESS) ) |
+			( (uint32_t)rt_s1_s2.get()       << (RT_S1) ) |
+			( (uint32_t)rt_s2_can.get()      << (RT_CAN) );
 	serial2_tx.set( routing );
 	return 0;
 }
@@ -343,6 +397,8 @@ void SetupMenu::begin( IpsDisplay* display, PressureSensor * bmp, AnalogInput *a
 	setup();
 	audio_volume.set( default_volume.get() );
 	init_routing();
+	init_screens();
+	initGearWarning();
 }
 
 void SetupMenu::catchFocus( bool activate ){
@@ -352,6 +408,7 @@ void SetupMenu::catchFocus( bool activate ){
 void SetupMenu::display( int mode ){
 	if( (selected != this) || !inSetup || focus )
 		return;
+	xSemaphoreTake(display_mutex,portMAX_DELAY);
 	ESP_LOGI(FNAME,"SetupMenu display( %s)", _title );
 	clear();
 	int y=25;
@@ -382,6 +439,7 @@ void SetupMenu::display( int mode ){
 	y+=170;
 	xSemaphoreGive(spiMutex );
 	showhelp( y );
+	xSemaphoreGive(display_mutex);
 }
 
 void SetupMenu::down(int count){
@@ -460,7 +518,7 @@ void SetupMenu::up(int count){
 	xSemaphoreGive(spiMutex );
 }
 
-void SetupMenu::showMenu( bool apressed ){
+void SetupMenu::showMenu(){
 	ESP_LOGI(FNAME,"showMenu() p:%d h:%d parent:%x", pressed, highlight, (int)_parent );
 	// default is not pressed, so just display, but we toogle pressed state at the end
 	// so next time we either step up to parent,
@@ -494,7 +552,7 @@ void SetupMenu::showMenu( bool apressed ){
 		else
 		{
 			ESP_LOGI(FNAME,"End Setup Menu");
-			_display->clear();
+			screens_init = INIT_DISPLAY_NULL;
 			_display->doMenu(false);
 			SetupCommon::commitNow();
 			inSetup=false;
@@ -503,64 +561,104 @@ void SetupMenu::showMenu( bool apressed ){
 	ESP_LOGI(FNAME,"end showMenu()");
 }
 
+
+static int screen_index = 0;
 void SetupMenu::press(){
-	if( selected == 0 )
-		selected = root;
 	if( (selected != this) || focus )
 		return;
+	ESP_LOGI(FNAME,"press() active_srceen %d, pressed %d inSet %d", active_screen, pressed, inSetup );
 	if( !inSetup ){
-		active_screen++;
-		active_screen = active_screen%(menu_screens.get()+1);
-		ESP_LOGI(FNAME,"short press() screen=%d", active_screen );
+		active_screen = 0;
+		while( !active_screen && (screen_index < screen_mask_len) ){
+			if( menu_screens.get() & (1 << screen_index) ){
+				active_screen = ( 1 << screen_index );
+				ESP_LOGI(FNAME,"New active_screen: %d", active_screen );
+			}
+			screen_index++;
+		}
+		if( screen_index >= screen_mask_len ){
+			ESP_LOGI(FNAME,"select vario screen");
+			screen_index = 0;
+			active_screen = 0; // fall back into default vario screen after optional screens
+		}
 	}
-	if( !menu_long_press.get() || inSetup )
-		showMenu( true );
-	if( pressed )
-		pressed = false;
-	else
-		pressed = true;
+	if( !active_screen || inSetup ){
+		ESP_LOGI(FNAME,"press() inSetup");
+		if( !menu_long_press.get() || inSetup )
+			showMenu();
+		if( pressed )
+			pressed = false;
+		else
+			pressed = true;
+	}
 }
 
 void SetupMenu::longPress(){
 	if( (selected != this) )
 		return;
 	// ESP_LOGI(FNAME,"longPress()");
-	if( menu_long_press.get() )
-	 	showMenu( true );
+	ESP_LOGI(FNAME,"longPress() active_srceen %d, pressed %d inSet %d", active_screen, pressed, inSetup );
+	if( menu_long_press.get() && !inSetup ){
+		showMenu();
+	}
+	if( pressed ){
+		pressed = false;
+	}
+	else{
+		pressed = true;
+	}
 }
 
+void SetupMenu::escape(){
+	if( inSetup ){
+		ESP_LOGI(FNAME,"escape now Setup Menu");
+		_display->clear();
+		_display->doMenu(false);
+		SetupCommon::commitNow();
+		inSetup=false;
+	}
+}
 
 void SetupMenu::setup( )
 {
 	ESP_LOGI(FNAME,"SetupMenu setup()");
 
 	SetupMenu * root = new SetupMenu( "Setup" );
+	root->setRoot( root );
 	MenuEntry* mm = root->addEntry( root );
 
-	SetupMenuValFloat * mc = new SetupMenuValFloat( "MC", "",	0.0, 9.9, 0.1, 0, true, &MC );
-	mc->setHelp(PROGMEM"Default Mac Cready value for optimum cruise speed, or average climb rate to be provided in same units as variometer setting");
-	mc->setPrecision(1);
-	mm->addEntry( mc );
-
-	SetupMenuValFloat * vol = new SetupMenuValFloat( "Audio Volume", "%", 0.0, 100, 1, vol_adj, true, &audio_volume );
-	vol->setHelp(PROGMEM"Set audio volume");
-	mm->addEntry( vol );
-
-	SetupMenuValFloat::qnh_menu = new SetupMenuValFloat( "QNH Setup", "", 900, 1100.0, 0.250, qnh_adj, true, &QNH );
-	SetupMenuValFloat::qnh_menu->setHelp(PROGMEM"Setup QNH pressure value from next ATC. On ground you may adjust to airfield altitude above MSL.", 180 );
-	mm->addEntry( SetupMenuValFloat::qnh_menu );
-
-	SetupMenuValFloat * bal = new SetupMenuValFloat( "Ballast", "litre", 0.0, 500, 1, water_adj, true, &ballast_kg  );
-	bal->setHelp(PROGMEM"Enter here the number of litres of water ballast added before flight");
-	bal->setPrecision(0);
-	mm->addEntry( bal );
+	if ( rot_default.get() == 0 ) {
+		SetupMenuValFloat * mc = new SetupMenuValFloat( "MC", "",	0.0, 9.9, 0.1, 0, true, &MC );
+		mc->setHelp(PROGMEM"Mac Cready value for optimum cruise speed, or average climb rate to be provided in same unit as the variometer");
+		mc->setPrecision(1);
+		mm->addEntry( mc );
+	}
+	else {
+		SetupMenuValFloat * vol = new SetupMenuValFloat( "Audio Volume", "%", 0.0, 100, 1, vol_adj, true, &audio_volume );
+		vol->setHelp(PROGMEM"Audio volume level for variometer tone on internal and external speaker");
+		mm->addEntry( vol );
+	}
 
 	SetupMenuValFloat * bgs = new SetupMenuValFloat( "Bugs", "%", 0.0, 50, 1, bug_adj, true, &bugs  );
 	bgs->setHelp(PROGMEM"Percent of bugs contamination to indicate degradation of gliding performance");
 	mm->addEntry( bgs );
 
+	SetupMenuValFloat * bal = new SetupMenuValFloat( "Ballast", "litre", 0.0, 500, 1, water_adj, true, &ballast_kg  );
+	bal->setHelp(PROGMEM"Amount of water ballast added to the over all weight");
+	bal->setPrecision(0);
+	mm->addEntry( bal );
+
+	SetupMenuValFloat * crewball = new SetupMenuValFloat( "Crew Weight", "kg", 0, 300, 1, crew_weight_adj, false, &crew_weight );
+	crewball->setPrecision(0);
+	crewball->setHelp(PROGMEM"Weight of the pilot(s) including parachute (everything on top of the empty weight apart from ballast)");
+	mm->addEntry( crewball );
+
+	SetupMenuValFloat::qnh_menu = new SetupMenuValFloat( "QNH", "", 900, 1100.0, 0.250, qnh_adj, true, &QNH );
+	SetupMenuValFloat::qnh_menu->setHelp(PROGMEM"QNH pressure value from next ATC. On ground you may adjust to airfield altitude above MSL", 180 );
+	mm->addEntry( SetupMenuValFloat::qnh_menu );
+
 	SetupMenuValFloat * afe = new SetupMenuValFloat( "Airfield Elevation", "", -1, 3000, 1, 0, true, &elevation );
-	afe->setHelp(PROGMEM"Set airfield elevation in meters for QNH auto adjust on ground according to this setting");
+	afe->setHelp(PROGMEM"Airfield elevation in meters for QNH auto adjust on ground according to this elevation");
 	mm->addEntry( afe );
 
 	if( (int)(password.get()) == 271 ) {
@@ -579,7 +677,7 @@ void SetupMenu::setup( )
 	else
 	{
 		// Vario
-		SetupMenu * va = new SetupMenu( "Vario and S2F" );
+		SetupMenu * va = new SetupMenu( "Vario and Speed 2 Fly" );
 		MenuEntry* vae = mm->addEntry( va );
 		SetupMenuValFloat * vga = new SetupMenuValFloat( "Range", "",	1.0, 30.0, 1, update_rentry, true, &range );
 		vga->setHelp(PROGMEM"Upper and lower value for Vario graphic display region");
@@ -617,6 +715,11 @@ void SetupMenu::setup( )
 		ncolor->addEntry( "Orange");
 		ncolor->addEntry( "Red");
 		vae->addEntry( ncolor );
+
+		SetupMenuSelect * scrcaid = new SetupMenuSelect( "Center-Aid", true, 0, true, &screen_centeraid );
+		scrcaid->addEntry( "Disable");
+		scrcaid->addEntry( "Enable");
+		vae->addEntry(scrcaid);
 
 		SetupMenu * vdamp = new SetupMenu( "Vario Damping" );
 		MenuEntry* vdampm = vae->addEntry( vdamp );
@@ -659,22 +762,27 @@ void SetupMenu::setup( )
 		s2fse->addEntry( blck );
 
 		SetupMenuSelect * s2fmod = new SetupMenuSelect( "S2F Mode", false, 0 , true, &audio_mode );
-		s2fmod->setHelp( PROGMEM"Select S2F mode either fixed, or controled by local switch or switch & airspeed combined or from external source", 220 );
+		s2fmod->setHelp( PROGMEM"Select source for S2F <-> Vario change, that supports multiple ways", 230 );
 		s2fmod->addEntry( "Vario fix");
 		s2fmod->addEntry( "Cruise fix");
 		s2fmod->addEntry( "Switch");
 		s2fmod->addEntry( "AutoSpeed");
 		s2fmod->addEntry( "External");
 		s2fmod->addEntry( "Flap");
+		s2fmod->addEntry( "AHRS-Gyro");
 		s2fse->addEntry( s2fmod );
 
 		SetupMenuValFloat * autospeed = new SetupMenuValFloat( "S2F AutoSpeed", "", 20.0, 250.0, 1.0, update_s2f_speed, false, &s2f_speed );
 		s2fse->addEntry( autospeed );
-		autospeed->setHelp(PROGMEM"Transition speed in AutoSpeed mode to change from Vario to Cruise (S2F) mode");
+		autospeed->setHelp(PROGMEM"Transition speed in AutoSpeed mode to switch Vario <-> Cruise (S2F) mode");
 
 		SetupMenuValFloat * s2f_flap = new SetupMenuValFloat( "S2F Flap Pos", "", -3, 3, 0.1, 0 , false, &s2f_flap_pos );
 		s2fse->addEntry( s2f_flap );
-		s2f_flap->setHelp(PROGMEM"Precise flap position in Flap mode to change from Vario to Cruise (S2F) mode");
+		s2f_flap->setHelp(PROGMEM"Precise flap position in Flap mode to switch Vario <-> Cruise (S2F) mode");
+
+		SetupMenuValFloat * s2f_gyro = new SetupMenuValFloat( "S2F AHRS Deg", "°", 0, 100, 1, 0 , false, &s2f_gyro_deg );
+		s2fse->addEntry( s2f_gyro );
+		s2f_gyro->setHelp(PROGMEM"Attitude change in degree per second to switch Vario <-> Cruise (S2F) mode");
 
 		SetupMenuValFloat * s2fhy = new SetupMenuValFloat( "Hysteresis", "",	-20, 20, 1, 0, false, &s2f_hysteresis );
 		s2fhy->setHelp(PROGMEM"Hysteresis for auto S2F transition at autospeed +- this value");
@@ -807,8 +915,8 @@ void SetupMenu::setup( )
 		audio->addEntry( frqr );
 
 		// Polar Setup
-		SetupMenu * po = new SetupMenu( "Weight/Polar" );
-		po->setHelp( PROGMEM"Weight and Polar setup for best match with performance of glider", 220 );
+		SetupMenu * po = new SetupMenu( "Glider Details" );
+		po->setHelp( PROGMEM"Weight and polar setup for best match with performance of glider", 220 );
 		MenuEntry* poe = mm->addEntry( po );
 
 		SetupMenuSelect * glt = new SetupMenuSelect( "Glider-Type",	false, polar_select, true, &glider_type );
@@ -820,8 +928,8 @@ void SetupMenu::setup( )
 			glt->addEntry( Polars::getPolar(x).type );
 		}
 
-		SetupMenu * pa = new SetupMenu( "PolarAdjust" );
-		pa->setHelp(PROGMEM "Adjust Polar at 3 points of selected polar in commonly used metric system for Polars", 230 );
+		SetupMenu * pa = new SetupMenu( "Polar Points" );
+		pa->setHelp(PROGMEM "Adjust polar at 3 points of selected polar in commonly used metric system for polars", 230 );
 		poe->addEntry( pa );
 
 		SetupMenuValFloat * wil = new SetupMenuValFloat( "Ref Wingload", "kg/m2", 10.0, 100.0, 0.1, 0, false, &polar_wingload );
@@ -856,15 +964,8 @@ void SetupMenu::setup( )
 
 		SetupMenuValFloat * fixball = new SetupMenuValFloat( "Empty Weight", "kg", 0, 1000, 1, empty_weight_adj, false, &empty_weight );
 		fixball->setPrecision(0);
-		fixball->setHelp(PROGMEM"Asjust here the empty weight of your glider, according to your weight an balance plan");
+		fixball->setHelp(PROGMEM"Net rigged weight of the glider, according to the weight and balance plan");
 		poe->addEntry( fixball );
-
-		SetupMenuValFloat * crewball = new SetupMenuValFloat( "Crew Weight", "kg", 0, 300, 1, crew_weight_adj, false, &crew_weight );
-		crewball->setPrecision(0);
-		crewball->setHelp(PROGMEM"Adjust here the weight of the pilot including the parachute, in twin seaters, both pilots");
-		poe->addEntry( crewball );
-
-
 
 		SetupMenu * opt = new SetupMenu( "Options" );
 
@@ -946,7 +1047,7 @@ void SetupMenu::setup( )
 		flarmv->setHelp(PROGMEM "Maximum volume FLARM alarm audio warning");
 		flarm->addEntry( flarmv );
 
-		SetupMenuSelect * flarms = new SetupMenuSelect( "FLARM Simulation",	false, 0, true, &flarm_sim );
+		SetupMenuSelect * flarms = new SetupMenuSelect( "FLARM Simulation",	false, 0, true, &flarm_sim, false, true );
 		flarm->addEntry( flarms );
 		flarms->setHelp( PROGMEM "Simulate an airplane crossing from left to right with different alarm levels and vertical distance 5 seconds after pressed (leave setup!)");
 		flarms->addEntry( "Disable");
@@ -1154,7 +1255,7 @@ void SetupMenu::setup( )
 		wloutxs2->addEntry( PROGMEM "Disable");
 		wloutxs2->addEntry( PROGMEM "Enable");
 		wlrt->addEntry( wloutxs2 );
-		SetupMenuSelect * wloutxcan = new SetupMenuSelect( PROGMEM "S2-CAN", false, 0, true, &rt_wl_can );
+		SetupMenuSelect * wloutxcan = new SetupMenuSelect( PROGMEM "CAN-bus", false, 0, true, &rt_wl_can );
 		wloutxcan->addEntry( PROGMEM "Disable");
 		wloutxcan->addEntry( PROGMEM "Enable");
 		wlrt->addEntry( wloutxcan );
@@ -1194,26 +1295,43 @@ void SetupMenu::setup( )
 
 		SetupMenuValFloat * gtpos = new SetupMenuValFloat( "Positive Threshold", "", 1.0, 8.0, 0.1, 0, false, &gload_pos_thresh );
 		gloadME->addEntry( gtpos );
+		gtpos->setPrecision( 1 );
 		gtpos->setHelp(PROGMEM "Positive threshold to launch G-Load display");
 
 		SetupMenuValFloat * gtneg = new SetupMenuValFloat( "Negative Threshold", "", -8.0, 1.0, 0.1, 0, false, &gload_neg_thresh );
 		gloadME->addEntry( gtneg );
+		gtneg->setPrecision( 1 );
 		gtneg->setHelp(PROGMEM "Negative threshold to launch G-Load display");
 
-		SetupMenuValFloat * glpos = new SetupMenuValFloat( "Positive Limit", "", 1.0, 8.0, 0.1, 0, false, &gload_pos_limit );
+		SetupMenuValFloat * glpos = new SetupMenuValFloat( "Red positive limit", "", 1.0, 8.0, 0.1, 0, false, &gload_pos_limit );
 		gloadME->addEntry( glpos );
-		glpos->setHelp(PROGMEM "Positive g load factor limit the structure of airplane is able to handle according to manual");
+		glpos->setPrecision( 1 );
+		glpos->setHelp(PROGMEM "Positive g load factor limit the airplane is able to handle according to manual below manoevering speed");
 
-		SetupMenuValFloat * glneg = new SetupMenuValFloat( "Negative Limit", "", -8.0, 1.0, 0.1, 0, false, &gload_neg_limit );
+		SetupMenuValFloat * glposl = new SetupMenuValFloat( "Yellow pos. Limit", "", 1.0, 8.0, 0.1, 0, false, &gload_pos_limit_low );
+		gloadME->addEntry( glposl );
+		glposl->setPrecision( 1 );
+		glposl->setHelp(PROGMEM "Positive g load factor limit the structure of airplane is able to handle, see manual, above manoevering speed");
+
+		SetupMenuValFloat * glneg = new SetupMenuValFloat( "Red negative limit", "", -8.0, 1.0, 0.1, 0, false, &gload_neg_limit );
 		gloadME->addEntry( glneg );
-		glneg->setHelp(PROGMEM "Negative g load factor limit the structure of airplane is able to handle according to manual");
+		glneg->setPrecision( 1 );
+		glneg->setHelp(PROGMEM "Negative g load factor limit the airplane is able to handle according to manual below manoevering speed");
+
+		SetupMenuValFloat * glnegl = new SetupMenuValFloat( "Yellow neg. Limit", "", -8.0, 1.0, 0.1, 0, false, &gload_neg_limit_low );
+		gloadME->addEntry( glnegl );
+		glnegl->setPrecision( 1 );
+		glnegl->setHelp(PROGMEM "Negative g load factor limit the structure of airplane is able to handle, see manual, below manoevering speed");
+
 
 		SetupMenuValFloat * gmpos = new SetupMenuValFloat( "Max Positive", "", 0.0, 0.0, 0.0, 0, false, &gload_pos_max );
 		gloadME->addEntry( gmpos );
+		gmpos->setPrecision( 1 );
 		gmpos->setHelp(PROGMEM "Maximum positive G-Load measured since last reset");
 
 		SetupMenuValFloat * gmneg = new SetupMenuValFloat( "Max Negative", "", 0.0, 0.0, 0.0, 0, false, &gload_neg_max );
 		gloadME->addEntry( gmneg );
+		gmneg->setPrecision( 1 );
 		gmneg->setHelp(PROGMEM "Maximum negative G-Load measured since last reset");
 
 		SetupMenuSelect * gloadres = new SetupMenuSelect( "G-Load reset", false, gload_reset, false, 0 );
@@ -1236,7 +1354,7 @@ void SetupMenu::setup( )
 
 		SetupMenuSelect * upd = new SetupMenuSelect( "Software Update", true, 0, true, &software_update );
 		soft->addEntry( upd );
-		upd->setHelp(PROGMEM "Software Update over the air (OTA). Start Wifi AP, then connect to Wifi 'ESP32 OTA' and open http://192.168.0.1 to upload firmware");
+		upd->setHelp(PROGMEM "Software Update over the air (OTA). Start Wifi AP, then connect to Wifi 'ESP32 OTA' and open http://192.168.4.1 to upload firmware");
 		upd->addEntry( "Cancel");
 		upd->addEntry( "Start");
 
@@ -1326,32 +1444,34 @@ void SetupMenu::setup( )
 		roinc->addEntry( "3 Indent");
 		roinc->addEntry( "4 Indent");
 
-		SetupMenu * rotarya = new SetupMenu( "Rotary Actions" );
-		hardware->addEntry( rotarya );
 		// Rotary Default
-		SetupMenuSelect * rd = new SetupMenuSelect( "Rotation", false, 0, true, &rot_default );
-		rotarya->addEntry( rd );
+		SetupMenuSelect * rd = new SetupMenuSelect( "Rotation", true, 0, true, &rot_default );
+		rotary->addEntry( rd );
 		rd->setHelp(PROGMEM "Select value to be altered at rotary movement outside of setup menu");
 		rd->addEntry( "Volume");
 		rd->addEntry( "MC Value");
 
-		SetupMenuSelect * sact = new SetupMenuSelect( "Setup Activ.", false, 0, true, &menu_long_press );
-		rotarya->addEntry( sact);
+		SetupMenuSelect * sact = new SetupMenuSelect( "Setup Menu by", false, 0, true, &menu_long_press );
+		rotary->addEntry( sact);
 		sact->setHelp(PROGMEM "Select Mode to activate setup menu either by short press or long press > 0.4 seconds");
 		sact->addEntry( "Short Press");
 		sact->addEntry( "Long Press");
 
-		SetupMenuSelect * screens = new SetupMenuSelect( "Screens", false, 0, true, &menu_screens );
-		rotarya->addEntry( screens );
+		SetupMenu * screens = new SetupMenu( "Screens");
+		rotary->addEntry( screens );
 		screens->setHelp(PROGMEM "Select screens to be activated one after each other by short press");
-		screens->addEntry( "Variometer");
-		screens->addEntry( "+ G-Meter");
+
+		SetupMenuSelect * scrgmet = new SetupMenuSelect( "G-Meter", false, upd_screens, true, &screen_gmeter );
+		scrgmet->addEntry( "Disable");
+		scrgmet->addEntry( "Enable");
+		screens->addEntry(scrgmet);
+
 		/*
-				screens->addEntry( "+ Traffic Alert");
-				screens->addEntry( "+ Thermal Assistant");
-		 */
-
-
+		SetupMenuSelect * scrfltr = new SetupMenuSelect( "Flarm Traffic", false, 0, true, &screen_flarm );
+		scrfltr->addEntry( "Disable");
+		scrfltr->addEntry( "Enable");
+		screens->addEntry(scrfltr);
+		*/
 		SetupMenuSelect * s2fsw = new SetupMenuSelect( "S2F Switch", false , 0, false, &s2f_switch_type );
 		hardware->addEntry( s2fsw );
 		s2fsw->setHelp( PROGMEM "Select S2F hardware switch type, what can be an normal switch or a push button without lock toggling S2F mode any time pressed");
@@ -1359,6 +1479,12 @@ void SetupMenu::setup( )
 		s2fsw->addEntry( "Push Button");
 		s2fsw->addEntry( "Switch Inverted");
 
+		SetupMenuSelect * gear = new SetupMenuSelect( "Gear Warn", false , config_gear_warning, false, &gear_warning );
+		hardware->addEntry( gear );
+		gear->setHelp( PROGMEM "Enable gear warning in case Flap Sensor (Pin 6) or Serial RS232 (Pin 4) is not equipped in S2");
+		gear->addEntry( "Disable");
+		gear->addEntry( "S2 Flap");
+		gear->addEntry( "S2 RS232");
 
 		if( hardwareRevision.get() >= 3 ){
 			SetupMenu * ahrs = new SetupMenu( "AHRS Setup" );
@@ -1388,7 +1514,7 @@ void SetupMenu::setup( )
 			ahrslc->addEntry( ahrslc2 );
 			ahrslc->addEntry( ahrslc3 );
 			ahrslc->addEntry( ahrslc4 );
-			static const char keys[][4] { "0","1","2","3","4","5","6","7","8","9",":",";","<","=",">","?","@","A","B","C","D","E","F","G","H","I","J","K","L","M","M","O","P","Q","R","S","T","U","V","W","X","Y","Z"};
+			static const char keys[][4] { "0","1","2","3","4","5","6","7","8","9",":",";","<","=",">","?","@","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"};
 			ahrslc1->addEntryList( keys, sizeof(keys)/4 );
 			ahrslc2->addEntryList( keys, sizeof(keys)/4 );
 			ahrslc3->addEntryList( keys, sizeof(keys)/4 );
@@ -1397,6 +1523,11 @@ void SetupMenu::setup( )
 			ahrsgf->setHelp(PROGMEM"Gyro factor in artifical horizont bank and pitch (more instant movement), zero disables Gyro");
 			ahrs->addEntry( ahrsgf );
 
+			SetupMenuSelect * rpyl = new SetupMenuSelect( "AHRS RPYL Sentence", false , 0, true, &ahrs_rpyl_dataset );
+			ahrs->addEntry( rpyl );
+			rpyl->setHelp( PROGMEM "Send LEVIL AHRS like $RPYL sentence for artifical horizon");
+			rpyl->addEntry( "Disable");
+			rpyl->addEntry( "Enable");
 		}
 
 		SetupMenuSelect * pstype = new SetupMenuSelect( "AS Sensor type", true , 0, false, &airspeed_sensor_type );
@@ -1407,9 +1538,9 @@ void SetupMenu::setup( )
 		pstype->addEntry( "MP5004");
 		pstype->addEntry( "Autodetect");
 
-		SetupMenuValFloat * fvoltadj = new SetupMenuValFloat( "Voltmeter Adjust", "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust,  false, false, true);
-		fvoltadj->setHelp(PROGMEM "Option to fine factory adjust voltmeter");
-		hardware->addEntry( fvoltadj );
+		SetupMenuValFloat::meter_adj_menu = new SetupMenuValFloat( "Voltmeter Adjust", "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust,  true, false, true);
+		SetupMenuValFloat::meter_adj_menu->setHelp(PROGMEM "Option to fine factory adjust voltmeter");
+		hardware->addEntry( SetupMenuValFloat::meter_adj_menu );
 
 		// Altimeter, IAS
 		SetupMenu * aia = new SetupMenu( "Altimeter, Airspeed" );
@@ -1451,7 +1582,7 @@ void SetupMenu::setup( )
 		stawaen->addEntry( "Disable");
 		stawaen->addEntry( "Enable");
 
-		SetupMenuValFloat * staspe = new SetupMenuValFloat( "Stall Speed", "", 20, 200, 1, 0, true, &stall_speed  );
+		SetupMenuValFloat * staspe = new SetupMenuValFloat( "Stall Speed", "", 20, 200, 1, 0, true, &stall_speed, true  );
 		staspe->setHelp(PROGMEM"Configure stalling speed for corresponding airplane type and reboot");
 		stallwa->addEntry( staspe );
 
@@ -1496,7 +1627,7 @@ void SetupMenu::setup( )
 		s1outs1->addEntry( "Disable");
 		s1outs1->addEntry( "Enable");
 		s1out->addEntry( s1outs1 );
-		SetupMenuSelect * s1outcan = new SetupMenuSelect( PROGMEM "S2-CAN", false, update_routing_s1, true, &rt_s1_can );
+		SetupMenuSelect * s1outcan = new SetupMenuSelect( PROGMEM "CAN-bus", false, update_routing_s1, true, &rt_s1_can );
 		s1outcan->addEntry( "Disable");
 		s1outcan->addEntry( "Enable");
 		s1out->addEntry( s1outcan );
@@ -1556,7 +1687,7 @@ void SetupMenu::setup( )
 			s2outs2->addEntry( "Disable");
 			s2outs2->addEntry( "Enable");
 			s2out->addEntry( s2outs2 );
-			SetupMenuSelect * s2outcan = new SetupMenuSelect( PROGMEM "S2-CAN", false, update_routing_s2, true, &rt_s2_can );
+			SetupMenuSelect * s2outcan = new SetupMenuSelect( PROGMEM "CAN-bus", false, update_routing_s2, true, &rt_s2_can );
 			s2outcan->addEntry( "Disable");
 			s2outcan->addEntry( "Enable");
 			s2out->addEntry( s2outcan );
@@ -1633,6 +1764,7 @@ void SetupMenu::setup( )
 		nmea->addEntry( "Borgelt");
 		nmea->addEntry( "Cambridge");
 		nmea->addEntry( "XCVario");
+		nmea->addEntry( "Disable");
 
 	}
 	SetupMenu::display();

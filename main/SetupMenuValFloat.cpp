@@ -15,6 +15,7 @@
 #include <esp_log.h>
 
 SetupMenuValFloat * SetupMenuValFloat::qnh_menu = 0;
+SetupMenuValFloat * SetupMenuValFloat::meter_adj_menu = 0;
 char SetupMenuValFloat::_val_str[20];
 
 SetupMenuValFloat::SetupMenuValFloat( const char* title, const char *unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs, bool restart, bool sync, bool live_update ) {
@@ -63,16 +64,17 @@ void SetupMenuValFloat::setPrecision( int prec ){
 	bits._precision = prec;
 }
 
-void SetupMenuValFloat::showQnhMenu(){
-	ESP_LOGI(FNAME,"showQnhMenu()");
-	if( qnh_menu ) {
-		ESP_LOGI(FNAME,"qnh_menu = true");
+void SetupMenuValFloat::showMenu( float val, SetupMenuValFloat * menu ){
+	ESP_LOGI(FNAME,"showMenu()");
+	if( menu ) {
+		ESP_LOGI(FNAME,"menu found");
 		inSetup = true;
-		selected = qnh_menu;
+		selected = menu;
 		inSetup=true;
-		qnh_menu->clear();
-		qnh_menu->display();
-		qnh_menu->pressed = true;
+		menu->clear();
+		menu->display();
+		menu->pressed = true;
+		menu->_value = val;
 	}
 }
 
@@ -163,7 +165,7 @@ void SetupMenuValFloat::longPress(){
 void SetupMenuValFloat::press(){
 	if( selected != this )
 		return;
-	// ESP_LOGI(FNAME,"SetupMenuValFloat press");
+	ESP_LOGI(FNAME,"SetupMenuValFloat press %d", pressed );
 	if ( pressed ){
 		// ESP_LOGI(FNAME,"pressed, value: %f", _value );
 		_nvs->set( _value );
@@ -174,18 +176,13 @@ void SetupMenuValFloat::press(){
 			selected = _parent;
 		selected->highlight = -1;  // to topmost selection when back
 		selected->pressed = true;
+		ESP_LOGI(FNAME,"Check if _value: %f != _value_safe: %f", _value, _value_safe );
 		if( _value != _value_safe ){
-			// ESP_LOGI(FNAME,"_value: %f != _value_safe: %f ", _value, _value_safe );
+			ESP_LOGI(FNAME,"Yes restart:%d", bits._restart);
 			_value_safe = _value;
 			_nvs->commit();
 			if( bits._restart ) {
-				Audio::shutdown();
-				clear();
-				ucg->setPrintPos( 10, 50 );
-				ucg->print("...rebooting now" );
-				SetupCommon::commitNow();
-				delay(2000);
-				esp_restart();
+				restart();
 			}
 		}
 		pressed = false;

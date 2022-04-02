@@ -4,6 +4,7 @@
 #include "Flap.h"
 #include "SetupMenuSelect.h"
 #include "SetupMenuValFloat.h"
+#include "average.h"
 
 
 Flap* Flap::_instance = nullptr;
@@ -21,15 +22,6 @@ static const char flap_labels[][4] = { "-9", "-8", "-7", "-6", "-5", "-4", "-3",
                                     "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",   // 39
                                     // N,L,S,3a,3b,A,21,..,27
                                     " N", " L", " S", "3a", "3b", " A", "21", "22", "23", "24", "25", "26", "27" };  // L=41  S=42
-
-
-void showWk(SetupMenuSelect *p){
-	p->ucg->setPrintPos(1,140);
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	p->ucg->printf("Sensor: %d      ", FLAP->getSensorRaw(256) );
-	xSemaphoreGive(spiMutex);
-	delay(5);
-}
 
 // Action Routines
 int select_flap_sens_pin(SetupMenuSelect *p){
@@ -67,14 +59,29 @@ int select_flap_sens_pin(SetupMenuSelect *p){
 	return 0;
 }
 
-void wk_cal_show( SetupMenuSelect *p, int wk ){
+unsigned int Flap::getSensorRaw(int oversampling) {
+	return haveSensor() ? sensorAdc->getRaw(oversampling) : 0;
+}
+
+int wk_cal_show( SetupMenuSelect *p, int wk, Average<50> &filter){
 	p->ucg->setPrintPos(1,60);
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->printf("Set Flap %+d   ", wk );
 	xSemaphoreGive(spiMutex);
 	delay(500);
-	while( !p->readSwitch() )
-		showWk(p);
+	int flap = 0;
+	int i=0;
+	while( !p->readSwitch() ){
+		i++;
+		flap = filter( (int)(FLAP->getSensorRaw(64)) );
+		if( !(i%10) ){
+			p->ucg->setPrintPos(1,140);
+			xSemaphoreTake(spiMutex,portMAX_DELAY );
+			p->ucg->printf("Sensor: %d      ", flap );
+			xSemaphoreGive(spiMutex);
+		}
+	}
+	return flap;
 }
 
 int flap_speed_act( SetupMenuValFloat *p ){
@@ -105,38 +112,40 @@ int flap_cal_act( SetupMenuSelect *p )
 		ESP_LOGI(FNAME,"Abort calibration, no signal");
 		return 0;
 	}
+	Average<50> filter;
 	if( p->getSelect() ){
 		p->clear();
 		p->ucg->setPrintPos(1,200);
 		p->ucg->setFont(ucg_font_ncenR14_hr, true );
 		p->ucg->printf("Press for next");
 		p->ucg->setFont(ucg_font_fub25_hr, true );
+		int flap;
 		if( flap_pos_max.get() > 2 ){
-			wk_cal_show( p,3 );
-			wk_sens_pos_plus_3.set( FLAP->getSensorRaw(256) );
+			flap = wk_cal_show( p,3,filter );
+			wk_sens_pos_plus_3.set( flap );
 		}
 		if( flap_pos_max.get() > 1 ){
-			wk_cal_show( p,2 );
-			wk_sens_pos_plus_2.set( FLAP->getSensorRaw(256) );
+			flap = wk_cal_show( p,2,filter );
+			wk_sens_pos_plus_2.set( flap );
 		}
 		if( flap_pos_max.get() > 0 ){
-			wk_cal_show( p,1 );
-			wk_sens_pos_plus_1.set( FLAP->getSensorRaw(256) );
+			flap = wk_cal_show( p,1,filter );
+			wk_sens_pos_plus_1.set( flap );
 		}
-		wk_cal_show( p,0 );
-		wk_sens_pos_0.set( FLAP->getSensorRaw(256) );
+		flap = wk_cal_show( p,0,filter );
+		wk_sens_pos_0.set( flap );
 
 		if( flap_neg_max.get() < 0 ){
-			wk_cal_show( p,-1 );
-			wk_sens_pos_minus_1.set( FLAP->getSensorRaw(256) );
+			flap = wk_cal_show( p,-1,filter );
+			wk_sens_pos_minus_1.set( flap );
 		}
 		if( flap_neg_max.get() < -1 ){
-			wk_cal_show( p,-2 );
-			wk_sens_pos_minus_2.set( FLAP->getSensorRaw(256) );
+			flap = wk_cal_show( p,-2,filter );
+			wk_sens_pos_minus_2.set( flap );
 		}
 		if( flap_neg_max.get() < -2 ){
-			wk_cal_show( p,-3 );
-			wk_sens_pos_minus_3.set( FLAP->getSensorRaw(256) );
+			flap = wk_cal_show( p,-3,filter );
+			wk_sens_pos_minus_3.set( flap );
 		}
 
 		p->ucg->setPrintPos(1,260);

@@ -95,8 +95,6 @@ CircleWind::~CircleWind()
 /** Called if a new sample is available in the sample list. */
 void CircleWind::newSample( Vector curVec )
 {
-	if( SetupCommon::isClient() )
-		return;
 	// circle detection
 	if( lastHeading != -1 )
 	{
@@ -105,8 +103,10 @@ void CircleWind::newSample( Vector curVec )
 		if( flightMode == circlingL || flightMode == circlingR )
 			circleDegrees += abs(headingDiff);
 	}
-	lastHeading = curVec.getAngleDeg();
+	if( SetupCommon::isClient() )
+		return;
 
+	lastHeading = curVec.getAngleDeg();
 	if( flightMode != circlingL && flightMode != circlingR ){
 		// ESP_LOGI(FNAME,"FlightMode not circling %d", flightMode );
 		status = "Not Circling";
@@ -337,9 +337,9 @@ void CircleWind::gpsStatusChange( bool newStatus )
 {
 	if( SetupCommon::isClient() )
 		return;
-	ESP_LOGI(FNAME,"gpsStatusChange status:%d", newStatus );
 	if( gpsStatus != newStatus  )
 	{
+		ESP_LOGI(FNAME,"gpsStatusChange status:%d", newStatus );
 		// we are not active because we had no GPS fix but that has been
 		// changed now. So we become active.
 		// Initialize analyzer-parameters

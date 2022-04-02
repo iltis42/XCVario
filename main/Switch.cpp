@@ -19,6 +19,9 @@
 #include "Setup.h"
 #include "sensor.h"
 #include "Flap.h"
+#include "KalmanMPU6050.h"
+#include "average.h"
+#include "vector.h"
 
 bool Switch::_cruise_mode_sw = false;
 bool Switch::_cruise_mode_speed = false;
@@ -31,6 +34,7 @@ bool Switch::cm_auto_prev = false;
 bool Switch::cruise_mode_final = false;
 bool Switch::_cruise_mode_xcv = false;
 bool Switch::cm_xcv_prev = false;
+Average<GYRO_FILTER_SAMPLES, float, float> Switch::filter;
 
 gpio_num_t Switch::_sw = GPIO_NUM_0;
 
@@ -62,11 +66,26 @@ bool Switch::cruiseMode() {
 			cruise_mode_final = _cruise_mode_speed;
 		}
 	}
-	else if( audio_mode.get() == AM_FLAP ){
-		if( FLAP->getFlapPosition() > s2f_flap_pos.get() )
+	else if( audio_mode.get() == AM_FLAP  ){
+		if( flap_enable.get() ){
+			if( FLAP->getFlapPosition() > s2f_flap_pos.get() )
+				cruise_mode_final = false;
+			else
+				cruise_mode_final = true;
+		}
+	}
+	else if( audio_mode.get() == AM_AHRS ){
+		float gr = (float)filter( (float)IMU::getGyroRate() );
+		// ESP_LOGI( FNAME,"Gyro-Rate %.2f", gr );
+		float ref = s2f_gyro_deg.get();
+		if( cruise_mode_final )
+			ref = ref*1.2;  // 20% hysteresis
+		// ESP_LOGI( FNAME,"Gyro-Rate: %.2f  thres: %.2f", gr, ref );
+		if( gr < ref )   // default 12° per second
 			cruise_mode_final = true;
 		else
 			cruise_mode_final = false;
+		// ESP_LOGI( FNAME,"Gyro-Rate: %.2f  thres: %.2f cmf: %d", gr, ref, cruise_mode_final  );
 	}
 	else if( audio_mode.get() == AM_SWITCH ){
 		if( cruise_mode_final != _cruise_mode_sw ){
@@ -143,16 +162,22 @@ void Switch::tick() {
 
 	if( audio_mode.get() == AM_AUTOSPEED || audio_mode.get() == AM_SWITCH ){   // both of this modes consider switch
 		if( s2f_switch_type.get() == S2F_HW_SWITCH || s2f_switch_type.get() == S2F_HW_SWITCH_INVERTED ){
-			if( isClosed() )
-				if( s2f_switch_type.get() == S2F_HW_SWITCH_INVERTED )
+			if( isClosed() ){
+				if( s2f_switch_type.get() == S2F_HW_SWITCH_INVERTED ){
 					_cruise_mode_sw = false;
-				else
+				}
+				else{
 					_cruise_mode_sw = true;
-			else
-				if( s2f_switch_type.get() == S2F_HW_SWITCH_INVERTED )
+				}
+			}
+			else{
+				if( s2f_switch_type.get() == S2F_HW_SWITCH_INVERTED ){
 					_cruise_mode_sw = true;
-				else
+				}
+				else{
 					_cruise_mode_sw = false;
+				}
+			}
 		}
 		else if( s2f_switch_type.get() == S2F_HW_PUSH_BUTTON ){
 			if( _holddown ){   // debouncing
@@ -175,7 +200,7 @@ void Switch::tick() {
 			}
 		}
 	}
-	if( !(_tick%20) )
+	if( !(_tick%100) )  // called every 10 mS, once in a second switch mode
 		Switch::cruiseMode();
 
 }

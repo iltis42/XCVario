@@ -29,6 +29,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include "CenterAid.h"
 
 int screens_init = INIT_DISPLAY_NULL;
 
@@ -42,6 +43,10 @@ int   IpsDisplay::yellow = 25;
 bool IpsDisplay::netto_old = false;
 int16_t IpsDisplay::char_width; // for roling altimeter
 int16_t IpsDisplay::char_height;
+
+// Average Vario data
+char IpsDisplay::last_s[20] = { "\0" };
+int IpsDisplay::x_start = 240;
 
 #define DISPLAY_H 320
 #define DISPLAY_W 240
@@ -102,7 +107,8 @@ int ASLEN = 0;
 static const int16_t INNER_RIGHT_ALIGN = 170;
 static int fh;
 
-extern xSemaphoreHandle spiMutex; // todo needs a better concept here
+extern xSemaphoreHandle spiMutex;
+xSemaphoreHandle display_mutex=NULL;
 
 #define PMLEN 24
 
@@ -112,7 +118,7 @@ ucg_color_t IpsDisplay::colorsalt[TEMAX+1+TEGAP];
 AdaptUGC *IpsDisplay::ucg = 0;
 
 int IpsDisplay::_te=0;
-int IpsDisplay::_ate=0;
+int IpsDisplay::_ate=-1000;
 int IpsDisplay::s2falt=-1;
 int IpsDisplay::s2fdalt=0;
 int IpsDisplay::s2f_level_prev=0;
@@ -140,6 +146,7 @@ int   IpsDisplay::_divisons = 5;
 float IpsDisplay::_range = 5.;
 int   IpsDisplay::average_climb = -100;
 float IpsDisplay::average_climbf = 0;
+int   IpsDisplay::prev_winddir = 0;
 int   IpsDisplay::prev_heading = 0;
 int   IpsDisplay::prev_windspeed = 0;
 float IpsDisplay::pref_qnh = 0;
@@ -265,6 +272,7 @@ IpsDisplay::IpsDisplay( AdaptUGC *aucg ) {
 	_dc = GPIO_NUM_MAX;
 	_reset = GPIO_NUM_MAX;
 	_cs = GPIO_NUM_MAX;
+	display_mutex = xSemaphoreCreateMutex();
 }
 
 IpsDisplay::~IpsDisplay() {
@@ -334,6 +342,7 @@ void IpsDisplay::bootDisplay() {
 		ucg->setRedBlueTwist( true );
 	if( display_type.get() == ILI9341_TFT_18P )
 		ucg->invertDisplay( true );
+	ESP_LOGI(FNAME,"clear boot");
 	clear();
 	ucg->setColor(1, COLOR_BLACK );
 	ucg->setColor(0, COLOR_WHITE );
@@ -569,7 +578,10 @@ void IpsDisplay::redrawValues()
 	needle_pos_old=-1000;
 	mcalt = -100;
 	as_prev = -1;
-	_ate = -200;
+	_ate = -2000;
+	last_s[0] = '\0';
+	x_start = 240;
+
 	alt_prev = -1;
 	pref_qnh = -1;
 	tyalt = 0;
@@ -593,6 +605,7 @@ void IpsDisplay::redrawValues()
 	old_polar_sink = -100;
 	old_vario_bar_val = 0;
 	old_sink_bar_val = 0;
+	prev_winddir = -1000;
 	prev_heading = -1000;
 	 
 	switch ( alt_quantization.get() ) {
@@ -793,7 +806,7 @@ void IpsDisplay::drawS2FBar(int16_t x, int16_t y, int s2fd)
 	for ( int i = s2f_level_prev + ((s2f_level_prev==0 || s2f_level_prev*inc>0) ? inc : 0);
 			i != level+((i*inc < 0)?0:inc); i+=inc ) {
 		if ( i != 0 ) {
-			drawArrow(x, y-2+(i>0?1:-1)*22, i, i*inc < 0);
+			drawArrow(x, y+(i>0?1:-1)*24, i, i*inc < 0);
 			// ESP_LOGI(FNAME,"s2fbar draw %d,%d", i, (i*inc < 0)?0:inc);
 		}
 	}
@@ -1225,8 +1238,8 @@ void IpsDisplay::drawWindArrow( float a, float speed, int type ){
 	if( _menu )
 		return;
 
-	const int X=80;
-	const int Y=220;
+	const int X=75;
+	const int Y=215;
 	float si=sin(D2R(a));
 	float co=cos(D2R(a));
 	const int b=9; // width of the arrow
@@ -1283,6 +1296,8 @@ void IpsDisplay::initRetroDisplay( bool ulmode ){
 	drawScale( _range, -_range, 140, 0);
 
 	// Unit's
+	if( _menu )
+		return;
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setPrintPos(5,50);
 	ucg->setColor(COLOR_HEADER);
@@ -1320,17 +1335,28 @@ void IpsDisplay::drawWarning( const char *warn, bool push ){
 }
 
 
-void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float ate ){
+void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float val ){
 	if( _menu )
 		return;
-	char s[15];
+	char s[20];
+	int ival = rint(val*10);  // integer value in steps of 10th
 	ucg->setFont(ucg_font_fub35_hn, false );
 	ucg->setFontPosCenter();
-	static const char* format[2] = {"   %2.1f", "   %2.0f"};
-	ucg->setColor( COLOR_WHITE );
-	sprintf(s, format[std::abs(ate)>10], round(ate*10.)/10.); // Avoid "-" sign because of not owns mantissa
-	ucg->setPrintPos(x - ucg->getStrWidth(s), y + 7);
-	ucg->print(s);
+	static const char* format[2] = {"%2.1f","%2.0f"};
+	sprintf(s, format[std::abs(ival)>100], float(ival/10.) );
+	if( strcmp( s, last_s ) != 0 ){  // only print if there a change in rounded numeric string
+		int new_x_start = x - ucg->getStrWidth(s);
+		if( new_x_start > x_start ){      // do we have a shorter string stating at higer x position
+			ucg->setColor( COLOR_BLACK );    // yes -> so blank exact prepending area
+			int fh = ucg->getFontAscent();   // height of blanking box
+			ucg->drawBox( x_start, y-fh/2, new_x_start-x_start, fh );  // draw blanking box
+		}
+		ucg->setColor( COLOR_WHITE );
+		ucg->setPrintPos(new_x_start, y + 7);
+		ucg->print(s);
+		strcpy( last_s, s );
+		x_start = new_x_start;
+	}
 	ucg->setFontPosBottom();
 }
 
@@ -1505,6 +1531,7 @@ void IpsDisplay::initLoadDisplay(){
 	if( _menu )
 		return;
 	ESP_LOGI(FNAME,"initLoadDisplay()");
+	xSemaphoreTake(spiMutex,portMAX_DELAY);
 	ucg->setColor( COLOR_HEADER );
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setPrintPos(20,20);
@@ -1524,11 +1551,18 @@ void IpsDisplay::initLoadDisplay(){
 	for( float a=gload_neg_limit.get()-1; a>-max_gscale; a-=0.05 ) {
 		drawOneScaleLine( ((float)a/max_gscale)*M_PI_2, 140, 150, 2, COLOR_RED );
 	}
+	for( float a=gload_pos_limit_low.get()-1; a<gload_pos_limit.get()-1; a+=0.05 ) {
+		drawOneScaleLine( ((float)a/max_gscale)*M_PI_2, 140, 150, 2, COLOR_ORANGE );
+	}
+	for( float a=gload_neg_limit_low.get()-1; a>gload_neg_limit.get()-1; a-=0.05 ) {
+		drawOneScaleLine( ((float)a/max_gscale)*M_PI_2, 140, 150, 2, COLOR_ORANGE );
+	}
 
 	initGauge(max_gscale, false); // no logarithmic gauge for g-load
 	drawScale( max_gscale, -max_gscale, 140, 1 );
 	old_gmax = 100;
 	old_gmin = -100;
+	xSemaphoreGive(spiMutex);
 	ESP_LOGI(FNAME,"initLoadDisplay end");
 }
 
@@ -1538,11 +1572,13 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 	if( _menu )
 		return;
 	tick++;
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
+
 	if( !(screens_init & INIT_DISPLAY_GLOAD) ){
+		clear();
 		initLoadDisplay();
 		screens_init |= INIT_DISPLAY_GLOAD;
 	}
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	// draw G pointer
 	float a = (*_gauge)(loadFactor-1.);
         ucg_color_t needlecolor[3] = { {COLOR_WHITE}, {COLOR_ORANGE}, {COLOR_RED} };
@@ -1579,6 +1615,22 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 	xSemaphoreGive(spiMutex);
 }
 
+
+float IpsDisplay::getHeading(){
+	float heading = 0;
+	if( (wind_reference.get() & WR_HEADING) )  // wind relative to airplane, first choice compass, second is GPS true course
+	{
+		heading = mag_hdt.get();
+		if( (heading < 0) && Flarm::gpsStatus() )            // fall back to GPS course
+			heading = Flarm::getGndCourse();
+	}
+	else if( (wind_reference.get() & WR_GPS_COURSE) ){
+		if( Flarm::gpsStatus() ){
+			heading = Flarm::getGndCourse();
+		}
+	}
+	return heading;
+}
 
 
 
@@ -1623,7 +1675,7 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass
 		}
 		// ESP_LOGI(FNAME, "WIND dir %d, speed %f, ok=%d", winddir, wind, ok );
 		int windspeed = (int)( Units::Airspeed(wind)+0.5 );
-		if( prev_heading != winddir || prev_windspeed != windspeed || compass_dirty ){
+		if( prev_winddir != winddir || prev_windspeed != windspeed || compass_dirty ){
 			ucg->setPrintPos(85,104);
 			ucg->setColor(  COLOR_WHITE  );
 			// ucg->setFont(ucg_font_fub20_hr);
@@ -1642,23 +1694,12 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass
 					ucg->printf("%s  ", s);
 			}
 		}
-		if( prev_heading != winddir || prev_windspeed != windspeed || wind_dirty ){
-			prev_heading = winddir;
-			if( wind_display.get() & WD_ARROW  ){
-				float dir=winddir;  // absolute wind related to geographic north
-				if( (wind_reference.get() & WR_HEADING) )  // wind relative to airplane, first choice compass, second is GPS true course
-				{
-					float heading = mag_hdt.get();
-					if( (heading < 0) && Flarm::gpsStatus() )            // fall back to GPS course
-						heading = Flarm::getGndCourse();
-					dir = Vector::angleDiffDeg( winddir, heading );
-				}
-				else if( (wind_reference.get() & WR_GPS_COURSE) ){
-					if( Flarm::gpsStatus() ){
-						float heading = Flarm::getGndCourse();
-						dir = Vector::angleDiffDeg( winddir, heading );
-					}
-				}
+		float heading = getHeading();
+		if( (prev_winddir != winddir) || (prev_windspeed != windspeed) || wind_dirty || (int)heading != (int)prev_heading ){
+			prev_winddir = winddir;  // absolute windir related to geographic north
+			prev_heading = heading;  // two things to consider here, heading and wind direction
+			if( wind_display.get() & WD_ARROW  ){ // draw wind arror
+				float dir = Vector::angleDiffDeg( winddir, heading );
 				drawWindArrow( dir, windspeed, 0 );
 			}
 			prev_windspeed = windspeed;
@@ -1672,7 +1713,7 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass
 		if( prev_heading != heading || compass_dirty ){
 			char s[20];
 			if( heading < 0 )
-				sprintf(s,"%s", "  ---" );
+				sprintf(s,"%s", "   ---" );
 			else
 				sprintf(s," %4d", heading );
 			ucg->setColor( COLOR_WHITE );
@@ -1771,7 +1812,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		return;
 	}
 	// average Climb
-	if( (int)(ate*30) != _ate && !(tick%3) ) {
+	if( ((int)(ate*30) != _ate) && !(tick%10) ) {
 		drawAvgVario( AMIDX + 38, AMIDY, ate );
 		_ate = (int)(ate*30);
 	}
@@ -1833,26 +1874,12 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		wind_dirty = false;
 	}
 
-	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
-	ucg_color_t needlecolor[3] = { {COLOR_WHITE}, {COLOR_ORANGE}, {COLOR_RED} };
-	if( drawPolarIndicator(needle_pos, 80, 132, 9, needlecolor[needle_color.get()], needle_dirty) ) {
-		alt_dirty = alt_overlap_old;
-		alt_overlap_old = alt_overlap;
-
-		speed_dirty = speed_overlap_old;
-		speed_overlap_old = speed_overlap;
-
-		wind_dirty = wind_overlap_old;
-		wind_overlap_old = wind_overlap;
-
-		compass_dirty = compass_overlap_old;
-		compass_overlap_old = compass_overlap;
-
-		// Draw colored bow
-		float bar_val = (needle_pos>0.) ? needle_pos : 0.;
-		// draw green/red vario bar
-		drawBow(bar_val, old_vario_bar_val, 134, bowcolor[BC_GREEN] );
+	// Center Aid around grafic wind
+	if( (centeraid && !(tick % 9)) || (centeraid && wind_dirty)  ){
+		centeraid->drawCenterAid();
 	}
+
+
 
 	// ESP_LOGI(FNAME,"polar-sink:%f Old:%f int:%d old:%d", polar_sink, old_polar_sink, int( polar_sink*100.), int( old_polar_sink*100. ) );
 	if( ps_display.get() && !(tick%3) ){
@@ -1919,6 +1946,27 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		average_climb = (int)(acl*10);
 		average_climbf = acl;
 	}
+	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
+	ucg_color_t needlecolor[3] = { {COLOR_WHITE}, {COLOR_ORANGE}, {COLOR_RED} };
+	if( drawPolarIndicator(needle_pos, 80, 132, 9, needlecolor[needle_color.get()], needle_dirty) ) {
+		alt_dirty = alt_overlap_old;
+		alt_overlap_old = alt_overlap;
+
+		speed_dirty = speed_overlap_old;
+		speed_overlap_old = speed_overlap;
+
+		wind_dirty = wind_overlap_old;
+		wind_overlap_old = wind_overlap;
+
+		compass_dirty = compass_overlap_old;
+		compass_overlap_old = compass_overlap;
+
+		// Draw colored bow
+		float bar_val = (needle_pos>0.) ? needle_pos : 0.;
+		// draw green/red vario bar
+		drawBow(bar_val, old_vario_bar_val, 134, bowcolor[BC_GREEN] );
+	}
+
 	xSemaphoreGive(spiMutex);
 }
 
@@ -1930,13 +1978,14 @@ void IpsDisplay::drawDisplay( int airspeed, float te, float ate, float polar_sin
 	if ( alt_display_mode.get() == MODE_QFE ) {
 		altitude -= elevation.get();
 	}
-
+	xSemaphoreTake(display_mutex,portMAX_DELAY);
 	if( display_style.get() == DISPLAY_AIRLINER )
 		drawAirlinerDisplay( airspeed,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_setting, wksensor );
 	else if( display_style.get() == DISPLAY_RETRO )
 		drawRetroDisplay( airspeed,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_setting, wksensor, false );
 	else if( display_style.get() == DISPLAY_UL )
 		drawRetroDisplay( airspeed,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_setting, wksensor, true );
+	xSemaphoreGive(display_mutex);
 
 }
 

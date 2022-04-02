@@ -9,6 +9,7 @@
 #define _SetupMenu_H_
 #include "MenuEntry.h"
 #include <string>
+#include <driver/gpio.h>
 
 class IpsDisplay;
 class ESPRotary;
@@ -28,9 +29,11 @@ public:
 	void down( int count );
 	void press();
 	void longPress();
-	void showMenu( bool pressed );
+	void escape();
+	void showMenu();
 	static void catchFocus( bool activate );
 	static bool focus;
+	static gpio_num_t getGearWarningIO();
 };
 
 #endif

@@ -12,7 +12,7 @@ class Flarm {
 public:
 	static void setDisplay( AdaptUGC *theUcg ) { ucg = theUcg; };
 	static void parsePFLAE( const char *pflae );
-	static void parsePFLAU( const char *pflau );
+	static void parsePFLAU( const char *pflau, bool sim=false );
 	static void parsePFLAA( const char *pflaa );
 	static void parsePFLAX( const char *pflax, int port );
 	static void parseGPRMC( const char *gprmc );
@@ -25,14 +25,17 @@ public:
 	static void initFlarmWarning();
 	static void progress();
 	static bool connected(); // returns true if Flarm is connected
-	static inline bool getGPS( double &gndSpeedKmh, double &gndTrack ) { if( gpsOK ) {
-		gndSpeedKmh = Units::knots2kmh(gndSpeedKnots);
-		gndTrack = gndCourse;
-		return true; }
-	else
-		return false;
+	static inline bool getGPS( double &gndSpeedKmh, double &gndTrack ) {
+		if( myGPS_OK ) {
+			gndSpeedKmh = Units::knots2kmh(gndSpeedKnots);
+			gndTrack = gndCourse;
+			return true;
+		}
+		else{
+			return false;
+		}
 	}
-	static bool gpsStatus() { return gpsOK; }
+	static inline bool gpsStatus() { return myGPS_OK; }
 	static double getGndSpeedKnots() { return gndSpeedKnots; }
 	static double getGndCourse() { return gndCourse; }
 	static int bincom;
@@ -56,9 +59,9 @@ private:
 	static int RelativeBearing,RelativeVertical,RelativeDistance;
 	static double gndSpeedKnots;
 	static double gndCourse;
-	static bool   gpsOK;
+	static bool   myGPS_OK;
 	static int AlarmType;
-	static char ID[8];
+	static char ID[20];
 	static int oldDist;
 	static int oldVertical;
 	static int oldBear;
@@ -67,6 +70,7 @@ private:
 	static int timeout;
 	static int ext_alt_timer;
 	static int _numSat;
+	static int sim_tick;
 };
 
 #endif

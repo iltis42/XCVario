@@ -37,6 +37,7 @@
 #include "Flarm.h"
 #include "Switch.h"
 #include "DataMonitor.h"
+#include "DataLink.h"
 
 typedef struct client_record {
 	int client;
@@ -45,17 +46,18 @@ typedef struct client_record {
 
 typedef struct xcv_sock_server {
 	RingBufCPP<SString, QUEUE_SIZE>* txbuf;
-	RingBufCPP<SString, QUEUE_SIZE>* rxbuf;
 	int port;
 	int idle;
 	TaskHandle_t pid;
 	std::list<client_record_t>  clients;
+	DataLink *dlw;
 }sock_server_t;
 
-static sock_server_t XCVario   = { .txbuf = &wl_vario_tx_q, .rxbuf = &wl_vario_rx_q, .port=8880, .idle = 0, .pid = 0 };
-static sock_server_t FLARM     = { .txbuf = &wl_flarm_tx_q, .rxbuf = &wl_flarm_rx_q, .port=8881, .idle = 0, .pid = 0 };
-static sock_server_t AUX       = { .txbuf = &wl_aux_tx_q,   .rxbuf = &wl_aux_rx_q,   .port=8882, .idle = 0, .pid = 0 };
-static sock_server_t XCVarioMS = { .txbuf = &can_tx_q,   .rxbuf = &can_rx_q,   .port=8884, .idle = 0, .pid = 0 };
+static sock_server_t XCVario   = { .txbuf = &wl_vario_tx_q, .port=8880, .idle = 0, .pid = 0 };
+static sock_server_t FLARM     = { .txbuf = &wl_flarm_tx_q, .port=8881, .idle = 0, .pid = 0 };
+static sock_server_t AUX       = { .txbuf = &wl_aux_tx_q,   .port=8882, .idle = 0, .pid = 0 };
+static sock_server_t XCVarioMS = { .txbuf = &can_tx_q,      .port=8884, .idle = 0, .pid = 0 };
+
 
 #define WIFI_BUFFER_SIZE 513
 // char WifiApp::buffer[WIFI_BUFFER_SIZE];
@@ -119,6 +121,7 @@ void WifiApp::socket_server(void *setup) {
 		ESP_LOGE(FNAME, "Socket creation for %d port FAILED: Abort task", config->port );
 		vTaskDelete(NULL);
 	}
+	config->dlw = new DataLink();
 	// we have a socket
 	fcntl(sock, F_SETFL, O_NONBLOCK); // socket should not block, so we can server several clients
 	while (1)
@@ -162,9 +165,7 @@ void WifiApp::socket_server(void *setup) {
 				// ESP_LOGI(FNAME, "read from wifi client %d", client_rec.client );
 				ssize_t sizeRead = recv(client_rec.client, r, SSTRLEN-1, MSG_DONTWAIT);
 				if (sizeRead > 0) {
-					SString tcprx;
-					tcprx.set( r, sizeRead );
-					Router::forwardMsg( tcprx, *(config->rxbuf) );
+					config->dlw->process( r, sizeRead, config->port );
 					DM.monitorString( MON_WIFI_8880+config->port-8880, DIR_RX, r );
 					// ESP_LOGI(FNAME, "RX wifi client port %d size: %d bincom:%d", config->port, sizeRead, Flarm::bincom );
 					// ESP_LOG_BUFFER_HEXDUMP(FNAME,tcprx.c_str(),sizeRead, ESP_LOG_INFO);
@@ -249,9 +250,6 @@ void WifiApp::wifi_init_softap()
 		ESP_LOGV(FNAME,"now esp_wifi_init");
 		wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
 		ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-
-
-
 		esp_event_loop_init( (system_event_cb_t)wifi_event_handler, 0 );
 
 		ESP_LOGV(FNAME,"now esp_wifi_set_mode");
@@ -281,13 +279,13 @@ void WifiApp::wifi_init_softap()
 		ESP_ERROR_CHECK(esp_wifi_set_max_tx_power( int(wifi_max_power.get()*80.0/100.0) ));
 
 		if( serial2_speed.get() != 0 &&  serial2_tx.get() != 0 )  // makes only sense if there is data from AUX = serial interface S2
-			xTaskCreatePinnedToCore(&socket_server, "socket_ser_2", 3300, &AUX, 10, &AUX.pid, 0);  // 10
+			xTaskCreatePinnedToCore(&socket_server, "socket_ser_2", 4096, &AUX, 10, &AUX.pid, 0);  // 10
 		if( wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE ) // 8880 Wifi server makes only sense if mode is WLAN, not Bluetooth
-			xTaskCreatePinnedToCore(&socket_server, "socket_srv_0", 3300, &XCVario, 11, &XCVario.pid, 0);  // 10
+			xTaskCreatePinnedToCore(&socket_server, "socket_srv_0", 4096, &XCVario, 11, &XCVario.pid, 0);  // 10
 		if( serial1_speed.get() != 0 &&  serial1_tx.get() != 0 ) // makes only sense if there is a FLARM connected on S1
-			xTaskCreatePinnedToCore(&socket_server, "socket_ser_1", 3300, &FLARM, 12, &FLARM.pid, 0);  // 10
+			xTaskCreatePinnedToCore(&socket_server, "socket_ser_1", 4096, &FLARM, 12, &FLARM.pid, 0);  // 10
 		if( wireless == WL_WLAN_MASTER ) // New port 8884 makes sense if we are WLAN_MASTER (this is backward compatible)
-			xTaskCreatePinnedToCore(&socket_server, "socket_srv_3", 3300, &XCVarioMS, 9, &XCVarioMS.pid, 0);  // 10
+			xTaskCreatePinnedToCore(&socket_server, "socket_srv_3", 4096, &XCVarioMS, 9, &XCVarioMS.pid, 0);  // 10
 
 		ESP_LOGV(FNAME, "wifi_init_softap finished SUCCESS. SSID:%s password:%s channel:%d", (char *)wc.ap.ssid, (char *)wc.ap.password, wc.ap.channel );
 	}

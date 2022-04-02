@@ -72,6 +72,7 @@
 #include <cstring>
 #include "DataMonitor.h"
 #include "AdaptUGC.h"
+#include "CenterAid.h"
 
 // #include "sound.h"
 
@@ -117,7 +118,9 @@ PressureSensor *baroSensor = 0;
 PressureSensor *teSensor = 0;
 
 AdaptUGC *MYUCG = 0;  // ( SPI_DC, CS_Display, RESET_Display );
-IpsDisplay *display;
+IpsDisplay *display = 0;
+CenterAid  *centeraid = 0;
+
 bool topDown = false;
 
 OTA *ota = 0;
@@ -176,12 +179,15 @@ int   stall_alarm_off_holddown=0;
 int count=0;
 bool flarmWarning = false;
 bool gLoadDisplay = false;
+bool gear_warning_active = false;
 int hold_alarm=0;
 int the_can_mode = CAN_MODE_MASTER;
 int active_screen = 0;  // 0 = Vario
 bool flarmDownload = false; // Flarm IGC download flag
 
 AdaptUGC *egl = 0;
+
+#define GYRO_FS (mpud::GYRO_FS_250DPS)
 
 float getTAS() { return tas; };
 
@@ -191,21 +197,21 @@ bool do_factory_reset() {
 
 void drawDisplay(void *pvParameters){
 	while (1) {
-	  if( Flarm::bincom ) {
-	      if( flarmDownload == false ) {
-	        flarmDownload = true;
-	        display->clear();
-	        Flarm::drawDownloadInfo();
-	      }
-	      // Flarm IGC download is running, display will be blocked, give Flarm
-	      // download all cpu power.
-	      vTaskDelay(20/portTICK_PERIOD_MS);
-	      continue;
-	  }
-	  else if( flarmDownload == true ) {
-	    flarmDownload = false;
-	    display->clear();
-	  }
+		if( Flarm::bincom ) {
+			if( flarmDownload == false ) {
+				flarmDownload = true;
+				display->clear();
+				Flarm::drawDownloadInfo();
+			}
+			// Flarm IGC download is running, display will be blocked, give Flarm
+			// download all cpu power.
+			vTaskDelay(20/portTICK_PERIOD_MS);
+			continue;
+		}
+		else if( flarmDownload == true ) {
+			flarmDownload = false;
+			display->clear();
+		}
 		// TickType_t dLastWakeTime = xTaskGetTickCount();
 		if( inSetup != true ) {
 			float t=OAT.get();
@@ -255,6 +261,22 @@ void drawDisplay(void *pvParameters){
 					}
 				}
 			}
+			if( gear_warning.get() ){
+				if( digitalRead( SetupMenu::getGearWarningIO() ) && !stall_warning_active ){
+					if( !gear_warning_active ){
+						Audio::alarm( true );
+						display->drawWarning( "! GEAR !", false );
+						gear_warning_active = true;
+					}
+				}else{
+					if( gear_warning_active ){
+						Audio::alarm( false );
+						display->clear();
+						gear_warning_active = false;
+					}
+				}
+			}
+
 			// Flarm Warning Screen
 			if( flarm_warning.get() && !stall_warning_active && Flarm::alarmLevel() >= flarm_warning.get() ){ // 0 -> Disable
 				// ESP_LOGI(FNAME,"Flarm::alarmLevel: %d, flarm_warning.get() %d", Flarm::alarmLevel(), flarm_warning.get() );
@@ -275,18 +297,17 @@ void drawDisplay(void *pvParameters){
 			if( flarmWarning )
 				Flarm::drawFlarmWarning();
 			// G-Load Display
+			// ESP_LOGI(FNAME,"Active Screen = %d", active_screen );
 			if( (((float)accelG[0] > gload_pos_thresh.get() || (float)accelG[0] < gload_neg_thresh.get()) && gload_mode.get() == GLOAD_DYNAMIC ) ||
-					( gload_mode.get() == GLOAD_ALWAYS_ON ) || active_screen == SCREEN_GMETER  )
+					( gload_mode.get() == GLOAD_ALWAYS_ON ) || ((active_screen << SCREEN_GMETER) & 1)  )
 			{
 				if( !gLoadDisplay ){
 					gLoadDisplay = true;
-					display->clear();
 				}
 			}
 			else{
 				if( gLoadDisplay ) {
 					gLoadDisplay = false;
-					display->clear();
 				}
 			}
 			if( gLoadDisplay ) {
@@ -308,7 +329,7 @@ void drawDisplay(void *pvParameters){
 				}
 			}
 			// Vario Screen
-			if( !(stall_warning_active || flarmWarning || gLoadDisplay )  ) {
+			if( !(stall_warning_active || gear_warning_active || flarmWarning || gLoadDisplay )  ) {
 				// ESP_LOGI(FNAME,"TE=%2.3f", te_vario.get() );
 				display->drawDisplay( airspeed, te_vario.get(), aTE, polar_sink, altitude.get(), t, battery, s2f_delta, as2f, average_climb.get(), cruise_mode.get(), standard_setting, flap_pos.get() );
 			}
@@ -328,7 +349,7 @@ void doAudio(){
 	float netto = aTES2F - polar_sink;
 	as2f = Speed2Fly.speed( netto, !cruise_mode.get() );
 	s2f_delta = s2f_delta + ((as2f - ias.get()) - s2f_delta)* (1/(s2f_delay.get()*10)); // low pass damping moved to the correct place
-	// ESP_LOGI( FNAME, "te: %f, polar_sink: %f, netto %f, s2f: %f  delta: %f", te, polar_sink, netto, as2f, s2f_delta );
+	// ESP_LOGI( FNAME, "te: %f, polar_sink: %f, netto %f, s2f: %f  delta: %f", aTES2F, polar_sink, netto, as2f, s2f_delta );
 	if( vario_mode.get() == VARIO_NETTO || (cruise_mode.get() &&  (vario_mode.get() == CRUISE_NETTO)) ){
 		if( netto_mode.get() == NETTO_RELATIVE )
 			Audio::setValues( te_vario.get() - polar_sink + Speed2Fly.circlingSink( ias.get() ), s2f_delta );
@@ -343,13 +364,13 @@ void doAudio(){
 void audioTask(void *pvParameters){
 	while (1)
 	{
-	  TickType_t xLastWakeTime = xTaskGetTickCount();
-	  if( Flarm::bincom ) {
-      // Flarm IGC download is running, audio will be blocked, give Flarm
-      // download all cpu power.
-	    vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
-	    continue;
-	  }
+		TickType_t xLastWakeTime = xTaskGetTickCount();
+		if( Flarm::bincom ) {
+			// Flarm IGC download is running, audio will be blocked, give Flarm
+			// download all cpu power.
+			vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
+			continue;
+		}
 		doAudio();
 		Router::routeXCV();
 		if( uxTaskGetStackHighWaterMark( apid )  < 512 )
@@ -369,7 +390,7 @@ static void grabMPU()
 	if( err != ESP_OK )
 		ESP_LOGE(FNAME, "gyro I2C error, X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
 	accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
-	gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
+	gyroDPS = mpud::gyroDegPerSec(gyroRaw, GYRO_FS);  // raw data to º/s
 	// ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f  gyro X: %+.2f Y:%+.2f Z:%+.2f ABx:%d ABy:%d, ABz=%d\n", -accelG[2], accelG[1], accelG[0] ,  gyroDPS.x, gyroDPS.y, gyroDPS.z, accl_bias.get().x, accl_bias.get().y, accl_bias.get().z );
 	bool goodAccl = true;
 	if( abs( accelG.x - accelG_Prev.x ) > 1 || abs( accelG.y - accelG_Prev.y ) > 1 || abs( accelG.z - accelG_Prev.z ) > 1 ) {
@@ -377,7 +398,7 @@ static void grabMPU()
 		accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);
 		if( abs( accelG.x - accelG_Prev.x ) > 1 || abs( accelG.y - accelG_Prev.y ) > 1 || abs( accelG.z - accelG_Prev.z ) > 1 ){
 			goodAccl = false;
-			ESP_LOGE(FNAME, "accelaration change > g in 0.2 S:  X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
+			ESP_LOGE(FNAME, "accelaration change > 1 g in 0.2 S:  X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
 		}
 	}
 	bool goodGyro = true;
@@ -385,7 +406,7 @@ static void grabMPU()
 		// ESP_LOGE(FNAME, "gyro sensor out of bounds: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
 		// ESP_LOGE(FNAME, "%04x %04x %04x", gyroRaw.x, gyroRaw.y, gyroRaw.z );
 		MPU.rotation(&gyroRaw);
-		gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);
+		gyroDPS = mpud::gyroDegPerSec(gyroRaw, GYRO_FS );
 		if( abs( gyroDPS.x - gyroDPS_Prev.x ) > MGRPS || abs( gyroDPS.y - gyroDPS_Prev.y ) > MGRPS || abs( gyroDPS.z - gyroDPS_Prev.z ) > MGRPS ) {
 			goodGyro = false;
 			ESP_LOGE(FNAME, "gyro angle >90 deg/s in 0.2 S: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
@@ -413,6 +434,12 @@ static void toyFeed()
 	// maybe just 1 or 2 per second
 	static char lb[150];
 
+	if( ahrs_rpyl_dataset.get() ){
+		OV.sendNMEA( P_AHRS_RPYL, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altitude.get(), validTemperature,
+				-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
+		OV.sendNMEA( P_AHRS_APENV1, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altitude.get(), validTemperature,
+				-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
+	}
 	if( nmea_protocol.get() == BORGELT ) {
 		OV.sendNMEA( P_BORGELT, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altSTD, validTemperature  );
 		OV.sendNMEA( P_GENERIC, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altSTD, validTemperature  );
@@ -426,6 +453,9 @@ static void toyFeed()
 	else if( nmea_protocol.get() == XCVARIO ) {
 		OV.sendNMEA( P_XCVARIO, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altitude.get(), validTemperature,
 				-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
+	}
+	else if( nmea_protocol.get() == NMEA_OFF ) {
+		;
 	}
 	else
 		ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
@@ -545,7 +575,7 @@ void readSensors(void *pvParameters){
 			altSTD = baroSensor->calcAVGAltitudeSTD( baroP );
 		float new_alt = 0;
 		if( alt_select.get() == AS_TE_SENSOR ) // TE
-				new_alt = bmpVario.readAVGalt();
+			new_alt = bmpVario.readAVGalt();
 		else if( alt_select.get() == AS_BARO_SENSOR  || alt_select.get() == AS_EXTERNAL ){ // Baro or external
 			if(  alt_unit.get() == ALT_UNIT_FL ) { // FL, always standard
 				new_alt = altSTD;
@@ -634,7 +664,10 @@ void readSensors(void *pvParameters){
 			}
 		}
 		lazyNvsCommit();
-
+		if( screen_centeraid.get() ){
+			if( centeraid )
+				centeraid->tick();
+		}
 		esp_task_wdt_reset();
 		if( uxTaskGetStackHighWaterMark( bpid ) < 512 )
 			ESP_LOGW(FNAME,"Warning sensor task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );
@@ -848,7 +881,7 @@ void system_startup(void *args){
 		MPU.initialize();  // this will initialize the chip and set default configurations
 		MPU.setSampleRate(50);  // in (Hz)
 		MPU.setAccelFullScale(mpud::ACCEL_FS_8G);
-		MPU.setGyroFullScale(mpud::GYRO_FS_500DPS);
+		MPU.setGyroFullScale( GYRO_FS );
 		MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
 		mpud::raw_axes_t gb = gyro_bias.get();
 		mpud::raw_axes_t ab = accl_bias.get();
@@ -1197,18 +1230,18 @@ void system_startup(void *args){
 
 	Serial::begin();
 	// Factory test for serial interface plus cable
-	if( abs(factory_volt_adjust.get() - 0.00815) < 0.00001 ) {
-		String result("Serial ");
-		if( Serial::selfTest( 1 ) )
-			result += "S1 OK";
+	String result("Serial ");
+	if( Serial::selfTest( 1 ) )
+		result += "S1 OK";
+	else
+		result += "S1 FAIL";
+	if( (hardwareRevision.get() >= 3) && serial2_speed.get() ){
+		if( Serial::selfTest( 2 ) )
+			result += ",S2 OK";
 		else
-			result += "S1 FAIL";
-		if( hardwareRevision.get() >= 3 ){
-			if( Serial::selfTest( 2 ) )
-				result += ",S2 OK";
-			else
-				result += ",S2 FAIL";
-		}
+			result += ",S2 FAIL";
+	}
+	if( abs(factory_volt_adjust.get() - 0.00815) < 0.00001 ){
 		display->writeText( line++, result.c_str() );
 	}
 	Serial::taskStart();
@@ -1290,12 +1323,12 @@ void system_startup(void *args){
 		ESP_LOGI(FNAME,"Master Mode: QNH Autosetup, IAS=%3f (<50 km/h)", ias.get() );
 		// QNH autosetup
 		float ae = elevation.get();
+		float qnh_best = 1013.25;
 		bool ok;
 		baroP = baroSensor->readPressure(ok);
 		if( ae > 0 ) {
 			float step=10.0; // 80 m
 			float min=1000.0;
-			float qnh_best = 1013.25;
 			for( float qnh = 870; qnh< 1085; qnh+=step ) {
 				float alt = 0;
 				if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
@@ -1318,11 +1351,15 @@ void system_startup(void *args){
 				delay(50);
 			}
 			ESP_LOGI(FNAME,"Auto QNH=%4.2f\n", qnh_best);
-			if( qnh_unit.get() == QNH_HPA )
-				QNH.set( qnh_best );
+			QNH.set( qnh_best );
 		}
 		display->clear();
-		SetupMenuValFloat::showQnhMenu();
+		if( abs(factory_volt_adjust.get() - 0.00815) < 0.00001 ){
+			ESP_LOGI(FNAME,"Do Factory Voltmeter adj");
+			SetupMenuValFloat::showMenu( 0.0, SetupMenuValFloat::meter_adj_menu );
+		}else{
+			SetupMenuValFloat::showMenu( qnh_best, SetupMenuValFloat::qnh_menu );
+		}
 	}
 	else
 	{
@@ -1390,6 +1427,9 @@ void system_startup(void *args){
 				}
 			}
 		}
+	}
+	if( screen_centeraid.get() ){
+		centeraid = new CenterAid( MYUCG );
 	}
 	if( SetupCommon::isClient() ){
 		xTaskCreatePinnedToCore(&clientLoop, "clientLoop", 4096, NULL, 14, &bpid, 0);

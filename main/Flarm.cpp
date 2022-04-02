@@ -19,8 +19,8 @@ int Flarm::RelativeVertical = 0;
 int Flarm::RelativeDistance = 0;
 double Flarm::gndSpeedKnots = 0;
 double Flarm::gndCourse = 0;
-bool Flarm::gpsOK = false;
-char Flarm::ID[8] = "";
+bool Flarm::myGPS_OK = false;
+char Flarm::ID[20] = "";
 int Flarm::bincom = 0;
 AdaptUGC* Flarm::ucg;
 
@@ -28,19 +28,20 @@ extern xSemaphoreHandle spiMutex;
 
 // Option to simulate FLARM sentences
 const char *flarm[] = {
-		"$PFLAU,3,1,2,1,1,-60,2,-100,755,1234*\n",
-		"$PFLAU,3,1,2,1,1,-20,2,-100,655,1234*\n",
-		"$PFLAU,3,1,2,1,1,-10,2,-80,455,1234*\n",
-		"$PFLAU,3,1,2,1,2,10,2,-40,155,1234*\n",
-		"$PFLAU,3,1,2,1,2,20,2,-20,155,1234*\n",
-		"$PFLAU,3,1,2,1,3,30,2,0,155,1234*\n",
-		"$PFLAU,3,1,2,1,3,60,2,20,255,1234*\n",
-		"$PFLAU,3,1,2,1,2,80,2,40,455,1234*\n",
-		"$PFLAU,3,1,2,1,1,90,2,80,855,1234*\n",
-		"$PFLAU,3,1,2,1,1,90,2,80,1555,1234*\n"
+		"$PFLAU,3,1,2,1,1,-60,2,-100,355,1234*\n",
+		"$PFLAU,3,1,2,1,1,-20,2,-100,255,1234*\n",
+		"$PFLAU,3,1,2,1,1,-10,2,-80,175,1234*\n",
+		"$PFLAU,3,1,2,1,2,10,2,-40,150,1234*\n",
+		"$PFLAU,3,1,2,1,2,20,2,-20,130,1234*\n",
+		"$PFLAU,3,1,2,1,3,30,2,0,120,1234*\n",
+		"$PFLAU,3,1,2,1,3,60,2,20,125,1234*\n",
+		"$PFLAU,3,1,2,1,2,80,2,40,160,1234*\n",
+		"$PFLAU,3,1,2,1,1,90,2,80,210,1234*\n",
+		"$PFLAU,3,1,2,1,1,90,2,80,280,1234*\n"
 };
+#define NUM_SIM_DATASETS 10
+int Flarm::sim_tick=NUM_SIM_DATASETS*2;
 
-int sim=100;
 
 /* PFLAU,<RX>,<TX>,<GPS>,<Power>,<AlarmLevel>,<RelativeBearing>,<AlarmType>,<RelativeVertical>,<RelativeDistance>,<ID>
 		$PFLAU,3,1,2,1,2,-30,2,-32,755*FLARM is working properly and currently receives 3 other aircraft.
@@ -97,31 +98,32 @@ int Flarm::_numSat=0;
 int Flarm::bincom_port=0;
 
 void Flarm::flarmSim(){
+	// ESP_LOGI(FNAME,"flarmSim sim-tick: %d", sim_tick);
 	if( flarm_sim.get() ){
-		sim=-3;
+		sim_tick=-3;
 		flarm_sim.set( 0 );
 	}
-	if( sim < 10 ){
-		if( sim >= 0 ){
-			int cs = Protocols::calcNMEACheckSum( (char *)flarm[sim] );
+	if( sim_tick < NUM_SIM_DATASETS*2 ){
+		if( sim_tick >= 0 ){
+			int cs = Protocols::calcNMEACheckSum( (char *)flarm[sim_tick/2] );
 			char str[80];
-			sprintf( str, "%s%02X\r\n", flarm[sim], cs );
-			SString sf( str );
-			Router::forwardMsg( sf, s1_rx_q );
-			ESP_LOGI(FNAME,"Serial FLARM SIM: %s",  sf.c_str() );
+			sprintf( str, "%s%02X\r\n", flarm[sim_tick/2], cs );
+			// SString sf( str );
+			// Router::forwardMsg( sf, s1_rx_q );
+			parsePFLAU( str, true );
+			ESP_LOGI(FNAME,"Serial FLARM SIM: %s",  str );
 		}
-		sim++;
+		sim_tick++;
 	}
 }
 
 
 void Flarm::progress(){  // once per second
-	if( timeout )
+	if( timeout ){
 		timeout--;
-
-	if( !(timeout%2) ){  // every other second
-		flarmSim();
 	}
+	// ESP_LOGI(FNAME,"progress, timeout=%d", timeout );
+	flarmSim();
 }
 
 bool Flarm::connected(){
@@ -158,31 +160,33 @@ void Flarm::parseGPRMC( const char *gprmc ) {
 		ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", gprmc, calc_cs, cs );
 		return;
 	}
-	// ESP_LOGI(FNAME,"parseG*RMC: %s", gprmc );
 	sscanf( gprmc+3, "RMC,%*f,%c,%*f,%*c,%*f,%*c,%lf,%lf,%*d,%*f,%*c*%*02x", &warn, &gndSpeedKnots, &gndCourse);
-	if( wind_enable.get() != WA_OFF ){
-		// ESP_LOGI(FNAME,"Wind enable, gpsOK %d", gpsOK );
-		if( warn == 'A' ) {
-			if( gpsOK == false ){
-				gpsOK = true;
-				ESP_LOGI(FNAME,"GPRMC, GPS status changed to good: %s", gprmc );
+
+	//ESP_LOGI(FNAME,"GPRMC myGPS_OK %d warn %c", myGPS_OK, warn );
+	if( warn == 'A' ) {
+		if( myGPS_OK == false ){
+			myGPS_OK = true;
+			if( wind_enable.get() != WA_OFF ){
 				CircleWind::gpsStatusChange( true);
 			}
-			theWind.calculateWind();
-			// ESP_LOGI(FNAME,"Track: %3.2f, GPRMC: %s", gndCourse, gprmc );
-			CircleWind::newSample( Vector( gndCourse, Units::knots2kmh( gndSpeedKnots ) ) );
+			ESP_LOGI(FNAME,"GPRMC, GPS status changed to good, rmc:%s gps:%d", gprmc, myGPS_OK );
 		}
-		else{
-			if( gpsOK == true  ){
-				gpsOK = false;
-				ESP_LOGI(FNAME,"GPRMC, GPS status changed to bad: %s", gprmc );
+		theWind.calculateWind();
+		// ESP_LOGI(FNAME,"Track: %3.2f, GPRMC: %s", gndCourse, gprmc );
+		CircleWind::newSample( Vector( gndCourse, Units::knots2kmh( gndSpeedKnots ) ) );
+	}
+	else{
+		if( myGPS_OK == true  ){
+			myGPS_OK = false;
+			ESP_LOGI(FNAME,"GPRMC, GPS status changed to bad, rmc:%s gps:%d", gprmc, myGPS_OK );
+			if( wind_enable.get() != WA_OFF ){
 				CircleWind::gpsStatusChange( false );
+				ESP_LOGW(FNAME,"GPRMC, GPS not OK: %s", gprmc );
 			}
-			ESP_LOGI(FNAME,"GPRMC, GPS not OK: %s", gprmc );
 		}
 	}
 	timeout = 10;
-	// ESP_LOGI(FNAME,"parseGPRMC() GPS: %d, Speed: %3.1f knots, Track: %3.1f° ", gpsOK, gndSpeedKnots, gndCourse );
+	// ESP_LOGI(FNAME,"parseGPRMC() GPS: %d, Speed: %3.1f knots, Track: %3.1f° ", myGPS_OK, gndSpeedKnots, gndCourse );
 }
 
 /*
@@ -212,20 +216,22 @@ void Flarm::parseGPGGA( const char *gpgga ) {
 	// ESP_LOGI(FNAME,"parseGPGGA");
 	int numSat;
 	int cs;
-	// ESP_LOGV(FNAME,"parseG*GGA: %s", gpgga );
+	// ESP_LOGI(FNAME,"parseG*GGA: %s", gpgga );
 	int calc_cs=Protocols::calcNMEACheckSum( gpgga );
 	cs = Protocols::getNMEACheckSum( gpgga );
 	if( cs != calc_cs ){
 		ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", gpgga, calc_cs, cs );
 		return;
 	}
-	sscanf( gpgga+3, "GGA,%*f,%*f,%*c,%*f,%*c,%*d,%d,%*f,%*f,M,%*f,M,%*f,%*d*%*02x", &numSat);
-
-	if( numSat != _numSat && wind_enable.get() != WA_OFF ){
-		_numSat = numSat;
-		CircleWind::newConstellation( numSat );
+	int ret=sscanf( gpgga+3, "GGA,%*f,%*f,%*c,%*f,%*c,%*d,%d,%*f,%*f,M,%*f,M,%*f,%*d*%*02x", &numSat);
+	// ESP_LOGI(FNAME,"parseG*GGA: %s numSat=%d ssf_ret=%d", gpgga, numSat, ret );
+	if( ret >=1 ){
+		if( (numSat != _numSat) && (wind_enable.get() != WA_OFF) ){
+			_numSat = numSat;
+			CircleWind::newConstellation( numSat );
+		}
+		timeout = 10;
 	}
-	timeout = 10;
 }
 
 // parsePFLAE $PFLAE,A,0,0*33
@@ -249,7 +255,10 @@ void Flarm::parsePFLAE( const char *pflae ) {
 }
 
 
-void Flarm::parsePFLAU( const char *pflau ) {
+void Flarm::parsePFLAU( const char *pflau, bool sim_data ) {
+	if( !sim_data && (sim_tick < NUM_SIM_DATASETS*2) ){
+		return;  // drop FLARM data during simulation
+	}
 	// ESP_LOGI(FNAME,"parsePFLAU");
 	int cs;
 	int id;
@@ -270,9 +279,11 @@ void Flarm::parsePFLAX( const char *msg, int port ) {
 	// ESP_LOGI(FNAME,"parsePFLAX");
 	// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
 	int start=0;
+	/* Solved now by DataLink frame recognition
 	if( !strncmp( msg, "\n", 1 )  ){  // catch case when serial.cpp does not correctly dissect at '\n', needs further evaluation, maybe multiple '\n' sent ?
 		start=1;
 	}
+	*/
 	// Note, if the Flarm switch to binary mode was accepted, Flarm will answer
 	// with $PFLAX,A*2E. In error case you will get as answer $PFLAX,A,<error>*
 	// and the Flarm stays in text mode.

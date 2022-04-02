@@ -14,13 +14,14 @@ struct bitfield_select {
    bool _restart      :1;
    bool _ext_handler  :1;
    bool _save         :1;
+   bool _end_menu     :1;
 };
 
 class SetupMenuSelect:  public MenuEntry
 {
 public:
 	SetupMenuSelect();
-	SetupMenuSelect( const char* title, bool restart=false, int (*action)(SetupMenuSelect *p) = 0, bool save=true, SetupNG<int> *anvs=0, bool ext_handler=false);
+	SetupMenuSelect( const char* title, bool restart=false, int (*action)(SetupMenuSelect *p) = 0, bool save=true, SetupNG<int> *anvs=0, bool ext_handler=false, bool end_menu=false );
 	virtual ~SetupMenuSelect();
 	void display( int mode=0 );
 	bool existsEntry( std::string ent );
@@ -32,6 +33,7 @@ public:
 	void down( int count );
 	void press();
 	void longPress();
+	void escape() {};
 	const char *value();
 	int getSelect();
 	void setSelect( int sel );

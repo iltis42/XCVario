@@ -14,7 +14,7 @@ Quaternion quaternion_from_accelerometer(float ax, float ay, float az)
     //float half_cos = sqrt(0.5*(1.0 + cos_theta));
     float half_cos = 0.7071*sqrt(1.0 + cos_theta);
     float temp = 0.5/half_cos;
-    Quaternion orientation( half_cos, -ay*temp, ax*temp, 0.0 );
+    Quaternion orientation( half_cos, ay*temp, ax*temp, 0.0 );
     return orientation;
 }
 

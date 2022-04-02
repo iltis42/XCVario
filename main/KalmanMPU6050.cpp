@@ -182,7 +182,8 @@ void IMU::read()
 		double roll=0;
 		double pitch=0;
 		IMU::RollPitchFromAccel(&roll, &pitch);
-		myrollz = R2D(atan(  ( D2R(gyroZ) * (getTAS()/3.6) ) / 9.81 ));
+		// Z/Y cross axis rotation in 3D space
+		myrollz = R2D(atan( ( sqrt( D2R(gyroZ)*D2R(gyroZ) + D2R(gyroY)*D2R(gyroY)) * (getTAS()/3.6) ) / 9.81 ));
 		// 2: estimate angle of bank from increased acceleration in Z axis
 		float posacc=accelZ;
 		// only positive G-force is to be considered, curve at negative G is not defined
@@ -193,7 +194,7 @@ void IMU::read()
 		float sign_accroll=accroll;
 		if( myrollz < 0 )
 			sign_accroll = -sign_accroll;
-		roll = -(myrollz + sign_accroll)/2;
+		roll = -(myrollz + sign_accroll)/2;  // positive or left turn comes with negative roll in right handed system
 
 		// Calculate Pitch from Gyro and acceleration
 		// PitchFromAccel(&pitch);
@@ -251,7 +252,7 @@ void IMU::read()
 		kalYAngle = Kalman_GetAngle(&kalmanY, pitch, 0, dt);
 		filterPitch += (kalYAngle - filterPitch) * 0.2;   // addittional low pass filter
 	}
-	// ESP_LOGI( FNAME,"GV-Pitch=%.1f  GV-Roll=%.1f filterYaw: %.2f curh: %.2f GX:%.3f GY:%.3f GZ:%.3f AX:%.3f AY:%.3f AZ:%.3f  FP:%.1f FR:%.1f", euler.pitch, euler.roll, filterYaw, curh, gyroX,gyroY,gyroZ, accelX, accelY, accelZ, filterPitch, filterRoll  );
+	ESP_LOGI( FNAME,"GV-Pitch=%.1f  GV-Roll=%.1f filterYaw: %.2f curh: %.2f GX:%.3f GY:%.3f GZ:%.3f AX:%.3f AY:%.3f AZ:%.3f  FP:%.1f FR:%.1f", euler.pitch, euler.roll, filterYaw, curh, gyroX,gyroY,gyroZ, accelX, accelY, accelZ, filterPitch, filterRoll  );
 }
 
 // IMU Function Definition

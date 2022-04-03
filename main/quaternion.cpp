@@ -178,23 +178,6 @@ void Quaternion::test()
     Quaternion qs = slerp(q, q2, 1.f);
     ESP_LOGI(FNAME,"slerp: %f %f %f %f a:%f", qs.a, qs.b, qs.c, qs.d, radians_to_degrees(qs.getAngle()) );
 
-    // norm
-    float x = 9., y;
-    t0 = esp_timer_get_time();
-    for ( int i=0; i<100; i++) y = InvSqrt(x+i);
-    t1 = esp_timer_get_time();
-    ESP_LOGI(FNAME,"InvSqrt: %lld - %f", t1-t0, InvSqrt(9.));
-
-    t0 = esp_timer_get_time();
-    for ( int i=0; i<100; i++) y = iSqrt(x+i);
-    t1 = esp_timer_get_time();
-    ESP_LOGI(FNAME,"iSqrt: %lld - %f", t1-t0, iSqrt(9.));
-
-    t0 = esp_timer_get_time();
-    for ( int i=0; i<100; i++) y = rsqrt(x+i);
-    t1 = esp_timer_get_time();
-    ESP_LOGI(FNAME,"rsqrt: %lld - %f", t1-t0, rsqrt(9.));
-
 
 }
 

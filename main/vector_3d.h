@@ -1,9 +1,6 @@
 #include <math.h>
 #pragma once
 
-float InvSqrt(float x);
-float iSqrt(float x);
-float rsqrt(float number);
 
 class vector_ijk
 {

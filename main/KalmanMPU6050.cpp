@@ -177,25 +177,25 @@ void IMU::read()
 		// 1: exstimate roll angle from Z axis omega plus airspeed
 		double roll=0;
 		double pitch=0;
-		IMU::RollPitchFromAccel(&roll, &pitch);
-		// Z cross axis rotation in 3D space with roll angle correction freedback
-		float omega = R2D(atan( ( D2R(gyroZ) * (getTAS()/3.6) ) / 9.80665 ));
+		IMU::PitchFromAccelRad(&pitch);
+		// Z cross axis rotation in 3D space with roll angle correction
+		float omega = atan( ( (D2R(gyroZ)/cos( D2R(euler.roll))) * (getTAS()/3.6) ) / 9.80665 );
 		// 2: estimate angle of bank from increased acceleration in Z axis
 		float positiveG=-accelZ;
 		// only positive G-force is to be considered, curve at negative G is not defined
 		if( positiveG < 1 )
 			positiveG = 1;
-		float groll = R2D(acos( 1 / positiveG ));
+		float groll = acos( 1 / positiveG );
 		// estimate sign of acceleration angle from gyro
 		if( omega < 0 )
 			groll = -groll;
 		roll = -(omega + groll)/2; // left turn is left wing down so negative roll
 		// Calculate Pitch from Gyro and acceleration
 		// PitchFromAccel(&pitch);
-		ax=(UINT16_MAX/2)*sin(D2R(pitch));  // Nose down positive pitch needs positive X
-		ay=(UINT16_MAX/2)*sin(D2R(roll)) * cos( D2R(pitch));  // Right wing down and positive pitch needs negative Y
-		az=(UINT16_MAX/2)*cos(D2R(roll)) * cos( D2R(pitch));  // Roll or Pitch makes less negative Z
-		ESP_LOGI( FNAME,"omega-roll:%f g-roll:%f roll:%f  AZ:%f", omega, groll, roll, positiveG );
+		ax=(UINT16_MAX/2)*sin(pitch);  // Nose down positive pitch needs positive X
+		ay=(UINT16_MAX/2)*sin(roll) * cos(pitch);  // Right wing down and positive pitch needs negative Y
+		az=(UINT16_MAX/2)*cos(roll) * cos(pitch);  // Roll or Pitch makes less negative Z
+		//ESP_LOGI( FNAME,"omega-roll:%f g-roll:%f roll:%f  AZ:%f", omega, groll, roll, positiveG );
 	}
 	else{ // Case when on ground, get accelerations from sensor directly
 		ax=accelX;
@@ -247,7 +247,7 @@ void IMU::read()
 		kalYAngle = Kalman_GetAngle(&kalmanY, pitch, 0, dt);
 		filterPitch += (kalYAngle - filterPitch) * 0.2;   // addittional low pass filter
 	}
-	ESP_LOGI( FNAME,"GV-Pitch=%.1f  GV-Roll=%.1f filterYaw: %.2f curh: %.2f GX:%.3f GY:%.3f GZ:%.3f AX:%.3f AY:%.3f AZ:%.3f  FP:%.1f FR:%.1f", euler.pitch, euler.roll, filterYaw, curh, gyroX,gyroY,gyroZ, accelX, accelY, accelZ, filterPitch, filterRoll  );
+	// ESP_LOGI( FNAME,"GV-Pitch=%.1f  GV-Roll=%.1f filterYaw: %.2f curh: %.2f GX:%.3f GY:%.3f GZ:%.3f AX:%.3f AY:%.3f AZ:%.3f  FP:%.1f FR:%.1f", euler.pitch, euler.roll, filterYaw, curh, gyroX,gyroY,gyroZ, accelX, accelY, accelZ, filterPitch, filterRoll  );
 }
 
 // IMU Function Definition
@@ -266,6 +266,11 @@ void IMU::MPU6050Read()
 void IMU::PitchFromAccel(double *pitch)
 {
 	*pitch = atan2(-accelX, accelZ) * RAD_TO_DEG;
+}
+
+void IMU::PitchFromAccelRad(double *pitch)
+{
+	*pitch = atan2(-accelX, accelZ);
 }
 
 void IMU::RollPitchFromAccel(double *roll, double *pitch)

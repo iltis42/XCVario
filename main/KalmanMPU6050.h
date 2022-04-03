@@ -153,6 +153,7 @@ private:
   static void MPU6050Read();
   static void RollPitchFromAccel(double *roll, double *pitch);
   static void PitchFromAccel(double *pitch);
+  static void PitchFromAccelRad(double *pitch);
   static uint64_t last_rts;
   static double  mypitch;
   static double  filterPitch;

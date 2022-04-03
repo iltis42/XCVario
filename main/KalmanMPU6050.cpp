@@ -196,7 +196,7 @@ void IMU::read()
 			float gyroYaw = getGyroYawDelta();
 			// tuned to plus 7% what gave the best timing swing in response, 2% for compass is far enough
 			// gyro and compass are time displaced, gyro comes immediate, compass a second later
-			fused_yaw +=  Vector::angleDiffDeg( curh ,fused_yaw )*0.02 - gyroYaw * 1.07;
+			fused_yaw +=  Vector::angleDiffDeg( curh ,fused_yaw )*0.02 + gyroYaw * 1.07;
 			filterYaw=Vector::normalizeDeg( fused_yaw );
 			compass->setGyroHeading( filterYaw );
 			// ESP_LOGI( FNAME,"cur magn head %.2f gyro yaw: %.4f fused: %.1f Gyro(%.3f/%.3f/%.3f)", curh, gyroYaw, gh, gyroX, gyroY, gyroZ  );

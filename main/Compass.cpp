@@ -453,7 +453,7 @@ float Compass::heading( bool *ok )
 	 */
 	// ESP_LOGI( FNAME, "heading: X:%d Y:%d Z:%d xs:%f ys:%f zs:%f", raw.x, raw.y, raw.z, scale.x, scale.y, scale.z);
 
-	fy = (double) ((float( raw.x ) - bias.x) * scale.x);
+	fy = -(double) ((float( raw.x ) - bias.x) * scale.x);
 	fx = -(double) ((float( raw.y ) - bias.y) * scale.y);  // mounting correction
 	fz = -(double) ((float( raw.z ) - bias.z) * scale.z);
 
@@ -469,15 +469,15 @@ float Compass::heading( bool *ok )
 	euler_angles ce = q2.to_euler_angles();
 
 	if( compass_enable.get() == CS_CAN || compass_enable.get() == CS_I2C ){
-		_heading = ce.yaw;
-		// ESP_LOGI(FNAME,"tcy %03.2f tcx %03.2f  heading:%03.1f pi:%.1f ro:%.1f", tcy, tcx, _heading, pitch, roll );
+		_heading = -ce.yaw;
+		//ESP_LOGI(FNAME,"tcy %03.2f tcx %03.2f  heading:%03.1f pi:%.1f ro:%.1f", tcy, tcx, _heading, pitch, roll );
 	}
 	else if ( compass_enable.get() == CS_I2C_NO_TILT )
 		_heading = -RAD_TO_DEG * atan2( fy, fx );
 
 	_heading = Vector::normalizeDeg( _heading );
 
-	// ESP_LOGI(FNAME,"Quat heading %.2f Mag(%.2f %.2f %.2f) Gyro(%.2f/%.2f/%.2f) Acc(%.4f/%.4f/%.4f)", _heading, mv.a, mv.b, mv.c, gyroDPS.z, gyroDPS.y, gyroDPS.x, accelG[2],accelG[1],accelG[0]  );
+	ESP_LOGI(FNAME,"Quat heading Y:%.2f P:%.2f R:%.2f Mag(%.2f %.2f %.2f) Acc(%.4f/%.4f/%.4f) Pitch:%.1f Roll:%.1f", _heading, ce.pitch, ce.roll , mv.a, mv.b, mv.c, gravity_vector.a,gravity_vector.b,gravity_vector.c, IMU::getPitch(), IMU::getRoll() );
 #if 0
 	if( wind_logging.get() ){
 		char log[120];

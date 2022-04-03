@@ -6,12 +6,6 @@
 #include "sensor_processing_lib.h"
 #include "vector.h"
 
-#define DEBUG_INIT()
-#define DEBUG_PRINT(x)
-#define DEBUG_PRINTLN(x)
-#define DEBUG_TS_PRINT(x)
-#define DEBUG_TS_PRINTLN(x)
-
 #define sqr(x) x *x
 #define hypotenuse(x, y) sqrt(sqr(x) + sqr(y))
 

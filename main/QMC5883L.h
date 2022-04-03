@@ -85,8 +85,8 @@ private:
 	uint8_t range; // magnetic resolution of sensor
 	uint8_t osr; // over sample ratio
 	bool overflowWarning;
-	Average<20> filterX;
-	Average<20> filterY;
-	Average<20> filterZ;
+	Average<25, int16_t> filterX;
+	Average<25, int16_t> filterY;
+	Average<25, int16_t> filterZ;
 	int age;
 };

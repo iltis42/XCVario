@@ -33,7 +33,7 @@ Quaternion quaternion_from_gyro(float wx, float wy, float wz, float time)
 
 Quaternion quaternion_from_compass(float wx, float wy, float wz )
 {
-	float a = 1;
+	// float a = 1;
 	// - 0.5*(wx*wx+wy*wy+wz*wz);
 
 	Quaternion result(0,wx,wy,wz);

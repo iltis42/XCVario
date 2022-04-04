@@ -665,8 +665,9 @@ void readSensors(void *pvParameters){
 		}
 		lazyNvsCommit();
 		if( screen_centeraid.get() ){
-			if( centeraid )
+			if( centeraid ){
 				centeraid->tick();
+			}
 		}
 		esp_task_wdt_reset();
 		if( uxTaskGetStackHighWaterMark( bpid ) < 512 )

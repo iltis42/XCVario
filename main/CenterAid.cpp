@@ -54,7 +54,6 @@ void CenterAid::drawThermal( int th, int idir, bool draw_sink ){
 			ucg->setColor( COLOR_RED );
 			ucg->drawDisc(cx,cy, -td, UCG_DRAW_ALL );
 		}
-
 		drawn_thermals[idir] = th;
 	}
 }
@@ -63,7 +62,7 @@ void CenterAid::newHeading(){
 	idir = rint(cur_heading-CA_STEP_2)/CA_STEP;
 	//  ESP_LOGI(FNAME,"newHeading: %d", idir );
 	int th = rint(te_vario.get()*10);
-	// ESP_LOGI(FNAME,"newHeading: %.2f, int TE:%d", dir, th );
+	// ESP_LOGI(FNAME,"newHeading int:%d, TE:%d", idir, th );
 	addThermal( th  );
 }
 
@@ -83,8 +82,10 @@ void CenterAid::drawCenterAid(){
 
 // add one thermal and draw thermal
 void CenterAid::addThermal( int teval ){
-	if( idir > CA_NUM_DIRS )
+	if( idir > CA_NUM_DIRS || idir < 0 ){
+		ESP_LOGE(FNAME,"addThermal errror idir %d out of range!", idir );
 		return;
+	}
 	// ESP_LOGI(FNAME,"addThermal %.1f (%d), TE:%d", cur_heading, idir, teval );
 	if( teval > thermals[ idir ]){
 		thermals[ idir ] = teval;
@@ -96,14 +97,16 @@ void CenterAid::ageThermal(){
 	// ESP_LOGI(FNAME,"age: dir %d, TH: %d, FM: %d", agedir, thermals[agedir], flightmode );
 	if( flightmode == circlingL ){
 		agedir = idir-3;
+		if( agedir < 0 )
+			agedir += CA_NUM_DIRS;
 	}
 	else if( flightmode == circlingR ){
 		agedir = idir+3;
 	}
 	else{
 		agedir++;
-		agedir = agedir %CA_NUM_DIRS;
 	}
+	agedir = agedir %CA_NUM_DIRS;
 	if( thermals[agedir] != 0 ){
 		thermals[agedir] = (int8_t)( (float)(thermals[agedir])*0.8 );
 	}
@@ -120,6 +123,7 @@ void CenterAid::fmStraight(){
 void CenterAid::tick(){
 	_tick++;
 	t_circling fm = CircleWind::getFlightMode();
+	// ESP_LOGI(FNAME,"CenterAid tick %d fm: %d", _tick, fm );
 	if( fm != flightmode ){
 		if( fm == straight ){
 			fmStraight();
@@ -127,6 +131,7 @@ void CenterAid::tick(){
 		flightmode = fm;
 	}
 	cur_heading = mag_hdt.get();
+	// ESP_LOGI(FNAME,"CenterAid tick %d fm: %d %.1f", _tick, fm, cur_heading );
 	if( cur_heading < 0 )  {          // fall back to GPS course
 		if( Flarm::gpsStatus() ){
 			// ESP_LOGI(FNAME,"Flarm GPS OK");

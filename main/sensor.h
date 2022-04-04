@@ -82,5 +82,8 @@ extern AdaptUGC *MYUCG;
 
 extern bool IMUstream;
 extern bool SENstream;
+extern int STRMtimer;
+extern int precountMAX;
+extern MPU_t MPU;
 
 #endif

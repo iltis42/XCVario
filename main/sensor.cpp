@@ -146,8 +146,10 @@ mpud::float_axes_t gyroDPS_Prev;
 Compass *compass;
 BTSender btsender;
 
-bool	IMUstream = false; // triggers IMU data stream
-bool	SENstream = false; // triggers sensors data stream
+bool	IMUstream = true; // triggers IMU data stream
+bool	SENstream = true; // triggers sensors data stream
+int STRtimer = 50; // sensor loop at 50 ms = IMU stream period
+int precountMAX = 2; // sensor loop compute period = analog sensor stream = STRtimer * precountMAX = 100 ms
 
 static float accelTime; // time stamp for accels
 static float gyroTime;  // time stamp for gyros
@@ -194,7 +196,8 @@ bool stall_warning_armed=false;
 float stall_alarm_off_kmh=0;
 int   stall_alarm_off_holddown=0;
 int count=0;
-int count1=0;
+int precount=0;
+int STRMtimer=50;
 bool flarmWarning = false;
 bool gLoadDisplay = false;
 bool gear_warning_active = false;
@@ -440,6 +443,30 @@ static void grabMPU()
 	accelG_Prev = accelG;
 }
 
+static void grabMPUraw()
+{
+	mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
+	mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
+	esp_err_t erracc = MPU.acceleration(&accelRaw);  // fetch raw accel data from the registers
+	if( erracc == ESP_OK ){
+		accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
+		accelTime = esp_timer_get_time()/1000000.0; // time in second
+	}
+	esp_err_t errgyr = MPU.rotation(&gyroRaw);       // fetch raw gyro data from the registers
+	if( erracc == ESP_OK ){
+		gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
+		gyroTime = esp_timer_get_time()/1000000.0; // time in second
+	}
+	if( erracc == ESP_OK && errgyr == ESP_OK) {
+		IMU::read();
+	}
+	int16_t MPUtempraw;
+	esp_err_t errtemp = MPU.temperature(&MPUtempraw);
+	if( errtemp == ESP_OK )
+		MPUtempcel = mpud::tempCelsius(MPUtempraw);
+}
+
+
 static void lazyNvsCommit()
 {
 	uint16_t dummy;
@@ -540,26 +567,30 @@ void clientLoop(void *pvParameters)
 void readSensors(void *pvParameters){
 	int client_sync_dataIdx = 0;
 	count = 0;
-	count1 = 0;
+	precount = 0;
+	IMUstream = true;
+	SENstream = true;
+	int precountMAX = 2;
 	
 	while (1)
 	{
-		count1++;
-
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 
 		xSemaphoreTake(xMutex,portMAX_DELAY );	
 		// get accels and gyros raw data
-		if( haveMPU )
-			grabMPU();
-
-		if( IMUstream ) {
-			OV.sendNmeaIMU(accelTime,-accelG[2],accelG[1],accelG[0],gyroTime,gyroDPS.x,gyroDPS.y, gyroDPS.z); 
+		if( haveMPU ) {
+			if( IMUstream ) {
+				grabMPUraw();
+				OV.sendNmeaIMU(accelTime,-accelG[2],accelG[1],accelG[0],gyroTime,gyroDPS.x,gyroDPS.y, gyroDPS.z); 
+			} else {
+				grabMPU();
+			}
 		}
-		xSemaphoreGive(xMutex);	
-
-		if ((count1 % 4 ) == 0) {
+		xSemaphoreGive(xMutex);
 		
+		precount++;
+		if ( precount >= precountMAX ) {
+			precount = 0;
 			bool ok=false;
 			float p = 0;
 
@@ -598,8 +629,6 @@ void readSensors(void *pvParameters){
 				// ESP_LOGW(FNAME,"T invalid, using 15 deg");
 			}
 			OATemp = T;
-
-
 
 			// broadcast raw sensor data
 			if( SENstream ) {
@@ -681,7 +710,7 @@ void readSensors(void *pvParameters){
 			aTE = bmpVario.readAVGTE();
 			doAudio();
 
-			if( !Flarm::bincom && ((count % 2) == 0 ) ){
+			if( !Flarm::bincom && !IMUstream && ((count % 2) == 0 ) ){
 				toyFeed();
 				vTaskDelay(2/portTICK_PERIOD_MS);
 			}
@@ -750,7 +779,7 @@ void readSensors(void *pvParameters){
 		esp_task_wdt_reset();
 		if( uxTaskGetStackHighWaterMark( bpid ) < 512 )
 			ESP_LOGW(FNAME,"Warning sensor task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );
-		vTaskDelayUntil(&xLastWakeTime, 25/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&xLastWakeTime, STRMtimer/portTICK_PERIOD_MS);
 
 	}
 }
@@ -962,7 +991,7 @@ void system_startup(void *args){
 		MPU.setSampleRate(400);  // in (Hz)
 		MPU.setAccelFullScale(mpud::ACCEL_FS_8G);
 		MPU.setGyroFullScale( GYRO_FS );
-		MPU.setDigitalLowPassFilter(mpud::DLPF_42HZ);  // smoother data
+		MPU.setDigitalLowPassFilter(mpud::DLPF_20HZ);  // smoother data
 		mpud::raw_axes_t gb = gyro_bias.get();
 		mpud::raw_axes_t ab = accl_bias.get();
 

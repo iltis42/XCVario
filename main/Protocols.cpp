@@ -490,22 +490,34 @@ void Protocols::parseNMEA( const char *str ){
 		Flarm::parsePGRMZ( str );
 		ageBincom();
 	}
-	else if( !strncmp( str, "$TRM,", 3 ) ) {
-		if (str[3] == '0') {
+	else if( !strncmp( str, "$TREAM", 6 ) ) {
+		if (str[6] == '0') {
 			IMUstream = false;
 			SENstream = false;
+			STRMtimer=50;
+			precountMAX=2;
+			MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);
 		}
-		else if (str[3] == '1') {
+		else if (str[6] == '1') {
 			IMUstream = true;
 			SENstream = false;
+			STRMtimer=25;
+			precountMAX=4;
+			MPU.setDigitalLowPassFilter(mpud::DLPF_42HZ);			
 		}
-		else if (str[3] == '2') {
+		else if (str[6] == '2') {
 			IMUstream = false;
 			SENstream = true;
+			STRMtimer=50;
+			precountMAX=2;
+			MPU.setDigitalLowPassFilter(mpud::DLPF_20HZ);
 		}
-		else if (str[3] == '3') {
+		else if (str[6] == '3') {
 			IMUstream = true;
 			SENstream = true;
+			STRMtimer=50;
+			precountMAX=2;
+			MPU.setDigitalLowPassFilter(mpud::DLPF_20HZ);
 		}
 	}
 }

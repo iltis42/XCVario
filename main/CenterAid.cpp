@@ -40,27 +40,28 @@ void CenterAid::drawThermal( int th, int idir, bool draw_sink ){
 	}
 	short int cy = Y-cos(D2R(idir*CA_STEP))*30;
 	short int cx = X+sin(D2R(idir*CA_STEP))*30;
-	if( drawn_thermals[idir] && (th <  drawn_thermals[idir]) ){
+	int td = rint(drawn_thermals[idir]/SCALE_DOWN);
+	td = td > MAX_DISK_RAD ? MAX_DISK_RAD : td;
+	int tn = rint(th/SCALE_DOWN);
+	tn = tn > MAX_DISK_RAD ? MAX_DISK_RAD : tn;
+
+	if( td && (tn <  td) ){
 		ucg->setColor( COLOR_BLACK );
 		int td = rint(drawn_thermals[idir]/SCALE_DOWN);
 		td = td > MAX_DISK_RAD ? MAX_DISK_RAD : td;
+		// ESP_LOGI(FNAME,"erase TH, dir:%d, TE:%d", idir, td );
 		ucg->drawDisc(cx,cy, td, UCG_DRAW_ALL );
 	}
-	if( th > 0 ){
-		int td = rint(th/SCALE_DOWN);
-		td = td > MAX_DISK_RAD ? MAX_DISK_RAD : td;
-		if( td > 0 ){
-			// ESP_LOGI(FNAME,"drawThermal dir:%d, s:%d", idir, td );
-			ucg->setColor( COLOR_GREEN );
-			ucg->drawDisc(cx,cy, td, UCG_DRAW_ALL );
-		}
-		else if( draw_sink ){
-			ucg->setColor( COLOR_RED );
-			ucg->drawDisc(cx,cy, -td, UCG_DRAW_ALL );
-		}
-		drawn_thermals[idir] = th;
+	if( tn > 0 ){
+		// ESP_LOGI(FNAME,"draw TH, dir:%d, TE:%d", idir, td );
+		ucg->setColor( COLOR_GREEN );
+		ucg->drawDisc(cx,cy, tn, UCG_DRAW_ALL );
 	}
-
+	else if( draw_sink ){
+		ucg->setColor( COLOR_RED );
+		ucg->drawDisc(cx,cy, -tn, UCG_DRAW_ALL );
+	}
+	drawn_thermals[idir] = th;
 }
 
 void CenterAid::checkThermal(){
@@ -107,13 +108,16 @@ void CenterAid::addThermal( int teval ){
 
 void CenterAid::ageThermal(){
 	// ESP_LOGI(FNAME,"age: dir %d, TH: %d, FM: %d", agedir, thermals[agedir], flightmode );
+	float lambda = 0.6; // age faster in straight flight: we leaf quickly the place of lift
 	if( flightmode == circlingL ){
 		agedir = idir-3;
 		if( agedir < 0 )
 			agedir += CA_NUM_DIRS;
+		lambda = 0.8;
 	}
 	else if( flightmode == circlingR ){
 		agedir = idir+3;
+		lambda = 0.8;
 	}
 	else{
 		agedir++;
@@ -124,7 +128,7 @@ void CenterAid::ageThermal(){
 		return;
 	}
 	if( thermals[agedir] != 0 ){
-		thermals[agedir] = (int8_t)( (float)(thermals[agedir])*0.8 );
+		thermals[agedir] = (int8_t)( (float)(thermals[agedir])*lambda);
 	}
 }
 

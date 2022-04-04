@@ -333,6 +333,11 @@ void drawDisplay(void *pvParameters){
 				// ESP_LOGI(FNAME,"TE=%2.3f", te_vario.get() );
 				display->drawDisplay( airspeed, te_vario.get(), aTE, polar_sink, altitude.get(), t, battery, s2f_delta, as2f, average_climb.get(), cruise_mode.get(), standard_setting, flap_pos.get() );
 			}
+			if( screen_centeraid.get() ){
+				if( centeraid ){
+					centeraid->tick();
+				}
+			}
 		}
 		if( hold_alarm )
 			hold_alarm--;
@@ -664,11 +669,7 @@ void readSensors(void *pvParameters){
 			}
 		}
 		lazyNvsCommit();
-		if( screen_centeraid.get() ){
-			if( centeraid ){
-				centeraid->tick();
-			}
-		}
+
 		esp_task_wdt_reset();
 		if( uxTaskGetStackHighWaterMark( bpid ) < 512 )
 			ESP_LOGW(FNAME,"Warning sensor task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );

@@ -27,8 +27,7 @@ public:
 private:
 	void ageThermal();
 	void addThermal( int teval );
-	void newHeading();
-	void fmStraight();
+	void checkThermal();
 
 	int8_t thermals[CA_NUM_DIRS];  // every 5 °  +-127 in steps of 0.1 m/S
 	int8_t drawn_thermals[CA_NUM_DIRS];

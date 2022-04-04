@@ -1611,7 +1611,6 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 		ucg->printf("%+1.2f   ", gload_neg_max.get() );
 		old_gmin = gload_neg_max.get();
 	}
-
 	xSemaphoreGive(spiMutex);
 }
 
@@ -1878,8 +1877,6 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	if( (centeraid && !(tick % 9)) || (centeraid && wind_dirty)  ){
 		centeraid->drawCenterAid();
 	}
-
-
 
 	// ESP_LOGI(FNAME,"polar-sink:%f Old:%f int:%d old:%d", polar_sink, old_polar_sink, int( polar_sink*100.), int( old_polar_sink*100. ) );
 	if( ps_display.get() && !(tick%3) ){

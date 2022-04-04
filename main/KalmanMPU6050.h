@@ -70,13 +70,6 @@ public:
   static void read();
 
   /**
-   * Get the last time data was fetched from the IMU (in microseconds, equivallent to a micros() call)
-   * 
-   * @returns Last time the data was fetched from the IMU in microseconds (micros())
-   */
-  static inline uint32_t getLastReadTime() { return lastProcessed; };
-
-  /**
    * Gets the accelerometer raw X reading, as per last read() call.
    * 
    * @returns The accelerometer raw X reading
@@ -133,18 +126,16 @@ public:
    * 
    * @returns The y rotation (pitch) in degrees
    */
-  static inline double getPitch()  { return -filterPitch;  }
+  static inline double getPitch()  { return filterPitch;  }
   static inline double getYaw()  { return filterYaw;  }
   static double getPitchRad();
 
   static inline double getGyroRate()  {	return abs(gyroX)+abs(gyroY)+abs(gyroZ); }
 
 private:
-  static uint32_t lastProcessed;
   static Kalman kalmanX; // Create the Kalman instances
   static Kalman kalmanY;
   static Kalman kalmanZ;
-  static double gyroXAngle, gyroYAngle, gyroZAngle; // Angle calculate using the gyro only
 
   static double accelX, accelY, accelZ;
   static double gyroX, gyroY, gyroZ;
@@ -153,18 +144,12 @@ private:
   static void MPU6050Read();
   static void RollPitchFromAccel(double *roll, double *pitch);
   static void PitchFromAccel(double *pitch);
+  static void PitchFromAccelRad(double *pitch);
   static uint64_t last_rts;
-  static float   myrolly;
-  static float   myrollz;
-  static float   myaccroll;
-  static double  mypitch;
   static double  filterPitch;
   static double  filterRoll;
   static double  filterYaw;
-  static float   pitchfilter;
-  static float   rollfilter;
-  static float   filterAccRoll;
-  static float   filterGyroRoll;
+  static float   fused_yaw;
 
   static Quaternion att_quat;
   static vector_ijk att_vector;

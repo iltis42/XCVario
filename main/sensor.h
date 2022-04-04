@@ -17,6 +17,7 @@
 #include "AdaptUGC.h"
 #include "canbus.h"
 #include "CenterAid.h"
+#include "vector_3d.h"
 
 // Display 4 Wire SPI and Display CS
 #define RESET_Display  GPIO_NUM_5       // Reset pin for Display
@@ -79,6 +80,8 @@ extern Compass *compass;
 
 class AdaptUGC;
 extern AdaptUGC *MYUCG;
+
+extern vector_ijk gravity_vector;
 
 
 #endif

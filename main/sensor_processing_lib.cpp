@@ -10,7 +10,7 @@ Quaternion quaternion_from_accelerometer(float ax, float ay, float az)
     Quaternion orientation = between_vectors(gravity,accelerometer);
     return orientation;*/
     // float norm_u_norm_v = 1.0;
-    float cos_theta = -1.0*az;
+    float cos_theta = -az;
     //float half_cos = sqrt(0.5*(1.0 + cos_theta));
     float half_cos = 0.7071*sqrt(1.0 + cos_theta);
     float temp = 0.5/half_cos;
@@ -23,9 +23,9 @@ Quaternion quaternion_from_gyro(float wx, float wy, float wz, float time)
     // wx,wy,wz in radians per second: time in seconds
     float alpha = 0.5*time;
     float a,b,c,d;
-    b = alpha*(-wx);
-    c = alpha*(-wy);
-    d = alpha*(-wz);
+    b = -alpha*(wx);
+    c = -alpha*(wy);
+    d = -alpha*(wz);
     a = 1 - 0.5*(b*b+c*c+d*d);
     Quaternion result(a,b,c,d);
     return result;
@@ -33,15 +33,11 @@ Quaternion quaternion_from_gyro(float wx, float wy, float wz, float time)
 
 Quaternion quaternion_from_compass(float wx, float wy, float wz )
 {
-	float alpha = 1;
-	float a,b,c,d;
-	b = alpha*(-wz);
-	c = alpha*(wy);
-	d = alpha*(wx);
-	a = 1;
-	Quaternion result(a,b,c,d);
-	return result;
+	// float a = 1;
+	// - 0.5*(wx*wx+wy*wy+wz*wz);
 
+	Quaternion result(0,wx,wy,wz);
+	return result;
 }
 
 float fusion_coeffecient(vector_ijk virtual_gravity, vector_ijk sensor_gravity)
@@ -55,7 +51,7 @@ float fusion_coeffecient(vector_ijk virtual_gravity, vector_ijk sensor_gravity)
     return ahrs_gyro_factor.get()/4;
 }
 
-vector_ijk sensor_gravity_normalized(int16_t ax, int16_t ay, int16_t az)
+vector_ijk sensor_gravity_normalized(float ax, float ay, float az)
 {
     vector_ijk result;
     result.a = ax;
@@ -92,7 +88,7 @@ vector_ijk update_gravity_vector(vector_ijk gravity_vector,float wx,float wy,flo
     return gravity_vector;
 }
 
-vector_ijk update_fused_vector(vector_ijk fused_vector, int16_t ax, int16_t ay, int16_t az,float wx,float wy,float wz,float delta)
+vector_ijk update_fused_vector(vector_ijk fused_vector, float ax, float ay, float az,float wx,float wy,float wz,float delta)
 {
 	// ESP_LOGI(FNAME,"ax=%d ay=%d az=%d", ax, ay, az);
     vector_ijk virtual_gravity = update_gravity_vector(fused_vector,wx,wy,wz,delta);

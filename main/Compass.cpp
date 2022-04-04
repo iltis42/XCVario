@@ -57,6 +57,9 @@ Compass::Compass( const uint8_t addr, const uint8_t odr, const uint8_t range, co
 	bias = { 0,0,0 };
 	scale = { 0,0,0 };
 	age = 100;
+	fx=0;
+	fy=0;
+	fz=0;
 }
 
 Compass::~Compass()
@@ -453,31 +456,32 @@ float Compass::heading( bool *ok )
 	 */
 	// ESP_LOGI( FNAME, "heading: X:%d Y:%d Z:%d xs:%f ys:%f zs:%f", raw.x, raw.y, raw.z, scale.x, scale.y, scale.z);
 
-	fy = (double) ((float( raw.x ) - bias.x) * scale.x);
-	fx = -(double) ((float( raw.y ) - bias.y) * scale.y);
-	fz = (double) ((float( raw.z ) - bias.z) * scale.z);
+	fy = -(double) ((float( raw.x ) - bias.x) * scale.x);
+	fx = -(double) ((float( raw.y ) - bias.y) * scale.y);  // mounting correction
+	fz = -(double) ((float( raw.z ) - bias.z) * scale.z);
 
-	double roll = filterRoll( IMU::getRollRad() );      // equal filter with equal delay to raw compass data for pitch and roll
-	double pitch = filterPitch( IMU::getPitchRad() );
-
-	double tcx = fx * cos( -pitch ) + fy * sin( -roll ) * sin( -pitch) - fz * cos( -roll) * sin( -pitch);
-	double tcy = fy * cos( -roll) + fz * sin( -roll);
-	if( isnan(tcx) || isnan(tcy) ){
-		*ok = true;
-		ESP_LOGI(FNAME,"gimbal lock, cannot determine heading");
-		return _heading;  // deliver old value in case of gimbal lock
-	}
+	vector_ijk gvr( 0,0,-1 );  // gravity vector direction, pointing down to ground: Z = -1
+	Quaternion q = Quaternion::AlignVectors( gravity_vector, gvr ) ; // create quaternion from gravity vector aligned to glider
+	vector_ijk mv( fx,fy,fz ); // magnetic vector, relative to glider from raw hall sensor x/y/z data
+	mv.normalize(); // normalize vector
+	vector_ijk mev = Quaternion::rotate_vector(mv,q);  // rotate quaternion by magnetic vector
+	mev.normalize();
+	// ESP_LOGI(FNAME,"mev.a %.2f °", mev.a * 180/M_PI );
+	vector_ijk frv( 1,0,0 ); // Fuselage reference vector, pointing in front to nose: X = 1
+	Quaternion q2 = Quaternion::AlignVectors( mev, frv );   // IMHO this is the right way to do it, results are correct
+	euler_angles ce = q2.to_euler_angles();                 //
 
 	if( compass_enable.get() == CS_CAN || compass_enable.get() == CS_I2C ){
-		_heading = -RAD_TO_DEG * atan2( tcy, tcx );
-		// ESP_LOGI(FNAME,"tcy %03.2f tcx %03.2f  heading:%03.1f pi:%.1f ro:%.1f", tcy, tcx, _heading, pitch, roll );
+		_heading = -ce.yaw;  // As left turn means plus, euler angles come with 0° for north, -90° for east, -+180 degree for south and for 90° west
+		                     // compass rose goes vice versa, so east is 90° means we need to invert
+		//ESP_LOGI(FNAME,"tcy %03.2f tcx %03.2f  heading:%03.1f pi:%.1f ro:%.1f", tcy, tcx, _heading, pitch, roll );
 	}
 	else if ( compass_enable.get() == CS_I2C_NO_TILT )
 		_heading = -RAD_TO_DEG * atan2( fy, fx );
 
-	_heading = Vector::normalizeDeg( _heading );
+	_heading = Vector::normalizeDeg( _heading );  // normalize the +-180 degree model to 0..360°
 
-	// ESP_LOGI(FNAME,"Magn heading: %.1f Roll: %0.1f Pitch: %.1f  Raw head: %.1f Gyro(%.1f/%.1f/%.1f) Acc(%.2f/%.2f/%.2f)", _heading, R2D(roll*2), R2D(pitch*2), -RAD_TO_DEG * atan2( fy, fx ), -gyroDPS.z, gyroDPS.y, gyroDPS.x, -accelG[2],accelG[1],accelG[0]  );
+	ESP_LOGI(FNAME,"Magn-Eul:(Y:%.1f P:%.1f R:%.1f) Magn-Vec:(%.4f %.4f %.4f) G-Vec:(%.4f/%.4f/%.4f) G-Eul:(P:%.1f R:%.1f)", _heading, ce.pitch, ce.roll , mv.a, mv.b, mv.c, gravity_vector.a,gravity_vector.b,gravity_vector.c, IMU::getPitch(), IMU::getRoll() );
 #if 0
 	if( wind_logging.get() ){
 		char log[120];

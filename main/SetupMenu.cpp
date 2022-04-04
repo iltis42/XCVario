@@ -592,7 +592,7 @@ void SetupMenu::press(){
 			pressed = true;
 	}
 }
-
+#include "quaternion.h"
 void SetupMenu::longPress(){
 	if( (selected != this) )
 		return;
@@ -606,6 +606,7 @@ void SetupMenu::longPress(){
 	}
 	else{
 		pressed = true;
+		Quaternion::test();
 	}
 }
 

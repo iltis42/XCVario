@@ -285,7 +285,7 @@ void Router::routeWLAN(){
 			if( rt_s2_wl.get() && serial2_speed.get() ){
 				if( forwardMsg( wlmsg, s2_tx_q ) ){
 					Serial::setRxTxNotifier( TX2_REQ );
-					// ESP_LOGI(FNAME,"Send to S2 device, TCP port 8882 received %d bytes", wlmsg.length() );
+					ESP_LOGI(FNAME,"Send to S2 device, TCP port 8882 received %d bytes", wlmsg.length() );
 				}
 			}
 			Protocols::parseNMEA( wlmsg.c_str() );

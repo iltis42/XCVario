@@ -26,7 +26,8 @@ enum state_t {
 	GET_UBX_CHKB,
 	GET_FB_LEN1,
 	GET_FB_LEN2,
-	GET_FB_DATA
+	GET_FB_DATA,
+	GET_KRT2_STX
 };
 
 

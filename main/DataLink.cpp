@@ -124,7 +124,7 @@ void DataLink::parse_NMEA_UBX( char c, int port, bool last ){
 			framebuffer[pos] = c;
 			pos++;
 			state = GET_KRT2_STX;
-			ESP_LOGI(FNAME, "Port %1d: STX Start at %d", port, pos );
+			// ESP_LOGI(FNAME, "Port %1d: STX Start at %d", port, pos );
 			break;
 		case NMEA_START1:
 		case NMEA_START2:
@@ -157,7 +157,7 @@ void DataLink::parse_NMEA_UBX( char c, int port, bool last ){
 			pos++;
 			if( pos > 12 ){ // 0..12 = 13 bytes STX message buffer.
 				framebuffer[pos] = 0;  // framebuffer is zero terminated
-				ESP_LOG_BUFFER_HEXDUMP(FNAME, framebuffer, pos+1, ESP_LOG_INFO);
+				// ESP_LOG_BUFFER_HEXDUMP(FNAME, framebuffer, pos+1, ESP_LOG_INFO);
 				routeSerialData(framebuffer, pos+1, port, true );
 				state = GET_NMEA_UBX_SYNC;
 				pos = 0;

@@ -1874,7 +1874,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	// Center Aid around grafic wind
-	if( (centeraid && !(tick % 9)) || (centeraid && wind_dirty)  ){
+	if( (centeraid && !(tick % 6)) || (centeraid && wind_dirty)  ){
 		centeraid->drawCenterAid();
 	}
 

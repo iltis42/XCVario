@@ -17,7 +17,7 @@
 
 #pragma once
 
-class CenterAid final {
+class CenterAid {
 public:
 	CenterAid( AdaptUGC *display );
 	void drawThermal( int th, int idir, bool draw_sink=false );
@@ -28,15 +28,21 @@ private:
 	void ageThermal();
 	void addThermal( int teval );
 	void checkThermal();
+	void calcFlightMode( float headingDiff );
 
 	int8_t thermals[CA_NUM_DIRS];  // every 5 °  +-127 in steps of 0.1 m/S
 	int8_t drawn_thermals[CA_NUM_DIRS];
 	AdaptUGC * ucg;
 	float cur_heading;
-	float last_heading;
-	int idir;
-	int agedir;
+	float gps_heading;
+	float gyro_last;
+	int8_t idir;
+	int8_t agedir;
 	int _tick;
 	t_circling flightmode;
+	uint8_t turn_left;
+	uint8_t turn_right;
+	uint8_t fly_straight;
+	uint64_t last_rts;
 };
 

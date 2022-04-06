@@ -127,9 +127,9 @@ private:
   static float lastWindSpeed;
   static Vector windVectors[NUM_RESULTS];
   static int curVectorNum;
-  static int turn_left;
-  static int turn_right;
-  static int fly_straight;
+  static uint8_t turn_left;
+  static uint8_t turn_right;
+  static uint8_t fly_straight;
 
 };
 

@@ -200,7 +200,13 @@ void IMU::read()
 			filterYaw=Vector::normalizeDeg( fused_yaw );
 			compass->setGyroHeading( filterYaw );
 			// ESP_LOGI( FNAME,"cur magn head %.2f gyro yaw: %.4f fused: %.1f Gyro(%.3f/%.3f/%.3f)", curh, gyroYaw, gh, gyroX, gyroY, gyroZ  );
+		}else
+		{
+			filterYaw=fallbackToGyro();
 		}
+	}
+	else{
+		filterYaw=fallbackToGyro();
 	}
 	if( ahrs_gyro_factor.get() > 0.1  ){
 		filterRoll =  euler.roll;
@@ -215,6 +221,12 @@ void IMU::read()
 		filterPitch += (kalYAngle - filterPitch) * 0.2;   // addittional low pass filter
 	}
 	// ESP_LOGI( FNAME,"GV-Pitch=%.1f  GV-Roll=%.1f filterYaw: %.2f curh: %.2f GX:%.3f GY:%.3f GZ:%.3f AX:%.3f AY:%.3f AZ:%.3f  FP:%.1f FR:%.1f", euler.pitch, euler.roll, filterYaw, curh, gyroX,gyroY,gyroZ, accelX, accelY, accelZ, filterPitch, filterRoll  );
+}
+
+float IMU::fallbackToGyro(){
+	float gyroYaw = getGyroYawDelta();
+	fused_yaw +=  gyroYaw * 1.07;
+	return( Vector::normalizeDeg( fused_yaw ) );
 }
 
 // IMU Function Definition

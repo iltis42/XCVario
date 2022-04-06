@@ -12,7 +12,9 @@
 #include "Flarm.h"
 #include "sensor.h"
 #include "AdaptUGC.h"
-
+#include "KalmanMPU6050.h"
+#include "sensor_processing_lib.h"
+#include "sensor.h"
 
 static const int X=75;
 static const int Y=215;
@@ -21,7 +23,6 @@ static const int Y=215;
 
 CenterAid::CenterAid( AdaptUGC *display ) {
 	ucg = display;
-	last_heading = 0;
 	_tick = 0;
 	for( int i=0; i<CA_NUM_DIRS; i++ ){
 		thermals[i] = 0;
@@ -30,6 +31,11 @@ CenterAid::CenterAid( AdaptUGC *display ) {
 	idir = 0;
 	agedir = 0;
 	flightmode = undefined;
+	turn_left = 0;
+	turn_right = 0;
+	fly_straight = 0;
+	cur_heading = 0;
+	gyro_last = 0;
 }
 
 void CenterAid::drawThermal( int th, int idir, bool draw_sink ){
@@ -107,7 +113,7 @@ void CenterAid::addThermal( int teval ){
 }
 
 void CenterAid::ageThermal(){
-	ESP_LOGI(FNAME,"age: dir %d, TH: %d, FM: %d", agedir, thermals[agedir], flightmode );
+	// ESP_LOGI(FNAME,"age: dir %d, TH: %d, FM: %d", agedir, thermals[agedir], flightmode );
 	float lambda = 0.6; // age faster in straight flight: we leaf quickly the place of lift
 	if( flightmode == circlingL ){
 		agedir--;
@@ -134,18 +140,81 @@ void CenterAid::ageThermal(){
 	}
 }
 
+
+void CenterAid::calcFlightMode( float headingDiff ){
+	// ESP_LOGI(FNAME,"calcFlightMode cur_head: %.1f hdiff:%.1f gs:%.0f GPSS:%d MH:%.1f FM:%d", cur_heading, headingDiff, getTAS(), Flarm::gpsStatus(), mag_hdt.get(), flightmode  );
+	if( getTAS() < 25 ){
+		if( flightmode != undefined ) {
+			flightmode = undefined;
+			ESP_LOGI(FNAME,"New fm: undefined, no AS");
+		}
+	}
+	else{
+		if( headingDiff > 4 ){
+				if( turn_right < 4 )
+					turn_right++;
+				fly_straight = 0;
+				if( flightmode != circlingR && turn_right > 2 ) {
+					flightmode = circlingR;
+					ESP_LOGI(FNAME,"New fm: circle right");
+				}
+		}
+		else if( headingDiff < -4 ) {
+			if( turn_left < 4 )
+				turn_left++;
+			fly_straight = 0;
+			if( flightmode != circlingL && turn_left > 2 ){
+				flightmode = circlingL;
+				ESP_LOGI(FNAME,"New fm: circle left");
+			}
+		}
+		else{
+			turn_left = turn_right = 0;
+			if( fly_straight < 4 )
+				fly_straight++;
+			if( flightmode != straight && fly_straight > 2 ) {
+				flightmode = straight;
+				ESP_LOGI(FNAME,"New fm: straight");
+			}
+		}
+	}
+}
+
 // every 100 mS
 void CenterAid::tick(){
 	_tick++;
 	if( !(_tick%5) ) { // every 100 mS
-		flightmode = CircleWind::getFlightMode();
 		// ESP_LOGI(FNAME,"CenterAid tick %d fm: %d", _tick, flightmode );
-		cur_heading = mag_hdt.get();
-		if( cur_heading < 0 )  {          // fall back to GPS course
+		float new_heading = -1.0;
+		if( compass_enable.get() )  // this is the best source for a heading, use this when avail
+			new_heading = mag_hdt.get();
+		// ESP_LOGI(FNAME,"MH %f", new_heading );
+		if( new_heading < 0 )  {         // fall back to GPS course and fuse gps heading with gyro
 			if( Flarm::gpsStatus() ){
-				// ESP_LOGI(FNAME,"Flarm GPS OK");
-				cur_heading = Flarm::getGndCourse();
+				if( gyro_last == 0 ){
+					gyro_last = IMU::getYaw();
+				}
+				float gpshead = Flarm::getGndCourse();
+				float gyro = IMU::getYaw();
+				float gyro_delta =  gyro - gyro_last;
+				gyro_last = gyro;
+				float diff = Vector::angleDiffDeg( gpshead, gps_heading );
+				gps_heading += (diff*0.01 + gyro_delta*1.07);
+				new_heading=Vector::normalizeDeg( gps_heading );
+				// ESP_LOGI(FNAME,"GPS OK TC:%f gdY:%f fused:%f diff:%f", gpshead, gyro_delta, new_heading, diff );
+			}else{     // trust as last resort just only gyro for Center Aid
+				new_heading = IMU::getYaw();
+				// ESP_LOGI(FNAME,"Gyro yaw %f", new_heading );
 			}
+		}
+		float diff = Vector::angleDiffDeg( new_heading, cur_heading );
+		// ESP_LOGI(FNAME,"new heading %.1f diff:%.1f", new_heading, diff );
+		if( new_heading != cur_heading ){
+			uint64_t rts = esp_timer_get_time();
+			float dt = (float)(rts - last_rts)/1000000.0;
+			last_rts = rts;
+			calcFlightMode( diff/dt ); // we calculate own flight mode here
+			cur_heading = new_heading;
 		}
 		checkThermal();
 		ageThermal();  // 0.2 s per thermal = 4.8 seconds all 24 thermals aged by 0.1 m/s

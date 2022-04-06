@@ -142,6 +142,7 @@ private:
   static double kalXAngle, kalYAngle;
 
   static void MPU6050Read();
+  static float fallbackToGyro();
   static void RollPitchFromAccel(double *roll, double *pitch);
   static void PitchFromAccel(double *pitch);
   static void PitchFromAccelRad(double *pitch);
@@ -149,6 +150,7 @@ private:
   static double  filterPitch;
   static double  filterRoll;
   static double  filterYaw;
+
   static float   fused_yaw;
 
   static Quaternion att_quat;

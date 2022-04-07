@@ -63,9 +63,11 @@ void DataLink::addChk(const char c) {
 	chkB += chkA;
 }
 
-void DataLink::routeSerialData( const char *data, int len, int port, bool nmea ){
+void DataLink::routeSerialData( const char *data, uint32_t len, int port, bool nmea ){
 	SString tx;
 	tx.set( data, len );
+	// ESP_LOGI(FNAME, "Port S%1d: len: %d", port, len );
+	// ESP_LOG_BUFFER_HEXDUMP(FNAME, tx.c_str(), tx.length(), ESP_LOG_INFO);
 	if( port == 1 ){      // S1
 		Router::forwardMsg( tx, s1_rx_q, nmea );
 		Router::routeS1();
@@ -173,6 +175,11 @@ void DataLink::parse_NMEA_UBX( char c, int port, bool last ){
 
 		case  GET_FB_LEN2:
 			len = (chkA + (unsigned char)c*256 );
+			if( len > 512 ){
+				ESP_LOGI(FNAME, "Odd length from flarm bincom: %d: restart", len );
+				state = GET_NMEA_UBX_SYNC;
+				break;
+			}
 			ESP_LOGI(FNAME, "got length from flarm bincom: %d", len );
 			state = GET_FB_DATA;
 			framebuffer[pos] = c;

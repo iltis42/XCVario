@@ -122,11 +122,11 @@ void Serial::serialHandler(void *pvParameters)
 		}
 		// RX part
 		if( (ebits & cfg->rx_char) ) { // only one transparent mode from now on, frame slicing in upper layer for UBX and NMEA
-			int available = cfg->uart->available();
+			uint32_t available = cfg->uart->available();
 			if( available ){
 				char* rxBuf = (char *)malloc( available+1 );
 				uint16_t rxBytes = cfg->uart->readBufFromQueue( (uint8_t*)rxBuf, available );  // read out all characters from the RX queue
-				// ESP_LOGI(FNAME,"S%d: RX len: %d bytes", cfg->uart->number(), rxBytes );
+				// ESP_LOGI(FNAME,"S%d: RX: %d bytes, avail: %d", cfg->uart->number(), rxBytes, available );
 				// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuf, available, ESP_LOG_INFO);
 				rxBuf[rxBytes] = 0;
 				cfg->dl->process( rxBuf, rxBytes, cfg->port );

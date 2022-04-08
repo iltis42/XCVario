@@ -1,6 +1,8 @@
 #include "vector_3d.h"
 #pragma once
 
+//#define Quaternionen_Test 1
+
 typedef struct euler_angles {
 
     float roll;
@@ -31,7 +33,7 @@ public:
     static Quaternion slerp(Quaternion q1, Quaternion q2, double lambda);
     static Quaternion AlignVectors(const vector_ijk &start, const vector_ijk &dest);
 
-    static void test();
+    static void quaternionen_test();
 
     euler_angles to_euler_angles();
     Quaternion conjugate();

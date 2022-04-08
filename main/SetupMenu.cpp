@@ -606,7 +606,9 @@ void SetupMenu::longPress(){
 	}
 	else{
 		pressed = true;
-		Quaternion::test();
+#ifdef Quaternionen_Test
+		Quaternion::quaternionen_test();
+#endif
 	}
 }
 

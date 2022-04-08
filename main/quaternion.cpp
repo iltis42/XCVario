@@ -155,9 +155,9 @@ Quaternion Quaternion::AlignVectors(const vector_ijk &start, const vector_ijk &d
 
 }
 
-#define Test 1
-#ifdef Test
-void Quaternion::test()
+#define Quaternionen_Test 1
+#ifdef Quaternionen_Test
+void Quaternion::quaternionen_test()
 {
     vector_ijk v1(1,0,0);
     vector_ijk v2(0,0,1), v3;

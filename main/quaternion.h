@@ -30,6 +30,7 @@ public:
     static Quaternion get_normalized(Quaternion q);
     Quaternion normalize();
     static vector_ijk rotate_vector(vector_ijk v, Quaternion q);
+    vector_ijk operator*(const vector_ijk& p) const;
     static Quaternion slerp(Quaternion q1, Quaternion q2, double lambda);
     static Quaternion AlignVectors(const vector_ijk &start, const vector_ijk &dest);
 

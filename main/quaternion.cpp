@@ -103,6 +103,28 @@ vector_ijk Quaternion::rotate_vector(vector_ijk v, Quaternion q)
     vector_ijk rotated(rotated_vector.b,rotated_vector.c,rotated_vector.d);
     return rotated;
 }
+vector_ijk Quaternion::operator*(const vector_ijk& vec) const
+{
+    float a00 = a * a;
+    float a01 = a * b;
+    float a02 = a * c;
+    float a03 = a * d;
+    float a11 = b * b;
+    float a12 = b * c;
+    float a13 = b * d;
+    float a22 = c * c;
+    float a23 = c * d;
+    float a33 = d * d;
+    vector_ijk result;
+    result.a = vec.a * (+a00 + a11 - a22 - a33)
+        + 2.0 * (a12 * vec.b + a13 * vec.c + a02 * vec.c - a03 * vec.b);
+    result.b = vec.b * (+a00 - a11 + a22 - a33)
+        + 2.0 * (a12 * vec.a + a23 * vec.c + a03 * vec.a - a01 * vec.c);
+    result.c = vec.c * (+a00 - a11 - a22 + a33)
+        + 2.0 * (a13 * vec.a + a23 * vec.b - a02 * vec.a + a01 * vec.b);
+    return result;
+}
+
 // return euler angles yaw, pitch, roll as degree from quaternion
 euler_angles Quaternion::to_euler_angles()
 {
@@ -160,17 +182,18 @@ Quaternion Quaternion::AlignVectors(const vector_ijk &start, const vector_ijk &d
 void Quaternion::quaternionen_test()
 {
     vector_ijk v1(1,0,0);
-    vector_ijk v2(0,0,1), v3;
+    vector_ijk v2(0,0,1), vt(1,2,3), v3;
 
     // v to v setup
     int64_t t0 = esp_timer_get_time();
     Quaternion q = Quaternion::AlignVectors(v1,v2);
     int64_t t1 = esp_timer_get_time();
+    ESP_LOGI(FNAME,"Align v1 to v2: (%f,%f,%f) - (%f,%f,%f)", v1.a, v1.b, v1.c, v2.a, v2.b, v2.c );
     ESP_LOGI(FNAME,"Q: %lld - %f %f %f %f a:%f", t1-t0, q.a, q.b, q.c, q.d, radians_to_degrees(q.getAngle()) );
 
     // rotate
     v3 = rotate_vector(v1, q);
-    ESP_LOGI(FNAME,"rv: %f %f %f", v3.a, v3.b, v3.c );
+    ESP_LOGI(FNAME,"rotate v1 -> v2: %f %f %f", v3.a, v3.b, v3.c );
 
     // slerp
     Quaternion q2 = Quaternion::AlignVectors(v1,vector_ijk(0.707106781, 0, 0.707106781));
@@ -178,6 +201,11 @@ void Quaternion::quaternionen_test()
     Quaternion qs = slerp(q, q2, 1.f);
     ESP_LOGI(FNAME,"slerp: %f %f %f %f a:%f", qs.a, qs.b, qs.c, qs.d, radians_to_degrees(qs.getAngle()) );
 
+    // Comp rotate
+    v3 = rotate_vector(vt, q);
+    ESP_LOGI(FNAME,"rotate vt: %f %f %f", v3.a, v3.b, v3.c );
+    v3 = q * vt;
+    ESP_LOGI(FNAME,"op*    vt: %f %f %f", v3.a, v3.b, v3.c );
 
 }
 

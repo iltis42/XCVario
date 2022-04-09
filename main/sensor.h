@@ -80,10 +80,8 @@ extern Compass *compass;
 class AdaptUGC;
 extern AdaptUGC *MYUCG;
 
-extern bool IMUstream;
-extern bool SENstream;
-extern int STRMtimer;
-extern int precountMAX;
-extern MPU_t MPU;
+extern int IMUrate;
+extern int SENrate;
+
 
 #endif

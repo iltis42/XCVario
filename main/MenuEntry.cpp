@@ -175,7 +175,7 @@ void MenuEntry::showhelp( int y ){
 
 void MenuEntry::clear()
 {
-	ESP_LOGI(FNAME,"MenuEntry::clear");
+	// ESP_LOGI(FNAME,"MenuEntry::clear");
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setColor(COLOR_BLACK);
 	ucg->drawBox( 0,0,240,320 );

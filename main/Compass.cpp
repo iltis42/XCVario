@@ -234,6 +234,7 @@ bool Compass::calibrate( bool (*reporter)( t_magn_axes raw, t_float_axes scale, 
 				}
 				continue;
 			}
+			// ESP_LOGI( FNAME, "Mag Raw X:%d Y:%d Z:%d", raw.x, raw.y, raw.z  );
 			/* Find max/min peak values */
 			min.x = ( raw.x < min.x ) ? raw.x : min.x;
 			min.y = ( raw.y < min.y ) ? raw.y : min.y;

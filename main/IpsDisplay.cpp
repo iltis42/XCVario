@@ -324,7 +324,7 @@ void IpsDisplay::writeText( int line, String text ){
 
 
 void IpsDisplay::clear(){
-	ESP_LOGI(FNAME,"display clear()");
+	// ESP_LOGI(FNAME,"display clear()");
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setColor( COLOR_BLACK );
 	ucg->drawBox( 0,0,240,320 );
@@ -342,7 +342,7 @@ void IpsDisplay::bootDisplay() {
 		ucg->setRedBlueTwist( true );
 	if( display_type.get() == ILI9341_TFT_18P )
 		ucg->invertDisplay( true );
-	ESP_LOGI(FNAME,"clear boot");
+	// ESP_LOGI(FNAME,"clear boot");
 	clear();
 	ucg->setColor(1, COLOR_BLACK );
 	ucg->setColor(0, COLOR_WHITE );
@@ -491,7 +491,7 @@ void IpsDisplay::setup()
 		_divisons = 5;
 
 	_pixpmd = (int)((  (DISPLAY_H-(2*VARBARGAP) )/2) /_range);
-	ESP_LOGI(FNAME,"Pixel per m/s %d", _pixpmd );
+	// ESP_LOGI(FNAME,"Pixel per m/s %d", _pixpmd );
 	_range_clip = _range;
 }
 

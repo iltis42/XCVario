@@ -115,33 +115,33 @@ int16_t old_cnt = 0;
 int old_button = RELEASE;
 
 void ESPRotary::sendRelease(){
-	ESP_LOGI(FNAME,"Release action");
+	// ESP_LOGI(FNAME,"Release action");
 	if( Flarm::bincom )
 	  return;
 	for (auto &observer : observers)
 		observer->release();
-	ESP_LOGI(FNAME,"End switch release action");
+	// ESP_LOGI(FNAME,"End switch release action");
 }
 
 void ESPRotary::sendPress(){
-	ESP_LOGI(FNAME,"Pressed action");
+	// ESP_LOGI(FNAME,"Pressed action");
 	pressed = true;
 	if( Flarm::bincom )
 		return;
 	for (auto &observer : observers)
 		observer->press();
-	ESP_LOGI(FNAME,"End pressed action");
+	// ESP_LOGI(FNAME,"End pressed action");
 
 }
 
 void ESPRotary::sendLongPress(){
-	ESP_LOGI(FNAME,"Long pressed action");
+	// ESP_LOGI(FNAME,"Long pressed action");
 	longPressed = true;
 	if( Flarm::bincom )
 		return;
 	for (auto &observer : observers)
 		observer->longPress();
-	ESP_LOGI(FNAME,"End long pressed action");
+	// ESP_LOGI(FNAME,"End long pressed action");
 }
 
 void ESPRotary::sendDown( int diff ){
@@ -190,7 +190,7 @@ void ESPRotary::informObservers( void * args )
 		}
 		else{   // Push button is being released
 			if( !released ){
-				ESP_LOGI(FNAME,"timer=%d", timer );
+				// ESP_LOGI(FNAME,"timer=%d", timer );
 				longPressed = false;
 				if( timer < 20 ){  // > 400 mS
 					if( !pressed ){

@@ -409,10 +409,10 @@ void SetupMenu::display( int mode ){
 	if( (selected != this) || !inSetup || focus )
 		return;
 	xSemaphoreTake(display_mutex,portMAX_DELAY);
-	ESP_LOGI(FNAME,"SetupMenu display( %s)", _title );
+	// ESP_LOGI(FNAME,"SetupMenu display( %s)", _title );
 	clear();
 	int y=25;
-	ESP_LOGI(FNAME,"Title: %s y=%d child size:%d", selected->_title,y, _childs.size()  );
+	// ESP_LOGI(FNAME,"Title: %s y=%d child size:%d", selected->_title,y, _childs.size()  );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setFont(ucg_font_ncenR14_hr);
 	ucg->setPrintPos(1,y);
@@ -424,7 +424,7 @@ void SetupMenu::display( int mode ){
 		ucg->setPrintPos(1,(i+1)*25+25);
 		ucg->setColor( COLOR_HEADER_LIGHT );
 		ucg->printf("%s",child->_title);
-		ESP_LOGI(FNAME,"Child Title: %s", child->_title );
+		// ESP_LOGI(FNAME,"Child Title: %s", child->_title );
 		if( child->value() ){
 			int fl=ucg->getStrWidth( child->_title );
 			ucg->setPrintPos(1+fl,(i+1)*25+25);
@@ -519,13 +519,13 @@ void SetupMenu::up(int count){
 }
 
 void SetupMenu::showMenu(){
-	ESP_LOGI(FNAME,"showMenu() p:%d h:%d parent:%x", pressed, highlight, (int)_parent );
+	// ESP_LOGI(FNAME,"showMenu() p:%d h:%d parent:%x", pressed, highlight, (int)_parent );
 	// default is not pressed, so just display, but we toogle pressed state at the end
 	// so next time we either step up to parent,
 	if( pressed )
 	{
 		if( highlight == -1 ) {
-			ESP_LOGI(FNAME,"SetupMenu to parent");
+			// ESP_LOGI(FNAME,"SetupMenu to parent");
 			if( _parent != 0 ){
 				selected = _parent;
 				selected->highlight = -1;
@@ -533,7 +533,7 @@ void SetupMenu::showMenu(){
 			}
 		}
 		else {
-			ESP_LOGI(FNAME,"SetupMenu to child");
+			// ESP_LOGI(FNAME,"SetupMenu to child");
 			if( (highlight >=0) && (highlight < (int)(_childs.size()) ) ){
 				selected = _childs[highlight];
 				selected->pressed = false;
@@ -545,20 +545,20 @@ void SetupMenu::showMenu(){
 		if( !inSetup )
 		{
 			inSetup=true;
-			ESP_LOGI(FNAME,"Start Setup Menu");
+			// ESP_LOGI(FNAME,"Start Setup Menu");
 			_display->doMenu(true);
 			delay(200);  // fixme give display task time to finish drawing
 		}
 		else
 		{
-			ESP_LOGI(FNAME,"End Setup Menu");
+			// ESP_LOGI(FNAME,"End Setup Menu");
 			screens_init = INIT_DISPLAY_NULL;
 			_display->doMenu(false);
 			SetupCommon::commitNow();
 			inSetup=false;
 		}
 	}
-	ESP_LOGI(FNAME,"end showMenu()");
+	// ESP_LOGI(FNAME,"end showMenu()");
 }
 
 
@@ -566,24 +566,24 @@ static int screen_index = 0;
 void SetupMenu::press(){
 	if( (selected != this) || focus )
 		return;
-	ESP_LOGI(FNAME,"press() active_srceen %d, pressed %d inSet %d", active_screen, pressed, inSetup );
+	// ESP_LOGI(FNAME,"press() active_srceen %d, pressed %d inSet %d", active_screen, pressed, inSetup );
 	if( !inSetup ){
 		active_screen = 0;
 		while( !active_screen && (screen_index < screen_mask_len) ){
 			if( menu_screens.get() & (1 << screen_index) ){
 				active_screen = ( 1 << screen_index );
-				ESP_LOGI(FNAME,"New active_screen: %d", active_screen );
+				// ESP_LOGI(FNAME,"New active_screen: %d", active_screen );
 			}
 			screen_index++;
 		}
 		if( screen_index >= screen_mask_len ){
-			ESP_LOGI(FNAME,"select vario screen");
+			// ESP_LOGI(FNAME,"select vario screen");
 			screen_index = 0;
 			active_screen = 0; // fall back into default vario screen after optional screens
 		}
 	}
 	if( !active_screen || inSetup ){
-		ESP_LOGI(FNAME,"press() inSetup");
+		// ESP_LOGI(FNAME,"press() inSetup");
 		if( !menu_long_press.get() || inSetup )
 			showMenu();
 		if( pressed )

@@ -11,9 +11,10 @@ class Average
             samples_[num_samples_++] = sample;
         else
         {
-            T& oldest = samples_[num_samples_++ % N];
+            T& oldest = samples_[num_samples_ % N];
+            samples_[num_samples_ %N] = sample;
+            num_samples_++;
             total_ -= oldest;
-            oldest = sample;
         }
         return (Total)(total_ / N);
     }

@@ -291,6 +291,9 @@ bool QMC5883L::rawAxes( t_magn_axes &axes )
 		axes.x = filterX( x );
 		axes.y = filterY( y );
 		axes.z = filterZ( z );
+
+		// ESP_LOGI( FNAME, "Mag Average: X:%d Y:%d Z:%d  Raw: X:%d Y:%d Z:%d", axes.x, axes.y, axes.z, x, y, z );
+
 		age = 0;
 		m_sensor = true;
 		// ESP_LOGI( FNAME, "X:%d Y:%d Z:%d  RDY:%d DOR:%d", raw.x, raw.y,raw.z, status & STATUS_DRDY, status & STATUS_DOR );

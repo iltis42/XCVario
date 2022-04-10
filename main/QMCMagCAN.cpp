@@ -70,6 +70,7 @@ bool QMCMagCAN::rawAxes( t_magn_axes &axes )
 		axes.x = filterX( can.x );
 		axes.y = filterY( can.y );
 		axes.z = filterZ( can.z );
+		ESP_LOGI( FNAME, "Mag Average: X:%d Y:%d Z:%d  Raw: X:%d Y:%d Z:%d", axes.x, axes.y, axes.z, can.x, can.y, can.z );
 		// ESP_LOGI( FNAME, "X:%d Y:%d Z:%d  Age:%d", can.x, can.y, can.z, age );
 		m_sensor = true;
 		return true;

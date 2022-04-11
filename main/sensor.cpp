@@ -147,8 +147,8 @@ mpud::float_axes_t gyroDPS_Prev;
 Compass *compass;
 BTSender btsender;
 
-int IMUrate = 0;// IMU data stream rate x 25ms. 0= no stream
-int SENrate = 0;// Sensor data stream rate x 25ms. 0= no stream
+int IMUrate = 1;// IMU data stream rate x 25ms. 0= no stream
+int SENrate = 4;// Sensor data stream rate x 25ms. 0= no stream
 
 static float accelTime; // time stamp for accels
 static float gyroTime;  // time stamp for gyros
@@ -657,48 +657,6 @@ void readSensors(void *pvParameters){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 	
 		count++;
-		bool ok=false;
-		float p = 0;
-
-		// get raw static pressure
-		p = baroSensor->readPressure(ok);
-		if ( ok ) {
-			statP = p;
-			statTime = esp_timer_get_time()/1000000.0; // time in second
-			baroP = p;
-		}
-
-		// get raw te pressure
-		p = teSensor->readPressure(ok);
-		if ( ok ) {
-			teP = p;
-			teTime = esp_timer_get_time()/1000000.0; // time in second
-		}
-
-		// get raw dynamic pressure
-		if( asSensor )
-			p = asSensor->readPascal(0, ok);
-		if( ok ) {
-			dynP = p;
-			dynTime = esp_timer_get_time()/1000000.0; // time in second
-			dynamicP = 0;
-			if (p > 60 )
-				dynamicP = p;
-		}
-		
-		// get OAT
-		float T=OAT.get();
-		if( !validTemperature ) {
-			T= 15 - ( (altitude.get()/100) * 0.65 );
-			// ESP_LOGW(FNAME,"T invalid, using 15 deg");
-		}
-		OATemp = T;
-
-		// get MPU temp
-		int16_t MPUtempraw;
-		esp_err_t errtemp = MPU.temperature(&MPUtempraw);
-		if( errtemp == ESP_OK )
-			MPUtempcel = mpud::tempCelsius(MPUtempraw);				
 		
 		float iasraw = Atmosphere::pascal2kmh( dynamicP );
 		// ESP_LOGI("FNAME","P: %f  IAS:%f", dynamicP, iasraw );		
@@ -1601,7 +1559,7 @@ void system_startup(void *args){
 	}
 	else {
 		xTaskCreatePinnedToCore(&readSensors, "readSensors", 4096, NULL, 14, &bpid, 0);
-		xTaskCreatePinnedToCore(&grabMPU, "grabMPU", 4096, NULL, 40, &mpid, 0);
+		xTaskCreatePinnedToCore(&grabMPU, "grabMPU", 4096, NULL, 24, &mpid, 0);
 	}
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 2500, NULL, 8, &tpid, 0);
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 5096, NULL, 4, &dpid, 0);

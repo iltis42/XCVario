@@ -122,11 +122,11 @@ void Protocols::sendItem( const char *key, char type, void *value, int len, bool
 Sensor data
 		$FTS,
 		T..T.TTTTTT:	static time in second with micro second resolution (before static measurement),
-		PPPP.PP:			static pressure hPa,
+		PPPP.PPP:		static pressure hPa,
 		T..T.TTTTTT:	TE time in second with micro second resolution (before TE measurement),
-		PPPP.PP:			TE pressure hPa,
+		PPPP.PPP:		TE pressure hPa,
 		T..T.TTTTTT:	Dyn time in second with micro second resolution (before dynamic measurement),		
-		PPPP.PP:			Dynamic Pa,
+		PPPP.PPP:		Dynamic Pa,
 		XX.X:				Outside Air Temperature °C,
 		XX.X:				MPU temperature °C,
 		X:					fix 0 to 5   3=3D   4= 3D diff,
@@ -165,11 +165,11 @@ IMU and Sensor data
 		YYY.Y:			rotation Y-Axis °/s,
 		ZZZ.Z:			rotation Z-Axis °/s,		
 		T..T.TTTTTT:	static time in second with micro second resolution (before static measurement),
-		PPPP.PP:			static pressure hPa,
+		PPPP.PPP:		static pressure hPa,
 		T..T.TTTTTT:	TE time in second with micro second resolution (before TE measurement),
-		PPPP.PP:			TE pressure hPa,
+		PPPP.PPP:		TE pressure hPa,
 		T..T.TTTTTT:	Dyn time in second with micro second resolution (before dynamic measurement),		
-		PPPP.PP:			Dynamic Pa,
+		PPPP.PPP:		Dynamic Pa,
 		XX.X:				Outside Air Temperature °C,
 		XX.X:				MPU temperature °C,
 		X:					fix 0 to 5   3=3D   4= 3D diff,
@@ -189,13 +189,13 @@ void Protocols::sendNmeaSEN( bool sensor, bool imu, float statTime, float statP,
 	char str[235];
 	
 	if (imu && sensor ) {
-		sprintf(str,"$FTIS,%.6f,%1.4f,%1.4f,%1.4f,%.6f,%3.1f,%3.1f,%3.1f,%.6f,%3.2f,%.6f,%3.2f,%.6f,%3.2f,%2.1f,%2.1f,%1d,%2d,%.3f,%4.1f,%2.2f,%2.2f,%2.2f,%2.2f\r\n",
+		sprintf(str,"$FTIS,%.6f,%1.4f,%1.4f,%1.4f,%.6f,%3.1f,%3.1f,%3.1f,%.6f,%4.3f,%.6f,%4.3f,%.6f,%4.3f,%2.1f,%2.1f,%1d,%2d,%.3f,%4.1f,%2.2f,%2.2f,%2.2f,%2.2f\r\n",
 					accelTime, acc_x, acc_y, acc_z , gyroTime, gx, gy, gz,
 					statTime, statP, teTime, teP, dynTime, dynP,  OATemp, MPUtempcel, fix, numSV, gnsstime ,gnssaltitude, gnssgroundspeed, gnssspeedx, gnssspeedy, gnssspeedz);
 		Router::sendXCV(str);
 	} else {
 		if (sensor) {
-					sprintf(str,"$FTS,%.6f,%3.2f,%.6f,%3.2f,%.6f,%3.2f,%2.1f,%2.1f,%1d,%2d,%.3f,%4.1f,%2.2f,%2.2f,%2.2f,%2.2f\r\n",
+					sprintf(str,"$FTS,%.6f,%4.3f,%.6f,%4.3f,%.6f,%4.3f,%2.1f,%2.1f,%1d,%2d,%.3f,%4.1f,%2.2f,%2.2f,%2.2f,%2.2f\r\n",
 					statTime, statP, teTime, teP, dynTime, dynP,  OATemp, MPUtempcel, fix, numSV, gnsstime ,gnssaltitude, gnssgroundspeed, gnssspeedx, gnssspeedy, gnssspeedz);
 		Router::sendXCV(str);
 		}

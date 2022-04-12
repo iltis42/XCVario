@@ -61,23 +61,27 @@ void DataMonitor::header( int ch, bool binary ){
 	ucg->printf("%s%s: RX:%d TX:%d bytes   ", b, what, rx_total, tx_total );
 }
 
-void DataMonitor::monitorString( int ch, e_dir_t dir, const char *str, bool binary ){
+void DataMonitor::monitorString( int ch, e_dir_t dir, const char *str, bool binary, int len ){
 	if( xSemaphoreTake(mutex,portMAX_DELAY ) ){
 		if( !mon_started || paused || (ch != channel) ){
 			// ESP_LOGI(FNAME,"not active, return started:%d paused:%d", mon_started, paused );
 			xSemaphoreGive(mutex);
 			return;
 		}
-		printString( ch, dir, str, binary );
+		printString( ch, dir, str, binary, len );
 		xSemaphoreGive(mutex);
 	}
 }
 
-void DataMonitor::printString( int ch, e_dir_t dir, const char *str, bool binary ){
+void DataMonitor::printString( int ch, e_dir_t dir, const char *str, bool binary, int _len ){
 	ESP_LOGI(FNAME,"DM ch:%d dir:%d string:%s", ch, dir, str );
 	std::string s( str );
 	const int scroll = 20;
-	int len = strlen( str );
+	int len = 0;
+	if( _len )
+		len = _len;
+	else
+		len = strlen( str );
 	std::string S;
 	if( dir == DIR_RX ){
 		S = std::string(">");

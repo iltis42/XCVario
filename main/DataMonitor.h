@@ -18,7 +18,7 @@ class DataMonitor: public RotaryObserver
 {
 public:
 	DataMonitor();
-	void monitorString( int ch, e_dir_t dir, const char *s, bool binary=false );
+	void monitorString( int ch, e_dir_t dir, const char *s, bool binary=false, int len=0 );
 	void start(SetupMenuSelect * p);
 	void stop();
 	void press();
@@ -32,7 +32,7 @@ public:
 	bool active() { return mon_started; };
 
 private:
-	void printString( int ch, e_dir_t dir, const char *s, bool binary );
+	void printString( int ch, e_dir_t dir, const char *s, bool binary, int len );
 	void header( int ch, bool binary=false );
 	bool mon_started;
 	AdaptUGC *ucg;

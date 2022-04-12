@@ -183,12 +183,16 @@ int CANbus::receive( int *id, SString& msg, int timeout ){
 		ESP_LOGW(FNAME,"receive: RX QUEUE FULL alert %X", alerts );
 
 	esp_err_t ret = twai_receive(&rx, pdMS_TO_TICKS(timeout) );
-	// ESP_LOGI(FNAME,"RX CAN bus message ret=%02x TO:%d", ret, _connected_timeout_xcv );
+	// ESP_LOGI(FNAME,"RX CAN bus message ret=%02x len_%d ID:%d dlc:%d ext:%d rtr:%d", ret, rx.data_length_code, rx.identifier, rx.dlc_non_comp, rx.extd, rx.rtr );
+	// if( rx.data_length_code <= 8 ){
+	//	ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.data, rx.data_length_code , ESP_LOG_INFO);
+	// }
 	if(ret == ESP_OK ){
 		// ESP_LOGI(FNAME,"RX CAN bus message ret=%02x TO:%d", ret, _connected_timeout_xcv );
 		if( rx.data_length_code > 0 && rx.data_length_code <= 8 ){
 			msg.set((const char*)rx.data, rx.data_length_code);
-			// ESP_LOGI(FNAME,"RX CAN bus message ret=(%02x), id:%04x bytes:%d, data:%s", ret, rx.identifier, rx.data_length_code, msg );
+			// ESP_LOGI(FNAME,"RX CAN bus message ret=(%02x), id:%04x bytes:%d, data:%s", ret, rx.identifier, rx.data_length_code, msg.c_str() );
+			// ESP_LOG_BUFFER_HEXDUMP(FNAME,msg.c_str(), msg.length() , ESP_LOG_INFO);
 			*id = rx.identifier;
 			return rx.data_length_code;
 		}
@@ -318,7 +322,7 @@ void CANbus::rxtick(int tick){
 			// ESP_LOGI(FNAME,"CAN RX MagSensor, msg: %d", bytes );
 			// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), bytes, ESP_LOG_INFO);
 			QMCMagCAN::fromCAN( msg.c_str() );
-			DM.monitorString( MON_CAN, DIR_RX, msg.c_str(), true );
+			DM.monitorString( MON_CAN, DIR_RX, msg.c_str(), true, 6);
 			_connected_timeout_magsens = 0;
 		}
 		bytes = receive( &id, msg, 10 );

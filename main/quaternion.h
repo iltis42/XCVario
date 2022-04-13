@@ -23,6 +23,9 @@ public:
     float d;
     Quaternion(float a, float b, float c, float d);
     Quaternion(const float angle, const vector_ijk& axis);
+    Quaternion(Quaternion &&) = default; // Allow std::move
+    Quaternion(const Quaternion &) = default;
+    Quaternion& operator=(const Quaternion&) = default;
     
     float getAngle() const;
 

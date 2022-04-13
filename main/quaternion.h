@@ -11,6 +11,7 @@ typedef struct euler_angles {
 
 } euler_angles;
 
+float Compass_atan2( float y, float x );
 
 // Quaternion class in the form:
 // q = a + bi + cj + dk

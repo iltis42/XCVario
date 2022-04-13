@@ -177,7 +177,20 @@ Quaternion Quaternion::AlignVectors(const vector_ijk &start, const vector_ijk &d
 
 }
 
-#define Quaternionen_Test 1
+// Grad
+float Compass_atan2( float y, float x )
+{
+    float result = radians_to_degrees(atan2(y, x));
+    
+    // As left turn means plus, euler angles come with 0° for north, -90° for east, -+180 degree for south and for 90° west
+    // compass rose goes vice versa, so east is 90° means we need to invert
+    if ( std::signbit(y) ) {
+        result += 360.f;
+    }
+
+    return result;
+} 
+
 #ifdef Quaternionen_Test
 void Quaternion::quaternionen_test()
 {
@@ -201,6 +214,19 @@ void Quaternion::quaternionen_test()
     Quaternion qs = slerp(q, q2, 1.f);
     ESP_LOGI(FNAME,"slerp: %f %f %f %f a:%f", qs.a, qs.b, qs.c, qs.d, radians_to_degrees(qs.getAngle()) );
 
+    // compass atan2
+    ESP_LOGI(FNAME,"Check compass atan2");
+    ESP_LOGI(FNAME,"  0? %f", Compass_atan2(0, 0));
+    ESP_LOGI(FNAME,"  0: %f", Compass_atan2(0, 1));
+    ESP_LOGI(FNAME," 45: %f", Compass_atan2(1, 1));
+    ESP_LOGI(FNAME," 45: %f", Compass_atan2(0.6, 0.6)); // norm?
+    ESP_LOGI(FNAME," 90: %f", Compass_atan2(1., 0.));
+    ESP_LOGI(FNAME,"135: %f", Compass_atan2(0.6, -0.6));
+    ESP_LOGI(FNAME,"180: %f", Compass_atan2(0., -1.));
+    ESP_LOGI(FNAME,"180: %f", Compass_atan2(-0.00001, -1.));
+    ESP_LOGI(FNAME,"225: %f", Compass_atan2(-0.6, -0.6));
+    ESP_LOGI(FNAME,"270: %f", Compass_atan2(-1., 0.));
+    ESP_LOGI(FNAME,"315: %f", Compass_atan2(-0.6, 0.6));
     // Comp rotate
     v3 = rotate_vector(vt, q);
     ESP_LOGI(FNAME,"rotate vt: %f %f %f", v3.a, v3.b, v3.c );

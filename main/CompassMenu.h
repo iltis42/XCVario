@@ -54,9 +54,6 @@ class CompassMenu
 
   // Backup for calibration data
   private:
-  static t_magn_axes  raw_back;
-  static t_float_axes scale_back;
-  static t_float_axes bias_back;
 
   // Pointer to setup menu of sensorCalibrationAction
   static SetupMenuSelect* menuPtr;

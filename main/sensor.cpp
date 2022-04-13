@@ -540,7 +540,7 @@ void grabMPU(void *pvParameters){
 			OV.sendNmeaSEN( SENstream, IMUstream, statTime, statP, teTime, teP, dynTime, dynP, OATemp, MPUtempcel,
 								chosenGnss->fix, chosenGnss->numSV, chosenGnss->time, chosenGnss->coordinates.altitude, chosenGnss->speed.ground, 
 								chosenGnss->speed.x, chosenGnss->speed.y, chosenGnss->speed.z,
-								accelTime, -accelG[2], accelG[1], accelG[0] , gyroTime, gyroDPS.x, gyroDPS.y, gyroDPS.z );
+								accelTime, -accelG[2], accelG[1], accelG[0] , gyroTime, -gyroDPS.z, -gyroDPS.y, -gyroDPS.x );
 			xSemaphoreGive(xMutex);		
 		}
 		
@@ -1005,7 +1005,8 @@ void system_startup(void *args){
 		MPU.setAccelFullScale(mpud::ACCEL_FS_8G);
 		MPU.setGyroFullScale( GYRO_FS );
 		MPU.setDigitalLowPassFilter(mpud::DLPF_42HZ);  // smoother data
-		mpud::raw_axes_t gb = gyro_bias.get();
+
+/*		mpud::raw_axes_t gb = gyro_bias.get();
 		mpud::raw_axes_t ab = accl_bias.get();
 
 		if( (gb.isZero() || ab.isZero()) || ahrs_autozero.get() ) {
@@ -1023,6 +1024,17 @@ void system_startup(void *args){
 			MPU.setAccelOffset(ab);
 			MPU.setGyroOffset(gb);
 		}
+*/
+//    set accel and gyro offsets to zero (we want raw MPU data)
+		mpud::raw_axes_t gb;
+		mpud::raw_axes_t ab;
+		gb.x=0;gb.y=0;gb.z=0;
+		ab.x=0;ab.y=0;ab.z=0;
+		gyro_bias.set( gb );
+		accl_bias.set( ab );
+		MPU.setGyroOffset(gb);
+		MPU.setAccelOffset(ab);
+		
 		delay( 50 );
 		mpud::raw_axes_t accelRaw;
 		float accel = 0;

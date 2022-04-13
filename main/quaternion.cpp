@@ -32,7 +32,7 @@ float Quaternion::getAngle() const
 }
 
 // should be the cross product
-Quaternion Quaternion::product(Quaternion q1, Quaternion q2)
+Quaternion operator*(const Quaternion& q1, const Quaternion& q2)
 {
     //q = q1*q2
     Quaternion q( (q1.a*q2.a) - (q1.b*q2.b) - (q1.c*q2.c) - (q1.d*q2.d),

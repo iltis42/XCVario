@@ -29,8 +29,8 @@ public:
     Quaternion& operator=(const Quaternion&) = default;
     
     float getAngle() const;
+    friend Quaternion operator*(const Quaternion& left, const Quaternion& right);
 
-    static Quaternion product(Quaternion q1, Quaternion q2);
     static Quaternion get_normalized(Quaternion q);
     Quaternion normalize();
     static vector_ijk rotate_vector(vector_ijk v, Quaternion q);

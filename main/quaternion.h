@@ -28,18 +28,17 @@ public:
     Quaternion(const Quaternion &) = default;
     Quaternion& operator=(const Quaternion&) = default;
     
+    // API
     float getAngle() const;
     friend Quaternion operator*(const Quaternion& left, const Quaternion& right);
-
-    static Quaternion get_normalized(Quaternion q);
+    Quaternion get_normalized() const;
     Quaternion normalize();
-    static vector_ijk rotate_vector(vector_ijk v, Quaternion q);
     vector_ijk operator*(const vector_ijk& p) const;
-    static Quaternion slerp(Quaternion q1, Quaternion q2, double lambda);
+    friend Quaternion slerp(Quaternion q1, Quaternion q2, double lambda);
     static Quaternion AlignVectors(const vector_ijk &start, const vector_ijk &dest);
-
-    static void quaternionen_test();
-
     euler_angles to_euler_angles();
-    Quaternion conjugate();
+    Quaternion get_conjugate() const;
+
+    // something like a unit test
+    static void quaternionen_test();
 };

@@ -102,10 +102,10 @@ void init_screens(){
 
 gpio_num_t SetupMenu::getGearWarningIO(){
 	gpio_num_t io = GPIO_NUM_0;
-	if( gear_warning.get() == GW_FLAP_SENSOR ){
+	if( gear_warning.get() == GW_FLAP_SENSOR || gear_warning.get() == GW_FLAP_SENSOR_INV ){
 		io = GPIO_NUM_34;
 	}
-	else if( gear_warning.get() == GW_S2_RS232_RX ){
+	else if( gear_warning.get() == GW_S2_RS232_RX || gear_warning.get() == GW_S2_RS232_RX_INV ){
 		io = GPIO_NUM_18;
 	}
 	return io;
@@ -119,6 +119,7 @@ void initGearWarning(){
 		gpio_set_pull_mode(io, GPIO_PULLUP_ONLY);
 		gpio_pullup_en( io );
 	}
+	ESP_LOGI(FNAME,"initGearWarning: IO: %d", io );
 }
 
 int config_gear_warning( SetupMenuSelect * p ){
@@ -1483,10 +1484,12 @@ void SetupMenu::setup( )
 
 		SetupMenuSelect * gear = new SetupMenuSelect( "Gear Warn", false , config_gear_warning, false, &gear_warning );
 		hardware->addEntry( gear );
-		gear->setHelp( PROGMEM "Enable gear warning in case Flap Sensor (Pin 6) or Serial RS232 (Pin 4) is not equipped in S2");
+		gear->setHelp( PROGMEM "Enable gear warning if Flap Sensor (Pin 6) or Serial RS232 (Pin 4) is not equipped in S2, triggerd by either high or low level");
 		gear->addEntry( "Disable");
-		gear->addEntry( "S2 Flap");
-		gear->addEntry( "S2 RS232");
+		gear->addEntry( "S2 Flap positive");   // A positive signal, high signal or > 2V will start alarm
+		gear->addEntry( "S2 RS232 positive");
+		gear->addEntry( "S2 Flap negative");   // A negative signal, low signal or < 1V will start alarm
+		gear->addEntry( "S2 RS232 negative");
 
 		if( hardwareRevision.get() >= 3 ){
 			SetupMenu * ahrs = new SetupMenu( "AHRS Setup" );

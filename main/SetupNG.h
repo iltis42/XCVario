@@ -89,7 +89,7 @@ typedef enum e_s2f_arrow_color { AC_WHITE_WHITE, AC_BLUE_BLUE, AC_GREEN_RED } e_
 typedef enum e_vario_needle_color { VN_COLOR_WHITE, VN_COLOR_ORANGE, VN_COLOR_RED }  e_vario_needle_color_t;
 typedef enum e_data_monitor { MON_OFF, MON_BLUETOOTH, MON_WIFI_8880, MON_WIFI_8881, MON_WIFI_8882, MON_S1, MON_S2, MON_CAN  }  e_data_monitor_t;
 typedef enum e_display_orientation { DISPLAY_NORMAL, DISPLAY_TOPDOWN } e_display_orientation_t;
-typedef enum e_gear_warning_io { GW_OFF, GW_FLAP_SENSOR, GW_S2_RS232_RX }  e_gear_warning_io_t;
+typedef enum e_gear_warning_io { GW_OFF, GW_FLAP_SENSOR, GW_S2_RS232_RX, GW_FLAP_SENSOR_INV, GW_S2_RS232_RX_INV }  e_gear_warning_io_t;
 
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
 void change_bal();

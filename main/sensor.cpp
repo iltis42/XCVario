@@ -262,7 +262,11 @@ void drawDisplay(void *pvParameters){
 				}
 			}
 			if( gear_warning.get() ){
-				if( digitalRead( SetupMenu::getGearWarningIO() ) && !stall_warning_active ){
+				int gw = digitalRead( SetupMenu::getGearWarningIO() );
+				if( gear_warning.get() == GW_FLAP_SENSOR_INV || gear_warning.get() == GW_S2_RS232_RX_INV ){
+					gw = !gw;
+				}
+				if( gw && !stall_warning_active ){
 					if( !gear_warning_active ){
 						Audio::alarm( true );
 						display->drawWarning( "! GEAR !", false );

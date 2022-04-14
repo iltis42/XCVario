@@ -1271,12 +1271,12 @@ void system_startup(void *args){
 		ESP_LOGI( FNAME, "Magnetic sensor type CAN");
 		compass = new Compass( 0 );  // I2C addr 0 -> instantiate without I2C bus and local sensor
 	}
-	else if( compass_enable.get() == CS_I2C || compass_enable.get() == CS_I2C_NO_TILT  ){
+	else if( compass_enable.get() == CS_I2C ){
 		ESP_LOGI( FNAME, "Magnetic sensor type I2C");
 		compass = new Compass( 0x0D, ODR_50Hz, RANGE_2GAUSS, OSR_512, &i2c_0 );
 	}
 	// magnetic sensor / compass selftest
-	if( compass_enable.get() != CS_DISABLE ) {
+	if( compass_enable.get() == CS_I2C || compass_enable.get() == CS_CAN ) {
 		compass->begin();
 		ESP_LOGI( FNAME, "Magnetic sensor enabled: initialize");
 		err = compass->selfTest();

@@ -16,6 +16,7 @@ Quaternion::Quaternion(float _a, float _b, float _c, float _d)
     d = _d;
 }
 
+// rotate radian angle around axis
 Quaternion::Quaternion(const float angle, const vector_ijk& axis)
 {
     float fac = std::sin(0.5 * angle);
@@ -25,14 +26,14 @@ Quaternion::Quaternion(const float angle, const vector_ijk& axis)
     c = fac * axis.b;
     d = fac * axis.c;
 }
-
+// radian
 float Quaternion::getAngle() const
 {
     return 2.f * std::acos(a);
 }
 
 // should be the cross product
-Quaternion Quaternion::product(Quaternion q1, Quaternion q2)
+Quaternion operator*(const Quaternion& q1, const Quaternion& q2)
 {
     //q = q1*q2
     Quaternion q( (q1.a*q2.a) - (q1.b*q2.b) - (q1.c*q2.c) - (q1.d*q2.d),
@@ -43,7 +44,7 @@ Quaternion Quaternion::product(Quaternion q1, Quaternion q2)
 }
 
 // return the conjugated quaternion
-Quaternion Quaternion::conjugate()
+Quaternion Quaternion::get_conjugate() const
 {
     Quaternion q2( a, -b, -c, -d );
     return q2;
@@ -56,7 +57,7 @@ Quaternion Quaternion::conjugate()
 // If the value of the parameter is close to 0, the output will be close to q1,
 // if it is close to 1, the output will be close to q2.
 
-Quaternion Quaternion::slerp(Quaternion q1, Quaternion q2, double lambda)
+Quaternion slerp(Quaternion q1, Quaternion q2, double lambda)
 {
 	float dotproduct = q1.b * q2.b + q1.c * q2.c + q1.d * q2.d + q1.a * q2.a;
 	float theta, st, sut, sout, coeff1, coeff2;
@@ -73,17 +74,18 @@ Quaternion Quaternion::slerp(Quaternion q1, Quaternion q2, double lambda)
 	coeff2 = sut/st;
 
 	Quaternion qr( coeff1*q1.a + coeff2*q2.a, coeff1*q1.b + coeff2*q2.b, coeff1*q1.c + coeff2*q2.c, coeff1*q1.d + coeff2*q2.d );
-	return( get_normalized( qr ) );
+	return qr.normalize();
 }
 
-// Normalize quaternion to magnitude of 1
-Quaternion Quaternion::get_normalized(Quaternion q1)
+// Get a normalize version of quaternion
+Quaternion Quaternion::get_normalized() const
 {
-    float len = sqrt(q1.a*q1.a + q1.b*q1.b + q1.c*q1.c + q1.d*q1.d);
-    Quaternion q2( q1.a/len, q1.b/len, q1.c/len, q1.d/len );
-    // ESP_LOGI(FNAME,"Q1: a=%.3f b=%.3f c=%.3f d=%.3f  Q2: a=%.3f b=%.3f c=%.3f d=%.3f obs:%f", q1.a, q1.b, q1.c, q1.d, q2.a, q2.b, q2.c, q2.d, one_by_sqrt );
+    float len = sqrt(a*a + b*b + c*c + d*d);
+    Quaternion q2( a/len, b/len, c/len, d/len );
+    // ESP_LOGI(FNAME,"Q1: a=%.3f b=%.3f c=%.3f d=%.3f  Q2: a=%.3f b=%.3f c=%.3f d=%.3f", a, b, c, d, q2.a, q2.b, q2.c, q2.d );
     return q2;
 }
+// Normalize quaternion
 Quaternion Quaternion::normalize()
 {
     float len = sqrt(a*a + b*b + c*c + d*d);
@@ -94,15 +96,29 @@ Quaternion Quaternion::normalize()
     return *this;
 }
 
-// rotate vector v by quaternion defined by q
-vector_ijk Quaternion::rotate_vector(vector_ijk v, Quaternion q)
+// rotate vector v by quaternion
+vector_ijk Quaternion::operator*(const vector_ijk& vec) const
 {
-    Quaternion vector = Quaternion(0.0, v.a, v.b, v.c);
-    Quaternion q_inverse = q.conjugate();
-    Quaternion rotated_vector = product(product(q, vector),q_inverse);
-    vector_ijk rotated(rotated_vector.b,rotated_vector.c,rotated_vector.d);
-    return rotated;
+    float a00 = a * a;
+    float a01 = a * b;
+    float a02 = a * c;
+    float a03 = a * d;
+    float a11 = b * b;
+    float a12 = b * c;
+    float a13 = b * d;
+    float a22 = c * c;
+    float a23 = c * d;
+    float a33 = d * d;
+    vector_ijk result;
+    result.a = vec.a * (+a00 + a11 - a22 - a33)
+        + 2.0f * (a12 * vec.b + a13 * vec.c + a02 * vec.c - a03 * vec.b);
+    result.b = vec.b * (+a00 - a11 + a22 - a33)
+        + 2.0f * (a12 * vec.a + a23 * vec.c + a03 * vec.a - a01 * vec.c);
+    result.c = vec.c * (+a00 - a11 - a22 + a33)
+        + 2.0f * (a13 * vec.a + a23 * vec.b - a02 * vec.a + a01 * vec.b);
+    return result;
 }
+
 // return euler angles yaw, pitch, roll as degree from quaternion
 euler_angles Quaternion::to_euler_angles()
 {
@@ -120,6 +136,7 @@ euler_angles Quaternion::to_euler_angles()
     return result;
 }
 
+// Creat a rotation through two vectors, aligning the first to the second
 Quaternion Quaternion::AlignVectors(const vector_ijk &start, const vector_ijk &dest)
 {
 	vector_ijk from = start;
@@ -152,32 +169,68 @@ Quaternion Quaternion::AlignVectors(const vector_ijk &start, const vector_ijk &d
 		rotationAxis.b / s,
 		rotationAxis.c / s
 	);
-
 }
 
-#define Test 1
-#ifdef Test
-void Quaternion::test()
+// Grad
+float Compass_atan2( float y, float x )
 {
-    vector_ijk v1(1,0,0);
-    vector_ijk v2(0,0,1), v3;
+    float result = radians_to_degrees(atan2(y, x));
+    
+    // As left turn means plus, euler angles come with 0° for north, -90° for east, -+180 degree for south and for 90° west
+    // compass rose goes vice versa, so east is 90° means we need to invert
+    if ( std::signbit(y) ) {
+        result += 360.f;
+    }
+
+    return result;
+} 
+
+#ifdef Quaternionen_Test
+void Quaternion::quaternionen_test()
+{
+    vector_ijk v1(1,0,0),
+        v2(0,0,1),
+        vt(1,2,3),
+        y_axes(0,1,0),
+        v3;
 
     // v to v setup
     int64_t t0 = esp_timer_get_time();
     Quaternion q = Quaternion::AlignVectors(v1,v2);
     int64_t t1 = esp_timer_get_time();
+    ESP_LOGI(FNAME,"Setup");
+    ESP_LOGI(FNAME,"Align v1 to v2: (%f,%f,%f) - (%f,%f,%f)", v1.a, v1.b, v1.c, v2.a, v2.b, v2.c );
     ESP_LOGI(FNAME,"Q: %lld - %f %f %f %f a:%f", t1-t0, q.a, q.b, q.c, q.d, radians_to_degrees(q.getAngle()) );
+    // explicit setup, rotate around y
+    Quaternion qex = Quaternion(degrees_to_radians(-90.f), y_axes);
+    ESP_LOGI(FNAME,"equal to: %f %f %f %f a:%f", qex.a, qex.b, qex.c, qex.d, radians_to_degrees(qex.getAngle()) );
 
     // rotate
-    v3 = rotate_vector(v1, q);
-    ESP_LOGI(FNAME,"rv: %f %f %f", v3.a, v3.b, v3.c );
+    v3 = q * v1;
+    ESP_LOGI(FNAME,"Mapping");
+    ESP_LOGI(FNAME,"rotate v1 -> v2: %f %f %f", v3.a, v3.b, v3.c );
 
     // slerp
+    ESP_LOGI(FNAME,"Slerp: (v1+v2)/2, v2");
     Quaternion q2 = Quaternion::AlignVectors(v1,vector_ijk(0.707106781, 0, 0.707106781));
     ESP_LOGI(FNAME,"Q: %f %f %f %f a:%f", q2.a, q2.b, q2.c, q2.d, radians_to_degrees(q2.getAngle()) );
     Quaternion qs = slerp(q, q2, 1.f);
+    ESP_LOGI(FNAME,"-> (45°+90°)/2");
     ESP_LOGI(FNAME,"slerp: %f %f %f %f a:%f", qs.a, qs.b, qs.c, qs.d, radians_to_degrees(qs.getAngle()) );
 
+    // compass atan2
+    ESP_LOGI(FNAME,"Check compass atan2");
+    ESP_LOGI(FNAME,"  0? %f", Compass_atan2(0, 0));
+    ESP_LOGI(FNAME,"  0: %f", Compass_atan2(0, 1));
+    ESP_LOGI(FNAME," 45: %f", Compass_atan2(1, 1));
+    ESP_LOGI(FNAME," 45: %f", Compass_atan2(0.6, 0.6)); // norm?
+    ESP_LOGI(FNAME," 90: %f", Compass_atan2(1., 0.));
+    ESP_LOGI(FNAME,"135: %f", Compass_atan2(0.6, -0.6));
+    ESP_LOGI(FNAME,"180: %f", Compass_atan2(0., -1.));
+    ESP_LOGI(FNAME,"180: %f", Compass_atan2(-0.00001, -1.));
+    ESP_LOGI(FNAME,"225: %f", Compass_atan2(-0.6, -0.6));
+    ESP_LOGI(FNAME,"270: %f", Compass_atan2(-1., 0.));
+    ESP_LOGI(FNAME,"315: %f", Compass_atan2(-0.6, 0.6));
 
 }
 

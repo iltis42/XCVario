@@ -83,7 +83,7 @@ vector_ijk update_gravity_vector(vector_ijk gravity_vector,float wx,float wy,flo
     euler_angles e = q_gyro.to_euler_angles();
     // ESP_LOGI(FNAME,"e.yaw=%.3f ", e.yaw );
     gyro_yaw_delta = e.yaw;
-    gravity_vector = Quaternion::rotate_vector(gravity_vector, q_gyro);
+    gravity_vector = q_gyro * gravity_vector;
     gravity_vector.normalize();
     return gravity_vector;
 }

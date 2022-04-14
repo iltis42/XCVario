@@ -159,7 +159,7 @@ void Compass:: progress(){
 void Compass::begin(){
 	Deviation::begin();
 	loadCalibration();
-	if( (compass_enable.get() == CS_I2C) || (compass_enable.get() == CS_I2C_NO_TILT) ){
+	if( compass_enable.get() == CS_I2C ){
 		i2c_0.begin(GPIO_NUM_4, GPIO_NUM_18, GPIO_PULLUP_DISABLE, GPIO_PULLUP_DISABLE, (int)(compass_i2c_cl.get()*1000) );
 		if( serial2_speed.get() )
 			serial2_speed.set(0);  // switch off serial interface, we can do only alternatively
@@ -390,9 +390,10 @@ float Compass::cur_heading( bool *ok ) {
  */
 float Compass::heading( bool *ok )
 {
+	*ok = false;
+
 	if( calibrationRunning == true )
 	{
-		*ok = false;
 		// ESP_LOGI(FNAME,"Calibration running, return 0");
 		return 0.0;
 	}
@@ -400,7 +401,6 @@ float Compass::heading( bool *ok )
 	if( compass_calibrated.get() == 0 )
 	{
 		// No calibration data available, return error
-		*ok = false;
 		// ESP_LOGI(FNAME,"Not calibrated" );
 		return 0.0;
 	}
@@ -408,7 +408,6 @@ float Compass::heading( bool *ok )
 	// ESP_LOGI(FNAME,"QMC5883L::heading() errors:%d, N:%d", errors, N );
 	if( errors > 100 && errors % 100 )  // Holddown processing and throwing errors once sensor is gone
 	{
-		*ok = false;
 		errors++;
 		// ESP_LOGI(FNAME,"Errors overrun, return 0");
 		return 0.0;
@@ -438,11 +437,9 @@ float Compass::heading( bool *ok )
 				if( sensor->initialize() != ESP_OK ) //  reinitialize once crashed, one retry
 					sensor->initialize();
 			}
-			*ok=false;
 			return 0.0;
 		}
 		if( errors > 100 ){  // survive 100 samples with constant heading if no valid reading
-			*ok = false;
 			return 0.0;
 		}
 		*ok = true;
@@ -457,28 +454,19 @@ float Compass::heading( bool *ok )
 	 */
 	// ESP_LOGI( FNAME, "heading: X:%d Y:%d Z:%d xs:%f ys:%f zs:%f", raw.x, raw.y, raw.z, scale.x, scale.y, scale.z);
 
-	fy = -(double) ((float( raw.x ) - bias.x) * scale.x);
 	fx = -(double) ((float( raw.y ) - bias.y) * scale.y);  // mounting correction
+	fy = -(double) ((float( raw.x ) - bias.x) * scale.x);
 	fz = -(double) ((float( raw.z ) - bias.z) * scale.z);
+	// ESP_LOGI(FNAME, "raw x %d, y %d, z %d ", raw.x, raw.y, raw.z);
 
 	vector_ijk gvr( 0,0,-1 );  // gravity vector direction, pointing down to ground: Z = -1
-	Quaternion q = Quaternion::AlignVectors( gravity_vector, gvr ) ; // create quaternion from gravity vector aligned to glider
+	Quaternion q = Quaternion::AlignVectors(gravity_vector, gvr) ; // create quaternion from gravity vector aligned to glider
 	vector_ijk mv( fx,fy,fz ); // magnetic vector, relative to glider from raw hall sensor x/y/z data
-	mv.normalize(); // normalize vector
-	vector_ijk mev = Quaternion::rotate_vector(mv,q);  // rotate quaternion by magnetic vector
-	mev.normalize();
-	// ESP_LOGI(FNAME,"mev.a %.2f °", mev.a * 180/M_PI );
-	vector_ijk frv( 1,0,0 ); // Fuselage reference vector, pointing in front to nose: X = 1
-	Quaternion q2 = Quaternion::AlignVectors( mev, frv );   // IMHO this is the right way to do it, results are correct
-	euler_angles ce = q2.to_euler_angles();                 //
-
-	if( compass_enable.get() == CS_CAN || compass_enable.get() == CS_I2C ){
-		_heading = -ce.yaw;  // As left turn means plus, euler angles come with 0° for north, -90° for east, -+180 degree for south and for 90° west
-		                     // compass rose goes vice versa, so east is 90° means we need to invert
-		//ESP_LOGI(FNAME,"tcy %03.2f tcx %03.2f  heading:%03.1f pi:%.1f ro:%.1f", tcy, tcx, _heading, pitch, roll );
-	}
-	else if ( compass_enable.get() == CS_I2C_NO_TILT )
-		_heading = -RAD_TO_DEG * atan2( fy, fx );
+	vector_ijk mev = q * mv;  // rotate magnetic vector
+	// ESP_LOGI(FNAME, "gravity a %.2f, b %.2f, c %.2f ", gravity_vector.a, gravity_vector.b, gravity_vector.c );
+	// ESP_LOGI(FNAME, "rot a %.2f, b %.2f, c %.2f, w %.2f - %.2f ", q.b, q.c, q.d, q.a, RAD_TO_DEG*q.getAngle() );
+	_heading = Compass_atan2( mev.b, mev.a );
+	// ESP_LOGI(FNAME,"compensated mag a %.2f, b %.2f, c %.2f h %.2f", mev.a, mev.b, mev.c, _heading);
 
 	_heading = Vector::normalizeDeg( _heading );  // normalize the +-180 degree model to 0..360°
 

@@ -159,7 +159,7 @@ void Compass:: progress(){
 void Compass::begin(){
 	Deviation::begin();
 	loadCalibration();
-	if( (compass_enable.get() == CS_I2C) || (compass_enable.get() == CS_I2C_NO_TILT) ){
+	if( compass_enable.get() == CS_I2C ){
 		i2c_0.begin(GPIO_NUM_4, GPIO_NUM_18, GPIO_PULLUP_DISABLE, GPIO_PULLUP_DISABLE, (int)(compass_i2c_cl.get()*1000) );
 		if( serial2_speed.get() )
 			serial2_speed.set(0);  // switch off serial interface, we can do only alternatively
@@ -459,20 +459,14 @@ float Compass::heading( bool *ok )
 	fz = -(double) ((float( raw.z ) - bias.z) * scale.z);
 	// ESP_LOGI(FNAME, "raw x %d, y %d, z %d ", raw.x, raw.y, raw.z);
 
-	if( compass_enable.get() == CS_CAN || compass_enable.get() == CS_I2C ){
-		vector_ijk gvr( 0,0,-1 );  // gravity vector direction, pointing down to ground: Z = -1
-		Quaternion q = Quaternion::AlignVectors( gvr, gravity_vector) ; // create quaternion from gravity vector aligned to glider
-		vector_ijk mv( fx,fy,fz ); // magnetic vector, relative to glider from raw hall sensor x/y/z data
-		vector_ijk mev = q * mv;  // rotate magnetic vector
-		// ESP_LOGI(FNAME, "gravity a %.2f, b %.2f, c %.2f ", gravity_vector.a, gravity_vector.b, gravity_vector.c );
-		// ESP_LOGI(FNAME, "rot a %.2f, b %.2f, c %.2f, w %.2f - %.2f ", q.b, q.c, q.d, q.a, RAD_TO_DEG*q.getAngle() );
-		_heading = Compass_atan2( mev.b, mev.a );
-		// ESP_LOGI(FNAME,"compensated a %.2f, b %.2f, c %.2f h %.2f", mev.a, mev.b, mev.c);
-	}
-	else if ( compass_enable.get() == CS_I2C_NO_TILT ) {
-		_heading = Compass_atan2( fy, fx );
-		// ESP_LOGI(FNAME,"turned x %.2f, y %.2f, z %.2f ", fx, fy, fz);
-	}
+	vector_ijk gvr( 0,0,-1 );  // gravity vector direction, pointing down to ground: Z = -1
+	Quaternion q = Quaternion::AlignVectors(gravity_vector, gvr) ; // create quaternion from gravity vector aligned to glider
+	vector_ijk mv( fx,fy,fz ); // magnetic vector, relative to glider from raw hall sensor x/y/z data
+	vector_ijk mev = q * mv;  // rotate magnetic vector
+	// ESP_LOGI(FNAME, "gravity a %.2f, b %.2f, c %.2f ", gravity_vector.a, gravity_vector.b, gravity_vector.c );
+	// ESP_LOGI(FNAME, "rot a %.2f, b %.2f, c %.2f, w %.2f - %.2f ", q.b, q.c, q.d, q.a, RAD_TO_DEG*q.getAngle() );
+	_heading = Compass_atan2( mev.b, mev.a );
+	// ESP_LOGI(FNAME,"compensated mag a %.2f, b %.2f, c %.2f h %.2f", mev.a, mev.b, mev.c, _heading);
 
 	_heading = Vector::normalizeDeg( _heading );  // normalize the +-180 degree model to 0..360°
 

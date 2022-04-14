@@ -333,7 +333,7 @@ bool CompassMenu::calibrationReport( t_magn_axes raw, t_float_axes scale, t_floa
 			menuPtr->ucg->setColor( COLOR_RED );
 		menuPtr->ucg->drawLine( X, Y, X-maxs.y, Y+maxs.y);    // 45 degree
 
-		if( b.zmin_green )
+		if( b.ymin_green )
 			menuPtr->ucg->setColor( COLOR_GREEN );
 		else
 			menuPtr->ucg->setColor( COLOR_RED );

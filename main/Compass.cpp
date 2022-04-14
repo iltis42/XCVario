@@ -218,14 +218,18 @@ bool Compass::calibrate( bool (*reporter)( t_magn_axes raw, t_float_axes scale, 
 	ESP_LOGI( FNAME, "calibrate min-max xyz");
 	int i = 0;
 	t_magn_axes raw;
+	t_magn_axes axes;
 	t_magn_axes min = { 20000,20000,20000 } ;
 	t_magn_axes max = { 0,0,0 };
 	t_bitfield_compass bits = { false, false, false, false, false, false };
+	Average<75, int16_t> avgX;
+	Average<75, int16_t> avgY;
+	Average<75, int16_t> avgZ;
 	if( !only_show ){
 		while( true )
 		{
 			i++;
-			if( sensor->rawAxes( raw ) == false )
+			if( sensor->rawAxes( axes ) == false )
 			{
 				errors++;
 				if( errors > 10 ){
@@ -234,28 +238,31 @@ bool Compass::calibrate( bool (*reporter)( t_magn_axes raw, t_float_axes scale, 
 				}
 				continue;
 			}
+			raw.x = avgX( axes.x );
+			raw.y = avgY( axes.y );
+			raw.z = avgZ( axes.z );
 			// ESP_LOGI( FNAME, "Mag Raw X:%d Y:%d Z:%d", raw.x, raw.y, raw.z  );
 			/* Find max/min peak values */
 			min.x = ( raw.x < min.x ) ? raw.x : min.x;
 			min.y = ( raw.y < min.y ) ? raw.y : min.y;
 			min.z = ( raw.z < min.z ) ? raw.z : min.z;
 			max.x = ( raw.x > max.x ) ? raw.x : max.x;
-			max.y = ( raw.y > max.y ) ? raw.y : max.z;
+			max.y = ( raw.y > max.y ) ? raw.y : max.y;
 			max.z = ( raw.z > max.z ) ? raw.z : max.z;
 
-			const int16_t minval = (32768/100)*1; // 1%
-			if( abs(raw.x) < minval && abs(raw.y) < minval && raw.z > 0  )
+			const int16_t minval = (32768/100)*1; // 1% full scale
+			if( abs(raw.x) < minval && abs(raw.y) < minval && raw.z > 2*minval  )
 				bits.zmax_green = true;
-			if( abs(raw.x) < minval && abs(raw.y) < minval && raw.z < 0  )
+			if( abs(raw.x) < minval && abs(raw.y) < minval && raw.z < -2*minval  )
 				bits.zmin_green = true;
-			if( abs(raw.x) < minval && abs(raw.z) < minval && raw.y < 0  )
-				bits.ymin_green = true;
-			if( abs(raw.x) < minval && abs(raw.z) < minval && raw.y > 0  )
+			if( abs(raw.x) < minval && abs(raw.z) < minval && raw.y > 2*minval  )
 				bits.ymax_green = true;
-			if( abs(raw.y) < minval && abs(raw.z) < minval && raw.x < 0  )
-				bits.xmin_green = true;
-			if( abs(raw.y) < minval && abs(raw.z) < minval && raw.x > 0  )
+			if( abs(raw.x) < minval && abs(raw.z) < minval && raw.y < -2*minval  )
+				bits.ymin_green = true;
+			if( abs(raw.y) < minval && abs(raw.z) < minval && raw.x > 2*minval  )
 				bits.xmax_green = true;
+			if( abs(raw.y) < minval && abs(raw.z) < minval && raw.x < -2*minval  )
+				bits.xmin_green = true;
 
 			if( i < 2 )
 				continue;

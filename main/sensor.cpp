@@ -135,8 +135,6 @@ DataMonitor DM;
 I2C_t& i2c = i2c1;  // i2c0 or i2c1
 I2C_t& i2c_0 = i2c0;  // i2c0 or i2c1
 MPU_t MPU;         // create an object
-mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
-mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
 esp_err_t err;				   // holds mpu reading status
 mpud::float_axes_t accelG;
 mpud::float_axes_t gyroDPS;
@@ -150,6 +148,9 @@ BTSender btsender;
 int IMUrate = 1;// IMU data stream rate x 25ms. 0= no stream
 int SENrate = 4;// Sensor data stream rate x 25ms. 0= no stream
 
+
+static mpud::raw_axes_t accelRaw;     // holds raw accels x, y, z axes as int16
+static mpud::raw_axes_t gyroRaw;      // holds raw gyros x, y, z axes as int16
 static float accelTime; // time stamp for accels
 static float gyroTime;  // time stamp for gyros
 static float statTime; // time stamp for statP
@@ -454,8 +455,7 @@ void grabMPU(void *pvParameters){
 		TickType_t xLastWakeTime_mpu =xTaskGetTickCount();
 
 		// get accel and gyro data
-		mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
-		mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
+
 		esp_err_t erracc = MPU.acceleration(&accelRaw);  // fetch raw accel data from the registers
 		if( erracc == ESP_OK ){
 			accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
@@ -1006,35 +1006,6 @@ void system_startup(void *args){
 		MPU.setGyroFullScale( GYRO_FS );
 		MPU.setDigitalLowPassFilter(mpud::DLPF_42HZ);  // smoother data
 
-/*		mpud::raw_axes_t gb = gyro_bias.get();
-		mpud::raw_axes_t ab = accl_bias.get();
-
-		if( (gb.isZero() || ab.isZero()) || ahrs_autozero.get() ) {
-			ESP_LOGI( FNAME,"MPU computeOffsets");
-			ahrs_autozero.set(0);
-			MPU.computeOffsets( &ab, &gb );  // returns Offsets in 16G scale
-			gyro_bias.set( gb );
-			accl_bias.set( ab );
-			MPU.setGyroOffset(gb);
-			MPU.setAccelOffset(ab);
-			ESP_LOGI( FNAME,"MPU new offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
-			if( hardwareRevision.get() != 3 )
-				hardwareRevision.set(3);
-		}else{
-			MPU.setAccelOffset(ab);
-			MPU.setGyroOffset(gb);
-		}
-*/
-//    set accel and gyro offsets to zero (we want raw MPU data)
-		mpud::raw_axes_t gb;
-		mpud::raw_axes_t ab;
-		gb.x=0;gb.y=0;gb.z=0;
-		ab.x=0;ab.y=0;ab.z=0;
-		gyro_bias.set( gb );
-		accl_bias.set( ab );
-		MPU.setGyroOffset(gb);
-		MPU.setAccelOffset(ab);
-		
 		delay( 50 );
 		mpud::raw_axes_t accelRaw;
 		float accel = 0;
@@ -1054,7 +1025,6 @@ void system_startup(void *args){
 		logged_tests += "MPU6050 AHRS test: PASSED\n";
 		IMU::init();
 		IMU::read();
-		ESP_LOGI( FNAME,"MPU current offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
 	}
 	else{
 		ESP_LOGI( FNAME,"MPU reset failed, check HW revision: %d",hardwareRevision.get() );
@@ -1577,6 +1547,33 @@ void system_startup(void *args){
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 5096, NULL, 4, &dpid, 0);
 
 	Audio::startAudio();
+	
+	// compute gyros offsets
+	ESP_LOGI( FNAME,"MPU compute gyros offsets");	
+	mpud::raw_axes_t gb = gyro_bias.get();
+	mpud::raw_axes_t newGyroOffsets;
+	newGyroOffsets.x = 0;
+	newGyroOffsets.y = 0;
+	newGyroOffsets.z = 0;
+	int nbsamples = 0;
+	for( int i=0; i<20; i++ ){
+		float gyroNorm = sqrt( gyroDPS.x * gyroDPS.x + gyroDPS.y * gyroDPS.y + gyroDPS.z * gyroDPS.z); 
+		if( (Atmosphere::pascal2kmh( dynP ) < 5 ) && gyroNorm < 1 ) {
+			newGyroOffsets.x = ( 4 * newGyroOffsets.x + gyroRaw.x ) / 5;
+			newGyroOffsets.y = ( 4 * newGyroOffsets.y + gyroRaw.y ) / 5;
+			newGyroOffsets.z = ( 4 * newGyroOffsets.z + gyroRaw.z ) / 5;
+			nbsamples++;
+			delay( 25 );
+		}
+	}
+	if ( nbsamples < 10 ) {
+		MPU.setGyroOffset(gb); // store old gyros offets in MPU
+		ESP_LOGI( FNAME,"MPU old offsets gyro:%d/%d/%d ", gb.x,gb.y,gb.z );
+	} else {
+		gyro_bias.set( newGyroOffsets ); // set new gyros offsets in NVRAM and store them in MPU
+		MPU.setGyroOffset(newGyroOffsets);
+		ESP_LOGI( FNAME,"MPU new offsets gyro:%d/%d/%d ", gb.x,gb.y,gb.z );
+	}
 }
 
 extern "C" void  app_main(void)

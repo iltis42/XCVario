@@ -765,7 +765,7 @@ void SetupMenu::setup( )
 		blck->addEntry( "ENABLE");
 		s2fse->addEntry( blck );
 
-		SetupMenuSelect * s2fmod = new SetupMenuSelect( "S2F Mode", false, 0 , true, &audio_mode );
+		SetupMenuSelect * s2fmod = new SetupMenuSelect( "S2F Mode", false, 0 , true, &s2f_switch_mode );
 		s2fmod->setHelp( PROGMEM"Select source for S2F <-> Vario change, that supports multiple ways", 230 );
 		s2fmod->addEntry( "Vario fix");
 		s2fmod->addEntry( "Cruise fix");

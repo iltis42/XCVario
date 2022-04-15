@@ -362,7 +362,7 @@ extern SetupNG<float>		gross_weight;
 extern SetupNG<float>  		s2f_speed;
 
 extern SetupNG<int>  		audio_variable_frequency;
-extern SetupNG<int>  		audio_mode;
+extern SetupNG<int>  		s2f_switch_mode;
 extern SetupNG<int>  		chopping_mode;
 extern SetupNG<int>  		chopping_style;
 extern SetupNG<int>  		amplifier_shutdown;

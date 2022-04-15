@@ -335,7 +335,7 @@ void drawDisplay(void *pvParameters){
 			// Vario Screen
 			if( !(stall_warning_active || gear_warning_active || flarmWarning || gLoadDisplay )  ) {
 				// ESP_LOGI(FNAME,"TE=%2.3f", te_vario.get() );
-				display->drawDisplay( airspeed, te_vario.get(), aTE, polar_sink, altitude.get(), t, battery, s2f_delta, as2f, average_climb.get(), cruise_mode.get(), standard_setting, flap_pos.get() );
+				display->drawDisplay( airspeed, te_vario.get(), aTE, polar_sink, altitude.get(), t, battery, s2f_delta, as2f, average_climb.get(), Switch::getCruiseState(), standard_setting, flap_pos.get() );
 			}
 			if( screen_centeraid.get() ){
 				if( centeraid ){
@@ -356,10 +356,10 @@ void doAudio(){
 	polar_sink = Speed2Fly.sink( ias.get() );
 	float aTES2F = bmpVario.readS2FTE();
 	float netto = aTES2F - polar_sink;
-	as2f = Speed2Fly.speed( netto, !cruise_mode.get() );
+	as2f = Speed2Fly.speed( netto, !Switch::getCruiseState() );
 	s2f_delta = s2f_delta + ((as2f - ias.get()) - s2f_delta)* (1/(s2f_delay.get()*10)); // low pass damping moved to the correct place
 	// ESP_LOGI( FNAME, "te: %f, polar_sink: %f, netto %f, s2f: %f  delta: %f", aTES2F, polar_sink, netto, as2f, s2f_delta );
-	if( vario_mode.get() == VARIO_NETTO || (cruise_mode.get() &&  (vario_mode.get() == CRUISE_NETTO)) ){
+	if( vario_mode.get() == VARIO_NETTO || (Switch::getCruiseState() &&  (vario_mode.get() == CRUISE_NETTO)) ){
 		if( netto_mode.get() == NETTO_RELATIVE )
 			Audio::setValues( te_vario.get() - polar_sink + Speed2Fly.circlingSink( ias.get() ), s2f_delta );
 		else if( netto_mode.get() == NETTO_NORMAL )
@@ -444,23 +444,23 @@ static void toyFeed()
 	static char lb[150];
 
 	if( ahrs_rpyl_dataset.get() ){
-		OV.sendNMEA( P_AHRS_RPYL, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altitude.get(), validTemperature,
+		OV.sendNMEA( P_AHRS_RPYL, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), validTemperature,
 				-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
-		OV.sendNMEA( P_AHRS_APENV1, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altitude.get(), validTemperature,
+		OV.sendNMEA( P_AHRS_APENV1, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), validTemperature,
 				-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
 	}
 	if( nmea_protocol.get() == BORGELT ) {
-		OV.sendNMEA( P_BORGELT, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altSTD, validTemperature  );
-		OV.sendNMEA( P_GENERIC, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altSTD, validTemperature  );
+		OV.sendNMEA( P_BORGELT, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altSTD, validTemperature  );
+		OV.sendNMEA( P_GENERIC, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altSTD, validTemperature  );
 	}
 	else if( nmea_protocol.get() == OPENVARIO ){
-		OV.sendNMEA( P_OPENVARIO, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altitude.get(), validTemperature  );
+		OV.sendNMEA( P_OPENVARIO, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), validTemperature  );
 	}
 	else if( nmea_protocol.get() == CAMBRIDGE ){
-		OV.sendNMEA( P_CAMBRIDGE, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altitude.get(), validTemperature  );
+		OV.sendNMEA( P_CAMBRIDGE, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), validTemperature  );
 	}
 	else if( nmea_protocol.get() == XCVARIO ) {
-		OV.sendNMEA( P_XCVARIO, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altitude.get(), validTemperature,
+		OV.sendNMEA( P_XCVARIO, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), validTemperature,
 				-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
 	}
 	else if( nmea_protocol.get() == NMEA_OFF ) {

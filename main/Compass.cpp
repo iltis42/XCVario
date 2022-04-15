@@ -275,10 +275,10 @@ bool Compass::calibrate( bool (*reporter)( t_magn_axes raw, t_float_axes scale, 
 
 			// Calculate soft-iron scale factors
 			// calculate average x, y, z axis max chord length in counts
-			float xchord = ( (float)max.x - min.x ) / 2;
-			float ychord = ( (float)max.y - min.y ) / 2;
-			float zchord = ( (float)max.z - min.z ) / 2;
-			float cord_avgerage = ( xchord + ychord + zchord ) / 3.;
+			float xchord = ( (float)max.x - min.x );
+			float ychord = ( (float)max.y - min.y );
+			float zchord = ( (float)max.z - min.z );
+			float cord_avgerage = ( xchord + ychord + zchord ) / 6.;
 			scale.x = cord_avgerage / xchord;
 			scale.y = cord_avgerage / ychord;
 			scale.z = cord_avgerage / zchord;

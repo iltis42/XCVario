@@ -82,6 +82,7 @@ extern AdaptUGC *MYUCG;
 
 extern int IMUrate;
 extern int SENrate;
+extern bool GyroBias;
 
 
 #endif

@@ -118,66 +118,6 @@ void Protocols::sendItem( const char *key, char type, void *value, int len, bool
 	}
 }
 
-/*
-Sensor data
-		$SEN,
-		T..T.TTTTTT:	static time in second with micro second resolution (before static measurement),
-		PPPP.PPP:		static pressure hPa,
-		T..T.TTTTTT:	TE time in second with micro second resolution (before TE measurement),
-		PPPP.PPP:		TE pressure hPa,
-		T..T.TTTTTT:	Dyn time in second with micro second resolution (before dynamic measurement),		
-		PPPP.PPP:		Dynamic Pa,
-		XX.X:				Outside Air Temperature °C,
-		XX.X:				MPU temperature °C,
-		X:					fix 0 to 5   3=3D   4= 3D diff,
-		XX:				numSV number of satelites used, 
-		T..T.TTT:		GNSS time in second with mili second resolution (corresponds to satellite data acquisition time),
-		AAAA.A:			GNSS altitude in meter,
-		VV.VV:			GNSS ground speed m/s,
-		VV.VV:			GNSS speed x or north,
-		VV.VV:			GNSS speed y or east,
-		VV.VV:			GNSS speed z or down,
-		*hh<CR><LF>		checksum
- */
- /*
-IMU data
-		$IMU,
-		T..T.TTTTTT:	accel time in second with micro second resolution (before IMU measurement),
-		X.XXXX:			acceleration in X-Axis in G,
-		Y.YYYY:			acceleration in Y-Axis in G,
-		Z.ZZZZ:			acceleration in Z-Axis in G,
-		T..T.TTTTTT:	gyro time in second with micro second resolution (before IMU measurement)
-		XXX.X:			rotation X-Axis °/s,
-		YYY.Y:			rotation Y-Axis °/s,
-		ZZZ.Z:			rotation Z-Axis °/s,
-		*hh<CR><LF>		checksum
- */
- 
-
-void Protocols::sendNmeaSEN( bool sensor, bool imu, float statTime, float statP, float teTime, float teP, float dynTime, float dynP, float OATemp, float MPUtempcel,
-		int fix, int numSV, float gnsstime, float gnssaltitude, float gnssgroundspeed, float gnssspeedx, float gnssspeedy, float gnssspeedz,
-		float accelTime, float acc_x, float acc_y, float acc_z, float gyroTime, float gx, float gy, float gz ) {
-	char str[235];
-	
-	if (imu && sensor ) {
-		sprintf(str,"$IMU,%.6f,%1.4f,%1.4f,%1.4f,%.6f,%3.1f,%3.1f,%3.1f\r\n$SEN,%.6f,%4.3f,%.6f,%4.3f,%.6f,%4.3f,%2.1f,%2.1f,%1d,%2d,%.3f,%4.1f,%2.2f,%2.2f,%2.2f,%2.2f\r\n",
-					accelTime, acc_x, acc_y, acc_z , gyroTime, gx, gy, gz,
-					statTime, statP, teTime, teP, dynTime, dynP,  OATemp, MPUtempcel, fix, numSV, gnsstime ,gnssaltitude, gnssgroundspeed, gnssspeedx, gnssspeedy, gnssspeedz);
-		Router::sendXCV(str);
-	} else {
-		if (sensor) {
-					sprintf(str,"$SEN,%.6f,%4.3f,%.6f,%4.3f,%.6f,%4.3f,%2.1f,%2.1f,%1d,%2d,%.3f,%4.1f,%2.2f,%2.2f,%2.2f,%2.2f\r\n",
-					statTime, statP, teTime, teP, dynTime, dynP,  OATemp, MPUtempcel, fix, numSV, gnsstime ,gnssaltitude, gnssgroundspeed, gnssspeedx, gnssspeedy, gnssspeedz);
-		Router::sendXCV(str);
-		}
-		if (imu) {
-			sprintf(str,"$IMU,%.6f,%1.4f,%1.4f,%1.4f,%.6f,%3.1f,%3.1f,%3.1f\r\n",accelTime, acc_x, acc_y, acc_z , gyroTime, gx, gy, gz);
-			Router::sendXCV(str);
-		}
-	}
-		
-}
-
 void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
 		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz ){
 	if( !validTemp )
@@ -271,7 +211,6 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		// Outside Air Temperature (?C) (i.e. +15.2)
 		// Relative humidity [%] (i.e. 095)
 		float pa = alt - 8.92*( QNH.get() - 1013.25);
-
 
 		if( validTemp )
 			sprintf(str, "$PEYA,%.2f,%.2f,%.2f,%.2f,,,%.2f,%.2f,%.2f,,", baro, baro+(dp/100),pa, QNH.get(),tas,te,temp);
@@ -501,6 +440,7 @@ void Protocols::parseNMEA( const char *str ){
 		if (str[3] == '0') {
 			IMUrate = 0; // FT stream
 			SENrate = 0;
+			GyroBias = false;
 		}
 		else if (str[3] == '1') {
 			IMUrate = 1; // FT IMU stream at 40 Hz
@@ -514,6 +454,9 @@ void Protocols::parseNMEA( const char *str ){
 			IMUrate = 1; // FT IMU at 40 Hz and sensor at 10 Hz
 			SENrate = 4;
 		}
+		else if (str[3] == '4') {
+			GyroBias = true; // FT sends gyros bias
+		}		
 	}
 }
 

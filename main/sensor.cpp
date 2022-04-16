@@ -137,6 +137,8 @@ I2C_t& i2c_0 = i2c0;  // i2c0 or i2c1
 MPU_t MPU;         // create an object
 esp_err_t err;				   // holds mpu reading status
 mpud::float_axes_t accelG;
+mpud::float_axes_t gyroRawDPS;
+mpud::float_axes_t currentGyroBiasDPS;
 mpud::float_axes_t gyroDPS;
 mpud::float_axes_t accelG_Prev;
 mpud::float_axes_t gyroDPS_Prev;
@@ -145,12 +147,15 @@ mpud::float_axes_t gyroDPS_Prev;
 Compass *compass;
 BTSender btsender;
 
-int IMUrate = 1;// IMU data stream rate x 25ms. 0= no stream
-int SENrate = 4;// Sensor data stream rate x 25ms. 0= no stream
+int IMUrate = 0;// IMU data stream rate x 25ms. 0= no stream
+int SENrate = 0;// Sensor data stream rate x 25ms. 0= no stream
+bool GyroBias = false;// Gyro Bias data
 
-
-static mpud::raw_axes_t accelRaw;     // holds raw accels x, y, z axes as int16
-static mpud::raw_axes_t gyroRaw;      // holds raw gyros x, y, z axes as int16
+static mpud::raw_axes_t accelRaw;     // holds accel x, y, z axes as int16
+static mpud::raw_axes_t gyroRaw;      // holds gyro x, y, z axes as int16
+static mpud::raw_axes_t gyroCorr;      // holds gyro x, y, z axes as int16
+static mpud::raw_axes_t currentGyroBias; // holds gyro biais x, y, z axes as int16
+static mpud::raw_axes_t newGyroBias; // holds gyro biais x, y, z axes as int16
 static float accelTime; // time stamp for accels
 static float gyroTime;  // time stamp for gyros
 static float statTime; // time stamp for statP
@@ -447,40 +452,43 @@ void grabMPU(void *pvParameters){
 		gyroDPS_Prev = gyroDPS;
 		accelG_Prev = accelG;
 */
-	mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
-	mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
-	int mtick = 0;
+	float gyrosum = 0;
+	float oldgyrosum = 0;
+	float oldaccelz = 0;
+	bool processbias = false;
+	bool biassolution = false;
+	bool needfirstbias = true;
+	int nbsamples = 0;
+	int mtick = 0; // counter to schedule tasks at specific time
+	currentGyroBias = gyro_bias.get(); // get stored gyro biais
+	char str[250];
+	
 	while (haveMPU) {
 		mtick++;
 		TickType_t xLastWakeTime_mpu =xTaskGetTickCount();
 
 		// get accel and gyro data
-
 		esp_err_t erracc = MPU.acceleration(&accelRaw);  // fetch raw accel data from the registers
 		if( erracc == ESP_OK ){
 			accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
 			accelTime = esp_timer_get_time()/1000000.0; // time in second
 		}
 		esp_err_t errgyr = MPU.rotation(&gyroRaw);       // fetch raw gyro data from the registers
-		if( erracc == ESP_OK ){
-			gyroDPS = mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);  // raw data to º/s
+		if( errgyr == ESP_OK ){
 			gyroTime = esp_timer_get_time()/1000000.0; // time in second
+			gyroCorr.x = gyroRaw.x - currentGyroBias.x;
+			gyroCorr.y = gyroRaw.y - currentGyroBias.y;
+			gyroCorr.z = gyroRaw.z - currentGyroBias.z;
+			gyroDPS = mpud::gyroDegPerSec(gyroCorr, GYRO_FS);  // raw data to º/s			
 		}
 		if( erracc == ESP_OK && errgyr == ESP_OK) {
 			IMU::read();
 		}
-		bool IMUstream = false;
-		if( IMUrate != 0 ) {
-			if ( (mtick % IMUrate) == 0 ) {
-				IMUstream = true;
-			}
-		}
-
+		
 		// get sensors data every 4 cycles
 		if ( (mtick % 4) == 0 ) {
 			bool ok=false;
 			float p = 0;
-
 			// get raw static pressure
 			p = baroSensor->readPressure(ok);
 			if ( ok ) {
@@ -488,14 +496,12 @@ void grabMPU(void *pvParameters){
 				statTime = esp_timer_get_time()/1000000.0; // time in second
 				baroP = p;
 			}
-
 			// get raw te pressure
 			p = teSensor->readPressure(ok);
 			if ( ok ) {
 				teP = p;
 				teTime = esp_timer_get_time()/1000000.0; // time in second
 			}
-
 			// get raw dynamic pressure
 			if( asSensor )
 				p = asSensor->readPascal(0, ok);
@@ -506,7 +512,6 @@ void grabMPU(void *pvParameters){
 				if (p > 60 )
 					dynamicP = p;
 			}
-			
 			// get OAT
 			float T=OAT.get();
 			if( !validTemperature ) {
@@ -514,36 +519,119 @@ void grabMPU(void *pvParameters){
 				// ESP_LOGW(FNAME,"T invalid, using 15 deg");
 			}
 			OATemp = T;
-
 			// get MPU temp
 			int16_t MPUtempraw;
 			esp_err_t errtemp = MPU.temperature(&MPUtempraw);
 			if( errtemp == ESP_OK )
 				MPUtempcel = mpud::tempCelsius(MPUtempraw);
-		}
-		bool SENstream = false;
-		if( SENrate != 0 ) {
-			if ( (mtick % SENrate) == 0 ) {
-				SENstream = true;
+
+			// identify gyro bias
+			if( (Atmosphere::pascal2kmh(abs(dynP)) < 20 ) ) {	// if IAS is << below stall ~20kmh MPU is probably not moving
+				gyrosum = abs(gyroDPS.x) + abs(gyroDPS.y) + abs( gyroDPS.z); // monitor sum of rotations to detect possible movements
+				if( !processbias ) { // if first time in gyro bias identification, initialize oldgyrosum, oldaccelz and process variables
+					oldgyrosum = gyrosum;
+					oldaccelz = accelG[0];
+					biassolution = false;
+					processbias = true;
+					nbsamples = 0;
+				} else {					
+					if ( (abs(gyrosum-oldgyrosum) < 0.5 ) && (abs(accelG[0]-oldaccelz) < .01 ) ) { // If variation of sum of gyros < 1°/s and variation of accel z component < .1 MPU is considered static
+						if ( nbsamples == 0 ) { // if first time in bias low pass, initialize bias.
+							newGyroBias.x = gyroRaw.x;
+							newGyroBias.y = gyroRaw.y;
+							newGyroBias.z = gyroRaw.z;
+						} else { // low pass on bias with .5s period
+							newGyroBias.x = ( 9 * newGyroBias.x + gyroRaw.x ) / 10;
+							newGyroBias.y = ( 9 * newGyroBias.y + gyroRaw.y ) / 10;
+							newGyroBias.z = ( 9 * newGyroBias.z + gyroRaw.z ) / 10;
+							if( nbsamples > 20 ) biassolution = true; // if low pass has at least 20 samples, bias is considered correct
+						}
+						nbsamples++;
+					} else { // MPU not static
+						processbias = false; // reinitialize bias identification process
+					}
+				}
+			}
+			if ( biassolution && ( needfirstbias || ( GyroBias && (nbsamples > 100)) || (nbsamples > 6000) )) { // if a bias solution exists and need a first bias or lowpass has accumulated > 6000 samples ~10 minutes
+				currentGyroBias = newGyroBias;
+				if ( needfirstbias || (nbsamples > 6000) )
+					gyro_bias.set( currentGyroBias );
+				processbias = false;
+				needfirstbias = false;
+				if (GyroBias) {
+					currentGyroBiasDPS = mpud::gyroDegPerSec(currentGyroBias, GYRO_FS);
+					sprintf(str,"$GBIAS,%2.1f,%3.2f,%3.2f,%3.2f\r\n", MPUtempcel, currentGyroBiasDPS.x, currentGyroBiasDPS.y, currentGyroBiasDPS.z);
+					Router::sendXCV(str);
+				}
 			}
 		}
-		
-		// GNSS data from S1 interface
-		const gnss_data_t *gnss1 = s1UbloxGnssDecoder.getGNSSData(1);
-		// GNSS data from S2 interface
-		const gnss_data_t *gnss2 = s2UbloxGnssDecoder.getGNSSData(2);
-		// select gnss with better fix
-		const gnss_data_t *chosenGnss = (gnss2->fix >= gnss1->fix) ? gnss2 : gnss1;
-		
-		if( IMUstream || SENstream ) {
-			xSemaphoreTake(xMutex,portMAX_DELAY );
-			OV.sendNmeaSEN( SENstream, IMUstream, statTime, statP, teTime, teP, dynTime, dynP, OATemp, MPUtempcel,
-								chosenGnss->fix, chosenGnss->numSV, chosenGnss->time, chosenGnss->coordinates.altitude, chosenGnss->speed.ground, 
-								chosenGnss->speed.x, chosenGnss->speed.y, chosenGnss->speed.z,
-								accelTime, -accelG[2], accelG[1], accelG[0] , gyroTime, -gyroDPS.z, -gyroDPS.y, -gyroDPS.x );
-			xSemaphoreGive(xMutex);		
+
+		 /*
+		IMU data
+				$IMU,
+				T..T.TTTTTT:	accel time in second with micro second resolution (before IMU measurement),
+				X.XXXX:			acceleration in X-Axis in G,
+				Y.YYYY:			acceleration in Y-Axis in G,
+				Z.ZZZZ:			acceleration in Z-Axis in G,
+				T..T.TTTTTT:	gyro time in second with micro second resolution (before IMU measurement)
+				XXX.XX:			rotation X-Axis °/s,
+				YYY.YY:			rotation Y-Axis °/s,
+				ZZZ.ZZ:			rotation Z-Axis °/s,
+				*hh<CR><LF>		checksum
+
+		Sensor data
+				$SEN,
+				T..T.TTTTTT:	static time in second with micro second resolution (before static measurement),
+				PPPP.PPP:		static pressure hPa,
+				T..T.TTTTTT:	TE time in second with micro second resolution (before TE measurement),
+				PPPP.PPP:		TE pressure hPa,
+				T..T.TTTTTT:	Dyn time in second with micro second resolution (before dynamic measurement),		
+				PPPP.PPP:		Dynamic Pa,
+				XX.X:				Outside Air Temperature °C,
+				XX.X:				MPU temperature °C,
+				X:					fix 0 to 5   3=3D   4= 3D diff,
+				XX:				numSV number of satelites used, 
+				T..T.TTT:		GNSS time in second with mili second resolution (corresponds to satellite data acquisition time),
+				AAAA.A:			GNSS altitude in meter,
+				VV.VV:			GNSS ground speed m/s,
+				VV.VV:			GNSS speed x or north,
+				VV.VV:			GNSS speed y or east,
+				VV.VV:			GNSS speed z or down,
+				*hh<CR><LF>		checksum
+		 */
+
+		if( SENrate != 0 ) {
+			if ( (mtick % SENrate) == 0 ) {
+				// GNSS data from S1 interface
+				const gnss_data_t *gnss1 = s1UbloxGnssDecoder.getGNSSData(1);
+				// GNSS data from S2 interface
+				const gnss_data_t *gnss2 = s2UbloxGnssDecoder.getGNSSData(2);
+				// select gnss with better fix
+				const gnss_data_t *chosenGnss = (gnss2->fix >= gnss1->fix) ? gnss2 : gnss1;
+				if ( IMUrate != 0 ) {
+					if ( (mtick % IMUrate) == 0 ) { //sending both IMU and SEN messages
+						sprintf(str,"$IMU,%.6f,%1.4f,%1.4f,%1.4f,%.6f,%3.2f,%3.2f,%3.2f\r\n$SEN,%.6f,%4.3f,%.6f,%4.3f,%.6f,%4.3f,%2.1f,%2.1f,%1d,%2d,%.3f,%4.1f,%2.2f,%2.2f,%2.2f,%2.2f\r\n",
+									accelTime, -accelG[2], accelG[1], accelG[0] , gyroTime, -gyroDPS.z, -gyroDPS.y, -gyroDPS.x,
+									statTime, statP, teTime, teP, dynTime, dynP,  OATemp, MPUtempcel, chosenGnss->fix, chosenGnss->numSV, chosenGnss->time,
+									chosenGnss->coordinates.altitude, chosenGnss->speed.ground, chosenGnss->speed.x, chosenGnss->speed.y, chosenGnss->speed.z);
+						Router::sendXCV(str);					
+					} 
+				} else { // sending only SEN message
+					sprintf(str,"$SEN,%.6f,%4.3f,%.6f,%4.3f,%.6f,%4.3f,%2.1f,%2.1f,%1d,%2d,%.3f,%4.1f,%2.2f,%2.2f,%2.2f,%2.2f\r\n",
+								statTime, statP, teTime, teP, dynTime, dynP,  OATemp, MPUtempcel, chosenGnss->fix, chosenGnss->numSV, chosenGnss->time,
+								chosenGnss->coordinates.altitude, chosenGnss->speed.ground, chosenGnss->speed.x, chosenGnss->speed.y, chosenGnss->speed.z);
+					Router::sendXCV(str);
+				}
+			} 
+		} else {
+			if ( IMUrate != 0 ) { 
+				if ( (mtick % IMUrate) == 0 ) {  // sending only IMU message			
+					sprintf(str,"$IMU,%.6f,%1.4f,%1.4f,%1.4f,%.6f,%3.2f,%3.2f,%3.2f\r\n",accelTime, -accelG[2], accelG[1], accelG[0] , gyroTime, -gyroDPS.z, -gyroDPS.y, -gyroDPS.x);
+					Router::sendXCV(str);
+				}
+			}
 		}
-		
+
 		esp_task_wdt_reset();
 		vTaskDelayUntil(&xLastWakeTime_mpu, 25/portTICK_PERIOD_MS);  // 25 ms = 40 Hz loop
 		if( (mtick % 20) == 0) {  // test stack every second
@@ -1007,7 +1095,19 @@ void system_startup(void *args){
 		MPU.setDigitalLowPassFilter(mpud::DLPF_42HZ);  // smoother data
 
 		delay( 50 );
+
+// clear gyro and accel MPU offsets, just in case
+		mpud::raw_axes_t gyroRaw;
+		gyroRaw.x = 0;
+		gyroRaw.y = 0;
+		gyroRaw.z = 0;
+		MPU.setGyroOffset(gyroRaw); 		
 		mpud::raw_axes_t accelRaw;
+		accelRaw.x = 0;
+		accelRaw.y = 0;
+		accelRaw.z = 0;
+		MPU.setGyroOffset(accelRaw);		
+// get average gravity data on z axis
 		float accel = 0;
 		for( auto i=0; i<11; i++ ){
 			esp_err_t err = MPU.acceleration(&accelRaw);  // fetch raw data from the registers
@@ -1547,33 +1647,6 @@ void system_startup(void *args){
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 5096, NULL, 4, &dpid, 0);
 
 	Audio::startAudio();
-	
-	// compute gyros offsets
-	ESP_LOGI( FNAME,"MPU compute gyros offsets");	
-	mpud::raw_axes_t gb = gyro_bias.get();
-	mpud::raw_axes_t newGyroOffsets;
-	newGyroOffsets.x = 0;
-	newGyroOffsets.y = 0;
-	newGyroOffsets.z = 0;
-	int nbsamples = 0;
-	for( int i=0; i<20; i++ ){
-		float gyroNorm = sqrt( gyroDPS.x * gyroDPS.x + gyroDPS.y * gyroDPS.y + gyroDPS.z * gyroDPS.z); 
-		if( (Atmosphere::pascal2kmh( dynP ) < 5 ) && gyroNorm < 1 ) {
-			newGyroOffsets.x = ( 4 * newGyroOffsets.x + gyroRaw.x ) / 5;
-			newGyroOffsets.y = ( 4 * newGyroOffsets.y + gyroRaw.y ) / 5;
-			newGyroOffsets.z = ( 4 * newGyroOffsets.z + gyroRaw.z ) / 5;
-			nbsamples++;
-			delay( 25 );
-		}
-	}
-	if ( nbsamples < 10 ) {
-		MPU.setGyroOffset(gb); // store old gyros offets in MPU
-		ESP_LOGI( FNAME,"MPU old offsets gyro:%d/%d/%d ", gb.x,gb.y,gb.z );
-	} else {
-		gyro_bias.set( newGyroOffsets ); // set new gyros offsets in NVRAM and store them in MPU
-		MPU.setGyroOffset(newGyroOffsets);
-		ESP_LOGI( FNAME,"MPU new offsets gyro:%d/%d/%d ", gb.x,gb.y,gb.z );
-	}
 }
 
 extern "C" void  app_main(void)

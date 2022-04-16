@@ -1221,7 +1221,7 @@ void IpsDisplay::drawOneLabel( float val, int16_t labl, int16_t pos, int16_t off
 	int x=gaugeCos(val+to_side, pos);
 	int y=gaugeSin(val+to_side, pos) +5;
 
-	ucg->setColor(COLOR_BBLUE);
+	ucg->setColor(COLOR_LBBLUE);
 	ucg->setPrintPos(x,y);
 	if ( offset != 0 ) {
 		ucg->printf("%d", labl+offset );

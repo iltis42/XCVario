@@ -456,7 +456,7 @@ void SetupMenu::down(int count){
 		}
 		else{  // Volume
 			int vol = (int)audio_volume.get();
-			vol -= count*10;
+			vol -= count*2;
 			vol = std::max( vol, 0 );
 			audio_volume.set( vol );
 		}

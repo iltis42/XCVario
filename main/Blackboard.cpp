@@ -23,5 +23,5 @@ Copyright_License {
 #include "Blackboard.h"
 
 
-
-Vario MC( "MacCready", 0.5, SYNC_BIDIR, change_mc_bal );
+// We go now for a integrated lean and complete solution, covering value and also unit for all config items in SetupNG.h
+// Vario MC( "MacCready", 0.5, SYNC_BIDIR, change_mc );

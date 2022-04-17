@@ -97,18 +97,21 @@ bool StraightWind::getWind( int* direction, float* speed, int *age )
 bool StraightWind::calculateWind()
 {
 	// ESP_LOGI(FNAME,"Straight wind, calculateWind()");
-	if( SetupCommon::isClient() ){
+	if( SetupCommon::isClient()  ){
 		ESP_LOGI(FNAME,"We are client device, get wind from master");
 		return false;
 	}
 
 	if( Flarm::gpsStatus() == false ) {
 		// GPS status not valid
-		ESP_LOGI(FNAME,"Restart Cycle: GPS Status invalid");
+		if( (wind_enable.get() == WA_STRAIGHT) || (wind_enable.get() == WA_BOTH) ){
+			ESP_LOGI(FNAME,"Restart Cycle: GPS Status invalid");
+		}
 		status="Bad GPS";
 		gpsStatus = false;
+	}else{
+		gpsStatus = true;
 	}
-	gpsStatus = true;
 	// ESP_LOGI(FNAME,"calculateWind flightMode: %d", CircleStraightWind::getFlightMode() );
 
 	// Check if wind requirements are fulfilled
@@ -147,12 +150,15 @@ bool StraightWind::calculateWind()
 		}
 	}
 	// Get current true heading from compass.
-	bool THok = true;
-	averageTH = Compass::filteredTrueHeading( &THok );
+	bool THok = false;
+	if( compass )
+		averageTH = compass->filteredTrueHeading( &THok );
 	if( THok == false ) {
 		// No valid heading available
-		status="No MH";
-		ESP_LOGI(FNAME,"Restart Cycle: No magnetic heading");
+		status="No Compass";
+		if( (wind_enable.get() == WA_STRAIGHT) || (wind_enable.get() == WA_BOTH) ){
+			ESP_LOGI(FNAME,"Restart Cycle: No magnetic heading");
+		}
 	}
 
 	// Get current true course from GPS
@@ -169,9 +175,9 @@ bool StraightWind::calculateWind()
 	// WCA in radians
 	magneticHeading = averageTH;
 
-	if( wind_logging.get() ){
+	if( wind_logging.get() && compass ){
 		char log[SSTRLEN];
-		float dev = Compass::getDeviation( averageTH );
+		float dev = compass->getDeviation( averageTH );
 		sprintf( log, "$WIND;%d;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f,%d,%d,%.1f\n", _tick, averageTC, cgs, averageTH, ctas, newWindDir, newWindSpeed, windDir, windSpeed, circlingWindDir, circlingWindSpeed, (airspeedCorrection-1)*100, CircleWind::getFlightMode(), gpsStatus, dev );
 		Router::sendXCV( log );
 		ESP_LOGI( FNAME,"%s", log );
@@ -240,7 +246,14 @@ void StraightWind::calculateWind( double tc, double gs, double th, double tas  )
 				airspeedCorrection = 1.01;
 			else if( airspeedCorrection < 0.99 )
 				airspeedCorrection = 0.99;
-			devOK = Compass::newDeviation( th, tH, airspeedCorrection );
+			if( abs( wind_as_calibration.get() - airspeedCorrection )*100 > 0.5 )
+					wind_as_calibration.set( airspeedCorrection );
+			if( compass )
+				devOK = compass->newDeviation( th, tH );
+			else{
+				status = "No Compass";
+				return;
+			}
 			// ESP_LOGI(FNAME,"Calculated TH/TAS: %3.1f°/%3.1f km/h  Measured TH/TAS: %3.1f°/%3.1f, asCorr:%2.3f, deltaAS:%3.2f, Age:%d", tH, airspeed, averageTH, tas, airspeedCorrection , airspeed-tas, circlingWindAge );
 		}
 	}else{

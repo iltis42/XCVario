@@ -1,22 +1,7 @@
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#ifndef QUATERNION_INCLUDED
-#define QUATERNION_INCLUDED
-
 #include "vector_3d.h"
+#pragma once
 
-typedef struct Quaternion {
-
-    float a;
-    float b;
-    float c;
-    float d;
-
-    // q = a + bi + cj + dk
-
-} Quaternion;
+//#define Quaternionen_Test 1
 
 typedef struct euler_angles {
 
@@ -26,16 +11,34 @@ typedef struct euler_angles {
 
 } euler_angles;
 
-Quaternion quaternion_initialize(float a, float b, float c, float d);
-Quaternion quaternion_product(Quaternion q1, Quaternion q2);
-Quaternion quaternion_conjugate(Quaternion q);
-Quaternion quaternion_normalize(Quaternion q);
-Quaternion quaternion_between_vectors(vector_ijk v1, vector_ijk v2);
-vector_ijk quaternion_rotate_vector(vector_ijk v, Quaternion q);
-euler_angles quaternion_to_euler_angles(Quaternion q);
+float Compass_atan2( float y, float x );
 
-#endif
+// Quaternion class in the form:
+// q = a + bi + cj + dk
 
-#ifdef __cplusplus
-}
-#endif
+class Quaternion {
+public:
+    float a;
+    float b;
+    float c;
+    float d;
+    Quaternion(float a, float b, float c, float d);
+    Quaternion(const float angle, const vector_ijk& axis);
+    Quaternion(Quaternion &&) = default; // Allow std::move
+    Quaternion(const Quaternion &) = default;
+    Quaternion& operator=(const Quaternion&) = default;
+    
+    // API
+    float getAngle() const;
+    friend Quaternion operator*(const Quaternion& left, const Quaternion& right);
+    Quaternion get_normalized() const;
+    Quaternion normalize();
+    vector_ijk operator*(const vector_ijk& p) const;
+    friend Quaternion slerp(Quaternion q1, Quaternion q2, double lambda);
+    static Quaternion AlignVectors(const vector_ijk &start, const vector_ijk &dest);
+    euler_angles to_euler_angles();
+    Quaternion get_conjugate() const;
+
+    // something like a unit test
+    static void quaternionen_test();
+};

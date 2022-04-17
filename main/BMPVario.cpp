@@ -31,7 +31,7 @@ float BMPVario::readS2FTE() {
 
 uint64_t lastrts = 0;
 void BMPVario::setup() {
-	_qnh = Units::Qnh( QNH.get() );
+	_qnh = QNH.get();
 	_damping = vario_delay.get();
 	_filter_len = 10;
 	lastrts = esp_timer_get_time();
@@ -92,9 +92,8 @@ double BMPVario::readTE( float tas ) {
 	double adiff = _currentAlt - Altitude;
 	// ESP_LOGI(FNAME,"BMPVario new alt %0.1f err %0.1f", _currentAlt, err);
 	double diff = (abs(adiff) * 1000) + 1;
-	if(diff > 1000000){  // more than 100 m alt diff in 0.1 second not plausible ( > 400 km/h vertical )
-		 ESP_LOGW(FNAME,"TE alt erratic reading: %f m", _currentAlt );
-	  	 return _TEF;  // looks like noise on the bus, fancy errored value ignored, return last TE
+	if(diff > 1000000){  // more than 100 m altitude diff in 0.1 second not plausible ( > 400 km/h vertical ) -> handled by Kalman filter
+		 ESP_LOGW(FNAME,"TE sensor delta OOB: %f m", diff/10000 );
 	}
 	double err = (abs(_currentAlt - predictAlt) * 1000) + 1;
 	averageAlt += (_currentAlt - averageAlt) * 0.1;

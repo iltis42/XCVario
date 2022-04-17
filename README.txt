@@ -10,13 +10,15 @@ https://github.com/iltis42/XCVario/blob/master/.github/workflows/cmake.yml
 
 Here the instructions to build the binary locally:
 
-1)  Clone, install, activate esp-idf and get cmake (obviously cmake is missing from install.sh)
+1)  Clone, checkout branch: release/v4.3 install and activate esp-idf and get cmake (obviously cmake is missing from install.sh)
 mkdir -p ~/esp; cd ~/esp; git clone --recursive https://github.com/espressif/esp-idf.git;
-cd ~/esp/esp-idf; ./install.sh; . ./export.sh;
+cd ~/esp/esp-idf; 
+git checkout release/v4.3; 
+./install.sh; . ./export.sh;
 pip install cmake;
 
-This will get you the lates state of esp-idf plus compiler (at this time is: esp-2020r3-8.4.0).
-For the docker official releases, stable version release-v4.3 is used at this time. 
+This will get the stable branch release/v4.3 of esp-idf plus corresponding compiler, etc.
+For the docker official releases, branch label is release-v4.3, see also workflow yaml.
 
 2) Build hello world application.
 A good idea is to work through the get-started manual from esp-idf, select the versions as shown,

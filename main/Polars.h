@@ -10,7 +10,7 @@
 
 typedef struct s_polars {
 	int 	 index;
-	char	 type[18];
+	const char	 *type;
 	float    wingload;
 	float    speed1;
 	float    sink1;

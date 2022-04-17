@@ -33,7 +33,7 @@ uint8_t getProgress() { return progress; }
 static esp_err_t
 _coredump_to_server_begin_cb_OTA(void * priv)
 {
-	char *head="================= CORE DUMP START =================\r\n";
+	const char *head="================= CORE DUMP START =================\r\n";
 	// ESP_LOGI("OTA", "coredump_to_server_begin_cb, size %d bytes; %s; %08x", strlen( head ), head, (unsigned int)priv );
 	// printf("%s", head );
 	httpd_resp_send_chunk((httpd_req*)priv, head, strlen( head ) );
@@ -45,7 +45,7 @@ _coredump_to_server_begin_cb_OTA(void * priv)
 static esp_err_t
 _coredump_to_server_end_cb_OTA(void * priv)
 {
-	char *end="================= CORE DUMP END =================\r\n";
+	const char *end="================= CORE DUMP END =================\r\n";
 	// printf("%s", end );
 	// ESP_LOGI("OTA", "coredump_to_server_end_cb, size %d bytes; %s", strlen( end ), end );
 	httpd_resp_send_chunk((httpd_req*)priv, end, strlen( end ) );
@@ -393,7 +393,7 @@ httpd_handle_t start_OTA_webserver(void)
 	
 	
 	// Start the httpd server
-	printf("Starting server on port: '%d'", config.server_port);
+	printf("Starting http server on port: '%d'", config.server_port);
 	
 
 	if (httpd_start(&OTA_server, &config) == ESP_OK) 
@@ -410,7 +410,7 @@ httpd_handle_t start_OTA_webserver(void)
 		return OTA_server;
 	}
 
-	printf("Error starting server!");
+	printf("Error starting http server!");
 	return NULL;
 }
 

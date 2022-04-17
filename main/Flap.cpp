@@ -4,6 +4,7 @@
 #include "Flap.h"
 #include "SetupMenuSelect.h"
 #include "SetupMenuValFloat.h"
+#include "average.h"
 
 
 Flap* Flap::_instance = nullptr;
@@ -13,78 +14,96 @@ Flap* Flap::_instance = nullptr;
 #define MAXPOS  flap_pos_max.get()
 
 
-// predefined flap labels         // -9,.,-2,-1,+0,+1,+2,.,+9
-static char flap_labels[][4] = { "-9", "-8", "-7", "-6", ".-5", "-4", "-3", "-2", "-1", "+0",
-                                    "+1", "+2", "+3", "+4", "+5", "+6", "+7", "+8", "+9",
-                                    // 0,1,2,3,.,20
-                                    " 0", " 1", " 2", " 3", " 4", " 5", " 6", " 7", " 8", " 9", "10",
-                                    "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",
-                                    // N,L,S
-                                    " N", " L", " S", "3a", "3b", " A", "" };
-
-static void showWk(SetupMenuSelect *p){
-	p->ucg->setPrintPos(1,140);
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	p->ucg->printf("Sensor: %d    ", FLAP->getSensorRaw(256) );
-	xSemaphoreGive(spiMutex);
-	delay(10);
-}
+// predefined flap labels         // -9,..,-2,-1,+0,+1,+2,..,+9
+static const char flap_labels[][4] = { "-9", "-8", "-7", "-6", "-5", "-4", "-3", "-2", "-1", "+0",  // 9
+                                    "+1", "+2", "+3", "+4", "+5", "+6", "+7", "+8", "+9",     // 18
+                                    // 0,1,2,3,..,20
+                                    " 0", " 1", " 2", " 3", " 4", " 5", " 6", " 7", " 8", " 9", "10",  // 29
+                                    "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",   // 39
+                                    // N,L,S,3a,3b,A,21,..,27
+                                    " N", " L", " S", "3a", "3b", " A", "21", "22", "23", "24", "25", "26", "27" };  // L=41  S=42
 
 // Action Routines
-static int select_flap_sens_pin(SetupMenuSelect *p){
-    p->clear();
+int select_flap_sens_pin(SetupMenuSelect *p){
+	//ESP_LOGI(FNAME,"select_flap_sens_pin, pressed:%d",(int)(p->pressed) );
+	if( (p->pressed ) ) // invoke when released
+		return 0;
+	p->clear();
     if( FLAP ) {
-        FLAP->configureADC();
+    	// ESP_LOGI(FNAME,"select_flap_sens_pin, have flap");
+        FLAP->configureADC( p->getSelect() );
         if ( FLAP->haveSensor() ) {
-            p->ucg->setPrintPos(1,30);
+        	// ESP_LOGI(FNAME,"select_flap_sens_pin, have sensor");
+            p->ucg->setPrintPos(5,50);
+            p->ucg->setFont(ucg_font_ncenR14_hr, true );
             xSemaphoreTake(spiMutex,portMAX_DELAY );
             p->ucg->printf("Check Sensor Reading,");
-            p->ucg->setPrintPos(1,60);
+            p->ucg->setPrintPos(5,80);
             p->ucg->printf("Press Button to exit");
             xSemaphoreGive(spiMutex);
-            while( !p->_rotary->readSwitch() ){
-                p->ucg->setPrintPos(1,90);
+            while( !p->readSwitch() ){
+            	// ESP_LOGI(FNAME,"SW wait loop");
                 xSemaphoreTake(spiMutex,portMAX_DELAY );
+                p->ucg->setPrintPos(5,120);
                 p->ucg->printf("Sensor: %d       ", FLAP->getSensorRaw(256) );
                 xSemaphoreGive(spiMutex);
-                delay(20);
+                delay(100);
             }
         }
     }
+	p->ucg->setPrintPos(5,280);
+	p->ucg->printf("Saved");
+	delay( 2000 );
     p->clear();
     Flap::setupSensorMenueEntries(p->_parent);
-
 	return 0;
 }
 
-static void wk_cal_show( SetupMenuSelect *p, int wk ){
+unsigned int Flap::getSensorRaw(int oversampling) {
+	return haveSensor() ? sensorAdc->getRaw(oversampling) : 0;
+}
+
+int wk_cal_show( SetupMenuSelect *p, int wk, Average<50> &filter){
 	p->ucg->setPrintPos(1,60);
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->printf("Set Flap %+d   ", wk );
 	xSemaphoreGive(spiMutex);
 	delay(500);
-	while( !p->_rotary->readSwitch() )
-		showWk(p);
+	int flap = 0;
+	int i=0;
+	while( !p->readSwitch() ){
+		i++;
+		flap = filter( (int)(FLAP->getSensorRaw(64)) );
+		if( !(i%10) ){
+			p->ucg->setPrintPos(1,140);
+			xSemaphoreTake(spiMutex,portMAX_DELAY );
+			p->ucg->printf("Sensor: %d      ", flap );
+			xSemaphoreGive(spiMutex);
+		}
+	}
+	return flap;
 }
 
-static int flap_speed_act( SetupMenuValFloat *p ){
+int flap_speed_act( SetupMenuValFloat *p ){
 	FLAP->initSpeeds();
 	return 0;
 }
 
-static int flap_lab_act( SetupMenuSelect *p ){
+int flap_lab_act( SetupMenuSelect *p ){
 	FLAP->initLabels();
 	return 0;
 }
 
-static int flap_pos_act( SetupMenuValFloat *p ){
+int flap_pos_act( SetupMenuValFloat *p ){
 	FLAP->initSensPos();
 	return 0;
 }
 
-static int flap_cal_act( SetupMenuSelect *p )
+int flap_cal_act( SetupMenuSelect *p )
 {
 	ESP_LOGI(FNAME,"WK calibration ( %d ) ", p->getSelect() );
+	if( (p->pressed ) ) // invoke when released
+		return 0;
 	if( !FLAP->haveSensor() ){
 		p->clear();
 		p->ucg->setPrintPos(1,60);
@@ -93,131 +112,127 @@ static int flap_cal_act( SetupMenuSelect *p )
 		ESP_LOGI(FNAME,"Abort calibration, no signal");
 		return 0;
 	}
+	Average<50> filter;
 	if( p->getSelect() ){
 		p->clear();
-		p->ucg->setFont(ucg_font_fub25_hr);
+		p->ucg->setPrintPos(1,200);
+		p->ucg->setFont(ucg_font_ncenR14_hr, true );
+		p->ucg->printf("Press for next");
+		p->ucg->setFont(ucg_font_fub25_hr, true );
+		int flap;
 		if( flap_pos_max.get() > 2 ){
-			wk_cal_show( p,3 );
-			wk_sens_pos_plus_3.set( FLAP->getSensorRaw(256) );
+			flap = wk_cal_show( p,3,filter );
+			wk_sens_pos_plus_3.set( flap );
 		}
 		if( flap_pos_max.get() > 1 ){
-			wk_cal_show( p,2 );
-			wk_sens_pos_plus_2.set( FLAP->getSensorRaw(256) );
+			flap = wk_cal_show( p,2,filter );
+			wk_sens_pos_plus_2.set( flap );
 		}
 		if( flap_pos_max.get() > 0 ){
-			wk_cal_show( p,1 );
-			wk_sens_pos_plus_1.set( FLAP->getSensorRaw(256) );
+			flap = wk_cal_show( p,1,filter );
+			wk_sens_pos_plus_1.set( flap );
 		}
-		wk_cal_show( p,0 );
-		wk_sens_pos_0.set( FLAP->getSensorRaw(256) );
+		flap = wk_cal_show( p,0,filter );
+		wk_sens_pos_0.set( flap );
 
 		if( flap_neg_max.get() < 0 ){
-			wk_cal_show( p,-1 );
-			wk_sens_pos_minus_1.set( FLAP->getSensorRaw(256) );
+			flap = wk_cal_show( p,-1,filter );
+			wk_sens_pos_minus_1.set( flap );
 		}
 		if( flap_neg_max.get() < -1 ){
-			wk_cal_show( p,-2 );
-			wk_sens_pos_minus_2.set( FLAP->getSensorRaw(256) );
+			flap = wk_cal_show( p,-2,filter );
+			wk_sens_pos_minus_2.set( flap );
 		}
 		if( flap_neg_max.get() < -2 ){
-			wk_cal_show( p,-3 );
-			wk_sens_pos_minus_3.set( FLAP->getSensorRaw(256) );
+			flap = wk_cal_show( p,-3,filter );
+			wk_sens_pos_minus_3.set( flap );
 		}
 
-		p->ucg->setPrintPos(1,60);
+		p->ucg->setPrintPos(1,260);
+		p->ucg->setFont(ucg_font_ncenR14_hr, true );
 		p->ucg->printf("Saved");
 		FLAP->initSensPos();
 		ESP_LOGI(FNAME,"Push Button pressed");
-		delay(500);
+		delay(2000);
 		p->clear();
 	}
 	return 0;
 }
 
-static int flap_enable_act( SetupMenuSelect *p ){
+int flap_enable_act( SetupMenuSelect *p ){
 	Flap::setupIndicatorMenueEntries(p->_parent);
 	return 0;
 }
 
+static SetupMenuSelect *wkes = 0;
+static SetupMenuSelect *wkcal = 0;
+
 void Flap::setupSensorMenueEntries(MenuEntry *wkm)
 {
-    static SetupMenuSelect *wkes = 0;
-    static SetupMenuSelect *wkcal = 0;
+	if( !wkes ){
+		wkes = new SetupMenuSelect( "Flap Sensor", false, select_flap_sens_pin, true, &flap_sensor );
+		wkes->addEntry( "Disable");
+		wkes->addEntry( "Enable IO-2");
+		wkes->addEntry( "Enable IO-34");
+		wkes->addEntry( "Enable IO-26");
+		wkes->setHelp(PROGMEM"Option to enable Flap sensor on corresponding IO pin, hardware may differ: check where you get a valid reading");
+		wkm->addEntry( wkes );
 
-    if ( !wkes && flap_enable.get() ) {
-        wkes = new SetupMenuSelect( "Flap Sensor", false, select_flap_sens_pin, true, &flap_sensor );
-        wkes->addEntry( "Disable");
-        wkes->addEntry( "Enable IO-2");
-        wkes->addEntry( "Enable IO-34");
-        wkes->addEntry( "Enable IO-26");
-        wkes->setHelp(PROGMEM"Option to enable Flap sensor on corresponding IO pin, hardware may differ: check where you get a valid reading");
-        wkm->addEntry( wkes );
-
-        if ( !SetupCommon::isClient() ) {
-            wkcal = new SetupMenuSelect( "Sensor Calibration", true, flap_cal_act, false  );
-            wkcal->addEntry( "Cancel");
-            wkcal->addEntry( "Start");
-            wkcal->setHelp( PROGMEM "Option to calibrate flap Sensor (WK), to indicate current flap setting: Press button after each setting" );
-            wkm->addEntry( wkcal, wkes );
-        }
-    }
-    // else if ( wkes && !flap_enable.get() ) { // todo nice to have
-    //     wkm->delEntry( wkes );
-    //     wkes = 0;
-    // }
-    // if ( wkcal && (!wkes || SetupCommon::isClient()) ) {
-    //     wkm->delEntry( wkcal );
-    //     wkcal = 0;
-    // }
+		wkcal = new SetupMenuSelect( "Sensor Calibration", true, flap_cal_act, false  );
+		wkcal->addEntry( "Cancel");
+		wkcal->addEntry( "Start");
+		wkcal->setHelp( PROGMEM "Option to calibrate flap Sensor (WK), to indicate current flap setting: Press button after each setting" );
+		wkm->addEntry( wkcal, wkes );
+	}
 }
+
+static SetupMenuValFloat *nflpos = 0;
+static SetupMenuValFloat *nflneg = 0;
+static SetupMenuValFloat *flgnd = 0;
+static SetupMenu *flapss = 0;
+static SetupMenu *flapls = 0;
 
 void Flap::setupIndicatorMenueEntries(MenuEntry *wkm)
 {
-    static SetupMenuValFloat *nflpos = 0;
-    static SetupMenuValFloat *nflneg = 0;
-    static SetupMenuValFloat *flgnd = 0;
-    static SetupMenu *flapss = 0;
-    static SetupMenu *flapls = 0;
-
     ESP_LOGI(FNAME,"Flap Indicator Menue");
     if ( ! nflpos && flap_enable.get() && !SetupCommon::isClient() ) {
 
-        nflpos = new SetupMenuValFloat("Max positive Flap", nullptr, "", 0., 3., 1., flap_pos_act, false, &flap_pos_max);
+        nflpos = new SetupMenuValFloat("Max positive Flap", "", 0., 3., 1., flap_pos_act, false, &flap_pos_max);
         nflpos->setHelp(PROGMEM"Maximum positive flap position to be displayed");
         wkm->addEntry( nflpos, wkm->getFirst() );
 
-        nflneg = new SetupMenuValFloat("Max negative Flap", nullptr, "", -3., 0., 1., flap_pos_act, false, &flap_neg_max);
+        nflneg = new SetupMenuValFloat("Max negative Flap", "", -3., 0., 1., flap_pos_act, false, &flap_neg_max);
         nflneg->setHelp(PROGMEM"Maximum negative flap position to be displayed");
         wkm->addEntry( nflneg, nflpos );
 
-        flgnd = new SetupMenuValFloat("Takeoff Flap", 0, "", -3, 3, 1, 0, false, &flap_takeoff  );
+        flgnd = new SetupMenuValFloat("Takeoff Flap","", -3, 3, 1, 0, false, &flap_takeoff  );
         flgnd->setHelp(PROGMEM"Flap position to be set on ground for takeoff, when there is no airspeed");
         wkm->addEntry( flgnd, nflneg );
 
         flapss = new SetupMenu( "Flap Speeds Setup" );
         wkm->addEntry( flapss, flgnd );
 
-        SetupMenuValFloat *plus3 = new SetupMenuValFloat("Speed +3 to +2", 0, sunit.c_str(),  20, 150, 1, flap_speed_act, false, &flap_plus_2  );
+        SetupMenuValFloat *plus3 = new SetupMenuValFloat("Speed +3 to +2", "",  20, 150, 1, flap_speed_act, false, &flap_plus_2  );
         plus3->setHelp(PROGMEM"Speed for transition from +3 to +3 flap setting");
         flapss->addEntry( plus3 );
 
-        SetupMenuValFloat *plus2 = new SetupMenuValFloat("Speed +2 to +1", 0, sunit.c_str(),  20, 150, 1, flap_speed_act, false, &flap_plus_1  );
+        SetupMenuValFloat *plus2 = new SetupMenuValFloat("Speed +2 to +1", "",  20, 150, 1, flap_speed_act, false, &flap_plus_1  );
         plus2->setHelp(PROGMEM"Speed for transition from +2 to +1 flap setting");
         flapss->addEntry( plus2 );
 
-        SetupMenuValFloat *plus1 = new SetupMenuValFloat("Speed +1 to 0", 0, sunit.c_str(),  20, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_0  );
+        SetupMenuValFloat *plus1 = new SetupMenuValFloat("Speed +1 to 0", "",  20, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_0  );
         plus1->setHelp(PROGMEM"Speed for transition from +1 to 0 flap setting");
         flapss->addEntry( plus1 );
 
-        SetupMenuValFloat *min1 = new SetupMenuValFloat("Speed 0 to -1", 0, sunit.c_str(),   20, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_minus_1  );
+        SetupMenuValFloat *min1 = new SetupMenuValFloat("Speed 0 to -1", "",   20, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_minus_1  );
         min1->setHelp(PROGMEM"Speed for transition from 0 to -1 flap setting");
         flapss->addEntry( min1 );
 
-        SetupMenuValFloat *min2 = new SetupMenuValFloat("Speed -1 to -2", 0, sunit.c_str(),  50, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_minus_2  );
+        SetupMenuValFloat *min2 = new SetupMenuValFloat("Speed -1 to -2", "",  50, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_minus_2  );
         min2->setHelp(PROGMEM"Speed for transition from -1 to -2 flap setting");
         flapss->addEntry( min2 );
 
-        SetupMenuValFloat *min3 = new SetupMenuValFloat("Speed -2 to -3", 0, sunit.c_str(),  50, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_minus_3  );
+        SetupMenuValFloat *min3 = new SetupMenuValFloat("Speed -2 to -3", "",  50, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_minus_3  );
         min3->setHelp(PROGMEM"Speed for transition from -2 to -3 flap setting");
         flapss->addEntry( min3 );
 
@@ -226,37 +241,30 @@ void Flap::setupIndicatorMenueEntries(MenuEntry *wkm)
 
         SetupMenuSelect *flab = new SetupMenuSelect( "Flap Label +3",	false, flap_lab_act, false, &wk_label_plus_3 );
         flapls->addEntry( flab );
-        flab->addEntry( *flap_labels ); // Initialize Flap Label Entries
+        flab->addEntryList( flap_labels, sizeof(flap_labels)/4 ); // Initialize Flap Label Entries
         flab = new SetupMenuSelect( "Flap Label +2",	false, flap_lab_act, false, &wk_label_plus_2 );
         flapls->addEntry( flab );
-        flab->addEntry( *flap_labels );
+        flab->addEntryList( flap_labels, sizeof(flap_labels)/4 );
         flab = new SetupMenuSelect( "Flap Label +1",	false, flap_lab_act, false, &wk_label_plus_1 );
         flapls->addEntry( flab );
-        flab->addEntry( *flap_labels );
+        flab->addEntryList( flap_labels, sizeof(flap_labels)/4 );
         flab = new SetupMenuSelect( "Flap Label  0",	false, flap_lab_act, false, &wk_label_null_0 );
         flapls->addEntry( flab );
-        flab->addEntry( *flap_labels );
+        flab->addEntryList( flap_labels, sizeof(flap_labels)/4 );
         flab = new SetupMenuSelect( "Flap Label -1",	false, flap_lab_act, false, &wk_label_minus_1 );
         flapls->addEntry( flab );
-        flab->addEntry( *flap_labels );
+        flab->addEntryList( flap_labels, sizeof(flap_labels)/4 );
         flab = new SetupMenuSelect( "Flap Label -2",	false, flap_lab_act, false, &wk_label_minus_2 );
         flapls->addEntry( flab );
-        flab->addEntry( *flap_labels );
+        flab->addEntryList( flap_labels, sizeof(flap_labels)/4  );
         flab = new SetupMenuSelect( "Flap Label -3",	false, flap_lab_act, false, &wk_label_minus_3 );
         flapls->addEntry( flab );
-        flab->addEntry( *flap_labels );
-    }
-    // else if ( nflpos && (!flap_sensor.get() || SetupCommon::isClient()) ) { // todo
-    //     ESP_LOGI(FNAME,"Flap Indicator Menue>>del");
-    //     wkm->delEntry( flapls );
-    //     wkm->delEntry( flapss );
-    //     wkm->delEntry( flgnd );
-    //     wkm->delEntry( nflneg );
-    //     wkm->delEntry( nflpos );
-    //     nflpos = 0;
-    // }
+        flab->addEntryList( flap_labels, sizeof(flap_labels)/4  );
 
-    setupSensorMenueEntries(wkm);
+        setupSensorMenueEntries(wkm);
+    }
+
+
 }
 
 void Flap::setupMenue( SetupMenu *parent ){
@@ -281,13 +289,13 @@ void Flap::setupMenue( SetupMenu *parent ){
 
 
 void Flap::drawSmallBar( float wkf ){
-	ucg->setFont(ucg_font_profont22_mr );
+	ucg->setFont(ucg_font_profont22_mr, true);
 	int	lfh = ucg->getFontAscent()+4;
 	int lfw = ucg->getStrWidth( "+2" );
 	int top = barpos_y-lfh/2;
 	if( dirty ) {
 		ucg->setColor(COLOR_HEADER);
-		ucg->drawFrame(barpos_x-5, top-3, lfw+4, 2*lfh);
+		ucg->drawFrame(barpos_x-5, top-4, lfw+4, 2*lfh);
 		int tri = barpos_y+lfh/2-3;
 		ucg->setColor(COLOR_GREEN);
 		ucg->drawTriangle( barpos_x-10, tri-5,  barpos_x-10,tri+5, barpos_x-5, tri );
@@ -296,13 +304,19 @@ void Flap::drawSmallBar( float wkf ){
 		dirty = false;
 	}
 	ucg->setClipRange( barpos_x-2, top-2, lfw, 2*lfh-2 );
+    if ((int)((wkf-2)*(lfh+4)) != (int)((wkf_old-2)*(lfh+4))) {
+        wkf_old = wkf;
+        ucg->setColor(COLOR_BLACK);
+        ucg->drawBox( barpos_x-2, top-2, lfw, 2*lfh-2 );
+        }
+ 
 	for( int wk=int(wkf-1); wk<=int(wkf+1) && wk<=2; wk++ ){
 		char position[6];
 		if(wk<-3)
 			continue;
 
 		sprintf( position,"%s", flapLabels[wk+3]);
-		int y=top+(lfh+4)*(5-(wk+2))+(int)((wkf-2)*(lfh+4));
+		int y=top+(lfh+4)*(5-(wk+2))+(int)((wkf-2)*(lfh+4)+3);
 		ucg->setPrintPos(barpos_x-2, y );
 		ucg->setColor(COLOR_WHITE);
 		ucg->printf(position);
@@ -313,10 +327,9 @@ void Flap::drawSmallBar( float wkf ){
 	ucg->undoClipRange();
 }
 
-void Flap::drawLever( int16_t xpos, int16_t ypos, int16_t oldypos, bool warn ){
+void Flap::drawLever( int16_t xpos, int16_t ypos, int16_t oldypos, bool warn, bool good ){
 	ucg->setColor(COLOR_BLACK);
-	ucg->drawBox( xpos-25, oldypos-4, 19, 8 );
-	ucg->drawBox( xpos-6, oldypos-2, 4, 4 );
+	ucg->drawBox( xpos-25, oldypos-4, 13, 7 );
     if( warn ){
     	// Blink effekt
     	if( warn_color ){
@@ -328,15 +341,18 @@ void Flap::drawLever( int16_t xpos, int16_t ypos, int16_t oldypos, bool warn ){
     		warn_color = true;
     	}
     }
+    else if( good ){
+    	ucg->setColor(COLOR_GREEN);
+    }
     else{
     	ucg->setColor(COLOR_WHITE);
     }
-	ucg->drawBox( xpos-25, ypos-4, 19, 8 );
-	ucg->drawBox( xpos-6, ypos-2, 4, 4 );
+	ucg->drawBox( xpos-25, ypos-4, 13, 7 );
 }
 
 void Flap::drawBigBar( float wkf, float wksens ){
-	ucg->setFont(ucg_font_profont22_mr );
+
+	ucg->setFont(ucg_font_profont22_mr, true);
 	ucg->setFontPosCenter();
 	int16_t lfh = 24; // ucg->getFontAscent()+10;  // a bit place around number
 	int16_t lfw = ucg->getStrWidth( "+2" );
@@ -349,7 +365,7 @@ void Flap::drawBigBar( float wkf, float wksens ){
 			sprintf( position,"%s", flapLabels[wk+3]);
 			int y= barpos_y + lfh*wk;  // negative WK eq. lower position
 			// ESP_LOGI(FNAME,"Y: %d lfh:%d wk:%d",y, lfh, wk );
-			ucg->setPrintPos(barpos_x+2, y+1);
+			ucg->setPrintPos(barpos_x+2, y+5);
 			ucg->setColor(COLOR_WHITE);
 			// print digit
 			ucg->print(position);
@@ -368,6 +384,7 @@ void Flap::drawBigBar( float wkf, float wksens ){
 	// ESP_LOGI(FNAME,"wkf: %f", wkf);
 
 	tickopt++;
+	// ESP_LOGI(FNAME,"drawBigBar wkf: %.2f y:%d lfh:%d", wkf, y, lfh );
 	if( optPosOldY != y || !(tickopt%10)) {  // redraw on change or when wklever is near
 		ucg->setColor(COLOR_BLACK);
 		ucg->drawTriangle( barpos_x-15,optPosOldY-5,  barpos_x-15,optPosOldY+5,  barpos_x-2,optPosOldY );
@@ -376,12 +393,15 @@ void Flap::drawBigBar( float wkf, float wksens ){
 		optPosOldY = y;
 	}
 	bool warn=false;
+	bool good=false;
+	if( abs( wkf - wksens) < 0.5 )
+		good = true;
 	if( abs( wkf - wksens) > 1 )
 		warn = true;
 	if( sensorOldY != ys || warn ) {  // redraw on change or when wklever is near
 		if( flap_sensor.get() ) {
 			// ESP_LOGI(FNAME,"wk lever redraw, old=%d", sensorOldY );
-			drawLever( barpos_x, ys, sensorOldY, warn );
+			drawLever( barpos_x, ys, sensorOldY, warn, good );
 			sensorOldY = ys;
 		}
 	}
@@ -441,26 +461,27 @@ void  Flap::initSpeeds(){
 
 void  Flap::initLabels(){
     // Fixme needs a refresh after synch from master -> blackboard action
-    flapLabels[0] = flap_labels[wk_label_minus_3.get()];
-    flapLabels[1] = flap_labels[wk_label_minus_2.get()];
-    flapLabels[2] = flap_labels[wk_label_minus_1.get()];
-    flapLabels[3] = flap_labels[wk_label_null_0.get()];
-    flapLabels[4] = flap_labels[wk_label_plus_1.get()];
-    flapLabels[5] = flap_labels[wk_label_plus_2.get()];
-    flapLabels[6] = flap_labels[wk_label_plus_3.get()];
+    flapLabels[0] = (char*)flap_labels[wk_label_minus_3.get()];
+    flapLabels[1] = (char*)flap_labels[wk_label_minus_2.get()];
+    flapLabels[2] = (char*)flap_labels[wk_label_minus_1.get()];
+    flapLabels[3] = (char*)flap_labels[wk_label_null_0.get()];
+    flapLabels[4] = (char*)flap_labels[wk_label_plus_1.get()];
+    flapLabels[5] = (char*)flap_labels[wk_label_plus_2.get()];
+    flapLabels[6] = (char*)flap_labels[wk_label_plus_3.get()];
 }
 
-void Flap::configureADC(){
-	ESP_LOGI( FNAME, "Flap::configureADC");
+void Flap::configureADC( int port ){
+	ESP_LOGI( FNAME, "Flap::configureADC port: %d", port );
 	if( sensorAdc ) {
 		delete sensorAdc;
         sensorAdc = nullptr;
     }
-    flap_pos.init(); // remove display until set properly
+    // flap_pos.init(); // remove display until set properly, removed, calls itself configureADC
     if ( SetupCommon::isClient() ) {
+    	ESP_LOGI( FNAME, "Client role: Abort");
         return; // no analog pin config for the client
     }
-	if( flap_sensor.get() == FLAP_SENSOR_GPIO_2 ) {
+	if( port == FLAP_SENSOR_GPIO_2 ) {
 		sensorAdc = new AnalogInput( -1, ADC_ATTEN_DB_0, ADC_CHANNEL_2, ADC_UNIT_2, true );
 	}
     else if( flap_sensor.get() == FLAP_SENSOR_GPIO_34 ) {
@@ -470,7 +491,7 @@ void Flap::configureADC(){
 		sensorAdc = new AnalogInput( -1, ADC_ATTEN_DB_0, ADC_CHANNEL_9, ADC_UNIT_2, true );
 	}
 	if( sensorAdc != 0 ) {
-		ESP_LOGI( FNAME, "Flap sensor configured");
+		ESP_LOGI( FNAME, "Flap sensor properly configured");
 		sensorAdc->begin();
 		delay(10);
 		uint32_t read =  sensorAdc->getRaw();
@@ -478,11 +499,13 @@ void Flap::configureADC(){
 			ESP_LOGI( FNAME, "Flap sensor not found or edge value, reading: %d", read);
 		else
 			ESP_LOGI( FNAME, "Flap sensor looks good, reading: %d", read );
+	}else{
+		ESP_LOGI( FNAME, "Sensor ADC NOT properly configured");
 	}
 
 }
 
-Flap::Flap(Ucglib_ILI9341_18x240x320_HWSPI *theUcg) :
+Flap::Flap(AdaptUGC *theUcg) :
 	ucg(theUcg)
 {}
 Flap::~Flap()
@@ -493,12 +516,12 @@ Flap::~Flap()
     }
     _instance = nullptr;
 }
-Flap*  Flap::init(Ucglib_ILI9341_18x240x320_HWSPI *ucg)
+Flap*  Flap::init(AdaptUGC *ucg)
 {
     if ( ! _instance ) {
         _instance = new Flap(ucg);
     }
-	_instance->configureADC();
+	_instance->configureADC( flap_sensor.get() );
 	_instance->initSpeeds();
     _instance->initLabels();
     _instance->initSensPos();
@@ -664,15 +687,15 @@ int Flap::getOptimumInt( float speed )
 		}
 	}
 	if( speed < flapSpeeds[7] ) {
-		// ESP_LOGI(FNAME,"Ret: %d", 1);
+		// ESP_LOGI(FNAME,"Ret: %d", (int)flap_takeoff.get() );
 		return flap_takeoff.get();
 	}
 	else if( speed > flapSpeeds[0] ){
-		// ESP_LOGI(FNAME,"Ret: %d", -2);
+		//ESP_LOGI(FNAME,"Ret: %d", (int)flap_neg_max.get() );
 		return flap_neg_max.get();
 	}
 	else {
-		// ESP_LOGI(FNAME,"Ret: %d", 1);
+		//ESP_LOGI(FNAME,"Ret: %d", 1);
 		return 1;
 	}
 }

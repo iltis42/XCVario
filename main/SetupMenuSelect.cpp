@@ -1,6 +1,3 @@
-
-
-
 /*
  * SetupMenu.cpp
  *
@@ -14,26 +11,68 @@
 #include "SetupMenuSelect.h"
 #include "ESPAudio.h"
 
-char SetupMenuSelect::_val_str[20];
+const char * SetupMenuSelect::getEntry() const
+{
+	ESP_LOGI(FNAME,"getEntry() select:%d", _select );
+	return _values[ _select ];
+}
+
+const char *SetupMenuSelect::value() {
+	if( _nvs )
+		_select = _nvs->get();
+	return getEntry();
+}
 
 bool SetupMenuSelect::existsEntry( std::string ent ){
-	for( std::vector<std::string>::iterator iter = _values.begin(); iter != _values.end(); ++iter )
-		if( *iter == ent )
+	for( std::vector<const char*>::iterator iter = _values.begin(); iter != _values.end(); ++iter )
+		if( std::string(*iter) == ent )
 			return true;
 	return false;
 }
 
-void SetupMenuSelect::addEntry( char ent[][4] )
-{
-    while ( *ent[0] != '\0' ) {
-        _values.push_back( std::string(*ent) ); _numval++;
-        ent += sizeof(char[4]);
-    }
+#ifdef DEBUG_MAX_ENTRIES
+// static int num_max = 0;
+#endif
+
+void SetupMenuSelect::addEntry( const char* ent ) {
+	_values.push_back( ent ); _numval++;
+#ifdef DEBUG_MAX_ENTRIES
+	if( num_max < _numval ){
+		ESP_LOGI(FNAME,"add ent:%s  num:%d", ent, _numval );
+		num_max = _numval;
+	}
+#endif
 }
 
-void SetupMenuSelect::delEntry( std::string ent ) {
-	for( std::vector<std::string>::iterator iter = _values.begin(); iter != _values.end(); ++iter )
-		if( *iter == ent )
+void SetupMenuSelect::setSelect( int sel ) {
+	_select = (int16_t)sel;
+	if( _nvs )
+		_select = _nvs->set( sel );
+}
+
+int SetupMenuSelect::getSelect() {
+	if( _nvs )
+		_select = _nvs->get();
+	return (int)_select;
+}
+
+void SetupMenuSelect::addEntryList( const char ent[][4], int size )
+{
+	ESP_LOGI(FNAME,"addEntryList() char ent[][4]");
+	for( int i=0; i<size; i++ ) {
+		_values.push_back( (char *)ent[i] ); _numval++;
+#ifdef DEBUG_MAX_ENTRIES
+		if( num_max < _numval ){
+			ESP_LOGI(FNAME,"addEntryList:%s  num:%d", (char *)ent[i], _numval );
+			num_max = _numval;
+		}
+#endif
+	}
+}
+
+void SetupMenuSelect::delEntry( const char* ent ) {
+	for( std::vector<const char *>::iterator iter = _values.begin(); iter != _values.end(); ++iter )
+		if( std::string(*iter) == std::string(ent) )
 		{
 			_values.erase( iter );
 			_numval--;
@@ -43,23 +82,23 @@ void SetupMenuSelect::delEntry( std::string ent ) {
 		}
 }
 
-SetupMenuSelect::SetupMenuSelect( std::string title, bool restart, int (*action)(SetupMenuSelect *p), bool save, SetupNG<int> *anvs ) {
-	ESP_LOGI(FNAME,"SetupMenuSelect( %s ) ", title.c_str() );
-	_rotary->attach(this);
+SetupMenuSelect::SetupMenuSelect( const char* title, bool restart, int (*action)(SetupMenuSelect *p), bool save, SetupNG<int> *anvs, bool ext_handler, bool end_menu ) {
+	// ESP_LOGI(FNAME,"SetupMenuSelect( %s ) action: %x", title, (int)action );
+	attach(this);
+	bits._ext_handler = ext_handler;
 	_title = title;
 	_nvs = 0;
 	_select = 0;
 	_select_save = 0;
+	bits._end_menu = end_menu;
 	highlight = -1;
-	select_intern = 0;
 	if( !anvs ) {
-		_select = select_intern;
-		_select_save = select_intern;
+		_select_save = _select;
 	}
 	_numval = 0;
-	_restart = restart;
+	bits._restart = restart;
 	_action = action;
-	_save = save;
+	bits._save = save;
 	if( anvs ) {
 		_nvs = anvs;
 		ESP_LOGI(FNAME,"_nvs->key(): %s val: %d", _nvs->key(), (int)(_nvs->get()) );
@@ -70,55 +109,59 @@ SetupMenuSelect::SetupMenuSelect( std::string title, bool restart, int (*action)
 }
 SetupMenuSelect::~SetupMenuSelect()
 {
-    _rotary->detach(this);
+	detach(this);
 }
 
-
 void SetupMenuSelect::display( int mode ){
-	if( (selected != this) || !inSetup )
+	if( (selected != this) || !inSetup  )
 		return;
-	ESP_LOGI(FNAME,"SetupMenuSelect display() %d %x", pressed, (int)this);
+	ESP_LOGI(FNAME,"display() pressed:%d title:%s action: %x hl:%d", pressed, _title, (int)(_action), highlight );
 	clear();
-	if( _action != 0 )
-		(*_action)( this );
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	ucg->setPrintPos(1,25);
-	ESP_LOGI(FNAME,"Title: %s y=%d", _title.c_str(),y );
-	ucg->printf("<< %s",_title.c_str());
-	xSemaphoreGive(spiMutex );
-	ESP_LOGI(FNAME,"select=%d numval=%d size=%d val=%s", _select, _numval, _values.size(), _values[_select].c_str() );
-	if( _numval > 9 ){
-		xSemaphoreTake(spiMutex,portMAX_DELAY );
-		ucg->setPrintPos( 1, 50 );
-		ucg->printf( "%s                ", _values[_select].c_str() );
-		xSemaphoreGive(spiMutex );
+	if( bits._ext_handler ){  // handling is done only in action method
+		ESP_LOGI(FNAME,"ext handler");
+		selected = _parent;
 	}else
 	{
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
-		for( int i=0; i<_numval && i<+10; i++ )	{
-			ucg->setPrintPos( 1, 50+25*i );
-			ucg->print( _values[i].c_str() );
+		ucg->setPrintPos(1,25);
+		ESP_LOGI(FNAME,"Title: %s ", _title );
+		ucg->printf("<< %s",_title);
+		xSemaphoreGive(spiMutex );
+		ESP_LOGI(FNAME,"select=%d numval=%d size=%d val=%s", _select, _numval, _values.size(), _values[_select] );
+		if( _numval > 9 ){
+			xSemaphoreTake(spiMutex,portMAX_DELAY );
+			ucg->setPrintPos( 1, 50 );
+			ucg->printf( "%s                ", _values[_select] );
+			xSemaphoreGive(spiMutex );
+		}else
+		{
+			xSemaphoreTake(spiMutex,portMAX_DELAY );
+			for( int i=0; i<_numval && i<+10; i++ )	{
+				ucg->setPrintPos( 1, 50+25*i );
+				ucg->print( _values[i] );
+			}
+			ucg->drawFrame( 1,(_select+1)*25+3,238,25 );
+			xSemaphoreGive(spiMutex );
 		}
-		ucg->drawFrame( 1,(_select+1)*25+3,238,25 );
-		xSemaphoreGive(spiMutex );
-	}
 
-	y=_numval*25+50;
-	showhelp( y );
-	if(mode == 1 && _save == true ){
-		xSemaphoreTake(spiMutex,portMAX_DELAY );
-		ucg->setPrintPos( 1, 300 );
-		ucg->print("Saved" );
-		xSemaphoreGive(spiMutex );
+		int y=_numval*25+50;
+		showhelp( y );
+		if(mode == 1 && bits._save == true ){
+			xSemaphoreTake(spiMutex,portMAX_DELAY );
+			ucg->setColor( COLOR_BLACK );
+			ucg->drawBox( 0,280,240,40 );
+			ucg->setPrintPos( 1, 300 );
+			ucg->print("Saved" );
+			xSemaphoreGive(spiMutex );
+		}
+		if( mode == 1 )
+			delay(1000);
 	}
-	if( mode == 1 )
-		delay(1000);
 }
 
 void SetupMenuSelect::down(int count){
 	if( (selected != this) || !inSetup )
 		return;
-
 	if( _numval > 9 ){
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		while( count ) {
@@ -127,7 +170,8 @@ void SetupMenuSelect::down(int count){
 			count--;
 		}
 		ucg->setPrintPos( 1, 50 );
-		ucg->printf("%s                  ",_values[_select].c_str());
+		ucg->setFont(ucg_font_ncenR14_hr, true );
+		ucg->printf("%s                  ",_values[_select] );
 		xSemaphoreGive(spiMutex );
 	}else {
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
@@ -154,7 +198,8 @@ void SetupMenuSelect::up(int count){
 			count--;
 		}
 		ucg->setPrintPos( 1, 50 );
-		ucg->printf("%s                   ", _values[_select].c_str());
+		ucg->setFont(ucg_font_ncenR14_hr, true );
+		ucg->printf("%s                   ", _values[_select] );
 		xSemaphoreGive(spiMutex );
 	}else {
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
@@ -176,34 +221,37 @@ void SetupMenuSelect::longPress(){
 void SetupMenuSelect::press(){
 	if( selected != this )
 		return;
-	ESP_LOGI(FNAME,"SetupMenuSelect press");
+	ESP_LOGI(FNAME,"press() ext handler: %d press: %d _select: %d", bits._ext_handler, pressed, _select );
 	if ( pressed ){
 		display( 1 );
-		if( _parent != 0) {
-			selected = _parent;
-			_parent->highlight = -1;  // to topmost selection when back
+		if( bits._end_menu ){
+			ESP_LOGI(FNAME,"press() end_menu");
+			selected = root;
 		}
+		else if( _parent != 0) {
+			ESP_LOGI(FNAME,"go to parent");
+			selected = _parent;
+		}
+		selected->highlight = -1;
 		selected->pressed = true;
 		if( _nvs ){
 			_nvs->set((int)_select, false ); // do sync in next step
 			_nvs->commit();
 		}
 		pressed = false;
-		//if( _action != 0 )  // maybe enough in display, to be tested...
-		//	(*_action)( this );
+		if( _action != 0 ){
+			ESP_LOGI(FNAME,"calling action in press %d", _select );
+			(*_action)( this );
+		}
 		if( _select_save != _select )
-			if( _restart ) {
-				Audio::shutdown();
-				clear();
-				ucg->setPrintPos( 10, 50 );
-				ucg->print("...rebooting now" );
-		        SetupCommon::commitNow();
-				delay(2000);
-				esp_restart();
+			if( bits._restart ) {
+				restart();
 			}
+		if( bits._end_menu ){
+			selected->press();
+		}
 	}
-	else
-	{
+	else{
 		pressed = true;
 	}
 }

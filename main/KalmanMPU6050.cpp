@@ -6,55 +6,34 @@
 #include "sensor_processing_lib.h"
 #include "vector.h"
 
-#define DEBUG_INIT()
-#define DEBUG_PRINT(x)
-#define DEBUG_PRINTLN(x)
-#define DEBUG_TS_PRINT(x)
-#define DEBUG_TS_PRINTLN(x)
-
 #define sqr(x) x *x
 #define hypotenuse(x, y) sqrt(sqr(x) + sqr(y))
-
-// MPU-6050
-#define IMU_ADDR 0x68
-#define IMU_ACCEL_XOUT_H 0x3B
-#define IMU_REG 0x19
-#define IMU_PWR_MGMT_1 0x6B
 
 // Kalman Variables
 Kalman IMU::kalmanX; // Create the Kalman instances
 Kalman IMU::kalmanY;
 Kalman IMU::kalmanZ;
 
-// Private Variables
-double IMU::gyroXAngle = 0;
-double IMU::gyroYAngle = 0; // Angle calculate using the gyro only
-double IMU::gyroZAngle = 0; // Angle calculate using the gyro only
-uint32_t IMU::lastProcessed = 0;
-
-float 	IMU::myrolly = 0;
-float 	IMU::myrollz = 0;
-float 	IMU::myaccroll = 0;
-double  IMU::mypitch = 0;
 double  IMU::filterPitch = 0;
 double  IMU::filterRoll = 0;
+double  IMU::filterYaw = 0;
 
 uint64_t IMU::last_rts=0;
 double IMU::accelX = 0.0;
 double IMU::accelY = 0.0;
 double IMU::accelZ = 0.0;
 double IMU::gyroX = 0.0;
-float  IMU::pitchfilter = 0.0;
-float  IMU::rollfilter = 0.0;
 double IMU::gyroY = 0.0;
 double IMU::gyroZ = 0.0;
 double IMU::kalXAngle = 0.0;
 double IMU::kalYAngle = 0.0;
-float IMU::filterAccRoll = 0.0;
-float IMU::filterGyroRoll = 0.0;
-Quaternion IMU::att_quat;
+float  IMU::fused_yaw = 0;
+
+Quaternion IMU::att_quat(0,0,0,0);
 vector_ijk IMU::att_vector;
 euler_angles IMU::euler;
+
+vector_ijk gravity_vector( 0,0,-1 );
 
 // Kalman Function Definition
 
@@ -62,7 +41,7 @@ void Kalman_Init(Kalman *kalPointer, double qang, double qbias, double rmeas )
 {
 	/* We will set the variables like so, these can also be tuned by the user */
 	kalPointer->Q_angle = 0.01;
-	kalPointer->Q_bias = 0.03;
+	kalPointer->Q_bias =  0.03;
 	kalPointer->R_measure = 0.1;
 
 	kalPointer->angle = 0; // Reset the angle
@@ -130,22 +109,15 @@ void IMU::init()
 	// sleep( 0.1 );
 	double roll=0;
 	double pitch=0;
-	// IMU::RollPitchFromAccel(&roll, &pitch);
 
 	kalmanX.angle = roll; // Set starting angle
 	kalmanY.angle = pitch;
-	gyroXAngle = roll;
-	gyroYAngle = pitch;
 
-	lastProcessed = micros();
-	att_quat = quaternion_initialize(1.0,0.0,0.0,0.0);
-	att_vector = vector_3d_initialize(0.0,0.0,-1.0);
+	att_quat = Quaternion(1.0,0.0,0.0,0.0);
+	att_vector = vector_ijk(0.0,0.0,-1.0);
 	euler = { 0,0,0 };
-	ESP_LOGD(FNAME, "Finished IMU setup  gyroYAngle:%f ", gyroYAngle);
+	ESP_LOGI(FNAME, "Finished IMU setup");
 }
-
-
-float fused_yaw = 0;
 
 double IMU::getRollRad() {
 	return filterRoll*DEG_TO_RAD;
@@ -154,8 +126,6 @@ double IMU::getRollRad() {
 double IMU::getPitchRad()  {
 	return -filterPitch*DEG_TO_RAD;
 }
-
-
 
 void IMU::read()
 {
@@ -169,40 +139,43 @@ void IMU::read()
 	last_rts = rts;
 	if( ret )
 		return;
+	float ax=0;
+	float ay=0;
+	float az=0;
 
-	double roll;
-	double pitch;
 	if( getTAS() > 10 ){
 		// This part is a deterministic and noise resistant approach for centrifugal force removal
 		// 1: exstimate roll angle from Z axis omega plus airspeed
-		myrollz = R2D(atan(  (gyroZ *PI/180 * (getTAS()/3.6) ) / 9.81 ));
+		double roll=0;
+		double pitch=0;
+		IMU::PitchFromAccelRad(&pitch);
+		// Z cross axis rotation in 3D space with roll angle correction
+		float omega = atan( ( (D2R(gyroZ)/cos( D2R(euler.roll))) * (getTAS()/3.6) ) / 9.80665 );
 		// 2: estimate angle of bank from increased acceleration in Z axis
-		float posacc=accelZ;
-		// only positive G-force is to be considered, curve at negative G is not define
-		if( posacc < 1 )
-			posacc = 1;
-		float aroll = acos( 1 / posacc )*180/PI;
-		// estimate sign of acceleration angle from gyro
-		float sign_accroll=aroll;
-		if( myrollz < 0 )
-			sign_accroll = -sign_accroll;
-		roll = -(myrollz + sign_accroll)/2;
-
-		// Calculate Pitch from Gyro and acceleration
-		PitchFromAccel(&pitch);
+		float positiveG=-accelZ;
+		// only positive G-force is to be considered, curve at negative G is not defined
+		if( positiveG < 1 )
+			positiveG = 1;
+		float groll = acos( 1 / positiveG );
+		// estimate sign of acceleration related angle from gyro
+		if( omega < 0 )
+			groll = -groll;
+		roll = -(omega + groll)/2; // left turn is left wing down so negative roll
+		// Calculate Pitch from gyro and accelerometer, vector is normalized later
+		ax=sin(pitch);              // Nose down (positive Y turn) results in positive X
+		ay=sin(roll)*cos(pitch);    // Left wing down (or negative X roll) resultis in positive Y
+		az=cos(roll)*cos(pitch);    // Any roll or pitch creates a less negative Z
+		//ESP_LOGI( FNAME,"omega-roll:%f g-roll:%f roll:%f  AZ:%f", omega, groll, roll, positiveG );
 	}
 	else{ // Case when on ground, get accelerations from sensor directly
-		IMU::RollPitchFromAccel(&roll, &pitch);
+		ax=accelX;
+		az=accelZ;
+		ay=accelY;
 	}
-
-	// to get pitch and roll independent of circling, image sensor values into quaternion format
-	uint16_t ax=(UINT16_MAX/2)*sin(D2R(pitch));
-	uint16_t ay=(-(UINT16_MAX/2)*sin(D2R(roll))) * cos( D2R(pitch) );
-	uint16_t az=(int16_t)(-(UINT16_MAX/2)*cos(D2R(roll))) * cos( D2R(pitch) );
-
+	// to get pitch and roll independent of circling, image pitch and roll values into 3D vector
 	att_vector = update_fused_vector(att_vector,ax, ay, az,D2R(gyroX),D2R(gyroY),D2R(gyroZ),dt);
 	att_quat = quaternion_from_accelerometer(att_vector.a,att_vector.b,att_vector.c);
-	euler = quaternion_to_euler_angles(att_quat);
+	euler = att_quat.to_euler_angles();
 	// treat gimbal lock, limit to 80 deg
 	if( euler.roll > 80.0 )
 		euler.roll = 80.0;
@@ -213,40 +186,69 @@ void IMU::read()
 	if( euler.pitch < -80.0 )
 		euler.pitch = -80.0;
 
-	bool ok;
-	float curh = Compass::cur_heading( &ok );
-	if( ok ){
-		fused_yaw +=  Vector::angleDiffDeg( curh ,fused_yaw )*0.05 + (getGyroYawDelta())*0.95;
-		Compass::setGyroHeading( Vector::normalizeDeg( fused_yaw ) );
+	float curh = 0;
+	if( compass ){
+		bool ok;
+		gravity_vector = vector_ijk(att_vector.a,att_vector.b,att_vector.c);
+		gravity_vector.normalize();
+		curh = compass->cur_heading( &ok );
+		if( ok ){
+			float gyroYaw = getGyroYawDelta();
+			// tuned to plus 7% what gave the best timing swing in response, 2% for compass is far enough
+			// gyro and compass are time displaced, gyro comes immediate, compass a second later
+			fused_yaw +=  Vector::angleDiffDeg( curh ,fused_yaw )*0.02 + gyroYaw * 1.07;
+			filterYaw=Vector::normalizeDeg( fused_yaw );
+			compass->setGyroHeading( filterYaw );
+			// ESP_LOGI( FNAME,"cur magn head %.2f gyro yaw: %.4f fused: %.1f Gyro(%.3f/%.3f/%.3f)", curh, gyroYaw, gh, gyroX, gyroY, gyroZ  );
+		}else
+		{
+			filterYaw=fallbackToGyro();
+		}
+	}
+	else{
+		filterYaw=fallbackToGyro();
 	}
 	if( ahrs_gyro_factor.get() > 0.1  ){
 		filterRoll =  euler.roll;
 		filterPitch =  euler.pitch;
 	}
 	else{
+		double roll=0;
+		double pitch=0;
 		kalXAngle = Kalman_GetAngle(&kalmanX, roll, 0, dt);
 		filterRoll = kalXAngle;
 		kalYAngle = Kalman_GetAngle(&kalmanY, pitch, 0, dt);
 		filterPitch += (kalYAngle - filterPitch) * 0.2;   // addittional low pass filter
 	}
-	// ESP_LOGI( FNAME,"ACC Pitch=%.1f Roll=%.1f GX:%.3f GY:%.3f GZ:%.3f:  FP:%.1f FR:%.1f", pitch, roll, gyroX,gyroY,gyroZ, filterPitch, filterRoll  );
+	// ESP_LOGI( FNAME,"GV-Pitch=%.1f  GV-Roll=%.1f filterYaw: %.2f curh: %.2f GX:%.3f GY:%.3f GZ:%.3f AX:%.3f AY:%.3f AZ:%.3f  FP:%.1f FR:%.1f", euler.pitch, euler.roll, filterYaw, curh, gyroX,gyroY,gyroZ, accelX, accelY, accelZ, filterPitch, filterRoll  );
+}
+
+float IMU::fallbackToGyro(){
+	float gyroYaw = getGyroYawDelta();
+	fused_yaw +=  gyroYaw * 1.07;
+	return( Vector::normalizeDeg( fused_yaw ) );
 }
 
 // IMU Function Definition
-
 void IMU::MPU6050Read()
 {
-	accelX = -accelG[2];
-	accelY = accelG[1];
-	accelZ = accelG[0];
-	gyroX = -(gyroDPS.z);
-	gyroY = gyroDPS.y;
-	gyroZ = gyroDPS.x;
+	accelX = accelG[2];
+	accelY = -accelG[1];
+	accelZ = -accelG[0];
+	// Gating ignores Gyro drift < 1 deg per second
+	gyroX = abs(gyroDPS.z) < 1.0 ? 0.0 :  -(gyroDPS.z);
+	gyroY = abs(gyroDPS.y) < 1.0 ? 0.0 :   (gyroDPS.y);
+	gyroZ = abs(gyroDPS.x) < 1.0 ? 0.0 :   (gyroDPS.x);
 }
 
 void IMU::PitchFromAccel(double *pitch)
 {
-	*pitch = atan2(-accelX, accelZ) * RAD_TO_DEG;
+	*pitch = atan2(accelX, accelZ) * RAD_TO_DEG;
+}
+
+void IMU::PitchFromAccelRad(double *pitch)
+{
+	*pitch = atan2(accelX, accelZ);
 }
 
 void IMU::RollPitchFromAccel(double *roll, double *pitch)
@@ -256,8 +258,7 @@ void IMU::RollPitchFromAccel(double *roll, double *pitch)
 	// It is then converted from radians to degrees
 
 	*roll = atan((double)accelY / hypotenuse((double)accelX, (double)accelZ)) * RAD_TO_DEG;
-	*pitch = atan2((double)-accelX, (double)accelZ) * RAD_TO_DEG;
+	*pitch = atan2((double)accelX, (double)accelZ) * RAD_TO_DEG;
 
 	// ESP_LOGI( FNAME,"Accelerometer Roll: %f  Pitch: %f  (y:%f x:%f)", *roll, *pitch, (double)accelY, (double)accelX );
-
 }

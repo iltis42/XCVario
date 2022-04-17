@@ -1,10 +1,10 @@
 # XCVario
-Software for ESP32 based lean Variometer system with data interface in OpenVario, Cambridge, Borgelt or (new) XCVario format, running on dedicated XCVario hardware
+Software for ESP32 based lean Variometer system with open data interface featuring OpenVario, Cambridge, Borgelt and XCVario format, running on dedicated XCVario hardware
 
 ![Vario]( https://raw.githubusercontent.com/iltis42/XCVario/master/images/Vario3D/vario-perspectiv.png )
 ![Vario Back]( https://github.com/iltis42/XCVario/blob/master/images/Vario3D/backviev-xcv-21.png )
 
-The project is dedicated to my open source and open hardware flight computer development using ESP32 WROOM development board plus modern sensors such as BMP280, DS1820b, MP5004DP. 
+The project is dedicated to my open source and open hardware flight computer development using ESP32 WROOM development board supporting modern digital sensors such as BMP280, SPL06-007, DS1820b, TE4525, ABPMRR, MP5004DP, CAN, AHRS MPU6050, and QMC5883L magnet sensor.
 
 * Evolution
 The history of the project is is available within branches and is listed below. 
@@ -19,7 +19,7 @@ The 'Long Vario' release 2 features a new technology 320x240 pixel IPS LCS displ
 The third generation 'XC Vario' uses the same display as the long vario, but came with a new sensor board 61x64 mm, vertically mounted behind the display board. The sensor board has a RJ45 connector for electrical connections, digital potentiomenter, and some more features like software update over the air, serial output and serial to bluetooth bridge and connector for external audio. It still has an audio amplifier with 1.2 Watt and an efficient loudspeaker on board, and has a just 34 mm long CNC fabricated aluminium housing and can be from back of the I-Panel as any other standard 57 mm instrument. A three digit number of boards have been fabricated and has been offered via http://xcvario.de webshop, selling the hardware for an interresting price. 
 
 4. master branch (default, what you see here)
-The fourth generation XCVario-21 or XCVario series 2021 has identical feature set as the series 2020, but has been pimped up with some nice hardware gimicks. The device got a second serial interface (S2) following the IGC standard pinout to be open for more applications with external serial devices. The interface pins RX/TX are programmable to be able to twist RX/TX lines by setup to minimize need for custom cables, so mostly a standard 1:1 patch  cable can be used. The second interface S2 can also power external devices and the same connector features one addittional programmable analog or digital input, e.g. for flarm sensor application. The digital audio amplifier has an increased power of 2 Watt's providing less THD at high volumes. Furthermore a 6 axis 'Attitude and Heading Reference System' (AHRS) has been placed on the board to provide acceleration to the flight computing software plus pitch and angle of bank for a connected XCSoar application. As extenal hardware a flap sensor has been developed, indication your current flap position on the display, plus a high precision magnetic sensor board featuring the new QMC5883L chip is in preparation that can both be connected to S2 interface. The shop opened January 2021 with a three digit number of new 2021 hardware devices, and more series will follow. 
+The fourth generation XCVario-21 or XCVario series 2021 has identical feature set as the series 2020, but has been pimped up with some nice hardware gimicks. The device got a second serial interface (S2) following the IGC standard pinout to be open for more applications with external serial devices. The interface pins RX/TX are programmable to be able to twist RX/TX lines by setup to minimize need for custom cables, so mostly a standard 1:1 patch  cable can be used. The second interface S2 can also power external devices and the same connector features one addittional programmable analog or digital input, e.g. for flarm sensor application. The digital audio amplifier has an increased power of 2 Watt's providing less THD at high volumes. Furthermore a 6 axis 'Attitude and Heading Reference System' (AHRS) has been placed on the board to provide acceleration to the flight computing software plus pitch and angle of bank for a connected XCSoar application. As extenal hardware a flap sensor has been developed, indication your current flap position on the display, plus a high precision magnetic sensor board featuring the new QMC5883L chip can both be connected to S2 interface. The shop opened January 2021 with a three digit number of new 2021 hardware devices. Mid 2021 the board was extended by a CAN interface.
 
 [List of Software Releases](https://github.com/iltis42/XCVario/releases/) , latest release on the top <br>
 
@@ -59,27 +59,27 @@ The Vario Prototype with 550 nits 2.4 inch IPS Technology LCD Display features a
 
 The Soft- and Hardware features:
 
-- QNH and McCready Adjustment
-- Audio-Generator with adjustable Volume and Deadband plus setup option for frequency tone style and range
-- Integrated Loudspeaker, 2 Watt Audio power (loud and clear)
-- Optimum Flap Position Indicator with Flap Sensor (optional)
+- QNH Ballast, Bugs and McCready adjustment and many other options configurable
+- Audio-Generator with adjustable Volume and Deadband plus setup option for frequency, tone style and range
+- Integrated Loudspeaker, 2 Watt Audio power
+- Optimum Flap Position Indicator with Flap Position Sensor (optional)
 - S2F (Speed2Fly) Indicator with configurable MC Ballast and Bugs based on customizable Polar
-- Around 100 Polars are already included ( list in https://github.com/iltis42/XCVario/blob/master/main/Polars.cpp )
-- IAS (Indicated Airspeed) and TAS Indicator
-- Outside Temperatur Sensor
-- Battery Charge Indicator
+- Around 130 Polars are included in installed polar library ( list in https://github.com/iltis42/XCVario/blob/master/main/Polars.cpp )
+- IAS or TAS airspeed indication
+- OAT (Outside Air Temperature) Sensor
+- Battery Charge Indicator, adaptable to battery type
 - Variometer display with adjustable range (1 m/s - 30 m/s), and damping ( 1s - 10s )
-- Bluetooth, Wifi or serial Interface to navigation devices (XCSoar, LK8000, etc).
-- Biderectional Sync of MacCready Value, Ballast and Bugs
-- Sync QNH from device
-- High precision barometric Altimeter 1 hPa (8 meter) absolute accuracy
+- Bluetooth, Wifi and two serial interfaces to external devices (XCSoar, LK8000, FLARM, Sensors, etc)
+- Biderectional Sync of QNH, MacCready Value, Ballast and Bugs with secondary variometer and navi
+- High precision barometric Altimeter 1 hPa (8 meter) absolute accuracy, and 0.1 meter resolution
 - Sunlight readable high contrast 550 nits 2.4 inch IPS Technology Display
 - Battery Voltage Indicator
-- Audio Switch for Vario/S2F Audio
-- Detailed Setup Menu
-- Serial to Bluetooth Bridge e.g. for FLARM and FLARM alert screen
-- Serial Output of OpenVarion Format NMEA data
-- Software Update OverTheAir (OTA) via WiFi Access Point
-- Attitude and Heading Reference System (AHRS) available in this hardware revision
+- Switch for S2F/Vario Mode (Audio and Netto-Mode)
+- Detailed Setup Menu to customise Vario for various applications (Standalone, Twin-Seater, etc.)
+- Option to connect navi to secondary device
+- Serial to wirless (Bluetooth or WiFi Bridge) e.g. for FLARM and FLARM alert screen
+- Output of NMEA data in OpenVario,Borgelt,Cambridge or XCVario format
+- OTA (Over The Air) Software Update via WiFi and Browser
+- Attitude and Heading Reference System (AHRS) available since 2021 hardware revision
 - Wind calculation in circling (with a Flarm) and in straight flight by magnet sensor extension
 

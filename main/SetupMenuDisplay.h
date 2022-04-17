@@ -25,7 +25,7 @@ Last update: 2021-02-25
 class SetupMenuDisplay: public MenuEntry
 {
 public:
-  SetupMenuDisplay( std::string title, int (*action)(SetupMenuDisplay *p) = nullptr );
+  SetupMenuDisplay( const char* title, int (*action)(SetupMenuDisplay *p) = nullptr );
 
   virtual ~SetupMenuDisplay();
 
@@ -36,7 +36,7 @@ public:
 	virtual void display( int mode=0 );
 
 	// No value support
-	virtual const char *value() const override { return nullptr; }
+	virtual const char *value() { return nullptr; }
 
 	// Ignore up calls
 	virtual void up( int count ) {}
@@ -49,6 +49,9 @@ public:
 
 	// Ignore release calls
 	virtual void release() {}
+
+	// Ignore escape calls
+	void escape() {};
 
 private:
 	// User's callback function

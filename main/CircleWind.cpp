@@ -85,9 +85,9 @@ const char * CircleWind::status = "idle";
 t_circling CircleWind::flightMode = undefined;
 Vector CircleWind::windVectors[NUM_RESULTS];
 int CircleWind::curVectorNum = 0;
-int CircleWind::turn_left=0;
-int CircleWind::turn_right=0;
-int CircleWind::fly_straight=0;
+uint8_t CircleWind::turn_left=0;
+uint8_t CircleWind::turn_right=0;
+uint8_t CircleWind::fly_straight=0;
 
 CircleWind::~CircleWind()
 {}
@@ -95,8 +95,6 @@ CircleWind::~CircleWind()
 /** Called if a new sample is available in the sample list. */
 void CircleWind::newSample( Vector curVec )
 {
-	if( SetupCommon::isClient() )
-		return;
 	// circle detection
 	if( lastHeading != -1 )
 	{
@@ -105,8 +103,10 @@ void CircleWind::newSample( Vector curVec )
 		if( flightMode == circlingL || flightMode == circlingR )
 			circleDegrees += abs(headingDiff);
 	}
-	lastHeading = curVec.getAngleDeg();
+	if( SetupCommon::isClient() )
+		return;
 
+	lastHeading = curVec.getAngleDeg();
 	if( flightMode != circlingL && flightMode != circlingR ){
 		// ESP_LOGI(FNAME,"FlightMode not circling %d", flightMode );
 		status = "Not Circling";
@@ -146,35 +146,38 @@ void CircleWind::calcFlightMode( float headingDiff, float speed ){
 		if( flightMode != undefined ) {
 			newFlightMode( undefined );
 			flightMode = undefined;
-			ESP_LOGI(FNAME,"calcFlightMode() New flightmode: undefined, no GS");
+			ESP_LOGI(FNAME,"New flightmode: undefined, no GS");
 		}
 	}
 	else{
 		if( headingDiff > MINTURNANGDIFF ){
-				turn_right++;
+				if( turn_right < 4 )  // hold down
+					turn_right++;
 				fly_straight = 0;
 				if( flightMode != circlingR && turn_right > 2 ) {
 					newFlightMode( circlingR );
 					flightMode = circlingR;
-					ESP_LOGI(FNAME,"calcFlightMode() New flightmode: circle right");
+					// ESP_LOGI(FNAME,"New flightmode: circle right");
 				}
 		}
 		else if( headingDiff < -MINTURNANGDIFF ) {
-			turn_left++;
+			if( turn_left < 4)
+				turn_left++;
 			fly_straight = 0;
 			if( flightMode != circlingL && turn_left > 2 ){
 				newFlightMode( circlingL );
 				flightMode = circlingL;
-				ESP_LOGI(FNAME,"calcFlightMode() New flightmode: circle left");
+				// ESP_LOGI(FNAME,"New flightmode: circle left");
 			}
 		}
 		else{
 			turn_left = turn_right = 0;
-			fly_straight++;
+			if( fly_straight < 4 )
+				fly_straight++;
 			if( flightMode != straight && fly_straight > 2 ) {
 				newFlightMode( straight );
 				flightMode = straight;
-				ESP_LOGI(FNAME,"calcFlightMode() New flightmode: straight");
+				// ESP_LOGI(FNAME,"New flightmode: straight");
 			}
 		}
 	}
@@ -337,9 +340,9 @@ void CircleWind::gpsStatusChange( bool newStatus )
 {
 	if( SetupCommon::isClient() )
 		return;
-	ESP_LOGI(FNAME,"gpsStatusChange status:%d", newStatus );
 	if( gpsStatus != newStatus  )
 	{
+		ESP_LOGI(FNAME,"gpsStatusChange status:%d", newStatus );
 		// we are not active because we had no GPS fix but that has been
 		// changed now. So we become active.
 		// Initialize analyzer-parameters

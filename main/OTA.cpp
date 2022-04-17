@@ -24,12 +24,10 @@
 
 OTA::OTA(){
 	pressed = false;
-	_rotary = 0;
 }
 
-void OTA::begin(ESPRotary * aRotary){
-	_rotary = aRotary;
-	_rotary->attach(this);
+void OTA::begin(){
+	attach(this);
 }
 
 void OTA::press() {
@@ -49,8 +47,9 @@ void OTA::doSoftwareUpdate(IpsDisplay * p ){
 	p->clear();
 	int line=1;
 	p->writeText(line++,"SOFTWARE DOWNLOAD");
-	p->writeText(line++,"Use   Wifi: ESP32 OTA");
-	p->writeText(line++,"Open: http://192.168.0.1");
+	p->writeText(line++,"Use Wifi: ESP32 OTA");
+	p->writeText(line++,"Password: xcvario-21");
+	p->writeText(line++,"Open: http://192.168.4.1");
 	p->writeText(line++,"Then follow the dialogue");
 	init_wifi_softap(&OTA_server);
 	for( int i=900; i>0; i-- ) {

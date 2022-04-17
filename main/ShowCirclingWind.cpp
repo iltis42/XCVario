@@ -24,13 +24,13 @@ Last update: 2021-04-18
 #include "Units.h"
 #include "sensor.h"
 
-#include <Ucglib.h>
+#include <AdaptUGC.h>
 #include <esp_log.h>
 
-ShowCirclingWind::ShowCirclingWind( std::string title ) :
+ShowCirclingWind::ShowCirclingWind( const char* title ) :
 SetupMenuDisplay( title, nullptr )
 {
-	ESP_LOGI(FNAME, "ShowCirclingWind(): title='%s'", title.c_str() );
+	ESP_LOGI(FNAME, "ShowCirclingWind(): title='%s'", title );
 }
 
 
@@ -43,8 +43,8 @@ void ShowCirclingWind::display( int mode )
 	ESP_LOGI(FNAME, "display() mode=%d", mode );
 	if( mode != 5 )
 		clear();
-	ucg->setFont( ucg_font_fur14_hf );
-	uprintf( 5, 25, selected->_title.c_str() );
+	ucg->setFont( ucg_font_ncenR14_hr  );
+	uprintf( 5, 25, selected->_title );
 
 	uint16_t y = 55;
 	char buffer[32];
@@ -74,7 +74,7 @@ void ShowCirclingWind::display( int mode )
 	y += 25;
 
 	ucg->setPrintPos( 0, y );
-	sprintf( buffer, "Last Wind : %3.1f\xb0/%2.1f  ", CircleWind::getAngle(), Units::Airspeed( CircleWind::getSpeed()) );
+	sprintf( buffer, "Last Wind : %3.1f°/%2.1f  ", CircleWind::getAngle(), Units::Airspeed( CircleWind::getSpeed()) );
 	ucg->printf( "%s", buffer );
 	y += 25;
 

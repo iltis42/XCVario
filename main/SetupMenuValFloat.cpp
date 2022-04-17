@@ -12,21 +12,19 @@
 #include "Polars.h"
 #include "sensor.h"
 #include "ESPAudio.h"
-
 #include <esp_log.h>
 
 SetupMenuValFloat * SetupMenuValFloat::qnh_menu = 0;
+SetupMenuValFloat * SetupMenuValFloat::meter_adj_menu = 0;
 char SetupMenuValFloat::_val_str[20];
 
-SetupMenuValFloat::SetupMenuValFloat( std::string title, float *value, const char *unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs, bool restart, bool sync ) {
+SetupMenuValFloat::SetupMenuValFloat( const char* title, const char *unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs, bool restart, bool sync, bool live_update ) {
 	// ESP_LOGI(FNAME,"SetupMenuValFloat( %s ) ", title.c_str() );
-	_rotary->attach(this);
+	attach(this);
 	_title = title;
 	highlight = -1;
 	_nvs = 0;
-	_restart = restart;
-	if( value )
-		_value = value;
+	bits._restart = restart;
 	if( unit != 0 )
 		_unit = unit;
 	else
@@ -35,91 +33,109 @@ SetupMenuValFloat::SetupMenuValFloat( std::string title, float *value, const cha
 	_max = max;
 	_step = step;
 	_action = action;
-	_end_menu = end_menu;
-	_precision = 2;
+	bits._end_menu = end_menu;
+	bits._precision = 2;
+	bits._live_update = live_update;
 	if( step >= 1 )
-		_precision = 0;
+		bits._precision = 0;
 	if( anvs ) {
 		_nvs = anvs;
-		_value = _nvs->getPtr();
-		_value_safe = *_value;
+		_value = _nvs->get();
+		_value_safe = _value;
 	}
 }
+
 SetupMenuValFloat::~SetupMenuValFloat()
 {
-    _rotary->detach(this);
+    detach(this);
+}
+
+const char *SetupMenuValFloat::value(){
+	float uval = Units::value( _nvs->get(), _nvs->unitType() );
+	// ESP_LOGI(FNAME,"value() ulen: %d val: %f, utype: %d unitval: %f", strlen( _unit ), _nvs->get(), _nvs->unitType(), uval  );
+	const char * final_unit = _unit;
+	if( strlen( _unit ) == 0 )
+		final_unit = Units::unit( _nvs->unitType() );
+	sprintf(_val_str,"%0.*f %s   ", bits._precision, uval, final_unit );
+	return _val_str;
 }
 
 void SetupMenuValFloat::setPrecision( int prec ){
-	_precision = prec;
+	bits._precision = prec;
 }
 
-void SetupMenuValFloat::showQnhMenu(){
-	ESP_LOGI(FNAME,"SetupMenuValFloat::showQnhMenu()");
-	if( qnh_menu ) {
-		ESP_LOGI(FNAME,"qnh_menu = true");
+void SetupMenuValFloat::showMenu( float val, SetupMenuValFloat * menu ){
+	ESP_LOGI(FNAME,"showMenu()");
+	if( menu ) {
+		ESP_LOGI(FNAME,"menu found");
 		inSetup = true;
-		selected = qnh_menu;
+		selected = menu;
 		inSetup=true;
-		qnh_menu->clear();
-		qnh_menu->display();
-		qnh_menu->pressed = true;
+		menu->clear();
+		menu->display();
+		menu->pressed = true;
+		menu->_value = val;
 	}
 }
 
 void SetupMenuValFloat::display( int mode ){
 	if( (selected != this) || !inSetup )
 		return;
-	// ESP_LOGI(FNAME,"SetupMenuValFloat display() %d %x", pressed, (int)this);
-	uprintf( 5,25, selected->_title.c_str() );
-	displayVal();
-	y= 75;
-	if( _action != 0 )
-		(*_action)( this );
-
-	showhelp( y );
-	if(mode == 1){
+	ESP_LOGI(FNAME,"display() pressed=%d instance=%x mode=%d", pressed, (int)this, mode );
+	int y= 75;
+	if( mode == 0 ){ // normal mode
+		uprintf( 5,25, selected->_title );
+		displayVal();
+		if( _action != 0 )
+			(*_action)( this );
+		showhelp( y );
+	}
+	else if (mode == 1){   // save mode, do show only "Saved"
 		y+=24;
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		ucg->setPrintPos( 1, 300 );
 		ucg->print("Saved");
 		xSemaphoreGive(spiMutex );
-	}
-	y=0;
-
-	if( mode == 1 )
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
-	ESP_LOGI(FNAME,"~SetupMenuValFloat display");
+	}
 }
 
 void SetupMenuValFloat::displayVal()
 {
+	ESP_LOGI(FNAME,"displayVal %s", value() );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setPrintPos( 1, 70 );
-	ucg->setFont(ucg_font_fub25_hf);
-	char val[20];
-	sprintf(val, "%0.*f", _precision, _nvs?_nvs->getGui():*_value );
-	ucg->print(val);
-	if( _unit ) {
-		ucg->setFont(ucg_font_fur25_hf);   // use different font for unit as of ° special char
-		ucg->setPrintPos( 1+ ucg->getStrWidth(val), 70 );
-		ucg->printf(" %s   ", _unit);
-	}
-
+	ucg->setFont(ucg_font_fub25_hf, true);
+	ucg->print( value() );
 	xSemaphoreGive(spiMutex );
 	ucg->setFont(ucg_font_ncenR14_hr);
+}
+
+float SetupMenuValFloat::step( float instep ){
+	float step = 1.0;
+	if( _nvs->unitType() == UNIT_ALT && alt_unit.get() == ALT_UNIT_FT )
+		step = 5.0;
+	else
+		step = instep;
+	if( _nvs->unitType() == UNIT_VARIO && vario_unit.get() == VARIO_UNIT_KNOTS )
+		step = Units::Vario2ms( instep*2 );
+	// ESP_LOGI(FNAME,"instep: %f, ut:%d ostep: %f", instep, _nvs->unitType(), step );
+	return step;
 }
 
 void SetupMenuValFloat::down( int count ){
 	if( (selected != this) || !inSetup )
 		return;
 	// ESP_LOGI(FNAME,"val down %d times ", count );
-	while( (*_value > _min) && count ) {
-		*_value -= _step;
+	_value = _nvs->get();
+	while( (_value > _min) && count ) {
+
+		_value -= step( _step );
 		count --;
 	}
-	if( *_value < _min )
-		*_value = _min;
+	if( _value < _min )
+		_value = _min;
+	_nvs->set(_value );
 	displayVal();
 	if( _action != 0 )
 		(*_action)( this );
@@ -129,12 +145,14 @@ void SetupMenuValFloat::up( int count ){
 	if( (selected != this) || !inSetup )
 		return;
 	// ESP_LOGI(FNAME,"val up %d times ", count );
-	while( (*_value < _max) && count ) {
-		*_value += _step;
+	_value = _nvs->get();
+	while( (_value < _max) && count ) {
+		_value += step( _step );
 		count--;
 	}
-	if( *_value > _max )
-		*_value = _max;
+	if( _value > _max )
+		_value = _max;
+	_nvs->set(_value );
 	displayVal();
 	if( _action != 0 )
 		(*_action)( this );
@@ -147,35 +165,34 @@ void SetupMenuValFloat::longPress(){
 void SetupMenuValFloat::press(){
 	if( selected != this )
 		return;
-	ESP_LOGI(FNAME,"SetupMenuValFloat press");
+	ESP_LOGI(FNAME,"SetupMenuValFloat press %d", pressed );
 	if ( pressed ){
+		// ESP_LOGI(FNAME,"pressed, value: %f", _value );
+		_nvs->set( _value );
 		display( 1 );
-		if( _end_menu )
+		if( bits._end_menu )
 			selected = root;
 		else if( _parent != 0 )
 			selected = _parent;
 		selected->highlight = -1;  // to topmost selection when back
 		selected->pressed = true;
-		if( *_value != _value_safe ){
-			if( _nvs )
-				_nvs->commit();
-			if( _restart ) {
-				Audio::shutdown();
-				clear();
-				ucg->setPrintPos( 10, 50 );
-				ucg->print("...rebooting now" );
-				SetupCommon::commitNow();
-				delay(2000);
-				esp_restart();
+		ESP_LOGI(FNAME,"Check if _value: %f != _value_safe: %f", _value, _value_safe );
+		if( _value != _value_safe ){
+			ESP_LOGI(FNAME,"Yes restart:%d", bits._restart);
+			_value_safe = _value;
+			_nvs->commit();
+			if( bits._restart ) {
+				restart();
 			}
 		}
 		pressed = false;
 		BMPVario::setHolddown( 150 );  // so seconds stop average
-		if( _end_menu )
+		if( bits._end_menu )
 			selected->press();
 	}
 	else
 	{
+		ESP_LOGI(FNAME,"NOT pressed, value: %f", _value );
 		pressed = true;
 		clear();
 		display();

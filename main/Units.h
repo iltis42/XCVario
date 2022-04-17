@@ -3,6 +3,7 @@
 
 #include "logdef.h"
 #include "Setup.h"
+#pragma once
 
 class Units {
 public:
@@ -60,7 +61,7 @@ public:
 	};
 
     static float ActualWingloadCorrection( float v ) {
-        return v * sqrt( 100.0/( ballast.get() + 100.0) );
+        return v * sqrt( 100.0/(ballast.get() + 100.0) );  // ballast is in percent overweight
     }
 
 	static float TemperatureUnit( float t ){
@@ -75,12 +76,14 @@ public:
 		}
 	}
 
-	static const char* TemperatureUnitStr( int idx ){
+	static const char* TemperatureUnitStr( int idx = -1 ){
+		if( idx == -1 )
+			idx = temperature_unit.get();
 		if( idx == T_FAHRENHEIT ) // °F
-			return "\xb0""F";
+			return "°F";
 		if( idx == T_KELVIN ) // °F
-			return "\xb0""K";
-		return "\xb0""C"; // default °C
+			return "°K";
+		return "°C"; // default °C
 	}
 
 	static const char * AirspeedUnitStr( int u = -1 ){
@@ -121,7 +124,7 @@ public:
 		if( qnh_unit.get() == QNH_HPA )
 			return( qnh );
 		else if(  qnh_unit.get() == QNH_INHG )
-			return( inHg2hPa( qnh ) );
+			return( hPa2inHg( qnh ) );
 		else
 			ESP_LOGE(FNAME,"Wrong unit for Vario");
 		return 0;
@@ -134,22 +137,6 @@ public:
 		}
 		return (int)(qnh_value+0.5);
 	};
-
-	static void recalculateQnh(){
-		ESP_LOGI(FNAME,"recalculateQnh");
-		if( qnh_unit.get() == QNH_HPA ){
-			if( QNH.get() < 500 ){  // convert to hPa
-				QNH.set( inHg2hPa( QNH.get() ));
-				ESP_LOGI(FNAME,"Converted QNH to hPa %.2f", QNH.get() );
-			}
-		}
-		else if( qnh_unit.get() == QNH_INHG ){
-			if( QNH.get() > 500 ){ // convert to inHG
-				QNH.set( hPa2inHg( QNH.get() ));
-				ESP_LOGI(FNAME,"Converted QNH to inHg %.2f", QNH.get() );
-			}
-		}
-	}
 
 	static float hPa2inHg( float hpa ){   // standard is m/s
 		return( hpa * 0.02952998597817832 );
@@ -164,6 +151,14 @@ public:
 
 	static float ms2knots( float knots ){   // if we got it in knots
 			return( knots*1.94384 );
+	};
+
+	static float ms2mph( float ms ){   // if we got it in knots
+				return( ms*2.23694 );
+	};
+
+	static float ms2fpm( float ms ){   // if we got it in knots
+					return( ms*196.85 );
 	};
 
 	static float Vario2ms( float var ){
@@ -203,7 +198,9 @@ public:
 		return "nan";
 	};
 
-	static const char * QnhUnit( int unit ){
+	static const char * QnhUnit( int unit = -1 ){
+		if( unit == -1 )
+			unit = qnh_unit.get();
 		if( unit == QNH_HPA )
 			return("hPa");
 		else if( unit == QNH_INHG )
@@ -249,16 +246,57 @@ public:
 			return( f/3.28084 );
 	};
 
-	static const char * AltitudeUnit(){
-		if( alt_unit.get() == 0 )  //m
+	static const char * AltitudeUnit( int unit = -1 ){
+		int u=unit;
+		if( u == -1 )
+			u=alt_unit.get();
+		if( u == 0 )  //m
 			return( "m" );
-		else if( alt_unit.get() == 1 ) //feet
+		else if( u == 1 ) //feet
 			return( "ft" );
-		else if( alt_unit.get() == 2 ) //FL
+		else if( u == 2 ) //FL
 			return( "FL" );
 		else
-			ESP_LOGE(FNAME,"Wrong unit for altitude");
+			ESP_LOGE(FNAME,"Wrong unit for altitude %d", u );
 		return "nan";
+	};
+
+	static float value( float val, e_unit_type_t u ){
+		switch( u ){
+		case UNIT_NONE:
+			return val;
+		case UNIT_TEMPERATURE:
+			return TemperatureUnit( val );
+		case UNIT_ALT:
+			return Altitude( val );
+		case UNIT_SPEED:
+			return Airspeed( val );
+		case UNIT_VARIO:
+			return Vario( val );
+		case UNIT_QNH:
+			return Qnh( val );
+		default:
+			return val;
+		}
+	};
+
+	static const char * unit( e_unit_type_t u ){
+		switch( u ){
+		case UNIT_NONE:
+			return "";
+		case UNIT_TEMPERATURE:
+			return TemperatureUnitStr();
+		case UNIT_ALT:
+			return AltitudeUnit();
+		case UNIT_SPEED:
+			return AirspeedUnitStr();
+		case UNIT_VARIO:
+			return VarioUnit();
+		case UNIT_QNH:
+			return QnhUnit();
+		default:
+			return "";
+		}
 	};
 
 };

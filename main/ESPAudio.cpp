@@ -35,7 +35,7 @@
 #include "Poti.h"
 
 
-TaskHandle_t *dactid;
+static TaskHandle_t dactid = NULL;
 
 uint8_t Audio::_tonemode;
 uint16_t *Audio::p_wiper;
@@ -459,13 +459,13 @@ void Audio::startAudio(){
 	_testmode = false;
 	evaluateChopping();
 	p_wiper = &wiper;
-	xTaskCreatePinnedToCore(&dactask, "dactask", 2400, NULL, 15, dactid, 0);
+	xTaskCreatePinnedToCore(&dactask, "dactask", 2400, NULL, 25, &dactid, 0);
 }
 
 bool Audio::calcS2Fmode(){
 	bool mode = false;
 	if( !_alarm_mode ) {
-		mode =  cruise_mode.get();
+		mode =  Switch::getCruiseState();
 		if( mode )
 			p_wiper = &wiper_s2f;
 		else

@@ -13,14 +13,30 @@
 #include "SetupMenu.h"
 #include "S2F.h"
 #include "StraightWind.h"
+#include "DataMonitor.h"
+#include "AdaptUGC.h"
+#include "canbus.h"
+#include "CenterAid.h"
+#include "vector_3d.h"
 
+// Display 4 Wire SPI and Display CS
+#define RESET_Display  GPIO_NUM_5       // Reset pin for Display
+#define CS_Display     GPIO_NUM_13      // CS pin 13 is for Display
+#define SPI_SCLK       GPIO_NUM_14      // SPI Clock pin 14
+#define SPI_DC         GPIO_NUM_15      // SPI Data/Command pin 15
+#define SPI_MOSI       GPIO_NUM_27      // SPI SDO Master Out Slave In pin
+#define SPI_MISO       GPIO_NUM_32      // SPI SDI Master In Slave Out
+
+extern CANbus* CAN;
 extern StraightWind theWind;
 extern xSemaphoreHandle xMutex;
 extern int active_screen;
+extern CenterAid *centeraid;
 
 extern bool haveMPU;
 extern bool ahrsKeyValid;
 extern SetupMenu  *Menu;
+extern xSemaphoreHandle display_mutex;
 
 extern e_wireless_type wireless;
 
@@ -56,12 +72,16 @@ extern IpsDisplay *display;
 
 extern ESPRotary Rotary;
 
+extern DataMonitor DM;
+
 extern xSemaphoreHandle spiMutex;
 
-extern Compass compass;
+extern Compass *compass;
 
-class Ucglib_ILI9341_18x240x320_HWSPI;
-extern Ucglib_ILI9341_18x240x320_HWSPI *MYUCG;
+class AdaptUGC;
+extern AdaptUGC *MYUCG;
+
+extern vector_ijk gravity_vector;
 
 
 #endif

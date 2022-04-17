@@ -14,6 +14,7 @@ public:
 	~CANbus(){};
 	void begin();
 	void restart();
+	void recover();
 	bool selfTest();
     bool GotNewClient() const { return _new_can_client_connected; }
     void ResetNewClient() { _new_can_client_connected = false; }
@@ -21,6 +22,7 @@ public:
 	bool connectedMagSens() { return _connected_magsens; };
 	bool connected() { return( _connected_xcv | _connected_magsens ); };
 	bool isOkay() { return _ready_initialized; };
+	bool sendNMEA( const SString& msg );
 
 private:
     friend void canTxTask(void *arg);
@@ -30,7 +32,6 @@ private:
 
 private:
 	bool sendData( int id, const char* msg, int length, int self=0 );
-	bool sendNMEA( const SString& msg );
 	int receive(  int *id, SString& msg, int timeout=5);
 	void driverInstall( twai_mode_t mode );
 	void driverUninstall();

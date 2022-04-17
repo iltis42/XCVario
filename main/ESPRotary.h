@@ -18,38 +18,29 @@
 #include "driver/pcnt.h"
 
 
-class RotaryObserver{
-public:
-	RotaryObserver(){};
-	virtual void up( int count ) = 0;
-	virtual void down( int count ) = 0;
-	virtual void press() = 0;
-	virtual void release() = 0;
-	virtual void longPress() = 0;
-	virtual ~RotaryObserver() {};
-private:
-};
-
 
 enum _event { NONE, PRESS, LONG_PRESS, RELEASE, UP, DOWN, ERROR, MAX_EVENT };
+
+class RotaryObserver;
 
 class ESPRotary {
 public:
     ESPRotary() {};
     void begin(gpio_num_t clk, gpio_num_t dt, gpio_num_t sw );
-    void attach( RotaryObserver *obs);
-    void detach( RotaryObserver *obs);
+    static void attach( RotaryObserver *obs);
+    static void detach( RotaryObserver *obs);
     static void readPos( void * args );
     static void informObservers( void * args );
     static void readPosInt( void * args );
     static void sendRelease();
     static void sendPress();
     static void sendLongPress();
-    bool readSwitch();  // returns true if pressed
+    static void sendUp( int diff );
+    static void sendDown( int diff );
+    static void sendEsc();
+    static bool readSwitch();  // returns true if pressed
 
 private:
-    xSemaphoreHandle swMutex;
-
 	static std::list<RotaryObserver *> observers;
     static gpio_num_t clk, dt, sw;
     static pcnt_config_t enc;
@@ -61,5 +52,23 @@ private:
     static bool longPressed;
     static bool pressed;
 };
+
+
+class RotaryObserver{
+public:
+	RotaryObserver(){};
+	virtual void up( int count ) = 0;
+	virtual void down( int count ) = 0;
+	virtual void press() = 0;
+	virtual void release() = 0;
+	virtual void longPress() = 0;
+	virtual void escape() = 0;
+	virtual ~RotaryObserver() {};
+	void attach( RotaryObserver *instance) { ESPRotary::attach( instance ); }
+	void detach( RotaryObserver *instance) { ESPRotary::detach( instance ); }
+	bool readSwitch() {  return( ESPRotary::readSwitch() ); }
+private:
+};
+
 
 #endif

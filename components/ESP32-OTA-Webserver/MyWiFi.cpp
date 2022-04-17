@@ -9,6 +9,8 @@
 
 #include "OTAServer.h"
 #include "MyWiFi.h"
+#include "esp_netif_types.h"
+
 
 
 
@@ -119,15 +121,16 @@ void start_dhcp_server(void)
 	tcpip_adapter_init();
 	// stop DHCP server
 	ESP_ERROR_CHECK(tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP));
-	// assign a static IP to the network interface
-	tcpip_adapter_ip_info_t info;
-	memset(&info, 0, sizeof(info));
+
+	ip_addr_t dnsserver;
+	dhcps_offer_t dhcps_dns_value = OFFER_DNS;
+	dhcps_set_option_info(ESP_NETIF_DOMAIN_NAME_SERVER, &dhcps_dns_value, sizeof(dhcps_dns_value));
+
+	// Set custom dns server address for dhcp server
+	dnsserver.u_addr.ip4.addr = esp_ip4addr_aton("0.0.0.0");
+	dnsserver.type = IPADDR_TYPE_V4;
+	dhcps_dns_setserver(&dnsserver);
 	
-	IP4_ADDR(&info.ip, 192, 168, 0, 1);
-	IP4_ADDR(&info.gw, 192, 168, 0, 1); //ESP acts as router, so gw addr will be its own addr
-	IP4_ADDR(&info.netmask, 255, 255, 255, 0);
-	ESP_ERROR_CHECK(tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_AP, &info));
-	// start the DHCP server   
 	ESP_ERROR_CHECK(tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP));
 	printf("DHCP server started \n");
 }
@@ -191,15 +194,15 @@ void printStationList(void)
 void init_wifi_softap(void *arg)
 {
 	esp_log_level_set("wifi", ESP_LOG_INFO);    // disable wifi driver logging
-	
+
 	start_dhcp_server();
 	
 	wifi_event_group = xEventGroupCreate();
 	
-	tcpip_adapter_init();
 	ESP_ERROR_CHECK(esp_event_loop_init(event_handler, arg));
 	
 	wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+
 
 	ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
@@ -208,10 +211,11 @@ void init_wifi_softap(void *arg)
 	
 	// configure the wifi connection and start the interface
 	wifi_config_t ap_config;
-	strcpy( (char *)(ap_config.ap.ssid), CONFIG_AP_SSID );
-	strcpy( (char*)ap_config.ap.password, CONFIG_AP_PASSPHARSE );
+	strcpy( (char *)(ap_config.ap.ssid), "ESP32 OTA" );
+	strcpy( (char*)ap_config.ap.password, "xcvario-21" );
 	ap_config.ap.ssid_len = 0;
-	ap_config.ap.channel = 0;
+	uint32_t channel = esp_random()%11;
+	ap_config.ap.channel = channel;
 	ap_config.ap.authmode = AP_AUTHMODE;
 	ap_config.ap.ssid_hidden = AP_SSID_HIDDEN;
 	ap_config.ap.max_connection = AP_MAX_CONNECTIONS;
@@ -219,8 +223,10 @@ void init_wifi_softap(void *arg)
 	
 	ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &ap_config));
 	
+	vTaskDelay(100 / portTICK_PERIOD_MS);
+
 	ESP_ERROR_CHECK(esp_wifi_start());
-	printf("ESP WiFi started in AP mode \n");
+	printf("ESP WiFi started in AP mode, channel: %d \n", channel );
 	
 	/*
 	 *
@@ -247,8 +253,7 @@ void init_wifi_station(void *arg)
 	esp_log_level_set("wifi", ESP_LOG_NONE);     // disable wifi driver logging
 	
 	wifi_event_group = xEventGroupCreate();
-	
-	tcpip_adapter_init();
+
 	ESP_ERROR_CHECK(esp_event_loop_init(event_handler, arg));
 	
 	wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();

@@ -1,5 +1,5 @@
 /*
- * Setup.h
+ * SetupNG.h
  *
  *  Created on: August 23, 2020
  *      Author: iltis
@@ -28,7 +28,8 @@
 #include <cstring>
 #include <iostream>
 #include <vector>
-
+#include "Compass.h"
+#include "SetupCommon.h"
 
 
 /*
@@ -42,18 +43,18 @@
  */
 
 
-typedef enum display_type { UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P } display_t;
+typedef enum display_type { UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P } xcv_display_t;
 typedef enum chopping_mode { NO_CHOP, VARIO_CHOP, S2F_CHOP, BOTH_CHOP } chopping_mode_t;
 typedef enum rs232linemode { RS232_NORMAL, RS232_INVERTED } rs232lm_t;
-typedef enum nmea_protocol  { OPENVARIO, BORGELT, CAMBRIDGE, XCVARIO, XCVARIO_DEVEL, GENERIC } nmea_proto_t;
+typedef enum nmea_protocol  { OPENVARIO, BORGELT, CAMBRIDGE, XCVARIO, NMEA_OFF } nmea_proto_t;
 typedef enum airspeed_mode  { MODE_IAS, MODE_TAS } airspeed_mode_t;
 typedef enum altitude_display_mode  { MODE_QNH, MODE_QFE } altitude_display_mode_t;
 typedef enum e_display_style  { DISPLAY_AIRLINER, DISPLAY_RETRO, DISPLAY_UL } display_style_t;
 typedef enum e_display_variant { DISPLAY_WHITE_ON_BLACK, DISPLAY_BLACK_ON_WHITE } display_variant_t;
 typedef enum e_s2f_type  { S2F_HW_SWITCH, S2F_HW_PUSH_BUTTON, S2F_HW_SWITCH_INVERTED } e_s2f_type;
-typedef enum e_serial_route_type { RT_DISABLE = 0, RT_XCVARIO = 1, RT_WIRELESS = 2, RT_S1 = 4, RT_XCVARIO_S1 = 5  } e_serial_routing_t;
+typedef enum e_serial_route_type { RT_XCVARIO, RT_WIRELESS, RT_S1, RT_S2, RT_CAN } e_serial_routing_t;
 typedef enum e_wireless_type { WL_DISABLE, WL_BLUETOOTH, WL_WLAN_MASTER, WL_WLAN_CLIENT, WL_WLAN_STANDALONE } e_wireless_t;
-typedef enum e_audiomode_type { AM_VARIO, AM_S2F, AM_SWITCH, AM_AUTOSPEED, AM_FROM_MASTER } e_audiomode_t;
+typedef enum e_audiomode_type { AM_VARIO, AM_S2F, AM_SWITCH, AM_AUTOSPEED, AM_EXTERNAL, AM_FLAP, AM_AHRS } e_audiomode_t;
 typedef enum e_audio_tone_mode { ATM_SINGLE_TONE, ATM_DUAL_TONE } e_audio_tone_mode_t;
 typedef enum e_audio_chopping_style { AUDIO_CHOP_SOFT, AUDIO_CHOP_HARD } e_audio_chopping_style_t;
 typedef enum e_audio_range { AUDIO_RANGE_5_MS, AUDIO_RANGE_10_MS, AUDIO_RANGE_VARIABLE } e_audio_range_t;
@@ -68,12 +69,14 @@ typedef enum e_windanalyser_mode { WA_OFF=0, WA_STRAIGHT=1, WA_CIRCLING=2, WA_BO
 typedef enum e_battery_display { BAT_PERCENTAGE, BAT_VOLTAGE, BAT_VOLTAGE_BIG } e_battery_display_t;
 typedef enum e_wind_display { WD_NONE, WD_DIGITS, WD_ARROW, WD_BOTH, WD_COMPASS } e_wind_display_t;
 typedef enum e_wind_reference { WR_NORTH, WR_HEADING, WR_GPS_COURSE } e_wind_reference_t;
+typedef enum e_unit_type{ UNIT_NONE, UNIT_TEMPERATURE, UNIT_ALT, UNIT_SPEED, UNIT_VARIO, UNIT_QNH } e_unit_type_t;
 typedef enum e_temperature_unit { T_CELCIUS, T_FAHRENHEIT, T_KELVIN } e_temperature_unit_t;
 typedef enum e_alt_unit { ALT_UNIT_METER, ALT_UNIT_FT, ALT_UNIT_FL } e_alt_unit_t;
 typedef enum e_speed_unit { SPEED_UNIT_KMH, SPEED_UNIT_MPH, SPEED_UNIT_KNOTS } e_speed_unit_t;
 typedef enum e_vario_unit { VARIO_UNIT_MS, VARIO_UNIT_FPM, VARIO_UNIT_KNOTS } e_vario_unit_t;
 typedef enum e_qnh_unit { QNH_HPA, QNH_INHG } e_qnh_unit_t;
-typedef enum e_compasss_sensor_type { CS_DISABLE, CS_I2C, CS_I2C_NO_TILT, CS_CAN } e_compasss_sensor_type_t;
+typedef enum e_compasss_sensor_type { CS_DISABLE=0, CS_I2C=1, CS_CAN=3 } e_compasss_sensor_type_t;
+typedef enum e_alt_quantisation { ALT_QUANT_DISABLE, ALT_QUANT_1, ALT_QUANT_5, ALT_QUANT_10, ALT_QUANT_20 } e_alt_quantisation_t;
 
 typedef enum e_sync { SYNC_NONE, SYNC_FROM_MASTER, SYNC_FROM_CLIENT, SYNC_BIDIR } e_sync_t;       // determines if data is synched from/to client. BIDIR means sync at commit from both sides
 typedef enum e_reset { RESET_NO, RESET_YES } e_reset_t;   // determines if data is reset to defaults on factory reset
@@ -81,66 +84,26 @@ typedef enum e_volatility { VOLATILE, PERSISTENT, SEMI_VOLATILE } e_volatility_t
 typedef enum e_can_speed { CAN_SPEED_OFF, CAN_SPEED_250KBIT, CAN_SPEED_500KBIT, CAN_SPEED_1MBIT } e_can_speed_t;  // stored in RAM, FLASH, or into FLASH after a while
 typedef enum e_can_mode { CAN_MODE_MASTER, CAN_MODE_CLIENT, CAN_MODE_STANDALONE } e_can_mode_t;
 typedef enum e_altimeter_select { AS_TE_SENSOR, AS_BARO_SENSOR, AS_EXTERNAL } e_altimeter_select_t;
-typedef enum e_menu_screens { SCREEN_VARIO, SCREEN_GMETER, SCREEN_FLARM, SCREEN_THERMAL_ASSISTANT } e_menu_screens_t;
+typedef enum e_menu_screens { SCREEN_GMETER, SCREEN_FLARM, SCREEN_THERMAL_ASSISTANT } e_menu_screens_t; // addittional screens
+typedef enum e_s2f_arrow_color { AC_WHITE_WHITE, AC_BLUE_BLUE, AC_GREEN_RED } e_s2f_arrow_color_t;
+typedef enum e_vario_needle_color { VN_COLOR_WHITE, VN_COLOR_ORANGE, VN_COLOR_RED }  e_vario_needle_color_t;
+typedef enum e_data_monitor { MON_OFF, MON_BLUETOOTH, MON_WIFI_8880, MON_WIFI_8881, MON_WIFI_8882, MON_S1, MON_S2, MON_CAN  }  e_data_monitor_t;
+typedef enum e_display_orientation { DISPLAY_NORMAL, DISPLAY_TOPDOWN } e_display_orientation_t;
+typedef enum e_gear_warning_io { GW_OFF, GW_FLAP_SENSOR, GW_S2_RS232_RX, GW_FLAP_SENSOR_INV, GW_S2_RS232_RX_INV }  e_gear_warning_io_t;
 
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
+void change_bal();
 
-
-class SetupCommon {
-public:
-	SetupCommon() { memset( _ID, 0, sizeof( _ID )); }
-	virtual ~SetupCommon() {};
-	virtual bool init() = 0;
-	virtual bool erase() = 0;
-	virtual bool mustReset() = 0;
-	virtual const char* key() = 0;
-	virtual char typeName() = 0;
-	virtual bool sync() = 0;
-	virtual uint8_t getSync() = 0;
-	static std::vector<SetupCommon *> entries;
-	static bool initSetup( bool &present );  // returns false if FLASH was completely blank
-	static char *getID();
-	static void sendSetup( uint8_t sync, const char * key, char type, void *value, int len, bool ack=false );
-	static SetupCommon * getMember( const char * key );
-	static bool syncEntry( int entry );
-	static int numEntries() { return entries.size(); };
-	static bool factoryReset();
-	static bool isMaster();
-	static bool isClient();
-    static bool isWired();
-	static bool haveWLAN();
-    static bool lazyCommit;
-    static bool commitNow();
-    static QueueHandle_t commitSema;
-
-protected:
-    static bool open(nvs_handle_t &h) {
-        esp_err_t err = nvs_open("SetupNG", NVS_READWRITE, &h);
-        if(err != ESP_OK){
-            ESP_LOGE(FNAME,"ESP32NVS open storage error %d", err );
-            h = 0;
-            return( false );
-        }
-        else {
-            // ESP_LOGI(FNAME,"ESP32NVS handle: %04X  OK", _nvs_handle );
-            return( true );
-        }
-	};
-	static void close(nvs_handle_t &h) {
-		if( h != 0) {
-			nvs_close(h);
-			h = 0;
-		}
-	};
-private:
-    static esp_timer_handle_t _timer;
-    static bool _dirty;
-	static char _ID[14];
-};
+typedef struct setup_flags{
+	bool _reset    :1;
+	bool _wait_ack :1;
+	bool _volatile :1;
+	uint8_t _sync  :2;
+	uint8_t _unit  :3;
+} t_setup_flags;
 
 
 template<typename T>
-
 class SetupNG: public SetupCommon
 {
 public:
@@ -156,20 +119,22 @@ public:
 			bool reset=true,               // reset data on factory reset
 			e_sync_t sync=SYNC_NONE,
 			e_volatility vol=PERSISTENT, // sync with client device is applicable
-			void (* action)()=0
+			void (* action)()=0,
+			e_unit_type_t unit = UNIT_NONE
 	)
 	{
 		// ESP_LOGI(FNAME,"SetupNG(%s)", akey );
 		if( strlen( akey ) > 15 )
 			ESP_LOGE(FNAME,"SetupNG(%s) key > 15 char !", akey );
-		entries.push_back( this );  // add into vector
+		instances->push_back( this );  // add into vector
 		_key = akey;
 		_default = adefault;
-		_reset = reset;
-		_sync = sync;
-		_volatile = vol;
+		flags._reset = reset;
+		flags._sync = sync;
+		flags._volatile = vol;
+		flags._wait_ack = false;
+		flags._unit = unit;
 		_action = action;
-		_wait_ack = false;
 	}
 
 	inline T* getPtr() {
@@ -187,11 +152,7 @@ public:
 	virtual T getGui() const { return get(); } // tb. overloaded for blackboard
 	virtual const char* unit() const { return ""; } // tb. overloaded for blackboard
 
-	bool mustSync(){
-		return( ( (isClient() && _sync == SYNC_FROM_CLIENT) || (isMaster() && _sync == SYNC_FROM_MASTER) || _sync == SYNC_BIDIR ) );
-	}
-
-	bool set( T aval, bool dosync=true ) {
+	bool set( T aval, bool dosync=true, bool doAct=true ) {
 		if( _value == aval ){
 			// ESP_LOGI(FNAME,"Value already in config: %s", _key );
 			return( true );
@@ -201,38 +162,42 @@ public:
 		if ( dosync ) {
 			sync();
 		}
-		else if( (_sync == SYNC_BIDIR) && isClient() ){
+		else if( (flags._sync == SYNC_BIDIR) && isClient() ){
 			sendAck();
 		}
-
-		if( _action != 0 ) {
-			(*_action)();
+		if( doAct ){
+			if( _action != 0 ) {
+				(*_action)();
+			}
 		}
-
-		if( _volatile == VOLATILE ){
+		if( flags._volatile == VOLATILE ){
 			return true;
 		}
 		return commit( false );
+	}
+
+	e_unit_type_t unitType() {
+		return (e_unit_type_t)flags._unit;
 	}
 
 	void ack( T aval ){
 		if( aval != _value ){
 			ESP_LOGI(FNAME,"sync to value client has acked");
 			_value = aval;
-			_wait_ack = false;
+			flags._wait_ack = false;
 		}
 	}
 
 	void sendAck(){
-		sendSetup( _sync, _key, typeName(), (void *)(&_value), sizeof( _value ), true );
+		sendSetup( flags._sync, _key, typeName(), (void *)(&_value), sizeof( _value ), true );
 	}
 
 	bool sync(){
-		if( mustSync() ){
+		if( SetupCommon::mustSync( flags._sync ) ){
 			// ESP_LOGI( FNAME,"Now sync %s", _key );
-			sendSetup( _sync, _key, typeName(), (void *)(&_value), sizeof( _value ) );
-			if( isMaster() && _sync == SYNC_BIDIR )
-				_wait_ack = true;
+			sendSetup( flags._sync, _key, typeName(), (void *)(&_value), sizeof( _value ) );
+			if( isMaster() && flags._sync == SYNC_BIDIR )
+				flags._wait_ack = true;
 			return true;
 		}
 		return false;
@@ -243,7 +208,7 @@ public:
 		if( dosync )
 			sync();
 
-		if( _volatile != PERSISTENT ){
+		if( flags._volatile != PERSISTENT ){
 			return true;
 		}
         nvs_handle_t h = 0;
@@ -272,7 +237,7 @@ public:
 	}
 
 	bool exists() {
-		if( _volatile != PERSISTENT ) {
+		if( flags._volatile != PERSISTENT ) {
             return true;
         }
         nvs_handle_t h = 0;
@@ -290,7 +255,7 @@ public:
 
 
 	virtual bool init() {
-		if( _volatile != PERSISTENT ){
+		if( flags._volatile != PERSISTENT ){
 			ESP_LOGI(FNAME,"NVS volatile set default");
 			set( _default );
 			return true;
@@ -334,7 +299,7 @@ public:
 
 
 	virtual bool erase() {
-		if( _volatile != PERSISTENT ){
+		if( flags._volatile != PERSISTENT ){
 			return true;
 		}
         nvs_handle_t h = 0;
@@ -352,20 +317,17 @@ public:
 	}
 
 	virtual bool mustReset() {
-		return _reset;
+		return flags._reset;
 	}
 
     inline T getDefault() const { return _default; }
-	inline uint8_t getSync() { return _sync; }
+	inline uint8_t getSync() { return flags._sync; }
 
 private:
 	T _value;
 	T _default;
 	const char * _key;
-	uint8_t _reset;
-	uint8_t _wait_ack;
-	uint8_t _sync;
-	uint8_t _volatile;
+	t_setup_flags flags;
 	void (* _action)();
 };
 
@@ -392,10 +354,15 @@ extern SetupNG<float>  		deadband_neg;
 extern SetupNG<float>  		range;
 extern SetupNG<int>			log_scale;
 extern SetupNG<float>  		ballast;
+extern SetupNG<float>  		ballast_kg;
+extern SetupNG<float>		empty_weight;
+extern SetupNG<float>		crew_weight;
+extern SetupNG<float>		gross_weight;
+
 extern SetupNG<float>  		s2f_speed;
 
 extern SetupNG<int>  		audio_variable_frequency;
-extern SetupNG<int>  		audio_mode;
+extern SetupNG<int>  		s2f_switch_mode;
 extern SetupNG<int>  		chopping_mode;
 extern SetupNG<int>  		chopping_style;
 extern SetupNG<int>  		amplifier_shutdown;
@@ -455,22 +422,28 @@ extern SetupNG<float>  		flap_0;
 extern SetupNG<float>  		flap_plus_1;
 extern SetupNG<float>  		flap_plus_2;
 extern SetupNG<int>  		alt_unit;
-extern SetupNG<int>  		alt_quant;
+extern SetupNG<int>  		alt_quantization;
 extern SetupNG<int>  		ias_unit;
 extern SetupNG<int>  		vario_unit;
 extern SetupNG<int>  		temperature_unit;
 extern SetupNG<int>  		qnh_unit;
 extern SetupNG<int>  		rot_default;
-
 extern SetupNG<int>  		serial1_speed;
 extern SetupNG<int>  		serial1_rxloop;
 extern SetupNG<int>  		serial1_tx;
+extern SetupNG<int>  		rt_s1_xcv;
+extern SetupNG<int>  		rt_s1_wl;
+extern SetupNG<int>  		rt_s1_s2;
+extern SetupNG<int>  		rt_s1_can;
 extern SetupNG<int>			serial1_pins_twisted;
 extern SetupNG<int>  		serial1_tx_inverted;
 extern SetupNG<int>  		serial1_rx_inverted;
 extern SetupNG<int>  		serial1_tx_enable;
 extern SetupNG<int>  		serial2_speed;
 extern SetupNG<int>  		serial2_tx;
+extern SetupNG<int>  		rt_s2_xcv;
+extern SetupNG<int>  		rt_s2_wl;
+extern SetupNG<int>  		rt_s2_can;
 extern SetupNG<int>			serial2_pins_twisted;
 extern SetupNG<int>  		serial2_tx_inverted;
 extern SetupNG<int>  		serial2_rx_inverted;
@@ -490,6 +463,7 @@ extern SetupNG<int>		    student_mode;
 extern SetupNG<float>		password;
 extern SetupNG<int>		    autozero;
 extern SetupNG<int>		    attitude_indicator;
+extern SetupNG<int>		    ahrs_rpyl_dataset;
 extern SetupNG<int>		    ahrs_autozero;
 extern SetupNG<float>		ahrs_gyro_factor;
 extern SetupNG<int>		    display_style;
@@ -543,7 +517,10 @@ extern SetupNG<int>         compass_nmea_hdt;
 extern SetupNG<float>		compass_i2c_cl;
 extern SetupNG<int> 		s2f_blockspeed;
 extern SetupNG<int>			needle_color;
+extern SetupNG<int>			s2f_arrow_color;
 extern SetupNG<float>  		s2f_hysteresis;
+extern SetupNG<float>  		s2f_flap_pos;
+extern SetupNG<float>  		s2f_gyro_deg;
 extern SetupNG<int> 		wk_label_plus_3;
 extern SetupNG<int> 		wk_label_plus_2;
 extern SetupNG<int> 		wk_label_plus_1;
@@ -561,6 +538,8 @@ extern SetupNG<float>		v_max;
 extern SetupNG<int>			gload_mode;
 extern SetupNG<float>		gload_pos_thresh;
 extern SetupNG<float>		gload_neg_thresh;
+extern SetupNG<float>		gload_pos_limit_low;
+extern SetupNG<float>		gload_neg_limit_low;
 extern SetupNG<float>		gload_pos_limit;
 extern SetupNG<float>		gload_neg_limit;
 extern SetupNG<float>		gload_pos_max;
@@ -579,16 +558,25 @@ extern SetupNG<float> 		wind_max_deviation;
 extern SetupNG<float>       max_circle_wind_diff;
 extern SetupNG<float>       circle_wind_lowpass;
 extern SetupNG<int> 		can_speed;
-extern SetupNG<int> 		can_tx;
+extern SetupNG<int> 		rt_can_xcv;
+extern SetupNG<int> 		rt_xcv_wl;
+extern SetupNG<int> 		rt_wl_can;
 extern SetupNG<int> 		can_mode;
 extern SetupNG<float> 		master_xcvario;
 extern SetupNG<int> 		master_xcvario_lock;
 extern SetupNG<int> 		menu_long_press;
 extern SetupNG<int> 		menu_screens;
-
-
+extern SetupNG<int> 		screen_gmeter;
+extern SetupNG<int> 		screen_flarm;
+extern SetupNG<int> 		screen_centeraid;
+extern SetupNG<int> 		data_monitor;
+extern SetupNG<t_bitfield_compass> 	calibration_bits;
+extern SetupNG<int> 		gear_warning;
 
 extern uint8_t g_col_background;
 extern uint8_t g_col_highlight;
 
-extern void change_mc_bal();
+extern int last_volume;
+
+void change_ballast();
+void change_mc();

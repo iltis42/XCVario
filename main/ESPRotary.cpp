@@ -13,6 +13,7 @@
 #include <logdef.h>
 #include <list>
 #include <algorithm>
+#include "Flarm.h"
 
 gpio_num_t ESPRotary::clk, ESPRotary::dt;
 gpio_num_t ESPRotary::sw = GPIO_NUM_0;
@@ -29,7 +30,7 @@ bool ESPRotary::longPressed = false;
 
 #define ROTARY_SINGLE_INC 0
 #define ROTARY_DOUBLE_INC 1
-static TaskHandle_t *pid;
+static TaskHandle_t pid = NULL;
 
 void ESPRotary::attach(RotaryObserver *obs) {
 	observers.push_back(obs);
@@ -42,6 +43,8 @@ void ESPRotary::detach(RotaryObserver *obs) {
 }
 
 bool ESPRotary::readSwitch() {
+  if( Flarm::bincom )
+    return false;
 	gpio_set_direction(sw,GPIO_MODE_INPUT);
 	gpio_pullup_en(sw);
 	if( gpio_get_level((gpio_num_t)sw) )
@@ -105,39 +108,74 @@ void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
 	pcnt_counter_clear(PCNT_UNIT_1);
 	pcnt_counter_resume(PCNT_UNIT_1);
 
-	xTaskCreatePinnedToCore(&ESPRotary::informObservers, "informObservers", 4096, NULL, 18, pid, 0);
+	xTaskCreatePinnedToCore(&ESPRotary::informObservers, "informObservers", 4096, NULL, 18, &pid, 0);
 }
 
 int16_t old_cnt = 0;
 int old_button = RELEASE;
 
 void ESPRotary::sendRelease(){
-	ESP_LOGI(FNAME,"Release action");
+	// ESP_LOGI(FNAME,"Release action");
+	if( Flarm::bincom )
+	  return;
 	for (auto &observer : observers)
 		observer->release();
-	ESP_LOGI(FNAME,"End switch release action");
+	// ESP_LOGI(FNAME,"End switch release action");
 }
 
 void ESPRotary::sendPress(){
-	ESP_LOGI(FNAME,"Pressed action");
+	// ESP_LOGI(FNAME,"Pressed action");
+	pressed = true;
+	if( Flarm::bincom )
+		return;
 	for (auto &observer : observers)
 		observer->press();
-	ESP_LOGI(FNAME,"End pressed action");
+	// ESP_LOGI(FNAME,"End pressed action");
 
 }
 
 void ESPRotary::sendLongPress(){
-	ESP_LOGI(FNAME,"Long pressed action");
+	// ESP_LOGI(FNAME,"Long pressed action");
+	longPressed = true;
+	if( Flarm::bincom )
+		return;
 	for (auto &observer : observers)
 		observer->longPress();
-	ESP_LOGI(FNAME,"End long pressed action");
+	// ESP_LOGI(FNAME,"End long pressed action");
+}
+
+void ESPRotary::sendDown( int diff ){
+	// ESP_LOGI(FNAME,"Rotary up action");
+	if( Flarm::bincom )
+		return;
+	for (auto &observer : observers)
+		observer->up( diff );   // tbd, clean up, this is named wrong in observers, shoud be down()
+}
+
+void ESPRotary::sendEsc(){
+	// ESP_LOGI(FNAME,"Rotary up action");
+	if( Flarm::bincom )
+		return;
+	for (auto &observer : observers)
+		observer->escape();
+}
+
+void ESPRotary::sendUp( int diff ){
+	// ESP_LOGI(FNAME,"Rotary down action");
+	if( Flarm::bincom )
+		return;
+	for (auto &observer : observers)
+		observer->down( diff );   // tbd, dito
 }
 
 void ESPRotary::informObservers( void * args )
 {
 	while( 1 ) {
+	  if( Flarm::bincom ) {
+	    vTaskDelay(20 / portTICK_PERIOD_MS);
+	    continue;
+	  }
 		int button = gpio_get_level((gpio_num_t)sw);
-		int event = NONE;
 		if( button == 0 ){  // Push button is being pressed
 			timer++;
 			released = false;
@@ -146,19 +184,18 @@ void ESPRotary::informObservers( void * args )
 				if( !longPressed ){
 					sendLongPress();
 					sendRelease();
-					longPressed = true;
+
 				}
 			}
 		}
 		else{   // Push button is being released
 			if( !released ){
-				ESP_LOGI(FNAME,"timer=%d", timer );
+				// ESP_LOGI(FNAME,"timer=%d", timer );
 				longPressed = false;
 				if( timer < 20 ){  // > 400 mS
 					if( !pressed ){
 						sendPress();
 						sendRelease();
-						pressed = true;
 					}
 				}
 				timer = 0;
@@ -190,14 +227,12 @@ void ESPRotary::informObservers( void * args )
 			}
 			old_cnt = r_enc_count+r_enc2_count;
 			if( diff < 0 ) {
-				// ESP_LOGI(FNAME,"Rotary up %d times",abs(diff) );
-				for (auto &observer : observers)
-					observer->up( abs(diff) );
+				// ESP_LOGI(FNAME,"Rotary down %d times",abs(diff) );
+				sendDown( abs(diff) );
 			}
 			else{
-				// ESP_LOGI(FNAME,"Rotary down %d times", abs(diff) );
-				for (auto &observer : observers)
-					observer->down( abs(diff) );
+				// ESP_LOGI(FNAME,"Rotary up %d times", abs(diff) );
+				sendUp( abs(diff) );
 			}
 		}
 		if( uxTaskGetStackHighWaterMark( pid ) < 256 )

@@ -1945,23 +1945,25 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 	ucg_color_t needlecolor[3] = { {COLOR_WHITE}, {COLOR_ORANGE}, {COLOR_RED} };
-	if( drawPolarIndicator(needle_pos, 80, 132, 9, needlecolor[needle_color.get()], needle_dirty) ) {
-		alt_dirty = alt_overlap_old;
-		alt_overlap_old = alt_overlap;
+	if( !(tick%8) ){
+		if( drawPolarIndicator(needle_pos, 80, 132, 9, needlecolor[needle_color.get()], needle_dirty) ) {
+			alt_dirty = alt_overlap_old;
+			alt_overlap_old = alt_overlap;
 
-		speed_dirty = speed_overlap_old;
-		speed_overlap_old = speed_overlap;
+			speed_dirty = speed_overlap_old;
+			speed_overlap_old = speed_overlap;
 
-		wind_dirty = wind_overlap_old;
-		wind_overlap_old = wind_overlap;
+			wind_dirty = wind_overlap_old;
+			wind_overlap_old = wind_overlap;
 
-		compass_dirty = compass_overlap_old;
-		compass_overlap_old = compass_overlap;
+			compass_dirty = compass_overlap_old;
+			compass_overlap_old = compass_overlap;
 
-		// Draw colored bow
-		float bar_val = (needle_pos>0.) ? needle_pos : 0.;
-		// draw green/red vario bar
-		drawBow(bar_val, old_vario_bar_val, 134, bowcolor[BC_GREEN] );
+			// Draw colored bow
+			float bar_val = (needle_pos>0.) ? needle_pos : 0.;
+			// draw green/red vario bar
+			drawBow(bar_val, old_vario_bar_val, 134, bowcolor[BC_GREEN] );
+		}
 	}
 
 	xSemaphoreGive(spiMutex);

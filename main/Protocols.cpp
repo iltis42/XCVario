@@ -438,24 +438,24 @@ void Protocols::parseNMEA( const char *str ){
 	}
 	else if( !strncmp( str, "$FT", 3 ) ) {
 		if (str[3] == '0') {
-			IMUrate = 0; // FT stream
-			SENrate = 0;
-			GyroBias = false;
+			IMUstream = false; // no FT stream
+			SENstream = false;
+			GBIASstream = false;
 		}
 		else if (str[3] == '1') {
-			IMUrate = 1; // FT IMU stream at 40 Hz
-			SENrate = 0;
+			IMUstream = true; // IMU stream
+			SENstream = false;
 		}
 		else if (str[3] == '2') {
-			IMUrate = 0; // FT sensor stream at 10 Hz
-			SENrate = 4;
+			IMUstream = false; // SEN stream
+			SENstream = true;
 		}
 		else if (str[3] == '3') {
-			IMUrate = 1; // FT IMU at 40 Hz and sensor at 10 Hz
-			SENrate = 4;
+			IMUstream = true; // IMU and SEN stream
+			SENstream = true;
 		}
 		else if (str[3] == '4') {
-			GyroBias = true; // FT sends gyros bias
+			GBIASstream = true; // gyros bias stream
 		}		
 	}
 }

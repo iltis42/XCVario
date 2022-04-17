@@ -80,9 +80,9 @@ extern Compass *compass;
 class AdaptUGC;
 extern AdaptUGC *MYUCG;
 
-extern int IMUrate;
-extern int SENrate;
-extern bool GyroBias;
+extern bool IMUstream;
+extern bool SENstream;
+extern bool GBIASstream;
 
 
 #endif

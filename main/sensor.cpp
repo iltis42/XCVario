@@ -147,9 +147,13 @@ mpud::float_axes_t gyroDPS_Prev;
 Compass *compass;
 BTSender btsender;
 
-int IMUrate = 0;// IMU data stream rate x 25ms. 0= no stream
-int SENrate = 0;// Sensor data stream rate x 25ms. 0= no stream
-bool GyroBias = false;// Gyro Bias data
+#define IMUrate 1 // IMU data stream rate x 25ms. 0 not allowed
+#define SENrate 4 // Sensor data stream rate x 25ms. 0 not allowed
+#define GBIASrate 100 // Gyro bias stream rate x 100ms. 100 = 10 seconds
+#define GBIASupdt 6000 // Gyro bias update in XCVario x 100ms. 6000 = 600 seconds = 10 minutes
+bool IMUstream = true; // IMU FT stream
+bool SENstream = true; // Sensors FT stream
+bool GBIASstream = false;// Gyro Bias FT stream
 
 static mpud::raw_axes_t accelRaw;     // holds accel x, y, z axes as int16
 static mpud::raw_axes_t gyroRaw;      // holds gyro x, y, z axes as int16
@@ -485,8 +489,8 @@ void grabMPU(void *pvParameters){
 			IMU::read();
 		}
 		
-		// get sensors data every 4 cycles
-		if ( (mtick % 4) == 0 ) {
+		// get sensors data every SENrate * 25ms
+		if ( (mtick % SENrate) == 0 ) {
 			bool ok=false;
 			float p = 0;
 			// get raw static pressure
@@ -535,7 +539,7 @@ void grabMPU(void *pvParameters){
 					processbias = true;
 					nbsamples = 0;
 				} else {					
-					if ( (abs(gyrosum-oldgyrosum) < 0.5 ) && (abs(accelG[0]-oldaccelz) < .01 ) ) { // If variation of sum of gyros < 1°/s and variation of accel z component < .1 MPU is considered static
+					if ( (abs(gyrosum-oldgyrosum) < 0.5 ) && (abs(accelG[0]-oldaccelz) < .01 ) ) { // If variation of sum of gyros < .5°/s and variation of accel z component < .01 MPU is considered static
 						if ( nbsamples == 0 ) { // if first time in bias low pass, initialize bias.
 							newGyroBias.x = gyroRaw.x;
 							newGyroBias.y = gyroRaw.y;
@@ -552,13 +556,13 @@ void grabMPU(void *pvParameters){
 					}
 				}
 			}
-			if ( biassolution && ( needfirstbias || ( GyroBias && (nbsamples > 100)) || (nbsamples > 6000) )) { // if a bias solution exists and need a first bias or lowpass has accumulated > 6000 samples ~10 minutes
+			if ( biassolution && ( needfirstbias || ( GBIASstream && (nbsamples > GBIASrate)) || (nbsamples > GBIASupdt) )) { // if a bias solution exists and need a first bias or lowpass has accumulated > 6000 samples ~10 minutes
 				currentGyroBias = newGyroBias;
-				if ( needfirstbias || (nbsamples > 6000) )
+				if ( needfirstbias || (nbsamples > GBIASupdt) )
 					gyro_bias.set( currentGyroBias );
 				processbias = false;
 				needfirstbias = false;
-				if (GyroBias) {
+				if (GBIASstream) {
 					currentGyroBiasDPS = mpud::gyroDegPerSec(currentGyroBias, GYRO_FS);
 					sprintf(str,"$GBIAS,%2.1f,%3.2f,%3.2f,%3.2f\r\n", MPUtempcel, currentGyroBiasDPS.x, currentGyroBiasDPS.y, currentGyroBiasDPS.z);
 					Router::sendXCV(str);
@@ -600,38 +604,32 @@ void grabMPU(void *pvParameters){
 				*hh<CR><LF>		checksum
 		 */
 
-		if( SENrate != 0 ) {
-			if ( (mtick % SENrate) == 0 ) {
-				// GNSS data from S1 interface
-				const gnss_data_t *gnss1 = s1UbloxGnssDecoder.getGNSSData(1);
-				// GNSS data from S2 interface
-				const gnss_data_t *gnss2 = s2UbloxGnssDecoder.getGNSSData(2);
-				// select gnss with better fix
-				const gnss_data_t *chosenGnss = (gnss2->fix >= gnss1->fix) ? gnss2 : gnss1;
-				if ( IMUrate != 0 ) {
-					if ( (mtick % IMUrate) == 0 ) { //sending both IMU and SEN messages
-						sprintf(str,"$IMU,%.6f,%1.4f,%1.4f,%1.4f,%.6f,%3.2f,%3.2f,%3.2f\r\n$SEN,%.6f,%4.3f,%.6f,%4.3f,%.6f,%4.3f,%2.1f,%2.1f,%1d,%2d,%.3f,%4.1f,%2.2f,%2.2f,%2.2f,%2.2f\r\n",
-									accelTime, -accelG[2], accelG[1], accelG[0] , gyroTime, -gyroDPS.z, -gyroDPS.y, -gyroDPS.x,
-									statTime, statP, teTime, teP, dynTime, dynP,  OATemp, MPUtempcel, chosenGnss->fix, chosenGnss->numSV, chosenGnss->time,
-									chosenGnss->coordinates.altitude, chosenGnss->speed.ground, chosenGnss->speed.x, chosenGnss->speed.y, chosenGnss->speed.z);
-						Router::sendXCV(str);					
-					} 
-				} else { // sending only SEN message
-					sprintf(str,"$SEN,%.6f,%4.3f,%.6f,%4.3f,%.6f,%4.3f,%2.1f,%2.1f,%1d,%2d,%.3f,%4.1f,%2.2f,%2.2f,%2.2f,%2.2f\r\n",
-								statTime, statP, teTime, teP, dynTime, dynP,  OATemp, MPUtempcel, chosenGnss->fix, chosenGnss->numSV, chosenGnss->time,
-								chosenGnss->coordinates.altitude, chosenGnss->speed.ground, chosenGnss->speed.x, chosenGnss->speed.y, chosenGnss->speed.z);
-					Router::sendXCV(str);
-				}
-			} 
+		// GNSS data from S1 interface
+		const gnss_data_t *gnss1 = s1UbloxGnssDecoder.getGNSSData(1);
+		// GNSS data from S2 interface
+		const gnss_data_t *gnss2 = s2UbloxGnssDecoder.getGNSSData(2);
+		// select gnss with better fix
+		const gnss_data_t *chosenGnss = (gnss2->fix >= gnss1->fix) ? gnss2 : gnss1;
+
+		if ( IMUstream && !(mtick % IMUrate) && SENstream && !(mtick % SENrate) ) {
+			sprintf(str,"$IMU,%.6f,%1.4f,%1.4f,%1.4f,%.6f,%3.2f,%3.2f,%3.2f\r\n$SEN,%.6f,%4.3f,%.6f,%4.3f,%.6f,%4.3f,%2.1f,%2.1f,%1d,%2d,%.3f,%4.1f,%2.2f,%2.2f,%2.2f,%2.2f\r\n",
+						accelTime, -accelG[2], accelG[1], accelG[0] , gyroTime, -gyroDPS.z, -gyroDPS.y, -gyroDPS.x,
+						statTime, statP, teTime, teP, dynTime, dynP,  OATemp, MPUtempcel, chosenGnss->fix, chosenGnss->numSV, chosenGnss->time,
+						chosenGnss->coordinates.altitude, chosenGnss->speed.ground, chosenGnss->speed.x, chosenGnss->speed.y, chosenGnss->speed.z);
+			Router::sendXCV(str);
 		} else {
-			if ( IMUrate != 0 ) { 
-				if ( (mtick % IMUrate) == 0 ) {  // sending only IMU message			
-					sprintf(str,"$IMU,%.6f,%1.4f,%1.4f,%1.4f,%.6f,%3.2f,%3.2f,%3.2f\r\n",accelTime, -accelG[2], accelG[1], accelG[0] , gyroTime, -gyroDPS.z, -gyroDPS.y, -gyroDPS.x);
-					Router::sendXCV(str);
-				}
+			if ( SENstream && !(mtick % SENrate) ) {
+				sprintf(str,"$SEN,%.6f,%4.3f,%.6f,%4.3f,%.6f,%4.3f,%2.1f,%2.1f,%1d,%2d,%.3f,%4.1f,%2.2f,%2.2f,%2.2f,%2.2f\r\n",
+							statTime, statP, teTime, teP, dynTime, dynP,  OATemp, MPUtempcel, chosenGnss->fix, chosenGnss->numSV, chosenGnss->time,
+							chosenGnss->coordinates.altitude, chosenGnss->speed.ground, chosenGnss->speed.x, chosenGnss->speed.y, chosenGnss->speed.z);
+				Router::sendXCV(str);
+			}
+			if ( IMUstream && !(mtick % IMUrate) ) {
+				sprintf(str,"$IMU,%.6f,%1.4f,%1.4f,%1.4f,%.6f,%3.2f,%3.2f,%3.2f\r\n",accelTime, -accelG[2], accelG[1], accelG[0] , gyroTime, -gyroDPS.z, -gyroDPS.y, -gyroDPS.x);
+				Router::sendXCV(str);
 			}
 		}
-
+					
 		esp_task_wdt_reset();
 		vTaskDelayUntil(&xLastWakeTime_mpu, 25/portTICK_PERIOD_MS);  // 25 ms = 40 Hz loop
 		if( (mtick % 20) == 0) {  // test stack every second

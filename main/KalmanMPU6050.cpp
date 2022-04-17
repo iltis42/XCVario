@@ -220,7 +220,9 @@ void IMU::read()
 		kalYAngle = Kalman_GetAngle(&kalmanY, pitch, 0, dt);
 		filterPitch += (kalYAngle - filterPitch) * 0.2;   // addittional low pass filter
 	}
+
 	// ESP_LOGI( FNAME,"GV-Pitch=%.1f  GV-Roll=%.1f filterYaw: %.2f curh: %.2f GX:%.3f GY:%.3f GZ:%.3f AX:%.3f AY:%.3f AZ:%.3f  FP:%.1f FR:%.1f", euler.pitch, euler.roll, filterYaw, curh, gyroX,gyroY,gyroZ, accelX, accelY, accelZ, filterPitch, filterRoll  );
+
 }
 
 float IMU::fallbackToGyro(){

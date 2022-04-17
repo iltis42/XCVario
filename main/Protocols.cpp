@@ -148,7 +148,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		int append_idx = strlen(str);
 		if( haveMPU && attitude_indicator.get() ){
 			float roll = IMU::getRoll();
-			float pitch = IMU::getPitch();
+			float pitch = IMU::getXCSPitch();
 			sprintf(str+append_idx,",%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", roll, pitch, acc_x, acc_y, acc_z );
 		}else{
 			sprintf(str+append_idx,",,,,,");

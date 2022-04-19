@@ -98,7 +98,7 @@ void BTSender::begin(){
 		dlb = new DataLink();
 		SerialBT = new BluetoothSerial();
 		SerialBT->begin( SetupCommon::getID() );
-		xTaskCreatePinnedToCore(&btTask, "btTask", 4096, NULL, 23, &pid, 0);  // stay below compass task
+		xTaskCreatePinnedToCore(&btTask, "btTask", 4096, NULL, 15, &pid, 0);  // stay below compass task
 	}
 }
 

@@ -152,8 +152,8 @@ BTSender btsender;
 #define SENrate 4 // Sensor data stream rate x 25ms. 0 not allowed
 #define GBIASrate 400 // Gyro bias stream rate x 25ms. 400 = 10 seconds
 #define GBIASupdt 24000 // Gyro bias update in XCVario x 25ms. 24000 = 600 seconds = 10 minutes
-bool IMUstream = true; // IMU FT stream
-bool SENstream = true; // Sensors FT stream
+bool IMUstream = false; // IMU FT stream
+bool SENstream = false; // Sensors FT stream
 bool GBIASstream = false;// Gyro Bias FT stream
 
 static mpud::raw_axes_t accelRaw;     // holds accel x, y, z axes as int16

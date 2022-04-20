@@ -31,6 +31,8 @@
 #include <cstring>
 #include "CenterAid.h"
 
+
+// local variables
 int screens_init = INIT_DISPLAY_NULL;
 
 int   IpsDisplay::tick = 0;
@@ -151,11 +153,13 @@ int   IpsDisplay::prev_heading = 0;
 int   IpsDisplay::prev_windspeed = 0;
 float IpsDisplay::pref_qnh = 0;
 float IpsDisplay::old_polar_sink = 0;
+PolarIndicator IpsDisplay::vario_indicator = PolarIndicator(80, 132, 9);
+PolarIndicator IpsDisplay::load_indicator = PolarIndicator(70, 129, 7);
 
-const int16_t SINCOS_OVER_110 = 256; // need to be a power of 2
-const float sincosScale = SINCOS_OVER_110/M_PI_2*90./110.;
-static float precalc_sin[SINCOS_OVER_110];
-static float precalc_cos[SINCOS_OVER_110];
+const int16_t SINCOS_OVER_130 = 256; // need to be a power of 2
+const float sincosScale = SINCOS_OVER_130/M_PI_2*90./130.;
+static float precalc_sin[SINCOS_OVER_130];
+static float precalc_cos[SINCOS_OVER_130];
 static int16_t old_vario_bar_val = 0;
 static int16_t old_sink_bar_val = 0;
 static int16_t alt_quant = 1;
@@ -170,6 +174,8 @@ bool blank = false;
 bool flarm_connected=false;
 typedef enum e_bow_color { BC_GREEN, BC_RED, BC_BLUE } t_bow_color;
 const static ucg_color_t bowcolor[3] = { {COLOR_GREEN}, {COLOR_RED}, {COLOR_BLUE} };
+const static ucg_color_t needlecolor[3] = { {COLOR_WHITE}, {COLOR_ORANGE}, {COLOR_RED} };
+
 
 ////////////////////////////
 // trigenometric helpers for gauge painters
@@ -185,11 +191,10 @@ static float linGaugeIdx(const float val)
 	return val * _scale_k;
 }
 static float (*_gauge)(float) = &linGaugeIdx;
-static int   needle_pos_old = 0; // -pi/2 .. pi/2 * sincosScale
 
 // get sin/cos position from gauge index in rad
-static inline int precal_scaled_idx(const float val) { return (int)(abs(val)*sincosScale)&(SINCOS_OVER_110-1); }
-static inline int precal_idx(const int ival) { return abs(ival)&(SINCOS_OVER_110-1); }
+static inline int precal_scaled_idx(const float val) { return (int)(abs(val)*sincosScale)&(SINCOS_OVER_130-1); }
+static inline int precal_idx(const int ival) { return abs(ival)&(SINCOS_OVER_130-1); }
 
 static inline int gaugeSin(const float val, const int len)
 {
@@ -244,7 +249,7 @@ static void initGauge(const float max, const bool log)
 	static bool initialized = false;
 	if ( initialized ) return;
 
-	for ( int i=0; i<SINCOS_OVER_110; i++ ) {
+	for ( int i=0; i<SINCOS_OVER_130; i++ ) {
 		precalc_sin[i] = sin(i/sincosScale);
 		precalc_cos[i] = cos(i/sincosScale);
 	}
@@ -259,6 +264,17 @@ static float gaugeValueFromIdx(const float rad)
 		return rad / _scale_k;
 	}
 }
+
+
+PolarIndicator::PolarIndicator(int16_t base_p, int16_t tip_p, int16_t half_width_p) :
+	base(base_p),
+	tip(tip_p),
+	h_width(half_width_p)
+{
+	color = needlecolor[0];
+	base_val_offset = (int)(atan(static_cast<float>(h_width)/base)*sincosScale);
+}
+
 
 ////////////////////////////
 // IpsDisplay implementation
@@ -575,7 +591,8 @@ void IpsDisplay::redrawValues()
 	s2f_level_prev = 0;
 	btqueue = -1;
 	_te=-200;
-	needle_pos_old=-1000;
+	vario_indicator.forceRedraw();
+	load_indicator.forceRedraw();
 	mcalt = -100;
 	as_prev = -1;
 	_ate = -2000;
@@ -1053,62 +1070,75 @@ void IpsDisplay::drawOneScaleLine( float a, int16_t l1, int16_t l2, int16_t w, u
 
 // -pi/2 < val < pi/2, center x, y, start radius, end radius, width, r,g,b
 // return status on updated a changed pointer position
-bool IpsDisplay::drawPolarIndicator( float a, int16_t l1, int16_t l2, int16_t w, ucg_color_t color, bool dirty )
+bool PolarIndicator::drawPolarIndicator( float a, bool dirty )
 {
-	typedef struct Triangle {
-		int16_t x_0=0, y_0=0, x_1=0, y_1=1, x_2=1, y_2=0;
-	} Triangle_t;
-	static Triangle_t o;
 	Triangle_t n;
-	if( _menu ) return false;
+	if( IpsDisplay::inMenu() ) return false;
 
-	int val = (int)(a*sincosScale + 0.5 ); // descrete indicator position
-	bool change = val != needle_pos_old;
+	int val = (int)(a*sincosScale); // descrete int indicator position, to compare with prev needle pos (do not round!)
+	bool change = val != prev_needle_pos;
 	if ( ! change && ! dirty ) return false; // nothing painted
 
-	float si=mySin(val);
-	float co=myCos(val);
-	float psi=gaugeSin(val,l1);
-	float pco=gaugeCos(val,l1);
+	// float si=mySin(val);
+	// float co=myCos(val);
+	// float psi=gaugeSin(val,l1);
+	// float pco=gaugeCos(val,l1);
 
-	n.x_0 = pco+w*si; // top shoulder
-	n.y_0 = psi-w*co;
-	n.x_1 = pco-w*si; // lower shoulder
-	n.y_1 = psi+w*co;
-	n.x_2 = gaugeCos(val, l2); // tip
-	n.y_2 = gaugeSin(val, l2);
-	// ESP_LOGI(FNAME,"IpsDisplay::drawTetragon  x0:%d y0:%d x1:%d y1:%d x2:%d y2:%d x3:%d y3:%d", (int)xn_0, (int)yn_0, (int)xn_1 ,(int)yn_1, (int)xn_2, (int)yn_2, (int)xn_3 ,(int)yn_3 );
+	n.x_0 = gaugeCos(val+base_val_offset, base); // top shoulder
+	n.y_0 = gaugeSin(val+base_val_offset, base);
+	n.x_1 = gaugeCos(val-base_val_offset, base); // lower shoulder
+	n.y_1 = gaugeSin(val-base_val_offset, base);
+	n.x_2 = gaugeCos(val, tip); // tip
+	n.y_2 = gaugeSin(val, tip);
+	// ESP_LOGI(FNAME,"IpsDisplay::drawTetragon  x0:%d y0:%d x1:%d y1:%d x2:%d y2:%d", n.x_0, n.y_0, n.x_1 ,n.y_1, n.x_2, n.y_2 );
+	// float arrow_a = atan(w/(l2-l1));
 
-	if ( std::abs(val-needle_pos_old) < 6./90.*sincosScale  ) { // 6deg:=atan(7/70)
+	if ( std::abs(val-prev_needle_pos) < 9./90.*sincosScale  ) { // 6deg:=atan(7/70)
 		// draw pointer
-		ucg->setColor( color.color[0], color.color[1], color.color[2] );
-		ucg->drawTriangle(n.x_0,n.y_0, n.x_1,n.y_1, n.x_2,n.y_2);
+		IpsDisplay::ucg->setColor( color.color[0], color.color[1], color.color[2] );
+		IpsDisplay::ucg->drawTriangle(n.x_0,n.y_0, n.x_1,n.y_1, n.x_2,n.y_2);
 		// cleanup respecting overlap
-		ucg->setColor( COLOR_BLACK );
-		if ( val > needle_pos_old ) {
-			// up
-			ucg->drawTetragon(o.x_2,o.y_2, o.x_1,o.y_1, n.x_1,n.y_1, n.x_2,n.y_2); // clear area to the side
-		} else {
-			ucg->drawTetragon(o.x_2,o.y_2, n.x_2,n.y_2, n.x_0,n.y_0, o.x_0,o.y_0);
-		}
+		IpsDisplay::ucg->setColor( COLOR_BLACK );
 		// trimm inner edge
-		w += 3;
-		int16_t x_0 = pco+w*si-co;
-		int16_t y_0 = psi-w*co-si;
-		int16_t x_1 = pco-w*si-co;
-		int16_t y_1 = psi+w*co-si;
-		ucg->drawTetragon(x_1,y_1, x_1+3.*co,y_1+3.*si, x_0+3.*co,y_0+3.*si, x_0,y_0);
+		// int w = base_val_offset + 1;
+		if ( val > prev_needle_pos ) {
+			// up
+			// si=mySin(a+arrow_a);
+			// co=myCos(a+arrow_a);
+			// ucg->setColor( COLOR_GREEN );
+			// ucg->drawLine(n.x_2,n.y_2, n.x_1+3.*co,n.y_1+3.*si);
+			// usleep(10000);
+			IpsDisplay::ucg->drawTetragon(prev.x_2,prev.y_2, prev.x_1,prev.y_1, n.x_1,n.y_1, n.x_2,n.y_2); // clear area to the side
+			int16_t x_0 = gaugeCos(val+base_val_offset, base-2);
+			int16_t y_0 = gaugeSin(val+base_val_offset, base-2);
+			int16_t x_1 = gaugeCos(prev_needle_pos-base_val_offset, base-2);
+			int16_t y_1 = gaugeSin(prev_needle_pos-base_val_offset, base-2);
+			IpsDisplay::ucg->drawTetragon(prev.x_1,prev.y_1, x_1,y_1, x_0,y_0, n.x_0,n.y_0); // trimm inner edge
+		} else {
+			// si=mySin(a-arrow_a);
+			// co=myCos(a-arrow_a);
+			IpsDisplay::ucg->drawTetragon(prev.x_2,prev.y_2, n.x_2,n.y_2, n.x_0,n.y_0, prev.x_0,prev.y_0);
+			int16_t x_0 = gaugeCos(prev_needle_pos+base_val_offset, base-2);
+			int16_t y_0 = gaugeSin(prev_needle_pos+base_val_offset, base-2);
+			int16_t x_1 = gaugeCos(val-base_val_offset, base-2);
+			int16_t y_1 = gaugeSin(val-base_val_offset, base-2);
+			IpsDisplay::ucg->drawTetragon(n.x_1,n.y_1, x_1,y_1, x_0,y_0, prev.x_0,prev.y_0); // trimm inner edge
+		}
 	}
 	else {
 		// cleanup previous incarnation
-		ucg->setColor( COLOR_BLACK );
-		ucg->drawTriangle(o.x_0,o.y_0,o.x_1,o.y_1,o.x_2,o.y_2);
+		IpsDisplay::ucg->setColor( COLOR_BLACK );
+		IpsDisplay::ucg->drawTriangle(prev.x_0,prev.y_0,prev.x_1,prev.y_1,prev.x_2,prev.y_2);
 		// draw pointer
-		ucg->setColor( color.color[0], color.color[1], color.color[2] );
-		ucg->drawTriangle(n.x_0,n.y_0,n.x_1,n.y_1,n.x_2,n.y_2);
+		IpsDisplay::ucg->setColor( color.color[0], color.color[1], color.color[2] );
+		IpsDisplay::ucg->drawTriangle(n.x_0,n.y_0,n.x_1,n.y_1,n.x_2,n.y_2);
 	}
-	o = n;
-	needle_pos_old = val;
+	prev = n;
+	// o.x_0 = o.x_0 + 3.*myCos(a-arrow_a);
+	// o.y_0 = o.y_0 + 3.*mySin(a-arrow_a);
+	// o.x_1 = o.x_1 + 3.*myCos(a+arrow_a);
+	// o.y_1 = o.y_1 + 3.*mySin(a+arrow_a);
+	prev_needle_pos = val;
 	return change;
 }
 
@@ -1605,8 +1635,7 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	// draw G pointer
 	float a = (*_gauge)(loadFactor-1.);
-        ucg_color_t needlecolor[3] = { {COLOR_WHITE}, {COLOR_ORANGE}, {COLOR_RED} };
-	drawPolarIndicator( a, 70, 129, 7, needlecolor[0] );
+	load_indicator.drawPolarIndicator( a );
 	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 
 	// G load digital
@@ -1976,8 +2005,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		average_climbf = acl;
 	}
 	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
-	ucg_color_t needlecolor[3] = { {COLOR_WHITE}, {COLOR_ORANGE}, {COLOR_RED} };
-	if( drawPolarIndicator(needle_pos, 80, 132, 9, needlecolor[needle_color.get()], needle_dirty) ) {
+	if( vario_indicator.drawPolarIndicator(needle_pos, needle_dirty) ) {
 		alt_dirty = alt_overlap_old;
 		alt_overlap_old = alt_overlap;
 

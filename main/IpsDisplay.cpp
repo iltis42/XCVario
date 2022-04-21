@@ -1315,7 +1315,7 @@ void IpsDisplay::drawOneLabel( float val, int16_t labl, int16_t pos, int16_t off
 	int x=gaugeCos(val+to_side, pos);
 	int y=gaugeSin(val+to_side, pos) +5;
 
-	ucg->setColor(COLOR_BBLUE);
+	ucg->setColor(COLOR_LBBLUE);
 	ucg->setPrintPos(x,y);
 	if ( offset != 0 ) {
 		ucg->printf("%d", labl+offset );
@@ -2047,23 +2047,25 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		average_climbf = acl;
 	}
 	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
-	if( indicator->drawPolarIndicator(needle_pos, needle_dirty) ) {
-		alt_dirty = alt_overlap_old;
-		alt_overlap_old = alt_overlap;
+	if( !(tick%8) ){
+		if( indicator->drawPolarIndicator(needle_pos, needle_dirty) ) {
+			alt_dirty = alt_overlap_old;
+			alt_overlap_old = alt_overlap;
 
-		speed_dirty = speed_overlap_old;
-		speed_overlap_old = speed_overlap;
+			speed_dirty = speed_overlap_old;
+			speed_overlap_old = speed_overlap;
 
-		wind_dirty = wind_overlap_old;
-		wind_overlap_old = wind_overlap;
+			wind_dirty = wind_overlap_old;
+			wind_overlap_old = wind_overlap;
 
-		compass_dirty = compass_overlap_old;
-		compass_overlap_old = compass_overlap;
+			compass_dirty = compass_overlap_old;
+			compass_overlap_old = compass_overlap;
 
-		// Draw colored bow
-		float bar_val = (needle_pos>0.) ? needle_pos : 0.;
-		// draw green/red vario bar
-		drawBow(bar_val, old_vario_bar_val, 134, bowcolor[BC_GREEN] );
+			// Draw colored bow
+			float bar_val = (needle_pos>0.) ? needle_pos : 0.;
+			// draw green/red vario bar
+			drawBow(bar_val, old_vario_bar_val, 134, bowcolor[BC_GREEN] );
+		}
 	}
 
 	xSemaphoreGive(spiMutex);

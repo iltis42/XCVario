@@ -456,7 +456,7 @@ void SetupMenu::down(int count){
 		}
 		else{  // Volume
 			int vol = (int)audio_volume.get();
-			vol -= count*10;
+			vol -= count*2;
 			vol = std::max( vol, 0 );
 			audio_volume.set( vol );
 		}
@@ -917,6 +917,12 @@ void SetupMenu::setup( )
 		SetupMenuValFloat * frqr = new SetupMenuValFloat( "Frequency Response", "%", -70.0, 70.0, 1.0, 0, false, &frequency_response );
 		frqr->setHelp(PROGMEM"Setup frequency response, double frequency will be attenuated by the factor given, half frequency will be amplified");
 		audio->addEntry( frqr );
+
+		SetupMenuSelect * amspvol = new SetupMenuSelect( "Split Volume", false, 0 , true, &audio_split_vol );
+		amspvol->setHelp(PROGMEM"Enable to control audio volume individually in SpeedToFly and in Vario mode, else there is one volume for both");
+		amspvol->addEntry( "Disable");      // 0
+		amspvol->addEntry( "Enable");       // 1
+		audio->addEntry( amspvol );
 
 		// Polar Setup
 		SetupMenu * po = new SetupMenu( "Glider Details" );

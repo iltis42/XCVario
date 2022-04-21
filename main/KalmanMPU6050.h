@@ -127,6 +127,10 @@ public:
    * @returns The y rotation (pitch) in degrees
    */
   static inline double getPitch()  { return filterPitch;  }
+
+  // XCSoar uses a 180 deg rotated reference system with Z vector pointing down, so Yaw and Pitch inverted
+  // hence only Pitch and Roll is used for XCSoar
+  static inline double getXCSPitch()  { return -filterPitch;  }
   static inline double getYaw()  { return filterYaw;  }
   static double getPitchRad();
 

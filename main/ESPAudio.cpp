@@ -466,7 +466,7 @@ bool Audio::calcS2Fmode(){
 	bool mode = false;
 	if( !_alarm_mode ) {
 		mode =  Switch::getCruiseState();
-		if( mode )
+		if( mode && audio_split_vol.get() )
 			p_wiper = &wiper_s2f;
 		else
 			p_wiper = &wiper;

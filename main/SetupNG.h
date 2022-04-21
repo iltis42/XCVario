@@ -389,6 +389,7 @@ extern SetupNG<float>  		core_climb_min;
 extern SetupNG<float>  		core_climb_history;
 extern SetupNG<float>  		elevation;
 extern SetupNG<float>  		audio_volume;
+extern SetupNG<int>  		audio_split_vol;
 extern SetupNG<float>  		default_volume;
 extern SetupNG<float>  		frequency_response;
 extern SetupNG<float>  		max_volume;

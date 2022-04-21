@@ -2047,7 +2047,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		average_climbf = acl;
 	}
 	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
-	if( !(tick%8) ){
+	if( !(tick%2) ){
 		if( indicator->drawPolarIndicator(needle_pos, needle_dirty) ) {
 			alt_dirty = alt_overlap_old;
 			alt_overlap_old = alt_overlap;

@@ -58,7 +58,7 @@ int SetupMenuSelect::getSelect() {
 
 void SetupMenuSelect::addEntryList( const char ent[][4], int size )
 {
-	ESP_LOGI(FNAME,"addEntryList() char ent[][4]");
+	// ESP_LOGI(FNAME,"addEntryList() char ent[][4]");
 	for( int i=0; i<size; i++ ) {
 		_values.push_back( (char *)ent[i] ); _numval++;
 #ifdef DEBUG_MAX_ENTRIES

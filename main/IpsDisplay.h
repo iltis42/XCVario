@@ -25,6 +25,8 @@ enum ips_display { ILI9341 };
 typedef enum e_sreens { INIT_DISPLAY_NULL, INIT_DISPLAY_AIRLINER=1, INIT_DISPLAY_RETRO=2, INIT_DISPLAY_FLARM=4, INIT_DISPLAY_GLOAD=8, INIT_DISPLAY_UL=16 } e_screens_t;
 extern int screens_init;
 
+class PolarIndicator;
+
 class IpsDisplay {
 public:
 	IpsDisplay( AdaptUGC *aucg );
@@ -39,6 +41,7 @@ public:
 	static void initDisplay();
 	static void clear();   // erase whole display
 	void doMenu( bool menu=true ) { _menu = menu; };
+	static bool inMenu() { return _menu; }
 	static void drawArrowBox( int x, int y, bool are=true );
 	static void redrawValues();
 	static float getHeading();
@@ -46,9 +49,9 @@ public:
 	static void drawWindArrow( float dir, float speed, int type );
 
 	static inline AdaptUGC *getDisplay() { return ucg; };
+	static AdaptUGC *ucg;
 
 private:
-	static AdaptUGC *ucg;
 	gpio_num_t _reset;
 	gpio_num_t _cs;
 	gpio_num_t _dc;
@@ -106,6 +109,7 @@ private:
 
 	static char last_s[20];
 	static int  x_start;
+	static PolarIndicator* indicator;
 
 	static void drawMC( float mc, bool large=false );
 	static void drawS2FMode( int x, int y, bool cruise );
@@ -123,7 +127,6 @@ private:
 	static void drawTemperature( int x, int y, float t );
 	static void drawThermometer( int x, int y );
 	static void drawOneScaleLine(float a, int16_t l1, int16_t l2, int16_t w, uint8_t r, uint8_t g, uint8_t b);
-	static bool drawPolarIndicator(float a, int16_t l1, int16_t l2, int16_t w, ucg_color_t color, bool dirty=false);
 	static void drawBow( float a, int16_t &old_a_level, int16_t l1, ucg_color_t color );
 	static void initRetroDisplay( bool ulmode );
 	static void initLoadDisplay();

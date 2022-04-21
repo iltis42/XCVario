@@ -80,6 +80,25 @@ bool SetupCommon::syncEntry( int entry ){
     return false;
 }
 
+
+void SetupCommon::giveConfigChanges( httpd_req *req, bool log_only ){
+	ESP_LOGI(FNAME,"giveConfigChanges");
+	char cfg[50];
+	for(int i = 0; i < instances->size(); i++ ) {
+		if( (*instances)[i]->isDefault() == false ){
+			char val[20];
+			if( (*instances)[i]->value_str( val ) ){
+				sprintf( cfg, "%s : %s <br>\n", (*instances)[i]->key(), val );
+				ESP_LOGI(FNAME,"%s : %s", (*instances)[i]->key(), val );
+				if( !log_only )
+					httpd_resp_send_chunk( req, cfg, strlen(cfg) );
+			}
+		}
+	}
+	if( !log_only )
+		httpd_resp_send_chunk( req, cfg, 0 );
+}
+
 bool SetupCommon::factoryReset(){
 	ESP_LOGI(FNAME,"\n\n******  FACTORY RESET ******");
 	bool retsum = true;
@@ -152,6 +171,7 @@ bool SetupCommon::initSetup( bool& present ) {
 		}
 	}
 	last_volume = (int)default_volume.get();
+	giveConfigChanges( 0, true );
 
     if ( _timer == nullptr ) {
         // create event queue to connect to the timer callback

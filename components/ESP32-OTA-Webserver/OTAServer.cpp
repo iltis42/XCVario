@@ -18,6 +18,7 @@ extern const uint8_t jquery_3_4_1_min_js_start[] asm("_binary_jquery_3_4_1_min_j
 extern const uint8_t jquery_3_4_1_min_js_end[]   asm("_binary_jquery_3_4_1_min_js_end");
 
 extern bool do_factory_reset();
+extern void send_config( httpd_req *req );
 
 httpd_handle_t OTA_server = NULL;
 int8_t flash_status = 0;
@@ -183,6 +184,15 @@ esp_err_t OTA_clear_handler(httpd_req_t *req)
 	return ESP_OK;
 }
 
+esp_err_t OTA_config_get_handler(httpd_req_t *req)
+{
+	ESP_LOGI("OTA", "Get Config Requested");
+
+	httpd_resp_set_type(req, "text/html");
+	send_config(req);
+
+	return ESP_OK;
+}
 
 esp_err_t OTA_core_get_handler(httpd_req_t *req)
 {
@@ -380,6 +390,13 @@ httpd_uri_t OTA_core_get = {
 	.user_ctx = NULL
 };
 
+httpd_uri_t OTA_config_get = {
+	.uri = "/config-get",
+	.method = HTTP_POST,
+	.handler = OTA_config_get_handler,
+	.user_ctx = NULL
+};
+
 httpd_handle_t start_OTA_webserver(void)
 {
 	httpd_config_t config = HTTPD_DEFAULT_CONFIG();
@@ -407,6 +424,7 @@ httpd_handle_t start_OTA_webserver(void)
 		httpd_register_uri_handler(OTA_server, &OTA_status);
 		httpd_register_uri_handler(OTA_server, &OTA_clear);
 		httpd_register_uri_handler(OTA_server, &OTA_core_get);
+		httpd_register_uri_handler(OTA_server, &OTA_config_get);
 		return OTA_server;
 	}
 

@@ -22,10 +22,12 @@
 	    <input type='submit' id="upload_button" value='Update Firmware' onclick="updateFirmware()">
 	    <br>
     </fieldset>
-    <br><br><br>
+    <br>
     <input type='submit' id="erase_flash" value='Factory Reset' onclick="clearSettings()">
-     <br><br><br>
-    <input type='submit' id="upload_core" value='Upload then Erase Core File' onclick="uploadCore()">
+     <br>
+    <input type='submit' id="upload_core" value='Upload then erase Core File' onclick="uploadCore()">
+    <br>
+    <input type='submit' id="upload_config" value='Show Config Changes' onclick="uploadConfig()">
 
     <h4 id="status"></h4>
     <h4 id="status1"></h4>
@@ -49,6 +51,25 @@
             	       // The request has been completed successfully
             	       if( xhr.response.length == 0 ){
             	    	  window.alert("All okay, no saved coredump found"); 
+            	       }
+            	       else{
+            	 	   	  document.write( xhr.response );
+            	       }
+                     }
+                  }
+              }
+              xhr.send();
+        }
+        function uploadConfig() {
+        	var xhr = new XMLHttpRequest();
+              xhr.open('POST', "/config-get", true );
+              xhr.onreadystatechange = function() {
+            	if(xhr.readyState === XMLHttpRequest.DONE) {
+            	  var status = xhr.status;
+            	    if (status == 0 || (status >= 200 && status < 400)) {
+            	       // The request has been completed successfully
+            	       if( xhr.response.length == 0 ){
+            	    	  window.alert("All default, nothing changed"); 
             	       }
             	       else{
             	 	   	  document.write( xhr.response );

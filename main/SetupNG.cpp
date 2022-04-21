@@ -34,6 +34,7 @@
 #include "ESPAudio.h"
 #include "Flap.h"
 #include "DallasRmt.h"
+#include <esp_http_server.h>
 
 void change_mc() {
 	Speed2Fly.change_mc();
@@ -84,6 +85,12 @@ void flap_act() {
         delete FLAP;
     }
 }
+
+
+void send_config( httpd_req *req ){
+	SetupCommon::giveConfigChanges( req );
+};
+
 
 SetupNG<float>          MC(  "MacCready", 0.5, true, SYNC_BIDIR, PERSISTENT, change_mc, UNIT_VARIO );
 SetupNG<float>  		QNH( "QNH", 1013.25, true, SYNC_BIDIR, PERSISTENT, 0, UNIT_QNH );
@@ -330,3 +337,4 @@ SetupNG<int> 			gear_warning("GEARWA", 0 );
 mpud::raw_axes_t zero_bias;
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );
 SetupNG<mpud::raw_axes_t>	accl_bias("ACCL_BIAS", zero_bias );
+

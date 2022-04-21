@@ -25,6 +25,8 @@
 #include <iostream>
 #include <vector>
 #include "SetupNG.h"
+#include <esp_http_server.h>
+
 
 class SetupCommon {
 public:
@@ -35,10 +37,13 @@ public:
 	virtual bool init() = 0;
 	virtual bool erase() = 0;
 	virtual bool mustReset() = 0;
+	virtual bool isDefault() = 0;
+	virtual bool value_str(char *str) = 0;
 	virtual const char* key() = 0;
 	virtual char typeName() = 0;
 	virtual bool sync() = 0;
 	virtual uint8_t getSync() = 0;
+	// virtual char* showSetting( bool nondefault=true ) = 0;
 
 	static bool initSetup( bool &present );  // returns false if FLASH was completely blank
 	static char *getID();
@@ -47,6 +52,7 @@ public:
 	static bool syncEntry( int entry );
 	static int numEntries();
 	static bool factoryReset();
+	static void giveConfigChanges( httpd_req *req, bool log_only=false );
 
 	// housekeeping supporters
 	static bool isMaster();

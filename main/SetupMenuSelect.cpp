@@ -101,7 +101,7 @@ SetupMenuSelect::SetupMenuSelect( const char* title, bool restart, int (*action)
 	bits._save = save;
 	if( anvs ) {
 		_nvs = anvs;
-		ESP_LOGI(FNAME,"_nvs->key(): %s val: %d", _nvs->key(), (int)(_nvs->get()) );
+		// ESP_LOGI(FNAME,"_nvs->key(): %s val: %d", _nvs->key(), (int)(_nvs->get()) );
 		_select = (int16_t)(*(int *)(_nvs->getPtr()));
 		_select_save = (int16_t)_nvs->get();
 	}

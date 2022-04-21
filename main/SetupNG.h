@@ -152,6 +152,24 @@ public:
 	virtual T getGui() const { return get(); } // tb. overloaded for blackboard
 	virtual const char* unit() const { return ""; } // tb. overloaded for blackboard
 
+	virtual bool value_str(char *str){
+		if( flags._volatile != VOLATILE ){
+			if( typeid( T ) == typeid( float ) ){
+				float t;
+				memcpy(&t, &_value, 4 );
+				sprintf( str,"%f", t );
+				return true;
+			}
+			else if( typeid( T ) == typeid( int ) ){
+				int t;
+				memcpy(&t, &_value, 4 );
+				sprintf( str,"%d", t );
+				return true;
+			}
+		}
+		return false;
+	}
+
 	bool set( T aval, bool dosync=true, bool doAct=true ) {
 		if( _value == aval ){
 			// ESP_LOGI(FNAME,"Value already in config: %s", _key );
@@ -256,7 +274,7 @@ public:
 
 	virtual bool init() {
 		if( flags._volatile != PERSISTENT ){
-			ESP_LOGI(FNAME,"NVS volatile set default");
+			// ESP_LOGI(FNAME,"NVS volatile set default");
 			set( _default );
 			return true;
 		}
@@ -289,7 +307,7 @@ public:
 					commit(false);
 				}
 				else {
-					ESP_LOGI(FNAME,"NVS key %s exists len: %d", _key, required_size );
+					// ESP_LOGI(FNAME,"NVS key %s exists len: %d", _key, required_size );
 				}
 			}
 		}
@@ -318,6 +336,13 @@ public:
 
 	virtual bool mustReset() {
 		return flags._reset;
+	}
+
+	virtual bool isDefault() {
+		if( _default == _value )
+			return true;
+		else
+			return false;
 	}
 
     inline T getDefault() const { return _default; }

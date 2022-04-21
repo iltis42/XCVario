@@ -25,31 +25,7 @@ enum ips_display { ILI9341 };
 typedef enum e_sreens { INIT_DISPLAY_NULL, INIT_DISPLAY_AIRLINER=1, INIT_DISPLAY_RETRO=2, INIT_DISPLAY_FLARM=4, INIT_DISPLAY_GLOAD=8, INIT_DISPLAY_UL=16 } e_screens_t;
 extern int screens_init;
 
-// types
-typedef struct Triangle {
-	int16_t x_0=0, y_0=0, x_1=0, y_1=1, x_2=1, y_2=0;
-} Triangle_t;
-
-////////////////////////////
-// Indicator
-class PolarIndicator {
-public:
-	PolarIndicator(int16_t base, int16_t tip, int16_t half_width);
-	// API
-	bool drawPolarIndicator( float a, bool dirty=false );
-	void forceRedraw() { prev_needle_pos = -1000; }
-	void setColor(ucg_color_t c) { color = c;}
-
-	// attrubutes
-private:
-	int16_t base = 0; // distance from center to base of arrow
-	int16_t tip = 0; // distance from center to arrow tip
-	int16_t h_width = 0; // half width of the arrow base
-	int base_val_offset; // angle "* sincosScale" from base point to shoulder point of arrow, wrt display center
-	ucg_color_t color;
-	Triangle_t prev;
-	int prev_needle_pos = -1000; // -pi/2 .. pi/2 * sincosScale
-};
+class PolarIndicator;
 
 class IpsDisplay {
 public:
@@ -133,9 +109,7 @@ private:
 
 	static char last_s[20];
 	static int  x_start;
-	static PolarIndicator vario_indicator;
-	static PolarIndicator load_indicator;
-
+	static PolarIndicator* indicator;
 
 	static void drawMC( float mc, bool large=false );
 	static void drawS2FMode( int x, int y, bool cruise );

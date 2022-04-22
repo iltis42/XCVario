@@ -22,12 +22,12 @@
 	    <input type='submit' id="upload_button" value='Update Firmware' onclick="updateFirmware()">
 	    <br>
     </fieldset>
-    <br>
+    <br><br>
     <input type='submit' id="erase_flash" value='Factory Reset' onclick="clearSettings()">
-     <br>
+    <br><br>
     <input type='submit' id="upload_core" value='Upload then erase Core File' onclick="uploadCore()">
-    <br>
-    <input type='submit' id="upload_config" value='Show Config Changes' onclick="uploadConfig()">
+    <br><br>
+    <input type='submit' id="download_config" value='Backup Configuration' onclick="downloadConfig()">
 
     <h4 id="status"></h4>
     <h4 id="status1"></h4>
@@ -60,7 +60,7 @@
               }
               xhr.send();
         }
-        function uploadConfig() {
+        function downloadConfig() {
         	var xhr = new XMLHttpRequest();
               xhr.open('POST', "/config-get", true );
               xhr.onreadystatechange = function() {
@@ -69,11 +69,19 @@
             	    if (status == 0 || (status >= 200 && status < 400)) {
             	       // The request has been completed successfully
             	       if( xhr.response.length == 0 ){
-            	    	  window.alert("All default, nothing changed"); 
+            	    	  window.alert("All default, nothing changed, nothing to upload"); 
             	       }
             	       else{
-            	 	   	  document.write( xhr.response );
-            	       }
+            	       		 var blob = new Blob( [xhr.response], {type:"octet-stream"} );
+            	       		 const href = URL.createObjectURL(blob);
+            	       		 var filename="xcvario-config-" + new Date().toJSON().slice(0,10) + ".txt";
+            	       		 window.alert("Upload XCVario Configuration, filename: " + filename ); 
+            	       		 const a = Object.assign( document.createElement('a'),{href, style:"display:none", download:filename });
+            	       		 document.body.appendChild(a);
+            	       		 a.click();
+	            	 	     URL.revokeObjectURL(href);
+	            	 	     a.remove();	            	 	    
+            	          }
                      }
                   }
               }

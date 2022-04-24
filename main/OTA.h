@@ -24,6 +24,7 @@ public:
 	void doSoftwareUpdate( IpsDisplay *p );
 private:
     bool pressed;
+    int  tick;
 };
 
 #endif /* MAIN_SWITCH_H_ */

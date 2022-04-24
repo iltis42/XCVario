@@ -15,23 +15,29 @@
     <fieldset style="width: 270px">
 		<legend>Software Update</legend>
 	    <h4 id="latest_firmware"></h4>
-	
 	    <input type="file" id="selectedFile" accept=".bin" style="display: none;" onchange="myFunction()" />
 	    <input type="button" value="Browse..." onclick="document.getElementById('selectedFile').click();" />
 	    <h3 id="file_info"></h3>
-	    <input type='submit' id="upload_button" value='Update Firmware' onclick="updateFirmware()">
+	    <input type='submit' id="upload_button" value='Update Firmware' onclick="uploadFirmware()">
 	    <br>
+	     <h4 id="status"></h4>
+    	 <h4 id="status1"></h4>
     </fieldset>
-    <br><br>
-    <input type='submit' id="erase_flash" value='Factory Reset' onclick="clearSettings()">
-    <br><br>
-    <input type='submit' id="upload_core" value='Upload then erase Core File' onclick="uploadCore()">
-    <br><br>
-    <input type='submit' id="download_config" value='Backup Configuration' onclick="downloadConfig()">
-
-    <h4 id="status"></h4>
-    <h4 id="status1"></h4>
-
+    <fieldset style="width: 270px">
+	    <legend>Reset/Debug</legend>
+	    <input type='submit' id="erase_flash" value='Factory Reset' onclick="clearSettings()">
+	    <br><br>
+	    <input type='submit' id="upload_core" value='Upload then erase Core File' onclick="downloadCore()">
+	    <br><br>
+     </fieldset>
+    <fieldset style="width: 270px">
+		<legend>Configuration Backup/Restore</legend>
+	    <input type='submit' id="download_config" value='Backup Config to File' onclick="downloadConfig()">
+	    <br><br>
+	    <input type='file' id="restore_config" accept="text/csv" style="display: none" onchange="restoreConfig()">
+	    <input type="button" value="Restore Config from File" onclick="document.getElementById('restore_config').click();" />
+    </fieldset>
+   
     <script type="text/javascript">
         var seconds = 10;
         var theTimer;
@@ -41,11 +47,12 @@
             var file = x.files[0];
             document.getElementById("file_info").innerHTML = "<h4>File: " + file.name + "<br>" + "Size: " + file.size + " bytes</h4>";
         }
-        function uploadCore() {
+        function downloadCore() {
         	var xhr = new XMLHttpRequest();
+        	  window.alert("Press button to provide core file for upload, then wait a couple of seconds...");
               xhr.open('POST', "/core-get", true );
               xhr.onreadystatechange = function() {
-            	if(xhr.readyState === XMLHttpRequest.DONE) {
+            	if(xhr.readyState == XMLHttpRequest.DONE) {
             	  var status = xhr.status;
             	    if (status == 0 || (status >= 200 && status < 400)) {
             	       // The request has been completed successfully
@@ -53,18 +60,50 @@
             	    	  window.alert("All okay, no saved coredump found"); 
             	       }
             	       else{
-            	 	   	  document.write( xhr.response );
+            	 	   	  // document.write( xhr.response );
+            	 	   	  var blob = new Blob( [xhr.response], {type:"octet-stream"} );
+            	       	  const href = URL.createObjectURL(blob);
+            	       	  var filename="xcvario-core-" + new Date().toJSON().slice(0,10) + ".txt";
+            	       	  window.alert("Download XCVario Core File, filename: " + filename ); 
+            	       	  const a = Object.assign( document.createElement('a'),{href, style:"display:none", download:filename });
+            	       	  document.body.appendChild(a);
+            	       	  a.click();
+	            	 	  URL.revokeObjectURL(href);
+	            	 	  a.remove();	
             	       }
                      }
                   }
               }
               xhr.send();
         }
+        
+        function restoreConfig() {
+            var formData = new FormData();
+            var fileSelect = document.getElementById("restore_config");
+			// window.alert( fileSelect.files + "/" + fileSelect.files.length );
+            if (fileSelect.files && fileSelect.files.length == 1) {
+                var file = fileSelect.files[0];
+                formData.append("file", file, file.name);
+                // Http Request
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', "/restore", true );
+                // xhr.responseType = "blob";
+                xhr.send(formData);
+                xhr.onreadystatechange = function() {
+            	if(xhr.readyState == XMLHttpRequest.DONE) {
+             	     window.alert( xhr.response );
+            	     }
+            	}
+            } else{
+            	window.alert("Error, no valid .csv file seleced");
+            }
+        }
+        
         function downloadConfig() {
         	var xhr = new XMLHttpRequest();
-              xhr.open('POST', "/config-get", true );
+              xhr.open('POST', "/backup", true );
               xhr.onreadystatechange = function() {
-            	if(xhr.readyState === XMLHttpRequest.DONE) {
+            	if(xhr.readyState == XMLHttpRequest.DONE) {
             	  var status = xhr.status;
             	    if (status == 0 || (status >= 200 && status < 400)) {
             	       // The request has been completed successfully
@@ -74,8 +113,8 @@
             	       else{
             	       		 var blob = new Blob( [xhr.response], {type:"octet-stream"} );
             	       		 const href = URL.createObjectURL(blob);
-            	       		 var filename="xcvario-config-" + new Date().toJSON().slice(0,10) + ".txt";
-            	       		 window.alert("Upload XCVario Configuration, filename: " + filename ); 
+            	       		 var filename="xcvario-config-" + new Date().toJSON().slice(0,10) + ".csv";
+            	       		 window.alert("Download XCVario Configuration, filename: " + filename ); 
             	       		 const a = Object.assign( document.createElement('a'),{href, style:"display:none", download:filename });
             	       		 document.body.appendChild(a);
             	       		 a.click();
@@ -95,7 +134,7 @@
   				var xhr = new XMLHttpRequest();
   	              xhr.open('POST', "/clear", true );
   	              xhr.onreadystatechange = function() {
-  	            	if(xhr.readyState === XMLHttpRequest.DONE) {
+  	            	if(xhr.readyState == XMLHttpRequest.DONE) {
   	            	    var status = xhr.status;
   	            	    if (status == 0 || (status >= 200 && status < 400)) {
   	            	      // The request has been completed successfully
@@ -111,10 +150,9 @@
 			}    
 		}
 		
-        function updateFirmware() {
+        function uploadFirmware() {
             // Form Data
             var formData = new FormData();
-
             var fileSelect = document.getElementById("selectedFile");
 
             if (fileSelect.files && fileSelect.files.length == 1) {
@@ -136,7 +174,7 @@
 
                         // After we send it all, lets ask the board if it went well. 
                         if (x == 100) {
-                            // Lets ask the board for the upload resilt 
+                            // Lets ask the board for the upload result 
                             getstatus();
                         }
 
@@ -167,7 +205,7 @@
                 if (this.readyState === XMLHttpRequest.DONE && this.status === 200) {
                     var response = JSON.parse(xhr.responseText);
 
-                    document.getElementById("latest_firmware").innerHTML = "Latest Firmware:  " + response.compile_date + " - " + response.compile_time
+                    document.getElementById("latest_firmware").innerHTML = "Current Software:  " + response.compile_date + " - " + response.compile_time
                         // If flashing was complete it will return a 1, else -1
                         // A return of 0 is just for information on the Latest Firmware request
                     if (response.status == 1) {

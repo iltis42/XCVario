@@ -36,6 +36,8 @@ public:
 	// virtual methods to be implemented in derived class
 	virtual bool init() = 0;
 	virtual bool erase() = 0;
+	virtual bool commit( bool sync=true) = 0;
+	virtual void setValueStr( const char * val ) = 0;
 	virtual bool mustReset() = 0;
 	virtual bool isDefault() = 0;
 	virtual bool value_str(char *str) = 0;
@@ -53,6 +55,7 @@ public:
 	static int numEntries();
 	static bool factoryReset();
 	static void giveConfigChanges( httpd_req *req, bool log_only=false );
+	static int restoreConfigChanges( int len, char *data );
 
 	// housekeeping supporters
 	static bool isMaster();

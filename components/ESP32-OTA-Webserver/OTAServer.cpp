@@ -19,6 +19,7 @@ extern const uint8_t jquery_3_4_1_min_js_end[]   asm("_binary_jquery_3_4_1_min_j
 
 extern bool do_factory_reset();
 extern void send_config( httpd_req *req );
+extern int restore_config( int len, char *data );
 
 httpd_handle_t OTA_server = NULL;
 int8_t flash_status = 0;
@@ -184,15 +185,45 @@ esp_err_t OTA_clear_handler(httpd_req_t *req)
 	return ESP_OK;
 }
 
-esp_err_t OTA_config_get_handler(httpd_req_t *req)
+esp_err_t OTA_backup_handler(httpd_req_t *req)
 {
-	ESP_LOGI("OTA", "Get Config Requested");
+	ESP_LOGI("OTA", "Backup Requested");
 
 	httpd_resp_set_type(req, "text/html");
 	send_config(req);
 
 	return ESP_OK;
 }
+
+esp_err_t OTA_restore_handler(httpd_req_t *req)
+{
+	const int max_len = 8192;
+	ESP_LOGI("OTA", "Restore Requested %d", req->content_len );
+	char *buff = (char*)malloc(max_len);
+	int recv_len;
+	if ((recv_len = httpd_req_recv(req, buff, MIN(req->content_len, max_len ))) < 0){
+		return ESP_FAIL;
+	}
+    ESP_LOGI("OTA", "Len %d", recv_len );
+	httpd_resp_set_type(req, "text/html");
+	buff[recv_len] = '\0';
+	int items = restore_config( recv_len, buff );
+	if( items ){
+		char res[80];
+		sprintf(res,"%d config items restored successfully", items );
+		ESP_LOGI("OTA", "Config Items %d, strlen: %d", items, strlen(res) );
+		httpd_resp_send(req, res, strlen(res) );
+	}
+	else{
+		char res[40] = "Config file format error!";
+		ESP_LOGI("OTA", "%s strlen: %d", res, strlen(res) );
+		httpd_resp_send(req,res, strlen(res) );
+	}
+
+    free(buff);
+	return ESP_OK;
+}
+
 
 esp_err_t OTA_core_get_handler(httpd_req_t *req)
 {
@@ -390,10 +421,17 @@ httpd_uri_t OTA_core_get = {
 	.user_ctx = NULL
 };
 
-httpd_uri_t OTA_config_get = {
-	.uri = "/config-get",
+httpd_uri_t OTA_backup = {
+	.uri = "/backup",
 	.method = HTTP_POST,
-	.handler = OTA_config_get_handler,
+	.handler = OTA_backup_handler,
+	.user_ctx = NULL
+};
+
+httpd_uri_t OTA_restore = {
+	.uri = "/restore",
+	.method = HTTP_POST,
+	.handler = OTA_restore_handler,
 	.user_ctx = NULL
 };
 
@@ -407,6 +445,7 @@ httpd_handle_t start_OTA_webserver(void)
 	
 	// Lets bump up the stack size (default was 4096)
 	config.stack_size = 8192;
+	config.max_uri_handlers = 10;
 	
 	
 	// Start the httpd server
@@ -424,7 +463,8 @@ httpd_handle_t start_OTA_webserver(void)
 		httpd_register_uri_handler(OTA_server, &OTA_status);
 		httpd_register_uri_handler(OTA_server, &OTA_clear);
 		httpd_register_uri_handler(OTA_server, &OTA_core_get);
-		httpd_register_uri_handler(OTA_server, &OTA_config_get);
+		httpd_register_uri_handler(OTA_server, &OTA_backup);
+		httpd_register_uri_handler(OTA_server, &OTA_restore);
 		return OTA_server;
 	}
 

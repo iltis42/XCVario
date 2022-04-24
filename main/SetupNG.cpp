@@ -86,11 +86,13 @@ void flap_act() {
     }
 }
 
-
 void send_config( httpd_req *req ){
 	SetupCommon::giveConfigChanges( req );
 };
 
+int restore_config(int len, char *data){
+	return( SetupCommon::restoreConfigChanges( len, data ) );
+};
 
 SetupNG<float>          MC(  "MacCready", 0.5, true, SYNC_BIDIR, PERSISTENT, change_mc, UNIT_VARIO );
 SetupNG<float>  		QNH( "QNH", 1013.25, true, SYNC_BIDIR, PERSISTENT, 0, UNIT_QNH );

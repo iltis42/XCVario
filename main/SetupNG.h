@@ -112,6 +112,10 @@ public:
 			return 'F';
 		else if( typeid( T ) == typeid( int ) )
 			return 'I';
+		else if( typeid( T ) == typeid( t_bitfield_compass ) )
+			return 'B';
+		else if( typeid( T ) == typeid( mpud::raw_axes_t ) )
+			return 'A';
 		return 'U';
 	}
 	SetupNG( const char * akey,
@@ -137,6 +141,38 @@ public:
 		_action = action;
 	}
 
+	virtual void setValueStr( const char * val ){
+		if( flags._volatile != VOLATILE ){
+			if( typeid( T ) == typeid( float ) ){
+				float t;
+				sscanf( val,"%f", &t );
+				memcpy((char *)&_value, &t, sizeof(t) );
+			}
+			else if( typeid( T ) == typeid( int ) ){
+				int t;
+				sscanf( val,"%d", &t );
+				memcpy((char *)&_value, &t, sizeof(t) );
+			}
+			else if( typeid( T ) == typeid( t_bitfield_compass ) ){
+				int temp;
+				t_bitfield_compass t;
+				if (sscanf(val ,"%u", &temp) == 1 && temp < 256) {
+					unsigned char c=temp;
+					memcpy((char *)&_value, &c, sizeof(t) );
+				}
+			}
+			else if( typeid( T ) == typeid( mpud::raw_axes_t ) ){
+				mpud::raw_axes_t t;
+				int x,y,z;
+				sscanf( val,"%d/%d/%d", &x, &y, &z );
+				t.x = x;
+				t.y = y;
+				t.z = z;
+				memcpy((char *)&_value, &t, sizeof(t) );
+			}
+		}
+	}
+
 	inline T* getPtr() {
 		return &_value;
 	}
@@ -156,14 +192,26 @@ public:
 		if( flags._volatile != VOLATILE ){
 			if( typeid( T ) == typeid( float ) ){
 				float t;
-				memcpy(&t, &_value, 4 );
+				memcpy(&t, &_value, sizeof(t) );
 				sprintf( str,"%f", t );
 				return true;
 			}
 			else if( typeid( T ) == typeid( int ) ){
 				int t;
-				memcpy(&t, &_value, 4 );
+				memcpy(&t, &_value, sizeof(t) );
 				sprintf( str,"%d", t );
+				return true;
+			}
+			else if( typeid( T ) == typeid( t_bitfield_compass ) ){
+				t_bitfield_compass t;
+				memcpy((char*)&t, &_value, sizeof(t) );
+				sprintf( str,"%u", *(char*)&t );
+				return true;
+			}
+			else if( typeid( T ) == typeid( mpud::raw_axes_t ) ){
+				mpud::raw_axes_t t;
+				memcpy((char*)&t, &_value, sizeof(t) );
+				sprintf( str, "%d/%d/%d", t.x, t.y, t.z );
 				return true;
 			}
 		}
@@ -233,7 +281,9 @@ public:
 		if( !open(h) ) {
 			return false;
 		}
-		ESP_LOGI(FNAME,"NVS commit(key:%s , addr:%08x, len:%d, nvs_handle: %04x)", _key, (unsigned int)(&_value), sizeof( _value ), h);
+		char val[30];
+		value_str(val);
+		ESP_LOGI(FNAME,"NVS commit(key:%s, val: %s addr:%08x, len:%d, nvs_handle: %04x)", _key, val, (unsigned int)(&_value), sizeof( _value ), h);
 		esp_err_t err = nvs_set_blob(h, _key, (void *)(&_value), sizeof( _value ));
 		if(err != ESP_OK) {
 			ESP_LOGE(FNAME,"NVS set blob error %d", err );

@@ -60,9 +60,9 @@ void S2F::recalculatePolar()
 	double w1 = polar_sink1.get();
 	double w2 = polar_sink2.get();
 	double w3 = polar_sink3.get();
-	ESP_LOGI(FNAME, "v1/s1 %.1f/%.1f", v1 * 3.6, w1);
-	ESP_LOGI(FNAME, "v2/s2 %.1f/%.1f", v2 * 3.6, w2);
-	ESP_LOGI(FNAME, "v3/s3 %.1f/%.1f", v3 * 3.6, w3);
+	ESP_LOGI(FNAME, "v1/s1 %.1f/%.3f", v1 * 3.6, w1);
+	ESP_LOGI(FNAME, "v2/s2 %.1f/%.3f", v2 * 3.6, w2);
+	ESP_LOGI(FNAME, "v3/s3 %.1f/%.3f", v3 * 3.6, w3);
 	// w= a0 + a1*v + a2*v^2   from ilec
 	// w=  c +  b*v +  a*v^2   from wiki
 	double d = v1 * v1 * (v2 - v3) + v2 * v2 * (v3 - v1) + v3 * v3 * (v1 - v2);

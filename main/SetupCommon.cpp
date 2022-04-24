@@ -30,6 +30,9 @@
 #include "Protocols.h"
 #include "ESPAudio.h"
 #include "SetupCommon.h"
+#include <iostream>
+#include <string>
+#include <sstream>
 
 bool SetupCommon::lazyCommit = true;
 QueueHandle_t SetupCommon::commitSema = nullptr;
@@ -88,8 +91,8 @@ void SetupCommon::giveConfigChanges( httpd_req *req, bool log_only ){
 		if( (*instances)[i]->isDefault() == false ){
 			char val[20];
 			if( (*instances)[i]->value_str( val ) ){
-				sprintf( cfg, "%s : %s <br>\n", (*instances)[i]->key(), val );
-				ESP_LOGI(FNAME,"%s : %s", (*instances)[i]->key(), val );
+				sprintf( cfg, "%s,%s\n", (*instances)[i]->key(), val );
+				ESP_LOGI(FNAME,"%s,%s", (*instances)[i]->key(), val );
 				if( !log_only )
 					httpd_resp_send_chunk( req, cfg, strlen(cfg) );
 			}
@@ -97,6 +100,37 @@ void SetupCommon::giveConfigChanges( httpd_req *req, bool log_only ){
 	}
 	if( !log_only )
 		httpd_resp_send_chunk( req, cfg, 0 );
+}
+
+
+int SetupCommon::restoreConfigChanges( int len, char *data ){
+	ESP_LOGI(FNAME,"restoreConfigChanges len: %d \n %s", len, data );
+	std::istringstream fs;
+	fs.str( data );
+	std::string line;
+	int i=0;
+	int valid=0;
+	while( std::getline(fs, line, '\n') ) {
+		if( line.find( "xcvario-config" ) != std::string::npos )
+			valid++;
+		else if( line.find( "text/comma-separated-values" ) != std::string::npos )
+			valid++;
+		else if( line.find( "WebKitForm" ) != std::string::npos )
+			valid++;
+		else if( (line.length() > 1) && (valid >= 3) ){
+			// printf( "%d, len:%d, %s\n", i, line.length(), line.c_str() );
+			std::string key = line.substr(0, line.find(','));
+			std::string value = line.substr(line.find(',')+1, line.length());
+			printf( "%d %s ", i, key.c_str()  );
+			SetupCommon * item = getMember( key.c_str() );
+			printf( ", typename: %c \n", item->typeName()  );
+			item->setValueStr( value.c_str() );
+			item->commit();
+			i++;
+		}
+	}
+	commitNow();
+	return i;
 }
 
 bool SetupCommon::factoryReset(){

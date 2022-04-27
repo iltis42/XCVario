@@ -18,8 +18,9 @@ const char * SetupMenuSelect::getEntry() const
 }
 
 const char *SetupMenuSelect::value() {
-	if( _nvs )
-		_select = _nvs->get();
+	if( _nvs ){
+		_select = _nvs->get() > _numval-1 ? _numval-1 : _nvs->get();
+	}
 	return getEntry();
 }
 

@@ -215,23 +215,25 @@ public:
 		int u = unit;
 		if( u == -1 )
 			u=vario_unit.get();
-		if( u == 0 )
+		if( u == VARIO_UNIT_MS )
 			return("m/s");
-		else if( u == 1 )
+		else if( u == VARIO_UNIT_FPM )
 			return("x 100ft/m");
-		else if( u == 2 )
+		else if( u == VARIO_UNIT_KNOTS )
 			return("knots");
 		else
 			ESP_LOGE(FNAME,"Wrong unit for altitude");
 		return "nan";
 	};
 
+
+
 	static float Altitude( float alt ){
-		if( alt_unit.get() == 0 )  //m
+		if( alt_unit.get() == ALT_UNIT_METER )  //m
 			return( alt );
-		else if( alt_unit.get() == 1 ) //feet
+		else if( alt_unit.get() == ALT_UNIT_FT ) //feet
 			return( alt*3.28084 );
-		else if( alt_unit.get() == 2 ) //FL
+		else if( alt_unit.get() == ALT_UNIT_FL ) //FL
 			return( alt*0.0328084 );
 		else
 			ESP_LOGE(FNAME,"Wrong unit for altitude");
@@ -246,15 +248,19 @@ public:
 			return( f/3.28084 );
 	};
 
+	static float meters2FL( float m ){
+			return( m*0.0328084 );
+	};
+
 	static const char * AltitudeUnit( int unit = -1 ){
 		int u=unit;
 		if( u == -1 )
 			u=alt_unit.get();
-		if( u == 0 )  //m
+		if( u == ALT_UNIT_METER )  //m
 			return( "m" );
-		else if( u == 1 ) //feet
+		else if( u == ALT_UNIT_FT ) //feet
 			return( "ft" );
-		else if( u == 2 ) //FL
+		else if( u == ALT_UNIT_FL ) //FL
 			return( "FL" );
 		else
 			ESP_LOGE(FNAME,"Wrong unit for altitude %d", u );

@@ -484,7 +484,8 @@ void clientLoop(void *pvParameters)
 		if( !(ccount%5) )
 		{
 			double tmpalt = altitude.get(); // get pressure from altitude
-			if( (fl_auto_transition.get() == 1) && ((int)(altitude.get()*0.0328084) + (int)(standard_setting) > transition_alt.get() ) ) {
+			if( (fl_auto_transition.get() == 1) && ((int)( Units::meters2FL( altitude.get() )) + (int)(standard_setting) > transition_alt.get() ) ) {
+				ESP_LOGI(FNAME,"Above transition altitude");
 				baroP = baroSensor->calcPressure(1013.25, tmpalt); // above transition altitude
 			}
 			else {
@@ -590,10 +591,10 @@ void readSensors(void *pvParameters){
 				new_alt = altSTD;
 				standard_setting = true;
 				// ESP_LOGI(FNAME,"au: %d", alt_unit.get() );
-			}else if( (fl_auto_transition.get() == 1) && ((int)altSTD*0.0328084 + (int)(standard_setting) > transition_alt.get() ) ) { // above transition altitude
+			}else if( (fl_auto_transition.get() == 1) && ((int)Units::meters2FL( altSTD ) + (int)(standard_setting) > transition_alt.get() ) ) { // above transition altitude
 				new_alt = altSTD;
 				standard_setting = true;
-				// ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), altSTD, standard_setting, transition_alt.get() );
+				ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), altSTD, standard_setting, transition_alt.get() );
 			}
 			else {
 				if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
@@ -1329,7 +1330,7 @@ void system_startup(void *args){
 		ESP_LOGI(FNAME,"Master Mode: QNH Autosetup, IAS=%3f (<50 km/h)", ias.get() );
 		// QNH autosetup
 		float ae = elevation.get();
-		float qnh_best = 1013.25;
+		float qnh_best = QNH.get();
 		bool ok;
 		baroP = baroSensor->readPressure(ok);
 		if( ae > 0 ) {

@@ -407,7 +407,7 @@ void SetupMenu::catchFocus( bool activate ){
 }
 
 void SetupMenu::display( int mode ){
-	if( (selected != this) || !inSetup || focus )
+	if( (selected != this) || !gflags.inSetup || focus )
 		return;
 	xSemaphoreTake(display_mutex,portMAX_DELAY);
 	// ESP_LOGI(FNAME,"SetupMenu display( %s)", _title );
@@ -444,7 +444,7 @@ void SetupMenu::display( int mode ){
 }
 
 void SetupMenu::down(int count){
-	if( selected == this && !inSetup ) {
+	if( selected == this && !gflags.inSetup ) {
 		// ESP_LOGI(FNAME,"root: down");
 		if( rot_default.get() == 1) {	 // MC Value
 			float mc = MC.get();
@@ -461,7 +461,7 @@ void SetupMenu::down(int count){
 			audio_volume.set( vol );
 		}
 	}
-	if( (selected != this) || !inSetup )
+	if( (selected != this) || !gflags.inSetup )
 		return;
 	// ESP_LOGI(FNAME,"down %d %d", highlight, _childs.size() );
 	if( focus )
@@ -481,7 +481,7 @@ void SetupMenu::down(int count){
 }
 
 void SetupMenu::up(int count){
-	if( selected == this && !inSetup ) {
+	if( selected == this && !gflags.inSetup ) {
 		// ESP_LOGI(FNAME,"root: up");
 		if(rot_default.get() == 1) {	 // MC Value
 			float mc = MC.get();
@@ -500,7 +500,7 @@ void SetupMenu::up(int count){
 			audio_volume.set( (float)vol );
 		}
 	}
-	if( (selected != this) || !inSetup )
+	if( (selected != this) || !gflags.inSetup )
 		return;
 	// ESP_LOGI(FNAME,"SetupMenu::up %d %d", highlight, _childs.size() );
 	if( focus )
@@ -543,9 +543,9 @@ void SetupMenu::showMenu(){
 	}
 	if( (_parent == 0) && (highlight == -1) ) // entering setup menu root
 	{
-		if( !inSetup )
+		if( !gflags.inSetup )
 		{
-			inSetup=true;
+			gflags.inSetup=true;
 			// ESP_LOGI(FNAME,"Start Setup Menu");
 			_display->doMenu(true);
 			delay(200);  // fixme give display task time to finish drawing
@@ -556,7 +556,7 @@ void SetupMenu::showMenu(){
 			screens_init = INIT_DISPLAY_NULL;
 			_display->doMenu(false);
 			SetupCommon::commitNow();
-			inSetup=false;
+			gflags.inSetup=false;
 		}
 	}
 	// ESP_LOGI(FNAME,"end showMenu()");
@@ -567,8 +567,8 @@ static int screen_index = 0;
 void SetupMenu::press(){
 	if( (selected != this) || focus )
 		return;
-	// ESP_LOGI(FNAME,"press() active_srceen %d, pressed %d inSet %d", active_screen, pressed, inSetup );
-	if( !inSetup ){
+	// ESP_LOGI(FNAME,"press() active_srceen %d, pressed %d inSet %d", active_screen, pressed, gflags.inSetup );
+	if( !gflags.inSetup ){
 		active_screen = 0;
 		while( !active_screen && (screen_index < screen_mask_len) ){
 			if( menu_screens.get() & (1 << screen_index) ){
@@ -583,9 +583,9 @@ void SetupMenu::press(){
 			active_screen = 0; // fall back into default vario screen after optional screens
 		}
 	}
-	if( !active_screen || inSetup ){
-		// ESP_LOGI(FNAME,"press() inSetup");
-		if( !menu_long_press.get() || inSetup )
+	if( !active_screen || gflags.inSetup ){
+		// ESP_LOGI(FNAME,"press() gflags.inSetup");
+		if( !menu_long_press.get() || gflags.inSetup )
 			showMenu();
 		if( pressed )
 			pressed = false;
@@ -598,8 +598,8 @@ void SetupMenu::longPress(){
 	if( (selected != this) )
 		return;
 	// ESP_LOGI(FNAME,"longPress()");
-	ESP_LOGI(FNAME,"longPress() active_srceen %d, pressed %d inSet %d", active_screen, pressed, inSetup );
-	if( menu_long_press.get() && !inSetup ){
+	ESP_LOGI(FNAME,"longPress() active_srceen %d, pressed %d inSet %d", active_screen, pressed, gflags.inSetup );
+	if( menu_long_press.get() && !gflags.inSetup ){
 		showMenu();
 	}
 	if( pressed ){
@@ -614,12 +614,12 @@ void SetupMenu::longPress(){
 }
 
 void SetupMenu::escape(){
-	if( inSetup ){
+	if( gflags.inSetup ){
 		ESP_LOGI(FNAME,"escape now Setup Menu");
 		_display->clear();
 		_display->doMenu(false);
 		SetupCommon::commitNow();
-		inSetup=false;
+		gflags.inSetup=false;
 	}
 }
 
@@ -1505,7 +1505,7 @@ void SetupMenu::setup( )
 			ahrs->addEntry( mpu );
 			mpu->setHelp( PROGMEM "Enable High Accuracy Attitude Sensor (AHRS) NMEA messages (need valid license key entered)");
 			mpu->addEntry( "Disable");
-			if( ahrsKeyValid )
+			if( gflags.ahrsKeyValid )
 				mpu->addEntry( "Enable");
 
 			SetupMenuSelect * ahrsaz = new SetupMenuSelect( "AHRS Autozero", true , 0, true, &ahrs_autozero );

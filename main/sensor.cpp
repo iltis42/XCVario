@@ -99,6 +99,7 @@ AirspeedSensor *asSensor=0;
 StraightWind theWind;
 
 xSemaphoreHandle xMutex=NULL;
+xSemaphoreHandle spiMutex=NULL;
 
 S2F Speed2Fly;
 Protocols OV( &Speed2Fly );
@@ -111,8 +112,6 @@ TaskHandle_t tpid = NULL;
 TaskHandle_t dpid = NULL;
 
 e_wireless_type wireless;
-
-xSemaphoreHandle spiMutex=NULL;
 
 PressureSensor *baroSensor = 0;
 PressureSensor *teSensor = 0;
@@ -144,7 +143,7 @@ BTSender btsender;
 
 static float baroP=0; // barometric pressure
 static float temperature=15.0;
-static bool  validTemperature=false;
+
 static float battery=0.0;
 static float dynamicP; // Pitot
 
@@ -157,10 +156,10 @@ uint8_t g_col_header_b=g_col_highlight;
 uint8_t g_col_header_light_r=161-g_col_background/4;
 uint8_t g_col_header_light_g=168-g_col_background/3;
 uint8_t g_col_header_light_b=g_col_highlight;
+uint8_t gear_warning_holdoff = 0;
 
-bool haveMPU=false;
-bool ahrsKeyValid=false;
-bool gload_alarm=false;
+t_global_flags gflags = { true, false, false, false, false, false, false, false, false, false, false, false };
+
 int  ccp=60;
 float tas = 0;
 float aTE = 0;
@@ -170,20 +169,14 @@ float netto = 0;
 float as2f = 0;
 float s2f_delta = 0;
 float polar_sink = 0;
-bool  standard_setting = false;
-bool inSetup=true;
-bool stall_warning_active=false;
-bool stall_warning_armed=false;
-float stall_alarm_off_kmh=0;
-int   stall_alarm_off_holddown=0;
+
+float      stall_alarm_off_kmh=0;
+uint16_t   stall_alarm_off_holddown=0;
+
 int count=0;
-bool flarmWarning = false;
-bool gLoadDisplay = false;
-bool gear_warning_active = false;
-int hold_alarm=0;
+int flarm_alarm_holdtime=0;
 int the_can_mode = CAN_MODE_MASTER;
 int active_screen = 0;  // 0 = Vario
-bool flarmDownload = false; // Flarm IGC download flag
 
 AdaptUGC *egl = 0;
 
@@ -198,8 +191,8 @@ bool do_factory_reset() {
 void drawDisplay(void *pvParameters){
 	while (1) {
 		if( Flarm::bincom ) {
-			if( flarmDownload == false ) {
-				flarmDownload = true;
+			if( gflags.flarmDownload == false ) {
+				gflags.flarmDownload = true;
 				display->clear();
 				Flarm::drawDownloadInfo();
 			}
@@ -208,14 +201,14 @@ void drawDisplay(void *pvParameters){
 			vTaskDelay(20/portTICK_PERIOD_MS);
 			continue;
 		}
-		else if( flarmDownload == true ) {
-			flarmDownload = false;
+		else if( gflags.flarmDownload == true ) {
+			gflags.flarmDownload = false;
 			display->clear();
 		}
 		// TickType_t dLastWakeTime = xTaskGetTickCount();
-		if( inSetup != true ) {
+		if( gflags.inSetup != true ) {
 			float t=OAT.get();
-			if( validTemperature == false )
+			if( gflags.validTemperature == false )
 				t = DEVICE_DISCONNECTED_C;
 			float airspeed = 0;
 			if( airspeed_mode.get() == MODE_IAS )
@@ -224,29 +217,29 @@ void drawDisplay(void *pvParameters){
 				airspeed = tas;
 			// Stall Warning Screen
 			if( stall_warning.get() && gload_mode.get() != GLOAD_ALWAYS_ON ){  // In aerobatics stall warning is contra productive, we concentrate on G-Load Display if permanent enabled
-				if( stall_warning_armed ){
+				if( gflags.stall_warning_armed ){
 					float acceleration=accelG[0];
 					if( acceleration < 0.3 )
 						acceleration = 0.3;  // limit acceleration effect to minimum 30% of 1g
 					float acc_stall= stall_speed.get() * sqrt( acceleration + ( ballast.get()/100));  // accelerated and ballast(ed) stall speed
 					if( ias.get() < acc_stall && ias.get() > acc_stall*0.7 ){
-						if( !stall_warning_active ){
+						if( !gflags.stall_warning_active ){
 							Audio::alarm( true );
 							display->drawWarning( "! STALL !", true );
-							stall_warning_active = true;
+							gflags.stall_warning_active = true;
 						}
 					}
 					else{
-						if( stall_warning_active ){
+						if( gflags.stall_warning_active ){
 							Audio::alarm( false );
 							display->clear();
-							stall_warning_active = false;
+							gflags.stall_warning_active = false;
 						}
 					}
 					if( ias.get() < stall_alarm_off_kmh ){
 						stall_alarm_off_holddown++;
 						if( stall_alarm_off_holddown > 1200 ){  // ~30 seconds holddown
-							stall_warning_armed = false;
+							gflags.stall_warning_armed = false;
 							stall_alarm_off_holddown=0;
 						}
 					}
@@ -256,7 +249,7 @@ void drawDisplay(void *pvParameters){
 				}
 				else{
 					if( ias.get() > stall_speed.get() ){
-						stall_warning_armed = true;
+						gflags.stall_warning_armed = true;
 						stall_alarm_off_holddown=0;
 					}
 				}
@@ -266,76 +259,76 @@ void drawDisplay(void *pvParameters){
 				if( gear_warning.get() == GW_FLAP_SENSOR_INV || gear_warning.get() == GW_S2_RS232_RX_INV ){
 					gw = !gw;
 				}
-				if( gw && !stall_warning_active ){
-					if( !gear_warning_active ){
+				if( gw && !gflags.stall_warning_active ){
+					if( !gflags.gear_warning_active ){
 						Audio::alarm( true );
 						display->drawWarning( "! GEAR !", false );
-						gear_warning_active = true;
+						gflags.gear_warning_active = true;
 					}
 				}else{
-					if( gear_warning_active ){
+					if( gflags.gear_warning_active ){
 						Audio::alarm( false );
 						display->clear();
-						gear_warning_active = false;
+						gflags.gear_warning_active = false;
 					}
 				}
 			}
 
 			// Flarm Warning Screen
-			if( flarm_warning.get() && !stall_warning_active && Flarm::alarmLevel() >= flarm_warning.get() ){ // 0 -> Disable
+			if( flarm_warning.get() && !gflags.stall_warning_active && Flarm::alarmLevel() >= flarm_warning.get() ){ // 0 -> Disable
 				// ESP_LOGI(FNAME,"Flarm::alarmLevel: %d, flarm_warning.get() %d", Flarm::alarmLevel(), flarm_warning.get() );
-				if( !flarmWarning ) {
-					flarmWarning = true;
+				if( !gflags.flarmWarning ) {
+					gflags.flarmWarning = true;
 					delay(100);
 					display->clear();
-					hold_alarm = 250;
+					flarm_alarm_holdtime = 250;
 				}
 			}
 			else{
-				if( flarmWarning && (hold_alarm == 0) ){
-					flarmWarning = false;
+				if( gflags.flarmWarning && (flarm_alarm_holdtime == 0) ){
+					gflags.flarmWarning = false;
 					display->clear();
 					Audio::alarm( false );
 				}
 			}
-			if( flarmWarning )
+			if( gflags.flarmWarning )
 				Flarm::drawFlarmWarning();
 			// G-Load Display
 			// ESP_LOGI(FNAME,"Active Screen = %d", active_screen );
 			if( (((float)accelG[0] > gload_pos_thresh.get() || (float)accelG[0] < gload_neg_thresh.get()) && gload_mode.get() == GLOAD_DYNAMIC ) ||
 					( gload_mode.get() == GLOAD_ALWAYS_ON ) || ((active_screen << SCREEN_GMETER) & 1)  )
 			{
-				if( !gLoadDisplay ){
-					gLoadDisplay = true;
+				if( !gflags.gLoadDisplay ){
+					gflags.gLoadDisplay = true;
 				}
 			}
 			else{
-				if( gLoadDisplay ) {
-					gLoadDisplay = false;
+				if( gflags.gLoadDisplay ) {
+					gflags.gLoadDisplay = false;
 				}
 			}
-			if( gLoadDisplay ) {
+			if( gflags.gLoadDisplay ) {
 				display->drawLoadDisplay( (float)accelG[0] );
 			}
 			// G-Load Alarm when limits reached
 			if( gload_mode.get() != GLOAD_OFF  ){
 				if( (float)accelG[0] > gload_pos_limit.get() || (float)accelG[0] < gload_neg_limit.get()  ){
-					if( !gload_alarm ) {
+					if( !gflags.gload_alarm ) {
 						Audio::alarm( true );
-						gload_alarm = true;
+						gflags.gload_alarm = true;
 					}
 				}else
 				{
-					if( gload_alarm ) {
+					if( gflags.gload_alarm ) {
 						Audio::alarm( false );
-						gload_alarm = false;
+						gflags.gload_alarm = false;
 					}
 				}
 			}
 			// Vario Screen
-			if( !(stall_warning_active || gear_warning_active || flarmWarning || gLoadDisplay )  ) {
+			if( !(gflags.stall_warning_active || gflags.gear_warning_active || gflags.flarmWarning || gflags.gLoadDisplay )  ) {
 				// ESP_LOGI(FNAME,"TE=%2.3f", te_vario.get() );
-				display->drawDisplay( airspeed, te_vario.get(), aTE, polar_sink, altitude.get(), t, battery, s2f_delta, as2f, average_climb.get(), Switch::getCruiseState(), standard_setting, flap_pos.get() );
+				display->drawDisplay( airspeed, te_vario.get(), aTE, polar_sink, altitude.get(), t, battery, s2f_delta, as2f, average_climb.get(), Switch::getCruiseState(), gflags.standard_setting, flap_pos.get() );
 			}
 			if( screen_centeraid.get() ){
 				if( centeraid ){
@@ -343,8 +336,8 @@ void drawDisplay(void *pvParameters){
 				}
 			}
 		}
-		if( hold_alarm )
-			hold_alarm--;
+		if( flarm_alarm_holdtime )
+			flarm_alarm_holdtime--;
 		vTaskDelay(20/portTICK_PERIOD_MS);
 		if( uxTaskGetStackHighWaterMark( dpid ) < 512  )
 			ESP_LOGW(FNAME,"Warning drawDisplay stack low: %d bytes", uxTaskGetStackHighWaterMark( dpid ) );
@@ -444,23 +437,23 @@ static void toyFeed()
 	static char lb[150];
 
 	if( ahrs_rpyl_dataset.get() ){
-		OV.sendNMEA( P_AHRS_RPYL, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), validTemperature,
+		OV.sendNMEA( P_AHRS_RPYL, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
 				-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
-		OV.sendNMEA( P_AHRS_APENV1, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), validTemperature,
+		OV.sendNMEA( P_AHRS_APENV1, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
 				-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
 	}
 	if( nmea_protocol.get() == BORGELT ) {
-		OV.sendNMEA( P_BORGELT, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altSTD, validTemperature  );
-		OV.sendNMEA( P_GENERIC, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altSTD, validTemperature  );
+		OV.sendNMEA( P_BORGELT, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altSTD, gflags.validTemperature  );
+		OV.sendNMEA( P_GENERIC, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altSTD, gflags.validTemperature  );
 	}
 	else if( nmea_protocol.get() == OPENVARIO ){
-		OV.sendNMEA( P_OPENVARIO, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), validTemperature  );
+		OV.sendNMEA( P_OPENVARIO, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature  );
 	}
 	else if( nmea_protocol.get() == CAMBRIDGE ){
-		OV.sendNMEA( P_CAMBRIDGE, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), validTemperature  );
+		OV.sendNMEA( P_CAMBRIDGE, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature  );
 	}
 	else if( nmea_protocol.get() == XCVARIO ) {
-		OV.sendNMEA( P_XCVARIO, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), validTemperature,
+		OV.sendNMEA( P_XCVARIO, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
 				-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
 	}
 	else if( nmea_protocol.get() == NMEA_OFF ) {
@@ -475,7 +468,7 @@ static void toyFeed()
 void clientLoop(void *pvParameters)
 {
 	int ccount = 0;
-	validTemperature = true;
+	gflags.validTemperature = true;
 	while (true)
 	{
 		TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -484,7 +477,7 @@ void clientLoop(void *pvParameters)
 		if( !(ccount%5) )
 		{
 			double tmpalt = altitude.get(); // get pressure from altitude
-			if( (fl_auto_transition.get() == 1) && ((int)( Units::meters2FL( altitude.get() )) + (int)(standard_setting) > transition_alt.get() ) ) {
+			if( (fl_auto_transition.get() == 1) && ((int)( Units::meters2FL( altitude.get() )) + (int)(gflags.standard_setting) > transition_alt.get() ) ) {
 				ESP_LOGI(FNAME,"Above transition altitude");
 				baroP = baroSensor->calcPressure(1013.25, tmpalt); // above transition altitude
 			}
@@ -494,7 +487,7 @@ void clientLoop(void *pvParameters)
 			dynamicP = Atmosphere::kmh2pascal(ias.get());
 			tas = Atmosphere::TAS2( ias.get(), altitude.get(), OAT.get() );
 
-			if( haveMPU ) {
+			if( gflags.haveMPU ) {
 				grabMPU();
 			}
 			if( accelG[0] > gload_pos_max.get() ){
@@ -532,7 +525,7 @@ void readSensors(void *pvParameters){
 	{
 		count++;
 		TickType_t xLastWakeTime = xTaskGetTickCount();
-		if( haveMPU  )  // 3th Generation HW, MPU6050 avail and feature enabled
+		if( gflags.haveMPU  )  // 3th Generation HW, MPU6050 avail and feature enabled
 		{
 			grabMPU();
 		}
@@ -545,7 +538,7 @@ void readSensors(void *pvParameters){
 		float iasraw = Atmosphere::pascal2kmh( dynamicP );
 		// ESP_LOGI("FNAME","P: %f  IAS:%f", dynamicP, iasraw );
 		float T=OAT.get();
-		if( !validTemperature ) {
+		if( !gflags.validTemperature ) {
 			T= 15 - ( (altitude.get()/100) * 0.65 );
 			// ESP_LOGW(FNAME,"T invalid, using 15 deg");
 		}
@@ -589,20 +582,20 @@ void readSensors(void *pvParameters){
 		else if( alt_select.get() == AS_BARO_SENSOR  || alt_select.get() == AS_EXTERNAL ){ // Baro or external
 			if(  alt_unit.get() == ALT_UNIT_FL ) { // FL, always standard
 				new_alt = altSTD;
-				standard_setting = true;
+				gflags.standard_setting = true;
 				// ESP_LOGI(FNAME,"au: %d", alt_unit.get() );
-			}else if( (fl_auto_transition.get() == 1) && ((int)Units::meters2FL( altSTD ) + (int)(standard_setting) > transition_alt.get() ) ) { // above transition altitude
+			}else if( (fl_auto_transition.get() == 1) && ((int)Units::meters2FL( altSTD ) + (int)(gflags.standard_setting) > transition_alt.get() ) ) { // above transition altitude
 				new_alt = altSTD;
-				standard_setting = true;
-				ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), altSTD, standard_setting, transition_alt.get() );
+				gflags.standard_setting = true;
+				ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), altSTD, gflags.standard_setting, transition_alt.get() );
 			}
 			else {
 				if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
 					new_alt = altSTD + ( QNH.get()- 1013.25)*8.2296;  // correct altitude according to ISA model = 27ft / hPa
 				else
 					new_alt = baroSensor->calcAVGAltitude( QNH.get(), baroP );
-				standard_setting = false;
-				// ESP_LOGI(FNAME,"QNH %f baro: %f alt: %f SS:%d", QNH.get(), baroP, alt, standard_setting  );
+				gflags.standard_setting = false;
+				// ESP_LOGI(FNAME,"QNH %f baro: %f alt: %f SS:%d", QNH.get(), baroP, alt, gflags.standard_setting  );
 			}
 		}
 		if( (int( new_alt +0.5 ) != int( altitude.get() +0.5 )) || !(count%20) ){
@@ -694,16 +687,16 @@ void readTemp(void *pvParameters){
 		if( !SetupCommon::isClient() ) {  // client Vario will get Temperature info from main Vario
 			t = ds18b20.getTemp();
 			if( t ==  DEVICE_DISCONNECTED_C ) {
-				if( validTemperature == true ) {
+				if( gflags.validTemperature == true ) {
 					ESP_LOGI(FNAME,"Temperatur Sensor disconnected, please plug Temperature Sensor");
-					validTemperature = false;
+					gflags.validTemperature = false;
 				}
 			}
 			else
 			{
-				if( validTemperature == false ) {
+				if( gflags.validTemperature == false ) {
 					ESP_LOGI(FNAME,"Temperatur Sensor connected, temperature valid");
-					validTemperature = true;
+					gflags.validTemperature = true;
 				}
 				// ESP_LOGI(FNAME,"temperature=%2.1f", temperature );
 				temperature +=  (t - temperature) * 0.3; // A bit low pass as strategy against toggling
@@ -720,7 +713,7 @@ void readTemp(void *pvParameters){
 				compass->tick();
 		}else{
 			if( (OAT.get() > -55.0) && (OAT.get() < 85.0) )
-				validTemperature = true;
+				gflags.validTemperature = true;
 		}
 		theWind.tick();
 		CircleWind::tick();
@@ -819,9 +812,9 @@ void system_startup(void *args){
 	AverageVario::begin();
 	stall_alarm_off_kmh = stall_speed.get()/3;
 	if( Cipher::checkKeyAHRS() ){
-		ESP_LOGI( FNAME, "AHRS key valid=%d", ahrsKeyValid );
+		ESP_LOGI( FNAME, "AHRS key valid=%d", gflags.ahrsKeyValid );
 	}else{
-		ESP_LOGI( FNAME, "AHRS key invalid=%d, disable AHRS Sensor", ahrsKeyValid );
+		ESP_LOGI( FNAME, "AHRS key invalid=%d, disable AHRS Sensor", gflags.ahrsKeyValid );
 		if( attitude_indicator.get() )
 			attitude_indicator.set(0);
 	}
@@ -883,7 +876,7 @@ void system_startup(void *args){
 	ESP_LOGI( FNAME,"MPU Probing returned %d MPU enable: %d ", err, attitude_indicator.get() );
 	if( err == ESP_OK ){
 		hardwareRevision.set(3);  // wow, there is MPU6050 gyro and acceleration sensor
-		haveMPU = true;
+		gflags.haveMPU = true;
 		ESP_LOGI( FNAME,"MPU initialize");
 		MPU.initialize();  // this will initialize the chip and set default configurations
 		MPU.setSampleRate(50);  // in (Hz)
@@ -1081,13 +1074,13 @@ void system_startup(void *args){
 		if( temperature == DEVICE_DISCONNECTED_C ) {
 			ESP_LOGE(FNAME,"Error: Self test Temperatur Sensor failed; returned T=%2.2f", temperature );
 			display->writeText( line++, "Temp Sensor: NOT FOUND");
-			validTemperature = false;
+			gflags.validTemperature = false;
 			logged_tests += "External Temperature Sensor: NOT FOUND\n";
 		}else
 		{
 			ESP_LOGI(FNAME,"Self test Temperatur Sensor PASSED; returned T=%2.2f", temperature );
 			display->writeText( line++, "Temp Sensor: OK");
-			validTemperature = true;
+			gflags.validTemperature = true;
 			logged_tests += "External Temperature Sensor:PASSED\n";
 
 		}
@@ -1370,7 +1363,7 @@ void system_startup(void *args){
 	}
 	else
 	{
-		inSetup = false;
+		gflags.inSetup = false;
 		display->clear();
 	}
 
@@ -1408,7 +1401,7 @@ void system_startup(void *args){
 				display->writeText( line++, "Now start, sync" );
 				WifiClient::start();
 				delay( 5000 );
-				inSetup = false;
+				gflags.inSetup = false;
 				display->clear();
 			}
 			else{
@@ -1423,7 +1416,7 @@ void system_startup(void *args){
 					display->writeText( 3, "Master XCVario found" );
 					display->writeText( 4, "Now start, sync" );
 					delay( 5000 );
-					inSetup = false;
+					gflags.inSetup = false;
 					display->clear();
 					break;
 				}

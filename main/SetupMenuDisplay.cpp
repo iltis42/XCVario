@@ -36,7 +36,7 @@ SetupMenuDisplay::~SetupMenuDisplay()
 
 void SetupMenuDisplay::display( int mode )
 {
-  if( (selected != this) || !inSetup )
+  if( (selected != this) || !gflags.inSetup )
     return;
 
   if( _action != nullptr ) {

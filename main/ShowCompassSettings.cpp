@@ -34,7 +34,7 @@ SetupMenuDisplay( title, nullptr )
 
 void ShowCompassSettings::display( int mode )
 {
-	if( (selected != this) || !inSetup )
+	if( (selected != this) || !gflags.inSetup )
 		return;
 	if( !compass )
 	{

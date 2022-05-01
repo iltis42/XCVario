@@ -68,9 +68,9 @@ void SetupMenuValFloat::showMenu( float val, SetupMenuValFloat * menu ){
 	ESP_LOGI(FNAME,"showMenu()");
 	if( menu ) {
 		ESP_LOGI(FNAME,"menu found");
-		inSetup = true;
+		gflags.inSetup = true;
 		selected = menu;
-		inSetup=true;
+		gflags.inSetup=true;
 		menu->clear();
 		menu->display();
 		menu->pressed = true;
@@ -79,7 +79,7 @@ void SetupMenuValFloat::showMenu( float val, SetupMenuValFloat * menu ){
 }
 
 void SetupMenuValFloat::display( int mode ){
-	if( (selected != this) || !inSetup )
+	if( (selected != this) || !gflags.inSetup )
 		return;
 	ESP_LOGI(FNAME,"display() pressed=%d instance=%x mode=%d", pressed, (int)this, mode );
 	int y= 75;
@@ -124,7 +124,7 @@ float SetupMenuValFloat::step( float instep ){
 }
 
 void SetupMenuValFloat::down( int count ){
-	if( (selected != this) || !inSetup )
+	if( (selected != this) || !gflags.inSetup )
 		return;
 	// ESP_LOGI(FNAME,"val down %d times ", count );
 	_value = _nvs->get();
@@ -142,7 +142,7 @@ void SetupMenuValFloat::down( int count ){
 }
 
 void SetupMenuValFloat::up( int count ){
-	if( (selected != this) || !inSetup )
+	if( (selected != this) || !gflags.inSetup )
 		return;
 	// ESP_LOGI(FNAME,"val up %d times ", count );
 	_value = _nvs->get();

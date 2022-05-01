@@ -27,14 +27,29 @@
 #define SPI_MOSI       GPIO_NUM_27      // SPI SDO Master Out Slave In pin
 #define SPI_MISO       GPIO_NUM_32      // SPI SDI Master In Slave Out
 
+typedef struct global_flags{
+	bool inSetup :1;
+	bool haveMPU :1;
+	bool ahrsKeyValid  :1;
+	bool gload_alarm :1;
+	bool  standard_setting :1;
+	bool stall_warning_active :1;
+	bool stall_warning_armed :1;
+	bool flarmWarning :1 ;
+	bool gLoadDisplay :1;
+	bool gear_warning_active :1;
+	bool flarmDownload :1 ; // Flarm IGC download flag
+	bool validTemperature :1 ;
+} t_global_flags;
+
+extern t_global_flags gflags;
+
 extern CANbus* CAN;
 extern StraightWind theWind;
 extern xSemaphoreHandle xMutex;
 extern int active_screen;
 extern CenterAid *centeraid;
 
-extern bool haveMPU;
-extern bool ahrsKeyValid;
 extern SetupMenu  *Menu;
 extern xSemaphoreHandle display_mutex;
 
@@ -64,8 +79,6 @@ extern float wksensor;
 extern S2F Speed2Fly;
 extern float meanClimb;
 extern Protocols OV;
-extern bool inSetup;
-extern bool stall_warning_active;
 extern int the_can_mode;
 
 extern IpsDisplay *display;

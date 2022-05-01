@@ -98,9 +98,9 @@ bool Cipher::init(){
 	ahrs_licence_dig3.set( encid[2]-'0' );
 	ahrs_licence_dig4.set( encid[3]-'0' );
 	std::string decid = Cipher::Decrypt(CIPHER_KEY, encid );
-	ahrsKeyValid = (id == decid);
-	ESP_LOGI(FNAME,"init() ID/DECID %s == %s returns %d", id.c_str(), decid.c_str(), ahrsKeyValid );
-	return ahrsKeyValid;
+	gflags.ahrsKeyValid = (id == decid);
+	ESP_LOGI(FNAME,"init() ID/DECID %s == %s returns %d", id.c_str(), decid.c_str(), gflags.ahrsKeyValid );
+	return gflags.ahrsKeyValid;
 }
 
 std::string Cipher::id(){
@@ -120,7 +120,7 @@ bool Cipher::checkKeyAHRS(){
 	key += char(ahrs_licence_dig3.get()+'0');
 	key += char(ahrs_licence_dig4.get()+'0');
 	std::string decid = Cipher::Decrypt(CIPHER_KEY, key );
-	ahrsKeyValid = (id == decid);
-	ESP_LOGI(FNAME,"checkKeyAHRS() ID/KEY/DECID %s %s %s returns %d", id.c_str(), key.c_str(), decid.c_str(), ahrsKeyValid );
-	return ahrsKeyValid;
+	gflags.ahrsKeyValid = (id == decid);
+	ESP_LOGI(FNAME,"checkKeyAHRS() ID/KEY/DECID %s %s %s returns %d", id.c_str(), key.c_str(), decid.c_str(), gflags.ahrsKeyValid );
+	return gflags.ahrsKeyValid;
 }

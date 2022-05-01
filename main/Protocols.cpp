@@ -146,7 +146,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		// ESP_LOGW(FNAME,"Ballast: %f %1.2f", bal, bal );
 		sprintf(str,"$PXCV,%3.1f,%1.2f,%d,%1.3f,%d,%2.1f,%4.1f,%4.1f,%.1f", te, mc, bugs, bal, !cruise, std::roundf(temp*10.f)/10.f, QNH.get() , baro, dp );
 		int append_idx = strlen(str);
-		if( haveMPU && attitude_indicator.get() ){
+		if( gflags.haveMPU && attitude_indicator.get() ){
 			float roll = IMU::getRoll();
 			float pitch = IMU::getXCSPitch();
 			sprintf(str+append_idx,",%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", roll, pitch, acc_x, acc_y, acc_z );
@@ -233,10 +233,10 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		 */
 		sprintf(str, "$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,", roll, pitch,acc_x,acc_y,acc_z );
 	}
-	else if( haveMPU && attitude_indicator.get() && (proto == P_AHRS_APENV1) ) {  // LEVIL_AHRS
+	else if( gflags.haveMPU && attitude_indicator.get() && (proto == P_AHRS_APENV1) ) {  // LEVIL_AHRS
 		sprintf(str, "$APENV1,%d,%d,0,0,0,%d", (int)(Units::kmh2knots(ias)+0.5),(int)(Units::meters2feet(alt)+0.5),(int)(Units::ms2fpm(te)+0.5));
 	}
-	else if( haveMPU && attitude_indicator.get() && (proto == P_AHRS_RPYL) ) {   // LEVIL_AHRS  $RPYL,Roll,Pitch,MagnHeading,SideSlip,YawRate,G,errorcode,
+	else if( gflags.haveMPU && attitude_indicator.get() && (proto == P_AHRS_RPYL) ) {   // LEVIL_AHRS  $RPYL,Roll,Pitch,MagnHeading,SideSlip,YawRate,G,errorcode,
 		sprintf(str, "$RPYL,%d,%d,%d,0,0,%d,0",
 				(int)(IMU::getRoll()*10+0.5),         // Bank == roll     (deg)
 				(int)(IMU::getPitch()*10+0.5),        // Pitch            (deg)

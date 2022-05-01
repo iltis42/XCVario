@@ -37,7 +37,7 @@ SetupMenuDisplay( title, nullptr )
 
 void ShowStraightWind::display( int mode )
 {
-	if( (selected != this) || !inSetup )
+	if( (selected != this) || !gflags.inSetup )
 		return;
 
 	ESP_LOGI(FNAME, "display() mode=%d", mode );

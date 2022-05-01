@@ -114,7 +114,7 @@ SetupMenuSelect::~SetupMenuSelect()
 }
 
 void SetupMenuSelect::display( int mode ){
-	if( (selected != this) || !inSetup  )
+	if( (selected != this) || !gflags.inSetup  )
 		return;
 	ESP_LOGI(FNAME,"display() pressed:%d title:%s action: %x hl:%d", pressed, _title, (int)(_action), highlight );
 	clear();
@@ -161,7 +161,7 @@ void SetupMenuSelect::display( int mode ){
 }
 
 void SetupMenuSelect::down(int count){
-	if( (selected != this) || !inSetup )
+	if( (selected != this) || !gflags.inSetup )
 		return;
 	if( _numval > 9 ){
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
@@ -188,7 +188,7 @@ void SetupMenuSelect::down(int count){
 }
 
 void SetupMenuSelect::up(int count){
-	if( (selected != this) || !inSetup )
+	if( (selected != this) || !gflags.inSetup )
 		return;
 	if( _numval > 9 )
 	{

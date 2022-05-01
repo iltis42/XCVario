@@ -156,7 +156,7 @@ uint8_t g_col_header_b=g_col_highlight;
 uint8_t g_col_header_light_r=161-g_col_background/4;
 uint8_t g_col_header_light_g=168-g_col_background/3;
 uint8_t g_col_header_light_b=g_col_highlight;
-uint8_t gear_warning_holdoff = 0;
+uint16_t gear_warning_holdoff = 0;
 
 t_global_flags gflags = { true, false, false, false, false, false, false, false, false, false, false, false };
 
@@ -255,22 +255,37 @@ void drawDisplay(void *pvParameters){
 				}
 			}
 			if( gear_warning.get() ){
-				int gw = digitalRead( SetupMenu::getGearWarningIO() );
-				if( gear_warning.get() == GW_FLAP_SENSOR_INV || gear_warning.get() == GW_S2_RS232_RX_INV ){
-					gw = !gw;
+				if( !gear_warning_holdoff ){
+					int gw = digitalRead( SetupMenu::getGearWarningIO() );
+					if( gear_warning.get() == GW_FLAP_SENSOR_INV || gear_warning.get() == GW_S2_RS232_RX_INV ){
+						gw = !gw;
+					}
+					if( gw ){
+						if( ESPRotary::readSwitch() ){
+							gear_warning_holdoff = 25000;  // 5 min
+							Audio::alarm( false );
+							display->clear();
+							gflags.gear_warning_active = false;
+							SetupMenu::catchFocus( false );
+						}
+						else if( !gflags.gear_warning_active && !gflags.stall_warning_active ){
+							Audio::alarm( true );
+							display->drawWarning( "! GEAR !", false );
+							gflags.gear_warning_active = true;
+							SetupMenu::catchFocus( true );
+						}
+					}
+					else{
+						if( gflags.gear_warning_active ){
+							SetupMenu::catchFocus( false );
+							Audio::alarm( false );
+							display->clear();
+							gflags.gear_warning_active = false;
+						}
+					}
 				}
-				if( gw && !gflags.stall_warning_active ){
-					if( !gflags.gear_warning_active ){
-						Audio::alarm( true );
-						display->drawWarning( "! GEAR !", false );
-						gflags.gear_warning_active = true;
-					}
-				}else{
-					if( gflags.gear_warning_active ){
-						Audio::alarm( false );
-						display->clear();
-						gflags.gear_warning_active = false;
-					}
+				else{
+					gear_warning_holdoff--;
 				}
 			}
 

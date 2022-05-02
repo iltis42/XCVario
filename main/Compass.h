@@ -80,6 +80,7 @@ public:
 	float rawX() { return fx; };
 	float rawY() { return fy; };
 	float rawZ() { return fz; };
+	t_magn_axes getRawAxes() { return rawAxes; };
 	float filteredHeading( bool *okIn );
 	float filteredTrueHeading( bool *okIn );
 	void setGyroHeading( float hd );
@@ -139,4 +140,5 @@ private:
 	double fx;
 	double fy;
 	double fz;
+	t_magn_axes rawAxes;
 };

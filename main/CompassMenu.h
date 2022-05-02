@@ -50,6 +50,8 @@ class CompassMenu
   /** Compass Menu Action method to calibrate sensor. */
   static int sensorCalibrationAction( SetupMenuSelect *p );
 
+  static bool showSensorRawData(SetupMenuSelect *p);
+
   static SetupNG<float> *deviations[8];
 
   // Backup for calibration data

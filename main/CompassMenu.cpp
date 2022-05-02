@@ -29,6 +29,7 @@ Last update: 2021-12-30
 #include "vector.h"
 #include "Colors.h"
 #include "logdef.h"
+#include "MagnetSensor.h"
 
 SetupMenuSelect* CompassMenu::menuPtr = nullptr;
 
@@ -183,10 +184,40 @@ int CompassMenu::declinationAction( SetupMenuValFloat *p )
 	return 0;
 }
 
+bool CompassMenu::showSensorRawData(SetupMenuSelect *p)
+{
+	// ESP_LOGI( FNAME, "showSensorRawData()" );
+	if( compass == 0 ){
+		ESP_LOGI( FNAME, "no compass" );
+		return false;
+	}
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
+	t_magn_axes raw = compass->getRawAxes();
+	p->ucg->setColor( COLOR_WHITE );
+	p->ucg->setPrintPos( 1, 60 );
+	p->ucg->printf( "X = %d  ", raw.x );
+	p->ucg->setPrintPos( 1, 90 );
+	p->ucg->printf( "Y = %d  ", raw.y );
+	p->ucg->setPrintPos( 1, 120 );
+	p->ucg->printf( "Z = %d  ", raw.z );
+	xSemaphoreGive(spiMutex);
+	return true;
+}
+
 int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 {
-	ESP_LOGI( FNAME, "sensorCalibrationAction()" );
+	ESP_LOGI( FNAME, "sensorCalibrationAction() selected: %d", p->getSelect());
 	bool only_show = (p->getSelect() == 2);  // Show
+	bool show_raw_data = (p->getSelect() == 3);  // Show X,Y,Z
+	p->ucg->setFont( ucg_font_ncenR14_hr, true );
+	if( show_raw_data ){
+		p->clear();
+		while( !p->readSwitch() ){
+				delay( 100 );
+				showSensorRawData(p);
+		}
+		return 0;
+	}
 
 	if( p->getSelect() == 0 )
 	{

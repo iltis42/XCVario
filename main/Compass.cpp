@@ -218,6 +218,8 @@ bool Compass::calibrate( bool (*reporter)( t_magn_axes raw, t_float_axes scale, 
 	ESP_LOGI( FNAME, "calibrate min-max xyz");
 	int i = 0;
 	t_magn_axes raw;
+	t_magn_axes raw_old = { 0,0,0 };
+	t_float_axes var;
 	t_magn_axes axes;
 	t_magn_axes min = { 20000,20000,20000 } ;
 	t_magn_axes max = { 0,0,0 };
@@ -241,7 +243,15 @@ bool Compass::calibrate( bool (*reporter)( t_magn_axes raw, t_float_axes scale, 
 			raw.x = avgX( axes.x );
 			raw.y = avgY( axes.y );
 			raw.z = avgZ( axes.z );
-			// ESP_LOGI( FNAME, "Mag Raw X:%d Y:%d Z:%d", raw.x, raw.y, raw.z  );
+			var.x =+ (raw.x -raw_old.x)/8.0;  // Variance low pass filtered
+			var.y =+ (raw.y -raw_old.y)/8.0;
+			var.z =+ (raw.z -raw_old.z)/8.0;
+			raw_old.x = raw.x;
+			raw_old.y = raw.y;
+			raw_old.z = raw.z;
+
+
+			// ESP_LOGI( FNAME, "Mag Var X:%.2f Y:%.2f Z:%.2f", var.x, var.y, var.z  );
 			/* Find max/min peak values */
 			min.x = ( raw.x < min.x ) ? raw.x : min.x;
 			min.y = ( raw.y < min.y ) ? raw.y : min.y;
@@ -251,17 +261,17 @@ bool Compass::calibrate( bool (*reporter)( t_magn_axes raw, t_float_axes scale, 
 			max.z = ( raw.z > max.z ) ? raw.z : max.z;
 
 			const int16_t minval = (32768/100)*1; // 1% full scale
-			if( abs(raw.x) < minval && abs(raw.y) < minval && raw.z > 2*minval  )
+			if( abs(raw.x) < minval && abs(raw.y) < minval && var.x < 0.1 && var.y < 0.1 && raw.z > 2*minval  )
 				bits.zmax_green = true;
-			if( abs(raw.x) < minval && abs(raw.y) < minval && raw.z < -2*minval  )
+			if( abs(raw.x) < minval && abs(raw.y) < minval && var.x < 0.1 && var.y < 0.1 && raw.z < -2*minval  )
 				bits.zmin_green = true;
-			if( abs(raw.x) < minval && abs(raw.z) < minval && raw.y > 2*minval  )
+			if( abs(raw.x) < minval && abs(raw.z) < minval && var.x < 0.1 && var.z < 0.1 && raw.y > 2*minval  )
 				bits.ymax_green = true;
-			if( abs(raw.x) < minval && abs(raw.z) < minval && raw.y < -2*minval  )
+			if( abs(raw.x) < minval && abs(raw.z) < minval && var.x < 0.1 && var.z < 0.1 && raw.y < -2*minval  )
 				bits.ymin_green = true;
-			if( abs(raw.y) < minval && abs(raw.z) < minval && raw.x > 2*minval  )
+			if( abs(raw.y) < minval && abs(raw.z) < minval && var.y < 0.1 && var.z < 0.1 && raw.x > 2*minval  )
 				bits.xmax_green = true;
-			if( abs(raw.y) < minval && abs(raw.z) < minval && raw.x < -2*minval  )
+			if( abs(raw.y) < minval && abs(raw.z) < minval && var.y < 0.1 && var.z < 0.1 && raw.x < -2*minval  )
 				bits.xmin_green = true;
 
 			if( i < 2 )
@@ -278,7 +288,7 @@ bool Compass::calibrate( bool (*reporter)( t_magn_axes raw, t_float_axes scale, 
 			float xchord = ( (float)max.x - min.x );
 			float ychord = ( (float)max.y - min.y );
 			float zchord = ( (float)max.z - min.z );
-			float cord_avgerage = ( xchord + ychord + zchord ) / 6.;
+			float cord_avgerage = ( xchord + ychord + zchord ) / 3.;
 			scale.x = cord_avgerage / xchord;
 			scale.y = cord_avgerage / ychord;
 			scale.z = cord_avgerage / zchord;
@@ -411,7 +421,6 @@ float Compass::heading( bool *ok )
 		// ESP_LOGI(FNAME,"Not calibrated" );
 		return 0.0;
 	}
-	t_magn_axes raw;
 	// ESP_LOGI(FNAME,"QMC5883L::heading() errors:%d, N:%d", errors, N );
 	if( errors > 100 && errors % 100 )  // Holddown processing and throwing errors once sensor is gone
 	{
@@ -429,8 +438,8 @@ float Compass::heading( bool *ok )
 			holddown = false;
 		}
 	}
-	bool state = sensor->rawAxes( raw );
-	// ESP_LOGI(FNAME,"state %d  x:%d y:%d z:%d", state, raw.x, raw.y, raw.z );
+	bool state = sensor->rawAxes( rawAxes );
+	// ESP_LOGI(FNAME,"state %d  x:%d y:%d z:%d", state, rawAxes.x, rawAxes.y, rawAxes.z );
 	if( !state )
 	{
 		errors++;
@@ -459,12 +468,12 @@ float Compass::heading( bool *ok )
 	 * turned clockwise by 90 degrees the X-axis and the Y-axis are moved and
 	 * have to be handled in this way.
 	 */
-	// ESP_LOGI( FNAME, "heading: X:%d Y:%d Z:%d xs:%f ys:%f zs:%f", raw.x, raw.y, raw.z, scale.x, scale.y, scale.z);
+	// ESP_LOGI( FNAME, "heading: X:%d Y:%d Z:%d xs:%f ys:%f zs:%f", rawAxes.x, rawAxes.y, rawAxes.z, scale.x, scale.y, scale.z);
 
-	fx = -(double) ((float( raw.y ) - bias.y) * scale.y);  // mounting correction
-	fy = -(double) ((float( raw.x ) - bias.x) * scale.x);
-	fz = -(double) ((float( raw.z ) - bias.z) * scale.z);
-	// ESP_LOGI(FNAME, "raw x %d, y %d, z %d ", raw.x, raw.y, raw.z);
+	fx = -(double) ((float( rawAxes.y ) - bias.y) * scale.y);  // mounting correction
+	fy = -(double) ((float( rawAxes.x ) - bias.x) * scale.x);
+	fz = -(double) ((float( rawAxes.z ) - bias.z) * scale.z);
+	// ESP_LOGI(FNAME, "raw x %d, y %d, z %d ", rawAxes.x, rawAxes.y, rawAxes.z);
 
 	vector_ijk gvr( 0,0,-1 );  // gravity vector direction, pointing down to ground: Z = -1
 	Quaternion q = Quaternion::AlignVectors(gravity_vector, gvr) ; // create quaternion from gravity vector aligned to glider
@@ -481,7 +490,7 @@ float Compass::heading( bool *ok )
 #if 0
 	if( wind_logging.get() ){
 		char log[120];
-		sprintf( log, "$COMPASS;%d;%d;%d;%.1f;%.1f;%.1f;%d\n", raw.x, raw.y, raw.z, IMU::getPitch(), IMU::getRoll(),  _heading,  totalReadErrors );
+		sprintf( log, "$COMPASS;%d;%d;%d;%.1f;%.1f;%.1f;%d\n", rawAxes.x, rawAxes.y, rawAxes.z, IMU::getPitch(), IMU::getRoll(),  _heading,  totalReadErrors );
 		Router::sendXCV( log );
 	}
 #endif

@@ -1085,6 +1085,7 @@ void SetupMenu::setup( )
 		compSensorCal->addEntry( "Cancel");
 		compSensorCal->addEntry( "Start");
 		compSensorCal->addEntry( "Show");
+		compSensorCal->addEntry( "Show Raw Data");
 		compSensorCal->setHelp( PROGMEM "Calibrate Magnetic Sensor, mandatory for operation" );
 		compassME->addEntry( compSensorCal );
 

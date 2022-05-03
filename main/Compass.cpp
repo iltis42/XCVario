@@ -218,15 +218,15 @@ bool Compass::calibrate( bool (*reporter)( t_magn_axes raw, t_float_axes scale, 
 	ESP_LOGI( FNAME, "calibrate min-max xyz");
 	int i = 0;
 	t_magn_axes raw;
-	t_magn_axes raw_old = { 0,0,0 };
 	t_float_axes var;
+	static float variance = 0.f;
 	t_magn_axes axes;
 	t_magn_axes min = { 20000,20000,20000 } ;
 	t_magn_axes max = { 0,0,0 };
 	t_bitfield_compass bits = { false, false, false, false, false, false };
-	Average<75, int16_t> avgX;
-	Average<75, int16_t> avgY;
-	Average<75, int16_t> avgZ;
+	Average<50, int16_t> avgX;
+	Average<50, int16_t> avgY;
+	Average<50, int16_t> avgZ;
 	if( !only_show ){
 		while( true )
 		{
@@ -243,12 +243,12 @@ bool Compass::calibrate( bool (*reporter)( t_magn_axes raw, t_float_axes scale, 
 			raw.x = avgX( axes.x );
 			raw.y = avgY( axes.y );
 			raw.z = avgZ( axes.z );
-			var.x =+ (raw.x -raw_old.x)/8.0;  // Variance low pass filtered
-			var.y =+ (raw.y -raw_old.y)/8.0;
-			var.z =+ (raw.z -raw_old.z)/8.0;
-			raw_old.x = raw.x;
-			raw_old.y = raw.y;
-			raw_old.z = raw.z;
+			// Variance low pass filtered
+			var.x = axes.x - raw.x;
+			var.y = axes.y - raw.y;
+			var.z = axes.z - raw.z;
+			variance += ((var.x*var.x + var.y*var.y + var.z*var.z) - variance) / 50.f;
+			ESP_LOGI( FNAME, "Mag Var: %7.3f", variance );
 
 
 			// ESP_LOGI( FNAME, "Mag Var X:%.2f Y:%.2f Z:%.2f", var.x, var.y, var.z  );
@@ -261,17 +261,17 @@ bool Compass::calibrate( bool (*reporter)( t_magn_axes raw, t_float_axes scale, 
 			max.z = ( raw.z > max.z ) ? raw.z : max.z;
 
 			const int16_t minval = (32768/100)*1; // 1% full scale
-			if( abs(raw.x) < minval && abs(raw.y) < minval && var.x < 0.1 && var.y < 0.1 && raw.z > 2*minval  )
+			if( abs(raw.x) < minval && abs(raw.y) < minval && variance < 800.f && raw.z > 2*minval  )
 				bits.zmax_green = true;
-			if( abs(raw.x) < minval && abs(raw.y) < minval && var.x < 0.1 && var.y < 0.1 && raw.z < -2*minval  )
+			if( abs(raw.x) < minval && abs(raw.y) < minval && variance < 800.f && raw.z < -2*minval  )
 				bits.zmin_green = true;
-			if( abs(raw.x) < minval && abs(raw.z) < minval && var.x < 0.1 && var.z < 0.1 && raw.y > 2*minval  )
+			if( abs(raw.x) < minval && abs(raw.z) < minval && variance < 800.f && raw.y > 2*minval  )
 				bits.ymax_green = true;
-			if( abs(raw.x) < minval && abs(raw.z) < minval && var.x < 0.1 && var.z < 0.1 && raw.y < -2*minval  )
+			if( abs(raw.x) < minval && abs(raw.z) < minval && variance < 800.f && raw.y < -2*minval  )
 				bits.ymin_green = true;
-			if( abs(raw.y) < minval && abs(raw.z) < minval && var.y < 0.1 && var.z < 0.1 && raw.x > 2*minval  )
+			if( abs(raw.y) < minval && abs(raw.z) < minval && variance < 800.f && raw.x > 2*minval  )
 				bits.xmax_green = true;
-			if( abs(raw.y) < minval && abs(raw.z) < minval && var.y < 0.1 && var.z < 0.1 && raw.x < -2*minval  )
+			if( abs(raw.y) < minval && abs(raw.z) < minval && variance < 800.f && raw.x < -2*minval  )
 				bits.xmin_green = true;
 
 			if( i < 2 )

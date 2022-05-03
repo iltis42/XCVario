@@ -248,7 +248,7 @@ bool Compass::calibrate( bool (*reporter)( t_magn_axes raw, t_float_axes scale, 
 			var.y = axes.y - raw.y;
 			var.z = axes.z - raw.z;
 			variance += ((var.x*var.x + var.y*var.y + var.z*var.z) - variance) / 50.f;
-			ESP_LOGI( FNAME, "Mag Var: %7.3f", variance );
+			// ESP_LOGI( FNAME, "Mag Var: %7.3f", variance );
 
 
 			// ESP_LOGI( FNAME, "Mag Var X:%.2f Y:%.2f Z:%.2f", var.x, var.y, var.z  );

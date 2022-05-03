@@ -111,6 +111,7 @@ private:
 	static int  x_start;
 	static PolarIndicator* indicator;
 
+	static float altitude_filtered;
 	static void drawMC( float mc, bool large=false );
 	static void drawS2FMode( int x, int y, bool cruise );
 	static void setArrowColor( bool upper );

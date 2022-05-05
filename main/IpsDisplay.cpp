@@ -1462,7 +1462,7 @@ void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float val ){
 bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty, bool incl_unit )
 {
 	if( _menu ) return false;
-	ESP_LOGI(FNAME,"draw alt %f", altitude );
+	// ESP_LOGI(FNAME,"draw alt %f", altitude );
     // filter a bit the altitude
 	if( altitude_filtered == 0 )
 		altitude_filtered = altitude;
@@ -1985,7 +1985,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	// Center Aid around grafic wind
-	if( (centeraid && !(tick % 6)) || (centeraid && wind_dirty)  ){
+	if( (centeraid && !(tick % 4)) || (centeraid && wind_dirty)  ){
 		centeraid->drawCenterAid();
 	}
 

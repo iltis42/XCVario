@@ -275,7 +275,7 @@ SetupNG<float>          compass_z_scale( "CP_Z_SCALE", 1.0 );
 SetupNG<int>            compass_calibrated( "CP_CALIBRATED", 0 );
 SetupNG<float>          compass_declination( "CP_DECL", 0 );
 SetupNG<int>            compass_declination_valid( "CP_DECL_VALID", 0 );
-SetupNG<float>          compass_damping( "CPS_DAMP", 3.0 );
+SetupNG<float>          compass_damping( "CPS_DAMP", 1.0 );
 SetupNG<int>            compass_nmea_hdm( "CP_NMEA_HDM", 0 );
 SetupNG<int>            compass_nmea_hdt( "CP_NMEA_HDT", 0 );
 SetupNG<float>          compass_i2c_cl("CP_I2C_CL", 100 );

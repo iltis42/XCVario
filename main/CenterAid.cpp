@@ -19,7 +19,6 @@
 static const int X=75;
 static const int Y=215;
 
-#define SCALE_DOWN 4.0
 
 CenterAid::CenterAid( AdaptUGC *display ) {
 	ucg = display;
@@ -35,39 +34,34 @@ CenterAid::CenterAid( AdaptUGC *display ) {
 	turn_right = 0;
 	fly_straight = 0;
 	cur_heading = 0;
-	gyro_last = 0;
+	peak_value = 1.0; // we start with expectation of 1 m/s thermals
 }
 
-void CenterAid::drawThermal( int th, int idir, bool draw_sink ){
+void CenterAid::drawThermal( int tn, int idir, bool draw_sink ){
 	// ESP_LOGI(FNAME,"drawThermal, th: %d, idir: %d, ds: %d", th, idir, draw_sink );
 	if( idir > CA_NUM_DIRS || idir < 0 ){
 		ESP_LOGE(FNAME,"index out of range: %d", agedir );
 		return;
 	}
-	short int cy = Y-cos(D2R(idir*CA_STEP))*30;
-	short int cx = X+sin(D2R(idir*CA_STEP))*30;
-	int td = rint(drawn_thermals[idir]/SCALE_DOWN);
-	td = td > MAX_DISK_RAD ? MAX_DISK_RAD : td;
-	int tn = rint(th/SCALE_DOWN);
-	tn = tn > MAX_DISK_RAD ? MAX_DISK_RAD : tn;
+	short int cy = Y-cos(D2R(idir*CA_STEP))*CA_STEP*2;
+	short int cx = X+sin(D2R(idir*CA_STEP))*CA_STEP*2;
+	int td = drawn_thermals[idir];
 
 	if( td && (tn <  td) ){
 		ucg->setColor( COLOR_BLACK );
-		int td = rint(drawn_thermals[idir]/SCALE_DOWN);
-		td = td > MAX_DISK_RAD ? MAX_DISK_RAD : td;
 		// ESP_LOGI(FNAME,"erase TH, dir:%d, TE:%d", idir, td );
-		ucg->drawDisc(cx,cy, td, UCG_DRAW_ALL );
+		ucg->drawDisc(cx,cy, td/DRAW_SCALE, UCG_DRAW_ALL );  // 120 / 20 = 6
 	}
 	if( tn > 0 ){
 		// ESP_LOGI(FNAME,"draw TH, dir:%d, TE:%d", idir, td );
 		ucg->setColor( COLOR_GREEN );
-		ucg->drawDisc(cx,cy, tn, UCG_DRAW_ALL );
+		ucg->drawDisc(cx,cy, tn/DRAW_SCALE, UCG_DRAW_ALL );
 	}
 	else if( draw_sink ){
 		ucg->setColor( COLOR_RED );
-		ucg->drawDisc(cx,cy, -tn, UCG_DRAW_ALL );
+		ucg->drawDisc(cx,cy, -tn/DRAW_SCALE, UCG_DRAW_ALL );
 	}
-	drawn_thermals[idir] = th;
+	drawn_thermals[idir] = tn;
 }
 
 void CenterAid::checkThermal(){
@@ -77,9 +71,17 @@ void CenterAid::checkThermal(){
 		ESP_LOGE(FNAME,"index out of range: %d", idir );
 		return;
 	}
-	int th = rint(te_vario.get()*10);
-	// ESP_LOGI(FNAME,"newThermal int:%d, TE:%d", idir, th );
-	addThermal( th  );
+	float th = te_vario.get();
+	if( th > peak_value  )
+		peak_value += (th - peak_value)*0.1;  // a bit low passing to catch values out of the row
+	if( peak_value > 1.0 )                // don't go below 1 m/s this is maximum sensitivity
+		peak_value = peak_value * 0.999;  // Peak value aging 0.1% per 100 mS or 1% per second
+	scale = PEAK_STORAGE/peak_value;      // scale orients itself at measured peak values
+	int ti = th*scale;
+	ti = ti > 127 ? 127 : ti;   // positive limit of 8 bit integer type
+	ti = ti < -126 ? -126 : ti;
+	// ESP_LOGI(FNAME,"newThermal dir:%d, TE:%.2f Peak:%.2f TI:%d", idir, th, peak_value, ti  );
+	addThermal( ti  );  // 1 m/s = 10; 5 m/s = 50; -10 m/s = -100
 }
 
 void CenterAid::drawCenterAid(){
@@ -93,7 +95,7 @@ void CenterAid::drawCenterAid(){
 			ESP_LOGE(FNAME,"index out of range: %d", d );
 		}
 	}
-	if( wind_display.get() == WD_NONE ){
+	if( wind_display.get() != WD_ARROW || wind_display.get() != WD_BOTH ){
 		// ESP_LOGI(FNAME,"draw Airplane");
 		ucg->setColor( COLOR_WHITE );
 		Flarm::drawAirplane( X, Y, false, true );
@@ -217,7 +219,9 @@ void CenterAid::tick(){
 			cur_heading = new_heading;
 		}
 		checkThermal();
-		ageThermal();  // 0.2 s per thermal = 4.8 seconds all 24 thermals aged by 0.1 m/s
+	}
+	if( !(_tick%10) ){
+		ageThermal(); // 0.2 s per thermal = 4.8 seconds all 24 thermals aged by 0.1 m/s
 	}
 }
 

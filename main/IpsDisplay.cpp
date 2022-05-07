@@ -81,7 +81,6 @@ int16_t IpsDisplay::char_height;
 char IpsDisplay::last_s[20] = { "\0" };
 int IpsDisplay::x_start = 240;
 PolarIndicator* IpsDisplay::indicator = nullptr;
-float IpsDisplay::altitude_filtered = 0;
 
 #define DISPLAY_H 320
 #define DISPLAY_W 240
@@ -695,7 +694,7 @@ void IpsDisplay::redrawValues()
 			alt_quant = 20;
 			break;
 		default:
-			alt_quant = 1;
+			alt_quant = 2;
 	}
 }
 
@@ -1462,14 +1461,9 @@ void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float val ){
 bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty, bool incl_unit )
 {
 	if( _menu ) return false;
+
 	// ESP_LOGI(FNAME,"draw alt %f", altitude );
-    // filter a bit the altitude
-	if( altitude_filtered == 0 )
-		altitude_filtered = altitude;
-	else
-		altitude_filtered += (altitude - altitude_filtered)* .06;
 	// check on the rendered value for change
-	altitude = altitude_filtered;
 	int alt = (int)(altitude);
 	if ( alt_quant == 1 && alt_unit.get() != ALT_UNIT_FL ) {
 		alt = (int)(altitude*10.); // respect tenth

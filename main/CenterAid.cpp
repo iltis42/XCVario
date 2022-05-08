@@ -105,12 +105,10 @@ void CenterAid::drawCenterAid(){
 // add one thermal and draw thermal
 void CenterAid::addThermal( int teval ){
 	// ESP_LOGI(FNAME,"addThermal %.1f (%d), TE:%d", cur_heading, idir, teval );
-	if( teval > thermals[ idir ]){
-		if( idir > CA_NUM_DIRS || idir < 0 ){
-			ESP_LOGE(FNAME,"index out of range: %d", idir );
-		}else{
-			thermals[ idir ] = teval;
-		}
+	if( idir > CA_NUM_DIRS || idir < 0 ){
+		ESP_LOGE(FNAME,"index out of range: %d", idir );
+	}else{
+		thermals[ idir ] = teval;
 	}
 }
 

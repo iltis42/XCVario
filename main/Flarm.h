@@ -25,7 +25,7 @@ public:
 	static void initFlarmWarning();
 	static void progress();
 	static bool connected(); // returns true if Flarm is connected
-	static inline bool getGPS( double &gndSpeedKmh, double &gndTrack ) {
+	static inline bool getGPS( float &gndSpeedKmh, float &gndTrack ) {
 		if( myGPS_OK ) {
 			gndSpeedKmh = Units::knots2kmh(gndSpeedKnots);
 			gndTrack = gndCourse;
@@ -36,8 +36,8 @@ public:
 		}
 	}
 	static inline bool gpsStatus() { return myGPS_OK; }
-	static double getGndSpeedKnots() { return gndSpeedKnots; }
-	static double getGndCourse() { return gndCourse; }
+	static float getGndSpeedKnots() { return gndSpeedKnots; }
+	static float getGndCourse() { return gndCourse; }
 	static int bincom;
 	static int bincom_port;
 	static void tick();
@@ -57,8 +57,8 @@ private:
 	static int RX,TX,GPS,Power;
 	static int AlarmLevel;
 	static int RelativeBearing,RelativeVertical,RelativeDistance;
-	static double gndSpeedKnots;
-	static double gndCourse;
+	static float gndSpeedKnots;
+	static float gndCourse;
 	static bool   myGPS_OK;
 	static int AlarmType;
 	static char ID[20];

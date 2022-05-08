@@ -127,10 +127,10 @@ bool StraightWind::calculateWind()
 	}
 
 	// Get current ground speed in km/h
-	double cgs = Units::knots2kmh( Flarm::getGndSpeedKnots() );
+	float cgs = Units::knots2kmh( Flarm::getGndSpeedKnots() );
 
 	// Get current TAS in km/h
-	double ctas = double( getTAS() );
+	float ctas = float( getTAS() );
 
 	// Check, if we have a AS value > minimum, default is 25 km/h.
 	// If GS is nearly zero, the measurement makes also sense (wave), hence if we are not flying it doesn't
@@ -162,7 +162,7 @@ bool StraightWind::calculateWind()
 	}
 
 	// Get current true course from GPS
-	double ctc = Flarm::getGndCourse();
+	float ctc = Flarm::getGndCourse();
 	averageTC += (ctc - averageTC) * 1/wind_gps_lowpass.get();
 
 	averageTas = ctas;
@@ -196,8 +196,8 @@ bool StraightWind::calculateWind()
 }
 
 // length (or speed) of third vector in windtriangle
-double StraightWind::calculateSpeed( double angle1, double speed1, double angle2, double speed2  ){
-	double delta = Vector::normalize( D2R( angle2 - angle1 ) );
+float StraightWind::calculateSpeed( float angle1, float speed1, float angle2, float speed2  ){
+	float delta = Vector::normalize( D2R( angle2 - angle1 ) );
 	// Cosinus sentence: c^2 = a^2 + b^2 − 2 * a * b * cos( α ) for wind speed in km/h
 	return sqrt( (speed2 * speed2) + (speed1 * speed1 ) - ( 2 * speed2 * speed1 * cos( delta ) ) );
 }
@@ -206,19 +206,19 @@ double StraightWind::calculateSpeed( double angle1, double speed1, double angle2
 // wind direction calculation taken from here:
 // view-source:http://www.owoba.de/fliegerei/flugrechner.html
 // direction in degrees of third vector in windtriangle
-double StraightWind::calculateAngle( double angle1, double speed1, double angle2, double speed2  ){
+float StraightWind::calculateAngle( float angle1, float speed1, float angle2, float speed2  ){
 	ESP_LOGI(FNAME,"calculateAngle: TC/GS=%3.1f°/%3.1f km/h  TH/AS=%3.1f°/%3.1f km/h", angle1, speed1, angle2, speed2 );
-	double tcrad = D2R( angle1 );
-	double thrad = D2R( angle2 );
-	double wca = Vector::normalize( thrad - tcrad );
-	double ang = tcrad + atan2( speed2 * sin( wca ), speed2 * cos( wca ) - speed1 );
+	float tcrad = D2R( angle1 );
+	float thrad = D2R( angle2 );
+	float wca = Vector::normalize( thrad - tcrad );
+	float ang = tcrad + atan2( speed2 * sin( wca ), speed2 * cos( wca ) - speed1 );
 	return( Vector::normalizeDeg( R2D( ang ) ) );  // convert radian to degree
 }
 
 float StraightWind::getAngle() { return swind_dir.get(); };
 float StraightWind::getSpeed() { return swind_speed.get(); };
 
-void StraightWind::calculateWind( double tc, double gs, double th, double tas  ){
+void StraightWind::calculateWind( float tc, float gs, float th, float tas  ){
 	// ESP_LOGI(FNAME,"calculateWind: TC:%3.1f GS:%3.1f TH:%3.1f TAS:%3.1f", tc, gs, th, tas );
 	// Wind correction angle WCA
 	if( gs < 5 ){

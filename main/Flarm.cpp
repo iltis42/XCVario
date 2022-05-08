@@ -17,8 +17,8 @@ int Flarm::RelativeBearing = 0;
 int Flarm::AlarmType = 0;
 int Flarm::RelativeVertical = 0;
 int Flarm::RelativeDistance = 0;
-double Flarm::gndSpeedKnots = 0;
-double Flarm::gndCourse = 0;
+float Flarm::gndSpeedKnots = 0;
+float Flarm::gndCourse = 0;
 bool Flarm::myGPS_OK = false;
 char Flarm::ID[20] = "";
 int Flarm::bincom = 0;
@@ -160,7 +160,7 @@ void Flarm::parseGPRMC( const char *gprmc ) {
 		ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", gprmc, calc_cs, cs );
 		return;
 	}
-	sscanf( gprmc+3, "RMC,%*f,%c,%*f,%*c,%*f,%*c,%lf,%lf,%*d,%*f,%*c*%*02x", &warn, &gndSpeedKnots, &gndCourse);
+	sscanf( gprmc+3, "RMC,%*f,%c,%*f,%*c,%*f,%*c,%f,%f,%*d,%*f,%*c*%*02x", &warn, &gndSpeedKnots, &gndCourse);
 
 	//ESP_LOGI(FNAME,"GPRMC myGPS_OK %d warn %c", myGPS_OK, warn );
 	if( warn == 'A' ) {
@@ -490,10 +490,10 @@ void Flarm::drawFlarmWarning(){
 		}
 		sprintf(v,"%d %s   ",  vdiff, unit );
 		ucg->printf( v );
-		double relDist =  (double)RelativeDistance;
+		float relDist =  (float)RelativeDistance;
 		if( RelativeBearing < 0 )
 			relDist = -relDist;
-		float horizontalAngle = RTD( atan2( relDist, (double)RelativeVertical) );
+		float horizontalAngle = RTD( atan2( relDist, (float)RelativeVertical) );
 		ESP_LOGI(FNAME,"horizontalAngle: %f  vert:%d", horizontalAngle, RelativeVertical );
 
 		drawClearVerticalTriangle( 70, 220, horizontalAngle, 0, 50, 6 );

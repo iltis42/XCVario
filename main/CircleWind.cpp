@@ -268,7 +268,7 @@ void CircleWind::_calcWind()
 
 // Jitter in the signal leads to higher windspeed measures as delta's grow
 // The new algorithm considers jitter and corrects windspeed according to measured jitter value
-void CircleWind::newWind( double angle, double speed ){
+void CircleWind::newWind( float angle, float speed ){
 	num_samples++;
 	windVectors[curVectorNum].setAngle( angle );
 	windVectors[curVectorNum].setSpeedKmh( speed );

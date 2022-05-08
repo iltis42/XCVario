@@ -87,7 +87,7 @@ public:
    */
   static void gpsStatusChange( bool newStatus );
 
-  static void newWind( double angle, double speed );
+  static void newWind( float angle, float speed );
 
   static bool getWind( int *dir, float *speed, int * age );
 

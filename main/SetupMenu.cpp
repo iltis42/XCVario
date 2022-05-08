@@ -1579,7 +1579,7 @@ void SetupMenu::setup( )
 		SetupMenuSelect * alq = new SetupMenuSelect( "Alt. Quantization", false,  0, true, &alt_quantization );
 		alq->setHelp( PROGMEM "Set altimeter mode with discrete steps and rolling last digits");
 		alq->addEntry( "Disable");
-		alq->addEntry( "1");
+		alq->addEntry( "2");
 		alq->addEntry( "5");
 		alq->addEntry( "10");
 		alq->addEntry( "20");

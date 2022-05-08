@@ -114,7 +114,7 @@ void CenterAid::addThermal( int teval ){
 
 void CenterAid::ageThermal(){
 	// ESP_LOGI(FNAME,"age: dir %d, TH: %d, FM: %d", agedir, thermals[agedir], flightmode );
-	float lambda = 0.6; // age faster in straight flight: we leaf quickly the place of lift
+	float lambda = 0.75; // age faster in straight flight: we leaf quickly the place of lift
 	if( flightmode == circlingL ){
 		agedir--;
 		if( agedir < 0 )

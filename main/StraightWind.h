@@ -12,7 +12,7 @@
 #include <sys/time.h>
 #include "vector.h"
 
-#define NUM_STRAIGHT_RESULTS 50
+#define NUM_STRAIGHT_RESULTS 90
 
 class StraightWind
 {

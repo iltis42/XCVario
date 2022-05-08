@@ -1872,7 +1872,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		else
 			sprintf(s, "s-net");
 		ucg->setFont(ucg_font_fub11_hr, true);
-		ucg->setPrintPos(120-ucg->getStrWidth(s), DISPLAY_H/2-30);
+		ucg->setPrintPos(126-ucg->getStrWidth(s), DISPLAY_H/2-33);
 		ucg->print(s);
 		netto_old = netto;
 	}

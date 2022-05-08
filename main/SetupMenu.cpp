@@ -1198,7 +1198,7 @@ void SetupMenu::setup( )
 		strWindM->addEntry( devlp );
 		devlp->setHelp(PROGMEM "Lowpass factor for deviation table correction from reverse wind calculation");
 
-		SetupMenuValFloat *wlpf = new SetupMenuValFloat( "Averager", "", 5, 300, 1, nullptr, false, &wind_filter_lowpass );
+		SetupMenuValFloat *wlpf = new SetupMenuValFloat( "Averager", "", 5, NUM_STRAIGHT_RESULTS, 1, nullptr, false, &wind_filter_lowpass );
 		wlpf->setPrecision(0);
 		strWindM->addEntry( wlpf );
 		wlpf->setHelp(PROGMEM "Number of measurements used for straight flight live wind averager");

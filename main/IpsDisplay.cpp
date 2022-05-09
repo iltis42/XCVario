@@ -1836,10 +1836,6 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	tick++;
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	// ESP_LOGI(FNAME,"drawRetroDisplay  TE=%0.1f IAS:%d km/h  WK=%d", te, airspeed, wksensor  );
-	static bool alt_dirty = false; // looped status
-	static bool speed_dirty = false;
-	static bool compass_dirty = false;
-	static bool wind_dirty = false;
 
 	bool netto=false;
 	if( vario_mode.get() == VARIO_NETTO || (s2fmode && ( vario_mode.get() == CRUISE_NETTO )) ){
@@ -1895,13 +1891,6 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	bool speed_overlap = needle_pos > M_PI_2*75./90.;
 	bool wind_overlap = needle_pos < -M_PI_2*25./90. && needle_pos > -M_PI_2*55./90.;
 	bool compass_overlap = needle_pos > M_PI_2*35./90. && needle_pos < M_PI_2*75./90.;
-	// ESP_LOGI(FNAME,"NP: %f wd: %d", R2D(needle_pos), wind_dirty );
-
-	static bool alt_overlap_old = false;
-	static bool speed_overlap_old = false;
-	static bool wind_overlap_old = false;
-	static bool compass_overlap_old = false;
-	// ESP_LOGI(FNAME,"alt %d speed %d", alt_overlap, speed_overlap );
 
 	if( _menu ){
 		xSemaphoreGive(spiMutex);
@@ -1947,39 +1936,35 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	// Altitude & Airspeed
-	if( !(tick%8) || speed_dirty ) {
-		if ( drawSpeed( airspeed_kmh, INNER_RIGHT_ALIGN, 75, speed_dirty ) ) {
+	if( (!(tick%8) && !speed_overlap) || (!(tick%16) && speed_overlap) ) {
+		if ( drawSpeed( airspeed_kmh, INNER_RIGHT_ALIGN, 75, !speed_overlap ) ) {
 			if( speed_overlap ){
 				needle_dirty = true;
 			}
 		}
-		speed_dirty = false;
 	}
-	if( !(tick%2) || alt_dirty ) {
+	if( (!(tick%2) && !alt_overlap) || (!(tick%15) && alt_overlap) ) {
 		// { // Enable those line, comment previous condition, for a drawAltimeter simulation
 		// static float alt = 300, rad = 0.0; 
 		// altitude = alt + sin(rad) * (2*alt_quant+2); rad += 0.001*alt_quant;
-		if ( drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, alt_dirty ) ) {
+		if ( drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, !(tick%10) && !alt_overlap ) ) {
 			if( alt_overlap ){
 				needle_dirty = true;
 			}
 		}
-		alt_dirty = false;
 	}
 
 	// Compass
-	if( !(tick%8) || wind_dirty || compass_dirty){
-		drawCompass(INNER_RIGHT_ALIGN, 105, wind_dirty, compass_dirty );
+	if( !(tick%8) ){
+		drawCompass(INNER_RIGHT_ALIGN, 105, !(tick%16) && !wind_overlap, !(tick%16) && !compass_overlap );
 		if( compass_overlap )
 			needle_dirty = true;
 		if( wind_overlap )
 			needle_dirty = true;
-		compass_dirty = false;
-		wind_dirty = false;
 	}
 
 	// Center Aid around grafic wind
-	if( (centeraid && !(tick % 4)) || (centeraid && wind_dirty)  ){
+	if( centeraid && !(tick % 4)   ){
 		centeraid->drawCenterAid();
 	}
 
@@ -2051,18 +2036,6 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 	if( !(tick%2) ){
 		if( indicator->drawPolarIndicator(needle_pos, needle_dirty) ) {
-			alt_dirty = alt_overlap_old;
-			alt_overlap_old = alt_overlap;
-
-			speed_dirty = speed_overlap_old;
-			speed_overlap_old = speed_overlap;
-
-			wind_dirty = wind_overlap_old;
-			wind_overlap_old = wind_overlap;
-
-			compass_dirty = compass_overlap_old;
-			compass_overlap_old = compass_overlap;
-
 			// Draw colored bow
 			float bar_val = (needle_pos>0.) ? needle_pos : 0.;
 			// draw green/red vario bar

@@ -266,6 +266,12 @@ void StraightWind::calculateWind( float tc, float gs, float th, float tas  ){
 			status = "Deviation OOB";
 			return;
 	}
+	if( abs( accelG[1]*100.0 ) > swind_sideslip_lim.get() ){
+		status = "Side Slip";
+		ESP_LOGI( FNAME, "Side slip factor %f", accelG[1] );
+		return;
+	}
+
     // wind speed
 	newWindSpeed = calculateSpeed( tc, gs, th, tas*airspeedCorrection );
 	// ESP_LOGI( FNAME, "Calculated raw windspeed %.1f jitter:%.1f", newWindSpeed, jitter );

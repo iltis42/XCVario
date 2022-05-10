@@ -1208,6 +1208,10 @@ void SetupMenu::setup( )
 		strWindM->addEntry( smgps );
 		smgps->setHelp(PROGMEM "Lowpass factor for GPS info TC and GS, should correlate with compass lowpass less GPS latency");
 
+		SetupMenuValFloat *smslip = new SetupMenuValFloat( "Sideslip Limit", "%", 0, 10.0, 0.1, nullptr, false, &swind_sideslip_lim );
+		smslip->setPrecision(1);
+		strWindM->addEntry( smslip );
+		smslip->setHelp(PROGMEM "Maximum side slip lateral acceleration in %, straight wind calculations are considered");
 
 		ShowStraightWind* ssw = new ShowStraightWind( "Straight Wind Status" );
 		strWindM->addEntry( ssw );

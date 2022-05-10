@@ -478,6 +478,7 @@ extern SetupNG<float>  		OAT;
 extern SetupNG<float>  		OAT;   // outside temperature
 extern SetupNG<float>  		swind_dir;   // straight wind direction
 extern SetupNG<float>  		swind_speed;
+extern SetupNG<float>  		swind_sideslip_lim;
 extern SetupNG<float>  		cwind_dir;   // cirling wind direction
 extern SetupNG<float>  		cwind_speed;
 extern SetupNG<float>  		mag_hdm;

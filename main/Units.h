@@ -103,8 +103,15 @@ public:
 	static const char* AirspeedModeStr(){
 		if ( airspeed_mode.get() == MODE_IAS ) {
 			return "IAS";
-		} else {
+		}
+		else if ( airspeed_mode.get() == MODE_TAS ) {
 			return "TAS";
+		}
+		else if( airspeed_mode.get() == MODE_SLIP ) {
+			return "SLIP";
+		}
+		else{
+			return "nan";
 		}
 	}
 

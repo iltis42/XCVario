@@ -96,4 +96,5 @@ private:
 	static Vector windVectors[NUM_STRAIGHT_RESULTS];
 	float newWindSpeed;
 	float newWindDir;
+	float slipAverage;
 };

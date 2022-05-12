@@ -1589,6 +1589,9 @@ void IpsDisplay::drawSmallSpeed(float v_kmh, int16_t x, int16_t y)
 // Accepts speed in kmh IAS/TAS, translates into configured unit
 // set dirty, when obscured from vario needle
 // right-aligned to value, unit optional behind
+// leant to display as well slip angle
+// TBD: Make this place a general field capable to display other values as well
+//      For now this is hijacked for slip angle tests
 bool IpsDisplay::drawSpeed(float v_kmh, int16_t x, int16_t y, bool dirty, bool inc_unit)
 {
 	if( _menu ) return false;
@@ -1603,14 +1606,20 @@ bool IpsDisplay::drawSpeed(float v_kmh, int16_t x, int16_t y, bool dirty, bool i
 	ucg->setFont(ucg_font_fub25_hn, true);
 
 	char s[10];
-	sprintf(s,"  %3d",  airspeed );
+	if( airspeed_mode.get() != MODE_SLIP )
+		sprintf(s,"  %3d",  airspeed );
+	else
+		sprintf(s,"  %.1f", -slipAngle );  // Slip Angle
 	ucg->setPrintPos(x-ucg->getStrWidth(s), y);
 	ucg->print(s);
 	if ( inc_unit ) {
 		ucg->setFont(ucg_font_fub11_hr);
 		ucg->setColor( COLOR_HEADER );
 		ucg->setPrintPos(x+5,y-3);
-		ucg->print(Units::AirspeedUnitStr() );
+		if( airspeed_mode.get() != MODE_SLIP )
+			ucg->print(Units::AirspeedUnitStr() );
+		else
+			ucg->print("deg");
 		ucg->setPrintPos(x+5,y-17);
 		ucg->print(Units::AirspeedModeStr());
 	}

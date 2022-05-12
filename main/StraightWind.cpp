@@ -32,6 +32,7 @@
 #include "math.h"
 #include "CircleWind.h"
 #include "Router.h"
+#include "sensor.h"
 
 // degree to rad conversion
 #define D2R(x) ((x)/57.2957795131)
@@ -63,7 +64,8 @@ status( "Initial" ),
 jitter(0),
 curVectorNum(0),
 newWindSpeed(0),
-newWindDir(0)
+newWindDir(0),
+slipAverage(0)
 {
 }
 
@@ -227,6 +229,7 @@ void StraightWind::calculateWind( float tc, float gs, float th, float tas  ){
 	// Wind speed
 	// Reverse calculate windtriangle for deviation and airspeed calibration
 	bool devOK = true;
+
 	if( circlingWindSpeed > 0 && compass_dev_auto.get() ){
 		if( circlingWindAge > 600 ){
 			status = "OLD CIRC WIND";
@@ -266,9 +269,10 @@ void StraightWind::calculateWind( float tc, float gs, float th, float tas  ){
 			status = "Deviation OOB";
 			return;
 	}
-	if( abs( accelG[1]*100.0 ) > swind_sideslip_lim.get() ){
+	slipAverage += (slipAngle -slipAverage)*0.0005;
+	if( abs( slipAngle - slipAverage) > swind_sideslip_lim.get() ){
 		status = "Side Slip";
-		ESP_LOGI( FNAME, "Side slip factor %f", accelG[1] );
+		ESP_LOGI( FNAME, "Side slip angle %.2f, average %.2f", slipAngle, slipAverage );
 		return;
 	}
 

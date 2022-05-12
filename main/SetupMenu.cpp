@@ -1024,6 +1024,8 @@ void SetupMenu::setup( )
 		amode->setHelp( PROGMEM "Select mode of Airspeed indicator to display IAS (Indicated AirSpeed, default) or TAS (True AirSpeed) considering air density", 130 );
 		amode->addEntry( "IAS");
 		amode->addEntry( "TAS");
+		amode->addEntry( "Slip Angle");
+
 
 		SetupMenuSelect * atl = new SetupMenuSelect( "Auto Transition",	false, 0, true, &fl_auto_transition );
 		opt->addEntry( atl );
@@ -1208,10 +1210,10 @@ void SetupMenu::setup( )
 		strWindM->addEntry( smgps );
 		smgps->setHelp(PROGMEM "Lowpass factor for GPS info TC and GS, should correlate with compass lowpass less GPS latency");
 
-		SetupMenuValFloat *smslip = new SetupMenuValFloat( "Sideslip Limit", "%", 0, 10.0, 0.1, nullptr, false, &swind_sideslip_lim );
+		SetupMenuValFloat *smslip = new SetupMenuValFloat( "Sideslip Limit", "°", 0, 45.0, 0.1, nullptr, false, &swind_sideslip_lim );
 		smslip->setPrecision(1);
 		strWindM->addEntry( smslip );
-		smslip->setHelp(PROGMEM "Maximum side slip lateral acceleration in %, straight wind calculations are considered");
+		smslip->setHelp(PROGMEM "Maximum side slip in ° from side slip estimator accepeted straight wind calculations");
 
 		ShowStraightWind* ssw = new ShowStraightWind( "Straight Wind Status" );
 		strWindM->addEntry( ssw );

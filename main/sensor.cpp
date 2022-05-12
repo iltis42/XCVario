@@ -147,6 +147,8 @@ static float temperature=15.0;
 static float battery=0.0;
 static float dynamicP; // Pitot
 
+float slipAngle = 0.0;
+
 // global color variables for adaptable display variant
 uint8_t g_col_background=255; // black
 uint8_t g_col_highlight=0;
@@ -215,6 +217,7 @@ void drawDisplay(void *pvParameters){
 				airspeed = ias.get();
 			else if( airspeed_mode.get() == MODE_TAS )
 				airspeed = tas;
+
 			// Stall Warning Screen
 			if( stall_warning.get() && gload_mode.get() != GLOAD_ALWAYS_ON ){  // In aerobatics stall warning is contra productive, we concentrate on G-Load Display if permanent enabled
 				if( gflags.stall_warning_armed ){
@@ -569,6 +572,15 @@ void readSensors(void *pvParameters){
 		// ESP_LOGI("FNAME","P: %f  IAS:%f IASF: %d", dynamicP, iasraw, ias );
 		tas += (tasraw-tas)*0.25;       // low pass filter
 		// ESP_LOGI(FNAME,"IAS=%f, T=%f, TAS=%f baroP=%f", ias, T, tas, baroP );
+
+		// Slip angle estimation
+		float as = tas/3.6;                  // tas in m/s
+		const float K = 1000 * 180/M_PI;      // airplane constant and Ay correction factor
+		if( tas > 25.0 ){
+			slipAngle += ((accelG[1]*K / (as*as)) - slipAngle)*0.09;   // with atan(x) = x for small x
+			ESP_LOGI(FNAME,"AS: %f m/s, CURSL: %f°, SLIP: %f", as, -accelG[1]*K / (as*as), slipAngle );
+		}
+
 		xSemaphoreTake(xMutex,portMAX_DELAY );
 
 		float te = bmpVario.readTE( tasraw );

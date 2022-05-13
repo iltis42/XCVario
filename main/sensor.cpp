@@ -578,7 +578,7 @@ void readSensors(void *pvParameters){
 		const float K = 1000 * 180/M_PI;      // airplane constant and Ay correction factor
 		if( tas > 25.0 ){
 			slipAngle += ((accelG[1]*K / (as*as)) - slipAngle)*0.09;   // with atan(x) = x for small x
-			ESP_LOGI(FNAME,"AS: %f m/s, CURSL: %f°, SLIP: %f", as, -accelG[1]*K / (as*as), slipAngle );
+			// ESP_LOGI(FNAME,"AS: %f m/s, CURSL: %f°, SLIP: %f", as, -accelG[1]*K / (as*as), slipAngle );
 		}
 
 		xSemaphoreTake(xMutex,portMAX_DELAY );

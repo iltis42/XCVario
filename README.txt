@@ -16,6 +16,7 @@ cd ~/esp/esp-idf;
 git checkout release/v4.3; 
 ./install.sh; . ./export.sh;
 pip install cmake;
+git submodule update --init --recursive;
 
 This will get the stable branch release/v4.3 of esp-idf plus corresponding compiler, etc.
 For the docker official releases, branch label is release-v4.3, see also workflow yaml.

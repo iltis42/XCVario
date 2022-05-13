@@ -1465,37 +1465,45 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 	// ESP_LOGI(FNAME,"draw alt %f", altitude );
 	// check on the rendered value for change
 	int alt = (int)(altitude);
-	if ( alt_quant == 1 && alt_unit.get() != ALT_UNIT_FL ) {
-		alt = (int)(altitude*10.); // respect tenth
+	if ( alt_quant < 5 && alt_unit.get() != ALT_UNIT_FL ) {
+		alt = (int)(altitude*10.); // respect difference also in tenth to set dirty
 	}
 
+	// The dirty criterion
 	dirty = dirty || alt != alt_prev;
 	if ( ! dirty ) return false;
 	alt_prev = alt;
 	alt = (int)roundf(altitude);
 
-	char s[20];
+	char s[20]; // plain altimeter as a string
 	ucg->setFont(ucg_font_fub25_hr, true);
 	ucg->setColor( COLOR_WHITE );
 	sprintf(s,"  %03d", alt); // need the string with at least three digits !!
 	if ( alt_unit.get() == ALT_UNIT_FL ) {
+		// Plain plot of altitude as FL
 		ucg->setPrintPos(x-ucg->getStrWidth(s),y);
 		ucg->print(s);
 	}
 	else if ( ! alt_quant ) {
+		// Plain plot of altitude for m and ft
 		sprintf(s,"  %d", alt);
 		ucg->setPrintPos(x-ucg->getStrWidth(s),y);
 		ucg->print(s);
 	}
 	else {
+		// Modifications on altitude string when quantization is set
+		// for meter and feet
 		int16_t len = std::strlen(s);
-		int16_t nr_rolling_digits = (alt_quant>9)? 2 : 1; // maxium two rolling last digits
+		int16_t nr_rolling_digits = (alt_quant>9)? 2 : 1; // maximum two rolling last digits
 
-		// Quantized altitude 
-		alt = (int)(altitude); // start from truncated value
+		// Quantized altitude, strip and save sign
+		float alt_f = std::abs(altitude); // float altitude w/o sign
+		int sign = std::signbit(altitude)?-1:1; // interger sign of the altitude
+		alt = (int)(alt_f); // to integer truncated altitude
 		alt = ((alt+alt_quant/2)/alt_quant)*alt_quant;
-		float fraction = (altitude+alt_quant/2 - alt) / alt_quant;
+		float fraction = (alt_f+alt_quant/2 - alt) / alt_quant;
 		int16_t mod = (nr_rolling_digits==2)? 100 : 10; // mod = pow10(nr_rolling_digits);
+		int alt_leadpart = alt/(mod*10); // left remaining part of altitude
 		s[len-nr_rolling_digits] = '\0'; len -= nr_rolling_digits; // chop nr_rolling_digits digits
 
 		static float fraction_prev = 1.;
@@ -1504,49 +1512,51 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 			// move last alt_quant digit(s)
 			int16_t base = mod/10;
 			int16_t lastdigit = alt%mod;
-			int16_t m = (1.-fraction) * char_height - char_height/2; // to pixel offest
-			// ESP_LOGI(FNAME,"Last %f/%d: %f m%d .%d", altitude, (int)(altitude)%alt_quant, fraction, m, lastdigit);
+			int16_t m = sign * ((1.f-fraction) * char_height - char_height/2); // to pixel offest
+			// ESP_LOGI(FNAME,"Last %f/%d: %f m%d .%d", altitude, alt, fraction, m, lastdigit);
 			int16_t xp = x - nr_rolling_digits*char_width;
+			//ucg->drawFrame(xp-1, y - char_height* 1.25 -1, char_width*nr_rolling_digits, char_height*1.45 +1);
 			ucg->setClipRange(xp, y - char_height * 1.25, char_width*nr_rolling_digits-1, char_height * 1.45);
 			ucg->setPrintPos(xp, y - m - char_height);
 			char tmp[10];
-			sprintf(tmp, "%0*u", nr_rolling_digits, (lastdigit+alt_quant)%mod);
+			sprintf(tmp, "%0*u", nr_rolling_digits, (lastdigit+(sign*alt_quant))%mod);
 			ucg->print(tmp); // one above
 			ucg->setPrintPos(xp, y - m);
 			sprintf(tmp, "%0*u", nr_rolling_digits, lastdigit);
 			ucg->print(tmp);
 			ucg->setPrintPos(xp, y - m + char_height);
-			sprintf(tmp, "%0*u", nr_rolling_digits, (lastdigit+mod-alt_quant)%mod);
+			sprintf(tmp, "%0*u", nr_rolling_digits, (lastdigit-(sign*alt_quant))%mod);
 			ucg->print(tmp); // one below
 
 			fraction_prev = fraction;
 
 			// Roll leading digit independant of quant setting in 2 * (mod/10) range
 			int16_t lead_quant = 2 * base; // eg. 2 for Q=1 and Q=5 
-			int16_t rollover = ((int)(altitude)%mod)/base;
-			if ( (rollover < 1) || (rollover > 8) ) { // [9.1,..,0.9]: roll-over needs clarification on leading digit
-				// Re-Quantized altitude 
-				fraction = (float)((int)((altitude+base)*10)%(mod*10)) / (lead_quant*10);
-				int16_t m = fraction * char_height; // to pixel offest
-				int16_t hdigit = (((int)(altitude)+lead_quant)/mod)%10;
+			int16_t rollover = ((int)(alt_f)%mod)/base;
+			if ( (rollover < 1 && alt_leadpart != 0) || (rollover > 8) ) { // [9.1,..,0.9]: roll-over needs clarification on leading digit
+				// Re-Quantized leading altitude part
+				fraction = (float)((int)((alt_f+base)*10)%(mod*10)) / (lead_quant*10);
+				int16_t m = sign * fraction * char_height; // to pixel offest
+				int16_t lead_digit = ((alt+lead_quant)/mod)%10;
+				// ESP_LOGI(FNAME,"Lead %f/%d: %f - %f m%d %d.", altitude, alt_leadpart, fraction, m, lead_digit);
 				nr_rolling_digits++; // one less digit remains to print
 				xp -= char_width; // one to the left
-				//ucg->drawFrame(xp-1, y - char_height-1, char_width+1, char_height+1);
+				// ucg->undoClipRange();
+				// ucg->drawFrame(xp-1, y - char_height-1, char_width+1, char_height+1);
 				ucg->setClipRange(xp, y - char_height, char_width-1, char_height-1);
 				ucg->setPrintPos(xp, y + m - char_height);
-				ucg->print(hdigit); // one above
+				ucg->print(lead_digit); // one above
 				ucg->setPrintPos(xp, y + m );
-				ucg->print((hdigit+9)%10);
+				ucg->print((lead_digit+9)%10);
 				s[len-1] = '\0'; len--; // chop another digits
 			}
 			ucg->undoClipRange();
 		}
 		ucg->setPrintPos(x - ucg->getStrWidth(s) - nr_rolling_digits*char_width , y);
-		static int altpart_prev = 0;
-		alt/=(mod*10);
-		if (dirty || altpart_prev != alt) {
+		static char altpart_prev_s[20] = "";
+		if (dirty || strcmp(altpart_prev_s, s) != 0 ) {
 			ucg->print(s);
-			altpart_prev = alt;
+			strcpy(altpart_prev_s, s);
 		}
 	}
 	if ( incl_unit ) {
@@ -1945,8 +1955,8 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 	if( (!(tick%2) && !alt_overlap) || (!(tick%15) && alt_overlap) ) {
 		// { // Enable those line, comment previous condition, for a drawAltimeter simulation
-		// static float alt = 300, rad = 0.0; 
-		// altitude = alt + sin(rad) * (2*alt_quant+2); rad += 0.001*alt_quant;
+		// static float alt = 0, rad = 0.0; int min_aq = std::max(alt_quant, (int16_t)1);
+		// altitude = alt + sin(rad) * (5*min_aq+2); rad += 0.003*min_aq;
 		if ( drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, !(tick%10) && !alt_overlap ) ) {
 			if( alt_overlap ){
 				needle_dirty = true;

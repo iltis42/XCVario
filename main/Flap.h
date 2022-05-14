@@ -58,7 +58,7 @@ private: // helper
 	static void setupSensorMenueEntries(MenuEntry *wkm);
     static void setupIndicatorMenueEntries(MenuEntry *wkm);
 
-	float sensorToLeverPosition( int sensorreading );
+	bool sensorToLeverPosition( int sensorreading, float& lever);
 	void  initSpeeds();
     void  initLabels();
 	void  initSensPos();

@@ -529,25 +529,40 @@ Flap*  Flap::init(AdaptUGC *ucg)
     return _instance;
 }
 
-float Flap::sensorToLeverPosition( int wks ){
+bool Flap::sensorToLeverPosition( int wks, float&lever ){
 	// ESP_LOGI(FNAME,"getSensorWkPos %d", wks);
-	int wk=0;
+	int wk=-1000;
 	int max = ZERO_INDEX +1 + flap_pos_max.get();
 	int min = ZERO_INDEX -1 + flap_neg_max.get();
 	// ESP_LOGI(FNAME,"getSensorWkPos %d min:%d max:%d", wks, min, max );
+	bool reverse = false;
+	if( (wk_sens_pos_0.get() - wk_sens_pos_minus_1.get()) < 0 )
+		reverse = true;
 	for( int i=min; i<=max; i++ ){
-		if( ((senspos[i] < wks) && (wks < senspos[i+1]))  ||
-				((senspos[i] > wks) && (wks > senspos[i+1])) ) {
-			wk = i;
-			break;
+		if( reverse ){
+			if( (senspos[i] > wks) && (wks > senspos[i+1])) {
+				wk = i;
+				break;
+			}
+
+		}
+		else{
+			if( (senspos[i] < wks) && (wks < senspos[i+1])) {
+				wk = i;
+				break;
+			}
 		}
 	}
-	float delta=senspos[wk]-senspos[wk+1];
-	float moved=senspos[wk]-wks;
-	float relative=moved/delta;
-	float wkf =(wk-ZERO_INDEX) + relative;
-	// ESP_LOGI(FNAME,"getLeverPos(%d): lever: %1.2f wk: %d relative: %1.1f  N:%d X%d ", wks, wkf, wk, relative, min, max  );
-	return wkf;
+	if( wk != -1000 ){
+		float delta=senspos[wk]-senspos[wk+1];
+		float moved=senspos[wk]-wks;
+		float relative=moved/delta;
+		float wkf =(wk-ZERO_INDEX) + relative;
+		// ESP_LOGI(FNAME,"getLeverPos(%d): lever: %1.2f wk: %d relative: %1.1f  N:%d X%d ", wks, wkf, wk, relative, min, max  );
+		lever = wkf;
+		return true;
+	}
+	return false;
 }
 
 void  Flap::progress(){
@@ -563,15 +578,16 @@ void  Flap::progress(){
 		rawFiltered = rawFiltered + (wkraw - rawFiltered)/6;
 		tick++;
 		if( !(tick%4) ){
-			lever = sensorToLeverPosition( rawFiltered );
-			// ESP_LOGI(FNAME,"wk sensor=%1.2f  raw=%d", lever, rawFiltered );
-			if( lever < flap_neg_max.get()-0.5 )
-				lever = flap_neg_max.get()-0.5;
-			else if( lever > flap_pos_max.get()+0.5 )
-				lever = flap_pos_max.get()+0.5;
+			if( sensorToLeverPosition( rawFiltered, lever ) ){
+				// ESP_LOGI(FNAME,"wk sensor=%1.2f  raw=%d", lever, rawFiltered );
+				if( lever < flap_neg_max.get()-0.5 )
+					lever = flap_neg_max.get()-0.5;
+				else if( lever > flap_pos_max.get()+0.5 )
+					lever = flap_pos_max.get()+0.5;
 
-			if( (int)(flap_pos.get()*10) != (int)(lever*10) ){
-				flap_pos.set( lever );   // update secondary vario
+				if( (int)(flap_pos.get()*10) != (int)(lever*10) ){
+					flap_pos.set( lever );   // update secondary vario
+				}
 			}
 		}
 	}

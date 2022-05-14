@@ -90,7 +90,6 @@ private:
 
 	static int wkalt;
 	static int wkoptalt;
-	static int wksensoralt;
 
 	static int yposalt;
 	static int tyalt;

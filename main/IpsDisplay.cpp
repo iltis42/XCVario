@@ -172,7 +172,6 @@ int IpsDisplay::pyalt = 0;
 #define WKSYMST DISPLAY_W-28
 ucg_color_t IpsDisplay::wkcolor;
 int IpsDisplay::wkoptalt;
-int IpsDisplay::wksensoralt;
 
 float IpsDisplay::_range_clip = 0;
 int   IpsDisplay::_divisons = 5;
@@ -668,7 +667,6 @@ void IpsDisplay::redrawValues()
 	average_climb = -1000;
 
 	wkoptalt = -100;
-	wksensoralt = -1;
 	tyalt = -1000;
 	polar_sink_prev = 0.1;
 	if ( FLAP ) FLAP->redraw();
@@ -2022,7 +2020,6 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		ucg->setColor(  COLOR_WHITE  );
 		FLAP->drawBigBar( (float)(wk)/10, wksensor );
 		wkoptalt = wk;
-		wksensoralt = (int)(wksensor*10);
 
 		if ( flap_neg_max.get() > -3 ) {
 			FLAP->drawWingSymbol( wki, wksensor);

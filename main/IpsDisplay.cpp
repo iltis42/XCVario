@@ -1966,7 +1966,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		// { // Enable those line, comment previous condition, for a drawAltimeter simulation
 		// static float alt = 0, rad = 0.0; int min_aq = std::max(alt_quant, (int16_t)1);
 		// altitude = alt + sin(rad) * (5*min_aq+2); rad += 0.003*min_aq;
-		if ( drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, alt_overlap ) ) {
+		if ( drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, alt_overlap || !(tick%60) ) ) {
 			if( alt_overlap ){
 				needle_dirty = true;
 			}
@@ -2171,29 +2171,9 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		_ate = (int)(ate)*10;
 	}
 
-	// Altitude Header
-/*	if( !(tick%24) ){
-		float qnh = Units::Qnh( QNH.get() );
-		// ESP_LOGI(FNAME,"standard_setting:%d",standard_setting );
-		if( standard_setting )
-			qnh = Units::Qnh( 1013.25 );
-		if( qnh != pref_qnh ) {
-			ucg->setFont(ucg_font_fub11_tr, false);
-			char unit[4];
-			if( standard_setting )
-				strcpy( unit, "QNE" );
-			else
-				strcpy( unit, "QNH" );
-			ucg->setPrintPos(FIELD_START,YALT-S2FFONTH-15);
-			ucg->setColor(0, COLOR_HEADER );
-			ucg->printf("%s %.2f %s  ", unit, qnh,  Units::QnhUnit( qnh_unit.get() ) );
-			pref_qnh = qnh;
-		}
-	}
-*/
 	// Altitude
 	if(!(tick%2) ) {
-		drawAltitude( altitude, FIELD_START+80, YALT-6, false, true );
+		drawAltitude( altitude, FIELD_START+80, YALT-6, !(tick%40), true );
 	}
 	// MC Value
 	if(  !(tick%8) ) {

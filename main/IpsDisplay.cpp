@@ -46,7 +46,7 @@ public:
 	PolarIndicator();
 	// API
 	void setGeometry(int16_t base, int16_t tip, int16_t half_width);
-	void forceRedraw() { prev_needle_pos = -1000; }
+	void forceRedraw() { dirty = true; }
 	void setColor(ucg_color_t c) { color = c;}
 	bool drawPolarIndicator( float a, bool dirty=false );
 
@@ -58,7 +58,8 @@ private:
 	int base_val_offset; // angle "* sincosScale" from base point to shoulder point of arrow, wrt display center
 	ucg_color_t color;
 	Triangle_t prev;
-	int prev_needle_pos = -1000; // -pi/2 .. pi/2 * sincosScale
+	int prev_needle_pos = 0; // -pi/2 .. pi/2 * sincosScale
+	bool dirty = true;
 };
 
 
@@ -316,7 +317,6 @@ void PolarIndicator::setGeometry(int16_t base_p, int16_t tip_p, int16_t half_wid
 	tip = tip_p;
 	h_width = half_width_p;
 	base_val_offset = (int)(atan(static_cast<float>(h_width)/base)*sincosScale);
-	prev_needle_pos = -1000;
 	prev.x_0 = gaugeCos(prev_needle_pos+base_val_offset, base); // top shoulder
 	prev.y_0 = gaugeSin(prev_needle_pos+base_val_offset, base);
 	prev.x_1 = gaugeCos(prev_needle_pos-base_val_offset, base); // lower shoulder
@@ -1125,14 +1125,16 @@ void IpsDisplay::drawOneScaleLine( float a, int16_t l1, int16_t l2, int16_t w, u
 
 // -pi/2 < val < pi/2, center x, y, start radius, end radius, width, r,g,b
 // return status on updated a changed pointer position
-bool PolarIndicator::drawPolarIndicator( float a, bool dirty )
+bool PolarIndicator::drawPolarIndicator( float a, bool dirty_p )
 {
 	Triangle_t n;
 	if( IpsDisplay::inMenu() ) return false;
 
 	int val = (int)(a*sincosScale); // descrete int indicator position, to compare with prev needle pos (do not round!)
 	bool change = val != prev_needle_pos;
-	if ( ! change && ! dirty ) return false; // nothing painted
+	dirty_p = dirty_p || dirty;
+	if ( ! change && ! dirty_p ) return false; // nothing painted
+	dirty = false; // a one shot re-paint trigger
 
 	n.x_0 = gaugeCos(val+base_val_offset, base); // top shoulder
 	n.y_0 = gaugeSin(val+base_val_offset, base);
@@ -1957,7 +1959,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		// { // Enable those line, comment previous condition, for a drawAltimeter simulation
 		// static float alt = 0, rad = 0.0; int min_aq = std::max(alt_quant, (int16_t)1);
 		// altitude = alt + sin(rad) * (5*min_aq+2); rad += 0.003*min_aq;
-		if ( drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, !(tick%10) && !alt_overlap ) ) {
+		if ( drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, alt_overlap ) ) {
 			if( alt_overlap ){
 				needle_dirty = true;
 			}

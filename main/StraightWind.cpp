@@ -180,7 +180,7 @@ bool StraightWind::calculateWind()
 	if( wind_logging.get() && compass ){
 		char log[SSTRLEN];
 		float dev = compass->getDeviation( averageTH );
-		sprintf( log, "$WIND;%d;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f,%d,%d,%.1f\n", _tick, averageTC, cgs, averageTH, ctas, newWindDir, newWindSpeed, windDir, windSpeed, circlingWindDir, circlingWindSpeed, (airspeedCorrection-1)*100, CircleWind::getFlightMode(), gpsStatus, dev );
+		sprintf( log, "$WIND;%d;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%d;%d;%.1f\n", _tick, averageTC, cgs, averageTH, ctas, newWindDir, newWindSpeed, windDir, windSpeed, circlingWindDir, circlingWindSpeed, (airspeedCorrection-1)*100, CircleWind::getFlightMode(), gpsStatus, dev );
 		Router::sendXCV( log );
 		ESP_LOGI( FNAME,"%s", log );
 	}

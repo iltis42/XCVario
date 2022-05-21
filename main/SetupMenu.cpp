@@ -226,7 +226,7 @@ int qnh_adj( SetupMenuValFloat * p )
 			alt += p->_bmp->readAltitude( QNH.get(), ok );
 			sleep(0.01);
 		}
-		alt = alt/6;
+		alt = alt/6.0;
 	}
 	ESP_LOGI(FNAME,"Setup BA alt=%f QNH=%f hPa", alt, QNH.get()  );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );

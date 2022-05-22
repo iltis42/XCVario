@@ -96,7 +96,7 @@ bool StraightWind::getWind( int* direction, float* speed, int *age )
  *
  * Returns true, if a new wind was calculated.
  */
-bool StraightWind::D()
+bool StraightWind::calculateWind()
 {
 	// ESP_LOGI(FNAME,"Straight wind, calculateWind()");
 	if( SetupCommon::isClient()  ){

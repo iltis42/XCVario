@@ -1521,16 +1521,16 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 			ucg->setPrintPos(xp, y - m - char_height);
 			char tmp[10];
 			sprintf(tmp, "%0*u", nr_rolling_digits, abs((lastdigit+(sign*alt_quant))%mod) );
-			ESP_LOGI(FNAME,"tmp0 %s ld: %d", tmp, (lastdigit-(sign*alt_quant))%mod );
+			// ESP_LOGI(FNAME,"tmp0 %s ld: %d", tmp, (lastdigit-(sign*alt_quant))%mod );
 			ucg->print(tmp); // one above
 			ucg->setPrintPos(xp, y - m);
 			sprintf(tmp, "%0*u", nr_rolling_digits, lastdigit);
-			ESP_LOGI(FNAME,"tmp1 %s ld: %d", tmp, lastdigit );
+			// ESP_LOGI(FNAME,"tmp1 %s ld: %d", tmp, lastdigit );
 			ucg->print(tmp);
 			ucg->setPrintPos(xp, y - m + char_height);
 			// ESP_LOGI(FNAME,"Last %f/%d: %f m%d .%d ldc:%d mod:%d", altitude, alt, fraction, m, lastdigit, ((lastdigit-(sign*alt_quant))%mod), mod );
 			sprintf(tmp, "%0*u", nr_rolling_digits, abs((lastdigit-(sign*alt_quant))%mod));
-			ESP_LOGI(FNAME,"tmp2 %s ld: %d rd:%d s:%d aq:%d las:%d ", tmp, (lastdigit-(sign*alt_quant))%mod, nr_rolling_digits, sign, alt_quant, lastdigit );
+			// ESP_LOGI(FNAME,"tmp2 %s ld: %d rd:%d s:%d aq:%d las:%d ", tmp, (lastdigit-(sign*alt_quant))%mod, nr_rolling_digits, sign, alt_quant, lastdigit );
 			ucg->print(tmp); // one below
 			fraction_prev = fraction;
 
@@ -1552,7 +1552,7 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 				ucg->print(lead_digit); // one above
 				ucg->setPrintPos(xp, y + m );
 				ucg->print((lead_digit+9)%10);
-				ESP_LOGI(FNAME,"ld4: %d", (lead_digit+9)%10 );
+				// ESP_LOGI(FNAME,"ld4: %d", (lead_digit+9)%10 );
 				s[len-1] = '\0'; len--; // chop another digits
 			}
 			ucg->undoClipRange();
@@ -1561,7 +1561,7 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 		static char altpart_prev_s[20] = "";
 		if (dirty || strcmp(altpart_prev_s, s) != 0 ) {
 			ucg->print(s);
-			ESP_LOGI(FNAME,"s5: %s", s );
+			// ESP_LOGI(FNAME,"s5: %s", s );
 			strcpy(altpart_prev_s, s);
 		}
 	}
@@ -1972,7 +1972,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		// { // Enable those line, comment previous condition, for a drawAltimeter simulation
 		// static float alt = 0, rad = 0.0; int min_aq = std::max(alt_quant, (int16_t)1);
 		// altitude = alt + sin(rad) * (5*min_aq+2); rad += 0.003*min_aq;
-		if ( drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, alt_overlap || !(tick%60) ) ) {
+		if ( drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, !alt_overlap || !(tick%60) ) ) {
 			if( alt_overlap ){
 				needle_dirty = true;
 			}

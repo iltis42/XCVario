@@ -96,7 +96,7 @@ bool StraightWind::getWind( int* direction, float* speed, int *age )
  *
  * Returns true, if a new wind was calculated.
  */
-bool StraightWind::calculateWind()
+bool StraightWind::D()
 {
 	// ESP_LOGI(FNAME,"Straight wind, calculateWind()");
 	if( SetupCommon::isClient()  ){
@@ -230,6 +230,13 @@ void StraightWind::calculateWind( float tc, float gs, float th, float tas  ){
 	// Reverse calculate windtriangle for deviation and airspeed calibration
 	bool devOK = true;
 
+	// Gating for proper heading alignment
+	slipAverage += (slipAngle -slipAverage)*0.0005;
+	if( abs( slipAngle - slipAverage) > swind_sideslip_lim.get() ){
+		status = "Side Slip";
+		ESP_LOGI( FNAME, "Slip overrun %.2f, average %.2f", slipAngle, slipAverage );
+		return;
+	}
 	if( circlingWindSpeed > 0 && compass_dev_auto.get() ){
 		if( circlingWindAge > 600 ){
 			status = "OLD CIRC WIND";
@@ -269,12 +276,7 @@ void StraightWind::calculateWind( float tc, float gs, float th, float tas  ){
 			status = "Deviation OOB";
 			return;
 	}
-	slipAverage += (slipAngle -slipAverage)*0.0005;
-	if( abs( slipAngle - slipAverage) > swind_sideslip_lim.get() ){
-		status = "Side Slip";
-		ESP_LOGI( FNAME, "Side slip angle %.2f, average %.2f", slipAngle, slipAverage );
-		return;
-	}
+
 
     // wind speed
 	newWindSpeed = calculateSpeed( tc, gs, th, tas*airspeedCorrection );

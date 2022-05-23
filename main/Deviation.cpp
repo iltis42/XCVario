@@ -95,24 +95,26 @@ bool Deviation::newDeviation( float measured_heading, float desired_heading, boo
 	// for(auto itx = std::begin(devmap); itx != std::end(devmap); ++itx ){
 	//	ESP_LOGI( FNAME, "Cur Dev MAP Head: %3.2f Dev: %3.2f", itx->first, itx->second );
 	//}
-	for(auto it = std::begin(devmap); it != std::end(devmap); ){
+	auto it_erase = std::end(devmap);
+	for(auto it = std::begin(devmap); it != std::end(devmap); it++){
 #ifdef VERBOSE_LOG
 		ESP_LOGI( FNAME, "Main X/Y Vector Head: %3.2f Dev: %3.2f", it->first, it->second );
 #endif
 		float diff = Vector::angleDiffDeg( measured_heading, (float)it->first );
-		if( diff < 22.5 && diff > -22.5  ){
-			// ESP_LOGI( FNAME, "Erase from map dev for heading=%3.2f, diff=%3.3f", it->first, diff );
-			devmap.erase( it++ );
+		if( abs(diff) < 22.5  ){
+			ESP_LOGI( FNAME, "Erase from map dev for heading=%3.2f, diff=%3.3f", it->first, diff );
+			it_erase = it;
 		}
-		else
-			it++;
+	}
+	if( it_erase != std::end(devmap) ){
+		devmap.erase( it_erase );
 	}
 	double old_dev = 0;
 	if( deviationSpline ){
 		old_dev = (*deviationSpline)((double)measured_heading);
 		// ESP_LOGI( FNAME, "OLD Spline Deviation for mesured heading: %3.2f Dev: %3.2f", measured_heading, old_dev );
 	}
-	double delta = (deviation - old_dev);
+	double delta = Vector::angleDiffDeg(deviation, old_dev);
 	// ESP_LOGI( FNAME, "Deviation Delta: %f old dev: %f, new dev: %f", delta, old_dev, old_dev + (delta * 0.15) );
 	float k=wind_dev_filter.get();
 	if(old_dev == 0.0) {
@@ -130,7 +132,7 @@ bool Deviation::newDeviation( float measured_heading, float desired_heading, boo
 #endif
 	xSemaphoreGive(splineMutex);
 	recalcInterpolationSpline();
-	ESP_LOGI( FNAME, "NEW Spline Deviation for mesured heading: %3.2f Dev: %3.2f", measured_heading, (*deviationSpline)((double)measured_heading) );
+	ESP_LOGI( FNAME, "NEW Spline Deviation for measured heading: %3.2f Dev: %3.2f", measured_heading, (*deviationSpline)((double)measured_heading) );
 	samples++;
 	if( ((samples > 50) && (_devHolddown <= 0)) || force ){
 		saveDeviation();

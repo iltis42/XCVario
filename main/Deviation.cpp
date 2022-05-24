@@ -132,7 +132,7 @@ bool Deviation::newDeviation( float measured_heading, float desired_heading, boo
 #endif
 	xSemaphoreGive(splineMutex);
 	recalcInterpolationSpline();
-	ESP_LOGI( FNAME, "NEW Spline Deviation for measured heading: %3.2f Dev: %3.2f", measured_heading, (*deviationSpline)((double)measured_heading) );
+	ESP_LOGI( FNAME, "NEW Deviation, MH: %3.2f Dev: %3.2f, Holddown: %d Samples: %d", measured_heading, (*deviationSpline)((double)measured_heading), _devHolddown, samples );
 	samples++;
 	if( ((samples > 50) && (_devHolddown <= 0)) || force ){
 		saveDeviation();
@@ -162,20 +162,20 @@ void Deviation::recalcInterpolationSpline()
 	X.clear();
 	Y.clear();
 	// take care for head of spline by extrapolation
-	for(auto it = std::begin(devmap); it != std::end(devmap); ++it ){
+	for(auto it = std::begin(devmap); it != std::end(devmap); it++ ){
 		if( it->first >= 210 ){  // 360° - 140°
 			// ESP_LOGI( FNAME, "Pre  X/Y Vector Head: %3.2f Dev: %3.2f", it->first-360, it->second );
 			X.push_back( it->first-360.0 );
 			Y.push_back( it->second );
 		}
 	}
-	for(auto it = std::begin(devmap); it != std::end(devmap); ++it ){
+	for(auto it = std::begin(devmap); it != std::end(devmap); it++ ){
 		// ESP_LOGI( FNAME, "Main X/Y Vector Head: %3.2f Dev: %3.2f", it->first, it->second );
 		X.push_back( it->first );
 		Y.push_back( it->second );
 	}
 	// take care for tail of spline by extrapolation
-	for(auto it = std::begin(devmap); it != std::end(devmap); ++it ){
+	for(auto it = std::begin(devmap); it != std::end(devmap); it++ ){
 		if( it->first <= 140 ){  // 140°
 			// ESP_LOGI( FNAME, "Post  X/Y Vector Head: %3.2f Dev: %3.2f", it->first+360, it->second );
 			X.push_back( it->first+360.0 );

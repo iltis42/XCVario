@@ -85,7 +85,7 @@ void Deviation::resetDeviation()
 // new Deviation from reverse calculated TAWC Wind measurement
 bool Deviation::newDeviation( float measured_heading, float desired_heading, bool force ){
 	double deviation = Vector::angleDiffDeg( desired_heading , measured_heading );
-	// ESP_LOGI( FNAME, "newDeviation Measured Head: %3.2f Desired Head: %3.2f => Deviation=%3.2f, Samples:%d", measured_heading, desired_heading, deviation, samples );
+	ESP_LOGI( FNAME, "newDeviation Measured Head: %3.2f Desired Head: %3.2f => Deviation=%3.2f, Samples:%d", measured_heading, desired_heading, deviation, samples );
 	if( (abs(deviation) > wind_max_deviation.get()) && !force ){ // data is not plausible/useful
 		ESP_LOGW( FNAME, "new Deviation out of bounds: %3.3f: Drop this deviation", deviation );
 		return false;
@@ -112,10 +112,10 @@ bool Deviation::newDeviation( float measured_heading, float desired_heading, boo
 	double old_dev = 0;
 	if( deviationSpline ){
 		old_dev = (*deviationSpline)((double)measured_heading);
-		// ESP_LOGI( FNAME, "OLD Spline Deviation for mesured heading: %3.2f Dev: %3.2f", measured_heading, old_dev );
+		ESP_LOGI( FNAME, "OLD Spline Deviation for mesured heading: %3.2f Dev: %3.2f", measured_heading, old_dev );
 	}
 	double delta = Vector::angleDiffDeg(deviation, old_dev);
-	// ESP_LOGI( FNAME, "Deviation Delta: %f old dev: %f, new dev: %f", delta, old_dev, old_dev + (delta * 0.15) );
+	ESP_LOGI( FNAME, "Deviation Delta: %f old dev: %f, new dev: %f", delta, old_dev, old_dev + (delta * 0.15) );
 	float k=wind_dev_filter.get();
 	if(old_dev == 0.0) {
 		ESP_LOGI( FNAME, "We are starting so provide initial value");
@@ -164,20 +164,20 @@ void Deviation::recalcInterpolationSpline()
 	// take care for head of spline by extrapolation
 	for(auto it = std::begin(devmap); it != std::end(devmap); it++ ){
 		if( it->first >= 210 ){  // 360° - 140°
-			// ESP_LOGI( FNAME, "Pre  X/Y Vector Head: %3.2f Dev: %3.2f", it->first-360, it->second );
+			ESP_LOGI( FNAME, "Pre  X/Y Vector Head: %3.2f Dev: %3.2f", it->first-360, it->second );
 			X.push_back( it->first-360.0 );
 			Y.push_back( it->second );
 		}
 	}
 	for(auto it = std::begin(devmap); it != std::end(devmap); it++ ){
-		// ESP_LOGI( FNAME, "Main X/Y Vector Head: %3.2f Dev: %3.2f", it->first, it->second );
+	    ESP_LOGI( FNAME, "Main X/Y Vector Head: %3.2f Dev: %3.2f", it->first, it->second );
 		X.push_back( it->first );
 		Y.push_back( it->second );
 	}
 	// take care for tail of spline by extrapolation
 	for(auto it = std::begin(devmap); it != std::end(devmap); it++ ){
 		if( it->first <= 140 ){  // 140°
-			// ESP_LOGI( FNAME, "Post  X/Y Vector Head: %3.2f Dev: %3.2f", it->first+360, it->second );
+			ESP_LOGI( FNAME, "Post  X/Y Vector Head: %3.2f Dev: %3.2f", it->first+360, it->second );
 			X.push_back( it->first+360.0 );
 			Y.push_back( it->second );
 		}
@@ -185,11 +185,11 @@ void Deviation::recalcInterpolationSpline()
 
 	deviationSpline  = new tk::spline(X,Y, tk::spline::cspline_hermite );
 	xSemaphoreGive(splineMutex );
-#ifdef VERBOSE_LOG
+// #ifdef VERBOSE_LOG
 	for( int dir=0; dir <= 360; dir+=45 ){
 		ESP_LOGI( FNAME, "NEW DEV Heading=%d  dev=%f", dir, (float)( (*deviationSpline)((double)dir) ));
 	}
-#endif
+// #endif
 
 }
 

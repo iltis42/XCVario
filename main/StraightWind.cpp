@@ -198,23 +198,20 @@ bool StraightWind::calculateWind()
 }
 
 // length (or speed) of third vector in windtriangle
-float StraightWind::calculateSpeed( float angle1, float speed1, float angle2, float speed2  ){
-	float delta = Vector::normalize( D2R( angle2 - angle1 ) );
-	// Cosinus sentence: c^2 = a^2 + b^2 − 2 * a * b * cos( α ) for wind speed in km/h
-	return sqrt( (speed2 * speed2) + (speed1 * speed1 ) - ( 2 * speed2 * speed1 * cos( delta ) ) );
-}
-
-// calculate WA (wind angle) in degree
+// and calculate WA (wind angle) in degree
 // wind direction calculation taken from here:
 // view-source:http://www.owoba.de/fliegerei/flugrechner.html
 // direction in degrees of third vector in windtriangle
-float StraightWind::calculateAngle( float angle1, float speed1, float angle2, float speed2  ){
-	ESP_LOGI(FNAME,"calculateAngle: TC/GS=%3.1f°/%3.1f km/h  TH/AS=%3.1f°/%3.1f km/h", angle1, speed1, angle2, speed2 );
+void StraightWind::calculateSpeedAndAngle( float angle1, float speed1, float angle2, float speed2, float& speed, float& angle ){
+	float delta = Vector::normalize( D2R( angle2 - angle1 ) );
 	float tcrad = D2R( angle1 );
 	float thrad = D2R( angle2 );
 	float wca = Vector::normalize( thrad - tcrad );
 	float ang = tcrad + atan2( speed2 * sin( wca ), speed2 * cos( wca ) - speed1 );
-	return( Vector::normalizeDeg( R2D( ang ) ) );  // convert radian to degree
+	// Cosinus sentence: c^2 = a^2 + b^2 − 2 * a * b * cos( α ) for wind speed in km/h
+	speed = sqrt( (speed2 * speed2) + (speed1 * speed1 ) - ( 2 * speed2 * speed1 * cos( delta ) ) );
+	angle = Vector::normalizeDeg( R2D( ang ) );  // convert radian to degree
+	ESP_LOGI(FNAME,"calculateSpeed( A1/S1=%3.1f°/%3.1f km/h  A2/S2=%3.1f°/%3.1f km/h): A/S: %3.2f°/%3.2f km/h", angle1, speed1, angle2, speed2, speed, angle );
 }
 
 float StraightWind::getAngle() { return swind_dir.get(); };
@@ -241,11 +238,12 @@ void StraightWind::calculateWind( float tc, float gs, float th, float tas  ){
 		if( circlingWindAge > 600 ){
 			status = "OLD CIRC WIND";
 		}else{
-			float airspeed = calculateSpeed( circlingWindDirReverse, circlingWindSpeed, tc, gs );
+			float airspeed = 0;
+			float heading = 0;
+			calculateSpeedAndAngle( circlingWindDirReverse, circlingWindSpeed, tc, gs, airspeed, heading );
 #ifdef VERBOSE_LOG
 			ESP_LOGI(FNAME,"Using reverse circling wind dir %3.2f, reverse cal. airspeed=%3.3f, tas=%3.3f, delta %3.3f", circlingWindDirReverse, airspeed, tas, airspeed-tas );
 #endif
-			float tH = calculateAngle( circlingWindDirReverse, circlingWindSpeed, tc, gs );
 			if( abs( airspeed/tas - 1.0 ) > 0.30 ){  // 30 percent max deviation
 				status = "AS OOB";
 				ESP_LOGI(FNAME,"Estimated Airspeed/Groundspeed OOB");
@@ -259,7 +257,7 @@ void StraightWind::calculateWind( float tc, float gs, float th, float tas  ){
 			if( abs( wind_as_calibration.get() - airspeedCorrection )*100 > 0.5 )
 					wind_as_calibration.set( airspeedCorrection );
 			if( compass )
-				devOK = compass->newDeviation( th, tH );
+				devOK = compass->newDeviation( th, heading );
 			else{
 				status = "No Compass";
 				return;
@@ -277,13 +275,9 @@ void StraightWind::calculateWind( float tc, float gs, float th, float tas  ){
 			return;
 	}
 
-
-    // wind speed
-	newWindSpeed = calculateSpeed( tc, gs, th, tas*airspeedCorrection );
+    // wind speed and direction
+	calculateSpeedAndAngle( tc, gs, th, tas*airspeedCorrection, newWindSpeed, newWindDir );
 	// ESP_LOGI( FNAME, "Calculated raw windspeed %.1f jitter:%.1f", newWindSpeed, jitter );
-
-	// wind direction
-	newWindDir = calculateAngle( tc, gs, th, tas*airspeedCorrection );
 
 	windVectors[curVectorNum].setAngle( newWindDir );
 	windVectors[curVectorNum].setSpeedKmh( newWindSpeed );

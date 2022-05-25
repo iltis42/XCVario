@@ -282,7 +282,7 @@ SetupNG<int>            compass_nmea_hdt( "CP_NMEA_HDT", 0 );
 SetupNG<float>          compass_i2c_cl("CP_I2C_CL", 100 );
 SetupNG<float>          wind_as_filter( "WINDASF", 0.02 );
 SetupNG<float>          wind_gps_lowpass( "WINDGPSLP", 1.00 );
-SetupNG<float>          wind_dev_filter( "WINDDEVF", 0.02 );
+SetupNG<float>          wind_dev_filter( "WINDDEVF", 0.010 );
 SetupNG<int> 			wind_enable( "WIND_ENA", WA_OFF );
 SetupNG<int> 			wind_logging( "WIND_LOG", 0 );
 SetupNG<float> 			wind_as_calibration("WIND_AS_CAL", 1.0 );

@@ -1190,12 +1190,12 @@ void SetupMenu::setup( )
 		smdev->setHelp( PROGMEM "Setup maximum deviation accepted for a wind measurement" );
 		strWindM->addEntry( smdev );
 
-		SetupMenuValFloat *smgsm = new SetupMenuValFloat( "Airspeed Lowpass", "", 0, 1.0, 0.001, nullptr, false, &wind_as_filter );
+		SetupMenuValFloat *smgsm = new SetupMenuValFloat( "Airspeed Lowpass", "", 0, 0.05, 0.001, nullptr, false, &wind_as_filter );
 		smgsm->setPrecision(3);
 		strWindM->addEntry( smgsm );
 		smgsm->setHelp(PROGMEM "Lowpass factor for airspeed correction from reverse wind calculation");
 
-		SetupMenuValFloat *devlp = new SetupMenuValFloat( "Deviation Lowpass", "", 0, 1.0, 0.001, nullptr, false, &wind_dev_filter );
+		SetupMenuValFloat *devlp = new SetupMenuValFloat( "Deviation Lowpass", "", 0, 0.05, 0.001, nullptr, false, &wind_dev_filter );
 		devlp->setPrecision(3);
 		strWindM->addEntry( devlp );
 		devlp->setHelp(PROGMEM "Lowpass factor for deviation table correction from reverse wind calculation");

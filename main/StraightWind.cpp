@@ -33,6 +33,7 @@
 #include "CircleWind.h"
 #include "Router.h"
 #include "sensor.h"
+#include "KalmanMPU6050.h"
 
 // degree to rad conversion
 #define D2R(x) ((x)/57.2957795131)
@@ -177,10 +178,22 @@ bool StraightWind::calculateWind()
 	// WCA in radians
 	magneticHeading = averageTH;
 
-	if( wind_logging.get() && compass ){
+	if( (wind_logging.get() != WLOG_DISABLE) && compass ){
 		char log[SSTRLEN];
 		float dev = compass->getDeviation( averageTH );
-		sprintf( log, "$WIND;%d;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%d;%d;%.1f;%1.1f\n", _tick, averageTC, cgs, averageTH, ctas, newWindDir, newWindSpeed, windDir, windSpeed, circlingWindDir, circlingWindSpeed, (airspeedCorrection-1)*100, CircleWind::getFlightMode(), gpsStatus, dev, slipAngle );
+		sprintf( log, "$WIND;");
+		if( wind_logging.get() & WLOG_WIND ){
+			sprintf( log, "%d;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%d;%d;%.1f;%1.1f", _tick, averageTC, cgs, averageTH, ctas, newWindDir, newWindSpeed, windDir, windSpeed, circlingWindDir, circlingWindSpeed, (airspeedCorrection-1)*100, CircleWind::getFlightMode(), gpsStatus, dev, slipAngle );
+		}
+		int pos=strlen(log);
+		if( wind_logging.get() & WLOG_GYRO_MAG ){
+			sprintf( log+pos, ";%.1f;%.1f;%.1f;%.3f;%.3f;%.3f;%.3f;%.3f;%.3f",
+					compass->rawX(),compass->rawY(),compass->rawZ(),
+					IMU::getRawAccelX(), IMU::getRawAccelY(), IMU::getRawAccelZ(),
+					IMU::getRawGyroX(), IMU::getRawGyroY(), IMU::getRawGyroZ()  );
+		}
+		pos = strlen(log);
+		sprintf( log+pos, "\n");
 		Router::sendXCV( log );
 		ESP_LOGI( FNAME,"%s", log );
 	}

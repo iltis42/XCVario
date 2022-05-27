@@ -1238,7 +1238,9 @@ void SetupMenu::setup( )
 
 		SetupMenuSelect * windlog = new SetupMenuSelect( "Wind Logging", false, 0, true, &wind_logging );
 		windlog->addEntry( "Disable");
-		windlog->addEntry( "Enable");
+		windlog->addEntry( "Enable WIND");
+		windlog->addEntry( "Enable GYRO/MAG");
+		windlog->addEntry( "Enable Both");
 		windlog->setHelp(PROGMEM "Enable Wind logging NMEA output to WIFI port 8882");
 		compassWindME->addEntry( windlog );
 

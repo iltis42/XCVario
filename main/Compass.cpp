@@ -120,7 +120,7 @@ float Compass::getGyroHeading( bool *ok, bool addDecl ){
 void Compass::compassT(void* arg ){
 	while(1){
 		TickType_t lastWakeTime = xTaskGetTickCount();
-		if( compass != 0){
+		if( compass ){
 			if( !compass->calibrationIsRunning() ){
 				compass->progress();
 			}

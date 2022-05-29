@@ -638,39 +638,41 @@ void readSensors(void *pvParameters){
 		}
 		Router::routeXCV();
 		// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d ena=%d", compass->haveSensor(),  compass_nmea_hdt.get(),  compass_enable.get() );
-		if( compass  && !Flarm::bincom && ! compass->calibrationIsRunning() ) {
-			// Trigger heading reading and low pass filtering. That job must be
-			// done periodically.
-			bool ok;
-			float heading = compass->getGyroHeading( &ok );
-			if(ok){
-				if( (int)heading != (int)mag_hdm.get() && !(count%10) ){
-					mag_hdm.set( heading );
+		if( compass ){
+			if( !Flarm::bincom && ! compass->calibrationIsRunning() ) {
+				// Trigger heading reading and low pass filtering. That job must be
+				// done periodically.
+				bool ok;
+				float heading = compass->getGyroHeading( &ok );
+				if(ok){
+					if( (int)heading != (int)mag_hdm.get() && !(count%10) ){
+						mag_hdm.set( heading );
+					}
+					if( !(count%5) && compass_nmea_hdm.get() == true ) {
+						xSemaphoreTake( xMutex, portMAX_DELAY );
+						OV.sendNmeaHDM( heading );
+						xSemaphoreGive( xMutex );
+					}
 				}
-				if( !(count%5) && compass_nmea_hdm.get() == true ) {
-					xSemaphoreTake( xMutex, portMAX_DELAY );
-					OV.sendNmeaHDM( heading );
-					xSemaphoreGive( xMutex );
+				else{
+					if( mag_hdm.get() != -1 )
+						mag_hdm.set( -1 );
 				}
-			}
-			else{
-				if( mag_hdm.get() != -1 )
-					mag_hdm.set( -1 );
-			}
-			float theading = compass->filteredTrueHeading( &ok );
-			if(ok){
-				if( (int)theading != (int)mag_hdt.get() && !(count%10) ){
-					mag_hdt.set( theading );
+				float theading = compass->filteredTrueHeading( &ok );
+				if(ok){
+					if( (int)theading != (int)mag_hdt.get() && !(count%10) ){
+						mag_hdt.set( theading );
+					}
+					if( !(count%5) && ( compass_nmea_hdt.get() == true )  ) {
+						xSemaphoreTake( xMutex, portMAX_DELAY );
+						OV.sendNmeaHDT( theading );
+						xSemaphoreGive( xMutex );
+					}
 				}
-				if( !(count%5) && ( compass_nmea_hdt.get() == true )  ) {
-					xSemaphoreTake( xMutex, portMAX_DELAY );
-					OV.sendNmeaHDT( theading );
-					xSemaphoreGive( xMutex );
+				else{
+					if( mag_hdt.get() != -1 )
+						mag_hdt.set( -1 );
 				}
-			}
-			else{
-				if( mag_hdt.get() != -1 )
-					mag_hdt.set( -1 );
 			}
 		}
 		if( accelG[0] > gload_pos_max.get() ){
@@ -1300,7 +1302,7 @@ void system_startup(void *args){
 		compass = new Compass( 0x0D, ODR_50Hz, RANGE_2GAUSS, OSR_512, &i2c_0 );
 	}
 	// magnetic sensor / compass selftest
-	if( compass_enable.get() == CS_I2C || compass_enable.get() == CS_CAN ) {
+	if( compass ) {
 		compass->begin();
 		ESP_LOGI( FNAME, "Magnetic sensor enabled: initialize");
 		err = compass->selfTest();

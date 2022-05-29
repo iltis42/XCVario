@@ -38,6 +38,7 @@ private:
 	static bool cm_auto_prev;
 	static bool cm_xcv_prev;
 	static bool cruise_mode_final;
+	static bool initial;
 };
 
 #endif /* MAIN_SWITCH_H_ */

@@ -34,6 +34,8 @@ bool Switch::cm_auto_prev = false;
 bool Switch::cruise_mode_final = false;
 bool Switch::_cruise_mode_xcv = false;
 bool Switch::cm_xcv_prev = false;
+bool Switch::initial = true;
+
 Average<GYRO_FILTER_SAMPLES, float, float> Switch::filter;
 
 gpio_num_t Switch::_sw = GPIO_NUM_0;
@@ -104,8 +106,9 @@ bool Switch::cruiseMode() {
 	}
 	// ESP_LOGI(FNAME,"cruise_mode_final %d", cruise_mode_final );
 
-	if( (int)cruise_mode_final != (int)cruise_mode.get() ){
+	if( (int)cruise_mode_final != (int)cruise_mode.get() || initial ){
 		ESP_LOGI(FNAME,"New cruise mode: %d", cruise_mode_final );
+		initial = false;
 		cruise_mode.set( (int)cruise_mode_final );
 	}
 	return cruise_mode_final;

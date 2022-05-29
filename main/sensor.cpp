@@ -138,7 +138,7 @@ mpud::float_axes_t accelG_Prev;
 mpud::float_axes_t gyroDPS_Prev;
 
 // Magnetic sensor / compass
-Compass *compass;
+Compass *compass = 0;
 BTSender btsender;
 
 static float baroP=0; // barometric pressure

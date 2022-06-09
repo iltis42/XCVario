@@ -216,7 +216,7 @@ bool CircleWind::getWind( int *dir, float *speed, int * age )
 	*dir=rint(cwind_dir.get());
 	*speed=cwind_speed.get();
 	*age=_age;
-	if( _age < 1800 && !(*speed == 0) && !(*dir == 0)  )
+	if( _age < 7200 && !(*speed == 0) && !(*dir == 0)  )
 		return true;
 	else
 		return false;

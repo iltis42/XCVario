@@ -85,12 +85,20 @@ class AdaptUGC : public Print{
 public:
 	// init
 	void begin();
-	void invertDisplay( bool inv ) {};  	        // solved in grafic layer
-	void setRedBlueTwist( bool twist ) {};   	    // no more needed, type of displays phased out
+	void invertDisplay( bool inv ) {invertDisp=inv;};  	        // solved in grafic layer
+	void setRedBlueTwist( bool twist ) {twistRB= twist;};   	    // no more needed, type of displays phased out
 	inline void undoClipRange() { eglib_undoClipRange(eglib);};
 	// color
-	inline void setColor( uint8_t idx, uint8_t r, uint8_t g, uint8_t b ) { eglib_SetIndexColor(eglib, idx, r, g, b); }
-	inline void setColor( uint8_t r, uint8_t g, uint8_t b ) { eglib_SetIndexColor(eglib, 0, r, g, b); }
+	inline void setColor( uint8_t idx, uint8_t r, uint8_t g, uint8_t b ) {
+		twistRB?
+			eglib_SetIndexColor(eglib, idx, invertDisp?~b:b, invertDisp?~g:g, invertDisp?~r:r):
+			eglib_SetIndexColor(eglib, idx, invertDisp?~r:r, invertDisp?~g:g, invertDisp?~b:b);
+	}
+	inline void setColor( uint8_t r, uint8_t g, uint8_t b ) {
+		twistRB?
+			eglib_SetIndexColor(eglib, 0, invertDisp?~b:b, invertDisp?~g:g, invertDisp?~r:r):
+			eglib_SetIndexColor(eglib, 0, invertDisp?~r:r, invertDisp?~g:g, invertDisp?~b:b);
+	}	
 	// graphics
 	inline void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1)  { eglib_DrawLine(eglib, x0, y0, x1, y1); }
 	inline void drawBox(int16_t x, int16_t y, int16_t w, int16_t h)  { eglib_DrawBox(eglib, x, y, w, h); }
@@ -132,4 +140,6 @@ private:
 	int8_t eglib_font_pos = UCG_FONT_POS_BOTTOM;
 	uint8_t eglib_print_dir = UCG_PRINT_DIR_LR;
 	eglib_t * eglib;
+	bool twistRB;
+	bool invertDisp;
 };

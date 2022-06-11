@@ -95,26 +95,24 @@ bool Deviation::newDeviation( float measured_heading, float desired_heading, boo
 	// for(auto itx = std::begin(devmap); itx != std::end(devmap); ++itx ){
 	//	ESP_LOGI( FNAME, "Cur Dev MAP Head: %3.2f Dev: %3.2f", itx->first, itx->second );
 	//}
-	auto it_erase = std::end(devmap);
-	for(auto it = std::begin(devmap); it != std::end(devmap); it++){
+	for(auto it = std::begin(devmap); it != std::end(devmap); ){
 #ifdef VERBOSE_LOG
 		ESP_LOGI( FNAME, "Main X/Y Vector Head: %3.2f Dev: %3.2f", it->first, it->second );
 #endif
 		float diff = Vector::angleDiffDeg( measured_heading, (float)it->first );
-		if( abs(diff) < 22.5  ){
-			ESP_LOGI( FNAME, "Erase from map dev for heading=%3.2f, diff=%3.3f", it->first, diff );
-			it_erase = it;
+		if( diff < 22.5 && diff > -22.5  ){
+			// ESP_LOGI( FNAME, "Erase from map dev for heading=%3.2f, diff=%3.3f", it->first, diff );
+			devmap.erase( it++ );
 		}
-	}
-	if( it_erase != std::end(devmap) ){
-		devmap.erase( it_erase );
+		else
+			it++;
 	}
 	double old_dev = 0;
 	if( deviationSpline ){
 		old_dev = (*deviationSpline)((double)measured_heading);
 		// ESP_LOGI( FNAME, "OLD Spline Deviation for mesured heading: %3.2f Dev: %3.2f", measured_heading, old_dev );
 	}
-	double delta = Vector::angleDiffDeg(deviation, old_dev);
+	double delta = (deviation - old_dev);
 	// ESP_LOGI( FNAME, "Deviation Delta: %f old dev: %f, new dev: %f", delta, old_dev, old_dev + (delta * 0.15) );
 	float k=wind_dev_filter.get();
 	if(old_dev == 0.0) {
@@ -132,7 +130,7 @@ bool Deviation::newDeviation( float measured_heading, float desired_heading, boo
 #endif
 	xSemaphoreGive(splineMutex);
 	recalcInterpolationSpline();
-	ESP_LOGI( FNAME, "NEW Deviation, MH: %3.2f Dev: %3.2f, Holddown: %d Samples: %d", measured_heading, (*deviationSpline)((double)measured_heading), _devHolddown, samples );
+	ESP_LOGI( FNAME, "NEW Spline Deviation for mesured heading: %3.2f Dev: %3.2f", measured_heading, (*deviationSpline)((double)measured_heading) );
 	samples++;
 	if( ((samples > 50) && (_devHolddown <= 0)) || force ){
 		saveDeviation();
@@ -147,7 +145,7 @@ bool Deviation::newDeviation( float measured_heading, float desired_heading, boo
  */
 void Deviation::recalcInterpolationSpline()
 {
-	// ESP_LOGI( FNAME, "recalcInterpolationSpline()");
+	ESP_LOGI( FNAME, "recalcInterpolationSpline()");
 	xSemaphoreTake(splineMutex,portMAX_DELAY );
 #ifdef VERBOSE_LOG
 	if( deviationSpline ){
@@ -162,20 +160,20 @@ void Deviation::recalcInterpolationSpline()
 	X.clear();
 	Y.clear();
 	// take care for head of spline by extrapolation
-	for(auto it = std::begin(devmap); it != std::end(devmap); it++ ){
+	for(auto it = std::begin(devmap); it != std::end(devmap); ++it ){
 		if( it->first >= 210 ){  // 360° - 140°
 			// ESP_LOGI( FNAME, "Pre  X/Y Vector Head: %3.2f Dev: %3.2f", it->first-360, it->second );
 			X.push_back( it->first-360.0 );
 			Y.push_back( it->second );
 		}
 	}
-	for(auto it = std::begin(devmap); it != std::end(devmap); it++ ){
-	    // ESP_LOGI( FNAME, "Main X/Y Vector Head: %3.2f Dev: %3.2f", it->first, it->second );
+	for(auto it = std::begin(devmap); it != std::end(devmap); ++it ){
+		// ESP_LOGI( FNAME, "Main X/Y Vector Head: %3.2f Dev: %3.2f", it->first, it->second );
 		X.push_back( it->first );
 		Y.push_back( it->second );
 	}
 	// take care for tail of spline by extrapolation
-	for(auto it = std::begin(devmap); it != std::end(devmap); it++ ){
+	for(auto it = std::begin(devmap); it != std::end(devmap); ++it ){
 		if( it->first <= 140 ){  // 140°
 			// ESP_LOGI( FNAME, "Post  X/Y Vector Head: %3.2f Dev: %3.2f", it->first+360, it->second );
 			X.push_back( it->first+360.0 );

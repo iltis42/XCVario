@@ -182,10 +182,11 @@ bool StraightWind::calculateWind()
 		char log[SSTRLEN];
 		float dev = compass->getDeviation( averageTH );
 		sprintf( log, "$WIND;");
+		int pos = strlen(log);
 		if( wind_logging.get() & WLOG_WIND ){
-			sprintf( log, "%d;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%d;%d;%.1f;%1.1f", _tick, averageTC, cgs, averageTH, ctas, newWindDir, newWindSpeed, windDir, windSpeed, circlingWindDir, circlingWindSpeed, (airspeedCorrection-1)*100, CircleWind::getFlightMode(), gpsStatus, dev, slipAngle );
+			sprintf( log+pos, "%d;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%d;%d;%.1f;%1.1f", _tick, averageTC, cgs, averageTH, ctas, newWindDir, newWindSpeed, windDir, windSpeed, circlingWindDir, circlingWindSpeed, (airspeedCorrection-1)*100, CircleWind::getFlightMode(), gpsStatus, dev, slipAngle );
 		}
-		int pos=strlen(log);
+		pos=strlen(log);
 		if( wind_logging.get() & WLOG_GYRO_MAG ){
 			sprintf( log+pos, ";%.3f;%.3f;%.3f;%.3f;%.3f;%.3f;%.3f;%.3f;%.3f",
 					compass->rawX()/16384.0,compass->rawY()/16384.0,compass->rawZ()/16384.0,
@@ -206,7 +207,6 @@ bool StraightWind::calculateWind()
 	status="Calculating";
 	// ESP_LOGI(FNAME,"%d TC: %3.1f (avg:%3.1f) GS:%3.1f TH: %3.1f (avg:%3.1f) TAS: %3.1f", nunberOfSamples, ctc, averageTC, cgs, cth, averageTH, ctas );
 	calculateWind( averageTC, averageGS, averageTH, averageTas  );
-
 	return true;
 }
 

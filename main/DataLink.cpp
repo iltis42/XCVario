@@ -30,6 +30,10 @@ const uint8_t FB_START_FRAME = 0x73;
 
 const uint8_t KRT2_STX_START = 0x02;
 
+const uint8_t BECKER_START_FRAME = 0xA5;
+const uint8_t BECKER_PROTID      = 0x14;
+
+
 
 DataLink::DataLink(){
 	state = GET_NMEA_UBX_SYNC;
@@ -151,8 +155,49 @@ void DataLink::parse_NMEA_UBX( char c, int port, bool last ){
 			framebuffer[pos] = c;
 			pos++;
 			break;
+		case BECKER_START_FRAME:
+			pos = 0;
+			len = 0;
+			framebuffer[pos] = c;
+			pos++;
+			state = GET_BECKER_PROTID;
 		}
 		break;
+
+		case GET_BECKER_PROTID:
+			if( c == BECKER_PROTID ){
+			   framebuffer[pos] = c;
+			   pos++;
+			   state = GET_BECKER_LEN;
+			}else{
+				state = GET_NMEA_UBX_SYNC;
+				pos = 0;
+			}
+			break;
+
+		case GET_BECKER_LEN:
+			framebuffer[pos] = c;
+			len = c;
+			if( len < 64 ){ // we support up to 64 bytes of msg length what should be far enough
+			   pos++;
+			   state = GET_BECKER_DATA;
+			}else
+			{
+				state = GET_NMEA_UBX_SYNC;
+				pos = 0;
+			}
+			break;
+
+		case GET_BECKER_DATA:
+			framebuffer[pos] = c;
+			pos++;
+			if( pos > len+5 ){  // including 3 bytes header/protid/len and 2 bytes CRC
+				framebuffer[pos] = 0;
+				routeSerialData(framebuffer, pos+1, port, true );
+				state = GET_NMEA_UBX_SYNC;
+				pos = 0;
+			}
+			break;
 
 		case GET_KRT2_STX:
 			framebuffer[pos] = c;

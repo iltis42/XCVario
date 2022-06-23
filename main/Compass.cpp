@@ -124,6 +124,9 @@ void Compass::compassT(void* arg ){
 			if( !compass->calibrationIsRunning() ){
 				compass->progress();
 			}
+			else{
+				compass->calcCalibration();
+			}
 			vTaskDelayUntil(&lastWakeTime, 50/portTICK_PERIOD_MS);
 		}
 	}
@@ -201,6 +204,75 @@ void Compass::setHeading( float h ) {
 	ESP_LOGI( FNAME, "NEW external heading %.1f", h );
 };
 
+// calibration calculation in sync with data received in compass task
+void Compass::calcCalibration(){
+	i++;
+	float variance = 0.f;
+	t_float_axes var;
+	if( sensor ){
+		if( sensor->rawAxes( axes ) == false )
+		{
+			errors++;
+			if( errors > 100 ){
+				sensor->initialize();
+				errors = 0;
+			}
+			return;
+		}
+	}
+	raw.x = (*avgX)( axes.x );
+	raw.y = (*avgY)( axes.y );
+	raw.z = (*avgZ)( axes.z );
+	// Variance low pass filtered
+	var.x = axes.x - raw.x;
+	var.y = axes.y - raw.y;
+	var.z = axes.z - raw.z;
+	variance += ((var.x*var.x + var.y*var.y + var.z*var.z) - variance) / 50.f;
+	// ESP_LOGI( FNAME, "Mag Var: %7.3f", variance );
+
+	// ESP_LOGI( FNAME, "Mag Var X:%.2f Y:%.2f Z:%.2f", var.x, var.y, var.z  );
+	/* Find max/min peak values */
+	min.x = ( raw.x < min.x ) ? raw.x : min.x;
+	min.y = ( raw.y < min.y ) ? raw.y : min.y;
+	min.z = ( raw.z < min.z ) ? raw.z : min.z;
+	max.x = ( raw.x > max.x ) ? raw.x : max.x;
+	max.y = ( raw.y > max.y ) ? raw.y : max.y;
+	max.z = ( raw.z > max.z ) ? raw.z : max.z;
+
+	const int16_t minval = (32768/100)*1; // 1% full scale
+	if( abs(raw.x) < minval && abs(raw.y) < minval && variance < 200.f && raw.z > 2*minval  )
+		bits.zmax_green = true;
+	if( abs(raw.x) < minval && abs(raw.y) < minval && variance < 200.f && raw.z < -2*minval  )
+		bits.zmin_green = true;
+	if( abs(raw.x) < minval && abs(raw.z) < minval && variance < 200.f && raw.y > 2*minval  )
+		bits.ymax_green = true;
+	if( abs(raw.x) < minval && abs(raw.z) < minval && variance < 200.f && raw.y < -2*minval  )
+		bits.ymin_green = true;
+	if( abs(raw.y) < minval && abs(raw.z) < minval && variance < 200.f && raw.x > 2*minval  )
+		bits.xmax_green = true;
+	if( abs(raw.y) < minval && abs(raw.z) < minval && variance < 200.f && raw.x < -2*minval  )
+		bits.xmin_green = true;
+
+	if( i < 2 )
+		return;
+
+	// Calculate hard iron correction
+	// calculate average x, y, z magnetic bias.x in counts
+	bias.x = ( (float)max.x + min.x ) / 2;
+	bias.y = ( (float)max.y + min.y ) / 2;
+	bias.z = ( (float)max.z + min.z ) / 2;
+
+	// Calculate soft-iron scale factors
+	// calculate average x, y, z axis max chord length in counts
+	float xchord = ( (float)max.x - min.x );
+	float ychord = ( (float)max.y - min.y );
+	float zchord = ( (float)max.z - min.z );
+	float cord_avgerage = ( xchord + ychord + zchord ) / 3.;
+	scale.x = cord_avgerage / xchord;
+	scale.y = cord_avgerage / ychord;
+	scale.z = cord_avgerage / zchord;
+}
+
 
 /**
  * Calibrate compass by using the read x, y, z raw values. The calibration is
@@ -211,126 +283,53 @@ bool Compass::calibrate( bool (*reporter)( t_magn_axes raw, t_float_axes scale, 
 {
 	// reset all old calibration data
 	ESP_LOGI( FNAME, "calibrate/show magnetic sensor, only_show=%d ", only_show );
-	calibrationRunning = true;
-	if( !only_show )
-		resetCalibration();
-
-	ESP_LOGI( FNAME, "calibrate min-max xyz");
-	int i = 0;
-	t_magn_axes raw;
-	t_float_axes var;
-	static float variance = 0.f;
-	t_magn_axes axes;
-	t_magn_axes min = { 20000,20000,20000 } ;
-	t_magn_axes max = { 0,0,0 };
-	t_bitfield_compass bits = { false, false, false, false, false, false };
-	Average<50, int16_t> avgX;
-	Average<50, int16_t> avgY;
-	Average<50, int16_t> avgZ;
 	if( !only_show ){
+		resetCalibration();
+		calibrationRunning = true;
+		min = { 20000,20000,20000 } ;
+		max = { 0,0,0 };
+		bits = { false, false, false, false, false, false };
+		raw = { 0,0,0 };
+		avgX = new Average<20, int16_t>;
+		avgY = new Average<20, int16_t>;
+		avgZ = new Average<20, int16_t>;
+		i=0;
 		while( true )
 		{
-			i++;
-			if( sensor->rawAxes( axes ) == false )
-			{
-				errors++;
-				if( errors > 10 ){
-					sensor->initialize();
-					errors = 0;
-				}
-				continue;
-			}
-			raw.x = avgX( axes.x );
-			raw.y = avgY( axes.y );
-			raw.z = avgZ( axes.z );
-			// Variance low pass filtered
-			var.x = axes.x - raw.x;
-			var.y = axes.y - raw.y;
-			var.z = axes.z - raw.z;
-			variance += ((var.x*var.x + var.y*var.y + var.z*var.z) - variance) / 50.f;
-			// ESP_LOGI( FNAME, "Mag Var: %7.3f", variance );
-
-
-			// ESP_LOGI( FNAME, "Mag Var X:%.2f Y:%.2f Z:%.2f", var.x, var.y, var.z  );
-			/* Find max/min peak values */
-			min.x = ( raw.x < min.x ) ? raw.x : min.x;
-			min.y = ( raw.y < min.y ) ? raw.y : min.y;
-			min.z = ( raw.z < min.z ) ? raw.z : min.z;
-			max.x = ( raw.x > max.x ) ? raw.x : max.x;
-			max.y = ( raw.y > max.y ) ? raw.y : max.y;
-			max.z = ( raw.z > max.z ) ? raw.z : max.z;
-
-			const int16_t minval = (32768/100)*1; // 1% full scale
-			if( abs(raw.x) < minval && abs(raw.y) < minval && variance < 800.f && raw.z > 2*minval  )
-				bits.zmax_green = true;
-			if( abs(raw.x) < minval && abs(raw.y) < minval && variance < 800.f && raw.z < -2*minval  )
-				bits.zmin_green = true;
-			if( abs(raw.x) < minval && abs(raw.z) < minval && variance < 800.f && raw.y > 2*minval  )
-				bits.ymax_green = true;
-			if( abs(raw.x) < minval && abs(raw.z) < minval && variance < 800.f && raw.y < -2*minval  )
-				bits.ymin_green = true;
-			if( abs(raw.y) < minval && abs(raw.z) < minval && variance < 800.f && raw.x > 2*minval  )
-				bits.xmax_green = true;
-			if( abs(raw.y) < minval && abs(raw.z) < minval && variance < 800.f && raw.x < -2*minval  )
-				bits.xmin_green = true;
-
-			if( i < 2 )
-				continue;
-
-			// Calculate hard iron correction
-			// calculate average x, y, z magnetic bias.x in counts
-			bias.x = ( (float)max.x + min.x ) / 2;
-			bias.y = ( (float)max.y + min.y ) / 2;
-			bias.z = ( (float)max.z + min.z ) / 2;
-
-			// Calculate soft-iron scale factors
-			// calculate average x, y, z axis max chord length in counts
-			float xchord = ( (float)max.x - min.x );
-			float ychord = ( (float)max.y - min.y );
-			float zchord = ( (float)max.z - min.z );
-			float cord_avgerage = ( xchord + ychord + zchord ) / 3.;
-			scale.x = cord_avgerage / xchord;
-			scale.y = cord_avgerage / ychord;
-			scale.z = cord_avgerage / zchord;
-
-			if( !(i%4) )
-			{
-				// Send a calibration report to the subscriber every 500ms
-				reporter( raw, scale, bias, bits, false );
-			}
+			// Send a calibration report to the subscriber
+			reporter( raw, scale, bias, bits, false );
 			if( ESPRotary::readSwitch() == true  )  // more responsive to query every loop
 				break;
+			delay(10);
 		}
+		calibrationRunning = false;
+		delay(100);
+		delete avgX;
+		delete avgY;
+		delete avgZ;
 	}else{
 		ESP_LOGI( FNAME, "Show Calibration");
 		t_bitfield_compass b = calibration_bits.get();
-		reporter( raw, scale, bias, b, true );
+		reporter( axes, scale, bias, b, true );
 		while( ESPRotary::readSwitch() == true  )
 			delay(100);
 	}
 	if( !only_show ){
-		ESP_LOGI( FNAME, "Read Cal-Samples=%d, OK=%d, NOK=%d",
-				i, i-errors, errors );
-
+		ESP_LOGI( FNAME, "Read Cal-Samples=%d, OK=%d, NOK=%d", i, i-errors, errors );
 		if( i < 2 )
 		{
 			// Too less samples to start calibration
 			ESP_LOGI( FNAME, "calibrate min-max xyz not enough samples");
-			calibrationRunning = false;
 			return false;
 		}
 		// save calibration
 		saveCalibration();
 		calibration_bits.set( bits );
 
-		ESP_LOGI( FNAME, "Compass: min.x=%d max.x=%d, min.y=%d max.y=%d, min.z=%d max.z=%d",
-				min.x, max.x, min.y, max.y, min.z, max.z );
-
 		ESP_LOGI( FNAME, "Compass hard-iron: bias.x=%.3f, bias.y=%.3f, bias.z=%.3f", bias.x, bias.y, bias.z );
 		ESP_LOGI( FNAME, "Compass soft-iron: scale.x=%.3f, scale.y=%.3f, scale.z=%.3f",	scale.x, scale.y, scale.x );
 		ESP_LOGI( FNAME, "calibration end" );
 	}
-	calibrationRunning = false;
 	return true;
 }
 

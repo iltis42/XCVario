@@ -96,6 +96,7 @@ public:
 	bool calibrationIsRunning() {  return calibrationRunning; }
 	// Returns total number of read errors
 	int getReadError(){ return totalReadErrors; };
+	void calcCalibration();
 
 private:
 	// Calculates tilt compensated heading in degrees of 0...359. The ok flag is set to true if fine, else false
@@ -141,4 +142,13 @@ private:
 	double fy;
 	double fz;
 	t_magn_axes rawAxes;
+	t_magn_axes raw;
+	t_magn_axes axes;
+	t_bitfield_compass bits;
+	t_magn_axes min;
+	t_magn_axes max;
+	Average<20, int16_t> *avgX = 0;
+	Average<20, int16_t> *avgY = 0;
+	Average<20, int16_t> *avgZ = 0;
+	int i;
 };

@@ -56,7 +56,7 @@ private:
 
 	static xSemaphoreHandle splineMutex;
 	tk::spline *deviationSpline;
-	std::map< double, double> devmap;
+	std::map< int, double> devmap;
 	int _devHolddown;
 	int samples;
 };

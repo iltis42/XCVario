@@ -569,7 +569,9 @@ void readSensors(void *pvParameters){
 			ias.set( new_ias );  // low pass filter
 		}
 		// ESP_LOGI("FNAME","P: %f  IAS:%f IASF: %d", dynamicP, iasraw, ias );
-		tas += (tasraw-tas)*0.25;       // low pass filter
+		if( !compass || !(compass->externalData()) ){
+			tas += (tasraw-tas)*0.25;       // low pass filter
+		}
 		// ESP_LOGI(FNAME,"IAS=%f, T=%f, TAS=%f baroP=%f", ias, T, tas, baroP );
 
 		// Slip angle estimation

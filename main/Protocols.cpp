@@ -308,11 +308,13 @@ void Protocols::parseNMEA( const char *str ){
 	// ESP_LOGI(FNAME,"parseNMEA: %s, len: %d", str,  strlen(str) );
 
 	if ( strncmp( str, "!xc,", 4 ) == 0 ) { // need this to support Wind Simulator with Compass simulation
-		float h;
-		sscanf( str,"!xc,%f", &h );
-		// ESP_LOGI(FNAME,"Compass heading detected=%3.1f", h );
+		float heading;
+		float TAS;
+		sscanf( str,"!xc,%f,%f", &heading, &TAS );
+		ESP_LOGI(FNAME,"Compass heading detected=%3.1f TAS: %3.1f", heading, TAS );
 		if( compass )
-			compass->setHeading( h );
+			compass->setHeading( heading );
+		tas = TAS;
 	}
 	else if ( (strncmp( str, "!g,", 3 ) == 0)    ) {
 		ESP_LOGI(FNAME,"parseNMEA, Cambridge C302 style command !g detected: %s",str);

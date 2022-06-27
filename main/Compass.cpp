@@ -60,6 +60,7 @@ Compass::Compass( const uint8_t addr, const uint8_t odr, const uint8_t range, co
 	fx=0;
 	fy=0;
 	fz=0;
+	i=0;
 }
 
 Compass::~Compass()
@@ -187,11 +188,14 @@ float Compass::rawHeading( bool *okIn )
 	return m_magn_heading;
 }
 
-float Compass::filteredTrueHeading( bool *okIn ){ // consider deviation table
-	float deviation_cur = getDeviation(  _heading_average );
-	float fth = Vector::normalizeDeg( _heading_average + deviation_cur );
+float Compass::filteredTrueHeading( bool *okIn, bool withDeviation ){ // consider deviation table
+	float fth = _heading_average;
+	if( withDeviation ){
+		float deviation_cur = getDeviation(  _heading_average );
+		fth = Vector::normalizeDeg( _heading_average + deviation_cur );
+	}
 	*okIn = m_headingValid;
-	// ESP_LOGI(FNAME,"filteredTrueHeading dev=%.1f head=%.1f hddev=%.1f ok=%d", deviation_cur, _heading_average, fth, *okIn   );
+	// ESP_LOGI(FNAME,"filteredTrueHeading head=%.1f hddev=%.1f ok=%d", _heading_average, fth, *okIn   );
 	return fth;
 }
 
@@ -199,6 +203,7 @@ float Compass::filteredTrueHeading( bool *okIn ){ // consider deviation table
 void Compass::setHeading( float h ) {
 	m_gyro_fused_heading = h;
 	m_magn_heading = h;
+	_heading_average = h;
 	m_headingValid=true;
 	_external_data=100;
 	ESP_LOGI( FNAME, "NEW external heading %.1f", h );

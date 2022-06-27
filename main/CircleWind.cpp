@@ -262,7 +262,6 @@ void CircleWind::_calcWind()
 	// Let the world know about our measurement!
 	ESP_LOGI(FNAME,"### RAW CircleWind: %3.1f°/%.1fKm/h", result.getAngleDeg(), result.getSpeed() );
 	newWind( result.getAngleDeg(), result.getSpeed() );
-	// _age = 0;
 }
 
 
@@ -293,7 +292,7 @@ void CircleWind::newWind( float angle, float speed ){
 	if( curVectorNum > max_samples )
 		curVectorNum=0;
 	ESP_LOGI(FNAME,"### NEW AGV CircleWind: %3.1f°/%.1fKm/h  JI:%2.1f", direction, windspeed, jitter  );
-
+	resetAge();
 	if( (int)direction != (int)cwind_dir.get()  ){
 		cwind_dir.set( direction );
 	}

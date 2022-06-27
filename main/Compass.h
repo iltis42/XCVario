@@ -73,6 +73,7 @@ public:
 	// sensor related interface
 	bool haveSensor();
 	bool overflowFlag();
+	bool externalData() { return( _external_data > 0); }
 
 	// Heading related methods
 	float cur_heading( bool *ok );
@@ -82,7 +83,7 @@ public:
 	float rawZ() { return fz; };
 	t_magn_axes getRawAxes() { return rawAxes; };
 	float filteredHeading( bool *okIn );
-	float filteredTrueHeading( bool *okIn );
+	float filteredTrueHeading( bool *okIn, bool withDeviation=true );
 	void setGyroHeading( float hd );
 	float getGyroHeading( bool *ok, bool addDeclination=true );
 	inline bool headingValid() {	return m_headingValid;	}

@@ -108,16 +108,32 @@ bool Deviation::newDeviation( float measured_heading, float desired_heading, boo
 #endif
 		float lowest_diff = 1000.0;
 		float diff = Vector::angleDiffDeg( measured_heading, (float)(it->first*0.1) );
-		if( (abs(diff) < 25) && (diff < lowest_diff) ){
-			// ESP_LOGI( FNAME, "Found lower diff in devmap for heading=%.1f, diff=%.3f", it->first*0.1, diff );
+		if( (abs(diff) < 15) && (diff < lowest_diff) ){
+			ESP_LOGI( FNAME, "Found lower diff in devmap for heading=%.1f, diff=%.3f", it->first*0.1, diff );
 			tbe = it;
 			lowest_diff = diff;
 		}
 	}
 	if( tbe != std::end(devmap) ){
-		// ESP_LOGI( FNAME, "Now erase from map dev for heading=%.1f", tbe->first*0.1 );
+		ESP_LOGI( FNAME, "Now erase from map dev for heading=%.1f", tbe->first*0.1 );
 		devmap.erase(tbe);
 	}
+	// Second pass
+	tbe = std::end(devmap);
+	for(auto it = std::begin(devmap); it != std::end(devmap); it++ ){
+		float lowest_diff = 1000.0;
+		float diff = Vector::angleDiffDeg( measured_heading, (float)(it->first*0.1) );
+		if( (abs(diff) < 10) && (diff < lowest_diff) ){
+			ESP_LOGI( FNAME, "Found lower diff in devmap for heading=%.1f, diff=%.3f", it->first*0.1, diff );
+			tbe = it;
+			lowest_diff = diff;
+		}
+	}
+	if( tbe != std::end(devmap) ){
+		ESP_LOGI( FNAME, "Now erase from map dev for heading=%.1f", tbe->first*0.1 );
+		devmap.erase(tbe);
+	}
+
 	double old_dev = (*deviationSpline)((double)measured_heading);
 	// ESP_LOGI( FNAME, "OLD Spline Deviation for measured heading: %.1f Dev: %f", measured_heading, old_dev );
 
@@ -134,11 +150,11 @@ bool Deviation::newDeviation( float measured_heading, float desired_heading, boo
 		// ESP_LOGI( FNAME, "old_dev %2.3f, delta %f, delta*k %f, new dev: %f",  old_dev, delta, delta*k, old_dev + (delta * k) );
 		devmap[ (int)(measured_heading*10.0 + 0.5) ] = old_dev + (delta * k);  // insert the new low pass filtered element
 	}
-#ifdef VERBOSE_LOG
+//#ifdef VERBOSE_LOG
 	for(auto itx = std::begin(devmap); itx != std::end(devmap); ++itx ){
-		ESP_LOGI( FNAME, "NEW Dev MAP Head: %.1f Dev: %f", itx->first*0.1, itx->second );
+		ESP_LOGI( FNAME, "NEW Dev MAP Head: %.1f Dev: %.2f", itx->first*0.1, itx->second );
 	}
-#endif
+//#endif
 	xSemaphoreGive(splineMutex);
 	recalcInterpolationSpline();
 	//double new_dev = (*deviationSpline)((double)measured_heading);

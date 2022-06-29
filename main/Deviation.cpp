@@ -28,6 +28,7 @@ Last update: 2021-03-29
 xSemaphoreHandle Deviation::splineMutex = 0;
 
 #define MAX_SAVE_DELTA 0.3 // maximum error for saving new deviation data per heading
+#define HALF_SPACING   10
 
 /*
   Creates instance for I2C connection with passing the desired parameters.
@@ -108,14 +109,14 @@ bool Deviation::newDeviation( float measured_heading, float desired_heading, boo
 #endif
 		float lowest_diff = 1000.0;
 		float diff = Vector::angleDiffDeg( measured_heading, (float)(it->first*0.1) );
-		if( (abs(diff) < 15) && (diff < lowest_diff) ){
-			ESP_LOGI( FNAME, "Found lower diff in devmap for heading=%.1f, diff=%.3f", it->first*0.1, diff );
+		if( (abs(diff) < HALF_SPACING) && (diff < lowest_diff) ){
+			// ESP_LOGI( FNAME, "Found lower diff in devmap for heading=%.1f, diff=%.3f", it->first*0.1, diff );
 			tbe = it;
 			lowest_diff = diff;
 		}
 	}
 	if( tbe != std::end(devmap) ){
-		ESP_LOGI( FNAME, "Now erase from map dev for heading=%.1f", tbe->first*0.1 );
+		// ESP_LOGI( FNAME, "Now erase from map dev for heading=%.1f", tbe->first*0.1 );
 		devmap.erase(tbe);
 	}
 	// Second pass
@@ -123,8 +124,8 @@ bool Deviation::newDeviation( float measured_heading, float desired_heading, boo
 	for(auto it = std::begin(devmap); it != std::end(devmap); it++ ){
 		float lowest_diff = 1000.0;
 		float diff = Vector::angleDiffDeg( measured_heading, (float)(it->first*0.1) );
-		if( (abs(diff) < 10) && (diff < lowest_diff) ){
-			ESP_LOGI( FNAME, "Found lower diff in devmap for heading=%.1f, diff=%.3f", it->first*0.1, diff );
+		if( (abs(diff) < HALF_SPACING) && (diff < lowest_diff) ){
+			// ESP_LOGI( FNAME, "Found lower diff in devmap for heading=%.1f, diff=%.3f", it->first*0.1, diff );
 			tbe = it;
 			lowest_diff = diff;
 		}

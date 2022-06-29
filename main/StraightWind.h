@@ -11,8 +11,8 @@
 
 #include <sys/time.h>
 #include "vector.h"
+#include <list>
 
-#define NUM_STRAIGHT_RESULTS 90
 
 class StraightWind
 {
@@ -69,15 +69,12 @@ public:
 	const char *getStatus() { return status; }
 
 private:
-
-	int    nunberOfSamples;  // current number of samples
-	float averageTas;             // TAS in km/h
+	float averageTas;         // TAS in km/h
 	float averageTH;          // sum of Compass true heading
 	float averageTC;          // sum of GPS heading (true course)
 	float averageGS;		   // average ground speed
 	float windDir;            // calculated wind direction
 	float windSpeed;          // calculated wind speed in Km/h
-	float lastWindSpeed;          // calculated wind speed in Km/h
 	bool   lowAirspeed;
 	float  circlingWindDir;
 	float  circlingWindDirReverse;
@@ -91,8 +88,7 @@ private:
 	float  magneticHeading;
 	const char *status;
 	float  jitter;
-	int curVectorNum;
-	static Vector windVectors[NUM_STRAIGHT_RESULTS];
+	std::list<Vector> windVectors;
 	float newWindSpeed;
 	float newWindDir;
 	float slipAverage;

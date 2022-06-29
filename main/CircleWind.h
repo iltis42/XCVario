@@ -35,11 +35,13 @@ typedef enum e_circling { undefined, straight, circlingL, circlingR } t_circling
 
 #include "vector.h"
 #include <cmath>
+#include <list>
+
+
 
 // #include "calculator.h"
 // #include "gpsnmea.h"
 
-#define NUM_RESULTS 10
 
 class CircleWind
 {
@@ -98,7 +100,7 @@ public:
   static float  getSpeed() 		 { return result.getSpeed(); }
   static int  getAge() 			 { return _age; }
   static void resetAge();
-  static int  getQuality() 		 { return rint(jitter*20); } // 0..100 %
+  static int  getQuality() 		 { return rint( 100.0 - jitter ); } // 0..100 %
   static const char * getStatus()      { return status; }
   static const char *getFlightModeStr();
 
@@ -118,15 +120,10 @@ private:
   static Vector result;
   static float jitter;
   static t_circling flightMode;
-  static float direction;
-  static float windspeed;
-  static int num_samples;
   static int _age;
   static const char *status;
   static float headingDiff;
-  static float lastWindSpeed;
-  static Vector windVectors[NUM_RESULTS];
-  static int curVectorNum;
+  static std::list<Vector> windVectors;
   static uint8_t turn_left;
   static uint8_t turn_right;
   static uint8_t fly_straight;

@@ -40,17 +40,13 @@
 #define R2D(x) ((x)*57.2957795131)
 
 
-Vector StraightWind::windVectors[NUM_STRAIGHT_RESULTS];
-
 StraightWind::StraightWind() :
-nunberOfSamples( 0 ),
 averageTas(0),
 averageTH( 0.0 ),
 averageTC( 0.0 ),
 averageGS(0.0),
 windDir( -1.0 ),
 windSpeed( -1.0 ),
-lastWindSpeed( -1.0 ),
 lowAirspeed( false ),
 circlingWindDir( -1.0 ),
 circlingWindDirReverse( -1.0 ),
@@ -63,7 +59,6 @@ deviation_cur(0),
 magneticHeading(0),
 status( "Initial" ),
 jitter(0),
-curVectorNum(0),
 newWindSpeed(0),
 newWindDir(0),
 slipAverage(0),
@@ -168,9 +163,7 @@ bool StraightWind::calculateWind()
 	// Get current true course from GPS
 	float ctc = Flarm::getGndCourse();
 	averageTC += (ctc - averageTC) * 1/wind_gps_lowpass.get();
-
 	averageTas = ctas;
-
 	averageGS += (cgs -averageGS) * 1/wind_gps_lowpass.get();
 
 	// Calculate average true course TC
@@ -303,32 +296,26 @@ void StraightWind::calculateWind( float tc, float gs, float th, float tas, float
 	calculateSpeedAndAngle( tc, gs, th+deviation, tas*airspeedCorrection, newWindSpeed, newWindDir );
 	// ESP_LOGI( FNAME, "Calculated raw windspeed %.1f jitter:%.1f", newWindSpeed, jitter );
 
-	windVectors[curVectorNum].setAngle( newWindDir );
-	windVectors[curVectorNum].setSpeedKmh( newWindSpeed );
-	// Take all as new sample
-	nunberOfSamples++;
+	Vector v;
+	v.setAngle( newWindDir );
+	v.setSpeedKmh( newWindSpeed );
 
-	int max_samples = wind_filter_lowpass.get();
-
-	Vector result;
-	for( int i=0; (i<max_samples) && (i<nunberOfSamples); i++ ){
-		result.add( windVectors[i] );
-		// ESP_LOGI(FNAME,"i=%d, angle %.1f speed %.1f", i, result.getAngleDeg(), result.getSpeed() );
+	windVectors.push_back( v );
+	if( windVectors.size() > wind_filter_lowpass.get() ){
+		windVectors.pop_front();
 	}
-	int cur_samples=nunberOfSamples;
-	if( cur_samples  > max_samples )
-		cur_samples = max_samples;
 
-	windDir = result.getAngleDeg(); // Vector::normalizeDeg( result.getAngleDeg()/circle_wind_lowpass.get() );
-	windSpeed = result.getSpeed() / cur_samples;
+	Vector result = Vector( 0.0, 0.0 );
+	for( auto it=std::begin(windVectors); it != std::end(windVectors); it++ ){
+			result.add( *it );
+			// ESP_LOGI(FNAME,"angle %.1f speed %.1f", it->getAngleDeg(), it->getSpeed() );
+	}
 
-	curVectorNum++;
-	if( curVectorNum > max_samples )
-		curVectorNum=0;
+	windDir   = result.getAngleDeg(); // Vector::normalizeDeg( result.getAngleDeg()/circle_wind_lowpass.get() );
+	windSpeed = result.getSpeed() / windVectors.size();
 
-	ESP_LOGI(FNAME,"New WindDirection: %3.1f deg,  Strength: %3.1f km/h JI:%2.1f", windDir, windSpeed, jitter );
+	ESP_LOGI(FNAME,"New AVG WindDirection: %3.1f deg,  Strength: %3.1f km/h JI:%2.1f", windDir, windSpeed, jitter );
 	_age = 0;
-	lastWindSpeed = windSpeed;
 	if( (int)windDir != (int)swind_dir.get()  ){
 		swind_dir.set( windDir );
 	}

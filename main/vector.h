@@ -60,6 +60,7 @@ public:
 
     static float polar(float y, float x);
     static float normalize(float angle);
+    static float normalizePI(float angle);
     static float normalizeDeg(float angle);
     static float normalizeDeg180(float angle);
 

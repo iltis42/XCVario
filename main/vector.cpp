@@ -44,6 +44,7 @@ Vector::Vector(const float angle, const float speed )
 	flags._isValid = true;
 }
 
+
 float Vector::normalize(float angle)
 {
 	//perhaps use something similar here?
@@ -63,6 +64,16 @@ float Vector::normalizeDeg(float angle)
 		a += 360.0;
 	while( a >= 360.0 )
 		a -= 360.0;
+	return a;
+}
+
+float Vector::normalizePI(float angle)
+{
+	float a=angle;
+	while( a < -M_PI )
+		a += PI2;
+	while( a >= M_PI )
+		a -= PI2;
 	return a;
 }
 
@@ -108,17 +119,7 @@ float Vector::angleDiffDeg(float ang1, float ang2)
 
 float Vector::angleDiff(float ang1, float ang2)
 {
-	float a1 = normalize (ang1);
-	float a2 = normalize (ang2);
-	float a = a2 - a1;
-
-	if (a > M_PI)
-		return (a - PI2);
-
-	if (a < -M_PI)
-		return (a + PI2);
-
-	return a;
+	return( normalizePI( normalizePI(ang1) - normalizePI(ang2) ));
 }
 
 Vector::~Vector()

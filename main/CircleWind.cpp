@@ -266,7 +266,7 @@ void CircleWind::newWind( float angle, float speed ){
 	ESP_LOGI(FNAME,"New Wind Vector angle %.1f speed %.1f", angle, speed );
 
 	windVectors.push_back( Vector( angle, speed ) );
-	if( windVectors.size() > (int)circle_wind_lowpass.get() ){
+	while( windVectors.size() > (int)circle_wind_lowpass.get() ){
 		windVectors.pop_front();
 	}
 	result = Vector( 0.0, 0.0 );

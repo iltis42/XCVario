@@ -39,7 +39,6 @@
 #define D2R(x) ((x)/57.2957795131)
 #define R2D(x) ((x)*57.2957795131)
 
-
 StraightWind::StraightWind() :
 averageTas(0),
 averageTH( 0.0 ),
@@ -84,7 +83,7 @@ bool StraightWind::getWind( int* direction, float* speed, int *age )
 	*direction = int( swind_dir.get() + 0.5 );
 	*speed = float( swind_speed.get() );
 	*age = _age;
-	return ( *direction != 0 && *speed != 0 );
+	return ( true );
 }
 
 /**
@@ -162,7 +161,7 @@ bool StraightWind::calculateWind()
 
 	// Get current true course from GPS
 	float ctc = Flarm::getGndCourse();
-	averageTC += (ctc - averageTC) * 1/wind_gps_lowpass.get();
+	averageTC = Vector::normalize( averageTC + (ctc - averageTC) * 1/wind_gps_lowpass.get());
 	averageTas = ctas;
 	averageGS += (cgs -averageGS) * 1/wind_gps_lowpass.get();
 
@@ -212,15 +211,15 @@ bool StraightWind::calculateWind()
 // view-source:http://www.owoba.de/fliegerei/flugrechner.html
 // direction in degrees of third vector in windtriangle
 void StraightWind::calculateSpeedAndAngle( float angle1, float speed1, float angle2, float speed2, float& speed, float& angle ){
-	float delta = Vector::normalize( D2R( angle2 - angle1 ) );
 	float tcrad = D2R( angle1 );
 	float thrad = D2R( angle2 );
-	float wca = Vector::normalize( thrad - tcrad );
-	float ang = tcrad + atan2( speed2 * sin( wca ), speed2 * cos( wca ) - speed1 );
+	float wca = Vector::angleDiff( thrad, tcrad );
+	float s2wca = speed2 * cos( wca );
+	float ang = tcrad + atan2( speed2 * sin( wca ), s2wca - speed1 );
 	// Cosinus sentence: c^2 = a^2 + b^2 − 2 * a * b * cos( α ) for wind speed in km/h
-	speed = sqrt( (speed2 * speed2) + (speed1 * speed1 ) - ( 2 * speed2 * speed1 * cos( delta ) ) );
+	speed = sqrt( (speed2 * speed2) + (speed1 * speed1 ) - ( 2 * s2wca * speed1  ) );
 	angle = Vector::normalizeDeg( R2D( ang ) );  // convert radian to degree
-	// ESP_LOGI(FNAME,"calcAngleSpeed( A1/S1=%3.1f°/%3.1f km/h  A2/S2=%3.1f°/%3.1f km/h): A/S: %3.2f°/%3.2f km/h", angle1, speed1, angle2, speed2, angle, speed  );
+	ESP_LOGI(FNAME,"calcAngleSpeed( A1/S1=%3.1f°/%3.1f km/h  A2/S2=%3.1f°/%3.1f km/h): A/S: %3.2f°/%3.2f km/h", angle1, speed1, angle2, speed2, angle, speed  );
 }
 
 float StraightWind::getAngle() { return swind_dir.get(); };
@@ -301,7 +300,7 @@ void StraightWind::calculateWind( float tc, float gs, float th, float tas, float
 	v.setSpeedKmh( newWindSpeed );
 
 	windVectors.push_back( v );
-	if( windVectors.size() > wind_filter_lowpass.get() ){
+	while( windVectors.size() > wind_filter_lowpass.get() ){
 		windVectors.pop_front();
 	}
 

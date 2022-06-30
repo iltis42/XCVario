@@ -67,7 +67,7 @@ public:
     static float angleDiff(float ang1, float ang2);    // RAD
     static float angleDiffDeg(float ang1, float ang2);    // DEG
 
-
+    static float reverse( float angle );
     /**
      * Get angle in degrees.
      */

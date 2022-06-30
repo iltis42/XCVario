@@ -67,6 +67,14 @@ void DisplayDeviations::display( int mode )
 
   // draw graph
   const int Y=245;
+  float max=0;
+   for( int x=0; x<360; x++ ){
+  	  float dev=compass->getDeviation((float)(x));
+  	  if( abs(dev) > max ){
+  		  max = dev;
+  	  }
+  }
+  max = max*1.1;
   ucg->drawHLine( 10, Y, 215 );   // X-Axis
   ucg->drawHLine( 15, Y-50, 5 );  // Scale
   ucg->drawHLine( 15, Y+50, 5 );
@@ -78,17 +86,18 @@ void DisplayDeviations::display( int mode )
 		  ucg->drawVLine( x, Y-3, 6 );
   }
   ucg->setColor( COLOR_GREEN );
+
   float avg=0;
   for( int x=0; x<360; x++ ){
 	  float dev=compass->getDeviation((float)(x));
- 	  ucg->drawPixel( 20+(x*200./360.), Y-(int)dev);
+ 	  ucg->drawPixel( 20+(x*200./360.), Y-(int)(dev*50/max +0.5) );
  	  avg +=dev;
   }
   avg = avg/360;
   ucg->setColor( COLOR_WHITE );
   for( int x=0; x<360; x++ ){
 	  if( !(x%10) )
-		  ucg->drawPixel( 20+(x*200./360.), Y-(int)(avg+0.5) );
+		  ucg->drawPixel( 20+(x*200./360.), Y-(int)(avg *50/max +0.5) );
   }
   ucg->setFontPosCenter();
   ucg->setColor( COLOR_HEADER_LIGHT );
@@ -97,9 +106,9 @@ void DisplayDeviations::display( int mode )
   ucg->printf("%d", (int)(avg+0.5));
   ucg->setFont(ucg_font_fub11_hr, true);
   ucg->setPrintPos(23,Y-50+7);  // Scale Labels
-  ucg->print("50");
+  ucg->printf("%2d", (int)rint(max));
   ucg->setPrintPos(23,Y+50+7);
-  ucg->print("-50");
+  ucg->printf("%2d", -(int)rint(max) );
   ucg->setPrintPos( 40, 317 );
   ucg->setColor( COLOR_WHITE );
   ucg->setPrintPos( 40, 317 );

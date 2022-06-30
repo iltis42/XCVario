@@ -91,6 +91,7 @@ bool Deviation::newDeviation( float measured_heading, float desired_heading, boo
 		ESP_LOGE( FNAME, "No Spline: Abort!");
 		return false;
 	}
+
 	double deviation = Vector::angleDiffDeg( desired_heading , measured_heading );
 	ESP_LOGI( FNAME, "New deviation: measured hdg: %.2f, desired hdg: %.2f => Deviation=%.3f, Sample:%d", measured_heading, desired_heading, deviation, samples );
 	if( (abs(deviation) > wind_max_deviation.get()) && !force ){ // data is not plausible/useful
@@ -151,11 +152,11 @@ bool Deviation::newDeviation( float measured_heading, float desired_heading, boo
 		// ESP_LOGI( FNAME, "old_dev %2.3f, delta %f, delta*k %f, new dev: %f",  old_dev, delta, delta*k, old_dev + (delta * k) );
 		devmap[ (int)(measured_heading*10.0 + 0.5) ] = old_dev + (delta * k);  // insert the new low pass filtered element
 	}
-#ifdef VERBOSE_LOG
+// #ifdef VERBOSE_LOG
 	for(auto itx = std::begin(devmap); itx != std::end(devmap); ++itx ){
 		ESP_LOGI( FNAME, "NEW Dev MAP Head: %.1f Dev: %.2f", itx->first*0.1, itx->second );
 	}
-#endif
+// #endif
 	xSemaphoreGive(splineMutex);
 	recalcInterpolationSpline();
 	//double new_dev = (*deviationSpline)((double)measured_heading);

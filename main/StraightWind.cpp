@@ -61,7 +61,8 @@ jitter(0),
 newWindSpeed(0),
 newWindDir(0),
 slipAverage(0),
-lastHeading(0)
+lastHeading(0),
+lastGroundCourse(0)
 {
 }
 
@@ -244,9 +245,15 @@ void StraightWind::calculateWind( float tc, float gs, float th, float tas, float
 	}
 	float headingDelta = Vector::angleDiffDeg( th , lastHeading );
 	lastHeading = th;
-	if(  abs(headingDelta) > 7.5  ){
+	if(  abs(headingDelta) > wind_straight_course_tolerance.get() ){
 		ESP_LOGI(FNAME,"Not really straight flight, heading delta: %f", headingDelta );
 		return;
+	}
+	float groundCourseDelta = Vector::angleDiffDeg( tc , lastGroundCourse );
+	lastGroundCourse = tc;
+	if(  abs(groundCourseDelta) > 7.5  ){
+			ESP_LOGI(FNAME,"Not really straight flight, GND course delta: %f", groundCourseDelta );
+			return;
 	}
 
 	if( circlingWindSpeed > 0 && compass_dev_auto.get() ){
@@ -254,16 +261,37 @@ void StraightWind::calculateWind( float tc, float gs, float th, float tas, float
 			status = "OLD CIRC WIND";
 			ESP_LOGI(FNAME,"Circling Wind exired");
 		}else{
+			// Tricky trial and error to catch the correct assembly for both vectors that is not deterministic
+			float airspeedR = 0;
+			float headingR = 0;
 			float airspeed = 0;
 			float heading = 0;
-			calculateSpeedAndAngle( circlingWindDirReverse, circlingWindSpeed, tc, gs, airspeed, heading );
+			Vector windR( circlingWindDirReverse, circlingWindSpeed );
+			Vector wind( circlingWindDir, circlingWindSpeed );
+			Vector groundTrackR( tc, gs );
+			Vector groundTrack( tc, gs );
+			groundTrackR.add( windR );
+			groundTrack.add( wind );
+			airspeedR = groundTrackR.getSpeed();
+			airspeed = groundTrack.getSpeed();
+			headingR = groundTrackR.getAngleDeg();
+			heading = groundTrack.getAngleDeg();
+			bool reverse = false;
+			float cwinddir = circlingWindDir;
+			if( abs(airspeedR - tas) < abs(airspeed -tas) ){
+				airspeed = airspeedR;
+				heading  = headingR;
+				cwinddir = circlingWindDirReverse;
+				reverse = true;
+			}
+			// calculateSpeedAndAngle( circlingWindDirReverse, circlingWindSpeed, tc, gs, airspeed, heading );
 //#ifdef VERBOSE_LOG
-			ESP_LOGI(FNAME,"Using reverse circling wind dir %3.2f, reverse cal. airspeed=%3.3f, tas=%3.3f, delta %3.3f", circlingWindDirReverse, airspeed, tas, airspeed-tas );
+			ESP_LOGI(FNAME,"Using reverse=%d CWind: %.2f°/%.2f, TC/GS: %.1f°/%.1f, HD/AS: %.2f°/%.2f, tas=%.2f, ASdelta %.3f", reverse, cwinddir, circlingWindSpeed, tc, gs, heading, airspeed, tas, airspeed-tas );
 // #endif
 			if( abs( airspeed/tas - 1.0 ) > 0.30 ){  // 30 percent max deviation
 				status = "AS OOB";
 				ESP_LOGI(FNAME,"Estimated Airspeed/Groundspeed OOB");
-				//return;
+				return;
 			}
 			airspeedCorrection +=  (airspeed/tas - airspeedCorrection) * wind_as_filter.get();
 			if( airspeedCorrection > 1.01 ) // we consider 1% as maximum needed correction
@@ -326,12 +354,9 @@ void StraightWind::calculateWind( float tc, float gs, float th, float tas, float
 
 void StraightWind::newCirclingWind( float angle, float speed ){
 	ESP_LOGI(FNAME,"New good circling wind %3.2f°/%3.2f", angle, speed );
-	circlingWindDirReverse = angle;
 	circlingWindDir = angle;
-	circlingWindDirReverse += 180;      // revers windvector
-	if( circlingWindDirReverse > 360 )
-		circlingWindDirReverse -= 360;
-	// ESP_LOGI(FNAME,"Reverse circling wind dir %3.2f", circlingWindDirReverse );
+	circlingWindDirReverse = Vector::reverse( angle );      // revers windvector
+	ESP_LOGI(FNAME,"Wind dir %3.2f, reverse circling wind dir %3.2f", angle, circlingWindDirReverse );
 	circlingWindSpeed = speed;
 	circlingWindAge = 0;
 }

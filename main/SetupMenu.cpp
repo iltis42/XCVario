@@ -1213,7 +1213,12 @@ void SetupMenu::setup( )
 		SetupMenuValFloat *smslip = new SetupMenuValFloat( "Sideslip Limit", "°", 0, 45.0, 0.1, nullptr, false, &swind_sideslip_lim );
 		smslip->setPrecision(1);
 		strWindM->addEntry( smslip );
-		smslip->setHelp(PROGMEM "Maximum side slip in ° from side slip estimator accepeted straight wind calculations");
+		smslip->setHelp(PROGMEM "Maximum side slip in ° from side slip estimator accepeted straight wind calculation");
+
+		SetupMenuValFloat *smcourse = new SetupMenuValFloat( "Course Limit", "°", 2.0, 30.0, 0.1, nullptr, false, &wind_straight_course_tolerance );
+		smcourse->setPrecision(1);
+		strWindM->addEntry( smcourse );
+		smcourse->setHelp(PROGMEM "Maximum delta angle in ° per second during straight flight accepeted for straight wind calculation");
 
 		ShowStraightWind* ssw = new ShowStraightWind( "Straight Wind Status" );
 		strWindM->addEntry( ssw );
@@ -1229,12 +1234,20 @@ void SetupMenu::setup( )
 		cirWindM->addEntry( cirwd );
 		cirwd->setHelp(PROGMEM "Maximum accepted delta accepted value for heading error in circling wind calculation");
 
-
 		SetupMenuValFloat *cirlp = new SetupMenuValFloat( "Averager", "", 1, 10, 1, nullptr, false, &circle_wind_lowpass );
 		cirlp->setPrecision(0);
 		cirWindM->addEntry( cirlp );
 		cirlp->setHelp(PROGMEM "Number of circles used for circling wind averager. A value of 1 means no average");
 
+		SetupMenuValFloat *cirwsd = new SetupMenuValFloat( "Max Speed Delta", "km/h", 0.0, 20.0, 0.1, nullptr, false, &max_circle_wind_delta_speed );
+		cirWindM->addEntry( cirwsd );
+		cirwsd->setPrecision(1);
+		cirwsd->setHelp(PROGMEM "Maximum accepted wind speed delta from last measurement accepted value for wind report to straight wind calculation");
+
+		SetupMenuValFloat *cirwdd = new SetupMenuValFloat( "Max Dir Delta", "°", 0.0, 60.0, 0.1, nullptr, false, &max_circle_wind_delta_deg );
+		cirWindM->addEntry( cirwdd );
+		cirwdd->setPrecision(1);
+		cirwdd->setHelp(PROGMEM "Maximum accepted wind direction delta from last measurement accepted value for wind report to straight wind calculation");
 
 		SetupMenuSelect * windlog = new SetupMenuSelect( "Wind Logging", false, 0, true, &wind_logging );
 		windlog->addEntry( "Disable");
@@ -1243,7 +1256,6 @@ void SetupMenu::setup( )
 		windlog->addEntry( "Enable Both");
 		windlog->setHelp(PROGMEM "Enable Wind logging NMEA output to WIFI port 8882");
 		compassWindME->addEntry( windlog );
-
 
 		SetupMenu * wireless = new SetupMenu( PROGMEM "Wireless" );
 		MenuEntry* wirelessM = opt->addEntry( wireless );

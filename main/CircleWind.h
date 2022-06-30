@@ -127,7 +127,8 @@ private:
   static uint8_t turn_left;
   static uint8_t turn_right;
   static uint8_t fly_straight;
-
+  static float lastWindDir;
+  static float lastWindSpeed;
 };
 
 #endif

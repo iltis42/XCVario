@@ -93,4 +93,5 @@ private:
 	float newWindDir;
 	float slipAverage;
 	float lastHeading;
+	float lastGroundCourse;
 };

@@ -83,6 +83,8 @@ std::list<Vector> CircleWind::windVectors;
 uint8_t CircleWind::turn_left=0;
 uint8_t CircleWind::turn_right=0;
 uint8_t CircleWind::fly_straight=0;
+float CircleWind::lastWindDir=0;
+float CircleWind::lastWindSpeed=0;
 
 CircleWind::~CircleWind()
 {}
@@ -218,7 +220,7 @@ bool CircleWind::getWind( int *dir, float *speed, int * age )
 }
 
 void CircleWind::resetAge(){
-	ESP_LOGI(FNAME,"resetAge");
+	// ESP_LOGI(FNAME,"resetAge");
 	_age = 0;
 }
 
@@ -288,8 +290,16 @@ void CircleWind::newWind( float angle, float speed ){
 	if( (int)(windspeed+0.5) != (int)cwind_speed.get() ){
 		cwind_speed.set( (int)(windspeed+0.5) );
 	}
-	if( circleCount >= 2 )
+	float deltaDir = abs( Vector::angleDiffDeg( lastWindDir, angle ) );
+	float deltaSpeed = abs( lastWindSpeed - speed );
+	lastWindDir = angle;
+	lastWindSpeed = speed;
+
+	if( deltaDir < max_circle_wind_delta_deg.get() && deltaSpeed < max_circle_wind_delta_speed.get()  ){
 		theWind.newCirclingWind( direction, windspeed );
+	}else{
+		status = "Delta too big";
+	}
 }
 
 void CircleWind::tick(){

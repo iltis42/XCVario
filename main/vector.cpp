@@ -87,6 +87,18 @@ float Vector::normalizeDeg180(float angle)
 	return a;
 }
 
+float Vector::reverse( float angle ){
+	float opposite = 0;
+	normalizeDeg( angle );
+	if( abs( angle ) < 0.1 )
+		opposite = 180.0;           // or -180 as you wish
+	else if(angle > 180.0)
+		opposite = angle - 180.0;
+	else if (angle < 180.0)
+		opposite = angle + 180.0;
+	return opposite;
+}
+
 float Vector::polar(float y, float x)
 {
 	float angle = 0.0;

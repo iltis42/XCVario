@@ -13,7 +13,7 @@
 
 const char * SetupMenuSelect::getEntry() const
 {
-	ESP_LOGI(FNAME,"getEntry() select:%d", _select );
+	// ESP_LOGI(FNAME,"getEntry() select:%d", _select );
 	return _values[ _select ];
 }
 

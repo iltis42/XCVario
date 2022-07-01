@@ -1186,42 +1186,51 @@ void SetupMenu::setup( )
 		compassWindME->addEntry( strWindM );
 		strWindM->setHelp( PROGMEM "Straight flight wind calculation needs compass module active", 250 );
 
-		SetupMenuValFloat *smdev = new SetupMenuValFloat( "Deviation tolerance", "°", 0.0, 180.0, 1.0,	nullptr, false, &wind_max_deviation );
-		smdev->setHelp( PROGMEM "Setup maximum deviation accepted for a wind measurement" );
-		strWindM->addEntry( smdev );
+		SetupMenu * strWindFM = new SetupMenu( "Filters" );
+		strWindM->addEntry( strWindFM );
+		SetupMenu * strWindLM = new SetupMenu( "Limits" );
+		strWindM->addEntry( strWindLM );
+		ShowStraightWind* ssw = new ShowStraightWind( "Straight Wind Status" );
+		strWindM->addEntry( ssw );
+
+		SetupMenuValFloat *smdev = new SetupMenuValFloat( "Deviation Limit", "°", 0.0, 180.0, 1.0,	nullptr, false, &wind_max_deviation );
+		smdev->setHelp( PROGMEM "Maximum deviation accepted derived from AS/Compass and GPS tracks" );
+		strWindLM->addEntry( smdev );
 
 		SetupMenuValFloat *smgsm = new SetupMenuValFloat( "Airspeed Lowpass", "", 0, 0.05, 0.001, nullptr, false, &wind_as_filter );
 		smgsm->setPrecision(3);
-		strWindM->addEntry( smgsm );
-		smgsm->setHelp(PROGMEM "Lowpass factor for airspeed correction from reverse wind calculation");
+		strWindFM->addEntry( smgsm );
+		smgsm->setHelp(PROGMEM "Lowpass factor for airspeed correction in airspeed estimation from AS/Compass and GPS tracks");
 
 		SetupMenuValFloat *devlp = new SetupMenuValFloat( "Deviation Lowpass", "", 0, 0.05, 0.001, nullptr, false, &wind_dev_filter );
 		devlp->setPrecision(3);
-		strWindM->addEntry( devlp );
-		devlp->setHelp(PROGMEM "Lowpass factor for deviation table correction from reverse wind calculation");
-
-		SetupMenuValFloat *wlpf = new SetupMenuValFloat( "Averager", "", 5, 120, 1, nullptr, false, &wind_filter_lowpass );
-		wlpf->setPrecision(0);
-		strWindM->addEntry( wlpf );
-		wlpf->setHelp(PROGMEM "Number of measurements used for straight flight live wind averager");
+		strWindFM->addEntry( devlp );
+		devlp->setHelp(PROGMEM "Lowpass factor for deviation table correction from AS/Compass and GPS tracks estimation");
 
 		SetupMenuValFloat *smgps = new SetupMenuValFloat( "GPS Lowpass", "sec", 0.1, 10.0, 0.1, nullptr, false, &wind_gps_lowpass );
 		smgps->setPrecision(1);
-		strWindM->addEntry( smgps );
-		smgps->setHelp(PROGMEM "Lowpass factor for GPS info TC and GS, should correlate with compass lowpass less GPS latency");
+		strWindFM->addEntry( smgps );
+		smgps->setHelp(PROGMEM "Lowpass factor for GPS track and speed, to correlate with Compass latency");
+
+		SetupMenuValFloat *wlpf = new SetupMenuValFloat( "Averager", "", 5, 120, 1, nullptr, false, &wind_filter_lowpass );
+		wlpf->setPrecision(0);
+		strWindFM->addEntry( wlpf );
+		wlpf->setHelp(PROGMEM "Number of measurements used for straight flight live wind averager");
 
 		SetupMenuValFloat *smslip = new SetupMenuValFloat( "Sideslip Limit", "°", 0, 45.0, 0.1, nullptr, false, &swind_sideslip_lim );
 		smslip->setPrecision(1);
-		strWindM->addEntry( smslip );
-		smslip->setHelp(PROGMEM "Maximum side slip in ° from side slip estimator accepeted straight wind calculation");
+		strWindLM->addEntry( smslip );
+		smslip->setHelp(PROGMEM "Maximum side slip in ° from side slip estimator accepted straight wind calculation");
 
 		SetupMenuValFloat *smcourse = new SetupMenuValFloat( "Course Limit", "°", 2.0, 30.0, 0.1, nullptr, false, &wind_straight_course_tolerance );
 		smcourse->setPrecision(1);
-		strWindM->addEntry( smcourse );
-		smcourse->setHelp(PROGMEM "Maximum delta angle in ° per second during straight flight accepeted for straight wind calculation");
+		strWindLM->addEntry( smcourse );
+		smcourse->setHelp(PROGMEM "Maximum delta angle in ° per second during straight flight accepted for straight wind calculation");
 
-		ShowStraightWind* ssw = new ShowStraightWind( "Straight Wind Status" );
-		strWindM->addEntry( ssw );
+		SetupMenuValFloat *aslim = new SetupMenuValFloat( "AS Delta Limit", "km/h", 1.0, 30.0, 1, nullptr, false, &wind_straight_speed_tolerance );
+		aslim->setPrecision(0);
+		strWindLM->addEntry( aslim );
+		smcourse->setHelp(PROGMEM "Maximum delta in airspeed estimation from wind and GPS during straight flight accpeted for straight wind calculation");
 
 		SetupMenu * cirWindM = new SetupMenu( "Circling Wind" );
 		compassWindME->addEntry( cirWindM );

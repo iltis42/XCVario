@@ -262,35 +262,21 @@ void StraightWind::calculateWind( float tc, float gs, float th, float tas, float
 			ESP_LOGI(FNAME,"Circling Wind exired");
 		}else{
 			// Tricky trial and error to catch the correct assembly for both vectors that is not deterministic
-			float airspeedR = 0;
-			float headingR = 0;
 			float airspeed = 0;
 			float heading = 0;
-			Vector windR( circlingWindDirReverse, circlingWindSpeed );
 			Vector wind( circlingWindDir, circlingWindSpeed );
-			Vector groundTrackR( tc, gs );
 			Vector groundTrack( tc, gs );
-			groundTrackR.add( windR );
 			groundTrack.add( wind );
-			airspeedR = groundTrackR.getSpeed();
 			airspeed = groundTrack.getSpeed();
-			headingR = groundTrackR.getAngleDeg();
 			heading = groundTrack.getAngleDeg();
-			bool reverse = false;
 			float cwinddir = circlingWindDir;
-			if( abs(airspeedR - tas) < abs(airspeed -tas) ){
-				airspeed = airspeedR;
-				heading  = headingR;
-				cwinddir = circlingWindDirReverse;
-				reverse = true;
-			}
 			// calculateSpeedAndAngle( circlingWindDirReverse, circlingWindSpeed, tc, gs, airspeed, heading );
 //#ifdef VERBOSE_LOG
-			ESP_LOGI(FNAME,"Using reverse=%d CWind: %.2f°/%.2f, TC/GS: %.1f°/%.1f, HD/AS: %.2f°/%.2f, tas=%.2f, ASdelta %.3f", reverse, cwinddir, circlingWindSpeed, tc, gs, heading, airspeed, tas, airspeed-tas );
+			ESP_LOGI(FNAME,"Using CWind: %.2f°/%.2f, TC/GS: %.1f°/%.1f, HD/AS: %.2f°/%.2f, tas=%.2f, ASdelta %.3f", cwinddir, circlingWindSpeed, tc, gs, heading, airspeed, tas, airspeed-tas );
 // #endif
-			if( abs( airspeed/tas - 1.0 ) > 0.30 ){  // 30 percent max deviation
+			if( abs( airspeed - tas ) > wind_straight_speed_tolerance.get() ){  // 30 percent max deviation
 				status = "AS OOB";
-				ESP_LOGI(FNAME,"Estimated Airspeed/Groundspeed OOB");
+				ESP_LOGI(FNAME,"Estimated Airspeed/Groundspeed OOB, max delta: %f km/h, delta: %f km/h", wind_straight_speed_tolerance.get(), abs( airspeed - tas ) );
 				return;
 			}
 			airspeedCorrection +=  (airspeed/tas - airspeedCorrection) * wind_as_filter.get();

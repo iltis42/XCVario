@@ -634,6 +634,7 @@ extern SetupNG<int> 		wind_display;
 extern SetupNG<int> 		wind_reference;
 extern SetupNG<float> 		wind_max_deviation;
 extern SetupNG<float>		wind_straight_course_tolerance;
+extern SetupNG<float> 		wind_straight_speed_tolerance;
 extern SetupNG<float>       max_circle_wind_diff;
 extern SetupNG<float>       circle_wind_lowpass;
 extern SetupNG<float>      	max_circle_wind_delta_deg;

@@ -104,9 +104,9 @@ float Vector::polar(float y, float x)
 	float angle = 0.0;
 	if(x >= -0.001 && x <= 0.001) {
 		if(y < 0.0)
-			return ( 1.5 * M_PI );
+			return ( M_PI );
 		else
-			return ( PI2 );
+			return ( 0 );
 	}
 	// Punkt liegt auf der neg. X-Achse
 	if(x < 0.0)
@@ -114,7 +114,7 @@ float Vector::polar(float y, float x)
 	else
 		angle = atan( y / x );
 
-	// Neg. value not allowed.
+	// Normalize
 	if(angle < 0.0)
 		angle = PI2 + angle;
 

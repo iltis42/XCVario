@@ -132,7 +132,7 @@ bool Deviation::newDeviation( float measured_heading, float desired_heading, boo
 		}
 	}
 	if( tbe != std::end(devmap) ){
-		ESP_LOGI( FNAME, "Now erase from map dev for heading=%.1f", tbe->first*0.1 );
+		// ESP_LOGI( FNAME, "Now erase from map dev for heading=%.1f", tbe->first*0.1 );
 		devmap.erase(tbe);
 	}
 
@@ -152,11 +152,11 @@ bool Deviation::newDeviation( float measured_heading, float desired_heading, boo
 		// ESP_LOGI( FNAME, "old_dev %2.3f, delta %f, delta*k %f, new dev: %f",  old_dev, delta, delta*k, old_dev + (delta * k) );
 		devmap[ (int)(measured_heading*10.0 + 0.5) ] = old_dev + (delta * k);  // insert the new low pass filtered element
 	}
-// #ifdef VERBOSE_LOG
+#ifdef VERBOSE_LOG
 	for(auto itx = std::begin(devmap); itx != std::end(devmap); ++itx ){
 		ESP_LOGI( FNAME, "NEW Dev MAP Head: %.1f Dev: %.2f", itx->first*0.1, itx->second );
 	}
-// #endif
+#endif
 	xSemaphoreGive(splineMutex);
 	recalcInterpolationSpline();
 	//double new_dev = (*deviationSpline)((double)measured_heading);

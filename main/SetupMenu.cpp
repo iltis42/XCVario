@@ -56,6 +56,7 @@ bool SetupMenu::focus = false;
 int gload_reset( SetupMenuSelect * p ){
 	gload_pos_max.set(0);
 	gload_neg_max.set(0);
+	airspeed_max.set(0);
 	return 0;
 }
 

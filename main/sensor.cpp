@@ -568,6 +568,9 @@ void readSensors(void *pvParameters){
 		if( (int( ias.get()+0.5 ) != int( new_ias+0.5 ) ) || !(count%20) ){
 			ias.set( new_ias );  // low pass filter
 		}
+		if( airspeed_max.get() < ias.get() ){
+			airspeed_max.set( ias.get() );
+		}
 		// ESP_LOGI("FNAME","P: %f  IAS:%f IASF: %d", dynamicP, iasraw, ias );
 		if( !compass || !(compass->externalData()) ){
 			tas += (tasraw-tas)*0.25;       // low pass filter

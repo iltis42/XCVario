@@ -1648,6 +1648,7 @@ bool IpsDisplay::drawSpeed(float v_kmh, int16_t x, int16_t y, bool dirty, bool i
 
 static float old_gmax = 100;
 static float old_gmin = -100;
+static float old_ias_max = -1;
 
 void IpsDisplay::initLoadDisplay(){
 	if( _menu )
@@ -1660,9 +1661,11 @@ void IpsDisplay::initLoadDisplay(){
 	ucg->print( "G-Force" );
 	ucg->setPrintPos(130,70);
 	ucg->setColor(  COLOR_HEADER_LIGHT  );
-	ucg->print( "MAX POS" );
-	ucg->setPrintPos(130,210);
-	ucg->print( "MAX NEG" );
+	ucg->print( "MAX POS G" );
+	ucg->setPrintPos(130,205);
+	ucg->print( "MAX NEG G" );
+	ucg->setPrintPos(130,260);
+	ucg->printf( "MAX IAS %s", Units::AirspeedUnitStr() );
 	int max_gscale = (int)( gload_pos_limit.get() )+1;
 	if( -gload_neg_limit.get() >= max_gscale )
 		max_gscale = (int)( -gload_neg_limit.get()  )+1;
@@ -1685,6 +1688,7 @@ void IpsDisplay::initLoadDisplay(){
 	indicator->setGeometry(70, 129, 7);
 	old_gmax = 100;
 	old_gmin = -100;
+	old_ias_max = -1;
 	xSemaphoreGive(spiMutex);
 	ESP_LOGI(FNAME,"initLoadDisplay end");
 }
@@ -1729,9 +1733,19 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 		else
 			ucg->setColor(  COLOR_RED  );
 		ucg->setFont(ucg_font_fub20_hr, true);
-		ucg->setPrintPos(125,245);
+		ucg->setPrintPos(125,235);
 		ucg->printf("%+1.2f   ", gload_neg_max.get() );
 		old_gmin = gload_neg_max.get();
+	}
+	if( old_ias_max != airspeed_max.get() ){
+			if( airspeed_max.get() < v_max.get() )
+				ucg->setColor(  COLOR_WHITE  );
+			else
+				ucg->setColor(  COLOR_RED  );
+			ucg->setFont(ucg_font_fub20_hr, true);
+			ucg->setPrintPos(125,295);
+			ucg->printf("%3d   ", Units::AirspeedRounded( airspeed_max.get() ) );
+			old_ias_max = airspeed_max.get();
 	}
 	xSemaphoreGive(spiMutex);
 }

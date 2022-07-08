@@ -1231,7 +1231,7 @@ void SetupMenu::setup( )
 		SetupMenuValFloat *aslim = new SetupMenuValFloat( "AS Delta Limit", "km/h", 1.0, 30.0, 1, nullptr, false, &wind_straight_speed_tolerance );
 		aslim->setPrecision(0);
 		strWindLM->addEntry( aslim );
-		smcourse->setHelp(PROGMEM "Maximum delta in airspeed estimation from wind and GPS during straight flight accpeted for straight wind calculation");
+		aslim->setHelp(PROGMEM "Maximum delta in airspeed estimation from wind and GPS during straight flight accpeted for straight wind calculation");
 
 		SetupMenu * cirWindM = new SetupMenu( "Circling Wind" );
 		compassWindME->addEntry( cirWindM );

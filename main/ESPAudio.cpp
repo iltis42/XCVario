@@ -459,7 +459,7 @@ void Audio::startAudio(){
 	_testmode = false;
 	evaluateChopping();
 	p_wiper = &wiper;
-	xTaskCreatePinnedToCore(&dactask, "dactask", 2400, NULL, 25, &dactid, 0);
+	xTaskCreatePinnedToCore(&dactask, "dactask", 2400, NULL, 19, &dactid, 0);
 }
 
 bool Audio::calcS2Fmode(){

@@ -173,7 +173,7 @@ void Compass::begin(){
 }
 
 void Compass::start(){
-	xTaskCreatePinnedToCore(&compassT, "compassT", 2600, NULL, 12, &ctid, 0);
+	xTaskCreatePinnedToCore(&compassT, "compassT", 2600, NULL, 11, &ctid, 0);
 }
 
 float Compass::filteredHeading( bool *okIn )

@@ -1465,13 +1465,13 @@ void system_startup(void *args){
 		centeraid = new CenterAid( MYUCG );
 	}
 	if( SetupCommon::isClient() ){
-		xTaskCreatePinnedToCore(&clientLoop, "clientLoop", 4096, NULL, 14, &bpid, 0);
-		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 14, &apid, 0);
+		xTaskCreatePinnedToCore(&clientLoop, "clientLoop", 4096, NULL, 11, &bpid, 0);
+		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 11, &apid, 0);
 	}
 	else {
-		xTaskCreatePinnedToCore(&readSensors, "readSensors", 4096, NULL, 14, &bpid, 0);
+		xTaskCreatePinnedToCore(&readSensors, "readSensors", 4096, NULL, 11, &bpid, 0);
 	}
-	xTaskCreatePinnedToCore(&readTemp, "readTemp", 2500, NULL, 8, &tpid, 0);
+	xTaskCreatePinnedToCore(&readTemp, "readTemp", 2500, NULL, 5, &tpid, 0);
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 5096, NULL, 4, &dpid, 0);
 
 	Audio::startAudio();

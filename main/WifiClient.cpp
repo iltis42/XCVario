@@ -247,6 +247,6 @@ void WifiClient::start()
 {
 	ESP_LOGI(FNAME, "start wifi_client"  );
     initialise_wifi();
-    xTaskCreate(&tcp_client,"tcp_client_xcv",4096,&XCVarioCL,15,NULL);
-    xTaskCreate(&tcp_client,"tcp_client_flarm",4096,&FLARM,15,NULL);
+    xTaskCreate(&tcp_client,"tcp_client_xcv",4096,&XCVarioCL,12,NULL);
+    xTaskCreate(&tcp_client,"tcp_client_flarm",4096,&FLARM,12,NULL);
 }

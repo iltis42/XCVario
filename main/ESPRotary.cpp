@@ -108,7 +108,7 @@ void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
 	pcnt_counter_clear(PCNT_UNIT_1);
 	pcnt_counter_resume(PCNT_UNIT_1);
 
-	xTaskCreatePinnedToCore(&ESPRotary::informObservers, "informObservers", 4096, NULL, 18, &pid, 0);
+	xTaskCreatePinnedToCore(&ESPRotary::informObservers, "informObservers", 4096, NULL, 14, &pid, 0);
 }
 
 int16_t old_cnt = 0;

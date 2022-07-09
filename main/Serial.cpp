@@ -299,9 +299,9 @@ void Serial::taskStart(){
 	bool serial2 = (serial2_speed.get() != 0 && hardwareRevision.get() >= 3);
 
 	if( serial1 ){
-		xTaskCreatePinnedToCore(&serialHandler, "serialHandler1", 4096, &S1, 16, &S1.pid, 0);  // stay below canbus
+		xTaskCreatePinnedToCore(&serialHandler, "serialHandler1", 4096, &S1, 13, &S1.pid, 0);  // stay below canbus
 	}
 	if( serial2 ){
-		xTaskCreatePinnedToCore(&serialHandler, "serialHandler2", 4096, &S2, 16, &S2.pid, 0);  // stay below canbus
+		xTaskCreatePinnedToCore(&serialHandler, "serialHandler2", 4096, &S2, 13, &S2.pid, 0);  // stay below canbus
 	}
 }

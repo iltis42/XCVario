@@ -46,7 +46,6 @@ void OTA::release() {
 // OTA
 void OTA::doSoftwareUpdate(IpsDisplay * p ){
 	ESP_LOGI(FNAME,"Now start Wifi OTA");
-	// xTaskCreate(&systemRebootTask, "rebootTask", 2048, NULL, 5, NULL);
 	p->clear();
 	int line=1;
 	p->writeText(line++,"SOFTWARE DOWNLOAD");

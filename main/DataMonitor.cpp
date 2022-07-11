@@ -21,7 +21,7 @@ DataMonitor::DataMonitor(){
 	tx_total = 0;
 }
 
-int DataMonitor::maxChar( const char *str, int pos, bool binary ){
+int DataMonitor::maxChar( const char *str, int pos, int len, bool binary ){
 	int N=0;
 	int i=0;
 	char s[4] = { 0 };
@@ -33,8 +33,10 @@ int DataMonitor::maxChar( const char *str, int pos, bool binary ){
 			s[0] = str[i+pos];
 		}
 		N += ucg->getStrWidth( s );
-		if( N<240 ){
+		if( N<240 && (i+pos)<len ){
 			i++;
+		}else{
+			break;
 		}
 	}
 	return i;
@@ -68,6 +70,8 @@ void DataMonitor::monitorString( int ch, e_dir_t dir, const char *str, bool bina
 			xSemaphoreGive(mutex);
 			return;
 		}
+		if( data_monitor_mode.get() == MON_MOD_BINARY )
+			binary = true;
 		printString( ch, dir, str, binary, len );
 		xSemaphoreGive(mutex);
 	}
@@ -76,7 +80,7 @@ void DataMonitor::monitorString( int ch, e_dir_t dir, const char *str, bool bina
 void DataMonitor::printString( int ch, e_dir_t dir, const char *str, bool binary, int _len ){
 	ESP_LOGI(FNAME,"DM ch:%d dir:%d string:%s", ch, dir, str );
 	std::string s( str );
-	const int scroll = 20;
+	const int scroll_lines = 20;
 	int len = 0;
 	if( _len )
 		len = _len;
@@ -100,39 +104,50 @@ void DataMonitor::printString( int ch, e_dir_t dir, const char *str, bool binary
 	}
 	ucg->setColor( COLOR_WHITE );
     header( ch, binary );
-    int rest = len;
 	int pos = 0;
-	while( rest > 1 ){  // ignore the \n
-		// ESP_LOGI(FNAME,"DM 1 rest: %d pos: %d", rest, pos );
-		int hunklen = maxChar( S.c_str(), pos, binary );
-		std::string hunk = S.substr( pos, hunklen );
-		// ESP_LOGI(FNAME,"DM 2 rest: %d hunklen: %d pos: %d  h:%s", rest, hunklen, pos, hunk.c_str()  );
-		ucg->setColor( COLOR_BLACK );
-		ucg->drawBox( 0, scrollpos, 240,scroll );
-		ucg->setColor( COLOR_WHITE );
-		ucg->setPrintPos( 0, scrollpos+scroll );
-		ucg->setFont(ucg_font_fub11_tr, true );
-		if( binary ){
-			std::string binstr;
-			for( int i=0; i<hunklen; i++ ){
-				char bin[4];
-				sprintf( bin, "%02x ", hunk[i] );
-				binstr += std::string(bin);
+	if( !binary )
+		len = len-1;  // ignore the \n in ASCII mode
+	int hunklen = 0;
+	do {
+		// ESP_LOGI(FNAME,"DM 1 len: %d pos: %d", len, pos );
+		hunklen = maxChar( S.c_str(), pos, len+1, binary );
+		if( hunklen ){
+			std::string hunk = S.substr( pos, hunklen );
+			// ESP_LOGI(FNAME,"DM 2 hunklen: %d pos: %d  h:%s", hunklen, pos, hunk.c_str()  );
+			ucg->setColor( COLOR_BLACK );
+			ucg->drawBox( 0, scrollpos, 240,scroll_lines );
+			ucg->setColor( COLOR_WHITE );
+			ucg->setPrintPos( 0, scrollpos+scroll_lines );
+			ucg->setFont(ucg_font_fub11_tr, true );
+			if( binary ){
+				std::string binstr;
+				for( int i=0; i<hunklen; i++ ){
+					char bin[4];
+					if( pos == 0 && i == 0 ){
+						sprintf( bin, "%c ", hunk[i] );
+					}else{
+						sprintf( bin, "%02x ", hunk[i] );
+					}
+					binstr += std::string(bin);
+				}
+				ucg->print( binstr.c_str() );
 			}
-			ucg->print( binstr.c_str() );
+			else{
+				ucg->print( hunk.c_str() );
+			}
+			pos+=hunklen;
+			// ESP_LOGI(FNAME,"DM 3 pos: %d", pos );
+			scroll(scroll_lines);
 		}
-		else{
-			ucg->print( hunk.c_str() );
-		}
-		pos+=hunklen;
-		rest -= hunklen;
-		// ESP_LOGI(FNAME,"DM 3 rest: %d pos: %d", rest, pos );
-		scrollpos+=scroll;
-		if( scrollpos >= SCROLL_BOTTOM )
-			scrollpos = 20;
-		ucg->scrollLines( scrollpos );  // set frame origin
-	}
+	}while( hunklen );
 	xSemaphoreGive(spiMutex);
+}
+
+void DataMonitor::scroll(int scroll){
+	scrollpos+=scroll;
+	if( scrollpos >= SCROLL_BOTTOM )
+		scrollpos = scroll;
+	ucg->scrollLines( scrollpos );  // set frame origin
 }
 
 void DataMonitor::press(){

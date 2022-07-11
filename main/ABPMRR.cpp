@@ -33,6 +33,8 @@ int ABPMRR::measure()
 	return ret;
 }
 
+// #define RANDOM_TEST
+
 char ABPMRR::fetch_pressure(uint16_t &P_dat, uint16_t &T_dat)
 {
 	// ESP_LOGI(FNAME,"ABPMRR::fetch_pressure");
@@ -54,6 +56,12 @@ char ABPMRR::fetch_pressure(uint16_t &P_dat, uint16_t &T_dat)
 	Press_L = data[1];
 	Temp_H = data[2];
 	Temp_L = data[3];
+
+#ifdef RANDOM_TEST
+	Press_H = esp_random() % 255;
+	Press_L = esp_random() % 255;
+	Temp_L = esp_random() % 255;
+#endif
 
 	// ESP_LOG_BUFFER_HEXDUMP(FNAME,data,4, ESP_LOG_INFO);
 

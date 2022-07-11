@@ -1324,6 +1324,12 @@ void SetupMenu::setup( )
 		datamon->addEntry( "CAN Bus");
 		wirelessM->addEntry( datamon );
 
+		SetupMenuSelect * datamonmod = new SetupMenuSelect( PROGMEM "Monitor Mode", false, data_mon, true, &data_monitor_mode );
+		datamonmod->setHelp( PROGMEM "Display data either in ASCII or do a Binary hexdump");
+		datamonmod->addEntry( "ASCII");
+		datamonmod->addEntry( "Binary");
+		wirelessM->addEntry( datamonmod );
+
 		SetupMenu * gload = new SetupMenu( "G-Load Display" );
 		MenuEntry* gloadME = opt->addEntry( gload );
 

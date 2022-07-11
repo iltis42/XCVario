@@ -211,12 +211,18 @@ double SPL06_007::get_scale_factor( int reg )
 	return k;
 }
 
+// #define RANDOM_TEST
+
 int32_t SPL06_007::get_praw( bool &ok )
 {
 	_praw = 0;
 	uint8_t data[3];
 	if( !i2c_read_bytes( 0X00, 3, data ) )
 		ok = false;
+#ifdef RANDOM_TEST
+	data[2] = esp_random() % 255;
+	data[1] = esp_random() % 255;
+#endif
 	_praw = (data[0] << 8) | data[1];
 	_praw = (_praw << 8) | data[2];
 	if(_praw & (1 << 23))

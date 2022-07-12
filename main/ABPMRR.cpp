@@ -33,7 +33,7 @@ int ABPMRR::measure()
 	return ret;
 }
 
-#define RANDOM_TEST
+// #define RANDOM_TEST
 
 char ABPMRR::fetch_pressure(uint16_t &P_dat, uint16_t &T_dat)
 {

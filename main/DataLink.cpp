@@ -57,7 +57,7 @@ void DataLink::process( const char *packet, int len, int port ) {
 		routeSerialData(packet, len, port, false );
 	}else{
 		for (int i = 0; i < len; i++) {
-			parse_NMEA_UBX(packet[i], port, i == len-1);
+			parse_NMEA_UBX(packet[i], port );
 		}
 	}
 }
@@ -120,7 +120,7 @@ void DataLink::processNMEA( char * buffer, int len, int port ){
 	routeSerialData(buffer, len, port, true );
 }
 
-void DataLink::parse_NMEA_UBX( char c, int port, bool last ){
+void DataLink::parse_NMEA_UBX( char c, int port ){
 	// ESP_LOGI(FNAME, "Port S%1d: char=%c pos=%d  state=%d", port, c, pos, state );
 	switch(state) {
 	case GET_NMEA_UBX_SYNC:

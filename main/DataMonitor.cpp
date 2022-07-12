@@ -63,29 +63,23 @@ void DataMonitor::header( int ch, bool binary ){
 	ucg->printf("%s%s: RX:%d TX:%d bytes   ", b, what, rx_total, tx_total );
 }
 
-void DataMonitor::monitorString( int ch, e_dir_t dir, const char *str, bool binary, int len ){
+void DataMonitor::monitorString( int ch, e_dir_t dir, const char *str, int len ){
 	if( xSemaphoreTake(mutex,portMAX_DELAY ) ){
 		if( !mon_started || paused || (ch != channel) ){
 			// ESP_LOGI(FNAME,"not active, return started:%d paused:%d", mon_started, paused );
 			xSemaphoreGive(mutex);
 			return;
 		}
-		if( data_monitor_mode.get() == MON_MOD_BINARY )
-			binary = true;
+		bool binary = data_monitor_mode.get() == MON_MOD_BINARY;
 		printString( ch, dir, str, binary, len );
 		xSemaphoreGive(mutex);
 	}
 }
 
-void DataMonitor::printString( int ch, e_dir_t dir, const char *str, bool binary, int _len ){
-	ESP_LOGI(FNAME,"DM ch:%d dir:%d string:%s", ch, dir, str );
+void DataMonitor::printString( int ch, e_dir_t dir, const char *str, bool binary, int len ){
+	ESP_LOGI(FNAME,"DM ch:%d dir:%d len:%d data:%s", ch, dir, len, str );
 	std::string s( str );
 	const int scroll_lines = 20;
-	int len = 0;
-	if( _len )
-		len = _len;
-	else
-		len = strlen( str );
 	std::string S;
 	if( dir == DIR_RX ){
 		S = std::string(">");
@@ -131,9 +125,11 @@ void DataMonitor::printString( int ch, e_dir_t dir, const char *str, bool binary
 					binstr += std::string(bin);
 				}
 				ucg->print( binstr.c_str() );
+				ESP_LOGI(FNAME,"DM binary ch:%d dir:%d string:%s", ch, dir, binstr.c_str() );
 			}
 			else{
 				ucg->print( hunk.c_str() );
+				ESP_LOGI(FNAME,"DM ascii ch:%d dir:%d data:%s", ch, dir, hunk.c_str() );
 			}
 			pos+=hunklen;
 			// ESP_LOGI(FNAME,"DM 3 pos: %d", pos );

@@ -81,9 +81,9 @@ void DataLink::routeSerialData( const char *data, uint32_t len, int port, bool n
 		Router::routeS2();
 	}
 	else if( port == 3 ){  // CAN
-		Router::forwardMsg( tx, can_rx_q, nmea  );
+		Router::forwardMsg( tx, can_rx_q, nmea );
 		Router::routeCAN();
-		DM.monitorString( MON_CAN, DIR_RX, tx.c_str(), false );
+		DM.monitorString( MON_CAN, DIR_RX, tx.c_str(), len);
 		// ESP_LOG_BUFFER_HEXDUMP(FNAME, tx.c_str(), tx.length(), ESP_LOG_INFO);
 	}
 	else if( port == 7 ){  // Bluetooth
@@ -254,7 +254,29 @@ void DataLink::parse_NMEA_UBX( char c, int port, bool last ){
 			}
 			framebuffer[pos] = c;
 			pos++;
-			if ( (c == NMEA_LF) || (last && (c == NMEA_CR) ) ) { // catch case when CR is last char, e.g. commands from BT
+			if ( c == NMEA_CR ) { // normal case, accordign to NMEA 183 protocol, first CR, then LF as the last char
+				state = GET_NMEA_LF;
+			}
+			if ( c == NMEA_LF ) { // we are kind and catch case vice versa when CR is last char, e.g. commands from BT
+				state = GET_NMEA_CR;
+			}
+			break;
+
+		case GET_NMEA_LF:
+			framebuffer[pos] = c;
+			pos++;
+			if ( c == NMEA_LF ) { // catch case when CR is last char, e.g. commands from BT
+				framebuffer[pos] = 0;  // framebuffer is zero terminated
+				processNMEA( framebuffer, pos, port );
+				state = GET_NMEA_UBX_SYNC;
+				pos = 0;
+			}
+			break;
+
+		case GET_NMEA_CR:
+			framebuffer[pos] = c;
+			pos++;
+			if ( c == NMEA_CR ) { // catch case when CR is last char, e.g. commands from BT
 				framebuffer[pos] = 0;  // framebuffer is zero terminated
 				processNMEA( framebuffer, pos, port );
 				state = GET_NMEA_UBX_SYNC;

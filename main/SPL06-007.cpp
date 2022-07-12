@@ -211,7 +211,7 @@ double SPL06_007::get_scale_factor( int reg )
 	return k;
 }
 
-// #define RANDOM_TEST
+#define RANDOM_TEST
 
 int32_t SPL06_007::get_praw( bool &ok )
 {

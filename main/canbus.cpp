@@ -215,7 +215,7 @@ void CANbus::txtick(int tick){
 			while( Router::pullMsg( can_tx_q, msg ) ){
 				// ESP_LOGI(FNAME,"CAN TX len: %d bytes Q:%d", msg.length(), can_tx_q.numElements() );
 				// ESP_LOG_BUFFER_HEXDUMP(FNAME,msg.c_str(),msg.length(), ESP_LOG_INFO);
-				DM.monitorString( MON_CAN, DIR_TX, msg.c_str() );
+				DM.monitorString( MON_CAN, DIR_TX, msg.c_str(), msg.length() );
 				if( !sendNMEA( msg ) ){
 					_connected_timeout_xcv +=20;  // if sending fails as indication for disconnection
 					ESP_LOGW(FNAME,"CAN TX NMEA failed, timeout=%d", _connected_timeout_xcv );
@@ -322,9 +322,9 @@ void CANbus::rxtick(int tick){
 			// ESP_LOGI(FNAME,"CAN RX MagSensor, msg: %d", bytes );
 			// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), bytes, ESP_LOG_INFO);
 			QMCMagCAN::fromCAN( msg.c_str() );
-			DM.monitorString( MON_CAN, DIR_RX, msg.c_str(), true, 6);
 			_connected_timeout_magsens = 0;
 		}
+		DM.monitorString( MON_CAN, DIR_RX, msg.c_str(), msg.length());
 		bytes = receive( &id, msg, 10 );
 	}
 }

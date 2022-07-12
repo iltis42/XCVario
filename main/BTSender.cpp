@@ -76,7 +76,7 @@ void BTSender::progress(){
 		SString rx;
 		rx.set( buf, pos );
 		dlb->process( buf, pos, 7 );
-		DM.monitorString( MON_BLUETOOTH, DIR_RX, rx.c_str() );
+		DM.monitorString( MON_BLUETOOTH, DIR_RX, rx.c_str(), pos );
 		// ESP_LOGI(FNAME,">BT RX: %d bytes", pos );
 		// ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.c_str(),pos, ESP_LOG_INFO);
 	}
@@ -86,7 +86,7 @@ void BTSender::progress(){
 			// ESP_LOGI(FNAME,"<BT TX %d bytes", msg.length() );
 			// ESP_LOG_BUFFER_HEXDUMP(FNAME,msg.c_str(),msg.length(), ESP_LOG_INFO);
 			SerialBT->write( (const uint8_t *)msg.c_str(), msg.length() );
-			DM.monitorString( MON_BLUETOOTH, DIR_TX, msg.c_str() );
+			DM.monitorString( MON_BLUETOOTH, DIR_TX, msg.c_str(), msg.length() );
 		}
 	}
 }

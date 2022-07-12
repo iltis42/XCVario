@@ -145,7 +145,7 @@ void WifiApp::socket_server(void *setup) {
 			if( len ){
 				// ESP_LOGI(FNAME, "port %d to sent %d: bytes, %s", config->port, len, buffer );
 				config->idle = 0;
-				DM.monitorString( MON_WIFI_8880+config->port-8880, DIR_TX, buffer );
+				DM.monitorString( MON_WIFI_8880+config->port-8880, DIR_TX, buffer, len );
 			}
 			else
 			{
@@ -166,7 +166,7 @@ void WifiApp::socket_server(void *setup) {
 				ssize_t sizeRead = recv(client_rec.client, r, SSTRLEN-1, MSG_DONTWAIT);
 				if (sizeRead > 0) {
 					config->dlw->process( r, sizeRead, config->port );
-					DM.monitorString( MON_WIFI_8880+config->port-8880, DIR_RX, r );
+					DM.monitorString( MON_WIFI_8880+config->port-8880, DIR_RX, r, sizeRead );
 					// ESP_LOGI(FNAME, "RX wifi client port %d size: %d bincom:%d", config->port, sizeRead, Flarm::bincom );
 					// ESP_LOG_BUFFER_HEXDUMP(FNAME,tcprx.c_str(),sizeRead, ESP_LOG_INFO);
 				}

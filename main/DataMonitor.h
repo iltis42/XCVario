@@ -18,7 +18,7 @@ class DataMonitor: public RotaryObserver
 {
 public:
 	DataMonitor();
-	void monitorString( int ch, e_dir_t dir, const char *s, bool binary=false, int len=0 );
+	void monitorString( int ch, e_dir_t dir, const char *s, int len );
 	void start(SetupMenuSelect * p);
 	void stop();
 	void press();

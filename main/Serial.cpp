@@ -116,7 +116,7 @@ void Serial::serialHandler(void *pvParameters)
 				// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
 				cfg->uart->write( s.c_str(),s.length() );
 				if( !bincom_mode )
-					DM.monitorString( cfg->monitor, DIR_TX, s.c_str() );
+					DM.monitorString( cfg->monitor, DIR_TX, s.c_str(), s.length());
 				// ESP_LOGD(FNAME,"S%d: TX written: %d", cfg->uart->number(), wr);
 			}
 		}
@@ -130,9 +130,7 @@ void Serial::serialHandler(void *pvParameters)
 				// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuf, available, ESP_LOG_INFO);
 				rxBuf[rxBytes] = 0;
 				cfg->dl->process( rxBuf, rxBytes, cfg->port );
-				if( !Flarm::bincom ){
-					DM.monitorString( cfg->monitor, DIR_RX, rxBuf, Flarm::bincom );
-				}
+				DM.monitorString( cfg->monitor, DIR_RX, rxBuf, rxBytes );
 				free( rxBuf );
 			}
 		}

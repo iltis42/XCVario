@@ -252,17 +252,23 @@ void DataLink::parse_NMEA_UBX( char c, int port ){
 				pos = 0;
 				state = GET_NMEA_UBX_SYNC;
 			}
-			framebuffer[pos] = c;
-			pos++;
-			if ( c == NMEA_CR || c == NMEA_LF ) { // normal case, accordign to NMEA 183 protocol, first CR, then LF as the last char
-				framebuffer[pos] = c;             // but we accept also a single terminator as not relevant for the data carried
+			if ( c == NMEA_CR || c == NMEA_LF ) { // normal case, accordign to NMEA 183 protocol, first CR, then LF as the last char  (<CR><LF> ends the message.)
+				           	   	   	   	   	   	  // but we accept also a single terminator as not relevant for the data carried        0d  0a
+				// make things clean!                                                                                                   \r  \n
+				framebuffer[pos] = NMEA_CR;       // append a CR
+				pos++;
+				framebuffer[pos] = NMEA_LF;       // append a LF
 				pos++;
 				framebuffer[pos] = 0;  // framebuffer is zero terminated
-				pos++;
+				// pos++;
 				processNMEA( framebuffer, pos, port );
 				state = GET_NMEA_UBX_SYNC;
 				pos = 0;
+			}else{
+				framebuffer[pos] = c;
+				pos++;
 			}
+
 			break;
 
 		case GET_UBX_SYNC2:

@@ -221,11 +221,11 @@ void DataLink::parse_NMEA_UBX( char c, int port ){
 		case  GET_FB_LEN2:
 			len = (chkA + (unsigned char)c*256 );
 			if( len > 512 ){
-				ESP_LOGI(FNAME, "Odd length from flarm bincom: %d: restart", len );
+				ESP_LOGW(FNAME, "Odd length from flarm bincom: %d: restart", len );
 				state = GET_NMEA_UBX_SYNC;
 				break;
 			}
-			ESP_LOGI(FNAME, "got length from flarm bincom: %d", len );
+			// ESP_LOGI(FNAME, "got length from flarm bincom: %d", len );
 			state = GET_FB_DATA;
 			framebuffer[pos] = c;
 			pos++;
@@ -242,8 +242,8 @@ void DataLink::parse_NMEA_UBX( char c, int port ){
 
 		case GET_NMEA_STREAM:
 			if ((c < NMEA_MIN || c > NMEA_MAX) && (c != NMEA_CR && c != NMEA_LF)) {
-				ESP_LOGE(FNAME, "Port S%1d: Invalid NMEA character %x, restart, pos: %d, state: %d", port, (int)c, pos, state );
-				ESP_LOG_BUFFER_HEXDUMP(FNAME, framebuffer, pos+1, ESP_LOG_INFO);
+				// ESP_LOGE(FNAME, "Port S%1d: Invalid NMEA character %x, restart, pos: %d, state: %d", port, (int)c, pos, state );
+				// ESP_LOG_BUFFER_HEXDUMP(FNAME, framebuffer, pos+1, ESP_LOG_INFO);
 				state = GET_NMEA_UBX_SYNC;
 				break;
 			}
@@ -254,30 +254,11 @@ void DataLink::parse_NMEA_UBX( char c, int port ){
 			}
 			framebuffer[pos] = c;
 			pos++;
-			if ( c == NMEA_CR ) { // normal case, accordign to NMEA 183 protocol, first CR, then LF as the last char
-				state = GET_NMEA_LF;
-			}
-			if ( c == NMEA_LF ) { // we are kind and catch case vice versa when CR is last char, e.g. commands from BT
-				state = GET_NMEA_CR;
-			}
-			break;
-
-		case GET_NMEA_LF:
-			framebuffer[pos] = c;
-			pos++;
-			if ( c == NMEA_LF ) { // catch case when CR is last char, e.g. commands from BT
+			if ( c == NMEA_CR || c == NMEA_LF ) { // normal case, accordign to NMEA 183 protocol, first CR, then LF as the last char
+				framebuffer[pos] = c;             // but we accept also a single terminator as not relevant for the data carried
+				pos++;
 				framebuffer[pos] = 0;  // framebuffer is zero terminated
-				processNMEA( framebuffer, pos, port );
-				state = GET_NMEA_UBX_SYNC;
-				pos = 0;
-			}
-			break;
-
-		case GET_NMEA_CR:
-			framebuffer[pos] = c;
-			pos++;
-			if ( c == NMEA_CR ) { // catch case when CR is last char, e.g. commands from BT
-				framebuffer[pos] = 0;  // framebuffer is zero terminated
+				pos++;
 				processNMEA( framebuffer, pos, port );
 				state = GET_NMEA_UBX_SYNC;
 				pos = 0;

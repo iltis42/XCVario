@@ -56,14 +56,17 @@ void AnalogInput::begin() {
 	get();
 }
 
+
 unsigned int AnalogInput::getRaw( int loops ) {
 	int adc = 0;
 	for( int i=0; i<loops; i++ ) {
 		int raw;
+		portDISABLE_INTERRUPTS();
 		if( _unit == ADC_UNIT_1 )
 			raw =  adc1_get_raw((adc1_channel_t)_adc_ch);
 		else if( _unit == ADC_UNIT_2 )
 			adc2_get_raw((adc2_channel_t)_adc_ch, ADC_WIDTH_BIT_12, &raw );
+		portENABLE_INTERRUPTS();
 		adc += raw;
 		if( loops > 1)
 			delay(1);

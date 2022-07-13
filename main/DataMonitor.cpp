@@ -33,7 +33,7 @@ int DataMonitor::maxChar( const char *str, int pos, int len, bool binary ){
 			s[0] = str[i+pos];
 		}
 		N += ucg->getStrWidth( s );
-		if( N<240 && (i+pos)<len ){
+		if( N<220 && (i+pos)<len ){
 			i++;
 		}else{
 			break;
@@ -78,18 +78,16 @@ void DataMonitor::monitorString( int ch, e_dir_t dir, const char *str, int len )
 
 void DataMonitor::printString( int ch, e_dir_t dir, const char *str, bool binary, int len ){
 	ESP_LOGI(FNAME,"DM ch:%d dir:%d len:%d data:%s", ch, dir, len, str );
-	std::string s( str );
 	const int scroll_lines = 20;
-	std::string S;
+	char dirsym = 0;
 	if( dir == DIR_RX ){
-		S = std::string(">");
+		dirsym = '>';
 		rx_total += len;
 	}
 	else{
-		S = std::string("<");
+		dirsym = '<';
 		tx_total += len;
 	}
-	S += s;
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	if( first ){
 		first = false;
@@ -98,38 +96,39 @@ void DataMonitor::printString( int ch, e_dir_t dir, const char *str, bool binary
 	}
 	ucg->setColor( COLOR_WHITE );
     header( ch, binary );
-	int pos = 0;
-	if( !binary )
-		len = len-1;  // ignore the \n in ASCII mode
+	//if( !binary )
+	// 	len = len-1;  // ignore the \n in ASCII mode
 	int hunklen = 0;
+	int pos=0;
 	do {
 		// ESP_LOGI(FNAME,"DM 1 len: %d pos: %d", len, pos );
-		hunklen = maxChar( S.c_str(), pos, len+1, binary );
+		hunklen = maxChar( str, pos, len, binary );
 		if( hunklen ){
-			std::string hunk = S.substr( pos, hunklen );
-			// ESP_LOGI(FNAME,"DM 2 hunklen: %d pos: %d  h:%s", hunklen, pos, hunk.c_str()  );
+			char hunk[64] = { 0 };
+			memcpy( (void*)hunk, (void*)(str+pos), hunklen );
+			// ESP_LOGI(FNAME,"DM 2 hunklen: %d pos: %d  h:%s", hunklen, pos, hunk );
 			ucg->setColor( COLOR_BLACK );
 			ucg->drawBox( 0, scrollpos, 240,scroll_lines );
 			ucg->setColor( COLOR_WHITE );
 			ucg->setPrintPos( 0, scrollpos+scroll_lines );
 			ucg->setFont(ucg_font_fub11_tr, true );
-			if( binary ){
-				std::string binstr;
-				for( int i=0; i<hunklen; i++ ){
-					char bin[4];
-					if( pos == 0 && i == 0 ){
-						sprintf( bin, "%c ", hunk[i] );
-					}else{
-						sprintf( bin, "%02x ", hunk[i] );
-					}
-					binstr += std::string(bin);
+			char txt[256];
+			int hpos = 0;
+			if( binary ){   // format data as readable text
+				hpos += sprintf( txt, "%c ", dirsym );
+				for( int i=0; i<hunklen && hpos<95 ; i++ ){
+					hpos += sprintf( txt+hpos, "%02x ", hunk[i] );
 				}
-				ucg->print( binstr.c_str() );
-				ESP_LOGI(FNAME,"DM binary ch:%d dir:%d string:%s", ch, dir, binstr.c_str() );
+				txt[hpos] = 0; // zero terminate string
+				ucg->print( txt );
+				ESP_LOGI(FNAME,"DM binary ch:%d dir:%d string:%s", ch, dir, txt );
 			}
 			else{
-				ucg->print( hunk.c_str() );
-				ESP_LOGI(FNAME,"DM ascii ch:%d dir:%d data:%s", ch, dir, hunk.c_str() );
+				hpos += sprintf( txt, "%c ", dirsym );
+				hpos += sprintf( txt+hpos, "%s", hunk );
+				txt[hpos] = 0;
+				ucg->print( txt );
+				ESP_LOGI(FNAME,"DM ascii ch:%d dir:%d data:%s", ch, dir, txt );
 			}
 			pos+=hunklen;
 			// ESP_LOGI(FNAME,"DM 3 pos: %d", pos );

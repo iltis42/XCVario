@@ -24,7 +24,7 @@ public:
 	inline double calcAVGAltitudeSTD( double p ) { return get_altitude( p, 1013.25 ); };
 	inline double calcAVGAltitude( double sl, double p ) { return get_altitude( p, sl ); };
 	double readAltitude( double qnh, bool &ok );
-	double get_temp_c();
+	double get_temp_c( bool &ok );
 	double get_temp_f();
 	double readTemperature( bool& success );
 

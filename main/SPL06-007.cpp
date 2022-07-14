@@ -48,6 +48,13 @@ bool SPL06_007::begin() {
 		return true;
 }
 
+double SPL06_007::readTemperature( bool& success ){
+
+	double t = double(c0) * 0.5f + double(c1) * double(_traw)/_scale_factor_t;
+	success = true;
+	return t;
+}
+
 bool SPL06_007::selfTest( float& t, float& p ){
 	uint8_t rdata = 0xFF;
 	esp_err_t err = bus->readByte(address, 0x0D, &rdata );  // ID
@@ -97,7 +104,9 @@ double SPL06_007::get_temp_c()
 {
 	bool ok;
 	double traw_sc = get_traw_sc(ok);
-	return (double(c0) * 0.5f) + (double(c1) * traw_sc);
+	double t = double(c0) * 0.5f + double(c1) * traw_sc;
+	ESP_LOGI(FNAME,"T=%f °C", t);
+	return (t);
 }
 
 double SPL06_007::get_temp_f()

@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.5)
 
 # (Not part of the boilerplate)
 # This example uses an extra component 
-set(EXTRA_COMPONENT_DIRS $ENV{IDF_PATH}/examples/sensor/components)
+#set(EXTRA_COMPONENT_DIRS $ENV{IDF_PATH}/examples/sensor/components)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 

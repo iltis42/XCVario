@@ -22,10 +22,10 @@ bool SPL06_007::begin() {
 	// ---- Use rates of 8x or less until feature is implemented ---
 	errors = 0;
 
-	i2c_write_uint8( 0X06, 0x73);	// Pressure    7=128 samples per second and 3 = 8x oversampling 128/8 = 16 mS 
-	i2c_write_uint8( 0X07, 0XF3);	// Temperature 7=128 samples per second and 3 = 8x oversampling
+	i2c_write_uint8( 0X06, 0x63);	// Pressure    7=128 samples per second and 3 = 8x oversampling 128/8 = 16 mS
+	i2c_write_uint8( 0X07, 0X80);	// Temperature 0=1   sample  per second and 0 = no oversampling
 	i2c_write_uint8( 0X08, 0B0111);	// continuous temp and pressure measurement
-	i2c_write_uint8( 0X09, 0X00);	// FIFO Pressure measurement
+	i2c_write_uint8( 0X09, 0x00);	// FIFO Pressure measurement
 
 	errors = 0x81;
 	for(int i=0; i<10; i++ ){
@@ -174,10 +174,10 @@ double SPL06_007::get_pcomp(bool &ok)
 	bool ok_t, ok_p;
 	ok = false;
 	int i=0;
-	int8_t status = 0;
+	uint8_t status = 0;
 	for( i=0; i<10; i++ ){
 		status = i2c_read_uint8( 0x08 );
-		if( (status & 0x70) != 0x70 ){  // sensor, temp, and pressure ready  D7 
+		if( (status & 0x10) != 0x10 ){  // sensor, temp, and pressure ready  D7
 			delay( 10 );
 		}else{
 			ok=true;

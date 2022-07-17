@@ -222,12 +222,17 @@ int qnh_adj( SetupMenuValFloat * p )
 	if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
 		alt = alt_external + ( QNH.get() - 1013.25)*8.2296;  // correct altitude according to ISA model = 27ft / hPa
 	else{
+		int samples = 0;
 		for( int i=0; i<6; i++ ) {
 			bool ok;
-			alt += p->_bmp->readAltitude( QNH.get(), ok );
-			sleep(0.01);
+			float a = p->_bmp->readAltitude( QNH.get(), ok );
+			if( ok ){  // only consider correct readouts
+				alt += a;
+				samples++;
+			}
+			delay(10);
 		}
-		alt = alt/6.0;
+		alt = alt/(float)samples;
 	}
 	ESP_LOGI(FNAME,"Setup BA alt=%f QNH=%f hPa", alt, QNH.get()  );
 	xSemaphoreTake(spiMutex,portMAX_DELAY );

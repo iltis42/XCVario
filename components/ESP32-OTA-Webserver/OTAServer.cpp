@@ -31,10 +31,14 @@ const int REBOOT_BIT = BIT0;
 uint8_t getFlashStatus() { return flash_status; }
 uint8_t getProgress() { return progress; }
 
+extern char * program_version;
 
 static esp_err_t
 _coredump_to_server_begin_cb_OTA(void * priv)
 {
+	char ver[128];
+	sprintf( ver, "Software Version: %s\r\n", program_version );
+	httpd_resp_send_chunk((httpd_req*)priv, ver, strlen( ver ) );
 	const char *head="================= CORE DUMP START =================\r\n";
 	// ESP_LOGI("OTA", "coredump_to_server_begin_cb, size %d bytes; %s; %08x", strlen( head ), head, (unsigned int)priv );
 	// printf("%s", head );

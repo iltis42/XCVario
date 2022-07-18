@@ -241,7 +241,7 @@ void Router::routeWLAN(){
 		// Route received data from WLAN ports
 		while( pullMsg( wl_vario_rx_q, wlmsg) ){
 			// ESP_LOGI(FNAME,"From WLAN port 8880 RX NMEA %s", wlmsg.c_str() );
-			if( rt_s1_wl.get()  && serial1_speed.get() ){
+			if( ( rt_s1_wl.get() == WLRT_ENABLE || rt_s1_wl.get() == WLRT_ENABLE_8880 ) && serial1_speed.get() ){
 				if( forwardMsg( wlmsg, s1_tx_q ) ){
 					Serial::setRxTxNotifier( TX1_REQ );
 					// ESP_LOGI(FNAME,"Send to S1 device, TCP port 8880 received %d bytes", wlmsg.length() );
@@ -261,7 +261,7 @@ void Router::routeWLAN(){
 			Protocols::parseNMEA( wlmsg.c_str() );
 		}
 		while( pullMsg( wl_flarm_rx_q, wlmsg ) ){
-			if( rt_s1_wl.get() && serial1_speed.get() ){
+			if( (rt_s1_wl.get() == WLRT_ENABLE) && serial1_speed.get() ){
 				if( forwardMsg( wlmsg, s1_tx_q ) ){
 					Serial::setRxTxNotifier( TX1_REQ );
 					// ESP_LOGI(FNAME,"Send to  device, TCP port 8881 received %d bytes", wlmsg.length() );
@@ -276,7 +276,7 @@ void Router::routeWLAN(){
 			Protocols::parseNMEA( wlmsg.c_str() );
 		}
 		while( pullMsg( wl_aux_rx_q, wlmsg ) ){
-			if( rt_s1_wl.get() && serial1_speed.get() ){
+			if( (rt_s1_wl.get() == WLRT_ENABLE) && serial1_speed.get() ){
 				if( forwardMsg( wlmsg, s1_tx_q ) ){
 					Serial::setRxTxNotifier( TX1_REQ );
 					// ESP_LOGI(FNAME,"Send to  device, TCP port 8882 received %d bytes", wlmsg.length() );

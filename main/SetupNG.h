@@ -92,6 +92,7 @@ typedef enum e_data_monitor { MON_OFF, MON_BLUETOOTH, MON_WIFI_8880, MON_WIFI_88
 typedef enum e_display_orientation { DISPLAY_NORMAL, DISPLAY_TOPDOWN } e_display_orientation_t;
 typedef enum e_gear_warning_io { GW_OFF, GW_FLAP_SENSOR, GW_S2_RS232_RX, GW_FLAP_SENSOR_INV, GW_S2_RS232_RX_INV }  e_gear_warning_io_t;
 typedef enum e_data_mon_mode { MON_MOD_ASCII, MON_MOD_BINARY } e_data_mon_mode_t;
+typedef enum e_wl_routing { WLRT_DISABLE, WLRT_ENABLE, WLRT_ENABLE_8880 } e_wl_routing;
 
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
 void change_bal();

@@ -1736,6 +1736,7 @@ void SetupMenu::setup( )
 			SetupMenuSelect * s2outwl = new SetupMenuSelect( PROGMEM  "Wireless", false, update_routing_s2, true, &rt_s2_wl );
 			s2outwl->addEntry( "Disable");
 			s2outwl->addEntry( "Enable");
+			s2outwl->addEntry( "Enable port 8880");
 			s2out->addEntry( s2outwl );
 			SetupMenuSelect * s2outs2 = new SetupMenuSelect( PROGMEM  "S1-RS232", false, update_routing_s2, true, &rt_s1_s2 );
 			s2outs2->addEntry( "Disable");

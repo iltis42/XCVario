@@ -596,7 +596,6 @@ void readSensors(void *pvParameters){
 		if( !(count % ccp) ) {
 			AverageVario::recalcAvgClimb();
 		}
-
 		if (FLAP) { FLAP->progress(); }
 		xSemaphoreTake(xMutex,portMAX_DELAY );
 		baroP = baroSensor->readPressure(ok);   // 10x per second
@@ -1469,7 +1468,7 @@ void system_startup(void *args){
 		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 11, &apid, 0);
 	}
 	else {
-		xTaskCreatePinnedToCore(&readSensors, "readSensors", 4096, NULL, 11, &bpid, 0);
+		xTaskCreatePinnedToCore(&readSensors, "readSensors", 5096, NULL, 11, &bpid, 0);
 	}
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 2500, NULL, 5, &tpid, 0);
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 5096, NULL, 4, &dpid, 0);

@@ -276,7 +276,7 @@ void Router::routeWLAN(){
 			Protocols::parseNMEA( wlmsg.c_str() );
 		}
 		while( pullMsg( wl_aux_rx_q, wlmsg ) ){
-			if( rt_s1_wl.get() && serial1_speed.get() ){
+			if( rt_s1_wl.get() == && serial1_speed.get() ){
 				if( forwardMsg( wlmsg, s1_tx_q ) ){
 					Serial::setRxTxNotifier( TX1_REQ );
 					// ESP_LOGI(FNAME,"Send to  device, TCP port 8882 received %d bytes", wlmsg.length() );

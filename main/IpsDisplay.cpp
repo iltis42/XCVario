@@ -618,7 +618,7 @@ void IpsDisplay::drawAvg( float avclimb, float delta ){
 		yusize=size;
 	}
 	else{
-		ucg->setColor( COLOR_BLUE );
+		ucg->setColor( COLOR_WHITE );
 		ylsize=size;
 		yusize=size;
 	}

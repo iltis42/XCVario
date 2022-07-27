@@ -1372,7 +1372,7 @@ void IpsDisplay::drawWindArrow( float a, float speed, int type ){
 	ucg->setColor( COLOR_WHITE );
 	if( wind_reference.get() != WR_NORTH )
 		Flarm::drawAirplane( xn_0, yn_0, false, true ); // draw a small airplane symbol
-	if( s > 5 ){
+	if( s > 1 ){
 		ucg->drawTriangle(xn_0,yn_0,xn_1,yn_1,xn_3,yn_3);
 		ucg->setColor(  COLOR_RED  );
 		ucg->drawTriangle(xn_2,yn_2,xn_1,yn_1,xn_3,yn_3);

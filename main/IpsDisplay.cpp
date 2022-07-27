@@ -202,7 +202,7 @@ bool blankold = false;
 bool blank = false;
 bool flarm_connected=false;
 typedef enum e_bow_color { BC_GREEN, BC_RED, BC_BLUE } t_bow_color;
-const static ucg_color_t bowcolor[3] = { {COLOR_GREEN}, {COLOR_RED}, {COLOR_BLUE} };
+const static ucg_color_t bowcolor[3] = { {COLOR_GREEN}, {COLOR_RED}, {COLOR_BBLUE} };
 const static ucg_color_t needlecolor[3] = { {COLOR_WHITE}, {COLOR_ORANGE}, {COLOR_RED} };
 
 

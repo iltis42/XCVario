@@ -32,17 +32,6 @@ void AverageVario::recalcAvgClimb() {
 		ac += *it;
 		ns++;
 	}
-	float ac_sec = 0;
-	int nss = 0;
-	for( auto it=avClimbSec.begin(); it != avClimbSec.end(); it++ ) {
-		// ESP_LOGI(FNAME,"MST pM= %2.2f", *it  );
-		ac_sec += *it;
-		nss++;
-	}
-	if( nss >= 60 ) {
-		ac += ac_sec/nss;
-		ns++;
-	}
 	if( ns )
 		averageClimb = ac/ns;
 	// ESP_LOGI(FNAME,"AVGsec:%2.2f  AVG:%2.2f", ac_sec, averageClimb );

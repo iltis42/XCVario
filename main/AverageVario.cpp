@@ -22,7 +22,6 @@ void AverageVario::begin(){
 	averageClimbSec = 0.0;
 	avindexSec = 0;
 	avindex100MSec = 0;
-	avClimbMin.resize( core_climb_history.get() );
 }
 
 void AverageVario::recalcAvgClimb() {

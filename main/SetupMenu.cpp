@@ -754,8 +754,8 @@ void SetupMenu::setup( )
 		vcch->setHelp(PROGMEM"Duration in minutes where samples for mean climb value are regarded, default is last 3 thermals or 45 min");
 		meanclimbm->addEntry( vcch );
 
-		SetupMenuValFloat * vcp = new SetupMenuValFloat( "Cycle", "sec", 10, 60, 1, 0, false, &core_climb_period );
-		vcp->setHelp(PROGMEM"Cycle in number of seconds when mean climb value is recalculated, default is last 60 seconds");
+		SetupMenuValFloat * vcp = new SetupMenuValFloat( "Cycle", "sec", 60, 300, 1, 0, false, &core_climb_period );
+		vcp->setHelp(PROGMEM"Cycle in number of seconds when mean climb value is recalculated, default is every 60 seconds");
 		meanclimbm->addEntry( vcp);
 
 		SetupMenu * s2fs = new SetupMenu( "S2F Settings" );

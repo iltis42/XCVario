@@ -32,7 +32,7 @@ void AverageVario::recalcAvgClimb() {
 		ac += *it;
 		ns++;
 	}
-	if( ns )
+	if( ns >= 5 ) // first average climb after 5 minutes
 		averageClimb = ac/ns;
 	// ESP_LOGI(FNAME,"AVGsec:%2.2f  AVG:%2.2f", ac_sec, averageClimb );
 	if( (int)(averageClimb*100) != (int)(average_climb.get()*100) ){
@@ -52,7 +52,7 @@ void AverageVario::newSample( float te ){  // to be called every 0.1 Second (100
 		// every second sum up all 100mS samples, then store in second
 		avindex100MSec = 0;
 		float acms=0.0;
-		for( int i=0; i<10; i++ ){
+		for( int i=0; i<10; i++ ){ // 0..9
 			acms += avClimb100MSec[i];
 		}
 		acms = acms/10.0;

@@ -94,7 +94,6 @@ private:
 	static int yposalt;
 	static int tyalt;
 	static int pyalt;
-	static int average_climb;
 	static float average_climbf;
 	// Battery Indicator related
 	static int charge;

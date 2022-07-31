@@ -177,7 +177,6 @@ int IpsDisplay::wkoptalt;
 float IpsDisplay::_range_clip = 0;
 int   IpsDisplay::_divisons = 5;
 float IpsDisplay::_range = 5.;
-int   IpsDisplay::average_climb = -100;
 float IpsDisplay::average_climbf = 0;
 int   IpsDisplay::prev_winddir = 0;
 int   IpsDisplay::prev_heading = 0;
@@ -607,12 +606,12 @@ void IpsDisplay::drawAvg( float avclimb, float delta ){
 		// refresh scale around old AVG icon
 		drawScale( _range, -_range, 140, 0, avc_old*10.f );
 	}
-	if( delta > 0.2 ){
+	if( delta > 0.1 ){
 		ucg->setColor( COLOR_GREEN );
 		yusize=size*2;
 		ylsize=size;
 	}
-	else if ( delta < -0.2 ){
+	else if ( delta < -0.1 ){
 		ucg->setColor( COLOR_RED );
 		ylsize=size*2;
 		yusize=size;
@@ -664,7 +663,7 @@ void IpsDisplay::redrawValues()
 		colorsalt[l].color[1] = 0;
 		colorsalt[l].color[2] = 0;
 	}
-	average_climb = -1000;
+	average_climbf = -1000.0;
 
 	wkoptalt = -100;
 	tyalt = -1000;
@@ -2063,12 +2062,10 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		drawS2FMode( 190, 18, s2fmode );
 		s2fmode_prev = (int)s2fmode;
 	}
-
 	// Medium Climb Indicator
-	// ESP_LOGI(FNAME,"acl:%f iacl:%d, nt:%d", acl, average_climb, !(tick%16) );
-	if ( average_climb != (int)(acl*10) && !(tick%16) && acl > 0 ){
+	// ESP_LOGI(FNAME,"acl:%f nt:%d", acl, average_climbf, !(tick%9) );
+	if( acl != average_climbf && !(tick%9) && acl > 0 ){
 		drawAvg( acl, acl-average_climbf );
-		average_climb = (int)(acl*10);
 		average_climbf = acl;
 	}
 	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
@@ -2277,11 +2274,11 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		s2fmodealt = s2fmode;
 	}
 
-	if ( average_climb !=  (int)(acl*10) && !(tick%10) && acl > 0 ){
-		drawAvgSymbol(  (average_climb*_pixpmd)/10, COLOR_BLACK );
+	if ( average_climbf !=  acl && !(tick%9) && acl > 0 ){
+		drawAvgSymbol(  (acl*_pixpmd)/10, COLOR_BLACK );
 		drawLegend( true );
-		average_climb = (int)(acl*10);
-		drawAvgSymbol(  (average_climb*_pixpmd)/10, COLOR_RED );
+		average_climbf = acl;
+		drawAvgSymbol(  (acl*_pixpmd)/10, COLOR_RED );
 	}
 
 	// TE Stuff

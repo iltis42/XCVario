@@ -386,13 +386,15 @@ void Flap::drawBigBar( float wkf, float wksens ){
 	// ESP_LOGI(FNAME,"wkf: %f", wkf);
 
 	tickopt++;
+	bool dirty_lever = false;
 	// ESP_LOGI(FNAME,"drawBigBar wkf: %.2f y:%d lfh:%d", wkf, y, lfh );
-	if( optPosOldY != y || !(tickopt%10)) {  // redraw on change or when wklever is near
+	if( optPosOldY != y || !(tickopt%10)) {  // redraw on change or every second
 		ucg->setColor(COLOR_BLACK);
 		ucg->drawTriangle( barpos_x-15,optPosOldY-5,  barpos_x-15,optPosOldY+5,  barpos_x-2,optPosOldY );
 		ucg->setColor(COLOR_GREEN);
 		ucg->drawTriangle( barpos_x-15,y-5,       barpos_x-15,y+5,       barpos_x-2,y );
 		optPosOldY = y;
+		dirty_lever = true;
 	}
 	bool warn=false;
 	bool good=false;
@@ -400,7 +402,7 @@ void Flap::drawBigBar( float wkf, float wksens ){
 		good = true;
 	if( abs( wkf - wksens) > 1 )
 		warn = true;
-	if( sensorOldY != ys || warn || good_old != good ) {  // redraw on change or when status changed
+	if( sensorOldY != ys || warn || good_old != good || dirty_lever) {  // redraw on change or when status changed
 		if( flap_sensor.get() ) {
 			// ESP_LOGI(FNAME,"wk lever redraw, old=%d", sensorOldY );
 			drawLever( barpos_x, ys, sensorOldY, warn, good );

@@ -586,8 +586,9 @@ void IpsDisplay::drawAvgSymbol( int y, int r, int g, int b, int x ) {
 	ucg->drawTetragon( x+size-1,dmid-y, x,dmid-y+size, x-size,dmid-y, x,dmid-y-size );
 }
 
+static float avc_old=-1000;
+
 void IpsDisplay::drawAvg( float avclimb, float delta ){
-	static float avc_old=-1000;
 	static int yusize=6;
 	static int ylsize=6;
 	if( _menu )
@@ -597,7 +598,7 @@ void IpsDisplay::drawAvg( float avclimb, float delta ){
 	int pos=145;
 	int size=7;
 	float a;
-	if( avc_old != -1000 ){
+	if( avc_old != avclimb ){
 		ucg->setColor( COLOR_BLACK );
 		a = (_gauge)(avc_old);
 		int x=gaugeCos(a, pos);
@@ -606,12 +607,12 @@ void IpsDisplay::drawAvg( float avclimb, float delta ){
 		// refresh scale around old AVG icon
 		drawScale( _range, -_range, 140, 0, avc_old*10.f );
 	}
-	if( delta > 0.1 ){
+	if( delta > 1.0/core_climb_history.get() ){
 		ucg->setColor( COLOR_GREEN );
 		yusize=size*2;
 		ylsize=size;
 	}
-	else if ( delta < -0.1 ){
+	else if ( delta < -1.0/core_climb_history.get() ){
 		ucg->setColor( COLOR_RED );
 		ylsize=size*2;
 		yusize=size;

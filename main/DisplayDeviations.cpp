@@ -71,7 +71,7 @@ void DisplayDeviations::display( int mode )
    for( int x=0; x<360; x++ ){
   	  float dev=compass->getDeviation((float)(x));
   	  if( abs(dev) > max ){
-  		  max = dev;
+  		  max = abs(dev);
   	  }
   }
   max = max*1.1;

@@ -350,7 +350,6 @@ void Flap::drawLever( int16_t xpos, int16_t ypos, int16_t oldypos, bool warn, bo
 	ucg->drawBox( xpos-25, ypos-4, 13, 7 );
 }
 
-static bool warn_old = false;
 static bool good_old = false;
 
 void Flap::drawBigBar( float wkf, float wksens ){
@@ -401,12 +400,11 @@ void Flap::drawBigBar( float wkf, float wksens ){
 		good = true;
 	if( abs( wkf - wksens) > 1 )
 		warn = true;
-	if( sensorOldY != ys || warn != warn_old || good != good_old ) {  // redraw on change or when wklever is near
+	if( sensorOldY != ys || warn || good_old != good ) {  // redraw on change or when status changed
 		if( flap_sensor.get() ) {
 			// ESP_LOGI(FNAME,"wk lever redraw, old=%d", sensorOldY );
 			drawLever( barpos_x, ys, sensorOldY, warn, good );
 			sensorOldY = ys;
-			warn_old = warn;
 			good_old = good;
 		}
 	}

@@ -607,22 +607,22 @@ void IpsDisplay::drawAvg( float avclimb, float delta ){
 		// refresh scale around old AVG icon
 		drawScale( _range, -_range, 140, 0, avc_old*10.f );
 	}
-	if( delta > 0.5/core_climb_history.get() ){
+	if( delta > (mean_climb_major_change.get()/2.0)/core_climb_history.get() ){
 		ucg->setColor( COLOR_GREEN );
 		yusize=size;
 		ylsize=size;
 	}
-	else if ( delta < -0.5/core_climb_history.get() ){
+	else if ( delta < -(mean_climb_major_change.get()/2.0)/core_climb_history.get() ){
 		ucg->setColor( COLOR_RED );
 		ylsize=size;
 		yusize=size;
 	}
-	else if( delta > 1.0/core_climb_history.get() ){
+	else if( delta > mean_climb_major_change.get()/core_climb_history.get() ){
 		ucg->setColor( COLOR_GREEN );
 		yusize=size*2;
 		ylsize=size;
 	}
-	else if ( delta < -1.0/core_climb_history.get() ){
+	else if ( delta < -mean_climb_major_change.get()/core_climb_history.get() ){
 		ucg->setColor( COLOR_RED );
 		ylsize=size*2;
 		yusize=size;

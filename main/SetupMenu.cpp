@@ -758,6 +758,10 @@ void SetupMenu::setup( )
 		vcp->setHelp(PROGMEM"Cycle in number of seconds when mean climb value is recalculated, default is every 60 seconds");
 		meanclimbm->addEntry( vcp);
 
+		SetupMenuValFloat * vcmc = new SetupMenuValFloat( "Major Change", "m/s", 0.1, 5.0, 0.1, 0, false, &mean_climb_major_change );
+		vcmc->setHelp(PROGMEM"Change in mean climb during last cycle (minute), that results in a major change indication with (arrow symbol)");
+		meanclimbm->addEntry( vcmc);
+
 		SetupMenu * s2fs = new SetupMenu( "S2F Settings" );
 		MenuEntry* s2fse = vae->addEntry( s2fs );
 

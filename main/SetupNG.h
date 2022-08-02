@@ -464,6 +464,7 @@ extern SetupNG<float>  		bat_full_volt;
 extern SetupNG<float>  		core_climb_period;
 extern SetupNG<float>  		core_climb_min;
 extern SetupNG<float>  		core_climb_history;
+extern SetupNG<float>  		mean_climb_major_change;
 extern SetupNG<float>  		elevation;
 extern SetupNG<float>  		audio_volume;
 extern SetupNG<int>  		audio_split_vol;

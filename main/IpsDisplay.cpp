@@ -2053,7 +2053,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// WK-Indicator
 	if( FLAP && !(tick%7) )
 	{
-		float wkspeed = Units::ActualWingloadCorrection(airspeed_kmh);
+		float wkspeed = Units::ActualWingloadCorrection(ias.get());
 		int wki;
 		float wkopt = FLAP->getOptimum( wkspeed, wki );
 		int wk = (int)((wki - wkopt + 0.5)*10);

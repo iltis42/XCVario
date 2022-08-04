@@ -35,6 +35,10 @@ CenterAid::CenterAid( AdaptUGC *display ) {
 	fly_straight = 0;
 	cur_heading = 0;
 	peak_value = 1.0; // we start with expectation of 1 m/s thermals
+	gyro_last = 0.0;
+	scale = 1.0;
+	gps_heading = 0.0;
+	last_rts = 0.0;
 }
 
 void CenterAid::drawThermal( int tn, int idir, bool draw_sink ){
@@ -72,6 +76,7 @@ void CenterAid::checkThermal(){
 		return;
 	}
 	float th = te_vario.get();
+	th = th > 5.0 ? 5.0 : th;  // limit to 5 m/s to avoid peak value excess
 	if( th > peak_value  )
 		peak_value += (th - peak_value)*0.1;  // a bit low passing to catch values out of the row
 	if( peak_value > 1.0 )                // don't go below 1 m/s this is maximum sensitivity

@@ -609,22 +609,22 @@ void IpsDisplay::drawAvg( float avclimb, float delta ){
 	}
 	if( delta > (mean_climb_major_change.get())/core_climb_history.get() ){
 		ucg->setColor( COLOR_GREEN );
-		yusize=size;
+		yusize=size*2;
 		ylsize=size;
 	}
 	else if ( delta < -(mean_climb_major_change.get())/core_climb_history.get() ){
 		ucg->setColor( COLOR_RED );
-		ylsize=size;
+		ylsize=size*2;
 		yusize=size;
 	}
 	else if( delta > (mean_climb_major_change.get()/2.0)/core_climb_history.get() ){
 		ucg->setColor( COLOR_GREEN );
-		yusize=size*2;
+		yusize=size;
 		ylsize=size;
 	}
 	else if ( delta < -(mean_climb_major_change.get()/2.0)/core_climb_history.get() ){
 		ucg->setColor( COLOR_RED );
-		ylsize=size*2;
+		ylsize=size;
 		yusize=size;
 	}
 	else{

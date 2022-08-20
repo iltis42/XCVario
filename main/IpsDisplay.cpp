@@ -1584,10 +1584,13 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 		ucg->print(s);
 		// QNH
 		int16_t qnh_x = x+5+ucg->getStrWidth(s);
+		float qnh = QNH.get();
+		if( gflags.standard_setting == true )
+			qnh = 1013;
 		if( qnh_unit.get() == QNH_INHG )
-			sprintf(s, "%.2f", Units::Qnh(QNH.get()));
+			sprintf(s, "%.2f", Units::Qnh(qnh));
 		else
-			sprintf(s, "%d", Units::QnhRounded(QNH.get()));
+			sprintf(s, "%d", Units::QnhRounded(qnh));
 		ucg->setPrintPos(qnh_x - ucg->getStrWidth(s), y-19);
 		ucg->setColor( COLOR_WHITE );
 		ucg->print(s);

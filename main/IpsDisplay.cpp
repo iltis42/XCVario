@@ -73,6 +73,8 @@ int   IpsDisplay::_pixpmd = 10;
 int   IpsDisplay::charge = 100;
 int   IpsDisplay::red = 10;
 int   IpsDisplay::yellow = 25;
+float IpsDisplay::flt_altitude = 0;
+
 
 bool IpsDisplay::netto_old = false;
 int16_t IpsDisplay::char_width; // for roling altimeter
@@ -1468,79 +1470,85 @@ void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float val ){
 
 // right-aligned to value, unit optional behind
 // altidude >=0 are displayed correctly with last two digits rolling accoring to their fraction to the right
-bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty, bool incl_unit )
+
+
+bool IpsDisplay::drawAltitude( float new_altitude, int16_t x, int16_t y, bool dirty, bool incl_unit )
 {
 	if( _menu ) return false;
 	// ESP_LOGI(FNAME,"draw alt %f dirty:%d", altitude, dirty );
 	// check on the rendered value for change
-	int alt = (int)(altitude);
-	if ( alt_quant < 5 && alt_unit.get() != ALT_UNIT_FL ) {
-		alt = (int)(altitude*10.); // respect difference also in tenth to set dirty
-	}
+	flt_altitude += (new_altitude - flt_altitude) *0.1; // a bit lowpass make sense, any jitter would mess up tape display
 
+	int alt = (int)(flt_altitude);
+	int unitalt = alt_unit.get();
+	if( gflags.standard_setting == true ){ // respect autotransition switch
+		unitalt = ALT_UNIT_FL;
+	}
+	int used_quant = alt_quant;
+	if( unitalt == ALT_UNIT_FL ) // may change dynamically in case of autotransition enabled
+			used_quant = 1;          // we use 1 for FL, this rolls smooth as slowly
+	if ( used_quant ) {
+		alt = (int)(flt_altitude*(20.0/used_quant)); // respect difference according to choosen quantisation
+	}
 	// The dirty criterion
 	dirty = dirty || alt != alt_prev;
 	if ( ! dirty ) return false;
 	alt_prev = alt;
-	alt = (int)roundf(altitude);
+	alt = (int)roundf(flt_altitude);
 
-	// ESP_LOGI(FNAME,"draw alt %f dirty:%d", altitude, dirty );
+	// ESP_LOGI(FNAME,"draw alt %f dirty:%d", flt_altitude, dirty );
 
 	char s[20]; // plain altimeter as a string
 	ucg->setFont(ucg_font_fub25_hr, true);
 	ucg->setColor( COLOR_WHITE );
 	sprintf(s,"  %03d", alt); // need the string with at least three digits !!
-	if ( alt_unit.get() == ALT_UNIT_FL ) {
-		// Plain plot of altitude as FL
-		ucg->setPrintPos(x-ucg->getStrWidth(s),y);
-		ucg->print(s);
-	}
-	else if ( ! alt_quant ) {
-		// Plain plot of altitude for m and ft
+    // FL also now also displayed fancy with low quant looks good to allow switching with no artefacts
+	if ( ! used_quant ) {
+		// Plain plot of flt_altitude for m and ft
 		sprintf(s,"  %d", alt);
 		ucg->setPrintPos(x-ucg->getStrWidth(s),y);
 		ucg->print(s);
 	}
 	else {
-		// Modifications on altitude string when quantization is set
+		// Modifications on flt_altitude string when quantization is set
 		// for meter and feet
 		int len = std::strlen(s);
-		int nr_rolling_digits = (alt_quant>9)? 2 : 1; // maximum two rolling last digits
+		int nr_rolling_digits = (used_quant>9)? 2 : 1; // maximum two rolling last digits
 
-		// Quantized altitude, strip and save sign
-		float alt_f = std::abs(altitude); // float altitude w/o sign
-		int sign = std::signbit(altitude)?-1:1; // interger sign of the altitude
-		alt = (int)(alt_f); // to integer truncated altitude
-		alt = ((alt+alt_quant/2)/alt_quant)*alt_quant;
-		float fraction = (alt_f+alt_quant/2 - alt) / alt_quant;
+		// Quantized flt_altitude, strip and save sign
+		float alt_f = std::abs(flt_altitude); // float flt_altitude w/o sign
+		int sign = std::signbit(flt_altitude)?-1:1; // interger sign of the flt_altitude
+		alt = (int)(alt_f); // to integer truncated flt_altitude
+		alt = ((alt+used_quant/2)/used_quant)*used_quant;
+		float fraction = (alt_f+used_quant/2 - alt) / used_quant;
 		int mod = (nr_rolling_digits==2)? 100 : 10; // mod = pow10(nr_rolling_digits);
-		int alt_leadpart = alt/(mod*10); // left remaining part of altitude
+		int alt_leadpart = alt/(mod*10); // left remaining part of flt_altitude
 		s[len-nr_rolling_digits] = '\0'; len -= nr_rolling_digits; // chop nr_rolling_digits digits
 
 		static float fraction_prev = 1.;
 		if (dirty || std::abs(fraction - fraction_prev) > 0.01 )
 		{
-			// move last alt_quant digit(s)
+			// move last used_quant digit(s)
 			int base = mod/10;
 			int lastdigit = alt%mod;
 			int16_t m = sign * ((1.f-fraction) * char_height - char_height/2); // to pixel offest
-			// ESP_LOGI(FNAME,"Last %f/%d: %f m%d .%d", altitude, alt, fraction, m, lastdigit);
+			// ESP_LOGI(FNAME,"Last %f/%d: %f m%d .%d", flt_altitude, alt, fraction, m, lastdigit);
 			int16_t xp = x - nr_rolling_digits*char_width;
 			//ucg->drawFrame(xp-1, y - char_height* 1.25 -1, char_width*nr_rolling_digits, char_height*1.45 +1);
-			ucg->setClipRange(xp, y - char_height * 1.25, char_width*nr_rolling_digits-1, char_height * 1.45);
+			ucg->setClipRange(xp, y - char_height * 1.45, char_width*nr_rolling_digits-1, char_height * 1.8 ); // slightly extend the tape to get 2 digits displayed uncut
 			ucg->setPrintPos(xp, y - m - char_height);
 			char tmp[10];
-			sprintf(tmp, "%0*u", nr_rolling_digits, abs((lastdigit+(sign*alt_quant))%mod) );
-			// ESP_LOGI(FNAME,"tmp0 %s ld: %d", tmp, (lastdigit-(sign*alt_quant))%mod );
+			sprintf(tmp, "%0*u", nr_rolling_digits, abs((lastdigit+(sign*used_quant))%mod) );
+			// ESP_LOGI(FNAME,"tmp0 %s ld: %d", tmp, (lastdigit-(sign*used_quant))%mod );
 			ucg->print(tmp); // one above
 			ucg->setPrintPos(xp, y - m);
 			sprintf(tmp, "%0*u", nr_rolling_digits, lastdigit);
 			// ESP_LOGI(FNAME,"tmp1 %s ld: %d", tmp, lastdigit );
 			ucg->print(tmp);
 			ucg->setPrintPos(xp, y - m + char_height);
-			// ESP_LOGI(FNAME,"Last %f/%d: %f m%d .%d ldc:%d mod:%d", altitude, alt, fraction, m, lastdigit, ((lastdigit-(sign*alt_quant))%mod), mod );
-			sprintf(tmp, "%0*u", nr_rolling_digits, abs((lastdigit-(sign*alt_quant))%mod));
-			// ESP_LOGI(FNAME,"tmp2 %s ld: %d rd:%d s:%d aq:%d las:%d ", tmp, (lastdigit-(sign*alt_quant))%mod, nr_rolling_digits, sign, alt_quant, lastdigit );
+			// ESP_LOGI(FNAME,"Last %f/%d: %f m%d .%d ldc:%d mod:%d", flt_altitude, alt, fraction, m, lastdigit, ((lastdigit-(sign*used_quant))%mod), mod );
+			sprintf(tmp, "%0*u", nr_rolling_digits, abs((lastdigit-(sign*used_quant))%mod));
+			// ESP_LOGI(FNAME,"tmp2 %s ld: %d rd:%d s:%d aq:%d las:%d ", tmp, (lastdigit-(sign*used_quant))%mod, nr_rolling_digits, sign, used_quant, lastdigit );
 			ucg->print(tmp); // one below
 			fraction_prev = fraction;
 
@@ -1548,11 +1556,11 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 			int lead_quant = 2 * base; // eg. 2 for Q=1 and Q=5
 			int rollover = ((int)(alt_f)%mod)/base;
 			if ( (rollover < 1 && alt_leadpart != 0) || (rollover > 8) ) { // [9.1,..,0.9]: roll-over needs clarification on leading digit
-				// Re-Quantized leading altitude part
+				// Re-Quantized leading flt_altitude part
 				fraction = (float)((int)((alt_f+base)*10)%(mod*10)) / (lead_quant*10);
 				int16_t m = sign * fraction * char_height; // to pixel offest
 				int lead_digit = ((alt+lead_quant)/mod)%10;
-				// ESP_LOGI(FNAME,"Lead %f/%d: %f - %f m%d %d.", altitude, alt_leadpart, fraction, m, lead_digit);
+				// ESP_LOGI(FNAME,"Lead %f/%d: %f - %f m%d %d.", flt_altitude, alt_leadpart, fraction, m, lead_digit);
 				nr_rolling_digits++; // one less digit remains to print
 				xp -= char_width; // one to the left
 				// ucg->undoClipRange();
@@ -1580,18 +1588,26 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 		ucg->setFont(ucg_font_fub11_hr, true);
 		ucg->setColor( COLOR_HEADER );
 		ucg->setPrintPos(x+5, y-3);
-		sprintf(s, "%s QNH", Units::AltitudeUnit()); // todo and QFE?
+		const char * dmode;
+		if( alt_display_mode.get() == MODE_QFE )
+			dmode = "QFE";
+		else if( alt_display_mode.get() == MODE_QNH )
+			dmode = "QNH";
+		else
+			dmode = "";
+		sprintf(s, "%s %s ", Units::AltitudeUnit(unitalt), dmode );  // e.g. ' m QNH'
 		ucg->print(s);
 		// QNH
-		int16_t qnh_x = x+5+ucg->getStrWidth(s);
+		int16_t qnh_x = x+25;
 		float qnh = QNH.get();
-		if( gflags.standard_setting == true )
+		if( gflags.standard_setting == true ){
 			qnh = 1013;
+		}
 		if( qnh_unit.get() == QNH_INHG )
-			sprintf(s, "%.2f", Units::Qnh(qnh));
+			sprintf(s, "%.2f ", Units::Qnh(qnh));
 		else
-			sprintf(s, "%d", Units::QnhRounded(qnh));
-		ucg->setPrintPos(qnh_x - ucg->getStrWidth(s), y-19);
+			sprintf(s, "%d ", Units::QnhRounded(qnh));
+		ucg->setPrintPos(qnh_x, y-19);
 		ucg->setColor( COLOR_WHITE );
 		ucg->print(s);
 	}
@@ -1933,7 +1949,11 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	//  float s2f = Units::Airspeed( s2f_ms );   not used for now
 	float s2fd = Units::Airspeed( s2fd_ms );
 	// int airspeed =  (int)(Units::Airspeed( airspeed_kmh ) + 0.5);
-	float altitude = Units::Altitude( altitude_m );
+	int unit = alt_unit.get();
+	if( gflags.standard_setting == true ){
+			unit = ALT_UNIT_FL;
+	}
+	float altitude = Units::Altitude( altitude_m, unit );
 
 	// TE vario pointer position in rad
 	float needle_pos = (*_gauge)(te);
@@ -2166,7 +2186,11 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	float s2f = Units::Airspeed( s2f_ms );
 	float s2fd = Units::Airspeed( s2fd_ms );
 	int airspeed =  Units::AirspeedRounded( airspeed_kmh );
-	float altitude = Units::Altitude( altitude_m );
+	int unit = alt_unit.get();
+	if( gflags.standard_setting == true ){
+		unit = ALT_UNIT_FL;
+	}
+	float altitude = Units::Altitude( altitude_m, unit );
 
 	vTaskDelay(3);
 	if( _menu ){
@@ -2204,7 +2228,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 
 	// Altitude
 	if(!(tick%2) ) {
-		drawAltitude( altitude, FIELD_START+80, YALT-6, !(tick%40), true );
+		drawAltitude( altitude, FIELD_START+80, YALT-12, !(tick%40), true );  // small alignment for larger tape
 	}
 	// MC Value
 	if(  !(tick%8) ) {

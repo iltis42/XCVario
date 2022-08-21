@@ -104,6 +104,7 @@ private:
 	static int16_t char_width;
 	static int16_t char_height;
 	static float old_polar_sink;
+	static float flt_altitude;
 
 	static char last_s[20];
 	static int  x_start;

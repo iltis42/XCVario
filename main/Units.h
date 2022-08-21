@@ -235,12 +235,15 @@ public:
 
 
 
-	static float Altitude( float alt ){
-		if( alt_unit.get() == ALT_UNIT_METER )  //m
+	static float Altitude( float alt, int unit = -1 ){
+		int u = unit;
+		if( u == -1 )
+			u = alt_unit.get();
+		if( u == ALT_UNIT_METER )  //m
 			return( alt );
-		else if( alt_unit.get() == ALT_UNIT_FT ) //feet
+		else if( u == ALT_UNIT_FT ) //feet
 			return( alt*3.28084 );
-		else if( alt_unit.get() == ALT_UNIT_FL ) //FL
+		else if( u == ALT_UNIT_FL ) //FL
 			return( alt*0.0328084 );
 		else
 			ESP_LOGE(FNAME,"Wrong unit for altitude");

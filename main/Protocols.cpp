@@ -118,6 +118,22 @@ void Protocols::sendItem( const char *key, char type, void *value, int len, bool
 	}
 }
 
+void Protocols::sendNmeaXCVCmd( const char *item, float value ){
+	if( Flarm::bincom )  // do not sent to client in case
+		return;
+	// ESP_LOGI(FNAME,"sendNMEACmd: %s: %f", item, value );
+	char str[40];
+	sprintf( str,"!xcv,%s,%d", item, (int)(value+0.5) );
+	int cs = calcNMEACheckSum(&str[1]);
+	int i = strlen(str);
+	sprintf( &str[i], "*%02X\r\n", cs );
+	ESP_LOGI(FNAME,"sendNMEACmd: %s", str );
+	SString nmea( str );
+	if( !Router::forwardMsg( nmea, xcv_tx_q ) ){
+		ESP_LOGW(FNAME,"Warning: Overrun in send to XCV tx queue %d bytes", nmea.length() );
+	}
+}
+
 void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
 		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz ){
 	if( !validTemp )
@@ -315,6 +331,50 @@ void Protocols::parseNMEA( const char *str ){
 		if( compass )
 			compass->setHeading( heading );
 		tas = TAS;
+	}
+	else if ( strncmp( str, "!xcs,", 5 ) == 0 ) {
+		if( strncmp( str+5, "crew-weight,", 12 ) ){
+			ESP_LOGI(FNAME,"Detected crew-weight cmd");
+			int weight;
+			int cs;
+			sscanf(str+17, "%d*%02x", &weight, &cs);
+			int calc_cs=calcNMEACheckSum( str );
+			if( calc_cs != cs ){
+				ESP_LOGW(FNAME,"CS Error in %s; %d != %d", str, cs, calc_cs );
+			}
+			else{
+				ESP_LOGI(FNAME,"New crew-weight: %d", weight );
+				crew_weight.set( (float)weight );
+			}
+		}
+		if( strncmp( str+5, "ref-weight,", 11 ) ){
+			ESP_LOGI(FNAME,"Detected ref-weight cmd");
+			int weight;
+			int cs;
+			sscanf(str+16, "%d*%02x", &weight, &cs);
+			int calc_cs=calcNMEACheckSum( str );
+			if( calc_cs != cs ){
+				ESP_LOGW(FNAME,"CS Error in %s; %d != %d", str, cs, calc_cs );
+			}
+			else{
+				ESP_LOGI(FNAME,"New ref/empty_weight: %d", weight );
+				empty_weight.set( (float)weight );
+			}
+		}
+		if( strncmp( str+5, "bal-water,", 10 ) ){
+			ESP_LOGI(FNAME,"Detected bal_water cmd");
+			int weight;
+			int cs;
+			sscanf(str+15, "%d*%02x", &weight, &cs);
+			int calc_cs=calcNMEACheckSum( str );
+			if( calc_cs != cs ){
+				ESP_LOGW(FNAME,"CS Error in %s; %d != %d", str, cs, calc_cs );
+			}
+			else{
+				ESP_LOGI(FNAME,"New ballast: %d", weight );
+				ballast_kg.set( (float)weight );
+			}
+		}
 	}
 	else if ( (strncmp( str, "!g,", 3 ) == 0)    ) {
 		ESP_LOGI(FNAME,"parseNMEA, Cambridge C302 style command !g detected: %s",str);

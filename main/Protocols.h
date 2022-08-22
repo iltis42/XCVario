@@ -28,6 +28,7 @@ public:
 			bool validTemp=false, float ax=0, float ay=0, float az=0, float gx=0, float gy=0, float gz=0 );
 
 	static void parseNMEA( const char *str );
+	static void sendNmeaXCVCmd( const char *item, float value );
 	static void parseXS( const char *str );
 	static int calcNMEACheckSum(const char *nmea);
 	static int getNMEACheckSum(const char *nmea);

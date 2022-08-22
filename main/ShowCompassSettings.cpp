@@ -65,8 +65,13 @@ void ShowCompassSettings::display( int mode )
 	y += 25;
 
 	ucg->setPrintPos( 0, y );
+	t_bitfield_compass state = calibration_bits.get();
+	t_bitfield_compass target = { 1,1,1,1,1,1 };
+	bool all_green = false;
+	if( state == target )
+		all_green = true;
 	sprintf( buffer, "Sensor calibrated: %s",
-			(compass_calibrated.get() == 0) ? "No" : "Yes"  );
+			(compass_calibrated.get() == 0 || !all_green) ? "No" : "Yes"  );
 	ucg->printf( "%s", buffer );
 	y += 25;
 

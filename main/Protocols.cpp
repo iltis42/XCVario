@@ -333,7 +333,7 @@ void Protocols::parseNMEA( const char *str ){
 		tas = TAS;
 	}
 	else if ( strncmp( str, "!xcs,", 5 ) == 0 ) {
-		if( strncmp( str+5, "crew-weight,", 12 ) ){
+		if( strncmp( str+5, "crew-weight,", 12 ) == 0 ){
 			ESP_LOGI(FNAME,"Detected crew-weight cmd");
 			int weight;
 			int cs;
@@ -347,7 +347,7 @@ void Protocols::parseNMEA( const char *str ){
 				crew_weight.set( (float)weight );
 			}
 		}
-		if( strncmp( str+5, "ref-weight,", 11 ) ){
+		else if( strncmp( str+5, "ref-weight,", 11 ) == 0 ){
 			ESP_LOGI(FNAME,"Detected ref-weight cmd");
 			int weight;
 			int cs;
@@ -361,7 +361,7 @@ void Protocols::parseNMEA( const char *str ){
 				empty_weight.set( (float)weight );
 			}
 		}
-		if( strncmp( str+5, "bal-water,", 10 ) ){
+		else if( strncmp( str+5, "bal-water,", 10 ) == 0 ){
 			ESP_LOGI(FNAME,"Detected bal_water cmd");
 			int weight;
 			int cs;

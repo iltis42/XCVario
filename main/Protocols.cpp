@@ -357,7 +357,21 @@ void Protocols::parseNMEA( const char *str ){
 				ESP_LOGW(FNAME,"CS Error in %s; %d != %d", str, cs, calc_cs );
 			}
 			else{
-				ESP_LOGI(FNAME,"New ref/empty_weight: %d", weight );
+				ESP_LOGI(FNAME,"New ref_weight and wingload: %d", weight );
+				polar_wingload.set( weight / polar_wingarea.get() );
+			}
+		}
+		else if( strncmp( str+5, "empty-weight,", 13 ) == 0 ){
+			ESP_LOGI(FNAME,"Detected empty-weight cmd");
+			int weight;
+			int cs;
+			sscanf(str+18, "%d*%02x", &weight, &cs);
+			int calc_cs=calcNMEACheckSum( str );
+			if( calc_cs != cs ){
+				ESP_LOGW(FNAME,"CS Error in %s; %d != %d", str, cs, calc_cs );
+			}
+			else{
+				ESP_LOGI(FNAME,"New empty_weight: %d", weight );
 				empty_weight.set( (float)weight );
 			}
 		}

@@ -32,12 +32,14 @@ public:
 	static void parseXS( const char *str );
 	static int calcNMEACheckSum(const char *nmea);
 	static int getNMEACheckSum(const char *nmea);
+	static int getXcvProtocolVersion() { return _protocol_version; };
 
 private:
 	static void ageBincom();
 	static S2F *   _s2f;
 	static float   _mc_prev;
 	static float   _qnh_prev;
+	static uint8_t  _protocol_version;
 };
 
 #endif /* PROTOCOLS_H_ */

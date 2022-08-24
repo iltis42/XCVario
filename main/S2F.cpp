@@ -96,7 +96,10 @@ void S2F::setPolar()
 	polar_max_ballast.set( p.max_ballast );
 	polar_wingarea.set( p.wingarea, true, false );
 	empty_weight.set( (p.wingload * p.wingarea) - 80.0, true, false ); // Calculate default for emtpy mass
-	ESP_LOGI(FNAME,"Referelce weight:%.1f, new empty_weight: %.1f", (p.wingload * p.wingarea), empty_weight.get() );
+	if( Protocols::getXcvProtocolVersion() > 1 ){
+			Protocols::sendNmeaXCVCmd( "empty-weight", empty_weight.get() );
+	}
+	ESP_LOGI(FNAME,"Reference weight:%.1f, new empty_weight: %.1f", (p.wingload * p.wingarea), empty_weight.get() );
 	modifyPolar();
 }
 

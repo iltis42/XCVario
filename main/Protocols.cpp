@@ -29,7 +29,8 @@
 #include "SetupNG.h"
 #include "CircleWind.h"
 
-S2F * Protocols::_s2f = 0;
+S2F *   Protocols::_s2f = 0;
+uint8_t Protocols::_protocol_version = 1;
 
 Protocols::Protocols(S2F * s2f) {
 	_s2f = s2f;
@@ -160,7 +161,14 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		 */
 		float bal = (aballast+100)/100.0;
 		// ESP_LOGW(FNAME,"Ballast: %f %1.2f", bal, bal );
-		sprintf(str,"$PXCV,%3.1f,%1.2f,%d,%1.3f,%d,%2.1f,%4.1f,%4.1f,%.1f", te, mc, bugs, bal, !cruise, std::roundf(temp*10.f)/10.f, QNH.get() , baro, dp );
+		if( Protocols::getXcvProtocolVersion() > 1 ){
+			// omit ballast overload field
+			sprintf(str,"$PXCV,%3.1f,%1.2f,%d,,%d,%2.1f,%4.1f,%4.1f,%.1f", te, mc, bugs, !cruise, std::roundf(temp*10.f)/10.f, QNH.get() , baro, dp );
+
+		}else{
+			// legacy send ballast overload
+			sprintf(str,"$PXCV,%3.1f,%1.2f,%d,%1.3f,%d,%2.1f,%4.1f,%4.1f,%.1f", te, mc, bugs, bal, !cruise, std::roundf(temp*10.f)/10.f, QNH.get() , baro, dp );
+		}
 		int append_idx = strlen(str);
 		if( gflags.haveMPU && attitude_indicator.get() ){
 			float roll = IMU::getRoll();
@@ -347,20 +355,6 @@ void Protocols::parseNMEA( const char *str ){
 				crew_weight.set( (float)weight );
 			}
 		}
-		else if( strncmp( str+5, "ref-weight,", 11 ) == 0 ){
-			ESP_LOGI(FNAME,"Detected ref-weight cmd");
-			int weight;
-			int cs;
-			sscanf(str+16, "%d*%02x", &weight, &cs);
-			int calc_cs=calcNMEACheckSum( str );
-			if( calc_cs != cs ){
-				ESP_LOGW(FNAME,"CS Error in %s; %d != %d", str, cs, calc_cs );
-			}
-			else{
-				ESP_LOGI(FNAME,"New ref_weight and wingload: %d", weight );
-				polar_wingload.set( weight / polar_wingarea.get() );
-			}
-		}
 		else if( strncmp( str+5, "empty-weight,", 13 ) == 0 ){
 			ESP_LOGI(FNAME,"Detected empty-weight cmd");
 			int weight;
@@ -387,6 +381,21 @@ void Protocols::parseNMEA( const char *str ){
 			else{
 				ESP_LOGI(FNAME,"New ballast: %d", weight );
 				ballast_kg.set( (float)weight );
+			}
+		}
+		else if( strncmp( str+5, "version,", 8 ) == 0 ){
+			ESP_LOGI(FNAME,"Detected version cmd");
+			int version;
+			int cs;
+			sscanf(str+13, "%d*%02x", &version, &cs);
+			int calc_cs=calcNMEACheckSum( str );
+			if( calc_cs != cs ){
+				ESP_LOGW(FNAME,"CS Error in %s; %d != %d", str, cs, calc_cs );
+			}
+			else{
+				ESP_LOGI(FNAME,"Got xcv protocol version: %d", version );
+				_protocol_version = version;
+				sendNmeaXCVCmd( "version", 2 );
 			}
 		}
 	}

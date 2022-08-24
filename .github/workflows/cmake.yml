@@ -32,12 +32,13 @@ jobs:
             VER=`date +"%y.%m%d-%H%M"`;
             BRANCH=`git branch --show-current`;
             cp $PWD/build/sensor.bin $PWD/images/sensor-${BRANCH}-${VER}.bin;
-            cp $PWD/build/sensor.elf $PWD/images/elf/sensor-${BRANCH}-${VER}.elf;
+            gzip $PWD/build/sensor.elf;
+            cp $PWD/build/sensor.elf.gz $PWD/images/elf/sensor-${BRANCH}-${VER}.elf.gz;
             git config user.name github-actions;
             git config user.email github-actions@github.com;
             git checkout $PWD/main/cipherkey.h;
             git add $PWD/images/sensor-${BRANCH}-${VER}.bin; 
-            git add $PWD/images/elf/sensor-${BRANCH}-${VER}.elf;
+            git add $PWD/images/elf/sensor-${BRANCH}-${VER}.elf.gz;
             git commit -a -m "new version build sensor-${BRANCH}-${VER}.bin";
             git push;
 

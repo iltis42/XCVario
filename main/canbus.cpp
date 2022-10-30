@@ -217,7 +217,7 @@ void CANbus::txtick(int tick){
 				// ESP_LOG_BUFFER_HEXDUMP(FNAME,msg.c_str(),msg.length(), ESP_LOG_INFO);
 				DM.monitorString( MON_CAN, DIR_TX, msg.c_str(), msg.length() );
 				if( !sendNMEA( msg ) ){
-					_connected_timeout_xcv +=20;  // if sending fails as indication for disconnection
+					_connected_timeout_xcv +=150;  // if sending fails as indication for disconnection
 					ESP_LOGW(FNAME,"CAN TX NMEA failed, timeout=%d", _connected_timeout_xcv );
 					if( !(_connected_timeout_xcv % 100) )
 						recover();

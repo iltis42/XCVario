@@ -32,8 +32,8 @@ jobs:
             VER=`date +"%y.%m%d-%H%M"`;
             BRANCH=`git branch --show-current`;
             cp $PWD/build/sensor.bin $PWD/images/sensor-${BRANCH}-${VER}.bin;
-            gzip $PWD/build/sensor.elf;
-            cp $PWD/build/sensor.elf.gz $PWD/images/elf/sensor-${BRANCH}-${VER}.elf.gz;
+            cp $PWD/build/sensor.elf $PWD/images/elf/sensor-${BRANCH}-${VER}.elf;
+            gzip $PWD/images/elf/sensor-${BRANCH}-${VER}.elf;
             git config user.name github-actions;
             git config user.email github-actions@github.com;
             git checkout $PWD/main/cipherkey.h;

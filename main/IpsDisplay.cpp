@@ -2070,7 +2070,6 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	// Temperature Value
-
 	if( (int)(temp*10) != tempalt && !(tick%12)) {
         ucg->setClipRange(ulmode?15:5,1,120,100); // avoid overwriting thermometer
 		drawTemperature( ulmode?65:55, 25, temp );

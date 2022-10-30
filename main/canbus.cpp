@@ -231,7 +231,7 @@ void CANbus::txtick(int tick){
 			msg.set( "K" );
 			if( !sendData( 0x11, msg.c_str(), 1 ) )
 			{
-				_connected_timeout_xcv +=20;  // if sending fails as indication for disconnection
+				_connected_timeout_xcv +=150;  // if sending fails as indication for disconnection
 				ESP_LOGI(FNAME,"CAN TX Keep Alive failed, timeout=%d", _connected_timeout_xcv );
 				if( !(_connected_timeout_xcv % 100) )
 					recover();

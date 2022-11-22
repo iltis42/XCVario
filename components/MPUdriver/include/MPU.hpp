@@ -238,6 +238,8 @@ class MPU
     esp_err_t rotation(raw_axes_t* gyro);
     esp_err_t rotation(int16_t* x, int16_t* y, int16_t* z);
     esp_err_t temperature(int16_t* temp);
+    float     getTemperature();  // in °C
+
     esp_err_t motion(raw_axes_t* accel, raw_axes_t* gyro);
     esp_err_t dmpGetQuaternion(int16_t *data);
 #if defined CONFIG_MPU_AK89xx

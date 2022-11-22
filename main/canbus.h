@@ -15,7 +15,7 @@ public:
 	void begin();
 	void restart();
 	void recover();
-	bool selfTest();
+	bool selfTest(bool rs_bit);
     bool GotNewClient() const { return _new_can_client_connected; }
     void ResetNewClient() { _new_can_client_connected = false; }
 	bool connectedXCV() { return _connected_xcv; };
@@ -23,6 +23,7 @@ public:
 	bool connected() { return( _connected_xcv | _connected_magsens ); };
 	bool isOkay() { return _ready_initialized; };
 	bool sendNMEA( const SString& msg );
+	bool hasSlopeSupport() { return _slope_support; };
 
 private:
     friend void canTxTask(void *arg);
@@ -35,11 +36,12 @@ private:
 	int receive(  int *id, SString& msg, int timeout=5);
 	void driverInstall( twai_mode_t mode );
 	void driverUninstall();
-	bool _ready_initialized = false;
 	gpio_num_t _tx_io = CAN_BUS_TX_PIN;
 	gpio_num_t _rx_io = CAN_BUS_RX_PIN;
+	bool _ready_initialized = false;
 	bool _connected_magsens = false;
 	bool _connected_xcv = false;
+	bool _slope_support = false;
     bool _new_can_client_connected = false;
 	int _connected_timeout_magsens = 0;
 	int _connected_timeout_xcv = 0;

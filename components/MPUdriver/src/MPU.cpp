@@ -1015,6 +1015,12 @@ esp_err_t MPU::rotation(int16_t* x, int16_t* y, int16_t* z)
 	return err;
 }
 
+float MPU::getTemperature(){
+	int16_t t;
+	temperature( &t );
+	return( (float)t/340.0 + 36.53 );
+}
+
 /**
  * Read temperature raw data.
  * */

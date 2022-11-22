@@ -136,6 +136,10 @@ mpud::float_axes_t accelG;
 mpud::float_axes_t gyroDPS;
 mpud::float_axes_t accelG_Prev;
 mpud::float_axes_t gyroDPS_Prev;
+#define MAXDRIFT 2               // °/s
+#define NUM_GYRO_SAMPLES 3000    // 10 per second -> 5 minutes, so T has been settled after power on
+static uint16_t num_gyro_samples = 0;
+static int32_t cur_gyro_bias[3];
 
 // Magnetic sensor / compass
 Compass *compass = 0;
@@ -160,7 +164,7 @@ uint8_t g_col_header_light_g=168-g_col_background/3;
 uint8_t g_col_header_light_b=g_col_highlight;
 uint16_t gear_warning_holdoff = 0;
 
-t_global_flags gflags = { true, false, false, false, false, false, false, false, false, false, false, false };
+t_global_flags gflags = { true, false, false, false, false, false, false, false, false, false, false, false, false };
 
 int  ccp=60;
 float tas = 0;
@@ -189,6 +193,37 @@ float getTAS() { return tas; };
 bool do_factory_reset() {
 	return( SetupCommon::factoryReset() );
 }
+
+
+static float mpu_t_delta = 0;
+static float mpu_t_delta_i = 0;
+static float mpu_heat_pwm = 0;
+
+void mpu_temp_control(){
+	mpu_t_delta = MPU.getTemperature() - 40.0;
+	gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);
+	mpu_heat_pwm = -mpu_t_delta*6.0;          // P part
+	mpu_t_delta_i -= (mpu_t_delta)/10.0;	  // I part
+	if( mpu_t_delta_i > 10 )
+		mpu_t_delta_i = 10;
+	if( mpu_t_delta_i < -10 )
+		mpu_t_delta_i = -10;
+	mpu_heat_pwm += mpu_t_delta_i;
+	if( mpu_heat_pwm > 10 )
+		mpu_heat_pwm = 10;
+	if( mpu_heat_pwm < 0 )
+		mpu_heat_pwm = 0;
+	if( (count%10) <  rint(mpu_heat_pwm) ){
+		gpio_set_level(GPIO_NUM_2, 1 );  // MPU heating on
+		ESP_LOGI(FNAME,"Td= %f, ON, pwm: %d", mpu_t_delta, (int)rint(mpu_heat_pwm) );
+		gflags.mpu_heat_on = true;
+	}else{
+		gpio_set_level(GPIO_NUM_2, 0 );  // off
+		ESP_LOGI(FNAME,"Td= %f, OFF pwm: %d", mpu_t_delta, (int)rint(mpu_heat_pwm) );
+		gflags.mpu_heat_on = false;
+	}
+}
+
 
 void drawDisplay(void *pvParameters){
 	while (1) {
@@ -398,6 +433,7 @@ void audioTask(void *pvParameters){
 	}
 }
 
+
 static void grabMPU()
 {
 	mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
@@ -408,9 +444,13 @@ static void grabMPU()
 	err |= MPU.rotation(&gyroRaw);       // fetch raw data from the registers
 	if( err != ESP_OK )
 		ESP_LOGE(FNAME, "gyro I2C error, X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
+
 	accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
 	gyroDPS = mpud::gyroDegPerSec(gyroRaw, GYRO_FS);  // raw data to º/s
 	// ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f  gyro X: %+.2f Y:%+.2f Z:%+.2f ABx:%d ABy:%d, ABz=%d\n", -accelG[2], accelG[1], accelG[0] ,  gyroDPS.x, gyroDPS.y, gyroDPS.z, accl_bias.get().x, accl_bias.get().y, accl_bias.get().z );
+	if( !(count%60) ){
+		ESP_LOGI(FNAME, "Gyro X:%+.2f Y:%+.2f Z:%+.2f T=%f\n", gyroDPS.x, gyroDPS.y, gyroDPS.z, MPU.getTemperature());
+	}
 	bool goodAccl = true;
 	if( abs( accelG.x - accelG_Prev.x ) > 1 || abs( accelG.y - accelG_Prev.y ) > 1 || abs( accelG.z - accelG_Prev.z ) > 1 ) {
 		MPU.acceleration(&accelRaw);
@@ -431,6 +471,30 @@ static void grabMPU()
 			ESP_LOGE(FNAME, "gyro angle >90 deg/s in 0.2 S: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
 		}
 	}
+	if( err == ESP_OK ){
+		// check low rotation on all 3 axes = on ground
+		if( abs( gyroDPS.x ) < MAXDRIFT && abs( gyroDPS.y ) < MAXDRIFT && abs( gyroDPS.z ) < MAXDRIFT ) {
+			if( ias.get() < 25 ){  // check no significant IAS
+				num_gyro_samples++;
+				for(int i=0; i<3; i++){
+					cur_gyro_bias[i] += gyroRaw[i];
+				}
+				if( num_gyro_samples > NUM_GYRO_SAMPLES ){  // every couple of minutes recalculate offset
+					mpud::raw_axes_t gb;
+					mpud::raw_axes_t gbo = MPU.getGyroOffset();
+					ESP_LOGI(FNAME, "Old gyro offset: X:%d Y:%d Z:%d",  gbo.x, gbo.y, gbo.z );
+					for(int i=0; i<3; i++){
+						gb[i]  = gbo[i] -(( (cur_gyro_bias)[i]/(NUM_GYRO_SAMPLES*4)) ); // translate to 1000 DPS
+						cur_gyro_bias[i] = 0;
+					}
+					ESP_LOGI(FNAME, "Set new gyro offset: X:%d Y:%d Z:%d",  gb.x, gb.y, gb.z );
+					MPU.setGyroOffset( gb );
+					num_gyro_samples = 0;
+				}
+			}
+		}
+	}
+
 	if( err == ESP_OK && goodAccl && goodGyro ) {
 		IMU::read();
 	}
@@ -584,7 +648,6 @@ void readSensors(void *pvParameters){
 			slipAngle += ((accelG[1]*K / (as*as)) - slipAngle)*0.09;   // with atan(x) = x for small x
 			// ESP_LOGI(FNAME,"AS: %f m/s, CURSL: %f°, SLIP: %f", as, -accelG[1]*K / (as*as), slipAngle );
 		}
-
 		xSemaphoreTake(xMutex,portMAX_DELAY );
 
 		float te = bmpVario.readTE( tasraw );
@@ -700,6 +763,10 @@ void readSensors(void *pvParameters){
 		}
 		lazyNvsCommit();
 
+		// MPU temperature PI control
+		// if( gflags.haveMPU && !CAN->hasSlopeSupport() ){ // series 2023 does not have slope support on CAN bus but MPU temperature control
+		// 	mpu_temp_control();
+		// }
 		esp_task_wdt_reset();
 		if( uxTaskGetStackHighWaterMark( bpid ) < 512 )
 			ESP_LOGW(FNAME,"Warning sensor task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );
@@ -711,6 +778,7 @@ static int ttick = 0;
 static float temp_prev = -3000;
 
 void readTemp(void *pvParameters){
+
 	while (1) {
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		float t=15.0;
@@ -801,6 +869,10 @@ void system_startup(void *args){
 	gyroDPS.x = 0;
 	gyroDPS.y = 0;
 	gyroDPS.z = 0;
+	cur_gyro_bias[0] = 0;
+	cur_gyro_bias[1] = 0;
+	cur_gyro_bias[2] = 0;
+
 	bool selftestPassed=true;
 	int line = 1;
 	ESP_LOGI( FNAME, "Now setup I2C bus IO 21/22");
@@ -917,7 +989,7 @@ void system_startup(void *args){
 		MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
 		mpud::raw_axes_t gb = gyro_bias.get();
 		mpud::raw_axes_t ab = accl_bias.get();
-
+		char ahrs[30];
 		if( (gb.isZero() || ab.isZero()) || ahrs_autozero.get() ) {
 			ESP_LOGI( FNAME,"MPU computeOffsets");
 			ahrs_autozero.set(0);
@@ -946,7 +1018,6 @@ void system_startup(void *args){
 			if( i>0 )
 				accel += accelG[0];
 		}
-		char ahrs[30];
 		sprintf( ahrs,"AHRS Sensor: OK (%.2f g)", accel/10 );
 		display->writeText( line++, ahrs );
 		logged_tests += "MPU6050 AHRS test: PASSED\n";
@@ -1229,15 +1300,22 @@ void system_startup(void *args){
 	if( Audio::haveCAT5171() ) // todo && CAN configured
 	{
 		CAN = new CANbus();
-		if( CAN->selfTest() ){
-			resultCAN = "OK";
-			ESP_LOGE(FNAME,"CAN Bus selftest: OK");
+		if( CAN->selfTest(false) ){  // series 2023 has fixed slope control, prio slope bit for AHRS temperature control
+			resultCAN = "OK-";
+			ESP_LOGE(FNAME,"CAN Bus selftest (no RS): OK");
 			logged_tests += "CAN Interface: OK\n";
 		}
 		else{
-			resultCAN = "FAIL";
-			logged_tests += "CAN Bus selftest: FAILED\n";
-			ESP_LOGE(FNAME,"Error: CAN Interface failed");
+			if( CAN->selfTest(true) ){  // if slope bit is to be handled, there is no temperature control
+				resultCAN = "OK";
+				ESP_LOGE(FNAME,"CAN Bus selftest RS: OK");
+				logged_tests += "CAN Interface: OK\n";
+			}
+			else{
+				resultCAN = "FAIL";
+				logged_tests += "CAN Bus selftest: FAILED\n";
+				ESP_LOGE(FNAME,"Error: CAN Interface failed");
+			}
 		}
 	}
 
@@ -1291,7 +1369,7 @@ void system_startup(void *args){
 		WifiApp::wifi_init_softap();
 	}
 	// 2021 series 3, or 2022 model with new digital poti CAT5171 also features CAN bus
-	if(  can_speed.get() != CAN_SPEED_OFF && resultCAN == "OK" && CAN )
+	if(  can_speed.get() != CAN_SPEED_OFF && (resultCAN == "OK" || resultCAN == "OK-") && CAN )
 	{
 		ESP_LOGI(FNAME, "Now start CAN Bus Interface");
 		CAN->begin();  // start CAN tasks and driver

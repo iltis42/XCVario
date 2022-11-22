@@ -84,8 +84,10 @@ void CANbus::driverInstall( twai_mode_t mode ){
 		_ready_initialized = true;
 		// Set RS pin
 		// bus_off_io may operate invers, so for now set this here
-		gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);
-		gpio_set_level(GPIO_NUM_2, 0 );
+		if( _slope_support ){
+			gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);
+			gpio_set_level(GPIO_NUM_2, gflags.mpu_heat_on  );
+		}
 		delay(10);
 	} else {
 		twai_driver_uninstall();
@@ -100,7 +102,6 @@ void CANbus::driverUninstall(){
 		twai_stop();
 		delay(100);
 		twai_driver_uninstall();
-		gpio_set_level(GPIO_NUM_2, 1 );
 		delay(100);
 	}
 }
@@ -367,16 +368,17 @@ bool CANbus::sendNMEA( const SString& msg ){
 	return ret;
 }
 
-bool CANbus::selfTest(){
+bool CANbus::selfTest( bool rs ){
 	ESP_LOGI(FNAME,"CAN bus selftest");
 	sendMutex = xSemaphoreCreateMutex();
 	nmeaMutex = xSemaphoreCreateMutex();
+	_slope_support = rs;
 	driverInstall( TWAI_MODE_NO_ACK );
 	bool res=false;
 	int id=0x100;
 	delay(100);
 	twai_clear_receive_queue();
-	for( int i=0; i<100; i++ ){
+	for( int i=0; i<10; i++ ){ // repeat test 10x
 		char tx[10] = { "1827364" };
 		int len = strlen(tx);
 		// there might be data from a remote device
@@ -416,6 +418,9 @@ bool CANbus::sendData( int id, const char* msg, int length, int self ){
 		return false;
 	}
 	xSemaphoreTake(sendMutex,portMAX_DELAY );
+	if( _slope_support ){
+		gpio_set_level(GPIO_NUM_2, 0 );
+	}
 	twai_message_t message;
 	memset( &message, 0, sizeof( message ) );
 	message.identifier = id;
@@ -451,6 +456,9 @@ bool CANbus::sendData( int id, const char* msg, int length, int self ){
 	}
 	else{
 		ESP_LOGW(FNAME,"Send CAN bus message failed, ret:%02x", error );
+	}
+	if( _slope_support ){
+		gpio_set_level(GPIO_NUM_2, gflags.mpu_heat_on );
 	}
 	xSemaphoreGive(sendMutex);
 	return ret;

@@ -127,6 +127,7 @@ double IMU::getPitchRad()  {
 	return -filterPitch*DEG_TO_RAD;
 }
 
+static float positiveG = 1.0;
 void IMU::read()
 {
 	double dt=0;
@@ -152,11 +153,13 @@ void IMU::read()
 		// Z cross axis rotation in 3D space with roll angle correction
 		float omega = atan( ( (D2R(gyroZ)/cos( D2R(euler.roll))) * (getTAS()/3.6) ) / 9.80665 );
 		// 2: estimate angle of bank from increased acceleration in Z axis
-		float positiveG=-accelZ;
+		positiveG += (-accelZ - positiveG)*0.08;  // some low pass filtering makes sense here
 		// only positive G-force is to be considered, curve at negative G is not defined
-		if( positiveG < 1 )
-			positiveG = 1;
-		float groll = acos( 1 / positiveG );
+		float groll = 0.0;
+		if( positiveG < 1.0 )
+			positiveG = 1.0;
+		else if( positiveG > 1.02 ) // unaccurate at very low g forces
+		    groll = acos( 1 / positiveG );
 		// estimate sign of acceleration related angle from gyro
 		if( omega < 0 )
 			groll = -groll;
@@ -165,7 +168,7 @@ void IMU::read()
 		ax=sin(pitch);              // Nose down (positive Y turn) results in positive X
 		ay=sin(roll)*cos(pitch);    // Left wing down (or negative X roll) resultis in positive Y
 		az=cos(roll)*cos(pitch);    // Any roll or pitch creates a less negative Z
-		//ESP_LOGI( FNAME,"omega-roll:%f g-roll:%f roll:%f  AZ:%f", omega, groll, roll, positiveG );
+		// ESP_LOGI( FNAME,"omega-roll:%f g-roll:%f roll:%f  AZ:%f", omega, groll, roll, positiveG );
 	}
 	else{ // Case when on ground, get accelerations from sensor directly
 		ax=accelX;
@@ -199,7 +202,7 @@ void IMU::read()
 			fused_yaw +=  Vector::angleDiffDeg( curh ,fused_yaw )*0.02 + gyroYaw * 1.07;
 			filterYaw=Vector::normalizeDeg( fused_yaw );
 			compass->setGyroHeading( filterYaw );
-			// ESP_LOGI( FNAME,"cur magn head %.2f gyro yaw: %.4f fused: %.1f Gyro(%.3f/%.3f/%.3f)", curh, gyroYaw, gh, gyroX, gyroY, gyroZ  );
+			//ESP_LOGI( FNAME,"cur magn head %.2f gyro yaw: %.4f fused: %.1f Gyro(%.3f/%.3f/%.3f)", curh, gyroYaw, gh, gyroX, gyroY, gyroZ  );
 		}else
 		{
 			filterYaw=fallbackToGyro();

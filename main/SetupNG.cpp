@@ -35,7 +35,7 @@
 #include "Flap.h"
 #include "DallasRmt.h"
 #include <esp_http_server.h>
-
+#include "WifiApp.h"
 
 void change_mc() {
 	Speed2Fly.change_mc();
@@ -366,6 +366,8 @@ SetupNG<int> 			data_monitor("DATAMON", MON_OFF, true, SYNC_NONE, VOLATILE  );
 SetupNG<int> 			data_monitor_mode("DATAMONM", MON_MOD_ASCII, true, SYNC_NONE, VOLATILE  );
 SetupNG<t_bitfield_compass>  calibration_bits("CALBIT", { 0,0,0,0,0,0 } );
 SetupNG<int> 			gear_warning("GEARWA", 0 );
+SetupNG<t_wireless_id>  user_wlid("WLID", { 0 } );
+
 
 mpud::raw_axes_t zero_bias;
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );

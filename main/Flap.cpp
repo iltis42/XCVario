@@ -267,7 +267,7 @@ void Flap::setupIndicatorMenueEntries(MenuEntry *wkm)
 
 }
 
-void Flap::setupMenue( SetupMenu *parent ){
+void Flap::setupMenue( MenuEntry *parent ){
     static MenuEntry* wkm = 0;
 
 	ESP_LOGI(FNAME,"Flap::setupMenue");

@@ -41,7 +41,7 @@ public:
 	void drawWingSymbol(int16_t wk, float wksens);
 	void redraw() { sensorOldY = -1000; dirty=true; };
 	// void redrawLever() { sensorOldY = -1000; };
-	static void setupMenue( SetupMenu *parent );
+	static void setupMenue( MenuEntry *parent );
 	unsigned int getSensorRaw(int oversampling=1);
     static inline Flap* FLAP() { return _instance; }
     static const int MAX_NR_POS = 9;

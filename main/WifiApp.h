@@ -4,6 +4,15 @@
 #include "esp_wifi.h"
 #include "esp_event.h"
 
+typedef struct str_wireless_id {
+	char id[10];
+
+	bool operator == ( const struct str_wireless_id &other ) const {
+		return( strcmp( id, other.id ) == 0 );
+    };
+
+} t_wireless_id;
+
 
 class WifiApp {
 	WifiApp() {};

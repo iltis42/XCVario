@@ -658,6 +658,7 @@ extern SetupNG<int> 		data_monitor;
 extern SetupNG<int> 		data_monitor_mode;
 extern SetupNG<t_bitfield_compass> 	calibration_bits;
 extern SetupNG<int> 		gear_warning;
+extern SetupNG<int>         wireless_id;
 
 extern uint8_t g_col_background;
 extern uint8_t g_col_highlight;

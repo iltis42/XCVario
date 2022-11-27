@@ -27,13 +27,15 @@ public:
 		helptext = 0;
 		hypos = 0;
 		_title = 0;
+		subtree_created = 0;
+		menu_create_ptr = 0;
 	};
 	virtual ~MenuEntry();
 	virtual void display( int mode=0 ) = 0;
 	virtual void release() { display(); };
 	virtual void longPress() {};
 	virtual const char* value() = 0;
-    MenuEntry* getFirst() const { return _childs.front(); }
+    MenuEntry* getFirst() const;
 	MenuEntry* addEntry( MenuEntry * item );
 	MenuEntry* addEntry( MenuEntry * item, const MenuEntry* after );
 	void       delEntry( MenuEntry * item );
@@ -47,6 +49,7 @@ public:
 	void semaphoreTake();
     void semaphoreGive();
     void restart();
+    void addCreator( void (menu_create)(MenuEntry*ptr) ){ menu_create_ptr=menu_create; }
     static void setRoot( MenuEntry *root ) { selected = root; };
 public:
 	std::vector<MenuEntry*>  _childs;
@@ -56,6 +59,8 @@ public:
 	uint8_t   pressed;
 	char      *helptext;
 	int16_t    hypos;
+	void (*menu_create_ptr)(MenuEntry*);
+	uint8_t subtree_created;
 	static AdaptUGC *ucg;
 	static MenuEntry *root;
 	static MenuEntry *selected;

@@ -31,7 +31,7 @@ public:
 	void longPress();
 	void escape();
 	void showMenu();
-	void addCreator( void (menu_create)(MenuEntry*ptr) ){ menu_create_ptr=menu_create; }
+
 	static void catchFocus( bool activate );
 	static bool focus;
 	static gpio_num_t getGearWarningIO();
@@ -40,9 +40,6 @@ public:
 	static void glider_menu_create( MenuEntry *top );
 	static void options_menu_create( MenuEntry *top );
 	static void system_menu_create( MenuEntry *top );
-
-	void (*menu_create_ptr)(MenuEntry*);
-	bool subtree_created;
 };
 
 #endif

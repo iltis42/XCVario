@@ -74,6 +74,11 @@ void MenuEntry::uprint( int x, int y, const char* str ) {
 	xSemaphoreGive(spiMutex );
 }
 
+MenuEntry* MenuEntry::getFirst() const {
+	// ESP_LOGI(FNAME,"MenuEntry::getFirst()");
+	return _childs.front();
+}
+
 MenuEntry* MenuEntry::addEntry( MenuEntry * item ) {
 	// ESP_LOGI(FNAME,"MenuEntry addMenu() title %s", item->_title );
 	if( root == 0 ){
@@ -93,7 +98,7 @@ MenuEntry* MenuEntry::addEntry( MenuEntry * item ) {
 
 MenuEntry* MenuEntry::addEntry( MenuEntry * item, const MenuEntry* after ) {
 	// ESP_LOGI(FNAME,"AddMenuEntry title %s after %s", item->_title, after->_title );
-	if( root == 0 ){
+	if( root == 0   ){
 		return addEntry(item);
 	}
 	else{

@@ -159,10 +159,11 @@ int update_s2f_speed(SetupMenuValFloat * p)
 
 int update_rentry(SetupMenuValFloat * p)
 {
-	ESP_LOGI(FNAME,"update_rentry() entries: %d, vu:%s ", audio_range_sm->numEntries(), Units::VarioUnit() );
+	// ESP_LOGI(FNAME,"update_rentry() entries: %d, vu:%s ", audio_range_sm->numEntries(), Units::VarioUnit() );
 	static char rentry1[20];
 	static char rentry2[20];
 	static char rentry3[25];
+
 	sprintf( rentry1, "Fix (5  %s)", Units::VarioUnit() );
 	bool entry_in = audio_range_sm->numEntries() == 3 ? true : false;
 	if( !entry_in )
@@ -382,15 +383,13 @@ SetupMenu::SetupMenu() : MenuEntry() {
 	highlight = -1;
 	_parent = 0;
 	helptext = 0;
-	menu_create_ptr = 0;
 }
 
 SetupMenu::SetupMenu( const char *title ) : MenuEntry() {
-	// ESP_LOGI(FNAME,"SetupMenu::SetupMenu( %s ) ", title.c_str() );
+	ESP_LOGI(FNAME,"SetupMenu::SetupMenu( %s ) ", title );
 	attach(this);
 	_title = title;
 	highlight = -1;
-	subtree_created = false;
 }
 
 SetupMenu::~SetupMenu()
@@ -576,7 +575,7 @@ static int screen_index = 0;
 void SetupMenu::press(){
 	if( (selected != this) || focus )
 		return;
-	ESP_LOGI(FNAME,"press() active_srceen %d, pressed %d inSet %d  subtree_created: %d", active_screen, pressed, gflags.inSetup, subtree_created );
+	// ESP_LOGI(FNAME,"press() active_srceen %d, pressed %d inSet %d  subtree_created: %d mptr: %p", active_screen, pressed, gflags.inSetup, subtree_created, menu_create_ptr );
 	if( !subtree_created && menu_create_ptr ){
 		(menu_create_ptr)(this);
 		subtree_created = true;
@@ -637,8 +636,9 @@ void SetupMenu::escape(){
 }
 
 void SetupMenu::vario_menu_create( MenuEntry *vae ){
+	ESP_LOGI(FNAME,"SetupMenu::vario_menu_create( %p )", vae );
 
-	SetupMenuValFloat * vga = new SetupMenuValFloat( "Range", "",	1.0, 30.0, 1, update_rentry, true, &range );
+	SetupMenuValFloat * vga = new SetupMenuValFloat( "Range", "",	1.0, 30.0, 1, 0, true, &range );
 	vga->setHelp(PROGMEM"Upper and lower value for Vario graphic display region");
 	vga->setPrecision( 0 );
 	vae->addEntry( vga );
@@ -647,41 +647,41 @@ void SetupMenu::vario_menu_create( MenuEntry *vae ){
 	vlogscale->setHelp(PROGMEM"Use a logarithmic scale to the vario gauge");
 	vlogscale->addEntry( "DISABLE" );
 	vlogscale->addEntry( "ENABLE" );
-	vae->addEntry( vlogscale );
+	vae->addEntry( vlogscale, vga );
 
 	SetupMenuSelect * vamod = new SetupMenuSelect( 	"Mode", false, 0 , true, &vario_mode );
 	vamod->setHelp(PROGMEM"Controls if vario considers polar sink (=Netto), or not (=Brutto), or if Netto vario applies only in Cruise Mode");
 	vamod->addEntry( "Brutto");
 	vamod->addEntry( "Netto");
 	vamod->addEntry( "Cruise-Netto");
-	vae->addEntry( vamod );
+	vae->addEntry( vamod, vlogscale);
 
 	SetupMenuSelect * nemod = new SetupMenuSelect( 	"Netto Mode", false, 0 , true, &netto_mode );
 	nemod->setHelp(PROGMEM"In 'Relative' mode, also circling sink is considered also called 'Super-Netto' to show climb rate as if you were circling there");
 	nemod->addEntry( "Normal");
 	nemod->addEntry( "Relative");
-	vae->addEntry( nemod );
+	vae->addEntry( nemod, vamod  );
 
 	SetupMenuSelect * sink = new SetupMenuSelect( 	"Polar Sink", false, 0 , true, &ps_display );
 	sink->setHelp(PROGMEM"Show polar sink rate together with TE in Vario bar when Vario is in Brutto Mode (else disabled)");
 	sink->addEntry( "DISABLE");
 	sink->addEntry( "ENABLE");
-	vae->addEntry( sink );
+	vae->addEntry( sink, nemod );
 
 	SetupMenuSelect * ncolor = new SetupMenuSelect( "Needle Color", false, 0 , true, &needle_color );
 	ncolor->setHelp(PROGMEM"Choose the color of the vario needle");
 	ncolor->addEntry( "White");
 	ncolor->addEntry( "Orange");
 	ncolor->addEntry( "Red");
-	vae->addEntry( ncolor );
+	vae->addEntry( ncolor, sink );
 
 	SetupMenuSelect * scrcaid = new SetupMenuSelect( "Center-Aid", true, 0, true, &screen_centeraid );
 	scrcaid->addEntry( "Disable");
 	scrcaid->addEntry( "Enable");
-	vae->addEntry(scrcaid);
+	vae->addEntry(scrcaid,ncolor);
 
 	SetupMenu * vdamp = new SetupMenu( "Vario Damping" );
-	MenuEntry* vdampm = vae->addEntry( vdamp );
+	MenuEntry* vdampm = vae->addEntry( vdamp, scrcaid );
 
 	SetupMenuValFloat * vda = new SetupMenuValFloat( 	"Damping", "sec", 2.0, 10.0, 0.1, 0, false, &vario_delay );
 	vda->setHelp(PROGMEM"Response time, time constant of Vario low pass kalman filter");
@@ -693,7 +693,7 @@ void SetupMenu::vario_menu_create( MenuEntry *vae ){
 
 	SetupMenu * meanclimb = new SetupMenu( "Mean Climb" );
 	meanclimb->setHelp(PROGMEM"Mean Climb or MC recommendation by green/red rhombus displayed in vario scale adjustment");
-	MenuEntry* meanclimbm = vae->addEntry( meanclimb );
+	MenuEntry* meanclimbm = vae->addEntry( meanclimb, vdamp);
 
 	SetupMenuValFloat * vccm = new SetupMenuValFloat( "Minimum climb", "",	0.0, 2.0, 0.1, 0, false, &core_climb_min );
 	vccm->setHelp(PROGMEM"Minimum climb rate that counts for arithmetic mean climb value");
@@ -712,7 +712,7 @@ void SetupMenu::vario_menu_create( MenuEntry *vae ){
 	meanclimbm->addEntry( vcmc);
 
 	SetupMenu * s2fs = new SetupMenu( "S2F Settings" );
-	MenuEntry* s2fse = vae->addEntry( s2fs );
+	MenuEntry* s2fse = vae->addEntry( s2fs, meanclimb );
 
 	SetupMenuValFloat * vds2 = new SetupMenuValFloat( "Damping", "sec", 0.10001, 10.0, 0.1, 0, false, &s2f_delay );
 	vds2->setHelp(PROGMEM"Time constant of S2F low pass filter");
@@ -760,7 +760,7 @@ void SetupMenu::vario_menu_create( MenuEntry *vae ){
 
 
 	SetupMenu * elco = new SetupMenu( "Electronic Compensation" );
-	vae->addEntry( elco );
+	vae->addEntry( elco, s2fs );
 	SetupMenuSelect * enac = new SetupMenuSelect( "eCompensation", false, 0 , false, &te_comp_enable );
 	enac->setHelp(PROGMEM"Enable/Disable electronic TE compensation option; Enable only when TE pressure is connected to ST (static) pressure");
 	enac->addEntry( "DISABLE");
@@ -1822,8 +1822,8 @@ void SetupMenu::setup( )
 	{
 		// Vario
 		SetupMenu * va = new SetupMenu( "Vario and Speed 2 Fly" );
-		mm->addEntry( va );
-		va->addCreator( vario_menu_create );
+		MenuEntry* vam = mm->addEntry( va );
+		vam->addCreator( vario_menu_create );
 
 		// Audio
 		SetupMenu * ad = new SetupMenu( "Audio" );

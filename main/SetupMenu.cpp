@@ -1532,8 +1532,8 @@ void SetupMenu::system_menu_create( MenuEntry *sye ){
 	pstype->addEntry( "TE4525");
 	pstype->addEntry( "MP5004");
 	pstype->addEntry( "Autodetect");
-
-	SetupMenuValFloat::meter_adj_menu = new SetupMenuValFloat( "Voltmeter Adjust", "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust,  true, false, true);
+	if( !SetupMenuValFloat::meter_adj_menu )
+		SetupMenuValFloat::meter_adj_menu = new SetupMenuValFloat( "Voltmeter Adjust", "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust,  true, false, true);
 	SetupMenuValFloat::meter_adj_menu->setHelp(PROGMEM "Option to fine factory adjust voltmeter");
 	hardware->addEntry( SetupMenuValFloat::meter_adj_menu );
 
@@ -1805,6 +1805,10 @@ void SetupMenu::setup( )
 	afe->setHelp(PROGMEM"Airfield elevation in meters for QNH auto adjust on ground according to this elevation");
 	mm->addEntry( afe );
 
+	if( NEED_VOLTAGE_ADJUST ){
+		SetupMenuValFloat::meter_adj_menu = new SetupMenuValFloat( "Voltmeter Adjust", "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust,  true, false, true);
+	}
+
 	if( (int)(password.get()) == 271 ) {
 		student_mode.set( 0 );
 		password.set( 0 );
@@ -1844,6 +1848,7 @@ void SetupMenu::setup( )
 		SetupMenu * sy = new SetupMenu( "System" );
 		mm->addEntry( sy );
 		sy->addCreator( system_menu_create );
+
 	}
 	SetupMenu::display();
 }

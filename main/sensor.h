@@ -98,5 +98,7 @@ extern AdaptUGC *MYUCG;
 
 extern vector_ijk gravity_vector;
 
+#define NEED_VOLTAGE_ADJUST (abs(factory_volt_adjust.get() - 0.00815) < 0.00001)
+
 
 #endif

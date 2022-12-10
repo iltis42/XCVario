@@ -1518,11 +1518,16 @@ void SetupMenu::system_menu_create( MenuEntry *sye ){
 		ahrsgf->setHelp(PROGMEM"Gyro factor in artifical horizont bank and pitch (more instant movement), zero disables Gyro");
 		ahrs->addEntry( ahrsgf );
 
-		SetupMenuSelect * rpyl = new SetupMenuSelect( "AHRS RPYL Sentence", false , 0, true, &ahrs_rpyl_dataset );
+		SetupMenuSelect * rpyl = new SetupMenuSelect( "AHRS RPYL", false , 0, true, &ahrs_rpyl_dataset );
 		ahrs->addEntry( rpyl );
 		rpyl->setHelp( PROGMEM "Send LEVIL AHRS like $RPYL sentence for artifical horizon");
 		rpyl->addEntry( "Disable");
 		rpyl->addEntry( "Enable");
+
+		SetupMenuValFloat * tcontrol = new SetupMenuValFloat( "AHRS Temp Control", "", -1, 50, 1, 0, false, &mpu_temperature  );
+		tcontrol->setPrecision( 0 );
+		tcontrol->setHelp( PROGMEM"Regulated constant temperature of AHRS chip, if supported in hardware (model > 2023), -1 means OFF");
+		ahrs->addEntry( tcontrol );
 	}
 
 	SetupMenuSelect * pstype = new SetupMenuSelect( "AS Sensor type", true , 0, false, &airspeed_sensor_type );
@@ -1826,8 +1831,8 @@ void SetupMenu::setup( )
 	{
 		// Vario
 		SetupMenu * va = new SetupMenu( "Vario and Speed 2 Fly" );
-		MenuEntry* vam = mm->addEntry( va );
-		vam->addCreator( vario_menu_create );
+		mm->addEntry( va );
+		va->addCreator( vario_menu_create );
 
 		// Audio
 		SetupMenu * ad = new SetupMenu( "Audio" );

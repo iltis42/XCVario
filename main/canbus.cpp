@@ -86,7 +86,6 @@ void CANbus::driverInstall( twai_mode_t mode ){
 		// bus_off_io may operate invers, so for now set this here
 		if( _slope_support ){
 			gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);
-			gpio_set_level(GPIO_NUM_2, gflags.mpu_heat_on  );
 		}
 		delay(10);
 	} else {
@@ -456,9 +455,6 @@ bool CANbus::sendData( int id, const char* msg, int length, int self ){
 	}
 	else{
 		ESP_LOGW(FNAME,"Send CAN bus message failed, ret:%02x", error );
-	}
-	if( _slope_support ){
-		gpio_set_level(GPIO_NUM_2, gflags.mpu_heat_on );
 	}
 	xSemaphoreGive(sendMutex);
 	return ret;

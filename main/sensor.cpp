@@ -73,6 +73,7 @@
 #include "DataMonitor.h"
 #include "AdaptUGC.h"
 #include "CenterAid.h"
+#include "driver/ledc.h"
 
 // #include "sound.h"
 
@@ -199,31 +200,47 @@ static float mpu_t_delta = 0;
 static float mpu_t_delta_i = 0;
 static float mpu_heat_pwm = 0;
 
-void mpu_temp_control(){
-	mpu_t_delta = MPU.getTemperature() - 40.0;
-	gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);
-	mpu_heat_pwm = -mpu_t_delta*6.0;          // P part
-	mpu_t_delta_i -= (mpu_t_delta)/10.0;	  // I part
-	if( mpu_t_delta_i > 10 )
-		mpu_t_delta_i = 10;
-	if( mpu_t_delta_i < -10 )
-		mpu_t_delta_i = -10;
+int mpu_temp_control(){
+	float temp = MPU.getTemperature();
+	mpu_t_delta = temp - mpu_temperature.get();
+	float mpu_t_delta_p = -mpu_t_delta*20.0;
+	mpu_heat_pwm = mpu_t_delta_p;             // P part
+	mpu_t_delta_i -= (mpu_t_delta)/3.0;	  // I part
+	if( mpu_t_delta_i > 255 )
+		mpu_t_delta_i = 255;
+	if( mpu_t_delta_i < 0 )
+		mpu_t_delta_i = 0;
 	mpu_heat_pwm += mpu_t_delta_i;
-	if( mpu_heat_pwm > 10 )
-		mpu_heat_pwm = 10;
+	if( mpu_heat_pwm > 255 )
+		mpu_heat_pwm = 255;
 	if( mpu_heat_pwm < 0 )
 		mpu_heat_pwm = 0;
-	if( (count%10) <  rint(mpu_heat_pwm) ){
-		gpio_set_level(GPIO_NUM_2, 1 );  // MPU heating on
-		ESP_LOGI(FNAME,"Td= %f, ON, pwm: %d", mpu_t_delta, (int)rint(mpu_heat_pwm) );
-		gflags.mpu_heat_on = true;
-	}else{
-		gpio_set_level(GPIO_NUM_2, 0 );  // off
-		ESP_LOGI(FNAME,"Td= %f, OFF pwm: %d", mpu_t_delta, (int)rint(mpu_heat_pwm) );
-		gflags.mpu_heat_on = false;
-	}
+
+	// ESP_LOGI(FNAME,"T=%.1f Td= %.1f P=%.2f I=%.2f, PWM=%d", temp, mpu_t_delta, mpu_t_delta_p, mpu_t_delta_i, (int)rint(mpu_heat_pwm) );
+	return mpu_heat_pwm;
 }
 
+void mpu_pwm_init(){
+	if( !gflags.mpu_pwm_initalized ){
+		ESP_LOGI(FNAME,"Initialize AHRS heating PWM control");
+		ledc_timer_config_t pwm_timer = {
+				.speed_mode = LEDC_HIGH_SPEED_MODE,
+				.duty_resolution = LEDC_TIMER_8_BIT,
+				.timer_num  = LEDC_TIMER_1,
+				.freq_hz = 500,
+				.clk_cfg = LEDC_AUTO_CLK };
+		ledc_channel_config_t pwm_ch = {
+				.gpio_num = GPIO_NUM_2,
+				.speed_mode = LEDC_HIGH_SPEED_MODE,
+				.channel = LEDC_CHANNEL_1,
+				.intr_type = LEDC_INTR_DISABLE,
+				.timer_sel = LEDC_TIMER_1,
+				.duty = 0, .hpoint = 0 };
+		ledc_channel_config(&pwm_ch);
+		ledc_timer_config(&pwm_timer);
+		gflags.mpu_pwm_initalized = true;
+	}
+}
 
 void drawDisplay(void *pvParameters){
 	while (1) {
@@ -762,11 +779,11 @@ void readSensors(void *pvParameters){
 			}
 		}
 		lazyNvsCommit();
-
-		// MPU temperature PI control
-		// if( gflags.haveMPU && !CAN->hasSlopeSupport() ){ // series 2023 does not have slope support on CAN bus but MPU temperature control
-		// 	mpu_temp_control();
-		// }
+		//MPU temperature PI control
+		if( gflags.haveMPU && !CAN->hasSlopeSupport() ){ // series 2023 does not have slope support on CAN bus but MPU temperature control
+			ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_1, mpu_temp_control() );
+			ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_1);
+		}
 		esp_task_wdt_reset();
 		if( uxTaskGetStackHighWaterMark( bpid ) < 512 )
 			ESP_LOGW(FNAME,"Warning sensor task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );
@@ -1488,6 +1505,9 @@ void system_startup(void *args){
 	else {
 		Rotary.begin( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);
 		gpio_pullup_en( GPIO_NUM_34 );
+		if( gflags.haveMPU && !CAN->hasSlopeSupport() ){ // series 2023 does not have slope support on CAN bus but MPU temperature control
+			mpu_pwm_init();
+		}
 	}
 	delay( 100 );
 	if ( SetupCommon::isClient() ){

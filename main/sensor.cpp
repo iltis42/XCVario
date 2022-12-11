@@ -200,7 +200,8 @@ static float mpu_t_delta = 0;
 static float mpu_t_delta_i = 0;
 static float mpu_heat_pwm = 0;
 
-int mpu_temp_control(){
+int mpu_temp_control( int tick_count ){
+
 	float temp = MPU.getTemperature();
 	mpu_t_delta = temp - mpu_temperature.get();
 	float mpu_t_delta_p = -mpu_t_delta*20.0;
@@ -216,7 +217,11 @@ int mpu_temp_control(){
 	if( mpu_heat_pwm < 0 )
 		mpu_heat_pwm = 0;
 
-	// ESP_LOGI(FNAME,"T=%.1f Td= %.1f P=%.2f I=%.2f, PWM=%d", temp, mpu_t_delta, mpu_t_delta_p, mpu_t_delta_i, (int)rint(mpu_heat_pwm) );
+	// ESP_LOGI(FNAME,"mpu_temp_control %d  300:%d td:%f", tick_count, !(tick_count%300), mpu_t_delta );
+
+	if( !(tick_count%300) && abs(mpu_t_delta) > 1.0 ){
+		ESP_LOGW(FNAME,"Warning MPU T deviation > 1°: T=%.1f Delta= %.1f P=%.2f I=%.2f, PWM=%d", temp, mpu_t_delta, mpu_t_delta_p, mpu_t_delta_i, (int)rint(mpu_heat_pwm) );
+	}
 	return mpu_heat_pwm;
 }
 
@@ -239,6 +244,17 @@ void mpu_pwm_init(){
 		ledc_channel_config(&pwm_ch);
 		ledc_timer_config(&pwm_timer);
 		gflags.mpu_pwm_initalized = true;
+	}
+}
+
+
+void MPU_temp_control(int count) {// MPU temperature PI control
+	if( gflags.haveMPU && !CAN->hasSlopeSupport() ){ // series 2023 does not have slope support on CAN bus but MPU temperature control
+		if( mpu_temperature.get() >= 0.0 ){ // MPU T = -1.0 switches off feature
+			int pwm=mpu_temp_control(count);
+			ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_1, pwm );
+			ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_1);
+		}
 	}
 }
 
@@ -584,7 +600,7 @@ void clientLoop(void *pvParameters)
 			}
 			dynamicP = Atmosphere::kmh2pascal(ias.get());
 			tas = Atmosphere::TAS2( ias.get(), altitude.get(), OAT.get() );
-
+			MPU_temp_control( ccount );
 			if( gflags.haveMPU ) {
 				grabMPU();
 			}
@@ -779,11 +795,7 @@ void readSensors(void *pvParameters){
 			}
 		}
 		lazyNvsCommit();
-		//MPU temperature PI control
-		if( gflags.haveMPU && !CAN->hasSlopeSupport() ){ // series 2023 does not have slope support on CAN bus but MPU temperature control
-			ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_1, mpu_temp_control() );
-			ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_1);
-		}
+		MPU_temp_control( count );
 		esp_task_wdt_reset();
 		if( uxTaskGetStackHighWaterMark( bpid ) < 512 )
 			ESP_LOGW(FNAME,"Warning sensor task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );

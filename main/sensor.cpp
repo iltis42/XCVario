@@ -463,7 +463,7 @@ static void grabMPU()
 					ESP_LOGI(FNAME, "Set new gyro offset: X:%d Y:%d Z:%d",  gb.x, gb.y, gb.z );
 					MPU.setGyroOffset( gb );
 					// if we have temperature control, we check if control is locked, otherwise we have no idea but anyway takeover better offset
-					if( (HAS_MPU_TEMP_CONTROL && MPU.siliconTempLocked()) || !HAS_MPU_TEMP_CONTROL ){
+					if( (HAS_MPU_TEMP_CONTROL && (MPU.getSiliconTempStatus() == MPU_T_LOCKED)) || !HAS_MPU_TEMP_CONTROL ){
 						if( (abs( gbo.x-gb.x ) > 1 || abs( gbo.y-gb.y ) > 1 || abs( gbo.z-gb.z ) > 1) && gyro_flash_savings<5 ){
 							gyro_bias.set( gb );
 							ESP_LOGI(FNAME,"Constant T: Store in new offset also in Flash, Nr: %d", gyro_flash_savings );

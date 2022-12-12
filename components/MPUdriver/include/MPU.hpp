@@ -34,6 +34,8 @@
 
 extern xSemaphoreHandle i2c_mutex;
 
+typedef enum temp_status { MPU_T_UNKNOWN, MPU_T_LOCKED, MPU_T_LOW, MPU_T_HIGH } temp_status_t;
+
 #ifdef CONFIG_MPU_I2C
 #if !defined I2CBUS_COMPONENT_TRUE
 #error ''MPU component requires I2Cbus library. \
@@ -255,10 +257,17 @@ class MPU
     void pwm_init();             // one time initialize of PMW subsystem
     int pi_control(int tick);    // PI control to regulate temperatured
     void temp_control(int tick);  // Tick hook
-    bool siliconTempLocked() { return( abs(mpu_t_delta) < 0.5); };
-    bool siliconTempLow() { return( mpu_t_delta < -0.5); };
-    bool siliconTempHigh() { return( mpu_t_delta > 0.5); };
 
+    temp_status_t getSiliconTempStatus() {
+    	if( abs(mpu_t_delta) < 0.5)
+    		return MPU_T_LOCKED;
+    	else if( mpu_t_delta < -0.5 )
+    		return MPU_T_LOW;
+    	else if( mpu_t_delta > 0.5 )
+    	    return MPU_T_HIGH;
+    	else
+    		return MPU_T_UNKNOWN;
+    };
  protected:
     esp_err_t accelSelfTest(raw_axes_t& regularBias, raw_axes_t& selfTestBias, uint8_t* result);
     esp_err_t gyroSelfTest(raw_axes_t& regularBias, raw_axes_t& selfTestBias, uint8_t* result);

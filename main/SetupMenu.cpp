@@ -1524,9 +1524,9 @@ void SetupMenu::system_menu_create( MenuEntry *sye ){
 		rpyl->addEntry( "Disable");
 		rpyl->addEntry( "Enable");
 
-		SetupMenuValFloat * tcontrol = new SetupMenuValFloat( "AHRS Temp Control", "", -1, 50, 1, 0, false, &mpu_temperature  );
+		SetupMenuValFloat * tcontrol = new SetupMenuValFloat( "AHRS Temp Control", "", -1, 60, 1, 0, false, &mpu_temperature  );
 		tcontrol->setPrecision( 0 );
-		tcontrol->setHelp( PROGMEM"Regulated constant temperature of AHRS chip, if supported in hardware (model > 2023), -1 means OFF");
+		tcontrol->setHelp( PROGMEM"Regulated target temperature of AHRS silicon chip, if supported in hardware (model > 2023), -1 means OFF");
 		ahrs->addEntry( tcontrol );
 	}
 

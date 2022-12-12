@@ -186,6 +186,8 @@ int   IpsDisplay::prev_windspeed = 0;
 float IpsDisplay::pref_qnh = 0;
 float IpsDisplay::old_polar_sink = 0;
 
+temp_status_t IpsDisplay::siliconTempStatusOld = MPU_T_UNKNOWN;
+
 const int16_t SINCOS_OVER_110 = 256; // need to be a power of 2
 const float sincosScale = SINCOS_OVER_110/M_PI_2*90./110.;
 static float precalc_sin[SINCOS_OVER_110];
@@ -1106,7 +1108,23 @@ void IpsDisplay::drawTemperature( int x, int y, float t ) {
 	ucg->setColor( COLOR_WHITE );
 	ucg->setPrintPos(x-ucg->getStrWidth(s),y);
 	ucg->print(s);
-	ucg->setColor( COLOR_HEADER );
+	if( HAS_MPU_TEMP_CONTROL ){   // Color if T unit shows if MPU silicon temperature is locked, too high or too low
+		switch( MPU.getSiliconTempStatus() ){
+		case MPU_T_LOCKED:
+			ucg->setColor( COLOR_HEADER );
+			break;
+		case MPU_T_LOW:
+			ucg->setColor( COLOR_LBLUE );
+			break;
+		case MPU_T_HIGH:
+			ucg->setColor( COLOR_RED );
+			break;
+		default:
+			ucg->setColor( COLOR_HEADER );
+		}
+	}else{
+		ucg->setColor( COLOR_HEADER );
+	}
 	ucg->setPrintPos(x+3,y);
 	ucg->print(Units::TemperatureUnitStr(temperature_unit.get()));
 }
@@ -2070,11 +2088,13 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	// Temperature Value
-	if( (int)(temp*10) != tempalt && !(tick%12)) {
+	temp_status_t mputemp = MPU.getSiliconTempStatus();
+	if( (((int)(temp*10) != tempalt) || (mputemp != siliconTempStatusOld)) && !(tick%12)) {
         ucg->setClipRange(ulmode?15:5,1,120,100); // avoid overwriting thermometer
 		drawTemperature( ulmode?65:55, 25, temp );
         ucg->undoClipRange();
 		tempalt=(int)(temp*10);
+		siliconTempStatusOld = mputemp;
 	}
 
 	// WK-Indicator

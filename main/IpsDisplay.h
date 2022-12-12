@@ -109,6 +109,7 @@ private:
 	static char last_s[20];
 	static int  x_start;
 	static PolarIndicator* indicator;
+	static temp_status_t siliconTempStatusOld;
 
 	static void drawMC( float mc, bool large=false );
 	static void drawS2FMode( int x, int y, bool cruise );

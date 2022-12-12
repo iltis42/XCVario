@@ -102,4 +102,7 @@ extern vector_ijk gravity_vector;
 
 extern float mpu_target_temp;
 
+// There is no temperature control for XCV hardware < 23, GPIO Pin there is wired to CAN slope control
+#define HAS_MPU_TEMP_CONTROL (CAN && !CAN->hasSlopeSupport())
+
 #endif

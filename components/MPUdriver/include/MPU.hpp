@@ -255,7 +255,9 @@ class MPU
     void pwm_init();             // one time initialize of PMW subsystem
     int pi_control(int tick);    // PI control to regulate temperatured
     void temp_control(int tick);  // Tick hook
-
+    bool siliconTempLocked() { return( abs(mpu_t_delta) < 0.5); };
+    bool siliconTempLow() { return( mpu_t_delta < -0.5); };
+    bool siliconTempHigh() { return( mpu_t_delta > 0.5); };
 
  protected:
     esp_err_t accelSelfTest(raw_axes_t& regularBias, raw_axes_t& selfTestBias, uint8_t* result);

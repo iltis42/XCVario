@@ -163,6 +163,7 @@ uint8_t g_col_header_light_r=161-g_col_background/4;
 uint8_t g_col_header_light_g=168-g_col_background/3;
 uint8_t g_col_header_light_b=g_col_highlight;
 uint16_t gear_warning_holdoff = 0;
+uint8_t gyro_flash_savings=0;
 
 t_global_flags gflags = { true, false, false, false, false, false, false, false, false, false, false, false, false };
 
@@ -451,7 +452,7 @@ static void grabMPU()
 				for(int i=0; i<3; i++){
 					cur_gyro_bias[i] += gyroRaw[i];
 				}
-				if( num_gyro_samples > NUM_GYRO_SAMPLES ){  // every couple of minutes recalculate offset
+				if( num_gyro_samples > NUM_GYRO_SAMPLES ){  // every 5 minute (3000 samples) recalculate offset
 					mpud::raw_axes_t gb;
 					mpud::raw_axes_t gbo = MPU.getGyroOffset();
 					ESP_LOGI(FNAME, "Old gyro offset: X:%d Y:%d Z:%d",  gbo.x, gbo.y, gbo.z );
@@ -461,6 +462,14 @@ static void grabMPU()
 					}
 					ESP_LOGI(FNAME, "Set new gyro offset: X:%d Y:%d Z:%d",  gb.x, gb.y, gb.z );
 					MPU.setGyroOffset( gb );
+					// if we have temperature control, we check if control is locked, otherwise we have no idea but anyway takeover better offset
+					if( (HAS_MPU_TEMP_CONTROL && MPU.siliconTempLocked()) || !HAS_MPU_TEMP_CONTROL ){
+						if( (abs( gbo.x-gb.x ) > 1 || abs( gbo.y-gb.y ) > 1 || abs( gbo.z-gb.z ) > 1) && gyro_flash_savings<5 ){
+							gyro_bias.set( gb );
+							ESP_LOGI(FNAME,"Constant T: Store in new offset also in Flash, Nr: %d", gyro_flash_savings );
+							gyro_flash_savings++;
+						}
+					}
 					num_gyro_samples = 0;
 				}
 			}
@@ -539,7 +548,7 @@ void clientLoop(void *pvParameters)
 			}
 			dynamicP = Atmosphere::kmh2pascal(ias.get());
 			tas = Atmosphere::TAS2( ias.get(), altitude.get(), OAT.get() );
-			if( gflags.haveMPU && CAN && !CAN->hasSlopeSupport() ){
+			if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL ){
 				MPU.temp_control( ccount );
 			}
 			if( gflags.haveMPU ) {
@@ -736,7 +745,7 @@ void readSensors(void *pvParameters){
 			}
 		}
 		lazyNvsCommit();
-		if( gflags.haveMPU && CAN && !CAN->hasSlopeSupport() ){
+		if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL ){
 			// ESP_LOGI(FNAME,"MPU temp control; T=%.2f", MPU.getTemperature() );
 			MPU.temp_control( count );
 		}
@@ -1462,7 +1471,7 @@ void system_startup(void *args){
 	else {
 		Rotary.begin( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);
 		gpio_pullup_en( GPIO_NUM_34 );
-		if( gflags.haveMPU && CAN && !CAN->hasSlopeSupport() && !gflags.mpu_pwm_initalized  ){ // series 2023 does not have slope support on CAN bus but MPU temperature control
+		if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL && !gflags.mpu_pwm_initalized  ){ // series 2023 does not have slope support on CAN bus but MPU temperature control
 			MPU.pwm_init();
 			gflags.mpu_pwm_initalized = true;
 		}

@@ -251,6 +251,12 @@ class MPU
     esp_err_t sensors(sensors_t* sensors, size_t extsens_len = 0);
     //! \}
 
+    // Temperature regulator by PI control
+    void pwm_init();             // one time initialize of PMW subsystem
+    int pi_control(int tick);    // PI control to regulate temperatured
+    void temp_control(int tick);  // Tick hook
+
+
  protected:
     esp_err_t accelSelfTest(raw_axes_t& regularBias, raw_axes_t& selfTestBias, uint8_t* result);
     esp_err_t gyroSelfTest(raw_axes_t& regularBias, raw_axes_t& selfTestBias, uint8_t* result);
@@ -261,6 +267,10 @@ class MPU
     mpu_addr_handle_t addr; /*!< I2C address / SPI device handle */
     uint8_t buffer[16];     /*!< Commom buffer for temporary data */
     esp_err_t err;          /*!< Holds last error code */
+
+    float mpu_t_delta = 0;
+    float mpu_t_delta_i = 0;
+    float mpu_heat_pwm = 0;
 };
 
 }  // namespace mpud

@@ -117,6 +117,11 @@ int restore_config(int len, char *data){
 	return( SetupCommon::restoreConfigChanges( len, data ) );
 };
 
+void chg_mpu_target(){
+	mpu_target_temp = mpu_temperature.get();
+};
+
+
 SetupNG<float>          MC(  "MacCready", 0.5, true, SYNC_BIDIR, PERSISTENT, change_mc, UNIT_VARIO );
 SetupNG<float>  		QNH( "QNH", 1013.25, true, SYNC_BIDIR, PERSISTENT, 0, UNIT_QNH );
 SetupNG<float> 			polar_wingload( "POLAR_WINGLOAD", 34.40, true, SYNC_FROM_MASTER, PERSISTENT, change_ballast );
@@ -372,5 +377,5 @@ SetupNG<t_wireless_id>  user_wlid("WLID", { 0 } );
 mpud::raw_axes_t zero_bias;
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );
 SetupNG<mpud::raw_axes_t>	accl_bias("ACCL_BIAS", zero_bias );
-SetupNG<float>              mpu_temperature("MPUTEMP", 45.0 );    // default for AHRS chip temperature (XCV 2023)
+SetupNG<float>              mpu_temperature("MPUTEMP", 45.0, true, SYNC_FROM_MASTER, PERSISTENT, chg_mpu_target );    // default for AHRS chip temperature (XCV 2023)
 

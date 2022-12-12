@@ -381,6 +381,7 @@ bool CANbus::selfTest( bool rs ){
 		char tx[10] = { "1827364" };
 		int len = strlen(tx);
 		// there might be data from a remote device
+		twai_clear_receive_queue();
 		if( !sendData( id, tx,len, 1 ) ){
 			ESP_LOGW(FNAME,"CAN bus selftest TX FAILED");
 			recover();

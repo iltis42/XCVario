@@ -73,7 +73,6 @@
 #include "DataMonitor.h"
 #include "AdaptUGC.h"
 #include "CenterAid.h"
-#include "driver/ledc.h"
 
 // #include "sound.h"
 
@@ -185,6 +184,8 @@ int flarm_alarm_holdtime=0;
 int the_can_mode = CAN_MODE_MASTER;
 int active_screen = 0;  // 0 = Vario
 
+float mpu_target_temp=45.0;
+
 AdaptUGC *egl = 0;
 
 #define GYRO_FS (mpud::GYRO_FS_250DPS)
@@ -193,69 +194,6 @@ float getTAS() { return tas; };
 
 bool do_factory_reset() {
 	return( SetupCommon::factoryReset() );
-}
-
-
-static float mpu_t_delta = 0;
-static float mpu_t_delta_i = 0;
-static float mpu_heat_pwm = 0;
-
-int mpu_temp_control( int tick_count ){
-
-	float temp = MPU.getTemperature();
-	mpu_t_delta = temp - mpu_temperature.get();
-	float mpu_t_delta_p = -mpu_t_delta*20.0;
-	mpu_heat_pwm = mpu_t_delta_p;             // P part
-	mpu_t_delta_i -= (mpu_t_delta)/3.0;	  // I part
-	if( mpu_t_delta_i > 255 )
-		mpu_t_delta_i = 255;
-	if( mpu_t_delta_i < 0 )
-		mpu_t_delta_i = 0;
-	mpu_heat_pwm += mpu_t_delta_i;
-	if( mpu_heat_pwm > 255 )
-		mpu_heat_pwm = 255;
-	if( mpu_heat_pwm < 0 )
-		mpu_heat_pwm = 0;
-
-	// ESP_LOGI(FNAME,"mpu_temp_control %d  300:%d td:%f", tick_count, !(tick_count%300), mpu_t_delta );
-
-	if( !(tick_count%300) && abs(mpu_t_delta) > 1.0 ){
-		ESP_LOGW(FNAME,"Warning MPU T deviation > 1°: T=%.1f Delta= %.1f P=%.2f I=%.2f, PWM=%d", temp, mpu_t_delta, mpu_t_delta_p, mpu_t_delta_i, (int)rint(mpu_heat_pwm) );
-	}
-	return mpu_heat_pwm;
-}
-
-void mpu_pwm_init(){
-	if( !gflags.mpu_pwm_initalized ){
-		ESP_LOGI(FNAME,"Initialize AHRS heating PWM control");
-		ledc_timer_config_t pwm_timer = {
-				.speed_mode = LEDC_HIGH_SPEED_MODE,
-				.duty_resolution = LEDC_TIMER_8_BIT,
-				.timer_num  = LEDC_TIMER_1,
-				.freq_hz = 500,
-				.clk_cfg = LEDC_AUTO_CLK };
-		ledc_channel_config_t pwm_ch = {
-				.gpio_num = GPIO_NUM_2,
-				.speed_mode = LEDC_HIGH_SPEED_MODE,
-				.channel = LEDC_CHANNEL_1,
-				.intr_type = LEDC_INTR_DISABLE,
-				.timer_sel = LEDC_TIMER_1,
-				.duty = 0, .hpoint = 0 };
-		ledc_channel_config(&pwm_ch);
-		ledc_timer_config(&pwm_timer);
-		gflags.mpu_pwm_initalized = true;
-	}
-}
-
-
-void MPU_temp_control(int count) {// MPU temperature PI control
-	if( gflags.haveMPU && !CAN->hasSlopeSupport() ){ // series 2023 does not have slope support on CAN bus but MPU temperature control
-		if( mpu_temperature.get() >= 0.0 ){ // MPU T = -1.0 switches off feature
-			int pwm=mpu_temp_control(count);
-			ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_1, pwm );
-			ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_1);
-		}
-	}
 }
 
 void drawDisplay(void *pvParameters){
@@ -480,7 +418,8 @@ static void grabMPU()
 
 	accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
 	gyroDPS = mpud::gyroDegPerSec(gyroRaw, GYRO_FS);  // raw data to º/s
-	// ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f  gyro X: %+.2f Y:%+.2f Z:%+.2f ABx:%d ABy:%d, ABz=%d\n", -accelG[2], accelG[1], accelG[0] ,  gyroDPS.x, gyroDPS.y, gyroDPS.z, accl_bias.get().x, accl_bias.get().y, accl_bias.get().z );
+	mpud::raw_axes_t gbo = MPU.getGyroOffset();
+	ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f  gyro X: %+.2f Y:%+.2f Z:%+.2f ABx:%d ABy:%d, ABz=%d\n", -accelG[2], accelG[1], accelG[0] ,  gyroDPS.x, gyroDPS.y, gyroDPS.z, gbo.x, gbo.y, gbo.z );
 	// if( !(count%60) ){
 	//	ESP_LOGI(FNAME, "Gyro X:%+.2f Y:%+.2f Z:%+.2f T=%f\n", gyroDPS.x, gyroDPS.y, gyroDPS.z, MPU.getTemperature());
 	// }
@@ -600,7 +539,9 @@ void clientLoop(void *pvParameters)
 			}
 			dynamicP = Atmosphere::kmh2pascal(ias.get());
 			tas = Atmosphere::TAS2( ias.get(), altitude.get(), OAT.get() );
-			MPU_temp_control( ccount );
+			if( gflags.haveMPU && CAN && !CAN->hasSlopeSupport() ){
+				MPU.temp_control( ccount );
+			}
 			if( gflags.haveMPU ) {
 				grabMPU();
 			}
@@ -795,7 +736,10 @@ void readSensors(void *pvParameters){
 			}
 		}
 		lazyNvsCommit();
-		MPU_temp_control( count );
+		if( gflags.haveMPU && CAN && !CAN->hasSlopeSupport() ){
+			// ESP_LOGI(FNAME,"MPU temp control; T=%.2f", MPU.getTemperature() );
+			MPU.temp_control( count );
+		}
 		esp_task_wdt_reset();
 		if( uxTaskGetStackHighWaterMark( bpid ) < 512 )
 			ESP_LOGW(FNAME,"Warning sensor task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );
@@ -1010,6 +954,7 @@ void system_startup(void *args){
 	if( err == ESP_OK ){
 		hardwareRevision.set(3);  // wow, there is MPU6050 gyro and acceleration sensor
 		gflags.haveMPU = true;
+		mpu_target_temp = mpu_temperature.get();
 		ESP_LOGI( FNAME,"MPU initialize");
 		MPU.initialize();  // this will initialize the chip and set default configurations
 		MPU.setSampleRate(50);  // in (Hz)
@@ -1517,8 +1462,9 @@ void system_startup(void *args){
 	else {
 		Rotary.begin( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);
 		gpio_pullup_en( GPIO_NUM_34 );
-		if( gflags.haveMPU && !CAN->hasSlopeSupport() ){ // series 2023 does not have slope support on CAN bus but MPU temperature control
-			mpu_pwm_init();
+		if( gflags.haveMPU && CAN && !CAN->hasSlopeSupport() && !gflags.mpu_pwm_initalized  ){ // series 2023 does not have slope support on CAN bus but MPU temperature control
+			MPU.pwm_init();
+			gflags.mpu_pwm_initalized = true;
 		}
 	}
 	delay( 100 );
@@ -1554,7 +1500,7 @@ void system_startup(void *args){
 			display->clear();
 			display->writeText( 1, "Wait for CAN Master" );
 			while( 1 ) {
-				if( CAN->connectedXCV() ){
+				if( CAN && CAN->connectedXCV() ){
 					display->writeText( 3, "Master XCVario found" );
 					display->writeText( 4, "Now start, sync" );
 					delay( 5000 );

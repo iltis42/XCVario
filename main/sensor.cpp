@@ -136,8 +136,8 @@ mpud::float_axes_t accelG;
 mpud::float_axes_t gyroDPS;
 mpud::float_axes_t accelG_Prev;
 mpud::float_axes_t gyroDPS_Prev;
-#define MAXDRIFT 2               // °/s
-#define NUM_GYRO_SAMPLES 3000    // 10 per second -> 5 minutes, so T has been settled after power on
+#define MAXDRIFT 2                // °/s maximum drift that is automatically compensated on ground
+#define NUM_GYRO_SAMPLES 3000     // 10 per second -> 5 minutes, so T has been settled after power on
 static uint16_t num_gyro_samples = 0;
 static int32_t cur_gyro_bias[3];
 
@@ -420,7 +420,7 @@ static void grabMPU()
 	accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
 	gyroDPS = mpud::gyroDegPerSec(gyroRaw, GYRO_FS);  // raw data to º/s
 	mpud::raw_axes_t gbo = MPU.getGyroOffset();
-	ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f  gyro X: %+.2f Y:%+.2f Z:%+.2f ABx:%d ABy:%d, ABz=%d\n", -accelG[2], accelG[1], accelG[0] ,  gyroDPS.x, gyroDPS.y, gyroDPS.z, gbo.x, gbo.y, gbo.z );
+	// ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f  gyro X: %+.2f Y:%+.2f Z:%+.2f ABx:%d ABy:%d ABz=%d\n", -accelG[2], accelG[1], accelG[0] ,  gyroDPS.x, gyroDPS.y, gyroDPS.z, gbo.x, gbo.y, gbo.z );
 	// if( !(count%60) ){
 	//	ESP_LOGI(FNAME, "Gyro X:%+.2f Y:%+.2f Z:%+.2f T=%f\n", gyroDPS.x, gyroDPS.y, gyroDPS.z, MPU.getTemperature());
 	// }
@@ -455,18 +455,20 @@ static void grabMPU()
 				if( num_gyro_samples > NUM_GYRO_SAMPLES ){  // every 5 minute (3000 samples) recalculate offset
 					mpud::raw_axes_t gb;
 					mpud::raw_axes_t gbo = MPU.getGyroOffset();
-					ESP_LOGI(FNAME, "Old gyro offset: X:%d Y:%d Z:%d",  gbo.x, gbo.y, gbo.z );
+					// ESP_LOGI(FNAME, "Old gyro offset: X:%d Y:%d Z:%d",  gbo.x, gbo.y, gbo.z );
 					for(int i=0; i<3; i++){
 						gb[i]  = gbo[i] -(( (cur_gyro_bias)[i]/(NUM_GYRO_SAMPLES*4)) ); // translate to 1000 DPS
 						cur_gyro_bias[i] = 0;
 					}
-					ESP_LOGI(FNAME, "Set new gyro offset: X:%d Y:%d Z:%d",  gb.x, gb.y, gb.z );
-					MPU.setGyroOffset( gb );
+					if( (abs( gbo.x-gb.x ) > 0) || (abs( gbo.y-gb.y ) > 0) || (abs( gbo.z-gb.z ) > 0)  ){  // any delta is directly set in RAM
+						ESP_LOGI(FNAME,"Set new gyro offset X/Y/Z: OLD:%d/%d/%d NEW:%d/%d/%d", gbo.x, gbo.y, gbo.z, gb.x, gb.y, gb.z );
+						MPU.setGyroOffset( gb );
+					}
 					// if we have temperature control, we check if control is locked, otherwise we have no idea but anyway takeover better offset
 					if( (HAS_MPU_TEMP_CONTROL && (MPU.getSiliconTempStatus() == MPU_T_LOCKED)) || !HAS_MPU_TEMP_CONTROL ){
-						if( (abs( gbo.x-gb.x ) > 1 || abs( gbo.y-gb.y ) > 1 || abs( gbo.z-gb.z ) > 1) && gyro_flash_savings<5 ){
+						if( (abs( gbo.x-gb.x ) > 1 || abs( gbo.y-gb.y ) > 1 || abs( gbo.z-gb.z ) > 1) && gyro_flash_savings<5 ){ // Set only changes > 1 in Flash and only 5 times per boot
 							gyro_bias.set( gb );
-							ESP_LOGI(FNAME,"Constant T: Store in new offset also in Flash, Nr: %d", gyro_flash_savings );
+							ESP_LOGI(FNAME,"Store the new offset also in Flash, store number: %d", gyro_flash_savings );
 							gyro_flash_savings++;
 						}
 					}

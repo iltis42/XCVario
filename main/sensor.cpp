@@ -455,11 +455,11 @@ static void grabMPU()
 				if( num_gyro_samples > NUM_GYRO_SAMPLES ){  // every 5 minute (3000 samples) recalculate offset
 					mpud::raw_axes_t gb;
 					mpud::raw_axes_t gbo = MPU.getGyroOffset();
-					// ESP_LOGI(FNAME, "Old gyro offset: X:%d Y:%d Z:%d",  gbo.x, gbo.y, gbo.z );
 					for(int i=0; i<3; i++){
 						gb[i]  = gbo[i] -(( (cur_gyro_bias)[i]/(NUM_GYRO_SAMPLES*4)) ); // translate to 1000 DPS
 						cur_gyro_bias[i] = 0;
 					}
+					// ESP_LOGI(FNAME,"New gyro offset X/Y/Z: OLD:%d/%d/%d NEW:%d/%d/%d", gbo.x, gbo.y, gbo.z, gb.x, gb.y, gb.z );
 					if( (abs( gbo.x-gb.x ) > 0) || (abs( gbo.y-gb.y ) > 0) || (abs( gbo.z-gb.z ) > 0)  ){  // any delta is directly set in RAM
 						ESP_LOGI(FNAME,"Set new gyro offset X/Y/Z: OLD:%d/%d/%d NEW:%d/%d/%d", gbo.x, gbo.y, gbo.z, gb.x, gb.y, gb.z );
 						MPU.setGyroOffset( gb );
@@ -538,6 +538,9 @@ void clientLoop(void *pvParameters)
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		ccount++;
 		aTE += (te_vario.get() - aTE)* (1/(10*vario_av_delay.get()));
+		if( gflags.haveMPU ) {
+			grabMPU();
+		}
 		if( !(ccount%5) )
 		{
 			double tmpalt = altitude.get(); // get pressure from altitude
@@ -552,9 +555,6 @@ void clientLoop(void *pvParameters)
 			tas = Atmosphere::TAS2( ias.get(), altitude.get(), OAT.get() );
 			if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL ){
 				MPU.temp_control( ccount );
-			}
-			if( gflags.haveMPU ) {
-				grabMPU();
 			}
 			if( accelG[0] > gload_pos_max.get() ){
 				gload_pos_max.set( (float)accelG[0] );

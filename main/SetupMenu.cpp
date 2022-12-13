@@ -635,6 +635,93 @@ void SetupMenu::escape(){
 	}
 }
 
+
+void SetupMenu::vario_menu_create_damping( MenuEntry *top ){
+	SetupMenuValFloat * vda = new SetupMenuValFloat( 	"Damping", "sec", 2.0, 10.0, 0.1, 0, false, &vario_delay );
+	vda->setHelp(PROGMEM"Response time, time constant of Vario low pass kalman filter");
+	top->addEntry( vda );
+
+	SetupMenuValFloat * vdav = new SetupMenuValFloat( 	"Averager", "sec", 2.0, 60.0,	0.1, 0, false, &vario_av_delay );
+	vdav->setHelp(PROGMEM"Response time, time constant of digital Average Vario Display");
+	top->addEntry( vdav );
+}
+
+void SetupMenu::vario_menu_create_meanclimb( MenuEntry *top ){
+	SetupMenuValFloat * vccm = new SetupMenuValFloat( "Minimum climb", "",	0.0, 2.0, 0.1, 0, false, &core_climb_min );
+	vccm->setHelp(PROGMEM"Minimum climb rate that counts for arithmetic mean climb value");
+	top->addEntry( vccm );
+
+	SetupMenuValFloat * vcch = new SetupMenuValFloat( "Duration", "min", 1, 300, 1, 0, false, &core_climb_history );
+	vcch->setHelp(PROGMEM"Duration in minutes where samples for mean climb value are regarded, default is last 3 thermals or 45 min");
+	top->addEntry( vcch );
+
+	SetupMenuValFloat * vcp = new SetupMenuValFloat( "Cycle", "sec", 60, 300, 1, 0, false, &core_climb_period );
+	vcp->setHelp(PROGMEM"Cycle in number of seconds when mean climb value is recalculated, default is every 60 seconds");
+	top->addEntry( vcp);
+
+	SetupMenuValFloat * vcmc = new SetupMenuValFloat( "Major Change", "m/s", 0.1, 5.0, 0.1, 0, false, &mean_climb_major_change );
+	vcmc->setHelp(PROGMEM"Change in mean climb during last cycle (minute), that results in a major change indication with (arrow symbol)");
+	top->addEntry( vcmc);
+}
+
+void SetupMenu::vario_menu_create_s2f( MenuEntry *top ){
+	SetupMenuValFloat * vds2 = new SetupMenuValFloat( "Damping", "sec", 0.10001, 10.0, 0.1, 0, false, &s2f_delay );
+	vds2->setHelp(PROGMEM"Time constant of S2F low pass filter");
+	top->addEntry( vds2 );
+
+	SetupMenuSelect * blck = new SetupMenuSelect( "Blockspeed", false, 0 , true, &s2f_blockspeed );
+	blck->setHelp(PROGMEM"With Blockspeed enabled, vertical movement of airmass or G-load is not considered for speed to fly (S2F) calculation");
+	blck->addEntry( "DISABLE");
+	blck->addEntry( "ENABLE");
+	top->addEntry( blck );
+
+	SetupMenuSelect * s2fmod = new SetupMenuSelect( "S2F Mode", false, 0 , true, &s2f_switch_mode );
+	s2fmod->setHelp( PROGMEM"Select source for S2F <-> Vario change, that supports multiple ways", 230 );
+	s2fmod->addEntry( "Vario fix");
+	s2fmod->addEntry( "Cruise fix");
+	s2fmod->addEntry( "Switch");
+	s2fmod->addEntry( "AutoSpeed");
+	s2fmod->addEntry( "External");
+	s2fmod->addEntry( "Flap");
+	s2fmod->addEntry( "AHRS-Gyro");
+	top->addEntry( s2fmod );
+
+	SetupMenuValFloat * autospeed = new SetupMenuValFloat( "S2F AutoSpeed", "", 20.0, 250.0, 1.0, update_s2f_speed, false, &s2f_speed );
+	top->addEntry( autospeed );
+	autospeed->setHelp(PROGMEM"Transition speed in AutoSpeed mode to switch Vario <-> Cruise (S2F) mode");
+
+	SetupMenuValFloat * s2f_flap = new SetupMenuValFloat( "S2F Flap Pos", "", -3, 3, 0.1, 0 , false, &s2f_flap_pos );
+	top->addEntry( s2f_flap );
+	s2f_flap->setHelp(PROGMEM"Precise flap position in Flap mode to switch Vario <-> Cruise (S2F) mode");
+
+	SetupMenuValFloat * s2f_gyro = new SetupMenuValFloat( "S2F AHRS Deg", "°", 0, 100, 1, 0 , false, &s2f_gyro_deg );
+	top->addEntry( s2f_gyro );
+	s2f_gyro->setHelp(PROGMEM"Attitude change in degree per second to switch Vario <-> Cruise (S2F) mode");
+
+	SetupMenuValFloat * s2fhy = new SetupMenuValFloat( "Hysteresis", "",	-20, 20, 1, 0, false, &s2f_hysteresis );
+	s2fhy->setHelp(PROGMEM"Hysteresis for auto S2F transition at autospeed +- this value");
+	top->addEntry( s2fhy );
+
+	SetupMenuSelect * s2fnc = new SetupMenuSelect( "Arrow Color", false, 0 , true, &s2f_arrow_color );
+	s2fnc->setHelp( PROGMEM"Select color of the S2F arrow's when painted in Up/Down position" );
+	s2fnc->addEntry( "White/White");
+	s2fnc->addEntry( "Blue/Blue");
+	s2fnc->addEntry( "Green/Red");
+	top->addEntry( s2fnc );
+}
+
+void SetupMenu::vario_menu_create_ec( MenuEntry *top ){
+	SetupMenuSelect * enac = new SetupMenuSelect( "eCompensation", false, 0 , false, &te_comp_enable );
+	enac->setHelp(PROGMEM"Enable/Disable electronic TE compensation option; Enable only when TE pressure is connected to ST (static) pressure");
+	enac->addEntry( "DISABLE");
+	enac->addEntry( "ENABLE");
+	top->addEntry( enac );
+
+	SetupMenuValFloat * elca = new SetupMenuValFloat( "Adjustment", "%",	-100, 100, 0.1, 0, false, &te_comp_adjust );
+	elca->setHelp(PROGMEM"Adjustment option for electronic compensation in %. This affects in % the energy altitude calculated from airspeed");
+	top->addEntry( elca );
+};
+
 void SetupMenu::vario_menu_create( MenuEntry *vae ){
 	ESP_LOGI(FNAME,"SetupMenu::vario_menu_create( %p )", vae );
 
@@ -681,95 +768,21 @@ void SetupMenu::vario_menu_create( MenuEntry *vae ){
 	vae->addEntry(scrcaid,ncolor);
 
 	SetupMenu * vdamp = new SetupMenu( "Vario Damping" );
-	MenuEntry* vdampm = vae->addEntry( vdamp, scrcaid );
-
-	SetupMenuValFloat * vda = new SetupMenuValFloat( 	"Damping", "sec", 2.0, 10.0, 0.1, 0, false, &vario_delay );
-	vda->setHelp(PROGMEM"Response time, time constant of Vario low pass kalman filter");
-	vdampm->addEntry( vda );
-
-	SetupMenuValFloat * vdav = new SetupMenuValFloat( 	"Averager", "sec", 2.0, 60.0,	0.1, 0, false, &vario_av_delay );
-	vdav->setHelp(PROGMEM"Response time, time constant of digital Average Vario Display");
-	vdampm->addEntry( vdav );
+	vae->addEntry( vdamp, scrcaid );
+	vdamp->addCreator( vario_menu_create_damping );
 
 	SetupMenu * meanclimb = new SetupMenu( "Mean Climb" );
 	meanclimb->setHelp(PROGMEM"Mean Climb or MC recommendation by green/red rhombus displayed in vario scale adjustment");
-	MenuEntry* meanclimbm = vae->addEntry( meanclimb, vdamp);
-
-	SetupMenuValFloat * vccm = new SetupMenuValFloat( "Minimum climb", "",	0.0, 2.0, 0.1, 0, false, &core_climb_min );
-	vccm->setHelp(PROGMEM"Minimum climb rate that counts for arithmetic mean climb value");
-	meanclimbm->addEntry( vccm );
-
-	SetupMenuValFloat * vcch = new SetupMenuValFloat( "Duration", "min", 1, 300, 1, 0, false, &core_climb_history );
-	vcch->setHelp(PROGMEM"Duration in minutes where samples for mean climb value are regarded, default is last 3 thermals or 45 min");
-	meanclimbm->addEntry( vcch );
-
-	SetupMenuValFloat * vcp = new SetupMenuValFloat( "Cycle", "sec", 60, 300, 1, 0, false, &core_climb_period );
-	vcp->setHelp(PROGMEM"Cycle in number of seconds when mean climb value is recalculated, default is every 60 seconds");
-	meanclimbm->addEntry( vcp);
-
-	SetupMenuValFloat * vcmc = new SetupMenuValFloat( "Major Change", "m/s", 0.1, 5.0, 0.1, 0, false, &mean_climb_major_change );
-	vcmc->setHelp(PROGMEM"Change in mean climb during last cycle (minute), that results in a major change indication with (arrow symbol)");
-	meanclimbm->addEntry( vcmc);
+	vae->addEntry( meanclimb, vdamp);
+	meanclimb->addCreator( vario_menu_create_meanclimb );
 
 	SetupMenu * s2fs = new SetupMenu( "S2F Settings" );
 	MenuEntry* s2fse = vae->addEntry( s2fs, meanclimb );
-
-	SetupMenuValFloat * vds2 = new SetupMenuValFloat( "Damping", "sec", 0.10001, 10.0, 0.1, 0, false, &s2f_delay );
-	vds2->setHelp(PROGMEM"Time constant of S2F low pass filter");
-	s2fse->addEntry( vds2 );
-
-	SetupMenuSelect * blck = new SetupMenuSelect( "Blockspeed", false, 0 , true, &s2f_blockspeed );
-	blck->setHelp(PROGMEM"With Blockspeed enabled, vertical movement of airmass or G-load is not considered for speed to fly (S2F) calculation");
-	blck->addEntry( "DISABLE");
-	blck->addEntry( "ENABLE");
-	s2fse->addEntry( blck );
-
-	SetupMenuSelect * s2fmod = new SetupMenuSelect( "S2F Mode", false, 0 , true, &s2f_switch_mode );
-	s2fmod->setHelp( PROGMEM"Select source for S2F <-> Vario change, that supports multiple ways", 230 );
-	s2fmod->addEntry( "Vario fix");
-	s2fmod->addEntry( "Cruise fix");
-	s2fmod->addEntry( "Switch");
-	s2fmod->addEntry( "AutoSpeed");
-	s2fmod->addEntry( "External");
-	s2fmod->addEntry( "Flap");
-	s2fmod->addEntry( "AHRS-Gyro");
-	s2fse->addEntry( s2fmod );
-
-	SetupMenuValFloat * autospeed = new SetupMenuValFloat( "S2F AutoSpeed", "", 20.0, 250.0, 1.0, update_s2f_speed, false, &s2f_speed );
-	s2fse->addEntry( autospeed );
-	autospeed->setHelp(PROGMEM"Transition speed in AutoSpeed mode to switch Vario <-> Cruise (S2F) mode");
-
-	SetupMenuValFloat * s2f_flap = new SetupMenuValFloat( "S2F Flap Pos", "", -3, 3, 0.1, 0 , false, &s2f_flap_pos );
-	s2fse->addEntry( s2f_flap );
-	s2f_flap->setHelp(PROGMEM"Precise flap position in Flap mode to switch Vario <-> Cruise (S2F) mode");
-
-	SetupMenuValFloat * s2f_gyro = new SetupMenuValFloat( "S2F AHRS Deg", "°", 0, 100, 1, 0 , false, &s2f_gyro_deg );
-	s2fse->addEntry( s2f_gyro );
-	s2f_gyro->setHelp(PROGMEM"Attitude change in degree per second to switch Vario <-> Cruise (S2F) mode");
-
-	SetupMenuValFloat * s2fhy = new SetupMenuValFloat( "Hysteresis", "",	-20, 20, 1, 0, false, &s2f_hysteresis );
-	s2fhy->setHelp(PROGMEM"Hysteresis for auto S2F transition at autospeed +- this value");
-	s2fse->addEntry( s2fhy );
-
-	SetupMenuSelect * s2fnc = new SetupMenuSelect( "Arrow Color", false, 0 , true, &s2f_arrow_color );
-	s2fnc->setHelp( PROGMEM"Select color of the S2F arrow's when painted in Up/Down position" );
-	s2fnc->addEntry( "White/White");
-	s2fnc->addEntry( "Blue/Blue");
-	s2fnc->addEntry( "Green/Red");
-	s2fse->addEntry( s2fnc );
-
+	s2fs->addCreator( vario_menu_create_s2f );
 
 	SetupMenu * elco = new SetupMenu( "Electronic Compensation" );
 	vae->addEntry( elco, s2fs );
-	SetupMenuSelect * enac = new SetupMenuSelect( "eCompensation", false, 0 , false, &te_comp_enable );
-	enac->setHelp(PROGMEM"Enable/Disable electronic TE compensation option; Enable only when TE pressure is connected to ST (static) pressure");
-	enac->addEntry( "DISABLE");
-	enac->addEntry( "ENABLE");
-	elco->addEntry( enac );
-
-	SetupMenuValFloat * elca = new SetupMenuValFloat( "Adjustment", "%",	-100, 100, 0.1, 0, false, &te_comp_adjust );
-	elca->setHelp(PROGMEM"Adjustment option for electronic compensation in %. This affects in % the energy altitude calculated from airspeed");
-	elco->addEntry( elca );
+	elco->addCreator( vario_menu_create_ec );
 }
 
 void SetupMenu::audio_menu_create( MenuEntry *audio ){

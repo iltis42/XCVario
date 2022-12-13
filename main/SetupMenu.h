@@ -36,6 +36,11 @@ public:
 	static bool focus;
 	static gpio_num_t getGearWarningIO();
 	static void vario_menu_create( MenuEntry *top );
+	static void vario_menu_create_damping( MenuEntry *top );
+	static void vario_menu_create_meanclimb( MenuEntry *top );
+	static void vario_menu_create_s2f( MenuEntry *top );
+	static void vario_menu_create_ec( MenuEntry *top );
+
 	static void audio_menu_create( MenuEntry *top );
 	static void glider_menu_create( MenuEntry *top );
 	static void options_menu_create( MenuEntry *top );

@@ -47,6 +47,8 @@ public:
 	static void audio_menu_create_deadbands( MenuEntry *top );
 
 	static void glider_menu_create( MenuEntry *top );
+	static void glider_menu_create_polarpoints( MenuEntry *top );
+
 	static void options_menu_create( MenuEntry *top );
 	static void system_menu_create( MenuEntry *top );
 };

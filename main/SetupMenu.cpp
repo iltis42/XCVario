@@ -902,6 +902,30 @@ void SetupMenu::audio_menu_create( MenuEntry *audio ){
 	audio->addEntry( amspvol );
 }
 
+void SetupMenu::glider_menu_create_polarpoints( MenuEntry *top ){
+	SetupMenuValFloat * wil = new SetupMenuValFloat( "Ref Wingload", "kg/m2", 10.0, 100.0, 0.1, 0, false, &polar_wingload );
+	wil->setHelp(PROGMEM"Wingload that corresponds to the 3 value pairs for speed/sink of polar");
+	top->addEntry( wil );
+	SetupMenuValFloat * pov1 = new SetupMenuValFloat( "Speed 1", "km/h", 50.0, 120.0, 1, 0, false, &polar_speed1);
+	pov1->setHelp(PROGMEM"Speed 1, near to minimum sink from polar e.g. 80 km/h");
+	top->addEntry( pov1 );
+	SetupMenuValFloat * pos1 = new SetupMenuValFloat( "Sink  1", "m/s", -3.0, 0.0, 0.01, 0, false, &polar_sink1 );
+	pos1->setHelp(PROGMEM"Sink indication at Speed 1 from polar");
+	top->addEntry( pos1 );
+	SetupMenuValFloat * pov2 = new SetupMenuValFloat( "Speed 2", "km/h", 70.0, 180.0, 1, 0, false, &polar_speed2 );
+	pov2->setHelp(PROGMEM"Speed 2 for a moderate cruise from polar e.g. 120 km/h");
+	top->addEntry( pov2 );
+	SetupMenuValFloat * pos2 = new SetupMenuValFloat( "Sink  2",  "m/s", -5.0, 0.0, 0.01, 0, false, &polar_sink2 );
+	pos2->setHelp(PROGMEM"Sink indication at Speed 2 from polar");
+	top->addEntry( pos2 );
+	SetupMenuValFloat * pov3 = new SetupMenuValFloat( "Speed 3", "km/h", 100.0, 250.0, 1, 0, false, &polar_speed3 );
+	pov3->setHelp(PROGMEM"Speed 3 for a fast cruise from polar e.g. 170 km/h");
+	top->addEntry( pov3 );
+	SetupMenuValFloat * pos3 = new SetupMenuValFloat( "Sink  3", "m/s", -6.0, 0.0, 0.01, 0, false, &polar_sink3 );
+	pos3->setHelp(PROGMEM"Sink indication at Speed 3 from polar");
+	top->addEntry( pos3 );
+}
+
 void SetupMenu::glider_menu_create( MenuEntry *poe ){
 	SetupMenuSelect * glt = new SetupMenuSelect( "Glider-Type",	false, polar_select, true, &glider_type );
 	poe->addEntry( glt );
@@ -914,28 +938,7 @@ void SetupMenu::glider_menu_create( MenuEntry *poe ){
 	SetupMenu * pa = new SetupMenu( "Polar Points" );
 	pa->setHelp(PROGMEM "Adjust polar at 3 points of selected polar in commonly used metric system for polars", 230 );
 	poe->addEntry( pa );
-
-	SetupMenuValFloat * wil = new SetupMenuValFloat( "Ref Wingload", "kg/m2", 10.0, 100.0, 0.1, 0, false, &polar_wingload );
-	wil->setHelp(PROGMEM"Wingload that corresponds to the 3 value pairs for speed/sink of polar");
-	pa->addEntry( wil );
-	SetupMenuValFloat * pov1 = new SetupMenuValFloat( "Speed 1", "km/h", 50.0, 120.0, 1, 0, false, &polar_speed1);
-	pov1->setHelp(PROGMEM"Speed 1, near to minimum sink from polar e.g. 80 km/h");
-	pa->addEntry( pov1 );
-	SetupMenuValFloat * pos1 = new SetupMenuValFloat( "Sink  1", "m/s", -3.0, 0.0, 0.01, 0, false, &polar_sink1 );
-	pos1->setHelp(PROGMEM"Sink indication at Speed 1 from polar");
-	pa->addEntry( pos1 );
-	SetupMenuValFloat * pov2 = new SetupMenuValFloat( "Speed 2", "km/h", 70.0, 180.0, 1, 0, false, &polar_speed2 );
-	pov2->setHelp(PROGMEM"Speed 2 for a moderate cruise from polar e.g. 120 km/h");
-	pa->addEntry( pov2 );
-	SetupMenuValFloat * pos2 = new SetupMenuValFloat( "Sink  2",  "m/s", -5.0, 0.0, 0.01, 0, false, &polar_sink2 );
-	pos2->setHelp(PROGMEM"Sink indication at Speed 2 from polar");
-	pa->addEntry( pos2 );
-	SetupMenuValFloat * pov3 = new SetupMenuValFloat( "Speed 3", "km/h", 100.0, 250.0, 1, 0, false, &polar_speed3 );
-	pov3->setHelp(PROGMEM"Speed 3 for a fast cruise from polar e.g. 170 km/h");
-	pa->addEntry( pov3 );
-	SetupMenuValFloat * pos3 = new SetupMenuValFloat( "Sink  3", "m/s", -6.0, 0.0, 0.01, 0, false, &polar_sink3 );
-	pos3->setHelp(PROGMEM"Sink indication at Speed 3 from polar");
-	pa->addEntry( pos3 );
+	pa->addCreator(glider_menu_create_polarpoints);
 
 	SetupMenuValFloat * maxbal = new SetupMenuValFloat(	"Max Ballast", "liters", 0, 500, 1, 0, false, &polar_max_ballast );
 	maxbal->setHelp(PROGMEM"Maximum water ballast for selected glider to allow sync from XCSoar using fraction of max ballast");

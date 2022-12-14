@@ -785,6 +785,65 @@ void SetupMenu::vario_menu_create( MenuEntry *vae ){
 	elco->addCreator( vario_menu_create_ec );
 }
 
+
+void SetupMenu::audio_menu_create_tonestyles( MenuEntry *top ){
+	SetupMenuValFloat * cf = new SetupMenuValFloat( "CenterFreq", "Hz", 200.0, 2000.0, 10.0, 0, false, &center_freq );
+	cf->setHelp(PROGMEM"Center frequency for Audio at zero Vario or zero S2F delta");
+	top->addEntry( cf );
+
+	SetupMenuValFloat * oc = new SetupMenuValFloat( "Octaves", "fold", 1.5, 4, 0.1, 0, false, &tone_var );
+	oc->setHelp(PROGMEM"Maximum tone frequency variation");
+	top->addEntry( oc );
+
+	SetupMenuSelect * dt = new SetupMenuSelect( "Dual Tone", true, 0 , true, &dual_tone );
+	dt->setHelp(PROGMEM"Select dual tone modue aka ilec sound, (di/da/di) or single tone (di/di/di) mode");
+	dt->addEntry( "Disable");       // 0
+	dt->addEntry( "Enable");        // 1
+	top->addEntry( dt );
+
+	SetupMenuValFloat * htv = new SetupMenuValFloat( "Dual Tone Pich", "%", 0, 50, 1.0, 0, false, &high_tone_var );
+	htv->setHelp(PROGMEM"Tone variation in Dual Tone mode, percent of frequency pitch up for second tone");
+	top->addEntry( htv );
+
+	SetupMenuSelect * tch = new SetupMenuSelect( "Chopping", false, eval_chop, true, &chopping_mode );
+	tch->setHelp(PROGMEM"Select tone chopping option on positive values for Vario and or S2F");
+	tch->addEntry( "Disabled");             // 0
+	tch->addEntry( "Vario only");           // 1
+	tch->addEntry( "S2F only");             // 2
+	tch->addEntry( "Vario and S2F");        // 3  default
+	top->addEntry( tch );
+
+	SetupMenuSelect * tchs = new SetupMenuSelect( "Chopping Style", false, 0 , true, &chopping_style );
+	tchs->setHelp(PROGMEM"Select style of tone chopping either hard, or soft with fadein/fadeout");
+	tchs->addEntry( "Soft");              // 0  default
+	tchs->addEntry( "Hard");              // 1
+	top->addEntry( tchs );
+
+	SetupMenuSelect * advarto = new SetupMenuSelect( "Variable Tone", false, 0 , true, &audio_variable_frequency );
+	advarto->setHelp(PROGMEM"Option to enable audio frequency updates within climbing tone intervals, disable keeps frequency constant");
+	advarto->addEntry( "Disable");       // 0
+	advarto->addEntry( "Enable");        // 1
+	top->addEntry( advarto );
+}
+
+void SetupMenu::audio_menu_create_deadbands( MenuEntry *top ){
+	SetupMenuValFloat * dbminlv = new SetupMenuValFloat( "Lower Vario", "", -5.0, 0, 0.1, 0 , false, &deadband_neg );
+	dbminlv->setHelp(PROGMEM"Lower deadband limit (sink) for Audio mute function when in Vario mode");
+	top->addEntry( dbminlv );
+
+	SetupMenuValFloat * dbmaxlv = new SetupMenuValFloat( "Upper Vario", "", 0, 5.0, 0.1, 0 , false, &deadband );
+	dbmaxlv->setHelp(PROGMEM"Upper deadband limit (climb) for Audio mute function when in Vario mode");
+	top->addEntry( dbmaxlv );
+
+	SetupMenuValFloat * dbmaxls2fn = new SetupMenuValFloat(	"Lower S2F", "", -25.0, 0, 1, 0 , false, &s2f_deadband_neg );
+	dbmaxls2fn->setHelp(PROGMEM"Negative deadband limit in speed (too slow) deviation when in S2F mode");
+	top->addEntry( dbmaxls2fn );
+
+	SetupMenuValFloat * dbmaxls2f = new SetupMenuValFloat( "Upper S2F", "", 0, 25.0, 1, 0 , false, &s2f_deadband );
+	dbmaxls2f->setHelp(PROGMEM"Positive deadband limit in speed (too high) deviation when in S2F mode");
+	top->addEntry( dbmaxls2f );
+}
+
 void SetupMenu::audio_menu_create( MenuEntry *audio ){
 	SetupMenuValFloat * dv = new SetupMenuValFloat( "Default Volume", "%", 0, 100, 1.0, 0, false, &default_volume );
 	audio->addEntry( dv );
@@ -803,44 +862,7 @@ void SetupMenu::audio_menu_create( MenuEntry *audio ){
 	SetupMenu * audios = new SetupMenu( "Tone Styles" );
 	audio->addEntry( audios );
 	audios->setHelp( PROGMEM "Configure audio style in terms of center frequency, octaves, single/dual tone, pitch and chopping", 220);
-
-	SetupMenuValFloat * cf = new SetupMenuValFloat( "CenterFreq", "Hz", 200.0, 2000.0, 10.0, 0, false, &center_freq );
-	cf->setHelp(PROGMEM"Center frequency for Audio at zero Vario or zero S2F delta");
-	audios->addEntry( cf );
-
-	SetupMenuValFloat * oc = new SetupMenuValFloat( "Octaves", "fold", 1.5, 4, 0.1, 0, false, &tone_var );
-	oc->setHelp(PROGMEM"Maximum tone frequency variation");
-	audios->addEntry( oc );
-
-	SetupMenuSelect * dt = new SetupMenuSelect( "Dual Tone", true, 0 , true, &dual_tone );
-	dt->setHelp(PROGMEM"Select dual tone modue aka ilec sound, (di/da/di) or single tone (di/di/di) mode");
-	dt->addEntry( "Disable");       // 0
-	dt->addEntry( "Enable");        // 1
-	audios->addEntry( dt );
-
-	SetupMenuValFloat * htv = new SetupMenuValFloat( "Dual Tone Pich", "%", 0, 50, 1.0, 0, false, &high_tone_var );
-	htv->setHelp(PROGMEM"Tone variation in Dual Tone mode, percent of frequency pitch up for second tone");
-	audios->addEntry( htv );
-
-	SetupMenuSelect * tch = new SetupMenuSelect( "Chopping", false, eval_chop, true, &chopping_mode );
-	tch->setHelp(PROGMEM"Select tone chopping option on positive values for Vario and or S2F");
-	tch->addEntry( "Disabled");             // 0
-	tch->addEntry( "Vario only");           // 1
-	tch->addEntry( "S2F only");             // 2
-	tch->addEntry( "Vario and S2F");        // 3  default
-	audios->addEntry( tch );
-
-	SetupMenuSelect * tchs = new SetupMenuSelect( "Chopping Style", false, 0 , true, &chopping_style );
-	tchs->setHelp(PROGMEM"Select style of tone chopping either hard, or soft with fadein/fadeout");
-	tchs->addEntry( "Soft");              // 0  default
-	tchs->addEntry( "Hard");              // 1
-	audios->addEntry( tchs );
-
-	SetupMenuSelect * advarto = new SetupMenuSelect( "Variable Tone", false, 0 , true, &audio_variable_frequency );
-	advarto->setHelp(PROGMEM"Option to enable audio frequency updates within climbing tone intervals, disable keeps frequency constant");
-	advarto->addEntry( "Disable");       // 0
-	advarto->addEntry( "Enable");        // 1
-	audios->addEntry( advarto );
+	audios->addCreator(audio_menu_create_tonestyles);
 
 	SetupMenuSelect * ar = new SetupMenuSelect( "Range", false, 0 , true, &audio_range  );
 	audio_range_sm = ar;
@@ -851,22 +873,7 @@ void SetupMenu::audio_menu_create( MenuEntry *audio ){
 	SetupMenu * db = new SetupMenu( "Deadbands" );
 	MenuEntry* dbe = audio->addEntry( db );
 	dbe->setHelp(PROGMEM"Audio dead band limits within Audio remains silent in metric scale. 0,1 m/s equals roughly 20 ft/min or 0.2 knots");
-
-	SetupMenuValFloat * dbminlv = new SetupMenuValFloat( "Lower Vario", "", -5.0, 0, 0.1, 0 , false, &deadband_neg );
-	dbminlv->setHelp(PROGMEM"Lower deadband limit (sink) for Audio mute function when in Vario mode");
-	dbe->addEntry( dbminlv );
-
-	SetupMenuValFloat * dbmaxlv = new SetupMenuValFloat( "Upper Vario", "", 0, 5.0, 0.1, 0 , false, &deadband );
-	dbmaxlv->setHelp(PROGMEM"Upper deadband limit (climb) for Audio mute function when in Vario mode");
-	dbe->addEntry( dbmaxlv );
-
-	SetupMenuValFloat * dbmaxls2fn = new SetupMenuValFloat(	"Lower S2F", "", -25.0, 0, 1, 0 , false, &s2f_deadband_neg );
-	dbmaxls2fn->setHelp(PROGMEM"Negative deadband limit in speed (too slow) deviation when in S2F mode");
-	dbe->addEntry( dbmaxls2fn );
-
-	SetupMenuValFloat * dbmaxls2f = new SetupMenuValFloat( "Upper S2F", "", 0, 25.0, 1, 0 , false, &s2f_deadband );
-	dbmaxls2f->setHelp(PROGMEM"Positive deadband limit in speed (too high) deviation when in S2F mode");
-	dbe->addEntry( dbmaxls2f );
+	db->addCreator(audio_menu_create_deadbands);
 
 	SetupMenuValFloat * afac = new SetupMenuValFloat( 	"Audio Exponent", "", 0.1, 2, 0.025, 0 , false, &audio_factor );
 	afac->setHelp(PROGMEM"Exponential factor < 1 gives a logarithmic, and > 1 exponential characteristic for frequency of audio signal");

@@ -150,10 +150,8 @@ void Serial::serialHandler(void *pvParameters)
 }
 
 void Serial::enterBincomMode( xcv_serial_t *cfg ){
-	// Stop routing of TX/RX data of other Serial channel, TDB: check if we did not forget what else to stop ?
-	setroutingStopped( cfg->cfg2, true );
-	// Stop RX interrupt of other serial channel
-	cfg->cfg2->uart->disableInterrupt();
+	// Stop routing of TX/RX data of a potential other device on the second serial channel needs to be done by user.
+	// Both channels may be involved in igc download so we can't automate more here
 	delay( 100 );
 	bincom_mode = true;
 	ESP_LOGI(FNAME, "%s: --> Switching to binary mode", cfg->name );

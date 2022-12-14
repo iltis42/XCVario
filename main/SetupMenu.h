@@ -50,6 +50,12 @@ public:
 	static void glider_menu_create_polarpoints( MenuEntry *top );
 
 	static void options_menu_create( MenuEntry *top );
+	static void options_menu_create_units( MenuEntry *top );
+	static void options_menu_create_flarm( MenuEntry *top );
+	static void options_menu_create_compasswind( MenuEntry *top );
+	static void options_menu_create_wireless( MenuEntry *top );
+	static void options_menu_create_gload( MenuEntry *top );
+
 	static void system_menu_create( MenuEntry *top );
 };
 

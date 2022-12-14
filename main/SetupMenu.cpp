@@ -953,98 +953,58 @@ void SetupMenu::glider_menu_create( MenuEntry *poe ){
 	fixball->setHelp(PROGMEM"Net rigged weight of the glider, according to the weight and balance plan");
 	poe->addEntry( fixball );
 }
-void SetupMenu::options_menu_create( MenuEntry *opt ){
-	if( student_mode.get() == 0 ) {
-		SetupMenuSelect *stumo  = new SetupMenuSelect( "Student Mode", true, 0, true, &student_mode );
-		opt->addEntry( stumo );
-		stumo->setHelp( PROGMEM "Student mode, disables all sophisticated setup to just basic pre-flight related items like MC, ballast or bugs");
-		stumo->addEntry( "Disable");
-		stumo->addEntry( "Enable");
-	}
-	Flap::setupMenue( opt );
-	// Units
-	SetupMenu * un = new SetupMenu( "Units" );
-	opt->addEntry( un );
-	un->setHelp( PROGMEM "Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units", 200);
+
+void SetupMenu::options_menu_create_units( MenuEntry *top ){
 	SetupMenuSelect * alu = new SetupMenuSelect( "Altimeter", false, 0, true, &alt_unit );
 	alu->addEntry( "Meter (m)");
 	alu->addEntry( "Foot  (ft)");
 	alu->addEntry( "FL    (FL)");
-	un->addEntry( alu );
-
+	top->addEntry( alu );
 	SetupMenuSelect * iau = new SetupMenuSelect( "Airspeed", false , 0, true, &ias_unit );
 	iau->addEntry( "Kilom. (Km/h)");
 	iau->addEntry( "Miles  (mph)");
 	iau->addEntry( "Knots  (kt)");
-	un->addEntry( iau );
+	top->addEntry( iau );
 	SetupMenuSelect * vau = new SetupMenuSelect( "Vario", false , update_rentrys, true, &vario_unit );
 	vau->addEntry( "Meters/sec (m/s)");
 	vau->addEntry( "100ft/min (cft/min)");
 	vau->addEntry( "Knots     (knots)");
-	un->addEntry( vau );
+	top->addEntry( vau );
 	SetupMenuSelect * teu = new SetupMenuSelect( "Temperature", false , 0, true, &temperature_unit );
 	teu->addEntry( "Celcius");
 	teu->addEntry( "Fahrenheit");
 	teu->addEntry( "Kelvin");
-	un->addEntry( teu );
+	top->addEntry( teu );
 	SetupMenuSelect * qnhi = new SetupMenuSelect( "QNH", false, 0, true, &qnh_unit );
-	un->addEntry( qnhi );
 	qnhi->addEntry( "Hectopascal");
 	qnhi->addEntry( "InchMercury");
+	top->addEntry( qnhi );
+}
 
-	SetupMenuSelect * amode = new SetupMenuSelect( "Airspeed Mode",	false, 0, true, &airspeed_mode );
-	opt->addEntry( amode );
-	amode->setHelp( PROGMEM "Select mode of Airspeed indicator to display IAS (Indicated AirSpeed, default) or TAS (True AirSpeed) considering air density", 130 );
-	amode->addEntry( "IAS");
-	amode->addEntry( "TAS");
-	amode->addEntry( "Slip Angle");
-
-	SetupMenuSelect * atl = new SetupMenuSelect( "Auto Transition",	false, 0, true, &fl_auto_transition );
-	opt->addEntry( atl );
-	atl->setHelp( PROGMEM "Option to enable automatic altitude transition to QNH Standard (1013.25) above 'Transition Altitude'");
-	atl->addEntry( "Disable");
-	atl->addEntry( "Enable");
-
-	SetupMenuSelect * altDisplayMode = new SetupMenuSelect( "Altitude Mode", false, 0, true, &alt_display_mode );
-	opt->addEntry( altDisplayMode );
-	altDisplayMode->setHelp( PROGMEM "Select altitude display mode");
-	altDisplayMode->addEntry( "QNH");
-	altDisplayMode->addEntry( "QFE");
-
-	SetupMenuValFloat * tral = new SetupMenuValFloat( "Transition Altitude", "FL", 0, 400, 10, 0, false, &transition_alt  );
-	tral->setHelp(PROGMEM"Transition altitude (or transition height, when using QFE) is the altitude/height above which standard pressure (QNE) is set (1013.2 mb/hPa)", 100 );
-	opt->addEntry( tral );
-
-	SetupMenu * flarm = new SetupMenu( "FLARM" );
-	opt->addEntry( flarm );
-	flarm->setHelp( PROGMEM "Option to display FLARM Warnings depending on FLARM alarm level");
-
+void SetupMenu::options_menu_create_flarm( MenuEntry *top ){
 	SetupMenuSelect * flarml = new SetupMenuSelect( "Alarm Level",	false, 0, true, &flarm_warning );
-	flarm->addEntry( flarml );
 	flarml->setHelp( PROGMEM "Enable FLARM Alarm level 1 is lowest with 13-18 sec, 2 medium 9-12 sec and 3 highest with 0-8 sec until impact");
 	flarml->addEntry( "Disable");
 	flarml->addEntry( "Level 1");
 	flarml->addEntry( "Level 2");
 	flarml->addEntry( "Level 3");
+	top->addEntry( flarml );
 
 	SetupMenuValFloat * flarmv = new SetupMenuValFloat("Alarm Volume",  "%", 20, 125, 1, 0, false, &flarm_volume  );
 	flarmv->setHelp(PROGMEM "Maximum volume FLARM alarm audio warning");
-	flarm->addEntry( flarmv );
+	top->addEntry( flarmv );
 
 	SetupMenuSelect * flarms = new SetupMenuSelect( "FLARM Simulation",	false, 0, true, &flarm_sim, false, true );
-	flarm->addEntry( flarms );
 	flarms->setHelp( PROGMEM "Simulate an airplane crossing from left to right with different alarm levels and vertical distance 5 seconds after pressed (leave setup!)");
 	flarms->addEntry( "Disable");
 	flarms->addEntry( "Start Sim");
+	top->addEntry( flarms );
+}
 
-	SetupMenu * compassWindMenu = new SetupMenu( "Compass/Wind" );
-	compassWindMenu->setHelp( PROGMEM "Setup Compass and Wind", 280 );
-	MenuEntry* compassWindME = opt->addEntry( compassWindMenu );
 
+void SetupMenu::options_menu_create_compasswind( MenuEntry *top ){
 	SetupMenu * compassMenu = new SetupMenu( "Compass" );
-	MenuEntry* compassME = compassWindME->addEntry( compassMenu );
-
-
+	MenuEntry* compassME = top->addEntry( compassMenu );
 	SetupMenuSelect * compSensor = new SetupMenuSelect( "Sensor Option", true, compass_ena, true, &compass_enable);
 	compSensor->addEntry( "Disable");
 	compSensor->addEntry( "Enable I2C sensor");
@@ -1133,7 +1093,7 @@ void SetupMenu::options_menu_create( MenuEntry *opt ){
 	windcal->addEntry( "Circling");
 	windcal->addEntry( "Both");
 	windcal->setHelp(PROGMEM "Enable Wind calculation for straight flight (needs compass), circling or both and display wind in reto display style");
-	compassWindME->addEntry( windcal );
+	top->addEntry( windcal );
 
 	// Display option
 	SetupMenuSelect * winddis = new SetupMenuSelect( "Display", false, 0, true, &wind_display );
@@ -1143,7 +1103,7 @@ void SetupMenu::options_menu_create( MenuEntry *opt ){
 	winddis->addEntry( "Wind Both");
 	winddis->addEntry( "Compass");
 	winddis->setHelp( PROGMEM "Control what is to be displayed, either as digits or by arrow or both on retro style screen");
-	compassWindME->addEntry( winddis );
+	top->addEntry( winddis );
 
 	// Wind speed observation window
 	SetupMenuSelect * windref = new SetupMenuSelect( "Arrow Ref", false, 0, true, &wind_reference );
@@ -1151,10 +1111,10 @@ void SetupMenu::options_menu_create( MenuEntry *opt ){
 	windref->addEntry( "Mag Heading");
 	windref->addEntry( "GPS Course");
 	windref->setHelp( PROGMEM "Wind arrow related either to geographic north or related to true airplane heading");
-	compassWindME->addEntry( windref );
+	top->addEntry( windref );
 
 	SetupMenu * strWindM = new SetupMenu( "Straight Wind" );
-	compassWindME->addEntry( strWindM );
+	top->addEntry( strWindM );
 	strWindM->setHelp( PROGMEM "Straight flight wind calculation needs compass module active", 250 );
 
 	SetupMenu * strWindFM = new SetupMenu( "Filters" );
@@ -1204,7 +1164,7 @@ void SetupMenu::options_menu_create( MenuEntry *opt ){
 	aslim->setHelp(PROGMEM "Maximum delta in airspeed estimation from wind and GPS during straight flight accpeted for straight wind calculation");
 
 	SetupMenu * cirWindM = new SetupMenu( "Circling Wind" );
-	compassWindME->addEntry( cirWindM );
+	top->addEntry( cirWindM );
 
 	// Show Circling Wind Status
 	ShowCirclingWind* scw = new ShowCirclingWind( "Circling Wind Status" );
@@ -1235,11 +1195,13 @@ void SetupMenu::options_menu_create( MenuEntry *opt ){
 	windlog->addEntry( "Enable GYRO/MAG");
 	windlog->addEntry( "Enable Both");
 	windlog->setHelp(PROGMEM "Enable Wind logging NMEA output to WIFI port 8882");
-	compassWindME->addEntry( windlog );
+	top->addEntry( windlog );
+}
 
-	SetupMenu * wireless = new SetupMenu( PROGMEM "Wireless" );
-	MenuEntry* wirelessM = opt->addEntry( wireless );
 
+
+void SetupMenu::options_menu_create_wireless( MenuEntry *top )
+{
 	SetupMenuSelect * btm = new SetupMenuSelect( PROGMEM "Wireless", true, 0, true, &wireless_type );
 	btm->setHelp( PROGMEM "Activate wireless interface type to connect navigation devices, or to another XCVario as client");
 	btm->addEntry( "Disable");
@@ -1247,11 +1209,9 @@ void SetupMenu::options_menu_create( MenuEntry *opt ){
 	btm->addEntry( "Wireless Master");
 	btm->addEntry( "Wireless Client");
 	btm->addEntry( "Wireless Standalone");
-	// btm->addEntry( "Wireless Master");
-	wirelessM->addEntry( btm );
 
 	SetupMenu * wlrt = new SetupMenu( PROGMEM "WL Routing" );
-	wirelessM->addEntry( wlrt );
+	top->addEntry( wlrt );
 	wlrt->setHelp( PROGMEM "Select data source that is routed from/to Wireless BT or WIFI interface");
 
 	SetupMenuSelect * wloutxcv = new SetupMenuSelect( PROGMEM "XCVario", false, 0, true, &rt_xcv_wl );
@@ -1273,14 +1233,14 @@ void SetupMenu::options_menu_create( MenuEntry *opt ){
 
 	SetupMenuValFloat *wifip = new SetupMenuValFloat( PROGMEM "WIFI Power", "%", 10.0, 100.0, 5.0, update_wifi_power, false, &wifi_max_power );
 	wifip->setPrecision(0);
-	wirelessM->addEntry( wifip );
+	top->addEntry( wifip );
 	wifip->setHelp(PROGMEM "Maximum Wifi Power to be used 10..100% or 2..20dBm");
 
 	SetupMenuSelect * wifimal = new SetupMenuSelect( PROGMEM "Lock Master", false, master_xcv_lock, true, &master_xcvario_lock );
 	wifimal->setHelp( PROGMEM "In wireless client role, lock the scanned master XCVario ID above to this client");
 	wifimal->addEntry( "Unlock");
 	wifimal->addEntry( "Lock");
-	wirelessM->addEntry( wifimal );
+	top->addEntry( wifimal );
 
 	SetupMenuSelect * datamon = new SetupMenuSelect( PROGMEM "Monitor", false, data_mon, true, &data_monitor );
 	datamon->setHelp( PROGMEM "Short press button to start/pause, long press to terminate data monitor", 260);
@@ -1292,62 +1252,61 @@ void SetupMenu::options_menu_create( MenuEntry *opt ){
 	datamon->addEntry( "RS232 S1");
 	datamon->addEntry( "RS232 S2");
 	datamon->addEntry( "CAN Bus");
-	wirelessM->addEntry( datamon );
+	top->addEntry( datamon );
 
 	SetupMenuSelect * datamonmod = new SetupMenuSelect( PROGMEM "Monitor Mode", false, data_mon, true, &data_monitor_mode );
 	datamonmod->setHelp( PROGMEM "Display data either in ASCII or do a Binary hexdump");
 	datamonmod->addEntry( "ASCII");
 	datamonmod->addEntry( "Binary");
-	wirelessM->addEntry( datamonmod );
+	top->addEntry( datamonmod );
+}
 
-	SetupMenu * gload = new SetupMenu( "G-Load Display" );
-	MenuEntry* gloadME = opt->addEntry( gload );
-
+void SetupMenu::options_menu_create_gload( MenuEntry *top ){
 	SetupMenuSelect * glmod = new SetupMenuSelect( "Activation Mode", false, 0, true, &gload_mode );
 	glmod->setHelp( PROGMEM "Switch off G-Force screen, or activate G-Force screen by threshold 'Dynamic', or static by 'Always-On'");
 	glmod->addEntry( "Off");
 	glmod->addEntry( "Dynamic");
 	glmod->addEntry( "Always-On");
-	gloadME->addEntry( glmod );
+	top->addEntry( glmod );
 
 	SetupMenuValFloat * gtpos = new SetupMenuValFloat( "Positive Threshold", "", 1.0, 8.0, 0.1, 0, false, &gload_pos_thresh );
-	gloadME->addEntry( gtpos );
+	top->addEntry( gtpos );
 	gtpos->setPrecision( 1 );
 	gtpos->setHelp(PROGMEM "Positive threshold to launch G-Load display");
 
 	SetupMenuValFloat * gtneg = new SetupMenuValFloat( "Negative Threshold", "", -8.0, 1.0, 0.1, 0, false, &gload_neg_thresh );
-	gloadME->addEntry( gtneg );
+	top->addEntry( gtneg );
 	gtneg->setPrecision( 1 );
 	gtneg->setHelp(PROGMEM "Negative threshold to launch G-Load display");
 
 	SetupMenuValFloat * glpos = new SetupMenuValFloat( "Red positive limit", "", 1.0, 8.0, 0.1, 0, false, &gload_pos_limit );
-	gloadME->addEntry( glpos );
+	top->addEntry( glpos );
 	glpos->setPrecision( 1 );
 	glpos->setHelp(PROGMEM "Positive g load factor limit the airplane is able to handle according to manual below manoevering speed");
 
 	SetupMenuValFloat * glposl = new SetupMenuValFloat( "Yellow pos. Limit", "", 1.0, 8.0, 0.1, 0, false, &gload_pos_limit_low );
-	gloadME->addEntry( glposl );
+	top->addEntry( glposl );
 	glposl->setPrecision( 1 );
 	glposl->setHelp(PROGMEM "Positive g load factor limit the structure of airplane is able to handle, see manual, above manoevering speed");
 
 	SetupMenuValFloat * glneg = new SetupMenuValFloat( "Red negative limit", "", -8.0, 1.0, 0.1, 0, false, &gload_neg_limit );
-	gloadME->addEntry( glneg );
+	top->addEntry( glneg );
 	glneg->setPrecision( 1 );
 	glneg->setHelp(PROGMEM "Negative g load factor limit the airplane is able to handle according to manual below manoevering speed");
 
 	SetupMenuValFloat * glnegl = new SetupMenuValFloat( "Yellow neg. Limit", "", -8.0, 1.0, 0.1, 0, false, &gload_neg_limit_low );
-	gloadME->addEntry( glnegl );
+	top->addEntry( glnegl );
 	glnegl->setPrecision( 1 );
 	glnegl->setHelp(PROGMEM "Negative g load factor limit the structure of airplane is able to handle, see manual, below manoevering speed");
 
 
 	SetupMenuValFloat * gmpos = new SetupMenuValFloat( "Max Positive", "", 0.0, 0.0, 0.0, 0, false, &gload_pos_max );
-	gloadME->addEntry( gmpos );
+	top->addEntry( gmpos );
 	gmpos->setPrecision( 1 );
 	gmpos->setHelp(PROGMEM "Maximum positive G-Load measured since last reset");
 
 	SetupMenuValFloat * gmneg = new SetupMenuValFloat( "Max Negative", "", 0.0, 0.0, 0.0, 0, false, &gload_neg_max );
-	gloadME->addEntry( gmneg );
+	top->addEntry( gmneg );
 	gmneg->setPrecision( 1 );
 	gmneg->setHelp(PROGMEM "Maximum negative G-Load measured since last reset");
 
@@ -1355,8 +1314,64 @@ void SetupMenu::options_menu_create( MenuEntry *opt ){
 	gloadres->setHelp(PROGMEM "Option to reset stored maximum positive and negative G-load values");
 	gloadres->addEntry( "Reset");
 	gloadres->addEntry( "Cancel");
-	gloadME->addEntry( gloadres );
+	top->addEntry( gloadres );
+}
 
+void SetupMenu::options_menu_create( MenuEntry *opt ){
+	if( student_mode.get() == 0 ) {
+		SetupMenuSelect *stumo  = new SetupMenuSelect( "Student Mode", true, 0, true, &student_mode );
+		opt->addEntry( stumo );
+		stumo->setHelp( PROGMEM "Student mode, disables all sophisticated setup to just basic pre-flight related items like MC, ballast or bugs");
+		stumo->addEntry( "Disable");
+		stumo->addEntry( "Enable");
+	}
+	Flap::setupMenue( opt );
+	// Units
+	SetupMenu * un = new SetupMenu( "Units" );
+	opt->addEntry( un );
+	un->setHelp( PROGMEM "Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units", 200);
+	un->addCreator(options_menu_create_units);
+
+	SetupMenuSelect * amode = new SetupMenuSelect( "Airspeed Mode",	false, 0, true, &airspeed_mode );
+	opt->addEntry( amode );
+	amode->setHelp( PROGMEM "Select mode of Airspeed indicator to display IAS (Indicated AirSpeed, default) or TAS (True AirSpeed) considering air density", 130 );
+	amode->addEntry( "IAS");
+	amode->addEntry( "TAS");
+	amode->addEntry( "Slip Angle");
+
+	SetupMenuSelect * atl = new SetupMenuSelect( "Auto Transition",	false, 0, true, &fl_auto_transition );
+	opt->addEntry( atl );
+	atl->setHelp( PROGMEM "Option to enable automatic altitude transition to QNH Standard (1013.25) above 'Transition Altitude'");
+	atl->addEntry( "Disable");
+	atl->addEntry( "Enable");
+
+	SetupMenuSelect * altDisplayMode = new SetupMenuSelect( "Altitude Mode", false, 0, true, &alt_display_mode );
+	opt->addEntry( altDisplayMode );
+	altDisplayMode->setHelp( PROGMEM "Select altitude display mode");
+	altDisplayMode->addEntry( "QNH");
+	altDisplayMode->addEntry( "QFE");
+
+	SetupMenuValFloat * tral = new SetupMenuValFloat( "Transition Altitude", "FL", 0, 400, 10, 0, false, &transition_alt  );
+	tral->setHelp(PROGMEM"Transition altitude (or transition height, when using QFE) is the altitude/height above which standard pressure (QNE) is set (1013.2 mb/hPa)", 100 );
+	opt->addEntry( tral );
+
+	SetupMenu * flarm = new SetupMenu( "FLARM" );
+	opt->addEntry( flarm );
+	flarm->setHelp( PROGMEM "Option to display FLARM Warnings depending on FLARM alarm level");
+	flarm->addCreator(options_menu_create_flarm);
+
+	SetupMenu * compassWindMenu = new SetupMenu( "Compass/Wind" );
+	opt->addEntry( compassWindMenu );
+	compassWindMenu->setHelp( PROGMEM "Setup Compass and Wind", 280 );
+	compassWindMenu->addCreator(options_menu_create_compasswind);
+
+	SetupMenu * wireless = new SetupMenu( PROGMEM "Wireless" );
+	opt->addEntry( wireless );
+	wireless->addCreator(options_menu_create_wireless);
+
+	SetupMenu * gload = new SetupMenu( "G-Load Display" );
+	opt->addEntry( gload );
+	gload->addCreator(options_menu_create_gload);
 }
 
 void SetupMenu::system_menu_create( MenuEntry *sye ){

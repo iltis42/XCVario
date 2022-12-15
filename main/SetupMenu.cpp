@@ -572,14 +572,19 @@ void SetupMenu::showMenu(){
 
 
 static int screen_index = 0;
-void SetupMenu::press(){
-	if( (selected != this) || focus )
-		return;
-	// ESP_LOGI(FNAME,"press() active_srceen %d, pressed %d inSet %d  subtree_created: %d mptr: %p", active_screen, pressed, gflags.inSetup, subtree_created, menu_create_ptr );
+
+void SetupMenu::create_subtree(){
 	if( !subtree_created && menu_create_ptr ){
 		(menu_create_ptr)(this);
 		subtree_created = true;
 	}
+}
+
+void SetupMenu::press(){
+	if( (selected != this) || focus )
+		return;
+	// ESP_LOGI(FNAME,"press() active_srceen %d, pressed %d inSet %d  subtree_created: %d mptr: %p", active_screen, pressed, gflags.inSetup, subtree_created, menu_create_ptr );
+	create_subtree();
 	if( !gflags.inSetup ){
 		active_screen = 0;
 		while( !active_screen && (screen_index < screen_mask_len) ){
@@ -1826,48 +1831,40 @@ void SetupMenu::system_menu_create( MenuEntry *sye ){
 	nmea->addEntry( "Disable");
 }
 
-
-void SetupMenu::setup( )
-{
-	ESP_LOGI(FNAME,"SetupMenu setup()");
-
-	SetupMenu * root = new SetupMenu( "Setup" );
-	root->setRoot( root );
-	MenuEntry* mm = root->addEntry( root );
-
+void SetupMenu::setup_create_root(MenuEntry *top ){
 	if ( rot_default.get() == 0 ) {
 		SetupMenuValFloat * mc = new SetupMenuValFloat( "MC", "",	0.0, 9.9, 0.1, 0, true, &MC );
 		mc->setHelp(PROGMEM"Mac Cready value for optimum cruise speed, or average climb rate to be provided in same unit as the variometer");
 		mc->setPrecision(1);
-		mm->addEntry( mc );
+		top->addEntry( mc );
 	}
 	else {
 		SetupMenuValFloat * vol = new SetupMenuValFloat( "Audio Volume", "%", 0.0, 100, 1, vol_adj, true, &audio_volume );
 		vol->setHelp(PROGMEM"Audio volume level for variometer tone on internal and external speaker");
-		mm->addEntry( vol );
+		top->addEntry( vol );
 	}
 
 	SetupMenuValFloat * bgs = new SetupMenuValFloat( "Bugs", "%", 0.0, 50, 1, bug_adj, true, &bugs  );
 	bgs->setHelp(PROGMEM"Percent of bugs contamination to indicate degradation of gliding performance");
-	mm->addEntry( bgs );
+	top->addEntry( bgs );
 
 	SetupMenuValFloat * bal = new SetupMenuValFloat( "Ballast", "litre", 0.0, 500, 1, water_adj, true, &ballast_kg  );
 	bal->setHelp(PROGMEM"Amount of water ballast added to the over all weight");
 	bal->setPrecision(0);
-	mm->addEntry( bal );
+	top->addEntry( bal );
 
 	SetupMenuValFloat * crewball = new SetupMenuValFloat( "Crew Weight", "kg", 0, 300, 1, crew_weight_adj, false, &crew_weight );
 	crewball->setPrecision(0);
 	crewball->setHelp(PROGMEM"Weight of the pilot(s) including parachute (everything on top of the empty weight apart from ballast)");
-	mm->addEntry( crewball );
+	top->addEntry( crewball );
 
 	SetupMenuValFloat::qnh_menu = new SetupMenuValFloat( "QNH", "", 900, 1100.0, 0.250, qnh_adj, true, &QNH );
 	SetupMenuValFloat::qnh_menu->setHelp(PROGMEM"QNH pressure value from next ATC. On ground you may adjust to airfield altitude above MSL", 180 );
-	mm->addEntry( SetupMenuValFloat::qnh_menu );
+	top->addEntry( SetupMenuValFloat::qnh_menu );
 
 	SetupMenuValFloat * afe = new SetupMenuValFloat( "Airfield Elevation", "", -1, 3000, 1, 0, true, &elevation );
 	afe->setHelp(PROGMEM"Airfield elevation in meters for QNH auto adjust on ground according to this elevation");
-	mm->addEntry( afe );
+	top->addEntry( afe );
 
 	if( NEED_VOLTAGE_ADJUST ){
 		SetupMenuValFloat::meter_adj_menu = new SetupMenuValFloat( "Voltmeter Adjust", "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust,  true, false, true);
@@ -1883,36 +1880,45 @@ void SetupMenu::setup( )
 		SetupMenuValFloat * passw = new SetupMenuValFloat( "Expert Password", "", 0, 1000, 1, 0, false, &password  );
 		passw->setPrecision( 0 );
 		passw->setHelp( PROGMEM"To exit from student mode enter expert password and restart device after expert password has been set correctly");
-		mm->addEntry( passw );
-		// Flap::setupMenue( NULL ); // fixme
+		top->addEntry( passw );
 	}
 	else
 	{
 		// Vario
 		SetupMenu * va = new SetupMenu( "Vario and Speed 2 Fly" );
-		mm->addEntry( va );
+		top->addEntry( va );
 		va->addCreator( vario_menu_create );
 
 		// Audio
 		SetupMenu * ad = new SetupMenu( "Audio" );
-		mm->addEntry( ad );
+		top->addEntry( ad );
 		ad->addCreator( audio_menu_create );
 
 		// Glider Setup
 		SetupMenu * po = new SetupMenu( "Glider Details" );
-		mm->addEntry( po );
+		top->addEntry( po );
 		po->addCreator( glider_menu_create );
 
 		// Options Setup
 		SetupMenu * opt = new SetupMenu( "Options" );
-		mm->addEntry( opt );
+		top->addEntry( opt );
 		opt->addCreator( options_menu_create );
 
 		// System Setup
 		SetupMenu * sy = new SetupMenu( "System" );
-		mm->addEntry( sy );
+		top->addEntry( sy );
 		sy->addCreator( system_menu_create );
-
 	}
+}
+
+
+void SetupMenu::setup( )
+{
+	ESP_LOGI(FNAME,"SetupMenu setup()");
+	SetupMenu * root = new SetupMenu( "Setup" );
+	root->setRoot( root );
+	root->addEntry( root );
+	root->addCreator(setup_create_root);
+	root->create_subtree();
 	SetupMenu::display();
 }

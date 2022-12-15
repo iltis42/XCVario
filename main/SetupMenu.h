@@ -35,6 +35,9 @@ public:
 	static void catchFocus( bool activate );
 	static bool focus;
 	static gpio_num_t getGearWarningIO();
+	void create_subtree();
+
+	static void setup_create_root( MenuEntry *top );
 
 	static void vario_menu_create( MenuEntry *top );
 	static void vario_menu_create_damping( MenuEntry *top );

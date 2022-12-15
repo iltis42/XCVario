@@ -57,6 +57,14 @@ public:
 	static void options_menu_create_gload( MenuEntry *top );
 
 	static void system_menu_create( MenuEntry *top );
+	static void system_menu_create_software( MenuEntry *top );
+	static void system_menu_create_battery( MenuEntry *top );
+	static void system_menu_create_hardware( MenuEntry *top );
+	static void system_menu_create_altimeter_airspeed( MenuEntry *top );
+	static void system_menu_create_interfaceS1( MenuEntry *top );
+	static void system_menu_create_interfaceS2( MenuEntry *top );
+	static void system_menu_create_interfaceCAN( MenuEntry *top );
+
 };
 
 #endif

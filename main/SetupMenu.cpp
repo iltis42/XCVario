@@ -1374,31 +1374,20 @@ void SetupMenu::options_menu_create( MenuEntry *opt ){
 	gload->addCreator(options_menu_create_gload);
 }
 
-void SetupMenu::system_menu_create( MenuEntry *sye ){
-	SetupMenu * soft = new SetupMenu( "Software Update" );
-	sye->addEntry( soft );
+void SetupMenu::system_menu_create_software( MenuEntry *top ){
 	Version V;
-
 	SetupMenuSelect * ver = new SetupMenuSelect( "Software Vers.", false, 0, false );
 	ver->addEntry( V.version() );
-	soft->addEntry( ver );
+	top->addEntry( ver );
 
 	SetupMenuSelect * upd = new SetupMenuSelect( "Software Update", true, 0, true, &software_update );
-	soft->addEntry( upd );
 	upd->setHelp(PROGMEM "Software Update over the air (OTA). Start Wifi AP, then connect to Wifi 'ESP32 OTA' and open http://192.168.4.1 to upload firmware");
 	upd->addEntry( "Cancel");
 	upd->addEntry( "Start");
+	top->addEntry( upd );
+}
 
-	SetupMenuSelect * fa = new SetupMenuSelect( "Factory Reset", true, 0, false, &factory_reset );
-	fa->setHelp(PROGMEM "Option to reset all settings to factory defaults, means metric system, 5 m/s vario range and more");
-	fa->addEntry( "Cancel");
-	fa->addEntry( "ResetAll");
-	sye->addEntry( fa );
-
-	SetupMenu * bat = new SetupMenu( "Battery Setup" );
-	bat->setHelp( PROGMEM "Adjust corresponding voltage for battery symbol display low,red,yellow and full");
-	sye->addEntry( bat );
-
+void SetupMenu::system_menu_create_battery( MenuEntry *top ){
 	SetupMenuValFloat * blow = new SetupMenuValFloat( "Battery Low", "Volt ", 0.0, 28.0, 0.1, 0, false, &bat_low_volt );
 	SetupMenuValFloat * bred = new SetupMenuValFloat( "Battery Red", "Volt ", 0.0, 28.0, 0.1, 0, false, &bat_red_volt  );
 	SetupMenuValFloat * byellow = new SetupMenuValFloat( "Battery Yellow", "Volt ", 0.0, 28.0, 0.1, 0, false, &bat_yellow_volt );
@@ -1410,18 +1399,16 @@ void SetupMenu::system_menu_create( MenuEntry *sye ){
 	batv->addEntry( "Voltage");
 	batv->addEntry( "Voltage Big");
 
-	bat->addEntry(blow);
-	bat->addEntry(bred);
-	bat->addEntry(byellow);
-	bat->addEntry(bfull);
-	bat->addEntry( batv );
+	top->addEntry(blow);
+	top->addEntry(bred);
+	top->addEntry(byellow);
+	top->addEntry(bfull);
+	top->addEntry( batv );
+}
 
-	SetupMenu * hardware = new SetupMenu( "Hardware Setup" );
-	hardware->setHelp( PROGMEM "Setup variometer hardware e.g. display, rotary, AS and AHRS sensor, voltmeter, etc", 240 );
-	sye->addEntry( hardware );
-
+void SetupMenu::system_menu_create_hardware( MenuEntry *top ){
 	SetupMenu * display = new SetupMenu( "DISPLAY Setup" );
-	hardware->addEntry( display );
+	top->addEntry( display );
 	// UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P
 	if( display_type.get() == UNIVERSAL )
 	{
@@ -1456,7 +1443,7 @@ void SetupMenu::system_menu_create( MenuEntry *sye ){
 	diso->addEntry( "TOPDOWN");
 
 	SetupMenu * rotary = new SetupMenu( "Rotary Setup" );
-	hardware->addEntry( rotary );
+	top->addEntry( rotary );
 	SetupMenuSelect * rotype;
 	if( hardwareRevision.get() < 3 )
 		rotype = new SetupMenuSelect( "Direction", false , 0, false, &rotary_dir );
@@ -1498,20 +1485,20 @@ void SetupMenu::system_menu_create( MenuEntry *sye ){
 	screens->addEntry(scrgmet);
 
 	/*
-		SetupMenuSelect * scrfltr = new SetupMenuSelect( "Flarm Traffic", false, 0, true, &screen_flarm );
-		scrfltr->addEntry( "Disable");
-		scrfltr->addEntry( "Enable");
-		screens->addEntry(scrfltr);
+	SetupMenuSelect * scrfltr = new SetupMenuSelect( "Flarm Traffic", false, 0, true, &screen_flarm );
+	scrfltr->addEntry( "Disable");
+	scrfltr->addEntry( "Enable");
+	screens->addEntry(scrfltr);
 	 */
 	SetupMenuSelect * s2fsw = new SetupMenuSelect( "S2F Switch", false , 0, false, &s2f_switch_type );
-	hardware->addEntry( s2fsw );
+	top->addEntry( s2fsw );
 	s2fsw->setHelp( PROGMEM "Select S2F hardware switch type, what can be an normal switch or a push button without lock toggling S2F mode any time pressed");
 	s2fsw->addEntry( "Switch");
 	s2fsw->addEntry( "Push Button");
 	s2fsw->addEntry( "Switch Inverted");
 
 	SetupMenuSelect * gear = new SetupMenuSelect( "Gear Warn", false , config_gear_warning, false, &gear_warning );
-	hardware->addEntry( gear );
+	top->addEntry( gear );
 	gear->setHelp( PROGMEM "Enable gear warning if Flap Sensor (Pin 6) or Serial RS232 (Pin 4) is not equipped in S2, triggerd by either high or low level");
 	gear->addEntry( "Disable");
 	gear->addEntry( "S2 Flap positive");   // A positive signal, high signal or > 2V will start alarm
@@ -1521,7 +1508,7 @@ void SetupMenu::system_menu_create( MenuEntry *sye ){
 
 	if( hardwareRevision.get() >= 3 ){
 		SetupMenu * ahrs = new SetupMenu( "AHRS Setup" );
-		hardware->addEntry( ahrs );
+		top->addEntry( ahrs );
 		mpu = new SetupMenuSelect( "AHRS Option", true , 0, true, &attitude_indicator );
 		ahrs->addEntry( mpu );
 		mpu->setHelp( PROGMEM "Enable High Accuracy Attitude Sensor (AHRS) NMEA messages (need valid license key entered)");
@@ -1569,7 +1556,7 @@ void SetupMenu::system_menu_create( MenuEntry *sye ){
 	}
 
 	SetupMenuSelect * pstype = new SetupMenuSelect( "AS Sensor type", true , 0, false, &airspeed_sensor_type );
-	hardware->addEntry( pstype );
+	top->addEntry( pstype );
 	pstype->setHelp( PROGMEM "Factory default for type of pressure sensor, will not erase on factory reset");
 	pstype->addEntry( "ABPMRR");
 	pstype->addEntry( "TE4525");
@@ -1578,14 +1565,12 @@ void SetupMenu::system_menu_create( MenuEntry *sye ){
 	if( !SetupMenuValFloat::meter_adj_menu )
 		SetupMenuValFloat::meter_adj_menu = new SetupMenuValFloat( "Voltmeter Adjust", "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust,  true, false, true);
 	SetupMenuValFloat::meter_adj_menu->setHelp(PROGMEM "Option to fine factory adjust voltmeter");
-	hardware->addEntry( SetupMenuValFloat::meter_adj_menu );
+	top->addEntry( SetupMenuValFloat::meter_adj_menu );
+}
 
-	// Altimeter, IAS
-	SetupMenu * aia = new SetupMenu( "Altimeter, Airspeed" );
-	sye->addEntry( aia );
-
+void SetupMenu::system_menu_create_altimeter_airspeed( MenuEntry *top ){
 	SetupMenuSelect * als = new SetupMenuSelect( "Altimeter Source", false, 0, true, &alt_select );
-	aia->addEntry( als );
+	top->addEntry( als );
 	als->setHelp( PROGMEM "Select source for barometric altitude, either TE sensor or Baro sensor (recommended) or an external source e.g. FLARM (if avail)");
 	als->addEntry( "TE Sensor");
 	als->addEntry( "Baro Sensor");
@@ -1593,10 +1578,10 @@ void SetupMenu::system_menu_create( MenuEntry *sye ){
 
 	SetupMenuValFloat * spc = new SetupMenuValFloat( "AS Calibration", "%", -100, 100, 1, 0, false, &speedcal  );
 	spc->setHelp(PROGMEM"Calibration of airspeed sensor (AS). Normally not needed, hence pressure probes may have systematic error");
-	aia->addEntry( spc );
+	top->addEntry( spc );
 
 	SetupMenuSelect * auze = new SetupMenuSelect( "AutoZero AS Sensor",	true, 0, true, &autozero );
-	aia->addEntry( auze );
+	top->addEntry( auze );
 	auze->setHelp( PROGMEM "Recalculate zero point for airspeed sensor on next power on");
 	auze->addEntry( "Cancel");
 	auze->addEntry( "Start");
@@ -1608,10 +1593,10 @@ void SetupMenu::system_menu_create( MenuEntry *sye ){
 	alq->addEntry( "5");
 	alq->addEntry( "10");
 	alq->addEntry( "20");
-	aia->addEntry( alq );
+	top->addEntry( alq );
 
 	SetupMenu * stallwa = new SetupMenu( "Stall Warning");
-	aia->addEntry( stallwa );
+	top->addEntry( stallwa );
 	stallwa->setHelp( PROGMEM "Configure stall warning");
 
 	SetupMenuSelect * stawaen = new SetupMenuSelect( "Stall Warning", false, 0, false, &stall_warning );
@@ -1626,15 +1611,12 @@ void SetupMenu::system_menu_create( MenuEntry *sye ){
 
 	SetupMenuValFloat * vmax = new SetupMenuValFloat( "Maximum Speed", "", 70, 450, 1, 0, false, &v_max  );
 	vmax->setHelp(PROGMEM"Configure maximum speed for corresponding airplane type");
-	aia->addEntry( vmax );
+	top->addEntry( vmax );
+}
 
-
-	// _serial1_speed
-	SetupMenu * rs232 = new SetupMenu( "RS232 Interface S1" );
-	sye->addEntry( rs232 );
+void SetupMenu::system_menu_create_interfaceS1( MenuEntry *top ){
 	SetupMenuSelect * s2sp = new SetupMenuSelect( PROGMEM "Baudraute",	true, 0, true, &serial1_speed );
-	rs232->addEntry( s2sp );
-	// s2sp->setHelp( "Serial RS232 (TTL) speed, pins RX:2, TX:3 on external RJ45 connector");
+	top->addEntry( s2sp );
 	s2sp->addEntry( "OFF");
 	s2sp->addEntry( "4800 baud");
 	s2sp->addEntry( "9600 baud");
@@ -1644,13 +1626,13 @@ void SetupMenu::system_menu_create( MenuEntry *sye ){
 	s2sp->addEntry( "115200 baud");
 
 	SetupMenuSelect * s1in = new SetupMenuSelect( PROGMEM "Serial Loops", false, 0, true, &serial1_rxloop );
-	rs232->addEntry( s1in );
+	top->addEntry( s1in );
 	s1in->setHelp( "Option to loop serial S1 RX to S1 TX, e.g. for unidirectional OV or Kobo connection" );
 	s1in->addEntry( "Disable");     // 0
 	s1in->addEntry( "Enable");      // 1
 
 	SetupMenu * s1out = new SetupMenu( PROGMEM "S1 Routing");
-	rs232->addEntry( s1out );
+	top->addEntry( s1out );
 	s1out->setHelp( PROGMEM "Select data source to be routed from/to serial interface S1");
 
 	SetupMenuSelect * s1outxcv = new SetupMenuSelect( PROGMEM "XCVario", false, update_routing_s1, true, &rt_s1_xcv );
@@ -1671,95 +1653,92 @@ void SetupMenu::system_menu_create( MenuEntry *sye ){
 	s1out->addEntry( s1outcan );
 
 	SetupMenuSelect * stxi = new SetupMenuSelect( PROGMEM "TX Inversion", true , 0, true, &serial1_tx_inverted );
-	rs232->addEntry( stxi );
+	top->addEntry( stxi );
 	stxi->setHelp( "Serial RS232 (TTL) option for negative logic, means a '1' will be sent at zero level (RS232 standard and default) and vice versa");
 	stxi->addEntry( "Normal");
 	stxi->addEntry( "Inverted");
 
 	SetupMenuSelect * srxi = new SetupMenuSelect( PROGMEM "RX Inversion", true, 0, true, &serial1_rx_inverted );
-	rs232->addEntry( srxi );
+	top->addEntry( srxi );
 	srxi->setHelp( "Serial RS232 (TTL) option for negative logic, means a '1' will be received at zero level (RS232 standard and default) and vice versa");
 	srxi->addEntry( "Normal");
 	srxi->addEntry( "Inverted");
 
 	SetupMenuSelect * srxtw1 = new SetupMenuSelect( PROGMEM "Twist RX/TX Pins", true, 0, true, &serial1_pins_twisted );
-	rs232->addEntry( srxtw1 );
+	top->addEntry( srxtw1 );
 	srxtw1->setHelp( "Option to twist RX and TX line for S1, e.g. for OpenVario. After change also a true power-cycle is needed");
 	srxtw1->addEntry( "Normal");
 	srxtw1->addEntry( "Twisted");
 
 	SetupMenuSelect * stxdis1 = new SetupMenuSelect( PROGMEM "TX Line", true, 0, true, &serial1_tx_enable );
-	rs232->addEntry( stxdis1 );
+	top->addEntry( stxdis1 );
 	stxdis1->setHelp( "Option to switch off RS232 TX line in case active sending is not required, e.g. for multiple devices connected to one device");
 	stxdis1->addEntry( "Disable");
 	stxdis1->addEntry( "Enable");
+}
+
+void SetupMenu::system_menu_create_interfaceS2( MenuEntry *top ){
+	SetupMenuSelect * s2sp2 = new SetupMenuSelect( PROGMEM "Baudraute",	true, 0, true, &serial2_speed );
+	top->addEntry( s2sp2 );
+	// s2sp->setHelp( "Serial RS232 (TTL) speed, pins RX:2, TX:3 on external RJ45 connector");
+	s2sp2->addEntry( "OFF");
+	s2sp2->addEntry( "4800 baud");
+	s2sp2->addEntry( "9600 baud");
+	s2sp2->addEntry( "19200 baud");
+	s2sp2->addEntry( "38400 baud");
+	s2sp2->addEntry( "57600 baud");
+	s2sp2->addEntry( "115200 baud");
+
+	SetupMenu * s2out = new SetupMenu( PROGMEM "S2 Routing" );
+	s2out->setHelp( PROGMEM "Select data source to be routed from/to serial interface S2");
+	top->addEntry( s2out );
+
+	SetupMenuSelect * s2outxcv = new SetupMenuSelect( PROGMEM "XCVario", false, update_routing_s2, true, &rt_s2_xcv );
+	s2outxcv->addEntry( "Disable");
+	s2outxcv->addEntry( "Enable");
+	s2out->addEntry( s2outxcv );
+	SetupMenuSelect * s2outwl = new SetupMenuSelect( PROGMEM  "Wireless", false, update_routing_s2, true, &rt_s2_wl );
+	s2outwl->addEntry( "Disable");
+	s2outwl->addEntry( "Enable");
+	s2out->addEntry( s2outwl );
+	SetupMenuSelect * s2outs2 = new SetupMenuSelect( PROGMEM  "S1-RS232", false, update_routing_s2, true, &rt_s1_s2 );
+	s2outs2->addEntry( "Disable");
+	s2outs2->addEntry( "Enable");
+	s2out->addEntry( s2outs2 );
+	SetupMenuSelect * s2outcan = new SetupMenuSelect( PROGMEM "CAN-bus", false, update_routing_s2, true, &rt_s2_can );
+	s2outcan->addEntry( "Disable");
+	s2outcan->addEntry( "Enable");
+	s2out->addEntry( s2outcan );
+
+	SetupMenuSelect * stxi2 = new SetupMenuSelect( PROGMEM "TX Inversion", true , 0, true, &serial2_tx_inverted );
+	top->addEntry( stxi2 );
+	stxi2->setHelp( "Serial RS232 (TTL) option for negative logic, means a '1' will be sent at zero level (RS232 standard and default) and vice versa");
+	stxi2->addEntry( "Normal");
+	stxi2->addEntry( "Inverted");
+
+	SetupMenuSelect * srxi2 = new SetupMenuSelect( PROGMEM "RX Inversion", true, 0, true, &serial2_rx_inverted );
+	top->addEntry( srxi2 );
+	srxi2->setHelp( "Serial RS232 (TTL) option for negative logic, means a '1' will be received at zero level (RS232 standard and default) and vice versa");
+	srxi2->addEntry( "Normal");
+	srxi2->addEntry( "Inverted");
+
+	SetupMenuSelect * srxtw2 = new SetupMenuSelect( PROGMEM "Twist RX/TX Pins", true, 0, true, &serial2_pins_twisted );
+	top->addEntry( srxtw2 );
+	srxtw2->setHelp( "Option to twist RX and TX line for S2, e.g. for OpenVario. After change also a true power-cycle is needed");
+	srxtw2->addEntry( "Normal");
+	srxtw2->addEntry( "Twisted");
+
+	SetupMenuSelect * stxdis2 = new SetupMenuSelect( PROGMEM "TX Line", true, 0, true, &serial2_tx_enable );
+	top->addEntry( stxdis2 );
+	stxdis2->setHelp( "Option to switch off RS232 TX line in case active sending is not required, e.g. for multiple devices connected to one device");
+	stxdis2->addEntry( "Disable");
+	stxdis2->addEntry( "Enable");
+}
 
 
-	if( hardwareRevision.get() >= 3 ) {
-		SetupMenu * rs232_2 = new SetupMenu( "RS232 Interface S2" );
-		sye->addEntry( rs232_2 );
-		SetupMenuSelect * s2sp2 = new SetupMenuSelect( PROGMEM "Baudraute",	true, 0, true, &serial2_speed );
-		rs232_2->addEntry( s2sp2 );
-		// s2sp->setHelp( "Serial RS232 (TTL) speed, pins RX:2, TX:3 on external RJ45 connector");
-		s2sp2->addEntry( "OFF");
-		s2sp2->addEntry( "4800 baud");
-		s2sp2->addEntry( "9600 baud");
-		s2sp2->addEntry( "19200 baud");
-		s2sp2->addEntry( "38400 baud");
-		s2sp2->addEntry( "57600 baud");
-		s2sp2->addEntry( "115200 baud");
-
-		SetupMenu * s2out = new SetupMenu( PROGMEM "S2 Routing" );
-		s2out->setHelp( PROGMEM "Select data source to be routed from/to serial interface S2");
-		rs232_2->addEntry( s2out );
-
-		SetupMenuSelect * s2outxcv = new SetupMenuSelect( PROGMEM "XCVario", false, update_routing_s2, true, &rt_s2_xcv );
-		s2outxcv->addEntry( "Disable");
-		s2outxcv->addEntry( "Enable");
-		s2out->addEntry( s2outxcv );
-		SetupMenuSelect * s2outwl = new SetupMenuSelect( PROGMEM  "Wireless", false, update_routing_s2, true, &rt_s2_wl );
-		s2outwl->addEntry( "Disable");
-		s2outwl->addEntry( "Enable");
-		s2out->addEntry( s2outwl );
-		SetupMenuSelect * s2outs2 = new SetupMenuSelect( PROGMEM  "S1-RS232", false, update_routing_s2, true, &rt_s1_s2 );
-		s2outs2->addEntry( "Disable");
-		s2outs2->addEntry( "Enable");
-		s2out->addEntry( s2outs2 );
-		SetupMenuSelect * s2outcan = new SetupMenuSelect( PROGMEM "CAN-bus", false, update_routing_s2, true, &rt_s2_can );
-		s2outcan->addEntry( "Disable");
-		s2outcan->addEntry( "Enable");
-		s2out->addEntry( s2outcan );
-
-
-		SetupMenuSelect * stxi2 = new SetupMenuSelect( PROGMEM "TX Inversion", true , 0, true, &serial2_tx_inverted );
-		rs232_2->addEntry( stxi2 );
-		stxi2->setHelp( "Serial RS232 (TTL) option for negative logic, means a '1' will be sent at zero level (RS232 standard and default) and vice versa");
-		stxi2->addEntry( "Normal");
-		stxi2->addEntry( "Inverted");
-
-		SetupMenuSelect * srxi2 = new SetupMenuSelect( PROGMEM "RX Inversion", true, 0, true, &serial2_rx_inverted );
-		rs232_2->addEntry( srxi2 );
-		srxi2->setHelp( "Serial RS232 (TTL) option for negative logic, means a '1' will be received at zero level (RS232 standard and default) and vice versa");
-		srxi2->addEntry( "Normal");
-		srxi2->addEntry( "Inverted");
-
-		SetupMenuSelect * srxtw2 = new SetupMenuSelect( PROGMEM "Twist RX/TX Pins", true, 0, true, &serial2_pins_twisted );
-		rs232_2->addEntry( srxtw2 );
-		srxtw2->setHelp( "Option to twist RX and TX line for S2, e.g. for OpenVario. After change also a true power-cycle is needed");
-		srxtw2->addEntry( "Normal");
-		srxtw2->addEntry( "Twisted");
-
-		SetupMenuSelect * stxdis2 = new SetupMenuSelect( PROGMEM "TX Line", true, 0, true, &serial2_tx_enable );
-		rs232_2->addEntry( stxdis2 );
-		stxdis2->setHelp( "Option to switch off RS232 TX line in case active sending is not required, e.g. for multiple devices connected to one device");
-		stxdis2->addEntry( "Disable");
-		stxdis2->addEntry( "Enable");
-	}
-	// Can Interface C1
-	SetupMenu * can = new SetupMenu( "CAN Interface" );
-	sye->addEntry( can );
-	SetupMenuSelect * canmode = new SetupMenuSelect( PROGMEM "Datarate",	true, 0, true, &can_speed );
-	can->addEntry( canmode );
+void SetupMenu::system_menu_create_interfaceCAN( MenuEntry *top ){
+	SetupMenuSelect * canmode = new SetupMenuSelect( PROGMEM "Datarate", true, 0, true, &can_speed );
+	top->addEntry( canmode );
 	canmode->setHelp( "Datarate on high speed serial CAN interace in kbit per second");
 	canmode->addEntry( "CAN OFF");
 	canmode->addEntry( "250 kbit");
@@ -1767,7 +1746,7 @@ void SetupMenu::system_menu_create( MenuEntry *sye ){
 	canmode->addEntry( "1000 kbit");
 
 	SetupMenu * canrt = new SetupMenu( PROGMEM "CAN Routing" );
-	can->addEntry( canrt );
+	top->addEntry( canrt );
 	canrt->setHelp( PROGMEM "Select data source that is routed from/to CAN interface");
 
 	SetupMenuSelect * canoutxcv = new SetupMenuSelect( PROGMEM "XCVario", false, 0, true, &rt_can_xcv );
@@ -1788,12 +1767,55 @@ void SetupMenu::system_menu_create( MenuEntry *sye ){
 	canrt->addEntry( canouts2 );
 
 	SetupMenuSelect * devmod = new SetupMenuSelect( PROGMEM "Mode", true , 0, false, &can_mode );
-	can->addEntry( devmod );
+	top->addEntry( devmod );
 	devmod->setHelp( PROGMEM "Select 'Standalone' for single seater or 'Master' in front, for secondary device in rear 'Client'");
 	devmod->addEntry( "Master");
 	devmod->addEntry( "Client");
 	devmod->addEntry( "Standalone");
+}
 
+void SetupMenu::system_menu_create( MenuEntry *sye ){
+	SetupMenu * soft = new SetupMenu( "Software Update" );
+	sye->addEntry( soft );
+	soft->addCreator(system_menu_create_software);
+
+	SetupMenuSelect * fa = new SetupMenuSelect( "Factory Reset", true, 0, false, &factory_reset );
+	fa->setHelp(PROGMEM "Option to reset all settings to factory defaults, means metric system, 5 m/s vario range and more");
+	fa->addEntry( "Cancel");
+	fa->addEntry( "ResetAll");
+	sye->addEntry( fa );
+
+	SetupMenu * bat = new SetupMenu( "Battery Setup" );
+	bat->setHelp( PROGMEM "Adjust corresponding voltage for battery symbol display low,red,yellow and full");
+	sye->addEntry( bat );
+	bat->addCreator(system_menu_create_battery);
+
+	SetupMenu * hardware = new SetupMenu( "Hardware Setup" );
+	hardware->setHelp( PROGMEM "Setup variometer hardware e.g. display, rotary, AS and AHRS sensor, voltmeter, etc", 240 );
+	sye->addEntry( hardware );
+	hardware->addCreator(system_menu_create_hardware);
+
+	// Altimeter, IAS
+	SetupMenu * aia = new SetupMenu( "Altimeter, Airspeed" );
+	sye->addEntry( aia );
+	aia->addCreator(system_menu_create_altimeter_airspeed);
+
+	// _serial1_speed
+	SetupMenu * rs232 = new SetupMenu( "RS232 Interface S1" );
+	sye->addEntry( rs232 );
+	rs232->addCreator(system_menu_create_interfaceS1);
+
+	if( hardwareRevision.get() >= 3 ) {
+		SetupMenu * rs232_2 = new SetupMenu( "RS232 Interface S2" );
+		sye->addEntry( rs232_2 );
+		rs232_2->addCreator(system_menu_create_interfaceS2);
+	}
+	// Can Interface C1
+	SetupMenu * can = new SetupMenu( "CAN Interface" );
+	sye->addEntry( can );
+	can->addCreator(system_menu_create_interfaceCAN);
+
+	// NMEA protocol of variometer
 	SetupMenuSelect * nmea = new SetupMenuSelect( PROGMEM "NMEA Protocol", false , 0, true, &nmea_protocol );
 	sye->addEntry( nmea );
 	nmea->setHelp( "Setup the protocol used for sending NMEA sentences. This needs to be inline with the device driver chosen in XCSoar/LK8000");
@@ -1803,7 +1825,6 @@ void SetupMenu::system_menu_create( MenuEntry *sye ){
 	nmea->addEntry( "XCVario");
 	nmea->addEntry( "Disable");
 }
-
 
 
 void SetupMenu::setup( )

@@ -32,7 +32,8 @@ PressureSensor *MenuEntry::_bmp = 0;
 
 MenuEntry::~MenuEntry()
 {
-    ESP_LOGI(FNAME,"del menu %s",_title );
+    // ESP_LOGI(FNAME,"del menu %s",_title );
+    detach(this);
     for ( MenuEntry* c : _childs ) {
         delete c;
         c = nullptr;

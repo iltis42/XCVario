@@ -57,6 +57,8 @@ private: // helper
     friend int flap_enable_act( SetupMenuSelect *p );
 	static void setupSensorMenueEntries(MenuEntry *wkm);
     static void setupIndicatorMenueEntries(MenuEntry *wkm);
+    static void position_labels_menu_create(MenuEntry* top);
+    static void speeds_setup_menu_create(MenuEntry* top);
 
 	bool sensorToLeverPosition( int sensorreading, float& lever);
 	void  initSpeeds();

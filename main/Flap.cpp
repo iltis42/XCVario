@@ -192,10 +192,66 @@ static SetupMenuValFloat *flgnd = 0;
 static SetupMenu *flapss = 0;
 static SetupMenu *flapls = 0;
 
+
+void Flap::speeds_setup_menu_create(MenuEntry*top){
+	SetupMenuValFloat *plus3 = new SetupMenuValFloat("Speed +3 to +2", "",  20, 150, 1, flap_speed_act, false, &flap_plus_2  );
+	plus3->setHelp(PROGMEM"Speed for transition from +3 to +3 flap setting");
+	top->addEntry( plus3 );
+
+	SetupMenuValFloat *plus2 = new SetupMenuValFloat("Speed +2 to +1", "",  20, 150, 1, flap_speed_act, false, &flap_plus_1  );
+	plus2->setHelp(PROGMEM"Speed for transition from +2 to +1 flap setting");
+	top->addEntry( plus2 );
+
+	SetupMenuValFloat *plus1 = new SetupMenuValFloat("Speed +1 to 0", "",  20, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_0  );
+	plus1->setHelp(PROGMEM"Speed for transition from +1 to 0 flap setting");
+	top->addEntry( plus1 );
+
+	SetupMenuValFloat *min1 = new SetupMenuValFloat("Speed 0 to -1", "",   20, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_minus_1  );
+	min1->setHelp(PROGMEM"Speed for transition from 0 to -1 flap setting");
+	top->addEntry( min1 );
+
+	SetupMenuValFloat *min2 = new SetupMenuValFloat("Speed -1 to -2", "",  50, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_minus_2  );
+	min2->setHelp(PROGMEM"Speed for transition from -1 to -2 flap setting");
+	top->addEntry( min2 );
+
+	SetupMenuValFloat *min3 = new SetupMenuValFloat("Speed -2 to -3", "",  50, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_minus_3  );
+	min3->setHelp(PROGMEM"Speed for transition from -2 to -3 flap setting");
+	top->addEntry( min3 );
+}
+
+void Flap::position_labels_menu_create(MenuEntry* top){
+	SetupMenuSelect *flab = new SetupMenuSelect( "Flap Label +3",	false, flap_lab_act, false, &wk_label_plus_3 );
+	top->addEntry( flab );
+	flab->addEntryList( flap_labels, sizeof(flap_labels)/4 ); // Initialize Flap Label Entries
+	flab = new SetupMenuSelect( "Flap Label +2",	false, flap_lab_act, false, &wk_label_plus_2 );
+	top->addEntry( flab );
+	flab->addEntryList( flap_labels, sizeof(flap_labels)/4 );
+	flab = new SetupMenuSelect( "Flap Label +1",	false, flap_lab_act, false, &wk_label_plus_1 );
+	top->addEntry( flab );
+	flab->addEntryList( flap_labels, sizeof(flap_labels)/4 );
+	flab = new SetupMenuSelect( "Flap Label  0",	false, flap_lab_act, false, &wk_label_null_0 );
+	top->addEntry( flab );
+	flab->addEntryList( flap_labels, sizeof(flap_labels)/4 );
+	flab = new SetupMenuSelect( "Flap Label -1",	false, flap_lab_act, false, &wk_label_minus_1 );
+	top->addEntry( flab );
+	flab->addEntryList( flap_labels, sizeof(flap_labels)/4 );
+	flab = new SetupMenuSelect( "Flap Label -2",	false, flap_lab_act, false, &wk_label_minus_2 );
+	top->addEntry( flab );
+	flab->addEntryList( flap_labels, sizeof(flap_labels)/4  );
+	flab = new SetupMenuSelect( "Flap Label -3",	false, flap_lab_act, false, &wk_label_minus_3 );
+	top->addEntry( flab );
+	flab->addEntryList( flap_labels, sizeof(flap_labels)/4  );
+}
+
 void Flap::setupIndicatorMenueEntries(MenuEntry *wkm)
 {
     ESP_LOGI(FNAME,"Flap Indicator Menue");
-    if ( ! nflpos && flap_enable.get() && !SetupCommon::isClient() ) {
+    if ( !SetupCommon::isClient() ) {
+    	SetupMenuSelect * wke = new SetupMenuSelect( "Flap Indicator", false, flap_enable_act, true, &flap_enable );
+    	wke->addEntry( "Disable");
+    	wke->addEntry( "Enable");
+    	wke->setHelp(PROGMEM"Option to enable Flap (WK) Indicator to assist optimum flap setting depending on speed and ballast");
+    	wkm->addEntry( wke );
 
         nflpos = new SetupMenuValFloat("Max positive Flap", "", 0., 3., 1., flap_pos_act, false, &flap_pos_max);
         nflpos->setHelp(PROGMEM"Maximum positive flap position to be displayed");
@@ -211,80 +267,24 @@ void Flap::setupIndicatorMenueEntries(MenuEntry *wkm)
 
         flapss = new SetupMenu( "Flap Speeds Setup" );
         wkm->addEntry( flapss, flgnd );
-
-        SetupMenuValFloat *plus3 = new SetupMenuValFloat("Speed +3 to +2", "",  20, 150, 1, flap_speed_act, false, &flap_plus_2  );
-        plus3->setHelp(PROGMEM"Speed for transition from +3 to +3 flap setting");
-        flapss->addEntry( plus3 );
-
-        SetupMenuValFloat *plus2 = new SetupMenuValFloat("Speed +2 to +1", "",  20, 150, 1, flap_speed_act, false, &flap_plus_1  );
-        plus2->setHelp(PROGMEM"Speed for transition from +2 to +1 flap setting");
-        flapss->addEntry( plus2 );
-
-        SetupMenuValFloat *plus1 = new SetupMenuValFloat("Speed +1 to 0", "",  20, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_0  );
-        plus1->setHelp(PROGMEM"Speed for transition from +1 to 0 flap setting");
-        flapss->addEntry( plus1 );
-
-        SetupMenuValFloat *min1 = new SetupMenuValFloat("Speed 0 to -1", "",   20, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_minus_1  );
-        min1->setHelp(PROGMEM"Speed for transition from 0 to -1 flap setting");
-        flapss->addEntry( min1 );
-
-        SetupMenuValFloat *min2 = new SetupMenuValFloat("Speed -1 to -2", "",  50, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_minus_2  );
-        min2->setHelp(PROGMEM"Speed for transition from -1 to -2 flap setting");
-        flapss->addEntry( min2 );
-
-        SetupMenuValFloat *min3 = new SetupMenuValFloat("Speed -2 to -3", "",  50, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_minus_3  );
-        min3->setHelp(PROGMEM"Speed for transition from -2 to -3 flap setting");
-        flapss->addEntry( min3 );
+        flapss->addCreator( speeds_setup_menu_create );
 
         flapls = new SetupMenu( "Flap Position Labels" );
         wkm->addEntry( flapls, flapss );
-
-        SetupMenuSelect *flab = new SetupMenuSelect( "Flap Label +3",	false, flap_lab_act, false, &wk_label_plus_3 );
-        flapls->addEntry( flab );
-        flab->addEntryList( flap_labels, sizeof(flap_labels)/4 ); // Initialize Flap Label Entries
-        flab = new SetupMenuSelect( "Flap Label +2",	false, flap_lab_act, false, &wk_label_plus_2 );
-        flapls->addEntry( flab );
-        flab->addEntryList( flap_labels, sizeof(flap_labels)/4 );
-        flab = new SetupMenuSelect( "Flap Label +1",	false, flap_lab_act, false, &wk_label_plus_1 );
-        flapls->addEntry( flab );
-        flab->addEntryList( flap_labels, sizeof(flap_labels)/4 );
-        flab = new SetupMenuSelect( "Flap Label  0",	false, flap_lab_act, false, &wk_label_null_0 );
-        flapls->addEntry( flab );
-        flab->addEntryList( flap_labels, sizeof(flap_labels)/4 );
-        flab = new SetupMenuSelect( "Flap Label -1",	false, flap_lab_act, false, &wk_label_minus_1 );
-        flapls->addEntry( flab );
-        flab->addEntryList( flap_labels, sizeof(flap_labels)/4 );
-        flab = new SetupMenuSelect( "Flap Label -2",	false, flap_lab_act, false, &wk_label_minus_2 );
-        flapls->addEntry( flab );
-        flab->addEntryList( flap_labels, sizeof(flap_labels)/4  );
-        flab = new SetupMenuSelect( "Flap Label -3",	false, flap_lab_act, false, &wk_label_minus_3 );
-        flapls->addEntry( flab );
-        flab->addEntryList( flap_labels, sizeof(flap_labels)/4  );
+        flapls->addCreator( position_labels_menu_create );
 
         setupSensorMenueEntries(wkm);
     }
-
-
 }
 
 void Flap::setupMenue( MenuEntry *parent ){
-    static MenuEntry* wkm = 0;
-
 	ESP_LOGI(FNAME,"Flap::setupMenue");
-	if( ! parent || wkm ){
+	if( ! parent  ){
         return;
     }
-
-	wkm = new SetupMenu( "Flap (WK) Indicator" );
+	MenuEntry* wkm = new SetupMenu( "Flap (WK) Indicator" );
     parent->addEntry( wkm );
-
-	SetupMenuSelect * wke = new SetupMenuSelect( "Flap Indicator", false, flap_enable_act, true, &flap_enable );
-	wke->addEntry( "Disable");
-	wke->addEntry( "Enable");
-	wke->setHelp(PROGMEM"Option to enable Flap (WK) Indicator to assist optimum flap setting depending on speed and ballast");
-	wkm->addEntry( wke );
-
-    setupIndicatorMenueEntries(wkm);
+	wkm->addCreator( setupIndicatorMenueEntries );
 }
 
 

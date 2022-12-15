@@ -804,7 +804,7 @@ void readTemp(void *pvParameters){
 		Flarm::progress();
 		vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS);
 		esp_task_wdt_reset();
-		if( (ttick++ % 50) == 0) {
+		if( (ttick++ % 5) == 0) {
 			ESP_LOGI(FNAME,"Free Heap: %d bytes", heap_caps_get_free_size(MALLOC_CAP_8BIT) );
 			if( uxTaskGetStackHighWaterMark( tpid ) < 256 )
 				ESP_LOGW(FNAME,"Warning temperature task stack low: %d bytes", uxTaskGetStackHighWaterMark( tpid ) );

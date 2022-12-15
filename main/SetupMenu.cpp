@@ -386,7 +386,7 @@ SetupMenu::SetupMenu() : MenuEntry() {
 }
 
 SetupMenu::SetupMenu( const char *title ) : MenuEntry() {
-	ESP_LOGI(FNAME,"SetupMenu::SetupMenu( %s ) ", title );
+	// ESP_LOGI(FNAME,"SetupMenu::SetupMenu( %s ) ", title );
 	attach(this);
 	_title = title;
 	highlight = -1;
@@ -394,6 +394,7 @@ SetupMenu::SetupMenu( const char *title ) : MenuEntry() {
 
 SetupMenu::~SetupMenu()
 {
+	// ESP_LOGI(FNAME,"del SetupMenu( %s ) ", _title );
 	detach(this);
 }
 
@@ -539,6 +540,7 @@ void SetupMenu::showMenu(){
 				selected = _parent;
 				selected->highlight = -1;
 				selected->pressed = true;
+				delete_subtree();
 			}
 		}
 		else {
@@ -577,6 +579,18 @@ void SetupMenu::create_subtree(){
 	if( !subtree_created && menu_create_ptr ){
 		(menu_create_ptr)(this);
 		subtree_created = true;
+		// ESP_LOGI(FNAME,"create_subtree() %d", _childs.size() );
+	}
+}
+
+void SetupMenu::delete_subtree(){
+	// ESP_LOGI(FNAME,"delete_subtree() %d", _childs.size() );
+	if( subtree_created && menu_create_ptr ){
+		subtree_created = false;
+		for (int i=0; i<_childs.size(); i++ ){
+			delete _childs[i];
+		}
+		_childs.clear();
 	}
 }
 
@@ -876,8 +890,8 @@ void SetupMenu::audio_menu_create( MenuEntry *audio ){
 	audio->addEntry( ar );
 
 	SetupMenu * db = new SetupMenu( "Deadbands" );
-	MenuEntry* dbe = audio->addEntry( db );
-	dbe->setHelp(PROGMEM"Audio dead band limits within Audio remains silent in metric scale. 0,1 m/s equals roughly 20 ft/min or 0.2 knots");
+	audio->addEntry( db );
+	db->setHelp(PROGMEM"Audio dead band limits within Audio remains silent in metric scale. 0,1 m/s equals roughly 20 ft/min or 0.2 knots");
 	db->addCreator(audio_menu_create_deadbands);
 
 	SetupMenuValFloat * afac = new SetupMenuValFloat( 	"Audio Exponent", "", 0.1, 2, 0.025, 0 , false, &audio_factor );
@@ -1006,10 +1020,32 @@ void SetupMenu::options_menu_create_flarm( MenuEntry *top ){
 	top->addEntry( flarms );
 }
 
+void SetupMenu::options_menu_create_compasswind_compass_dev( MenuEntry *top ){
+	const char *skydirs[8] = { "0°", "45°", "90°", "135°", "180°", "225°", "270°", "315°" };
+	for( int i = 0; i < 8; i++ )
+	{
+		SetupMenuSelect* sms = new SetupMenuSelect( "Direction", false, compassDeviationAction, false, 0 );
+		sms->setHelp( "Push button to start deviation action" );
+		sms->addEntry( skydirs[i] );
+		top->addEntry( sms );
+	}
+}
 
-void SetupMenu::options_menu_create_compasswind( MenuEntry *top ){
-	SetupMenu * compassMenu = new SetupMenu( "Compass" );
-	MenuEntry* compassME = top->addEntry( compassMenu );
+void SetupMenu::options_menu_create_compasswind_compass_nmea( MenuEntry *top ){
+	SetupMenuSelect * nmeaHdm = new SetupMenuSelect( "Magnetic Heading", false, 0, true, &compass_nmea_hdm );
+	nmeaHdm->addEntry( "Disable");
+	nmeaHdm->addEntry( "Enable");
+	nmeaHdm->setHelp( PROGMEM "Enable/disable NMEA '$HCHDM' sentence generation for magnetic heading" );
+	top->addEntry( nmeaHdm );
+
+	SetupMenuSelect * nmeaHdt = new SetupMenuSelect( "True Heading", false, 0, true, &compass_nmea_hdt );
+	nmeaHdt->addEntry( "Disable");
+	nmeaHdt->addEntry( "Enable");
+	nmeaHdt->setHelp( PROGMEM "Enable/disable NMEA '$HCHDT' sentence generation for true heading" );
+	top->addEntry( nmeaHdt );
+}
+
+void SetupMenu::options_menu_create_compasswind_compass( MenuEntry *top ){
 	SetupMenuSelect * compSensor = new SetupMenuSelect( "Sensor Option", true, compass_ena, true, &compass_enable);
 	compSensor->addEntry( "Disable");
 	compSensor->addEntry( "Enable I2C sensor");
@@ -1017,7 +1053,7 @@ void SetupMenu::options_menu_create_compasswind( MenuEntry *top ){
 	compSensor->addEntry( "Enable CAN sensor");
 
 	compSensor->setHelp( PROGMEM "Option to enable/disable the Compass Sensor" );
-	compassME->addEntry( compSensor );
+	top->addEntry( compSensor );
 
 	SetupMenuSelect * compSensorCal = new SetupMenuSelect( "Sensor Calibration", false, compassSensorCalibrateAction, false );
 	compSensorCal->addEntry( "Cancel");
@@ -1025,71 +1061,137 @@ void SetupMenu::options_menu_create_compasswind( MenuEntry *top ){
 	compSensorCal->addEntry( "Show");
 	compSensorCal->addEntry( "Show Raw Data");
 	compSensorCal->setHelp( PROGMEM "Calibrate Magnetic Sensor, mandatory for operation" );
-	compassME->addEntry( compSensorCal );
+	top->addEntry( compSensorCal );
 
 	SetupMenuValFloat *cd = new SetupMenuValFloat( "Setup Declination",	"°",	-180, 180, 1.0, compassDeclinationAction, false, &compass_declination );
 
 	cd->setHelp( PROGMEM "Set compass declination in degrees" );
-	compassME->addEntry( cd );
+	top->addEntry( cd );
 
 	SetupMenuSelect * devMenuA = new SetupMenuSelect( "AutoDeviation", false, 0, true, &compass_dev_auto );
 	devMenuA->setHelp( "Automatic adaptive deviation and precise airspeed evaluation method using data from circling wind");
 	devMenuA->addEntry( "Disable");
 	devMenuA->addEntry( "Enable");
-	compassME->addEntry( devMenuA );
+	top->addEntry( devMenuA );
 
 	SetupMenu * devMenu = new SetupMenu( "Setup Deviations" );
 	devMenu->setHelp( "Compass Deviations", 280 );
-	MenuEntry* dme = compassMenu->addEntry( devMenu );
-
+	top->addEntry( devMenu );
+	devMenu->addCreator( options_menu_create_compasswind_compass_dev );
 	// Calibration menu is requested
-	const char *skydirs[8] = { "0°", "45°", "90°", "135°", "180°", "225°", "270°", "315°" };
-	for( int i = 0; i < 8; i++ )
-	{
-		SetupMenuSelect* sms = new SetupMenuSelect( "Direction", false, compassDeviationAction, false, 0 );
-		sms->setHelp( "Push button to start deviation action" );
-		sms->addEntry( skydirs[i] );
-		dme->addEntry( sms );
-	}
 
 	// Show comapss deviations
 	DisplayDeviations* smd = new DisplayDeviations( "Show Deviations" );
-	compassME->addEntry( smd );
+	top->addEntry( smd );
 
 	SetupMenuSelect* sms = new SetupMenuSelect( "Reset Deviations ", false, compassResetDeviationAction, false,	0 );
 
 	sms->setHelp( "Reset all deviation data to zero" );
 	sms->addEntry( "Cancel" );
 	sms->addEntry( "Reset" );
-	compassME->addEntry( sms );
+	top->addEntry( sms );
 
 	SetupMenu * nmeaMenu = new SetupMenu( "Setup NMEA" );
-	compassME->addEntry( nmeaMenu );
-
-	SetupMenuSelect * nmeaHdm = new SetupMenuSelect( "Magnetic Heading", false, 0, true, &compass_nmea_hdm );
-	nmeaHdm->addEntry( "Disable");
-	nmeaHdm->addEntry( "Enable");
-	nmeaHdm->setHelp( PROGMEM "Enable/disable NMEA '$HCHDM' sentence generation for magnetic heading" );
-	nmeaMenu->addEntry( nmeaHdm );
-
-	SetupMenuSelect * nmeaHdt = new SetupMenuSelect( "True Heading", false, 0, true, &compass_nmea_hdt );
-	nmeaHdt->addEntry( "Disable");
-	nmeaHdt->addEntry( "Enable");
-	nmeaHdt->setHelp( PROGMEM "Enable/disable NMEA '$HCHDT' sentence generation for true heading" );
-	nmeaMenu->addEntry( nmeaHdt );
+	top->addEntry( nmeaMenu );
+	nmeaMenu->addCreator( options_menu_create_compasswind_compass_nmea );
 
 	SetupMenuValFloat * compdamp = new SetupMenuValFloat( "Damping", "sec", 0.1, 10.0, 0.1, 0, false, &compass_damping );
 	compdamp->setPrecision(1);
-	compassME->addEntry( compdamp );
+	top->addEntry( compdamp );
 	compdamp->setHelp(PROGMEM "Compass or magnetic heading damping factor in seconds");
 
 	SetupMenuValFloat * compi2c = new SetupMenuValFloat( "I2C Clock", "KHz", 10.0, 400.0, 10, 0, false, &compass_i2c_cl, true );
-	compassME->addEntry( compi2c );
+	top->addEntry( compi2c );
 	compi2c->setHelp(PROGMEM "Setup compass I2C Bus clock in KHz");
 
 	// Show compass settings
 	ShowCompassSettings* scs = new ShowCompassSettings( "Show Settings" );
-	compassME->addEntry( scs );
+	top->addEntry( scs );
+}
+
+void SetupMenu::options_menu_create_compasswind_straightwind_filters( MenuEntry *top ){
+	SetupMenuValFloat *smgsm = new SetupMenuValFloat( "Airspeed Lowpass", "", 0, 0.05, 0.001, nullptr, false, &wind_as_filter );
+	smgsm->setPrecision(3);
+	top->addEntry( smgsm );
+	smgsm->setHelp(PROGMEM "Lowpass factor for airspeed correction in airspeed estimation from AS/Compass and GPS tracks");
+
+	SetupMenuValFloat *devlp = new SetupMenuValFloat( "Deviation Lowpass", "", 0, 0.05, 0.001, nullptr, false, &wind_dev_filter );
+	devlp->setPrecision(3);
+	top->addEntry( devlp );
+	devlp->setHelp(PROGMEM "Lowpass factor for deviation table correction from AS/Compass and GPS tracks estimation");
+
+	SetupMenuValFloat *smgps = new SetupMenuValFloat( "GPS Lowpass", "sec", 0.1, 10.0, 0.1, nullptr, false, &wind_gps_lowpass );
+	smgps->setPrecision(1);
+	top->addEntry( smgps );
+	smgps->setHelp(PROGMEM "Lowpass factor for GPS track and speed, to correlate with Compass latency");
+
+	SetupMenuValFloat *wlpf = new SetupMenuValFloat( "Averager", "", 5, 120, 1, nullptr, false, &wind_filter_lowpass );
+	wlpf->setPrecision(0);
+	top->addEntry( wlpf );
+	wlpf->setHelp(PROGMEM "Number of measurements used for straight flight live wind averager");
+}
+
+void SetupMenu::options_menu_create_compasswind_straightwind_limits( MenuEntry *top ){
+	SetupMenuValFloat *smdev = new SetupMenuValFloat( "Deviation Limit", "°", 0.0, 180.0, 1.0,	nullptr, false, &wind_max_deviation );
+	smdev->setHelp( PROGMEM "Maximum deviation accepted derived from AS/Compass and GPS tracks" );
+	top->addEntry( smdev );
+
+	SetupMenuValFloat *smslip = new SetupMenuValFloat( "Sideslip Limit", "°", 0, 45.0, 0.1, nullptr, false, &swind_sideslip_lim );
+	smslip->setPrecision(1);
+	top->addEntry( smslip );
+	smslip->setHelp(PROGMEM "Maximum side slip in ° from side slip estimator accepted straight wind calculation");
+
+	SetupMenuValFloat *smcourse = new SetupMenuValFloat( "Course Limit", "°", 2.0, 30.0, 0.1, nullptr, false, &wind_straight_course_tolerance );
+	smcourse->setPrecision(1);
+	top->addEntry( smcourse );
+	smcourse->setHelp(PROGMEM "Maximum delta angle in ° per second during straight flight accepted for straight wind calculation");
+
+	SetupMenuValFloat *aslim = new SetupMenuValFloat( "AS Delta Limit", "km/h", 1.0, 30.0, 1, nullptr, false, &wind_straight_speed_tolerance );
+	aslim->setPrecision(0);
+	top->addEntry( aslim );
+	aslim->setHelp(PROGMEM "Maximum delta in airspeed estimation from wind and GPS during straight flight accpeted for straight wind calculation");
+}
+
+void SetupMenu::options_menu_create_compasswind_straightwind( MenuEntry *top ){
+	SetupMenu * strWindFM = new SetupMenu( "Filters" );
+	top->addEntry( strWindFM );
+	strWindFM->addCreator( options_menu_create_compasswind_straightwind_filters );
+	SetupMenu * strWindLM = new SetupMenu( "Limits" );
+	top->addEntry( strWindLM );
+	strWindLM->addCreator( options_menu_create_compasswind_straightwind_limits );
+	ShowStraightWind* ssw = new ShowStraightWind( "Straight Wind Status" );
+	top->addEntry( ssw );
+}
+
+void SetupMenu::options_menu_create_compasswind_circlingwind( MenuEntry *top ){
+	// Show Circling Wind Status
+	ShowCirclingWind* scw = new ShowCirclingWind( "Circling Wind Status" );
+	top->addEntry( scw );
+
+	SetupMenuValFloat *cirwd = new SetupMenuValFloat( "Max Delta", "°", 0, 90.0, 1.0, nullptr, false, &max_circle_wind_diff );
+	top->addEntry( cirwd );
+	cirwd->setHelp(PROGMEM "Maximum accepted delta accepted value for heading error in circling wind calculation");
+
+	SetupMenuValFloat *cirlp = new SetupMenuValFloat( "Averager", "", 1, 10, 1, nullptr, false, &circle_wind_lowpass );
+	cirlp->setPrecision(0);
+	top->addEntry( cirlp );
+	cirlp->setHelp(PROGMEM "Number of circles used for circling wind averager. A value of 1 means no average");
+
+	SetupMenuValFloat *cirwsd = new SetupMenuValFloat( "Max Speed Delta", "km/h", 0.0, 20.0, 0.1, nullptr, false, &max_circle_wind_delta_speed );
+	top->addEntry( cirwsd );
+	cirwsd->setPrecision(1);
+	cirwsd->setHelp(PROGMEM "Maximum accepted wind speed delta from last measurement accepted value for wind report to straight wind calculation");
+
+	SetupMenuValFloat *cirwdd = new SetupMenuValFloat( "Max Dir Delta", "°", 0.0, 60.0, 0.1, nullptr, false, &max_circle_wind_delta_deg );
+	top->addEntry( cirwdd );
+	cirwdd->setPrecision(1);
+	cirwdd->setHelp(PROGMEM "Maximum accepted wind direction delta from last measurement accepted value for wind report to straight wind calculation");
+}
+
+void SetupMenu::options_menu_create_compasswind( MenuEntry *top ){
+	SetupMenu * compassMenu = new SetupMenu( "Compass" );
+	top->addEntry( compassMenu );
+	compassMenu->addCreator( options_menu_create_compasswind_compass );
 
 	// Wind speed observation window
 	SetupMenuSelect * windcal = new SetupMenuSelect( "Wind Calculation", false, 0, true, &wind_enable );
@@ -1121,78 +1223,11 @@ void SetupMenu::options_menu_create_compasswind( MenuEntry *top ){
 	SetupMenu * strWindM = new SetupMenu( "Straight Wind" );
 	top->addEntry( strWindM );
 	strWindM->setHelp( PROGMEM "Straight flight wind calculation needs compass module active", 250 );
-
-	SetupMenu * strWindFM = new SetupMenu( "Filters" );
-	strWindM->addEntry( strWindFM );
-	SetupMenu * strWindLM = new SetupMenu( "Limits" );
-	strWindM->addEntry( strWindLM );
-	ShowStraightWind* ssw = new ShowStraightWind( "Straight Wind Status" );
-	strWindM->addEntry( ssw );
-
-	SetupMenuValFloat *smdev = new SetupMenuValFloat( "Deviation Limit", "°", 0.0, 180.0, 1.0,	nullptr, false, &wind_max_deviation );
-	smdev->setHelp( PROGMEM "Maximum deviation accepted derived from AS/Compass and GPS tracks" );
-	strWindLM->addEntry( smdev );
-
-	SetupMenuValFloat *smgsm = new SetupMenuValFloat( "Airspeed Lowpass", "", 0, 0.05, 0.001, nullptr, false, &wind_as_filter );
-	smgsm->setPrecision(3);
-	strWindFM->addEntry( smgsm );
-	smgsm->setHelp(PROGMEM "Lowpass factor for airspeed correction in airspeed estimation from AS/Compass and GPS tracks");
-
-	SetupMenuValFloat *devlp = new SetupMenuValFloat( "Deviation Lowpass", "", 0, 0.05, 0.001, nullptr, false, &wind_dev_filter );
-	devlp->setPrecision(3);
-	strWindFM->addEntry( devlp );
-	devlp->setHelp(PROGMEM "Lowpass factor for deviation table correction from AS/Compass and GPS tracks estimation");
-
-	SetupMenuValFloat *smgps = new SetupMenuValFloat( "GPS Lowpass", "sec", 0.1, 10.0, 0.1, nullptr, false, &wind_gps_lowpass );
-	smgps->setPrecision(1);
-	strWindFM->addEntry( smgps );
-	smgps->setHelp(PROGMEM "Lowpass factor for GPS track and speed, to correlate with Compass latency");
-
-	SetupMenuValFloat *wlpf = new SetupMenuValFloat( "Averager", "", 5, 120, 1, nullptr, false, &wind_filter_lowpass );
-	wlpf->setPrecision(0);
-	strWindFM->addEntry( wlpf );
-	wlpf->setHelp(PROGMEM "Number of measurements used for straight flight live wind averager");
-
-	SetupMenuValFloat *smslip = new SetupMenuValFloat( "Sideslip Limit", "°", 0, 45.0, 0.1, nullptr, false, &swind_sideslip_lim );
-	smslip->setPrecision(1);
-	strWindLM->addEntry( smslip );
-	smslip->setHelp(PROGMEM "Maximum side slip in ° from side slip estimator accepted straight wind calculation");
-
-	SetupMenuValFloat *smcourse = new SetupMenuValFloat( "Course Limit", "°", 2.0, 30.0, 0.1, nullptr, false, &wind_straight_course_tolerance );
-	smcourse->setPrecision(1);
-	strWindLM->addEntry( smcourse );
-	smcourse->setHelp(PROGMEM "Maximum delta angle in ° per second during straight flight accepted for straight wind calculation");
-
-	SetupMenuValFloat *aslim = new SetupMenuValFloat( "AS Delta Limit", "km/h", 1.0, 30.0, 1, nullptr, false, &wind_straight_speed_tolerance );
-	aslim->setPrecision(0);
-	strWindLM->addEntry( aslim );
-	aslim->setHelp(PROGMEM "Maximum delta in airspeed estimation from wind and GPS during straight flight accpeted for straight wind calculation");
+	strWindM->addCreator( options_menu_create_compasswind_straightwind );
 
 	SetupMenu * cirWindM = new SetupMenu( "Circling Wind" );
 	top->addEntry( cirWindM );
-
-	// Show Circling Wind Status
-	ShowCirclingWind* scw = new ShowCirclingWind( "Circling Wind Status" );
-	cirWindM->addEntry( scw );
-
-	SetupMenuValFloat *cirwd = new SetupMenuValFloat( "Max Delta", "°", 0, 90.0, 1.0, nullptr, false, &max_circle_wind_diff );
-	cirWindM->addEntry( cirwd );
-	cirwd->setHelp(PROGMEM "Maximum accepted delta accepted value for heading error in circling wind calculation");
-
-	SetupMenuValFloat *cirlp = new SetupMenuValFloat( "Averager", "", 1, 10, 1, nullptr, false, &circle_wind_lowpass );
-	cirlp->setPrecision(0);
-	cirWindM->addEntry( cirlp );
-	cirlp->setHelp(PROGMEM "Number of circles used for circling wind averager. A value of 1 means no average");
-
-	SetupMenuValFloat *cirwsd = new SetupMenuValFloat( "Max Speed Delta", "km/h", 0.0, 20.0, 0.1, nullptr, false, &max_circle_wind_delta_speed );
-	cirWindM->addEntry( cirwsd );
-	cirwsd->setPrecision(1);
-	cirwsd->setHelp(PROGMEM "Maximum accepted wind speed delta from last measurement accepted value for wind report to straight wind calculation");
-
-	SetupMenuValFloat *cirwdd = new SetupMenuValFloat( "Max Dir Delta", "°", 0.0, 60.0, 0.1, nullptr, false, &max_circle_wind_delta_deg );
-	cirWindM->addEntry( cirwdd );
-	cirwdd->setPrecision(1);
-	cirwdd->setHelp(PROGMEM "Maximum accepted wind direction delta from last measurement accepted value for wind report to straight wind calculation");
+	cirWindM->addCreator( options_menu_create_compasswind_circlingwind );
 
 	SetupMenuSelect * windlog = new SetupMenuSelect( "Wind Logging", false, 0, true, &wind_logging );
 	windlog->addEntry( "Disable");
@@ -1203,7 +1238,24 @@ void SetupMenu::options_menu_create_compasswind( MenuEntry *top ){
 	top->addEntry( windlog );
 }
 
-
+void SetupMenu::options_menu_create_wireless_routing( MenuEntry *top ){
+	SetupMenuSelect * wloutxcv = new SetupMenuSelect( PROGMEM "XCVario", false, 0, true, &rt_xcv_wl );
+	wloutxcv->addEntry( PROGMEM "Disable");
+	wloutxcv->addEntry( PROGMEM "Enable");
+	top->addEntry( wloutxcv );
+	SetupMenuSelect * wloutxs1 = new SetupMenuSelect( PROGMEM "S1-RS232", false, update_routing_s1, true, &rt_s1_wl );
+	wloutxs1->addEntry( PROGMEM "Disable");
+	wloutxs1->addEntry( PROGMEM "Enable");
+	top->addEntry( wloutxs1 );
+	SetupMenuSelect * wloutxs2 = new SetupMenuSelect( PROGMEM "S2-RS233", false, update_routing_s2, true, &rt_s2_wl );
+	wloutxs2->addEntry( PROGMEM "Disable");
+	wloutxs2->addEntry( PROGMEM "Enable");
+	top->addEntry( wloutxs2 );
+	SetupMenuSelect * wloutxcan = new SetupMenuSelect( PROGMEM "CAN-bus", false, 0, true, &rt_wl_can );
+	wloutxcan->addEntry( PROGMEM "Disable");
+	wloutxcan->addEntry( PROGMEM "Enable");
+	top->addEntry( wloutxcan );
+}
 
 void SetupMenu::options_menu_create_wireless( MenuEntry *top )
 {
@@ -1214,27 +1266,12 @@ void SetupMenu::options_menu_create_wireless( MenuEntry *top )
 	btm->addEntry( "Wireless Master");
 	btm->addEntry( "Wireless Client");
 	btm->addEntry( "Wireless Standalone");
+	top->addEntry( btm );
 
 	SetupMenu * wlrt = new SetupMenu( PROGMEM "WL Routing" );
 	top->addEntry( wlrt );
 	wlrt->setHelp( PROGMEM "Select data source that is routed from/to Wireless BT or WIFI interface");
-
-	SetupMenuSelect * wloutxcv = new SetupMenuSelect( PROGMEM "XCVario", false, 0, true, &rt_xcv_wl );
-	wloutxcv->addEntry( PROGMEM "Disable");
-	wloutxcv->addEntry( PROGMEM "Enable");
-	wlrt->addEntry( wloutxcv );
-	SetupMenuSelect * wloutxs1 = new SetupMenuSelect( PROGMEM "S1-RS232", false, update_routing_s1, true, &rt_s1_wl );
-	wloutxs1->addEntry( PROGMEM "Disable");
-	wloutxs1->addEntry( PROGMEM "Enable");
-	wlrt->addEntry( wloutxs1 );
-	SetupMenuSelect * wloutxs2 = new SetupMenuSelect( PROGMEM "S2-RS233", false, update_routing_s2, true, &rt_s2_wl );
-	wloutxs2->addEntry( PROGMEM "Disable");
-	wloutxs2->addEntry( PROGMEM "Enable");
-	wlrt->addEntry( wloutxs2 );
-	SetupMenuSelect * wloutxcan = new SetupMenuSelect( PROGMEM "CAN-bus", false, 0, true, &rt_wl_can );
-	wloutxcan->addEntry( PROGMEM "Disable");
-	wloutxcan->addEntry( PROGMEM "Enable");
-	wlrt->addEntry( wloutxcan );
+	wlrt->addCreator( options_menu_create_wireless_routing );
 
 	SetupMenuValFloat *wifip = new SetupMenuValFloat( PROGMEM "WIFI Power", "%", 10.0, 100.0, 5.0, update_wifi_power, false, &wifi_max_power );
 	wifip->setPrecision(0);
@@ -1411,56 +1448,63 @@ void SetupMenu::system_menu_create_battery( MenuEntry *top ){
 	top->addEntry( batv );
 }
 
-void SetupMenu::system_menu_create_hardware( MenuEntry *top ){
-	SetupMenu * display = new SetupMenu( "DISPLAY Setup" );
-	top->addEntry( display );
+void SetupMenu::system_menu_create_hardware_type( MenuEntry *top ){
 	// UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P
-	if( display_type.get() == UNIVERSAL )
-	{
-		SetupMenuSelect * dtype = new SetupMenuSelect( 	"HW Type", false, 0, true, &display_type );
-		dtype->setHelp( PROGMEM "Factory setup for corresponding display type used");
-		dtype->addEntry( "UNIVERSAL");
-		dtype->addEntry( "RAYSTAR");
-		dtype->addEntry( "ST7789");
-		dtype->addEntry( "ILI9341");
-		display->addEntry( dtype );
-	}
+	SetupMenuSelect * dtype = new SetupMenuSelect( 	"HW Type", false, 0, true, &display_type );
+	dtype->setHelp( PROGMEM "Factory setup for corresponding display type used");
+	dtype->addEntry( "UNIVERSAL");
+	dtype->addEntry( "RAYSTAR");
+	dtype->addEntry( "ST7789");
+	dtype->addEntry( "ILI9341");
+	top->addEntry( dtype );
 
 	SetupMenuSelect * disty = new SetupMenuSelect( "Style", false , 0, false, &display_style );
-	display->addEntry( disty );
+	top->addEntry( disty );
 	disty->setHelp( PROGMEM "Display style in more digital airliner stype or retro mode with classic vario meter needle");
 	disty->addEntry( "Airliner");
 	disty->addEntry( "Retro");
 	disty->addEntry( "UL");
 
 	SetupMenuSelect * disva = new SetupMenuSelect( "Color Variant", false , 0, false, &display_variant );
-	display->addEntry( disva );
+	top->addEntry( disva );
 	disva->setHelp( PROGMEM "Display variant white on black (W/B) or black on white(B/W)");
 	disva->addEntry( "W/B");
 	disva->addEntry( "B/W");
 
-
 	// Orientation   _display_orientation
 	SetupMenuSelect * diso = new SetupMenuSelect( "Orientation", true, 0, true, &display_orientation );
-	display->addEntry( diso );
+	top->addEntry( diso );
 	diso->setHelp( PROGMEM "Display Orientation either NORMAL means Rotary is right, or TOPDOWN means Rotary is left");
 	diso->addEntry( "NORMAL");
 	diso->addEntry( "TOPDOWN");
+}
 
-	SetupMenu * rotary = new SetupMenu( "Rotary Setup" );
-	top->addEntry( rotary );
+
+void SetupMenu::system_menu_create_hardware_rotary_screens( MenuEntry *top ){
+	SetupMenuSelect * scrgmet = new SetupMenuSelect( "G-Meter", false, upd_screens, true, &screen_gmeter );
+	scrgmet->addEntry( "Disable");
+	scrgmet->addEntry( "Enable");
+	top->addEntry(scrgmet);
+}
+
+void SetupMenu::system_menu_create_hardware_rotary( MenuEntry *top ){
+	SetupMenu * screens = new SetupMenu( "Screens");
+	top->addEntry( screens );
+	screens->setHelp(PROGMEM "Select screens to be activated one after each other by short press");
+	screens->addCreator( system_menu_create_hardware_rotary_screens );
+
 	SetupMenuSelect * rotype;
 	if( hardwareRevision.get() < 3 )
 		rotype = new SetupMenuSelect( "Direction", false , 0, false, &rotary_dir );
 	else
 		rotype = new SetupMenuSelect( "Direction", false , 0, false, &rotary_dir_21 );
-	rotary->addEntry( rotype );
+	top->addEntry( rotype );
 	rotype->setHelp( PROGMEM "Select type of rotary switch, different brands may need adjustment");
 	rotype->addEntry( "Clockwise");
 	rotype->addEntry( "Counterclockwise");
 
 	SetupMenuSelect * roinc = new SetupMenuSelect( "Sensitivity", false , 0, false, &rotary_inc );
-	rotary->addEntry( roinc );
+	top->addEntry( roinc );
 	roinc->setHelp( PROGMEM "Select rotary sensitivity in number of Indent's for one increment, to your personal preference, 1 Indent is most sensitive");
 	roinc->addEntry( "1 Indent");
 	roinc->addEntry( "2 Indent");
@@ -1469,32 +1513,80 @@ void SetupMenu::system_menu_create_hardware( MenuEntry *top ){
 
 	// Rotary Default
 	SetupMenuSelect * rd = new SetupMenuSelect( "Rotation", true, 0, true, &rot_default );
-	rotary->addEntry( rd );
+	top->addEntry( rd );
 	rd->setHelp(PROGMEM "Select value to be altered at rotary movement outside of setup menu");
 	rd->addEntry( "Volume");
 	rd->addEntry( "MC Value");
 
 	SetupMenuSelect * sact = new SetupMenuSelect( "Setup Menu by", false, 0, true, &menu_long_press );
-	rotary->addEntry( sact);
+	top->addEntry( sact);
 	sact->setHelp(PROGMEM "Select Mode to activate setup menu either by short press or long press > 0.4 seconds");
 	sact->addEntry( "Short Press");
 	sact->addEntry( "Long Press");
+}
 
-	SetupMenu * screens = new SetupMenu( "Screens");
-	rotary->addEntry( screens );
-	screens->setHelp(PROGMEM "Select screens to be activated one after each other by short press");
+void SetupMenu::system_menu_create_hardware_ahrs_lc( MenuEntry *top ){
+	SetupMenuSelect * ahrslc1 = new SetupMenuSelect( "First    Letter",	false, add_key, false, &ahrs_licence_dig1 );
+	SetupMenuSelect * ahrslc2 = new SetupMenuSelect( "Second Letter",	false, add_key, false, &ahrs_licence_dig2 );
+	SetupMenuSelect * ahrslc3 = new SetupMenuSelect( "Third   Letter",	false, add_key, false, &ahrs_licence_dig3 );
+	SetupMenuSelect * ahrslc4 = new SetupMenuSelect( "Last     Letter",	false, add_key, false, &ahrs_licence_dig4 );
+	top->addEntry( ahrslc1 );
+	top->addEntry( ahrslc2 );
+	top->addEntry( ahrslc3 );
+	top->addEntry( ahrslc4 );
+	static const char keys[][4] { "0","1","2","3","4","5","6","7","8","9",":",";","<","=",">","?","@","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"};
+	ahrslc1->addEntryList( keys, sizeof(keys)/4 );
+	ahrslc2->addEntryList( keys, sizeof(keys)/4 );
+	ahrslc3->addEntryList( keys, sizeof(keys)/4 );
+	ahrslc4->addEntryList( keys, sizeof(keys)/4 );
+}
 
-	SetupMenuSelect * scrgmet = new SetupMenuSelect( "G-Meter", false, upd_screens, true, &screen_gmeter );
-	scrgmet->addEntry( "Disable");
-	scrgmet->addEntry( "Enable");
-	screens->addEntry(scrgmet);
+void SetupMenu::system_menu_create_hardware_ahrs( MenuEntry *top ){
+	mpu = new SetupMenuSelect( "AHRS Option", true , 0, true, &attitude_indicator );
+	top->addEntry( mpu );
+	mpu->setHelp( PROGMEM "Enable High Accuracy Attitude Sensor (AHRS) NMEA messages (need valid license key entered)");
+	mpu->addEntry( "Disable");
+	if( gflags.ahrsKeyValid )
+		mpu->addEntry( "Enable");
 
-	/*
-	SetupMenuSelect * scrfltr = new SetupMenuSelect( "Flarm Traffic", false, 0, true, &screen_flarm );
-	scrfltr->addEntry( "Disable");
-	scrfltr->addEntry( "Enable");
-	screens->addEntry(scrfltr);
-	 */
+	SetupMenuSelect * ahrsaz = new SetupMenuSelect( "AHRS Autozero", true , 0, true, &ahrs_autozero );
+	top->addEntry( ahrsaz );
+	ahrsaz->setHelp( PROGMEM "Start Autozero of AHRS Sensor; Preconditions: On ground; Wings 100% horizontal, fuselage in flight position !");
+	ahrsaz->addEntry( "Cancel");
+	ahrsaz->addEntry( "Start");
+
+	SetupMenu * ahrslc = new SetupMenu( "AHRS License Key" );
+	ahrslc->setHelp( PROGMEM "Enter valid AHRS License Key, then with valid key under 'AHRS Option', AHRS feature can be enabled");
+	top->addEntry( ahrslc );
+	ahrslc->addCreator( system_menu_create_hardware_ahrs_lc );
+
+	SetupMenuValFloat * ahrsgf = new SetupMenuValFloat( "AHRS Gyro", "%", 0, 100, 0.1, 0, false, &ahrs_gyro_factor  );
+	ahrsgf->setHelp(PROGMEM"Gyro factor in artifical horizont bank and pitch (more instant movement), zero disables Gyro");
+	top->addEntry( ahrsgf );
+
+	SetupMenuSelect * rpyl = new SetupMenuSelect( "AHRS RPYL", false , 0, true, &ahrs_rpyl_dataset );
+	top->addEntry( rpyl );
+	rpyl->setHelp( PROGMEM "Send LEVIL AHRS like $RPYL sentence for artifical horizon");
+	rpyl->addEntry( "Disable");
+	rpyl->addEntry( "Enable");
+
+	SetupMenuValFloat * tcontrol = new SetupMenuValFloat( "AHRS Temp Control", "", -1, 60, 1, 0, false, &mpu_temperature  );
+	tcontrol->setPrecision( 0 );
+	tcontrol->setHelp( PROGMEM"Regulated target temperature of AHRS silicon chip, if supported in hardware (model > 2023), -1 means OFF");
+	top->addEntry( tcontrol );
+}
+
+
+
+void SetupMenu::system_menu_create_hardware( MenuEntry *top ){
+	SetupMenu * display = new SetupMenu( "DISPLAY Setup" );
+	top->addEntry( display );
+	display->addCreator( system_menu_create_hardware_type );
+
+	SetupMenu * rotary = new SetupMenu( "Rotary Setup" );
+	top->addEntry( rotary );
+	rotary->addCreator( system_menu_create_hardware_rotary );
+
 	SetupMenuSelect * s2fsw = new SetupMenuSelect( "S2F Switch", false , 0, false, &s2f_switch_type );
 	top->addEntry( s2fsw );
 	s2fsw->setHelp( PROGMEM "Select S2F hardware switch type, what can be an normal switch or a push button without lock toggling S2F mode any time pressed");
@@ -1514,50 +1606,7 @@ void SetupMenu::system_menu_create_hardware( MenuEntry *top ){
 	if( hardwareRevision.get() >= 3 ){
 		SetupMenu * ahrs = new SetupMenu( "AHRS Setup" );
 		top->addEntry( ahrs );
-		mpu = new SetupMenuSelect( "AHRS Option", true , 0, true, &attitude_indicator );
-		ahrs->addEntry( mpu );
-		mpu->setHelp( PROGMEM "Enable High Accuracy Attitude Sensor (AHRS) NMEA messages (need valid license key entered)");
-		mpu->addEntry( "Disable");
-		if( gflags.ahrsKeyValid )
-			mpu->addEntry( "Enable");
-
-		SetupMenuSelect * ahrsaz = new SetupMenuSelect( "AHRS Autozero", true , 0, true, &ahrs_autozero );
-		ahrs->addEntry( ahrsaz );
-		ahrsaz->setHelp( PROGMEM "Start Autozero of AHRS Sensor; Preconditions: On ground; Wings 100% horizontal, fuselage in flight position !");
-		ahrsaz->addEntry( "Cancel");
-		ahrsaz->addEntry( "Start");
-
-		SetupMenu * ahrslc = new SetupMenu( "AHRS License Key" );
-		ahrslc->setHelp( PROGMEM "Enter valid AHRS License Key, then with valid key under 'AHRS Option', AHRS feature can be enabled");
-		ahrs->addEntry( ahrslc );
-
-		SetupMenuSelect * ahrslc1 = new SetupMenuSelect( "First    Letter",	false, add_key, false, &ahrs_licence_dig1 );
-		SetupMenuSelect * ahrslc2 = new SetupMenuSelect( "Second Letter",	false, add_key, false, &ahrs_licence_dig2 );
-		SetupMenuSelect * ahrslc3 = new SetupMenuSelect( "Third   Letter",	false, add_key, false, &ahrs_licence_dig3 );
-		SetupMenuSelect * ahrslc4 = new SetupMenuSelect( "Last     Letter",	false, add_key, false, &ahrs_licence_dig4 );
-		ahrslc->addEntry( ahrslc1 );
-		ahrslc->addEntry( ahrslc2 );
-		ahrslc->addEntry( ahrslc3 );
-		ahrslc->addEntry( ahrslc4 );
-		static const char keys[][4] { "0","1","2","3","4","5","6","7","8","9",":",";","<","=",">","?","@","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"};
-		ahrslc1->addEntryList( keys, sizeof(keys)/4 );
-		ahrslc2->addEntryList( keys, sizeof(keys)/4 );
-		ahrslc3->addEntryList( keys, sizeof(keys)/4 );
-		ahrslc4->addEntryList( keys, sizeof(keys)/4 );
-		SetupMenuValFloat * ahrsgf = new SetupMenuValFloat( "AHRS Gyro", "%", 0, 100, 0.1, 0, false, &ahrs_gyro_factor  );
-		ahrsgf->setHelp(PROGMEM"Gyro factor in artifical horizont bank and pitch (more instant movement), zero disables Gyro");
-		ahrs->addEntry( ahrsgf );
-
-		SetupMenuSelect * rpyl = new SetupMenuSelect( "AHRS RPYL", false , 0, true, &ahrs_rpyl_dataset );
-		ahrs->addEntry( rpyl );
-		rpyl->setHelp( PROGMEM "Send LEVIL AHRS like $RPYL sentence for artifical horizon");
-		rpyl->addEntry( "Disable");
-		rpyl->addEntry( "Enable");
-
-		SetupMenuValFloat * tcontrol = new SetupMenuValFloat( "AHRS Temp Control", "", -1, 60, 1, 0, false, &mpu_temperature  );
-		tcontrol->setPrecision( 0 );
-		tcontrol->setHelp( PROGMEM"Regulated target temperature of AHRS silicon chip, if supported in hardware (model > 2023), -1 means OFF");
-		ahrs->addEntry( tcontrol );
+		ahrs->addCreator( system_menu_create_hardware_ahrs );
 	}
 
 	SetupMenuSelect * pstype = new SetupMenuSelect( "AS Sensor type", true , 0, false, &airspeed_sensor_type );
@@ -1567,10 +1616,22 @@ void SetupMenu::system_menu_create_hardware( MenuEntry *top ){
 	pstype->addEntry( "TE4525");
 	pstype->addEntry( "MP5004");
 	pstype->addEntry( "Autodetect");
-	if( !SetupMenuValFloat::meter_adj_menu )
-		SetupMenuValFloat::meter_adj_menu = new SetupMenuValFloat( "Voltmeter Adjust", "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust,  true, false, true);
-	SetupMenuValFloat::meter_adj_menu->setHelp(PROGMEM "Option to fine factory adjust voltmeter");
-	top->addEntry( SetupMenuValFloat::meter_adj_menu );
+
+	SetupMenuValFloat * met_adj = new SetupMenuValFloat( "Voltmeter Adjust", "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust,  true, false, true);
+	met_adj->setHelp(PROGMEM "Option to fine factory adjust voltmeter");
+	top->addEntry( met_adj );
+}
+
+void SetupMenu::system_menu_create_altimeter_airspeed_stallwa( MenuEntry *top ){
+	SetupMenuSelect * stawaen = new SetupMenuSelect( "Stall Warning", false, 0, false, &stall_warning );
+	top->addEntry( stawaen );
+	stawaen->setHelp( PROGMEM "Enable alarm sound when speed goes below configured stall speed and below (until 30% less)");
+	stawaen->addEntry( "Disable");
+	stawaen->addEntry( "Enable");
+
+	SetupMenuValFloat * staspe = new SetupMenuValFloat( "Stall Speed", "", 20, 200, 1, 0, true, &stall_speed, true  );
+	staspe->setHelp(PROGMEM"Configure stalling speed for corresponding airplane type and reboot");
+	top->addEntry( staspe );
 }
 
 void SetupMenu::system_menu_create_altimeter_airspeed( MenuEntry *top ){
@@ -1602,21 +1663,34 @@ void SetupMenu::system_menu_create_altimeter_airspeed( MenuEntry *top ){
 
 	SetupMenu * stallwa = new SetupMenu( "Stall Warning");
 	top->addEntry( stallwa );
-	stallwa->setHelp( PROGMEM "Configure stall warning");
-
-	SetupMenuSelect * stawaen = new SetupMenuSelect( "Stall Warning", false, 0, false, &stall_warning );
-	stallwa->addEntry( stawaen );
-	stawaen->setHelp( PROGMEM "Enable alarm sound when speed goes below configured stall speed and below (until 30% less)");
-	stawaen->addEntry( "Disable");
-	stawaen->addEntry( "Enable");
-
-	SetupMenuValFloat * staspe = new SetupMenuValFloat( "Stall Speed", "", 20, 200, 1, 0, true, &stall_speed, true  );
-	staspe->setHelp(PROGMEM"Configure stalling speed for corresponding airplane type and reboot");
-	stallwa->addEntry( staspe );
+	stallwa->setHelp( PROGMEM "Configure stall warning parameters");
+	stallwa->addCreator( system_menu_create_altimeter_airspeed_stallwa );
 
 	SetupMenuValFloat * vmax = new SetupMenuValFloat( "Maximum Speed", "", 70, 450, 1, 0, false, &v_max  );
 	vmax->setHelp(PROGMEM"Configure maximum speed for corresponding airplane type");
 	top->addEntry( vmax );
+}
+
+void SetupMenu::system_menu_create_interfaceS1_routing( MenuEntry *top ){
+	SetupMenuSelect * s1outxcv = new SetupMenuSelect( PROGMEM "XCVario", false, update_routing_s1, true, &rt_s1_xcv );
+	s1outxcv->addEntry( "Disable");
+	s1outxcv->addEntry( "Enable");
+	top->addEntry( s1outxcv );
+
+	SetupMenuSelect * s1outwl = new SetupMenuSelect( PROGMEM  "Wireless", false, update_routing_s1, true, &rt_s1_wl );
+	s1outwl->addEntry( "Disable");
+	s1outwl->addEntry( "Enable");
+	top->addEntry( s1outwl );
+
+	SetupMenuSelect * s1outs1 = new SetupMenuSelect( PROGMEM  "S2-RS232", false, update_routing_s1, true, &rt_s1_s2 );
+	s1outs1->addEntry( "Disable");
+	s1outs1->addEntry( "Enable");
+	top->addEntry( s1outs1 );
+
+	SetupMenuSelect * s1outcan = new SetupMenuSelect( PROGMEM "CAN-bus", false, update_routing_s1, true, &rt_s1_can );
+	s1outcan->addEntry( "Disable");
+	s1outcan->addEntry( "Enable");
+	top->addEntry( s1outcan );
 }
 
 void SetupMenu::system_menu_create_interfaceS1( MenuEntry *top ){
@@ -1639,23 +1713,7 @@ void SetupMenu::system_menu_create_interfaceS1( MenuEntry *top ){
 	SetupMenu * s1out = new SetupMenu( PROGMEM "S1 Routing");
 	top->addEntry( s1out );
 	s1out->setHelp( PROGMEM "Select data source to be routed from/to serial interface S1");
-
-	SetupMenuSelect * s1outxcv = new SetupMenuSelect( PROGMEM "XCVario", false, update_routing_s1, true, &rt_s1_xcv );
-	s1outxcv->addEntry( "Disable");
-	s1outxcv->addEntry( "Enable");
-	s1out->addEntry( s1outxcv );
-	SetupMenuSelect * s1outwl = new SetupMenuSelect( PROGMEM  "Wireless", false, update_routing_s1, true, &rt_s1_wl );
-	s1outwl->addEntry( "Disable");
-	s1outwl->addEntry( "Enable");
-	s1out->addEntry( s1outwl );
-	SetupMenuSelect * s1outs1 = new SetupMenuSelect( PROGMEM  "S2-RS232", false, update_routing_s1, true, &rt_s1_s2 );
-	s1outs1->addEntry( "Disable");
-	s1outs1->addEntry( "Enable");
-	s1out->addEntry( s1outs1 );
-	SetupMenuSelect * s1outcan = new SetupMenuSelect( PROGMEM "CAN-bus", false, update_routing_s1, true, &rt_s1_can );
-	s1outcan->addEntry( "Disable");
-	s1outcan->addEntry( "Enable");
-	s1out->addEntry( s1outcan );
+	s1out->addCreator( system_menu_create_interfaceS1_routing );
 
 	SetupMenuSelect * stxi = new SetupMenuSelect( PROGMEM "TX Inversion", true , 0, true, &serial1_tx_inverted );
 	top->addEntry( stxi );
@@ -1682,6 +1740,25 @@ void SetupMenu::system_menu_create_interfaceS1( MenuEntry *top ){
 	stxdis1->addEntry( "Enable");
 }
 
+void SetupMenu::system_menu_create_interfaceS2_routing( MenuEntry *top ){
+	SetupMenuSelect * s2outxcv = new SetupMenuSelect( PROGMEM "XCVario", false, update_routing_s2, true, &rt_s2_xcv );
+	s2outxcv->addEntry( "Disable");
+	s2outxcv->addEntry( "Enable");
+	top->addEntry( s2outxcv );
+	SetupMenuSelect * s2outwl = new SetupMenuSelect( PROGMEM  "Wireless", false, update_routing_s2, true, &rt_s2_wl );
+	s2outwl->addEntry( "Disable");
+	s2outwl->addEntry( "Enable");
+	top->addEntry( s2outwl );
+	SetupMenuSelect * s2outs2 = new SetupMenuSelect( PROGMEM  "S1-RS232", false, update_routing_s2, true, &rt_s1_s2 );
+	s2outs2->addEntry( "Disable");
+	s2outs2->addEntry( "Enable");
+	top->addEntry( s2outs2 );
+	SetupMenuSelect * s2outcan = new SetupMenuSelect( PROGMEM "CAN-bus", false, update_routing_s2, true, &rt_s2_can );
+	s2outcan->addEntry( "Disable");
+	s2outcan->addEntry( "Enable");
+	top->addEntry( s2outcan );
+}
+
 void SetupMenu::system_menu_create_interfaceS2( MenuEntry *top ){
 	SetupMenuSelect * s2sp2 = new SetupMenuSelect( PROGMEM "Baudraute",	true, 0, true, &serial2_speed );
 	top->addEntry( s2sp2 );
@@ -1697,23 +1774,7 @@ void SetupMenu::system_menu_create_interfaceS2( MenuEntry *top ){
 	SetupMenu * s2out = new SetupMenu( PROGMEM "S2 Routing" );
 	s2out->setHelp( PROGMEM "Select data source to be routed from/to serial interface S2");
 	top->addEntry( s2out );
-
-	SetupMenuSelect * s2outxcv = new SetupMenuSelect( PROGMEM "XCVario", false, update_routing_s2, true, &rt_s2_xcv );
-	s2outxcv->addEntry( "Disable");
-	s2outxcv->addEntry( "Enable");
-	s2out->addEntry( s2outxcv );
-	SetupMenuSelect * s2outwl = new SetupMenuSelect( PROGMEM  "Wireless", false, update_routing_s2, true, &rt_s2_wl );
-	s2outwl->addEntry( "Disable");
-	s2outwl->addEntry( "Enable");
-	s2out->addEntry( s2outwl );
-	SetupMenuSelect * s2outs2 = new SetupMenuSelect( PROGMEM  "S1-RS232", false, update_routing_s2, true, &rt_s1_s2 );
-	s2outs2->addEntry( "Disable");
-	s2outs2->addEntry( "Enable");
-	s2out->addEntry( s2outs2 );
-	SetupMenuSelect * s2outcan = new SetupMenuSelect( PROGMEM "CAN-bus", false, update_routing_s2, true, &rt_s2_can );
-	s2outcan->addEntry( "Disable");
-	s2outcan->addEntry( "Enable");
-	s2out->addEntry( s2outcan );
+	s2out->addCreator( system_menu_create_interfaceS1_routing );
 
 	SetupMenuSelect * stxi2 = new SetupMenuSelect( PROGMEM "TX Inversion", true , 0, true, &serial2_tx_inverted );
 	top->addEntry( stxi2 );
@@ -1740,6 +1801,27 @@ void SetupMenu::system_menu_create_interfaceS2( MenuEntry *top ){
 	stxdis2->addEntry( "Enable");
 }
 
+void SetupMenu::system_menu_create_interfaceCAN_routing( MenuEntry *top ){
+	SetupMenuSelect * canoutxcv = new SetupMenuSelect( PROGMEM "XCVario", false, 0, true, &rt_can_xcv );
+	canoutxcv->addEntry( "Disable");
+	canoutxcv->addEntry( "Enable");
+	top->addEntry( canoutxcv );
+
+	SetupMenuSelect * canoutwl = new SetupMenuSelect( PROGMEM "Wireless", false, 0, true, &rt_wl_can );
+	canoutwl->addEntry( "Disable");
+	canoutwl->addEntry( "Enable");
+	top->addEntry( canoutwl );
+
+	SetupMenuSelect * canouts1 = new SetupMenuSelect( PROGMEM "S1-RS232", false, update_routing_s1, true, &rt_s1_can );
+	canouts1->addEntry( "Disable");
+	canouts1->addEntry( "Enable");
+	top->addEntry( canouts1 );
+
+	SetupMenuSelect * canouts2 = new SetupMenuSelect( PROGMEM "S2-RS232", false, update_routing_s2, true, &rt_s2_can );
+	canouts2->addEntry( "Disable");
+	canouts2->addEntry( "Enable");
+	top->addEntry( canouts2 );
+}
 
 void SetupMenu::system_menu_create_interfaceCAN( MenuEntry *top ){
 	SetupMenuSelect * canmode = new SetupMenuSelect( PROGMEM "Datarate", true, 0, true, &can_speed );
@@ -1753,23 +1835,7 @@ void SetupMenu::system_menu_create_interfaceCAN( MenuEntry *top ){
 	SetupMenu * canrt = new SetupMenu( PROGMEM "CAN Routing" );
 	top->addEntry( canrt );
 	canrt->setHelp( PROGMEM "Select data source that is routed from/to CAN interface");
-
-	SetupMenuSelect * canoutxcv = new SetupMenuSelect( PROGMEM "XCVario", false, 0, true, &rt_can_xcv );
-	canoutxcv->addEntry( "Disable");
-	canoutxcv->addEntry( "Enable");
-	canrt->addEntry( canoutxcv );
-	SetupMenuSelect * canoutwl = new SetupMenuSelect( PROGMEM "Wireless", false, 0, true, &rt_wl_can );
-	canoutwl->addEntry( "Disable");
-	canoutwl->addEntry( "Enable");
-	canrt->addEntry( canoutwl );
-	SetupMenuSelect * canouts1 = new SetupMenuSelect( PROGMEM "S1-RS232", false, update_routing_s1, true, &rt_s1_can );
-	canouts1->addEntry( "Disable");
-	canouts1->addEntry( "Enable");
-	canrt->addEntry( canouts1 );
-	SetupMenuSelect * canouts2 = new SetupMenuSelect( PROGMEM "S2-RS232", false, update_routing_s2, true, &rt_s2_can );
-	canouts2->addEntry( "Disable");
-	canouts2->addEntry( "Enable");
-	canrt->addEntry( canouts2 );
+	canrt->addCreator( system_menu_create_interfaceCAN_routing );
 
 	SetupMenuSelect * devmod = new SetupMenuSelect( PROGMEM "Mode", true , 0, false, &can_mode );
 	top->addEntry( devmod );
@@ -1832,7 +1898,7 @@ void SetupMenu::system_menu_create( MenuEntry *sye ){
 }
 
 void SetupMenu::setup_create_root(MenuEntry *top ){
-	if ( rot_default.get() == 0 ) {
+	if( rot_default.get() == 0 ) {
 		SetupMenuValFloat * mc = new SetupMenuValFloat( "MC", "",	0.0, 9.9, 0.1, 0, true, &MC );
 		mc->setHelp(PROGMEM"Mac Cready value for optimum cruise speed, or average climb rate to be provided in same unit as the variometer");
 		mc->setPrecision(1);
@@ -1866,7 +1932,7 @@ void SetupMenu::setup_create_root(MenuEntry *top ){
 	afe->setHelp(PROGMEM"Airfield elevation in meters for QNH auto adjust on ground according to this elevation");
 	top->addEntry( afe );
 
-	if( NEED_VOLTAGE_ADJUST ){
+	if( NEED_VOLTAGE_ADJUST && !SetupMenuValFloat::meter_adj_menu ){
 		SetupMenuValFloat::meter_adj_menu = new SetupMenuValFloat( "Voltmeter Adjust", "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust,  true, false, true);
 	}
 

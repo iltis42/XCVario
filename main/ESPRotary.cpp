@@ -33,9 +33,11 @@ bool ESPRotary::longPressed = false;
 static TaskHandle_t pid = NULL;
 
 void ESPRotary::attach(RotaryObserver *obs) {
+	// ESP_LOGI(FNAME,"Attach obs: %p", obs );
 	observers.push_back(obs);
 }
 void ESPRotary::detach(RotaryObserver *obs) {
+	// ESP_LOGI(FNAME,"Detach obs: %p", obs );
 	auto it = std::find(observers.begin(), observers.end(), obs);
 	if ( it != observers.end() ) {
 		observers.erase(it);

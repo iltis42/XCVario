@@ -41,11 +41,8 @@
 #include "SetupNG.h"
 #include "quaternion.h"
 
-
-
 SetupMenuSelect * audio_range_sm = 0;
 SetupMenuSelect * mpu = 0;
-
 
 // Menu for flap setup
 
@@ -149,13 +146,11 @@ int update_routing_s2( SetupMenuSelect * p ){
 	return 0;
 }
 
-
 int update_s2f_speed(SetupMenuValFloat * p)
 {
 	Switch::setCruiseSpeed( Units::Airspeed2Kmh( s2f_speed.get() ) );
 	return 0;
 }
-
 
 int update_rentry(SetupMenuValFloat * p)
 {
@@ -256,7 +251,6 @@ int qnh_adj( SetupMenuValFloat * p )
 	return 0;
 }
 
-
 // Battery Voltage Meter Calibration
 int factv_adj( SetupMenuValFloat * p )
 {
@@ -268,7 +262,6 @@ int factv_adj( SetupMenuValFloat * p )
 	xSemaphoreGive(spiMutex );
 	return 0;
 }
-
 
 int master_xcv_lock( SetupMenuSelect * p ){
 	ESP_LOGI(FNAME,"master_xcv_lock");
@@ -325,7 +318,6 @@ int crew_weight_adj( SetupMenuValFloat * p )
 int bug_adj( SetupMenuValFloat * p ){
 	return 0;
 }
-
 
 int vol_adj( SetupMenuValFloat * p ){
 	// Audio::setVolume( (int)(*(p->_value)) );
@@ -572,7 +564,6 @@ void SetupMenu::showMenu(){
 	// ESP_LOGI(FNAME,"end showMenu()");
 }
 
-
 static int screen_index = 0;
 
 void SetupMenu::create_subtree(){
@@ -653,7 +644,6 @@ void SetupMenu::escape(){
 		gflags.inSetup=false;
 	}
 }
-
 
 void SetupMenu::vario_menu_create_damping( MenuEntry *top ){
 	SetupMenuValFloat * vda = new SetupMenuValFloat( 	"Damping", "sec", 2.0, 10.0, 0.1, 0, false, &vario_delay );
@@ -796,14 +786,13 @@ void SetupMenu::vario_menu_create( MenuEntry *vae ){
 	meanclimb->addCreator( vario_menu_create_meanclimb );
 
 	SetupMenu * s2fs = new SetupMenu( "S2F Settings" );
-	MenuEntry* s2fse = vae->addEntry( s2fs, meanclimb );
+	vae->addEntry( s2fs, meanclimb );
 	s2fs->addCreator( vario_menu_create_s2f );
 
 	SetupMenu * elco = new SetupMenu( "Electronic Compensation" );
 	vae->addEntry( elco, s2fs );
 	elco->addCreator( vario_menu_create_ec );
 }
-
 
 void SetupMenu::audio_menu_create_tonestyles( MenuEntry *top ){
 	SetupMenuValFloat * cf = new SetupMenuValFloat( "CenterFreq", "Hz", 200.0, 2000.0, 10.0, 0, false, &center_freq );
@@ -1064,7 +1053,6 @@ void SetupMenu::options_menu_create_compasswind_compass( MenuEntry *top ){
 	top->addEntry( compSensorCal );
 
 	SetupMenuValFloat *cd = new SetupMenuValFloat( "Setup Declination",	"°",	-180, 180, 1.0, compassDeclinationAction, false, &compass_declination );
-
 	cd->setHelp( PROGMEM "Set compass declination in degrees" );
 	top->addEntry( cd );
 
@@ -1078,14 +1066,12 @@ void SetupMenu::options_menu_create_compasswind_compass( MenuEntry *top ){
 	devMenu->setHelp( "Compass Deviations", 280 );
 	top->addEntry( devMenu );
 	devMenu->addCreator( options_menu_create_compasswind_compass_dev );
-	// Calibration menu is requested
 
 	// Show comapss deviations
 	DisplayDeviations* smd = new DisplayDeviations( "Show Deviations" );
 	top->addEntry( smd );
 
 	SetupMenuSelect* sms = new SetupMenuSelect( "Reset Deviations ", false, compassResetDeviationAction, false,	0 );
-
 	sms->setHelp( "Reset all deviation data to zero" );
 	sms->addEntry( "Cancel" );
 	sms->addEntry( "Reset" );
@@ -1976,7 +1962,6 @@ void SetupMenu::setup_create_root(MenuEntry *top ){
 		sy->addCreator( system_menu_create );
 	}
 }
-
 
 void SetupMenu::setup( )
 {

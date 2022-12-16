@@ -10,6 +10,7 @@
 #include "MenuEntry.h"
 #include <string>
 #include <driver/gpio.h>
+#include "SetupMenuValFloat.h"
 
 class IpsDisplay;
 class ESPRotary;
@@ -86,7 +87,7 @@ public:
 	static void system_menu_create_hardware_ahrs( MenuEntry *top );
 	static void system_menu_create_hardware_ahrs_lc( MenuEntry *top );
 
-
+	static SetupMenuValFloat * createQNHMenu();
 };
 
 #endif

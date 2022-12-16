@@ -1453,7 +1453,8 @@ void system_startup(void *args){
 			ESP_LOGI(FNAME,"Do Factory Voltmeter adj");
 			SetupMenuValFloat::showMenu( 0.0, SetupMenuValFloat::meter_adj_menu );
 		}else{
-			SetupMenuValFloat::showMenu( qnh_best, SetupMenuValFloat::qnh_menu );
+			SetupMenuValFloat *qnh_menu = SetupMenu::createQNHMenu();
+			SetupMenuValFloat::showMenu( qnh_best, qnh_menu );
 		}
 	}
 	else

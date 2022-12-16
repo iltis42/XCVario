@@ -81,7 +81,7 @@ void SetupMenuValFloat::showMenu( float val, SetupMenuValFloat * menu ){
 void SetupMenuValFloat::display( int mode ){
 	if( (selected != this) || !gflags.inSetup )
 		return;
-	ESP_LOGI(FNAME,"display() pressed=%d instance=%x mode=%d", pressed, (int)this, mode );
+	// ESP_LOGI(FNAME,"display() pressed=%d instance=%x mode=%d", pressed, (int)this, mode );
 	int y= 75;
 	if( mode == 0 ){ // normal mode
 		uprintf( 5,25, selected->_title );

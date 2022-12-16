@@ -1884,6 +1884,7 @@ void SetupMenu::system_menu_create( MenuEntry *sye ){
 }
 
 void SetupMenu::setup_create_root(MenuEntry *top ){
+	ESP_LOGI(FNAME,"setup_create_root()");
 	if( rot_default.get() == 0 ) {
 		SetupMenuValFloat * mc = new SetupMenuValFloat( "MC", "",	0.0, 9.9, 0.1, 0, true, &MC );
 		mc->setHelp(PROGMEM"Mac Cready value for optimum cruise speed, or average climb rate to be provided in same unit as the variometer");
@@ -1910,23 +1911,19 @@ void SetupMenu::setup_create_root(MenuEntry *top ){
 	crewball->setHelp(PROGMEM"Weight of the pilot(s) including parachute (everything on top of the empty weight apart from ballast)");
 	top->addEntry( crewball );
 
-	SetupMenuValFloat::qnh_menu = new SetupMenuValFloat( "QNH", "", 900, 1100.0, 0.250, qnh_adj, true, &QNH );
-	SetupMenuValFloat::qnh_menu->setHelp(PROGMEM"QNH pressure value from next ATC. On ground you may adjust to airfield altitude above MSL", 180 );
-	top->addEntry( SetupMenuValFloat::qnh_menu );
+	SetupMenuValFloat *qnh_menu = SetupMenu::createQNHMenu();
+	top->addEntry( qnh_menu );
 
 	SetupMenuValFloat * afe = new SetupMenuValFloat( "Airfield Elevation", "", -1, 3000, 1, 0, true, &elevation );
 	afe->setHelp(PROGMEM"Airfield elevation in meters for QNH auto adjust on ground according to this elevation");
 	top->addEntry( afe );
 
-	if( NEED_VOLTAGE_ADJUST && !SetupMenuValFloat::meter_adj_menu ){
-		SetupMenuValFloat::meter_adj_menu = new SetupMenuValFloat( "Voltmeter Adjust", "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust,  true, false, true);
-	}
-
+    // Clear student mode, password correct
 	if( (int)(password.get()) == 271 ) {
 		student_mode.set( 0 );
 		password.set( 0 );
 	}
-
+    // Student mode: Query password
 	if( student_mode.get() )
 	{
 		SetupMenuValFloat * passw = new SetupMenuValFloat( "Expert Password", "", 0, 1000, 1, 0, false, &password  );
@@ -1963,13 +1960,21 @@ void SetupMenu::setup_create_root(MenuEntry *top ){
 	}
 }
 
+SetupMenuValFloat * SetupMenu::createQNHMenu(){
+	SetupMenuValFloat * qnh = new SetupMenuValFloat( "QNH", "", 900, 1100.0, 0.250, qnh_adj, true, &QNH );
+	qnh->setHelp(PROGMEM"QNH pressure value from next ATC. On ground you may adjust to airfield altitude above MSL", 180 );
+	return qnh;
+}
+
 void SetupMenu::setup( )
 {
 	ESP_LOGI(FNAME,"SetupMenu setup()");
 	SetupMenu * root = new SetupMenu( "Setup" );
 	root->setRoot( root );
 	root->addEntry( root );
-	root->addCreator(setup_create_root);
-	root->create_subtree();
-	SetupMenu::display();
+	// Create static menues
+	if( NEED_VOLTAGE_ADJUST && !SetupMenuValFloat::meter_adj_menu ){
+			SetupMenuValFloat::meter_adj_menu = new SetupMenuValFloat( "Voltmeter Adjust", "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust,  true, false, true);
+	}
+	setup_create_root( root );
 }

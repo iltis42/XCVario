@@ -67,6 +67,7 @@ public:
 	static void options_menu_create_compasswind_straightwind_filters( MenuEntry *top );
 	static void options_menu_create_compasswind_circlingwind( MenuEntry *top );
 	static void options_menu_create_wireless( MenuEntry *top );
+	static void options_menu_create_wireless_custom_id( MenuEntry *top );
 	static void options_menu_create_wireless_routing( MenuEntry *top );
 	static void options_menu_create_gload( MenuEntry *top );
 

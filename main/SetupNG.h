@@ -30,6 +30,7 @@
 #include <vector>
 #include "Compass.h"
 #include "SetupCommon.h"
+#include "WifiApp.h"
 
 
 /*
@@ -103,7 +104,6 @@ typedef struct setup_flags{
 	uint8_t _sync  :2;
 	uint8_t _unit  :3;
 } t_setup_flags;
-
 
 template<typename T>
 class SetupNG: public SetupCommon
@@ -408,6 +408,9 @@ private:
 	void (* _action)();
 };
 
+
+
+
 extern SetupNG<float> 		QNH;
 extern SetupNG<float> 		polar_wingload;
 extern SetupNG<float> 		polar_speed1;
@@ -659,7 +662,7 @@ extern SetupNG<int> 		data_monitor;
 extern SetupNG<int> 		data_monitor_mode;
 extern SetupNG<t_bitfield_compass> 	calibration_bits;
 extern SetupNG<int> 		gear_warning;
-extern SetupNG<int>         wireless_id;
+extern SetupNG<t_wireless_id>  custom_wireless_id;
 
 extern uint8_t g_col_background;
 extern uint8_t g_col_highlight;

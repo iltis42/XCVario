@@ -886,6 +886,9 @@ void system_startup(void *args){
 	register_coredump();
 	Polars::begin();
 
+	custom_wireless_id.set(t_wireless_id( "D-ABCD") );
+	ESP_LOGI(FNAME,"Custom Wirelss-ID: %s", custom_wireless_id.get().id );
+
 	the_can_mode = can_mode.get(); // initialize variable for CAN mode
 	if( hardwareRevision.get() != 2 ){
 		gpio_set_direction(GPIO_NUM_2, GPIO_MODE_INPUT);     // 2020 series 1, analog in default

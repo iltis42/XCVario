@@ -50,7 +50,7 @@ typedef struct bitfield_compass{
 	   	return( String(xmax_green) + " " + String(xmin_green) +
 	   			String(ymax_green) + " " + String(ymin_green) +
 				String(zmax_green) + " " + String(zmin_green) );
-	 };
+	};
 }t_bitfield_compass;
 
 class Compass: public Deviation

@@ -1243,6 +1243,13 @@ void SetupMenu::options_menu_create_wireless_routing( MenuEntry *top ){
 	top->addEntry( wloutxcan );
 }
 
+/*
+void SetupMenu::options_menu_create_wireless_custom_id( MenuEntry *top ){
+	SetupMenuString * id1 = new SetupMenuString( "Wireless ID",	false, wireless_id, false, &custom_wl_id );
+	top->addEntry( id1 );
+}
+
+*/
 void SetupMenu::options_menu_create_wireless( MenuEntry *top )
 {
 	SetupMenuSelect * btm = new SetupMenuSelect( PROGMEM "Wireless", true, 0, true, &wireless_type );
@@ -1526,6 +1533,8 @@ void SetupMenu::system_menu_create_hardware_ahrs_lc( MenuEntry *top ){
 	ahrslc3->addEntryList( keys, sizeof(keys)/4 );
 	ahrslc4->addEntryList( keys, sizeof(keys)/4 );
 }
+
+
 
 void SetupMenu::system_menu_create_hardware_ahrs( MenuEntry *top ){
 	mpu = new SetupMenuSelect( "AHRS Option", true , 0, true, &attitude_indicator );

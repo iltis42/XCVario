@@ -71,10 +71,7 @@ bool MP5004DP::offsetPlausible(uint16_t aoffset )
 	ESP_LOGI(FNAME,"MP5004DP offsetPlausible( %d )", aoffset );
 	int lower_val = 608;
 	int upper_val = 1067;
-	if( hardwareRevision.get() >= 4 ){  // XGZ sensor, measured 252 typical
-		lower_val = 150;
-		upper_val = 500;
-	}
+
 	if( (aoffset > lower_val ) && (aoffset < upper_val )  )
 		return true;
 	else

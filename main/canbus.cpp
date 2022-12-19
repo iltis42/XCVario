@@ -372,6 +372,10 @@ bool CANbus::selfTest( bool rs ){
 	sendMutex = xSemaphoreCreateMutex();
 	nmeaMutex = xSemaphoreCreateMutex();
 	_slope_support = rs;
+	if( !_slope_support ){
+		gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);
+		gpio_set_level(GPIO_NUM_2, 1 );
+	}
 	driverInstall( TWAI_MODE_NO_ACK );
 	bool res=false;
 	int id=0x100;

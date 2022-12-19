@@ -240,7 +240,7 @@ bool SetupCommon::initSetup( bool& present ) {
 char * SetupCommon::getID() {
 	char id[7] = { 0 };
 	strcpy( id, custom_wireless_id.get().id );
-	if( hardwareRevision.get() >= 3 ){
+	if( hardwareRevision.get() >= XCVARIO_21 ){
 		sprintf( _ID, "%s%s", getFixedID(), id );
 	}
 	else{
@@ -256,7 +256,7 @@ char * SetupCommon::getDefaultID() {
 	if ( esp_efuse_mac_get_default(mac) == ESP_OK ){
 		crc = mz_crc32(0L, mac, 6);
 	}
-	if( hardwareRevision.get() >= 3 ){
+	if( hardwareRevision.get() >= XCVARIO_21 ){
 		sprintf( default_id, "%04d", int(crc % 10000) );
 	}
 	else{
@@ -266,7 +266,7 @@ char * SetupCommon::getDefaultID() {
 }
 
 char * SetupCommon::getFixedID() {
-	if( hardwareRevision.get() >= 3 ){
+	if( hardwareRevision.get() >= XCVARIO_21 ){
 		return "XCVario-";
 	}
 	else{

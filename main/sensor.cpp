@@ -886,23 +886,12 @@ void system_startup(void *args){
 	register_coredump();
 	Polars::begin();
 
-	char id[10] = { 0 };
-	strcpy( id, custom_wireless_id.get().id );
-	if( strlen( id ) == 0 ){
-		custom_wireless_id.set( SetupCommon::getDefaultID() ); // Default ID created from MAC address CRC
-		ESP_LOGI(FNAME,"Empty ID: Initialize empty Wirelss-ID: %s", custom_wireless_id.get().id );
-	}
-	ESP_LOGI(FNAME,"Custom Wirelss-ID: %s", custom_wireless_id.get().id );
-
 	the_can_mode = can_mode.get(); // initialize variable for CAN mode
 	if( hardwareRevision.get() == HW_UNKNOWN ){  // per default we assume there is XCV-20
 		ESP_LOGI( FNAME, "Hardware Revision unknown, set revision 2 (XCV-20)");
-		hardwareRevision.set(2);
+		hardwareRevision.set(XCVARIO_20);
 	}
-	if( hardwareRevision.get() != 2 ){
-		gpio_set_direction(GPIO_NUM_2, GPIO_MODE_INPUT);     // 2020 series 1, analog in default
-		gpio_pullup_en( GPIO_NUM_2 );
-	}
+
 	if( display_orientation.get() ){
 		ESP_LOGI( FNAME, "TopDown display mode flag set");
 		topDown = true;
@@ -911,14 +900,7 @@ void system_startup(void *args){
 	wireless = (e_wireless_type)(wireless_type.get()); // we cannot change this on the fly, so get that on boot
 	AverageVario::begin();
 	stall_alarm_off_kmh = stall_speed.get()/3;
-	Cipher::begin();
-	if( Cipher::checkKeyAHRS() ){
-		ESP_LOGI( FNAME, "AHRS key valid=%d", gflags.ahrsKeyValid );
-	}else{
-		ESP_LOGI( FNAME, "AHRS key invalid=%d, disable AHRS Sensor", gflags.ahrsKeyValid );
-		if( attitude_indicator.get() )
-			attitude_indicator.set(0);
-	}
+
 	Battery.begin();  // for battery voltage
 	xMutex=xSemaphoreCreateMutex();
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
@@ -961,7 +943,7 @@ void system_startup(void *args){
 		ESP_LOGI(FNAME,"Rotary pressed: Do Software Update");
 	}
 	if( doUpdate ) {
-		if( hardwareRevision.get() == 2) { // only XCV-20 uses this GPIO for Rotary
+		if( hardwareRevision.get() == XCVARIO_20) { // only XCV-20 uses this GPIO for Rotary
 			ESP_LOGI( FNAME,"Hardware Revision detected 2");
 			Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
 		}
@@ -980,9 +962,9 @@ void system_startup(void *args){
 	err = MPU.reset();
 	ESP_LOGI( FNAME,"MPU Probing returned %d MPU enable: %d ", err, attitude_indicator.get() );
 	if( err == ESP_OK ){
-		if( hardwareRevision.get() < 3 ){
+		if( hardwareRevision.get() < XCVARIO_21 ){
 			ESP_LOGI( FNAME,"MPU avail, increase hardware revision to 3 (XCV-21)");
-			hardwareRevision.set(3);  // there is MPU6050 gyro and acceleration sensor, at least we got an XCV-21
+			hardwareRevision.set(XCVARIO_21);  // there is MPU6050 gyro and acceleration sensor, at least we got an XCV-21
 		}
 		gflags.haveMPU = true;
 		mpu_target_temp = mpu_temperature.get();
@@ -1030,12 +1012,21 @@ void system_startup(void *args){
 	}
 	else{
 		ESP_LOGI( FNAME,"MPU reset failed, check HW revision: %d",hardwareRevision.get() );
-		if( hardwareRevision.get() >= 3 ) {
+		if( hardwareRevision.get() >= XCVARIO_21 ) {
 			ESP_LOGI( FNAME,"hardwareRevision detected = 3, XCVario-21+");
 			display->writeText( line++, "AHRS Sensor: NOT FOUND");
 			logged_tests += "MPU6050 AHRS test: NOT FOUND\n";
 		}
 	}
+	char id[16] = { 0 };
+	strcpy( id, custom_wireless_id.get().id );
+	ESP_LOGI(FNAME,"Custom Wirelss-ID from Flash: %s len: %d", id, strlen(id) );
+	if( strlen( id ) == 0 ){
+		custom_wireless_id.set( SetupCommon::getDefaultID() ); // Default ID created from MAC address CRC
+		ESP_LOGI(FNAME,"Empty ID: Initialize empty Wirelss-ID: %s", custom_wireless_id.get().id );
+	}
+	ESP_LOGI(FNAME,"Custom Wirelss-ID: %s", custom_wireless_id.get().id );
+
 	String wireless_id;
 	if( wireless == WL_BLUETOOTH ) {
 		wireless_id="BT ID: ";
@@ -1045,11 +1036,19 @@ void system_startup(void *args){
 		wireless_id="WLAN SID: ";
 	wireless_id += SetupCommon::getID();
 	display->writeText(line++, wireless_id.c_str() );
+	Cipher::begin();
+	if( Cipher::checkKeyAHRS() ){
+		ESP_LOGI( FNAME, "AHRS key valid=%d", gflags.ahrsKeyValid );
+	}else{
+		ESP_LOGI( FNAME, "AHRS key invalid=%d, disable AHRS Sensor", gflags.ahrsKeyValid );
+		if( attitude_indicator.get() )
+			attitude_indicator.set(0);
+	}
 
 	ESP_LOGI(FNAME,"Airspeed sensor init..  type configured: %d", airspeed_sensor_type.get() );
 	int offset;
 	bool found = false;
-	if( hardwareRevision.get() >= 3 ){ // autodetect
+	if( hardwareRevision.get() >= XCVARIO_21 ){ // autodetect new type of sensors
 		ESP_LOGI(FNAME," HW revision 3, check configured airspeed sensor");
 		bool valid_config=true;
 		switch( airspeed_sensor_type.get() ){
@@ -1303,9 +1302,9 @@ void system_startup(void *args){
 			resultCAN = "OK";
 			ESP_LOGE(FNAME,"CAN Bus selftest (no RS): OK");
 			logged_tests += "CAN Interface: OK\n";
-			if( hardwareRevision.get() != 5 ){
+			if( hardwareRevision.get() != XCVARIO_23 ){
 				ESP_LOGI(FNAME,"CAN Bus selftest without RS control OK: set hardwareRevision 5 (XCV-23)");
-				hardwareRevision.set(5);  // XCV-23, including AHRS temperature control
+				hardwareRevision.set(XCVARIO_23);  // XCV-23, including AHRS temperature control
 			}
 		}
 		else{
@@ -1313,8 +1312,8 @@ void system_startup(void *args){
 				resultCAN = "OK";
 				ESP_LOGE(FNAME,"CAN Bus selftest RS: OK");
 				logged_tests += "CAN Interface: OK\n";
-				if( hardwareRevision.get() != 4 ){
-					hardwareRevision.set(4);  // XCV-22, CAN but no AHRS temperature control
+				if( hardwareRevision.get() != XCVARIO_22 ){
+					hardwareRevision.set(XCVARIO_22);  // XCV-22, CAN but no AHRS temperature control
 				}
 			}
 			else{
@@ -1351,7 +1350,7 @@ void system_startup(void *args){
 		result += "S1 OK";
 	else
 		result += "S1 FAIL";
-	if( (hardwareRevision.get() >= 3) && serial2_speed.get() ){
+	if( (hardwareRevision.get() >= XCVARIO_21) && serial2_speed.get() ){
 		if( Serial::selfTest( 2 ) )
 			result += ",S2 OK";
 		else
@@ -1488,8 +1487,7 @@ void system_startup(void *args){
 		Flap::init(MYUCG);
 	}
 
-
-	if( hardwareRevision.get() == 2 ){
+	if( hardwareRevision.get() == XCVARIO_20 ){
 		Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);  // XCV-20 uses GPIO_2 for Rotary
 	}
 	else {

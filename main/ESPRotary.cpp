@@ -61,6 +61,8 @@ void ESPRotary::begin(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw ) {
 	sw = asw;
 
 	gpio_set_direction(sw,GPIO_MODE_INPUT);
+	gpio_set_direction(dt,GPIO_MODE_INPUT);
+	gpio_set_direction(clk,GPIO_MODE_INPUT);
 	gpio_pullup_en(sw); // Rotary Encoder Button
 	gpio_pullup_en(dt);
 	gpio_pullup_en(clk);
@@ -219,7 +221,7 @@ void ESPRotary::informObservers( void * args )
 			int diff = (r_enc_count+r_enc2_count) - old_cnt;
 			diff = diff / ( rotary_inc.get()+1 );
 			// ESP_LOGI(FNAME,"Rotary diff %d", diff );
-			if( hardwareRevision.get() >= 3 ) {
+			if( hardwareRevision.get() >= XCVARIO_21 ) {
 				if( rotary_dir_21.get() == 1 ) // reverse default for 2021 series
 					diff = -diff;
 			}

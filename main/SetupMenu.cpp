@@ -1521,7 +1521,7 @@ void SetupMenu::system_menu_create_hardware_rotary( MenuEntry *top ){
 	screens->addCreator( system_menu_create_hardware_rotary_screens );
 
 	SetupMenuSelect * rotype;
-	if( hardwareRevision.get() < 3 )
+	if( hardwareRevision.get() < XCVARIO_21 )
 		rotype = new SetupMenuSelect( "Direction", false , 0, false, &rotary_dir );
 	else
 		rotype = new SetupMenuSelect( "Direction", false , 0, false, &rotary_dir_21 );
@@ -1636,7 +1636,7 @@ void SetupMenu::system_menu_create_hardware( MenuEntry *top ){
 	gear->addEntry( "S2 Flap negative");   // A negative signal, low signal or < 1V will start alarm
 	gear->addEntry( "S2 RS232 negative");
 
-	if( hardwareRevision.get() >= 3 ){
+	if( hardwareRevision.get() >= XCVARIO_21 ){
 		SetupMenu * ahrs = new SetupMenu( "AHRS Setup" );
 		top->addEntry( ahrs );
 		ahrs->addCreator( system_menu_create_hardware_ahrs );
@@ -1909,15 +1909,17 @@ void SetupMenu::system_menu_create( MenuEntry *sye ){
 	sye->addEntry( rs232 );
 	rs232->addCreator(system_menu_create_interfaceS1);
 
-	if( hardwareRevision.get() >= 3 ) {
+	if( hardwareRevision.get() >= XCVARIO_21 ) {
 		SetupMenu * rs232_2 = new SetupMenu( "RS232 Interface S2" );
 		sye->addEntry( rs232_2 );
 		rs232_2->addCreator(system_menu_create_interfaceS2);
 	}
-	// Can Interface C1
-	SetupMenu * can = new SetupMenu( "CAN Interface" );
-	sye->addEntry( can );
-	can->addCreator(system_menu_create_interfaceCAN);
+	if( hardwareRevision.get() >= XCVARIO_22 ){
+		// Can Interface C1
+		SetupMenu * can = new SetupMenu( "CAN Interface" );
+		sye->addEntry( can );
+		can->addCreator(system_menu_create_interfaceCAN);
+	}
 
 	// NMEA protocol of variometer
 	SetupMenuSelect * nmea = new SetupMenuSelect( PROGMEM "NMEA Protocol", false , 0, true, &nmea_protocol );

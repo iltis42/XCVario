@@ -886,10 +886,19 @@ void system_startup(void *args){
 	register_coredump();
 	Polars::begin();
 
-	custom_wireless_id.set(t_wireless_id( "D-ABCD") );
+	char id[10] = { 0 };
+	strcpy( id, custom_wireless_id.get().id );
+	if( strlen( id ) == 0 ){
+		custom_wireless_id.set( SetupCommon::getDefaultID() ); // Default ID created from MAC address CRC
+		ESP_LOGI(FNAME,"Empty ID: Initialize empty Wirelss-ID: %s", custom_wireless_id.get().id );
+	}
 	ESP_LOGI(FNAME,"Custom Wirelss-ID: %s", custom_wireless_id.get().id );
 
 	the_can_mode = can_mode.get(); // initialize variable for CAN mode
+	if( hardwareRevision.get() == HW_UNKNOWN ){  // per default we assume there is XCV-20
+		ESP_LOGI( FNAME, "Hardware Revision unknown, set revision 2 (XCV-20)");
+		hardwareRevision.set(2);
+	}
 	if( hardwareRevision.get() != 2 ){
 		gpio_set_direction(GPIO_NUM_2, GPIO_MODE_INPUT);     // 2020 series 1, analog in default
 		gpio_pullup_en( GPIO_NUM_2 );
@@ -902,6 +911,7 @@ void system_startup(void *args){
 	wireless = (e_wireless_type)(wireless_type.get()); // we cannot change this on the fly, so get that on boot
 	AverageVario::begin();
 	stall_alarm_off_kmh = stall_speed.get()/3;
+	Cipher::begin();
 	if( Cipher::checkKeyAHRS() ){
 		ESP_LOGI( FNAME, "AHRS key valid=%d", gflags.ahrsKeyValid );
 	}else{
@@ -937,8 +947,12 @@ void system_startup(void *args){
 	String logged_tests;
 	logged_tests += "\n\n\n";
 	Version V;
-	std::string ver( "Version: " );
+	std::string ver( " Ver.: " );
 	ver += V.version();
+	char hw[24];
+	sprintf( hw,", XCV-%d", hardwareRevision.get()+18);  // plus 18, e.g. 2 = XCVario-20
+	std::string hwrev( hw );
+	ver += hwrev;
 	display->writeText(line++, ver.c_str() );
 	sleep(1);
 	bool doUpdate = software_update.get();
@@ -947,7 +961,7 @@ void system_startup(void *args){
 		ESP_LOGI(FNAME,"Rotary pressed: Do Software Update");
 	}
 	if( doUpdate ) {
-		if( hardwareRevision.get() == 2) {
+		if( hardwareRevision.get() == 2) { // only XCV-20 uses this GPIO for Rotary
 			ESP_LOGI( FNAME,"Hardware Revision detected 2");
 			Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
 		}
@@ -966,7 +980,10 @@ void system_startup(void *args){
 	err = MPU.reset();
 	ESP_LOGI( FNAME,"MPU Probing returned %d MPU enable: %d ", err, attitude_indicator.get() );
 	if( err == ESP_OK ){
-		hardwareRevision.set(3);  // wow, there is MPU6050 gyro and acceleration sensor
+		if( hardwareRevision.get() < 3 ){
+			ESP_LOGI( FNAME,"MPU avail, increase hardware revision to 3 (XCV-21)");
+			hardwareRevision.set(3);  // there is MPU6050 gyro and acceleration sensor, at least we got an XCV-21
+		}
 		gflags.haveMPU = true;
 		mpu_target_temp = mpu_temperature.get();
 		ESP_LOGI( FNAME,"MPU initialize");
@@ -987,8 +1004,6 @@ void system_startup(void *args){
 			MPU.setGyroOffset(gb);
 			MPU.setAccelOffset(ab);
 			ESP_LOGI( FNAME,"MPU new offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
-			if( hardwareRevision.get() != 3 )
-				hardwareRevision.set(3);
 		}else{
 			MPU.setAccelOffset(ab);
 			MPU.setGyroOffset(gb);
@@ -1015,19 +1030,15 @@ void system_startup(void *args){
 	}
 	else{
 		ESP_LOGI( FNAME,"MPU reset failed, check HW revision: %d",hardwareRevision.get() );
-		if( hardwareRevision.get() != 2 ){
-			ESP_LOGI( FNAME,"hardwareRevision detected = 2, XCVario-20");
-			hardwareRevision.set(2);
-		}
-		if( hardwareRevision.get() == 3 ) {
-			ESP_LOGI( FNAME,"hardwareRevision detected = 3, XCVario-21");
+		if( hardwareRevision.get() >= 3 ) {
+			ESP_LOGI( FNAME,"hardwareRevision detected = 3, XCVario-21+");
 			display->writeText( line++, "AHRS Sensor: NOT FOUND");
 			logged_tests += "MPU6050 AHRS test: NOT FOUND\n";
 		}
 	}
 	String wireless_id;
 	if( wireless == WL_BLUETOOTH ) {
-		wireless_id="Bluetooth ID: ";
+		wireless_id="BT ID: ";
 		btsender.begin();
 	}
 	else
@@ -1038,7 +1049,7 @@ void system_startup(void *args){
 	ESP_LOGI(FNAME,"Airspeed sensor init..  type configured: %d", airspeed_sensor_type.get() );
 	int offset;
 	bool found = false;
-	if( hardwareRevision.get() == 3 ){ // autodetect
+	if( hardwareRevision.get() >= 3 ){ // autodetect
 		ESP_LOGI(FNAME," HW revision 3, check configured airspeed sensor");
 		bool valid_config=true;
 		switch( airspeed_sensor_type.get() ){
@@ -1289,15 +1300,22 @@ void system_startup(void *args){
 	{
 		CAN = new CANbus();
 		if( CAN->selfTest(false) ){  // series 2023 has fixed slope control, prio slope bit for AHRS temperature control
-			resultCAN = "OK-";
+			resultCAN = "OK";
 			ESP_LOGE(FNAME,"CAN Bus selftest (no RS): OK");
 			logged_tests += "CAN Interface: OK\n";
+			if( hardwareRevision.get() != 5 ){
+				ESP_LOGI(FNAME,"CAN Bus selftest without RS control OK: set hardwareRevision 5 (XCV-23)");
+				hardwareRevision.set(5);  // XCV-23, including AHRS temperature control
+			}
 		}
 		else{
 			if( CAN->selfTest(true) ){  // if slope bit is to be handled, there is no temperature control
 				resultCAN = "OK";
 				ESP_LOGE(FNAME,"CAN Bus selftest RS: OK");
 				logged_tests += "CAN Interface: OK\n";
+				if( hardwareRevision.get() != 4 ){
+					hardwareRevision.set(4);  // XCV-22, CAN but no AHRS temperature control
+				}
 			}
 			else{
 				resultCAN = "FAIL";
@@ -1357,7 +1375,7 @@ void system_startup(void *args){
 		WifiApp::wifi_init_softap();
 	}
 	// 2021 series 3, or 2022 model with new digital poti CAT5171 also features CAN bus
-	if(  can_speed.get() != CAN_SPEED_OFF && (resultCAN == "OK" || resultCAN == "OK-") && CAN )
+	if(  can_speed.get() != CAN_SPEED_OFF && (resultCAN == "OK") && CAN )
 	{
 		ESP_LOGI(FNAME, "Now start CAN Bus Interface");
 		CAN->begin();  // start CAN tasks and driver
@@ -1472,7 +1490,7 @@ void system_startup(void *args){
 
 
 	if( hardwareRevision.get() == 2 ){
-		Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
+		Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);  // XCV-20 uses GPIO_2 for Rotary
 	}
 	else {
 		Rotary.begin( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);

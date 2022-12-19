@@ -38,12 +38,12 @@ bool SetupCommon::lazyCommit = true;
 QueueHandle_t SetupCommon::commitSema = nullptr;
 esp_timer_handle_t SetupCommon::_timer = nullptr;
 bool SetupCommon::_dirty = false;
-char SetupCommon::_ID[14];
+char SetupCommon::_ID[16] = { 0 };
+char SetupCommon::default_id[6] = { 0 };
 std::vector<SetupCommon *> *SetupCommon::instances = 0;
 
 
 SetupCommon::SetupCommon() {
-	memset( _ID, 0, sizeof( _ID ));
 	if( !instances )  // instantiate first
 		instances = new std::vector<SetupCommon *>;
 }
@@ -236,22 +236,44 @@ bool SetupCommon::initSetup( bool& present ) {
 	return ret;
 };
 
+
 char * SetupCommon::getID() {
-	if( strlen( _ID ) == 0 ) {
-		uint8_t mac[6];
-		unsigned long  crc = 0;
-		if ( esp_efuse_mac_get_default(mac) == ESP_OK ){
-			crc = mz_crc32(0L, mac, 6);
-		}
-		if( hardwareRevision.get() >= 3 ){
-			sprintf( _ID, "XCVario-%04d", int(crc % 10000) );
-		}
-		else{
-			sprintf( _ID, "iVario-%03d", int(crc % 1000));
-		}
+	char id[7] = { 0 };
+	strcpy( id, custom_wireless_id.get().id );
+	if( hardwareRevision.get() >= 3 ){
+		sprintf( _ID, "%s%s", getFixedID(), id );
+	}
+	else{
+		sprintf( _ID, "%s%s", getFixedID(), id );
 	}
 	return _ID;
 }
+
+// String from crc of MAC address to get a unique ID
+char * SetupCommon::getDefaultID() {
+	uint8_t mac[6];
+	unsigned long  crc = 0;
+	if ( esp_efuse_mac_get_default(mac) == ESP_OK ){
+		crc = mz_crc32(0L, mac, 6);
+	}
+	if( hardwareRevision.get() >= 3 ){
+		sprintf( default_id, "%04d", int(crc % 10000) );
+	}
+	else{
+		sprintf( default_id, "%03d", int(crc % 1000));
+	}
+	return default_id;
+}
+
+char * SetupCommon::getFixedID() {
+	if( hardwareRevision.get() >= 3 ){
+		return "XCVario-";
+	}
+	else{
+		return "iVario-";
+	}
+}
+
 
 bool SetupCommon::isMaster(){
 	bool ret = (wireless == WL_WLAN_MASTER) || ((can_speed.get() != CAN_SPEED_OFF) && (can_mode.get() == CAN_MODE_MASTER));

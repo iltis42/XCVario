@@ -6,7 +6,7 @@
 #include "Setup.h"
 #include "freertos/FreeRTOS.h"
 
-
+std::string Cipher::_id;
 
 std::string Cipher::Encrypt(std::string key, std::string plaintext) {
 	// std::string to hold our encrypted text
@@ -88,39 +88,42 @@ void Cipher::FormatEncrypted(std::string& encrypted) {
 		encrypted.at(i) = std::toupper(encrypted.at(i), loc); // Make all character uppercase
 }
 
+void Cipher::begin()
+{
+	uint8_t mac[6];
+	esp_efuse_mac_get_default(mac);
+	char id[6];
+	sprintf( id,"%04d", (int)(mz_crc32(0L, mac, 6) % 10000) );
+	ESP_LOGI(FNAME,"Cipher::id() returns: %s", id );
+	_id = std::string( id );
+}
 
 bool Cipher::init(){
-	std::string id=Cipher::id();
-	std::string encid = Cipher::Encrypt(CIPHER_KEY, id );
+	std::string encid = Cipher::Encrypt(CIPHER_KEY, _id );
 	ESP_LOGI(FNAME,"init() Encrypted ID %s", encid.c_str() );
 	ahrs_licence_dig1.set( encid[0]-'0' );
 	ahrs_licence_dig2.set( encid[1]-'0' );
 	ahrs_licence_dig3.set( encid[2]-'0' );
 	ahrs_licence_dig4.set( encid[3]-'0' );
 	std::string decid = Cipher::Decrypt(CIPHER_KEY, encid );
-	gflags.ahrsKeyValid = (id == decid);
-	ESP_LOGI(FNAME,"init() ID/DECID %s == %s returns %d", id.c_str(), decid.c_str(), gflags.ahrsKeyValid );
+	gflags.ahrsKeyValid = (_id == decid);
+	ESP_LOGI(FNAME,"init() ID/DECID %s == %s returns %d", _id.c_str(), decid.c_str(), gflags.ahrsKeyValid );
 	return gflags.ahrsKeyValid;
 }
 
-std::string Cipher::id(){
-	uint8_t mac[6];
-	esp_efuse_mac_get_default(mac);
-	char id[6];
-	sprintf( id,"%04d", (int)(mz_crc32(0L, mac, 6) % 10000) );
-	ESP_LOGI(FNAME,"Cipher::id() returns: %s", id );
-	return( std::string( id ) );
+const char * Cipher::id(){
+	return( _id.c_str() );
 }
 
 bool Cipher::checkKeyAHRS(){
-	std::string id=Cipher::id();
+
 	std::string key;
 	key += char(ahrs_licence_dig1.get()+'0');
 	key += char(ahrs_licence_dig2.get()+'0');
 	key += char(ahrs_licence_dig3.get()+'0');
 	key += char(ahrs_licence_dig4.get()+'0');
 	std::string decid = Cipher::Decrypt(CIPHER_KEY, key );
-	gflags.ahrsKeyValid = (id == decid);
-	ESP_LOGI(FNAME,"checkKeyAHRS() ID/KEY/DECID %s %s %s returns %d", id.c_str(), key.c_str(), decid.c_str(), gflags.ahrsKeyValid );
+	gflags.ahrsKeyValid = (_id == decid);
+	ESP_LOGI(FNAME,"checkKeyAHRS() ID/KEY/DECID %s %s %s returns %d", _id.c_str(), key.c_str(), decid.c_str(), gflags.ahrsKeyValid );
 	return gflags.ahrsKeyValid;
 }

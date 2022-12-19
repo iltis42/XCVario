@@ -18,6 +18,7 @@
 #include "Flap.h"
 #include "SetupMenuSelect.h"
 #include "SetupMenuValFloat.h"
+#include "SetupMenuChar.h"
 #include "DisplayDeviations.h"
 #include "ShowCompassSettings.h"
 #include "ShowCirclingWind.h"
@@ -198,6 +199,17 @@ int data_mon( SetupMenuSelect * p ){
 	return 0;
 }
 
+int update_id( SetupMenuChar * p){
+	const char *c = p->getEntry();
+	ESP_LOGI(FNAME,"New Letter %c Index: %d", *c, p->getCharIndex() );
+	char id[10] = { 0 };
+	strcpy( id, custom_wireless_id.get().id );
+	id[p->getCharIndex()] = *c;
+	ESP_LOGI(FNAME,"New ID %s", id );
+	custom_wireless_id.set( id );
+	return 0;
+}
+
 int add_key( SetupMenuSelect * p )
 {
 	ESP_LOGI(FNAME,"add_key( %d ) ", p->getSelect() );
@@ -216,8 +228,9 @@ int qnh_adj( SetupMenuValFloat * p )
 {
 	ESP_LOGI(FNAME,"qnh_adj %f", QNH.get() );
 	float alt=0;
-	if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
+	if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL ){
 		alt = alt_external + ( QNH.get() - 1013.25)*8.2296;  // correct altitude according to ISA model = 27ft / hPa
+	}
 	else{
 		int samples = 0;
 		for( int i=0; i<6; i++ ) {
@@ -1243,13 +1256,29 @@ void SetupMenu::options_menu_create_wireless_routing( MenuEntry *top ){
 	top->addEntry( wloutxcan );
 }
 
-/*
+
 void SetupMenu::options_menu_create_wireless_custom_id( MenuEntry *top ){
-	SetupMenuString * id1 = new SetupMenuString( "Wireless ID",	false, wireless_id, false, &custom_wl_id );
-	top->addEntry( id1 );
+	SetupMenuChar * c1 = new SetupMenuChar( "Letter 1",	false, update_id, false, custom_wireless_id.get().id, 0 );
+	SetupMenuChar * c2 = new SetupMenuChar( "Letter 2",	false, update_id, false, custom_wireless_id.get().id, 1 );
+	SetupMenuChar * c3 = new SetupMenuChar( "Letter 3",	false, update_id, false, custom_wireless_id.get().id, 2 );
+	SetupMenuChar * c4 = new SetupMenuChar( "Letter 4",	false, update_id, false, custom_wireless_id.get().id, 3 );
+	SetupMenuChar * c5 = new SetupMenuChar( "Letter 5",	false, update_id, false, custom_wireless_id.get().id, 4 );
+	SetupMenuChar * c6 = new SetupMenuChar( "Letter 6",	false, update_id, false, custom_wireless_id.get().id, 5 );
+	top->addEntry( c1 );
+	top->addEntry( c2 );
+	top->addEntry( c3 );
+	top->addEntry( c4 );
+	top->addEntry( c5 );
+	top->addEntry( c6 );
+	static const char keys[][4] { "\0","0","1","2","3","4","5","6","7","8","9","-","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"};
+	c1->addEntryList( keys, sizeof(keys)/4 );
+	c2->addEntryList( keys, sizeof(keys)/4 );
+	c3->addEntryList( keys, sizeof(keys)/4 );
+	c4->addEntryList( keys, sizeof(keys)/4 );
+	c5->addEntryList( keys, sizeof(keys)/4 );
+	c6->addEntryList( keys, sizeof(keys)/4 );
 }
 
-*/
 void SetupMenu::options_menu_create_wireless( MenuEntry *top )
 {
 	SetupMenuSelect * btm = new SetupMenuSelect( PROGMEM "Wireless", true, 0, true, &wireless_type );
@@ -1294,6 +1323,11 @@ void SetupMenu::options_menu_create_wireless( MenuEntry *top )
 	datamonmod->addEntry( "ASCII");
 	datamonmod->addEntry( "Binary");
 	top->addEntry( datamonmod );
+
+	SetupMenu * cusid = new SetupMenu( PROGMEM "Custom-ID" );
+	top->addEntry( cusid );
+	cusid->setHelp( PROGMEM "Select custom ID (SSID) for wireless BT (or WIFI) interface, e.g. D-1234. Restart device to activate", 215);
+	cusid->addCreator( options_menu_create_wireless_custom_id );
 }
 
 void SetupMenu::options_menu_create_gload( MenuEntry *top ){
@@ -1537,6 +1571,10 @@ void SetupMenu::system_menu_create_hardware_ahrs_lc( MenuEntry *top ){
 
 
 void SetupMenu::system_menu_create_hardware_ahrs( MenuEntry *top ){
+	SetupMenuSelect * ahrsid = new SetupMenuSelect( "AHRS ID", false, 0, false );
+	ahrsid->addEntry( Cipher::id() );
+	top->addEntry( ahrsid );
+
 	mpu = new SetupMenuSelect( "AHRS Option", true , 0, true, &attitude_indicator );
 	top->addEntry( mpu );
 	mpu->setHelp( PROGMEM "Enable High Accuracy Attitude Sensor (AHRS) NMEA messages (need valid license key entered)");

@@ -49,6 +49,8 @@ public:
 
 	static bool initSetup( bool &present );  // returns false if FLASH was completely blank
 	static char *getID();
+	static char *getDefaultID();
+	static char *getFixedID();
 	static void sendSetup( uint8_t sync, const char * key, char type, void *value, int len, bool ack=false );
 	static SetupCommon * getMember( const char * key );
 	static bool syncEntry( int entry );
@@ -81,6 +83,7 @@ private:
 	static void timeout(QueueHandle_t arg);
     static esp_timer_handle_t _timer;
     static bool _dirty;
-	static char _ID[14];
+	static char _ID[16];
+	static char default_id[6];
 };
 

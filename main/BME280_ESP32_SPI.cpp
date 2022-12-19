@@ -203,14 +203,17 @@ double BME280_ESP32_SPI::readPressure(bool &ok){
 	bool success;
 	readTemperature( success );
 	int loop = 0;
+	ok = true;
 	while( !success && loop < 100) {  // workaround as first read after others access SPI reads zero
 		// delay(1);
 		delayMicroseconds(100);
 		readTemperature( success );
 		loop++;
 	}
-	if( loop == 100 )
+	if( loop == 100 ){
 		ESP_LOGE(FNAME,"Error reading temp BMP280 CS: %d !", _cs );
+		ok = false;
+	}
 	uint8_t tx[4];
 	uint8_t rx[4];
 	memset(tx, 0, 4);

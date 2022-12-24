@@ -160,7 +160,7 @@ bool StraightWind::calculateWind()
 
 	// Get current true course from GPS
 	float ctc = Flarm::getGndCourse();
-	averageTC = Vector::normalize( averageTC + (ctc - averageTC) * 1/wind_gps_lowpass.get());
+	// averageTC = Vector::normalize( averageTC + (ctc - averageTC) * 1/wind_gps_lowpass.get());
 	averageTas = ctas;
 	averageGS += (cgs -averageGS) * 1/wind_gps_lowpass.get();
 
@@ -267,10 +267,9 @@ void StraightWind::calculateWind( float tc, float gs, float th, float tas, float
 			groundTrack.add( wind );
 			airspeed = groundTrack.getSpeed();
 			heading = groundTrack.getAngleDeg();
-			float cwinddir = circlingWindDir;
 			// calculateSpeedAndAngle( circlingWindDirReverse, circlingWindSpeed, tc, gs, airspeed, heading );
 //#ifdef VERBOSE_LOG
-			ESP_LOGI(FNAME,"Using CWind: %.2f°/%.2f, TC/GS: %.1f°/%.1f, HD/AS: %.2f°/%.2f, tas=%.2f, ASdelta %.3f", cwinddir, circlingWindSpeed, tc, gs, heading, airspeed, tas, airspeed-tas );
+			ESP_LOGI(FNAME,"Using CWind: %.2f°/%.2f, TC/GS: %.1f°/%.1f, HD/AS: %.2f°/%.2f, tas=%.2f, ASdelta %.3f", circlingWindDir, circlingWindSpeed, tc, gs, heading, airspeed, tas, airspeed-tas );
 // #endif
 			if( abs( airspeed - tas ) > wind_straight_speed_tolerance.get() ){  // 30 percent max deviation
 				status = "AS OOB";

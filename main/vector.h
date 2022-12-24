@@ -39,8 +39,9 @@
 #define PI2 2*M_PI
 
 #ifndef D2R
-#define D2R(x) ((x)/57.2957795131)
-#define R2D(x) ((x)*57.2957795131)
+// degree to rad conversion
+#define D2R(x) ((x)*(M_PI/180.0))
+#define R2D(x) ((x)*(180.0/M_PI))
 #endif
 
 typedef struct bitfield_vector {

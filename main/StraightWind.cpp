@@ -34,10 +34,8 @@
 #include "Router.h"
 #include "sensor.h"
 #include "KalmanMPU6050.h"
+#include "vector.h"  // D2R, R2D
 
-// degree to rad conversion
-#define D2R(x) ((x)/57.2957795131)
-#define R2D(x) ((x)*57.2957795131)
 
 StraightWind::StraightWind() :
 averageTas(0),

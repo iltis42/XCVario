@@ -95,9 +95,9 @@ typedef enum e_data_mon_mode { MON_MOD_ASCII, MON_MOD_BINARY } e_data_mon_mode_t
 typedef enum e_hardware_rev { 	HW_UNKNOWN=0,
 								HW_LONG_VARIO=1,
 								XCVARIO_20=2,  // 1 RS232
-								XCVARIO_21=3,  // AHRS, 2 RS232
-								XCVARIO_22=4,  // AHRS, CAN Bus, 2 RS232
-								XCVARIO_23=5   // AHRS with temperature control, CAN Bus, 2 RS232
+								XCVARIO_21=3,  // 2 RS232, AHRS
+								XCVARIO_22=4,  // 2 RS232, AHRS, CAN Bus,
+								XCVARIO_23=5   // 2 RS232, AHRS, CAN Bus, AHRS temperature control
 } e_hardware_rev_t;        // XCVario-Num = hardware revision + 18
 
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };

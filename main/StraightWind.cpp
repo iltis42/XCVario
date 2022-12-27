@@ -259,7 +259,6 @@ void StraightWind::calculateWind( float tc, float gs, float th, float tas, float
 			status = "OLD CIRC WIND";
 			ESP_LOGI(FNAME,"Circling Wind exired");
 		}else{
-			// Tricky trial and error to catch the correct assembly for both vectors that is not deterministic
 			float airspeed = 0;
 			float heading = 0;
 			Vector wind( circlingWindDir, circlingWindSpeed );
@@ -267,7 +266,6 @@ void StraightWind::calculateWind( float tc, float gs, float th, float tas, float
 			groundTrack.add( wind );
 			airspeed = groundTrack.getSpeed();
 			heading = groundTrack.getAngleDeg();
-			// calculateSpeedAndAngle( circlingWindDirReverse, circlingWindSpeed, tc, gs, airspeed, heading );
 //#ifdef VERBOSE_LOG
 			ESP_LOGI(FNAME,"Using CWind: %.2f°/%.2f, TC/GS: %.1f°/%.1f, HD/AS: %.2f°/%.2f, tas=%.2f, ASdelta %.3f", circlingWindDir, circlingWindSpeed, tc, gs, heading, airspeed, tas, airspeed-tas );
 // #endif

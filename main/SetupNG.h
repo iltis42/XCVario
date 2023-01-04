@@ -48,7 +48,7 @@ typedef enum display_type { UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, IL
 typedef enum chopping_mode { NO_CHOP, VARIO_CHOP, S2F_CHOP, BOTH_CHOP } chopping_mode_t;
 typedef enum rs232linemode { RS232_NORMAL, RS232_INVERTED } rs232lm_t;
 typedef enum nmea_protocol  { OPENVARIO, BORGELT, CAMBRIDGE, XCVARIO, NMEA_OFF } nmea_proto_t;
-typedef enum airspeed_mode  { MODE_IAS, MODE_TAS, MODE_SLIP } airspeed_mode_t;
+typedef enum airspeed_mode  { MODE_IAS, MODE_TAS, MODE_CAS, MODE_SLIP } airspeed_mode_t;
 typedef enum altitude_display_mode  { MODE_QNH, MODE_QFE } altitude_display_mode_t;
 typedef enum e_display_style  { DISPLAY_AIRLINER, DISPLAY_RETRO, DISPLAY_UL } display_style_t;
 typedef enum e_display_variant { DISPLAY_WHITE_ON_BLACK, DISPLAY_BLACK_ON_WHITE } display_variant_t;

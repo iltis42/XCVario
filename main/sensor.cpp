@@ -169,6 +169,7 @@ t_global_flags gflags = { true, false, false, false, false, false, false, false,
 
 int  ccp=60;
 float tas = 0;
+float cas = 0;
 float aTE = 0;
 float alt_external;
 float altSTD;
@@ -224,6 +225,10 @@ void drawDisplay(void *pvParameters){
 				airspeed = ias.get();
 			else if( airspeed_mode.get() == MODE_TAS )
 				airspeed = tas;
+			else if( airspeed_mode.get() == MODE_CAS )
+				airspeed = cas;
+			else
+				airspeed = ias.get();
 
 			// Stall Warning Screen
 			if( stall_warning.get() && gload_mode.get() != GLOAD_ALWAYS_ON ){  // In aerobatics stall warning is contra productive, we concentrate on G-Load Display if permanent enabled
@@ -419,7 +424,7 @@ static void grabMPU()
 
 	accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
 	gyroDPS = mpud::gyroDegPerSec(gyroRaw, GYRO_FS);  // raw data to º/s
-	mpud::raw_axes_t gbo = MPU.getGyroOffset();
+	// mpud::raw_axes_t gbo = MPU.getGyroOffset();
 	// ESP_LOGI(FNAME, "accel X: %+.2f Y:%+.2f Z:%+.2f  gyro X: %+.2f Y:%+.2f Z:%+.2f ABx:%d ABy:%d ABz=%d\n", -accelG[2], accelG[1], accelG[0] ,  gyroDPS.x, gyroDPS.y, gyroDPS.z, gbo.x, gbo.y, gbo.z );
 	// if( !(count%60) ){
 	//	ESP_LOGI(FNAME, "Gyro X:%+.2f Y:%+.2f Z:%+.2f T=%f\n", gyroDPS.x, gyroDPS.y, gyroDPS.z, MPU.getTemperature());
@@ -553,6 +558,8 @@ void clientLoop(void *pvParameters)
 			}
 			dynamicP = Atmosphere::kmh2pascal(ias.get());
 			tas = Atmosphere::TAS2( ias.get(), altitude.get(), OAT.get() );
+			if( airspeed_mode.get() == MODE_CAS )
+				cas = Atmosphere::CAS( dynamicP );
 			if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL ){
 				MPU.temp_control( ccount );
 			}
@@ -610,8 +617,13 @@ void readSensors(void *pvParameters){
 		}
 		float tasraw = 0;
 		if( baroP != 0 )
-			tasraw =  Atmosphere::TAS( iasraw , baroP, T);  // True airspeed
+			tasraw =  Atmosphere::TAS( iasraw , baroP, T);  // True airspeed in km/h
 
+		if( airspeed_mode.get() == MODE_CAS ){
+			float casraw=Atmosphere::CAS( dynamicP );
+			cas += (casraw-cas)*0.25;       // low pass filter
+			// ESP_LOGI(FNAME,"IAS=%f, TAS=%f CAS=%f baro=%f", iasraw, tasraw, cas, baroP );
+		}
 		static float new_ias = 0;
 		new_ias = ias.get() + (iasraw - ias.get())*0.25;
 		if( (int( ias.get()+0.5 ) != int( new_ias+0.5 ) ) || !(count%20) ){

@@ -1403,9 +1403,10 @@ void SetupMenu::options_menu_create( MenuEntry *opt ){
 
 	SetupMenuSelect * amode = new SetupMenuSelect( "Airspeed Mode",	false, 0, true, &airspeed_mode );
 	opt->addEntry( amode );
-	amode->setHelp( PROGMEM "Select mode of Airspeed indicator to display IAS (Indicated AirSpeed, default) or TAS (True AirSpeed) considering air density", 130 );
+	amode->setHelp( PROGMEM "Select mode of Airspeed indicator to display IAS (Indicated AirSpeed), TAS (True AirSpeed) or CAS (calibrated airspeed)", 180 );
 	amode->addEntry( "IAS");
 	amode->addEntry( "TAS");
+	amode->addEntry( "CAS");
 	amode->addEntry( "Slip Angle");
 
 	SetupMenuSelect * atl = new SetupMenuSelect( "Auto Transition",	false, 0, true, &fl_auto_transition );

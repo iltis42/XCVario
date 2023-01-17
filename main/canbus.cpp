@@ -144,6 +144,8 @@ void CANbus::restart(){
 	ESP_LOGW(FNAME,"CANbus restart");
 	driverUninstall();
 	driverInstall( TWAI_MODE_NORMAL );
+	_connected_timeout_magsens = 0;
+	_connected_timeout_xcv = 0;
 }
 
 void CANbus::recover(){
@@ -156,6 +158,8 @@ void CANbus::recover(){
 	twai_start();
 	delay(100);
 	twai_initiate_recovery();
+	_connected_timeout_xcv = 0;
+	_connected_timeout_magsens = 0;
 }
 
 // begin CANbus, start selfTest and launch driver in normal (bidir) mode afterwards
@@ -218,8 +222,8 @@ void CANbus::txtick(int tick){
 				DM.monitorString( MON_CAN, DIR_TX, msg.c_str(), msg.length() );
 				if( !sendNMEA( msg ) ){
 					_connected_timeout_xcv +=150;  // if sending fails as indication for disconnection
-					ESP_LOGW(FNAME,"CAN TX NMEA failed, timeout=%d", _connected_timeout_xcv );
-					if( !(_connected_timeout_xcv % 100) )
+					// ESP_LOGW(FNAME,"CAN TX NMEA failed, timeout=%d", _connected_timeout_xcv );
+					if( _connected_timeout_xcv > 1000 )
 						recover();
 				}
 			}
@@ -232,9 +236,17 @@ void CANbus::txtick(int tick){
 			if( !sendData( 0x11, msg.c_str(), 1 ) )
 			{
 				_connected_timeout_xcv +=150;  // if sending fails as indication for disconnection
-				ESP_LOGI(FNAME,"CAN TX Keep Alive failed, timeout=%d", _connected_timeout_xcv );
-				if( !(_connected_timeout_xcv % 100) )
+				if( !_keep_alive_fails ){
+					ESP_LOGW(FNAME,"Permanent CAN TX Keep Alive failure");
+					_keep_alive_fails = true;
+				}
+				if( _connected_timeout_xcv > 1000 )
 					recover();
+			}else{
+				if( _keep_alive_fails ){
+					ESP_LOGI(FNAME,"Okay again CAN TX Keep Alive");
+					_keep_alive_fails = false;
+				}
 			}
 		}
 	}
@@ -285,7 +297,7 @@ void CANbus::rxtick(int tick){
 					ESP_LOGI(FNAME,"CAN Magsensor connection timeout");
 					_connected_magsens = false;
 				}
-				if( compass_enable.get() == CS_CAN && !(_connected_timeout_magsens % 10000) && !_connected_xcv ){
+				if( compass_enable.get() == CS_CAN && (_connected_timeout_magsens > 10000) && !_connected_xcv ){
 					// only restart when xcv is not connected, otherwise magsensor may be just plugged out
 					ESP_LOGI(FNAME,"CAN Magnet Sensor restart timeout");
 					restart();
@@ -294,7 +306,7 @@ void CANbus::rxtick(int tick){
 		}
 		if( !xcv_came ){
 			_connected_timeout_xcv++;
-			if( _connected_timeout_xcv > 500 ){
+			if( _connected_timeout_xcv > 200 ){
 				if(  _connected_xcv ){
 					ESP_LOGI(FNAME,"CAN XCV connection timeout");
 					_connected_xcv = false;
@@ -357,8 +369,16 @@ bool CANbus::sendNMEA( const SString& msg ){
 		// Underlaying queue does block until there is space,
 		// only a timeout would return false.
 		if( !sendData(id, cptr, dlen) ) {
-			ESP_LOGW(FNAME,"send CAN NMEA failed msg: %s chunk: %s", msg.c_str(), cptr );
+			if( !_send_nmea_fails ){
+				ESP_LOGW(FNAME,"Permanent send CAN NMEA failure msg: %s chunk: %s", msg.c_str(), cptr );
+				_send_nmea_fails = true;
+			}
 			ret = false;
+		}else{
+			if( _send_nmea_fails ){
+				ESP_LOGI(FNAME,"Okay again send CAN NMEA failed msg: %s chunk: %s", msg.c_str(), cptr );
+				_send_nmea_fails = false;
+			}
 		}
 		cptr += dlen;
 		len -= dlen;
@@ -457,9 +477,6 @@ bool CANbus::sendData( int id, const char* msg, int length, int self ){
 			ESP_LOGW(FNAME,"TX_FAILED alert %X", alerts );
 		// ESP_LOGI(FNAME,"Send CAN bus message okay");
 		ret = true;
-	}
-	else{
-		ESP_LOGW(FNAME,"Send CAN bus message failed, ret:%02x", error );
 	}
 	xSemaphoreGive(sendMutex);
 	return ret;

@@ -435,11 +435,12 @@ float Compass::heading( bool *ok )
 	if( errors > 100 ){
 		if( !holddown ){
 			holddown = true;
-			ESP_LOGI(FNAME,"100 sensor read errors: Start Holddown");
+			ESP_LOGI(FNAME,"Permanent compass sensor read errors: Start Holddown");
 		}
 	}else{
 		if( holddown ){
 			holddown = false;
+			ESP_LOGI(FNAME,"Okay again compass sensor read");
 		}
 	}
 	bool state = sensor->rawAxes( rawAxes );

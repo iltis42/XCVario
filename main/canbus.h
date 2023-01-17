@@ -43,6 +43,8 @@ private:
 	bool _connected_xcv = false;
 	bool _slope_support = false;
     bool _new_can_client_connected = false;
+    bool _keep_alive_fails = false;
+    bool _send_nmea_fails = false;
 	int _connected_timeout_magsens = 0;
 	int _connected_timeout_xcv = 0;
     TickType_t _tx_timeout = 2; // [msec] about two times the time for 111 bit to send

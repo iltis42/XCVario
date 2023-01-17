@@ -40,6 +40,7 @@ private:
 	static float   _mc_prev;
 	static float   _qnh_prev;
 	static uint8_t  _protocol_version;
+	static bool     _can_send_error;
 };
 
 #endif /* PROTOCOLS_H_ */

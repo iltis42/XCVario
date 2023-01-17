@@ -31,7 +31,7 @@
 
 S2F *   Protocols::_s2f = 0;
 uint8_t Protocols::_protocol_version = 1;
-
+bool    Protocols::_can_send_error = false;
 Protocols::Protocols(S2F * s2f) {
 	_s2f = s2f;
 }
@@ -114,7 +114,14 @@ void Protocols::sendItem( const char *key, char type, void *value, int len, bool
 		// ESP_LOGI(FNAME,"sendNMEAString: %s", str );
 		SString nmea( str );
 		if( !Router::forwardMsg( nmea, can_tx_q ) ){
-			ESP_LOGW(FNAME,"Warning: Overrun in send to Client XCV %d bytes", nmea.length() );
+			if( !_can_send_error ){
+				_can_send_error = true;
+				ESP_LOGW(FNAME,"Permanent send msg to XCV client XCV (%d bytes) failure", nmea.length() );
+			}
+		}
+		else if( _can_send_error ){
+			_can_send_error = false;
+			ESP_LOGI(FNAME,"Okay again send msg to XCV client (%d bytes)", nmea.length() );
 		}
 	}
 }

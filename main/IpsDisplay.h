@@ -45,7 +45,7 @@ public:
 	static void drawArrowBox( int x, int y, bool are=true );
 	static void redrawValues();
 	static float getHeading();
-	static void drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass_dirty );
+	static bool drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass_dirty );
 	static void drawWindArrow( float dir, float speed, int type );
 
 	static inline AdaptUGC *getDisplay() { return ucg; };

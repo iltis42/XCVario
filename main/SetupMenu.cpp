@@ -1505,6 +1505,14 @@ void SetupMenu::system_menu_create_hardware_type( MenuEntry *top ){
 	diso->setHelp( PROGMEM "Display Orientation either NORMAL means Rotary is right, or TOPDOWN means Rotary is left");
 	diso->addEntry( "NORMAL");
 	diso->addEntry( "TOPDOWN");
+
+	//
+	SetupMenuSelect * drawp = new SetupMenuSelect( "Needle Alignment", false, 0, true, &drawing_prio );
+	top->addEntry( drawp );
+	drawp->setHelp( PROGMEM "Alignment of the variometer needle either in front of the infos displayed, or in background");
+	drawp->addEntry( "Front");
+	drawp->addEntry( "Back");
+
 }
 
 

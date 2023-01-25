@@ -99,6 +99,7 @@ typedef enum e_hardware_rev { 	HW_UNKNOWN=0,
 								XCVARIO_22=4,  // 2 RS232, AHRS, CAN Bus,
 								XCVARIO_23=5   // 2 RS232, AHRS, CAN Bus, AHRS temperature control
 } e_hardware_rev_t;        // XCVario-Num = hardware revision + 18
+typedef enum e_drawing_prio { DP_NEEDLE, DP_BACKGROUND } e_drawing_prio_t;
 
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
 void change_bal();
@@ -669,6 +670,7 @@ extern SetupNG<int> 		data_monitor_mode;
 extern SetupNG<t_bitfield_compass> 	calibration_bits;
 extern SetupNG<int> 		gear_warning;
 extern SetupNG<t_wireless_id>  custom_wireless_id;
+extern SetupNG<int> 		drawing_prio;
 
 extern uint8_t g_col_background;
 extern uint8_t g_col_highlight;

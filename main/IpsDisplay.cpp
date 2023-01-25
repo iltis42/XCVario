@@ -196,6 +196,10 @@ static int16_t old_vario_bar_val = 0;
 static int16_t old_sink_bar_val = 0;
 static int16_t alt_quant = 1;
 
+static bool wind_overlap = false;
+static bool compass_overlap = false;
+static bool alt_overlap = false;
+static bool speed_overlap = false;
 
 #define WKBARMID (AMIDY-15)
 
@@ -207,7 +211,6 @@ bool flarm_connected=false;
 typedef enum e_bow_color { BC_GREEN, BC_RED, BC_BLUE } t_bow_color;
 const static ucg_color_t bowcolor[3] = { {COLOR_GREEN}, {COLOR_RED}, {COLOR_BBLUE} };
 const static ucg_color_t needlecolor[3] = { {COLOR_WHITE}, {COLOR_ORANGE}, {COLOR_RED} };
-
 
 ////////////////////////////
 // trigenometric helpers for gauge painters
@@ -1161,7 +1164,8 @@ bool PolarIndicator::drawPolarIndicator( float a, bool dirty_p )
 	int val = (int)(a*sincosScale); // descrete int indicator position, to compare with prev needle pos (do not round!)
 	bool change = val != prev_needle_pos;
 	dirty_p = dirty_p || dirty;
-	if ( ! change && ! dirty_p ) return false; // nothing painted
+	if ( ! change && ! dirty_p )
+		return false; // nothing painted
 	dirty = false; // a one shot re-paint trigger
 
 	n.x_0 = gaugeCos(val+base_val_offset, base); // top shoulder
@@ -1389,9 +1393,9 @@ void IpsDisplay::drawWindArrow( float a, float speed, int type ){
 	// ESP_LOGI(FNAME,"IpsDisplay::drawWindArrow  x0:%d y0:%d x1:%d y1:%d x2:%d y2:%d x3:%d y3:%d", (int)xn_0, (int)yn_0, (int)xn_1 ,(int)yn_1, (int)xn_2, (int)yn_2, (int)xn_3 ,(int)yn_3 );
 	if( del_wind ) {  // cleanup previous incarnation
 		ucg->setColor(  COLOR_BLACK  );
-		ucg->drawTriangle(wx0,wy0,wx1,wy1,wx3,wy3);
-		// if( wind_reference.get() != WR_NORTH )
 		Flarm::drawAirplane( wx0, wy0, false, true ); // clear small airplane symbol, need to clear anytime as it moves...
+		ucg->setColor(  COLOR_BLACK  );
+		ucg->drawTriangle(wx0,wy0,wx1,wy1,wx3,wy3);
 		wx0 = xn_0;
 		wy0 = yn_0;
 		wx1 = xn_1;
@@ -1399,13 +1403,15 @@ void IpsDisplay::drawWindArrow( float a, float speed, int type ){
 		wx3 = xn_3;
 		wy3 = yn_3;
 	}
-	ucg->setColor( COLOR_WHITE );
-	if( wind_reference.get() != WR_NORTH )
-		Flarm::drawAirplane( xn_0, yn_0, false, true ); // draw a small airplane symbol
 	if( s > 1 ){
+		ucg->setColor( COLOR_WHITE );
 		ucg->drawTriangle(xn_0,yn_0,xn_1,yn_1,xn_3,yn_3);
 		ucg->setColor(  COLOR_RED  );
 		ucg->drawTriangle(xn_2,yn_2,xn_1,yn_1,xn_3,yn_3);
+	}
+	if( wind_reference.get() != WR_NORTH ){
+			ucg->setColor( COLOR_WHITE );
+			Flarm::drawAirplane( xn_0, yn_0, false, true ); // draw a small airplane symbol
 	}
 	del_wind = true;
 }
@@ -1512,6 +1518,7 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 	if ( ! dirty ) return false;
 	alt_prev = alt;
 	alt = (int)roundf(altitude);
+	alt_overlap = false;
 
 	// ESP_LOGI(FNAME,"draw alt %f dirty:%d", altitude, dirty );
 
@@ -1691,6 +1698,7 @@ bool IpsDisplay::drawSpeed(float v_kmh, int16_t x, int16_t y, bool dirty, bool i
 		ucg->print(Units::AirspeedModeStr());
 	}
 	as_prev = airspeed;
+	speed_overlap = false;
 	return true;
 }
 
@@ -1821,10 +1829,11 @@ float IpsDisplay::getHeading(){
 
 
 // Compass or Wind Display
-void IpsDisplay::drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass_dirty) {
+bool IpsDisplay::drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass_dirty) {
+	bool ret=false;
 	if( _menu )
-		return;
-	// ESP_LOGI(FNAME, "drawCompass: %d ", wind_display.get() );
+		return ret;
+	// ESP_LOGI(FNAME, "drawCompass: %d ", wind_dirty );
 	if( (wind_display.get() & WD_DIGITS) || (wind_display.get() & WD_ARROW) ){
 		int winddir=0;
 		float wind=0;
@@ -1860,6 +1869,7 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass
 			// ESP_LOGI(FNAME, "SWIND dir=%d, SSPEED=%f ageC=%d ageS=%d okc:=%d oks=%d ok:=%d", wds, ws, ageCircling, ageStraight, okc, oks, ok  );
 		}
 		// ESP_LOGI(FNAME, "WIND dir %d, speed %f, ok=%d", winddir, wind, ok );
+		// Windspeed and Direction digital
 		int windspeed = (int)( Units::Airspeed(wind)+0.5 );
 		if( prev_winddir != winddir || prev_windspeed != windspeed || compass_dirty ){
 			ucg->setPrintPos(85,104);
@@ -1878,19 +1888,27 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass
 					ucg->printf("%s   ", s);
 				else
 					ucg->printf("%s  ", s);
+				compass_overlap = false;
+				ret = true;
 			}
 		}
 		float heading = getHeading();
+		// Wind arrow
 		if( (prev_winddir != winddir) || (prev_windspeed != windspeed) || wind_dirty || (int)heading != (int)prev_heading ){
+			// ESP_LOGI(FNAME, "draw WIND arrow");
 			prev_winddir = winddir;  // absolute windir related to geographic north
 			prev_heading = heading;  // two things to consider here, heading and wind direction
 			if( wind_display.get() & WD_ARROW  ){ // draw wind arror
 				float dir = Vector::angleDiffDeg( winddir, heading );
 				drawWindArrow( dir, windspeed, 0 );
+				// ESP_LOGI(FNAME, "gap = false");
+				ret = true;
 			}
 			prev_windspeed = windspeed;
+			wind_overlap = false;
 		}
 	}
+	// Compass
 	else if( wind_display.get() & WD_COMPASS ){
 		int heading = static_cast<int>(rintf(mag_hdt.get()));
 		if( heading >= 360 )
@@ -1910,9 +1928,14 @@ void IpsDisplay::drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass
 			ucg->setPrintPos(x+5, y);
 			ucg->print("° ");
 			prev_heading = heading;
+			compass_overlap = false;
+			ret = true;
 		}
 	}
+	return ret;
 }
+
+
 
 void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, float polar_sink_ms, float altitude_m,
 		float temp, float volt, float s2fd_ms, float s2f_ms, float acl_ms, bool s2fmode, bool standard_setting, float wksensor, bool ulmode ){
@@ -1982,10 +2005,10 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	float needle_pos = (*_gauge)(te);
 	bool needle_dirty = false;
 	// Check overlap on inner figures
-	bool alt_overlap = needle_pos < -M_PI_2*60./90.;
-	bool speed_overlap = needle_pos > M_PI_2*75./90.;
-	bool wind_overlap = needle_pos < -M_PI_2*25./90. && needle_pos > -M_PI_2*55./90.;
-	bool compass_overlap = needle_pos > M_PI_2*35./90. && needle_pos < M_PI_2*75./90.;
+	alt_overlap |= needle_pos < -M_PI_2*60./90.;
+	speed_overlap |= needle_pos > M_PI_2*75./90.;
+	wind_overlap |= needle_pos < -M_PI_2*25./90. && needle_pos > -M_PI_2*55./90.;
+	compass_overlap |= needle_pos > M_PI_2*35./90. && needle_pos < M_PI_2*75./90.;
 
 	if( _menu ){
 		xSemaphoreGive(spiMutex);
@@ -2029,33 +2052,73 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		xSemaphoreGive(spiMutex);
 		return;
 	}
-
-	// Altitude & Airspeed
-	if( (!(tick%8) && !speed_overlap) || (!(tick%16) && speed_overlap) ) {
-		if ( drawSpeed( airspeed_kmh, INNER_RIGHT_ALIGN, 75, !speed_overlap ) ) {
-			if( speed_overlap ){
-				needle_dirty = true;
+	bool needle_prio = (drawing_prio.get() == DP_NEEDLE);
+	bool bg_prio = (drawing_prio.get() == DP_BACKGROUND);
+    bool needle_drawn = false;
+	if( !(tick%2) && bg_prio ){  // draw needle first when background has prio
+			if( indicator->drawPolarIndicator(needle_pos, false) ) {
+				// Draw colored bow
+				float bar_val = (needle_pos>0.) ? needle_pos : 0.;
+				// draw green/red vario bar
+				drawBow(bar_val, old_vario_bar_val, 134, bowcolor[BC_GREEN] );
+				needle_drawn = true;
+			}
+	}
+	// Airspeed (NEEDLE overlap)
+	if( !(tick%6)  ) {
+		if( bg_prio ){
+			if( drawSpeed( airspeed_kmh, INNER_RIGHT_ALIGN, 75, (speed_overlap && !(tick%10))) || (speed_overlap && needle_drawn) ){
+				if( speed_overlap ){
+					needle_dirty = true;
+				}
+			}
+		}else {
+			if( drawSpeed( airspeed_kmh, INNER_RIGHT_ALIGN, 75, (speed_overlap && !(tick%10)) ) ){
+				if( needle_prio ){
+					indicator->drawPolarIndicator(needle_pos, true);
+				}
 			}
 		}
 	}
-	if( (!(tick%2) && !alt_overlap) || (!(tick%15) && alt_overlap) ) {
+	// Altitude (NEEDLE overlap)
+	if( !(tick%2) ) {
 		// { // Enable those line, comment previous condition, for a drawAltimeter simulation
 		// static float alt = 0, rad = 0.0; int min_aq = std::max(alt_quant, (int16_t)1);
 		// altitude = alt + sin(rad) * (5*min_aq+2); rad += 0.003*min_aq;
-		if ( drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, !alt_overlap || !(tick%60) ) ) {
-			if( alt_overlap ){
-				needle_dirty = true;
+		if( bg_prio ){
+			drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, (alt_overlap && !(tick%10)) || (alt_overlap && needle_drawn) );
+		}else{  // needle prio
+			if( !alt_overlap || (alt_overlap && !(tick%10)) ){  // reduce redraw on needle overlap to reduce flickering
+				if ( drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, alt_overlap || !(tick%20) ) ) {
+					// directly draw needle to reduce flickering
+					indicator->drawPolarIndicator(needle_pos, true);
+				}
 			}
 		}
 	}
-
-	// Compass
-	if( !(tick%8) ){
-		drawCompass(INNER_RIGHT_ALIGN, 105, !(tick%16) && !wind_overlap, !(tick%16) && !compass_overlap );
+	// Compass  (NEEDLE overlap)
+	if( !(tick%2)  ){
+		if( bg_prio )
+			drawCompass(INNER_RIGHT_ALIGN, 105, (wind_overlap && !(tick%10)) || (wind_overlap && needle_drawn),
+					                            (compass_overlap || !(tick%10)) || (compass_overlap && needle_drawn) );
+		else{
+			if( drawCompass(INNER_RIGHT_ALIGN, 105, wind_overlap && !(tick%10), compass_overlap && !(tick%10) ) ){
+				indicator->drawPolarIndicator(needle_pos, true);
+			}
+		}
 		if( compass_overlap )
 			needle_dirty = true;
 		if( wind_overlap )
 			needle_dirty = true;
+	}
+
+	if( !(tick%2) && needle_prio  ){
+			if( indicator->drawPolarIndicator(needle_pos, needle_dirty) ) {
+				// Draw colored bow
+				float bar_val = (needle_pos>0.) ? needle_pos : 0.;
+				// draw green/red vario bar
+				drawBow(bar_val, old_vario_bar_val, 134, bowcolor[BC_GREEN] );
+			}
 	}
 
 	// Center Aid around grafic wind
@@ -2127,15 +2190,6 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		average_climbf = acl;
 	}
 	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
-	if( !(tick%2) ){
-		if( indicator->drawPolarIndicator(needle_pos, needle_dirty) ) {
-			// Draw colored bow
-			float bar_val = (needle_pos>0.) ? needle_pos : 0.;
-			// draw green/red vario bar
-			drawBow(bar_val, old_vario_bar_val, 134, bowcolor[BC_GREEN] );
-		}
-	}
-
 	xSemaphoreGive(spiMutex);
 }
 

@@ -54,7 +54,7 @@ The ESP32 module contains a bluetooth and WLAN sender module plus serial interfa
 
 * [Handbücher per Release](https://github.com/iltis42/XCVario/blob/master/handbook)
 * [Handbuch Germann (Multilingual ->Translate)](https://xcvario.de/handbuch)
-* [Handbook English (Multilingual ->Translate)] (https://xcvario.de/handbook)
+* [Handbook English (Multilingual ->Translate)](https://xcvario.de/handbook)
 
 The Vario Prototype with 550 nits 2.4 inch IPS Technology LCD Display features a low power consumation of less that 1.2W, that equals to 100mA at 12.5V operating voltage. The Size is 68(H)x64(B)x35(T) mm, for a standard 57mm Instrument Panel. Weight is only about 170 gramm.
 

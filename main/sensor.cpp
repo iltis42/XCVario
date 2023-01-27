@@ -165,7 +165,7 @@ uint8_t g_col_header_light_b=g_col_highlight;
 uint16_t gear_warning_holdoff = 0;
 uint8_t gyro_flash_savings=0;
 
-t_global_flags gflags = { true, false, false, false, false, false, false, false, false, false, false, false, false };
+t_global_flags gflags = { true, false, false, false, false, false, false, false, false, false, false, false, false, false };
 
 int  ccp=60;
 float tas = 0;
@@ -271,12 +271,17 @@ void drawDisplay(void *pvParameters){
 			}
 			if( gear_warning.get() ){
 				if( !gear_warning_holdoff ){
-					int gw = digitalRead( SetupMenu::getGearWarningIO() );
-					if( gear_warning.get() == GW_FLAP_SENSOR_INV || gear_warning.get() == GW_S2_RS232_RX_INV ){
-						gw = !gw;
+					int gw = 0;
+					if( gear_warning.get() == GW_EXTERNAL ){
+						gw = gflags.gear_warn_external;
+					}else{
+						gw = digitalRead( SetupMenu::getGearWarningIO() );
+						if( gear_warning.get() == GW_FLAP_SENSOR_INV || gear_warning.get() == GW_S2_RS232_RX_INV ){
+							gw = !gw;
+						}
 					}
 					if( gw ){
-						if( ESPRotary::readSwitch() ){
+						if( ESPRotary::readSwitch() ){   // Acknowledge Warning -> Warning OFF
 							gear_warning_holdoff = 25000;  // 5 min
 							Audio::alarm( false );
 							display->clear();

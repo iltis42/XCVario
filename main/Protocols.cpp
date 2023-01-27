@@ -342,7 +342,7 @@ void Protocols::parseNMEA( const char *str ){
 		float heading;
 		float TAS;
 		sscanf( str,"!xc,%f,%f", &heading, &TAS );
-		ESP_LOGI(FNAME,"Compass heading detected=%3.1f TAS: %3.1f", heading, TAS );
+		ESP_LOGI(FNAME,"Compass heading detected=%3.1f TAS: %3.1f NMEA:%s", heading, TAS, str );
 		if( compass )
 			compass->setHeading( heading );
 		tas = TAS;
@@ -505,6 +505,25 @@ void Protocols::parseNMEA( const char *str ){
 				else if( func == 'x' ){
 					ESP_LOGI(FNAME,"Escape");
 					ESPRotary::sendEsc();
+				}
+			}
+		}
+		if (str[3] == 'w') {  // nonstandard CAI 302 extension for gear warning enable/disable
+			int gear;
+			int cs;
+			ESP_LOGI(FNAME,"Detected gear warning message");
+			sscanf(str, "$g,w%d*%02x", &gear, &cs);
+			int calc_cs=calcNMEACheckSum( str );
+			if( calc_cs != cs ){
+				ESP_LOGW(FNAME,"CS Error: in %s; %x != %x", str, cs, calc_cs );
+			}
+			else{
+				if( gear == 0 ){
+					ESP_LOGI(FNAME,"Gear warning disable");
+					gflags.gear_warn_external = false;
+				}else if( gear == 1 ){
+					ESP_LOGI(FNAME,"Gear warning enable");
+					gflags.gear_warn_external = true;
 				}
 			}
 		}

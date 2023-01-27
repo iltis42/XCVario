@@ -663,7 +663,7 @@ void SetupMenu::vario_menu_create_damping( MenuEntry *top ){
 	vda->setHelp(PROGMEM"Response time, time constant of Vario low pass kalman filter");
 	top->addEntry( vda );
 
-	SetupMenuValFloat * vdav = new SetupMenuValFloat( 	"Averager", "sec", 2.0, 60.0,	0.1, 0, false, &vario_av_delay );
+	SetupMenuValFloat * vdav = new SetupMenuValFloat( 	"Averager", "sec", 2.0, 60.0, 1, 0, false, &vario_av_delay );
 	vdav->setHelp(PROGMEM"Response time, time constant of digital Average Vario Display");
 	top->addEntry( vdav );
 }
@@ -1638,12 +1638,13 @@ void SetupMenu::system_menu_create_hardware( MenuEntry *top ){
 
 	SetupMenuSelect * gear = new SetupMenuSelect( "Gear Warn", false , config_gear_warning, false, &gear_warning );
 	top->addEntry( gear );
-	gear->setHelp( PROGMEM "Enable gear warning if Flap Sensor (Pin 6) or Serial RS232 (Pin 4) is not equipped in S2, triggerd by either high or low level");
+	gear->setHelp( PROGMEM "Enable gear warning on S2 flap sensor or serial RS232 pin (pos. or neg. signal) or by external command", 220 );
 	gear->addEntry( "Disable");
 	gear->addEntry( "S2 Flap positive");   // A positive signal, high signal or > 2V will start alarm
 	gear->addEntry( "S2 RS232 positive");
 	gear->addEntry( "S2 Flap negative");   // A negative signal, low signal or < 1V will start alarm
 	gear->addEntry( "S2 RS232 negative");
+	gear->addEntry( "External");           // A $g,w<n>*CS command from an external device
 
 	if( hardwareRevision.get() >= XCVARIO_21 ){
 		SetupMenu * ahrs = new SetupMenu( "AHRS Setup" );

@@ -2067,7 +2067,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			}
 	}
 	// Airspeed (NEEDLE overlap)
-	if( !(tick%6)  ) {
+	if( !(tick%6) ) {
 		if( bg_prio ){
 			if( drawSpeed( airspeed_kmh, INNER_RIGHT_ALIGN, 75, (speed_overlap && !(tick%10))) || (speed_overlap && needle_drawn) ){
 				if( speed_overlap ){
@@ -2099,7 +2099,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		}
 	}
 	// Compass  (NEEDLE overlap)
-	if( !(tick%2)  ){
+	if( !(tick%2) ){
 		if( bg_prio )
 			drawCompass(INNER_RIGHT_ALIGN, 105, (wind_overlap && !(tick%10)) || (wind_overlap && needle_drawn),
 					                            (compass_overlap || !(tick%10)) || (compass_overlap && needle_drawn) );
@@ -2114,6 +2114,12 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			needle_dirty = true;
 	}
 
+	// Center Aid around grafic wind
+	if( centeraid && !(tick % 4)   ){
+		centeraid->drawCenterAid();
+	}
+
+	// Vario Needle in Front mode drawn as last
 	if( !(tick%2) && needle_prio  ){
 			if( indicator->drawPolarIndicator(needle_pos, needle_dirty) ) {
 				// Draw colored bow
@@ -2122,12 +2128,6 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 				drawBow(bar_val, old_vario_bar_val, 134, bowcolor[BC_GREEN] );
 			}
 	}
-
-	// Center Aid around grafic wind
-	if( centeraid && !(tick % 4)   ){
-		centeraid->drawCenterAid();
-	}
-
 	// ESP_LOGI(FNAME,"polar-sink:%f Old:%f int:%d old:%d", polar_sink, old_polar_sink, int( polar_sink*100.), int( old_polar_sink*100. ) );
 	if( ps_display.get() && !(tick%3) ){
 		if( int( polar_sink*100.) != int( old_polar_sink*100. ) ){

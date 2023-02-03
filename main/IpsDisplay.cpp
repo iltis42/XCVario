@@ -302,9 +302,9 @@ static float gaugeValueFromIdx(const float rad)
 
 
 PolarIndicator::PolarIndicator() :
-	base(80),
-	tip(132),
-	h_width(9)
+			base(80),
+			tip(132),
+			h_width(9)
 {
 	color = needlecolor[1];
 	base_val_offset = (int)(atan(static_cast<float>(h_width)/base)*sincosScale);
@@ -694,22 +694,22 @@ void IpsDisplay::redrawValues()
 	old_sink_bar_val = 0;
 	prev_winddir = -1000;
 	prev_heading = -1000;
-	 
+
 	switch ( alt_quantization.get() ) {
-		case ALT_QUANT_DISABLE:
-			alt_quant = 0;
-			break;
-		case ALT_QUANT_5:
-			alt_quant = 5;
-			break;
-		case ALT_QUANT_10:
-			alt_quant = 10;
-			break;
-		case ALT_QUANT_20:
-			alt_quant = 20;
-			break;
-		default:
-			alt_quant = 2;
+	case ALT_QUANT_DISABLE:
+		alt_quant = 0;
+		break;
+	case ALT_QUANT_5:
+		alt_quant = 5;
+		break;
+	case ALT_QUANT_10:
+		alt_quant = 10;
+		break;
+	case ALT_QUANT_20:
+		alt_quant = 20;
+		break;
+	default:
+		alt_quant = 2;
 	}
 }
 
@@ -770,7 +770,7 @@ void IpsDisplay::drawMC( float mc, bool large ) {
 	} else {
 		ucg->setFont(ucg_font_fub14_hn, false);
 	}
-	char s[10];
+	char s[32];
 	std::sprintf(s, "%1.1f", Units::Vario(mc) );
 	ucg->print(s);
 	int16_t fl = ucg->getStrWidth(s);
@@ -1100,8 +1100,8 @@ void IpsDisplay::drawTemperature( int x, int y, float t ) {
 	if( _menu )
 		return;
 	ucg->setFont(ucg_font_fur14_hf, true);
-	char s[10];
-    if( t != DEVICE_DISCONNECTED_C ) {
+	char s[32];
+	if( t != DEVICE_DISCONNECTED_C ) {
 		float temp_unit = Units::TemperatureUnit( t );
 		sprintf(s, "   %4.1f", std::roundf(temp_unit*10.f)/10.f );
 	}
@@ -1404,8 +1404,8 @@ void IpsDisplay::drawWindArrow( float a, float speed, int type ){
 		ucg->drawTriangle(xn_2,yn_2,xn_1,yn_1,xn_3,yn_3);
 	}
 	if( wind_reference.get() != WR_NORTH ){
-			ucg->setColor( COLOR_WHITE );
-			Flarm::drawAirplane( xn_0, yn_0, false, true ); // draw a small airplane symbol
+		ucg->setColor( COLOR_WHITE );
+		Flarm::drawAirplane( xn_0, yn_0, false, true ); // draw a small airplane symbol
 	}
 	wx0 = xn_0;
 	wy0 = yn_0;
@@ -1468,7 +1468,7 @@ void IpsDisplay::drawWarning( const char *warn, bool push ){
 void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float val ){
 	if( _menu )
 		return;
-	char s[20];
+	char s[32];
 	int ival = rint(val*10);  // integer value in steps of 10th
 	ucg->setFont(ucg_font_fub35_hn, false );
 	ucg->setFontPosCenter();
@@ -1508,7 +1508,7 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 	}
 	int used_quant = alt_quant;
 	if( unitalt == ALT_UNIT_FL ) // may change dynamically in case of autotransition enabled
-			used_quant = 1;          // we use 1 for FL, this rolls smooth as slowly
+		used_quant = 1;          // we use 1 for FL, this rolls smooth as slowly
 	if ( used_quant ) {
 		alt = (int)(altitude*(20.0/used_quant)); // respect difference according to choosen quantisation
 	}
@@ -1521,15 +1521,15 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 
 	// ESP_LOGI(FNAME,"draw alt %f dirty:%d", altitude, dirty );
 
-	char s[20]; // plain altimeter as a string
+	char s[32]; // plain altimeter as a string
 	ucg->setFont(ucg_font_fub25_hr, true);
 	ucg->setColor( COLOR_WHITE );
 	sprintf(s,"  %03d", alt); // need the string with at least three digits !!
-    // FL also now also displayed fancy with low quant looks good to allow switching with no artefacts
+	// FL also now also displayed fancy with low quant looks good to allow switching with no artefacts
 	if( used_quant != last_quant ){ // cleanup artefacts from higher digits
-				last_quant = used_quant;
-				ucg->setColor( COLOR_BLACK );
-				ucg->drawBox(x-2*char_width,y-char_height*1.5, 2*char_width, char_height*2 );
+		last_quant = used_quant;
+		ucg->setColor( COLOR_BLACK );
+		ucg->drawBox(x-2*char_width,y-char_height*1.5, 2*char_width, char_height*2 );
 	}
 
 	if ( ! used_quant ) {
@@ -1565,7 +1565,7 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 			//ucg->drawFrame(xp-1, y - char_height* 1.25 -1, char_width*nr_rolling_digits, char_height*1.45 +1);
 			ucg->setClipRange(xp, y - char_height * 1.45, char_width*nr_rolling_digits-1, char_height * 1.8 ); // slightly extend the tape to get 2 digits displayed uncut
 			ucg->setPrintPos(xp, y - m - char_height);
-			char tmp[10];
+			char tmp[32];
 			sprintf(tmp, "%0*u", nr_rolling_digits, abs((lastdigit+(sign*used_quant))%mod) );
 			// ESP_LOGI(FNAME,"tmp0 %s ld: %d", tmp, (lastdigit-(sign*used_quant))%mod );
 			ucg->print(tmp); // one above
@@ -1604,7 +1604,7 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 			ucg->undoClipRange();
 		}
 		ucg->setPrintPos(x - ucg->getStrWidth(s) - nr_rolling_digits*char_width , y);
-		static char altpart_prev_s[20] = "";
+		static char altpart_prev_s[32] = "";
 		if (dirty || strcmp(altpart_prev_s, s) != 0 ) {
 			ucg->print(s);
 			// ESP_LOGI(FNAME,"s5: %s", s );
@@ -1639,10 +1639,8 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 		ucg->setColor( COLOR_WHITE );
 		ucg->print(s);
 	}
-
 	return true;
 }
-
 
 // Accepts speed in kmh IAS/TAS, translates into configured unit
 // right-aligned to value in 25 font size, no unit
@@ -1651,13 +1649,11 @@ void IpsDisplay::drawSmallSpeed(float v_kmh, int16_t x, int16_t y)
 	int airspeed = Units::AirspeedRounded(v_kmh);
 	ucg->setColor( COLOR_WHITE );
 	ucg->setFont(ucg_font_fub14_hr, true);
-	char s[10];
+	char s[32];
 	sprintf(s,"  %3d",  airspeed ); //additional blank to avoid artefacts
 	ucg->setPrintPos(x-ucg->getStrWidth(s), y);
 	ucg->print(s);
 }
-
-
 
 // Accepts speed in kmh IAS/TAS, translates into configured unit
 // set dirty, when obscured from vario needle
@@ -1678,7 +1674,7 @@ bool IpsDisplay::drawSpeed(float v_kmh, int16_t x, int16_t y, bool dirty, bool i
 	ucg->setColor( COLOR_WHITE );
 	ucg->setFont(ucg_font_fub25_hn, true);
 
-	char s[10];
+	char s[32];
 	if( airspeed_mode.get() != MODE_SLIP )
 		sprintf(s,"  %3d",  airspeed );
 	else
@@ -1796,14 +1792,14 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 		old_gmin = gload_neg_max.get();
 	}
 	if( old_ias_max != airspeed_max.get() ){
-			if( airspeed_max.get() < v_max.get() )
-				ucg->setColor(  COLOR_WHITE  );
-			else
-				ucg->setColor(  COLOR_RED  );
-			ucg->setFont(ucg_font_fub20_hr, true);
-			ucg->setPrintPos(125,295);
-			ucg->printf("%3d   ", Units::AirspeedRounded( airspeed_max.get() ) );
-			old_ias_max = airspeed_max.get();
+		if( airspeed_max.get() < v_max.get() )
+			ucg->setColor(  COLOR_WHITE  );
+		else
+			ucg->setColor(  COLOR_RED  );
+		ucg->setFont(ucg_font_fub20_hr, true);
+		ucg->setPrintPos(125,295);
+		ucg->printf("%3d   ", Units::AirspeedRounded( airspeed_max.get() ) );
+		old_ias_max = airspeed_max.get();
 	}
 	xSemaphoreGive(spiMutex);
 }
@@ -1824,8 +1820,6 @@ float IpsDisplay::getHeading(){
 	}
 	return heading;
 }
-
-
 
 // Compass or Wind Display
 bool IpsDisplay::drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass_dirty) {
@@ -1875,7 +1869,7 @@ bool IpsDisplay::drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass
 			ucg->setColor(  COLOR_WHITE  );
 			// ucg->setFont(ucg_font_fub20_hr);
 			ucg->setFont(ucg_font_fub17_hf, true);
-			char s[12];
+			char s[32];
 			if( wind_display.get() & WD_DIGITS ){
 				if( ok )
 					sprintf(s,"%3d°%c%2d", winddir, type, windspeed );
@@ -1914,7 +1908,7 @@ bool IpsDisplay::drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass
 			heading -= 360;
 		// ESP_LOGI(FNAME, "heading %d", heading );
 		if( prev_heading != heading || compass_dirty ){
-			char s[20];
+			char s[32];
 			if( heading < 0 )
 				sprintf(s,"%s", "   ---" );
 			else
@@ -1968,11 +1962,9 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			ucg->setColor( COLOR_WHITE );
 		else
 			ucg->setColor( COLOR_BLACK );
-		char s[10];
-		if( netto_mode.get() == NETTO_NORMAL )
-			sprintf(s, "net");
-		else
-			sprintf(s, "s-net");
+		const char *s = "net";
+		if( netto_mode.get() == NETTO_RELATIVE )
+			s = "s-net";
 		ucg->setFont(ucg_font_fub11_hr, true);
 		ucg->setPrintPos(126-ucg->getStrWidth(s), DISPLAY_H/2-33);
 		ucg->print(s);
@@ -1995,14 +1987,13 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// int airspeed =  (int)(Units::Airspeed( airspeed_kmh ) + 0.5);
 	int unit = alt_unit.get();
 	if( gflags.standard_setting == true ){
-			unit = ALT_UNIT_FL;
+		unit = ALT_UNIT_FL;
 	}
 	flt_altitude += (altitude_m - flt_altitude) *0.1; // a bit lowpass make sense, any jitter would mess up tape display
 	float altitude = Units::Altitude( flt_altitude, unit );
 
 	// TE vario pointer position in rad
 	float needle_pos = (*_gauge)(te);
-	bool needle_dirty = false;
 	// Check overlap on inner figures
 	alt_overlap |= needle_pos < -M_PI_2*60./90.;
 	speed_overlap |= needle_pos > M_PI_2*75./90.;
@@ -2053,24 +2044,20 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 	bool needle_prio = (drawing_prio.get() == DP_NEEDLE);
 	bool bg_prio = (drawing_prio.get() == DP_BACKGROUND);
-    bool needle_drawn = false;
+	bool needle_drawn = false;
 	if( !(tick%2) && bg_prio ){  // draw needle first when background has prio
-			if( indicator->drawPolarIndicator(needle_pos, false) ) {
-				// Draw colored bow
-				float bar_val = (needle_pos>0.) ? needle_pos : 0.;
-				// draw green/red vario bar
-				drawBow(bar_val, old_vario_bar_val, 134, bowcolor[BC_GREEN] );
-				needle_drawn = true;
-			}
+		if( indicator->drawPolarIndicator(needle_pos, false) ) {
+			// Draw colored bow
+			float bar_val = (needle_pos>0.) ? needle_pos : 0.;
+			// draw green/red vario bar
+			drawBow(bar_val, old_vario_bar_val, 134, bowcolor[BC_GREEN] );
+			needle_drawn = true;
+		}
 	}
 	// Airspeed (NEEDLE overlap)
 	if( !(tick%6) ) {
 		if( bg_prio ){
-			if( drawSpeed( airspeed_kmh, INNER_RIGHT_ALIGN, 75, (speed_overlap && !(tick%10))) || (speed_overlap && needle_drawn) ){
-				if( speed_overlap ){
-					needle_dirty = true;
-				}
-			}
+			drawSpeed( airspeed_kmh, INNER_RIGHT_ALIGN, 75, (speed_overlap && !(tick%10)) || (speed_overlap && needle_drawn) );
 		}else {
 			if( drawSpeed( airspeed_kmh, INNER_RIGHT_ALIGN, 75, (speed_overlap && !(tick%10)) ) ){
 				if( needle_prio ){
@@ -2099,16 +2086,12 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	if( !(tick%2) ){
 		if( bg_prio )
 			drawCompass(INNER_RIGHT_ALIGN, 105, (wind_overlap && !(tick%10)) || (wind_overlap && needle_drawn),
-					                            (compass_overlap || !(tick%10)) || (compass_overlap && needle_drawn) );
+					(compass_overlap || !(tick%10)) || (compass_overlap && needle_drawn) );
 		else{
 			if( drawCompass(INNER_RIGHT_ALIGN, 105, wind_overlap && !(tick%10), compass_overlap && !(tick%10) ) ){
 				indicator->drawPolarIndicator(needle_pos, true);
 			}
 		}
-		if( compass_overlap )
-			needle_dirty = true;
-		if( wind_overlap )
-			needle_dirty = true;
 	}
 
 	// Center Aid around grafic wind
@@ -2118,12 +2101,12 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	// Vario Needle in Front mode drawn as last
 	if( !(tick%2) && needle_prio  ){
-			if( indicator->drawPolarIndicator(needle_pos, needle_dirty) ) {
-				// Draw colored bow
-				float bar_val = (needle_pos>0.) ? needle_pos : 0.;
-				// draw green/red vario bar
-				drawBow(bar_val, old_vario_bar_val, 134, bowcolor[BC_GREEN] );
-			}
+		if( indicator->drawPolarIndicator(needle_pos, false) ) {
+			// Draw colored bow
+			float bar_val = (needle_pos>0.) ? needle_pos : 0.;
+			// draw green/red vario bar
+			drawBow(bar_val, old_vario_bar_val, 134, bowcolor[BC_GREEN] );
+		}
 	}
 	// ESP_LOGI(FNAME,"polar-sink:%f Old:%f int:%d old:%d", polar_sink, old_polar_sink, int( polar_sink*100.), int( old_polar_sink*100. ) );
 	if( ps_display.get() && !(tick%3) ){
@@ -2152,9 +2135,9 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// Temperature Value
 	temp_status_t mputemp = MPU.getSiliconTempStatus();
 	if( (((int)(temp*10) != tempalt) || (mputemp != siliconTempStatusOld)) && !(tick%12)) {
-        ucg->setClipRange(ulmode?15:5,1,120,100); // avoid overwriting thermometer
+		ucg->setClipRange(ulmode?15:5,1,120,100); // avoid overwriting thermometer
 		drawTemperature( ulmode?65:55, 25, temp );
-        ucg->undoClipRange();
+		ucg->undoClipRange();
 		tempalt=(int)(temp*10);
 		siliconTempStatusOld = mputemp;
 	}
@@ -2296,11 +2279,10 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	// Average Vario
 	if( _ate != (int)(ate*10) && !(tick%3) ) {
 		// draw numeric value
-        // set coarse clipbox to avoid overwriting Vario Skale and pointer
-        ucg->setClipRange(DISPLAY_LEFT+bw+22,1,120,100);
+		// set coarse clipbox to avoid overwriting Vario Skale and pointer
+		ucg->setClipRange(DISPLAY_LEFT+bw+22,1,120,100);
 		drawAvgVario( FIELD_START+88, YVAR-23, ate );
-        ucg->undoClipRange();
-
+		ucg->undoClipRange();
 		_ate = (int)(ate)*10;
 	}
 
@@ -2323,9 +2305,9 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	}
 	// Temperature ValueAirliner
 	if( (int)(temp*10) != tempalt && !(tick%11)) {
-        ucg->setClipRange(FIELD_START+10, 1,500,500); // avoid overwriting thermometer
+		ucg->setClipRange(FIELD_START+10, 1,500,500); // avoid overwriting thermometer
 		drawTemperature( FIELD_START+65, DISPLAY_H-5, temp );
-        ucg->undoClipRange();
+		ucg->undoClipRange();
 		tempalt=(int)(temp*10);
 	}
 	// Battery Symbol
@@ -2453,20 +2435,20 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		{
 			if( ((speed%20) == 0 && (speed >= 0)) || speed == -20 ) {
 				// blank old values
-                ucg->setColor( COLOR_BLACK );
+				ucg->setColor( COLOR_BLACK );
 				ucg->drawBox( FIELD_START+6,dmid+(speed-airspeed)-(fh/2)-9, ASLEN-6, fh+15 );
 				int col = 0;
-                if ( display_variant.get() == DISPLAY_WHITE_ON_BLACK ) {
+				if ( display_variant.get() == DISPLAY_WHITE_ON_BLACK ) {
 					col = abs(((speed-airspeed)*2));
 				}
 				else {
 					col = abs(255 - abs(((speed-airspeed)*2)));
 				}
-                if( speed >= 0 ){
-                	ucg->setColor(  col,col,col  );
-                	ucg->setPrintPos(FIELD_START+8,dmid+(speed-airspeed)+(fh/2));
-                	ucg->printf("%3d ""- ", speed);
-                }
+				if( speed >= 0 ){
+					ucg->setColor(  col,col,col  );
+					ucg->setPrintPos(FIELD_START+8,dmid+(speed-airspeed)+(fh/2));
+					ucg->printf("%3d ""- ", speed);
+				}
 			}
 		}
 		ucg->undoClipRange();

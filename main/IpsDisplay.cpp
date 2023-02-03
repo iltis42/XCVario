@@ -1181,37 +1181,39 @@ bool PolarIndicator::drawPolarIndicator( float a, bool dirty_p )
 		// Clear just a smal triangle
 		int16_t x_2 = gaugeCos(prev_needle_pos, base+7);
 		int16_t y_2 = gaugeSin(prev_needle_pos, base+7);
-		IpsDisplay::ucg->setColor( COLOR_BLACK );
-		IpsDisplay::ucg->drawTriangle(prev.x_0,prev.y_0, prev.x_1,prev.y_1, x_2,y_2);
+		if( change ){
+			IpsDisplay::ucg->setColor( COLOR_BLACK );
+			IpsDisplay::ucg->drawTriangle(prev.x_0,prev.y_0, prev.x_1,prev.y_1, x_2,y_2);
+		}
 
 		// draw pointer
 		IpsDisplay::ucg->setColor( color.color[0], color.color[1], color.color[2] );
 		IpsDisplay::ucg->drawTriangle(n.x_0,n.y_0, n.x_1,n.y_1, n.x_2,n.y_2);
 
 		// cleanup respecting overlap
-		IpsDisplay::ucg->setColor( COLOR_BLACK );
-		// clear area to the side
-		if ( val > prev_needle_pos ) {
-			// up
-			IpsDisplay::ucg->drawTetragon(prev.x_2,prev.y_2, prev.x_1,prev.y_1, n.x_1,n.y_1, n.x_2,n.y_2);
-		} else {
-			IpsDisplay::ucg->drawTetragon(prev.x_2,prev.y_2, n.x_2,n.y_2, n.x_0,n.y_0, prev.x_0,prev.y_0);
+		if( change ){  // we need to cleanup only if position has changed, otherwise a redraw at same position is enough
+			IpsDisplay::ucg->setColor( COLOR_BLACK );
+			// clear area to the side
+			if ( val > prev_needle_pos ) {
+				// up
+				IpsDisplay::ucg->drawTetragon(prev.x_2,prev.y_2, prev.x_1,prev.y_1, n.x_1,n.y_1, n.x_2,n.y_2);
+			} else {
+				IpsDisplay::ucg->drawTetragon(prev.x_2,prev.y_2, n.x_2,n.y_2, n.x_0,n.y_0, prev.x_0,prev.y_0);
+			}
 		}
 
 	}
 	else {
-		// cleanup previous incarnation
-		IpsDisplay::ucg->setColor( COLOR_BLACK );
-		IpsDisplay::ucg->drawTriangle(prev.x_0,prev.y_0,prev.x_1,prev.y_1,prev.x_2,prev.y_2);
-		// draw pointer
-		IpsDisplay::ucg->setColor( color.color[0], color.color[1], color.color[2] );
-		IpsDisplay::ucg->drawTriangle(n.x_0,n.y_0,n.x_1,n.y_1,n.x_2,n.y_2);
+		if( change ){
+			// cleanup previous incarnation
+			IpsDisplay::ucg->setColor( COLOR_BLACK );
+			IpsDisplay::ucg->drawTriangle(prev.x_0,prev.y_0,prev.x_1,prev.y_1,prev.x_2,prev.y_2);
+			// draw pointer
+			IpsDisplay::ucg->setColor( color.color[0], color.color[1], color.color[2] );
+			IpsDisplay::ucg->drawTriangle(n.x_0,n.y_0,n.x_1,n.y_1,n.x_2,n.y_2);
+		}
 	}
 	prev = n;
-	// o.x_0 = o.x_0 + 3.*myCos(a-arrow_a);
-	// o.y_0 = o.y_0 + 3.*mySin(a-arrow_a);
-	// o.x_1 = o.x_1 + 3.*myCos(a+arrow_a);
-	// o.y_1 = o.y_1 + 3.*mySin(a+arrow_a);
 	prev_needle_pos = val;
 	return change;
 }

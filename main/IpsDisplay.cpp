@@ -1360,14 +1360,12 @@ void IpsDisplay::drawOneLabel( float val, int16_t labl, int16_t pos, int16_t off
 	}
 }
 
-static bool del_wind=true;
+static int wx0,wy0,wx1,wy1,wx3,wy3 = 0;  // initialize by zero
 
 // draw windsock style alike arrow white and red
 void IpsDisplay::drawWindArrow( float a, float speed, int type ){
-	static int wx0,wy0,wx1,wy1,wx3,wy3;
 	if( _menu )
 		return;
-
 	const int X=75;
 	const int Y=215;
 	float si=sin(D2R(a));
@@ -1393,17 +1391,11 @@ void IpsDisplay::drawWindArrow( float a, float speed, int type ){
 	int yn_2 = rint(Y-(s2*co*0.2));
 
 	// ESP_LOGI(FNAME,"IpsDisplay::drawWindArrow  x0:%d y0:%d x1:%d y1:%d x2:%d y2:%d x3:%d y3:%d", (int)xn_0, (int)yn_0, (int)xn_1 ,(int)yn_1, (int)xn_2, (int)yn_2, (int)xn_3 ,(int)yn_3 );
-	if( del_wind ) {  // cleanup previous incarnation
+	// cleanup previous incarnation
+	if( wx0 ){  // check if not zero (init condition, not yet drawn)
 		ucg->setColor(  COLOR_BLACK  );
 		Flarm::drawAirplane( wx0, wy0, false, true ); // clear small airplane symbol, need to clear anytime as it moves...
-		ucg->setColor(  COLOR_BLACK  );
 		ucg->drawTriangle(wx0,wy0,wx1,wy1,wx3,wy3);
-		wx0 = xn_0;
-		wy0 = yn_0;
-		wx1 = xn_1;
-		wy1 = yn_1;
-		wx3 = xn_3;
-		wy3 = yn_3;
 	}
 	if( s > 1 ){
 		ucg->setColor( COLOR_WHITE );
@@ -1415,7 +1407,12 @@ void IpsDisplay::drawWindArrow( float a, float speed, int type ){
 			ucg->setColor( COLOR_WHITE );
 			Flarm::drawAirplane( xn_0, yn_0, false, true ); // draw a small airplane symbol
 	}
-	del_wind = true;
+	wx0 = xn_0;
+	wy0 = yn_0;
+	wx1 = xn_1;
+	wy1 = yn_1;
+	wx3 = xn_3;
+	wy3 = yn_3;
 }
 
 void IpsDisplay::initRetroDisplay( bool ulmode ){

@@ -1928,7 +1928,19 @@ bool IpsDisplay::drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass
 	return ret;
 }
 
-
+void IpsDisplay::drawNetto( int16_t x, int16_t y, bool netto ) {
+	ESP_LOGI(FNAME,"drawNetto x:%d y:%d netto:%d", x,y,netto );
+	if( netto )
+		ucg->setColor( COLOR_WHITE );
+	else
+		ucg->setColor( COLOR_BLACK );
+	const char *s = "net";
+	if( netto_mode.get() == NETTO_RELATIVE )
+		s = "s-net";
+	ucg->setFont(ucg_font_fub11_hr, true);
+	ucg->setPrintPos(x-ucg->getStrWidth(s),y);
+	ucg->print(s);
+}
 
 void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, float polar_sink_ms, float altitude_m,
 		float temp, float volt, float s2fd_ms, float s2f_ms, float acl_ms, bool s2fmode, bool standard_setting, float wksensor, bool ulmode ){
@@ -1958,16 +1970,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 	// indicate vario mode
 	if( netto != netto_old ) {
-		if( netto )
-			ucg->setColor( COLOR_WHITE );
-		else
-			ucg->setColor( COLOR_BLACK );
-		const char *s = "net";
-		if( netto_mode.get() == NETTO_RELATIVE )
-			s = "s-net";
-		ucg->setFont(ucg_font_fub11_hr, true);
-		ucg->setPrintPos(126-ucg->getStrWidth(s), DISPLAY_H/2-33);
-		ucg->print(s);
+		drawNetto( 126, DISPLAY_H/2-33, netto );
 		netto_old = netto;
 	}
 
@@ -2219,20 +2222,9 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		}
 		netto=true;
 	}
-	if( !(tick%20) ){
-		if( netto != netto_old ){
-			ucg->setFont(ucg_font_fub11_hr, true);
-			ucg->setPrintPos(165,15);
-			if( netto )
-				ucg->setColor( COLOR_WHITE );
-			else
-				ucg->setColor( COLOR_BLACK );
-			if( netto_mode.get() == NETTO_NORMAL )
-				ucg->print( "  net" );
-			else
-				ucg->print( "s-net" );
-			netto_old = netto;
-		}
+	if( netto != netto_old ){
+		drawNetto( DISPLAY_W-37, 20, netto );
+		netto_old = netto;
 	}
 
 	float te = Units::Vario( te_ms );

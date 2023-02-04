@@ -106,7 +106,7 @@ private:
 	static float old_polar_sink;
 	static float flt_altitude;
 
-	static char last_s[20];
+	static int last_avg;
 	static int  x_start;
 	static PolarIndicator* indicator;
 	static temp_status_t siliconTempStatusOld;

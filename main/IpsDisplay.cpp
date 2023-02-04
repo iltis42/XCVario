@@ -81,7 +81,7 @@ int16_t IpsDisplay::char_width; // for roling altimeter
 int16_t IpsDisplay::char_height;
 
 // Average Vario data
-char IpsDisplay::last_s[20] = { "\0" };
+int IpsDisplay::last_avg = -1000;
 int IpsDisplay::x_start = 240;
 PolarIndicator* IpsDisplay::indicator = nullptr;
 
@@ -667,7 +667,7 @@ void IpsDisplay::redrawValues()
 	mcalt = -100;
 	as_prev = -1;
 	_ate = -2000;
-	last_s[0] = '\0';
+	last_avg = -1000;
 	x_start = 240;
 
 	alt_prev = -1;
@@ -1468,13 +1468,13 @@ void IpsDisplay::drawWarning( const char *warn, bool push ){
 void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float val ){
 	if( _menu )
 		return;
-	char s[32];
 	int ival = rint(val*10);  // integer value in steps of 10th
-	ucg->setFont(ucg_font_fub35_hn, false );
-	ucg->setFontPosCenter();
-	static const char* format[2] = {"%2.1f","%2.0f"};
-	sprintf(s, format[std::abs(ival)>100], float(ival/10.) );
-	if( strcmp( s, last_s ) != 0 ){  // only print if there a change in rounded numeric string
+	if( last_avg != ival){  // only print if there a change in rounded numeric string
+		char s[32];
+		ucg->setFont(ucg_font_fub35_hn, false );
+		ucg->setFontPosCenter();
+		static const char* format[2] = {"%2.1f","%2.0f"};
+		sprintf(s, format[std::abs(ival)>100], float(ival/10.) );
 		int new_x_start = x - ucg->getStrWidth(s);
 		if( new_x_start > x_start ){      // do we have a shorter string stating at higer x position
 			ucg->setColor( COLOR_BLACK );    // yes -> so blank exact prepending area
@@ -1484,10 +1484,10 @@ void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float val ){
 		ucg->setColor( COLOR_WHITE );
 		ucg->setPrintPos(new_x_start, y + 7);
 		ucg->print(s);
-		strcpy( last_s, s );
+		last_avg = ival;
 		x_start = new_x_start;
+		ucg->setFontPosBottom();
 	}
-	ucg->setFontPosBottom();
 }
 
 
@@ -1664,7 +1664,6 @@ void IpsDisplay::drawSmallSpeed(float v_kmh, int16_t x, int16_t y)
 bool IpsDisplay::drawSpeed(float v_kmh, int16_t x, int16_t y, bool dirty, bool inc_unit)
 {
 	if( _menu ) return false;
-
 	int airspeed = Units::AirspeedRounded(v_kmh);
 
 	dirty = dirty || as_prev != airspeed;

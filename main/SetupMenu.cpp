@@ -87,6 +87,8 @@ int update_routing_s1( SetupMenuSelect * p ){
 	return 0;
 }
 
+
+
 void init_screens(){
 	uint32_t scr = menu_screens.get();
 	screen_gmeter.set( (scr >> SCREEN_GMETER) & 1);
@@ -99,6 +101,13 @@ void init_screens(){
 	}
 	ESP_LOGI(FNAME,"screens mask len: %d, screens: %d", screen_mask_len, menu_screens.get() );
 }
+
+int vario_setup(SetupMenuValFloat * p)
+{
+	bmpVario.configChange();
+	return 0;
+}
+
 
 gpio_num_t SetupMenu::getGearWarningIO(){
 	gpio_num_t io = GPIO_NUM_0;
@@ -659,7 +668,7 @@ void SetupMenu::escape(){
 }
 
 void SetupMenu::vario_menu_create_damping( MenuEntry *top ){
-	SetupMenuValFloat * vda = new SetupMenuValFloat( 	"Damping", "sec", 2.0, 10.0, 0.1, 0, false, &vario_delay );
+	SetupMenuValFloat * vda = new SetupMenuValFloat( 	"Damping", "sec", 2.0, 10.0, 0.1, vario_setup, false, &vario_delay );
 	vda->setHelp(PROGMEM"Response time, time constant of Vario low pass kalman filter");
 	top->addEntry( vda );
 

@@ -288,7 +288,7 @@ int32_t SPL06_007::get_praw( bool &ok )
 	_praw = (data[0] << 8) | data[1];
 	_praw = (_praw << 8) | data[2];
 	if(_praw & (1 << 23)){
-		_praw = _praw | 0XFF000000; // Set left bits to one for 2's complement conversion of negitive number
+		_praw = _praw | 0XFF000000; // Set left bits to one for 2's complement conversion of negative number
 	}
 #ifdef I2C_ISSUE_TEST
 	if( address == 0x76 ){
@@ -307,14 +307,12 @@ int16_t SPL06_007::get_c0()
 	uint8_t tmp_MSB,tmp_LSB;
 	tmp_MSB = i2c_read_uint8( 0X10);
 	tmp_LSB = i2c_read_uint8( 0X11);
-	tmp_LSB = tmp_LSB >> 4;
-	c0 = (tmp_MSB << 4) | tmp_LSB;
+	c0 = (tmp_MSB << 4) | (tmp_LSB >> 4);
 
 	if(c0 & (1 << 11)) // Check for 2's complement negative number
 		c0 = c0 | 0XF000; // Set left bits to one for 2's complement conversion of negitive number
 	return c0;
 }
-
 
 int16_t SPL06_007::get_c1()
 {
@@ -340,8 +338,6 @@ int32_t SPL06_007::get_c00()
 	tmp_XLSB = i2c_read_uint8( 0X15);
 
 	tmp_XLSB = tmp_XLSB >> 4;
-	tmp = (tmp_MSB << 8) | tmp_LSB;
-	tmp = (tmp << 4) | tmp_XLSB;
 	tmp = (uint32_t)tmp_MSB << 12 | (uint32_t)tmp_LSB << 4 | (uint32_t)tmp_XLSB >> 4;
 	if(tmp & (1 << 19))
 		tmp = tmp | 0XFFF00000; // Set left bits to one for 2's complement conversion of negitive number
@@ -357,9 +353,6 @@ int32_t SPL06_007::get_c10()
 	tmp_LSB = i2c_read_uint8( 0X16); // 8 bits
 	tmp_XLSB = i2c_read_uint8( 0X17); // 8 bits
 	tmp_MSB = tmp_MSB & 0b00001111;
-
-	tmp = (tmp_MSB << 4) | tmp_LSB;
-	tmp = (tmp << 8) | tmp_XLSB;
 	tmp = (uint32_t)tmp_MSB << 16 | (uint32_t)tmp_LSB << 8 | (uint32_t)tmp_XLSB;
 
 	if(tmp & (1 << 19))
@@ -382,7 +375,6 @@ void SPL06_007::i2c_write_uint8( uint8_t eeaddress, uint8_t data )
 		ESP_LOGE(FNAME,"Error I2C write, status :%d", err );
 		errors++;
 	}
-
 }
 
 bool SPL06_007::i2c_read_bytes( uint8_t eeaddress, int num, uint8_t *data )

@@ -3,12 +3,11 @@
 #include "freertos/FreeRTOS.h"
 #include <freertos/task.h>
 #include <atomic>
+#include <cmath>
 #include <logdef.h>
 #include "S2F.h"
 #include "AverageVario.h"
 #include "sensor.h"
-
-#define abs(x)  ((x) < 0.0 ? -(x) : (x))
 
 const double sigmaAdjust = 255 * 2.0/33;  // 2 Vss
 int BMPVario::holddown = 0;

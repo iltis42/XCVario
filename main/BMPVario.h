@@ -35,7 +35,6 @@ public:
 		memset( TEarr, 0, sizeof(TEarr) );
 		_TEF = 0;
 		_test = false;
-		_init = false;
 		_sensorTE = 0;
 		_avgTE = 0;
 		averageAlt = 0;
@@ -84,7 +83,6 @@ private:
 	double _avgTE;
 	double bmpTemp;
 	bool _test;
-	bool _init;
 	float _damping;
 	float _S2FTE;
 	double _currentAlt;

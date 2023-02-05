@@ -14,8 +14,6 @@ int BMPVario::holddown = 0;
 void BMPVario::begin( PressureSensor *te, PressureSensor *baro, S2F *aS2F  ) {
 	_sensorTE = te;
 	_sensorBARO = baro;
-	_init = true;
-
 	_S2FTE = 0.0;
 	myS2F = aS2F;
 }
@@ -35,6 +33,18 @@ void BMPVario::setup() {
 	_damping = vario_delay.get();
 	_filter_len = 10;
 	lastrts = esp_timer_get_time();
+	vTaskDelay(100 / portTICK_PERIOD_MS);
+	bool success;
+	_currentAlt = _sensorTE->readAltitude(_qnh, success ) * 1.03; // we want have some beep when powerd on
+	if( success ){
+		lastAltitude = _currentAlt;
+		predictAlt = _currentAlt;
+		Altitude = _currentAlt;
+		averageAlt = _currentAlt;
+		ESP_LOGI(FNAME, "Initial Alt=%0.1f",Altitude );
+	}else{
+		ESP_LOGE(FNAME, "Initial Alt read error Alt=%0.1f",Altitude );
+	}
 }
 
 
@@ -73,21 +83,7 @@ double BMPVario::readTE( float tas ) {
 		if( !success )
 			_currentAlt = lastAltitude;  // ignore readout when failed
 	}
-
 	// ESP_LOGI(FNAME,"TE alt: %4.3f m", _currentAlt );
-	if( _init  ){
-		vTaskDelay(100 / portTICK_PERIOD_MS);
-		_currentAlt = _sensorTE->readAltitude(_qnh, success ) * 1.03; // we want have some beep when powerd on
-		lastAltitude = _currentAlt;
-		predictAlt = _currentAlt;
-		Altitude = _currentAlt;
-		averageAlt = _currentAlt;
-		// ESP_LOGI(FNAME,"Initial Alt=%0.1f",Altitude);
-		ESP_LOGI(FNAME, "Initial Alt=%0.1f",Altitude );
-
-		// analogOut();  // set defaults
-		_init = false;
-	}
 	averageAlt += (_currentAlt - averageAlt) * 0.1;
 	double adiff = _currentAlt - Altitude;
 	// ESP_LOGI(FNAME,"BMPVario new alt %0.1f err %0.1f", _currentAlt, err);
@@ -102,9 +98,7 @@ double BMPVario::readTE( float tas ) {
 	double TE = Altitude - lastAltitude;
 	// ESP_LOGI(FNAME," TE %0.1f diff %0.1f", TE, diff);
 	lastAltitude = Altitude;
-
 	// ESP_LOGI(FNAME,"++++++ DELTA %0.4f", delta );
-
 	TEarr[index++] = TE / delta;
 	if (index >= _filter_len ) {
 		index = 0;

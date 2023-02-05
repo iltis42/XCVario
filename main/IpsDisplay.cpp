@@ -201,6 +201,8 @@ static bool compass_dirty = false;
 static bool alt_dirty = false;
 static bool speed_dirty = false;
 
+static float prev_needle = 0;
+
 #define WKBARMID (AMIDY-15)
 
 float polar_sink_prev = 0;
@@ -302,9 +304,9 @@ static float gaugeValueFromIdx(const float rad)
 
 
 PolarIndicator::PolarIndicator() :
-			base(80),
-			tip(132),
-			h_width(9)
+					base(80),
+					tip(132),
+					h_width(9)
 {
 	color = needlecolor[1];
 	base_val_offset = (int)(atan(static_cast<float>(h_width)/base)*sincosScale);
@@ -1160,18 +1162,29 @@ bool PolarIndicator::drawPolarIndicator( float a, bool dirty_p )
 {
 	Triangle_t n;
 	if( IpsDisplay::inMenu() ) return false;
-	alt_dirty |= a < -M_PI_2*60./90.;
-	speed_dirty |= a > M_PI_2*75./90.;
-	wind_dirty |= a < -M_PI_2*25./90. && a > -M_PI_2*55./90.;
-	compass_dirty |= a > M_PI_2*35./90. && a < M_PI_2*75./90.;
-
-
 	int val = (int)(a*sincosScale); // descrete int indicator position, to compare with prev needle pos (do not round!)
 	bool change = val != prev_needle_pos;
 	dirty_p = dirty_p || dirty;
 	if ( ! change && ! dirty_p )
 		return false; // nothing painted
 	dirty = false; // a one shot re-paint trigger
+
+	alt_dirty |= a < -M_PI_2*60./90.;
+	speed_dirty |= a > M_PI_2*75./90.;
+	wind_dirty |= a < -M_PI_2*25./90. && a > -M_PI_2*55./90.;
+	compass_dirty |= a > M_PI_2*35./90. && a < M_PI_2*75./90.;
+    if( !alt_dirty ){
+    	alt_dirty |= prev_needle < -M_PI_2*60./90.;
+    }
+    if( !speed_dirty ){
+    	speed_dirty |= prev_needle > M_PI_2*75./90.;
+    }
+    if( !wind_dirty ){
+    	wind_dirty |= prev_needle < -M_PI_2*25./90. && prev_needle > -M_PI_2*55./90.;
+    }
+    if( !compass_dirty ){
+    	compass_dirty |= prev_needle > M_PI_2*35./90. && prev_needle < M_PI_2*75./90.;
+    }
 
 	n.x_0 = gaugeCos(val+base_val_offset, base); // top shoulder
 	n.y_0 = gaugeSin(val+base_val_offset, base);
@@ -1220,6 +1233,7 @@ bool PolarIndicator::drawPolarIndicator( float a, bool dirty_p )
 	}
 	prev = n;
 	prev_needle_pos = val;
+	prev_needle = a;
 	return change;
 }
 
@@ -1522,7 +1536,7 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 	if ( ! dirty ) return false;
 	alt_prev = alt;
 	alt = (int)roundf(altitude);
-	alt_dirty = false;
+
 	bool ret=false;
 	// ESP_LOGI(FNAME,"draw alt %f dirty:%d", altitude, dirty );
 
@@ -1537,6 +1551,7 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 		ucg->drawBox(x-2*char_width,y-char_height*1.5, 2*char_width, char_height*2 );
 	}
 
+	alt_dirty = false;
 	if ( ! used_quant ) {
 		// Plain plot of altitude for m and ft
 		sprintf(s,"  %d", alt);
@@ -1827,11 +1842,11 @@ float IpsDisplay::getHeading(){
 }
 
 // Compass or Wind Display
-bool IpsDisplay::drawCompass(int16_t x, int16_t y, bool _wind_dirty, bool compass_dirty) {
+bool IpsDisplay::drawCompass(int16_t x, int16_t y, bool _dirty, bool compass_dirty) {
 	bool ret=false;
 	if( _menu )
 		return ret;
-	ESP_LOGI(FNAME, "drawCompass: %d ", _wind_dirty );
+	// ESP_LOGI(FNAME, "drawCompass: %d ", _dirty );
 	if( (wind_display.get() & WD_DIGITS) || (wind_display.get() & WD_ARROW) ){
 		int winddir=0;
 		float wind=0;
@@ -1892,7 +1907,7 @@ bool IpsDisplay::drawCompass(int16_t x, int16_t y, bool _wind_dirty, bool compas
 		}
 		float heading = getHeading();
 		// Wind arrow
-		if( (prev_winddir != winddir) || (prev_windspeed != windspeed) || _wind_dirty || (int)heading != (int)prev_heading ){
+		if( (prev_winddir != winddir) || (prev_windspeed != windspeed) || _dirty || (int)heading != (int)prev_heading ){
 			// ESP_LOGI(FNAME, "draw WIND arrow");
 			prev_winddir = winddir;  // absolute windir related to geographic north
 			prev_heading = heading;  // two things to consider here, heading and wind direction
@@ -2059,12 +2074,10 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// Airspeed (NEEDLE overlap)
 	if( !(tick%6) ) {
 		if( bg_prio ){
-			drawSpeed( airspeed_kmh, INNER_RIGHT_ALIGN, 75, (speed_dirty && !(tick%10)) || speed_dirty );
+			drawSpeed( airspeed_kmh, INNER_RIGHT_ALIGN, 75, speed_dirty );
 		}else {
 			if( drawSpeed( airspeed_kmh, INNER_RIGHT_ALIGN, 75, (speed_dirty && !(tick%10)) ) ){
-				if( needle_prio ){
-					indicator->drawPolarIndicator(needle_pos, true);
-				}
+				indicator->drawPolarIndicator(needle_pos, true);
 			}
 		}
 	}
@@ -2074,24 +2087,17 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		// static float alt = 0, rad = 0.0; int min_aq = std::max(alt_quant, (int16_t)1);
 		// altitude = alt + sin(rad) * (5*min_aq+2); rad += 0.003*min_aq;
 		if( bg_prio ){
-			drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, (alt_dirty && !(tick%10)) || alt_dirty );
+			drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, alt_dirty );
 		}else{  // needle prio
-			if( !alt_dirty || (alt_dirty && !(tick%10)) ){  // reduce redraw on needle overlap to reduce flickering
-				if( alt_dirty ){
-					if( drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, true ) ){
-						indicator->drawPolarIndicator(needle_pos, true);
-					}
-				}else {
-					drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, false );
-				}
+			if( drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, (alt_dirty && !(tick%10)) ) ){
+				indicator->drawPolarIndicator(needle_pos, true);
 			}
 		}
 	}
 	// Compass  (NEEDLE overlap)
 	if( !(tick%2) ){
 		if( bg_prio )
-			drawCompass(INNER_RIGHT_ALIGN, 105, (wind_dirty && !(tick%10)) || wind_dirty,
-					(compass_dirty || !(tick%10)) || compass_dirty );
+			drawCompass(INNER_RIGHT_ALIGN, 105, wind_dirty, compass_dirty );
 		else{
 			if( drawCompass(INNER_RIGHT_ALIGN, 105, wind_dirty && !(tick%10), compass_dirty && !(tick%10) ) ){
 				indicator->drawPolarIndicator(needle_pos, true);

@@ -138,9 +138,9 @@ float ABPMRR::getTemperature(void){     // returns temperature of last measureme
 float ABPMRR::getAirSpeed(void){        // calculates and returns the airspeed in m/s IAS
 	/* Velocity calculation from a pitot tube explanation */
 	/* +/- 1PSI, approximately 100 m/s */
-	const float rho = 1.225/(2.0*100); // density of air plus multiplier
+	const float rhom = (2.0*100)/1.225; // density of air plus multiplier
 	// velocity = sqrt( (2*psi) / rho )   or sqt( psi /
-	float velocity sqrt(psi/rho);
+	float velocity sqrt(psi*rhom);
 	if (psi<0)
 		velocity = -velocity;
 	return velocity;

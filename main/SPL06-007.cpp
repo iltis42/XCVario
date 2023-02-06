@@ -304,11 +304,9 @@ int32_t SPL06_007::get_praw( bool &ok )
 
 int16_t SPL06_007::get_c0()
 {
-	uint8_t tmp_MSB,tmp_LSB;
-	tmp_MSB = i2c_read_uint8( 0X10);
-	tmp_LSB = i2c_read_uint8( 0X11);
-	c0 = (tmp_MSB << 4) | (tmp_LSB >> 4);
-
+	uint8_t bytes[2];
+	i2c_read_bytes( 0x10, 2, bytes );
+	c0 = (bytes[0] << 4) | (bytes[1] >> 4);
 	if(c0 & (1 << 11)) // Check for 2's complement negative number
 		c0 = c0 | 0XF000; // Set left bits to one for 2's complement conversion of negitive number
 	return c0;
@@ -316,13 +314,10 @@ int16_t SPL06_007::get_c0()
 
 int16_t SPL06_007::get_c1()
 {
-	uint8_t tmp_MSB,tmp_LSB;
-	tmp_MSB = i2c_read_uint8( 0X11);
-	tmp_LSB = i2c_read_uint8( 0X12);
-	tmp_MSB = tmp_MSB & 0XF;
-
-	c1 = (tmp_MSB << 8) | tmp_LSB;
-
+	uint8_t bytes[2];
+	i2c_read_bytes( 0x11, 2, bytes );
+	bytes[0] = bytes[0] & 0XF;
+	c1 = (bytes[0] << 8) | bytes[1];
 	if(c1 & (1 << 11)) // Check for 2's complement negative number
 		c1 = c1 | 0XF000; // Set left bits to one for 2's complement conversion of negitive number
 	return c1;
@@ -330,34 +325,26 @@ int16_t SPL06_007::get_c1()
 
 int32_t SPL06_007::get_c00()
 {
-	int32_t tmp;
-	uint8_t tmp_MSB,tmp_LSB,tmp_XLSB;
-
-	tmp_MSB = i2c_read_uint8( 0X13);
-	tmp_LSB = i2c_read_uint8( 0X14);
-	tmp_XLSB = i2c_read_uint8( 0X15);
-
-	tmp_XLSB = tmp_XLSB >> 4;
-	tmp = (uint32_t)tmp_MSB << 12 | (uint32_t)tmp_LSB << 4 | (uint32_t)tmp_XLSB >> 4;
-	if(tmp & (1 << 19))
-		tmp = tmp | 0XFFF00000; // Set left bits to one for 2's complement conversion of negitive number
-	return tmp;
+	int32_t ret;
+	uint8_t bytes[4];
+	i2c_read_bytes( 0x13, 3, bytes );
+	bytes[2] = bytes[2] >> 4;
+	ret = (uint32_t)bytes[0] << 12 | (uint32_t)bytes[1] << 4 | (uint32_t)bytes[2];
+	if(ret & (1 << 19))
+		ret = ret | 0XFFF00000; // Set left bits to one for 2's complement conversion of negitive number
+	return ret;
 }
 
 int32_t SPL06_007::get_c10()
 {
-	int32_t tmp;
-	uint8_t tmp_MSB,tmp_LSB,tmp_XLSB;
-
-	tmp_MSB = i2c_read_uint8( 0X15); // 4 bits
-	tmp_LSB = i2c_read_uint8( 0X16); // 8 bits
-	tmp_XLSB = i2c_read_uint8( 0X17); // 8 bits
-	tmp_MSB = tmp_MSB & 0b00001111;
-	tmp = (uint32_t)tmp_MSB << 16 | (uint32_t)tmp_LSB << 8 | (uint32_t)tmp_XLSB;
-
-	if(tmp & (1 << 19))
-		tmp = tmp | 0XFFF00000; // Set left bits to one for 2's complement conversion of negitive number
-	return tmp;
+	int32_t ret;
+	uint8_t bytes[4];
+	i2c_read_bytes( 0x15, 3, bytes );
+	bytes[0] = bytes[0] & 0b00001111;
+	ret = (uint32_t)bytes[0] << 16 | (uint32_t)bytes[1] << 8 | (uint32_t)bytes[2];
+	if(ret & (1 << 19))
+		ret = ret | 0XFFF00000; // Set left bits to one for 2's complement conversion of negitive number
+	return ret;
 }
 
 int16_t SPL06_007::get_16bit( uint8_t addr )

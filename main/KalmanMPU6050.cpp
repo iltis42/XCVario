@@ -158,7 +158,7 @@ void IMU::read()
 		float groll = 0.0;
 		if( positiveG < 1.0 )
 			positiveG = 1.0;
-		else if( positiveG > 1.02 ) // unaccurate at very low g forces
+		else if( positiveG > 1.02 ) // inaccurate at very low g forces
 		    groll = acos( 1 / positiveG );
 		// estimate sign of acceleration related angle from gyro
 		if( omega < 0 )
@@ -221,7 +221,7 @@ void IMU::read()
 		kalXAngle = Kalman_GetAngle(&kalmanX, roll, 0, dt);
 		filterRoll = kalXAngle;
 		kalYAngle = Kalman_GetAngle(&kalmanY, pitch, 0, dt);
-		filterPitch += (kalYAngle - filterPitch) * 0.2;   // addittional low pass filter
+		filterPitch += (kalYAngle - filterPitch) * 0.2;   // additional low pass filter
 	}
 
 	// ESP_LOGI( FNAME,"GV-Pitch=%.1f  GV-Roll=%.1f filterYaw: %.2f curh: %.2f GX:%.3f GY:%.3f GZ:%.3f AX:%.3f AY:%.3f AZ:%.3f  FP:%.1f FR:%.1f", euler.pitch, euler.roll, filterYaw, curh, gyroX,gyroY,gyroZ, accelX, accelY, accelZ, filterPitch, filterRoll  );

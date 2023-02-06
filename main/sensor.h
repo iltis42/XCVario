@@ -19,6 +19,7 @@
 #include "CenterAid.h"
 #include "vector_3d.h"
 #include "BMPVario.h"
+#include "AirspeedSensor.h"
 
 // Display 4 Wire SPI and Display CS
 #define RESET_Display  GPIO_NUM_5       // Reset pin for Display
@@ -52,6 +53,7 @@ extern StraightWind theWind;
 extern xSemaphoreHandle xMutex;
 extern int active_screen;
 extern CenterAid *centeraid;
+extern AirspeedSensor *asSensor;
 
 extern SetupMenu  *Menu;
 extern xSemaphoreHandle display_mutex;

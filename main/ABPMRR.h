@@ -48,6 +48,7 @@ class ABPMRR : public AirspeedSensor
         bool  offsetPlausible( uint16_t offset );
         bool  selfTest( int& adval );
         void  setBus( I2C_t *theBus ) {  bus = theBus; };
+        void  changeConfig();
 
     private:
         int   measure(void);            // returns status of measurement
@@ -67,6 +68,7 @@ class ABPMRR : public AirspeedSensor
         uint16_t    T_dat;  // 11 bit temperature data
         esp_err_t   error;
     	float       _offset;
+    	float       multiplier;
     // private functions
         int collect(void);
     

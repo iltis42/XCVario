@@ -108,6 +108,12 @@ int vario_setup(SetupMenuValFloat * p)
 	return 0;
 }
 
+int speedcal_change(SetupMenuValFloat * p)
+{
+	if( asSensor)
+		asSensor->changeConfig();
+	return 0;
+}
 
 gpio_num_t SetupMenu::getGearWarningIO(){
 	gpio_num_t io = GPIO_NUM_0;
@@ -1694,7 +1700,7 @@ void SetupMenu::system_menu_create_altimeter_airspeed( MenuEntry *top ){
 	als->addEntry( "Baro Sensor");
 	als->addEntry( "External");
 
-	SetupMenuValFloat * spc = new SetupMenuValFloat( "AS Calibration", "%", -100, 100, 1, 0, false, &speedcal  );
+	SetupMenuValFloat * spc = new SetupMenuValFloat( "AS Calibration", "%", -100, 100, 1, speedcal_change, false, &speedcal  );
 	spc->setHelp(PROGMEM"Calibration of airspeed sensor (AS). Normally not needed, hence pressure probes may have systematic error");
 	top->addEntry( spc );
 

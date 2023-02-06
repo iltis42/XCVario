@@ -39,6 +39,10 @@ P = 5000/4096 * adc
 
 */
 
+void MP5004DP::changeConfig(){
+	_correction = correction * ((100.0 + speedcal.get()) / 100.0);
+}
+
 void MP5004DP::setBus( I2C_t *_theBus ){
 	bool ret = MCP->begin();
 	if ( ret == false )
@@ -150,7 +154,7 @@ float MP5004DP::readPascal( float minimum, bool &ok ){
 		return 0.0;
 	}
 	float val = MCP->readVal();
-	float _pascal = (val - _offset) * correction * ((100.0 + speedcal.get()) / 100.0);
+	float _pascal = (val - _offset) * _correction;
     if ( (_pascal < minimum) && (minimum != 0) ) {
 	  _pascal = 0.0;
 	};

@@ -265,7 +265,7 @@ char * SetupCommon::getDefaultID() {
 	return default_id;
 }
 
-char * SetupCommon::getFixedID() {
+const char * SetupCommon::getFixedID() {
 	if( hardwareRevision.get() >= XCVARIO_21 ){
 		return "XCVario-";
 	}

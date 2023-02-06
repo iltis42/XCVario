@@ -50,7 +50,7 @@ public:
 	static bool initSetup( bool &present );  // returns false if FLASH was completely blank
 	static char *getID();
 	static char *getDefaultID();
-	static char *getFixedID();
+	static const char *getFixedID();
 	static void sendSetup( uint8_t sync, const char * key, char type, void *value, int len, bool ack=false );
 	static SetupCommon * getMember( const char * key );
 	static bool syncEntry( int entry );

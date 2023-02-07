@@ -100,6 +100,7 @@ typedef enum e_hardware_rev { 	HW_UNKNOWN=0,
 								XCVARIO_23=5   // 2 RS232, AHRS, CAN Bus, AHRS temperature control
 } e_hardware_rev_t;        // XCVario-Num = hardware revision + 18
 typedef enum e_drawing_prio { DP_NEEDLE, DP_BACKGROUND } e_drawing_prio_t;
+typedef enum e_nmea_streams { FT_DISABLE, FT_IMU, FT_SENSOR, FT_BOTH } e_nmea_streams_t;
 
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
 void change_bal();
@@ -542,6 +543,7 @@ extern SetupNG<int>  		software_update;
 extern SetupNG<int>  		battery_display;
 extern SetupNG<int>  		airspeed_mode;
 extern SetupNG<int>  		nmea_protocol;
+extern SetupNG<int> 		nmea_streams;
 extern SetupNG<int>		    log_level;
 extern SetupNG<float>		audio_factor;
 extern SetupNG<float>		te_comp_adjust;
@@ -671,6 +673,7 @@ extern SetupNG<t_bitfield_compass> 	calibration_bits;
 extern SetupNG<int> 		gear_warning;
 extern SetupNG<t_wireless_id>  custom_wireless_id;
 extern SetupNG<int> 		drawing_prio;
+
 
 extern uint8_t g_col_background;
 extern uint8_t g_col_highlight;

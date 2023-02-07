@@ -153,6 +153,18 @@ int upd_screens( SetupMenuSelect * p ){
 	return 0;
 }
 
+int change_streams( SetupMenuSelect * p ){
+	if( nmea_streams.get() & FT_IMU )
+		IMUstream = true;
+	else
+		IMUstream = false;
+	if( nmea_streams.get() & FT_SENSOR )
+		SENstream = true;
+	else
+		SENstream = false;
+	return 0;
+}
+
 int update_routing_s2( SetupMenuSelect * p ){
 	uint32_t routing =  (uint32_t)rt_s2_xcv.get()       << (RT_XCVARIO) |
 			( (uint32_t)rt_s2_wl.get() << (RT_WIRELESS) ) |
@@ -1955,6 +1967,14 @@ void SetupMenu::system_menu_create( MenuEntry *sye ){
 	nmea->addEntry( "Cambridge");
 	nmea->addEntry( "XCVario");
 	nmea->addEntry( "Disable");
+
+	SetupMenuSelect * nmeas = new SetupMenuSelect( PROGMEM "NMEA Streams", false , change_streams, true, &nmea_streams );
+	sye->addEntry( nmeas );
+	nmeas->setHelp( "Setup the flight test streams for IMU or SEN (other Sensors) to be transmitted in realtime");
+	nmeas->addEntry( "Disable");
+	nmeas->addEntry( "IMU");
+	nmeas->addEntry( "SEN");
+	nmeas->addEntry( "IMU&SEN");
 }
 
 void SetupMenu::setup_create_root(MenuEntry *top ){

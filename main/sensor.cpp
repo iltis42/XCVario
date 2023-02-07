@@ -1590,6 +1590,7 @@ extern "C" void  app_main(void)
 	ESP_LOGI(FNAME,"Now init all Setup elements");
 	bool setupPresent;
 	SetupCommon::initSetup( setupPresent );
+	Cipher::begin();
 	if( !setupPresent ){
 		if( Cipher::init() )
 			attitude_indicator.set(1);

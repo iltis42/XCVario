@@ -1,10 +1,8 @@
 #include "Cipher.h"
-#include "cipherkey.h"
 #include "logdef.h"
 #include "sensor.h"
 #include <esp32/rom/miniz.h>
 #include "Setup.h"
-#include "freertos/FreeRTOS.h"
 
 std::string Cipher::_id;
 

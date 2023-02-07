@@ -94,9 +94,10 @@ BMP:
 
 #define MGRPS 360
 
+// Flight test 
 #define GRAVITY 9.807
-
 #define DegToRad (M_PI / 180)
+// Fligth test
 
 MCP3221 *MCP=0;
 DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 standard, alternative  GPIO_NUM_17
@@ -112,7 +113,10 @@ Protocols OV( &Speed2Fly );
 
 AnalogInput Battery( (22.0+1.2)/1200, ADC_ATTEN_DB_0, ADC_CHANNEL_7, ADC_UNIT_1 );
 
+// Fligth Test
 TaskHandle_t mpid = NULL;
+// Fligth Test
+
 TaskHandle_t apid = NULL;
 TaskHandle_t bpid = NULL;
 TaskHandle_t tpid = NULL;
@@ -140,28 +144,32 @@ I2C_t& i2c = i2c1;  // i2c0 or i2c1
 I2C_t& i2c_0 = i2c0;  // i2c0 or i2c1
 MPU_t MPU;         // create an object
 mpud::float_axes_t accelG;
-mpud::float_axes_t accelISUNED; // accel in standard units m/s² with NED referenc
 mpud::float_axes_t gyroDPS;
-mpud::float_axes_t gyroISUNED; // gyro in standard units rad/s with NED reference
 mpud::float_axes_t accelG_Prev;
 mpud::float_axes_t gyroDPS_Prev;
-mpud::float_axes_t accelAVG;
+
+// Fligth Test
+mpud::float_axes_t accelISUNED; // accel in standard units m/s² with NED reference
+mpud::float_axes_t gyroISUNED; // gyro in standard units rad/s with NED reference
+// Fligth Test
 
 #define MAXDRIFT 2                // °/s maximum drift that is automatically compensated on ground
 #define NUM_GYRO_SAMPLES 3000     // 10 per second -> 5 minutes, so T has been settled after power on
 static uint16_t num_gyro_samples = 0;
 static int32_t cur_gyro_bias[3];
+
+// Fligth Test
 static esp_err_t erracc;
 static esp_err_t errgyr;
-
-// sampling rate for MPU and sensors
 #define IMUrate 1 // IMU data stream rate x 25ms. 0 not allowed
 #define SENrate 4 // Sensor data stream rate x 25ms. 0 not allowed
+// Fligth Test
 
 // Magnetic sensor / compass
 Compass *compass = 0;
 BTSender btsender;
 
+// Fligth Test
 static float accelTime; // time stamp for accels
 static float gyroTime;  // time stamp for gyros
 static float statTime; // time stamp for statP
@@ -170,14 +178,15 @@ static float teTime; // time stamp for teP
 static float teP=0; // raw te pressure
 static float dynTime; // time stamp for dynP
 static float dynP=0; // raw dynamic pressure
-static float dynamicP; // filtered dynamic pressure
 static float OATemp; // OAT for pressure corrections (real or from standard atmosphere) 
 static float MPUtempcel; // MPU chip temperature
-
+//
 bool IMUstream = false; // IMU FT stream
 bool SENstream = false; // Sensors FT stream
 bool ACCELcalib = false; // Accel calibration stream
+// Fligth Test
 
+static float dynamicP; // filtered dynamic pressure
 static float baroP=0; // barometric pressure
 static float temperature=15.0;
 
@@ -222,8 +231,10 @@ float mpu_target_temp=45.0;
 
 AdaptUGC *egl = 0;
 
+// Fligth Test
 extern UbloxGnssDecoder s1UbloxGnssDecoder;
 extern UbloxGnssDecoder s2UbloxGnssDecoder;
+// Fligth Test
 
 #define GYRO_FS (mpud::GYRO_FS_250DPS)
 
@@ -452,8 +463,12 @@ void audioTask(void *pvParameters){
 
 static void grabSensors(void *pvParameters)
 {
-// grabSensors gets MPU info, converts them in NED frame in International System Units : m/s² for accels and rad/s for rotation rates.
-// it also gets static, TE, dynamic pressure, OAT, MPU temp and GNSS data. 
+// grabSensors process reads all sensors information required for processing total energy calculation, including attitude estimation
+// it is also able to stream flight test data to BT which is used in post processing to validate algorithms.
+// This process gets following information:
+// - MPU, converts accels and gyros to NED frame in International System Units : m/s² for accels and rad/s for rotation rates.
+// - Sensors data, static, TE, dynamic pressure, OAT and MPU temp
+// - Ublox GNSS data. 
 	
 	mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
 	mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
@@ -466,29 +481,27 @@ static void grabSensors(void *pvParameters)
 		
 		// get MPU data every IMUrate * 25 ms
 		if( gflags.haveMPU && ((mtick % IMUrate) == 0) ) {
-			// get accel raw data
+			// get accel data
 			erracc = MPU.acceleration(&accelRaw);  // fetch raw accel data from the registers
 			if( erracc == ESP_OK ){
-				// record time of accels measurement
-				accelTime = esp_timer_get_time()/1000000.0; // time in second
+				accelTime = esp_timer_get_time()/1000000.0; // record time of accels measurement in second
 				accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // convert raw data to to 8G full scale
 				// convert accels coordinates to NED ISU : m/s²
 				accelISUNED.x = - accelG.z * GRAVITY;
 				accelISUNED.y = - accelG.y * GRAVITY;
 				accelISUNED.z = - accelG.x * GRAVITY;			
 			}
-			// get gyro raw data
+			// get gyro data
 			errgyr = MPU.rotation(&gyroRaw); // fetch raw gyro data from the registers
 			if( errgyr == ESP_OK ){
-				// record time of gyro measurement
-				gyroTime = esp_timer_get_time()/1000000.0; // time in second
+				gyroTime = esp_timer_get_time()/1000000.0; // record time of gyro measurement in second
 				gyroDPS = mpud::gyroDegPerSec(gyroRaw, GYRO_FS); // convert raw gyro to Gyro_FS full scale
 				// convert gyro coordinates to NED ISU : rad/s
 				gyroISUNED.x = -gyroDPS.z * DegToRad;
 				gyroISUNED.y = -gyroDPS.y * DegToRad;
 				gyroISUNED.z = -gyroDPS.x * DegToRad;
 			}
-			// If IMU stream reaquired
+			// If required stream IMU data
 			if ( IMUstream ) {
 				/*
 				IMU data in ISU and NED orientation
@@ -506,30 +519,10 @@ static void grabSensors(void *pvParameters)
 				sprintf(str,"$IMU,%.6f,%1.4f,%1.4f,%1.4f,%.6f,%3.4f,%3.4f,%3.4f\r\n",accelTime, accelISUNED.x, accelISUNED.y, accelISUNED.z , gyroTime, gyroISUNED.x, gyroISUNED.y, gyroISUNED.z );
 				Router::sendXCV(str);
 			}
-			// if average accels streaming is requested for calibration purpose, average 20 samples of accélération ~0.5 second average with tick at 40Hz
-			if ( ACCELcalib ) { 
-				if ( (mtick % 20) == 0 ) {
-					// average accels over 20 samples
-					accelAVG.x = accelAVG.x / 20;
-					accelAVG.y = accelAVG.y / 20;
-					accelAVG.z = accelAVG.z / 20;
-					// stream averaged accels
-					sprintf(str,"$ACCCAL,%06.3f,%06.3f,%06.3f\r\n", accelAVG.x, accelAVG.y, accelAVG.z);
-					Router::sendXCV(str);
-					// reinitialize accels accumulation
-					accelAVG.x = accelISUNED.x;
-					accelAVG.y = accelISUNED.y;
-					accelAVG.z = accelISUNED.z;				
-				} else {
-					// accumulate accel data to prepare average
-					accelAVG.x = accelAVG.x + accelISUNED.x;
-					accelAVG.y = accelAVG.y + accelISUNED.y;
-					accelAVG.z = accelAVG.z + accelISUNED.z;
-				}
-			}			
 		}
 		
 		// get sensors data : static, TE, dynamic pressure, OAT, MPU temp and GNSS data. 
+		
 		// get sensors data every SENrate * 25ms
 		if ( (mtick % SENrate) == 0 ) {
 			// get raw static pressurebool
@@ -537,37 +530,43 @@ static void grabSensors(void *pvParameters)
 			float p = 0;
 			p = baroSensor->readPressure(ok);
 			if ( ok ) {
+				statTime = esp_timer_get_time()/1000000.0; // record static time in second
 				statP = p;
-				statTime = esp_timer_get_time()/1000000.0; // record time in second
+				// for compatibility with readSensors
 				baroP = p;
 			}
 			// get raw te pressure
 			p = teSensor->readPressure(ok);
 			if ( ok ) {
+				teTime = esp_timer_get_time()/1000000.0; // record TE time in second
 				teP = p;
-				teTime = esp_timer_get_time()/1000000.0; // record time in second
+				// not sure what is required for compatibility with readSensors
 			}
 			// get raw dynamic pressure
 			if( asSensor )
 				p = asSensor->readPascal(0, ok);
 			if( ok ) {
+				dynTime = esp_timer_get_time()/1000000.0; // record dynamic time in second
 				dynP = p;
-				dynTime = esp_timer_get_time()/1000000.0; // record time in second
+				// for compatibility with readSensors
 				dynamicP = 0;
-				if (p > 60 ) // 
+				if (p > 60 ) 
 					dynamicP = p; 
 			}
 			// get OAT			
-			float T=OAT.get();
+			OATemp = OAT.get();
 			if( !gflags.validTemperature ) {
-				T= 15 - ( (altitude.get()/100) * 0.65 );
+				OATemp = 15 - ( (altitude.get()/100) * 0.65 );
 			}
-			OATemp = T;
+			// not sure what is required for compatibility with readSensors
+			
 			// get MPU temp
 			int16_t MPUtempraw;
 			esp_err_t errtemp = MPU.temperature(&MPUtempraw);
-			if( errtemp == ESP_OK )
+			if( errtemp == ESP_OK ) {
 				MPUtempcel = mpud::tempCelsius(MPUtempraw);
+			}
+			
 			// get Ublox GNSS data
 			// when GNSS receiver is connected to S1 interface
 			const gnss_data_t *gnss1 = s1UbloxGnssDecoder.getGNSSData(1);
@@ -603,7 +602,9 @@ static void grabSensors(void *pvParameters)
 				Router::sendXCV(str);
 			}
 		}
-					
+		
+		Router::routeXCV(); // allows to get commonds from BT to turn on/off streams
+		
 		esp_task_wdt_reset();
 		vTaskDelayUntil(&xLastWakeTime_mpu, 25/portTICK_PERIOD_MS);  // 25 ms = 40 Hz loop
 		if( (mtick % 25) == 0) {  // test stack every second
@@ -616,7 +617,10 @@ static void grabSensors(void *pvParameters)
 static void grabMPU()
 {
 	mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
-	mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16	
+	mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
+	// Flight Test
+	// accel already read by grabSensors
+	//
 	bool goodAccl = true;
 	if( abs( accelG.x - accelG_Prev.x ) > 1 || abs( accelG.y - accelG_Prev.y ) > 1 || abs( accelG.z - accelG_Prev.z ) > 1 ) {
 		MPU.acceleration(&accelRaw);
@@ -626,6 +630,9 @@ static void grabMPU()
 			ESP_LOGE(FNAME, "accelaration change > 1 g in 0.2 S:  X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
 		}
 	}
+	// Flight Test
+	// gyro already read by grabSensors
+	//	
 	bool goodGyro = true;
 	if( abs( gyroDPS.x - gyroDPS_Prev.x ) > MGRPS || abs( gyroDPS.y - gyroDPS_Prev.y ) > MGRPS || abs( gyroDPS.z - gyroDPS_Prev.z ) > MGRPS ) {
 		// ESP_LOGE(FNAME, "gyro sensor out of bounds: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
@@ -786,17 +793,21 @@ void readSensors(void *pvParameters){
 	{
 		count++;
 		TickType_t xLastWakeTime = xTaskGetTickCount();
+		
+		// Fligth Test
+		// Need to update following code to take into account grabSensors has already read sensors.
+		//
+		
 		if( gflags.haveMPU  )  // 3th Generation HW, MPU6050 avail and feature enabled
 		{
 			grabMPU();
 		}
-		// Dynamic pressure is being read in grabSensors		
-		// bool ok=false;
-		// float p = 0;
-		// if( asSensor )
-		//  	p = asSensor->readPascal(60, ok);
-		// if( ok )
-		//	dynamicP = p;
+		bool ok=false;
+		float p = 0;
+		if( asSensor )
+			p = asSensor->readPascal(60, ok);
+		if( ok )
+			dynamicP = p;
 		float iasraw = Atmosphere::pascal2kmh( dynamicP );
 		// ESP_LOGI("FNAME","P: %f  IAS:%f", dynamicP, iasraw );
 		float T=OAT.get();
@@ -846,10 +857,9 @@ void readSensors(void *pvParameters){
 			AverageVario::recalcAvgClimb();
 		}
 		if (FLAP) { FLAP->progress(); }
-		// baroP is beingread in grabSensors
-		// xSemaphoreTake(xMutex,portMAX_DELAY );
-		// baroP = baroSensor->readPressure(ok);   // 10x per second
-		// xSemaphoreGive(xMutex);
+		xSemaphoreTake(xMutex,portMAX_DELAY );
+		baroP = baroSensor->readPressure(ok);   // 10x per second
+		xSemaphoreGive(xMutex);
 		// ESP_LOGI(FNAME,"Baro Pressure: %4.3f", baroP );
 		float altSTD = 0;
 		if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
@@ -1752,13 +1762,16 @@ void system_startup(void *args){
 	if( screen_centeraid.get() ){
 		centeraid = new CenterAid( MYUCG );
 	}
+	
+	xTaskCreatePinnedToCore(&grabSensors, "grabSensors", 4096, NULL, 20, &mpid, 0);	
+	
 	if( SetupCommon::isClient() ){
 		xTaskCreatePinnedToCore(&clientLoop, "clientLoop", 4096, NULL, 11, &bpid, 0);
 		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 11, &apid, 0);
 	}
 	else {
 		xTaskCreatePinnedToCore(&readSensors, "readSensors", 5120, NULL, 11, &bpid, 0);
-		xTaskCreatePinnedToCore(&grabSensors, "grabSensors", 4096, NULL, 15, &mpid, 0);
+
 	}
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 3000, NULL, 5, &tpid, 0);       // increase stack by 500 byte
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 6144, NULL, 4, &dpid, 0); // increase stack by 1K

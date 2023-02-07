@@ -548,6 +548,24 @@ void Protocols::parseNMEA( const char *str ){
 		Flarm::parsePGRMZ( str );
 		ageBincom();
 	}
+	else if( !strncmp( str, "$FT", 3 ) ) {
+		if (str[3] == '0') {
+			IMUstream = false; // no FT stream
+			SENstream = false;
+		}
+		else if (str[3] == '1') {
+			IMUstream = true; // IMU stream
+			SENstream = false;
+		}
+		else if (str[3] == '2') {
+			IMUstream = false; // SEN stream
+			SENstream = true;
+		}
+		else if (str[3] == '3') {
+			IMUstream = true; // IMU and SEN stream
+			SENstream = true;
+		}
+	}
 }
 
 void Protocols::ageBincom(){

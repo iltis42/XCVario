@@ -26,6 +26,7 @@ typedef struct _gnss_data {
 	int date;
 	float time;
 	int fix;
+	int numSV;	
 } gnss_data_t;
 
 

@@ -153,7 +153,8 @@ int upd_screens( SetupMenuSelect * p ){
 	return 0;
 }
 
-int change_streams( SetupMenuSelect * p ){
+
+void build_streams(){
 	if( nmea_streams.get() & FT_IMU )
 		IMUstream = true;
 	else
@@ -162,6 +163,10 @@ int change_streams( SetupMenuSelect * p ){
 		SENstream = true;
 	else
 		SENstream = false;
+}
+
+int change_streams( SetupMenuSelect * p ){
+	build_streams();
 	return 0;
 }
 
@@ -441,6 +446,7 @@ void SetupMenu::begin( IpsDisplay* display, PressureSensor * bmp, AnalogInput *a
 	init_routing();
 	init_screens();
 	initGearWarning();
+	build_streams();
 }
 
 void SetupMenu::catchFocus( bool activate ){

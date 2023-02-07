@@ -54,7 +54,7 @@ void BTSender::btTask(void *pvParameters){
 		Router::routeBT();
 		if( uxTaskGetStackHighWaterMark( pid ) < 256 )
 			ESP_LOGW(FNAME,"Warning BT task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid ) );
-		vTaskDelay( 20/portTICK_PERIOD_MS );
+		vTaskDelay( 10/portTICK_PERIOD_MS );
 	}
 }
 
@@ -98,7 +98,7 @@ void BTSender::begin(){
 		dlb = new DataLink();
 		SerialBT = new BluetoothSerial();
 		SerialBT->begin( SetupCommon::getID() );
-		xTaskCreatePinnedToCore(&btTask, "btTask", 4096, NULL, 12, &pid, 0);  // stay below compass task
+		xTaskCreatePinnedToCore(&btTask, "btTask", 4096, NULL, 21, &pid, 0);  // stay below compass task
 	}
 }
 

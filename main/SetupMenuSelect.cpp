@@ -128,7 +128,9 @@ void SetupMenuSelect::display( int mode ){
 		ESP_LOGI(FNAME,"Title: %s ", _title );
 		ucg->printf("<< %s",_title);
 		xSemaphoreGive(spiMutex );
-		ESP_LOGI(FNAME,"select=%d numval=%d size=%d val=%s", _select, _numval, _values.size(), _values[_select] );
+		if( _select > _values.size() )
+			_select = _numval-1;
+		// ESP_LOGI(FNAME,"select=%d numval=%d size=%d val=%s", _select, _numval, _values.size(), _values[_select]  );
 		if( _numval > 9 ){
 			xSemaphoreTake(spiMutex,portMAX_DELAY );
 			ucg->setPrintPos( 1, 50 );

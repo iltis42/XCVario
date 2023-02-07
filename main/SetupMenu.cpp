@@ -1594,6 +1594,9 @@ void SetupMenu::system_menu_create_hardware_rotary( MenuEntry *top ){
 	sact->addEntry( "Long Press");
 }
 
+
+static const char PROGMEM lkeys[][4] { "0","1","2","3","4","5","6","7","8","9",":",";","<","=",">","?","@","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"};
+
 void SetupMenu::system_menu_create_hardware_ahrs_lc( MenuEntry *top ){
 	SetupMenuSelect * ahrslc1 = new SetupMenuSelect( "First    Letter",	false, add_key, false, &ahrs_licence_dig1 );
 	SetupMenuSelect * ahrslc2 = new SetupMenuSelect( "Second Letter",	false, add_key, false, &ahrs_licence_dig2 );
@@ -1603,11 +1606,10 @@ void SetupMenu::system_menu_create_hardware_ahrs_lc( MenuEntry *top ){
 	top->addEntry( ahrslc2 );
 	top->addEntry( ahrslc3 );
 	top->addEntry( ahrslc4 );
-	static const char keys[][4] { "0","1","2","3","4","5","6","7","8","9",":",";","<","=",">","?","@","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"};
-	ahrslc1->addEntryList( keys, sizeof(keys)/4 );
-	ahrslc2->addEntryList( keys, sizeof(keys)/4 );
-	ahrslc3->addEntryList( keys, sizeof(keys)/4 );
-	ahrslc4->addEntryList( keys, sizeof(keys)/4 );
+	ahrslc1->addEntryList( lkeys, sizeof(lkeys)/4 );
+	ahrslc2->addEntryList( lkeys, sizeof(lkeys)/4 );
+	ahrslc3->addEntryList( lkeys, sizeof(lkeys)/4 );
+	ahrslc4->addEntryList( lkeys, sizeof(lkeys)/4 );
 }
 
 

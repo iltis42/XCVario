@@ -183,7 +183,6 @@ static float MPUtempcel; // MPU chip temperature
 //
 bool IMUstream = false; // IMU FT stream
 bool SENstream = false; // Sensors FT stream
-bool ACCELcalib = false; // Accel calibration stream
 // Fligth Test
 
 static float dynamicP; // filtered dynamic pressure

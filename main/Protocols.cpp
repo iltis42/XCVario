@@ -552,27 +552,18 @@ void Protocols::parseNMEA( const char *str ){
 		if (str[3] == '0') {
 			IMUstream = false; // no FT stream
 			SENstream = false;
-			ACCELcalib = false;			
 		}
 		else if (str[3] == '1') {
 			IMUstream = true; // IMU stream
 			SENstream = false;
-			ACCELcalib = false;			
 		}
 		else if (str[3] == '2') {
 			IMUstream = false; // SEN stream
 			SENstream = true;
-			ACCELcalib = false;			
 		}
 		else if (str[3] == '3') {
 			IMUstream = true; // IMU and SEN stream
 			SENstream = true;
-			ACCELcalib = false;			
-		}
-		else if (str[3] == '4') {
-			IMUstream = false; // accel average stream (purpose is to help accels bench calibration)
-			SENstream = false;			
-			ACCELcalib = true;
 		}
 	}
 }

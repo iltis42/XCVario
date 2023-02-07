@@ -4,6 +4,7 @@
 #include <string> // std::string
 #include <locale> // std::locale, std::toupper
 #include "cipherkey.h"
+#include "freertos/FreeRTOS.h"
 
 
 class Cipher {

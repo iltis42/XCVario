@@ -22,7 +22,7 @@ bool SPL06_007::begin() {
 	// ---- Use rates of 8x or less until feature is implemented ---
 	errors = 0;
 
-	i2c_write_uint8( 0X06, 0x63);	// Pressure    7=128 samples per second and 3 = 8x oversampling 128/8 = 16 mS
+	i2c_write_uint8( 0X06, 0x72);	// Pressure    7=128 samples per second and 3 = 8x oversampling 128/8 = 16 mS
 	i2c_write_uint8( 0X07, 0X80);	// Temperature 0=1   sample  per second and 0 = no oversampling
 	i2c_write_uint8( 0X08, 0B0111);	// continuous temp and pressure measurement
 	i2c_write_uint8( 0X09, 0x00);	// FIFO Pressure measurement

@@ -228,6 +228,8 @@ int active_screen = 0;  // 0 = Vario
 
 float mpu_target_temp=45.0;
 
+static int mtick = 0;
+
 AdaptUGC *egl = 0;
 
 // Fligth Test
@@ -460,6 +462,8 @@ void audioTask(void *pvParameters){
 	}
 }
 
+
+
 static void grabSensors(void *pvParameters)
 {
 // grabSensors process reads all sensors information required for processing total energy calculation, including attitude estimation
@@ -471,11 +475,10 @@ static void grabSensors(void *pvParameters)
 	
 	mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
 	mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
-	int mtick = 0; // counter to schedule tasks at specific time
+// counter to schedule tasks at specific time
 	char str[150]; // string for flight test message broadcast
-	
 	while (1) {
-		mtick++;
+
 		TickType_t xLastWakeTime_mpu =xTaskGetTickCount();
 		
 		// get MPU data every IMUrate * 25 ms
@@ -527,6 +530,7 @@ static void grabSensors(void *pvParameters)
 			// get raw static pressurebool
 			bool ok=false;
 			float p = 0;
+
 			p = baroSensor->readPressure(ok);
 			if ( ok ) {
 				statTime = esp_timer_get_time()/1000000.0; // record static time in second
@@ -541,6 +545,7 @@ static void grabSensors(void *pvParameters)
 				teP = p;
 				// not sure what is required for compatibility with readSensors
 			}
+
 			// get raw dynamic pressure
 			if( asSensor )
 				p = asSensor->readPascal(0, ok);
@@ -603,8 +608,8 @@ static void grabSensors(void *pvParameters)
 		}
 		
 		Router::routeXCV(); // allows to get commonds from BT to turn on/off streams
-		
-		esp_task_wdt_reset();
+		mtick++;
+		// esp_task_wdt_reset();
 		vTaskDelayUntil(&xLastWakeTime_mpu, 25/portTICK_PERIOD_MS);  // 25 ms = 40 Hz loop
 		if( (mtick % 25) == 0) {  // test stack every second
 			if( uxTaskGetStackHighWaterMark( mpid ) < 1024 )
@@ -791,6 +796,10 @@ void readSensors(void *pvParameters){
 	while (1)
 	{
 		count++;
+		while( (mtick%4)==0 ){ // wait for grabSensors SEN tick has been processed
+			delay(2);
+		}
+
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		
 		// Fligth Test
@@ -1762,7 +1771,7 @@ void system_startup(void *args){
 		centeraid = new CenterAid( MYUCG );
 	}
 	
-	xTaskCreatePinnedToCore(&grabSensors, "grabSensors", 4096, NULL, 20, &mpid, 0);	
+	xTaskCreatePinnedToCore(&grabSensors, "grabSensors", 4096, NULL, 11, &mpid, 0);
 	
 	if( SetupCommon::isClient() ){
 		xTaskCreatePinnedToCore(&clientLoop, "clientLoop", 4096, NULL, 11, &bpid, 0);
@@ -1773,7 +1782,7 @@ void system_startup(void *args){
 
 	}
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 3000, NULL, 5, &tpid, 0);       // increase stack by 500 byte
-	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 6144, NULL, 4, &dpid, 0); // increase stack by 1K
+	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 6144, NULL, 7, &dpid, 0); // increase stack by 1K
 
 	Audio::startAudio();
 }

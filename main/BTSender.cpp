@@ -54,7 +54,7 @@ void BTSender::btTask(void *pvParameters){
 		Router::routeBT();
 		if( uxTaskGetStackHighWaterMark( pid ) < 256 )
 			ESP_LOGW(FNAME,"Warning BT task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid ) );
-		vTaskDelay( 10/portTICK_PERIOD_MS );
+		vTaskDelay( 25/portTICK_PERIOD_MS );
 	}
 }
 
@@ -77,12 +77,12 @@ void BTSender::progress(){
 		rx.set( buf, pos );
 		dlb->process( buf, pos, 7 );
 		DM.monitorString( MON_BLUETOOTH, DIR_RX, rx.c_str(), pos );
-		// ESP_LOGI(FNAME,">BT RX: %d bytes", pos );
+		ESP_LOGI(FNAME,">BT RX: %d bytes", pos );
 		// ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.c_str(),pos, ESP_LOG_INFO);
 	}
 	if( SerialBT->hasClient() ) {
 		SString msg;
-		if ( Router::pullMsg( bt_tx_q, msg ) ){
+		while( Router::pullMsg( bt_tx_q, msg ) ){
 			// ESP_LOGI(FNAME,"<BT TX %d bytes", msg.length() );
 			// ESP_LOG_BUFFER_HEXDUMP(FNAME,msg.c_str(),msg.length(), ESP_LOG_INFO);
 			SerialBT->write( (const uint8_t *)msg.c_str(), msg.length() );
@@ -98,7 +98,7 @@ void BTSender::begin(){
 		dlb = new DataLink();
 		SerialBT = new BluetoothSerial();
 		SerialBT->begin( SetupCommon::getID() );
-		xTaskCreatePinnedToCore(&btTask, "btTask", 4096, NULL, 21, &pid, 0);  // stay below compass task
+		xTaskCreatePinnedToCore(&btTask, "btTask", 7000, NULL, 12, &pid, 0);  // stay below compass task
 	}
 }
 

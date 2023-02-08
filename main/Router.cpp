@@ -51,6 +51,7 @@ bool Router::forwardMsg( SString &s, RingBufCPP<SString, QUEUE_SIZE>& q, bool nm
 		return true;
 	}
 	// ESP_LOGW(FNAME,"+++ WARNING +++ dropped msg len: %d, queueElem: %d", s.length(), q.numElements() );
+	ESP_LOGW(FNAME,"drp msg l:%d q:%d", s.length(), q.numElements() );
 	return false;
 }
 
@@ -130,6 +131,7 @@ void Router::routeXCV(){
 	SString xcv;
 	while( pullMsg( xcv_tx_q, xcv ) ){
 		// ESP_LOGI(FNAME,"XCV data to be forwarded %d bytes", xcv.length() );
+		// ESP_LOGI(FNAME,"XCV txq %d B", xcv.length() );
 		if ( strncmp( xcv.c_str(), "!xs", 3 ) != 0 ){  // !xs messages are XCV specific and must not go to BT,WiFi or serial Navi's
 			if( rt_xcv_wl.get() && (wireless == WL_BLUETOOTH) ) {
 				if( forwardMsg( xcv, bt_tx_q ) ){

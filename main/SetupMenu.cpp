@@ -170,28 +170,23 @@ int update_s2f_speed(SetupMenuValFloat * p)
 
 int update_rentry(SetupMenuValFloat * p)
 {
-	// ESP_LOGI(FNAME,"update_rentry() entries: %d, vu:%s ", audio_range_sm->numEntries(), Units::VarioUnit() );
-	static char rentry1[20];
-	static char rentry2[20];
-	static char rentry3[25];
-
-	sprintf( rentry1, "Fix (5  %s)", Units::VarioUnit() );
-	bool entry_in = audio_range_sm->numEntries() == 3 ? true : false;
-	if( !entry_in )
+	ESP_LOGI(FNAME,"update_rentry() vu:%s ar:%p", Units::VarioUnit(), audio_range_sm );
+	static char rentry0[25];
+	static char rentry1[25];
+	static char rentry2[25];
+	sprintf( rentry0, "Fix (5  %s)", Units::VarioUnit() );
+	sprintf( rentry1, "Fix (10 %s)", Units::VarioUnit() );
+	sprintf( rentry2, "Variable (%d %s)", (int)(range.get()), Units::VarioUnit() );
+	if( !audio_range_sm ){
+		audio_range_sm = new SetupMenuSelect( "Range", false, 0 , true, &audio_range  );
+		audio_range_sm->addEntry( rentry0  );
 		audio_range_sm->addEntry( rentry1  );
-	else
+		audio_range_sm->addEntry( rentry2  );
+	}else{
+		audio_range_sm->updateEntry( rentry0, 0 );
 		audio_range_sm->updateEntry( rentry1, 1 );
-	sprintf( rentry2, "Fix (10 %s)", Units::VarioUnit() );
-	if( !entry_in )
-		audio_range_sm->addEntry( rentry2 );
-	else
 		audio_range_sm->updateEntry( rentry2, 2 );
-	sprintf( rentry3, "Variable (%d %s)", (int)(range.get()), Units::VarioUnit() );
-	if( !entry_in )
-		audio_range_sm->addEntry( rentry3 );
-	else
-		audio_range_sm->updateEntry( rentry3, 3 );
-	entry_in = true;
+	}
 	return 0;
 }
 
@@ -900,11 +895,9 @@ void SetupMenu::audio_menu_create( MenuEntry *audio ){
 	audios->setHelp( PROGMEM "Configure audio style in terms of center frequency, octaves, single/dual tone, pitch and chopping", 220);
 	audios->addCreator(audio_menu_create_tonestyles);
 
-	SetupMenuSelect * ar = new SetupMenuSelect( "Range", false, 0 , true, &audio_range  );
-	audio_range_sm = ar;
 	update_rentrys(0);
-	ar->setHelp(PROGMEM"Select either fixed or variable Audio range according to current Vario setting");
-	audio->addEntry( ar );
+	audio_range_sm->setHelp(PROGMEM"Select either fixed or variable Audio range according to current Vario setting");
+	audio->addEntry( audio_range_sm );
 
 	SetupMenu * db = new SetupMenu( "Deadbands" );
 	audio->addEntry( db );
@@ -1994,12 +1987,12 @@ void SetupMenu::setup_create_root(MenuEntry *top ){
 	afe->setHelp(PROGMEM"Airfield elevation in meters for QNH auto adjust on ground according to this elevation");
 	top->addEntry( afe );
 
-    // Clear student mode, password correct
+	// Clear student mode, password correct
 	if( (int)(password.get()) == 271 ) {
 		student_mode.set( 0 );
 		password.set( 0 );
 	}
-    // Student mode: Query password
+	// Student mode: Query password
 	if( student_mode.get() )
 	{
 		SetupMenuValFloat * passw = new SetupMenuValFloat( "Expert Password", "", 0, 1000, 1, 0, false, &password  );
@@ -2050,7 +2043,7 @@ void SetupMenu::setup( )
 	root->addEntry( root );
 	// Create static menues
 	if( NEED_VOLTAGE_ADJUST && !SetupMenuValFloat::meter_adj_menu ){
-			SetupMenuValFloat::meter_adj_menu = new SetupMenuValFloat( "Voltmeter Adjust", "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust,  true, false, true);
+		SetupMenuValFloat::meter_adj_menu = new SetupMenuValFloat( "Voltmeter Adjust", "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust,  true, false, true);
 	}
 	setup_create_root( root );
 }

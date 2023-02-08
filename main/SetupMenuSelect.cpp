@@ -45,6 +45,11 @@ void SetupMenuSelect::addEntry( const char* ent ) {
 #endif
 }
 
+void SetupMenuSelect::updateEntry( const char * ent, int num ) {
+	ESP_LOGI(FNAME,"updateEntry ent:%s  num:%d total%d", ent, num, _numval );
+	_values.at(num) = ent;
+}
+
 void SetupMenuSelect::setSelect( int sel ) {
 	_select = (int16_t)sel;
 	if( _nvs )

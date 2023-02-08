@@ -543,7 +543,7 @@ void IpsDisplay::begin() {
 void IpsDisplay::setup()
 {
 	ESP_LOGI(FNAME,"IpsDisplay::setup");
-	_range = range.get();
+	_range = Units::Vario( range.get() );
 
 	if( (int)_range <= 5 )
 		_divisons = (int)_range*2;

@@ -39,6 +39,9 @@
 #include "DataMonitor.h"
 #include "DataLink.h"
 
+static float socket_serverTime;
+
+
 typedef struct client_record {
 	int client;
 	int retries;
@@ -111,6 +114,7 @@ void WifiApp::on_client_connect( int port, int msg ){
 int tick=0;
 
 void WifiApp::socket_server(void *setup) {
+
 	sock_server_t *config = (sock_server_t *)setup;
 	struct sockaddr_in clientAddress[10];  // we support max 10 clients try to connect same time
 	socklen_t clientAddressLength = sizeof(struct sockaddr_in);
@@ -126,6 +130,7 @@ void WifiApp::socket_server(void *setup) {
 	fcntl(sock, F_SETFL, O_NONBLOCK); // socket should not block, so we can server several clients
 	while (1)
 	{
+		socket_serverTime = (esp_timer_get_time()/1000.0);
 		int new_client = accept(sock, (struct sockaddr *)&clientAddress[clients.size()], &clientAddressLength);
 		if( new_client >= 0 && clients.size() < 10 ){
 			client_record_t new_client_rec;
@@ -204,7 +209,8 @@ void WifiApp::socket_server(void *setup) {
 		}
 		Router::routeWLAN();
 		Router::routeCAN();
-
+		socket_serverTime = (esp_timer_get_time()/1000.0) - socket_serverTime;
+		ESP_LOGI(FNAME,"socket_server: %0.1f  / %0.1f", socket_serverTime, 200.0 );
 		if( uxTaskGetStackHighWaterMark( config->pid ) < 128 )
 			ESP_LOGW(FNAME,"Warning wifi task stack low: %d bytes, port %d", uxTaskGetStackHighWaterMark( config->pid ), config->port );
 		if( Flarm::bincom )

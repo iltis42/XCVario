@@ -170,6 +170,7 @@ Compass *compass = 0;
 BTSender btsender;
 
 // Fligth Test
+static float grabSensorsTime;
 static float accelTime; // time stamp for accels
 static float gyroTime;  // time stamp for gyros
 static float statTime; // time stamp for statP
@@ -237,6 +238,13 @@ extern UbloxGnssDecoder s1UbloxGnssDecoder;
 extern UbloxGnssDecoder s2UbloxGnssDecoder;
 // Fligth Test
 
+static float clientLoopTime;
+static float readSensorsTime;
+static float drawDisplayTime;
+static float readTempTime;
+static float audioTaskTime;
+
+
 #define GYRO_FS (mpud::GYRO_FS_250DPS)
 
 float getTAS() { return tas; };
@@ -247,6 +255,7 @@ bool do_factory_reset() {
 
 void drawDisplay(void *pvParameters){
 	while (1) {
+		drawDisplayTime = (esp_timer_get_time()/1000.0);
 		if( Flarm::bincom ) {
 			if( gflags.flarmDownload == false ) {
 				gflags.flarmDownload = true;
@@ -420,6 +429,8 @@ void drawDisplay(void *pvParameters){
 		}
 		if( flarm_alarm_holdtime )
 			flarm_alarm_holdtime--;
+		drawDisplayTime = (esp_timer_get_time()/1000.0) - drawDisplayTime;
+		ESP_LOGI(FNAME,"drawDisplay: %0.1f  / %0.1f", drawDisplayTime, 20.0 );
 		vTaskDelay(20/portTICK_PERIOD_MS);
 		if( uxTaskGetStackHighWaterMark( dpid ) < 512  )
 			ESP_LOGW(FNAME,"Warning drawDisplay stack low: %d bytes", uxTaskGetStackHighWaterMark( dpid ) );
@@ -447,6 +458,8 @@ void doAudio(){
 void audioTask(void *pvParameters){
 	while (1)
 	{
+		audioTaskTime = (esp_timer_get_time()/1000.0);
+		ESP_LOGI(FNAME,"grabSensors: %0.1f  / %0.1f", grabSensorsTime, 25.0 );
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		if( Flarm::bincom ) {
 			// Flarm IGC download is running, audio will be blocked, give Flarm
@@ -456,6 +469,8 @@ void audioTask(void *pvParameters){
 		}
 		doAudio();
 		Router::routeXCV();
+		audioTaskTime = (esp_timer_get_time()/1000.0) - audioTaskTime;
+		ESP_LOGI(FNAME,"audioTask: %0.1f  / %0.1f", audioTaskTime, 100.0 );
 		if( uxTaskGetStackHighWaterMark( apid )  < 512 )
 			ESP_LOGW(FNAME,"Warning audio task stack low: %d", uxTaskGetStackHighWaterMark( apid ) );
 		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
@@ -481,6 +496,8 @@ static void grabSensors(void *pvParameters)
 
 		TickType_t xLastWakeTime_mpu =xTaskGetTickCount();
 		
+		grabSensorsTime = (esp_timer_get_time()/1000.0);
+
 		// get MPU data every IMUrate * 25 ms
 		if( gflags.haveMPU && ((mtick % IMUrate) == 0) ) {
 			// get accel data
@@ -610,6 +627,10 @@ static void grabSensors(void *pvParameters)
 		Router::routeXCV(); // allows to get commonds from BT to turn on/off streams
 		mtick++;
 		// esp_task_wdt_reset();
+		
+		grabSensorsTime = (esp_timer_get_time()/1000.0) - grabSensorsTime;
+		ESP_LOGI(FNAME,"grabSensors: %0.1f  / %0.1f", grabSensorsTime, 25.0 );
+		
 		vTaskDelayUntil(&xLastWakeTime_mpu, 25/portTICK_PERIOD_MS);  // 25 ms = 40 Hz loop
 		if( (mtick % 25) == 0) {  // test stack every second
 			if( uxTaskGetStackHighWaterMark( mpid ) < 1024 )
@@ -739,6 +760,8 @@ void clientLoop(void *pvParameters)
 	gflags.validTemperature = true;
 	while (true)
 	{
+		clientLoopTime = (esp_timer_get_time()/1000.0);
+
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		ccount++;
 		aTE += (te_vario.get() - aTE)* (1/(10*vario_av_delay.get()));
@@ -787,6 +810,8 @@ void clientLoop(void *pvParameters)
 			if( uxTaskGetStackHighWaterMark( bpid ) < 512 )
 				ESP_LOGW(FNAME,"Warning client task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );
 		}
+		clientLoopTime = (esp_timer_get_time()/1000.0) - clientLoopTime;
+		ESP_LOGI(FNAME,"clientLoop: %0.1f  / %0.1f", clientLoopTime, 100.0 );
 		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
 	}
 }
@@ -795,6 +820,7 @@ void readSensors(void *pvParameters){
 	int client_sync_dataIdx = 0;
 	while (1)
 	{
+		readSensorsTime = (esp_timer_get_time()/1000.0);
 		count++;
 		while( (mtick%4)==0 ){ // wait for grabSensors SEN tick has been processed
 			delay(2);
@@ -971,6 +997,9 @@ void readSensors(void *pvParameters){
 			// ESP_LOGI(FNAME,"MPU temp control; T=%.2f", MPU.getTemperature() );
 			MPU.temp_control( count );
 		}
+		
+		readSensorsTime = (esp_timer_get_time()/1000.0) - readSensorsTime;
+		ESP_LOGI(FNAME,"readSensors: %0.1f  / %0.1f", readSensorsTime, 100.0 );
 		esp_task_wdt_reset();
 		if( uxTaskGetStackHighWaterMark( bpid ) < 512 )
 			ESP_LOGW(FNAME,"Warning sensor task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );
@@ -984,6 +1013,7 @@ static float temp_prev = -3000;
 void readTemp(void *pvParameters){
 
 	while (1) {
+		readTempTime = (esp_timer_get_time()/1000.0);
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		float t=15.0;
 		battery = Battery.get();
@@ -1022,6 +1052,8 @@ void readTemp(void *pvParameters){
 		theWind.tick();
 		CircleWind::tick();
 		Flarm::progress();
+		readTempTime = (esp_timer_get_time()/1000.0) - readTempTime;
+		ESP_LOGI(FNAME,"readTemp: %0.1f  / %0.1f", readTempTime, 1000.0 );
 		vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS);
 		esp_task_wdt_reset();
 		if( (ttick++ % 5) == 0) {

@@ -31,6 +31,7 @@ bool ESPRotary::longPressed = false;
 #define ROTARY_SINGLE_INC 0
 #define ROTARY_DOUBLE_INC 1
 static TaskHandle_t pid = NULL;
+static float informObserversTime;
 
 void ESPRotary::attach(RotaryObserver *obs) {
 	// ESP_LOGI(FNAME,"Attach obs: %p", obs );
@@ -175,6 +176,8 @@ void ESPRotary::sendUp( int diff ){
 void ESPRotary::informObservers( void * args )
 {
 	while( 1 ) {
+	informObserversTime = (esp_timer_get_time()/1000.0);	
+		
 	  if( Flarm::bincom ) {
 	    vTaskDelay(20 / portTICK_PERIOD_MS);
 	    continue;
@@ -239,6 +242,9 @@ void ESPRotary::informObservers( void * args )
 				sendUp( abs(diff) );
 			}
 		}
+		
+		informObserversTime = (esp_timer_get_time()/1000.0) - informObserversTime;
+		ESP_LOGI(FNAME,"informObservers: %0.1f  / %0.1f", informObserversTime, 20.0 );
 		if( uxTaskGetStackHighWaterMark( pid ) < 256 )
 			ESP_LOGW(FNAME,"Warning rotary task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid ) );
 		vTaskDelay(20 / portTICK_PERIOD_MS);

@@ -68,9 +68,12 @@ xcv_serial_t Serial::S2 = { .name="S2", .tx_q = &s2_tx_q, .rx_q = &s2_rx_q, .rou
 
 bool Serial::bincom_mode = false;  // we start with bincom timer inactive
 
+static float serialHandlerTime;
+
 // Serial Handler ttyS1, S1, port 8881
 void Serial::serialHandler(void *pvParameters)
 {
+	serialHandlerTime = (esp_timer_get_time()/1000.0);
 	SString s;
 	xcv_serial_t *cfg = (xcv_serial_t *)pvParameters;
 	// Make a pause, that has avoided core dumps during enable the RX interrupt.
@@ -147,6 +150,8 @@ void Serial::serialHandler(void *pvParameters)
 			}
 		}
 	} // end while( true )
+			serialHandlerTime = (esp_timer_get_time()/1000.0) - serialHandlerTime;
+		ESP_LOGI(FNAME,"serialHandler: %0.1f  / %0.1f", serialHandlerTime, 0.0 );	
 }
 
 void Serial::enterBincomMode( xcv_serial_t *cfg ){

@@ -41,13 +41,19 @@ portMUX_TYPE btmux = portMUX_INITIALIZER_UNLOCKED;
 
 // Utility methods to push and pull data into/from queues
 
+static xSemaphoreHandle qMutex=NULL;
+
+void Router::begin(){
+	qMutex = xSemaphoreCreateMutex();
+}
+
 // checks if Queue is full, otherwise appends SString
 bool Router::forwardMsg( SString &s, RingBufCPP<SString, QUEUE_SIZE>& q, bool nmea ){
 	// ESP_LOGI(FNAME,"forwardMsg() len: %d, queueElem: %d queueFull:%d", s.length(), q.numElements(), q.isFull() );
 	if( !q.isFull() ) {
-		portENTER_CRITICAL_ISR(&btmux);
+		xSemaphoreTake(qMutex,portMAX_DELAY );
 		q.add( s );
-		portEXIT_CRITICAL_ISR(&btmux);
+		xSemaphoreGive(qMutex);
 		return true;
 	}
 	// ESP_LOGW(FNAME,"+++ WARNING +++ dropped msg len: %d, queueElem: %d", s.length(), q.numElements() );
@@ -66,9 +72,9 @@ void Router::clearQueue( RingBufCPP<SString, QUEUE_SIZE>& q ){
 // gets last message from ringbuffer FIFO
 bool Router::pullMsg( RingBufCPP<SString, QUEUE_SIZE>& q, SString& s ){
 	if( !q.isEmpty() ){
-		portENTER_CRITICAL_ISR(&btmux);
+		xSemaphoreTake(qMutex,portMAX_DELAY );
 		q.pull( s );
-		portEXIT_CRITICAL_ISR(&btmux);
+		xSemaphoreGive(qMutex);
 		return true;
 	}
 	return false;
@@ -78,9 +84,9 @@ int Router::pullMsg( RingBufCPP<SString, QUEUE_SIZE>& q, char *block ){
 	int size = 0;
 	if( !q.isEmpty() ){
 		SString s;
-		portENTER_CRITICAL_ISR(&btmux);
+		xSemaphoreTake(qMutex,portMAX_DELAY );
 		q.pull(  s );
-		portEXIT_CRITICAL_ISR(&btmux);
+		xSemaphoreGive(qMutex);
 		size = s.length();
 		memcpy( block, s.c_str(), size );
 	}
@@ -92,9 +98,9 @@ int Router::pullBlock( RingBufCPP<SString, QUEUE_SIZE>& q, char *block, int size
 	int len = 0;
 	while( !q.isEmpty() ){
 		SString s;
-		portENTER_CRITICAL_ISR(&btmux);
+		xSemaphoreTake(qMutex,portMAX_DELAY );
 		q.pull(  s );
-		portEXIT_CRITICAL_ISR(&btmux);
+		xSemaphoreGive(qMutex);
 		memcpy( block+len, s.c_str(), s.length() );
 		len += s.length();
 		if( (len + SSTRLEN) > size )

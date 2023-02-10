@@ -878,6 +878,7 @@ void system_startup(void *args){
 	int line = 1;
 	ESP_LOGI( FNAME, "Now setup I2C bus IO 21/22");
 	i2c.begin(GPIO_NUM_21, GPIO_NUM_22, 100000 );
+	Router::begin();
 	theWind.begin();
 
 	MCP = new MCP3221();

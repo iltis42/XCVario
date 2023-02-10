@@ -1845,7 +1845,7 @@ void SetupMenu::system_menu_create_interfaceS2( MenuEntry *top ){
 	SetupMenu * s2out = new SetupMenu( PROGMEM "S2 Routing" );
 	s2out->setHelp( PROGMEM "Select data source to be routed from/to serial interface S2");
 	top->addEntry( s2out );
-	s2out->addCreator( system_menu_create_interfaceS1_routing );
+	s2out->addCreator( system_menu_create_interfaceS2_routing );
 
 	SetupMenuSelect * stxi2 = new SetupMenuSelect( PROGMEM "TX Inversion", true , 0, true, &serial2_tx_inverted );
 	top->addEntry( stxi2 );

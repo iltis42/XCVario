@@ -73,7 +73,8 @@ static float serialHandlerTime;
 // Serial Handler ttyS1, S1, port 8881
 void Serial::serialHandler(void *pvParameters)
 {
-	serialHandlerTime = (esp_timer_get_time()/1000.0);
+//time
+//	serialHandlerTime = (esp_timer_get_time()/1000.0);
 	SString s;
 	xcv_serial_t *cfg = (xcv_serial_t *)pvParameters;
 	// Make a pause, that has avoided core dumps during enable the RX interrupt.
@@ -150,8 +151,8 @@ void Serial::serialHandler(void *pvParameters)
 			}
 		}
 	} // end while( true )
-			serialHandlerTime = (esp_timer_get_time()/1000.0) - serialHandlerTime;
-		ESP_LOGI(FNAME,"serialHandler: %0.1f  / %0.1f", serialHandlerTime, 0.0 );	
+//		serialHandlerTime = (esp_timer_get_time()/1000.0) - serialHandlerTime;
+//		ESP_LOGI(FNAME,"serialHandler: %0.1f  / %0.1f", serialHandlerTime, 0.0 );	
 }
 
 void Serial::enterBincomMode( xcv_serial_t *cfg ){

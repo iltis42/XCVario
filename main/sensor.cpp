@@ -458,7 +458,8 @@ void doAudio(){
 void audioTask(void *pvParameters){
 	while (1)
 	{
-		audioTaskTime = (esp_timer_get_time()/1000.0);
+//time
+//		audioTaskTime = (esp_timer_get_time()/1000.0);
 		ESP_LOGI(FNAME,"grabSensors: %0.1f  / %0.1f", grabSensorsTime, 25.0 );
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		if( Flarm::bincom ) {
@@ -469,8 +470,8 @@ void audioTask(void *pvParameters){
 		}
 		doAudio();
 		Router::routeXCV();
-		audioTaskTime = (esp_timer_get_time()/1000.0) - audioTaskTime;
-		ESP_LOGI(FNAME,"audioTask: %0.1f  / %0.1f", audioTaskTime, 100.0 );
+//		audioTaskTime = (esp_timer_get_time()/1000.0) - audioTaskTime;
+//		ESP_LOGI(FNAME,"audioTask: %0.1f  / %0.1f", audioTaskTime, 100.0 );
 		if( uxTaskGetStackHighWaterMark( apid )  < 512 )
 			ESP_LOGW(FNAME,"Warning audio task stack low: %d", uxTaskGetStackHighWaterMark( apid ) );
 		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
@@ -555,14 +556,17 @@ static void grabSensors(void *pvParameters)
 				// for compatibility with readSensors
 				baroP = p;
 			}
+			
 			// get raw te pressure
+			xSemaphoreTake(xMutex,portMAX_DELAY );
 			p = teSensor->readPressure(ok);
 			if ( ok ) {
 				teTime = esp_timer_get_time()/1000000.0; // record TE time in second
 				teP = p;
 				// not sure what is required for compatibility with readSensors
 			}
-
+			xSemaphoreGive(xMutex);
+			
 			// get raw dynamic pressure
 			if( asSensor )
 				p = asSensor->readPascal(0, ok);
@@ -646,6 +650,7 @@ static void grabMPU()
 	// Flight Test
 	// accel already read by grabSensors
 	//
+	/*
 	bool goodAccl = true;
 	if( abs( accelG.x - accelG_Prev.x ) > 1 || abs( accelG.y - accelG_Prev.y ) > 1 || abs( accelG.z - accelG_Prev.z ) > 1 ) {
 		MPU.acceleration(&accelRaw);
@@ -654,10 +659,11 @@ static void grabMPU()
 			goodAccl = false;
 			ESP_LOGE(FNAME, "accelaration change > 1 g in 0.2 S:  X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
 		}
-	}
+	} */
 	// Flight Test
 	// gyro already read by grabSensors
-	//	
+	//
+	/*
 	bool goodGyro = true;
 	if( abs( gyroDPS.x - gyroDPS_Prev.x ) > MGRPS || abs( gyroDPS.y - gyroDPS_Prev.y ) > MGRPS || abs( gyroDPS.z - gyroDPS_Prev.z ) > MGRPS ) {
 		// ESP_LOGE(FNAME, "gyro sensor out of bounds: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
@@ -668,7 +674,8 @@ static void grabMPU()
 			goodGyro = false;
 			ESP_LOGE(FNAME, "gyro angle >90 deg/s in 0.2 S: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
 		}
-	}
+	} */
+	/*
 	if( errgyr == ESP_OK ){
 		// check low rotation on all 3 axes = on ground
 		if( abs( gyroDPS.x ) < MAXDRIFT && abs( gyroDPS.y ) < MAXDRIFT && abs( gyroDPS.z ) < MAXDRIFT ) {
@@ -702,10 +709,12 @@ static void grabMPU()
 			}
 		}
 	}
-
+	*/
+	/*
 	if( errgyr == ESP_OK && erracc == ESP_OK && goodAccl && goodGyro ) {
 		IMU::read();
 	}
+	*/
 	gyroDPS_Prev = gyroDPS;
 	accelG_Prev = accelG;
 }
@@ -760,7 +769,8 @@ void clientLoop(void *pvParameters)
 	gflags.validTemperature = true;
 	while (true)
 	{
-		clientLoopTime = (esp_timer_get_time()/1000.0);
+//time
+//		clientLoopTime = (esp_timer_get_time()/1000.0);
 
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		ccount++;
@@ -810,8 +820,8 @@ void clientLoop(void *pvParameters)
 			if( uxTaskGetStackHighWaterMark( bpid ) < 512 )
 				ESP_LOGW(FNAME,"Warning client task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );
 		}
-		clientLoopTime = (esp_timer_get_time()/1000.0) - clientLoopTime;
-		ESP_LOGI(FNAME,"clientLoop: %0.1f  / %0.1f", clientLoopTime, 100.0 );
+//		clientLoopTime = (esp_timer_get_time()/1000.0) - clientLoopTime;
+//		ESP_LOGI(FNAME,"clientLoop: %0.1f  / %0.1f", clientLoopTime, 100.0 );
 		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
 	}
 }
@@ -838,17 +848,19 @@ void readSensors(void *pvParameters){
 		}
 		bool ok=false;
 		float p = 0;
-		if( asSensor )
-			p = asSensor->readPascal(60, ok);
-		if( ok )
-			dynamicP = p;
+		// Flight Test
+		//if( asSensor )
+		//	p = asSensor->readPascal(60, ok);
+		//if( ok )
+		//	dynamicP = p;
 		float iasraw = Atmosphere::pascal2kmh( dynamicP );
 		// ESP_LOGI("FNAME","P: %f  IAS:%f", dynamicP, iasraw );
-		float T=OAT.get();
-		if( !gflags.validTemperature ) {
-			T= 15 - ( (altitude.get()/100) * 0.65 );
-			// ESP_LOGW(FNAME,"T invalid, using 15 deg");
-		}
+		//float T=OAT.get();
+		//if( !gflags.validTemperature ) {
+		//	T= 15 - ( (altitude.get()/100) * 0.65 );
+		//	// ESP_LOGW(FNAME,"T invalid, using 15 deg");
+		//}
+		float T = OATemp;
 		float tasraw = 0;
 		if( baroP != 0 )
 			tasraw =  Atmosphere::TAS( iasraw , baroP, T);  // True airspeed in km/h
@@ -891,9 +903,10 @@ void readSensors(void *pvParameters){
 			AverageVario::recalcAvgClimb();
 		}
 		if (FLAP) { FLAP->progress(); }
-		xSemaphoreTake(xMutex,portMAX_DELAY );
-		baroP = baroSensor->readPressure(ok);   // 10x per second
-		xSemaphoreGive(xMutex);
+		// Flight test
+		//xSemaphoreTake(xMutex,portMAX_DELAY );
+		//baroP = baroSensor->readPressure(ok);   // 10x per second
+		//xSemaphoreGive(xMutex);
 		// ESP_LOGI(FNAME,"Baro Pressure: %4.3f", baroP );
 		float altSTD = 0;
 		if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
@@ -1804,7 +1817,7 @@ void system_startup(void *args){
 		centeraid = new CenterAid( MYUCG );
 	}
 	
-	xTaskCreatePinnedToCore(&grabSensors, "grabSensors", 4096, NULL, 11, &mpid, 0);
+	xTaskCreatePinnedToCore(&grabSensors, "grabSensors", 4096, NULL, 15, &mpid, 0);
 	
 	if( SetupCommon::isClient() ){
 		xTaskCreatePinnedToCore(&clientLoop, "clientLoop", 4096, NULL, 11, &bpid, 0);

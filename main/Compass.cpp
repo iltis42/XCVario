@@ -121,7 +121,8 @@ float Compass::getGyroHeading( bool *ok, bool addDecl ){
  */
 void Compass::compassT(void* arg ){
 	while(1){
-		compassTTime = (esp_timer_get_time()/1000.0);
+//time
+//		compassTTime = (esp_timer_get_time()/1000.0);
 		TickType_t lastWakeTime = xTaskGetTickCount();
 		if( compass ){
 			if( !compass->calibrationIsRunning() ){
@@ -132,8 +133,8 @@ void Compass::compassT(void* arg ){
 			}
 			vTaskDelayUntil(&lastWakeTime, 50/portTICK_PERIOD_MS);
 		}
-		compassTTime = (esp_timer_get_time()/1000.0) - compassTTime;
-		ESP_LOGI(FNAME,"compassT: %0.1f  / %0.1f", compassTTime, 50.0 );
+//		compassTTime = (esp_timer_get_time()/1000.0) - compassTTime;
+//		ESP_LOGI(FNAME,"compassT: %0.1f  / %0.1f", compassTTime, 50.0 );
 	}
 }
 

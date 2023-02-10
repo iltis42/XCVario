@@ -130,7 +130,8 @@ void WifiApp::socket_server(void *setup) {
 	fcntl(sock, F_SETFL, O_NONBLOCK); // socket should not block, so we can server several clients
 	while (1)
 	{
-		socket_serverTime = (esp_timer_get_time()/1000.0);
+//time
+//		socket_serverTime = (esp_timer_get_time()/1000.0);
 		int new_client = accept(sock, (struct sockaddr *)&clientAddress[clients.size()], &clientAddressLength);
 		if( new_client >= 0 && clients.size() < 10 ){
 			client_record_t new_client_rec;
@@ -209,8 +210,8 @@ void WifiApp::socket_server(void *setup) {
 		}
 		Router::routeWLAN();
 		Router::routeCAN();
-		socket_serverTime = (esp_timer_get_time()/1000.0) - socket_serverTime;
-		ESP_LOGI(FNAME,"socket_server: %0.1f  / %0.1f", socket_serverTime, 200.0 );
+//		socket_serverTime = (esp_timer_get_time()/1000.0) - socket_serverTime;
+//		ESP_LOGI(FNAME,"socket_server: %0.1f  / %0.1f", socket_serverTime, 200.0 );
 		if( uxTaskGetStackHighWaterMark( config->pid ) < 128 )
 			ESP_LOGW(FNAME,"Warning wifi task stack low: %d bytes, port %d", uxTaskGetStackHighWaterMark( config->pid ), config->port );
 		if( Flarm::bincom )

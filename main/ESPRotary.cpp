@@ -176,7 +176,8 @@ void ESPRotary::sendUp( int diff ){
 void ESPRotary::informObservers( void * args )
 {
 	while( 1 ) {
-	informObserversTime = (esp_timer_get_time()/1000.0);	
+//time
+//	informObserversTime = (esp_timer_get_time()/1000.0);	
 		
 	  if( Flarm::bincom ) {
 	    vTaskDelay(20 / portTICK_PERIOD_MS);
@@ -243,8 +244,8 @@ void ESPRotary::informObservers( void * args )
 			}
 		}
 		
-		informObserversTime = (esp_timer_get_time()/1000.0) - informObserversTime;
-		ESP_LOGI(FNAME,"informObservers: %0.1f  / %0.1f", informObserversTime, 20.0 );
+//		informObserversTime = (esp_timer_get_time()/1000.0) - informObserversTime;
+//		ESP_LOGI(FNAME,"informObservers: %0.1f  / %0.1f", informObserversTime, 20.0 );
 		if( uxTaskGetStackHighWaterMark( pid ) < 256 )
 			ESP_LOGW(FNAME,"Warning rotary task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid ) );
 		vTaskDelay(20 / portTICK_PERIOD_MS);

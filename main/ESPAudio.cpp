@@ -511,7 +511,8 @@ void Audio::dactask(void* arg )
 		tick++;
 		Switch::tick();    // we hook switch sceduling here to save extra task
 
-		dactaskTime = esp_timer_get_time()/1000.0; // record time of accels measurement in ms
+//time
+//		dactaskTime = esp_timer_get_time()/1000.0; // record time of accels measurement in ms
 		// Chopping or dual tone modulation
 		if( millis() > next_scedule ){
 			if ( _te > 0 ){
@@ -661,8 +662,8 @@ void Audio::dactask(void* arg )
 			}
 		}
 		// ESP_LOGI(FNAME, "Audio delay %d", _delay );
-		dactaskTime = (esp_timer_get_time()/1000.0) - dactaskTime;
-		ESP_LOGI(FNAME,"dactask: %0.1f  / %0.1f", dactaskTime, 10.0 );
+//		dactaskTime = (esp_timer_get_time()/1000.0) - dactaskTime;
+//		ESP_LOGI(FNAME,"dactask: %0.1f  / %0.1f", dactaskTime, 10.0 );
 		if( uxTaskGetStackHighWaterMark( dactid ) < 256 )
 			ESP_LOGW(FNAME,"Warning Audio dac task stack low: %d bytes", uxTaskGetStackHighWaterMark( dactid ) );
 		vTaskDelayUntil(&xLastWakeTime, 10/portTICK_PERIOD_MS);

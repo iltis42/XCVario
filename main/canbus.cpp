@@ -111,7 +111,8 @@ void CANbus::driverUninstall(){
 void canTxTask(void *arg){
 	unsigned int tick = 0;
 	while (true) {
-		canTxTaskTime = (esp_timer_get_time()/1000.0);
+//time
+//		canTxTaskTime = (esp_timer_get_time()/1000.0);
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		if( !Flarm::bincom ){
 			static_cast<CANbus*>(arg)->txtick(tick);
@@ -121,8 +122,8 @@ void canTxTask(void *arg){
 			if( uxTaskGetStackHighWaterMark( nullptr ) < 128 )
 				ESP_LOGW(FNAME,"Warning canbus txtask stack low: %d bytes", uxTaskGetStackHighWaterMark( nullptr ) );
 		}
-		canTxTaskTime = (esp_timer_get_time()/1000.0) - canTxTaskTime;
-		ESP_LOGI(FNAME,"canTxTask: %0.1f  / %0.1f", canTxTaskTime, 10.0 );
+//		canTxTaskTime = (esp_timer_get_time()/1000.0) - canTxTaskTime;
+//		ESP_LOGI(FNAME,"canTxTask: %0.1f  / %0.1f", canTxTaskTime, 10.0 );
 		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(10));
 	}
 }
@@ -130,7 +131,8 @@ void canTxTask(void *arg){
 void canRxTask(void *arg){
 	int tick = 0;
 	while (true) {
-		canRxTaskTime = (esp_timer_get_time()/1000.0);
+//time
+//		canRxTaskTime = (esp_timer_get_time()/1000.0);
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		if( !Flarm::bincom ){
 			static_cast<CANbus*>(arg)->rxtick(tick);
@@ -140,8 +142,8 @@ void canRxTask(void *arg){
 			if( uxTaskGetStackHighWaterMark( nullptr ) < 128 )
 				ESP_LOGW(FNAME,"Warning canbus rxtask stack low: %d bytes", uxTaskGetStackHighWaterMark( nullptr ) );
 		}
-		canRxTaskTime = (esp_timer_get_time()/1000.0) - canRxTaskTime;
-		ESP_LOGI(FNAME,"canRxTask: %0.1f  / %0.1f", canRxTaskTime, 5.0 );
+//		canRxTaskTime = (esp_timer_get_time()/1000.0) - canRxTaskTime;
+//		ESP_LOGI(FNAME,"canRxTask: %0.1f  / %0.1f", canRxTaskTime, 5.0 );
 		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(5));
 	}
 }

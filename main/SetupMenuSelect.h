@@ -28,7 +28,7 @@ public:
     void addEntry( const char* ent );
 	void addEntryList( const char ent[][4], int size );
 	void delEntry( const char * ent );
-	inline void updateEntry( const char * ent, int num ) { _values[ num ] = ent; }
+	void updateEntry( const char * ent, int num );
 	void up( int count );  // step up to parent
 	void down( int count );
 	void press();

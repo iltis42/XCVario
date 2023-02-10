@@ -48,6 +48,7 @@ class Router {
 
 public:
   Router() { };
+  static void begin();
   // add message to queue and return true if succeeded
   static bool forwardMsg( SString &s, RingBufCPP<SString, QUEUE_SIZE>& q, bool nmea=false );
   // gets last message from ringbuffer FIFO, return true if succeeded

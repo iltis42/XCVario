@@ -226,10 +226,10 @@ SetupNG<int>  			vario_unit( "VARIO_UNIT", VARIO_UNIT_MS );
 SetupNG<int>  			temperature_unit( "TEMP_UNIT", T_CELCIUS );
 SetupNG<int>  			qnh_unit("QNH_UNIT", QNH_HPA );
 SetupNG<int>  			rot_default( "ROTARY_DEFAULT", 0 );
-SetupNG<int>  			serial1_speed( "SERIAL2_SPEED", 3 );   // tag will stay SERIAL2 from historical reason
+SetupNG<int>  			serial1_speed( "SERIAL2_SPEED", 3 );   // tag will stay SERIAL2 from historical reason // 38400 bps for FLARM
 SetupNG<int>  			serial1_pins_twisted( "SERIAL2_PINS", 0 );
 SetupNG<int>  			serial1_rxloop( "SERIAL2_RXLOOP", 0 );
-SetupNG<int>  			serial1_tx( "SERIAL2_TX", (1UL << RT_XCVARIO) | (1UL << RT_WIRELESS) );   //  Default Wireless and local XCVario for Flarm Warnings, bincom
+SetupNG<int>            serial1_tx( "SERIAL2_TX", (1UL << RT_WIRELESS) );     //  Route FLARM to wireless
 SetupNG<int>  			rt_s1_xcv( "S2_TX_XCV", 1, false, SYNC_NONE, VOLATILE  );
 SetupNG<int>  			rt_s1_wl( "S2_TX_WL", 1, false, SYNC_NONE, VOLATILE );
 SetupNG<int>  			rt_s1_s2( "S2_TX_S2", 0, false, SYNC_NONE, VOLATILE );
@@ -237,14 +237,14 @@ SetupNG<int>  			rt_s1_can( "S2_TX_CAN", 0, false, SYNC_NONE, VOLATILE );
 SetupNG<int>  			serial1_tx_inverted( "SERIAL2_TX_INV", RS232_INVERTED );
 SetupNG<int>  			serial1_rx_inverted( "SERIAL2_RX_INV", RS232_INVERTED );
 SetupNG<int>  			serial1_tx_enable( "SER1_TX_ENA", 1 );
-SetupNG<int>  			serial2_speed( "SERIAL1_SPEED", 3 );
+SetupNG<int>  			serial2_speed( "SERIAL1_SPEED", 4 ); // 57600 pbs for Ublox GNSS
 SetupNG<int>  			serial2_pins_twisted( "SERIAL1_PINS", 0 );
-SetupNG<int>  			serial2_tx( "SERIAL1_TX", (1UL << RT_XCVARIO) | (1UL << RT_WIRELESS) );     //  BT device and XCVario, Serial2 is foreseen for Protocols or Kobo
+SetupNG<int>  			serial2_tx( "SERIAL1_TX", 0 );     //  BT device and XCVario, Serial2 is foreseen for Protocols or Kobo
 SetupNG<int>  			rt_s2_xcv( "S1_TX_XCV", 1, false, SYNC_NONE, VOLATILE );
 SetupNG<int>  			rt_s2_wl( "S1_TX_WL", 0, false, SYNC_NONE, VOLATILE );
 SetupNG<int>  			rt_s2_can( "S1_TX_CAN", 0,false, SYNC_NONE, VOLATILE );
-SetupNG<int>  			serial2_tx_inverted( "SERIAL1_TX_INV", RS232_INVERTED );
-SetupNG<int>  			serial2_rx_inverted( "SERIAL1_RX_INV", RS232_INVERTED );
+SetupNG<int>  			serial2_tx_inverted( "SERIAL1_TX_INV", RS232_NORMAL ); // normal for Ublox GNSS TTL
+SetupNG<int>  			serial2_rx_inverted( "SERIAL1_RX_INV", RS232_NORMAL ); // normal for Ublox GNSS TTL
 SetupNG<int>  			serial2_tx_enable( "SER2_TX_ENA", 1 );
 SetupNG<int>  			software_update( "SOFTWARE_UPDATE", 0 );
 SetupNG<int>  			battery_display( "BAT_DISPLAY", 0 );

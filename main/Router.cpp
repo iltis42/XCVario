@@ -79,34 +79,18 @@ bool Router::pullMsg( RingBufCPP<SString, QUEUE_SIZE>& q, SString& s ){
 	return false;
 }
 
-int Router::pullMsg( RingBufCPP<SString, QUEUE_SIZE>& q, char *block ){
-	int size = 0;
-	if( !q.isEmpty() ){
-		SString s;
-		xSemaphoreTake(qMutex,portMAX_DELAY );
-		q.pull(  s );
-		xSemaphoreGive(qMutex);
-		size = s.length();
-		memcpy( block, s.c_str(), size );
-	}
-	block[size]=0;
-	return size;
-}
-
 int Router::pullBlock( RingBufCPP<SString, QUEUE_SIZE>& q, char *block, int size ){
-	int len = 0;
+	xSemaphoreTake(qMutex,portMAX_DELAY );
+	int total_len = 0;
 	while( !q.isEmpty() ){
-		SString s;
-		xSemaphoreTake(qMutex,portMAX_DELAY );
-		q.pull(  s );
-		xSemaphoreGive(qMutex);
-		memcpy( block+len, s.c_str(), s.length() );
-		len += s.length();
-		if( (len + SSTRLEN) > size )
+		int len = q.pull( block+total_len );
+		total_len += len;
+		if( (total_len + SSTRLEN) > size )
 			break;
 	}
-	block[len]=0;
-	return len;
+	block[total_len]=0;
+	xSemaphoreGive(qMutex);
+	return total_len;
 }
 
 // XCVario Router

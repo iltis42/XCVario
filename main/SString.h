@@ -20,34 +20,34 @@ public:
     {
         str = std::string( s );
     }
-    void set(const char *s)
+    inline void set(const char *s)
     {
         // add pure strings
     	str = std::string( s );
     }
-    void set(const char *s, int alen)
+    inline void set(const char *s, int alen)
     {
       str = std::string( s, alen );
     }
-    SString& operator=(const SString& right)
+    inline SString& operator=(const SString& right)
     {
        str = right.str;
        return *this;
     }
-    void append(char c)
+    inline void append(char c)
     {
     	str += c;
     }
-    void append(const char *s, int alen)
+    inline void append(const char *s, int alen)
     {
        str.append( s, alen );
     }
-    SString& operator+=(const SString& right)
+    inline SString& operator+=(const SString& right)
     {
       str += right.str;
       return *this;
     }
-    void clear()
+    inline void clear()
     {
         str.erase( 0, length() );
     }

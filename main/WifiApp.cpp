@@ -63,10 +63,11 @@ static sock_server_t XCVarioMS = { .txbuf = &can_tx_q,      .port=8884, .idle = 
 // char WifiApp::buffer[WIFI_BUFFER_SIZE];
 
 int  WifiApp::queueFull(){
-	if( !wl_vario_tx_q.isFull() || !can_tx_q.isFull() )
-		return 0;
-	else
+	// ESP_LOGI(FNAME, "WQF: %d", wl_vario_tx_q.isFull() );
+	if( wl_vario_tx_q.isFull() )
 		return 1;
+	else
+		return 0;
 }
 
 int WifiApp::create_socket( int port ){

@@ -1,135 +1,99 @@
 #pragma once
 
-#include "RingBufHelpers.h"
 #include "logdef.h"
 #include <cstring>
 #include <SString.h>
+#include <queue>
+
 
 template <typename Type, size_t MaxElements>
-class RingBufCPP
+class RingBufCPP : public std::queue<Type>
 {
 public:
-    inline RingBufCPP()
-    {
-        _numElements = 0;
-        _head = 0;
-        _tail = 0;
-    }
+	/**
+	 * Add element obj to the buffer.
+	 *
+	 * If there is already MaxElements in the buffer,
+	 * the oldest element will either be overwritten (when overwrite is true) or
+	 * this add will have no effect (when overwrite is false).
+	 *
+	 * Return: true if there was room in the buffer to add this element
+	 */
 
-    /**
-     * Add element obj to the buffer.
-     *
-     * If there is already MaxElements in the buffer,
-     * the oldest element will either be overwritten (when overwrite is true) or
-     * this add will have no effect (when overwrite is false).
-     *
-     * Return: true if there was room in the buffer to add this element
-     */
-    bool add(const Type &obj, bool overwrite = false)
-    {
-        bool full = false;
-        RB_ATOMIC_START
-        {
-            full = isFull();
-            if (!full || overwrite)
-            {
-                _buf[_head] = obj;
-                _head = (_head + 1) % MaxElements;
-                _numElements++;
-            }
-        }
-        RB_ATOMIC_END
-        return !full;
-    }
+	bool add(const Type& value ) {
+		if (this->size() == MaxElements) {
+			this->pop();
+		}
+		this->push(value);
+		return( !isFull() );
+	}
 
-    /**
-     * Remove last element from buffer, and copy it to dest
-     * Return: true on success
-     */
-    bool pull(Type &dest)
-    {
-        bool ret = false;
-        RB_ATOMIC_START
-        {
-            if (!isEmpty())
-            {
-                dest = _buf[_tail];
-                _numElements--;
-                _tail = (_tail + 1) % MaxElements;
-                ret = true;
-            }
-        }
-        RB_ATOMIC_END
+	/**
+	 * Remove last element from buffer, and copy it to dest
+	 * Return: true on success
+	 */
+	bool pull(Type &dest)
+	{
+		if(hasEntries())
+		{
+			dest = this->front();
+			this->pop();
+			return true;
+		}
+		return false;
+	}
 
-        return ret;
-    }
+	int pull(char *dest)
+	{
+		if(hasEntries())
+		{
+			Type elem = this->front();
+			int len = elem.length();
+			memcpy( dest, elem.c_str(), len );
+			this->pop();
+			return len;
+		}
+		return 0;
+	}
 
-    /**
-     * Peek at num'th element in the buffer
-     * Return: a pointer to the num'th element
-     */
-    Type *peek(size_t num)
-    {
-        Type *ret = NULL;
-        RB_ATOMIC_START
-        {
-            if (num < MaxElements) //make sure not out of bounds
-                ret = &_buf[num];
-        }
-        RB_ATOMIC_END
-        return ret;
-    }
+	/**
+	 * Removes all items from the queue.
+	 */
+	inline void clear()
+	{
+		this->clear();
+	}
 
-    /**
-     * Removes all items from the queue.
-     */
-    void clear()
-    {
-      RB_ATOMIC_START
-      _numElements = 0;
-      _head = 0;
-      _tail = 0;
-      RB_ATOMIC_END
-    }
+	/**
+	 * Return: true if buffer is full
+	 */
+	inline bool isFull() const
+	{
+		return( this->size() == MaxElements );
+	}
 
-    /**
-     * Return: true if buffer is full
-     */
-    bool isFull() const
-    {
-        return (_numElements >= MaxElements);
-    }
+	/**
+	 * Return: number of elements in buffer
+	 */
+	inline size_t numElements() const
+	{
+		return this->size();
+	}
 
-    /**
-     * Return: number of elements in buffer
-     */
-    size_t numElements() const
-    {
-        return _numElements;
-    }
+	/**
+	 * Return: true if buffer is empty
+	 */
+	inline bool isEmpty() const
+	{
+		return( this->size() == 0 );
+	}
 
-    /**
-     * Return: true if buffer is empty
-     */
-    bool isEmpty() const
-    {
-        return !_numElements;
-    }
+	/**
+	 * Return: true if there is at least one entry
+	 */
+	inline bool hasEntries() const
+	{
+		return( this->size() );
+	}
 
-protected:
-    /**
-     * Calculates the index in the array of the oldest element
-     * Return: index in array of element
-     */
-    size_t getTail() const
-    {
-        return _tail;
-    }
-
-    // underlying array
-    Type _buf[MaxElements];
-
-    size_t _head;
-    size_t _tail;
-    size_t _numElements;
 };

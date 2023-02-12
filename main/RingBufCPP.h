@@ -1,21 +1,15 @@
 #pragma once
 
-#include "RingBufHelpers.h"
 #include "logdef.h"
 #include <cstring>
 #include <SString.h>
+#include <queue>
+
 
 template <typename Type, size_t MaxElements>
-class RingBufCPP
+class RingBufCPP : public std::queue<Type>
 {
 public:
-	inline RingBufCPP()
-	{
-		_numElements = 0;
-		_head = 0;
-		_tail = 0;
-	}
-
 	/**
 	 * Add element obj to the buffer.
 	 *
@@ -25,19 +19,13 @@ public:
 	 *
 	 * Return: true if there was room in the buffer to add this element
 	 */
-	bool add(const Type &obj, bool overwrite = false)
-	{
-		bool full = false;
-		{
-			full = isFull();
-			if (!full || overwrite)
-			{
-				_buf[_head] = obj;
-				_head = (_head + 1) % MaxElements;
-				_numElements++;
-			}
+
+	bool add(const Type& value ) {
+		if (this->size() == MaxElements) {
+			this->pop();
 		}
-		return !full;
+		this->push(value);
+		return( !isFull() );
 	}
 
 	/**
@@ -46,32 +34,26 @@ public:
 	 */
 	bool pull(Type &dest)
 	{
-		bool ret = false;
+		if(hasEntries())
 		{
-			if (!isEmpty())
-			{
-				dest = _buf[_tail];
-				_numElements--;
-				_tail = (_tail + 1) % MaxElements;
-				ret = true;
-			}
+			dest = this->front();
+			this->pop();
+			return true;
 		}
-		return ret;
+		return false;
 	}
 
 	int pull(char *dest)
 	{
-		int ret = 0;
+		if(hasEntries())
 		{
-			if (!isEmpty())
-			{
-				memcpy( dest, _buf[_tail].c_str(), _buf[_tail].length() );
-				ret = _buf[_tail].length();
-				_numElements--;
-				_tail = (_tail + 1) % MaxElements;
-			}
+			Type elem = this->front();
+			int len = elem.length();
+			memcpy( dest, elem.c_str(), len );
+			this->pop();
+			return len;
 		}
-		return ret;
+		return 0;
 	}
 
 	/**
@@ -79,9 +61,7 @@ public:
 	 */
 	inline void clear()
 	{
-		_numElements = 0;
-		_head = 0;
-		_tail = 0;
+		this->clear();
 	}
 
 	/**
@@ -89,7 +69,7 @@ public:
 	 */
 	inline bool isFull() const
 	{
-		return (_numElements >= MaxElements);
+		return( this->size() == MaxElements );
 	}
 
 	/**
@@ -97,7 +77,7 @@ public:
 	 */
 	inline size_t numElements() const
 	{
-		return _numElements;
+		return this->size();
 	}
 
 	/**
@@ -105,23 +85,15 @@ public:
 	 */
 	inline bool isEmpty() const
 	{
-		return !_numElements;
+		return( this->size() == 0 );
 	}
 
-protected:
 	/**
-	 * Calculates the index in the array of the oldest element
-	 * Return: index in array of element
+	 * Return: true if there is at least one entry
 	 */
-	size_t getTail() const
+	inline bool hasEntries() const
 	{
-		return _tail;
+		return( this->size() );
 	}
 
-	// underlying array
-	Type _buf[MaxElements];
-
-	size_t _head;
-	size_t _tail;
-	size_t _numElements;
 };

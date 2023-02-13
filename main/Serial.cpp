@@ -71,7 +71,7 @@ bool Serial::bincom_mode = false;  // we start with bincom timer inactive
 // Serial Handler ttyS1, S1, port 8881
 void Serial::serialHandler(void *pvParameters)
 {
-	SString s;
+	char buf[512];  // 6 messages @ 80 byte
 	xcv_serial_t *cfg = (xcv_serial_t *)pvParameters;
 	// Make a pause, that has avoided core dumps during enable the RX interrupt.
 	delay( 8000 );                   // delay a bit serial task startup unit startup of system is through
@@ -111,27 +111,26 @@ void Serial::serialHandler(void *pvParameters)
 		// TX part, check if there is data for Serial Interface to send
 		if( ebits & cfg->tx_req && cfg->uart->availableForWrite() ) {
 			// ESP_LOGI(FNAME,"S%d: TX and available", cfg->uart->number() );
-			while( Router::pullMsg( *(cfg->tx_q), s ) ) {
-				// ESP_LOGI(FNAME,"S%d: TX len: %d bytes", cfg->uart->number(), s.length() );
-				// ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_INFO);
-				cfg->uart->write( s.c_str(),s.length() );
+			int len = Router::pullBlock( *(cfg->tx_q), buf, 512 );
+			if( len ){
+				// ESP_LOGI(FNAME,"S%d: TX len: %d bytes", cfg->uart->number(), len );
+				// ESP_LOG_BUFFER_HEXDUMP(FNAME,buf,len, ESP_LOG_INFO);
+				cfg->uart->write( buf, len );
 				if( !bincom_mode )
-					DM.monitorString( cfg->monitor, DIR_TX, s.c_str(), s.length());
+					DM.monitorString( cfg->monitor, DIR_TX, buf, len );
 				// ESP_LOGD(FNAME,"S%d: TX written: %d", cfg->uart->number(), wr);
 			}
 		}
 		// RX part
 		if( (ebits & cfg->rx_char) ) { // only one transparent mode from now on, frame slicing in upper layer for UBX and NMEA
-			uint32_t available = cfg->uart->available();
+			uint32_t available = std::min( cfg->uart->available(), 511 );
 			if( available ){
-				char* rxBuf = (char *)malloc( available+1 );
-				uint16_t rxBytes = cfg->uart->readBufFromQueue( (uint8_t*)rxBuf, available );  // read out all characters from the RX queue
+				uint16_t rxBytes = cfg->uart->readBufFromQueue( (uint8_t*)buf, available );  // read out all characters from the RX queue
 				// ESP_LOGI(FNAME,"S%d: RX: %d bytes, avail: %d", cfg->uart->number(), rxBytes, available );
-				// ESP_LOG_BUFFER_HEXDUMP(FNAME,rxBuf, available, ESP_LOG_INFO);
-				rxBuf[rxBytes] = 0;
-				cfg->dl->process( rxBuf, rxBytes, cfg->port );
-				DM.monitorString( cfg->monitor, DIR_RX, rxBuf, rxBytes );
-				free( rxBuf );
+				// ESP_LOG_BUFFER_HEXDUMP(FNAME,buf, rxBytes, ESP_LOG_INFO);
+				buf[rxBytes] = 0;
+				cfg->dl->process( buf, rxBytes, cfg->port );
+				DM.monitorString( cfg->monitor, DIR_RX, buf, rxBytes );
 			}
 		}
 		if( Flarm::bincom ){

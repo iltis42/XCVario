@@ -141,7 +141,7 @@ void WifiApp::socket_server(void *setup) {
 			int size=400;
 			if( Flarm::bincom )
 				size=WIFI_BUFFER_SIZE-1;
-			char *buffer = (char*)malloc( WIFI_BUFFER_SIZE );
+			char buffer[WIFI_BUFFER_SIZE+1];
 			int	len = Router::pullBlock( *(config->txbuf), buffer, size );
 			if( len ){
 				// ESP_LOGI(FNAME, "port %d to sent %d: bytes, %s", config->port, len, buffer );
@@ -201,7 +201,6 @@ void WifiApp::socket_server(void *setup) {
 						num_send = 0;
 				}
 			}
-			free( buffer );
 		}
 		Router::routeWLAN();
 		Router::routeCAN();

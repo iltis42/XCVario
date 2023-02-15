@@ -147,18 +147,22 @@ double SPL06_007::get_temp_f()
 	return (((double(c0) * 0.5f) + (double(c1) * traw_sc)) * 9/5) + 32;
 }
 
+static int32_t last_traw = 15.0;
+
 int32_t SPL06_007::get_traw( bool &ok )
 {
-	_traw = 0;
 	uint8_t data[3];
-	if ( !i2c_read_bytes( 0X03, 3, data ) )   // use correct method to read 3 bytes of volatile data
-		ok = false;
-	_traw = (data[0] << 8) | data[1];
-	_traw = (_traw << 8) | data[2];
-
-	if(_traw & (1 << 23))
-		_traw = _traw | 0XFF000000; // Set left bits to one for 2's complement conversion of negitive number
-	ok = true;
+	ok = i2c_read_bytes( 0X03, 3, data );   // use correct method to read 3 bytes of volatile data
+	if( ok ){
+		_traw = (data[0] << 16) | data[1] << 8 | data[2];
+		if(_traw & (1 << 23))
+			_traw = _traw | 0XFF000000; // Set left bits to one for 2's complement conversion of negative number
+	}
+	else{
+		ESP_LOGW(FNAME,"T raw read error, data: %02x%02x%02x", data[0],data[1],data[2] );
+		return last_traw;
+	}
+	last_traw = _traw;
 	return _traw;
 }
 
@@ -194,10 +198,8 @@ double SPL06_007::get_pcomp(bool &ok)
 
 	double traw_sc = get_traw_sc( ok_t );
 	double praw_sc = get_praw_sc( ok_p );
-	if( !ok_t || !ok_t ){
-		ok = false;
+	if( !ok_t || !ok_p ){
 		ESP_LOGW(FNAME,"T %d or P %d reading returned false", ok_t, ok_p );
-		return 0;
 	}
 	double p = double(c00) + praw_sc * (double(c10) + praw_sc * (double(c20) + praw_sc * double(c30))) + traw_sc * double(c01) + traw_sc * praw_sc * ( double(c11) + praw_sc * double(c21));
 	// if( address == 0x76 ) {
@@ -274,21 +276,22 @@ static int32_t last_praw=0;
 
 int32_t SPL06_007::get_praw( bool &ok )
 {
-	_praw = 0;
 	uint8_t data[3];
-	if( !i2c_read_bytes( 0X00, 3, data ) ){
-		ESP_LOGW(FNAME,"P raw read error, data: %02x%02x%02x", data[0],data[1],data[2] );
-		ok = false;
-		return last_praw;
-	}
+	ok = i2c_read_bytes( 0X00, 3, data );
+	if( ok )
+	{
 #ifdef RANDOM_TEST
-	data[2] = esp_random() % 255;
-	data[1] = esp_random() % 255;
+		data[2] = esp_random() % 255;
+		data[1] = esp_random() % 255;
 #endif
-	_praw = (data[0] << 8) | data[1];
-	_praw = (_praw << 8) | data[2];
-	if(_praw & (1 << 23)){
-		_praw = _praw | 0XFF000000; // Set left bits to one for 2's complement conversion of negative number
+		_praw = data[0] << 16 | data[1] << 8 | data[2];
+		if(_praw & (1 << 23)){
+			_praw = _praw | 0XFF000000; // Set left bits to one for 2's complement conversion of negative number
+		}
+	}
+	else{
+		ESP_LOGW(FNAME,"P raw read error, data: %02x%02x%02x", data[0],data[1],data[2] );
+		return last_praw;
 	}
 #ifdef I2C_ISSUE_TEST
 	if( address == 0x76 ){
@@ -298,7 +301,7 @@ int32_t SPL06_007::get_praw( bool &ok )
 		last_praw = _praw;
 	}
 #endif
-	ok = true;
+	last_praw = _praw;
 	return _praw;
 }
 

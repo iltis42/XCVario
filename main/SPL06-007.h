@@ -71,7 +71,9 @@ private:
 	double _scale_factor_t;
 	int    errors;
 	int32_t _praw;
+	int32_t last_praw;
 	int32_t _traw;
+	int32_t last_traw;
 };
 
 #endif

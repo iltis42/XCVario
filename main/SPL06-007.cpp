@@ -10,6 +10,8 @@ SPL06_007::SPL06_007( char _addr ){
 	errors = 0;
 	_praw = 0;
 	_traw = 0;
+	last_praw = 0;
+	last_traw = 0;
 }
 
 // Addr. 0x06 PM_RATE Bits 6-4:    110  - 64 measurements pr. sec.
@@ -147,8 +149,6 @@ double SPL06_007::get_temp_f()
 	return (((double(c0) * 0.5f) + (double(c1) * traw_sc)) * 9/5) + 32;
 }
 
-static int32_t last_traw = 15.0;
-
 int32_t SPL06_007::get_traw( bool &ok )
 {
 	uint8_t data[3];
@@ -271,8 +271,6 @@ double SPL06_007::get_scale_factor( int reg )
 
 // #define RANDOM_TEST
 
-
-static int32_t last_praw=0;
 
 int32_t SPL06_007::get_praw( bool &ok )
 {

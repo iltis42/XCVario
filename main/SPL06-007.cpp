@@ -190,7 +190,7 @@ double SPL06_007::get_pcomp(bool &ok)
 	}
 	if( !ok ){
 		ESP_LOGE(FNAME,"Sensor temp and pressure ready bits not set %02x", status );
-		return 0;
+		return last_p;
 	}
 	if( i>0 ){
 		ESP_LOGW(FNAME,"Sensor temp and pressure ready bits took %d attempts", i );
@@ -207,6 +207,7 @@ double SPL06_007::get_pcomp(bool &ok)
 	// 	ESP_LOGI(FNAME,"P:%06x,%d  T:%06x PC:%f T:%f I2C E:%d",_praw, _praw, _traw, p/100, t , errors );
 	// }
 	ok = true;
+	last_p = p;
 	return p;
 }
 

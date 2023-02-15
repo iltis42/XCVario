@@ -74,6 +74,7 @@ private:
 	int32_t last_praw;
 	int32_t _traw;
 	int32_t last_traw;
+	double last_p;
 };
 
 #endif

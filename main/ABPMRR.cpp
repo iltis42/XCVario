@@ -56,15 +56,12 @@ char ABPMRR::fetch_pressure(uint16_t &P_dat, uint16_t &T_dat)
 		ESP_LOGW(FNAME,"fetch_pressure() I2C error");
 		return _status;
 	}
-
 #ifdef RANDOM_TEST
 	Press_H = esp_random() % 255;
 	Press_L = esp_random() % 255;
 	Temp_L = esp_random() % 255;
 #endif
-
 	// ESP_LOG_BUFFER_HEXDUMP(FNAME,data,4, ESP_LOG_INFO);
-
 	_status = (Press_H >> 6) & 0x03;
 	P_dat = (((uint16_t)(Press_H & 0x3f)) << 8) | Press_L;
 	T_dat = (((uint16_t)Temp_H) << 3) | (Temp_L >>5);
@@ -72,7 +69,7 @@ char ABPMRR::fetch_pressure(uint16_t &P_dat, uint16_t &T_dat)
 	return _status;
 }
 
-float   ABPMRR::readPascal( float minimum, bool &ok ){
+float ABPMRR::readPascal( float minimum, bool &ok ){
 	measure();
 	if( _status == 0 )
 		ok=true;
@@ -86,9 +83,8 @@ float   ABPMRR::readPascal( float minimum, bool &ok ){
 			ok=false;
 		}
 	}
-
 	float _pascal = (P_dat - _offset) * multiplier;
-	if ( (_pascal < minimum) && (minimum != 0) ) {
+	if ( _pascal < minimum ) {
 		_pascal = 0.0;
 	};
 
@@ -120,7 +116,6 @@ bool    ABPMRR::selfTest( int& adval ){
 float ABPMRR::getPSI(void){             // returns the PSI of last measurement
 	// convert and store PSI
 	psi=( static_cast<float>(static_cast<int16_t>(P_dat)-ABPMRRZeroCounts))  / static_cast<float>(ABPMRRSpan)* static_cast<float>(ABPMRRFullScaleRange);
-
 	return psi;
 }             
 
@@ -136,9 +131,8 @@ float ABPMRR::getAirSpeed(void){        // calculates and returns the airspeed i
 	/* +/- 1PSI, approximately 100 m/s */
 	const float rhom = (2.0*100)/1.225; // density of air plus multiplier
 	// velocity = sqrt( (2*psi) / rho )   or sqt( psi /
-	float velocity = sqrt(psi*rhom);
-	if (psi<0)
-		velocity = -velocity;
+	float velocity = abs( sqrt(psi*rhom) );
+	// ESP_LOGI(FNAME,"velocity %f", velocity );
 	return velocity;
 }
 
@@ -146,8 +140,8 @@ float ABPMRR::getAirSpeed(void){        // calculates and returns the airspeed i
 bool ABPMRR::offsetPlausible(uint16_t aoffset )
 {
 	ESP_LOGI(FNAME,"ABPMRR offsetPlausible( %d )", aoffset );
-	int lower_val = 8192-200;
-	int upper_val = 8192+200;
+	const int lower_val = 8192-200;
+	const int upper_val = 8192+200;
 	if( (aoffset > lower_val ) && (aoffset < upper_val )  )
 		return true;
 	else

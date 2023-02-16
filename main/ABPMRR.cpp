@@ -40,16 +40,15 @@ int ABPMRR::measure()
 }
 
 // #define RANDOM_TEST
+#define Press_H data[0]
+#define Press_L data[1]
+#define Temp_H  data[2]
+#define Temp_L  data[3]
 
 char ABPMRR::fetch_pressure(uint16_t &P_dat, uint16_t &T_dat)
 {
 	// ESP_LOGI(FNAME,"ABPMRR::fetch_pressure");
 	char _status;
-	char Press_H;
-	char Press_L;
-	char Temp_H;
-	char Temp_L;
-
 	uint8_t data[4];
 	esp_err_t err = bus->readBytes(address, 0, 4, data );
 	if( err != ESP_OK ) {
@@ -57,11 +56,6 @@ char ABPMRR::fetch_pressure(uint16_t &P_dat, uint16_t &T_dat)
 		ESP_LOGW(FNAME,"fetch_pressure() I2C error");
 		return _status;
 	}
-
-	Press_H = data[0];
-	Press_L = data[1];
-	Temp_H = data[2];
-	Temp_L = data[3];
 
 #ifdef RANDOM_TEST
 	Press_H = esp_random() % 255;
@@ -72,12 +66,8 @@ char ABPMRR::fetch_pressure(uint16_t &P_dat, uint16_t &T_dat)
 	// ESP_LOG_BUFFER_HEXDUMP(FNAME,data,4, ESP_LOG_INFO);
 
 	_status = (Press_H >> 6) & 0x03;
-	Press_H = Press_H & 0x3f;
-	P_dat = (((uint16_t)Press_H) << 8) | Press_L;
-
-	Temp_L = (Temp_L >> 5);
-	T_dat = (((uint16_t)Temp_H) << 3) | Temp_L;
-
+	P_dat = (((uint16_t)(Press_H & 0x3f)) << 8) | Press_L;
+	T_dat = (((uint16_t)Temp_H) << 3) | (Temp_L >>5);
 	// ESP_LOGI(FNAME,"fetch_pressure() status: %d, err %d,  P:%04x T: %04x",  _status, err, P_dat, T_dat );
 	return _status;
 }

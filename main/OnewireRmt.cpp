@@ -18,6 +18,9 @@ OnewireRmt::OnewireRmt(gpio_num_t pin, rmt_channel_t rmt_rx, rmt_channel_t rmt_t
 	if (false == driverOk) {
 		ESP_LOGE(FNAME, "onewire_rmt could not start - rmt device could not be configured.");
 	}
+	if (onewire_rmt_attach_pin(pin) != true) {
+	    ESP_LOGE(FNAME, "onewire_rmt_attach_pin returned false, abort reset");
+	}
 }
 
 
@@ -26,10 +29,6 @@ bool OnewireRmt::onewire_rmt_reset(struct mgos_rmt_onewire *ow) {
     bool _presence = false;
     gpio_num_t gpio_num = (gpio_num_t)ow->pin;
 
-    if (onewire_rmt_attach_pin(gpio_num) != true) {
-    	ESP_LOGE(FNAME, "onewire_rmt_attach_pin returned false, abort reset");
-        return false;
-    }
     ESP_LOGD(FNAME,"onewire_rmt_reset() OW_DEPOWER( %d)", (int)gpio_num );
     OW_DEPOWER(gpio_num);
 
@@ -40,29 +39,29 @@ bool OnewireRmt::onewire_rmt_reset(struct mgos_rmt_onewire *ow) {
 
     uint16_t old_rx_thresh;
     rmt_get_rx_idle_thresh(ow_rmt.rx, &old_rx_thresh);
-    rmt_set_rx_idle_thresh(ow_rmt.rx, OW_DURATION_RESET + 60);
+    rmt_set_rx_idle_thresh(ow_rmt.rx, OW_DURATION_RESET + 120);
 
-    ESP_LOGD(FNAME, "Now rmt_rx_start()");
+    // ESP_LOGD(FNAME, "Now rmt_rx_start()");
     onewire_flush_rmt_rx_buf();
     rmt_rx_start(ow_rmt.rx, true);
     if (rmt_write_items(ow_rmt.tx, tx_items, 1, true) == ESP_OK) {
     	// OW_DEPOWER(gpio_num);
-    	ESP_LOGD(FNAME, "rmt_write_items() ch:%d OK", (int)ow_rmt.tx );
+    	// ESP_LOGD(FNAME, "rmt_write_items() ch:%d OK", (int)ow_rmt.tx );
     	size_t rx_size;
     	rmt_item32_t* rx_items = (rmt_item32_t *) xRingbufferReceive(ow_rmt.rb, &rx_size, 100 / portTICK_PERIOD_MS);
     	if (rx_items) {
-    		ESP_LOGD(FNAME,"there are rx_items, size %d", rx_size );
+    		// ESP_LOGD(FNAME,"there are rx_items, size %d", rx_size );
     		if (rx_size >= 1 * sizeof ( rmt_item32_t)) {
-    			for (int i = 0; i < rx_size / 4; i++) {
-    				ESP_LOGD(FNAME, "item[%d] l0:%d d0:%d l1:%d d1:%d", i, rx_items[i].level0, rx_items[i].duration0, rx_items[i].level1, rx_items[i].duration1);
-    			}
-    			ESP_LOGD(FNAME,"Now parse signal and search for presence pulse l0:%d d0:%d l1:%d d1:%d", rx_items[0].level0, rx_items[0].duration0, rx_items[0].level1, rx_items[0].duration1 );
+    			// for (int i = 0; i < rx_size / 4; i++) {
+    			//	ESP_LOGI(FNAME, "item[%d] l0:%d d0:%d l1:%d d1:%d", i, rx_items[i].level0, rx_items[i].duration0, rx_items[i].level1, rx_items[i].duration1);
+    			//}
+    			//ESP_LOGD(FNAME,"Now parse signal and search for presence pulse l0:%d d0:%d l1:%d d1:%d", rx_items[0].level0, rx_items[0].duration0, rx_items[0].level1, rx_items[0].duration1 );
     			if ((rx_items[0].level0 == 0) && (rx_items[0].duration0 >= OW_DURATION_RESET - 20)) {
-    				ESP_LOGD(FNAME,"OW duration0 > OW_DURATION_RESET (480) fine");
+    				// ESP_LOGI(FNAME,"OW duration0 > OW_DURATION_RESET (480) fine");
     				if ((rx_items[0].level1 == 1) && (rx_items[0].duration1 > 0)) {
     					ESP_LOGD(FNAME,"level1 == 1 && duration1 > 0");
-    					if (rx_items[1].level0 == 0) {
-    						ESP_LOGD(FNAME,"presence = true");
+    					if (rx_items[1].level0 == 0 && rx_items[1].duration0 > 50) {
+    						ESP_LOGD(FNAME,"presence = true, len:%d", rx_items[1].duration0 );
     						_presence = true;
     					}
     					else
@@ -147,10 +146,6 @@ bool OnewireRmt::onewire_read_bits(gpio_num_t gpio_num, uint8_t *data, uint8_t n
         return false;
     }
 
-    if (onewire_rmt_attach_pin(gpio_num) != true) {
-        return false;
-    }
-
     OW_DEPOWER(gpio_num);
 
     // generate requested read slots
@@ -160,19 +155,16 @@ bool OnewireRmt::onewire_read_bits(gpio_num_t gpio_num, uint8_t *data, uint8_t n
     // end marker
     tx_items[num].level0 = 1;
     tx_items[num].duration0 = 0;
-
-    onewire_flush_rmt_rx_buf();
-    rmt_rx_start(ow_rmt.rx, true);
+   	onewire_flush_rmt_rx_buf();
+   	rmt_rx_start(ow_rmt.rx, true);
     if (rmt_write_items(ow_rmt.tx, tx_items, num + 1, true) == ESP_OK) {
         size_t rx_size;
         rmt_item32_t* rx_items = (rmt_item32_t *) xRingbufferReceive(ow_rmt.rb, &rx_size, portMAX_DELAY);
 
         if (rx_items) {
-            for (int i = 0; i < rx_size / 4; i++) {
-                ESP_LOGD(FNAME, "level: %d, duration %d", rx_items[i].level0, rx_items[i].duration0);
-                ESP_LOGD(FNAME, "level: %d, duration %d", rx_items[i].level1, rx_items[i].duration1);
-            }
-
+            // for (int i = 0; i < rx_size / 4; i++) {
+            //    ESP_LOGI(FNAME, "l0: %d0, d: %d l1: %d, d1: %d", rx_items[i].level0, rx_items[i].duration0,rx_items[i].level1, rx_items[i].duration1 );
+            //}
             if (rx_size >= num * sizeof ( rmt_item32_t)) {
                 for (int i = 0; i < num; i++) {
                     read_data >>= 1;
@@ -181,6 +173,9 @@ bool OnewireRmt::onewire_read_bits(gpio_num_t gpio_num, uint8_t *data, uint8_t n
                         if ((rx_items[i].level0 == 0) && (rx_items[i].duration0 < OW_DURATION_SAMPLE)) {
                             // rising edge occured before 15us -> bit 1
                             read_data |= 0x80;
+                        }else
+                        {
+                        	// ESP_LOGI(FNAME, "OW bit %d duration %d exceeded %d ", i, rx_items[i].duration0, OW_DURATION_SAMPLE );
                         }
                     }
                 }
@@ -197,7 +192,7 @@ bool OnewireRmt::onewire_read_bits(gpio_num_t gpio_num, uint8_t *data, uint8_t n
         // error in tx channel
         res = false;
     }
-    rmt_rx_stop(ow_rmt.rx);
+   	rmt_rx_stop(ow_rmt.rx);
     *data = read_data;
     return res;
 }
@@ -206,10 +201,6 @@ bool OnewireRmt::onewire_write_bits(gpio_num_t gpio_num, uint8_t data, uint8_t n
     rmt_item32_t tx_items[num + 1];
 
     if (num > 8) {
-        return false;
-    }
-
-    if (onewire_rmt_attach_pin(gpio_num) != true) {
         return false;
     }
 
@@ -314,15 +305,10 @@ bool OnewireRmt::onewire_rmt_init(gpio_num_t gpio_num, rmt_channel_t tx_channel,
 
 uint8_t OnewireRmt::reset(void)
 {
-	ESP_LOGD(FNAME,"OnewireRmt::reset()");
 	rmt_item32_t tx_items[1];
 	bool _presence = false;
 	gpio_num_t gpio_num = (gpio_num_t)_ow.pin;
 
-	if (onewire_rmt_attach_pin(gpio_num) != true) {
-		ESP_LOGE(FNAME, "onewire_rmt_attach_pin returned false, abort reset");
-		return false;
-	}
 	ESP_LOGD(FNAME,"onewire_rmt_reset() OW_DEPOWER( %d)", (int)gpio_num );
 	OW_DEPOWER(gpio_num);
 
@@ -333,29 +319,29 @@ uint8_t OnewireRmt::reset(void)
 
 	uint16_t old_rx_thresh;
 	rmt_get_rx_idle_thresh(ow_rmt.rx, &old_rx_thresh);
-	rmt_set_rx_idle_thresh(ow_rmt.rx, OW_DURATION_RESET + 60);
+	rmt_set_rx_idle_thresh(ow_rmt.rx, OW_DURATION_RESET + 120);
 
-	ESP_LOGD(FNAME, "Now rmt_rx_start()");
+	// ESP_LOGI(FNAME, "Now rmt_rx_start()");
 	onewire_flush_rmt_rx_buf();
 	rmt_rx_start(ow_rmt.rx, true);
 	if (rmt_write_items(ow_rmt.tx, tx_items, 1, true) == ESP_OK) {
 		// OW_DEPOWER(gpio_num);
-		ESP_LOGD(FNAME, "rmt_write_items() ch:%d OK", (int)ow_rmt.tx );
+		// ESP_LOGI(FNAME, "rmt_write_items() ch:%d OK", (int)ow_rmt.tx );
 		size_t rx_size;
 		rmt_item32_t* rx_items = (rmt_item32_t *) xRingbufferReceive(ow_rmt.rb, &rx_size, 100 / portTICK_PERIOD_MS);
 		if (rx_items) {
-			ESP_LOGD(FNAME,"there are rx_items, size %d", rx_size );
+			// ESP_LOGI(FNAME,"there are rx_items, size %d", rx_size );
 			if (rx_size >= 1 * sizeof ( rmt_item32_t)) {
-				for (int i = 0; i < rx_size / 4; i++) {
-					ESP_LOGD(FNAME, "item[%d] l0:%d d0:%d l1:%d d1:%d", i, rx_items[i].level0, rx_items[i].duration0, rx_items[i].level1, rx_items[i].duration1);
-				}
-				ESP_LOGD(FNAME,"Now parse signal and search for presence pulse l0:%d d0:%d l1:%d d1:%d", rx_items[0].level0, rx_items[0].duration0, rx_items[0].level1, rx_items[0].duration1 );
+				// for (int i = 0; i < rx_size / 4; i++) {
+				//	ESP_LOGI(FNAME, "RX item[%d] l0:%d d0:%d l1:%d d1:%d", i, rx_items[i].level0, rx_items[i].duration0, rx_items[i].level1, rx_items[i].duration1);
+				// }
+				// ESP_LOGD(FNAME,"Now parse signal and search for presence pulse l0:%d d0:%d l1:%d d1:%d", rx_items[0].level0, rx_items[0].duration0, rx_items[0].level1, rx_items[0].duration1 );
 				if ((rx_items[0].level0 == 0) && (rx_items[0].duration0 >= OW_DURATION_RESET - 20)) {
-					ESP_LOGD(FNAME,"OW duration0 > OW_DURATION_RESET (480) fine");
-					if ((rx_items[0].level1 == 1) && (rx_items[0].duration1 > 0)) {
-						ESP_LOGD(FNAME,"level1 == 1 && duration1 > 0");
-						if (rx_items[1].level0 == 0) {
-							ESP_LOGD(FNAME,"presence = true");
+					// ESP_LOGD(FNAME,"OW duration0 > OW_DURATION_RESET (480) fine");
+					if ((rx_items[0].level1 == 1) && (rx_items[0].duration1 > 0)) {  // wire came back to one
+						// ESP_LOGD(FNAME,"level1 == 1 && duration1 > 0");
+						if ( rx_items[1].level0 == 0 && rx_items[1].duration0 > 50) {  // presence pulse 60 ... 240 uS seen
+							ESP_LOGD(FNAME,"presence = true len:%d", rx_items[1].duration0 );
 							_presence = true;
 						}
 						else
@@ -407,9 +393,9 @@ void OnewireRmt::skip(void)
 	onewire_write_bits(_ow.pin, 0xCC, 8, owDefaultPower);
 }
 
-void OnewireRmt::write(uint8_t data, uint8_t power)
+bool OnewireRmt::write(uint8_t data, uint8_t power)
 {
-	onewire_write_bits(_ow.pin, data, 8, power);
+	return( onewire_write_bits(_ow.pin, data, 8, power) );
 }
 
 void OnewireRmt::write_bytes(const uint8_t *buf, uint16_t count, bool power)
@@ -431,16 +417,17 @@ uint8_t OnewireRmt::read(void)
 	return res;
 }
 
-void OnewireRmt::read_bytes(uint8_t *buf, uint16_t count)
+bool OnewireRmt::read_bytes(uint8_t *buf, uint16_t count)
 {
-
+	bool ret=true;
 	for (uint16_t i = 0; i < count; i++) {
-		if (onewire_read_bits(_ow.pin, buf, 8) != true) {
+		if (onewire_read_bits(_ow.pin, buf, 8 ) != true) {
 			ESP_LOGE(FNAME, "OnewireRmt::write_bytes error");
-			break;
+			ret = false;
 		}
 		buf++;
 	}
+	return ret;
 }
 
 void OnewireRmt::write_bit(uint8_t bit)
@@ -483,7 +470,7 @@ void OnewireRmt::target_search(uint8_t family_code)
 
 uint8_t OnewireRmt::search(uint8_t *rom, bool search_mode)
 {
-	ESP_LOGD(FNAME,"search( %08x, %d )", (unsigned int)rom, search_mode );
+	// ESP_LOGI(FNAME,"search( %08x, %d )", (unsigned int)rom, search_mode );
 	uint8_t id_bit_number;
 	uint8_t last_zero, rom_byte_number, search_result;
 	uint8_t id_bit, cmp_id_bit;

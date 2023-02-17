@@ -155,7 +155,7 @@ void WifiApp::socket_server(void *setup) {
 					buffer[0] = '\n';
 					len=1;
 					config->idle = 0;
-					ESP_LOGI(FNAME, "KEEP-ALIVE port %d", config->port );
+					// ESP_LOGI(FNAME, "KEEP-ALIVE port %d", config->port );
 				}
 			}
 			std::list<client_record_t>::iterator it;

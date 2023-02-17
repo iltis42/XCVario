@@ -36,7 +36,7 @@ public:
     // returns true if address is of the family of sensors the lib supports.
     bool validFamily(const uint8_t* deviceAddress);
     // finds an address at a given index on the bus
-    bool getAddress(uint8_t* deviceAddress, uint8_t index);
+    bool getAddress(uint8_t index);
 
     // attempt to determine if the device at the given address is connected to the bus
     bool isConnected(const uint8_t*);
@@ -163,6 +163,10 @@ private:
 
     bool _waitForConversion;
     bool _checkForConversion;
+    DeviceAddress deviceAddress;
+
+    ScratchPad scratchPad;
+    int errors;
 
     // reads scratchpad and returns the raw temperature
     int16_t calculateTemperature(const uint8_t*, uint8_t*);

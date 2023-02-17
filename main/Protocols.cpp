@@ -342,7 +342,7 @@ void Protocols::parseNMEA( const char *str ){
 		float heading;
 		float TAS;
 		sscanf( str,"!xc,%f,%f", &heading, &TAS );
-		ESP_LOGI(FNAME,"Compass heading detected=%3.1f TAS: %3.1f NMEA:%s", heading, TAS, str );
+		// ESP_LOGI(FNAME,"Compass heading detected=%3.1f TAS: %3.1f NMEA:%s", heading, TAS, str );
 		if( compass )
 			compass->setHeading( heading );
 		tas = TAS;

@@ -111,7 +111,7 @@ void CircleWind::newSample( Vector curVec )
 		return;
 	}
 	status = "Sampling";
-	ESP_LOGI(FNAME,"GPS Sample, dir:%3.2f° speed:%3.2f", curVec.getAngleDeg(), curVec.getSpeed() );
+	// ESP_LOGI(FNAME,"GPS Sample, dir:%3.2f° speed:%3.2f", curVec.getAngleDeg(), curVec.getSpeed() );
 
 	if( curVec.getSpeed() < minVector.getSpeed() )
 	{

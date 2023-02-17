@@ -1108,7 +1108,7 @@ void IpsDisplay::drawTemperature( int x, int y, float t ) {
 		sprintf(s, "   %4.1f", std::roundf(temp_unit*10.f)/10.f );
 	}
 	else {
-		strcpy(s, " - ");
+		strcpy(s, "    --- ");
 	}
 	ucg->setColor( COLOR_WHITE );
 	ucg->setPrintPos(x-ucg->getStrWidth(s),y);

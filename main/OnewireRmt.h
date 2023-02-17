@@ -18,7 +18,7 @@
 #define OW_DURATION_0_LOW   65
 #define OW_DURATION_0_HIGH (OW_DURATION_SLOT - OW_DURATION_0_LOW)
 // sample time for read slot
-#define OW_DURATION_SAMPLE  (15-2)
+#define OW_DURATION_SAMPLE  (15)
 // RX idle threshold
 // needs to be larger than any duration occurring during write slots
 #define OW_DURATION_RX_IDLE (OW_DURATION_SLOT + 2)
@@ -79,12 +79,12 @@ public:
     // the end for parasitically powered devices. You are responsible
     // for eventually depowering it by calling depower() or doing
     // another read or write.
-    void write(uint8_t v, uint8_t power = 0);
+    bool write(uint8_t v, uint8_t power = 0);
     void write_bytes(const uint8_t *buf, uint16_t count, bool power = 0);
 
     // Read a byte.
     uint8_t read(void);
-    void read_bytes(uint8_t *buf, uint16_t count);
+    bool read_bytes(uint8_t *buf, uint16_t count);
 
     // Write a bit. The bus is always left powered at the end, see
     // note in write() about that.

@@ -41,12 +41,7 @@ float DS18B20::getTemp(){
 	 float temp = 0;
 	 dallas->requestTemperatures();
 	 temp = dallas->getTempCByIndex(0);
-     if( temp == DEVICE_DISCONNECTED_C ) {
-    	 ESP_LOGD(FNAME,"T sensor disconnected");
-    	 numDevices = dallas->getDeviceCount();
-     }
-    ESP_LOGD(FNAME, "Temperatur: %f", temp );
-	return temp;
+	 return temp;
 }
 
 DS18B20::~DS18B20() {

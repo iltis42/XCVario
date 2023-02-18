@@ -12,6 +12,7 @@ set( src_dirs
   "libraries/Update/src"
   "libraries/Wire/src"
   "libraries/BluetoothSerial/src"
+  "libraries/BLE/src"
   )
 
 set( inc_dirs
@@ -28,6 +29,7 @@ set( inc_dirs
   "libraries/Update/src"
   "libraries/Wire/src"
   "libraries/BluetoothSerial/src"
+  "libraries/BLE/src"
   )
 
 

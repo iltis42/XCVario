@@ -986,18 +986,18 @@ void SetupMenu::glider_menu_create( MenuEntry *poe ){
 void SetupMenu::options_menu_create_units( MenuEntry *top ){
 	SetupMenuSelect * alu = new SetupMenuSelect( "Altimeter", false, 0, true, &alt_unit );
 	alu->addEntry( "Meter (m)");
-	alu->addEntry( "Foot  (ft)");
-	alu->addEntry( "FL    (FL)");
+	alu->addEntry( "Foot (ft)");
+	alu->addEntry( "FL (FL)");
 	top->addEntry( alu );
 	SetupMenuSelect * iau = new SetupMenuSelect( "Airspeed", false , 0, true, &ias_unit );
-	iau->addEntry( "Kilometers/hour (Km/h)");
-	iau->addEntry( "Miles/hour      (mph)");
-	iau->addEntry( "Knots           (kt)");
+	iau->addEntry( "Kilom./hour (Km/h)");
+	iau->addEntry( "Miles/hour (mph)");
+	iau->addEntry( "Knots (kt)");
 	top->addEntry( iau );
 	SetupMenuSelect * vau = new SetupMenuSelect( "Vario", false , update_rentrys, true, &vario_unit );
-	vau->addEntry( "Meters/sec     (m/s)");
+	vau->addEntry( "Meters/sec (m/s)");
 	vau->addEntry( "Feet/min x 100 (ft/min)");
-	vau->addEntry( "Knots          (knots)");
+	vau->addEntry( "Knots (knots)");
 	top->addEntry( vau );
 	SetupMenuSelect * teu = new SetupMenuSelect( "Temperature", false , 0, true, &temperature_unit );
 	teu->addEntry( "Celcius");
@@ -1010,7 +1010,7 @@ void SetupMenu::options_menu_create_units( MenuEntry *top ){
 	top->addEntry( qnhi );
 	SetupMenuSelect * dst = new SetupMenuSelect( "Distance", false , 0, true, &dst_unit );
 	dst->addEntry( "Meter (m)");
-	dst->addEntry( "Feet  (ft)");
+	dst->addEntry( "Feet (ft)");
 	dst->addEntry( "Miles (mi)");
 	top->addEntry( dst );
 }

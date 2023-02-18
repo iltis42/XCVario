@@ -213,7 +213,7 @@ public:
 		if( vario_unit.get() == VARIO_UNIT_MS )
 			return("m/s");
 		else if( vario_unit.get() == VARIO_UNIT_FPM )
-			return("cf/m");
+			return("ft/m");
 		else if( vario_unit.get() == VARIO_UNIT_KNOTS )
 			return("kt");
 		else
@@ -312,8 +312,8 @@ public:
 			u=dst_unit.get();
 		if( u == DST_UNIT_KM )      // kilometers km
 			return( "km" );
-		else if( u == DST_UNIT_FT ) // hundreds feet cf
-			return( "cf" );
+		else if( u == DST_UNIT_FT ) // hundreds feet
+			return( "ft" );
 		else if( u == DST_UNIT_MILES ) // Miles mi
 			return( "mi" );
 		else

@@ -990,14 +990,14 @@ void SetupMenu::options_menu_create_units( MenuEntry *top ){
 	alu->addEntry( "FL    (FL)");
 	top->addEntry( alu );
 	SetupMenuSelect * iau = new SetupMenuSelect( "Airspeed", false , 0, true, &ias_unit );
-	iau->addEntry( "Kilom. (Km/h)");
-	iau->addEntry( "Miles  (mph)");
-	iau->addEntry( "Knots  (kt)");
+	iau->addEntry( "Kilometers/hour (Km/h)");
+	iau->addEntry( "Miles/hour      (mph)");
+	iau->addEntry( "Knots           (kt)");
 	top->addEntry( iau );
 	SetupMenuSelect * vau = new SetupMenuSelect( "Vario", false , update_rentrys, true, &vario_unit );
-	vau->addEntry( "Meters/sec (m/s)");
-	vau->addEntry( "100ft/min (cf/min)");
-	vau->addEntry( "Knots     (knots)");
+	vau->addEntry( "Meters/sec     (m/s)");
+	vau->addEntry( "Feet/min x 100 (ft/min)");
+	vau->addEntry( "Knots          (knots)");
 	top->addEntry( vau );
 	SetupMenuSelect * teu = new SetupMenuSelect( "Temperature", false , 0, true, &temperature_unit );
 	teu->addEntry( "Celcius");
@@ -1009,9 +1009,9 @@ void SetupMenu::options_menu_create_units( MenuEntry *top ){
 	qnhi->addEntry( "InchMercury");
 	top->addEntry( qnhi );
 	SetupMenuSelect * dst = new SetupMenuSelect( "Distance", false , 0, true, &dst_unit );
-	dst->addEntry( "Kilom. (km)");
-	dst->addEntry( "100 ft (ct)");
-	dst->addEntry( "Miles  (mi)");
+	dst->addEntry( "Meter (m)");
+	dst->addEntry( "Feet  (ft)");
+	dst->addEntry( "Miles (mi)");
 	top->addEntry( dst );
 }
 

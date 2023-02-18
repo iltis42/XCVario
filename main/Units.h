@@ -293,6 +293,19 @@ public:
 		return "nan";
 	};
 
+	static const char * AltitudeUnitMeterOrFeet( int unit = -1 ){
+		int u=unit;
+		if( u == -1 )
+			u=alt_unit.get();
+		if( u == ALT_UNIT_METER )  //m
+			return( "m" );
+		else if( u == ALT_UNIT_FT || u == ALT_UNIT_FL ) //feet
+			return( "ft" );
+		else
+			ESP_LOGE(FNAME,"Wrong unit for altitude %d", u );
+		return "nan";
+	};
+
 	static const char * DistanceUnit( int unit = -1 ){
 		int u=unit;
 		if( u == -1 )

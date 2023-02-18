@@ -469,12 +469,10 @@ void Flarm::drawFlarmWarning(){
 		ucg->setPrintPos(130, 140 );
 		ucg->setFontPosCenter();
 		ucg->setColor( COLOR_WHITE );
-		ucg->setFont(ucg_font_fub20_hr, true );
+		ucg->setFont(ucg_font_fub25_hr, true);
 		char d[32] = "\0";
-		if( dst_unit.get() == DST_UNIT_KM || dst_unit.get() == DST_UNIT_MILES ) // In km: 1.000 km or in miles e.g. 0.621 mi
-			sprintf(d,"%.3f   ", RelativeDistance/1000.0 );
-		else if( dst_unit.get() == DST_UNIT_FT )                                // we use multiple of hundred feet e.g. 32.80 cf
-			sprintf(d,"%.2f   ", Units::Distance( RelativeDistance)/100.0 );
+		int dist = rint(Units::Distance(RelativeDistance)/10)*10;
+		sprintf(d,"%d   ",dist);
 		ucg->printf( d );
 		oldDist = RelativeDistance;
 	}
@@ -486,7 +484,7 @@ void Flarm::drawFlarmWarning(){
 		char v[32];
 		int vdiff = RelativeVertical;
 		if( alt_unit.get() != 0 ){  // then its ft or FL -> feet
-			vdiff = (vdiff/10)*10;
+			vdiff = rint((vdiff/10)*10);
 		}
 		sprintf(v,"%d    ",  vdiff );
 		ucg->printf( v );

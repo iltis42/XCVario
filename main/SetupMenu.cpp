@@ -1011,7 +1011,6 @@ void SetupMenu::options_menu_create_units( MenuEntry *top ){
 	SetupMenuSelect * dst = new SetupMenuSelect( "Distance", false , 0, true, &dst_unit );
 	dst->addEntry( "Meter (m)");
 	dst->addEntry( "Feet (ft)");
-	dst->addEntry( "Miles (mi)");
 	top->addEntry( dst );
 }
 

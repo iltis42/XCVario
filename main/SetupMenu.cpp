@@ -996,7 +996,7 @@ void SetupMenu::options_menu_create_units( MenuEntry *top ){
 	top->addEntry( iau );
 	SetupMenuSelect * vau = new SetupMenuSelect( "Vario", false , update_rentrys, true, &vario_unit );
 	vau->addEntry( "Meters/sec (m/s)");
-	vau->addEntry( "100ft/min (cft/min)");
+	vau->addEntry( "100ft/min (cf/min)");
 	vau->addEntry( "Knots     (knots)");
 	top->addEntry( vau );
 	SetupMenuSelect * teu = new SetupMenuSelect( "Temperature", false , 0, true, &temperature_unit );
@@ -1008,6 +1008,11 @@ void SetupMenu::options_menu_create_units( MenuEntry *top ){
 	qnhi->addEntry( "Hectopascal");
 	qnhi->addEntry( "InchMercury");
 	top->addEntry( qnhi );
+	SetupMenuSelect * dst = new SetupMenuSelect( "Distance", false , 0, true, &dst_unit );
+	dst->addEntry( "Kilom. (km)");
+	dst->addEntry( "100 ft (ct)");
+	dst->addEntry( "Miles  (mi)");
+	top->addEntry( dst );
 }
 
 void SetupMenu::options_menu_create_flarm( MenuEntry *top ){
@@ -1406,7 +1411,7 @@ void SetupMenu::options_menu_create( MenuEntry *opt ){
 	// Units
 	SetupMenu * un = new SetupMenu( "Units" );
 	opt->addEntry( un );
-	un->setHelp( PROGMEM "Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units", 200);
+	un->setHelp( PROGMEM "Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units", 205);
 	un->addCreator(options_menu_create_units);
 
 	SetupMenuSelect * amode = new SetupMenuSelect( "Airspeed Mode",	false, 0, true, &airspeed_mode );

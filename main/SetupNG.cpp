@@ -224,6 +224,7 @@ SetupNG<int>  			alt_quantization( "ALT_QUANT", ALT_QUANT_10 );
 SetupNG<int>  			ias_unit( "IAS_UNIT", SPEED_UNIT_KMH );
 SetupNG<int>  			vario_unit( "VARIO_UNIT", VARIO_UNIT_MS );
 SetupNG<int>  			temperature_unit( "TEMP_UNIT", T_CELCIUS );
+SetupNG<int>  			dst_unit( "DST_UNIT", DST_UNIT_KM );
 SetupNG<int>  			qnh_unit("QNH_UNIT", QNH_HPA );
 SetupNG<int>  			rot_default( "ROTARY_DEFAULT", 0 );
 SetupNG<int>  			serial1_speed( "SERIAL2_SPEED", 3 );   // tag will stay SERIAL2 from historical reason

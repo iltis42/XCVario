@@ -470,9 +470,12 @@ void Flarm::drawFlarmWarning(){
 		ucg->setPrintPos(130, 140 );
 		ucg->setFontPosCenter();
 		ucg->setColor( COLOR_WHITE );
-		ucg->setFont(ucg_font_fub25_hr, true );
-		char d[16];
-		sprintf(d,"%d m   ", RelativeDistance );
+		ucg->setFont(ucg_font_fub20_hr, true );
+		char d[32] = "\0";
+		if( dst_unit.get() == DST_UNIT_KM || dst_unit.get() == DST_UNIT_MILES ) // In km: 1.000 km or in miles e.g. 0.621 mi
+			sprintf(d,"%.3f %s   ", RelativeDistance/1000.0, Units::DistanceUnit() );
+		else if( dst_unit.get() == DST_UNIT_FT )                                // we use multiple of hundred feet e.g. 32.80 cf
+			sprintf(d,"%.2f %s   ", Units::Distance( RelativeDistance)/100.0, Units::DistanceUnit() );
 		ucg->printf( d );
 		oldDist = RelativeDistance;
 	}
@@ -481,7 +484,7 @@ void Flarm::drawFlarmWarning(){
 		ucg->setFontPosCenter();
 		ucg->setColor( COLOR_WHITE );
 		ucg->setFont(ucg_font_fub25_hr, true);
-		char v[16];
+		char v[32];
 		int vdiff = RelativeVertical;
 		const char *unit = "m";
 		if( alt_unit.get() != 0 ){  // then its ft or FL -> feet
@@ -506,7 +509,7 @@ void Flarm::drawFlarmWarning(){
 		ucg->setFontPosCenter();
 		ucg->setColor( COLOR_WHITE );
 		ucg->setFont(ucg_font_fub25_hr, true );
-		char b[16];
+		char b[32];
 		int quant=15;
 		if( RelativeBearing < 0 )
 			quant=-15;

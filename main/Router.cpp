@@ -121,7 +121,7 @@ void Router::routeXCV(){
 	while( pullMsg( xcv_tx_q, xcv ) ){
 		// ESP_LOGI(FNAME,"XCV data to be forwarded %d bytes", xcv.length() );
 		if ( strncmp( xcv.c_str(), "!xs", 3 ) != 0 ){  // !xs messages are XCV specific and must not go to BT,WiFi or serial Navi's
-			if( rt_xcv_wl.get() && (wireless == WL_BLUETOOTH) ) {
+			if( rt_xcv_wl.get() && ((wireless == WL_BLUETOOTH) || (wireless == WL_BLUETOOTH_LE))  ) {
 				if( forwardMsg( xcv, bt_tx_q ) ){
 					// ESP_LOGI(FNAME,"XCV data forwarded to BT device, %d bytes", xcv.length() );
 				}
@@ -167,7 +167,7 @@ void Router::routeS1(){
 				// ESP_LOGI(FNAME,"S1 RX %d bytes forwarded to WiFi port 8881", s1.length() );
 			}
 		}
-		if( rt_s1_wl.get() && (wireless == WL_BLUETOOTH) ){
+		if( rt_s1_wl.get() && ((wireless == WL_BLUETOOTH) || (wireless == WL_BLUETOOTH_LE)) ){
 			if( forwardMsg( s1, bt_tx_q )){
 				// ESP_LOGI(FNAME,"S1 RX %d bytes forwarded to BT", s1.length() );
 			}
@@ -204,7 +204,7 @@ void Router::routeS2(){
 			if( forwardMsg( s2, wl_aux_tx_q )){
 				// ESP_LOGI(FNAME,"S2 RX bytes %d forward to WiFi port 8882", s2.length() );
 			}
-		if( rt_s2_wl.get() && (wireless == WL_BLUETOOTH) ){
+		if( rt_s2_wl.get() && ((wireless == WL_BLUETOOTH) || (wireless == WL_BLUETOOTH_LE)) ){
 			if( forwardMsg( s2, bt_tx_q )){
 				// ESP_LOGI(FNAME,"S2 RX %d bytes forwarded to BT", s2.length() );
 			}
@@ -286,7 +286,7 @@ void Router::routeWLAN(){
 
 // route messages from Bluetooth
 void Router::routeBT(){
-	if( wireless != WL_BLUETOOTH )
+	if( (wireless != WL_BLUETOOTH) && (wireless != WL_BLUETOOTH_LE) )
 		return;
 	SString bt;
 	while( pullMsg( bt_rx_q, bt ) ){
@@ -334,7 +334,7 @@ void Router::routeCAN(){
 					// ESP_LOGI(FNAME, "Send to S2 device, can link received %d NMEA bytes", can.length());
 				}
 			}
-			if( rt_wl_can.get() && (wireless == WL_BLUETOOTH) ) {
+			if( rt_wl_can.get() && ((wireless == WL_BLUETOOTH) || (wireless == WL_BLUETOOTH_LE)) ) {
 				if( forwardMsg( can, bt_tx_q )) {
 					// ESP_LOGI(FNAME,"Send to BT device, can link received %d NMEA bytes", can.length() );
 				}

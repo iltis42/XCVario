@@ -70,7 +70,7 @@ void eglib_SetIndexColor(
 //
 
 // includes pixels of bounding box
-inline bool eglib_inClipArea(eglib_t * eglib, coordinate_t x, coordinate_t y ){
+bool eglib_inClipArea(eglib_t * eglib, coordinate_t x, coordinate_t y ){
 	if( x >=  eglib->drawing.clip_xmin &&
 		x <= eglib->drawing.clip_xmax &&
 		y >=  eglib->drawing.clip_ymin &&
@@ -1185,8 +1185,6 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
 	if(glyph == NULL)
 		return;
 	uint8_t *buffer;
-	int pixels_off = 0;
-	int pixels     = 0;
 	int ascent = eglib->drawing.font->ascent;
 	int descent = eglib->drawing.font->descent;
 	int ascheight = ascent - descent;

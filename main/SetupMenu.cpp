@@ -1294,12 +1294,13 @@ void SetupMenu::options_menu_create_wireless_custom_id( MenuEntry *top ){
 void SetupMenu::options_menu_create_wireless( MenuEntry *top )
 {
 	SetupMenuSelect * btm = new SetupMenuSelect( PROGMEM "Wireless", true, 0, true, &wireless_type );
-	btm->setHelp( PROGMEM "Activate wireless interface type to connect navigation devices, or to another XCVario as client");
+	btm->setHelp( PROGMEM "Activate wireless interface type to connect navigation devices, or to another XCVario as client", 220 );
 	btm->addEntry( "Disable");
 	btm->addEntry( "Bluetooth");
 	btm->addEntry( "Wireless Master");
 	btm->addEntry( "Wireless Client");
 	btm->addEntry( "Wireless Standalone");
+	btm->addEntry( "Bluetooth LE");
 	top->addEntry( btm );
 
 	SetupMenu * wlrt = new SetupMenu( PROGMEM "WL Routing" );

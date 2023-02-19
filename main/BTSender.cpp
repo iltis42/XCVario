@@ -22,7 +22,7 @@
 
 static TaskHandle_t pid = nullptr;
 
-DataLink *dlb;
+static DataLink *dlb;
 
 bool BTSender::selfTest(){
 	ESP_LOGI(FNAME,"SerialBT::selfTest");
@@ -103,4 +103,4 @@ void BTSender::begin(){
 }
 
 // dummy, we don't implement BLE right now
-extern "C" void btsnd_hcic_ble_update_adv_report_flow_control( int ignore ) {};
+// extern "C" void btsnd_hcic_ble_update_adv_report_flow_control( int ignore ) {};

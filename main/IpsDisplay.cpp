@@ -8,6 +8,7 @@
 
 #include "IpsDisplay.h"
 #include "BTSender.h"
+#include "BLESender.h"
 #include "DallasRmt.h"
 #include "WifiClient.h"
 #include "WifiApp.h"
@@ -906,7 +907,11 @@ void IpsDisplay::drawS2FBar(int16_t x, int16_t y, int s2fd)
 void IpsDisplay::drawBT() {
 	if( _menu )
 		return;
-	int btq=BTSender::queueFull();
+	int btq=0;
+	if( wireless == WL_BLUETOOTH )
+		btq=BTSender::queueFull();
+	else if( wireless == WL_BLUETOOTH_LE )
+		btq=BLESender::queueFull();
 	if( btq != btqueue || Flarm::connected() != flarm_connected ){
 		int16_t btx=DISPLAY_W-20;
 		int16_t bty=(BTH/2) + 8;
@@ -1019,7 +1024,7 @@ void IpsDisplay::drawWifi( int x, int y ) {
 
 void IpsDisplay::drawConnection( int16_t x, int16_t y )
 {
-	if( wireless == WL_BLUETOOTH )
+	if( wireless == WL_BLUETOOTH || wireless == WL_BLUETOOTH_LE )
 		drawBT();
 	else if( wireless != WL_DISABLE )
 		drawWifi(x, y);

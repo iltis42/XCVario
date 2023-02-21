@@ -445,11 +445,11 @@ void Flarm::initFlarmWarning(){
 	ucg->printf( "Traffic Alert" );
 	ucg->setColor( COLOR_HEADER );
 	ucg->setFont(ucg_font_fub11_hr);
-	ucg->setPrintPos(130,60);
+	ucg->setPrintPos(130,65);
 	ucg->printf("o'Clock");
-	ucg->setPrintPos(10,220);
+	ucg->setPrintPos(10,230);
 	ucg->printf("Distance %s", Units::DistanceUnit() );
-	ucg->setPrintPos(130,220);
+	ucg->setPrintPos(130,230);
 	ucg->printf("Vertical %s", Units::AltitudeUnitMeterOrFeet() );
 
 	oldDist = 0;
@@ -511,7 +511,7 @@ void Flarm::drawFlarmWarning(){
 		strcpy(oldID,ID);
 	}
 	if( oldDist !=  RelativeDistance ) {
-		ucg->setPrintPos(10, 240 );
+		ucg->setPrintPos(10, 270);
 		ucg->setFontPosCenter();
 		ucg->setColor( COLOR_WHITE );
 		ucg->setFont(ucg_font_fub25_hr, true);
@@ -528,7 +528,7 @@ void Flarm::drawFlarmWarning(){
 	if (RelativeVertical < -deadband) color_id = COLOR_ID_GREEN;
 
 	if( oldVertical !=  RelativeVertical ) {
-		ucg->setPrintPos(130, 240 );
+		ucg->setPrintPos(130, 270);
 		ucg->setFontPosCenter();
 		setColorByID( color_id );
 		ucg->setFont(ucg_font_fub25_hr, true);
@@ -552,7 +552,7 @@ void Flarm::drawFlarmWarning(){
 		oldVertical = RelativeVertical;
 	}
 	if( oldBear != RelativeBearing ){
-		ucg->setPrintPos(50, 70 );
+		ucg->setPrintPos(40, 65);
 		ucg->setFontPosCenter();
 		ucg->setColor( COLOR_WHITE );
 		ucg->setFont(ucg_font_fub25_hr, true );
@@ -563,11 +563,11 @@ void Flarm::drawFlarmWarning(){
 		int clock = int((RelativeBearing+quant)/30);
 		if( clock <= 0 )
 			clock += 12;
-		sprintf(b,"  %d ", clock );
+		sprintf(b,"  %d  ", clock );
 		ucg->printf( b );
-		drawClearTriangle( 120,160, RelativeBearing, 0, 50, 4, color_id );
+		drawClearTriangle( 120,155, RelativeBearing, 0, 75, 4, color_id );
 		ucg->setColor( COLOR_WHITE );
-		drawAirplane( 120, 160 );
+		drawAirplane( 120, 155, false, false );
 		oldBear = RelativeBearing;
 	}
 

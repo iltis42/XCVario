@@ -7,6 +7,15 @@
 #include "RingBufCPP.h"  // SString, tbd: extra header
 #include "Units.h"
 
+enum {
+	COLOR_ID_WHITE,
+	COLOR_ID_BLACK,
+	COLOR_ID_GREY,
+	COLOR_ID_RED,
+	COLOR_ID_GREEN,
+	COLOR_ID_BLUE,
+	COLOR_ID_YELLOW
+};
 
 class Flarm {
 public:
@@ -48,10 +57,11 @@ public:
 	}
 
 private:
-	static void drawClearTriangle( int x, int y, int rb, int dist, int size, int factor );
-	static void drawClearVerticalTriangle( int x, int y, int rb, int dist, int size, int factor );
-	static void drawTriangle( int x, int y, int rb, int dist, int size=15, int factor=2, bool erase=false );
+	static void drawClearTriangle( int x, int y, int rb, int dist, int size, int factor, int color_id );
+	static void drawClearVerticalTriangle( int x, int y, int rb, int dist, int size, int factor, int color_id );
+	static void drawTriangle( int x, int y, int rb, int dist, int size=15, int factor=2, int color_id=COLOR_ID_WHITE, bool erase=false );
 	static void flarmSim();
+	static void setColorByID(int color_id);
 
 	static AdaptUGC* ucg;
 	static int RX,TX,GPS,Power;

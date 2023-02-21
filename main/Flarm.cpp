@@ -8,6 +8,8 @@
 #include "CircleWind.h"
 #include "Router.h"
 
+#include <Arduino.h>
+
 int Flarm::RX = 0;
 int Flarm::TX = 0;
 int Flarm::GPS = 0;
@@ -342,28 +344,56 @@ void Flarm::parsePGRMZ( const char *pgrmz ) {
 	ext_alt_timer = 10;  // Fall back to internal Barometer after 10 seconds
 }
 
+void Flarm::setColorByID(int color_id) {
+	switch (color_id) {
+	case COLOR_ID_BLACK:
+		ucg->setColor( COLOR_BLACK );
+		break;
+	case COLOR_ID_WHITE:
+		ucg->setColor( COLOR_WHITE );
+		break;
+	case COLOR_ID_GREY:
+		ucg->setColor( COLOR_MGREY );
+		break;
+	case COLOR_ID_RED:
+		ucg->setColor( COLOR_RED );
+		break;
+	case COLOR_ID_GREEN:
+		ucg->setColor( COLOR_GREEN );
+		break;
+	case COLOR_ID_BLUE:
+		ucg->setColor( COLOR_BLUE );
+		break;
+	case COLOR_ID_YELLOW:
+		ucg->setColor( COLOR_YELLOW );
+		break;
+	default:
+		ucg->setColor( COLOR_WHITE );
+		break;
+	}
+}
 
 int rbOld = -500; // outside normal range
 
-void Flarm::drawClearTriangle( int x, int y, int rb, int dist, int size, int factor ) {
+void Flarm::drawClearTriangle( int x, int y, int rb, int dist, int size, int factor, int color_id ) {
 	if( rbOld != -500 ){
-		drawTriangle( x,y, rbOld, dist, size, factor, true );
+		drawTriangle( x,y, rbOld, dist, size, factor, color_id, true );
 	}
-	drawTriangle( x,y, rb, dist, size, factor );
+	drawTriangle( x,y, rb, dist, size, factor, color_id );
 	rbOld = rb;
 }
 
 int rbVert = -500;
 
-void Flarm::drawClearVerticalTriangle( int x, int y, int rb, int dist, int size, int factor ) {
+void Flarm::drawClearVerticalTriangle( int x, int y, int rb, int dist, int size, int factor, int color_id ) {
 	if( rbVert != -500 ){
-		drawTriangle( x,y, rbVert, dist, size, factor, true );
+		drawTriangle( x,y, rbVert, dist, size, factor, color_id, true );
 	}
-	drawTriangle( x,y, rb, dist, size, factor );
+	drawTriangle( x,y, rb, dist, size, factor, color_id );
 	rbVert = rb;
 }
 
-void Flarm::drawTriangle( int x, int y, int rb, int dist, int size, int factor, bool erase ) {
+void Flarm::drawTriangle( int x, int y, int rb, int dist, int size, int factor, int color_id, bool erase ) {
 	float s = sin( DTR(rb) );
 	float c = cos( DTR(rb) );
 	int tipx = (int)(x + s*dist );
@@ -377,7 +407,7 @@ void Flarm::drawTriangle( int x, int y, int rb, int dist, int size, int factor, 
 	if( erase )
 		ucg->setColor( COLOR_BLACK );
 	else
-		ucg->setColor( COLOR_RED );
+		setColorByID( color_id );
 	// ESP_LOGI(FNAME,"s: %f c:%f tipx: %d tipy:%d  mx:%2.2f my:%2.2f  ax:%d ay:%d", s,c, tipx, tipy, mx,my, ax,ay);
 	ucg->drawTriangle( tipx, tipy, ax,ay, bx, by );
 }
@@ -396,9 +426,13 @@ void Flarm::drawAirplane( int x, int y, bool fromBehind, bool smallSize ){
 			ucg->drawTetragon( x-4,y+10, x-4,y+9, x+4,y+9, x+4,y+10 ); // elevator
 
 		}else{
-			ucg->drawTetragon( x-30,y-2, x-30,y+2, x+30,y+2, x+30,y-2 );  // wings
-			ucg->drawTetragon( x-2,y+25, x-2,y-10, x+2,y-10, x+2,y+25 ); // fuselage
-			ucg->drawTetragon( x-8,y+25, x-8,y+21, x+8,y+21, x+8,y+25 ); // elevator
+			//ucg->drawTetragon( x-30,y-2, x-30,y+2, x+30,y+2, x+30,y-2 );  // wings
+			//ucg->drawTetragon( x-2,y+25, x-2,y-10, x+2,y-10, x+2,y+25 ); // fuselage
+			//ucg->drawTetragon( x-8,y+25, x-8,y+21, x+8,y+21, x+8,y+25 ); // elevator
+			// use larger size centered on display, numbers pushed to bottom:
+			ucg->drawTetragon( x-45,y-3, x-45,y+3, x+45,y+3, x+45,y-3 );     // wings
+			ucg->drawTetragon( x-3,y+37, x-3,y-15, x+3,y-15, x+3,y+37 );     // fuselage
+			ucg->drawTetragon( x-12,y+37, x-12,y+31, x+12,y+31, x+12,y+37 ); // elevator
 		}
 	}
 }
@@ -411,11 +445,11 @@ void Flarm::initFlarmWarning(){
 	ucg->printf( "Traffic Alert" );
 	ucg->setColor( COLOR_HEADER );
 	ucg->setFont(ucg_font_fub11_hr);
-	ucg->setPrintPos(130,50);
+	ucg->setPrintPos(130,60);
 	ucg->printf("o'Clock");
-	ucg->setPrintPos(130,110);
+	ucg->setPrintPos(10,220);
 	ucg->printf("Distance %s", Units::DistanceUnit() );
-	ucg->setPrintPos(130,190);
+	ucg->setPrintPos(130,220);
 	ucg->printf("Vertical %s", Units::AltitudeUnitMeterOrFeet() );
 
 	oldDist = 0;
@@ -436,37 +470,48 @@ void Flarm::drawFlarmWarning(){
 		AlarmLevel = 0;
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	int volume=0;
+	int alarm_duration=0;   // limit alarm duration, restart when alarm level changes
 	e_audio_alarm_type_t alarm = AUDIO_ALARM_FLARM_1;
 	if( AlarmLevel == 3 ) { // highest, impact 0-8 seconds
 		volume = flarm_volume.get();
 		alarm = AUDIO_ALARM_FLARM_3;
+		alarm_duration = 2000;
 	}
 	else if( AlarmLevel == 2 ){
 		volume = flarm_volume.get()/4;
 		alarm = AUDIO_ALARM_FLARM_2;
+		alarm_duration = 1200;
 	}
 	else if( AlarmLevel == 1 ){ // lowest
 		volume = flarm_volume.get()/8;
 		alarm = AUDIO_ALARM_FLARM_1;
+		alarm_duration = 700;
 	}else{
 		alarm = AUDIO_ALARM_OFF;
 	}
+
+	static int32_t alarm_start_time = 0;
+	if (millis() > alarm_start_time + alarm_duration)
+		alarm = AUDIO_ALARM_OFF;
 
 	if( alarm != AUDIO_ALARM_OFF )
 		Audio::alarm( true, volume, alarm );
 	else
 		Audio::alarm( false );
 
-	if( AlarmLevel != alarmOld ) {
+	static char oldID[20] = "XXXXXX";
+	if( AlarmLevel != alarmOld || strcmp(ID,oldID) != 0 ) {
+		alarm_start_time = millis();
 		ucg->setPrintPos(200, 25 );
 		ucg->setFontPosCenter();
 		ucg->setColor( COLOR_WHITE );
 		ucg->setFont(ucg_font_fub20_hr, true);
 		ucg->printf( "%d ", AlarmLevel );
 		alarmOld = AlarmLevel;
+		strcpy(oldID,ID);
 	}
 	if( oldDist !=  RelativeDistance ) {
-		ucg->setPrintPos(130, 140 );
+		ucg->setPrintPos(10, 240 );
 		ucg->setFontPosCenter();
 		ucg->setColor( COLOR_WHITE );
 		ucg->setFont(ucg_font_fub25_hr, true);
@@ -476,10 +521,16 @@ void Flarm::drawFlarmWarning(){
 		ucg->printf( d );
 		oldDist = RelativeDistance;
 	}
+
+	int color_id = COLOR_ID_RED ;
+	int deadband = ((alt_unit.get() != 0) ? 60 : 20);
+	if (RelativeVertical >  deadband) color_id = COLOR_ID_YELLOW;
+	if (RelativeVertical < -deadband) color_id = COLOR_ID_GREEN;
+
 	if( oldVertical !=  RelativeVertical ) {
-		ucg->setPrintPos(130, 220 );
+		ucg->setPrintPos(130, 240 );
 		ucg->setFontPosCenter();
-		ucg->setColor( COLOR_WHITE );
+		setColorByID( color_id );
 		ucg->setFont(ucg_font_fub25_hr, true);
 		char v[32];
 		int vdiff = RelativeVertical;
@@ -494,13 +545,14 @@ void Flarm::drawFlarmWarning(){
 		float horizontalAngle = RTD( atan2( relDist, (float)RelativeVertical) );
 		ESP_LOGI(FNAME,"horizontalAngle: %f  vert:%d", horizontalAngle, RelativeVertical );
 
-		drawClearVerticalTriangle( 70, 220, horizontalAngle, 0, 50, 6 );
-		ucg->setColor( COLOR_WHITE );
-		drawAirplane( 70, 220, true );
+		// Skip drawing vertical airplane altogether:
+		// drawClearVerticalTriangle( 70, 220, horizontalAngle, 0, 50, 6, color_id );
+		// ucg->setColor( COLOR_WHITE );
+		// drawAirplane( 70, 220, true );
 		oldVertical = RelativeVertical;
 	}
 	if( oldBear != RelativeBearing ){
-		ucg->setPrintPos(130, 80 );
+		ucg->setPrintPos(50, 70 );
 		ucg->setFontPosCenter();
 		ucg->setColor( COLOR_WHITE );
 		ucg->setFont(ucg_font_fub25_hr, true );
@@ -511,11 +563,11 @@ void Flarm::drawFlarmWarning(){
 		int clock = int((RelativeBearing+quant)/30);
 		if( clock <= 0 )
 			clock += 12;
-		sprintf(b,"  %d  ", clock );
+		sprintf(b,"  %d ", clock );
 		ucg->printf( b );
-		drawClearTriangle( 70,120, RelativeBearing, 0, 50, 4 );
+		drawClearTriangle( 120,160, RelativeBearing, 0, 50, 4, color_id );
 		ucg->setColor( COLOR_WHITE );
-		drawAirplane( 70, 120 );
+		drawAirplane( 120, 160 );
 		oldBear = RelativeBearing;
 	}
 

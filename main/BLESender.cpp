@@ -136,7 +136,7 @@ void BLESender::begin(){
 	// Create a BLE Characteristic
 	pTxCharacteristic = pService->createCharacteristic(
 			CHARACTERISTIC_UUID_TX,
-			BLECharacteristic::PROPERTY_WRITE
+			BLECharacteristic::PROPERTY_NOTIFY
 	);
 
 	pTxCharacteristic->addDescriptor(new BLE2902());

@@ -438,18 +438,18 @@ void Flarm::drawAirplane( int x, int y, bool fromBehind, bool smallSize ){
 }
 
 void Flarm::initFlarmWarning(){
-	ucg->setPrintPos(15, 25 );
+	ucg->setPrintPos(15, 28);
 	ucg->setFontPosCenter();
 	ucg->setColor( COLOR_WHITE );
 	ucg->setFont(ucg_font_fub20_hr);
 	ucg->printf( "Traffic Alert" );
 	ucg->setColor( COLOR_HEADER );
 	ucg->setFont(ucg_font_fub11_hr);
-	ucg->setPrintPos(130,65);
+	ucg->setPrintPos(125,65);
 	ucg->printf("o'Clock");
-	ucg->setPrintPos(10,230);
+	ucg->setPrintPos(10,240);
 	ucg->printf("Distance %s", Units::DistanceUnit() );
-	ucg->setPrintPos(130,230);
+	ucg->setPrintPos(130,240);
 	ucg->printf("Vertical %s", Units::AltitudeUnitMeterOrFeet() );
 
 	oldDist = 0;
@@ -480,12 +480,12 @@ void Flarm::drawFlarmWarning(){
 	else if( AlarmLevel == 2 ){
 		volume = flarm_volume.get()/4;
 		alarm = AUDIO_ALARM_FLARM_2;
-		alarm_duration = 1200;
+		alarm_duration = 1300;
 	}
 	else if( AlarmLevel == 1 ){ // lowest
 		volume = flarm_volume.get()/8;
 		alarm = AUDIO_ALARM_FLARM_1;
-		alarm_duration = 700;
+		alarm_duration = 800;
 	}else{
 		alarm = AUDIO_ALARM_OFF;
 	}
@@ -511,7 +511,7 @@ void Flarm::drawFlarmWarning(){
 		strcpy(oldID,ID);
 	}
 	if( oldDist !=  RelativeDistance ) {
-		ucg->setPrintPos(10, 270);
+		ucg->setPrintPos(10, 275);
 		ucg->setFontPosCenter();
 		ucg->setColor( COLOR_WHITE );
 		ucg->setFont(ucg_font_fub25_hr, true);
@@ -528,7 +528,7 @@ void Flarm::drawFlarmWarning(){
 	if (RelativeVertical < -deadband) color_id = COLOR_ID_GREEN;
 
 	if( oldVertical !=  RelativeVertical ) {
-		ucg->setPrintPos(130, 270);
+		ucg->setPrintPos(130, 275);
 		ucg->setFontPosCenter();
 		setColorByID( color_id );
 		ucg->setFont(ucg_font_fub25_hr, true);

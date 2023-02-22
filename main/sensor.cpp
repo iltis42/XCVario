@@ -881,7 +881,6 @@ void system_startup(void *args){
 	int line = 1;
 	ESP_LOGI( FNAME, "Now setup I2C bus IO 21/22");
 	i2c.begin(GPIO_NUM_21, GPIO_NUM_22, 100000 );
-	Router::begin();
 	theWind.begin();
 
 	MCP = new MCP3221();
@@ -1591,7 +1590,7 @@ extern "C" void  app_main(void)
 {
 	// Init timer infrastructure
 	esp_timer_init();
-
+	Router::begin();
 	Audio::boot();
 	ESP_LOGI(FNAME,"app_main" );
 	ESP_LOGI(FNAME,"Now init all Setup elements");

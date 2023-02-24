@@ -1220,7 +1220,7 @@ void SetupMenu::options_menu_create_compasswind( MenuEntry *top ){
 	winddis->addEntry( "Wind Arrow");
 	winddis->addEntry( "Wind Both");
 	winddis->addEntry( "Compass");
-	winddis->setHelp( PROGMEM "Control what is to be displayed, either as digits or by arrow or both on retro style screen");
+	winddis->setHelp( PROGMEM "Control what is to be displayed, either as digits or by arrow or both on retro style screen, if no wind avail, compass is shown");
 	top->addEntry( winddis );
 
 	// Wind speed observation window

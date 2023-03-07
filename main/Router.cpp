@@ -227,7 +227,7 @@ void Router::routeS2(){
 // route messages from WLAN
 void Router::routeWLAN(){
 	SString wlmsg;
-	if( wireless != WL_DISABLE || wireless == WL_WLAN_CLIENT || wireless == WL_WLAN_STANDALONE  ){
+	if( wireless == WL_WLAN_MASTER || wireless == WL_WLAN_CLIENT || wireless == WL_WLAN_STANDALONE  ){
 		// Route received data from any of the WLAN ports
 		while( pullMsg( wl_vario_rx_q, wlmsg) ){   // Port 8880 received data
 			// ESP_LOGI(FNAME,"From WLAN port 8880 RX NMEA %s", wlmsg.c_str() );

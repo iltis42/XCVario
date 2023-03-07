@@ -227,9 +227,9 @@ void Router::routeS2(){
 // route messages from WLAN
 void Router::routeWLAN(){
 	SString wlmsg;
-	if( wireless != WL_DISABLE  ){
-		// Route received data from WLAN ports
-		while( pullMsg( wl_vario_rx_q, wlmsg) ){
+	if( wireless != WL_DISABLE || wireless == WL_WLAN_CLIENT || wireless == WL_WLAN_STANDALONE  ){
+		// Route received data from any of the WLAN ports
+		while( pullMsg( wl_vario_rx_q, wlmsg) ){   // Port 8880 received data
 			// ESP_LOGI(FNAME,"From WLAN port 8880 RX NMEA %s", wlmsg.c_str() );
 			if( rt_s1_wl.get()  && serial1_speed.get() ){
 				if( forwardMsg( wlmsg, s1_tx_q ) ){
@@ -245,16 +245,16 @@ void Router::routeWLAN(){
 			}
 			if( rt_wl_can.get() ){
 				if( forwardMsg( wlmsg, can_tx_q ) ){
-					// ESP_LOGI(FNAME,"Send to XCV processing, TCP port 8880 received %d bytes", wlmsg.length() );
+					// ESP_LOGI(FNAME,"Send to CAN XCV processing, TCP port 8880 received %d bytes", wlmsg.length() );
 				}
 			}
 			Protocols::parseNMEA( wlmsg.c_str() );
 		}
-		while( pullMsg( wl_flarm_rx_q, wlmsg ) ){
+		while( pullMsg( wl_flarm_rx_q, wlmsg ) ){   // Port 8881 received data
 			if( rt_s1_wl.get() && serial1_speed.get() ){
 				if( forwardMsg( wlmsg, s1_tx_q ) ){
 					Serial::setRxTxNotifier( TX1_REQ );
-					// ESP_LOGI(FNAME,"Send to  device, TCP port 8881 received %d bytes", wlmsg.length() );
+					// ESP_LOGI(FNAME,"Send to S1 device, TCP port 8881 received %d bytes", wlmsg.length() );
 				}
 			}
 			if( rt_s2_wl.get() && serial2_speed.get() ){
@@ -265,17 +265,17 @@ void Router::routeWLAN(){
 			}
 			Protocols::parseNMEA( wlmsg.c_str() );
 		}
-		while( pullMsg( wl_aux_rx_q, wlmsg ) ){
+		while( pullMsg( wl_aux_rx_q, wlmsg ) ){  // Port 8882 received data
 			if( rt_s1_wl.get() && serial1_speed.get() ){
 				if( forwardMsg( wlmsg, s1_tx_q ) ){
 					Serial::setRxTxNotifier( TX1_REQ );
-					// ESP_LOGI(FNAME,"Send to  device, TCP port 8882 received %d bytes", wlmsg.length() );
+					// ESP_LOGI(FNAME,"Send to S1 device, TCP port 8882 received %d bytes", wlmsg.length() );
 				}
 			}
 			if( rt_s2_wl.get() && serial2_speed.get() ){
 				if( forwardMsg( wlmsg, s2_tx_q ) ){
 					Serial::setRxTxNotifier( TX2_REQ );
-					ESP_LOGI(FNAME,"Send to S2 device, TCP port 8882 received %d bytes", wlmsg.length() );
+					// ESP_LOGI(FNAME,"Send to S2 device, TCP port 8882 received %d bytes", wlmsg.length() );
 				}
 			}
 			Protocols::parseNMEA( wlmsg.c_str() );

@@ -257,21 +257,9 @@ void Router::routeWLAN(){
 					// ESP_LOGI(FNAME,"Send to S1 device, TCP port 8881 received %d bytes", wlmsg.length() );
 				}
 			}
-			if( rt_s2_wl.get() && serial2_speed.get() ){
-				if( forwardMsg( wlmsg, s2_tx_q ) ){
-					Serial::setRxTxNotifier( TX2_REQ );
-					// ESP_LOGI(FNAME,"Send to S2 device, TCP port 8881 received %d bytes", wlmsg.length() );
-				}
-			}
 			Protocols::parseNMEA( wlmsg.c_str() );
 		}
 		while( pullMsg( wl_aux_rx_q, wlmsg ) ){  // Port 8882 received data
-			if( rt_s1_wl.get() && serial1_speed.get() ){
-				if( forwardMsg( wlmsg, s1_tx_q ) ){
-					Serial::setRxTxNotifier( TX1_REQ );
-					// ESP_LOGI(FNAME,"Send to S1 device, TCP port 8882 received %d bytes", wlmsg.length() );
-				}
-			}
 			if( rt_s2_wl.get() && serial2_speed.get() ){
 				if( forwardMsg( wlmsg, s2_tx_q ) ){
 					Serial::setRxTxNotifier( TX2_REQ );

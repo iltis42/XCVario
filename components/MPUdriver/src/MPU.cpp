@@ -124,32 +124,51 @@ esp_err_t MPU::reset()
 	return ESP_OK;
 }
 
-int MPU::pi_control(int tick_count){
+//modif gfm
+//int MPU::pi_control(int tick_count){
+char MPU::pi_control(int tick_count,float OATemp){
 	float temp = getTemperature();
-	mpu_t_delta = temp - mpu_target_temp;
-	float mpu_t_delta_p = -mpu_t_delta*20.0;
-	mpu_heat_pwm = mpu_t_delta_p;             // P part
-	mpu_t_delta_i -= (mpu_t_delta)/3.0;	      // I part
-	if( mpu_t_delta_i > 255 )
-		mpu_t_delta_i = 255;
-	if( mpu_t_delta_i < 0 )
-		mpu_t_delta_i = 0;
-	mpu_heat_pwm += mpu_t_delta_i;
-	if( mpu_heat_pwm > 255 )
-		mpu_heat_pwm = 255;
-	if( mpu_heat_pwm < 0 )
-		mpu_heat_pwm = 0;
-	// MPU_LOGI("MPU T: T=%.1f Delta= %.1f P=%.2f I=%.2f, PWM=%d", temp, mpu_t_delta, mpu_t_delta_p, mpu_t_delta_i, (int)rint(mpu_heat_pwm) );
+	char pwm;
+	bool Captured = false;
+	float target_pwm = 7.0*(mpu_target_temp-OATemp)-30;
 
-	if( !(tick_count%300) && abs(mpu_t_delta) > 1.0 ){
-		MPU_LOGW("Warning MPU T deviation > 1°: T=%.1f Delta= %.1f P=%.2f I=%.2f, PWM=%d", temp, mpu_t_delta, mpu_t_delta_p, mpu_t_delta_i, (int)rint(mpu_heat_pwm) );
+	mpu_heat_pwm = target_pwm;// Set a target command
+	mpu_t_delta = temp - mpu_target_temp;
+	//	float mpu_t_delta_p = -mpu_t_delta*20.0;
+	float mpu_t_delta_p = -mpu_t_delta*100.0;
+	mpu_heat_pwm += mpu_t_delta_p;             // P part
+	//mpu_t_delta_i -= (mpu_t_delta)/3.0;	      // I part
+	Captured = (fabs(mpu_heat_pwm-target_pwm) < 50.0);
+	if (Captured ) {
+		mpu_t_delta_i -= (mpu_t_delta)*1.0;	      // I part
+		if( mpu_t_delta_i > 100 )
+			mpu_t_delta_i = 100;
+		if( mpu_t_delta_i < -100 )
+			mpu_t_delta_i = -100;
 	}
-	return mpu_heat_pwm;
+	else {
+		//Captured = false;
+	}
+	// fin modif gfm
+	mpu_heat_pwm += mpu_t_delta_i;
+	if( mpu_heat_pwm >= 255.0 )
+		mpu_heat_pwm = 255.0;
+	if( mpu_heat_pwm <= 0.0 )
+		mpu_heat_pwm = 0.0;
+	//modif gfm
+	pwm = (char)rint(mpu_heat_pwm);
+	if( !(tick_count%30) && abs(mpu_t_delta) > 1.0 ){
+	// MPU_LOGI("MPU T: T=%.1f Delta= %.1f P=%.2f I=%.2f, PWM=%d", temp, mpu_t_delta, mpu_t_delta_p, mpu_t_delta_i, (int)rint(mpu_heat_pwm) );
+		MPU_LOGW("Warning MPU T deviation > 1°: T=%.2f Delta= %.1f P=%.2f I=%.2f , PWM=%d", temp, mpu_t_delta, mpu_t_delta_p, mpu_t_delta_i,  pwm );
+	}
+	// return mpu_heat_pwm
+	return pwm;
+	// fin modif gfm
 }
 
-void MPU::temp_control(int count) {   // MPU temperature PI control
+void MPU::temp_control(int count, float OATemp) {   // MPU temperature PI control
 	if( mpu_target_temp >= 0.0 ){     // MPU T = -1.0 switches off feature
-		int pwm=pi_control(count);
+		int pwm=pi_control(count,OATemp);
 		ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_1, pwm );
 		ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_1);
 	}

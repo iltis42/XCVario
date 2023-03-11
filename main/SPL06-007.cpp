@@ -189,7 +189,7 @@ double SPL06_007::get_pcomp(bool &ok)
 		return 0;
 	}
 	if( i>0 ){
-		ESP_LOGW(FNAME,"Sensor temp and pressure ready bits took %d attempts", i );
+		//ESP_LOGW(FNAME,"Sensor temp and pressure ready bits took %d attempts", i );
 	}
 
 	double traw_sc = get_traw_sc( ok_t );

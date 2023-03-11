@@ -57,7 +57,7 @@ bool Router::forwardMsg( SString &s, RingBufCPP<SString, QUEUE_SIZE>& q, bool nm
 		return true;
 	}
 	// ESP_LOGW(FNAME,"+++ WARNING +++ dropped msg len: %d, queueElem: %d", s.length(), q.numElements() );
-	ESP_LOGW(FNAME,"drp msg l:%d q:%d", s.length(), q.numElements() );
+	//ESP_LOGW(FNAME,"drp msg l:%d q:%d", s.length(), q.numElements() );
 	return false;
 }
 

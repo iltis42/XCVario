@@ -11,7 +11,10 @@
 #define DS28EA00MODEL 0x42
 
 // Error Codes
-#define DEVICE_DISCONNECTED_C -127
+// modif gfm
+//#define DEVICE_DISCONNECTED_C -127
+#define DEVICE_DISCONNECTED_C 7
+//fin modif gfm
 #define DEVICE_DISCONNECTED_F -196.6
 #define DEVICE_DISCONNECTED_RAW -7040
 

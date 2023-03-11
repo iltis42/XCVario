@@ -75,6 +75,7 @@
 #include "DataMonitor.h"
 #include "AdaptUGC.h"
 #include "CenterAid.h"
+#include "MPU.hpp"
 
 // #include "sound.h"
 
@@ -155,7 +156,7 @@ mpud::float_axes_t gyroISUNED; // gyro in standard units rad/s with NED referenc
 
 #define MAXDRIFT 2                // °/s maximum drift that is automatically compensated on ground
 #define NUM_GYRO_SAMPLES 3000     // 10 per second -> 5 minutes, so T has been settled after power on
-static uint16_t num_gyro_samples = 0;
+//static uint16_t num_gyro_samples = 0;
 static int32_t cur_gyro_bias[3];
 
 // Fligth Test
@@ -238,12 +239,12 @@ extern UbloxGnssDecoder s1UbloxGnssDecoder;
 extern UbloxGnssDecoder s2UbloxGnssDecoder;
 // Fligth Test
 
-static float clientLoopTime;
+/*static float clientLoopTime;
 static float readSensorsTime;
 static float drawDisplayTime;
 static float readTempTime;
 static float audioTaskTime;
-
+*/
 
 #define GYRO_FS (mpud::GYRO_FS_250DPS)
 
@@ -584,16 +585,19 @@ static void grabSensors(void *pvParameters)
 			OATemp = OAT.get();
 			if( !gflags.validTemperature ) {
 				OATemp = 15 - ( (altitude.get()/100) * 0.65 );
+				ESP_LOGI(FNAME,"OATemp: %0.1f  Altitude %0.1f", OATemp, altitude.get() );
 			}
 			// not sure what is required for compatibility with readSensors
 			
 			// get MPU temp
+			float MPUheatpwm;
 			int16_t MPUtempraw;
+			MPUheatpwm = MPU.mpu_heat_pwm;
 			esp_err_t errtemp = MPU.temperature(&MPUtempraw);
 			if( errtemp == ESP_OK ) {
 				MPUtempcel = mpud::tempCelsius(MPUtempraw);
 			}
-			
+			MPUtempcel = MPU.getTemperature();
 			// get Ublox GNSS data
 			// when GNSS receiver is connected to S1 interface
 			const gnss_data_t *gnss1 = s1UbloxGnssDecoder.getGNSSData(1);
@@ -623,8 +627,9 @@ static void grabSensors(void *pvParameters)
 				VV.VV:			GNSS speed z or down,
 				<CR><LF>		
 			*/
-				sprintf(str,"$SEN,%.6f,%4.3f,%.6f,%4.3f,%.6f,%4.3f,%2.1f,%2.1f,%1d,%2d,%.3f,%4.1f,%2.2f,%2.2f,%2.2f,%2.2f\r\n",
-							statTime, statP, teTime, teP, dynTime, dynP,  OATemp, MPUtempcel, chosenGnss->fix, chosenGnss->numSV, chosenGnss->time,
+				sprintf(str,"$SEN,%.6f,%4.3f,%.6f,%4.3f,%.6f,%4.3f,%2.1f,%3.2f,%1d,%2d,%.3f,%4.1f,%2.2f,%2.2f,%2.2f,%2.2f\r\n",
+// modif gfm						statTime, statP, teTime, teP, dynTime, dynP,  OATemp, MPUtempcel, chosenGnss->fix, chosenGnss->numSV, chosenGnss->time,
+						statTime, statP, teTime, teP, dynTime, MPUheatpwm,  OATemp, MPUtempcel, chosenGnss->fix, chosenGnss->numSV, chosenGnss->time,
 							chosenGnss->coordinates.altitude, chosenGnss->speed.ground, chosenGnss->speed.x, chosenGnss->speed.y, chosenGnss->speed.z);
 				Router::sendXCV(str);
 			}
@@ -794,7 +799,7 @@ void clientLoop(void *pvParameters)
 			if( airspeed_mode.get() == MODE_CAS )
 				cas = Atmosphere::CAS( dynamicP );
 			if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL ){
-				MPU.temp_control( ccount );
+				MPU.temp_control( ccount,OATemp );
 			}
 			if( accelG[0] > gload_pos_max.get() ){
 				gload_pos_max.set( (float)accelG[0] );
@@ -848,8 +853,8 @@ void readSensors(void *pvParameters){
 		{
 			grabMPU();
 		}
-		bool ok=false;
-		float p = 0;
+		//bool ok=false;
+		//float p = 0;
 		// Flight Test
 		//if( asSensor )
 		//	p = asSensor->readPascal(60, ok);
@@ -1010,7 +1015,7 @@ void readSensors(void *pvParameters){
 		lazyNvsCommit();
 		if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL ){
 			// ESP_LOGI(FNAME,"MPU temp control; T=%.2f", MPU.getTemperature() );
-			MPU.temp_control( count );
+			MPU.temp_control( count,OATemp );
 		}
 		
 //		readSensorsTime = (esp_timer_get_time()/1000.0) - readSensorsTime;
@@ -1073,7 +1078,7 @@ void readTemp(void *pvParameters){
 		vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS);
 		esp_task_wdt_reset();
 		if( (ttick++ % 5) == 0) {
-			ESP_LOGI(FNAME,"Free Heap: %d bytes", heap_caps_get_free_size(MALLOC_CAP_8BIT) );
+			//ESP_LOGI(FNAME,"Free Heap: %d bytes", heap_caps_get_free_size(MALLOC_CAP_8BIT) );
 			if( uxTaskGetStackHighWaterMark( tpid ) < 256 )
 				ESP_LOGW(FNAME,"Warning temperature task stack low: %d bytes", uxTaskGetStackHighWaterMark( tpid ) );
 			if( heap_caps_get_free_size(MALLOC_CAP_8BIT) < 20000 )

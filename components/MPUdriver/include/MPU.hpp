@@ -255,9 +255,12 @@ class MPU
 
     // Temperature regulator by PI control
     void pwm_init();             // one time initialize of PMW subsystem
-    int pi_control(int tick);    // PI control to regulate temperatured
-    void temp_control(int tick);  // Tick hook
-
+    void temp_control(int tick, float OATemp);  // Tick hook
+    //modif gfm
+    // int pi_control(int tick);    // PI control to regulate temperature
+    char pi_control(int tick,float OATemp);    // PI control to regulate temperature
+    float mpu_heat_pwm = 0; //from protected to here
+    // fin modif gfm
     temp_status_t getSiliconTempStatus() {
     	if( abs(mpu_t_delta) < 0.5)
     		return MPU_T_LOCKED;
@@ -281,7 +284,7 @@ class MPU
 
     float mpu_t_delta = 0;
     float mpu_t_delta_i = 0;
-    float mpu_heat_pwm = 0;
+
 };
 
 }  // namespace mpud

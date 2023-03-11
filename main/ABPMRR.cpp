@@ -100,9 +100,9 @@ float   ABPMRR::readPascal( float minimum, bool &ok ){
 	float _pascal = (P_dat - _offset) * multiplier;
 	if ( (_pascal < minimum) && (minimum != 0) ) {
 		_pascal = 0.0;
+		ESP_LOGI(FNAME,"pressure: %f offset: %d raw: %d  raw-off:%f m:%f", _pascal, (int)_offset, P_dat,  (_offset - P_dat),  ABPMRRmultiplier );
 	};
 
-	// ESP_LOGI(FNAME,"pressure: %f offset: %d raw: %d  raw-off:%f m:%f", _pascal, (int)_offset, P_dat,  (_offset - P_dat),  ABPMRRmultiplier );
 	return( _pascal );
 }
 

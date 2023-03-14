@@ -190,6 +190,7 @@ bool SENstream = false; // Sensors FT stream
 static float dynamicP; // filtered dynamic pressure
 static float baroP=0; // barometric pressure
 static float temperature=15.0;
+static float XCVTemp=15.0;//External temperature for MPU temp control
 
 static float battery=0.0;
 
@@ -581,7 +582,8 @@ static void grabSensors(void *pvParameters)
 				if (p > 60 ) 
 					dynamicP = p; 
 			}
-			// get OAT			
+			// get XCVTemp
+			XCVTemp = bmpVario.bmpTemp;
 			OATemp = OAT.get();
 			if( !gflags.validTemperature ) {
 				OATemp = 15 - ( (altitude.get()/100) * 0.65 );
@@ -629,7 +631,7 @@ static void grabSensors(void *pvParameters)
 			*/
 				sprintf(str,"$SEN,%.6f,%4.3f,%.6f,%4.3f,%.6f,%4.3f,%2.1f,%3.2f,%1d,%2d,%.3f,%4.1f,%2.2f,%2.2f,%2.2f,%2.2f\r\n",
 // modif gfm						statTime, statP, teTime, teP, dynTime, dynP,  OATemp, MPUtempcel, chosenGnss->fix, chosenGnss->numSV, chosenGnss->time,
-						statTime, statP, teTime, teP, dynTime, MPUheatpwm,  OATemp, MPUtempcel, chosenGnss->fix, chosenGnss->numSV, chosenGnss->time,
+						statTime, asSensor->getTemperature(), teTime,XCVTemp, dynTime, MPUheatpwm,  OATemp, MPUtempcel, chosenGnss->fix, chosenGnss->numSV, chosenGnss->time,
 							chosenGnss->coordinates.altitude, chosenGnss->speed.ground, chosenGnss->speed.x, chosenGnss->speed.y, chosenGnss->speed.z);
 				Router::sendXCV(str);
 			}
@@ -798,8 +800,9 @@ void clientLoop(void *pvParameters)
 			tas = Atmosphere::TAS2( ias.get(), altitude.get(), OAT.get() );
 			if( airspeed_mode.get() == MODE_CAS )
 				cas = Atmosphere::CAS( dynamicP );
+			XCVTemp = bmpVario.bmpTemp;
 			if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL ){
-				MPU.temp_control( ccount,OATemp );
+				MPU.temp_control( ccount,XCVTemp );
 			}
 			if( accelG[0] > gload_pos_max.get() ){
 				gload_pos_max.set( (float)accelG[0] );
@@ -1013,9 +1016,10 @@ void readSensors(void *pvParameters){
 			}
 		}
 		lazyNvsCommit();
+		XCVTemp = bmpVario.bmpTemp;
 		if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL ){
 			// ESP_LOGI(FNAME,"MPU temp control; T=%.2f", MPU.getTemperature() );
-			MPU.temp_control( count,OATemp );
+			MPU.temp_control( count,XCVTemp);
 		}
 		
 //		readSensorsTime = (esp_timer_get_time()/1000.0) - readSensorsTime;

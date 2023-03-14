@@ -255,10 +255,10 @@ class MPU
 
     // Temperature regulator by PI control
     void pwm_init();             // one time initialize of PMW subsystem
-    void temp_control(int tick, float OATemp);  // Tick hook
+    void temp_control(int tick, float XCVTemp);  // Tick hook
     //modif gfm
     // int pi_control(int tick);    // PI control to regulate temperature
-    char pi_control(int tick,float OATemp);    // PI control to regulate temperature
+    char pi_control(int tick,float XCVTemp);    // PI control to regulate temperature
     float mpu_heat_pwm = 0; //from protected to here
     // fin modif gfm
     temp_status_t getSiliconTempStatus() {

@@ -126,20 +126,18 @@ esp_err_t MPU::reset()
 
 //modif gfm
 //int MPU::pi_control(int tick_count){
-char MPU::pi_control(int tick_count,float OATemp){
+char MPU::pi_control(int tick_count,float XCVTemp){
 	float temp = getTemperature();
 	char pwm;
-	bool Captured = false;
-	float target_pwm = 7.0*(mpu_target_temp-OATemp)-30;
-
-	mpu_heat_pwm = target_pwm;// Set a target command
+	float mpu_target_pwm = 7.0*(mpu_target_temp-XCVTemp)-30;
+	mpu_heat_pwm = mpu_target_pwm;
 	mpu_t_delta = temp - mpu_target_temp;
-	//	float mpu_t_delta_p = -mpu_t_delta*20.0;
+	//	P control with Kp=100;
 	float mpu_t_delta_p = -mpu_t_delta*100.0;
-	mpu_heat_pwm += mpu_t_delta_p;             // P part
-	//mpu_t_delta_i -= (mpu_t_delta)/3.0;	      // I part
-	Captured = (fabs(mpu_heat_pwm-target_pwm) < 50.0);
-	if (Captured ) {
+	mpu_heat_pwm -= mpu_t_delta*100.0;             // P part
+	//To avoid damping of temperature correction, integral correction is only applied when pwm is close enougn to target pwm
+	// I control with Ki = 1
+	if (fabs(mpu_heat_pwm-mpu_target_pwm) < 50.0 ) {
 		mpu_t_delta_i -= (mpu_t_delta)*1.0;	      // I part
 		if( mpu_t_delta_i > 100 )
 			mpu_t_delta_i = 100;
@@ -155,10 +153,10 @@ char MPU::pi_control(int tick_count,float OATemp){
 		mpu_heat_pwm = 255.0;
 	if( mpu_heat_pwm <= 0.0 )
 		mpu_heat_pwm = 0.0;
-	//modif gfm
+	//convert /cast to get pwm as byte
 	pwm = (char)rint(mpu_heat_pwm);
-	if( !(tick_count%30) && abs(mpu_t_delta) > 1.0 ){
-	// MPU_LOGI("MPU T: T=%.1f Delta= %.1f P=%.2f I=%.2f, PWM=%d", temp, mpu_t_delta, mpu_t_delta_p, mpu_t_delta_i, (int)rint(mpu_heat_pwm) );
+//	if( !(tick_count%30) && abs(mpu_t_delta) > 1.0 ){
+	if( !(tick_count%10)){
 		MPU_LOGW("Warning MPU T deviation > 1°: T=%.2f Delta= %.1f P=%.2f I=%.2f , PWM=%d", temp, mpu_t_delta, mpu_t_delta_p, mpu_t_delta_i,  pwm );
 	}
 	// return mpu_heat_pwm
@@ -166,9 +164,9 @@ char MPU::pi_control(int tick_count,float OATemp){
 	// fin modif gfm
 }
 
-void MPU::temp_control(int count, float OATemp) {   // MPU temperature PI control
+void MPU::temp_control(int count, float XCVTemp) {   // MPU temperature PI control
 	if( mpu_target_temp >= 0.0 ){     // MPU T = -1.0 switches off feature
-		int pwm=pi_control(count,OATemp);
+		int pwm=pi_control(count,XCVTemp);
 		ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_1, pwm );
 		ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_1);
 	}

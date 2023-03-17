@@ -61,6 +61,7 @@ public:
 	inline double   readCuralt() { return _currentAlt; };   // get average Altitude
 	void setTE( double te ); // for testing purposes
 	void configChange();
+	double bmpTemp;
 
 private:
 	gpio_num_t _negative;
@@ -79,7 +80,6 @@ private:
 	int    index;
 	double _TEF;
 	double _avgTE;
-	double bmpTemp;
 	bool _test;
 	float _damping;
 	double _damping_factor;

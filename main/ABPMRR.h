@@ -49,11 +49,11 @@ class ABPMRR : public AirspeedSensor
         bool  selfTest( int& adval );
         void  setBus( I2C_t *theBus ) {  bus = theBus; };
         void  changeConfig();
+        float getTemperature(void);     // returns temperature of last measurement
 
     private:
         int   measure(void);            // returns status of measurement
         float getPSI(void);             // returns the PSI of last measurement
-        float getTemperature(void);     // returns temperature of last measurement
         float getAirSpeed(void);        // calculates and returns the airspeed
         char  fetch_pressure(uint16_t &P_dat, uint16_t &T_dat);
 

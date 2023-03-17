@@ -76,7 +76,7 @@ double BMPVario::readTE( float tas ) {
 		ESP_LOGW(FNAME,"Vario time_delta=%2.3f sec", time_delta );
 
 	bmpTemp = _sensorTE->readTemperature( success );
-	// ESP_LOGI(FNAME,"BMP temp=%0.1f", bmpTemp );
+	ESP_LOGI(FNAME,"BMP temp=%0.1f", bmpTemp );
 	if( te_comp_enable.get() ) {
 		_currentAlt = altitude.get(); // already read
 		if( !success )

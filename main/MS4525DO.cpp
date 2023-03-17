@@ -57,7 +57,7 @@ char MS4525DO::fetch_pressure(uint16_t &P_dat, uint16_t &T_dat)
 	Press_L = data[1];
 	Temp_H = data[2];
 	Temp_L = data[3];
-	// ESP_LOG_BUFFER_HEXDUMP(FNAME,data,4, ESP_LOG_INFO);
+	ESP_LOG_BUFFER_HEXDUMP(FNAME,data,4, ESP_LOG_INFO);
 
 	_status = (Press_H >> 6) & 0x03;
 	Press_H = Press_H & 0x3f;

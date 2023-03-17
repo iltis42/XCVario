@@ -162,4 +162,8 @@ float MP5004DP::readPascal( float minimum, bool &ok ){
 	return _pascal;
 }
 
+float MP5004DP::getTemperature(void){     // return 0 for compatibility airspeed interface
+	return 0;
+}
+
 

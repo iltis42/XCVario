@@ -28,7 +28,7 @@ public:
 	bool    offsetPlausible( uint16_t offset );
 	void    setBus( I2C_t *_theBus );
 	void    changeConfig();
-
+	float   getTemperature(void);
 private:
 	float _offset;
 	float _alpha;

@@ -258,7 +258,7 @@ class MPU
     void temp_control(int tick, float XCVTemp);  // Tick hook
     //modif gfm
     // int pi_control(int tick);    // PI control to regulate temperature
-    char pi_control(int tick,float XCVTemp);    // PI control to regulate temperature
+    uint32_t pi_control(int tick,float XCVTemp);    // PI control to regulate temperature
     float mpu_heat_pwm = 0; //from protected to here
     // fin modif gfm
     temp_status_t getSiliconTempStatus() {

@@ -127,9 +127,17 @@ esp_err_t MPU::reset()
 int MPU::pi_control(int tick_count){
 	float temp = getTemperature();
 	mpu_t_delta = temp - mpu_target_temp;
-	float mpu_t_delta_p = -mpu_t_delta*20.0;
-	mpu_heat_pwm = mpu_t_delta_p;             // P part
-	mpu_t_delta_i -= (mpu_t_delta)/3.0;	      // I part
+	float mpu_t_delta_p = 0;
+	if(abs(mpu_t_delta) > 1.5){
+		mpu_t_delta_p = -mpu_t_delta*100.0;
+		mpu_t_delta_i = mpu_t_delta_p*0.6;	      // I part: init by 60% of P-Part
+	}
+	else{
+		mpu_t_delta_p = -mpu_t_delta*20.0;
+		mpu_t_delta_i -= (mpu_t_delta)/3.0;	      // I part
+	}
+	mpu_heat_pwm = mpu_t_delta_p;                 // P part
+
 	if( mpu_t_delta_i > 255 )
 		mpu_t_delta_i = 255;
 	if( mpu_t_delta_i < 0 )
@@ -139,7 +147,7 @@ int MPU::pi_control(int tick_count){
 		mpu_heat_pwm = 255;
 	if( mpu_heat_pwm < 0 )
 		mpu_heat_pwm = 0;
-	// MPU_LOGI("MPU T: T=%.1f Delta= %.1f P=%.2f I=%.2f, PWM=%d", temp, mpu_t_delta, mpu_t_delta_p, mpu_t_delta_i, (int)rint(mpu_heat_pwm) );
+	MPU_LOGI("MPU T: T=%.1f Delta= %.1f P=%.2f I=%.2f, PWM=%d", temp, mpu_t_delta, mpu_t_delta_p, mpu_t_delta_i, (int)rint(mpu_heat_pwm) );
 
 	if( !(tick_count%300) && abs(mpu_t_delta) > 1.0 ){
 		MPU_LOGW("Warning MPU T deviation > 1°: T=%.1f Delta= %.1f P=%.2f I=%.2f, PWM=%d", temp, mpu_t_delta, mpu_t_delta_p, mpu_t_delta_i, (int)rint(mpu_heat_pwm) );

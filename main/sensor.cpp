@@ -149,6 +149,7 @@ BLESender blesender;
 
 static float baroP=0; // barometric pressure
 static float temperature=15.0;
+static float xcvTemp=15.0;
 
 static float battery=0.0;
 static float dynamicP; // Pitot
@@ -568,7 +569,7 @@ void clientLoop(void *pvParameters)
 			if( airspeed_mode.get() == MODE_CAS )
 				cas = Atmosphere::CAS( dynamicP );
 			if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL ){
-				MPU.temp_control( ccount );
+				MPU.temp_control( ccount, xcvTemp );
 			}
 			if( accelG[0] > gload_pos_max.get() ){
 				gload_pos_max.set( (float)accelG[0] );
@@ -665,6 +666,12 @@ void readSensors(void *pvParameters){
 		}
 		if (FLAP) { FLAP->progress(); }
 		xSemaphoreTake(xMutex,portMAX_DELAY );
+		if( !(count%10) ){  // every second read temperature of baro sensor
+			float xt = baroSensor->readTemperature(ok);
+			if( ok ){
+				xcvTemp = xt;
+			}
+		}
 		baroP = baroSensor->readPressure(ok);   // 10x per second
 		xSemaphoreGive(xMutex);
 		// ESP_LOGI(FNAME,"Baro Pressure: %4.3f", baroP );
@@ -768,7 +775,7 @@ void readSensors(void *pvParameters){
 		lazyNvsCommit();
 		if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL ){
 			// ESP_LOGI(FNAME,"MPU temp control; T=%.2f", MPU.getTemperature() );
-			MPU.temp_control( count );
+			MPU.temp_control( count, xcvTemp );
 		}
 		esp_task_wdt_reset();
 		if( uxTaskGetStackHighWaterMark( bpid ) < 512 )

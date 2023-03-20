@@ -174,6 +174,7 @@ BTSender btsender;
 static float grabSensorsTime;
 static float accelTime; // time stamp for accels
 static float gyroTime;  // time stamp for gyros
+static float prevgyroTime;
 static float statTime; // time stamp for statP
 static float statP=0; // raw static pressure
 static float teTime; // time stamp for teP
@@ -182,6 +183,24 @@ static float dynTime; // time stamp for dynP
 static float dynP=0; // raw dynamic pressure
 static float OATemp; // OAT for pressure corrections (real or from standard atmosphere) 
 static float MPUtempcel; // MPU chip temperature
+static int gyrobiastemptimer; //counter for MPU temperature
+static float dtGyr; // period for gyro sampling
+static float GxBias;
+static float GyBias;
+static float GzBias;
+static float AccelTest;
+static float deltaAccelTest;
+static float prevAccelTest;
+static float AccelTestPrimFilt;
+static float betaAccelTest;
+static float alphaAccelTest;
+static float AccelTestFilt;
+static int gyrostable=0;
+static float NewGxBias;
+static float NewGyBias;
+static float NewGzBias;
+
+
 //
 bool IMUstream = false; // IMU FT stream
 bool SENstream = false; // Sensors FT stream
@@ -494,6 +513,7 @@ static void grabSensors(void *pvParameters)
 	
 	mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
 	mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
+	
 // counter to schedule tasks at specific time
 	char str[150]; // string for flight test message broadcast
 	while (1) {
@@ -518,12 +538,13 @@ static void grabSensors(void *pvParameters)
 			// get gyro data
 			errgyr = MPU.rotation(&gyroRaw); // fetch raw gyro data from the registers
 			if( errgyr == ESP_OK ){
+				prevgyroTime = gyroTime;
 				gyroTime = esp_timer_get_time()/1000000.0; // record time of gyro measurement in second
 				gyroDPS = mpud::gyroDegPerSec(gyroRaw, GYRO_FS); // convert raw gyro to Gyro_FS full scale
 				// convert gyro coordinates to NED ISU : rad/s
-				gyroISUNED.x = -gyroDPS.z * DegToRad;
-				gyroISUNED.y = -gyroDPS.y * DegToRad;
-				gyroISUNED.z = -gyroDPS.x * DegToRad;
+				gyroISUNED.x = -(gyroDPS.z - NewGxBias)* DegToRad;
+				gyroISUNED.y = -(gyroDPS.y - NewGyBias)* DegToRad;
+				gyroISUNED.z = -(gyroDPS.x - NewGzBias)* DegToRad;
 			}
 			// If required stream IMU data
 			if ( IMUstream ) {
@@ -542,6 +563,46 @@ static void grabSensors(void *pvParameters)
 				*/			
 				sprintf(str,"$IMU,%.6f,%1.4f,%1.4f,%1.4f,%.6f,%3.4f,%3.4f,%3.4f\r\n",accelTime, accelISUNED.x, accelISUNED.y, accelISUNED.z , gyroTime, gyroISUNED.x, gyroISUNED.y, gyroISUNED.z );
 				Router::sendXCV(str);
+			}
+			// Estimation of gyro bias
+			// When on ground:  IAS < 25 km/h 
+			if( ias.get() < 25.0 ) {
+				// When there is MPU temperature control and temperature is locked   or   when there is no temperature control
+				if ( (HAS_MPU_TEMP_CONTROL && (MPU.getSiliconTempStatus() == MPU_T_LOCKED)) || !HAS_MPU_TEMP_CONTROL ) {
+					// count cycles when temperature is locked
+					gyrobiastemptimer++;
+					// compute period between current and last gyro samples
+					dtGyr = gyroTime - prevgyroTime;
+					// filter gyros with long period (i.e. 10 seconds)
+					GxBias = GxBias * 0.9975 + gyroDPS.x * 0.0025;
+					GyBias = GyBias * 0.9975 + gyroDPS.y * 0.0025;
+					GzBias = GzBias * 0.9975 + gyroDPS. z* 0.0025;
+					// detect if accelerations are stable using an alpha/beta filter to estimate variation over short period (i.e. 0.5 second)
+					int N_acc = 20;
+					alphaAccelTest = 2 * (2 * N_acc - 1) / (N_acc) / (N_acc + 1);
+					betaAccelTest = 6 / N_acc / (N_acc + 1) / dtGyr;	
+					AccelTest = accelISUNED.x * accelISUNED.x + accelISUNED.y * accelISUNED.y + accelISUNED.z * accelISUNED.z;
+					deltaAccelTest = AccelTest - prevAccelTest;
+					AccelTestPrimFilt = AccelTestPrimFilt + betaAccelTest * deltaAccelTest;
+					AccelTestFilt = AccelTestFilt + alphaAccelTest * deltaAccelTest + AccelTestPrimFilt * dtGyr;
+					prevAccelTest = AccelTestFilt;
+					// if temperature conditions has been stable for more than 30 seconds (1200 = 30x40hz) and there is very little acceleration variation
+					if ( gyrobiastemptimer > 1200 && abs(AccelTestPrimFilt) < 1.0 ) {
+						// if accel have been stable for 10 continuous seconds
+						if ( gyrostable++ > 400 ) {
+							NewGxBias = GxBias;
+							NewGyBias = GyBias;
+							NewGzBias = GzBias;
+						}
+					} else {
+						gyrostable = 0;
+					}
+				} else {
+					gyrobiastemptimer = 0;
+					GxBias = gyroDPS.x;
+					GyBias = gyroDPS.y;
+					GzBias = gyroDPS.z;				
+				}
 			}
 		}
 		
@@ -1251,25 +1312,22 @@ void system_startup(void *args){
 		MPU.setSampleRate(50);  // in (Hz)
 		MPU.setAccelFullScale(mpud::ACCEL_FS_8G);
 		MPU.setGyroFullScale( GYRO_FS );
-		MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
-		mpud::raw_axes_t gb = gyro_bias.get();
-		mpud::raw_axes_t ab = accl_bias.get();
-		char ahrs[30];
-		if( (gb.isZero() || ab.isZero()) || ahrs_autozero.get() ) {
-			ESP_LOGI( FNAME,"MPU computeOffsets");
-			ahrs_autozero.set(0);
-			MPU.computeOffsets( &ab, &gb );  // returns Offsets in 16G scale
-			gyro_bias.set( gb );
-			accl_bias.set( ab );
-			MPU.setGyroOffset(gb);
-			MPU.setAccelOffset(ab);
-			ESP_LOGI( FNAME,"MPU new offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
-		}else{
-			MPU.setAccelOffset(ab);
-			MPU.setGyroOffset(gb);
-		}
-		delay( 50 );
+		MPU.setDigitalLowPassFilter(mpud::DLPF_42HZ);  // smoother data
+		
+		// clear gyro and accel MPU offsets, just in case
+		mpud::raw_axes_t gyroRaw;
+		gyroRaw.x = 0;
+		gyroRaw.y = 0;
+		gyroRaw.z = 0;
+		MPU.setGyroOffset(gyroRaw); 		
 		mpud::raw_axes_t accelRaw;
+		accelRaw.x = 0;
+		accelRaw.y = 0;
+		accelRaw.z = 0;
+		MPU.setAccelOffset(accelRaw);	
+		
+		delay( 50 );
+		char ahrs[50];
 		float accel = 0;
 		for( auto i=0; i<11; i++ ){
 			esp_err_t err = MPU.acceleration(&accelRaw);  // fetch raw data from the registers
@@ -1286,7 +1344,7 @@ void system_startup(void *args){
 		logged_tests += "MPU6050 AHRS test: PASSED\n";
 		IMU::init();
 		IMU::read();
-		ESP_LOGI( FNAME,"MPU current offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
+		// TODO not compatible with flight test code( FNAME,"MPU current offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
 	}
 	else{
 		ESP_LOGI( FNAME,"MPU reset failed, check HW revision: %d",hardwareRevision.get() );

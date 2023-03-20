@@ -123,24 +123,46 @@ esp_err_t MPU::reset()
 	MPU_LOGI("MPU Reset OKAY!");
 	return ESP_OK;
 }
+/*uint32_t MPU::pi_control(int tick_count,float XCVTemp){
+	float temp = getTemperature();
+	mpu_t_delta = temp - mpu_target_temp;
+	float mpu_t_delta_p = -mpu_t_delta*20.0;
+	mpu_heat_pwm = mpu_t_delta_p;             // P part
+	mpu_t_delta_i -= (mpu_t_delta)/3.0;	      // I part
+	if( mpu_t_delta_i > 255 )
+		mpu_t_delta_i = 255;
+	if( mpu_t_delta_i < 0 )
+		mpu_t_delta_i = 0;
+	mpu_heat_pwm += mpu_t_delta_i;
+	if( mpu_heat_pwm > 255 )
+		mpu_heat_pwm = 255;
+	if( mpu_heat_pwm < 0 )
+		mpu_heat_pwm = 0;
+	// MPU_LOGI("MPU T: T=%.1f Delta= %.1f P=%.2f I=%.2f, PWM=%d", temp, mpu_t_delta, mpu_t_delta_p, mpu_t_delta_i, (int)rint(mpu_heat_pwm) );
 
+	if( !(tick_count%300) && abs(mpu_t_delta) > 1.0 ){
+		MPU_LOGW("Warning MPU T deviation > 1°: T=%.1f Delta= %.1f P=%.2f I=%.2f, PWM=%d", temp, mpu_t_delta, mpu_t_delta_p, mpu_t_delta_i, (int)rint(mpu_heat_pwm) );
+	}
+	return (uint32_t)rint(mpu_heat_pwm) ;
+}
+*/
 uint32_t MPU::pi_control(int tick_count,float XCVTemp){
 	float temp = getTemperature();
 	uint8_t pwm;
-	float mpu_target_pwm = 7.0*(mpu_target_temp-XCVTemp)-30;
-	mpu_heat_pwm = mpu_target_pwm;
+	//float mpu_target_pwm = 7.0*(mpu_target_temp-XCVTemp)-30;
+	mpu_heat_pwm = 127;
 	mpu_t_delta = temp - mpu_target_temp;
 	//	P control with Kp=100;
 	float mpu_t_delta_p = -mpu_t_delta*100.0;
 	mpu_heat_pwm -= mpu_t_delta*100.0;             // P part
 	//To avoid damping of temperature correction, integral correction is only applied when pwm is close enougn to target pwm
 	// I control with Ki = 1
-	if (fabs(mpu_t_delta) < 0.5 ) {
+	if (fabs(mpu_t_delta) < 1.3 ) {
 		mpu_t_delta_i -= (mpu_t_delta)*1.0;	      // I part
-		if( mpu_t_delta_i > 100 )
-			mpu_t_delta_i = 100;
-		if( mpu_t_delta_i < -100 )
-			mpu_t_delta_i = -100;
+		if( mpu_t_delta_i > 127 )
+			mpu_t_delta_i = 127;
+		if( mpu_t_delta_i < -127 )
+			mpu_t_delta_i = -127;
 	}
 	mpu_heat_pwm += mpu_t_delta_i;
 	if( mpu_heat_pwm >= 255.0 )

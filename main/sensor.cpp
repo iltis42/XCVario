@@ -574,9 +574,9 @@ static void grabSensors(void *pvParameters)
 					// compute period between current and last gyro samples
 					dtGyr = gyroTime - prevgyroTime;
 					// filter gyros with long period (i.e. 10 seconds)
-					GxBias = GxBias * 0.9975 + gyroDPS.x * 0.0025;
+					GxBias = GxBias * 0.9975 + gyroDPS.z * 0.0025;
 					GyBias = GyBias * 0.9975 + gyroDPS.y * 0.0025;
-					GzBias = GzBias * 0.9975 + gyroDPS. z* 0.0025;
+					GzBias = GzBias * 0.9975 + gyroDPS.x * 0.0025;
 					// detect if accelerations are stable using an alpha/beta filter to estimate variation over short period (i.e. 0.5 second)
 					int N_acc = 20;
 					alphaAccelTest = 2 * (2 * N_acc - 1) / (N_acc) / (N_acc + 1);
@@ -599,9 +599,9 @@ static void grabSensors(void *pvParameters)
 					}
 				} else {
 					gyrobiastemptimer = 0;
-					GxBias = gyroDPS.x;
+					GxBias = gyroDPS.z;
 					GyBias = gyroDPS.y;
-					GzBias = gyroDPS.z;				
+					GzBias = gyroDPS.x;
 				}
 			}
 		}

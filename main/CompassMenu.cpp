@@ -201,7 +201,7 @@ bool CompassMenu::showSensorRawData(SetupMenuSelect *p)
 	p->ucg->setPrintPos( 1, 120 );
 	p->ucg->printf( "Z = %d  ", raw.z );
 	p->ucg->setPrintPos( 1, 150 );
-	p->ucg->printf( "Raw magn H= %.3f uT", sqrt( (float)raw.x*(float)raw.x + (float)raw.y*(float)raw.y + (float)raw.z*(float)raw.z )/15000.0 );
+	p->ucg->printf( "Raw magn H= %.3f uT", sqrt( (float)raw.x*(float)raw.x + (float)raw.y*(float)raw.y + (float)raw.z*(float)raw.z )/150.0 );
 	if( compass_calibrated.get() ){
 		p->ucg->setPrintPos( 1, 180 );
 		p->ucg->printf( "Cal magn H= %.3f uT", sqrt( compass->rawX()*compass->rawX()  + compass->rawY()*compass->rawY() + compass->rawZ()*compass->rawZ() )/15000.0 );

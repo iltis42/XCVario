@@ -186,15 +186,15 @@ int CompassMenu::declinationAction( SetupMenuValFloat *p )
 
 bool CompassMenu::showSensorRawData(SetupMenuSelect *p)
 {
-	// ESP_LOGI( FNAME, "showSensorRawData()" );
 	if( compass == 0 ){
-		ESP_LOGI( FNAME, "no compass" );
+		ESP_LOGI( FNAME, "showSensorRawData(): no compass" );
 		return false;
 	}
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	t_magn_axes raw = compass->getRawAxes();
+	// ESP_LOGI( FNAME, "showSensorRawData() %d %d %d", raw.x, raw.y, raw.z );
 	p->ucg->setColor( COLOR_WHITE );
 	p->ucg->setPrintPos( 1, 60 );
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->printf( "X = %d  ", raw.x );
 	p->ucg->setPrintPos( 1, 90 );
 	p->ucg->printf( "Y = %d  ", raw.y );
@@ -202,8 +202,10 @@ bool CompassMenu::showSensorRawData(SetupMenuSelect *p)
 	p->ucg->printf( "Z = %d  ", raw.z );
 	p->ucg->setPrintPos( 1, 150 );
 	p->ucg->printf( "Raw magn H= %.3f uT", sqrt( (float)raw.x*(float)raw.x + (float)raw.y*(float)raw.y + (float)raw.z*(float)raw.z )/15000.0 );
-	p->ucg->setPrintPos( 1, 180 );
-	p->ucg->printf( "Cal magn H= %.3f uT", sqrt( compass->rawX()*compass->rawX()  + compass->rawY()*compass->rawY() + compass->rawZ()*compass->rawZ() )/15000.0 );
+	if( compass_calibrated.get() ){
+		p->ucg->setPrintPos( 1, 180 );
+		p->ucg->printf( "Cal magn H= %.3f uT", sqrt( compass->rawX()*compass->rawX()  + compass->rawY()*compass->rawY() + compass->rawZ()*compass->rawZ() )/15000.0 );
+	}
 	xSemaphoreGive(spiMutex);
 	return true;
 }

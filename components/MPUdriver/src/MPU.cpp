@@ -146,7 +146,7 @@ int MPU::pi_control(int tick_count, float XCVTemp){
 	if( mpu_heat_pwm <= 0.0 )
 		mpu_heat_pwm = 0.0;
 
-	MPU_LOGI("XCV T: %.1f MPU T: T=%.1f Delta= %.1f P=%.2f I=%.2f, PWM=%d", XCVTemp, temp, mpu_t_delta, mpu_t_delta_p, mpu_t_delta_i, (int)rint(mpu_heat_pwm) );
+	// MPU_LOGI("XCV T: %.1f MPU T: T=%.1f Delta= %.1f P=%.2f I=%.2f, PWM=%d", XCVTemp, temp, mpu_t_delta, mpu_t_delta_p, mpu_t_delta_i, (int)rint(mpu_heat_pwm) );
 
 	if( !(tick_count%30) && abs(mpu_t_delta) > 1.0 ){
 		MPU_LOGW("Warning MPU T deviation > 1°: T=%.1f Delta= %.1f P=%.2f I=%.2f, PWM=%d", temp, mpu_t_delta, mpu_t_delta_p, mpu_t_delta_i, (int)rint(mpu_heat_pwm) );

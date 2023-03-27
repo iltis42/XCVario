@@ -1324,7 +1324,20 @@ void system_startup(void *args){
 		accelRaw.x = 0;
 		accelRaw.y = 0;
 		accelRaw.z = 0;
-		MPU.setAccelOffset(accelRaw);	
+		MPU.setAccelOffset(accelRaw);
+
+		if( hardwareRevision.get() == XCVARIO_20 ){
+			Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);  // XCV-20 uses GPIO_2 for Rotary
+		}
+		else {
+			Rotary.begin( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);
+			gpio_pullup_en( GPIO_NUM_34 );
+			if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL && !gflags.mpu_pwm_initalized  ){ // series 2023 does not have slope support on CAN bus but MPU temperature control
+				MPU.pwm_init();
+				gflags.mpu_pwm_initalized = true;
+			}
+		}
+		delay( 100 );		
 		
 		delay( 50 );
 		char ahrs[50];
@@ -1823,18 +1836,7 @@ void system_startup(void *args){
 		Flap::init(MYUCG);
 	}
 
-	if( hardwareRevision.get() == XCVARIO_20 ){
-		Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);  // XCV-20 uses GPIO_2 for Rotary
-	}
-	else {
-		Rotary.begin( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);
-		gpio_pullup_en( GPIO_NUM_34 );
-		if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL && !gflags.mpu_pwm_initalized  ){ // series 2023 does not have slope support on CAN bus but MPU temperature control
-			MPU.pwm_init();
-			gflags.mpu_pwm_initalized = true;
-		}
-	}
-	delay( 100 );
+
 	if ( SetupCommon::isClient() ){
 		if( wireless == WL_WLAN_CLIENT ){
 			display->clear();

@@ -202,6 +202,8 @@ void MPU::pwm_init(){
 			.duty = 0, .hpoint = 0 };
 	ledc_channel_config(&pwm_ch);
 	ledc_timer_config(&pwm_timer);
+	ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_1, 0 );
+	ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_1);
 }
 
 /**

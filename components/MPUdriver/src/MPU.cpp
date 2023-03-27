@@ -149,15 +149,15 @@ esp_err_t MPU::reset()
 uint32_t MPU::pi_control(int tick_count,float XCVTemp){
 	float temp = getTemperature();
 	uint8_t pwm;
-	//float mpu_target_pwm = 7.0*(mpu_target_temp-XCVTemp)-30;
-	mpu_heat_pwm = 127;
+	float mpu_target_pwm = 7.0*(mpu_target_temp-XCVTemp)-30;
+	mpu_heat_pwm = mpu_target_pwm;
 	mpu_t_delta = temp - mpu_target_temp;
 	//	P control with Kp=100;
 	float mpu_t_delta_p = -mpu_t_delta*100.0;
 	mpu_heat_pwm -= mpu_t_delta*100.0;             // P part
 	//To avoid damping of temperature correction, integral correction is only applied when pwm is close enougn to target pwm
 	// I control with Ki = 1
-	if (fabs(mpu_t_delta) < 1.3 ) {
+	if (getSiliconTempStatus() == MPU_T_LOCKED) {
 		mpu_t_delta_i -= (mpu_t_delta)*1.0;	      // I part
 		if( mpu_t_delta_i > 127 )
 			mpu_t_delta_i = 127;

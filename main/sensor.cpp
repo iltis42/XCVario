@@ -604,6 +604,7 @@ static void grabSensors(void *pvParameters)
 					GzBias = gyroDPS.x;
 				}
 			}
+			else gyrobiastemptimer = 0;// No bias evaluation during flight
 		}
 		
 		// get sensors data : static, TE, dynamic pressure, OAT, MPU temp and GNSS data. 

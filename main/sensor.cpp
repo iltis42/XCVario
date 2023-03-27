@@ -1838,7 +1838,7 @@ void system_startup(void *args){
 		if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL && !gflags.mpu_pwm_initalized  ){ // series 2023 does not have slope support on CAN bus but MPU temperature control
 			MPU.pwm_init();
 			gflags.mpu_pwm_initalized = true;
-			//gpio_set_level(GPIO_NUM_34,0);
+			///gpio_set_level(GPIO_NUM_34,0);
 
 		}
 

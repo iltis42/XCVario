@@ -203,6 +203,7 @@ esp_err_t QMC5883L::initialize2( int a_odr, int a_osr )
 {
 	esp_err_t e1, e2, e3, e4;
 	e1 = e2 = e3 = e4 = 0;
+	X = Y = Z = 0;
 
 	// Soft Reset
 	e1 = writeRegister( addr, REG_CONTROL2, SOFT_RST );
@@ -234,7 +235,6 @@ esp_err_t QMC5883L::initialize2( int a_odr, int a_osr )
 	}
 	return ESP_FAIL;
 }
-
 
 bool QMC5883L::rawAxes( t_magn_axes &axes )
 {
@@ -284,13 +284,13 @@ bool QMC5883L::rawAxes( t_magn_axes &axes )
 	// Data can be read in every case
 	if( count == 6 )
 	{
-		int x = (int)( (int16_t)(( data[1] << 8 ) | data[0]) );
-		int y = (int)( (int16_t)(( data[3] << 8 ) | data[2]) );
-		int z = (int)( (int16_t)(( data[5] << 8 ) | data[4]) );
+		X = (int)( (int16_t)(( data[1] << 8 ) | data[0]) );
+		Y = (int)( (int16_t)(( data[3] << 8 ) | data[2]) );
+		Z = (int)( (int16_t)(( data[5] << 8 ) | data[4]) );
 
-		axes.x = filterX( x );
-		axes.y = filterY( y );
-		axes.z = filterZ( z );
+		axes.x = filterX( X );
+		axes.y = filterY( Y );
+		axes.z = filterZ( Z );
 
 		// ESP_LOGI( FNAME, "Mag Average: X:%d Y:%d Z:%d  Raw: X:%d Y:%d Z:%d", axes.x, axes.y, axes.z, x, y, z );
 

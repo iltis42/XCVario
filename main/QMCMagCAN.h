@@ -64,6 +64,10 @@ public:
 	// If device is connected via CAN, just get X,Y,Z data from there
 	static void fromCAN( const char * msg );
 
+	int curX() { return (int)can.x; }
+	int curY() { return (int)can.y; }
+	int curZ() { return (int)can.z; }
+
 private:
 	bool m_sensor;
 	Average<20> filterX;

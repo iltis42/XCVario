@@ -81,12 +81,19 @@ public:
 	float rawX() { return fx; };
 	float rawY() { return fy; };
 	float rawZ() { return fz; };
+	float curX() { return sensor->curX(); };
+	float curY() { return sensor->curY(); };
+	float curZ() { return sensor->curZ(); };
+	float calX() { return ((float( (float)sensor->curX() ) - bias.x) * scale.x); };
+	float calY() { return ((float( (float)sensor->curY() ) - bias.y) * scale.y); };
+	float calZ() { return ((float( (float)sensor->curZ() ) - bias.z) * scale.z); };
+
 	t_magn_axes getRawAxes() { return rawAxes; };
 	float filteredHeading( bool *okIn );
 	float filteredTrueHeading( bool *okIn, bool withDeviation=true );
 	void setGyroHeading( float hd );
 	float getGyroHeading( bool *ok, bool addDeclination=true );
-	inline bool headingValid() {	return m_headingValid;	}
+	inline bool headingValid() { return m_headingValid;	}
 	void setHeading( float h );
 
 	// Calibration releated methods

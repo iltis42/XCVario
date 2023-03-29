@@ -48,4 +48,7 @@ public:
 	virtual esp_err_t selfTest() = 0;
 	virtual bool overflowFlag() = 0;
 	virtual bool rawAxes( t_magn_axes &axes ) = 0;
+	virtual int curX() = 0;
+	virtual int curY() = 0;
+	virtual int curZ() = 0;
 };

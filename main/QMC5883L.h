@@ -62,7 +62,9 @@ public:
 	bool overflowFlag()	{ return overflowWarning; }
 	// Read out the registers X, Y, Z (0...5) in raw format into variables, return true if success
 	bool rawAxes( t_magn_axes &axes );
-
+	int curX(){ return X; };
+	int curY(){ return X; };
+	int curZ(){ return X; };
 private:
 	// Configure the device with the set parameters and set the mode to continuous.
 	esp_err_t initialize2( int a_odr=0, int a_osr=0 );
@@ -88,5 +90,6 @@ private:
 	Average<20, int16_t> filterX;
 	Average<20, int16_t> filterY;
 	Average<20, int16_t> filterZ;
+	int X,Y,Z;
 	int age;
 };

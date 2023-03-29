@@ -204,7 +204,7 @@ bool CompassMenu::showSensorRawData(SetupMenuSelect *p)
 	p->ucg->setPrintPos( 1, 120 );
 	p->ucg->printf( "Z = %d  ", raw.z );
 	p->ucg->setPrintPos( 1, 150 );
-	float t = sqrt( compass->curX()*compass->curX()  + compass->curY()*compass->curY() + compass->curZ()*compass->curZ() )/150.0;
+	float t = sqrt( compass->curX()*compass->curX() + compass->curY()*compass->curY() + compass->curZ()*compass->curZ() )/150.0;
 	if( abs(t-tesla) > 5 )
 		tesla += (t-tesla)*0.2;
 	else if ( abs(t-tesla) > 1 )
@@ -214,7 +214,7 @@ bool CompassMenu::showSensorRawData(SetupMenuSelect *p)
 	p->ucg->printf( "Raw magn H= %.1f uT", tesla );
 	if( compass_calibrated.get() ){
 		p->ucg->setPrintPos( 1, 180 );
-		float t= sqrt( compass->calX()*compass->calX()  + compass->calY()*compass->calY() + compass->calZ()*compass->calZ() )/150.0;
+		float t= sqrt( compass->calX()*compass->calX() + compass->calY()*compass->calY() + compass->calZ()*compass->calZ() )/150.0;
 		if( abs(t-tesla_cal) > 5 )
 			tesla_cal += (t-tesla_cal)*0.2;
 		else if ( abs(t-tesla_cal) > 1 )

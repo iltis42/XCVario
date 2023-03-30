@@ -182,7 +182,7 @@ void SetupMenuValFloat::press(){
 			_value_safe = _value;
 			_nvs->commit();
 			if( bits._restart ) {
-				restart();
+				_restart = true;
 			}
 		}
 		pressed = false;

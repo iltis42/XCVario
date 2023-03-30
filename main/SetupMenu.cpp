@@ -583,6 +583,8 @@ void SetupMenu::showMenu(){
 			screens_init = INIT_DISPLAY_NULL;
 			_display->doMenu(false);
 			SetupCommon::commitNow();
+			if( selected->get_restart() )
+				selected->restart();
 			gflags.inSetup=false;
 		}
 	}

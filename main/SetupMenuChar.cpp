@@ -226,7 +226,7 @@ void SetupMenuChar::press(){
 		}
 		if( _select_save != _select )
 			if( bits._restart ) {
-				restart();
+				_restart = true;
 			}
 		if( bits._end_menu ){
 			selected->press();

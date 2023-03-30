@@ -49,6 +49,7 @@ public:
 	void semaphoreTake();
     void semaphoreGive();
     void restart();
+    bool get_restart() { return _restart; };
     void addCreator( void (menu_create)(MenuEntry*ptr) ){ menu_create_ptr=menu_create; }
     static void setRoot( MenuEntry *root ) { selected = root; };
 public:
@@ -67,4 +68,5 @@ public:
 	static IpsDisplay* _display;
 	static AnalogInput* _adc;
 	static PressureSensor *_bmp;
+	static bool _restart;
 };

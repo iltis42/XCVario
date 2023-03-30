@@ -157,8 +157,9 @@ void SetupMenuSelect::display( int mode ){
 		if(mode == 1 && bits._save == true ){
 			xSemaphoreTake(spiMutex,portMAX_DELAY );
 			ucg->setColor( COLOR_BLACK );
-			ucg->drawBox( 0,280,240,40 );
+			ucg->drawBox( 1,280,240,40 );
 			ucg->setPrintPos( 1, 300 );
+			ucg->setColor( COLOR_WHITE );
 			ucg->print("Saved" );
 			xSemaphoreGive(spiMutex );
 		}
@@ -229,9 +230,12 @@ void SetupMenuSelect::longPress(){
 void SetupMenuSelect::press(){
 	if( selected != this )
 		return;
-	ESP_LOGI(FNAME,"press() ext handler: %d press: %d _select: %d", bits._ext_handler, pressed, _select );
+	ESP_LOGI(FNAME,"press() ext handler: %d press: %d _select: %d selected %p", bits._ext_handler, pressed, _select, selected );
 	if ( pressed ){
-		display( 1 );
+		if( _select_save != _select )
+			display( 1 );
+		//else
+		//	display();
 		if( bits._end_menu ){
 			ESP_LOGI(FNAME,"press() end_menu");
 			selected = root;
@@ -251,10 +255,12 @@ void SetupMenuSelect::press(){
 			ESP_LOGI(FNAME,"calling action in press %d", _select );
 			(*_action)( this );
 		}
-		if( _select_save != _select )
+		if( _select_save != _select ){
 			if( bits._restart ) {
-				restart();
+				_restart = true;
 			}
+			_select_save = _select;
+		}
 		if( bits._end_menu ){
 			selected->press();
 		}

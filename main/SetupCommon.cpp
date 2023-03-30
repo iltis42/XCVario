@@ -313,15 +313,14 @@ bool SetupCommon::isWired(){
 
 bool SetupCommon::commitNow()
 {
-    nvs_handle_t h;
-    if( _dirty && open(h) ) {
-        esp_err_t ret = nvs_commit(h);
-		close(h);
-        _dirty = false;
-        ESP_LOGI(FNAME,"nvs commiting now!" );
-        return ret == ESP_OK;
-    }
-    return false;
+	for(int i = 0; i < instances->size(); i++ ) {
+		bool dirty = (*instances)[i]->get_dirty();
+		if( dirty ){
+			ESP_LOGI(FNAME,"Now commit dirty NVS record: %s", (*instances)[i]->key() );
+		    (*instances)[i]->commit();
+		}
+	}
+    return true;
 }
 
 int SetupCommon::numEntries() {

@@ -37,6 +37,8 @@ public:
 	virtual bool init() = 0;
 	virtual bool erase() = 0;
 	virtual bool commit( bool sync=true) = 0;
+	virtual bool get_dirty() = 0;
+	virtual void clear_dirty() = 0;
 	virtual void setValueStr( const char * val ) = 0;
 	virtual bool mustReset() = 0;
 	virtual bool isDefault() = 0;

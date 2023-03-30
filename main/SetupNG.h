@@ -94,11 +94,11 @@ typedef enum e_display_orientation { DISPLAY_NORMAL, DISPLAY_TOPDOWN } e_display
 typedef enum e_gear_warning_io { GW_OFF, GW_FLAP_SENSOR, GW_S2_RS232_RX, GW_FLAP_SENSOR_INV, GW_S2_RS232_RX_INV, GW_EXTERNAL }  e_gear_warning_io_t;
 typedef enum e_data_mon_mode { MON_MOD_ASCII, MON_MOD_BINARY } e_data_mon_mode_t;
 typedef enum e_hardware_rev { 	HW_UNKNOWN=0,
-								HW_LONG_VARIO=1,
-								XCVARIO_20=2,  // 1 RS232
-								XCVARIO_21=3,  // 2 RS232, AHRS
-								XCVARIO_22=4,  // 2 RS232, AHRS, CAN Bus,
-								XCVARIO_23=5   // 2 RS232, AHRS, CAN Bus, AHRS temperature control
+	HW_LONG_VARIO=1,
+	XCVARIO_20=2,  // 1 RS232
+	XCVARIO_21=3,  // 2 RS232, AHRS
+	XCVARIO_22=4,  // 2 RS232, AHRS, CAN Bus,
+	XCVARIO_23=5   // 2 RS232, AHRS, CAN Bus, AHRS temperature control
 } e_hardware_rev_t;        // XCVario-Num = hardware revision + 18
 typedef enum e_drawing_prio { DP_NEEDLE, DP_BACKGROUND } e_drawing_prio_t;
 
@@ -111,6 +111,7 @@ typedef struct setup_flags{
 	bool _volatile :1;
 	uint8_t _sync  :2;
 	uint8_t _unit  :3;
+	bool _is_dirty :1;
 } t_setup_flags;
 
 template<typename T>
@@ -147,6 +148,7 @@ public:
 		flags._sync = sync;
 		flags._volatile = vol;
 		flags._wait_ack = false;
+		flags._is_dirty = false;
 		flags._unit = unit;
 		_action = action;
 	}
@@ -195,6 +197,14 @@ public:
 	const char * key() {
 		return _key;
 	}
+
+	bool get_dirty() {
+		return flags._is_dirty;
+	}
+
+	void clear_dirty() {
+		flags._is_dirty = false;
+	}
 	virtual T getGui() const { return get(); } // tb. overloaded for blackboard
 	virtual const char* unit() const { return ""; } // tb. overloaded for blackboard
 
@@ -234,7 +244,6 @@ public:
 			return( true );
 		}
 		_value = aval;
-
 		if ( dosync ) {
 			sync();
 		}
@@ -249,7 +258,9 @@ public:
 		if( flags._volatile == VOLATILE ){
 			return true;
 		}
-		return commit( false );
+		flags._is_dirty=true;
+		// ESP_LOGI(FNAME,"set() %s", _key );
+		return true;
 	}
 
 	e_unit_type_t unitType() {
@@ -280,15 +291,16 @@ public:
 	}
 
 	bool commit(bool dosync=true) {
-		ESP_LOGI(FNAME,"NVS commit(): ");
+		// ESP_LOGI(FNAME,"NVS commit(): ");
 		if( dosync )
 			sync();
 
 		if( flags._volatile != PERSISTENT ){
 			return true;
 		}
-        nvs_handle_t h = 0;
+		nvs_handle_t h = 0;
 		if( !open(h) ) {
+			ESP_LOGE(FNAME,"NVS commit() ERROR: cannot open handle!");
 			return false;
 		}
 		char val[30];
@@ -300,31 +312,27 @@ public:
 			close(h);
 			return( false );
 		}
-		if(lazyCommit) {
-            _dirty=true;
-            close(h);
-            return true;
-        }
 		err = nvs_commit(h);
 		close(h);
 		if(err != ESP_OK)  {
+			ESP_LOGE(FNAME,"NVS commit ERROR!");
 			return false;
 		}
-		ESP_LOGI(FNAME,"success");
+		flags._is_dirty=false;
 		return true;
 	}
 
 	bool exists() {
 		if( flags._volatile != PERSISTENT ) {
-            return true;
-        }
-        nvs_handle_t h = 0;
+			return true;
+		}
+		nvs_handle_t h = 0;
 		if( !open(h) ) {
 			return false;
 		}
 		size_t required_size;
 		esp_err_t err = nvs_get_blob(h, _key, NULL, &required_size);
-        close(h);
+		close(h);
 		if ( err != ESP_OK )
 			return false;
 		return true;
@@ -338,7 +346,7 @@ public:
 			set( _default );
 			return true;
 		}
-        nvs_handle_t h = 0;
+		nvs_handle_t h = 0;
 		if( !open(h) ) {
 			return false;
 		}
@@ -354,7 +362,7 @@ public:
 				ESP_LOGE(FNAME,"NVS error: size too big: %d > %d", required_size , sizeof( T ) );
 				erase();
 				set( _default );  // try to init
-				close(h);
+				close(h);flags._is_dirty=true;
 				return false;
 			}
 			else {
@@ -380,7 +388,7 @@ public:
 		if( flags._volatile != PERSISTENT ){
 			return true;
 		}
-        nvs_handle_t h = 0;
+		nvs_handle_t h = 0;
 		open(h);
 		esp_err_t err = nvs_erase_key(h, _key);
 		if(err != ESP_OK)
@@ -405,7 +413,7 @@ public:
 			return false;
 	}
 
-    inline T getDefault() const { return _default; }
+	inline T getDefault() const { return _default; }
 	inline uint8_t getSync() { return flags._sync; }
 
 private:

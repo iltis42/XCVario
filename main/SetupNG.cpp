@@ -380,3 +380,4 @@ SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );
 SetupNG<mpud::raw_axes_t>	accl_bias("ACCL_BIAS", zero_bias );
 SetupNG<float>              mpu_temperature("MPUTEMP", 45.0, true, SYNC_FROM_MASTER, PERSISTENT, chg_mpu_target );    // default for AHRS chip temperature (XCV 2023)
 
+

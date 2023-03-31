@@ -94,8 +94,8 @@ bool StraightWind::getWind( int* direction, float* speed, int *age )
 bool StraightWind::calculateWind()
 {
 	// ESP_LOGI(FNAME,"Straight wind, calculateWind()");
-	if( SetupCommon::isClient()  ){
-		ESP_LOGI(FNAME,"We are client device, get wind from master");
+	if( SetupCommon::isClient() || gflags.inSetup ){
+		ESP_LOGI(FNAME,"No windcalc on client, or setup active");
 		return false;
 	}
 

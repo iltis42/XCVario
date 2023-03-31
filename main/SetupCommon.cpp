@@ -34,7 +34,6 @@
 #include <string>
 #include <sstream>
 
-bool SetupCommon::lazyCommit = true;
 QueueHandle_t SetupCommon::commitSema = nullptr;
 esp_timer_handle_t SetupCommon::_timer = nullptr;
 bool SetupCommon::_dirty = false;
@@ -174,16 +173,7 @@ bool SetupCommon::factoryReset(){
 bool SetupCommon::initSetup( bool& present ) {
 	bool ret=true;
 	ESP_LOGI(FNAME,"SetupCommon::initSetup()");
-	esp_err_t _err = nvs_flash_init();
-	if (_err == ESP_ERR_NVS_NO_FREE_PAGES) {
-		ESP_LOGE(FNAME,"Error no more space in NVS: erase partition");
-		const esp_partition_t* nvs_partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_NVS, NULL);
-		_err = (esp_partition_erase_range(nvs_partition, 0, nvs_partition->size));
-		if ( _err != ESP_OK ){
-			ESP_LOGE(FNAME, "partition erase returned error ret=%d", _err );
-			ret = false;
-		}
-	}
+	NVS.begin();
 	if( ahrs_licence_dig1.exists() )
 		present = true;
 	else
@@ -313,36 +303,16 @@ bool SetupCommon::isWired(){
 
 bool SetupCommon::commitNow()
 {
-	for(int i = 0; i < instances->size(); i++ ) {
-		bool dirty = (*instances)[i]->get_dirty();
-		if( dirty ){
-			ESP_LOGI(FNAME,"Now commit dirty NVS record: %s", (*instances)[i]->key() );
-		    (*instances)[i]->commit();
-		}
+	if( _dirty ){
+		bool ret = NVS.commit();
+    	if( ret )
+    		_dirty = false;
+    	return ret;
 	}
     return true;
 }
 
 int SetupCommon::numEntries() {
 	return instances->size();
-};
-
-bool SetupCommon::open(nvs_handle_t &h) {
-	esp_err_t err = nvs_open("SetupNG", NVS_READWRITE, &h);
-	if(err != ESP_OK){
-		ESP_LOGE(FNAME,"ESP32NVS open storage error %d", err );
-		h = 0;
-		return( false );
-	}
-	else {
-		// ESP_LOGI(FNAME,"ESP32NVS handle: %04X  OK", _nvs_handle );
-		return( true );
-	}
 }
 
-void SetupCommon::close(nvs_handle_t &h) {
-	if( h != 0) {
-		nvs_close(h);
-		h = 0;
-	}
-}

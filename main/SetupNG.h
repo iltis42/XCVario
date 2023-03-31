@@ -31,6 +31,7 @@
 #include "Compass.h"
 #include "SetupCommon.h"
 #include "WifiApp.h"
+#include "ESP32NVS.h"
 
 
 /*
@@ -111,7 +112,6 @@ typedef struct setup_flags{
 	bool _volatile :1;
 	uint8_t _sync  :2;
 	uint8_t _unit  :3;
-	bool _is_dirty :1;
 } t_setup_flags;
 
 template<typename T>
@@ -148,7 +148,6 @@ public:
 		flags._sync = sync;
 		flags._volatile = vol;
 		flags._wait_ack = false;
-		flags._is_dirty = false;
 		flags._unit = unit;
 		_action = action;
 	}
@@ -198,13 +197,6 @@ public:
 		return _key;
 	}
 
-	bool get_dirty() {
-		return flags._is_dirty;
-	}
-
-	void clear_dirty() {
-		flags._is_dirty = false;
-	}
 	virtual T getGui() const { return get(); } // tb. overloaded for blackboard
 	virtual const char* unit() const { return ""; } // tb. overloaded for blackboard
 
@@ -258,9 +250,10 @@ public:
 		if( flags._volatile == VOLATILE ){
 			return true;
 		}
-		flags._is_dirty=true;
+		bool ret=write();
+		SetupCommon::set_dirty( true );
 		// ESP_LOGI(FNAME,"set() %s", _key );
-		return true;
+		return ret;
 	}
 
 	e_unit_type_t unitType() {
@@ -290,35 +283,29 @@ public:
 		return false;
 	}
 
-	bool commit(bool dosync=true) {
+	bool commit() {
 		// ESP_LOGI(FNAME,"NVS commit(): ");
+		bool ret = NVS.commit();
+		if( !ret )
+			return false;
+		SetupCommon::set_dirty( false );
+		return true;
+	}
+
+	bool write(bool dosync=true) {
+		// ESP_LOGI(FNAME,"NVS write(): ");
 		if( dosync )
 			sync();
 
 		if( flags._volatile != PERSISTENT ){
 			return true;
 		}
-		nvs_handle_t h = 0;
-		if( !open(h) ) {
-			ESP_LOGE(FNAME,"NVS commit() ERROR: cannot open handle!");
-			return false;
-		}
 		char val[30];
 		value_str(val);
-		ESP_LOGI(FNAME,"NVS commit(key:%s, val: %s addr:%08x, len:%d, nvs_handle: %04x)", _key, val, (unsigned int)(&_value), sizeof( _value ), h);
-		esp_err_t err = nvs_set_blob(h, _key, (void *)(&_value), sizeof( _value ));
-		if(err != ESP_OK) {
-			ESP_LOGE(FNAME,"NVS set blob error %d", err );
-			close(h);
-			return( false );
-		}
-		err = nvs_commit(h);
-		close(h);
-		if(err != ESP_OK)  {
-			ESP_LOGE(FNAME,"NVS commit ERROR!");
+		ESP_LOGI(FNAME,"NVS set blob(key:%s, val: %s addr:%p, len:%d )", _key, val, &_value, sizeof( _value ) );
+		bool ret = NVS.setBlob( _key, (void *)(&_value), sizeof( _value ) );
+		if( !ret )
 			return false;
-		}
-		flags._is_dirty=false;
 		return true;
 	}
 
@@ -326,19 +313,10 @@ public:
 		if( flags._volatile != PERSISTENT ) {
 			return true;
 		}
-		nvs_handle_t h = 0;
-		if( !open(h) ) {
-			return false;
-		}
-		size_t required_size;
-		esp_err_t err = nvs_get_blob(h, _key, NULL, &required_size);
-		close(h);
-		if ( err != ESP_OK )
-			return false;
-		return true;
+		size_t size;
+		bool ret = NVS.getBlob(_key, NULL, &size);
+		return ret;
 	}
-
-
 
 	virtual bool init() {
 		if( flags._volatile != PERSISTENT ){
@@ -346,59 +324,54 @@ public:
 			set( _default );
 			return true;
 		}
-		nvs_handle_t h = 0;
-		if( !open(h) ) {
-			return false;
-		}
 		size_t required_size;
-		esp_err_t err = nvs_get_blob(h, _key, NULL, &required_size);
-		if ( err != ESP_OK ){
-			ESP_LOGE(FNAME, "%s: NVS nvs_get_blob error: returned error ret=%d", _key, err );
+		bool ret = NVS.getBlob(_key, NULL, &required_size);
+		if ( !ret ){
+			ESP_LOGE(FNAME, "%s: NVS nvs_get_blob error", _key );
 			set( _default );  // try to init
-			commit(false);
+			write(false);
+			commit();
 		}
 		else {
+			// ESP_LOGI(FNAME,"NVS %s size: %d", _key, required_size );
 			if( required_size > sizeof( T ) ) {
 				ESP_LOGE(FNAME,"NVS error: size too big: %d > %d", required_size , sizeof( T ) );
 				erase();
 				set( _default );  // try to init
-				close(h);flags._is_dirty=true;
 				return false;
 			}
 			else {
-				// ESP_LOGI(FNAME,"NVS size okay: %d", required_size );
-				err = nvs_get_blob(h, _key, &_value, &required_size);
-				if ( err != ESP_OK ){
-					ESP_LOGE(FNAME, "NVS nvs_get_blob returned error ret=%d", err );
+				// ESP_LOGI(FNAME,"NVS size okay");
+				ret = NVS.getBlob(_key, &_value, &required_size);
+
+				if ( !ret ){
+					ESP_LOGE(FNAME, "NVS nvs_get_blob returned error");
 					erase();
 					set( _default );  // try to init
-					commit(false);
+					write(false);
+					commit();
 				}
 				else {
-					// ESP_LOGI(FNAME,"NVS key %s exists len: %d", _key, required_size );
+					// char val[30];
+					// value_str(val);
+					// ESP_LOGI(FNAME,"NVS key %s exists len: %d, value: %s", _key, required_size, val );
 				}
 			}
 		}
-		close(h);
 		return true;
 	}
-
 
 	virtual bool erase() {
 		if( flags._volatile != PERSISTENT ){
 			return true;
 		}
-		nvs_handle_t h = 0;
-		open(h);
-		esp_err_t err = nvs_erase_key(h, _key);
-		if(err != ESP_OK)
+		bool ret = NVS.erase(_key);
+		if( !ret ){
 			return false;
+		}
 		else {
-			ESP_LOGI(FNAME,"NVS erased %s by handle %d", _key, h );
-			if( set( _default ) )
-				return true;
-			else
-				return false;
+			ESP_LOGI(FNAME,"NVS erased key  %s", _key );
+			return set( _default );
 		}
 	}
 

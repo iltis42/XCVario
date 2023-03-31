@@ -909,7 +909,6 @@ void system_startup(void *args){
 	ESP_LOGI( FNAME,"%dMB %s flash\n", spi_flash_get_chip_size() / (1024 * 1024),
 			(chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 	ESP_LOGI(FNAME, "QNH.get() %.1f hPa", QNH.get() );
-	NVS.begin();
 	register_coredump();
 	Polars::begin();
 

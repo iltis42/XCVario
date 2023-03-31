@@ -36,9 +36,8 @@ public:
 	// virtual methods to be implemented in derived class
 	virtual bool init() = 0;
 	virtual bool erase() = 0;
-	virtual bool commit( bool sync=true) = 0;
-	virtual bool get_dirty() = 0;
-	virtual void clear_dirty() = 0;
+	virtual bool write( bool sync=true) = 0;
+	virtual bool commit() = 0;
 	virtual void setValueStr( const char * val ) = 0;
 	virtual bool mustReset() = 0;
 	virtual bool isDefault() = 0;
@@ -70,22 +69,21 @@ public:
 
     static bool mustSync( uint8_t sync);
 	static bool haveWLAN();
-    static bool lazyCommit;
     static bool commitNow();
+    static bool get_dirty() { return _dirty; };
+    static void set_dirty( bool dirt ) { _dirty = dirt; };
 
     // variables
     static std::vector<SetupCommon *> *instances;
     static QueueHandle_t commitSema;
 
 protected:
-    static bool open(nvs_handle_t &h);
-	static void close(nvs_handle_t &h);
 
 private:
 	static void timeout(QueueHandle_t arg);
     static esp_timer_handle_t _timer;
-    static bool _dirty;
 	static char _ID[16];
 	static char default_id[6];
+	static bool _dirty;
 };
 

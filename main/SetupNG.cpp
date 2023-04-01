@@ -92,15 +92,15 @@ int last_volume=0;
 
 void change_volume() {
 	int delta = (int)audio_volume.get() - last_volume;
-	if( delta != 0 ){
+	if( delta ){
 		if( delta > 0 ){
 			Audio::incVolume(delta);
 		}
-		if( delta < 0 ){
-			Audio::decVolume(abs(delta));
+		else if( delta < 0 ){
+			Audio::decVolume(-delta);
 		}
 		last_volume += delta;
-		ESP_LOGI(FNAME,"change_volume, delta=%d last_vol: %d", delta, last_volume );
+		// ESP_LOGI(FNAME,"change_volume, delta=%d last_vol: %d", delta, last_volume );
 	}
 }
 

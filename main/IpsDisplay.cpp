@@ -1599,8 +1599,8 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 			// ESP_LOGI(FNAME,"tmp1 %s ld: %d", tmp, lastdigit );
 			ucg->print(tmp);
 			ucg->setPrintPos(xp, y - m + char_height);
-			// ESP_LOGI(FNAME,"Last %f/%d: %f m%d .%d ldc:%d mod:%d", altitude, alt, fraction, m, lastdigit, ((lastdigit-(sign*used_quant))%mod), mod );
-			sprintf(tmp, "%0*u", nr_rolling_digits, abs((lastdigit-(sign*used_quant))%mod));
+			// ESP_LOGI(FNAME,"Last %f/%d: %f m%d .%d ldc:%d mod:%d", altitude, alt, fraction, m, lastdigit, ((lastdigit+mod-(sign*used_quant))%mod), mod );
+			sprintf(tmp, "%0*u", nr_rolling_digits, abs((lastdigit+mod-(sign*used_quant))%mod));
 			// ESP_LOGI(FNAME,"tmp2 %s ld: %d rd:%d s:%d aq:%d las:%d ", tmp, (lastdigit-(sign*used_quant))%mod, nr_rolling_digits, sign, used_quant, lastdigit );
 			ucg->print(tmp); // one below
 			fraction_prev = fraction;

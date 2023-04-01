@@ -60,7 +60,6 @@ void MenuEntry::restart(){
 	clear();
 	ucg->setPrintPos( 10, 50 );
 	ucg->print("...rebooting now" );
-	SetupCommon::commitNow();
 	delay(2000);
 	esp_restart();
 }

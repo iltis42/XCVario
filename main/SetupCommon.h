@@ -67,24 +67,18 @@ public:
 	static bool isCanClient();
 	static bool isCanMaster();
     static bool isWired();
+    static void commitDirty();
 
     static bool mustSync( uint8_t sync);
 	static bool haveWLAN();
-    static bool commitNow();
-    static bool get_dirty() { return _dirty; };
-    static void set_dirty( bool dirt ) { _dirty = dirt; };
 
     // variables
     static std::vector<SetupCommon *> *instances;
-    static QueueHandle_t commitSema;
 
 protected:
 
 private:
-	static void timeout(QueueHandle_t arg);
-    static esp_timer_handle_t _timer;
 	static char _ID[16];
 	static char default_id[6];
-	static bool _dirty;
 };
 

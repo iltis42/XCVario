@@ -498,14 +498,6 @@ static void grabMPU()
 	accelG_Prev = accelG;
 }
 
-static void lazyNvsCommit()
-{
-	uint16_t dummy;
-	if ( xQueueReceive(SetupCommon::commitSema, &dummy, 0) ) {
-		SetupCommon::commitNow();
-	}
-}
-
 static void toyFeed()
 {
 	xSemaphoreTake(xMutex,portMAX_DELAY );
@@ -591,7 +583,6 @@ void clientLoop(void *pvParameters)
 					xSemaphoreGive( xMutex );
 				}
 			}
-			lazyNvsCommit();
 			esp_task_wdt_reset();
 			if( uxTaskGetStackHighWaterMark( bpid ) < 512 )
 				ESP_LOGW(FNAME,"Warning client task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );
@@ -772,7 +763,6 @@ void readSensors(void *pvParameters){
 				CAN->ResetNewClient();
 			}
 		}
-		lazyNvsCommit();
 		if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL ){
 			// ESP_LOGI(FNAME,"MPU temp control; T=%.2f", MPU.getTemperature() );
 			MPU.temp_control( count, xcvTemp );
@@ -829,7 +819,6 @@ void readTemp(void *pvParameters){
 		theWind.tick();
 		CircleWind::tick();
 		Flarm::progress();
-		vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS);
 		esp_task_wdt_reset();
 		if( (ttick++ % 50) == 0) {
 			ESP_LOGI(FNAME,"Free Heap: %d bytes", heap_caps_get_free_size(MALLOC_CAP_8BIT) );
@@ -838,6 +827,10 @@ void readTemp(void *pvParameters){
 			if( heap_caps_get_free_size(MALLOC_CAP_8BIT) < 20000 )
 				ESP_LOGW(FNAME,"Warning heap_caps_get_free_size getting low: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
 		}
+		if( (ttick%5) == 0 ){
+			SetupCommon::commitDirty();
+		}
+		vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS);
 	}
 }
 

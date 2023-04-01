@@ -151,7 +151,6 @@ int CompassMenu::resetDeviationAction( SetupMenuSelect *p )
 		{
 			deviations[i]->set( 0.0 );
 		}
-		SetupCommon::commitNow();
 		ESP_LOGI( FNAME, "All compass deviations values were reset" );
 		delay( 1000 );
 	}

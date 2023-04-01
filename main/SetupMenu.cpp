@@ -582,7 +582,6 @@ void SetupMenu::showMenu(){
 			// ESP_LOGI(FNAME,"End Setup Menu");
 			screens_init = INIT_DISPLAY_NULL;
 			_display->doMenu(false);
-			SetupCommon::commitNow();
 			if( selected->get_restart() )
 				selected->restart();
 			gflags.inSetup=false;
@@ -667,7 +666,6 @@ void SetupMenu::escape(){
 		ESP_LOGI(FNAME,"escape now Setup Menu");
 		_display->clear();
 		_display->doMenu(false);
-		SetupCommon::commitNow();
 		gflags.inSetup=false;
 	}
 }

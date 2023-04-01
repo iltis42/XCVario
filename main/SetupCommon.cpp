@@ -34,9 +34,9 @@
 #include <string>
 #include <sstream>
 
-QueueHandle_t SetupCommon::commitSema = nullptr;
-esp_timer_handle_t SetupCommon::_timer = nullptr;
-bool SetupCommon::_dirty = false;
+// QueueHandle_t SetupCommon::commitSema = nullptr;
+// esp_timer_handle_t SetupCommon::_timer = nullptr;
+
 char SetupCommon::_ID[16] = { 0 };
 char SetupCommon::default_id[6] = { 0 };
 std::vector<SetupCommon *> *SetupCommon::instances = 0;
@@ -52,12 +52,6 @@ SetupCommon::~SetupCommon() {
 		delete instances;
 }
 
-// TimeOut callback
-void SetupCommon::timeout(QueueHandle_t arg)
-{
-    uint32_t stat = 0;
-    xQueueSendFromISR(arg, &stat, NULL);
-}
 
 void SetupCommon::sendSetup( uint8_t sync, const char *key, char type, void *value, int len, bool ack ){
 	// ESP_LOGI(FNAME,"sendSetup(): key=%s, type=%c, len=%d, ack=%d", key, type, len, ack );
@@ -134,13 +128,19 @@ int SetupCommon::restoreConfigChanges( int len, char *data ){
 			SetupCommon * item = getMember( key.c_str() );
 			printf( ", typename: %c \n", item->typeName()  );
 			item->setValueStr( value.c_str() );
-			// item->commit();  // lets do that lazy later
+			item->commit();  // lets do that lazy later
 			i++;
 		}
 	}
-	commitNow();
 	ESP_LOGI(FNAME,"return %d", i);
 	return i;
+}
+
+void SetupCommon::commitDirty(){
+	for(int i = 0; i < instances->size(); i++ ) {
+		if( (*instances)[i]->dirty() )
+			(*instances)[i]->commit();
+	}
 }
 
 bool SetupCommon::factoryReset(){
@@ -212,22 +212,6 @@ bool SetupCommon::initSetup( bool& present ) {
 	}
 	last_volume = (int)default_volume.get();
 	giveConfigChanges( 0, true );
-
-    if ( _timer == nullptr ) {
-        // create event queue to connect to the timer callback
-        commitSema = xQueueCreate(2, sizeof(uint32_t));
-
-        esp_timer_create_args_t timer_args = {
-            .callback = (esp_timer_cb_t)timeout,
-            .arg = commitSema,
-            .dispatch_method = ESP_TIMER_TASK,
-            .name = "lazy_nvs",
-            .skip_unhandled_events = true,
-        };
-        ESP_ERROR_CHECK(esp_timer_create(&timer_args, &_timer));
-        ESP_ERROR_CHECK(esp_timer_start_periodic(_timer, 5ULL * 1000000)); // 5 sec in usec
-    }
-
 	return ret;
 };
 
@@ -306,15 +290,6 @@ bool SetupCommon::isWired(){
 	return(can_speed.get() && (can_mode.get() == CAN_MODE_CLIENT || can_mode.get() == CAN_MODE_MASTER));
 }
 
-bool SetupCommon::commitNow()
-{
-	for(int i = 0; i < instances->size(); i++ ) {
-		if( (*instances)[i]->dirty() ){
-			(*instances)[i]->commit();
-		}
-	}
-	return true;
-}
 
 int SetupCommon::numEntries() {
 	return instances->size();

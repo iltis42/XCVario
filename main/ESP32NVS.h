@@ -29,7 +29,6 @@ public:
 	bool    getBlob(const char *key, void* object, size_t *length);
 
 private:
-	nvs_handle_t  _nvs_handle;
 	static ESP32NVS * Instance;
 };
 

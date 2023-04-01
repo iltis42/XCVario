@@ -11,12 +11,10 @@ xSemaphoreHandle nvMutex=NULL;
 ESP32NVS * ESP32NVS::Instance = 0;
 
 ESP32NVS::ESP32NVS(){
-	_nvs_handle = 0;
 }
 
 bool ESP32NVS::begin(){
 	ESP_LOGI(FNAME,"ESP32NVS::begin()");
-	_nvs_handle = 0;
 	nvMutex=xSemaphoreCreateMutex();
 	esp_err_t _err = nvs_flash_init();
 	if (_err == ESP_ERR_NVS_NO_FREE_PAGES) {
@@ -43,7 +41,7 @@ void ESP32NVS::close( nvs_handle_t h ){
 
 
 bool ESP32NVS::commit(){
-	ESP_LOGI(FNAME,"ESP32NVS::commit()");
+	// ESP_LOGI(FNAME,"ESP32NVS::commit()");
 	bool ret=true;
 	xSemaphoreTake(nvMutex,portMAX_DELAY );
 	nvs_handle_t h = open();

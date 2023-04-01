@@ -1531,8 +1531,9 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 		unitalt = ALT_UNIT_FL;
 	}
 	int used_quant = alt_quant;
-	if( unitalt == ALT_UNIT_FL ) // may change dynamically in case of autotransition enabled
-		used_quant = 1;          // we use 1 for FL, this rolls smooth as slowly
+	if( unitalt == ALT_UNIT_FL ) { // may change dynamically in case of autotransition enabled
+		used_quant = 1;            // we use 1 for FL, this rolls smooth as slowly
+	}
 	if ( used_quant ) {
 		alt = (int)(altitude*(20.0/used_quant)); // respect difference according to choosen quantisation
 	}
@@ -1587,12 +1588,12 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 			int16_t m = sign * ((1.f-fraction) * char_height - char_height/2); // to pixel offest
 			// ESP_LOGI(FNAME,"Last %f/%d: %f m%d .%d", altitude, alt, fraction, m, lastdigit);
 			int16_t xp = x - nr_rolling_digits*char_width;
-			//ucg->drawFrame(xp-1, y - char_height* 1.25 -1, char_width*nr_rolling_digits, char_height*1.45 +1);
-			ucg->setClipRange(xp, y - char_height * 1.45, char_width*nr_rolling_digits-1, char_height * 1.8 ); // slightly extend the tape to get 2 digits displayed uncut
+			// ucg->drawFrame(xp-1, y - char_height* 1.35 -1, char_width*nr_rolling_digits, char_height*1.8 +1); // checker box
+			ucg->setClipRange(xp, y - char_height * 1.35, char_width*nr_rolling_digits-1, char_height * 1.8 ); // space to get 2 digits displayed uncut
 			ucg->setPrintPos(xp, y - m - char_height);
 			char tmp[32];
 			sprintf(tmp, "%0*u", nr_rolling_digits, abs((lastdigit+(sign*used_quant))%mod) );
-			// ESP_LOGI(FNAME,"tmp0 %s ld: %d", tmp, (lastdigit-(sign*used_quant))%mod );
+			// ESP_LOGI(FNAME,"tmp0 %s ld: %d", tmp, (lastdigit+(sign*used_quant))%mod );
 			ucg->print(tmp); // one above
 			ucg->setPrintPos(xp, y - m);
 			sprintf(tmp, "%0*u", nr_rolling_digits, lastdigit);

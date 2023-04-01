@@ -181,6 +181,7 @@ public:
 				t.z = z;
 				memcpy((char *)&_value, &t, sizeof(t) );
 			}
+			write(); // set blob
 		}
 	}
 

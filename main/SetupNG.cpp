@@ -138,7 +138,7 @@ SetupNG<float> 			polar_sink3( "POLAR_SINK3",    -2.24, true, SYNC_FROM_MASTER, 
 SetupNG<float> 			polar_max_ballast( "POLAR_MAX_BAL",  160, true, SYNC_FROM_MASTER, PERSISTENT, change_ballast );
 SetupNG<float> 			polar_wingarea( "POLAR_WINGAREA", 10.5, true, SYNC_FROM_MASTER, PERSISTENT, change_ballast );
 
-SetupNG<float>  		speedcal( "SPEEDCAL", 0.0 );
+SetupNG<float>  		speedcal( "SPEEDCAL", 0.0, true, SYNC_FROM_MASTER );
 SetupNG<float>  		vario_delay( "VARIO_DELAY", 3.0 );
 SetupNG<float>  		vario_av_delay( "VARIO_AV_DELAY", 20.0 );  // changed to 20 seconds (quasi standard) what equals to a half circle
 SetupNG<float>  		center_freq( "AUDIO_CENTER_F", 500.0, true, SYNC_FROM_MASTER  );

@@ -169,21 +169,19 @@ static SetupMenuSelect *wkcal = 0;
 
 void Flap::setupSensorMenueEntries(MenuEntry *wkm)
 {
-	if( !wkes ){
-		wkes = new SetupMenuSelect( "Flap Sensor", false, select_flap_sens_pin, true, &flap_sensor );
-		wkes->addEntry( "Disable");
-		wkes->addEntry( "Enable IO-2");
-		wkes->addEntry( "Enable IO-34");
-		wkes->addEntry( "Enable IO-26");
-		wkes->setHelp(PROGMEM"Option to enable Flap sensor on corresponding IO pin, hardware may differ: check where you get a valid reading");
-		wkm->addEntry( wkes );
+	wkes = new SetupMenuSelect( "Flap Sensor", false, select_flap_sens_pin, true, &flap_sensor );
+	wkes->addEntry( "Disable");
+	wkes->addEntry( "Enable IO-2");
+	wkes->addEntry( "Enable IO-34");
+	wkes->addEntry( "Enable IO-26");
+	wkes->setHelp(PROGMEM"Option to enable Flap sensor on corresponding IO pin, hardware may differ: check where you get a valid reading");
+	wkm->addEntry( wkes );
 
-		wkcal = new SetupMenuSelect( "Sensor Calibration", true, flap_cal_act, false  );
-		wkcal->addEntry( "Cancel");
-		wkcal->addEntry( "Start");
-		wkcal->setHelp( PROGMEM "Option to calibrate flap Sensor (WK), to indicate current flap setting: Press button after each setting" );
-		wkm->addEntry( wkcal, wkes );
-	}
+	wkcal = new SetupMenuSelect( "Sensor Calibration", true, flap_cal_act, false  );
+	wkcal->addEntry( "Cancel");
+	wkcal->addEntry( "Start");
+	wkcal->setHelp( PROGMEM "Option to calibrate flap Sensor (WK), to indicate current flap setting: Press button after each setting" );
+	wkm->addEntry( wkcal, wkes );
 }
 
 static SetupMenuValFloat *nflpos = 0;
@@ -245,36 +243,35 @@ void Flap::position_labels_menu_create(MenuEntry* top){
 
 void Flap::setupIndicatorMenueEntries(MenuEntry *wkm)
 {
-    ESP_LOGI(FNAME,"Flap Indicator Menue");
-    if ( !SetupCommon::isClient() ) {
-    	SetupMenuSelect * wke = new SetupMenuSelect( "Flap Indicator", false, flap_enable_act, true, &flap_enable );
-    	wke->addEntry( "Disable");
-    	wke->addEntry( "Enable");
-    	wke->setHelp(PROGMEM"Option to enable Flap (WK) Indicator to assist optimum flap setting depending on speed and ballast");
-    	wkm->addEntry( wke );
+	ESP_LOGI(FNAME,"Flap Indicator Menue");
 
-        nflpos = new SetupMenuValFloat("Max positive Flap", "", 0., 3., 1., flap_pos_act, false, &flap_pos_max);
-        nflpos->setHelp(PROGMEM"Maximum positive flap position to be displayed");
-        wkm->addEntry( nflpos, wkm->getFirst() );
+	SetupMenuSelect * wke = new SetupMenuSelect( "Flap Indicator", false, flap_enable_act, true, &flap_enable );
+	wke->addEntry( "Disable");
+	wke->addEntry( "Enable");
+	wke->setHelp(PROGMEM"Option to enable Flap (WK) Indicator to assist optimum flap setting depending on speed and ballast");
+	wkm->addEntry( wke );
 
-        nflneg = new SetupMenuValFloat("Max negative Flap", "", -3., 0., 1., flap_pos_act, false, &flap_neg_max);
-        nflneg->setHelp(PROGMEM"Maximum negative flap position to be displayed");
-        wkm->addEntry( nflneg, nflpos );
+	nflpos = new SetupMenuValFloat("Max positive Flap", "", 0., 3., 1., flap_pos_act, false, &flap_pos_max);
+	nflpos->setHelp(PROGMEM"Maximum positive flap position to be displayed");
+	wkm->addEntry( nflpos, wkm->getFirst() );
 
-        flgnd = new SetupMenuValFloat("Takeoff Flap","", -3, 3, 1, 0, false, &flap_takeoff  );
-        flgnd->setHelp(PROGMEM"Flap position to be set on ground for takeoff, when there is no airspeed");
-        wkm->addEntry( flgnd, nflneg );
+	nflneg = new SetupMenuValFloat("Max negative Flap", "", -3., 0., 1., flap_pos_act, false, &flap_neg_max);
+	nflneg->setHelp(PROGMEM"Maximum negative flap position to be displayed");
+	wkm->addEntry( nflneg, nflpos );
 
-        flapss = new SetupMenu( "Flap Speeds Setup" );
-        wkm->addEntry( flapss, flgnd );
-        flapss->addCreator( speeds_setup_menu_create );
+	flgnd = new SetupMenuValFloat("Takeoff Flap","", -3, 3, 1, 0, false, &flap_takeoff  );
+	flgnd->setHelp(PROGMEM"Flap position to be set on ground for takeoff, when there is no airspeed");
+	wkm->addEntry( flgnd, nflneg );
 
-        flapls = new SetupMenu( "Flap Position Labels" );
-        wkm->addEntry( flapls, flapss );
-        flapls->addCreator( position_labels_menu_create );
+	flapss = new SetupMenu( "Flap Speeds Setup" );
+	wkm->addEntry( flapss, flgnd );
+	flapss->addCreator( speeds_setup_menu_create );
 
-        setupSensorMenueEntries(wkm);
-    }
+	flapls = new SetupMenu( "Flap Position Labels" );
+	wkm->addEntry( flapls, flapss );
+	flapls->addCreator( position_labels_menu_create );
+
+	setupSensorMenueEntries(wkm);
 }
 
 void Flap::setupMenue( MenuEntry *parent ){

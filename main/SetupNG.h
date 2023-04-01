@@ -302,7 +302,7 @@ public:
 		}
 		char val[30];
 		value_str(val);
-		ESP_LOGI(FNAME,"NVS set blob(key:%s, val: %s addr:%p, len:%d )", _key, val, &_value, sizeof( _value ) );
+		// ESP_LOGI(FNAME,"NVS set blob(key:%s, val: %s, len:%d )", _key, val, sizeof( _value ) );
 		bool ret = NVS.setBlob( _key, (void *)(&_value), sizeof( _value ) );
 		if( !ret )
 			return false;

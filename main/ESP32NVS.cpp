@@ -58,7 +58,7 @@ bool ESP32NVS::commit(){
 }
 
 bool ESP32NVS::setBlob(const char * key, void* value, size_t length){
-	ESP_LOGI(FNAME,"ESP32NVS::setBlob(key:%s, addr:%p, len:%d)", key, value, length );
+	// ESP_LOGI(FNAME,"ESP32NVS::setBlob(key:%s, addr:%p, len:%d)", key, value, length );
 	bool ret=true;
 	xSemaphoreTake(nvMutex,portMAX_DELAY );
 	nvs_handle_t h = open();
@@ -69,7 +69,7 @@ bool ESP32NVS::setBlob(const char * key, void* value, size_t length){
 		ESP_LOGE(FNAME,"set blob error %d", _err );
 		ret=false;
 	}
-	ESP_LOGI(FNAME,"set blob OK");
+	// ESP_LOGI(FNAME,"set blob OK");
 	close(h);
 	xSemaphoreGive(nvMutex);
 	return ret;

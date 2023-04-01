@@ -108,7 +108,6 @@ void change_bal();
 
 typedef struct setup_flags{
 	bool _reset    :1;
-	bool _wait_ack :1;
 	bool _volatile :1;
 	uint8_t _sync  :2;
 	uint8_t _unit  :3;
@@ -148,7 +147,6 @@ public:
 		flags._reset = reset;
 		flags._sync = sync;
 		flags._volatile = vol;
-		flags._wait_ack = false;
 		flags._unit = unit;
 		flags._dirty = false;
 		_action = action;
@@ -271,7 +269,6 @@ public:
 		if( aval != _value ){
 			ESP_LOGI(FNAME,"sync to value client has acked");
 			_value = aval;
-			flags._wait_ack = false;
 		}
 	}
 
@@ -283,8 +280,6 @@ public:
 		if( SetupCommon::mustSync( flags._sync ) ){
 			// ESP_LOGI( FNAME,"Now sync %s", _key );
 			sendSetup( flags._sync, _key, typeName(), (void *)(&_value), sizeof( _value ) );
-			if( isMaster() && flags._sync == SYNC_BIDIR )
-				flags._wait_ack = true;
 			return true;
 		}
 		return false;

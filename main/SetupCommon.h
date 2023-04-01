@@ -36,7 +36,7 @@ public:
 	// virtual methods to be implemented in derived class
 	virtual bool init() = 0;
 	virtual bool erase() = 0;
-	virtual bool write( bool sync=true) = 0;
+	virtual bool write() = 0;
 	virtual bool commit() = 0;
 	virtual void setValueStr( const char * val ) = 0;
 	virtual bool mustReset() = 0;
@@ -45,6 +45,7 @@ public:
 	virtual const char* key() = 0;
 	virtual char typeName() = 0;
 	virtual bool sync() = 0;
+	virtual bool dirty() = 0;
 	virtual uint8_t getSync() = 0;
 	// virtual char* showSetting( bool nondefault=true ) = 0;
 

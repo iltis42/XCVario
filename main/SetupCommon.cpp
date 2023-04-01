@@ -134,7 +134,7 @@ int SetupCommon::restoreConfigChanges( int len, char *data ){
 			SetupCommon * item = getMember( key.c_str() );
 			printf( ", typename: %c \n", item->typeName()  );
 			item->setValueStr( value.c_str() );
-			item->commit();
+			// item->commit();  // lets do that lazy later
 			i++;
 		}
 	}
@@ -156,6 +156,11 @@ bool SetupCommon::factoryReset(){
 			}
 			ret = (*instances)[i]->init();
 			if( ret != true ) {
+				for(int i = 0; i < instances->size(); i++ ) {
+					if( (*instances)[i]->dirty() )
+						(*instances)[i]->commit();
+				}
+				return true;
 				ESP_LOGE(FNAME,"Error init with default %s", (*instances)[i]->key() );
 				retsum = false;
 			}
@@ -303,13 +308,12 @@ bool SetupCommon::isWired(){
 
 bool SetupCommon::commitNow()
 {
-	if( _dirty ){
-		bool ret = NVS.commit();
-    	if( ret )
-    		_dirty = false;
-    	return ret;
+	for(int i = 0; i < instances->size(); i++ ) {
+		if( (*instances)[i]->dirty() ){
+			(*instances)[i]->commit();
+		}
 	}
-    return true;
+	return true;
 }
 
 int SetupCommon::numEntries() {

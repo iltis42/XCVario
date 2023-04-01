@@ -1018,7 +1018,7 @@ void IpsDisplay::drawWifi( int x, int y ) {
 		btqueue = btq;
 	}
 	if( SetupCommon::isWired() ) {
-		drawCable(x, y+18);
+		drawCable(DISPLAY_W-20, y+18);
 	}
 }
 
@@ -1029,7 +1029,7 @@ void IpsDisplay::drawConnection( int16_t x, int16_t y )
 	else if( wireless != WL_DISABLE )
 		drawWifi(x, y);
 	else if( SetupCommon::isWired() )
-		drawCable(x+10, y);
+		drawCable(DISPLAY_W-20, y);
 }
 
 void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {

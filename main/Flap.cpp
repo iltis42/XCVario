@@ -55,7 +55,6 @@ int select_flap_sens_pin(SetupMenuSelect *p){
 	p->ucg->printf("Saved");
 	delay( 2000 );
     p->clear();
-    Flap::setupSensorMenueEntries(p->_parent);
 	return 0;
 }
 
@@ -159,11 +158,6 @@ int flap_cal_act( SetupMenuSelect *p )
 	return 0;
 }
 
-int flap_enable_act( SetupMenuSelect *p ){
-	Flap::setupIndicatorMenueEntries(p->_parent);
-	return 0;
-}
-
 static SetupMenuSelect *wkes = 0;
 static SetupMenuSelect *wkcal = 0;
 
@@ -245,7 +239,7 @@ void Flap::setupIndicatorMenueEntries(MenuEntry *wkm)
 {
 	ESP_LOGI(FNAME,"Flap Indicator Menue");
 
-	SetupMenuSelect * wke = new SetupMenuSelect( "Flap Indicator", false, flap_enable_act, true, &flap_enable );
+	SetupMenuSelect * wke = new SetupMenuSelect( "Flap Indicator", false, 0, true, &flap_enable );
 	wke->addEntry( "Disable");
 	wke->addEntry( "Enable");
 	wke->setHelp(PROGMEM"Option to enable Flap (WK) Indicator to assist optimum flap setting depending on speed and ballast");

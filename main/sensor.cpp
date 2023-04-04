@@ -204,6 +204,7 @@ static float NewGzBias;
 //
 bool IMUstream = false; // IMU FT stream
 bool SENstream = false; // Sensors FT stream
+bool BIAS_Init = false; // Bias initialization done
 // Fligth Test
 
 static float dynamicP; // filtered dynamic pressure
@@ -566,7 +567,7 @@ static void grabSensors(void *pvParameters)
 			}
 			// Estimation of gyro bias
 			// When on ground:  IAS < 25 km/h 
-			if( ias.get() < 25.0 ) {
+			if( (ias.get() < 25.0 ) && !BIAS_Init ) {
 				// When there is MPU temperature control and temperature is locked   or   when there is no temperature control
 				if ( (HAS_MPU_TEMP_CONTROL && (MPU.getSiliconTempStatus() == MPU_T_LOCKED)) || !HAS_MPU_TEMP_CONTROL ) {
 					// count cycles when temperature is locked
@@ -588,11 +589,12 @@ static void grabSensors(void *pvParameters)
 					prevAccelTest = AccelTestFilt;
 					// if temperature conditions has been stable for more than 30 seconds (1200 = 30x40hz) and there is very little acceleration variation
 					if ( gyrobiastemptimer > 1200 && abs(AccelTestPrimFilt) < 1.0 ) {
-						// if accel have been stable for 10 continuous seconds
+						// if accel have been stable for 10 continuous seconds are you sure that they are continous?
 						if ( gyrostable++ > 400 ) {
 							NewGxBias = GxBias;
 							NewGyBias = GyBias;
 							NewGzBias = GzBias;
+							BIAS_Init = true;
 						}
 					} else {
 						gyrostable = 0;

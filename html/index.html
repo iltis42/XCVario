@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>XCVario</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <link rel="stylesheet" href="milligram.min.css" />
+
+    <style>
+        .wrapper {
+            display: block;
+            overflow: hidden;
+            position: relative;
+            width: 100%
+        }
+
+        .wrapper .container {
+            max-width: 80rem
+        }
+
+        .header {
+            background-color: #f4f5f6;
+            padding-top: 1rem
+        }
+
+        @media(min-width:40rem) {
+            .header {
+                padding-top: 5rem
+            }
+        }
+
+        .header+section {
+            border-top: 0
+        }
+
+        .header .container {
+            border-top: 0;
+            padding-bottom: 7.5rem;
+            padding-top: 7.5rem;
+            position: relative;
+            text-align: center
+        }
+
+        .header .title {
+            font-family: Gotham Rounded A, Gotham Rounded B, Helvetica Neue, Arial, sans-serif
+        }
+
+        .header .button {
+            margin-bottom: 4rem;
+            margin-top: 2rem
+        }
+
+        @media(min-width:40rem) {
+            .header .button {
+                margin-bottom: 4rem;
+                margin-top: 2rem
+            }
+        }
+
+        @keyframes a {
+            0% {
+                fill-opacity: 0;
+                stroke-dashoffset: 38321
+            }
+
+            25% {
+                fill-opacity: 0;
+                stroke: #9b4dca
+            }
+
+            to {
+                fill-opacity: 1;
+                stroke-dashoffset: 0
+            }
+        }
+
+        .navigation {
+            background: #f4f5f6;
+            border-bottom: .1rem solid #d1d1d1;
+            display: block;
+            height: 5.2rem;
+            left: 0;
+            max-width: 100%;
+            position: fixed;
+            right: 0;
+            top: 0;
+            width: 100%;
+            z-index: 2
+        }
+
+        .navigation .container {
+            padding-bottom: 0;
+            padding-top: 0
+        }
+
+
+        .navigation .navigation-title,
+        .navigation .title {
+            color: #606c76;
+            font-family: Gotham Rounded A, Gotham Rounded B, Helvetica Neue, Arial, sans-serif;
+            position: relative
+        }
+
+        .navigation .navigation-link,
+        .navigation .navigation-title,
+        .navigation .title {
+            display: inline;
+            font-size: 1.6rem;
+            line-height: 5.2rem;
+            padding: 0;
+            text-decoration: none
+        }
+
+        .navigation .navigation-link.active {
+            color: #606c76
+        }
+
+
+
+        input[type="file"] {
+            display: none;
+        }
+
+
+        .mg-tabs>ul {
+            display: flex;
+            text-align: center;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            list-style: none;
+            margin: 0;
+        }
+
+        .mg-tabs>ul>li>* {
+            color: var(--mg-color-secondary);
+            white-space: nowrap;
+        }
+
+        .mg-tabs>ul>li {
+            font-weight: bold;
+            border-bottom: 0.3rem solid transparent;
+            color: var(--mg-color-tertiary);
+            opacity: 0.7;
+            flex: 0 0 auto;
+        }
+
+        .mg-tabs>ul>li.active {
+            color: var(--mg-color-primary);
+            border-color: var(--mg-color-primary);
+            overflow-y: hidden;
+            opacity: 1;
+        }
+
+        .mg-tabs>ul>li:hover {
+            color: var(--mg-color-secondary);
+            border-color: var(--mg-color-tertiary);
+            opacity: 1;
+            transition: all 0.3s;
+        }
+
+        .mg-tabs--item {
+            margin-left: 0.2em;
+            margin-right: 0.2em;
+            padding-left: 0.2em;
+            padding-right: 0.2em;
+        }
+
+        .mg-tabs--content {
+            display: none;
+            padding-bottom: 1em;
+            /* border-bottom: 1px solid transparent; */
+            border-color: var(--mg-color-quaternary);
+            clear: both;
+        }
+
+        .mg-tabs--item li+li:before {
+            content: " | ";
+            padding: 0 10px;
+        }
+
+        .poll-label {
+            position: relative;
+            width: 100%;
+            height: 30px;
+            background-color: #ddd;
+            display: block;
+            border-radius: .4rem;
+        }
+        
+        .poll-result {
+            position: absolute;
+            width: 0;
+            height: 30px;
+            display: block;
+            background-color: #9b4dca;
+            /* transition: width 0.3s ease-in-out; */
+            /* -webkit-transition: width 0.3s ease-in-out; */
+            border-radius: .4rem;
+        }
+        
+        .poll-result-text,
+        .poll-answer,
+        small {
+            position: relative;
+            text-align: center;
+            line-height: 30px;
+            color: #000000;
+            display: inline-block;
+            width: 100%;
+        }
+
+.lds-ellipsis {
+  display: inline-block;
+  position: relative;
+  width: 80px;
+  height: 10px;
+}
+.lds-ellipsis div {
+  position: absolute;
+  /* top: 33px; */
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #fff;
+  animation-timing-function: cubic-bezier(0, 1, 1, 0);
+}
+.lds-ellipsis div:nth-child(1) {
+  left: 8px;
+  animation: lds-ellipsis1 0.6s infinite;
+}
+.lds-ellipsis div:nth-child(2) {
+  left: 8px;
+  animation: lds-ellipsis2 0.6s infinite;
+}
+.lds-ellipsis div:nth-child(3) {
+  left: 32px;
+  animation: lds-ellipsis2 0.6s infinite;
+}
+.lds-ellipsis div:nth-child(4) {
+  left: 56px;
+  animation: lds-ellipsis3 0.6s infinite;
+}
+@keyframes lds-ellipsis1 {
+  0% {
+    transform: scale(0);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes lds-ellipsis3 {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(0);
+  }
+}
+@keyframes lds-ellipsis2 {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(24px, 0);
+  }
+}
+    </style>
+</head>
+
+<body>
+    <main class="wrapper">
+        <nav class="navigation">
+            <section class="container">
+                <h1 class="title">XCVario Management</h1>
+            </section>
+        </nav>
+        <section class="spacer" style="padding-bottom: 5.2rem;"></section>
+        <section class="container" id="tabs" style="padding: 0px;">
+            <div class="mg-tabs" data-toggle="tabs" id="tabs-example">
+                <ul>
+                    <li class="mg-tabs--item active" data-target="tab1">
+                        <a href="#" class="secondary">System Info</a>
+                    </li>
+                    <li class="mg-tabs--item" data-target="tab2">
+                        <a href="#" class="button--outline">Debug/Reset</a>
+                    </li>
+                    <li class="mg-tabs--item" data-target="tab3">
+                        <a href="#" class="secondary">Backup/Restore</a>
+                    </li>
+                </ul>
+                <!-- System info TAB -->
+                <div class="mg-tabs--content" id="tab1">
+                    <h3 class="title">System Info</h3>
+                    <table>
+                        <tbody>
+                            <tr>
+                                <td>Version</td>
+                                <td id="systemVersion" style="font-weight: bold;">00.000-00</td>
+                            </tr>
+                            <tr>
+                                <td>Build time</td>
+                                <td id="buildTime" style="font-weight: bold;">???</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p id="updateFileName" style="display: none;"></p>
+                    <div class="row">
+                        <div class="column">
+                            <label id="progress" class="poll-label" style="visibility: hidden;">
+                              <span id="progress-bar" class="poll-result"></span>
+                              <span id="progress-num" class="poll-result-text">0,00%</span>
+                          </label>
+                        </div>
+                    </div>
+                    <label class="custom-file-upload button button-primary">
+                        <input type="file" accept=".bin" id="updateFile" />
+                        Select
+                    </label>
+                    <button disabled class="button-primary" id="uploadButton">Upload</button>
+                </div>
+                <!-- Reset/Debug TAB -->
+                <div class="mg-tabs--content" id="tab2">
+                    <h3 class="title">Reset/Debug</h3>
+                    <button class="button-primary" type="button" id="factoryResetButton">Factory Reset</button>
+                    <button disabled class="button-primary" type="button" id="downloadCoreDumpButton">Download CORE-Dump 
+                        <div id="coreDumpElliipsis" class="lds-ellipsis" style="display: none;"><div></div><div></div><div></div><div></div></div>
+                    </button>
+                </div>
+                <!-- Backup/Restore TAB -->
+                <div class="mg-tabs--content" id="tab3">
+                    <h3 class="title">Configuration Backup/Restore</h3>
+                    <button class="button-primary" type="button" id="backupBtn">Backup</button>
+                    <label class="custom-file-upload button button-primary">
+                        <input type="file" accept=".csv" id="restoreFile" />
+                        Restore
+                    </label>
+                </div>
+            </div>
+        </section>
+    </main>
+    <script type="">
+    var xhttp = new XMLHttpRequest();
+
+
+    document.getElementById('updateFile').addEventListener('change', function(e) {
+        if (e.target.files[0]) {
+            document.getElementById('updateFileName').innerHTML = "Uploading: <b>" + e.target.files[0].name + "</b>";
+            document.getElementById('updateFileName').style.display ="block";
+            document.getElementById("uploadButton").disabled = false;
+            document.getElementById("progress").style.visibility = "visible";
+        }
+    });
+
+    // Update
+    document.getElementById('uploadButton').addEventListener('click', function(e) {
+
+        document.getElementById("uploadButton").disabled = true;
+
+        var file = document.getElementById("updateFile").files[0];
+        var fileSize = file.size;
+        var chunkSize = Math.ceil(file.size / 100, 100);
+        var chunk = 0;
+
+        console.log('filesize ', fileSize);
+        console.log('chunksize: ', chunkSize);
+
+        sendFileSlice(file, chunkSize, chunk, 100);
+
+    });
+
+    function sendFileSlice(file, chunkSize, currentChunk, numChunks) {
+        // console.log("Sending Chunk " + currentChunk + " / " + numChunks);
+
+        if (currentChunk <= numChunks - 1) {
+            var offset = currentChunk * chunkSize;
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    console.log("Chunk " + currentChunk + " sent");
+                    currentChunk++;
+
+                    var percentComplete = Math.round(currentChunk * chunkSize * 100 / file.size);
+                    if (percentComplete > 100) {
+                        percentComplete = 100;
+                    }
+
+                    document.getElementById('progress-num').innerHTML = percentComplete.toString() + '%';
+                    document.getElementById("progress-bar").style.width = percentComplete.toString() + '%'
+
+                    setTimeout(() => {
+                        sendFileSlice(file, chunkSize, currentChunk, numChunks); 
+                    }, 10);
+                }
+                // else
+                // {
+                //     console.log(this.readyState, this.status);
+                //     alert("Upload failed!");
+                //     document.getElementById("uploadButton").disabled = false;
+                // }
+            };
+            xhttp.open("POST", "/update", true);
+            xhttp.setRequestHeader("X-OTA-SIZE", file.size);
+            xhttp.send(file.slice(offset, offset + chunkSize));
+        }
+        else
+        {
+            alert("Upload Done, rebooting...");
+            document.getElementById("uploadButton").disabled = false;
+        }
+    }
+
+    // Backup
+    document.getElementById('backupBtn').addEventListener('click', function(e) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', "/backup", true );
+        xhr.onreadystatechange = function() {
+            if(xhr.readyState == XMLHttpRequest.DONE) {
+                var status = xhr.status;
+                if (status == 0 || (status >= 200 && status < 400)) {
+                    // The request has been completed successfully
+                    if( xhr.response.length == 0 ){
+                        window.alert("All default, nothing changed, nothing to upload"); 
+                    }
+                    else{
+                        var blob = new Blob( [xhr.response], {type:"octet-stream"} );
+                        const href = URL.createObjectURL(blob);
+                        var filename="xcvario-config-" + new Date().toJSON().slice(0,10) + ".csv";
+                        window.alert("Download XCVario Configuration, filename: " + filename ); 
+                        const a = Object.assign( document.createElement('a'),{href, style:"display:none", download:filename });
+                        document.body.appendChild(a);
+                        a.click();
+                        URL.revokeObjectURL(href);
+                        a.remove();	            	 	    
+                    }
+                }
+            }
+        }
+        xhr.send();
+    });
+
+    // Restore
+    document.getElementById('restoreFile').addEventListener('change', function(e) {
+        var formData = new FormData();
+
+        if (e.target.files && e.target.files.length == 1) {
+            var file = e.target.files[0];
+            formData.append("file", file, file.name);
+            // Http Request
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', "/restore", true );
+            xhr.onreadystatechange = function() {
+                if(xhr.readyState == XMLHttpRequest.DONE) {
+                    window.alert( xhr.response );
+                }
+            }
+            xhr.send(formData);
+        } else {
+            window.alert("Error, no valid .csv file seleced");
+        }
+    });
+
+    // Reset
+    document.getElementById('factoryResetButton').addEventListener('click', function(e) {
+        var r = window.confirm("Warning, Factory Reset will clear all your settings. Do you really want to clear all settings to Factory Default ?");
+        if (r == true) {
+            window.alert('Press OK to clear all settings to factory default, this takes a couple of seconds, then wait for response...');
+            var xhr = new XMLHttpRequest();
+                xhr.open('DELETE', "/reset", true );
+                xhr.onreadystatechange = function() {
+                if(xhr.readyState == XMLHttpRequest.DONE) {
+                    var status = xhr.status;
+                    if (status == 0 || (status >= 200 && status < 400)) {
+                        // The request has been completed successfully
+                        window.alert( "Factory Reset status: " + xhr.response );
+                    } else {
+                        window.alert( "There has been an error with the status request for factory reset" );
+                    }
+                }
+            }
+            xhr.send();
+        } else {
+            window.alert('Abort clear');
+        }    
+    });
+    
+    // Coredump
+    document.getElementById('downloadCoreDumpButton').addEventListener('click', function(e) {
+        document.getElementById('downloadCoreDumpButton').disabled = true;
+        document.getElementById('coreDumpElliipsis').style.display ="inline-block";
+
+        window.alert("Press button to provide core file for upload, then wait a couple of seconds...");
+        
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', "/coredump", true );
+        xhr.onreadystatechange = function() {
+            if(xhr.readyState == XMLHttpRequest.DONE) {
+                var status = xhr.status;
+                if (status == 0 || (status >= 200 && status < 400)) {
+                    // The request has been completed successfully
+                    if( xhr.response.length == 0 ){
+                        window.alert("All okay, no saved coredump found"); 
+                    }
+                    else{
+                        // document.write( xhr.response );
+                        var blob = new Blob( [xhr.response], {type:"octet-stream"} );
+                        const href = URL.createObjectURL(blob);
+                        var filename="xcvario-core-" + new Date().toJSON().slice(0,10) + ".txt";
+                        window.alert("Download XCVario Core File, filename: " + filename ); 
+                        const a = Object.assign( document.createElement('a'),{href, style:"display:none", download:filename });
+                        document.body.appendChild(a);
+                        a.click();
+                        URL.revokeObjectURL(href);
+                        a.remove();	
+                    }
+                }
+            }
+        }
+        xhr.send();
+    });
+
+    // onDocumentReady
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log("onload");
+        document.getElementById("uploadButton").disabled = true;
+        document.querySelectorAll("[data-toggle~=tabs]").forEach(setupTabs);
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', "/status.json", true );
+        xhr.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                var response = JSON.parse(xhr.responseText);
+                console.log(response);
+                document.getElementById("systemVersion").innerHTML = response.program_version;
+                document.getElementById("buildTime").innerHTML = response.compile_date + " " + response.compile_time;
+
+                if(response.coredump_available == 1)
+                {
+                    console.log("Enable CoredumpBTN");
+                    document.getElementById("downloadCoreDumpButton").disabled = false;
+                }
+            }
+        };
+        xhr.send();
+    });
+
+    // Menu TABs
+    function setupTabs(tabs) {
+      var items = tabs.getElementsByClassName("mg-tabs--item");
+
+      for (var j = 0; j < items.length; j++) {
+        if (
+          items[j].classList.contains("active") ||
+          items[j].getAttribute("data-active") === "true"
+        ) {
+          items[j].setAttribute("data-active", "true");
+          items[j].classList.add("active");
+          var targetToShow = items[j].getAttribute("data-target");
+          if (targetToShow)
+            document.getElementById(targetToShow).style.display = "block";
+        }
+      }
+
+      tabs.addEventListener("click", function (e) {
+        var selector = e.target;
+        if (e.target.parentNode.classList.contains("mg-tabs--item")) {
+          selector = e.target.parentNode;
+
+          e.stopPropagation();
+          e.preventDefault();
+
+          if (selector.getAttribute("data-active") !== "true") {
+            //disable all selected tabs
+            var items = tabs.getElementsByClassName("mg-tabs--item");
+
+            for (var j = 0; j < items.length; j++) {
+              items[j].classList.remove("active");
+              items[j].setAttribute("data-active", "false");
+              var targetToHide = items[j].getAttribute("data-target");
+              if (targetToHide) {
+                document.getElementById(targetToHide).style.display = "none";
+              }
+            }
+            //activate selected tab
+            selector.classList.add("active");
+            selector.setAttribute("data-active", "true");
+            var targetToShow = selector.getAttribute("data-target");
+            if (targetToShow) {
+              document.getElementById(targetToShow).style.display = "block";
+            }
+          }
+        }
+      });
+    }
+
+  </script>
+</body>
+
+</html>

@@ -158,7 +158,6 @@ mpud::raw_axes_t currentGyroBias; // holds gyro biais x, y, z axes as int16
 #define MAXDRIFT 2                // °/s maximum drift that is automatically compensated on ground
 #define NUM_GYRO_SAMPLES 3000     // 10 per second -> 5 minutes, so T has been settled after power on
 //static uint16_t num_gyro_samples = 0;
-static int32_t cur_gyro_bias[3];
 
 // Fligth Test
 static esp_err_t erracc;
@@ -166,6 +165,9 @@ static esp_err_t errgyr;
 #define IMUrate 1 // IMU data stream rate x 25ms. 0 not allowed
 #define SENrate 4 // Sensor data stream rate x 25ms. 0 not allowed
 // Fligth Test
+//#define N_acc 40
+#define alphaAccelTest 0.096 //2.0 * (2.0 * N_acc - 1.0) / (N_acc) / (N_acc + 1)
+#define betaAccelTest 0.146  //6.0 / N_acc / (N_acc + 1) / 0.025
 
 // Magnetic sensor / compass
 Compass *compass = 0;
@@ -189,17 +191,19 @@ static float dtGyr; // period for gyro sampling
 static float GxBias;
 static float GyBias;
 static float GzBias;
-static float AccelTest;
 static float deltaAccelTest;
-static float prevAccelTest;
-static float AccelTestPrimFilt;
-static float betaAccelTest;
-static float alphaAccelTest;
+static float AccelTestPrimFilt = 0.0;
 static float AccelTestFilt;
 static int gyrostable=0;
 static float NewGxBias;
 static float NewGyBias;
 static float NewGzBias;
+static float TakeGxBias = 0.0;
+static float TakeGyBias = 0.0;
+static float TakeGzBias = 0.0;
+static int32_t cur_gyro_bias[3];
+//static float betaAccelTest;
+//static float alphaAccelTest;
 
 
 //
@@ -545,15 +549,27 @@ static void grabSensors(void *pvParameters)
 				accelISUNED.z = - accelG.x * GRAVITY;			
 			}
 			// get gyro data
+			//To do : quand on aura mis au propre l'algo il faudra purger les variables inutiles :
+				//	static float NewGxBias;
+				//	static float NewGyBias;
+				//	static float NewGzBias;
+				//	static int32_t cur_gyro_bias[3];
+				//	static float betaAccelTest;
+				//	static float alphaAccelTest;
+
 			errgyr = MPU.rotation(&gyroRaw); // fetch raw gyro data from the registers
 			if( errgyr == ESP_OK ){
 				prevgyroTime = gyroTime;
 				gyroTime = esp_timer_get_time()/1000000.0; // record time of gyro measurement in second
-				gyroDPS = mpud::gyroDegPerSec(gyroRaw, GYRO_FS); // convert raw gyro to Gyro_FS full scale
+				gyroDPS = mpud::gyroRadPerSec(gyroRaw, GYRO_FS); // convert raw gyro to Gyro_FS full scale
 				// convert gyro coordinates to NED ISU : rad/s
-				gyroISUNED.x = -(gyroDPS.z - NewGxBias)* DegToRad;
-				gyroISUNED.y = -(gyroDPS.y - NewGyBias)* DegToRad;
-				gyroISUNED.z = -(gyroDPS.x - NewGzBias)* DegToRad;
+				// gfm : les biais sont mis dans les offsets du MPU et sont donc pris en compte dans gyroDPS
+				//gyroISUNED.x = -(gyroDPS.z - NewGxBias);
+				//gyroISUNED.y = -(gyroDPS.y - NewGyBias);
+				//gyroISUNED.z = -(gyroDPS.x - NewGzBias);
+				gyroISUNED.x = -(gyroDPS.z);
+				gyroISUNED.y = -(gyroDPS.y);
+				gyroISUNED.z = -(gyroDPS.x);
 			}
 			// If required stream IMU data
 			if ( IMUstream ) {
@@ -587,34 +603,46 @@ static void grabSensors(void *pvParameters)
 					GyBias = GyBias * 0.9975 + gyroDPS.y * 0.0025;
 					GzBias = GzBias * 0.9975 + gyroDPS.x * 0.0025;
 					// plutot qu'un critère sur l'accélération on va prendre un critère sur le module de la dérivée des gyros
-					// detect if accelerations are stable using an alpha/beta filter to estimate variation over short period (i.e. 0.5 second)
-					int N_acc = 20;
-					alphaAccelTest = 2 * (2 * N_acc - 1) / (N_acc) / (N_acc + 1);
-					betaAccelTest = 6 / N_acc / (N_acc + 1) / dtGyr;	
+					// detect if accelerations are stable using an alpha/beta filter to estimate variation over short period (i.e. 1 second)
 					//AccelTest = accelISUNED.x * accelISUNED.x + accelISUNED.y * accelISUNED.y + accelISUNED.z * accelISUNED.z;
-					AccelTest = gyroISUNED.x * gyroISUNED.x + gyroISUNED.y * gyroISUNED.y + gyroISUNED.z * gyroISUNED.z;
-					deltaAccelTest = AccelTest - prevAccelTest;
+					deltaAccelTest =  gyroISUNED.x * gyroISUNED.x + gyroISUNED.y * gyroISUNED.y + gyroISUNED.z * gyroISUNED.z - AccelTestFilt;
 					AccelTestPrimFilt = AccelTestPrimFilt + betaAccelTest * deltaAccelTest;
 					AccelTestFilt = AccelTestFilt + alphaAccelTest * deltaAccelTest + AccelTestPrimFilt * dtGyr;
-					prevAccelTest = AccelTestFilt;
-					// if temperature conditions has been stable for more than 30 seconds (1200 = 30x40hz) and there is very little acceleration variation
-					if ( gyrobiastemptimer > 1200 && abs(AccelTestPrimFilt) < 1.0 ) {
-						// if accel have been stable for 10 continuous seconds are you sure that they are continous?
+					// if temperature conditions has been stable for more than 30 seconds (1200 = 30x40hz) and there is very little angular acceleration variation
+					if ( gyrobiastemptimer > 1200 && abs(AccelTestPrimFilt) < 0.01 ) {//Attention 0.01 mean 0.1 rd/s²)
+						// if accel have been stable for 10 continuous seconds
 						if ( gyrostable++ > 400 ) {
-							NewGxBias = GxBias;
-							NewGyBias = GyBias;
-							NewGzBias = GzBias;
+							NewGxBias = TakeGxBias;
+							NewGyBias = TakeGyBias;
+							NewGzBias = TakeGzBias;
 							BIAS_Init = true;//On n'initialise qu'une seule fois après la mise sous tension
 							//formatage des biais pour les flasher dans le MPU en les mettant sur les bons axes et avec les bons signes
-							currentGyroBias.x = - (int16_t)rint(GzBias);
-							currentGyroBias.y = - (int16_t)rint(GyBias);
-							currentGyroBias.z = - (int16_t)rint(GxBias);
+							currentGyroBias = MPU.getGyroOffset();
+							sprintf(str,"$GBIAS,%.6f,%3.3f,%6d,%6d,%6d\r\n", dynTime, MPUtempcel, currentGyroBias.x, currentGyroBias.y, currentGyroBias.z );
+							Router::sendXCV(str);
+							currentGyroBias.x -= (int16_t)rint(NewGzBias*(180/M_PI) / mpud::gyroResolution(GYRO_FS)/4);
+							currentGyroBias.y -= (int16_t)rint(NewGyBias*(180/M_PI) / mpud::gyroResolution(GYRO_FS)/4);
+							currentGyroBias.z -= (int16_t)rint(NewGxBias*(180/M_PI) / mpud::gyroResolution(GYRO_FS)/4);
 							MPU.setGyroOffset(currentGyroBias);
-							sprintf(str,"$GBIAS,%.6f,%3.3f,%3.4f,%3.4f,%3.4f\r\n", dynTime, MPUtempcel, GxBias, GxBias, GxBias );
+							sprintf(str,"$GBIAS,%.6f,%3.3f,%6d,%6d,%6d\r\n", dynTime, MPUtempcel, currentGyroBias.x, currentGyroBias.y, currentGyroBias.z );
+							Router::sendXCV(str);
+							currentGyroBias = MPU.getGyroOffset();
+							sprintf(str,"$GBIAS,%.6f,%3.3f,%6d,%6d,%6d\r\n", dynTime, MPUtempcel, currentGyroBias.x, currentGyroBias.y, currentGyroBias.z );
 							Router::sendXCV(str);
 						}
+						else {//Mémorisation de la valeur en cours de stabilité mais avant qu'on en sorte
+							if ( gyrostable == 300 ) {
+								TakeGxBias = GxBias;
+								TakeGyBias = GyBias;
+								TakeGzBias = GzBias;
+
+							}
+						}
 					} else {
-						gyrostable = 0;
+						gyrostable = 0;// Attention remise à zéro de la tempo dès que le moindre mouvement ou bruit apparaît sur les gyros
+						if (gyrobiastemptimer>2400){
+							BIAS_Init = true;//On sort de ce test impossible à satisfaire en gardant les biais d'avant mise sous tension
+						}
 					}
 				} else {//si la température MPU n'est pas atteinte
 					gyrobiastemptimer = 0;//on initialise la tempo de filtrage
@@ -624,6 +652,7 @@ static void grabSensors(void *pvParameters)
 						//GyBias = gyroDPS.y;
 						//GzBias = gyroDPS.x;
 					//mais avec la valeur des biais mémorisés une fois précédente
+					//Ce que je n'arrive pas à faire dans cette version du code : faut-il supprimer le MPU::Reset? Ou les mettre dans la flash ESP32?
 					currentGyroBias = MPU.getGyroOffset();
 					GxBias = -currentGyroBias.z;
 					GyBias = -currentGyroBias.y;
@@ -1454,19 +1483,21 @@ void system_startup(void *args){
 		//gyroRaw.x = 0;
 		//gyroRaw.y = 0;
 		//gyroRaw.z = 0;
-		//.setGyroOffset(gyroRaw);
-		// fin modif gfm
+		//MPU.setGyroOffset(gyroRaw);
+
+		// Set accel Matthieu bias : Bizarre que l'échelle soit fixée à 8g 14 lignes plus haut et qu'il faille diviser par 2048!
 		mpud::raw_axes_t accelRaw;
-		accelRaw.z = (int16_t) rint(-0.24/GRAVITY*2048);
-		accelRaw.y = (int16_t) rint(0.07/GRAVITY*2048);
-		accelRaw.x = (int16_t) rint(-0.20/GRAVITY*2048);
+		accelRaw.z = (int16_t) rint(-0.836/GRAVITY*2048);
+		accelRaw.y = (int16_t) rint(-0.014/GRAVITY*2048);
+		accelRaw.x = (int16_t) rint(-0.414/GRAVITY*2048);
 		MPU.setAccelOffset(accelRaw);
+		// fin modif gfm
 
 		delay( 50 );
 
 		char ahrs[50];
 		float accel = 0;
-		for( auto i=0; i<10; i++ ){
+		for( auto i=0; i<11; i++ ){
 			esp_err_t err = MPU.acceleration(&accelRaw);  // fetch raw data from the registers
 			if( err != ESP_OK )
 				ESP_LOGE(FNAME, "AHRS acceleration I2C read error");
@@ -1474,7 +1505,7 @@ void system_startup(void *args){
 			ESP_LOGI( FNAME,"MPU %.2f", accelG[0] );
 			delay( 5 );
 			if( i>0 )
-				accel += accelG[0];
+				accel += sqrt(accelG[0]*accelG[0]+accelG[1]*accelG[1]+accelG[2]*accelG[2]);
 		}
 		sprintf( ahrs,"AHRS Sensor: OK (%.2f g)", accel/10 );
 		display->writeText( line++, ahrs );

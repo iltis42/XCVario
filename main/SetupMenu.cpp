@@ -170,25 +170,16 @@ int update_s2f_speed(SetupMenuValFloat * p)
 	return 0;
 }
 
+static char rentry0[32];
+static char rentry1[32];
+static char rentry2[32];
+
 int update_rentry(SetupMenuValFloat * p)
 {
-	ESP_LOGI(FNAME,"update_rentry() vu:%s ar:%p", Units::VarioUnit(), audio_range_sm );
-	static char rentry0[25];
-	static char rentry1[25];
-	static char rentry2[25];
+	// ESP_LOGI(FNAME,"update_rentry() vu:%s ar:%p", Units::VarioUnit(), audio_range_sm );
 	sprintf( rentry0, "Fix (5  %s)", Units::VarioUnit() );
 	sprintf( rentry1, "Fix (10 %s)", Units::VarioUnit() );
 	sprintf( rentry2, "Variable (%d %s)", (int)(range.get()), Units::VarioUnit() );
-	if( !audio_range_sm ){
-		audio_range_sm = new SetupMenuSelect( "Range", false, 0 , true, &audio_range  );
-		audio_range_sm->addEntry( rentry0  );
-		audio_range_sm->addEntry( rentry1  );
-		audio_range_sm->addEntry( rentry2  );
-	}else{
-		audio_range_sm->updateEntry( rentry0, 0 );
-		audio_range_sm->updateEntry( rentry1, 1 );
-		audio_range_sm->updateEntry( rentry2, 2 );
-	}
 	return 0;
 }
 
@@ -897,7 +888,11 @@ void SetupMenu::audio_menu_create( MenuEntry *audio ){
 	audios->setHelp( PROGMEM "Configure audio style in terms of center frequency, octaves, single/dual tone, pitch and chopping", 220);
 	audios->addCreator(audio_menu_create_tonestyles);
 
-	update_rentrys(0);
+	update_rentry(0);
+	audio_range_sm = new SetupMenuSelect( "Range", false, 0 , true, &audio_range  );
+	audio_range_sm->addEntry( rentry0  );
+	audio_range_sm->addEntry( rentry1  );
+	audio_range_sm->addEntry( rentry2  );
 	audio_range_sm->setHelp(PROGMEM"Select either fixed or variable Audio range according to current Vario setting");
 	audio->addEntry( audio_range_sm );
 

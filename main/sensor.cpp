@@ -152,7 +152,10 @@ mpud::float_axes_t gyroDPS_Prev;
 // Fligth Test
 mpud::float_axes_t accelISUNED; // accel in standard units m/s² with NED reference
 mpud::float_axes_t gyroISUNED; // gyro in standard units rad/s with NED reference
+mpud::float_axes_t accelGAIN; // Keep some room for the next step taking account of gain non unitary
+mpud::float_axes_t gyroGAIN; // Keep some room for the next step taking account of gain non unitary
 mpud::raw_axes_t currentGyroBias; // holds gyro biais x, y, z axes as int16
+mpud::raw_axes_t currentAccelBias; // holds gyro biais x, y, z axes as int16
 // Fligth Test
 
 #define MAXDRIFT 2                // °/s maximum drift that is automatically compensated on ground
@@ -586,7 +589,9 @@ static void grabSensors(void *pvParameters)
 					ZZZ.ZZZZ:		rotation Z-Axis rad/s,
 					<CR><LF>	
 				*/			
-				sprintf(str,"$IMU,%.6f,%1.4f,%1.4f,%1.4f,%.6f,%3.4f,%3.4f,%3.4f\r\n",accelTime, accelISUNED.x, accelISUNED.y, accelISUNED.z , gyroTime, gyroISUNED.x, gyroISUNED.y, gyroISUNED.z );
+				//sprintf(str,"$IMU,%.6f,%1.4f,%1.4f,%1.4f,%.6f,%3.4f,%3.4f,%3.4f\r\n",accelTime, accelISUNED.x, accelISUNED.y, accelISUNED.z , gyroTime, gyroISUNED.x, gyroISUNED.y, gyroISUNED.z );
+				sprintf(str,"$I,%6d,%6d,%6d,%.6f,%6d,%6d,%6d\r\n",
+						(int16_t)(accelISUNED.x*1000.0), (int16_t)(accelISUNED.y*1000.0), (int16_t)(accelISUNED.z*1000.0), gyroTime, (int16_t)(gyroISUNED.x*10000.0), (int16_t)(gyroISUNED.y*10000.0),(int16_t) (gyroISUNED.z*10000.0) );
 				Router::sendXCV(str);
 			}
 			// Estimation of gyro bias
@@ -615,19 +620,16 @@ static void grabSensors(void *pvParameters)
 							NewGxBias = TakeGxBias;
 							NewGyBias = TakeGyBias;
 							NewGzBias = TakeGzBias;
-							BIAS_Init = true;//On n'initialise qu'une seule fois après la mise sous tension
 							//formatage des biais pour les flasher dans le MPU en les mettant sur les bons axes et avec les bons signes
 							currentGyroBias = MPU.getGyroOffset();
-							sprintf(str,"$GBIAS,%.6f,%3.3f,%6d,%6d,%6d\r\n", dynTime, MPUtempcel, currentGyroBias.x, currentGyroBias.y, currentGyroBias.z );
-							Router::sendXCV(str);
 							currentGyroBias.x -= (int16_t)rint(NewGzBias*(180/M_PI) / mpud::gyroResolution(GYRO_FS)/4);
 							currentGyroBias.y -= (int16_t)rint(NewGyBias*(180/M_PI) / mpud::gyroResolution(GYRO_FS)/4);
 							currentGyroBias.z -= (int16_t)rint(NewGxBias*(180/M_PI) / mpud::gyroResolution(GYRO_FS)/4);
+							//Mémorisation en flash
+							 gyro_bias.set(currentGyroBias);
+							BIAS_Init = true;//On n'initialise qu'une seule fois après la mise sous tension
 							MPU.setGyroOffset(currentGyroBias);
-							sprintf(str,"$GBIAS,%.6f,%3.3f,%6d,%6d,%6d\r\n", dynTime, MPUtempcel, currentGyroBias.x, currentGyroBias.y, currentGyroBias.z );
-							Router::sendXCV(str);
-							currentGyroBias = MPU.getGyroOffset();
-							sprintf(str,"$GBIAS,%.6f,%3.3f,%6d,%6d,%6d\r\n", dynTime, MPUtempcel, currentGyroBias.x, currentGyroBias.y, currentGyroBias.z );
+							sprintf(str,"$GBIAS,%.6f,%3.3f,%.6f,%.6f,%.6f\r\n", dynTime, MPUtempcel, NewGxBias, NewGyBias, NewGzBias );
 							Router::sendXCV(str);
 						}
 						else {//Mémorisation de la valeur en cours de stabilité mais avant qu'on en sorte
@@ -653,117 +655,14 @@ static void grabSensors(void *pvParameters)
 						//GzBias = gyroDPS.x;
 					//mais avec la valeur des biais mémorisés une fois précédente
 					//Ce que je n'arrive pas à faire dans cette version du code : faut-il supprimer le MPU::Reset? Ou les mettre dans la flash ESP32?
-					currentGyroBias = MPU.getGyroOffset();
-					GxBias = -currentGyroBias.z;
-					GyBias = -currentGyroBias.y;
-					GzBias = -currentGyroBias.x;
+					currentGyroBias = gyro_bias.get();
+					GxBias = -currentGyroBias.z*(M_PI/180) * mpud::gyroResolution(GYRO_FS)/4;
+					GyBias = -currentGyroBias.y*(M_PI/180) * mpud::gyroResolution(GYRO_FS)/4;
+					GzBias = -currentGyroBias.x*(M_PI/180) * mpud::gyroResolution(GYRO_FS)/4;
 				}
 			}
 			else gyrobiastemptimer = 0;// No bias evaluation during flight
 		}
-//modif gfm : recopie de la solution V1.06
-		//gfm : suppression de l'acquisition qui est faite dans la nouvelle version ci-dessus
-		/*
-		// get MPU data every IMUrate * 25 ms
-		if( haveMPU && ((mtick % IMUrate) == 0) ) {
-			// get accel and gyro data
-			esp_err_t erracc = MPU.acceleration(&accelRaw);  // fetch raw accel data from the registers
-			if( erracc == ESP_OK ){
-				accelTime = esp_timer_get_time()/1000000.0; // time in second
-				accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
-				accelISUNED.x = - accelG.z * GRAVITY;
-				accelISUNED.y = - accelG.y * GRAVITY;
-				accelISUNED.z = - accelG.x * GRAVITY;
-			}
-			esp_err_t errgyr = MPU.rotation(&gyroRaw); // fetch raw gyro data from the registers
-			if( errgyr == ESP_OK ){
-				gyroTime = esp_timer_get_time()/1000000.0; // time in second
-				gyroCorr.x = gyroRaw.x - currentGyroBias.x;
-				gyroCorr.y = gyroRaw.y - currentGyroBias.y;
-				gyroCorr.z = gyroRaw.z - currentGyroBias.z;
-				gyroDPS = mpud::gyroDegPerSec(gyroCorr, GYRO_FS);
-				gyroISUNED.x = -gyroDPS.z * DegToRad;
-				gyroISUNED.y = -gyroDPS.y * DegToRad;
-				gyroISUNED.z = -gyroDPS.x * DegToRad;
-			}
-			if( erracc == ESP_OK && errgyr == ESP_OK) {
-				IMU::read();
-			}
-			*/
-			// identify gyro bias
-		// La technique du filtrage ci-dessus, plutôt que de la moyenne ci-dessous, est conservée
-		    /*
-			( (Atmosphere::pascal2kmh(abs(dynP)) < STILLSPEED ) ) {	// if IAS is << below stall = STILLSPEED, MPU is probably not moving
-				gyrosum = abs(gyroISUNED.x) + abs(gyroISUNED.y) + abs( gyroISUNED.z); // monitor sum of rotations to detect possible movements
-				if( !processbias ) { // if first time in gyro bias identification, initialize prevgyrosum, prevaccelz and process variables
-					prevgyrosum = gyrosum;
-					prevaccelz = accelISUNED.z;
-					processbias = true;
-					nbsamples = 0;
-					newGyroBias.x = 0;
-					newGyroBias.y = 0;
-					newGyroBias.z = 0;
-				} else {
-					if ( (abs(gyrosum-prevgyrosum) < STILLMAXGYRO ) && (abs(accelISUNED.z-prevaccelz) < STILLMAXACCEL ) ) { // If variation of sum of gyros < 10 mrad/s and variation of accel z component < .1 m/s² MPU is considered static
-						// average bias over 320 samples : 8 seconds at 40 Hz sample rate
-						newGyroBias.x = newGyroBias.x + gyroRaw.x;
-						newGyroBias.y = newGyroBias.y + gyroRaw.y;
-						newGyroBias.z = newGyroBias.z + gyroRaw.z;
-						nbsamples++;
-						if( nbsamples >= AVGSAMPLES ) {
-							biassolution = true; // if processed at least AVGSAMPLES samples, bias is considered correct
-						}
-					} else { // MPU not static
-						processbias = false; // reinitialize bias identification process
-					}
-				}
-			}
-			*/
-			// if a bias solution exists and need a first bias or streaming bias/IMU or MPU has moved (!processbias) and more than GBIASupdt samples accumulated
-		// on recopie l'idée de la mise en flash
-			/*if ( biassolution && ( needfirstbias || GBIASstream || IMUstream || ((nbsamples > GBIASupdt) && !processbias) ) ) {
-				newGyroBias.x = newGyroBias.x / nbsamples;
-				newGyroBias.y = newGyroBias.y / nbsamples;
-				newGyroBias.z = newGyroBias.z / nbsamples;
-				currentGyroBias.x = (int16_t)(newGyroBias.x + .5);
-				currentGyroBias.y = (int16_t)(newGyroBias.y + .5);
-				currentGyroBias.z = (int16_t)(newGyroBias.z + .5);
-				currentGyroBiasDPS = mpud::gyroDegPerSec(currentGyroBias, GYRO_FS);
-				currentGyroBiasISUNED.x = -currentGyroBiasDPS.z * DegToRad;
-				currentGyroBiasISUNED.y = -currentGyroBiasDPS.y * DegToRad;
-				currentGyroBiasISUNED.z = -currentGyroBiasDPS.x * DegToRad;
-				if (GBIASstream ) { // stream gyro bias if gyro bias stream active or need first bias or MPU moved with enough samples for bias and long delay since last bias
-
-					GBIAS data in ISU and NED orientation
-							$GBIAS,
-							T..T.TTTTTT:	time in second with micro second resolution,
-							XX.X:				MPU temp °C,
-							XXX.XXXX:			bias X-Axis rad/s,
-							YYY.YYYY:			bias Y-Axis rad/s,
-							ZZZ.ZZZZ:			bias Z-Axis rad/s,
-							<CR><LF>
-
-					sprintf(str,"$GBIAS,%.6f,%2.1f,%3.4f,%3.4f,%3.4f\r\n", dynTime, MPUtempcel, currentGyroBiasISUNED.x, currentGyroBiasISUNED.y, currentGyroBiasISUNED.z );
-					Router::sendXCV(str);
-				}
-				if ( needfirstbias || (nbsamples > GBIASupdt) ) {
-					gyro_bias.set( currentGyroBias );
-				}
-				// TODO FLIGHT TEST ONLY to be removed
-				// For FT only, force IMU and SEN streams right after first bias identification
-				if ( needfirstbias ) {
-					IMUstream = true;
-					SENstream = true;
-				}
-				processbias = false;
-				needfirstbias = false;
-				biassolution = false;
-				nbsamples = 0;
-			}
-			*/
-		//}
-		
-//fin modif gfm
 		// get sensors data : static, TE, dynamic pressure, OAT, MPU temp and GNSS data. 
 		
 		// get sensors data every SENrate * 25ms
@@ -848,10 +747,12 @@ static void grabSensors(void *pvParameters)
 				VV.VV:			GNSS speed z or down,
 				<CR><LF>		
 			*/
-				sprintf(str,"$SEN,%.6f,%4.3f,%.6f,%4.3f,%.6f,%4.3f,%2.1f,%3.2f,%1d,%2d,%.3f,%4.1f,%2.2f,%2.2f,%2.2f,%2.2f\r\n",
-						statTime, statP, teTime, teP, dynTime, dynP,  OATemp, MPUtempcel, chosenGnss->fix, chosenGnss->numSV, chosenGnss->time,
+				//sprintf(str,"$SEN,%.6f,%4.3f,%.6f,%4.3f,%.6f,%4.3f,%2.1f,%3.2f,%1d,%2d,%.3f,%4.1f,%2.2f,%2.2f,%2.2f,%2.2f\r\n",
+				//		statTime, statP, teTime, teP, dynTime, dynP,  OATemp, MPUtempcel, chosenGnss->fix, chosenGnss->numSV, chosenGnss->time,
+				sprintf(str,"$S,%.6f,%8d,%8d,%7d,%2.1f,%2.1f,%1d,%2d,%.3f,%7d,%4d,%4d,%4d\r\n",
+						statTime, (int16_t)(statP*10), (int16_t)(teP*10), (int16_t)(dynP*1000),  OATemp, MPUtempcel, chosenGnss->fix, chosenGnss->numSV, chosenGnss->time,
 						// modif gfm						statTime, asSensor->getTemperature(), teTime,XCVTemp, dynTime, MPUheatpwm,  OATemp, MPUtempcel, chosenGnss->fix, chosenGnss->numSV, chosenGnss->time,
-							chosenGnss->coordinates.altitude, chosenGnss->speed.ground, chosenGnss->speed.x, chosenGnss->speed.y, chosenGnss->speed.z);
+						(int16_t)(chosenGnss->coordinates.altitude*100), (int16_t)(chosenGnss->speed.x*100), (int16_t)(chosenGnss->speed.y*100), (int16_t)(chosenGnss->speed.z*100));
 				Router::sendXCV(str);
 			}
 		}
@@ -1479,18 +1380,24 @@ void system_startup(void *args){
 		
 		// clear gyro and accel MPU offsets, just in case
 		//modif gfm clear only accelero offsets
-		//mpud::raw_axes_t gyroRaw;
-		//gyroRaw.x = 0;
-		//gyroRaw.y = 0;
-		//gyroRaw.z = 0;
-		//MPU.setGyroOffset(gyroRaw);
-
+		//mpud::raw_axes_t currentGyroBias;
+		currentGyroBias = gyro_bias.get();
+		 MPU.setGyroOffset(currentGyroBias);
 		// Set accel Matthieu bias : Bizarre que l'échelle soit fixée à 8g 14 lignes plus haut et qu'il faille diviser par 2048!
-		mpud::raw_axes_t accelRaw;
-		accelRaw.z = (int16_t) rint(-0.836/GRAVITY*2048);
-		accelRaw.y = (int16_t) rint(-0.014/GRAVITY*2048);
-		accelRaw.x = (int16_t) rint(-0.414/GRAVITY*2048);
-		MPU.setAccelOffset(accelRaw);
+		 mpud::raw_axes_t accelRaw;
+		 currentAccelBias.z = (int16_t) rint(-0.836/GRAVITY*2048);
+		 currentAccelBias.y = (int16_t) rint(-0.014/GRAVITY*2048);
+		 currentAccelBias.x = (int16_t) rint(-0.414/GRAVITY*2048);
+		 MPU.setAccelOffset(currentAccelBias);// Mémorisation dans le MPU
+		 accl_bias.set(currentAccelBias);// Mémorisation dans la flash
+		 gyroGAIN.x = 1.0;
+		 gyroGAIN.y = 1.0;
+		 gyroGAIN.z = 1.0;
+		 gyro_gain.set(gyroGAIN);
+		 accelGAIN.x = 1.0;
+		 accelGAIN.y = 1.0;
+		 accelGAIN.z = 1.0;
+		 accl_gain.set(accelGAIN);
 		// fin modif gfm
 
 		delay( 50 );

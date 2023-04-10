@@ -563,6 +563,8 @@ extern SetupNG<int>		    display_variant;
 extern SetupNG<int>		    s2f_switch_type;
 extern SetupNG<mpud::raw_axes_t> gyro_bias;
 extern SetupNG<mpud::raw_axes_t> accl_bias;
+extern SetupNG<mpud::float_axes_t> gyro_gain;
+extern SetupNG<mpud::float_axes_t> accl_gain;
 extern SetupNG<float>       mpu_temperature;
 extern SetupNG<int>		    hardwareRevision;
 extern SetupNG<int>		    ahrs_licence_dig1;

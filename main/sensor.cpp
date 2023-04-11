@@ -590,8 +590,8 @@ static void grabSensors(void *pvParameters)
 					<CR><LF>	
 				*/			
 				//sprintf(str,"$IMU,%.6f,%1.4f,%1.4f,%1.4f,%.6f,%3.4f,%3.4f,%3.4f\r\n",accelTime, accelISUNED.x, accelISUNED.y, accelISUNED.z , gyroTime, gyroISUNED.x, gyroISUNED.y, gyroISUNED.z );
-				sprintf(str,"$I,%6d,%6d,%6d,%.6f,%6d,%6d,%6d\r\n",
-						(int16_t)(accelISUNED.x*1000.0), (int16_t)(accelISUNED.y*1000.0), (int16_t)(accelISUNED.z*1000.0), gyroTime, (int16_t)(gyroISUNED.x*10000.0), (int16_t)(gyroISUNED.y*10000.0),(int16_t) (gyroISUNED.z*10000.0) );
+				sprintf(str,"$I,%.3f,%i,%i,%i,%i,%i,%i\r\n",
+						 gyroTime,(int32_t)(accelISUNED.x*1000.0), (int32_t)(accelISUNED.y*1000.0), (int32_t)(accelISUNED.z*1000.0), (int32_t)(gyroISUNED.x*10000.0), (int32_t)(gyroISUNED.y*10000.0),(int32_t) (gyroISUNED.z*10000.0) );
 				Router::sendXCV(str);
 			}
 			// Estimation of gyro bias
@@ -749,10 +749,10 @@ static void grabSensors(void *pvParameters)
 			*/
 				//sprintf(str,"$SEN,%.6f,%4.3f,%.6f,%4.3f,%.6f,%4.3f,%2.1f,%3.2f,%1d,%2d,%.3f,%4.1f,%2.2f,%2.2f,%2.2f,%2.2f\r\n",
 				//		statTime, statP, teTime, teP, dynTime, dynP,  OATemp, MPUtempcel, chosenGnss->fix, chosenGnss->numSV, chosenGnss->time,
-				sprintf(str,"$S,%.6f,%8d,%8d,%7d,%2.1f,%2.1f,%1d,%2d,%.3f,%7d,%4d,%4d,%4d\r\n",
-						statTime, (int16_t)(statP*10), (int16_t)(teP*10), (int16_t)(dynP*1000),  OATemp, MPUtempcel, chosenGnss->fix, chosenGnss->numSV, chosenGnss->time,
+				sprintf(str,"$S,%.3f,%i,%i,%i,%2.1f,%2.1f,%1d,%2d,%.3f,%i,%i,%i,%i\r\n",
+						statTime, (int16_t)(statP*10.0), (int16_t)(teP*10.0), (int16_t)(dynP*1000.0),  OATemp, MPUtempcel, chosenGnss->fix, chosenGnss->numSV, chosenGnss->time,
 						// modif gfm						statTime, asSensor->getTemperature(), teTime,XCVTemp, dynTime, MPUheatpwm,  OATemp, MPUtempcel, chosenGnss->fix, chosenGnss->numSV, chosenGnss->time,
-						(int16_t)(chosenGnss->coordinates.altitude*100), (int16_t)(chosenGnss->speed.x*100), (int16_t)(chosenGnss->speed.y*100), (int16_t)(chosenGnss->speed.z*100));
+						(int32_t)(chosenGnss->coordinates.altitude*100), (int16_t)(chosenGnss->speed.x*100), (int16_t)(chosenGnss->speed.y*100), (int16_t)(chosenGnss->speed.z*100));
 				Router::sendXCV(str);
 			}
 		}

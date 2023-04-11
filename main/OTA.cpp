@@ -77,6 +77,7 @@ void OTA::doSoftwareUpdate(IpsDisplay * p ){
 	}
 	ESP_LOGI(FNAME,"Now restart");
 	software_update.set( 0 );
+	software_update.commit();
 	Audio::shutdown();
 	esp_restart();
 }

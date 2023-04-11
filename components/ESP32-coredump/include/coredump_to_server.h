@@ -19,3 +19,5 @@ typedef struct coredump_to_server_config_t {
 esp_err_t coredump_to_server(coredump_to_server_config_t const * const cfg);
 
 esp_err_t clear_coredump();
+
+bool coredump_available();

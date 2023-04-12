@@ -731,7 +731,7 @@ static void grabSensors(void *pvParameters)
 				PPPPPP:		static pressure in Pa,
 				TTTTTT:		TE time in milli second,
 				PPPPPP:		TE pressure in Pa,
-				PPPPPP:		Dynamic pressure in milli Pa,
+				PPPPPP:		Dynamic pressure in Pa,
 				XXX:		Outside Air Temperature in tenth of °C,
 				XXX:		MPU temperature in tenth °C,
 				X:			fix 0 to 5   3=3D   4= 3D diff,
@@ -743,8 +743,8 @@ static void grabSensors(void *pvParameters)
 				VVVV:		GNSS speed z or down in centimeters/s,
 				<CR><LF>		
 			*/
-				sprintf(str,"$S,%lld,%i,%lld,%i, %i,%i,%i,%1d,%2d,%lld,%i,%i,%i,%i\r\n",
-					(int64_t)(statTime*1000.0), (int32_t)(statP*100.0), (int64_t)(teTime*1000.0),(int32_t)(teP*100.0), (int16_t)(dynP*10.0),  (int16_t)(OATemp*10.0), (int16_t)(MPUtempcel*10.0), chosenGnss->fix, chosenGnss->numSV,
+				sprintf(str,"$S,%lld,%i,%lld,%i,%i,%i,%i,%1d,%2d,%lld,%i,%i,%i,%i\r\n",
+					(int64_t)(statTime*1000.0), (int32_t)(statP*100.0), (int64_t)(teTime*1000.0),(int32_t)(teP*100.0), (int16_t)(dynP),  (int16_t)(OATemp*10.0), (int16_t)(MPUtempcel*10.0), chosenGnss->fix, chosenGnss->numSV,
 					(int64_t)(chosenGnss->time*1000.0), (int32_t)(chosenGnss->coordinates.altitude*100), (int16_t)(chosenGnss->speed.x*100), (int16_t)(chosenGnss->speed.y*100), (int16_t)(chosenGnss->speed.z*100));
 				Router::sendXCV(str);
 			}

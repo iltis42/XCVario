@@ -16,7 +16,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-  
+    - name: set-env
+      run:  VER=`date +"%y.%m%d-%H%M"`;
+            BRANCH=`git branch --show-current`;
+
+            echo "FILE_VERSION=${BRANCH}-${VER}" >> $GITHUB_ENV
+
     - name: Build 
       # Use a bash shell so we can use the same syntax for environment variable
       # access regardless of the host operating system
@@ -25,22 +30,18 @@ jobs:
       # Note the current convention is to use the -S and -B options here to specify source 
       # and build directories, but this is only available with CMake 3.13 and higher.  
       # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
-      
+
       run:  touch $PWD/main/Version.h;
             echo "#define CIPHER_KEY \"${{ secrets.AHRS_CIPHER_KEY }}\"" >$PWD/main/cipherkey.h;
             docker run --rm -v $PWD:/project -w /project espressif/idf:release-v4.3 idf.py build;
-            VER=`date +"%y.%m%d-%H%M"`;
-            BRANCH=`git branch --show-current`;
-            cp $PWD/build/sensor.bin $PWD/images/sensor-${BRANCH}-${VER}.bin;
-            cp $PWD/build/sensor.elf $PWD/images/elf/sensor-${BRANCH}-${VER}.elf;
-            gzip $PWD/images/elf/sensor-${BRANCH}-${VER}.elf;
-            git config user.name github-actions;
-            git config user.email github-actions@github.com;
-            git checkout $PWD/main/cipherkey.h;
-            git add $PWD/images/sensor-${BRANCH}-${VER}.bin; 
-            git add $PWD/images/elf/sensor-${BRANCH}-${VER}.elf.gz;
-            git commit -a -m "new version build sensor-${BRANCH}-${VER}.bin";
-            git push;
+            cp $PWD/build/sensor.bin $PWD/images/sensor-${{ env:FILE_VERSION }}.bin;
+            cp $PWD/build/sensor.elf $PWD/images/elf/sensor-${{ env:FILE_VERSION }}.elf;
+            gzip $PWD/images/elf/sensor-${{ env:FILE_VERSION }}.elf;
 
-  
-      
+    - uses: actions/upload-artifact@v3
+      with:
+        name: XCVario-${{ env.FILE_VERSION }}
+        path: |
+              $PWD/images/sensor-${{ env:FILE_VERSION }}.bin
+              $PWD/images/sensor-${{ env:FILE_VERSION }}.elf.gz
+

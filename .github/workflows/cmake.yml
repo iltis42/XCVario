@@ -36,7 +36,8 @@ jobs:
             cp $PWD/build/sensor.bin $PWD/images/sensor-${{ env.FILE_VERSION }}.bin;
             cp $PWD/build/sensor.elf $PWD/images/elf/sensor-${{ env.FILE_VERSION }}.elf;
             gzip $PWD/images/elf/sensor-${{ env.FILE_VERSION }}.elf;
-            ls images
+            ls images/*${{ env.FILE_VERSION }}*
+            ls build/sensor*
 
     - name: Upload binary
       uses: actions/upload-artifact@v3
@@ -48,5 +49,5 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: XCVario-${{ env.FILE_VERSION }}-debug
-        path: images/elf/sensor-${{ env.FILE_VERSION }}.elf
+        path: images/elf/sensor-${{ env.FILE_VERSION }}.elf.gz
 

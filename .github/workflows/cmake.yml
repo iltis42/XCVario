@@ -33,20 +33,21 @@ jobs:
       run:  touch $PWD/main/Version.h;
             echo "#define CIPHER_KEY \"${{ secrets.AHRS_CIPHER_KEY }}\"" >$PWD/main/cipherkey.h;
             docker run --rm -v $PWD:/project -w /project espressif/idf:release-v4.3 idf.py build;
-            cp $PWD/build/sensor.bin $PWD/build/sensor-${{ env.FILE_VERSION }}.bin;
-            cp $PWD/build/sensor.elf $PWD/build/sensor-${{ env.FILE_VERSION }}.elf;
-            gzip $PWD/build/sensor-${{ env.FILE_VERSION }}.elf;
-            ls build/sensor*;
+            mkdir -p artifacts;
+            cp $PWD/build/sensor.bin $PWD/artifacts/sensor-${{ env.FILE_VERSION }}.bin;
+            cp $PWD/build/sensor.elf $PWD/artifacts/sensor-${{ env.FILE_VERSION }}.elf;
+            gzip $PWD/artifacts/sensor-${{ env.FILE_VERSION }}.elf;
+            ls artifacts/*;
 
     - name: Upload binary
       uses: actions/upload-artifact@v3
       with:
         name: XCVario-${{ env.FILE_VERSION }}
-        path: build/sensor-${{ env.FILE_VERSION }}.bin
+        path: artifacts/sensor-${{ env.FILE_VERSION }}.bin
      
     - name: Upload ELF
       uses: actions/upload-artifact@v3
       with:
         name: XCVario-${{ env.FILE_VERSION }}
-        path: build/sensor-${{ env.FILE_VERSION }}.elf.gz
+        path: artifacts/sensor-${{ env.FILE_VERSION }}.elf.gz
 

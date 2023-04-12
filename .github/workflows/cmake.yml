@@ -1,4 +1,4 @@
-name: CMake
+name: Build
 
 on: workflow_dispatch
 
@@ -42,7 +42,10 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: XCVario-${{ env.FILE_VERSION }}
-        path: |
-          images/sensor-${{ env.FILE_VERSION }}.bin
-          images/elf/sensor-${{ env.FILE_VERSION }}.elf
+        path: images/elf/sensor-${{ env.FILE_VERSION }}.elf
+     
+      uses: actions/upload-artifact@v3
+      with:
+        name: XCVario-${{ env.FILE_VERSION }}-debug
+        path: images/elf/sensor-${{ env.FILE_VERSION }}.elf
 

@@ -34,8 +34,8 @@ jobs:
             echo "#define CIPHER_KEY \"${{ secrets.AHRS_CIPHER_KEY }}\"" >$PWD/main/cipherkey.h;
             docker run --rm -v $PWD:/project -w /project espressif/idf:release-v4.3 idf.py build;
             cp $PWD/build/sensor.bin $PWD/images/sensor-${{ env.FILE_VERSION }}.bin;
-            cp $PWD/build/sensor.elf $PWD/images/elf/sensor-${{ env.FILE_VERSION }}.elf;
-            gzip $PWD/images/elf/sensor-${{ env.FILE_VERSION }}.elf;
+            cp $PWD/build/sensor.elf $PWD/images/sensor-${{ env.FILE_VERSION }}.elf;
+            gzip $PWD/images/sensor-${{ env.FILE_VERSION }}.elf;
             ls images/*${{ env.FILE_VERSION }}*
             ls build/sensor*
 
@@ -49,5 +49,5 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: XCVario-${{ env.FILE_VERSION }}-debug
-        path: images/elf/sensor-${{ env.FILE_VERSION }}.elf.gz
+        path: images/sensor-${{ env.FILE_VERSION }}.elf.gz
 

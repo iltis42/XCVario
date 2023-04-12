@@ -36,8 +36,8 @@ jobs:
             cp $PWD/build/sensor.bin $PWD/images/sensor-${{ env.FILE_VERSION }}.bin;
             cp $PWD/build/sensor.elf $PWD/images/sensor-${{ env.FILE_VERSION }}.elf;
             gzip $PWD/images/sensor-${{ env.FILE_VERSION }}.elf;
-            ls images/*${{ env.FILE_VERSION }}*
-            ls build/sensor*
+            ls images/*${{ env.FILE_VERSION }}* 2>/dev/null
+            ls build/sensor* 2>/dev/null
 
     - name: Upload binary
       uses: actions/upload-artifact@v3

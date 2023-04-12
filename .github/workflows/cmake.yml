@@ -1,4 +1,4 @@
-name: Build
+name: CMake
 
 on: workflow_dispatch
 
@@ -15,11 +15,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: set-env
       run:  VER=`date +"%y.%m%d-%H%M"`;
             BRANCH=`git branch --show-current`;
-
             echo "FILE_VERSION=${BRANCH}-${VER}" >> $GITHUB_ENV
 
     - name: Build 
@@ -37,12 +36,14 @@ jobs:
             cp $PWD/build/sensor.bin $PWD/images/sensor-${{ env.FILE_VERSION }}.bin;
             cp $PWD/build/sensor.elf $PWD/images/elf/sensor-${{ env.FILE_VERSION }}.elf;
             gzip $PWD/images/elf/sensor-${{ env.FILE_VERSION }}.elf;
+            ls $PWD/images
+            ls artifacts
 
     - name: Upload binary
       uses: actions/upload-artifact@v3
       with:
         name: XCVario-${{ env.FILE_VERSION }}
-        path: images/elf/sensor-${{ env.FILE_VERSION }}.elf
+        path: images/sensor-${{ env.FILE_VERSION }}.bin
      
     - name: Upload ELF
       uses: actions/upload-artifact@v3

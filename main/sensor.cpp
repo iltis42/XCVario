@@ -575,25 +575,23 @@ static void grabSensors(void *pvParameters)
 				gyroISUNED.z = -(gyroDPS.x);
 			}
 			// If required stream IMU data
-			if ( IMUstream ) {
-				/*
-				IMU data in ISU and NED orientation
-					$IMU,
-					T..T.TTTTTT:	accel time in second with micro second resolution (before IMU measurement),
-					X.XXXX:			acceleration in X-Axis in m/s²,
-					Y.YYYY:			acceleration in Y-Axis in m/s²,
-					Z.ZZZZ:			acceleration in Z-Axis in m/s²,
-					T..T.TTTTTT:	gyro time in second with micro second resolution (before IMU measurement)
-					XXX.XXXX:		rotation X-Axis rad/s,
-					YYY.YYYY:		rotation Y-Axis rad/s,
-					ZZZ.ZZZZ:		rotation Z-Axis rad/s,
-					<CR><LF>	
-				*/			
-				//sprintf(str,"$IMU,%.6f,%1.4f,%1.4f,%1.4f,%.6f,%3.4f,%3.4f,%3.4f\r\n",accelTime, accelISUNED.x, accelISUNED.y, accelISUNED.z , gyroTime, gyroISUNED.x, gyroISUNED.y, gyroISUNED.z );
-				sprintf(str,"$I,%.3f,%i,%i,%i,%i,%i,%i\r\n",
-						 gyroTime,(int32_t)(accelISUNED.x*1000.0), (int32_t)(accelISUNED.y*1000.0), (int32_t)(accelISUNED.z*1000.0), (int32_t)(gyroISUNED.x*10000.0), (int32_t)(gyroISUNED.y*10000.0),(int32_t) (gyroISUNED.z*10000.0) );
-				Router::sendXCV(str);
-			}
+	if ( IMUstream ) {
+		/*
+		IMU data in ISU and NED orientation
+			$I,
+			TTTTT:		MPU (gyro) time in milli second,
+			XXXXX:		acceleration in X-Axis in milli m/s²,
+			YYYYY:		acceleration in Y-Axis in milli m/s²,
+			ZZZZZ:		acceleration in Z-Axis in milli m/s²,
+			XXXXX:		rotation X-Axis in tenth of milli rad/s,
+			YYYYY:		rotation Y-Axis in tenth of milli rad/s,
+			ZZZZZ:		rotation Z-Axis in tenth of milli rad/s,
+			<CR><LF>	
+		*/			
+		sprintf(str,"$I,%lld,%i,%i,%i,%i,%i,%i\r\n",
+				 (int64_t)(gyroTime*1000.0),(int32_t)(accelISUNED.x*1000.0), (int32_t)(accelISUNED.y*1000.0), (int32_t)(accelISUNED.z*1000.0), (int32_t)(gyroISUNED.x*10000.0), (int32_t)(gyroISUNED.y*10000.0),(int32_t) (gyroISUNED.z*10000.0) );
+		Router::sendXCV(str);
+	}
 			// Estimation of gyro bias
 			// When on ground:  IAS < 25 km/h 
 			if( (ias.get() < 25.0 ) && !BIAS_Init ) {
@@ -728,31 +726,26 @@ static void grabSensors(void *pvParameters)
 			
 			if ( SENstream ) {
 			/*
-				$SEN,
-				T..T.TTTTTT:	static time in second with micro second resolution (before static measurement),
-				PPPP.PPP:		static pressure hPa,
-				T..T.TTTTTT:	TE time in second with micro second resolution (before TE measurement),
-				PPPP.PPP:		TE pressure hPa,
-				T..T.TTTTTT:	Dyn time in second with micro second resolution (before dynamic measurement),		
-				PPPP.PPP:		Dynamic Pa,
-				XX.XX:				Outside Air Temperature °C,
-				XX.XX:				MPU temperature °C,
-				X:					fix 0 to 5   3=3D   4= 3D diff,
-				XX:				numSV number of satelites used, 
-				T..T.TTT:		GNSS time in second with mili second resolution (corresponds to satellite data acquisition time),
-				AAAA.A:			GNSS altitude in meter,
-				VV.VV:			GNSS ground speed m/s,
-				VV.VV:			GNSS speed x or north,
-				VV.VV:			GNSS speed y or east,
-				VV.VV:			GNSS speed z or down,
+				$S,			Sensor data
+				TTTTTT:		static time in milli second,
+				PPPPPP:		static pressure in Pa,
+				TTTTTT:		TE time in milli second,
+				PPPPPP:		TE pressure in Pa,
+				PPPPPP:		Dynamic pressure in milli Pa,
+				XXX:		Outside Air Temperature in tenth of °C,
+				XXX:		MPU temperature in tenth °C,
+				X:			fix 0 to 5   3=3D   4= 3D diff,
+				XX:			numSV number of satelites used, 
+				TTTTTT:		GNSS time in milli second,
+				AAAAAA:		GNSS altitude in centimeter,
+				VVVV:		GNSS speed x or north in centimeters/s,
+				VVVV:		GNSS speed y or east in centimeters/s,
+				VVVV:		GNSS speed z or down in centimeters/s,
 				<CR><LF>		
 			*/
-				//sprintf(str,"$SEN,%.6f,%4.3f,%.6f,%4.3f,%.6f,%4.3f,%2.1f,%3.2f,%1d,%2d,%.3f,%4.1f,%2.2f,%2.2f,%2.2f,%2.2f\r\n",
-				//		statTime, statP, teTime, teP, dynTime, dynP,  OATemp, MPUtempcel, chosenGnss->fix, chosenGnss->numSV, chosenGnss->time,
-				sprintf(str,"$S,%.3f,%i,%i,%i,%2.1f,%2.1f,%1d,%2d,%.3f,%i,%i,%i,%i\r\n",
-						statTime, (int16_t)(statP*10.0), (int16_t)(teP*10.0), (int16_t)(dynP*1000.0),  OATemp, MPUtempcel, chosenGnss->fix, chosenGnss->numSV, chosenGnss->time,
-						// modif gfm						statTime, asSensor->getTemperature(), teTime,XCVTemp, dynTime, MPUheatpwm,  OATemp, MPUtempcel, chosenGnss->fix, chosenGnss->numSV, chosenGnss->time,
-						(int32_t)(chosenGnss->coordinates.altitude*100), (int16_t)(chosenGnss->speed.x*100), (int16_t)(chosenGnss->speed.y*100), (int16_t)(chosenGnss->speed.z*100));
+				sprintf(str,"$S,%lld,%i,%lld,%i, %i,%i,%i,%1d,%2d,%lld,%i,%i,%i,%i\r\n",
+					(int64_t)(statTime*1000.0), (int32_t)(statP*100.0), (int64_t)(teTime*1000.0),(int32_t)(teP*100.0), (int16_t)(dynP*10.0),  (int16_t)(OATemp*10.0), (int16_t)(MPUtempcel*10.0), chosenGnss->fix, chosenGnss->numSV,
+					(int64_t)(chosenGnss->time*1000.0), (int32_t)(chosenGnss->coordinates.altitude*100), (int16_t)(chosenGnss->speed.x*100), (int16_t)(chosenGnss->speed.y*100), (int16_t)(chosenGnss->speed.z*100));
 				Router::sendXCV(str);
 			}
 		}

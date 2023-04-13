@@ -565,6 +565,12 @@ void Protocols::parseNMEA( const char *str ){
 			IMUstream = true; // IMU and SEN stream
 			SENstream = true;
 		}
+	} else if( !strncmp( str, "$ACC", 4 ) ) {
+		mpud::float_axes_t AccBias;	
+		mpud::float_axes_t AccGain;
+		sscanf( str,"$ACC,%f,%f,%f,%f,%f,%f",&AccBias.x,&AccBias.y,&AccBias.z,&AccGain.x,&AccGain.y,&AccGain.z);
+		accl_bias.set(AccBias);
+		accl_gain.set(AccGain);
 	}
 }
 

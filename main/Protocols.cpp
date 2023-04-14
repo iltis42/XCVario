@@ -571,6 +571,11 @@ void Protocols::parseNMEA( const char *str ){
 		sscanf( str,"$ACC,%f,%f,%f,%f,%f,%f",&AccBias.x,&AccBias.y,&AccBias.z,&AccGain.x,&AccGain.y,&AccGain.z);
 		accl_bias.set(AccBias);
 		accl_gain.set(AccGain);
+		AccBias = accl_bias.get();
+		AccGain = accl_gain.get();
+		char stream[80];
+		sprintf(stream,"$ACC IN FLASH, %1.4f, %1.4f, %1.4f, %1.4f, %1.4f, %1.4f\r\n",AccBias.x,AccBias.y,AccBias.z,AccGain.x,AccGain.y,AccGain.z );
+		Router::sendXCV(stream);		
 	}
 }
 

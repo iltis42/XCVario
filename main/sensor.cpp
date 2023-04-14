@@ -572,7 +572,7 @@ static void grabSensors(void *pvParameters)
 					// count cycles when temperature is locked
 					gyrobiastemptimer++;
 					// detect if gyro variations is below stability threshold using an alpha/beta filter to estimate variation over short period of time
-					deltaGyroTest =  abs(gyroISUNEDMPU.x) + abs(gyroISUNEDMPU.y) + abs(gyroISUNEDMPU.z) - GyroTestFilt;
+					deltaGyroTest =  ( gyroISUNEDMPU.x * gyroISUNEDMPU.x + gyroISUNEDMPU.y * gyroISUNEDMPU.y + gyroISUNEDMPU.z * gyroISUNEDMPU.z ) - GyroTestFilt;
 					GyroTestPrimFilt = GyroTestPrimFilt + betaGyroTest * deltaGyroTest;
 					GyroTestFilt = GyroTestFilt + alphaGyroTest * deltaGyroTest + GyroTestPrimFilt * dtGyr;
 					// if temperature conditions has been stable for more than 30 seconds (1200 = 30x40hz) and there is very little angular acceleration variation
@@ -589,9 +589,9 @@ static void grabSensors(void *pvParameters)
 							// between 2.5 seconds and 12.5 seconds, accumulate gyro data
 							if ( gyrostable < 500 ) {
 								averagecount++;
-								GxBias = GxBias + gyroRPS.z;
+								GxBias = GxBias + gyroRPS.x;
 								GyBias = GyBias + gyroRPS.y;
-								GzBias = GzBias + gyroDPS.x;
+								GzBias = GzBias + gyroDPS.z;
 							} else {
 								// after 15 seconds calculate average bias and set bias in FLASH
 								if ( gyrostable++ > 600 ) {

@@ -562,7 +562,7 @@ static void grabSensors(void *pvParameters)
 					<CR><LF>	
 				*/			
 				sprintf(str,"$I,%lld,%i,%i,%i,%i,%i,%i\r\n",
-					gyroTime,(int32_t)(accelISUNEDMPU.x*1000.0), (int32_t)(accelISUNEDMPU.y*1000.0), (int32_t)(accelISUNEDMPU.z*1000.0), (int32_t)(gyroISUNEDMPU.x*10000.0), (int32_t)(gyroISUNEDMPU.y*10000.0),(int32_t) (gyroISUNEDMPU.z*10000.0) );
+					gyroTime,(int32_t)(accelISUNEDMPU.x*1000.0), (int32_t)(accelISUNEDMPU.y*1000.0), (int32_t)(accelISUNEDMPU.z*1000.0), (int32_t)(gyroISUNEDMPU.x*10000.0), (int32_t)(gyroISUNEDMPU.y*10000.0),(int32_t)(gyroISUNEDMPU.z*10000.0) );
 				Router::sendXCV(str);
 			}
 			// Estimation of gyro bias when on ground:  IAS < 25 km/h and not bias estimation yet
@@ -572,7 +572,7 @@ static void grabSensors(void *pvParameters)
 					// count cycles when temperature is locked
 					gyrobiastemptimer++;
 					// detect if gyro variations is below stability threshold using an alpha/beta filter to estimate variation over short period of time
-					deltaGyroTest =  ( gyroISUNEDMPU.x * gyroISUNEDMPU.x + gyroISUNEDMPU.y * gyroISUNEDMPU.y + gyroISUNEDMPU.z * gyroISUNEDMPU.z ) - GyroTestFilt;
+					deltaGyroTest =  ( gyroRPS.x * gyroRPS.x + gyroRPS.y * gyroRPS.y + gyroRPS.z * gyroRPS.z ) - GyroTestFilt;
 					GyroTestPrimFilt = GyroTestPrimFilt + betaGyroTest * deltaGyroTest;
 					GyroTestFilt = GyroTestFilt + alphaGyroTest * deltaGyroTest + GyroTestPrimFilt * dtGyr;
 					// if temperature conditions has been stable for more than 30 seconds (1200 = 30x40hz) and there is very little angular acceleration variation

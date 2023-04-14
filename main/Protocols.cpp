@@ -571,6 +571,7 @@ void Protocols::parseNMEA( const char *str ){
 		sscanf( str,"$ACC,%f,%f,%f,%f,%f,%f",&AccBias.x,&AccBias.y,&AccBias.z,&AccGain.x,&AccGain.y,&AccGain.z);
 		accl_bias.set(AccBias);
 		accl_gain.set(AccGain);
+		delay(500);
 		AccBias = accl_bias.get();
 		AccGain = accl_gain.get();
 		char stream[80];

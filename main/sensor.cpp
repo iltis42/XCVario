@@ -506,15 +506,15 @@ static void grabSensors(void *pvParameters)
 	float GyBias = 0.0;
 	float GzBias = 0.0;
 		
-	// get accel bias (should be set with BT command "$ACC,Bias.x,Bias.y,Bias.z,Gain.x,Gain.y,Gain.z"
+	// get accel bias and gain (should be set with BT command "$ACC,Bias.x,Bias.y,Bias.z,Gain.x,Gain.y,Gain.z"
 	mpud::float_axes_t currentAccelBias;	
 	currentAccelBias = accl_bias.get();
-	// get accel gain
 	mpud::float_axes_t currentAccelGain;	
 	currentAccelGain = accl_gain.get();
 
 	// get gyro bias
 	mpud::float_axes_t currentGyroBias = gyro_bias.get();
+	// TODO estimation of gyro gain
 	
 	// string for flight test message broadcast on wireless
 	char str[150]; 
@@ -531,7 +531,8 @@ static void grabSensors(void *pvParameters)
 				// convert accels coordinates to ISU : m/s² NED MPU
 				accelISUNEDMPU.x = ((- accelG.z * GRAVITY) - currentAccelBias.x ) / currentAccelGain.x;
 				accelISUNEDMPU.y = ((- accelG.y * GRAVITY) - currentAccelBias.y ) / currentAccelGain.y;
-				accelISUNEDMPU.z = ((- accelG.x * GRAVITY) - currentAccelBias.z ) / currentAccelGain.z;			
+				accelISUNEDMPU.z = ((- accelG.x * GRAVITY) - currentAccelBias.z ) / currentAccelGain.z;
+				// TODO convert accels to ISUNEDBODY				
 			}
 			// get gyro data
 			if( MPU.rotation(&gyroRaw) == ESP_OK ){
@@ -544,6 +545,7 @@ static void grabSensors(void *pvParameters)
 				gyroISUNEDMPU.x = -(gyroRPS.z - currentGyroBias.z);
 				gyroISUNEDMPU.y = -(gyroRPS.y - currentGyroBias.y);
 				gyroISUNEDMPU.z = -(gyroRPS.x - currentGyroBias.x);
+				// TODO convert gyros to ISUNEDBODY and remove offset estimation in flight
 			}
 			// If required stream IMU data
 			if ( IMUstream ) {
@@ -574,7 +576,7 @@ static void grabSensors(void *pvParameters)
 					GyroTestPrimFilt = GyroTestPrimFilt + betaGyroTest * deltaGyroTest;
 					GyroTestFilt = GyroTestFilt + alphaGyroTest * deltaGyroTest + GyroTestPrimFilt * dtGyr;
 					// if temperature conditions has been stable for more than 30 seconds (1200 = 30x40hz) and there is very little angular acceleration variation
-					if ( gyrobiastemptimer > 1200 && abs(GyroTestPrimFilt) < 0.1 ) {
+					if ( gyrobiastemptimer > 1200 && abs(GyroTestPrimFilt) < 0.01 ) {
 						gyrostable++;
 						// during first 2.5 seconds, initialize gyro data
 						if ( gyrostable < 100 ) {
@@ -1312,12 +1314,13 @@ void system_startup(void *args){
 		MPU.setDigitalLowPassFilter(mpud::DLPF_42HZ);  // smoother data
 		
 		// clear gyro and accel MPU offsets, just in case
-		mpud::raw_axes_t zeroGyroBias;
-		zeroGyroBias.x = 0.0;
-		zeroGyroBias.y = 0.0;
-		zeroGyroBias.z = 0.0;
-		MPU.setGyroOffset(zeroGyroBias);
-		
+		mpud::raw_axes_t zeroBias;
+		zeroBias.x = 0.0;
+		zeroBias.y = 0.0;
+		zeroBias.z = 0.0;
+		MPU.setGyroOffset(zeroBias);
+		MPU.setAccelOffset(zeroBias);
+	
 		mpud::raw_axes_t accelRaw;
 		delay( 50 );
 

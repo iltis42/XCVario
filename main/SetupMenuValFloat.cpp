@@ -14,11 +14,12 @@
 #include "ESPAudio.h"
 #include <esp_log.h>
 
+
 SetupMenuValFloat * SetupMenuValFloat::qnh_menu = 0;
 SetupMenuValFloat * SetupMenuValFloat::meter_adj_menu = 0;
 char SetupMenuValFloat::_val_str[20];
 
-SetupMenuValFloat::SetupMenuValFloat( const char* title, const char *unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs, bool restart, bool sync, bool live_update ) {
+SetupMenuValFloat::SetupMenuValFloat( const char* title, const char *unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs, e_restart_mode_t restart, bool sync, bool live_update ) {
 	// ESP_LOGI(FNAME,"SetupMenuValFloat( %s ) ", title.c_str() );
 	attach(this);
 	_title = title;
@@ -90,7 +91,7 @@ void SetupMenuValFloat::display( int mode ){
 			(*_action)( this );
 		showhelp( y );
 	}
-	else if (mode == 1){   // save mode, do show only "Saved"
+	else if (mode == 1){   // save mode, do show only "Saved"true
 		y+=24;
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		ucg->setPrintPos( 1, 300 );
@@ -181,8 +182,11 @@ void SetupMenuValFloat::press(){
 			ESP_LOGI(FNAME,"Yes restart:%d", bits._restart);
 			_value_safe = _value;
 			_nvs->commit();
-			if( bits._restart ) {
+			if( bits._restart == RST_ON_EXIT ) {
 				_restart = true;
+			}else if( bits._restart == RST_IMMEDIATE ){
+				_nvs->commit();
+				MenuEntry::restart();
 			}
 		}
 		pressed = false;

@@ -1108,7 +1108,7 @@ void SetupMenu::options_menu_create_compasswind_compass( MenuEntry *top ){
 	top->addEntry( compdamp );
 	compdamp->setHelp(PROGMEM "Compass or magnetic heading damping factor in seconds");
 
-	SetupMenuValFloat * compi2c = new SetupMenuValFloat( "I2C Clock", "KHz", 10.0, 400.0, 10, 0, false, &compass_i2c_cl, true );
+	SetupMenuValFloat * compi2c = new SetupMenuValFloat( "I2C Clock", "KHz", 10.0, 400.0, 10, 0, false, &compass_i2c_cl, RST_ON_EXIT );
 	top->addEntry( compi2c );
 	compi2c->setHelp(PROGMEM "Setup compass I2C Bus clock in KHz");
 
@@ -1672,7 +1672,7 @@ void SetupMenu::system_menu_create_hardware( MenuEntry *top ){
 	pstype->addEntry( "MP5004");
 	pstype->addEntry( "Autodetect");
 
-	SetupMenuValFloat * met_adj = new SetupMenuValFloat( "Voltmeter Adjust", "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust,  true, false, true);
+	SetupMenuValFloat * met_adj = new SetupMenuValFloat( "Voltmeter Adjust", "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust,  RST_IMMEDIATE, false, true);
 	met_adj->setHelp(PROGMEM "Option to fine factory adjust voltmeter");
 	top->addEntry( met_adj );
 }
@@ -1684,7 +1684,7 @@ void SetupMenu::system_menu_create_altimeter_airspeed_stallwa( MenuEntry *top ){
 	stawaen->addEntry( "Disable");
 	stawaen->addEntry( "Enable");
 
-	SetupMenuValFloat * staspe = new SetupMenuValFloat( "Stall Speed", "", 20, 200, 1, 0, true, &stall_speed, true  );
+	SetupMenuValFloat * staspe = new SetupMenuValFloat( "Stall Speed", "", 20, 200, 1, 0, true, &stall_speed, RST_ON_EXIT  );
 	staspe->setHelp(PROGMEM"Configure stalling speed for corresponding airplane type and reboot");
 	top->addEntry( staspe );
 }
@@ -2045,7 +2045,7 @@ void SetupMenu::setup( )
 	root->addEntry( root );
 	// Create static menues
 	if( NEED_VOLTAGE_ADJUST && !SetupMenuValFloat::meter_adj_menu ){
-		SetupMenuValFloat::meter_adj_menu = new SetupMenuValFloat( "Voltmeter Adjust", "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust,  true, false, true);
+		SetupMenuValFloat::meter_adj_menu = new SetupMenuValFloat( "Voltmeter Adjust", "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust,  RST_IMMEDIATE, false, true);
 	}
 	setup_create_root( root );
 }

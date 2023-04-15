@@ -478,9 +478,9 @@ void audioTask(void *pvParameters){
 
 
 
-static void grabSensors(void *pvParameters)
+static void processIMU(void *pvParameters)
 {
-// grabSensors process reads all sensors information required for processing total energy calculation, including attitude estimation
+// processIMU process reads all sensors information required for processing total energy calculation, including attitude estimation
 // it is also able to stream flight test data to BT which is used in post processing to validate algorithms.
 // This process gets following information:
 // - MPU, converts accels and gyros to NED frame in International System Units : m/s² for accels and rad/s for rotation rates.
@@ -591,7 +591,7 @@ static void grabSensors(void *pvParameters)
 								averagecount++;
 								GxBias = GxBias + gyroRPS.x;
 								GyBias = GyBias + gyroRPS.y;
-								GzBias = GzBias + gyroDPS.z;
+								GzBias = GzBias + gyroRPS.z;
 							} else {
 								// after 15 seconds calculate average bias and set bias in FLASH
 								if ( gyrostable++ > 600 ) {
@@ -658,14 +658,8 @@ static void grabSensors(void *pvParameters)
 			// not sure what is required for compatibility with readSensors
 			
 			// get MPU temp
-			//float MPUheatpwm;
-			int16_t MPUtempraw;
-			//MPUheatpwm = MPU.mpu_heat_pwm;
-			esp_err_t errtemp = MPU.temperature(&MPUtempraw);
-			if( errtemp == ESP_OK ) {
-				MPUtempcel = mpud::tempCelsius(MPUtempraw);
-			}
 			MPUtempcel = MPU.getTemperature();
+			
 			// get Ublox GNSS data
 			// when GNSS receiver is connected to S1 interface
 			const gnss_data_t *gnss1 = s1UbloxGnssDecoder.getGNSSData(1);
@@ -703,7 +697,7 @@ static void grabSensors(void *pvParameters)
 		mtick++;
 		
 //		grabSensorsTime = (esp_timer_get_time()/1000.0) - grabSensorsTime;
-//		ESP_LOGI(FNAME,"grabSensors: %0.1f  / %0.1f", grabSensorsTime, 25.0 );
+//		ESP_LOGI(FNAME,"processIMU: %0.1f  / %0.1f", grabSensorsTime, 25.0 );
 		
 		vTaskDelayUntil(&xLastWakeTime_mpu, 25/portTICK_PERIOD_MS);  // 25 ms = 40 Hz loop
 		if( (mtick % 25) == 0) {  // test stack every second
@@ -718,7 +712,7 @@ static void grabMPU()
 	// mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
 	// mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
 	// Flight Test
-	// accel already read by grabSensors
+	// accel already read by processIMU
 	//
 	/*
 	bool goodAccl = true;
@@ -731,7 +725,7 @@ static void grabMPU()
 		}
 	} */
 	// Flight Test
-	// gyro already read by grabSensors
+	// gyro already read by processIMU
 	//
 	/*
 	bool goodGyro = true;
@@ -899,14 +893,14 @@ void readSensors(void *pvParameters){
 	while (1)
 	{
 		count++;
-		while( (mtick%4)==0 ){ // wait for grabSensors SEN tick has been processed
+		while( (mtick%4)==0 ){ // wait for processIMU SEN tick has been processed
 			delay(2);
 		}
 
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		
 		// Fligth Test
-		// Need to update following code to take into account grabSensors has already read sensors.
+		// Need to update following code to take into account processIMU has already read sensors.
 		//
 		
 		if( gflags.haveMPU  )  // 3th Generation HW, MPU6050 avail and feature enabled
@@ -1889,7 +1883,7 @@ void system_startup(void *args){
 		centeraid = new CenterAid( MYUCG );
 	}
 	
-	xTaskCreatePinnedToCore(&grabSensors, "grabSensors", 4096, NULL, 15, &mpid, 0);
+	xTaskCreatePinnedToCore(&processIMU, "processIMU", 4096, NULL, 15, &mpid, 0);
 	
 	if( SetupCommon::isClient() ){
 		xTaskCreatePinnedToCore(&clientLoop, "clientLoop", 4096, NULL, 11, &bpid, 0);

@@ -569,14 +569,24 @@ void Protocols::parseNMEA( const char *str ){
 		mpud::float_axes_t AccBias;	
 		mpud::float_axes_t AccGain;
 		sscanf( str,"$ACC,%f,%f,%f,%f,%f,%f",&AccBias.x,&AccBias.y,&AccBias.z,&AccGain.x,&AccGain.y,&AccGain.z);
-		accl_bias.set(AccBias);
-		accl_gain.set(AccGain);
-		delay(500);
-		AccBias = accl_bias.get();
-		AccGain = accl_gain.get();
-		char stream[80];
-		sprintf(stream,"$ACC IN FLASH, %1.4f, %1.4f, %1.4f, %1.4f, %1.4f, %1.4f\r\n",AccBias.x,AccBias.y,AccBias.z,AccGain.x,AccGain.y,AccGain.z );
-		Router::sendXCV(stream);		
+			char stream[100];
+			if ( (abs(AccBias.x) < 1) && (abs(AccBias.y) < 1) && (abs(AccBias.z) < 1) && (abs(AccGain.x-1) > 0.2) && (abs(AccGain.y-1) > 0.2) && (abs(AccGain.z-1) > 0.2) ) {
+			accl_bias.set(AccBias);
+			accl_gain.set(AccGain);
+			delay(100);
+			AccBias = accl_bias.get();
+			AccGain = accl_gain.get();
+			sprintf(stream,"$ACC IN FLASH, %1.4f, %1.4f, %1.4f, %1.4f, %1.4f, %1.4f\r\n",AccBias.x,AccBias.y,AccBias.z,AccGain.x,AccGain.y,AccGain.z );
+			Router::sendXCV(stream);
+			// reboot Vario so that new bias/gains are taken into effect
+			delay(100);
+			esp_restart();
+		} else {
+			sprintf(stream,"$ACC format error. Need to type: $ACC,bias_x,bias_y,bias_z,gain_x,gain_y,gain_z\r\n");
+			Router::sendXCV(stream);
+			sprintf(stream,"example: $ACC,0.02,-0.001,0.004,1.02,0.98,1.003\r\n");
+			Router::sendXCV(stream);
+		}			
 	}
 }
 

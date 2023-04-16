@@ -19,7 +19,7 @@ public:
 	void release();
 	void up( int count ) {};
 	void down( int count ) {};
-	void longPress() {};
+	void longPress();
 	void escape() {};
 	void doSoftwareUpdate( IpsDisplay *p );
 private:

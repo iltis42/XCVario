@@ -38,9 +38,15 @@ void OTA::press() {
 	}
 }
 
+void OTA::longPress() {
+	ESP_LOGI(FNAME,"OTA::longPress() %d", tick );
+	if( tick > 2 ){
+		pressed = true;
+	}
+}
+
 void OTA::release() {
 	ESP_LOGI(FNAME,"OTA::release()");
-	// pressed = false;
 }
 
 // OTA

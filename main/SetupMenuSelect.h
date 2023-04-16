@@ -9,19 +9,20 @@
 #define _SetupMenuSelect_H_
 #include "SetupNG.h"
 #include "MenuEntry.h"
+#include "SetupMenuValCommon.h"
 
 struct bitfield_select {
-   bool _restart      :1;
-   bool _ext_handler  :1;
-   bool _save         :1;
-   bool _end_menu     :1;
+   e_restart_mode_t _restart :2;
+   bool _ext_handler         :1;
+   bool _save                :1;
+   bool _end_menu            :1;
 };
 
 class SetupMenuSelect:  public MenuEntry
 {
 public:
 	SetupMenuSelect();
-	SetupMenuSelect( const char* title, bool restart=false, int (*action)(SetupMenuSelect *p) = 0, bool save=true, SetupNG<int> *anvs=0, bool ext_handler=false, bool end_menu=false );
+	SetupMenuSelect( const char* title, e_restart_mode_t restart=RST_NONE, int (*action)(SetupMenuSelect *p) = 0, bool save=true, SetupNG<int> *anvs=0, bool ext_handler=false, bool end_menu=false );
 	virtual ~SetupMenuSelect();
 	void display( int mode=0 );
 	bool existsEntry( std::string ent );

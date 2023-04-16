@@ -20,12 +20,14 @@
 #include "mpu/registers.hpp"
 #include "mpu/types.hpp"
 #include "sdkconfig.h"
+#include "driver/ledc.h"
 
 static const char* TAG = CONFIG_MPU_CHIP_MODEL;
 
 #include "mpu/log.hpp"
 
 extern bool topDown;
+extern float mpu_target_temp;
 
 
 /*! MPU Driver namespace */
@@ -120,6 +122,87 @@ esp_err_t MPU::reset()
 #endif
 	MPU_LOGI("MPU Reset OKAY!");
 	return ESP_OK;
+}
+/*uint32_t MPU::pi_control(int tick_count,float XCVTemp){
+	float temp = getTemperature();
+	mpu_t_delta = temp - mpu_target_temp;
+	float mpu_t_delta_p = -mpu_t_delta*20.0;
+	mpu_heat_pwm = mpu_t_delta_p;             // P part
+	mpu_t_delta_i -= (mpu_t_delta)/3.0;	      // I part
+	if( mpu_t_delta_i > 255 )
+		mpu_t_delta_i = 255;
+	if( mpu_t_delta_i < 0 )
+		mpu_t_delta_i = 0;
+	mpu_heat_pwm += mpu_t_delta_i;
+	if( mpu_heat_pwm > 255 )
+		mpu_heat_pwm = 255;
+	if( mpu_heat_pwm < 0 )
+		mpu_heat_pwm = 0;
+	// MPU_LOGI("MPU T: T=%.1f Delta= %.1f P=%.2f I=%.2f, PWM=%d", temp, mpu_t_delta, mpu_t_delta_p, mpu_t_delta_i, (int)rint(mpu_heat_pwm) );
+
+	if( !(tick_count%300) && abs(mpu_t_delta) > 1.0 ){
+		MPU_LOGW("Warning MPU T deviation > 1°: T=%.1f Delta= %.1f P=%.2f I=%.2f, PWM=%d", temp, mpu_t_delta, mpu_t_delta_p, mpu_t_delta_i, (int)rint(mpu_heat_pwm) );
+	}
+	return (uint32_t)rint(mpu_heat_pwm) ;
+}
+*/
+uint32_t MPU::pi_control(int tick_count,float XCVTemp){
+	float temp = getTemperature();
+	//uint8_t pwm;
+	float mpu_target_pwm = 7.0*(mpu_target_temp-XCVTemp)-30;
+	mpu_heat_pwm = mpu_target_pwm;
+	mpu_t_delta = temp - mpu_target_temp;
+	//	P control with Kp=100;
+	//float mpu_t_delta_p = -mpu_t_delta*100.0;
+	mpu_heat_pwm -= mpu_t_delta*100.0;             // P part
+	//To avoid damping of temperature correction, integral correction is only applied when pwm is close enougn to target pwm
+	// I control with Ki = 1
+	if (getSiliconTempStatus() == MPU_T_LOCKED) {
+		mpu_t_delta_i -= (mpu_t_delta)*1.0;	      // I part
+		if( mpu_t_delta_i > 127 )
+			mpu_t_delta_i = 127;
+		if( mpu_t_delta_i < -127 )
+			mpu_t_delta_i = -127;
+	}
+	mpu_heat_pwm += mpu_t_delta_i;
+	if( mpu_heat_pwm >= 255.0 )
+		mpu_heat_pwm = 255.0;
+	if( mpu_heat_pwm <= 0.0 )
+		mpu_heat_pwm = 0.0;
+	//pwm = (uint32_t)rint(mpu_heat_pwm);
+	//if( !(tick_count%30) && abs(mpu_t_delta) > 1.0 ){
+		//MPU_LOGW("Warning MPU T deviation > 1°: T=%.2f Delta= %.1f P=%.2f I=%.2f , PWM=%d", temp, mpu_t_delta, mpu_t_delta_p, mpu_t_delta_i,  pwm );
+	//}
+	// return mpu_heat_pwm
+	return  (uint32_t)rint(mpu_heat_pwm);
+}
+
+void MPU::temp_control(int count, float XCVTemp) {   // MPU temperature PI control
+	if( mpu_target_temp >= 0.0 ){     // MPU T = -1.0 switches off feature
+		ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_1, pi_control(count,XCVTemp) );
+		ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_1);
+	}
+}
+
+void MPU::pwm_init(){
+	MPU_LOGI("Initialize AHRS heating PWM control");
+	ledc_timer_config_t pwm_timer = {
+			.speed_mode = LEDC_HIGH_SPEED_MODE,
+			.duty_resolution = LEDC_TIMER_8_BIT,
+			.timer_num  = LEDC_TIMER_1,
+			.freq_hz = 500,
+			.clk_cfg = LEDC_AUTO_CLK };
+	ledc_channel_config_t pwm_ch = {
+			.gpio_num = GPIO_NUM_2,
+			.speed_mode = LEDC_HIGH_SPEED_MODE,
+			.channel = LEDC_CHANNEL_1,
+			.intr_type = LEDC_INTR_DISABLE,
+			.timer_sel = LEDC_TIMER_1,
+			.duty = 0, .hpoint = 0 };
+	ledc_channel_config(&pwm_ch);
+	ledc_timer_config(&pwm_timer);
+	ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_1, 0 );
+	ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_1);
 }
 
 /**
@@ -1013,6 +1096,12 @@ esp_err_t MPU::rotation(int16_t* x, int16_t* y, int16_t* z)
 		*z = (buffer[4] << 8 | buffer[5]);
 	}
 	return err;
+}
+
+float MPU::getTemperature(){
+	int16_t t;
+	temperature( &t );
+	return( (float)t/340.0 + 36.53 );
 }
 
 /**

@@ -34,6 +34,8 @@
 
 extern xSemaphoreHandle i2c_mutex;
 
+typedef enum temp_status { MPU_T_UNKNOWN, MPU_T_LOCKED, MPU_T_LOW, MPU_T_HIGH } temp_status_t;
+
 #ifdef CONFIG_MPU_I2C
 #if !defined I2CBUS_COMPONENT_TRUE
 #error ''MPU component requires I2Cbus library. \
@@ -238,6 +240,8 @@ class MPU
     esp_err_t rotation(raw_axes_t* gyro);
     esp_err_t rotation(int16_t* x, int16_t* y, int16_t* z);
     esp_err_t temperature(int16_t* temp);
+    float     getTemperature();  // in °C
+
     esp_err_t motion(raw_axes_t* accel, raw_axes_t* gyro);
     esp_err_t dmpGetQuaternion(int16_t *data);
 #if defined CONFIG_MPU_AK89xx
@@ -249,6 +253,24 @@ class MPU
     esp_err_t sensors(sensors_t* sensors, size_t extsens_len = 0);
     //! \}
 
+    // Temperature regulator by PI control
+    void pwm_init();             // one time initialize of PMW subsystem
+    void temp_control(int tick, float XCVTemp);  // Tick hook
+    //modif gfm
+    // int pi_control(int tick);    // PI control to regulate temperature
+    uint32_t pi_control(int tick,float XCVTemp);    // PI control to regulate temperature
+    float mpu_heat_pwm = 0; //from protected to here
+    // fin modif gfm
+    temp_status_t getSiliconTempStatus() {
+    	if( abs(mpu_t_delta) < 0.5)
+    		return MPU_T_LOCKED;
+    	else if( mpu_t_delta < -0.5 )
+    		return MPU_T_LOW;
+    	else if( mpu_t_delta > 0.5 )
+    	    return MPU_T_HIGH;
+    	else
+    		return MPU_T_UNKNOWN;
+    };
  protected:
     esp_err_t accelSelfTest(raw_axes_t& regularBias, raw_axes_t& selfTestBias, uint8_t* result);
     esp_err_t gyroSelfTest(raw_axes_t& regularBias, raw_axes_t& selfTestBias, uint8_t* result);
@@ -259,6 +281,10 @@ class MPU
     mpu_addr_handle_t addr; /*!< I2C address / SPI device handle */
     uint8_t buffer[16];     /*!< Commom buffer for temporary data */
     esp_err_t err;          /*!< Holds last error code */
+
+    float mpu_t_delta = 0;
+    float mpu_t_delta_i = 0;
+
 };
 
 }  // namespace mpud

@@ -1,0 +1,13 @@
+Total sizes:
+Used static DRAM:   12848 bytes ( 167888 remain, 7.1% used)
+      .data size:   10560 bytes
+      .bss  size:    2288 bytes
+Used static IRAM:   45618 bytes (  85454 remain, 34.8% used)
+      .text size:   44591 bytes
+   .vectors size:    1027 bytes
+Used Flash size :  107463 bytes
+      .text     :   79399 bytes
+      .rodata   :   27808 bytes
+Total image size:  163641 bytes (.bin may be padded larger)
+d:\Espressif\python_env\idf4.3_py3.6_env\Scripts\python.exe D:\Espressif\frameworks\esp-idf-v4.3.4\components\partition_table\gen_esp32part.py D:\eclipse_2020\Travail\Jlder\idf_default_template\build\partition_table\partition-table.bin
+Total time taken to build the project: 290?591 ms

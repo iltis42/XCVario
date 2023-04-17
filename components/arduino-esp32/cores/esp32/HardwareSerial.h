@@ -40,12 +40,6 @@
    }
 
  Pay attention: the baudrate returned by baudRate() may be rounded, eg 115200 returns 115201
-
- 02.01.2022 Axel Pauli: method number() added.
- 01.01.2022 Axel Pauli: Flarm stuff moved to Flarm.
-                        added readBufFromQueue() and made some single line
-                        methods to inline.
- 24.12.2021 Axel Pauli: added RX interrupt handling stuff.
  */
 
 #ifndef HardwareSerial_h
@@ -55,8 +49,6 @@
 
 #include "Stream.h"
 #include "esp32-hal.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/event_groups.h"
 
 class HardwareSerial: public Stream
 {
@@ -65,18 +57,9 @@ public:
 
     void begin(unsigned long baud, uint32_t config=SERIAL_8N1, int8_t rxPin=-1, int8_t txPin=-1, bool rxinvert=false, bool txinvert=false, unsigned long timeout_ms = 20000UL);
     void end();
-    void updateBaudRate(unsigned long baud)
-    {
-      uartSetBaudRate(_uart, baud);
-    }
-    int available(void)
-    {
-      return uartAvailable(_uart);
-    }
-    int availableForWrite(void)
-    {
-      return uartAvailableForWrite(_uart);
-    }
+    void updateBaudRate(unsigned long baud);
+    int available(void);
+    int availableForWrite(void);
     int peek(void);
     int read(void);
     size_t read(uint8_t *buffer, size_t size);
@@ -84,29 +67,8 @@ public:
     {
         return read((uint8_t*) buffer, size);
     }
-    size_t readLine(uint8_t *buffer, size_t size );
-    inline size_t readLine(char * buffer, size_t size )
-    {
-    	return readLine((uint8_t*) buffer, size );
-    }
-    size_t readLineFromQueue(uint8_t *buffer, size_t size);
-
-    uint8_t readCharFromQueue( uint8_t* c )
-    {
-      return uartReadCharFromQueue( _uart, c );
-    }
-    uint16_t readBufFromQueue( uint8_t* buffer, const size_t len)
-    {
-      return uartReadBufFromQueue( _uart, buffer, len);
-    }
-    void flush(void)
-    {
-      uartFlush(_uart);
-    }
-    void flush( bool txOnly)
-    {
-      uartFlushTxOnly(_uart, txOnly);
-    }
+    void flush(void);
+    void flush( bool txOnly);
     size_t write(uint8_t);
     size_t write(const uint8_t *buffer, size_t size);
     inline size_t write(const char * buffer, size_t size)
@@ -141,45 +103,6 @@ public:
     
     void setRxInvert(bool);
     void setTxInvert(bool);
-
-    // enable uart RX interrupt
-    void enableRxInterrupt();
-
-    // disable uart RX interupt
-    void disableInterrupt();
-
-    // Event group handler to signal RX events to clients waiting for characters.
-    static void setRxNotifier( EventGroupHandle_t egh )
-    {
-      uartRxEventHandler( egh );
-    }
-
-    // Functions for handling of newline counter
-    void incNlCounter()
-    {
-      uartIncNlCounter( _uart );
-    }
-
-    void decNlCounter()
-    {
-      uartDecNlCounter( _uart );
-    }
-
-    void clearNlCounter()
-    {
-      uartClearNlCounter( _uart );
-    }
-
-    uint16_t getNlCounter()
-    {
-      return uartGetNlCounter( _uart );
-    }
-
-    // return the number of the Uart.
-    int number() const
-    {
-      return _uart_nr;
-    }
 
 protected:
     int _uart_nr;

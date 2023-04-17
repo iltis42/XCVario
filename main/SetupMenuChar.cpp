@@ -71,7 +71,7 @@ void SetupMenuChar::delEntry( const char* ent ) {
 		}
 }
 
-SetupMenuChar::SetupMenuChar( const char* title, bool restart, int (*action)(SetupMenuChar *p), bool save, char *achar, uint32_t index, bool ext_handler, bool end_menu ) {
+SetupMenuChar::SetupMenuChar( const char* title, e_restart_mode_t restart, int (*action)(SetupMenuChar *p), bool save, char *achar, uint32_t index, bool ext_handler, bool end_menu ) {
 	ESP_LOGI(FNAME,"SetupMenuChar( %s ), char: %c", title, *achar );
 	attach(this);
 	bits._ext_handler = ext_handler;

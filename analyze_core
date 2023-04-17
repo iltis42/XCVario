@@ -1,2 +1,0 @@
-espcoredump.py dbg_corefile --core-format b64 --core $1   ~/XCVario/build/sensor.elf 
-

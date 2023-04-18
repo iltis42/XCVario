@@ -1672,7 +1672,7 @@ void SetupMenu::system_menu_create_hardware( MenuEntry *top ){
 	pstype->addEntry( "MP5004");
 	pstype->addEntry( "Autodetect");
 
-	SetupMenuValFloat * met_adj = new SetupMenuValFloat( "Voltmeter Adjust", "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust,  RST_IMMEDIATE, false, true);
+	SetupMenuValFloat * met_adj = new SetupMenuValFloat( "Voltmeter Adjust", "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust,  RST_NONE, false, true);
 	met_adj->setHelp(PROGMEM "Option to fine factory adjust voltmeter");
 	top->addEntry( met_adj );
 }

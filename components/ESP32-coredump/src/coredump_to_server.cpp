@@ -107,13 +107,13 @@ esp_err_t coredump_to_server(coredump_to_server_config_t const * const write_cfg
 }
 
 esp_err_t clear_coredump(){
-    size_t coredump_addr;
-    size_t coredump_size;
-    esp_err_t err = esp_core_dump_image_get(&coredump_addr, &coredump_size);
-    if (err != ESP_OK) {
-        ESP_LOGI(TAG, "No coredump in flash");
-        return err;
-    }
+	   size_t coredump_addr;
+	    size_t coredump_size;
+	    esp_err_t err = esp_core_dump_image_get(&coredump_addr, &coredump_size);
+	    if (err != ESP_OK) {
+	        ESP_LOGI(TAG, "No coredump in flash");
+	        return err;
+	    }
 	uint32_t sec_num = coredump_size / SPI_FLASH_SEC_SIZE;
 	if (coredump_size % SPI_FLASH_SEC_SIZE) {
 		sec_num++;
@@ -123,16 +123,4 @@ esp_err_t clear_coredump(){
 		ESP_LOGE(TAG, "Failed to erase coredump (%d)!", err);
 	}
 	return err;
-}
-
-bool coredump_available()
-{
-    size_t coredump_addr;
-    size_t coredump_size;
-    esp_err_t err = esp_core_dump_image_get(&coredump_addr, &coredump_size);
-    if (err != ESP_OK) {
-        ESP_LOGI(TAG, "No coredump available");
-        return false;
-    }
-    return true;
 }

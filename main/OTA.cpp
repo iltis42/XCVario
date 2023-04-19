@@ -21,7 +21,6 @@
 #include "OTA.h"
 #include <logdef.h>
 #include "ESPAudio.h"
-#include "Webserver.h"
 
 OTA::OTA(){
 	pressed = false;
@@ -60,30 +59,28 @@ void OTA::doSoftwareUpdate(IpsDisplay * p ){
 	p->writeText(line++,"Password: xcvario-21");
 	p->writeText(line++,"Open: http://192.168.4.1");
 	p->writeText(line++,"Then follow the dialogue");
-	init_wifi_softap(nullptr);
-    Webserver.start();
+	init_wifi_softap(&OTA_server);
 	for( tick=0; tick<900; tick++ ) {
 		char txt[40];
 		sprintf(txt,"Timeout in %d sec  ", 900-tick );
 		p->writeText(line+2,txt);
 		std::string pro( "Progress: ");
-		pro += std::to_string( Webserver.getOtaProgress() ) + " %";
+		pro += std::to_string( getProgress() ) + " %";
 		p->writeText(line+3,pro.c_str());
-		vTaskDelay(1000/portTICK_PERIOD_MS);
-		if( Webserver.getOtaStatus() == otaStatus::DONE ){
+		sleep(1);
+		if( getFlashStatus() == 1 ){
 			ESP_LOGI(FNAME,"Flash status, Now restart");
 			p->writeText(line+5,"Download SUCCESS !");
-			vTaskDelay(3000/portTICK_PERIOD_MS);
+			sleep(3);
 			break;
 		}
 		if( pressed ) {
 			ESP_LOGI(FNAME,"pressed");
 			p->writeText(line+5,"Abort, Now Restart");
-			vTaskDelay(3000/portTICK_PERIOD_MS);
+			sleep(3);
 			break;
 		}
 	}
-    Webserver.stop();
 	ESP_LOGI(FNAME,"Now restart");
 	software_update.set( 0 );
 	software_update.commit();

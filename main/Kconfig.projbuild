@@ -1,8 +1,0 @@
-menu "Webserver"
-    config WEBSERVER_USE_GZIP
-            bool "Use gzip compressed web assets"
-            default true
-            help
-                Saves approxemately 22kB flash by using gzip compressed html / css files
-
-endmenu

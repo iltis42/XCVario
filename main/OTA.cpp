@@ -63,23 +63,24 @@ void OTA::doSoftwareUpdate(IpsDisplay * p ){
 		std::string pro( "Progress: ");
 		pro += std::to_string( Webserver.getOtaProgress() ) + " %";
 		p->writeText(line+3,pro.c_str());
-		vTaskDelay(1/portTICK_PERIOD_MS);
+		vTaskDelay(1000/portTICK_PERIOD_MS);
 		if( Webserver.getOtaStatus() == otaStatus::DONE ){
 			ESP_LOGI(FNAME,"Flash status, Now restart");
 			p->writeText(line+5,"Download SUCCESS !");
-			vTaskDelay(3/portTICK_PERIOD_MS);
+			vTaskDelay(3000/portTICK_PERIOD_MS);
 			break;
 		}
 		if( pressed ) {
 			ESP_LOGI(FNAME,"pressed");
 			p->writeText(line+5,"Abort, Now Restart");
-			vTaskDelay(3/portTICK_PERIOD_MS);
+			vTaskDelay(3000/portTICK_PERIOD_MS);
 			break;
 		}
 	}
     Webserver.stop();
 	ESP_LOGI(FNAME,"Now restart");
 	software_update.set( 0 );
+	software_update.commit();
 	Audio::shutdown();
 	esp_restart();
 }

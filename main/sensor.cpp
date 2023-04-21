@@ -614,6 +614,19 @@ static void processIMU(void *pvParameters)
 	currentAccelBias = accl_bias.get();
 	mpud::float_axes_t currentAccelGain;	
 	currentAccelGain = accl_gain.get();
+	
+	// get installation parameters tilt, sway, distCG
+	// compute trigonometry
+	float DistCGVario = distCG.get();
+	float CS = cos(sway.get());
+	float SS = sin(sway.get());
+	float CT = cos(tilt.get());
+	float ST = sin(tilt.get());
+	float STmultSS = ST * SS;
+	float STmultCS = ST * CS;
+	float SSmultCT = SS * CT;
+	float CTmultCS = CT * CS;	
+	
 
 	// get gyro bias
 	mpud::float_axes_t currentGyroBias = gyro_bias.get();
@@ -645,8 +658,13 @@ static void processIMU(void *pvParameters)
 			gyroISUNEDMPU.x = -(gyroRPS.z - currentGyroBias.z);
 			gyroISUNEDMPU.y = -(gyroRPS.y - currentGyroBias.y);
 			gyroISUNEDMPU.z = -(gyroRPS.x - currentGyroBias.x);
-			// TODO convert gyros to ISUNEDBODY and remove offset estimation in flight
-			gyroISUNEDBODY = gyroISUNEDMPU;
+			// convert NEDMPU to NEDBODY
+			gyroISUNEDBODY.x = CT * gyroISUNEDMPU.x + STmultSS * gyroISUNEDMPU.y + STmultCS * gyroISUNEDMPU.z;
+			gyroISUNEDBODY.y = CS * gyroISUNEDMPU.y - SS * gyroISUNEDMPU.z;
+			gyroISUNEDBODY.z = -ST * gyroISUNEDMPU.x + SSmultCT  * gyroISUNEDMPU.y + CTmultCS * gyroISUNEDMPU.z;
+			accelISUNEDBODY.x = CT * accelISUNEDMPU.x + STmultSS * accelISUNEDMPU.y + STmultCS * accelISUNEDMPU.z - ( gyroISUNEDBODY.y * gyroISUNEDBODY.y + gyroISUNEDBODY.z * gyroISUNEDBODY.z ) * DistCGVario;
+			accelISUNEDBODY.y = CS * accelISUNEDMPU.y - SS * accelISUNEDMPU.z;
+			accelISUNEDBODY.z = -ST * accelISUNEDMPU.x + SSmultCT * accelISUNEDMPU.y + CTmultCS * accelISUNEDMPU.z;
 		}
 
 		if(BIAS_Init || ias.get() > 25){

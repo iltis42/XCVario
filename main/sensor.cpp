@@ -168,6 +168,19 @@ Compass *compass = 0;
 BTSender btsender;
 
 // Fligth Test
+
+// IMU variables	
+static float GravModuleFilt = 0.0;	
+static float integralFBx = 0.0;
+static float integralFBy = 0.0;
+static float integralFBz = 0.0;
+static float IMUBiasx = 0.0;
+static float IMUBiasy = 0.0;
+static float IMUBiasz = 0.0;
+static float GravyFilt = 0.0;
+static float alternategzBias = 0.0;
+
+
 static char str[150]; 	// string for flight test message broadcast on wireless
 static int64_t ProcessTime = 0;
 static int64_t gyroTime;  // time stamp for gyros
@@ -478,7 +491,86 @@ void audioTask(void *pvParameters){
 	}
 }
 
+void MahonyUpdateIMU(float dt, float gx, float gy, float gz, float ax, float ay, float az, float &q0, float &q1, float &q2, float &q3) {
 
+#define Nzlimit 0.15 // m/s²
+#define Kp 0.1
+#define Ki 0.01
+#define fcGrav 3.0 // 3Hz low pass
+#define fcgrav1 (40.0/(40.0+fcGrav))
+#define fcgrav2 (1.0-fcgrav1)
+#define Kbias 0.001
+#define winglevel 0.15 // max lateral gravity acceleration to consider wings are ~leveled
+#define Kalt 0.001
+
+float GravModule, QuatModule, recipNorm, halfvx, halfvy, halfvz, halfex, halfey, halfez, qa, qb, qc;
+
+	// Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
+	GravModule = ax * ax + ay * ay + az * az;	
+	if ( GravModule != 0.0) {
+		// Normalise accelerometer measurement
+		recipNorm = 1.0 / sqrt( GravModule );
+		ax *=recipNorm;
+		ay *=recipNorm;
+		az *=recipNorm;
+		// Estimated direction of gravity
+		halfvx = q1 * q3 - q0 * q2;
+		halfvy = q0 * q1 + q2 * q3;
+		halfvz = q0 * q0 - 0.5 + q3 * q3;
+		// Error is sum of cross product between estimated and measured direction of gravity
+		halfex = (ay * halfvz - az * halfvy);
+		halfey = (az * halfvx - ax * halfvz);
+		halfez = (ax * halfvy - ay * halfvx);
+		// If gravity from acceleromters can be trusted ( acceleration module below given Nzlimit)
+		// correct gyros using proportional and integral feedback
+		// estimate long term bias from gyros
+		GravModuleFilt = fcgrav1 * GravModuleFilt + fcgrav2 * sqrt( GravModule );
+		if ( (GravModuleFilt-GRAVITY) < Nzlimit ) {
+			integralFBx = integralFBx + Ki * halfex * dt;
+			integralFBy = integralFBy + Ki * halfey * dt;
+			integralFBz = integralFBz + Ki * halfez * dt;
+			gx = gx + integralFBx; // apply integral feedback
+			gy = gy + integralFBy;
+			gz = gz + integralFBz;
+			// Apply proportional feedback
+			gx = gx + Kp * halfex;
+			gy = gy + Kp * halfey;
+			gz = gz + Kp * halfez;
+			// Estimate bias from gyros by long term integration of errors
+			IMUBiasx = IMUBiasx + Kbias * halfex * dt;
+			IMUBiasy = IMUBiasy + Kbias * halfey * dt;
+			IMUBiasz = IMUBiasz + Kbias * halfez * dt;
+			// To capture gz bias when in straight flight, compute bias considering long time average of gz is ~0 when wings are leveled
+			// We should only consider long period therefore Kalt should be set very low e.g. 10-2 or 10-3
+			GravyFilt = fcgrav1 * GravyFilt + fcgrav2 * halfvy;
+			if ( abs(GravyFilt) < winglevel ) alternategzBias = ( 1 - Kalt ) * alternategzBias + Kalt * gz;
+			// TODO verify validity of the alternate gz bias estimation before using it for gyro corrections
+		}
+	}
+
+	// Integrate rate of change of quaternion
+	gx = gx * 0.5 * dt; // pre-multiply common factors
+	gy = gy * 0.5 * dt;
+	gz = gz * 0.5 * dt;
+	qa = q0;
+	qb = q1;
+	qc = q2;
+	q0 +=(-qb * gx - qc * gy - q3 * gz);
+	q1 += (qa * gx + qc * gz - q3 * gy);
+	q2 += (qa * gy - qb * gz + q3 * gx);
+	q3 += (qa * gz + qb * gy - qc * gx);
+
+	// Normalise quaternion
+	
+	QuatModule = sqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);
+	if ( QuatModule != 0.0) {	
+		recipNorm = 1.0 / QuatModule;	
+		q0 *= recipNorm;
+		q1 *= recipNorm;
+		q2 *= recipNorm;
+		q3 *= recipNorm;
+	}
+}
 
 static void processIMU(void *pvParameters)
 {

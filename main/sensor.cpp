@@ -179,6 +179,13 @@ static float IMUBiasy = 0.0;
 static float IMUBiasz = 0.0;
 static float GravyFilt = 0.0;
 static float alternategzBias = 0.0;
+static float Pitch;
+static float Roll;
+static float Yaw;
+static float q0 = 0.0;
+static float q1 = 0.0;
+static float q2 = 0.0;
+static float q3 = 1.0;
 
 
 static char str[150]; 	// string for flight test message broadcast on wireless
@@ -584,9 +591,11 @@ static void processIMU(void *pvParameters)
 	// MPU data
 	mpud::raw_axes_t accelRaw; 
 	mpud::float_axes_t accelISUNEDMPU;
+	mpud::float_axes_t accelISUNEDBODY;	
 	mpud::raw_axes_t gyroRaw;
 	mpud::float_axes_t gyroRPS;
 	mpud::float_axes_t gyroISUNEDMPU;
+	mpud::float_axes_t gyroISUNEDBODY;	
 
 	// variables for bias estimation
 	int16_t gyrobiastemptimer = 0;
@@ -621,7 +630,8 @@ static void processIMU(void *pvParameters)
 			accelISUNEDMPU.x = ((- accelG.z * GRAVITY) - currentAccelBias.x ) / currentAccelGain.x;
 			accelISUNEDMPU.y = ((- accelG.y * GRAVITY) - currentAccelBias.y ) / currentAccelGain.y;
 			accelISUNEDMPU.z = ((- accelG.x * GRAVITY) - currentAccelBias.z ) / currentAccelGain.z;
-			// TODO convert accels to ISUNEDBODY				
+			// TODO convert accels to ISUNEDBODY
+			accelISUNEDBODY = accelISUNEDMPU;
 		}
 		// get gyro data
 		if( MPU.rotation(&gyroRaw) == ESP_OK ){
@@ -635,7 +645,34 @@ static void processIMU(void *pvParameters)
 			gyroISUNEDMPU.y = -(gyroRPS.y - currentGyroBias.y);
 			gyroISUNEDMPU.z = -(gyroRPS.x - currentGyroBias.x);
 			// TODO convert gyros to ISUNEDBODY and remove offset estimation in flight
+			gyroISUNEDBODY = gyroISUNEDMPU;
 		}
+
+		if(BIAS_Init || ias.get() > 25){
+			// estimate gravity with centrifugal corrections
+			mpud::float_axes_t gravISUNEDBODY;
+			mpud::float_axes_t Vbi;
+			if (tas>25.0) Vbi.x = tas; else Vbi.x = 0.0;
+			Vbi.y = 0;
+			Vbi.z = 0;
+			gravISUNEDBODY.x = accelISUNEDBODY.x - gyroISUNEDBODY.y * Vbi.z + gyroISUNEDBODY.z * Vbi.y;
+			gravISUNEDBODY.y = accelISUNEDBODY.y - gyroISUNEDBODY.z * Vbi.x + gyroISUNEDBODY.x * Vbi.z;
+			gravISUNEDBODY.z = accelISUNEDBODY.z + gyroISUNEDBODY.y * Vbi.x - gyroISUNEDBODY.x * Vbi.y;
+
+			// Update IMU quaternion
+			MahonyUpdateIMU( dtGyr, gyroISUNEDBODY.x, gyroISUNEDBODY.y, gyroISUNEDBODY.z, -gravISUNEDBODY.x, -gravISUNEDBODY.y, -gravISUNEDBODY.z, q0, q1, q2, q3 );
+			// Euler angles
+			if ( abs(q1 * q3 - q0 * q2) < 0.5 ) {
+				Pitch = asin(-2.0 * (q1 * q3 - q0 * q2));
+			} else {
+				Pitch = M_PI / 2.0 * signbit((q0 * q2 - q1 * q3 ));
+			}
+			Roll = atan2((q0 * q1 + q2 * q3), (0.5 - q1 * q1 - q2 * q2));
+			Yaw = atan2(2.0 * (q1 * q2 + q0 * q3), (q0 * q0 + q1 * q1 - q2 * q2 - q3 * q3));
+			if (Yaw < 0.0 ) Yaw = Yaw + 2.0 * M_PI;
+			if (Yaw > 2.0 * M_PI) Yaw = Yaw - 2.0 * M_PI;
+		}		
+		
 		// If required stream IMU data
 		if ( IMUstream ) {
 			/*
@@ -1891,7 +1928,7 @@ void system_startup(void *args){
 		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 11, &apid, 0);
 	}
 	else {
-		xTaskCreatePinnedToCore(&readSensors, "readSensors", 5120, NULL, 11, &bpid, 0);
+		xTaskCreatePinnedToCore(&readSensors, "readSensors", 5120, NULL, 14, &bpid, 0);
 
 	}
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 3000, NULL, 5, &tpid, 0);       // increase stack by 500 byte

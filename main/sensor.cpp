@@ -168,6 +168,7 @@ Compass *compass = 0;
 BTSender btsender;
 
 // Fligth Test
+static char str[150]; 	// string for flight test message broadcast on wireless
 static int64_t ProcessTime = 0;
 static int64_t gyroTime;  // time stamp for gyros
 static int16_t dtGyr; // period between last gyro samples
@@ -516,183 +517,98 @@ static void processIMU(void *pvParameters)
 	mpud::float_axes_t currentGyroBias = gyro_bias.get();
 	// TODO estimation of gyro gain
 	
-	// string for flight test message broadcast on wireless
-	char str[150]; 
-	
 	while (1) {
 
 		TickType_t xLastWakeTime_mpu =xTaskGetTickCount();
 		
-		// get MPU data every IMUrate * 25 ms
-		if( gflags.haveMPU && ((mtick % IMUrate) == 0) ) {
-			// get accel data
-			if( MPU.acceleration(&accelRaw) == ESP_OK ){
-				accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // For compatibility with Eckhard code only. Convert raw data to to 8G full scale
-				// convert accels coordinates to ISU : m/s² NED MPU
-				accelISUNEDMPU.x = ((- accelG.z * GRAVITY) - currentAccelBias.x ) / currentAccelGain.x;
-				accelISUNEDMPU.y = ((- accelG.y * GRAVITY) - currentAccelBias.y ) / currentAccelGain.y;
-				accelISUNEDMPU.z = ((- accelG.x * GRAVITY) - currentAccelBias.z ) / currentAccelGain.z;
-				// TODO convert accels to ISUNEDBODY				
-			}
-			// get gyro data
-			if( MPU.rotation(&gyroRaw) == ESP_OK ){
-				prevgyroTime = gyroTime;
-				gyroTime = esp_timer_get_time()/1000; // record time of gyro measurement in milli second
-				dtGyr = gyroTime - prevgyroTime; // period between last two valid samples
-				gyroDPS = mpud::gyroDegPerSec(gyroRaw, GYRO_FS); // For compatibility with Eckhard code only. Convert raw gyro to Gyro_FS full scale in degre per second 
-				gyroRPS = mpud::gyroRadPerSec(gyroRaw, GYRO_FS); // convert raw gyro to Gyro_FS full scale
-				// convert gyro coordinates to ISU : rad/s NED MPU and remove bias
-				gyroISUNEDMPU.x = -(gyroRPS.z - currentGyroBias.z);
-				gyroISUNEDMPU.y = -(gyroRPS.y - currentGyroBias.y);
-				gyroISUNEDMPU.z = -(gyroRPS.x - currentGyroBias.x);
-				// TODO convert gyros to ISUNEDBODY and remove offset estimation in flight
-			}
-			// If required stream IMU data
-			if ( IMUstream ) {
-				/*
-				IMU data in ISU and NED orientation
-					$I,
-					TTTTT:		MPU (gyro) time in milli second,
-					XXXXX:		acceleration in X-Axis in milli m/s²,
-					YYYYY:		acceleration in Y-Axis in milli m/s²,
-					ZZZZZ:		acceleration in Z-Axis in milli m/s²,
-					XXXXX:		rotation X-Axis in tenth of milli rad/s,
-					YYYYY:		rotation Y-Axis in tenth of milli rad/s,
-					ZZZZZ:		rotation Z-Axis in tenth of milli rad/s,
-					<CR><LF>	
-				*/			
-				sprintf(str,"$I,%lld,%i,%i,%i,%i,%i,%i\r\n",
-					gyroTime,(int32_t)(accelISUNEDMPU.x*1000.0), (int32_t)(accelISUNEDMPU.y*1000.0), (int32_t)(accelISUNEDMPU.z*1000.0), (int32_t)(gyroISUNEDMPU.x*10000.0), (int32_t)(gyroISUNEDMPU.y*10000.0),(int32_t)(gyroISUNEDMPU.z*10000.0) );
-				Router::sendXCV(str);
-			}
-			// Estimation of gyro bias when on ground:  IAS < 25 km/h and not bias estimation yet
-			if( (ias.get() < 25.0 ) && !BIAS_Init ) {
-				// When there is MPU temperature control and temperature is locked   or   when there is no temperature control
-				if ( (HAS_MPU_TEMP_CONTROL && (MPU.getSiliconTempStatus() == MPU_T_LOCKED)) || !HAS_MPU_TEMP_CONTROL ) {
-					// count cycles when temperature is locked
-					gyrobiastemptimer++;
-					// detect if gyro variations is below stability threshold using an alpha/beta filter to estimate variation over short period of time
-					deltaGyroTest =  ( gyroRPS.x * gyroRPS.x + gyroRPS.y * gyroRPS.y + gyroRPS.z * gyroRPS.z ) - GyroTestFilt;
-					GyroTestPrimFilt = GyroTestPrimFilt + betaGyroTest * deltaGyroTest;
-					GyroTestFilt = GyroTestFilt + alphaGyroTest * deltaGyroTest + GyroTestPrimFilt * dtGyr;
-					// if temperature conditions has been stable for more than 30 seconds (1200 = 30x40hz) and there is very little angular acceleration variation
-					if ( gyrobiastemptimer > 1200 && abs(GyroTestPrimFilt) < 0.01 ) {
-						gyrostable++;
-						// during first 2.5 seconds, initialize gyro data
-						if ( gyrostable < 100 ) {
-							averagecount = 0;
-							BIAS_Init = false;
-							GxBias = 0;
-							GyBias = 0;
-							GzBias = 0;							
+
+		// get accel data
+		if( MPU.acceleration(&accelRaw) == ESP_OK ){
+			accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // For compatibility with Eckhard code only. Convert raw data to to 8G full scale
+			// convert accels coordinates to ISU : m/s² NED MPU
+			accelISUNEDMPU.x = ((- accelG.z * GRAVITY) - currentAccelBias.x ) / currentAccelGain.x;
+			accelISUNEDMPU.y = ((- accelG.y * GRAVITY) - currentAccelBias.y ) / currentAccelGain.y;
+			accelISUNEDMPU.z = ((- accelG.x * GRAVITY) - currentAccelBias.z ) / currentAccelGain.z;
+			// TODO convert accels to ISUNEDBODY				
+		}
+		// get gyro data
+		if( MPU.rotation(&gyroRaw) == ESP_OK ){
+			prevgyroTime = gyroTime;
+			gyroTime = esp_timer_get_time()/1000; // record time of gyro measurement in milli second
+			dtGyr = gyroTime - prevgyroTime; // period between last two valid samples
+			gyroDPS = mpud::gyroDegPerSec(gyroRaw, GYRO_FS); // For compatibility with Eckhard code only. Convert raw gyro to Gyro_FS full scale in degre per second 
+			gyroRPS = mpud::gyroRadPerSec(gyroRaw, GYRO_FS); // convert raw gyro to Gyro_FS full scale
+			// convert gyro coordinates to ISU : rad/s NED MPU and remove bias
+			gyroISUNEDMPU.x = -(gyroRPS.z - currentGyroBias.z);
+			gyroISUNEDMPU.y = -(gyroRPS.y - currentGyroBias.y);
+			gyroISUNEDMPU.z = -(gyroRPS.x - currentGyroBias.x);
+			// TODO convert gyros to ISUNEDBODY and remove offset estimation in flight
+		}
+		// If required stream IMU data
+		if ( IMUstream ) {
+			/*
+			IMU data in ISU and NED orientation
+				$I,
+				TTTTT:		MPU (gyro) time in milli second,
+				XXXXX:		acceleration in X-Axis in milli m/s²,
+				YYYYY:		acceleration in Y-Axis in milli m/s²,
+				ZZZZZ:		acceleration in Z-Axis in milli m/s²,
+				XXXXX:		rotation X-Axis in tenth of milli rad/s,
+				YYYYY:		rotation Y-Axis in tenth of milli rad/s,
+				ZZZZZ:		rotation Z-Axis in tenth of milli rad/s,
+				<CR><LF>	
+			*/			
+			sprintf(str,"$I,%lld,%i,%i,%i,%i,%i,%i\r\n",
+				gyroTime,(int32_t)(accelISUNEDMPU.x*1000.0), (int32_t)(accelISUNEDMPU.y*1000.0), (int32_t)(accelISUNEDMPU.z*1000.0), (int32_t)(gyroISUNEDMPU.x*10000.0), (int32_t)(gyroISUNEDMPU.y*10000.0),(int32_t)(gyroISUNEDMPU.z*10000.0) );
+			Router::sendXCV(str);
+		}
+		// Estimation of gyro bias when on ground:  IAS < 25 km/h and not bias estimation yet
+		if( (ias.get() < 25.0 ) && !BIAS_Init ) {
+			// When there is MPU temperature control and temperature is locked   or   when there is no temperature control
+			if ( (HAS_MPU_TEMP_CONTROL && (MPU.getSiliconTempStatus() == MPU_T_LOCKED)) || !HAS_MPU_TEMP_CONTROL ) {
+				// count cycles when temperature is locked
+				gyrobiastemptimer++;
+				// detect if gyro variations is below stability threshold using an alpha/beta filter to estimate variation over short period of time
+				deltaGyroTest =  ( gyroRPS.x * gyroRPS.x + gyroRPS.y * gyroRPS.y + gyroRPS.z * gyroRPS.z ) - GyroTestFilt;
+				GyroTestPrimFilt = GyroTestPrimFilt + betaGyroTest * deltaGyroTest;
+				GyroTestFilt = GyroTestFilt + alphaGyroTest * deltaGyroTest + GyroTestPrimFilt * dtGyr;
+				// if temperature conditions has been stable for more than 30 seconds (1200 = 30x40hz) and there is very little angular acceleration variation
+				if ( gyrobiastemptimer > 1200 && abs(GyroTestPrimFilt) < 0.01 ) {
+					gyrostable++;
+					// during first 2.5 seconds, initialize gyro data
+					if ( gyrostable < 100 ) {
+						averagecount = 0;
+						BIAS_Init = false;
+						GxBias = 0;
+						GyBias = 0;
+						GzBias = 0;							
+					} else {
+						// between 2.5 seconds and 12.5 seconds, accumulate gyro data
+						if ( gyrostable < 500 ) {
+							averagecount++;
+							GxBias = GxBias + gyroRPS.x;
+							GyBias = GyBias + gyroRPS.y;
+							GzBias = GzBias + gyroRPS.z;
 						} else {
-							// between 2.5 seconds and 12.5 seconds, accumulate gyro data
-							if ( gyrostable < 500 ) {
-								averagecount++;
-								GxBias = GxBias + gyroRPS.x;
-								GyBias = GyBias + gyroRPS.y;
-								GzBias = GzBias + gyroRPS.z;
-							} else {
-								// after 15 seconds calculate average bias and set bias in FLASH
-								if ( gyrostable++ > 600 ) {
-									BIAS_Init = true;
-									currentGyroBias.x = GxBias / averagecount;
-									currentGyroBias.y = GyBias / averagecount;
-									currentGyroBias.z = GzBias / averagecount;
-									gyro_bias.set(currentGyroBias);
-									sprintf(str,"$GBIAS,%lld,%3.3f,%.6f,%.6f,%.6f\r\n", gyroTime, MPUtempcel, -currentGyroBias.z, -currentGyroBias.y, -currentGyroBias.x );
-									Router::sendXCV(str);
-								}
+							// after 15 seconds calculate average bias and set bias in FLASH
+							if ( gyrostable++ > 600 ) {
+								BIAS_Init = true;
+								currentGyroBias.x = GxBias / averagecount;
+								currentGyroBias.y = GyBias / averagecount;
+								currentGyroBias.z = GzBias / averagecount;
+								gyro_bias.set(currentGyroBias);
+								sprintf(str,"$GBIAS,%lld,%3.3f,%.6f,%.6f,%.6f\r\n", gyroTime, MPUtempcel, -currentGyroBias.z, -currentGyroBias.y, -currentGyroBias.x );
+								Router::sendXCV(str);
 							}
 						}
-					} else {
-						gyrostable = 0; // reset gyro stability counter if temperature not stable or movement detected
 					}
-				} 
-			}
-			else gyrobiastemptimer = 0; // Insure No bias evaluation during flight
+				} else {
+					gyrostable = 0; // reset gyro stability counter if temperature not stable or movement detected
+				}
+			} 
 		}
+		else gyrobiastemptimer = 0; // Insure No bias evaluation during flight
 		
-		// get sensors data : static, TE, dynamic pressure, OAT, MPU temp and GNSS data. 
-		// get sensors data every SENrate * 25ms
-		if ( (mtick % SENrate) == 0 ) {
-			// get raw static pressurebool
-			bool ok=false;
-			float p = 0;
-
-			p = baroSensor->readPressure(ok);
-			if ( ok ) {
-				statTime = esp_timer_get_time()/1000.0; // record static time in second
-				statP = p;
-				// for compatibility with readSensors
-				baroP = p;
-			}
-			
-			// get raw te pressure
-			xSemaphoreTake(xMutex,portMAX_DELAY );
-			p = teSensor->readPressure(ok);
-			if ( ok ) {
-				teTime = esp_timer_get_time()/1000.0; // record TE time in second
-				teP = p;
-				// not sure what is required for compatibility with readSensors
-			}
-			xSemaphoreGive(xMutex);
-			
-			// get raw dynamic pressure
-			if( asSensor )
-				p = asSensor->readPascal(0, ok);
-			if( ok ) {
-				dynP = p;
-				// for compatibility with readSensors
-				dynamicP = 0;
-				if (p > 60 ) 
-					dynamicP = p; 
-			}
-			// get XCVTemp
-			XCVTemp = bmpVario.bmpTemp;
-			OATemp = OAT.get();
-			if( !gflags.validTemperature ) {
-				OATemp = 15 - ( (altitude.get()/100) * 0.65 );
-				ESP_LOGI(FNAME,"OATemp: %0.1f  Altitude %0.1f", OATemp, altitude.get() );
-			}
-			// not sure what is required for compatibility with readSensors
-			
-			// get MPU temp
-			MPUtempcel = MPU.getTemperature();
-			
-			// get Ublox GNSS data
-			// when GNSS receiver is connected to S1 interface
-			const gnss_data_t *gnss1 = s1UbloxGnssDecoder.getGNSSData(1);
-			// when GNSS receiver is connected to S2 interface
-			const gnss_data_t *gnss2 = s2UbloxGnssDecoder.getGNSSData(2);
-			// select gnss with better fix
-			const gnss_data_t *chosenGnss = (gnss2->fix >= gnss1->fix) ? gnss2 : gnss1;
-			
-			if ( SENstream ) {
-			/*
-				$S,			Sensor data
-				TTTTTT:		static time in milli second,
-				PPPPPP:		static pressure in Pa,
-				TTTTTT:		TE time in milli second,
-				PPPPPP:		TE pressure in Pa,
-				PPPPPP:		Dynamic pressure in Pa,
-				XXX:		Outside Air Temperature in tenth of °C,
-				XXX:		MPU temperature in tenth °C,
-				X:			fix 0 to 5   3=3D   4= 3D diff,
-				XX:			numSV number of satelites used, 
-				TTTTTT:		GNSS time in milli second,
-				AAAAAA:		GNSS altitude in centimeter,
-				VVVV:		GNSS speed x or north in centimeters/s,
-				VVVV:		GNSS speed y or east in centimeters/s,
-				VVVV:		GNSS speed z or down in centimeters/s,
-				<CR><LF>		
-			*/
-				sprintf(str,"$S,%lld,%i,%lld,%i,%i,%i,%i,%1d,%2d,%lld,%i,%i,%i,%i\r\n",
-					statTime, (int32_t)(statP*100.0), teTime,(int32_t)(teP*100.0), (int16_t)(dynP),  (int16_t)(OATemp*10.0), (int16_t)(MPUtempcel*10.0), chosenGnss->fix, chosenGnss->numSV,
-					(int64_t)(chosenGnss->time*1000.0), (int32_t)(chosenGnss->coordinates.altitude*100), (int16_t)(chosenGnss->speed.x*100), (int16_t)(chosenGnss->speed.y*100), (int16_t)(chosenGnss->speed.z*100));
-				Router::sendXCV(str);
-			}
-		}
 
 		ProcessTime = (esp_timer_get_time()/1000.0) - gyroTime;
 		if ( ProcessTime > 15 ) {
@@ -702,88 +618,13 @@ static void processIMU(void *pvParameters)
 		mtick++;
 		
 		vTaskDelayUntil(&xLastWakeTime_mpu, 25/portTICK_PERIOD_MS);  // 25 ms = 40 Hz loop
-		if( (mtick % 25) == 0) {  // test stack every second
+		if( (mtick % 40) == 0) {  // test stack every second
 			if( uxTaskGetStackHighWaterMark( mpid ) < 1024 )
 				 ESP_LOGW(FNAME,"Warning MPU and sensor task stack low: %d bytes", uxTaskGetStackHighWaterMark( mpid ) );
 		}
 	}		
 }			
 
-static void grabMPU()
-{
-	// mpud::raw_axes_t accelRaw;     // holds x, y, z axes as int16
-	// mpud::raw_axes_t gyroRaw;      // holds x, y, z axes as int16
-	// Flight Test
-	// accel already read by processIMU
-	//
-	/*
-	bool goodAccl = true;
-	if( abs( accelG.x - accelG_Prev.x ) > 1 || abs( accelG.y - accelG_Prev.y ) > 1 || abs( accelG.z - accelG_Prev.z ) > 1 ) {
-		MPU.acceleration(&accelRaw);
-		accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);
-		if( abs( accelG.x - accelG_Prev.x ) > 1 || abs( accelG.y - accelG_Prev.y ) > 1 || abs( accelG.z - accelG_Prev.z ) > 1 ){
-			goodAccl = false;
-			ESP_LOGE(FNAME, "accelaration change > 1 g in 0.2 S:  X:%+.2f Y:%+.2f Z:%+.2f", -accelG[2], accelG[1], accelG[0] );
-		}
-	} */
-	// Flight Test
-	// gyro already read by processIMU
-	//
-	/*
-	bool goodGyro = true;
-	if( abs( gyroDPS.x - gyroDPS_Prev.x ) > MGRPS || abs( gyroDPS.y - gyroDPS_Prev.y ) > MGRPS || abs( gyroDPS.z - gyroDPS_Prev.z ) > MGRPS ) {
-		// ESP_LOGE(FNAME, "gyro sensor out of bounds: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
-		// ESP_LOGE(FNAME, "%04x %04x %04x", gyroRaw.x, gyroRaw.y, gyroRaw.z );
-		MPU.rotation(&gyroRaw);
-		gyroDPS = mpud::gyroDegPerSec(gyroRaw, GYRO_FS );
-		if( abs( gyroDPS.x - gyroDPS_Prev.x ) > MGRPS || abs( gyroDPS.y - gyroDPS_Prev.y ) > MGRPS || abs( gyroDPS.z - gyroDPS_Prev.z ) > MGRPS ) {
-			goodGyro = false;
-			ESP_LOGE(FNAME, "gyro angle >90 deg/s in 0.2 S: X:%+.2f Y:%+.2f Z:%+.2f",  gyroDPS.x, gyroDPS.y, gyroDPS.z );
-		}
-	} */
-	/*
-	if( errgyr == ESP_OK ){
-		// check low rotation on all 3 axes = on ground
-		if( abs( gyroDPS.x ) < MAXDRIFT && abs( gyroDPS.y ) < MAXDRIFT && abs( gyroDPS.z ) < MAXDRIFT ) {
-			if( ias.get() < 25 ){  // check no significant IAS
-				num_gyro_samples++;
-				for(int i=0; i<3; i++){
-					cur_gyro_bias[i] += gyroRaw[i];
-				}
-				if( num_gyro_samples > NUM_GYRO_SAMPLES ){  // every 5 minute (3000 samples) recalculate offset
-					mpud::raw_axes_t gb;
-					mpud::raw_axes_t gbo = MPU.getGyroOffset();
-					for(int i=0; i<3; i++){
-						gb[i]  = gbo[i] -(( (cur_gyro_bias)[i]/(NUM_GYRO_SAMPLES*4)) ); // translate to 1000 DPS
-						cur_gyro_bias[i] = 0;
-					}
-					// ESP_LOGI(FNAME,"New gyro offset X/Y/Z: OLD:%d/%d/%d NEW:%d/%d/%d", gbo.x, gbo.y, gbo.z, gb.x, gb.y, gb.z );
-					if( (abs( gbo.x-gb.x ) > 0) || (abs( gbo.y-gb.y ) > 0) || (abs( gbo.z-gb.z ) > 0)  ){  // any delta is directly set in RAM
-						ESP_LOGI(FNAME,"Set new gyro offset X/Y/Z: OLD:%d/%d/%d NEW:%d/%d/%d", gbo.x, gbo.y, gbo.z, gb.x, gb.y, gb.z );
-						MPU.setGyroOffset( gb );
-					}
-					// if we have temperature control, we check if control is locked, otherwise we have no idea but anyway takeover better offset
-					if( (HAS_MPU_TEMP_CONTROL && (MPU.getSiliconTempStatus() == MPU_T_LOCKED)) || !HAS_MPU_TEMP_CONTROL ){
-						if( (abs( gbo.x-gb.x ) > 1 || abs( gbo.y-gb.y ) > 1 || abs( gbo.z-gb.z ) > 1) && gyro_flash_savings<5 ){ // Set only changes > 1 in Flash and only 5 times per boot
-							gyro_bias.set( gb );
-							ESP_LOGI(FNAME,"Store the new offset also in Flash, store number: %d", gyro_flash_savings );
-							gyro_flash_savings++;
-						}
-					}
-					num_gyro_samples = 0;
-				}
-			}
-		}
-	}
-	*/
-	/*
-	if( errgyr == ESP_OK && erracc == ESP_OK && goodAccl && goodGyro ) {
-		IMU::read();
-	}
-	*/
-	gyroDPS_Prev = gyroDPS;
-	accelG_Prev = accelG;
-}
 
 static void lazyNvsCommit()
 {
@@ -838,9 +679,7 @@ void clientLoop(void *pvParameters)
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		ccount++;
 		aTE += (te_vario.get() - aTE)* (1/(10*vario_av_delay.get()));
-		if( gflags.haveMPU ) {
-			grabMPU();
-		}
+
 		if( !(ccount%5) )
 		{
 			double tmpalt = altitude.get(); // get pressure from altitude
@@ -895,33 +734,94 @@ void readSensors(void *pvParameters){
 	while (1)
 	{
 		count++;
-		while( (mtick%4)==0 ){ // wait for processIMU SEN tick has been processed
-			delay(2);
-		}
 
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		
 		ProcessTime = (esp_timer_get_time()/1000.0);
 		
-		
-		if( gflags.haveMPU  )  // 3th Generation HW, MPU6050 avail and feature enabled
-		{
-			grabMPU();
+		// get raw static pressure
+		bool ok=false;
+		float p = 0;
+		p = baroSensor->readPressure(ok);
+		if ( ok ) {
+			statTime = esp_timer_get_time()/1000.0; // record static time in milli second
+			statP = p;
+			// for compatibility with Eckhard code
+			baroP = p;
 		}
-		//bool ok=false;
-		//float p = 0;
-		// Flight Test
-		//if( asSensor )
-		//	p = asSensor->readPascal(60, ok);
-		//if( ok )
-		//	dynamicP = p;
+		
+		// get raw te pressure
+		xSemaphoreTake(xMutex,portMAX_DELAY );
+		p = teSensor->readPressure(ok);
+		if ( ok ) {
+			teTime = esp_timer_get_time()/1000.0; // record TE time in second
+			teP = p;
+			// not sure what is required for compatibility with Eckhard code
+		}
+		xSemaphoreGive(xMutex);
+		
+		// get raw dynamic pressure
+		if( asSensor )
+			p = asSensor->readPascal(0, ok);
+		if( ok ) {
+			dynP = p;
+			// for compatibility with Eckhard code
+			dynamicP = 0;
+			if (p > 60 ) 
+				dynamicP = p; 
+		}
+		
+		// get XCVTemp
+		XCVTemp = bmpVario.bmpTemp;
+		OATemp = OAT.get();
+		if( !gflags.validTemperature ) {
+			OATemp = 15 - ( (altitude.get()/100) * 0.65 );
+			ESP_LOGI(FNAME,"OATemp: %0.1f  Altitude %0.1f", OATemp, altitude.get() );
+		}
+		
+		// get MPU temp
+		MPUtempcel = MPU.getTemperature();
+		
+		// get Ublox GNSS data
+		// when GNSS receiver is connected to S1 interface
+		const gnss_data_t *gnss1 = s1UbloxGnssDecoder.getGNSSData(1);
+		// when GNSS receiver is connected to S2 interface
+		const gnss_data_t *gnss2 = s2UbloxGnssDecoder.getGNSSData(2);
+		// select gnss with better fix
+		const gnss_data_t *chosenGnss = (gnss2->fix >= gnss1->fix) ? gnss2 : gnss1;
+		
+		if ( SENstream ) {
+		/*
+			$S,			Sensor data
+			TTTTTT:		static time in milli second,
+			PPPPPP:		static pressure in Pa,
+			TTTTTT:		TE time in milli second,
+			PPPPPP:		TE pressure in Pa,
+			PPPPPP:		Dynamic pressure in Pa,
+			XXX:		Outside Air Temperature in tenth of °C,
+			XXX:		MPU temperature in tenth °C,
+			X:			fix 0 to 5   3=3D   4= 3D diff,
+			XX:			numSV number of satelites used, 
+			TTTTTT:		GNSS time in milli second,
+			AAAAAA:		GNSS altitude in centimeter,
+			VVVV:		GNSS speed x or north in centimeters/s,
+			VVVV:		GNSS speed y or east in centimeters/s,
+			VVVV:		GNSS speed z or down in centimeters/s,
+			<CR><LF>		
+		*/
+			sprintf(str,"$S,%lld,%i,%lld,%i,%i,%i,%i,%1d,%2d,%lld,%i,%i,%i,%i\r\n",
+				statTime, (int32_t)(statP*100.0), teTime,(int32_t)(teP*100.0), (int16_t)(dynP),  (int16_t)(OATemp*10.0), (int16_t)(MPUtempcel*10.0), chosenGnss->fix, chosenGnss->numSV,
+				(int64_t)(chosenGnss->time*1000.0), (int32_t)(chosenGnss->coordinates.altitude*100), (int16_t)(chosenGnss->speed.x*100), (int16_t)(chosenGnss->speed.y*100), (int16_t)(chosenGnss->speed.z*100));
+			Router::sendXCV(str);
+		}		
+		
+		
+		//
+		// Eckhard code
+		//
+
 		float iasraw = Atmosphere::pascal2kmh( dynamicP );
-		// ESP_LOGI("FNAME","P: %f  IAS:%f", dynamicP, iasraw );
-		//float T=OAT.get();
-		//if( !gflags.validTemperature ) {
-		//	T= 15 - ( (altitude.get()/100) * 0.65 );
-		//	// ESP_LOGW(FNAME,"T invalid, using 15 deg");
-		//}
+
 		float T = OATemp;
 		float tasraw = 0;
 		if( baroP != 0 )

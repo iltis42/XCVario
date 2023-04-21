@@ -502,14 +502,14 @@ void audioTask(void *pvParameters){
 void MahonyUpdateIMU(float dt, float gx, float gy, float gz, float ax, float ay, float az, float &q0, float &q1, float &q2, float &q3) {
 
 #define Nzlimit 0.15 // m/s²
-#define Kp 0.1
-#define Ki 0.01
+#define Kp 0.5
+#define Ki 0.05
 #define fcGrav 3.0 // 3Hz low pass
 #define fcgrav1 (40.0/(40.0+fcGrav))
 #define fcgrav2 (1.0-fcgrav1)
-#define Kbias 0.001
+#define Kbias 0.02
 #define winglevel 0.15 // max lateral gravity acceleration to consider wings are ~leveled
-#define Kalt 0.001
+#define Kalt 0.02
 
 float GravModule, QuatModule, recipNorm, halfvx, halfvy, halfvz, halfex, halfey, halfez, qa, qb, qc;
 

@@ -707,17 +707,17 @@ static void processIMU(void *pvParameters)
 				XXXX:		Pitch in milli rad,
 				YYYY:		Roll in milli rad,
 				ZZZZ:		YAW in milli rad,
-				XXXXX: 		gyro bias x in tenth of milli rad/s,
-				YYYYY:		gyro bias y in tenth of milli rad/s,
-				ZZZZZ:		gyro bias z in tenth of milli rad/s,
-				ZZZZZ:		gyro alternate bias z in tenth of milli rad/s
+				XXXXXX: 		gyro bias x in hundred of milli rad/s,
+				YYYYYY:		gyro bias y in hundred of milli rad/s,
+				ZZZZZY:		gyro bias z in hundred of milli rad/s,
+				ZZZZZY:		gyro alternate bias z in hundred of milli rad/s
 				<CR><LF>	
 			*/			
 			sprintf(str,"$I,%lld,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",
 				gyroTime,(int32_t)(accelISUNEDBODY.x*1000.0), (int32_t)(accelISUNEDBODY.y*1000.0), (int32_t)(accelISUNEDBODY.z*1000.0),
 				(int32_t)(gyroISUNEDBODY.x*10000.0), (int32_t)(gyroISUNEDBODY.y*10000.0),(int32_t)(gyroISUNEDBODY.z*10000.0),
 				(int16_t)(Pitch*1000.0), (int16_t)(Roll*1000.0), (int16_t)(Yaw*1000.0) ,
-				(int16_t)(IMUBiasx*10000.0), (int16_t)(IMUBiasy*10000.0), (int16_t)(IMUBiasz*10000.0),(int16_t)(GravyFilt*10000.0) );
+				(int32_t)(IMUBiasx*100000.0), (int32_t)(IMUBiasy*100000.0), (int32_t)(IMUBiasz*100000.0),(int32_t)(GravyFilt*100000.0) );
 			Router::sendXCV(str);
 		}
 		// Estimation of gyro bias when on ground:  IAS < 25 km/h and not bias estimation yet

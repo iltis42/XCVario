@@ -168,6 +168,7 @@ Compass *compass = 0;
 BTSender btsender;
 
 // Fligth Test
+static int64_t ProcessTime = 0;
 static int64_t gyroTime;  // time stamp for gyros
 static int16_t dtGyr; // period between last gyro samples
 static int64_t prevgyroTime;
@@ -692,11 +693,13 @@ static void processIMU(void *pvParameters)
 				Router::sendXCV(str);
 			}
 		}
-		
+
+		ProcessTime = (esp_timer_get_time()/1000.0) - gyroTime;
+		if ( ProcessTime > 15 ) {
+			ESP_LOGI(FNAME,"processIMU: %i / 25", (int16_t)(ProcessTime) );
+		}		
+
 		mtick++;
-		
-//		grabSensorsTime = (esp_timer_get_time()/1000.0) - grabSensorsTime;
-//		ESP_LOGI(FNAME,"processIMU: %0.1f  / %0.1f", grabSensorsTime, 25.0 );
 		
 		vTaskDelayUntil(&xLastWakeTime_mpu, 25/portTICK_PERIOD_MS);  // 25 ms = 40 Hz loop
 		if( (mtick % 25) == 0) {  // test stack every second
@@ -898,9 +901,8 @@ void readSensors(void *pvParameters){
 
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		
-		// Fligth Test
-		// Need to update following code to take into account processIMU has already read sensors.
-		//
+		ProcessTime = (esp_timer_get_time()/1000.0);
+		
 		
 		if( gflags.haveMPU  )  // 3th Generation HW, MPU6050 avail and feature enabled
 		{
@@ -1071,9 +1073,17 @@ void readSensors(void *pvParameters){
 			// ESP_LOGI(FNAME,"MPU temp control; T=%.2f", MPU.getTemperature() );
 			MPU.temp_control( count,XCVTemp);
 		}
+
+		ProcessTime = (esp_timer_get_time()/1000.0) - gyroTime;
+		if ( ProcessTime > 15 ) {
+			ESP_LOGI(FNAME,"processIMU: %i / 25", (int16_t)(ProcessTime) );
+		}	
 		
-//		readSensorsTime = (esp_timer_get_time()/1000.0) - readSensorsTime;
-//		ESP_LOGI(FNAME,"readSensors: %0.1f  / %0.1f", readSensorsTime, 100.0 );
+		ProcessTime = (esp_timer_get_time()/1000.0) - ProcessTime;
+		if ( ProcessTime > 75 ) {
+			ESP_LOGI(FNAME,"readSEnsors: %i / 100", (int16_t)(ProcessTime) );
+		}	
+
 		esp_task_wdt_reset();
 		if( uxTaskGetStackHighWaterMark( bpid ) < 512 )
 			ESP_LOGW(FNAME,"Warning sensor task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );

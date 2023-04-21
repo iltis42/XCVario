@@ -678,17 +678,20 @@ static void processIMU(void *pvParameters)
 			/*
 			IMU data in ISU and NED orientation
 				$I,
-				TTTTT:		MPU (gyro) time in milli second,
-				XXXXX:		acceleration in X-Axis in milli m/s²,
-				YYYYY:		acceleration in Y-Axis in milli m/s²,
-				ZZZZZ:		acceleration in Z-Axis in milli m/s²,
+				TTTT:		MPU (gyro) time in milli second,
+				XXXX:		acceleration in X-Axis in milli m/s²,
+				YYYY:		acceleration in Y-Axis in milli m/s²,
+				ZZZZ:		acceleration in Z-Axis in milli m/s²,
 				XXXXX:		rotation X-Axis in tenth of milli rad/s,
 				YYYYY:		rotation Y-Axis in tenth of milli rad/s,
 				ZZZZZ:		rotation Z-Axis in tenth of milli rad/s,
+				XXXX:		Pitch in milli rad,
+				YYYY:		Roll in milli rad,
+				ZZZZ:		YAW in milli rad,				
 				<CR><LF>	
 			*/			
-			sprintf(str,"$I,%lld,%i,%i,%i,%i,%i,%i\r\n",
-				gyroTime,(int32_t)(accelISUNEDMPU.x*1000.0), (int32_t)(accelISUNEDMPU.y*1000.0), (int32_t)(accelISUNEDMPU.z*1000.0), (int32_t)(gyroISUNEDMPU.x*10000.0), (int32_t)(gyroISUNEDMPU.y*10000.0),(int32_t)(gyroISUNEDMPU.z*10000.0) );
+			sprintf(str,"$I,%lld,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",
+				gyroTime,(int32_t)(accelISUNEDMPU.x*1000.0), (int32_t)(accelISUNEDMPU.y*1000.0), (int32_t)(accelISUNEDMPU.z*1000.0), (int32_t)(gyroISUNEDMPU.x*10000.0), (int32_t)(gyroISUNEDMPU.y*10000.0),(int32_t)(gyroISUNEDMPU.z*10000.0), (int16_t)(Pitch/1000.0), (int16_t)(Roll/1000.0), (int16_t)(Yaw/1000.0) );
 			Router::sendXCV(str);
 		}
 		// Estimation of gyro bias when on ground:  IAS < 25 km/h and not bias estimation yet

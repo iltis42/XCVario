@@ -637,7 +637,7 @@ static void processIMU(void *pvParameters)
 		if( MPU.rotation(&gyroRaw) == ESP_OK ){
 			prevgyroTime = gyroTime;
 			gyroTime = esp_timer_get_time()/1000; // record time of gyro measurement in milli second
-			dtGyr = gyroTime - prevgyroTime; // period between last two valid samples
+			dtGyr = (gyroTime - prevgyroTime) / 1000.0 // period between last two valid samples in second
 			gyroDPS = mpud::gyroDegPerSec(gyroRaw, GYRO_FS); // For compatibility with Eckhard code only. Convert raw gyro to Gyro_FS full scale in degre per second 
 			gyroRPS = mpud::gyroRadPerSec(gyroRaw, GYRO_FS); // convert raw gyro to Gyro_FS full scale
 			// convert gyro coordinates to ISU : rad/s NED MPU and remove bias

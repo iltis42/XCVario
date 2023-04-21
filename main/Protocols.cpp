@@ -32,6 +32,9 @@
 S2F *   Protocols::_s2f = 0;
 uint8_t Protocols::_protocol_version = 1;
 bool    Protocols::_can_send_error = false;
+
+char stream[100];
+
 Protocols::Protocols(S2F * s2f) {
 	_s2f = s2f;
 }
@@ -569,7 +572,7 @@ void Protocols::parseNMEA( const char *str ){
 		mpud::float_axes_t AccBias;	
 		mpud::float_axes_t AccGain;
 		sscanf( str,"$ACC,%f,%f,%f,%f,%f,%f",&AccBias.x,&AccBias.y,&AccBias.z,&AccGain.x,&AccGain.y,&AccGain.z);
-			char stream[100];
+			
 			if ( (abs(AccBias.x) < 1) && (abs(AccBias.y) < 1) && (abs(AccBias.z) < 1) && (abs(AccGain.x-1) < 0.2) && (abs(AccGain.y-1) < 0.2) && (abs(AccGain.z-1) < 0.2) ) {
 			accl_bias.set(AccBias);
 			accl_gain.set(AccGain);
@@ -586,7 +589,29 @@ void Protocols::parseNMEA( const char *str ){
 			Router::sendXCV(stream);
 			sprintf(stream,"example: $ACC,0.02,-0.001,0.004,1.02,0.98,1.003\r\n");
 			Router::sendXCV(stream);
-		}			
+		}
+	} else if( !strncmp( str, "$INST", 5 ) ) {
+		float xcv_tilt, xcv_sway, xcv_distCG;	
+		sscanf( str,"$INST,%f,%f,%f",&xcv_tilt,&xcv_sway,&xcv_distCG);
+		if ( (abs(xcv_tilt) < 0.4) && (abs(xcv_sway) < 0.4) && (xcv_distCG < 3) ) {
+			tilt.set(xcv_tilt);
+			sway.set(xcv_sway);
+			distCG.set(xcv_distCG);
+			delay(100);
+			xcv_tilt = tilt.get();
+			xcv_sway = sway.get();
+			xcv_distCG = distCG.get();
+			sprintf(stream,"$INST IN FLASH, %1.3f, %1.3f, %1.3f\r\n",xcv_tilt,xcv_sway,xcv_distCG);
+			Router::sendXCV(stream);
+			// reboot Vario so that new tilt, sway and distance to CG are taken in effect
+			delay(100);
+			esp_restart();
+		} else {
+			sprintf(stream,"$INST format error. Need to type: $INST,tilt,sway,dist_to_cg respectively in rad, rad and meter\r\n");
+			Router::sendXCV(stream);
+			sprintf(stream,"example: $INST,0.14,0.52,1.1\r\n");
+			Router::sendXCV(stream);
+		}		
 	}
 }
 

@@ -741,15 +741,15 @@ static void processIMU(void *pvParameters)
 						GyBias = 0;
 						GzBias = 0;							
 					} else {
-						// between 2.5 seconds and 12.5 seconds, accumulate gyro data
-						if ( gyrostable < 500 ) {
+						// between 2.5 seconds and 22.5 seconds, accumulate gyro data
+						if ( gyrostable < 900 ) {
 							averagecount++;
 							GxBias = GxBias + gyroRPS.x;
 							GyBias = GyBias + gyroRPS.y;
 							GzBias = GzBias + gyroRPS.z;
 						} else {
-							// after 15 seconds calculate average bias and set bias in FLASH
-							if ( gyrostable++ > 600 ) {
+							// after 25 seconds calculate average bias and set bias in FLASH
+							if ( gyrostable++ > 1000 ) {
 								BIAS_Init = true;
 								currentGyroBias.x = GxBias / averagecount;
 								currentGyroBias.y = GyBias / averagecount;

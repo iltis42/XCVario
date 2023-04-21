@@ -189,7 +189,8 @@ static float q3 = 1.0;
 
 
 static char str[150]; 	// string for flight test message broadcast on wireless
-static int64_t ProcessTime = 0;
+static int64_t ProcessTimeIMU = 0.0;
+static int64_t ProcessTimeSensors = 0.0;
 static int64_t gyroTime;  // time stamp for gyros
 static int16_t dtGyr; // period between last gyro samples
 static int64_t prevgyroTime;
@@ -636,8 +637,8 @@ static void processIMU(void *pvParameters)
 		// get gyro data
 		if( MPU.rotation(&gyroRaw) == ESP_OK ){
 			prevgyroTime = gyroTime;
-			gyroTime = esp_timer_get_time()/1000; // record time of gyro measurement in milli second
-			dtGyr = (gyroTime - prevgyroTime) / 1000.0 // period between last two valid samples in second
+			gyroTime = esp_timer_get_time()/1000.0; // record time of gyro measurement in milli second
+			dtGyr = (gyroTime - prevgyroTime) / 1000.0; // period between last two valid samples in second
 			gyroDPS = mpud::gyroDegPerSec(gyroRaw, GYRO_FS); // For compatibility with Eckhard code only. Convert raw gyro to Gyro_FS full scale in degre per second 
 			gyroRPS = mpud::gyroRadPerSec(gyroRaw, GYRO_FS); // convert raw gyro to Gyro_FS full scale
 			// convert gyro coordinates to ISU : rad/s NED MPU and remove bias
@@ -687,11 +688,18 @@ static void processIMU(void *pvParameters)
 				ZZZZZ:		rotation Z-Axis in tenth of milli rad/s,
 				XXXX:		Pitch in milli rad,
 				YYYY:		Roll in milli rad,
-				ZZZZ:		YAW in milli rad,				
+				ZZZZ:		YAW in milli rad,
+				XXXXX: 		gyro bias x in tenth of milli rad/s,
+				YYYYY:		gyro bias y in tenth of milli rad/s,
+				ZZZZZ:		gyro bias z in tenth of milli rad/s,
+				ZZZZZ:		gyro alternate bias z in tenth of milli rad/s
 				<CR><LF>	
 			*/			
-			sprintf(str,"$I,%lld,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",
-				gyroTime,(int32_t)(accelISUNEDMPU.x*1000.0), (int32_t)(accelISUNEDMPU.y*1000.0), (int32_t)(accelISUNEDMPU.z*1000.0), (int32_t)(gyroISUNEDMPU.x*10000.0), (int32_t)(gyroISUNEDMPU.y*10000.0),(int32_t)(gyroISUNEDMPU.z*10000.0), (int16_t)(Pitch/1000.0), (int16_t)(Roll/1000.0), (int16_t)(Yaw/1000.0) );
+			sprintf(str,"$I,%lld,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",
+				gyroTime,(int32_t)(accelISUNEDBODY.x*1000.0), (int32_t)(accelISUNEDBODY.y*1000.0), (int32_t)(accelISUNEDBODY.z*1000.0),
+				(int32_t)(gyroISUNEDBODY.x*10000.0), (int32_t)(gyroISUNEDBODY.y*10000.0),(int32_t)(gyroISUNEDBODY.z*10000.0),
+				(int16_t)(Pitch*1000.0), (int16_t)(Roll*1000.0), (int16_t)(Yaw*1000.0) ,
+				(int16_t)(IMUBiasx*10000.0), (int16_t)(IMUBiasy*10000.0), (int16_t)(IMUBiasz*10000.0),(int16_t)(GravyFilt*10000.0) );
 			Router::sendXCV(str);
 		}
 		// Estimation of gyro bias when on ground:  IAS < 25 km/h and not bias estimation yet
@@ -742,9 +750,9 @@ static void processIMU(void *pvParameters)
 		else gyrobiastemptimer = 0; // Insure No bias evaluation during flight
 		
 
-		ProcessTime = (esp_timer_get_time()/1000.0) - gyroTime;
-		if ( ProcessTime > 15 ) {
-			ESP_LOGI(FNAME,"processIMU: %i / 25", (int16_t)(ProcessTime) );
+		ProcessTimeIMU = (esp_timer_get_time()/1000.0) - gyroTime;
+		if ( ProcessTimeIMU > 15 ) {
+			ESP_LOGI(FNAME,"processIMU: %i / 25", (int16_t)(ProcessTimeIMU) );
 		}		
 
 		mtick++;
@@ -869,7 +877,7 @@ void readSensors(void *pvParameters){
 
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		
-		ProcessTime = (esp_timer_get_time()/1000.0);
+		ProcessTimeSensors = (esp_timer_get_time()/1000.0);
 		
 		// get raw static pressure
 		bool ok=false;
@@ -1106,9 +1114,9 @@ void readSensors(void *pvParameters){
 			MPU.temp_control( count,XCVTemp);
 		}
 
-		ProcessTime = (esp_timer_get_time()/1000.0) - ProcessTime;
-		if ( ProcessTime > 75 ) {
-			ESP_LOGI(FNAME,"readSensors: %i / 100", (int16_t)(ProcessTime) );
+		ProcessTimeSensors = (esp_timer_get_time()/1000.0) - ProcessTimeSensors;
+		if ( ProcessTimeSensors > 75 ) {
+			ESP_LOGI(FNAME,"readSensors: %i / 100", (int16_t)(ProcessTimeSensors) );
 		}	
 
 		esp_task_wdt_reset();

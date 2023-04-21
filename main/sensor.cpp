@@ -1106,14 +1106,9 @@ void readSensors(void *pvParameters){
 			MPU.temp_control( count,XCVTemp);
 		}
 
-		ProcessTime = (esp_timer_get_time()/1000.0) - gyroTime;
-		if ( ProcessTime > 15 ) {
-			ESP_LOGI(FNAME,"processIMU: %i / 25", (int16_t)(ProcessTime) );
-		}	
-		
 		ProcessTime = (esp_timer_get_time()/1000.0) - ProcessTime;
 		if ( ProcessTime > 75 ) {
-			ESP_LOGI(FNAME,"readSEnsors: %i / 100", (int16_t)(ProcessTime) );
+			ESP_LOGI(FNAME,"readSensors: %i / 100", (int16_t)(ProcessTime) );
 		}	
 
 		esp_task_wdt_reset();

@@ -32,7 +32,7 @@ jobs:
 
       run:  touch $PWD/main/Version.h;
             echo "#define CIPHER_KEY \"${{ secrets.AHRS_CIPHER_KEY }}\"" >$PWD/main/cipherkey.h;
-            echo "#define LOCALE_DE >$PWD/main/xcv_locale.h"
+            echo "#define XCV_LOCALE DE >$PWD/main/xcv_locale.h";
             docker run --rm -v $PWD:/project -w /project espressif/idf:release-v4.3 idf.py build;
             mkdir -p artifacts;
             cp $PWD/build/sensor.bin $PWD/artifacts/sensor-${{ env.FILE_VERSION }}-de.bin;

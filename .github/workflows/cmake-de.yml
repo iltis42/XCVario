@@ -1,4 +1,4 @@
-name: CMake
+name: CMake-DE
 
 on: workflow_dispatch
 

@@ -95,10 +95,7 @@ BMP:
 
 #define MGRPS 360
 
-// Flight test 
-#define GRAVITY 9.807
 #define DegToRad (M_PI / 180)
-// Fligth test
 
 MCP3221 *MCP=0;
 DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 standard, alternative  GPIO_NUM_17
@@ -167,7 +164,7 @@ Compass *compass = 0;
 BTSender btsender;
 
 // IMU variables	
-static float GravModuleFilt = 0.0;	
+static float AccelGravModuleFilt = 0.0;	
 static float integralFBx = 0.0;
 static float integralFBy = 0.0;
 static float integralFBz = 0.0;
@@ -200,11 +197,12 @@ static float OATemp; // OAT for pressure corrections (real or from standard atmo
 static float MPUtempcel; // MPU chip temperature
 
 static int32_t cur_gyro_bias[3];
-//
+
 bool IMUstream = false; // IMU FT stream
 bool SENstream = false; // Sensors FT stream
 bool BIAS_Init = false; // Bias initialization done
-// Fligth Test
+
+float GRAVITY = gravity.get();
 
 static float dynamicP; // filtered dynamic pressure
 static float baroP=0; // barometric pressure
@@ -497,60 +495,66 @@ void audioTask(void *pvParameters){
 
 void MahonyUpdateIMU(float dt, float gx, float gy, float gz, float ax, float ay, float az, float &q0, float &q1, float &q2, float &q3) {
 
-#define Nlimit 0.15 // m/s²
-#define FlightAccelprimlimit 0.25 // m/s²
-#define FlightGyroprimlimit 0.015 // m/s²
-#define Kp 0.5
-#define Ki 0.05
-#define fcGrav 3.0 // 3Hz low pass
+#define fcGrav 3.0 // 3Hz low pass to filter for testing stability criteria
 #define fcgrav1 (40.0/(40.0+fcGrav))
 #define fcgrav2 (1.0-fcgrav1)
-#define Kbias 0.02
-#define winglevel 0.15 // max lateral gravity acceleration to consider wings are ~leveled
-#define Kalt 0.02
+#define Nlimit 0.2 // stability criteria for gravity estimation from accels
+#define FlightAccelprimlimit 0.5 // stability criteria on accels variations. twice value used on ground
+#define FlightGyroprimlimit 0.030  // stability criteria on gyros variations. twice value used on ground
+#define Kp 1 // proportional feedback to sync quaternion
+#define Ki 0.1 // integral feedback to sync quaternion
 
-float GravModule, QuatModule, recipNorm, halfvx, halfvy, halfvz, halfex, halfey, halfez, qa, qb, qc;
+#define WingLevel 0.75 // max lateral gravity acceleration to consider wings are ~leveled
+#define Kbias 0.04 // integration factor for bias estimation
+#define Kalt 0.04 // integration factor for bias estimation
 
-	// Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
-	GravModule = ax * ax + ay * ay + az * az;	
-	if ( GravModule != 0.0) {
-		// Normalise accelerometer measurement
-		recipNorm = 1.0 / sqrt( GravModule );
-		ax *=recipNorm;
-		ay *=recipNorm;
-		az *=recipNorm;
-		// Estimated direction of gravity
-		halfvx = q1 * q3 - q0 * q2;
-		halfvy = q0 * q1 + q2 * q3;
-		halfvz = q0 * q0 - 0.5 + q3 * q3;
-		// Error is sum of cross product between estimated and measured direction of gravity
-		halfex = (ay * halfvz - az * halfvy);
-		halfey = (az * halfvx - ax * halfvz);
-		halfez = (ax * halfvy - ay * halfvx);
-		// If gravity from acceleromters can be trusted ( gravity module, acceleration module variation and gyro module variation below given limits)
-		// correct gyros using proportional and integral feedback
-		// estimate long term bias from gyros
-		GravModuleFilt = fcgrav1 * GravModuleFilt + fcgrav2 * sqrt( GravModule );
-		if ( (GravModuleFilt-GRAVITY) < Nlimit && abs(GyroModulePrimFilt) < FlightGyroprimlimit && abs(AccelModulePrimFilt) < FlightAccelprimlimit ) {
+float AccelGravModule, QuatModule, recipNorm, halfvx, halfvy, halfvz, halfex, halfey, halfez, qa, qb, qc;
+
+	// If gravity from acceleromters can be trusted ( accel module ~Gravity, acceleration module variation and gyro module variation below given limits )
+	// correct gyros using proportional and integral feedback
+	// Filter acceleration module 
+	AccelGravModule = ax * ax + ay * ay + az * az;
+	AccelGravModuleFilt = fcgrav1 * AccelGravModuleFilt + fcgrav2 * sqrt( AccelGravModule );
+	if ( (AccelGravModuleFilt-GRAVITY) < Nlimit && abs(GyroModulePrimFilt) < FlightGyroprimlimit && abs(AccelModulePrimFilt) < FlightAccelprimlimit ) {
+		// Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
+		if ( AccelGravModule != 0.0) {
+			// Normalise accelerometer measurement
+			recipNorm = 1.0 / sqrt( AccelGravModule );
+			ax *=recipNorm;
+			ay *=recipNorm;
+			az *=recipNorm;
+			// Estimate direction of gravity from quaternion
+			halfvx = q1 * q3 - q0 * q2;
+			halfvy = q0 * q1 + q2 * q3;
+			halfvz = q0 * q0 - 0.5 + q3 * q3;
+			// Estimate error between quaternion and accels. Error is sum of cross product between Quaternion and accels gravity estimations
+			halfex = (ay * halfvz - az * halfvy);
+			halfey = (az * halfvx - ax * halfvz);
+			halfez = (ax * halfvy - ay * halfvx);
+			// calculate integral feedback
 			integralFBx = integralFBx + Ki * halfex * dt;
 			integralFBy = integralFBy + Ki * halfey * dt;
 			integralFBz = integralFBz + Ki * halfez * dt;
-			gx = gx + integralFBx; // apply integral feedback
+			// apply integral feedback to gyros
+			gx = gx + integralFBx; 
 			gy = gy + integralFBy;
 			gz = gz + integralFBz;
-			// Apply proportional feedback
+			// Apply proportional feedback to gyros
 			gx = gx + Kp * halfex;
 			gy = gy + Kp * halfey;
 			gz = gz + Kp * halfez;
-			// Estimate bias from gyros by long term integration of errors
-			IMUBiasx = IMUBiasx + Kbias * halfex * dt;
-			IMUBiasy = IMUBiasy + Kbias * halfey * dt;
-			IMUBiasz = IMUBiasz + Kbias * halfez * dt;
-			// To capture gz bias when in straight flight, compute bias considering long time average of gz is ~0 when wings are leveled
-			// We should only consider long period therefore Kalt should be set very low e.g. 10-2 or 10-3
+
+			// capture gyros bias when wings are close to be leveled (~straight flight), when wings are leveled
+			// We should only consider long period therefore Kbias and Kalt should be set very low e.g.  ~10-2
 			GravyFilt = fcgrav1 * GravyFilt + fcgrav2 * halfvy;
-			if ( abs(GravyFilt) < winglevel ) alternategzBias = ( 1 - Kalt ) * alternategzBias + Kalt * gz;
-			// TODO verify validity of the alternate gz bias estimation before using it for gyro corrections
+			if ( abs(GravyFilt) < WingLevel ) {
+				// Estimate bias from gyros by long term integration of errors
+				IMUBiasx = IMUBiasx + Kbias * halfex * dt;
+				IMUBiasy = IMUBiasy + Kbias * halfey * dt;
+				IMUBiasz = IMUBiasz + Kbias * halfez * dt;
+				// compute gz bias considering long time average of gz is ~0 when wings are ~leveled
+				alternategzBias = ( 1 - Kalt ) * alternategzBias + Kalt * gz;
+			}
 		}
 	}
 
@@ -611,6 +615,10 @@ static void processIMU(void *pvParameters)
 	float GxBias = 0.0;
 	float GyBias = 0.0;
 	float GzBias = 0.0;
+	// variables for gravity estimation
+	float Gravx = 0.0;
+	float Gravy = 0.0;
+	float Gravz = 0.0;	
 		
 	// get accel bias and gain (should be set with BT command "$ACC,Bias.x,Bias.y,Bias.z,Gain.x,Gain.y,Gain.z"
 	mpud::float_axes_t currentAccelBias;	
@@ -636,6 +644,7 @@ static void processIMU(void *pvParameters)
 	// get gyro bias
 	mpud::float_axes_t currentGyroBias = gyro_bias.get();
 	// TODO estimation of gyro gain
+
 	
 	while (1) {
 
@@ -750,9 +759,12 @@ static void processIMU(void *pvParameters)
 					if ( gyrostable < 100 ) {
 						averagecount = 0;
 						BIAS_Init = false;
-						GxBias = 0;
-						GyBias = 0;
-						GzBias = 0;							
+						GxBias = 0.0;
+						GyBias = 0.0;
+						GzBias = 0.0;	
+						Gravx = 0.0;
+						Gravy = 0.0;
+						Gravz = 0.0;
 					} else {
 						// between 2.5 seconds and 22.5 seconds, accumulate gyro data
 						if ( gyrostable < 900 ) {
@@ -760,6 +772,9 @@ static void processIMU(void *pvParameters)
 							GxBias = GxBias + gyroRPS.x;
 							GyBias = GyBias + gyroRPS.y;
 							GzBias = GzBias + gyroRPS.z;
+							Gravx = Gravx + accelISUNEDBODY.x;
+							Gravy = Gravy + accelISUNEDBODY.y;
+							Gravz = Gravz + accelISUNEDBODY.z;							
 						} else {
 							// after 25 seconds calculate average bias and set bias in FLASH
 							if ( gyrostable++ > 1000 ) {
@@ -768,7 +783,11 @@ static void processIMU(void *pvParameters)
 								currentGyroBias.y = GyBias / averagecount;
 								currentGyroBias.z = GzBias / averagecount;
 								gyro_bias.set(currentGyroBias);
-								sprintf(str,"$GBIAS,%lld,%3.3f,%.6f,%.6f,%.6f\r\n", gyroTime, MPUtempcel, -currentGyroBias.z, -currentGyroBias.y, -currentGyroBias.x );
+								Gravx = Gravx / averagecount;
+								Gravy = Gravy / averagecount;
+								Gravz = Gravz / averagecount;
+								gravity.set(sqrt(Gravx*Gravx+Gravy*Gravy+Gravz*Gravz));
+								sprintf(str,"$GBIAS,%lld,%3.3f,%.6f,%.6f,%.6f,%.6f\r\n", gyroTime, MPUtempcel, -currentGyroBias.z, -currentGyroBias.y, -currentGyroBias.x, gravity.get() );
 								Router::sendXCV(str);
 							}
 						}

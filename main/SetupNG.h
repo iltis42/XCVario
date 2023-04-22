@@ -568,6 +568,7 @@ extern SetupNG<mpud::float_axes_t> accl_gain;
 extern SetupNG<float>		tilt;
 extern SetupNG<float>		sway;
 extern SetupNG<float>		distCG;
+extern SetupNG<float>		gravity;
 extern SetupNG<float>       mpu_temperature;
 extern SetupNG<int>		    hardwareRevision;
 extern SetupNG<int>		    ahrs_licence_dig1;

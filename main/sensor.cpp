@@ -151,23 +151,20 @@ mpud::float_axes_t gyroDPS_Prev;
 
 #define MAXDRIFT 2                // °/s maximum drift that is automatically compensated on ground
 #define NUM_GYRO_SAMPLES 3000     // 10 per second -> 5 minutes, so T has been settled after power on
-//static uint16_t num_gyro_samples = 0;
 
-// Fligth Test
 #define IMUrate 1 // IMU data stream rate x 25ms. 0 not allowed
 #define SENrate 4 // Sensor data stream rate x 25ms. 0 not allowed
 // Fligth Test
-//#define N_acc 40
-#define alphaGyroTest 0.096 //2.0 * (2.0 * N_acc - 1.0) / (N_acc) / (N_acc + 1)
-#define betaGyroTest 0.146  //6.0 / N_acc / (N_acc + 1) / 0.025
-#define MPU_TEMP_STABILITY 1200; // 30 seconds at 40 hz
-#define GYRO_STABILITY 0.1; // threshold to consider gyro are stable
+float deltaGyroModule = 0.0;	// gyro module alfa/beta filter for gyro stability test
+float GyroModulePrimFilt = 0.0;
+float GyroModuleFilt = 0.0;
+float deltaAccelModule = 0.0;	// accel module alfa/beta filter for gyro stability test
+float AccelModulePrimFilt = 0.0;
+float AccelModuleFilt = 0.0;
 
 // Magnetic sensor / compass
 Compass *compass = 0;
 BTSender btsender;
-
-// Fligth Test
 
 // IMU variables	
 static float GravModuleFilt = 0.0;	
@@ -192,7 +189,7 @@ static char str[150]; 	// string for flight test message broadcast on wireless
 static int64_t ProcessTimeIMU = 0.0;
 static int64_t ProcessTimeSensors = 0.0;
 static int64_t gyroTime;  // time stamp for gyros
-static float dtGyr; // period between last gyro samples
+static float dtGyr = 0.025; // period between last gyro samples
 static int64_t prevgyroTime;
 static int64_t statTime; // time stamp for statP
 static float statP=0; // raw static pressure
@@ -203,7 +200,6 @@ static float OATemp; // OAT for pressure corrections (real or from standard atmo
 static float MPUtempcel; // MPU chip temperature
 
 static int32_t cur_gyro_bias[3];
-
 //
 bool IMUstream = false; // IMU FT stream
 bool SENstream = false; // Sensors FT stream
@@ -501,7 +497,9 @@ void audioTask(void *pvParameters){
 
 void MahonyUpdateIMU(float dt, float gx, float gy, float gz, float ax, float ay, float az, float &q0, float &q1, float &q2, float &q3) {
 
-#define Nzlimit 0.15 // m/s²
+#define Nlimit 0.15 // m/s²
+#define FlightAccelprimlimit 0.25 // m/s²
+#define FlightGyroprimlimit 0.015 // m/s²
 #define Kp 0.5
 #define Ki 0.05
 #define fcGrav 3.0 // 3Hz low pass
@@ -529,11 +527,11 @@ float GravModule, QuatModule, recipNorm, halfvx, halfvy, halfvz, halfex, halfey,
 		halfex = (ay * halfvz - az * halfvy);
 		halfey = (az * halfvx - ax * halfvz);
 		halfez = (ax * halfvy - ay * halfvx);
-		// If gravity from acceleromters can be trusted ( acceleration module below given Nzlimit)
+		// If gravity from acceleromters can be trusted ( gravity module, acceleration module variation and gyro module variation below given limits)
 		// correct gyros using proportional and integral feedback
 		// estimate long term bias from gyros
 		GravModuleFilt = fcgrav1 * GravModuleFilt + fcgrav2 * sqrt( GravModule );
-		if ( (GravModuleFilt-GRAVITY) < Nzlimit ) {
+		if ( (GravModuleFilt-GRAVITY) < Nlimit && abs(GyroModulePrimFilt) < FlightGyroprimlimit && abs(AccelModulePrimFilt) < FlightAccelprimlimit ) {
 			integralFBx = integralFBx + Ki * halfex * dt;
 			integralFBy = integralFBy + Ki * halfey * dt;
 			integralFBz = integralFBz + Ki * halfez * dt;
@@ -590,6 +588,12 @@ static void processIMU(void *pvParameters)
 // - Ublox GNSS data. 
 
 	// MPU data
+	#define NAccel 7
+	#define NGyro 7
+	#define alfaAccelModule (2.0 * (2.0 * NAccel - 1.0) / NAccel / (NAccel + 1))
+	#define betaAccelModule (6.0 / NAccel / (NAccel + 1) / 0.025)
+	#define alfaGyroModule (2.0 * (2.0 * NGyro - 1.0) / NGyro / (NGyro + 1))
+	#define betaGyroModule (6.0 / NGyro / (NGyro + 1) / 0.025)	
 	mpud::raw_axes_t accelRaw; 
 	mpud::float_axes_t accelISUNEDMPU;
 	mpud::float_axes_t accelISUNEDBODY;	
@@ -599,10 +603,9 @@ static void processIMU(void *pvParameters)
 	mpud::float_axes_t gyroISUNEDBODY;	
 
 	// variables for bias estimation
+	#define GroundAccelprimlimit 0.25 // m/s²
+	#define GroundGyroprimlimit 0.015 // rad/s²	
 	int16_t gyrobiastemptimer = 0;
-	float deltaGyroTest = 0.0;	// gyro alfa/beta filter for gyro stability test
-	float GyroTestPrimFilt = 0.0;
-	float GyroTestFilt = 0.0;
 	int16_t gyrostable = 0;
 	int16_t averagecount = 0;
 	float GxBias = 0.0;
@@ -646,8 +649,15 @@ static void processIMU(void *pvParameters)
 			accelISUNEDMPU.x = ((- accelG.z * GRAVITY) - currentAccelBias.x ) / currentAccelGain.x;
 			accelISUNEDMPU.y = ((- accelG.y * GRAVITY) - currentAccelBias.y ) / currentAccelGain.y;
 			accelISUNEDMPU.z = ((- accelG.x * GRAVITY) - currentAccelBias.z ) / currentAccelGain.z;
-			// TODO convert accels to ISUNEDBODY
-			accelISUNEDBODY = accelISUNEDMPU;
+			// convert from MPU to BODY
+			accelISUNEDBODY.x = CT * accelISUNEDMPU.x + STmultSS * accelISUNEDMPU.y + STmultCS * accelISUNEDMPU.z - ( gyroISUNEDBODY.y * gyroISUNEDBODY.y + gyroISUNEDBODY.z * gyroISUNEDBODY.z ) * DistCGVario;
+			accelISUNEDBODY.y = CS * accelISUNEDMPU.y - SS * accelISUNEDMPU.z;
+			accelISUNEDBODY.z = -ST * accelISUNEDMPU.x + SSmultCT * accelISUNEDMPU.y + CTmultCS * accelISUNEDMPU.z;
+			// filter acceleration module with alfa/beta filter
+			deltaAccelModule =  sqrt( accelISUNEDBODY.x * accelISUNEDBODY.x + accelISUNEDBODY.y * accelISUNEDBODY.y + accelISUNEDBODY.z * accelISUNEDBODY.z ) - AccelModuleFilt;
+			AccelModulePrimFilt = AccelModulePrimFilt + betaAccelModule * deltaAccelModule;
+			AccelModuleFilt = AccelModuleFilt + alfaAccelModule * deltaAccelModule + AccelModulePrimFilt * dtGyr;			
+			
 		}
 		// get gyro data
 		if( MPU.rotation(&gyroRaw) == ESP_OK ){
@@ -664,9 +674,10 @@ static void processIMU(void *pvParameters)
 			gyroISUNEDBODY.x = CT * gyroISUNEDMPU.x + STmultSS * gyroISUNEDMPU.y + STmultCS * gyroISUNEDMPU.z;
 			gyroISUNEDBODY.y = CS * gyroISUNEDMPU.y - SS * gyroISUNEDMPU.z;
 			gyroISUNEDBODY.z = -ST * gyroISUNEDMPU.x + SSmultCT  * gyroISUNEDMPU.y + CTmultCS * gyroISUNEDMPU.z;
-			accelISUNEDBODY.x = CT * accelISUNEDMPU.x + STmultSS * accelISUNEDMPU.y + STmultCS * accelISUNEDMPU.z - ( gyroISUNEDBODY.y * gyroISUNEDBODY.y + gyroISUNEDBODY.z * gyroISUNEDBODY.z ) * DistCGVario;
-			accelISUNEDBODY.y = CS * accelISUNEDMPU.y - SS * accelISUNEDMPU.z;
-			accelISUNEDBODY.z = -ST * accelISUNEDMPU.x + SSmultCT * accelISUNEDMPU.y + CTmultCS * accelISUNEDMPU.z;
+			// filter gyro module with alfa/beta filter
+			deltaGyroModule =  sqrt( gyroISUNEDBODY.x * gyroISUNEDBODY.x + gyroISUNEDBODY.y * gyroISUNEDBODY.y + gyroISUNEDBODY.z * gyroISUNEDBODY.z ) - GyroModuleFilt;
+			GyroModulePrimFilt = GyroModulePrimFilt + betaGyroModule * deltaGyroModule;
+			GyroModuleFilt = GyroModuleFilt + alfaGyroModule * deltaGyroModule + GyroModulePrimFilt * dtGyr;			
 		}
 
 	if(BIAS_Init || ias.get() > 25){
@@ -731,12 +742,9 @@ static void processIMU(void *pvParameters)
 			if ( (HAS_MPU_TEMP_CONTROL && (MPU.getSiliconTempStatus() == MPU_T_LOCKED)) || !HAS_MPU_TEMP_CONTROL ) {
 				// count cycles when temperature is locked
 				gyrobiastemptimer++;
-				// detect if gyro variations is below stability threshold using an alpha/beta filter to estimate variation over short period of time
-				deltaGyroTest =  ( gyroRPS.x * gyroRPS.x + gyroRPS.y * gyroRPS.y + gyroRPS.z * gyroRPS.z ) - GyroTestFilt;
-				GyroTestPrimFilt = GyroTestPrimFilt + betaGyroTest * deltaGyroTest;
-				GyroTestFilt = GyroTestFilt + alphaGyroTest * deltaGyroTest + GyroTestPrimFilt * dtGyr;
-				// if temperature conditions has been stable for more than 30 seconds (1200 = 30x40hz) and there is very little angular acceleration variation
-				if ( gyrobiastemptimer > 1200 && abs(GyroTestPrimFilt) < 0.01 ) {
+				// detect if gyro ans accel variations is below stability threshold using an alpha/beta filter to estimate variation over short period of time
+				// if temperature conditions has been stable for more than 30 seconds (1200 = 30x40hz) and there is very little angular and acceleration variation
+				if ( gyrobiastemptimer > 1200 && abs(GyroModulePrimFilt) < GroundGyroprimlimit && abs(AccelModulePrimFilt) < GroundAccelprimlimit ) {
 					gyrostable++;
 					// during first 2.5 seconds, initialize gyro data
 					if ( gyrostable < 100 ) {

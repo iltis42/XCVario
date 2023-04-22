@@ -35,19 +35,19 @@ jobs:
             echo "#define LOCALE_DE >$PWD/main/xcv_locale.h"
             docker run --rm -v $PWD:/project -w /project espressif/idf:release-v4.3 idf.py build;
             mkdir -p artifacts;
-            cp $PWD/build/sensor.bin $PWD/artifacts/sensor-${{ env.FILE_VERSION }}.bin;
-            cp $PWD/build/sensor.elf $PWD/artifacts/sensor-${{ env.FILE_VERSION }}.elf;
-            gzip $PWD/artifacts/sensor-${{ env.FILE_VERSION }}.elf;
+            cp $PWD/build/sensor.bin $PWD/artifacts/sensor-${{ env.FILE_VERSION }}-de.bin;
+            cp $PWD/build/sensor.elf $PWD/artifacts/sensor-${{ env.FILE_VERSION }}-de.elf;
+            gzip $PWD/artifacts/sensor-${{ env.FILE_VERSION }}-de.elf;
             ls artifacts/*;
 
     - name: Upload binary
       uses: actions/upload-artifact@v3
       with:
         name: XCVario-${{ env.FILE_VERSION }}
-        path: artifacts/sensor-${{ env.FILE_VERSION }}.bin
+        path: artifacts/sensor-${{ env.FILE_VERSION }}-de.bin
      
     - name: Upload ELF
       uses: actions/upload-artifact@v3
       with:
         name: XCVario-${{ env.FILE_VERSION }}
-        path: artifacts/sensor-${{ env.FILE_VERSION }}.elf.gz
+        path: artifacts/sensor-${{ env.FILE_VERSION }}-de.elf.gz

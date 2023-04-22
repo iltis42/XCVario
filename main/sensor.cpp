@@ -192,7 +192,7 @@ static char str[150]; 	// string for flight test message broadcast on wireless
 static int64_t ProcessTimeIMU = 0.0;
 static int64_t ProcessTimeSensors = 0.0;
 static int64_t gyroTime;  // time stamp for gyros
-static int16_t dtGyr; // period between last gyro samples
+static float dtGyr; // period between last gyro samples
 static int64_t prevgyroTime;
 static int64_t statTime; // time stamp for statP
 static float statP=0; // raw static pressure
@@ -628,6 +628,8 @@ static void processIMU(void *pvParameters)
 	float CTmultCS = CT * CS;	
 	
 
+	mpud::float_axes_t gravISUNEDBODY;
+	mpud::float_axes_t Vbi;
 	// get gyro bias
 	mpud::float_axes_t currentGyroBias = gyro_bias.get();
 	// TODO estimation of gyro gain
@@ -667,10 +669,8 @@ static void processIMU(void *pvParameters)
 			accelISUNEDBODY.z = -ST * accelISUNEDMPU.x + SSmultCT * accelISUNEDMPU.y + CTmultCS * accelISUNEDMPU.z;
 		}
 
-		if(BIAS_Init || ias.get() > 25){
+	if(BIAS_Init || ias.get() > 25){
 			// estimate gravity with centrifugal corrections
-			mpud::float_axes_t gravISUNEDBODY;
-			mpud::float_axes_t Vbi;
 			if (tas>25.0) Vbi.x = tas; else Vbi.x = 0.0;
 			Vbi.y = 0;
 			Vbi.z = 0;
@@ -717,7 +717,7 @@ static void processIMU(void *pvParameters)
 				
 				<CR><LF>	
 			*/			
-			sprintf(str,"$I,%lld,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",
+			sprintf(str,"$I,%lld,%i,%i,%i,%i,%i,%i,%d,%d,%d,%i,%i,%i,%i,%i,%i,%i\r\n",
 				gyroTime,(int32_t)(accelISUNEDBODY.x*1000.0), (int32_t)(accelISUNEDBODY.y*1000.0), (int32_t)(accelISUNEDBODY.z*1000.0),
 				(int32_t)(gyroISUNEDBODY.x*10000.0), (int32_t)(gyroISUNEDBODY.y*10000.0),(int32_t)(gyroISUNEDBODY.z*10000.0),
 				(int16_t)(Pitch*1000.0), (int16_t)(Roll*1000.0), (int16_t)(Yaw*1000.0) ,
@@ -774,7 +774,7 @@ static void processIMU(void *pvParameters)
 		
 
 		ProcessTimeIMU = (esp_timer_get_time()/1000.0) - gyroTime;
-		if ( ProcessTimeIMU > 15 ) {
+		if ( ProcessTimeIMU > 5 ) {
 			ESP_LOGI(FNAME,"processIMU: %i / 25", (int16_t)(ProcessTimeIMU) );
 		}		
 
@@ -1138,7 +1138,7 @@ void readSensors(void *pvParameters){
 		}
 
 		ProcessTimeSensors = (esp_timer_get_time()/1000.0) - ProcessTimeSensors;
-		if ( ProcessTimeSensors > 75 ) {
+		if ( ProcessTimeSensors > 40 ) {
 			ESP_LOGI(FNAME,"readSensors: %i / 100", (int16_t)(ProcessTimeSensors) );
 		}	
 

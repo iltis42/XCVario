@@ -1588,9 +1588,9 @@ void system_startup(void *args){
 extern "C" void  app_main(void)
 {
 	// Init timer infrastructure
+	Audio::shutdown();
 	esp_timer_init();
 	Router::begin();
-	Audio::boot();
 	ESP_LOGI(FNAME,"app_main" );
 	ESP_LOGI(FNAME,"Now init all Setup elements");
 	bool setupPresent;

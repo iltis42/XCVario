@@ -468,7 +468,7 @@ void IpsDisplay::initDisplay() {
 		ucg->print(Units::VarioUnit());
 		ucg->setPrintPos(FIELD_START,YVAR-VARFONTH+7);
 
-		ucg->print("AV Vario");
+		ucg->print(PROGMEM"AV Vario");
 		ucg->setColor(0, COLOR_WHITE );
 
 		// print TE scale
@@ -488,7 +488,7 @@ void IpsDisplay::initDisplay() {
 		ucg->printf("%s %s", Units::AirspeedModeStr(), Units::AirspeedUnitStr() );
 
 		ucg->setPrintPos(ASVALX,YS2F-(2*fh) - 8);
-		ucg->print(" S2F");
+		ucg->print(PROGMEM" S2F");
 
 		ucg->setColor(0, COLOR_WHITE );
 		// AS Box
@@ -1738,14 +1738,14 @@ void IpsDisplay::initLoadDisplay(){
 	ucg->setColor( COLOR_HEADER );
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setPrintPos(20,20);
-	ucg->print( "G-Force" );
+	ucg->print( PROGMEM"G-Force" );
 	ucg->setPrintPos(130,70);
 	ucg->setColor(  COLOR_HEADER_LIGHT  );
-	ucg->print( "MAX POS G" );
+	ucg->print( PROGMEM"MAX POS G" );
 	ucg->setPrintPos(130,205);
-	ucg->print( "MAX NEG G" );
+	ucg->print( PROGMEM"MAX NEG G" );
 	ucg->setPrintPos(130,260);
-	ucg->printf( "MAX IAS %s", Units::AirspeedUnitStr() );
+	ucg->printf( PROGMEM"MAX IAS %s", Units::AirspeedUnitStr() );
 	int max_gscale = (int)( gload_pos_limit.get() )+1;
 	if( -gload_neg_limit.get() >= max_gscale )
 		max_gscale = (int)( -gload_neg_limit.get()  )+1;

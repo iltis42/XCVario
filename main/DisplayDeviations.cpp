@@ -40,7 +40,7 @@ void DisplayDeviations::display( int mode )
 	  clear();
 	  ucg->setFont( ucg_font_ncenR14_hr );
 	  ucg->setPrintPos( 1, 30 );
-	  ucg->printf( "No magnetic Sensor, Abort" );
+	  ucg->printf( PROGMEM"No magnetic Sensor, Abort" );
 	  return;
   }
   ESP_LOGI(FNAME, "display() mode=%d", mode );
@@ -62,7 +62,7 @@ void DisplayDeviations::display( int mode )
       x += 50;
       ucg->setColor( COLOR_WHITE );
       ucg->setPrintPos( x, y );
-      ucg->printf( "Deviation %3.1f°",  compass->getDeviation(i*45) );
+      ucg->printf( PROGMEM"Deviation %3.1f°",  compass->getDeviation(i*45) );
     }
 
   // draw graph
@@ -112,6 +112,6 @@ void DisplayDeviations::display( int mode )
   ucg->setPrintPos( 40, 317 );
   ucg->setColor( COLOR_WHITE );
   ucg->setPrintPos( 40, 317 );
-  ucg->printf( "Press button to exit" );
+  ucg->printf( PROGMEM"Press button to exit" );
   semaphoreGive();
 }

@@ -60,7 +60,7 @@ void DataMonitor::header( int ch, bool binary ){
 	else
 		b = "";
 	ucg->setPrintPos( 20, SCROLL_TOP );
-	ucg->printf("%s%s: RX:%d TX:%d bytes   ", b, what, rx_total, tx_total );
+	ucg->printf( PROGMEM"%s%s: RX:%d TX:%d bytes   ", b, what, rx_total, tx_total );
 }
 
 void DataMonitor::monitorString( int ch, e_dir_t dir, const char *str, int len ){

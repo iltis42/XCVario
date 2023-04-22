@@ -95,7 +95,7 @@ void SetupMenuValFloat::display( int mode ){
 		y+=24;
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		ucg->setPrintPos( 1, 300 );
-		ucg->print("Saved");
+		ucg->print(PROGMEM"Saved");
 		xSemaphoreGive(spiMutex );
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
 	}

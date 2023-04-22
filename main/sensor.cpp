@@ -954,26 +954,26 @@ void readSensors(void *pvParameters){
 		const gnss_data_t *chosenGnss = (gnss2->fix >= gnss1->fix) ? gnss2 : gnss1;
 		
 		if ( SENstream ) {
-		/*
-			$S,			Sensor data
-			TTTTTT:		static time in milli second,
-			PPPPPP:		static pressure in Pa,
-			TTTTTT:		TE time in milli second,
-			PPPPPP:		TE pressure in Pa,
-			PPPPPP:		Dynamic pressure in Pa,
-			XXX:		Outside Air Temperature in tenth of °C,
-			XXX:		MPU temperature in tenth °C,
-			X:			fix 0 to 5   3=3D   4= 3D diff,
-			XX:			numSV number of satelites used, 
-			TTTTTT:		GNSS time in milli second,
-			AAAAAA:		GNSS altitude in centimeter,
-			VVVV:		GNSS speed x or north in centimeters/s,
-			VVVV:		GNSS speed y or east in centimeters/s,
-			VVVV:		GNSS speed z or down in centimeters/s,
+		/* Sensor data
+			$S,			
+			static time in milli second,
+			static pressure in Pa,
+			TE time in milli second,
+			TE pressure in deci Pa,
+			Dynamic pressure in tenth of Pa,
+			Outside Air Temperature in tenth of °C,
+			MPU temperature in tenth °C,
+			GNSS fix 0 to 5   3=3D   4= 3D diff,
+			GNSS number of satelites used, 
+			GNSS time in milli second,
+			GNSS altitude in centimeter,
+			GNSS speed x or north in centimeters/s,
+			GNSS speed y or east in centimeters/s,
+			GNSS speed z or down in centimeters/s,
 			<CR><LF>		
 		*/
 			sprintf(str,"$S,%lld,%i,%lld,%i,%i,%i,%i,%1d,%2d,%lld,%i,%i,%i,%i\r\n",
-				statTime, (int32_t)(statP*100.0), teTime,(int32_t)(teP*100.0), (int16_t)(dynP),  (int16_t)(OATemp*10.0), (int16_t)(MPUtempcel*10.0), chosenGnss->fix, chosenGnss->numSV,
+				statTime, (int32_t)(statP*100.0), teTime,(int32_t)(teP*100.0), (int16_t)(dynP*10),  (int16_t)(OATemp*10.0), (int16_t)(MPUtempcel*10.0), chosenGnss->fix, chosenGnss->numSV,
 				(int64_t)(chosenGnss->time*1000.0), (int32_t)(chosenGnss->coordinates.altitude*100), (int16_t)(chosenGnss->speed.x*100), (int16_t)(chosenGnss->speed.y*100), (int16_t)(chosenGnss->speed.z*100));
 			Router::sendXCV(str);
 		}		

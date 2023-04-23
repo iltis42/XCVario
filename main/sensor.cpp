@@ -202,7 +202,7 @@ bool IMUstream = false; // IMU FT stream
 bool SENstream = false; // Sensors FT stream
 bool BIAS_Init = false; // Bias initialization done
 
-float GRAVITY = gravity.get();
+static float GRAVITY = 9.807;
 
 static float dynamicP; // filtered dynamic pressure
 static float baroP=0; // barometric pressure
@@ -650,7 +650,6 @@ static void processIMU(void *pvParameters)
 
 		TickType_t xLastWakeTime_mpu =xTaskGetTickCount();
 		
-
 		// get accel data
 		if( MPU.acceleration(&accelRaw) == ESP_OK ){
 			accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // For compatibility with Eckhard code only. Convert raw data to to 8G full scale
@@ -689,7 +688,7 @@ static void processIMU(void *pvParameters)
 			GyroModuleFilt = GyroModuleFilt + alfaGyroModule * deltaGyroModule + GyroModulePrimFilt * dtGyr;			
 		}
 
-	if(BIAS_Init || ias.get() > 25){
+		if(BIAS_Init || ias.get() > 25){
 			// estimate gravity with centrifugal corrections
 			if (tas>25.0) Vbi.x = tas; else Vbi.x = 0.0;
 			Vbi.y = 0;
@@ -738,11 +737,11 @@ static void processIMU(void *pvParameters)
 				<CR><LF>	
 			*/			
 			sprintf(str,"$I,%lld,%i,%i,%i,%i,%i,%i,%d,%d,%d,%i,%i,%i,%i,%i,%i,%i\r\n",
-				gyroTime,(int32_t)(accelISUNEDBODY.x*1000.0), (int32_t)(accelISUNEDBODY.y*1000.0), (int32_t)(accelISUNEDBODY.z*1000.0),
-				(int32_t)(gyroISUNEDBODY.x*10000.0), (int32_t)(gyroISUNEDBODY.y*10000.0),(int32_t)(gyroISUNEDBODY.z*10000.0),
+				gyroTime,(int32_t)(accelISUNEDBODY.x*10000.0), (int32_t)(accelISUNEDBODY.y*10000.0), (int32_t)(accelISUNEDBODY.z*10000.0),
+				(int32_t)(gyroISUNEDBODY.x*100000.0), (int32_t)(gyroISUNEDBODY.y*100000.0),(int32_t)(gyroISUNEDBODY.z*100000.0),
 				(int16_t)(Pitch*1000.0), (int16_t)(Roll*1000.0), (int16_t)(Yaw*1000.0) ,
-				(int32_t)(IMUBiasx*100000.0), (int32_t)(IMUBiasy*100000.0), (int32_t)(IMUBiasz*100000.0),(int32_t)(GravyFilt*100000.0),
-				(int32_t)(integralFBx*100000.0), (int32_t)(integralFBy*100000.0), (int32_t)(integralFBz*100000.0) );				
+				(int32_t)(IMUBiasx*100000.0), (int32_t)(IMUBiasy*100000.0), (int32_t)(IMUBiasz*100000.0),(int32_t)(AccelGravModuleFilt*100000.0),
+				(int32_t)(integralFBx*10000.0), (int32_t)(integralFBy*10000.0), (int32_t)(integralFBz*10000.0) );
 			Router::sendXCV(str);
 		}
 		// Estimation of gyro bias when on ground:  IAS < 25 km/h and not bias estimation yet
@@ -787,7 +786,9 @@ static void processIMU(void *pvParameters)
 								Gravy = Gravy / averagecount;
 								Gravz = Gravz / averagecount;
 								gravity.set(sqrt(Gravx*Gravx+Gravy*Gravy+Gravz*Gravz));
-								sprintf(str,"$GBIAS,%lld,%3.3f,%.6f,%.6f,%.6f,%.6f\r\n", gyroTime, MPUtempcel, -currentGyroBias.z, -currentGyroBias.y, -currentGyroBias.x, gravity.get() );
+								sprintf(str,"$GBIAS,%lld,%3.3f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\r\n",
+										gyroTime, MPUtempcel, -currentGyroBias.z, -currentGyroBias.y, -currentGyroBias.x,
+										gravity.get(), Gravx, Gravy, Gravz );
 								Router::sendXCV(str);
 							}
 						}
@@ -1413,6 +1414,8 @@ void system_startup(void *args){
 		delay( 50 );
 
 		char ahrs[50];
+		GRAVITY = gravity.get();
+		if(abs(GRAVITY-9.807) > 0.5 ) GRAVITY = 9.807;
 		float accel = 0;
 		for( auto i=0; i<11; i++ ){
 			esp_err_t err = MPU.acceleration(&accelRaw);  // fetch raw data from the registers

@@ -502,8 +502,8 @@ void MahonyUpdateIMU(float dt, float gx, float gy, float gz, float ax, float ay,
 #define fcgrav1 (40.0/(40.0+fcGrav))
 #define fcgrav2 (1.0-fcgrav1)
 #define Nlimit 0.2 // stability criteria for gravity estimation from accels
-#define FlightAccelprimlimit 0.5 // stability criteria on accels variations. twice value used on ground
-#define FlightGyroprimlimit 0.030  // stability criteria on gyros variations. twice value used on ground
+#define FlightAccelprimlimit 0.3 // stability criteria on accels variations. twice value used on ground
+#define FlightGyroprimlimit 0.02  // stability criteria on gyros variations. twice value used on ground
 #define Kp 1 // proportional feedback to sync quaternion
 #define Ki 0.1 // integral feedback to sync quaternion
 

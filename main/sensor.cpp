@@ -164,7 +164,7 @@ Compass *compass = 0;
 BTSender btsender;
 
 // IMU variables	
-static float AccelGravModuleFilt = 0.0;	
+static float AccelGravModuleFilt = 9.807;
 static float integralFBx = 0.0;
 static float integralFBy = 0.0;
 static float integralFBz = 0.0;
@@ -515,7 +515,7 @@ float AccelGravModule, QuatModule, recipNorm, halfvx, halfvy, halfvz, halfex, ha
 	// Filter acceleration module 
 	AccelGravModule = ax * ax + ay * ay + az * az;
 	AccelGravModuleFilt = fcgrav1 * AccelGravModuleFilt + fcgrav2 * sqrt( AccelGravModule );
-	if ( (AccelGravModuleFilt-GRAVITY) < Nlimit && abs(GyroModulePrimFilt) < FlightGyroprimlimit && abs(AccelModulePrimFilt) < FlightAccelprimlimit ) {
+	if ( (abs(AccelGravModuleFilt-GRAVITY) < Nlimit) && (abs(GyroModulePrimFilt) < FlightGyroprimlimit) && (abs(AccelModulePrimFilt) < FlightAccelprimlimit ) ) {
 		// Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
 		if ( AccelGravModule != 0.0) {
 			// Normalise accelerometer measurement
@@ -644,7 +644,7 @@ static void processIMU(void *pvParameters)
 	// get gyro bias
 	mpud::float_axes_t currentGyroBias = gyro_bias.get();
 	// TODO estimation of gyro gain
-
+	float Module = 9.807 ;
 	
 	while (1) {
 
@@ -662,7 +662,8 @@ static void processIMU(void *pvParameters)
 			accelISUNEDBODY.y = CS * accelISUNEDMPU.y - SS * accelISUNEDMPU.z;
 			accelISUNEDBODY.z = -ST * accelISUNEDMPU.x + SSmultCT * accelISUNEDMPU.y + CTmultCS * accelISUNEDMPU.z;
 			// filter acceleration module with alfa/beta filter
-			deltaAccelModule =  sqrt( accelISUNEDBODY.x * accelISUNEDBODY.x + accelISUNEDBODY.y * accelISUNEDBODY.y + accelISUNEDBODY.z * accelISUNEDBODY.z ) - AccelModuleFilt;
+			Module = sqrt( accelISUNEDBODY.x * accelISUNEDBODY.x + accelISUNEDBODY.y * accelISUNEDBODY.y + accelISUNEDBODY.z * accelISUNEDBODY.z );
+			deltaAccelModule =  Module - AccelModuleFilt;
 			AccelModulePrimFilt = AccelModulePrimFilt + betaAccelModule * deltaAccelModule;
 			AccelModuleFilt = AccelModuleFilt + alfaAccelModule * deltaAccelModule + AccelModulePrimFilt * dtGyr;			
 			
@@ -736,12 +737,23 @@ static void processIMU(void *pvParameters)
 				
 				<CR><LF>	
 			*/			
-			sprintf(str,"$I,%lld,%i,%i,%i,%i,%i,%i,%d,%d,%d,%i,%i,%i,%i,%i,%i,%i\r\n",
+			if(BIAS_Init){
+				sprintf(str,"$I,%lld,%i,%i,%i,%i,%i,%i,%d,%d,%d,%i,%i,%i,%i,%i,%i,%i\r\n",
 				gyroTime,(int32_t)(accelISUNEDBODY.x*10000.0), (int32_t)(accelISUNEDBODY.y*10000.0), (int32_t)(accelISUNEDBODY.z*10000.0),
 				(int32_t)(gyroISUNEDBODY.x*100000.0), (int32_t)(gyroISUNEDBODY.y*100000.0),(int32_t)(gyroISUNEDBODY.z*100000.0),
 				(int16_t)(Pitch*1000.0), (int16_t)(Roll*1000.0), (int16_t)(Yaw*1000.0) ,
 				(int32_t)(IMUBiasx*100000.0), (int32_t)(IMUBiasy*100000.0), (int32_t)(IMUBiasz*100000.0),(int32_t)(AccelGravModuleFilt*100000.0),
-				(int32_t)(integralFBx*10000.0), (int32_t)(integralFBy*10000.0), (int32_t)(integralFBz*10000.0) );
+				(int32_t)(integralFBx*100000.0), (int32_t)(integralFBy*100000.0), (int32_t)(integralFBz*100000.0) );
+			}
+			else{
+				sprintf(str,"$I,%lld,%i,%i,%i,%i,%i,%i,%d,%d,%d,%i,%i,%i,%i,%i,%i,%i\r\n",
+				gyroTime,(int32_t)(accelISUNEDBODY.x*10000.0), (int32_t)(accelISUNEDBODY.y*10000.0), (int32_t)(accelISUNEDBODY.z*10000.0),
+				(int32_t)(gyroISUNEDBODY.x*100000.0), (int32_t)(gyroISUNEDBODY.y*100000.0),(int32_t)(gyroISUNEDBODY.z*100000.0),
+				(int16_t)(0.0), (int16_t)(0.0), (int16_t)(0.0) ,
+				(int32_t)(IMUBiasx*100000.0), (int32_t)(IMUBiasy*100000.0), (int32_t)(IMUBiasz*100000.0),(int32_t)(AccelGravModuleFilt*100000.0),
+				(int32_t)(integralFBx*100000.0), (int32_t)(integralFBy*100000.0), (int32_t)(integralFBz*100000.0) );
+			}
+
 			Router::sendXCV(str);
 		}
 		// Estimation of gyro bias when on ground:  IAS < 25 km/h and not bias estimation yet
@@ -768,28 +780,38 @@ static void processIMU(void *pvParameters)
 						// between 2.5 seconds and 22.5 seconds, accumulate gyro data
 						if ( gyrostable < 900 ) {
 							averagecount++;
-							GxBias = GxBias + gyroRPS.x;
-							GyBias = GyBias + gyroRPS.y;
-							GzBias = GzBias + gyroRPS.z;
-							Gravx = Gravx + accelISUNEDBODY.x;
-							Gravy = Gravy + accelISUNEDBODY.y;
-							Gravz = Gravz + accelISUNEDBODY.z;							
+							GxBias += gyroRPS.x;
+							GyBias += gyroRPS.y;
+							GzBias += gyroRPS.z;
+							Gravx += accelISUNEDBODY.x;
+							Gravy += accelISUNEDBODY.y;
+							Gravz += accelISUNEDBODY.z;
+							Roll += atan(accelISUNEDBODY.y / accelISUNEDBODY.z);
+							Pitch += asin(accelISUNEDBODY.x/Module);
 						} else {
 							// after 25 seconds calculate average bias and set bias in FLASH
 							if ( gyrostable++ > 1000 ) {
-								BIAS_Init = true;
 								currentGyroBias.x = GxBias / averagecount;
 								currentGyroBias.y = GyBias / averagecount;
 								currentGyroBias.z = GzBias / averagecount;
 								gyro_bias.set(currentGyroBias);
-								Gravx = Gravx / averagecount;
-								Gravy = Gravy / averagecount;
-								Gravz = Gravz / averagecount;
+								Gravx /= averagecount;
+								Gravy /= averagecount;
+								Gravz /= averagecount;
 								gravity.set(sqrt(Gravx*Gravx+Gravy*Gravy+Gravz*Gravz));
-								sprintf(str,"$GBIAS,%lld,%3.3f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\r\n",
+								Roll  /= averagecount;
+								Pitch /= averagecount;
+								Yaw   = 0.0;
+								/* Initialisation du quaternion*/
+								q0=((cos(Roll/2.0)*cos(Pitch/2.0)*cos(Yaw/2.0)+sin(Roll/2.0)*sin(Pitch/2.0)*sin(Yaw/2.0)));
+								q1=((sin(Roll/2.0)*cos(Pitch/2.0)*cos(Yaw/2.0)-cos(Roll/2.0)*sin(Pitch/2.0)*sin(Yaw/2.0)));
+								q2=((cos(Roll/2.0)*sin(Pitch/2.0)*cos(Yaw/2.0)+sin(Roll/2.0)*cos(Pitch/2.0)*sin(Yaw/2.0)));
+								q3=((cos(Roll/2.0)*cos(Pitch/2.0)*sin(Yaw/2.0)-sin(Roll/2.0)*sin(Pitch/2.0)*cos(Yaw/2.0)));
+								sprintf(str,"$GBIAS,%lld,%3.3f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\r\n",
 										gyroTime, MPUtempcel, -currentGyroBias.z, -currentGyroBias.y, -currentGyroBias.x,
-										gravity.get(), Gravx, Gravy, Gravz );
+										gravity.get(), Gravx, Gravy, Gravz, Roll, Pitch, Yaw );
 								Router::sendXCV(str);
+								BIAS_Init = true;
 							}
 						}
 					}

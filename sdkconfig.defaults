@@ -210,6 +210,12 @@ CONFIG_ARDUHAL_PARTITION_SCHEME="default"
 # end of Arduino Configuration
 
 #
+# Webserver
+#
+CONFIG_WEBSERVER_USE_GZIP=y
+# end of Webserver
+
+#
 # Compiler options
 #
 # CONFIG_COMPILER_OPTIMIZATION_DEFAULT is not set

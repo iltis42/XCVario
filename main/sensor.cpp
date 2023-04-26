@@ -504,12 +504,14 @@ void MahonyUpdateIMU(float dt, float gx, float gy, float gz, float ax, float ay,
 #define Nlimit 0.2 // stability criteria for gravity estimation from accels
 #define FlightAccelprimlimit 0.3 // stability criteria on accels variations. twice value used on ground
 #define FlightGyroprimlimit 0.02  // stability criteria on gyros variations. twice value used on ground
-#define Kp 1 // proportional feedback to sync quaternion
-#define Ki 0.1 // integral feedback to sync quaternion
+#define Kp 25 // proportional feedback to sync quaternion
+#define Ki 1.5 // integral feedback to sync quaternion
 
 #define WingLevel 0.75 // max lateral gravity acceleration to consider wings are ~leveled
-#define Kbias 0.04 // integration factor for bias estimation
-#define Kalt 0.04 // integration factor for bias estimation
+#define Kbias2 0.002
+#define Kbias1 (1-Kbias2)
+#define Kalt2 0.01 // integration factor for bias estimation
+#define Kalt1 (1-Kalt2)
 
 float AccelGravModule, QuatModule, recipNorm, halfvx, halfvy, halfvz, halfex, halfey, halfez, qa, qb, qc;
 
@@ -518,7 +520,7 @@ float AccelGravModule, QuatModule, recipNorm, halfvx, halfvy, halfvz, halfex, ha
 	// Filter acceleration module 
 	AccelGravModule = ax * ax + ay * ay + az * az;
 	AccelGravModuleFilt = fcgrav1 * AccelGravModuleFilt + fcgrav2 * sqrt( AccelGravModule );
-	if ( (AccelGravModuleFilt-GRAVITY) < Nlimit && GyroModulePrimLevel < FlightGyroprimlimit && AccelModulePrimLevel < FlightAccelprimlimit ) {
+	if ( (abs(AccelGravModuleFilt-GRAVITY) < Nlimit) && (GyroModulePrimLevel < FlightGyroprimlimit) && (AccelModulePrimLevel < FlightAccelprimlimit) ) {
 		// Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
 		if ( AccelGravModule != 0.0) {
 			// Normalise accelerometer measurement
@@ -546,17 +548,16 @@ float AccelGravModule, QuatModule, recipNorm, halfvx, halfvy, halfvz, halfex, ha
 			gx = gx + Kp * halfex;
 			gy = gy + Kp * halfey;
 			gz = gz + Kp * halfez;
+			// Estimate bias from gyros by long term filtering of integral term
+			IMUBiasx = Kbias1 * IMUBiasx + Kbias2 * integralFBx;
+			IMUBiasy = Kbias1 * IMUBiasy + Kbias2 * integralFBy;
+			IMUBiasz = Kbias1 * IMUBiasz + Kbias2 * integralFBz;			
 
-			// capture gyros bias when wings are close to be leveled (~straight flight), when wings are leveled
-			// We should only consider long period therefore Kbias and Kalt should be set very low e.g.  ~10-2
+			// capture alternate gyro bias gz when wings are close to be leveled (~straight flight)
 			GravyFilt = fcgrav1 * GravyFilt + fcgrav2 * halfvy;
 			if ( abs(GravyFilt) < WingLevel ) {
-				// Estimate bias from gyros by long term integration of errors
-				IMUBiasx = IMUBiasx + Kbias * halfex * dt;
-				IMUBiasy = IMUBiasy + Kbias * halfey * dt;
-				IMUBiasz = IMUBiasz + Kbias * halfez * dt;
 				// compute gz bias considering long time average of gz is ~0 when wings are ~leveled
-				alternategzBias = ( 1 - Kalt ) * alternategzBias + Kalt * gz;
+				alternategzBias = Kalt1 * alternategzBias + Kalt2 * gz;
 			}
 		}
 	}
@@ -660,28 +661,6 @@ static void processIMU(void *pvParameters)
 
 		TickType_t xLastWakeTime_mpu =xTaskGetTickCount();
 		
-		// get accel data
-		if( MPU.acceleration(&accelRaw) == ESP_OK ){
-			accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // For compatibility with Eckhard code only. Convert raw data to to 8G full scale
-			// convert accels coordinates to ISU : m/s² NED MPU
-			accelISUNEDMPU.x = ((- accelG.z * GRAVITY) - currentAccelBias.x ) / currentAccelGain.x;
-			accelISUNEDMPU.y = ((- accelG.y * GRAVITY) - currentAccelBias.y ) / currentAccelGain.y;
-			accelISUNEDMPU.z = ((- accelG.x * GRAVITY) - currentAccelBias.z ) / currentAccelGain.z;
-			// convert from MPU to BODY
-			accelISUNEDBODY.x = CT * accelISUNEDMPU.x + STmultSS * accelISUNEDMPU.y + STmultCS * accelISUNEDMPU.z - ( gyroISUNEDBODY.y * gyroISUNEDBODY.y + gyroISUNEDBODY.z * gyroISUNEDBODY.z ) * DistCGVario;
-			accelISUNEDBODY.y = CS * accelISUNEDMPU.y - SS * accelISUNEDMPU.z;
-			accelISUNEDBODY.z = -ST * accelISUNEDMPU.x + SSmultCT * accelISUNEDMPU.y + CTmultCS * accelISUNEDMPU.z;
-			// filter acceleration module with alfa/beta filter
-			Module = sqrt( accelISUNEDBODY.x * accelISUNEDBODY.x + accelISUNEDBODY.y * accelISUNEDBODY.y + accelISUNEDBODY.z * accelISUNEDBODY.z );
-			deltaAccelModule =  Module - AccelModuleFilt;
-			AccelModulePrimFilt = AccelModulePrimFilt + betaAccelModule * deltaAccelModule;
-			AccelModuleFilt = AccelModuleFilt + alfaAccelModule * deltaAccelModule + AccelModulePrimFilt * dtGyr;			
-			if ( AccelModulePrimLevel < abs(AccelModulePrimFilt) ) {
-				AccelModulePrimLevel = abs(AccelModulePrimFilt);
-			} else {
-				AccelModulePrimLevel = fcAL1 * AccelModulePrimLevel +  fcAL2 * abs(AccelModulePrimFilt);
-			}
-		}
 		// get gyro data
 		if( MPU.rotation(&gyroRaw) == ESP_OK ){
 			prevgyroTime = gyroTime;
@@ -707,6 +686,28 @@ static void processIMU(void *pvParameters)
 				GyroModulePrimLevel = fcGL1 * GyroModulePrimLevel +  fcGL2 * abs(GyroModulePrimFilt);
 			}			
 		}
+		// get accel data
+		if( MPU.acceleration(&accelRaw) == ESP_OK ){
+			accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // For compatibility with Eckhard code only. Convert raw data to to 8G full scale
+			// convert accels coordinates to ISU : m/s² NED MPU
+			accelISUNEDMPU.x = ((- accelG.z * GRAVITY) - currentAccelBias.x ) / currentAccelGain.x;
+			accelISUNEDMPU.y = ((- accelG.y * GRAVITY) - currentAccelBias.y ) / currentAccelGain.y;
+			accelISUNEDMPU.z = ((- accelG.x * GRAVITY) - currentAccelBias.z ) / currentAccelGain.z;
+			// convert from MPU to BODY
+			accelISUNEDBODY.x = CT * accelISUNEDMPU.x + STmultSS * accelISUNEDMPU.y + STmultCS * accelISUNEDMPU.z - ( gyroISUNEDBODY.y * gyroISUNEDBODY.y + gyroISUNEDBODY.z * gyroISUNEDBODY.z ) * DistCGVario;
+			accelISUNEDBODY.y = CS * accelISUNEDMPU.y - SS * accelISUNEDMPU.z;
+			accelISUNEDBODY.z = -ST * accelISUNEDMPU.x + SSmultCT * accelISUNEDMPU.y + CTmultCS * accelISUNEDMPU.z;
+			// filter acceleration module with alfa/beta filter
+			Module = sqrt( accelISUNEDBODY.x * accelISUNEDBODY.x + accelISUNEDBODY.y * accelISUNEDBODY.y + accelISUNEDBODY.z * accelISUNEDBODY.z );
+			deltaAccelModule =  Module - AccelModuleFilt;
+			AccelModulePrimFilt = AccelModulePrimFilt + betaAccelModule * deltaAccelModule;
+			AccelModuleFilt = AccelModuleFilt + alfaAccelModule * deltaAccelModule + AccelModulePrimFilt * dtGyr;			
+			if ( AccelModulePrimLevel < abs(AccelModulePrimFilt) ) {
+				AccelModulePrimLevel = abs(AccelModulePrimFilt);
+			} else {
+				AccelModulePrimLevel = fcAL1 * AccelModulePrimLevel +  fcAL2 * abs(AccelModulePrimFilt);
+			}
+		}		
 
 		if(BIAS_Init || ias.get() > 25){
 			// estimate gravity with centrifugal corrections
@@ -748,21 +749,24 @@ static void processIMU(void *pvParameters)
 				ZZZZ:		YAW in milli rad,
 				XXXXXX: 	gyro bias x in hundred of milli rad/s,
 				YYYYYY:		gyro bias y in hundred of milli rad/s,
-				ZZZZZY:		gyro bias z in hundred of milli rad/s,
+				ZZZZZZ:		gyro bias z in hundred of milli rad/s,
+				ZZZZZZ:		alternate gyro bias z in hundred of milli rad/s,
 				ZZZZZY:		gyro alternate bias z in hundred of milli rad/s
 				XXXXXX: 	integralFBx in hundred of milli rad/s,
 				YYYYYY:		integralFBy in hundred of milli rad/s,
-				ZZZZZY:		integralFBz in hundred of milli rad/s,				
-				
+				ZZZZZY:		integralFBz in hundred of milli rad/s,
+				XXXXXX:		Gyro module variation level in hundred of milli rad/s,
+				XXXXXX:		Accel module variation level in hundred of milli rad/s,			
 				<CR><LF>	
 			*/			
 			if(BIAS_Init){
-				sprintf(str,"$I,%lld,%i,%i,%i,%i,%i,%i,%d,%d,%d,%i,%i,%i,%i,%i,%i,%i\r\n",
+				sprintf(str,"$I,%lld,%i,%i,%i,%i,%i,%i,%d,%d,%d,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",
 				gyroTime,(int32_t)(accelISUNEDBODY.x*10000.0), (int32_t)(accelISUNEDBODY.y*10000.0), (int32_t)(accelISUNEDBODY.z*10000.0),
 				(int32_t)(gyroISUNEDBODY.x*100000.0), (int32_t)(gyroISUNEDBODY.y*100000.0),(int32_t)(gyroISUNEDBODY.z*100000.0),
 				(int16_t)(Pitch*1000.0), (int16_t)(Roll*1000.0), (int16_t)(Yaw*1000.0) ,
-				(int32_t)(IMUBiasx*100000.0), (int32_t)(IMUBiasy*100000.0), (int32_t)(IMUBiasz*100000.0),(int32_t)(AccelGravModuleFilt*100000.0),
-				(int32_t)(integralFBx*100000.0), (int32_t)(integralFBy*100000.0), (int32_t)(integralFBz*100000.0) );
+				(int32_t)(IMUBiasx*100000.0), (int32_t)(IMUBiasy*100000.0), (int32_t)(IMUBiasz*100000.0), (int32_t)(alternategzBias*100000.0), (int32_t)(AccelGravModuleFilt*100000.0),
+				(int32_t)(integralFBx*100000.0), (int32_t)(integralFBy*100000.0), (int32_t)(integralFBz*100000.0),
+				(int32_t)(GyroModulePrimLevel*100000.0), (int32_t)(AccelModulePrimLevel*100000.0) );
 			}
 			else{
 				sprintf(str,"$I,%lld,%i,%i,%i,%i,%i,%i,%d,%d,%d,%i,%i,%i,%i,%i,%i,%i\r\n",

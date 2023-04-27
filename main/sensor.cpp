@@ -501,9 +501,9 @@ void MahonyUpdateIMU(float dt, float gx, float gy, float gz, float ax, float ay,
 #define fcGrav 3.0 // 3Hz low pass to filter for testing stability criteria
 #define fcgrav1 (40.0/(40.0+fcGrav))
 #define fcgrav2 (1.0-fcgrav1)
-#define Nlimit 0.2 // stability criteria for gravity estimation from accels
-#define FlightAccelprimlimit 0.3 // stability criteria on accels variations. twice value used on ground
-#define FlightGyroprimlimit 0.02  // stability criteria on gyros variations. twice value used on ground
+#define Nlimit 0.15 // stability criteria for gravity estimation from accels
+#define FlightAccelprimlimit 3.0 // stability criteria on accels variations.
+#define FlightGyroprimlimit 1.0  // stability criteria on gyros variations.
 #define Kp 25 // proportional feedback to sync quaternion
 #define Ki 1.5 // integral feedback to sync quaternion
 
@@ -744,39 +744,11 @@ static void processIMU(void *pvParameters)
 				XXXXX:		rotation X-Axis in tenth of milli rad/s,
 				YYYYY:		rotation Y-Axis in tenth of milli rad/s,
 				ZZZZZ:		rotation Z-Axis in tenth of milli rad/s,
-				XXXX:		Pitch in milli rad,
-				YYYY:		Roll in milli rad,
-				ZZZZ:		YAW in milli rad,
-				XXXXXX: 	gyro bias x in hundred of milli rad/s,
-				YYYYYY:		gyro bias y in hundred of milli rad/s,
-				ZZZZZZ:		gyro bias z in hundred of milli rad/s,
-				ZZZZZZ:		alternate gyro bias z in hundred of milli rad/s,
-				ZZZZZY:		gyro alternate bias z in hundred of milli rad/s
-				XXXXXX: 	integralFBx in hundred of milli rad/s,
-				YYYYYY:		integralFBy in hundred of milli rad/s,
-				ZZZZZY:		integralFBz in hundred of milli rad/s,
-				XXXXXX:		Gyro module variation level in hundred of milli rad/s,
-				XXXXXX:		Accel module variation level in hundred of milli rad/s,			
 				<CR><LF>	
 			*/			
-			if(BIAS_Init){
-				sprintf(str,"$I,%lld,%i,%i,%i,%i,%i,%i,%d,%d,%d,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",
+			sprintf(str,"$I,%lld,%i,%i,%i,%i,%i,%i\r\n",
 				gyroTime,(int32_t)(accelISUNEDBODY.x*10000.0), (int32_t)(accelISUNEDBODY.y*10000.0), (int32_t)(accelISUNEDBODY.z*10000.0),
-				(int32_t)(gyroISUNEDBODY.x*100000.0), (int32_t)(gyroISUNEDBODY.y*100000.0),(int32_t)(gyroISUNEDBODY.z*100000.0),
-				(int16_t)(Pitch*1000.0), (int16_t)(Roll*1000.0), (int16_t)(Yaw*1000.0) ,
-				(int32_t)(IMUBiasx*100000.0), (int32_t)(IMUBiasy*100000.0), (int32_t)(IMUBiasz*100000.0), (int32_t)(alternategzBias*100000.0), (int32_t)(AccelGravModuleFilt*100000.0),
-				(int32_t)(integralFBx*100000.0), (int32_t)(integralFBy*100000.0), (int32_t)(integralFBz*100000.0),
-				(int32_t)(GyroModulePrimLevel*100000.0), (int32_t)(AccelModulePrimLevel*100000.0) );
-			}
-			else{
-				sprintf(str,"$I,%lld,%i,%i,%i,%i,%i,%i,%d,%d,%d,%i,%i,%i,%i,%i,%i,%i\r\n",
-				gyroTime,(int32_t)(accelISUNEDBODY.x*10000.0), (int32_t)(accelISUNEDBODY.y*10000.0), (int32_t)(accelISUNEDBODY.z*10000.0),
-				(int32_t)(gyroISUNEDBODY.x*100000.0), (int32_t)(gyroISUNEDBODY.y*100000.0),(int32_t)(gyroISUNEDBODY.z*100000.0),
-				(int16_t)(0.0), (int16_t)(0.0), (int16_t)(0.0) ,
-				(int32_t)(IMUBiasx*100000.0), (int32_t)(IMUBiasy*100000.0), (int32_t)(IMUBiasz*100000.0),(int32_t)(AccelGravModuleFilt*100000.0),
-				(int32_t)(integralFBx*100000.0), (int32_t)(integralFBy*100000.0), (int32_t)(integralFBz*100000.0) );
-			}
-
+				(int32_t)(gyroISUNEDBODY.x*100000.0), (int32_t)(gyroISUNEDBODY.y*100000.0),(int32_t)(gyroISUNEDBODY.z*100000.0) );
 			Router::sendXCV(str);
 		}
 		// Estimation of gyro bias when on ground:  IAS < 25 km/h and not bias estimation yet
@@ -1043,11 +1015,28 @@ void readSensors(void *pvParameters){
 			GNSS speed x or north in centimeters/s,
 			GNSS speed y or east in centimeters/s,
 			GNSS speed z or down in centimeters/s,
+			XXXX:		Pitch in milli rad,
+			YYYY:		Roll in milli rad,
+			ZZZZ:		YAW in milli rad,
+			XXXXXX: 	gyro bias x in hundred of milli rad/s,
+			YYYYYY:		gyro bias y in hundred of milli rad/s,
+			ZZZZZZ:		gyro bias z in hundred of milli rad/s,
+			ZZZZZZ:		alternate gyro bias z in hundred of milli rad/s,
+			ZZZZZY:		Gravity module from accel in hundred of milli m/s²,
+			XXXXXX: 	integralFBx in hundred of milli rad/s,
+			YYYYYY:		integralFBy in hundred of milli rad/s,
+			ZZZZZY:		integralFBz in hundred of milli rad/s,
+			XXXXXX:		Gyro module variation level in hundred of milli,
+			XXXXXX:		Accel module variation level in hundred of milli			
 			<CR><LF>		
 		*/
-			sprintf(str,"$S,%lld,%i,%lld,%i,%i,%i,%i,%1d,%2d,%lld,%i,%i,%i,%i\r\n",
+			sprintf(str,"$S,%lld,%i,%lld,%i,%i,%i,%i,%1d,%2d,%lld,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",
 				statTime, (int32_t)(statP*100.0), teTime,(int32_t)(teP*100.0), (int16_t)(dynP*10),  (int16_t)(OATemp*10.0), (int16_t)(MPUtempcel*10.0), chosenGnss->fix, chosenGnss->numSV,
-				(int64_t)(chosenGnss->time*1000.0), (int32_t)(chosenGnss->coordinates.altitude*100), (int16_t)(chosenGnss->speed.x*100), (int16_t)(chosenGnss->speed.y*100), (int16_t)(chosenGnss->speed.z*100));
+				(int64_t)(chosenGnss->time*1000.0), (int32_t)(chosenGnss->coordinates.altitude*100), (int16_t)(chosenGnss->speed.x*100), (int16_t)(chosenGnss->speed.y*100), (int16_t)(chosenGnss->speed.z*100),
+				(int16_t)(Pitch*1000.0), (int16_t)(Roll*1000.0), (int16_t)(Yaw*1000.0) ,
+				(int32_t)(IMUBiasx*100000.0), (int32_t)(IMUBiasy*100000.0), (int32_t)(IMUBiasz*100000.0), (int32_t)(alternategzBias*100000.0), (int32_t)(AccelGravModuleFilt*100000.0),
+				(int32_t)(integralFBx*100000.0), (int32_t)(integralFBy*100000.0), (int32_t)(integralFBz*100000.0),
+				(int32_t)(GyroModulePrimLevel*100000.0), (int32_t)(AccelModulePrimLevel*100000.0) );				
 			Router::sendXCV(str);
 		}		
 		

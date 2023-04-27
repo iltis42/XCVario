@@ -15,19 +15,20 @@ config I2CBUS_LOG_READWRITES
         Log all successuful read/write data, including port, slave address, 
         target register and the data written to. Useful for debugging.
 
-choice
-    prompt "Log level"
+choice I2CBUS_LOG_RW_LEVEL
+    bool "Log level"
     depends on I2CBUS_LOG_READWRITES
     default I2CBUS_LOG_RW_LEVEL_VERBOSE
     help
         Log level for successuful read/write operations. Levels depends on LOG_DEFAULT_LEVEL
-        
+
     config I2CBUS_LOG_RW_LEVEL_INFO
-    	bool "Info"
-	config I2CBUS_LOG_RW_LEVEL_DEBUG
-    	bool "Debug"
-	config I2CBUS_LOG_RW_LEVEL_VERBOSE
-    	bool "Verbose"
+        bool "Info"
+    config I2CBUS_LOG_RW_LEVEL_DEBUG
+        bool "Debug"
+    config I2CBUS_LOG_RW_LEVEL_VERBOSE
+        bool "Verbose"
+
 endchoice
 
 endmenu

@@ -1,8 +1,6 @@
 set( src_dirs
-  "variants/esp32"
   "cores/esp32"
   "libraries/EEPROM/src"
-  "libraries/ESP32/src"
   "libraries/FFat/src"
   "libraries/FS/src"
   "libraries/Preferences/src"

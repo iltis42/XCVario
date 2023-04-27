@@ -16,12 +16,12 @@ config I2CBUS_LOG_READWRITES
         target register and the data written to. Useful for debugging.
 
 choice I2CBUS_LOG_RW_LEVEL
-    prompt "Log level"
+    bool "Log level"
     depends on I2CBUS_LOG_READWRITES
     default I2CBUS_LOG_RW_LEVEL_VERBOSE
     help
         Log level for successuful read/write operations. Levels depends on LOG_DEFAULT_LEVEL
-        
+
     config I2CBUS_LOG_RW_LEVEL_INFO
         bool "Info"
     config I2CBUS_LOG_RW_LEVEL_DEBUG
@@ -30,6 +30,5 @@ choice I2CBUS_LOG_RW_LEVEL
         bool "Verbose"
         
 endchoice
-
 
 endmenu

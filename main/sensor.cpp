@@ -737,13 +737,13 @@ static void processIMU(void *pvParameters)
 			/*
 			IMU data in ISU and NED orientation
 				$I,
-				TTTT:		MPU (gyro) time in milli second,
-				XXXX:		acceleration in X-Axis in milli m/s²,
-				YYYY:		acceleration in Y-Axis in milli m/s²,
-				ZZZZ:		acceleration in Z-Axis in milli m/s²,
-				XXXXX:		rotation X-Axis in tenth of milli rad/s,
-				YYYYY:		rotation Y-Axis in tenth of milli rad/s,
-				ZZZZZ:		rotation Z-Axis in tenth of milli rad/s,
+				MPU (gyro) time in milli second,
+				Acceleration in X-Axis in milli m/s²,
+				Acceleration in Y-Axis in milli m/s²,
+				Acceleration in Z-Axis in milli m/s²,
+				Rotation X-Axis in tenth of milli rad/s,
+				Rotation Y-Axis in tenth of milli rad/s,
+				Rotation Z-Axis in tenth of milli rad/s,
 				<CR><LF>	
 			*/			
 			sprintf(str,"$I,%lld,%i,%i,%i,%i,%i,%i\r\n",
@@ -1015,19 +1015,19 @@ void readSensors(void *pvParameters){
 			GNSS speed x or north in centimeters/s,
 			GNSS speed y or east in centimeters/s,
 			GNSS speed z or down in centimeters/s,
-			XXXX:		Pitch in milli rad,
-			YYYY:		Roll in milli rad,
-			ZZZZ:		YAW in milli rad,
-			XXXXXX: 	gyro bias x in hundred of milli rad/s,
-			YYYYYY:		gyro bias y in hundred of milli rad/s,
-			ZZZZZZ:		gyro bias z in hundred of milli rad/s,
-			ZZZZZZ:		alternate gyro bias z in hundred of milli rad/s,
-			ZZZZZY:		Gravity module from accel in hundred of milli m/s²,
-			XXXXXX: 	integralFBx in hundred of milli rad/s,
-			YYYYYY:		integralFBy in hundred of milli rad/s,
-			ZZZZZY:		integralFBz in hundred of milli rad/s,
-			XXXXXX:		Gyro module variation level in hundred of milli,
-			XXXXXX:		Accel module variation level in hundred of milli			
+			Pitch in milli rad,
+			Roll in milli rad,
+			Yaw in milli rad,
+			Gyro bias x in hundred of milli rad/s,
+			Gyro bias y in hundred of milli rad/s,
+			Gyro bias z in hundred of milli rad/s,
+			Alternate gyro bias z in hundred of milli rad/s,
+			Gravity module from accel in hundred of milli m/s²,
+			IntegralFBx in hundred of milli rad/s,
+			IntegralFBy in hundred of milli rad/s,
+			IntegralFBz in hundred of milli rad/s,
+			Gyro module variation level in hundred of milli,
+			Accel module variation level in hundred of milli			
 			<CR><LF>		
 		*/
 			sprintf(str,"$S,%lld,%i,%lld,%i,%i,%i,%i,%1d,%2d,%lld,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",

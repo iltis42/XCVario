@@ -3,11 +3,9 @@
 #include <string.h>
 #include <esp_log.h>
 #include "esp_wifi.h"
-#include <esp_http_server.h>
 #include "esp_event.h"
 #include "freertos/event_groups.h"
 
-#include "OTAServer.h"
 #include "MyWiFi.h"
 #include "esp_netif_types.h"
 
@@ -25,8 +23,6 @@ const int WIFI_STA_DISCONNECTED_BIT = BIT1;
 
 static esp_err_t event_handler(void *ctx, system_event_t *event) 
 {
-	httpd_handle_t *server = (httpd_handle_t *) ctx;
-	
 	switch (event->event_id) 
 	{
 		case SYSTEM_EVENT_WIFI_READY:			printf("SYSTEM_EVENT_WIFI_READY\r\n");	break;
@@ -44,12 +40,6 @@ static esp_err_t event_handler(void *ctx, system_event_t *event)
 												esp_wifi_connect();
 												xEventGroupClearBits(wifi_event_group, WIFI_STA_DISCONNECTED_BIT);
 												ESP_LOGI("WiFI", "retry to connect to the AP\r\n");
-												/* Stop the web server */
-												if (*server) 
-												{
-													stop_OTA_webserver(*server);
-													*server = NULL;
-												}
 												break;
 		
 		case SYSTEM_EVENT_STA_AUTHMODE_CHANGE:	printf("SYSTEM_EVENT_STA_AUTHMODE_CHANGE\r\n");	break;      /**< the auth mode of AP connected by ESP32 station changed */
@@ -57,11 +47,6 @@ static esp_err_t event_handler(void *ctx, system_event_t *event)
 												printf("SYSTEM_EVENT_STA_GOT_IP\r\n");
 												ESP_LOGI("WiFI", "got ip:%s",	ip4addr_ntoa((const struct ip4_addr *)&event->event_info.got_ip.ip_info.ip));
 												xEventGroupSetBits(wifi_event_group, WIFI_STA_CONNECTED_BIT);
-												/* Start the web server */
-												if (*server == NULL) 
-												{
-													*server = start_OTA_webserver();
-												}
 												break;
 		
 		case SYSTEM_EVENT_STA_LOST_IP:  		printf("SYSTEM_EVENT_STA_LOST_IP\r\n");	break;           /**< ESP32 station lost IP and the IP is reset to 0 */
@@ -76,23 +61,12 @@ static esp_err_t event_handler(void *ctx, system_event_t *event)
 		
 												ESP_LOGI("WiFI-AP",	"station: %02x:%02x:%02x:%02x:%02x:%02x join, AID=%d", MAC2STR(event->event_info.sta_connected.mac),	event->event_info.sta_connected.aid);
 												xEventGroupSetBits(wifi_event_group, AP_CLIENT_CONNECTED_BIT);
-												/* Start the web server */
-												if (*server == NULL) 
-												{
-													*server = start_OTA_webserver();
-												}
 												break;
 		
 	    case SYSTEM_EVENT_AP_STADISCONNECTED:	/**< a station disconnected from ESP32 soft-AP */
 												printf("SYSTEM_EVENT_AP_STADISCONNECTED\r\n");
 												ESP_LOGI("WiFI-AP",	"station: %02x:%02x:%02x:%02x:%02x:%02x leave, AID=%d", MAC2STR(event->event_info.sta_disconnected.mac),	event->event_info.sta_disconnected.aid);
 												xEventGroupSetBits(wifi_event_group, AP_CLIENT_DISCONNECTED_BIT);
-												/* Stop the web server */
-												if (*server) 
-												{
-													stop_OTA_webserver(*server);
-													*server = NULL;
-												}
 												break;
 		
 	    case SYSTEM_EVENT_AP_PROBEREQRECVED:	printf("SYSTEM_EVENT_AP_PROBEREQRECVED\r\n");	break;      /**< Receive probe request packet in soft-AP interface */

@@ -325,7 +325,7 @@
                     <h3 class="title">Reset/Debug</h3>
                     <button class="button-primary" type="button" id="factoryResetButton">Factory Reset</button>
                     <button disabled class="button-primary" type="button" id="downloadCoreDumpButton">Download CORE-Dump 
-                        <div id="coreDumpElliipsis" class="lds-ellipsis" style="display: none;"><div></div><div></div><div></div><div></div></div>
+                        <div id="coreDumpEllipsis" class="lds-ellipsis" style="display: none;"><div></div><div></div><div></div><div></div></div>
                     </button>
                 </div>
                 <!-- Backup/Restore TAB -->
@@ -487,7 +487,7 @@
     // Coredump
     document.getElementById('downloadCoreDumpButton').addEventListener('click', function(e) {
         document.getElementById('downloadCoreDumpButton').disabled = true;
-        document.getElementById('coreDumpElliipsis').style.display ="inline-block";
+        document.getElementById('coreDumpEllipsis').style.display ="inline-block";
 
         window.alert("Press button to provide core file for upload, then wait a couple of seconds...");
         
@@ -514,6 +514,8 @@
                         a.remove();	
                     }
                 }
+                document.getElementById('downloadCoreDumpButton').disabled = false;
+                document.getElementById('coreDumpEllipsis').style.display ="none";
             }
         }
         xhr.send();

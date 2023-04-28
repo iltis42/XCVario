@@ -14,11 +14,6 @@
 
 #include "MPU.hpp"
 
-#if !defined CONFIG_MPU_ENABLE_DMP
-#warning ''You must enable the option DMP in \
-menuconfig -> components -> MPU driver, to compile the DMP source code''
-#endif
-
 /*! MPU Driver namespace */
 namespace mpud
 {

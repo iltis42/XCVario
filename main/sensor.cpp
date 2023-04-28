@@ -1590,6 +1590,7 @@ extern "C" void  app_main(void)
 	// Init timer infrastructure
 	Audio::shutdown();
 	esp_timer_init();
+	MPU.clearpwm();
 	Router::begin();
 	ESP_LOGI(FNAME,"app_main" );
 	ESP_LOGI(FNAME,"Now init all Setup elements");

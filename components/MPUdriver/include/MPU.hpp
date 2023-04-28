@@ -257,6 +257,7 @@ class MPU
     void pwm_init();             // one time initialize of PMW subsystem
     int pi_control(int tick, float xcvTemp);    // PI control to regulate temperatured
     void temp_control(int tick, float xcvTemp);  // Tick hook
+    void clearpwm(); // ensure heating is off
 
     temp_status_t getSiliconTempStatus() {
     	if( abs(mpu_t_delta) < 0.5)

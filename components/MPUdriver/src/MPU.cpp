@@ -179,7 +179,14 @@ void MPU::pwm_init(){
 			.duty = 0, .hpoint = 0 };
 	ledc_channel_config(&pwm_ch);
 	ledc_timer_config(&pwm_timer);
+	temp_control( 0, 45.0 );
 }
+
+void MPU::clearpwm(){
+	gpio_set_direction(GPIO_NUM_2,GPIO_MODE_OUTPUT);
+	gpio_set_level(GPIO_NUM_2, 0 ); // heating off
+}
+
 
 /**
  * @brief Enable / disable sleep mode

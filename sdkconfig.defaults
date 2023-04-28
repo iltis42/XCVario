@@ -212,7 +212,7 @@ CONFIG_ARDUHAL_PARTITION_SCHEME="default"
 #
 # Webserver
 #
-CONFIG_WEBSERVER_USE_GZIP=y
+# CONFIG_WEBSERVER_USE_GZIP is not set
 # end of Webserver
 
 #

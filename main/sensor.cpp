@@ -628,7 +628,8 @@ static void processIMU(void *pvParameters)
 	// variables for bias estimation
 	#define GroundAccelprimlimit 0.25 // m/s²
 	#define GroundGyroprimlimit 0.015 // rad/s²	
-	int16_t gyrobiastemptimer = 0;
+	int32_t gyrobiastemptimer = 0;
+	bool GroundBiasTimeout = false;
 	int16_t gyrostable = 0;
 	int16_t averagecount = 0;
 	float GxBias = 0.0;
@@ -717,11 +718,12 @@ static void processIMU(void *pvParameters)
 			}
 		}		
 
-		if (ias.get() > 25) {
+		// if moving, speed > 25 km/h or ground bias estimation has ran for 20 minutes
+		if (ias.get() > 25  || GroundBiasTimeout ) {
 			// first time in movement, if BIAS_int was achieved = true, store bias and gravity in FLASH
 			if ( BIAS_Init ) {
 				gyro_bias.set(currentGyroBias);
-				gravity.set(sqrt(Gravx*Gravx+Gravy*Gravy+Gravz*Gravz));
+				gravity.set(GRAVITY);
 				BIAS_Init = false;
 			}
 			// estimate gravity with centrifugal corrections
@@ -791,6 +793,7 @@ static void processIMU(void *pvParameters)
 								Gravx /= averagecount;
 								Gravy /= averagecount;
 								Gravz /= averagecount;
+								GRAVITY = sqrt(Gravx*Gravx+Gravy*Gravy+Gravz*Gravz);
 								Roll  /= averagecount;
 								Pitch /= averagecount;
 								Yaw   = 0.0;
@@ -801,13 +804,14 @@ static void processIMU(void *pvParameters)
 								q3=((cos(Roll/2.0)*cos(Pitch/2.0)*sin(Yaw/2.0)-sin(Roll/2.0)*sin(Pitch/2.0)*cos(Yaw/2.0)));
 								sprintf(str,"$GBIAS,%lld,%3.3f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\r\n",
 									gyroTime, MPUtempcel, -currentGyroBias.z, -currentGyroBias.y, -currentGyroBias.x,
-									gravity.get(), Gravx, Gravy, Gravz, Roll, Pitch, Yaw );
+									GRAVITY, Gravx, Gravy, Gravz, Roll, Pitch, Yaw );
 								Router::sendXCV(str);
 								BIAS_Init = true;
 							}
 						} 
 					}
 				} else gyrostable = 0; // reset gyro stability counter if temperature not stable or movement detected
+				if ( gyrobiastemptimer > 48000 ) GroundBiasTimeout = true;
 			} 
 		} 			
 		

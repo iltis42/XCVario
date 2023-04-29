@@ -717,7 +717,13 @@ static void processIMU(void *pvParameters)
 			}
 		}		
 
-		if(BIAS_Init || ias.get() > 25){
+		if (ias.get() > 25) {
+			// first time in movement, if BIAS_int was achieved = true, store bias and gravity in FLASH
+			if ( BIAS_Init ) {
+				gyro_bias.set(currentGyroBias);
+				gravity.set(sqrt(Gravx*Gravx+Gravy*Gravy+Gravz*Gravz));
+				BIAS_Init = false;
+			}
 			// estimate gravity with centrifugal corrections
 			if (tas>25.0) Vbi.x = tas; else Vbi.x = 0.0;
 			Vbi.y = 0;
@@ -738,7 +744,73 @@ static void processIMU(void *pvParameters)
 			Yaw = atan2(2.0 * (q1 * q2 + q0 * q3), (q0 * q0 + q1 * q1 - q2 * q2 - q3 * q3));
 			if (Yaw < 0.0 ) Yaw = Yaw + 2.0 * M_PI;
 			if (Yaw > 2.0 * M_PI) Yaw = Yaw - 2.0 * M_PI;
-		}		
+			
+			gyrobiastemptimer = 0; // Insure No bias evaluation when moving or in flight			
+			
+		}
+		if (ias.get() < 25)	{
+			// Not moving
+			// When there is MPU temperature control and temperature is locked   or   when there is no temperature control
+			if ( (HAS_MPU_TEMP_CONTROL && (MPU.getSiliconTempStatus() == MPU_T_LOCKED)) || !HAS_MPU_TEMP_CONTROL ) {
+				// count cycles when temperature is locked
+				gyrobiastemptimer++;
+				// detect if gyro ans accel variations is below stability threshold using an alpha/beta filter to estimate variation over short period of time
+				// if temperature conditions has been stable for more than 30 seconds (1200 = 30x40hz) and there is very little angular and acceleration variation
+				if ( gyrobiastemptimer > 1200 && abs(GyroModulePrimFilt) < GroundGyroprimlimit && abs(AccelModulePrimFilt) < GroundAccelprimlimit ) {
+					gyrostable++;
+					// during first 2.5 seconds, initialize gyro data
+					if ( gyrostable < 100 ) {
+						averagecount = 0;
+						BIAS_Init = false;
+						GxBias = 0.0;
+						GyBias = 0.0;
+						GzBias = 0.0;	
+						Gravx = 0.0;
+						Gravy = 0.0;
+						Gravz = 0.0;
+						Roll = 0.0;
+						Pitch = 0.0;
+					} else {
+						// between 2.5 seconds and 22.5 seconds, accumulate gyro data
+						if ( gyrostable < 900 ) {
+							averagecount++;
+							GxBias += gyroRPS.x;
+							GyBias += gyroRPS.y;
+							GzBias += gyroRPS.z;
+							Gravx += accelISUNEDBODY.x;
+							Gravy += accelISUNEDBODY.y;
+							Gravz += accelISUNEDBODY.z;
+							Roll += atan(accelISUNEDBODY.y / accelISUNEDBODY.z);
+							Pitch += asin(accelISUNEDBODY.x/Module);
+						} else {
+							// If not bias yet, after 25 seconds calculate average bias, gravity and roll/pitch
+							// If already have bias, calulate after 2 minutes to avoid risk of perturbation before takeoff
+							if ( (!BIAS_Init && gyrostable > 1000) || (BIAS_Init && gyrostable > 4800) ) {
+								currentGyroBias.x = GxBias / averagecount;
+								currentGyroBias.y = GyBias / averagecount;
+								currentGyroBias.z = GzBias / averagecount;
+								Gravx /= averagecount;
+								Gravy /= averagecount;
+								Gravz /= averagecount;
+								Roll  /= averagecount;
+								Pitch /= averagecount;
+								Yaw   = 0.0;
+								// Initialisation du quaternion
+								q0=((cos(Roll/2.0)*cos(Pitch/2.0)*cos(Yaw/2.0)+sin(Roll/2.0)*sin(Pitch/2.0)*sin(Yaw/2.0)));
+								q1=((sin(Roll/2.0)*cos(Pitch/2.0)*cos(Yaw/2.0)-cos(Roll/2.0)*sin(Pitch/2.0)*sin(Yaw/2.0)));
+								q2=((cos(Roll/2.0)*sin(Pitch/2.0)*cos(Yaw/2.0)+sin(Roll/2.0)*cos(Pitch/2.0)*sin(Yaw/2.0)));
+								q3=((cos(Roll/2.0)*cos(Pitch/2.0)*sin(Yaw/2.0)-sin(Roll/2.0)*sin(Pitch/2.0)*cos(Yaw/2.0)));
+								sprintf(str,"$GBIAS,%lld,%3.3f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\r\n",
+									gyroTime, MPUtempcel, -currentGyroBias.z, -currentGyroBias.y, -currentGyroBias.x,
+									gravity.get(), Gravx, Gravy, Gravz, Roll, Pitch, Yaw );
+								Router::sendXCV(str);
+								BIAS_Init = true;
+							}
+						} 
+					}
+				} else gyrostable = 0; // reset gyro stability counter if temperature not stable or movement detected
+			} 
+		} 			
 		
 		// If required stream IMU data
 		if ( IMUstream ) {
@@ -758,73 +830,7 @@ static void processIMU(void *pvParameters)
 				gyroTime,(int32_t)(accelISUNEDBODY.x*10000.0), (int32_t)(accelISUNEDBODY.y*10000.0), (int32_t)(accelISUNEDBODY.z*10000.0),
 				(int32_t)(gyroISUNEDBODY.x*100000.0), (int32_t)(gyroISUNEDBODY.y*100000.0),(int32_t)(gyroISUNEDBODY.z*100000.0) );
 			Router::sendXCV(str);
-		}
-		// Estimation of gyro bias when on ground:  IAS < 25 km/h and not bias estimation yet
-		if( (ias.get() < 25.0 ) && !BIAS_Init ) {
-			// When there is MPU temperature control and temperature is locked   or   when there is no temperature control
-			if ( (HAS_MPU_TEMP_CONTROL && (MPU.getSiliconTempStatus() == MPU_T_LOCKED)) || !HAS_MPU_TEMP_CONTROL ) {
-				// count cycles when temperature is locked
-				gyrobiastemptimer++;
-				// detect if gyro ans accel variations is below stability threshold using an alpha/beta filter to estimate variation over short period of time
-				// if temperature conditions has been stable for more than 30 seconds (1200 = 30x40hz) and there is very little angular and acceleration variation
-				if ( gyrobiastemptimer > 1200 && abs(GyroModulePrimFilt) < GroundGyroprimlimit && abs(AccelModulePrimFilt) < GroundAccelprimlimit ) {
-					gyrostable++;
-					// during first 2.5 seconds, initialize gyro data
-					if ( gyrostable < 100 ) {
-						averagecount = 0;
-						BIAS_Init = false;
-						GxBias = 0.0;
-						GyBias = 0.0;
-						GzBias = 0.0;	
-						Gravx = 0.0;
-						Gravy = 0.0;
-						Gravz = 0.0;
-					} else {
-						// between 2.5 seconds and 22.5 seconds, accumulate gyro data
-						if ( gyrostable < 900 ) {
-							averagecount++;
-							GxBias += gyroRPS.x;
-							GyBias += gyroRPS.y;
-							GzBias += gyroRPS.z;
-							Gravx += accelISUNEDBODY.x;
-							Gravy += accelISUNEDBODY.y;
-							Gravz += accelISUNEDBODY.z;
-							Roll += atan(accelISUNEDBODY.y / accelISUNEDBODY.z);
-							Pitch += asin(accelISUNEDBODY.x/Module);
-						} else {
-							// after 25 seconds calculate average bias and set bias in FLASH
-							if ( gyrostable++ > 1000 ) {
-								currentGyroBias.x = GxBias / averagecount;
-								currentGyroBias.y = GyBias / averagecount;
-								currentGyroBias.z = GzBias / averagecount;
-								gyro_bias.set(currentGyroBias);
-								Gravx /= averagecount;
-								Gravy /= averagecount;
-								Gravz /= averagecount;
-								gravity.set(sqrt(Gravx*Gravx+Gravy*Gravy+Gravz*Gravz));
-								Roll  /= averagecount;
-								Pitch /= averagecount;
-								Yaw   = 0.0;
-								/* Initialisation du quaternion*/
-								q0=((cos(Roll/2.0)*cos(Pitch/2.0)*cos(Yaw/2.0)+sin(Roll/2.0)*sin(Pitch/2.0)*sin(Yaw/2.0)));
-								q1=((sin(Roll/2.0)*cos(Pitch/2.0)*cos(Yaw/2.0)-cos(Roll/2.0)*sin(Pitch/2.0)*sin(Yaw/2.0)));
-								q2=((cos(Roll/2.0)*sin(Pitch/2.0)*cos(Yaw/2.0)+sin(Roll/2.0)*cos(Pitch/2.0)*sin(Yaw/2.0)));
-								q3=((cos(Roll/2.0)*cos(Pitch/2.0)*sin(Yaw/2.0)-sin(Roll/2.0)*sin(Pitch/2.0)*cos(Yaw/2.0)));
-								sprintf(str,"$GBIAS,%lld,%3.3f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\r\n",
-										gyroTime, MPUtempcel, -currentGyroBias.z, -currentGyroBias.y, -currentGyroBias.x,
-										gravity.get(), Gravx, Gravy, Gravz, Roll, Pitch, Yaw );
-								Router::sendXCV(str);
-								BIAS_Init = true;
-							}
-						}
-					}
-				} else {
-					gyrostable = 0; // reset gyro stability counter if temperature not stable or movement detected
-				}
-			} 
-		}
-		else gyrobiastemptimer = 0; // Insure No bias evaluation during flight
-		
+		}		
 
 		ProcessTimeIMU = (esp_timer_get_time()/1000.0) - gyroTime;
 		if ( ProcessTimeIMU > 5 ) {

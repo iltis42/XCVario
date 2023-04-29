@@ -747,16 +747,15 @@ static void processIMU(void *pvParameters)
 			
 			gyrobiastemptimer = 0; // Insure No bias evaluation when moving or in flight			
 			
-		}
-		if (ias.get() < 25)	{
+		} else {
 			// Not moving
 			// When there is MPU temperature control and temperature is locked   or   when there is no temperature control
 			if ( (HAS_MPU_TEMP_CONTROL && (MPU.getSiliconTempStatus() == MPU_T_LOCKED)) || !HAS_MPU_TEMP_CONTROL ) {
 				// count cycles when temperature is locked
 				gyrobiastemptimer++;
 				// detect if gyro ans accel variations is below stability threshold using an alpha/beta filter to estimate variation over short period of time
-				// if temperature conditions has been stable for more than 30 seconds (1200 = 30x40hz) and there is very little angular and acceleration variation
-				if ( gyrobiastemptimer > 1200 && abs(GyroModulePrimFilt) < GroundGyroprimlimit && abs(AccelModulePrimFilt) < GroundAccelprimlimit ) {
+				// if temperature conditions has been stable for more than 30 seconds (1200 = 30x40hz) but less than 20 minutes and there is very little angular and acceleration variation
+				if ( gyrobiastemptimer > 1200 && gyrobiastemptimer < 48000 && abs(GyroModulePrimFilt) < GroundGyroprimlimit && abs(AccelModulePrimFilt) < GroundAccelprimlimit ) {
 					gyrostable++;
 					// during first 2.5 seconds, initialize gyro data
 					if ( gyrostable < 100 ) {

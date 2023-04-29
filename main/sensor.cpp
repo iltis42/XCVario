@@ -168,6 +168,7 @@ BTSender btsender;
 
 // IMU variables	
 static float AccelGravModuleFilt = 9.807;
+static int16_t IMUstable = 0;
 static float integralFBx = 0.0;
 static float integralFBy = 0.0;
 static float integralFBz = 0.0;
@@ -536,10 +537,17 @@ float AccelGravModule, QuatModule, recipNorm, halfvx, halfvy, halfvz, halfex, ha
 			halfex = (ay * halfvz - az * halfvy);
 			halfey = (az * halfvx - ax * halfvz);
 			halfez = (ax * halfvy - ay * halfvx);
-			// calculate integral feedback
-			integralFBx = integralFBx + Ki * halfex * dt;
-			integralFBy = integralFBy + Ki * halfey * dt;
-			integralFBz = integralFBz + Ki * halfez * dt;
+			// when IMU becomes stable, wait 3 samples before calculating integral feedback and estimating bias 
+			if ( IMUstable > 2 ) {
+				// integral feedback
+				integralFBx = integralFBx + Ki * halfex * dt;
+				integralFBy = integralFBy + Ki * halfey * dt;
+				integralFBz = integralFBz + Ki * halfez * dt;
+				// Estimate bias from gyros by long term filtering of integral term
+				IMUBiasx = Kbias1 * IMUBiasx + Kbias2 * integralFBx;
+				IMUBiasy = Kbias1 * IMUBiasy + Kbias2 * integralFBy;
+				IMUBiasz = Kbias1 * IMUBiasz + Kbias2 * integralFBz;
+			}
 			// apply integral feedback to gyros
 			gx = gx + integralFBx; 
 			gy = gy + integralFBy;
@@ -548,10 +556,7 @@ float AccelGravModule, QuatModule, recipNorm, halfvx, halfvy, halfvz, halfex, ha
 			gx = gx + Kp * halfex;
 			gy = gy + Kp * halfey;
 			gz = gz + Kp * halfez;
-			// Estimate bias from gyros by long term filtering of integral term
-			IMUBiasx = Kbias1 * IMUBiasx + Kbias2 * integralFBx;
-			IMUBiasy = Kbias1 * IMUBiasy + Kbias2 * integralFBy;
-			IMUBiasz = Kbias1 * IMUBiasz + Kbias2 * integralFBz;			
+			
 
 			// capture alternate gyro bias gz when wings are close to be leveled (~straight flight)
 			GravyFilt = fcgrav1 * GravyFilt + fcgrav2 * halfvy;
@@ -559,7 +564,10 @@ float AccelGravModule, QuatModule, recipNorm, halfvx, halfvy, halfvz, halfex, ha
 				// compute gz bias considering long time average of gz is ~0 when wings are ~leveled
 				alternategzBias = Kalt1 * alternategzBias + Kalt2 * gz;
 			}
+			if ( IMUstable < 3 ) IMUstable++;
 		}
+	} else {
+		IMUstable = 0;
 	}
 
 	// Integrate rate of change of quaternion

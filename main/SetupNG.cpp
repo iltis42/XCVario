@@ -381,9 +381,9 @@ SetupNG<mpud::float_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );
 SetupNG<mpud::float_axes_t>	accl_bias("ACCL_BIAS", zero_bias );
 SetupNG<mpud::float_axes_t>	gyro_gain("GYRO_GAIN", imu_gains );
 SetupNG<mpud::float_axes_t>	accl_gain("ACCL_GAIN", imu_gains );
-SetupNG<float>			tilt("XCV_TILT", 0);
-SetupNG<float>			sway("XCV_SWAY", 0);
-SetupNG<float>			distCG("DIST_CG_XCVARIO", 0);
+SetupNG<float>			tilt("XCV_TILT", 0.0);
+SetupNG<float>			sway("XCV_SWAY", 0.0);
+SetupNG<float>			distCG("DIST_CG_XCVARIO", 0.0);
 SetupNG<float>			gravity("LOCAL_GRAVITY", 9.807);
 SetupNG<float>          mpu_temperature("MPUTEMP", 45.0, true, SYNC_FROM_MASTER, PERSISTENT, chg_mpu_target );    // default for AHRS chip temperature (XCV 2023)
 

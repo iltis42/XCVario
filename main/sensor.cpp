@@ -638,7 +638,11 @@ static void processIMU(void *pvParameters)
 	// variables for gravity estimation
 	float Gravx = 0.0;
 	float Gravy = 0.0;
-	float Gravz = 0.0;	
+	float Gravz = 0.0;
+	// variables for Euler/quaternion initialisation
+	float PitchInit = 0.0;
+	float RollInit = 0.0;
+	float YawInit = 0.0;
 		
 	// get accel bias and gain (should be set with BT command "$ACC,Bias.x,Bias.y,Bias.z,Gain.x,Gain.y,Gain.z"
 	mpud::float_axes_t currentAccelBias;	
@@ -769,8 +773,8 @@ static void processIMU(void *pvParameters)
 						Gravx = 0.0;
 						Gravy = 0.0;
 						Gravz = 0.0;
-						Roll = 0.0;
-						Pitch = 0.0;
+						RollInit = 0.0;
+						PitchInit = 0.0;
 					} else {
 						// between 2.5 seconds and 22.5 seconds, accumulate gyro data
 						if ( gyrostable < 900 ) {
@@ -781,8 +785,8 @@ static void processIMU(void *pvParameters)
 							Gravx += accelISUNEDBODY.x;
 							Gravy += accelISUNEDBODY.y;
 							Gravz += accelISUNEDBODY.z;
-							Roll += atan(accelISUNEDBODY.y / accelISUNEDBODY.z);
-							Pitch += asin(accelISUNEDBODY.x/Module);
+							RollInit += atan(accelISUNEDBODY.y / accelISUNEDBODY.z);
+							PitchInit += asin(accelISUNEDBODY.x/Module);
 						} else {
 							// If not bias yet, after 25 seconds calculate average bias, gravity and roll/pitch
 							// If already have bias, calulate after 2 minutes to avoid risk of perturbation before takeoff
@@ -794,17 +798,17 @@ static void processIMU(void *pvParameters)
 								Gravy /= averagecount;
 								Gravz /= averagecount;
 								GRAVITY = sqrt(Gravx*Gravx+Gravy*Gravy+Gravz*Gravz);
-								Roll  /= averagecount;
-								Pitch /= averagecount;
-								Yaw   = 0.0;
+								RollInit  /= averagecount;
+								PitchInit /= averagecount;
+								YawInit   = 0.0;
 								// Initialisation du quaternion
-								q0=((cos(Roll/2.0)*cos(Pitch/2.0)*cos(Yaw/2.0)+sin(Roll/2.0)*sin(Pitch/2.0)*sin(Yaw/2.0)));
-								q1=((sin(Roll/2.0)*cos(Pitch/2.0)*cos(Yaw/2.0)-cos(Roll/2.0)*sin(Pitch/2.0)*sin(Yaw/2.0)));
-								q2=((cos(Roll/2.0)*sin(Pitch/2.0)*cos(Yaw/2.0)+sin(Roll/2.0)*cos(Pitch/2.0)*sin(Yaw/2.0)));
-								q3=((cos(Roll/2.0)*cos(Pitch/2.0)*sin(Yaw/2.0)-sin(Roll/2.0)*sin(Pitch/2.0)*cos(Yaw/2.0)));
+								q0=((cos(RollInit/2.0)*cos(PitchInit/2.0)*cos(YawInit/2.0)+sin(RollInit/2.0)*sin(PitchInit/2.0)*sin(YawInit/2.0)));
+								q1=((sin(RollInit/2.0)*cos(PitchInit/2.0)*cos(YawInit/2.0)-cos(RollInit/2.0)*sin(PitchInit/2.0)*sin(YawInit/2.0)));
+								q2=((cos(RollInit/2.0)*sin(PitchInit/2.0)*cos(YawInit/2.0)+sin(RollInit/2.0)*cos(PitchInit/2.0)*sin(YawInit/2.0)));
+								q3=((cos(RollInit/2.0)*cos(PitchInit/2.0)*sin(YawInit/2.0)-sin(RollInit/2.0)*sin(PitchInit/2.0)*cos(YawInit/2.0)));
 								sprintf(str,"$GBIAS,%lld,%3.3f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\r\n",
 									gyroTime, MPUtempcel, -currentGyroBias.z, -currentGyroBias.y, -currentGyroBias.x,
-									GRAVITY, Gravx, Gravy, Gravz, Roll, Pitch, Yaw );
+									GRAVITY, Gravx, Gravy, Gravz, RollInit, PitchInit, YawInit );
 								Router::sendXCV(str);
 								BIAS_Init = true;
 							}

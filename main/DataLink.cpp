@@ -44,6 +44,7 @@ DataLink::DataLink(){
 	nmeaFound = false;
 	ubxFound = false;
 	len = 0;
+	krt2_len=0;
 }
 
 void DataLink::process( const char *packet, int len, int port ) {
@@ -129,7 +130,7 @@ void DataLink::parse_NMEA_UBX( char c, int port ){
 			pos = 0;
 			framebuffer[pos] = c;
 			pos++;
-			state = GET_KRT2_STX;
+			state = GET_KRT2_CMD;
 			// ESP_LOGI(FNAME, "Port %1d: STX Start at %d", port, pos );
 			break;
 		case NMEA_START1:
@@ -199,16 +200,42 @@ void DataLink::parse_NMEA_UBX( char c, int port ){
 			}
 			break;
 
-		case GET_KRT2_STX:
+		case GET_KRT2_CMD:
 			framebuffer[pos] = c;
 			pos++;
-			if( pos > 12 ){ // 0..12 = 13 bytes STX message buffer.
+			if( c == 'U' || c == 'R'  ){
+				krt2_len = 12;
+			    state = GET_KRT2_DATA;
+			}
+			else if( c == 'A' ){
+				krt2_len = 5;
+			    state = GET_KRT2_DATA;
+			}
+			else if( c == 'C' || c == 'O' || c == 'o'  ){   // we have a single byte command Swap or Dual Mode
+				krt2_len = 1;
+				framebuffer[pos] = 0;
+				routeSerialData(framebuffer, pos+1, port, true );
+				state = GET_NMEA_UBX_SYNC;
+				pos = 0;
+			}
+			else {
+				krt2_len = 1;
+				state = GET_NMEA_UBX_SYNC;
+				pos = 0;
+			};
+            break;
+
+		case GET_KRT2_DATA: {
+			framebuffer[pos] = c;
+			pos++;
+			if( pos > krt2_len ){ // 0..12 = 13 bytes STX message buffer.
 				framebuffer[pos] = 0;  // framebuffer is zero terminated
 				// ESP_LOG_BUFFER_HEXDUMP(FNAME, framebuffer, pos+1, ESP_LOG_INFO);
 				routeSerialData(framebuffer, pos+1, port, true );
 				state = GET_NMEA_UBX_SYNC;
 				pos = 0;
 			}
+		}
 			break;
 
 		case GET_FB_LEN1:

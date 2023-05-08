@@ -27,7 +27,8 @@ enum state_t {
 	GET_FB_LEN1,
 	GET_FB_LEN2,
 	GET_FB_DATA,
-	GET_KRT2_STX,
+	GET_KRT2_CMD,
+	GET_KRT2_DATA,
 	GET_BECKER_PROTID,
 	GET_BECKER_LEN,
 	GET_BECKER_DATA
@@ -53,4 +54,5 @@ class DataLink {
 		char chkBuf;
 		bool nmeaFound;
 		bool ubxFound;
+		unsigned char krt2_len;
 };

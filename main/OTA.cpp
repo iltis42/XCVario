@@ -57,7 +57,7 @@ void OTA::doSoftwareUpdate(IpsDisplay * p ){
 	p->writeText(line++,"SOFTWARE DOWNLOAD");
 	p->writeText(line++,"Use Wifi: ESP32 OTA");
 	p->writeText(line++,"Password: xcvario-21");
-	p->writeText(line++,"Open: http://192.168.4.1");
+	p->writeText(line++,"Open: https://192.168.4.1");
 	p->writeText(line++,"Then follow the dialogue");
 	init_wifi_softap(nullptr);
     Webserver.start();

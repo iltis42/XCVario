@@ -1644,6 +1644,12 @@ void SetupMenu::system_menu_create_hardware_ahrs( MenuEntry *top ){
 	tcontrol->setPrecision( 0 );
 	tcontrol->setHelp( PROGMEM"Regulated target temperature of AHRS silicon chip, if supported in hardware (model > 2023), -1 means OFF");
 	top->addEntry( tcontrol );
+	
+	SetupMenuSelect * ahrscal = new SetupMenuSelect( "AHRS calibration", true , 0, true, &ahrs_calibration );
+	top->addEntry( ahrscal );
+	ahrscal->setHelp( PROGMEM "Start AHRS Sensor calibration; Preconditions: In laboratoratory on horizontal table!");
+	ahrscal->addEntry( "Cancel");
+	ahrscal->addEntry( "Start");
 }
 
 

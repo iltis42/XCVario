@@ -114,7 +114,7 @@ extern MPU_t MPU;
 
 extern bool IMUstream;
 extern bool SENstream;
-extern bool ACCELcalib;
+extern bool CALstream ;
 
 
 #endif

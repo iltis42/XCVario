@@ -555,6 +555,7 @@ void Protocols::parseNMEA( const char *str ){
 		if (str[3] == '0') {
 			IMUstream = false; // no FT stream
 			SENstream = false;
+			CALstream = false;
 		}
 		else if (str[3] == '1') {
 			IMUstream = true; // IMU stream
@@ -567,6 +568,11 @@ void Protocols::parseNMEA( const char *str ){
 		else if (str[3] == '3') {
 			IMUstream = true; // IMU and SEN stream
 			SENstream = true;
+		}
+		else if (str[3] == '4') {
+			IMUstream = false;
+			SENstream = false;			
+			CALstream = true; // Accel calibration stream
 		}
 	} else if( !strncmp( str, "$ACC", 4 ) ) {
 		mpud::float_axes_t AccBias;	

@@ -557,6 +557,7 @@ extern SetupNG<int>		    autozero;
 extern SetupNG<int>		    attitude_indicator;
 extern SetupNG<int>		    ahrs_rpyl_dataset;
 extern SetupNG<int>		    ahrs_autozero;
+extern SetupNG<int>		    ahrs_calibration;
 extern SetupNG<float>		ahrs_gyro_factor;
 extern SetupNG<int>		    display_style;
 extern SetupNG<int>		    display_variant;

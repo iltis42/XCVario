@@ -588,7 +588,7 @@ void Audio::dactask(void* arg )
 					dacEnable();
 					if( (*p_wiper) > cur_wiper ){
 						for( int i=cur_wiper; i<(*p_wiper); i+=delta ) {
-							DigitalPoti->writeWiper( equal_volume(i) );center_freq.get()
+							DigitalPoti->writeWiper( equal_volume(i) );
 							delta = _step+i/FADING_TIME;
 							// ESP_LOGI(FNAME, "volume inc, new wiper: %d", i );
 							delay(1);

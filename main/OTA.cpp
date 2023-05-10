@@ -21,6 +21,7 @@
 #include <logdef.h>
 #include "ESPAudio.h"
 #include "Webserver.h"
+#include "DNSServer.h"
 
 OTA::OTA(){
 	pressed = false;
@@ -61,6 +62,7 @@ void OTA::doSoftwareUpdate(IpsDisplay * p ){
 	p->writeText(line++,"Then follow the dialogue");
 	init_wifi_softap(nullptr);
     Webserver.start();
+    DNSServer.start();
 	for( tick=0; tick<900; tick++ ) {
 		char txt[40];
 		sprintf(txt,"Timeout in %d sec  ", 900-tick );
@@ -82,6 +84,7 @@ void OTA::doSoftwareUpdate(IpsDisplay * p ){
 			break;
 		}
 	}
+    DNSServer.stop();
     Webserver.stop();
 	ESP_LOGI(FNAME,"Now restart");
 	software_update.set( 0 );

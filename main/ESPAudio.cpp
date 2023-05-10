@@ -215,7 +215,8 @@ bool Audio::selfTest(){
 	else
 		ret = true;
 	bool fadein=false;
-	for( float f=261.62; f<1046.51; f=f*1.03){
+	ESP_LOGI(FNAME,"Min F %f, Max F %f", minf, maxf );
+	for( float f=minf; f<maxf; f=f*1.03){
 		ESP_LOGV(FNAME,"f=%f",f);
 		setFrequency( f );
 		current_frequency = f;
@@ -587,7 +588,7 @@ void Audio::dactask(void* arg )
 					dacEnable();
 					if( (*p_wiper) > cur_wiper ){
 						for( int i=cur_wiper; i<(*p_wiper); i+=delta ) {
-							DigitalPoti->writeWiper( equal_volume(i) );
+							DigitalPoti->writeWiper( equal_volume(i) );center_freq.get()
 							delta = _step+i/FADING_TIME;
 							// ESP_LOGI(FNAME, "volume inc, new wiper: %d", i );
 							delay(1);
@@ -669,11 +670,13 @@ void Audio::dactask(void* arg )
 
 uint16_t Audio::equal_volume( uint16_t volume ){
 	float fdelta = current_frequency/center_freq.get();
-	uint16_t new_vol = (uint16_t)( volume *( 1 - ((fdelta-1.0) * (frequency_response.get()/100.0) ) ));
+	int16_t new_vol = (uint16_t)( volume *( 1 - ((fdelta-1.0) * (frequency_response.get()/100.0) ) ));
 	if( new_vol >=  DigitalPoti->getRange()*(max_volume.get()/100) )
 		new_vol =  DigitalPoti->getRange()*(max_volume.get()/100);
-	// ESP_LOGI(FNAME,"Vol: %d Scaled %d  f: %4.0f delta:%2.2f", volume, new_vol, current_frequency, fdelta );
-	return new_vol;
+	if( new_vol <= 0 )
+		new_vol = 0;
+	//ESP_LOGI(FNAME,"Vol: %d Scaled %d  f: %4.0f delta:%2.2f", volume, new_vol, current_frequency, fdelta );
+	return (uint16_t)new_vol;
 }
 
 bool Audio::inDeadBand( float te )
@@ -735,7 +738,7 @@ void Audio::setup()
 	_high_tone_var = ((high_tone_var.get() + 100.0)/100);
 
 	maxf = center_freq.get() * tone_var.get();
-	minf = center_freq.get() - ( center_freq.get() / tone_var.get() );
+	minf = center_freq.get() / tone_var.get();
 }
 
 void Audio::restart()

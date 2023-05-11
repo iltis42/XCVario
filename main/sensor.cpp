@@ -204,16 +204,21 @@ float SSmultCT = 0.0; // SS * CT
 float CTmultCS = 0.0; // CT * CS
 
 
-static char str[150]; 	// string for flight test message broadcast on wireless
+static char str[250]; 	// string for flight test message broadcast on wireless
 static int64_t ProcessTimeIMU = 0.0;
 static int64_t ProcessTimeSensors = 0.0;
 static int64_t gyroTime;  // time stamp for gyros
-static float dtGyr = 0.025; // period between last gyro samples
 static int64_t prevgyroTime;
+static float dtGyr = 0.025; // period between last gyro samples
 static int64_t statTime; // time stamp for statP
+static int64_t prevstatTime;
+static float dtstat = 0.1;
 static float statP=0; // raw static pressure
 static int64_t teTime; // time stamp for teP
 static float teP=0; // raw te pressure
+static int64_t dynPTime;
+static int64_t prevdynPTime;
+static float dtdynP = 0.1;
 static float dynP=0; // raw dynamic pressure
 static float OATemp; // OAT for pressure corrections (real or from standard atmosphere) 
 static float MPUtempcel; // MPU chip temperature
@@ -223,6 +228,7 @@ static int32_t cur_gyro_bias[3];
 bool IMUstream = false; // IMU FT stream
 bool SENstream = false; // Sensors FT stream
 bool CALstream = false; // accel calibration stream
+float localGravity = 9.807; // local gravity used during accel calibration. Value is entered using BT $CAL command
 uint16_t BIAS_Init = 0; // Bias initialization status (0= no init, n = nth bias calculation
 bool BIASInFLASH = false; // New BIAS stored in FLASH
 
@@ -232,6 +238,33 @@ static float dynamicP; // filtered dynamic pressure
 static float baroP=0; // barometric pressure
 static float temperature=15.0;
 static float XCVTemp=15.0;//External temperature for MPU temp control
+
+static float Rho;
+static float CASraw;
+static float deltaCAS;
+static float CASprim;
+static float CAS;
+static float prevCAS;
+static float Rhocorr;
+static float TAS;
+static float TASprim;
+static float ALTraw;
+static float deltaALT;
+static float Vzbaro;
+static float ALT;
+static float prevALT;
+
+#define NCAS 7 // CAS alpha/beta filter coeff
+#define alphaCAS (2.0 * (2.0 * NCAS - 1.0) / NCAS / (NCAS + 1))
+#define betaCAS (6.0 / NCAS / (NCAS + 1) / 0.1)
+#define NALT 7 // ALT alpha/beta coeff
+#define alphaALT (2.0 * (2.0 * NALT - 1.0) / NALT / (NALT + 1))
+#define betaALT (6.0 / NALT / (NALT + 1) / 0.1)
+#define alfaGyroModule (2.0 * (2.0 * NGyro - 1.0) / NGyro / (NGyro + 1))
+#define betaGyroModule (6.0 / NGyro / (NGyro + 1) / 0.025)
+#define RhoSLISA 1.225
+
+
 
 static float battery=0.0;
 
@@ -456,14 +489,9 @@ void drawDisplay(void *pvParameters){
 				// ESP_LOGI(FNAME,"TE=%2.3f", te_vario.get() );
 // modif gfm affichage d'une tension batterie nulle tant que les biais gyros n'ont pas été initialisés
 				if (BIAS_Init > 0){
-					if ( CALstream ) {
-						display->drawDisplay( airspeed, (pow(2, GyroModulePrimLevel)-1)*5, aTE, polar_sink, altitude.get(), t, 0.0, s2f_delta, as2f, average_climb.get(), Switch::getCruiseState(), gflags.standard_setting, flap_pos.get() );
-					} else {
-						display->drawDisplay( airspeed, te_vario.get(), aTE, polar_sink, altitude.get(), t, battery, s2f_delta, as2f, average_climb.get(), Switch::getCruiseState(), gflags.standard_setting, flap_pos.get() );
-					}
+					display->drawDisplay( airspeed, te_vario.get(), aTE, polar_sink, altitude.get(), t, battery, s2f_delta, as2f, average_climb.get(), Switch::getCruiseState(), gflags.standard_setting, flap_pos.get() );
 				}	
 				else {
-
 					display->drawDisplay( airspeed, te_vario.get(), aTE, polar_sink, altitude.get(), t, 0.0, s2f_delta, as2f, average_climb.get(), Switch::getCruiseState(), gflags.standard_setting, flap_pos.get() );
 				}
 // fin modif gfm
@@ -919,7 +947,7 @@ static void processIMU(void *pvParameters)
 				sprintf(str,"$CAL,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\r\n",
 					accelAvgx, accelMaxx, accelMinx, accelAvgy, accelMaxy, accelMiny, accelAvgz, accelMaxz, accelMinz,
 					(accelMaxx+accelMinx)/2, (accelMaxy+accelMiny)/2, (accelMaxz+accelMinz)/2,
-					9.807/((accelMaxx-accelMinx)/2), 9.807/((accelMaxy-accelMiny)/2), 9.807/((accelMaxz-accelMinz)/2) );
+					localGravity /((accelMaxx-accelMinx)/2), localGravity /((accelMaxy-accelMiny)/2), localGravity/((accelMaxz-accelMinz)/2) );
 			} else {
 				sprintf(str,"$CAL, ----------\r\n");
 			}
@@ -1060,7 +1088,9 @@ void readSensors(void *pvParameters){
 		float p = 0;
 		p = baroSensor->readPressure(ok);
 		if ( ok ) {
+			prevstatTime = statTime;
 			statTime = esp_timer_get_time()/1000.0; // record static time in milli second
+			dtstat = (statTime - prevstatTime) / 1000.0; // period between last two valid static pressure samples in second	
 			statP = p;
 			// for compatibility with Eckhard code
 			baroP = p;
@@ -1070,7 +1100,7 @@ void readSensors(void *pvParameters){
 		xSemaphoreTake(xMutex,portMAX_DELAY );
 		p = teSensor->readPressure(ok);
 		if ( ok ) {
-			teTime = esp_timer_get_time()/1000.0; // record TE time in second
+			teTime = esp_timer_get_time()/1000.0; // record TE time in milli second
 			teP = p;
 			// not sure what is required for compatibility with Eckhard code
 		}
@@ -1080,6 +1110,9 @@ void readSensors(void *pvParameters){
 		if( asSensor )
 			p = asSensor->readPascal(0, ok);
 		if( ok ) {
+			prevdynPTime = dynPTime;
+			dynPTime = esp_timer_get_time()/1000.0; // record dynPTimeTE time in milli second		
+			dtdynP = (dynPTime - prevdynPTime) / 1000.0; // period between last two valid dynamic pressure samples in second			
 			dynP = p;
 			// for compatibility with Eckhard code
 			dynamicP = 0;
@@ -1105,6 +1138,54 @@ void readSensors(void *pvParameters){
 		const gnss_data_t *gnss2 = s2UbloxGnssDecoder.getGNSSData(2);
 		// select gnss with better fix
 		const gnss_data_t *chosenGnss = (gnss2->fix >= gnss1->fix) ? gnss2 : gnss1;
+		
+		/*
+		
+		#4 Compute glider sink rate from speed polar
+		AccNorm := sqrt( Ax * Ax + Ay * Ay + Az * Az );
+		LF := AccNorm / Gravity;
+		sqrtLF := sqrt( LF );
+		sqrtRWL := sqrt( RWL );
+		Sink := a0 * LF * sqrtLF * sqrtRWL + a1 * LF * CAS + a2 * sqrtLF / sqrtRWL * CAS * CAS;
+
+		#5  Compute Alpha and Beta angles (angles between BODY axis and relative airflow)
+		CL := Az * 2 * Gravity / Rho0 * WL / CAS / CAS;
+		dAlpha := ( CL - prevCL ) / CLA;
+		prevCL := CL;
+		# AlphaRaw := Ax + Sink / CAS + Alpha0 MSC 03/10/22
+		AlphaRaw := Ax / Az - Sink / LF / CAS
+		Alpha := FcAlpha * ( Alpha + dAlpha )  + ( 1 - FcAlpha ) * AlphaRaw;
+		Beta := FcBeta * Beta + (1.0 - FcBeta) * (Kbeta * WL * (Ay-Ay_Off) / DynPres  - Kbetar * Gz / TAS- Kbetap * Gx / TAS);
+
+		#6  Compute trajectory pneumatic speeds components in body frame NEDBODY
+		# Vh corresponds to the trajectory horizontal speed and Vzbaro corresponds to the vertical speed
+		Vh := TAS * cos( Pitch + cos(Roll) * Alpha + sin(Roll) * Beta );
+		# Pitch and Roll correspond to the attitude of the glider and DHeading corresponds to the heading deviation due to the Beta and Alpha.
+		DHeading=(Beta * cosRoll - Alpha * sinRoll ) / ( cosPitch + Beta * sinPitch * sinRoll +Alpha * sinPitch * cosRoll )
+		# applying DCM from earth to body frame (using Pitch, Roll and DHeading Yaw angles) to Vh and Vzbaro trajectory components in earth frame to reproject speed in TE referential onto body axis. 
+		Up := cosPitch * cos(DHeading) * Vh - sinPitch * Vzbaro
+		Vp := ( sinRoll * sinPitch * cos(DHeading) - cosRoll * sin(DHeading) ) * Vh + sinRoll * cosPitch * Vzbaro
+		Wp := ( cosRoll * sinPitch * cos(DHeading) + sinRoll * sin(DHeading) ) * Vh + cosRoll * cosPitch * Vzbaro
+		*/
+
+		Rho = (100.0 * statP / 287.058 / (273.15 + OATemp));
+		CASraw = sqrt(2 * dynP / RhoSLISA);
+		deltaCAS = CASraw - prevCAS;
+		CASprim = CASprim + betaCAS * deltaCAS;
+		CAS = CAS + alphaCAS * deltaCAS + CASprim * dtdynP;
+		prevCAS = CAS;
+		Rhocorr = sqrt(RhoSLISA/Rho);
+		TAS = Rhocorr * CAS;
+		TASprim = Rhocorr * CASprim;
+//		ALTraw = (1.0 - pow( (statP-(QNH.get()-1013.25))/1013.25 , (1.0/5.25516) ) ) * (273.15 + OATemp) / 0.0065;
+		ALTraw = (1.0 - pow( (statP-(QNH.get()-1013.25)) * 0.000986923 , 0.1902891634 ) ) * (273.15 + OATemp) * 153.846153846;		
+		deltaALT = ALTraw - prevALT;
+		Vzbaro = Vzbaro + betaALT * deltaALT;
+		ALT = ALT + alphaALT * deltaALT + Vzbaro * dtstat;
+		prevALT = ALT;	
+		sprintf(str,"$S,%i,%i,%i,%i,%i\r\n",
+			(int16_t)(CASraw*100),(int16_t)(ias.get()*100),(int16_t)(QNH.get()*100),(int16_t)(ALTraw*100),(int16_t)(altitude.get()*100) );
+		Router::sendXCV(str);		
 		
 		if ( SENstream && BIAS_Init > 0 ) {
 		/* Sensor data
@@ -1135,16 +1216,29 @@ void readSensors(void *pvParameters){
 			IntegralFBy in hundred of milli rad/s,
 			IntegralFBz in hundred of milli rad/s,
 			Gyro module variation level in hundredth of milli,
-			Accel module variation level in hundredth of milli			
+			Accel module variation level in hundredth of milli,
+			CAS in cm/s,
+			CASprim in cm/s²,
+			TAS in cm/s, project
+			tas in cm/s, XCVario
+			TASprim in cm/s²,
+			ALT in cm,
+			altitude.get() in cm,
+			Vzbaro in cm/s,
+			te_vario in cm/s
+			
 			<CR><LF>		
 		*/
-			sprintf(str,"$S,%lld,%i,%lld,%i,%i,%i,%i,%1d,%2d,%lld,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",
-				statTime, (int32_t)(statP*100.0), teTime,(int32_t)(teP*100.0), (int16_t)(dynP*10),  (int16_t)(OATemp*10.0), (int16_t)(MPUtempcel*10.0), chosenGnss->fix, chosenGnss->numSV,
+	
+		
+			sprintf(str,"$S,%lld,%i,%lld,%i,%i,%i,%i,%1d,%2d,%lld,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",
+				statTime, (int32_t)(statP*100.0), teTime,(int32_t)(teP*100.0), (int16_t)(dynP*10), (int16_t)(OATemp*10.0), (int16_t)(MPUtempcel*10.0), chosenGnss->fix, chosenGnss->numSV,
 				(int64_t)(chosenGnss->time*1000.0), (int32_t)(chosenGnss->coordinates.altitude*100), (int16_t)(chosenGnss->speed.x*100), (int16_t)(chosenGnss->speed.y*100), (int16_t)(chosenGnss->speed.z*100),
 				(int16_t)(Pitch*1000.0), (int16_t)(Roll*1000.0), (int16_t)(Yaw*1000.0) ,
 				(int32_t)(IMUBiasx*100000.0), (int32_t)(IMUBiasy*100000.0), (int32_t)(IMUBiasz*100000.0), (int32_t)(alternategzBias*100000.0), (int32_t)(AccelGravModuleFilt*100000.0),
 				(int32_t)(integralFBx*100000.0), (int32_t)(integralFBy*100000.0), (int32_t)(integralFBz*100000.0),
-				(int32_t)(GyroModulePrimLevel*100000.0), (int32_t)(AccelModulePrimLevel*100000.0) );				
+				(int32_t)(GyroModulePrimLevel*100000.0), (int32_t)(AccelModulePrimLevel*100000.0),
+				(int16_t)(CAS*100), (int16_t)(CASprim*100), (int16_t)(TAS*100), (int16_t)(tas/3.6*100), (int16_t)(TASprim*100), (int16_t)(ALT*100), (int16_t)(altitude.get()*100), (int16_t)(Vzbaro*100), (int16_t)(te_vario.get()*100) );
 			Router::sendXCV(str);
 		}		
 		

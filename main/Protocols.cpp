@@ -618,6 +618,18 @@ void Protocols::parseNMEA( const char *str ){
 			sprintf(stream,"example: $INST,0.14,0.52,1.1\r\n");
 			Router::sendXCV(stream);
 		}		
+	} else if( !strncmp( str, "$CAL", 4 ) ) {
+		sscanf( str,"$INST,%f",&localGravity);
+		if  (abs(localGravity - 9.807) < 0.1) {
+			IMUstream = false;
+			SENstream = false;			
+			CALstream = true; // Accel calibration stream
+		} else {
+			sprintf(stream,"$CAL format error. Need to type: $CAL, local_gravity_value\r\n");
+			Router::sendXCV(stream);
+			sprintf(stream,"example: $CAL,9.803\r\n");
+			Router::sendXCV(stream);
+		}
 	}
 }
 

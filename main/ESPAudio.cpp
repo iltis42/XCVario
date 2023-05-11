@@ -60,8 +60,8 @@ unsigned long Audio::next_scedule=0;
 
 uint16_t Audio::_vol_back = 0;
 uint16_t Audio::_vol_back_s2f = 0;
-float Audio::maxf = 2000;
-float Audio::minf = 250;
+float Audio::maxf;
+float Audio::minf;
 float Audio::current_frequency;
 float Audio::_te = 0;
 float Audio::exponent_max = 2;
@@ -157,6 +157,19 @@ void Audio::dac_cosine_enable(dac_channel_t channel, bool enable)
 	}
 }
 
+// 4 Ohms Type
+static const std::vector<double> F1{   50,  175, 542, 885, 1236,  1380, 2100, 3000, 4000, 10000    };
+static const std::vector<double> VOL1{ 1.5, 1.3, 1.1, 0.8,  1.5,   2.1,  1.7,  1.5,  1.4,   1.4    };
+
+// 8 Ohms Type
+static const std::vector<double> F2{   50,  175, 542, 885, 1236,  1380, 2100, 3000, 4000, 10000    };
+static const std::vector<double> VOL2{ 1.5, 1.3, 1.2, 0.8,  1.5,   2.1,  1.7,  1.5,  1.4,   1.4    };
+
+// External Speaker
+static const std::vector<double> F3{   50,  175, 490,  700, 1000, 1380, 2100, 2400, 3000, 4000, 10000   };
+static const std::vector<double> VOL3{ 1.3, 1.2, 0.9, 0.20,  1.2,  2.1,  1.8,  1.3,  1.9,  2.0,   2.0   };
+
+tk::spline *Audio::equalizerSpline = 0;
 
 void Audio::begin( dac_channel_t ch  )
 {
@@ -166,7 +179,27 @@ void Audio::begin( dac_channel_t ch  )
 	_ch = ch;
 	restart();
 	_testmode = true;
+	if( audio_equalizer.get() == AUDIO_EQ_LS4 )
+		equalizerSpline  = new tk::spline(F1,VOL1, tk::spline::cspline_hermite );
+	else if( audio_equalizer.get() == AUDIO_EQ_LS8 )
+		equalizerSpline  = new tk::spline(F2,VOL2, tk::spline::cspline_hermite );
+	else if( audio_equalizer.get() == AUDIO_EQ_LSEXT )
+		equalizerSpline  = new tk::spline(F3,VOL3, tk::spline::cspline_hermite );
 	delay(10);
+}
+
+
+uint16_t Audio::equal_volume( uint16_t volume ){
+	float freq_resp = ( 1 - (((current_frequency-minf) / (maxf-minf)) * (frequency_response.get()/100.0) ) );
+	float new_vol = volume * freq_resp;
+	if( equalizerSpline )
+		new_vol = new_vol * (float)(*equalizerSpline)( (double)current_frequency );
+	if( new_vol >=  DigitalPoti->getRange()*(max_volume.get()/100) )
+		new_vol =  DigitalPoti->getRange()*(max_volume.get()/100);
+	if( new_vol <= 0 )
+		new_vol = 0;
+	// ESP_LOGI(FNAME,"Vol: %d Scaled: %f  F: %.0f spline: %.3f", volume, new_vol, current_frequency, (float)(*equalizerSpline)( (double)current_frequency ));
+	return (uint16_t)new_vol;
 }
 
 bool Audio::selfTest(){
@@ -216,7 +249,7 @@ bool Audio::selfTest(){
 		ret = true;
 	bool fadein=false;
 	ESP_LOGI(FNAME,"Min F %f, Max F %f", minf, maxf );
-	for( float f=minf; f<maxf; f=f*1.03){
+	for( float f=minf; f<maxf*1.25; f=f*1.03){
 		ESP_LOGV(FNAME,"f=%f",f);
 		setFrequency( f );
 		current_frequency = f;
@@ -230,7 +263,7 @@ bool Audio::selfTest(){
 			}
 		}
 		DigitalPoti->writeWiper( equal_volume( setwiper ) );
-		delay(30);
+		delay(20);
 		esp_task_wdt_reset();
 	}
 	delay(200);
@@ -668,16 +701,7 @@ void Audio::dactask(void* arg )
 	}
 }
 
-uint16_t Audio::equal_volume( uint16_t volume ){
-	float fdelta = current_frequency/center_freq.get();
-	int16_t new_vol = (uint16_t)( volume *( 1 - ((fdelta-1.0) * (frequency_response.get()/100.0) ) ));
-	if( new_vol >=  DigitalPoti->getRange()*(max_volume.get()/100) )
-		new_vol =  DigitalPoti->getRange()*(max_volume.get()/100);
-	if( new_vol <= 0 )
-		new_vol = 0;
-	//ESP_LOGI(FNAME,"Vol: %d Scaled %d  f: %4.0f delta:%2.2f", volume, new_vol, current_frequency, fdelta );
-	return (uint16_t)new_vol;
-}
+
 
 bool Audio::inDeadBand( float te )
 {

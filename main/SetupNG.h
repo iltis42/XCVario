@@ -102,6 +102,7 @@ typedef enum e_hardware_rev { 	HW_UNKNOWN=0,
 	XCVARIO_23=5   // 2 RS232, AHRS, CAN Bus, AHRS temperature control
 } e_hardware_rev_t;        // XCVario-Num = hardware revision + 18
 typedef enum e_drawing_prio { DP_NEEDLE, DP_BACKGROUND } e_drawing_prio_t;
+typedef enum e_equalizer_type {  AUDIO_EQ_DISABLE, AUDIO_EQ_LS4, AUDIO_EQ_LS8, AUDIO_EQ_LSEXT } e_equalizer_type_t;
 
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
 void change_bal();
@@ -433,6 +434,7 @@ extern SetupNG<int>  		s2f_switch_mode;
 extern SetupNG<int>  		chopping_mode;
 extern SetupNG<int>  		chopping_style;
 extern SetupNG<int>  		amplifier_shutdown;
+extern SetupNG<int>         audio_equalizer;
 
 extern SetupNG<int>  		wireless_type;
 extern SetupNG<float>  		wifi_max_power;

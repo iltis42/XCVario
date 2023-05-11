@@ -12,6 +12,7 @@
 #include "driver/dac.h"
 #include "Setup.h"
 #include "soc/rtc.h"
+#include "spline.h"
 
 typedef enum e_audio_alarm_type { AUDIO_ALARM_OFF, AUDIO_ALARM_STALL, AUDIO_ALARM_FLARM_1, AUDIO_ALARM_FLARM_2, AUDIO_ALARM_FLARM_3, AUDIO_ALARM_GEAR } e_audio_alarm_type_t;
 
@@ -98,6 +99,7 @@ private:
     static bool dac_enable;
     static bool amplifier_enable;
     static bool _haveCAT5171;
+    static tk::spline *equalizerSpline;
 };
 
 

@@ -51,6 +51,7 @@ public:
 	static void audio_menu_create( MenuEntry *top );
 	static void audio_menu_create_tonestyles( MenuEntry *top );
 	static void audio_menu_create_deadbands( MenuEntry *top );
+	static void audio_menu_create_equalizer( MenuEntry *top );
 
 	static void glider_menu_create( MenuEntry *top );
 	static void glider_menu_create_polarpoints( MenuEntry *top );

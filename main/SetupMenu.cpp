@@ -869,6 +869,20 @@ void SetupMenu::audio_menu_create_deadbands( MenuEntry *top ){
 	top->addEntry( dbmaxls2f );
 }
 
+void SetupMenu::audio_menu_create_equalizer( MenuEntry *top ){
+	SetupMenuSelect * audeqt = new SetupMenuSelect( PROGMEM"Equalizer", RST_ON_EXIT, 0 , true, &audio_equalizer );
+	audeqt->setHelp(PROGMEM"Select the equalizer according to the type of used loudspeaker");
+	audeqt->addEntry( PROGMEM"Disable");
+	audeqt->addEntry( PROGMEM"Speaker 8 Ohms");
+	audeqt->addEntry( PROGMEM"Speaker 4 Ohms");
+	audeqt->addEntry( PROGMEM"Speaker External");
+	top->addEntry( audeqt );
+
+    SetupMenuValFloat * frqr = new SetupMenuValFloat( PROGMEM"Frequency Response", "%", -70.0, 70.0, 1.0, 0, false, &frequency_response );
+	frqr->setHelp(PROGMEM"Setup frequency response, double frequency will be attenuated by the factor given, half frequency will be amplified");
+	top->addEntry( frqr );
+}
+
 void SetupMenu::audio_menu_create( MenuEntry *audio ){
 	SetupMenuValFloat * dv = new SetupMenuValFloat( PROGMEM"Default Volume", "%", 0, 100, 1.0, 0, false, &default_volume );
 	audio->addEntry( dv );
@@ -918,9 +932,10 @@ void SetupMenu::audio_menu_create( MenuEntry *audio ){
 	ameda->addEntry( PROGMEM"Silent");       // 1
 	audio->addEntry( ameda );
 
-	SetupMenuValFloat * frqr = new SetupMenuValFloat( PROGMEM"Frequency Response", "%", -70.0, 70.0, 1.0, 0, false, &frequency_response );
-	frqr->setHelp(PROGMEM"Setup frequency response, double frequency will be attenuated by the factor given, half frequency will be amplified");
-	audio->addEntry( frqr );
+	SetupMenu * audeq = new SetupMenu( PROGMEM"Equalizer" );
+	audio->addEntry( audeq );
+	audeq->setHelp( PROGMEM "Equalizing parameters for a constant volume over a wider frequency range", 220);
+	audeq->addCreator(audio_menu_create_equalizer);
 
 	SetupMenuSelect * amspvol = new SetupMenuSelect( PROGMEM"Split Volume", RST_NONE, 0 , true, &audio_split_vol );
 	amspvol->setHelp(PROGMEM"Enable to control audio volume individually in SpeedToFly and in Vario mode, else there is one volume for both");

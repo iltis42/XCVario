@@ -190,6 +190,19 @@ static float q0 = 0.0;
 static float q1 = 0.0;
 static float q2 = 0.0;
 static float q3 = 1.0;
+static float _Pitch;
+static float _Roll;
+static float _Yaw;
+static float _q0 = 0.0;
+static float _q1 = 0.0;
+static float _q2 = 0.0;
+static float _q3 = 1.0;
+static float BiasQuatGx;
+static float BiasQuatGy;
+static float BiasQuatGz;
+static float integralBiasQuatGx = 0.0;
+static float integralBiasQuatGy = 0.0;
+static float integralBiasQuatGz = 0.0;
 
 // installation and calibration variables
 mpud::float_axes_t currentAccelBias;
@@ -553,7 +566,9 @@ void audioTask(void *pvParameters){
 	}
 }
 
-void MahonyUpdateIMU(float dt, float gx, float gy, float gz, float ax, float ay, float az, float &q0, float &q1, float &q2, float &q3) {
+void MahonyUpdateIMU(float dt, float gxraw, float gyraw, float gzraw,
+					float ax, float ay, float az, float &q0, float &q1, float &q2, float &q3,
+					float &_q0, float &_q1, float &_q2, float &_q3, float &_halfex, float &_halfey, float &_halfez ) {
 
 #define fcGrav 3.0 // 3Hz low pass to filter for testing stability criteria
 #define fcgrav1 (40.0/(40.0+fcGrav))
@@ -561,27 +576,67 @@ void MahonyUpdateIMU(float dt, float gx, float gy, float gz, float ax, float ay,
 #define Nlimit 0.15 // stability criteria for gravity estimation from accels
 #define FlightAccelprimlimit 3.0 // stability criteria on accels variations.
 #define FlightGyroprimlimit 1.0  // stability criteria on gyros variations.
-#define Kp 25 // proportional feedback to sync quaternion
-#define Ki 1.5 // integral feedback to sync quaternion
+#define Kp 2.5 // proportional feedback to sync quaternion
+#define Ki 0.15 // integral feedback to sync quaternion
 
 #define WingLevel 0.75 // max lateral gravity acceleration to consider wings are ~leveled
-#define Kbias2 0.0005
+#define Kbias2 0.005
 #define Kbias1 (1-Kbias2)
-#define Kalt2 0.0005 // integration factor for bias estimation
+#define Kalt2 0.005 // integration factor for bias estimation
 #define Kalt1 (1-Kalt2)
+#define Qbias2 0.1 // integration factor for bias estimation
+#define Qbias1 (1-Qbias2)
 
-float AccelGravModule, QuatModule, recipNorm, halfvx, halfvy, halfvz, halfex, halfey, halfez, qa, qb, qc;
+float gx, gy, gz, AccelGravModule, QuatModule, recipNorm, halfvx, halfvy, halfvz, halfex, halfey, halfez, qa, qb, qc, _halfvx, _halfvy, _halfvz ;
 
 	// If gravity from acceleromters can be trusted ( accel module ~Gravity, acceleration module variation and gyro module variation below given limits )
 	// correct gyros using proportional and integral feedback
 	// Filter acceleration module 
+
+	// Estimate direction of gravity from IMU quaternion
+	halfvx = q1 * q3 - q0 * q2;
+	halfvy = q0 * q1 + q2 * q3;
+	halfvz = q0 * q0 - 0.5 + q3 * q3;
+	// Estimate direction of gravity from free drifting quaternion
+	_halfvx = _q1 * _q3 - _q0 * _q2;
+	_halfvy = _q0 * _q1 + _q2 * _q3;
+	_halfvz = _q0 * _q0 - 0.5 + _q3 * _q3;
+	// Estimate and filter error between IMU quaternion and free drifting quaternion
+	_halfex = Qbias1 * _halfex + Qbias2 * (_halfvy * halfvz - _halfvz * halfvy);
+	_halfey = Qbias1 * _halfey + Qbias2 * (_halfvz * halfvx - _halfvx * halfvz);
+	_halfez = Qbias1 * _halfez + Qbias2 * (_halfvx * halfvy - _halfvy * halfvx);	
+	// Integrate rate of change of free drifting quaternion
+	gx = gxraw * 0.5 * dt; // pre-multiply common factors
+	gy = gyraw * 0.5 * dt;
+	gz = gzraw * 0.5 * dt;
+	qa = _q0;
+	qb = _q1;
+	qc = _q2;
+	_q0 +=(-qb * gx - qc * gy - _q3 * gz);
+	_q1 += (qa * gx + qc * gz - _q3 * gy);
+	_q2 += (qa * gy - qb * gz + _q3 * gx);
+	_q3 += (qa * gz + qb * gy - qc * gx);
+	// Normalise free drifting quaternion
+	QuatModule = sqrt(_q0 * _q0 + _q1 * _q1 + _q2 * _q2 + _q3 * _q3);
+	if ( QuatModule != 0.0) {	
+		recipNorm = 1.0 / QuatModule;	
+		_q0 *= recipNorm;
+		_q1 *= recipNorm;
+		_q2 *= recipNorm;
+		_q3 *= recipNorm;
+	}	
+
+	// Update IMU quaternion
+	// estimate, filter and test module of gravity
 	AccelGravModule = sqrt( ax * ax + ay * ay + az * az );
 	if ( AccelGravModuleFilt < AccelGravModule ) {
 		AccelGravModuleFilt = AccelGravModule;
 	} else {
 		AccelGravModuleFilt = fcgrav1 * AccelGravModuleFilt + fcgrav2 * AccelGravModule;
-	}	
-
+	}
+	gx = gxraw;
+	gy = gyraw;
+	gz = gzraw;
 	if ( (abs(AccelGravModuleFilt-GRAVITY) < Nlimit) && (GyroModulePrimLevel < FlightGyroprimlimit) && (AccelModulePrimLevel < FlightAccelprimlimit) ) {
 		// Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
 		if ( AccelGravModule != 0.0) {
@@ -590,11 +645,7 @@ float AccelGravModule, QuatModule, recipNorm, halfvx, halfvy, halfvz, halfex, ha
 			ax *=recipNorm;
 			ay *=recipNorm;
 			az *=recipNorm;
-			// Estimate direction of gravity from quaternion
-			halfvx = q1 * q3 - q0 * q2;
-			halfvy = q0 * q1 + q2 * q3;
-			halfvz = q0 * q0 - 0.5 + q3 * q3;
-			// Estimate error between quaternion and accels. Error is sum of cross product between Quaternion and accels gravity estimations
+			// Estimate error between IMU quaternion and accels. Error is sum of cross product between Quaternion and accels gravity estimations
 			halfex = (ay * halfvz - az * halfvy);
 			halfey = (az * halfvx - ax * halfvz);
 			halfez = (ax * halfvy - ay * halfvx);
@@ -623,15 +674,16 @@ float AccelGravModule, QuatModule, recipNorm, halfvx, halfvy, halfvz, halfex, ha
 			GravyFilt = fcgrav1 * GravyFilt + fcgrav2 * halfvy;
 			if ( abs(GravyFilt) < WingLevel ) {
 				// compute gz bias considering long time average of gz is ~0 when wings are ~leveled
-				alternategzBias = Kalt1 * alternategzBias + Kalt2 * gz;
+				alternategzBias = Kalt1 * alternategzBias + Kalt2 * gzraw;
 			}
 			if ( IMUstable < 3 ) IMUstable++;
+			
 		}
 	} else {
 		IMUstable = 0;
 	}
 
-	// Integrate rate of change of quaternion
+	// Integrate rate of change of IMU quaternion
 	gx = gx * 0.5 * dt; // pre-multiply common factors
 	gy = gy * 0.5 * dt;
 	gz = gz * 0.5 * dt;
@@ -643,8 +695,7 @@ float AccelGravModule, QuatModule, recipNorm, halfvx, halfvy, halfvz, halfex, ha
 	q2 += (qa * gy - qb * gz + q3 * gx);
 	q3 += (qa * gz + qb * gy - qc * gx);
 
-	// Normalise quaternion
-	
+	// Normalise IMU quaternion
 	QuatModule = sqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);
 	if ( QuatModule != 0.0) {	
 		recipNorm = 1.0 / QuatModule;	
@@ -653,6 +704,7 @@ float AccelGravModule, QuatModule, recipNorm, halfvx, halfvy, halfvz, halfex, ha
 		q2 *= recipNorm;
 		q3 *= recipNorm;
 	}
+	
 }
 
 static void processIMU(void *pvParameters)
@@ -785,9 +837,20 @@ static void processIMU(void *pvParameters)
 			gravISUNEDBODY.y = accelISUNEDBODY.y - gyroISUNEDBODY.z * Vbi.x + gyroISUNEDBODY.x * Vbi.z;
 			gravISUNEDBODY.z = accelISUNEDBODY.z + gyroISUNEDBODY.y * Vbi.x - gyroISUNEDBODY.x * Vbi.y;
 
+			// test correction of gyro using free quaternion
+			integralBiasQuatGx = integralBiasQuatGx + 0.01 * BiasQuatGx * dtGyr;
+			integralBiasQuatGy = integralBiasQuatGy + 0.01 * BiasQuatGy * dtGyr;
+			integralBiasQuatGz = integralBiasQuatGz + 0.01 * BiasQuatGz * dtGyr;			
+			gyroISUNEDBODY.x = gyroISUNEDBODY.x - 0.1 * BiasQuatGx - integralBiasQuatGx;
+			gyroISUNEDBODY.y = gyroISUNEDBODY.y - 0.1 * BiasQuatGy - integralBiasQuatGy;
+			gyroISUNEDBODY.z = gyroISUNEDBODY.z - 0.1 * BiasQuatGz - integralBiasQuatGy;
+
 			// Update IMU quaternion
-			MahonyUpdateIMU( dtGyr, gyroISUNEDBODY.x, gyroISUNEDBODY.y, gyroISUNEDBODY.z, -gravISUNEDBODY.x, -gravISUNEDBODY.y, -gravISUNEDBODY.z, q0, q1, q2, q3 );
-			// Euler angles
+			MahonyUpdateIMU( dtGyr, gyroISUNEDBODY.x, gyroISUNEDBODY.y, gyroISUNEDBODY.z,
+							-gravISUNEDBODY.x, -gravISUNEDBODY.y, -gravISUNEDBODY.z, q0, q1, q2, q3,
+							_q0, _q1, _q2, _q3, BiasQuatGx, BiasQuatGy, BiasQuatGz );
+							
+			// Euler angles from IMU quaternion
 			if ( abs(q1 * q3 - q0 * q2) < 0.5 ) {
 				Pitch = asin(-2.0 * (q1 * q3 - q0 * q2));
 			} else {
@@ -797,6 +860,17 @@ static void processIMU(void *pvParameters)
 			Yaw = atan2(2.0 * (q1 * q2 + q0 * q3), (q0 * q0 + q1 * q1 - q2 * q2 - q3 * q3));
 			if (Yaw < 0.0 ) Yaw = Yaw + 2.0 * M_PI;
 			if (Yaw > 2.0 * M_PI) Yaw = Yaw - 2.0 * M_PI;
+			
+			// Euler angles from free drifting quaternion
+			if ( abs(_q1 * _q3 - _q0 * _q2) < 0.5 ) {
+				_Pitch = asin(-2.0 * (_q1 * _q3 - _q0 * _q2));
+			} else {
+				_Pitch = M_PI / 2.0 * signbit((_q0 * _q2 - _q1 * _q3 ));
+			}
+			_Roll = atan2((_q0 * _q1 + _q2 * _q3), (0.5 - _q1 * _q1 - _q2 * _q2));
+			_Yaw = atan2(2.0 * (_q1 * _q2 + _q0 * _q3), (_q0 * _q0 + _q1 * _q1 - _q2 * _q2 - _q3 * _q3));
+			if (_Yaw < 0.0 ) _Yaw = _Yaw + 2.0 * M_PI;
+			if (_Yaw > 2.0 * M_PI) _Yaw = _Yaw - 2.0 * M_PI;			
 			
 		
 			
@@ -854,6 +928,11 @@ static void processIMU(void *pvParameters)
 								q1=((sin(RollInit/2.0)*cos(PitchInit/2.0)*cos(YawInit/2.0)-cos(RollInit/2.0)*sin(PitchInit/2.0)*sin(YawInit/2.0)));
 								q2=((cos(RollInit/2.0)*sin(PitchInit/2.0)*cos(YawInit/2.0)+sin(RollInit/2.0)*cos(PitchInit/2.0)*sin(YawInit/2.0)));
 								q3=((cos(RollInit/2.0)*cos(PitchInit/2.0)*sin(YawInit/2.0)-sin(RollInit/2.0)*sin(PitchInit/2.0)*cos(YawInit/2.0)));
+								_q0 = q0;
+								_q1 = q1;
+								_q2 = q2;
+								_q3 = q3;
+								
 								BIAS_Init++;
 								sprintf(str,"$GBIAS,%lld,%3.3f, %d, %.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\r\n",
 									gyroTime, MPUtempcel, BIAS_Init, -currentGyroBias.z, -currentGyroBias.y, -currentGyroBias.x,
@@ -1235,9 +1314,10 @@ void readSensors(void *pvParameters){
 			Gyro bias z in hundredth of milli rad/s,
 			Alternate gyro bias z in hundredth of milli rad/s,
 			Gravity module from accel in hundredth of milli m/s²,
-			IntegralFBx in hundred of milli rad/s,
-			IntegralFBy in hundred of milli rad/s,
-			IntegralFBz in hundred of milli rad/s,
+			Gravity estimation in hundredth of milli m/s²
+			Gyro bias x from free quaternion in hundred of milli rad/s,
+			Gyro bias y from free quaternion in hundred of milli rad/s,
+			Gyro bias z from free quaternion in hundred of milli rad/s,
 			Gyro module variation level in hundredth of milli,
 			Accel module variation level in hundredth of milli,
 			CAS in cm/s,
@@ -1252,12 +1332,12 @@ void readSensors(void *pvParameters){
 		*/
 	
 		
-			sprintf(str,"$S,%lld,%i,%lld,%i,%i,%i,%i,%1d,%2d,%lld,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",
+			sprintf(str,"$S,%lld,%i,%lld,%i,%i,%i,%i,%1d,%2d,%lld,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",
 				statTime, (int32_t)(statP*100.0), teTime,(int32_t)(teP*100.0), (int16_t)(dynP*10), (int16_t)(OATemp*10.0), (int16_t)(MPUtempcel*10.0), chosenGnss->fix, chosenGnss->numSV,
 				(int64_t)(chosenGnss->time*1000.0), (int32_t)(chosenGnss->coordinates.altitude*100), (int16_t)(chosenGnss->speed.x*100), (int16_t)(chosenGnss->speed.y*100), (int16_t)(chosenGnss->speed.z*100),
-				(int16_t)(Pitch*1000.0), (int16_t)(Roll*1000.0), (int16_t)(Yaw*1000.0) ,
+				(int16_t)(Pitch*1000.0), (int16_t)(Roll*1000.0), (int16_t)(Yaw*1000.0),(int16_t)(_Pitch*1000.0), (int16_t)(_Roll*1000.0), (int16_t)(_Yaw*1000.0),
 				(int32_t)(IMUBiasx*100000.0), (int32_t)(IMUBiasy*100000.0), (int32_t)(IMUBiasz*100000.0), (int32_t)(alternategzBias*100000.0), (int32_t)(AccelGravModuleFilt*100000.0),(int32_t)(GRAVITY*100000.0),
-				(int32_t)(integralFBx*100000.0), (int32_t)(integralFBy*100000.0), (int32_t)(integralFBz*100000.0),
+				(int32_t)(BiasQuatGx*100000.0), (int32_t)(BiasQuatGy*100000.0), (int32_t)(BiasQuatGz*100000.0),
 				(int32_t)(GyroModulePrimLevel*100000.0), (int32_t)(AccelModulePrimLevel*100000.0),
 				(int16_t)(CAS*100), (int16_t)(CASprim*100), (int16_t)(TAS*100), (int16_t)(TASprim*100), (int32_t)(ALT*100), (int16_t)(Vzbaro*100),
 				(int16_t)(Alpha*1000), (int16_t)(Beta*1000) );

@@ -30,6 +30,7 @@ static esp_err_t GET_backup_handler(httpd_req_t *req);
 static esp_err_t POST_restore_handler(httpd_req_t *req);
 static esp_err_t DELETE_reset_handler(httpd_req_t *req);
 static esp_err_t GET_coredump_handler(httpd_req_t *req);
+static esp_err_t ERROR_404_hndler(httpd_req_t *req, httpd_err_code_t err);
 
 httpd_uri_t GET_index_html = {
 	.uri = "/",
@@ -136,6 +137,7 @@ void cWebserver::start()
 		httpd_register_uri_handler(m_httpHandle, &POST_restore);
 		httpd_register_uri_handler(m_httpHandle, &DELETE_reset);
 	    httpd_register_uri_handler(m_httpHandle, &GET_coredump);
+        httpd_register_err_handler(m_httpHandle, HTTPD_404_NOT_FOUND, ERROR_404_hndler);
 	}
     else
     {
@@ -153,6 +155,20 @@ void cWebserver::stop()
  * @brief HTTP Handlers
  * 
  */
+
+// HTTP Error (404) Handler - Redirects all requests to the root page
+static esp_err_t ERROR_404_hndler(httpd_req_t *req, httpd_err_code_t err)
+{
+    ESP_LOGD(FNAME, "404 - Redirecting to root");
+
+    const char body[] = "CaptivePortal";                    // iOS requires content in the response to detect a captive portal, simply redirecting is not sufficient.
+
+    httpd_resp_set_status(req, "302 Temporary Redirect");   // Set status
+    httpd_resp_set_hdr(req, "Location", "/");               // Redirect to the "/" root directory
+    httpd_resp_send(req, body, HTTPD_RESP_USE_STRLEN);
+
+    return ESP_OK;
+}
 
 // GET /index.html
 static esp_err_t GET_index_html_handler(httpd_req_t *req)
@@ -199,7 +215,7 @@ static esp_err_t GET_status_json_handler(httpd_req_t *req)
 	snprintf(jsonBuffer, 199, json, __TIME__, __DATE__, program_version, 0, coredump_available());
 
 	httpd_resp_set_type(req, "application/json ");
-	httpd_resp_send(req, jsonBuffer, strlen(jsonBuffer));
+	httpd_resp_send(req, jsonBuffer, HTTPD_RESP_USE_STRLEN);
 
 	return ESP_OK;
 }
@@ -288,7 +304,7 @@ static esp_err_t POST_update_handler(httpd_req_t *req)
         otaStarted = false;
         // End response
         httpd_resp_set_type(req, "application/json");
-        httpd_resp_send(req, "OK", strlen("OK"));
+        httpd_resp_send(req, "OK", HTTPD_RESP_USE_STRLEN);
 
         if (esp_ota_end(otaHandle) == ESP_OK)
         {
@@ -345,14 +361,14 @@ static esp_err_t POST_restore_handler(httpd_req_t *req)
 	int items = restore_config( recv_len, buff );
 	if( items ){
 		char res[80];
-		sprintf(res,"%d config items restored successfully", items );
+		snprintf(res, sizeof(res), "%d config items restored successfully", items );
 		ESP_LOGI(FNAME, "Config Items %d, strlen: %d", items, strlen(res) );
-		httpd_resp_send(req, res, strlen(res) );
+		httpd_resp_send(req, res, HTTPD_RESP_USE_STRLEN );
 	}
 	else{
 		char res[40] = "Config file format error!";
 		ESP_LOGI(FNAME, "%s strlen: %d", res, strlen(res) );
-		httpd_resp_send(req,res, strlen(res) );
+		httpd_resp_send(req, res, HTTPD_RESP_USE_STRLEN );
 	}
 
     free(buff);
@@ -380,7 +396,7 @@ static esp_err_t DELETE_reset_handler(httpd_req_t *req)
 static esp_err_t _coredump_to_server_begin_cb_OTA(void * priv)
 {
 	char ver[128];
-	sprintf( ver, "Software Version: %s\r\n", program_version );
+	snprintf(ver, sizeof(ver), "Software Version: %s\r\n", program_version );
 	httpd_resp_send_chunk((httpd_req*)priv, ver, strlen( ver ) );
 	const char *head="================= CORE DUMP START =================\r\n";
 	httpd_resp_send_chunk((httpd_req*)priv, head, strlen( head ) );
@@ -405,16 +421,16 @@ static esp_err_t _coredump_to_server_write_cb_OTA(void * priv, char const * cons
 }
 
 static void send_coredump( httpd_req *req ) {
-	 coredump_to_server_config_t coredump_cfg = {
-	        .start = _coredump_to_server_begin_cb_OTA,
-	        .end = _coredump_to_server_end_cb_OTA,
-	        .write = _coredump_to_server_write_cb_OTA,
-	        .priv = req,
-	    };
-	 ESP_LOGI("OTA", "priv %08x", (unsigned int)req );
-	 if( coredump_to_server(&coredump_cfg) != ESP_OK ){ // Dump to Webserver
-		 httpd_resp_send(req, "", 0 );
-	 }
+    coredump_to_server_config_t coredump_cfg = {
+        .start = _coredump_to_server_begin_cb_OTA,
+        .end = _coredump_to_server_end_cb_OTA,
+        .write = _coredump_to_server_write_cb_OTA,
+        .priv = req,
+    };
+    ESP_LOGI("OTA", "priv %08x", (unsigned int)req );
+    if( coredump_to_server(&coredump_cfg) != ESP_OK ){ // Dump to Webserver
+        httpd_resp_send(req, "", 0 );
+    }
 }
 
 static esp_err_t GET_coredump_handler(httpd_req_t *req)

@@ -580,12 +580,15 @@ void MahonyUpdateIMU(float dt, float gxraw, float gyraw, float gzraw,
 #define Ki 0.15 // integral feedback to sync quaternion
 
 #define WingLevel 0.75 // max lateral gravity acceleration to consider wings are ~leveled
-#define Kalt2 0.005 // integration factor for bias estimation
+#define Kalt2 0.001 // integration factor for Gz bias estimation
 #define Kalt1 (1-Kalt2)
-#define Qbias2 0.1 // integration factor for bias estimation
+#define Qbias2 0.0001 // integration factor for bias estimation
 #define Qbias1 (1-Qbias2)
 
-float gx, gy, gz, AccelGravModule, QuatModule, recipNorm, halfvx, halfvy, halfvz, halfex, halfey, halfez, qa, qb, qc, _halfvx, _halfvy, _halfvz ;
+float gx, gy, gz;
+float AccelGravModule, QuatModule, recipNorm;
+float halfvx, halfvy, halfvz, halfex, halfey, halfez, qa, qb, qc, _halfvx, _halfvy, _halfvz;
+float GravityModuleErr, Kgain, dynKp, dynKi;
 
 	// If gravity from acceleromters can be trusted ( accel module ~Gravity, acceleration module variation and gyro module variation below given limits )
 	// correct gyros using proportional and integral feedback
@@ -595,16 +598,16 @@ float gx, gy, gz, AccelGravModule, QuatModule, recipNorm, halfvx, halfvy, halfvz
 	halfvx = q1 * q3 - q0 * q2;
 	halfvy = q0 * q1 + q2 * q3;
 	halfvz = q0 * q0 - 0.5 + q3 * q3;
-	// Estimate direction of gravity from free drifting quaternion
+	// Estimate direction of gravity from raw gyro quaternion
 	_halfvx = _q1 * _q3 - _q0 * _q2;
 	_halfvy = _q0 * _q1 + _q2 * _q3;
 	_halfvz = _q0 * _q0 - 0.5 + _q3 * _q3;
-	// Estimate and filter error between IMU quaternion and free drifting quaternion
+	// Estimate and long period filter to average error between IMU quaternion and free drifting quaternion
 	_halfex = Qbias1 * _halfex + Qbias2 * (_halfvy * halfvz - _halfvz * halfvy);
 	_halfey = Qbias1 * _halfey + Qbias2 * (_halfvz * halfvx - _halfvx * halfvz);
 	_halfez = Qbias1 * _halfez + Qbias2 * (_halfvx * halfvy - _halfvy * halfvx);	
-	// Integrate rate of change of free drifting quaternion
-	gx = gxraw * 0.5 * dt; // pre-multiply common factors
+	// Integrate rate of change of raw gyro quaternion
+	gx = gxraw * 0.5 * dt;
 	gy = gyraw * 0.5 * dt;
 	gz = gzraw * 0.5 * dt;
 	qa = _q0;
@@ -614,7 +617,7 @@ float gx, gy, gz, AccelGravModule, QuatModule, recipNorm, halfvx, halfvy, halfvz
 	_q1 += (qa * gx + qc * gz - _q3 * gy);
 	_q2 += (qa * gy - qb * gz + _q3 * gx);
 	_q3 += (qa * gz + qb * gy - qc * gx);
-	// Normalise free drifting quaternion
+	// Normalise raw gyro quaternion
 	QuatModule = sqrt(_q0 * _q0 + _q1 * _q1 + _q2 * _q2 + _q3 * _q3);
 	if ( QuatModule != 0.0) {	
 		recipNorm = 1.0 / QuatModule;	
@@ -627,21 +630,28 @@ float gx, gy, gz, AccelGravModule, QuatModule, recipNorm, halfvx, halfvy, halfvz
 	// Update IMU quaternion
 	// estimate, filter and test module of gravity
 	AccelGravModule = sqrt( ax * ax + ay * ay + az * az );
+	// asymetrical filter with slow decay
 	if ( AccelGravModuleFilt < AccelGravModule ) {
 		AccelGravModuleFilt = AccelGravModule;
 	} else {
 		AccelGravModuleFilt = fcgrav1 * AccelGravModuleFilt + fcgrav2 * AccelGravModule;
 	}
-	gx = gxraw;
-	gy = gyraw;
-	gz = gzraw;
-	if ( (Nlimit - abs(AccelGravModuleFilt-GRAVITY)) > 0.0 ) {
-		Kgain = 1.0;
+	// correct raw gyro with estimated gyro bias
+	gx = gxraw - _halfex;
+	gy = gyraw - _halfey;
+	gz = gzraw - _halfez;
+	// compute dynamic dynKp and dynKi in function of acceleration gravitity module
+	GravityModuleErr = Nlimit - abs(AccelGravModuleFilt-GRAVITY);
+	if ( GravityModuleErr > 0.0 ) {
+		dynKp = Kp;
+		dynKi = Ki;
 	} else {
-		Kgain = pow( 10.0, (Nlimit - abs(AccelGravModuleFilt-GRAVITY)) * 15.0 );
+		Kgain = pow( 10.0, GravityModuleErr * 15.0 );
+		dynKp = Kgain * Kp;
+		dynKi = Kgain * Ki;
 	}
 
-	// Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
+	// Compute feedback error between gravity and quaternion only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
 	if ( AccelGravModule != 0.0) {
 		// Normalise accelerometer measurement
 		recipNorm = 1.0 / AccelGravModule;
@@ -653,21 +663,21 @@ float gx, gy, gz, AccelGravModule, QuatModule, recipNorm, halfvx, halfvy, halfvz
 		halfey = (az * halfvx - ax * halfvz);
 		halfez = (ax * halfvy - ay * halfvx);
 		// integral feedback
-		integralFBx = integralFBx + Ki * Kgain * halfex * dt;
-		integralFBy = integralFBy + Ki * Kgain * halfey * dt;
-		integralFBz = integralFBz + Ki * Kgain * halfez * dt;
+		integralFBx = integralFBx + dynKi * halfex * dt;
+		integralFBy = integralFBy + dynKi * halfey * dt;
+		integralFBz = integralFBz + dynKi * halfez * dt;
 		// apply integral feedback to gyros
 		gx = gx + integralFBx; 
 		gy = gy + integralFBy;
 		gz = gz + integralFBz;
 		// Apply proportional feedback to gyros
-		gx = gx + Kp * Kgain * halfex;
-		gy = gy + Kp * Kgain * halfey;
-		gz = gz + Kp * Kgain * halfez;
+		gx = gx + dynKp * halfex;
+		gy = gy + dynKp * halfey;
+		gz = gz + dynKp * halfez;
 
-		// capture alternate gyro bias gz when wings are close to be leveled (~straight flight)
+		// capture alternate gyro bias gz when wings are close to be leveled (~straight flight) and acceleration module is close to gravity
 		GravyFilt = fcgrav1 * GravyFilt + fcgrav2 * halfvy;
-		if ( abs(GravyFilt) < WingLevel ) {
+		if ( abs(GravyFilt) < WingLevel && GravityModuleErr > 0.0 ) {
 			// compute gz bias considering long time average of gz is ~0 when wings are ~leveled
 			alternategzBias = Kalt1 * alternategzBias + Kalt2 * gzraw;
 		}
@@ -811,7 +821,7 @@ static void processIMU(void *pvParameters)
 			}
 		}		
 
-		// if moving, speed > 25 km/h or ground bias estimation has ran for 20 minutes
+		// if moving, speed > 25 km/h or ground bias estimation has ran more than "0" times
 		if (ias.get() > 25  || BIAS_Init > 0 ) {
 			// first time in movement, if BIAS_int was achieved = true, store bias and gravity in FLASH
 			if ( !BIASInFLASH ) {
@@ -827,15 +837,8 @@ static void processIMU(void *pvParameters)
 			gravISUNEDBODY.y = accelISUNEDBODY.y - gyroISUNEDBODY.z * Vbi.x + gyroISUNEDBODY.x * Vbi.z;
 			gravISUNEDBODY.z = accelISUNEDBODY.z + gyroISUNEDBODY.y * Vbi.x - gyroISUNEDBODY.x * Vbi.y;
 
-			// test correction of gyro using free quaternion
-			integralBiasQuatGx = integralBiasQuatGx + 0.01 * BiasQuatGx * dtGyr;
-			integralBiasQuatGy = integralBiasQuatGy + 0.01 * BiasQuatGy * dtGyr;
-			integralBiasQuatGz = integralBiasQuatGz + 0.01 * BiasQuatGz * dtGyr;			
-			gyroISUNEDBODY.x = gyroISUNEDBODY.x - 0.1 * BiasQuatGx - integralBiasQuatGx;
-			gyroISUNEDBODY.y = gyroISUNEDBODY.y - 0.1 * BiasQuatGy - integralBiasQuatGy;
-			gyroISUNEDBODY.z = gyroISUNEDBODY.z - 0.1 * BiasQuatGz - integralBiasQuatGy;
-
 			// Update IMU quaternion
+			// gyroISUNEDBODY corresponds to raw gyro and BiasQuatGx,y,z to the gyros bias
 			MahonyUpdateIMU( dtGyr, gyroISUNEDBODY.x, gyroISUNEDBODY.y, gyroISUNEDBODY.z,
 							-gravISUNEDBODY.x, -gravISUNEDBODY.y, -gravISUNEDBODY.z, q0, q1, q2, q3,
 							_q0, _q1, _q2, _q3, BiasQuatGx, BiasQuatGy, BiasQuatGz );

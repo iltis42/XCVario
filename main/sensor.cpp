@@ -821,8 +821,8 @@ static void processIMU(void *pvParameters)
 			}
 		}		
 
-		// if moving, speed > 25 km/h or ground bias estimation has ran more than "0" times
-		if (ias.get() > 25  || BIAS_Init > 0 ) {
+		// if moving, speed > 25 km/h or ground bias estimation has ran more than "2" times
+		if (ias.get() > 25  || BIAS_Init > 2) {
 			// first time in movement, if BIAS_int was achieved = true, store bias and gravity in FLASH
 			if ( !BIASInFLASH ) {
 				gyro_bias.set(currentGyroBias);
@@ -875,22 +875,22 @@ static void processIMU(void *pvParameters)
 				gyrobiastemptimer++;
 				// detect if gyro ans accel variations is below stability threshold using an alpha/beta filter to estimate variation over short period of time
 				// if temperature conditions has been stable for more than 30 seconds (1200 = 30x40hz) but less than 20 minutes and there is very little angular and acceleration variation
-				if ( (gyrobiastemptimer > 1200) && (gyrobiastemptimer < 48000) && (GyroModulePrimLevel < GroundGyroprimlimit) && (AccelModulePrimLevel < GroundAccelprimlimit) ) {
+				if ( (gyrobiastemptimer > 1200) && (GyroModulePrimLevel < GroundGyroprimlimit) && (AccelModulePrimLevel < GroundAccelprimlimit) ) {
 					gyrostable++;
 					// during first 2.5 seconds, initialize gyro data
 					if ( gyrostable < 100 ) {
-						averagecount = 0;
-						GxBias = 0.0;
-						GyBias = 0.0;
-						GzBias = 0.0;	
-						Gravx = 0.0;
-						Gravy = 0.0;
-						Gravz = 0.0;
-						RollInit = 0.0;
-						PitchInit = 0.0;
+						GxBias = gyroRPS.x;
+						GyBias = gyroRPS.y;
+						GzBias = gyroRPS.z;
+						Gravx = accelISUNEDBODY.x;
+						Gravy = accelISUNEDBODY.y;
+						Gravz = accelISUNEDBODY.z;
+						RollInit = atan(accelISUNEDBODY.y / accelISUNEDBODY.z);
+						PitchInit = asin(accelISUNEDBODY.x/Module);						
+						averagecount = 1;
 					} else {
 						// between 2.5 seconds and 22.5 seconds, accumulate gyro data
-						if ( gyrostable < 900 ) {
+						if ( gyrostable <900 ) {
 							averagecount++;
 							GxBias += gyroRPS.x;
 							GyBias += gyroRPS.y;
@@ -903,8 +903,7 @@ static void processIMU(void *pvParameters)
 						} else {
 							// If not bias yet, after 25 seconds calculate average bias, gravity and roll/pitch
 							// If already have bias, calulate after 2 minutes to avoid risk of perturbation before takeoff
-							//if ( (BIAS_Init == 0 && gyrostable > 1000) || (BIAS_Init > 0 && gyrostable > 4800) ) {
-							if ( (BIAS_Init == 0 && gyrostable > 1000) || (BIAS_Init > 0 && gyrostable > 1200) ) {								
+							if ( (BIAS_Init == 0 && gyrostable > 1000) || (BIAS_Init > 0 && gyrostable > 4800) ) {
 								currentGyroBias.x = GxBias / averagecount;
 								currentGyroBias.y = GyBias / averagecount;
 								currentGyroBias.z = GzBias / averagecount;
@@ -995,23 +994,23 @@ static void processIMU(void *pvParameters)
 			}
 			/*
 			CAL data
-				$CAL,
-				Acceleration in X-Axis in m/s²,
-				Acceleration max in X-Axis in m/s²,
-				Acceleration min in X-Axis in m/s²,				
-				Acceleration in Y-Axis in m/s²,
-				Acceleration max in Y-Axis in m/s²,
-				Acceleration min in Y-Axis in  m/s²,				
-				Acceleration in Z-Axis in m/s²,
-				Acceleration max in Z-Axis in m/s²,
-				Acceleration min in Z-Axis in m/s²,
-				Acceleration bias x in m/s²,
-				Acceleration bias y in m/s²
-				Acceleration bias z in m/s²	
-				Acceleration gain x in m/s²,
-				Acceleration gain y in m/s²
-				Acceleration gain z in m/s²				
-				<CR><LF>	
+			$CAL,
+			Acceleration in X-Axis in m/s²,
+			Acceleration max in X-Axis in m/s²,
+			Acceleration min in X-Axis in m/s²,				
+			Acceleration in Y-Axis in m/s²,
+			Acceleration max in Y-Axis in m/s²,
+			Acceleration min in Y-Axis in  m/s²,				
+			Acceleration in Z-Axis in m/s²,
+			Acceleration max in Z-Axis in m/s²,
+			Acceleration min in Z-Axis in m/s²,
+			Acceleration bias x in m/s²,
+			Acceleration bias y in m/s²
+			Acceleration bias z in m/s²	
+			Acceleration gain x in m/s²,
+			Acceleration gain y in m/s²
+			Acceleration gain z in m/s²				
+			<CR><LF>	
 			*/
 			if ( gyromodulestable > 0 ) {			
 				sprintf(str,"$CAL,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\r\n",

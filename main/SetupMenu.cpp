@@ -1618,7 +1618,7 @@ void SetupMenu::system_menu_create_hardware_ahrs( MenuEntry *top ){
 	if( gflags.ahrsKeyValid )
 		mpu->addEntry( PROGMEM"Enable");
 
-	SetupMenuSelect * ahrsaz = new SetupMenuSelect( "AHRS Autozero", RST_ON_EXIT , 0, true, &ahrs_autozero );
+	SetupMenuSelect * ahrsaz = new SetupMenuSelect( "AHRS Autozero", RST_IMMEDIATE , 0, true, &ahrs_autozero );
 	top->addEntry( ahrsaz );
 	ahrsaz->setHelp( PROGMEM "Start Autozero of AHRS Sensor; Preconditions: On ground; Wings 100% horizontal, fuselage in flight position! (reboots)");
 	ahrsaz->addEntry( "Cancel");

@@ -116,11 +116,7 @@ int SetupCommon::restoreConfigChanges( int len, char *data ){
 			valid++;
 			ESP_LOGI(FNAME,"found text/csv, valid=%d", valid );
 		}
-		else if( line.find( "WebKitForm" ) != std::string::npos ){
-			valid++;
-			ESP_LOGI(FNAME,"found WebKitForm, valid=%d", valid );
-		}
-		else if( (line.length() > 1) && (valid >= 3) ){
+		else if( (line.length() > 1) && (valid >= 2) && line.find( "," ) != std::string::npos ){
 			printf( "%d, len:%d, %s\n", i, line.length(), line.c_str() );
 			std::string key = line.substr(0, line.find(','));
 			std::string value = line.substr(line.find(',')+1, line.length());

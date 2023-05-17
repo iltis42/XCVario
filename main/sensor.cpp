@@ -729,8 +729,10 @@ static void processIMU(void *pvParameters)
 	#define fcGyroLevel 3.0 // 3Hz low pass to filter 
 	#define fcGL1 (40.0/(40.0+fcGyroLevel))
 	#define fcGL2 (1.0-fcGL1)
-	#define GroundAccelprimlimit 0.25 // m/s²
-	#define	GroundGyroprimlimit 0.2 // rad/s²	
+	//#define GroundAccelprimlimit 0.25 // m/s²
+	//#define	GroundGyroprimlimit 0.2 // rad/s²	
+	#define GroundAccelprimlimit 5.0 // m/s²
+	#define	GroundGyroprimlimit 0.05 // rad/s²	
 	
 	mpud::raw_axes_t accelRaw;
 	mpud::raw_axes_t gyroRaw;
@@ -822,7 +824,7 @@ static void processIMU(void *pvParameters)
 		}		
 
 		// if moving, speed > 25 km/h or ground bias estimation has ran more than "2" times
-		if (ias.get() > 25  || BIAS_Init > 2) {
+		if (TAS > 10.0  || BIAS_Init > 5 ) {
 			// first time in movement, if BIAS_int was achieved = true, store bias and gravity in FLASH
 			if ( !BIASInFLASH ) {
 				gyro_bias.set(currentGyroBias);
@@ -830,7 +832,7 @@ static void processIMU(void *pvParameters)
 				BIASInFLASH = true;
 				}
 			// estimate gravity with centrifugal corrections
-			if (tas>25.0) Vbi.x = tas/3.6; else Vbi.x = 0.0;
+			if (TAS>10.0) Vbi.x = TAS; else Vbi.x = 0.0;
 			Vbi.y = 0;
 			Vbi.z = 0;
 			gravISUNEDBODY.x = accelISUNEDBODY.x - gyroISUNEDBODY.y * Vbi.z + gyroISUNEDBODY.z * Vbi.y;
@@ -886,8 +888,8 @@ static void processIMU(void *pvParameters)
 						Gravy = accelISUNEDBODY.y;
 						Gravz = accelISUNEDBODY.z;
 						RollInit = atan(accelISUNEDBODY.y / accelISUNEDBODY.z);
-						PitchInit = asin(accelISUNEDBODY.x/Module);						
 						averagecount = 1;
+						
 					} else {
 						// between 2.5 seconds and 22.5 seconds, accumulate gyro data
 						if ( gyrostable <900 ) {
@@ -926,6 +928,7 @@ static void processIMU(void *pvParameters)
 								_q3 = q3;
 								
 								BIAS_Init++;
+								gyrostable = 0;
 								sprintf(str,"$GBIAS,%lld,%3.3f, %d, %.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\r\n",
 									gyroTime, MPUtempcel, BIAS_Init, -currentGyroBias.z, -currentGyroBias.y, -currentGyroBias.x,
 									GRAVITY, Gravx, Gravy, Gravz, RollInit, PitchInit, YawInit );
@@ -934,7 +937,11 @@ static void processIMU(void *pvParameters)
 							}
 						} 
 					}
-				} else gyrostable = 0; // reset gyro stability counter if temperature not stable or movement detected
+				} else {
+					gyrostable = 0; // reset gyro stability counter if temperature not stable or movement detected
+					sprintf(str,"%f , %f \r\n", GyroModulePrimLevel, AccelModulePrimLevel);
+					Router::sendXCV(str);
+				}
 			} 
 		} 			
 		
@@ -1025,7 +1032,9 @@ static void processIMU(void *pvParameters)
 
 		ProcessTimeIMU = (esp_timer_get_time()/1000.0) - gyroTime;
 		if ( ProcessTimeIMU > 5 ) {
-			ESP_LOGI(FNAME,"processIMU: %i / 25", (int16_t)(ProcessTimeIMU) );
+//			ESP_LOGI(FNAME,"processIMU: %i / 25", (int16_t)(ProcessTimeIMU) );
+			sprintf(str,"IMU Process : %i ms\r\n",(int16_t)(ProcessTimeIMU) );
+			Router::sendXCV(str);			
 		}		
 
 		mtick++;

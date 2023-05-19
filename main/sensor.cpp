@@ -189,6 +189,8 @@ static float q0 = 0.0;
 static float q1 = 0.0;
 static float q2 = 0.0;
 static float q3 = 1.0;
+// Attention une variable précédée d'un ubderscore (blanc souligné ou "_") pourrait être interprétée par le compilateur C comme liée à la variable no préfixée
+// Exemple _Roll pourrait se rapporter à Roll. C'est ce que j'ai remarqué dans le code sans avoir approfondi...
 static float _Pitch;
 static float _Roll;
 static float _Yaw;
@@ -261,16 +263,16 @@ static float Rho;
 static float CASraw;
 static float deltaCAS;
 static float CASprim;
-static float CAS;
-static float prevCAS = 0.0;
+static float CAS = 0.0;
+//static float prevCAS;
 static float Rhocorr;
 static float TAS;
 static float TASprim;
 static float ALTraw;
 static float deltaALT;
 static float Vzbaro;
-static float ALT;
-static float prevALT = 0.0;
+static float ALT = 0.0;
+//static float prevALT;
 
 #define NCAS 7 // CAS alpha/beta filter coeff
 #define alphaCAS (2.0 * (2.0 * NCAS - 1.0) / NCAS / (NCAS + 1))
@@ -823,7 +825,7 @@ static void processIMU(void *pvParameters)
 			}
 		}		
 
-		// if moving, speed > 25 km/h or ground bias estimation has ran more than "2" times
+		// if moving, speed > 10 m/s or ground bias estimation has ran more than "5" times
 		if (TAS > 10.0  || BIAS_Init > 5 ) {
 			// first time in movement, if BIAS_int was achieved = true, store bias and gravity in FLASH
 			if ( !BIASInFLASH ) {
@@ -831,10 +833,11 @@ static void processIMU(void *pvParameters)
 				gravity.set(GRAVITY);
 				BIASInFLASH = true;
 				}
-			// estimate gravity with centrifugal corrections
+			// estimate gravity in body frame taking into account centrifugal corrections
 			if (TAS>10.0) Vbi.x = TAS; else Vbi.x = 0.0;
 			Vbi.y = 0;
-			Vbi.z = 0;
+            //Ziprim := (uiprim * sin(Pitch) + cos(Pitch) * sin(Roll) * viprim + cos(Pitch) * cos(Roll) * wiprim);
+			Vbi.z = 0;//could be improved using Ziprim
 			gravISUNEDBODY.x = accelISUNEDBODY.x - gyroISUNEDBODY.y * Vbi.z + gyroISUNEDBODY.z * Vbi.y;
 			gravISUNEDBODY.y = accelISUNEDBODY.y - gyroISUNEDBODY.z * Vbi.x + gyroISUNEDBODY.x * Vbi.z;
 			gravISUNEDBODY.z = accelISUNEDBODY.z + gyroISUNEDBODY.y * Vbi.x - gyroISUNEDBODY.x * Vbi.y;
@@ -875,7 +878,7 @@ static void processIMU(void *pvParameters)
 			if ( (HAS_MPU_TEMP_CONTROL && (MPU.getSiliconTempStatus() == MPU_T_LOCKED)) || !HAS_MPU_TEMP_CONTROL ) {
 				// count cycles when temperature is locked
 				gyrobiastemptimer++;
-				// detect if gyro ans accel variations is below stability threshold using an alpha/beta filter to estimate variation over short period of time
+				// detect if gyro and accel variations is below stability threshold using an alpha/beta filter to estimate variation over short period of time
 				// if temperature conditions has been stable for more than 30 seconds (1200 = 30x40hz) but less than 20 minutes and there is very little angular and acceleration variation
 				if ( (gyrobiastemptimer > 1200) && (GyroModulePrimLevel < GroundGyroprimlimit) && (AccelModulePrimLevel < GroundAccelprimlimit) ) {
 					gyrostable++;
@@ -1248,19 +1251,19 @@ void readSensors(void *pvParameters){
 
 		Rho = (100.0 * statP / 287.058 / (273.15 + OATemp));
 		CASraw = sqrt(2 * dynP / RhoSLISA);
-		deltaCAS = CASraw - prevCAS;
+		deltaCAS = CASraw - CAS;
 		CASprim = CASprim + betaCAS * deltaCAS;
 		CAS = CAS + alphaCAS * deltaCAS + CASprim * dtdynP;
-		prevCAS = CAS;
+		//prevCAS = CAS; Ce n'est pas nécessaire de recycler la CAS dans un filtre alpha/beta
 		Rhocorr = sqrt(RhoSLISA/Rho);
 		TAS = Rhocorr * CAS;
 		TASprim = Rhocorr * CASprim;
 		//ALTraw = (1.0 - pow( (statP-(QNH.get()-1013.25))/1013.25 , (1.0/5.25516) ) ) * (273.15 + OATemp) / 0.0065;
 		ALTraw = (1.0 - pow( (statP-(QNH.get()-1013.25)) * 0.000986923 , 0.1902891634 ) ) * (273.15 + OATemp) * 153.846153846;		
-		deltaALT = ALTraw - prevALT;
+		deltaALT = ALTraw - ALT;
 		Vzbaro = Vzbaro + betaALT * deltaALT;
 		ALT = ALT + alphaALT * deltaALT + Vzbaro * dtstat;
-		prevALT = ALT;
+		//prevALT = ALT; Même punition que pour la CAS
 		
 		float currentSink;
 		float CL;

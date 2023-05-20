@@ -94,16 +94,16 @@ void start_dhcp_server(void)
 	// initialize the tcp stack
 	tcpip_adapter_init();
 	// stop DHCP server
-	// ESP_ERROR_CHECK(tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP));
+	ESP_ERROR_CHECK(tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP));
 
-	// ip_addr_t dnsserver;
-	// dhcps_offer_t dhcps_dns_value = OFFER_DNS;
-	// dhcps_set_option_info(ESP_NETIF_DOMAIN_NAME_SERVER, &dhcps_dns_value, sizeof(dhcps_dns_value));
+	ip_addr_t dnsserver;
+	dhcps_offer_t dhcps_dns_value = OFFER_DNS;
+	dhcps_set_option_info(ESP_NETIF_DOMAIN_NAME_SERVER, &dhcps_dns_value, sizeof(dhcps_dns_value));
 
 	// Set custom dns server address for dhcp server
-	// dnsserver.u_addr.ip4.addr = esp_ip4addr_aton("0.0.0.0");
-	// dnsserver.type = IPADDR_TYPE_V4;
-	// dhcps_dns_setserver(&dnsserver);
+	dnsserver.u_addr.ip4.addr = esp_ip4addr_aton("0.0.0.0");
+	dnsserver.type = IPADDR_TYPE_V4;
+	dhcps_dns_setserver(&dnsserver);
 	
 	ESP_ERROR_CHECK(tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP));
 	printf("DHCP server started \n");

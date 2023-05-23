@@ -458,9 +458,13 @@ static void grabMPU()
 		}
 	}
 	if( err == ESP_OK ){
-		// check low rotation on all 3 axes = on ground
-		if( abs( gyroDPS.x ) < MAXDRIFT && abs( gyroDPS.y ) < MAXDRIFT && abs( gyroDPS.z ) < MAXDRIFT ) {
-			if( ias.get() < 25 ){  // check no significant IAS
+		float GS=0;      // Autoleveling Gyro feature only with GPS and GS close to zero to avoid triggering at push back taxi with zero AS
+		float gndTrack=0;
+		bool gpsOK = Flarm::getGPS( GS, gndTrack );
+		// ESP_LOGI(FNAME,"GS=%.3f %d", GS, gpsOK );
+		if( gpsOK && GS < 2 && ias.get() < 5 ){  // GPS status, groundspeed and airspeed regarded for still stand
+			// check low rotation on all 3 axes = on ground
+			if( abs( gyroDPS.x ) < MAXDRIFT && abs( gyroDPS.y ) < MAXDRIFT && abs( gyroDPS.z ) < MAXDRIFT ) {
 				num_gyro_samples++;
 				for(int i=0; i<3; i++){
 					cur_gyro_bias[i] += gyroRaw[i];
@@ -490,7 +494,6 @@ static void grabMPU()
 			}
 		}
 	}
-
 	if( err == ESP_OK && goodAccl && goodGyro ) {
 		IMU::read();
 	}

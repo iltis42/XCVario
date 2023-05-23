@@ -35,6 +35,15 @@ public:
 			return false;
 		}
 	}
+	static inline bool getGPSknots( float &gndSpeed ) {
+			if( myGPS_OK ) {
+				gndSpeed = gndSpeedKnots;
+				return true;
+			}
+			else{
+				return false;
+			}
+	}
 	static inline bool gpsStatus() { return myGPS_OK; }
 	static float getGndSpeedKnots() { return gndSpeedKnots; }
 	static float getGndCourse() { return gndCourse; }

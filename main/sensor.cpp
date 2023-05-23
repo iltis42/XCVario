@@ -459,8 +459,7 @@ static void grabMPU()
 	}
 	if( err == ESP_OK ){
 		float GS=0;      // Autoleveling Gyro feature only with GPS and GS close to zero to avoid triggering at push back taxi with zero AS
-		float gndTrack=0;
-		bool gpsOK = Flarm::getGPS( GS, gndTrack );
+		bool gpsOK = Flarm::getGPSknots( GS );
 		// ESP_LOGI(FNAME,"GS=%.3f %d", GS, gpsOK );
 		if( gpsOK && GS < 2 && ias.get() < 5 ){  // GPS status, groundspeed and airspeed regarded for still stand
 			// check low rotation on all 3 axes = on ground

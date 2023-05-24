@@ -876,19 +876,28 @@ static void processIMU(void *pvParameters)
 			}
 		}		
 
-		// if moving, speed > 10 m/s or ground bias estimation has ran more than "0" times
+		// if moving, speed > 10 m/s or ground bias estimation has ran more than "0" times TODO when operational BIAS_Init should be up to 10.
 		if (TAS > 10.0  || BIAS_Init > 0 ) {
-			// first time in movement, if BIAS_int was achieved = true, store bias and gravity in FLASH
+			// first time in movement, if biais initialiazation was achieved, store bias and local gravity in FLASH
 			if ( !BIASInFLASH ) {
 				gyro_bias.set(currentGyroBias);
 				gravity.set(GRAVITY);
 				BIASInFLASH = true;
 				}
+
+			// TODO compute inertial and baro inertial speeds
+            // Ziprim := (uiprim * sin(Pitch) + cos(Pitch) * sin(Roll) * viprim + cos(Pitch) * cos(Roll) * wiprim);
+			if ( TAS > 10.0 ) {
+				Vbi.x = Up;
+				Vbi.y = Vp;
+				Vbi.y = Wp;
+			} else {
+				Vbi.x = 0.0;
+				Vbi.y = 0.0;
+				Vbi.z = 0.0;
+			}
+
 			// estimate gravity in body frame taking into account centrifugal corrections
-			if (TAS>10.0) Vbi.x = TAS; else Vbi.x = 0.0;
-			Vbi.y = 0;
-            //Ziprim := (uiprim * sin(Pitch) + cos(Pitch) * sin(Roll) * viprim + cos(Pitch) * cos(Roll) * wiprim);
-			Vbi.z = 0;//could be improved using Ziprim
 			gravISUNEDBODY.x = accelISUNEDBODY.x - gyroISUNEDBODY.y * Vbi.z + gyroISUNEDBODY.z * Vbi.y;
 			gravISUNEDBODY.y = accelISUNEDBODY.y - gyroISUNEDBODY.z * Vbi.x + gyroISUNEDBODY.x * Vbi.z;
 			gravISUNEDBODY.z = accelISUNEDBODY.z + gyroISUNEDBODY.y * Vbi.x - gyroISUNEDBODY.x * Vbi.y;
@@ -1208,12 +1217,10 @@ void clientLoop(void *pvParameters)
 
 void readSensors(void *pvParameters){
 	
-	float currentSink = 0.0;
 	float CL = 0.0;
 	float prevCL = 0.0;
 	float dAoA = 0.0;
 	float AoARaw = 0.0;
-	float LF = 1.0;
 	float WingLoad = 40.0;
 	float AoA = 0.0;
 	float AoB = 0.0;
@@ -1309,13 +1316,13 @@ void readSensors(void *pvParameters){
 		Vzbaro = Vzbaro + betaALT * deltaALT;
 		ALT = ALT + alphaALT * deltaALT + Vzbaro * dtstat;
 
-		// compute AoA (Incidence angle) and AoB (Slip angle)
-		WingLoad = gross_weight.get() / polar_wingarea.get();
+		// compute AoA (Angle of attack) and AoB (Angle od slip)
+		WingLoad = gross_weight.get() / polar_wingarea.get();  // should be only computed when pilot change weight settings in XCVario
 		if ( CAS > 10 && dynP > 0.0 && accelISUNEDBODY.z != 0.0 ) { // compute AoA and AoB only when speed is above 10 m/s
 			CL = accelISUNEDBODY.z * 2 / RhoSLISA * WingLoad / CAS / CAS;
 			dAoA = ( CL - prevCL ) / CLA;
 			prevCL = CL;
-			AoARaw = -(accelISUNEDBODY.x / accelISUNEDBODY.z) + Speed2Fly.cw( CAS );
+			AoARaw = -(accelISUNEDBODY.x / accelISUNEDBODY.z) + Speed2Fly.cw( CAS ) / Speed2Fly.getN();
 			AoA = fcAoA1 * ( AoA + dAoA ) + fcAoA2 * AoARaw ;
 			AoB = fcAoB1 * AoB + fcAoB2 * ( KAoB * WingLoad * accelISUNEDBODY.y / dynP - KGx * gyroISUNEDBODY.x / TAS);			
 		} else {

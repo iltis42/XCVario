@@ -182,30 +182,30 @@ static float IMUBiasy = 0.0;
 static float IMUBiasz = 0.0;
 static float BankFilt = 0.0;
 static float alternategzBias = 0.0;
-static float Pitch;
-static float Roll;
-static float Yaw;
+static float Pitch = 0.0;
+static float Roll = 0.0;
+static float Yaw = 0.0;
 static float q0 = 0.0;
 static float q1 = 0.0;
 static float q2 = 0.0;
 static float q3 = 1.0;
-static float free_Pitch;
-static float free_Roll;
-static float free_Yaw;
+static float free_Pitch = 0.0;
+static float free_Roll = 0.0;
+static float free_Yaw = 0.0;
 static float free_q0 = 0.0;
 static float free_q1 = 0.0;
 static float free_q2 = 0.0;
 static float free_q3 = 1.0;
-static float free_halfex;
-static float delta_errx;
+static float free_halfex = 0.0;
+static float delta_errx = 0.0;
 static float filt_errx = 0.0;
 static float errx_prim = 0.0;
-static float free_halfey;
-static float delta_erry;
+static float free_halfey = 0.0;
+static float delta_erry = 0.0;
 static float filt_erry = 0.0;
 static float erry_prim = 0.0;
-static float free_halfez;
-static float delta_errz;
+static float free_halfez = 0.0;
+static float delta_errz = 0.0;
 static float filt_errz = 0.0;
 static float errz_prim = 0.0;
 static float BiasQuatGx = 0.0;
@@ -271,7 +271,6 @@ static float CASraw;
 static float deltaCAS;
 static float CASprim;
 static float CAS = 0.0;
-//static float prevCAS;
 static float Rhocorr;
 static float TAS;
 static float TASprim;
@@ -279,7 +278,7 @@ static float ALTraw;
 static float deltaALT;
 static float Vzbaro;
 static float ALT = 0.0;
-//static float prevALT;
+
 
 #define NCAS 7 // CAS alpha/beta filter coeff
 #define alphaCAS (2.0 * (2.0 * NCAS - 1.0) / NCAS / (NCAS + 1))
@@ -579,10 +578,10 @@ void MahonyUpdateIMU(float dt, float gxraw, float gyraw, float gzraw,
 					float ax, float ay, float az, 
 					float &Bias_Gx, float &Bias_Gy, float &Bias_Gz ) {
 
-#define Nbias 7000 // very long period for extracting error rate of change between IMU quaternion and free quaternion
+#define Nbias 3000 // very long period for extracting error rate of change between IMU quaternion and free quaternion
 #define alphaBias (2.0 * (2.0 * Nbias - 1.0) / Nbias / (Nbias + 1.0))
 #define betaBias (6.0 / Nbias / (Nbias + 1.0) / 0.1)
-#define Kbias 6 // gain to apply to error rate to be homogeneous to gyro bias. experimental, TODO need to be adjusted
+#define Kbias 21 // gain to apply to error rate to be homogeneous to gyro bias. experimental, TODO need to be adjusted
 #define fcGrav 3.0 // 3Hz low pass to filter for testing stability criteria
 #define fcgrav1 (40.0/(40.0+fcGrav))
 #define fcgrav2 (1.0-fcgrav1)
@@ -600,7 +599,7 @@ void MahonyUpdateIMU(float dt, float gxraw, float gyraw, float gzraw,
 float gx, gy, gz;
 float AccelGravModule, QuatModule, recipNorm;
 float halfvx, halfvy, halfvz, halfex, halfey, halfez, qa, qb, qc, free_halfvx, free_halfvy, free_halfvz;
-float GravityModuleErr, dynKp, dynKi, temp_Bias_Gz;
+float GravityModuleErr, dynKp, dynKi, temp_Bias_Gz = 0.0;
 
 
 	
@@ -647,6 +646,7 @@ float GravityModuleErr, dynKp, dynKi, temp_Bias_Gz;
 	// compute acceleration module difference with local gravity (GRAVITY) to allow alternate Gz bias estimation and dynamic correction of IMU quaternion
 	// Nlimit is the coefficient to statidfy staibility criteria
 	GravityModuleErr = Nlimit - abs(AccelGravModuleFilt-GRAVITY);
+	if ( GravityModuleErr < - 4.0 ) GravityModuleErr = - 4.0;
 
 	// Gz bias can only be observed using error between IMU and free quaternion when there is significant bank.
 	// Therefore bias is computed from this error only when there is significant bank
@@ -699,7 +699,7 @@ float GravityModuleErr, dynKp, dynKi, temp_Bias_Gz;
 			dynKp = Kp;
 			dynKi = Ki;
 		} else {
-			Kgain = pow( 10.0, GravityModuleErr * 15.0 );
+			Kgain = pow( 10.0, GravityModuleErr * 1.5 );
 			dynKp = Kgain * Kp;
 			dynKi = Kgain * Ki;
 		}		
@@ -865,8 +865,8 @@ static void processIMU(void *pvParameters)
 			}
 		}		
 
-		// if moving, speed > 10 m/s or ground bias estimation has ran more than "5" times
-		if (TAS > 10.0  || BIAS_Init > 5 ) {
+		// if moving, speed > 10 m/s or ground bias estimation has ran more than "0" times
+		if (TAS > 10.0  || BIAS_Init > 0 ) {
 			// first time in movement, if BIAS_int was achieved = true, store bias and gravity in FLASH
 			if ( !BIASInFLASH ) {
 				gyro_bias.set(currentGyroBias);
@@ -982,8 +982,6 @@ static void processIMU(void *pvParameters)
 					}
 				} else {
 					gyrostable = 0; // reset gyro stability counter if temperature not stable or movement detected
-					sprintf(str,"%f , %f \r\n", GyroModulePrimLevel, AccelModulePrimLevel);
-					Router::sendXCV(str);
 				}
 			} 
 		} 			
@@ -1359,9 +1357,6 @@ void readSensors(void *pvParameters){
 			Alternate gyro bias z in hundredth of milli rad/s,
 			Gravity module from accel in hundredth of milli m/s²,
 			Gravity estimation in hundredth of milli m/s²
-			Gyro bias x from free quaternion in hundred of milli rad/s,
-			Gyro bias y from free quaternion in hundred of milli rad/s,
-			Gyro bias z from free quaternion in hundred of milli rad/s,
 			Gyro module variation level in hundredth of milli,
 			Accel module variation level in hundredth of milli,
 			CAS in cm/s,
@@ -1376,12 +1371,11 @@ void readSensors(void *pvParameters){
 		*/
 	
 		
-			sprintf(str,"$S,%lld,%i,%lld,%i,%i,%i,%i,%1d,%2d,%lld,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",
+			sprintf(str,"$S,%lld,%i,%lld,%i,%i,%i,%i,%1d,%2d,%lld,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",
 				statTime, (int32_t)(statP*100.0), teTime,(int32_t)(teP*100.0), (int16_t)(dynP*10), (int16_t)(OATemp*10.0), (int16_t)(MPUtempcel*10.0), chosenGnss->fix, chosenGnss->numSV,
 				(int64_t)(chosenGnss->time*1000.0), (int32_t)(chosenGnss->coordinates.altitude*100), (int16_t)(chosenGnss->speed.x*100), (int16_t)(chosenGnss->speed.y*100), (int16_t)(chosenGnss->speed.z*100),
-				(int16_t)(Pitch*1000.0), (int16_t)(Roll*1000.0), (int16_t)(Yaw*1000.0),(int16_t)(free_Pitch*1000.0), (int16_t)(free_Roll*1000.0), (int16_t)(free_Yaw*1000.0),
+				(int32_t)(Pitch*1000.0), (int32_t)(Roll*1000.0), (int32_t)(Yaw*1000.0),(int32_t)(free_Pitch*1000.0), (int32_t)(free_Roll*1000.0), (int32_t)(free_Yaw*1000.0),
 				(int32_t)(IMUBiasx*100000.0), (int32_t)(IMUBiasy*100000.0), (int32_t)(IMUBiasz*100000.0), (int32_t)(alternategzBias*100000.0), (int32_t)(AccelGravModuleFilt*100000.0),(int32_t)(GRAVITY*100000.0),
-				(int32_t)(BiasQuatGx*100000.0), (int32_t)(BiasQuatGy*100000.0), (int32_t)(BiasQuatGz*100000.0),
 				(int32_t)(GyroModulePrimLevel*100000.0), (int32_t)(AccelModulePrimLevel*100000.0),
 				(int16_t)(CAS*100), (int16_t)(CASprim*100), (int16_t)(TAS*100), (int16_t)(TASprim*100), (int32_t)(ALT*100), (int16_t)(Vzbaro*100),
 				(int16_t)(Alpha*1000), (int16_t)(Beta*1000) );

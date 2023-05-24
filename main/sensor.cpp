@@ -597,8 +597,6 @@ void MahonyUpdateIMU(float dt, float gxraw, float gyraw, float gzraw,
 #define fcgrav1 (40.0/(40.0+fcGrav))
 #define fcgrav2 (1.0-fcgrav1)
 #define Nlimit 0.15 // stability criteria for gravity estimation from accels
-#define FlightAccelprimlimit 3.0 // stability criteria on accels variations.
-#define FlightGyroprimlimit 1.0  // stability criteria on gyros variations.
 #define Kp 2.5 // proportional feedback to sync quaternion
 #define Ki 0.15 // integral feedback to sync quaternion
 
@@ -782,10 +780,8 @@ static void processIMU(void *pvParameters)
 	#define fcGyroLevel 3.0 // 3Hz low pass to filter 
 	#define fcGL1 (40.0/(40.0+fcGyroLevel))
 	#define fcGL2 (1.0-fcGL1)
-	//#define GroundAccelprimlimit 0.25 // m/s²
-	//#define	GroundGyroprimlimit 0.2 // rad/s²	
-	#define GroundAccelprimlimit 5.0 // m/s²
-	#define	GroundGyroprimlimit 0.05 // rad/s²	
+	#define GroundAccelprimlimit 0.9 // m/s²
+	#define	GroundGyroprimlimit 0.3 // rad/s²	
 	
 	mpud::raw_axes_t accelRaw;
 	mpud::raw_axes_t gyroRaw;

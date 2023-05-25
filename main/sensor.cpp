@@ -984,7 +984,7 @@ static void processIMU(void *pvParameters)
 			UiPrim = accelISUNEDBODY.x - GravIMU.x - gyroISUNEDBODY.y * Vbi.z + gyroISUNEDBODY.z * Vbi.y;
 			ViPrim = accelISUNEDBODY.x - GravIMU.y - gyroISUNEDBODY.z * Vbi.x + gyroISUNEDBODY.x * Vbi.z;			
 			WiPrim = accelISUNEDBODY.x - GravIMU.z - gyroISUNEDBODY.y * Vbi.x + gyroISUNEDBODY.x * Vbi.y;
-			// compte UiPrim, ViPrim and WiPrim derivative
+			// compute UiPrim, ViPrim and WiPrim derivative
 			deltaUiPrim = UiPrim - UiPrimFilt;
 			UiPrimPrim = UiPrimPrim + betaAcc * deltaUiPrim;
 			UiPrimFilt = UiPrimFilt + alphaAcc * deltaUiPrim + UiPrimPrim * dtGyr;
@@ -1006,13 +1006,6 @@ static void processIMU(void *pvParameters)
 			VziPrim =sinPitch * UiPrim + sinRoll * cosPitch * ViPrim + cosRoll * cosPitch * WiPrim;
 			// compute baro inertial vertical speed
 			Vzbi = fcAcc1 * (Vzbi + VziPrim * dtGyr) + fcAcc2 * Vzbaro;
-			// compute baro inertial total energy
-			Vztotbiraw = Vzbi + ( Vbi.x * VbiPrim.x + Vbi.y * VbiPrim.y + Vbi.z * VbiPrim.z ) / GRAVITY;
-			// filter raw total energy
-			deltaVztot = Vztotbiraw - Vztot;
-			VztotPrim = VztotPrim + betaVztot * deltaVztot;
-			Vztot = Vztot + alphaVztot * deltaVztot + VztotPrim * dtdynP;
-
 				
 		} else {
 			// Not moving
@@ -1430,6 +1423,13 @@ void readSensors(void *pvParameters){
 		WpPrim = WpPrim + betaVelAcc * deltaWp;
 		WpFilt = WpFilt + alphaVelAcc * deltaWp + WpPrim * dtdynP;
 		
+		// compute baro inertial total energy
+		Vztotbiraw = Vzbi + ( Vbi.x * VbiPrim.x + Vbi.y * VbiPrim.y + Vbi.z * VbiPrim.z ) / GRAVITY;
+		// filter raw total energy
+		deltaVztot = Vztotbiraw - Vztot;
+		VztotPrim = VztotPrim + betaVztot * deltaVztot;
+		Vztot = Vztot + alphaVztot * deltaVztot + VztotPrim * dtdynP;		
+		
 		if ( SENstream && BIAS_Init > 0 ) {
 		/* Sensor data
 			$S,			
@@ -1465,19 +1465,28 @@ void readSensors(void *pvParameters){
 			ALT in cm,
 			Vzbaro in cm/s,
 			AoA angle in mrad,
-			AoB  angle in mrad
+			AoB  angle in mrad,
+			UiPrim in cm/s²,
+			ViPrim in cm/s²,
+			WiPrim in cm/s²,
+			Vbi.x in cm/s,
+			Vbi.y in cm/s,
+			Vbi.z in cm/s, 
+			Vztot in cm/s
 			<CR><LF>		
 		*/
 	
 		
-			sprintf(str,"$S,%lld,%i,%lld,%i,%i,%i,%i,%1d,%2d,%lld,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",
+			sprintf(str,"$S,%lld,%i,%lld,%i,%i,%i,%i,%1d,%2d,%lld,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",
 				statTime, (int32_t)(statP*100.0), teTime,(int32_t)(teP*100.0), (int16_t)(dynP*10), (int16_t)(OATemp*10.0), (int16_t)(MPUtempcel*10.0), chosenGnss->fix, chosenGnss->numSV,
 				(int64_t)(chosenGnss->time*1000.0), (int32_t)(chosenGnss->coordinates.altitude*100), (int16_t)(chosenGnss->speed.x*100), (int16_t)(chosenGnss->speed.y*100), (int16_t)(chosenGnss->speed.z*100),
 				(int32_t)(Pitch*1000.0), (int32_t)(Roll*1000.0), (int32_t)(Yaw*1000.0),(int32_t)(free_Pitch*1000.0), (int32_t)(free_Roll*1000.0), (int32_t)(free_Yaw*1000.0),
 				(int32_t)(IMUBiasx*100000.0), (int32_t)(IMUBiasy*100000.0), (int32_t)(IMUBiasz*100000.0), (int32_t)(alternategzBias*100000.0), (int32_t)(AccelGravModuleFilt*100000.0),(int32_t)(GRAVITY*100000.0),
 				(int32_t)(GyroModulePrimLevel*100000.0), (int32_t)(AccelModulePrimLevel*100000.0),
-				(int16_t)(CAS*100), (int16_t)(CASprim*100), (int16_t)(TAS*100), (int16_t)(TASprim*100), (int32_t)(ALT*100), (int16_t)(Vzbaro*100),
-				(int16_t)(AoA*1000), (int16_t)(AoB*1000) );
+				(int32_t)(CAS*100), (int32_t)(CASprim*100), (int32_t)(TAS*100), (int32_t)(TASprim*100), (int32_t)(ALT*100), (int32_t)(Vzbaro*100),
+				(int32_t)(AoA*1000), (int32_t)(AoB*1000),
+				(int32_t)(UiPrim*100), (int32_t)(ViPrim*100), (int32_t)(WiPrim*100), (int32_t)(Vbi.x*100), (int32_t)(Vbi.y*100), (int32_t)(Vbi.z*100),				
+				(int32_t)(Vztot*100) );
 			Router::sendXCV(str);
 		}		
 		

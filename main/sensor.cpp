@@ -223,6 +223,9 @@ static float sinDHeading = 0.0;
 static float Up = 0.0;
 static float Vp = 0.0;
 static float Wp = 0.0;
+static float UiPrim = 0.0;
+static float ViPrim = 0.0;
+static float WiPrim = 0.0;
 
 // installation and calibration variables
 mpud::float_axes_t currentAccelBias;
@@ -289,8 +292,6 @@ static float ALTraw;
 static float deltaALT;
 static float Vzbaro;
 static float ALT = 0.0;
-
-
 #define NCAS 7 // CAS alpha/beta filter coeff
 #define alphaCAS (2.0 * (2.0 * NCAS - 1.0) / NCAS / (NCAS + 1))
 #define betaCAS (6.0 / NCAS / (NCAS + 1) / 0.1)
@@ -298,6 +299,33 @@ static float ALT = 0.0;
 #define alphaALT (2.0 * (2.0 * NALT - 1.0) / NALT / (NALT + 1))
 #define betaALT (6.0 / NALT / (NALT + 1) / 0.1)
 #define RhoSLISA 1.225
+
+mpud::float_axes_t Vbi;
+mpud::float_axes_t VbiPrim;
+static float deltaUp = 0.0;
+static float UpPrim = 0.0;
+static float UpFilt = 0.0;
+static float deltaVp = 0.0;
+static float VpPrim = 0.0;
+static float VpFilt = 0.0;	
+static float deltaWp = 0.0;
+static float WpPrim = 0.0;
+static float WpFilt = 0.0;	
+static float Vzbi = 0.0;
+static float VziPrim = 0.0;
+static float Vztotbiraw = 0.0;
+static float deltaVztot = 0.0;
+static float Vztot = 0.0;
+static float VztotPrim = 0.0;
+#define NVztot 7 // CAS alpha/beta filter coeff
+#define alphaVztot (2.0 * (2.0 * NVztot - 1.0) / NVztot / (NVztot + 1.0))
+#define betaVztot (6.0 / NVztot / (NVztot + 1.0) / 0.1)
+#define NVelAcc 160 // pneumatic velocity variation alpha/beta filter coeff
+#define alphaVelAcc (2.0 * (2.0 * NVelAcc - 1.0) / NVelAcc / (NVelAcc + 1.0))
+#define betaVelAcc (6.0 / NVelAcc / (NVelAcc + 1.0) / 0.1)
+
+
+
 
 
 
@@ -589,10 +617,10 @@ void MahonyUpdateIMU(float dt, float gxraw, float gyraw, float gzraw,
 					float ax, float ay, float az, 
 					float &Bias_Gx, float &Bias_Gy, float &Bias_Gz ) {
 
-#define Nbias 3000 // very long period for extracting error rate of change between IMU quaternion and free quaternion
+#define Nbias 2000 // very long period for extracting error rate of change between IMU quaternion and free quaternion
 #define alphaBias (2.0 * (2.0 * Nbias - 1.0) / Nbias / (Nbias + 1.0))
-#define betaBias (6.0 / Nbias / (Nbias + 1.0) / 0.1)
-#define Kbias 21 // gain to apply to error rate to be homogeneous to gyro bias. experimental, TODO need to be adjusted
+#define betaBias (6.0 / Nbias / (Nbias + 1.0) / 0.025)
+#define Kbias 1 // gain to apply to error rate to be homogeneous to gyro bias. experimental, TODO need to be adjusted
 #define fcGrav 3.0 // 3Hz low pass to filter for testing stability criteria
 #define fcgrav1 (40.0/(40.0+fcGrav))
 #define fcgrav2 (1.0-fcgrav1)
@@ -781,10 +809,27 @@ static void processIMU(void *pvParameters)
 	#define fcGL1 (40.0/(40.0+fcGyroLevel))
 	#define fcGL2 (1.0-fcGL1)
 	#define GroundAccelprimlimit 0.9 // m/s²
-	#define	GroundGyroprimlimit 0.3 // rad/s²	
+	#define	GroundGyroprimlimit 0.3 // rad/s²
+	#define PeriodAcc 5 // period for Kinetic acceleration complementary filter
+	#define fcAcc1 (40.0/(40.0+ (1/PeriodAcc)))
+	#define fcAcc2 (1.0-fcAcc1)	
 	
 	mpud::raw_axes_t accelRaw;
 	mpud::raw_axes_t gyroRaw;
+	
+	float deltaUiPrim = 0.0;
+	float UiPrimPrim = 0.0;
+	float UiPrimFilt = 0.0;
+	float deltaViPrim = 0.0;
+	float ViPrimPrim = 0.0;
+	float ViPrimFilt = 0.0;
+	float deltaWiPrim = 0.0;
+	float WiPrimPrim = 0.0;
+	float WiPrimFilt = 0.0;
+
+	#define NAccelPrim 5 // alpha/beta filter coeff for accel derivaive estimation
+	#define alphaAcc (2.0 * (2.0 * NAccelPrim - 1.0) / NAccelPrim / (NAccelPrim + 1.0))
+	#define betaAcc (6.0 / NAccelPrim / (NAccelPrim + 1.0) / 0.025)	
 
 	// variables for accel calibration
 	float accelMaxx = 0.0;
@@ -805,6 +850,7 @@ static void processIMU(void *pvParameters)
 	float GyBias = 0.0;
 	float GzBias = 0.0;
 	// variables for gravity estimation
+	mpud::float_axes_t GravIMU;	
 	float Gravx = 0.0;
 	float Gravy = 0.0;
 	float Gravz = 0.0;
@@ -814,7 +860,7 @@ static void processIMU(void *pvParameters)
 	float YawInit = 0.0;
 		
 	mpud::float_axes_t gravISUNEDBODY;
-	mpud::float_axes_t Vbi;
+
 	// get gyro bias
 	mpud::float_axes_t currentGyroBias = gyro_bias.get();
 	// TODO estimation of gyro gain
@@ -884,19 +930,18 @@ static void processIMU(void *pvParameters)
 			// TODO compute inertial and baro inertial speeds
             // Ziprim := (uiprim * sin(Pitch) + cos(Pitch) * sin(Roll) * viprim + cos(Pitch) * cos(Roll) * wiprim);
 			if ( TAS > 10.0 ) {
-				Vbi.x = Up;
-				Vbi.y = Vp;
-				Vbi.y = Wp;
+			// estimate gravity in body frame taking into account centrifugal corrections
+				gravISUNEDBODY.x = accelISUNEDBODY.x - gyroISUNEDBODY.y * Vbi.z + gyroISUNEDBODY.z * Vbi.y;
+				gravISUNEDBODY.y = accelISUNEDBODY.y - gyroISUNEDBODY.z * Vbi.x + gyroISUNEDBODY.x * Vbi.z;
+				gravISUNEDBODY.z = accelISUNEDBODY.z + gyroISUNEDBODY.y * Vbi.x - gyroISUNEDBODY.x * Vbi.y;
 			} else {
-				Vbi.x = 0.0;
-				Vbi.y = 0.0;
-				Vbi.z = 0.0;
+				// estimate gravity in body frame using accels only
+				gravISUNEDBODY.x = accelISUNEDBODY.x;
+				gravISUNEDBODY.y = accelISUNEDBODY.y;
+				gravISUNEDBODY.z = accelISUNEDBODY.z;
 			}
 
-			// estimate gravity in body frame taking into account centrifugal corrections
-			gravISUNEDBODY.x = accelISUNEDBODY.x - gyroISUNEDBODY.y * Vbi.z + gyroISUNEDBODY.z * Vbi.y;
-			gravISUNEDBODY.y = accelISUNEDBODY.y - gyroISUNEDBODY.z * Vbi.x + gyroISUNEDBODY.x * Vbi.z;
-			gravISUNEDBODY.z = accelISUNEDBODY.z + gyroISUNEDBODY.y * Vbi.x - gyroISUNEDBODY.x * Vbi.y;
+
 
 			// Update IMU quaternion
 			// gyroISUNEDBODY corresponds to raw gyro and BiasQuatGx,y,z to the gyros bias
@@ -929,7 +974,45 @@ static void processIMU(void *pvParameters)
 			cosRoll = cos( Roll );
 			sinRoll = sin( Roll );
 			cosPitch = cos( Pitch );
-			sinPitch = sin( Pitch );			
+			sinPitch = sin( Pitch );
+			
+			GravIMU.x = GRAVITY * 2.0 * (q1 * q3 - q0 * q2);
+			GravIMU.y = -GRAVITY * 2.0 * (q2 * q3 + q0 * q1);
+			GravIMU.z = -GRAVITY * (q0 * q0 - q1 * q1 - q2 * q2 + q3 * q3);
+
+			// compute kinetic acceleration from accels, gravity from IMU and centrifugal forces
+			UiPrim = accelISUNEDBODY.x - GravIMU.x - gyroISUNEDBODY.y * Vbi.z + gyroISUNEDBODY.z * Vbi.y;
+			ViPrim = accelISUNEDBODY.x - GravIMU.y - gyroISUNEDBODY.z * Vbi.x + gyroISUNEDBODY.x * Vbi.z;			
+			WiPrim = accelISUNEDBODY.x - GravIMU.z - gyroISUNEDBODY.y * Vbi.x + gyroISUNEDBODY.x * Vbi.y;
+			// compte UiPrim, ViPrim and WiPrim derivative
+			deltaUiPrim = UiPrim - UiPrimFilt;
+			UiPrimPrim = UiPrimPrim + betaAcc * deltaUiPrim;
+			UiPrimFilt = UiPrimFilt + alphaAcc * deltaUiPrim + UiPrimPrim * dtGyr;
+			deltaViPrim = ViPrim - ViPrimFilt;
+			ViPrimPrim = ViPrimPrim + betaAcc * deltaViPrim;
+			ViPrimFilt = ViPrimFilt + alphaAcc * deltaViPrim + ViPrimPrim * dtGyr;
+			deltaWiPrim = WiPrim - WiPrimFilt;
+			WiPrimPrim = WiPrimPrim + betaAcc * deltaWiPrim;
+			WiPrimFilt = WiPrimFilt + alphaAcc * deltaWiPrim + WiPrimPrim * dtGyr;
+			// compute baro internial acceleration
+			VbiPrim.x = fcAcc1 * ( VbiPrim.x + UiPrimPrim * dtGyr ) + fcAcc2 * UpPrim;
+			VbiPrim.y = fcAcc1 * ( VbiPrim.y + ViPrimPrim * dtGyr ) + fcAcc2 * VpPrim;
+			VbiPrim.z = fcAcc1 * ( VbiPrim.z + WiPrimPrim * dtGyr ) + fcAcc2 * WpPrim;
+			// compute baro inertial speed
+			Vbi.x = fcAcc1 * ( Vbi.x + UiPrim * dtGyr ) + fcAcc2 * Up;
+			Vbi.y = fcAcc1 * ( Vbi.y + ViPrim * dtGyr ) + fcAcc2 * Vp;
+			Vbi.z = fcAcc1 * ( Vbi.z + WiPrim * dtGyr ) + fcAcc2 * Wp;
+			// compute inertial vertical acceleration
+			VziPrim =sinPitch * UiPrim + sinRoll * cosPitch * ViPrim + cosRoll * cosPitch * WiPrim;
+			// compute baro inertial vertical speed
+			Vzbi = fcAcc1 * (Vzbi + VziPrim * dtGyr) + fcAcc2 * Vzbaro;
+			// compute baro inertial total energy
+			Vztotbiraw = Vzbi + ( Vbi.x * VbiPrim.x + Vbi.y * VbiPrim.y + Vbi.z * VbiPrim.z ) / GRAVITY;
+			// filter raw total energy
+			deltaVztot = Vztotbiraw - Vztot;
+			VztotPrim = VztotPrim + betaVztot * deltaVztot;
+			Vztot = Vztot + alphaVztot * deltaVztot + VztotPrim * dtdynP;
+
 				
 		} else {
 			// Not moving
@@ -1223,13 +1306,12 @@ void readSensors(void *pvParameters){
 	float CLA = 5.75; // CLA=2*PI/(1+2/AR) = 5.75 for LS6 5.98 for Ventus 3
 	float KAoB = 200; // 200 for LS6  5.98 for Ventus 3
 	float KGx = 4.1; // 4.1 for LS6 and 12 for Ventus 3 
-
 	#define FreqAlpha 1.5 // Hz
 	#define fcAoA1 (10.0/(10.0+FreqAlpha))
 	#define fcAoA2 (1-fcAoA1)
 	#define FreqBeta 1.0 // Hz
 	#define fcAoB1 (10.0/(10.0+FreqBeta))
-	#define fcAoB2 (1-fcAoB1)	
+	#define fcAoB2 (1-fcAoB1)
 	
 	int client_sync_dataIdx = 0;
 
@@ -1337,6 +1419,16 @@ void readSensors(void *pvParameters){
 		Up = cosPitch * cosDHeading * Vh - sinPitch * Vzbaro;
 		Vp = ( sinRoll * sinPitch * cosDHeading - cosRoll * sinDHeading ) * Vh + sinRoll * cosPitch * Vzbaro;
 		Wp = ( cosRoll * sinPitch * cosDHeading + sinRoll * sinDHeading ) * Vh + cosRoll * cosPitch * Vzbaro;
+		
+		deltaUp = Up - UpFilt;
+		UpPrim = UpPrim + betaVelAcc * deltaUp;
+		UpFilt = UpFilt + alphaVelAcc * deltaUp + UpPrim * dtdynP;
+		deltaVp = Vp - VpFilt;
+		VpPrim = VpPrim + betaVelAcc * deltaVp;
+		VpFilt = VpFilt + alphaVelAcc * deltaVp + VpPrim * dtdynP;
+		deltaWp = Wp - WpFilt;
+		WpPrim = WpPrim + betaVelAcc * deltaWp;
+		WpFilt = WpFilt + alphaVelAcc * deltaWp + WpPrim * dtdynP;
 		
 		if ( SENstream && BIAS_Init > 0 ) {
 		/* Sensor data

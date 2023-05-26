@@ -269,6 +269,8 @@ static int32_t cur_gyro_bias[3];
 bool IMUstream = false; // IMU FT stream
 bool SENstream = false; // Sensors FT stream
 bool CALstream = false; // accel calibration stream
+bool ACCBIAS = false; // reset XCVario when new accel biases entered
+bool INSTVAL = false; // reset XCVario when XCVario position parameters entered
 float localGravity = 9.807; // local gravity used during accel calibration. Value is entered using BT $CAL command
 uint16_t BIAS_Init = 0; // Bias initialization status (0= no init, n = nth bias calculation
 bool BIASInFLASH = false; // New BIAS stored in FLASH
@@ -976,7 +978,7 @@ static void processIMU(void *pvParameters)
 			cosPitch = cos( Pitch );
 			sinPitch = sin( Pitch );
 			
-			GravIMU.x = GRAVITY * 2.0 * (q1 * q3 - q0 * q2);
+			GravIMU.x = -GRAVITY * 2.0 * (q1 * q3 - q0 * q2);
 			GravIMU.y = -GRAVITY * 2.0 * (q2 * q3 + q0 * q1);
 			GravIMU.z = -GRAVITY * (q0 * q0 - q1 * q1 - q2 * q2 + q3 * q3);
 
@@ -1314,6 +1316,11 @@ void readSensors(void *pvParameters){
 
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		
+		if ( ACCBIAS || INSTVAL ) {
+			vTaskDelay(2000 / portTICK_PERIOD_MS);
+			esp_restart();
+		}
+		
 		ProcessTimeSensors = (esp_timer_get_time()/1000.0);
 		
 		// get raw static pressure
@@ -1395,41 +1402,43 @@ void readSensors(void *pvParameters){
 			prevCL = CL;
 			AoARaw = -(accelISUNEDBODY.x / accelISUNEDBODY.z) + Speed2Fly.cw( CAS ) / Speed2Fly.getN();
 			AoA = fcAoA1 * ( AoA + dAoA ) + fcAoA2 * AoARaw ;
-			AoB = fcAoB1 * AoB + fcAoB2 * ( KAoB * WingLoad * accelISUNEDBODY.y / dynP - KGx * gyroISUNEDBODY.x / TAS);			
+			AoB = fcAoB1 * AoB + fcAoB2 * ( KAoB * WingLoad * accelISUNEDBODY.y / dynP - KGx * gyroISUNEDBODY.x / TAS);	
+			// Compute trajectory pneumatic speeds components in body frame NEDBODY
+			// Vh corresponds to the trajectory horizontal speed and Vzbaro corresponds to the vertical speed
+			Vh = TAS * cos( Pitch + cosRoll * AoA + sinRoll * AoB );
+			// Pitch and Roll correspond to the attitude of the glider and DHeading corresponds to the heading deviation due to the Beta and Alpha.
+			DHeading =(AoB * cosRoll - AoA * sinRoll ) / ( cosPitch + AoB * sinPitch * sinRoll + AoA * sinPitch * cosRoll );
+			cosDHeading = cos( DHeading );
+			sinDHeading = sin( DHeading );
+			// applying DCM from earth to body frame (using Pitch, Roll and DHeading Yaw angles) to Vh and Vzbaro trajectory components in earth frame to reproject speed in TE referential onto body axis. 
+			Up = cosPitch * cosDHeading * Vh - sinPitch * Vzbaro;
+			Vp = ( sinRoll * sinPitch * cosDHeading - cosRoll * sinDHeading ) * Vh + sinRoll * cosPitch * Vzbaro;
+			Wp = ( cosRoll * sinPitch * cosDHeading + sinRoll * sinDHeading ) * Vh + cosRoll * cosPitch * Vzbaro;
+			// compute acceleration from pneumatic velocities
+			deltaUp = Up - UpFilt;
+			UpPrim = UpPrim + betaVelAcc * deltaUp;
+			UpFilt = UpFilt + alphaVelAcc * deltaUp + UpPrim * dtdynP;
+			deltaVp = Vp - VpFilt;
+			VpPrim = VpPrim + betaVelAcc * deltaVp;
+			VpFilt = VpFilt + alphaVelAcc * deltaVp + VpPrim * dtdynP;
+			deltaWp = Wp - WpFilt;
+			WpPrim = WpPrim + betaVelAcc * deltaWp;
+			WpFilt = WpFilt + alphaVelAcc * deltaWp + WpPrim * dtdynP;
+			// compute baro inertial total energy
+			Vztotbiraw = Vzbi + ( Vbi.x * VbiPrim.x + Vbi.y * VbiPrim.y + Vbi.z * VbiPrim.z ) / GRAVITY;
+			// filter raw total energy
+			deltaVztot = Vztotbiraw - Vztot;
+			VztotPrim = VztotPrim + betaVztot * deltaVztot;
+			Vztot = Vztot + alphaVztot * deltaVztot + VztotPrim * dtdynP;	
 		} else {
 			AoA = 0.0;
 			AoB = 0.0;
+			Up = 0.0;
+			Vp = 0.0;
+			Wp = 0.0;
+			Vztot = 0.0;
 		}
 
-		// Compute trajectory pneumatic speeds components in body frame NEDBODY
-		// Vh corresponds to the trajectory horizontal speed and Vzbaro corresponds to the vertical speed
-		Vh = TAS * cos( Pitch + cosRoll * AoA + sinRoll * AoB );
-		// Pitch and Roll correspond to the attitude of the glider and DHeading corresponds to the heading deviation due to the Beta and Alpha.
-		DHeading =(AoB * cosRoll - AoA * sinRoll ) / ( cosPitch + AoB * sinPitch * sinRoll + AoA * sinPitch * cosRoll );
-		cosDHeading = cos( DHeading );
-		sinDHeading = sin( DHeading );
-		// applying DCM from earth to body frame (using Pitch, Roll and DHeading Yaw angles) to Vh and Vzbaro trajectory components in earth frame to reproject speed in TE referential onto body axis. 
-		Up = cosPitch * cosDHeading * Vh - sinPitch * Vzbaro;
-		Vp = ( sinRoll * sinPitch * cosDHeading - cosRoll * sinDHeading ) * Vh + sinRoll * cosPitch * Vzbaro;
-		Wp = ( cosRoll * sinPitch * cosDHeading + sinRoll * sinDHeading ) * Vh + cosRoll * cosPitch * Vzbaro;
-		
-		deltaUp = Up - UpFilt;
-		UpPrim = UpPrim + betaVelAcc * deltaUp;
-		UpFilt = UpFilt + alphaVelAcc * deltaUp + UpPrim * dtdynP;
-		deltaVp = Vp - VpFilt;
-		VpPrim = VpPrim + betaVelAcc * deltaVp;
-		VpFilt = VpFilt + alphaVelAcc * deltaVp + VpPrim * dtdynP;
-		deltaWp = Wp - WpFilt;
-		WpPrim = WpPrim + betaVelAcc * deltaWp;
-		WpFilt = WpFilt + alphaVelAcc * deltaWp + WpPrim * dtdynP;
-		
-		// compute baro inertial total energy
-		Vztotbiraw = Vzbi + ( Vbi.x * VbiPrim.x + Vbi.y * VbiPrim.y + Vbi.z * VbiPrim.z ) / GRAVITY;
-		// filter raw total energy
-		deltaVztot = Vztotbiraw - Vztot;
-		VztotPrim = VztotPrim + betaVztot * deltaVztot;
-		Vztot = Vztot + alphaVztot * deltaVztot + VztotPrim * dtdynP;		
-		
 		if ( SENstream && BIAS_Init > 0 ) {
 		/* Sensor data
 			$S,			

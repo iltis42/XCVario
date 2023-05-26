@@ -33,7 +33,7 @@ S2F *   Protocols::_s2f = 0;
 uint8_t Protocols::_protocol_version = 1;
 bool    Protocols::_can_send_error = false;
 
-char stream[100];
+char strx[200];
 
 Protocols::Protocols(S2F * s2f) {
 	_s2f = s2f;
@@ -577,58 +577,64 @@ void Protocols::parseNMEA( const char *str ){
 	} else if( !strncmp( str, "$ACC", 4 ) ) {
 		mpud::float_axes_t AccBias;	
 		mpud::float_axes_t AccGain;
+		AccBias.x = 2.0; // force value outside OK range
+		AccBias.y = 2.0;
+		AccBias.z = 2.0;
+		AccGain.x = 2.0;
+		AccGain.y = 2.0;
+		AccGain.z = 2.0;
 		sscanf( str,"$ACC,%f,%f,%f,%f,%f,%f",&AccBias.x,&AccBias.y,&AccBias.z,&AccGain.x,&AccGain.y,&AccGain.z);
-			
-			if ( (abs(AccBias.x) < 1) && (abs(AccBias.y) < 1) && (abs(AccBias.z) < 1) && (abs(AccGain.x-1) < 0.2) && (abs(AccGain.y-1) < 0.2) && (abs(AccGain.z-1) < 0.2) ) {
+		if ( (abs(AccBias.x) < 1) && (abs(AccBias.y) < 1) && (abs(AccBias.z) < 1) && (abs(AccGain.x-1) < 0.2) && (abs(AccGain.y-1) < 0.2) && (abs(AccGain.z-1) < 0.2) ) {
 			accl_bias.set(AccBias);
 			accl_gain.set(AccGain);
-			delay(100);
+			delay(200);
 			AccBias = accl_bias.get();
 			AccGain = accl_gain.get();
-			sprintf(stream,"$ACC IN FLASH, %1.4f, %1.4f, %1.4f, %1.4f, %1.4f, %1.4f\r\n",AccBias.x,AccBias.y,AccBias.z,AccGain.x,AccGain.y,AccGain.z );
-			Router::sendXCV(stream);
-			// reboot Vario so that new bias/gains are taken into effect
-			delay(100);
-			esp_restart();
+			sprintf(strx,"$ACC IN FLASH, %1.4f, %1.4f, %1.4f, %1.4f, %1.4f, %1.4f\r\n",AccBias.x,AccBias.y,AccBias.z,AccGain.x,AccGain.y,AccGain.z );
+			Router::sendXCV(strx);
+			ACCBIAS = true;
 		} else {
-			sprintf(stream,"$ACC format error. Need to type: $ACC,bias_x,bias_y,bias_z,gain_x,gain_y,gain_z\r\n");
-			Router::sendXCV(stream);
-			sprintf(stream,"example: $ACC,0.02,-0.001,0.004,1.02,0.98,1.003\r\n");
-			Router::sendXCV(stream);
+			sprintf(strx,"$ACC format error. Need to type: $ACC,bias_x,bias_y,bias_z,gain_x,gain_y,gain_z\r\n");
+			Router::sendXCV(strx);
+			sprintf(strx,"example: $ACC,0.02,-0.001,0.004,1.02,0.98,1.003\r\n");
+			Router::sendXCV(strx);
+			ACCBIAS = false;
 		}
 	} else if( !strncmp( str, "$INST", 5 ) ) {
-		float xcv_tilt, xcv_sway, xcv_distCG;	
+		float xcv_tilt = 4.0; // force value outside OK range
+		float xcv_sway = 4.0;
+		float xcv_distCG = 4.0;	
 		sscanf( str,"$INST,%f,%f,%f",&xcv_tilt,&xcv_sway,&xcv_distCG);
 		if ( (abs(xcv_tilt) < 0.4) && (abs(xcv_sway) < 0.4) && (xcv_distCG < 3) ) {
 			tilt.set(xcv_tilt);
 			sway.set(xcv_sway);
 			distCG.set(xcv_distCG);
-			delay(100);
+			delay(200);
 			xcv_tilt = tilt.get();
 			xcv_sway = sway.get();
 			xcv_distCG = distCG.get();
-			sprintf(stream,"$INST IN FLASH, %1.3f, %1.3f, %1.3f\r\n",xcv_tilt,xcv_sway,xcv_distCG);
-			Router::sendXCV(stream);
-			// reboot Vario so that new tilt, sway and distance to CG are taken in effect
-			delay(100);
-			esp_restart();
+			sprintf(strx,"$INST IN FLASH, %1.3f, %1.3f, %1.3f\r\n",xcv_tilt,xcv_sway,xcv_distCG);
+			Router::sendXCV(strx);
+			INSTVAL = true;
 		} else {
-			sprintf(stream,"$INST format error. Need to type: $INST,tilt,sway,dist_to_cg respectively in rad, rad and meter\r\n");
-			Router::sendXCV(stream);
-			sprintf(stream,"example: $INST,0.14,0.52,1.1\r\n");
-			Router::sendXCV(stream);
+			sprintf(strx,"$INST format error. Need to type: $INST,tilt,sway,dist_to_cg respectively in rad, rad and meter\r\n");
+			Router::sendXCV(strx);
+			sprintf(strx,"example: $INST,0.14,0.52,1.1\r\n");
+			Router::sendXCV(strx);
+			INSTVAL = false;
 		}		
 	} else if( !strncmp( str, "$CAL", 4 ) ) {
+		float localGravity = 9.0; // force value outside OK range
 		sscanf( str,"$INST,%f",&localGravity);
 		if  (abs(localGravity - 9.807) < 0.1) {
 			IMUstream = false;
 			SENstream = false;			
 			CALstream = true; // Accel calibration stream
 		} else {
-			sprintf(stream,"$CAL format error. Need to type: $CAL, local_gravity_value\r\n");
-			Router::sendXCV(stream);
-			sprintf(stream,"example: $CAL,9.803\r\n");
-			Router::sendXCV(stream);
+			sprintf(strx,"$CAL format error. Need to type: $CAL, local_gravity_value\r\n");
+			Router::sendXCV(strx);
+			sprintf(strx,"example: $CAL,9.803\r\n");
+			Router::sendXCV(strx);
 		}
 	}
 }

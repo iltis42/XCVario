@@ -237,6 +237,9 @@ float ViPrimFilt = 0.0;
 float deltaWiPrim = 0.0;
 float WiPrimPrim = 0.0;
 float WiPrimFilt = 0.0;
+float UpPrimFilt = 0.0;
+float VpPrimFilt = 0.0;
+float WpPrimFilt = 0.0;
 
 // installation and calibration variables
 mpud::float_axes_t currentAccelBias;
@@ -302,6 +305,7 @@ static float TASprim;
 static float ALTraw;
 static float deltaALT;
 static float Vzbaro;
+static float VzbaroFilt = 0.0;
 static float ALT = 0.0;
 #define NCAS 7 // CAS alpha/beta filter coeff
 #define alphaCAS (2.0 * (2.0 * NCAS - 1.0) / NCAS / (NCAS + 1))
@@ -603,6 +607,7 @@ void doAudio(){
 		Audio::setValues( te_vario.get(), s2f_delta );
 	}
 }
+
 
 void audioTask(void *pvParameters){
 	while (1)
@@ -927,7 +932,7 @@ static void processIMU(void *pvParameters)
 		}		
 
 		// if moving, speed > 10 m/s or ground bias estimation has ran more than "0" times TODO when operational BIAS_Init should be up to 10.
-		if (TAS > 10.0  || BIAS_Init > 0 ) {
+		if (TAS > 10.0  || BIAS_Init > 5 ) {
 			// first time in movement, if biais initialiazation was achieved, store bias and local gravity in FLASH
 			if ( !BIASInFLASH ) {
 				gyro_bias.set(currentGyroBias);
@@ -1007,17 +1012,17 @@ static void processIMU(void *pvParameters)
 			ViPrimPrimFilt = 0.75 * ViPrimPrimFilt + 0.25 * ViPrimPrim;
 			WiPrimPrimFilt = 0.75 * WiPrimPrimFilt + 0.25 * WiPrimPrim;			
 			// compute baro internial acceleration
-			VbiPrim.x = fcAcc1 * ( VbiPrim.x + UiPrimPrimFilt * dtGyr ) + fcAcc2 * UpPrim;
-			VbiPrim.y = fcAcc1 * ( VbiPrim.y + ViPrimPrimFilt * dtGyr ) + fcAcc2 * VpPrim;
-			VbiPrim.z = fcAcc1 * ( VbiPrim.z + WiPrimPrimFilt * dtGyr ) + fcAcc2 * WpPrim;
+			VbiPrim.x = fcAcc1 * ( VbiPrim.x + UiPrimPrimFilt * dtGyr ) + fcAcc2 * UpPrimFilt;
+			VbiPrim.y = fcAcc1 * ( VbiPrim.y + ViPrimPrimFilt * dtGyr ) + fcAcc2 * VpPrimFilt;
+			VbiPrim.z = fcAcc1 * ( VbiPrim.z + WiPrimPrimFilt * dtGyr ) + fcAcc2 * WpPrimFilt;
 			// compute baro inertial speed
-			Vbi.x = fcAcc1 * ( Vbi.x + UiPrimFilt * dtGyr ) + fcAcc2 * Up;
-			Vbi.y = fcAcc1 * ( Vbi.y + ViPrimFilt * dtGyr ) + fcAcc2 * Vp;
-			Vbi.z = fcAcc1 * ( Vbi.z + WiPrimFilt * dtGyr ) + fcAcc2 * Wp;
+			Vbi.x = fcAcc1 * ( Vbi.x + UiPrimFilt * dtGyr ) + fcAcc2 * UpFilt;
+			Vbi.y = fcAcc1 * ( Vbi.y + ViPrimFilt * dtGyr ) + fcAcc2 * VpFilt;
+			Vbi.z = fcAcc1 * ( Vbi.z + WiPrimFilt * dtGyr ) + fcAcc2 * WpFilt;
 			// compute inertial vertical acceleration
 			VziPrim =sinPitch * UiPrimFilt + sinRoll * cosPitch * ViPrimFilt + cosRoll * cosPitch * WiPrimFilt;
 			// compute baro inertial vertical speed
-			Vzbi = fcAcc1 * (Vzbi + VziPrim * dtGyr) + fcAcc2 * Vzbaro;
+			Vzbi = fcAcc1 * (Vzbi + VziPrim * dtGyr) + fcAcc2 * VzbaroFilt;
 				
 		} else {
 			// Not moving
@@ -1100,12 +1105,6 @@ static void processIMU(void *pvParameters)
 			IMU data in ISU and NED orientation
 				$I,
 				MPU (gyro) time in milli second,
-				Acceleration in MPU X-Axis in tenth milli m/s²,
-				Acceleration in MPU Y-Axis in tenth milli m/s²,
-				Acceleration in MPU Z-Axis in tenth milli m/s²,
-				Rotation MPU X-Axis in hundredth of milli rad/s,
-				Rotation MPU Y-Axis in hundredth of milli rad/s,
-				Rotation MPU Z-Axis in hundredth of milli rad/s,
 				Acceleration in BODY X-Axis in tenth milli m/s²,
 				Acceleration in BODY Y-Axis in tenth milli m/s²,
 				Acceleration in BODU Z-Axis in tenth milli m/s²,				
@@ -1114,10 +1113,8 @@ static void processIMU(void *pvParameters)
 				Rotation BODY Z-Axis in hundredth of milli rad/s,				
 				<CR><LF>	
 			*/			
-			sprintf(str,"$I,%lld,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",
+			sprintf(str,"$I,%lld,%i,%i,%i,%i,%i,%i\r\n",
 				gyroTime,
-				(int32_t)(accelISUNEDMPU.x*10000.0), (int32_t)(accelISUNEDMPU.y*10000.0), (int32_t)(accelISUNEDMPU.z*10000.0),
-				(int32_t)(gyroISUNEDMPU.x*100000.0), (int32_t)(gyroISUNEDMPU.y*100000.0),(int32_t)(gyroISUNEDMPU.z*100000.0),
 				(int32_t)(accelISUNEDBODY.x*10000.0), (int32_t)(accelISUNEDBODY.y*10000.0), (int32_t)(accelISUNEDBODY.z*10000.0),
 				(int32_t)(gyroISUNEDBODY.x*100000.0), (int32_t)(gyroISUNEDBODY.y*100000.0),(int32_t)(gyroISUNEDBODY.z*100000.0) );
 			Router::sendXCV(str);
@@ -1182,8 +1179,8 @@ static void processIMU(void *pvParameters)
 		ProcessTimeIMU = (esp_timer_get_time()/1000.0) - gyroTime;
 		if ( ProcessTimeIMU > 5 ) {
 //			ESP_LOGI(FNAME,"processIMU: %i / 25", (int16_t)(ProcessTimeIMU) );
-			sprintf(str,"IMU Process : %i ms\r\n",(int16_t)(ProcessTimeIMU) );
-			Router::sendXCV(str);			
+//TODO			sprintf(str,"IMU Process : %i ms\r\n",(int16_t)(ProcessTimeIMU) );
+//			Router::sendXCV(str);			
 		}		
 
 		mtick++;
@@ -1360,7 +1357,7 @@ void readSensors(void *pvParameters){
 			dynPTime = esp_timer_get_time()/1000.0; // record dynPTimeTE time in milli second		
 			dtdynP = (dynPTime - prevdynPTime) / 1000.0; // period between last two valid dynamic pressure samples in second			
 			dynP = 0;
-			if ( p > 0 ) dynP = p;
+			if ( p > 60 ) dynP = p; // TODO decide if a dynP should be aboce certain value to be valid
 			// for compatibility with Eckhard code
 			dynamicP = 0;
 			if ( p > 60 ) dynamicP = p; 
@@ -1399,6 +1396,8 @@ void readSensors(void *pvParameters){
 		deltaALT = ALTraw - ALT;
 		Vzbaro = Vzbaro + betaALT * deltaALT;
 		ALT = ALT + alphaALT * deltaALT + Vzbaro * dtstat;
+		// Small LP on Vzbaro TODO check if LP is necessary
+		VzbaroFilt = 0.75 * VzbaroFilt + 0.25 * Vzbaro;
 
 		// compute AoA (Angle of attack) and AoB (Angle od slip)
 		WingLoad = gross_weight.get() / polar_wingarea.get();  // should be only computed when pilot change weight settings in XCVario
@@ -1424,10 +1423,10 @@ void readSensors(void *pvParameters){
 		DHeading =(AoB * cosRoll - AoA * sinRoll ) / ( cosPitch + AoB * sinPitch * sinRoll + AoA * sinPitch * cosRoll );
 		cosDHeading = cos( DHeading );
 		sinDHeading = sin( DHeading );
-		// applying DCM from earth to body frame (using Pitch, Roll and DHeading Yaw angles) to Vh and Vzbaro trajectory components in earth frame to reproject speed in TE referential onto body axis. 
-		Up = cosPitch * cosDHeading * Vh - sinPitch * Vzbaro;
-		Vp = ( sinRoll * sinPitch * cosDHeading - cosRoll * sinDHeading ) * Vh + sinRoll * cosPitch * Vzbaro;
-		Wp = ( cosRoll * sinPitch * cosDHeading + sinRoll * sinDHeading ) * Vh + cosRoll * cosPitch * Vzbaro;
+		// applying DCM from earth to body frame (using Pitch, Roll and DHeading Yaw angles) to Vh and VzbaroFilt trajectory components in earth frame to reproject speed in TE referential onto body axis. 
+		Up = cosPitch * cosDHeading * Vh - sinPitch * VzbaroFilt;
+		Vp = ( sinRoll * sinPitch * cosDHeading - cosRoll * sinDHeading ) * Vh + sinRoll * cosPitch * VzbaroFilt;
+		Wp = ( cosRoll * sinPitch * cosDHeading + sinRoll * sinDHeading ) * Vh + cosRoll * cosPitch * VzbaroFilt;
 		// compute acceleration from pneumatic velocities
 		deltaUp = Up - UpFilt;
 		UpPrim = UpPrim + betaVelAcc * deltaUp;
@@ -1438,6 +1437,10 @@ void readSensors(void *pvParameters){
 		deltaWp = Wp - WpFilt;
 		WpPrim = WpPrim + betaVelAcc * deltaWp;
 		WpFilt = WpFilt + alphaVelAcc * deltaWp + WpPrim * dtdynP;
+		// Small LP on prim values TODO check if LP is necessary
+		UpPrimFilt = 0.75 * UpPrimFilt + 0.25 * UpPrim;
+		VpPrimFilt = 0.75 * VpPrimFilt + 0.25 * VpPrim;
+		WpPrimFilt = 0.75 * WpPrimFilt + 0.25 * WpPrim;			
 		// compute baro inertial total energy
 		Vztotbiraw = Vzbi + ( Vbi.x * VbiPrim.x + Vbi.y * VbiPrim.y + Vbi.z * VbiPrim.z ) / GRAVITY;
 		// filter raw total energy
@@ -1478,7 +1481,7 @@ void readSensors(void *pvParameters){
 			TAS in cm/s,
 			TASprim in cm/s²,
 			ALT in cm,
-			Vzbaro in cm/s,
+			VzbaroFilt in cm/s,
 			AoA angle in mrad,
 			AoB  angle in mrad,
 			UiPrim in cm/s²,
@@ -1491,14 +1494,13 @@ void readSensors(void *pvParameters){
 			<CR><LF>		
 		*/
 	
-		
 			sprintf(str,"$S,%lld,%i,%lld,%i,%i,%i,%i,%1d,%2d,%lld,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",
 				statTime, (int32_t)(statP*100.0), teTime,(int32_t)(teP*100.0), (int16_t)(dynP*10), (int16_t)(OATemp*10.0), (int16_t)(MPUtempcel*10.0), chosenGnss->fix, chosenGnss->numSV,
 				(int64_t)(chosenGnss->time*1000.0), (int32_t)(chosenGnss->coordinates.altitude*100), (int16_t)(chosenGnss->speed.x*100), (int16_t)(chosenGnss->speed.y*100), (int16_t)(chosenGnss->speed.z*100),
 				(int32_t)(Pitch*1000.0), (int32_t)(Roll*1000.0), (int32_t)(Yaw*1000.0),(int32_t)(free_Pitch*1000.0), (int32_t)(free_Roll*1000.0), (int32_t)(free_Yaw*1000.0),
 				(int32_t)(BiasQuatGx*100000.0), (int32_t)(BiasQuatGy*100000.0), (int32_t)(BiasQuatGz*100000.0), (int32_t)(alternategzBias*100000.0), (int32_t)(AccelGravModuleFilt*100000.0),(int32_t)(GRAVITY*100000.0),
 				(int32_t)(GyroModulePrimLevel*100000.0), (int32_t)(AccelModulePrimLevel*100000.0),
-				(int32_t)(CAS*100), (int32_t)(CASprim*100), (int32_t)(TAS*100), (int32_t)(TASprim*100), (int32_t)(ALT*100), (int32_t)(Vzbaro*100),
+				(int32_t)(CAS*100), (int32_t)(CASprim*100), (int32_t)(TAS*100), (int32_t)(TASprim*100), (int32_t)(ALT*100), (int32_t)(VzbaroFilt*100),
 				(int32_t)(AoA*1000), (int32_t)(AoB*1000),
 				(int32_t)(UiPrim*100), (int32_t)(ViPrim*100), (int32_t)(WiPrim*100), (int32_t)(Vbi.x*100), (int32_t)(Vbi.y*100), (int32_t)(Vbi.z*100),				
 				(int32_t)(Vztot*100) );

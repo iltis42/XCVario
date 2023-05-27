@@ -583,6 +583,9 @@ void Protocols::parseNMEA( const char *str ){
 		AccGain.x = 2.0;
 		AccGain.y = 2.0;
 		AccGain.z = 2.0;
+		IMUstream = false; // no FT stream
+		SENstream = false;
+		CALstream = false;		
 		sscanf( str,"$SETACC,%f,%f,%f,%f,%f,%f",&AccBias.x,&AccBias.y,&AccBias.z,&AccGain.x,&AccGain.y,&AccGain.z);
 		if ( (abs(AccBias.x) < 1) && (abs(AccBias.y) < 1) && (abs(AccBias.z) < 1) && (abs(AccGain.x-1) < 0.2) && (abs(AccGain.y-1) < 0.2) && (abs(AccGain.z-1) < 0.2) ) {
 			accl_bias.set(AccBias);
@@ -590,7 +593,11 @@ void Protocols::parseNMEA( const char *str ){
 			accl_gain.set(AccGain);
 			delay(200);
 			sprintf(strx,"OK\r\n");
+			Router::sendXCV(strx);
+			sprintf(strx,"\r\n");
 			Router::sendXCV(strx);			
+			sleep(3);
+			esp_restart();				
 		} else {
 			sprintf(strx,"$ACC format error. Need to type: $ACC,bias_x,bias_y,bias_z,gain_x,gain_y,gain_z\r\n");
 			Router::sendXCV(strx);
@@ -600,6 +607,9 @@ void Protocols::parseNMEA( const char *str ){
 	} else if( !strncmp( str, "$GETACC", 7 ) ) {
 		mpud::float_axes_t AccBias;	
 		mpud::float_axes_t AccGain;
+		IMUstream = false; // no FT stream
+		SENstream = false;
+		CALstream = false;		
 		AccBias = accl_bias.get();
 		AccGain = accl_gain.get();
 		sprintf(strx,"$ACC IN FLASH, %1.4f, %1.4f, %1.4f, %1.4f, %1.4f, %1.4f\r\n",AccBias.x,AccBias.y,AccBias.z,AccGain.x,AccGain.y,AccGain.z );
@@ -607,7 +617,10 @@ void Protocols::parseNMEA( const char *str ){
 	} else if( !strncmp( str, "$SETINST", 8 ) ) {
 		float xcv_tilt = 4.0; // force value outside OK range
 		float xcv_sway = 4.0;
-		float xcv_distCG = 4.0;	
+		float xcv_distCG = 4.0;
+		IMUstream = false; // no FT stream
+		SENstream = false;
+		CALstream = false;		
 		sscanf( str,"$SETINST,%f,%f,%f",&xcv_tilt,&xcv_sway,&xcv_distCG);
 		if ( (abs(xcv_tilt) < 0.4) && (abs(xcv_sway) < 0.4) && (xcv_distCG < 3) ) {
 			tilt.set(xcv_tilt);
@@ -617,7 +630,12 @@ void Protocols::parseNMEA( const char *str ){
 			distCG.set(xcv_distCG);
 			delay(200);
 			sprintf(strx,"OK\r\n");
+			Router::sendXCV(strx);
+			sprintf(strx,"\r\n");
 			Router::sendXCV(strx);			
+			sleep(3);
+
+			esp_restart();			
 		} else {
 			sprintf(strx,"$INST format error. Need to type: $INST,tilt,sway,dist_to_cg respectively in rad, rad and meter\r\n");
 			Router::sendXCV(strx);
@@ -628,6 +646,9 @@ void Protocols::parseNMEA( const char *str ){
 		float xcv_tilt;
 		float xcv_sway;
 		float xcv_distCG;
+		IMUstream = false; // no FT stream
+		SENstream = false;
+		CALstream = false;		
 		xcv_tilt = tilt.get();
 		xcv_sway = sway.get();
 		xcv_distCG = distCG.get();

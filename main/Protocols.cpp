@@ -574,7 +574,7 @@ void Protocols::parseNMEA( const char *str ){
 			SENstream = false;			
 			CALstream = true; // Accel calibration stream
 		}
-	} else if( !strncmp( str, "$ACC", 4 ) ) {
+	} else if( !strncmp( str, "$SETACC", 7 ) ) {
 		mpud::float_axes_t AccBias;	
 		mpud::float_axes_t AccGain;
 		AccBias.x = 2.0; // force value outside OK range
@@ -583,49 +583,60 @@ void Protocols::parseNMEA( const char *str ){
 		AccGain.x = 2.0;
 		AccGain.y = 2.0;
 		AccGain.z = 2.0;
-		sscanf( str,"$ACC,%f,%f,%f,%f,%f,%f",&AccBias.x,&AccBias.y,&AccBias.z,&AccGain.x,&AccGain.y,&AccGain.z);
+		sscanf( str,"$SETACC,%f,%f,%f,%f,%f,%f",&AccBias.x,&AccBias.y,&AccBias.z,&AccGain.x,&AccGain.y,&AccGain.z);
 		if ( (abs(AccBias.x) < 1) && (abs(AccBias.y) < 1) && (abs(AccBias.z) < 1) && (abs(AccGain.x-1) < 0.2) && (abs(AccGain.y-1) < 0.2) && (abs(AccGain.z-1) < 0.2) ) {
 			accl_bias.set(AccBias);
+			delay(200);
 			accl_gain.set(AccGain);
 			delay(200);
-			AccBias = accl_bias.get();
-			AccGain = accl_gain.get();
-			sprintf(strx,"$ACC IN FLASH, %1.4f, %1.4f, %1.4f, %1.4f, %1.4f, %1.4f\r\n",AccBias.x,AccBias.y,AccBias.z,AccGain.x,AccGain.y,AccGain.z );
-			Router::sendXCV(strx);
-			ACCBIAS = true;
+			sprintf(strx,"OK\r\n");
+			Router::sendXCV(strx);			
 		} else {
 			sprintf(strx,"$ACC format error. Need to type: $ACC,bias_x,bias_y,bias_z,gain_x,gain_y,gain_z\r\n");
 			Router::sendXCV(strx);
 			sprintf(strx,"example: $ACC,0.02,-0.001,0.004,1.02,0.98,1.003\r\n");
 			Router::sendXCV(strx);
-			ACCBIAS = false;
 		}
-	} else if( !strncmp( str, "$INST", 5 ) ) {
+	} else if( !strncmp( str, "$GETACC", 7 ) ) {
+		mpud::float_axes_t AccBias;	
+		mpud::float_axes_t AccGain;
+		AccBias = accl_bias.get();
+		AccGain = accl_gain.get();
+		sprintf(strx,"$ACC IN FLASH, %1.4f, %1.4f, %1.4f, %1.4f, %1.4f, %1.4f\r\n",AccBias.x,AccBias.y,AccBias.z,AccGain.x,AccGain.y,AccGain.z );
+		Router::sendXCV(strx);		
+	} else if( !strncmp( str, "$SETINST", 8 ) ) {
 		float xcv_tilt = 4.0; // force value outside OK range
 		float xcv_sway = 4.0;
 		float xcv_distCG = 4.0;	
-		sscanf( str,"$INST,%f,%f,%f",&xcv_tilt,&xcv_sway,&xcv_distCG);
+		sscanf( str,"$SETINST,%f,%f,%f",&xcv_tilt,&xcv_sway,&xcv_distCG);
 		if ( (abs(xcv_tilt) < 0.4) && (abs(xcv_sway) < 0.4) && (xcv_distCG < 3) ) {
 			tilt.set(xcv_tilt);
+			delay(200);
 			sway.set(xcv_sway);
+			delay(200);
 			distCG.set(xcv_distCG);
 			delay(200);
-			xcv_tilt = tilt.get();
-			xcv_sway = sway.get();
-			xcv_distCG = distCG.get();
-			sprintf(strx,"$INST IN FLASH, %1.3f, %1.3f, %1.3f\r\n",xcv_tilt,xcv_sway,xcv_distCG);
-			Router::sendXCV(strx);
-			INSTVAL = true;
+			sprintf(strx,"OK\r\n");
+			Router::sendXCV(strx);			
 		} else {
 			sprintf(strx,"$INST format error. Need to type: $INST,tilt,sway,dist_to_cg respectively in rad, rad and meter\r\n");
 			Router::sendXCV(strx);
 			sprintf(strx,"example: $INST,0.14,0.52,1.1\r\n");
 			Router::sendXCV(strx);
-			INSTVAL = false;
-		}		
+		}
+	} else if( !strncmp( str, "$GETINST", 8 ) ) {
+		float xcv_tilt;
+		float xcv_sway;
+		float xcv_distCG;
+		xcv_tilt = tilt.get();
+		xcv_sway = sway.get();
+		xcv_distCG = distCG.get();
+		sprintf(strx,"$INST IN FLASH, %1.3f, %1.3f, %1.3f\r\n",xcv_tilt,xcv_sway,xcv_distCG);
+		Router::sendXCV(strx);
+		
 	} else if( !strncmp( str, "$CAL", 4 ) ) {
 		float localGravity = 9.0; // force value outside OK range
-		sscanf( str,"$INST,%f",&localGravity);
+		sscanf( str,"$CAL,%f",&localGravity);
 		if  (abs(localGravity - 9.807) < 0.1) {
 			IMUstream = false;
 			SENstream = false;			

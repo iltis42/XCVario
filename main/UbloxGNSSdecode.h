@@ -23,6 +23,7 @@ typedef struct _gnss_data {
 		float y;
 		float z;
 	} speed;
+	int route;	
 	int date;
 	float time;
 	int fix;

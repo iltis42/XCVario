@@ -177,9 +177,6 @@ static int32_t gyrobiastemptimer = 0;
 static float integralFBx = 0.0;
 static float integralFBy = 0.0;
 static float integralFBz = 0.0;
-static float IMUBiasx = 0.0;
-static float IMUBiasy = 0.0;
-static float IMUBiasz = 0.0;
 static float BankFilt = 0.0;
 static float alternategzBias = 0.0;
 static float Pitch = 0.0;
@@ -278,6 +275,7 @@ static float dtdynP = 0.1;
 static float dynP=0; // raw dynamic pressure
 static float OATemp = 15; // OAT for pressure corrections (real or from standard atmosphere) 
 static float MPUtempcel; // MPU chip temperature
+static float GNSSRouteraw;
 
 static int32_t cur_gyro_bias[3];
 
@@ -636,7 +634,7 @@ void MahonyUpdateIMU(float dt, float gxraw, float gyraw, float gzraw,
 #define Nbias 2000 // very long period for extracting error rate of change between IMU quaternion and free quaternion
 #define alphaBias (2.0 * (2.0 * Nbias - 1.0) / Nbias / (Nbias + 1.0))
 #define betaBias (6.0 / Nbias / (Nbias + 1.0) / 0.025)
-#define Kbias 1 // gain to apply to error rate to be homogeneous to gyro bias. experimental, TODO need to be adjusted
+#define Kbias 2 // gain to apply to error rate to be homogeneous to gyro bias. experimental, TODO need to be adjusted
 #define fcGrav 3.0 // 3Hz low pass to filter for testing stability criteria
 #define fcgrav1 (40.0/(40.0+fcGrav))
 #define fcgrav2 (1.0-fcgrav1)
@@ -644,15 +642,26 @@ void MahonyUpdateIMU(float dt, float gxraw, float gyraw, float gzraw,
 #define Kp 2.5 // proportional feedback to sync quaternion
 #define Ki 0.15 // integral feedback to sync quaternion
 
-#define WingLevel 1.5 // max lateral gravity acceleration to consider wings are ~ < 10° bank
+#define WingLevel 0.85 // max lateral gravity acceleration to consider wings are ~ < 5° bank
 #define Kalt2 0.001 // integration factor for Gz bias estimation
 #define Kalt1 (1-Kalt2)
 
+#define NGNSS 7 // GNSS alpha/beta
+#define alphaGNSSRoute (2.0 * (2.0 * NGNSS - 1.0) / NGNSS / (NGNSS + 1.0))
+#define betaGNSSRoute (6.0 / NGNSS / (NGNSS + 1.0) / 0.1)
+#define NGz 1200// Very long period alpha/beta for Gz bias estimation. When GNSS is avilable, GNSS route variation is used to improve bias estimation.
+#define alphaGz (2.0 * (2.0 * NGz - 1.0) / NGz / (NGz + 1.0))
+#define betaGz (6.0 / NGz / (NGz + 1.0) / 0.025)
 
 float gx, gy, gz;
 float AccelGravModule, QuatModule, recipNorm;
 float halfvx, halfvy, halfvz, halfex, halfey, halfez, qa, qb, qc, free_halfvx, free_halfvy, free_halfvz;
-float GravityModuleErr, dynKp, dynKi, temp_Bias_Gz = 0.0;
+float GravityModuleErr, dynKp, dynKi;
+float deltaGNSSRoute;
+float GNSSRoutePrim = 0.0;
+float GNSSRoute = 0.0;
+float deltaBiasGz;
+float GzPrim = 0.0;
 
 
 	
@@ -685,7 +694,6 @@ float GravityModuleErr, dynKp, dynKi, temp_Bias_Gz = 0.0;
 	// Apply experimental gain to error to be homogeneous to gyro biases
 	Bias_Gx = Kbias * errx_prim;
 	Bias_Gy = Kbias * erry_prim;
-	temp_Bias_Gz = Kbias * errz_prim; // Gz bias is temporay since it can only be observed when there is some Roll
 	
 	// gyro are corrected using accelerometers only when module of accelerometer is close from local gravity (GRAVITY)
 	// correction coefficients are lower when acceleration module moves away from GRAVITY
@@ -701,16 +709,18 @@ float GravityModuleErr, dynKp, dynKi, temp_Bias_Gz = 0.0;
 	GravityModuleErr = Nlimit - abs(AccelGravModuleFilt-GRAVITY);
 	if ( GravityModuleErr < - 4.0 ) GravityModuleErr = - 4.0;
 
-	// Gz bias can only be observed using error between IMU and free quaternion when there is significant bank.
-	// Therefore bias is computed from this error only when there is significant bank
-	// TODO when bank is low and acceleration module is close to GRAVITY, an alternate method is tested to capture Gz bias, considering average Gz should be ~0 when wings are close to tbe leveld
-	BankFilt = fcgrav1 * BankFilt + fcgrav2 * halfvy;	// low pass filter on estimated Bank to reduce noise
-	if ( abs(BankFilt) > WingLevel  ) {
-		Bias_Gz = fcgrav1 * Bias_Gz + fcgrav2 * temp_Bias_Gz;  // compute gz bias from quaternions error using low pass
+	// When bank is low , considering average Gz should be ~0 when wings are close to tbe leveld
+	BankFilt = fcgrav1 * BankFilt + fcgrav2 * 2.0 * halfvy;	// low pass filter on estimated Bank to reduce noise
+	// alpha/beta filter on GNSS route to reduce noise and get derivative
+	deltaGNSSRoute = GNSSRouteraw - GNSSRoute;
+	GNSSRoutePrim = GNSSRoutePrim + betaGNSSRoute * deltaGNSSRoute;
+	GNSSRoute = GNSSRoute + alphaGNSSRoute * deltaGNSSRoute + GNSSRoutePrim * 0.1;
+	if ( abs(BankFilt) < WingLevel  ) {
+        deltaBiasGz = (gzraw - GNSSRoutePrim) - Bias_Gz;
+		GzPrim = GzPrim + betaGz * deltaBiasGz;
+        Bias_Gz = Bias_Gz + alphaGz * deltaBiasGz + GzPrim * dt;
 	} else {
-		if ( GravityModuleErr > 0.0 ) {
-			alternategzBias = Kalt1 * alternategzBias + Kalt2 * gzraw;	// compute gz bias with very long term low pass
-		}
+		Bias_Gz = gzraw;
 	}
 	
 	// Update free quaternion by integrating rate of change
@@ -739,9 +749,9 @@ float GravityModuleErr, dynKp, dynKi, temp_Bias_Gz = 0.0;
 	// gyros are corrected using estimated bias and estimaded error with vertical from accelerometer (gravity)
 	//
 	// correct raw gyro with estimated gyro bias
-	gx = gxraw + 2 * Bias_Gx;
-	gy = gyraw + 2 * Bias_Gy;
-	gz = gzraw + 2 * Bias_Gz;	
+	gx = gxraw + Bias_Gx;
+	gy = gyraw + Bias_Gy;
+	gz = gzraw + Bias_Gz;	
 	// Compute feedback error between gravity and quaternion only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
 	if ( AccelGravModule != 0.0) {
 		// gyro are corrected using accelerometers only when module of accelerometer is close to local gravity (GRAVITY)
@@ -1370,7 +1380,7 @@ void readSensors(void *pvParameters){
 		const gnss_data_t *gnss2 = s2UbloxGnssDecoder.getGNSSData(2);
 		// select gnss with better fix
 		const gnss_data_t *chosenGnss = (gnss2->fix >= gnss1->fix) ? gnss2 : gnss1;
-		
+		GNSSRouteraw = chosenGnss->route;
 
 		// compute CAS, ALT and Vzbaro using alpha/beta filters
 		Rho = (100.0 * statP / 287.058 / (273.15 + OATemp));
@@ -1488,7 +1498,7 @@ void readSensors(void *pvParameters){
 	
 			sprintf(str,"$S,%lld,%i,%lld,%i,%i,%i,%i,%1d,%2d,%lld,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,,%i,%i,%i%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",
 				statTime, (int32_t)(statP*100.0), teTime,(int32_t)(teP*100.0), (int16_t)(dynP*10), (int16_t)(OATemp*10.0), (int16_t)(MPUtempcel*10.0), chosenGnss->fix, chosenGnss->numSV,
-				(int64_t)(chosenGnss->time*1000.0), (int32_t)(chosenGnss->coordinates.altitude*100), (int16_t)(chosenGnss->speed.x*100), (int16_t)(chosenGnss->speed.y*100), (int16_t)(chosenGnss->speed.z*100), (int16_t)(chosenGnss->route*10),
+				(int64_t)(chosenGnss->time*1000.0), (int32_t)(chosenGnss->coordinates.altitude*100), (int16_t)(chosenGnss->speed.x*100), (int16_t)(chosenGnss->speed.y*100), (int16_t)(chosenGnss->speed.z*100), (int16_t)(GNSSRouteraw*10),
 				(int32_t)(Pitch*1000.0), (int32_t)(Roll*1000.0), (int32_t)(Yaw*1000.0),(int32_t)(free_Pitch*1000.0), (int32_t)(free_Roll*1000.0), (int32_t)(free_Yaw*1000.0),
 				(int32_t)(BiasQuatGx*100000.0), (int32_t)(BiasQuatGy*100000.0), (int32_t)(BiasQuatGz*100000.0), (int32_t)(alternategzBias*100000.0), (int32_t)(AccelGravModuleFilt*100000.0),(int32_t)(GRAVITY*100000.0),(int16_t)BIAS_Init, (int32_t)(-currentGyroBias.z*100000), (int32_t)(-currentGyroBias.y*100000), (int32_t)(-currentGyroBias.x*100000),
 				(int32_t)(GyroModulePrimLevel*100000.0), (int32_t)(AccelModulePrimLevel*100000.0),

@@ -158,7 +158,7 @@ float GyroModuleFilt = 0.0;
 float GyroModulePrimLevel = 0.0;
 float deltaAccelModule = 0.0;	// accel module alfa/beta filter for gyro stability test
 float AccelModulePrimFilt = 0.0;
-float AccelModuleFilt = 0.0;
+float AccelModuleFilt = 9.807;
 float AccelModulePrimLevel = 0.0;
 
 
@@ -638,7 +638,7 @@ void MahonyUpdateIMU(float dt, float gxraw, float gyraw, float gzraw,
 #define fcGrav 3.0 // 3Hz low pass to filter for testing stability criteria
 #define fcgrav1 (40.0/(40.0+fcGrav))
 #define fcgrav2 (1.0-fcgrav1)
-#define Nlimit 0.15 // stability criteria for gravity estimation from accels
+#define Nlimit 0.15 // stability criteria for gravity estimation from accels in m/s²
 #define Kp 2.5 // proportional feedback to sync quaternion
 #define Ki 0.15 // integral feedback to sync quaternion
 
@@ -646,10 +646,10 @@ void MahonyUpdateIMU(float dt, float gxraw, float gyraw, float gzraw,
 #define Kalt2 0.001 // integration factor for Gz bias estimation
 #define Kalt1 (1-Kalt2)
 
-#define NGNSS 7 // GNSS alpha/beta
+#define NGNSS 7 // GNSS alpha/beta. Sample rate is 0 Hz = 0.1 second
 #define alphaGNSSRoute (2.0 * (2.0 * NGNSS - 1.0) / NGNSS / (NGNSS + 1.0))
 #define betaGNSSRoute (6.0 / NGNSS / (NGNSS + 1.0) / 0.1)
-#define NGz 1200// Very long period alpha/beta for Gz bias estimation. When GNSS is avilable, GNSS route variation is used to improve bias estimation.
+#define NGz 1200// Very long period alpha/beta for Gz bias estimation. ample rate is 40 he / period 0.025 second. When GNSS is avilable, GNSS route variation is used to improve bias estimation.
 #define alphaGz (2.0 * (2.0 * NGz - 1.0) / NGz / (NGz + 1.0))
 #define betaGz (6.0 / NGz / (NGz + 1.0) / 0.025)
 
@@ -714,7 +714,7 @@ float GzPrim = 0.0;
 	// alpha/beta filter on GNSS route to reduce noise and get derivative
 	deltaGNSSRoute = GNSSRouteraw - GNSSRoute;
 	GNSSRoutePrim = GNSSRoutePrim + betaGNSSRoute * deltaGNSSRoute;
-	GNSSRoute = GNSSRoute + alphaGNSSRoute * deltaGNSSRoute + GNSSRoutePrim * 0.1;
+	GNSSRoute = GNSSRoute + alphaGNSSRoute * deltaGNSSRoute + GNSSRoutePrim * 0.025;
 	if ( abs(BankFilt) < WingLevel  ) {
         deltaBiasGz = (gzraw - GNSSRoutePrim) - Bias_Gz;
 		GzPrim = GzPrim + betaGz * deltaBiasGz;
@@ -995,12 +995,13 @@ static void processIMU(void *pvParameters)
 			sinPitch = sin( Pitch );
 
 			// compute kinetic acceleration from accels, gravity from IMU and centrifugal forces
-			GravIMU.x = -GRAVITY * 2.0 * (q1 * q3 - q0 * q2);
+			GravIMU.x = GRAVITY * 2.0 * (q1 * q3 - q0 * q2);
 			GravIMU.y = -GRAVITY * 2.0 * (q2 * q3 + q0 * q1);
 			GravIMU.z = -GRAVITY * (q0 * q0 - q1 * q1 - q2 * q2 + q3 * q3);
 			UiPrim = accelISUNEDBODY.x - GravIMU.x - gyroISUNEDBODY.y * Vbi.z + gyroISUNEDBODY.z * Vbi.y;
 			ViPrim = accelISUNEDBODY.y - GravIMU.y - gyroISUNEDBODY.z * Vbi.x + gyroISUNEDBODY.x * Vbi.z;			
 			WiPrim = accelISUNEDBODY.z - GravIMU.z + gyroISUNEDBODY.y * Vbi.x - gyroISUNEDBODY.x * Vbi.y;
+
 			// compute UiPrim, ViPrim and WiPrim derivative with alpha beta filter
 			deltaUiPrim = UiPrim - UiPrimFilt;
 			UiPrimPrim = UiPrimPrim + betaAcc * deltaUiPrim;

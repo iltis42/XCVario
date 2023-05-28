@@ -244,6 +244,7 @@ float WpPrimFilt = 0.0;
 // installation and calibration variables
 mpud::float_axes_t currentAccelBias;
 mpud::float_axes_t currentAccelGain;
+mpud::float_axes_t currentGyroBias;
 // get installation parameters tilt, sway, distCG
 // compute trigonometry
 float DistCGVario = 0.0; // distance from CG to vario
@@ -873,8 +874,6 @@ static void processIMU(void *pvParameters)
 		
 	mpud::float_axes_t gravISUNEDBODY;
 
-	// get gyro bias
-	mpud::float_axes_t currentGyroBias = gyro_bias.get();
 	// TODO estimation of gyro gain
 	float Module = 9.807;
 	
@@ -1080,11 +1079,6 @@ static void processIMU(void *pvParameters)
 								
 								BIAS_Init++;
 								gyrostable = 0;
-								sprintf(str,"$GBIAS,%lld,%3.3f, %d, %.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\r\n",
-									gyroTime, MPUtempcel, BIAS_Init, -currentGyroBias.z, -currentGyroBias.y, -currentGyroBias.x,
-									GRAVITY, Gravx, Gravy, Gravz, RollInit, PitchInit, YawInit );
-								Router::sendXCV(str);
-
 							}
 						} 
 					}
@@ -1467,7 +1461,11 @@ void readSensors(void *pvParameters){
 			Gyro bias z in hundredth of milli rad/s,
 			Alternate gyro bias z in hundredth of milli rad/s,
 			Gravity module from accel in hundredth of milli m/s²,
-			Gravity estimation in hundredth of milli m/s²
+			Local gravity on ground estimation in hundredth of milli m/s²,
+			Number of biases and local gravity on ground estimations,
+			Gyro x bias ground estimation,
+			Gyro y bias ground estimation,
+			Gyro z bias ground estimation,			
 			Gyro module variation level in hundredth of milli,
 			Accel module variation level in hundredth of milli,
 			CAS in cm/s,
@@ -1488,11 +1486,11 @@ void readSensors(void *pvParameters){
 			<CR><LF>		
 		*/
 	
-			sprintf(str,"$S,%lld,%i,%lld,%i,%i,%i,%i,%1d,%2d,%lld,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",
+			sprintf(str,"$S,%lld,%i,%lld,%i,%i,%i,%i,%1d,%2d,%lld,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,,%i,%i,%i%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",
 				statTime, (int32_t)(statP*100.0), teTime,(int32_t)(teP*100.0), (int16_t)(dynP*10), (int16_t)(OATemp*10.0), (int16_t)(MPUtempcel*10.0), chosenGnss->fix, chosenGnss->numSV,
 				(int64_t)(chosenGnss->time*1000.0), (int32_t)(chosenGnss->coordinates.altitude*100), (int16_t)(chosenGnss->speed.x*100), (int16_t)(chosenGnss->speed.y*100), (int16_t)(chosenGnss->speed.z*100), (int16_t)(chosenGnss->route*10),
 				(int32_t)(Pitch*1000.0), (int32_t)(Roll*1000.0), (int32_t)(Yaw*1000.0),(int32_t)(free_Pitch*1000.0), (int32_t)(free_Roll*1000.0), (int32_t)(free_Yaw*1000.0),
-				(int32_t)(BiasQuatGx*100000.0), (int32_t)(BiasQuatGy*100000.0), (int32_t)(BiasQuatGz*100000.0), (int32_t)(alternategzBias*100000.0), (int32_t)(AccelGravModuleFilt*100000.0),(int32_t)(GRAVITY*100000.0),
+				(int32_t)(BiasQuatGx*100000.0), (int32_t)(BiasQuatGy*100000.0), (int32_t)(BiasQuatGz*100000.0), (int32_t)(alternategzBias*100000.0), (int32_t)(AccelGravModuleFilt*100000.0),(int32_t)(GRAVITY*100000.0),(int16_t)BIAS_Init, (int32_t)(-currentGyroBias.z*100000), (int32_t)(-currentGyroBias.y*100000), (int32_t)(-currentGyroBias.x*100000),
 				(int32_t)(GyroModulePrimLevel*100000.0), (int32_t)(AccelModulePrimLevel*100000.0),
 				(int32_t)(CAS*100), (int32_t)(CASprim*100), (int32_t)(TAS*100), (int32_t)(TASprim*100), (int32_t)(ALT*100), (int32_t)(Vzbaro*100),
 				(int32_t)(AoA*1000), (int32_t)(AoB*1000),
@@ -1921,6 +1919,14 @@ void system_startup(void *args){
 				currentAccelGain.x = 1.0;
 				currentAccelGain.y = 1.0;
 				currentAccelGain.z = 1.0;
+		}
+		
+		// get last known ground gyro biases
+		currentGyroBias = gyro_bias.get();
+		if ( abs(currentGyroBias.x)>0.1 || abs(currentGyroBias.y)>0.1 || abs(currentGyroBias.z)>0.1 ) {
+				currentGyroBias.x = 0.0;
+				currentGyroBias.y = 0.0;
+				currentGyroBias.z = 0.0;
 		}
 
 		// get installation parameters tilt, sway, distCG

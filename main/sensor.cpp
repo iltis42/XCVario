@@ -304,8 +304,7 @@ static float TAS;
 static float TASprim;
 static float ALTraw;
 static float deltaALT;
-static float Vzbaro;
-static float VzbaroFilt = 0.0;
+static float Vzbaro = 0.0;
 static float ALT = 0.0;
 #define NCAS 7 // CAS alpha/beta filter coeff
 #define alphaCAS (2.0 * (2.0 * NCAS - 1.0) / NCAS / (NCAS + 1))
@@ -833,7 +832,7 @@ static void processIMU(void *pvParameters)
 	mpud::raw_axes_t accelRaw;
 	mpud::raw_axes_t gyroRaw;
 	
-	#define NAccelPrim 10 // alpha/beta filter coeff for accel derivaive estimation
+	#define NAccelPrim 7	// ~6 Hz alpha/beta filter coeff for accel derivative estimation
 	#define alphaAcc (2.0 * (2.0 * NAccelPrim - 1.0) / NAccelPrim / (NAccelPrim + 1.0))
 	#define betaAcc (6.0 / NAccelPrim / (NAccelPrim + 1.0) / 0.025)	
 
@@ -940,8 +939,6 @@ static void processIMU(void *pvParameters)
 				BIASInFLASH = true;
 				}
 
-			// TODO compute inertial and baro inertial speeds
-            // Ziprim := (uiprim * sin(Pitch) + cos(Pitch) * sin(Roll) * viprim + cos(Pitch) * cos(Roll) * wiprim);
 			if ( TAS > 10.0 ) {
 			// estimate gravity in body frame taking into account centrifugal corrections
 				gravISUNEDBODY.x = accelISUNEDBODY.x - gyroISUNEDBODY.y * Vbi.z + gyroISUNEDBODY.z * Vbi.y;
@@ -953,8 +950,6 @@ static void processIMU(void *pvParameters)
 				gravISUNEDBODY.y = accelISUNEDBODY.y;
 				gravISUNEDBODY.z = accelISUNEDBODY.z;
 			}
-
-
 
 			// Update IMU quaternion
 			// gyroISUNEDBODY corresponds to raw gyro and BiasQuatGx,y,z to the gyros bias
@@ -984,20 +979,20 @@ static void processIMU(void *pvParameters)
 			if (free_Yaw < 0.0 ) free_Yaw = free_Yaw + 2.0 * M_PI;
 			if (free_Yaw > 2.0 * M_PI) free_Yaw = free_Yaw - 2.0 * M_PI;
 
+			// compute sin and cos for Roll and Pitch from IMU quaternion since theyr are used in multiple calculations
 			cosRoll = cos( Roll );
 			sinRoll = sin( Roll );
 			cosPitch = cos( Pitch );
 			sinPitch = sin( Pitch );
-			
+
+			// compute kinetic acceleration from accels, gravity from IMU and centrifugal forces
 			GravIMU.x = -GRAVITY * 2.0 * (q1 * q3 - q0 * q2);
 			GravIMU.y = -GRAVITY * 2.0 * (q2 * q3 + q0 * q1);
 			GravIMU.z = -GRAVITY * (q0 * q0 - q1 * q1 - q2 * q2 + q3 * q3);
-
-			// compute kinetic acceleration from accels, gravity from IMU and centrifugal forces
 			UiPrim = accelISUNEDBODY.x - GravIMU.x - gyroISUNEDBODY.y * Vbi.z + gyroISUNEDBODY.z * Vbi.y;
 			ViPrim = accelISUNEDBODY.y - GravIMU.y - gyroISUNEDBODY.z * Vbi.x + gyroISUNEDBODY.x * Vbi.z;			
 			WiPrim = accelISUNEDBODY.z - GravIMU.z + gyroISUNEDBODY.y * Vbi.x - gyroISUNEDBODY.x * Vbi.y;
-			// compute UiPrim, ViPrim and WiPrim derivative
+			// compute UiPrim, ViPrim and WiPrim derivative with alpha beta filter
 			deltaUiPrim = UiPrim - UiPrimFilt;
 			UiPrimPrim = UiPrimPrim + betaAcc * deltaUiPrim;
 			UiPrimFilt = UiPrimFilt + alphaAcc * deltaUiPrim + UiPrimPrim * dtGyr;
@@ -1007,22 +1002,22 @@ static void processIMU(void *pvParameters)
 			deltaWiPrim = WiPrim - WiPrimFilt;
 			WiPrimPrim = WiPrimPrim + betaAcc * deltaWiPrim;
 			WiPrimFilt = WiPrimFilt + alphaAcc * deltaWiPrim + WiPrimPrim * dtGyr;
-			// Small LP on prim prim values TODO check if LP is necessary
-			UiPrimPrimFilt = 0.75 * UiPrimPrimFilt + 0.25 * UiPrimPrim;
-			ViPrimPrimFilt = 0.75 * ViPrimPrimFilt + 0.25 * ViPrimPrim;
-			WiPrimPrimFilt = 0.75 * WiPrimPrimFilt + 0.25 * WiPrimPrim;			
-			// compute baro internial acceleration
+			// Small LP  on UiPrim, ViPrim and WiPrim derivatives to reduce noise. TODO check if LP is necessary. alpha/beta + LP ~3 Hz response
+			UiPrimPrimFilt = 0.5 * UiPrimPrimFilt + 0.5 * UiPrimPrim;
+			ViPrimPrimFilt = 0.5 * ViPrimPrimFilt + 0.5 * ViPrimPrim;
+			WiPrimPrimFilt = 0.5 * WiPrimPrimFilt + 0.5 * WiPrimPrim;			
+			// compute baro internial acceleration with complementary filter
 			VbiPrim.x = fcAcc1 * ( VbiPrim.x + UiPrimPrimFilt * dtGyr ) + fcAcc2 * UpPrimFilt;
 			VbiPrim.y = fcAcc1 * ( VbiPrim.y + ViPrimPrimFilt * dtGyr ) + fcAcc2 * VpPrimFilt;
 			VbiPrim.z = fcAcc1 * ( VbiPrim.z + WiPrimPrimFilt * dtGyr ) + fcAcc2 * WpPrimFilt;
-			// compute baro inertial speed
+			// compute baro inertial speed with complementary filter
 			Vbi.x = fcAcc1 * ( Vbi.x + UiPrimFilt * dtGyr ) + fcAcc2 * UpFilt;
 			Vbi.y = fcAcc1 * ( Vbi.y + ViPrimFilt * dtGyr ) + fcAcc2 * VpFilt;
 			Vbi.z = fcAcc1 * ( Vbi.z + WiPrimFilt * dtGyr ) + fcAcc2 * WpFilt;
-			// compute inertial vertical acceleration
+			// compute inertial vertical acceleration in earth frame
 			VziPrim =sinPitch * UiPrimFilt + sinRoll * cosPitch * ViPrimFilt + cosRoll * cosPitch * WiPrimFilt;
-			// compute baro inertial vertical speed
-			Vzbi = fcAcc1 * (Vzbi + VziPrim * dtGyr) + fcAcc2 * VzbaroFilt;
+			// compute baro inertial vertical speed  with complementary filter
+			Vzbi = fcAcc1 * (Vzbi + VziPrim * dtGyr) + fcAcc2 * Vzbaro;
 				
 		} else {
 			// Not moving
@@ -1396,8 +1391,6 @@ void readSensors(void *pvParameters){
 		deltaALT = ALTraw - ALT;
 		Vzbaro = Vzbaro + betaALT * deltaALT;
 		ALT = ALT + alphaALT * deltaALT + Vzbaro * dtstat;
-		// Small LP on Vzbaro TODO check if LP is necessary
-		VzbaroFilt = 0.75 * VzbaroFilt + 0.25 * Vzbaro;
 
 		// compute AoA (Angle of attack) and AoB (Angle od slip)
 		WingLoad = gross_weight.get() / polar_wingarea.get();  // should be only computed when pilot change weight settings in XCVario
@@ -1417,16 +1410,16 @@ void readSensors(void *pvParameters){
 			Vztot = 0.0;
 		}
 		// Compute trajectory pneumatic speeds components in body frame NEDBODY
-		// Vh corresponds to the trajectory horizontal speed and Vzbaro corresponds to the vertical speed
+		// Vh corresponds to the trajectory horizontal speed and Vzbaro corresponds to the vertical speed in earth frame
 		Vh = TAS * cos( Pitch + cosRoll * AoA + sinRoll * AoB );
 		// Pitch and Roll correspond to the attitude of the glider and DHeading corresponds to the heading deviation due to the Beta and Alpha.
 		DHeading =(AoB * cosRoll - AoA * sinRoll ) / ( cosPitch + AoB * sinPitch * sinRoll + AoA * sinPitch * cosRoll );
 		cosDHeading = cos( DHeading );
 		sinDHeading = sin( DHeading );
-		// applying DCM from earth to body frame (using Pitch, Roll and DHeading Yaw angles) to Vh and VzbaroFilt trajectory components in earth frame to reproject speed in TE referential onto body axis. 
-		Up = cosPitch * cosDHeading * Vh - sinPitch * VzbaroFilt;
-		Vp = ( sinRoll * sinPitch * cosDHeading - cosRoll * sinDHeading ) * Vh + sinRoll * cosPitch * VzbaroFilt;
-		Wp = ( cosRoll * sinPitch * cosDHeading + sinRoll * sinDHeading ) * Vh + cosRoll * cosPitch * VzbaroFilt;
+		// applying DCM from earth to body frame (using Pitch, Roll and DHeading Yaw angles) to Vh and Vzbaro trajectory components in earth frame to reproject speed in TE referential onto body axis. 
+		Up = cosPitch * cosDHeading * Vh - sinPitch * Vzbaro;
+		Vp = ( sinRoll * sinPitch * cosDHeading - cosRoll * sinDHeading ) * Vh + sinRoll * cosPitch * Vzbaro;
+		Wp = ( cosRoll * sinPitch * cosDHeading + sinRoll * sinDHeading ) * Vh + cosRoll * cosPitch * Vzbaro;
 		// compute acceleration from pneumatic velocities
 		deltaUp = Up - UpFilt;
 		UpPrim = UpPrim + betaVelAcc * deltaUp;
@@ -1481,7 +1474,7 @@ void readSensors(void *pvParameters){
 			TAS in cm/s,
 			TASprim in cm/s²,
 			ALT in cm,
-			VzbaroFilt in cm/s,
+			Vzbaro in cm/s,
 			AoA angle in mrad,
 			AoB  angle in mrad,
 			UiPrim in cm/s²,
@@ -1500,7 +1493,7 @@ void readSensors(void *pvParameters){
 				(int32_t)(Pitch*1000.0), (int32_t)(Roll*1000.0), (int32_t)(Yaw*1000.0),(int32_t)(free_Pitch*1000.0), (int32_t)(free_Roll*1000.0), (int32_t)(free_Yaw*1000.0),
 				(int32_t)(BiasQuatGx*100000.0), (int32_t)(BiasQuatGy*100000.0), (int32_t)(BiasQuatGz*100000.0), (int32_t)(alternategzBias*100000.0), (int32_t)(AccelGravModuleFilt*100000.0),(int32_t)(GRAVITY*100000.0),
 				(int32_t)(GyroModulePrimLevel*100000.0), (int32_t)(AccelModulePrimLevel*100000.0),
-				(int32_t)(CAS*100), (int32_t)(CASprim*100), (int32_t)(TAS*100), (int32_t)(TASprim*100), (int32_t)(ALT*100), (int32_t)(VzbaroFilt*100),
+				(int32_t)(CAS*100), (int32_t)(CASprim*100), (int32_t)(TAS*100), (int32_t)(TASprim*100), (int32_t)(ALT*100), (int32_t)(Vzbaro*100),
 				(int32_t)(AoA*1000), (int32_t)(AoB*1000),
 				(int32_t)(UiPrim*100), (int32_t)(ViPrim*100), (int32_t)(WiPrim*100), (int32_t)(Vbi.x*100), (int32_t)(Vbi.y*100), (int32_t)(Vbi.z*100),				
 				(int32_t)(Vztot*100) );

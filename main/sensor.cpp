@@ -1100,7 +1100,7 @@ static void processIMU(void *pvParameters)
 		} 			
 		
 		// If required stream IMU data
-		if ( IMUstream && BIAS_Init > 0 ) {
+		if ( IMUstream  ) {
 			/*
 			IMU data in ISU and NED orientation
 				$I,
@@ -1448,7 +1448,7 @@ void readSensors(void *pvParameters){
 		VztotPrim = VztotPrim + betaVztot * deltaVztot;
 		Vztot = Vztot + alphaVztot * deltaVztot + VztotPrim * dtdynP;		
 		
-		if ( SENstream && BIAS_Init > 0 ) {
+		if ( SENstream ) {
 		/* Sensor data
 			$S,			
 			static time in milli second,

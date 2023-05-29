@@ -149,8 +149,6 @@ mpud::float_axes_t gyroDPS_Prev;
 #define MAXDRIFT 2                // °/s maximum drift that is automatically compensated on ground
 #define NUM_GYRO_SAMPLES 3000     // 10 per second -> 5 minutes, so T has been settled after power on
 
-#define IMUrate 1 // IMU data stream rate x 25ms. 0 not allowed
-#define SENrate 4 // Sensor data stream rate x 25ms. 0 not allowed
 // Fligth Test
 float deltaGyroModule = 0.0;	// gyro module alfa/beta filter for gyro stability test
 float GyroModulePrimFilt = 0.0;
@@ -182,17 +180,17 @@ static float alternategzBias = 0.0;
 static float Pitch = 0.0;
 static float Roll = 0.0;
 static float Yaw = 0.0;
-static float q0 = 0.0;
+static float q0 = 1.0;
 static float q1 = 0.0;
 static float q2 = 0.0;
-static float q3 = 1.0;
+static float q3 = 0.0;
 static float free_Pitch = 0.0;
 static float free_Roll = 0.0;
 static float free_Yaw = 0.0;
-static float free_q0 = 0.0;
+static float free_q0 = 1.0;
 static float free_q1 = 0.0;
 static float free_q2 = 0.0;
-static float free_q3 = 1.0;
+static float free_q3 = 0.0;
 static float free_halfex = 0.0;
 static float delta_errx = 0.0;
 static float filt_errx = 0.0;
@@ -276,6 +274,8 @@ static float dynP=0; // raw dynamic pressure
 static float OATemp = 15; // OAT for pressure corrections (real or from standard atmosphere) 
 static float MPUtempcel; // MPU chip temperature
 static float GNSSRouteraw;
+static float GNSSRoutePrim = 0.0;
+static float GNSSRoute = 0.0;
 
 static int32_t cur_gyro_bias[3];
 
@@ -642,14 +642,9 @@ void MahonyUpdateIMU(float dt, float gxraw, float gyraw, float gzraw,
 #define Kp 2.5 // proportional feedback to sync quaternion
 #define Ki 0.15 // integral feedback to sync quaternion
 
-#define WingLevel 0.85 // max lateral gravity acceleration to consider wings are ~ < 5° bank
-#define Kalt2 0.001 // integration factor for Gz bias estimation
-#define Kalt1 (1-Kalt2)
+#define WingLevel 0.085 // max lateral gravity acceleration (normalized acceleration) to consider wings are ~ < 5° bank
 
-#define NGNSS 7 // GNSS alpha/beta. Sample rate is 0 Hz = 0.1 second
-#define alphaGNSSRoute (2.0 * (2.0 * NGNSS - 1.0) / NGNSS / (NGNSS + 1.0))
-#define betaGNSSRoute (6.0 / NGNSS / (NGNSS + 1.0) / 0.1)
-#define NGz 1200// Very long period alpha/beta for Gz bias estimation. ample rate is 40 he / period 0.025 second. When GNSS is avilable, GNSS route variation is used to improve bias estimation.
+#define NGz 1200// Very long period alpha/beta for Gz bias estimation. Sample rate is 40 hz / period 0.025 second. When GNSS is avilable, GNSS route variation is used to improve bias estimation.
 #define alphaGz (2.0 * (2.0 * NGz - 1.0) / NGz / (NGz + 1.0))
 #define betaGz (6.0 / NGz / (NGz + 1.0) / 0.025)
 
@@ -657,9 +652,6 @@ float gx, gy, gz;
 float AccelGravModule, QuatModule, recipNorm;
 float halfvx, halfvy, halfvz, halfex, halfey, halfez, qa, qb, qc, free_halfvx, free_halfvy, free_halfvz;
 float GravityModuleErr, dynKp, dynKi;
-float deltaGNSSRoute;
-float GNSSRoutePrim = 0.0;
-float GNSSRoute = 0.0;
 float deltaBiasGz;
 float GzPrim = 0.0;
 
@@ -707,14 +699,10 @@ float GzPrim = 0.0;
 	// compute acceleration module difference with local gravity (GRAVITY) to allow alternate Gz bias estimation and dynamic correction of IMU quaternion
 	// Nlimit is the coefficient to statidfy staibility criteria
 	GravityModuleErr = Nlimit - abs(AccelGravModuleFilt-GRAVITY);
-	if ( GravityModuleErr < - 4.0 ) GravityModuleErr = - 4.0;
+	if ( GravityModuleErr < -4.0 ) GravityModuleErr = -4.0;
 
 	// When bank is low , considering average Gz should be ~0 when wings are close to tbe leveld
 	BankFilt = fcgrav1 * BankFilt + fcgrav2 * 2.0 * halfvy;	// low pass filter on estimated Bank to reduce noise
-	// alpha/beta filter on GNSS route to reduce noise and get derivative
-	deltaGNSSRoute = GNSSRouteraw - GNSSRoute;
-	GNSSRoutePrim = GNSSRoutePrim + betaGNSSRoute * deltaGNSSRoute;
-	GNSSRoute = GNSSRoute + alphaGNSSRoute * deltaGNSSRoute + GNSSRoutePrim * 0.025;
 	if ( abs(BankFilt) < WingLevel  ) {
         deltaBiasGz = (gzraw - GNSSRoutePrim) - Bias_Gz;
 		GzPrim = GzPrim + betaGz * deltaBiasGz;
@@ -939,7 +927,7 @@ static void processIMU(void *pvParameters)
 			}
 		}		
 
-		// if moving, speed > 10 m/s or ground bias estimation has ran more than "0" times TODO when operational BIAS_Init should be up to 10.
+		// if moving, speed > 10 m/s or ground bias estimation has ran more than "10" times TODO when operational BIAS_Init should be up to 10.
 		if (TAS > 10.0  || BIAS_Init > 10 ) {
 			// first time in movement, if biais initialiazation was achieved, store bias and local gravity in FLASH
 			if ( !BIASInFLASH && BIAS_Init > 1 ) {
@@ -1012,7 +1000,7 @@ static void processIMU(void *pvParameters)
 			deltaWiPrim = WiPrim - WiPrimFilt;
 			WiPrimPrim = WiPrimPrim + betaAcc * deltaWiPrim;
 			WiPrimFilt = WiPrimFilt + alphaAcc * deltaWiPrim + WiPrimPrim * dtGyr;
-			// Small LP  on UiPrim, ViPrim and WiPrim derivatives to reduce noise. TODO check if LP is necessary. alpha/beta + LP ~3 Hz response
+			// Small Low Pass  on UiPrim, ViPrim and WiPrim derivatives to reduce noise. TODO check if LP is necessary. alpha/beta + LP ~3 Hz response
 			UiPrimPrimFilt = 0.5 * UiPrimPrimFilt + 0.5 * UiPrimPrim;
 			ViPrimPrimFilt = 0.5 * ViPrimPrimFilt + 0.5 * ViPrimPrim;
 			WiPrimPrimFilt = 0.5 * WiPrimPrimFilt + 0.5 * WiPrimPrim;			
@@ -1321,6 +1309,11 @@ void readSensors(void *pvParameters){
 	#define fcAoB1 (10.0/(10.0+FreqBeta))
 	#define fcAoB2 (1-fcAoB1)
 	
+	float deltaGNSSRoute;	
+	#define NGNSS 7 // GNSS alpha/beta. Sample rate is 0 Hz = 0.1 second
+	#define alphaGNSSRoute (2.0 * (2.0 * NGNSS - 1.0) / NGNSS / (NGNSS + 1.0))
+	#define betaGNSSRoute (6.0 / NGNSS / (NGNSS + 1.0) / 0.1)	
+	
 	int client_sync_dataIdx = 0;
 
 	while (1)
@@ -1387,8 +1380,12 @@ void readSensors(void *pvParameters){
 		// select gnss with better fix
 		const gnss_data_t *chosenGnss = (gnss2->fix >= gnss1->fix) ? gnss2 : gnss1;
 		GNSSRouteraw = chosenGnss->route;
+		// alpha/beta filter on GNSS route to reduce noise and get derivative
+		deltaGNSSRoute = GNSSRouteraw - GNSSRoute;
+		GNSSRoutePrim = GNSSRoutePrim + betaGNSSRoute * deltaGNSSRoute;
+		GNSSRoute = GNSSRoute + alphaGNSSRoute * deltaGNSSRoute + GNSSRoutePrim * 0.1;	//TODO consider changing 0.1 with actual GNSS time difference	
 
-		// compute CAS, ALT and Vzbaro using alpha/beta filters
+		// compute CAS, ALT and Vzbaro using alpha/beta filters.  TODO consider using atmospher.h functions
 		Rho = (100.0 * statP / 287.058 / (273.15 + OATemp));
 		CASraw = sqrt(2 * dynP / RhoSLISA);
 		deltaCAS = CASraw - CAS;
@@ -1414,10 +1411,6 @@ void readSensors(void *pvParameters){
 		} else {
 			AoA = 0.0;
 			AoB = 0.0;
-			Up = 0.0;
-			Vp = 0.0;
-			Wp = 0.0;
-			Vztot = 0.0;
 		}
 		// Compute trajectory pneumatic speeds components in body frame NEDBODY
 		// Vh corresponds to the trajectory horizontal speed and Vzbaro corresponds to the vertical speed in earth frame
@@ -1440,10 +1433,10 @@ void readSensors(void *pvParameters){
 		deltaWp = Wp - WpFilt;
 		WpPrim = WpPrim + betaVelAcc * deltaWp;
 		WpFilt = WpFilt + alphaVelAcc * deltaWp + WpPrim * dtdynP;
-		// Small LP on prim values TODO check if LP is necessary
-		UpPrimFilt = 0.75 * UpPrimFilt + 0.25 * UpPrim;
-		VpPrimFilt = 0.75 * VpPrimFilt + 0.25 * VpPrim;
-		WpPrimFilt = 0.75 * WpPrimFilt + 0.25 * WpPrim;			
+		// Small Low Pass on prim values to reduce noise. TODO check if LP is necessary
+		UpPrimFilt = 0.5 * UpPrimFilt + 0.5 * UpPrim;
+		VpPrimFilt = 0.5 * VpPrimFilt + 0.5 * VpPrim;
+		WpPrimFilt = 0.5 * WpPrimFilt + 0.5 * WpPrim;			
 		// compute baro inertial total energy
 		Vztotbiraw = Vzbi + ( Vbi.x * VbiPrim.x + Vbi.y * VbiPrim.y + Vbi.z * VbiPrim.z ) / GRAVITY;
 		// filter raw total energy

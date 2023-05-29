@@ -940,13 +940,13 @@ static void processIMU(void *pvParameters)
 		}		
 
 		// if moving, speed > 10 m/s or ground bias estimation has ran more than "0" times TODO when operational BIAS_Init should be up to 10.
-		if (TAS > 10.0  || BIAS_Init > 5 ) {
+		if (TAS > 10.0  || BIAS_Init > 10 ) {
 			// first time in movement, if biais initialiazation was achieved, store bias and local gravity in FLASH
-			if ( !BIASInFLASH ) {
+			if ( !BIASInFLASH && BIAS_Init > 1 ) {
 				gyro_bias.set(currentGyroBias);
 				gravity.set(GRAVITY);
 				BIASInFLASH = true;
-				}
+			}
 
 			if ( TAS > 10.0 ) {
 			// estimate gravity in body frame taking into account centrifugal corrections
@@ -1089,6 +1089,11 @@ static void processIMU(void *pvParameters)
 								free_q3 = q3;
 								
 								BIAS_Init++;
+								if ( BIAS_Init == 1 ) {
+									gyro_bias.set(currentGyroBias);
+									gravity.set(GRAVITY);
+									BIASInFLASH = false;
+								}								
 								gyrostable = 0;
 							}
 						} 

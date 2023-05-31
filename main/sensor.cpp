@@ -146,8 +146,8 @@ mpud::float_axes_t gyroDPS;
 mpud::float_axes_t accelG_Prev;
 mpud::float_axes_t gyroDPS_Prev; 
 
-#define MAXDRIFT 2                // °/s maximum drift that is automatically compensated on ground
-#define NUM_GYRO_SAMPLES 3000     // 10 per second -> 5 minutes, so T has been settled after power on
+#define PERIOD10HZ 0.1 // constant for filters in the 10 Hz loop
+#define PERIOD40HZ 0.025 // constant for filters in the 40 Hz loop
 
 // Fligth Test
 float deltaGyroModule = 0.0;	// gyro module alfa/beta filter for gyro stability test
@@ -260,16 +260,16 @@ static int64_t ProcessTimeIMU = 0.0;
 static int64_t ProcessTimeSensors = 0.0;
 static int64_t gyroTime;  // time stamp for gyros
 static int64_t prevgyroTime;
-static float dtGyr = 0.025; // period between last gyro samples
+static float dtGyr = PERIOD40HZ; // period between last gyro samples
 static int64_t statTime; // time stamp for statP
 static int64_t prevstatTime;
-static float dtstat = 0.1;
+static float dtstat = PERIOD10HZ;
 static float statP=0; // raw static pressure
 static int64_t teTime; // time stamp for teP
 static float teP=0; // raw te pressure
 static int64_t dynPTime;
 static int64_t prevdynPTime;
-static float dtdynP = 0.1;
+static float dtdynP = PERIOD10HZ;
 static float dynP=0; // raw dynamic pressure
 static float OATemp = 15; // OAT for pressure corrections (real or from standard atmosphere) 
 static float MPUtempcel; // MPU chip temperature
@@ -307,10 +307,10 @@ static float Vzbaro = 0.0;
 static float ALT = 0.0;
 #define NCAS 7 // CAS alpha/beta filter coeff
 #define alphaCAS (2.0 * (2.0 * NCAS - 1.0) / NCAS / (NCAS + 1))
-#define betaCAS (6.0 / NCAS / (NCAS + 1) / 0.1)
+#define betaCAS (6.0 / NCAS / (NCAS + 1) / PERIOD10HZ)
 #define NALT 7 // ALT alpha/beta coeff
 #define alphaALT (2.0 * (2.0 * NALT - 1.0) / NALT / (NALT + 1))
-#define betaALT (6.0 / NALT / (NALT + 1) / 0.1)
+#define betaALT (6.0 / NALT / (NALT + 1) / PERIOD10HZ)
 #define RhoSLISA 1.225
 
 mpud::float_axes_t Vbi;
@@ -332,10 +332,10 @@ static float Vztot = 0.0;
 static float VztotPrim = 0.0;
 #define NVztot 7 // CAS alpha/beta filter coeff
 #define alphaVztot (2.0 * (2.0 * NVztot - 1.0) / NVztot / (NVztot + 1.0))
-#define betaVztot (6.0 / NVztot / (NVztot + 1.0) / 0.1)
+#define betaVztot (6.0 / NVztot / (NVztot + 1.0) / PERIOD10HZ)
 #define NVelAcc 7 // pneumatic velocity variation alpha/beta filter coeff
 #define alphaVelAcc (2.0 * (2.0 * NVelAcc - 1.0) / NVelAcc / (NVelAcc + 1.0))
-#define betaVelAcc (6.0 / NVelAcc / (NVelAcc + 1.0) / 0.1)
+#define betaVelAcc (6.0 / NVelAcc / (NVelAcc + 1.0) / PERIOD10HZ)
 
 
 
@@ -633,7 +633,7 @@ void MahonyUpdateIMU(float dt, float gxraw, float gyraw, float gzraw,
 
 #define Nbias 2000 // very long period for extracting error rate of change between IMU quaternion and free quaternion
 #define alphaBias (2.0 * (2.0 * Nbias - 1.0) / Nbias / (Nbias + 1.0))
-#define betaBias (6.0 / Nbias / (Nbias + 1.0) / 0.025)
+#define betaBias (6.0 / Nbias / (Nbias + 1.0) / PERIOD40HZ)
 #define Kbias 2 // gain to apply to error rate to be homogeneous to gyro bias. experimental, TODO need to be adjusted
 #define fcGrav 3.0 // 3Hz low pass to filter for testing stability criteria
 #define fcgrav1 (40.0/(40.0+fcGrav))
@@ -646,7 +646,7 @@ void MahonyUpdateIMU(float dt, float gxraw, float gyraw, float gzraw,
 
 #define NGz 1200// Very long period alpha/beta for Gz bias estimation. Sample rate is 40 hz / period 0.025 second. When GNSS is avilable, GNSS route variation is used to improve bias estimation.
 #define alphaGz (2.0 * (2.0 * NGz - 1.0) / NGz / (NGz + 1.0))
-#define betaGz (6.0 / NGz / (NGz + 1.0) / 0.025)
+#define betaGz (6.0 / NGz / (NGz + 1.0) / PERIOD40HZ)
 
 float gx, gy, gz;
 float AccelGravModule, QuatModule, recipNorm;
@@ -813,9 +813,9 @@ static void processIMU(void *pvParameters)
 	#define NAccel 7 // accel alpha/beta filter coeff
 	#define NGyro 7 // gyro alpha/beta coeff
 	#define alfaAccelModule (2.0 * (2.0 * NAccel - 1.0) / NAccel / (NAccel + 1))
-	#define betaAccelModule (6.0 / NAccel / (NAccel + 1) / 0.025)
+	#define betaAccelModule (6.0 / NAccel / (NAccel + 1) / PERIOD40HZ)
 	#define alfaGyroModule (2.0 * (2.0 * NGyro - 1.0) / NGyro / (NGyro + 1))
-	#define betaGyroModule (6.0 / NGyro / (NGyro + 1) / 0.025)
+	#define betaGyroModule (6.0 / NGyro / (NGyro + 1) / PERIOD40HZ)
 	#define fcAccelLevel 3.0 // 3Hz low pass to filter 
 	#define fcAL1 (40.0/(40.0+fcAccelLevel))
 	#define fcAL2 (1.0-fcAL1)
@@ -833,7 +833,7 @@ static void processIMU(void *pvParameters)
 	
 	#define NAccelPrim 7	// ~6 Hz alpha/beta filter coeff for accel derivative estimation
 	#define alphaAcc (2.0 * (2.0 * NAccelPrim - 1.0) / NAccelPrim / (NAccelPrim + 1.0))
-	#define betaAcc (6.0 / NAccelPrim / (NAccelPrim + 1.0) / 0.025)	
+	#define betaAcc (6.0 / NAccelPrim / (NAccelPrim + 1.0) / PERIOD40HZ)	
 
 	// variables for accel calibration
 	float accelMaxx = 0.0;
@@ -1312,7 +1312,7 @@ void readSensors(void *pvParameters){
 	float deltaGNSSRoute;	
 	#define NGNSS 7 // GNSS alpha/beta. Sample rate is 0 Hz = 0.1 second
 	#define alphaGNSSRoute (2.0 * (2.0 * NGNSS - 1.0) / NGNSS / (NGNSS + 1.0))
-	#define betaGNSSRoute (6.0 / NGNSS / (NGNSS + 1.0) / 0.1)	
+	#define betaGNSSRoute (6.0 / NGNSS / (NGNSS + 1.0) / PERIOD10HZ)	
 	
 	int client_sync_dataIdx = 0;
 
@@ -1383,7 +1383,7 @@ void readSensors(void *pvParameters){
 		// alpha/beta filter on GNSS route to reduce noise and get derivative
 		deltaGNSSRoute = GNSSRouteraw - GNSSRoute;
 		GNSSRoutePrim = GNSSRoutePrim + betaGNSSRoute * deltaGNSSRoute;
-		GNSSRoute = GNSSRoute + alphaGNSSRoute * deltaGNSSRoute + GNSSRoutePrim * 0.1;	//TODO consider changing 0.1 with actual GNSS time difference	
+		GNSSRoute = GNSSRoute + alphaGNSSRoute * deltaGNSSRoute + GNSSRoutePrim * PERIOD10HZ;	//TODO consider changing 0.1 with actual GNSS time difference	
 
 		// compute CAS, ALT and Vzbaro using alpha/beta filters.  TODO consider using atmospher.h functions
 		Rho = (100.0 * statP / 287.058 / (273.15 + OATemp));

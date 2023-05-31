@@ -1929,11 +1929,12 @@ void system_startup(void *args){
 		mpud::raw_axes_t accelRaw;
 		delay( 50 );
 
-		// check GRAVITY and accels offset and gain just in case FLASH is not correct
+		// check GRAVITY and accels offset/gain 
 		GRAVITY = gravity.get();
 		if(abs(GRAVITY-9.807) > 0.5 ) GRAVITY = 9.807;
 		currentAccelBias = accl_bias.get();
-		currentAccelGain = accl_gain.get();		
+		currentAccelGain = accl_gain.get();	
+		// Check value just in case FLASH is not correct to reset to neutral values (OK range is +- 1 m/s² for bias and +-10% on gain)
 		if ( abs(currentAccelBias.x)>1.0 || abs(currentAccelBias.y)>1.0 || abs(currentAccelBias.z)>1.0 || 
 			abs(currentAccelGain.x-1.0)>0.1 || abs(currentAccelGain.y-1.0)>0.1 || abs(currentAccelGain.z-1.0)>0.1 ){
 				currentAccelBias.x = 0.0;
@@ -1946,6 +1947,7 @@ void system_startup(void *args){
 		
 		// get last known ground gyro biases
 		currentGyroBias = gyro_bias.get();
+		// Check value just in case FLASH is not correct to reset to neutral values (OK range is +-0.1 rad/s)
 		if ( abs(currentGyroBias.x)>0.1 || abs(currentGyroBias.y)>0.1 || abs(currentGyroBias.z)>0.1 ) {
 				currentGyroBias.x = 0.0;
 				currentGyroBias.y = 0.0;
@@ -1953,8 +1955,8 @@ void system_startup(void *args){
 		}
 
 		// get installation parameters tilt, sway, distCG
-		// compute trigonometry
 		DistCGVario = distCG.get();
+		// Check value just in case FLASH is not correct to reset to neutral values (OK range is dist from CG to XCV between 0 an 3 meters and sway and tilt +-0.4 rad)
 		if ( DistCGVario < 0.0 || DistCGVario > 3.0 ) DistCGVario = 0.0;
 		Sway = sway.get();
 		Tilt = tilt.get();
@@ -1962,6 +1964,7 @@ void system_startup(void *args){
 			Sway = 0.0;
 			Tilt = 0.0;
 		}
+		// compute trigonometry
 		S_S = sin(Sway);
 		C_S = cos(Sway);
 		S_T = sin(Tilt);

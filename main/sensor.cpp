@@ -928,7 +928,7 @@ static void processIMU(void *pvParameters)
 		}		
 
 		// if moving, speed > 10 m/s or ground bias estimation has ran more than "10" times TODO when operational BIAS_Init should be up to 10.
-		if (TAS > 10.0  || BIAS_Init > 10 ) {
+		if (TAS > 10.0  || BIAS_Init > 0 ) {  // used 0 instead of 10 for test purpose on the ground when TAS = 0
 			// first time in movement, if biais initialiazation was achieved, store bias and local gravity in FLASH
 			if ( !BIASInFLASH && BIAS_Init > 1 ) {
 				gyro_bias.set(currentGyroBias);

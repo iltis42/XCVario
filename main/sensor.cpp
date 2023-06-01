@@ -565,10 +565,10 @@ void drawDisplay(void *pvParameters){
 				// ESP_LOGI(FNAME,"TE=%2.3f", te_vario.get() );
 // modif gfm affichage d'une tension batterie nulle tant que les biais gyros n'ont pas été initialisés
 				if (BIAS_Init > 0){
-					display->drawDisplay( airspeed, Vztot /*te_vario.get()*/, aTE, polar_sink, altitude.get(), t, battery, s2f_delta, as2f, average_climb.get(), Switch::getCruiseState(), gflags.standard_setting, flap_pos.get() );
+					display->drawDisplay( airspeed, -Vztot /*te_vario.get()*/, aTE, polar_sink, altitude.get(), t, battery, s2f_delta, as2f, average_climb.get(), Switch::getCruiseState(), gflags.standard_setting, flap_pos.get() );
 				}	
 				else {
-					display->drawDisplay( airspeed, Vztot /*te_vario.get()*/, aTE, polar_sink, altitude.get(), t, 0.0, s2f_delta, as2f, average_climb.get(), Switch::getCruiseState(), gflags.standard_setting, flap_pos.get() );
+					display->drawDisplay( airspeed, -Vztot /*te_vario.get()*/, aTE, polar_sink, altitude.get(), t, 0.0, s2f_delta, as2f, average_climb.get(), Switch::getCruiseState(), gflags.standard_setting, flap_pos.get() );
 				}
 // fin modif gfm
 				}
@@ -1017,11 +1017,6 @@ static void processIMU(void *pvParameters)
 			VziPrim =sinPitch * UiPrimFilt + sinRoll * cosPitch * ViPrimFilt + cosRoll * cosPitch * WiPrimFilt;
 			// compute baro inertial vertical speed  with complementary filter
 			Vzbi = fcAcc1 * (Vzbi + VziPrim * dtGyr) + fcAcc2 * Vzbaro;
-			sprintf(str,"$DEF1,%.6f,%.6f,%6f,%.6f,%.6f,%.6f,%.6f,%.6f,%6f,%.6f,%.6f,%.6f,%.6f,%.6f,%6f,%.6f,%.6f,%.6f,%.6f,%.6f,%6f,%.6f,%.6f,%.6f,%.6f,%.6f\r\n",
-				alphaCAS,betaCAS,alphaALT,betaALT,alphaVztot,betaVztot,alphaVelAcc,betaVelAcc,
-				alphaBias,betaBias,fcgrav1,fcgrav2,alphaGz,betaGz,alfaAccelModule,betaAccelModule,alfaGyroModule,betaGyroModule,
-				fcAL1,fcAL2,fcGL1,fcGL2,fcAcc1,fcAcc2,alphaAcc,betaAcc );
-			Router::sendXCV(str);	
 				
 		} else {
 			// Not moving
@@ -1449,9 +1444,7 @@ void readSensors(void *pvParameters){
 		deltaVztot = Vztotbiraw - Vztot;
 		VztotPrim = VztotPrim + betaVztot * deltaVztot;
 		Vztot = Vztot + alphaVztot * deltaVztot + VztotPrim * dtdynP;		
-		sprintf(str,"$DEF2,%.6f,%.6f,%.6f,%.6f,%.6f,%6f\r\n",
-				fcAoA1,fcAoA2,fcAoB1,fcAoB2,alphaGNSSRoute,betaGNSSRoute );
-		Router::sendXCV(str);
+
 		if ( SENstream ) {
 		/* Sensor data
 			$S,			

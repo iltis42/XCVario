@@ -95,7 +95,7 @@ BMP:
 
 #define MGRPS 360
 
-#define DegToRad (M_PI / 180)
+#define DegToRad (M_PI / 180.0)
 
 MCP3221 *MCP=0;
 DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 standard, alternative  GPIO_NUM_17
@@ -305,12 +305,12 @@ static float ALTraw;
 static float deltaALT;
 static float Vzbaro = 0.0;
 static float ALT = 0.0;
-#define NCAS 7 // CAS alpha/beta filter coeff
-#define alphaCAS (2.0 * (2.0 * NCAS - 1.0) / NCAS / (NCAS + 1))
-#define betaCAS (6.0 / NCAS / (NCAS + 1) / PERIOD10HZ)
-#define NALT 7 // ALT alpha/beta coeff
-#define alphaALT (2.0 * (2.0 * NALT - 1.0) / NALT / (NALT + 1))
-#define betaALT (6.0 / NALT / (NALT + 1) / PERIOD10HZ)
+#define NCAS 7.0 // CAS alpha/beta filter coeff
+#define alphaCAS (2.0 * (2.0 * NCAS - 1.0) / NCAS / (NCAS + 1.0))
+#define betaCAS (6.0 / NCAS / (NCAS + 1.0) / PERIOD10HZ)
+#define NALT 7.0 // ALT alpha/beta coeff
+#define alphaALT (2.0 * (2.0 * NALT - 1.0) / NALT / (NALT + 1.0))
+#define betaALT (6.0 / NALT / (NALT + 1.0) / PERIOD10HZ)
 #define RhoSLISA 1.225
 
 mpud::float_axes_t Vbi;
@@ -330,10 +330,10 @@ static float Vztotbiraw = 0.0;
 static float deltaVztot = 0.0;
 static float Vztot = 0.0;
 static float VztotPrim = 0.0;
-#define NVztot 7 // CAS alpha/beta filter coeff
+#define NVztot 7.0 // CAS alpha/beta filter coeff
 #define alphaVztot (2.0 * (2.0 * NVztot - 1.0) / NVztot / (NVztot + 1.0))
 #define betaVztot (6.0 / NVztot / (NVztot + 1.0) / PERIOD10HZ)
-#define NVelAcc 7 // pneumatic velocity variation alpha/beta filter coeff
+#define NVelAcc 7.0 // pneumatic velocity variation alpha/beta filter coeff
 #define alphaVelAcc (2.0 * (2.0 * NVelAcc - 1.0) / NVelAcc / (NVelAcc + 1.0))
 #define betaVelAcc (6.0 / NVelAcc / (NVelAcc + 1.0) / PERIOD10HZ)
 
@@ -631,10 +631,10 @@ void MahonyUpdateIMU(float dt, float gxraw, float gyraw, float gzraw,
 					float ax, float ay, float az, 
 					float &Bias_Gx, float &Bias_Gy, float &Bias_Gz ) {
 
-#define Nbias 2000 // very long period for extracting error rate of change between IMU quaternion and free quaternion
+#define Nbias 2000.0 // very long period for extracting error rate of change between IMU quaternion and free quaternion
 #define alphaBias (2.0 * (2.0 * Nbias - 1.0) / Nbias / (Nbias + 1.0))
 #define betaBias (6.0 / Nbias / (Nbias + 1.0) / PERIOD40HZ)
-#define Kbias 2 // gain to apply to error rate to be homogeneous to gyro bias. experimental, TODO need to be adjusted
+#define Kbias 2.0 // gain to apply to error rate to be homogeneous to gyro bias. experimental, TODO need to be adjusted
 #define fcGrav 3.0 // 3Hz low pass to filter for testing stability criteria
 #define fcgrav1 (40.0/(40.0+fcGrav))
 #define fcgrav2 (1.0-fcgrav1)
@@ -644,7 +644,7 @@ void MahonyUpdateIMU(float dt, float gxraw, float gyraw, float gzraw,
 
 #define WingLevel 0.085 // max lateral gravity acceleration (normalized acceleration) to consider wings are ~ < 5° bank
 
-#define NGz 1200// Very long period alpha/beta for Gz bias estimation. Sample rate is 40 hz / period 0.025 second. When GNSS is avilable, GNSS route variation is used to improve bias estimation.
+#define NGz 1200.0// Very long period alpha/beta for Gz bias estimation. Sample rate is 40 hz / period 0.025 second. When GNSS is avilable, GNSS route variation is used to improve bias estimation.
 #define alphaGz (2.0 * (2.0 * NGz - 1.0) / NGz / (NGz + 1.0))
 #define betaGz (6.0 / NGz / (NGz + 1.0) / PERIOD40HZ)
 
@@ -810,12 +810,12 @@ static void processIMU(void *pvParameters)
 // - Ublox GNSS data. 
 
 	// MPU data
-	#define NAccel 7 // accel alpha/beta filter coeff
-	#define NGyro 7 // gyro alpha/beta coeff
-	#define alfaAccelModule (2.0 * (2.0 * NAccel - 1.0) / NAccel / (NAccel + 1))
-	#define betaAccelModule (6.0 / NAccel / (NAccel + 1) / PERIOD40HZ)
-	#define alfaGyroModule (2.0 * (2.0 * NGyro - 1.0) / NGyro / (NGyro + 1))
-	#define betaGyroModule (6.0 / NGyro / (NGyro + 1) / PERIOD40HZ)
+	#define NAccel 7.0 // accel alpha/beta filter coeff
+	#define NGyro 7.0 // gyro alpha/beta coeff
+	#define alfaAccelModule (2.0 * (2.0 * NAccel - 1.0) / NAccel / (NAccel + 1.0))
+	#define betaAccelModule (6.0 / NAccel / (NAccel + 1.0) / PERIOD40HZ)
+	#define alfaGyroModule (2.0 * (2.0 * NGyro - 1.0) / NGyro / (NGyro + 1.0))
+	#define betaGyroModule (6.0 / NGyro / (NGyro + 1.0) / PERIOD40HZ)
 	#define fcAccelLevel 3.0 // 3Hz low pass to filter 
 	#define fcAL1 (40.0/(40.0+fcAccelLevel))
 	#define fcAL2 (1.0-fcAL1)
@@ -824,14 +824,14 @@ static void processIMU(void *pvParameters)
 	#define fcGL2 (1.0-fcGL1)
 	#define GroundAccelprimlimit 0.9 // m/s²
 	#define	GroundGyroprimlimit 0.3 // rad/s²
-	#define PeriodAcc 5 // period in second for Kinetic acceleration and speed complementary filter
-	#define fcAcc1 (40.0/(40.0+ (1/PeriodAcc)))
+	#define PeriodAcc 5.0 // period in second for Kinetic acceleration and speed complementary filter
+	#define fcAcc1 (40.0/(40.0 + (1.0/PeriodAcc)))
 	#define fcAcc2 (1.0-fcAcc1)	
 
 	mpud::raw_axes_t accelRaw;
 	mpud::raw_axes_t gyroRaw;
 	
-	#define NAccelPrim 7	// ~6 Hz alpha/beta filter coeff for accel derivative estimation
+	#define NAccelPrim 7.0	// ~6 Hz alpha/beta filter coeff for accel derivative estimation
 	#define alphaAcc (2.0 * (2.0 * NAccelPrim - 1.0) / NAccelPrim / (NAccelPrim + 1.0))
 	#define betaAcc (6.0 / NAccelPrim / (NAccelPrim + 1.0) / PERIOD40HZ)	
 
@@ -983,9 +983,10 @@ static void processIMU(void *pvParameters)
 			sinPitch = sin( Pitch );
 
 			// compute kinetic acceleration from accels, gravity from IMU and centrifugal forces
-			GravIMU.x = GRAVITY * 2.0 * (q1 * q3 - q0 * q2);
+			GravIMU.x = -GRAVITY * 2.0 * (q1 * q3 - q0 * q2);
 			GravIMU.y = -GRAVITY * 2.0 * (q2 * q3 + q0 * q1);
 			GravIMU.z = -GRAVITY * (q0 * q0 - q1 * q1 - q2 * q2 + q3 * q3);
+			
 			UiPrim = accelISUNEDBODY.x - GravIMU.x - gyroISUNEDBODY.y * Vbi.z + gyroISUNEDBODY.z * Vbi.y;
 			ViPrim = accelISUNEDBODY.y - GravIMU.y - gyroISUNEDBODY.z * Vbi.x + gyroISUNEDBODY.x * Vbi.z;			
 			WiPrim = accelISUNEDBODY.z - GravIMU.z + gyroISUNEDBODY.y * Vbi.x - gyroISUNEDBODY.x * Vbi.y;
@@ -1016,6 +1017,11 @@ static void processIMU(void *pvParameters)
 			VziPrim =sinPitch * UiPrimFilt + sinRoll * cosPitch * ViPrimFilt + cosRoll * cosPitch * WiPrimFilt;
 			// compute baro inertial vertical speed  with complementary filter
 			Vzbi = fcAcc1 * (Vzbi + VziPrim * dtGyr) + fcAcc2 * Vzbaro;
+			sprintf(str,"$DEF1,%.6f,%.6f,%6f,%.6f,%.6f,%.6f,%.6f,%.6f,%6f,%.6f,%.6f,%.6f,%.6f,%.6f,%6f,%.6f,%.6f,%.6f,%.6f,%.6f,%6f,%.6f,%.6f,%.6f,%.6f,%.6f\r\n",
+				alphaCAS,betaCAS,alphaALT,betaALT,alphaVztot,betaVztot,alphaVelAcc,betaVelAcc,
+				alphaBias,betaBias,fcgrav1,fcgrav2,alphaGz,betaGz,alfaAccelModule,betaAccelModule,alfaGyroModule,betaGyroModule,
+				fcAL1,fcAL2,fcGL1,fcGL2,fcAcc1,fcAcc2,alphaAcc,betaAcc );
+			Router::sendXCV(str);	
 				
 		} else {
 			// Not moving
@@ -1304,13 +1310,13 @@ void readSensors(void *pvParameters){
 	float KGx = 4.1; // 4.1 for LS6 and 12 for Ventus 3 
 	#define FreqAlpha 1.5 // Hz
 	#define fcAoA1 (10.0/(10.0+FreqAlpha))
-	#define fcAoA2 (1-fcAoA1)
+	#define fcAoA2 (1.0-fcAoA1)
 	#define FreqBeta 1.0 // Hz
 	#define fcAoB1 (10.0/(10.0+FreqBeta))
-	#define fcAoB2 (1-fcAoB1)
+	#define fcAoB2 (1.0-fcAoB1)
 	
 	float deltaGNSSRoute;	
-	#define NGNSS 7 // GNSS alpha/beta. Sample rate is 0 Hz = 0.1 second
+	#define NGNSS 7.0 // GNSS alpha/beta. Sample rate is 0 Hz = 0.1 second
 	#define alphaGNSSRoute (2.0 * (2.0 * NGNSS - 1.0) / NGNSS / (NGNSS + 1.0))
 	#define betaGNSSRoute (6.0 / NGNSS / (NGNSS + 1.0) / PERIOD10HZ)	
 	
@@ -1443,7 +1449,9 @@ void readSensors(void *pvParameters){
 		deltaVztot = Vztotbiraw - Vztot;
 		VztotPrim = VztotPrim + betaVztot * deltaVztot;
 		Vztot = Vztot + alphaVztot * deltaVztot + VztotPrim * dtdynP;		
-		
+		sprintf(str,"$DEF2,%.6f,%.6f,%.6f,%.6f,%.6f,%6f\r\n",
+				fcAoA1,fcAoA2,fcAoB1,fcAoB2,alphaGNSSRoute,betaGNSSRoute );
+		Router::sendXCV(str);
 		if ( SENstream ) {
 		/* Sensor data
 			$S,			

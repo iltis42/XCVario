@@ -115,6 +115,7 @@ extern MPU_t MPU;
 extern bool IMUstream;
 extern bool SENstream;
 extern bool CALstream;
+extern bool SPDstream;
 extern float localGravity;
 
 

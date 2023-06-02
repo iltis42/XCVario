@@ -282,6 +282,7 @@ static int32_t cur_gyro_bias[3];
 bool IMUstream = false; // IMU FT stream
 bool SENstream = false; // Sensors FT stream
 bool CALstream = false; // accel calibration stream
+bool SPDstream = false; // speed FT stream
 float localGravity = 9.807; // local gravity used during accel calibration. Value is entered using BT $CAL command
 uint16_t BIAS_Init = 0; // Bias initialization status (0= no init, n = nth bias calculation
 bool BIASInFLASH = false; // New BIAS stored in FLASH
@@ -1471,14 +1472,44 @@ void readSensors(void *pvParameters){
 			Gyro bias y in hundredth of milli rad/s,
 			Gyro bias z in hundredth of milli rad/s,
 			Alternate gyro bias z in hundredth of milli rad/s,
-			Gravity module from accel in hundredth of milli m/s²,
 			Local gravity on ground estimation in hundredth of milli m/s²,
 			Number of biases and local gravity on ground estimations,
-			Gyro x bias ground estimation,
-			Gyro y bias ground estimation,
-			Gyro z bias ground estimation,			
-			Gyro module variation level in hundredth of milli,
-			Accel module variation level in hundredth of milli,
+			CAS in cm/s,
+			TAS in cm/s,
+			ALT in cm,
+			Vzbaro in cm/s,
+			AoA angle in mrad,
+			AoB  angle in mrad,
+			Up in cm/s,
+			Vp in cm/s,
+			Wp in cm/s,
+			VbiPrim.x in cm/s²,
+			VbiPrim.y in cm/s²,
+			VbiPrim.z in cm/s²,
+			Vbi.x in cm/s,
+			Vbi.y in cm/s,
+			Vbi.z in cm/s, 
+			Vztot in cm/s
+			<CR><LF>		
+		*/
+	
+			sprintf(str,"$SPD,%lld,%i,%lld,%i,%i,%i,%i,%1d,%2d,%lld,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",
+				statTime, (int32_t)(statP*100.0), teTime,(int32_t)(teP*100.0), (int16_t)(dynP*10), (int16_t)(OATemp*10.0), (int16_t)(MPUtempcel*10.0),
+				chosenGnss->fix, chosenGnss->numSV,
+				(int64_t)(chosenGnss->time*1000.0), (int32_t)(chosenGnss->coordinates.altitude*100),
+				(int16_t)(chosenGnss->speed.x*100), (int16_t)(chosenGnss->speed.y*100), (int16_t)(chosenGnss->speed.z*100), (int16_t)(GNSSRouteraw*10),
+				(int32_t)(Pitch*1000.0), (int32_t)(Roll*1000.0), (int32_t)(Yaw*1000.0),
+				(int32_t)(BiasQuatGx*100000.0), (int32_t)(BiasQuatGy*100000.0), (int32_t)(BiasQuatGz*100000.0), (int32_t)(alternategzBias*100000.0),
+				(int32_t)(GRAVITY*100000.0),(int16_t)BIAS_Init,
+				(int32_t)(CAS*100), (int32_t)(TAS*100), (int32_t)(ALT*100), (int32_t)(Vzbaro*100),
+				(int32_t)(AoA*1000), (int32_t)(AoB*1000),
+				(int32_t)(Up*100), (int32_t)(Vp*100), (int32_t)(Wp*100), (int32_t)(UpPrim*100), (int32_t)(VpPrim*100), (int32_t)(WpPrim*100),
+				(int32_t)(VbiPrim.x*100), (int32_t)(VbiPrim.y*100), (int32_t)(VbiPrim.z*100), (int32_t)(Vbi.x*100), (int32_t)(Vbi.y*100), (int32_t)(Vbi.z*100), 				
+				(int32_t)(Vztot*100) );
+			Router::sendXCV(str);
+		}
+		if ( SPDstream ) {
+		/* Speed data
 			CAS in cm/s,
 			CASprim in cm/s²,
 			TAS in cm/s,
@@ -1493,9 +1524,6 @@ void readSensors(void *pvParameters){
 			UpPrim in cm/s²,
 			VpPrim in cm/s²,
 			WpPrim in cm/s²,
-			UiPrimFilt in cm/s²,
-			ViPrimFilt in cm/s²,
-			WiPrimFilt in cm/s²,
 			UiPrimPrim in cm/s3,
 			ViPrimPrim in cm/s3,
 			WiPrimPrim in cm/s3,			
@@ -1509,16 +1537,11 @@ void readSensors(void *pvParameters){
 			<CR><LF>		
 		*/
 	
-			sprintf(str,"$S,%lld,%i,%lld,%i,%i,%i,%i,%1d,%2d,%lld,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",
-				statTime, (int32_t)(statP*100.0), teTime,(int32_t)(teP*100.0), (int16_t)(dynP*10), (int16_t)(OATemp*10.0), (int16_t)(MPUtempcel*10.0), chosenGnss->fix, chosenGnss->numSV,
-				(int64_t)(chosenGnss->time*1000.0), (int32_t)(chosenGnss->coordinates.altitude*100), (int16_t)(chosenGnss->speed.x*100), (int16_t)(chosenGnss->speed.y*100), (int16_t)(chosenGnss->speed.z*100), (int16_t)(GNSSRouteraw*10),
-				(int32_t)(Pitch*1000.0), (int32_t)(Roll*1000.0), (int32_t)(Yaw*1000.0),(int32_t)(free_Pitch*1000.0), (int32_t)(free_Roll*1000.0), (int32_t)(free_Yaw*1000.0),
-				(int32_t)(BiasQuatGx*100000.0), (int32_t)(BiasQuatGy*100000.0), (int32_t)(BiasQuatGz*100000.0), (int32_t)(alternategzBias*100000.0), (int32_t)(AccelGravModuleFilt*100000.0),(int32_t)(GRAVITY*100000.0),(int16_t)BIAS_Init, (int32_t)(-currentGyroBias.z*100000), (int32_t)(-currentGyroBias.y*100000), (int32_t)(-currentGyroBias.x*100000),
-				(int32_t)(GyroModulePrimLevel*100000.0), (int32_t)(AccelModulePrimLevel*100000.0),
-				(int32_t)(CAS*100), (int32_t)(CASprim*100), (int32_t)(TAS*100), (int32_t)(TASprim*100), (int32_t)(ALT*100), (int32_t)(Vzbaro*100),
+			sprintf(str,"$S,%lld,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",
+				statTime, (int32_t)(CAS*100), (int32_t)(CASprim*100), (int32_t)(TAS*100), (int32_t)(TASprim*100), (int32_t)(ALT*100), (int32_t)(Vzbaro*100),
 				(int32_t)(AoA*1000), (int32_t)(AoB*1000),
 				(int32_t)(Up*100), (int32_t)(Vp*100), (int32_t)(Wp*100), (int32_t)(UpPrim*100), (int32_t)(VpPrim*100), (int32_t)(WpPrim*100),
-				(int32_t)(UiPrimFilt*100), (int32_t)(ViPrimFilt*100), (int32_t)(WiPrimFilt*100), (int32_t)(UiPrimPrim*100), (int32_t)(ViPrimPrim*100), (int32_t)(WiPrimPrim*100),
+				(int32_t)(UiPrimPrim*100), (int32_t)(ViPrimPrim*100), (int32_t)(WiPrimPrim*100),
 				(int32_t)(VbiPrim.x*100), (int32_t)(VbiPrim.y*100), (int32_t)(VbiPrim.z*100), (int32_t)(Vbi.x*100), (int32_t)(Vbi.y*100), (int32_t)(Vbi.z*100), 				
 				(int32_t)(Vztot*100) );
 			Router::sendXCV(str);

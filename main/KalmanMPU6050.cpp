@@ -144,7 +144,7 @@ void IMU::read()
 	float ay=0;
 	float az=0;
 
-	if( getTAS() > 10 ){
+	if( 0 /* getTAS() > 10 */ ){
 		// This part is a deterministic and noise resistant approach for centrifugal force removal
 		// 1: exstimate roll angle from Z axis omega plus airspeed
 		double roll=0;
@@ -153,8 +153,10 @@ void IMU::read()
 		// Z cross axis rotation in 3D space with roll angle correction
 		float omega = atan( ( (D2R(gyroZ)/cos( D2R(euler.roll))) * (getTAS()/3.6) ) / 9.80665 );
 		// 2: estimate angle of bank from increased acceleration in Z axis
-		positiveG += (-accelZ - positiveG)*0.08;  // some low pass filtering makes sense here
+		// positiveG += (-accelZ - positiveG)*0.08;  // some low pass filtering makes sense here
+		positiveG = -accelZ;
 		// only positive G-force is to be considered, curve at negative G is not defined
+		// Trust = TrustMin + (TrustMax – TrustMin) * ( 1 - 10^-( (LoadFactor – 1 ) * Dynamic) )
 		float groll = 0.0;
 		if( positiveG < 1.0 )
 			positiveG = 1.0;

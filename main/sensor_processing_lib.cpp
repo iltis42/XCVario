@@ -40,15 +40,16 @@ Quaternion quaternion_from_compass(float wx, float wy, float wz )
 	return result;
 }
 
-float fusion_coeffecient(vector_ijk virtual_gravity, vector_ijk sensor_gravity)
+#define TrustMin  10.0
+
+float fusion_coeffecient(vector_ijk virtual_gravity, vector_ijk sensor_gravity, float loadFactor )
 {
     vector_ijk v = sensor_gravity;
-    float dot = v.dot_product(virtual_gravity);
-    // ESP_LOGI(FNAME,"dot: %f ax: %.3f ay: %.3f az:%.3f", dot, virtual_gravity.a, virtual_gravity.b, virtual_gravity.c );
-    if (dot<=0.96){
-       return ahrs_gyro_factor.get();   // if both are close, trust more gyro
-    }
-    return ahrs_gyro_factor.get()/4;
+    float lf = loadFactor > 2.0 ? 2.0 : loadFactor;  // limit to +-1g
+    lf = lf < -1.0 ? -1.0 : lf;
+    float trust = TrustMin + ahrs_gyro_factor.get() * ( pow(10, abs(lf-1) * ahrs_dynamic_factor.get()) - 1);
+    // ESP_LOGI(FNAME,"LF= %f trust= %f", loadFactor, trust);
+    return trust;
 }
 
 vector_ijk sensor_gravity_normalized(float ax, float ay, float az)
@@ -61,9 +62,9 @@ vector_ijk sensor_gravity_normalized(float ax, float ay, float az)
     return result;
 }
 
-vector_ijk fuse_vector(vector_ijk virtual_gravity, vector_ijk sensor_gravity)
+vector_ijk fuse_vector(vector_ijk virtual_gravity, vector_ijk sensor_gravity, float loadFactor )
 {
-    float fusion = fusion_coeffecient(virtual_gravity, sensor_gravity);
+    float fusion = fusion_coeffecient(virtual_gravity, sensor_gravity, loadFactor);
     virtual_gravity.scale(fusion);
     vector_ijk result = virtual_gravity;
     result.sum(sensor_gravity);
@@ -90,9 +91,10 @@ vector_ijk update_gravity_vector(vector_ijk gravity_vector,float wx,float wy,flo
 
 vector_ijk update_fused_vector(vector_ijk fused_vector, float ax, float ay, float az,float wx,float wy,float wz,float delta)
 {
-	// ESP_LOGI(FNAME,"ax=%d ay=%d az=%d", ax, ay, az);
     vector_ijk virtual_gravity = update_gravity_vector(fused_vector,wx,wy,wz,delta);
     vector_ijk sensor_gravity = sensor_gravity_normalized(ax,ay,az);
-    fused_vector = fuse_vector(virtual_gravity,sensor_gravity);
+    float loadFactor = sqrt( ax * ax + ay * ay + az * az );
+    // ESP_LOGI(FNAME,"ax=%f ay=%f az=%f lf=%f", ax, ay, az, loadFactor );
+    fused_vector = fuse_vector(virtual_gravity,sensor_gravity, loadFactor);
     return fused_vector;
 }

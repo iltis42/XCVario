@@ -325,7 +325,7 @@ static float deltaWp = 0.0;
 static float WpPrim = 0.0;
 static float WpFilt = 0.0;	
 static float Vzbi = 0.0;
-static float VziPrim = 0.0;
+static float VzbiPrim = 0.0;
 static float Vztotbiraw = 0.0;
 static float deltaVztot = 0.0;
 static float Vztot = 0.0;
@@ -830,6 +830,7 @@ static void processIMU(void *pvParameters)
 
 	mpud::raw_axes_t accelRaw;
 	mpud::raw_axes_t gyroRaw;
+	mpud::float_axes_t gyroCorr;	
 	
 	#define NAccelPrim 7.0	// ~6 Hz alpha/beta filter coeff for accel derivative estimation
 	#define alphaAcc (2.0 * (2.0 * NAccelPrim - 1.0) / NAccelPrim / (NAccelPrim + 1.0))
@@ -873,7 +874,7 @@ static void processIMU(void *pvParameters)
 	mpud::float_axes_t gravISUNEDBODY;
 
 	// TODO estimation of gyro gain
-	float Module = 9.807;
+	float Module = gravity.get();
 	
 	while (1) {
 
@@ -894,15 +895,10 @@ static void processIMU(void *pvParameters)
 			gyroISUNEDBODY.x = C_T * gyroISUNEDMPU.x + STmultSS * gyroISUNEDMPU.y + STmultCS * gyroISUNEDMPU.z;
 			gyroISUNEDBODY.y = C_S * gyroISUNEDMPU.y - S_S * gyroISUNEDMPU.z;
 			gyroISUNEDBODY.z = -S_T * gyroISUNEDMPU.x + SSmultCT  * gyroISUNEDMPU.y + CTmultCS * gyroISUNEDMPU.z;
-			// filter gyro module with alfa/beta filter
-			deltaGyroModule =  sqrt( gyroISUNEDBODY.x * gyroISUNEDBODY.x + gyroISUNEDBODY.y * gyroISUNEDBODY.y + gyroISUNEDBODY.z * gyroISUNEDBODY.z ) - GyroModuleFilt;
-			GyroModulePrimFilt = GyroModulePrimFilt + betaGyroModule * deltaGyroModule;
-			GyroModuleFilt = GyroModuleFilt + alfaGyroModule * deltaGyroModule + GyroModulePrimFilt * dtGyr;
-			if ( GyroModulePrimLevel < abs(GyroModulePrimFilt) ) {
-				GyroModulePrimLevel = abs(GyroModulePrimFilt);
-			} else {
-				GyroModulePrimLevel = fcGL1 * GyroModulePrimLevel +  fcGL2 * abs(GyroModulePrimFilt);
-			}			
+			// correct gyro with flight gyro estimation
+			gyroCorr.x = gyroISUNEDBODY.x - BiasQuatGx;
+			gyroCorr.y = gyroISUNEDBODY.y - BiasQuatGy;
+			gyroCorr.z = gyroISUNEDBODY.z - BiasQuatGz;
 		}
 		// get accel data
 		if( MPU.acceleration(&accelRaw) == ESP_OK ){
@@ -912,35 +908,26 @@ static void processIMU(void *pvParameters)
 			accelISUNEDMPU.y = ((-accelG.y*9.807) - currentAccelBias.y ) * currentAccelGain.y;
 			accelISUNEDMPU.z = ((-accelG.x*9.807) - currentAccelBias.z ) * currentAccelGain.z;
 			// convert from MPU to BODY
-			accelISUNEDBODY.x = C_T * accelISUNEDMPU.x + STmultSS * accelISUNEDMPU.y + STmultCS * accelISUNEDMPU.z - ( gyroISUNEDBODY.y * gyroISUNEDBODY.y + gyroISUNEDBODY.z * gyroISUNEDBODY.z ) * DistCGVario;
+			accelISUNEDBODY.x = C_T * accelISUNEDMPU.x + STmultSS * accelISUNEDMPU.y + STmultCS * accelISUNEDMPU.z - ( gyroCorr.y * gyroCorr.y + gyroCorr.z * gyroCorr.z ) * DistCGVario;
 			accelISUNEDBODY.y = C_S * accelISUNEDMPU.y - S_S * accelISUNEDMPU.z;
 			accelISUNEDBODY.z = -S_T * accelISUNEDMPU.x + SSmultCT * accelISUNEDMPU.y + CTmultCS * accelISUNEDMPU.z;
-			// filter acceleration module with alfa/beta filter
-			Module = sqrt( accelISUNEDBODY.x * accelISUNEDBODY.x + accelISUNEDBODY.y * accelISUNEDBODY.y + accelISUNEDBODY.z * accelISUNEDBODY.z );
-			deltaAccelModule =  Module - AccelModuleFilt;
-			AccelModulePrimFilt = AccelModulePrimFilt + betaAccelModule * deltaAccelModule;
-			AccelModuleFilt = AccelModuleFilt + alfaAccelModule * deltaAccelModule + AccelModulePrimFilt * dtGyr;			
-			if ( AccelModulePrimLevel < abs(AccelModulePrimFilt) ) {
-				AccelModulePrimLevel = abs(AccelModulePrimFilt);
-			} else {
-				AccelModulePrimLevel = fcAL1 * AccelModulePrimLevel +  fcAL2 * abs(AccelModulePrimFilt);
-			}
 		}		
 
-		// if moving, speed > 10 m/s or ground bias estimation has ran more than "10" times TODO when operational BIAS_Init should be up to 10.
+		// if moving (speed > 10 m/s or ground bias estimation has ran more than "10" times TODO when operational BIAS_Init should be up to 10)
+		// Update IMU quaternion, compute accelerations and speeds
 		if (TAS > 10.0  || BIAS_Init > 0 ) {  // used 0 instead of 10 for test purpose on the ground when TAS = 0
-			// first time in movement, if biais initialiazation was achieved, store bias and local gravity in FLASH
+			// first time in movement, if biais initialiazation was achieved more than once, store bias and local gravity in FLASH
 			if ( !BIASInFLASH && BIAS_Init > 1 ) {
 				gyro_bias.set(currentGyroBias);
 				gravity.set(GRAVITY);
 				BIASInFLASH = true;
 			}
-
+			// only consider centrifugal forces if TAS > 10 m/s
 			if ( TAS > 10.0 ) {
 			// estimate gravity in body frame taking into account centrifugal corrections
-				gravISUNEDBODY.x = accelISUNEDBODY.x - gyroISUNEDBODY.y * Vbi.z + gyroISUNEDBODY.z * Vbi.y;
-				gravISUNEDBODY.y = accelISUNEDBODY.y - gyroISUNEDBODY.z * Vbi.x + gyroISUNEDBODY.x * Vbi.z;
-				gravISUNEDBODY.z = accelISUNEDBODY.z + gyroISUNEDBODY.y * Vbi.x - gyroISUNEDBODY.x * Vbi.y;
+				gravISUNEDBODY.x = accelISUNEDBODY.x - gyroCorr.y * Vbi.z + gyroCorr.z * Vbi.y;
+				gravISUNEDBODY.y = accelISUNEDBODY.y - gyroCorr.z * Vbi.x + gyroCorr.x * Vbi.z;
+				gravISUNEDBODY.z = accelISUNEDBODY.z + gyroCorr.y * Vbi.x - gyroCorr.x * Vbi.y;
 			} else {
 				// estimate gravity in body frame using accels only
 				gravISUNEDBODY.x = accelISUNEDBODY.x;
@@ -982,14 +969,14 @@ static void processIMU(void *pvParameters)
 			cosPitch = cos( Pitch );
 			sinPitch = sin( Pitch );
 
-			// compute kinetic acceleration from accels, gravity from IMU and centrifugal forces
+			// compute kinetic acceleration from accels, gravity from IMU and centrifugal forces from accels and baro inertial speeds
 			GravIMU.x = -GRAVITY * 2.0 * (q1 * q3 - q0 * q2);
 			GravIMU.y = -GRAVITY * 2.0 * (q2 * q3 + q0 * q1);
 			GravIMU.z = -GRAVITY * (q0 * q0 - q1 * q1 - q2 * q2 + q3 * q3);
-			
-			UiPrim = accelISUNEDBODY.x - GravIMU.x - gyroISUNEDBODY.y * Vbi.z + gyroISUNEDBODY.z * Vbi.y;
-			ViPrim = accelISUNEDBODY.y - GravIMU.y - gyroISUNEDBODY.z * Vbi.x + gyroISUNEDBODY.x * Vbi.z;			
-			WiPrim = accelISUNEDBODY.z - GravIMU.z + gyroISUNEDBODY.y * Vbi.x - gyroISUNEDBODY.x * Vbi.y;
+			// Kinetic accelerations
+			UiPrim = accelISUNEDBODY.x - GravIMU.x - gyroCorr.y * Vbi.z + gyroCorr.z * Vbi.y;
+			ViPrim = accelISUNEDBODY.y - GravIMU.y - gyroCorr.z * Vbi.x + gyroCorr.x * Vbi.z;			
+			WiPrim = accelISUNEDBODY.z - GravIMU.z + gyroCorr.y * Vbi.x - gyroCorr.x * Vbi.y;
 
 			// compute UiPrim, ViPrim and WiPrim derivative with alpha beta filter
 			deltaUiPrim = UiPrim - UiPrimFilt;
@@ -1001,31 +988,51 @@ static void processIMU(void *pvParameters)
 			deltaWiPrim = WiPrim - WiPrimFilt;
 			WiPrimPrim = WiPrimPrim + betaAcc * deltaWiPrim;
 			WiPrimFilt = WiPrimFilt + alphaAcc * deltaWiPrim + WiPrimPrim * dtGyr;
-			// Small Low Pass  on UiPrim, ViPrim and WiPrim derivatives to reduce noise. TODO check if LP is necessary. alpha/beta + LP ~3 Hz response
-			UiPrimPrimFilt = 0.5 * UiPrimPrimFilt + 0.5 * UiPrimPrim;
-			ViPrimPrimFilt = 0.5 * ViPrimPrimFilt + 0.5 * ViPrimPrim;
-			WiPrimPrimFilt = 0.5 * WiPrimPrimFilt + 0.5 * WiPrimPrim;			
 			// compute baro internial acceleration with complementary filter
-			VbiPrim.x = fcAcc1 * ( VbiPrim.x + UiPrimPrimFilt * dtGyr ) + fcAcc2 * UpPrimFilt;
-			VbiPrim.y = fcAcc1 * ( VbiPrim.y + ViPrimPrimFilt * dtGyr ) + fcAcc2 * VpPrimFilt;
-			VbiPrim.z = fcAcc1 * ( VbiPrim.z + WiPrimPrimFilt * dtGyr ) + fcAcc2 * WpPrimFilt;
+			VbiPrim.x = fcAcc1 * ( VbiPrim.x + UiPrimPrim * dtGyr ) + fcAcc2 * UpPrim;
+			VbiPrim.y = fcAcc1 * ( VbiPrim.y + ViPrimPrim * dtGyr ) + fcAcc2 * VpPrim;
+			VbiPrim.z = fcAcc1 * ( VbiPrim.z + WiPrimPrim * dtGyr ) + fcAcc2 * WpPrim;
 			// compute baro inertial speed with complementary filter
-			Vbi.x = fcAcc1 * ( Vbi.x + UiPrimFilt * dtGyr ) + fcAcc2 * UpFilt;
-			Vbi.y = fcAcc1 * ( Vbi.y + ViPrimFilt * dtGyr ) + fcAcc2 * VpFilt;
-			Vbi.z = fcAcc1 * ( Vbi.z + WiPrimFilt * dtGyr ) + fcAcc2 * WpFilt;
-			// compute inertial vertical acceleration in earth frame
-			VziPrim =sinPitch * UiPrimFilt + sinRoll * cosPitch * ViPrimFilt + cosRoll * cosPitch * WiPrimFilt;
+			Vbi.x = fcAcc1 * ( Vbi.x + VbiPrim.x * dtGyr ) + fcAcc2 * Up;
+			Vbi.y = fcAcc1 * ( Vbi.y + VbiPrim.y * dtGyr ) + fcAcc2 * Vp;
+			Vbi.z = fcAcc1 * ( Vbi.z + VbiPrim.z * dtGyr ) + fcAcc2 * Wp;
+			// compute baro inertial vertical acceleration in earth frame
+			VzbiPrim =sinPitch * VbiPrim.x + sinRoll * cosPitch * VbiPrim.y + cosRoll * cosPitch * VbiPrim.z;
 			// compute baro inertial vertical speed  with complementary filter
-			Vzbi = fcAcc1 * (Vzbi + VziPrim * dtGyr) + fcAcc2 * Vzbaro;
+			Vzbi = fcAcc1 * (Vzbi + VzbiPrim * dtGyr) + fcAcc2 * Vzbaro;
 				
 		} else {
 			// Not moving
+			// compute acceleration module variation
+			deltaAccelModule = sqrt( accelISUNEDBODY.x * accelISUNEDBODY.x + accelISUNEDBODY.y * accelISUNEDBODY.y + accelISUNEDBODY.z * accelISUNEDBODY.z ) - AccelModuleFilt;
+			// filter gyro with alfa/beta
+			AccelModulePrimFilt = AccelModulePrimFilt + betaAccelModule * deltaAccelModule;
+			AccelModuleFilt = AccelModuleFilt + alfaAccelModule * deltaAccelModule + AccelModulePrimFilt * dtGyr;
+			// aysmétric filter with fast raise and slow decay
+			if ( AccelModulePrimLevel < abs(AccelModulePrimFilt) ) {
+				AccelModulePrimLevel = abs(AccelModulePrimFilt);
+			} else {
+				AccelModulePrimLevel = fcAL1 * AccelModulePrimLevel +  fcAL2 * abs(AccelModulePrimFilt);
+			}			
+			// compute gyro module variation
+			deltaGyroModule =  sqrt( gyroISUNEDBODY.x * gyroISUNEDBODY.x + gyroISUNEDBODY.y * gyroISUNEDBODY.y + gyroISUNEDBODY.z * gyroISUNEDBODY.z ) - GyroModuleFilt;
+			// filter gyro with alfa/beta
+			GyroModulePrimFilt = GyroModulePrimFilt + betaGyroModule * deltaGyroModule;
+			GyroModuleFilt = GyroModuleFilt + alfaGyroModule * deltaGyroModule + GyroModulePrimFilt * dtGyr;
+			// aysmétric filter with fast raise and slow decay
+			if ( GyroModulePrimLevel < abs(GyroModulePrimFilt) ) {
+				GyroModulePrimLevel = abs(GyroModulePrimFilt);
+			} else {
+				GyroModulePrimLevel = fcGL1 * GyroModulePrimLevel +  fcGL2 * abs(GyroModulePrimFilt);
+			}	
+			
 			// When there is MPU temperature control and temperature is locked   or   when there is no temperature control
 			if ( (HAS_MPU_TEMP_CONTROL && (MPU.getSiliconTempStatus() == MPU_T_LOCKED)) || !HAS_MPU_TEMP_CONTROL ) {
 				// count cycles when temperature is locked
 				gyrobiastemptimer++;
 				// detect if gyro and accel variations is below stability threshold using an alpha/beta filter to estimate variation over short period of time
 				// if temperature conditions has been stable for more than 30 seconds (1200 = 30x40hz) but less than 20 minutes and there is very little angular and acceleration variation
+				// filter acceleration module with alfa/beta filter
 				if ( (gyrobiastemptimer > 1200) && (GyroModulePrimLevel < GroundGyroprimlimit) && (AccelModulePrimLevel < GroundAccelprimlimit) ) {
 					gyrostable++;
 					// during first 2.5 seconds, initialize gyro data
@@ -1091,6 +1098,60 @@ static void processIMU(void *pvParameters)
 					gyrostable = 0; // reset gyro stability counter if temperature not stable or movement detected
 				}
 			} 
+			// If required stream accel calibration data
+			if ( CALstream && BIAS_Init > 0 ) {
+				// If gyro are stable
+				if ( GyroModulePrimLevel < GroundGyroprimlimit ) {
+					if ( gyromodulestable == 0 ) {
+						accelAvgx = -accelG.z*9.807;
+						accelAvgy = -accelG.y*9.807;
+						accelAvgz = -accelG.x*9.807;
+						gyromodulestable = 1;
+					} else {
+						accelAvgx = 0.95 * accelAvgx + 0.05 * (-accelG.z*9.807);
+						accelAvgy = 0.95 * accelAvgy + 0.05 * (-accelG.y*9.807);
+						accelAvgz = 0.95 * accelAvgz + 0.05 * (-accelG.x*9.807);
+					}					
+					// store max and min
+					if ( accelAvgx > accelMaxx ) accelMaxx = accelAvgx;
+					if ( accelAvgy > accelMaxy ) accelMaxy = accelAvgy;
+					if ( accelAvgz > accelMaxz ) accelMaxz = accelAvgz;
+					if ( accelAvgx < accelMinx ) accelMinx = accelAvgx;
+					if ( accelAvgy < accelMiny ) accelMiny = accelAvgy;
+					if ( accelAvgz < accelMinz ) accelMinz = accelAvgz;
+				} else {
+					gyromodulestable = 0;
+				}
+				/*
+				CAL data
+				$CAL,
+				Acceleration in X-Axis in m/s²,
+				Acceleration max in X-Axis in m/s²,
+				Acceleration min in X-Axis in m/s²,				
+				Acceleration in Y-Axis in m/s²,
+				Acceleration max in Y-Axis in m/s²,
+				Acceleration min in Y-Axis in  m/s²,				
+				Acceleration in Z-Axis in m/s²,
+				Acceleration max in Z-Axis in m/s²,
+				Acceleration min in Z-Axis in m/s²,
+				Acceleration bias x in m/s²,
+				Acceleration bias y in m/s²
+				Acceleration bias z in m/s²	
+				Acceleration gain x in m/s²,
+				Acceleration gain y in m/s²
+				Acceleration gain z in m/s²				
+				<CR><LF>	
+				*/
+				if ( gyromodulestable > 0 ) {			
+					sprintf(str,"$CAL,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\r\n",
+						accelAvgx, accelMaxx, accelMinx, accelAvgy, accelMaxy, accelMiny, accelAvgz, accelMaxz, accelMinz,
+						(accelMaxx+accelMinx)/2, (accelMaxy+accelMiny)/2, (accelMaxz+accelMinz)/2,
+						localGravity /((accelMaxx-accelMinx)/2), localGravity /((accelMaxy-accelMiny)/2), localGravity/((accelMaxz-accelMinz)/2) );
+				} else {
+					sprintf(str,"$CAL, ----------\r\n");
+				}
+				Router::sendXCV(str);
+			}	
 		} 			
 		
 		// If required stream IMU data
@@ -1113,62 +1174,6 @@ static void processIMU(void *pvParameters)
 				(int32_t)(gyroISUNEDBODY.x*100000.0), (int32_t)(gyroISUNEDBODY.y*100000.0),(int32_t)(gyroISUNEDBODY.z*100000.0) );
 			Router::sendXCV(str);
 		}
-
-
-		// If required stream accel calibration data
-		if ( CALstream && BIAS_Init > 0 ) {
-			// If gyro are stable
-			if ( GyroModulePrimLevel < GroundGyroprimlimit ) {
-				if ( gyromodulestable == 0 ) {
-					accelAvgx = -accelG.z*9.807;
-					accelAvgy = -accelG.y*9.807;
-					accelAvgz = -accelG.x*9.807;
-					gyromodulestable = 1;
-				} else {
-					accelAvgx = 0.95 * accelAvgx + 0.05 * (-accelG.z*9.807);
-					accelAvgy = 0.95 * accelAvgy + 0.05 * (-accelG.y*9.807);
-					accelAvgz = 0.95 * accelAvgz + 0.05 * (-accelG.x*9.807);
-				}					
-				// store max and min
-				if ( accelAvgx > accelMaxx ) accelMaxx = accelAvgx;
-				if ( accelAvgy > accelMaxy ) accelMaxy = accelAvgy;
-				if ( accelAvgz > accelMaxz ) accelMaxz = accelAvgz;
-				if ( accelAvgx < accelMinx ) accelMinx = accelAvgx;
-				if ( accelAvgy < accelMiny ) accelMiny = accelAvgy;
-				if ( accelAvgz < accelMinz ) accelMinz = accelAvgz;
-			} else {
-				gyromodulestable = 0;
-			}
-			/*
-			CAL data
-			$CAL,
-			Acceleration in X-Axis in m/s²,
-			Acceleration max in X-Axis in m/s²,
-			Acceleration min in X-Axis in m/s²,				
-			Acceleration in Y-Axis in m/s²,
-			Acceleration max in Y-Axis in m/s²,
-			Acceleration min in Y-Axis in  m/s²,				
-			Acceleration in Z-Axis in m/s²,
-			Acceleration max in Z-Axis in m/s²,
-			Acceleration min in Z-Axis in m/s²,
-			Acceleration bias x in m/s²,
-			Acceleration bias y in m/s²
-			Acceleration bias z in m/s²	
-			Acceleration gain x in m/s²,
-			Acceleration gain y in m/s²
-			Acceleration gain z in m/s²				
-			<CR><LF>	
-			*/
-			if ( gyromodulestable > 0 ) {			
-				sprintf(str,"$CAL,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\r\n",
-					accelAvgx, accelMaxx, accelMinx, accelAvgy, accelMaxy, accelMiny, accelAvgz, accelMaxz, accelMinz,
-					(accelMaxx+accelMinx)/2, (accelMaxy+accelMiny)/2, (accelMaxz+accelMinz)/2,
-					localGravity /((accelMaxx-accelMinx)/2), localGravity /((accelMaxy-accelMiny)/2), localGravity/((accelMaxz-accelMinz)/2) );
-			} else {
-				sprintf(str,"$CAL, ----------\r\n");
-			}
-			Router::sendXCV(str);
-		}		
 
 		ProcessTimeIMU = (esp_timer_get_time()/1000.0) - gyroTime;
 		if ( ProcessTimeIMU > 5 ) {
@@ -1434,10 +1439,6 @@ void readSensors(void *pvParameters){
 		deltaWp = Wp - WpFilt;
 		WpPrim = WpPrim + betaVelAcc * deltaWp;
 		WpFilt = WpFilt + alphaVelAcc * deltaWp + WpPrim * dtdynP;
-		// Small Low Pass on prim values to reduce noise. TODO check if LP is necessary
-		UpPrimFilt = 0.5 * UpPrimFilt + 0.5 * UpPrim;
-		VpPrimFilt = 0.5 * VpPrimFilt + 0.5 * VpPrim;
-		WpPrimFilt = 0.5 * WpPrimFilt + 0.5 * WpPrim;			
 		// compute baro inertial total energy
 		Vztotbiraw = Vzbi + ( Vbi.x * VbiPrim.x + Vbi.y * VbiPrim.y + Vbi.z * VbiPrim.z ) / GRAVITY;
 		// filter raw total energy

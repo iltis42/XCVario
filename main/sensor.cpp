@@ -170,6 +170,7 @@ mpud::float_axes_t accelISUNEDBODY;
 mpud::float_axes_t gyroRPS;
 mpud::float_axes_t gyroISUNEDMPU;
 mpud::float_axes_t gyroISUNEDBODY;
+mpud::float_axes_t gyroCorr;
 static float AccelGravModuleFilt = 9.807;
 static int32_t gyrobiastemptimer = 0;
 static float integralFBx = 0.0;
@@ -337,11 +338,6 @@ static float VztotPrim = 0.0;
 #define NVelAcc 7.0 // pneumatic velocity variation alpha/beta filter coeff
 #define alphaVelAcc (2.0 * (2.0 * NVelAcc - 1.0) / NVelAcc / (NVelAcc + 1.0))
 #define betaVelAcc (6.0 / NVelAcc / (NVelAcc + 1.0) / PERIOD10HZ)
-
-
-
-
-
 
 static float battery=0.0;
 
@@ -831,7 +827,6 @@ static void processIMU(void *pvParameters)
 
 	mpud::raw_axes_t accelRaw;
 	mpud::raw_axes_t gyroRaw;
-	mpud::float_axes_t gyroCorr;	
 	
 	#define NAccelPrim 7.0	// ~6 Hz alpha/beta filter coeff for accel derivative estimation
 	#define alphaAcc (2.0 * (2.0 * NAccelPrim - 1.0) / NAccelPrim / (NAccelPrim + 1.0))
@@ -1016,7 +1011,7 @@ static void processIMU(void *pvParameters)
 				AccelModulePrimLevel = fcAL1 * AccelModulePrimLevel +  fcAL2 * abs(AccelModulePrimFilt);
 			}			
 			// compute gyro module variation
-			deltaGyroModule =  sqrt( gyroISUNEDBODY.x * gyroISUNEDBODY.x + gyroISUNEDBODY.y * gyroISUNEDBODY.y + gyroISUNEDBODY.z * gyroISUNEDBODY.z ) - GyroModuleFilt;
+			deltaGyroModule =  sqrt( gyroCorr.x * gyroCorr.x + gyroCorr.y * gyroCorr.y + gyroCorr.z * gyroCorr.z ) - GyroModuleFilt;
 			// filter gyro with alfa/beta
 			GyroModulePrimFilt = GyroModulePrimFilt + betaGyroModule * deltaGyroModule;
 			GyroModuleFilt = GyroModuleFilt + alfaGyroModule * deltaGyroModule + GyroModulePrimFilt * dtGyr;
@@ -1414,7 +1409,7 @@ void readSensors(void *pvParameters){
 			prevCL = CL;
 			AoARaw = -(accelISUNEDBODY.x / accelISUNEDBODY.z) + Speed2Fly.cw( CAS ) / Speed2Fly.getN();
 			AoA = fcAoA1 * ( AoA + dAoA ) + fcAoA2 * AoARaw ;
-			AoB = fcAoB1 * AoB + fcAoB2 * ( KAoB * WingLoad * accelISUNEDBODY.y / dynP - KGx * gyroISUNEDBODY.x / TAS);	
+			AoB = fcAoB1 * AoB + fcAoB2 * ( KAoB * WingLoad * accelISUNEDBODY.y / dynP - KGx * gyroCorr.x / TAS);	
 		} else {
 			AoA = 0.0;
 			AoB = 0.0;

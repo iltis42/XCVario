@@ -821,7 +821,10 @@ static void processIMU(void *pvParameters)
 	#define fcGL2 (1.0-fcGL1)
 	#define GroundAccelprimlimit 0.9 // m/s²
 	#define	GroundGyroprimlimit 0.3 // rad/s²
-	#define PeriodAcc 5.0 // period in second for Kinetic acceleration and speed complementary filter
+	#define PeriodAccP 2.5 // period in second for Kinetic acceleration² and pneumatic acceleration complementary filter
+	#define fcAccP1 (40.0/(40.0 + (1.0/PeriodAccP)))
+	#define fcAccP2 (1.0-fcAccP1)	
+	#define PeriodAcc 5.0 // period in second for Kinetic baro internial acceleration and pneumatic speed complementary filter
 	#define fcAcc1 (40.0/(40.0 + (1.0/PeriodAcc)))
 	#define fcAcc2 (1.0-fcAcc1)	
 
@@ -892,9 +895,9 @@ static void processIMU(void *pvParameters)
 			gyroISUNEDBODY.y = C_S * gyroISUNEDMPU.y - S_S * gyroISUNEDMPU.z;
 			gyroISUNEDBODY.z = -S_T * gyroISUNEDMPU.x + SSmultCT  * gyroISUNEDMPU.y + CTmultCS * gyroISUNEDMPU.z;
 			// correct gyro with flight gyro estimation
-			gyroCorr.x = gyroISUNEDBODY.x - BiasQuatGx;
-			gyroCorr.y = gyroISUNEDBODY.y - BiasQuatGy;
-			gyroCorr.z = gyroISUNEDBODY.z - BiasQuatGz;
+			gyroCorr.x = gyroISUNEDBODY.x + BiasQuatGx;
+			gyroCorr.y = gyroISUNEDBODY.y + BiasQuatGy;
+			gyroCorr.z = gyroISUNEDBODY.z + BiasQuatGz;
 		}
 		// get accel data
 		if( MPU.acceleration(&accelRaw) == ESP_OK ){

@@ -990,9 +990,9 @@ static void processIMU(void *pvParameters)
 			WiPrimPrim = WiPrimPrim + betaAcc * deltaWiPrim;
 			WiPrimFilt = WiPrimFilt + alphaAcc * deltaWiPrim + WiPrimPrim * dtGyr;
 			// compute baro internial acceleration with complementary filter
-			VbiPrim.x = fcAcc1 * ( VbiPrim.x + UiPrimPrim * dtGyr ) + fcAcc2 * UpPrim;
-			VbiPrim.y = fcAcc1 * ( VbiPrim.y + ViPrimPrim * dtGyr ) + fcAcc2 * VpPrim;
-			VbiPrim.z = fcAcc1 * ( VbiPrim.z + WiPrimPrim * dtGyr ) + fcAcc2 * WpPrim;
+			VbiPrim.x = fcAccP1 * ( VbiPrim.x + UiPrimPrim * dtGyr ) + fcAccP2 * UpPrim;
+			VbiPrim.y = fcAccP1 * ( VbiPrim.y + ViPrimPrim * dtGyr ) + fcAccP2 * VpPrim;
+			VbiPrim.z = fcAccP1 * ( VbiPrim.z + WiPrimPrim * dtGyr ) + fcAccP2 * WpPrim;
 			// compute baro inertial speed with complementary filter
 			Vbi.x = fcAcc1 * ( Vbi.x + VbiPrim.x * dtGyr ) + fcAcc2 * Up;
 			Vbi.y = fcAcc1 * ( Vbi.y + VbiPrim.y * dtGyr ) + fcAcc2 * Vp;

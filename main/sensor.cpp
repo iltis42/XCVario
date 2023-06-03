@@ -298,13 +298,14 @@ static float XCVTemp=15.0;//External temperature for MPU temp control
 static float Rho;
 static float CASraw;
 static float deltaCAS;
-static float CASprim;
+static float CASprim = 0.0;
 static float CAS = 0.0;
 static float Rhocorr;
 static float TAS;
 static float TASprim;
 static float ALTraw;
 static float deltaALT;
+static float ALTPrim = 0.0;
 static float Vzbaro = 0.0;
 static float ALT = 0.0;
 #define NCAS 7.0 // CAS alpha/beta filter coeff
@@ -332,6 +333,7 @@ static float Vztotbiraw = 0.0;
 static float deltaVztot = 0.0;
 static float Vztot = 0.0;
 static float VztotPrim = 0.0;
+static float TotalEnergy = 0.0;
 #define NVztot 7.0 // CAS alpha/beta filter coeff
 #define alphaVztot (2.0 * (2.0 * NVztot - 1.0) / NVztot / (NVztot + 1.0))
 #define betaVztot (6.0 / NVztot / (NVztot + 1.0) / PERIOD10HZ)
@@ -562,10 +564,10 @@ void drawDisplay(void *pvParameters){
 				// ESP_LOGI(FNAME,"TE=%2.3f", te_vario.get() );
 // modif gfm affichage d'une tension batterie nulle tant que les biais gyros n'ont pas été initialisés
 				if (BIAS_Init > 0){
-					display->drawDisplay( airspeed, -Vztot /*te_vario.get()*/, aTE, polar_sink, altitude.get(), t, battery, s2f_delta, as2f, average_climb.get(), Switch::getCruiseState(), gflags.standard_setting, flap_pos.get() );
+					display->drawDisplay( airspeed, TotalEnergy /*te_vario.get()*/, aTE, polar_sink, altitude.get(), t, battery, s2f_delta, as2f, average_climb.get(), Switch::getCruiseState(), gflags.standard_setting, flap_pos.get() );
 				}	
 				else {
-					display->drawDisplay( airspeed, -Vztot /*te_vario.get()*/, aTE, polar_sink, altitude.get(), t, 0.0, s2f_delta, as2f, average_climb.get(), Switch::getCruiseState(), gflags.standard_setting, flap_pos.get() );
+					display->drawDisplay( airspeed, TotalEnergy /*te_vario.get()*/, aTE, polar_sink, altitude.get(), t, 0.0, s2f_delta, as2f, average_climb.get(), Switch::getCruiseState(), gflags.standard_setting, flap_pos.get() );
 				}
 // fin modif gfm
 				}
@@ -1401,8 +1403,11 @@ void readSensors(void *pvParameters){
 		TASprim = Rhocorr * CASprim;
 		ALTraw = (1.0 - pow( (statP-(QNH.get()-1013.25)) * 0.000986923 , 0.1902891634 ) ) * (273.15 + OATemp) * 153.846153846;		
 		deltaALT = ALTraw - ALT;
-		Vzbaro = Vzbaro + betaALT * deltaALT;
-		ALT = ALT + alphaALT * deltaALT + Vzbaro * dtstat;
+		ALTPrim = ALTPrim + betaALT * deltaALT;
+		ALT = ALT + alphaALT * deltaALT + ALTPrim * dtstat;
+		// in glider operation, gaining altitude and energy is considered positive. However in NED representation vertical axis is positive pointing down.
+		// therefore Vzbaro in NED is the opposite of altitude variation.
+		Vzbaro = - ALTPrim;
 
 		// compute AoA (Angle of attack) and AoB (Angle od slip)
 		WingLoad = gross_weight.get() / polar_wingarea.get();  // should be only computed when pilot change weight settings in XCVario
@@ -1443,7 +1448,8 @@ void readSensors(void *pvParameters){
 		// filter raw total energy
 		deltaVztot = Vztotbiraw - Vztot;
 		VztotPrim = VztotPrim + betaVztot * deltaVztot;
-		Vztot = Vztot + alphaVztot * deltaVztot + VztotPrim * dtdynP;		
+		Vztot = Vztot + alphaVztot * deltaVztot + VztotPrim * dtdynP;
+		TotalEnergy = -Vztot;
 
 		if ( SENstream ) {
 		/* Sensor data

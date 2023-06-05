@@ -660,12 +660,12 @@ float deltaBiasGz;
 	#define fcGrav 3.0 // 3Hz low pass to filter for testing stability criteria
 	#define fcGrav1 ( fcGrav /( fcGrav + PERIOD40HZ ))
 	#define fcGrav2 ( 1.0 - fcGrav1 )
-	if ( abs(BankFilt) < abs(halfvy) ) {
+	if ( BankFilt < abs(halfvy) ) {
 		BankFilt = halfvy;
 	} else {
-		BankFilt = fcGrav1 * BankFilt + fcGrav2 * halfvy;	// low pass filter on estimated Bank to reduce noise
+		BankFilt = fcGrav1 * BankFilt + fcGrav2 * abs(halfvy);	// low pass filter on estimated Bank to reduce noise
 	}
-	if ( abs(BankFilt) < WingLevel  ) {
+	if ( BankFilt < WingLevel  ) {
 		#define NGz 1200.0 // Very long period alpha/beta for Gz bias estimation. 
 		#define alphaGz (2.0 * (2.0 * NGz - 1.0) / NGz / (NGz + 1.0))
 		#define betaGz (6.0 / NGz / (NGz + 1.0) / PERIOD40HZ)		
@@ -716,13 +716,13 @@ float deltaBiasGz;
 		// when error is higher than threshold, reduced coefficients are used.
 		//
 		// acceleration module filtered with asymetrical low pass filter (fast rise and slower decay) 
-		if ( AccelGravModuleFilt < AccelGravModule ) {
-			AccelGravModuleFilt = AccelGravModule;
+		if ( AccelGravModuleFilt < abs(AccelGravModule - GRAVITY) ) {
+			AccelGravModuleFilt = abs(AccelGravModule - GRAVITY);
 		} else {
-			AccelGravModuleFilt = fcGrav1 * AccelGravModuleFilt + fcGrav2 * AccelGravModule;
+			AccelGravModuleFilt = fcGrav1 * AccelGravModuleFilt + fcGrav2 * abs(AccelGravModule - GRAVITY);
 		}
 		// compute error between acceleration module and local gravity (GRAVITY) in relation to Nlimit
-		GravityModuleErr = Nlimit - abs(AccelGravModuleFilt-GRAVITY);
+		GravityModuleErr = Nlimit - AccelGravModuleFilt;
 		// if GravityModuleErr positive, high confidence in accels
 		if ( GravityModuleErr > 0.0 ) {
 			dynKp = Kp;

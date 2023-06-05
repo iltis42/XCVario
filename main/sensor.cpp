@@ -206,6 +206,7 @@ static float errz_prim = 0.0;
 static float BiasQuatGx = 0.0;
 static float BiasQuatGy = 0.0;
 static float BiasQuatGz = 0.0;
+static float Bias_GzOffset = 0.0;
 static float Kgain = 1.0;
 static float cosRoll = 1.0;
 static float sinRoll = 0.0;
@@ -704,7 +705,7 @@ float deltaBiasGz;
 	// correct raw gyro with estimated gyro bias
 	gx = gxraw + Bias_Gx; // error on x should be added to gyro
 	gy = gyraw + Bias_Gy; // error on y should be added to gyro
-	gz = gzraw - Bias_Gz  // error on z should be removed to gyro
+	gz = gzraw - Bias_Gz; // error on z should be removed to gyro
 	// Compute feedback error only if accelerometer measurement is valid (avoids NaN in accelerometer normalisation)
 	AccelGravModule = sqrt( ax * ax + ay * ay + az * az );
 	if ( AccelGravModule != 0.0) {

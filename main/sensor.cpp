@@ -1443,11 +1443,9 @@ void readSensors(void *pvParameters){
 			$S1,			
 			static time in milli second,
 			static pressure in Pa,
-			TE time in milli second,
 			TE pressure in deci Pa,
 			Dynamic pressure in tenth of Pa,
 			GNSS time in milli second,
-			GNSS altitude in centimeter,
 			GNSS speed x or north in centimeters/s,
 			GNSS speed y or east in centimeters/s,
 			GNSS speed z or down in centimeters/s,
@@ -1471,8 +1469,8 @@ void readSensors(void *pvParameters){
 			<CR><LF>		
 		*/
 	
-			sprintf(str,"$S1,%lld,%i,%lld,%i,%i,%lld,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",
-				statTime, (int32_t)(statP*100.0), teTime,(int32_t)(teP*100.0), (int16_t)(dynP*10), 
+			sprintf(str,"$S1,%lld,%i,%i,%i,%lld,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",
+				statTime, (int32_t)(statP*100.0),(int32_t)(teP*100.0), (int16_t)(dynP*10), 
 				(int64_t)(chosenGnss->time*1000.0), (int16_t)(chosenGnss->speed.x*100), (int16_t)(chosenGnss->speed.y*100), (int16_t)(chosenGnss->speed.z*100), (int16_t)(GNSSRouteraw*10),
 				(int32_t)(Pitch*1000.0), (int32_t)(Roll*1000.0), (int32_t)(Yaw*1000.0),
 				(int32_t)(CAS*100), (int32_t)(TAS*100), (int32_t)(ALT*100), (int32_t)(Vzbaro*100),
@@ -1493,12 +1491,16 @@ void readSensors(void *pvParameters){
 			Gyro bias y in hundredth of milli rad/s,
 			Gyro bias z in hundredth of milli rad/s,
 			Local Gravity in tenth of milli m/s²,
-			Number of ground bias estimations
+			Number of ground bias estimations,
+			free quaternion Pitch in milli rad,
+			free quaternion Roll in milli rad,
+			free quaternion Yaw in milli rad			
 		*/
-			sprintf(str,"$S2,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",
+			sprintf(str,"$S2,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i\r\n",
 				(int16_t)(OATemp*10.0), (int16_t)(MPUtempcel*10.0), chosenGnss->fix, chosenGnss->numSV,
-				(int32_t)(BiasQuatGx*100000.0), (int32_t)(BiasQuatGy*100000.0), (int32_t)(BiasQuatGz*100000.0),
-				(int32_t)(GRAVITY*10000.0),(int16_t)BIAS_Init				
+				(int32_t)(BiasQuatGx*100000.0), (int32_t)(BiasQuatGy*100000.0), (int32_t)(-BiasQuatGz*100000.0),
+				(int32_t)(GRAVITY*10000.0),(int16_t)BIAS_Init,
+				(int32_t)(free_Pitch*1000.0), (int32_t)(free_Roll*1000.0), (int32_t)(free_Yaw*1000.0)
 				);
 			Router::sendXCV(str);
 		}		

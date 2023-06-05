@@ -616,7 +616,7 @@ void MahonyUpdateIMU(float dt, float gxraw, float gyraw, float gzraw,
 #define Kp 2.5 // proportional feedback to sync quaternion
 #define Ki 0.15 // integral feedback to sync quaternion
 
-#define WingLevel 0.085 // max lateral gravity acceleration (normalized acceleration) to consider wings are ~ < 5° bank
+#define WingLevel 0.04 // max lateral gravity acceleration (normalized acceleration) to consider wings are ~ < 5° bank. Value is half sinus of angle
 
 float gx, gy, gz;
 float AccelGravModule, QuatModule, recipNorm;
@@ -660,20 +660,20 @@ float deltaBiasGz;
 	#define fcGrav 3.0 // 3Hz low pass to filter for testing stability criteria
 	#define fcGrav1 ( fcGrav /( fcGrav + PERIOD40HZ ))
 	#define fcGrav2 ( 1.0 - fcGrav1 )
-	if ( BankFilt < halfvy ) {
+	if ( abs(BankFilt) < abs(halfvy) ) {
 		BankFilt = halfvy;
 	} else {
-		BankFilt = fcGrav1 * BankFilt + fcGrav2 * 2.0 * halfvy;	// low pass filter on estimated Bank to reduce noise
+		BankFilt = fcGrav1 * BankFilt + fcGrav2 * halfvy;	// low pass filter on estimated Bank to reduce noise
 	}
 	if ( abs(BankFilt) < WingLevel  ) {
 		#define NGz 1200.0 // Very long period alpha/beta for Gz bias estimation. 
 		#define alphaGz (2.0 * (2.0 * NGz - 1.0) / NGz / (NGz + 1.0))
 		#define betaGz (6.0 / NGz / (NGz + 1.0) / PERIOD40HZ)		
-        deltaBiasGz = (gzraw - GNSSRoutePrim) - Bias_Gz;
+        deltaBiasGz = (gzraw - GNSSRoutePrim) - (Bias_Gz - Bias_GzOffset);
 		GzPrim = GzPrim + betaGz * deltaBiasGz;
         Bias_Gz = Bias_Gz + alphaGz * deltaBiasGz + GzPrim * dt;
 	} else {
-		Bias_Gz = gzraw;
+		Bias_GzOffset = gzraw - Bias_Gz;
 	}
 	
 	// Update free quaternion by integrating rate of change
@@ -702,9 +702,9 @@ float deltaBiasGz;
 	// gyros are corrected using estimated bias and estimaded error with vertical from accelerometer (gravity)
 	//
 	// correct raw gyro with estimated gyro bias
-	gx = gxraw + Bias_Gx;
-	gy = gyraw + Bias_Gy;
-	gz = gzraw + Bias_Gz;	
+	gx = gxraw + Bias_Gx; // error on x should be added to gyro
+	gy = gyraw + Bias_Gy; // error on y should be added to gyro
+	gz = gzraw - Bias_Gz  // error on z should be removed to gyro
 	// Compute feedback error only if accelerometer measurement is valid (avoids NaN in accelerometer normalisation)
 	AccelGravModule = sqrt( ax * ax + ay * ay + az * az );
 	if ( AccelGravModule != 0.0) {
@@ -876,9 +876,9 @@ static void processIMU(void *pvParameters)
 			gyroISUNEDBODY.y = C_S * gyroISUNEDMPU.y - S_S * gyroISUNEDMPU.z;
 			gyroISUNEDBODY.z = -S_T * gyroISUNEDMPU.x + SSmultCT  * gyroISUNEDMPU.y + CTmultCS * gyroISUNEDMPU.z;
 			// correct gyro with flight gyro estimation
-			gyroCorr.x = gyroISUNEDBODY.x + BiasQuatGx;
-			gyroCorr.y = gyroISUNEDBODY.y + BiasQuatGy;
-			gyroCorr.z = gyroISUNEDBODY.z + BiasQuatGz;
+			gyroCorr.x = gyroISUNEDBODY.x + BiasQuatGx;  // error on x should be added
+			gyroCorr.y = gyroISUNEDBODY.y + BiasQuatGy;  // error on y should be added
+			gyroCorr.z = gyroISUNEDBODY.z - BiasQuatGz;  // error on z should be removed
 		}
 		// get accel data
 		if( MPU.acceleration(&accelRaw) == ESP_OK ){

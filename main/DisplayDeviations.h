@@ -25,10 +25,9 @@ class DisplayDeviations: public SetupMenuDisplay
 {
   public:
 
-  DisplayDeviations( String title );
+  DisplayDeviations( const char* title );
 
   virtual ~DisplayDeviations() {}
 
 	virtual void display( int mode=0 );
 };
-

@@ -7,44 +7,47 @@
 
 #ifndef _SetupMenuSelect_H_
 #define _SetupMenuSelect_H_
-#include <string>
-#include <vector>
-#include <stdio.h>
-#include "Setup.h"
+#include "SetupNG.h"
 #include "MenuEntry.h"
 
+struct bitfield_select {
+   bool _restart      :1;
+   bool _ext_handler  :1;
+   bool _save         :1;
+   bool _end_menu     :1;
+};
 
-class SetupMenuSelect:  public MenuEntry {
+class SetupMenuSelect:  public MenuEntry
+{
 public:
 	SetupMenuSelect();
-	SetupMenuSelect(  String title, bool restart=false, int (*action)(SetupMenuSelect *p) = 0, bool save=true, SetupNG<int> *anvs=0 );
+	SetupMenuSelect( const char* title, bool restart=false, int (*action)(SetupMenuSelect *p) = 0, bool save=true, SetupNG<int> *anvs=0, bool ext_handler=false, bool end_menu=false );
+	virtual ~SetupMenuSelect();
 	void display( int mode=0 );
-	bool existsEntry( String ent );
-	inline void addEntry( String ent ) {  _values.push_back( ent );
-										  _numval++;
-	};
-	void delEntry( String ent );
-	inline void updateEntry( String ent, int num ) {  _values[ num ] = ent; };
+	bool existsEntry( std::string ent );
+    void addEntry( const char* ent );
+	void addEntryList( const char ent[][4], int size );
+	void delEntry( const char * ent );
+	void updateEntry( const char * ent, int num );
 	void up( int count );  // step up to parent
 	void down( int count );
 	void press();
-	char *value() { sprintf(_val_str,"%s", getEntry() ); return _val_str; }
-	virtual ~SetupMenuSelect() {};
-	inline int getSelect() { return *_select; };
-	inline const char * getEntry(){ return _values[ *_select ].c_str(); }
+	void longPress();
+	void escape() {};
+	const char *value();
+	int getSelect();
+	void setSelect( int sel );
+	const char * getEntry() const ;
+	int numEntries() { return _numval; };
 
 private:
-	static char _val_str[20];
-	int  *_select;
-	int  select_intern;
-	int  _select_save;
-	int  _numval;
-	bool _restart;
-	bool _save;
-	std::vector<String> _values;
+	uint8_t  _select;       // limit to maximum 255 entries, as of today there are e.g. 134 different polars
+	uint8_t  _select_save;
+	uint8_t  _numval;
+	bitfield_select bits;
+	std::vector<const char *> _values;
 	int (*_action)( SetupMenuSelect *p );
-	SetupNG<int> * _nvs;
+	SetupNG<int> *_nvs;
 };
-
 
 #endif

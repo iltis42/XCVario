@@ -14,16 +14,20 @@ MS4525DO::MS4525DO()
 	_status = 0;
 	_offset = 0;
 	bus = 0;
+	changeConfig();
 }
 
 MS4525DO::~MS4525DO()
 {
 
 }
+
+void MS4525DO::changeConfig(){
+	_multiplier = multiplier * ((100.0 + speedcal.get()) / 100.0);
+}
+
 // combine measure and collect into one function that returns the status code only, and holds the results in variables
 // other subroutines for returning clean values should be get functions
-
-
 int MS4525DO::measure()
 {
 	char ret;
@@ -53,7 +57,7 @@ char MS4525DO::fetch_pressure(uint16_t &P_dat, uint16_t &T_dat)
 	Press_L = data[1];
 	Temp_H = data[2];
 	Temp_L = data[3];
-	// ESP_LOG_BUFFER_HEXDUMP(FNAME,data,4, ESP_LOG_INFO);
+	ESP_LOG_BUFFER_HEXDUMP(FNAME,data,4, ESP_LOG_INFO);
 
 	_status = (Press_H >> 6) & 0x03;
 	Press_H = Press_H & 0x3f;
@@ -80,10 +84,10 @@ float   MS4525DO::readPascal( float minimum, bool &ok ){
 		}
 	}
 
-	float _pascal = (_offset - P_dat) * multiplier * ((100.0 + speedcal.get()) / 100.0);
-	    if ( (_pascal < minimum) && (minimum != 0) ) {
-		  _pascal = 0.0;
-		};
+	float _pascal = (_offset - P_dat) * _multiplier;
+	if ( (_pascal < minimum) && (minimum != 0) ) {
+		_pascal = 0.0;
+	};
 	return( _pascal );
 }
 
@@ -112,7 +116,7 @@ float MS4525DO::getPSI(void){             // returns the PSI of last measurement
 	// convert and store PSI
 	psi=( static_cast<float>(static_cast<int16_t>(P_dat)-MS4525ZeroCounts))  / static_cast<float>(MS4525Span)* static_cast<float>(MS4525FullScaleRange);
 
-return psi;
+	return psi;
 }             
 
 float MS4525DO::getTemperature(void){     // returns temperature of last measurement
@@ -179,29 +183,29 @@ bool MS4525DO::doOffset( bool force ){
 	// Long term stability of Sensor as from datasheet 0.5% per year -> 4000 * 0.005 = 20
 	if( (_offset < 0 ) || ( plausible && (deviation < MAX_AUTO_CORRECTED_OFFSET ) ) || autozero.get() )
 	{
-	 	ESP_LOGI(FNAME,"Airspeed OFFSET correction ongoing, calculate new _offset...");
-	 	if( autozero.get() )
-	 		autozero.set(0);
-	 	uint32_t rawOffset=0;
-	 	for( int i=0; i<100; i++){
-	 		fetch_pressure( adcval, T );
-	 		rawOffset += adcval;
-	 		vTaskDelay(10 / portTICK_PERIOD_MS);
-	 	}
-   	    _offset = rawOffset / 100;
-	   	if( offsetPlausible( _offset ) )
-	   	{
-	   	   ESP_LOGI(FNAME,"Offset procedure finished, offset: %f", _offset);
-	   	   if( as_offset.get() != _offset ){
-	          as_offset.set( _offset );
-  		      ESP_LOGI(FNAME,"Stored new offset in NVS");
-	   	   }
-	   	   else
-	   		   ESP_LOGI(FNAME,"New offset equal to value from NVS");
-	    }
-	   	else{
-	   		ESP_LOGW(FNAME,"Offset out of tolerance, ignore odd offset value");
-	   	}
+		ESP_LOGI(FNAME,"Airspeed OFFSET correction ongoing, calculate new _offset...");
+		if( autozero.get() )
+			autozero.set(0);
+		uint32_t rawOffset=0;
+		for( int i=0; i<100; i++){
+			fetch_pressure( adcval, T );
+			rawOffset += adcval;
+			vTaskDelay(10 / portTICK_PERIOD_MS);
+		}
+		_offset = rawOffset / 100;
+		if( offsetPlausible( _offset ) )
+		{
+			ESP_LOGI(FNAME,"Offset procedure finished, offset: %f", _offset);
+			if( as_offset.get() != _offset ){
+				as_offset.set( _offset );
+				ESP_LOGI(FNAME,"Stored new offset in NVS");
+			}
+			else
+				ESP_LOGI(FNAME,"New offset equal to value from NVS");
+		}
+		else{
+			ESP_LOGW(FNAME,"Offset out of tolerance, ignore odd offset value");
+		}
 	}
 	else
 	{

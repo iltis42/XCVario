@@ -32,6 +32,10 @@ Last update: 2021-04-05
 #include "ahrs.hpp"
 #include "SetupNG.h"
 #include "MenuEntry.h"
+#include "Router.h"
+#include "vector.h"
+// #include "sensor_processing_lib.h"
+// #include "canbus.h"
 
 /* Register numbers */
 #define REG_X_LSB 0         // Output Data Registers for magnetic sensor.
@@ -63,6 +67,7 @@ Last update: 2021-04-05
 #define MODE_STANDBY    0b00000000  // Standby mode.
 #define MODE_CONTINUOUS 0b00000001  // Continuous read mode.
 
+<<<<<<< HEAD
 // Sensor state
 bool QMC5883L::m_sensor = false;
 
@@ -80,22 +85,21 @@ float QMC5883L::_heading = 0;
 double QMC5883L::mag_vector[] = { 0, 0, 1 };
 double QMC5883L::mag_raw[] = { 0, 0, 1 };
 //fin modif gfm
+=======
+>>>>>>> 6d4fdd1baa8561b1de0632823deccb549c2dcd9b
 /*
   Creates instance for I2C connection with passing the desired parameters.
   No action is done at the bus. Note if i2cBus is not set in the constructor,
   you have to set it by calling method setBus(). The default address of the
   chip is 0x0D.
  */
+
+
 QMC5883L::QMC5883L( const uint8_t addrIn,
 		const uint8_t odrIn,
 		const uint8_t rangeIn,
 		const uint16_t osrIn,
-		I2C_t *i2cBus ) :
-										  m_bus( i2cBus ),
-										  addr( addrIn ),
-										  odr( odrIn ),
-										  range( rangeIn ),
-										  osr( osrIn )
+		I2C_t *i2cBus ) : m_bus( i2cBus ), addr( addrIn ), odr( odrIn ), range( rangeIn ), osr( osrIn )
 {
 	ESP_LOGI( FNAME, "QMC5883L( %02X )", addrIn );
 
@@ -104,19 +108,27 @@ QMC5883L::QMC5883L( const uint8_t addrIn,
 		// set address to default value of chip, if it is zero.
 		addr = QMC5883L_ADDR;
 	}
-
-  overflowWarning = false;
-	resetClassCalibration();
+	age = 0;
+	overflowWarning = false;
+	m_sensor = false;
 }
+
 
 QMC5883L::~QMC5883L()
 {
 }
 
+bool QMC5883L::checkBus()
+{
+	if( m_bus == nullptr )	{
+		// ESP_LOGE( FNAME, "QMC5883L bus pointer is zero" );
+		return false;
+	}
+	return true;
+}
+
 /** Write with data part. */
-esp_err_t QMC5883L::writeRegister( const uint8_t addr,
-		const uint8_t reg,
-		const uint8_t value )
+esp_err_t QMC5883L::writeRegister( const uint8_t addr,	const uint8_t reg,	const uint8_t value )
 {
 	if( checkBus() == false )
 		return ESP_FAIL;
@@ -134,39 +146,42 @@ esp_err_t QMC5883L::writeRegister( const uint8_t addr,
  * Read bytes from the chip.
  * Return the number of read bytes or 0 in error case.
  */
-uint8_t QMC5883L::readRegister( const uint8_t addr,
-		const uint8_t reg,
-		const uint8_t count,
-		uint8_t *data  )
+uint8_t QMC5883L::readRegister( const uint8_t addr,	const uint8_t reg,	const uint8_t count, uint8_t *data  )
 {
 	if( checkBus() == false )
 		return 0;
 	// read bytes from chip
-	esp_err_t err = m_bus->readBytes( addr, reg, count, data );
-	if( err != ESP_OK ){
-		// ESP_LOGW( FNAME,"readRegister( 0x%02X, 0x%02X, %d ) FAILED", addr, reg, count );
-		err = m_bus->readBytes( addr, reg, count, data );
-		if( err != ESP_OK ){
-			// ESP_LOGW( FNAME,"Retry failed also, try to reinitialize chip now");
-			initialize();
-			err = m_bus->readBytes( addr, reg, count, data );
-			if( err != ESP_OK ){
-				// ESP_LOGW( FNAME,"Read after retry failed also, return with no data, len=0");
-				return 0;
+	for( int i=0; i<=100; i++ ){
+		esp_err_t err = m_bus->readBytes( addr, reg, count, data );
+		if( err == ESP_OK && count == 6 ){
+			return count;
+		}
+		else
+		{
+			// ESP_LOGW( FNAME,"readRegister( 0x%02X, 0x%02X, %d ) FAILED N:%d", addr, reg, count, i );
+			if( i == 100 ){
+				ESP_LOGW( FNAME,"100 retries read mag sensor failed also, now try to reinitialize chip");
+				if( initialize() != ESP_OK )
+					initialize();  // one retry
+				err = m_bus->readBytes( addr, reg, count, data );
+				if( err == ESP_OK && count == 6 ){
+					// ESP_LOGI( FNAME,"Read after reinit ok");
+					return count;
+				}
 			}
-			/*
-			else
-				ESP_LOGW( FNAME,"Read after retry SUCCESS, we did it!");
-				*/
+			// ESP_LOGW( FNAME,"retry #%d reg=%02X err=%d", i, reg, err );
+			delay(2);
 		}
 	}
-	return count;
+	ESP_LOGW( FNAME,"Read after init and retry failed also, return with no data, len=0");
+	return 0;
 }
 
 // scan bus for I2C address
 esp_err_t QMC5883L::selfTest()
 {
 	ESP_LOGI( FNAME, "QMC5883L selftest");
+	// load last known calibration.
 	if( !checkBus() )	{
 		m_sensor = false;
 		return ESP_FAIL;
@@ -195,17 +210,20 @@ esp_err_t QMC5883L::selfTest()
 	}
 	ESP_LOGI( FNAME, "QMC5883L selftest PASSED");
 	m_sensor = true;
-
-	// load last known calibration.
-	loadCalibration();
 	return ESP_OK;
+
 }
+
+esp_err_t QMC5883L::initialize() {
+	return initialize2( odr, osr );
+}
+
 
 /**
  * Configure the device with the set parameters and set the mode to continuous.
  * That means, the device starts working.
  */
-esp_err_t QMC5883L::initialize( int a_odr, int a_osr )
+esp_err_t QMC5883L::initialize2( int a_odr, int a_osr )
 {
 	esp_err_t e1, e2, e3, e4;
 	e1 = e2 = e3 = e4 = 0;
@@ -216,10 +234,8 @@ esp_err_t QMC5883L::initialize( int a_odr, int a_osr )
 
 	// Enable ROL_PTN, Pointer roll over function.
 	e2 = writeRegister( addr, REG_CONTROL2, POL_PNT );
-
 	// Define SET/RESET period. Should be set to 1
 	e3 = writeRegister( addr, REG_RST_PERIOD, 1 );
-
 	// Set mesaurement data and start it in dependency of mode bit.
 	int used_osr = a_osr;
 	if( used_osr == 0 )
@@ -229,63 +245,78 @@ esp_err_t QMC5883L::initialize( int a_odr, int a_osr )
 	if( used_odr == 0 )
 		used_odr = odr;
 
-  ESP_LOGI( FNAME, "initialize() dataRate: %d Oversampling: %d", used_odr, used_osr );
+	// ESP_LOGI( FNAME, "initialize() dataRate: %d Oversampling: %d", used_odr, used_osr );
 
 	e4 = writeRegister( addr, REG_CONTROL1,	(used_osr << 6) | (range <<4) | (used_odr <<2) | MODE_CONTINUOUS );
+<<<<<<< HEAD
 
 	if( (e1 + e2 + e3 + e4) == 0 ) {
       //ESP_LOGI( FNAME, "initialize() OK");
       return ESP_OK;
 		}
 
+=======
+	if( e1 == ESP_OK || e2 == ESP_OK || e3 == ESP_OK || e4 == ESP_OK ) {
+		// ESP_LOGI( FNAME, "initialize() OK");
+		return ESP_OK;
+	}
+	else{
+		ESP_LOGE( FNAME, "initialize() ERROR %d %d %d %d", e1,e2,e3,e4 );
+		return ESP_FAIL;
+	}
+>>>>>>> 6d4fdd1baa8561b1de0632823deccb549c2dcd9b
 	return ESP_FAIL;
 }
 
-/**
- * Read out the registers X, Y, Z (0...5) in raw format.
- *
- * The status register bits are checked, if the heading data available, if no
- * overflow has occurred and if no data locking is shown.
- *
- * Returns true in case of success otherwise false.
- */
-bool QMC5883L::rawHeading()
+
+bool QMC5883L::rawAxes( t_magn_axes &axes )
 {
-#if 1
-  // calculate last call time.
-  static uint64_t lastCall = getMsTime();
-
-  uint64_t elapsed = getMsTime() - lastCall;
-  lastCall = getMsTime();
-#endif
-
-	// Check, if data are available
 	uint8_t data[6];
 	uint8_t status = 0;
-
-	// Read status register
-	uint8_t count = readRegister( addr, REG_STATUS, 1, &status );
-
-	if( count != 1 )
+	// Check, if data are available
+	// as sensor is outside the housing, there may be I2C noise, so we need retries
+	bool okay = false;
+	// Poll status until RDY or DOR
+	esp_err_t ret = ESP_OK;
+	for( int i=1; i<30; i++ ){
+		ret = m_bus->readByte( addr, REG_STATUS, &status );
+		if( ret == ESP_OK ){
+			if( (status & STATUS_DRDY) || (status & STATUS_DOR )  ){
+				okay = true;
+				break;
+			}
+			// else
+			// 	ESP_LOGW( FNAME, "No new data,  N=%d  RDY%d  DOR%d REG:%02X", i, status & STATUS_DRDY, status & STATUS_DOR, status );
+		}
+		else{
+			delay( 2 );
+			// ESP_LOGW( FNAME, "read REG_STATUS failed, N=%d  RDY%d  DOR%d", i, status & STATUS_DRDY, status & STATUS_DOR );
+		}
+	}
+	if( okay == false )
 	{
+<<<<<<< HEAD
 		//ESP_LOGE( FNAME, "read REG_STATUS FAILED, count=%d, status=%d", count, status );
+=======
+		// ESP_LOGE( FNAME, "read REG_STATUS FAILED %d", ret );
+>>>>>>> 6d4fdd1baa8561b1de0632823deccb549c2dcd9b
 		return false;
 	}
-	// ESP_LOGI( FNAME, "REG_STATUS: %02x", status );
 
 	if( ( status & STATUS_OVL ) == true )
 	{
 		// Magnetic X-Y-Z data overflow has occurred, give out a warning only once
-	  if( overflowWarning == false )
-	    ESP_LOGW( FNAME, "read rawHeading detected a X-Y-Z data overflow." );
-
-    overflowWarning = true;
-		return false;
+		if( overflowWarning == false ){
+			ESP_LOGW( FNAME, "read rawHeading detected a X-Y-Z data overflow." );
+			overflowWarning = true;
+			return false;
+		}
 	}
-
 	// Reset overflow warning, to get a current status of it.
+
 	overflowWarning = false;
 
+<<<<<<< HEAD
 	if( ( status & STATUS_DRDY ) && (status & STATUS_DOR ) )//modif gfm pour ne lire que si toutes les data sont là
 	{
 		// Data can be read in every case
@@ -357,7 +388,31 @@ esp_err_t QMC5883L::getMagnet(raw_axes_t* mag)
 	else
 	  ESP_LOGW( FNAME, "No sensor data read, Status-Reg=0x%X, last call before=%lld ms",
 	            status, elapsed );
+=======
+	// Precondition already checked in loop before, point only reached if there is RDY or DOR
+	int count = readRegister( addr, REG_X_LSB, 6, data );
+	// Data can be read in every case
+	if( count == 6 )
+	{
+		int x = (int)( (int16_t)(( data[1] << 8 ) | data[0]) );
+		int y = (int)( (int16_t)(( data[3] << 8 ) | data[2]) );
+		int z = (int)( (int16_t)(( data[5] << 8 ) | data[4]) );
+>>>>>>> 6d4fdd1baa8561b1de0632823deccb549c2dcd9b
 
+		axes.x = filterX( x );
+		axes.y = filterY( y );
+		axes.z = filterZ( z );
+
+		// ESP_LOGI( FNAME, "Mag Average: X:%d Y:%d Z:%d  Raw: X:%d Y:%d Z:%d", axes.x, axes.y, axes.z, x, y, z );
+
+		age = 0;
+		m_sensor = true;
+		// ESP_LOGI( FNAME, "X:%d Y:%d Z:%d  RDY:%d DOR:%d", raw.x, raw.y,raw.z, status & STATUS_DRDY, status & STATUS_DOR );
+		return true;
+	}
+	ESP_LOGE( FNAME, "read Register REG_X_LSB returned count != 6, count: %d", count );
+	if( age > 10 )
+		m_sensor = false;
 	return false;
 }
 
@@ -368,7 +423,7 @@ esp_err_t QMC5883L::getMagnet(raw_axes_t* mag)
  */
 int16_t QMC5883L::temperature( bool *ok )
 {
-  assert( (ok != nullptr) && "Passing of NULL pointer is forbidden" );
+	assert( (ok != nullptr) && "Passing of NULL pointer is forbidden" );
 
 	uint8_t data[2];
 	if( readRegister( addr, REG_TEMP_LSB, 2, data ) == 0 ){
@@ -383,6 +438,7 @@ int16_t QMC5883L::temperature( bool *ok )
 		*ok = true;
 	return t;
 }
+<<<<<<< HEAD
 
 /**
  * Resets the class calibration variables.
@@ -786,3 +842,5 @@ void  QMC5883L::getMagnet(double mag_raw[],double mag_vector[], bool *ok )
 	mag_vector[2] =  (x*a13+y*a23+z*a33) ;
 	return;
 }
+=======
+>>>>>>> 6d4fdd1baa8561b1de0632823deccb549c2dcd9b

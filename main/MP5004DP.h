@@ -19,17 +19,21 @@ public:
 		_offset = 0;
 	    _alpha = alpha;
 	    _haveDevice = false;
+	    _correction = correction;
+	    changeConfig();
 	}
 	bool    doOffset( bool force=false );
 	float   readPascal( float minimum, bool &ok );
 	bool    selfTest( int& adval );
 	bool    offsetPlausible( uint16_t offset );
 	void    setBus( I2C_t *_theBus );
-
+	void    changeConfig();
+	float   getTemperature(void);
 private:
 	float _offset;
 	float _alpha;
 	bool _haveDevice;
+	float _correction;
 };
 
 #endif

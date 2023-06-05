@@ -2,6 +2,7 @@
 #include <math.h>
 #include <logdef.h>
 
+
 ABPMRR::ABPMRR()
 {
 	address = I2C_ADDRESS_ABPMRR;
@@ -14,6 +15,7 @@ ABPMRR::ABPMRR()
 	_status = 0;
 	_offset = 0;
 	bus = 0;
+	changeConfig();
 }
 
 ABPMRR::~ABPMRR()
@@ -23,6 +25,11 @@ ABPMRR::~ABPMRR()
 // combine measure and collect into one function that returns the status code only, and holds the results in variables
 // other subroutines for returning clean values should be get functions
 
+void ABPMRR::changeConfig(){
+	multiplier = ABPMRRmultiplier * ((100.0 + speedcal.get()) / 100.0);
+	ESP_LOGI(FNAME,"changeConfig, speed multiplier %f, speed cal: %f ", multiplier, speedcal.get() );
+}
+
 
 int ABPMRR::measure()
 {
@@ -31,6 +38,8 @@ int ABPMRR::measure()
 	// ESP_LOGI(FNAME,"ABPMRR::fetch_pressure: %d", P_dat );
 	return ret;
 }
+
+// #define RANDOM_TEST
 
 char ABPMRR::fetch_pressure(uint16_t &P_dat, uint16_t &T_dat)
 {
@@ -53,6 +62,12 @@ char ABPMRR::fetch_pressure(uint16_t &P_dat, uint16_t &T_dat)
 	Press_L = data[1];
 	Temp_H = data[2];
 	Temp_L = data[3];
+
+#ifdef RANDOM_TEST
+	Press_H = esp_random() % 255;
+	Press_L = esp_random() % 255;
+	Temp_L = esp_random() % 255;
+#endif
 
 	// ESP_LOG_BUFFER_HEXDUMP(FNAME,data,4, ESP_LOG_INFO);
 
@@ -82,12 +97,12 @@ float   ABPMRR::readPascal( float minimum, bool &ok ){
 		}
 	}
 
-	float _pascal = (P_dat - _offset) * ABPMRRmultiplier * ((100.0 + speedcal.get()) / 100.0);
-	    if ( (_pascal < minimum) && (minimum != 0) ) {
-		  _pascal = 0.0;
-		};
+	float _pascal = (P_dat - _offset) * multiplier;
+	if ( (_pascal < minimum) && (minimum != 0) ) {
+		_pascal = 0.0;
+		ESP_LOGI(FNAME,"pressure: %f offset: %d raw: %d  raw-off:%f m:%f", _pascal, (int)_offset, P_dat,  (_offset - P_dat),  ABPMRRmultiplier );
+	};
 
-	// ESP_LOGI(FNAME,"pressure: %f offset: %d raw: %d  raw-off:%f m:%f", _pascal, (int)_offset, P_dat,  (_offset - P_dat),  ABPMRRmultiplier );
 	return( _pascal );
 }
 
@@ -116,7 +131,7 @@ float ABPMRR::getPSI(void){             // returns the PSI of last measurement
 	// convert and store PSI
 	psi=( static_cast<float>(static_cast<int16_t>(P_dat)-ABPMRRZeroCounts))  / static_cast<float>(ABPMRRSpan)* static_cast<float>(ABPMRRFullScaleRange);
 
-return psi;
+	return psi;
 }             
 
 float ABPMRR::getTemperature(void){     // returns temperature of last measurement
@@ -126,19 +141,14 @@ float ABPMRR::getTemperature(void){     // returns temperature of last measureme
 	return temperature;
 }
 
-float ABPMRR::getAirSpeed(void){        // calculates and returns the airspeed
+float ABPMRR::getAirSpeed(void){        // calculates and returns the airspeed in m/s IAS
 	/* Velocity calculation from a pitot tube explanation */
 	/* +/- 1PSI, approximately 100 m/s */
-	float rho = 1.225; // density of air
-	// velocity = squareroot( (2*differential) / rho )
-	float velocity;
-	if (psi<0) {
-		velocity = -sqrt(-(2*psi) / rho);
-	}else{
-		velocity = sqrt((2*psi) / rho);
-	}
-	velocity = velocity*10;
-
+	const float rhom = (2.0*100)/1.225; // density of air plus multiplier
+	// velocity = sqrt( (2*psi) / rho )   or sqt( psi /
+	float velocity = sqrt(psi*rhom);
+	if (psi<0)
+		velocity = -velocity;
 	return velocity;
 }
 
@@ -183,29 +193,29 @@ bool ABPMRR::doOffset( bool force ){
 	// Long term stability of Sensor as from datasheet 0.5% per year -> 4000 * 0.005 = 20
 	if( (_offset < 0 ) || ( plausible && (deviation < MAX_AUTO_CORRECTED_OFFSET ) ) || autozero.get() )
 	{
-	 	ESP_LOGI(FNAME,"Airspeed OFFSET correction ongoing, calculate new _offset...");
-	 	if( autozero.get() )
-	 		autozero.set(0);
-	 	uint32_t rawOffset=0;
-	 	for( int i=0; i<100; i++){
-	 		fetch_pressure( adcval, T );
-	 		rawOffset += adcval;
-	 		vTaskDelay(10 / portTICK_PERIOD_MS);
-	 	}
-   	    _offset = rawOffset / 100;
-	   	if( offsetPlausible( _offset ) )
-	   	{
-	   	   ESP_LOGI(FNAME,"Offset procedure finished, offset: %f", _offset);
-	   	   if( as_offset.get() != _offset ){
-	          as_offset.set( _offset );
-  		      ESP_LOGI(FNAME,"Stored new offset in NVS");
-	   	   }
-	   	   else
-	   		   ESP_LOGI(FNAME,"New offset equal to value from NVS");
-	    }
-	   	else{
-	   		ESP_LOGW(FNAME,"Offset out of tolerance, ignore odd offset value");
-	   	}
+		ESP_LOGI(FNAME,"Airspeed OFFSET correction ongoing, calculate new _offset...");
+		if( autozero.get() )
+			autozero.set(0);
+		uint32_t rawOffset=0;
+		for( int i=0; i<100; i++){
+			fetch_pressure( adcval, T );
+			rawOffset += adcval;
+			vTaskDelay(10 / portTICK_PERIOD_MS);
+		}
+		_offset = rawOffset / 100;
+		if( offsetPlausible( _offset ) )
+		{
+			ESP_LOGI(FNAME,"Offset procedure finished, offset: %f", _offset);
+			if( as_offset.get() != _offset ){
+				as_offset.set( _offset );
+				ESP_LOGI(FNAME,"Stored new offset in NVS");
+			}
+			else
+				ESP_LOGI(FNAME,"New offset equal to value from NVS");
+		}
+		else{
+			ESP_LOGW(FNAME,"Offset out of tolerance, ignore odd offset value");
+		}
 	}
 	else
 	{

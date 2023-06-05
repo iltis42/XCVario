@@ -1,4 +1,4 @@
-
+#include "Router.h"
 #include <esp_log.h>
 #include "BTSender.h"
 #include <string>
@@ -8,18 +8,21 @@
 #include "freertos/task.h"
 #include "esp_task_wdt.h"
 #include <freertos/semphr.h>
-#include "RingBufCPP.h"
 #include "Protocols.h"
 #include <logdef.h>
 #include "Switch.h"
 #include "sensor.h"
-#include "Router.h"
 #include "Flarm.h"
+<<<<<<< HEAD
 //Modif gfm
 #include "UBX_Parser.h"
 #include "Protocols.h"
 proto_t proto;
 //fin modif gfm
+=======
+#include "Serial.h"
+#include "UbloxGNSSdecode.h"
+>>>>>>> 6d4fdd1baa8561b1de0632823deccb549c2dcd9b
 
 RingBufCPP<SString, QUEUE_SIZE> wl_vario_tx_q;
 RingBufCPP<SString, QUEUE_SIZE> wl_flarm_tx_q;
@@ -37,70 +40,133 @@ RingBufCPP<SString, QUEUE_SIZE> s2_tx_q;
 RingBufCPP<SString, QUEUE_SIZE> s1_rx_q;
 RingBufCPP<SString, QUEUE_SIZE> s2_rx_q;
 
-RingBufCPP<SString, QUEUE_SIZE> xcv_rx_q;
-// RingBufCPP<SString, QUEUE_SIZE> xcv_tx_q;
+RingBufCPP<SString, QUEUE_SIZE> xcv_tx_q;
+
+RingBufCPP<SString, QUEUE_SIZE> can_rx_q;
+RingBufCPP<SString, QUEUE_SIZE> can_tx_q;
 
 portMUX_TYPE btmux = portMUX_INITIALIZER_UNLOCKED;
 
 // Utility methods to push and pull data into/from queues
 
+static xSemaphoreHandle qMutex=NULL;
+
+void Router::begin(){
+	qMutex = xSemaphoreCreateMutex();
+}
+
 // checks if Queue is full, otherwise appends SString
-bool Router::forwardMsg( SString &s, RingBufCPP<SString, QUEUE_SIZE>& q ){
+bool Router::forwardMsg( SString &s, RingBufCPP<SString, QUEUE_SIZE>& q, bool nmea ){
+	// ESP_LOGI(FNAME,"forwardMsg() len: %d, queueElem: %d queueFull:%d", s.length(), q.numElements(), q.isFull() );
 	if( !q.isFull() ) {
-		portENTER_CRITICAL_ISR(&btmux);
+		xSemaphoreTake(qMutex,portMAX_DELAY );
 		q.add( s );
-		portEXIT_CRITICAL_ISR(&btmux);
+		xSemaphoreGive(qMutex);
 		return true;
 	}
+	// ESP_LOGW(FNAME,"+++ WARNING +++ dropped msg len: %d, queueElem: %d", s.length(), q.numElements() );
+	//ESP_LOGW(FNAME,"drp msg l:%d q:%d", s.length(), q.numElements() );
 	return false;
+}
+
+
+void Router::clearQueue( RingBufCPP<SString, QUEUE_SIZE>& q ){
+	SString dummy;
+	while( pullMsg( q, dummy ) ){
+		// ESP_LOGI(FNAME,"clear %s", dummy.c_str() );
+	}
 }
 
 // gets last message from ringbuffer FIFO
 bool Router::pullMsg( RingBufCPP<SString, QUEUE_SIZE>& q, SString& s ){
 	if( !q.isEmpty() ){
-		portENTER_CRITICAL_ISR(&btmux);
-		q.pull( &s );
-		portEXIT_CRITICAL_ISR(&btmux);
+		xSemaphoreTake(qMutex,portMAX_DELAY );
+		q.pull( s );
+		xSemaphoreGive(qMutex);
 		return true;
 	}
 	return false;
 }
 
+int Router::pullBlock( RingBufCPP<SString, QUEUE_SIZE>& q, char *block, int size ){
+	xSemaphoreTake(qMutex,portMAX_DELAY );
+	int total_len = 0;
+	while( !q.isEmpty() ){
+		int len = q.pull( block+total_len );
+		total_len += len;
+		if( (total_len + SSTRLEN) > size )
+			break;
+	}
+	block[total_len]=0;
+	xSemaphoreGive(qMutex);
+	return total_len;
+}
+
 // XCVario Router
 void Router::sendXCV(char * s){
-	// ESP_LOGV( FNAME,"XCVario message %s",s);
+	// ESP_LOGI( FNAME,"XCVario message %s",s);
 	if(  !Flarm::bincom  ){
 		SString xcv( s );
-		if( forwardMsg( xcv, xcv_rx_q ) )
-			ESP_LOGV(FNAME,"Received %d bytes from XCV", xcv.length() );
-		routeXCV();
+		if( forwardMsg( xcv, xcv_tx_q ) ){
+			// ----------------(FNAME,"Received %d bytes from XCV", xcv.length() );
+		}
+	}
+}
+
+// XCVario Router
+void Router::sendAUX(char * s){
+	// ESP_LOGI( FNAME,"AUX message %s",s);
+	if(  !Flarm::bincom  ){
+		SString xcv( s );
+		if( forwardMsg( xcv, wl_aux_tx_q ) ){
+			// ESP_LOGI(FNAME,"Sent %d bytes to 8882 port", xcv.length() );
+		}
 	}
 }
 
 // Route XCVario messages
 void Router::routeXCV(){
 	SString xcv;
-	if( pullMsg( xcv_rx_q, xcv ) ){
-		if( blue_enable.get() == WL_BLUETOOTH ) {
-			if( forwardMsg( xcv, bt_tx_q ) )
-				ESP_LOGV(FNAME,"Send to BT device, XCV received %d bytes", xcv.length() );
+	while( pullMsg( xcv_tx_q, xcv ) ){
+		// ESP_LOGI(FNAME,"XCV data to be forwarded %d bytes", xcv.length() );
+		// ESP_LOGI(FNAME,"XCV txq %d B", xcv.length() );
+		if ( strncmp( xcv.c_str(), "!xs", 3 ) != 0 ){  // !xs messages are XCV specific and must not go to BT,WiFi or serial Navi's
+			if( rt_xcv_wl.get() && (wireless == WL_BLUETOOTH) ) {
+				if( forwardMsg( xcv, bt_tx_q ) ){
+					// ESP_LOGI(FNAME,"XCV data forwarded to BT device, %d bytes", xcv.length() );
+				}
+			}
+			if( rt_xcv_wl.get() && (wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE) ){
+				if( forwardMsg( xcv, wl_vario_tx_q ) ){
+					// ESP_LOGI(FNAME,"XCV data forwarded to WLAN port 8880, %d bytes", xcv.length() );
+				}
+			}
+			// ESP_LOGI(FNAME,"XCV data for S1 device, %d bytes ena:%d speed:%d", xcv.length(), rt_s1_xcv.get(), serial1_speed.get() );
+			if( rt_s1_xcv.get() && serial1_speed.get() ){
+				if( forwardMsg( xcv, s1_tx_q ) ){
+					Serial::setRxTxNotifier( TX1_REQ );
+					// ESP_LOGI(FNAME,"XCV data forwarded to S1 device, %d bytes", xcv.length() );
+				}
+			}
+			// ESP_LOGI(FNAME,"XCV data for S1 device, %d bytes ena:%d speed:%d", xcv.length(), rt_s2_xcv.get(), serial2_speed.get() );
+			if( rt_s2_xcv.get() && serial2_speed.get() ){
+				if( forwardMsg( xcv, s2_tx_q ) ){
+					Serial::setRxTxNotifier( TX2_REQ );
+					// ESP_LOGI(FNAME,"XCV data forwarded to S2 device, %d bytes", xcv.length() );
+				}
+			}
+			if( rt_can_xcv.get() && can_speed.get() && (strncmp( xcv.c_str(), "$PXCV", 5 ) != 0) ){ // don't route PXCV to master, has its own
+				if( forwardMsg( xcv, can_tx_q ) ){
+					// ESP_LOGI(FNAME,"XCV data forwarded to CAN bus, %d bytes", xcv.length() );
+				}
+			}
 		}
-		else if( blue_enable.get() == WL_WLAN || blue_enable.get() == WL_WLAN_CLIENT )
-		{
-			if( forwardMsg( xcv, wl_vario_tx_q ) )
-				ESP_LOGV(FNAME,"Send to WLAN port 8880, XCV received %d bytes", xcv.length() );
-		}
-		if( serial1_tx.get() & RT_XCVARIO )
-				if( forwardMsg( xcv, s1_tx_q ) )
-					ESP_LOGV(FNAME,"Send to ttyS1 device, XCV received %d bytes", xcv.length() );
-		if( serial2_tx.get() & RT_XCVARIO )
-				if( forwardMsg( xcv, s2_tx_q ) )
-					ESP_LOGV(FNAME,"Send to ttyS2 device, XCV received %d bytes", xcv.length() );
 	}
 }
 // Route messages from serial interface S1
 void Router::routeS1(){
 	SString s1;
+<<<<<<< HEAD
 	//modif gfm : S1 sera dédié au GPS : tous les messages qui arrivent seront envoyer à UBX_parser
 	int i;
 	if( pullMsg( s1_rx_q, s1) ){
@@ -133,24 +199,71 @@ void Router::routeS1(){
 			if( forwardMsg( s1, s2_tx_q ))
 				ESP_LOGV(FNAME,"ttyS1 RX bytes %d looped to s2_tx_q", s1.length() );
 */	  }
+=======
+	while( pullMsg( s1_rx_q, s1) ){
+		// ESP_LOGI(FNAME,"S1 RX %d bytes: %s", s1.length(), s1.c_str() );
+		// ESP_LOGI(FNAME,"routeS1 RX %d bytes, Q:%d  B:%d", s1.length(), s1_rx_q.numElements(), Flarm::bincom );
+		// ESP_LOG_BUFFER_HEXDUMP(FNAME,s1.c_str(),s1.length(), ESP_LOG_INFO);
+
+		if( rt_s1_wl.get() && (wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE) ){
+			if( forwardMsg( s1, wl_flarm_tx_q )){
+				// ESP_LOGI(FNAME,"S1 RX %d bytes forwarded to WiFi port 8881", s1.length() );
+			}
+		}
+		if( rt_s1_wl.get() && (wireless == WL_BLUETOOTH) ){
+			if( forwardMsg( s1, bt_tx_q )){
+				// ESP_LOGI(FNAME,"S1 RX %d bytes forwarded to BT", s1.length() );
+			}
+		}
+		if( rt_s1_can.get() && can_speed.get() ){
+			if( forwardMsg( s1, can_tx_q )){
+				// ESP_LOGI(FNAME,"S1 RX %d bytes forwarded to CAN bus", s1.length() );
+			}
+		}
+		if( rt_s1_s2.get() && serial2_speed.get() ){
+			if( forwardMsg( s1, s2_tx_q )){
+				Serial::setRxTxNotifier( TX2_REQ );
+				// ESP_LOGI(FNAME,"S1 RX %d bytes looped to S2", s1.length() );
+			}
+		}
+		if( serial1_rxloop.get() ){  // only 0=DISABLE | 1=ENABLE
+			if( forwardMsg( s1, s1_tx_q )){
+				Serial::setRxTxNotifier( TX1_REQ );
+				// ESP_LOGI(FNAME,"S1 RX bytes %d looped to s1_tx_q", s1.length() );
+			}
+		}
+		Protocols::parseNMEA( s1.c_str() );
+>>>>>>> 6d4fdd1baa8561b1de0632823deccb549c2dcd9b
 	}
 }
 
 // Route messages from serial interface S2
 void Router::routeS2(){
 	SString s2;
-	if( pullMsg( s2_rx_q, s2) ){
-		ESP_LOGD(FNAME,"ttyS2 RX len: %d bytes, Q:%d", s2.length(), bt_tx_q.isFull() );
-		ESP_LOG_BUFFER_HEXDUMP(FNAME,s2.c_str(),s2.length(), ESP_LOG_DEBUG);
-		if( blue_enable.get() == WL_WLAN )
-			if( forwardMsg( s2, wl_aux_tx_q ))
-				ESP_LOGV(FNAME,"ttyS2 RX bytes %d forward to wl_aux_tx_q port 8882", s2.length() );
-		if( blue_enable.get() == WL_BLUETOOTH )
-			if( forwardMsg( s2, bt_tx_q ))
-				ESP_LOGV(FNAME,"ttyS2 RX bytes %d forward to bt_tx_q", s2.length() );
-		if( serial2_tx.get() & RT_S1 )
-			if( forwardMsg( s2, s1_tx_q ))
-				ESP_LOGV(FNAME,"ttyS2 RX bytes %d looped to s1_tx_q", s2.length() );
+	while( pullMsg( s2_rx_q, s2) ){
+		// ESP_LOGI(FNAME,"S2 RX len: %d bytes, Q:%d BC:%d", s2.length(), bt_tx_q.isFull(), Flarm::bincom  );
+		// ESP_LOG_BUFFER_HEXDUMP(FNAME,s2.c_str(),s2.length(), ESP_LOG_INFO);
+
+		if( rt_s2_wl.get() && (wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE) )
+			if( forwardMsg( s2, wl_aux_tx_q )){
+				// ESP_LOGI(FNAME,"S2 RX bytes %d forward to WiFi port 8882", s2.length() );
+			}
+		if( rt_s2_wl.get() && (wireless == WL_BLUETOOTH) ){
+			if( forwardMsg( s2, bt_tx_q )){
+				// ESP_LOGI(FNAME,"S2 RX %d bytes forwarded to BT", s2.length() );
+			}
+		}
+		if( rt_s2_can.get() && can_speed.get() ){
+			if( forwardMsg( s2, can_tx_q )){
+				// ESP_LOGI(FNAME,"S2 RX %d bytes forwarded to CAN bus", s2.length() );
+			}
+		}
+		if( rt_s1_s2.get() && serial1_speed.get() ){
+			if( forwardMsg( s2, s1_tx_q )){  // This might connect XCSoar on S2 with Flarm on S1
+				Serial::setRxTxNotifier( TX1_REQ );
+				// ESP_LOGI(FNAME,"S2 RX %d bytes forwarded to S1", s2.length() );
+			}
+		}
 		Protocols::parseNMEA( s2.c_str() );
 	}
 }
@@ -158,59 +271,128 @@ void Router::routeS2(){
 // route messages from WLAN
 void Router::routeWLAN(){
 	SString wlmsg;
-	if( blue_enable.get() == WL_WLAN || blue_enable.get() == WL_WLAN_CLIENT ){
+	if( wireless != WL_DISABLE  ){
 		// Route received data from WLAN ports
-		if( pullMsg( wl_vario_rx_q, wlmsg) ){
-			ESP_LOGV(FNAME,"From WLAN port 8880 RX parse NMEA %s", wlmsg.c_str() );
-			if( serial1_tx.get() & RT_WIRELESS )
-				if( forwardMsg( wlmsg, s1_tx_q ) )
-					ESP_LOGV(FNAME,"Send to  device, TCP port 8880 received %d bytes", wlmsg.length() );
-			if( serial2_tx.get() & RT_WIRELESS )
-				if( forwardMsg( wlmsg, s2_tx_q ) )
-					ESP_LOGV(FNAME,"Send to ttyS2 device, TCP port 8880 received %d bytes", wlmsg.length() );
+		while( pullMsg( wl_vario_rx_q, wlmsg) ){
+			// ESP_LOGI(FNAME,"From WLAN port 8880 RX NMEA %s", wlmsg.c_str() );
+			if( rt_s1_wl.get()  && serial1_speed.get() ){
+				if( forwardMsg( wlmsg, s1_tx_q ) ){
+					Serial::setRxTxNotifier( TX1_REQ );
+					// ESP_LOGI(FNAME,"Send to S1 device, TCP port 8880 received %d bytes", wlmsg.length() );
+				}
+			}
+			if( rt_s2_wl.get() && serial2_speed.get() ){
+				if( forwardMsg( wlmsg, s2_tx_q ) ){
+					Serial::setRxTxNotifier( TX2_REQ );
+					// ESP_LOGI(FNAME,"Send to S2 device, TCP port 8880 received %d bytes", wlmsg.length() );
+				}
+			}
+			if( rt_wl_can.get() ){
+				if( forwardMsg( wlmsg, can_tx_q ) ){
+					// ESP_LOGI(FNAME,"Send to XCV processing, TCP port 8880 received %d bytes", wlmsg.length() );
+				}
+			}
 			Protocols::parseNMEA( wlmsg.c_str() );
 		}
-		if( pullMsg( wl_flarm_rx_q, wlmsg ) ){
-			Flarm::parsePFLAX( wlmsg );
-			if( serial1_tx.get() & RT_WIRELESS )
-				if( forwardMsg( wlmsg, s1_tx_q ) )
-					ESP_LOGV(FNAME,"Send to  device, TCP port 8881 received %d bytes", wlmsg.length() );
-			if( serial2_tx.get() & RT_WIRELESS )
-				if( forwardMsg( wlmsg, s2_tx_q ) )
-					ESP_LOGV(FNAME,"Send to ttyS2 device, TCP port 8881 received %d bytes", wlmsg.length() );
+		while( pullMsg( wl_flarm_rx_q, wlmsg ) ){
+			if( rt_s1_wl.get() && serial1_speed.get() ){
+				if( forwardMsg( wlmsg, s1_tx_q ) ){
+					Serial::setRxTxNotifier( TX1_REQ );
+					// ESP_LOGI(FNAME,"Send to  device, TCP port 8881 received %d bytes", wlmsg.length() );
+				}
+			}
+			if( rt_s2_wl.get() && serial2_speed.get() ){
+				if( forwardMsg( wlmsg, s2_tx_q ) ){
+					Serial::setRxTxNotifier( TX2_REQ );
+					// ESP_LOGI(FNAME,"Send to S2 device, TCP port 8881 received %d bytes", wlmsg.length() );
+				}
+			}
+			Protocols::parseNMEA( wlmsg.c_str() );
 		}
-		if( pullMsg( wl_aux_rx_q, wlmsg ) ){
-			Flarm::parsePFLAX( wlmsg );
-			if( serial1_tx.get() & RT_WIRELESS )
-				if( forwardMsg( wlmsg, s1_tx_q ) )
-					ESP_LOGV(FNAME,"Send to  device, TCP port 8882 received %d bytes", wlmsg.length() );
-			if( serial2_tx.get() & RT_WIRELESS )
-				if( forwardMsg( wlmsg, s2_tx_q ) )
-					ESP_LOGV(FNAME,"Send to ttyS2 device, TCP port 8882 received %d bytes", wlmsg.length() );
+		while( pullMsg( wl_aux_rx_q, wlmsg ) ){
+			if( rt_s1_wl.get() && serial1_speed.get() ){
+				if( forwardMsg( wlmsg, s1_tx_q ) ){
+					Serial::setRxTxNotifier( TX1_REQ );
+					// ESP_LOGI(FNAME,"Send to  device, TCP port 8882 received %d bytes", wlmsg.length() );
+				}
+			}
+			if( rt_s2_wl.get() && serial2_speed.get() ){
+				if( forwardMsg( wlmsg, s2_tx_q ) ){
+					Serial::setRxTxNotifier( TX2_REQ );
+					ESP_LOGI(FNAME,"Send to S2 device, TCP port 8882 received %d bytes", wlmsg.length() );
+				}
+			}
+			Protocols::parseNMEA( wlmsg.c_str() );
 		}
 	}
 }
 
+
 // route messages from Bluetooth
 void Router::routeBT(){
-	if( blue_enable.get() != WL_BLUETOOTH )
+	if( wireless != WL_BLUETOOTH )
 		return;
 	SString bt;
-	if( pullMsg( bt_rx_q, bt ) ){
-		Flarm::parsePFLAX( bt );
-		if( serial1_tx.get() & RT_WIRELESS )  // Serial data TX from bluetooth enabled ?
-			if( forwardMsg( bt, s1_tx_q ) )
-				ESP_LOGV(FNAME,"Send to S1 device, BT received %d bytes", bt.length() );
-		if( serial2_tx.get() & RT_WIRELESS )  // Serial data TX from bluetooth enabled ?
-			if( forwardMsg( bt, s2_tx_q ) )
-				ESP_LOGV(FNAME,"Send to S2 device, BT received %d bytes", bt.length() );
-		// always check if it is a command to ourselves
-		if( strncmp( bt.c_str(), "!g,", 3 )  == 0 ) {
-			ESP_LOGV(FNAME,"BT RX Matched a Borgelt command %s", bt.c_str() );
-			Protocols::parseNMEA( bt.c_str() );
+	while( pullMsg( bt_rx_q, bt ) ){
+		// ESP_LOGI(FNAME,"BT RX %s, len: %d bytes", bt.c_str(), bt.length() );
+		// ESP_LOG_BUFFER_HEXDUMP(FNAME,bt.c_str(),bt.length(), ESP_LOG_INFO);
+		if( rt_s1_wl.get() && serial1_speed.get() ){  // Serial data TX from bluetooth enabled ?
+			if( forwardMsg( bt, s1_tx_q ) ){
+				Serial::setRxTxNotifier( TX1_REQ );
+				// ESP_LOGI(FNAME,"Send to S1 device, BT received %d bytes", bt.length() );
+			}
 		}
+		if( rt_s2_wl.get() && serial2_speed.get() ){  // Serial data TX from bluetooth enabled ?
+			if( forwardMsg( bt, s2_tx_q ) ){
+				Serial::setRxTxNotifier( TX2_REQ );
+				// ESP_LOGI(FNAME,"Send to S2 device, BT received %d bytes", bt.length() );
+			}
+		}
+		if( rt_wl_can.get() && can_speed.get() ){
+			// ESP_LOGI(FNAME,"Send to CAN bus, BT received %d bytes", bt.length() );
+			CAN->sendNMEA( bt );
+		}
+		Protocols::parseNMEA( bt.c_str() );
 		bt.clear();
 	}
 }
 
+// route messages from master or can via CAN or Wifi
+void Router::routeCAN(){
+	SString can;
+	while( pullMsg( can_rx_q, can ) ){
+		// ESP_LOGI(FNAME,"can received %d bytes %s", can.length(), can.c_str());
+		// ESP_LOG_BUFFER_HEXDUMP(FNAME,can.c_str(),can.length(), ESP_LOG_INFO);
+		if (strncmp(can.c_str(), "!xs", 3) != 0)
+		{
+			// ESP_LOGI(FNAME,"can rx route.. wl-can:%d wl=bt:%d", rt_wl_can.get(), (wireless == WL_BLUETOOTH) );
+			if( (rt_s1_can.get() && serial1_speed.get()) ) {
+				if (forwardMsg(can, s1_tx_q)) {
+					Serial::setRxTxNotifier( TX1_REQ );
+					// ESP_LOGI(FNAME, "Send to S1 device, CAN link received %d NMEA bytes", can.length());
+				}
+			}
+			if( rt_s2_can.get() && serial2_speed.get()) {
+				if (forwardMsg(can, s2_tx_q)) {
+					Serial::setRxTxNotifier( TX2_REQ );
+					// ESP_LOGI(FNAME, "Send to S2 device, can link received %d NMEA bytes", can.length());
+				}
+			}
+			if( rt_wl_can.get() && (wireless == WL_BLUETOOTH) ) {
+				if( forwardMsg( can, bt_tx_q )) {
+					// ESP_LOGI(FNAME,"Send to BT device, can link received %d NMEA bytes", can.length() );
+				}
+			}
+			if( rt_wl_can.get() && (wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE) ) {
+				if( forwardMsg( can, wl_vario_tx_q )) {  // CAN received data sent to XCVario protocol 8880, maybe in future add other options if applicable
+					// ESP_LOGI(FNAME,"Send to WiFi device, can link received %d NMEA bytes", can.length() );
+				}
+			}
+			Protocols::parseNMEA( can.c_str() );
+		}
+		else{ // got !xs frame
+			Protocols::parseXS( can.c_str() );
+		}
 
+	}
+}

@@ -25,6 +25,7 @@
 #include "Units.h"
 #include "Flap.h"
 #include "Switch.h"
+<<<<<<< HEAD
 S2F * Protocols::_s2f = 0;
 //modif gfm
 #include "UBX_Parser.h"
@@ -43,6 +44,17 @@ extern int gps_nav_valid;
 extern PressureSensor *baroSensor;
 // fin modif gfm
 float Protocols::ballast_percent=0;
+=======
+#include "Blackboard.h"
+#include "SetupNG.h"
+#include "CircleWind.h"
+
+S2F *   Protocols::_s2f = 0;
+uint8_t Protocols::_protocol_version = 1;
+bool    Protocols::_can_send_error = false;
+
+char strx[200];
+>>>>>>> 6d4fdd1baa8561b1de0632823deccb549c2dcd9b
 
 Protocols::Protocols(S2F * s2f) {
 	_s2f = s2f;
@@ -50,79 +62,6 @@ Protocols::Protocols(S2F * s2f) {
 
 Protocols::~Protocols() {
 
-}
-
-void Protocols::sendTemperatureChange( float temp ){
-	char str[20];
-	sprintf( str,"!xt,%2.2f\n", temp );
-	ESP_LOGI(FNAME,"New Temperature: %f, cmd: %s", temp, str );
-	Router::sendXCV(str);
-}
-
-void Protocols::sendWkChange( float wk ){
-	char str[20];
-	sprintf( str,"!xw,%1.1f\n", wk );
-	ESP_LOGI(FNAME,"New WK pos: %f, cmd: %s", wk, str );
-	Router::sendXCV(str);
-}
-
-void Protocols::sendQNHChange( float qnh ){
-  char str[20];
-  sprintf( str,"!xq,%4.2f\n", qnh );
-  ESP_LOGI(FNAME,"New QNH: %4.2f, cmd: %s", qnh, str );
-  Router::sendXCV(str);
-}
-
-void Protocols::sendBallastChange( float ballast, bool external ){
-	char str[20];
-	ESP_LOGI(FNAME,"Send new Ballast %f ", ballast );
-	float refw = polar_wingload.get() * polar_wingarea.get();
-	ESP_LOGI(FNAME,"Reference weight: %f kg", refw);
-	float liters = (1+ (ballast/100))*refw -refw;
-	ESP_LOGI(FNAME,"New Ballast in liters: %f ", liters);
-	float max_bal = polar_max_ballast.get();
-	if( (int)(polar_max_ballast.get()) == 0 ) { // We use 100 liters as default once its not with the polar
-		max_bal = 100;
-	}
-	ESP_LOGI(FNAME,"Max ballast %f", max_bal );
-	float bal = (liters/max_bal)*10;
-	ballast_percent = bal*10;
-	if( external ){
-		sprintf( str,"!g,b%d\n\r", (int)(bal + 0.5));
-		ESP_LOGI(FNAME,"New ballast %f, cmd: %s", bal, str );
-		Router::sendXCV(str);
-	}
-	sprintf( str,"!xb,%3.1f\n", ballast);
-	ESP_LOGI(FNAME,"New ballast internal %f, cmd: %s", ballast, str );
-	Router::sendXCV(str);
-}
-
-void Protocols::sendBugsChange( float bugs ){
-	char str[20];
-	sprintf( str,"!g,u%d\n", (int)(100-bugs));
-	ESP_LOGI(FNAME,"New bugs %f, cmd: %s", bugs, str );
-	Router::sendXCV(str);
-}
-
-void Protocols::sendMcChange( float mc ){
-	char str[20];
-	sprintf( str,"!g,m%d\n", (int)(Units::ms2knots(mc)*10));
-	ESP_LOGI(FNAME,"New MC %f, cmd: %s", mc , str );
-	Router::sendXCV(str);
-}
-
-
-int last_climb=-1000;
-
-void Protocols::sendMeanClimb( float climb ){
-	if( int(climb*10) != last_climb )
-	{
-		last_climb=int(climb*10);
-		char str[20];
-		sprintf( str,"!xa,%1.1f\n", climb );
-		ESP_LOGI(FNAME,"New mean climb value: %f, cmd:%s", climb, str );
-		Router::sendXCV(str);
-	}
 }
 
 /*
@@ -136,8 +75,9 @@ HDM - Heading - Magnetic
   1) Heading Degrees, magnetic
   2) M = magnetic
   3) Checksum
-*/
+ */
 void Protocols::sendNmeaHDM( float heading ) {
+<<<<<<< HEAD
   char str[21];
   sprintf( str,"$HCHDM,%3.1f,M", heading );
   ESP_LOGI(FNAME,"Magnetic Heading: %3.1f", heading );
@@ -146,6 +86,16 @@ void Protocols::sendNmeaHDM( float heading ) {
   int i = strlen(str);
   sprintf( &str[i], "*%02X\r\n", cs );
   Router::sendXCV(str);
+=======
+	char str[21];
+	sprintf( str,"$HCHDM,%3.1f,M", heading );
+	// ESP_LOGI(FNAME,"Magnetic Heading: %3.1f", heading );
+
+	int cs = calcNMEACheckSum(&str[1]);
+	int i = strlen(str);
+	sprintf( &str[i], "*%02X\r\n", cs );
+	Router::sendXCV(str);
+>>>>>>> 6d4fdd1baa8561b1de0632823deccb549c2dcd9b
 }
 
 /*
@@ -159,8 +109,9 @@ HDT - Heading - True
   1) Heading Degrees, true
   2) T = True
   3) Checksum
-*/
+ */
 void Protocols::sendNmeaHDT( float heading ) {
+<<<<<<< HEAD
   char str[21];
   sprintf( str,"$HCHDT,%3.1f,T", heading );
   ESP_LOGI(FNAME,"True Heading: %3.1f", heading );
@@ -169,9 +120,75 @@ void Protocols::sendNmeaHDT( float heading ) {
   int i = strlen(str);
   sprintf( &str[i], "*%02X\r\n", cs );
   Router::sendXCV(str);
+=======
+	char str[21];
+	sprintf( str,"$HCHDT,%3.1f,T", heading );
+	// ESP_LOGI(FNAME,"True Heading: %3.1f", heading );
+
+	int cs = calcNMEACheckSum(&str[1]);
+	int i = strlen(str);
+	sprintf( &str[i], "*%02X\r\n", cs );
+	Router::sendXCV(str);
 }
 
+void Protocols::sendItem( const char *key, char type, void *value, int len, bool ack ){
+	if( Flarm::bincom )  // do not sent to client in case
+		return;
+	// ESP_LOGI(FNAME,"sendItem: %s", key );
+	char str[40];
+	char sender = 'U';
+	if( SetupCommon::isMaster()  )
+		sender='M';
+	else if( SetupCommon::isClient() ){
+		if( ack )
+			sender='A'; // ack from client
+		else
+			sender='C';
+	}
+	// ESP_LOGI(FNAME,"sender: %c", sender );
+	if( sender != 'U' ) {
+		int l = sprintf( str,"!xs%c,%s,%c,", sender, key, type );
+		if( type == 'F' )
+			sprintf( str+l,"%.3f", *(float*)(value) );
+		else if( type == 'I' )
+			sprintf( str+l,"%d", *(int*)(value) );
 
+		int cs = calcNMEACheckSum(&str[1]);
+		int i = strlen(str);
+		sprintf( &str[i], "*%02X\r\n", cs );
+		// ESP_LOGI(FNAME,"sendNMEAString: %s", str );
+		SString nmea( str );
+		if( !Router::forwardMsg( nmea, can_tx_q ) ){
+			if( !_can_send_error ){
+				_can_send_error = true;
+				ESP_LOGW(FNAME,"Permanent send msg to XCV client XCV (%d bytes) failure", nmea.length() );
+			}
+		}
+		else if( _can_send_error ){
+			_can_send_error = false;
+			ESP_LOGI(FNAME,"Okay again send msg to XCV client (%d bytes)", nmea.length() );
+		}
+	}
+>>>>>>> 6d4fdd1baa8561b1de0632823deccb549c2dcd9b
+}
+
+void Protocols::sendNmeaXCVCmd( const char *item, float value ){
+	if( Flarm::bincom )  // do not sent to client in case
+		return;
+	// ESP_LOGI(FNAME,"sendNMEACmd: %s: %f", item, value );
+	char str[40];
+	sprintf( str,"!xcv,%s,%d", item, (int)(value+0.5) );
+	int cs = calcNMEACheckSum(&str[1]);
+	int i = strlen(str);
+	sprintf( &str[i], "*%02X\r\n", cs );
+	ESP_LOGI(FNAME,"sendNMEACmd: %s", str );
+	SString nmea( str );
+	if( !Router::forwardMsg( nmea, xcv_tx_q ) ){
+		ESP_LOGW(FNAME,"Warning: Overrun in send to XCV tx queue %d bytes", nmea.length() );
+	}
+}
+
+<<<<<<< HEAD
 void Protocols::sendNMEA( proto_t proto, char* str,float baro, float dp, float te, float temp, float ias, float tas, int mc, float bugs,float aballast,int cruise,float alt,bool validTemp,
 		float time_gps,int gps_nav_valid,float latitude,float longitude,float estimated_altitude,float Vsx_gps,float Vsy_gps,float Vsz_gps,float vze_fusion,float Ground_Speed_gps)
 {
@@ -283,6 +300,49 @@ void Protocols::sendNMEA( proto_t proto, char* str,float baro, float dp, float t
 
 		}else{
 			sprintf(str,"$PXCV,%3.1f,%1.1f,%d,%1.2f,%1.2f,%d,%2.1f,%4.1f,%4.1f,%.1f,,,,,", te, ias, mc, bugs, (aballast+100)/100.0, cruise, std::roundf(temp*10.f)/10.f, QNH.get(), baro, dp );
+=======
+void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
+		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz ){
+	if( !validTemp )
+		temp=0;
+	if( proto == P_XCVARIO ){
+		/*
+					Sentence has following format:
+					$PXCV,
+					BBB.B = Vario, -30 to +30 m/s, negative sign for sink,
+					C.C = MacCready 0 to 10 m/s
+					EE = bugs degradation, 0 = clean to 30 %,
+					F.FF = Ballast 1.00 to 1.60,
+					G = 0 in climb, 1 in cruise,
+					HH.H = Outside airtemp in degrees celcius ( may have leading negative sign ),
+					QQQQ.Q = QNH e.g. 1013.2,
+					PPPP.P: static pressure in hPa,
+					QQQQ.Q: dynamic pressure in Pa,
+					RRR.R: roll angle,
+					III.I: pitch angle,
+					X.XX:   acceleration in X-Axis,
+					Y.YY:   acceleration in Y-Axis,
+					Z.ZZ:   acceleration in Z-Axis,
+		 *CHK = standard NMEA checksum
+		 */
+		float bal = (aballast+100)/100.0;
+		// ESP_LOGW(FNAME,"Ballast: %f %1.2f", bal, bal );
+		if( Protocols::getXcvProtocolVersion() > 1 ){
+			// omit ballast overload field
+			sprintf(str,"$PXCV,%3.1f,%1.2f,%d,,%d,%2.1f,%4.1f,%4.1f,%.1f", te, mc, bugs, !cruise, std::roundf(temp*10.f)/10.f, QNH.get() , baro, dp );
+
+		}else{
+			// legacy send ballast overload
+			sprintf(str,"$PXCV,%3.1f,%1.2f,%d,%1.3f,%d,%2.1f,%4.1f,%4.1f,%.1f", te, mc, bugs, bal, !cruise, std::roundf(temp*10.f)/10.f, QNH.get() , baro, dp );
+		}
+		int append_idx = strlen(str);
+		if( gflags.haveMPU && attitude_indicator.get() ){
+			float roll = IMU::getRoll();
+			float pitch = IMU::getXCSPitch();
+			sprintf(str+append_idx,",%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", roll, pitch, acc_x, acc_y, acc_z );
+		}else{
+			sprintf(str+append_idx,",,,,,");
+>>>>>>> 6d4fdd1baa8561b1de0632823deccb549c2dcd9b
 		}
 	}
 	else if( proto == P_OPENVARIO ) {
@@ -293,42 +353,46 @@ void Protocols::sendNMEA( proto_t proto, char* str,float baro, float dp, float t
 	}
 	else if ( proto == P_BORGELT ) {
 		/*
-		Sentence has following format:
-		$PBB50,AAA,BBB.B,C.C,DDDDD,EE,F.FF,G,HH*CHK crlf
-		AAA = TAS 0 to 150 knots
-		BBB.B = Vario, -10 to +15 knots, negative sign for sink
-		C.C = MacCready 0 to 8.0 knots
-		DDDDD = IAS squared 0 to 22500
-		EE = bugs degradation, 0 = clean to 30 %
-		F.FF = Ballast 1.00 to 1.60
-		G = 0 in climb, 1 in cruise
-		HH = Outside airtemp in degrees celcius ( may have leading negative sign )
-		CHK = standard NMEA checksum
+			Sentence has following format:
+			$PBB50,AAA,BBB.B,C.C,DDDDD,EE,F.FF,G,HH*CHK crlf
+			AAA = TAS 0 to 150 knots
+			BBB.B = Vario, -10 to +15 knots, negative sign for sink
+			C.C = MacCready 0 to 8.0 knots
+			DDDDD = IAS squared 0 to 22500
+			EE = bugs degradation, 0 = clean to 30 %
+			F.FF = Ballast 1.00 to 1.60
+			G = 0 in climb, 1 in cruise
+			HH = Outside airtemp in degrees celcius ( may have leading negative sign )
+			CHK = standard NMEA checksum
 		 */
 		float iaskn = Units::kmh2knots( ias );
+<<<<<<< HEAD
 		sprintf(str,"$PBB50,%03d,%3.1f,%1.1f,%d,%1.2f,%1.2f,%1d,%2d", (int)(Units::kmh2knots(tas)+0.5), Units::ms2knots(te), Units::mcval2knots(mc), (int)((iaskn*iaskn)+0.5), bugs, (aballast+100)/100.0, cruise, (int)(temp+0.5) );
+=======
+		sprintf(str,"$PBB50,%03d,%3.1f,%1.1f,%d,%d,%1.2f,%1d,%2d", (int)(Units::kmh2knots(tas)+0.5), Units::ms2knots(te), Units::mcval2knots(mc), (int)((iaskn*iaskn)+0.5), bugs, (aballast+100)/100.0, !cruise, (int)(temp+0.5) );
+>>>>>>> 6d4fdd1baa8561b1de0632823deccb549c2dcd9b
 	}
 	else if( proto == P_CAMBRIDGE ){
 		/*
 		 * Cambridge 302 Format
-		!W,<1>,<2>,<3>,<4>,<5>,<6>,<7>,<8>,<9>,<10>,<11>,<12>,<13>*hh<CR><LF>
-		<1>    Vector wind direction in degrees
-		<2>    Vector wind speed in 10ths of meters per second
-		<3>    Vector wind age in seconds
-		<4>    Component wind in 10ths of Meters per second + 500 (500 = 0, 495 = 0.5 m/s tailwind)
-		<5>    True altitude in Meters + 1000
-		<6>    Instrument QNH setting
-		<7>    True airspeed in 100ths of Meters per second
-		<8>    Variometer reading in 10ths of knots + 200
-		<9>    Averager reading in 10ths of knots + 200
-		<10>   Relative variometer reading in 10ths of knots + 200
-		<11>   Instrument MacCready setting in 10ths of knots
-		<12>   Instrument Ballast setting in percent of capacity
-		<13>   Instrument Bug setting
+			!W,<1>,<2>,<3>,<4>,<5>,<6>,<7>,<8>,<9>,<10>,<11>,<12>,<13>*hh<CR><LF>
+			<1>    Vector wind direction in degrees
+			<2>    Vector wind speed in 10ths of meters per second
+			<3>    Vector wind age in seconds
+			<4>    Component wind in 10ths of Meters per second + 500 (500 = 0, 495 = 0.5 m/s tailwind)
+			<5>    True altitude in Meters + 1000
+			<6>    Instrument QNH setting
+			<7>    True airspeed in 100ths of Meters per second
+			<8>    Variometer reading in 10ths of knots + 200
+			<9>    Averager reading in 10ths of knots + 200
+			<10>   Relative variometer reading in 10ths of knots + 200
+			<11>   Instrument MacCready setting in 10ths of knots
+			<12>   Instrument Ballast setting in percent of capacity
+			<13>   Instrument Bug setting
 		 *hh   Checksum, XOR of all bytes of the sentence after the ‘!’ and before the ‘*’
 		 */
-
-		sprintf(str, "!w,0,0,0,0,%d,%d,%d,%d,0,0,%d,%d,%d", int(alt+1000), (int)(QNH.get()), int(Units::kmh2knots(tas)*100), int((Units::ms2knots(te)*10)+200), int( Units::mcval2knots(mc)*10 ), int( ballast_percent ), (int)bugs );
+		int cballast = int((100*ballast_kg.get() / polar_max_ballast.get()));
+		sprintf(str, "!w,0,0,0,0,%d,%4.2f,%d,%d,0,0,%d,%d,%d", int(alt+1000), QNH.get(), int(Units::kmh2ms(tas)*100), int((Units::ms2knots(te)*10)+200), int( Units::mcval2knots(mc)*10 ), cballast, (int)(100-bugs) );
 	}
 	else if( proto == P_EYE_PEYA ){
 		// Static pressure from aircraft pneumatic system [hPa] (i.e. 1015.5)
@@ -341,38 +405,51 @@ void Protocols::sendNMEA( proto_t proto, char* str,float baro, float dp, float t
 		// Vertical speed from anemometry (m/s) (i.e. +05.4)
 		// Outside Air Temperature (?C) (i.e. +15.2)
 		// Relative humidity [%] (i.e. 095)
-		float pa = alt - 8.92*(QNH.get() - 1013.25);
+		float pa = alt - 8.92*( QNH.get() - 1013.25);
 
 
 		if( validTemp )
 			sprintf(str, "$PEYA,%.2f,%.2f,%.2f,%.2f,,,%.2f,%.2f,%.2f,,", baro, baro+(dp/100),pa, QNH.get(),tas,te,temp);
 		else
 			sprintf(str, "$PEYA,%.2f,%.2f,%.2f,%.2f,,,%.2f,%.2f,0,,", baro, baro+(dp/100),alt, QNH.get(),tas,te);
-
 	}
 	else if( proto == P_EYE_PEYI ){
+<<<<<<< HEAD
 		double roll = IMU::getRollRad();
 		double pitch = IMU::getPitchRad();
+=======
+		float roll = IMU::getRoll();
+		float pitch = IMU::getPitch();
+>>>>>>> 6d4fdd1baa8561b1de0632823deccb549c2dcd9b
 		// ESP_LOGI(FNAME,"roll %.2f pitch %.2f yaw %.2f", roll, pitch, yaw  );
 		/*
-			$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,%.2f,
-			lbank,         // Bank == roll    (deg)           SRC
-			lpitch,         // pItch           (deg)
-			x,
-			y,
-			z,
-			);
+				$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,%.2f,
+				lbank,         // Bank == roll    (deg)           SRC
+				lpitch,         // pItch           (deg)
+				x,
+				y,
+				z,
+				);
 		 */
 		sprintf(str, "$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,", roll, pitch,IMU::getEarthAccelX(),IMU::getEarthAccelY(),IMU::getEarthAccelZ() );
 	}
-	else if( proto == P_AHRS_APENV1 ) { // experimental
-		sprintf(str, "$APENV1,%.2f,%.2f,0,0,0,%.2f,", ias,alt,te );
+	else if( gflags.haveMPU && attitude_indicator.get() && (proto == P_AHRS_APENV1) ) {  // LEVIL_AHRS
+		sprintf(str, "$APENV1,%d,%d,0,0,0,%d", (int)(Units::kmh2knots(ias)+0.5),(int)(Units::meters2feet(alt)+0.5),(int)(Units::ms2fpm(te)+0.5));
 	}
+<<<<<<< HEAD
 	else if( proto == P_AHRS_RPYL ) {   // experimental
 		sprintf(str, "$RPYL,%.2f,%.2f,0,0,,%.2f,0,",
 				IMU::getRollRad(),         // Bank == roll    (rad)           SRC
 				IMU::getPitchRad(),         // pItch           (rad)
 				IMU::getEarthAccelZ()
+=======
+	else if( gflags.haveMPU && attitude_indicator.get() && (proto == P_AHRS_RPYL) ) {   // LEVIL_AHRS  $RPYL,Roll,Pitch,MagnHeading,SideSlip,YawRate,G,errorcode,
+		sprintf(str, "$RPYL,%d,%d,%d,0,0,%d,0",
+				(int)(IMU::getRoll()*10+0.5),         // Bank == roll     (deg)
+				(int)(IMU::getPitch()*10+0.5),        // Pitch            (deg)
+				(int)(IMU::getYaw()*10+0.5),          // Magnetic Heading (deg)
+				(int)(acc_z*1000.0+0.5)
+>>>>>>> 6d4fdd1baa8561b1de0632823deccb549c2dcd9b
 		);
 	}
 	else if( proto == P_GENERIC ) {
@@ -394,116 +471,155 @@ void Protocols::sendNMEA( proto_t proto, char* str,float baro, float dp, float t
 	Router::sendXCV(str);
 }
 
-int countPFLAU=0;
-
-int tickNMEA=0;
-float Protocols::_mc_prev = 0.5;
-float Protocols::_qnh_prev = 0.5;
-
 // The XCVario Protocol or Cambridge CAI302 protocol to adjust MC,Ballast,Bugs.
 
-char * mystrtok(char *s)
-{
-	int i, c;
-	for (i = 0; i < strlen(s); i++) {
-		c = (unsigned char)s[i];
-		if (c == '$' || c == '!')
-			return &s[i];
+void Protocols::parseXS( const char *str ){
+	// ESP_LOGI(FNAME,"parseXS %s", str );
+	char key[20];
+	char type;
+	char role; // M | C
+	int cs;
+	float val;
+	sscanf(str, "!xs%c,%[^,],%c,%f*%02x", &role, key, &type, &val, &cs );  // !xsM,FLPS,F,1.5000*27
+	int calc_cs=calcNMEACheckSum( str );
+	if( cs == calc_cs ){
+		// ESP_LOGI(FNAME,"parsed NMEA: role=%c type=%c key=%s val=%f vali=%d", role, type , key, val, (int)val );
+		if( type == 'F' ){
+			SetupNG<float> *item = (SetupNG<float> *)SetupCommon::getMember( key );
+			if( item != 0 ){
+				if( role == 'A' )
+					item->ack( val );
+				else
+					item->set( val, false );
+			}else
+				ESP_LOGW(FNAME,"Setup item with key %s not found", key );
+		}
+		else if( type == 'I' ){
+			SetupNG<int> *item = (SetupNG<int> *)SetupCommon::getMember( key );
+			if( item != 0 ){
+				if( role == 'A' && val == item->get() )
+					item->ack( val );
+				else
+					item->set( (int)val, false );
+			}else
+				ESP_LOGW(FNAME,"Setup item with key %s not found", key );
+		}
+
+	}else{
+		ESP_LOGW(FNAME,"!xs messgae CS error got:%X != calculated:%X", cs, calc_cs );
+		ESP_LOG_BUFFER_HEXDUMP(FNAME,str,32, ESP_LOG_WARN);
 	}
-	return 0;
 }
 
 
-void Protocols::parseNMEA( char *astr ){
-	// ESP_LOGI(FNAME,"parseNMEA: %s", astr );
-	char *str = mystrtok(astr);
-	while( str ){
-		ESP_LOGV(FNAME,"parseNMEA token: %s", str);
-		tickNMEA++;
-		if ( strncmp( str, "!xw,", 4 ) == 0 ) {
-			float wkcmd;
-			sscanf( str,"!xw,%f", &wkcmd );  // directly scan into sensor variable
-			Flap::setLever( wkcmd );
-			// ESP_LOGI(FNAME,"XW command detected wk=%f", wksensor );
-		}
-		else if ( strncmp( str, "!xt,", 4 ) == 0 ) {
-			float temp;
-			sscanf( str,"!xt,%f", &temp );  // directly scan into sensor variable
-			temperature = temp;
-			validTemperature=true;
-			ESP_LOGI(FNAME,"T change detected T=%f", temp );
-		}
-		else if ( strncmp( str, "!xa,", 4 ) == 0 ) {
-			float climb;
-			sscanf( str,"!xa,%f", &climb );  // directly scan into sensor variable
-			meanClimb = climb;
-			// ESP_LOGI(FNAME,"mean climb change detected mean climb=%f", climb );
-		}
-		else if ( strncmp( str, "!xq,", 4 ) == 0 ) {
-			float qnh;
-			sscanf( str,"!xq,%f", &qnh );  // directly scan into sensor variable
-			if( QNH.get() != qnh )
-				QNH.set( qnh );
-			ESP_LOGI(FNAME,"QNH change cmd new QNH: %f, cmd: %s", qnh, str );
-		}
-		else if ( strncmp( str, "!xb,", 4 ) == 0 ) {
-			float aballast;
-			sscanf(str, "!xb,%f", &aballast);
-			ballast.set( aballast );
-			ESP_LOGI(FNAME,"parseNMEA, internal ballast modification %s new ballast: %f", str, aballast );
-			_s2f->change_mc_bal();
-		}
+void Protocols::parseNMEA( const char *str ){
+	// ESP_LOGI(FNAME,"parseNMEA: %s, len: %d", str,  strlen(str) );
 
-		else if ( (strncmp( str, "!g,", 3 ) == 0)    ) {
-			ESP_LOGI(FNAME,"parseNMEA, Cambridge C302 style command !g detected: %s",str);
-			if (str[3] == 'b' && blue_enable.get() != WL_WLAN_CLIENT ) {  // we run own protocol between Master and Client as of bad precision in official
-				ESP_LOGI(FNAME,"parseNMEA, BORGELT, ballast modification");
-				float aballast;
-				sscanf(str, "!g,b%f", &aballast);
-				aballast = aballast * 10; // Its obviously only possible to change in fraction's by 10% in CA302 (issue: 464)
-				ESP_LOGI(FNAME,"New Ballast: %f %% of max ", aballast);
-				float liters = (aballast/100.0) * polar_max_ballast.get();
-				ESP_LOGI(FNAME,"New Ballast in liters: %f ", liters);
-				float refw = polar_wingload.get() * polar_wingarea.get();
-				ESP_LOGI(FNAME,"Reference weight: %f ", refw);
-				float bal = (100.0*(liters+refw)/refw) - 100;
-				ESP_LOGI(FNAME,"Final new ballast: %f ", bal);
-				ballast.set( bal );
-				_s2f->change_mc_bal();
-				if( blue_enable.get() == WL_WLAN ) {// update also client from Master
-					delay( 500 );
-					OV.sendBallastChange( ballast.get(), false );
-				}
+	if ( strncmp( str, "!xc,", 4 ) == 0 ) { // need this to support Wind Simulator with Compass simulation
+		float heading;
+		float TAS;
+		sscanf( str,"!xc,%f,%f", &heading, &TAS );
+		ESP_LOGI(FNAME,"Compass heading detected=%3.1f TAS: %3.1f NMEA:%s", heading, TAS, str );
+		if( compass )
+			compass->setHeading( heading );
+		tas = TAS;
+	}
+	else if ( strncmp( str, "!xcs,", 5 ) == 0 ) {
+		if( strncmp( str+5, "crew-weight,", 12 ) == 0 ){
+			ESP_LOGI(FNAME,"Detected crew-weight cmd");
+			int weight;
+			int cs;
+			sscanf(str+17, "%d*%02x", &weight, &cs);
+			int calc_cs=calcNMEACheckSum( str );
+			if( calc_cs != cs ){
+				ESP_LOGW(FNAME,"CS Error in %s; %d != %d", str, cs, calc_cs );
 			}
-			if (str[3] == 'm') {
-				ESP_LOGI(FNAME,"parseNMEA, BORGELT, MC modification");
-				float mc;
-				sscanf(str, "!g,m%f", &mc);
-				mc = mc*0.1;   // comes in knots*10, unify to knots
-				ESP_LOGI(FNAME,"New MC: %1.1f knots", mc);
-				float mc_ms =  Units::knots2ms(mc);
-				ESP_LOGI(FNAME,"New MC: %1.1f knots, %f", mc, mc_ms );
-				MC.set( Units::Vario( mc_ms ) );  // set mc according corresponding vario units
-				_s2f->change_mc_bal();
-				if( blue_enable.get() == WL_WLAN ) {// update also client from Master
-					delay( 500 );
-					OV.sendMcChange( MC.get() );
-				}
-			}
-			if (str[3] == 'u') {
-				ESP_LOGI(FNAME,"parseNMEA, BORGELT, Bugs modification");
-				int mybugs;
-				sscanf(str, "!g,u%d", &mybugs);
-				mybugs = 100-mybugs;
-				ESP_LOGI(FNAME,"New Bugs: %d %%", mybugs);
-				bugs.set( mybugs );
-				_s2f->change_mc_bal();
-				if( blue_enable.get() == WL_WLAN ) {// update also client from Master
-					delay( 500 );
-					OV.sendBugsChange( bugs.get() );
-				}
+			else{
+				ESP_LOGI(FNAME,"New crew-weight: %d", weight );
+				crew_weight.set( (float)weight );
 			}
 		}
+		else if( strncmp( str+5, "empty-weight,", 13 ) == 0 ){
+			ESP_LOGI(FNAME,"Detected empty-weight cmd");
+			int weight;
+			int cs;
+			sscanf(str+18, "%d*%02x", &weight, &cs);
+			int calc_cs=calcNMEACheckSum( str );
+			if( calc_cs != cs ){
+				ESP_LOGW(FNAME,"CS Error in %s; %d != %d", str, cs, calc_cs );
+			}
+			else{
+				ESP_LOGI(FNAME,"New empty_weight: %d", weight );
+				empty_weight.set( (float)weight );
+			}
+		}
+		else if( strncmp( str+5, "bal-water,", 10 ) == 0 ){
+			ESP_LOGI(FNAME,"Detected bal_water cmd");
+			int weight;
+			int cs;
+			sscanf(str+15, "%d*%02x", &weight, &cs);
+			int calc_cs=calcNMEACheckSum( str );
+			if( calc_cs != cs ){
+				ESP_LOGW(FNAME,"CS Error in %s; %d != %d", str, cs, calc_cs );
+			}
+			else{
+				ESP_LOGI(FNAME,"New ballast: %d", weight );
+				ballast_kg.set( (float)weight );
+			}
+		}
+		else if( strncmp( str+5, "version,", 8 ) == 0 ){
+			ESP_LOGI(FNAME,"Detected version cmd");
+			int version;
+			int cs;
+			sscanf(str+13, "%d*%02x", &version, &cs);
+			int calc_cs=calcNMEACheckSum( str );
+			if( calc_cs != cs ){
+				ESP_LOGW(FNAME,"CS Error in %s; %d != %d", str, cs, calc_cs );
+			}
+			else{
+				ESP_LOGI(FNAME,"Got xcv protocol version: %d", version );
+				_protocol_version = version;
+				sendNmeaXCVCmd( "version", 2 );
+			}
+		}
+	}
+	else if ( (strncmp( str, "!g,", 3 ) == 0)    ) {
+		ESP_LOGI(FNAME,"parseNMEA, Cambridge C302 style command !g detected: %s",str);
+		if (str[3] == 'b') {  // this may reach master or client with an own navi
+			ESP_LOGI(FNAME,"parseNMEA, BORGELT, ballast modification");
+			float aballast;
+			sscanf(str, "!g,b%f", &aballast);
+			aballast = aballast * 10; // Its obviously only possible to change in fraction's by 10% in CA302 (issue: 464)
+			ESP_LOGI(FNAME,"New Ballast: %.1f %% of max ", aballast);
+			float liters = (aballast/100.0) * polar_max_ballast.get();
+			ESP_LOGI(FNAME,"New Ballast in liters/kg: %.1f ", liters);
+			ballast_kg.set( liters );
+		}
+		if (str[3] == 'm' ) {
+			ESP_LOGI(FNAME,"parseNMEA, BORGELT, MC modification");
+			float mc;
+			sscanf(str, "!g,m%f", &mc);
+			mc = mc*0.1;   // comes in knots*10, unify to knots
+			float mc_ms =  std::roundf(Units::knots2ms(mc)*10.f)/10.f; // hide rough knot resolution
+			if( vario_unit.get() == VARIO_UNIT_KNOTS )
+				mc_ms =  std::roundf(Units::knots2ms(mc)*100.f)/100.f; // higher resolution for knots
+			ESP_LOGI(FNAME,"New MC: %1.1f knots, %f m/s", mc, mc_ms );
+			MC.set( mc_ms );  // set mc in m/s
+		}
+		if (str[3] == 'u') {
+			int mybugs;
+			sscanf(str, "!g,u%d", &mybugs);
+			mybugs = 100-mybugs;
+			ESP_LOGI(FNAME,"New Bugs: %d %%", mybugs);
+			bugs.set( mybugs );
+		}
+		if (str[3] == 'q') {  // nonstandard CAI 302 extension for QNH setting in XCVario in int or float e.g. 1013 or 1020.20
+			float qnh;
+			sscanf(str, "!g,q%f", &qnh);
+			ESP_LOGI(FNAME,"New QNH: %.2f", qnh);
+			QNH.set( qnh );
+		}
+<<<<<<< HEAD
 		else if( !strncmp( str, "$PXCV,", 5 ) ){   // $PXCV,-0.0,0.5,0,1.00,0,24.4,1013.2,990.8, 0.0,0.2,-29.2,-0.45,0.01,0.80*2C
 			/*
 				$PXCV,
@@ -528,91 +644,259 @@ void Protocols::parseNMEA( char *astr ){
 			float _time,_mc,_te,_bugs,_ballast, _temp, _qnh, _baro, _pitot, _roll, _pitch, _ax, _ay, _az,_aex,_aey,_aez;
 			int _cs, _cruise;
 			sscanf( str, "$PXCV,%f,%f,%f,%f,%f,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f*%02x", &_time, &_te, &_mc, &_bugs, &_ballast,&_cruise, &_temp, &_qnh, &_baro, &_pitot, &_roll, &_pitch, &_ax, &_ay, &_az, &_aex, &_aey, &_aez, &_cs  );
+=======
+	}
+	else if( strncmp( str, "$g,", 3 ) == 0 ) {
+		ESP_LOGI(FNAME,"Remote cmd %s", str );
+		if (str[3] == 's') {  // nonstandard CAI 302 extension for S2F mode switch, e.g. for XCNav remote stick
+			ESP_LOGI(FNAME,"Detected S2F cmd");
+			int mode;
+			int cs;
+			sscanf(str, "$g,s%d*%02x", &mode, &cs);
+>>>>>>> 6d4fdd1baa8561b1de0632823deccb549c2dcd9b
 			int calc_cs=calcNMEACheckSum( str );
-			if( _cs != calc_cs )
-				ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", str, calc_cs, _cs );
+			if( calc_cs != cs ){
+				ESP_LOGW(FNAME,"CS Error in %s; %d != %d", str, cs, calc_cs );
+			}
 			else{
-				TE = _te;
-				baroP = _baro;
-				dynamicP = _pitot;
-				float iasraw= Atmosphere::pascal2kmh( dynamicP );
-				Switch::setCruiseModeXCV( _cruise );
-				ias = ias + (iasraw - ias)*0.25;
-				tas += ( Atmosphere::TAS( iasraw , _baro, _temp) - tas)*0.25;
-				alt=Atmosphere::calcAltitude( QNH.get(), _baro );
-				aTE += (TE - aTE)* (1/(10*vario_av_delay.get()));
-			}
-			// ESP_LOGI(FNAME,"parseNMEA, $PXCV TE=%2.1f T=%2.1f Baro=%4.1f Pitot=%4.1f IAS:%3.1f", _te, _temp, _baro, _pitot, ias);
-		}
-		else if( !strncmp( str, "$PFLAU,", 6 )) {
-			Flarm::parsePFLAU( str );
-			if( Flarm::bincom  ) {
-				Flarm::bincom--;
-				ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
+				ESP_LOGI(FNAME,"New S2F mode: %d", mode );
+				cruise_mode.set( mode );
 			}
 		}
-		else if( !strncmp( str, "$GPRMC,", 6 )) {
-			Flarm::parseGPRMC( str );
-			if( Flarm::bincom  ) {
-				Flarm::bincom--;
-				ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
-			}
-		}
-		else if( !strncmp( str, "$GPGGA,", 6 )) {
-			Flarm::parseGPGGA( str );
-			if( Flarm::bincom  ) {
-				Flarm::bincom--;
-				ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
-			}
-		}
-		else if( !strncmp( str, "!w,", 2 ) ){
-			/*
-			 * Cambridge 302 Format
-			!W,<1>,<2>,<3>,<4>,<5>,<6>,<7>,<8>,<9>,<10>,<11>,<12>,<13>*hh<CR><LF>
-			<1>    Vector wind direction in degrees
-			<2>    Vector wind speed in 10ths of meters per second
-			<3>    Vector wind age in seconds
-			<4>    Component wind in 10ths of Meters per second + 500 (500 = 0, 495 = 0.5 m/s tailwind)
-			<5>    True altitude in Meters + 1000
-			<6>    Instrument QNH setting
-			<7>    True airspeed in 100ths of Meters per second  ( kilometers per second )
-			<8>    Variometer reading in 10ths of knots + 200
-			<9>    Averager reading in 10ths of knots + 200
-			<10>   Relative variometer reading in 10ths of knots + 200
-			<11>   Instrument MacCready setting in 10ths of knots
-			<12>   Instrument Ballast setting in percent of capacity
-			<13>   Instrument Bug setting
-			 *hh   Checksum, XOR of all bytes of the sentence after the ‘!’ and before the ‘*’
-			 */
-			float _alt, _qnh, _tas, _te, _mc, _ballast, _bugs;
-			int _cs;
-			sscanf(str, "!w,0,0,0,0,%f,%f,%f,%f,0,0,%f,%f,%f*%02x", &_alt, &_qnh, &_tas, &_te, &_mc, &_ballast, &_bugs, &_cs );
+		if (str[3] == 'v') {  // nonstandard CAI 302 extension for volume Up/Down, e.g. for XCNav remote stick
+			int steps;
+			int cs;
+			ESP_LOGI(FNAME,"Detected volume cmd");
+			sscanf(str, "$g,v%d*%02x", &steps, &cs);
 			int calc_cs=calcNMEACheckSum( str );
-			if( _cs != calc_cs )
-				ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", str, calc_cs, _cs );
+			if( calc_cs != cs ){
+				ESP_LOGW(FNAME,"CS Error: in %s; %d != %d", str, cs, calc_cs );
+			}
 			else{
-				alt = _alt-1000;
-				if( _qnh_prev != _qnh ){
-					QNH.set( _qnh );
-					_qnh_prev = _qnh;
+				float v = audio_volume.get() + steps;
+				if( v<=100.0 && v >= 0.0 ){
+					audio_volume.set( v );
+					ESP_LOGI(FNAME,"Volume change: %d steps, new volume: %.0f", steps, v );
+				}else
+					ESP_LOGI(FNAME,"Volume change limit reached steps: %d volume: %.0f", steps, v );
+			}
+		}
+		if (str[3] == 'r') {  // nonstandard CAI 302 extension for Rotary Movement, e.g. for XCNav remote stick to navigate
+			char func;
+			int cs;
+			ESP_LOGI(FNAME,"Detected rotary message");
+			sscanf(str, "$g,r%c*%02x", &func, &cs);
+			int calc_cs=calcNMEACheckSum( str );
+			if( calc_cs != cs ){
+				ESP_LOGW(FNAME,"CS Error: in %s; %x != %x", str, cs, calc_cs );
+			}
+			else{
+				if( func == 'p' ){
+					ESP_LOGI(FNAME,"Short Press");
+					ESPRotary::sendPress();
+					ESPRotary::sendRelease();
+				}else if( func == 'l' ){
+					ESP_LOGI(FNAME,"Long Press" );
+					ESPRotary::sendLongPress();
+					ESPRotary::sendRelease();
+				}else if( func == 'u' ){
+					ESP_LOGI(FNAME,"Up");
+					ESPRotary::sendUp(1);
+				}else if( func == 'd' ){
+					ESP_LOGI(FNAME,"Down");
+					ESPRotary::sendDown(1);
 				}
-				tas = Units::knots2kmh( _tas )/100;
-				ias = Atmosphere::IAS( tas , alt, temperature );
-				TE = Units::knots2ms( _te - 200 )/10;
-				aTE += (TE - aTE)* (1/(10*vario_av_delay.get()));
-				// ESP_LOGI(FNAME,"parseNMEA/Cambridge %s: alt=%4.1f QNH=%4.1f TE=%2.1f TAS:%3.1f",str, alt, _qnh, TE, tas);
+				else if( func == 'x' ){
+					ESP_LOGI(FNAME,"Escape");
+					ESPRotary::sendEsc();
+				}
 			}
 		}
-		str++;
-		str = mystrtok(str);
+		if (str[3] == 'w') {  // nonstandard CAI 302 extension for gear warning enable/disable
+			int gear;
+			int cs;
+			ESP_LOGI(FNAME,"Detected gear warning message");
+			sscanf(str, "$g,w%d*%02x", &gear, &cs);
+			int calc_cs=calcNMEACheckSum( str );
+			if( calc_cs != cs ){
+				ESP_LOGW(FNAME,"CS Error: in %s; %x != %x", str, cs, calc_cs );
+			}
+			else{
+				if( gear == 0 ){
+					ESP_LOGI(FNAME,"Gear warning disable");
+					gflags.gear_warn_external = false;
+				}else if( gear == 1 ){
+					ESP_LOGI(FNAME,"Gear warning enable");
+					gflags.gear_warn_external = true;
+				}
+			}
+		}
+	}
+	else if( !strncmp( str+1, "PFLAE,", 5 )) {  // On Task declaration or re-connect
+		Flarm::parsePFLAE( str );
+		ageBincom();
+	}
+	else if( !strncmp( str+1, "PFLAU,", 5 )) {
+		Flarm::parsePFLAU( str );
+		ageBincom();
+	}
+	else if( !strncmp( str+3, "RMC,", 3 ) ) {
+		Flarm::parseGPRMC( str );
+		ageBincom();
+	}
+	else if( !strncmp( str+3, "GGA,", 3 )) {
+		Flarm::parseGPGGA( str );
+		ageBincom();
+	}
+	else if( !strncmp( str+3, "RMZ,", 3 )) {
+		Flarm::parsePGRMZ( str );
+		ageBincom();
+	}
+	else if( !strncmp( str, "$FT", 3 ) ) {
+		if (str[3] == '0') {
+			IMUstream = false; // no FT stream
+			SENstream = false;
+			CALstream = false;
+			SPDstream = false;			
+		}
+		else if (str[3] == '1') {
+			IMUstream = true; // IMU stream
+			SENstream = false;
+			CALstream = false;			
+			SPDstream = false;
+		}
+		else if (str[3] == '2') {
+			IMUstream = false; // SEN stream
+			SENstream = true;
+			CALstream = false;			
+			SPDstream = false;			
+		}
+		else if (str[3] == '3') {
+			IMUstream = true; // IMU and SEN stream
+			SENstream = true;
+			CALstream = false;			
+			SPDstream = false;			
+		}
+		else if (str[3] == '4') {
+			IMUstream = false;
+			SENstream = false;			
+			CALstream = true; // Accel calibration stream
+			SPDstream = false;			
+		}
+		else if (str[3] == '5') {
+			IMUstream = false;
+			SENstream = false;
+			CALstream = false; 			
+			SPDstream = true; // Speed and accel data stream
+		}
+	} else if( !strncmp( str, "$SETACC", 7 ) ) {
+		mpud::float_axes_t AccBias;	
+		mpud::float_axes_t AccGain;
+		AccBias.x = 2.0; // force value outside OK range
+		AccBias.y = 2.0;
+		AccBias.z = 2.0;
+		AccGain.x = 2.0;
+		AccGain.y = 2.0;
+		AccGain.z = 2.0;
+		IMUstream = false; // no FT stream
+		SENstream = false;
+		CALstream = false;		
+		sscanf( str,"$SETACC,%f,%f,%f,%f,%f,%f",&AccBias.x,&AccBias.y,&AccBias.z,&AccGain.x,&AccGain.y,&AccGain.z);
+		if ( (abs(AccBias.x) < 1) && (abs(AccBias.y) < 1) && (abs(AccBias.z) < 1) && (abs(AccGain.x-1) < 0.2) && (abs(AccGain.y-1) < 0.2) && (abs(AccGain.z-1) < 0.2) ) {
+			accl_bias.set(AccBias);
+			delay(200);
+			accl_gain.set(AccGain);
+			delay(200);
+			sprintf(strx,"OK\r\n");
+			Router::sendXCV(strx);
+			sprintf(strx,"\r\n");
+			Router::sendXCV(strx);			
+			sleep(3);
+			esp_restart();				
+		} else {
+			sprintf(strx,"$ACC format error. Need to type: $ACC,bias_x,bias_y,bias_z,gain_x,gain_y,gain_z\r\n");
+			Router::sendXCV(strx);
+			sprintf(strx,"example: $ACC,0.02,-0.001,0.004,1.02,0.98,1.003\r\n");
+			Router::sendXCV(strx);
+		}
+	} else if( !strncmp( str, "$GETACC", 7 ) ) {
+		mpud::float_axes_t AccBias;	
+		mpud::float_axes_t AccGain;
+		IMUstream = false; // no FT stream
+		SENstream = false;
+		CALstream = false;		
+		AccBias = accl_bias.get();
+		AccGain = accl_gain.get();
+		sprintf(strx,"$ACC IN FLASH, %1.4f, %1.4f, %1.4f, %1.4f, %1.4f, %1.4f\r\n",AccBias.x,AccBias.y,AccBias.z,AccGain.x,AccGain.y,AccGain.z );
+		Router::sendXCV(strx);		
+	} else if( !strncmp( str, "$SETINST", 8 ) ) {
+		float xcv_tilt = 4.0; // force value outside OK range
+		float xcv_sway = 4.0;
+		float xcv_distCG = 4.0;
+		IMUstream = false; // no FT stream
+		SENstream = false;
+		CALstream = false;		
+		sscanf( str,"$SETINST,%f,%f,%f",&xcv_tilt,&xcv_sway,&xcv_distCG);
+		if ( (abs(xcv_tilt) < 0.4) && (abs(xcv_sway) < 0.4) && (xcv_distCG < 3) ) {
+			tilt.set(xcv_tilt);
+			delay(200);
+			sway.set(xcv_sway);
+			delay(200);
+			distCG.set(xcv_distCG);
+			delay(200);
+			sprintf(strx,"OK\r\n");
+			Router::sendXCV(strx);
+			sprintf(strx,"\r\n");
+			Router::sendXCV(strx);			
+			sleep(3);
+
+			esp_restart();			
+		} else {
+			sprintf(strx,"$INST format error. Need to type: $INST,tilt,sway,dist_to_cg respectively in rad, rad and meter\r\n");
+			Router::sendXCV(strx);
+			sprintf(strx,"example: $INST,0.14,0.52,1.1\r\n");
+			Router::sendXCV(strx);
+		}
+	} else if( !strncmp( str, "$GETINST", 8 ) ) {
+		float xcv_tilt;
+		float xcv_sway;
+		float xcv_distCG;
+		IMUstream = false; // no FT stream
+		SENstream = false;
+		CALstream = false;		
+		xcv_tilt = tilt.get();
+		xcv_sway = sway.get();
+		xcv_distCG = distCG.get();
+		sprintf(strx,"$INST IN FLASH, %1.3f, %1.3f, %1.3f\r\n",xcv_tilt,xcv_sway,xcv_distCG);
+		Router::sendXCV(strx);
+		
+	} else if( !strncmp( str, "$CAL", 4 ) ) {
+		float localGravity = 9.0; // force value outside OK range
+		sscanf( str,"$CAL,%f",&localGravity);
+		if  (abs(localGravity - 9.807) < 0.1) {
+			IMUstream = false;
+			SENstream = false;			
+			CALstream = true; // Accel calibration stream
+		} else {
+			sprintf(strx,"$CAL format error. Need to type: $CAL, local_gravity_value\r\n");
+			Router::sendXCV(strx);
+			sprintf(strx,"example: $CAL,9.803\r\n");
+			Router::sendXCV(strx);
+		}
 	}
 }
 
+void Protocols::ageBincom(){
+	if( Flarm::bincom  ) {
+		Flarm::bincom--;
+		ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
+	}
+}
 
 // Calculate the checksum and output it as an int
 // is required as HEX in the NMEA data set
 // between $ or! and * character
-int Protocols::calcNMEACheckSum(char * nmea) {
+int Protocols::calcNMEACheckSum(const char *nmea) {
 	int i, XOR, c;
 	for (XOR = 0, i = 0; i < strlen(nmea); i++) {
 		c = (unsigned char)nmea[i];
@@ -622,7 +906,7 @@ int Protocols::calcNMEACheckSum(char * nmea) {
 	return XOR;
 }
 
-int Protocols::getNMEACheckSum(char * nmea) {
+int Protocols::getNMEACheckSum(const char *nmea) {
 	int i, cs, c;
 	for (i = 0; i < strlen(nmea); i++) {
 		c = (unsigned char)nmea[i];
@@ -631,4 +915,3 @@ int Protocols::getNMEACheckSum(char * nmea) {
 	sscanf( &nmea[i],"*%02x", &cs );
 	return cs;
 }
-

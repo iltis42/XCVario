@@ -21,61 +21,31 @@
 
 Vector::Vector() :
 _angle(0.0),
-dirtyXY(false),
-dirtyDR(false),
 _x(0.0),
 _y(0.0),
-_speed(0.0),
-_isValid(false)
+_speed(0.0)
 {
+	flags.dirtyXY = false;
+	flags.dirtyDR = true;
+	flags._isValid = true;
 }
 
-/*
-Vector::Vector(const double& x, const double& y)
-{
-	_angle = 0.0;
-	_speed = 0.0;
-	dirtyXY = false;
-	dirtyDR = false;
-	setX( x );
-	setY( y );
-	dirtyXY = false;
-	dirtyDR = true;
-	_isValid = true;
-}
-*/
-
-Vector::Vector(const int angle, const double& speed)
-{
-	// ESP_LOGI(FNAME, "New Vector ang:%d speed %f", angle, speed );
-	_x = 0.0;
-	_y = 0.0;
-	dirtyXY = false;
-	dirtyDR = false;
-	_speed = speed;
-	setAngle( angle );
-	dirtyDR = false;
-	dirtyXY = true;
-	_isValid = true;
-}
-
-Vector::Vector(const double angle, const double speed )
+Vector::Vector(const float angle, const float speed )
 {
 	// ESP_LOGI(FNAME, "New Vector ang:%f speed %f", angle, speed );
 	_x = 0.0;
 	_y = 0.0;
-	dirtyXY = false;
-	dirtyDR = false;
+	flags.dirtyXY = false;
+	flags.dirtyDR = false;
 	_speed = speed;
 	setAngle( angle );
-	dirtyDR = false;
-	dirtyXY = true;
-	_isValid = true;
+	flags.dirtyDR = false;
+	flags.dirtyXY = true;
+	flags._isValid = true;
 }
 
 
-
-double Vector::normalize(double angle)
+float Vector::normalize(float angle)
 {
 	//perhaps use something similar here?
 	if (angle < 0)
@@ -87,7 +57,7 @@ double Vector::normalize(double angle)
 	return angle;
 }
 
-double Vector::normalizeDeg(double angle)
+float Vector::normalizeDeg(float angle)
 {
 	float a=angle;
 	while( a < 0.0 )
@@ -97,7 +67,17 @@ double Vector::normalizeDeg(double angle)
 	return a;
 }
 
-double Vector::normalizeDeg180(double angle)
+float Vector::normalizePI(float angle)
+{
+	float a=angle;
+	while( a < -M_PI )
+		a += PI2;
+	while( a >= M_PI )
+		a -= PI2;
+	return a;
+}
+
+float Vector::normalizeDeg180(float angle)
 {
 	float a=angle;
 	while( a < -180.0 )
@@ -107,14 +87,26 @@ double Vector::normalizeDeg180(double angle)
 	return a;
 }
 
-double Vector::polar(double y, double x)
+float Vector::reverse( float angle ){
+	float opposite = 0;
+	normalizeDeg( angle );
+	if( abs( angle ) < 0.1 )
+		opposite = 180.0;           // or -180 as you wish
+	else if(angle > 180.0)
+		opposite = angle - 180.0;
+	else if (angle < 180.0)
+		opposite = angle + 180.0;
+	return opposite;
+}
+
+float Vector::polar(float y, float x)
 {
-	double angle = 0.0;
+	float angle = 0.0;
 	if(x >= -0.001 && x <= 0.001) {
 		if(y < 0.0)
-			return ( 1.5 * M_PI );
+			return ( M_PI );
 		else
-			return ( PI2 );
+			return ( 0 );
 	}
 	// Punkt liegt auf der neg. X-Achse
 	if(x < 0.0)
@@ -122,7 +114,7 @@ double Vector::polar(double y, double x)
 	else
 		angle = atan( y / x );
 
-	// Neg. value not allowed.
+	// Normalize
 	if(angle < 0.0)
 		angle = PI2 + angle;
 
@@ -132,39 +124,22 @@ double Vector::polar(double y, double x)
 	return angle;
 }
 
-
 float Vector::angleDiffDeg(float ang1, float ang2)
 {
 	return( normalizeDeg180( normalizeDeg180(ang1) - normalizeDeg180( ang2 ) ) );
 }
 
-double Vector::angleDiffDeg(double ang1, double ang2)
+float Vector::angleDiff(float ang1, float ang2)
 {
-	return( normalizeDeg180( normalizeDeg180(ang1) - normalizeDeg180( ang2 ) ) );
-}
-
-double Vector::angleDiff(double ang1, double ang2)
-{
-	double a1 = normalize (ang1);
-	double a2 = normalize (ang2);
-	double a = a2 - a1;
-
-	if (a > M_PI)
-		return (a - PI2);
-
-	if (a < -M_PI)
-		return (a + PI2);
-
-	return a;
+	return( normalizePI( normalizePI(ang1) - normalizePI(ang2) ));
 }
 
 Vector::~Vector()
 {}
 
-
-double Vector::getAngleDeg()
+float Vector::getAngleDeg()
 {
-	if( dirtyDR )
+	if( flags.dirtyDR )
 	{
 		recalcDR();
 	}
@@ -173,9 +148,9 @@ double Vector::getAngleDeg()
 }
 
 /** Get angle in radian. */
-double Vector::getAngleRad()
+float Vector::getAngleRad()
 {
-	if( dirtyDR )
+	if( flags.dirtyDR )
 	{
 		recalcDR();
 	}
@@ -183,32 +158,17 @@ double Vector::getAngleRad()
 	return _angle;
 }
 
-/** Set property of integer angle in degrees. */
-void Vector::setAngle(const int angle)
-{
-	// ESP_LOGI(FNAME, "setAngle I ang:%d", angle );
-	if( dirtyDR )
-	{
-		recalcDR();
-	}
-
-	_angle = normalize( angle );
-	dirtyXY = true;
-	_isValid = true;
-
-}
-
-void Vector::setAngle(const double angle)
+void Vector::setAngle(const float angle)
 {
 	// ESP_LOGI(FNAME, "setAngle D ang:%f", angle );
-	if( dirtyDR )
+	if( flags.dirtyDR )
 	{
 		recalcDR();
 	}
 
 	_angle = normalize( angle*M_PI/180.0 );
-	dirtyXY = true;
-	_isValid = true;
+	flags.dirtyXY = true;
+	flags._isValid = true;
 	// ESP_LOGI(FNAME, "New angle ang:%f", _angle );
 }
 
@@ -216,83 +176,83 @@ void Vector::setAngle(const double angle)
 /**
  * set the angle in degrees and the speed.
  */
-void Vector::setAngleAndSpeed(const int angle, const double & spd)
+void Vector::setAngleAndSpeed(const int angle, const float & spd)
 {
-	if( dirtyDR )
+	if( flags.dirtyDR )
 	{
 		recalcDR();
 	}
 
 	setAngle( angle );
 	_speed = spd;
-	dirtyDR = false;
-	dirtyXY = true;
-	_isValid = true;
+	flags.dirtyDR = false;
+	flags.dirtyXY = true;
+	flags._isValid = true;
 }
 
-/** Set property of double angle as radian. */
-void Vector::setAngleRad(const double& angle)
+/** Set property of float angle as radian. */
+void Vector::setAngleRad(const float& angle)
 {
-	if( dirtyDR )
+	if( flags.dirtyDR )
 	{
 		recalcDR();
 	}
 
 	_angle = normalize( angle );
-	dirtyXY = true;
-	dirtyDR = false;
-	_isValid = true;
+	flags.dirtyXY = true;
+	flags.dirtyDR = false;
+	flags._isValid = true;
 }
 
 /**
  * Set the speed
  */
-void Vector::setSpeedKmh(const double speed)
+void Vector::setSpeedKmh(const float speed)
 {
-	if( dirtyDR )
+	if( flags.dirtyDR )
 	{
 		recalcDR();
 	}
 
 	_speed = speed;
-	_isValid = true;
+	flags._isValid = true;
 }
 
 /**
  * Set the speed. Expected unit is meter per second.
  */
-void Vector::setSpeedMps(const double mps)
+void Vector::setSpeedMps(const float mps)
 {
-	if( dirtyDR )
+	if( flags.dirtyDR )
 	{
 		recalcDR();
 	}
 
 	_speed = mps*3.6;
-	_isValid = true;
+	flags._isValid = true;
 }
 
 /**
  * @return The speed
  */
-double Vector::getSpeed()
+float Vector::getSpeed()
 {
-	if( dirtyDR )
+	if( flags.dirtyDR )
 	{
 		recalcDR();
 	}
 
-	return double( _speed );
+	return float( _speed );
 }
 
-double Vector::getSpeedMps()
+float Vector::getSpeedMps()
 {
-	if( dirtyDR )
+	if( flags.dirtyDR )
 	{
 		recalcDR();
 	}
 
-	return double( Units::kmh2ms( _speed ) );
+	return float( Units::kmh2ms( _speed ) );
 }
 
 
@@ -301,7 +261,7 @@ void Vector::recalcDR()
 {
 	_angle = normalize( polar( _y, _x ) );
 	_speed = hypot( _y, _x );
-	dirtyDR = false;
+	flags.dirtyDR = false;
 }
 
 
@@ -310,38 +270,38 @@ void Vector::recalcXY()
 {
 	_y = _speed * sin( _angle );
 	_x = _speed * cos( _angle );
-	dirtyXY = false;
+	flags.dirtyXY = false;
 }
 
 
 /** returns the speed in X (latitude) direction (north is positive, south is negative) */
-double Vector::getX()
+float Vector::getX()
 {
-	if( dirtyXY )
+	if( flags.dirtyXY )
 	{
 		recalcXY();
 	}
 
-	return double( _x );
+	return float( _x );
 }
 
 
 /** Returns the speed in Y (longitude) direction (east is positive, west is negative) */
-double Vector::getY()
+float Vector::getY()
 {
-	if( dirtyXY )
+	if( flags.dirtyXY )
 	{
 		recalcXY();
 	}
 
-	return double( _y );
+	return float( _y );
 }
 
 
 /** returns the speed in X (latitude) direction (north is positive, south is negative) */
-double Vector::getXMps()
+float Vector::getXMps()
 {
-	if( dirtyXY )
+	if( flags.dirtyXY )
 	{
 		recalcXY();
 	}
@@ -350,9 +310,9 @@ double Vector::getXMps()
 }
 
 /** Returns the speed in Y (longitude) direction (east is positive, west is negative) */
-double Vector::getYMps()
+float Vector::getYMps()
 {
-	if( dirtyXY )
+	if( flags.dirtyXY )
 	{
 		recalcXY();
 	}
@@ -362,41 +322,41 @@ double Vector::getYMps()
 
 
 /** Sets the Y (longitudinal) speed in meters per second. */
-void Vector::setY(const double& y)
+void Vector::setY(const float& y)
 {
-	if( dirtyXY )
+	if( flags.dirtyXY )
 	{
 		recalcXY();
 	}
 
 	_y = y;
-	dirtyDR = true;
-	_isValid = true;
+	flags.dirtyDR = true;
+	flags._isValid = true;
 }
 
 /** Sets the X (latitudinal) speed in meters per second. */
-void Vector::setX(const double& x)
+void Vector::setX(const float& x)
 {
-	if( dirtyXY )
+	if( flags.dirtyXY )
 	{
 		recalcXY();
 	}
 
 	_x = x;
-	dirtyDR = true;
-	_isValid = true;
+	flags.dirtyDR = true;
+	flags._isValid = true;
 }
 
 /** = operator for Vector. */
 Vector& Vector::operator = (const Vector& x)
 {
-	_isValid = x._isValid;
+	flags._isValid = x.flags._isValid;
 	setX( x._x );
 	setY( x._y );
 	_speed = x._speed;
 	_angle = x._angle;
-	dirtyXY = x.dirtyXY;
-	dirtyDR = x.dirtyDR;
+	flags.dirtyXY = x.flags.dirtyXY;
+	flags.dirtyDR = x.flags.dirtyDR;
 
 	return *this;
 }
@@ -405,12 +365,12 @@ Vector& Vector::operator = (const Vector& x)
 /** + operator for Vector. */
 Vector Vector::operator + (Vector& x)
 {
-	if( dirtyXY )
+	if( flags.dirtyXY )
 	{
 		recalcXY();
 	}
 
-	if( x.dirtyXY )
+	if( x.flags.dirtyXY )
 	{
 		x.recalcXY();
 	}
@@ -422,12 +382,12 @@ Vector Vector::operator + (Vector& x)
 /** - operator for Vector. */
 Vector Vector::operator - (Vector& x)
 {
-	if( dirtyXY )
+	if( flags.dirtyXY )
 	{
 		recalcXY();
 	}
 
-	if( x.dirtyXY )
+	if( x.flags.dirtyXY )
 	{
 		x.recalcXY();
 	}
@@ -436,24 +396,24 @@ Vector Vector::operator - (Vector& x)
 }
 
 /** * operator for Vector. */
-Vector Vector::operator * (double left)
+Vector Vector::operator * (float left)
 		{
-	if( dirtyDR )
+	if( flags.dirtyDR )
 	{
 		recalcDR();
 	}
 
-	return Vector( _angle, double( left * _speed ) );
+	return Vector( _angle, float( left * _speed ) );
 		}
 
 
 Vector Vector::operator * (int left)
 		{
-	if( !dirtyDR )
+	if( !flags.dirtyDR )
 	{
-		return Vector( _angle, double( left * _speed ) );
+		return Vector( _angle, float( left * _speed ) );
 	}
-	else if( !dirtyXY )
+	else if( !flags.dirtyXY )
 	{
 		return Vector( left * _x, left * _y );
 	}
@@ -466,22 +426,22 @@ Vector Vector::operator * (int left)
 
 
 /** / operator for Vector. */
-double Vector::operator / ( Vector& x)
+float Vector::operator / ( Vector& x)
 		{
-	if (dirtyDR)
+	if (flags.dirtyDR)
 		recalcDR();
-	if (x.dirtyDR)
+	if (x.flags.dirtyDR)
 		x.recalcDR();
 	return _speed / x._speed;
 		}
 
 
 /** * operator for Vector. */
-double Vector::operator * ( Vector& x)
+float Vector::operator * ( Vector& x)
 		{
-	if (dirtyDR)
+	if (flags.dirtyDR)
 		recalcDR();
-	if (x.dirtyDR)
+	if (x.flags.dirtyDR)
 		x.recalcDR();
 	return _speed * x._speed;
 		}
@@ -493,12 +453,12 @@ bool Vector::operator == ( Vector& x)
 	Vector t( x );
 	Vector u( *this );
 
-	if( u.dirtyDR )
+	if( u.flags.dirtyDR )
 	{
 		u.recalcDR();
 	}
 
-	if( t.dirtyDR )
+	if( t.flags.dirtyDR )
 	{
 		t.recalcDR();
 	}
@@ -510,7 +470,7 @@ bool Vector::operator == ( Vector& x)
 /** != operator for Vector */
 bool Vector::operator != ( Vector& x)
 		{
-	if( dirtyDR )
+	if( flags.dirtyDR )
 	{
 		recalcDR();
 	}
@@ -523,11 +483,11 @@ bool Vector::operator != ( Vector& x)
 Vector Vector::operator - ()
 {
 	//there are two options for this. We use the one that involves the least conversions.
-	if( !dirtyDR )
+	if( !flags.dirtyDR )
 	{
-		return Vector( _angle + M_PI, double( _speed ) );
+		return Vector( _angle + M_PI, float( _speed ) );
 	}
-	else if( !dirtyXY )
+	else if( !flags.dirtyXY )
 	{
 		return Vector( -_x, -_y );
 	}
@@ -540,41 +500,41 @@ Vector Vector::operator - ()
 
 
 /** * operator for vector. */
-Vector operator * (Vector& left, double right)
+Vector operator * (Vector& left, float right)
 		{
-	return Vector( left.getAngleRad(), double( right * left.getSpeed() ) );
+	return Vector( left.getAngleRad(), float( right * left.getSpeed() ) );
 		}
 
 
 /** * operator for vector. */
-Vector operator * (double left, Vector& right)
+Vector operator * (float left, Vector& right)
 		{
-	return Vector( right.getAngleRad(), double( left * right.getSpeed() ) );
+	return Vector( right.getAngleRad(), float( left * right.getSpeed() ) );
 		}
 
 
 /** / operator for vector. */
-Vector operator /( Vector& left, double right )
+Vector operator /( Vector& left, float right )
 {
-	return Vector( left.getAngleRad(), double( left.getSpeed() / right ) );
+	return Vector( left.getAngleRad(), float( left.getSpeed() / right ) );
 }
 
 /** / operator for vector. */
 Vector operator /( Vector& left, int right )
 {
-	return Vector( left.getAngleRad(), double( left.getSpeed() / right ) );
+	return Vector( left.getAngleRad(), float( left.getSpeed() / right ) );
 }
 
 
 /** Poor man's solution for not getting the + operator to work properly. */
 void Vector::add(Vector arg)
 {
-	if( arg.dirtyXY )
+	if( arg.flags.dirtyXY )
 	{
 		arg.recalcXY();
 	}
 
-	if( dirtyXY )
+	if( flags.dirtyXY )
 	{
 		recalcXY();
 	}
@@ -582,7 +542,7 @@ void Vector::add(Vector arg)
 	_x += arg.getXMps();
 	_y += arg.getYMps();
 
-	dirtyDR = true;
+	flags.dirtyDR = true;
 }
 
 
@@ -591,9 +551,9 @@ Vector Vector::clone()
 {
 	Vector result;
 
-	result._isValid = _isValid;
+	result.flags._isValid = flags._isValid;
 	result._speed = _speed;
 	result.setAngleRad( this->getAngleRad() );
-	result.dirtyDR = false;
+	result.flags.dirtyDR = false;
 	return result;
 }

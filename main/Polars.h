@@ -9,7 +9,8 @@
 #define MAIN_POLARS_H_
 
 typedef struct s_polars {
-	char	 type[18];
+	int 	 index;
+	const char	 *type;
 	float    wingload;
 	float    speed1;
 	float    sink1;
@@ -27,6 +28,7 @@ public:
 	Polars();
 	static const t_polar getPolar( int x );
 	static int numPolars();
+	static void begin();
 	virtual ~Polars();
 };
 

@@ -17,33 +17,36 @@ Last update: 2021-04-18
 
  ****************************************************************************/
 
-#include "logdef.h"
-#include "esp_log.h"
-#include "CircleWind.h"
 #include "ShowCirclingWind.h"
+
+#include "CircleWind.h"
 #include "SetupNG.h"
 #include "Units.h"
+#include "sensor.h"
 
-ShowCirclingWind::ShowCirclingWind( String title ) :
+#include <AdaptUGC.h>
+#include <esp_log.h>
+
+ShowCirclingWind::ShowCirclingWind( const char* title ) :
 SetupMenuDisplay( title, nullptr )
 {
-	ESP_LOGI(FNAME, "ShowCirclingWind(): title='%s'", title.c_str() );
+	ESP_LOGI(FNAME, "ShowCirclingWind(): title='%s'", title );
 }
 
 
 
 void ShowCirclingWind::display( int mode )
 {
-	if( (selected != this) || !_menu_enabled )
+	if( (selected != this) || !gflags.inSetup )
 		return;
 
 	ESP_LOGI(FNAME, "display() mode=%d", mode );
 	if( mode != 5 )
 		clear();
-	ucg->setFont( ucg_font_fur14_hf );
-	uprintf( 5, 25, selected->_title.c_str() );
+	ucg->setFont( ucg_font_ncenR14_hr  );
+	uprintf( 5, 25, selected->_title );
 
-	uint16_t y = 75;
+	uint16_t y = 55;
 	char buffer[32];
 
 	semaphoreTake();
@@ -58,18 +61,20 @@ void ShowCirclingWind::display( int mode )
 	ucg->printf( "%s", buffer );
 	y += 25;
 
+	if( CircleWind::getGpsStatus() ){
+		ucg->setPrintPos( 0, y );
+		sprintf( buffer, "GPS Satellites : %d  ", CircleWind::getSatCnt() );
+		ucg->printf( "%s", buffer );
+		y += 25;
+	}
+
 	ucg->setPrintPos( 0, y );
-	sprintf( buffer, "GPS Satellites : %d  ", CircleWind::getSatCnt() );
+	sprintf( buffer, "Number of Circles : %2.2f  ", CircleWind::getNumCircles() );
 	ucg->printf( "%s", buffer );
 	y += 25;
 
 	ucg->setPrintPos( 0, y );
-	sprintf( buffer, "Number of Cirlces : %d  ", CircleWind::getNumCircles() );
-	ucg->printf( "%s", buffer );
-	y += 25;
-
-	ucg->setPrintPos( 0, y );
-	sprintf( buffer, "Last Wind : %3.1f\xb0/%2.1f  ", CircleWind::getAngle(), Units::Airspeed( CircleWind::getSpeed()) );
+	sprintf( buffer, "Last Wind : %3.1f°/%2.1f  ", CircleWind::getAngle(), Units::Airspeed( CircleWind::getSpeed()) );
 	ucg->printf( "%s", buffer );
 	y += 25;
 
@@ -80,6 +85,16 @@ void ShowCirclingWind::display( int mode )
 
 	ucg->setPrintPos( 0, y );
 	sprintf( buffer, "Quality : %d %%  ", CircleWind::getQuality() );
+	ucg->printf( "%s", buffer );
+	y += 25;
+
+	ucg->setPrintPos( 0, y );
+	sprintf( buffer, "Status : %s    ", CircleWind::getStatus() );
+	ucg->printf( "%s", buffer );
+	y += 25;
+
+	ucg->setPrintPos( 0, y );
+	sprintf( buffer, "Flight Mode : %s    ", CircleWind::getFlightModeStr() );
 	ucg->printf( "%s", buffer );
 	y += 25;
 

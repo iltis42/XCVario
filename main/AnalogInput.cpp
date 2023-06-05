@@ -34,6 +34,7 @@ AnalogInput::AnalogInput( float multiplier, adc_atten_t attenuation, adc_channel
 
 void AnalogInput::begin() {
 	ESP_LOGI(FNAME,"begin() unit: %d ch:%d cal:%d att: %d", _unit, _adc_ch, _cal, _attenuation  );
+	adc_power_acquire(); // we need ADC for battery measure and Flaps
 	if( _unit == ADC_UNIT_1 ) {
 		adc1_config_width(ADC_WIDTH_BIT_12);
 		adc1_config_channel_atten((adc1_channel_t)_adc_ch,_attenuation);
@@ -56,6 +57,7 @@ void AnalogInput::begin() {
 	get();
 }
 
+
 unsigned int AnalogInput::getRaw( int loops ) {
 	int adc = 0;
 	for( int i=0; i<loops; i++ ) {
@@ -65,6 +67,7 @@ unsigned int AnalogInput::getRaw( int loops ) {
 		else if( _unit == ADC_UNIT_2 )
 			adc2_get_raw((adc2_channel_t)_adc_ch, ADC_WIDTH_BIT_12, &raw );
 		adc += raw;
+		// ESP_LOGI(FNAME,"ADC raw :%d ch :%d", raw, _adc_ch );
 		if( loops > 1)
 			delay(1);
 	}

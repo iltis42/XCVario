@@ -11,6 +11,7 @@
 #include <logdef.h>
 
 char Version::_version[32];
+char * program_version;
 
 Version::Version() {
 	const char data[]=__DATE__;
@@ -22,7 +23,12 @@ Version::Version() {
 	sscanf(tempo, "%d:%d:%d", &hora, &min, &seg);
 	mes=(strstr(nomes, omes)-nomes)/3+1;
 
+<<<<<<< HEAD
 	sprintf(_version,"%02d.%02d%02d-%02d%02d", ano%100, mes, dia, hora, min );
+=======
+	sprintf(_version,"%02d.%02d%02d-%02d", ano%100, mes, dia, hora );
+	program_version = _version;
+>>>>>>> 6d4fdd1baa8561b1de0632823deccb549c2dcd9b
 }
 
 Version::~Version() {

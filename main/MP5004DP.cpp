@@ -39,6 +39,10 @@ P = 5000/4096 * adc
 
 */
 
+void MP5004DP::changeConfig(){
+	_correction = correction * ((100.0 + speedcal.get()) / 100.0);
+}
+
 void MP5004DP::setBus( I2C_t *_theBus ){
 	bool ret = MCP->begin();
 	if ( ret == false )
@@ -71,10 +75,7 @@ bool MP5004DP::offsetPlausible(uint16_t aoffset )
 	ESP_LOGI(FNAME,"MP5004DP offsetPlausible( %d )", aoffset );
 	int lower_val = 608;
 	int upper_val = 1067;
-	if( hardwareRevision.get() >= 4 ){  // XGZ sensor, measured 252 typical
-		lower_val = 150;
-		upper_val = 500;
-	}
+
 	if( (aoffset > lower_val ) && (aoffset < upper_val )  )
 		return true;
 	else
@@ -153,12 +154,16 @@ float MP5004DP::readPascal( float minimum, bool &ok ){
 		return 0.0;
 	}
 	float val = MCP->readVal();
-	float _pascal = (val - _offset) * correction * ((100.0 + speedcal.get()) / 100.0);
+	float _pascal = (val - _offset) * _correction;
     if ( (_pascal < minimum) && (minimum != 0) ) {
 	  _pascal = 0.0;
 	};
     // ESP_LOGI(FNAME,"pressure read %f", _pascal );
 	return _pascal;
+}
+
+float MP5004DP::getTemperature(void){     // return 0 for compatibility airspeed interface
+	return 0;
 }
 
 

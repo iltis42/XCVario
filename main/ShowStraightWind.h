@@ -24,7 +24,7 @@ class ShowStraightWind: public SetupMenuDisplay
 {
 public:
 
-	ShowStraightWind( String title );
+	ShowStraightWind( const char* title );
 
 	virtual ~ShowStraightWind() {}
 

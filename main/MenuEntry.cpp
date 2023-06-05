@@ -23,16 +23,22 @@
 #include "Flap.h"
 #include "MenuEntry.h"
 
-Ucglib_ILI9341_18x240x320_HWSPI *MenuEntry::ucg = 0;
+AdaptUGC *MenuEntry::ucg = 0;
 IpsDisplay* MenuEntry::_display = 0;
 MenuEntry* MenuEntry::root = 0;
 MenuEntry* MenuEntry::selected = 0;
-ESPRotary* MenuEntry::_rotary = 0;
 AnalogInput* MenuEntry::_adc = 0;
 PressureSensor *MenuEntry::_bmp = 0;
-float MenuEntry::volume;
-bool  MenuEntry::_menu_enabled = false;
 
+MenuEntry::~MenuEntry()
+{
+    // ESP_LOGI(FNAME,"del menu %s",_title );
+    detach(this);
+    for ( MenuEntry* c : _childs ) {
+        delete c;
+        c = nullptr;
+    }
+}
 
 void MenuEntry::uprintf( int x, int y, const char* format, ...) {
 	if( ucg == 0 ) {
@@ -48,6 +54,16 @@ void MenuEntry::uprintf( int x, int y, const char* format, ...) {
 	va_end(argptr);
 }
 
+void MenuEntry::restart(){
+	Audio::shutdown();
+	clear();
+	ucg->setPrintPos( 10, 50 );
+	ucg->print("...rebooting now" );
+	SetupCommon::commitNow();
+	delay(2000);
+	esp_restart();
+}
+
 void MenuEntry::uprint( int x, int y, const char* str ) {
 	if( ucg == 0 ) {
 		ESP_LOGE(FNAME,"Error UCG not initialized !");
@@ -59,8 +75,13 @@ void MenuEntry::uprint( int x, int y, const char* str ) {
 	xSemaphoreGive(spiMutex );
 }
 
-MenuEntry* MenuEntry::addMenu( MenuEntry * item ) {
-	// ESP_LOGI(FNAME,"MenuEntry addMenu() title %s", item->_title.c_str() );
+MenuEntry* MenuEntry::getFirst() const {
+	// ESP_LOGI(FNAME,"MenuEntry::getFirst()");
+	return _childs.front();
+}
+
+MenuEntry* MenuEntry::addEntry( MenuEntry * item ) {
+	// ESP_LOGI(FNAME,"MenuEntry addMenu() title %s", item->_title );
 	if( root == 0 ){
 		ESP_LOGI(FNAME,"Init root menu");
 		root = item;
@@ -76,24 +97,42 @@ MenuEntry* MenuEntry::addMenu( MenuEntry * item ) {
 	}
 }
 
-void MenuEntry::delMenu( MenuEntry * item ) {
-	ESP_LOGI(FNAME,"MenuEntry delMenu() title %s", item->_title.c_str() );
+MenuEntry* MenuEntry::addEntry( MenuEntry * item, const MenuEntry* after ) {
+	// ESP_LOGI(FNAME,"AddMenuEntry title %s after %s", item->_title, after->_title );
+	if( root == 0   ){
+		return addEntry(item);
+	}
+	else{
+        std::vector<MenuEntry *>::iterator position = std::find(_childs.begin(), _childs.end(), after );
+        if (position != _childs.end()) {
+            item->_parent = this;
+            _childs.insert( ++position, item );
+            return item;
+        }
+        else { return addEntry(item); }
+	}
+}
+
+
+void MenuEntry::delEntry( MenuEntry * item ) {
+	ESP_LOGI(FNAME,"MenuEntry delMenu() title %s", item->_title );
 	std::vector<MenuEntry *>::iterator position = std::find(_childs.begin(), _childs.end(), item );
 	if (position != _childs.end()) { // == myVector.end() means the element was not found
 		ESP_LOGI(FNAME,"found entry, now erase" );
 		_childs.erase(position);
+        delete *position;
 	}
 }
 
-MenuEntry* MenuEntry::findMenu( String title, MenuEntry* start )
+MenuEntry* MenuEntry::findMenu( std::string title, MenuEntry* start )
 {
 	ESP_LOGI(FNAME,"MenuEntry findMenu() %s %x", title.c_str(), (uint32_t)start );
-	if( start->_title == title ) {
+	if( std::string(start->_title) == title ) {
 		ESP_LOGI(FNAME,"Menu entry found for start %s", title.c_str() );
 		return start;
 	}
 	for(MenuEntry* child : start->_childs) {
-		if( child->_title == title )
+		if( std::string(start->_title) == title )
 			return child;
 		MenuEntry* m = child->findMenu( title, child );
 		if( m != 0 ) {
@@ -108,7 +147,7 @@ MenuEntry* MenuEntry::findMenu( String title, MenuEntry* start )
 void MenuEntry::showhelp( int y ){
 	if( helptext != 0 ){
 		int w=0;
-		char buf[512];
+		char *buf = (char *)malloc(512);
 		memset(buf, 0, 512);
 		memcpy( buf, helptext, strlen(helptext));
 		char *p = strtok (buf, " ");
@@ -136,12 +175,13 @@ void MenuEntry::showhelp( int y ){
 			xSemaphoreGive(spiMutex );
 			x+=len+5;
 		}
+		free( buf );
 	}
 }
 
 void MenuEntry::clear()
 {
-	ESP_LOGI(FNAME,"MenuEntry::clear");
+	// ESP_LOGI(FNAME,"MenuEntry::clear");
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setColor(COLOR_BLACK);
 	ucg->drawBox( 0,0,240,320 );
@@ -161,4 +201,3 @@ void MenuEntry::semaphoreGive()
 {
   xSemaphoreGive( spiMutex );
 }
-

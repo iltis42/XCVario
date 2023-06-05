@@ -10,13 +10,16 @@ https://github.com/iltis42/XCVario/blob/master/.github/workflows/cmake.yml
 
 Here the instructions to build the binary locally:
 
-1)  Clone, install, activate esp-idf and get cmake (obviously cmake is missing from install.sh)
-mkdir -p ~/esp; cd ~/esp; git clone --recursive https://github.com/espressif/esp-idf.git;
-cd ~/esp/esp-idf; ./install.sh; . ./export.sh;
+1)  Clone, checkout branch: release/v4.3 install and activate esp-idf and get cmake (obviously cmake is missing from install.sh)
+mkdir -p ~/esp; cd ~/esp; git clone -b release/v4.3 --recursive https://github.com/espressif/esp-idf.git;
+cd ~/esp/esp-idf; 
+git checkout release/v4.3; 
+./install.sh; . ./export.sh;
 pip install cmake;
+git submodule update --init --recursive;
 
-This will get you the lates state of esp-idf plus compiler (at this time is: esp-2020r3-8.4.0).
-For the docker official releases, stable version release-v4.3 is used at this time. 
+This will get the stable branch release/v4.3 of esp-idf plus corresponding compiler, etc.
+For the docker official releases, branch label is release-v4.3, see also workflow yaml.
 
 2) Build hello world application.
 A good idea is to work through the get-started manual from esp-idf, select the versions as shown,
@@ -89,3 +92,10 @@ C) Flashing via OTA
 Start OTA Software download Wifi AP at XCVario and
 upload through this webpage binary image: ~/esp/esp-idf/examples/get-started/XCVario/build/sensor.bin
 
+D) As an alternative to above steps you may execute the following in a single line. Attention/Warning: this will remove any existing espressif installation and all changes which you might have done to your local clone of xcvario, installs and configures espressif, git pulls XCVario and compiles an image: (time to exceute app 10 min)
+
+cd ~;rm -rf esp;rm -rf .espressif/;mkdir -p ~/esp; cd ~/esp; git clone -b release/v4.3 --recursive https://github.com/espressif/esp-idf.git;cd ~/esp/esp-idf;git checkout release/v4.3;./install.sh; . ./export.sh;pip install cmake;/home/xcsdev/.espressif/python_env/idf4.3_py3.8_env/bin/python -m pip install --upgrade pip;cd ~/esp/esp-idf/examples/get-started/; git clone --recursive https://github.com/iltis42/XCVario.git;cd ~/esp/esp-idf/examples/get-started/XCVario;get_idf;git pull;idf.py build 
+
+Therafter it is sufficent to execute the following to update the image:
+
+cd ~/esp/esp-idf/examples/get-started/XCVario;get_idf;git pull;idf.py build 

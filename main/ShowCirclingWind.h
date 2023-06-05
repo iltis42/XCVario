@@ -24,7 +24,7 @@ class ShowCirclingWind: public SetupMenuDisplay
 {
 public:
 
-	ShowCirclingWind( String title );
+	ShowCirclingWind( const char* title );
 
 	virtual ~ShowCirclingWind() {}
 

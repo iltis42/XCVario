@@ -32,19 +32,48 @@
 #include "esp_wifi.h"
 #include <list>
 #include "WifiClient.h"
+#include "WifiApp.h"
 #include "sensor.h"
+#include "Flarm.h"
+#include "Switch.h"
+#include "DataMonitor.h"
+#include "DataLink.h"
+
+static float socket_serverTime;
+
+
+typedef struct client_record {
+	int client;
+	int retries;
+}client_record_t;
 
 typedef struct xcv_sock_server {
 	RingBufCPP<SString, QUEUE_SIZE>* txbuf;
-	RingBufCPP<SString, QUEUE_SIZE>* rxbuf;
 	int port;
+	int idle;
+	TaskHandle_t pid;
+	std::list<client_record_t>  clients;
+	DataLink *dlw;
 }sock_server_t;
 
-static sock_server_t XCVario = { .txbuf = &wl_vario_tx_q, .rxbuf = &wl_vario_rx_q, .port=8880 };
-static sock_server_t FLARM   = { .txbuf = &wl_flarm_tx_q, .rxbuf = &wl_flarm_rx_q, .port=8881 };
-static sock_server_t AUX     = { .txbuf = &wl_aux_tx_q,   .rxbuf = &wl_aux_rx_q,   .port=8882 };
+static sock_server_t XCVario   = { .txbuf = &wl_vario_tx_q, .port=8880, .idle = 0, .pid = 0 };
+static sock_server_t FLARM     = { .txbuf = &wl_flarm_tx_q, .port=8881, .idle = 0, .pid = 0 };
+static sock_server_t AUX       = { .txbuf = &wl_aux_tx_q,   .port=8882, .idle = 0, .pid = 0 };
+static sock_server_t XCVarioMS = { .txbuf = &can_tx_q,      .port=8884, .idle = 0, .pid = 0 };
 
-int create_socket( int port ){
+
+#define WIFI_BUFFER_SIZE 513
+// char WifiApp::buffer[WIFI_BUFFER_SIZE];
+
+int  WifiApp::queueFull(){
+	// ESP_LOGI(FNAME, "WQF: %d", wl_vario_tx_q.isFull() );
+	if( wl_vario_tx_q.isFull() )
+		return 1;
+	else
+		return 0;
+}
+
+int WifiApp::create_socket( int port ){
 	struct sockaddr_in serverAddress;
 	// Create a socket that we will listen upon.
 	int mysock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -61,10 +90,10 @@ int create_socket( int port ){
 		ESP_LOGE(FNAME, "bind: %d %s", rc, strerror(errno));
 		return -1;
 	}
-	int flag = 1;
+	// int flag = 1;
 	// this is really realtime data, so sent TCP_NODELAY for XCVario data exchange
-	setsockopt(mysock, IPPROTO_TCP, TCP_NODELAY, (char *) &flag, sizeof(int));
-	ESP_LOGI(FNAME, "bind port: %d", port  );
+	// setsockopt(mysock, IPPROTO_TCP, TCP_NODELAY, (char *) &flag, sizeof(int));
+	ESP_LOGV(FNAME, "bind port: %d", port  );
 	// Flag the socket as listening for new connections.
 	rc = listen(mysock, 5);
 	if (rc < 0) {
@@ -76,100 +105,120 @@ int create_socket( int port ){
 
 // Multi client TCP server with dynamic updated list of clients connected
 
-void on_client_connect( int port, int msg ){
-	if( port == 8880 ){ // have a client to XCVario protocol connected
-		ESP_LOGI(FNAME, "on_client_connect: Send MC, Ballast, Bugs, etc");
-		if( msg == 1 )
-			OV.sendQNHChange( QNH.get() );
-		if( msg == 2 ) {
-			if( blue_enable.get() == WL_WLAN_CLIENT )
-				OV.sendBallastChange( ballast.get(), false );
-			else
-				OV.sendBallastChange( ballast.get(), true );
-		}
-		if( msg == 3 )
-			OV.sendBugsChange( bugs.get() );
-		if( msg == 4 )
-			OV.sendMcChange( MC.get() );
-		if( msg == 5 )
-			OV.sendTemperatureChange( temperature );
+void WifiApp::on_client_connect( int port, int msg ){
+	if( port == 8884 && !Flarm::bincom ){ // have a client to XCVario protocol connected
+		// ESP_LOGV(FNAME, "on_client_connect: Send MC, Ballast, Bugs, etc");
+		SetupCommon::syncEntry(msg);
 	}
 }
 
+int tick=0;
 
-void socket_server(void *setup) {
+void WifiApp::socket_server(void *setup) {
+
 	sock_server_t *config = (sock_server_t *)setup;
 	struct sockaddr_in clientAddress[10];  // we support max 10 clients try to connect same time
 	socklen_t clientAddressLength = sizeof(struct sockaddr_in);
-	std::list<int>  clients;
+	std::list<client_record_t>  &clients = config->clients;
 	int num_send = 0;
 	int sock = create_socket( config->port );
 	if( sock < 0 ) {
 		ESP_LOGE(FNAME, "Socket creation for %d port FAILED: Abort task", config->port );
 		vTaskDelete(NULL);
 	}
+	config->dlw = new DataLink();
 	// we have a socket
 	fcntl(sock, F_SETFL, O_NONBLOCK); // socket should not block, so we can server several clients
-	while(1)
+	while (1)
 	{
-		while (1) {
-			int new_client = accept(sock, (struct sockaddr *)&clientAddress[clients.size()], &clientAddressLength);
-			if( new_client >= 0 && clients.size() < 10 ){
-				clients.push_back( new_client );
-				num_send = 0;
-				ESP_LOGV(FNAME, "New sock client: %d, number of clients: %d", new_client, clients.size()  );
-			}
-			if( clients.size() ) {
-				SString s;
-				Router::pullMsg( *(config->txbuf), s);
-				if( s.length() )
-					ESP_LOGV(FNAME, "port %d to sent %d: bytes, %s", config->port, s.length(), s.c_str() );
-				std::list<int>::iterator it;
-				int client_dead = 0;
-				int client;
-				for(it = clients.begin(); it != clients.end(); ++it)
-				{
-					client=*it;
-					// ESP_LOGD(FNAME, "loop tcp client %d, port %d", client , config->port );
-					if ( s.length() ){
-						ESP_LOGV(FNAME, "sent to tcp client %d: %d bytes", client, s.length() );
-						ESP_LOG_BUFFER_HEXDUMP(FNAME,s.c_str(),s.length(), ESP_LOG_VERBOSE);
-						if( client >= 0 ){
-							int num = send(client, s.c_str(), s.length(), 0);
-							// ESP_LOGI(FNAME, "client %d, num send %d", client, num );
-							if( num < 0 ) {
-								ESP_LOGW(FNAME, "tcp client %d (port %d) send err: %s, remove!", client,  config->port, strerror(errno) );
-								close(client);
-								client_dead = client;
-								num_send = 0;
-								// check on sending and remove from list if client has died
-							}
-							// ESP_LOGI(FNAME, "tcp send to client %d (port: %d), bytes %d success", client, config->port, num );
-						}
-					}
-					if( !client_dead ){
-						// ESP_LOGI(FNAME, "read from client %d", client);
-						SString tcprx;
-						ssize_t sizeRead = recv(client, tcprx.c_str(), SSTRLEN-1, MSG_DONTWAIT);
-						if (sizeRead > 0) {
-							tcprx.setLen( sizeRead );
-							Router::forwardMsg( tcprx, *(config->rxbuf) );
-							ESP_LOGV(FNAME, "tcp read from port %d size: %d data: %s", config->port, sizeRead, tcprx.c_str() );
-						}
-						if( config->port == 8880 ){
-							num_send ++;
-							if( num_send < 6 ){
-								on_client_connect( config->port, num_send );
-							}
-						}
-					}
-
-				}
-				if( client_dead )
-					clients.remove( client_dead );
-			}
-			vTaskDelay(20/portTICK_PERIOD_MS);
+//time
+//		socket_serverTime = (esp_timer_get_time()/1000.0);
+		int new_client = accept(sock, (struct sockaddr *)&clientAddress[clients.size()], &clientAddressLength);
+		if( new_client >= 0 && clients.size() < 10 ){
+			client_record_t new_client_rec;
+			new_client_rec.client = new_client;
+			new_client_rec.retries = 0;
+			clients.push_back( new_client_rec );
+			num_send = 0;
+			ESP_LOGI(FNAME, "New sock client: %d, number of clients: %d", new_client, clients.size()  );
 		}
+		// ESP_LOGI(FNAME, "Number of clients %d, port %d, idle %d", clients.size(), config->port, config->idle );
+		if( clients.size() ) {
+			int size=400;
+			if( Flarm::bincom )
+				size=WIFI_BUFFER_SIZE-1;
+			char *buffer = (char*)malloc( WIFI_BUFFER_SIZE );
+			int	len = Router::pullBlock( *(config->txbuf), buffer, size );
+			if( len ){
+				// ESP_LOGI(FNAME, "port %d to sent %d: bytes, %s", config->port, len, buffer );
+				config->idle = 0;
+				DM.monitorString( MON_WIFI_8880+config->port-8880, DIR_TX, buffer, len );
+			}
+			else
+			{
+				config->idle++;
+				if( config->idle > 10 && !Flarm::bincom ){  // if there is no data, send a \n all 2 seconds as keep alive
+					buffer[0] = '\n';
+					len=1;
+					config->idle = 0;
+					ESP_LOGI(FNAME, "KEEP-ALIVE port %d", config->port );
+				}
+			}
+			std::list<client_record_t>::iterator it;
+			for(it = clients.begin(); it != clients.end(); ++it)
+			{
+				client_record_t &client_rec = *it;
+				char r[SSTRLEN+1];
+				// ESP_LOGI(FNAME, "read from wifi client %d", client_rec.client );
+				ssize_t sizeRead = recv(client_rec.client, r, SSTRLEN-1, MSG_DONTWAIT);
+				if (sizeRead > 0) {
+					config->dlw->process( r, sizeRead, config->port );
+					DM.monitorString( MON_WIFI_8880+config->port-8880, DIR_RX, r, sizeRead );
+					// ESP_LOGI(FNAME, "RX wifi client port %d size: %d bincom:%d", config->port, sizeRead, Flarm::bincom );
+					// ESP_LOG_BUFFER_HEXDUMP(FNAME,tcprx.c_str(),sizeRead, ESP_LOG_INFO);
+				}
+				if( config->port == 8884 ){
+					if( num_send < SetupCommon::numEntries() ){
+						on_client_connect( config->port, num_send );
+						num_send ++;
+					}
+				}
+				// ESP_LOGI(FNAME, "loop tcp client %d, port %d", client_rec.client, config->port );
+				if ( len ){
+					// ESP_LOGI(FNAME, "TX wifi client %d, bytes %d, port %d, trials:%d", client_rec.client, len, config->port, client_rec.retries );
+					// ESP_LOG_BUFFER_HEXDUMP(FNAME,buffer,len, ESP_LOG_INFO);
+					client_rec.retries++;
+					if( client_rec.client >= 0 ){
+						int num = send(client_rec.client, buffer, len, MSG_DONTWAIT);
+						// ESP_LOGI(FNAME, "client %d, num send %d", client_rec.client, num );
+						if( num >= 0 ){
+							client_rec.retries = 0;
+							// ESP_LOGI(FNAME, "tcp send to client %d (port: %d), bytes %d success", client_rec.client, config->port, num );
+						}
+					}
+				}
+				// if( client_rec.retries != 0 )
+				//	ESP_LOGI(FNAME, "tcp retry %d (port: %d), %d", client_rec.client, config->port, client_rec.retries );
+				if( client_rec.retries > 100 && !Flarm::bincom ){
+					ESP_LOGW(FNAME, "tcp client %d (port %d) permanent send err: %s, remove!", client_rec.client,  config->port, strerror(errno) );
+					close(client_rec.client );
+					it = clients.erase( it );
+					if( config->port == 8884 )
+						num_send = 0;
+				}
+			}
+			free( buffer );
+		}
+		Router::routeWLAN();
+		Router::routeCAN();
+//		socket_serverTime = (esp_timer_get_time()/1000.0) - socket_serverTime;
+//		ESP_LOGI(FNAME,"socket_server: %0.1f  / %0.1f", socket_serverTime, 200.0 );
+		if( uxTaskGetStackHighWaterMark( config->pid ) < 128 )
+			ESP_LOGW(FNAME,"Warning wifi task stack low: %d bytes, port %d", uxTaskGetStackHighWaterMark( config->pid ), config->port );
+		if( Flarm::bincom )
+			vTaskDelay(5/portTICK_PERIOD_MS);  // maximize realtime throuput for flight download
+		else
+			vTaskDelay(200/portTICK_PERIOD_MS);
 	}
 	vTaskDelete(NULL);
 }
@@ -178,8 +227,7 @@ void socket_server(void *setup) {
 
  */
 
-static void wifi_event_handler(void* arg, esp_event_base_t event_base,
-		int32_t event_id, void* event_data)
+void WifiApp::wifi_event_handler(void* arg, esp_event_base_t event_base,	int32_t event_id, void* event_data)
 {
 	if (event_id == WIFI_EVENT_AP_STACONNECTED) {
 		wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*) event_data;
@@ -191,32 +239,31 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
 }
 
 
-void wifi_init_softap()
+void WifiApp::wifi_init_softap()
 {
-	if( blue_enable.get() == WL_WLAN ){
+	if( wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE ){
 		tcpip_adapter_init();
-		ESP_LOGI(FNAME,"now esp_netif_init");
+		ESP_LOGV(FNAME,"now esp_netif_init");
 		ESP_ERROR_CHECK(esp_netif_init());
 		ESP_ERROR_CHECK(esp_event_loop_create_default());
-		ESP_LOGI(FNAME,"now esp_event_handler_instance_register");
+		ESP_LOGV(FNAME,"now esp_event_handler_instance_register");
 		ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
 				ESP_EVENT_ANY_ID,
 				&wifi_event_handler,
 				NULL,
 				NULL));
 
-		// ESP_LOGI(FNAME,"now esp_netif_create_default_wifi_ap");
+		// ESP_LOGV(FNAME,"now esp_netif_create_default_wifi_ap");
 		// esp_netif_create_default_wifi_ap();
-		ESP_LOGI(FNAME,"now esp_wifi_init");
+		ESP_LOGV(FNAME,"now esp_wifi_init");
 		wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
 		ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-
 		esp_event_loop_init( (system_event_cb_t)wifi_event_handler, 0 );
 
-		ESP_LOGI(FNAME,"now esp_wifi_set_mode");
+		ESP_LOGV(FNAME,"now esp_wifi_set_mode");
 		ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
 
-		ESP_LOGI(FNAME,"now esp_wifi_set_config ssid:%s", SetupCommon::getID() );
+		ESP_LOGV(FNAME,"now esp_wifi_set_config ssid:%s", SetupCommon::getID() );
 		wifi_config_t wc;
 		strcpy( (char *)wc.ap.ssid, SetupCommon::getID() );
 		wc.ap.ssid_len = strlen( (char *)wc.ap.ssid );
@@ -229,19 +276,25 @@ void wifi_init_softap()
 
 		ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wc));
 
-		ESP_LOGI(FNAME,"now esp_wifi_set_storage");
+		ESP_LOGV(FNAME,"now esp_wifi_set_storage");
 		ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+		// For further testing, may improve wifi range
+		// ESP_ERROR_CHECK(esp_wifi_set_protocol(ESP_IF_WIFI_STA, WIFI_PROTOCOL_LR ));
 
 		sleep(1);
-		ESP_LOGI(FNAME,"now esp_wifi_start");
+		ESP_LOGI(FNAME,"now start WSP wifi access point");
 		ESP_ERROR_CHECK(esp_wifi_start());
-		ESP_ERROR_CHECK(esp_wifi_set_max_tx_power(8));
+		ESP_ERROR_CHECK(esp_wifi_set_max_tx_power( int(wifi_max_power.get()*80.0/100.0) ));
 
-		xTaskCreatePinnedToCore(&socket_server, "socket_srv_0", 4096, &XCVario, 17, 0, 0);  // 10
-		xTaskCreatePinnedToCore(&socket_server, "socket_ser_1", 4096, &FLARM, 18, 0, 0);  // 10
-		xTaskCreatePinnedToCore(&socket_server, "socket_ser_2", 4096, &AUX, 16, 0, 0);  // 10
+		if( serial2_speed.get() != 0 &&  serial2_tx.get() != 0 )  // makes only sense if there is data from AUX = serial interface S2
+			xTaskCreatePinnedToCore(&socket_server, "socket_ser_2", 4096, &AUX, 7, &AUX.pid, 0);  // 10
+		if( wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE ) // 8880 Wifi server makes only sense if mode is WLAN, not Bluetooth
+			xTaskCreatePinnedToCore(&socket_server, "socket_srv_0", 4096, &XCVario, 8, &XCVario.pid, 0);  // 10
+		if( serial1_speed.get() != 0 &&  serial1_tx.get() != 0 ) // makes only sense if there is a FLARM connected on S1
+			xTaskCreatePinnedToCore(&socket_server, "socket_ser_1", 4096, &FLARM, 9, &FLARM.pid, 0);  // 10
+		if( wireless == WL_WLAN_MASTER ) // New port 8884 makes sense if we are WLAN_MASTER (this is backward compatible)
+			xTaskCreatePinnedToCore(&socket_server, "socket_srv_3", 4096, &XCVarioMS, 6, &XCVarioMS.pid, 0);  // 10
 
-		ESP_LOGI(FNAME, "wifi_init_softap finished SUCCESS. SSID:%s password:%s channel:%d", (char *)wc.ap.ssid, (char *)wc.ap.password, wc.ap.channel );
+		ESP_LOGV(FNAME, "wifi_init_softap finished SUCCESS. SSID:%s password:%s channel:%d", (char *)wc.ap.ssid, (char *)wc.ap.password, wc.ap.channel );
 	}
 }
-

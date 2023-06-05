@@ -1,0 +1,771 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>HAL Interface &#8212; eglib master documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="4-Wire SPI Drivers" href="four_wire_spi/index.html" />
+    <link rel="prev" title="HAL" href="index.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="hal-interface">
+<h1><a class="toc-backref" href="#id2">HAL Interface</a><a class="headerlink" href="#hal-interface" title="Permalink to this headline">¶</a></h1>
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#hal-interface" id="id2">HAL Interface</a></p>
+<ul>
+<li><p><a class="reference internal" href="#types" id="id3">Types</a></p></li>
+<li><p><a class="reference internal" href="#display-configuration" id="id4">Display Configuration</a></p>
+<ul>
+<li><p><a class="reference internal" href="#wire-spi" id="id5">4-Wire SPI</a></p></li>
+<li><p><a class="reference internal" href="#i2c" id="id6">I2C</a></p></li>
+<li><p><a class="reference internal" href="#parallel-8-bit-8080" id="id7">Parallel 8-bit 8080</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#hal-driver" id="id8">HAL Driver</a></p>
+<ul>
+<li><p><a class="reference internal" href="#hal-driver-helper-functions" id="id9">HAL Driver Helper Functions</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#display-driver-hal-interface-functions" id="id10">Display driver HAL interface functions</a></p>
+<ul>
+<li><p><a class="reference internal" href="#delay" id="id11">Delay</a></p></li>
+<li><p><a class="reference internal" href="#i-o" id="id12">I/O</a></p></li>
+<li><p><a class="reference internal" href="#communication" id="id13">Communication</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;eglib/hal.h&gt;</span><span class="cp"></span>
+</pre></div>
+</div>
+<p>HAL drivers implement <a class="reference internal" href="#c.hal_struct" title="hal_struct"><code class="xref c c-type docutils literal notranslate"><span class="pre">hal_struct</span></code></a> and can accept a configuration
+(<a class="reference internal" href="#c.eglib_GetHalConfig" title="eglib_GetHalConfig"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_GetHalConfig()</span></code></a>), both which are passed to <a class="reference internal" href="../eglib.html#c.eglib_Init" title="eglib_Init"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_Init()</span></code></a>.</p>
+<div class="section" id="types">
+<h2><a class="toc-backref" href="#id3">Types</a><a class="headerlink" href="#types" title="Permalink to this headline">¶</a></h2>
+<dl class="type">
+<dt id="c.hal_dc_t">
+enum <code class="sig-name descname">hal_dc_t</code><a class="headerlink" href="#c.hal_dc_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>Type of bytes transmitted</p>
+<dl class="macro">
+<dt id="c.HAL_COMMAND">
+<code class="sig-name descname">HAL_COMMAND</code><a class="headerlink" href="#c.HAL_COMMAND" title="Permalink to this definition">¶</a></dt>
+<dd><p>Command</p>
+</dd></dl>
+
+<dl class="macro">
+<dt id="c.HAL_DATA">
+<code class="sig-name descname">HAL_DATA</code><a class="headerlink" href="#c.HAL_DATA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Data</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="type">
+<dt id="c.hal_bit_numbering_t">
+enum <code class="sig-name descname">hal_bit_numbering_t</code><a class="headerlink" href="#c.hal_bit_numbering_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>Endianness</p>
+<dl class="macro">
+<dt id="c.HAL_LSB_FIRST">
+<code class="sig-name descname">HAL_LSB_FIRST</code><a class="headerlink" href="#c.HAL_LSB_FIRST" title="Permalink to this definition">¶</a></dt>
+<dd><p>Big-endian (most significant bit first)</p>
+</dd></dl>
+
+<dl class="macro">
+<dt id="c.HAL_MSB_FIRST">
+<code class="sig-name descname">HAL_MSB_FIRST</code><a class="headerlink" href="#c.HAL_MSB_FIRST" title="Permalink to this definition">¶</a></dt>
+<dd><p>Little-endian (least significant bit first)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="type">
+<dt id="c.hal_i2c_speed_t">
+enum <code class="sig-name descname">hal_i2c_speed_t</code><a class="headerlink" href="#c.hal_i2c_speed_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>I2C Speed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.hal_i2c_config_t" title="hal_i2c_config_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">hal_i2c_config_t</span></code></a>.</p>
+</dd>
+</dl>
+<dl class="macro">
+<dt id="c.HAL_I2C_100KHZ">
+<code class="sig-name descname">HAL_I2C_100KHZ</code><a class="headerlink" href="#c.HAL_I2C_100KHZ" title="Permalink to this definition">¶</a></dt>
+<dd><p>100kHz</p>
+</dd></dl>
+
+<dl class="macro">
+<dt id="c.HAL_I2C_400KHZ">
+<code class="sig-name descname">HAL_I2C_400KHZ</code><a class="headerlink" href="#c.HAL_I2C_400KHZ" title="Permalink to this definition">¶</a></dt>
+<dd><p>400kHz</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="display-configuration">
+<h2><a class="toc-backref" href="#id4">Display Configuration</a><a class="headerlink" href="#display-configuration" title="Permalink to this headline">¶</a></h2>
+<p>These are configuration definitions required by the HAL driver <a class="reference internal" href="#c.hal_struct" title="hal_struct"><code class="xref c c-type docutils literal notranslate"><span class="pre">hal_struct</span></code></a> and that
+are provided by display the driver <a class="reference internal" href="../display/interface.html#c.display_struct" title="display_struct"><code class="xref c c-type docutils literal notranslate"><span class="pre">display_struct</span></code></a>.</p>
+<div class="section" id="wire-spi">
+<h3><a class="toc-backref" href="#id5">4-Wire SPI</a><a class="headerlink" href="#wire-spi" title="Permalink to this headline">¶</a></h3>
+<dl class="type">
+<dt id="c.hal_four_wire_spi_config_t">
+<code class="sig-name descname">hal_four_wire_spi_config_t</code><a class="headerlink" href="#c.hal_four_wire_spi_config_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>4-Wire SPI configuration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../display/interface.html#c.display_struct" title="display_struct"><code class="xref c c-type docutils literal notranslate"><span class="pre">display_struct</span></code></a>.</p>
+</dd>
+<dt class="field-even">See also</dt>
+<dd class="field-even"><p><a class="reference internal" href="../display/interface.html#c.eglib_GetHalFourWireSpiConfigComm" title="eglib_GetHalFourWireSpiConfigComm"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_GetHalFourWireSpiConfigComm()</span></code></a>.</p>
+</dd>
+</dl>
+<dl class="member">
+<dt id="c.hal_four_wire_spi_config_t.mode">
+uint8_t <code class="sig-name descname">mode</code><a class="headerlink" href="#c.hal_four_wire_spi_config_t.mode" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>SPI Mode:</dt><dd><ul class="simple">
+<li><p>0: CPOL=0, CPHA=0</p></li>
+<li><p>1: CPOL=0, CPHA=1</p></li>
+<li><p>2: CPOL=1, CPHA=0</p></li>
+<li><p>3: CPOL=1, CPHA=1</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.hal_four_wire_spi_config_t.bit_numbering">
+enum <a class="reference internal" href="#c.hal_bit_numbering_t" title="hal_bit_numbering_t">hal_bit_numbering_t</a> <code class="sig-name descname">bit_numbering</code><a class="headerlink" href="#c.hal_four_wire_spi_config_t.bit_numbering" title="Permalink to this definition">¶</a></dt>
+<dd><p>Endianness</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.hal_four_wire_spi_config_t.cs_setup_ns">
+uint32_t <code class="sig-name descname">cs_setup_ns</code><a class="headerlink" href="#c.hal_four_wire_spi_config_t.cs_setup_ns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delay after CS asserted</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.hal_four_wire_spi_config_t.cs_hold_ns">
+uint32_t <code class="sig-name descname">cs_hold_ns</code><a class="headerlink" href="#c.hal_four_wire_spi_config_t.cs_hold_ns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delay before de-asserting CS</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.hal_four_wire_spi_config_t.cs_disable_ns">
+uint32_t <code class="sig-name descname">cs_disable_ns</code><a class="headerlink" href="#c.hal_four_wire_spi_config_t.cs_disable_ns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delay after de-asserting CS</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.hal_four_wire_spi_config_t.dc_setup_ns">
+uint32_t <code class="sig-name descname">dc_setup_ns</code><a class="headerlink" href="#c.hal_four_wire_spi_config_t.dc_setup_ns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delay before changing DC</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.hal_four_wire_spi_config_t.dc_hold_ns">
+uint32_t <code class="sig-name descname">dc_hold_ns</code><a class="headerlink" href="#c.hal_four_wire_spi_config_t.dc_hold_ns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delay after changing DC</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.hal_four_wire_spi_config_t.sck_cycle_ns">
+uint32_t <code class="sig-name descname">sck_cycle_ns</code><a class="headerlink" href="#c.hal_four_wire_spi_config_t.sck_cycle_ns" title="Permalink to this definition">¶</a></dt>
+<dd><p>SCK Period (1/frequency*10^9)</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="i2c">
+<h3><a class="toc-backref" href="#id6">I2C</a><a class="headerlink" href="#i2c" title="Permalink to this headline">¶</a></h3>
+<dl class="type">
+<dt id="c.hal_i2c_config_t">
+<code class="sig-name descname">hal_i2c_config_t</code><a class="headerlink" href="#c.hal_i2c_config_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>I2C Configuration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../display/interface.html#c.display_struct" title="display_struct"><code class="xref c c-type docutils literal notranslate"><span class="pre">display_struct</span></code></a>.</p>
+</dd>
+<dt class="field-even">See also</dt>
+<dd class="field-even"><p><a class="reference internal" href="../display/interface.html#c.eglib_GetHalI2cConfigComm" title="eglib_GetHalI2cConfigComm"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_GetHalI2cConfigComm()</span></code></a>.</p>
+</dd>
+</dl>
+<dl class="member">
+<dt id="c.hal_i2c_config_t.speed">
+enum <a class="reference internal" href="#c.hal_i2c_speed_t" title="hal_i2c_speed_t">hal_i2c_speed_t</a> <code class="sig-name descname">speed</code><a class="headerlink" href="#c.hal_i2c_config_t.speed" title="Permalink to this definition">¶</a></dt>
+<dd><p>I2C Speed</p>
+</dd></dl>
+
+<dl class="member">
+<dt>
+<code class="sig-name descname">uint8_t (*)(eglib_t *, enum hal_dc_t) get_7bit_slave_addr</code></dt>
+<dd><p>Pointer to a function that returns the 7-bit slave address of the display.</p>
+<p>Some displays have fixed addresses, others have addresses configurable
+depending on the state of its I/O pins and some have different addresses
+whether command or data is being sent.</p>
+<p>This function delegates this definition to each display driver and is
+called by HAL drivers <a class="reference internal" href="#c.hal_struct" title="hal_struct"><code class="xref c c-type docutils literal notranslate"><span class="pre">hal_struct</span></code></a> via
+<a class="reference internal" href="../display/interface.html#c.eglib_GetI2c7bitSlaveAddr" title="eglib_GetI2c7bitSlaveAddr"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_GetI2c7bitSlaveAddr()</span></code></a> when needed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>eglib</strong> – <a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">eglib_t</span></code></a> handle.</p></li>
+<li><p><strong>dc</strong> – Whether address command or data (<a class="reference internal" href="#c.hal_dc_t" title="hal_dc_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">hal_dc_t</span></code></a>).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>7-bit slave address.</p>
+</dd>
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.hal_dc_t" title="hal_dc_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">hal_dc_t</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="member">
+<dt>
+<code class="sig-name descname">void (*)(eglib_t *, void (*)(eglib_t *, uint8_t), enum hal_dc_t, uint8_t *, uint32_t) send</code></dt>
+<dd><p>Pointer to a function that sends I2C bytes.</p>
+<p>Each display driver has its own particular way of encoding bytes sent
+via I2C, depending on data or command being sent, number of bytes etc.</p>
+<p>This function delegates this encoding to display drivers and is called by
+HAL drivers <a class="reference internal" href="#c.hal_struct" title="hal_struct"><code class="xref c c-type docutils literal notranslate"><span class="pre">hal_struct</span></code></a> via <a class="reference internal" href="../display/interface.html#c.eglib_I2cSend" title="eglib_I2cSend"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_I2cSend()</span></code></a> when needed.</p>
+<p>Some examples of what may be required by a display:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>First send a byte informing whether the following bytes are data or
+command.</p></li>
+<li><p>Issue an I2C restart at the end of transmission (by calling
+<a class="reference internal" href="#c.eglib_CommBegin" title="eglib_CommBegin"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_CommBegin()</span></code></a>).</p></li>
+</ul>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>eglib</strong> – <a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">eglib_t</span></code></a> handle.</p></li>
+<li><p><strong>i2c_write</strong> – Pointer to a function that sends the passed byte via
+I2C.</p></li>
+<li><p><strong>dc</strong> – Whether bytes are command or data (<a class="reference internal" href="#c.hal_dc_t" title="hal_dc_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">hal_dc_t</span></code></a>).</p></li>
+<li><p><strong>bytes</strong> – Pointer to an array of bytes to send.</p></li>
+<li><p><strong>length</strong> – Number of bytes to send.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="parallel-8-bit-8080">
+<h3><a class="toc-backref" href="#id7">Parallel 8-bit 8080</a><a class="headerlink" href="#parallel-8-bit-8080" title="Permalink to this headline">¶</a></h3>
+<dl class="type">
+<dt id="c.hal_parallel_8_bit_8080_config_t">
+<code class="sig-name descname">hal_parallel_8_bit_8080_config_t</code><a class="headerlink" href="#c.hal_parallel_8_bit_8080_config_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parallel 8-bit 8080 configuration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../display/interface.html#c.display_struct" title="display_struct"><code class="xref c c-type docutils literal notranslate"><span class="pre">display_struct</span></code></a>.</p>
+</dd>
+<dt class="field-even">See also</dt>
+<dd class="field-even"><p><a class="reference internal" href="../display/interface.html#c.eglib_GetHalParallel8bit8080ConfigComm" title="eglib_GetHalParallel8bit8080ConfigComm"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_GetHalParallel8bit8080ConfigComm()</span></code></a>.</p>
+</dd>
+</dl>
+<dl class="member">
+<dt id="c.hal_parallel_8_bit_8080_config_t.csx_setup_ns">
+uint32_t <code class="sig-name descname">csx_setup_ns</code><a class="headerlink" href="#c.hal_parallel_8_bit_8080_config_t.csx_setup_ns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delay after CSX asserted.</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.hal_parallel_8_bit_8080_config_t.csx_hold_ns">
+uint32_t <code class="sig-name descname">csx_hold_ns</code><a class="headerlink" href="#c.hal_parallel_8_bit_8080_config_t.csx_hold_ns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delay before de-asserting CSX.</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.hal_parallel_8_bit_8080_config_t.csx_disable_ns">
+uint32_t <code class="sig-name descname">csx_disable_ns</code><a class="headerlink" href="#c.hal_parallel_8_bit_8080_config_t.csx_disable_ns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delay after de-asserting CSX.</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.hal_parallel_8_bit_8080_config_t.dcx_setup_ns">
+uint32_t <code class="sig-name descname">dcx_setup_ns</code><a class="headerlink" href="#c.hal_parallel_8_bit_8080_config_t.dcx_setup_ns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delay after D/CX set.</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.hal_parallel_8_bit_8080_config_t.wrx_cycle_ns">
+uint32_t <code class="sig-name descname">wrx_cycle_ns</code><a class="headerlink" href="#c.hal_parallel_8_bit_8080_config_t.wrx_cycle_ns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write cycle  duration</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.hal_parallel_8_bit_8080_config_t.wrx_high_ns">
+uint32_t <code class="sig-name descname">wrx_high_ns</code><a class="headerlink" href="#c.hal_parallel_8_bit_8080_config_t.wrx_high_ns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write cycle high duration.</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.hal_parallel_8_bit_8080_config_t.wrx_low_ns">
+uint32_t <code class="sig-name descname">wrx_low_ns</code><a class="headerlink" href="#c.hal_parallel_8_bit_8080_config_t.wrx_low_ns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write cycle low duration.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="hal-driver">
+<h2><a class="toc-backref" href="#id8">HAL Driver</a><a class="headerlink" href="#hal-driver" title="Permalink to this headline">¶</a></h2>
+<dl class="type">
+<dt id="c.hal_struct">
+struct <code class="sig-name descname">hal_struct</code><a class="headerlink" href="#c.hal_struct" title="Permalink to this definition">¶</a></dt>
+<dd><p>HAL driver definition.</p>
+<p>Aliased as <a class="reference internal" href="../eglib.html#c.hal_t" title="hal_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">hal_t</span></code></a>.</p>
+<dl class="member">
+<dt>
+<code class="sig-name descname">void (*)(eglib_t *) init</code></dt>
+<dd><p>Pointer to a function that initializes the peripheral based on:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>The HAL driver configuration (<a class="reference internal" href="#c.eglib_GetHalConfig" title="eglib_GetHalConfig"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_GetHalConfig()</span></code></a>).</p></li>
+<li><p>The Display driver bus configuration:</p></li>
+</ul>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>4-Wire SPI</strong>: (<a class="reference internal" href="../display/interface.html#c.eglib_GetHalFourWireSpiConfigComm" title="eglib_GetHalFourWireSpiConfigComm"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_GetHalFourWireSpiConfigComm()</span></code></a>).</p></li>
+<li><p><strong>I2C</strong>: (<a class="reference internal" href="../display/interface.html#c.eglib_GetHalI2cConfigComm" title="eglib_GetHalI2cConfigComm"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_GetHalI2cConfigComm()</span></code></a>).</p></li>
+<li><p><strong>Parallel 8-bit 8080</strong>: (<a class="reference internal" href="../display/interface.html#c.eglib_GetHalParallel8bit8080ConfigComm" title="eglib_GetHalParallel8bit8080ConfigComm"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_GetHalParallel8bit8080ConfigComm()</span></code></a>).</p></li>
+</ul>
+</div></blockquote>
+</div></blockquote>
+</dd></dl>
+
+<dl class="member">
+<dt>
+<code class="sig-name descname">void (*)(eglib_t *) sleep_in</code></dt>
+<dd><p>Pointer to a function that puts the peripheral in sleep mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../eglib.html#c.eglib_SleepIn" title="eglib_SleepIn"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_SleepIn()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="member">
+<dt>
+<code class="sig-name descname">void (*)(eglib_t *) sleep_out</code></dt>
+<dd><p>Pointer to a function that puts the peripheral out of sleep mode</p>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../eglib.html#c.eglib_SleepOut" title="eglib_SleepOut"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_SleepOut()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="member">
+<dt>
+<code class="sig-name descname">void (*)(eglib_t *, uint32_t) delay_ns</code></dt>
+<dd><p>Pointer to a function that delays for given amount of nanoseconds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.eglib_DelayNs" title="eglib_DelayNs"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_DelayNs()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="member">
+<dt>
+<code class="sig-name descname">void (*)(eglib_t *, _Bool) set_reset</code></dt>
+<dd><p>Pointer to a function that sets the reset pin to given <code class="docutils literal notranslate"><span class="pre">state</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.eglib_SetReset" title="eglib_SetReset"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_SetReset()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="member">
+<dt>
+<code class="sig-name descname">_Bool (*)(eglib_t *) get_busy</code></dt>
+<dd><p>Pointer to a function that gets the busy line state.</p>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.eglib_GetBusy" title="eglib_GetBusy"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_GetBusy()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="member">
+<dt>
+<code class="sig-name descname">void (*)(eglib_t *) comm_begin</code></dt>
+<dd><p>Pointer to a function that begins communication. The meaning of this
+function varies depending on the bus:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>4-Wire SPI</strong>: asserts CS.</p></li>
+<li><p><strong>I2C</strong>: sends start condition.</p></li>
+</ul>
+<blockquote>
+<div><ul class="simple">
+<li><p>When called more than one time before ending communication
+(<a class="reference internal" href="#c.eglib_CommEnd" title="eglib_CommEnd"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_CommEnd()</span></code></a>) sends restart condition.</p></li>
+</ul>
+</div></blockquote>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.eglib_CommBegin" title="eglib_CommBegin"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_CommBegin()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="member">
+<dt>
+<code class="sig-name descname">void (*)(eglib_t *, enum hal_dc_t, uint8_t *, uint32_t) send</code></dt>
+<dd><p>Sends data. Depending on the bus, additional things must happen prior to
+sending the data:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>4-Wire SPI</strong>: Set data or command line.</p></li>
+<li><p><strong>I2C</strong>: if <a class="reference internal" href="#c.eglib_ShouldSendI2cSlaveAddr" title="eglib_ShouldSendI2cSlaveAddr"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_ShouldSendI2cSlaveAddr()</span></code></a> returns true then the
+slave address returned by <a class="reference internal" href="../display/interface.html#c.eglib_GetI2c7bitSlaveAddr" title="eglib_GetI2c7bitSlaveAddr"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_GetI2c7bitSlaveAddr()</span></code></a> must be sent.
+Additionally, <a class="reference internal" href="../display/interface.html#c.eglib_I2cSend" title="eglib_I2cSend"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_I2cSend()</span></code></a> must be used to send I2C data,
+so that the required encoding by each display is executed.</p></li>
+</ul>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>eglib</strong> – <a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">eglib_t</span></code></a> handle.</p></li>
+<li><p><strong>dc</strong> – Whether bytes are command or data (<a class="reference internal" href="#c.hal_dc_t" title="hal_dc_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">hal_dc_t</span></code></a>).</p></li>
+<li><p><strong>bytes</strong> – Pointer to an array of bytes to send.</p></li>
+<li><p><strong>length</strong> – Number of bytes to send.</p></li>
+</ul>
+</dd>
+<dt class="field-even">See also</dt>
+<dd class="field-even"><p><a class="reference internal" href="#c.eglib_Send" title="eglib_Send"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_Send()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="member">
+<dt>
+<code class="sig-name descname">void (*)(eglib_t *) comm_end</code></dt>
+<dd><p>Ends communication. The meaning of this function varies depending on the
+bus:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>4-Wire SPI</strong>: de-asserts CS.</p></li>
+<li><p><strong>I2C</strong>: sends stop condition.</p></li>
+</ul>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.eglib_CommEnd" title="eglib_CommEnd"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_CommEnd()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<div class="section" id="hal-driver-helper-functions">
+<h3><a class="toc-backref" href="#id9">HAL Driver Helper Functions</a><a class="headerlink" href="#hal-driver-helper-functions" title="Permalink to this headline">¶</a></h3>
+<p>The following functions can be used from HAL driver <a class="reference internal" href="#c.hal_struct" title="hal_struct"><code class="xref c c-type docutils literal notranslate"><span class="pre">hal_struct</span></code></a>
+functions.</p>
+<dl class="function">
+<dt id="c.eglib_GetHalConfig">
+<code class="sig-name descname">eglib_GetHalConfig</code><span class="sig-paren">(</span>eglib<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_GetHalConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a pointer to the HAL driver configuration that was passed to
+<a class="reference internal" href="../eglib.html#c.eglib_Init" title="eglib_Init"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_Init()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_IsCommActive">
+<code class="sig-name descname">eglib_IsCommActive</code><span class="sig-paren">(</span>eglib<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_IsCommActive" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether in between calls to <a class="reference internal" href="#c.eglib_CommBegin" title="eglib_CommBegin"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_CommBegin()</span></code></a> and <a class="reference internal" href="#c.eglib_CommEnd" title="eglib_CommEnd"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_CommEnd()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_ShouldSendI2cSlaveAddr">
+<code class="sig-name descname">eglib_ShouldSendI2cSlaveAddr</code><span class="sig-paren">(</span>eglib<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_ShouldSendI2cSlaveAddr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether I2C slave address should be sent.</p>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="display-driver-hal-interface-functions">
+<span id="id1"></span><h2><a class="toc-backref" href="#id10">Display driver HAL interface functions</a><a class="headerlink" href="#display-driver-hal-interface-functions" title="Permalink to this headline">¶</a></h2>
+<p>The following functions can be used by
+<a class="reference internal" href="../display/index.html"><span class="doc">display drivers</span></a> <a class="reference internal" href="../display/interface.html#c.display_struct" title="display_struct"><code class="xref c c-type docutils literal notranslate"><span class="pre">display_struct</span></code></a> to
+interface with HAL.</p>
+<div class="section" id="delay">
+<h3><a class="toc-backref" href="#id11">Delay</a><a class="headerlink" href="#delay" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.eglib_DelayNs">
+<code class="sig-name descname">eglib_DelayNs</code><span class="sig-paren">(</span>eglib, ns<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DelayNs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delay for given number of nanoseconds</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_DelayUs">
+<code class="sig-name descname">eglib_DelayUs</code><span class="sig-paren">(</span>eglib, us<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DelayUs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delay for given number of microseconds</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_DelayMs">
+<code class="sig-name descname">eglib_DelayMs</code><span class="sig-paren">(</span>eglib, ms<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DelayMs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delay for given number of milliseconds</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_DelayS">
+void <code class="sig-name descname">eglib_DelayS</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em>, uint32_t<em> s</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_DelayS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delay for given number of seconds</p>
+</dd></dl>
+
+</div>
+<div class="section" id="i-o">
+<h3><a class="toc-backref" href="#id12">I/O</a><a class="headerlink" href="#i-o" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.eglib_SetReset">
+<code class="sig-name descname">eglib_SetReset</code><span class="sig-paren">(</span>eglib, state<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_SetReset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set reset line to given state.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_GetBusy">
+<code class="sig-name descname">eglib_GetBusy</code><span class="sig-paren">(</span>eglib<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_GetBusy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the value of th busy data line, often found in e-ink / e-paper displays.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="communication">
+<h3><a class="toc-backref" href="#id13">Communication</a><a class="headerlink" href="#communication" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.eglib_CommBegin">
+void <code class="sig-name descname">eglib_CommBegin</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_CommBegin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initiates communication. Must be called before <a class="reference internal" href="#c.eglib_Send" title="eglib_Send"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_Send()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_Send">
+void <code class="sig-name descname">eglib_Send</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em>, enum <a class="reference internal" href="#c.hal_dc_t" title="hal_dc_t">hal_dc_t</a><em> dc</em>, uint8_t *<em> bytes</em>, uint32_t<em> length</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_Send" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends data. Must be called after <a class="reference internal" href="#c.eglib_CommBegin" title="eglib_CommBegin"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_CommBegin()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>eglib</strong> – <a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">eglib_t</span></code></a> handle.</p></li>
+<li><p><strong>dc</strong> – Whether bytes are command or data (<a class="reference internal" href="#c.hal_dc_t" title="hal_dc_t"><code class="xref c c-type docutils literal notranslate"><span class="pre">hal_dc_t</span></code></a>).</p></li>
+<li><p><strong>bytes</strong> – Pointer to an array of bytes to send.</p></li>
+<li><p><strong>length</strong> – Number of bytes to send.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_SendData">
+<code class="sig-name descname">eglib_SendData</code><span class="sig-paren">(</span>eglib, bytes, length<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_SendData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.eglib_Send" title="eglib_Send"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_Send()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_SendDataByte">
+<code class="sig-name descname">eglib_SendDataByte</code><span class="sig-paren">(</span>eglib, bytes<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_SendDataByte" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends a single data byte.</p>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.eglib_Send" title="eglib_Send"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_Send()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_SendCommands">
+<code class="sig-name descname">eglib_SendCommands</code><span class="sig-paren">(</span>eglib, bytes, length<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_SendCommands" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends commands.</p>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.eglib_Send" title="eglib_Send"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_Send()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_SendCommandByte">
+<code class="sig-name descname">eglib_SendCommandByte</code><span class="sig-paren">(</span>eglib, bytes<span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_SendCommandByte" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends a single command byte.</p>
+<dl class="field-list simple">
+<dt class="field-odd">See also</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#c.eglib_Send" title="eglib_Send"><code class="xref c c-func docutils literal notranslate"><span class="pre">eglib_Send()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.eglib_CommEnd">
+void <code class="sig-name descname">eglib_CommEnd</code><span class="sig-paren">(</span><a class="reference internal" href="../eglib.html#c.eglib_t" title="eglib_t">eglib_t</a> *<em> eglib</em><span class="sig-paren">)</span><a class="headerlink" href="#c.eglib_CommEnd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ends communication.</p>
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="index.html" title="Previous document">HAL</a>
+        </li>
+        <li>
+          <a href="four_wire_spi/index.html" title="Next document">4-Wire SPI Drivers</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../../index.html">
+    <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+
+
+<p>
+	<a class="badge" href="https://github.com/fornellas/eglib/actions?query=workflow%3Abuild+branch%3Amaster" target="_blank">
+	  <img src="https://github.com/fornellas/eglib/workflows/build/badge.svg?branch=master"/>
+	</a>
+	<a class="badge" href="https://github.com/fornellas/eglib/pulls" target="_blank">
+	  <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg"/>
+	</a>
+	<br>
+	<a class="badge" href="https://www.paypal.com/donate?hosted_button_id=AX26JVRT2GS2Q" target="_blank">
+	  <img src="https://img.shields.io/badge/donate-%E2%9D%A4%C2%A0-ff69b4.svg?style=flat"/>
+	</a>
+</p>
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../driver_development/index.html">Driver Development</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../eglib.html">eglib</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../drawing/index.html">Drawing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../display/index.html">Display</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">HAL</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">HAL Interface</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#types">Types</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#display-configuration">Display Configuration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#hal-driver">HAL Driver</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#display-driver-hal-interface-functions">Display driver HAL interface functions</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="four_wire_spi/index.html">4-Wire SPI Drivers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="i2c/index.html">I2C Drivers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parallel_8_bit_8080/index.html">Parallel 8-bit 8080 Drivers</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Fabio Pugliese Ornellas.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.4.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../_sources/api_reference/hal/interface.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+    <a href="https://github.com/fornellas/eglib" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

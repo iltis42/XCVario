@@ -15,7 +15,6 @@
 
 typedef enum e_audio_alarm_type { AUDIO_ALARM_OFF, AUDIO_ALARM_STALL, AUDIO_ALARM_FLARM_1, AUDIO_ALARM_FLARM_2, AUDIO_ALARM_FLARM_3, AUDIO_ALARM_GEAR } e_audio_alarm_type_t;
 
-
 class Audio {
 public:
 	Audio();
@@ -31,12 +30,17 @@ public:
 	static void setup();
 	static void incVolume( int steps );
 	static void decVolume( int steps );
-	static inline void setVolume( int vol ) {wiper = vol;};
+	static void setVolume( int vol );
 
 	static void alarm( bool enable, int volume=100, e_audio_alarm_type_t alarmType=AUDIO_ALARM_STALL );
 	static bool selfTest();
 	static inline void setTestmode( bool mode ) { _testmode = mode; }
     static void shutdown();  // frue ON, false OFF
+    static void evaluateChopping();
+    static void dacEnable();
+    static void dacDisable();
+    static inline bool haveCAT5171(){ return _haveCAT5171; };
+    static void boot();
 
 private:
 	static void dac_cosine_enable(dac_channel_t channel, bool enable=true);
@@ -46,23 +50,24 @@ private:
 	static void dac_invert_set(dac_channel_t channel, int invert);
 	static void dactask(void* arg);
 	static void modtask(void* arg );
-    static void calcS2Fmode();
+    static bool calcS2Fmode();
     static bool inDeadBand( float te );
 	static bool lookup( float f, int& div, int &step );
-	static bool volumeScale( int vol, int& scale, int &wiper );
 	static void enableAmplifier( bool enable );  // frue ON, false OFF
-	static void  evaluateChopping();
+	static uint16_t equal_volume( uint16_t volume );
+	static void  calculateFrequency();
 
 	static dac_channel_t _ch;
 	static float _te;
 	static bool _s2f_mode;
 	static uint8_t _tonemode;
-	static uint8_t _chopping_mode;
 	static float _high_tone_var;
 	static bool _testmode;
-	static bool sound_on;
+	static bool sound;
     static float _range;
+    static uint16_t *p_wiper;
     static uint16_t wiper;
+    static uint16_t wiper_s2f;
     static uint16_t cur_wiper;
     static float maxf;
     static float minf;
@@ -76,7 +81,8 @@ private:
     static bool hightone;
     static bool _alarm_mode;
     static int  defaultDelay;
-    static float _vol_back;
+    static uint16_t _vol_back;
+    static uint16_t _vol_back_s2f;
     static bool  _s2f_mode_back;
     static int   _tonemode_back;
     static int tick;
@@ -84,6 +90,14 @@ private:
     static int volume_change;
     static bool _chopping;
     static bool prev_alarm;
+    static int _delay;
+    static unsigned long next_scedule;
+    static int mtick;
+    static float current_frequency;
+    static int _step;
+    static bool dac_enable;
+    static bool amplifier_enable;
+    static bool _haveCAT5171;
 };
 
 

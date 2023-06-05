@@ -26,8 +26,8 @@
  * \brief A vector represents a speed in a certain (2d) direction.
  *
  * A vector represents a speed in a certain (2d) direction.
- * It is a subclass from the @ref double class, meaning you can use it as a
- * normal double object. The values returned or set in that way are the
+ * It is a subclass from the @ref float class, meaning you can use it as a
+ * normal float object. The values returned or set in that way are the
  * values in the given direction. You can read or set that direction using
  * the getAngle... and setAngle member functions (or their variants).
  * You can also access the components of the speed in the X and Y directions.
@@ -39,103 +39,108 @@
 #define PI2 2*M_PI
 
 #ifndef D2R
-#define D2R(x) ((x)/57.2957795131)
-#define R2D(x) ((x)*57.2957795131)
+// degree to rad conversion
+#define D2R(x) ((x)*(M_PI/180.0))
+#define R2D(x) ((x)*(180.0/M_PI))
 #endif
+
+typedef struct bitfield_vector {
+	   bool dirtyXY  :1;   // True if X and/or Y have been set, and speed and direction need to be recalculated
+       bool dirtyDR  :1;
+	   bool _isValid :1;
+}bitfield_vector_t;
 
 class Vector
 {
 public:
 
     Vector();
-    // Vector(const double& x, const double& y);
-    Vector(const int angle, const double& R);
-    Vector(const double angle, const double speed);
+    Vector(const float angle, const float speed);
 
     ~Vector();
 
-    static double polar(double y, double x);
-    static double normalize(double angle);
-    static double normalizeDeg(double angle);
-    static double normalizeDeg180(double angle);
+    static float polar(float y, float x);
+    static float normalize(float angle);
+    static float normalizePI(float angle);
+    static float normalizeDeg(float angle);
+    static float normalizeDeg180(float angle);
 
-    static double angleDiff(double ang1, double ang2);    // RAD
-    static float angleDiffDeg(float ang1, float ang2);    // RAD
-    static double angleDiffDeg(double ang1, double ang2); // DEG
+    static float angleDiff(float ang1, float ang2);    // RAD
+    static float angleDiffDeg(float ang1, float ang2);    // DEG
 
+    static float reverse( float angle );
     /**
      * Get angle in degrees.
      */
-    double getAngleDeg();
+    float getAngleDeg();
 
     /**
      * Get angle in radian.
      */
-    double getAngleRad();
+    float getAngleRad();
 
     /**
      * set the angle in degrees
      */
-    void setAngle(const int angle);
-    void setAngle(const double angle);
+    void setAngle(const float angle);
 
     /**
      * set the angle in degrees  and the speed
      */
-    void setAngleAndSpeed(const int angle, const double&);
+    void setAngleAndSpeed(const int angle, const float&);
 
     /**
      * set the angle in radian
      */
-    void setAngleRad(const double& angle);
+    void setAngleRad(const float& angle);
 
     /**
      * Set the speed. Expected unit is meter per second.
      */
-    void setSpeedKmh(const double kmh);
-    void setSpeedMps(const double mps);
+    void setSpeedKmh(const float kmh);
+    void setSpeedMps(const float mps);
 
     /**
      * @return The speed
      */
-    double getSpeed();  // in internal units of Kmh
+    float getSpeed();  // in internal units of Kmh
 
-    double getSpeedMps();
+    float getSpeedMps();
 
     /**
      * @return The speed in Y (longitude) direction
      * (east is positive, west is negative)
      */
-    double getY();
+    float getY();
 
     /**
      * @return The speed in X (latitude) direction
      * (north is positive, south is negative)
      */
-    double getX();
+    float getX();
 
     /**
      * @returns The speed in Y (longitude) direction
      * (east is positive, west is negative) in meters per second
      */
-    double getYMps();
+    float getYMps();
 
     /**
      * @return The speed in X (latitude) direction
      * (north is positive, south is negative) in meters per second
      */
-    double getXMps();
+    float getXMps();
 
 
     /**
      * Sets the X (latitudinal) speed in meters per second.
      */
-    void setX(const double& x);
+    void setX(const float& x);
 
     /**
      * Sets the Y (longitudinal) speed in meters per second.
      */
-    void setY(const double& y);
+    void setY(const float& y);
 
     /* Operators */
     /**
@@ -156,12 +161,12 @@ public:
     /**
      * / operator for Vector.
      */
-    double operator / (Vector& x);
+    float operator / (Vector& x);
 
     /**
      * operator for Vector.
      */
-    double operator * (Vector& x);
+    float operator * (Vector& x);
 
     /**
      * != operator for Vector
@@ -181,7 +186,7 @@ public:
     /**
      * * prefix operator for Vector
      */
-    Vector operator * (double left);
+    Vector operator * (float left);
 
     Vector operator * (int left);
 
@@ -201,9 +206,9 @@ public:
      */
     void setInvalid()
     {
-        _isValid=false;
-        dirtyXY=true;
-        dirtyDR=true;
+        flags._isValid=false;
+        flags.dirtyXY=true;
+        flags.dirtyDR=true;
         _angle=0;
         _x=0;
         _y=0;
@@ -215,44 +220,31 @@ public:
      */
     bool isValid() const
     {
-      return _isValid;
+      return flags._isValid;
     };
 
 protected: // Protected attributes
+
+    bitfield_vector_t flags;
     /**
      * Contains the angle of the speed. 0 is north, pi/2 east, pi south, etc.
      */
-    double _angle;
+    float _angle;
 
     /**
-     *  True if the speed and/or direction have been set, and XY need to be recalculated
+     * float in X (latitudinal) direction in meters per second, north being positive.
      */
-    bool dirtyXY;
+    float _x;
 
     /**
-     * True if X and/or Y have been set, and speed and direction need to be recalculated
+     * float in Y (longitudinal) direction in meters per second, east being positive.
      */
-    bool dirtyDR;
+    float _y;
 
     /**
-     * double in X (latitudinal) direction in meters per second, north being positive.
+     * float in mps
      */
-    double _x;
-
-    /**
-     * double in Y (longitudinal) direction in meters per second, east being positive.
-     */
-    double _y;
-
-    /**
-     * double in mps
-     */
-    double _speed;
-
-    /**
-     * value valid?
-     */
-    bool _isValid;
+    float _speed;
 
 private:
     /**
@@ -267,9 +259,9 @@ private:
 };
 
 /** operators for vector. */
-Vector operator * (double left, Vector& right);
-Vector operator * (Vector& left, double right);
-Vector operator / (Vector& left, double right);
+Vector operator * (float left, Vector& right);
+Vector operator * (Vector& left, float right);
+Vector operator / (Vector& left, float right);
 Vector operator / (Vector& left, int right);
 
 #endif

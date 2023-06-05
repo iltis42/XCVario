@@ -31,34 +31,31 @@ class CompassMenu
   /**
    * Creates a compass menu instance with an active compass object.
    */
-  CompassMenu( Compass& compassIn);
+  CompassMenu();
 
   ~CompassMenu();
 
   /** Compass Menu Action method to set deviations. */
-  int deviationAction( SetupMenuSelect *p );
+  static int deviationAction( SetupMenuSelect *p );
 
   /** Compass Menu Action method to reset all deviations to 0. */
-  int resetDeviationAction( SetupMenuSelect *p );
+  static int resetDeviationAction( SetupMenuSelect *p );
 
   /** Compass Menu Action method to set declination valid. */
-  int declinationAction( SetupMenuValFloat *p );
+  static int declinationAction( SetupMenuValFloat *p );
 
   /** Method for receiving intermediate calibration results. */
-  static bool calibrationReport( float xscale, float yscale, float zscale, float xbias, float ybias, float zbias );
+  static bool calibrationReport( t_magn_axes raw, t_float_axes scale, t_float_axes bias, bitfield_compass b, bool print );
 
   /** Compass Menu Action method to calibrate sensor. */
-  int sensorCalibrationAction( SetupMenuSelect *p );
+  static int sensorCalibrationAction( SetupMenuSelect *p );
+
+  static bool showSensorRawData(SetupMenuSelect *p);
 
   static SetupNG<float> *deviations[8];
 
+  // Backup for calibration data
   private:
-
-  // active compass instance
-  Compass& compass;
-
-  // Compass filter
-  CompassFilter filter;
 
   // Pointer to setup menu of sensorCalibrationAction
   static SetupMenuSelect* menuPtr;

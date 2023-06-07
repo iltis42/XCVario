@@ -1629,12 +1629,16 @@ void SetupMenu::system_menu_create_hardware_ahrs( MenuEntry *top ){
 	top->addEntry( ahrslc );
 	ahrslc->addCreator( system_menu_create_hardware_ahrs_lc );
 
-	SetupMenuValFloat * ahrsgf = new SetupMenuValFloat( PROGMEM"Gyro Trust", "%", 10, 100, 0.1, 0, false, &ahrs_gyro_factor  );
+	SetupMenuValFloat * ahrsgf = new SetupMenuValFloat( PROGMEM"Gyro Max Trust", "%", 0, 100, 1, 0, false, &ahrs_gyro_factor  );
 	ahrsgf->setHelp(PROGMEM"Gyro trust factor in artifical horizont bank and pitch");
 	top->addEntry( ahrsgf );
 
-	SetupMenuValFloat * ahrsdgf = new SetupMenuValFloat( PROGMEM"Gyro Dyanmics", "%", 0.5, 10, 0.1, 0, false, &ahrs_dynamic_factor  );
-	ahrsgf->setHelp(PROGMEM"Gyro dynamics factor, higher value trusts more gyro when load factor is different to one");
+	SetupMenuValFloat * ahrsgfm = new SetupMenuValFloat( PROGMEM"Gyro Min Trust", "%", 0, 10, 0.1, 0, false, &ahrs_min_gyro_factor  );
+	ahrsgfm->setHelp(PROGMEM"Minimum Gyro trust factor in artifical horizont bank and pitch");
+	top->addEntry( ahrsgfm );
+
+	SetupMenuValFloat * ahrsdgf = new SetupMenuValFloat( PROGMEM"Gyro Dyanmics", "", 0.5, 10, 0.1, 0, false, &ahrs_dynamic_factor  );
+	ahrsdgf->setHelp(PROGMEM"Gyro dynamics factor, higher value trusts more gyro when load factor is different to one");
 	top->addEntry( ahrsdgf );
 
 	SetupMenuSelect * rpyl = new SetupMenuSelect( PROGMEM"AHRS RPYL", RST_NONE , 0, true, &ahrs_rpyl_dataset );

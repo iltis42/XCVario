@@ -156,7 +156,6 @@ void IMU::read()
 		// positiveG += (-accelZ - positiveG)*0.08;  // some low pass filtering makes sense here
 		positiveG = -accelZ;
 		// only positive G-force is to be considered, curve at negative G is not defined
-		// Trust = TrustMin + (TrustMax – TrustMin) * ( 1 - 10^-( (LoadFactor – 1 ) * Dynamic) )
 		float groll = 0.0;
 		if( positiveG < 1.0 )
 			positiveG = 1.0;
@@ -181,15 +180,17 @@ void IMU::read()
 	att_vector = update_fused_vector(att_vector,ax, ay, az,D2R(gyroX),D2R(gyroY),D2R(gyroZ),dt);
 	att_quat = quaternion_from_accelerometer(att_vector.a,att_vector.b,att_vector.c);
 	euler = att_quat.to_euler_angles();
-	// treat gimbal lock, limit to 80 deg
-	if( euler.roll > 80.0 )
-		euler.roll = 80.0;
-	if( euler.pitch > 80.0 )
-		euler.pitch = 80.0;
-	if( euler.roll < -80.0 )
-		euler.roll = -80.0;
-	if( euler.pitch < -80.0 )
-		euler.pitch = -80.0;
+	// treat gimbal lock, limit to 88 deg
+
+	if( euler.roll > 88.0 )
+		euler.roll = 88.0;
+	if( euler.pitch > 88.0 )
+		euler.pitch = 88.0;
+	if( euler.roll < -88.0 )
+		euler.roll = -88.0;
+	if( euler.pitch < -88.0 )
+		euler.pitch = -88.0;
+
 
 	float curh = 0;
 	if( compass ){
@@ -213,18 +214,8 @@ void IMU::read()
 	else{
 		filterYaw=fallbackToGyro();
 	}
-	if( ahrs_gyro_factor.get() > 0.1  ){
-		filterRoll =  euler.roll;
-		filterPitch =  euler.pitch;
-	}
-	else{
-		double roll=0;
-		double pitch=0;
-		kalXAngle = Kalman_GetAngle(&kalmanX, roll, 0, dt);
-		filterRoll = kalXAngle;
-		kalYAngle = Kalman_GetAngle(&kalmanY, pitch, 0, dt);
-		filterPitch += (kalYAngle - filterPitch) * 0.2;   // additional low pass filter
-	}
+	filterRoll =  euler.roll;
+	filterPitch =  euler.pitch;
 
 	// ESP_LOGI( FNAME,"GV-Pitch=%.1f  GV-Roll=%.1f filterYaw: %.2f curh: %.2f GX:%.3f GY:%.3f GZ:%.3f AX:%.3f AY:%.3f AZ:%.3f  FP:%.1f FR:%.1f", euler.pitch, euler.roll, filterYaw, curh, gyroX,gyroY,gyroZ, accelX, accelY, accelZ, filterPitch, filterRoll  );
 

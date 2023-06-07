@@ -40,14 +40,12 @@ Quaternion quaternion_from_compass(float wx, float wy, float wz )
 	return result;
 }
 
-#define TrustMin  10.0
-
 float fusion_coeffecient(vector_ijk virtual_gravity, vector_ijk sensor_gravity, float loadFactor )
 {
     vector_ijk v = sensor_gravity;
     float lf = loadFactor > 2.0 ? 2.0 : loadFactor;  // limit to +-1g
     lf = lf < -1.0 ? -1.0 : lf;
-    float trust = TrustMin + ahrs_gyro_factor.get() * ( pow(10, abs(lf-1) * ahrs_dynamic_factor.get()) - 1);
+    float trust = ahrs_min_gyro_factor.get() + ahrs_gyro_factor.get() * ( pow(10, abs(lf-1) * ahrs_dynamic_factor.get()) - 1);
     // ESP_LOGI(FNAME,"LF= %f trust= %f", loadFactor, trust);
     return trust;
 }

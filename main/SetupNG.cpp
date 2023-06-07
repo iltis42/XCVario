@@ -271,6 +271,7 @@ SetupNG<int>		    ahrs_rpyl_dataset("RPYL", 0 );
 SetupNG<int>		    ahrs_autozero("AHRSAZ", 0 );
 SetupNG<float>		    ahrs_gyro_factor("AHRSGF", 90 );
 SetupNG<float>		    ahrs_dynamic_factor("AHRDYN", 5 );
+SetupNG<float>		    ahrs_min_gyro_factor("AHRSGFM", 10 );
 SetupNG<int>		    display_style("DISPLAY_STYLE", 1 );
 SetupNG<int>		    s2f_switch_type("S2FHWSW", S2F_HW_SWITCH );
 SetupNG<int>		    hardwareRevision("HWREV", HW_UNKNOWN );

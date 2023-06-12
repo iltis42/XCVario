@@ -78,7 +78,7 @@ esp_err_t MPU::initialize()
 if (MPU_ERR_CHECK(setGyroFullScale(GYRO_FS_500DPS))) return err;
 if (MPU_ERR_CHECK(setAccelFullScale(ACCEL_FS_4G))) return err;
 // set Digital Low Pass Filter to get smoother data
-if (MPU_ERR_CHECK(setDigitalLowPassFilter(DLPF_42HZ))) return err;
+if (MPU_ERR_CHECK(setDigitalLowPassFilter(DLPF_5HZ))) return err;
 
 // setup magnetometer
 #ifdef CONFIG_MPU_AK89xx

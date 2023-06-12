@@ -127,7 +127,9 @@ double IMU::getPitchRad()  {
 	return -filterPitch*DEG_TO_RAD;
 }
 
-static float positiveG = 1.0;
+static float oas_roll = 0.0;
+static float ax,ay,az = 0.0;
+
 void IMU::read()
 {
 	double dt=0;
@@ -140,42 +142,14 @@ void IMU::read()
 	last_rts = rts;
 	if( ret )
 		return;
-	float ax=0;
-	float ay=0;
-	float az=0;
+    oas_roll += ( atan(D2R(gyroZ)/cos(D2R(euler.roll) * (getTAS()/3.6))/9.80665 ) - oas_roll) * 0.05;
 
-	if( 0 /* getTAS() > 10 */ ){
-		// This part is a deterministic and noise resistant approach for centrifugal force removal
-		// 1: exstimate roll angle from Z axis omega plus airspeed
-		double roll=0;
-		double pitch=0;
-		IMU::PitchFromAccelRad(&pitch);
-		// Z cross axis rotation in 3D space with roll angle correction
-		float omega = atan( ( (D2R(gyroZ)/cos( D2R(euler.roll))) * (getTAS()/3.6) ) / 9.80665 );
-		// 2: estimate angle of bank from increased acceleration in Z axis
-		// positiveG += (-accelZ - positiveG)*0.08;  // some low pass filtering makes sense here
-		positiveG = -accelZ;
-		// only positive G-force is to be considered, curve at negative G is not defined
-		float groll = 0.0;
-		if( positiveG < 1.0 )
-			positiveG = 1.0;
-		else if( positiveG > 1.02 ) // inaccurate at very low g forces
-		    groll = acos( 1 / positiveG );
-		// estimate sign of acceleration related angle from gyro
-		if( omega < 0 )
-			groll = -groll;
-		roll = -(omega + groll)/2; // left turn is left wing down so negative roll
-		// Calculate Pitch from gyro and accelerometer, vector is normalized later
-		ax=sin(pitch);              // Nose down (positive Y turn) results in positive X
-		ay=sin(roll)*cos(pitch);    // Left wing down (or negative X roll) resultis in positive Y
-		az=cos(roll)*cos(pitch);    // Any roll or pitch creates a less negative Z
-		// ESP_LOGI( FNAME,"omega-roll:%f g-roll:%f roll:%f  AZ:%f", omega, groll, roll, positiveG );
-	}
-	else{ // Case when on ground, get accelerations from sensor directly
-		ax=accelX;
-		az=accelZ;
-		ay=accelY;
-	}
+	ax += (accelX - ax)*0.05;
+	ay += (((1+sin(oas_roll)) * accelY) -ay ) * 0.05;
+	az += ((cos(oas_roll) * accelZ) - az) * 0.05;
+
+	// ESP_LOGI( FNAME,"omega-roll:%f° AX:%f AY:%f AZ:%f", R2D(oas_roll),  ax, ay, az );
+
 	// to get pitch and roll independent of circling, image pitch and roll values into 3D vector
 	att_vector = update_fused_vector(att_vector,ax, ay, az,D2R(gyroX),D2R(gyroY),D2R(gyroZ),dt);
 	att_quat = quaternion_from_accelerometer(att_vector.a,att_vector.b,att_vector.c);

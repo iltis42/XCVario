@@ -13,8 +13,11 @@
 #include "Setup.h"
 #include "soc/rtc.h"
 #include "spline.h"
+#include "Poti.h"
 
 typedef enum e_audio_alarm_type { AUDIO_ALARM_OFF, AUDIO_ALARM_STALL, AUDIO_ALARM_FLARM_1, AUDIO_ALARM_FLARM_2, AUDIO_ALARM_FLARM_3, AUDIO_ALARM_GEAR } e_audio_alarm_type_t;
+
+extern Poti *DigitalPoti;
 
 class Audio {
 public:
@@ -57,6 +60,7 @@ private:
 	static void enableAmplifier( bool enable );  // frue ON, false OFF
 	static uint16_t equal_volume( uint16_t volume );
 	static void  calculateFrequency();
+	static void writeWiper( uint16_t volume );
 
 	static dac_channel_t _ch;
 	static float _te;
@@ -90,7 +94,6 @@ private:
     static int tickmod;
     static int volume_change;
     static bool _chopping;
-    static bool prev_alarm;
     static int _delay;
     static unsigned long next_scedule;
     static int mtick;

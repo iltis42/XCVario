@@ -28,10 +28,10 @@ uint8_t PROGMEM ucg_font_fub25_hf[] = { UCG_FONT_FUB25_HF };
 uint8_t PROGMEM ucg_font_fur25_hf[] = { UCG_FONT_FUR25_HF };
 uint8_t PROGMEM ucg_font_fub35_hn[] = { UCG_FONT_FUB35_HN };
 uint8_t PROGMEM ucg_font_fub35_hr[] = { UCG_FONT_FUB35_HR };
-
 uint8_t PROGMEM ucg_font_profont22_mr[] = {  UCG_FONT_PROFONT22_MR };
 uint8_t PROGMEM ucg_font_fub25_hn[] = { UCG_FONT_FUB25_HN };
 uint8_t PROGMEM ucg_font_fub11_hn[] = { UCG_FONT_FUB11_HN };
+uint8_t PROGMEM eglib_font_free_sansbold_66[] = { EGLIB_FONT_FREE_SANSBOLD_66 };
 
 static ili9341_config_t ili9341_config = {
 		.width = 240,
@@ -117,6 +117,9 @@ void AdaptUGC::setFont(uint8_t *f, bool filled ){    // adapter
 	case UCG_FONT_FUB35_HR:
 		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_48px);
 		break;
+	case EGLIB_FONT_FREE_SANSBOLD_66:
+                eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_66px);
+                break;
 	case UCG_FONT_PROFONT22_MR:
 		eglib_SetFont(eglib, &font_FreeFont_FreeMonoBold_20px);
 		break;

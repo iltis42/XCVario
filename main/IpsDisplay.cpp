@@ -1489,13 +1489,16 @@ void IpsDisplay::drawWarning( const char *warn, bool push ){
 }
 
 
-void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float val ){
+void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float val, bool large ){
 	if( _menu )
 		return;
 	int ival = rint(val*10);  // integer value in steps of 10th
 	if( last_avg != ival){  // only print if there a change in rounded numeric string
 		char s[32];
-		ucg->setFont(ucg_font_fub35_hn, false );
+		if( large )
+			ucg->setFont(eglib_font_free_sansbold_66, false );
+		else
+			ucg->setFont(ucg_font_fub35_hn, false );
 		ucg->setFontPosCenter();
 		static const char* format[2] = {"%2.1f","%2.0f"};
 		sprintf(s, format[std::abs(ival)>100], float(ival/10.) );
@@ -1730,6 +1733,17 @@ static float old_gmax = 100;
 static float old_gmin = -100;
 static float old_ias_max = -1;
 
+void IpsDisplay::drawLoadDisplayTexts(){
+	ucg->setFont(ucg_font_fub11_hr, true);
+	ucg->setPrintPos(130,70);
+	ucg->setColor(  COLOR_HEADER_LIGHT  );
+	ucg->print( PROGMEM"MAX POS G" );
+	ucg->setPrintPos(130,205);
+	ucg->print( PROGMEM"MAX NEG G" );
+	ucg->setPrintPos(130,260);
+	ucg->printf( PROGMEM"MAX IAS %s", Units::AirspeedUnitStr() );
+}
+
 void IpsDisplay::initLoadDisplay(){
 	if( _menu )
 		return;
@@ -1739,13 +1753,7 @@ void IpsDisplay::initLoadDisplay(){
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setPrintPos(20,20);
 	ucg->print( PROGMEM"G-Force" );
-	ucg->setPrintPos(130,70);
-	ucg->setColor(  COLOR_HEADER_LIGHT  );
-	ucg->print( PROGMEM"MAX POS G" );
-	ucg->setPrintPos(130,205);
-	ucg->print( PROGMEM"MAX NEG G" );
-	ucg->setPrintPos(130,260);
-	ucg->printf( PROGMEM"MAX IAS %s", Units::AirspeedUnitStr() );
+	drawLoadDisplayTexts();
 	int max_gscale = (int)( gload_pos_limit.get() )+1;
 	if( -gload_neg_limit.get() >= max_gscale )
 		max_gscale = (int)( -gload_neg_limit.get()  )+1;
@@ -1775,7 +1783,7 @@ void IpsDisplay::initLoadDisplay(){
 
 
 void IpsDisplay::drawLoadDisplay( float loadFactor ){
-	// ESP_LOGI(FNAME,"drawLoadDisplay %1.1f", loadFactor );
+	// ESP_LOGI(FNAME,"drawLoadDisplay %1.1f tick: %d", loadFactor, tick );
 	if( _menu )
 		return;
 	tick++;
@@ -1793,39 +1801,43 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 
 	// G load digital
 	if( (int)(loadFactor*30) != _ate && !(tick%3) ) {
-		drawAvgVario( AMIDX+38, AMIDY, loadFactor );
+		drawAvgVario( AMIDX+38, AMIDY, loadFactor, true );
 		_ate = (int)(loadFactor*30);
 	}
 	// Min/Max values
-	if( old_gmax != gload_pos_max.get() ){
+	if( old_gmax != gload_pos_max.get() || !(tick%10)) {
 		if( gload_pos_max.get() < gload_pos_limit.get() )
 			ucg->setColor(  COLOR_WHITE  );
 		else
 			ucg->setColor(  COLOR_RED  );
 		ucg->setFont(ucg_font_fub20_hr, true);
 		ucg->setPrintPos(120,105);
-		ucg->printf("%+1.2f   ", gload_pos_max.get() );
+		ucg->printf("  %+1.2f   ", gload_pos_max.get() );
 		old_gmax = gload_pos_max.get();
 	}
-	if( old_gmin != gload_neg_max.get() ){
+	if( old_gmin != gload_neg_max.get() || !(tick%10)){
 		if( gload_neg_max.get() > gload_neg_limit.get() )
 			ucg->setColor(  COLOR_WHITE  );
 		else
 			ucg->setColor(  COLOR_RED  );
 		ucg->setFont(ucg_font_fub20_hr, true);
 		ucg->setPrintPos(125,235);
-		ucg->printf("%+1.2f   ", gload_neg_max.get() );
+		ucg->printf("  %+1.2f   ", gload_neg_max.get() );
 		old_gmin = gload_neg_max.get();
 	}
-	if( old_ias_max != airspeed_max.get() ){
+	if( old_ias_max != airspeed_max.get() || !(tick%10)){
 		if( airspeed_max.get() < v_max.get() )
 			ucg->setColor(  COLOR_WHITE  );
 		else
 			ucg->setColor(  COLOR_RED  );
 		ucg->setFont(ucg_font_fub20_hr, true);
 		ucg->setPrintPos(125,295);
-		ucg->printf("%3d   ", Units::AirspeedRounded( airspeed_max.get() ) );
+		ucg->printf("  %3d   ", Units::AirspeedRounded( airspeed_max.get() ) );
 		old_ias_max = airspeed_max.get();
+	}
+
+	if( !(tick%10)){
+		drawLoadDisplayTexts();
 	}
 	xSemaphoreGive(spiMutex);
 }

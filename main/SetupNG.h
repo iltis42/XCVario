@@ -620,6 +620,7 @@ extern SetupNG<float>		gload_pos_limit;
 extern SetupNG<float>		gload_neg_limit;
 extern SetupNG<float>		gload_pos_max;
 extern SetupNG<float>		gload_neg_max;
+extern SetupNG<float>		gload_alarm_volume;
 extern SetupNG<float>		airspeed_max;
 extern SetupNG<int> 		wind_enable;
 extern SetupNG<int> 		wind_logging;

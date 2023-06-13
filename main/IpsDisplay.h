@@ -38,6 +38,7 @@ public:
 	static void drawDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor );
 	static void drawWarning( const char *warn, bool push=false );
 	static void drawLoadDisplay( float loadFactor );
+	static void drawLoadDisplayTexts();
 	static void initDisplay();
 	static void clear();   // erase whole display
 	void doMenu( bool menu=true ) { _menu = menu; };
@@ -143,7 +144,7 @@ private:
 	static void drawSmallSpeed(float v_kmh, int16_t x, int16_t y);
 	static bool drawSpeed(float speed, int16_t x, int16_t y, bool dirty, bool inc_unit=false);
 	static void drawLegend( bool onlyLines=false );
-	static void drawAvgVario( int16_t x, int16_t y, float ate );
+	static void drawAvgVario( int16_t x, int16_t y, float ate, bool large=false );
 	static void drawNetto( int16_t x, int16_t y, bool netto );
 };
 

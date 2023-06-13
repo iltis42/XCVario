@@ -53,7 +53,8 @@ typedef enum _fonts_enum {
 	UCG_FONT_PROFONT22_MR,
 	UCG_FONT_FUB25_HN,
 	UCG_FONT_FUB11_HN,
-	UCG_FONT_FUB14_HN
+	UCG_FONT_FUB14_HN,
+	EGLIB_FONT_FREE_SANSBOLD_66,
 } e_fonts_enum;
 
 // to be activated as soon as ucg.h is replaced by AdaptUGC.h
@@ -79,6 +80,7 @@ extern uint8_t ucg_font_fub35_hr[];
 extern uint8_t ucg_font_profont22_mr[];
 extern uint8_t ucg_font_fub25_hn[];
 extern uint8_t ucg_font_fub11_hn[];
+extern uint8_t eglib_font_free_sansbold_66[];
 
 
 class AdaptUGC : public Print{

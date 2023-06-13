@@ -1036,7 +1036,7 @@ void SetupMenu::options_menu_create_flarm( MenuEntry *top ){
 	flarml->addEntry( PROGMEM"Level 3");
 	top->addEntry( flarml );
 
-	SetupMenuValFloat * flarmv = new SetupMenuValFloat( PROGMEM"Alarm Volume",  "%", 20, 125, 1, 0, false, &flarm_volume  );
+	SetupMenuValFloat * flarmv = new SetupMenuValFloat( PROGMEM"Alarm Volume",  "%", 20, 100, 1, 0, false, &flarm_volume  );
 	flarmv->setHelp( PROGMEM "Maximum volume FLARM alarm audio warning");
 	top->addEntry( flarmv );
 
@@ -1403,6 +1403,10 @@ void SetupMenu::options_menu_create_gload( MenuEntry *top ){
 	top->addEntry( gmneg );
 	gmneg->setPrecision( 1 );
 	gmneg->setHelp(PROGMEM"Maximum negative G-Load measured since last reset");
+
+	SetupMenuValFloat * gloadalvo = new SetupMenuValFloat( PROGMEM"Alarm Volume",  "%", 20, 100, 1, 0, false, &gload_alarm_volume  );
+	gloadalvo->setHelp( PROGMEM "Maximum volume of G-Load alarm audio warning");
+	top->addEntry( gloadalvo );
 
 	SetupMenuSelect * gloadres = new SetupMenuSelect( PROGMEM"G-Load reset", RST_NONE, gload_reset, false, 0 );
 	gloadres->setHelp(PROGMEM "Option to reset stored maximum positive and negative G-load values");

@@ -1248,6 +1248,7 @@ void IpsDisplay::drawBow( float a, int16_t &old_a_level, int16_t l1, ucg_color_t
 	int16_t level = (int16_t)(a*sincosScale); // dice up into discrete steps
 
 	if ( _menu ) return;
+	// ESP_LOGI(FNAME,"drawBbow af=%f level=%d old_level=%d", a, level, old_a_level );
 
 	if ( level == old_a_level ) {
 		return;
@@ -1279,6 +1280,7 @@ void IpsDisplay::drawBow( float a, int16_t &old_a_level, int16_t l1, ucg_color_t
 		else ucg->setColor(c.color[0], c.color[1], c.color[2]);
 	}
 	old_a_level = level;
+
 }
 
 // +/- range, radius to AMID [pixel], opt. small area refresh at [scale*10]
@@ -2125,7 +2127,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	// Vario Needle in Front mode drawn as last
-	if( !(tick%2) && needle_prio  ){
+	if(  needle_prio  ){
 		if( indicator->drawPolarIndicator(needle_pos, false) ) {
 			// Draw colored bow
 			float bar_val = (needle_pos>0.) ? needle_pos : 0.;

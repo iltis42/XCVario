@@ -39,6 +39,7 @@ public:
 	static void drawWarning( const char *warn, bool push=false );
 	static void drawLoadDisplay( float loadFactor );
 	static void drawLoadDisplayTexts();
+	static void drawBow( float a, int16_t &old_a_level, int16_t l1, ucg_color_t color );
 	static void initDisplay();
 	static void clear();   // erase whole display
 	void doMenu( bool menu=true ) { _menu = menu; };
@@ -128,7 +129,7 @@ private:
 	static void drawTemperature( int x, int y, float t );
 	static void drawThermometer( int x, int y );
 	static void drawOneScaleLine(float a, int16_t l1, int16_t l2, int16_t w, uint8_t r, uint8_t g, uint8_t b);
-	static void drawBow( float a, int16_t &old_a_level, int16_t l1, ucg_color_t color );
+
 	static void initRetroDisplay( bool ulmode );
 	static void initLoadDisplay();
 	static void drawRetroDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor, bool ulmode );

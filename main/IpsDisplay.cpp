@@ -50,6 +50,7 @@ public:
 	void forceRedraw() { dirty = true; }
 	void setColor(ucg_color_t c) { color = c;}
 	bool drawPolarIndicator( float a, bool dirty=false );
+	bool drawPolarIndicatorAndBow( float a, bool dirty=false );
 
 	// attributes
 private:
@@ -1236,6 +1237,7 @@ bool PolarIndicator::drawPolarIndicator( float a, bool dirty_p )
 			IpsDisplay::ucg->drawTriangle(n.x_0,n.y_0,n.x_1,n.y_1,n.x_2,n.y_2);
 		}
 	}
+	// ESP_LOGI(FNAME,"change=%d  prev=%d  now=%d", change, prev_needle_pos, val  );
 	prev = n;
 	prev_needle_pos = val;
 	prev_needle = a;
@@ -1978,6 +1980,17 @@ void IpsDisplay::drawNetto( int16_t x, int16_t y, bool netto ) {
 	ucg->print(s);
 }
 
+bool PolarIndicator::drawPolarIndicatorAndBow(float a, bool dirty){
+	if( drawPolarIndicator(a, false) ) {
+		// Draw colored bow
+		float bar_val = (a>0.) ? a : 0.;
+		// draw green/red vario bar
+		IpsDisplay::drawBow(bar_val, old_vario_bar_val, 134, bowcolor[BC_GREEN] );
+		return true;
+	}
+	return false;
+}
+
 void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, float polar_sink_ms, float altitude_m,
 		float temp, float volt, float s2fd_ms, float s2f_ms, float acl_ms, bool s2fmode, bool standard_setting, float wksensor, bool ulmode ){
 	// ESP_LOGI(FNAME,"drawRetroDisplay polar_sink: %f", polar_sink_ms );
@@ -2080,12 +2093,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	bool needle_prio = (drawing_prio.get() == DP_NEEDLE);
 	bool bg_prio = (drawing_prio.get() == DP_BACKGROUND);
 	if( !(tick%2) && bg_prio ){  // draw needle first when background has prio
-		if( indicator->drawPolarIndicator(needle_pos, false) ) {
-			// Draw colored bow
-			float bar_val = (needle_pos>0.) ? needle_pos : 0.;
-			// draw green/red vario bar
-			drawBow(bar_val, old_vario_bar_val, 134, bowcolor[BC_GREEN] );
-		}
+		indicator->drawPolarIndicatorAndBow(needle_pos, false);
 	}
 	// Airspeed (NEEDLE overlap)
 	if( !(tick%6) ) {
@@ -2093,7 +2101,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			drawSpeed( airspeed_kmh, INNER_RIGHT_ALIGN, 75, speed_dirty );
 		}else {
 			if( drawSpeed( airspeed_kmh, INNER_RIGHT_ALIGN, 75, (speed_dirty && !(tick%10)) ) ){
-				indicator->drawPolarIndicator(needle_pos, true);
+				indicator->drawPolarIndicatorAndBow(needle_pos, false);
 			}
 		}
 	}
@@ -2106,7 +2114,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, alt_dirty );
 		}else{  // needle prio
 			if( drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, (alt_dirty && !(tick%10)) ) ){
-				indicator->drawPolarIndicator(needle_pos, true);
+				indicator->drawPolarIndicatorAndBow(needle_pos, true);
 			}
 		}
 	}
@@ -2116,7 +2124,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			drawCompass(INNER_RIGHT_ALIGN, 105, wind_dirty, compass_dirty );
 		else{
 			if( drawCompass(INNER_RIGHT_ALIGN, 105, wind_dirty && !(tick%10), compass_dirty && !(tick%10) ) ){
-				indicator->drawPolarIndicator(needle_pos, true);
+				indicator->drawPolarIndicatorAndBow(needle_pos, true);
 			}
 		}
 	}
@@ -2127,13 +2135,8 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	// Vario Needle in Front mode drawn as last
-	if(  needle_prio  ){
-		if( indicator->drawPolarIndicator(needle_pos, false) ) {
-			// Draw colored bow
-			float bar_val = (needle_pos>0.) ? needle_pos : 0.;
-			// draw green/red vario bar
-			drawBow(bar_val, old_vario_bar_val, 134, bowcolor[BC_GREEN] );
-		}
+	if( !(tick%2) && needle_prio ){
+		indicator->drawPolarIndicatorAndBow(needle_pos, false);
 	}
 	// ESP_LOGI(FNAME,"polar-sink:%f Old:%f int:%d old:%d", polar_sink, old_polar_sink, int( polar_sink*100.), int( old_polar_sink*100. ) );
 	if( ps_display.get() && !(tick%3) ){

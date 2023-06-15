@@ -87,11 +87,10 @@ vector_ijk update_gravity_vector(vector_ijk gravity_vector,float wx,float wy,flo
     return gravity_vector;
 }
 
-vector_ijk update_fused_vector(vector_ijk fused_vector, float ax, float ay, float az,float wx,float wy,float wz,float delta)
+vector_ijk update_fused_vector(vector_ijk fused_vector, float loadFactor, float ax, float ay, float az,float wx,float wy,float wz,float delta)
 {
     vector_ijk virtual_gravity = update_gravity_vector(fused_vector,wx,wy,wz,delta);
     vector_ijk sensor_gravity = sensor_gravity_normalized(ax,ay,az);
-    float loadFactor = sqrt( ax * ax + ay * ay + az * az );
     // ESP_LOGI(FNAME,"ax=%f ay=%f az=%f lf=%f", ax, ay, az, loadFactor );
     fused_vector = fuse_vector(virtual_gravity,sensor_gravity, loadFactor);
     return fused_vector;

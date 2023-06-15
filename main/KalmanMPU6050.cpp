@@ -127,8 +127,9 @@ double IMU::getPitchRad()  {
 	return -filterPitch*DEG_TO_RAD;
 }
 
-static float oas_roll = 0.0;
+float oas_roll = 0.0;
 static float ax,ay,az = 0.0;
+static float axo,ayo,azo = 0.0;
 
 void IMU::read()
 {
@@ -142,16 +143,36 @@ void IMU::read()
 	last_rts = rts;
 	if( ret )
 		return;
-    oas_roll += ( atan(D2R(gyroZ)/cos(D2R(euler.roll) * (getTAS()/3.6))/9.80665 ) - oas_roll) * 0.05;
 
-	ax += (accelX - ax)*0.05;
-	ay += (((1+sin(oas_roll)) * accelY) -ay ) * 0.05;
-	az += ((cos(oas_roll) * accelZ) - az) * 0.05;
+	double pitch=0;
+	IMU::PitchFromAccelRad(&pitch);
+	// Z cross axis rotation in 3D space with roll angle correction
+	// float omega = atan( ( (D2R(gyroZ)/cos( D2R(euler.roll))) * (getTAS()/3.6) ) / 9.80665 );
 
-	// ESP_LOGI( FNAME,"omega-roll:%f° AX:%f AY:%f AZ:%f", R2D(oas_roll),  ax, ay, az );
+	float omega = gyroZ/cos(D2R(euler.roll));
+	double roll = atan( D2R(omega) * (getTAS()/3.6)/ 9.80665);
+
+	// pure accelerator, trust this more depending on load factor close to 1
+	ax = accelX;
+	ay = accelY;
+	az = accelZ;
+
+	// omega plus airspeed related roll (and pitch from accel.): trust this more on higer turn rates
+	axo = sin(pitch);               // Nose down (positive Y turn) results in positive X
+	ayo = sin(roll);                // Left wing down (or negative X roll) results in positive Y
+	azo = cos(roll)*cos(pitch);     // Any roll or pitch creates a less negative Z
+
+	float loadFactor = sqrt( accelX * accelX + accelY * accelY + accelZ * accelZ );
+
+	//ESP_LOGI( FNAME,"roll:%.1f° pitch:%.1f° GX:%.1f GY%.1f GZ%.1f AX:%.3f AY:%.3f AZ:%.3f AXO:%.3f AYO:%.3f AZO:%.3f  e-roll:%.1f e-pitch:%.1f gz:%f tas:%.1f", R2D(roll), R2D(pitch), gyroX,gyroY,gyroZ, ax, ay, az, axo, ayo, azo, euler.roll, euler.pitch, gyroZ, getTAS() );
 
 	// to get pitch and roll independent of circling, image pitch and roll values into 3D vector
-	att_vector = update_fused_vector(att_vector,ax, ay, az,D2R(gyroX),D2R(gyroY),D2R(gyroZ),dt);
+	float delta = dt;
+	if( abs(omega) > 5 && getTAS() > 10 ){
+		delta = delta/2;
+		att_vector = update_fused_vector(att_vector, loadFactor, axo, ayo, azo,D2R(gyroX),D2R(gyroY),D2R(gyroZ),delta); // trust also more omega at g loads unequal 1
+	}
+	att_vector = update_fused_vector(att_vector, loadFactor, ax, ay, az,D2R(gyroX),D2R(gyroY),D2R(gyroZ),delta);
 	att_quat = quaternion_from_accelerometer(att_vector.a,att_vector.b,att_vector.c);
 	euler = att_quat.to_euler_angles();
 	// treat gimbal lock, limit to 88 deg
@@ -207,10 +228,10 @@ void IMU::MPU6050Read()
 	accelX = accelG[2];
 	accelY = -accelG[1];
 	accelZ = -accelG[0];
-	// Gating ignores Gyro drift < 1 deg per second
-	gyroX = abs(gyroDPS.z) < 1.0 ? 0.0 :  -(gyroDPS.z);
-	gyroY = abs(gyroDPS.y) < 1.0 ? 0.0 :   (gyroDPS.y);
-	gyroZ = abs(gyroDPS.x) < 1.0 ? 0.0 :   (gyroDPS.x);
+	// Gating ignores Gyro drift < 2 deg per second
+	gyroX = abs(gyroDPS.z) < gyro_gating.get() ? 0.0 :  -(gyroDPS.z);
+	gyroY = abs(gyroDPS.y) < gyro_gating.get() ? 0.0 :   (gyroDPS.y);
+	gyroZ = abs(gyroDPS.x) < gyro_gating.get() ? 0.0 :   (gyroDPS.x);
 }
 
 void IMU::PitchFromAccel(double *pitch)

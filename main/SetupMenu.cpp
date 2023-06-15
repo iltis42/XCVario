@@ -1655,6 +1655,10 @@ void SetupMenu::system_menu_create_hardware_ahrs( MenuEntry *top ){
 	tcontrol->setPrecision( 0 );
 	tcontrol->setHelp( PROGMEM"Regulated target temperature of AHRS silicon chip, if supported in hardware (model > 2023), -1 means OFF");
 	top->addEntry( tcontrol );
+
+	SetupMenuValFloat * gyrog = new SetupMenuValFloat( PROGMEM"Gyro Gating", "°", 0, 10, 0.1, 0, false, &gyro_gating  );
+	gyrog->setHelp( PROGMEM"Minimum accepted gyro rate in degree per second");
+	top->addEntry( gyrog );
 }
 
 

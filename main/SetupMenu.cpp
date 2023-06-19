@@ -310,6 +310,12 @@ void print_fb( SetupMenuValFloat * p, float wingload ){
 
 int water_adj( SetupMenuValFloat * p )
 {
+	if( (ballast_kg.get() > polar_max_ballast.get()) || (ballast_kg.get() < 0) ){
+		ballast_kg.set(0);
+		ballast_kg.commit();
+		delay(1000);
+	}
+	p->setMax(polar_max_ballast.get());
 	float wingload = (ballast_kg.get() + crew_weight.get()+ empty_weight.get()) / polar_wingarea.get();
 	ESP_LOGI(FNAME,"water_adj() wingload:%.1f empty: %.1f cw:%.1f water:%.1f", wingload, empty_weight.get(), crew_weight.get(), ballast_kg.get() );
 	print_fb( p, wingload );

@@ -271,6 +271,7 @@ SetupNG<int>		    ahrs_rpyl_dataset("RPYL", 0 );
 SetupNG<int>		    ahrs_autozero("AHRSAZ", 0 );
 SetupNG<float>		    ahrs_gyro_factor("AHRSGF", 90 );
 SetupNG<float>		    ahrs_dynamic_factor("AHRDYN", 5 );
+SetupNG<float>		    ahrs_min_gyro_factor("AHRSGFM", 10 );
 SetupNG<int>		    display_style("DISPLAY_STYLE", 1 );
 SetupNG<int>		    s2f_switch_type("S2FHWSW", S2F_HW_SWITCH );
 SetupNG<int>		    hardwareRevision("HWREV", HW_UNKNOWN );
@@ -356,6 +357,7 @@ SetupNG<float>			gload_neg_limit("GLOADNL", -3 );
 SetupNG<float>			gload_pos_max("GLOADPM", 1 );
 SetupNG<float>			gload_neg_max("GLOADNM", 1 );
 SetupNG<float>			airspeed_max("ASMAX", 0 );
+SetupNG<float>		    gload_alarm_volume("GLOADAVOL", 100 );
 SetupNG<int>        	display_variant("DISPLAY_VARIANT", 0 );
 SetupNG<int>        	compass_dev_auto("COMPASS_DEV", 0 );
 SetupNG<float>       	max_circle_wind_diff("CI_WINDDM", 60.0 );
@@ -382,6 +384,7 @@ SetupNG<t_wireless_id>  custom_wireless_id("WLID", t_wireless_id("") );
 SetupNG<int> 			drawing_prio("DRAWP", DP_NEEDLE );
 
 mpud::raw_axes_t zero_bias;
+SetupNG<float>       	    gyro_gating("GYRO_GAT", 1.5 );
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );
 SetupNG<mpud::raw_axes_t>	accl_bias("ACCL_BIAS", zero_bias );
 SetupNG<float>              mpu_temperature("MPUTEMP", 45.0, true, SYNC_FROM_MASTER, PERSISTENT, chg_mpu_target );    // default for AHRS chip temperature (XCV 2023)

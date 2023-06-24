@@ -32,7 +32,6 @@
 #include "I2Cbus.hpp"
 #include "sensor.h"
 #include "SetupNG.h"
-#include "Poti.h"
 
 
 static TaskHandle_t dactid = NULL;
@@ -76,7 +75,6 @@ int   Audio::_tonemode_back = 0;
 int   Audio::tick = 0;
 int   Audio::volume_change=0;
 int   Audio::_step = 2;
-bool  Audio::prev_alarm=false;
 bool  Audio::dac_enable=false;
 bool  Audio::amplifier_enable=false;
 bool  Audio::_haveCAT5171=false;
@@ -91,7 +89,6 @@ typedef struct volume {  uint16_t vol; uint8_t scale; uint8_t wiper; } t_scale_w
 
 Poti *DigitalPoti;
 
-
 Audio::Audio( ) {
 	_ch = DAC_CHANNEL_1;
 	_te = 0.0;
@@ -103,8 +100,6 @@ Audio::Audio( ) {
 	cur_wiper = 63;
 	p_wiper = 0;
 }
-
-
 
 PROGMEM std::map<uint16_t, t_lookup_entry> lftab{
 	{ 18,{ 6,1}},   { 21,{5,1} },	{ 25,{4,1} },	{ 32,{3,1} },	{ 37,{6,2} },	{ 43,{5,2} },	{ 51,{4,2} },	{ 55,{6,3} },
@@ -161,7 +156,6 @@ void Audio::dac_cosine_enable(dac_channel_t channel, bool enable)
 static const std::vector<double> F1{   50,  175, 542, 885, 1236,  1380, 2100, 3000, 4000, 10000    };
 static const std::vector<double> VOL2{ 1.5, 1.3, 1.2, 0.8,  1.5,   2.1,  1.7,  1.5,  1.4,   1.4    };
 
-
 // 8 Ohms Type
 static const std::vector<double> F2{   50,  175, 700, 885, 1120,  1380, 1450, 1600, 2000, 2100, 2300, 2600,  10000    };
 static const std::vector<double> VOL1{ 1.0, 1.0, 2.3, 0.6,  2.1,   2.2,  1.2, 0.04,  1.0,  1.0,  1.0, 1.0,    0.3    };
@@ -188,7 +182,6 @@ void Audio::begin( dac_channel_t ch  )
 		equalizerSpline  = new tk::spline(F3,VOL3, tk::spline::cspline_hermite );
 	delay(10);
 }
-
 
 uint16_t Audio::equal_volume( uint16_t volume ){
 	float freq_resp = ( 1 - (((current_frequency-minf) / (maxf-minf)) * (frequency_response.get()/100.0) ) );
@@ -234,7 +227,7 @@ bool Audio::selfTest(){
 	wiper = wiper_s2f = setwiper;
 	ESP_LOGI(FNAME,"default volume/wiper: %d", (*p_wiper) );
 	ESP_LOGI(FNAME, "selfTest wiper: %d", wiper );
-	DigitalPoti->writeWiper( 1 );
+	writeWiper( 1 );
 	uint16_t getwiper;
 	bool ret = DigitalPoti->readWiper( getwiper );
 	if( ret == false ) {
@@ -249,7 +242,7 @@ bool Audio::selfTest(){
 	else
 		ret = true;
 	bool fadein=false;
-//	while(1){    // uncomment for continuous self test
+	//	while(1){    // uncomment for continuous self test
 	ESP_LOGI(FNAME,"Min F %f, Max F %f", minf, maxf );
 	for( float f=minf; f<maxf*1.25; f=f*1.03){
 		ESP_LOGV(FNAME,"f=%f",f);
@@ -258,20 +251,20 @@ bool Audio::selfTest(){
 		if( !fadein ){
 			int volume = 3;
 			for( int i=0; i<FADING_STEPS && volume <= (int)setwiper; i++ ) {
-				DigitalPoti->writeWiper( equal_volume( (int)volume ) );
+				writeWiper( volume );
 				volume = volume*1.75;
 				delay(1);
 				fadein = true;
 			}
 		}
-		DigitalPoti->writeWiper( equal_volume( setwiper ) );
+		writeWiper( setwiper );
 		delay(20);
 		esp_task_wdt_reset();
 	}
-//	}
+	//	}
 	delay(200);
 	ESP_LOGI(FNAME, "selfTest wiper: %d", 0 );
-	DigitalPoti->writeWiper( 0 );
+	writeWiper( 0 );
 	dacDisable();
 	_testmode=true;
 	return ret;
@@ -348,12 +341,8 @@ void Audio::dac_scale_set(dac_channel_t channel, int scale)
 void Audio::alarm( bool enable, int volume, e_audio_alarm_type_t style ){  // non blocking
 	if( enable ) {
 		// ESP_LOGI(FNAME,"Alarm sound enable volume: %d style: %d", volume, style );
-		if( !prev_alarm ){
-			prev_alarm = true;
-			_vol_back_s2f = wiper_s2f;
-			_vol_back = wiper;
-			ESP_LOGI(FNAME,"Alarm volume backup %d", (*p_wiper) );
-		}
+		_vol_back_s2f = wiper_s2f;
+		_vol_back = wiper;
 		enableAmplifier( true );
 		_s2f_mode_back = _s2f_mode;
 		_s2f_mode = false;
@@ -389,21 +378,21 @@ void Audio::alarm( bool enable, int volume, e_audio_alarm_type_t style ){  // no
 		}
 		else
 			ESP_LOGE(FNAME,"Error, wrong alarm style %d", style );
-
+		calculateFrequency();
 		_alarm_mode=true;
 	}
-	else
+	else if( !enable && _alarm_mode )
 	{
-		if( prev_alarm ){
-			prev_alarm = false;
-			wiper = _vol_back;
-			wiper_s2f = _vol_back_s2f;
-			ESP_LOGI(FNAME,"Alarm volume restore %d", (*p_wiper) );
-		}
+		wiper = _vol_back;
+		wiper_s2f = _vol_back_s2f;
 		_s2f_mode = _s2f_mode_back;
 		defaultDelay = 500;
-		_alarm_mode=false;
 		_tonemode = _tonemode_back;
+		_alarm_mode=false;
+		if( _s2f_mode )
+			writeWiper( wiper_s2f );
+		else
+			writeWiper( wiper );
 	}
 }
 
@@ -540,13 +529,19 @@ void  Audio::calculateFrequency(){
 	// ESP_LOGI(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f multi:%0.3f  wiper:%d", f, _te, audio_factor.get(), mult, cur_wiper );
 }
 
+void Audio::writeWiper( uint16_t volume ){
+	if( _alarm_mode )
+		DigitalPoti->writeWiper( volume );  // max volume
+	else
+		DigitalPoti->writeWiper( equal_volume(volume) ); // take care frequency response
+}
+
 void Audio::dactask(void* arg )
 {
 	while(1){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		tick++;
 		Switch::tick();    // we hook switch sceduling here to save extra task
-
 		// Chopping or dual tone modulation
 		if( millis() > next_scedule ){
 			if ( _te > 0 ){
@@ -624,20 +619,20 @@ void Audio::dactask(void* arg )
 					dacEnable();
 					if( (*p_wiper) > cur_wiper ){
 						for( int i=cur_wiper; i<(*p_wiper); i+=delta ) {
-							DigitalPoti->writeWiper( equal_volume(i) );
+							writeWiper( i );
 							delta = _step+i/FADING_TIME;
 							// ESP_LOGI(FNAME, "volume inc, new wiper: %d", i );
 							delay(1);
 						}}
 					else{
-							for( int i=cur_wiper; i>(*p_wiper); i-=delta ) {
-								DigitalPoti->writeWiper( equal_volume(i) );
-								// ESP_LOGI(FNAME, "volume dec, new wiper: %d", i );
-								delta = _step+i/FADING_TIME;
-								delay(1);
-							}
+						for( int i=cur_wiper; i>(*p_wiper); i-=delta ) {
+							writeWiper( i );
+							// ESP_LOGI(FNAME, "volume dec, new wiper: %d", i );
+							delta = _step+i/FADING_TIME;
+							delay(1);
+						}
 					}
-					DigitalPoti->writeWiper( equal_volume((*p_wiper)) );
+					writeWiper( *p_wiper );
 					cur_wiper = (*p_wiper);
 					if( cur_wiper == 0 )
 						dacDisable();
@@ -648,44 +643,44 @@ void Audio::dactask(void* arg )
 				if(  cur_wiper != (*p_wiper) ){
 					dacEnable();
 					if( chopping_style.get() == AUDIO_CHOP_HARD ){
-						DigitalPoti->writeWiper( equal_volume( (*p_wiper)) );
+						writeWiper( *p_wiper );
 						cur_wiper = (*p_wiper);
 					}
 					else{
 						float volume=3;
 						for( int i=0; i<FADING_STEPS && (int)volume <=(*p_wiper); i++ ) {
 							// ESP_LOGI(FNAME, "fade in sound, wiper: %3.1f", volume );
-							DigitalPoti->writeWiper( equal_volume( (int)volume ) );
+							writeWiper( volume );
 							cur_wiper = volume;
 							volume = volume*1.75;
 							delay(1);
 						}
 						if(  cur_wiper != (*p_wiper) ){
 							// ESP_LOGI(FNAME, "fade in sound, wiper: %d", (*p_wiper)  );
-							DigitalPoti->writeWiper( equal_volume( (*p_wiper) ) );
+							writeWiper( *p_wiper );
 							cur_wiper = (*p_wiper);
 						}
 					}
 				}
 				if( !(tick%10) ){
-					DigitalPoti->writeWiper( equal_volume((*p_wiper)) ); // take care frequency response
+					writeWiper( *p_wiper );
 				}
 			}
 			else{
 				// Fade out volume
 				if( cur_wiper != 0 ){
 					if( chopping_style.get() == AUDIO_CHOP_HARD ){
-						DigitalPoti->writeWiper( 0 );
+						writeWiper( 0 );
 						cur_wiper = 0;
 					}else{
 						float volume = (float)(*p_wiper);
 						for( int i=0; i<FADING_STEPS && (int)volume >=0; i++ ) {
 							//ESP_LOGI(FNAME, "fade out sound, wiper: %3.1f", volume );
-							DigitalPoti->writeWiper( equal_volume( (int)volume ) );
+							writeWiper( volume );
 							volume = volume*0.75;
 						}
 						delay(1);
-						DigitalPoti->writeWiper( 0 );
+						writeWiper( 0 );
 						// ESP_LOGI(FNAME, "fade out sound, final wiper: 0" );
 						cur_wiper = 0;
 					}
@@ -779,7 +774,6 @@ void Audio::restart()
 	enableAmplifier( true );
 	dacEnable();
 }
-
 
 void Audio::shutdown(){
 	dacDisable();

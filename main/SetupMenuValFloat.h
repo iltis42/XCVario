@@ -34,6 +34,7 @@ public:
 	void longPress();
 	void escape() {}; // ignore, base class takes care
 	void setStep( float val ) { _step = val; };
+	void setMax( float max ) { _max = max; };
     float _value;
     static SetupMenuValFloat * qnh_menu;
     static SetupMenuValFloat * meter_adj_menu;

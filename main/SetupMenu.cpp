@@ -310,6 +310,12 @@ void print_fb( SetupMenuValFloat * p, float wingload ){
 
 int water_adj( SetupMenuValFloat * p )
 {
+	if( (ballast_kg.get() > polar_max_ballast.get()) || (ballast_kg.get() < 0) ){
+		ballast_kg.set(0);
+		ballast_kg.commit();
+		delay(1000);
+	}
+	p->setMax(polar_max_ballast.get());
 	float wingload = (ballast_kg.get() + crew_weight.get()+ empty_weight.get()) / polar_wingarea.get();
 	ESP_LOGI(FNAME,"water_adj() wingload:%.1f empty: %.1f cw:%.1f water:%.1f", wingload, empty_weight.get(), crew_weight.get(), ballast_kg.get() );
 	print_fb( p, wingload );
@@ -1036,7 +1042,7 @@ void SetupMenu::options_menu_create_flarm( MenuEntry *top ){
 	flarml->addEntry( PROGMEM"Level 3");
 	top->addEntry( flarml );
 
-	SetupMenuValFloat * flarmv = new SetupMenuValFloat( PROGMEM"Alarm Volume",  "%", 20, 125, 1, 0, false, &flarm_volume  );
+	SetupMenuValFloat * flarmv = new SetupMenuValFloat( PROGMEM"Alarm Volume",  "%", 20, 100, 1, 0, false, &flarm_volume  );
 	flarmv->setHelp( PROGMEM "Maximum volume FLARM alarm audio warning");
 	top->addEntry( flarmv );
 
@@ -1404,6 +1410,10 @@ void SetupMenu::options_menu_create_gload( MenuEntry *top ){
 	gmneg->setPrecision( 1 );
 	gmneg->setHelp(PROGMEM"Maximum negative G-Load measured since last reset");
 
+	SetupMenuValFloat * gloadalvo = new SetupMenuValFloat( PROGMEM"Alarm Volume",  "%", 20, 100, 1, 0, false, &gload_alarm_volume  );
+	gloadalvo->setHelp( PROGMEM "Maximum volume of G-Load alarm audio warning");
+	top->addEntry( gloadalvo );
+
 	SetupMenuSelect * gloadres = new SetupMenuSelect( PROGMEM"G-Load reset", RST_NONE, gload_reset, false, 0 );
 	gloadres->setHelp(PROGMEM "Option to reset stored maximum positive and negative G-load values");
 	gloadres->addEntry( PROGMEM"Reset");
@@ -1629,12 +1639,16 @@ void SetupMenu::system_menu_create_hardware_ahrs( MenuEntry *top ){
 	top->addEntry( ahrslc );
 	ahrslc->addCreator( system_menu_create_hardware_ahrs_lc );
 
-	SetupMenuValFloat * ahrsgf = new SetupMenuValFloat( PROGMEM"Gyro Trust", "%", 10, 100, 0.1, 0, false, &ahrs_gyro_factor  );
+	SetupMenuValFloat * ahrsgf = new SetupMenuValFloat( PROGMEM"Gyro Max Trust", "%", 0, 100, 1, 0, false, &ahrs_gyro_factor  );
 	ahrsgf->setHelp(PROGMEM"Gyro trust factor in artifical horizont bank and pitch");
 	top->addEntry( ahrsgf );
 
-	SetupMenuValFloat * ahrsdgf = new SetupMenuValFloat( PROGMEM"Gyro Dyanmics", "%", 0.5, 10, 0.1, 0, false, &ahrs_dynamic_factor  );
-	ahrsgf->setHelp(PROGMEM"Gyro dynamics factor, higher value trusts more gyro when load factor is different to one");
+	SetupMenuValFloat * ahrsgfm = new SetupMenuValFloat( PROGMEM"Gyro Min Trust", "%", 0, 10, 0.1, 0, false, &ahrs_min_gyro_factor  );
+	ahrsgfm->setHelp(PROGMEM"Minimum Gyro trust factor in artifical horizont bank and pitch");
+	top->addEntry( ahrsgfm );
+
+	SetupMenuValFloat * ahrsdgf = new SetupMenuValFloat( PROGMEM"Gyro Dyanmics", "", 0.5, 10, 0.1, 0, false, &ahrs_dynamic_factor  );
+	ahrsdgf->setHelp(PROGMEM"Gyro dynamics factor, higher value trusts more gyro when load factor is different to one");
 	top->addEntry( ahrsdgf );
 
 	SetupMenuSelect * rpyl = new SetupMenuSelect( PROGMEM"AHRS RPYL", RST_NONE , 0, true, &ahrs_rpyl_dataset );
@@ -1647,6 +1661,10 @@ void SetupMenu::system_menu_create_hardware_ahrs( MenuEntry *top ){
 	tcontrol->setPrecision( 0 );
 	tcontrol->setHelp( PROGMEM"Regulated target temperature of AHRS silicon chip, if supported in hardware (model > 2023), -1 means OFF");
 	top->addEntry( tcontrol );
+
+	SetupMenuValFloat * gyrog = new SetupMenuValFloat( PROGMEM"Gyro Gating", "°", 0, 10, 0.1, 0, false, &gyro_gating  );
+	gyrog->setHelp( PROGMEM"Minimum accepted gyro rate in degree per second");
+	top->addEntry( gyrog );
 }
 
 

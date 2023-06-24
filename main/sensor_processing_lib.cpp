@@ -5,11 +5,6 @@
 Quaternion quaternion_from_accelerometer(float ax, float ay, float az)
 {
 	// ESP_LOGI(FNAME,"ax=%.3f ay=%.3f az=%.3f", ax, ay, az);
-    /*vector_ijk gravity = vector_3d_initialize(0.0f, 0.0f, -1.0f);
-    vector_ijk accelerometer = vector_3d_initialize(ax, ay, az);
-    Quaternion orientation = between_vectors(gravity,accelerometer);
-    return orientation;*/
-    // float norm_u_norm_v = 1.0;
     float cos_theta = -az;
     //float half_cos = sqrt(0.5*(1.0 + cos_theta));
     float half_cos = 0.7071*sqrt(1.0 + cos_theta);
@@ -40,16 +35,10 @@ Quaternion quaternion_from_compass(float wx, float wy, float wz )
 	return result;
 }
 
-#define TrustMin  10.0
-
-float fusion_coeffecient(vector_ijk virtual_gravity, vector_ijk sensor_gravity, float loadFactor )
+float fusion_coeffecient(vector_ijk virtual_gravity, vector_ijk sensor_gravity, float gyro_trust )
 {
-    vector_ijk v = sensor_gravity;
-    float lf = loadFactor > 2.0 ? 2.0 : loadFactor;  // limit to +-1g
-    lf = lf < -1.0 ? -1.0 : lf;
-    float trust = TrustMin + ahrs_gyro_factor.get() * ( pow(10, abs(lf-1) * ahrs_dynamic_factor.get()) - 1);
-    // ESP_LOGI(FNAME,"LF= %f trust= %f", loadFactor, trust);
-    return trust;
+    // ESP_LOGI(FNAME,"trust= %f", gyro_trust);
+    return gyro_trust;
 }
 
 vector_ijk sensor_gravity_normalized(float ax, float ay, float az)
@@ -62,11 +51,11 @@ vector_ijk sensor_gravity_normalized(float ax, float ay, float az)
     return result;
 }
 
-vector_ijk fuse_vector(vector_ijk virtual_gravity, vector_ijk sensor_gravity, float loadFactor )
+vector_ijk fuse_vector(vector_ijk virtual_gyro_gravity, vector_ijk sensor_gravity, float gyro_trust )
 {
-    float fusion = fusion_coeffecient(virtual_gravity, sensor_gravity, loadFactor);
-    virtual_gravity.scale(fusion);
-    vector_ijk result = virtual_gravity;
+    float fusion = fusion_coeffecient(virtual_gyro_gravity, sensor_gravity, gyro_trust);
+    virtual_gyro_gravity.scale(fusion);
+    vector_ijk result = virtual_gyro_gravity;
     result.sum(sensor_gravity);
     result.normalize();
     return result;
@@ -89,12 +78,11 @@ vector_ijk update_gravity_vector(vector_ijk gravity_vector,float wx,float wy,flo
     return gravity_vector;
 }
 
-vector_ijk update_fused_vector(vector_ijk fused_vector, float ax, float ay, float az,float wx,float wy,float wz,float delta)
+vector_ijk update_fused_vector(vector_ijk fused_vector, float gyro_trust, float ax, float ay, float az,float wx,float wy,float wz,float delta)
 {
+	// ESP_LOGI(FNAME,"UFV ax=%f ay=%f az=%f trust=%f, gx=%f gy=%f gz=%f", ax, ay, az, gyro_trust, wx,wy,wz );
     vector_ijk virtual_gravity = update_gravity_vector(fused_vector,wx,wy,wz,delta);
     vector_ijk sensor_gravity = sensor_gravity_normalized(ax,ay,az);
-    float loadFactor = sqrt( ax * ax + ay * ay + az * az );
-    // ESP_LOGI(FNAME,"ax=%f ay=%f az=%f lf=%f", ax, ay, az, loadFactor );
-    fused_vector = fuse_vector(virtual_gravity,sensor_gravity, loadFactor);
+    fused_vector = fuse_vector(virtual_gravity,sensor_gravity, gyro_trust);
     return fused_vector;
 }

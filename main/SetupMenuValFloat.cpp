@@ -42,6 +42,10 @@ SetupMenuValFloat::SetupMenuValFloat( const char* title, const char *unit, float
 	if( anvs ) {
 		_nvs = anvs;
 		_value = _nvs->get();
+		if( (_value > max) || (_value < min) ){
+			_nvs->init();
+			ESP_LOGI(FNAME,"SetupMenuValFloat( %s ), OOB: set to default value = %s", title, value() );
+		}
 		_value_safe = _value;
 	}
 }

@@ -160,6 +160,8 @@ SetupNG<int>  			cruise_mode( "CRUISE", 0, RST_NONE, SYNC_BIDIR, VOLATILE );
 SetupNG<float>  		OAT( "OAT", DEVICE_DISCONNECTED_C, true, SYNC_FROM_MASTER, VOLATILE );   // outside temperature
 SetupNG<float>  		swind_dir( "SWDD", 0.0, true, SYNC_FROM_MASTER, VOLATILE, resetSWindAge );
 SetupNG<float>  		swind_speed( "SWDS", 0.0, true, SYNC_FROM_MASTER, VOLATILE, resetSWindAge );
+SetupNG<float>  		twind_dir( "TWDD", 0.0, true, SYNC_FROM_MASTER, VOLATILE, resetSWindAge );
+SetupNG<float>  		twind_speed( "TWDS", 0.0, true, SYNC_FROM_MASTER, VOLATILE, resetSWindAge );
 SetupNG<float>  		swind_sideslip_lim( "SWSL", 2.0, true, SYNC_FROM_MASTER );
 SetupNG<float>  		cwind_dir( "CWDD", 0.0, true, SYNC_FROM_MASTER, VOLATILE, resetCWindAge );
 SetupNG<float>  		cwind_speed( "CWDS", 0.0, true, SYNC_FROM_MASTER, VOLATILE, resetCWindAge );
@@ -324,6 +326,8 @@ SetupNG<int> 			wind_enable( "WIND_ENA", WA_OFF );
 SetupNG<int> 			wind_logging( "WIND_LOG", 0 );
 SetupNG<float> 			wind_as_calibration("WIND_AS_CAL", 1.0 );
 SetupNG<float> 			wind_filter_lowpass("SWINDAVER", 60 );
+SetupNG<float> 			twind_filter_lowpass("TWINDAVER", 10 );
+SetupNG<int> 		    thermal_wind("THWIND", 0 );
 SetupNG<float> 			wind_straight_course_tolerance("WINDSTOL", 7.5 );
 SetupNG<float> 			wind_straight_speed_tolerance("WINDSSTOL", 15 );
 SetupNG<int> 			wind_display( "WIND_DIS", WD_NONE );

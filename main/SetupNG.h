@@ -473,6 +473,8 @@ extern SetupNG<float>  		OAT;
 extern SetupNG<float>  		OAT;   // outside temperature
 extern SetupNG<float>  		swind_dir;   // straight wind direction
 extern SetupNG<float>  		swind_speed;
+extern SetupNG<float>  		twind_dir;   // straight wind direction
+extern SetupNG<float>  		twind_speed;
 extern SetupNG<float>  		swind_sideslip_lim;
 extern SetupNG<float>  		cwind_dir;   // cirling wind direction
 extern SetupNG<float>  		cwind_speed;
@@ -627,6 +629,8 @@ extern SetupNG<int> 		wind_logging;
 extern SetupNG<float> 		wind_as_min;
 extern SetupNG<float> 		wind_as_calibration;
 extern SetupNG<float> 		wind_filter_lowpass;
+extern SetupNG<float> 		twind_filter_lowpass;
+extern SetupNG<int> 		thermal_wind;
 extern SetupNG<float>       wind_gps_lowpass;
 extern SetupNG<float>       wind_as_filter;
 extern SetupNG<float>       wind_dev_filter;

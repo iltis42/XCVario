@@ -1158,6 +1158,11 @@ void SetupMenu::options_menu_create_compasswind_straightwind_filters( MenuEntry 
 	wlpf->setPrecision(0);
 	top->addEntry( wlpf );
 	wlpf->setHelp(PROGMEM "Number of measurements used for straight flight live wind averager");
+
+	SetupMenuValFloat *twlpf = new SetupMenuValFloat( PROGMEM"Thermal Wind Averager", "", 0, 20, 1, nullptr, false, &twind_filter_lowpass );
+	twlpf->setPrecision(0);
+	top->addEntry( twlpf );
+	twlpf->setHelp(PROGMEM "Number of measurements used for thermal wind averager");
 }
 
 void SetupMenu::options_menu_create_compasswind_straightwind_limits( MenuEntry *top ){
@@ -1265,6 +1270,12 @@ void SetupMenu::options_menu_create_compasswind( MenuEntry *top ){
 	windlog->addEntry( PROGMEM"Enable Both");
 	windlog->setHelp(PROGMEM "Enable Wind logging NMEA output to WIFI port 8882");
 	top->addEntry( windlog );
+
+	SetupMenuSelect * windth = new SetupMenuSelect( PROGMEM"Thermal Wind", RST_NONE, 0, true, &thermal_wind );
+	windth->addEntry( PROGMEM "Disable");
+	windth->addEntry( PROGMEM "Enable thermal wind");
+	windth->setHelp( PROGMEM "Enable cyclonic thermal wind component calculation");
+	top->addEntry( windth );
 }
 
 void SetupMenu::options_menu_create_wireless_routing( MenuEntry *top ){

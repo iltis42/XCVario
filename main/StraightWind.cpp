@@ -79,8 +79,13 @@ void StraightWind::tick(){
 
 bool StraightWind::getWind( int* direction, float* speed, int *age )
 {
-	*direction = int( swind_dir.get() + 0.5 );
-	*speed = float( swind_speed.get() );
+	if( thermal_wind.get() ){
+		*direction = int( twind_dir.get() + 0.5 );
+		*speed = float( twind_speed.get() );
+	}else{
+		*direction = int( swind_dir.get() + 0.5 );
+		*speed = float( swind_speed.get() );
+	}
 	*age = _age;
 	return ( true );
 }
@@ -138,7 +143,7 @@ bool StraightWind::calculateWind()
 		if( !lowAirspeed ) {
 			ESP_LOGI(FNAME,"Low Airspeed, stop wind calculation, AS %3.1f  < %3.1f Kmh", ctas,  Units::Airspeed2Kmh( wind_as_min.get() ) );
 			lowAirspeed = true;
-		}
+		}extern SetupNG<int> 		thermal_wind;
 		status="Low AS";
 	}else{
 		if( lowAirspeed ) {
@@ -209,7 +214,7 @@ bool StraightWind::calculateWind()
 // wind direction calculation taken from here:
 // view-source:http://www.owoba.de/fliegerei/flugrechner.html
 // direction in degrees of third vector in windtriangle
-void StraightWind::calculateSpeedAndAngle( float angle1, float speed1, float angle2, float speed2, float& speed, float& angle ){
+void StraightWind::calculateSpeedAndAngle( float angle1, float speed1, float angle2, float speed2, float& angle, float& speed ){
 	float tcrad = D2R( angle1 );
 	float thrad = D2R( angle2 );
 	float wca = Vector::angleDiff( thrad, tcrad );
@@ -301,7 +306,7 @@ void StraightWind::calculateWind( float tc, float gs, float th, float tas, float
 	}
 
     // wind speed and direction
-	calculateSpeedAndAngle( tc, gs, th+deviation, tas*airspeedCorrection, newWindSpeed, newWindDir );
+	calculateSpeedAndAngle( tc, gs, th+deviation, tas*airspeedCorrection, newWindDir, newWindSpeed );
 	// ESP_LOGI( FNAME, "Calculated raw windspeed %.1f jitter:%.1f", newWindSpeed, jitter );
 
 	Vector v;
@@ -321,6 +326,31 @@ void StraightWind::calculateWind( float tc, float gs, float th, float tas, float
 
 	windDir   = result.getAngleDeg(); // Vector::normalizeDeg( result.getAngleDeg()/circle_wind_lowpass.get() );
 	windSpeed = result.getSpeed() / windVectors.size();
+	if( thermal_wind.get() ){
+		// tornado speed and direction
+		float d,s;
+		calculateSpeedAndAngle( windDir, windSpeed, v.getAngleDeg(), v.getSpeed(), d, s ); // momentary wind minus average
+		d = d > 360.0 ? 360.0 : d;
+		d = d < 0.0 ? 0.0 : d;
+		s = s > 100.0 ? 100.0 : s;
+		s = s < 0.0 ? 0.0 : s;
+		Vector tornadoWind = Vector(d,s);
+		tornadoVectors.push_back( tornadoWind );
+		while( tornadoVectors.size() > twind_filter_lowpass.get() ){
+			tornadoVectors.pop_front();
+		}
+		Vector tornadoResult = Vector( 0.0, 0.0 );
+		for( auto it=std::begin(tornadoVectors); it != std::end(tornadoVectors); it++ ){
+			tornadoResult.add( *it );
+		}
+		if( (int)d != (int)twind_dir.get()  ){
+			twind_dir.set( d );
+		}
+		if( (int)s != (int)twind_speed.get() ){
+			twind_speed.set( s );
+		}
+		ESP_LOGI(FNAME,"Wind AVG: %.1f°/%.1f CUR: %.1f°/%.1f TORN: %.1f°/%.1f", windDir, windSpeed, v.getAngleDeg(), v.getSpeed(), d,s );
+	}
 
 	// ESP_LOGI(FNAME,"New AVG WindDirection: %3.1f deg,  Strength: %3.1f km/h JI:%2.1f", windDir, windSpeed, jitter );
 	_age = 0;

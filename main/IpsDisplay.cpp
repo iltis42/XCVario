@@ -1401,8 +1401,8 @@ void IpsDisplay::drawWindArrow( float a, float speed, int type ){
 	const int b=9; // width of the arrow
 	int s=speed*0.6;
 	int s2=s;
-	if( s>30 )
-		s2=30;   // maximum space we got on the display
+	if( s>25 )
+		s2=25;   // maximum space we got on the display
 	if( s<10 )
 		s2=10;    // minimum size, otherwise arrow is not readable
 

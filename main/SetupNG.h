@@ -484,6 +484,7 @@ extern SetupNG<float>  		altitude;
 extern SetupNG<float>  		ias;
 extern SetupNG<float>  		te_vario;
 
+
 extern SetupNG<int>  		display_type;
 extern SetupNG<int>  		display_orientation;
 extern SetupNG<int>  		flap_enable;
@@ -541,6 +542,9 @@ extern SetupNG<int>		    ahrs_autozero;
 extern SetupNG<float>		ahrs_gyro_factor;
 extern SetupNG<float>		ahrs_dynamic_factor;
 extern SetupNG<float>		ahrs_min_gyro_factor;
+extern SetupNG<float>  		ahrs_omega_factor;
+extern SetupNG<float>  		ahrs_virt_g_lowpass;
+extern SetupNG<float>  		ahrs_gyro_bank_trust;
 extern SetupNG<int>		    display_style;
 extern SetupNG<int>		    display_variant;
 extern SetupNG<int>		    s2f_switch_type;

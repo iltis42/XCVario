@@ -130,9 +130,12 @@ double IMU::getPitchRad()  {
 float oas_roll = 0.0;
 static float omega;
 static float ax,ay,az = 0.0;
+static float ax1,ay1,az1 = 0.0;
 static float loadFactor = 0.0;
 static float positiveG = 1.0;
 double roll=0;
+
+double pitch = 0;
 
 void IMU::read()
 {
@@ -151,41 +154,33 @@ void IMU::read()
 	ay = accelY;
 	az = accelZ;
 	loadFactor += (sqrt( accelX * accelX + accelY * accelY + accelZ * accelZ ) - loadFactor) * 0.2;
+	float lf = loadFactor > 2.0 ? 2.0 : loadFactor;  // limit to +-1g
+	lf = lf < 0 ? 0 : lf;
 	// to get pitch and roll independent of circling, image pitch and roll values into 3D vector
-	double pitch=0;
-	omega += (-atan( ( (D2R(gyroZ) *cos( D2R(euler.roll) ) ) * (getTAS()/3.6) ) / 9.80665 )  - omega) * 0.5;
-	if( R2D(abs(omega)) * getTAS() > 1200 ){  // There is IAS and we fly a curve: We omit accelerometer based evaluation in curve as there its not benefical at all
-		IMU::PitchFromAccelRad(&pitch);
-		// estimate angle of bank from increased acceleration in Z axis
-		positiveG += (-accelZ - positiveG)*0.08;  // some low pass filtering makes sense here
-		// only positive G-force is to be considered, curve at negative G is not defined
-		float groll=0.0;
-		if( positiveG < 1.0)
-			positiveG = 1.0;
-		groll = acos( 1/positiveG );
-		if( omega < 0 ) // estimate sign of acceleration related angle from gyro
-			groll = -groll;
-		float T = (pow( 10, (positiveG-1)/1.41 ) -1);
-		roll += (((omega + groll*T )/(T+1)) - roll) *0.5; // left turn is left wing down so negative roll
-		// Calculate Pitch from gyro and accelerometer, vector is normalized later
-		float ax1=sin(pitch);              // Nose down (positive Y turn) results in positive X
-		float ay1=-sin(roll)*cos(pitch);    // Left wing down (or negative X roll) resultis in positive Y
-		float az1=-cos(roll)*cos(pitch);    // Any roll or pitch creates a less negative Z, unaccelerated Z is negative
-		// ESP_LOGI( FNAME,"pitch. %.1f omega-roll:%.1f g-roll:%.1f roll:%f  AZ:%f euler.roll:%.1f  euler.pitch:%.1f SR:%f CP:%f ax:%f ay:%f az:%f", pitch, R2D(omega), R2D(groll), R2D(roll), positiveG, euler.roll, euler.pitch, sin(roll), cos(pitch), ax1, ay1, az1 );
-		loadFactor = 1 + omega;
-		float lf = loadFactor > 2.0 ? 2.0 : loadFactor;  // limit to +-1g
-		lf = lf < 0 ? 0 : lf;
-		float gyro_trust = ahrs_min_gyro_factor.get()/5 + ahrs_gyro_factor.get() / ( pow(10, abs(lf-1) * ahrs_dynamic_factor.get()*10) - 1);
-		// ESP_LOGI( FNAME,"Cirlce:   loadFactor: %f, trust: %f pitch: %f T: %f", loadFactor, gyro_trust, euler.pitch, T );
-		att_vector = update_fused_vector(att_vector, gyro_trust, ax1, ay1, az1,D2R(gyroX),D2R(gyroY),D2R(gyroZ),dt); // trust also more omega at g loads unequal 1
-	}else{
-		loadFactor += (sqrt( ax * ax + ay * ay + az * az ) - loadFactor) * 0.2;
-		float lf = loadFactor > 2.0 ? 2.0 : loadFactor;  // limit to +-1g
-		lf = lf < 0 ? 0 : lf;
-		float gyro_trust = ahrs_min_gyro_factor.get() + ahrs_gyro_factor.get() * ( pow(10, abs(lf-1) * ahrs_dynamic_factor.get()) - 1);
-		// ESP_LOGI( FNAME,"Straight: loadFactor: %f, trust: %f pitch: %f", loadFactor, gyro_trust, euler.pitch );
-		att_vector = update_fused_vector(att_vector, gyro_trust, ax, ay, az,D2R(gyroX),D2R(gyroY),D2R(gyroZ),dt);
-	}
+	omega = -atan( ( (D2R(gyroZ) ) * (getTAS()/3.6) ) / 9.80665 );  // removed as this can cause overswing:  cos( D2R(euler.roll) )
+	double p;
+	IMU::PitchFromAccelRad(&p);
+	pitch += (p-pitch)*0.2;
+	// estimate angle of bank from increased acceleration in Z axis
+	positiveG += (-lf - positiveG)*0.2;  // some low pass filtering makes sense here
+	// only positive G-force is to be considered, curve at negative G is not defined
+	float groll=0.0;
+	if( positiveG < 1.0)
+		positiveG = 1.0;
+	groll = acos( 1/positiveG );
+	if( omega < 0 ) // estimate sign of acceleration related angle from gyro
+		groll = -groll;
+	float T = pow( 10, (positiveG-1)/1.41 ) -1;
+
+	roll += (((omega + groll*T )/(T+1)) - roll) *0.2; // left turn is left wing down so negative roll
+	float Q = abs(R2D(roll))/5;                 // how much we trust in airspeed and omega based virtual gravity, depending on angle of bank
+	// Calculate Pitch from gyro and accelerometer, vector is normalized later
+	ax1 += (sin(pitch) -ax1) * 0.05;               // Nose down (positive Y turn) results in positive X
+	ay1 += (-sin(roll)*cos(pitch) -ay1) * 0.05;    // Left wing down (or negative X roll) results in positive Y
+	az1 += (-cos(roll)*cos(pitch) -az1) * 0.05;    // Any roll or pitch creates a less negative Z, unaccelerated Z is negative
+	float gyro_trust = (ahrs_min_gyro_factor.get() + ahrs_gyro_factor.get() * ( pow(10, abs(lf-1) * ahrs_dynamic_factor.get()) - 1)) / abs( 1+ R2D(omega) );
+	// ESP_LOGI( FNAME,"ax:%f ay:%f az:%f  ax1:%f ay1:%f az1:%f GT:%f Q:%f Pitch:%.1f Roll:%.1f GR:%.1f OR:%.1f Y:%f Z:%f", ax,ay,az, ax1, ay1, az1, gyro_trust, Q, R2D(pitch), R2D(roll), R2D(groll), R2D(omega), (ay+ay1*Q)/(Q+1), (az+az1*Q)/(Q+1) );
+	att_vector = update_fused_vector(att_vector, gyro_trust, (ax+ax1*Q)/(Q+1), (ay+ay1*Q)/(Q+1), (az+az1*Q)/(Q+1),D2R(gyroX),D2R(gyroY),D2R(gyroZ),dt);
 	att_quat = quaternion_from_accelerometer(att_vector.a,att_vector.b,att_vector.c);
 	euler = att_quat.to_euler_angles();
 	// ESP_LOGI( FNAME,"omega*tas: %.3f roll:%.1f° pitch:%.1f° GX:%.1f GY%.1f GZ%.1f AX:%.3f AY:%.3f AZ:%.3f (AXO:%.3f AYO:%.3f AZO:%.3f) e-roll:%.1f e-pitch:%.1f gz:%f tas:%.1f", omega*getTAS(), R2D(roll), R2D(pitch), gyroX,gyroY,gyroZ, ax, ay, az, axo, ayo, azo, euler.roll, euler.pitch, gyroZ, getTAS() );

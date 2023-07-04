@@ -143,6 +143,8 @@ private:
 
   static double accelX, accelY, accelZ;
   static double gyroX, gyroY, gyroZ;
+  static float ax1,ay1,az1;
+  static float positiveG;
   static double kalXAngle, kalYAngle;
 
   static void MPU6050Read();
@@ -160,6 +162,7 @@ private:
   static Quaternion att_quat;
   static vector_ijk att_vector;
   static euler_angles euler;
+
 
 };
 

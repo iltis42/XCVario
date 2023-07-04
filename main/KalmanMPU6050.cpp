@@ -28,6 +28,9 @@ double IMU::gyroZ = 0.0;
 double IMU::kalXAngle = 0.0;
 double IMU::kalYAngle = 0.0;
 float  IMU::fused_yaw = 0;
+float IMU::ax1,IMU::ay1,IMU::az1 = 0.0;
+float IMU::positiveG = 1.0;
+
 
 Quaternion IMU::att_quat(0,0,0,0);
 vector_ijk IMU::att_vector;
@@ -127,16 +130,6 @@ double IMU::getPitchRad()  {
 	return -filterPitch*DEG_TO_RAD;
 }
 
-float oas_roll = 0.0;
-static float omega;
-static float ax,ay,az = 0.0;
-static float ax1,ay1,az1 = 0.0;
-static float loadFactor = 0.0;
-static float positiveG = 1.0;
-double roll=0;
-
-double pitch = 0;
-
 void IMU::read()
 {
 	double dt=0;
@@ -150,17 +143,16 @@ void IMU::read()
 	if( ret )
 		return;
 
-	ax = accelX;
-	ay = accelY;
-	az = accelZ;
-	loadFactor = sqrt( accelX * accelX + accelY * accelY + accelZ * accelZ );
+	float ax = accelX;
+	float ay = accelY;
+	float az = accelZ;
+	float loadFactor = sqrt( accelX * accelX + accelY * accelY + accelZ * accelZ );
 	float lf = loadFactor > 2.0 ? 2.0 : loadFactor;  // limit to +-1g
 	lf = lf < 0 ? 0 : lf;
 	// to get pitch and roll independent of circling, image pitch and roll values into 3D vector
-	omega = -atan(((D2R(gyroZ)/ cos( D2R(euler.roll))) * (getTAS()/3.6)) / 9.80665);  // removed as this can cause overswing:  cos( D2R(euler.roll) )
-	double p;
-	IMU::PitchFromAccelRad(&p);
-	pitch = p;
+	float omega = -atan(((D2R(gyroZ)/ cos( D2R(euler.roll))) * (getTAS()/3.6)) / 9.80665);  // removed as this can cause overswing:  cos( D2R(euler.roll) )
+	double pitch;
+	IMU::PitchFromAccelRad(&pitch);
 	// estimate angle of bank from increased acceleration in Z axis
 	positiveG += (lf - positiveG)*ahrs_gforce_lp.get();  // some low pass filtering makes sense here
 	// only positive G-force is to be considered, curve at negative G is not defined
@@ -171,7 +163,7 @@ void IMU::read()
 		groll = -groll;
 	float T = pow( 10, (positiveG-1)/ahrs_gbank_dynamic.get() ) -1;      // merge g load depending angle of bank depending of load factor
 
-	roll = (omega + groll*T )/(T+1);                                     // left turn is left wing down so negative roll
+	double roll = (omega + groll*T )/(T+1);                                     // left turn is left wing down so negative roll
 	float Q = abs(R2D(roll))/ahrs_gyro_bank_trust.get();                 // how much we trust in airspeed and omega based virtual gravity, depending on angle of bank
 	// Virtual gravity from centripedal forces to keep angle of bank while circling
 	ax1 += (sin(pitch) -ax1) * ahrs_virt_g_lowpass.get();                // Nose down (positive Y turn) results in positive X

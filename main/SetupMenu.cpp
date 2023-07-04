@@ -1616,11 +1616,11 @@ void SetupMenu::system_menu_create_hardware_ahrs_lc( MenuEntry *top ){
 
 
 void SetupMenu::system_menu_create_hardware_ahrs_parameter( MenuEntry *top ){
-	SetupMenuValFloat * ahrsgf = new SetupMenuValFloat( PROGMEM"Gyro Max Trust", "%", 0, 100, 1, 0, false, &ahrs_gyro_factor  );
+	SetupMenuValFloat * ahrsgf = new SetupMenuValFloat( PROGMEM"Gyro Max Trust", "x", 0, 100, 1, 0, false, &ahrs_gyro_factor  );
 	ahrsgf->setHelp(PROGMEM"Gyro trust factor in artifical horizont bank and pitch");
 	top->addEntry( ahrsgf );
 
-	SetupMenuValFloat * ahrsgfm = new SetupMenuValFloat( PROGMEM"Gyro Min Trust", "%", 0, 10, 0.1, 0, false, &ahrs_min_gyro_factor  );
+	SetupMenuValFloat * ahrsgfm = new SetupMenuValFloat( PROGMEM"Gyro Min Trust", "x", 0, 50, 0.1, 0, false, &ahrs_min_gyro_factor  );
 	ahrsgfm->setHelp(PROGMEM"Minimum Gyro trust factor in artifical horizont bank and pitch");
 	top->addEntry( ahrsgfm );
 
@@ -1634,16 +1634,21 @@ void SetupMenu::system_menu_create_hardware_ahrs_parameter( MenuEntry *top ){
 
 	SetupMenuValFloat * virtglp = new SetupMenuValFloat( PROGMEM"Virtual G Lowpass", "", 0, 1, 0.005, 0, false, &ahrs_virt_g_lowpass  );
 	virtglp->setPrecision( 3 );
-	virtglp->setHelp( PROGMEM"Lowpass for virtual gravity from airspeed and omega or centripedal force compensation");
+	virtglp->setHelp( PROGMEM"Lowpass factor for virtual gravity from airspeed and omega or centripedal force compensation");
 	top->addEntry( virtglp );
 
-	SetupMenuValFloat * omegaf = new SetupMenuValFloat( PROGMEM"Omega Factor", "", 0, 100, 0.1, 0, false, &ahrs_omega_factor  );
-	omegaf->setHelp( PROGMEM"Factor to reduce gyro trust based on omega or in other words angle of bank");
-	top->addEntry( omegaf );
+	SetupMenuValFloat * gflp = new SetupMenuValFloat( PROGMEM"G-Force Lowpass", "", 0, 1, 0.005, 0, false, &ahrs_gforce_lp  );
+	gflp->setHelp( PROGMEM"Lowpass factor to filter g force for loadfactor dependent bank calculation");
+	gflp->setPrecision( 3 );
+	top->addEntry( gflp );
 
 	SetupMenuValFloat * vgtrust = new SetupMenuValFloat( PROGMEM"Gyro Trust Banking", "", 0, 100, 0.1, 0, false, &ahrs_gyro_bank_trust  );
 	vgtrust->setHelp( PROGMEM"Factor for trust in gyro on high angles of bank");
 	top->addEntry( vgtrust );
+
+	SetupMenuValFloat * gyrocal = new SetupMenuValFloat( PROGMEM"Gyro Calibration", "", -0.5, 1.5, 0.01, 0, false, &ahrs_gyro_cal  );
+	gyrocal->setHelp( PROGMEM"Gyro calibration factor to increase accuracy of gyro in %/100");
+	top->addEntry( gyrocal );
 
 }
 
@@ -1671,7 +1676,7 @@ void SetupMenu::system_menu_create_hardware_ahrs( MenuEntry *top ){
 	ahrslc->addCreator( system_menu_create_hardware_ahrs_lc );
 
 	SetupMenu * ahrspa = new SetupMenu( PROGMEM"AHRS Parameters" );
-	ahrspa->setHelp( PROGMEM"AHRS Parameters such as gyro trust and filtering constants", 240 );
+	ahrspa->setHelp( PROGMEM"AHRS Parameters such as gyro trust and filtering constants", 260 );
 	top->addEntry( ahrspa );
 	ahrspa->addCreator( system_menu_create_hardware_ahrs_parameter );
 

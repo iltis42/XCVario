@@ -153,16 +153,16 @@ void IMU::read()
 	ax = accelX;
 	ay = accelY;
 	az = accelZ;
-	loadFactor += (sqrt( accelX * accelX + accelY * accelY + accelZ * accelZ ) - loadFactor) * 0.2;
+	loadFactor = sqrt( accelX * accelX + accelY * accelY + accelZ * accelZ );
 	float lf = loadFactor > 2.0 ? 2.0 : loadFactor;  // limit to +-1g
 	lf = lf < 0 ? 0 : lf;
 	// to get pitch and roll independent of circling, image pitch and roll values into 3D vector
-	omega = -atan( ( (D2R(gyroZ) ) * (getTAS()/3.6) ) / 9.80665 );  // removed as this can cause overswing:  cos( D2R(euler.roll) )
+	omega = -atan(((D2R(gyroZ)/ cos( D2R(euler.roll))) * (getTAS()/3.6)) / 9.80665);  // removed as this can cause overswing:  cos( D2R(euler.roll) )
 	double p;
 	IMU::PitchFromAccelRad(&p);
-	pitch += (p-pitch)*0.2;
+	pitch = p;
 	// estimate angle of bank from increased acceleration in Z axis
-	positiveG += (-lf - positiveG)*0.2;  // some low pass filtering makes sense here
+	positiveG += (lf - positiveG)*ahrs_gforce_lp.get();  // some low pass filtering makes sense here
 	// only positive G-force is to be considered, curve at negative G is not defined
 	float groll=0.0;
 	if( positiveG < 1.0)
@@ -170,16 +170,19 @@ void IMU::read()
 	groll = acos( 1/positiveG );
 	if( omega < 0 ) // estimate sign of acceleration related angle from gyro
 		groll = -groll;
-	float T = pow( 10, (positiveG-1)/1.41 ) -1;
+	float T = pow( 10, (positiveG-1)/1.2 ) -1;      // merge g load dependent roll depending of load factor
 
-	roll += (((omega + groll*T )/(T+1)) - roll) *0.2;                     // left turn is left wing down so negative roll
-	float Q = abs(R2D(roll))/ahrs_gyro_bank_trust.get();                 // how much we trust in airspeed and omega based virtual gravity, depending on angle of bank
+	roll = (omega + groll*T )/(T+1);                 // left turn is left wing down so negative roll
+	float Q = abs(R2D(roll))/ahrs_gyro_bank_trust.get();              // how much we trust in airspeed and omega based virtual gravity, depending on angle of bank
 	// Virtual gravity from centripedal forces to keep angle of bank while circling
 	ax1 += (sin(pitch) -ax1) * ahrs_virt_g_lowpass.get();               // Nose down (positive Y turn) results in positive X
 	ay1 += (-sin(roll)*cos(pitch) -ay1) * ahrs_virt_g_lowpass.get();    // Left wing down (or negative X roll) results in positive Y
 	az1 += (-cos(roll)*cos(pitch) -az1) * ahrs_virt_g_lowpass.get();    // Any roll or pitch creates a less negative Z, unaccelerated Z is negative
-	float gyro_trust = (ahrs_min_gyro_factor.get() + ahrs_gyro_factor.get() * ( pow(10, abs(lf-1) * ahrs_dynamic_factor.get()) - 1)) / abs( 1+ R2D(omega)*ahrs_omega_factor.get() );
+	// trust in gyro at load factors unequal 1 g
+	float gyro_trust = ahrs_min_gyro_factor.get() + (ahrs_gyro_factor.get() * ( pow(10, abs(lf-1) * ahrs_dynamic_factor.get()) - 1));
 	// ESP_LOGI( FNAME,"ax:%f ay:%f az:%f  ax1:%f ay1:%f az1:%f GT:%f Q:%f Pitch:%.1f Roll:%.1f GR:%.1f OR:%.1f Y:%f Z:%f", ax,ay,az, ax1, ay1, az1, gyro_trust, Q, R2D(pitch), R2D(roll), R2D(groll), R2D(omega), (ay+ay1*Q)/(Q+1), (az+az1*Q)/(Q+1) );
+	// ESP_LOGI( FNAME,"GT:%f Q:%f Pitch:%.1f Roll:%.1f GR:%.1f OR:%.1f Y:%f Z:%f T:%f lf:%f", gyro_trust, Q, R2D(pitch), R2D(roll), R2D(groll), R2D(omega), (ay+ay1*Q)/(Q+1), (az+az1*Q)/(Q+1), T, lf );
+
 	att_vector = update_fused_vector(att_vector, gyro_trust, (ax+ax1*Q)/(Q+1), (ay+ay1*Q)/(Q+1), (az+az1*Q)/(Q+1),D2R(gyroX),D2R(gyroY),D2R(gyroZ),dt);
 	att_quat = quaternion_from_accelerometer(att_vector.a,att_vector.b,att_vector.c);
 	euler = att_quat.to_euler_angles();
@@ -205,7 +208,7 @@ void IMU::read()
 			float gyroYaw = getGyroYawDelta();
 			// tuned to plus 7% what gave the best timing swing in response, 2% for compass is far enough
 			// gyro and compass are time displaced, gyro comes immediate, compass a second later
-			fused_yaw +=  Vector::angleDiffDeg( curh ,fused_yaw )*0.02 + gyroYaw * 1.07;
+			fused_yaw +=  Vector::angleDiffDeg( curh ,fused_yaw )*0.02 + gyroYaw;
 			filterYaw=Vector::normalizeDeg( fused_yaw );
 			compass->setGyroHeading( filterYaw );
 			//ESP_LOGI( FNAME,"cur magn head %.2f gyro yaw: %.4f fused: %.1f Gyro(%.3f/%.3f/%.3f)", curh, gyroYaw, gh, gyroX, gyroY, gyroZ  );
@@ -226,7 +229,7 @@ void IMU::read()
 
 float IMU::fallbackToGyro(){
 	float gyroYaw = getGyroYawDelta();
-	fused_yaw +=  gyroYaw * 1.07;
+	fused_yaw +=  gyroYaw;
 	return( Vector::normalizeDeg( fused_yaw ) );
 }
 
@@ -237,9 +240,9 @@ void IMU::MPU6050Read()
 	accelY = -accelG[1];
 	accelZ = -accelG[0];
 	// Gating ignores Gyro drift < 2 deg per second
-	gyroX = abs(gyroDPS.z) < gyro_gating.get() ? 0.0 :  -(gyroDPS.z);
-	gyroY = abs(gyroDPS.y) < gyro_gating.get() ? 0.0 :   (gyroDPS.y);
-	gyroZ = abs(gyroDPS.x) < gyro_gating.get() ? 0.0 :   (gyroDPS.x);
+	gyroX = abs(gyroDPS.z*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 :  -(gyroDPS.z);
+	gyroY = abs(gyroDPS.y*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 :   (gyroDPS.y);
+	gyroZ = abs(gyroDPS.x*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 :   (gyroDPS.x);
 }
 
 void IMU::PitchFromAccel(double *pitch)

@@ -163,7 +163,7 @@ void IMU::read()
 		groll = -groll;
 	float T = pow( 10, (positiveG-1)/ahrs_gbank_dynamic.get() ) -1;      // merge g load depending angle of bank depending of load factor
 
-	double roll = (omega + groll*T )/(T+1);                                     // left turn is left wing down so negative roll
+	double roll = (omega + groll*T )/(T+1);                              // left turn is left wing down so negative roll
 	float Q = abs(R2D(roll))/ahrs_gyro_bank_trust.get();                 // how much we trust in airspeed and omega based virtual gravity, depending on angle of bank
 	// Virtual gravity from centripedal forces to keep angle of bank while circling
 	ax1 += (sin(pitch) -ax1) * ahrs_virt_g_lowpass.get();                // Nose down (positive Y turn) results in positive X

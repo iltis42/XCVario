@@ -1646,6 +1646,10 @@ void SetupMenu::system_menu_create_hardware_ahrs_parameter( MenuEntry *top ){
 	vgtrust->setHelp( PROGMEM"Factor for trust in gyro on high angles of bank");
 	top->addEntry( vgtrust );
 
+	SetupMenuValFloat * gloadbd = new SetupMenuValFloat( PROGMEM"G Load bank Dynamic", "", 1, 2, 0.01, 0, false, &ahrs_gbank_dynamic  );
+	gloadbd->setHelp( PROGMEM"G load dynamic grow factor for angle of bank to be considered");
+	top->addEntry( gloadbd );
+
 	SetupMenuValFloat * gyrocal = new SetupMenuValFloat( PROGMEM"Gyro Calibration", "", -0.5, 1.5, 0.01, 0, false, &ahrs_gyro_cal  );
 	gyrocal->setHelp( PROGMEM"Gyro calibration factor to increase accuracy of gyro in %/100");
 	top->addEntry( gyrocal );
@@ -1676,7 +1680,7 @@ void SetupMenu::system_menu_create_hardware_ahrs( MenuEntry *top ){
 	ahrslc->addCreator( system_menu_create_hardware_ahrs_lc );
 
 	SetupMenu * ahrspa = new SetupMenu( PROGMEM"AHRS Parameters" );
-	ahrspa->setHelp( PROGMEM"AHRS Parameters such as gyro trust and filtering constants", 260 );
+	ahrspa->setHelp( PROGMEM"AHRS constants such as gyro trust and filtering", 275 );
 	top->addEntry( ahrspa );
 	ahrspa->addCreator( system_menu_create_hardware_ahrs_parameter );
 

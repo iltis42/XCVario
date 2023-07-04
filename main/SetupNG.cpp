@@ -276,6 +276,7 @@ SetupNG<float>  		ahrs_gforce_lp("AHRSGFLP", 0.1 );
 SetupNG<float>  		ahrs_virt_g_lowpass("AHRSVGL", 0.1 );
 SetupNG<float>  		ahrs_gyro_bank_trust("AHRSGBT", 5 );
 SetupNG<float>  		ahrs_gyro_cal("AHRSGCAL", 1.07 );
+SetupNG<float>  		ahrs_gbank_dynamic("AHRSGBD", 1.2 );
 SetupNG<int>		    display_style("DISPLAY_STYLE", 1 );
 SetupNG<int>		    s2f_switch_type("S2FHWSW", S2F_HW_SWITCH );
 SetupNG<int>		    hardwareRevision("HWREV", HW_UNKNOWN );

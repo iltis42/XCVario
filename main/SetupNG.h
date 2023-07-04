@@ -546,6 +546,7 @@ extern SetupNG<float>  		ahrs_gforce_lp;
 extern SetupNG<float>  		ahrs_virt_g_lowpass;
 extern SetupNG<float>  		ahrs_gyro_bank_trust;
 extern SetupNG<float>  		ahrs_gyro_cal;
+extern SetupNG<float>  		ahrs_gbank_dynamic;
 extern SetupNG<int>		    display_style;
 extern SetupNG<int>		    display_variant;
 extern SetupNG<int>		    s2f_switch_type;

@@ -164,20 +164,19 @@ void IMU::read()
 	// estimate angle of bank from increased acceleration in Z axis
 	positiveG += (lf - positiveG)*ahrs_gforce_lp.get();  // some low pass filtering makes sense here
 	// only positive G-force is to be considered, curve at negative G is not defined
-	float groll=0.0;
 	if( positiveG < 1.0)
 		positiveG = 1.0;
-	groll = acos( 1/positiveG );
+	float groll = acos( 1/positiveG );
 	if( omega < 0 ) // estimate sign of acceleration related angle from gyro
 		groll = -groll;
-	float T = pow( 10, (positiveG-1)/1.2 ) -1;      // merge g load dependent roll depending of load factor
+	float T = pow( 10, (positiveG-1)/ahrs_gbank_dynamic.get() ) -1;      // merge g load depending angle of bank depending of load factor
 
-	roll = (omega + groll*T )/(T+1);                 // left turn is left wing down so negative roll
-	float Q = abs(R2D(roll))/ahrs_gyro_bank_trust.get();              // how much we trust in airspeed and omega based virtual gravity, depending on angle of bank
+	roll = (omega + groll*T )/(T+1);                                     // left turn is left wing down so negative roll
+	float Q = abs(R2D(roll))/ahrs_gyro_bank_trust.get();                 // how much we trust in airspeed and omega based virtual gravity, depending on angle of bank
 	// Virtual gravity from centripedal forces to keep angle of bank while circling
-	ax1 += (sin(pitch) -ax1) * ahrs_virt_g_lowpass.get();               // Nose down (positive Y turn) results in positive X
-	ay1 += (-sin(roll)*cos(pitch) -ay1) * ahrs_virt_g_lowpass.get();    // Left wing down (or negative X roll) results in positive Y
-	az1 += (-cos(roll)*cos(pitch) -az1) * ahrs_virt_g_lowpass.get();    // Any roll or pitch creates a less negative Z, unaccelerated Z is negative
+	ax1 += (sin(pitch) -ax1) * ahrs_virt_g_lowpass.get();                // Nose down (positive Y turn) results in positive X
+	ay1 += (-sin(roll)*cos(pitch) -ay1) * ahrs_virt_g_lowpass.get();     // Left wing down (or negative X roll) results in positive Y
+	az1 += (-cos(roll)*cos(pitch) -az1) * ahrs_virt_g_lowpass.get();     // Any roll or pitch creates a less negative Z, unaccelerated Z is negative
 	// trust in gyro at load factors unequal 1 g
 	float gyro_trust = ahrs_min_gyro_factor.get() + (ahrs_gyro_factor.get() * ( pow(10, abs(lf-1) * ahrs_dynamic_factor.get()) - 1));
 	// ESP_LOGI( FNAME,"ax:%f ay:%f az:%f  ax1:%f ay1:%f az1:%f GT:%f Q:%f Pitch:%.1f Roll:%.1f GR:%.1f OR:%.1f Y:%f Z:%f", ax,ay,az, ax1, ay1, az1, gyro_trust, Q, R2D(pitch), R2D(roll), R2D(groll), R2D(omega), (ay+ay1*Q)/(Q+1), (az+az1*Q)/(Q+1) );

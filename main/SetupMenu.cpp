@@ -717,6 +717,14 @@ void SetupMenu::vario_menu_create_s2f( MenuEntry *top ){
 	s2fmod->addEntry( PROGMEM"AHRS-Gyro");
 	top->addEntry( s2fmod );
 
+	SetupMenuSelect * s2fsw = new SetupMenuSelect( PROGMEM"S2F Switch", RST_NONE , 0, false, &s2f_switch_type );
+	top->addEntry( s2fsw );
+	s2fsw->setHelp( PROGMEM "Select S2F switch type, either a normal switch, a push button toggling S2F mode any time pressed, or disabled");
+	s2fsw->addEntry( PROGMEM"Switch");
+	s2fsw->addEntry( PROGMEM"Push Button");
+	s2fsw->addEntry( PROGMEM"Switch Invert");
+	s2fsw->addEntry( PROGMEM"Disable");
+
 	SetupMenuValFloat * autospeed = new SetupMenuValFloat( PROGMEM"S2F AutoSpeed", "", 20.0, 250.0, 1.0, update_s2f_speed, false, &s2f_speed );
 	top->addEntry( autospeed );
 	autospeed->setHelp(PROGMEM"Transition speed in AutoSpeed mode to switch Vario <-> Cruise (S2F) mode");
@@ -1708,13 +1716,6 @@ void SetupMenu::system_menu_create_hardware( MenuEntry *top ){
 	SetupMenu * rotary = new SetupMenu( PROGMEM"Rotary Setup" );
 	top->addEntry( rotary );
 	rotary->addCreator( system_menu_create_hardware_rotary );
-
-	SetupMenuSelect * s2fsw = new SetupMenuSelect( PROGMEM"S2F Switch", RST_NONE , 0, false, &s2f_switch_type );
-	top->addEntry( s2fsw );
-	s2fsw->setHelp( PROGMEM "Select S2F hardware switch type, what can be an normal switch or a push button without lock toggling S2F mode any time pressed");
-	s2fsw->addEntry( PROGMEM"Switch");
-	s2fsw->addEntry( PROGMEM"Push Button");
-	s2fsw->addEntry( PROGMEM"Switch Inverted");
 
 	SetupMenuSelect * gear = new SetupMenuSelect( PROGMEM"Gear Warn", RST_NONE , config_gear_warning, false, &gear_warning );
 	top->addEntry( gear );

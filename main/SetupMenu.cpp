@@ -1617,10 +1617,12 @@ void SetupMenu::system_menu_create_hardware_ahrs_lc( MenuEntry *top ){
 
 void SetupMenu::system_menu_create_hardware_ahrs_parameter( MenuEntry *top ){
 	SetupMenuValFloat * ahrsgf = new SetupMenuValFloat( PROGMEM"Gyro Max Trust", "x", 0, 100, 1, 0, false, &ahrs_gyro_factor  );
+	ahrsgf->setPrecision( 0 );
 	ahrsgf->setHelp(PROGMEM"Gyro trust factor in artifical horizont bank and pitch");
 	top->addEntry( ahrsgf );
 
 	SetupMenuValFloat * ahrsgfm = new SetupMenuValFloat( PROGMEM"Gyro Min Trust", "x", 0, 50, 0.1, 0, false, &ahrs_min_gyro_factor  );
+	ahrsgfm->setPrecision( 0 );
 	ahrsgfm->setHelp(PROGMEM"Minimum Gyro trust factor in artifical horizont bank and pitch");
 	top->addEntry( ahrsgfm );
 
@@ -1642,8 +1644,8 @@ void SetupMenu::system_menu_create_hardware_ahrs_parameter( MenuEntry *top ){
 	gflp->setPrecision( 3 );
 	top->addEntry( gflp );
 
-	SetupMenuValFloat * vgtrust = new SetupMenuValFloat( PROGMEM"Gyro Trust Banking", "", 0, 100, 0.1, 0, false, &ahrs_gyro_bank_trust  );
-	vgtrust->setHelp( PROGMEM"Factor for trust in gyro on high angles of bank");
+	SetupMenuValFloat * vgtrust = new SetupMenuValFloat( PROGMEM"Virt G trust bank", "", 0, 100, 0.1, 0, false, &ahrs_virtg_bank_trust  );
+	vgtrust->setHelp( PROGMEM"Factor for trust in virtual gravity depending on angle of bank");
 	top->addEntry( vgtrust );
 
 	SetupMenuValFloat * gloadbd = new SetupMenuValFloat( PROGMEM"G Load bank Dynamic", "", 1, 2, 0.01, 0, false, &ahrs_gbank_dynamic  );

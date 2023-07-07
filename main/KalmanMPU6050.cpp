@@ -172,12 +172,11 @@ void IMU::read()
 	// trust in gyro at load factors unequal 1 g
 	float gyro_trust = ahrs_min_gyro_factor.get() + (ahrs_gyro_factor.get() * ( pow(10, abs(lf-1) * ahrs_dynamic_factor.get()) - 1));
 	// ESP_LOGI( FNAME,"ax:%f ay:%f az:%f  ax1:%f ay1:%f az1:%f GT:%f Q:%f Pitch:%.1f Roll:%.1f GR:%.1f OR:%.1f Y:%f Z:%f", ax,ay,az, ax1, ay1, az1, gyro_trust, Q, R2D(pitch), R2D(roll), R2D(groll), R2D(omega), (ay+ay1*Q)/(Q+1), (az+az1*Q)/(Q+1) );
-	// ESP_LOGI( FNAME,"GT:%f Q:%f Pitch:%.1f Roll:%.1f GR:%.1f OR:%.1f Y:%f Z:%f T:%f lf:%f", gyro_trust, Q, R2D(pitch), R2D(roll), R2D(groll), R2D(omega), (ay+ay1*Q)/(Q+1), (az+az1*Q)/(Q+1), T, lf );
 
 	att_vector = update_fused_vector(att_vector, gyro_trust, (ax+ax1*Q)/(Q+1), (ay+ay1*Q)/(Q+1), (az+az1*Q)/(Q+1),D2R(gyroX),D2R(gyroY),D2R(gyroZ),dt);
 	att_quat = quaternion_from_accelerometer(att_vector.a,att_vector.b,att_vector.c);
 	euler = att_quat.to_euler_angles();
-	// ESP_LOGI( FNAME,"omega*tas: %.3f roll:%.1f° pitch:%.1f° GX:%.1f GY%.1f GZ%.1f AX:%.3f AY:%.3f AZ:%.3f (AXO:%.3f AYO:%.3f AZO:%.3f) e-roll:%.1f e-pitch:%.1f gz:%f tas:%.1f", omega*getTAS(), R2D(roll), R2D(pitch), gyroX,gyroY,gyroZ, ax, ay, az, axo, ayo, azo, euler.roll, euler.pitch, gyroZ, getTAS() );
+	// ESP_LOGI( FNAME,"Euler R:%.1f P:%.1f T:%f Q:%f GT:%f OR:%f GR:%f R:%f", euler.roll, euler.pitch, T, Q, gyro_trust, R2D(omega), R2D(groll), R2D(roll) );
 
 	// treat gimbal lock, limit to 88 deg
 	if( euler.roll > 88.0 )

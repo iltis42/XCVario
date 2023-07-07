@@ -212,7 +212,6 @@ void Switch::tick() {
 		else if( s2f_switch_type.get() == S2F_HW_PUSH_BUTTON ){
 			if( _holddown ){   // debouncing
 				_holddown--;
-				// return;
 			}
 			else{
 				if( _closed ) {

@@ -1629,7 +1629,7 @@ void SetupMenu::system_menu_create_hardware_ahrs_parameter( MenuEntry *top ){
 	ahrsgf->setHelp(PROGMEM"Gyro trust factor in artifical horizont bank and pitch");
 	top->addEntry( ahrsgf );
 
-	SetupMenuValFloat * ahrsgfm = new SetupMenuValFloat( PROGMEM"Gyro Min Trust", "x", 0, 50, 0.1, 0, false, &ahrs_min_gyro_factor  );
+	SetupMenuValFloat * ahrsgfm = new SetupMenuValFloat( PROGMEM"Gyro Min Trust", "x", 0, 100, 1, 0, false, &ahrs_min_gyro_factor  );
 	ahrsgfm->setPrecision( 0 );
 	ahrsgfm->setHelp(PROGMEM"Minimum Gyro trust factor in artifical horizont bank and pitch");
 	top->addEntry( ahrsgfm );

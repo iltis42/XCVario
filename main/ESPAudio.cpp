@@ -226,6 +226,7 @@ bool Audio::selfTest(){
 	wiper = wiper_s2f = setwiper;
 	ESP_LOGI(FNAME,"default volume/wiper: %d", (*p_wiper) );
 	ESP_LOGI(FNAME, "selfTest wiper: %d", wiper );
+	_alarm_mode = true;
 	writeWiper( 1 );
 	uint16_t getwiper;
 	bool ret = DigitalPoti->readWiper( getwiper );
@@ -241,6 +242,7 @@ bool Audio::selfTest(){
 	else
 		ret = true;
 	bool fadein=false;
+	_alarm_mode = false;
 	//	while(1){    // uncomment for continuous self test
 	ESP_LOGI(FNAME,"Min F %f, Max F %f", minf, maxf );
 	for( float f=minf; f<maxf*1.25; f=f*1.03){

@@ -176,7 +176,7 @@ void IMU::read()
 	att_vector = update_fused_vector(att_vector, gyro_trust, (ax+ax1*Q)/(Q+1), (ay+ay1*Q)/(Q+1), (az+az1*Q)/(Q+1),D2R(gyroX),D2R(gyroY),D2R(gyroZ),dt);
 	att_quat = quaternion_from_accelerometer(att_vector.a,att_vector.b,att_vector.c);
 	euler = att_quat.to_euler_angles();
-	ESP_LOGI( FNAME,"Euler R:%.1f P:%.1f T:%f Q:%f GT:%f OR:%f GR:%f R:%f", euler.roll, euler.pitch, T, Q, gyro_trust, R2D(omega), R2D(groll), R2D(roll) );
+	// ESP_LOGI( FNAME,"Euler R:%.1f P:%.1f T:%f Q:%f GT:%f OR:%f GR:%f R:%f", euler.roll, euler.pitch, T, Q, gyro_trust, R2D(omega), R2D(groll), R2D(roll) );
 
 	// treat gimbal lock, limit to 88 deg
 	if( euler.roll > 88.0 )

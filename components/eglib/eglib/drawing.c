@@ -30,6 +30,7 @@ void eglib_setClipRange(
     if ( ((x+w) >= eglib->drawing.clip_xmin) && ((x+w) < eglib->drawing.clip_xmax)) eglib->drawing.clip_xmax = x+w;
     if ( (y >= eglib->drawing.clip_ymin) && (y < eglib->drawing.clip_ymax)) eglib->drawing.clip_ymin = y;
     if ( ((y+h) >= eglib->drawing.clip_ymin) && ((y+h) < eglib->drawing.clip_ymax)) eglib->drawing.clip_ymax = y+h;
+    // ESP_LOGI( "dl1", "S xmin:%d xmax:%d ymin:%d ymax:%d", eglib->drawing.clip_xmin, eglib->drawing.clip_xmax, eglib->drawing.clip_ymin, eglib->drawing.clip_ymax );
     return;
 };
 
@@ -45,6 +46,7 @@ void eglib_undoClipRange( eglib_t *eglib){
     eglib->drawing.clip_xmin = 0;
     eglib->drawing.clip_ymax = eglib_GetHeight(eglib);
     eglib->drawing.clip_ymin = 0;
+    // ESP_LOGI( "dl1", "U xmin:%d xmax:%d ymin:%d ymax:%d", eglib->drawing.clip_xmin, eglib->drawing.clip_xmax, eglib->drawing.clip_ymin, eglib->drawing.clip_ymax );
     return;
 };
 
@@ -162,7 +164,7 @@ static void draw_fast_90_line(
     coordinate_t length;
 
     if(x1==x2) {         // vertical
-      length = abs(y1-y2);
+      // length = abs(y1-y2);
       if(y2 > y1)
         direction = DISPLAY_LINE_DIRECTION_DOWN;
       else
@@ -178,34 +180,46 @@ static void draw_fast_90_line(
     	return;
 
     switch(direction) {
-      case DISPLAY_LINE_DIRECTION_RIGHT:
-        if((y1 > eglib->drawing.clip_ymax) || (y1 < eglib->drawing.clip_ymin))
-            return;
-        if (x1 < eglib->drawing.clip_xmin) x1 = eglib->drawing.clip_xmin;
-        if(x1 + length > eglib->drawing.clip_xmax)
-          length = eglib->drawing.clip_xmax - x1 +1;
-        break;
-      case DISPLAY_LINE_DIRECTION_LEFT:
-        if((y1 > eglib->drawing.clip_ymax) || (y1 < eglib->drawing.clip_ymin))
-            return;
-        if (x1 > eglib->drawing.clip_xmax) x1 = eglib->drawing.clip_xmax;
-        if(x1 - length < eglib->drawing.clip_xmin)
-          length = x1 - eglib->drawing.clip_xmin +1;
-        break;
-      case DISPLAY_LINE_DIRECTION_DOWN:
-        if((x1 > eglib->drawing.clip_xmax) || (x1 < eglib->drawing.clip_xmin))
-            return;
-        if(y1 + length > eglib->drawing.clip_ymax)
-          length = eglib->drawing.clip_ymax - y1 +1;
-        break;
-      case DISPLAY_LINE_DIRECTION_UP:
-        if((x1 > eglib->drawing.clip_xmax) || (x1 < eglib->drawing.clip_xmin))
-            return;
-        if(y1 - length < eglib->drawing.clip_ymin)
-          length = y1 - eglib->drawing.clip_ymin +1;
-        break;
-    }
+    case DISPLAY_LINE_DIRECTION_RIGHT:
+    	if((y1 > eglib->drawing.clip_ymax) || (y1 < eglib->drawing.clip_ymin))
+    		return;
+    	if( x2 >= eglib->drawing.clip_xmax )
+    		x2 = eglib->drawing.clip_xmax;
+    	if (x1 <= eglib->drawing.clip_xmin)
+    		x1 = eglib->drawing.clip_xmin;
+    	length = x2-x1;
+    	break;
 
+    case DISPLAY_LINE_DIRECTION_LEFT:
+    	if((y1 > eglib->drawing.clip_ymax) || (y1 < eglib->drawing.clip_ymin))
+    		return;
+    	if (x1 >= eglib->drawing.clip_xmax)
+    		x1 = eglib->drawing.clip_xmax;
+    	if (x2 <= eglib->drawing.clip_xmin)
+    		x2 = eglib->drawing.clip_xmin;
+    	length = x1-x2;
+  		break;
+
+  	case DISPLAY_LINE_DIRECTION_DOWN:
+  		if((x1 > eglib->drawing.clip_xmax) || (x1 < eglib->drawing.clip_xmin))
+  			return;
+  		if(y2 >= eglib->drawing.clip_ymax)
+  			y2 = eglib->drawing.clip_ymax;
+  		if(y1 <= eglib->drawing.clip_ymin )
+  			y1 = eglib->drawing.clip_ymin;
+  		length = y2-y1;
+  		break;
+
+  	case DISPLAY_LINE_DIRECTION_UP:
+  		if((x1 > eglib->drawing.clip_xmax) || (x1 < eglib->drawing.clip_xmin))
+  			return;
+  		if(y1 >= eglib->drawing.clip_ymax)
+  			y1 = eglib->drawing.clip_ymax;
+  		if(y2 <= eglib->drawing.clip_ymin )
+  			y1 = eglib->drawing.clip_ymin;
+  		length = y1-y2;
+  		break;
+  	}
     if(length < 1)
       return;
 
@@ -1220,7 +1234,7 @@ void eglib_DrawGlyph(eglib_t *eglib, coordinate_t x, coordinate_t y, const struc
 		//char line[width+1];
 		for(coordinate_t u=0 ; u < width; u++) {
 			coordinate_t v = v1 - head;  // read glyph from right row
-			if( eglib_inClipArea( eglib, u+x, v1-height+y ) ){
+			if( eglib_inClipArea( eglib, u+x+1, v1-height+y ) ){
 				if( startx > u )  // the following code captures the minimum bounding box from what is rendered
 					startx = u;
 				if( starty > v1 )

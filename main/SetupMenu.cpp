@@ -102,7 +102,7 @@ void init_screens(){
 	uint32_t scr = menu_screens.get();
 	screen_gmeter.set( (scr >> SCREEN_GMETER) & 1);
 	// 	screen_centeraid.set( (scr >> SCREEN_THERMAL_ASSISTANT) & 1);
-	screen_flarm.set( (scr >> SCREEN_FLARM) & 1);
+	screen_horizon.set( (scr >> SCREEN_HORIZON) & 1);
 	screen_mask_len = 1; // default vario
 	while( scr ){
 		scr = scr >> 1;
@@ -154,11 +154,11 @@ int config_gear_warning( SetupMenuSelect * p ){
 int upd_screens( SetupMenuSelect * p ){
 	uint32_t screens =
 			( (uint32_t)screen_gmeter.get() << (SCREEN_GMETER)  |
-					//		( (uint32_t)screen_centeraid.get() << (SCREEN_THERMAL_ASSISTANT) ) |
-					( (uint32_t)screen_flarm.get() << (SCREEN_FLARM) )
+			//		( (uint32_t)screen_centeraid.get() << (SCREEN_THERMAL_ASSISTANT) ) |
+			( (uint32_t)screen_horizon.get() << (SCREEN_HORIZON) )
 			);
 	menu_screens.set( screens );
-	init_screens();
+	// init_screens();
 	return 0;
 }
 
@@ -611,19 +611,19 @@ void SetupMenu::delete_subtree(){
 void SetupMenu::press(){
 	if( (selected != this) || focus )
 		return;
-	// ESP_LOGI(FNAME,"press() active_srceen %d, pressed %d inSet %d  subtree_created: %d mptr: %p", active_screen, pressed, gflags.inSetup, subtree_created, menu_create_ptr );
+	ESP_LOGI(FNAME,"press() active_srceen %d, pressed %d inSet %d  subtree_created: %d mptr: %p", active_screen, pressed, gflags.inSetup, subtree_created, menu_create_ptr );
 	create_subtree();
 	if( !gflags.inSetup ){
 		active_screen = 0;
-		while( !active_screen && (screen_index < screen_mask_len) ){
+		while( !active_screen && (screen_index <= screen_mask_len) ){
 			if( menu_screens.get() & (1 << screen_index) ){
-				active_screen = ( 1 << screen_index );
-				// ESP_LOGI(FNAME,"New active_screen: %d", active_screen );
+				active_screen = screen_index;
+				ESP_LOGI(FNAME,"New active_screen: %d", active_screen );
 			}
 			screen_index++;
 		}
-		if( screen_index >= screen_mask_len ){
-			// ESP_LOGI(FNAME,"select vario screen");
+		if( screen_index > screen_mask_len ){
+			ESP_LOGI(FNAME,"select vario screen");
 			screen_index = 0;
 			active_screen = 0; // fall back into default vario screen after optional screens
 		}
@@ -1564,6 +1564,12 @@ void SetupMenu::system_menu_create_hardware_rotary_screens( MenuEntry *top ){
 	scrgmet->addEntry( PROGMEM"Disable");
 	scrgmet->addEntry( PROGMEM"Enable");
 	top->addEntry(scrgmet);
+	if( gflags.ahrsKeyValid ){
+		SetupMenuSelect * horizon = new SetupMenuSelect( PROGMEM"Horizon", RST_NONE, upd_screens, true, &screen_horizon );
+		horizon->addEntry( PROGMEM"Disable");
+		horizon->addEntry( PROGMEM"Enable");
+		top->addEntry(horizon);
+	}
 }
 
 void SetupMenu::system_menu_create_hardware_rotary( MenuEntry *top ){

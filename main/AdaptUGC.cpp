@@ -136,7 +136,7 @@ void  AdaptUGC::begin() {
 	}
 	ESP_LOGI(FNAME, "eglib_Send() &eglib:%x  hal-driv:%x config:%x\n", (unsigned int)eglib, (unsigned int)&esp32_ili9341, (unsigned int)&esp32_ili9341_config );
 	eglib_Init( &myeglib, &esp32_ili9341, &esp32_ili9341_config, &ili9341, &ili9341_config );
-	setClipRange( 0,0, 239, 319 );
+	setClipRange( 0,0, 240, 320 );
 };
 
 void AdaptUGC::advanceCursor( size_t delta ){

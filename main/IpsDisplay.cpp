@@ -1805,10 +1805,8 @@ void IpsDisplay::drawHorizon( float pitch, float roll, float yaw ){
 		clear();
 		P1o.y = 0;
 		ucg->setColor( COLOR_WHITE );
-		ucg->drawHLine( 1,161, 20 );
-		ucg->drawHLine( 1,159, 20 );
-		ucg->drawHLine( 220,161, 20 );
-		ucg->drawHLine( 220,159, 20 );
+		ucg->drawTriangle( 1,   150, 20,  160, 1,   170 ); // Triangles l/r
+		ucg->drawTriangle( 240, 150, 220, 160, 240, 170 );
 		for( int i=-80; i<=80; i+=20 ){  // 10° scale
 			ucg->drawHLine( 1,160+i, 20 );
 			ucg->drawHLine( 220,160+i, 20 );
@@ -1847,14 +1845,11 @@ void IpsDisplay::drawHorizon( float pitch, float roll, float yaw ){
 	if( P1r.y != P1o.y || P1r.x != P1o.x ){
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		ucg->setClipRange( 20, 60, 200, 200 );
-		// ucg->setClipRange( 1, 40, 240, 240 );
-		// ucg->setClipRange( 1, 160-120*abs(sinf(max(roll,oroll)))-1, 240, 240*abs(sinf(max(roll,oroll)))+2 );
 		ucg->setColor( COLOR_LBLUE );
 		ucg->drawTetragon( P1r.x, P1r.y, P2r.x, P2r.y, P3r.x, P3r.y, P4r.x , P4r.y );
 		ucg->setColor( COLOR_BROWN );
 		ucg->drawTetragon( P4r.x, P4r.y, P3r.x, P3r.y, P6r.x, P6r.y, P5r.x , P5r.y );
-		ucg->setColor( COLOR_WHITE );
-		Flarm::drawAirplane( 120, 160, true, false );
+		// Flarm::drawAirplane( 120, 160, true, false );  would be nice hence flickering
 		P1o = P1r;
 		P2o = P2r;
 		P3o = P3r;
@@ -1873,6 +1868,7 @@ void IpsDisplay::drawHorizon( float pitch, float roll, float yaw ){
 			heading -= 360;
 		//			ESP_LOGI(FNAME,"compass enable, heading: %d", heading );
 		if( heading > 0  && heading != heading_old){
+			ucg->setColor( COLOR_WHITE );
 			ucg->printf("   %d°   ", heading );
 			heading_old = heading;
 		}

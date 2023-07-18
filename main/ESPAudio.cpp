@@ -70,7 +70,6 @@ int   Audio::prev_div = 0;
 int   Audio::prev_step = 0;
 int   Audio::scale = 0;
 int   Audio::prev_scale = -1;
-int   Audio::defaultDelay = 500;
 int   Audio::_tonemode_back = 0;
 int   Audio::tick = 0;
 int   Audio::volume_change=0;
@@ -153,12 +152,12 @@ void Audio::dac_cosine_enable(dac_channel_t channel, bool enable)
 }
 
 // 4 Ohms Type
-static const std::vector<double> F1{   50,  175, 542, 885, 1236,  1380, 2100, 3000, 4000, 10000    };
-static const std::vector<double> VOL2{ 1.5, 1.3, 1.2, 0.8,  1.5,   2.1,  1.7,  1.5,  1.4,   1.4    };
+static const std::vector<double> F1{   50,  175, 350, 542, 885, 1236,  1380, 2100, 3000, 4000, 10000    };
+static const std::vector<double> VOL2{ 0.1, 0.2, 0.3, 1.2, 0.8,  1.5,   2.1,  1.7,  1.5,  1.4,   1.4    };
 
 // 8 Ohms Type
-static const std::vector<double> F2{   50,  175, 700, 885, 1120,  1380, 1450, 1600, 2000, 2100, 2300, 2600,  10000    };
-static const std::vector<double> VOL1{ 1.0, 1.0, 2.3, 0.6,  2.1,   2.2,  1.2, 0.04,  1.0,  1.0,  1.0, 1.0,    0.3    };
+static const std::vector<double> F2{   50,  175, 350, 700, 885, 1120,  1380, 1450, 1600, 2000, 2100, 2300, 2600,  10000    };
+static const std::vector<double> VOL1{ 0.1, 0.2, 0.3, 2.3, 0.6,  2.1,   2.2,  1.2, 0.04,  1.0,  1.0,  1.0, 1.0,    0.3    };
 
 // External Speaker
 static const std::vector<double> F3{   50,  175, 490,  700, 1000, 1380, 2100, 2400, 3000, 4000, 10000   };
@@ -227,6 +226,7 @@ bool Audio::selfTest(){
 	wiper = wiper_s2f = setwiper;
 	ESP_LOGI(FNAME,"default volume/wiper: %d", (*p_wiper) );
 	ESP_LOGI(FNAME, "selfTest wiper: %d", wiper );
+	_alarm_mode = true;
 	writeWiper( 1 );
 	uint16_t getwiper;
 	bool ret = DigitalPoti->readWiper( getwiper );
@@ -242,6 +242,7 @@ bool Audio::selfTest(){
 	else
 		ret = true;
 	bool fadein=false;
+	_alarm_mode = false;
 	//	while(1){    // uncomment for continuous self test
 	ESP_LOGI(FNAME,"Min F %f, Max F %f", minf, maxf );
 	for( float f=minf; f<maxf*1.25; f=f*1.03){
@@ -339,39 +340,47 @@ void Audio::dac_scale_set(dac_channel_t channel, int scale)
 }
 
 void Audio::alarm( bool enable, int volume, e_audio_alarm_type_t style ){  // non blocking
-	if( enable ) {
-		// ESP_LOGI(FNAME,"Alarm sound enable volume: %d style: %d", volume, style );
+	if( enable && !_alarm_mode ){ // Begin of alarm
 		_vol_back_s2f = wiper_s2f;
 		_vol_back = wiper;
-		enableAmplifier( true );
 		_s2f_mode_back = _s2f_mode;
 		_s2f_mode = false;
-		(*p_wiper) = volume;
 		_tonemode_back = _tonemode;
+		_alarm_mode=true;
+		enableAmplifier( true );
+	}
+	if( !enable && _alarm_mode ){ // End of alarm
+		wiper = _vol_back;
+		wiper_s2f = _vol_back_s2f;
+		_s2f_mode = _s2f_mode_back;
+		_tonemode = _tonemode_back;
+		_alarm_mode=false;
+		if( _s2f_mode )
+			writeWiper( wiper_s2f );
+		else
+			writeWiper( wiper );
+	}
+	if( enable ) {  // tune alarm
+		// ESP_LOGI(FNAME,"Alarm sound enable volume: %d style: %d", volume, style );
 		if( style == AUDIO_ALARM_STALL ){
 			_te = 3.0;
 			_tonemode = ATM_DUAL_TONE;
-			defaultDelay = 125;
 		}
 		else if( style == AUDIO_ALARM_FLARM_1 ){  // lowest
 			_te = 3.0;
 			_tonemode = ATM_SINGLE_TONE;
-			defaultDelay = 500;
 		}
 		else if( style == AUDIO_ALARM_FLARM_2 ){
 			_te = 4.0;
 			_tonemode = ATM_SINGLE_TONE;
-			defaultDelay = 400;
 		}
 		else if( style == AUDIO_ALARM_FLARM_3 ){ // highest
 			_te = 5.0;
 			_tonemode = ATM_SINGLE_TONE;
-			defaultDelay = 300;
 		}
 		else if( style == AUDIO_ALARM_GEAR ){
 			_te = 2.0;
 			_tonemode = ATM_DUAL_TONE;
-			defaultDelay = 250;
 		}
 		else if( style == AUDIO_ALARM_OFF ){
 			volume = 0;
@@ -379,20 +388,7 @@ void Audio::alarm( bool enable, int volume, e_audio_alarm_type_t style ){  // no
 		else
 			ESP_LOGE(FNAME,"Error, wrong alarm style %d", style );
 		calculateFrequency();
-		_alarm_mode=true;
-	}
-	else if( !enable && _alarm_mode )
-	{
-		wiper = _vol_back;
-		wiper_s2f = _vol_back_s2f;
-		_s2f_mode = _s2f_mode_back;
-		defaultDelay = 500;
-		_tonemode = _tonemode_back;
-		_alarm_mode=false;
-		if( _s2f_mode )
-			writeWiper( wiper_s2f );
-		else
-			writeWiper( wiper );
+		(*p_wiper) = volume;
 	}
 }
 
@@ -530,6 +526,7 @@ void  Audio::calculateFrequency(){
 }
 
 void Audio::writeWiper( uint16_t volume ){
+	// ESP_LOGI(FNAME, "set volume: %d", volume);
 	if( _alarm_mode )
 		DigitalPoti->writeWiper( volume );  // max volume
 	else

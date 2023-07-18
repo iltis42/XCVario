@@ -31,6 +31,7 @@
 #include <cstdio>
 #include <cstring>
 #include "CenterAid.h"
+#include "Rotate.h"
 
 
 ////////////////////////////
@@ -1783,6 +1784,95 @@ void IpsDisplay::initLoadDisplay(){
 	old_ias_max = -1;
 	xSemaphoreGive(spiMutex);
 	ESP_LOGI(FNAME,"initLoadDisplay end");
+}
+
+static Point P1o;
+static Point P2o;
+static Point P3o;
+static Point P4o;
+static Point P5o;
+static Point P6o;
+
+static float oroll=0;
+static int heading_old = -1;
+
+void IpsDisplay::drawHorizon( float pitch, float roll, float yaw ){
+	// ESP_LOGI(FNAME,"drawHorizon P: %1.1f R: %1.1f Y: %1.1f", R2D(pitch), R2D(roll), R2D(yaw) );
+	if( _menu || !gflags.ahrsKeyValid )
+		return;
+	tick++;
+	if( !(screens_init & INIT_DISPLAY_HORIZON) ){
+		clear();
+		P1o.y = 0;
+		ucg->setColor( COLOR_WHITE );
+		ucg->drawTriangle( 1,   150, 20,  160, 1,   170 ); // Triangles l/r
+		ucg->drawTriangle( 240, 150, 220, 160, 240, 170 );
+		for( int i=-80; i<=80; i+=20 ){  // 10° scale
+			ucg->drawHLine( 1,160+i, 20 );
+			ucg->drawHLine( 220,160+i, 20 );
+		}
+		for( int i=-70; i<=70; i+=20 ){  // 5° scale
+			ucg->drawHLine( 10,160+i, 10 );
+			ucg->drawHLine( 220,160+i, 10 );
+		}
+		screens_init |= INIT_DISPLAY_HORIZON;
+	}
+	Point P1( -100, -60 );
+	Point P2(  340, -60 );
+	Point P3(  340, 160 );
+	Point P4( -100, 160 );
+	Point P5( -100, 380 );
+	Point P6(  340, 380 );
+	Point Center( 120, 160 );
+	Point P1r = P1.rotate( Center, roll );
+	Point P2r = P2.rotate( Center, roll );
+	Point P3r = P3.rotate( Center, roll );
+	Point P4r = P4.rotate( Center, roll );
+	Point P5r = P5.rotate( Center, roll );
+	Point P6r = P6.rotate( Center, roll );
+	int p = rint(R2D( pitch )*2);  // 1 deg := 1 pixel
+	P1r.moveVertical(p);
+	P2r.moveVertical(p);
+	P3r.moveVertical(p);
+	P4r.moveVertical(p);
+	P5r.moveVertical(p);
+	P6r.moveVertical(p);
+	int heading = 0;
+	if( compass_enable.get() != CS_DISABLE ){
+
+	}
+	// ESP_LOGI(FNAME,"P1:%d/%d P2:%d/%d P3:%d/%d P4:%d/%d roll:%f d:%d ", P1r.x, P1r.y+p, P2r.x, P2r.y+p, P3r.x, P3r.y+p, P4r.x , P4r.y+p, R2D(roll), p  );
+	if( P1r.y != P1o.y || P1r.x != P1o.x ){
+		xSemaphoreTake(spiMutex,portMAX_DELAY );
+		ucg->setClipRange( 20, 60, 200, 200 );
+		ucg->setColor( COLOR_LBLUE );
+		ucg->drawTetragon( P1r.x, P1r.y, P2r.x, P2r.y, P3r.x, P3r.y, P4r.x , P4r.y );
+		ucg->setColor( COLOR_BROWN );
+		ucg->drawTetragon( P4r.x, P4r.y, P3r.x, P3r.y, P6r.x, P6r.y, P5r.x , P5r.y );
+		// Flarm::drawAirplane( 120, 160, true, false );  would be nice hence flickering
+		P1o = P1r;
+		P2o = P2r;
+		P3o = P3r;
+		P4o = P4r;
+		P5o = P5r;
+		P6o = P6r;
+		oroll = roll;
+		ucg->undoClipRange();
+		xSemaphoreGive(spiMutex);
+	}
+	if( compass_enable.get() != CS_DISABLE ){
+		heading = static_cast<int>(rintf(mag_hdt.get()));
+		ucg->setFont(ucg_font_fub20_hr, true);
+		ucg->setPrintPos(70,310);
+		if( heading >= 360 )
+			heading -= 360;
+		//			ESP_LOGI(FNAME,"compass enable, heading: %d", heading );
+		if( heading > 0  && heading != heading_old){
+			ucg->setColor( COLOR_WHITE );
+			ucg->printf("   %d°   ", heading );
+			heading_old = heading;
+		}
+	}
 }
 
 

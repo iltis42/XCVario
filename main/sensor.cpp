@@ -168,7 +168,7 @@ uint8_t g_col_header_light_b=g_col_highlight;
 uint16_t gear_warning_holdoff = 0;
 uint8_t gyro_flash_savings=0;
 
-t_global_flags gflags = { true, false, false, false, false, false, false, false, false, false, false, false, false, false };
+t_global_flags gflags = { true, false, false, false, false, false, false, false, false, false, false, false, false, false, false };
 
 int  ccp=60;
 float tas = 0;
@@ -334,7 +334,7 @@ void drawDisplay(void *pvParameters){
 			// G-Load Display
 			// ESP_LOGI(FNAME,"Active Screen = %d", active_screen );
 			if( (((float)accelG[0] > gload_pos_thresh.get() || (float)accelG[0] < gload_neg_thresh.get()) && gload_mode.get() == GLOAD_DYNAMIC ) ||
-					( gload_mode.get() == GLOAD_ALWAYS_ON ) || ((active_screen << SCREEN_GMETER) & 1)  )
+					( gload_mode.get() == GLOAD_ALWAYS_ON ) || (active_screen == SCREEN_GMETER)  )
 			{
 				if( !gflags.gLoadDisplay ){
 					gflags.gLoadDisplay = true;
@@ -347,6 +347,15 @@ void drawDisplay(void *pvParameters){
 			}
 			if( gflags.gLoadDisplay ) {
 				display->drawLoadDisplay( (float)accelG[0] );
+			}
+			if( active_screen == SCREEN_HORIZON ) {
+				float roll = -IMU::getRollRad();
+				float pitch = IMU::getPitchRad();
+				display->drawHorizon( pitch, roll, 0 );
+				gflags.horizon = true;
+			}
+			else{
+				gflags.horizon = false;
 			}
 			// G-Load Alarm when limits reached
 			if( gload_mode.get() != GLOAD_OFF  ){
@@ -364,7 +373,7 @@ void drawDisplay(void *pvParameters){
 				}
 			}
 			// Vario Screen
-			if( !(gflags.stall_warning_active || gflags.gear_warning_active || gflags.flarmWarning || gflags.gLoadDisplay )  ) {
+			if( !(gflags.stall_warning_active || gflags.gear_warning_active || gflags.flarmWarning || gflags.gLoadDisplay || gflags.horizon )  ) {
 				// ESP_LOGI(FNAME,"TE=%2.3f", te_vario.get() );
 				display->drawDisplay( airspeed, te_vario.get(), aTE, polar_sink, altitude.get(), t, battery, s2f_delta, as2f, average_climb.get(), Switch::getCruiseState(), gflags.standard_setting, flap_pos.get() );
 			}

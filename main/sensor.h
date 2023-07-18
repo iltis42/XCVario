@@ -39,6 +39,7 @@ typedef struct global_flags{
 	bool stall_warning_armed :1;
 	bool flarmWarning :1 ;
 	bool gLoadDisplay :1;
+	bool horizon :1;
 	bool gear_warning_active :1;
 	bool flarmDownload :1 ; // Flarm IGC download flag
 	bool validTemperature :1 ;

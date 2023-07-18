@@ -27,6 +27,7 @@ extern uint8_t g_col_header_light_b;
 #define COLOR_LBLUE  200, 200, 0
 #define COLOR_BBLUE  170, 160, 0
 #define COLOR_LBBLUE  85, 80, 0
+#define COLOR_BROWN   255-50,255-15,255-5  // Chocolate Brown
 
 
 

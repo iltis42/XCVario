@@ -22,7 +22,7 @@
 
 enum ips_display { ILI9341 };
 
-typedef enum e_sreens { INIT_DISPLAY_NULL, INIT_DISPLAY_AIRLINER=1, INIT_DISPLAY_RETRO=2, INIT_DISPLAY_FLARM=4, INIT_DISPLAY_GLOAD=8, INIT_DISPLAY_UL=16 } e_screens_t;
+typedef enum e_sreens { INIT_DISPLAY_NULL, INIT_DISPLAY_AIRLINER=1, INIT_DISPLAY_RETRO=2, INIT_DISPLAY_FLARM=4, INIT_DISPLAY_GLOAD=8, INIT_DISPLAY_UL=16, INIT_DISPLAY_HORIZON=32 } e_screens_t;
 extern int screens_init;
 
 class PolarIndicator;
@@ -38,6 +38,7 @@ public:
 	static void drawDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor );
 	static void drawWarning( const char *warn, bool push=false );
 	static void drawLoadDisplay( float loadFactor );
+	static void drawHorizon( float pitch, float roll, float yaw );
 	static void drawLoadDisplayTexts();
 	static void drawBow( float a, int16_t &old_a_level, int16_t l1, ucg_color_t color );
 	static void initDisplay();

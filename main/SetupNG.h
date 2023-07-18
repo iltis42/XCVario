@@ -53,7 +53,7 @@ typedef enum airspeed_mode  { MODE_IAS, MODE_TAS, MODE_CAS, MODE_SLIP } airspeed
 typedef enum altitude_display_mode  { MODE_QNH, MODE_QFE } altitude_display_mode_t;
 typedef enum e_display_style  { DISPLAY_AIRLINER, DISPLAY_RETRO, DISPLAY_UL } display_style_t;
 typedef enum e_display_variant { DISPLAY_WHITE_ON_BLACK, DISPLAY_BLACK_ON_WHITE } display_variant_t;
-typedef enum e_s2f_type  { S2F_HW_SWITCH, S2F_HW_PUSH_BUTTON, S2F_HW_SWITCH_INVERTED } e_s2f_type;
+typedef enum e_s2f_type  { S2F_HW_SWITCH, S2F_HW_PUSH_BUTTON, S2F_HW_SWITCH_INVERTED, S2F_SWITCH_DISABLE } e_s2f_type;
 typedef enum e_serial_route_type { RT_XCVARIO, RT_WIRELESS, RT_S1, RT_S2, RT_CAN } e_serial_routing_t;
 typedef enum e_wireless_type { WL_DISABLE, WL_BLUETOOTH, WL_WLAN_MASTER, WL_WLAN_CLIENT, WL_WLAN_STANDALONE, WL_BLUETOOTH_LE } e_wireless_t;
 typedef enum e_audiomode_type { AM_VARIO, AM_S2F, AM_SWITCH, AM_AUTOSPEED, AM_EXTERNAL, AM_FLAP, AM_AHRS } e_audiomode_t;
@@ -87,7 +87,7 @@ typedef enum e_volatility { VOLATILE, PERSISTENT, SEMI_VOLATILE } e_volatility_t
 typedef enum e_can_speed { CAN_SPEED_OFF, CAN_SPEED_250KBIT, CAN_SPEED_500KBIT, CAN_SPEED_1MBIT } e_can_speed_t;  // stored in RAM, FLASH, or into FLASH after a while
 typedef enum e_can_mode { CAN_MODE_MASTER, CAN_MODE_CLIENT, CAN_MODE_STANDALONE } e_can_mode_t;
 typedef enum e_altimeter_select { AS_TE_SENSOR, AS_BARO_SENSOR, AS_EXTERNAL } e_altimeter_select_t;
-typedef enum e_menu_screens { SCREEN_GMETER, SCREEN_FLARM, SCREEN_THERMAL_ASSISTANT } e_menu_screens_t; // addittional screens
+typedef enum e_menu_screens { SCREEN_VARIO, SCREEN_GMETER, SCREEN_HORIZON, SCREEN_FLARM, SCREEN_THERMAL_ASSISTANT } e_menu_screens_t; // addittional screens
 typedef enum e_s2f_arrow_color { AC_WHITE_WHITE, AC_BLUE_BLUE, AC_GREEN_RED } e_s2f_arrow_color_t;
 typedef enum e_vario_needle_color { VN_COLOR_WHITE, VN_COLOR_ORANGE, VN_COLOR_RED }  e_vario_needle_color_t;
 typedef enum e_data_monitor { MON_OFF, MON_BLUETOOTH, MON_WIFI_8880, MON_WIFI_8881, MON_WIFI_8882, MON_S1, MON_S2, MON_CAN  }  e_data_monitor_t;
@@ -486,6 +486,7 @@ extern SetupNG<float>  		altitude;
 extern SetupNG<float>  		ias;
 extern SetupNG<float>  		te_vario;
 
+
 extern SetupNG<int>  		display_type;
 extern SetupNG<int>  		display_orientation;
 extern SetupNG<int>  		flap_enable;
@@ -543,6 +544,11 @@ extern SetupNG<int>		    ahrs_autozero;
 extern SetupNG<float>		ahrs_gyro_factor;
 extern SetupNG<float>		ahrs_dynamic_factor;
 extern SetupNG<float>		ahrs_min_gyro_factor;
+extern SetupNG<float>  		ahrs_gforce_lp;
+extern SetupNG<float>  		ahrs_virt_g_lowpass;
+extern SetupNG<float>  		ahrs_virtg_bank_trust;
+extern SetupNG<float>  		ahrs_gyro_cal;
+extern SetupNG<float>  		ahrs_gbank_dynamic;
 extern SetupNG<int>		    display_style;
 extern SetupNG<int>		    display_variant;
 extern SetupNG<int>		    s2f_switch_type;
@@ -653,7 +659,7 @@ extern SetupNG<int> 		master_xcvario_lock;
 extern SetupNG<int> 		menu_long_press;
 extern SetupNG<int> 		menu_screens;
 extern SetupNG<int> 		screen_gmeter;
-extern SetupNG<int> 		screen_flarm;
+extern SetupNG<int> 		screen_horizon;
 extern SetupNG<int> 		screen_centeraid;
 extern SetupNG<int> 		data_monitor;
 extern SetupNG<int> 		data_monitor_mode;

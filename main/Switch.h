@@ -30,6 +30,8 @@ private:
 	static bool _cruise_mode_sw;
 	static bool _cruise_mode_xcv;
 	static bool _cruise_mode_speed;
+	static bool _cruise_mode_flap;
+	static bool _cruise_mode_gyro;
 	static bool _closed;
 	static int _holddown;
 	static float _cruise_speed_kmh;

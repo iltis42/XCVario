@@ -25,6 +25,8 @@
 
 bool Switch::_cruise_mode_sw = false;
 bool Switch::_cruise_mode_speed = false;
+bool Switch::_cruise_mode_flap = false;
+bool Switch::_cruise_mode_gyro = false;
 bool Switch::_closed = false;
 int Switch::_holddown = 0;
 float Switch::_cruise_speed_kmh = 100;
@@ -58,7 +60,6 @@ bool Switch::cruiseMode() {
 	}
 	else if( s2f_switch_mode.get() == AM_AUTOSPEED ){        // Let autospeed mode merge both states
 		if( _cruise_mode_sw != cm_switch_prev  ){
-			ESP_LOGI(FNAME,"cruise_mode change %d", cruise_mode_final );
 			cm_switch_prev = _cruise_mode_sw;
 			cruise_mode_final = _cruise_mode_sw;
 			ESP_LOGI(FNAME,"cruise_mode change from Switch: %d", cruise_mode_final );
@@ -68,38 +69,64 @@ bool Switch::cruiseMode() {
 			cruise_mode_final = _cruise_mode_speed;
 		}
 	}
-	else if( s2f_switch_mode.get() == AM_FLAP  ){
-		if( flap_enable.get() ){
-			if( FLAP->getFlapPosition() > s2f_flap_pos.get() )
-				cruise_mode_final = false;
-			else
-				cruise_mode_final = true;
+	else if( s2f_switch_mode.get() == AM_FLAP  ){           // Allow for FLAP source switch changes
+		if( _cruise_mode_sw != cm_switch_prev  ){
+			cm_switch_prev = _cruise_mode_sw;
+			cruise_mode_final = _cruise_mode_sw;
+			ESP_LOGI(FNAME,"cruise_mode change from Switch: %d", cruise_mode_final );
+		}
+		else if( flap_enable.get() ){
+			bool flap_s2f = FLAP->getFlapPosition() < s2f_flap_pos.get();
+			if( flap_s2f != _cruise_mode_flap ){
+				if( !flap_s2f ){
+					_cruise_mode_flap = false;
+					cruise_mode_final = false;
+				}else
+				{
+					_cruise_mode_flap = true;
+					cruise_mode_final = true;
+				}
+			}
 		}
 	}
-	else if( s2f_switch_mode.get() == AM_AHRS ){
-		float gr = (float)filter( (float)IMU::getGyroRate() );
-		// ESP_LOGI( FNAME,"Gyro-Rate %.2f", gr );
-		float ref = s2f_gyro_deg.get();
-		if( cruise_mode_final )
-			ref = ref*1.2;  // 20% hysteresis
-		// ESP_LOGI( FNAME,"Gyro-Rate: %.2f  thres: %.2f", gr, ref );
-		if( gr < ref )   // default 12° per second
-			cruise_mode_final = true;
-		else
-			cruise_mode_final = false;
-		// ESP_LOGI( FNAME,"Gyro-Rate: %.2f  thres: %.2f cmf: %d", gr, ref, cruise_mode_final  );
+	else if( s2f_switch_mode.get() == AM_AHRS ){           // GYRO and switch combined
+		if( _cruise_mode_sw != cm_switch_prev  ){
+			cm_switch_prev = _cruise_mode_sw;
+			cruise_mode_final = _cruise_mode_sw;
+			ESP_LOGI(FNAME,"cruise_mode change from Switch: %d", cruise_mode_final );
+		}
+		else{
+			float gr = (float)filter( (float)IMU::getGyroRate() );
+			// ESP_LOGI( FNAME,"Gyro-Rate %.2f", gr );
+			float ref = s2f_gyro_deg.get();
+			if( _cruise_mode_gyro )
+				ref = ref*1.2;           // 20% hysteresis
+			bool gyro_s2f =  gr < ref;   // Turn-Rate lower than reference => straight flight
+			// ESP_LOGI( FNAME,"Gyro-Rate: %.2f  thres: %.2f", gr, ref );
+			if( gyro_s2f != _cruise_mode_gyro ){
+				if( gyro_s2f ){
+					_cruise_mode_gyro = true;
+					cruise_mode_final = true;
+				}
+				else{
+					_cruise_mode_gyro = false;
+					cruise_mode_final = false;
+				}
+			}
+			// ESP_LOGI( FNAME,"Gyro-Rate: %.2f  thres: %.2f cmf: %d", gr, ref, cruise_mode_final  );
+		}
 	}
-	else if( s2f_switch_mode.get() == AM_SWITCH ){
+	else if( s2f_switch_mode.get() == AM_SWITCH ){       // Only switch
 		if( cruise_mode_final != _cruise_mode_sw ){
 			cruise_mode_final = _cruise_mode_sw;
 		}
 	}
-	else if( s2f_switch_mode.get() == AM_VARIO ) {
+	else if( s2f_switch_mode.get() == AM_VARIO ) {       // Fix operation vario mode
 		if( cruise_mode_final != false ){
 			cruise_mode_final = false;
 		}
 	}
-	else if( s2f_switch_mode.get() == AM_S2F ){
+	else if( s2f_switch_mode.get() == AM_S2F ){          // Fix operation S2F mode
 		if( cruise_mode_final != true ){
 			cruise_mode_final = true;
 		}
@@ -107,7 +134,7 @@ bool Switch::cruiseMode() {
 	// ESP_LOGI(FNAME,"cruise_mode_final %d", cruise_mode_final );
 
 	if( (int)cruise_mode_final != (int)cruise_mode.get() || initial ){
-		ESP_LOGI(FNAME,"New cruise mode: %d", cruise_mode_final );
+		ESP_LOGI(FNAME,"New S2F mode: %d", cruise_mode_final );
 		initial = false;
 		cruise_mode.set( (int)cruise_mode_final );
 	}
@@ -149,7 +176,7 @@ void Switch::tick() {
 			if ( ias.get() < (_cruise_speed_kmh - s2f_hysteresis.get()) ){
 				if( _cruise_mode_speed != false  ){
 					_cruise_mode_speed = false;
-					ESP_LOGI(FNAME,"set cruise mode false");
+					// ESP_LOGI(FNAME,"set cruise mode false");
 				}
 			}
 		}
@@ -157,13 +184,13 @@ void Switch::tick() {
 			if ( ias.get() > (_cruise_speed_kmh + s2f_hysteresis.get()) ){
 				if( _cruise_mode_speed != true ){
 					_cruise_mode_speed = true;
-					ESP_LOGI(FNAME,"set cruise mode true");
+					// ESP_LOGI(FNAME,"set cruise mode true");
 				}
 			}
 		}
 	}
 
-	if( s2f_switch_mode.get() == AM_AUTOSPEED || s2f_switch_mode.get() == AM_SWITCH ){   // both of this modes consider switch
+	if( s2f_switch_type.get() != S2F_SWITCH_DISABLE ){   // consider switch/push button states once not disabled
 		if( s2f_switch_type.get() == S2F_HW_SWITCH || s2f_switch_type.get() == S2F_HW_SWITCH_INVERTED ){
 			if( isClosed() ){
 				if( s2f_switch_type.get() == S2F_HW_SWITCH_INVERTED ){
@@ -185,20 +212,21 @@ void Switch::tick() {
 		else if( s2f_switch_type.get() == S2F_HW_PUSH_BUTTON ){
 			if( _holddown ){   // debouncing
 				_holddown--;
-				return;
 			}
-			if( _closed ) {
-				if( !isClosed() )
-					_closed = false;
-			}
-			else {
-				if( isClosed() ) {
-					_closed = true;
-					_holddown = 5;
-					if( _cruise_mode_sw )
-						_cruise_mode_sw = false;
-					else
-						_cruise_mode_sw = true;
+			else{
+				if( _closed ) {
+					if( !isClosed() )
+						_closed = false;
+				}
+				else {
+					if( isClosed() ) {
+						_closed = true;
+						_holddown = 5;
+						if( _cruise_mode_sw )
+							_cruise_mode_sw = false;
+						else
+							_cruise_mode_sw = true;
+					}
 				}
 			}
 		}

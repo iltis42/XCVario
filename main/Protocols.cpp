@@ -21,6 +21,7 @@
 #include "KalmanMPU6050.h"
 #include "Router.h"
 #include "Atmosphere.h"
+#include "Anemoi.h"
 #include "Flarm.h"
 #include "Units.h"
 #include "Flap.h"
@@ -527,6 +528,12 @@ void Protocols::parseNMEA( const char *str ){
 				}
 			}
 		}
+	}
+	else if( !strncmp(str, "$S,", 2) ) {
+		Anemoi::parseStatus( str );
+	}
+	else if( !strncmp(str, "$W,", 2) || !strncmp(str, "$w,", 2) ) {
+		Anemoi::parseWind( str );
 	}
 	else if( !strncmp( str+1, "PFLAE,", 5 )) {  // On Task declaration or re-connect
 		Flarm::parsePFLAE( str );

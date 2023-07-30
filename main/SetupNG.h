@@ -476,6 +476,11 @@ extern SetupNG<float>  		swind_speed;
 extern SetupNG<float>  		swind_sideslip_lim;
 extern SetupNG<float>  		cwind_dir;   // cirling wind direction
 extern SetupNG<float>  		cwind_speed;
+extern SetupNG<float>  		extwind_sptc_dir; // synoptic and
+extern SetupNG<float>  		extwind_sptc_speed;
+extern SetupNG<float>  		extwind_inst_dir; // instant external wind
+extern SetupNG<float>  		extwind_inst_speed;
+extern SetupNG<int>  		extwind_status;
 extern SetupNG<float>  		mag_hdm;
 extern SetupNG<float>  		mag_hdt;
 extern SetupNG<float>  		average_climb;

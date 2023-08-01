@@ -1236,7 +1236,8 @@ void SetupMenu::options_menu_create_compasswind( MenuEntry *top ){
 	windcal->addEntry( PROGMEM"Straight");
 	windcal->addEntry( PROGMEM"Circling");
 	windcal->addEntry( PROGMEM"Both");
-	windcal->setHelp(PROGMEM"Enable Wind calculation for straight flight (needs compass), circling or both and display wind in reto display style");
+	windcal->addEntry( PROGMEM"Anemoi");
+	windcal->setHelp(PROGMEM"Enable Wind calculation for straight flight (needs compass), circling, both or external source");
 	top->addEntry( windcal );
 
 	// Display option

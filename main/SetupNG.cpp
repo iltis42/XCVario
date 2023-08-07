@@ -73,6 +73,7 @@ void polar_set(){
 
 void polar_update_name(){
 	Polars::begin();
+	polar_set();
 }
 
 void modifyPolar() {

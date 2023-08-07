@@ -101,7 +101,7 @@ bool StraightWind::calculateWind()
 
 	if( Flarm::gpsStatus() == false ) {
 		// GPS status not valid
-		if( (wind_enable.get() == WA_STRAIGHT) || (wind_enable.get() == WA_BOTH) ){
+		if( wind_enable.get() & WA_STRAIGHT ){
 			ESP_LOGI(FNAME,"Restart Cycle: GPS Status invalid");
 		}
 		status="Bad GPS";
@@ -112,14 +112,14 @@ bool StraightWind::calculateWind()
 	// ESP_LOGI(FNAME,"calculateWind flightMode: %d", CircleStraightWind::getFlightMode() );
 
 	// Check if wind requirements are fulfilled
-	if( (compass_enable.get() != CS_I2C &&  compass_enable.get() != CS_CAN) || compass_calibrated.get() == false || wind_enable.get() == WA_OFF ) {
+	if( (compass_enable.get() != CS_I2C &&  compass_enable.get() != CS_CAN) || compass_calibrated.get() == false || !(wind_enable.get() & WA_STRAIGHT)) {
 		ESP_LOGI(FNAME,"Compass issues: ENA:%d CAL:%d WIND_ENA:%d, abort", compass_enable.get(), compass_calibrated.get(), wind_enable.get() );
 		if( !compass_enable.get() )
 			status="Comps Dis";
 		if( !compass_calibrated.get() )
 			status="Comps NoCal";
-		if( !wind_enable.get() )
-			status="Wind NoEna";
+		if( !( wind_enable.get() & WA_STRAIGHT) )
+			status="SWnd NoEna";
 		return false;
 	}
 
@@ -153,7 +153,7 @@ bool StraightWind::calculateWind()
 	if( THok == false ) {
 		// No valid heading available
 		status="No Compass";
-		if( (wind_enable.get() == WA_STRAIGHT) || (wind_enable.get() == WA_BOTH) ){
+		if( wind_enable.get() & WA_STRAIGHT ){
 			ESP_LOGI(FNAME,"Restart Cycle: No magnetic heading");
 		}
 	}

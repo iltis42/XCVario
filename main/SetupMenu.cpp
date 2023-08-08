@@ -1571,6 +1571,10 @@ void SetupMenu::system_menu_create_hardware_rotary_screens( MenuEntry *top ){
 		horizon->addEntry( PROGMEM"Enable");
 		top->addEntry(horizon);
 	}
+	SetupMenuSelect * scrdgbImu = new SetupMenuSelect( PROGMEM"Debug_IMU", RST_NONE, upd_screens, true, &screen_debug_IMU );
+	scrdgbImu->addEntry( PROGMEM"Disable");
+	scrdgbImu->addEntry( PROGMEM"Enable");
+	top->addEntry(scrdgbImu);
 }
 
 void SetupMenu::system_menu_create_hardware_rotary( MenuEntry *top ){

@@ -4,3 +4,6 @@
 build
 /Debug/
 sdkconfig
+
+.DS_Store
+.cache/

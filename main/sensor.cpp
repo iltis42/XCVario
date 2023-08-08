@@ -348,6 +348,16 @@ void drawDisplay(void *pvParameters){
 			if( gflags.gLoadDisplay ) {
 				display->drawLoadDisplay( (float)accelG[0] );
 			}
+			if( active_screen == SCREEN_DEBUG_IMU ) {
+				bool hasTemperatureControl = (hardwareRevision.get() == XCVARIO_23);
+				display->drawDebug_IMU(
+					IMU::getRawAccelX(), IMU::getRawAccelY(), IMU::getRawAccelZ(),
+					IMU::getRawGyroX(), IMU::getRawGyroY(), IMU::getRawGyroZ(),
+					hasTemperatureControl, MPU.getTemperature(), MPU.getImuTemperatureError(), MPU.getPwm());
+				gflags.debug_IMU = true;
+			} else {
+				gflags.debug_IMU = false;
+			}
 			if( active_screen == SCREEN_HORIZON ) {
 				float roll = -IMU::getRollRad();
 				float pitch = IMU::getPitchRad();
@@ -373,7 +383,7 @@ void drawDisplay(void *pvParameters){
 				}
 			}
 			// Vario Screen
-			if( !(gflags.stall_warning_active || gflags.gear_warning_active || gflags.flarmWarning || gflags.gLoadDisplay || gflags.horizon )  ) {
+			if( !(gflags.stall_warning_active || gflags.gear_warning_active || gflags.flarmWarning || gflags.gLoadDisplay || gflags.horizon || gflags.debug_IMU )  ) {
 				// ESP_LOGI(FNAME,"TE=%2.3f", te_vario.get() );
 				display->drawDisplay( airspeed, te_vario.get(), aTE, polar_sink, altitude.get(), t, battery, s2f_delta, as2f, average_climb.get(), Switch::getCruiseState(), gflags.standard_setting, flap_pos.get() );
 			}

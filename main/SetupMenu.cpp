@@ -103,6 +103,7 @@ void init_screens(){
 	screen_gmeter.set( (scr >> SCREEN_GMETER) & 1);
 	// 	screen_centeraid.set( (scr >> SCREEN_THERMAL_ASSISTANT) & 1);
 	screen_horizon.set( (scr >> SCREEN_HORIZON) & 1);
+	screen_debug_IMU.set( (scr >> SCREEN_DEBUG_IMU) & 1);
 	screen_mask_len = 1; // default vario
 	while( scr ){
 		scr = scr >> 1;
@@ -155,7 +156,8 @@ int upd_screens( SetupMenuSelect * p ){
 	uint32_t screens =
 			( (uint32_t)screen_gmeter.get() << (SCREEN_GMETER)  |
 			//		( (uint32_t)screen_centeraid.get() << (SCREEN_THERMAL_ASSISTANT) ) |
-			( (uint32_t)screen_horizon.get() << (SCREEN_HORIZON) )
+			( (uint32_t)screen_horizon.get() << (SCREEN_HORIZON) ) |
+			( (uint32_t)screen_debug_IMU.get() << (SCREEN_DEBUG_IMU) )
 			);
 	menu_screens.set( screens );
 	// init_screens();

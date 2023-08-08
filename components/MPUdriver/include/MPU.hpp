@@ -258,6 +258,8 @@ class MPU
     int pi_control(int tick, float xcvTemp);    // PI control to regulate temperatured
     void temp_control(int tick, float xcvTemp);  // Tick hook
     void clearpwm(); // ensure heating is off
+    float getPwm() {return mpu_heat_pwm;}
+    float getImuTemperatureError() {return mpu_t_delta;}
 
     temp_status_t getSiliconTempStatus() {
     	if( abs(mpu_t_delta) < 0.5)

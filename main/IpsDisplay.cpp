@@ -1875,6 +1875,93 @@ void IpsDisplay::drawHorizon( float pitch, float roll, float yaw ){
 	}
 }
 
+void IpsDisplay::drawDebug_IMU(float a_x, float a_y, float a_z, float g_x, float g_y, float g_z, bool hasTemperatureControl, float temperature, float errTemperature, float pwmTemperature)
+{
+	if( !(screens_init & INIT_DISPLAY_DEBUG_IMU) ){
+		ESP_LOGI(FNAME,"Clearing debug 1. screens_init: %d", screens_init);
+		clear();
+		screens_init |= INIT_DISPLAY_DEBUG_IMU;
+	}
+	xSemaphoreTake(spiMutex, portMAX_DELAY);
+
+	ucg->setFont(ucg_font_fur14_hf, true);
+	ucg->setColor( COLOR_WHITE );
+
+	uint16_t lineHeight = 21;
+
+	tick++;
+	if( (tick % 2) == 0 ) {
+
+		char s[100];
+		uint16_t x=15;
+		uint16_t y;
+
+		y = 40;
+		snprintf(s, sizeof(s), "accel [gee]:");
+		ucg->setPrintPos(x, y);
+		ucg->print(s);
+		y += lineHeight;
+		snprintf(s, sizeof(s), "    x: %6.3f    ", a_x);
+		ucg->setPrintPos(x, y);
+		ucg->print(s);
+		y += lineHeight;
+		snprintf(s, sizeof(s), "    y: %6.3f    ", a_y);
+		ucg->setPrintPos(x, y);
+		ucg->print(s);
+		y += lineHeight;
+		snprintf(s, sizeof(s), "    z: %6.3f    ", a_z);
+		ucg->setPrintPos(x, y);
+		ucg->print(s);
+
+		y += lineHeight + 2;
+		snprintf(s, sizeof(s), "gyro [deg/s]: ");
+		ucg->setPrintPos(x, y);
+		ucg->print(s);
+		y += lineHeight;
+		snprintf(s, sizeof(s), "    x: %6.2f    ", g_x);
+		ucg->setPrintPos(x, y);
+		ucg->print(s);
+		y += lineHeight;
+		snprintf(s, sizeof(s), "    y: %6.2f    ", g_y);
+		ucg->setPrintPos(x, y);
+		ucg->print(s);
+		y += lineHeight;
+		snprintf(s, sizeof(s), "    z: %6.2f    ", g_z);
+		ucg->setPrintPos(x, y);
+		ucg->print(s);
+
+		y += lineHeight + 2;
+		snprintf(s, sizeof(s), "Temperature control: ");
+		ucg->setPrintPos(x, y);
+		ucg->print(s);
+		if (hasTemperatureControl) {
+			y += lineHeight;
+			snprintf(s, sizeof(s), "    T [C]: %6.1f    ", temperature);
+			ucg->setPrintPos(x, y);
+			ucg->print(s);
+			y += lineHeight;
+			snprintf(s, sizeof(s), "    error [C]: %6.1f    ", errTemperature);
+			ucg->setPrintPos(x, y);
+			ucg->print(s);
+			y += lineHeight;
+			snprintf(s, sizeof(s), "    duty cycle: %6.1f%%    ", pwmTemperature/255*100);
+			ucg->setPrintPos(x, y);
+			ucg->print(s);
+		} else {
+            ucg->setColor( COLOR_LRED );
+            y += lineHeight;
+            snprintf(s, sizeof(s), "    not supported on ");
+            ucg->setPrintPos(x, y);
+            ucg->print(s);
+            y += lineHeight;
+            snprintf(s, sizeof(s), "    this hardware");
+            ucg->setPrintPos(x, y);
+            ucg->print(s);
+		}
+	}
+
+	xSemaphoreGive(spiMutex);
+}
 
 void IpsDisplay::drawLoadDisplay( float loadFactor ){
 	// ESP_LOGI(FNAME,"drawLoadDisplay %1.1f tick: %d", loadFactor, tick );

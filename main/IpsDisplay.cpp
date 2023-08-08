@@ -1444,6 +1444,23 @@ void IpsDisplay::drawWindArrow( float a, float speed, int type ){
 	wy3 = yn_3;
 }
 
+
+// accept temperature in deg C and display in configured unit
+// right-aligned value to x, incl. unit right of x
+void IpsDisplay::drawVolume( int x, int y, int volume ) {
+	if( _menu ) {
+		return;
+	}
+	ucg->setFont(ucg_font_fur25_hf, true);
+
+	char s[32];
+	sprintf(s, "    Volume: %d%%", volume);
+
+	ucg->setColor( COLOR_RED );
+	ucg->setPrintPos(x-ucg->getStrWidth(s),y);
+	ucg->print(s);
+}
+
 void IpsDisplay::initRetroDisplay( bool ulmode ){
 	if( _menu )
 		return;
@@ -2298,8 +2315,40 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		drawAvg( acl, acl-average_climbf );
 		average_climbf = acl;
 	}
+
+	// Check if the volume has changed.
+	static auto lastAudioVolume = audio_volume.get();
+	static auto lastVolumeChangeTime_ms = 0;
+	static bool shouldClearDisplay = false;
+	static bool shouldDrawVolume = false;
+	if (lastAudioVolume != audio_volume.get()) {
+		// Update the helper variables
+		lastAudioVolume = audio_volume.get();
+		lastVolumeChangeTime_ms = millis();
+		shouldDrawVolume = true;
+	}
+
+	//  Check if the timer has expired. If it has, check if we should clear the display
+	static uint16_t volumeDisplayPersistance_ms = 1500;
+	if (shouldDrawVolume == true) {
+		if (millis() - lastVolumeChangeTime_ms < volumeDisplayPersistance_ms) {
+			// Draw the new volume
+			drawVolume(220, 180, audio_volume.get());
+		} else {
+			// Set flags
+			shouldDrawVolume = false;
+			shouldClearDisplay = true;
+		}
+	}
+
 	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 	xSemaphoreGive(spiMutex);
+
+	// Check if necessary to clear display
+	if (shouldClearDisplay == true) {
+		shouldClearDisplay = false;
+		clear();
+	}
 }
 
 void IpsDisplay::drawDisplay( int airspeed, float te, float ate, float polar_sink, float altitude,

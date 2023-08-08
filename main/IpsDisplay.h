@@ -128,6 +128,7 @@ private:
 	static void drawConnection( int16_t x, int16_t y );
 	static void drawBat( float volt, int x, int y, bool blank );
 	static void drawTemperature( int x, int y, float t );
+	static void drawVolume(int x, int y, int volume );
 	static void drawThermometer( int x, int y );
 	static void drawOneScaleLine(float a, int16_t l1, int16_t l2, int16_t w, uint8_t r, uint8_t g, uint8_t b);
 

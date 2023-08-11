@@ -1,8 +1,86 @@
 #include "Anemoi.h"
 #include "SetupNG.h"
 
+// Anemoi protocol message id's and their message length
+static const char *ANEMOI_IDS = "ADMSWadw";
+static const int ANEMOI_LEN[] = {9, 14, 5, 5, 10, 9, 14, 10};
 
 static uint8_t crc8ccitt(const void * data, size_t size);
+
+
+gen_state_t Anemoi::nextByte(const char c)
+{
+    char *ptr;
+
+    switch(_state) {
+    case START_TOKEN:
+    case CHECK_OK:
+    case CHECK_FAILED:
+    case ABORT:
+        if ( c == '$' ) { //0x24
+            _state = HEADER;
+            reset();
+            push(c);
+        }
+        // ESP_LOGI(FNAME, "ANEMOI START_TOKEN");
+        break;
+    case HEADER:
+        ptr = strchr(ANEMOI_IDS, c);
+        if ( ptr != nullptr ) {
+            _len = ANEMOI_LEN[int(ptr-ANEMOI_IDS)];
+            _state = PAYLOAD;
+            push(c);
+            //ESP_LOGI(FNAME, "ANEMOI HEADER %c/%d", c, _len);
+        }
+        else {
+            _state = START_TOKEN;
+        }
+        break;
+    case PAYLOAD:
+        push(c);
+        if ( _pos >= _len ) {
+            // only start token plus payload
+            _state = STOP_TOKEN;
+        }
+        //ESP_LOGI(FNAME, "ANEMOI PAYLOAD");
+        break;
+    case STOP_TOKEN:
+        push(c);
+        if( c == 0x0a ) {
+            _state = COMPLETE;
+            //ESP_LOGI(FNAME, "ANEMOI STOP_TOKEN %x", c);
+        }
+        else {
+            _state = ABORT;
+        }
+        break;
+    case COMPLETE:
+        push(c);
+        _state = CHECK_FAILED;
+        //ESP_LOGI(FNAME, "ANEMOI COMPLETE %x", _crc);
+        if ( _crc == 0 ) {
+            _state = START_TOKEN; // nor routing nor parsing wanted
+            ptr = strchr("SWw", _framebuffer[1]);
+            if ( ptr != nullptr ) {
+                // Only process status and wind
+                // ESP_LOGI(FNAME, "Port S2 anemoi %c", _framebuffer[1]);
+                switch (ptr-_framebuffer) {
+                case 0:
+                    parseStatus();
+                    break;
+                default:
+                    parseWind();
+                    break;
+                }
+            }
+        }
+        break;
+    default:
+        break;
+    }
+    return _state;
+}
+
 
 /*
     $S, display rotation, health, firmware revision, 0x0a, CRC
@@ -24,13 +102,10 @@ static uint8_t crc8ccitt(const void * data, size_t size);
 
     e.g.: $S 1 0x88 0x14 0x0a 0xba
  */
-void Anemoi::parseStatus( const char *status )
+void Anemoi::parseStatus()
 {
-    // ESP_LOGI(FNAME,"Anemoi Status %x %x", *(status+6), crc8ccitt(status, 6));
-    if ( *(status+6) == crc8ccitt(status, 6) ) {
-        extwind_status.set(*(status+3));
-        ESP_LOGI(FNAME,"Anemoi %d.%d DisplayOrient: %d, Status: %x", *(status+4)>>4, *(status+4)&0xF, *(status+2), *(status+3));
-    }
+    extwind_status.set(_framebuffer[3]);
+    // ESP_LOGI(FNAME,"Anemoi %d.%d DisplayOrient: %d, Status: %x", *(status+4)>>4, *(status+4)&0xF, *(status+2), *(status+3));
 }
 
 /*
@@ -49,21 +124,14 @@ void Anemoi::parseStatus( const char *status )
 
     e.g.: $W ... 0x0a .
  */
-void Anemoi::parseWind( const char *wind )
+void Anemoi::parseWind()
 {
-    // ESP_LOGI(FNAME,"Anemoi Wind %x %x", *(wind+11), crc8ccitt(wind, 11));
-
-    if ( *(wind+11) == crc8ccitt(wind, 11) ) {
-        extwind_inst_dir.set((*(wind+2)<<8) + *(wind+3));
-        extwind_inst_speed.set(*(wind+4));
-        extwind_sptc_dir.set((*(wind+5)<<8) + *(wind+6));
-        extwind_sptc_speed.set(*(wind+7));
-        ESP_LOGI(FNAME,"WDir %.1f, Wvel %.1f", extwind_inst_dir.get(), extwind_inst_speed.get());
-    }
+    extwind_inst_dir.set((_framebuffer[2]<<8) + _framebuffer[3]);
+    extwind_inst_speed.set(_framebuffer[4]);
+    extwind_sptc_dir.set((_framebuffer[5]<<8) + _framebuffer[6]);
+    extwind_sptc_speed.set(_framebuffer[7]);
+    // ESP_LOGI(FNAME,"WDir %.1f, Wvel %.1f", extwind_inst_dir.get(), extwind_inst_speed.get());
 }
-
-
-
 
 
 
@@ -114,4 +182,9 @@ uint8_t crc8ccitt(const void * data, size_t size) {
         pos++;
     }
     return val;
+}
+
+void Anemoi::incrCRC(const char c)
+{
+    _crc = CRC_TABLE[_crc ^ c];
 }

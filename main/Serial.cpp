@@ -54,16 +54,13 @@ EventGroupHandle_t Serial::rxTxNotifier = 0;
 #define RX2_CHAR 16
 #define RX2_NL 32
 
-DataLink dl1;
-DataLink dl2;
-
-xcv_serial_t Serial::S1 = { .name="S1", .tx_q = &s1_tx_q, .rx_q = &s1_rx_q, .route=Router::routeS1, .uart=&Serial1,
+xcv_serial_t Serial::S1 = { .name="S1", .tx_q = &s1_tx_q, .uart=&Serial1,
 		                    .rx_char = RX1_CHAR, .rx_nl = RX1_NL, .tx_req = TX1_REQ,
-		                    .monitor=MON_S1, .pid = 0, .cfg2 = nullptr, .route_disable = true, .dl = &dl1, .port = 1
+		                    .monitor=MON_S1, .pid = 0, .cfg2 = nullptr, .route_disable = true, .dl = &dl_S1, .port = 1
 };
-xcv_serial_t Serial::S2 = { .name="S2", .tx_q = &s2_tx_q, .rx_q = &s2_rx_q, .route=Router::routeS2, .uart=&Serial2,
+xcv_serial_t Serial::S2 = { .name="S2", .tx_q = &s2_tx_q, .uart=&Serial2,
 		                    .rx_char = RX2_CHAR, .rx_nl = RX2_NL, .tx_req = TX2_REQ,
-		                    .monitor=MON_S2, .pid = 0, .cfg2 = nullptr, .route_disable = true, .dl = &dl2, .port = 2
+		                    .monitor=MON_S2, .pid = 0, .cfg2 = nullptr, .route_disable = true, .dl = &dl_S2, .port = 2
 };
 
 bool Serial::bincom_mode = false;  // we start with bincom timer inactive
@@ -94,7 +91,7 @@ void Serial::serialHandler(void *pvParameters)
 		if( routingStopped( cfg ) ) {
 			// Flarm download of other Serial is running, stop RX processing and empty TX queue.
 			cfg->tx_q->clear();
-			cfg->rx_q->clear();
+			//cfg->rx_q->clear();
 			delay( 1000 );
 			continue;
 		}
@@ -129,7 +126,7 @@ void Serial::serialHandler(void *pvParameters)
 				// ESP_LOGI(FNAME,"S%d: RX: %d bytes, avail: %d", cfg->uart->number(), rxBytes, available );
 				// ESP_LOG_BUFFER_HEXDUMP(FNAME,buf, rxBytes, ESP_LOG_INFO);
 				buf[rxBytes] = 0;
-				cfg->dl->process( buf, rxBytes, cfg->port );
+				cfg->dl->process( buf, rxBytes );
 				DM.monitorString( cfg->monitor, DIR_RX, buf, rxBytes );
 			}
 		}

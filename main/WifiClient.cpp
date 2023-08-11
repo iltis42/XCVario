@@ -22,8 +22,8 @@
 int WifiClient::master_xcvario_scanned = 0; // e.g. 1234
 
 typedef struct xcv_sock_client {
-	RingBufCPP<SString, QUEUE_SIZE>* txbuf;
-	RingBufCPP<SString, QUEUE_SIZE>* rxbuf;
+	RingBufCPP<SString>* txbuf;
+	RingBufCPP<SString>* rxbuf;
 	int port;
 	bool connected;
 	int sock;

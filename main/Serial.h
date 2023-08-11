@@ -35,7 +35,7 @@
 // All data of one Uart channel
 typedef struct xcv_serial {
 	const char* name;
-	RingBufCPP<SString, QUEUE_SIZE>* tx_q;
+	RingBufCPP<SString>* tx_q;
 	//RingBufCPP<SString>* rx_q;
 	// void (*route)();
 	HardwareSerial *uart;

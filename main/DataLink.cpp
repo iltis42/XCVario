@@ -33,16 +33,10 @@ const uint8_t KRT2_STX_START = 0x02;
 const uint8_t BECKER_START_FRAME = 0xA5;
 const uint8_t BECKER_PROTID      = 0x14;
 
-static const char *ANEMOI_IDS = "ADMSWadw";
-static const char *ANEMOI_OFF = "";
-static const int ANEMOI_LEN[] = {10, 15, 7, 7, 12, 10, 15, 12};
-const char *ANEMOI_IDS_PTR = ANEMOI_OFF;
 
 void enable_anemoi(){
-	ANEMOI_IDS_PTR = ANEMOI_IDS;
 }
 void disable_anemoi() {
-	ANEMOI_IDS_PTR = ANEMOI_OFF;
 }
 
 
@@ -285,17 +279,6 @@ void DataLink::parse_NMEA_UBX( char c, int port ){
 			state = GET_NMEA_UBX_SYNC;
 			break;
 		}
-		if ( pos == 1 && framebuffer[0] == NMEA_START1 ) {
-			char *ptr = strchr(ANEMOI_IDS_PTR, c);
-			if ( ptr != nullptr ) {
-				len = ANEMOI_LEN[int(ptr-ANEMOI_IDS)];
-				state = GET_ANEMOI_DATA;
-				framebuffer[pos] = c;
-				pos++;
-				// ESP_LOGE(FNAME, "ANEMOI Start");
-				break;
-			}
-		}
 		if (pos >= sizeof(framebuffer) - 1) {
 			ESP_LOGE(FNAME, "Port S%1d NMEA buffer not large enough, restart", port);
 			pos = 0;
@@ -318,21 +301,6 @@ void DataLink::parse_NMEA_UBX( char c, int port ){
 			pos++;
 		}
 
-		break;
-
-	case GET_ANEMOI_DATA:
-		framebuffer[pos] = c;
-		pos++;
-		if( pos >= len ) { // including frame and CRC
-			if ( strchr("SWw", framebuffer[1]) != nullptr ) {
-				// Only process status and wind
-				framebuffer[pos] = 0;
-				// ESP_LOGI(FNAME, "Port S%1d anemoi %c", port, framebuffer[1]);
-				routeSerialData(framebuffer, pos, port, true );
-			}
-			state = GET_NMEA_UBX_SYNC;
-			pos = 0;
-		}
 		break;
 
 	case GET_UBX_SYNC2:

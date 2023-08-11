@@ -16,28 +16,26 @@
 #include "Serial.h"
 #include "UbloxGNSSdecode.h"
 
-RingBufCPP<SString, QUEUE_SIZE> wl_vario_tx_q;
-RingBufCPP<SString, QUEUE_SIZE> wl_flarm_tx_q;
-RingBufCPP<SString, QUEUE_SIZE> wl_aux_tx_q;
-RingBufCPP<SString, QUEUE_SIZE> wl_vario_rx_q;
-RingBufCPP<SString, QUEUE_SIZE> wl_flarm_rx_q;
-RingBufCPP<SString, QUEUE_SIZE> wl_aux_rx_q;
+RingBufCPP<SString> wl_vario_tx_q;
+RingBufCPP<SString> wl_flarm_tx_q;
+RingBufCPP<SString> wl_aux_tx_q;
+RingBufCPP<SString> wl_vario_rx_q;
+RingBufCPP<SString> wl_flarm_rx_q;
+RingBufCPP<SString> wl_aux_rx_q;
 
-RingBufCPP<SString, QUEUE_SIZE> bt_tx_q;
-RingBufCPP<SString, QUEUE_SIZE> bt_rx_q;
+RingBufCPP<SString> bt_tx_q;
+RingBufCPP<SString> bt_rx_q;
 
-RingBufCPP<SString, QUEUE_SIZE> s1_tx_q;
-RingBufCPP<SString, QUEUE_SIZE> s2_tx_q;
+RingBufCPP<SString> s1_tx_q;
+RingBufCPP<SString> s2_tx_q;
 
 // RingBufCPP<SString> s1_rx_q;
 // RingBufCPP<SString> s2_rx_q;
-RingBufCPP<SString, QUEUE_SIZE> s1_rx_q;
-RingBufCPP<SString, QUEUE_SIZE> s2_rx_q;
 
-RingBufCPP<SString, QUEUE_SIZE> xcv_tx_q;
+RingBufCPP<SString> xcv_tx_q;
 
-RingBufCPP<SString, QUEUE_SIZE> can_rx_q;
-RingBufCPP<SString, QUEUE_SIZE> can_tx_q;
+RingBufCPP<SString> can_rx_q;
+RingBufCPP<SString> can_tx_q;
 
 portMUX_TYPE btmux = portMUX_INITIALIZER_UNLOCKED;
 
@@ -50,7 +48,7 @@ void Router::begin(){
 }
 
 // checks if Queue is full, otherwise appends SString
-bool Router::forwardMsg( SString &s, RingBufCPP<SString, QUEUE_SIZE>& q, bool nmea ){
+bool Router::forwardMsg( SString &s, RingBufCPP<SString>& q, bool nmea ){
 	// ESP_LOGI(FNAME,"forwardMsg() len: %d, queueElem: %d queueFull:%d", s.length(), q.numElements(), q.isFull() );
 	if( !q.isFull() ) {
 		xSemaphoreTake(qMutex,portMAX_DELAY );
@@ -63,7 +61,7 @@ bool Router::forwardMsg( SString &s, RingBufCPP<SString, QUEUE_SIZE>& q, bool nm
 }
 
 
-void Router::clearQueue( RingBufCPP<SString, QUEUE_SIZE>& q ){
+void Router::clearQueue( RingBufCPP<SString>& q ){
 	SString dummy;
 	while( pullMsg( q, dummy ) ){
 		// ESP_LOGI(FNAME,"clear %s", dummy.c_str() );
@@ -71,7 +69,7 @@ void Router::clearQueue( RingBufCPP<SString, QUEUE_SIZE>& q ){
 }
 
 // gets last message from ringbuffer FIFO
-bool Router::pullMsg( RingBufCPP<SString, QUEUE_SIZE>& q, SString& s ){
+bool Router::pullMsg( RingBufCPP<SString>& q, SString& s ){
 	if( !q.isEmpty() ){
 		xSemaphoreTake(qMutex,portMAX_DELAY );
 		q.pull( s );
@@ -81,7 +79,7 @@ bool Router::pullMsg( RingBufCPP<SString, QUEUE_SIZE>& q, SString& s ){
 	return false;
 }
 
-int Router::pullBlock( RingBufCPP<SString, QUEUE_SIZE>& q, char *block, int size ){
+int Router::pullBlock( RingBufCPP<SString>& q, char *block, int size ){
 	xSemaphoreTake(qMutex,portMAX_DELAY );
 	int total_len = 0;
 	while( !q.isEmpty() ){

@@ -45,7 +45,7 @@ typedef struct client_record {
 }client_record_t;
 
 typedef struct xcv_sock_server {
-	RingBufCPP<SString, QUEUE_SIZE>* txbuf;
+	RingBufCPP<SString>* txbuf;
 	int port;
 	int idle;
 	TaskHandle_t pid;

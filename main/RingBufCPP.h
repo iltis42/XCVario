@@ -2,14 +2,14 @@
 
 #include "logdef.h"
 #include <cstring>
-#include <SString.h>
 #include <queue>
 
 
-template <typename Type, size_t MaxElements>
+template <typename Type>
 class RingBufCPP : public std::queue<Type>
 {
 public:
+	static constexpr size_t MaxElements = 8;
 	/**
 	 * Add element obj to the buffer.
 	 *

@@ -142,38 +142,32 @@ void IMU::read()
 	last_rts = rts;
 	if( ret )
 		return;
+	float gravity_trust = 1;
+	double roll = 0;
+	if( getTAS() > 10 ){
+		float loadFactor = sqrt( accelX * accelX + accelY * accelY + accelZ * accelZ );
+		float lf = loadFactor > 2.0 ? 2.0 : loadFactor;
+		loadFactor = lf < 0 ? 0 : lf; // limit to 0..2g
+		// to get pitch and roll independent of circling, image pitch and roll values into 3D vector
+		roll = -atan(((D2R(gyroZ) /cos( D2R(euler.roll)) ) * (getTAS()/3.6)) / 9.80665);
+		double pitch;
+		IMU::PitchFromAccelRad(&pitch);
 
-	float ax = accelX;
-	float ay = accelY;
-	float az = accelZ;
-	float loadFactor = sqrt( accelX * accelX + accelY * accelY + accelZ * accelZ );
-	float lf = loadFactor > 2.0 ? 2.0 : loadFactor;  // limit to +-1g
-	lf = lf < 0 ? 0 : lf;
-	// to get pitch and roll independent of circling, image pitch and roll values into 3D vector
-	float omega = -atan(((D2R(gyroZ)/ cos( D2R(euler.roll))) * (getTAS()/3.6)) / 9.80665);  // removed as this can cause overswing:  cos( D2R(euler.roll) )
-	double pitch = euler.pitch;
-	// IMU::PitchFromAccelRad(&pitch);
-	// estimate angle of bank from increased acceleration in Z axis
-	positiveG += (lf - positiveG)*ahrs_gforce_lp.get();  // some low pass filtering makes sense here
-	// only positive G-force is to be considered, curve at negative G is not defined
-	if( positiveG < 1.0)
-		positiveG = 1.0;
-	float groll = acos( 1/positiveG );
-	if( omega < 0 ) // estimate sign of acceleration related angle from gyro
-		groll = -groll;
-	float T = pow( 10, (positiveG-1)/ahrs_gbank_dynamic.get() ) -1;      // merge g load depending angle of bank depending of load factor
-
-	double roll = (omega + groll*T )/(T+1);                              // left turn is left wing down so negative roll
-	float Q = abs(R2D(roll))/ahrs_virtg_bank_trust.get();                 // how much we trust in airspeed and omega based virtual gravity, depending on angle of bank
-	// Virtual gravity from centripedal forces to keep angle of bank while circling
-	ax1 += (sin(pitch) -ax1) * ahrs_virt_g_lowpass.get();                // Nose down (positive Y turn) results in positive X
-	ay1 += (-sin(roll)*cos(pitch) -ay1) * ahrs_virt_g_lowpass.get();     // Left wing down (or negative X roll) results in positive Y
-	az1 += (-cos(roll)*cos(pitch) -az1) * ahrs_virt_g_lowpass.get();     // Any roll or pitch creates a less negative Z, unaccelerated Z is negative
-	// trust in gyro at load factors unequal 1 g
-	float gyro_trust = ahrs_min_gyro_factor.get() + (ahrs_gyro_factor.get() * ( pow(10, abs(loadFactor-1) * ahrs_dynamic_factor.get()) - 1));
-	// ESP_LOGI( FNAME,"ax:%f ay:%f az:%f  ax1:%f ay1:%f az1:%f GT:%f Q:%f Pitch:%.1f Roll:%.1f GR:%.1f OR:%.1f Y:%f Z:%f", ax,ay,az, ax1, ay1, az1, gyro_trust, Q, R2D(pitch), R2D(roll), R2D(groll), R2D(omega), (ay+ay1*Q)/(Q+1), (az+az1*Q)/(Q+1) );
-
-	att_vector = update_fused_vector(att_vector, gyro_trust, (ax+ax1*Q)/(Q+1), (ay+ay1*Q)/(Q+1), (az+az1*Q)/(Q+1),D2R(gyroX),D2R(gyroY),D2R(gyroZ),dt);
+		// Virtual gravity from centripedal forces to keep angle of bank while circling
+		ax1 = sin(pitch);                // Nose down (positive Y turn) results in positive X
+		ay1 = -sin(roll)*cos(pitch);     // Left wing down (or negative X roll) results in positive Y
+		az1 = -cos(roll)*cos(pitch);     // Any roll or pitch creates a less negative Z, unaccelerated Z is negative
+		// trust in gyro at load factors unequal 1 g
+		gravity_trust = (ahrs_min_gyro_factor.get() + (ahrs_gyro_factor.get() * ( pow(10, abs(loadFactor-1) * ahrs_dynamic_factor.get()) - 1)));
+		// ESP_LOGI( FNAME,"Omega roll: %f Pitch: %f Gyro Trust: %f", R2D(roll), R2D(pitch), gravity_trust );
+	}
+	else{
+		ax1=accelX;
+		az1=accelZ;
+		ay1=accelY;
+	}
+	// ESP_LOGI( FNAME, " ax1:%f ay1:%f az1:%f Gx:%f Gy:%f GZ:%f GRT:%f Roll:%.1f ", ax1, ay1, az1, gyroX, gyroY, gyroZ, gravity_trust, R2D(roll) );
+	att_vector = update_fused_vector(att_vector, gravity_trust, ax1, ay1, az1, D2R(gyroX),D2R(gyroY),D2R(gyroZ),dt);
 	att_quat = quaternion_from_accelerometer(att_vector.a,att_vector.b,att_vector.c);
 	euler = att_quat.to_euler_angles();
 	// ESP_LOGI( FNAME,"Euler R:%.1f P:%.1f T:%f Q:%f GT:%f OR:%f GR:%f R:%f", euler.roll, euler.pitch, T, Q, gyro_trust, R2D(omega), R2D(groll), R2D(roll) );

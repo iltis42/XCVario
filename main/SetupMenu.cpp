@@ -1633,12 +1633,12 @@ void SetupMenu::system_menu_create_hardware_ahrs_lc( MenuEntry *top ){
 void SetupMenu::system_menu_create_hardware_ahrs_parameter( MenuEntry *top ){
 	SetupMenuValFloat * ahrsgf = new SetupMenuValFloat( PROGMEM"Gyro Max Trust", "x", 0, 100, 1, 0, false, &ahrs_gyro_factor  );
 	ahrsgf->setPrecision( 0 );
-	ahrsgf->setHelp(PROGMEM"Gyro trust factor in artifical horizont bank and pitch");
+	ahrsgf->setHelp(PROGMEM"Maximum Gyro trust factor in artifical horizont");
 	top->addEntry( ahrsgf );
 
 	SetupMenuValFloat * ahrsgfm = new SetupMenuValFloat( PROGMEM"Gyro Min Trust", "x", 0, 100, 1, 0, false, &ahrs_min_gyro_factor  );
 	ahrsgfm->setPrecision( 0 );
-	ahrsgfm->setHelp(PROGMEM"Minimum Gyro trust factor in artifical horizont bank and pitch");
+	ahrsgfm->setHelp(PROGMEM"Minimum Gyro trust factor in artifical horizont");
 	top->addEntry( ahrsgfm );
 
 	SetupMenuValFloat * ahrsdgf = new SetupMenuValFloat( PROGMEM"Gyro Dyanmics", "", 0.5, 10, 0.1, 0, false, &ahrs_dynamic_factor  );
@@ -1648,7 +1648,7 @@ void SetupMenu::system_menu_create_hardware_ahrs_parameter( MenuEntry *top ){
 	SetupMenuValFloat * gyrog = new SetupMenuValFloat( PROGMEM"Gyro Gating", "°", 0, 10, 0.1, 0, false, &gyro_gating  );
 	gyrog->setHelp( PROGMEM"Minimum accepted gyro rate in degree per second");
 	top->addEntry( gyrog );
-
+/*
 	SetupMenuValFloat * virtglp = new SetupMenuValFloat( PROGMEM"Virtual G Lowpass", "", 0, 1, 0.005, 0, false, &ahrs_virt_g_lowpass  );
 	virtglp->setPrecision( 3 );
 	virtglp->setHelp( PROGMEM"Lowpass factor for virtual gravity from airspeed and omega or centripedal force compensation");
@@ -1666,7 +1666,7 @@ void SetupMenu::system_menu_create_hardware_ahrs_parameter( MenuEntry *top ){
 	SetupMenuValFloat * gloadbd = new SetupMenuValFloat( PROGMEM"G Load bank Dynamic", "", 1, 2, 0.01, 0, false, &ahrs_gbank_dynamic  );
 	gloadbd->setHelp( PROGMEM"G load dynamic grow factor for angle of bank to be considered");
 	top->addEntry( gloadbd );
-
+*/
 	SetupMenuValFloat * gyrocal = new SetupMenuValFloat( PROGMEM"Gyro Calibration", "", -0.5, 1.5, 0.01, 0, false, &ahrs_gyro_cal  );
 	gyrocal->setHelp( PROGMEM"Gyro calibration factor to increase accuracy of gyro in %/100");
 	top->addEntry( gyrocal );

@@ -1813,10 +1813,10 @@ void SetupMenu::system_menu_create_interfaceS1_routing( MenuEntry *top ){
 	s1outwl->addEntry( PROGMEM"Enable");
 	top->addEntry( s1outwl );
 
-	SetupMenuSelect * s1outs2 = new SetupMenuSelect( PROGMEM"S2-RS232", RST_NONE, update_routing, true, &rt_s1_s2 );
-	s1outs2->addEntry( PROGMEM"Disable");
-	s1outs2->addEntry( PROGMEM"Enable");
-	top->addEntry( s1outs2 );
+	SetupMenuSelect * s1outs1 = new SetupMenuSelect( PROGMEM"S2-RS232", RST_NONE, update_routing, true, &rt_s1_s2 );
+	s1outs1->addEntry( PROGMEM"Disable");
+	s1outs1->addEntry( PROGMEM"Enable");
+	top->addEntry( s1outs1 );
 
 	SetupMenuSelect * s1outcan = new SetupMenuSelect( PROGMEM"CAN-bus", RST_NONE, update_routing, true, &rt_s1_can );
 	s1outcan->addEntry( PROGMEM"Disable");
@@ -1880,10 +1880,10 @@ void SetupMenu::system_menu_create_interfaceS2_routing( MenuEntry *top ){
 	s2outwl->addEntry( PROGMEM"Disable");
 	s2outwl->addEntry( PROGMEM"Enable");
 	top->addEntry( s2outwl );
-	SetupMenuSelect * s2outs1 = new SetupMenuSelect( PROGMEM"S1-RS232", RST_NONE, update_routing, true, &rt_s1_s2 );
-	s2outs1->addEntry( PROGMEM"Disable");
-	s2outs1->addEntry( PROGMEM"Enable");
-	top->addEntry( s2outs1 );
+	SetupMenuSelect * s2outs2 = new SetupMenuSelect( PROGMEM"S1-RS232", RST_NONE, update_routing, true, &rt_s1_s2 );
+	s2outs2->addEntry( PROGMEM"Disable");
+	s2outs2->addEntry( PROGMEM"Enable");
+	top->addEntry( s2outs2 );
 	SetupMenuSelect * s2outcan = new SetupMenuSelect( PROGMEM"CAN-bus", RST_NONE, update_routing, true, &rt_s2_can );
 	s2outcan->addEntry( PROGMEM"Disable");
 	s2outcan->addEntry( PROGMEM"Enable");

@@ -26,10 +26,9 @@ static uint8_t crc8ccitt(const void * data, size_t size);
  */
 void Anemoi::parseStatus( const char *status )
 {
-    // ESP_LOGI(FNAME,"Anemoi Status %x %x", *(status+6), crc8ccitt(status, 6));
     if ( *(status+6) == crc8ccitt(status, 6) ) {
         extwind_status.set(*(status+3));
-        ESP_LOGI(FNAME,"Anemoi %d.%d DisplayOrient: %d, Status: %x", *(status+4)>>4, *(status+4)&0xF, *(status+2), *(status+3));
+        // ESP_LOGI(FNAME,"Anemoi %d.%d DisplayOrient: %d, Status: %x", *(status+4)>>4, *(status+4)&0xF, *(status+2), *(status+3));
     }
 }
 
@@ -51,14 +50,12 @@ void Anemoi::parseStatus( const char *status )
  */
 void Anemoi::parseWind( const char *wind )
 {
-    // ESP_LOGI(FNAME,"Anemoi Wind %x %x", *(wind+11), crc8ccitt(wind, 11));
-
-    if ( *(wind+11) == crc8ccitt(wind, 11) ) {
+    if ( *(wind+6) == crc8ccitt(wind, 10) ) {
         extwind_inst_dir.set((*(wind+2)<<8) + *(wind+3));
         extwind_inst_speed.set(*(wind+4));
         extwind_sptc_dir.set((*(wind+5)<<8) + *(wind+6));
         extwind_sptc_speed.set(*(wind+7));
-        ESP_LOGI(FNAME,"WDir %.1f, Wvel %.1f", extwind_inst_dir.get(), extwind_inst_speed.get());
+        // ESP_LOGI(FNAME,"WDir %d, Wvel", extwind_inst_dir.get(), extwind_inst_speed.get());
     }
 }
 

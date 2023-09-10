@@ -1994,7 +1994,7 @@ bool IpsDisplay::drawCompass(int16_t x, int16_t y, bool _dirty, bool compass_dir
 			}
 			// ESP_LOGI(FNAME, "SWIND dir=%d, SSPEED=%f ageC=%d ageS=%d okc:=%d oks=%d ok:=%d", wds, ws, ageCircling, ageStraight, okc, oks, ok  );
 		}
-		else if( wind_enable.get() == WA_EXT_ANEMOI ) {
+		else if( wind_enable.get() == WA_EXT_ANEMOI && extwind_status.get() == 0 ) {
 			wind = extwind_inst_speed.get();
 			winddir = extwind_inst_dir.get();
 			type = '~';

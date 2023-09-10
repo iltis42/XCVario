@@ -33,17 +33,11 @@ const uint8_t KRT2_STX_START = 0x02;
 const uint8_t BECKER_START_FRAME = 0xA5;
 const uint8_t BECKER_PROTID      = 0x14;
 
-static const char *ANEMOI_IDS = "ADMSWadw";
-static const char *ANEMOI_OFF = "";
-static const int ANEMOI_LEN[] = {10, 15, 7, 7, 12, 10, 15, 12};
-const char *ANEMOI_IDS_PTR = ANEMOI_OFF;
+static const char *ANEMOI_IDS = "SWw"; // all are "ADMSWadw";
+static const int ANEMOI_LEN[] = {7, 11, 11}; // {10, 15, 7, 7, 11, 10, 15, 11};
 
-void enable_anemoi(){
-	ANEMOI_IDS_PTR = ANEMOI_IDS;
-}
-void disable_anemoi() {
-	ANEMOI_IDS_PTR = ANEMOI_OFF;
-}
+
+
 
 
 DataLink::DataLink(){
@@ -286,7 +280,7 @@ void DataLink::parse_NMEA_UBX( char c, int port ){
 			break;
 		}
 		if ( pos == 1 && framebuffer[0] == NMEA_START1 ) {
-			char *ptr = strchr(ANEMOI_IDS_PTR, c);
+			char *ptr = strchr(ANEMOI_IDS, c);
 			if ( ptr != nullptr ) {
 				len = ANEMOI_LEN[int(ptr-ANEMOI_IDS)];
 				state = GET_ANEMOI_DATA;
@@ -323,11 +317,10 @@ void DataLink::parse_NMEA_UBX( char c, int port ){
 	case GET_ANEMOI_DATA:
 		framebuffer[pos] = c;
 		pos++;
-		if( pos >= len ) { // including frame and CRC
-			if ( strchr("SWw", framebuffer[1]) != nullptr ) {
+		if( pos >= len ) {
+			if ( strchr(ANEMOI_IDS, framebuffer[1]) != nullptr ) {  // including frame and CRC
 				// Only process status and wind
 				framebuffer[pos] = 0;
-				// ESP_LOGI(FNAME, "Port S%1d anemoi %c", port, framebuffer[1]);
 				routeSerialData(framebuffer, pos, port, true );
 			}
 			state = GET_NMEA_UBX_SYNC;

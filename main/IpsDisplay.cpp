@@ -1993,14 +1993,7 @@ bool IpsDisplay::drawCompass(int16_t x, int16_t y, bool _dirty, bool compass_dir
 				wind_ok = true;
 			}
 			// ESP_LOGI(FNAME, "SWIND dir=%d, SSPEED=%f ageC=%d ageS=%d okc:=%d oks=%d ok:=%d", wds, ws, ageCircling, ageStraight, okc, oks, ok  );
-		}
-		else if( wind_enable.get() == WA_EXT_ANEMOI && extwind_status.get() == 0 ) {
-			wind = extwind_inst_speed.get();
-			winddir = extwind_inst_dir.get();
-			type = '~';
-			wind_ok = true;
-		}
-		ucg->setPrintPos(85,104);
+		}ucg->setPrintPos(85,104);
 		// ESP_LOGI(FNAME, "WIND dir %d, speed %f, ok=%d", winddir, wind, ok );
 		// Windspeed and Direction digital
 		int windspeed = (int)( Units::Airspeed(wind)+0.5 );

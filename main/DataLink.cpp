@@ -33,11 +33,6 @@ const uint8_t KRT2_STX_START = 0x02;
 const uint8_t BECKER_START_FRAME = 0xA5;
 const uint8_t BECKER_PROTID      = 0x14;
 
-static const char *ANEMOI_IDS = "SWw"; // all are "ADMSWadw";
-static const int ANEMOI_LEN[] = {7, 11, 11}; // {10, 15, 7, 7, 11, 10, 15, 11};
-
-
-
 
 
 DataLink::DataLink(){
@@ -170,226 +165,201 @@ void DataLink::parse_NMEA_UBX( char c, int port ){
 		}
 		break;
 
-	case GET_BECKER_PROTID:
-		if( c == BECKER_PROTID ){
+		case GET_BECKER_PROTID:
+			if( c == BECKER_PROTID ){
+			   framebuffer[pos] = c;
+			   pos++;
+			   state = GET_BECKER_LEN;
+			}else{
+				state = GET_NMEA_UBX_SYNC;
+				pos = 0;
+			}
+			break;
+
+		case GET_BECKER_LEN:
+			framebuffer[pos] = c;
+			len = c;
+			if( len < 64 ){ // we support up to 64 bytes of msg length what should be far enough
+			   pos++;
+			   state = GET_BECKER_DATA;
+			}else
+			{
+				state = GET_NMEA_UBX_SYNC;
+				pos = 0;
+			}
+			break;
+
+		case GET_BECKER_DATA:
 			framebuffer[pos] = c;
 			pos++;
-			state = GET_BECKER_LEN;
-		}else{
-			state = GET_NMEA_UBX_SYNC;
-			pos = 0;
-		}
-		break;
+			if( pos > len+5 ){  // including 3 bytes header/protid/len and 2 bytes CRC
+				framebuffer[pos] = 0;
+				routeSerialData(framebuffer, pos+1, port, true );
+				state = GET_NMEA_UBX_SYNC;
+				pos = 0;
+			}
+			break;
 
-	case GET_BECKER_LEN:
-		framebuffer[pos] = c;
-		len = c;
-		if( len < 64 ){ // we support up to 64 bytes of msg length what should be far enough
+		case GET_KRT2_CMD:
+			framebuffer[pos] = c;
 			pos++;
-			state = GET_BECKER_DATA;
-		}else
-		{
-			state = GET_NMEA_UBX_SYNC;
-			pos = 0;
-		}
-		break;
+			if( c == 'U' || c == 'R'  ){
+				krt2_len = 12;
+			    state = GET_KRT2_DATA;
+			}
+			else if( c == 'A' ){
+				krt2_len = 5;
+			    state = GET_KRT2_DATA;
+			}
+			else if( c == 'C' || c == 'O' || c == 'o'  ){   // we have a single byte command Swap or Dual Mode
+				krt2_len = 1;
+				framebuffer[pos] = 0;
+				routeSerialData(framebuffer, pos+1, port, true );
+				state = GET_NMEA_UBX_SYNC;
+				pos = 0;
+			}
+			else {
+				krt2_len = 1;
+				state = GET_NMEA_UBX_SYNC;
+				pos = 0;
+			};
+            break;
 
-	case GET_BECKER_DATA:
-		framebuffer[pos] = c;
-		pos++;
-		if( pos > len+5 ){  // including 3 bytes header/protid/len and 2 bytes CRC
-			framebuffer[pos] = 0;
-			routeSerialData(framebuffer, pos+1, port, true );
-			state = GET_NMEA_UBX_SYNC;
-			pos = 0;
+		case GET_KRT2_DATA: {
+			framebuffer[pos] = c;
+			pos++;
+			if( pos > krt2_len ){ // 0..12 = 13 bytes STX message buffer.
+				framebuffer[pos] = 0;  // framebuffer is zero terminated
+				// ESP_LOG_BUFFER_HEXDUMP(FNAME, framebuffer, pos+1, ESP_LOG_INFO);
+				routeSerialData(framebuffer, pos+1, port, true );
+				state = GET_NMEA_UBX_SYNC;
+				pos = 0;
+			}
 		}
-		break;
-
-	case GET_KRT2_CMD:
-		framebuffer[pos] = c;
-		pos++;
-		if( c == 'U' || c == 'R'  ){
-			krt2_len = 12;
-			state = GET_KRT2_DATA;
-		}
-		else if( c == 'A' ){
-			krt2_len = 5;
-			state = GET_KRT2_DATA;
-		}
-		else if( c == 'C' || c == 'O' || c == 'o'  ){   // we have a single byte command Swap or Dual Mode
-			krt2_len = 1;
-			framebuffer[pos] = 0;
-			routeSerialData(framebuffer, pos+1, port, true );
-			state = GET_NMEA_UBX_SYNC;
-			pos = 0;
-		}
-		else {
-			krt2_len = 1;
-			state = GET_NMEA_UBX_SYNC;
-			pos = 0;
-		};
-		break;
-
-	case GET_KRT2_DATA: {
-		framebuffer[pos] = c;
-		pos++;
-		if( pos > krt2_len ){ // 0..12 = 13 bytes STX message buffer.
-			framebuffer[pos] = 0;  // framebuffer is zero terminated
-			// ESP_LOG_BUFFER_HEXDUMP(FNAME, framebuffer, pos+1, ESP_LOG_INFO);
-			routeSerialData(framebuffer, pos+1, port, true );
-			state = GET_NMEA_UBX_SYNC;
-			pos = 0;
-		}
-	}
-	break;
-
-	case GET_FB_LEN1:
-		chkA = c;
-		state = GET_FB_LEN2;
-		framebuffer[pos] = c;
-		pos++;
-		break;
-
-	case  GET_FB_LEN2:
-		len = (chkA + (unsigned char)c*256 );
-		if( len > 512 ){
-			ESP_LOGW(FNAME, "Odd length from flarm bincom: %d: restart", len );
-			state = GET_NMEA_UBX_SYNC;
 			break;
-		}
-		// ESP_LOGI(FNAME, "got length from flarm bincom: %d", len );
-		state = GET_FB_DATA;
-		framebuffer[pos] = c;
-		pos++;
-		break;
 
-	case GET_FB_DATA:
-		framebuffer[pos] = c;
-		pos++;
-		if( pos > len ){
-			routeSerialData(framebuffer, len+1, port, true );
-			state = GET_NMEA_UBX_SYNC;
-		}
-		break;
-
-	case GET_NMEA_STREAM:
-		if ((c < NMEA_MIN || c > NMEA_MAX) && (c != NMEA_CR && c != NMEA_LF)) {
-			// ESP_LOGE(FNAME, "Port S%1d: Invalid NMEA character %x, restart, pos: %d, state: %d", port, (int)c, pos, state );
-			// ESP_LOG_BUFFER_HEXDUMP(FNAME, framebuffer, pos+1, ESP_LOG_INFO);
-			state = GET_NMEA_UBX_SYNC;
+		case GET_FB_LEN1:
+			chkA = c;
+			state = GET_FB_LEN2;
+			framebuffer[pos] = c;
+			pos++;
 			break;
-		}
-		if ( pos == 1 && framebuffer[0] == NMEA_START1 ) {
-			char *ptr = strchr(ANEMOI_IDS, c);
-			if ( ptr != nullptr ) {
-				len = ANEMOI_LEN[int(ptr-ANEMOI_IDS)];
-				state = GET_ANEMOI_DATA;
-				framebuffer[pos] = c;
-				pos++;
-				// ESP_LOGE(FNAME, "ANEMOI Start");
+
+		case  GET_FB_LEN2:
+			len = (chkA + (unsigned char)c*256 );
+			if( len > 512 ){
+				ESP_LOGW(FNAME, "Odd length from flarm bincom: %d: restart", len );
+				state = GET_NMEA_UBX_SYNC;
 				break;
 			}
-		}
-		if (pos >= sizeof(framebuffer) - 1) {
-			ESP_LOGE(FNAME, "Port S%1d NMEA buffer not large enough, restart", port);
-			pos = 0;
-			state = GET_NMEA_UBX_SYNC;
-		}
-		if ( c == NMEA_CR || c == NMEA_LF ) { // normal case, accordign to NMEA 183 protocol, first CR, then LF as the last char  (<CR><LF> ends the message.)
-												// but we accept also a single terminator as not relevant for the data carried        0d  0a
-			// make things clean!                                                                                                   \r  \n
-			framebuffer[pos] = NMEA_CR;       // append a CR
-			pos++;
-			framebuffer[pos] = NMEA_LF;       // append a LF
-			pos++;
-			framebuffer[pos] = 0;  // framebuffer is zero terminated
-			// pos++;
-			processNMEA( framebuffer, pos, port );
-			state = GET_NMEA_UBX_SYNC;
-			pos = 0;
-		}else{
+			// ESP_LOGI(FNAME, "got length from flarm bincom: %d", len );
+			state = GET_FB_DATA;
 			framebuffer[pos] = c;
 			pos++;
-		}
+			break;
 
-		break;
+		case GET_FB_DATA:
+			framebuffer[pos] = c;
+			pos++;
+			if( pos > len ){
+				routeSerialData(framebuffer, len+1, port, true );
+				state = GET_NMEA_UBX_SYNC;
+			}
+			break;
 
-	case GET_ANEMOI_DATA:
-		framebuffer[pos] = c;
-		pos++;
-		if( pos >= len ) {
-			if ( strchr(ANEMOI_IDS, framebuffer[1]) != nullptr ) {  // including frame and CRC
-				// Only process status and wind
-				framebuffer[pos] = 0;
-				routeSerialData(framebuffer, pos, port, true );
+		case GET_NMEA_STREAM:
+			if ((c < NMEA_MIN || c > NMEA_MAX) && (c != NMEA_CR && c != NMEA_LF)) {
+				// ESP_LOGE(FNAME, "Port S%1d: Invalid NMEA character %x, restart, pos: %d, state: %d", port, (int)c, pos, state );
+				// ESP_LOG_BUFFER_HEXDUMP(FNAME, framebuffer, pos+1, ESP_LOG_INFO);
+				state = GET_NMEA_UBX_SYNC;
+				break;
+			}
+			if (pos >= sizeof(framebuffer) - 1) {
+				ESP_LOGE(FNAME, "Port S%1d NMEA buffer not large enough, restart", port);
+				pos = 0;
+				state = GET_NMEA_UBX_SYNC;
+			}
+			if ( c == NMEA_CR || c == NMEA_LF ) { // normal case, accordign to NMEA 183 protocol, first CR, then LF as the last char  (<CR><LF> ends the message.)
+				           	   	   	   	   	   	  // but we accept also a single terminator as not relevant for the data carried        0d  0a
+				// make things clean!                                                                                                   \r  \n
+				framebuffer[pos] = NMEA_CR;       // append a CR
+				pos++;
+				framebuffer[pos] = NMEA_LF;       // append a LF
+				pos++;
+				framebuffer[pos] = 0;  // framebuffer is zero terminated
+				// pos++;
+				processNMEA( framebuffer, pos, port );
+				state = GET_NMEA_UBX_SYNC;
+				pos = 0;
+			}else{
+				framebuffer[pos] = c;
+				pos++;
+			}
+
+			break;
+
+		case GET_UBX_SYNC2:
+			if (c != UBX_SYNC2) {
+				ESP_LOGW(FNAME, "Port S%1d Unexpected UBX SYN2 at %d", port, pos);
+				state = GET_NMEA_UBX_SYNC;
+				break;
+			}
+			// ESP_LOGI(FNAME,"Port S%d UBX SYNC2 received at %d", port, pos );
+			state = GET_UBX_CLASS;
+			break;
+
+		case GET_UBX_CLASS:
+			if (c != UBX_CLASS) {
+				ESP_LOGW(FNAME, "Port S%1d Unexpected UBX class at %d", port, pos );
+				state = GET_NMEA_UBX_SYNC;
+				break;
+			}
+			addChk(c);
+			state = GET_UBX_ID;
+			break;
+
+		case GET_UBX_ID:
+			if (c != UBX_ID) {
+				ESP_LOGW(FNAME, "Port S%1d Unexpected UBX ID at %d", port, pos );
+				state = GET_NMEA_UBX_SYNC;
+				break;
+			}
+			addChk(c);
+			state = GET_UBX_LENGTH1;
+			break;
+
+		case GET_UBX_LENGTH1:
+			addChk(c);
+			state = GET_UBX_LENGTH2;
+			break;
+
+		case GET_UBX_LENGTH2:
+			addChk(c);
+			state = GET_UBX_PAYLOAD;
+			break;
+
+		case GET_UBX_PAYLOAD:
+			addChk(c);
+			framebuffer[pos] = c;
+			if (pos == PVT_PAYLOAD_SIZE - 1) {
+				state = GET_UBX_CHKA;
+			}
+			pos++;
+			break;
+
+		case GET_UBX_CHKA:
+			chkBuf = c;
+			state = GET_UBX_CHKB;
+			break;
+
+		case GET_UBX_CHKB:
+			if (chkBuf == chkA && c == chkB) {
+				UbloxGnssDecoder::processNavPvtFrame( framebuffer, port );  // drop to decoder for local usage
+				pos = 0;
+			} else {
+				ESP_LOGE(FNAME, "Port S%1d: UBX checksum does not match", port);
 			}
 			state = GET_NMEA_UBX_SYNC;
-			pos = 0;
-		}
-		break;
-
-	case GET_UBX_SYNC2:
-		if (c != UBX_SYNC2) {
-			ESP_LOGW(FNAME, "Port S%1d Unexpected UBX SYN2 at %d", port, pos);
-			state = GET_NMEA_UBX_SYNC;
 			break;
-		}
-		// ESP_LOGI(FNAME,"Port S%d UBX SYNC2 received at %d", port, pos );
-		state = GET_UBX_CLASS;
-		break;
-
-	case GET_UBX_CLASS:
-		if (c != UBX_CLASS) {
-			ESP_LOGW(FNAME, "Port S%1d Unexpected UBX class at %d", port, pos );
-			state = GET_NMEA_UBX_SYNC;
-			break;
-		}
-		addChk(c);
-		state = GET_UBX_ID;
-		break;
-
-	case GET_UBX_ID:
-		if (c != UBX_ID) {
-			ESP_LOGW(FNAME, "Port S%1d Unexpected UBX ID at %d", port, pos );
-			state = GET_NMEA_UBX_SYNC;
-			break;
-		}
-		addChk(c);
-		state = GET_UBX_LENGTH1;
-		break;
-
-	case GET_UBX_LENGTH1:
-		addChk(c);
-		state = GET_UBX_LENGTH2;
-		break;
-
-	case GET_UBX_LENGTH2:
-		addChk(c);
-		state = GET_UBX_PAYLOAD;
-		break;
-
-	case GET_UBX_PAYLOAD:
-		addChk(c);
-		framebuffer[pos] = c;
-		if (pos == PVT_PAYLOAD_SIZE - 1) {
-			state = GET_UBX_CHKA;
-		}
-		pos++;
-		break;
-
-	case GET_UBX_CHKA:
-		chkBuf = c;
-		state = GET_UBX_CHKB;
-		break;
-
-	case GET_UBX_CHKB:
-		if (chkBuf == chkA && c == chkB) {
-			UbloxGnssDecoder::processNavPvtFrame( framebuffer, port );  // drop to decoder for local usage
-			pos = 0;
-		} else {
-			ESP_LOGE(FNAME, "Port S%1d: UBX checksum does not match", port);
-		}
-		state = GET_NMEA_UBX_SYNC;
-		break;
 	}
 }

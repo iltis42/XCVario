@@ -282,7 +282,7 @@ SetupNG<float>		    ahrs_min_gyro_factor("AHRSLGYF", 20 );
 SetupNG<float>		    ahrs_dynamic_factor("AHRSGDYN", 5 );
 SetupNG<float>       	gyro_gating("GYRO_GAT", 1.0 );
 SetupNG<float>  		ahrs_gyro_cal("AHRSGCAL", 1.07 );
-SetupNG<int>  			ahrs_defaults( "AHRSDEF", 1, RST_NONE, SYNC_NONE, VOLATILE, set_ahrs_defaults );
+SetupNG<int>  			ahrs_defaults( "AHRSDEF", 0, RST_NONE, SYNC_NONE, VOLATILE, set_ahrs_defaults );
 SetupNG<int>		    display_style("DISPLAY_STYLE", 1 );
 SetupNG<int>		    s2f_switch_type("S2FHWSW", S2F_HW_SWITCH );
 SetupNG<int>		    hardwareRevision("HWREV", HW_UNKNOWN );

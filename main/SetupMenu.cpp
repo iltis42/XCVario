@@ -1647,25 +1647,7 @@ void SetupMenu::system_menu_create_hardware_ahrs_parameter( MenuEntry *top ){
 	SetupMenuValFloat * gyrog = new SetupMenuValFloat( PROGMEM"Gyro Gating", "°", 0, 10, 0.1, 0, false, &gyro_gating  );
 	gyrog->setHelp( PROGMEM"Minimum accepted gyro rate in degree per second");
 	top->addEntry( gyrog );
-/*
-	SetupMenuValFloat * virtglp = new SetupMenuValFloat( PROGMEM"Virtual G Lowpass", "", 0, 1, 0.005, 0, false, &ahrs_virt_g_lowpass  );
-	virtglp->setPrecision( 3 );
-	virtglp->setHelp( PROGMEM"Lowpass factor for virtual gravity from airspeed and omega or centripedal force compensation");
-	top->addEntry( virtglp );
 
-	SetupMenuValFloat * gflp = new SetupMenuValFloat( PROGMEM"G-Force Lowpass", "", 0, 1, 0.005, 0, false, &ahrs_gforce_lp  );
-	gflp->setHelp( PROGMEM"Lowpass factor to filter g force for loadfactor dependent bank calculation");
-	gflp->setPrecision( 3 );
-	top->addEntry( gflp );
-
-	SetupMenuValFloat * vgtrust = new SetupMenuValFloat( PROGMEM"Virt G trust bank", "", 0, 100, 0.1, 0, false, &ahrs_virtg_bank_trust  );
-	vgtrust->setHelp( PROGMEM"Factor for trust in virtual gravity depending on angle of bank");
-	top->addEntry( vgtrust );
-
-	SetupMenuValFloat * gloadbd = new SetupMenuValFloat( PROGMEM"G Load bank Dynamic", "", 1, 2, 0.01, 0, false, &ahrs_gbank_dynamic  );
-	gloadbd->setHelp( PROGMEM"G load dynamic grow factor for angle of bank to be considered");
-	top->addEntry( gloadbd );
-*/
 	SetupMenuValFloat * gyrocal = new SetupMenuValFloat( PROGMEM"Gyro Calibration", "", -0.5, 1.5, 0.01, 0, false, &ahrs_gyro_cal  );
 	gyrocal->setHelp( PROGMEM"Gyro calibration factor to increase accuracy of gyro in %/100");
 	top->addEntry( gyrocal );
@@ -1699,6 +1681,12 @@ void SetupMenu::system_menu_create_hardware_ahrs( MenuEntry *top ){
 	ahrspa->setHelp( PROGMEM"AHRS constants such as gyro trust and filtering", 275 );
 	top->addEntry( ahrspa );
 	ahrspa->addCreator( system_menu_create_hardware_ahrs_parameter );
+
+	SetupMenuSelect * ahrsdef = new SetupMenuSelect( "AHRS Defaults", RST_NONE, 0, true, &ahrs_defaults );
+	top->addEntry( ahrsdef );
+	ahrsdef->setHelp( PROGMEM "Set optimum default values for all AHRS Parameters as determined to the best practice");
+	ahrsdef->addEntry( "Start");
+	ahrsdef->addEntry( "Cancel");
 
 	SetupMenuSelect * rpyl = new SetupMenuSelect( PROGMEM"AHRS RPYL", RST_NONE , 0, true, &ahrs_rpyl_dataset );
 	top->addEntry( rpyl );

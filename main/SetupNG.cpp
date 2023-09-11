@@ -126,6 +126,13 @@ void chg_mpu_target(){
 	mpu_target_temp = mpu_temperature.get();
 };
 
+void set_ahrs_defaults(){
+	ahrs_gyro_factor.setDefault();
+	ahrs_min_gyro_factor.setDefault();
+	ahrs_dynamic_factor.setDefault();
+	gyro_gating.setDefault();
+	ahrs_gyro_cal.setDefault();
+}
 
 SetupNG<float>          MC(  "MacCready", 0.5, true, SYNC_BIDIR, PERSISTENT, change_mc, UNIT_VARIO );
 SetupNG<float>  		QNH( "QNH", 1013.25, true, SYNC_BIDIR, PERSISTENT, 0, UNIT_QNH );
@@ -271,13 +278,11 @@ SetupNG<int>		    attitude_indicator("AHRS", 1 );
 SetupNG<int>		    ahrs_rpyl_dataset("RPYL", 0 );
 SetupNG<int>		    ahrs_autozero("AHRSAZ", 0 );
 SetupNG<float>		    ahrs_gyro_factor("AHRSMGYF", 100 );
+SetupNG<float>		    ahrs_min_gyro_factor("AHRSLGYF", 20 );
 SetupNG<float>		    ahrs_dynamic_factor("AHRSGDYN", 5 );
-SetupNG<float>		    ahrs_min_gyro_factor("AHRSLGYF", 40 );
-SetupNG<float>  		ahrs_gforce_lp("AHRSGFLP", 0.2 );
-SetupNG<float>  		ahrs_virt_g_lowpass("AHRSVGL", 0.2 );
-SetupNG<float>  		ahrs_virtg_bank_trust("AHRSGBT", 20 );
+SetupNG<float>       	gyro_gating("GYRO_GAT", 1.0 );
 SetupNG<float>  		ahrs_gyro_cal("AHRSGCAL", 1.07 );
-SetupNG<float>  		ahrs_gbank_dynamic("AHRSGBD", 1.2 );
+SetupNG<int>  			ahrs_defaults( "AHRSDEF", 1, RST_NONE, SYNC_NONE, VOLATILE, set_ahrs_defaults );
 SetupNG<int>		    display_style("DISPLAY_STYLE", 1 );
 SetupNG<int>		    s2f_switch_type("S2FHWSW", S2F_HW_SWITCH );
 SetupNG<int>		    hardwareRevision("HWREV", HW_UNKNOWN );
@@ -390,7 +395,7 @@ SetupNG<t_wireless_id>  custom_wireless_id("WLID", t_wireless_id("") );
 SetupNG<int> 			drawing_prio("DRAWP", DP_NEEDLE );
 
 mpud::raw_axes_t zero_bias;
-SetupNG<float>       	    gyro_gating("GYRO_GAT", 2.5 );
+
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );
 SetupNG<mpud::raw_axes_t>	accl_bias("ACCL_BIAS", zero_bias );
 SetupNG<float>              mpu_temperature("MPUTEMP", 45.0, true, SYNC_FROM_MASTER, PERSISTENT, chg_mpu_target );    // default for AHRS chip temperature (XCV 2023)

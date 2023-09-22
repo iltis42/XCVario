@@ -93,6 +93,10 @@ BMP:
 
 #define MGRPS 360
 
+#define GLOAD_UPPER_BOUND 10.0f
+#define GLOAD_LOWER_BOUND  7.5f
+#define SPEED2FLY_BOUND  285.0f
+
 MCP3221 *MCP=0;
 DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 standard, alternative  GPIO_NUM_17
 
@@ -574,11 +578,23 @@ void clientLoop(void *pvParameters)
 			if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL ){
 				MPU.temp_control( ccount, xcvTemp );
 			}
-			if( accelG[0] > gload_pos_max.get() ){
-				gload_pos_max.set( (float)accelG[0] );
-			}else if( accelG[0] < gload_neg_max.get() ){
-				gload_neg_max.set(  (float)accelG[0] );
+			const float gload = accelG[0];
+			if( gload > gload_pos_max.get() ){
+				gload_pos_max.set( gload );
+			}else if( gload < gload_neg_max.get() ){
+				gload_neg_max.set(  gload );
 			}
+			
+			const bool isSpeedExcess = as2f > SPEED2FLY_BOUND;
+			const bool isGLoadExcess = gload < GLOAD_LOWER_BOUND 
+									|| gload > GLOAD_UPPER_BOUND;
+			if( isSpeedExcess || isGLoadExcess ){
+				int r = trackExcess(as2f, gload);
+				if (r == 0) { // Storage is full
+					// ToDo: Display warning because of a full storage
+				}
+			}
+
 			toyFeed();
 			Router::routeXCV();
 			if( true && !(ccount%5) ) { // todo need a mag_hdm.valid() flag

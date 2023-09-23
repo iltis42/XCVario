@@ -286,8 +286,13 @@
                     <li class="mg-tabs--item" data-target="tab2">
                         <a href="#" class="button--outline">Debug/Reset</a>
                     </li>
+                </ul>
+                <ul>
                     <li class="mg-tabs--item" data-target="tab3">
                         <a href="#" class="secondary">Backup/Restore</a>
+                    </li>
+                    <li class="mg-tabs--item" data-target="tab4">
+                        <a href="#" class="secondary">Exceedance</a>
                     </li>
                 </ul>
                 <!-- System info TAB -->
@@ -336,6 +341,12 @@
                         <input type="file" accept=".csv" id="restoreFile" />
                         Restore
                     </label>
+                </div>
+                <!-- Backup/Restore TAB -->
+                <div class="mg-tabs--content" id="tab4">
+                    <h3 class="title">Exceedance Tracker</h3>
+                    <button class="button-primary" type="button" id="DownloadBtn">Download</button>
+                    <button class="button-primary" type="button" id="ClearBtn">Clear</button>
                 </div>
             </div>
         </section>
@@ -458,6 +469,53 @@
         } else {
             window.alert("Error, no valid .csv file seleced");
         }
+    });
+
+    // Download
+    document.getElementById('DownloadBtn').addEventListener('click', function(e) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', "/download", true);
+        xhr.onreadystatechange = function() {
+            if(xhr.readyState == XMLHttpRequest.DONE) {
+                var status = xhr.status;
+                if (status == 0 || (status >= 200 && status < 400)) {
+                    // The request has been completed successfully
+                    if (xhr.response.length == 0) {
+                        window.alert("No Exceedances to download."); 
+                    } else {
+                        var blob = new Blob([xhr.response], {type:"octet-stream"});
+                        const href = URL.createObjectURL(blob);
+                        var filename = "xcvario-exceedance-" + new Date().toJSON().slice(0,10) + ".csv";
+                        window.alert("Download XCVario Exceedances, filename: " + filename ); 
+                        const a = Object.assign(document.createElement('a'), {href, style:"display:none", download:filename});
+                        document.body.appendChild(a);
+                        a.click();
+                        URL.revokeObjectURL(href);
+                        a.remove();	            	 	    
+                    }
+                }
+            }
+        }
+        xhr.send();
+    });
+
+    // Clear Exceedances
+    document.getElementById('ClearBtn').addEventListener('click', function(e) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('DELETE', "/clear", true);
+        xhr.onreadystatechange = function() {
+            if(xhr.readyState == XMLHttpRequest.DONE) {
+                var status = xhr.status;
+                if (status == 0 || (status >= 200 && status < 400)) {
+                    // The request has been completed successfully
+                    window.alert("Successfully deleted all exceedances."); 
+                } else {
+
+                    window.alert("Error while deleting exceedances."); 
+                }
+            }
+        }
+        xhr.send();
     });
 
     // Reset

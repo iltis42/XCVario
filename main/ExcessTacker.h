@@ -3,6 +3,7 @@
 
 #include <Preferences.h> // Wrapper around the Non-volatile storage on ESP32 processor
 #include <string>
+#include <utility>
 
 #define NAMESPACE "XCVario" // Note: Namespace name is limited to 15 chars.
 #define READ_ONLY  false
@@ -34,6 +35,13 @@ public:
     void pugeData();
 
     /**
+     * Get the count of Rows stored in the Preferences storage.
+     * 
+     * @returns the count of rows
+    */
+    uint16_t getRowCount();
+
+    /**
      * Saves the speed or the G-Load excess to Preferences with a timestamp.
      * 
      * @param speed2Fly the speed to fly
@@ -43,7 +51,14 @@ public:
     */
     int trackExcess(const float speed2Fly, const float gLoad);
 
-    // ToDo: searchable Excess
+    /**
+     * Get Rows stored at the index.
+     * 
+     * @returns the (Speed, G-Load) Pair located at the index
+     *          nullptr if the index is smaller zero or 
+     *            greater or equal the row count
+    */
+    std::pair<float, float> getRow(uint16_t index);
 
 private:
     Preferences preferences;

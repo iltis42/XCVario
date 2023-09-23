@@ -26,13 +26,18 @@ void ExcessTracker::pugeData()
         preferences.clear());
 }
 
-void ExcessTracker::trackExcess(const float speed2Fly, const float gLoad)
+uint16_t ExcessTracker::getRowCount()
 {
-    int result = 1; // SUCCESSFULL
-    const uint16_t size = preferences.getUInt( // Get Number of entries
+    return preferences.getUInt( // Get Number of entries
         ENTRY_SIZE_KEY,
         0 // return ZERO if the key is not available
     );
+}
+
+void ExcessTracker::trackExcess(const float speed2Fly, const float gLoad)
+{
+    int result = 1; // SUCCESSFULL
+    const uint16_t size = this->getRowCount();
     const size_t freeEntires = preferences.freeEntries();
 
     if (freeEntires >= size + ENTRY_COUNT_PER_EXCESS)
@@ -54,8 +59,30 @@ void ExcessTracker::trackExcess(const float speed2Fly, const float gLoad)
             ENTRY_SIZE_KEY,
             size + 1);
         assert(bytesWritten > 0);
-    } else {
+    }
+    else
+    {
         result = 0;
     }
     return result;
+}
+
+std::pair<float, float> ExcessTracker::getRow(uint16_t index)
+{
+    if (index < 0 || index >= this->getRowCount())
+    { // avoid out of bound accesses
+        return nullptr;
+    }
+
+    const std::string prefix = std::to_string(index);
+
+    float speed2Fly = preferences.getFloat(
+        prefix + SPEED2FLY_POSTFIX,
+        0.0f);
+
+    float gLoad = preferences.getFloat(
+        prefix + GLOAD_POSTFIX,
+        0.0f);
+
+    return std::make_pair(speed2Fly, gLoad);
 }

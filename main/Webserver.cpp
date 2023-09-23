@@ -10,6 +10,9 @@ extern char * program_version;
 extern bool do_factory_reset();
 extern void send_config( httpd_req *req );
 extern int restore_config( int len, char *data );
+extern void do_excess_purge();
+extern uint16_t get_row_count();
+extern std::pair<float, float> get_row(uint16_t index);
 
 // file assets
 extern const uint8_t index_html_start[]             asm("_binary_index_html_start");
@@ -28,6 +31,8 @@ static esp_err_t GET_status_json_handler(httpd_req_t *req);
 static esp_err_t POST_update_handler(httpd_req_t *req);
 static esp_err_t GET_backup_handler(httpd_req_t *req);
 static esp_err_t POST_restore_handler(httpd_req_t *req);
+static esp_err_t GET_download_handler(httpd_req_t *req);
+static esp_err_t DELETE_clear_handler(httpd_req_t *req);
 static esp_err_t DELETE_reset_handler(httpd_req_t *req);
 static esp_err_t GET_coredump_handler(httpd_req_t *req);
 
@@ -70,6 +75,20 @@ httpd_uri_t POST_restore = {
 	.uri = "/restore",
 	.method = HTTP_POST,
 	.handler = POST_restore_handler,
+	.user_ctx = NULL
+};
+
+httpd_uri_t GET_download = {
+	.uri = "/download",
+	.method = HTTP_GET,
+	.handler = GET_download_handler,
+	.user_ctx = NULL
+};
+
+httpd_uri_t DELETE_clear = {
+	.uri = "/clear",
+	.method = HTTP_POST,
+	.handler = DELETE_clear_handler,
 	.user_ctx = NULL
 };
 
@@ -134,6 +153,8 @@ void cWebserver::start()
 		httpd_register_uri_handler(m_httpHandle, &POST_update);
 		httpd_register_uri_handler(m_httpHandle, &GET_backup);
 		httpd_register_uri_handler(m_httpHandle, &POST_restore);
+		httpd_register_uri_handler(m_httpHandle, &GET_download);
+		httpd_register_uri_handler(m_httpHandle, &DELETE_clear);
 		httpd_register_uri_handler(m_httpHandle, &DELETE_reset);
 	    httpd_register_uri_handler(m_httpHandle, &GET_coredump);
 	}
@@ -356,6 +377,55 @@ static esp_err_t POST_restore_handler(httpd_req_t *req)
 	}
 
     free(buff);
+	return ESP_OK;
+}
+
+
+static esp_err_t GET_download_handler(httpd_req_t *req)
+{
+	ESP_LOGI(FNAME, "Exceedance Download Requested");
+
+	// The result will be interpreted as CSV
+	httpd_resp_set_type(req, "text/html");
+
+	// Transmit column names
+	std::string columnNames = "Speed, G-Load\n";
+	httpd_resp_send_chunk(req, columnNames, strlen(columnNames));
+	
+	// Transmit all rows
+	const int row_str_len = 18; // Size = 18
+								// Speed: 4 + 2 + 1 = 7; 
+								// G-Load: 2 + 4 + 1 = 7; 
+								// rest (", ", newLine, zero terminator): 4
+    char row_str[row_str_len];
+	uint16_t row_count = get_row_count();
+	for (uint16_t i = 0; i < row_count; i++) {
+
+		std::pair<float, float> row = get_row(i);
+
+		if (row != nullptr) {
+			if( (*instances)[i]->value_str( val ) ){
+				snprintf( // avoid buffer overflow errors
+					row_str, 
+					row_str_len, 
+					"%4.2f, %2.4f\n", 
+					row.first, 
+					row.second);
+				httpd_resp_send_chunk(req, row_str, strlen(row_str));
+			}
+		}
+	}
+
+	// Terminate transmission
+	httpd_resp_send_chunk( req, cfg, 0 );
+	
+	return ESP_OK;
+}
+
+static esp_err_t DELETE_clear_handler(httpd_req_t *req)
+{
+	ESP_LOGI(FNAME, "Exceedance Delete Requested");
+	do_excess_purge();	
 	return ESP_OK;
 }
 

@@ -54,6 +54,7 @@
 #include <coredump_to_server.h>
 #include "canbus.h"
 #include "Router.h"
+#include "ExcessTacker.h"
 
 #include "sdkconfig.h"
 #include <freertos/FreeRTOS.h>
@@ -108,6 +109,8 @@ xSemaphoreHandle spiMutex=NULL;
 
 S2F Speed2Fly;
 Protocols OV( &Speed2Fly );
+
+ExcessTracker excessTracker;
 
 AnalogInput Battery( (22.0+1.2)/1200, ADC_ATTEN_DB_0, ADC_CHANNEL_7, ADC_UNIT_1 );
 
@@ -203,6 +206,18 @@ float getTAS() { return tas; };
 
 bool do_factory_reset() {
 	return( SetupCommon::factoryReset() );
+}
+
+void do_excess_purge() {
+	excessTracker.pugeData();
+}
+
+uint16_t get_row_count() {
+	return excessTracker.getRowCount();
+}
+
+std::pair<float, float> get_row(uint16_t index) {
+	return excessTracker.getRow(index);
 }
 
 void drawDisplay(void *pvParameters){
@@ -589,7 +604,7 @@ void clientLoop(void *pvParameters)
 			const bool isGLoadExcess = gload < GLOAD_LOWER_BOUND 
 									|| gload > GLOAD_UPPER_BOUND;
 			if( isSpeedExcess || isGLoadExcess ){
-				int r = trackExcess(as2f, gload);
+				int r = excessTracker.trackExcess(as2f, gload);
 				if (r == 0) { // Storage is full
 					// ToDo: Display warning because of a full storage
 				}

@@ -1020,7 +1020,7 @@ void system_startup(void *args){
 			MPU.setAccelOffset(ab);
 			MPU.setGyroOffset(gb);
 		}
-		delay( 50 );
+		delay( 500 );
 		mpud::raw_axes_t accelRaw;
 		float accel = 0;
 		for( auto i=0; i<11; i++ ){

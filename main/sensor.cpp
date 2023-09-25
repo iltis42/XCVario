@@ -95,7 +95,7 @@ BMP:
 #define MGRPS 360
 
 #define GLOAD_UPPER_BOUND 10.0f
-#define GLOAD_LOWER_BOUND  7.5f
+#define GLOAD_LOWER_BOUND  -7.5f
 #define SPEED2FLY_BOUND  285.0f
 
 MCP3221 *MCP=0;

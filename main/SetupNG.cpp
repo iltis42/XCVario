@@ -191,7 +191,7 @@ SetupNG<int>  			s2f_switch_mode( "AUDIO_MODE" ,  3 );
 SetupNG<int>  			chopping_mode( "CHOPPING_MODE",  VARIO_CHOP );
 SetupNG<int>  			chopping_style( "CHOP_STYLE",  AUDIO_CHOP_SOFT );
 SetupNG<int>  			amplifier_shutdown( "AMP_DIS", 0 );
-SetupNG<int>            audio_equalizer( "AUD_EQ" , AUDIO_EQ_LS4 );
+SetupNG<int>            audio_equalizer( "AUD_EQ", AUDIO_EQ_DISABLE, false );
 
 SetupNG<int>  			wireless_type( "BT_ENABLE" ,  WL_BLUETOOTH );
 SetupNG<float>  		wifi_max_power( "WIFI_MP" ,  50);
@@ -215,7 +215,7 @@ SetupNG<float>  		core_climb_min( "CORE_CLIMB_MIN" , 0.5, true, SYNC_FROM_MASTER
 SetupNG<float>  		core_climb_history( "CORE_CLIMB_HIST" , 45, true, SYNC_FROM_MASTER  );
 SetupNG<float>  		mean_climb_major_change( "MEAN_CLMC", 0.5, true, SYNC_FROM_MASTER );
 SetupNG<float>  		elevation( "ELEVATION", -1, true, SYNC_BIDIR, PERSISTENT, 0, UNIT_ALT );
-SetupNG<float>  		default_volume( "DEFAULT_VOL", 10.0 );
+SetupNG<float>  		default_volume( "DEFAULT_VOL", 25.0 );
 SetupNG<float>  		max_volume( "MAXI_VOL", 60.0 );
 SetupNG<float>  		frequency_response( "FREQ_RES", 30.0 );
 SetupNG<float>  		s2f_deadband( "DEADBAND_S2F", 10.0, true, SYNC_BIDIR, PERSISTENT, 0, UNIT_SPEED );

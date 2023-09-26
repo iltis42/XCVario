@@ -216,7 +216,7 @@ uint16_t get_row_count() {
 	return excessTracker.getRowCount();
 }
 
-std::pair<float, float> get_row(uint16_t index) {
+std::vector<float> get_row(uint16_t index) {
 	return excessTracker.getRow(index);
 }
 
@@ -604,10 +604,9 @@ void clientLoop(void *pvParameters)
 			const bool isGLoadExcess = gload < GLOAD_LOWER_BOUND 
 									|| gload > GLOAD_UPPER_BOUND;
 			if( isSpeedExcess || isGLoadExcess ){
-				int r = excessTracker.trackExcess(as2f, gload);
-				if (r == 0) { // Storage is full
-					// ToDo: Display warning because of a full storage
-				}
+				excessTracker.setExcess(as2f, gload);
+			} else {
+				excessTracker.stopExcess();
 			}
 
 			toyFeed();

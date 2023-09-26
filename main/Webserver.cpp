@@ -12,7 +12,7 @@ extern void send_config( httpd_req *req );
 extern int restore_config( int len, char *data );
 extern void do_excess_purge();
 extern uint16_t get_row_count();
-extern std::pair<float, float> get_row(uint16_t index);
+extern std::vector<float> get_row(uint16_t index);
 
 // file assets
 extern const uint8_t index_html_start[]             asm("_binary_index_html_start");
@@ -389,33 +389,34 @@ static esp_err_t GET_download_handler(httpd_req_t *req)
 	httpd_resp_set_type(req, "text/html");
 
 	// Transmit column names
-	const char *columnNames = "Speed, G-Load\n";
+	const char *columnNames = "Speed, G-Load, Duration_S\n";
 	httpd_resp_send_chunk(req, columnNames, strlen(columnNames));
 	
 	// Transmit all rows
-	const int row_str_len = 18; // Size = 18
-								// Speed: 4 + 2 + 1 = 7; 
-								// G-Load: 2 + 4 + 1 = 7; 
+	const int row_str_len = 26; // Speed: 4 + 2 + 1 = 7 +
+								// G-Load: 2 + 4 + 1 = 7 +
+								// Duration: 3 + 4 + 1 = 8 +
 								// rest (", ", newLine, zero terminator): 4
     char row_str[row_str_len];
 	uint16_t row_count = get_row_count();
 	for (uint16_t i = 0; i < row_count; i++) {
 
-		std::pair<float, float> row = get_row(i);
+		std::vector<float> row = get_row(i);
 
-		if (row.first != 0.0f && row.second != 0.0f) {
+		if (row[0] != 0.0f && row[1] != 0.0f) {
 			snprintf( // avoid buffer overflow errors
 				row_str, 
 				row_str_len, 
-				"%4.2f, %2.4f\n", 
-				row.first, 
-				row.second);
+				"%4.2f, %2.4f, %3.4f\n", 
+				row[0], 
+				row[1],
+				row[2]);
 			httpd_resp_send_chunk(req, row_str, strlen(row_str));
 		}
 	}
 
 	// Terminate transmission
-	httpd_resp_send_chunk( req, row_str, 0 );
+	httpd_resp_send_chunk(req, row_str, 0);
 	
 	return ESP_OK;
 }

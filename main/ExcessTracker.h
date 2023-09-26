@@ -49,20 +49,19 @@ public:
      * @returns 1 if data was successfully stored
      *          0 if the storage is full
     */
-    int trackExcess(const float speed2Fly, const float gLoad);
+    int trackExcess(float_t speed2Fly, float_t gLoad);
 
     /**
      * Get Rows stored at the index.
      * 
      * @returns the (Speed, G-Load) Pair located at the index
-     *          nullptr if the index is smaller zero or 
+     *          (0.0f, 0.0f) if the index is smaller zero or 
      *            greater or equal the row count
     */
     std::pair<float, float> getRow(uint16_t index);
 
 private:
     Preferences preferences;
-    ESP32Time rtc(3600);  // offset in seconds GMT+1
 };
 
 #endif

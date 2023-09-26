@@ -1,4 +1,4 @@
-#include "ExcessTacker.h"
+#include "ExcessTracker.h"
 
 #define ENTRY_SIZE_KEY "Entries"
 #define SPEED2FLY_POSTFIX "_S2F"
@@ -34,7 +34,7 @@ uint16_t ExcessTracker::getRowCount()
     );
 }
 
-void ExcessTracker::trackExcess(const float speed2Fly, const float gLoad)
+int ExcessTracker::trackExcess(float_t speed2Fly, float_t gLoad)
 {
     int result = 1; // SUCCESSFULL
     const uint16_t size = this->getRowCount();
@@ -42,16 +42,18 @@ void ExcessTracker::trackExcess(const float speed2Fly, const float gLoad)
 
     if (freeEntires >= size + ENTRY_COUNT_PER_EXCESS)
     { // Two entires are free
-        const std::string prefix = std::to_string(size);
+        std::string prefix = std::to_string(size);
 
         size_t bytesWritten = 0;
+        std::string S2FKey = prefix + SPEED2FLY_POSTFIX;
         bytesWritten = preferences.putFloat( // write Speed2Fly using 3 entires
-            prefix + SPEED2FLY_POSTFIX,
+            S2FKey.c_str(),
             speed2Fly);
         assert(bytesWritten > 0);
 
+        std::string gLoadKey = prefix + GLOAD_POSTFIX;
         bytesWritten = preferences.putFloat( // write G-Load using 3 entries
-            prefix + GLOAD_POSTFIX,
+            gLoadKey.c_str(),
             gLoad);
         assert(bytesWritten > 0);
 
@@ -71,17 +73,19 @@ std::pair<float, float> ExcessTracker::getRow(uint16_t index)
 {
     if (index < 0 || index >= this->getRowCount())
     { // avoid out of bound accesses
-        return nullptr;
+        return std::make_pair(0.0f, 0.0f);
     }
 
     const std::string prefix = std::to_string(index);
 
+    std::string S2FKey = prefix + SPEED2FLY_POSTFIX;
     float speed2Fly = preferences.getFloat(
-        prefix + SPEED2FLY_POSTFIX,
+        S2FKey.c_str(),
         0.0f);
 
+    std::string gLoadKey = prefix + GLOAD_POSTFIX;
     float gLoad = preferences.getFloat(
-        prefix + GLOAD_POSTFIX,
+        gLoadKey.c_str(),
         0.0f);
 
     return std::make_pair(speed2Fly, gLoad);

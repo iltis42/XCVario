@@ -389,7 +389,7 @@ static esp_err_t GET_download_handler(httpd_req_t *req)
 	httpd_resp_set_type(req, "text/html");
 
 	// Transmit column names
-	std::string columnNames = "Speed, G-Load\n";
+	const char *columnNames = "Speed, G-Load\n";
 	httpd_resp_send_chunk(req, columnNames, strlen(columnNames));
 	
 	// Transmit all rows
@@ -403,21 +403,19 @@ static esp_err_t GET_download_handler(httpd_req_t *req)
 
 		std::pair<float, float> row = get_row(i);
 
-		if (row != nullptr) {
-			if( (*instances)[i]->value_str( val ) ){
-				snprintf( // avoid buffer overflow errors
-					row_str, 
-					row_str_len, 
-					"%4.2f, %2.4f\n", 
-					row.first, 
-					row.second);
-				httpd_resp_send_chunk(req, row_str, strlen(row_str));
-			}
+		if (row.first != 0.0f && row.second != 0.0f) {
+			snprintf( // avoid buffer overflow errors
+				row_str, 
+				row_str_len, 
+				"%4.2f, %2.4f\n", 
+				row.first, 
+				row.second);
+			httpd_resp_send_chunk(req, row_str, strlen(row_str));
 		}
 	}
 
 	// Terminate transmission
-	httpd_resp_send_chunk( req, cfg, 0 );
+	httpd_resp_send_chunk( req, row_str, 0 );
 	
 	return ESP_OK;
 }

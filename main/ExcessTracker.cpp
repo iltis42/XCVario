@@ -208,7 +208,7 @@ void ExcessTracker::setExcess(float_t speed2Fly, float_t gLoad)
 
 void ExcessTracker::stopExcess()
 {
-    if (isExcess)
+    if (excessStarted)
     {
         int64_t endTimeMicoS = esp_timer_get_time();
         int64_t durationMicorS = endTimeMicoS - startTimeMicoS;

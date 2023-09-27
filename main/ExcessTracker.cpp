@@ -20,12 +20,41 @@ ExcessTracker::~ExcessTracker()
     preferences.end();
 }
 
+float_t ExcessTracker::getSpeed2FlyBound()
+{
+    return speed2FlyBound;
+}
+
+void ExcessTracker::setSpeed2FlyBound(float_t speed2FlyBound)
+{
+    this->speed2FlyBound = speed2FlyBound;
+}
+
+float_t ExcessTracker::getGLoadUpperBound()
+{
+    return gLoadUpperBound;
+}
+
+void ExcessTracker::setGLoadUpperBound(float_t gLoadUpperBound)
+{
+    this->gLoadUpperBound = gLoadUpperBound;
+}
+
+float_t ExcessTracker::getGLoadLowerBound()
+{
+    return gLoadLowerBound;
+}
+
+void ExcessTracker::setGLoadLowerBound(float_t gLoadLowerBound)
+{
+    this->gLoadLowerBound = gLoadLowerBound;
+}
+
 void ExcessTracker::pugeData()
 {
     // Delete all keys and values
     // Note: The namespace name still exists afterward.
-    assert(
-        preferences.clear());
+    assert(preferences.clear());
 }
 
 uint16_t ExcessTracker::getRowCount()
@@ -106,7 +135,7 @@ int ExcessTracker::trackExcessDuration(float_t speed2Fly, float_t gLoad, float_t
 
     if (result == 1)
     { // Only save duration and update size if there was enugh space to store the excess.
-        if (duration > 0.000001f) 
+        if (duration > 0.000001f)
         { // No need to save the duration if there is none.
             result = storeDuration(size, duration);
         }
@@ -143,12 +172,28 @@ std::vector<float> ExcessTracker::getRow(uint16_t index)
     return {speed2Fly, gLoad, duration};
 }
 
+bool ExcessTracker::isExcess(float_t speed2Fly, float_t gLoad)
+{
+    bool result = false;
+
+    if (isStaticModel) {
+			const bool isSpeedExcess = speed2Fly > getSpeed2FlyBound();
+			const bool isGLoadExcess = gLoad < getGLoadLowerBound() 
+									|| gLoad > getGLoadUpperBound();
+			result = isSpeedExcess || isGLoadExcess;
+    } else {
+        // ToDo: Implement dynamic model
+    }
+
+    return result;
+}
+
 void ExcessTracker::setExcess(float_t speed2Fly, float_t gLoad)
 {
-    if (!isExcess)
+    if (!excessStarted)
     {
         startTimeMicoS = esp_timer_get_time();
-        isExcess = true;
+        excessStarted = true;
     }
 
     if (gLoad > maxGLoad)
@@ -169,12 +214,12 @@ void ExcessTracker::stopExcess()
         int64_t durationMicorS = endTimeMicoS - startTimeMicoS;
         float_t durationS = ((float_t)durationMicorS) / MICRO_SEC_TO_SEC;
 
-        int r = trackExcessDuration(maxSpeed2Fly, maxGLoad, durationS);
-        assert(r == 1);
-
+        // it does nothing if there is no space left to store the excess
+        trackExcessDuration(maxSpeed2Fly, maxGLoad, durationS); 
+    
         startTimeMicoS = 0;
         maxSpeed2Fly = 0.0f;
         maxGLoad = 0.0f;
-        isExcess = false;
+        excessStarted = false;
     }
 }

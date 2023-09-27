@@ -94,10 +94,6 @@ BMP:
 
 #define MGRPS 360
 
-#define GLOAD_UPPER_BOUND 10.0f
-#define GLOAD_LOWER_BOUND  -7.5f
-#define SPEED2FLY_BOUND  285.0f
-
 MCP3221 *MCP=0;
 DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 standard, alternative  GPIO_NUM_17
 
@@ -206,6 +202,30 @@ float getTAS() { return tas; };
 
 bool do_factory_reset() {
 	return( SetupCommon::factoryReset() );
+}
+
+float get_speed2Fly_bound() {
+	return excessTracker.getSpeed2FlyBound();
+}
+
+void set_speed2Fly_bound(float speed2FlyBound) {
+	excessTracker.setSpeed2FlyBound(speed2FlyBound);
+}
+
+float get_gLoad_lower_bound() {
+	return excessTracker.getGLoadLowerBound();
+}
+
+void set_gLoad_lower_bound(float gLoadLowerBound) {
+	excessTracker.setGLoadLowerBound(gLoadLowerBound);
+}
+
+float get_gLoad_upper_bound() {
+	return excessTracker.getGLoadUpperBound();
+}
+
+void set_gLoad_upper_bound(float gLoadUpperBound) {
+	excessTracker.setGLoadUpperBound(gLoadUpperBound);
 }
 
 void do_excess_purge() {
@@ -599,11 +619,8 @@ void clientLoop(void *pvParameters)
 			}else if( gload < gload_neg_max.get() ){
 				gload_neg_max.set(  gload );
 			}
-			
-			const bool isSpeedExcess = as2f > SPEED2FLY_BOUND;
-			const bool isGLoadExcess = gload < GLOAD_LOWER_BOUND 
-									|| gload > GLOAD_UPPER_BOUND;
-			if( isSpeedExcess || isGLoadExcess ){
+
+			if( excessTracker.isExcess(as2f, gload) ){
 				excessTracker.setExcess(as2f, gload);
 			} else {
 				excessTracker.stopExcess();

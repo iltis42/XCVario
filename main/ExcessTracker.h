@@ -11,6 +11,10 @@
 #define READ_ONLY  false
 #define MICRO_SEC_TO_SEC 1000000.0f
 
+#define SPEED2FLY_BOUND  285.0f
+#define GLOAD_UPPER_BOUND 10.0f
+#define GLOAD_LOWER_BOUND  -7.5f
+
 /**
  * ExcessTracker saves speed and G-Load excesses permanently with the Preferences API.
  * It has 20 kb peserved memory.
@@ -31,6 +35,48 @@ public:
      * Closes the Preferences.
     */
 	virtual ~ExcessTracker();
+
+    /**
+     * Getter for the Speed to Fly upper bound.
+     * 
+     * @returns the Speed to Fly
+    */
+    float_t getSpeed2FlyBound();
+
+    /**
+     * Setter for the Speed to Fly upper bound.
+     * 
+     * @param speed2FlyBound the Speed to Fly bound to be set.
+    */
+    void setSpeed2FlyBound(float_t speed2FlyBound);
+
+    /**
+     * Getter for the upper G-Load Bound.
+     * 
+     * @returns the upper G-Load Bound
+    */
+    float_t getGLoadUpperBound();
+
+    /**
+     * Setter for the upper G-Load Bound.
+     * 
+     * @param gLoadUpperBound the new upper G-Load bound to be set
+    */
+    void setGLoadUpperBound(float_t gLoadUpperBound);
+    
+    /**
+     * Getter for the lower G-Load Bound.
+     * 
+     * @returns the lower G-Load Bound
+    */
+    float_t getGLoadLowerBound();
+
+    /**
+     * Setter for the lower G-Load Bound
+     * 
+     * @param the new lower G-Load bound th be set
+    */
+    void setGLoadLowerBound(float_t gLoadLowerBound);
 
     /**
      * Deletes all keys and values from the "XCVario" Namespace
@@ -68,6 +114,7 @@ public:
     /**
      * Get Rows stored at the index.
      * 
+     * @param index the index of the element in range [0; size[
      * @returns the [Speed, G-Load, Duration] List located at the index
      *          (0.0f, 0.0f, 0.0f) if the index is smaller zero or 
      *            greater or equal the row count
@@ -75,9 +122,23 @@ public:
     std::vector<float> getRow(uint16_t index);
 
     /**
+     * Checks weather the provided values constitute a excess, 
+     * with the configured bounds and the choosen model (static/dynamic).
+     * 
+     * @param speed2Fly the current speed to fly
+     * @param gLoad the current gload
+     * @returns true if it is a excess
+     *          false otherwise
+    */
+    bool isExcess(float_t speed2Fly, float_t gLoad);
+
+    /**
      * Starts the excess timer and sets the isExcess property (to true).
      * Then it updates the excess values (Speed2Fly, G-Load) 
      * if they are greather then the current maxima.
+     * 
+     * @param speed2Fly the current speed to fly
+     * @param gLoad the current gload
     */
     void setExcess(float_t speed2Fly, float_t gLoad);
 
@@ -93,7 +154,13 @@ public:
 private:
     Preferences preferences;
 
-    bool isExcess = false;
+    bool isStaticModel = true;
+
+    float_t speed2FlyBound = SPEED2FLY_BOUND;
+    float_t gLoadUpperBound = GLOAD_UPPER_BOUND;
+    float_t gLoadLowerBound = GLOAD_LOWER_BOUND;
+
+    bool excessStarted = false;
     int64_t startTimeMicoS = 0;
     float_t maxSpeed2Fly = 0.0f;
     float_t maxGLoad = 0.0f;

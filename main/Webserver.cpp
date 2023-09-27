@@ -10,6 +10,12 @@ extern char * program_version;
 extern bool do_factory_reset();
 extern void send_config( httpd_req *req );
 extern int restore_config( int len, char *data );
+extern float get_speed2Fly_bound();
+extern void set_speed2Fly_bound(float speed2FlyBound);
+extern float get_gLoad_upper_bound();
+extern void set_gLoad_upper_bound(float gLoadUpperBound);
+extern float get_gLoad_lower_bound();
+extern void set_gLoad_lower_bound(float gLoadLowerBound);
 extern void do_excess_purge();
 extern uint16_t get_row_count();
 extern std::vector<float> get_row(uint16_t index);
@@ -31,6 +37,8 @@ static esp_err_t GET_status_json_handler(httpd_req_t *req);
 static esp_err_t POST_update_handler(httpd_req_t *req);
 static esp_err_t GET_backup_handler(httpd_req_t *req);
 static esp_err_t POST_restore_handler(httpd_req_t *req);
+static esp_err_t GET_load_static_handler(httpd_req_t *req);
+static esp_err_t PUT_save_static_handler(httpd_req_t *req);
 static esp_err_t GET_download_handler(httpd_req_t *req);
 static esp_err_t DELETE_clear_handler(httpd_req_t *req);
 static esp_err_t DELETE_reset_handler(httpd_req_t *req);
@@ -78,6 +86,20 @@ httpd_uri_t POST_restore = {
 	.user_ctx = NULL
 };
 
+httpd_uri_t GET_load_static = {
+	.uri = "/loadStatic",
+	.method = HTTP_GET,
+	.handler = GET_load_static_handler,
+	.user_ctx = NULL
+};
+
+httpd_uri_t PUT_save_static = {
+	.uri = "/saveStatic",
+	.method = HTTP_PUT,
+	.handler = PUT_save_static_handler,
+	.user_ctx = NULL
+};
+
 httpd_uri_t GET_download = {
 	.uri = "/download",
 	.method = HTTP_GET,
@@ -87,7 +109,7 @@ httpd_uri_t GET_download = {
 
 httpd_uri_t DELETE_clear = {
 	.uri = "/clear",
-	.method = HTTP_POST,
+	.method = HTTP_DELETE,
 	.handler = DELETE_clear_handler,
 	.user_ctx = NULL
 };
@@ -153,6 +175,8 @@ void cWebserver::start()
 		httpd_register_uri_handler(m_httpHandle, &POST_update);
 		httpd_register_uri_handler(m_httpHandle, &GET_backup);
 		httpd_register_uri_handler(m_httpHandle, &POST_restore);
+		httpd_register_uri_handler(m_httpHandle, &GET_load_static);
+		httpd_register_uri_handler(m_httpHandle, &PUT_save_static);
 		httpd_register_uri_handler(m_httpHandle, &GET_download);
 		httpd_register_uri_handler(m_httpHandle, &DELETE_clear);
 		httpd_register_uri_handler(m_httpHandle, &DELETE_reset);
@@ -380,6 +404,104 @@ static esp_err_t POST_restore_handler(httpd_req_t *req)
 	return ESP_OK;
 }
 
+static esp_err_t GET_load_static_handler(httpd_req_t *req) 
+{
+	const int size = 200; // Format str len 80 
+						  // 3x %X.Xf: -15
+						  // Speed: 4 + 2 + 1 = 7
+						  // G-Load: 2 + 4 + 1 = 7
+						  // Duration: 3 + 4 + 1 = 8
+	char jsonBuffer[size]; 
+    const char json[] = R"({"speedUpperBound":"%4.2f","gLoadLowerBound":"%2.4f","gLoadUpperBound":"%3.4f"})";
+
+	snprintf(
+		jsonBuffer, 
+		size - 1, 
+		json, 
+		get_speed2Fly_bound(), 
+		get_gLoad_lower_bound(), 
+		get_gLoad_upper_bound()
+	);
+
+	httpd_resp_set_type(req, "application/json ");
+	httpd_resp_send(req, jsonBuffer, strlen(jsonBuffer));
+
+	return ESP_OK;
+}
+
+static esp_err_t PUT_save_static_handler(httpd_req_t *req) 
+{
+	const size_t buffSize = req->content_len + 1;
+	if (buffSize <= 1 || buffSize > 254) {
+		ESP_LOGE(FNAME, "The request was to huge or zero %d", buffSize);
+		return ESP_FAIL;
+	}
+
+
+	char *buffer = (char *)malloc(sizeof(char) * buffSize);
+	
+	bool wasSuccessfull = false;
+	int try_counter = 0;
+	do
+    {
+		int recv_len = httpd_req_recv(req, buffer, buffSize);
+		// Read the excess configuration
+		if (recv_len < 0)
+		{
+			if (recv_len == HTTPD_SOCK_ERR_TIMEOUT)
+			{
+				ESP_LOGW(FNAME, "Socket Timeout");
+				/* Retry receiving if timeout occurred */
+			} else {
+				ESP_LOGE(FNAME, "Excess Config Other Error %d", recv_len);
+				free(buffer);
+				return ESP_FAIL;
+			}
+		} else {
+			wasSuccessfull = true;
+		}
+
+		try_counter++;
+		if (try_counter > 10) {
+			ESP_LOGE(FNAME, "Unable to request Config %d", recv_len);
+			free(buffer);
+			return ESP_FAIL;
+		}
+    } while (!wasSuccessfull);
+
+
+	cJSON *root = cJSON_Parse(buffer);
+	if (root == NULL) {
+		free(buffer);
+		ESP_LOGE(FNAME, "Unable to parse JSON buffer: %s", buffer);
+		return ESP_FAIL;
+	}
+	cJSON *speedUpperBound = cJSON_GetObjectItem(root, "speedUpperBound");
+	if (speedUpperBound == NULL) {
+		free(buffer);
+		ESP_LOGE(FNAME, "Json Buffer has no speedUpperBound property");
+		return ESP_FAIL;
+	}
+	cJSON *gLoadUpperBound = cJSON_GetObjectItem(root, "gLoadUpperBound");
+	if (gLoadUpperBound == NULL) {
+		free(buffer);
+		ESP_LOGE(FNAME, "Json Buffer has no gLoadUpperBound property");
+		return ESP_FAIL;
+	}
+	cJSON *gLoadLowerBound = cJSON_GetObjectItem(root, "gLoadLowerBound");
+	if (gLoadLowerBound == NULL) {
+		free(buffer);
+		ESP_LOGE(FNAME, "Json Buffer has no gLoadLowerBound property");
+		return ESP_FAIL;
+	}
+
+	set_speed2Fly_bound((float) speedUpperBound->valuedouble);
+	set_gLoad_upper_bound((float) gLoadUpperBound->valuedouble);
+	set_gLoad_upper_bound((float) gLoadLowerBound->valuedouble);
+
+	free(buffer);
+	return ESP_OK;
+}
 
 static esp_err_t GET_download_handler(httpd_req_t *req)
 {
@@ -393,9 +515,9 @@ static esp_err_t GET_download_handler(httpd_req_t *req)
 	httpd_resp_send_chunk(req, columnNames, strlen(columnNames));
 	
 	// Transmit all rows
-	const int row_str_len = 26; // Speed: 4 + 2 + 1 = 7 +
-								// G-Load: 2 + 4 + 1 = 7 +
-								// Duration: 3 + 4 + 1 = 8 +
+	const int row_str_len = 26; // Speed: 4 + 2 + 1 = 7
+								// G-Load: 2 + 4 + 1 = 7
+								// Duration: 3 + 4 + 1 = 8
 								// rest (", ", newLine, zero terminator): 4
     char row_str[row_str_len];
 	uint16_t row_count = get_row_count();

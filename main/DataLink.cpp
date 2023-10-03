@@ -42,12 +42,9 @@ DataLinkNT dl_S1(Router::routeS1);
 DataLinkNT dl_S2(Router::routeS2);
 
 void enable_anemoi(){
-	dl_S2.setProtocol(ANEMOI);
 }
 void disable_anemoi() {
-	dl_S2.setProtocol(NO_ONE);
 }
-
 
 DataLink::DataLink(){
 	state = GET_NMEA_UBX_SYNC;
@@ -95,6 +92,7 @@ void DataLinkNT::process(const char *packet, const int len)
 		}
 	}
 }
+
 // protocol factory
 void DataLinkNT::setProtocol(protocol_nt ptyp)
 {

@@ -61,7 +61,6 @@ private:
 	unsigned char krt2_len;
 };
 
-
 /**
  *
  * DataLink

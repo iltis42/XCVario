@@ -2,7 +2,7 @@
 
 // Supported protocol id's
 enum protocol_nt {
-	NO_ONE,
+	NO_ONE,     // Disable
 	NMEA,
 	ANEMOI
 };

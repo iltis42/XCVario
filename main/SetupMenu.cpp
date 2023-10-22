@@ -1686,7 +1686,7 @@ void SetupMenu::system_menu_create_hardware_ahrs( MenuEntry *top ){
 	top->addEntry( ahrsdef );
 	ahrsdef->setHelp( PROGMEM "Set optimum default values for all AHRS Parameters as determined to the best practice");
 	ahrsdef->addEntry( "Cancel");
-	ahrsdef->addEntry( "Start");
+	ahrsdef->addEntry( "Set Defaults");
 
 	SetupMenuSelect * rpyl = new SetupMenuSelect( PROGMEM"AHRS RPYL", RST_NONE , 0, true, &ahrs_rpyl_dataset );
 	top->addEntry( rpyl );

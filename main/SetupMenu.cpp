@@ -162,7 +162,28 @@ int upd_screens( SetupMenuSelect * p ){
 	return 0;
 }
 
-
+int do_display_test(SetupMenuSelect * p){
+	if( display_test.get() ){
+		xSemaphoreTake(spiMutex,portMAX_DELAY );
+		p->ucg->setColor( 0,0,0 );
+		p->ucg->drawBox( 0, 0, 240, 320 );
+		xSemaphoreGive(spiMutex );
+		while( !p->readSwitch() ){
+			delay(100);
+			ESP_LOGI(FNAME,"Wait for key press");
+		}
+		xSemaphoreTake(spiMutex,portMAX_DELAY );
+		p->ucg->setColor( 255,255,255 );
+		p->ucg->drawBox( 0, 0, 240, 320 );
+		xSemaphoreGive(spiMutex );
+		while( !p->readSwitch() ){
+			delay(100);
+			ESP_LOGI(FNAME,"Wait for key press");
+		}
+		esp_restart();
+	}
+	return 0;
+}
 
 int update_s2f_speed(SetupMenuValFloat * p)
 {
@@ -1538,7 +1559,7 @@ void SetupMenu::system_menu_create_hardware_type( MenuEntry *top ){
 
 	SetupMenuSelect * disva = new SetupMenuSelect( PROGMEM"Color Variant", RST_NONE , 0, false, &display_variant );
 	top->addEntry( disva );
-	disva->setHelp( PROGMEM "Display variant white on black (W/B) or black on white(B/W)");
+	disva->setHelp( PROGMEM "Display variant white on black (W/B) or black on white (B/W)");
 	disva->addEntry( PROGMEM"W/B");
 	disva->addEntry( PROGMEM"B/W");
 
@@ -1556,6 +1577,11 @@ void SetupMenu::system_menu_create_hardware_type( MenuEntry *top ){
 	drawp->addEntry( PROGMEM"Front");
 	drawp->addEntry( PROGMEM"Back");
 
+	SetupMenuSelect * dtest = new SetupMenuSelect( PROGMEM"Display Test", RST_NONE, do_display_test, true, &display_test );
+	top->addEntry( dtest );
+	dtest->setHelp( PROGMEM "Start display test screens, press rotary to cancel");
+	dtest->addEntry( PROGMEM"Cancel");
+	dtest->addEntry( PROGMEM"Start Test");
 }
 
 

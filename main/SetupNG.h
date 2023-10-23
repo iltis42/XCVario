@@ -491,6 +491,7 @@ extern SetupNG<float>  		te_vario;
 
 
 extern SetupNG<int>  		display_type;
+extern SetupNG<int>  		display_test;
 extern SetupNG<int>  		display_orientation;
 extern SetupNG<int>  		flap_enable;
 extern SetupNG<float>  		flap_minus_3;

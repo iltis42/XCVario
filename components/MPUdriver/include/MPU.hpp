@@ -347,50 +347,42 @@ inline esp_err_t MPU::lastError()
 /*! Read a single bit from a register*/
 inline esp_err_t MPU::readBit(uint8_t regAddr, uint8_t bitNum, uint8_t* data)
 {
-	esp_err_t err = bus->readBit(addr, regAddr, bitNum, data);
-    return err;
+	return err = bus->readBit(addr, regAddr, bitNum, data);
 }
 /*! Read a range of bits from a register */
 inline esp_err_t MPU::readBits(uint8_t regAddr, uint8_t bitStart, uint8_t length, uint8_t* data)
 {
-    err = bus->readBits(addr, regAddr, bitStart, length, data);
-    return err;
+    return err = bus->readBits(addr, regAddr, bitStart, length, data);
 }
 /*! Read a single register */
 inline esp_err_t MPU::readByte(uint8_t regAddr, uint8_t* data)
 {
-    esp_err_t err = bus->readByte(addr, regAddr, data);
-    return err;
+    return err = bus->readByte(addr, regAddr, data);
 }
 /*! Read data from sequence of registers */
 inline esp_err_t MPU::readBytes(uint8_t regAddr, size_t length, uint8_t* data)
 {
-    esp_err_t err = bus->readBytes(addr, regAddr, length, data);
-    return err;
+    return err = bus->readBytes(addr, regAddr, length, data);
 }
 /*! Write a single bit to a register */
 inline esp_err_t MPU::writeBit(uint8_t regAddr, uint8_t bitNum, uint8_t data)
 {
-    esp_err_t err = bus->writeBit(addr, regAddr, bitNum, data);
-    return err;
+    return err = bus->writeBit(addr, regAddr, bitNum, data);
 }
 /*! Write a range of bits to a register */
 inline esp_err_t MPU::writeBits(uint8_t regAddr, uint8_t bitStart, uint8_t length, uint8_t data)
 {
-    esp_err_t err = bus->writeBits(addr, regAddr, bitStart, length, data);
-    return err;
+    return err = bus->writeBits(addr, regAddr, bitStart, length, data);
 }
 /*! Write a value to a register */
 inline esp_err_t MPU::writeByte(uint8_t regAddr, uint8_t data)
 {
-    esp_err_t err = bus->writeByte(addr, regAddr, data);
-    return err;
+    return err = bus->writeByte(addr, regAddr, data);
 }
 /*! Write a sequence to data to a sequence of registers */
 inline esp_err_t MPU::writeBytes(uint8_t regAddr, size_t length, const uint8_t* data)
 {
-    esp_err_t err = bus->writeBytes(addr, regAddr, length, data);
-    return err;
+    return err = bus->writeBytes(addr, regAddr, length, data);
 }
 
 

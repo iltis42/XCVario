@@ -305,7 +305,7 @@ void IMU::getAccelSamplesAndCalib(int side)
 	err = MPU.getAccelSamplesG(bob->a, bob->b, bob->c);
 	ESP_LOGI(FNAME, "wing down bob: %f/%f/%f", bob->a, bob->b, bob->c);
 	if ( err == 0 ) {
-		progress |= side;
+		progress |= side; // Note progress
 		if ( progress == 0x3 ) {
 			// Ectract the current bias from wing down measurments
 			std::vector<double> start{.0, .0, .0};
@@ -340,8 +340,9 @@ void IMU::getAccelSamplesAndCalib(int side)
 			ESP_LOGI(FNAME, "Z: %f,%f,%f", Z.a, Z.b, Z.c);
 
 			// Correct the result by the ground angle of attac
-			Quaternion rot_groundAA(glider_ground_aa.get(), vector_ijk(0,1,0)); // rotate positive around Y
-			ref_rot = Quaternion::fromRotationMatrix(X, Y).get_conjugate();// * rot_groundAA;
+			Quaternion rot_groundAA(deg2rad(glider_ground_aa.get()), vector_ijk(0,1,0)); // rotate positive around Y
+			// Concatenated and inverted
+			ref_rot = Quaternion::fromRotationMatrix(X, Y).get_conjugate() * rot_groundAA;
 			ref_rot.normalize();
 
 			// Save to nvs storage

@@ -25,6 +25,7 @@ Author: Axel Pauli, deviation and refactoring by Eckhard Völlm Dec 2021
 #include "KalmanMPU6050.h"
 #include "QMCMagCAN.h"
 #include "QMC5883L.h"
+#include "quaternion.h"
 
 TaskHandle_t ctid = 0;
 

@@ -2,9 +2,6 @@
 #include <logdef.h>
 #include <esp_timer.h>
 
-#define M_PIf 3.14159265358979323846f
-#define degrees_to_radians(degrees) ((degrees) * M_PIf / 180.0f)
-#define radians_to_degrees(rad) ((rad) * 180.0f / M_PIf)
 
 
 // basic constructor
@@ -177,7 +174,7 @@ Quaternion Quaternion::AlignVectors(const vector_ijk &start, const vector_ijk &d
 			rotationAxis = from.cross(vector_ijk(1.0f, 0.0f, 0.0f));
 
 		rotationAxis.normalize();
-		return Quaternion(degrees_to_radians(180.0f), rotationAxis);
+		return Quaternion(deg2rad(180.0f), rotationAxis);
 	}
 
 	rotationAxis = from.cross(to);
@@ -242,7 +239,7 @@ Quaternion Quaternion::fromRotationMatrix(const vector_d &X, const vector_d &Y)
 // Grad
 float Compass_atan2( float y, float x )
 {
-    float result = radians_to_degrees(atan2(y, x));
+    float result = rad2deg(atan2(y, x));
     
     // As left turn means plus, euler angles come with 0° for north, -90° for east, -+180 degree for south and for 90° west
     // compass rose goes vice versa, so east is 90° means we need to invert
@@ -296,10 +293,10 @@ void Quaternion::quaternionen_test()
     int64_t t1 = esp_timer_get_time();
     ESP_LOGI(FNAME,"Setup");
     ESP_LOGI(FNAME,"Align v1 to v2: (%f,%f,%f) - (%f,%f,%f)", v1.a, v1.b, v1.c, v2.a, v2.b, v2.c );
-    ESP_LOGI(FNAME,"%-4lldusec: %f %f %f %f a:%f", t1-t0, q.a, q.b, q.c, q.d, radians_to_degrees(q.getAngle()) );
+    ESP_LOGI(FNAME,"%-4lldusec: %f %f %f %f a:%f", t1-t0, q.a, q.b, q.c, q.d, rad2deg(q.getAngle()) );
     // explicit setup, rotate around y
-    Quaternion qex = Quaternion(degrees_to_radians(-90.f), y_axes);
-    ESP_LOGI(FNAME,"equal to: %f %f %f %f a:%f", qex.a, qex.b, qex.c, qex.d, radians_to_degrees(qex.getAngle()) );
+    Quaternion qex = Quaternion(deg2rad(-90.f), y_axes);
+    ESP_LOGI(FNAME,"equal to: %f %f %f %f a:%f", qex.a, qex.b, qex.c, qex.d, rad2deg(qex.getAngle()) );
 
     // rotate
     t0 = esp_timer_get_time();
@@ -318,10 +315,10 @@ void Quaternion::quaternionen_test()
     // slerp
     ESP_LOGI(FNAME,"Slerp: (v1+v2)/2, v2");
     Quaternion q2 = Quaternion::AlignVectors(v1,vector_ijk(0.707106781, 0, 0.707106781));
-    ESP_LOGI(FNAME,"Q: %f %f %f %f a:%f", q2.a, q2.b, q2.c, q2.d, radians_to_degrees(q2.getAngle()) );
+    ESP_LOGI(FNAME,"Q: %f %f %f %f a:%f", q2.a, q2.b, q2.c, q2.d, rad2deg(q2.getAngle()) );
     Quaternion qs = slerp(q, q2, 1.f);
     ESP_LOGI(FNAME,"-> (45°+90°)/2");
-    ESP_LOGI(FNAME,"slerp: %f %f %f %f a:%f", qs.a, qs.b, qs.c, qs.d, radians_to_degrees(qs.getAngle()) );
+    ESP_LOGI(FNAME,"slerp: %f %f %f %f a:%f", qs.a, qs.b, qs.c, qs.d, rad2deg(qs.getAngle()) );
 
     // compass atan2
     ESP_LOGI(FNAME,"Check compass atan2");
@@ -344,21 +341,21 @@ void Quaternion::quaternionen_test()
     ESP_LOGI(FNAME, "Benign case: 1,0,0/0,1,0 - %f %f %f %f", q.a, q.b, q.c, q.d);
     ESP_LOGI(FNAME, "Rotate 90°/Z");
     q = fromRotationMatrix(vector_d(0,1,0), vector_d(-1,0,0));
-    ESP_LOGI(FNAME, "Quaternion : %f %f %f %f a:%f", q.a, q.b, q.c, q.d, radians_to_degrees(q.getAngle()) );
+    ESP_LOGI(FNAME, "Quaternion : %f %f %f %f a:%f", q.a, q.b, q.c, q.d, rad2deg(q.getAngle()) );
     // explicit setup, rotate around z
-    qex = Quaternion(degrees_to_radians(90.f), z_axes);
-    ESP_LOGI(FNAME, "check equal: %f %f %f %f a:%f", qex.a, qex.b, qex.c, qex.d, radians_to_degrees(qex.getAngle()) );
+    qex = Quaternion(deg2rad(90.f), z_axes);
+    ESP_LOGI(FNAME, "check equal: %f %f %f %f a:%f", qex.a, qex.b, qex.c, qex.d, rad2deg(qex.getAngle()) );
 
     ESP_LOGI(FNAME, "Rotate 90°/X");
     q2 = fromRotationMatrix(vector_d(1,0,0), vector_d(0,0,1));
-    ESP_LOGI(FNAME, "Quaternion : %f %f %f %f a:%f", q2.a, q2.b, q2.c, q2.d, radians_to_degrees(q2.getAngle()) );
+    ESP_LOGI(FNAME, "Quaternion : %f %f %f %f a:%f", q2.a, q2.b, q2.c, q2.d, rad2deg(q2.getAngle()) );
     // explicit setup, rotate around z
-    qex = Quaternion(degrees_to_radians(90.f), x_axes);
-    ESP_LOGI(FNAME, "check equal: %f %f %f %f a:%f", qex.a, qex.b, qex.c, qex.d, radians_to_degrees(qex.getAngle()) );
+    qex = Quaternion(deg2rad(90.f), x_axes);
+    ESP_LOGI(FNAME, "check equal: %f %f %f %f a:%f", qex.a, qex.b, qex.c, qex.d, rad2deg(qex.getAngle()) );
 
     ESP_LOGI(FNAME, "Concat Rotate 90°/Z and Rotate 90°/X");
     q = q * q2; // concatenate
-    ESP_LOGI(FNAME, "Quaternion : %f %f %f %f a:%f", q2.a, q2.b, q2.c, q2.d, radians_to_degrees(q2.getAngle()) );
+    ESP_LOGI(FNAME, "Quaternion : %f %f %f %f a:%f", q2.a, q2.b, q2.c, q2.d, rad2deg(q2.getAngle()) );
     v1 = q * x_axes;
     ESP_LOGI(FNAME, "image of x-axes: %f %f %f", v1.a, v1.b, v1.c );
     v1 = q * y_axes;
@@ -367,7 +364,7 @@ void Quaternion::quaternionen_test()
     ESP_LOGI(FNAME, "image of 5,5,5: %f %f %f", v1.a, v1.b, v1.c );
     // concatenate
     qex = fromRotationMatrix(vector_d(0,1,0), vector_d(0,0,1));
-    ESP_LOGI(FNAME, "check equal: %f %f %f %f a:%f", qex.a, qex.b, qex.c, qex.d, radians_to_degrees(qex.getAngle()) );
+    ESP_LOGI(FNAME, "check equal: %f %f %f %f a:%f", qex.a, qex.b, qex.c, qex.d, rad2deg(qex.getAngle()) );
     v1 = qex * x_axes;
     ESP_LOGI(FNAME, "image of x-axes: %f %f %f", v1.a, v1.b, v1.c );
     v1 = qex * y_axes;

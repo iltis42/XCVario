@@ -87,6 +87,10 @@ esp_err_t MPU::initialize()
 #endif
 #endif
 
+	// save accelerometer factory trim values
+	accel_factory_trim = getAccelOffset();
+	MPU_LOGI("Factory trim: %d/%d/%d", accel_factory_trim.x, accel_factory_trim.y, accel_factory_trim.z);
+
 	// set sample rate to 100Hz
 	if (MPU_ERR_CHECK(setSampleRate(100))) return err;
 	MPU_LOGI("Initialization complete");
@@ -900,27 +904,11 @@ raw_axes_t MPU::getGyroOffset()
 esp_err_t MPU::setAccelOffset(raw_axes_t bias)
 {
 	raw_axes_t facBias;
-	// first, read OTP values of Accel factory trim
-
-#if defined CONFIG_MPU6050
-	if (MPU_ERR_CHECK(readBytes(regs::XA_OFFSET_H, 6, buffer))) return err;
-	facBias.x = (buffer[0] << 8) | buffer[1];
-	facBias.y = (buffer[2] << 8) | buffer[3];
-	facBias.z = (buffer[4] << 8) | buffer[5];
-
-#elif defined CONFIG_MPU6500
-	if (MPU_ERR_CHECK(readBytes(regs::XA_OFFSET_H, 8, buffer))) return err;
-	// note: buffer[2] and buffer[5], stay the same,
-	//  they are read just to keep the burst reading
-	facBias.x = (buffer[0] << 8) | buffer[1];
-	facBias.y = (buffer[3] << 8) | buffer[4];
-	facBias.z = (buffer[6] << 8) | buffer[7];
-#endif
-
+	// apply saved values of factory trim
 	// note: preserve bit 0 of factory value (for temperature compensation)
-	facBias.x += (bias.x & ~1);
-	facBias.y += (bias.y & ~1);
-	facBias.z += (bias.z & ~1);
+	facBias.x = accel_factory_trim.x + (bias.x & ~1);
+	facBias.y = accel_factory_trim.y + (bias.y & ~1);
+	facBias.z = accel_factory_trim.z + (bias.z & ~1);
 
 #if defined CONFIG_MPU6050
 	buffer[0] = (uint8_t)(facBias.x >> 8);

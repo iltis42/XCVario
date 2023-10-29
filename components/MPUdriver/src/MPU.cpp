@@ -2464,9 +2464,6 @@ esp_err_t MPU::getBiases(accel_fs_t accelFS, gyro_fs_t gyroFS, raw_axes_t* accel
 		gyroCur.x  = (buffer[6] << 8) | buffer[7];
 		gyroCur.y  = (buffer[8] << 8) | buffer[9];
 		gyroCur.z  = (buffer[10] << 8) | buffer[11];
-		gyroCur.x  = (buffer[6] << 8) | buffer[7];
-		gyroCur.y  = (buffer[8] << 8) | buffer[9];
-		gyroCur.z  = (buffer[10] << 8) | buffer[11];
 		// add up
 		accelAvg.x += accelCur.x;
 		accelAvg.y += accelCur.y;

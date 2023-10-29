@@ -4,6 +4,8 @@
 #include "quaternion.h"
 #include "sensor_processing_lib.h"
 #include "vector.h"
+#include <simplex.h>
+#include <vector>
 
 #define sqr(x) x *x
 #define hypotenuse(x, y) sqrt(sqr(x) + sqr(y))
@@ -37,6 +39,10 @@ float IMU::positiveG = 1.0;
 Quaternion IMU::att_quat(0,0,0,0);
 vector_ijk IMU::att_vector;
 euler_angles IMU::euler;
+int IMU::progress = 0;
+vector_3d<double> IMU::bob_right_wing(0,0,0),
+	IMU::bob_left_wing(0,0,0);
+Quaternion IMU::ref_rot;
 
 vector_ijk gravity_vector( 0,0,-1 );
 
@@ -121,6 +127,9 @@ void IMU::init()
 	att_quat = Quaternion(1.0,0.0,0.0,0.0);
 	att_vector = vector_ijk(0.0,0.0,-1.0);
 	euler = { 0,0,0 };
+	progress = 0;
+	bob_right_wing = bob_left_wing = vector_3d<double>();
+	ref_rot = imu_reference.get();
 	ESP_LOGI(FNAME, "Finished IMU setup");
 }
 
@@ -223,13 +232,17 @@ float IMU::fallbackToGyro(){
 // IMU Function Definition
 void IMU::MPU6050Read()
 {
-	accelX = accelG[2];
-	accelY = -accelG[1];
-	accelZ = -accelG[0];
+	vector_d tmp(accelG[0],accelG[1], accelG[2]);
+	accel = ref_rot * tmp;
 	// Gating ignores Gyro drift < 2 deg per second
-	gyroX = abs(gyroDPS.z*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 :  -(gyroDPS.z);
-	gyroY = abs(gyroDPS.y*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 :   (gyroDPS.y);
-	gyroZ = abs(gyroDPS.x*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 :   (gyroDPS.x);
+	// gyroX = abs(gyroDPS.z*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 :  -(gyroDPS.z);
+	// gyroY = abs(gyroDPS.y*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 :   (gyroDPS.y);
+	// gyroZ = abs(gyroDPS.x*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 :   (gyroDPS.x);
+	tmp.a = abs(gyroDPS.x*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 : gyroDPS.x;
+	tmp.b = abs(gyroDPS.y*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 : gyroDPS.y;
+	tmp.c = abs(gyroDPS.z*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 : gyroDPS.z;
+	gyro = ref_rot * tmp;
+	ESP_LOGI(FNAME,"XYZ:\t%f\t%f\t%f \tL%.2f", accel.a, accel.b, accel.c, accel.get_norm());
 }
 
 void IMU::PitchFromAccel(double *pitch)
@@ -252,4 +265,107 @@ void IMU::RollPitchFromAccel(double *roll, double *pitch)
 	*pitch = atan2((double)accelX, (double)accelZ) * RAD_TO_DEG;
 
 	// ESP_LOGI( FNAME,"Accelerometer Roll: %f  Pitch: %f  (y:%f x:%f)", *roll, *pitch, (double)accelY, (double)accelX );
+}
+
+
+// IMU reference calibration
+class IMU_Ref
+{
+    public:
+	void setBr(vector_d& p) { Br=p; }
+	void setBl(vector_d& p) { Bl=p; }
+    double operator()(const std::vector<double> x) const
+   {
+		const vector_d tmp(x[0], x[1], x[2]);
+        double Nr = (Br - tmp).get_norm();  // |Mr-B|
+		double Nl = (Bl - tmp).get_norm();
+
+		// ESP_LOGI(FNAME, "iter: %f,%f,%f", x[0],x[1],x[2]);
+        return pow(Nr-1,2) + pow(Nl-1,2) + pow(Nl- Nr,2)/10.;
+    }
+	private:
+	vector_d Br, Bl;
+};
+
+void IMU::getAccelSamplesAndCalib(int side)
+{
+	esp_err_t err;
+	vector_d *bob = nullptr;
+	if ( side == 1 ) {
+		bob = &bob_right_wing;
+	}
+	else if ( side == 2 ) {
+		bob = &bob_left_wing;
+	}
+	else {
+		ESP_LOGI(FNAME, "Wrong wing down parameter %d", side);
+		return;
+	}
+
+	err = MPU.getAccelSamplesG(bob->a, bob->b, bob->c);
+	ESP_LOGI(FNAME, "wing down bob: %f/%f/%f", bob->a, bob->b, bob->c);
+	if ( err == 0 ) {
+		progress |= side;
+		if ( progress == 0x3 ) {
+			// Ectract the current bias from wing down measurments
+			std::vector<double> start{.0, .0, .0};
+			std::vector<std::vector<double> > imu_simp{{0.05,0,0},{0,-0.05,0},{0,0,0.05},{0,0,0}};
+			IMU_Ref bias_min;
+			bias_min.setBr(bob_right_wing);
+			bias_min.setBl(bob_left_wing);
+			std::vector<double> x = BT::Simplex(bias_min, start, 1e-10, imu_simp);
+			vector_d bias(x[0],x[1],x[2]);
+			ESP_LOGI(FNAME, "Bias: %f,%f,%f", x[0],x[1],x[2]);
+
+			// Calculate the rotation to the glieder reference from the two measurments
+			// Corrected wing down bob vectores
+			vector_d pureBr = bob_right_wing - bias;
+			vector_d pureBl = bob_left_wing - bias;
+			ESP_LOGI(FNAME,"pureBr:\t%f\t%f\t%f \tL%.2f", pureBr.a, pureBr.b, pureBr.c, pureBr.get_norm());
+			ESP_LOGI(FNAME,"pureBl:\t%f\t%f\t%f \tL%.2f", pureBl.a, pureBl.b, pureBl.c, pureBl.get_norm());
+
+			// A vector from skid touch points towards the main wheel touch point
+			// The X in glider reference (points towards the nose)
+			vector_d X = pureBr.cross(pureBl); // Br x Bl
+			X.normalize();
+			ESP_LOGI(FNAME, "X: %f,%f,%f", X.a, X.b, X.c);
+			// The Z in glider reference
+			// The bob in glider ref, skid stil on the ground (points up)
+			vector_d Z(pureBr+pureBl);
+			Z.normalize();
+			// The Y in glider reference
+			vector_d Y = Z.cross(X);
+			Y.normalize();
+			ESP_LOGI(FNAME, "Y: %f,%f,%f", Y.a, Y.b, Y.c);
+			ESP_LOGI(FNAME, "Z: %f,%f,%f", Z.a, Z.b, Z.c);
+
+			// Correct the result by the ground angle of attac
+			Quaternion rot_groundAA(glider_ground_aa.get(), vector_ijk(0,1,0)); // rotate positive around Y
+			ref_rot = Quaternion::fromRotationMatrix(X, Y).get_conjugate();// * rot_groundAA;
+			ref_rot.normalize();
+
+			// Save to nvs storage
+			imu_reference.set(ref_rot, false);
+			mpud::raw_axes_t raw_bias(bias.a*-2048., bias.b*-2048., bias.c*-2048.);
+			accl_bias.set(raw_bias, false);
+			// Reprogam MPU bias
+			MPU.setAccelOffset(raw_bias);
+
+		}
+	}
+}
+
+void IMU::defaultImuReference(bool topDown)
+{
+	// Revert from calibrated IMU to default mapping, which fits 
+	// roughly to an upright or top down installation.
+	Quaternion accelDefaultRef = Quaternion(90.0f, vector_ijk(0,1,0)).get_conjugate();
+	ESP_LOGI(FNAME, "default ref: %f %f %f %f a:%f", accelDefaultRef.a, accelDefaultRef.b, accelDefaultRef.c, accelDefaultRef.d, accelDefaultRef.getAngle()*180./M_PI );
+
+	if ( topDown ) {
+		accelDefaultRef = accelDefaultRef * Quaternion(180.0f, vector_ijk(1,0,0));
+	}
+	ref_rot = accelDefaultRef; //Quaternion();
+	imu_reference.set(ref_rot, false);
+	progress = 0;
 }

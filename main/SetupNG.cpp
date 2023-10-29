@@ -6,6 +6,7 @@
  */
 
 #include "SetupNG.h"
+#include "quaternion.h"
 #include <string>
 #include <stdio.h>
 #include "esp_system.h"
@@ -397,8 +398,10 @@ SetupNG<int> 			gear_warning("GEARWA", 0 );
 SetupNG<t_wireless_id>  custom_wireless_id("WLID", t_wireless_id("") );
 SetupNG<int> 			drawing_prio("DRAWP", DP_NEEDLE );
 
-mpud::raw_axes_t zero_bias;
-
+static mpud::raw_axes_t zero_bias;
+SetupNG<float>				glider_ground_aa("GLIDER_GROUND_AA", 12.0, true, SYNC_FROM_MASTER);
+							// default is 90° around Y-axes
+SetupNG<Quaternion>			imu_reference("IMU_REFERENCE", Quaternion(0.525322, -0.000000, -0.850904, -0.000000), false);
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );
 SetupNG<mpud::raw_axes_t>	accl_bias("ACCL_BIAS", zero_bias );
 SetupNG<float>              mpu_temperature("MPUTEMP", 45.0, true, SYNC_FROM_MASTER, PERSISTENT, chg_mpu_target );    // default for AHRS chip temperature (XCV 2023)

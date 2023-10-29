@@ -999,10 +999,18 @@ accelZ = accelG[0];
 esp_err_t MPU::acceleration(raw_axes_t* accel)
 {
 	if (MPU_ERR_CHECK(readBytes(regs::ACCEL_XOUT_H, 6, buffer))) return err;
-	accel->x = buffer[0] << 8 | buffer[1];
-	accel->y = buffer[2] << 8 | buffer[3];
-	accel->z = buffer[4] << 8 | buffer[5];
-	// MPU_LOGI("accel:\t%d\t%d\t%d", accel->x, accel->y, accel->z);
+	if( topDown ){
+		accel->x = -(buffer[0] << 8 | buffer[1]);   // real Z
+		accel->y = -(buffer[2] << 8 | buffer[3]);    // real Y
+		accel->z = (buffer[4] << 8 | buffer[5]);    // real -X
+
+	}else
+	{
+		accel->x = buffer[0] << 8 | buffer[1];
+		accel->y = buffer[2] << 8 | buffer[3];
+		accel->z = buffer[4] << 8 | buffer[5];
+	}
+	// MPU_LOGI("MPU acc: x:%d y:%d z:%d", accel->x, accel->y, accel->z );
 	return err;
 }
 
@@ -1052,7 +1060,7 @@ float MPU::getTemperature(){
  * Read temperature raw data.
  * */
 esp_err_t MPU::temperature(int16_t* temp)
-{
+{XCVario
 	if (MPU_ERR_CHECK(readBytes(regs::TEMP_OUT_H, 2, buffer))) return err;
 	*temp = buffer[0] << 8 | buffer[1];
 	return err;
@@ -1123,6 +1131,7 @@ esp_err_t MPU::sensors(sensors_t* sensors, size_t extsens_len)
 	sensors->gyro.y  = buffer[10] << 8 | buffer[11];
 	sensors->gyro.z  = buffer[12] << 8 | buffer[13];
 	sensors->temp    = buffer[6] << 8 | buffer[7];
+
 
 #if CONFIG_MPU_AK89xx
 sensors->mag.x = buffer[16] << 8 | buffer[15];

@@ -2388,6 +2388,72 @@ esp_err_t MPU::gyroSelfTest(raw_axes_t& regularBias, raw_axes_t& selfTestBias, u
 }
 
 /**
+ * @brief Collect samples of a static 1g acceleration
+ * This algorithm takes about ~500ms to oversample.
+ * */
+esp_err_t MPU::getAccelSamplesG(double& avgx, double& avgy, double& avgz)
+{
+	// configurations to get accel only
+	constexpr fifo_config_t kFIFOConfig = FIFO_CFG_ACCEL;
+	constexpr size_t kPacketSize        = 6;
+	// backup previous configuration
+	const fifo_config_t prevFIFOConfig = getFIFOConfig();
+	const accel_fs_t accelFS           = getAccelFullScale();
+	const bool prevFIFOState           = getFIFOEnabled();
+	// setup .. stick with the intended use configuration in terms of rate and resolution(!)
+	if (MPU_ERR_CHECK(setFIFOConfig(kFIFOConfig))) return err;
+	if (MPU_ERR_CHECK(setFIFOEnabled(true))) return err;
+
+	if (MPU_ERR_CHECK(setAccelOffset())) return err;
+
+	// wait for 100ms for sensors to stabilize
+	vTaskDelay(100 / portTICK_PERIOD_MS);
+	// fill FIFO for 400ms
+	if (MPU_ERR_CHECK(resetFIFO())) return err;
+	vTaskDelay(400 / portTICK_PERIOD_MS);
+	if (MPU_ERR_CHECK(setFIFOConfig(FIFO_CFG_NONE))) return err;
+	// get FIFO count
+	const uint16_t fifoCount = getFIFOCount();
+	MPU_LOGI("Fifocount %d", fifoCount);
+	if (MPU_ERR_CHECK(lastError())) return err;
+	const int packetCount = fifoCount / kPacketSize;
+	// read overrun bytes, if any
+	const int overrunCount = fifoCount - (packetCount * kPacketSize);
+	uint8_t buffer[kPacketSize] = {0};
+	if (overrunCount > 0) {
+		if (MPU_ERR_CHECK(readFIFO(overrunCount, buffer))) return err;
+	}
+	// fetch data and add up
+	axes_t<int> avg;
+	for (int i = 0; i < packetCount; i++) {
+		if (MPU_ERR_CHECK(readFIFO(kPacketSize, buffer))) return err;
+		// retrieve data
+		raw_axes_t accelCur;
+		accelCur.x = (buffer[0] << 8) | buffer[1];
+		accelCur.y = (buffer[2] << 8) | buffer[3];
+		accelCur.z = (buffer[4] << 8) | buffer[5];
+		// MPU_LOGI("Part %d/%d/%d", accelCur.x, accelCur.y, accelCur.z);
+		avg += accelCur; // add up
+	}
+	// calculate average
+	avg /= packetCount;
+	MPU_LOGI("Avg %d/%d/%d", avg.x, avg.y, avg.z);
+
+	// the unit in multiples of g
+	double one_g = 0x8000 >> (accelFS+1);
+	avgx = double(avg.x) / one_g; // returned vector
+	avgy = double(avg.y) / one_g;
+	avgz = double(avg.z) / one_g;
+
+	// Restore registers
+	MPU_ERR_CHECK(setFIFOConfig(prevFIFOConfig));
+	MPU_ERR_CHECK(setFIFOEnabled(prevFIFOState));
+
+	return err;
+}
+
+
+/**
  * @brief Compute the Biases in regular mode and self-test mode.
  * @attention When calculating the biases the MPU must remain as horizontal as possible (0 degrees), facing up.
  * This algorithm takes about ~400ms to compute offsets.

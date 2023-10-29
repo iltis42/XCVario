@@ -1,5 +1,10 @@
-#include "vector_3d.h"
 #pragma once
+
+#include "vector_3d.h"
+#include <cmath>
+
+#define deg2rad(degrees) ((degrees) * float(M_PI) / 180.0f)
+#define rad2deg(rad) ((rad) * 180.0f / float(M_PI))
 
 //#define Quaternionen_Test 1
 

@@ -247,12 +247,12 @@ void IMU::MPU6050Read()
 
 void IMU::PitchFromAccel(double *pitch)
 {
-	*pitch = atan2(accelX, -accelZ) * RAD_TO_DEG;
+	*pitch = atan2(accel.a, accel.c) * RAD_TO_DEG;
 }
 
 void IMU::PitchFromAccelRad(double *pitch)
 {
-	*pitch = atan2(accelX, -accelZ);
+	*pitch = atan2(accel.a, accel.c);
 }
 
 void IMU::RollPitchFromAccel(double *roll, double *pitch)
@@ -261,10 +261,10 @@ void IMU::RollPitchFromAccel(double *roll, double *pitch)
 	// atan2 outputs the value of -π to π (radians) - see http://en.wikipedia.org/wiki/Atan2
 	// It is then converted from radians to degrees
 
-	*roll = atan((double)accelY / hypotenuse((double)accelX, (double)accelZ)) * RAD_TO_DEG;
-	*pitch = atan2((double)accelX, (double)accelZ) * RAD_TO_DEG;
+	*roll = atan(accel.b /  accel.c) * RAD_TO_DEG;
+	*pitch = atan2(accel.a, accel.c) * RAD_TO_DEG;
 
-	// ESP_LOGI( FNAME,"Accelerometer Roll: %f  Pitch: %f  (y:%f x:%f)", *roll, *pitch, (double)accelY, (double)accelX );
+	// ESP_LOGI( FNAME,"Accelerometer Roll: %f  Pitch: %f  (y:%f x:%f)", *roll, *pitch, accel.b, accel.a );
 }
 
 

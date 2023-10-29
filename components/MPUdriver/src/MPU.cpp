@@ -1021,6 +1021,7 @@ esp_err_t MPU::acceleration(raw_axes_t* accel)
 		accel->y = buffer[2] << 8 | buffer[3];
 		accel->z = buffer[4] << 8 | buffer[5];
 	}
+	// MPU_LOGI("MPU acc: x:%d y:%d z:%d", accel->x, accel->y, accel->z );
 	return err;
 }
 
@@ -1194,6 +1195,7 @@ esp_err_t MPU::sensors(sensors_t* sensors, size_t extsens_len)
 		sensors->gyro.z  = buffer[12] << 8 | buffer[13];
 	}
 	sensors->temp    = buffer[6] << 8 | buffer[7];
+
 
 #if CONFIG_MPU_AK89xx
 sensors->mag.x = buffer[16] << 8 | buffer[15];

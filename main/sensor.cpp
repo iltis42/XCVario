@@ -1000,7 +1000,6 @@ void system_startup(void *args){
 		MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
 		mpud::raw_axes_t gb = gyro_bias.get();
 		mpud::raw_axes_t ab = accl_bias.get();
-		char ahrs[30];
 		if( 0 ) { // gb.isZero() ) {
 			ESP_LOGI( FNAME,"MPU computeOffsets");
 			MPU.computeOffsets( &ab, &gb );  // returns Offsets in 16G scale
@@ -1016,7 +1015,7 @@ void system_startup(void *args){
 		delay( 500 );
 		mpud::raw_axes_t accelRaw;
 		float accel = 0;
-		for( auto i=0; i<11; i++ ){
+		for( auto i=0; i<10; i++ ){
 			esp_err_t err = MPU.acceleration(&accelRaw);  // fetch raw data from the registers
 			if( err != ESP_OK )
 				ESP_LOGE(FNAME, "AHRS acceleration I2C read error");
@@ -1026,6 +1025,7 @@ void system_startup(void *args){
 			if( i>0 )
 				accel += accelG[0];
 		}
+		char ahrs[30];
 		sprintf( ahrs,"AHRS Sensor: OK (%.2f g)", accel/10 );
 		display->writeText( line++, ahrs );
 		logged_tests += "MPU6050 AHRS test: PASSED\n";

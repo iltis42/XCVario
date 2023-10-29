@@ -26,7 +26,6 @@ static const char* TAG = CONFIG_MPU_CHIP_MODEL;
 
 #include "mpu/log.hpp"
 
-extern bool topDown;
 extern float mpu_target_temp;
 
 
@@ -74,24 +73,24 @@ esp_err_t MPU::initialize()
 	}
 #endif
 
-// set Full Scale range
-if (MPU_ERR_CHECK(setGyroFullScale(GYRO_FS_500DPS))) return err;
-if (MPU_ERR_CHECK(setAccelFullScale(ACCEL_FS_4G))) return err;
-// set Digital Low Pass Filter to get smoother data
-if (MPU_ERR_CHECK(setDigitalLowPassFilter(DLPF_5HZ))) return err;
+	// set Full Scale range
+	if (MPU_ERR_CHECK(setGyroFullScale(GYRO_FS_500DPS))) return err;
+	if (MPU_ERR_CHECK(setAccelFullScale(ACCEL_FS_4G))) return err;
+	// set Digital Low Pass Filter to get smoother data
+	if (MPU_ERR_CHECK(setDigitalLowPassFilter(DLPF_5HZ))) return err;
 
 // setup magnetometer
 #ifdef CONFIG_MPU_AK89xx
-if (MPU_ERR_CHECK(compassInit())) return err;
+	if (MPU_ERR_CHECK(compassInit())) return err;
 #ifdef CONFIG_MPU_AK8963
-if (MPU_ERR_CHECK(compassSetSensitivity(MAG_SENSITIVITY_0_15_uT))) return err;
+	if (MPU_ERR_CHECK(compassSetSensitivity(MAG_SENSITIVITY_0_15_uT))) return err;
 #endif
 #endif
 
-// set sample rate to 100Hz
-if (MPU_ERR_CHECK(setSampleRate(100))) return err;
-MPU_LOGI("Initialization complete");
-return err;
+	// set sample rate to 100Hz
+	if (MPU_ERR_CHECK(setSampleRate(100))) return err;
+	MPU_LOGI("Initialization complete");
+	return err;
 }
 
 /**
@@ -1012,18 +1011,10 @@ accelZ = accelG[0];
 esp_err_t MPU::acceleration(raw_axes_t* accel)
 {
 	if (MPU_ERR_CHECK(readBytes(regs::ACCEL_XOUT_H, 6, buffer))) return err;
-	if( topDown ){
-		accel->x = -(buffer[0] << 8 | buffer[1]);   // real Z
-		accel->y = -(buffer[2] << 8 | buffer[3]);    // real Y
-		accel->z = (buffer[4] << 8 | buffer[5]);    // real -X
-
-	}else
-	{
-		accel->x = buffer[0] << 8 | buffer[1];
-		accel->y = buffer[2] << 8 | buffer[3];
-		accel->z = buffer[4] << 8 | buffer[5];
-	}
-	// MPU_LOGI("MPU acc: x:%d y:%d z:%d", accel->x, accel->y, accel->z );
+	accel->x = buffer[0] << 8 | buffer[1];
+	accel->y = buffer[2] << 8 | buffer[3];
+	accel->z = buffer[4] << 8 | buffer[5];
+	// MPU_LOGI("accel:\t%d\t%d\t%d", accel->x, accel->y, accel->z);
 	return err;
 }
 
@@ -1033,15 +1024,9 @@ esp_err_t MPU::acceleration(raw_axes_t* accel)
 esp_err_t MPU::acceleration(int16_t* x, int16_t* y, int16_t* z)
 {
 	if (MPU_ERR_CHECK(readBytes(regs::ACCEL_XOUT_H, 6, buffer))) return err;
-	if( topDown ){
-		*x = -(buffer[0] << 8 | buffer[1]);
-		*y = -(buffer[2] << 8 | buffer[3]);
-		*z = buffer[4] << 8 | buffer[5];
-	}else{
-		*x = buffer[0] << 8 | buffer[1];
-		*y = buffer[2] << 8 | buffer[3];
-		*z = buffer[4] << 8 | buffer[5];
-	}
+	*x = buffer[0] << 8 | buffer[1];
+	*y = buffer[2] << 8 | buffer[3];
+	*z = buffer[4] << 8 | buffer[5];
 	return err;
 }
 
@@ -1051,17 +1036,9 @@ esp_err_t MPU::acceleration(int16_t* x, int16_t* y, int16_t* z)
 esp_err_t MPU::rotation(raw_axes_t* gyro)
 {
 	if (MPU_ERR_CHECK(readBytes(regs::GYRO_XOUT_H, 6, buffer))) return err;
-	if( topDown ){
-		gyro->x = -(buffer[0] << 8 | buffer[1]);  // real Z
-		gyro->y = -(buffer[2] << 8 | buffer[3]);  // real Y
-		gyro->z = (buffer[4] << 8 | buffer[5]);   // real X
-	}
-	else
-	{
-		gyro->x = buffer[0] << 8 | buffer[1];
-		gyro->y = buffer[2] << 8 | buffer[3];
-		gyro->z = buffer[4] << 8 | buffer[5];
-	}
+	gyro->x = buffer[0] << 8 | buffer[1];
+	gyro->y = buffer[2] << 8 | buffer[3];
+	gyro->z = buffer[4] << 8 | buffer[5];
 	return err;
 }
 
@@ -1071,16 +1048,9 @@ esp_err_t MPU::rotation(raw_axes_t* gyro)
 esp_err_t MPU::rotation(int16_t* x, int16_t* y, int16_t* z)
 {
 	if (MPU_ERR_CHECK(readBytes(regs::GYRO_XOUT_H, 6, buffer))) return err;
-	if( topDown ){
-		*x = -(buffer[0] << 8 | buffer[1]);
-		*y = -(buffer[2] << 8 | buffer[3]);
-		*z = (buffer[4] << 8 | buffer[5]);
-	}
-	else{
-		*x = (buffer[0] << 8 | buffer[1]);
-		*y = (buffer[2] << 8 | buffer[3]);
-		*z = (buffer[4] << 8 | buffer[5]);
-	}
+	*x = (buffer[0] << 8 | buffer[1]);
+	*y = (buffer[2] << 8 | buffer[3]);
+	*z = (buffer[4] << 8 | buffer[5]);
 	return err;
 }
 
@@ -1106,23 +1076,12 @@ esp_err_t MPU::temperature(int16_t* temp)
 esp_err_t MPU::motion(raw_axes_t* accel, raw_axes_t* gyro)
 {
 	if (MPU_ERR_CHECK(readBytes(regs::ACCEL_XOUT_H, 14, buffer))) return err;
-	if( topDown ){
-		accel->x = -(buffer[0] << 8 | buffer[1]);
-		accel->y = -(buffer[2] << 8 | buffer[3]);
-		accel->z = buffer[4] << 8 | buffer[5];
-		gyro->x  = -(buffer[8] << 8 | buffer[9]);
-		gyro->y  = -(buffer[10] << 8 | buffer[11]);
-		gyro->z  = buffer[12] << 8 | buffer[13];
-	}
-	else
-	{
-		accel->x = buffer[0] << 8 | buffer[1];
-		accel->y = buffer[2] << 8 | buffer[3];
-		accel->z = buffer[4] << 8 | buffer[5];
-		gyro->x  = buffer[8] << 8 | buffer[9];
-		gyro->y  = buffer[10] << 8 | buffer[11];
-		gyro->z  = buffer[12] << 8 | buffer[13];
-	}
+	accel->x = buffer[0] << 8 | buffer[1];
+	accel->y = buffer[2] << 8 | buffer[3];
+	accel->z = buffer[4] << 8 | buffer[5];
+	gyro->x  = buffer[8] << 8 | buffer[9];
+	gyro->y  = buffer[10] << 8 | buffer[11];
+	gyro->z  = buffer[12] << 8 | buffer[13];
 	return err;
 }
 
@@ -1143,22 +1102,12 @@ esp_err_t MPU::dmpGetQuaternion(int16_t *data) {
 esp_err_t MPU::sensors(raw_axes_t* accel, raw_axes_t* gyro, int16_t* temp)
 {
 	if (MPU_ERR_CHECK(readBytes(regs::ACCEL_XOUT_H, 14, buffer))) return err;
-	if( topDown ){
-		accel->x = -(buffer[0] << 8 | buffer[1]);
-		accel->y = -(buffer[2] << 8 | buffer[3]);
-		accel->z = buffer[4] << 8 | buffer[5];
-		gyro->x  = -(buffer[8] << 8 | buffer[9]);
-		gyro->y  = -(buffer[10] << 8 | buffer[11]);
-		gyro->z  = buffer[12] << 8 | buffer[13];
-	}
-	else{
-		accel->x = buffer[0] << 8 | buffer[1];
-		accel->y = buffer[2] << 8 | buffer[3];
-		accel->z = buffer[4] << 8 | buffer[5];
-		gyro->x  = buffer[8] << 8 | buffer[9];
-		gyro->y  = buffer[10] << 8 | buffer[11];
-		gyro->z  = buffer[12] << 8 | buffer[13];
-	}
+	accel->x = buffer[0] << 8 | buffer[1];
+	accel->y = buffer[2] << 8 | buffer[3];
+	accel->z = buffer[4] << 8 | buffer[5];
+	gyro->x  = buffer[8] << 8 | buffer[9];
+	gyro->y  = buffer[10] << 8 | buffer[11];
+	gyro->z  = buffer[12] << 8 | buffer[13];
 	*temp    = buffer[6] << 8 | buffer[7];
 	return err;
 }
@@ -1179,23 +1128,12 @@ esp_err_t MPU::sensors(sensors_t* sensors, size_t extsens_len)
 #endif
 	if (MPU_ERR_CHECK(readBytes(regs::ACCEL_XOUT_H, length, buffer))) return err;
 
-	if( topDown ){
-		sensors->accel.x = -(buffer[0] << 8 | buffer[1]);
-		sensors->accel.y = -(buffer[2] << 8 | buffer[3]);
-		sensors->accel.z = buffer[4] << 8 | buffer[5];
-		sensors->gyro.x  = -(buffer[8] << 8 | buffer[9]);
-		sensors->gyro.y  = -(buffer[10] << 8 | buffer[11]);
-		sensors->gyro.z  = buffer[12] << 8 | buffer[13];
-	}
-	else
-	{
-		sensors->accel.x = buffer[0] << 8 | buffer[1];
-		sensors->accel.y = buffer[2] << 8 | buffer[3];
-		sensors->accel.z = buffer[4] << 8 | buffer[5];
-		sensors->gyro.x  = buffer[8] << 8 | buffer[9];
-		sensors->gyro.y  = buffer[10] << 8 | buffer[11];
-		sensors->gyro.z  = buffer[12] << 8 | buffer[13];
-	}
+	sensors->accel.x = buffer[0] << 8 | buffer[1];
+	sensors->accel.y = buffer[2] << 8 | buffer[3];
+	sensors->accel.z = buffer[4] << 8 | buffer[5];
+	sensors->gyro.x  = buffer[8] << 8 | buffer[9];
+	sensors->gyro.y  = buffer[10] << 8 | buffer[11];
+	sensors->gyro.z  = buffer[12] << 8 | buffer[13];
 	sensors->temp    = buffer[6] << 8 | buffer[7];
 
 
@@ -2466,6 +2404,7 @@ esp_err_t MPU::gyroSelfTest(raw_axes_t& regularBias, raw_axes_t& selfTestBias, u
  * @brief Compute the Biases in regular mode and self-test mode.
  * @attention When calculating the biases the MPU must remain as horizontal as possible (0 degrees), facing up.
  * This algorithm takes about ~400ms to compute offsets.
+ * todo needs rework
  * */
 esp_err_t MPU::getBiases(accel_fs_t accelFS, gyro_fs_t gyroFS, raw_axes_t* accelBias, raw_axes_t* gyroBias,
 		bool selftest)
@@ -2546,9 +2485,9 @@ esp_err_t MPU::getBiases(accel_fs_t accelFS, gyro_fs_t gyroFS, raw_axes_t* accel
 	// remove gravity from Accel Z axis for bias
 
 	const uint16_t gravityLSB = INT16_MAX >> (accelFS + 1);
-	if( topDown )  // consider topdown mode for offset compensation
-		accelAvg.x += gravityLSB;
-	else
+	// if( topDown )  // consider topdown mode for offset compensation
+		// accelAvg.x += gravityLSB;
+	// else
 		accelAvg.x -= gravityLSB;
 	// printf("XXXXXXX CAX:%d\n", accelAvg.x);
 

@@ -121,8 +121,6 @@ AdaptUGC *MYUCG = 0;  // ( SPI_DC, CS_Display, RESET_Display );
 IpsDisplay *display = 0;
 CenterAid  *centeraid = 0;
 
-bool topDown = false;
-
 OTA *ota = 0;
 
 ESPRotary Rotary;
@@ -192,6 +190,7 @@ int active_screen = 0;  // 0 = Vario
 float mpu_target_temp=45.0;
 
 AdaptUGC *egl = 0;
+
 
 #define GYRO_FS (mpud::GYRO_FS_250DPS)
 
@@ -923,11 +922,6 @@ void system_startup(void *args){
 	if( hardwareRevision.get() == HW_UNKNOWN ){  // per default we assume there is XCV-20
 		ESP_LOGI( FNAME, "Hardware Revision unknown, set revision 2 (XCV-20)");
 		hardwareRevision.set(XCVARIO_20);
-	}
-
-	if( display_orientation.get() ){
-		ESP_LOGI( FNAME, "TopDown display mode flag set");
-		topDown = true;
 	}
 
 	wireless = (e_wireless_type)(wireless_type.get()); // we cannot change this on the fly, so get that on boot

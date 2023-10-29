@@ -77,7 +77,7 @@ Quaternion slerp(Quaternion q1, Quaternion q2, double lambda)
 	return qr.normalize();
 }
 
-// Get a normalize version of quaternion
+// Get a normalized version of quaternion
 Quaternion Quaternion::get_normalized() const
 {
     float len = sqrt(a*a + b*b + c*c + d*d);
@@ -118,6 +118,27 @@ vector_ijk Quaternion::operator*(const vector_ijk& vec) const
         + 2.0f * (a13 * vec.a + a23 * vec.b - a02 * vec.a + a01 * vec.b);
     return result;
 }
+vector_d Quaternion::operator*(const vector_d& vec) const
+{
+    double a00 = a * a;
+    double a01 = a * b;
+    double a02 = a * c;
+    double a03 = a * d;
+    double a11 = b * b;
+    double a12 = b * c;
+    double a13 = b * d;
+    double a22 = c * c;
+    double a23 = c * d;
+    double a33 = d * d;
+    vector_d result;
+    result.a = vec.a * (+a00 + a11 - a22 - a33)
+        + 2.0f * (a12 * vec.b + a13 * vec.c + a02 * vec.c - a03 * vec.b);
+    result.b = vec.b * (+a00 - a11 + a22 - a33)
+        + 2.0f * (a12 * vec.a + a23 * vec.c + a03 * vec.a - a01 * vec.c);
+    result.c = vec.c * (+a00 - a11 - a22 + a33)
+        + 2.0f * (a13 * vec.a + a23 * vec.b - a02 * vec.a + a01 * vec.b);
+    return result;
+}
 
 // return euler angles yaw, pitch, roll as degree from quaternion
 euler_angles Quaternion::to_euler_angles()
@@ -140,11 +161,11 @@ euler_angles Quaternion::to_euler_angles()
 Quaternion Quaternion::AlignVectors(const vector_ijk &start, const vector_ijk &dest)
 {
 	vector_ijk from = start;
-    from.normalize_f();
+    from.normalize();
 	vector_ijk to = dest;
-    to.normalize_f();
+    to.normalize();
 
-	float cosTheta = from.dot_product(to);
+	float cosTheta = from.dot(to);
 	vector_ijk rotationAxis;
 
 	if (cosTheta < -1 + 0.001f){
@@ -155,7 +176,7 @@ Quaternion Quaternion::AlignVectors(const vector_ijk &start, const vector_ijk &d
 		if (rotationAxis.get_norm2() < 0.01 ) // bad luck, they were parallel, try again!
 			rotationAxis = from.cross(vector_ijk(1.0f, 0.0f, 0.0f));
 
-		rotationAxis.normalize_f();
+		rotationAxis.normalize();
 		return Quaternion(degrees_to_radians(180.0f), rotationAxis);
 	}
 
@@ -170,6 +191,53 @@ Quaternion Quaternion::AlignVectors(const vector_ijk &start, const vector_ijk &d
 		rotationAxis.c / s
 	);
 }
+
+Quaternion Quaternion::fromRotationMatrix(const vector_d &X, const vector_d &Y)
+{
+    vector_d mat[3];
+    mat[0] = X;
+    mat[1] = Y;
+    mat[2] = X.cross(Y);
+    ESP_LOGI(FNAME, "Z: %f,%f,%f", mat[2].a, mat[2].b, mat[2].c);
+
+    Quaternion result;
+    const double trace = mat[0].a + mat[1].b + mat[2].c;
+    ESP_LOGI(FNAME, "trace: %f", trace);
+
+    // check the diagonal
+    if ( trace > 0.0 ) {
+        double s = std::sqrt(trace + 1.0);
+        result.a = s / 2.0;
+        s = 0.5 / s;
+
+        result.b = (mat[1][2] - mat[2][1]) * s;
+        result.c = (mat[2][0] - mat[0][2]) * s;
+        result.d = (mat[0][1] - mat[1][0]) * s;
+    } else {
+        // find largest diag. element with index i
+        int i = 0;
+        if ( mat[1][1] > mat[0][0] ) {
+            i = 1;
+        }
+        if ( mat[2][2] > mat[i][i] ) {
+            i = 2;
+        }
+        int j = (i + 1) % 3;
+        int k = (i + 2) % 3;
+
+        double s = std::sqrt((mat[i][i] - (mat[j][j] + mat[k][k])) + 1.0);
+        vector_d v;
+        v[i] = s * 0.5;
+        s = 0.5 / s;
+
+        result.a = (mat[j][k] - mat[k][j]) * s;
+        v[j] = (mat[i][j] + mat[j][i]) * s;
+        v[k] = (mat[i][k] + mat[k][i]) * s;
+        result.b = v[0]; result.c = v[1]; result.d = v[2];
+    }
+    return result;
+}
+
 
 // Grad
 float Compass_atan2( float y, float x )
@@ -186,12 +254,40 @@ float Compass_atan2( float y, float x )
 } 
 
 #ifdef Quaternionen_Test
+
+// Test quaternion performance against a matrix mapping
+class Matrix
+{
+public:
+    Matrix() = default;
+    Matrix(const vector_ijk& x, const vector_ijk& y) {
+        vector_ijk z = x.cross(y);
+        m[0][0] = x.a; m[1][0] = x.a; m[2][0] = x.a;
+        m[0][1] = y.b; m[1][1] = y.b; m[2][1] = y.b;
+        m[0][2] = z.c; m[1][2] = z.c; m[2][2] = z.c;
+    }
+    vector_ijk operator*(vector_ijk& v2) {
+        vector_ijk r;
+        // not correct, just for a performance comparison
+        for ( int row = 0; row < 3; ++row ) {
+            for ( int col = 0; col < 3; ++col ) {
+                r[row] += m[row][col] * v2[row];
+            }
+        }
+        return r;
+    }
+
+    float m[3][3];
+};
+
 void Quaternion::quaternionen_test()
 {
     vector_ijk v1(1,0,0),
         v2(0,0,1),
         vt(1,2,3),
+        x_axes(1,0,0),
         y_axes(0,1,0),
+        z_axes(0,0,1),
         v3;
 
     // v to v setup
@@ -200,14 +296,23 @@ void Quaternion::quaternionen_test()
     int64_t t1 = esp_timer_get_time();
     ESP_LOGI(FNAME,"Setup");
     ESP_LOGI(FNAME,"Align v1 to v2: (%f,%f,%f) - (%f,%f,%f)", v1.a, v1.b, v1.c, v2.a, v2.b, v2.c );
-    ESP_LOGI(FNAME,"Q: %lld - %f %f %f %f a:%f", t1-t0, q.a, q.b, q.c, q.d, radians_to_degrees(q.getAngle()) );
+    ESP_LOGI(FNAME,"%-4lldusec: %f %f %f %f a:%f", t1-t0, q.a, q.b, q.c, q.d, radians_to_degrees(q.getAngle()) );
     // explicit setup, rotate around y
     Quaternion qex = Quaternion(degrees_to_radians(-90.f), y_axes);
     ESP_LOGI(FNAME,"equal to: %f %f %f %f a:%f", qex.a, qex.b, qex.c, qex.d, radians_to_degrees(qex.getAngle()) );
 
     // rotate
+    t0 = esp_timer_get_time();
     v3 = q * v1;
-    ESP_LOGI(FNAME,"Mapping");
+    t1 = esp_timer_get_time();
+    ESP_LOGI(FNAME,"Mapping (%lldusec)", t1-t0);
+    ESP_LOGI(FNAME,"rotate v1 -> v2: %f %f %f", v3.a, v3.b, v3.c );
+    // compare to matrix mapping
+    Matrix m(v2, y_axes);
+    t0 = esp_timer_get_time();
+    v3 = m * v1;
+    t1 = esp_timer_get_time();
+    ESP_LOGI(FNAME,"Matrixing (%lldusec)", t1-t0);
     ESP_LOGI(FNAME,"rotate v1 -> v2: %f %f %f", v3.a, v3.b, v3.c );
 
     // slerp
@@ -231,6 +336,44 @@ void Quaternion::quaternionen_test()
     ESP_LOGI(FNAME,"225: %f", Compass_atan2(-0.6, -0.6));
     ESP_LOGI(FNAME,"270: %f", Compass_atan2(-1., 0.));
     ESP_LOGI(FNAME,"315: %f", Compass_atan2(-0.6, 0.6));
+
+
+    // fromRotationMatrix
+    ESP_LOGI(FNAME, "Test import of 3x3 matrix");
+    q = fromRotationMatrix(vector_d(1,0,0), vector_d(0,1,0));
+    ESP_LOGI(FNAME, "Benign case: 1,0,0/0,1,0 - %f %f %f %f", q.a, q.b, q.c, q.d);
+    ESP_LOGI(FNAME, "Rotate 90°/Z");
+    q = fromRotationMatrix(vector_d(0,1,0), vector_d(-1,0,0));
+    ESP_LOGI(FNAME, "Quaternion : %f %f %f %f a:%f", q.a, q.b, q.c, q.d, radians_to_degrees(q.getAngle()) );
+    // explicit setup, rotate around z
+    qex = Quaternion(degrees_to_radians(90.f), z_axes);
+    ESP_LOGI(FNAME, "check equal: %f %f %f %f a:%f", qex.a, qex.b, qex.c, qex.d, radians_to_degrees(qex.getAngle()) );
+
+    ESP_LOGI(FNAME, "Rotate 90°/X");
+    q2 = fromRotationMatrix(vector_d(1,0,0), vector_d(0,0,1));
+    ESP_LOGI(FNAME, "Quaternion : %f %f %f %f a:%f", q2.a, q2.b, q2.c, q2.d, radians_to_degrees(q2.getAngle()) );
+    // explicit setup, rotate around z
+    qex = Quaternion(degrees_to_radians(90.f), x_axes);
+    ESP_LOGI(FNAME, "check equal: %f %f %f %f a:%f", qex.a, qex.b, qex.c, qex.d, radians_to_degrees(qex.getAngle()) );
+
+    ESP_LOGI(FNAME, "Concat Rotate 90°/Z and Rotate 90°/X");
+    q = q * q2; // concatenate
+    ESP_LOGI(FNAME, "Quaternion : %f %f %f %f a:%f", q2.a, q2.b, q2.c, q2.d, radians_to_degrees(q2.getAngle()) );
+    v1 = q * x_axes;
+    ESP_LOGI(FNAME, "image of x-axes: %f %f %f", v1.a, v1.b, v1.c );
+    v1 = q * y_axes;
+    ESP_LOGI(FNAME, "image of y-axes: %f %f %f", v1.a, v1.b, v1.c );
+    v1 = q * vector_ijk(5,5,5);
+    ESP_LOGI(FNAME, "image of 5,5,5: %f %f %f", v1.a, v1.b, v1.c );
+    // concatenate
+    qex = fromRotationMatrix(vector_d(0,1,0), vector_d(0,0,1));
+    ESP_LOGI(FNAME, "check equal: %f %f %f %f a:%f", qex.a, qex.b, qex.c, qex.d, radians_to_degrees(qex.getAngle()) );
+    v1 = qex * x_axes;
+    ESP_LOGI(FNAME, "image of x-axes: %f %f %f", v1.a, v1.b, v1.c );
+    v1 = qex * y_axes;
+    ESP_LOGI(FNAME, "image of y-axes: %f %f %f", v1.a, v1.b, v1.c );
+    v1 = qex * vector_ijk(5,5,5);
+    ESP_LOGI(FNAME, "image of 5,5,5: %f %f %f", v1.a, v1.b, v1.c );
 
 }
 

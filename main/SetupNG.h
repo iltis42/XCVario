@@ -33,6 +33,8 @@
 #include "WifiApp.h"
 #include "ESP32NVS.h"
 
+// forwards
+class Quaternion;
 
 /*
  *
@@ -554,6 +556,8 @@ extern SetupNG<float>  		ahrs_gyro_cal;
 extern SetupNG<int>		    display_style;
 extern SetupNG<int>		    display_variant;
 extern SetupNG<int>		    s2f_switch_type;
+extern SetupNG<float>		glider_ground_aa;
+extern SetupNG<Quaternion>	imu_reference;
 extern SetupNG<mpud::raw_axes_t> gyro_bias;
 extern SetupNG<mpud::raw_axes_t> accl_bias;
 extern SetupNG<float>       mpu_temperature;

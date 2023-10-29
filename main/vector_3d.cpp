@@ -30,6 +30,13 @@ float vector_ijk::dot_product(const vector_ijk v2)
 }
 
 
+void vector_ijk::cross_product(const vector_ijk v2)
+{
+    a = b*v2.c - c*v2.b;
+    b = c*v2.a - a*v2.c;
+    c = a*v2.b - b*v2.a;
+}
+
 vector_ijk vector_ijk::cross(const vector_ijk &v2) const
 {
     vector_ijk tmp;

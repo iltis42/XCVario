@@ -15,6 +15,7 @@ public:
 	void sum(const vector_ijk v2);
 	void difference(vector_ijk v2);
 	float dot_product(const vector_ijk v2);
+	void cross_product(const vector_ijk v2 );
 	vector_ijk cross(const vector_ijk &v2 ) const;
 	void normalize();
 	void normalize_f();

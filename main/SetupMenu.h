@@ -88,6 +88,7 @@ public:
 	static void system_menu_create_hardware_rotary( MenuEntry *top );
 	static void system_menu_create_hardware_rotary_screens( MenuEntry *top );
 	static void system_menu_create_hardware_ahrs( MenuEntry *top );
+	static void system_menu_create_ahrs_calib( MenuEntry *top );
 	static void system_menu_create_hardware_ahrs_lc( MenuEntry *top );
 	static void system_menu_create_hardware_ahrs_parameter( MenuEntry *top );
 	static SetupMenuValFloat * createQNHMenu();

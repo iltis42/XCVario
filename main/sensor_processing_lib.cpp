@@ -54,9 +54,9 @@ vector_ijk sensor_gravity_normalized(float ax, float ay, float az)
 vector_ijk fuse_vector(vector_ijk virtual_gyro_gravity, vector_ijk sensor_gravity, float gyro_trust )
 {
     float fusion = fusion_coeffecient(virtual_gyro_gravity, sensor_gravity, gyro_trust);
-    virtual_gyro_gravity.scale(fusion);
+    virtual_gyro_gravity *= fusion;
     vector_ijk result = virtual_gyro_gravity;
-    result.sum(sensor_gravity);
+    result += sensor_gravity;
     result.normalize();
     return result;
 }

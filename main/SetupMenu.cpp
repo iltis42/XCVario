@@ -31,6 +31,7 @@
 #include "WifiClient.h"
 #include "Blackboard.h"
 #include "DataMonitor.h"
+#include "KalmanMPU6050.h"
 
 #include <inttypes.h>
 #include <iterator>
@@ -40,7 +41,6 @@
 #include <cstring>
 #include <string>
 #include "SetupNG.h"
-#include "quaternion.h"
 
 SetupMenuSelect * audio_range_sm = 0;
 SetupMenuSelect * mpu = 0;
@@ -245,6 +245,29 @@ int add_key( SetupMenuSelect * p )
 		if( mpu->existsEntry( "Enable") )
 			mpu->delEntry( "Enable");
 	}
+	return 0;
+}
+
+int imu_calib( SetupMenuSelect *p )
+{
+	ESP_LOGI(FNAME,"Collect AHRS data (%d)", p->getSelect() );
+	int sel = p->getSelect();
+	switch (sel) {
+		case 0:
+			break; // cancel
+		case 1:
+		case 2:
+			// collect samples
+			IMU::getAccelSamplesAndCalib(sel);
+			break;
+		case 3:
+			// reset to default
+			IMU::defaultImuReference(display_orientation.get() == DISPLAY_TOPDOWN);
+			break;
+		default:
+			break;
+	}
+
 	return 0;
 }
 
@@ -1637,6 +1660,21 @@ void SetupMenu::system_menu_create_hardware_rotary( MenuEntry *top ){
 }
 
 
+void SetupMenu::system_menu_create_ahrs_calib( MenuEntry *top ){
+	SetupMenuValFloat* ahrs_ground_aa = new SetupMenuValFloat( PROGMEM"Ground angle of attac", "°", 0, 20, 1, nullptr, false, &glider_ground_aa);
+	ahrs_ground_aa->setHelp(PROGMEM"Angle of attac with tail skid on the ground to correct AHRS reference.");
+	ahrs_ground_aa->setPrecision( 0 );
+	SetupMenuSelect* ahrs_calib_collect = new SetupMenuSelect( PROGMEM"Wing down samples", RST_NONE, imu_calib, false);
+	ahrs_calib_collect->setHelp(PROGMEM"Collect samples with right and left wing on the ground in any sequence. Start sampling by selecting the proper side and pressing the button.");
+	ahrs_calib_collect->addEntry("Cancel");
+	ahrs_calib_collect->addEntry("Right");
+	ahrs_calib_collect->addEntry("Left");
+	ahrs_calib_collect->addEntry("Reset");
+	top->addEntry( ahrs_ground_aa );
+	top->addEntry( ahrs_calib_collect );
+}
+
+
 static const char PROGMEM lkeys[][4] { "0","1","2","3","4","5","6","7","8","9",":",";","<","=",">","?","@","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"};
 
 void SetupMenu::system_menu_create_hardware_ahrs_lc( MenuEntry *top ){
@@ -1653,7 +1691,6 @@ void SetupMenu::system_menu_create_hardware_ahrs_lc( MenuEntry *top ){
 	ahrslc3->addEntryList( lkeys, sizeof(lkeys)/4 );
 	ahrslc4->addEntryList( lkeys, sizeof(lkeys)/4 );
 }
-
 
 void SetupMenu::system_menu_create_hardware_ahrs_parameter( MenuEntry *top ){
 	SetupMenuValFloat * ahrsgf = new SetupMenuValFloat( PROGMEM"Gyro Max Trust", "x", 0, 100, 1, 0, false, &ahrs_gyro_factor  );
@@ -1692,11 +1729,10 @@ void SetupMenu::system_menu_create_hardware_ahrs( MenuEntry *top ){
 	if( gflags.ahrsKeyValid )
 		mpu->addEntry( PROGMEM"Enable");
 
-	SetupMenuSelect * ahrsaz = new SetupMenuSelect( "AHRS Autozero", RST_IMMEDIATE , 0, true, &ahrs_autozero );
-	top->addEntry( ahrsaz );
-	ahrsaz->setHelp( PROGMEM "Start Autozero of AHRS Sensor; Preconditions: On ground; Wings 100% horizontal, fuselage in flight position! (reboots)");
-	ahrsaz->addEntry( "Cancel");
-	ahrsaz->addEntry( "Start");
+	SetupMenu* ahrscalib = new SetupMenu( "AHRS Calibration" );
+	ahrscalib->setHelp( PROGMEM "Bias & Reference of the AHRS Sensor: Place glider on horizontal underground, first the right wing down, then the left wing.");
+	top->addEntry( ahrscalib );
+	ahrscalib->addCreator( system_menu_create_ahrs_calib );
 
 	SetupMenu * ahrslc = new SetupMenu( PROGMEM"AHRS License Key" );
 	ahrslc->setHelp( PROGMEM"Enter valid AHRS License Key, then with valid key under 'AHRS Option', AHRS feature can be enabled");

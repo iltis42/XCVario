@@ -1001,9 +1001,8 @@ void system_startup(void *args){
 		mpud::raw_axes_t gb = gyro_bias.get();
 		mpud::raw_axes_t ab = accl_bias.get();
 		char ahrs[30];
-		if( (gb.isZero() || ab.isZero()) || ahrs_autozero.get() ) {
+		if( 0 ) { // gb.isZero() ) {
 			ESP_LOGI( FNAME,"MPU computeOffsets");
-			ahrs_autozero.set(0);
 			MPU.computeOffsets( &ab, &gb );  // returns Offsets in 16G scale
 			gyro_bias.set( gb );
 			accl_bias.set( ab );

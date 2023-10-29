@@ -2,7 +2,6 @@
 #include "logdef.h"
 #include "sensor.h"
 #include "quaternion.h"
-#include "vector_3d.h"
 #include "sensor_processing_lib.h"
 #include "vector.h"
 
@@ -19,12 +18,15 @@ double  IMU::filterRoll = 0;
 double  IMU::filterYaw = 0;
 
 uint64_t IMU::last_rts=0;
-double IMU::accelX = 0.0;
-double IMU::accelY = 0.0;
-double IMU::accelZ = 0.0;
-double IMU::gyroX = 0.0;
-double IMU::gyroY = 0.0;
-double IMU::gyroZ = 0.0;
+vector_d IMU::accel(0,0,0);
+vector_d IMU::gyro(0,0,0);
+
+#define accelX accel.a
+#define accelY accel.b
+#define accelZ accel.c
+#define gyroX gyro.a
+#define gyroY gyro.b
+#define gyroZ gyro.c
 double IMU::kalXAngle = 0.0;
 double IMU::kalYAngle = 0.0;
 float  IMU::fused_yaw = 0;
@@ -145,7 +147,7 @@ void IMU::read()
 	float gravity_trust = 1;
 	double roll = 0;
 	if( getTAS() > 10 ){
-		float loadFactor = sqrt( accelX * accelX + accelY * accelY + accelZ * accelZ );
+		float loadFactor = accel.get_norm(); // (hjr) Only the Z axes should be relevant here?!
 		float lf = loadFactor > 2.0 ? 2.0 : loadFactor;
 		loadFactor = lf < 0 ? 0 : lf; // limit to 0..2g
 		// to get pitch and roll independent of circling, image pitch and roll values into 3D vector
@@ -162,9 +164,9 @@ void IMU::read()
 		// ESP_LOGI( FNAME,"Omega roll: %f Pitch: %f Gyro Trust: %f", R2D(roll), R2D(pitch), gravity_trust );
 	}
 	else{
-		ax1=accelX;
-		az1=accelZ;
-		ay1=accelY;
+		ax1=accel.a;
+		ay1=accel.b;
+		az1=accel.c;
 	}
 	// ESP_LOGI( FNAME, " ax1:%f ay1:%f az1:%f Gx:%f Gy:%f GZ:%f GRT:%f Roll:%.1f ", ax1, ay1, az1, gyroX, gyroY, gyroZ, gravity_trust, R2D(roll) );
 	att_vector = update_fused_vector(att_vector, gravity_trust, ax1, ay1, az1, D2R(gyroX),D2R(gyroY),D2R(gyroZ),dt);

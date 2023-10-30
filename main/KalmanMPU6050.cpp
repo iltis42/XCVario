@@ -341,7 +341,7 @@ void IMU::getAccelSamplesAndCalib(int side)
 			// Correct the result by the ground angle of attac
 			Quaternion rot_groundAA(deg2rad(glider_ground_aa.get()), vector_ijk(0,1,0)); // rotate positive around Y
 			// Concatenated and inverted
-			ref_rot = Quaternion::fromRotationMatrix(X, Y).get_conjugate() * rot_groundAA;
+			ref_rot = rot_groundAA * Quaternion::fromRotationMatrix(X, Y).get_conjugate();
 			ref_rot.normalize();
 
 			// Save to nvs storage

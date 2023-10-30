@@ -70,50 +70,61 @@ public:
   /**
    * Fetches the IMU data and proccesses it through the Kalman Filter.
    */
-  static void read();
+  static esp_err_t MPU6050Read();
+  static void Process();
+
+  // Accelerometer reading in glider reference and in [g]
+  static inline vector_ijk getGliderAccel() { return accel; };
 
   /**
-   * Gets the accelerometer raw X reading, as per last read() call.
+   * Gets the accelerometer X reading, as per last read() call.
    * 
-   * @returns The accelerometer raw X reading
+   * @returns The accelerometer X reading in glider reference
    */
-  static inline double getRawAccelX()  { return accel.a; };
+  static inline float getGliderAccelX()  { return accel.a; };
 
   /**
-   * Gets the accelerometer raw Y reading, as per last read() call.
+   * Gets the accelerometer Y reading, as per last read() call.
    * 
-   * @returns The accelerometer raw Y reading
+   * @returns The accelerometer Y reading
    */
-  static inline double getRawAccelY()   { return accel.b; };
+  static inline float getGliderAccelY()   { return accel.b; };
 
   /**
-   * Gets the accelerometer raw Z reading, as per last read() call.
+   * Gets the accelerometer Z reading, as per last read() call.
    * 
-   * @returns The accelerometer raw Z reading
+   * @returns The accelerometer Z reading
    */
-  static inline double getRawAccelZ()  { return accel.c; };
+  static inline float getGliderAccelZ()  { return accel.c; };
+
+  // Gyro reading in glider reference and in DPS
+  static inline vector_ijk getGliderGyro() { return gyro; };
 
   /**
-   * Gets the gyroscope raw X reading, as per last read() call.
+   * Gets the gyroscope X reading, as per last read() call.
    * 
-   * @returns The gyroscope raw X reading.
+   * @returns The gyroscope X reading in glider reference.
    */
-  static inline double getRawGyroX()   { return gyro.a; };
+  static inline float getGliderGyroX()   { return gyro.a; };
 
   /**
-   * Gets the gyroscope raw Y reading, as per last read() call.
+   * Gets the gyroscope Y reading, as per last read() call.
    * 
-   * @returns The gyroscope raw Y reading.
+   * @returns The gyroscope Y reading.
    */
-  static inline double getRawGyroY()   { return gyro.b; };
+  static inline float getGliderGyroY()   { return gyro.b; };
 
   /**
-   * Gets the gyroscope raw Z reading, as per last read() call.
+   * Gets the gyroscope Z reading, as per last read() call.
    * 
-   * @returns The gyroscope raw Z reading.
+   * @returns The gyroscope Z reading.
    */
-  static inline double getRawGyroZ()   { return gyro.c; };
+  static inline float getGliderGyroZ()   { return gyro.c; };
 
+  // Get the last raw gyro reads
+  static inline float getRawGyroX()   { return raw_gyro.a; };
+  static inline float getRawGyroY()   { return raw_gyro.b; };
+  static inline float getRawGyroZ()   { return raw_gyro.c; };
 
   /**
    * Gets the roll (X rotation) in degress from the Kalman Filter.
@@ -149,13 +160,13 @@ private:
   static Kalman kalmanY;
   static Kalman kalmanZ;
 
-  static vector_d accel;
-  static vector_d gyro;
+  static vector_i   raw_gyro;
+  static vector_ijk accel;
+  static vector_ijk gyro;
   static float ax1,ay1,az1;
   static float positiveG;
   static double kalXAngle, kalYAngle;
 
-  static void MPU6050Read();
   static float fallbackToGyro();
   static void RollPitchFromAccel(double *roll, double *pitch);
   static void PitchFromAccel(double *pitch);

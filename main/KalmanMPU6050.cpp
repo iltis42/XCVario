@@ -1,4 +1,6 @@
 #include "KalmanMPU6050.h"
+#include <MPU.hpp>
+#include <mpu/math.hpp>
 #include "logdef.h"
 #include "sensor.h"
 #include "quaternion.h"
@@ -20,8 +22,9 @@ double  IMU::filterRoll = 0;
 double  IMU::filterYaw = 0;
 
 uint64_t IMU::last_rts=0;
-vector_d IMU::accel(0,0,0);
-vector_d IMU::gyro(0,0,0);
+vector_i   IMU::raw_gyro(0,0,0);
+vector_ijk IMU::accel(0,0,0);
+vector_ijk IMU::gyro(0,0,0);
 
 #define accelX accel.a
 #define accelY accel.b
@@ -141,11 +144,11 @@ double IMU::getPitchRad()  {
 	return -filterPitch*DEG_TO_RAD;
 }
 
-void IMU::read()
+// Only call when successfully called MPU6050Read() beforehand 
+void IMU::Process()
 {
 	double dt=0;
 	bool ret=false;
-	MPU6050Read();
 	uint64_t rts = esp_timer_get_time();
 	if( last_rts == 0 )
 		ret=true;
@@ -156,7 +159,7 @@ void IMU::read()
 	float gravity_trust = 1;
 	double roll = 0;
 	if( getTAS() > 10 ){
-		float loadFactor = accel.get_norm(); // (hjr) Only the Z axes should be relevant here?!
+		float loadFactor = accel.c;
 		float lf = loadFactor > 2.0 ? 2.0 : loadFactor;
 		loadFactor = lf < 0 ? 0 : lf; // limit to 0..2g
 		// to get pitch and roll independent of circling, image pitch and roll values into 3D vector
@@ -228,20 +231,59 @@ float IMU::fallbackToGyro(){
 	return( Vector::normalizeDeg( fused_yaw ) );
 }
 
-// IMU Function Definition
-void IMU::MPU6050Read()
+// Central read of IMU with reotation into the glider reference system
+esp_err_t IMU::MPU6050Read()
 {
-	vector_d tmp(accelG[0],accelG[1], accelG[2]);
-	accel = ref_rot * tmp;
-	// Gating ignores Gyro drift < 2 deg per second
-	// gyroX = abs(gyroDPS.z*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 :  -(gyroDPS.z);
-	// gyroY = abs(gyroDPS.y*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 :   (gyroDPS.y);
-	// gyroZ = abs(gyroDPS.x*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 :   (gyroDPS.x);
-	tmp.a = abs(gyroDPS.x*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 : gyroDPS.x;
-	tmp.b = abs(gyroDPS.y*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 : gyroDPS.y;
-	tmp.c = abs(gyroDPS.z*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 : gyroDPS.z;
-	gyro = ref_rot * tmp;
-	ESP_LOGI(FNAME,"XYZ:\t%f\t%f\t%f \tL%.2f", accel.a, accel.b, accel.c, accel.get_norm());
+	static vector_ijk prev_accel(1,0,0), prev_gyro(0,0,0);
+
+	// Get new accelerometer values from MPU6050
+	mpud::raw_axes_t imuRaw; // holds x, y, z axes as int16
+	esp_err_t err = MPU.acceleration(&imuRaw);  // fetch raw data from the registers
+	if( err != ESP_OK ) {
+		ESP_LOGE(FNAME, "accel I2C error, X:%d Y:%d Z:%d", imuRaw.x, imuRaw.y, imuRaw.z );
+	}
+	mpud::float_axes_t tmp = mpud::accelGravity(imuRaw, mpud::ACCEL_FS_8G); // raw data to gravity
+	vector_ijk tmpvec(tmp.x, tmp.y, tmp.z);
+
+	// Check on irrational changes
+	if ( (tmpvec-prev_accel).get_norm2() > 25 ) {
+		vector_ijk d(tmpvec-prev_accel); 
+		ESP_LOGE(FNAME, "accelaration change > 5 g in 0.2 S:  X:%+.2f Y:%+.2f Z:%+.2f", d.a, d.b, d.c );
+		err |= ESP_FAIL;
+	}
+	else {
+		// into glide reference system
+		accel = ref_rot * tmpvec;
+		prev_accel = tmpvec;
+		// ESP_LOGI(FNAME,"XYZ:\t%f\t%f\t%f \tL%.2f", accel.a, accel.b, accel.c, accel.get_norm());
+	}
+
+	// Get new gyro values from MPU6050
+	err |= MPU.rotation(&imuRaw);       // fetch raw data from the registers
+	if( err != ESP_OK ) {
+		ESP_LOGE(FNAME, "gyro I2C error, X:%d Y:%d Z:%d",  imuRaw.x, imuRaw.y, imuRaw.z );
+	}
+	tmp = mpud::gyroDegPerSec(imuRaw, GYRO_FS);  // raw data to º/s
+	tmpvec = vector_ijk(tmp.x, tmp.y, tmp.z);
+
+	// Check on irrational changes
+	if ( (tmpvec-prev_gyro).get_norm2() > 8100 ) {
+		vector_ijk d(tmpvec-prev_gyro); 
+		ESP_LOGE(FNAME, "gyro angle >90 deg/s in 0.2 S: X:%+.2f Y:%+.2f Z:%+.2f", d.a, d.b, d.c );
+		err |= ESP_FAIL;
+	}
+	else {
+		// Gating ignores Gyro drift < 2 deg per second
+		tmpvec.a = abs(tmpvec.a*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 : tmpvec.a;
+		tmpvec.b = abs(tmpvec.b*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 : tmpvec.b;
+		tmpvec.c = abs(tmpvec.c*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 : tmpvec.c;
+		// into glide reference system
+		gyro = ref_rot * tmpvec;
+		prev_gyro = tmpvec;
+		// preserve the raw read-out
+		raw_gyro.a = imuRaw.x; raw_gyro.b = imuRaw.y; raw_gyro.b = imuRaw.z;
+	}
+	return err;
 }
 
 void IMU::PitchFromAccel(double *pitch)

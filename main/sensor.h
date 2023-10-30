@@ -29,6 +29,8 @@
 #define SPI_MOSI       GPIO_NUM_27      // SPI SDO Master Out Slave In pin
 #define SPI_MISO       GPIO_NUM_32      // SPI SDI Master In Slave Out
 
+#define GYRO_FS (mpud::GYRO_FS_250DPS)
+
 typedef struct global_flags{
 	bool inSetup :1;
 	bool haveMPU :1;

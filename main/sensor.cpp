@@ -226,7 +226,7 @@ void drawDisplay(void *pvParameters){
 			// Stall Warning Screen
 			if( stall_warning.get() && gload_mode.get() != GLOAD_ALWAYS_ON ){  // In aerobatics stall warning is contra productive, we concentrate on G-Load Display if permanent enabled
 				if( gflags.stall_warning_armed ){
-					float acceleration=accelG[0];
+					float acceleration=IMU::getGliderAccelZ();
 					if( acceleration < 0.3 )
 						acceleration = 0.3;  // limit acceleration effect to minimum 30% of 1g
 					float acc_stall= stall_speed.get() * sqrt( acceleration + ( ballast.get()/100));  // accelerated and ballast(ed) stall speed
@@ -323,7 +323,7 @@ void drawDisplay(void *pvParameters){
 				Flarm::drawFlarmWarning();
 			// G-Load Display
 			// ESP_LOGI(FNAME,"Active Screen = %d", active_screen );
-			if( (((float)accelG[0] > gload_pos_thresh.get() || (float)accelG[0] < gload_neg_thresh.get()) && gload_mode.get() == GLOAD_DYNAMIC ) ||
+			if( ((IMU::getGliderAccelZ() > gload_pos_thresh.get() || IMU::getGliderAccelZ() < gload_neg_thresh.get()) && gload_mode.get() == GLOAD_DYNAMIC ) ||
 					( gload_mode.get() == GLOAD_ALWAYS_ON ) || (active_screen == SCREEN_GMETER)  )
 			{
 				if( !gflags.gLoadDisplay ){
@@ -336,7 +336,7 @@ void drawDisplay(void *pvParameters){
 				}
 			}
 			if( gflags.gLoadDisplay ) {
-				display->drawLoadDisplay( (float)accelG[0] );
+				display->drawLoadDisplay( IMU::getGliderAccelZ() );
 			}
 			if( active_screen == SCREEN_HORIZON ) {
 				float roll = -IMU::getRollRad();
@@ -349,7 +349,7 @@ void drawDisplay(void *pvParameters){
 			}
 			// G-Load Alarm when limits reached
 			if( gload_mode.get() != GLOAD_OFF  ){
-				if( (float)accelG[0] > gload_pos_limit.get() || (float)accelG[0] < gload_neg_limit.get()  ){
+				if( IMU::getGliderAccelZ() > gload_pos_limit.get() || IMU::getGliderAccelZ() < gload_neg_limit.get()  ){
 					if( !gflags.gload_alarm ) {
 						Audio::alarm( true, DigitalPoti->getRange()*(gload_alarm_volume.get()/100) );
 						gflags.gload_alarm = true;
@@ -477,9 +477,9 @@ static void toyFeed()
 
 	if( ahrs_rpyl_dataset.get() ){
 		OV.sendNMEA( P_AHRS_RPYL, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
-				-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
+				IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
 		OV.sendNMEA( P_AHRS_APENV1, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
-				-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
+				IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
 	}
 	if( nmea_protocol.get() == BORGELT ) {
 		OV.sendNMEA( P_BORGELT, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altSTD, gflags.validTemperature  );
@@ -493,7 +493,7 @@ static void toyFeed()
 	}
 	else if( nmea_protocol.get() == XCVARIO ) {
 		OV.sendNMEA( P_XCVARIO, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
-				-accelG[2], accelG[1],accelG[0], gyroDPS.x, gyroDPS.y, gyroDPS.z );
+				IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
 	}
 	else if( nmea_protocol.get() == NMEA_OFF ) {
 		;
@@ -533,10 +533,10 @@ void clientLoop(void *pvParameters)
 			if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL ){
 				MPU.temp_control( ccount, xcvTemp );
 			}
-			if( accelG[0] > gload_pos_max.get() ){
-				gload_pos_max.set( (float)accelG[0] );
-			}else if( accelG[0] < gload_neg_max.get() ){
-				gload_neg_max.set(  (float)accelG[0] );
+			if( IMU::getGliderAccelZ() > gload_pos_max.get() ){
+				gload_pos_max.set( IMU::getGliderAccelZ() );
+			}else if( IMU::getGliderAccelZ() < gload_neg_max.get() ){
+				gload_neg_max.set( IMU::getGliderAccelZ() );
 			}
 			toyFeed();
 			Router::routeXCV();
@@ -611,8 +611,8 @@ void readSensors(void *pvParameters){
 		float as = tas/3.6;                  // tas in m/s
 		const float K = 4000 * 180/M_PI;      // airplane constant and Ay correction factor
 		if( tas > 25.0 ){
-			slipAngle += ((accelG[1]*K / (as*as)) - slipAngle)*0.09;   // with atan(x) = x for small x
-			// ESP_LOGI(FNAME,"AS: %f m/s, CURSL: %f°, SLIP: %f", as, -accelG[1]*K / (as*as), slipAngle );
+			slipAngle += ((IMU::getGliderAccelY()*K / (as*as)) - slipAngle)*0.09;   // with atan(x) = x for small x
+			// ESP_LOGI(FNAME,"AS: %f m/s, CURSL: %f°, SLIP: %f", as, IMU::getGliderAccelY()*K / (as*as), slipAngle );
 		}
 		xSemaphoreTake(xMutex,portMAX_DELAY );
 
@@ -714,10 +714,10 @@ void readSensors(void *pvParameters){
 				}
 			}
 		}
-		if( accelG[0] > gload_pos_max.get() ){
-			gload_pos_max.set( (float)accelG[0] );
-		}else if( accelG[0] < gload_neg_max.get() ){
-			gload_neg_max.set(  (float)accelG[0] );
+		if( IMU::getGliderAccelZ() > gload_pos_max.get() ){
+			gload_pos_max.set( IMU::getGliderAccelZ() );
+		}else if( IMU::getGliderAccelZ() < gload_neg_max.get() ){
+			gload_neg_max.set( IMU::getGliderAccelZ() );
 		}
 
 		// Check on new clients connecting
@@ -955,9 +955,7 @@ void system_startup(void *args){
 			ESP_LOGI( FNAME,"MPU computeOffsets");
 			MPU.computeOffsets( &ab, &gb );  // returns Offsets in 16G scale
 			gyro_bias.set( gb );
-			accl_bias.set( ab );
 			MPU.setGyroOffset(gb);
-			MPU.setAccelOffset(ab);
 			ESP_LOGI( FNAME,"MPU new offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
 		}else{
 			MPU.setAccelOffset(ab);
@@ -969,7 +967,7 @@ void system_startup(void *args){
 			esp_err_t err = MPU.acceleration(&accelRaw);  // fetch raw data from the registers
 			if( err != ESP_OK )
 				ESP_LOGE(FNAME, "AHRS acceleration I2C read error");
-			accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
+			mpud::float_axes_t accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
 			ESP_LOGI( FNAME,"MPU %.2f", accelG[0] );
 			delay( 5 );
 			if( i>0 )

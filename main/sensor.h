@@ -63,10 +63,6 @@ extern xSemaphoreHandle display_mutex;
 
 extern e_wireless_type wireless;
 
-// MPU6050 sensor
-extern mpud::float_axes_t accelG;
-extern mpud::float_axes_t gyroDPS;
-
 extern float getTAS();
 void doAudio( float te );
 

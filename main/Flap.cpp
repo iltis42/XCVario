@@ -5,7 +5,7 @@
 #include "SetupMenuSelect.h"
 #include "SetupMenuValFloat.h"
 #include "average.h"
-
+#include "KalmanMPU6050.h"
 
 Flap* Flap::_instance = nullptr;
 
@@ -661,7 +661,7 @@ void  Flap::initSensPos(){
 float Flap::getOptimum( float wks, int& wki )
 {
 	// Correct for current g load
-	g_force += (accelG[0] - g_force) * 0.02;  // lowpass filtering, to smooth display in rough air
+	g_force += (IMU::getGliderAccelZ() - g_force) * 0.02;  // lowpass filtering, to smooth display in rough air
 	if ( g_force < 0.3 ) {
 		g_force = 0.3; // Ignore meaningless values below 0.3g
 	}

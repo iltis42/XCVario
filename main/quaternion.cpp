@@ -29,10 +29,11 @@ float Quaternion::getAngle() const
     return 2.f * std::acos(a);
 }
 
-// should be the cross product
+// concatenatin of two quaternions
 Quaternion operator*(const Quaternion& q1, const Quaternion& q2)
 {
-    //q = q1*q2
+    // q = q1*q2 -- IMPORTANT: read the "*" operator as "after"
+    //                         q1*q2 is first rotating q2, then q1 (!)
     Quaternion q( (q1.a*q2.a) - (q1.b*q2.b) - (q1.c*q2.c) - (q1.d*q2.d),
                   (q1.a*q2.b) + (q1.b*q2.a) + (q1.c*q2.d) - (q1.d*q2.c),
                   (q1.a*q2.c) - (q1.b*q2.d) + (q1.c*q2.a) + (q1.d*q2.b),

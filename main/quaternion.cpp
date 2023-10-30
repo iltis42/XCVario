@@ -195,11 +195,11 @@ Quaternion Quaternion::fromRotationMatrix(const vector_d &X, const vector_d &Y)
     mat[0] = X;
     mat[1] = Y;
     mat[2] = X.cross(Y);
-    ESP_LOGI(FNAME, "Z: %f,%f,%f", mat[2].a, mat[2].b, mat[2].c);
+    // ESP_LOGI(FNAME, "Z: %f,%f,%f", mat[2].a, mat[2].b, mat[2].c);
 
     Quaternion result;
     const double trace = mat[0].a + mat[1].b + mat[2].c;
-    ESP_LOGI(FNAME, "trace: %f", trace);
+    // ESP_LOGI(FNAME, "trace: %f", trace);
 
     // check the diagonal
     if ( trace > 0.0 ) {

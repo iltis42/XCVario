@@ -42,3 +42,4 @@ vector_3d<T>& operator+(const vector_3d<T> v1, const vector_3d<T> v2);
 
 typedef vector_3d<float> vector_ijk;
 typedef vector_3d<double> vector_d;
+typedef vector_3d<int>    vector_i;

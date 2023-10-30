@@ -99,3 +99,4 @@ void vector_3d<T>::normalize()
 
 template class vector_3d<float>; // explicit instantiation
 template class vector_3d<double>;
+template class vector_3d<int>;

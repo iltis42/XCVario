@@ -133,6 +133,10 @@ void IMU::init()
 	progress = 0;
 	bob_right_wing = bob_left_wing = vector_3d<double>();
 	ref_rot = imu_reference.get();
+	// If unset, set to a rough default
+	if ( ref_rot == Quaternion() ) {
+		defaultImuReference();
+	}
 	ESP_LOGI(FNAME, "Finished IMU setup");
 }
 
@@ -397,17 +401,16 @@ void IMU::getAccelSamplesAndCalib(int side)
 	}
 }
 
-void IMU::defaultImuReference(bool topDown)
+void IMU::defaultImuReference()
 {
 	// Revert from calibrated IMU to default mapping, which fits 
 	// roughly to an upright or top down installation.
-	Quaternion accelDefaultRef = Quaternion(90.0f, vector_ijk(0,1,0)).get_conjugate();
-	ESP_LOGI(FNAME, "default ref: %f %f %f %f a:%f", accelDefaultRef.a, accelDefaultRef.b, accelDefaultRef.c, accelDefaultRef.d, accelDefaultRef.getAngle()*180./M_PI );
+	Quaternion accelDefaultRef = Quaternion(deg2rad(90.0f), vector_ijk(0,1,0)).get_conjugate();
 
-	if ( topDown ) {
-		accelDefaultRef = accelDefaultRef * Quaternion(180.0f, vector_ijk(1,0,0));
+	if ( display_orientation.get() == DISPLAY_TOPDOWN ) {
+		accelDefaultRef = Quaternion(deg2rad(180.0f), vector_ijk(1,0,0)) * accelDefaultRef;
 	}
-	ref_rot = accelDefaultRef; //Quaternion();
-	imu_reference.set(ref_rot, false);
-	progress = 0;
+	ref_rot = accelDefaultRef;
+	imu_reference.set(ref_rot, false); // nvs
+	progress = 0; // reset the calibration procedure
 }

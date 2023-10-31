@@ -129,9 +129,6 @@ DataMonitor DM;
 I2C_t& i2c = i2c1;  // i2c0 or i2c1
 I2C_t& i2c_0 = i2c0;  // i2c0 or i2c1
 MPU_t MPU;         // create an object
-#define MAXDRIFT 2                // °/s maximum drift that is automatically compensated on ground
-#define NUM_GYRO_SAMPLES 3000     // 10 per second -> 5 minutes, so T has been settled after power on
-static uint16_t num_gyro_samples = 0;
 
 // Magnetic sensor / compass
 Compass *compass = 0;
@@ -425,12 +422,18 @@ static void grabMPU()
 {
 	// Automatically trac the gyro bias
 	static int32_t cur_gyro_bias[3];
+	const int MAXDRIFT         = 2;    // °/s maximum drift that is automatically compensated on ground
+	const int NUM_GYRO_SAMPLES = 3000; // 10 per second -> 5 minutes, so T has been settled after power on
+	static uint16_t num_gyro_samples = 0;
 
 	// Read the IMU registers and check the output
-	if(  IMU::MPU6050Read() == ESP_OK ){
-
+	if(  IMU::MPU6050Read() == ESP_OK )
+	{
 		// Do the gyro auto bias
 		vector_ijk gyroDPS = IMU::getGliderGyro();
+		// ESP_LOGI(FNAME,"Gyro:\t%4f\t%4f\t%4f", gyroDPS.a, gyroDPS.b, gyroDPS.c);
+		// vector_ijk accl = IMU::getGliderAccel();
+		// ESP_LOGI(FNAME,"Accl:\t%4f\t%4f\t%4f\tL%.2f", accl.a, accl.b, accl.c, accl.get_norm());
 
 		float GS=0; // Autoleveling Gyro feature only with GPS and GS close to zero to avoid triggering at push back taxi with zero AS
 		bool gpsOK = Flarm::getGPSknots( GS );

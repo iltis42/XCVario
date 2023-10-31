@@ -152,7 +152,7 @@ public:
 
   // Reference calibration
   static void getAccelSamplesAndCalib(int side);
-  static void defaultImuReference(bool topDown=false);
+  static void defaultImuReference();
   static void getGyroSamplesAndZero();
 
 private:

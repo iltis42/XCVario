@@ -255,9 +255,9 @@ esp_err_t IMU::MPU6050Read()
 	else {
 		// into glide reference system
 		accel = ref_rot * tmpvec;
-		prev_accel = tmpvec;
 		// ESP_LOGI(FNAME,"XYZ:\t%f\t%f\t%f \tL%.2f", accel.a, accel.b, accel.c, accel.get_norm());
 	}
+	prev_accel = tmpvec;
 
 	// Get new gyro values from MPU6050
 	err |= MPU.rotation(&imuRaw);       // fetch raw data from the registers
@@ -268,9 +268,9 @@ esp_err_t IMU::MPU6050Read()
 	tmpvec = vector_ijk(tmp.x, tmp.y, tmp.z);
 
 	// Check on irrational changes
-	if ( (tmpvec-prev_gyro).get_norm2() > 8100 ) {
+	if ( (tmpvec-prev_gyro).get_norm2() > 10000 ) {
 		vector_ijk d(tmpvec-prev_gyro); 
-		ESP_LOGE(FNAME, "gyro angle >90 deg/s in 0.2 S: X:%+.2f Y:%+.2f Z:%+.2f", d.a, d.b, d.c );
+		ESP_LOGE(FNAME, "gyro angle >100 deg/s in 0.2 S: X:%+.2f Y:%+.2f Z:%+.2f", d.a, d.b, d.c );
 		err |= ESP_FAIL;
 	}
 	else {
@@ -280,10 +280,10 @@ esp_err_t IMU::MPU6050Read()
 		tmpvec.c = abs(tmpvec.c*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 : tmpvec.c;
 		// into glide reference system
 		gyro = ref_rot * tmpvec;
-		prev_gyro = tmpvec;
 		// preserve the raw read-out
 		raw_gyro.a = imuRaw.x; raw_gyro.b = imuRaw.y; raw_gyro.b = imuRaw.z;
 	}
+	prev_gyro = tmpvec;
 	return err;
 }
 

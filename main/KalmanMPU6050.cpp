@@ -254,7 +254,6 @@ esp_err_t IMU::MPU6050Read()
 	else {
 		// into glide reference system
 		accel = ref_rot * tmpvec;
-		// ESP_LOGI(FNAME,"XYZ:\t%f\t%f\t%f \tL%.2f", accel.a, accel.b, accel.c, accel.get_norm());
 	}
 	prev_accel = tmpvec;
 

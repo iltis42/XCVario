@@ -398,8 +398,7 @@ SetupNG<int> 			drawing_prio("DRAWP", DP_NEEDLE );
 
 static mpud::raw_axes_t zero_bias;
 SetupNG<float>				glider_ground_aa("GLIDER_GROUND_AA", 12.0, true, SYNC_FROM_MASTER);
-							// default is 90° around Y-axes
-SetupNG<Quaternion>			imu_reference("IMU_REFERENCE", Quaternion(0.525322, -0.000000, -0.850904, -0.000000), false);
+SetupNG<Quaternion>			imu_reference("IMU_REFERENCE", Quaternion(), false);
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );
 SetupNG<mpud::raw_axes_t>	accl_bias("ACCL_BIAS", zero_bias );
 SetupNG<float>              mpu_temperature("MPUTEMP", 45.0, true, SYNC_FROM_MASTER, PERSISTENT, chg_mpu_target );    // default for AHRS chip temperature (XCV 2023)

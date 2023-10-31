@@ -262,7 +262,7 @@ int imu_calib( SetupMenuSelect *p )
 			break;
 		case 3:
 			// reset to default
-			IMU::defaultImuReference(display_orientation.get() == DISPLAY_TOPDOWN);
+			IMU::defaultImuReference();
 			break;
 		default:
 			break;

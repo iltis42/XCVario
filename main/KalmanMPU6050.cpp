@@ -132,10 +132,13 @@ void IMU::init()
 	euler = { 0,0,0 };
 	progress = 0;
 	bob_right_wing = bob_left_wing = vector_3d<double>();
-	ref_rot = imu_reference.get();
-	// If unset, set to a rough default
-	if ( ref_rot == Quaternion() ) {
+	Quaternion basic_ref = imu_reference.get();
+	if ( basic_ref == Quaternion() ) {
+		// If unset, set to a rough default
 		defaultImuReference();
+	}
+	else {
+		applyImuReference(glider_ground_aa.get(), basic_ref);
 	}
 	ESP_LOGI(FNAME, "Finished IMU setup");
 }
@@ -384,14 +387,14 @@ void IMU::getAccelSamplesAndCalib(int side)
 			ESP_LOGI(FNAME, "Y: %f,%f,%f", Y.a, Y.b, Y.c);
 			ESP_LOGI(FNAME, "Z: %f,%f,%f", Z.a, Z.b, Z.c);
 
-			// Correct the result by the ground angle of attac
-			Quaternion rot_groundAA(deg2rad(glider_ground_aa.get()), vector_ijk(0,1,0)); // rotate positive around Y
-			// Concatenated and inverted
-			ref_rot = rot_groundAA * Quaternion::fromRotationMatrix(X, Y).get_conjugate();
-			ref_rot.normalize();
+			// The inverted rotation we need to apply
+			Quaternion basic_reference = Quaternion::fromRotationMatrix(X, Y).get_conjugate();
+			// Concatenated with ground angle
+			applyImuReference(glider_ground_aa.get(), basic_reference);
 
-			// Save to nvs storage
-			imu_reference.set(ref_rot, false);
+			// Save the basic part to nvs storage
+			imu_reference.set(basic_reference, false);
+			// Save the bias
 			mpud::raw_axes_t raw_bias(bias.a*-2048., bias.b*-2048., bias.c*-2048.);
 			accl_bias.set(raw_bias, false);
 			// Reprogam MPU bias
@@ -413,4 +416,10 @@ void IMU::defaultImuReference()
 	ref_rot = accelDefaultRef;
 	imu_reference.set(ref_rot, false); // nvs
 	progress = 0; // reset the calibration procedure
+}
+// Concatenation of ground angle of attack and the basic reference calibration rotation
+void IMU::applyImuReference(const float gAA, const Quaternion& basic)
+{
+	ref_rot = Quaternion(deg2rad(gAA), vector_ijk(0,1,0)) * basic; // rotate positive around Y
+	ref_rot.normalize();
 }

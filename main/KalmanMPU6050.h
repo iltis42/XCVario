@@ -152,8 +152,9 @@ public:
 
   // Reference calibration
   static void getAccelSamplesAndCalib(int side);
-  static void defaultImuReference();
   static void getGyroSamplesAndZero();
+  static void defaultImuReference();
+  static void applyImuReference(const float gAA, const Quaternion& basic);
 
 private:
   static Kalman kalmanX; // Create the Kalman instances

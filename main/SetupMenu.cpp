@@ -32,15 +32,16 @@
 #include "Blackboard.h"
 #include "DataMonitor.h"
 #include "KalmanMPU6050.h"
+#include "sensor.h"
+#include "SetupNG.h"
+#include "quaternion.h"
 
+#include <logdef.h>
 #include <inttypes.h>
 #include <iterator>
 #include <algorithm>
-#include <logdef.h>
-#include <sensor.h>
 #include <cstring>
 #include <string>
-#include "SetupNG.h"
 
 SetupMenuSelect * audio_range_sm = 0;
 SetupMenuSelect * mpu = 0;
@@ -262,7 +263,13 @@ int add_key( SetupMenuSelect * p )
 	return 0;
 }
 
-int imu_calib( SetupMenuSelect *p )
+static int imu_gaa( SetupMenuValFloat* f )
+{
+	IMU::applyImuReference(f->_value, imu_reference.get());
+	return 0;
+}
+
+static int imu_calib( SetupMenuSelect *p )
 {
 	ESP_LOGI(FNAME,"Collect AHRS data (%d)", p->getSelect() );
 	int sel = p->getSelect();
@@ -1731,17 +1738,17 @@ void SetupMenu::system_menu_create_hardware_rotary( MenuEntry *top ){
 
 
 void SetupMenu::system_menu_create_ahrs_calib( MenuEntry *top ){
-	SetupMenuValFloat* ahrs_ground_aa = new SetupMenuValFloat( PROGMEM"Ground angle of attac", "°", 0, 20, 1, nullptr, false, &glider_ground_aa);
-	ahrs_ground_aa->setHelp(PROGMEM"Angle of attac with tail skid on the ground to correct AHRS reference.");
-	ahrs_ground_aa->setPrecision( 0 );
 	SetupMenuSelect* ahrs_calib_collect = new SetupMenuSelect( PROGMEM"Wing down samples", RST_NONE, imu_calib, false);
 	ahrs_calib_collect->setHelp(PROGMEM"Collect samples with right and left wing on the ground in any sequence. Start sampling by selecting the proper side and pressing the button.");
 	ahrs_calib_collect->addEntry("Cancel");
 	ahrs_calib_collect->addEntry("Right");
 	ahrs_calib_collect->addEntry("Left");
 	ahrs_calib_collect->addEntry("Reset");
-	top->addEntry( ahrs_ground_aa );
+	SetupMenuValFloat* ahrs_ground_aa = new SetupMenuValFloat( PROGMEM"Ground angle of attack", "°", 0, 20, 1, imu_gaa, false, &glider_ground_aa);
+	ahrs_ground_aa->setHelp(PROGMEM"Angle of attack with tail skid on the ground to adjust the AHRS reference. Change this any time to correct the AHRS horizon level.");
+	ahrs_ground_aa->setPrecision( 0 );
 	top->addEntry( ahrs_calib_collect );
+	top->addEntry( ahrs_ground_aa );
 }
 
 

@@ -26,7 +26,7 @@ DS18B20::DS18B20(gpio_num_t pin, uint8_t res, int max_dev ) {
 bool DS18B20::begin(){
 	ESP_LOGI(FNAME,"DS18B20::begin");
 	gpio_set_pull_mode(_pin, GPIO_PULLUP_ONLY);
-	ow = new OnewireRmt( GPIO_NUM_23, RMT_CHANNEL_0, RMT_CHANNEL_1);
+	ow = new OnewireRmt(_pin, RMT_CHANNEL_0, RMT_CHANNEL_1);
 	dallas = new DallasRmt( ow );
 	dallas->begin();
 	numDevices = dallas->getDeviceCount();

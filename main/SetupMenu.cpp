@@ -1674,7 +1674,7 @@ void SetupMenu::system_menu_create_ahrs_calib( MenuEntry *top ){
 	ahrs_calib_collect->addEntry("Right");
 	ahrs_calib_collect->addEntry("Left");
 	ahrs_calib_collect->addEntry("Reset");
-	SetupMenuValFloat* ahrs_ground_aa = new SetupMenuValFloat( PROGMEM"Ground angle of attack", "°", 0, 20, 1, imu_gaa, false, &glider_ground_aa);
+	SetupMenuValFloat* ahrs_ground_aa = new SetupMenuValFloat( PROGMEM"Ground angle of attack", "°", -5, 20, 1, imu_gaa, false, &glider_ground_aa);
 	ahrs_ground_aa->setHelp(PROGMEM"Angle of attack with tail skid on the ground to adjust the AHRS reference. Change this any time to correct the AHRS horizon level.");
 	ahrs_ground_aa->setPrecision( 0 );
 	top->addEntry( ahrs_calib_collect );

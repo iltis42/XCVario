@@ -134,9 +134,9 @@ public:
 			return 'A';
 		return 'U';
 	}
-	SetupNG( const char * akey,
-			T adefault,  				   // unique identification TAG
-			bool reset=true,               // reset data on factory reset
+	SetupNG( const char * akey,          // unique identification TAG
+			T adefault,
+			bool reset=true,             // reset data on factory reset
 			e_sync_t sync=SYNC_NONE,
 			e_volatility vol=PERSISTENT, // sync with client device is applicable
 			void (* action)()=0,

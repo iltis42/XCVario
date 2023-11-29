@@ -1345,13 +1345,20 @@ void IpsDisplay::drawScale( int16_t max_pos, int16_t max_neg, int16_t pos, int16
 				}
 				draw_label = a!=0 && (draw_label || max_pos<5 || a==mid_lpos);
 			}
-			// ESP_LOGI(FNAME, "lines a %d %d %d", a, end, draw_label);
+			// ESP_LOGI(FNAME, "lines a:%d end:%d label: %d  width: %d", a, end, draw_label, width );
 
 			float val = (*_gauge)((float)a/10.);
-			drawOneScaleLine( val, pos, end, width, COLOR_WHITE );
+			if( width < 3 )
+				drawOneScaleLine( val, pos, end, width, DARK_GREY );  // darker color for small scale
+			else
+				drawOneScaleLine( val, pos, end, width, COLOR_WHITE );
+
 			if ( draw_label ) { drawOneLabel(val, a/10, pos+12, offset); }
 			if ( (-a/10) >= max_neg && at < max_neg ) {
-				drawOneScaleLine( -val, pos, end, width, COLOR_WHITE );
+				if( width < 3 )
+					drawOneScaleLine( -val, pos, end, width, DARK_GREY );
+				else
+					drawOneScaleLine( -val, pos, end, width, COLOR_WHITE );
 				if ( draw_label ) { drawOneLabel(-val, a/10, pos+12, -offset); }
 			}
 			draw_label = false;

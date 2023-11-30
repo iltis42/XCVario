@@ -221,7 +221,8 @@ bool Audio::selfTest(){
 		ESP_LOGI(FNAME,"MCP4018 digital Poti found");
 	}
 	_step = DigitalPoti->getStep();
-	uint16_t setwiper = ((default_volume.get() * 100.0) / DigitalPoti->getRange());
+	uint16_t setwiper = ( 0.01 * default_volume.get() * DigitalPoti->getRange());
+	// - it was incorrectly * 100 / getRange
 	p_wiper = &wiper;
 	wiper = wiper_s2f = setwiper;
 	ESP_LOGI(FNAME,"default volume/wiper: %d", (*p_wiper) );
@@ -436,29 +437,58 @@ void Audio::dac_invert_set(dac_channel_t channel, int invert)
 	}
 }
 
+// setVolumePct() now called upon volume change via rotary
 
 void Audio::setVolume( int vol ) {
 	if((p_wiper) == 0 )
 		return;
 	(*p_wiper) = vol;
+	volume_change = 100;
 };
 
+void Audio::setVolumePct( float pct ) {
+	if (pct < 0 || pct > 100)
+		return;
+	if (DigitalPoti == nullptr)  // at initial setup
+		return;
+	//uint16_t wiper;
+	//bool ret = DigitalPoti->readWiper( wiper );
+	//if( ret == false )
+	//	return;
+	float range = (float) DigitalPoti->getRange();
+	if (range <= 0)
+		return;
+	int newwiper = (int) (0.01 * pct * range);
+	static int oldwiper = 0;
+	if (newwiper != oldwiper) {
+		setVolume(newwiper);
+		  // what will actually be written later to poti
+		  //   in writeWiper() will vary due to equalization
+		ESP_LOGI(FNAME,"change_volume wiper %d -> %d", oldwiper, newwiper );
+		oldwiper = newwiper;
+	}
+}
+
+// decVolume() and incVolume() no longer used
+
+#if 0
 void Audio::decVolume( int steps ) {
 	if((p_wiper) == 0 )
 		return;
+	ESP_LOGI(FNAME,"dec volume, wiper: %d, steps: %d", (*p_wiper), steps );
 	steps = int( 1+ ( (float)(*p_wiper)/16.0 ))*steps;
 	while( steps && ((*p_wiper) > 0) ){
 		(*p_wiper)--;
 		steps--;
 	}
+	ESP_LOGI(FNAME,"dec volume, *p_wiper: %d", (*p_wiper) );
 	volume_change = 100;
-	// ESP_LOGI(FNAME,"dec volume, *p_wiper: %d", (*p_wiper) );
 }
-
 
 void Audio::incVolume( int steps ) {
 	if((p_wiper) == 0 )
 		return;
+	ESP_LOGI(FNAME,"inc volume, wiper: %d, steps: %d", (*p_wiper), steps );
 	steps = int( 1+ ( (float)(*p_wiper)/16.0 ))*steps;
 	while( steps && ((*p_wiper) <  DigitalPoti->getRange()*(max_volume.get()/100)) ){
 		(*p_wiper)++;
@@ -466,9 +496,10 @@ void Audio::incVolume( int steps ) {
 	}
 	if( (*p_wiper) > DigitalPoti->getRange() )
 		(*p_wiper) =  DigitalPoti->getRange();
+	ESP_LOGI(FNAME,"inc volume, *p_wiper: %d", (*p_wiper) );
 	volume_change = 100;
-	// ESP_LOGI(FNAME,"inc volume, *p_wiper: %d", (*p_wiper) );
 }
+#endif
 
 void Audio::startAudio(){
 	ESP_LOGI(FNAME,"startAudio");

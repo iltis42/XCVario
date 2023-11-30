@@ -670,7 +670,7 @@ extern SetupNG<int> 		drawing_prio;
 extern uint8_t g_col_background;
 extern uint8_t g_col_highlight;
 
-extern int last_volume;
+//extern int last_volume;
 
 void change_ballast();
 void change_mc();

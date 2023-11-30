@@ -32,9 +32,10 @@ public:
 	static void setFrequency( float f );
 
 	static void setup();
-	static void incVolume( int steps );
-	static void decVolume( int steps );
+	//static void incVolume( int steps );
+	//static void decVolume( int steps );
 	static void setVolume( int vol );
+	static void setVolumePct( float pct );
 
 	static void alarm( bool enable, int volume=100, e_audio_alarm_type_t alarmType=AUDIO_ALARM_STALL );
 	static bool selfTest();

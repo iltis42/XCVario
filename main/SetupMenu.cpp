@@ -363,7 +363,8 @@ int bug_adj( SetupMenuValFloat * p ){
 }
 
 int vol_adj( SetupMenuValFloat * p ){
-	// Audio::setVolume( (int)(*(p->_value)) );
+	float pct = audio_volume.get();
+	Audio::setVolumePct( pct );
 	return 0;
 }
 
@@ -499,10 +500,17 @@ void SetupMenu::down(int count){
 			MC.set( mc );
 		}
 		else{  // Volume
-			int vol = (int)audio_volume.get();
-			vol -= count*2;
-			vol = std::max( vol, 0 );
-			audio_volume.set( vol );
+			// >>> MB: Revised to make wiper always reflect volume percent.
+			// Change the volume by the same % as the wiper step is of wiper range.
+			// Up/down is reversed so increase volume here and decrease in up().
+			float vol_pct = audio_volume.get();
+			float step = 2;
+			if (DigitalPoti != nullptr)  // only after audio init
+				step = 100 * (float) DigitalPoti->getStep() / (float) DigitalPoti->getRange();
+			vol_pct += count * step;
+			if (vol_pct > 100)  vol_pct = 100;
+			audio_volume.set( vol_pct );
+			//ESP_LOGI(FNAME,"down: volume pct UP to %f", vol_pct );
 		}
 	}
 	if( (selected != this) || !gflags.inSetup )
@@ -538,10 +546,14 @@ void SetupMenu::up(int count){
 			MC.set( mc );
 		}
 		else{  // Volume
-			int vol = (int)audio_volume.get();
-			vol += count;
-			vol = std::min( vol, 100 );
-			audio_volume.set( (float)vol );
+			float vol_pct = audio_volume.get();
+			float step = 2;
+			if (DigitalPoti != nullptr)  // only after audio init
+				step = 100 * (float) DigitalPoti->getStep() / (float) DigitalPoti->getRange();
+			vol_pct -= 2 * count * step;
+			if (vol_pct < 0)  vol_pct = 0;
+			audio_volume.set( vol_pct );
+			//ESP_LOGI(FNAME,"up: volume pct DOWN to %f", vol_pct );
 		}
 	}
 	if( (selected != this) || !gflags.inSetup )

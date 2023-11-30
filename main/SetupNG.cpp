@@ -89,20 +89,12 @@ void resetCWindAge() {
 		CircleWind::resetAge();
 }
 
-int last_volume=0;
-
 void change_volume() {
-	int delta = (int)audio_volume.get() - last_volume;
-	if( delta ){
-		if( delta > 0 ){
-			Audio::incVolume(delta);
-		}
-		else if( delta < 0 ){
-			Audio::decVolume(-delta);
-		}
-		last_volume += delta;
-		// ESP_LOGI(FNAME,"change_volume, delta=%d last_vol: %d", delta, last_volume );
-	}
+	if (DigitalPoti == nullptr)  // do not set volume until poti set up
+		return;
+	float pct = audio_volume.get();
+	Audio::setVolumePct( pct );
+	ESP_LOGI(FNAME,"change_volume -> %f", pct );
 }
 
 void flap_act() {

@@ -93,6 +93,10 @@ void change_volume() {
 	if (DigitalPoti == nullptr)  // do not set volume until poti set up
 		return;
 	float pct = audio_volume.get();
+	if (Switch::getCruiseState())
+		volume_s2f = pct;
+	else
+		volume_vario = pct;
 	Audio::setVolumePct( pct );
 	ESP_LOGI(FNAME,"change_volume -> %f", pct );
 }
@@ -393,4 +397,6 @@ SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );
 SetupNG<mpud::raw_axes_t>	accl_bias("ACCL_BIAS", zero_bias );
 SetupNG<float>              mpu_temperature("MPUTEMP", 45.0, true, SYNC_FROM_MASTER, PERSISTENT, chg_mpu_target );    // default for AHRS chip temperature (XCV 2023)
 
+float volume_vario = 0;
+float volume_s2f = 0;
 

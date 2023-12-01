@@ -72,8 +72,11 @@ private:
 	static bool sound;
     static float _range;
     static uint16_t *p_wiper;
+    static uint16_t *p_oldwiper;
     static uint16_t wiper;
+    static uint16_t oldwiper;
     static uint16_t wiper_s2f;
+    static uint16_t oldwiper_s2f;
     static uint16_t cur_wiper;
     static float maxf;
     static float minf;

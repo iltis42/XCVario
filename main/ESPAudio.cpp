@@ -37,9 +37,12 @@
 static TaskHandle_t dactid = NULL;
 
 uint8_t Audio::_tonemode;
-uint16_t *Audio::p_wiper;
+uint16_t *Audio::p_wiper = 0;
+uint16_t *Audio::p_oldwiper = 0;
 uint16_t Audio::wiper;
+uint16_t Audio::oldwiper = 0;
 uint16_t Audio::wiper_s2f;
+uint16_t Audio::oldwiper_s2f = 0;
 uint16_t Audio::cur_wiper;
 dac_channel_t Audio::_ch;
 
@@ -98,6 +101,7 @@ Audio::Audio( ) {
 	wiper_s2f = 63;
 	cur_wiper = 63;
 	p_wiper = 0;
+	p_oldwiper = 0;
 }
 
 PROGMEM std::map<uint16_t, t_lookup_entry> lftab{
@@ -224,6 +228,7 @@ bool Audio::selfTest(){
 	uint16_t setwiper = ( 0.01 * default_volume.get() * DigitalPoti->getRange());
 	// - it was incorrectly * 100 / getRange
 	p_wiper = &wiper;
+	p_oldwiper = &oldwiper;
 	wiper = wiper_s2f = setwiper;
 	ESP_LOGI(FNAME,"default volume/wiper: %d", (*p_wiper) );
 	ESP_LOGI(FNAME, "selfTest wiper: %d", wiper );
@@ -459,14 +464,15 @@ void Audio::setVolumePct( float pct ) {
 	if (range <= 0)
 		return;
 	int newwiper = (int) (0.01 * pct * range);
-	static int oldwiper = 0;
-	if (newwiper != oldwiper) {
-		setVolume(newwiper);
-		  // what will actually be written later to poti
-		  //   in writeWiper() will vary due to equalization
-		ESP_LOGI(FNAME,"change_volume wiper %d -> %d", oldwiper, newwiper );
-		oldwiper = newwiper;
-	}
+	if(p_oldwiper == 0 )
+		return;
+	if (newwiper == (*p_oldwiper))  // no change
+		return;
+	setVolume(newwiper);
+	  // what will actually be written later to poti
+	  //   in writeWiper() will vary due to equalization
+	ESP_LOGI(FNAME,"setVolumePct wiper %d -> %d", (*p_oldwiper), newwiper );
+	(*p_oldwiper) = newwiper;
 }
 
 // decVolume() and incVolume() no longer used
@@ -513,10 +519,17 @@ bool Audio::calcS2Fmode(){
 	bool mode = false;
 	if( !_alarm_mode ) {
 		mode =  Switch::getCruiseState();
-		if( mode && audio_split_vol.get() )
+		if( mode && audio_split_vol.get() ) {
 			p_wiper = &wiper_s2f;
-		else
+			p_oldwiper = &oldwiper_s2f;
+			if ( audio_volume.get() != volume_s2f )
+				audio_volume.set( volume_s2f );
+		} else {
 			p_wiper = &wiper;
+			p_oldwiper = &oldwiper;
+			if ( audio_volume.get() != volume_vario )
+				audio_volume.set( volume_vario );
+		}
 	}
 	return mode;
 }

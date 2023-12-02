@@ -1686,9 +1686,9 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 
 // Accepts speed in kmh IAS/TAS, translates into configured unit
 // right-aligned to value in 25 font size, no unit
-void IpsDisplay::drawSmallSpeed(float v_kmh, int16_t x, int16_t y)
+void IpsDisplay::drawSmallSpeed(float v, int16_t x, int16_t y)
 {
-	int airspeed = Units::AirspeedRounded(v_kmh);
+	int airspeed = (int)roundf(v);
 	ucg->setColor( COLOR_WHITE );
 	ucg->setFont(ucg_font_fub14_hr, true);
 	char s[32];
@@ -2379,7 +2379,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	// WK-Indicator
 	if( FLAP && !(tick%7) )
 	{
-		float wkspeed = Units::ActualWingloadCorrection(airspeed_kmh);
+		float wkspeed = Units::ActualWingloadCorrection(airspeed_kmh); // no units conversion in here, tbd: move sub to other place
 		int wki;
 		float wkopt=FLAP->getOptimum( wkspeed, wki );
 		int wk = (int)((wki - wkopt + 0.5)*10);
@@ -2570,7 +2570,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		}
 		ucg->undoClipRange();
 		// AS cleartext
-		drawSmallSpeed(airspeed_kmh, FIELD_START+35, YS2F-fh+3);
+		drawSmallSpeed(airspeed, FIELD_START+35, YS2F-fh+3);
 		as_prev = airspeed;
 	}
 	// S2F command trend triangle

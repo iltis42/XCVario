@@ -2578,7 +2578,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		xSemaphoreGive(spiMutex);
 		return;
 	}
-	if( ((int)s2fd != s2fdalt && !((tick+1)%2)) || !(tick%21) ) {
+	if( ((int)s2fd != s2fdalt) || (s2falt != (int)(s2f+0.5)) || !(tick%21) ) {
 		// Arrow pointing there
 		if( s2fmode ){
 			// erase old

@@ -491,14 +491,17 @@ bool Audio::calcS2Fmode(){
 }
 
 void  Audio::evaluateChopping(){
-	if(
-			(chopping_mode.get() == BOTH_CHOP) ||
-			(_s2f_mode && (chopping_mode.get() == S2F_CHOP) ) ||
-			( _s2f_mode && (cruise_audio_mode.get() == AUDIO_VARIO) && (chopping_mode.get() != NO_CHOP) ) ||
-			(!_s2f_mode && (chopping_mode.get() == VARIO_CHOP) )
-	)
-		_chopping = true;
-	else
+	int chop_mode = chopping_mode.get();
+	_chopping = true;   // default, including BOTH_CHOP and RICO_CHOP
+	if( chop_mode == VARIO_CHOP ) {
+		if( _s2f_mode && cruise_audio_mode.get() != AUDIO_VARIO )
+			_chopping = false;
+	}
+	else if( chop_mode == S2F_CHOP ) {
+		if( ! _s2f_mode )
+			_chopping = false;
+	}
+	else if( chop_mode == NO_CHOP )
 		_chopping = false;
 }
 
@@ -548,19 +551,32 @@ void Audio::dactask(void* arg )
 				else
 					hightone = false;
 
-				float f=0;
-				if( _s2f_mode && (cruise_audio_mode.get() == AUDIO_S2F) )
-					f = 1+9*(_te/5.0);
+				float f, g;
+				if ( chopping_mode.get() == RICO_CHOP )
+					g = 7.0;
 				else
-					f = 1+9*(_te/_range);
-
-				float period_ms = 1000.0/f;
+					g = 9.0;
+				if( _s2f_mode && (cruise_audio_mode.get() == AUDIO_S2F) )
+					// f = 1+9*(_te/5.0);
+					f = 5.0/((5.0+g*_te));
+				else
+					// f = 1+9*(_te/_range);
+					f = _range/((_range+g*_te));
+				// float period_ms = 1000.0/f;
+				float period_ms = 1000.0 * f;
 				if ( hightone ){  // duration of break (or second tone)
-					_delay = int(period_ms * 0.1)+40;  // 1Hz: 100 mS; 10Hz: 50 mS
+					if ( chopping_mode.get() == RICO_CHOP )
+						_delay = int(period_ms * 0.7)-20;   // 1Hz: 680 mS; 10Hz: 67 mS
+					else
+						_delay = int(period_ms * 0.1)+40;   // 1Hz: 140 mS; 10Hz: 50 mS
 					// ESP_LOGI(FNAME, "Break: %d period:%4.2f %4.1f", _delay, period_ms, f );
 				}
-				else{  // duration of main tone 1Hz: 900 mS; 10Hz: 50 mS
-					_delay = int(period_ms * 0.9)-40;
+				else{
+					if ( chopping_mode.get() == RICO_CHOP )
+						_delay = 18;  // mS duration of RICO "tick" - actually 20 ?
+					else
+						_delay = int(period_ms * 0.9)-40;
+						  // duration of main tone 1Hz: 860 mS; 10Hz: 50 mS
 					// ESP_LOGI(FNAME, "Tone: %d period:%4.2f %4.1f", _delay, period_ms, f );
 				}
 			}

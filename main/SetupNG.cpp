@@ -187,7 +187,7 @@ SetupNG<float>  		s2f_gyro_deg( "S2F_GYRO", 12, true, SYNC_FROM_MASTER, PERSISTE
 SetupNG<float> 			audio_volume("AUD_VOL", 10, true, SYNC_BIDIR, VOLATILE, change_volume );
 SetupNG<int>  			audio_split_vol( "AUD_SPLIT", 0 );
 SetupNG<int>  			audio_variable_frequency( "AUD_VAFQ", 0);
-SetupNG<int>  			s2f_switch_mode( "AUDIO_MODE" ,  3 );
+SetupNG<int>  			s2f_switch_mode( "AUDIO_MODE" ,  AM_AUTOSPEED );
 SetupNG<int>  			chopping_mode( "CHOPPING_MODE",  VARIO_CHOP );
 SetupNG<int>  			chopping_style( "CHOP_STYLE",  AUDIO_CHOP_SOFT );
 SetupNG<int>  			amplifier_shutdown( "AMP_DIS", 0 );

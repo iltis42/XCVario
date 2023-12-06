@@ -363,7 +363,23 @@ int bug_adj( SetupMenuValFloat * p ){
 }
 
 int vol_adj( SetupMenuValFloat * p ){
-	// Audio::setVolume( (int)(*(p->_value)) );
+	// float pct = audio_volume.get();
+	float max = max_volume.get();
+	// if (pct > max)
+	//	pct = max;
+	// Audio::setVolume( (int) pct );
+	p->setMax(max);
+	  // this happens *after* we used this menu, but how to do it before?
+	  // - perhaps save "vol" pointer as static var when creating the menu
+	  // - but the vol menu is not created if rotary is set to change volume
+	return 0;
+}
+
+int max_vol_adj( SetupMenuValFloat * p ){
+	float pct = max_volume.get();
+	if (pct < audio_volume.get())
+		audio_volume.set(pct);
+	// audio_volume menu ->setMax(pct);  tbd: ideally should do this here
 	return 0;
 }
 
@@ -717,6 +733,11 @@ void SetupMenu::vario_menu_create_meanclimb( MenuEntry *top ){
 }
 
 void SetupMenu::vario_menu_create_s2f( MenuEntry *top ){
+		SetupMenuValFloat * mc = new SetupMenuValFloat( PROGMEM"MC", "",	0.0, 9.9, 0.1, 0, true, &MC );
+		mc->setHelp(PROGMEM"MacCready value for optimum cruise speed, or average climb rate to be provided in same unit as the variometer");
+		mc->setPrecision(1);
+		top->addEntry( mc );
+
 	SetupMenuValFloat * vds2 = new SetupMenuValFloat( PROGMEM"Damping", "sec", 0.10001, 10.0, 0.1, 0, false, &s2f_delay );
 	vds2->setHelp(PROGMEM"Time constant of S2F low pass filter");
 	top->addEntry( vds2 );
@@ -851,8 +872,8 @@ void SetupMenu::audio_menu_create_tonestyles( MenuEntry *top ){
 	cf->setHelp(PROGMEM"Center frequency for Audio at zero Vario or zero S2F delta");
 	top->addEntry( cf );
 
-	SetupMenuValFloat * oc = new SetupMenuValFloat( "Octaves", "fold", 1.5, 4, 0.1, 0, false, &tone_var );
-	oc->setHelp(PROGMEM"Maximum tone frequency variation");
+	SetupMenuValFloat * oc = new SetupMenuValFloat( "Octaves", "fold", 1.1, 4, 0.1, 0, false, &tone_var, RST_ON_EXIT );
+	oc->setHelp(PROGMEM"Maximum tone frequency variation (reboots)");
 	top->addEntry( oc );
 
 	SetupMenuSelect * dt = new SetupMenuSelect( PROGMEM"Dual Tone", RST_ON_EXIT, 0 , true, &dual_tone );
@@ -918,14 +939,51 @@ void SetupMenu::audio_menu_create_equalizer( MenuEntry *top ){
 	top->addEntry( frqr );
 }
 
-void SetupMenu::audio_menu_create( MenuEntry *audio ){
+void SetupMenu::audio_menu_create_volume( MenuEntry *top ){
+		SetupMenuValFloat * vol = new SetupMenuValFloat( PROGMEM"Audio Volume", "%", 0.0, 100, 1, vol_adj, true, &audio_volume );
+		vol->setHelp(PROGMEM"Audio volume level for variometer tone on internal and external speaker");
+		vol->setMax(max_volume.get());
+		top->addEntry( vol );
+
 	SetupMenuValFloat * dv = new SetupMenuValFloat( PROGMEM"Default Volume", "%", 0, 100, 1.0, 0, false, &default_volume );
-	audio->addEntry( dv );
 	dv->setHelp(PROGMEM"Default volume for Audio when device is switched on");
+	top->addEntry( dv );
 
 	SetupMenuValFloat * mv = new SetupMenuValFloat( PROGMEM"Max Volume", "%", 0, 100, 1.0, 0, false, &max_volume );
-	audio->addEntry( mv );
 	mv->setHelp(PROGMEM"Maximum volume for Audio when volume setting is at max. Set to 0% to mute audio entirely.");
+	top->addEntry( mv );
+
+	SetupMenu * audeq = new SetupMenu( PROGMEM"Equalizer" );
+	audeq->setHelp( PROGMEM "Equalizing parameters for a constant volume over a wider frequency range", 220);
+	audeq->addCreator(audio_menu_create_equalizer);
+	top->addEntry( audeq );
+
+	SetupMenuSelect * amspvol = new SetupMenuSelect( PROGMEM"S2F Volume", RST_NONE, 0 , true, &audio_split_vol );
+	amspvol->setHelp(PROGMEM"Enable to control audio volume individually in SpeedToFly and in Vario modes, else same volume for both");
+	amspvol->addEntry( PROGMEM"Disable");      // 0
+	amspvol->addEntry( PROGMEM"Enable");       // 1
+	top->addEntry( amspvol );
+
+	SetupMenuSelect * sv = new SetupMenuSelect( PROGMEM"2-Seat Volume", RST_NONE, 0 , true, &sync_volume );
+	sv->setHelp(PROGMEM"Separate: independent volume control in master and slave XCvario units; Linked: controlled together");
+	sv->addEntry( PROGMEM"Separate");      // 0
+	sv->addEntry( PROGMEM"Linked");        // 1
+	top->addEntry( sv );
+
+	SetupMenuSelect * amps = new SetupMenuSelect( PROGMEM"Amplifier Off", RST_NONE, 0 , true, &amplifier_shutdown );
+	amps->setHelp(PROGMEM"Select if Audio Amplifier is totally shutdown while in deadband (saves energy), or stays on");
+	amps->addEntry( PROGMEM"Always On");       // 0
+	amps->addEntry( PROGMEM"In deadband");     // 1
+	amps->addEntry( PROGMEM"Off in sink");     // 2
+	amps->addEntry( PROGMEM"Always Off");      // 3
+	top->addEntry( amps );
+}
+
+void SetupMenu::audio_menu_create( MenuEntry *audio ){
+	SetupMenu * volumes = new SetupMenu( PROGMEM"Volume options" );
+	volumes->setHelp( PROGMEM "Configure audio volume options", 240);
+	volumes->addCreator(audio_menu_create_volume);
+	audio->addEntry( volumes );
 
 	SetupMenuSelect * abnm = new SetupMenuSelect( PROGMEM"Cruise Audio", RST_NONE, 0 , true, &cruise_audio_mode );
 	abnm->setHelp(PROGMEM"Select either S2F command or Variometer (Netto/Brutto as selected) as audio source while cruising");
@@ -934,9 +992,9 @@ void SetupMenu::audio_menu_create( MenuEntry *audio ){
 	audio->addEntry( abnm );
 
 	SetupMenu * audios = new SetupMenu( PROGMEM"Tone Styles" );
-	audio->addEntry( audios );
 	audios->setHelp( PROGMEM "Configure audio style in terms of center frequency, octaves, single/dual tone, pitch and chopping", 220);
 	audios->addCreator(audio_menu_create_tonestyles);
+	audio->addEntry( audios );
 
 	update_rentry(0);
 	audio_range_sm = new SetupMenuSelect( PROGMEM"Range", RST_NONE, 0 , true, &audio_range  );
@@ -947,36 +1005,19 @@ void SetupMenu::audio_menu_create( MenuEntry *audio ){
 	audio->addEntry( audio_range_sm );
 
 	SetupMenu * db = new SetupMenu( PROGMEM"Deadbands" );
-	audio->addEntry( db );
-	db->setHelp(PROGMEM"Audio dead band limits within Audio remains silent in metric scale. 0,1 m/s equals roughly 20 ft/min or 0.2 knots");
+	db->setHelp(PROGMEM"Dead band limits within which audio remains silent.  1 m/s equals roughly 200 fpm or 2 knots");
 	db->addCreator(audio_menu_create_deadbands);
+	audio->addEntry( db );
 
 	SetupMenuValFloat * afac = new SetupMenuValFloat( PROGMEM"Audio Exponent", "", 0.1, 2, 0.025, 0 , false, &audio_factor );
 	afac->setHelp(PROGMEM"Exponential factor < 1 gives a logarithmic, and > 1 exponential characteristic for frequency of audio signal");
 	audio->addEntry( afac);
-
-	SetupMenuSelect * amps = new SetupMenuSelect( PROGMEM"Amplifier Off", RST_NONE, 0 , true, &amplifier_shutdown );
-	amps->setHelp(PROGMEM"Select if Amplifier is totally shutdown while in deadband (saves energy), or stays always on");
-	amps->addEntry( PROGMEM"Always On");         // 0
-	amps->addEntry( PROGMEM"Shutdown");          // 1
-	audio->addEntry( amps );
 
 	SetupMenuSelect * ameda = new SetupMenuSelect( PROGMEM"Audio in Setup", RST_NONE, 0 , true, &audio_disable );
 	ameda->setHelp(PROGMEM"Select if Audio will get muted while Setup Menu is open or stays always on");
 	ameda->addEntry( PROGMEM"Stay On");      // 0
 	ameda->addEntry( PROGMEM"Silent");       // 1
 	audio->addEntry( ameda );
-
-	SetupMenu * audeq = new SetupMenu( PROGMEM"Equalizer" );
-	audio->addEntry( audeq );
-	audeq->setHelp( PROGMEM "Equalizing parameters for a constant volume over a wider frequency range", 220);
-	audeq->addCreator(audio_menu_create_equalizer);
-
-	SetupMenuSelect * amspvol = new SetupMenuSelect( PROGMEM"Split Volume", RST_NONE, 0 , true, &audio_split_vol );
-	amspvol->setHelp(PROGMEM"Enable to control audio volume individually in SpeedToFly and in Vario mode, else there is one volume for both");
-	amspvol->addEntry( PROGMEM"Disable");      // 0
-	amspvol->addEntry( PROGMEM"Enable");       // 1
-	audio->addEntry( amspvol );
 }
 
 void SetupMenu::glider_menu_create_polarpoints( MenuEntry *top ){
@@ -2047,13 +2088,14 @@ void SetupMenu::setup_create_root(MenuEntry *top ){
 	ESP_LOGI(FNAME,"setup_create_root()");
 	if( rot_default.get() == 0 ) {
 		SetupMenuValFloat * mc = new SetupMenuValFloat( PROGMEM"MC", "",	0.0, 9.9, 0.1, 0, true, &MC );
-		mc->setHelp(PROGMEM"Mac Cready value for optimum cruise speed, or average climb rate to be provided in same unit as the variometer");
+		mc->setHelp(PROGMEM"MacCready value for optimum cruise speed, or average climb rate to be provided in same unit as the variometer");
 		mc->setPrecision(1);
 		top->addEntry( mc );
 	}
 	else {
 		SetupMenuValFloat * vol = new SetupMenuValFloat( PROGMEM"Audio Volume", "%", 0.0, 100, 1, vol_adj, true, &audio_volume );
 		vol->setHelp(PROGMEM"Audio volume level for variometer tone on internal and external speaker");
+		vol->setMax(max_volume.get());
 		top->addEntry( vol );
 	}
 

@@ -49,6 +49,7 @@ public:
 	static void vario_menu_create_ec( MenuEntry *top );
 
 	static void audio_menu_create( MenuEntry *top );
+	static void audio_menu_create_volume( MenuEntry *top );
 	static void audio_menu_create_tonestyles( MenuEntry *top );
 	static void audio_menu_create_deadbands( MenuEntry *top );
 	static void audio_menu_create_equalizer( MenuEntry *top );

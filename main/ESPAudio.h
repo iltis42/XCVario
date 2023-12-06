@@ -79,6 +79,7 @@ private:
     static int prev_div;
     static int prev_step;
     static bool deadband_active;
+    static bool disable_amp;
     static float exponent_max;
     static float prev_aud_fact;
     static int scale;

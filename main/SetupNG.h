@@ -392,6 +392,7 @@ public:
 
 	inline T getDefault() const { return _default; }
 	inline uint8_t getSync() { return flags._sync; }
+	inline void setSync( e_sync_t sync ) { flags._sync = sync; }
 
 private:
 	T _value;
@@ -468,6 +469,7 @@ extern SetupNG<int>  		audio_split_vol;
 extern SetupNG<float>  		default_volume;
 extern SetupNG<float>  		frequency_response;
 extern SetupNG<float>  		max_volume;
+extern SetupNG<int>  		sync_volume;
 extern SetupNG<float>  		s2f_deadband;
 extern SetupNG<float>  		s2f_deadband_neg;
 extern SetupNG<float>  		s2f_delay;

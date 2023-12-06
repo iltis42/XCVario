@@ -50,6 +50,7 @@ bool  Audio::_s2f_mode = false;
 bool  Audio::sound=false;
 bool  Audio::_testmode=false;
 bool  Audio::deadband_active = false;
+bool  Audio::disable_amp = false;
 bool  Audio::hightone = false;
 int   Audio::_delay=100;
 int   Audio::mtick = 0;
@@ -588,11 +589,13 @@ void Audio::dactask(void* arg )
 
 			if( inDeadBand(_te) && !volume_change ){
 				deadband_active = true;
+				disable_amp = true;
 				sound = false;
 				// ESP_LOGI(FNAME,"Audio in DeadBand true");
 			}
 			else{
 				deadband_active = false;
+				disable_amp = false;
 				sound = true;
 				if( _tonemode == ATM_SINGLE_TONE ){
 					if( hightone )
@@ -601,10 +604,19 @@ void Audio::dactask(void* arg )
 				}
 				// ESP_LOGI(FNAME,"Audio in DeadBand false");
 			}
-			// Optionally disable Sound when in Menu
-			if( audio_disable.get() && gflags.inSetup )
+			if( audio_disable.get() && gflags.inSetup ) {
+				// Optionally disable Sound when in Menu
 				sound = false;
-			//ESP_LOGI(FNAME, "sound %d, ht %d, te %2.1f vc:%d cw:%d ", sound, hightone, _te, volume_change, cur_wiper );
+				disable_amp = true;
+			} else if( amplifier_shutdown.get() == 2 && _te < 0 ) {
+				// Optionally disable Sound when in sink
+				sound = false;
+				disable_amp = true;
+			} else if( amplifier_shutdown.get() == 3 ) {
+				// Optionally disable Sound altogether
+				sound = false;
+				disable_amp = true;
+			}			//ESP_LOGI(FNAME, "sound %d, ht %d, te %2.1f vc:%d cw:%d ", sound, hightone, _te, volume_change, cur_wiper );
 			if( sound ){
 				if( !deadband_active ){
 					enableAmplifier( true );
@@ -683,7 +695,7 @@ void Audio::dactask(void* arg )
 					}
 					dacDisable();
 				}
-				if( deadband_active )
+				if( disable_amp )
 					enableAmplifier( false );
 			}
 		}
@@ -709,9 +721,9 @@ bool Audio::inDeadBand( float te )
 		dbp = deadband.get();
 		dbn = deadband_neg.get();
 	}
-	if( ((int)( dbp*100 ) == 0) && ((int)( dbn*100 ) == 0)  ){
-		return false;
-	}
+//	if( ((int)( dbp*100 ) == 0) && ((int)( dbn*100 ) == 0)  ){
+//		return false;
+//	}
 
 	if( te > 0 ) {
 		if( te < dbp )

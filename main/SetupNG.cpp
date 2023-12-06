@@ -105,6 +105,11 @@ void change_volume() {
 	}
 }
 
+void set_volume_sync() {
+	audio_volume.setSync( sync_volume.get()? SYNC_BIDIR : SYNC_NONE );
+	ESP_LOGI(FNAME,"audio_volume sync now %d", audio_volume.getSync() );
+}
+
 void flap_act() {
     if (flap_enable.get()) {
         Flap::init(MYUCG);
@@ -187,7 +192,7 @@ SetupNG<float>  		s2f_gyro_deg( "S2F_GYRO", 12, true, SYNC_FROM_MASTER, PERSISTE
 SetupNG<float> 			audio_volume("AUD_VOL", 10, true, SYNC_BIDIR, VOLATILE, change_volume );
 SetupNG<int>  			audio_split_vol( "AUD_SPLIT", 0 );
 SetupNG<int>  			audio_variable_frequency( "AUD_VAFQ", 0);
-SetupNG<int>  			s2f_switch_mode( "AUDIO_MODE" ,  3 );
+SetupNG<int>  			s2f_switch_mode( "AUDIO_MODE" ,  AM_AUTOSPEED );
 SetupNG<int>  			chopping_mode( "CHOPPING_MODE",  VARIO_CHOP );
 SetupNG<int>  			chopping_style( "CHOP_STYLE",  AUDIO_CHOP_SOFT );
 SetupNG<int>  			amplifier_shutdown( "AMP_DIS", 0 );
@@ -217,6 +222,7 @@ SetupNG<float>  		mean_climb_major_change( "MEAN_CLMC", 0.5, true, SYNC_FROM_MAS
 SetupNG<float>  		elevation( "ELEVATION", -1, true, SYNC_BIDIR, PERSISTENT, 0, UNIT_ALT );
 SetupNG<float>  		default_volume( "DEFAULT_VOL", 25.0 );
 SetupNG<float>  		max_volume( "MAXI_VOL", 60.0 );
+SetupNG<int>  			sync_volume( "SYNC_VOL", 1, true, SYNC_BIDIR, PERSISTENT, set_volume_sync );
 SetupNG<float>  		frequency_response( "FREQ_RES", 30.0 );
 SetupNG<float>  		s2f_deadband( "DEADBAND_S2F", 10.0, true, SYNC_BIDIR, PERSISTENT, 0, UNIT_SPEED );
 SetupNG<float>  		s2f_deadband_neg( "DB_S2F_NEG", -10.0, true, SYNC_BIDIR, PERSISTENT, 0, UNIT_SPEED );

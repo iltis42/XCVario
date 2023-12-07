@@ -851,8 +851,8 @@ void SetupMenu::audio_menu_create_tonestyles( MenuEntry *top ){
 	cf->setHelp(PROGMEM"Center frequency for Audio at zero Vario or zero S2F delta");
 	top->addEntry( cf );
 
-	SetupMenuValFloat * oc = new SetupMenuValFloat( "Octaves", "fold", 1.5, 4, 0.1, 0, false, &tone_var );
-	oc->setHelp(PROGMEM"Maximum tone frequency variation");
+	SetupMenuValFloat * oc = new SetupMenuValFloat( "Octaves", "fold", 1.1, 4, 0.1, 0, false, &tone_var, RST_ON_EXIT );
+	oc->setHelp(PROGMEM"Maximum tone frequency variation (reboots)");
 	top->addEntry( oc );
 
 	SetupMenuSelect * dt = new SetupMenuSelect( PROGMEM"Dual Tone", RST_ON_EXIT, 0 , true, &dual_tone );

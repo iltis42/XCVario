@@ -221,7 +221,7 @@ bool Audio::selfTest(){
 		ESP_LOGI(FNAME,"MCP4018 digital Poti found");
 	}
 	_step = DigitalPoti->getStep();
-	uint16_t setwiper = ((default_volume.get() * 100.0) / DigitalPoti->getRange());
+	uint16_t setwiper = ( 0.01 * default_volume.get() * DigitalPoti->getRange());
 	p_wiper = &wiper;
 	wiper = wiper_s2f = setwiper;
 	ESP_LOGI(FNAME,"default volume/wiper: %d", (*p_wiper) );

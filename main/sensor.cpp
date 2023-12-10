@@ -424,7 +424,7 @@ static void grabMPU()
 	static uint16_t num_gyro_samples = 0;
 
 	// Read the IMU registers and check the output
-	if(  IMU::MPU6050Read() == ESP_OK )
+	if( IMU::MPU6050Read() == ESP_OK )
 	{
 		// Do the gyro auto bias
 		vector_ijk gyroDPS = IMU::getGliderGyro();
@@ -954,9 +954,10 @@ void system_startup(void *args){
 		MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
 		mpud::raw_axes_t gb = gyro_bias.get();
 		mpud::raw_axes_t ab = accl_bias.get();
-		if( 0 ) { // gb.isZero() ) {
+		if( gb.isZero() && ab.isZero() ) {
 			ESP_LOGI( FNAME,"MPU computeOffsets");
 			MPU.computeOffsets( &ab, &gb );  // returns Offsets in 16G scale
+			accl_bias.set( ab );
 			gyro_bias.set( gb );
 			MPU.setGyroOffset(gb);
 			ESP_LOGI( FNAME,"MPU new offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );

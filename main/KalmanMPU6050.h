@@ -182,11 +182,6 @@ private:
   static Quaternion att_quat;
   static vector_ijk att_vector;
   static euler_angles euler;
-
-  // Reference
-  static int progress; // bit-wise 0 -> 1 -> 3 -> 0 // start -> right -> left -> finish
-  static vector_d bob_right_wing, bob_left_wing;
-  static Quaternion ref_rot;
 };
 
 #endif // _KalmanMPU6050_H_

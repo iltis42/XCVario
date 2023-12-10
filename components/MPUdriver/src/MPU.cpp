@@ -2396,23 +2396,24 @@ esp_err_t MPU::gyroSelfTest(raw_axes_t& regularBias, raw_axes_t& selfTestBias, u
  * @brief Collect samples of a static 1g acceleration
  * This algorithm takes about ~500ms to oversample.
  * */
-esp_err_t MPU::getAccelSamplesG(double& avgx, double& avgy, double& avgz)
+esp_err_t MPU::getMPUSamples(double& avgx, double& avgy, double& avgz, axes_t<int>& gyro)
 {
 	// configurations to get accel only
-	constexpr fifo_config_t kFIFOConfig = FIFO_CFG_ACCEL;
-	constexpr size_t kPacketSize        = 6;
+	constexpr fifo_config_t kFIFOConfig = FIFO_CFG_ACCEL | FIFO_CFG_GYRO;
+	constexpr size_t kPacketSize       = 12;
+	const accel_fs_t accelFS           = getAccelFullScale();
+	const gyro_fs_t  gyroFS            = getGyroFullScale();
 	// backup previous configuration
 	const fifo_config_t prevFIFOConfig = getFIFOConfig();
-	const accel_fs_t accelFS           = getAccelFullScale();
 	const bool prevFIFOState           = getFIFOEnabled();
+	raw_axes_t curr_offset             = getAccelOffset();
 	// setup .. stick with the intended use configuration in terms of rate and resolution(!)
 	if (MPU_ERR_CHECK(setFIFOConfig(kFIFOConfig))) return err;
 	if (MPU_ERR_CHECK(setFIFOEnabled(true))) return err;
-
 	if (MPU_ERR_CHECK(setAccelOffset())) return err;
 
-	// wait for 100ms for sensors to stabilize
-	vTaskDelay(100 / portTICK_PERIOD_MS);
+	// wait for 200ms for sensors to stabilize
+	vTaskDelay(200 / portTICK_PERIOD_MS);
 	// fill FIFO for 400ms
 	if (MPU_ERR_CHECK(resetFIFO())) return err;
 	vTaskDelay(400 / portTICK_PERIOD_MS);
@@ -2429,30 +2430,52 @@ esp_err_t MPU::getAccelSamplesG(double& avgx, double& avgy, double& avgz)
 		if (MPU_ERR_CHECK(readFIFO(overrunCount, buffer))) return err;
 	}
 	// fetch data and add up
-	axes_t<int> avg;
+	axes_t<int> avg_accel, avg_gyro;
 	for (int i = 0; i < packetCount; i++) {
 		if (MPU_ERR_CHECK(readFIFO(kPacketSize, buffer))) return err;
 		// retrieve data
-		raw_axes_t accelCur;
-		accelCur.x = (buffer[0] << 8) | buffer[1];
-		accelCur.y = (buffer[2] << 8) | buffer[3];
-		accelCur.z = (buffer[4] << 8) | buffer[5];
-		// MPU_LOGI("Part %d/%d/%d", accelCur.x, accelCur.y, accelCur.z);
-		avg += accelCur; // add up
+		raw_axes_t mpuCur;
+		mpuCur.x = (buffer[0] << 8) | buffer[1];
+		mpuCur.y = (buffer[2] << 8) | buffer[3];
+		mpuCur.z = (buffer[4] << 8) | buffer[5];
+		// MPU_LOGI("XYZ part %d/%d/%d", mpuCur.x, mpuCur.y, mpuCur.z);
+		avg_accel += mpuCur; // add up
+
+		mpuCur.x  = (buffer[6] << 8) | buffer[7];
+		mpuCur.y  = (buffer[8] << 8) | buffer[9];
+		mpuCur.z  = (buffer[10] << 8) | buffer[11];
+		// MPU_LOGI("Rot part %d/%d/%d", mpuCur.x, mpuCur.y, mpuCur.z);
+		avg_gyro += mpuCur;
 	}
 	// calculate average
-	avg /= packetCount;
-	MPU_LOGI("Avg %d/%d/%d", avg.x, avg.y, avg.z);
+	avg_accel /= packetCount;
+	MPU_LOGI("Avg accel %d/%d/%d", avg_accel.x, avg_accel.y, avg_accel.z);
+	avg_gyro /= packetCount;
+	MPU_LOGI("Avg gyro %d/%d/%d", avg_gyro.x, avg_gyro.y, avg_gyro.z);
 
 	// the unit in multiples of g
 	double one_g = 0x8000 >> (accelFS+1);
-	avgx = double(avg.x) / one_g; // returned vector
-	avgy = double(avg.y) / one_g;
-	avgz = double(avg.z) / one_g;
+	avgx = double(avg_accel.x) / one_g; // returned vector
+	avgy = double(avg_accel.y) / one_g;
+	avgz = double(avg_accel.z) / one_g;
+
+	// rotation scaled up to GYRO_FS_1000DPS
+	int to_1000_dps = types::GYRO_FS_1000DPS - gyroFS;
+	if ( to_1000_dps >= 0 ) {
+		for (int i = 0; i < 3; i++) {
+			gyro[i] = avg_gyro[i] >> to_1000_dps;
+		}
+	} else {
+		for (int i = 0; i < 3; i++) {
+			gyro[i] = avg_gyro[i] << 1;
+		}
+	}
+	MPU_LOGI("Avg gyro result %d/%d/%d", gyro.x, gyro.y, gyro.z);
 
 	// Restore registers
 	MPU_ERR_CHECK(setFIFOConfig(prevFIFOConfig));
 	MPU_ERR_CHECK(setFIFOEnabled(prevFIFOState));
+	MPU_ERR_CHECK(setAccelOffset(curr_offset));
 
 	return err;
 }

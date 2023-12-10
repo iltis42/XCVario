@@ -42,10 +42,12 @@ float IMU::positiveG = 1.0;
 Quaternion IMU::att_quat(0,0,0,0);
 vector_ijk IMU::att_vector;
 euler_angles IMU::euler;
-int IMU::progress = 0;
-vector_3d<double> IMU::bob_right_wing(0,0,0),
-	IMU::bob_left_wing(0,0,0);
-Quaternion IMU::ref_rot;
+
+// Reference calib
+static int progress = 0; // bit-wise 0 -> 1 -> 3 -> 0 // start -> right -> left -> finish
+static vector_d bob_right_wing, bob_left_wing;
+static mpud::axes_t<int> gyro_bias_one, gyro_bias_two;
+static Quaternion ref_rot;
 
 vector_ijk gravity_vector( 0,0,-1 );
 
@@ -132,6 +134,7 @@ void IMU::init()
 	euler = { 0,0,0 };
 	progress = 0;
 	bob_right_wing = bob_left_wing = vector_3d<double>();
+	gyro_bias_one = gyro_bias_two = mpud::axes_t<int>();
 	Quaternion basic_ref = imu_reference.get();
 	if ( basic_ref == Quaternion() ) {
 		// If unset, set to a rough default
@@ -337,24 +340,27 @@ class IMU_Ref
 void IMU::getAccelSamplesAndCalib(int side)
 {
 	esp_err_t err;
-	vector_d *bob = nullptr;
+	vector_d *bob;
+	mpud::axes_t<int> *gbias;
 	if ( side == 1 ) {
 		bob = &bob_right_wing;
+		gbias = &gyro_bias_one;
 	}
 	else if ( side == 2 ) {
 		bob = &bob_left_wing;
+		gbias = &gyro_bias_two;
 	}
 	else {
 		ESP_LOGI(FNAME, "Wrong wing down parameter %d", side);
 		return;
 	}
 
-	err = MPU.getAccelSamplesG(bob->a, bob->b, bob->c);
+	err = MPU.getMPUSamples(bob->a, bob->b, bob->c, *gbias);
 	ESP_LOGI(FNAME, "wing down bob: %f/%f/%f", bob->a, bob->b, bob->c);
 	if ( err == 0 ) {
-		progress |= side; // Note progress
+		progress |= side; // accumulate progress
 		if ( progress == 0x3 ) {
-			// Ectract the current bias from wing down measurments
+			// Extract the current bias from wing down measurments
 			std::vector<double> start{.0, .0, .0};
 			std::vector<std::vector<double> > imu_simp{{0.05,0,0},{0,-0.05,0},{0,0,0.05},{0,0,0}};
 			IMU_Ref bias_min;
@@ -393,12 +399,25 @@ void IMU::getAccelSamplesAndCalib(int side)
 
 			// Save the basic part to nvs storage
 			imu_reference.set(basic_reference, false);
-			// Save the bias
+			// Save the accel bias
 			mpud::raw_axes_t raw_bias(bias.a*-2048., bias.b*-2048., bias.c*-2048.);
+			ESP_LOGI(FNAME, "raw  Bias: %d,%d,%d", raw_bias.x, raw_bias.y, raw_bias.z);
 			accl_bias.set(raw_bias, false);
 			// Reprogam MPU bias
 			MPU.setAccelOffset(raw_bias);
 
+			// Additionaly use gyro sample to calc offset and save it
+			raw_bias = mpud::raw_axes_t((gyro_bias_one.x + gyro_bias_two.x) / -2,
+				(gyro_bias_one.y + gyro_bias_two.y) / -2,
+				(gyro_bias_one.z + gyro_bias_two.z) / -2);
+			ESP_LOGI(FNAME, "raw  Gyro: %d,%d,%d", raw_bias.x, raw_bias.y, raw_bias.z);
+			mpud::raw_axes_t curr_bias = MPU.getGyroOffset();
+			ESP_LOGI(FNAME, "curr Gyro: %d,%d,%d", curr_bias.x, curr_bias.y, curr_bias.z);
+			raw_bias += curr_bias;
+			ESP_LOGI(FNAME, "new  Gyro: %d,%d,%d", raw_bias.x, raw_bias.y, raw_bias.z);
+			gyro_bias.set(raw_bias, false);
+			// Reprogam MPU bias
+			MPU.setGyroOffset(raw_bias);
 		}
 	}
 }

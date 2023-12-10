@@ -896,8 +896,8 @@ raw_axes_t MPU::getGyroOffset()
 /**
  * @brief Push biases to the accel offset registers.
  *
- * This function expects biases relative to the current sensor output, and
- * these biases will be added to the factory-supplied values.
+ * This function expects biases relative to the sensor output with factory trim,
+ * these biases will be added to the factory-supplied trim values.
  *
  * Note: Bias inputs are LSB in +-16G format.
  * */
@@ -934,8 +934,8 @@ esp_err_t MPU::setAccelOffset(raw_axes_t bias)
 
 /**
  * @brief Return biases from accel offset registers.
- * This returns the biases with OTP values from factory trim added,
- * so returned values will be different than that ones set with setAccelOffset().
+ * This returns the biases with OTP values from factory trim subtracted,
+ * so returned values will be the same as the ones set with setAccelOffset().
  *
  * Note: Bias output are LSB in +-16G format.
  * */
@@ -956,6 +956,7 @@ raw_axes_t MPU::getAccelOffset()
 	bias.z                        = (buffer[6] << 8) | buffer[7];
 #endif
 
+	bias -= accel_factory_trim;
 	return bias;
 }
 

@@ -981,6 +981,9 @@ esp_err_t MPU::computeOffsets(raw_axes_t* accel, raw_axes_t* gyro)
 		(*accel)[i] = -((*accel)[i] >> (types::ACCEL_FS_16G - kAccelFS));
 		(*gyro)[i]  = -((*gyro)[i] >> (types::GYRO_FS_1000DPS - kGyroFS));
 	}
+	// add currently set gyro offset register values
+	*gyro  += getGyroOffset();
+
 	return err;
 }
 
@@ -2459,7 +2462,7 @@ esp_err_t MPU::getAccelSamplesG(double& avgx, double& avgy, double& avgz)
  * @brief Compute the Biases in regular mode and self-test mode.
  * @attention When calculating the biases the MPU must remain as horizontal as possible (0 degrees), facing up.
  * This algorithm takes about ~400ms to compute offsets.
- * todo needs rework
+ * As is a good approach to cope with the first time powered uncalibrated variometer.
  * */
 esp_err_t MPU::getBiases(accel_fs_t accelFS, gyro_fs_t gyroFS, raw_axes_t* accelBias, raw_axes_t* gyroBias,
 		bool selftest)
@@ -2476,6 +2479,8 @@ esp_err_t MPU::getBiases(accel_fs_t accelFS, gyro_fs_t gyroFS, raw_axes_t* accel
 	const gyro_fs_t prevGyroFS         = getGyroFullScale();
 	const fifo_config_t prevFIFOConfig = getFIFOConfig();
 	const bool prevFIFOState           = getFIFOEnabled();
+	raw_axes_t curr_offset             = getAccelOffset();
+
 	// setup
 	if (MPU_ERR_CHECK(setSampleRate(kSampleRate))) return err;
 	if (MPU_ERR_CHECK(setDigitalLowPassFilter(kDLPF))) return err;
@@ -2483,6 +2488,7 @@ esp_err_t MPU::getBiases(accel_fs_t accelFS, gyro_fs_t gyroFS, raw_axes_t* accel
 	if (MPU_ERR_CHECK(setGyroFullScale(gyroFS))) return err;
 	if (MPU_ERR_CHECK(setFIFOConfig(kFIFOConfig))) return err;
 	if (MPU_ERR_CHECK(setFIFOEnabled(true))) return err;
+	if (MPU_ERR_CHECK(setAccelOffset())) return err;
 	if (selftest) {
 		if (MPU_ERR_CHECK(writeBits(regs::ACCEL_CONFIG, regs::ACONFIG_XA_ST_BIT, 3, 0x7))) {
 			return err;
@@ -2529,11 +2535,13 @@ esp_err_t MPU::getBiases(accel_fs_t accelFS, gyro_fs_t gyroFS, raw_axes_t* accel
 	// remove gravity from Accel Z axis for bias
 
 	const uint16_t gravityLSB = INT16_MAX >> (accelFS + 1);
-	// if( topDown )  // consider topdown mode for offset compensation
-		// accelAvg.x += gravityLSB;
-	// else
+	if( abs(accelAvg.x) > (gravityLSB/2) ) {
 		accelAvg.x -= gravityLSB;
-	// printf("XXXXXXX CAX:%d\n", accelAvg.x);
+	}
+	else {
+		// consider topdown mode for offset compensation
+		accelAvg.x += gravityLSB;
+	}
 
 	// save biases
 	for (int i = 0; i < 3; i++) {
@@ -2547,6 +2555,7 @@ esp_err_t MPU::getBiases(accel_fs_t accelFS, gyro_fs_t gyroFS, raw_axes_t* accel
 	if (MPU_ERR_CHECK(setGyroFullScale(prevGyroFS))) return err;
 	if (MPU_ERR_CHECK(setFIFOConfig(prevFIFOConfig))) return err;
 	if (MPU_ERR_CHECK(setFIFOEnabled(prevFIFOState))) return err;
+	if (MPU_ERR_CHECK(setAccelOffset(curr_offset))) return err;
 	return err;
 }
 

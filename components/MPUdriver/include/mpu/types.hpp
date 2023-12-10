@@ -463,19 +463,26 @@ struct axes_t
             T z;
         };
     };
-	axes_t<T>() = default;
-	axes_t<T>(T p1, T p2, T p3) : x(p1), y(p2), z(p3) {};
+    axes_t<T>() = default;
+    axes_t<T>(T p1, T p2, T p3) : x(p1), y(p2), z(p3) {}
+    axes_t<T>(const axes_t<T>&) = default;
     T& operator[](int i) { return xyz[i]; }
-    struct axes_t<T>& operator = ( const struct axes_t &other )
+    axes_t<T>& operator = (const axes_t<T> &other)
         { x = other.x; y = other.y; z = other.z; return *this; }
-    bool operator == ( const struct axes_t<T> &right ) const
+    bool operator == ( const axes_t<T> &right ) const
         { return x == right.x && y == right.y && z == right.z; }
     bool isZero() const { return bool( !(x|y|z) ); }
     void setZero() { x=y=z=.0; }
-	struct axes_t<T>& operator+=(const axes_t<int16_t>& right)
+    axes_t<T>& operator+=(const axes_t<int16_t>& right)
         { x += right.x; y += right.y; z += right.z; return *this; }
-	struct axes_t<T>& operator/=(T right)
+    axes_t<T>& operator+(const axes_t<T>& right)
+        { axes_t<T> tmp(*this); tmp += right; return tmp; }
+    axes_t<T>& operator-=(const axes_t<int16_t>& right)
+        { x -= right.x; y -= right.y; z -= right.z; return *this; }
+    axes_t<T>& operator/=(T right)
         { x /= right; y /= right; z /= right; return *this; }
+    axes_t<T>& operator/(T right)
+        { axes_t<T> tmp(*this); tmp.x /= right; tmp.y /= right; tmp.z /= right; return tmp; }
     const char* toString() {
     	return ("X:" + String(x) + " Y:" + String(y) + " Z:" + String(z)).c_str();
     };

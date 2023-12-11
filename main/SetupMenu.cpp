@@ -869,7 +869,7 @@ void SetupMenu::audio_menu_create_tonestyles( MenuEntry *top ){
 	oc->setHelp(PROGMEM"Maximum tone frequency variation");
 	top->addEntry( oc );
 
-	SetupMenuSelect * dt = new SetupMenuSelect( PROGMEM"Dual Tone", RST_ON_EXIT, audio_setup_s, true, &dual_tone );
+	SetupMenuSelect * dt = new SetupMenuSelect( PROGMEM"Dual Tone", RST_NONE, audio_setup_s, true, &dual_tone );
 	dt->setHelp(PROGMEM"Select dual tone modue aka ilec sound, (di/da/di) or single tone (di/di/di) mode (reboots)");
 	dt->addEntry( PROGMEM"Disable");       // 0
 	dt->addEntry( PROGMEM"Enable");        // 1

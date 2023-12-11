@@ -117,7 +117,13 @@ int vario_setup(SetupMenuValFloat * p)
 	return 0;
 }
 
-int audio_setup(SetupMenuValFloat * p)
+int audio_setup_s(SetupMenuSelect * p)
+{
+	Audio::setup();
+	return 0;
+}
+
+int audio_setup_f(SetupMenuValFloat * p)
 {
 	Audio::setup();
 	return 0;
@@ -855,11 +861,11 @@ void SetupMenu::vario_menu_create( MenuEntry *vae ){
 }
 
 void SetupMenu::audio_menu_create_tonestyles( MenuEntry *top ){
-	SetupMenuValFloat * cf = new SetupMenuValFloat( PROGMEM"CenterFreq", "Hz", 200.0, 2000.0, 10.0, 0, false, &center_freq );
+	SetupMenuValFloat * cf = new SetupMenuValFloat( PROGMEM"CenterFreq", "Hz", 200.0, 2000.0, 10.0, audio_setup_f, false, &center_freq );
 	cf->setHelp(PROGMEM"Center frequency for Audio at zero Vario or zero S2F delta");
 	top->addEntry( cf );
 
-	SetupMenuValFloat * oc = new SetupMenuValFloat( "Octaves", "fold", 1.2, 4, 0.05, audio_setup, false, &tone_var, RST_ON_EXIT );
+	SetupMenuValFloat * oc = new SetupMenuValFloat( "Octaves", "fold", 1.2, 4, 0.05, audio_setup_f, false, &tone_var, RST_ON_EXIT );
 	oc->setHelp(PROGMEM"Maximum tone frequency variation");
 	top->addEntry( oc );
 
@@ -947,7 +953,7 @@ void SetupMenu::audio_menu_create( MenuEntry *audio ){
 	audios->addCreator(audio_menu_create_tonestyles);
 
 	update_rentry(0);
-	audio_range_sm = new SetupMenuSelect( PROGMEM"Range", RST_NONE, 0 , true, &audio_range  );
+	audio_range_sm = new SetupMenuSelect( PROGMEM"Range", RST_NONE, audio_setup_s, true, &audio_range  );
 	audio_range_sm->addEntry( rentry0  );
 	audio_range_sm->addEntry( rentry1  );
 	audio_range_sm->addEntry( rentry2  );

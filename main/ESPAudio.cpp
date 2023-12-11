@@ -522,7 +522,7 @@ void  Audio::calculateFrequency(){
 		setFrequency( current_frequency*_high_tone_var );
 	else
 		setFrequency( current_frequency );
-	ESP_LOGI(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f multi:%0.3f  wiper:%d", f, _te, audio_factor.get(), mult, cur_wiper );
+	// ESP_LOGI(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f multi:%0.3f  wiper:%d", f, _te, audio_factor.get(), mult, cur_wiper );
 }
 
 void Audio::writeWiper( uint16_t volume ){
@@ -820,6 +820,7 @@ void Audio::dacEnable(){
 		dac_enable = true;
 	}
 }
+
 void Audio::dacDisable(){
 	if( dac_enable ){
 		// ESP_LOGI(FNAME,"Audio::dacDisable");

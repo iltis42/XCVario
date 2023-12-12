@@ -975,7 +975,7 @@ void SetupMenu::audio_menu_create( MenuEntry *audio ){
 	afac->setHelp(PROGMEM"Exponential factor < 1 gives a logarithmic, and > 1 exponential characteristic for frequency of audio signal");
 	audio->addEntry( afac);
 
-	SetupMenuSelect * amps = new SetupMenuSelect( PROGMEM"Amplifier Off", RST_NONE, 0 , true, &amplifier_shutdown );
+	SetupMenuSelect * amps = new SetupMenuSelect( PROGMEM"Amplifier Off", RST_NONE, audio_setup_s, true, &amplifier_shutdown );
 	amps->setHelp(PROGMEM"Select if Amplifier is totally shutdown while in deadband (saves energy), or stays always on");
 	amps->addEntry( PROGMEM"Always On");         // 0
 	amps->addEntry( PROGMEM"Shutdown");          // 1

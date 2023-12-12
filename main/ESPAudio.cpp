@@ -730,6 +730,7 @@ void Audio::setup()
 
 	maxf = center_freq.get() * tone_var.get();
 	minf = center_freq.get() / tone_var.get();
+	restart();
 }
 
 void Audio::restart()

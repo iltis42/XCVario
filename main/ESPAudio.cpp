@@ -578,7 +578,7 @@ void Audio::dactask(void* arg )
 				sound = false;
 			//ESP_LOGI(FNAME, "sound %d, ht %d, te %2.1f vc:%d cw:%d ", sound, hightone, _te, volume_change, cur_wiper );
 			if( sound ){
-				if( !deadband_active ){
+				if( !deadband_active && amplifier_shutdown.get() ){
 					enableAmplifier( true );
 				}
 				// Blend over gracefully volume changes
@@ -655,7 +655,7 @@ void Audio::dactask(void* arg )
 					}
 					dacDisable();
 				}
-				if( deadband_active )
+				if( deadband_active && amplifier_shutdown.get() )
 					enableAmplifier( false );
 			}
 		}

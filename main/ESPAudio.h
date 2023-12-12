@@ -68,9 +68,9 @@ private:
 	static bool _testmode;
 	static bool sound;
     static float _range;
-    static uint16_t *p_wiper;
-    static uint16_t wiper;
-    static uint16_t wiper_s2f;
+    static uint16_t &speaker_volume;
+    static uint16_t vario_mode_volume;
+    static uint16_t s2f_mode_volume;
     static uint16_t current_volume;
     static float maxf;
     static float minf;
@@ -84,7 +84,7 @@ private:
     static bool hightone;
     static bool _alarm_mode;
     static int  defaultDelay;
-    static uint16_t _vol_back;
+    static uint16_t _vol_back_vario;
     static uint16_t _vol_back_s2f;
     static bool  _s2f_mode_back;
     static int   _tonemode_back;

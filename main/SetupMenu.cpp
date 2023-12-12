@@ -513,10 +513,11 @@ void SetupMenu::down(int count){
 			MC.set( mc );
 		}
 		else{  // Volume
-			int vol = (int)audio_volume.get();
-			vol -= count*2;
-			vol = std::max( vol, 0 );
+			float vol = audio_volume.get();
+			for( int i=0; i<count; i++ )
+				vol = vol * 0.83;
 			audio_volume.set( vol );
+			// ESP_LOGI(FNAME,"NEW DN VOL: %f", vol );
 		}
 	}
 	if( (selected != this) || !gflags.inSetup )
@@ -552,10 +553,15 @@ void SetupMenu::up(int count){
 			MC.set( mc );
 		}
 		else{  // Volume
-			int vol = (int)audio_volume.get();
-			vol += count;
-			vol = std::min( vol, 100 );
-			audio_volume.set( (float)vol );
+			float vol = audio_volume.get();
+			if( vol<3.0 )
+				vol=3.0;
+			for( int i=0; i<count; i++ )
+				vol = vol * 1.17;
+			if( vol > 100.0 )
+				vol = 100.0;
+			audio_volume.set( vol );
+		    // ESP_LOGI(FNAME,"NEW UP VOL: %f", vol );
 		}
 	}
 	if( (selected != this) || !gflags.inSetup )

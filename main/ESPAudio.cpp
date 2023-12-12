@@ -441,34 +441,8 @@ void Audio::setVolume( int vol ) {
 	if((p_wiper) == 0 )
 		return;
 	(*p_wiper) = vol;
+	volume_change = 100;
 };
-
-void Audio::decVolume( int steps ) {
-	if((p_wiper) == 0 )
-		return;
-	steps = int( 1+ ( (float)(*p_wiper)/16.0 ))*steps;
-	while( steps && ((*p_wiper) > 0) ){
-		(*p_wiper)--;
-		steps--;
-	}
-	volume_change = 100;
-	// ESP_LOGI(FNAME,"dec volume, *p_wiper: %d", (*p_wiper) );
-}
-
-
-void Audio::incVolume( int steps ) {
-	if((p_wiper) == 0 )
-		return;
-	steps = int( 1+ ( (float)(*p_wiper)/16.0 ))*steps;
-	while( steps && ((*p_wiper) <  DigitalPoti->getRange()*(max_volume.get()/100)) ){
-		(*p_wiper)++;
-		steps--;
-	}
-	if( (*p_wiper) > DigitalPoti->getRange() )
-		(*p_wiper) =  DigitalPoti->getRange();
-	volume_change = 100;
-	// ESP_LOGI(FNAME,"inc volume, *p_wiper: %d", (*p_wiper) );
-}
 
 void Audio::startAudio(){
 	ESP_LOGI(FNAME,"startAudio");

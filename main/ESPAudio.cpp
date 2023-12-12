@@ -488,15 +488,13 @@ void  Audio::calculateFrequency(){
 		exponent_max  = std::pow( 2, audio_factor.get());
 		prev_aud_fact = audio_factor.get();
 	}
-	float f = center_freq.get() + ((mult*_te)/range )  * (max_var/exponent_max);
-	if( (int)(f/10.0) != int(current_frequency/10.0) ){
-		current_frequency = f;
-	}
+	float current_frequency = center_freq.get() + ((mult*_te)/range )  * (max_var/exponent_max);
+
 	if( hightone && (_tonemode == ATM_DUAL_TONE ) )
 		setFrequency( current_frequency*_high_tone_var );
 	else
 		setFrequency( current_frequency );
-	// ESP_LOGI(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f multi:%0.3f  wiper:%d", f, _te, audio_factor.get(), mult, cur_wiper );
+	// ESP_LOGI(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f", current_frequency, _te, mult );
 }
 
 void Audio::writeWiper( uint16_t volume ){

@@ -58,7 +58,7 @@ private:
 	static void enableAmplifier( bool enable );  // frue ON, false OFF
 	static uint16_t equal_volume( uint16_t volume );
 	static void  calculateFrequency();
-	static void writeWiper( uint16_t volume );
+	static void writeVolume( uint16_t volume );
 
 	static dac_channel_t _ch;
 	static float _te;
@@ -71,7 +71,7 @@ private:
     static uint16_t *p_wiper;
     static uint16_t wiper;
     static uint16_t wiper_s2f;
-    static uint16_t cur_wiper;
+    static uint16_t current_volume;
     static float maxf;
     static float minf;
     static int prev_div;

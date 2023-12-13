@@ -435,7 +435,7 @@ void Flarm::drawFlarmWarning(){
 	if( _tick > 500 ) // age FLARM alarm in case there is no more input  50 per second = 10 sec
 		AlarmLevel = 0;
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	int volume=0;
+	float volume=0;
 	e_audio_alarm_type_t alarm = AUDIO_ALARM_FLARM_1;
 	if( AlarmLevel == 3 ) { // highest, impact 0-8 seconds
 		volume = flarm_volume.get();

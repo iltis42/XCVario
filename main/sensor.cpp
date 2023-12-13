@@ -361,7 +361,7 @@ void drawDisplay(void *pvParameters){
 			if( gload_mode.get() != GLOAD_OFF  ){
 				if( (float)accelG[0] > gload_pos_limit.get() || (float)accelG[0] < gload_neg_limit.get()  ){
 					if( !gflags.gload_alarm ) {
-						Audio::alarm( true, DigitalPoti->getRange()*(gload_alarm_volume.get()/100) );
+						Audio::alarm( true, gload_alarm_volume.get() );
 						gflags.gload_alarm = true;
 					}
 				}else

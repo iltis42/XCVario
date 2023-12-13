@@ -7,14 +7,16 @@ MCP4018::MCP4018()
 {
 	errorcount=0;
 	_noDevice = false;
-	wiper = 63;
+	wiper = MCP4018RANGE/2;
 	bus = 0;
 }
 
 bool MCP4018::begin()
 {
 	errorcount=0;
-	if( readWiper( wiper ) ) {
+	int local_wiper;
+	if( readWiper( local_wiper ) ) {
+		wiper = local_wiper;
 		ESP_LOGI(FNAME,"MCP4018 wiper=%d", wiper );
 		return(true);
 	}
@@ -42,23 +44,12 @@ bool MCP4018::haveDevice() {
 	  }
 }
 
-bool MCP4018::incWiper(){
-	if( wiper <127 )
-		wiper++;
-	return( writeWiper(wiper) );
-}
-
-bool MCP4018::decWiper(){
-	if( wiper >1 )
-		wiper--;
-	return( writeWiper(wiper) );
-}
-
-
-bool MCP4018::readWiper( uint16_t &val ) {
-	esp_err_t err = bus->read8bit(MPC4018_I2C_ADDR, &val );
+bool MCP4018::readWiper( int &val ) {
+	uint16_t i16val;
+	esp_err_t err = bus->read8bit(MPC4018_I2C_ADDR, &i16val );
 	if( err == ESP_OK ){
-		ESP_LOGI(FNAME,"MCP4018 read wiper val=%d  OK", val );
+		//ESP_LOGI(FNAME,"MCP4018 read wiper val=%d  OK", i16val );
+		val = i16val;
 		return true;
 	}
 	else
@@ -69,9 +60,9 @@ bool MCP4018::readWiper( uint16_t &val ) {
 	}
 }
 
-bool MCP4018::writeWiper( uint16_t val ) {
+bool MCP4018::writeWiper( int val ) {
     // ESP_LOGI(FNAME,"MCP4018 write wiper %d", val );
-	esp_err_t err = bus->write8bit(MPC4018_I2C_ADDR, val );
+	esp_err_t err = bus->write8bit(MPC4018_I2C_ADDR, (uint16_t)val );
 	if( err == ESP_OK ){
 		// ESP_LOGV(FNAME,"MCP4018 write wiper OK");
 		return true;
@@ -84,6 +75,20 @@ bool MCP4018::writeWiper( uint16_t val ) {
 	}
 }
 
+bool MCP4018::readVolume( float &val ) {
+	int ival;
+	if ( readWiper( ival ) ) {
+		val = (float)(100 * ival) * getInvRange();
+		return true;
+	}
+	else
+	{
+	    return false;
+	}
+}
 
-
-
+bool MCP4018::writeVolume( float val ) {
+	int ival = (int)(val * getRange());
+	ival /= 100;
+	return writeWiper( ival );
+}

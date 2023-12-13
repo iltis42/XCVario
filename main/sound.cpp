@@ -77,9 +77,9 @@ void Sound::playSound( e_sound a_sound, bool end ){
 	sound = a_sound;
 	ESP_LOGI(FNAME,"Start play sound");
 	Audio::setTestmode(true);
-	uint16_t volume;
-	_poti->readWiper( volume );
-	_poti->writeWiper( 50 );
+	float volume;
+	_poti->readVolume( volume );
+	_poti->writeVolume( 50.0 );
 	dac_output_enable(DAC_CHANNEL_1);
 	dac_output_voltage(DAC_CHANNEL_1,127);
 	sleep(0.05);
@@ -91,7 +91,7 @@ void Sound::playSound( e_sound a_sound, bool end ){
 	timer_disable_intr(TIMER_GROUP_0, TIMER_0);
 	ESP_LOGI(FNAME,"play Sound end");
 	if( end ) {
-		_poti->writeWiper( volume );
+		_poti->writeVolume( volume );
 	   Audio::restart();
 	}
 	ESP_LOGI(FNAME,"play Sound task end");

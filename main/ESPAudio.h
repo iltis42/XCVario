@@ -32,9 +32,9 @@ public:
 	static void setFrequency( float f );
 
 	static void setup();
-	static void setVolume( int vol );
+	static void setVolume( float vol );
 
-	static void alarm( bool enable, int volume=100, e_audio_alarm_type_t alarmType=AUDIO_ALARM_STALL );
+	static void alarm( bool enable, float volume=100, e_audio_alarm_type_t alarmType=AUDIO_ALARM_STALL );
 	static bool selfTest();
 	static inline void setTestmode( bool mode ) { _testmode = mode; }
     static void shutdown();  // frue ON, false OFF
@@ -56,9 +56,9 @@ private:
     static bool inDeadBand( float te );
 	static bool lookup( float f, int& div, int &step );
 	static void enableAmplifier( bool enable );  // frue ON, false OFF
-	static uint16_t equal_volume( uint16_t volume );
+	static float equal_volume( float volume );
 	static void  calculateFrequency();
-	static void writeVolume( uint16_t volume );
+	static void writeVolume( float volume );
 
 	static dac_channel_t _ch;
 	static float _te;
@@ -68,10 +68,10 @@ private:
 	static bool _testmode;
 	static bool sound;
     static float _range;
-    static uint16_t &speaker_volume;
-    static uint16_t vario_mode_volume;
-    static uint16_t s2f_mode_volume;
-    static uint16_t current_volume;
+    static float &speaker_volume;
+    static float vario_mode_volume;
+    static float s2f_mode_volume;
+    static float current_volume;
     static float maxf;
     static float minf;
     static int prev_div;
@@ -96,7 +96,7 @@ private:
     static unsigned long next_scedule;
     static int mtick;
     static float current_frequency;
-    static int _step;
+    static float _step;
     static bool dac_enable;
     static bool amplifier_enable;
     static bool _haveCAT5171;

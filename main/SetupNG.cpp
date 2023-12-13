@@ -89,10 +89,10 @@ void resetCWindAge() {
 		CircleWind::resetAge();
 }
 
-int last_volume=0;
+float last_volume=0;   // is this used?
 
 void change_volume() {
-	Audio::setVolume( (int)audio_volume.get() );
+	Audio::setVolume( audio_volume.get() );
 }
 
 void flap_act() {

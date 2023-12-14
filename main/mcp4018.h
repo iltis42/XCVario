@@ -28,19 +28,21 @@ public:
   */
   ~MCP4018();
 
-  bool readWiper( uint16_t& val );
-  bool writeWiper( uint16_t val );
-  bool incWiper();
-  bool decWiper();
+  bool readVolume( float& val );
+  bool writeVolume( float val );
   bool haveDevice();
-  inline int  getRange() { return 127; };  // 7 bit 0..127
-  inline int  getStep() { return 2; };
 
 private:
+  bool readWiper( int& val );
+  bool writeWiper( int val );
+#define MCP4018RANGE 127
+  inline int  getRange() { return MCP4018RANGE; };
+  inline float getInvRange() { return (1.0/MCP4018RANGE); };
+  inline int  getStep() { return 2; };
   I2C_t *bus;
   int  errorcount;
   bool  _noDevice;
-  uint16_t wiper;  // only bit 0..7 supported
+  int wiper;  // only bit 0..7 supported
 };
 
 #endif

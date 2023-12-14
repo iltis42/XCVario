@@ -28,20 +28,22 @@ public:
   */
   ~CAT5171();
 
-  bool readWiper( uint16_t& val );
-  bool writeWiper( uint16_t val );
+  bool readVolume( float& val );
+  bool writeVolume( float val );
   bool reset();
-  bool incWiper();
-  bool decWiper();
   bool haveDevice();
-  inline int  getRange() { return 255; };
-  inline int  getStep() { return 3; };
 
 private:
+  bool readWiper( int& val );
+  bool writeWiper( int val );
+#define CAT5171RANGE 255
+  inline int  getRange() { return CAT5171RANGE; };
+  inline float getInvRange() { return (1.0/CAT5171RANGE); };
+  inline int  getStep() { return 3; };
   I2C_t *bus;
   int  errorcount;
   bool  _noDevice;
-  uint16_t wiper;  // only bit 0..7 supported
+  int wiper;  // only bit 0..7 supported
 };
 
 #endif

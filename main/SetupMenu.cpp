@@ -377,7 +377,7 @@ int bug_adj( SetupMenuValFloat * p ){
 }
 
 int vol_adj( SetupMenuValFloat * p ){
-	// Audio::setVolume( (int)(*(p->_value)) );
+	// Audio::setVolume( (*(p->_value)) );
 	return 0;
 }
 
@@ -516,6 +516,8 @@ void SetupMenu::down(int count){
 			float vol = audio_volume.get();
 			for( int i=0; i<count; i++ )
 				vol = vol * 0.83;
+			if( vol<3.0 )
+				vol=0;
 			audio_volume.set( vol );
 			// ESP_LOGI(FNAME,"NEW DN VOL: %f", vol );
 		}

@@ -170,8 +170,8 @@ private:
 
   static float fallbackToGyro();
   static void RollPitchFromAccel(double *roll, double *pitch);
-  static void PitchFromAccel(double *pitch);
-  static void PitchFromAccelRad(double *pitch);
+  static double PitchFromAccel();
+  static double PitchFromAccelRad();
   static uint64_t last_rts;
   static double  filterPitch;
   static double  filterRoll;

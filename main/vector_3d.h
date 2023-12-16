@@ -23,6 +23,7 @@ public:
 	vector_3d<T>& operator-=(const vector_3d<T>& v2);
 	vector_3d<T>& operator-(const vector_3d<T>& v2) const;
 	vector_3d<T>& operator*=(const T s2);
+	vector_3d<T>& operator*(const T s2);
 	vector_3d<T>& operator/=(const T s2);
 	T dot(const vector_3d<T>& v2);
 	// void cross_product(const vector_3d v2 );

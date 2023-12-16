@@ -1866,6 +1866,8 @@ void IpsDisplay::drawHorizon( float pitch, float roll, float yaw ){
 		P6o = P6r;
 		oroll = roll;
 		ucg->undoClipRange();
+		ucg->setColor( COLOR_WHITE );
+		ucg->drawCircle(120, 160, 6);
 		xSemaphoreGive(spiMutex);
 	}
 	if( compass_enable.get() != CS_DISABLE ){

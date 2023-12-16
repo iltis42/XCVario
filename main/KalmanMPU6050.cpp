@@ -148,7 +148,7 @@ double IMU::getRollRad() {
 }
 
 double IMU::getPitchRad()  {
-	return -filterPitch*DEG_TO_RAD;
+	return filterPitch*DEG_TO_RAD;
 }
 
 // Only call when successfully called MPU6050Read() beforehand 

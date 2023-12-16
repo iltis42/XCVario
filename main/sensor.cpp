@@ -336,7 +336,7 @@ void drawDisplay(void *pvParameters){
 				display->drawLoadDisplay( IMU::getGliderAccelZ() );
 			}
 			if( active_screen == SCREEN_HORIZON ) {
-				float roll = -IMU::getRollRad();
+				float roll =  IMU::getRollRad();
 				float pitch = IMU::getPitchRad();
 				display->drawHorizon( pitch, roll, 0 );
 				gflags.horizon = true;

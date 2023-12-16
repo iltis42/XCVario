@@ -130,7 +130,7 @@ void IMU::init()
 	kalmanY.angle = pitch;
 
 	att_quat = Quaternion(1.0,0.0,0.0,0.0);
-	att_vector = vector_ijk(0.0,0.0,-1.0);
+	att_vector = vector_ijk(0.0,0.0,1.0);
 	euler = { 0,0,0 };
 	progress = 0;
 	bob_right_wing = bob_left_wing = vector_3d<double>();
@@ -180,7 +180,7 @@ void IMU::Process()
 		// Virtual gravity from centripedal forces to keep angle of bank while circling
 		ax1 = sin(pitch);                // Nose down (positive Y turn) results in positive X
 		ay1 = -sin(roll)*cos(pitch);     // Left wing down (or negative X roll) results in positive Y
-		az1 = -cos(roll)*cos(pitch);     // Any roll or pitch creates a less negative Z, unaccelerated Z is negative
+		az1 = cos(roll)*cos(pitch);      // Any roll or pitch creates a smaller positive Z, unaccelerated Z is positive
 		// trust in gyro at load factors unequal 1 g
 		gravity_trust = (ahrs_min_gyro_factor.get() + (ahrs_gyro_factor.get() * ( pow(10, abs(loadFactor-1) * ahrs_dynamic_factor.get()) - 1)));
 		// ESP_LOGI( FNAME,"Omega roll: %f Pitch: %f Gyro Trust: %f", R2D(roll), R2D(pitch), gravity_trust );
@@ -286,7 +286,7 @@ esp_err_t IMU::MPU6050Read()
 		tmpvec.a = abs(tmpvec.a*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 : tmpvec.a;
 		tmpvec.b = abs(tmpvec.b*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 : tmpvec.b;
 		tmpvec.c = abs(tmpvec.c*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 : tmpvec.c;
-		// into glide reference system
+		// into glider reference system
 		gyro = ref_rot * tmpvec;
 		// preserve the raw read-out
 		raw_gyro.a = imuRaw.x; raw_gyro.b = imuRaw.y; raw_gyro.b = imuRaw.z;
@@ -311,8 +311,8 @@ void IMU::RollPitchFromAccel(double *roll, double *pitch)
 	// atan2 outputs the value of -π to π (radians) - see http://en.wikipedia.org/wiki/Atan2
 	// It is then converted from radians to degrees
 
-	*roll = atan(accel.b /  accel.c) * RAD_TO_DEG;
-	*pitch = atan2(accel.a, accel.c) * RAD_TO_DEG;
+	*roll = atan(accel.b / hypotenuse(accel.a, accel.c)) * RAD_TO_DEG;
+	*pitch = atan2(accel.a, -accel.c) * RAD_TO_DEG;
 
 	// ESP_LOGI( FNAME,"Accelerometer Roll: %f  Pitch: %f  (y:%f x:%f)", *roll, *pitch, accel.b, accel.a );
 }

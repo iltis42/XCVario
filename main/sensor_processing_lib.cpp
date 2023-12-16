@@ -11,16 +11,24 @@ Quaternion quaternion_from_accelerometer(const vector_ijk& a)
     return orientation;
 }
 
-Quaternion quaternion_from_gyro(float wx, float wy, float wz, float time)
+static Quaternion quaternion_from_gyro(vector_ijk w, float time)
 {
     // wx,wy,wz in radians per second: time in seconds
     float alpha = 0.5*time;
     float a,b,c,d;
-    b = -alpha*(wx);
-    c = -alpha*(wy);
-    d = -alpha*(wz);
+    b = alpha*(w.a);
+    c = alpha*(w.b);
+    d = alpha*(w.c);
     a = 1 - 0.5*(b*b+c*c+d*d);
     Quaternion result(a,b,c,d);
+
+    // // ESP_LOGI(FNAME,"Quat: %.3f %.3f %.3f", w.a, w.b, w.c );
+    // // omega=(alpha,beta,gamma)
+    // // theta = ||omega||*dt; //length of angular velocity vector
+    // float norm = w.normalize(); // normalized orientation of angular velocity vector
+    // float theta_05 = norm * 0.5 * time;
+    // Quaternion result(cos(theta_05), w.a * sin(theta_05), w.b * sin(theta_05), w.c * sin(theta_05));
+    // ESP_LOGI(FNAME,"Quat: %.3f %.3f %.3f %.3f", result.a, result.b, result.c, result.d );
     return result;
 }
 
@@ -65,9 +73,9 @@ float getGyroYawDelta(){
 	return gyro_yaw_delta;
 }
 
-vector_ijk update_gravity_vector(vector_ijk gravity_vector,float wx,float wy,float wz,float delta)
+static vector_ijk virtual_gravity_vector(const vector_ijk& gravity_vector, const vector_ijk& w,float delta)
 {
-    Quaternion q_gyro = quaternion_from_gyro(wx,wy,wz,delta);
+    Quaternion q_gyro = quaternion_from_gyro(w, delta);
     euler_angles e = q_gyro.to_euler_angles();
     // ESP_LOGI(FNAME,"e.yaw=%.3f ", e.yaw );
     gyro_yaw_delta = e.yaw;
@@ -79,7 +87,7 @@ vector_ijk update_gravity_vector(vector_ijk gravity_vector,float wx,float wy,flo
 vector_ijk update_fused_vector(vector_ijk fused_vector, float gyro_trust, float ax, float ay, float az,float wx,float wy,float wz,float delta)
 {
 	// ESP_LOGI(FNAME,"UFV ax=%f ay=%f az=%f trust=%f, gx=%f gy=%f gz=%f", ax, ay, az, gyro_trust, wx,wy,wz );
-    vector_ijk virtual_gravity = update_gravity_vector(fused_vector,wx,wy,wz,delta);
+    vector_ijk virtual_gravity = virtual_gravity_vector(fused_vector, w, delta);
     vector_ijk sensor_gravity = sensor_gravity_normalized(ax,ay,az);
     fused_vector = fuse_vector(virtual_gravity,sensor_gravity, gyro_trust);
     return fused_vector;

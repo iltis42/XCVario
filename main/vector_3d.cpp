@@ -53,6 +53,13 @@ vector_3d<T>& vector_3d<T>::operator*=(const T s2)
 }
 
 template <typename T>
+vector_3d<T>& vector_3d<T>::operator*(const T s2)
+{
+    vector_3d<T> result(*this);
+    return result *= s2;
+}
+
+template <typename T>
 vector_3d<T>& vector_3d<T>::operator/=(const T s2)
 {
     //if (s2 == 0) throw

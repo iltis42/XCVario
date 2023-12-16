@@ -95,13 +95,17 @@ vector_3d<T> vector_3d<T>::cross(const vector_3d &v2) const
 }
 
 template <typename T>
-void vector_3d<T>::normalize()
+T vector_3d<T>::normalize()
 {
     T one_by_sqrt;
-    one_by_sqrt = 1/get_norm();
-    a = a*one_by_sqrt;
-    b = b*one_by_sqrt;
-    c = c*one_by_sqrt;
+    T norm = get_norm();
+    if ( norm > 0.00001 ) {
+        one_by_sqrt = 1/norm;
+        a = a*one_by_sqrt;
+        b = b*one_by_sqrt;
+        c = c*one_by_sqrt;
+    }
+    return norm;
 }
 
 template class vector_3d<float>; // explicit instantiation

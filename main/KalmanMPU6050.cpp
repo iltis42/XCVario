@@ -176,16 +176,16 @@ void IMU::Process()
 		pitch = IMU::PitchFromAccelRad();
 
 		// Virtual gravity from centripedal forces to keep angle of bank while circling
-		ax1 = sin(pitch);                // Nose down (positive Y turn) results in positive X
-		ay1 = -sin(roll)*cos(pitch);     // Left wing down (or negative X roll) results in positive Y
+		ax1 = sin(pitch);                // Nose down (positive Y turn) results in negative X
+		ay1 = -sin(roll)*cos(pitch);     // Left wing down (or negative X roll) results in negative Y
 		az1 = cos(roll)*cos(pitch);      // Any roll or pitch creates a smaller positive Z, unaccelerated Z is positive
 		// trust in gyro at load factors unequal 1 g
 		gravity_trust = (ahrs_min_gyro_factor.get() + (ahrs_gyro_factor.get() * ( pow(10, abs(loadFactor-1) * ahrs_dynamic_factor.get()) - 1)));
 		// ESP_LOGI( FNAME,"Omega roll: %f Pitch: %f Gyro Trust: %f", R2D(roll), R2D(pitch), gravity_trust );
 	}
 	else{
-		ax1=accel.a;
-		ay1=accel.b;
+		ax1=-accel.a;
+		ay1=-accel.b;
 		az1=accel.c;
 	}
 	vector_ijk gyro_rad = gyro * (float(M_PI)/180.0f);

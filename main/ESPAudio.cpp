@@ -437,8 +437,14 @@ void Audio::dac_invert_set(dac_channel_t channel, int invert)
 
 
 void Audio::setVolume( float vol ) {
+	volume_change = (vol != speaker_volume) ? 100 : 0;
 	speaker_volume = vol;
-	volume_change = 100;
+	// also copy the new volume into the cruise-mode specific variables so
+	// that calcS2Fmode() will later restore the same volume as mode changes:
+	if( _s2f_mode )
+		s2f_mode_volume = speaker_volume;
+	else
+		vario_mode_volume = speaker_volume;
 };
 
 void Audio::startAudio(){
@@ -450,13 +456,26 @@ void Audio::startAudio(){
 }
 
 bool Audio::calcS2Fmode(){
-	bool mode = false;
-	if( !_alarm_mode ) {
-		mode =  Switch::getCruiseState();
-		if( mode && audio_split_vol.get() )
-			speaker_volume = s2f_mode_volume;
-		else
-			speaker_volume= vario_mode_volume;
+	if( _alarm_mode )
+		return false;
+	bool mode = Switch::getCruiseState();
+	if( mode != _s2f_mode ){
+		if ( audio_split_vol.get() ) {
+			if( mode )
+				speaker_volume = s2f_mode_volume;
+			else
+				speaker_volume = vario_mode_volume;
+			if ( speaker_volume != audio_volume.get() )
+				audio_volume.set( speaker_volume );
+			// - this is to keep the current volume shown (or implied) in the menus
+			//   in step with the actual speaker volume, in case volume is changed
+			//   after the CruiseState has changed.  Calling audio_volume.set() here
+			//   will call the action change_volume() which calls Audio::setVolume()
+			//   which will write it back into speaker_volume and the mode-specific
+			//   variable, and will also set volume_change=100, but all that is OK.
+//		} else {
+//			speaker_volume = vario_mode_volume;
+		}
 	}
 	return mode;
 }

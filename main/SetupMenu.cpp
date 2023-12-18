@@ -381,6 +381,13 @@ int vol_adj( SetupMenuValFloat * p ){
 	return 0;
 }
 
+int cur_vol_dflt( SetupMenuSelect *p ){
+	if( p->getSelect() != 0 )  // "set"
+		default_volume.set( audio_volume.get() );
+	p->setSelect( 0 );   // return to "cancel"
+	return 0;
+}
+
 /**
  * C-Wrappers function to compass menu handlers.
  */
@@ -940,14 +947,44 @@ void SetupMenu::audio_menu_create_equalizer( MenuEntry *top ){
 	top->addEntry( frqr );
 }
 
-void SetupMenu::audio_menu_create( MenuEntry *audio ){
+void SetupMenu::audio_menu_create_volume( MenuEntry *top ){
+	SetupMenuValFloat * vol = new SetupMenuValFloat( PROGMEM"Current Volume", "%",
+	    0.0, 100.0, 2.0, vol_adj, false, &audio_volume );
+	// unlike top-level menu volume which exits setup, this returns to parent menu
+	vol->setHelp(PROGMEM"Audio volume level for variometer tone on internal and external speaker");
+	top->addEntry( vol );
+
+	SetupMenuSelect * cdv = new SetupMenuSelect( PROGMEM"Current->Default", RST_NONE, cur_vol_dflt, true );
+	cdv->addEntry( PROGMEM"Cancel" );
+	cdv->addEntry( PROGMEM"Set" );
+	cdv->setHelp(PROGMEM"Set current volume as default volume when device is switched on");
+	top->addEntry( cdv );
+
 	SetupMenuValFloat * dv = new SetupMenuValFloat( PROGMEM"Default Volume", "%", 0, 100, 1.0, 0, false, &default_volume );
-	audio->addEntry( dv );
+	top->addEntry( dv );
 	dv->setHelp(PROGMEM"Default volume for Audio when device is switched on");
 
 	SetupMenuValFloat * mv = new SetupMenuValFloat( PROGMEM"Max Volume", "%", 0, 100, 1.0, 0, false, &max_volume );
-	audio->addEntry( mv );
+	top->addEntry( mv );
 	mv->setHelp(PROGMEM"Maximum audio volume setting allowed. Set to 0% to mute audio entirely.");
+
+	SetupMenu * audeq = new SetupMenu( PROGMEM"Equalizer" );
+	top->addEntry( audeq );
+	audeq->setHelp( PROGMEM "Equalization parameters for a constant perceived volume over a wide frequency range", 220);
+	audeq->addCreator(audio_menu_create_equalizer);
+
+	SetupMenuSelect * amspvol = new SetupMenuSelect( PROGMEM"STF Volume", RST_NONE, 0 , true, &audio_split_vol );
+	amspvol->setHelp(PROGMEM"Enable independent audio volume in SpeedToFly and Vario modes, disable for one volume for both");
+	amspvol->addEntry( PROGMEM"Disable");      // 0
+	amspvol->addEntry( PROGMEM"Enable");       // 1
+	top->addEntry( amspvol );
+}
+
+void SetupMenu::audio_menu_create( MenuEntry *audio ){
+	SetupMenu * volumes = new SetupMenu( PROGMEM"Volume options" );
+	audio->addEntry( volumes );
+	volumes->setHelp( PROGMEM "Configure audio volume options", 240);
+	volumes->addCreator(audio_menu_create_volume);
 
 	SetupMenuSelect * abnm = new SetupMenuSelect( PROGMEM"Cruise Audio", RST_NONE, 0 , true, &cruise_audio_mode );
 	abnm->setHelp(PROGMEM"Select either S2F command or Variometer (Netto/Brutto as selected) as audio source while cruising");
@@ -989,16 +1026,6 @@ void SetupMenu::audio_menu_create( MenuEntry *audio ){
 	ameda->addEntry( PROGMEM"Silent");       // 1
 	audio->addEntry( ameda );
 
-	SetupMenu * audeq = new SetupMenu( PROGMEM"Equalizer" );
-	audio->addEntry( audeq );
-	audeq->setHelp( PROGMEM "Equalization parameters for a constant perceived volume over a wide frequency range", 220);
-	audeq->addCreator(audio_menu_create_equalizer);
-
-	SetupMenuSelect * amspvol = new SetupMenuSelect( PROGMEM"STF Volume", RST_NONE, 0 , true, &audio_split_vol );
-	amspvol->setHelp(PROGMEM"Enable independent audio volume in SpeedToFly and Vario modes, disable for one volume for both");
-	amspvol->addEntry( PROGMEM"Disable");      // 0
-	amspvol->addEntry( PROGMEM"Enable");       // 1
-	audio->addEntry( amspvol );
 }
 
 void SetupMenu::glider_menu_create_polarpoints( MenuEntry *top ){

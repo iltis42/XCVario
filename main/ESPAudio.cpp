@@ -598,40 +598,42 @@ void Audio::dactask(void* arg )
 					enableAmplifier( true );
 				}
 				// Blend over gracefully volume changes
-				if(  (current_volume != speaker_volume) && volume_change ){
+				if( (current_volume != speaker_volume) && volume_change ){
 					// ESP_LOGI(FNAME, "volume change, new volume: %f, current_volume %f", speaker_volume, current_volume );
-					float delta = 1;
+					// change volume logarithmically
+					if (current_volume < 3.0)
+						current_volume = 3.0;   // avoid division by zero
+					float g = speaker_volume / current_volume;
+					if (g < 0.25)
+						g = 0.25;
+					g = 1.0 + (g-1.0) / (g + (float)FADING_TIME);
+					// This works for decreasing volume too, e.g.:
+					// if decreasing by 50%, g = 1+(0.5-1)/(0.5+3) = 0.857
+					// This formula is specifically fitted to FADING_TIME=3 though.
+					float f = current_volume;
 					dacEnable();
-					if( speaker_volume > current_volume ){
-						for( float f=current_volume; f<speaker_volume; f+=delta ) {
-							writeVolume( f );
-							delta = _step+f/FADING_TIME;
-							// ESP_LOGI(FNAME, "volume inc, new volume: %f", f );
-							delay(1);
-						}}
-					else{
-						for( float f=current_volume; f>speaker_volume; f-=delta ) {
-							writeVolume( f );
-							// ESP_LOGI(FNAME, "volume dec, new volume: %f", f );
-							delta = _step+f/FADING_TIME;
-							delay(1);
-						}
+					for( int i=0; i<FADING_TIME; i++ ) {
+						f = f * g;
+						if (f > max_volume.get())  f = max_volume.get();
+						writeVolume( f );
+						// ESP_LOGI(FNAME, "new volume: %f", f );
+						delay(1);
 					}
 					writeVolume( speaker_volume );
-					if( current_volume == 0 )
+					if( speaker_volume == 0 )
 						dacDisable();
 					// ESP_LOGI(FNAME, "volume change, new volume: %d", current_volume );
 					// ESP_LOGI(FNAME, "have sound");
 				}
 				// Fade in volume
-				if(  current_volume != speaker_volume ){
+				if( current_volume != speaker_volume ){
 					dacEnable();
 					if( chopping_style.get() == AUDIO_CHOP_HARD ){
 						writeVolume( speaker_volume );
 					}
 					else{
 						float volume=3;
-						for( int i=0; i<FADING_STEPS && volume<=speaker_volume; i++ ) {
+						for( int i=0; i<FADING_STEPS && volume <=speaker_volume; i++ ) {
 							// ESP_LOGI(FNAME, "fade in sound, volume: %3.1f", volume );
 							writeVolume( volume );
 							volume = volume*1.75;
@@ -644,7 +646,7 @@ void Audio::dactask(void* arg )
 					}
 				}
 				if( !(tick%10) ){
-					writeVolume( speaker_volume );
+					writeVolume( speaker_volume );   // <<< why?
 				}
 			}
 			else{

@@ -68,7 +68,7 @@ private:
 	static bool _testmode;
 	static bool sound;
     static float _range;
-    static float &speaker_volume;
+    static float speaker_volume;
     static float vario_mode_volume;
     static float s2f_mode_volume;
     static float current_volume;

@@ -39,7 +39,7 @@ static TaskHandle_t dactid = NULL;
 uint8_t Audio::_tonemode;
 float Audio::vario_mode_volume;
 float Audio::s2f_mode_volume;
-float &Audio::speaker_volume = Audio::vario_mode_volume;
+float Audio::speaker_volume;
 float Audio::current_volume;
 dac_channel_t Audio::_ch;
 
@@ -97,7 +97,7 @@ Audio::Audio( ) {
 	vario_mode_volume = 63;
 	s2f_mode_volume = 63;
 	current_volume = 63;
-	speaker_volume = 0;
+	speaker_volume = 63;
 }
 
 PROGMEM std::map<uint16_t, t_lookup_entry> lftab{
@@ -221,14 +221,13 @@ bool Audio::selfTest(){
 		ESP_LOGI(FNAME,"MCP4018 digital Poti found");
 	}
 	float setvolume = default_volume.get();
-	speaker_volume = vario_mode_volume;
-	vario_mode_volume = s2f_mode_volume = setvolume;
-	ESP_LOGI(FNAME,"default volume/wiper: %f", (speaker_volume) );
-	ESP_LOGI(FNAME, "selfTest wiper: %f", vario_mode_volume );
+	speaker_volume = vario_mode_volume = s2f_mode_volume = setvolume;
+	ESP_LOGI(FNAME,"default volume: %f", speaker_volume );
 	_alarm_mode = true;
 	writeVolume( 50.0 );
 	float getvolume;
 	bool ret = DigitalPoti->readVolume( getvolume );  // gets 49.8049...
+	ESP_LOGI(FNAME,"writeVolume(50) then readvolume() got: %f", getvolume );
 	if( ret == false ) {
 		ESP_LOGI(FNAME,"readWiper returned error");
 		return false;
@@ -387,7 +386,7 @@ void Audio::alarm( bool enable, float volume, e_audio_alarm_type_t style ){  // 
 		else
 			ESP_LOGE(FNAME,"Error, wrong alarm style %d", style );
 		calculateFrequency();
-		(speaker_volume) = volume;
+		speaker_volume = volume;
 	}
 }
 
@@ -437,8 +436,14 @@ void Audio::dac_invert_set(dac_channel_t channel, int invert)
 
 
 void Audio::setVolume( float vol ) {
+	volume_change = (vol != speaker_volume) ? 100 : 0;
 	speaker_volume = vol;
-	volume_change = 100;
+	// also copy the new volume into the cruise-mode specific variables so
+	// that calcS2Fmode() will later restore the same volume as mode changes:
+	if( _s2f_mode )
+		s2f_mode_volume = speaker_volume;
+	else
+		vario_mode_volume = speaker_volume;
 };
 
 void Audio::startAudio(){
@@ -450,13 +455,26 @@ void Audio::startAudio(){
 }
 
 bool Audio::calcS2Fmode(){
-	bool mode = false;
-	if( !_alarm_mode ) {
-		mode =  Switch::getCruiseState();
-		if( mode && audio_split_vol.get() )
-			speaker_volume = s2f_mode_volume;
-		else
-			speaker_volume= vario_mode_volume;
+	if( _alarm_mode )
+		return false;
+	bool mode = Switch::getCruiseState();
+	if( mode != _s2f_mode ){            // mode has changed,
+		if ( audio_split_vol.get() ) {  // need to switch to the other volume level
+			if( mode )
+				speaker_volume = s2f_mode_volume;
+			else
+				speaker_volume = vario_mode_volume;
+			if ( speaker_volume != audio_volume.get() )
+				audio_volume.set( speaker_volume );
+			// - this is to keep the current volume shown (or implied) in the menus
+			//   in step with the actual speaker volume, in case volume is changed
+			//   after the CruiseState has changed.  Calling audio_volume.set() here
+			//   will call the action change_volume() which calls Audio::setVolume()
+			//   which will write it back into speaker_volume and the mode-specific
+			//   variable, and will also set volume_change=100, but all that is OK.
+//		} else {
+//			speaker_volume = vario_mode_volume;
+		}
 	}
 	return mode;
 }
@@ -547,7 +565,7 @@ void Audio::dactask(void* arg )
 			calculateFrequency();
 		// Amplifier and Volume control
 		if( !_testmode && !(tick%2) ) {
-			// ESP_LOGI(FNAME, "sound dactask tick:%d volume:%f  te:%f db:%d", tick, (speaker_volume), _te, inDeadBand(_te) );
+			// ESP_LOGI(FNAME, "sound dactask tick:%d volume:%f  te:%f db:%d", tick, speaker_volume, _te, inDeadBand(_te) );
 			if( !(tick%10) ){
 				bool mode = calcS2Fmode();
 				if( _s2f_mode != mode ){
@@ -580,19 +598,19 @@ void Audio::dactask(void* arg )
 					enableAmplifier( true );
 				}
 				// Blend over gracefully volume changes
-				if(  (current_volume != (speaker_volume)) && volume_change ){
-					// ESP_LOGI(FNAME, "volume change, new volume: %f, current_volume %f", (speaker_volume), current_volume );
+				if(  (current_volume != speaker_volume) && volume_change ){
+					// ESP_LOGI(FNAME, "volume change, new volume: %f, current_volume %f", speaker_volume, current_volume );
 					float delta = 1;
 					dacEnable();
-					if( (speaker_volume) > current_volume ){
-						for( float f=current_volume; f<(speaker_volume); f+=delta ) {
+					if( speaker_volume > current_volume ){
+						for( float f=current_volume; f<speaker_volume; f+=delta ) {
 							writeVolume( f );
 							delta = _step+f/FADING_TIME;
 							// ESP_LOGI(FNAME, "volume inc, new volume: %f", f );
 							delay(1);
 						}}
 					else{
-						for( float f=current_volume; f>(speaker_volume); f-=delta ) {
+						for( float f=current_volume; f>speaker_volume; f-=delta ) {
 							writeVolume( f );
 							// ESP_LOGI(FNAME, "volume dec, new volume: %f", f );
 							delta = _step+f/FADING_TIME;
@@ -606,21 +624,21 @@ void Audio::dactask(void* arg )
 					// ESP_LOGI(FNAME, "have sound");
 				}
 				// Fade in volume
-				if(  current_volume != (speaker_volume) ){
+				if(  current_volume != speaker_volume ){
 					dacEnable();
 					if( chopping_style.get() == AUDIO_CHOP_HARD ){
 						writeVolume( speaker_volume );
 					}
 					else{
 						float volume=3;
-						for( int i=0; i<FADING_STEPS && volume <=(speaker_volume); i++ ) {
+						for( int i=0; i<FADING_STEPS && volume<=speaker_volume; i++ ) {
 							// ESP_LOGI(FNAME, "fade in sound, volume: %3.1f", volume );
 							writeVolume( volume );
 							volume = volume*1.75;
 							delay(1);
 						}
-						if(  current_volume != (speaker_volume) ){
-							// ESP_LOGI(FNAME, "fade in sound, volume: %d", (speaker_volume)  );
+						if(  current_volume != speaker_volume ){
+							// ESP_LOGI(FNAME, "fade in sound, volume: %d", speaker_volume );
 							writeVolume( speaker_volume );
 						}
 					}
@@ -635,7 +653,7 @@ void Audio::dactask(void* arg )
 					if( chopping_style.get() == AUDIO_CHOP_HARD ){
 						writeVolume( 0 );
 					}else{
-						float volume = (float)(speaker_volume);
+						float volume = speaker_volume;
 						for( int i=0; i<FADING_STEPS && volume > 0; i++ ) {
 							//ESP_LOGI(FNAME, "fade out sound, volume: %3.1f", volume );
 							writeVolume( volume );

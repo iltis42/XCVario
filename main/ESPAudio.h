@@ -52,7 +52,7 @@ private:
 	static void dac_invert_set(dac_channel_t channel, int invert);
 	static void dactask(void* arg);
 	static void modtask(void* arg );
-    static bool calcS2Fmode();
+    static void calcS2Fmode();
     static bool inDeadBand( float te );
 	static bool lookup( float f, int& div, int &step );
 	static void enableAmplifier( bool enable );  // frue ON, false OFF
@@ -84,8 +84,8 @@ private:
     static bool hightone;
     static bool _alarm_mode;
     static int  defaultDelay;
-    static uint16_t _vol_back_vario;
-    static uint16_t _vol_back_s2f;
+    static float _vol_back_vario;
+    static float _vol_back_s2f;
     static bool  _s2f_mode_back;
     static int   _tonemode_back;
     static int tick;
@@ -96,7 +96,6 @@ private:
     static unsigned long next_scedule;
     static int mtick;
     static float current_frequency;
-    static float _step;
     static bool dac_enable;
     static bool amplifier_enable;
     static bool _haveCAT5171;

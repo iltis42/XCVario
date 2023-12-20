@@ -57,8 +57,8 @@ bool  Audio::_alarm_mode=false;
 bool  Audio::_s2f_mode_back = false;
 unsigned long Audio::next_scedule=0;
 
-uint16_t Audio::_vol_back_vario = 0;
-uint16_t Audio::_vol_back_s2f = 0;
+float Audio::_vol_back_vario = 0;
+float Audio::_vol_back_s2f = 0;
 float Audio::maxf;
 float Audio::minf;
 float Audio::current_frequency;
@@ -73,7 +73,6 @@ int   Audio::prev_scale = -1;
 int   Audio::_tonemode_back = 0;
 int   Audio::tick = 0;
 int   Audio::volume_change=0;
-float Audio::_step = 2;
 bool  Audio::dac_enable=false;
 bool  Audio::amplifier_enable=false;
 bool  Audio::_haveCAT5171=false;
@@ -438,13 +437,21 @@ void Audio::dac_invert_set(dac_channel_t channel, int invert)
 void Audio::setVolume( float vol ) {
 	volume_change = (vol != speaker_volume) ? 100 : 0;
 	speaker_volume = vol;
-	// also copy the new volume into the cruise-mode specific variables so
-	// that calcS2Fmode() will later restore the same volume as mode changes:
-	if( _s2f_mode )
+	// also copy the new volume into the cruise-mode specific variables so that
+	// calcS2Fmode() will later restore the correct volume when mode changes:
+	if( audio_split_vol.get() ) {
+		if( _s2f_mode )
+			s2f_mode_volume = speaker_volume;
+		else
+			vario_mode_volume = speaker_volume;
+		ESP_LOGI(FNAME, "setvolume() to %f, _s2f_mode %d", speaker_volume, _s2f_mode );
+	} else {
+		// copy to both variables in case audio_split_vol enabled later
 		s2f_mode_volume = speaker_volume;
-	else
 		vario_mode_volume = speaker_volume;
-};
+		ESP_LOGI(FNAME, "setvolume() to %f, mono mode", speaker_volume );
+	}
+}
 
 void Audio::startAudio(){
 	ESP_LOGI(FNAME,"startAudio");
@@ -454,29 +461,30 @@ void Audio::startAudio(){
 	xTaskCreatePinnedToCore(&dactask, "dactask", 2400, NULL, 16, &dactid, 0);
 }
 
-bool Audio::calcS2Fmode(){
+void Audio::calcS2Fmode(){
 	if( _alarm_mode )
-		return false;
+		return;
 	bool mode = Switch::getCruiseState();
-	if( mode != _s2f_mode ){            // mode has changed,
-		if ( audio_split_vol.get() ) {  // need to switch to the other volume level
-			if( mode )
-				speaker_volume = s2f_mode_volume;
-			else
-				speaker_volume = vario_mode_volume;
-			if ( speaker_volume != audio_volume.get() )
-				audio_volume.set( speaker_volume );
-			// - this is to keep the current volume shown (or implied) in the menus
-			//   in step with the actual speaker volume, in case volume is changed
-			//   after the CruiseState has changed.  Calling audio_volume.set() here
-			//   will call the action change_volume() which calls Audio::setVolume()
-			//   which will write it back into speaker_volume and the mode-specific
-			//   variable, and will also set volume_change=100, but all that is OK.
-//		} else {
-//			speaker_volume = vario_mode_volume;
+	if( mode != _s2f_mode ){
+		ESP_LOGI(FNAME, "S2Fmode changed to %d", mode );
+		_s2f_mode = mode;             // do this first, as...
+		calculateFrequency();         // this needs the new _stf_mode
+		if( _s2f_mode )
+			speaker_volume = s2f_mode_volume;
+		else
+			speaker_volume = vario_mode_volume;
+		if ( speaker_volume != audio_volume.get() ) {  // due to audio_split_vol
+			ESP_LOGI(FNAME, "... changing volume %f -> %f",
+			     audio_volume.get(), speaker_volume );
+			audio_volume.set( speaker_volume );  // this too needs _stf_mode
+			// this is to keep the current volume shown (or implied) in the menus
+			// in step with the actual speaker volume, in case volume is changed
+			// after the CruiseState has changed.  Calling audio_volume.set() here
+			// will call the action change_volume() which calls Audio::setVolume()
+			// which will write it back into speaker_volume and the mode-specific
+			// variable, and will also set volume_change=100, but all that is OK.
 		}
 	}
-	return mode;
 }
 
 void  Audio::evaluateChopping(){
@@ -503,7 +511,7 @@ void  Audio::calculateFrequency(){
 		exponent_max  = std::pow( 2, audio_factor.get());
 		prev_aud_fact = audio_factor.get();
 	}
-	float current_frequency = center_freq.get() + ((mult*_te)/range )  * (max_var/exponent_max);
+	current_frequency = center_freq.get() + ((mult*_te)/range )  * (max_var/exponent_max);
 
 	if( hightone && (_tonemode == ATM_DUAL_TONE ) )
 		setFrequency( current_frequency*_high_tone_var );
@@ -561,17 +569,19 @@ void Audio::dactask(void* arg )
 				calculateFrequency();
 			next_scedule = millis()+_delay;
 		}
-		if( audio_variable_frequency.get() )
-			calculateFrequency();
+//		if( audio_variable_frequency.get() )
+//			calculateFrequency();
+
 		// Amplifier and Volume control
 		if( !_testmode && !(tick%2) ) {
 			// ESP_LOGI(FNAME, "sound dactask tick:%d volume:%f  te:%f db:%d", tick, speaker_volume, _te, inDeadBand(_te) );
+
+			// moved here to call calculateFrequency() less often:
+			if( audio_variable_frequency.get() )
+				calculateFrequency();
+
 			if( !(tick%10) ){
-				bool mode = calcS2Fmode();
-				if( _s2f_mode != mode ){
-					calculateFrequency();
-					_s2f_mode = mode;
-				}
+				calcS2Fmode();      // if mode changed, affects volume and frequency
 			}
 
 			if( inDeadBand(_te) && !volume_change ){
@@ -655,11 +665,11 @@ void Audio::dactask(void* arg )
 					if( chopping_style.get() == AUDIO_CHOP_HARD ){
 						writeVolume( 0 );
 					}else{
-						float volume = speaker_volume;
+						float volume = current_volume;
 						for( int i=0; i<FADING_STEPS && volume > 0; i++ ) {
 							//ESP_LOGI(FNAME, "fade out sound, volume: %3.1f", volume );
-							writeVolume( volume );
 							volume = volume*0.75;
+							writeVolume( volume );
 							if (volume < 3.0)
 								volume = 0;
 						}

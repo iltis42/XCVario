@@ -349,13 +349,19 @@ void Audio::alarm( bool enable, float volume, e_audio_alarm_type_t style ){  // 
 	if( !enable && _alarm_mode ){ // End of alarm
 		vario_mode_volume = _vol_back_vario;
 		s2f_mode_volume = _vol_back_s2f;
-		_s2f_mode = _s2f_mode_back;
 		_tonemode = _tonemode_back;
-		_alarm_mode=false;
-		if( _s2f_mode )
+		_alarm_mode = false;
+		_s2f_mode = _s2f_mode_back;
+		bool mode = Switch::getCruiseState();
+		if( mode != _s2f_mode ) {
+			calcS2Fmode();
+		} else if( _s2f_mode ) {
 			writeVolume( s2f_mode_volume );
-		else
+			speaker_volume = s2f_mode_volume;
+		} else {
 			writeVolume( vario_mode_volume );
+			speaker_volume = vario_mode_volume;
+		}
 	}
 	if( enable ) {  // tune alarm
 		// ESP_LOGI(FNAME,"Alarm sound enable volume: %f style: %d", volume, style );

@@ -347,21 +347,13 @@ void Audio::alarm( bool enable, float volume, e_audio_alarm_type_t style ){  // 
 		enableAmplifier( true );
 	}
 	if( !enable && _alarm_mode ){ // End of alarm
+		_alarm_mode = false;
 		vario_mode_volume = _vol_back_vario;
 		s2f_mode_volume = _vol_back_s2f;
 		_tonemode = _tonemode_back;
-		_alarm_mode = false;
-		_s2f_mode = _s2f_mode_back;
-		bool mode = Switch::getCruiseState();
-		if( mode != _s2f_mode ) {
-			calcS2Fmode();
-		} else if( _s2f_mode ) {
-			writeVolume( s2f_mode_volume );
-			speaker_volume = s2f_mode_volume;
-		} else {
-			writeVolume( vario_mode_volume );
-			speaker_volume = vario_mode_volume;
-		}
+		_s2f_mode = _s2f_mode_back;    // S2F mode from before the alarm
+		calcS2Fmode(true);             // may update the S2F mode
+		writeVolume( speaker_volume );
 	}
 	if( enable ) {  // tune alarm
 		// ESP_LOGI(FNAME,"Alarm sound enable volume: %f style: %d", volume, style );
@@ -467,13 +459,16 @@ void Audio::startAudio(){
 	xTaskCreatePinnedToCore(&dactask, "dactask", 2400, NULL, 16, &dactid, 0);
 }
 
-void Audio::calcS2Fmode(){
+void Audio::calcS2Fmode( bool recalc ){
 	if( _alarm_mode )
 		return;
 	bool mode = Switch::getCruiseState();
 	if( mode != _s2f_mode ){
 		ESP_LOGI(FNAME, "S2Fmode changed to %d", mode );
 		_s2f_mode = mode;             // do this first, as...
+		recalc = true;
+	}
+	if( recalc ){
 		calculateFrequency();         // this needs the new _stf_mode
 		if( _s2f_mode )
 			speaker_volume = s2f_mode_volume;
@@ -587,7 +582,7 @@ void Audio::dactask(void* arg )
 				calculateFrequency();
 
 			if( !(tick%10) ){
-				calcS2Fmode();      // if mode changed, affects volume and frequency
+				calcS2Fmode(false);     // if mode changed, affects volume and frequency
 			}
 
 			if( inDeadBand(_te) && !volume_change ){

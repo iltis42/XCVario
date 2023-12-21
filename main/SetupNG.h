@@ -615,7 +615,9 @@ extern SetupNG<int> 		wk_label_minus_1;
 extern SetupNG<int> 		wk_label_minus_2;
 extern SetupNG<int> 		wk_label_minus_3;
 extern SetupNG<float>       flap_takeoff;
-extern SetupNG<int> 		audio_disable;
+extern SetupNG<int> 		audio_mute_menu;  // replaced audio_disable (same key)
+extern SetupNG<int> 		audio_mute_sink;
+extern SetupNG<int> 		audio_mute_gen;
 extern SetupNG<int>			vario_mode;
 extern SetupNG<int>			airspeed_sensor_type;
 extern SetupNG<int>			cruise_audio_mode;

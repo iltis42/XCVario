@@ -488,6 +488,7 @@ void Audio::calcS2Fmode( bool recalc ){
 	}
 }
 
+
 void  Audio::evaluateChopping(){
 	if(
 			(chopping_mode.get() == BOTH_CHOP) ||
@@ -572,7 +573,6 @@ void Audio::dactask(void* arg )
 		}
 //		if( audio_variable_frequency.get() )
 //			calculateFrequency();
-
 		// Amplifier and Volume control
 		if( !_testmode && !(tick%2) ) {
 			// ESP_LOGI(FNAME, "sound dactask tick:%d volume:%f  te:%f db:%d", tick, speaker_volume, _te, inDeadBand(_te) );
@@ -600,9 +600,22 @@ void Audio::dactask(void* arg )
 				}
 				// ESP_LOGI(FNAME,"Audio in DeadBand false");
 			}
-			// Optionally disable Sound when in Menu
-			if( audio_disable.get() && gflags.inSetup )
-				sound = false;
+			if( sound ) {
+				if( !_alarm_mode ) {
+					// Optionally disable vario audio when in Sink
+					if( audio_mute_sink.get() && _te < 0 )
+						sound = false;
+					// Optionally disable vario audio when in setup menu
+					else if( audio_mute_menu.get() && gflags.inSetup )
+						sound = false;
+					// Optionally disable vario audio generally
+					else if( audio_mute_gen.get() != 0 )  // == 1 or 2
+						sound = false;
+				} else if( audio_mute_gen.get() == 2 ) {
+					// Optionally mute alarms too
+					sound = false;
+				}
+			}
 			//ESP_LOGI(FNAME, "sound %d, ht %d, te %2.1f vc:%d cw:%f ", sound, hightone, _te, volume_change, current_volume );
 			if( sound ){
 				if( !deadband_active && amplifier_shutdown.get() ){
@@ -697,6 +710,8 @@ void Audio::dactask(void* arg )
 
 bool Audio::inDeadBand( float te )
 {
+	if( _alarm_mode )
+		return false;
 	float dbp=0.0;
 	float dbn=0.0;
 	if( _s2f_mode && (cruise_audio_mode.get() == AUDIO_S2F)) {

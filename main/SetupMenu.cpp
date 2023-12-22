@@ -995,15 +995,15 @@ void SetupMenu::audio_menu_create_mute( MenuEntry *top ){
 
 	SetupMenuSelect * ageda = new SetupMenuSelect( PROGMEM"Generally", RST_NONE, 0 , true, &audio_mute_gen );
 	ageda->setHelp(PROGMEM"Select audio on, or vario audio muted, or all audio muted including alarms");
-	ageda->addEntry( PROGMEM"Audio On");      // 0
-	ageda->addEntry( PROGMEM"Alarms On");     // 1
-	ageda->addEntry( PROGMEM"Audio Off");     // 2
+	ageda->addEntry( PROGMEM"Audio On");      // 0 = AUDIO_ON
+	ageda->addEntry( PROGMEM"Alarms On");     // 1 = AUDIO_ALARMS
+	ageda->addEntry( PROGMEM"Audio Off");     // 2 = AUDIO_OFF
 	top->addEntry( ageda );
 
 	SetupMenuSelect * amps = new SetupMenuSelect( PROGMEM"Amplifier", RST_NONE, 0 , true, &amplifier_shutdown );
-	amps->setHelp(PROGMEM"Select whether amplifier is shutdown during long silences, or always stays on");
-	amps->addEntry( PROGMEM"Stay On");   // 0
-	amps->addEntry( PROGMEM"Shutdown");  // 1
+	amps->setHelp(PROGMEM"Select whether amplifier is shutdown during silences, or always stays on");
+	amps->addEntry( PROGMEM"Stay On");   // 0 = AMP_STAY_ON
+	amps->addEntry( PROGMEM"Shutdown");  // 1 = AMP_SHUTDOWN
 	top->addEntry( amps );
 }
 

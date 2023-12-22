@@ -585,6 +585,8 @@ void Audio::dactask(void* arg )
 				calcS2Fmode(false);     // if mode changed, affects volume and frequency
 			}
 
+			int shutdownamp = amplifier_shutdown.get();
+
 			if( inDeadBand(_te) && !volume_change ){
 				deadband_active = true;
 				sound = false;
@@ -603,22 +605,23 @@ void Audio::dactask(void* arg )
 			if( sound ) {
 				if( !_alarm_mode ) {
 					// Optionally disable vario audio when in Sink
-					if( audio_mute_sink.get() && _te < 0 )
+					if( audio_mute_sink.get() && _te < 0 ) {
 						sound = false;
 					// Optionally disable vario audio when in setup menu
-					else if( audio_mute_menu.get() && gflags.inSetup )
+					} else if( audio_mute_menu.get() && gflags.inSetup ) {
 						sound = false;
 					// Optionally disable vario audio generally
-					else if( audio_mute_gen.get() != 0 )  // == 1 or 2
+					} else if( audio_mute_gen.get() != AUDIO_ON ) {
 						sound = false;
-				} else if( audio_mute_gen.get() == 2 ) {
+					}
+				} else if( audio_mute_gen.get() == AUDIO_OFF ) {
 					// Optionally mute alarms too
 					sound = false;
 				}
 			}
 			//ESP_LOGI(FNAME, "sound %d, ht %d, te %2.1f vc:%d cw:%f ", sound, hightone, _te, volume_change, current_volume );
 			if( sound ){
-				if( !deadband_active && amplifier_shutdown.get() ){
+				if( !deadband_active && shutdownamp ){
 					enableAmplifier( true );
 				}
 				// Blend over gracefully volume changes
@@ -693,8 +696,13 @@ void Audio::dactask(void* arg )
 					}
 					dacDisable();
 				}
-				if( deadband_active && amplifier_shutdown.get() )
+				if( shutdownamp ) {
+					if( deadband_active 
+					 || ( audio_mute_sink.get() && _te < 0 )
+					 || ( audio_mute_menu.get() && gflags.inSetup )
+					 || ( audio_mute_gen.get() != AUDIO_ON ) )
 					enableAmplifier( false );
+				}
 			}
 		}
 		// ESP_LOGI(FNAME, "Audio delay %d", _delay );
@@ -814,7 +822,7 @@ void Audio::enableAmplifier( bool enable )
 	}
 	else {
 		if( amplifier_enable ){
-			if( amplifier_shutdown.get() ){
+			if( amplifier_shutdown.get() > AMP_STAY_ON ){
 				ESP_LOGI(FNAME,"Audio::disableAmplifier");
 				gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );   // use pullup 1 == SOUND 0 == SILENCE
 				gpio_set_level(GPIO_NUM_19, 0 );

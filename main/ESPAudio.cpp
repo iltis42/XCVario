@@ -488,6 +488,7 @@ void Audio::calcS2Fmode( bool recalc ){
 	}
 }
 
+
 void  Audio::evaluateChopping(){
 	if(
 			(chopping_mode.get() == BOTH_CHOP) ||
@@ -572,7 +573,6 @@ void Audio::dactask(void* arg )
 		}
 //		if( audio_variable_frequency.get() )
 //			calculateFrequency();
-
 		// Amplifier and Volume control
 		if( !_testmode && !(tick%2) ) {
 			// ESP_LOGI(FNAME, "sound dactask tick:%d volume:%f  te:%f db:%d", tick, speaker_volume, _te, inDeadBand(_te) );
@@ -585,14 +585,19 @@ void Audio::dactask(void* arg )
 				calcS2Fmode(false);     // if mode changed, affects volume and frequency
 			}
 
+			int shutdownamp = amplifier_shutdown.get();
+			bool disable_amp = false;
+
 			if( inDeadBand(_te) && !volume_change ){
 				deadband_active = true;
 				sound = false;
+				disable_amp = true;
 				// ESP_LOGI(FNAME,"Audio in DeadBand true");
 			}
 			else{
 				deadband_active = false;
 				sound = true;
+				disable_amp = false;
 				if( _tonemode == ATM_SINGLE_TONE ){
 					if( hightone )
 						if( _chopping )
@@ -600,14 +605,33 @@ void Audio::dactask(void* arg )
 				}
 				// ESP_LOGI(FNAME,"Audio in DeadBand false");
 			}
-			// Optionally disable Sound when in Menu
-			if( audio_disable.get() && gflags.inSetup )
-				sound = false;
+			if( sound ) {
+				if( !_alarm_mode ) {
+					// Optionally disable vario audio when in Sink
+					if( audio_mute_sink.get() && _te < 0 ) {
+						sound = false;
+						disable_amp = true;
+					// Optionally disable vario audio when in setup menu
+					} else if( audio_mute_menu.get() && gflags.inSetup ) {
+						sound = false;
+						disable_amp = true;
+					// Optionally disable vario audio generally
+					} else if( audio_mute_gen.get() != AUDIO_ON ) {
+						sound = false;
+						disable_amp = true;
+					}
+				} else if( audio_mute_gen.get() == AUDIO_OFF ) {
+					// Optionally mute alarms too
+					sound = false;
+					disable_amp = true;
+				}
+			}
 			//ESP_LOGI(FNAME, "sound %d, ht %d, te %2.1f vc:%d cw:%f ", sound, hightone, _te, volume_change, current_volume );
 			if( sound ){
-				if( !deadband_active && amplifier_shutdown.get() ){
+				if( shutdownamp ){
 					enableAmplifier( true );
 				}
+				disable_amp = false;
 				// Blend over gracefully volume changes
 				if( (current_volume != speaker_volume) && volume_change ){
 					// ESP_LOGI(FNAME, "volume change, new volume: %f, current_volume %f", speaker_volume, current_volume );
@@ -680,7 +704,7 @@ void Audio::dactask(void* arg )
 					}
 					dacDisable();
 				}
-				if( deadband_active && amplifier_shutdown.get() )
+				if( disable_amp )
 					enableAmplifier( false );
 			}
 		}
@@ -697,6 +721,8 @@ void Audio::dactask(void* arg )
 
 bool Audio::inDeadBand( float te )
 {
+	if( _alarm_mode )
+		return false;
 	float dbp=0.0;
 	float dbn=0.0;
 	if( _s2f_mode && (cruise_audio_mode.get() == AUDIO_S2F)) {
@@ -799,7 +825,7 @@ void Audio::enableAmplifier( bool enable )
 	}
 	else {
 		if( amplifier_enable ){
-			if( amplifier_shutdown.get() ){
+			if( amplifier_shutdown.get() > AMP_STAY_ON ){
 				ESP_LOGI(FNAME,"Audio::disableAmplifier");
 				gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );   // use pullup 1 == SOUND 0 == SILENCE
 				gpio_set_level(GPIO_NUM_19, 0 );

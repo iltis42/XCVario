@@ -980,11 +980,43 @@ void SetupMenu::audio_menu_create_volume( MenuEntry *top ){
 	top->addEntry( amspvol );
 }
 
+void SetupMenu::audio_menu_create_mute( MenuEntry *top ){
+	SetupMenuSelect * asida = new SetupMenuSelect( PROGMEM"In Sink", RST_NONE, 0 , true, &audio_mute_sink );
+	asida->setHelp(PROGMEM"Select whether vario audio will be muted while in sink");
+	asida->addEntry( PROGMEM"Stay On");  // 0
+	asida->addEntry( PROGMEM"Mute");     // 1
+	top->addEntry( asida );
+
+	SetupMenuSelect * ameda = new SetupMenuSelect( PROGMEM"In Setup", RST_NONE, 0 , true, &audio_mute_menu );
+	ameda->setHelp(PROGMEM"Select whether vario audio will be muted while Setup Menu is open");
+	ameda->addEntry( PROGMEM"Stay On");  // 0
+	ameda->addEntry( PROGMEM"Mute");     // 1
+	top->addEntry( ameda );
+
+	SetupMenuSelect * ageda = new SetupMenuSelect( PROGMEM"Generally", RST_NONE, 0 , true, &audio_mute_gen );
+	ageda->setHelp(PROGMEM"Select audio on, or vario audio muted, or all audio muted including alarms");
+	ageda->addEntry( PROGMEM"Audio On");      // 0 = AUDIO_ON
+	ageda->addEntry( PROGMEM"Alarms On");     // 1 = AUDIO_ALARMS
+	ageda->addEntry( PROGMEM"Audio Off");     // 2 = AUDIO_OFF
+	top->addEntry( ageda );
+
+	SetupMenuSelect * amps = new SetupMenuSelect( PROGMEM"Amplifier", RST_NONE, 0 , true, &amplifier_shutdown );
+	amps->setHelp(PROGMEM"Select whether amplifier is shutdown during silences, or always stays on");
+	amps->addEntry( PROGMEM"Stay On");   // 0 = AMP_STAY_ON
+	amps->addEntry( PROGMEM"Shutdown");  // 1 = AMP_SHUTDOWN
+	top->addEntry( amps );
+}
+
 void SetupMenu::audio_menu_create( MenuEntry *audio ){
 	SetupMenu * volumes = new SetupMenu( PROGMEM"Volume options" );
 	audio->addEntry( volumes );
 	volumes->setHelp( PROGMEM "Configure audio volume options", 240);
 	volumes->addCreator(audio_menu_create_volume);
+
+	SetupMenu * mutes = new SetupMenu( PROGMEM"Mute Audio" );
+	audio->addEntry( mutes );
+	mutes->setHelp( PROGMEM "Configure audio muting options", 240);
+	mutes->addCreator(audio_menu_create_mute);
 
 	SetupMenuSelect * abnm = new SetupMenuSelect( PROGMEM"Cruise Audio", RST_NONE, 0 , true, &cruise_audio_mode );
 	abnm->setHelp(PROGMEM"Select either S2F command or Variometer (Netto/Brutto as selected) as audio source while cruising");
@@ -1013,19 +1045,6 @@ void SetupMenu::audio_menu_create( MenuEntry *audio ){
 	SetupMenuValFloat * afac = new SetupMenuValFloat( PROGMEM"Audio Exponent", "", 0.1, 2, 0.025, 0 , false, &audio_factor );
 	afac->setHelp(PROGMEM"How the audio frequency responds to the climb rate: < 1 for logarithmic, and > 1 for exponential, response");
 	audio->addEntry( afac);
-
-	SetupMenuSelect * amps = new SetupMenuSelect( PROGMEM"Amplifier Off", RST_NONE, 0 , true, &amplifier_shutdown );
-	amps->setHelp(PROGMEM"Select if Amplifier is totally shutdown while in deadband (saves energy), or stays always on");
-	amps->addEntry( PROGMEM"Always On");         // 0
-	amps->addEntry( PROGMEM"Shutdown");          // 1
-	audio->addEntry( amps );
-
-	SetupMenuSelect * ameda = new SetupMenuSelect( PROGMEM"Audio in Setup", RST_NONE, 0 , true, &audio_disable );
-	ameda->setHelp(PROGMEM"Select whether Audio will get muted while Setup Menu is open, or stays on");
-	ameda->addEntry( PROGMEM"Stay On");      // 0
-	ameda->addEntry( PROGMEM"Silent");       // 1
-	audio->addEntry( ameda );
-
 }
 
 void SetupMenu::glider_menu_create_polarpoints( MenuEntry *top ){

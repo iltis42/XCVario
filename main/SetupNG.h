@@ -60,6 +60,8 @@ typedef enum e_audiomode_type { AM_VARIO, AM_S2F, AM_SWITCH, AM_AUTOSPEED, AM_EX
 typedef enum e_audio_tone_mode { ATM_SINGLE_TONE, ATM_DUAL_TONE } e_audio_tone_mode_t;
 typedef enum e_audio_chopping_style { AUDIO_CHOP_SOFT, AUDIO_CHOP_HARD } e_audio_chopping_style_t;
 typedef enum e_audio_range { AUDIO_RANGE_5_MS, AUDIO_RANGE_10_MS, AUDIO_RANGE_VARIABLE } e_audio_range_t;
+typedef enum e_audio_mute_gen { AUDIO_ON, AUDIO_ALARMS, AUDIO_OFF } e_audio_mute_gen_t;
+typedef enum e_amp_shutdown { AMP_STAY_ON, AMP_SHUTDOWN, AMP_SHUTDOWN_5S } e_amp_shutdown_t;
 typedef enum e_flap_sensor { FLAP_SENSOR_DISABLE, FLAP_SENSOR_GPIO_2, FLAP_SENSOR_GPIO_34, FLAP_SENSOR_GPIO_26 } e_flap_sensor_t;
 typedef enum e_cruise_audio { AUDIO_S2F, AUDIO_VARIO } e_cruise_audio_2;
 typedef enum e_vario_mode { VARIO_BRUTTO, VARIO_NETTO, CRUISE_NETTO } e_vario_mode_t;
@@ -615,7 +617,9 @@ extern SetupNG<int> 		wk_label_minus_1;
 extern SetupNG<int> 		wk_label_minus_2;
 extern SetupNG<int> 		wk_label_minus_3;
 extern SetupNG<float>       flap_takeoff;
-extern SetupNG<int> 		audio_disable;
+extern SetupNG<int> 		audio_mute_menu;  // replaced audio_disable (same key)
+extern SetupNG<int> 		audio_mute_sink;
+extern SetupNG<int> 		audio_mute_gen;
 extern SetupNG<int>			vario_mode;
 extern SetupNG<int>			airspeed_sensor_type;
 extern SetupNG<int>			cruise_audio_mode;

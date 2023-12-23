@@ -92,7 +92,14 @@ void resetCWindAge() {
 float last_volume=0;   // is this used?
 
 void change_volume() {
-	Audio::setVolume( audio_volume.get() );
+	float vol = audio_volume.get();
+	float max = max_volume.get();
+	if (vol > max) {
+		audio_volume.set( max );  // will call this function again!
+		return;
+	}
+	Audio::setVolume( vol );
+	ESP_LOGI(FNAME,"change_volume -> %f", audio_volume.get() );
 }
 
 void flap_act() {
@@ -180,7 +187,7 @@ SetupNG<int>  			audio_variable_frequency( "AUD_VAFQ", 0);
 SetupNG<int>  			s2f_switch_mode( "AUDIO_MODE" ,  3 );
 SetupNG<int>  			chopping_mode( "CHOPPING_MODE",  VARIO_CHOP );
 SetupNG<int>  			chopping_style( "CHOP_STYLE",  AUDIO_CHOP_SOFT );
-SetupNG<int>  			amplifier_shutdown( "AMP_DIS", 0 );
+SetupNG<int>  			amplifier_shutdown( "AMP_DIS", AMP_STAY_ON );
 SetupNG<int>            audio_equalizer( "AUD_EQ", AUDIO_EQ_DISABLE, false );
 
 SetupNG<int>  			wireless_type( "BT_ENABLE" ,  WL_BLUETOOTH );
@@ -343,7 +350,9 @@ SetupNG<int> 			wk_label_minus_1( "WKLM1", 8,  true, SYNC_FROM_MASTER, PERSISTEN
 SetupNG<int> 			wk_label_minus_2( "WKLM2", 7,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);  // -2
 SetupNG<int> 			wk_label_minus_3( "WKLM3", 42,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act); //  S
 SetupNG<float>       	flap_takeoff("FLAPTO", 1,  true, SYNC_FROM_MASTER);
-SetupNG<int> 			audio_disable( "AUDIS", 0 );
+SetupNG<int> 			audio_mute_menu( "AUDIS", 0 );
+SetupNG<int> 			audio_mute_sink( "AUDISS", 0 );
+SetupNG<int> 			audio_mute_gen( "AUDISG", AUDIO_ON );
 SetupNG<int>			vario_mode("VAMOD", CRUISE_NETTO );  // switch to netto mode when cruising
 SetupNG<int>			airspeed_sensor_type("PTYPE", PS_NONE, RST_NONE);
 SetupNG<int>			cruise_audio_mode("CAUDIO", 0 );

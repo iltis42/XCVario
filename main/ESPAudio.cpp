@@ -697,8 +697,8 @@ void Audio::dactask(void* arg )
 							writeVolume( volume );
 							if (volume < 3.0)
 								volume = 0;
+							delay(1);
 						}
-						delay(1);
 						writeVolume( 0 );
 						// ESP_LOGI(FNAME, "fade out sound, final volume: 0" );
 					}

@@ -567,8 +567,8 @@ void SetupMenu::up(int count){
 				vol=3.0;
 			for( int i=0; i<count; i++ )
 				vol = vol * 1.17;
-			if( vol > 100.0 )
-				vol = 100.0;
+			if( vol > max_volume.get() )
+				vol = max_volume.get();
 			audio_volume.set( vol );
 		    // ESP_LOGI(FNAME,"NEW UP VOL: %f", vol );
 		}
@@ -952,6 +952,7 @@ void SetupMenu::audio_menu_create_volume( MenuEntry *top ){
 	    0.0, 100.0, 2.0, vol_adj, false, &audio_volume );
 	// unlike top-level menu volume which exits setup, this returns to parent menu
 	vol->setHelp(PROGMEM"Audio volume level for variometer tone on internal and external speaker");
+	vol->setMax(max_volume.get());   // is this only done at startup?
 	top->addEntry( vol );
 
 	SetupMenuSelect * cdv = new SetupMenuSelect( PROGMEM"Current->Default", RST_NONE, cur_vol_dflt, true );
@@ -2122,6 +2123,7 @@ void SetupMenu::setup_create_root(MenuEntry *top ){
 	else {
 		SetupMenuValFloat * vol = new SetupMenuValFloat( PROGMEM"Audio Volume", "%", 0.0, 100, 1, vol_adj, true, &audio_volume );
 		vol->setHelp(PROGMEM"Audio volume level for variometer tone on internal and external speaker");
+		vol->setMax(max_volume.get());   // is this only done at startup?
 		top->addEntry( vol );
 	}
 

@@ -433,6 +433,8 @@ void Audio::dac_invert_set(dac_channel_t channel, int invert)
 
 
 void Audio::setVolume( float vol ) {
+	if( vol > max_volume.get() )
+		vol = max_volume.get();
 	volume_change = (vol != speaker_volume) ? 100 : 0;
 	speaker_volume = vol;
 	// also copy the new volume into the cruise-mode specific variables so that

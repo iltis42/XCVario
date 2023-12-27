@@ -952,7 +952,7 @@ void SetupMenu::audio_menu_create_volume( MenuEntry *top ){
 	    0.0, 100.0, 2.0, vol_adj, false, &audio_volume );
 	// unlike top-level menu volume which exits setup, this returns to parent menu
 	vol->setHelp(PROGMEM"Audio volume level for variometer tone on internal and external speaker");
-	vol->setMax(max_volume.get());   // is this only done at startup?
+	vol->setMax(max_volume.get());   // only works after leaving this *parent* menu and returning
 	top->addEntry( vol );
 
 	SetupMenuSelect * cdv = new SetupMenuSelect( PROGMEM"Current->Default", RST_NONE, cur_vol_dflt, true );
@@ -965,9 +965,10 @@ void SetupMenu::audio_menu_create_volume( MenuEntry *top ){
 	top->addEntry( dv );
 	dv->setHelp(PROGMEM"Default volume for Audio when device is switched on");
 
-	SetupMenuValFloat * mv = new SetupMenuValFloat( PROGMEM"Max Volume", "%", 0, 100, 1.0, 0, false, &max_volume );
+// after max_volume exit menu, when re-entering will setMax() volume setting above
+	SetupMenuValFloat * mv = new SetupMenuValFloat( PROGMEM"Max Volume", "%", 0, 100, 1.0, 0, true, &max_volume );
 	top->addEntry( mv );
-	mv->setHelp(PROGMEM"Maximum audio volume setting allowed. Set to 0% to mute audio entirely.");
+	mv->setHelp(PROGMEM"Maximum audio volume setting allowed");
 
 	SetupMenu * audeq = new SetupMenu( PROGMEM"Equalizer" );
 	top->addEntry( audeq );
@@ -2123,7 +2124,7 @@ void SetupMenu::setup_create_root(MenuEntry *top ){
 	else {
 		SetupMenuValFloat * vol = new SetupMenuValFloat( PROGMEM"Audio Volume", "%", 0.0, 100, 1, vol_adj, true, &audio_volume );
 		vol->setHelp(PROGMEM"Audio volume level for variometer tone on internal and external speaker");
-		vol->setMax(max_volume.get());   // is this only done at startup?
+		vol->setMax(max_volume.get());
 		top->addEntry( vol );
 	}
 

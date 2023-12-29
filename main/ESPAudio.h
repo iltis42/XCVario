@@ -55,10 +55,12 @@ private:
     static void calcS2Fmode( bool recalc=false );
     static bool inDeadBand( float te );
 	static bool lookup( float f, int& div, int &step );
-	static void enableAmplifier( bool enable );  // frue ON, false OFF
+	static void enableAmplifier( bool enable, int silence_ms=0 );  // true ON, false OFF
 	static float equal_volume( float volume );
-	static void  calculateFrequency();
+	static void calculateFrequency();
 	static void writeVolume( float volume );
+	static void fade_in();
+	static void fade_out();
 
 	static dac_channel_t _ch;
 	static float _te;
@@ -77,10 +79,11 @@ private:
     static int prev_div;
     static int prev_step;
     static bool deadband_active;
-    static float exponent_max;
+    static bool disable_amp;
+    static float inv_exp_max;
     static float prev_aud_fact;
     static int scale;
-    static int prev_scale;
+    static int dac_scale;
     static bool hightone;
     static bool _alarm_mode;
     static int  defaultDelay;
@@ -88,6 +91,7 @@ private:
     static float _vol_back_s2f;
     static bool  _s2f_mode_back;
     static int   _tonemode_back;
+    static int   _chopping_style_back;
     static int tick;
     static int tickmod;
     static int volume_change;
@@ -95,9 +99,15 @@ private:
     static int _delay;
     static unsigned long next_scedule;
     static int mtick;
+    static int old_tick;
+    static int silent_ticks;
+    static int chop_style;
+    static bool long_silence;
+    static bool scheduled;
+    static int sink_style;
     static float current_frequency;
-    static bool dac_enable;
-    static bool amplifier_enable;
+    static bool dac_enabled;
+    static bool amplifier_enabled;
     static bool _haveCAT5171;
     static tk::spline *equalizerSpline;
 };

@@ -6,8 +6,8 @@ Quaternion quaternion_from_accelerometer(const vector_ijk& a)
 {
 	// ESP_LOGI(FNAME,"ax=%.3f ay=%.3f az=%.3f", ax, ay, az);
     float half_cos = sqrt(0.5*(1.0 + a.c));
-    float temp = 2.*half_cos;
-    Quaternion orientation( half_cos, -a.b/temp, a.a/temp, 0.0 );
+    float temp = 0.5f/half_cos;
+    Quaternion orientation( half_cos, -a.b*temp, a.a*temp, 0.0 );
     return orientation;
 }
 

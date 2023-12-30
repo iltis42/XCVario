@@ -166,7 +166,7 @@ void IMU::Process()
 	float gravity_trust = 1;
 	double roll = 0;
 	if( getTAS() > 10 ){
-		float loadFactor = accel.c;
+		float loadFactor = accel.get_norm();
 		float lf = loadFactor > 2.0 ? 2.0 : loadFactor;
 		loadFactor = lf < 0 ? 0 : lf; // limit to 0..2g
 		// to get pitch and roll independent of circling, image pitch and roll values into 3D vector
@@ -175,8 +175,8 @@ void IMU::Process()
 		pitch = IMU::PitchFromAccelRad();
 
 		// Virtual gravity from centripedal forces to keep angle of bank while circling
-		ax1 = sin(pitch);                // Nose down (positive Y turn) results in negative X
-		ay1 = -sin(roll)*cos(pitch);     // Left wing down (or negative X roll) results in negative Y
+		ax1 = sin(pitch);                // Nose down (positive Y turn) results in positive X
+		ay1 = -sin(roll)*cos(pitch);     // Left wing down (or negative X roll) results in positive Y
 		az1 = cos(roll)*cos(pitch);      // Any roll or pitch creates a smaller positive Z, unaccelerated Z is positive
 		// trust in gyro at load factors unequal 1 g
 		gravity_trust = (ahrs_min_gyro_factor.get() + (ahrs_gyro_factor.get() * ( pow(10, abs(loadFactor-1) * ahrs_dynamic_factor.get()) - 1)));

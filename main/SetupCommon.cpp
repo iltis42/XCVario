@@ -206,7 +206,6 @@ bool SetupCommon::initSetup( bool& present ) {
 			}
 		}
 	}
-	last_volume = (int)default_volume.get();
 	giveConfigChanges( 0, true );
 	return ret;
 };

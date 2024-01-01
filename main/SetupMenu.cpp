@@ -902,10 +902,12 @@ void SetupMenu::audio_menu_create_tonestyles( MenuEntry *top ){
 	tch->addEntry( PROGMEM"Vario and S2F");        // 3  default
 	top->addEntry( tch );
 
-	SetupMenuSelect * tchs = new SetupMenuSelect( PROGMEM"Chopping Style", RST_NONE, 0 , true, &chopping_style );
-	tchs->setHelp(PROGMEM"Select style of tone chopping either hard, or soft with fadein/fadeout");
-	tchs->addEntry( PROGMEM"Soft");              // 0  default
-	tchs->addEntry( PROGMEM"Hard");              // 1
+	SetupMenuSelect * tchs = new SetupMenuSelect( PROGMEM"Chopping Style", RST_NONE, audio_setup_s, true, &chopping_style );
+	tchs->setHelp(PROGMEM"Tone chopping style, hard, or soft with fadein/fadeout.  RICO style is very short tones/clicks");
+	tchs->addEntry( PROGMEM"Soft");             // 0  default
+	tchs->addEntry( PROGMEM"Hard");             // 1
+	tchs->addEntry( PROGMEM"RICO Soft");        // 2
+	tchs->addEntry( PROGMEM"RICO Hard");        // 3
 	top->addEntry( tchs );
 
 	SetupMenuSelect * advarto = new SetupMenuSelect( PROGMEM"Variable Tone", RST_NONE, 0 , true, &audio_variable_frequency );
@@ -984,9 +986,11 @@ void SetupMenu::audio_menu_create_volume( MenuEntry *top ){
 
 void SetupMenu::audio_menu_create_mute( MenuEntry *top ){
 	SetupMenuSelect * asida = new SetupMenuSelect( PROGMEM"In Sink", RST_NONE, 0 , true, &audio_mute_sink );
-	asida->setHelp(PROGMEM"Select whether vario audio will be muted while in sink");
-	asida->addEntry( PROGMEM"Stay On");  // 0
-	asida->addEntry( PROGMEM"Mute");     // 1
+	asida->setHelp(PROGMEM"Configure vario audio volume while in sink");
+	asida->addEntry( PROGMEM"Normal");  // 0
+	asida->addEntry( PROGMEM"Louder");  // 1
+	asida->addEntry( PROGMEM"Softer");  // 2
+	asida->addEntry( PROGMEM"Mute");    // 3
 	top->addEntry( asida );
 
 	SetupMenuSelect * ameda = new SetupMenuSelect( PROGMEM"In Setup", RST_NONE, 0 , true, &audio_mute_menu );
@@ -1003,9 +1007,10 @@ void SetupMenu::audio_menu_create_mute( MenuEntry *top ){
 	top->addEntry( ageda );
 
 	SetupMenuSelect * amps = new SetupMenuSelect( PROGMEM"Amplifier", RST_NONE, 0 , true, &amplifier_shutdown );
-	amps->setHelp(PROGMEM"Select whether amplifier is shutdown during silences, or always stays on");
+	amps->setHelp(PROGMEM"Whether amplifier always stays on, is shutdown in deadband immediately, or after 5 sec silence");
 	amps->addEntry( PROGMEM"Stay On");   // 0 = AMP_STAY_ON
 	amps->addEntry( PROGMEM"Shutdown");  // 1 = AMP_SHUTDOWN
+	amps->addEntry( PROGMEM"After 5s");  // 2 = AMP_SHUTDOWN_5S
 	top->addEntry( amps );
 }
 
@@ -1028,7 +1033,7 @@ void SetupMenu::audio_menu_create( MenuEntry *audio ){
 
 	SetupMenu * audios = new SetupMenu( PROGMEM"Tone Styles" );
 	audio->addEntry( audios );
-	audios->setHelp( PROGMEM "Configure audio style in terms of center frequency, octaves, single/dual tone, pitch and chopping", 220);
+	audios->setHelp( PROGMEM "Configure vario audio frequencies and chopping", 240);
 	audios->addCreator(audio_menu_create_tonestyles);
 
 	update_rentry(0);
@@ -1044,7 +1049,7 @@ void SetupMenu::audio_menu_create( MenuEntry *audio ){
 	db->setHelp(PROGMEM"Dead band limits within which audio remains silent.  1 m/s equals roughly 200 fpm or 2 knots");
 	db->addCreator(audio_menu_create_deadbands);
 
-	SetupMenuValFloat * afac = new SetupMenuValFloat( PROGMEM"Audio Exponent", "", 0.1, 2, 0.025, 0 , false, &audio_factor );
+	SetupMenuValFloat * afac = new SetupMenuValFloat( PROGMEM"Audio Exponent", "", -0.5, 2.0, 0.1, 0 , false, &audio_factor );
 	afac->setHelp(PROGMEM"How the audio frequency responds to the climb rate: < 1 for logarithmic, and > 1 for exponential, response");
 	audio->addEntry( afac);
 }

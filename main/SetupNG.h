@@ -58,8 +58,9 @@ typedef enum e_serial_route_type { RT_XCVARIO, RT_WIRELESS, RT_S1, RT_S2, RT_CAN
 typedef enum e_wireless_type { WL_DISABLE, WL_BLUETOOTH, WL_WLAN_MASTER, WL_WLAN_CLIENT, WL_WLAN_STANDALONE, WL_BLUETOOTH_LE } e_wireless_t;
 typedef enum e_audiomode_type { AM_VARIO, AM_S2F, AM_SWITCH, AM_AUTOSPEED, AM_EXTERNAL, AM_FLAP, AM_AHRS } e_audiomode_t;
 typedef enum e_audio_tone_mode { ATM_SINGLE_TONE, ATM_DUAL_TONE } e_audio_tone_mode_t;
-typedef enum e_audio_chopping_style { AUDIO_CHOP_SOFT, AUDIO_CHOP_HARD } e_audio_chopping_style_t;
+typedef enum e_audio_chopping_style { AUDIO_CHOP_SOFT, AUDIO_CHOP_HARD, RICO_CHOP_SOFT, RICO_CHOP_HARD } e_audio_chopping_style_t;
 typedef enum e_audio_range { AUDIO_RANGE_5_MS, AUDIO_RANGE_10_MS, AUDIO_RANGE_VARIABLE } e_audio_range_t;
+typedef enum e_audio_mute_sink { SINK_ON, SINK_LOUD, SINK_SOFT, SINK_OFF } e_audio_mute_sink_t;
 typedef enum e_audio_mute_gen { AUDIO_ON, AUDIO_ALARMS, AUDIO_OFF } e_audio_mute_gen_t;
 typedef enum e_amp_shutdown { AMP_STAY_ON, AMP_SHUTDOWN, AMP_SHUTDOWN_5S } e_amp_shutdown_t;
 typedef enum e_flap_sensor { FLAP_SENSOR_DISABLE, FLAP_SENSOR_GPIO_2, FLAP_SENSOR_GPIO_34, FLAP_SENSOR_GPIO_26 } e_flap_sensor_t;

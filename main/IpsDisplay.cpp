@@ -1801,7 +1801,6 @@ static bool horizon_done = false;
 #define WIDTH_   (DISPLAY_W-1)   // 239
 
 void IpsDisplay::drawHorizon( float p, float b, float yaw ){   // ( pitch, roll, yaw )
-
 	tick++;
 	if( !(screens_init & INIT_DISPLAY_HORIZON) ){
 		clear();
@@ -1811,7 +1810,6 @@ void IpsDisplay::drawHorizon( float p, float b, float yaw ){   // ( pitch, roll,
 		return;
 	}
 
-// >>> this demo will only be shown if settings menu is changed
 //     to allow activating horizon screen without AHRS license.
 	if( !gflags.ahrsKeyValid ) {       // demo static horizon
 		if (horizon_done)
@@ -1898,14 +1896,10 @@ void IpsDisplay::drawHorizon( float p, float b, float yaw ){   // ( pitch, roll,
 	old_y1 = y1;
 	horizon_done = true;
 
-	// a very simple "airplane" icon, scaled to use 3/4 of the display width
-	int m = WIDTH_2;
-	int n = HEIGHT_2;
-	int size = DISPLAY_W/4 + DISPLAY_W/8;
+	// draw simple "airplane" icon from Flarm class
 	xSemaphoreTake(spiMutex, portMAX_DELAY );
-	ucg->setColor( COLOR_BLACK );
-	ucg->drawTetragon( m-size,n+5, m-size,n-5, m+size,n-5, m+size,n+5 );    // wings
-	ucg->drawTetragon( m-5,n-5, m-5,n-5-size/2, m+5,n-5-size/2, m+5,n-5 );  // tail
+	ucg->setColor( COLOR_WHITE );
+	Flarm::drawAirplane( WIDTH_2, HEIGHT_2, true );
 	xSemaphoreGive(spiMutex);
 
 	// display heading too, if possible

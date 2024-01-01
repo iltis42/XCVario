@@ -91,7 +91,7 @@ const float freq_step = RTC_FAST_CLK_FREQ_APPROX / (65536 * 8 );  // div = 0x07
 typedef struct lookup {  uint8_t div; uint8_t step; } t_lookup_entry;
 //typedef struct volume {  uint16_t vol; uint8_t scale; uint8_t wiper; } t_scale_wip;
 
-#define FADING_STEPS 5  // steps used for fade in/out at chopping
+#define FADING_STEPS 3  // steps used for fade in/out at chopping
 // #define FADING_TIME  3  // factor for volume changes fade over smoothing
 
 Poti *DigitalPoti;
@@ -586,7 +586,7 @@ void Audio::dactask(void* arg )
 				float period_ms = 1000.0 * f;
 				if ( hightone ){  // duration of break (or second tone)
 					if ( chop_style >= RICO_CHOP_SOFT )
-						_delay = int(period_ms * 0.7);   // roughly 500 - 100 mS
+						_delay = int(period_ms * 0.33);   // roughly 500 - 100 mS
 					else
 						_delay = int(period_ms * 0.1)+40;   // 1Hz: 140 mS; 10Hz: 50 mS
 					//ESP_LOGI(FNAME, "dactask: te: %4.2f break: %d  period: %d", _te, _delay, (int)period_ms);
@@ -597,7 +597,7 @@ void Audio::dactask(void* arg )
 							dac_scale_set(_ch, 1 );   // 6 dB louder than normal
 						else
 							dac_scale_set(_ch, 2 );
-						_delay = 18;  // somewhat less than two periods of this task
+						_delay = 25;  // adjusted, 18 mS sounds strange
 						  // duration of RICO "tick" 20 ms, minus 10ms cut-in if "hard"
 					} else {
 						_delay = int(period_ms * 0.9)-40;
@@ -701,11 +701,6 @@ void Audio::dactask(void* arg )
 				silent_ticks = 0;
 				disable_amp = false;
 
-				if( chop_style == RICO_CHOP_HARD && scheduled && mtick != 0 )
-					delay(10);   // shorten the beep further
-				else
-					yield();
-
 				// In lift, amplifier usually enabled during silence before tick.
 				// But below the deadband need to enable here for continuous tone.
 				// Also in 2-tone mode need to enable the amplifier.  If mtick
@@ -777,7 +772,7 @@ void Audio::dactask(void* arg )
 		// ESP_LOGI(FNAME, "Audio delay %d", _delay );
 		if( uxTaskGetStackHighWaterMark( dactid ) < 256 )
 			ESP_LOGW(FNAME,"Warning Audio dac task stack low: %d bytes", uxTaskGetStackHighWaterMark( dactid ) );
-		vTaskDelayUntil(&xLastWakeTime, 10/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&xLastWakeTime, 5/portTICK_PERIOD_MS);
 //		if( volume_change )
 //			volume_change--;
 	}

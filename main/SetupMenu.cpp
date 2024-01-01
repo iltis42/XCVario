@@ -377,7 +377,7 @@ int bug_adj( SetupMenuValFloat * p ){
 }
 
 int vol_adj( SetupMenuValFloat * p ){
-	// Audio::setVolume( (*(p->_value)) );
+	// do nothing - change_volume() already called Audio::setVolume()
 	return 0;
 }
 
@@ -746,6 +746,12 @@ void SetupMenu::vario_menu_create_meanclimb( MenuEntry *top ){
 }
 
 void SetupMenu::vario_menu_create_s2f( MenuEntry *top ){
+	// repeat the MC menu here for convenience
+	SetupMenuValFloat * mc = new SetupMenuValFloat( PROGMEM"MC", "",	0.0, 9.9, 0.1, 0, true, &MC );
+	mc->setHelp(PROGMEM"MacCready value for optimum cruise speed, or average climb rate to be provided in same unit as the variometer");
+	mc->setPrecision(1);
+	top->addEntry( mc );
+
 	SetupMenuValFloat * vds2 = new SetupMenuValFloat( PROGMEM"Damping", "sec", 0.10001, 10.0, 0.1, 0, false, &s2f_delay );
 	vds2->setHelp(PROGMEM"Time constant of S2F low pass filter");
 	top->addEntry( vds2 );
@@ -884,10 +890,12 @@ void SetupMenu::audio_menu_create_tonestyles( MenuEntry *top ){
 	oc->setHelp(PROGMEM"Maximum tone frequency variation");
 	top->addEntry( oc );
 
-	SetupMenuSelect * dt = new SetupMenuSelect( PROGMEM"Dual Tone", RST_NONE, audio_setup_s, true, &dual_tone );
-	dt->setHelp(PROGMEM"Select dual tone modue aka ilec sound (di/da/di), or single tone (di/di/di) mode");
-	dt->addEntry( PROGMEM"Disable");       // 0
-	dt->addEntry( PROGMEM"Enable");        // 1
+	// the NG variable is still called "dual_tone" but it now includes choice of RICO style
+	SetupMenuSelect * dt = new SetupMenuSelect( PROGMEM"Tone Flavor", RST_NONE, audio_setup_s, true, &dual_tone );
+	dt->setHelp(PROGMEM"Single tone (di/di/di), dual tone (ILEC) sound (di/da/di), or RICO style (very short beeps/ticks)");
+	dt->addEntry( PROGMEM"Single Tone");      // 0=ATM_SINGLE_TONE
+	dt->addEntry( PROGMEM"Dual Tone");        // 1=ATM_DUAL_TONE
+	dt->addEntry( PROGMEM"RICO Style");       // 2=ATM_RICO_TONE
 	top->addEntry( dt );
 
 	SetupMenuValFloat * htv = new SetupMenuValFloat( PROGMEM"Dual Tone Pitch", "%", 0, 50, 1.0, audio_setup_f, false, &high_tone_var );
@@ -903,11 +911,9 @@ void SetupMenu::audio_menu_create_tonestyles( MenuEntry *top ){
 	top->addEntry( tch );
 
 	SetupMenuSelect * tchs = new SetupMenuSelect( PROGMEM"Chopping Style", RST_NONE, audio_setup_s, true, &chopping_style );
-	tchs->setHelp(PROGMEM"Tone chopping style, hard, or soft with fadein/fadeout.  RICO style is very short tones/clicks");
+	tchs->setHelp(PROGMEM"Tone chopping style, hard, or soft with fadein/fadeout");
 	tchs->addEntry( PROGMEM"Soft");             // 0  default
 	tchs->addEntry( PROGMEM"Hard");             // 1
-	tchs->addEntry( PROGMEM"RICO Soft");        // 2
-	tchs->addEntry( PROGMEM"RICO Hard");        // 3
 	top->addEntry( tchs );
 
 	SetupMenuSelect * advarto = new SetupMenuSelect( PROGMEM"Variable Tone", RST_NONE, 0 , true, &audio_variable_frequency );

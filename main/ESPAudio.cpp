@@ -72,7 +72,6 @@ int   Audio::prev_step = 0;
 int   Audio::scale = 0;
 int   Audio::dac_scale = -1;
 int   Audio::_tonemode_back = 0;
-int   Audio::_chopping_style_back = 0;
 int   Audio::tick = 0;
 int   Audio::volume_change=0;
 bool  Audio::dac_enabled=false;
@@ -90,9 +89,6 @@ const int clk_8m_div = 7;    // RTC 8M clock divider (division is by clk_8m_div+
 const float freq_step = RTC_FAST_CLK_FREQ_APPROX / (65536 * 8 );  // div = 0x07
 typedef struct lookup {  uint8_t div; uint8_t step; } t_lookup_entry;
 //typedef struct volume {  uint16_t vol; uint8_t scale; uint8_t wiper; } t_scale_wip;
-
-#define FADING_STEPS 3  // steps used for fade in/out at chopping
-// #define FADING_TIME  3  // factor for volume changes fade over smoothing
 
 Poti *DigitalPoti;
 
@@ -260,7 +256,7 @@ bool Audio::selfTest(){
 			writeVolume( 0 );
 			//enableAmplifier( true );
 			dacEnable();
-			fade_in();
+			fade_to( speaker_volume );
 			fadein = true;
 		}
 		writeVolume( setvolume );
@@ -352,8 +348,6 @@ void Audio::alarm( bool enable, float volume, e_audio_alarm_type_t style ){  // 
 		_s2f_mode_back = _s2f_mode;
 		_s2f_mode = false;
 		_tonemode_back = _tonemode;
-		_chopping_style_back = chopping_style.get();
-		chopping_style.set( _chopping_style_back & 1 );  // turn off RICO style
 		dacDisable();
 		dac_scale_set(_ch, 2 );   // normal loudness (RICO ticks use scale=1)
 		_alarm_mode=true;
@@ -491,13 +485,16 @@ void Audio::calcS2Fmode( bool recalc ){
 		if ( speaker_volume != audio_volume.get() ) {  // due to audio_split_vol
 			ESP_LOGI(FNAME, "... changing volume %f -> %f",
 			     audio_volume.get(), speaker_volume );
-			audio_volume.set( speaker_volume );  // this too needs _stf_mode
+//			audio_volume.set( speaker_volume );  // this too needs _stf_mode
 			// this is to keep the current volume shown (or implied) in the menus
 			// in step with the actual speaker volume, in case volume is changed
 			// after the CruiseState has changed.  Calling audio_volume.set() here
 			// will call the action change_volume() which calls Audio::setVolume()
 			// which will write it back into speaker_volume and the mode-specific
 			// variable, and will also set volume_change=100, but all that is OK.
+// But wait: there is a way to avoid that circularity!
+// Calling .set() like this does (potentially) sync but skips the action function:
+			audio_volume.set( speaker_volume, true, false );
 		}
 	}
 }
@@ -505,7 +502,7 @@ void Audio::calcS2Fmode( bool recalc ){
 void  Audio::evaluateChopping(){
 	// re-coded for clarity:
 	_chopping = true;   // default
-	if (chopping_style.get() >= RICO_CHOP_SOFT)  // overrides chopping_mode
+	if (dual_tone.get() == ATM_RICO_TONE)  // overrides chopping_mode
 		return;
 	int chop_mode = chopping_mode.get();
 	if( chop_mode == VARIO_CHOP ) {
@@ -573,7 +570,7 @@ void Audio::dactask(void* arg )
 				float f = _range;
 				if( _s2f_mode && (cruise_audio_mode.get() == AUDIO_S2F) )
 					f = 5.0;
-				if ( chop_style >= RICO_CHOP_SOFT ) {
+				if ( _tonemode == ATM_RICO_TONE ) {
 					f = f / (4.0*f/(3.0+audio_factor.get()) + 6.0*_te);
 					  // lower exponent results in more frequent ticks in weak lift
 				} else {
@@ -585,20 +582,21 @@ void Audio::dactask(void* arg )
 				}
 				float period_ms = 1000.0 * f;
 				if ( hightone ){  // duration of break (or second tone)
-					if ( chop_style >= RICO_CHOP_SOFT )
-						_delay = int(period_ms * 0.33);   // roughly 500 - 100 mS
+					if ( _tonemode == ATM_RICO_TONE )
+						_delay = int(period_ms * 0.7);   // roughly 1000 - 100 mS
 					else
 						_delay = int(period_ms * 0.1)+40;   // 1Hz: 140 mS; 10Hz: 50 mS
 					//ESP_LOGI(FNAME, "dactask: te: %4.2f break: %d  period: %d", _te, _delay, (int)period_ms);
 				}
 				else{
-					if ( chop_style >= RICO_CHOP_SOFT ) {
-						if ( chop_style == RICO_CHOP_HARD )
+					if ( _tonemode == ATM_RICO_TONE ) {
+						if ( chop_style == AUDIO_CHOP_HARD ) {
+							_delay = 9;
 							dac_scale_set(_ch, 1 );   // 6 dB louder than normal
-						else
+						} else  {
+							_delay = 24;
 							dac_scale_set(_ch, 2 );
-						_delay = 25;  // adjusted, 18 mS sounds strange
-						  // duration of RICO "tick" 20 ms, minus 10ms cut-in if "hard"
+						}
 					} else {
 						_delay = int(period_ms * 0.9)-40;
 						  // duration of main tone 1Hz: 860 mS; 10Hz: 50 mS
@@ -618,7 +616,6 @@ void Audio::dactask(void* arg )
 			if( !audio_variable_frequency.get() )
 				calculateFrequency();
 			next_scedule = millis()+_delay;
-			yield();
 		}
 //		if( audio_variable_frequency.get() )
 //			calculateFrequency();
@@ -627,7 +624,7 @@ void Audio::dactask(void* arg )
 		//   If RICO, audio ticks are too short to wait until a later task tick,
 		//   so always process after delays scheduled above,
 		//   otherwise process every fourth tick:
-		if( !_testmode && ( !(tick&0x3) || scheduled ) ) {
+		if( !_testmode && ( !(tick&0x7) || scheduled ) ) {
 			// ESP_LOGI(FNAME, "sound dactask tick:%d wiper:%d  te:%f db:%d", tick, (*p_wiper), _te, inDeadBand(_te) );
 			int ticks = tick - old_tick;
 			old_tick = tick;
@@ -636,7 +633,7 @@ void Audio::dactask(void* arg )
 			if( audio_variable_frequency.get() )
 				calculateFrequency();
 
-			if( !(tick&0x1F) ){     // every 320 ms
+			if( !(tick&0x3F) ){     // every 320 ms
 				calcS2Fmode(false);     // if mode changed, affects volume and frequency
 				yield();
 			}
@@ -654,7 +651,7 @@ void Audio::dactask(void* arg )
 				deadband_active = false;
 				sound = true;
 				disable_amp = false;
-				if(chop_style >= RICO_CHOP_SOFT || (_chopping && _tonemode == ATM_SINGLE_TONE)){
+				if( _tonemode == ATM_RICO_TONE || (_chopping && _tonemode == ATM_SINGLE_TONE)){
 					if( hightone )
 						sound = false;
 				}
@@ -711,12 +708,11 @@ void Audio::dactask(void* arg )
 				if ( (mtick & 1) == 0 )
 					enableAmplifier( true );
 
-				if( chop_style == AUDIO_CHOP_SOFT || chop_style == RICO_CHOP_SOFT 
-				      || volume_change ){
+				if( volume_change || chop_style == AUDIO_CHOP_SOFT ){
 					// Fade in volume (or smooth over volume changes)
 					dacEnable();
 					if( current_volume != speaker_volume ){
-						fade_in();
+						fade_to( speaker_volume );
 						volume_change = 0;
 						yield();
 					}
@@ -729,7 +725,7 @@ void Audio::dactask(void* arg )
 					dacEnable();
 				}
 
-				if( !(tick&0x0F) ){
+				if( !(tick&0x1F) ){
 					if( current_volume != speaker_volume ){
 						ESP_LOGI(FNAME, "periodic during sound, readVolume %.2f -> %.2f",
 						       current_volume, speaker_volume );
@@ -747,11 +743,10 @@ void Audio::dactask(void* arg )
 				if (long_silence)
 					disable_amp = true;
 
-				if( chop_style == AUDIO_CHOP_SOFT || chop_style == RICO_CHOP_SOFT
-				        || mtick <= 1 ){
+				if( mtick <= 1 || chop_style == AUDIO_CHOP_SOFT ){
 					// fade out if entering deadband, before first beep, or soft mode
 					if( current_volume != 0 ){
-						fade_out();
+						fade_to( 0 );
 					}
 				}
 				// if hard chopping leave the volume as-is, dacDisable() is enough
@@ -924,38 +919,32 @@ void Audio::dacDisable(){
 	}
 }
 
-void Audio::fade_in(){
-	float volume = current_volume;
-	if (volume < 3)  volume = 3;
-	float r = speaker_volume / volume;
-	if (r < 0.25)  r = 0.25;
-	float g = (r>1 ? (float)(FADING_STEPS+1) : (float)(FADING_STEPS-1));
-	g = 1.0 + (r-1.0) / (r+g);
-	// - this works for decreasing volume too, then r<1 and g<1
-	for( int i=0; i<FADING_STEPS; i++ ) {
-		// ESP_LOGI(FNAME, "fade in sound, volume: %.1f", volume );
-		volume = volume * g;
-		if (r > 1 && volume > speaker_volume)  break;
-		if (r < 1 && volume < 3)               break;
-		writeVolume( volume );
-		delay(1);
+// Fade in or out, full or partial, smaller relative changes on the loud end.
+// This version uses up to 8 steps, but often skips some steps, and, 
+// most of the change happens in 4 steps.
+void Audio::fade_to( float target_volume ){
+	static const float fade_factor[7] = {0.10, 0.20, 0.38, 0.56, 0.71, 0.83, 0.92};
+	float start_volume = current_volume;
+	if (target_volume < start_volume) {  // fade-out
+		for( int i=6; i>=0; i-- ) {
+			float volume = start_volume * fade_factor[i];
+			if (volume <  target_volume)  break;
+			if (volume <  3)  break;
+			writeVolume( volume );
+			delay(1);
+		}
+	} else {  // fade-in
+		float threshold = start_volume / target_volume;
+		for( int i=0; i<7; i++ ) {
+			if (fade_factor[i] < threshold)  continue;
+			float volume = target_volume * fade_factor[i];
+			writeVolume( volume );
+			delay(1);
+		}
 	}
-	writeVolume( speaker_volume );
-	if( speaker_volume == 0 )
+	writeVolume( target_volume );
+	if( target_volume == 0 )
 		dacDisable();
-}
-
-void Audio::fade_out(){
-	float volume = current_volume;
-	for( int i=0; i<FADING_STEPS; i++ ) {
-		volume = volume*0.75;
-		if (volume < 3)
-			break;
-		writeVolume( volume );
-		//ESP_LOGI(FNAME, "fade out sound, volume: %3.1f", volume );
-		delay(1);
-	}
-	writeVolume( 0 );
 }
 
 bool Audio::lookup( float f, int& div, int &step ){

@@ -59,8 +59,7 @@ private:
 	static float equal_volume( float volume );
 	static void calculateFrequency();
 	static void writeVolume( float volume );
-	static void fade_in();
-	static void fade_out();
+	static void fade_to( float target_volume );
 
 	static dac_channel_t _ch;
 	static float _te;
@@ -91,7 +90,6 @@ private:
     static float _vol_back_s2f;
     static bool  _s2f_mode_back;
     static int   _tonemode_back;
-    static int   _chopping_style_back;
     static int tick;
     static int tickmod;
     static int volume_change;

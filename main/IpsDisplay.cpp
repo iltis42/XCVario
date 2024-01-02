@@ -1801,6 +1801,7 @@ static bool horizon_done = false;
 #define WIDTH_   (DISPLAY_W-1)   // 239
 
 void IpsDisplay::drawHorizon( float p, float b, float yaw ){   // ( pitch, roll, yaw )
+
 	tick++;
 	if( !(screens_init & INIT_DISPLAY_HORIZON) ){
 		clear();
@@ -1810,19 +1811,18 @@ void IpsDisplay::drawHorizon( float p, float b, float yaw ){   // ( pitch, roll,
 		return;
 	}
 
-//     to allow activating horizon screen without AHRS license.
 	if( !gflags.ahrsKeyValid ) {       // demo static horizon
 		if (horizon_done)
 			return;                   // only draw this once
-		int w = DISPLAY_W;
+		int w = DISPLAY_W+20;
 		int h = DISPLAY_H;
-		int y = WIDTH_2;          // not HEIGHT_2 - only paint the top square
+		int y = WIDTH_2+20;        // not HEIGHT_2 - only paint a square
 		xSemaphoreTake(spiMutex, portMAX_DELAY );
 		ucg->setColor( COLOR_SKY );
-		ucg->drawTetragon( 0,y, 0,0, w-1,0, w-1,y );
+		ucg->drawTetragon( 0,y, 0,20, w-1,20, w-1,y );
 		ucg->setColor( COLOR_GROUND );
 		ucg->drawTetragon( 0,w-1, 0,y, w-1,y, w-1,w+1 );
-		ucg->setPrintPos(40, h-30);
+		ucg->setPrintPos(40, h-40);
 		ucg->setFontPosCenter();
 		ucg->setColor( COLOR_BRED );
 		ucg->setFont(ucg_font_fub20_hr);
@@ -1896,11 +1896,26 @@ void IpsDisplay::drawHorizon( float p, float b, float yaw ){   // ( pitch, roll,
 	old_y1 = y1;
 	horizon_done = true;
 
-	// draw simple "airplane" icon from Flarm class
-	xSemaphoreTake(spiMutex, portMAX_DELAY );
-	ucg->setColor( COLOR_WHITE );
-	Flarm::drawAirplane( WIDTH_2, HEIGHT_2, true );
-	xSemaphoreGive(spiMutex);
+	// a simple "airplane" icon, scaled to use 3/4 of the display width
+	int m = WIDTH_2;
+	int n = HEIGHT_2;
+	int size = DISPLAY_W/4 + DISPLAY_W/8;
+	y = n - 4 - size/4;   // Y-position of top of vertical tail
+	h = size/4;           // half-width of horizontal tail
+	if ( horizon_done && k0>n+9 && k1>n+9 ) {
+		// horizon redrawn completely below the "airplane", no need to redraw
+//	} else if ( horizon_done && g0<y-6 && g1<y-6 ) {
+		// horizon redrawn completely above the "airplane", no need to redraw
+		//  (not likely to happen)
+	} else {
+		xSemaphoreTake(spiMutex, portMAX_DELAY );
+		ucg->setColor( COLOR_BLACK );
+		ucg->drawTetragon( m-size,n+3, m-size,n-3, m+size,n-3, m+size,n+3 ); // wings
+		ucg->drawTetragon( m-3,n-3, m-3,y, m+3,y, m+3,n-3 );      // v tail
+		ucg->drawTetragon( m-h,y, m-h,y-6, m+h,y-6, m+h,y );      // h tail
+		ucg->drawDisc( m,n, 9, UCG_DRAW_ALL );                    // fuselage
+		xSemaphoreGive(spiMutex);
+	}
 
 	// display heading too, if possible
 	int heading;

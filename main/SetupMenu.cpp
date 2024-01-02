@@ -377,7 +377,7 @@ int bug_adj( SetupMenuValFloat * p ){
 }
 
 int vol_adj( SetupMenuValFloat * p ){
-	// Audio::setVolume( (*(p->_value)) );
+	// do nothing - change_volume() already called Audio::setVolume()
 	return 0;
 }
 
@@ -746,6 +746,12 @@ void SetupMenu::vario_menu_create_meanclimb( MenuEntry *top ){
 }
 
 void SetupMenu::vario_menu_create_s2f( MenuEntry *top ){
+	// repeat the MC menu here for convenience
+	SetupMenuValFloat * mc = new SetupMenuValFloat( PROGMEM"MC", "",	0.0, 9.9, 0.1, 0, true, &MC );
+	mc->setHelp(PROGMEM"MacCready value for optimum cruise speed, or average climb rate to be provided in same unit as the variometer");
+	mc->setPrecision(1);
+	top->addEntry( mc );
+
 	SetupMenuValFloat * vds2 = new SetupMenuValFloat( PROGMEM"Damping", "sec", 0.10001, 10.0, 0.1, 0, false, &s2f_delay );
 	vds2->setHelp(PROGMEM"Time constant of S2F low pass filter");
 	top->addEntry( vds2 );
@@ -884,10 +890,12 @@ void SetupMenu::audio_menu_create_tonestyles( MenuEntry *top ){
 	oc->setHelp(PROGMEM"Maximum tone frequency variation");
 	top->addEntry( oc );
 
-	SetupMenuSelect * dt = new SetupMenuSelect( PROGMEM"Dual Tone", RST_NONE, audio_setup_s, true, &dual_tone );
-	dt->setHelp(PROGMEM"Select dual tone modue aka ilec sound (di/da/di), or single tone (di/di/di) mode");
-	dt->addEntry( PROGMEM"Disable");       // 0
-	dt->addEntry( PROGMEM"Enable");        // 1
+	// the NG variable is still called "dual_tone" but it now includes choice of RICO style
+	SetupMenuSelect * dt = new SetupMenuSelect( PROGMEM"Tone Flavor", RST_NONE, audio_setup_s, true, &dual_tone );
+	dt->setHelp(PROGMEM"Single tone (di/di/di), dual tone (ILEC) sound (di/da/di), or RICO style (very short beeps/ticks)");
+	dt->addEntry( PROGMEM"Single Tone");      // 0=ATM_SINGLE_TONE
+	dt->addEntry( PROGMEM"Dual Tone");        // 1=ATM_DUAL_TONE
+	dt->addEntry( PROGMEM"RICO Style");       // 2=ATM_RICO_TONE
 	top->addEntry( dt );
 
 	SetupMenuValFloat * htv = new SetupMenuValFloat( PROGMEM"Dual Tone Pitch", "%", 0, 50, 1.0, audio_setup_f, false, &high_tone_var );
@@ -902,10 +910,10 @@ void SetupMenu::audio_menu_create_tonestyles( MenuEntry *top ){
 	tch->addEntry( PROGMEM"Vario and S2F");        // 3  default
 	top->addEntry( tch );
 
-	SetupMenuSelect * tchs = new SetupMenuSelect( PROGMEM"Chopping Style", RST_NONE, 0 , true, &chopping_style );
-	tchs->setHelp(PROGMEM"Select style of tone chopping either hard, or soft with fadein/fadeout");
-	tchs->addEntry( PROGMEM"Soft");              // 0  default
-	tchs->addEntry( PROGMEM"Hard");              // 1
+	SetupMenuSelect * tchs = new SetupMenuSelect( PROGMEM"Chopping Style", RST_NONE, audio_setup_s, true, &chopping_style );
+	tchs->setHelp(PROGMEM"Tone chopping style, hard, or soft with fadein/fadeout");
+	tchs->addEntry( PROGMEM"Soft");             // 0  default
+	tchs->addEntry( PROGMEM"Hard");             // 1
 	top->addEntry( tchs );
 
 	SetupMenuSelect * advarto = new SetupMenuSelect( PROGMEM"Variable Tone", RST_NONE, 0 , true, &audio_variable_frequency );
@@ -984,9 +992,11 @@ void SetupMenu::audio_menu_create_volume( MenuEntry *top ){
 
 void SetupMenu::audio_menu_create_mute( MenuEntry *top ){
 	SetupMenuSelect * asida = new SetupMenuSelect( PROGMEM"In Sink", RST_NONE, 0 , true, &audio_mute_sink );
-	asida->setHelp(PROGMEM"Select whether vario audio will be muted while in sink");
-	asida->addEntry( PROGMEM"Stay On");  // 0
-	asida->addEntry( PROGMEM"Mute");     // 1
+	asida->setHelp(PROGMEM"Configure vario audio volume while in sink");
+	asida->addEntry( PROGMEM"Normal");  // 0
+	asida->addEntry( PROGMEM"Louder");  // 1
+	asida->addEntry( PROGMEM"Softer");  // 2
+	asida->addEntry( PROGMEM"Mute");    // 3
 	top->addEntry( asida );
 
 	SetupMenuSelect * ameda = new SetupMenuSelect( PROGMEM"In Setup", RST_NONE, 0 , true, &audio_mute_menu );
@@ -1003,9 +1013,10 @@ void SetupMenu::audio_menu_create_mute( MenuEntry *top ){
 	top->addEntry( ageda );
 
 	SetupMenuSelect * amps = new SetupMenuSelect( PROGMEM"Amplifier", RST_NONE, 0 , true, &amplifier_shutdown );
-	amps->setHelp(PROGMEM"Select whether amplifier is shutdown during silences, or always stays on");
+	amps->setHelp(PROGMEM"Whether amplifier always stays on, is shutdown in deadband immediately, or after 5 sec silence");
 	amps->addEntry( PROGMEM"Stay On");   // 0 = AMP_STAY_ON
 	amps->addEntry( PROGMEM"Shutdown");  // 1 = AMP_SHUTDOWN
+	amps->addEntry( PROGMEM"After 5s");  // 2 = AMP_SHUTDOWN_5S
 	top->addEntry( amps );
 }
 
@@ -1028,7 +1039,7 @@ void SetupMenu::audio_menu_create( MenuEntry *audio ){
 
 	SetupMenu * audios = new SetupMenu( PROGMEM"Tone Styles" );
 	audio->addEntry( audios );
-	audios->setHelp( PROGMEM "Configure audio style in terms of center frequency, octaves, single/dual tone, pitch and chopping", 220);
+	audios->setHelp( PROGMEM "Configure vario audio frequencies and chopping", 240);
 	audios->addCreator(audio_menu_create_tonestyles);
 
 	update_rentry(0);
@@ -1044,7 +1055,7 @@ void SetupMenu::audio_menu_create( MenuEntry *audio ){
 	db->setHelp(PROGMEM"Dead band limits within which audio remains silent.  1 m/s equals roughly 200 fpm or 2 knots");
 	db->addCreator(audio_menu_create_deadbands);
 
-	SetupMenuValFloat * afac = new SetupMenuValFloat( PROGMEM"Audio Exponent", "", 0.1, 2, 0.025, 0 , false, &audio_factor );
+	SetupMenuValFloat * afac = new SetupMenuValFloat( PROGMEM"Audio Exponent", "", -0.5, 2.0, 0.1, 0 , false, &audio_factor );
 	afac->setHelp(PROGMEM"How the audio frequency responds to the climb rate: < 1 for logarithmic, and > 1 for exponential, response");
 	audio->addEntry( afac);
 }
@@ -1660,12 +1671,16 @@ void SetupMenu::system_menu_create_hardware_rotary_screens( MenuEntry *top ){
 	scrgmet->addEntry( PROGMEM"Disable");
 	scrgmet->addEntry( PROGMEM"Enable");
 	top->addEntry(scrgmet);
-	if( gflags.ahrsKeyValid ){
-		SetupMenuSelect * horizon = new SetupMenuSelect( PROGMEM"Horizon", RST_NONE, upd_screens, true, &screen_horizon );
-		horizon->addEntry( PROGMEM"Disable");
+
+	SetupMenuSelect * horizon = new SetupMenuSelect( PROGMEM"Horizon", RST_NONE, upd_screens, true, &screen_horizon );
+	horizon->addEntry( PROGMEM"Disable");
+	if( gflags.ahrsKeyValid ) {
 		horizon->addEntry( PROGMEM"Enable");
-		top->addEntry(horizon);
+	} else {
+		horizon->addEntry( PROGMEM"Static Demo");
+		horizon->setHelp( PROGMEM"License key required for the real horizon screen");
 	}
+	top->addEntry(horizon);
 }
 
 void SetupMenu::system_menu_create_hardware_rotary( MenuEntry *top ){

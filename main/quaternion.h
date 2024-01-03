@@ -3,18 +3,10 @@
 #include "vector_3d.h"
 #include <cmath>
 
-#define deg2rad(degrees) ((degrees) * float(M_PI) / 180.0f)
-#define rad2deg(rad) ((rad) * 180.0f / float(M_PI))
+#define deg2rad(degrees) ((degrees) * (float(M_PI) / 180.0f))
+#define rad2deg(rad) ((rad) * (180.0f / float(M_PI)))
 
 //#define Quaternionen_Test 1
-
-typedef struct euler_angles {
-
-    float roll;
-    float pitch;
-    float yaw;
-
-} euler_angles;
 
 float Compass_atan2( float y, float x );
 
@@ -45,7 +37,7 @@ public:
     friend Quaternion slerp(Quaternion q1, Quaternion q2, double lambda);
     static Quaternion AlignVectors(const vector_ijk &start, const vector_ijk &dest);
     static Quaternion fromRotationMatrix(const vector_d &X, const vector_d &Y);
-    euler_angles to_euler_angles();
+    EulerAngles toEulerRad();
     Quaternion get_conjugate() const;
 
     // something like a unit test

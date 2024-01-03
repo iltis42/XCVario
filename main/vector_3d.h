@@ -31,6 +31,13 @@ public:
 	T get_norm() const { return sqrt(a*a + b*b + c*c); }
 	T get_norm2() const { return a*a + b*b + c*c; }
 	T normalize();
+	// Interpretation as Euler angles
+	float Roll()  const { return a; }
+	void setRoll(float r) { a=r; }
+	float Pitch() const { return b; }
+	void setPitch(float p) { b=p; }
+	float Yaw()   const { return c; }
+	void setYaw(float y) { c=y; }
 	// tbd: private
 	T a;
 	T b;
@@ -41,6 +48,7 @@ template <typename T>
 vector_3d<T>& operator+(const vector_3d<T> v1, const vector_3d<T> v2);
 
 
-typedef vector_3d<float> vector_ijk;
+typedef vector_3d<float>  vector_ijk;
+typedef vector_3d<float>  EulerAngles;
 typedef vector_3d<double> vector_d;
 typedef vector_3d<int>    vector_i;

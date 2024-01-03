@@ -38,7 +38,7 @@ float IMU::positiveG = 1.0;
 
 Quaternion IMU::att_quat(0,0,0,0);
 vector_ijk IMU::att_vector;
-euler_angles IMU::euler;
+EulerAngles IMU::euler;
 
 // Reference calib
 static int progress = 0; // bit-wise 0 -> 1 -> 3 -> 0 // start -> right -> left -> finish
@@ -193,18 +193,18 @@ void IMU::Process()
 	// ESP_LOGI(FNAME,"attv: %.3f %.3f %.3f", att_vector.a, att_vector.b, att_vector.c);
 	att_quat = quaternion_from_accelerometer(att_vector);
 	// ESP_LOGI(FNAME,"attq: %.3f %.3f %.3f %.3f", att_quat.a, att_quat.b, att_quat.c, att_quat.d );
-	euler = att_quat.to_euler_angles();
-	// ESP_LOGI( FNAME,"Euler R:%.1f P:%.1f R:%f", euler.roll, euler.pitch, R2D(roll) );
+	euler = rad2deg(att_quat.toEulerRad());
+	ESP_LOGI( FNAME,"Euler R:%.1f P:%.1f Y:%f", euler.Roll(), euler.Pitch(), euler.Yaw());
 
 	// treat gimbal lock, limit to 88 deg
-	if( euler.roll > 88.0 )
-		euler.roll = 88.0;
-	if( euler.pitch > 88.0 )
-		euler.pitch = 88.0;
-	if( euler.roll < -88.0 )
-		euler.roll = -88.0;
-	if( euler.pitch < -88.0 )
-		euler.pitch = -88.0;
+	if( euler.Roll() > 88.0 )
+		euler.setRoll(88.0);
+	if( euler.Pitch() > 88.0 )
+		euler.setPitch(88.0);
+	if( euler.Roll() < -88.0 )
+		euler.setRoll(-88.0);
+	if( euler.Pitch() < -88.0 )
+		euler.setPitch(-88.0);
 
 	float curh = 0;
 	if( compass ){
@@ -228,8 +228,8 @@ void IMU::Process()
 	else{
 		filterYaw=fallbackToGyro();
 	}
-	filterRoll =  euler.roll;
-	filterPitch =  euler.pitch;
+	filterRoll =  euler.Roll();
+	filterPitch =  euler.Pitch();
 
 	// ESP_LOGI( FNAME,"GV-Pitch=%.1f  GV-Roll=%.1f filterYaw: %.2f curh: %.2f GX:%.3f GY:%.3f GZ:%.3f AX:%.3f AY:%.3f AZ:%.3f  FP:%.1f FR:%.1f", euler.pitch, euler.roll, filterYaw, curh, gyroX,gyroY,gyroZ, accelX, accelY, accelZ, filterPitch, filterRoll  );
 

@@ -168,25 +168,24 @@ void IMU::Process()
 		float loadFactor = accel.get_norm();
 		float lf = loadFactor > 2.0 ? 2.0 : loadFactor;
 		loadFactor = lf < 0 ? 0 : lf; // limit to 0..2g
-		// to get pitch and roll independent of circling, image pitch and roll values into 3D vector
-		roll = -atan(((D2R(gyroZ) /cos( D2R(euler.roll)) ) * (getTAS()/3.6)) / 9.80665);
-		double pitch;
-		pitch = IMU::PitchFromAccelRad();
+		// to get pitch and roll independent of circling, map pitch and roll values into 3D vector
+		roll = atan(((D2R(gyroZ) /cos( D2R(euler.Roll())) ) * (getTAS()/3.6)) / 9.80665);
+		double pitch = IMU::PitchFromAccelRad();
 
 		// Virtual gravity from centripedal forces to keep angle of bank while circling
-		a1.a = -sin(pitch);                // Nose down (positive Y turn) results in negative X
-		a1.b = sin(roll)*cos(pitch);     // Left wing down (or negative X roll) results in negative Y
+		a1.a = -sin(pitch);               // Nose down (positive Y turn) results in negative X
+		a1.b = sin(roll)*cos(pitch);      // Left wing down (or negative X roll) results in negative Y
 		a1.c = cos(roll)*cos(pitch);      // Any roll or pitch creates a smaller positive Z, gravity Z is positive
 		// trust in gyro at load factors unequal 1 g
 		gravity_trust = (ahrs_min_gyro_factor.get() + (ahrs_gyro_factor.get() * ( pow(10, abs(loadFactor-1) * ahrs_dynamic_factor.get()) - 1)));
-		// ESP_LOGI( FNAME,"Omega roll: %f Pitch: %f Gyro Trust: %f", R2D(roll), R2D(pitch), gravity_trust );
+		ESP_LOGI( FNAME,"Omega roll: %f Pitch: %f Gyro Trust: %f", R2D(roll), R2D(pitch), gravity_trust );
 	}
 	else{
 		a1.a = accel.a;
 		a1.b = accel.b;
 		a1.c = accel.c;
 	}
-	vector_ijk gyro_rad = gyro * (float(M_PI)/180.0f);
+	vector_ijk gyro_rad = deg2rad(gyro);
 	ESP_LOGI( FNAME, " ax1:%f ay1:%f az1:%f Gx:%f Gy:%f GZ:%f GRT:%f Roll:%.1f ", a1.a, a1.b, a1.c, gyro_rad.a, gyro_rad.b, gyro_rad.c, gravity_trust, R2D(roll) );
 	update_fused_vector(att_vector, gravity_trust, a1, gyro_rad, dt);
 	// ESP_LOGI(FNAME,"attv: %.3f %.3f %.3f", att_vector.a, att_vector.b, att_vector.c);
@@ -194,6 +193,11 @@ void IMU::Process()
 	// ESP_LOGI(FNAME,"attq: %.3f %.3f %.3f %.3f", att_quat.a, att_quat.b, att_quat.c, att_quat.d );
 	euler = rad2deg(att_quat.toEulerRad());
 	ESP_LOGI( FNAME,"Euler R:%.1f P:%.1f Y:%f", euler.Roll(), euler.Pitch(), euler.Yaw());
+	// euler_angles my_euler;
+	// my_euler.a  = atan2(att_vector.b, att_vector.c)*180.f/float(M_PI);
+	// my_euler.b = atan2(-att_vector.a, att_vector.c)*180.f/float(M_PI);
+	// my_euler.c   = atan2(-att_vector.a, att_vector.b)*180.f/float(M_PI);
+	// ESP_LOGI( FNAME,"MyEuler R:%.1f P:%.1f Y:%f", my_euler.Roll(), my_euler.Pitch(), my_euler.Yaw());
 
 	// treat gimbal lock, limit to 88 deg
 	if( euler.Roll() > 88.0 )

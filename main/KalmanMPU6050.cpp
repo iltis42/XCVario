@@ -191,7 +191,7 @@ void IMU::Process()
 	ESP_LOGI( FNAME, " ax1:%f ay1:%f az1:%f Gx:%f Gy:%f GZ:%f GRT:%f Roll:%.1f ", a1.a, a1.b, a1.c, gyro_rad.a, gyro_rad.b, gyro_rad.c, gravity_trust, R2D(roll) );
 	update_fused_vector(att_vector, gravity_trust, a1, gyro_rad, dt);
 	// ESP_LOGI(FNAME,"attv: %.3f %.3f %.3f", att_vector.a, att_vector.b, att_vector.c);
-	att_quat = quaternion_from_accelerometer(att_vector);
+	att_quat = Quaternion::fromAccelerometer(att_vector);
 	// ESP_LOGI(FNAME,"attq: %.3f %.3f %.3f %.3f", att_quat.a, att_quat.b, att_quat.c, att_quat.d );
 	euler = rad2deg(att_quat.toEulerRad());
 	ESP_LOGI( FNAME,"Euler R:%.1f P:%.1f Y:%f", euler.Roll(), euler.Pitch(), euler.Yaw());

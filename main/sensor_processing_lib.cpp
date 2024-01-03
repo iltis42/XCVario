@@ -37,11 +37,11 @@ float getGyroYawDelta(){
 
 static vector_ijk virtual_gravity_vector(const vector_ijk& gravity_vector, const vector_ijk& w,float delta)
 {
-    Quaternion q_gyro = quaternion_from_gyro(w, delta);
+    Quaternion non_gravity = Quaternion::fromGyro(w, delta);
     EulerAngles e = rad2deg(non_gravity.toEulerRad());
     // ESP_LOGI(FNAME,"e.yaw=%.3f ", e.yaw );
     gyro_yaw_delta = e.Yaw();
-    vector_ijk virtual_gravity = q_gyro * gravity_vector;
+    vector_ijk virtual_gravity = non_gravity.get_conjugate() * gravity_vector;
     virtual_gravity.normalize();
     return virtual_gravity;
 }

@@ -296,12 +296,12 @@ esp_err_t IMU::MPU6050Read()
 
 double IMU::PitchFromAccel()
 {
-	return atan2(accel.a, accel.c) * RAD_TO_DEG;
+	return -atan2(accel.a, accel.c) * RAD_TO_DEG;
 }
 
 double IMU::PitchFromAccelRad()
 {
-	return atan2(accel.a, accel.c);
+	return -atan2(accel.a, accel.c);
 }
 
 void IMU::RollPitchFromAccel(double *roll, double *pitch)

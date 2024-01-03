@@ -55,10 +55,9 @@ static vector_ijk virtual_gravity_vector(const vector_ijk& gravity_vector, const
     return virtual_gravity;
 }
 
-void update_fused_vector(vector_ijk& fused_vector, float gyro_trust, float ax, float ay, float az, const vector_ijk& w, float delta)
+void update_fused_vector(vector_ijk& fused_vector, float gyro_trust, const vector_ijk& a1, const vector_ijk& w, float delta)
 {
 	// ESP_LOGI(FNAME,"UFV ax=%f ay=%f az=%f trust=%f, gx=%f gy=%f gz=%f", ax, ay, az, gyro_trust, wx,wy,wz );
     vector_ijk virtual_gravity = virtual_gravity_vector(fused_vector, w, delta);
-    vector_ijk sensor_gravity = sensor_gravity_normalized(ax,ay,az);
-    fused_vector = fuse_vector(virtual_gravity, sensor_gravity, gyro_trust);
+    fused_vector = fuse_vector(virutal_gravity, a1, gyro_trust);
 }

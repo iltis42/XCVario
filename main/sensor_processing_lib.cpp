@@ -18,22 +18,13 @@
 //     return gyro_trust;
 // }
 
-static vector_ijk sensor_gravity_normalized(float ax, float ay, float az)
-{
-    vector_ijk result;
-    result.a = ax;
-    result.b = ay;
-    result.c = az;
-    result.normalize();
-    return result;
-}
-
 static vector_ijk fuse_vector(vector_ijk virtual_gyro_gravity, vector_ijk sensor_gravity, float gyro_trust )
 {
     // float fusion = fusion_coeffecient(virtual_gyro_gravity, sensor_gravity, gyro_trust);
     // virtual_gyro_gravity *= fusion;
     virtual_gyro_gravity *= gyro_trust;
-    virtual_gyro_gravity += sensor_gravity;
+    sensor_gravity.normalize();
+    virtual_gyro_gravity -= sensor_gravity;
     virtual_gyro_gravity.normalize();
     return virtual_gyro_gravity;
 }

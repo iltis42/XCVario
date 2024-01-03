@@ -23,7 +23,6 @@
 #include "vector_3d.h"
 
 class Quaternion;
-struct euler_angles;
 
 #ifndef M_PI
 #define M_PI 3.14159265359
@@ -181,7 +180,7 @@ private:
 
   static Quaternion att_quat;
   static vector_ijk att_vector;
-  static euler_angles euler;
+  static EulerAngles euler;
 };
 
 #endif // _KalmanMPU6050_H_

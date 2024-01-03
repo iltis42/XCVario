@@ -138,20 +138,23 @@ vector_d Quaternion::operator*(const vector_d& vec) const
     return result;
 }
 
-// return euler angles yaw, pitch, roll as degree from quaternion
-euler_angles Quaternion::to_euler_angles()
+// return euler angles yaw, pitch, roll in radian
+EulerAngles Quaternion::toEulerRad()
 {
-    euler_angles result;
+    EulerAngles result;
     double q0 = a;
     double q1 = b;
     double q2 = c;
     double q3 = d;
-    result.roll = atan2(2*(q0*q1 + q2*q3),1 - 2*(q1*q1 + q2*q2))*180/M_PI;
-    result.pitch = asin(2*(q0*q2 - q3*q1))*180/M_PI;
+    result.a = atan2(2*(q0*q1 + q2*q3),1 - 2*(q1*q1 + q2*q2));
+    // float xx = asin(2*(q0*q2 - q3*q1))*180/M_PI;
+    result.b = (-M_PI/2. + 2* atan2(sqrt(1+ 2*(q0*q2 - q1*q3)), sqrt(1- 2*(q0*q2 - q1*q3))));
+    //result.pitch = asin(2*(q0*q2 - q3*q1))*180/M_PI;
+    // ESP_LOGI( FNAME,"EulerPitch sin:%.4f atan2:%.4f", xx, result.pitch);
     if (d==0)
-        result.yaw = 0.0;
+        result.c = 0.0;
     else
-        result.yaw = atan2(2*(q0*q3 + q1*q2),1 - 2*(q2*q2 + q3*q3))*180/M_PI;
+        result.c = atan2(2*(q0*q3 + q1*q2),1 - 2*(q2*q2 + q3*q3));
     return result;
 }
 

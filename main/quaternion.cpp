@@ -239,6 +239,53 @@ Quaternion Quaternion::fromRotationMatrix(const vector_d &X, const vector_d &Y)
     return result;
 }
 
+// https://ahrs.readthedocs.io/en/latest/filters/aqua.html
+// accel_par in m/(sec*sec)
+Quaternion Quaternion::fromAccelerometer(const vector_ijk& accel_par)
+{
+    // Normalize
+    vector_ijk an = accel_par;
+    an.normalize();
+	//ESP_LOGI(FNAME,"ax=%.3f ay=%.3f az=%.3f", an.an, an.b, an.c);
+    // There is a singularity at an.c == -1
+    if ( an.c < 0 ) {
+        float half_cos = sqrt(0.5f*(1.0f - an.c));
+        float temp = 2.f * half_cos;
+        Quaternion orientation( -an.b/temp, half_cos, 0.0, an.a/temp );
+        //ESP_LOGI(FNAME,"Quat: %.3f %.3f %.3f %.3f", orientation.a, orientation.b, orientation.c, orientation.d );
+        return orientation;
+    } else {
+        float half_cos = sqrt(0.5f*(1.0f + an.c));
+        float temp = 2.f * half_cos;
+        Quaternion orientation( half_cos, -an.b/temp, an.a/temp, 0.0 );
+        //ESP_LOGI(FNAME,"Quat: %.3f %.3f %.3f %.3f", orientation.a, orientation.b, orientation.c, orientation.d );
+        return orientation;
+    }
+}
+
+// omega in radians per second: dtime in seconds
+Quaternion Quaternion::fromGyro(const vector_ijk& omega, float dtime)
+{
+    // ESP_LOGI(FNAME,"Quat: %.3f %.3f %.3f", omega.a, omega.b, omega.c );
+    float alpha = 0.5*dtime;
+    float a,b,c,d;
+    b = alpha*(omega.a);
+    c = alpha*(omega.b);
+    d = alpha*(omega.c);
+    a = 1 - 0.5*(b*b+c*c+d*d);
+    Quaternion result(a,b,c,d);
+    // ESP_LOGI(FNAME,"Quat1: %.3f %.3f %.3f %.3f", result.a, result.b, result.c, result.d );
+
+    // Often found in literature and identic for small angles.
+    // // omega=(alpha,beta,gamma)
+    // // theta = ||omega||*dt; //length of angular velocity vector
+    // float norm = omega.normalize(); // normalized orientation of angular velocity vector
+    // float theta_05 = norm * 0.5 * dtime;
+    // Quaternion result2(cos(theta_05), omega.a * sin(theta_05), omega.b * sin(theta_05), omega.c * sin(theta_05));
+    // result = result2;
+    // ESP_LOGI(FNAME,"Quat2: %.3f %.3f %.3f %.3f", result.a, result.b, result.c, result.d );
+    return result;
+}
 
 // Grad
 float Compass_atan2( float y, float x )
@@ -376,6 +423,29 @@ void Quaternion::quaternionen_test()
     v1 = qex * vector_ijk(5,5,5);
     ESP_LOGI(FNAME, "image of 5,5,5: %f %f %f", v1.a, v1.b, v1.c );
 
+    // fromAccelerometer
+    ESP_LOGI(FNAME, "Test accelerometer vector conversion");
+    q = fromAccelerometer(vector_ijk(0,0,1));
+    EulerAngles euler = rad2deg(q.toEulerRad());
+    ESP_LOGI(FNAME, "Check zero case: R/P/Y: %f %f %f", euler.Roll(), euler.Pitch(), euler.Yaw());
+    q = fromAccelerometer(vector_ijk(0,1,1));
+    euler = rad2deg(q.toEulerRad());
+    ESP_LOGI(FNAME, "Check Roll-45°X case: R/P/Y: %f %f %f", euler.Roll(), euler.Pitch(), euler.Yaw());
+
+    // fromGyro
+    ESP_LOGI(FNAME, "Test gyro vector conversion");
+    q = fromGyro(vector_ijk(deg2rad(30),0,0), 0.5f);
+    euler = rad2deg(q.toEulerRad());
+    ESP_LOGI(FNAME, "Check X:30°/s,0.5s: X/Y/Z: %f %f %f", euler.Roll(), euler.Pitch(), euler.Yaw());
+    q = fromGyro(vector_ijk(0,deg2rad(-30),0), 0.5f);
+    euler = rad2deg(q.toEulerRad());
+    ESP_LOGI(FNAME, "Check Y:-30°/s,0.5s: X/Y/Z: %f %f %f", euler.Roll(), euler.Pitch(), euler.Yaw());
+    q = fromGyro(vector_ijk(0,0,deg2rad(30)), 0.5f);
+    euler = rad2deg(q.toEulerRad());
+    ESP_LOGI(FNAME, "Check Z:30°/s,0.5s: X/Y/Z: %f %f %f", euler.Roll(), euler.Pitch(), euler.Yaw());
+    q = fromGyro(vector_ijk(deg2rad(30),deg2rad(30),deg2rad(30)), 0.5f);
+    euler = rad2deg(q.toEulerRad());
+    ESP_LOGI(FNAME, "Check All:30°/s,0.5s: X/Y/Z: %f %f %f", euler.Roll(), euler.Pitch(), euler.Yaw());
 }
 
 #endif

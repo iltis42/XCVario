@@ -37,6 +37,8 @@ public:
     friend Quaternion slerp(Quaternion q1, Quaternion q2, double lambda);
     static Quaternion AlignVectors(const vector_ijk &start, const vector_ijk &dest);
     static Quaternion fromRotationMatrix(const vector_d &X, const vector_d &Y);
+    static Quaternion fromAccelerometer(const vector_ijk& accel);
+    static Quaternion fromGyro(const vector_ijk& w, float time);
     EulerAngles toEulerRad();
     Quaternion get_conjugate() const;
 

@@ -22,7 +22,7 @@ void eglib_setClipRange(
     coordinate_t w,
     coordinate_t h
 ) {
-    eglib->drawing.clip_xmax = eglib_GetHeight(eglib);
+    eglib->drawing.clip_xmax = eglib_GetWidth(eglib);
     eglib->drawing.clip_xmin = 0;
     eglib->drawing.clip_ymax = eglib_GetHeight(eglib);
     eglib->drawing.clip_ymin = 0;

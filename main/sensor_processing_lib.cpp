@@ -50,5 +50,5 @@ void update_fused_vector(vector_ijk& fused_vector, float gyro_trust, const vecto
 {
 	// ESP_LOGI(FNAME,"UFV ax=%f ay=%f az=%f trust=%f, gx=%f gy=%f gz=%f", ax, ay, az, gyro_trust, wx,wy,wz );
     vector_ijk virtual_gravity = virtual_gravity_vector(fused_vector, w, delta);
-    fused_vector = fuse_vector(virutal_gravity, a1, gyro_trust);
+    fused_vector = fuse_vector(virtual_gravity, a1, gyro_trust);
 }

@@ -41,13 +41,6 @@ Quaternion operator*(const Quaternion& q1, const Quaternion& q2)
     return q;
 }
 
-// return the conjugated quaternion
-Quaternion Quaternion::get_conjugate() const
-{
-    Quaternion q2( a, -b, -c, -d );
-    return q2;
-}
-
 // Spherically interpolates between quaternions q1 and q2 by ratio lambda.
 // The parameter lambda is clamped to the range [0, 1].
 // Use this to create a rotation which smoothly interpolates between the first
@@ -84,7 +77,7 @@ Quaternion Quaternion::get_normalized() const
     return q2;
 }
 // Normalize quaternion
-Quaternion Quaternion::normalize()
+Quaternion& Quaternion::normalize()
 {
     float len = sqrt(a*a + b*b + c*c + d*d);
     a = a/len;
@@ -92,6 +85,22 @@ Quaternion Quaternion::normalize()
     c = c/len;
     d =d/len;
     return *this;
+}
+
+// conjugat quaternion
+Quaternion& Quaternion::conjugate()
+{
+    b = -b;
+    c = -c;
+    d = -d;
+    return *this;
+}
+
+// return the conjugated quaternion
+Quaternion Quaternion::get_conjugate() const
+{
+    Quaternion q2( a, -b, -c, -d );
+    return q2;
 }
 
 // rotate vector v by quaternion
@@ -130,31 +139,33 @@ vector_d Quaternion::operator*(const vector_d& vec) const
     double a33 = d * d;
     vector_d result;
     result.a = vec.a * (+a00 + a11 - a22 - a33)
-        + 2.0f * (a12 * vec.b + a13 * vec.c + a02 * vec.c - a03 * vec.b);
+        + 2.0 * (a12 * vec.b + a13 * vec.c + a02 * vec.c - a03 * vec.b);
     result.b = vec.b * (+a00 - a11 + a22 - a33)
-        + 2.0f * (a12 * vec.a + a23 * vec.c + a03 * vec.a - a01 * vec.c);
+        + 2.0 * (a12 * vec.a + a23 * vec.c + a03 * vec.a - a01 * vec.c);
     result.c = vec.c * (+a00 - a11 - a22 + a33)
-        + 2.0f * (a13 * vec.a + a23 * vec.b - a02 * vec.a + a01 * vec.b);
+        + 2.0 * (a13 * vec.a + a23 * vec.b - a02 * vec.a + a01 * vec.b);
     return result;
 }
 
-// return euler angles yaw, pitch, roll in radian
-EulerAngles Quaternion::toEulerRad()
+// return euler angles roll, pitch, yaw in radian
+EulerAngles Quaternion::toEulerRad() const
 {
     EulerAngles result;
-    double q0 = a;
-    double q1 = b;
-    double q2 = c;
-    double q3 = d;
-    result.a = atan2(2*(q0*q1 + q2*q3),1 - 2*(q1*q1 + q2*q2));
-    // float xx = asin(2*(q0*q2 - q3*q1))*180/M_PI;
-    result.b = (-M_PI/2. + 2* atan2(sqrt(1+ 2*(q0*q2 - q1*q3)), sqrt(1- 2*(q0*q2 - q1*q3))));
-    //result.pitch = asin(2*(q0*q2 - q3*q1))*180/M_PI;
+
+    // roll
+    result.a = atan2(2*(a*b + c*d),1 - 2*(b*b + c*c));
+    // float xx = asin(2*(a*c - d*b));
+
+    // pitch
+    result.b = (-M_PI/2. + 2* atan2(sqrt(1+ 2*(a*c - b*d)), sqrt(1- 2*(a*c - b*d))));
+    //result.pitch = asin(2*(q0*c - d*b));
     // ESP_LOGI( FNAME,"EulerPitch sin:%.4f atan2:%.4f", xx, result.pitch);
+
+    // yaw
     if (d==0)
         result.c = 0.0;
     else
-        result.c = atan2(2*(q0*q3 + q1*q2),1 - 2*(q2*q2 + q3*q3));
+        result.c = atan2(2*(a*d + b*c),1 - 2*(c*c + d*d));
     return result;
 }
 
@@ -363,6 +374,11 @@ void Quaternion::quaternionen_test()
     ESP_LOGI(FNAME,"Matrixing (%lldusec)", t1-t0);
     ESP_LOGI(FNAME,"rotate v1 -> v2: %f %f %f", v3.a, v3.b, v3.c );
 
+    // Zero rotation
+    q = Quaternion(1,0,0,0);
+    v3 = q * v1;
+    ESP_LOGI(FNAME,"rotate yero v1 -> v1: %f %f %f", v3.a, v3.b, v3.c );
+
     // slerp
     ESP_LOGI(FNAME,"Slerp: (v1+v2)/2, v2");
     Quaternion q2 = Quaternion::AlignVectors(v1,vector_ijk(0.707106781, 0, 0.707106781));
@@ -370,6 +386,15 @@ void Quaternion::quaternionen_test()
     Quaternion qs = slerp(q, q2, 1.f);
     ESP_LOGI(FNAME,"-> (45°+90°)/2");
     ESP_LOGI(FNAME,"slerp: %f %f %f %f a:%f", qs.a, qs.b, qs.c, qs.d, rad2deg(qs.getAngle()) );
+
+    // toEuler
+    q = Quaternion(1,0,0,0);
+    EulerAngles e = rad2deg(q.toEulerRad());
+    ESP_LOGI( FNAME,"Euler zero r/p/y %.4f/%.4f/%.4f", e.Roll(), e.Pitch(), e.Yaw());
+    // 45° around X
+    q = Quaternion::AlignVectors(vector_ijk(0,0,1), vector_ijk(0,-1,1));
+    e = rad2deg(q.toEulerRad());
+    ESP_LOGI( FNAME,"Euler +45X r/p/y %.4f/%.4f/%.4f", e.Roll(), e.Pitch(), e.Yaw());
 
     // compass atan2
     ESP_LOGI(FNAME,"Check compass atan2");

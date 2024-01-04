@@ -32,8 +32,6 @@ Last update: 2021-04-05
 #include "MenuEntry.h"
 #include "Router.h"
 #include "vector.h"
-// #include "sensor_processing_lib.h"
-// #include "canbus.h"
 
 /* Register numbers */
 #define REG_X_LSB 0         // Output Data Registers for magnetic sensor.

@@ -167,7 +167,7 @@ private:
   static double kalXAngle, kalYAngle;
 
   static float fallbackToGyro();
-  static void RollPitchFromAccel(double *roll, double *pitch);
+  // static void RollPitchFromAccel(double *roll, double *pitch);
   static double PitchFromAccel();
   static double PitchFromAccelRad();
   static uint64_t last_rts;

@@ -156,6 +156,8 @@ public:
   static void applyImuReference(const float gAA, const Quaternion& basic);
 
 private:
+  static float getGyroYawDelta();
+  static void update_fused_vector(vector_ijk& fused, float gyro_trust, const vector_ijk& petal_force, const vector_ijk& omega, float delta);
   static Kalman kalmanX; // Create the Kalman instances
   static Kalman kalmanY;
   static Kalman kalmanZ;
@@ -178,6 +180,7 @@ private:
   static float   fused_yaw;
 
   static Quaternion att_quat;
+  static Quaternion omega_step;
   static vector_ijk att_vector;
   static EulerAngles euler;
 };

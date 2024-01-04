@@ -4,7 +4,6 @@
 #include "logdef.h"
 #include "sensor.h"
 #include "quaternion.h"
-#include "sensor_processing_lib.h"
 #include "vector.h"
 #include <simplex.h>
 #include <vector>
@@ -36,6 +35,7 @@ vector_ijk IMU::petal(0,0,0);
 
 
 Quaternion IMU::att_quat(0,0,0,0);
+Quaternion IMU::omega_step(0,0,0,0);
 vector_ijk IMU::att_vector;
 EulerAngles IMU::euler;
 
@@ -148,6 +148,33 @@ double IMU::getRollRad() {
 
 double IMU::getPitchRad()  {
 	return filterPitch*DEG_TO_RAD;
+}
+
+float IMU::getGyroYawDelta()
+{
+    EulerAngles e = rad2deg(omega_step.toEulerRad());
+    // ESP_LOGI(FNAME,"ngrav deg r=%.3f  p=%.3f  y=%.3f ", e.Roll(), e.Pitch(), e.Yaw() );
+	return e.Yaw();
+}
+
+void IMU::update_fused_vector(vector_ijk& fused, float gyro_trust, const vector_ijk& petal_force, const vector_ijk& omega, float delta)
+{
+    // integrate omega step, get roll and pitch from gyro
+    omega_step = Quaternion::fromGyro(omega, delta);
+    // ESP_LOGI(FNAME,"ngrav: %.3f %.3f %.3f %.3f", omega_step.a, omega_step.b, omega_step.c, omega_step.d );
+
+    // move the previos fused attitude by the new omage step
+    vector_ijk virtual_gravity = omega_step * fused;
+    virtual_gravity.normalize();
+    // ESP_LOGI(FNAME,"fused/virtual %.4f,%.4f,%.4f/%.4f,%.4f,%.4f", fused.a, fused.b, fused.c, virtual_gravity.a, virtual_gravity.b, virtual_gravity.c);
+
+    // fuse the centripetal and gyro estimation
+    virtual_gravity *= gyro_trust;
+	virtual_gravity.normalize();
+    fused = virtual_gravity + petal_force;
+    // ESP_LOGI(FNAME,"fused %.4f,%.4f,%.4f", fused.a, fused.b, fused.c);
+    fused.normalize();
+    // ESP_LOGI(FNAME,"fusedn %.4f,%.4f,%.4f", fused.a, fused.b, fused.c);
 }
 
 // Only call when successfully called MPU6050Read() beforehand 

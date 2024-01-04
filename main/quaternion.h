@@ -31,7 +31,9 @@ public:
     float getAngle() const;
     friend Quaternion operator*(const Quaternion& left, const Quaternion& right);
     Quaternion get_normalized() const;
-    Quaternion normalize();
+    Quaternion& normalize();
+    Quaternion& conjugate();
+    Quaternion get_conjugate() const;
     vector_ijk operator*(const vector_ijk& p) const;
     vector_d operator*(const vector_d& p) const;
     friend Quaternion slerp(Quaternion q1, Quaternion q2, double lambda);
@@ -39,8 +41,7 @@ public:
     static Quaternion fromRotationMatrix(const vector_d &X, const vector_d &Y);
     static Quaternion fromAccelerometer(const vector_ijk& accel);
     static Quaternion fromGyro(const vector_ijk& w, float time);
-    EulerAngles toEulerRad();
-    Quaternion get_conjugate() const;
+    EulerAngles toEulerRad() const;
 
     // something like a unit test
     static void quaternionen_test();

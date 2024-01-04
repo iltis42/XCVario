@@ -308,17 +308,17 @@ double IMU::PitchFromAccelRad()
 	return -atan2(accel.a, accel.c);
 }
 
-void IMU::RollPitchFromAccel(double *roll, double *pitch)
-{
-	// Source: http://www.freescale.com/files/sensors/doc/app_note/AN3461.pdf eq. 25 and eq. 26
-	// atan2 outputs the value of -π to π (radians) - see http://en.wikipedia.org/wiki/Atan2
-	// It is then converted from radians to degrees
+// void IMU::RollPitchFromAccel(double *roll, double *pitch)
+// {
+// 	// Source: http://www.freescale.com/files/sensors/doc/app_note/AN3461.pdf eq. 25 and eq. 26
+// 	// atan2 outputs the value of -π to π (radians) - see http://en.wikipedia.org/wiki/Atan2
+// 	// It is then converted from radians to degrees
 
-	*roll = atan(accel.b / hypotenuse(accel.a, accel.c)) * RAD_TO_DEG;
-	*pitch = atan2(accel.a, -accel.c) * RAD_TO_DEG;
+// 	*roll = atan(accel.b / hypotenuse(accel.a, accel.c)) * RAD_TO_DEG;
+// 	*pitch = -atan2(accel.a, accel.c) * RAD_TO_DEG;
 
-	// ESP_LOGI( FNAME,"Accelerometer Roll: %f  Pitch: %f  (y:%f x:%f)", *roll, *pitch, accel.b, accel.a );
-}
+// 	// ESP_LOGI( FNAME,"Accelerometer Roll: %f  Pitch: %f  (y:%f x:%f)", *roll, *pitch, accel.b, accel.a );
+// }
 
 
 // IMU reference calibration

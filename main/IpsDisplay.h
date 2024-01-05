@@ -148,6 +148,9 @@ private:
 	static void drawLegend( bool onlyLines=false );
 	static void drawAvgVario( int16_t x, int16_t y, float ate, bool large=false );
 	static void drawNetto( int16_t x, int16_t y, bool netto );
+	static void pitch_tick( bool major, int y, int k01, int g01 );
+	static void pitch_ticks( int k01, int g01 );
+	static void bank_ticks( int k01, int g01 );
 };
 
 

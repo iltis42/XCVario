@@ -75,15 +75,6 @@ T vector_3d<T>::dot(const vector_3d<T>& v2)
     return (a*v2.a + b*v2.b + c*v2.c);
 }
 
-
-// template <typename T>
-// void vector_3d<T>::cross_product(const vector_3d v2)
-// {
-//     a = b*v2.c - c*v2.b;
-//     b = c*v2.a - a*v2.c; // deadly wrong!!!!
-//     c = a*v2.b - b*v2.a;
-// }
-
 template <typename T>
 vector_3d<T> vector_3d<T>::cross(const vector_3d &v2) const
 {
@@ -106,6 +97,14 @@ T vector_3d<T>::normalize()
         c = c*one_by_sqrt;
     }
     return norm;
+}
+
+template <typename T>
+vector_3d<T> vector_3d<T>::get_normalized() const
+{
+    vector_3d<T> ret = *this;
+    ret.normalize();
+    return ret;
 }
 
 template class vector_3d<float>; // explicit instantiation

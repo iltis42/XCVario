@@ -26,11 +26,11 @@ public:
 	vector_3d<T>& operator*(const T s2);
 	vector_3d<T>& operator/=(const T s2);
 	T dot(const vector_3d<T>& v2);
-	// void cross_product(const vector_3d v2 );
 	vector_3d<T> cross(const vector_3d<T> &v2 ) const;
 	T get_norm() const { return sqrt(a*a + b*b + c*c); }
 	T get_norm2() const { return a*a + b*b + c*c; }
 	T normalize();
+	vector_3d<T> get_normalized() const;
 	// Interpretation as Euler angles
 	float Roll()  const { return a; }
 	void setRoll(float r) { a=r; }

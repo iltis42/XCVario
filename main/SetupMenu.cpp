@@ -1660,12 +1660,16 @@ void SetupMenu::system_menu_create_hardware_rotary_screens( MenuEntry *top ){
 	scrgmet->addEntry( PROGMEM"Disable");
 	scrgmet->addEntry( PROGMEM"Enable");
 	top->addEntry(scrgmet);
-	if( gflags.ahrsKeyValid ){
-		SetupMenuSelect * horizon = new SetupMenuSelect( PROGMEM"Horizon", RST_NONE, upd_screens, true, &screen_horizon );
-		horizon->addEntry( PROGMEM"Disable");
+
+	SetupMenuSelect * horizon = new SetupMenuSelect( PROGMEM"Horizon", RST_NONE, upd_screens, true, &screen_horizon );
+	horizon->addEntry( PROGMEM"Disable");
+	if( gflags.ahrsKeyValid ) {
 		horizon->addEntry( PROGMEM"Enable");
-		top->addEntry(horizon);
+	} else {
+		horizon->addEntry( PROGMEM"Static Demo");
+		horizon->setHelp( PROGMEM"License key required for the real horizon screen");
 	}
+	top->addEntry(horizon);
 }
 
 void SetupMenu::system_menu_create_hardware_rotary( MenuEntry *top ){

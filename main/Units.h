@@ -19,13 +19,15 @@ public:
 		return 0;
 	};
 
-	static float Distance( float d ){
-		if( dst_unit.get() == DST_UNIT_KM ) // km/h
+	static float Distance( float d ){  //
+		if( dst_unit.get() == DST_UNIT_M ) // meters per default
 			return( d );
 		else if( dst_unit.get() == DST_UNIT_FT ) // ft
 			return( d*3.28084 );
 		else if( dst_unit.get() == DST_UNIT_MILES ) // mi
-			return( d*0.621371 );
+			return( d*0.000621371 );
+		else if( dst_unit.get() == DST_UNIT_NAUTICAL_MILES ) // sm
+			return( d*0.000539957 );
 		else
 			ESP_LOGE(FNAME,"Wrong unit for Distance");
 		return d;
@@ -310,12 +312,14 @@ public:
 		int u=unit;
 		if( u == -1 )
 			u=dst_unit.get();
-		if( u == DST_UNIT_KM )      // kilometers km
-			return( "km" );
+		if( u == DST_UNIT_M )      // kilometers km
+			return( "m" );
 		else if( u == DST_UNIT_FT ) // hundreds feet
 			return( "ft" );
 		else if( u == DST_UNIT_MILES ) // Miles mi
 			return( "mi" );
+		else if( u == DST_UNIT_NAUTICAL_MILES ) // nautical miles
+			return( "nm" );
 		else
 			ESP_LOGE(FNAME,"Wrong unit for distance %d", u );
 		return "nan";

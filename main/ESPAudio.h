@@ -45,11 +45,11 @@ public:
     static void boot();
 
 private:
-	static void dac_cosine_enable(dac_channel_t channel, bool enable=true);
+	static void dac_cosine_enable( bool enable=true );
 	static void dac_frequency_set(int clk_8m_div, int frequency_step);
-	static void dac_scale_set(dac_channel_t channel, int scale);
-	static void dac_offset_set(dac_channel_t channel, int offset);
-	static void dac_invert_set(dac_channel_t channel, int invert);
+	static void dac_scale_set(int scale);
+	static void dac_offset_set(int offset);
+	static void dac_invert_set(int invert);
 	static void dactask(void* arg);
 	static void modtask(void* arg );
     static void calcS2Fmode( bool recalc=false );
@@ -59,8 +59,8 @@ private:
 	static float equal_volume( float volume );
 	static void calculateFrequency();
 	static void writeVolume( float volume );
-	static void fade_in();
-	static void fade_out();
+	static void fade_to( float target_volume );
+	static void fade_harder( float target_volume );
 
 	static dac_channel_t _ch;
 	static float _te;
@@ -82,7 +82,6 @@ private:
     static bool disable_amp;
     static float inv_exp_max;
     static float prev_aud_fact;
-    static int scale;
     static int dac_scale;
     static bool hightone;
     static bool _alarm_mode;
@@ -91,7 +90,6 @@ private:
     static float _vol_back_s2f;
     static bool  _s2f_mode_back;
     static int   _tonemode_back;
-    static int   _chopping_style_back;
     static int tick;
     static int tickmod;
     static int volume_change;

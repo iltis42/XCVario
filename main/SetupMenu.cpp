@@ -377,7 +377,7 @@ int bug_adj( SetupMenuValFloat * p ){
 }
 
 int vol_adj( SetupMenuValFloat * p ){
-	// Audio::setVolume( (*(p->_value)) );
+	// do nothing - change_volume() already called Audio::setVolume()
 	return 0;
 }
 
@@ -884,10 +884,13 @@ void SetupMenu::audio_menu_create_tonestyles( MenuEntry *top ){
 	oc->setHelp(PROGMEM"Maximum tone frequency variation");
 	top->addEntry( oc );
 
-	SetupMenuSelect * dt = new SetupMenuSelect( PROGMEM"Dual Tone", RST_NONE, audio_setup_s, true, &dual_tone );
-	dt->setHelp(PROGMEM"Select dual tone modue aka ilec sound (di/da/di), or single tone (di/di/di) mode");
-	dt->addEntry( PROGMEM"Disable");       // 0
-	dt->addEntry( PROGMEM"Enable");        // 1
+	// the NG variable is still called "dual_tone" but it now includes choice of RICO style
+	SetupMenuSelect * dt = new SetupMenuSelect( PROGMEM"Tone Flavor", RST_NONE, audio_setup_s, true, &dual_tone );
+	dt->setHelp(PROGMEM"Single tone (di/di/di), dual tone (ILEC style) (di/da/di), short beeps (di, di), or very short (RICO style) (tick, tick)");
+	dt->addEntry( PROGMEM"Single Tone");      // 0=ATM_SINGLE_TONE
+	dt->addEntry( PROGMEM"Dual Tone");        // 1=ATM_DUAL_TONE
+	dt->addEntry( PROGMEM"Short Beeps");      // 2=ATM_RICO_LONG
+	dt->addEntry( PROGMEM"Very Short");       // 3=ATM_RICO_SHORT
 	top->addEntry( dt );
 
 	SetupMenuValFloat * htv = new SetupMenuValFloat( PROGMEM"Dual Tone Pitch", "%", 0, 50, 1.0, audio_setup_f, false, &high_tone_var );
@@ -902,12 +905,11 @@ void SetupMenu::audio_menu_create_tonestyles( MenuEntry *top ){
 	tch->addEntry( PROGMEM"Vario and S2F");        // 3  default
 	top->addEntry( tch );
 
-	SetupMenuSelect * tchs = new SetupMenuSelect( PROGMEM"Chopping Style", RST_NONE, audio_setup_s, true, &chopping_style );
-	tchs->setHelp(PROGMEM"Tone chopping style, hard, or soft with fadein/fadeout.  RICO style is very short tones/clicks");
+	SetupMenuSelect * tchs = new SetupMenuSelect( PROGMEM"Chopping Style", RST_NONE, 0 , true, &chopping_style );
+	tchs->setHelp(PROGMEM"Tone chopping style: hard, or soft with fadein/fadeout");
 	tchs->addEntry( PROGMEM"Soft");             // 0  default
 	tchs->addEntry( PROGMEM"Hard");             // 1
-	tchs->addEntry( PROGMEM"RICO Soft");        // 2
-	tchs->addEntry( PROGMEM"RICO Hard");        // 3
+	tchs->addEntry( PROGMEM"Medium");           // 2
 	top->addEntry( tchs );
 
 	SetupMenuSelect * advarto = new SetupMenuSelect( PROGMEM"Variable Tone", RST_NONE, 0 , true, &audio_variable_frequency );
@@ -951,7 +953,7 @@ void SetupMenu::audio_menu_create_equalizer( MenuEntry *top ){
 
 void SetupMenu::audio_menu_create_volume( MenuEntry *top ){
 	SetupMenuValFloat * vol = new SetupMenuValFloat( PROGMEM"Current Volume", "%",
-	    0.0, 100.0, 2.0, vol_adj, false, &audio_volume );
+	    0.0, 200.0, 2.0, vol_adj, false, &audio_volume );
 	// unlike top-level menu volume which exits setup, this returns to parent menu
 	vol->setHelp(PROGMEM"Audio volume level for variometer tone on internal and external speaker");
 	vol->setMax(max_volume.get());   // only works after leaving this *parent* menu and returning
@@ -968,7 +970,7 @@ void SetupMenu::audio_menu_create_volume( MenuEntry *top ){
 	dv->setHelp(PROGMEM"Default volume for Audio when device is switched on");
 
 // after max_volume exit menu, when re-entering will setMax() volume setting above
-	SetupMenuValFloat * mv = new SetupMenuValFloat( PROGMEM"Max Volume", "%", 0, 100, 1.0, 0, true, &max_volume );
+	SetupMenuValFloat * mv = new SetupMenuValFloat( PROGMEM"Max Volume", "%", 0, 200, 5.0, 0, true, &max_volume );
 	top->addEntry( mv );
 	mv->setHelp(PROGMEM"Maximum audio volume setting allowed");
 
@@ -1033,7 +1035,7 @@ void SetupMenu::audio_menu_create( MenuEntry *audio ){
 
 	SetupMenu * audios = new SetupMenu( PROGMEM"Tone Styles" );
 	audio->addEntry( audios );
-	audios->setHelp( PROGMEM "Configure vario audio frequencies and chopping", 240);
+	audios->setHelp( PROGMEM "Configure vario audio styles, frequencies and chopping", 240);
 	audios->addCreator(audio_menu_create_tonestyles);
 
 	update_rentry(0);
@@ -2127,7 +2129,7 @@ void SetupMenu::setup_create_root(MenuEntry *top ){
 		top->addEntry( mc );
 	}
 	else {
-		SetupMenuValFloat * vol = new SetupMenuValFloat( PROGMEM"Audio Volume", "%", 0.0, 100, 1, vol_adj, true, &audio_volume );
+		SetupMenuValFloat * vol = new SetupMenuValFloat( PROGMEM"Audio Volume", "%", 0.0, 200, 2, vol_adj, true, &audio_volume );
 		vol->setHelp(PROGMEM"Audio volume level for variometer tone on internal and external speaker");
 		vol->setMax(max_volume.get());
 		top->addEntry( vol );

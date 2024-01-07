@@ -13,7 +13,7 @@
 
 // Format per glider:  { Index, GliderType, Reference Wingload (kg/m2), speed1 (km/h), sink1 (m/s), speed2, sink2, speed3, sink3 , max ballast [liters or kg], wing area [m2] },
 
-static const PROGMEM t_polar polars_default_arr[] = {
+static const t_polar polars_default_arr[] = {
 	{ 1000, "User Polar",34.40,80,-0.66,125,-0.97,175,-2.24,160,10.5},
 	{ 1010, "Antares 20E", 42.86,100,-0.53,140,-0.76,200,-1.79,216,12.6},
 	{ 1020, "Apis 2", 25.8,80,-0.60,100,-0.75,142,-1.50,0,12.4},

@@ -175,7 +175,7 @@ bool Serial::selfTest(int num){
 	ESP_LOGI(FNAME,"Serial %d selftest", num );
 	delay(100);  // wait for serial hardware init
 	_selfTest = true;
-	std::string test( PROGMEM "The quick brown fox jumps over the lazy dog" );
+	std::string test( "The quick brown fox jumps over the lazy dog" );
 	int tx = 0;
 	if( mySerial->availableForWrite() ) {
 		tx = mySerial->write( test.c_str(), test.length() );

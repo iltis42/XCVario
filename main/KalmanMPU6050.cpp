@@ -144,13 +144,14 @@ void IMU::read()
 		return;
 	float gravity_trust = 1;
 	double roll = 0;
+	double pitch = 0;
 	if( getTAS() > 10 ){
 		float loadFactor = sqrt( accelX * accelX + accelY * accelY + accelZ * accelZ );
 		float lf = loadFactor > 2.0 ? 2.0 : loadFactor;
 		loadFactor = lf < 0 ? 0 : lf; // limit to 0..2g
 		// to get pitch and roll independent of circling, image pitch and roll values into 3D vector
 		roll = -atan(((D2R(gyroZ) /cos( D2R(euler.roll)) ) * (getTAS()/3.6)) / 9.80665);
-		double pitch;
+
 		IMU::PitchFromAccelRad(&pitch);
 
 		// Virtual gravity from centripedal forces to keep angle of bank while circling
@@ -170,7 +171,7 @@ void IMU::read()
 	att_vector = update_fused_vector(att_vector, gravity_trust, ax1, ay1, az1, D2R(gyroX),D2R(gyroY),D2R(gyroZ),dt);
 	att_quat = quaternion_from_accelerometer(att_vector.a,att_vector.b,att_vector.c);
 	euler = att_quat.to_euler_angles();
-	// ESP_LOGI( FNAME,"Euler R:%.1f P:%.1f T:%f Q:%f GT:%f OR:%f GR:%f R:%f", euler.roll, euler.pitch, T, Q, gyro_trust, R2D(omega), R2D(groll), R2D(roll) );
+	// ESP_LOGI( FNAME,"Euler R:%.1f P:%.1f Trust:%.1f OmRoll:%.1f IMUP:%.1f", euler.roll, euler.pitch, gravity_trust, R2D(roll), R2D(pitch) );
 
 	// treat gimbal lock, limit to 88 deg
 	if( euler.roll > 88.0 )

@@ -165,9 +165,7 @@ void IMU::update_fused_vector(vector_ijk& fused, float gyro_trust, const vector_
     // ESP_LOGI(FNAME,"fused/virtual %.4f,%.4f,%.4f/%.4f,%.4f,%.4f", fused.a, fused.b, fused.c, virtual_gravity.a, virtual_gravity.b, virtual_gravity.c);
 
     // fuse the centripetal and gyro estimation
-    virtual_gravity *= gyro_trust;
-	virtual_gravity.normalize();
-    fused = virtual_gravity + petal_force;
+    fused = virtual_gravity * gyro_trust + petal_force.get_normalized();
     // ESP_LOGI(FNAME,"fused %.4f,%.4f,%.4f", fused.a, fused.b, fused.c);
     fused.normalize();
     // ESP_LOGI(FNAME,"fusedn %.4f,%.4f,%.4f", fused.a, fused.b, fused.c);

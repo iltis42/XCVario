@@ -157,7 +157,7 @@ public:
 
 private:
   static float getGyroYawDelta();
-  static void update_fused_vector(vector_ijk& fused, float gyro_trust, const vector_ijk& petal_force, const vector_ijk& omega, float delta);
+  static void update_fused_vector(vector_ijk& fused, float gyro_trust, const vector_ijk& petal_force, const Quaternion& omega_step);
   static Kalman kalmanX; // Create the Kalman instances
   static Kalman kalmanY;
   static Kalman kalmanZ;

@@ -337,12 +337,10 @@ void drawDisplay(void *pvParameters){
 			}
 			// Horizon Display
 			if( active_screen == SCREEN_HORIZON ) {
-				if( !(gflags.stall_warning_active || gflags.flarmWarning || gflags.gLoadDisplay) ) {
-					float roll  = IMU::getRollRad();
-					float pitch = IMU::getPitchRad();
-					display->drawHorizon( pitch, roll, 0 );
-					gflags.horizon = true;
-				}
+				float roll =  IMU::getRollRad();
+				float pitch = IMU::getPitchRad();
+				display->drawHorizon( pitch, roll, 0 );
+				gflags.horizon = true;
 			}
 			else{
 				gflags.horizon = false;

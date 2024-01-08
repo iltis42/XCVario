@@ -29,6 +29,23 @@ float Quaternion::getAngle() const
     return 2.f * std::acos(a);
 }
 
+// radions and a normalized vector
+float Quaternion::getAngleAndAxis(vector_ijk& axis) const
+{
+    float angle = getAngle();
+    float sinphi2 = fabs(angle) > 1e-7 ? 1.0f / sin(0.5f * angle) : 0.0;
+
+    // null rotation -> return null vector
+    axis.a = b;
+    axis.b = c;
+    axis.c = d;
+    axis *= sinphi2;
+    // ESP_LOGI(FNAME,"naxisv: %.3f", axis.get_norm() );
+
+    return angle;
+}
+
+
 // concatenatin of two quaternions
 Quaternion operator*(const Quaternion& q1, const Quaternion& q2)
 {
@@ -150,22 +167,39 @@ vector_d Quaternion::operator*(const vector_d& vec) const
 // return euler angles roll, pitch, yaw in radian
 EulerAngles Quaternion::toEulerRad() const
 {
+    // EulerAngles result;
+
+    // // roll
+    // result.a = atan2(2*(a*b + c*d),1 - 2*(b*b + c*c));
+    // // float xx = asin(2*(a*c - d*b));
+
+    // // pitch
+    // result.b = (-M_PI/2. + 2* atan2(sqrt(1+ 2*(a*c - b*d)), sqrt(1- 2*(a*c - b*d))));
+    // //result.pitch = asin(2*(q0*c - d*b));
+    // // ESP_LOGI( FNAME,"EulerPitch sin:%.4f atan2:%.4f", xx, result.pitch);
+
+    // // yaw
+    // if (d==0)
+    //     result.c = 0.0;
+    // else
+    //     result.c = atan2(2*(a*d + b*c),1 - 2*(c*c + d*d));
+    // return result;
+
+
     EulerAngles result;
-
-    // roll
-    result.a = atan2(2*(a*b + c*d),1 - 2*(b*b + c*c));
-    // float xx = asin(2*(a*c - d*b));
-
-    // pitch
-    result.b = (-M_PI/2. + 2* atan2(sqrt(1+ 2*(a*c - b*d)), sqrt(1- 2*(a*c - b*d))));
-    //result.pitch = asin(2*(q0*c - d*b));
+    double q0 = a;
+    double q1 = b;
+    double q2 = c;
+    double q3 = d;
+    result.a = atan2(2*(q0*q1 + q2*q3),1 - 2*(q1*q1 + q2*q2));
+    // float xx = asin(2*(q0*q2 - q3*q1))*180/M_PI;
+    result.b = (-M_PI/2. + 2* atan2(sqrt(1+ 2*(q0*q2 - q1*q3)), sqrt(1- 2*(q0*q2 - q1*q3))));
+    //result.pitch = asin(2*(q0*q2 - q3*q1))*180/M_PI;
     // ESP_LOGI( FNAME,"EulerPitch sin:%.4f atan2:%.4f", xx, result.pitch);
-
-    // yaw
     if (d==0)
         result.c = 0.0;
     else
-        result.c = atan2(2*(a*d + b*c),1 - 2*(c*c + d*d));
+        result.c = atan2(2*(q0*q3 + q1*q2),1 - 2*(q2*q2 + q3*q3));
     return result;
 }
 
@@ -283,7 +317,7 @@ Quaternion Quaternion::fromGyro(const vector_ijk& omega, float dtime)
     b = alpha*(omega.a);
     c = alpha*(omega.b);
     d = alpha*(omega.c);
-    a = 1 - 0.5*(b*b+c*c+d*d);
+    a = 1. - 0.5*(b*b+c*c+d*d);
     Quaternion result(a,b,c,d);
     // ESP_LOGI(FNAME,"Quat1: %.3f %.3f %.3f %.3f", result.a, result.b, result.c, result.d );
 

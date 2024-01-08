@@ -16,8 +16,8 @@ Kalman IMU::kalmanX; // Create the Kalman instances
 Kalman IMU::kalmanY;
 Kalman IMU::kalmanZ;
 
-double  IMU::filterPitch = 0;
-double  IMU::filterRoll = 0;
+double  IMU::filterPitch_rad = 0;
+double  IMU::filterRoll_rad = 0;
 double  IMU::filterYaw = 0;
 
 uint64_t IMU::last_rts=0;
@@ -37,7 +37,7 @@ vector_ijk IMU::petal(0,0,0);
 Quaternion IMU::att_quat(0,0,0,0);
 Quaternion IMU::omega_step(0,0,0,0);
 vector_ijk IMU::att_vector;
-EulerAngles IMU::euler;
+EulerAngles IMU::euler_rad;
 
 // Reference calib
 static int progress = 0; // bit-wise 0 -> 1 -> 3 -> 0 // start -> right -> left -> finish
@@ -127,7 +127,7 @@ void IMU::init()
 
 	att_quat = Quaternion(1.0,0.0,0.0,0.0);
 	att_vector = vector_ijk(0.0,0.0,1.0);
-	euler = { 0,0,0 };
+	euler_rad = { 0,0,0 };
 	progress = 0;
 	bob_right_wing = bob_left_wing = vector_3d<double>();
 	gyro_bias_one = gyro_bias_two = mpud::axes_t<int>();
@@ -143,11 +143,11 @@ void IMU::init()
 }
 
 double IMU::getRollRad() {
-	return filterRoll*DEG_TO_RAD;
+	return filterRoll_rad;
 }
 
 double IMU::getPitchRad()  {
-	return filterPitch*DEG_TO_RAD;
+	return filterPitch_rad;
 }
 
 float IMU::getGyroYawDelta()
@@ -180,7 +180,7 @@ void IMU::update_fused_vector(vector_ijk& fused, float gyro_trust, const vector_
 // Only call when successfully called MPU6050Read() beforehand 
 void IMU::Process()
 {
-	double dt=0;
+	float dt=0;
 	bool ret=false;
 	uint64_t rts = esp_timer_get_time();
 	if( last_rts == 0 )
@@ -195,7 +195,8 @@ void IMU::Process()
 		float lf = loadFactor > 2.0 ? 2.0 : loadFactor;
 		loadFactor = lf < 0 ? 0 : lf; // limit to 0..2g
 		// to get pitch and roll independent of circling, map pitch and roll values into 3D vector
-		float roll = -atan(((D2R(gyro.c) /cos( D2R(euler.Roll())) ) * (getTAS()/3.6f)) / 9.80665f);
+		float roll = -atan(((gyro_rad.c /cos( euler_rad.Roll()) ) * (getTAS()/3.6)) / 9.80665);
+		// get pitch from accelerometer
 		float pitch = IMU::PitchFromAccelRad();
 
 		// Centripetal forces to keep angle of bank while circling
@@ -204,7 +205,7 @@ void IMU::Process()
 		petal.c = cos(roll)*cos(pitch);      // Any roll or pitch creates a smaller positive Z, gravity Z is positive
 		// trust in gyro at load factors unequal 1 g
 		gravity_trust = (ahrs_min_gyro_factor.get() + (ahrs_gyro_factor.get() * ( pow(10, abs(loadFactor-1) * ahrs_dynamic_factor.get()) - 1)));
-		ESP_LOGI( FNAME,"Omega roll: %f Pitch: %f Gyro Trust: %f", R2D(roll), R2D(pitch), gravity_trust );
+		// ESP_LOGI( FNAME,"Omega roll: %f Pitch: %f Gyro Trust: %f", R2D(roll), R2D(pitch), gravity_trust );
 	}
 	else {
 		// For still stand centripetal forces are simulated by rotating g@180Z
@@ -218,18 +219,20 @@ void IMU::Process()
 	// ESP_LOGI(FNAME,"attv: %.3f %.3f %.3f", att_vector.a, att_vector.b, att_vector.c);
 	att_quat = Quaternion::fromAccelerometer(att_vector);
 	// ESP_LOGI(FNAME,"attq: %.3f %.3f %.3f %.3f", att_quat.a, att_quat.b, att_quat.c, att_quat.d );
-	euler = rad2deg(att_quat.toEulerRad());
-	ESP_LOGI( FNAME,"Euler R:%.1f P:%.1f Y:%f", euler.Roll(), euler.Pitch(), euler.Yaw());
+	euler_rad = att_quat.toEulerRad();
+	// EulerAngles euler = rad2deg(euler_rad);
+	// ESP_LOGI( FNAME,"Euler R:%.1f P:%.1f Y:%f", euler.Roll(), euler.Pitch(), euler.Yaw());
 
 	// treat gimbal lock, limit to 88 deg
-	if( euler.Roll() > 88.0 )
-		euler.setRoll(88.0);
-	if( euler.Pitch() > 88.0 )
-		euler.setPitch(88.0);
-	if( euler.Roll() < -88.0 )
-		euler.setRoll(-88.0);
-	if( euler.Pitch() < -88.0 )
-		euler.setPitch(-88.0);
+	const float limit = deg2rad(88.);
+	if( euler_rad.Roll() > limit )
+		euler_rad.setRoll(limit);
+	if( euler_rad.Pitch() > limit )
+		euler_rad.setPitch(limit);
+	if( euler_rad.Roll() < -limit )
+		euler_rad.setRoll(-limit);
+	if( euler_rad.Pitch() < -limit )
+		euler_rad.setPitch(-limit);
 
 	float curh = 0;
 	if( compass ){
@@ -253,10 +256,10 @@ void IMU::Process()
 	else{
 		filterYaw=fallbackToGyro();
 	}
-	filterRoll =  euler.Roll();
-	filterPitch =  euler.Pitch();
+	filterRoll_rad =  euler_rad.Roll();
+	filterPitch_rad =  euler_rad.Pitch();
 
-	// ESP_LOGI( FNAME,"GV-Pitch=%.1f  GV-Roll=%.1f filterYaw: %.2f curh: %.2f GX:%.3f GY:%.3f GZ:%.3f AX:%.3f AY:%.3f AZ:%.3f  FP:%.1f FR:%.1f", euler.pitch, euler.roll, filterYaw, curh, gyroX,gyroY,gyroZ, accelX, accelY, accelZ, filterPitch, filterRoll  );
+	// ESP_LOGI( FNAME,"GV-Pitch=%.1f  GV-Roll=%.1f filterYaw: %.2f curh: %.2f GX:%.3f GY:%.3f GZ:%.3f AX:%.3f AY:%.3f AZ:%.3f  FP:%.1f FR:%.1f", euler.Pitch(), euler.Roll(), filterYaw, curh, gyro.a,gyro.b,gyro.c, accel.a, accel.b, accel.c, filterPitch_rad, filterRoll_rad  );
 
 }
 

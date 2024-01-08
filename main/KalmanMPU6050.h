@@ -131,7 +131,7 @@ public:
    * 
    * @returns The x rotation (roll) in degrees
    */
-  static inline double getRoll() {  return filterRoll;  };
+  static inline double getRoll() {  return filterRoll_rad;  };
   static double getRollRad();
 
   /**
@@ -139,11 +139,11 @@ public:
    * 
    * @returns The y rotation (pitch) in degrees
    */
-  static inline double getPitch()  { return filterPitch;  }
+  static inline double getPitch()  { return filterPitch_rad;  }
 
   // XCSoar uses a 180 deg rotated reference system with Z vector pointing down, so Yaw and Pitch inverted
   // hence only Pitch and Roll is used for XCSoar
-  static inline double getXCSPitch()  { return -filterPitch;  }
+  static inline double getXCSPitch()  { return -filterPitch_rad;  }
   static inline double getYaw()  { return filterYaw;  }
   static double getPitchRad();
 
@@ -173,8 +173,8 @@ private:
   static double PitchFromAccel();
   static double PitchFromAccelRad();
   static uint64_t last_rts;
-  static double  filterPitch;
-  static double  filterRoll;
+  static double  filterPitch_rad;
+  static double  filterRoll_rad;
   static double  filterYaw;
 
   static float   fused_yaw;
@@ -182,7 +182,7 @@ private:
   static Quaternion att_quat;
   static Quaternion omega_step;
   static vector_ijk att_vector;
-  static EulerAngles euler;
+  static EulerAngles euler_rad;
 };
 
 #endif // _KalmanMPU6050_H_

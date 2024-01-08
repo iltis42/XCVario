@@ -29,6 +29,7 @@ public:
     
     // API
     float getAngle() const;
+    float getAngleAndAxis(vector_ijk& axis) const;
     friend Quaternion operator*(const Quaternion& left, const Quaternion& right);
     Quaternion get_normalized() const;
     Quaternion& normalize();

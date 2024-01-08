@@ -160,7 +160,7 @@ void SetupMenuSelect::display( int mode ){
 			ucg->drawBox( 1,280,240,40 );
 			ucg->setPrintPos( 1, 300 );
 			ucg->setColor( COLOR_WHITE );
-			ucg->print(PROGMEM"Saved" );
+			ucg->print( "Saved" );
 			xSemaphoreGive(spiMutex );
 		}
 		if( mode == 1 )

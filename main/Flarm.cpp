@@ -305,14 +305,14 @@ void Flarm::drawDownloadInfo() {
 	ucg->setColor( COLOR_WHITE );
 	ucg->setFont(ucg_font_fub20_hr);
 	ucg->setPrintPos(60, 140);
-	ucg->printf(PROGMEM"Flarm IGC");
+	ucg->printf("Flarm IGC");
 	ucg->setPrintPos(60, 170);
-	ucg->printf(PROGMEM"download");
+	ucg->printf("download");
 	ucg->setPrintPos(60, 200);
-	ucg->printf(PROGMEM"is running");
+	ucg->printf("is running");
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setPrintPos(20, 280);
-	ucg->printf(PROGMEM"(restarts on end download)");
+	ucg->printf("(restarts on end download)");
 	xSemaphoreGive(spiMutex);
 }
 
@@ -408,15 +408,15 @@ void Flarm::initFlarmWarning(){
 	ucg->setFontPosCenter();
 	ucg->setColor( COLOR_WHITE );
 	ucg->setFont(ucg_font_fub20_hr);
-	ucg->printf( PROGMEM"Traffic Alert" );
+	ucg->printf( "Traffic Alert" );
 	ucg->setColor( COLOR_HEADER );
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setPrintPos(130,50);
-	ucg->printf(PROGMEM"o'Clock");
+	ucg->printf("o'Clock");
 	ucg->setPrintPos(130,110);
-	ucg->printf(PROGMEM"Distance %s", Units::DistanceUnit() );
+	ucg->printf("Distance %s", Units::DistanceUnit() );
 	ucg->setPrintPos(130,190);
-	ucg->printf(PROGMEM"Vertical %s", Units::AltitudeUnitMeterOrFeet() );
+	ucg->printf("Vertical %s", Units::AltitudeUnitMeterOrFeet() );
 
 	oldDist = 0;
 	oldVertical = 0;

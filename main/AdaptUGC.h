@@ -59,28 +59,28 @@ typedef enum _fonts_enum {
 
 // to be activated as soon as ucg.h is replaced by AdaptUGC.h
 
-extern uint8_t ucg_font_9x15B_mf[];
-extern uint8_t ucg_font_ncenR14_hr[];
-extern uint8_t ucg_font_fub11_tr[];
-extern uint8_t ucg_font_fub11_hr[];
-extern uint8_t ucg_font_fub14_hn[];
-extern uint8_t ucg_font_fub14_hr[];
-extern uint8_t ucg_font_fub14_hf[];
-extern uint8_t ucg_font_fur14_hf[];
-extern uint8_t ucg_font_fub17_hf[];
-extern uint8_t ucg_font_fub20_hn[];
-extern uint8_t ucg_font_fub20_hr[];
-extern uint8_t ucg_font_fub20_hf[];
-extern uint8_t ucg_font_fur20_hf[];
-extern uint8_t ucg_font_fub25_hr[];
-extern uint8_t ucg_font_fub25_hf[];
-extern uint8_t ucg_font_fur25_hf[];
-extern uint8_t ucg_font_fub35_hn[];
-extern uint8_t ucg_font_fub35_hr[];
-extern uint8_t ucg_font_profont22_mr[];
-extern uint8_t ucg_font_fub25_hn[];
-extern uint8_t ucg_font_fub11_hn[];
-extern uint8_t eglib_font_free_sansbold_66[];
+extern const uint8_t ucg_font_9x15B_mf[];
+extern const uint8_t ucg_font_ncenR14_hr[];
+extern const uint8_t ucg_font_fub11_tr[];
+extern const uint8_t ucg_font_fub11_hr[];
+extern const uint8_t ucg_font_fub14_hn[];
+extern const uint8_t ucg_font_fub14_hr[];
+extern const uint8_t ucg_font_fub14_hf[];
+extern const uint8_t ucg_font_fur14_hf[];
+extern const uint8_t ucg_font_fub17_hf[];
+extern const uint8_t ucg_font_fub20_hn[];
+extern const uint8_t ucg_font_fub20_hr[];
+extern const uint8_t ucg_font_fub20_hf[];
+extern const uint8_t ucg_font_fur20_hf[];
+extern const uint8_t ucg_font_fub25_hr[];
+extern const uint8_t ucg_font_fub25_hf[];
+extern const uint8_t ucg_font_fur25_hf[];
+extern const uint8_t ucg_font_fub35_hn[];
+extern const uint8_t ucg_font_fub35_hr[];
+extern const uint8_t ucg_font_profont22_mr[];
+extern const uint8_t ucg_font_fub25_hn[];
+extern const uint8_t ucg_font_fub11_hn[];
+extern const uint8_t eglib_font_free_sansbold_66[];
 
 
 class AdaptUGC : public Print{
@@ -122,7 +122,7 @@ public:
 	inline void setPrintDir(uint8_t d) { eglib_print_dir = d; }
 	inline int16_t getStrWidth( const char * s ) { return ( eglib_GetTextWidth(eglib, s) ); };
 	// Font related
-	void setFont(uint8_t *f, bool filled=false );
+	void setFont(const uint8_t *f, bool filled=false );
 	void setFontMode( uint8_t is_transparent ) {};  // no concept for transparent fonts in eglib, as it appears
 	inline void setFontPosBottom() {  eglib_setFontOrigin( eglib, FONT_BOTTOM ); };
 	inline void setFontPosCenter() {   eglib_setFontOrigin( eglib, FONT_MIDDLE ); };

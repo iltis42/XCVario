@@ -41,7 +41,7 @@ void ShowCompassSettings::display( int mode )
 		clear();
 		ucg->setFont( ucg_font_ncenR14_hr );
 		ucg->setPrintPos( 1, 30 );
-		ucg->printf( PROGMEM"No magnetic Sensor, Abort" );
+		ucg->printf( "No magnetic Sensor, Abort" );
 		delay( 2000 );
 		clear();
 		return;
@@ -59,7 +59,7 @@ void ShowCompassSettings::display( int mode )
 	semaphoreTake();
 
 	ucg->setPrintPos( 0, y );
-	sprintf( buffer, PROGMEM"Sensor enabled: %s",
+	sprintf( buffer, "Sensor enabled: %s",
 			(compass_enable.get() == 0) ? "No" : "Yes"  );
 	ucg->printf( "%s", buffer );
 	y += 25;
@@ -70,13 +70,13 @@ void ShowCompassSettings::display( int mode )
 	bool all_green = false;
 	if( state == target )
 		all_green = true;
-	sprintf( buffer, PROGMEM"Sensor calibrated: %s",
+	sprintf( buffer, "Sensor calibrated: %s",
 			(compass_calibrated.get() == 0 || !all_green) ? "No" : "Yes"  );
 	ucg->printf( "%s", buffer );
 	y += 25;
 
 	y1 = y;
-	const char* soText = PROGMEM"Sensor overflow: ";
+	const char* soText = "Sensor overflow: ";
 	int sotw = ucg->getStrWidth( soText );
 	ucg->setPrintPos( 0, y );
 	ucg->printf( "%s", soText );
@@ -85,35 +85,35 @@ void ShowCompassSettings::display( int mode )
 	y += 25;
 
 	ucg->setPrintPos( 0, y );
-	sprintf( buffer, PROGMEM"Compass declination: %d°",
+	sprintf( buffer, "Compass declination: %d°",
 			static_cast<int>(compass_declination.get()) );
 	ucg->printf( "%s", buffer );
 	y += 25;
 
   ucg->setPrintPos( 0, y );
-  sprintf( buffer, PROGMEM"Display damping: %.02fs", (compass_damping.get()) );
+  sprintf( buffer, "Display damping: %.02fs", (compass_damping.get()) );
   ucg->printf( "%s", buffer );
   y += 25;
 
   ucg->setPrintPos( 0, y );
-  sprintf( buffer, PROGMEM"I2C Clock: %d KHz", static_cast<int>(compass_i2c_cl.get()) );
+  sprintf( buffer, "I2C Clock: %d KHz", static_cast<int>(compass_i2c_cl.get()) );
   ucg->printf( "%s", buffer );
   y += 25;
 
 	ucg->setPrintPos( 0, y );
-	sprintf( buffer, PROGMEM"NMEA mag heading: %s",
+	sprintf( buffer, "NMEA mag heading: %s",
 			(compass_nmea_hdm.get() == 0) ? "No" : "Yes"  );
 	ucg->printf( "%s", buffer );
 	y += 25;
 
 	ucg->setPrintPos( 0, y );
-	sprintf( buffer, PROGMEM"NMEA true heading: %s",
+	sprintf( buffer, "NMEA true heading: %s",
 			(compass_nmea_hdt.get() == 0) ? "No" : "Yes"  );
 	ucg->printf( "%s", buffer );
 	y += 25;
 
 	ucg->setPrintPos( 5, 290 );
-	ucg->printf( PROGMEM"Press button to exit" );
+	ucg->printf( "Press button to exit" );
 
 	semaphoreGive();
 

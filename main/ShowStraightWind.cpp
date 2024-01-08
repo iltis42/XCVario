@@ -52,43 +52,43 @@ void ShowStraightWind::display( int mode )
 	semaphoreTake();
 
 	ucg->setPrintPos( 0, y );
-	sprintf( buffer, PROGMEM"Straight Wind enabled: %s", (wind_enable.get() & 1) ? "Yes" : "No  "  );
+	sprintf( buffer, "Straight Wind enabled: %s", (wind_enable.get() & 1) ? "Yes" : "No  "  );
 	ucg->printf( "%s", buffer );
 	y += 25;
 
 	ucg->setPrintPos( 0, y );
-	sprintf( buffer, PROGMEM"Status: %s     ", theWind.getStatus() );
+	sprintf( buffer, "Status: %s     ", theWind.getStatus() );
 	ucg->printf( "%s", buffer );
 	y += 25;
 
 	ucg->setPrintPos( 0, y );
-	sprintf( buffer, PROGMEM"GPS Status : %s", (theWind.getGpsStatus() == true ) ? "Good" : "Bad  "  );
+	sprintf( buffer, "GPS Status : %s", (theWind.getGpsStatus() == true ) ? "Good" : "Bad  "  );
 	ucg->printf( "%s", buffer );
 	y += 25;
 
 	ucg->setPrintPos( 0, y );
-	sprintf( buffer, PROGMEM"AS C/F: %+3.3f %%/%3.3f %%  ", (theWind.getAsCorrection()-1.0)*100, (wind_as_calibration.get()-1.0)*100 );
+	sprintf( buffer, "AS C/F: %+3.3f %%/%3.3f %%  ", (theWind.getAsCorrection()-1.0)*100, (wind_as_calibration.get()-1.0)*100 );
 	ucg->printf( "%s", buffer );
 	y += 25;
 
 	ucg->setPrintPos( 0, y );
-	sprintf( buffer, PROGMEM"Last Wind : %3.1f°/%2.1f   ", theWind.getAngle(), Units::Airspeed( theWind.getSpeed()) );
+	sprintf( buffer, "Last Wind : %3.1f°/%2.1f   ", theWind.getAngle(), Units::Airspeed( theWind.getSpeed()) );
 	ucg->printf( "%s", buffer );
 	y += 25;
 
 	ucg->setPrintPos( 0, y );
-	sprintf( buffer, PROGMEM"MH/Dev: %3.2f/%+3.2f   ", theWind.getMH(), theWind.getDeviation() );
+	sprintf( buffer, "MH/Dev: %3.2f/%+3.2f   ", theWind.getMH(), theWind.getDeviation() );
 	ucg->printf( "%s", buffer );
 	y += 25;
 
 	ucg->setPrintPos( 0, y );
-	sprintf( buffer, PROGMEM"Wind Age : %d sec   ", theWind.getAge() );
+	sprintf( buffer, "Wind Age : %d sec   ", theWind.getAge() );
 	ucg->printf( "%s", buffer );
 	y += 25;
 
 
 	ucg->setPrintPos( 5, 310 );
-	ucg->printf( PROGMEM"Press button to exit" );
+	ucg->printf( "Press button to exit" );
 
 	semaphoreGive();
 

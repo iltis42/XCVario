@@ -13,7 +13,6 @@
 #include "sensor.h"
 #include "AdaptUGC.h"
 #include "KalmanMPU6050.h"
-#include "sensor_processing_lib.h"
 #include "sensor.h"
 
 static const int X=75;

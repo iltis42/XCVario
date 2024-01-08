@@ -127,9 +127,10 @@ class MPU
     //! \name Offset / Bias
     //! \{
     esp_err_t setGyroOffset(raw_axes_t bias);
-    esp_err_t setAccelOffset(raw_axes_t bias);
+    esp_err_t setAccelOffset(raw_axes_t bias = raw_axes_t());
     raw_axes_t getGyroOffset();
     raw_axes_t getAccelOffset();
+    esp_err_t getMPUSamples(double& avgx, double& avgy, double& avgz, axes_t<int>& gyro);
     esp_err_t computeOffsets(raw_axes_t* accel, raw_axes_t* gyro);
     //! \}
     //! \name Interrupt
@@ -280,6 +281,7 @@ class MPU
     uint8_t buffer[16];     /*!< Commom buffer for temporary data */
     esp_err_t err;          /*!< Holds last error code */
 
+    raw_axes_t accel_factory_trim;
     float mpu_t_delta = 0;
     float mpu_t_delta_i = 0;
     float mpu_heat_pwm = 0;

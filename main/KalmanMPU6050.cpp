@@ -185,7 +185,7 @@ void IMU::Process()
 	omega_step = Quaternion::fromGyro(gyro_rad, dt);
 	vector_ijk axis;
 	float w = omega_step.getAngleAndAxis(axis) * 1.f / dt; // angular speed [rad/sec]
-	ESP_LOGI( FNAME,"Omega: %f axis: %.3f,%.3f,%.3f", w, axis.a, axis.b, axis.c);
+	// ESP_LOGI( FNAME,"Omega: %f axis: %.3f,%.3f,%.3f", w, axis.a, axis.b, axis.c);
 
 	if( getTAS() > 10 ){
 		float loadFactor = accel.get_norm();
@@ -212,7 +212,7 @@ void IMU::Process()
 		petal.b = -accel.b;
 		petal.c = accel.c;
 	}
-	// ESP_LOGI( FNAME, " ax1:%f ay1:%f az1:%f Gx:%f Gy:%f GZ:%f GRT:%f dT:%f", petal.a, petal.b, petal.c, gyro.a, gyro.b, gyro.c, gravity_trust, dt );
+	// ESP_LOGI( FNAME, " ax1:%f ay1:%f az1:%f Gx:%f Gy:%f GZ:%f dT:%f", petal.a, petal.b, petal.c, gyro.a, gyro.b, gyro.c, dt );
 	update_fused_vector(att_vector, gravity_trust, petal, omega_step);
 	// ESP_LOGI(FNAME,"attv: %.3f %.3f %.3f", att_vector.a, att_vector.b, att_vector.c);
 	att_quat = Quaternion::fromAccelerometer(att_vector);

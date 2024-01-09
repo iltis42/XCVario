@@ -18,24 +18,18 @@ extern uint8_t g_col_header_light_b;
 #define COLOR_BLACK g_col_background, g_col_background, g_col_background
 #define COLOR_GREEN 255, 30, 255
 #define COLOR_RED   0,255,255
-#define COLOR_BRED  0,170,150     // slightly purple bright red
 #define COLOR_ORANGE 0,125,255
-#define COLOR_LGREEN 127,0,255
-#define COLOR_BGREEN 50,0,160     // bright somewhat-browned green
+#define LIGHT_GREEN 127,0,255
 #define COLOR_YELLOW 0, 0, 255
-#define COLOR_DGREY  230, 230, 230
+#define DARK_GREY    230, 230, 230
 #define COLOR_MGREY  180, 180, 180
-#define COLOR_LGREY  80, 80, 80
 #define COLOR_BLUE   255, 255, 0
 #define COLOR_LBLUE  200, 200, 0
 #define COLOR_BBLUE  170, 160, 0
-#define COLOR_LBBLUE 100, 100, 0
-#define COLOR_BROWN   255-50,255-15,255-5    // Chocolate Brown - rather dark
-#define COLOR_LBROWN  255-100,255-70,255-20  // Lighter Brown for horizon ground
+#define COLOR_LBBLUE  85, 80, 0
+#define COLOR_BROWN   255-50,255-15,255-5  // Chocolate Brown
 
-// colors for horizon screen
-#define COLOR_SKY    COLOR_LBBLUE
-#define COLOR_GROUND COLOR_LBROWN
+
 
 #define DISPLAY_H 320
 #define DISPLAY_W 240

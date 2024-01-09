@@ -188,12 +188,14 @@ void IMU::Process()
 		ay1=accel.b;
 		az1=accel.c;
 	}
-	// ESP_LOGI( FNAME, " ax1:%f ay1:%f az1:%f Gx:%f Gy:%f GZ:%f GRT:%f Roll:%.1f ", ax1, ay1, az1, gyroX, gyroY, gyroZ, gravity_trust, R2D(roll) );
-	att_vector = update_fused_vector(att_vector, gravity_trust, ax1, ay1, az1, D2R(gyroX),D2R(gyroY),D2R(gyroZ),dt);
+	vector_ijk gyro_rad = gyro * (float(M_PI)/180.0f);
+	// ESP_LOGI( FNAME, " ax1:%f ay1:%f az1:%f Gx:%f Gy:%f GZ:%f GRT:%f Roll:%.1f ", ax1, ay1, az1, gyro_rad.a, gyro_rad.b, gyro_rad.c, gravity_trust, R2D(roll) );
+	update_fused_vector(att_vector, gravity_trust, ax1, ay1, az1, gyro_rad, dt);
+	// ESP_LOGI(FNAME,"attv: %.3f %.3f %.3f", att_vector.a, att_vector.b, att_vector.c);
 	att_quat = quaternion_from_accelerometer(att_vector);
 	// ESP_LOGI(FNAME,"attq: %.3f %.3f %.3f %.3f", att_quat.a, att_quat.b, att_quat.c, att_quat.d );
 	euler = att_quat.to_euler_angles();
-	// ESP_LOGI( FNAME,"Euler R:%.1f P:%.1f Trust:%.1f OmRoll:%.1f IMUP:%.1f", euler.roll, euler.pitch, gravity_trust, R2D(roll), R2D(pitch) );
+	// ESP_LOGI( FNAME,"Euler R:%.1f P:%.1f R:%f", euler.roll, euler.pitch, R2D(roll) );
 
 	// treat gimbal lock, limit to 88 deg
 	if( euler.roll > 88.0 )

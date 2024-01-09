@@ -149,13 +149,9 @@ float IMU::getGyroYawDelta()
 	return e.Yaw();
 }
 
-void IMU::update_fused_vector(vector_ijk& fused, float gyro_trust, const vector_ijk& petal_force, const vector_ijk& omega, float delta)
+void IMU::update_fused_vector(vector_ijk& fused, float gyro_trust, const vector_ijk& petal_force, const Quaternion& omega_step)
 {
-    // integrate omega step, get roll and pitch from gyro
-    omega_step = Quaternion::fromGyro(omega, delta);
-    // ESP_LOGI(FNAME,"ngrav: %.3f %.3f %.3f %.3f", omega_step.a, omega_step.b, omega_step.c, omega_step.d );
-
-    // move the previos fused attitude by the new omage step
+    // move the previos fused attitude by the new omega step
     vector_ijk virtual_gravity = omega_step * fused;
     virtual_gravity.normalize();
     // ESP_LOGI(FNAME,"fused/virtual %.4f,%.4f,%.4f/%.4f,%.4f,%.4f", fused.a, fused.b, fused.c, virtual_gravity.a, virtual_gravity.b, virtual_gravity.c);
@@ -182,7 +178,14 @@ void IMU::Process()
 	if( ret )
 		return;
 	float gravity_trust = 1;
-	double pitch = 0;
+
+	// create a gyro base rotation axis
+	vector_ijk gyro_rad = deg2rad(gyro);
+	omega_step = Quaternion::fromGyro(gyro_rad, dt);
+	// vector_ijk axis;
+	// float w = omega_step.getAngleAndAxis(axis);
+	// ESP_LOGI( FNAME,"Omega: %f axis: %.3f,%.3f,%.3f", w, axis.a, axis.b, axis.c);
+
 	if( getTAS() > 10 ){
 		float loadFactor = accel.get_norm();
 		float lf = loadFactor > 2.0 ? 2.0 : loadFactor;
@@ -206,9 +209,8 @@ void IMU::Process()
 		petal.b = -accel.b;
 		petal.c = accel.c;
 	}
-	vector_ijk gyro_rad = deg2rad(gyro);
-	ESP_LOGI( FNAME, " ax1:%f ay1:%f az1:%f Gx:%f Gy:%f GZ:%f GRT:%f ", petal.a, petal.b, petal.c, gyro_rad.a, gyro_rad.b, gyro_rad.c, gravity_trust );
-	update_fused_vector(att_vector, gravity_trust, petal, gyro_rad, dt);
+	// ESP_LOGI( FNAME, " ax1:%f ay1:%f az1:%f Gx:%f Gy:%f GZ:%f GRT:%f dT:%f", petal.a, petal.b, petal.c, gyro.a, gyro.b, gyro.c, gravity_trust, dt );
+	update_fused_vector(att_vector, gravity_trust, petal, omega_step);
 	// ESP_LOGI(FNAME,"attv: %.3f %.3f %.3f", att_vector.a, att_vector.b, att_vector.c);
 	att_quat = Quaternion::fromAccelerometer(att_vector);
 	// ESP_LOGI(FNAME,"attq: %.3f %.3f %.3f %.3f", att_quat.a, att_quat.b, att_quat.c, att_quat.d );

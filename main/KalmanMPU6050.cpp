@@ -154,10 +154,13 @@ void IMU::update_fused_vector(vector_ijk& fused, float gyro_trust, const vector_
     // move the previos fused attitude by the new omega step
     vector_ijk virtual_gravity = omega_step * fused;
     virtual_gravity.normalize();
-    // ESP_LOGI(FNAME,"fused/virtual %.4f,%.4f,%.4f/%.4f,%.4f,%.4f", fused.a, fused.b, fused.c, virtual_gravity.a, virtual_gravity.b, virtual_gravity.c);
+    virtual_gravity *= gyro_trust;
+    ESP_LOGI(FNAME,"fused/virtual %.4f,%.4f,%.4f/%.4f,%.4f,%.4f", fused.a, fused.b, fused.c, virtual_gravity.a, virtual_gravity.b, virtual_gravity.c);
 
     // fuse the centripetal and gyro estimation
-    fused = virtual_gravity * gyro_trust + petal_force.get_normalized();
+    vector_ijk pn = petal_force;
+    pn.normalize();
+    fused = virtual_gravity + pn;
     // ESP_LOGI(FNAME,"fused %.4f,%.4f,%.4f", fused.a, fused.b, fused.c);
     fused.normalize();
     // ESP_LOGI(FNAME,"fusedn %.4f,%.4f,%.4f", fused.a, fused.b, fused.c);

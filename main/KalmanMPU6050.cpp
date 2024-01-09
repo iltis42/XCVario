@@ -26,9 +26,6 @@ vector_i   IMU::raw_gyro(0,0,0);
 vector_ijk IMU::accel(0,0,0);
 vector_ijk IMU::gyro(0,0,0);
 
-#define accelX accel.a
-#define accelY accel.b
-#define accelZ accel.c
 #define gyroX gyro.a
 #define gyroY gyro.b
 #define gyroZ gyro.c
@@ -176,7 +173,7 @@ void IMU::Process()
 		// to get pitch and roll independent of circling, image pitch and roll values into 3D vector
 		roll = -atan(((D2R(gyroZ) /cos( D2R(euler.roll)) ) * (getTAS()/3.6)) / 9.80665);
 
-		IMU::PitchFromAccelRad(&pitch);
+		pitch = IMU::PitchFromAccelRad();
 
 		// Virtual gravity from centripedal forces to keep angle of bank while circling
 		ax1 = sin(pitch);                // Nose down (positive Y turn) results in positive X
@@ -210,7 +207,7 @@ void IMU::Process()
 	float curh = 0;
 	if( compass ){
 		bool ok;
-		gravity_vector = vector_ijk(att_vector.a,att_vector.b,att_vector.c);
+		gravity_vector = att_vector;
 		gravity_vector.normalize();
 		curh = compass->cur_heading( &ok );
 		if( ok ){
@@ -296,14 +293,14 @@ esp_err_t IMU::MPU6050Read()
 	return err;
 }
 
-void IMU::PitchFromAccel(double *pitch)
+double IMU::PitchFromAccel()
 {
-	*pitch = atan2(accel.a, accel.c) * RAD_TO_DEG;
+	return atan2(accel.a, accel.c) * RAD_TO_DEG;
 }
 
-void IMU::PitchFromAccelRad(double *pitch)
+double IMU::PitchFromAccelRad()
 {
-	*pitch = atan2(accel.a, accel.c);
+	return atan2(accel.a, accel.c);
 }
 
 void IMU::RollPitchFromAccel(double *roll, double *pitch)

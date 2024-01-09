@@ -160,10 +160,11 @@ void IMU::update_fused_vector(vector_ijk& fused, float gyro_trust, const vector_
     // fuse the centripetal and gyro estimation
     vector_ijk pn = petal_force;
     pn.normalize();
-    fused = virtual_gravity + pn;
+    vector_ijk f = virtual_gravity + pn;
     // ESP_LOGI(FNAME,"fused %.4f,%.4f,%.4f", fused.a, fused.b, fused.c);
-    fused.normalize();
+    f.normalize();
     // ESP_LOGI(FNAME,"fusedn %.4f,%.4f,%.4f", fused.a, fused.b, fused.c);
+    fused = f;
 }
 
 // Only call when successfully called MPU6050Read() beforehand 
@@ -187,6 +188,8 @@ void IMU::Process()
 	float w = omega_step.getAngleAndAxis(axis) * 1.f / dt; // angular speed [rad/sec]
 	// ESP_LOGI( FNAME,"Omega: %f axis: %.3f,%.3f,%.3f", w, axis.a, axis.b, axis.c);
 
+	float roll = 0.0;
+	float pitch = 0.0;
 	if( getTAS() > 10 ){
 		float loadFactor = accel.get_norm();
 		float lf = loadFactor > 2.0 ? 2.0 : loadFactor;
@@ -194,9 +197,9 @@ void IMU::Process()
 		// the yz portion of w is proportional to the length of YZ portion of the normalized axis.
 		float w_yz = w * sqrt(axis.b*axis.b + axis.c*axis.c);
 		// tan(roll):= petal force/G = m w v / m g
-		float roll = (std::signbit(gyro_rad.c)?1.f:-1.f) * atan( w_yz * getTAS() / (3.6 * 9.80665) );
+		roll = (std::signbit(gyro_rad.c)?1.f:-1.f) * atan( w_yz * getTAS() / (3.6 * 9.80665) );
 		// get pitch from accelerometer
-		float pitch = IMU::PitchFromAccelRad();
+		pitch = IMU::PitchFromAccelRad();
 
 		// Centripetal forces to keep angle of bank while circling
 		petal.a = sin(pitch);                // Nose down (positive Y turn) results in positive X force
@@ -213,13 +216,14 @@ void IMU::Process()
 		petal.c = accel.c;
 	}
 	// ESP_LOGI( FNAME, " ax1:%f ay1:%f az1:%f Gx:%f Gy:%f GZ:%f dT:%f", petal.a, petal.b, petal.c, gyro.a, gyro.b, gyro.c, dt );
+	// ESP_LOGI(FNAME,"attv 1: %.3f %.3f %.3f", att_vector.a, att_vector.b, att_vector.c);
 	update_fused_vector(att_vector, gravity_trust, petal, omega_step);
-	// ESP_LOGI(FNAME,"attv: %.3f %.3f %.3f", att_vector.a, att_vector.b, att_vector.c);
+	// ESP_LOGI(FNAME,"attv 2: %.3f %.3f %.3f", att_vector.a, att_vector.b, att_vector.c);
 	att_quat = Quaternion::fromAccelerometer(att_vector);
 	// ESP_LOGI(FNAME,"attq: %.3f %.3f %.3f %.3f", att_quat.a, att_quat.b, att_quat.c, att_quat.d );
 	euler_rad = att_quat.toEulerRad();
 	EulerAngles euler = rad2deg(euler_rad);
-	ESP_LOGI( FNAME,"Euler R:%.1f P:%.1f Y:%f", euler.Roll(), euler.Pitch(), euler.Yaw());
+	ESP_LOGI( FNAME,"Euler Roll:%.1f Pitch:%.1f ORoll:%.1f IMUPitch:%.1f", euler.Roll(), euler.Pitch(), R2D(roll), R2D(pitch)  );
 
 	// treat gimbal lock, limit to 88 deg
 	const float limit = deg2rad(88.);

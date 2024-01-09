@@ -183,16 +183,18 @@ void IMU::Process()
 	// create a gyro base rotation axis
 	vector_ijk gyro_rad = deg2rad(gyro);
 	omega_step = Quaternion::fromGyro(gyro_rad, dt);
-	// vector_ijk axis;
-	// float w = omega_step.getAngleAndAxis(axis);
-	// ESP_LOGI( FNAME,"Omega: %f axis: %.3f,%.3f,%.3f", w, axis.a, axis.b, axis.c);
+	vector_ijk axis;
+	float w = omega_step.getAngleAndAxis(axis) * 1.f / dt; // angular speed [rad/sec]
+	ESP_LOGI( FNAME,"Omega: %f axis: %.3f,%.3f,%.3f", w, axis.a, axis.b, axis.c);
 
 	if( getTAS() > 10 ){
 		float loadFactor = accel.get_norm();
 		float lf = loadFactor > 2.0 ? 2.0 : loadFactor;
 		loadFactor = lf < 0 ? 0 : lf; // limit to 0..2g
-		// to get pitch and roll independent of circling, map pitch and roll values into 3D vector
-		float roll = -atan(((gyro_rad.c /cos( euler_rad.Roll()) ) * (getTAS()/3.6)) / 9.80665);
+		// the yz portion of w is proportional to the length of YZ portion of the normalized axis.
+		float w_yz = w * sqrt(axis.b*axis.b + axis.c*axis.c);
+		// tan(roll):= petal force/G = m w v / m g
+		float roll = (std::signbit(gyro_rad.c)?1.f:-1.f) * atan( w_yz * getTAS() / (3.6 * 9.80665) );
 		// get pitch from accelerometer
 		float pitch = IMU::PitchFromAccelRad();
 
@@ -202,7 +204,7 @@ void IMU::Process()
 		petal.c = cos(roll)*cos(pitch);      // Any roll or pitch creates a smaller positive Z, gravity Z is positive
 		// trust in gyro at load factors unequal 1 g
 		gravity_trust = (ahrs_min_gyro_factor.get() + (ahrs_gyro_factor.get() * ( pow(10, abs(loadFactor-1) * ahrs_dynamic_factor.get()) - 1)));
-		// ESP_LOGI( FNAME,"Omega roll: %f Pitch: %f Gyro Trust: %f", R2D(roll), R2D(pitch), gravity_trust );
+		ESP_LOGI( FNAME,"Omega roll: %f Pitch: %f W_yz: %f Gyro Trust: %f", R2D(roll), R2D(pitch), w_yz, gravity_trust );
 	}
 	else {
 		// For still stand centripetal forces are simulated by rotating g@180Z

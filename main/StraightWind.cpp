@@ -184,8 +184,8 @@ bool StraightWind::calculateWind()
 		if( wind_logging.get() & WLOG_GYRO_MAG ){
 			sprintf( log+pos, ";%.3f;%.3f;%.3f;%.3f;%.3f;%.3f;%.3f;%.3f;%.3f",
 					compass->rawX()/16384.0,compass->rawY()/16384.0,compass->rawZ()/16384.0,
-					IMU::getRawAccelX(), IMU::getRawAccelY(), IMU::getRawAccelZ(),
-					IMU::getRawGyroX(), IMU::getRawGyroY(), IMU::getRawGyroZ()  );
+					IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(),
+					IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ()  );
 		}
 		pos = strlen(log);
 		sprintf( log+pos, "\n");

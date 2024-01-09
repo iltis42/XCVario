@@ -20,7 +20,9 @@
 #define _KalmanMPU6050_H_
 
 #include "Arduino.h"
-#include "quaternion.h"
+#include "vector_3d.h"
+
+class Quaternion;
 
 #ifndef M_PI
 #define M_PI 3.14159265359
@@ -67,50 +69,61 @@ public:
   /**
    * Fetches the IMU data and proccesses it through the Kalman Filter.
    */
-  static void read();
+  static esp_err_t MPU6050Read();
+  static void Process();
+
+  // Accelerometer reading in glider reference and in [g]
+  static inline vector_ijk getGliderAccel() { return accel; };
 
   /**
-   * Gets the accelerometer raw X reading, as per last read() call.
+   * Gets the accelerometer X reading, as per last read() call.
    * 
-   * @returns The accelerometer raw X reading
+   * @returns The accelerometer X reading in glider reference
    */
-  static inline double getRawAccelX()  {  return accelX;  };
+  static inline float getGliderAccelX()  { return accel.a; };
 
   /**
-   * Gets the accelerometer raw Y reading, as per last read() call.
+   * Gets the accelerometer Y reading, as per last read() call.
    * 
-   * @returns The accelerometer raw Y reading
+   * @returns The accelerometer Y reading
    */
-  static inline double getRawAccelY()   {   return accelY;   };
+  static inline float getGliderAccelY()   { return accel.b; };
 
   /**
-   * Gets the accelerometer raw Z reading, as per last read() call.
+   * Gets the accelerometer Z reading, as per last read() call.
    * 
-   * @returns The accelerometer raw Z reading
+   * @returns The accelerometer Z reading
    */
-  static inline double getRawAccelZ()  {  	return accelZ;  };
+  static inline float getGliderAccelZ()  { return accel.c; };
+
+  // Gyro reading in glider reference and in DPS
+  static inline vector_ijk getGliderGyro() { return gyro; };
 
   /**
-   * Gets the gyroscope raw X reading, as per last read() call.
+   * Gets the gyroscope X reading, as per last read() call.
    * 
-   * @returns The gyroscope raw X reading.
+   * @returns The gyroscope X reading in glider reference.
    */
-  static inline double getRawGyroX()   {  	return gyroX;  };
+  static inline float getGliderGyroX()   { return gyro.a; };
 
   /**
-   * Gets the gyroscope raw Y reading, as per last read() call.
+   * Gets the gyroscope Y reading, as per last read() call.
    * 
-   * @returns The gyroscope raw Y reading.
+   * @returns The gyroscope Y reading.
    */
-  static inline double getRawGyroY()   {  	return gyroY;  };
+  static inline float getGliderGyroY()   { return gyro.b; };
 
   /**
-   * Gets the gyroscope raw Z reading, as per last read() call.
+   * Gets the gyroscope Z reading, as per last read() call.
    * 
-   * @returns The gyroscope raw Z reading.
+   * @returns The gyroscope Z reading.
    */
-  static inline double getRawGyroZ()   {  return gyroZ;  };
+  static inline float getGliderGyroZ()   { return gyro.c; };
 
+  // Get the last raw gyro reads
+  static inline float getRawGyroX()   { return raw_gyro.a; };
+  static inline float getRawGyroY()   { return raw_gyro.b; };
+  static inline float getRawGyroZ()   { return raw_gyro.c; };
 
   /**
    * Gets the roll (X rotation) in degress from the Kalman Filter.
@@ -118,52 +131,58 @@ public:
    * 
    * @returns The x rotation (roll) in degrees
    */
-  static inline double getRoll() {  return filterRoll;  };
-  static double getRollRad();
+  static inline float getRoll() { return float(RAD_TO_DEG) * filterRoll_rad; };
+  static inline float getRollRad() { return filterRoll_rad; };
 
   /**
    * Gets the pitch (Y rotation) in degrees from the Kalman Filter.\
    * 
    * @returns The y rotation (pitch) in degrees
    */
-  static inline double getPitch()  { return filterPitch;  }
+  static inline float getPitch()  { return float(RAD_TO_DEG) * filterPitch_rad; }
+  static inline float getPitchRad()  { return filterPitch_rad; }
 
   // XCSoar uses a 180 deg rotated reference system with Z vector pointing down, so Yaw and Pitch inverted
   // hence only Pitch and Roll is used for XCSoar
-  static inline double getXCSPitch()  { return -filterPitch;  }
+  static inline float getXCSPitch()  { return -float(RAD_TO_DEG) * filterPitch_rad;  }
   static inline double getYaw()  { return filterYaw;  }
-  static double getPitchRad();
+  
+  static inline double getGyroRate()  {	return abs(gyro.a)+abs(gyro.b)+abs(gyro.c); }
 
-  static inline double getGyroRate()  {	return abs(gyroX)+abs(gyroY)+abs(gyroZ); }
+  // Reference calibration
+  static void getAccelSamplesAndCalib(int side);
+  static void getGyroSamplesAndZero();
+  static void defaultImuReference();
+  static void applyImuReference(const float gAA, const Quaternion& basic);
 
 private:
+  static float getGyroYawDelta();
+  static void update_fused_vector(vector_ijk& fused, float gyro_trust, const vector_ijk& petal_force, const Quaternion& omega_step);
   static Kalman kalmanX; // Create the Kalman instances
   static Kalman kalmanY;
   static Kalman kalmanZ;
 
-  static double accelX, accelY, accelZ;
-  static double gyroX, gyroY, gyroZ;
-  static float ax1,ay1,az1;
-  static float positiveG;
+  static vector_i   raw_gyro;
+  static vector_ijk accel;
+  static vector_ijk gyro;
+  static vector_ijk petal;
   static double kalXAngle, kalYAngle;
 
-  static void MPU6050Read();
   static float fallbackToGyro();
-  static void RollPitchFromAccel(double *roll, double *pitch);
-  static void PitchFromAccel(double *pitch);
-  static void PitchFromAccelRad(double *pitch);
+  // static void RollPitchFromAccel(double *roll, double *pitch);
+  static double PitchFromAccel();
+  static double PitchFromAccelRad();
   static uint64_t last_rts;
-  static double  filterPitch;
-  static double  filterRoll;
+  static float  filterPitch_rad;
+  static float  filterRoll_rad;
   static double  filterYaw;
 
   static float   fused_yaw;
 
   static Quaternion att_quat;
+  static Quaternion omega_step;
   static vector_ijk att_vector;
-  static euler_angles euler;
-
-
+  static EulerAngles euler_rad;
 };
 
 #endif // _KalmanMPU6050_H_

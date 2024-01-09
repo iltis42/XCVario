@@ -167,40 +167,40 @@ vector_d Quaternion::operator*(const vector_d& vec) const
 // return euler angles roll, pitch, yaw in radian
 EulerAngles Quaternion::toEulerRad() const
 {
-    // EulerAngles result;
-
-    // // roll
-    // result.a = atan2(2*(a*b + c*d),1 - 2*(b*b + c*c));
-    // // float xx = asin(2*(a*c - d*b));
-
-    // // pitch
-    // result.b = (-M_PI/2. + 2* atan2(sqrt(1+ 2*(a*c - b*d)), sqrt(1- 2*(a*c - b*d))));
-    // //result.pitch = asin(2*(q0*c - d*b));
-    // // ESP_LOGI( FNAME,"EulerPitch sin:%.4f atan2:%.4f", xx, result.pitch);
-
-    // // yaw
-    // if (d==0)
-    //     result.c = 0.0;
-    // else
-    //     result.c = atan2(2*(a*d + b*c),1 - 2*(c*c + d*d));
-    // return result;
-
-
     EulerAngles result;
-    double q0 = a;
-    double q1 = b;
-    double q2 = c;
-    double q3 = d;
-    result.a = atan2(2*(q0*q1 + q2*q3),1 - 2*(q1*q1 + q2*q2));
-    // float xx = asin(2*(q0*q2 - q3*q1))*180/M_PI;
-    result.b = (-M_PI/2. + 2* atan2(sqrt(1+ 2*(q0*q2 - q1*q3)), sqrt(1- 2*(q0*q2 - q1*q3))));
-    //result.pitch = asin(2*(q0*q2 - q3*q1))*180/M_PI;
+
+    // roll
+    result.a = atan2(2*(a*b + c*d),1 - 2*(b*b + c*c));
+    // float xx = asin(2*(a*c - d*b));
+
+    // pitch
+    result.b = (-M_PI/2. + 2* atan2(sqrt(1+ 2*(a*c - b*d)), sqrt(1- 2*(a*c - b*d))));
+    //result.pitch = asin(2*(q0*c - d*b));
     // ESP_LOGI( FNAME,"EulerPitch sin:%.4f atan2:%.4f", xx, result.pitch);
+
+    // yaw
     if (d==0)
         result.c = 0.0;
     else
-        result.c = atan2(2*(q0*q3 + q1*q2),1 - 2*(q2*q2 + q3*q3));
+        result.c = atan2(2*(a*d + b*c),1 - 2*(c*c + d*d));
     return result;
+
+
+    // EulerAngles result;
+    // double q0 = a;
+    // double q1 = b;
+    // double q2 = c;
+    // double q3 = d;
+    // result.a = atan2(2*(q0*q1 + q2*q3),1 - 2*(q1*q1 + q2*q2));
+    // // float xx = asin(2*(q0*q2 - q3*q1))*180/M_PI;
+    // result.b = (-M_PI/2. + 2* atan2(sqrt(1+ 2*(q0*q2 - q1*q3)), sqrt(1- 2*(q0*q2 - q1*q3))));
+    // //result.pitch = asin(2*(q0*q2 - q3*q1))*180/M_PI;
+    // // ESP_LOGI( FNAME,"EulerPitch sin:%.4f atan2:%.4f", xx, result.pitch);
+    // if (d==0)
+    //     result.c = 0.0;
+    // else
+    //     result.c = atan2(2*(q0*q3 + q1*q2),1 - 2*(q2*q2 + q3*q3));
+    // return result;
 }
 
 // Creat a rotation through two vectors, aligning the first to the second

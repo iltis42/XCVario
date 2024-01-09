@@ -1075,7 +1075,7 @@ void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
 			if(chgpos <= 4)
 				chgpos = 4;
 			ucg->drawBox( x-40+2,y, chgpos, 8  );  // Bat charge state
-			ucg->setColor( COLOR_DGREY );
+			ucg->setColor( DARK_GREY );
 			ucg->drawBox( x-40+2+chgpos,y, 32-chgpos, 8 );  // Empty bat bar
 			ucg->setFont(ucg_font_fub11_hr, true);
 			ucg->setPrintPos(x-42,y-6);
@@ -1349,14 +1349,14 @@ void IpsDisplay::drawScale( int16_t max_pos, int16_t max_neg, int16_t pos, int16
 
 			float val = (*_gauge)((float)a/10.);
 			if( width < 3 )
-				drawOneScaleLine( val, pos, end, width, COLOR_DGREY );  // darker color for small scale
+				drawOneScaleLine( val, pos, end, width, DARK_GREY );  // darker color for small scale
 			else
 				drawOneScaleLine( val, pos, end, width, COLOR_WHITE );
 
 			if ( draw_label ) { drawOneLabel(val, a/10, pos+12, offset); }
 			if ( (-a/10) >= max_neg && at < max_neg ) {
 				if( width < 3 )
-					drawOneScaleLine( -val, pos, end, width, COLOR_DGREY );
+					drawOneScaleLine( -val, pos, end, width, DARK_GREY );
 				else
 					drawOneScaleLine( -val, pos, end, width, COLOR_WHITE );
 				if ( draw_label ) { drawOneLabel(-val, a/10, pos+12, -offset); }
@@ -1793,136 +1793,96 @@ void IpsDisplay::initLoadDisplay(){
 	ESP_LOGI(FNAME,"initLoadDisplay end");
 }
 
+static Point P1o;
+static Point P2o;
+static Point P3o;
+static Point P4o;
+static Point P5o;
+static Point P6o;
+
+static float oroll=0;
 static int heading_old = -1;
-static bool horizon_done = false;
 
-#define WIDTH_2  (DISPLAY_W/2)   // 120
-#define HEIGHT_2 (DISPLAY_H/2)   // 160
-#define WIDTH_   (DISPLAY_W-1)   // 239
-
-void IpsDisplay::drawHorizon( float p, float b, float yaw ){   // ( pitch, roll, yaw )
+void IpsDisplay::drawHorizon( float pitch, float roll, float yaw ){
+	// ESP_LOGI(FNAME,"drawHorizon P: %1.1f R: %1.1f Y: %1.1f", R2D(pitch), R2D(roll), R2D(yaw) );
+	if( _menu || !gflags.ahrsKeyValid )
+		return;
 	tick++;
 	if( !(screens_init & INIT_DISPLAY_HORIZON) ){
 		clear();
-		horizon_done = false;
-		screens_init |= INIT_DISPLAY_HORIZON;
-	} else if ( (tick&0x0F) != 0 ) {   // don't redraw horizon too often
-		return;
-	}
-
-//     to allow activating horizon screen without AHRS license.
-	if( !gflags.ahrsKeyValid ) {       // demo static horizon
-		if (horizon_done)
-			return;                   // only draw this once
-		int w = DISPLAY_W;
-		int h = DISPLAY_H;
-		int y = WIDTH_2;          // not HEIGHT_2 - only paint the top square
-		xSemaphoreTake(spiMutex, portMAX_DELAY );
-		ucg->setColor( COLOR_SKY );
-		ucg->drawTetragon( 0,y, 0,0, w-1,0, w-1,y );
-		ucg->setColor( COLOR_GROUND );
-		ucg->drawTetragon( 0,w-1, 0,y, w-1,y, w-1,w+1 );
-		ucg->setPrintPos(40, h-30);
-		ucg->setFontPosCenter();
-		ucg->setColor( COLOR_BRED );
-		ucg->setFont(ucg_font_fub20_hr);
-		ucg->printf( "AHRS disabled" );
-		xSemaphoreGive(spiMutex);
-		horizon_done = true;
-		return;                // do not draw "airplane"
-	}
-
-	if (p >  0.4)  p =  0.4;
-	else
-	if (p < -0.4)  p = -0.4;
-	// Move center of horizon up or down by approximately sin(pitch)
-	//    (no actual trig, for efficiency)
-	// The 2.3 is a visual exaggeration factor
-	float hzn = 2.3*p*(1-0.1667*p*p);
-	int y = HEIGHT_2 + (int)(WIDTH_2*hzn); // + (int)horizon_pitch_offset.get();
-
-	if (b >  1.0)  b =  1.0;
-	else
-	if (b < -1.0)  b = -1.0;
-	// move ends of horizon up or down by approximately tan(bank)
-	//    (no actual trig, for efficiency)
-	float bb_2 = 0.5*b*b;
-	float s = b*(1-0.3333*bb_2);
-	float c =  1 - bb_2;
-	int h = (int) (WIDTH_2*s/c);
-
-	int y0 = y + h;    // left end of horizon line
-	int y1 = y - h;    // right end of horizon line
-
-	int k0 = HEIGHT_2 - WIDTH_2 + 1;      // almost top of centered square
-	int k1 = k0;
-	int g0 = HEIGHT_2 + WIDTH_2 - 2;      // almost bottom of centered square
-	int g1 = g0;
-	// constrain to within the square:
-	if (y0 > g0)  y0 = g0;
-	if (y0 < k0)  y0 = k0;
-	if (y1 > g1)  y1 = g1;
-	if (y1 < k1)  y1 = k1;
-
-	static int old_y0 = 0;
-	static int old_y1 = 0;
-
-	// redraw only if change will be visible in pixel resolution
-	if ( horizon_done && y0==old_y0 && y1==old_y1 )
-		return;        // no need to redraw "airplane" either
-
-	// skip repainting most of top and bottom trapezoids, for efficiency
-	if (horizon_done) {     // not first draw (since cleared)
-		// only repaint the changed slivers
-		k0 = (old_y0 < y0)? old_y0 : y0;
-		k1 = (old_y1 < y1)? old_y1 : y1;
-		g0 = (old_y0 > y0)? old_y0 : y0;
-		g1 = (old_y1 > y1)? old_y1 : y1;
-	} else {
-		k0 -= 6;   // add a bit more colored top and bottom on first draw
-		k1 -= 6;
-		g0 += 3;
-		g1 += 3;
-	}
-
-	xSemaphoreTake(spiMutex, portMAX_DELAY );
-	ucg->setColor( COLOR_SKY );
-	ucg->drawTetragon( 0,k0-1, 0,y0, WIDTH_,y1, WIDTH_,k1-1 );
-	ucg->setColor( COLOR_GROUND );
-	ucg->drawTetragon( 0,g0+1, 0,y0, WIDTH_,y1, WIDTH_,g1+1 );
-	xSemaphoreGive(spiMutex);
-
-	old_y0 = y0;
-	old_y1 = y1;
-	horizon_done = true;
-
-	// draw simple "airplane" icon from Flarm class
-	xSemaphoreTake(spiMutex, portMAX_DELAY );
-	ucg->setColor( COLOR_WHITE );
-	Flarm::drawAirplane( WIDTH_2, HEIGHT_2, true );
-	xSemaphoreGive(spiMutex);
-
-	// display heading too, if possible
-	int heading;
-	if( compass_enable.get() != CS_DISABLE )
-		heading = static_cast<int>(rintf(mag_hdt.get()));
-	else if( Flarm::gpsStatus() )
-		heading = static_cast<int>(rintf(Flarm::getGndCourse()));
-	else
-		heading = heading_old;
-	if( heading != heading_old ){
-		ucg->setFont(ucg_font_fub20_hr, true);
-		//ucg->setFontPosCenter();
-		ucg->setPrintPos(70,310);
-		if( heading <= 0 )
-			heading += 360;
-		else if( heading > 360 )
-			heading -= 360;
+		P1o.y = 0;
 		ucg->setColor( COLOR_WHITE );
-		ucg->printf("   %d°   ", heading );
-		heading_old = heading;
+		ucg->drawTriangle( 1,   150, 20,  160, 1,   170 ); // Triangles l/r
+		ucg->drawTriangle( 240, 150, 220, 160, 240, 170 );
+		for( int i=-80; i<=80; i+=20 ){  // 10° scale
+			ucg->drawHLine( 1,160+i, 20 );
+			ucg->drawHLine( 220,160+i, 20 );
+		}
+		for( int i=-70; i<=70; i+=20 ){  // 5° scale
+			ucg->drawHLine( 10,160+i, 10 );
+			ucg->drawHLine( 220,160+i, 10 );
+		}
+		screens_init |= INIT_DISPLAY_HORIZON;
+	}
+	Point P1( -100, -60 );
+	Point P2(  340, -60 );
+	Point P3(  340, 160 );
+	Point P4( -100, 160 );
+	Point P5( -100, 380 );
+	Point P6(  340, 380 );
+	Point Center( 120, 160 );
+	Point P1r = P1.rotate( Center, roll );
+	Point P2r = P2.rotate( Center, roll );
+	Point P3r = P3.rotate( Center, roll );
+	Point P4r = P4.rotate( Center, roll );
+	Point P5r = P5.rotate( Center, roll );
+	Point P6r = P6.rotate( Center, roll );
+	int p = rint(R2D( pitch )*2);  // 1 deg := 1 pixel
+	P1r.moveVertical(p);
+	P2r.moveVertical(p);
+	P3r.moveVertical(p);
+	P4r.moveVertical(p);
+	P5r.moveVertical(p);
+	P6r.moveVertical(p);
+	int heading = 0;
+	if( compass_enable.get() != CS_DISABLE ){
+
+	}
+	// ESP_LOGI(FNAME,"P1:%d/%d P2:%d/%d P3:%d/%d P4:%d/%d roll:%f d:%d ", P1r.x, P1r.y+p, P2r.x, P2r.y+p, P3r.x, P3r.y+p, P4r.x , P4r.y+p, R2D(roll), p  );
+	if( P1r.y != P1o.y || P1r.x != P1o.x ){
+		ESP_LOGI(FNAME,"drawHorizon P: %1.1f R: %1.1f Y: %1.1f", R2D(pitch), R2D(roll), R2D(yaw) );
+		xSemaphoreTake(spiMutex,portMAX_DELAY );
+		ucg->setClipRange( 20, 60, 200, 200 );
+		ucg->setColor( COLOR_LBLUE );
+		ucg->drawTetragon( P1r.x, P1r.y, P2r.x, P2r.y, P3r.x, P3r.y, P4r.x , P4r.y );
+		ucg->setColor( COLOR_BROWN );
+		ucg->drawTetragon( P4r.x, P4r.y, P3r.x, P3r.y, P6r.x, P6r.y, P5r.x , P5r.y );
+		// Flarm::drawAirplane( 120, 160, true, false );  would be nice hence flickering
+		P1o = P1r;
+		P2o = P2r;
+		P3o = P3r;
+		P4o = P4r;
+		P5o = P5r;
+		P6o = P6r;
+		oroll = roll;
+		ucg->undoClipRange();
+		xSemaphoreGive(spiMutex);
+	}
+	if( compass_enable.get() != CS_DISABLE ){
+		heading = static_cast<int>(rintf(mag_hdt.get()));
+		ucg->setFont(ucg_font_fub20_hr, true);
+		ucg->setPrintPos(70,310);
+		if( heading >= 360 )
+			heading -= 360;
+		//			ESP_LOGI(FNAME,"compass enable, heading: %d", heading );
+		if( heading > 0  && heading != heading_old){
+			ucg->setColor( COLOR_WHITE );
+			ucg->printf("   %d°   ", heading );
+			heading_old = heading;
+		}
 	}
 }
+
 
 void IpsDisplay::drawLoadDisplay( float loadFactor ){
 	// ESP_LOGI(FNAME,"drawLoadDisplay %1.1f tick: %d", loadFactor, tick );

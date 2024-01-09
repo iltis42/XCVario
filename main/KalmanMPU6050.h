@@ -163,7 +163,7 @@ private:
   static vector_i   raw_gyro;
   static vector_ijk accel;
   static vector_ijk gyro;
-  static vector_ijk a1;
+  static vector_ijk petal;
   static double kalXAngle, kalYAngle;
 
   static float fallbackToGyro();

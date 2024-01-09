@@ -32,7 +32,7 @@ vector_ijk IMU::gyro(0,0,0);
 double IMU::kalXAngle = 0.0;
 double IMU::kalYAngle = 0.0;
 float  IMU::fused_yaw = 0;
-vector_ijk IMU::a1(0,0,0);
+vector_ijk IMU::petal(0,0,0);
 
 
 Quaternion IMU::att_quat(0,0,0,0);
@@ -163,42 +163,37 @@ void IMU::Process()
 	if( ret )
 		return;
 	float gravity_trust = 1;
-	double roll = 0;
 	double pitch = 0;
 	if( getTAS() > 10 ){
 		float loadFactor = accel.get_norm();
 		float lf = loadFactor > 2.0 ? 2.0 : loadFactor;
 		loadFactor = lf < 0 ? 0 : lf; // limit to 0..2g
 		// to get pitch and roll independent of circling, map pitch and roll values into 3D vector
-		roll = atan(((D2R(gyroZ) /cos( D2R(euler.Roll())) ) * (getTAS()/3.6)) / 9.80665);
-		double pitch = IMU::PitchFromAccelRad();
+		float roll = -atan(((D2R(gyro.c) /cos( D2R(euler.Roll())) ) * (getTAS()/3.6f)) / 9.80665f);
+		float pitch = IMU::PitchFromAccelRad();
 
-		// Virtual gravity from centripedal forces to keep angle of bank while circling
-		a1.a = -sin(pitch);               // Nose down (positive Y turn) results in negative X
-		a1.b = sin(roll)*cos(pitch);      // Left wing down (or negative X roll) results in negative Y
-		a1.c = cos(roll)*cos(pitch);      // Any roll or pitch creates a smaller positive Z, gravity Z is positive
+		// Centripetal forces to keep angle of bank while circling
+		petal.a = sin(pitch);                // Nose down (positive Y turn) results in positive X force
+		petal.b = -sin(roll)*cos(pitch);     // Left wing down (or negative X roll) results in positive Y force
+		petal.c = cos(roll)*cos(pitch);      // Any roll or pitch creates a smaller positive Z, gravity Z is positive
 		// trust in gyro at load factors unequal 1 g
 		gravity_trust = (ahrs_min_gyro_factor.get() + (ahrs_gyro_factor.get() * ( pow(10, abs(loadFactor-1) * ahrs_dynamic_factor.get()) - 1)));
 		ESP_LOGI( FNAME,"Omega roll: %f Pitch: %f Gyro Trust: %f", R2D(roll), R2D(pitch), gravity_trust );
 	}
-	else{
-		a1.a = accel.a;
-		a1.b = accel.b;
-		a1.c = accel.c;
+	else {
+		// For still stand centripetal forces are simulated by rotating g@180Z
+		petal.a = -accel.a;
+		petal.b = -accel.b;
+		petal.c = accel.c;
 	}
 	vector_ijk gyro_rad = deg2rad(gyro);
-	ESP_LOGI( FNAME, " ax1:%f ay1:%f az1:%f Gx:%f Gy:%f GZ:%f GRT:%f Roll:%.1f ", a1.a, a1.b, a1.c, gyro_rad.a, gyro_rad.b, gyro_rad.c, gravity_trust, R2D(roll) );
-	update_fused_vector(att_vector, gravity_trust, a1, gyro_rad, dt);
+	ESP_LOGI( FNAME, " ax1:%f ay1:%f az1:%f Gx:%f Gy:%f GZ:%f GRT:%f ", petal.a, petal.b, petal.c, gyro_rad.a, gyro_rad.b, gyro_rad.c, gravity_trust );
+	update_fused_vector(att_vector, gravity_trust, petal, gyro_rad, dt);
 	// ESP_LOGI(FNAME,"attv: %.3f %.3f %.3f", att_vector.a, att_vector.b, att_vector.c);
 	att_quat = Quaternion::fromAccelerometer(att_vector);
 	// ESP_LOGI(FNAME,"attq: %.3f %.3f %.3f %.3f", att_quat.a, att_quat.b, att_quat.c, att_quat.d );
 	euler = rad2deg(att_quat.toEulerRad());
 	ESP_LOGI( FNAME,"Euler R:%.1f P:%.1f Y:%f", euler.Roll(), euler.Pitch(), euler.Yaw());
-	// euler_angles my_euler;
-	// my_euler.a  = atan2(att_vector.b, att_vector.c)*180.f/float(M_PI);
-	// my_euler.b = atan2(-att_vector.a, att_vector.c)*180.f/float(M_PI);
-	// my_euler.c   = atan2(-att_vector.a, att_vector.b)*180.f/float(M_PI);
-	// ESP_LOGI( FNAME,"MyEuler R:%.1f P:%.1f Y:%f", my_euler.Roll(), my_euler.Pitch(), my_euler.Yaw());
 
 	// treat gimbal lock, limit to 88 deg
 	if( euler.Roll() > 88.0 )
@@ -341,6 +336,7 @@ class IMU_Ref
 	vector_d Br, Bl;
 };
 
+// Callback for the two vector samples needed for the reference calibration
 void IMU::getAccelSamplesAndCalib(int side)
 {
 	esp_err_t err;
@@ -426,6 +422,7 @@ void IMU::getAccelSamplesAndCalib(int side)
 	}
 }
 
+// Setup the rotation for the "upright" and "topdown" vario mounting positions
 void IMU::defaultImuReference()
 {
 	// Revert from calibrated IMU to default mapping, which fits 

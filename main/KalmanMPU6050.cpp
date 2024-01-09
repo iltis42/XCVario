@@ -155,7 +155,7 @@ void IMU::update_fused_vector(vector_ijk& fused, float gyro_trust, const vector_
     vector_ijk virtual_gravity = omega_step * fused;
     virtual_gravity.normalize();
     virtual_gravity *= gyro_trust;
-    ESP_LOGI(FNAME,"fused/virtual %.4f,%.4f,%.4f/%.4f,%.4f,%.4f", fused.a, fused.b, fused.c, virtual_gravity.a, virtual_gravity.b, virtual_gravity.c);
+    // ESP_LOGI(FNAME,"fused/virtual %.4f,%.4f,%.4f/%.4f,%.4f,%.4f", fused.a, fused.b, fused.c, virtual_gravity.a, virtual_gravity.b, virtual_gravity.c);
 
     // fuse the centripetal and gyro estimation
     vector_ijk pn = petal_force;
@@ -204,7 +204,7 @@ void IMU::Process()
 		petal.c = cos(roll)*cos(pitch);      // Any roll or pitch creates a smaller positive Z, gravity Z is positive
 		// trust in gyro at load factors unequal 1 g
 		gravity_trust = (ahrs_min_gyro_factor.get() + (ahrs_gyro_factor.get() * ( pow(10, abs(loadFactor-1) * ahrs_dynamic_factor.get()) - 1)));
-		ESP_LOGI( FNAME,"Omega roll: %f Pitch: %f W_yz: %f Gyro Trust: %f", R2D(roll), R2D(pitch), w_yz, gravity_trust );
+		// ESP_LOGI( FNAME,"Omega roll: %f Pitch: %f W_yz: %f Gyro Trust: %f", R2D(roll), R2D(pitch), w_yz, gravity_trust );
 	}
 	else {
 		// For still stand centripetal forces are simulated by rotating g@180Z
@@ -218,8 +218,8 @@ void IMU::Process()
 	att_quat = Quaternion::fromAccelerometer(att_vector);
 	// ESP_LOGI(FNAME,"attq: %.3f %.3f %.3f %.3f", att_quat.a, att_quat.b, att_quat.c, att_quat.d );
 	euler_rad = att_quat.toEulerRad();
-	// EulerAngles euler = rad2deg(euler_rad);
-	// ESP_LOGI( FNAME,"Euler R:%.1f P:%.1f Y:%f", euler.Roll(), euler.Pitch(), euler.Yaw());
+	EulerAngles euler = rad2deg(euler_rad);
+	ESP_LOGI( FNAME,"Euler R:%.1f P:%.1f Y:%f", euler.Roll(), euler.Pitch(), euler.Yaw());
 
 	// treat gimbal lock, limit to 88 deg
 	const float limit = deg2rad(88.);

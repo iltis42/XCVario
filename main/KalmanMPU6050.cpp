@@ -220,13 +220,16 @@ void IMU::Process()
 		petal.c = accel.c;
 	}
 	// ESP_LOGI( FNAME, " ax1:%f ay1:%f az1:%f Gx:%f Gy:%f GZ:%f dT:%f", petal.a, petal.b, petal.c, gyro.a, gyro.b, gyro.c, dt );
+	vector_ijk att_prev = att_vector;
 	update_fused_vector(att_vector, gravity_trust, petal, omega_step);
 	// ESP_LOGI(FNAME,"attv: %.3f %.3f %.3f", att_vector.a, att_vector.b, att_vector.c);
 	att_quat = Quaternion::fromAccelerometer(att_vector);
 	// ESP_LOGI(FNAME,"attq: %.3f %.3f %.3f %.3f", att_quat.a, att_quat.b, att_quat.c, att_quat.d );
 	euler_rad = att_quat.toEulerRad();
-	EulerAngles euler = rad2deg(euler_rad);
-	ESP_LOGI( FNAME,"Euler R:%.1f P:%.1f Y:%f", euler.Roll(), euler.Pitch(), euler.Yaw());
+	if ( (att_vector-att_prev).get_norm2() > 0.5 ) {
+		EulerAngles euler = rad2deg(euler_rad);
+		ESP_LOGI( FNAME,"Euler R:%.1f P:%.1f OR:%.1f IMUP:%.1f %.1f@GA(%.3f,%.3f,%.3f)", euler.Roll(), euler.Pitch(), R2D(roll), R2D(pitch), R2D(w), axis.a, axis.b, axis.c );
+	}
 
 	// treat gimbal lock, limit to 88 deg
 	const float limit = deg2rad(88.);

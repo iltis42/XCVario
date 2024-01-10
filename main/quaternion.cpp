@@ -170,19 +170,19 @@ EulerAngles Quaternion::toEulerRad() const
     EulerAngles result;
 
     // roll
-    result.a = atan2(2*(a*b + c*d),1 - 2*(b*b + c*c));
+    result.a = atan2(2.f*(a*b + c*d),1.f - 2.f*(b*b + c*c));
     // float xx = asin(2*(a*c - d*b));
 
     // pitch
-    result.b = (-M_PI/2. + 2* atan2(sqrt(1+ 2*(a*c - b*d)), sqrt(1- 2*(a*c - b*d))));
+    result.b = (-(float)(M_PI)/2.f + 2.f* atan2(sqrt(1.f+ 2.f*(a*c - b*d)), sqrt(1- 2*(a*c - b*d))));
     //result.pitch = asin(2*(q0*c - d*b));
     // ESP_LOGI( FNAME,"EulerPitch sin:%.4f atan2:%.4f", xx, result.pitch);
 
     // yaw
     if (d==0)
-        result.c = 0.0;
+        result.c = 0.0f;
     else
-        result.c = atan2(2*(a*d + b*c),1 - 2*(c*c + d*d));
+        result.c = atan2(2.f*(a*d + b*c),1.f - 2.f*(c*c + d*d));
     return result;
 
 
@@ -293,16 +293,16 @@ Quaternion Quaternion::fromAccelerometer(const vector_ijk& accel_par)
     an.normalize();
 	//ESP_LOGI(FNAME,"ax=%.3f ay=%.3f az=%.3f", an.an, an.b, an.c);
     // There is a singularity at an.c == -1
-    if ( an.c < 0 ) {
+    if ( an.c < -0.999f ) {
         float half_cos = sqrt(0.5f*(1.0f - an.c));
-        float temp = 2.f * half_cos;
-        Quaternion orientation( -an.b/temp, half_cos, 0.0, an.a/temp );
+        float temp = .5f / half_cos;
+        Quaternion orientation( -an.b*temp, half_cos, 0.0, an.a*temp );
         //ESP_LOGI(FNAME,"Quat: %.3f %.3f %.3f %.3f", orientation.a, orientation.b, orientation.c, orientation.d );
         return orientation;
     } else {
         float half_cos = sqrt(0.5f*(1.0f + an.c));
-        float temp = 2.f * half_cos;
-        Quaternion orientation( half_cos, -an.b/temp, an.a/temp, 0.0 );
+        float temp = .5f / half_cos;
+        Quaternion orientation( half_cos, -an.b*temp, an.a*temp, 0.0 );
         //ESP_LOGI(FNAME,"Quat: %.3f %.3f %.3f %.3f", orientation.a, orientation.b, orientation.c, orientation.d );
         return orientation;
     }
@@ -317,8 +317,9 @@ Quaternion Quaternion::fromGyro(const vector_ijk& omega, float dtime)
     b = alpha*(omega.a);
     c = alpha*(omega.b);
     d = alpha*(omega.c);
-    a = 1. - 0.5*(b*b+c*c+d*d);
+    a = 1.f - 0.5f*(b*b+c*c+d*d);
     Quaternion result(a,b,c,d);
+    result.normalize();
     // ESP_LOGI(FNAME,"Quat1: %.3f %.3f %.3f %.3f", result.a, result.b, result.c, result.d );
 
     // Often found in literature and identic for small angles.

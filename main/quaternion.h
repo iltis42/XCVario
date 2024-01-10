@@ -1,15 +1,12 @@
-#include "vector_3d.h"
 #pragma once
 
+#include "vector_3d.h"
+#include <cmath>
+
+#define deg2rad(degrees) ((degrees) * (float(M_PI) / 180.0f))
+#define rad2deg(rad) ((rad) * (180.0f / float(M_PI)))
+
 //#define Quaternionen_Test 1
-
-typedef struct euler_angles {
-
-    float roll;
-    float pitch;
-    float yaw;
-
-} euler_angles;
 
 float Compass_atan2( float y, float x );
 
@@ -22,22 +19,30 @@ public:
     float b;
     float c;
     float d;
+    Quaternion() : a(1.), b(0), c(0), d(0) {};
     Quaternion(float a, float b, float c, float d);
     Quaternion(const float angle, const vector_ijk& axis);
     Quaternion(Quaternion &&) = default; // Allow std::move
     Quaternion(const Quaternion &) = default;
     Quaternion& operator=(const Quaternion&) = default;
+    bool operator==(const Quaternion r) { return a==r.a && b==r.b && c==r.c && d==r.d; };
     
     // API
     float getAngle() const;
+    float getAngleAndAxis(vector_ijk& axis) const;
     friend Quaternion operator*(const Quaternion& left, const Quaternion& right);
     Quaternion get_normalized() const;
-    Quaternion normalize();
+    Quaternion& normalize();
+    Quaternion& conjugate();
+    Quaternion get_conjugate() const;
     vector_ijk operator*(const vector_ijk& p) const;
+    vector_d operator*(const vector_d& p) const;
     friend Quaternion slerp(Quaternion q1, Quaternion q2, double lambda);
     static Quaternion AlignVectors(const vector_ijk &start, const vector_ijk &dest);
-    euler_angles to_euler_angles();
-    Quaternion get_conjugate() const;
+    static Quaternion fromRotationMatrix(const vector_d &X, const vector_d &Y);
+    static Quaternion fromAccelerometer(const vector_ijk& accel);
+    static Quaternion fromGyro(const vector_ijk& w, float time);
+    EulerAngles toEulerRad() const;
 
     // something like a unit test
     static void quaternionen_test();

@@ -12,11 +12,10 @@
 #ifndef _MPU_TYPES_HPP_
 #define _MPU_TYPES_HPP_
 
-#include <stdint.h>
-#include <string>
 #include "mpu/registers.hpp"
 #include "sdkconfig.h"
 #include "WString.h"
+#include <cstdint>
 
 /*! MPU Driver namespace */
 namespace mpud
@@ -451,25 +450,41 @@ static constexpr dmp_tap_axis_t DMP_TAP_XYZ     {0x3F};
 
 /*! Generic axes struct to store sensors' data */
 
-template <class type_t>
+template <typename T>
 struct axes_t
 {
     union
     {
-        type_t xyz[3] = {0};
+        T xyz[3] = {0};
         struct
         {
-            type_t x;
-            type_t y;
-            type_t z;
+            T x;
+            T y;
+            T z;
         };
     };
-    type_t& operator[](int i) { return xyz[i]; }
-    struct axes_t operator = ( const struct axes_t &other ) { x = other.x; y = other.y; z = other.z; return *this; }
-    bool operator == ( const struct axes_t<type_t> &right ) const { return x == right.x && y == right.y && z == right.z; }
-    bool isZero() { return bool( !(x|y|z) ); }
-    operator String  () {
-    	return "X:" + String(x) + " Y:" + String(y) + " Z:" + String(z);
+    axes_t<T>() = default;
+    axes_t<T>(T p1, T p2, T p3) : x(p1), y(p2), z(p3) {}
+    axes_t<T>(const axes_t<T>&) = default;
+    T& operator[](int i) { return xyz[i]; }
+    axes_t<T>& operator = (const axes_t<T> &other)
+        { x = other.x; y = other.y; z = other.z; return *this; }
+    bool operator == ( const axes_t<T> &right ) const
+        { return x == right.x && y == right.y && z == right.z; }
+    bool isZero() const { return bool( !(x|y|z) ); }
+    void setZero() { x=y=z=.0; }
+    axes_t<T>& operator+=(const axes_t<int16_t>& right)
+        { x += right.x; y += right.y; z += right.z; return *this; }
+    axes_t<T>& operator+(const axes_t<T>& right)
+        { axes_t<T> tmp(*this); tmp += right; return tmp; }
+    axes_t<T>& operator-=(const axes_t<int16_t>& right)
+        { x -= right.x; y -= right.y; z -= right.z; return *this; }
+    axes_t<T>& operator/=(T right)
+        { x /= right; y /= right; z /= right; return *this; }
+    axes_t<T>& operator/(T right)
+        { axes_t<T> tmp(*this); tmp.x /= right; tmp.y /= right; tmp.z /= right; return tmp; }
+    const char* toString() {
+    	return ("X:" + String(x) + " Y:" + String(y) + " Z:" + String(z)).c_str();
     };
 };
 // Ready-to-use axes types

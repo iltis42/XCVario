@@ -26,7 +26,6 @@ static const char* TAG = CONFIG_MPU_CHIP_MODEL;
 
 #include "mpu/log.hpp"
 
-extern bool topDown;
 extern float mpu_target_temp;
 
 
@@ -74,24 +73,28 @@ esp_err_t MPU::initialize()
 	}
 #endif
 
-// set Full Scale range
-if (MPU_ERR_CHECK(setGyroFullScale(GYRO_FS_500DPS))) return err;
-if (MPU_ERR_CHECK(setAccelFullScale(ACCEL_FS_4G))) return err;
-// set Digital Low Pass Filter to get smoother data
-if (MPU_ERR_CHECK(setDigitalLowPassFilter(DLPF_5HZ))) return err;
+	// set Full Scale range
+	if (MPU_ERR_CHECK(setGyroFullScale(GYRO_FS_500DPS))) return err;
+	if (MPU_ERR_CHECK(setAccelFullScale(ACCEL_FS_4G))) return err;
+	// set Digital Low Pass Filter to get smoother data
+	if (MPU_ERR_CHECK(setDigitalLowPassFilter(DLPF_5HZ))) return err;
 
 // setup magnetometer
 #ifdef CONFIG_MPU_AK89xx
-if (MPU_ERR_CHECK(compassInit())) return err;
+	if (MPU_ERR_CHECK(compassInit())) return err;
 #ifdef CONFIG_MPU_AK8963
-if (MPU_ERR_CHECK(compassSetSensitivity(MAG_SENSITIVITY_0_15_uT))) return err;
+	if (MPU_ERR_CHECK(compassSetSensitivity(MAG_SENSITIVITY_0_15_uT))) return err;
 #endif
 #endif
 
-// set sample rate to 100Hz
-if (MPU_ERR_CHECK(setSampleRate(100))) return err;
-MPU_LOGI("Initialization complete");
-return err;
+	// save accelerometer factory trim values
+	accel_factory_trim = getAccelOffset();
+	MPU_LOGI("Factory trim: %d/%d/%d", accel_factory_trim.x, accel_factory_trim.y, accel_factory_trim.z);
+
+	// set sample rate to 100Hz
+	if (MPU_ERR_CHECK(setSampleRate(100))) return err;
+	MPU_LOGI("Initialization complete");
+	return err;
 }
 
 /**
@@ -176,7 +179,8 @@ void MPU::pwm_init(){
 			.channel = LEDC_CHANNEL_1,
 			.intr_type = LEDC_INTR_DISABLE,
 			.timer_sel = LEDC_TIMER_1,
-			.duty = 0, .hpoint = 0 };
+			.duty = 0,
+			.hpoint = 0 };
 	ledc_channel_config(&pwm_ch);
 	ledc_timer_config(&pwm_timer);
 	temp_control( 0, 45.0 );
@@ -891,35 +895,19 @@ raw_axes_t MPU::getGyroOffset()
 /**
  * @brief Push biases to the accel offset registers.
  *
- * This function expects biases relative to the current sensor output, and
- * these biases will be added to the factory-supplied values.
+ * This function expects biases relative to the sensor output with factory trim,
+ * these biases will be added to the factory-supplied trim values.
  *
  * Note: Bias inputs are LSB in +-16G format.
  * */
 esp_err_t MPU::setAccelOffset(raw_axes_t bias)
 {
 	raw_axes_t facBias;
-	// first, read OTP values of Accel factory trim
-
-#if defined CONFIG_MPU6050
-	if (MPU_ERR_CHECK(readBytes(regs::XA_OFFSET_H, 6, buffer))) return err;
-	facBias.x = (buffer[0] << 8) | buffer[1];
-	facBias.y = (buffer[2] << 8) | buffer[3];
-	facBias.z = (buffer[4] << 8) | buffer[5];
-
-#elif defined CONFIG_MPU6500
-	if (MPU_ERR_CHECK(readBytes(regs::XA_OFFSET_H, 8, buffer))) return err;
-	// note: buffer[2] and buffer[5], stay the same,
-	//  they are read just to keep the burst reading
-	facBias.x = (buffer[0] << 8) | buffer[1];
-	facBias.y = (buffer[3] << 8) | buffer[4];
-	facBias.z = (buffer[6] << 8) | buffer[7];
-#endif
-
+	// apply saved values of factory trim
 	// note: preserve bit 0 of factory value (for temperature compensation)
-	facBias.x += (bias.x & ~1);
-	facBias.y += (bias.y & ~1);
-	facBias.z += (bias.z & ~1);
+	facBias.x = accel_factory_trim.x + (bias.x & ~1);
+	facBias.y = accel_factory_trim.y + (bias.y & ~1);
+	facBias.z = accel_factory_trim.z + (bias.z & ~1);
 
 #if defined CONFIG_MPU6050
 	buffer[0] = (uint8_t)(facBias.x >> 8);
@@ -945,8 +933,8 @@ esp_err_t MPU::setAccelOffset(raw_axes_t bias)
 
 /**
  * @brief Return biases from accel offset registers.
- * This returns the biases with OTP values from factory trim added,
- * so returned values will be different than that ones set with setAccelOffset().
+ * This returns the biases with OTP values from factory trim subtracted,
+ * so returned values will be the same as the ones set with setAccelOffset().
  *
  * Note: Bias output are LSB in +-16G format.
  * */
@@ -967,6 +955,7 @@ raw_axes_t MPU::getAccelOffset()
 	bias.z                        = (buffer[6] << 8) | buffer[7];
 #endif
 
+	bias -= accel_factory_trim;
 	return bias;
 }
 
@@ -991,6 +980,9 @@ esp_err_t MPU::computeOffsets(raw_axes_t* accel, raw_axes_t* gyro)
 		(*accel)[i] = -((*accel)[i] >> (types::ACCEL_FS_16G - kAccelFS));
 		(*gyro)[i]  = -((*gyro)[i] >> (types::GYRO_FS_1000DPS - kGyroFS));
 	}
+	// add currently set gyro offset register values
+	*gyro  += getGyroOffset();
+
 	return err;
 }
 
@@ -1010,18 +1002,10 @@ accelZ = accelG[0];
 esp_err_t MPU::acceleration(raw_axes_t* accel)
 {
 	if (MPU_ERR_CHECK(readBytes(regs::ACCEL_XOUT_H, 6, buffer))) return err;
-	if( topDown ){
-		accel->x = -(buffer[0] << 8 | buffer[1]);   // real Z
-		accel->y = -(buffer[2] << 8 | buffer[3]);    // real Y
-		accel->z = (buffer[4] << 8 | buffer[5]);    // real -X
-
-	}else
-	{
-		accel->x = buffer[0] << 8 | buffer[1];
-		accel->y = buffer[2] << 8 | buffer[3];
-		accel->z = buffer[4] << 8 | buffer[5];
-	}
-	// MPU_LOGI("MPU acc: x:%d y:%d z:%d", accel->x, accel->y, accel->z );
+	accel->x = buffer[0] << 8 | buffer[1];
+	accel->y = buffer[2] << 8 | buffer[3];
+	accel->z = buffer[4] << 8 | buffer[5];
+	// MPU_LOGI("accel:\t%d\t%d\t%d", accel->x, accel->y, accel->z);
 	return err;
 }
 
@@ -1031,15 +1015,9 @@ esp_err_t MPU::acceleration(raw_axes_t* accel)
 esp_err_t MPU::acceleration(int16_t* x, int16_t* y, int16_t* z)
 {
 	if (MPU_ERR_CHECK(readBytes(regs::ACCEL_XOUT_H, 6, buffer))) return err;
-	if( topDown ){
-		*x = -(buffer[0] << 8 | buffer[1]);
-		*y = -(buffer[2] << 8 | buffer[3]);
-		*z = buffer[4] << 8 | buffer[5];
-	}else{
-		*x = buffer[0] << 8 | buffer[1];
-		*y = buffer[2] << 8 | buffer[3];
-		*z = buffer[4] << 8 | buffer[5];
-	}
+	*x = buffer[0] << 8 | buffer[1];
+	*y = buffer[2] << 8 | buffer[3];
+	*z = buffer[4] << 8 | buffer[5];
 	return err;
 }
 
@@ -1049,17 +1027,9 @@ esp_err_t MPU::acceleration(int16_t* x, int16_t* y, int16_t* z)
 esp_err_t MPU::rotation(raw_axes_t* gyro)
 {
 	if (MPU_ERR_CHECK(readBytes(regs::GYRO_XOUT_H, 6, buffer))) return err;
-	if( topDown ){
-		gyro->x = -(buffer[0] << 8 | buffer[1]);  // real Z
-		gyro->y = -(buffer[2] << 8 | buffer[3]);  // real Y
-		gyro->z = (buffer[4] << 8 | buffer[5]);   // real X
-	}
-	else
-	{
-		gyro->x = buffer[0] << 8 | buffer[1];
-		gyro->y = buffer[2] << 8 | buffer[3];
-		gyro->z = buffer[4] << 8 | buffer[5];
-	}
+	gyro->x = buffer[0] << 8 | buffer[1];
+	gyro->y = buffer[2] << 8 | buffer[3];
+	gyro->z = buffer[4] << 8 | buffer[5];
 	return err;
 }
 
@@ -1069,16 +1039,9 @@ esp_err_t MPU::rotation(raw_axes_t* gyro)
 esp_err_t MPU::rotation(int16_t* x, int16_t* y, int16_t* z)
 {
 	if (MPU_ERR_CHECK(readBytes(regs::GYRO_XOUT_H, 6, buffer))) return err;
-	if( topDown ){
-		*x = -(buffer[0] << 8 | buffer[1]);
-		*y = -(buffer[2] << 8 | buffer[3]);
-		*z = (buffer[4] << 8 | buffer[5]);
-	}
-	else{
-		*x = (buffer[0] << 8 | buffer[1]);
-		*y = (buffer[2] << 8 | buffer[3]);
-		*z = (buffer[4] << 8 | buffer[5]);
-	}
+	*x = (buffer[0] << 8 | buffer[1]);
+	*y = (buffer[2] << 8 | buffer[3]);
+	*z = (buffer[4] << 8 | buffer[5]);
 	return err;
 }
 
@@ -1104,23 +1067,12 @@ esp_err_t MPU::temperature(int16_t* temp)
 esp_err_t MPU::motion(raw_axes_t* accel, raw_axes_t* gyro)
 {
 	if (MPU_ERR_CHECK(readBytes(regs::ACCEL_XOUT_H, 14, buffer))) return err;
-	if( topDown ){
-		accel->x = -(buffer[0] << 8 | buffer[1]);
-		accel->y = -(buffer[2] << 8 | buffer[3]);
-		accel->z = buffer[4] << 8 | buffer[5];
-		gyro->x  = -(buffer[8] << 8 | buffer[9]);
-		gyro->y  = -(buffer[10] << 8 | buffer[11]);
-		gyro->z  = buffer[12] << 8 | buffer[13];
-	}
-	else
-	{
-		accel->x = buffer[0] << 8 | buffer[1];
-		accel->y = buffer[2] << 8 | buffer[3];
-		accel->z = buffer[4] << 8 | buffer[5];
-		gyro->x  = buffer[8] << 8 | buffer[9];
-		gyro->y  = buffer[10] << 8 | buffer[11];
-		gyro->z  = buffer[12] << 8 | buffer[13];
-	}
+	accel->x = buffer[0] << 8 | buffer[1];
+	accel->y = buffer[2] << 8 | buffer[3];
+	accel->z = buffer[4] << 8 | buffer[5];
+	gyro->x  = buffer[8] << 8 | buffer[9];
+	gyro->y  = buffer[10] << 8 | buffer[11];
+	gyro->z  = buffer[12] << 8 | buffer[13];
 	return err;
 }
 
@@ -1141,22 +1093,12 @@ esp_err_t MPU::dmpGetQuaternion(int16_t *data) {
 esp_err_t MPU::sensors(raw_axes_t* accel, raw_axes_t* gyro, int16_t* temp)
 {
 	if (MPU_ERR_CHECK(readBytes(regs::ACCEL_XOUT_H, 14, buffer))) return err;
-	if( topDown ){
-		accel->x = -(buffer[0] << 8 | buffer[1]);
-		accel->y = -(buffer[2] << 8 | buffer[3]);
-		accel->z = buffer[4] << 8 | buffer[5];
-		gyro->x  = -(buffer[8] << 8 | buffer[9]);
-		gyro->y  = -(buffer[10] << 8 | buffer[11]);
-		gyro->z  = buffer[12] << 8 | buffer[13];
-	}
-	else{
-		accel->x = buffer[0] << 8 | buffer[1];
-		accel->y = buffer[2] << 8 | buffer[3];
-		accel->z = buffer[4] << 8 | buffer[5];
-		gyro->x  = buffer[8] << 8 | buffer[9];
-		gyro->y  = buffer[10] << 8 | buffer[11];
-		gyro->z  = buffer[12] << 8 | buffer[13];
-	}
+	accel->x = buffer[0] << 8 | buffer[1];
+	accel->y = buffer[2] << 8 | buffer[3];
+	accel->z = buffer[4] << 8 | buffer[5];
+	gyro->x  = buffer[8] << 8 | buffer[9];
+	gyro->y  = buffer[10] << 8 | buffer[11];
+	gyro->z  = buffer[12] << 8 | buffer[13];
 	*temp    = buffer[6] << 8 | buffer[7];
 	return err;
 }
@@ -1177,23 +1119,12 @@ esp_err_t MPU::sensors(sensors_t* sensors, size_t extsens_len)
 #endif
 	if (MPU_ERR_CHECK(readBytes(regs::ACCEL_XOUT_H, length, buffer))) return err;
 
-	if( topDown ){
-		sensors->accel.x = -(buffer[0] << 8 | buffer[1]);
-		sensors->accel.y = -(buffer[2] << 8 | buffer[3]);
-		sensors->accel.z = buffer[4] << 8 | buffer[5];
-		sensors->gyro.x  = -(buffer[8] << 8 | buffer[9]);
-		sensors->gyro.y  = -(buffer[10] << 8 | buffer[11]);
-		sensors->gyro.z  = buffer[12] << 8 | buffer[13];
-	}
-	else
-	{
-		sensors->accel.x = buffer[0] << 8 | buffer[1];
-		sensors->accel.y = buffer[2] << 8 | buffer[3];
-		sensors->accel.z = buffer[4] << 8 | buffer[5];
-		sensors->gyro.x  = buffer[8] << 8 | buffer[9];
-		sensors->gyro.y  = buffer[10] << 8 | buffer[11];
-		sensors->gyro.z  = buffer[12] << 8 | buffer[13];
-	}
+	sensors->accel.x = buffer[0] << 8 | buffer[1];
+	sensors->accel.y = buffer[2] << 8 | buffer[3];
+	sensors->accel.z = buffer[4] << 8 | buffer[5];
+	sensors->gyro.x  = buffer[8] << 8 | buffer[9];
+	sensors->gyro.y  = buffer[10] << 8 | buffer[11];
+	sensors->gyro.z  = buffer[12] << 8 | buffer[13];
 	sensors->temp    = buffer[6] << 8 | buffer[7];
 
 
@@ -2461,9 +2392,99 @@ esp_err_t MPU::gyroSelfTest(raw_axes_t& regularBias, raw_axes_t& selfTestBias, u
 }
 
 /**
+ * @brief Collect samples of a static 1g acceleration
+ * This algorithm takes about ~500ms to oversample.
+ * */
+esp_err_t MPU::getMPUSamples(double& avgx, double& avgy, double& avgz, axes_t<int>& gyro)
+{
+	// configurations to get accel only
+	constexpr fifo_config_t kFIFOConfig = FIFO_CFG_ACCEL | FIFO_CFG_GYRO;
+	constexpr size_t kPacketSize       = 12;
+	const accel_fs_t accelFS           = getAccelFullScale();
+	const gyro_fs_t  gyroFS            = getGyroFullScale();
+	// backup previous configuration
+	const fifo_config_t prevFIFOConfig = getFIFOConfig();
+	const bool prevFIFOState           = getFIFOEnabled();
+	raw_axes_t curr_offset             = getAccelOffset();
+	// setup .. stick with the intended use configuration in terms of rate and resolution(!)
+	if (MPU_ERR_CHECK(setFIFOConfig(kFIFOConfig))) return err;
+	if (MPU_ERR_CHECK(setFIFOEnabled(true))) return err;
+	if (MPU_ERR_CHECK(setAccelOffset())) return err;
+
+	// wait for 200ms for sensors to stabilize
+	vTaskDelay(200 / portTICK_PERIOD_MS);
+	// fill FIFO for 400ms
+	if (MPU_ERR_CHECK(resetFIFO())) return err;
+	vTaskDelay(400 / portTICK_PERIOD_MS);
+	if (MPU_ERR_CHECK(setFIFOConfig(FIFO_CFG_NONE))) return err;
+	// get FIFO count
+	const uint16_t fifoCount = getFIFOCount();
+	MPU_LOGI("Fifocount %d", fifoCount);
+	if (MPU_ERR_CHECK(lastError())) return err;
+	const int packetCount = fifoCount / kPacketSize;
+	// read overrun bytes, if any
+	const int overrunCount = fifoCount - (packetCount * kPacketSize);
+	uint8_t buffer[kPacketSize] = {0};
+	if (overrunCount > 0) {
+		if (MPU_ERR_CHECK(readFIFO(overrunCount, buffer))) return err;
+	}
+	// fetch data and add up
+	axes_t<int> avg_accel, avg_gyro;
+	for (int i = 0; i < packetCount; i++) {
+		if (MPU_ERR_CHECK(readFIFO(kPacketSize, buffer))) return err;
+		// retrieve data
+		raw_axes_t mpuCur;
+		mpuCur.x = (buffer[0] << 8) | buffer[1];
+		mpuCur.y = (buffer[2] << 8) | buffer[3];
+		mpuCur.z = (buffer[4] << 8) | buffer[5];
+		// MPU_LOGI("XYZ part %d/%d/%d", mpuCur.x, mpuCur.y, mpuCur.z);
+		avg_accel += mpuCur; // add up
+
+		mpuCur.x  = (buffer[6] << 8) | buffer[7];
+		mpuCur.y  = (buffer[8] << 8) | buffer[9];
+		mpuCur.z  = (buffer[10] << 8) | buffer[11];
+		// MPU_LOGI("Rot part %d/%d/%d", mpuCur.x, mpuCur.y, mpuCur.z);
+		avg_gyro += mpuCur;
+	}
+	// calculate average
+	avg_accel /= packetCount;
+	MPU_LOGI("Avg accel %d/%d/%d", avg_accel.x, avg_accel.y, avg_accel.z);
+	avg_gyro /= packetCount;
+	MPU_LOGI("Avg gyro %d/%d/%d", avg_gyro.x, avg_gyro.y, avg_gyro.z);
+
+	// the unit in multiples of g
+	double one_g = 0x8000 >> (accelFS+1);
+	avgx = double(avg_accel.x) / one_g; // returned vector
+	avgy = double(avg_accel.y) / one_g;
+	avgz = double(avg_accel.z) / one_g;
+
+	// rotation scaled up to GYRO_FS_1000DPS
+	int to_1000_dps = types::GYRO_FS_1000DPS - gyroFS;
+	if ( to_1000_dps >= 0 ) {
+		for (int i = 0; i < 3; i++) {
+			gyro[i] = avg_gyro[i] >> to_1000_dps;
+		}
+	} else {
+		for (int i = 0; i < 3; i++) {
+			gyro[i] = avg_gyro[i] << 1;
+		}
+	}
+	MPU_LOGI("Avg gyro result %d/%d/%d", gyro.x, gyro.y, gyro.z);
+
+	// Restore registers
+	MPU_ERR_CHECK(setFIFOConfig(prevFIFOConfig));
+	MPU_ERR_CHECK(setFIFOEnabled(prevFIFOState));
+	MPU_ERR_CHECK(setAccelOffset(curr_offset));
+
+	return err;
+}
+
+
+/**
  * @brief Compute the Biases in regular mode and self-test mode.
  * @attention When calculating the biases the MPU must remain as horizontal as possible (0 degrees), facing up.
  * This algorithm takes about ~400ms to compute offsets.
+ * As is a good approach to cope with the first time powered uncalibrated variometer.
  * */
 esp_err_t MPU::getBiases(accel_fs_t accelFS, gyro_fs_t gyroFS, raw_axes_t* accelBias, raw_axes_t* gyroBias,
 		bool selftest)
@@ -2480,6 +2501,8 @@ esp_err_t MPU::getBiases(accel_fs_t accelFS, gyro_fs_t gyroFS, raw_axes_t* accel
 	const gyro_fs_t prevGyroFS         = getGyroFullScale();
 	const fifo_config_t prevFIFOConfig = getFIFOConfig();
 	const bool prevFIFOState           = getFIFOEnabled();
+	raw_axes_t curr_offset             = getAccelOffset();
+
 	// setup
 	if (MPU_ERR_CHECK(setSampleRate(kSampleRate))) return err;
 	if (MPU_ERR_CHECK(setDigitalLowPassFilter(kDLPF))) return err;
@@ -2487,6 +2510,7 @@ esp_err_t MPU::getBiases(accel_fs_t accelFS, gyro_fs_t gyroFS, raw_axes_t* accel
 	if (MPU_ERR_CHECK(setGyroFullScale(gyroFS))) return err;
 	if (MPU_ERR_CHECK(setFIFOConfig(kFIFOConfig))) return err;
 	if (MPU_ERR_CHECK(setFIFOEnabled(true))) return err;
+	if (MPU_ERR_CHECK(setAccelOffset())) return err;
 	if (selftest) {
 		if (MPU_ERR_CHECK(writeBits(regs::ACCEL_CONFIG, regs::ACONFIG_XA_ST_BIT, 3, 0x7))) {
 			return err;
@@ -2523,32 +2547,23 @@ esp_err_t MPU::getBiases(accel_fs_t accelFS, gyro_fs_t gyroFS, raw_axes_t* accel
 		gyroCur.x  = (buffer[6] << 8) | buffer[7];
 		gyroCur.y  = (buffer[8] << 8) | buffer[9];
 		gyroCur.z  = (buffer[10] << 8) | buffer[11];
-		gyroCur.x  = (buffer[6] << 8) | buffer[7];
-		gyroCur.y  = (buffer[8] << 8) | buffer[9];
-		gyroCur.z  = (buffer[10] << 8) | buffer[11];
 		// add up
-		accelAvg.x += accelCur.x;
-		accelAvg.y += accelCur.y;
-		accelAvg.z += accelCur.z;
-		gyroAvg.x += gyroCur.x;
-		gyroAvg.y += gyroCur.y;
-		gyroAvg.z += gyroCur.z;
+		accelAvg += accelCur;
+		gyroAvg += gyroCur;
 	}
 	// calculate average
-	accelAvg.x /= packetCount;
-	accelAvg.y /= packetCount;
-	accelAvg.z /= packetCount;
-	gyroAvg.x /= packetCount;
-	gyroAvg.y /= packetCount;
-	gyroAvg.z /= packetCount;
+	accelAvg /= packetCount;
+	gyroAvg /= packetCount;
 	// remove gravity from Accel Z axis for bias
 
 	const uint16_t gravityLSB = INT16_MAX >> (accelFS + 1);
-	if( topDown )  // consider topdown mode for offset compensation
-		accelAvg.x += gravityLSB;
-	else
+	if( abs(accelAvg.x) > (gravityLSB/2) ) {
 		accelAvg.x -= gravityLSB;
-	// printf("XXXXXXX CAX:%d\n", accelAvg.x);
+	}
+	else {
+		// consider topdown mode for offset compensation
+		accelAvg.x += gravityLSB;
+	}
 
 	// save biases
 	for (int i = 0; i < 3; i++) {
@@ -2562,6 +2577,7 @@ esp_err_t MPU::getBiases(accel_fs_t accelFS, gyro_fs_t gyroFS, raw_axes_t* accel
 	if (MPU_ERR_CHECK(setGyroFullScale(prevGyroFS))) return err;
 	if (MPU_ERR_CHECK(setFIFOConfig(prevFIFOConfig))) return err;
 	if (MPU_ERR_CHECK(setFIFOEnabled(prevFIFOState))) return err;
+	if (MPU_ERR_CHECK(setAccelOffset(curr_offset))) return err;
 	return err;
 }
 

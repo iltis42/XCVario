@@ -187,6 +187,7 @@ void IMU::Process()
 	float w = omega_step.getAngleAndAxis(axis) * 1.f / dt; // angular speed [rad/sec]
 	// ESP_LOGI( FNAME,"Omega: %f axis: %.3f,%.3f,%.3f", w, axis.a, axis.b, axis.c);
 
+	float roll=0, pitch=0;
 	if( getTAS() > 10 ){
 		float loadFactor = accel.get_norm();
 		float lf = loadFactor > 2.0 ? 2.0 : loadFactor;
@@ -194,9 +195,15 @@ void IMU::Process()
 		// the yz portion of w is proportional to the length of YZ portion of the normalized axis.
 		float w_yz = w * sqrt(axis.b*axis.b + axis.c*axis.c);
 		// tan(roll):= petal force/G = m w v / m g
-		float roll = (std::signbit(gyro_rad.c)?1.f:-1.f) * atan( w_yz * getTAS() / (3.6 * 9.80665) );
+		float tanw = w_yz * getTAS() / (3.6f * 9.80665f);
+		// expected extra load c = sqrt(aa+bb) - 1, here a = 1/9.81 x atan, b=1
+		float load_exp = sqrt(tanw*tanw/(9.80665f*9.80665f)+1.f) - 1.f;
+		float load_check = (load_exp > 0.f) ? std::min(std::max((loadFactor-.99f)/load_exp,0.f), 1.f) : 0.f;
+		// ESP_LOGI( FNAME,"tanw: %f loadexp: %.2f loadf: %.2f c:%.2f", tanw, load_exp, loadFactor, load_check );
+		// Scale according to real experienced load factor with x 0..1
+		roll = (std::signbit(gyro_rad.c)?1.f:-1.f) * atan( tanw ) * load_check;
 		// get pitch from accelerometer
-		float pitch = IMU::PitchFromAccelRad();
+		pitch = IMU::PitchFromAccelRad();
 
 		// Centripetal forces to keep angle of bank while circling
 		petal.a = sin(pitch);                // Nose down (positive Y turn) results in positive X force

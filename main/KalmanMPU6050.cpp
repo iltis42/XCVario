@@ -302,9 +302,9 @@ esp_err_t IMU::MPU6050Read()
 	tmpvec = vector_ijk(tmp.x, tmp.y, tmp.z);
 
 	// Check on irrational changes
-	if ( (tmpvec-prev_gyro).get_norm2() > 10000 ) {
+	if ( (tmpvec-prev_gyro).get_norm2() > 30000 ) {
 		vector_ijk d(tmpvec-prev_gyro); 
-		ESP_LOGE(FNAME, "gyro angle >100 deg/s in 0.2 S: X:%+.2f Y:%+.2f Z:%+.2f", d.a, d.b, d.c );
+		ESP_LOGE(FNAME, "gyro angle >300 deg/s in 0.2 S: X:%+.2f Y:%+.2f Z:%+.2f", d.a, d.b, d.c );
 		err |= ESP_FAIL;
 	}
 	else {

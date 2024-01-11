@@ -475,13 +475,13 @@ struct axes_t
     void setZero() { x=y=z=.0; }
     axes_t<T>& operator+=(const axes_t<int16_t>& right)
         { x += right.x; y += right.y; z += right.z; return *this; }
-    axes_t<T>& operator+(const axes_t<T>& right)
+    axes_t<T> operator+(const axes_t<T>& right)
         { axes_t<T> tmp(*this); tmp += right; return tmp; }
     axes_t<T>& operator-=(const axes_t<int16_t>& right)
         { x -= right.x; y -= right.y; z -= right.z; return *this; }
     axes_t<T>& operator/=(T right)
         { x /= right; y /= right; z /= right; return *this; }
-    axes_t<T>& operator/(T right)
+    axes_t<T> operator/(T right)
         { axes_t<T> tmp(*this); tmp.x /= right; tmp.y /= right; tmp.z /= right; return tmp; }
     const char* toString() {
     	return ("X:" + String(x) + " Y:" + String(y) + " Z:" + String(z)).c_str();

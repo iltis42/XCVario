@@ -149,18 +149,18 @@ float IMU::getGyroYawDelta()
 	return e.Yaw();
 }
 
-void IMU::update_fused_vector(vector_ijk& fused, float gyro_trust, const vector_ijk& petal_force, const Quaternion& omega_step)
+void IMU::update_fused_vector(vector_ijk& fused, float gyro_trust, vector_ijk& petal_force, Quaternion& omega_step)
 {
     // move the previos fused attitude by the new omega step
+    omega_step.d = -omega_step.d; // keep horizon when circling .. magic
     vector_ijk virtual_gravity = omega_step * fused;
     virtual_gravity.normalize();
     virtual_gravity *= gyro_trust;
     // ESP_LOGI(FNAME,"fused/virtual %.4f,%.4f,%.4f/%.4f,%.4f,%.4f", fused.a, fused.b, fused.c, virtual_gravity.a, virtual_gravity.b, virtual_gravity.c);
 
     // fuse the centripetal and gyro estimation
-    vector_ijk pn = petal_force;
-    pn.normalize();
-    fused = virtual_gravity + pn;
+    petal_force.normalize();
+    fused = virtual_gravity + petal_force;
     // ESP_LOGI(FNAME,"fused %.4f,%.4f,%.4f", fused.a, fused.b, fused.c);
     fused.normalize();
     // ESP_LOGI(FNAME,"fusedn %.4f,%.4f,%.4f", fused.a, fused.b, fused.c);
@@ -197,11 +197,11 @@ void IMU::Process()
 		// tan(roll):= petal force/G = m w v / m g
 		float tanw = w_yz * getTAS() / (3.6f * 9.80665f);
 		// expected extra load c = sqrt(aa+bb) - 1, here a = 1/9.81 x atan, b=1
-		float load_exp = sqrt(tanw*tanw/(9.80665f*9.80665f)+1.f) - 1.f;
-		float load_check = (load_exp > 0.f) ? std::min(std::max((loadFactor-.99f)/load_exp,0.f), 1.f) : 0.f;
-		// ESP_LOGI( FNAME,"tanw: %f loadexp: %.2f loadf: %.2f c:%.2f", tanw, load_exp, loadFactor, load_check );
+		float loadz_exp = sqrt(tanw*tanw/(9.80665f*9.80665f)+1.f) - 1.f;
+		float loadz_check = (loadz_exp > 0.f) ? std::min(std::max((accel.c-.99f)/loadz_exp,0.f), 1.f) : 0.f;
+		// ESP_LOGI( FNAME,"tanw: %f loadexp: %.2f loadf: %.2f c:%.2f", tanw, loadz_exp, loadFactor, loadz_check );
 		// Scale according to real experienced load factor with x 0..1
-		roll = (std::signbit(gyro_rad.c)?1.f:-1.f) * atan( tanw ) * load_check;
+		roll = (std::signbit(gyro_rad.c)?1.f:-1.f) * atan( tanw ) * loadz_check;
 		// get pitch from accelerometer
 		pitch = IMU::PitchFromAccelRad();
 

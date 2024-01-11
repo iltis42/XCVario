@@ -1752,8 +1752,8 @@ static int p5 = 0;
 static int p10;
 static int p15;
 static int p20;
-//static int p25;
-//static int p30;
+static int p25;
+static int p30;
 
 static float pitch_offset = 0;
 
@@ -1892,24 +1892,33 @@ void IpsDisplay::pitch_ticks( bool draw ) {
 		pp = oldpitchpixels;
 	xSemaphoreTake(spiMutex, portMAX_DELAY );
 	// draw ticks above the horizon
-	if ( pp > 15 )               //  3-degree threshold
+	if ( pp > 15 ) {              //  3-degree threshold
 		pitch_tick( draw, false,   p5 );   //  5 deg minor tick
-	if ( pp > p5 )
+	if ( pp > p5 ) {
 		pitch_tick( draw, true,   p10 );   // 10 deg major tick
-	if ( pp > p10 )
+	if ( pp > p10 ) {
 		pitch_tick( draw, false,  p15 );   // 15 deg minor tick
-	if ( pp > p15 )
+	if ( pp > p15 ) {
 		pitch_tick( draw, true,   p20 );   // 20 deg major tick
+	if ( pp > p20 ) {
+		pitch_tick( draw, false,  p25 );   // 25 deg minor tick
+	if ( pp > p25 )
+		pitch_tick( draw, true,   p30 );   // 30 deg major tick
+	}}}}} else
 	// draw ticks below the horizon
-	if ( pp < -15 )
+	if ( pp < -15 ) {
 		pitch_tick( draw, false,  -p5 );   //  5 deg minor tick
-	if ( pp < -p5 )
+	if ( pp < -p5 ) {
 		pitch_tick( draw, true,  -p10 );   // 10 deg major tick
-	if ( pp < -p10 )
+	if ( pp < -p10 ) {
 		pitch_tick( draw, false, -p15 );   // 15 deg minor tick
-	if ( pp < -p15 )
+	if ( pp < -p15 ) {
 		pitch_tick( draw, true,  -p20 );   // 20 deg major tick
-//	}
+	if ( pp < -p20 ) {
+		pitch_tick( draw, false, -p25 );   // 15 deg minor tick
+	if ( pp < -p25 ) 
+		pitch_tick( draw, true,  -p30 );   // 20 deg major tick
+	}}}}}
 	xSemaphoreGive(spiMutex);
 }
 
@@ -2043,8 +2052,8 @@ void IpsDisplay::drawHorizon( float p, float b, float yaw ){   // ( pitch, roll,
 			p10 = pitch2pixels( D2R(10) );
 			p15 = pitch2pixels( D2R(15) );
 			p20 = pitch2pixels( D2R(20) );
-//			p25 = pitch2pixels( D2R(25) );
-//			p30 = pitch2pixels( D2R(30) );
+			p25 = pitch2pixels( D2R(25) );
+			p30 = pitch2pixels( D2R(30) );
 		}
 		hzn_x0 = 0;
 		hzn_x1 = WIDTH_;
@@ -2163,18 +2172,18 @@ void IpsDisplay::drawHorizon( float p, float b, float yaw ){   // ( pitch, roll,
 	pitchpixels = pitch2pixels(p_);        // includes the offset
 	// Divide by cos(bank) since "pitch" is defined as perpendicular to ground
 	int y = n + ( (pitchpixels<<8) / cos_bank );
-	bool wrongpitch = ( p_ != p );      // limited_pitch() reduced it
-	// ensure some sky and some ground even with offset
-	if (y > AHRS_BOT - 10) {
-		y = AHRS_BOT - 10;
-		wrongpitch = true;
-	} else
-	if (y < AHRS_TOP + 10) {
-		y = AHRS_TOP + 10;
-		wrongpitch = true;
-	}
 	// move ends of horizon up or down by tan(bank)
 	int h = (WIDTH_2 * sin_bank) / cos_bank;
+	// ensure some sky and some ground even with offset
+	bool wrongpitch = ( p_ != p );      // limited_pitch() reduced it
+	if (y-abs(h) > AHRS_BOT-15) {
+		y = AHRS_BOT + abs(h) - 15;
+		wrongpitch = true;
+	} else
+	if (y+abs(h) < AHRS_TOP+15) {
+		y = AHRS_TOP - abs(h) + 15;
+		wrongpitch = true;
+	}
 	hzn_y0 = y + h;      // left end of horizon line, lower if h>0 i.e. bank>0
 	hzn_y1 = y - h;      // right end of horizon line
 	hzn_x0 = 0;

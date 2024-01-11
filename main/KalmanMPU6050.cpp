@@ -196,12 +196,15 @@ void IMU::Process()
 		float w_yz = w * sqrt(axis.b*axis.b + axis.c*axis.c);
 		// tan(roll):= petal force/G = m w v / m g
 		float tanw = w_yz * getTAS() / (3.6f * 9.80665f);
-		// expected extra load c = sqrt(aa+bb) - 1, here a = 1/9.81 x atan, b=1
-		float loadz_exp = sqrt(tanw*tanw/(9.80665f*9.80665f)+1.f) - 1.f;
-		float loadz_check = (loadz_exp > 0.f) ? std::min(std::max((accel.c-.99f)/loadz_exp,0.f), 1.f) : 0.f;
-		// ESP_LOGI( FNAME,"tanw: %f loadexp: %.2f loadf: %.2f c:%.2f", tanw, loadz_exp, loadFactor, loadz_check );
-		// Scale according to real experienced load factor with x 0..1
-		roll = (std::signbit(gyro_rad.c)?1.f:-1.f) * atan( tanw ) * loadz_check;
+		roll = (std::signbit(gyro_rad.c)?1.f:-1.f) * atan( tanw );
+		if ( ahrs_roll_check.get() ) {
+			// expected extra load c = sqrt(aa+bb) - 1, here a = 1/9.81 x atan, b=1
+			float loadz_exp = sqrt(tanw*tanw/(9.80665f*9.80665f)+1.f) - 1.f;
+			float loadz_check = (loadz_exp > 0.f) ? std::min(std::max((accel.c-.99f)/loadz_exp,0.f), 1.f) : 0.f;
+			ESP_LOGI( FNAME,"tanw: %f loadexp: %.2f loadf: %.2f c:%.2f", tanw, loadz_exp, loadFactor, loadz_check );
+			// Scale according to real experienced load factor with x 0..1
+			roll *= loadz_check;
+		}
 		// get pitch from accelerometer
 		pitch = IMU::PitchFromAccelRad();
 

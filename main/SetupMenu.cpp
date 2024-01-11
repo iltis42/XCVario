@@ -513,11 +513,13 @@ void SetupMenu::down(int count){
 		// ESP_LOGI(FNAME,"root: down");
 		if( gflags.horizon ) {
 			float offset = horizon_offset.get();
-			offset -= 0.5*count;
-			if( offset < -10.0 )
-				offset = -10.0;
-			else if( fabs(offset) < 1 )
+			if (offset > 0 && offset <= 1) {
 				offset = 0;
+			} else {
+				offset -= 0.5*count;
+				if( offset < -10.0 )
+					offset = -10.0;
+			}
 			horizon_offset.set( offset );
 			//ESP_LOGI(FNAME,"down: horizon_offset pct to %f", offset );
 		}
@@ -564,11 +566,13 @@ void SetupMenu::up(int count){
 		// ESP_LOGI(FNAME,"root: up");
 		if( gflags.horizon ) {
 			float offset = horizon_offset.get();
-			offset += 0.5*count;
-			if( offset > 10.0 )
-				offset = 10.0;
-			else if( fabs(offset) < 1 )
+			if (offset < 0 && offset >= -1) {
 				offset = 0;
+			} else {
+				offset += 0.5*count;
+				if( offset > 10.0 )
+					offset = 10.0;
+			}
 			horizon_offset.set( offset );
 			//ESP_LOGI(FNAME,"up: horizon_offset pct to %f", offset );
 		}

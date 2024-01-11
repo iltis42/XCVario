@@ -2122,17 +2122,15 @@ void IpsDisplay::drawHorizon( float p, float b, float yaw ){   // ( pitch, roll,
 		ucg->printf( "p %4.1f  ", 57.296 * p );
 
 		// show a warning about pitch offset being applied
-		if ( pitch_offset != 0 ) {
-//			ucg->setFont(ucg_font_fub14_hn, true);
-			ucg->setColor( COLOR_BRED );
-			ucg->setPrintPos(215,315);
-			if (pitch_offset > 0)
-				ucg->print( "^" );
-			else if (pitch_offset < 0)
-				ucg->print( "v" );
-			else
-				ucg->print( "  " );
-		}
+//		ucg->setFont(ucg_font_fub14_hn, true);
+		ucg->setColor( COLOR_BRED );
+		ucg->setPrintPos(215,315);
+		if (pitch_offset > 0)
+			ucg->print( "^" );
+		else if (pitch_offset < 0)
+			ucg->print( "v" );
+		else  // == 0
+			ucg->print( "  " );
 
 		return;     // skip drawing horizon & ticks until next call
 	}

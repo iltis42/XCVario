@@ -19,11 +19,11 @@ public:
 	// API
 	void set(const T p1, const T p2, const T p3) { a=p1, b=p2, c=p3; }
 	vector_3d<T>& operator+=(const vector_3d<T>& v2);
-	vector_3d<T>& operator+(const vector_3d<T>& v2) const;
+	vector_3d<T> operator+(const vector_3d<T>& v2) const;
 	vector_3d<T>& operator-=(const vector_3d<T>& v2);
-	vector_3d<T>& operator-(const vector_3d<T>& v2) const;
+	vector_3d<T> operator-(const vector_3d<T>& v2) const;
 	vector_3d<T>& operator*=(const T s2);
-	vector_3d<T>& operator*(const T s2);
+	vector_3d<T> operator*(const T s2);
 	vector_3d<T>& operator/=(const T s2);
 	T dot(const vector_3d<T>& v2);
 	vector_3d<T> cross(const vector_3d<T> &v2 ) const;

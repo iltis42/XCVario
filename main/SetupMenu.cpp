@@ -1784,6 +1784,12 @@ void SetupMenu::system_menu_create_hardware_ahrs_parameter( MenuEntry *top ){
 	ahrsdgf->setHelp( "Gyro dynamics factor, higher value trusts gyro more when load factor is different from one");
 	top->addEntry( ahrsdgf );
 
+	SetupMenuSelect * ahrsrollcheck = new SetupMenuSelect( "Gyro Roll Check", RST_NONE, nullptr, true, &ahrs_roll_check  );
+	ahrsrollcheck->setHelp( "Switch to test the gyro roll check code.");
+	ahrsrollcheck->addEntry( "Disable");
+	ahrsrollcheck->addEntry( "Enable");
+	top->addEntry( ahrsrollcheck );
+
 	SetupMenuValFloat * gyrog = new SetupMenuValFloat( "Gyro Gating", "°", 0, 10, 0.1, 0, false, &gyro_gating  );
 	gyrog->setHelp( "Minimum accepted gyro rate in degree per second");
 	top->addEntry( gyrog );

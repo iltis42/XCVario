@@ -282,6 +282,7 @@ SetupNG<int>		    ahrs_autozero("AHRSAZ", 0 );
 SetupNG<float>		    ahrs_gyro_factor("AHRSMGYF", 100 );
 SetupNG<float>		    ahrs_min_gyro_factor("AHRSLGYF", 20 );
 SetupNG<float>		    ahrs_dynamic_factor("AHRSGDYN", 5 );
+SetupNG<int>		    ahrs_roll_check("AHRSRCHECK", 0 );
 SetupNG<float>       	gyro_gating("GYRO_GAT", 1.0 );
 SetupNG<float>  		ahrs_gyro_cal("AHRSGCAL", 1.07 );
 SetupNG<int>  			ahrs_defaults( "AHRSDEF", 0, RST_NONE, SYNC_NONE, VOLATILE, set_ahrs_defaults );

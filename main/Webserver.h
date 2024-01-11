@@ -1,4 +1,6 @@
 #include <esp_http_server.h>
+#include <vector>
+#include <cJSON.h>
 
 
     enum class otaStatus : int8_t

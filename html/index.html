@@ -286,8 +286,13 @@
                     <li class="mg-tabs--item" data-target="tab2">
                         <a href="#" class="button--outline">Debug/Reset</a>
                     </li>
+                </ul>
+                <ul>
                     <li class="mg-tabs--item" data-target="tab3">
                         <a href="#" class="secondary">Backup/Restore</a>
+                    </li>
+                    <li class="mg-tabs--item" data-target="tab4">
+                        <a href="#" class="secondary">Exceedance</a>
                     </li>
                 </ul>
                 <!-- System info TAB -->
@@ -336,6 +341,47 @@
                         <input type="file" accept=".csv" id="restoreFile" />
                         Restore
                     </label>
+                </div>
+                <!-- Backup/Restore TAB -->
+                <div class="mg-tabs--content" id="tab4">
+                    <h3 class="title">Exceedance Tracker</h3>
+
+                    <details>
+                        <summary>Configure Static Limits</summary>
+                        <table>
+                            <tbody>
+                                <tr>
+                                    <td>Speed (km/h)</td>
+                                    <td id="SL" style="font-weight: bold;">
+                                        <input type="number" name="Speed Limit" id="SpeedUpperBound" min="0" max="10000"></input>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Neg. G-Load</td>
+                                    <td id="GNeg" style="font-weight: bold;">
+                                        <input type="number" name="Negative G-Load Limit" id="GLoadLowerBound" min="-20" max="-0.5"></input>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Pos. G-Load</td>
+                                    <td id="GPos" style="font-weight: bold;">
+                                        <input type="number" name="Positiv G-Load Limit" id="GLoadUpperBound" min="1" max="20"></input>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <button class="button-primary" type="button" id="LoadStaicBtn">Load</button>
+                                    </td>
+                                    <td>
+                                        <button class="button-primary" type="button" id="SaveStaicBtn" style="background-color: crimson;">Save</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </details>
+
+                    <button class="button-primary" type="button" id="DownloadBtn">Download</button>
+                    <button class="button-primary" type="button" id="ClearBtn" style="background-color: crimson;">Delete</button>
                 </div>
             </div>
         </section>
@@ -457,6 +503,106 @@
             xhr.send(formData);
         } else {
             window.alert("Error, no valid .csv file seleced");
+        }
+    });
+
+    // Load Static Exceedance Bounds
+    document.getElementById('LoadStaicBtn').addEventListener('click', function(e) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', "/loadStatic", true);
+        xhr.onreadystatechange = function() {
+            if(xhr.readyState == XMLHttpRequest.DONE) {
+                var status = xhr.status;
+                if (status == 200) {
+                    var response = JSON.parse(xhr.responseText);
+                    console.log(response);
+                    document.getElementById("SpeedUpperBound").value = response.speedUpperBound;
+                    document.getElementById("GLoadLowerBound").value = response.gLoadLowerBound;
+                    document.getElementById("GLoadUpperBound").value = response.gLoadUpperBound;
+                } else {
+                    window.alert("Error while loading exceedancesconfiguration."); 
+                }
+            }
+        }
+        xhr.send();
+
+    });
+
+    // Save Static Exceedance Bounds
+    document.getElementById('SaveStaicBtn').addEventListener('click', function(e) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('PUT', "/saveStatic", true);
+        xhr.onreadystatechange = function() {
+            if(xhr.readyState == XMLHttpRequest.DONE) {
+                var status = xhr.status;
+                if (status == 0 || (status >= 200 && status < 400)) {
+                    // The request has been completed successfully
+                    window.alert("Saved Configuration."); 
+                } else {
+
+                    window.alert("Error while saveing exceedances configuration."); 
+                }
+            }
+        }
+        if (confirm("Are you sure you want to overwrite the current configuration?")) {
+            xhr.send(
+                "{\"speedUpperBound\":" 
+                + document.getElementById("SpeedUpperBound").value
+                + ", \"gLoadUpperBound=\":"
+                + document.getElementById("GLoadUpperBound").value 
+                + ", \"gLoadLowerBound\":"
+                + document.getElementById("GLoadLowerBound").value
+                + "}"
+            );
+        }
+    });
+
+    // Download
+    document.getElementById('DownloadBtn').addEventListener('click', function(e) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', "/download", true);
+        xhr.onreadystatechange = function() {
+            if(xhr.readyState == XMLHttpRequest.DONE) {
+                var status = xhr.status;
+                if (status == 0 || (status >= 200 && status < 400)) {
+                    // The request has been completed successfully
+                    if (xhr.response.length == 0) {
+                        window.alert("No Exceedances to download."); 
+                    } else {
+                        var blob = new Blob([xhr.response], {type:"octet-stream"});
+                        const href = URL.createObjectURL(blob);
+                        var filename = "xcvario-exceedance-" + new Date().toJSON().slice(0,10) + ".csv";
+                        window.alert("Download XCVario Exceedances, filename: " + filename ); 
+                        const a = Object.assign(document.createElement('a'), {href, style:"display:none", download:filename});
+                        document.body.appendChild(a);
+                        a.click();
+                        URL.revokeObjectURL(href);
+                        a.remove();	            	 	    
+                    }
+                }
+            }
+        }
+        xhr.send();
+    });
+
+    // Clear Exceedances
+    document.getElementById('ClearBtn').addEventListener('click', function(e) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('DELETE', "/clear", true);
+        xhr.onreadystatechange = function() {
+            if(xhr.readyState == XMLHttpRequest.DONE) {
+                var status = xhr.status;
+                if (status == 0 || (status >= 200 && status < 400)) {
+                    // The request has been completed successfully
+                    window.alert("Successfully deleted all exceedances."); 
+                } else {
+
+                    window.alert("Error while deleting exceedances."); 
+                }
+            }
+        }
+        if (confirm("Are you sure you want to delete the whole Exceedance history?")) {
+            xhr.send();
         }
     });
 

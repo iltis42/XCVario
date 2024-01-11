@@ -1902,7 +1902,7 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 
 	// G load digital
-	if( (int)(loadFactor*30) != _ate && !(tick%3) ) {
+	if( (int)(loadFactor*30) != _ate ) {
 		drawAvgVario( AMIDX+38, AMIDY, loadFactor, true );
 		_ate = (int)(loadFactor*30);
 	}

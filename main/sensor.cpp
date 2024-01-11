@@ -54,6 +54,7 @@
 #include <coredump_to_server.h>
 #include "canbus.h"
 #include "Router.h"
+#include "ExcessTracker.h"
 
 #include "sdkconfig.h"
 #include <freertos/FreeRTOS.h>
@@ -104,6 +105,8 @@ xSemaphoreHandle spiMutex=NULL;
 
 S2F Speed2Fly;
 Protocols OV( &Speed2Fly );
+
+ExcessTracker excessTracker;
 
 AnalogInput Battery( (22.0+1.2)/1200, ADC_ATTEN_DB_0, ADC_CHANNEL_7, ADC_UNIT_1 );
 
@@ -199,6 +202,42 @@ float getTAS() { return tas; };
 
 bool do_factory_reset() {
 	return( SetupCommon::factoryReset() );
+}
+
+float get_speed2Fly_bound() {
+	return excessTracker.getSpeed2FlyBound();
+}
+
+void set_speed2Fly_bound(float speed2FlyBound) {
+	excessTracker.setSpeed2FlyBound(speed2FlyBound);
+}
+
+float get_gLoad_lower_bound() {
+	return excessTracker.getGLoadLowerBound();
+}
+
+void set_gLoad_lower_bound(float gLoadLowerBound) {
+	excessTracker.setGLoadLowerBound(gLoadLowerBound);
+}
+
+float get_gLoad_upper_bound() {
+	return excessTracker.getGLoadUpperBound();
+}
+
+void set_gLoad_upper_bound(float gLoadUpperBound) {
+	excessTracker.setGLoadUpperBound(gLoadUpperBound);
+}
+
+void do_excess_purge() {
+	excessTracker.pugeData();
+}
+
+uint16_t get_row_count() {
+	return excessTracker.getRowCount();
+}
+
+std::vector<float> get_row(uint16_t index) {
+	return excessTracker.getRow(index);
 }
 
 void drawDisplay(void *pvParameters){
@@ -574,11 +613,19 @@ void clientLoop(void *pvParameters)
 			if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL ){
 				MPU.temp_control( ccount, xcvTemp );
 			}
-			if( accelG[0] > gload_pos_max.get() ){
-				gload_pos_max.set( (float)accelG[0] );
-			}else if( accelG[0] < gload_neg_max.get() ){
-				gload_neg_max.set(  (float)accelG[0] );
+			const float gload = accelG[0];
+			if( gload > gload_pos_max.get() ){
+				gload_pos_max.set( gload );
+			}else if( gload < gload_neg_max.get() ){
+				gload_neg_max.set(  gload );
 			}
+
+			if( excessTracker.isExcess(as2f, gload) ){
+				excessTracker.setExcess(as2f, gload);
+			} else {
+				excessTracker.stopExcess();
+			}
+
 			toyFeed();
 			Router::routeXCV();
 			if( true && !(ccount%5) ) { // todo need a mag_hdm.valid() flag

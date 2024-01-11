@@ -149,18 +149,18 @@ float IMU::getGyroYawDelta()
 	return e.Yaw();
 }
 
-void IMU::update_fused_vector(vector_ijk& fused, float gyro_trust, const vector_ijk& petal_force, const Quaternion& omega_step)
+void IMU::update_fused_vector(vector_ijk& fused, float gyro_trust, vector_ijk& petal_force, Quaternion& omega_step)
 {
     // move the previos fused attitude by the new omega step
+    omega_step.d = -omega_step.d; // keep horizon when circling .. magic
     vector_ijk virtual_gravity = omega_step * fused;
     virtual_gravity.normalize();
     virtual_gravity *= gyro_trust;
     // ESP_LOGI(FNAME,"fused/virtual %.4f,%.4f,%.4f/%.4f,%.4f,%.4f", fused.a, fused.b, fused.c, virtual_gravity.a, virtual_gravity.b, virtual_gravity.c);
 
     // fuse the centripetal and gyro estimation
-    vector_ijk pn = petal_force;
-    pn.normalize();
-    fused = virtual_gravity + pn;
+    petal_force.normalize();
+    fused = virtual_gravity + petal_force;
     // ESP_LOGI(FNAME,"fused %.4f,%.4f,%.4f", fused.a, fused.b, fused.c);
     fused.normalize();
     // ESP_LOGI(FNAME,"fusedn %.4f,%.4f,%.4f", fused.a, fused.b, fused.c);

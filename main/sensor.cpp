@@ -312,25 +312,67 @@ void drawDisplay(void *pvParameters){
 				}
 			}
 
+			// Flarm Warning Sound
+			if( gflags.stall_warning_active || gflags.gear_warning_active) {
+				//gflags.flarmSound = false;
+			} else if( flarm_sound.get()
+			            && Flarm::alarmLevel() >= flarm_sound.get()
+			            && !Flarm::HoldingOff() ){
+				//gflags.flarmSound = true;
+				Flarm::soundWarning();
+			} else {
+				//gflags.flarmSound = false;
+				Audio::alarm( false );
+			}
+
 			// Flarm Warning Screen
-			if( flarm_warning.get() && !gflags.stall_warning_active && Flarm::alarmLevel() >= flarm_warning.get() ){ // 0 -> Disable
-				// ESP_LOGI(FNAME,"Flarm::alarmLevel: %d, flarm_warning.get() %d", Flarm::alarmLevel(), flarm_warning.get() );
-				if( !gflags.flarmWarning ) {
-					gflags.flarmWarning = true;
-					delay(100);
-					display->clear();
+			if( gflags.stall_warning_active || gflags.gear_warning_active) {
+				// stall and gear warnings preempt FLARM warning
+				gflags.flarmVisual = false;
+			} else if( flarm_visual.get() && Flarm::alarmLevel() >= flarm_visual.get() ){
+				// FLARM alarm condition
+				if( gflags.flarmVisual ) {
+					if( !Flarm::HoldingOff() && ESPRotary::readSwitch() ){
+						// Acknowledge Warning -> Warning OFF
+						Flarm::HoldOff();
+						if( Flarm::HoldingOff() ) {    // not within 2sec of holdoff-cancel
+							//Audio::alarm( false );
+							//gflags.flarmSound = false;
+							gflags.flarmVisual = false;   // allow vario display
+							display->clear();
+							delay(100);
+							SetupMenu::catchFocus( true );   // but not SetupMenu::press()
+						}
+					}
+				} else if( Flarm::HoldingOff() ) {
+					if( ESPRotary::readSwitch() )
+						Flarm::HoldOff();
+						// - may cancel hold-off - if not within 2sec of holdoff start
+				}
+				Flarm::checkWarning();    // checks whether holding off should stop
+				if( !gflags.flarmVisual && !Flarm::HoldingOff() ) {
+					// FLARM alarm condition, not already warning but need to
+					gflags.flarmVisual = true;
 					flarm_alarm_holdtime = 250;
-				}
-			}
-			else{
-				if( gflags.flarmWarning && (flarm_alarm_holdtime == 0) ){
-					gflags.flarmWarning = false;
 					display->clear();
-					Audio::alarm( false );
+					delay(100);
+					SetupMenu::catchFocus( true );   // do not allow SetupMenu::press()
+				}
+				if (gflags.flarmVisual)
+					Flarm::drawWarning();
+			}
+			else if( gflags.flarmVisual ){
+				// FLARM alarm condition has passed,
+				//    but hold visual for 5s since started
+				//Audio::alarm( false );
+				if( flarm_alarm_holdtime == 0 ){
+					gflags.flarmVisual = false;
+					display->clear();
+					delay(100);
+					SetupMenu::catchFocus( false );   // allow SetupMenu::press()
 				}
 			}
-			if( gflags.flarmWarning )
-				Flarm::drawFlarmWarning();
+
 			// G-Load Display
 			// ESP_LOGI(FNAME,"Active Screen = %d", active_screen );
 			if( (((float)accelG[0] > gload_pos_thresh.get() || (float)accelG[0] < gload_neg_thresh.get()) && gload_mode.get() == GLOAD_DYNAMIC ) ||
@@ -373,7 +415,7 @@ void drawDisplay(void *pvParameters){
 				}
 			}
 			// Vario Screen
-			if( !(gflags.stall_warning_active || gflags.gear_warning_active || gflags.flarmWarning || gflags.gLoadDisplay || gflags.horizon )  ) {
+			if( !(gflags.stall_warning_active || gflags.gear_warning_active || gflags.flarmVisual || gflags.gLoadDisplay || gflags.horizon )  ) {
 				// ESP_LOGI(FNAME,"TE=%2.3f", te_vario.get() );
 				display->drawDisplay( airspeed, te_vario.get(), aTE, polar_sink, altitude.get(), t, battery, s2f_delta, as2f, average_climb.get(), Switch::getCruiseState(), gflags.standard_setting, flap_pos.get() );
 			}

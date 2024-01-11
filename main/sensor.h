@@ -37,7 +37,7 @@ typedef struct global_flags{
 	bool  standard_setting :1;
 	bool stall_warning_active :1;
 	bool stall_warning_armed :1;
-	bool flarmWarning :1 ;
+	bool flarmVisual :1 ;
 	bool gLoadDisplay :1;
 	bool horizon :1;
 	bool gear_warning_active :1;

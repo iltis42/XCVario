@@ -2249,8 +2249,8 @@ void IpsDisplay::drawHorizon( float p, float b, float yaw ){   // ( pitch, roll,
 	xSemaphoreTake(spiMutex, portMAX_DELAY );
 	ucg->setColor( COLOR_DSKY );
 	double_line( old_x0,old_y0, old_x1,old_y1 );
-//	ucg->setColor( COLOR_DGROUND );
-//	double_line( old_x0,old_y0+1, old_x1,old_y1+1 );
+	ucg->setColor( COLOR_DGROUND );
+	double_line( old_x0,old_y0+1, old_x1,old_y1+1, 0 );
 
 	// paint only narrow triangles as needed to cover the change
 	// this algorithm may paint up to about double the actual changed area

@@ -148,10 +148,22 @@ private:
 	static void drawLegend( bool onlyLines=false );
 	static void drawAvgVario( int16_t x, int16_t y, float ate, bool large=false );
 	static void drawNetto( int16_t x, int16_t y, bool netto );
-	static void pitch_tick( bool major, int y, int k01, int g01 );
-	static void pitch_ticks( int k01, int g01 );
-	static void bank_ticks( int k01, int g01 );
+
+// functions used by drawHorizon() that need access to the object (namely to ucg):
+	static void double_line( int x1, int y1, int x2, int y2, int which=2 );
+	static void pitch_tick( bool draw, bool major, int pp );
+	static void pitch_ticks( bool draw );
+	static void ticks_bank( bool draw, bool major, int sinbb, int cosbb, int sbt );
+	static void bank_ticks( bool draw );
+	static void airplane_icon( int k0, int k1, int g0, int g1 );
 };
 
+// internal functions used by drawHorizon():
+static float limited_pitch( float p );
+static float limited_bank( float b );
+static float approxsin( float x );
+static float approxcos( float x );
+static int pitch2pixels( float p );
+static int pitch2pixels0( float p );
 
 #endif /* IPS_DISPLAY_H */

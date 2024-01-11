@@ -511,6 +511,17 @@ void SetupMenu::display( int mode ){
 void SetupMenu::down(int count){
 	if( selected == this && !gflags.inSetup ) {
 		// ESP_LOGI(FNAME,"root: down");
+		if( gflags.horizon ) {
+			float offset = horizon_offset.get();
+			offset -= 0.5*count;
+			if( offset < -10.0 )
+				offset = -10.0;
+			else if( fabs(offset) < 1 )
+				offset = 0;
+			horizon_offset.set( offset );
+			//ESP_LOGI(FNAME,"down: horizon_offset pct to %f", offset );
+		}
+		else 
 		if( rot_default.get() == 1) {	 // MC Value
 			float mc = MC.get();
 			float step = Units::Vario2ms( 0.1 );
@@ -551,6 +562,17 @@ void SetupMenu::down(int count){
 void SetupMenu::up(int count){
 	if( selected == this && !gflags.inSetup ) {
 		// ESP_LOGI(FNAME,"root: up");
+		if( gflags.horizon ) {
+			float offset = horizon_offset.get();
+			offset += 0.5*count;
+			if( offset > 10.0 )
+				offset = 10.0;
+			else if( fabs(offset) < 1 )
+				offset = 0;
+			horizon_offset.set( offset );
+			//ESP_LOGI(FNAME,"up: horizon_offset pct to %f", offset );
+		}
+		else
 		if(rot_default.get() == 1) {	 // MC Value
 			float mc = MC.get();
 			// ESP_LOGI(FNAME,"MC up: %f count: %d", mc, count );
@@ -1754,7 +1776,37 @@ void SetupMenu::system_menu_create_hardware_ahrs_parameter( MenuEntry *top ){
 
 }
 
+// this submenu will eventually have additional horizon screen options, such as:
+// colors, size of airplane icon, whether to display pitch and bank ticks and/or numbers...
+// - maybe also a default (boot-time) value for the horizon_offset.
+void SetupMenu::system_menu_create_horizon_screen( MenuEntry *top ){
+
+	// this should be here, not in hardware/rotary
+	SetupMenuSelect * horizon = new SetupMenuSelect( "Horizon Screen", RST_NONE, upd_screens, true, &screen_horizon );
+	horizon->addEntry( "Disable");
+	if( gflags.ahrsKeyValid ) {
+		horizon->addEntry( "Enable");
+	} else {
+		horizon->addEntry( "Static Demo");
+		horizon->setHelp( "License key required for the real horizon screen");
+	}
+	top->addEntry(horizon);
+
+	SetupMenuValFloat * offset = new SetupMenuValFloat( "Horizon Pitch Offset", "°", -10, 10, 0.5, 0, false, &horizon_offset );
+	offset->setPrecision( 1 );
+	offset->setHelp("Move displayed horizon up/down (also via rotary). Returns to zero on reboot. (Not related to autozero)");
+	top->addEntry( offset );
+}
+
 void SetupMenu::system_menu_create_hardware_ahrs( MenuEntry *top ){
+
+// this should eventually move into a new "options" / "advanced options" menu
+//       rather than here in "system" / "hardware"
+	SetupMenu * horizon_screen = new SetupMenu( "Horizon Screen Options");
+	top->addEntry( horizon_screen );
+	horizon_screen->setHelp("Options regarding the horizon screen");
+	horizon_screen->addCreator( system_menu_create_horizon_screen );
+
 	SetupMenuSelect * ahrsid = new SetupMenuSelect( PROGMEM"AHRS ID", RST_NONE, 0, false );
 	ahrsid->addEntry( Cipher::id() );
 	top->addEntry( ahrsid );

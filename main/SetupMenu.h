@@ -92,6 +92,7 @@ public:
 	static void system_menu_create_hardware_ahrs( MenuEntry *top );
 	static void system_menu_create_hardware_ahrs_lc( MenuEntry *top );
 	static void system_menu_create_hardware_ahrs_parameter( MenuEntry *top );
+	static void system_menu_create_horizon_screen( MenuEntry *top );
 	static SetupMenuValFloat * createQNHMenu();
 };
 

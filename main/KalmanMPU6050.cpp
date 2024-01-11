@@ -201,7 +201,7 @@ void IMU::Process()
 			// expected extra load c = sqrt(aa+bb) - 1, here a = 1/9.81 x atan, b=1
 			float loadz_exp = sqrt(tanw*tanw/(9.80665f*9.80665f)+1.f) - 1.f;
 			float loadz_check = (loadz_exp > 0.f) ? std::min(std::max((accel.c-.99f)/loadz_exp,0.f), 1.f) : 0.f;
-			ESP_LOGI( FNAME,"tanw: %f loadexp: %.2f loadf: %.2f c:%.2f", tanw, loadz_exp, loadFactor, loadz_check );
+			// ESP_LOGI( FNAME,"tanw: %f loadexp: %.2f loadf: %.2f c:%.2f", tanw, loadz_exp, loadFactor, loadz_check );
 			// Scale according to real experienced load factor with x 0..1
 			roll *= loadz_check;
 		}

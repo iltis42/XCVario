@@ -1748,9 +1748,9 @@ bool IpsDisplay::drawSpeed(float v_kmh, int16_t x, int16_t y, bool dirty, bool i
 #define AHRS_TOP (HEIGHT_2-WIDTH_2)   //  40
 #define AHRS_BOT (HEIGHT_2+WIDTH_2)-1 // 279
 
-const static ucg_color_t skycolor[2] = { {COLOR_DSKY},    {COLOR_LSKY},    {COLOR_LSKY} };
-const static ucg_color_t gndcolor[2] = { {COLOR_DGROUND}, {COLOR_LGROUND}, {COLOR_LGROUND} };
-const static ucg_color_t hzncolor[2] = { {COLOR_WHITE},   {COLOR_BLACK},   {COLOR_WHITE} };
+const static ucg_color_t skycolor[3] = { {COLOR_DSKY},    {COLOR_LSKY},    {COLOR_LSKY} };
+const static ucg_color_t gndcolor[3] = { {COLOR_DGROUND}, {COLOR_LGROUND}, {COLOR_LGROUND} };
+const static ucg_color_t hzncolor[3] = { {COLOR_WHITE},   {COLOR_BLACK},   {COLOR_WHITE} };
 static const ucg_color_t *sky_color;
 static const ucg_color_t *gnd_color;
 static const ucg_color_t *hzn_color;

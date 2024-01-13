@@ -150,6 +150,7 @@ private:
 	static void drawNetto( int16_t x, int16_t y, bool netto );
 
 // functions used by drawHorizon() that need access to the object (namely to ucg):
+	static void HznSetColor( const ucg_color_t *color );
 	static void double_line( int x1, int y1, int x2, int y2, int which=2 );
 	static void pitch_tick( bool draw, bool major, int pp );
 	static void pitch_ticks( bool draw );

@@ -1748,6 +1748,17 @@ bool IpsDisplay::drawSpeed(float v_kmh, int16_t x, int16_t y, bool dirty, bool i
 #define AHRS_TOP (HEIGHT_2-WIDTH_2)   //  40
 #define AHRS_BOT (HEIGHT_2+WIDTH_2)-1 // 279
 
+const static ucg_color_t skycolor[2] = { {COLOR_DSKY},    {COLOR_LSKY} };
+const static ucg_color_t gndcolor[2] = { {COLOR_DGROUND}, {COLOR_LGROUND} };
+const static ucg_color_t hzncolor[2] = { {COLOR_WHITE},   {COLOR_BLACK} };
+static const ucg_color_t *sky_color;
+static const ucg_color_t *gnd_color;
+static const ucg_color_t *hzn_color;
+
+void IpsDisplay::HznSetColor( const ucg_color_t *color ) {
+	ucg->setColor( (color->color)[0], (color->color)[1], (color->color)[2] );
+}
+
 static int p5 = 0;
 static int p10;
 static int p15;
@@ -1775,8 +1786,8 @@ static float limited_pitch( float p ) {
 
 static float limited_bank( float b ) {
 	// limit to about 65 degrees
-	if (b > 1.13)  return 1.13;
-	else if (b < -1.13)  return -1.13;
+	if (b > 1.3)  return 1.3;
+	else if (b < -1.3)  return -1.3;
 	else  return b;
 }
 
@@ -1799,35 +1810,33 @@ static int pitch2pixels( float p ) {
 }
 
 // Draw a pair of lines, after checking that they are in display range
-// The "which" parameter allows changing colors in-between the two lines
+// The "which" parameter allows changing colors in-between the two lines.
+// Try and draw the second line "below" the first one (towards ground).
 void IpsDisplay::double_line( int x1, int y1, int x2, int y2, int which ) {
 	if ( x1 >= 0 && x1 <= WIDTH_
 	  && x2 >= 0 && x2 <= WIDTH_
 	  && y1 >= AHRS_TOP && y1 <= AHRS_BOT
 	  && y2 >= AHRS_TOP && y2 <= AHRS_BOT) {
-		if (which != 1) {   // 0 or 2
+		if( which != 1 ) {   // 0 or 2
 			ucg->drawLine( x1,y1, x2,y2 );
 		}
-		if (which != 0) {   // 1 or 2
+		if( which != 0 ) {   // 1 or 2
 			// draw another line next to it to make it thicker
-			if (abs(y2-y1) > abs(x2-x1)) {  // more vertical than horizontal
-				if (x1 < WIDTH_ && x2 < WIDTH_) {
-					x1++;
-					x2++;
-				} else {
-					x1--;
-					x2--;
-				}
+			if( abs(y2-y1) > abs(x2-x1) ) {  // more vertical than horizontal
+//				if( y1 > y2 && x2 < WIDTH_ )
+//					ucg->drawLine( ++x1,y1, ++x2,y2 );
+//				else if( y1 < y2 && x1 > 0 )
+//					ucg->drawLine( --x1,y1, --x2,y2 );
+// try and let eglib do the clipping
+				if( y1 > y2 )
+					ucg->drawLine( ++x1,y1, ++x2,y2 );
+				else if( y1 < y2 )
+					ucg->drawLine( --x1,y1, --x2,y2 );
+
 			} else {
-				if (y1 < AHRS_BOT && y2 < AHRS_BOT) {
-					y1++;
-					y2++;
-				} else {
-					y1--;
-					y2--;
-				}
+				if( y1 < AHRS_BOT && y2 < AHRS_BOT )
+					ucg->drawLine( x1,++y1, x2,++y2 );
 			}
-			ucg->drawLine( x1,y1, x2,y2 );
 		}
 	}
 }
@@ -1859,7 +1868,7 @@ void IpsDisplay::pitch_tick( bool draw, bool major, int pt ) {
 	// move it "up" (perpendicular to horizon) by pt pixels:
 //	x -= ((pt*sb)>>8);
 //	y -= ((pt*cb)>>8);
-	// can combine with the above
+	// can combine the two calculations
 	int x = WIDTH_2  + (((pp-pt)*sb)>>8);
 	int y = HEIGHT_2 + (((pp-pt)*cb)>>8);
 	// alternative for pitch ticks: zero on the airplane, read value on horizon:
@@ -1872,16 +1881,17 @@ void IpsDisplay::pitch_tick( bool draw, bool major, int pt ) {
 	w >>= (major?4:5);     // half-width of tick projected along horizontal axis
 	v >>= (major?4:5);     // half-width of tick projected along vertical axis
 	if (draw)
-		ucg->setColor( COLOR_WHITE );
-	else if( pt > 0 )
-		ucg->setColor( COLOR_DSKY );
+		HznSetColor( hzn_color );
+//	else if (pt > pitchpixels)
+	else if (pt > 0)
+		HznSetColor( sky_color );
 	else
-		ucg->setColor( COLOR_DGROUND );
+		HznSetColor( gnd_color );
 	double_line( x-w,y-v, x+w,y+v );
-	if ((sb > 170 || sb < -170)) {
-		ESP_LOGI(FNAME,"pitch tick %d y0=%d y1=%d sb=%d cb=%d", draw, y0, y1, sb, cb );  // <<<
-		ESP_LOGI(FNAME,"... pt=%d pp=%d %d,%d - %d,%d", pt, pp, x-w,y-v, x+w,y+v );
-	}
+//	if ((sb > 170 || sb < -170)) {
+//		ESP_LOGI(FNAME,"pitch tick %d y0=%d y1=%d sb=%d cb=%d", draw, y0, y1, sb, cb );
+//		ESP_LOGI(FNAME,"... pt=%d pp=%d %d,%d - %d,%d", pt, pp, x-w,y-v, x+w,y+v );
+//	}
 }
 
 void IpsDisplay::pitch_ticks( bool draw ) {
@@ -1924,7 +1934,7 @@ void IpsDisplay::pitch_ticks( bool draw ) {
 
 void IpsDisplay::ticks_bank( bool draw, bool major, int sinbb, int cosbb, int sbt ) {
 	int sb, cb;
-	if (draw) {
+	if( draw ) {
 		sb = sin_bank;
 		cb = cos_bank;
 	} else {
@@ -1938,8 +1948,8 @@ void IpsDisplay::ticks_bank( bool draw, bool major, int sinbb, int cosbb, int sb
 	int n = HEIGHT_2;
 	int h = WIDTH_2;
 	// use trig formulas for sin & cos of (bb-b), arranged for integer math
-	int w4 = ((h * ((cb*cosbb + abs_sb*sinbb)>>8))>>8);    // horizontal size of tick
-	int z4 = ((h * ((cb*sinbb - abs_sb*cosbb)>>8))>>8);    // vertical size of tick
+	int w4 = ((h * ((cb*cosbb + abs_sb*sinbb)>>8))>>8);   // horizontal size of tick
+	int z4 = ((h * ((cb*sinbb - abs_sb*cosbb)>>8))>>8);   // vertical offset of tick
 	int w3, z3;
 	if ( major ) {
 		// ticks from 3/4-radius to full radius of circle
@@ -1950,21 +1960,41 @@ void IpsDisplay::ticks_bank( bool draw, bool major, int sinbb, int cosbb, int sb
 		w3 = w4 - (w4>>3);
 		z3 = z4 - (z4>>3);
 	}
-	if (draw)
-		ucg->setColor( COLOR_WHITE );
-	else
-		ucg->setColor( COLOR_DSKY );
 	// only draw ticks in the 2 relevant quadrants out of 4:
-	if ( sb >= 0 )
+	if( draw )
+		HznSetColor( hzn_color );
+	if( sb > 0 ) {
+		if( !draw ) {
+			if( -z4 < ((hzn_y0-n)*w4)/WIDTH_2 )
+				HznSetColor( sky_color );
+			else
+				HznSetColor( gnd_color );
+		}
 		double_line( m-w3,n-z3, m-w4,n-z4 );
-	if ( sb <= 0 )
-		double_line( m+w3,n-z3, m+w4,n-z4 );
-	if (!draw)
-		ucg->setColor( COLOR_DGROUND );
-	if ( sb <= 0 )
-		double_line( m-w3,n+z3, m-w4,n+z4 );
-	if ( sb >= 0 )
+		if( !draw ) {
+			if( z4 < ((hzn_y1-n)*w4)/WIDTH_2 )
+				HznSetColor( sky_color );
+			else
+				HznSetColor( gnd_color );
+		}
 		double_line( m+w3,n+z3, m+w4,n+z4 );
+	}
+	if( sb < 0 ) {
+		if( !draw ) {
+			if( z4 < ((hzn_y0-n)*w4)/WIDTH_2 )
+				HznSetColor( sky_color );
+			else
+				HznSetColor( gnd_color );
+		}
+		double_line( m-w3,n+z3, m-w4,n+z4 );
+		if( !draw ) {
+			if( -z4 < ((hzn_y1-n)*w4)/WIDTH_2 )
+				HznSetColor( sky_color );
+			else
+				HznSetColor( gnd_color );
+		}
+		double_line( m+w3,n-z3, m+w4,n-z4 );
+	}
 }
 
 void IpsDisplay::bank_ticks( bool draw ) {
@@ -1990,14 +2020,21 @@ void IpsDisplay::airplane_icon( int k0, int k1, int g0, int g1 ) {
 	//ESP_LOGI(FNAME,"draw airplane icon...");
 	int m = WIDTH_2;
 	int n = HEIGHT_2;
-	int w = DISPLAY_W/4 + DISPLAY_W/8;   // half wingspan
-	int z = w>>2;           // half-width of horizontal tail
-	int y = n - 3 - z;      // Y-position of top of vertical tail
+	int w, z, y;
+	if( horizon_largeicon.get() ) {
+		w = DISPLAY_W/4 + DISPLAY_W/8;   // half wingspan
+		z = w>>2;           // half-width of horizontal tail
+		y = n - 3 - z;      // Y-position of top of vertical tail
+	} else {
+		w = DISPLAY_W/4;
+		z = 0;              // no horizontal tail
+		y = n - 3 - DISPLAY_W/10;
+	}
 	// skip redraw if likely no overlap with redrawn sky & ground parts
 	// overlaps if k above bottom (largest y) & g below top (smallest y)
 	int kmid = (k0+k1)>>1;
 	int gmid = (g0+g1)>>1;
-	ucg->setColor( COLOR_WHITE );
+	HznSetColor( hzn_color );
 	xSemaphoreTake(spiMutex, portMAX_DELAY );
 	if ( (k0 < n+3 || kmid < n+3) && (g0 > n-3 || gmid > n-3) )
 		ucg->drawTetragon( m-w,n+3, m-w,n-3, m-10,n-3, m-10,n+3 );  // left wing
@@ -2005,7 +2042,7 @@ void IpsDisplay::airplane_icon( int k0, int k1, int g0, int g1 ) {
 		ucg->drawTetragon( m+10,n+3, m+10,n-3, m+w,n-3, m+w,n+3 );  // right wing
 	if ( kmid < n && gmid+3 > y )
 		ucg->drawTetragon( m-3,n-9, m-3,y, m+3,y, m+3,n-9 );        // v tail
-	if ( (k0<y || k1<y) && (g0>y-6 || g1>y-6) )
+	if ( z && ((k0<y || k1<y) && (g0>y-6 || g1>y-6)) )
 		ucg->drawTetragon( m-z,y, m-z,y-6, m+z,y-6, m+z,y );        // h tail
 	if ( kmid < n+15 && gmid >= n-15 ) {
 		ucg->drawCircle( m, n,  9, UCG_DRAW_ALL );
@@ -2027,6 +2064,10 @@ void IpsDisplay::drawHorizon( float p, float b, float yaw ){   // ( pitch, roll,
 		clear();
 		horizon_done = 0;
 		screens_init |= INIT_DISPLAY_HORIZON;
+		int hc = horizon_colors.get();
+		sky_color = &skycolor[hc];
+		gnd_color = &gndcolor[hc];
+		hzn_color = &hzncolor[hc];
 		return;    // yield for now, will draw sky & ground on the next call
 	}
 
@@ -2034,15 +2075,16 @@ void IpsDisplay::drawHorizon( float p, float b, float yaw ){   // ( pitch, roll,
 
 		// paint AHRS square, half dark sky and half dark ground:
 		xSemaphoreTake(spiMutex, portMAX_DELAY );
-		ucg->setColor( COLOR_DSKY );
+		HznSetColor( sky_color );
 		ucg->drawTetragon( 0,AHRS_TOP, 0,HEIGHT_2, WIDTH_,HEIGHT_2, WIDTH_,AHRS_TOP );
 		xSemaphoreGive(spiMutex);
 		vTaskDelay(2);
 		xSemaphoreTake(spiMutex, portMAX_DELAY );
-		ucg->setColor( COLOR_DGROUND );
+		HznSetColor( gnd_color );
 		ucg->drawTetragon( 0,AHRS_BOT, 0,HEIGHT_2, WIDTH_,HEIGHT_2, WIDTH_,AHRS_BOT );
-		// add thin brighter line at horizon:
-		ucg->setColor( COLOR_WHITE );
+		// if dark theme, add thin brighter line at horizon:
+		if (horizon_colors.get() == 0)
+			HznSetColor( hzn_color );
 		double_line( 0,HEIGHT_2, WIDTH_,HEIGHT_2 );
 		xSemaphoreGive(spiMutex);
 		//vTaskDelay(2);
@@ -2085,10 +2127,17 @@ void IpsDisplay::drawHorizon( float p, float b, float yaw ){   // ( pitch, roll,
 	if( !gflags.ahrsKeyValid )    // static demo does not change
 		return;
 
-	// periodically redraw airplane fully and print some numbers
+	// periodically clean up and print some numbers
 
 	if ( (tick&0x1F) == 0 ) {
 
+		// repaint the sky periodically (only in dark theme with the horizon line leftovers)
+		if (horizon_colors.get() == 0) {
+			HznSetColor( sky_color );
+			ucg->drawTetragon( hzn_x0,AHRS_TOP, hzn_x0,hzn_y0, hzn_x1,hzn_y1, hzn_x1,AHRS_TOP );
+		}
+
+		// completely redraw the airplane icon
 		airplane_icon( AHRS_TOP, AHRS_TOP, AHRS_BOT, AHRS_BOT );
 
 		// display heading (or course), if possible
@@ -2171,7 +2220,8 @@ void IpsDisplay::drawHorizon( float p, float b, float yaw ){   // ( pitch, roll,
 	sin_bank = (int)(256 * approxsin(b_));
 	pitchpixels = pitch2pixels(p_);        // includes the offset
 	// Divide by cos(bank) since "pitch" is defined as perpendicular to ground
-	int y = n + ( (pitchpixels<<8) / cos_bank );
+	int pc = (pitchpixels<<8) / cos_bank;
+	int y = n + pc;
 	// move ends of horizon up or down by tan(bank)
 	int h = (WIDTH_2 * sin_bank) / cos_bank;
 	// ensure some sky and some ground even with offset
@@ -2193,32 +2243,30 @@ void IpsDisplay::drawHorizon( float p, float b, float yaw ){   // ( pitch, roll,
 	// Compute where horizon touches top and/or bottom edges of square instead
 	// if (h=0) h=m;  - in any case don't crash on a division-by-0
 	if (hzn_y0 < AHRS_TOP) {
-		hzn_x0 = m - (m*(m+pitchpixels))/(h?-h:m);   // h<0
-		//ESP_LOGI(FNAME,"top-left y0=%d -> x0=%d, pp=%d h=%d", hzn_y0, hzn_x0, pp, h );
+		hzn_x0 = m - (m*(m+pc))/(h?-h:m);   // h<0
+		//ESP_LOGI(FNAME,"top-left y0=%d -> x0=%d, pc=%d h=%d", hzn_y0, hzn_x0, pc, h );
 		hzn_y0 = AHRS_TOP;
 	} else if (hzn_y0 > AHRS_BOT) {
-		hzn_x0 = m - (m*(m-pitchpixels))/(h?h:m);    // h>0
-		//ESP_LOGI(FNAME,"bot-left y0=%d -> x0=%d, pp=%d h=%d", hzn_y0, hzn_x0, pp, h );
+		hzn_x0 = m - (m*(m-pc))/(h?h:m);    // h>0
+		//ESP_LOGI(FNAME,"bot-left y0=%d -> x0=%d, pc=%d h=%d", hzn_y0, hzn_x0, pc, h );
 		hzn_y0 = AHRS_BOT;
 	}
 	if (hzn_y1 < AHRS_TOP) {
-		hzn_x1 = m + (m*(m+pitchpixels))/(h?h:m);    // h>0
-		//ESP_LOGI(FNAME,"top-right y1=%d -> x1=%d, pp=%d h=%d", hzn_y1, hzn_x1, pp, h );
+		hzn_x1 = m + (m*(m+pc))/(h?h:m);    // h>0
+		//ESP_LOGI(FNAME,"top-right y1=%d -> x1=%d, pc=%d h=%d", hzn_y1, hzn_x1, pc, h );
 		hzn_y1 = AHRS_TOP;
 	} else if (hzn_y1 > AHRS_BOT) {
-		hzn_x1 = m + (m*(m-pitchpixels))/(h?-h:m);   // h<0
-		//ESP_LOGI(FNAME,"bot-right y1=%d -> x1=%d, pp=%d h=%d", hzn_y1, hzn_x1, pp, h );
+		hzn_x1 = m + (m*(m-pc))/(h?-h:m);   // h<0
+		//ESP_LOGI(FNAME,"bot-right y1=%d -> x1=%d, pc=%d h=%d", hzn_y1, hzn_x1, pc, h );
 		hzn_y1 = AHRS_BOT;
 	}
 
-	// The following variables are used to mark the unsafe zone, where other objects
-	//   may have been painted over when the horizon was drawn.
-	int k0, k1, g0, g1;
-	k0 = ((old_y0 < hzn_y0)? old_y0 : hzn_y0);
-	k1 = ((old_y1 < hzn_y1)? old_y1 : hzn_y1);
-	g0 = ((old_y0 > hzn_y0)? old_y0 : hzn_y0);
-	g1 = ((old_y1 > hzn_y1)? old_y1 : hzn_y1);
-	airplane_icon( k0, k1, g0, g1 );
+	// ensure still some sky and some ground (corner can shrink to 0)
+	if (hzn_x0 > WIDTH_ - 25)
+		hzn_x0 = WIDTH_ - 25;
+	else
+	if (hzn_x1 < 25)
+		hzn_x1 = 25;
 
 	// find out in which direction each end of the horizon line moved
 	// also set up yy0,yy1 for correct choice of top or bottom
@@ -2254,50 +2302,81 @@ void IpsDisplay::drawHorizon( float p, float b, float yaw ){   // ( pitch, roll,
 		y2 = hzn_y1;
 	}
 
-	// first erase the thin line between ground and sky
+	// erase the existing tick marks before over-writing old sin_bank, cos_bank
+	pitch_ticks( false );
+	bank_ticks( false );
+
 	xSemaphoreTake(spiMutex, portMAX_DELAY );
-	ucg->setColor( COLOR_DSKY );
-	double_line( old_x0,old_y0, old_x1,old_y1 );
-	ucg->setColor( COLOR_DGROUND );
-	double_line( old_x0,old_y0+1, old_x1,old_y1+1, 0 );
+	// first erase the thin line between ground and sky (dark theme only)
+	if (horizon_colors.get() == 0) {
+		if (hzn_y0+hzn_y1 > old_y0+old_y1)  // horizon line moving mostly down
+			HznSetColor( sky_color );
+		else
+			HznSetColor( gnd_color );
+		double_line( old_x0,old_y0, old_x1,old_y1 );
+	}
 
 	// paint only narrow triangles as needed to cover the change
 	// this algorithm may paint up to about double the actual changed area
 	// when the lines cross, but is simpler than computing the crossing point
+	// Re-arranged to always draw sky first, ground second.
+	// The number of triangles actually drawn is never more than 4,
+	// and only 2 if horizon hasn't crossed corners of display.
 	//ESP_LOGI(FNAME,"about to draw triangles");
-	if ( up1 )
-		ucg->setColor( COLOR_DGROUND );
-	else
-		ucg->setColor( COLOR_DSKY );
-	if ( hzn_y1 != old_y1 )
-		ucg->drawTriangle( hzn_x0,hzn_y0, WIDTH_,hzn_y1, WIDTH_,old_y1 );
-	if ( hzn_x1 != old_x1 )
-		ucg->drawTriangle( hzn_x0,hzn_y0, hzn_x1,yy1, old_x1,yy1 );
-		//ESP_LOGI(FNAME,"horiz x0=%d y0=%d x1=%d old_x1=%d yy1=%d", hzn_x0, hzn_y0, hzn_x1, old_x1, yy1 );
-	if ( up0 )
-		ucg->setColor( COLOR_DGROUND );
-	else
-		ucg->setColor( COLOR_DSKY );
-	if ( hzn_y0 != old_y0 )
-		ucg->drawTriangle( x2,y2, 0,hzn_y0, 0,old_y0 );
-	if ( hzn_x0 != old_x0 )
-		ucg->drawTriangle( x2,y2, hzn_x0,yy0, old_x0,yy0 );
-		//ESP_LOGI(FNAME,"horiz x1_=%d y1_=%d x0=%d old_x0=%d yy0=%d", x1, hzn_y1, hzn_x0, old_x0, yy0 );
 
-	// add thin more obvious line at horizon:
-	//ESP_LOGI(FNAME,"about to draw horizon line");
-	ucg->setColor( COLOR_WHITE );
-	double_line( hzn_x0,hzn_y0, hzn_x1,hzn_y1 );
+	HznSetColor( sky_color );
+	if ( !up0 ) {
+		if ( hzn_y0 != old_y0 )
+			ucg->drawTriangle( x2,y2, 0,hzn_y0, 0,old_y0 );
+		if ( hzn_x0 != old_x0 )
+			ucg->drawTriangle( x2,y2, hzn_x0,yy0, old_x0,yy0 );
+	}
+	if ( !up1 ) {
+		if ( hzn_y1 != old_y1 )
+			ucg->drawTriangle( hzn_x0,hzn_y0, WIDTH_,hzn_y1, WIDTH_,old_y1 );
+		if ( hzn_x1 != old_x1 )
+			ucg->drawTriangle( hzn_x0,hzn_y0, hzn_x1,yy1, old_x1,yy1 );
+	}
+	HznSetColor( gnd_color );
+	if ( up0 ) {
+		if ( hzn_y0 != old_y0 )
+			ucg->drawTriangle( x2,y2, 0,hzn_y0, 0,old_y0 );
+		if ( hzn_x0 != old_x0 )
+			ucg->drawTriangle( x2,y2, hzn_x0,yy0, old_x0,yy0 );
+	}
+	if ( up1 ) {
+		if ( hzn_y1 != old_y1 )
+			ucg->drawTriangle( hzn_x0,hzn_y0, WIDTH_,hzn_y1, WIDTH_,old_y1 );
+		if ( hzn_x1 != old_x1 )
+			ucg->drawTriangle( hzn_x0,hzn_y0, hzn_x1,yy1, old_x1,yy1 );
+	}
+
+	// add thin more obvious line at horizon (dark theme only)
+	if (horizon_colors.get() == 0) {
+		//ESP_LOGI(FNAME,"about to draw horizon line");
+		HznSetColor( hzn_color );
+		double_line( hzn_x0,hzn_y0, hzn_x1,hzn_y1 );
+	}
 	xSemaphoreGive(spiMutex);
 
 	// draw tickmarks - these are always completely re-drawn
 	// erase the existing tick marks before over-writing old sin_bank, cos_bank
 	//ESP_LOGI(FNAME,"about to draw ticks");
-	pitch_ticks( false );        // erase old, then
+//	pitch_ticks( false );        // erase old, then
 	if ( ! wrongpitch )
 		pitch_ticks( true  );    // draw new right away to reduce flicker
-	bank_ticks( false );
+//	bank_ticks( false );
 	bank_ticks( true  );
+
+	// The following variables are used to mark the unsafe zone, where other objects
+	//   may have been painted over when the horizon was drawn.
+	int k0, k1, g0, g1;
+	k0 = ((old_y0 < hzn_y0)? old_y0 : hzn_y0);
+	k1 = ((old_y1 < hzn_y1)? old_y1 : hzn_y1);
+	g0 = ((old_y0 > hzn_y0)? old_y0 : hzn_y0);
+	g1 = ((old_y1 > hzn_y1)? old_y1 : hzn_y1);
+	// redraw parts of airplane icon as needed
+	airplane_icon( k0, k1, g0, g1 );
 
 	// store current values for future reference
 	old_x0 = hzn_x0;

@@ -546,6 +546,8 @@ extern SetupNG<float>		password;
 extern SetupNG<int>		    autozero;
 extern SetupNG<int>		    attitude_indicator;
 extern SetupNG<float>		horizon_offset;
+extern SetupNG<int>		    horizon_colors;
+extern SetupNG<int>		    horizon_largeicon;
 extern SetupNG<int>		    ahrs_rpyl_dataset;
 extern SetupNG<int>		    ahrs_autozero;
 extern SetupNG<float>		ahrs_gyro_factor;

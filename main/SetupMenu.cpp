@@ -1799,7 +1799,8 @@ void SetupMenu::system_menu_create_horizon_screen( MenuEntry *top ){
 	SetupMenuSelect * colors = new SetupMenuSelect( "Colors", RST_NONE, 0, true, &horizon_colors );
 	colors->addEntry( "White on Dark");
 	colors->addEntry( "Black on Bright");
-		horizon->setHelp( "Color scheme for the horizon screen");
+	colors->addEntry( "White on Bright");
+	horizon->setHelp( "Color scheme for the horizon screen");
 	top->addEntry(colors);
 
 	SetupMenuSelect * icon = new SetupMenuSelect( "Airplane Icon", RST_NONE, 0, true, &horizon_largeicon );

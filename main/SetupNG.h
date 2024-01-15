@@ -92,7 +92,7 @@ typedef enum e_altimeter_select { AS_TE_SENSOR, AS_BARO_SENSOR, AS_EXTERNAL } e_
 typedef enum e_menu_screens { SCREEN_VARIO, SCREEN_GMETER, SCREEN_HORIZON, SCREEN_FLARM, SCREEN_THERMAL_ASSISTANT } e_menu_screens_t; // addittional screens
 typedef enum e_s2f_arrow_color { AC_WHITE_WHITE, AC_BLUE_BLUE, AC_GREEN_RED } e_s2f_arrow_color_t;
 typedef enum e_vario_needle_color { VN_COLOR_WHITE, VN_COLOR_ORANGE, VN_COLOR_RED }  e_vario_needle_color_t;
-typedef enum e_horizon_color { WHITE_ON_DARK, BLACK_ON_BRIGHT, WHITE_ON_BRIGHT } e_horizon_color_t;
+typedef enum e_horizon_color { WHITE_ON_DARK, BLACK_ON_BRIGHT, WHITE_ON_BRIGHT, WHITE_ON_BLACK } e_horizon_color_t;
 typedef enum e_data_monitor { MON_OFF, MON_BLUETOOTH, MON_WIFI_8880, MON_WIFI_8881, MON_WIFI_8882, MON_S1, MON_S2, MON_CAN  }  e_data_monitor_t;
 typedef enum e_display_orientation { DISPLAY_NORMAL, DISPLAY_TOPDOWN } e_display_orientation_t;
 typedef enum e_gear_warning_io { GW_OFF, GW_FLAP_SENSOR, GW_S2_RS232_RX, GW_FLAP_SENSOR_INV, GW_S2_RS232_RX_INV, GW_EXTERNAL }  e_gear_warning_io_t;

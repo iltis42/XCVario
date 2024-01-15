@@ -1748,9 +1748,9 @@ bool IpsDisplay::drawSpeed(float v_kmh, int16_t x, int16_t y, bool dirty, bool i
 #define AHRS_TOP (HEIGHT_2-WIDTH_2)   //  40
 #define AHRS_BOT (HEIGHT_2+WIDTH_2)-1 // 279
 
-const static ucg_color_t skycolor[3] = { {COLOR_DSKY},    {COLOR_LSKY},    {COLOR_LSKY} };
-const static ucg_color_t gndcolor[3] = { {COLOR_DGROUND}, {COLOR_LGROUND}, {COLOR_LGROUND} };
-const static ucg_color_t hzncolor[3] = { {COLOR_WHITE},   {COLOR_BLACK},   {COLOR_WHITE} };
+const static ucg_color_t skycolor[4] = {{COLOR_DSKY},   {COLOR_LSKY},   {COLOR_LSKY},   {COLOR_BLACK}};
+const static ucg_color_t gndcolor[4] = {{COLOR_DGROUND},{COLOR_LGROUND},{COLOR_LGROUND},{COLOR_BLACK}};
+const static ucg_color_t hzncolor[4] = {{COLOR_WHITE},  {COLOR_BLACK},  {COLOR_WHITE},  {COLOR_WHITE}};
 static const ucg_color_t *sky_color;
 static const ucg_color_t *gnd_color;
 static const ucg_color_t *hzn_color;
@@ -2083,9 +2083,10 @@ void IpsDisplay::drawHorizon( float p, float b, float yaw ){   // ( pitch, roll,
 		HznSetColor( gnd_color );
 		ucg->drawTetragon( 0,AHRS_BOT, 0,HEIGHT_2, WIDTH_,HEIGHT_2, WIDTH_,AHRS_BOT );
 		// if dark theme, add thin brighter line at horizon:
-		if (horizon_colors.get() == WHITE_ON_DARK)
+		if (horizon_colors.get() == WHITE_ON_DARK || horizon_colors.get() == WHITE_ON_BLACK) {
 			HznSetColor( hzn_color );
-		double_line( 0,HEIGHT_2, WIDTH_,HEIGHT_2 );
+			double_line( 0,HEIGHT_2, WIDTH_,HEIGHT_2 );
+		}
 		xSemaphoreGive(spiMutex);
 		//vTaskDelay(2);
 		if (p5 == 0) {
@@ -2131,8 +2132,8 @@ void IpsDisplay::drawHorizon( float p, float b, float yaw ){   // ( pitch, roll,
 
 	if ( (tick&0x1F) == 0 ) {
 
-		// repaint the sky periodically (only in dark theme with the horizon line leftovers)
-		if (horizon_colors.get() == WHITE_ON_DARK) {
+		// repaint the sky periodically (only in dark themes with the horizon line leftovers)
+		if (horizon_colors.get() == WHITE_ON_DARK || horizon_colors.get() == WHITE_ON_BLACK) {
 			HznSetColor( sky_color );
 			ucg->drawTetragon( hzn_x0,AHRS_TOP, hzn_x0,hzn_y0, hzn_x1,hzn_y1, hzn_x1,AHRS_TOP );
 		}
@@ -2307,8 +2308,8 @@ void IpsDisplay::drawHorizon( float p, float b, float yaw ){   // ( pitch, roll,
 	bank_ticks( false );
 
 	xSemaphoreTake(spiMutex, portMAX_DELAY );
-	// first erase the thin line between ground and sky (dark theme only)
-	if (horizon_colors.get() == WHITE_ON_DARK) {
+	// first erase the thin line between ground and sky (dark themes only)
+	if (horizon_colors.get() == WHITE_ON_DARK || horizon_colors.get() == WHITE_ON_BLACK) {
 		if (hzn_y0+hzn_y1 > old_y0+old_y1)  // horizon line moving mostly down
 			HznSetColor( sky_color );
 		else
@@ -2351,8 +2352,8 @@ void IpsDisplay::drawHorizon( float p, float b, float yaw ){   // ( pitch, roll,
 			ucg->drawTriangle( hzn_x0,hzn_y0, hzn_x1,yy1, old_x1,yy1 );
 	}
 
-	// add thin more obvious line at horizon (dark theme only)
-	if (horizon_colors.get() == WHITE_ON_DARK) {
+	// add thin more obvious line at horizon (dark themes only)
+	if (horizon_colors.get() == WHITE_ON_DARK || horizon_colors.get() == WHITE_ON_BLACK) {
 		//ESP_LOGI(FNAME,"about to draw horizon line");
 		HznSetColor( hzn_color );
 		double_line( hzn_x0,hzn_y0, hzn_x1,hzn_y1 );

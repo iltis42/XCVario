@@ -1800,6 +1800,7 @@ void SetupMenu::system_menu_create_horizon_screen( MenuEntry *top ){
 	colors->addEntry( "White on Dark");
 	colors->addEntry( "Black on Bright");
 	colors->addEntry( "White on Bright");
+	colors->addEntry( "White on Black");
 	horizon->setHelp( "Color scheme for the horizon screen");
 	top->addEntry(colors);
 

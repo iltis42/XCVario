@@ -82,7 +82,6 @@ void SetupMenuSelect::addEntryList( const char ent[][4], int size )
 }
 
 void SetupMenuSelect::delEntry( const char* ent ) {
-	int i=0;
 	for( std::vector<const char *>::iterator iter = _values.begin(); iter != _values.end(); ++iter ) {
 		if( std::string(*iter) == std::string(ent) )
 		{
@@ -92,7 +91,6 @@ void SetupMenuSelect::delEntry( const char* ent ) {
 				_select = _numval-1;
 			break;
 		}
-		++i;
 	}
 }
 
@@ -177,7 +175,7 @@ void SetupMenuSelect::display( int mode ){
 			ucg->drawBox( 1,280,240,40 );
 			ucg->setPrintPos( 1, 300 );
 			ucg->setColor( COLOR_WHITE );
-			ucg->print(PROGMEM"Saved" );
+			ucg->print( "Saved" );
 			xSemaphoreGive(spiMutex );
 		}
 		if( mode == 1 )
@@ -333,6 +331,12 @@ int SetupMenuSelectCodes::getSelect() {
 	return (int)_select;
 }
 
+int SetupMenuSelectCodes::getSelectCode() {
+	return _codes.at(_select);
+}
+
+#if 0    // the functions below are not likely to be actually used
+
 void SetupMenuSelectCodes::addEntryList( const char ent[][4], int size )
 {
 	// ESP_LOGI(FNAME,"addEntryList() char ent[][4]");
@@ -394,7 +398,5 @@ void SetupMenuSelectCodes::delEntryByCode( const int code ) {
 		++i;
 	}
 }
-int SetupMenuSelectCodes::getSelectCode() {
-	return _codes.at(_select);
-}
 
+#endif

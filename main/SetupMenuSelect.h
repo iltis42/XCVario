@@ -66,12 +66,12 @@ public:
 	       SetupMenuSelect(title, restart, action, save, anvs, ext_handler, end_menu){};
 	void addEntryCode( const char* ent, const int code );
 	void updateEntryCode( const char * ent, int num, const int code );
-	void addEntryList( const char ent[][4], int size );
-	void delEntry( const char* ent );
-	void delEntryByCode( const int code );
 	void setSelect( int sel );
 	int getSelect();
 	int getSelectCode();
+	//void addEntryList( const char ent[][4], int size );
+	//void delEntry( const char* ent );
+	//void delEntryByCode( const int code );
 private:
 	std::vector<int> _codes;
 };

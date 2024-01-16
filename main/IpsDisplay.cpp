@@ -1751,6 +1751,7 @@ bool IpsDisplay::drawSpeed(float v_kmh, int16_t x, int16_t y, bool dirty, bool i
 const static ucg_color_t skycolor[4] = {{COLOR_DSKY},   {COLOR_LSKY},   {COLOR_LSKY},   {COLOR_BLACK}};
 const static ucg_color_t gndcolor[4] = {{COLOR_DGROUND},{COLOR_LGROUND},{COLOR_LGROUND},{COLOR_BLACK}};
 const static ucg_color_t hzncolor[4] = {{COLOR_WHITE},  {COLOR_BLACK},  {COLOR_WHITE},  {COLOR_WHITE}};
+// >>> may want to change skycolor[3] to dark grey or dark blue? but all black avoids "debris".
 static const ucg_color_t *sky_color;
 static const ucg_color_t *gnd_color;
 static const ucg_color_t *hzn_color;
@@ -1766,11 +1767,13 @@ static int p20;
 static int p25;
 static int p30;
 
-static float pitch_offset = 0;
+static float pitch_offset = 0;   // reflects the NG horizon_offset
 
+// current and previous horizon state variables
 static int hzn_x0, hzn_x1, hzn_y0, hzn_y1;
 static int old_x0, old_x1, old_y0, old_y1;
 static int pitchpixels, oldpitchpixels;
+static bool ticks_drawn;
 // these are sin() & cos() of the bank angle, as integers scaled 256x
 static int sin_bank = 0;
 static int cos_bank = 0x100;
@@ -1785,17 +1788,41 @@ static float limited_pitch( float p ) {
 }
 
 static float limited_bank( float b ) {
-	// limit to about 65 degrees
-	if (b > 1.3)  return 1.3;
-	else if (b < -1.3)  return -1.3;
+	// limit to a bit under 90 degrees
+	if (b > 1.56)  return 1.56;
+	else if (b < -1.56)  return -1.56;
 	else  return b;
 }
 
 static float approxsin( float x ) {
+	//ESP_LOGI(FNAME,"approxsin(%f)", x);
+	if (x > 0) {
+		if (x > 2.3562)                      // x > 135 degrees (but < 180)
+			return approxsin( 3.1416-x );   // now x < 45
+		else if (x > 0.7854)                // x > 45 degrees
+			return approxcos( 1.5708-x );   // approxcos() more accurate
+	} else {
+		if (x < -2.3562)
+			return approxsin( -3.1416-x );
+		else if (x < -0.7854)
+			return -approxcos( x+1.5708 );
+	}
 	return (x*(1-0.1667*x*x));
 }
 
 static float approxcos( float x ) {
+	//ESP_LOGI(FNAME,"approxcos(%f)", x);
+	if (x > 0) {
+		if (x > 2.3562)  // 135 degrees
+			return -approxcos( 3.1416-x );
+		if (x > 0.7854)  // 45 degrees
+			return approxsin( 1.5708-x );
+	} else {
+		if (x < -2.3562)  // -135 degrees
+			return -approxcos( x+3.1416 );
+		if (x < -0.7854)  // -45 degrees
+			return approxsin( x+1.5708 );
+	}
 	x = 0.5*x*x;
 	return (1.0 - x + 0.1667*x*x);
 }
@@ -1805,8 +1832,9 @@ static int pitch2pixels( float p ) {
 		p += D2R(pitch_offset);
 	// Move center of horizon up or down by approximately sin(pitch)
 	// The 2.3 is a visual exaggeration factor
-	p = (WIDTH_2 * 2.3) * approxsin( p );
-	return( (int)p );
+	float sp = approxsin( p );
+	//ESP_LOGI(FNAME,"approxsin(%f) = %f", p, sp);
+	return( (int)((WIDTH_2 * 2.3) * sp) );
 }
 
 // Draw a pair of lines, after checking that they are in display range
@@ -1827,7 +1855,7 @@ void IpsDisplay::double_line( int x1, int y1, int x2, int y2, int which ) {
 //					ucg->drawLine( ++x1,y1, ++x2,y2 );
 //				else if( y1 < y2 && x1 > 0 )
 //					ucg->drawLine( --x1,y1, --x2,y2 );
-// try and let eglib do the clipping
+// instead try and let eglib do the clipping
 				if( y1 > y2 )
 					ucg->drawLine( ++x1,y1, ++x2,y2 );
 				else if( y1 < y2 )
@@ -1876,22 +1904,15 @@ void IpsDisplay::pitch_tick( bool draw, bool major, int pt ) {
 	//int y = HEIGHT_2 + ((pt*cb)>>8);
 	int w = (x1-x0);    // <<< this width is variable
 	int v = (y1-y0);
-//	if( abs(w)+abs(v) < WIDTH_2/4 )    // horizon line very close to corner
-//		return;
 	w >>= (major?4:5);     // half-width of tick projected along horizontal axis
 	v >>= (major?4:5);     // half-width of tick projected along vertical axis
 	if (draw)
 		HznSetColor( hzn_color );
-//	else if (pt > pitchpixels)
 	else if (pt > 0)
 		HznSetColor( sky_color );
 	else
 		HznSetColor( gnd_color );
 	double_line( x-w,y-v, x+w,y+v );
-//	if ((sb > 170 || sb < -170)) {
-//		ESP_LOGI(FNAME,"pitch tick %d y0=%d y1=%d sb=%d cb=%d", draw, y0, y1, sb, cb );
-//		ESP_LOGI(FNAME,"... pt=%d pp=%d %d,%d - %d,%d", pt, pp, x-w,y-v, x+w,y+v );
-//	}
 }
 
 void IpsDisplay::pitch_ticks( bool draw ) {
@@ -2049,6 +2070,65 @@ void IpsDisplay::airplane_icon( int k0, int k1, int g0, int g1 ) {
 		ucg->drawCircle( m, n, 10, UCG_DRAW_ALL );                  // fuselage
 	}
 	xSemaphoreGive(spiMutex);
+}
+
+bool calc_horizon( int sb, int cb, int& x0, int& y0, int& x1, int& y1 ) {
+	// prepare to draw new horizon line
+	//ESP_LOGI(FNAME,"prepare to draw new horizon");
+	int m = WIDTH_2;
+	int n = WIDTH_2;  // this function lives in a square world
+	if ( cb <= 0 )   cb = 256;
+	// Vertical position of horizon at center of width after offsetting for pitch:
+	// Divide by cos(bank) since "pitch" is defined as perpendicular to ground
+	int pc = (pitchpixels<<8) / cb;
+	int y = n + pc;
+	// move ends of horizon up or down by tan(bank)
+	int h = (WIDTH_2 * sb) / cb;
+	// ensure some sky and some ground even with offset
+	bool wrongpitch = false;
+	//ESP_LOGI(FNAME,"calc_horizon() y=%d h=%d", y, h );
+	int abs_h = abs(h);
+	if (y-abs_h > (WIDTH_-15)) {     // y > WIDTH_-15 + abs(h)
+		y = (WIDTH_-15) + abs_h;
+		wrongpitch = true;
+	} else
+	if (y+abs_h < 15) {              // y < 15 - abs(h)
+		y = 15 - abs_h;
+		wrongpitch = true;
+	}
+	y0 = y + h;      // left end of horizon line, lower if h>0 i.e. bank>0
+	y1 = y - h;      // right end of horizon line
+	x0 = 0;
+	x1 = WIDTH_;
+	//ESP_LOGI(FNAME,"calc_horizon() y0=%d y1=%d", y0, y1 );
+	// In steep bank y0,y1 may be outside the display square Y range,
+	// Compute where horizon touches top and/or bottom edges of square instead
+	// if (h=0) h=m;  - in any case don't crash on a division-by-0
+	if (y0 < 0) {
+		x0 = m - (m*(m+pc))/(h?-h:m);   // h<0
+		//ESP_LOGI(FNAME,"top-left y0=%d -> x0=%d, pc=%d h=%d", y0, x0, pc, h );
+		y0 = 0;
+	} else if (y0 > WIDTH_) {
+		x0 = m - (m*(m-pc))/(h?h:m);    // h>0
+		//ESP_LOGI(FNAME,"bot-left y0=%d -> x0=%d, pc=%d h=%d", y0, x0, pc, h );
+		y0 = WIDTH_;
+	}
+	if (y1 < 0) {
+		x1 = m + (m*(m+pc))/(h?h:m);    // h>0
+		//ESP_LOGI(FNAME,"top-right y1=%d -> x1=%d, pc=%d h=%d", y1, x1, pc, h );
+		y1 = 0;
+	} else if (y1 > WIDTH_) {
+		x1 = m + (m*(m-pc))/(h?-h:m);   // h<0
+		//ESP_LOGI(FNAME,"bot-right y1=%d -> x1=%d, pc=%d h=%d", y1, x1, pc, h );
+		y1 = WIDTH_;
+	}
+	// ensure still some sky and some ground (corner can shrink to 0)
+	if (x0 > WIDTH_ - 25)
+		x0 = WIDTH_ - 25;
+	else
+	if (x1 < 25)
+		x1 = 25;
+	return wrongpitch;
 }
 
 void IpsDisplay::drawHorizon( float p, float b, float yaw ){   // ( pitch, roll, yaw )
@@ -2212,62 +2292,47 @@ void IpsDisplay::drawHorizon( float p, float b, float yaw ){   // ( pitch, roll,
 	horizon_done = 2;
 	old_p = p_;
 	old_b = b_;
+	bool drawticks = ( p_ == p );       // limited_pitch() did not reduce it
 
 	// prepare to draw new horizon line
 	//ESP_LOGI(FNAME,"prepare to draw new horizon");
-	int m = WIDTH_2;
-	int n = HEIGHT_2;
+	//int m = WIDTH_2;
+	//int n = HEIGHT_2;
 	cos_bank = (int)(256 * approxcos(b_));
+	//ESP_LOGI(FNAME,"approxcos(%f) = %f", b_, (float)cos_bank/256.0);
 	sin_bank = (int)(256 * approxsin(b_));
-	pitchpixels = pitch2pixels(p_);        // includes the offset
-	// Divide by cos(bank) since "pitch" is defined as perpendicular to ground
-	int pc = (pitchpixels<<8) / cos_bank;
-	int y = n + pc;
-	// move ends of horizon up or down by tan(bank)
-	int h = (WIDTH_2 * sin_bank) / cos_bank;
-	// ensure some sky and some ground even with offset
-	bool wrongpitch = ( p_ != p );      // limited_pitch() reduced it
-	if (y-abs(h) > AHRS_BOT-15) {
-		y = AHRS_BOT + abs(h) - 15;
-		wrongpitch = true;
-	} else
-	if (y+abs(h) < AHRS_TOP+15) {
-		y = AHRS_TOP - abs(h) + 15;
-		wrongpitch = true;
+	//ESP_LOGI(FNAME,"approxsin(%f) = %f", b_, (float)sin_bank/256.0);
+	pitchpixels = pitch2pixels(p_);     // includes the offset
+	int x0, y0, x1, y1;
+	if ( b_ > 1.13 ) {
+		// over about 65 degrees bank:
+		// use calc_horizon in a world rotated 90 degrees:
+		//ESP_LOGI(FNAME,"calling calc_horizon() 1");
+		calc_horizon( -cos_bank, sin_bank, x0, y0, x1, y1 );
+		hzn_x0 = y0;
+		hzn_y0 = AHRS_BOT - x0;
+		hzn_x1 = y1;
+		hzn_y1 = AHRS_BOT - x1;
+		drawticks = false;
+	} else if ( b_ < -1.13 ) {
+		//ESP_LOGI(FNAME,"calling calc_horizon() 2");
+		calc_horizon( cos_bank, -sin_bank, x0, y0, x1, y1 );
+		hzn_x0 = WIDTH_ - y0;
+		hzn_y0 = AHRS_TOP + x0;
+		hzn_x1 = WIDTH_ - y1;
+		hzn_y1 = AHRS_TOP + x1;
+		drawticks = false;
+	} else {
+		// under about 65 degrees, use the straightforward method:
+		//ESP_LOGI(FNAME,"calling calc_horizon() 3");
+		if( calc_horizon( sin_bank, cos_bank, x0, y0, x1, y1 ) )
+			drawticks = false;
+		//ESP_LOGI(FNAME,"... calc_horizon() returned");
+		hzn_x0 = x0;
+		hzn_y0 = AHRS_TOP + y0;
+		hzn_x1 = x1;
+		hzn_y1 = AHRS_TOP + y1;
 	}
-	hzn_y0 = y + h;      // left end of horizon line, lower if h>0 i.e. bank>0
-	hzn_y1 = y - h;      // right end of horizon line
-	hzn_x0 = 0;
-	hzn_x1 = WIDTH_;
-
-	// In steep bank y0,y1 may be outside the display square Y range,
-	// Compute where horizon touches top and/or bottom edges of square instead
-	// if (h=0) h=m;  - in any case don't crash on a division-by-0
-	if (hzn_y0 < AHRS_TOP) {
-		hzn_x0 = m - (m*(m+pc))/(h?-h:m);   // h<0
-		//ESP_LOGI(FNAME,"top-left y0=%d -> x0=%d, pc=%d h=%d", hzn_y0, hzn_x0, pc, h );
-		hzn_y0 = AHRS_TOP;
-	} else if (hzn_y0 > AHRS_BOT) {
-		hzn_x0 = m - (m*(m-pc))/(h?h:m);    // h>0
-		//ESP_LOGI(FNAME,"bot-left y0=%d -> x0=%d, pc=%d h=%d", hzn_y0, hzn_x0, pc, h );
-		hzn_y0 = AHRS_BOT;
-	}
-	if (hzn_y1 < AHRS_TOP) {
-		hzn_x1 = m + (m*(m+pc))/(h?h:m);    // h>0
-		//ESP_LOGI(FNAME,"top-right y1=%d -> x1=%d, pc=%d h=%d", hzn_y1, hzn_x1, pc, h );
-		hzn_y1 = AHRS_TOP;
-	} else if (hzn_y1 > AHRS_BOT) {
-		hzn_x1 = m + (m*(m-pc))/(h?-h:m);   // h<0
-		//ESP_LOGI(FNAME,"bot-right y1=%d -> x1=%d, pc=%d h=%d", hzn_y1, hzn_x1, pc, h );
-		hzn_y1 = AHRS_BOT;
-	}
-
-	// ensure still some sky and some ground (corner can shrink to 0)
-	if (hzn_x0 > WIDTH_ - 25)
-		hzn_x0 = WIDTH_ - 25;
-	else
-	if (hzn_x1 < 25)
-		hzn_x1 = 25;
 
 	// find out in which direction each end of the horizon line moved
 	// also set up yy0,yy1 for correct choice of top or bottom
@@ -2303,9 +2368,12 @@ void IpsDisplay::drawHorizon( float p, float b, float yaw ){   // ( pitch, roll,
 		y2 = hzn_y1;
 	}
 
-	// erase the existing tick marks before over-writing old sin_bank, cos_bank
-	pitch_ticks( false );
-	bank_ticks( false );
+	// erase the existing tick marks before over-writing old sin_bank, cos_bank, pitchpixels
+	if ( ticks_drawn ) {
+		pitch_ticks( false );
+		bank_ticks( false );
+		ticks_drawn = false;
+	}
 
 	xSemaphoreTake(spiMutex, portMAX_DELAY );
 	// first erase the thin line between ground and sky (dark themes only)
@@ -2354,20 +2422,17 @@ void IpsDisplay::drawHorizon( float p, float b, float yaw ){   // ( pitch, roll,
 
 	// add thin more obvious line at horizon (dark themes only)
 	if (horizon_colors.get() == WHITE_ON_DARK || horizon_colors.get() == WHITE_ON_BLACK) {
-		//ESP_LOGI(FNAME,"about to draw horizon line");
 		HznSetColor( hzn_color );
 		double_line( hzn_x0,hzn_y0, hzn_x1,hzn_y1 );
 	}
 	xSemaphoreGive(spiMutex);
 
 	// draw tickmarks - these are always completely re-drawn
-	// erase the existing tick marks before over-writing old sin_bank, cos_bank
-	//ESP_LOGI(FNAME,"about to draw ticks");
-//	pitch_ticks( false );        // erase old, then
-	if ( ! wrongpitch )
-		pitch_ticks( true  );    // draw new right away to reduce flicker
-//	bank_ticks( false );
-	bank_ticks( true  );
+	if ( drawticks ) {
+		pitch_ticks( true  );
+		bank_ticks( true  );
+		ticks_drawn = true;
+	}
 
 	// The following variables are used to mark the unsafe zone, where other objects
 	//   may have been painted over when the horizon was drawn.

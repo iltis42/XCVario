@@ -103,6 +103,7 @@ void change_max_volume() {
 		audio_volume.set( max );
 		ESP_LOGI(FNAME,"change volume -> %f to fit max", max );
 	}
+	update_volume_menu_max();   // make volume menu use the new max
 }
 
 void flap_act() {

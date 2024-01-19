@@ -152,7 +152,6 @@ float IMU::getGyroYawDelta()
 void IMU::update_fused_vector(vector_ijk& fused, float gyro_trust, vector_ijk& petal_force, Quaternion& omega_step)
 {
     // move the previos fused attitude by the new omega step
-    omega_step.d = -omega_step.d; // keep horizon when circling .. magic
     vector_ijk virtual_gravity = omega_step * fused;
     virtual_gravity.normalize();
     virtual_gravity *= gyro_trust;
@@ -185,6 +184,7 @@ void IMU::Process()
 	omega_step = Quaternion::fromGyro(gyro_rad, dt);
 	vector_ijk axis;
 	float w = omega_step.getAngleAndAxis(axis) * 1.f / dt; // angular speed [rad/sec]
+	omega_step.conjugate(); // inverse step
 	// ESP_LOGI( FNAME,"Omega: %f axis: %.3f,%.3f,%.3f", w, axis.a, axis.b, axis.c);
 
 	float roll=0, pitch=0;
@@ -209,18 +209,16 @@ void IMU::Process()
 		pitch = IMU::PitchFromAccelRad();
 
 		// Centripetal forces to keep angle of bank while circling
-		petal.a = sin(pitch);                // Nose down (positive Y turn) results in positive X force
-		petal.b = -sin(roll)*cos(pitch);     // Left wing down (or negative X roll) results in positive Y force
+		petal.a = -sin(pitch);               // Nose down (positive Y turn) results in negative X force
+		petal.b = sin(roll)*cos(pitch);      // Rigrht wing down (or positive X roll) results in positive Y force
 		petal.c = cos(roll)*cos(pitch);      // Any roll or pitch creates a smaller positive Z, gravity Z is positive
 		// trust in gyro at load factors unequal 1 g
 		gravity_trust = (ahrs_min_gyro_factor.get() + (ahrs_gyro_factor.get() * ( pow(10, abs(loadFactor-1) * ahrs_dynamic_factor.get()) - 1)));
 		// ESP_LOGI( FNAME,"Omega roll: %f Pitch: %f W_yz: %f Gyro Trust: %f", R2D(roll), R2D(pitch), w_yz, gravity_trust );
 	}
 	else {
-		// For still stand centripetal forces are simulated by rotating g@180Z
-		petal.a = -accel.a;
-		petal.b = -accel.b;
-		petal.c = accel.c;
+		// For still stand centripetal forces are taken from the accelerometer
+		petal = accel;
 	}
 	// ESP_LOGI( FNAME, " ax1:%f ay1:%f az1:%f Gx:%f Gy:%f GZ:%f dT:%f", petal.a, petal.b, petal.c, gyro.a, gyro.b, gyro.c, dt );
 	vector_ijk att_prev = att_vector;
@@ -228,7 +226,7 @@ void IMU::Process()
 	// ESP_LOGI(FNAME,"attv: %.3f %.3f %.3f", att_vector.a, att_vector.b, att_vector.c);
 	att_quat = Quaternion::fromAccelerometer(att_vector);
 	// ESP_LOGI(FNAME,"attq: %.3f %.3f %.3f %.3f", att_quat.a, att_quat.b, att_quat.c, att_quat.d );
-	euler_rad = att_quat.toEulerRad();
+	euler_rad = att_quat.toEulerRad() * -1.f;
 	if ( (att_vector-att_prev).get_norm2() > 0.5 ) {
 		EulerAngles euler = rad2deg(euler_rad);
 		ESP_LOGI( FNAME,"Euler R:%.1f P:%.1f OR:%.1f IMUP:%.1f %.1f@GA(%.3f,%.3f,%.3f)", euler.Roll(), euler.Pitch(), R2D(roll), R2D(pitch), R2D(w), axis.a, axis.b, axis.c );

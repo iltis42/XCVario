@@ -1174,13 +1174,34 @@ void SetupMenu::options_menu_create_units( MenuEntry *top ){
 }
 
 void SetupMenu::options_menu_create_flarm( MenuEntry *top ){
-	SetupMenuSelect * flarml = new SetupMenuSelect( "Alarm Level",	RST_NONE, 0, true, &flarm_warning );
-	flarml->setHelp( "Level of FLARM alarm to enable: 1 is lowest (13-18 sec), 2 medium (9-12 sec), 3 highest (0-8 sec) until impact");
+
+	SetupMenuSelect * flarml = new SetupMenuSelect( PROGMEM"Visual Alarm", RST_NONE, 0, true, &flarm_visual );
+	flarml->setHelp( PROGMEM "FLARM level 1 is lowest with 13-18 sec, 2 medium 9-12 sec and 3 highest with 0-8 sec until impact");
 	flarml->addEntry( "Disable");
-	flarml->addEntry( "Level 1");
-	flarml->addEntry( "Level 2");
+	flarml->addEntry( "Level 1+");
+	flarml->addEntry( "Level 2+");
 	flarml->addEntry( "Level 3");
 	top->addEntry( flarml );
+
+	SetupMenuSelect * flarmi = new SetupMenuSelect( PROGMEM"Visual Style", RST_NONE, 0, true, &flarm_2icons );
+	flarmi->setHelp( PROGMEM "FLARM Alarm screen style: single icon for traffic bearing, or add second icon for vertical angle");
+	flarmi->addEntry( "One icon");
+	flarmi->addEntry( "Two icons");
+	top->addEntry( flarmi );
+
+	SetupMenuSelect * flarma = new SetupMenuSelect( PROGMEM"Audio Alarm", RST_NONE, 0, true, &flarm_sound );
+	flarma->setHelp( PROGMEM "FLARM level 1 is lowest with 13-18 sec, 2 medium 9-12 sec and 3 highest with 0-8 sec until impact");
+	flarma->addEntry( "Disable");
+	flarma->addEntry( "Level 1+");
+	flarma->addEntry( "Level 2+");
+	flarma->addEntry( "Level 3");
+	top->addEntry( flarma );
+
+	SetupMenuSelect * flarmc = new SetupMenuSelect( PROGMEM"Audio Style", RST_NONE, 0, true, &flarm_sound_continuous );
+	flarmc->setHelp( PROGMEM "FLARM Alarm Audio: Short (<=2 sec) for each higher level or new aircraft, or Continuous while danger");
+	flarmc->addEntry( "Short");
+	flarmc->addEntry( "Continuous");
+	top->addEntry( flarmc );
 
 	SetupMenuValFloat * flarmv = new SetupMenuValFloat( "Alarm Volume",  "%", 20, 100, 1, 0, false, &flarm_volume  );
 	flarmv->setHelp( "Maximum audio volume of FLARM alarm warning");
@@ -1602,7 +1623,7 @@ void SetupMenu::options_menu_create( MenuEntry *opt ){
 
 	SetupMenu * flarm = new SetupMenu( "FLARM" );
 	opt->addEntry( flarm );
-	flarm->setHelp( "Option to display FLARM Warnings depending on FLARM alarm level");
+	flarm->setHelp( "Option to display FLARM Warnings depending on FLARM alarm level", 240);
 	flarm->addCreator(options_menu_create_flarm);
 
 	SetupMenu * compassWindMenu = new SetupMenu( "Compass/Wind" );

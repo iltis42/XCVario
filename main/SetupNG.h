@@ -579,7 +579,10 @@ extern SetupNG<int>		    wk_sens_pos_minus_2;
 extern SetupNG<int>		    wk_sens_pos_minus_3;
 extern SetupNG<int>       	stall_warning;
 extern SetupNG<float>		stall_speed;
-extern SetupNG<int>       	flarm_warning;
+extern SetupNG<int>       	flarm_visual;  // replaced flarm_warning (same key)
+extern SetupNG<int>       	flarm_2icons;
+extern SetupNG<int>       	flarm_sound;
+extern SetupNG<int>       	flarm_sound_continuous;
 extern SetupNG<float>     	flarm_volume;
 extern SetupNG<int>       	flarm_sim;
 extern SetupNG<int>       	flap_sensor;

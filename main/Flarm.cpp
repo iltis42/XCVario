@@ -7,6 +7,9 @@
 #include "sensor.h"
 #include "CircleWind.h"
 #include "Router.h"
+#include "SetupMenu.h"
+
+#include <Arduino.h>
 
 int Flarm::RX = 0;
 int Flarm::TX = 0;
@@ -20,7 +23,8 @@ int Flarm::RelativeDistance = 0;
 float Flarm::gndSpeedKnots = 0;
 float Flarm::gndCourse = 0;
 bool Flarm::myGPS_OK = false;
-char Flarm::ID[20] = "";
+int Flarm::ID = 0;
+int Flarm::oldID = 0;
 int Flarm::bincom = 0;
 AdaptUGC* Flarm::ucg;
 
@@ -91,11 +95,17 @@ int Flarm::oldDist = 0;
 int Flarm::oldVertical = 0;
 int Flarm::oldBear = 0;
 int Flarm::alarmOld=0;
+int32_t Flarm::alarm_start_time = 0;
+uint32_t Flarm::flarm_warning_hold = 0;
+uint32_t Flarm::flarm_hold_canceled = 0;
+uint32_t Flarm::lastPFLAUtime = 0;
 int Flarm::_tick=0;
 int Flarm::timeout=0;
 int Flarm::ext_alt_timer=0;
 int Flarm::_numSat=0;
 int Flarm::bincom_port=0;
+
+#define FLARM_HOLDOFF_MS (3*60*1000)   // 3 minutes
 
 void Flarm::flarmSim(){
 	// ESP_LOGI(FNAME,"flarmSim sim-tick: %d", sim_tick);
@@ -166,7 +176,8 @@ void Flarm::parseGPRMC( const char *gprmc ) {
 	if( warn == 'A' ) {
 		if( myGPS_OK == false ){
 			myGPS_OK = true;
-			if( wind_enable.get() & WA_STRAIGHT || wind_enable.get() & WA_CIRCLING  ){
+			//if( wind_enable.get() & WA_STRAIGHT || wind_enable.get() & WA_CIRCLING  ){
+			if( wind_enable.get() & (WA_STRAIGHT | WA_CIRCLING) ){
 				CircleWind::gpsStatusChange( true);
 			}
 			ESP_LOGI(FNAME,"GPRMC, GPS status changed to good, rmc:%s gps:%d", gprmc, myGPS_OK );
@@ -179,7 +190,8 @@ void Flarm::parseGPRMC( const char *gprmc ) {
 		if( myGPS_OK == true  ){
 			myGPS_OK = false;
 			ESP_LOGI(FNAME,"GPRMC, GPS status changed to bad, rmc:%s gps:%d", gprmc, myGPS_OK );
-			if( wind_enable.get() & WA_STRAIGHT || wind_enable.get() & WA_CIRCLING ){
+			//if( wind_enable.get() & WA_STRAIGHT || wind_enable.get() & WA_CIRCLING  ){
+			if( wind_enable.get() & (WA_STRAIGHT | WA_CIRCLING) ){
 				CircleWind::gpsStatusChange( false );
 				ESP_LOGW(FNAME,"GPRMC, GPS not OK: %s", gprmc );
 			}
@@ -261,18 +273,18 @@ void Flarm::parsePFLAU( const char *pflau, bool sim_data ) {
 	}
 	// ESP_LOGI(FNAME,"parsePFLAU");
 	int cs;
-	int id;
 	int calc_cs=Protocols::calcNMEACheckSum( pflau );
 	cs = Protocols::getNMEACheckSum( pflau );
 	if( cs != calc_cs ){
 		ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", pflau, calc_cs, cs );
 		return;
 	}
-	sscanf( pflau, "$PFLAU,%d,%d,%d,%d,%d,%d,%d,%d,%d,%x*%02x",&RX,&TX,&GPS,&Power,&AlarmLevel,&RelativeBearing,&AlarmType,&RelativeVertical,&RelativeDistance,&id,&cs);
+	sscanf( pflau, "$PFLAU,%d,%d,%d,%d,%d,%d,%d,%d,%d,%x*%02x",&RX,&TX,&GPS,&Power,&AlarmLevel,&RelativeBearing,&AlarmType,&RelativeVertical,&RelativeDistance,&ID,&cs);
 	// ESP_LOGI(FNAME,"parsePFLAU() RB: %d ALT:%d  DIST %d",RelativeBearing,RelativeVertical, RelativeDistance );
-	sprintf( ID,"%06x", id );
 	_tick=0;
+	lastPFLAUtime = millis();
 	timeout = 10;
+	// leave alarmOld as is, for holdoff
 }
 
 void Flarm::parsePFLAX( const char *msg, int port ) {
@@ -342,28 +354,16 @@ void Flarm::parsePGRMZ( const char *pgrmz ) {
 	ext_alt_timer = 10;  // Fall back to internal Barometer after 10 seconds
 }
 
-
-int rbOld = -500; // outside normal range
-
-void Flarm::drawClearTriangle( int x, int y, int rb, int dist, int size, int factor ) {
-	if( rbOld != -500 ){
-		drawTriangle( x,y, rbOld, dist, size, factor, true );
-	}
-	drawTriangle( x,y, rb, dist, size, factor );
-	rbOld = rb;
+void Flarm::setColorByAlt( int rel_alt ) {
+	if (rel_alt == ALT_BELOW)
+		ucg->setColor( COLOR_BELOW );
+	else if (rel_alt == ALT_ABOVE)
+		ucg->setColor( COLOR_ABOVE );
+	else
+		ucg->setColor( COLOR_LEVEL );
 }
 
-int rbVert = -500;
-
-void Flarm::drawClearVerticalTriangle( int x, int y, int rb, int dist, int size, int factor ) {
-	if( rbVert != -500 ){
-		drawTriangle( x,y, rbVert, dist, size, factor, true );
-	}
-	drawTriangle( x,y, rb, dist, size, factor );
-	rbVert = rb;
-}
-
-void Flarm::drawTriangle( int x, int y, int rb, int dist, int size, int factor, bool erase ) {
+void Flarm::drawTriangle( int x, int y, int rb, int dist, int size, int factor, int rel_alt, bool erase ) {
 	float s = sin( DTR(rb) );
 	float c = cos( DTR(rb) );
 	int tipx = (int)(x + s*dist );
@@ -377,9 +377,46 @@ void Flarm::drawTriangle( int x, int y, int rb, int dist, int size, int factor, 
 	if( erase )
 		ucg->setColor( COLOR_BLACK );
 	else
-		ucg->setColor( COLOR_RED );
+		setColorByAlt( rel_alt );
 	// ESP_LOGI(FNAME,"s: %f c:%f tipx: %d tipy:%d  mx:%2.2f my:%2.2f  ax:%d ay:%d", s,c, tipx, tipy, mx,my, ax,ay);
 	ucg->drawTriangle( tipx, tipy, ax,ay, bx, by );
+}
+
+void Flarm::drawClearTriangle( int x, int y, int rb, int dist, int size, int factor, int rel_alt ) {
+	static int rbOld = -500; // outside normal range
+	if( rbOld != -500 ){
+		drawTriangle( x,y, rbOld, dist, size, factor, rel_alt, true );
+	}
+	drawTriangle( x,y, rb, dist, size, factor, rel_alt );
+	rbOld = rb;
+}
+
+void Flarm::drawClearVerticalTriangle( int x, int y, int rb, int dist, int size, int factor, int rel_alt ) {
+	static int rbVert = -500;
+	if( rbVert != -500 ){
+		drawTriangle( x,y, rbVert, dist, size, factor, rel_alt, true );
+	}
+	drawTriangle( x,y, rb, dist, size, factor, rel_alt );
+	rbVert = rb;
+}
+
+// draw - or erase - small up or down triangle
+void Flarm::drawUpDnTriangle( int rel_alt ) {
+	static int old_alt = ALT_SAME;
+	if( rel_alt == old_alt )
+		return;
+	ucg->setColor( COLOR_BLACK );
+	if (old_alt == ALT_ABOVE)             // erase UP
+		ucg->drawTriangle( 227,246, 216,271, 238,271 );
+	else if (old_alt == ALT_BELOW)        // erase DOWN
+		ucg->drawTriangle( 227,304, 216,279, 238,279 );
+	setColorByAlt( rel_alt );
+	if( rel_alt == ALT_ABOVE )            // draw UP
+		ucg->drawTriangle( 227,246, 216,271, 238,271 );
+	else if( rel_alt == ALT_BELOW )       // draw DOWN
+		ucg->drawTriangle( 227,304, 216,279, 238,279 );
+	// else - ALT_SAME - draw nothing
+	old_alt = rel_alt;
 }
 
 void Flarm::drawAirplane( int x, int y, bool fromBehind, bool smallSize ){
@@ -394,68 +431,214 @@ void Flarm::drawAirplane( int x, int y, bool fromBehind, bool smallSize ){
 			ucg->drawTetragon( x-15,y-1, x-15,y+1, x+15,y+1, x+15,y-1 );  // wings
 			ucg->drawTetragon( x-1,y+10, x-1,y-3, x+1,y-3, x+1,y+10 ); // fuselage
 			ucg->drawTetragon( x-4,y+10, x-4,y+9, x+4,y+9, x+4,y+10 ); // elevator
-
-		}else{
+		}else if (flarm_2icons.get()){  // 2 icons, default
 			ucg->drawTetragon( x-30,y-2, x-30,y+2, x+30,y+2, x+30,y-2 );  // wings
 			ucg->drawTetragon( x-2,y+25, x-2,y-10, x+2,y-10, x+2,y+25 ); // fuselage
 			ucg->drawTetragon( x-8,y+25, x-8,y+21, x+8,y+21, x+8,y+25 ); // elevator
+		}else{   // setting==0, 1 icon
+			// use larger size centered on display, numbers pushed to bottom:
+			ucg->drawTetragon( x-45,y-3, x-45,y+3, x+45,y+3, x+45,y-3 );     // wings
+			ucg->drawTetragon( x-3,y+37, x-3,y-15, x+3,y-15, x+3,y+37 );     // fuselage
+			ucg->drawTetragon( x-12,y+37, x-12,y+31, x+12,y+31, x+12,y+37 ); // elevator
 		}
 	}
 }
 
-void Flarm::initFlarmWarning(){
+// version for single-icon display style
+void Flarm::initWarning1(){
+	xSemaphoreTake(spiMutex, portMAX_DELAY );
+	ucg->setPrintPos(15, 28);
+	ucg->setFontPosCenter();
+	ucg->setColor( COLOR_WHITE );
+	ucg->setFont(ucg_font_fub20_hr);
+	ucg->printf( PROGMEM"Traffic Alert" );
+	ucg->setColor( COLOR_LGREY );
+	ucg->setFont(ucg_font_fub11_hr);
+	ucg->setPrintPos(125,65);
+	ucg->printf(PROGMEM"o'Clock");
+	ucg->setPrintPos(10,250);
+	ucg->printf(PROGMEM"Distance %s", Units::DistanceUnit() );
+	ucg->setPrintPos(130,250);
+	ucg->printf(PROGMEM"Vertical %s", Units::AltitudeUnitMeterOrFeet() );
+	xSemaphoreGive(spiMutex);
+}
+
+// version for dual-icon display style
+void Flarm::initWarning2(){
+	xSemaphoreTake(spiMutex, portMAX_DELAY );
 	ucg->setPrintPos(15, 25 );
 	ucg->setFontPosCenter();
 	ucg->setColor( COLOR_WHITE );
 	ucg->setFont(ucg_font_fub20_hr);
-	ucg->printf( "Traffic Alert" );
+	ucg->printf( PROGMEM"Traffic Alert" );
 	ucg->setColor( COLOR_HEADER );
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setPrintPos(130,50);
-	ucg->printf("o'Clock");
+	ucg->printf(PROGMEM"o'Clock");
 	ucg->setPrintPos(130,110);
-	ucg->printf("Distance %s", Units::DistanceUnit() );
+	ucg->printf(PROGMEM"Distance %s", Units::DistanceUnit() );
 	ucg->setPrintPos(130,190);
-	ucg->printf("Vertical %s", Units::AltitudeUnitMeterOrFeet() );
-
-	oldDist = 0;
-	oldVertical = 0;
-	oldBear = 0;
-	// Audio::alarm( true, 30, AUDIO_ALARM_FLARM_1 );
+	ucg->printf(PROGMEM"Vertical %s", Units::AltitudeUnitMeterOrFeet() );
+	xSemaphoreGive(spiMutex);
 }
 
-void Flarm::drawFlarmWarning(){
-	// ESP_LOGI(FNAME,"drawFlarmWarning");
-	if( !( screens_init & INIT_DISPLAY_FLARM ) ){
-		initFlarmWarning();
-		screens_init |= INIT_DISPLAY_FLARM;
-		ESP_LOGI(FNAME,"init drawFlarmWarning");
-	}
-	_tick++;
-	if( _tick > 500 ) // age FLARM alarm in case there is no more input  50 per second = 10 sec
-		AlarmLevel = 0;
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
+// separate sound and visual alarms
+
+void Flarm::soundWarning() {
+
 	float volume=0;
+	int alarm_duration=0;   // limit alarm duration, restart when alarm level changes
 	e_audio_alarm_type_t alarm = AUDIO_ALARM_FLARM_1;
 	if( AlarmLevel == 3 ) { // highest, impact 0-8 seconds
 		volume = flarm_volume.get();
 		alarm = AUDIO_ALARM_FLARM_3;
+		alarm_duration = 2000;
 	}
 	else if( AlarmLevel == 2 ){
-		volume = flarm_volume.get()/4;
+		volume = flarm_volume.get() * 0.5;
 		alarm = AUDIO_ALARM_FLARM_2;
+		alarm_duration = 1300;
 	}
 	else if( AlarmLevel == 1 ){ // lowest
-		volume = flarm_volume.get()/8;
+		volume = flarm_volume.get() * 0.25;
 		alarm = AUDIO_ALARM_FLARM_1;
+		alarm_duration = 800;
 	}else{
 		alarm = AUDIO_ALARM_OFF;
 	}
 
-	if( alarm != AUDIO_ALARM_OFF )
-		Audio::alarm( true, volume, alarm );
-	else
+	if (flarm_sound_continuous.get()) {
+		// sound will be turned off in sensor.cpp when AlarmLevel is low enough
+		if (flarm_warning_hold)
+			alarm = AUDIO_ALARM_OFF;   // button also holds off continuous sound
+	} else {
+		if (alarm_start_time != 0 && millis() > alarm_start_time + alarm_duration)
+			alarm = AUDIO_ALARM_OFF;
+	}
+
+	if( alarm == AUDIO_ALARM_OFF ) {
 		Audio::alarm( false );
+	} else {
+		Audio::alarm( true, volume, alarm );
+		if (alarm_start_time == 0)
+			alarm_start_time = millis();
+	}
+}
+
+// version for single-icon display style
+void Flarm::drawWarning1(){
+	// ESP_LOGI(FNAME,"drawWarning1");
+
+	if( !( screens_init & INIT_DISPLAY_FLARM ) ){
+		initWarning1();
+		oldDist = 0;
+		oldVertical = 0;
+		oldBear = 0;
+		alarmOld = 0;
+		screens_init |= INIT_DISPLAY_FLARM;
+		//ESP_LOGI(FNAME,"init drawWarning");
+	}
+
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
+    
+	if( AlarmLevel != alarmOld) {
+		ESP_LOGI(FNAME,"alarm level -> %d", AlarmLevel );
+		ucg->setPrintPos(200, 28 );
+		ucg->setFontPosCenter();
+		ucg->setColor( COLOR_WHITE );
+		ucg->setFont(ucg_font_fub20_hr, true);
+		ucg->printf( "%d ", AlarmLevel );
+		alarmOld = AlarmLevel;
+	}
+
+	if( RelativeDistance != oldDist ) {
+		ESP_LOGI(FNAME,"Distance -> %d", RelativeDistance );
+		ucg->setPrintPos(10, 285);
+		ucg->setFontPosCenter();
+		ucg->setColor( COLOR_WHITE );
+		ucg->setFont(ucg_font_fub25_hr, true);
+		char d[32] = "\0";
+		int dist = rint(Units::Distance(RelativeDistance)/10)*10;
+		sprintf(d,"%d   ",dist);
+		ucg->printf( d );
+		oldDist = RelativeDistance;
+	}
+
+	int rel_alt = ALT_SAME ;
+	// deadband +- 35 meters
+	if (RelativeVertical >  35)  rel_alt = ALT_ABOVE;
+	else
+	if (RelativeVertical < -35)  rel_alt = ALT_BELOW;
+
+	if( RelativeVertical != oldVertical ) {
+		ESP_LOGI(FNAME,"Vertical -> %d [%d]", RelativeVertical, rel_alt );
+		ucg->setPrintPos(130, 285);
+		ucg->setFontPosCenter();
+		setColorByAlt( rel_alt );
+		ucg->setFont(ucg_font_fub25_hr, true);
+		char v[32];
+		int vdiff = RelativeVertical;
+		if( alt_unit.get() != 0 ){  // then it's ft or FL -> feet
+			vdiff = vdiff * 33;
+			vdiff /= 100;
+			vdiff *= 10;        // example: 75m -> 2475 -> 24 -> 240ft
+		} else {
+			vdiff /= 10;
+			vdiff *= 10;
+		}
+		int absdiff = abs(vdiff);
+		if (absdiff > 999)
+			sprintf(v,"%+d",  vdiff );  // include a "+" sign if positive
+		else if (absdiff > 99)
+			sprintf(v,"%+d ",  vdiff );
+		else if (absdiff > 9)
+			sprintf(v,"%+d  ",  vdiff );
+		else
+			sprintf(v,"%+d   ",  vdiff );
+		ucg->printf( v );
+		//if (absdiff <= 999)
+		drawUpDnTriangle( rel_alt );
+		oldVertical = RelativeVertical;
+	}
+	if( oldBear != RelativeBearing ){
+		ESP_LOGI(FNAME,"Bearing -> %d", RelativeBearing );
+		ucg->setPrintPos(40, 65);
+		ucg->setFontPosCenter();
+		ucg->setColor( COLOR_WHITE );
+		ucg->setFont(ucg_font_fub25_hr, true );
+		char b[32];
+		int quant=15;
+		if( RelativeBearing < 0 )
+			quant=-15;
+		int clock = int((RelativeBearing+quant)/30);
+		if( clock <= 0 )
+			clock += 12;
+		sprintf(b,"  %d  ", clock );
+		ucg->printf( b );
+		drawClearTriangle( 120,155, RelativeBearing, 0, 75, 4, rel_alt );
+		ucg->setColor( COLOR_WHITE );
+		drawAirplane( 120, 155, false, false );
+		oldBear = RelativeBearing;
+	}
+
+	xSemaphoreGive(spiMutex);
+}
+
+// version for dual-icon display style
+void Flarm::drawWarning2(){
+	// ESP_LOGI(FNAME,"drawWarning2");
+
+	if( !( screens_init & INIT_DISPLAY_FLARM ) ){
+		initWarning2();
+		oldDist = 0;
+		oldVertical = 0;
+		oldBear = 0;
+		alarmOld = 0;
+		screens_init |= INIT_DISPLAY_FLARM;
+		//ESP_LOGI(FNAME,"init drawWarning");
+	}
+
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
 
 	if( AlarmLevel != alarmOld ) {
 		ucg->setPrintPos(200, 25 );
@@ -469,7 +652,7 @@ void Flarm::drawFlarmWarning(){
 		ucg->setPrintPos(130, 140 );
 		ucg->setFontPosCenter();
 		ucg->setColor( COLOR_WHITE );
-		ucg->setFont(ucg_font_fub25_hr, true);
+		ucg->setFont(ucg_font_fub25_hr, true );
 		char d[32] = "\0";
 		int dist = rint(Units::Distance(RelativeDistance)/10)*10;
 		sprintf(d,"%d   ",dist);
@@ -484,9 +667,14 @@ void Flarm::drawFlarmWarning(){
 		char v[32];
 		int vdiff = RelativeVertical;
 		if( alt_unit.get() != 0 ){  // then its ft or FL -> feet
-			vdiff = rint((vdiff/10)*10);
+			vdiff = vdiff * 33;
+			vdiff /= 100;
+			vdiff *= 10;        // example: 75m -> 2525 -> 25 -> 250ft
+		} else {
+			vdiff /= 10;
+			vdiff *= 10;
 		}
-		sprintf(v,"%d    ",  vdiff );
+		sprintf(v,"%+d    ",  vdiff );
 		ucg->printf( v );
 		float relDist =  (float)RelativeDistance;
 		if( RelativeBearing < 0 )
@@ -494,12 +682,12 @@ void Flarm::drawFlarmWarning(){
 		float horizontalAngle = RTD( atan2( relDist, (float)RelativeVertical) );
 		ESP_LOGI(FNAME,"horizontalAngle: %f  vert:%d", horizontalAngle, RelativeVertical );
 
-		drawClearVerticalTriangle( 70, 220, horizontalAngle, 0, 50, 6 );
+		drawClearVerticalTriangle( 70, 220, horizontalAngle, 0, 50, 6, ALT_SAME );
 		ucg->setColor( COLOR_WHITE );
 		drawAirplane( 70, 220, true );
 		oldVertical = RelativeVertical;
 	}
-	if( oldBear != RelativeBearing ){
+	if( oldBear != RelativeBearing ) {
 		ucg->setPrintPos(130, 80 );
 		ucg->setFontPosCenter();
 		ucg->setColor( COLOR_WHITE );
@@ -513,11 +701,56 @@ void Flarm::drawFlarmWarning(){
 			clock += 12;
 		sprintf(b,"  %d  ", clock );
 		ucg->printf( b );
-		drawClearTriangle( 70,120, RelativeBearing, 0, 50, 4 );
+		drawClearTriangle( 70,120, RelativeBearing, 0, 50, 4, ALT_SAME );
 		ucg->setColor( COLOR_WHITE );
 		drawAirplane( 70, 120 );
 		oldBear = RelativeBearing;
 	}
 
 	xSemaphoreGive(spiMutex);
+}
+
+void Flarm::HoldOff(){
+	// called if rotary button pressed
+	if (flarm_warning_hold) {
+		// already in hold-off
+		if ( millis() > flarm_warning_hold + 2000 ) {
+			// another press after a while - cancel hold-off
+			flarm_warning_hold = 0;
+			alarm_start_time = 0;      // also be ready to make a sound again
+			flarm_hold_canceled = millis();
+		}
+	} else if ( flarm_hold_canceled == 0 || millis() > flarm_hold_canceled + 2000 ) {
+		// start holdoff timer
+		flarm_warning_hold = millis();
+		flarm_hold_canceled = 0;
+	}
+}
+
+// this function is called even when in hold-off mode
+void Flarm::checkWarning(){
+	if( AlarmLevel > alarmOld || ID != oldID ) {       // new or closer aircraft
+		oldID = ID;
+		alarm_start_time = 0;           // be ready to make a sound again
+		flarm_warning_hold = 0;         // also cancel holdoff if any
+	}
+	else if( flarm_warning_hold ) {
+		if( millis() > flarm_warning_hold + FLARM_HOLDOFF_MS ) {   // holdoff timeout
+			flarm_warning_hold = 0;     // cancel holdoff
+			alarm_start_time = 0;       // also be ready to make a sound again
+		}
+	}
+	else if (millis() > lastPFLAUtime + 10000) {
+		// age FLARM alarm in case there is no more input
+		AlarmLevel = 0;
+		flarm_warning_hold = 0;
+		alarm_start_time = 0;
+	}
+}
+
+void Flarm::drawWarning(){
+	if (flarm_2icons.get())
+		drawWarning2();
+	else
+		drawWarning1();
 }

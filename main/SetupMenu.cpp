@@ -46,6 +46,12 @@
 SetupMenuSelect * audio_range_sm = 0;
 SetupMenuSelect * mpu = 0;
 
+SetupMenuValFloat *volume_menu = 0;
+void update_volume_menu_max() {
+	if (volume_menu)
+		volume_menu->setMax( max_volume.get() );
+}
+
 // Menu for flap setup
 
 float elev_step = 1;
@@ -978,11 +984,13 @@ void SetupMenu::audio_menu_create_equalizer( MenuEntry *top ){
 }
 
 void SetupMenu::audio_menu_create_volume( MenuEntry *top ){
+
 	SetupMenuValFloat * vol = new SetupMenuValFloat( "Current Volume", "%",
 	    0.0, 100.0, 2.0, vol_adj, false, &audio_volume );
 	// unlike top-level menu volume which exits setup, this returns to parent menu
 	vol->setHelp( "Audio volume level for variometer tone on internal and external speaker");
-	vol->setMax(max_volume.get());   // only works after leaving this *parent* menu and returning
+	vol->setMax(max_volume.get());   // this only works after leaving *parent* menu and returning
+	volume_menu = vol;               // but this allows changing the volume menu max later
 	top->addEntry( vol );
 
 	SetupMenuSelect * cdv = new SetupMenuSelect( "Current->Default", RST_NONE, cur_vol_dflt, true );
@@ -995,8 +1003,7 @@ void SetupMenu::audio_menu_create_volume( MenuEntry *top ){
 	top->addEntry( dv );
 	dv->setHelp( "Default volume for Audio when device is switched on");
 
-// after max_volume exit menu, when re-entering will setMax() volume setting above
-	SetupMenuValFloat * mv = new SetupMenuValFloat( "Max Volume", "%", 0, 100, 1.0, 0, true, &max_volume );
+	SetupMenuValFloat * mv = new SetupMenuValFloat( "Max Volume", "%", 0, 100, 1.0, 0, false, &max_volume );
 	top->addEntry( mv );
 	mv->setHelp( "Maximum audio volume setting allowed");
 
@@ -1040,6 +1047,10 @@ void SetupMenu::audio_menu_create_mute( MenuEntry *top ){
 }
 
 void SetupMenu::audio_menu_create( MenuEntry *audio ){
+
+	// volume menu has gone out of scope by now
+	// make sure update_volume_menu_max() does not try and dereference it
+	volume_menu = 0;
 	SetupMenu * volumes = new SetupMenu( "Volume options" );
 	audio->addEntry( volumes );
 	volumes->setHelp( "Configure audio volume options", 240);

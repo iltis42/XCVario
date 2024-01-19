@@ -33,6 +33,8 @@
 #include "WifiApp.h"
 #include "ESP32NVS.h"
 
+// forwards
+class Quaternion;
 
 /*
  *
@@ -132,9 +134,9 @@ public:
 			return 'A';
 		return 'U';
 	}
-	SetupNG( const char * akey,
-			T adefault,  				   // unique identification TAG
-			bool reset=true,               // reset data on factory reset
+	SetupNG( const char * akey,          // unique identification TAG
+			T adefault,
+			bool reset=true,             // reset data on factory reset
 			e_sync_t sync=SYNC_NONE,
 			e_volatility vol=PERSISTENT, // sync with client device is applicable
 			void (* action)()=0,
@@ -550,12 +552,15 @@ extern SetupNG<int>		    ahrs_autozero;
 extern SetupNG<float>		ahrs_gyro_factor;
 extern SetupNG<float>		ahrs_min_gyro_factor;
 extern SetupNG<float>		ahrs_dynamic_factor;
+extern SetupNG<int>		    ahrs_roll_check;
 extern SetupNG<float>       gyro_gating;
 extern SetupNG<int>  		ahrs_defaults;
 extern SetupNG<float>  		ahrs_gyro_cal;
 extern SetupNG<int>		    display_style;
 extern SetupNG<int>		    display_variant;
 extern SetupNG<int>		    s2f_switch_type;
+extern SetupNG<float>		glider_ground_aa;
+extern SetupNG<Quaternion>	imu_reference;
 extern SetupNG<mpud::raw_axes_t> gyro_bias;
 extern SetupNG<mpud::raw_axes_t> accl_bias;
 extern SetupNG<float>       mpu_temperature;

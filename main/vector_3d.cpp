@@ -3,75 +3,110 @@
 #include <limits>
 #include <cassert>
 
-vector_ijk::vector_ijk(float _a, float _b, float _c)
+template <typename T>
+vector_3d<T>::vector_3d(T _a, T _b, T _c)
 {
     a = _a;
     b = _b;
     c = _c;
 }
 
-void vector_ijk::sum(const vector_ijk v2)
+template <typename T>
+vector_3d<T>& vector_3d<T>::operator+=(const vector_3d<T>& v2)
 {
     a = a + v2.a;
     b = b + v2.b;
     c = c + v2.c;
+    return *this;
 }
 
-void vector_ijk::difference(const vector_ijk v2)
+template <typename T>
+vector_3d<T> vector_3d<T>::operator+(const vector_3d<T>& v2) const
+{
+    vector_3d<T> result(*this);
+    return result += v2;
+}
+
+template <typename T>
+vector_3d<T>& vector_3d<T>::operator-=(const vector_3d<T>& v2)
 {
     a = a - v2.a;
     b = b - v2.b;
     c = c - v2.c;
+    return *this;
 }
 
-float vector_ijk::dot_product(const vector_ijk v2)
+template <typename T>
+vector_3d<T> vector_3d<T>::operator-(const vector_3d<T>& v2) const
+{
+    vector_3d<T> result(*this);
+    return result -= v2;
+}
+
+template <typename T>
+vector_3d<T>& vector_3d<T>::operator*=(const T s2)
+{
+    a = a * s2;
+    b = b * s2;
+    c = c * s2;
+    return *this;
+}
+
+template <typename T>
+vector_3d<T> vector_3d<T>::operator*(const T s2)
+{
+    vector_3d<T> result(*this);
+    return result *= s2;
+}
+
+template <typename T>
+vector_3d<T>& vector_3d<T>::operator/=(const T s2)
+{
+    //if (s2 == 0) throw
+    a = a / s2;
+    b = b / s2;
+    c = c / s2;
+    return *this;
+}
+
+template <typename T>
+T vector_3d<T>::dot(const vector_3d<T>& v2)
 {
     return (a*v2.a + b*v2.b + c*v2.c);
 }
 
-
-void vector_ijk::cross_product(const vector_ijk v2)
+template <typename T>
+vector_3d<T> vector_3d<T>::cross(const vector_3d &v2) const
 {
-    a = b*v2.c - c*v2.b;
-    b = c*v2.a - a*v2.c;
-    c = a*v2.b - b*v2.a;
-}
-
-vector_ijk vector_ijk::cross(const vector_ijk &v2) const
-{
-    vector_ijk tmp;
+    vector_3d tmp;
     tmp.a = b*v2.c - c*v2.b;
     tmp.b = c*v2.a - a*v2.c;
     tmp.c = a*v2.b - b*v2.a;
     return tmp;
 }
 
-void vector_ijk::normalize()
+template <typename T>
+T vector_3d<T>::normalize()
 {
-    float one_by_sqrt;
-    one_by_sqrt = 1/sqrt(a*a + b*b + c*c);
-    a = a*one_by_sqrt;
-    b = b*one_by_sqrt;
-    c = c*one_by_sqrt;
+    T one_by_sqrt;
+    T norm = get_norm();
+    if ( norm > 0.00001 ) {
+        one_by_sqrt = 1/norm;
+        a = a*one_by_sqrt;
+        b = b*one_by_sqrt;
+        c = c*one_by_sqrt;
+    }
+    return norm;
 }
 
-void vector_ijk::normalize_f()
+template <typename T>
+vector_3d<T> vector_3d<T>::get_normalized() const
 {
-    float len = sqrt(a*a + b*b + c*c);
-    a = a/len;
-    b = b/len;
-    c = c/len;
+    vector_3d<T> ret = *this;
+    ret.normalize();
+    return ret;
 }
 
-float vector_ijk::get_norm2()
-{
-    return a*a + b*b + c*c;
-}
-
-void vector_ijk::scale(float scale)
-{
-    a = a*scale;
-    b = b*scale;
-    c = c*scale;
-}
-
+template class vector_3d<float>; // explicit instantiation
+template class vector_3d<double>;
+template class vector_3d<int>;

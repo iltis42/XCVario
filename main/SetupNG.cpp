@@ -277,6 +277,8 @@ SetupNG<float>		    password( "PASSWORD", 0 );
 SetupNG<int>		    autozero( "AUTOZERO", 0 );
 SetupNG<int>		    attitude_indicator("AHRS", 1 );
 SetupNG<float>		    horizon_offset("HRZOFST", 0, RST_NONE, SYNC_NONE, VOLATILE );
+SetupNG<int>		    horizon_colors("HRZCOLOR", 0, RST_NONE, SYNC_NONE, VOLATILE );  // later make this persistent
+SetupNG<int>		    horizon_largeicon("HRZLICON", 0, RST_NONE, SYNC_NONE, VOLATILE );  // later make this persistent
 SetupNG<int>		    ahrs_rpyl_dataset("RPYL", 0 );
 SetupNG<int>		    ahrs_autozero("AHRSAZ", 0 );
 SetupNG<float>		    ahrs_gyro_factor("AHRSMGYF", 100 );

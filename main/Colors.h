@@ -37,8 +37,7 @@ extern uint8_t g_col_header_light_b;
 
 // colors for horizon screen
 #define COLOR_LSKY    COLOR_LBBLUE
-#define COLOR_LGROUND COLOR_LBROWN
-#define COLOR_MGROUND COLOR_MBROWN
+#define COLOR_LGROUND COLOR_MBROWN
 #define COLOR_DSKY    COLOR_DBLUE
 #define COLOR_DGROUND COLOR_BROWN
 

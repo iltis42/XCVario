@@ -1796,6 +1796,19 @@ void SetupMenu::system_menu_create_horizon_screen( MenuEntry *top ){
 	}
 	top->addEntry(horizon);
 
+	SetupMenuSelect * colors = new SetupMenuSelect( "Colors", RST_NONE, 0, true, &horizon_colors );
+	colors->addEntry( "White on Dark");
+	colors->addEntry( "Black on Bright");
+	colors->addEntry( "White on Bright");
+	colors->addEntry( "White on Black");
+	horizon->setHelp( "Color scheme for the horizon screen");
+	top->addEntry(colors);
+
+	SetupMenuSelect * icon = new SetupMenuSelect( "Airplane Icon", RST_NONE, 0, true, &horizon_largeicon );
+	icon->addEntry( "Small");
+	icon->addEntry( "Large");
+	top->addEntry(icon);
+
 	SetupMenuValFloat * offset = new SetupMenuValFloat( "Horizon Pitch Offset", "°", -10, 10, 0.5, 0, false, &horizon_offset );
 	offset->setPrecision( 1 );
 	offset->setHelp("Move displayed horizon up/down (also via rotary). Returns to zero on reboot. (Not related to autozero)");

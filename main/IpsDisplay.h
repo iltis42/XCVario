@@ -153,10 +153,11 @@ private:
 	static void HznSetColor( const ucg_color_t *color );
 	static void double_line( int x1, int y1, int x2, int y2, int which=2 );
 	static void pitch_tick( bool draw, bool major, int pp );
-	static void pitch_ticks( bool draw );
-	static void ticks_bank( bool draw, bool major, int sinbb, int cosbb, int sbt );
-	static void bank_ticks( bool draw );
-	static void airplane_icon( int k0, int k1, int g0, int g1 );
+	static bool pitch_ticks( bool draw );
+	static bool bank_tick( int stage, int x1, int y1, int x2, int y2 );
+	static bool ticks_bank( int stage, bool major, int sinbb, int cosbb, int sbt );
+	static bool bank_ticks( int stage );
+	static void airplane_icon( bool draw );
 };
 
 // internal functions used by drawHorizon():
@@ -165,6 +166,6 @@ static float limited_bank( float b );
 static float approxsin( float x );
 static float approxcos( float x );
 static int pitch2pixels( float p );
-static int pitch2pixels0( float p );
+static bool calc_horizon( int sb, int cb, int& x0, int& y0, int& x1, int& y1 );
 
 #endif /* IPS_DISPLAY_H */

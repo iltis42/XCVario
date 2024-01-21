@@ -480,3 +480,40 @@ void IMU::applyImuReference(const float gAA, const Quaternion& basic)
 	ref_rot = Quaternion(deg2rad(gAA), vector_ijk(0,1,0)) * basic; // rotate positive around Y
 	ref_rot.normalize();
 }
+
+void IMU::doImuCalibration( SetupMenuSelect *p ){
+	p->ucg->setFont( ucg_font_ncenR14_hr, true );
+	p->clear();
+	p->ucg->setPrintPos( 1, 30 );
+	p->ucg->printf( "AHRS calibration" );
+	p->ucg->setPrintPos( 1, 60 );
+	p->ucg->printf( "Ensure ground is flat," );
+	p->ucg->setPrintPos( 1, 90 );
+	p->ucg->printf( "with no inclination." );
+	p->ucg->setPrintPos( 1, 120 );
+	p->ucg->printf( "Press button to start" );
+	while( !p->readSwitch() ){ delay( 100 ); }
+	p->clear();
+	p->ucg->setPrintPos( 1, 30 );
+	p->ucg->printf( "Now put down RIGHT wing" );
+	p->ucg->setPrintPos( 1, 60 );
+	p->ucg->printf( "on the ground," );
+	p->ucg->setPrintPos( 1, 90 );
+	p->ucg->printf( "then press button.." );
+	while( !p->readSwitch() ){ delay( 100 ); }
+	IMU::getAccelSamplesAndCalib(IMU_RIGHT);
+	p->clear();
+	p->ucg->setPrintPos( 1, 30 );
+	p->ucg->printf( "Now put down LEFT wing" );
+	p->ucg->setPrintPos( 1, 60 );
+	p->ucg->printf( "on the ground," );
+	p->ucg->setPrintPos( 1, 90 );
+	p->ucg->printf( "then press button.." );
+	while( !p->readSwitch() ){ delay( 100 ); }
+	IMU::getAccelSamplesAndCalib(IMU_LEFT);
+	p->ucg->setPrintPos( 1, 130 );
+	p->ucg->printf( "Finished!" );
+	delay(2000);
+}
+
+

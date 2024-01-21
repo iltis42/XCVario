@@ -283,9 +283,8 @@ static int imu_calib( SetupMenuSelect *p )
 		case 0:
 			break; // cancel
 		case 1:
-		case 2:
 			// collect samples
-			IMU::getAccelSamplesAndCalib(sel);
+			IMU::doImuCalibration(p);
 			break;
 		case 3:
 			// reset to default
@@ -294,7 +293,7 @@ static int imu_calib( SetupMenuSelect *p )
 		default:
 			break;
 	}
-
+	p->setSelect(0);
 	return 0;
 }
 
@@ -466,6 +465,15 @@ static int compassSensorCalibrateAction( SetupMenuSelect *p )
 	ESP_LOGI(FNAME,"compassSensorCalibrateAction()");
 	if( p->getSelect() != 0 ){ // Start, Show
 		CompassMenu::sensorCalibrationAction( p );
+	}
+	p->setSelect( 0 );
+	return 0;
+}
+
+static int ahrsCalibrateAction( SetupMenuSelect *p )
+{
+	if( p->getSelect() == 1 ){ // Start
+		IMU::doImuCalibration(p);
 	}
 	p->setSelect( 0 );
 	return 0;
@@ -1749,12 +1757,12 @@ void SetupMenu::system_menu_create_hardware_rotary( MenuEntry *top ){
 
 
 void SetupMenu::system_menu_create_ahrs_calib( MenuEntry *top ){
-	SetupMenuSelect* ahrs_calib_collect = new SetupMenuSelect( PROGMEM"Wing down samples", RST_NONE, imu_calib, false);
-	ahrs_calib_collect->setHelp(PROGMEM"Collect samples with right and left wing on the ground in any sequence. Start sampling by selecting the proper side and pressing the button.");
+	SetupMenuSelect* ahrs_calib_collect = new SetupMenuSelect( PROGMEM"Axis calibration", RST_NONE, imu_calib, false);
+	ahrs_calib_collect->setHelp(PROGMEM"Calibrate IMU axis on flat leveled ground ground with no inclination. Run the procedure by selecting Start.");
 	ahrs_calib_collect->addEntry("Cancel");
-	ahrs_calib_collect->addEntry("Right");
-	ahrs_calib_collect->addEntry("Left");
+	ahrs_calib_collect->addEntry("Start");
 	ahrs_calib_collect->addEntry("Reset");
+
 	SetupMenuValFloat* ahrs_ground_aa = new SetupMenuValFloat( PROGMEM"Ground angle of attack", "°", -5, 20, 1, imu_gaa, false, &glider_ground_aa);
 	ahrs_ground_aa->setHelp(PROGMEM"Angle of attack with tail skid on the ground to adjust the AHRS reference. Change this any time to correct the AHRS horizon level.");
 	ahrs_ground_aa->setPrecision( 0 );

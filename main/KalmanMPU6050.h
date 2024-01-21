@@ -21,6 +21,7 @@
 
 #include "Arduino.h"
 #include "vector_3d.h"
+#include "SetupMenuSelect.h"
 
 class Quaternion;
 
@@ -34,6 +35,8 @@ class Quaternion;
 #ifndef DEG_TO_RAD
 #define DEG_TO_RAD (M_PI/180.0)
 #endif // DEG_TO_RAD
+
+typedef enum e_imudir { IMU_RIGHT=1, IMU_LEFT=2 } e_imudir_t;
 
 typedef struct kalman_t
 {
@@ -154,6 +157,7 @@ public:
   static void getGyroSamplesAndZero();
   static void defaultImuReference();
   static void applyImuReference(const float gAA, const Quaternion& basic);
+  static void doImuCalibration( SetupMenuSelect *p );
 
 private:
   static float getGyroYawDelta();

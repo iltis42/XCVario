@@ -489,7 +489,7 @@ void IMU::doImuCalibration( SetupMenuSelect *p ){
 	p->ucg->setPrintPos( 1, 60 );
 	p->ucg->printf( "Ensure ground is flat," );
 	p->ucg->setPrintPos( 1, 90 );
-	p->ucg->printf( "with no inclination." );
+	p->ucg->printf( "with zero inclination." );
 	p->ucg->setPrintPos( 1, 120 );
 	p->ucg->printf( "Press button to start" );
 	while( !p->readSwitch() ){ delay( 100 ); }

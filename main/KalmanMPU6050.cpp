@@ -32,6 +32,7 @@ double IMU::kalXAngle = 0.0;
 double IMU::kalYAngle = 0.0;
 float  IMU::fused_yaw = 0;
 vector_ijk IMU::petal(0,0,0);
+float IMU::circle_omega = 0.f;
 
 
 Quaternion IMU::att_quat(0,0,0,0);
@@ -193,9 +194,9 @@ void IMU::Process()
 		float lf = loadFactor > 2.0 ? 2.0 : loadFactor;
 		loadFactor = lf < 0 ? 0 : lf; // limit to 0..2g
 		// the yz portion of w is proportional to the length of YZ portion of the normalized axis.
-		float w_yz = w * sqrt(axis.b*axis.b + axis.c*axis.c);
+		circle_omega = w * sqrt(axis.b*axis.b + axis.c*axis.c);
 		// tan(roll):= petal force/G = m w v / m g
-		float tanw = w_yz * getTAS() / (3.6f * 9.80665f);
+		float tanw = circle_omega * getTAS() / (3.6f * 9.80665f);
 		roll = (std::signbit(gyro_rad.c)?1.f:-1.f) * atan( tanw );
 		if ( ahrs_roll_check.get() ) {
 			// expected extra load c = sqrt(aa+bb) - 1, here a = 1/9.81 x atan, b=1
@@ -214,18 +215,20 @@ void IMU::Process()
 		petal.c = cos(roll)*cos(pitch);      // Any roll or pitch creates a smaller positive Z, gravity Z is positive
 		// trust in gyro at load factors unequal 1 g
 		gravity_trust = (ahrs_min_gyro_factor.get() + (ahrs_gyro_factor.get() * ( pow(10, abs(loadFactor-1) * ahrs_dynamic_factor.get()) - 1)));
-		// ESP_LOGI( FNAME,"Omega roll: %f Pitch: %f W_yz: %f Gyro Trust: %f", R2D(roll), R2D(pitch), w_yz, gravity_trust );
+		// ESP_LOGI( FNAME,"Omega roll: %f Pitch: %f W_yz: %f Gyro Trust: %f", R2D(roll), R2D(pitch), circle_omega, gravity_trust );
 	}
 	else {
 		// For still stand centripetal forces are taken from the accelerometer
 		petal = accel;
+		circle_omega = 0.f;
 	}
 	// ESP_LOGI( FNAME, " ax1:%f ay1:%f az1:%f Gx:%f Gy:%f GZ:%f dT:%f", petal.a, petal.b, petal.c, gyro.a, gyro.b, gyro.c, dt );
 	vector_ijk att_prev = att_vector;
 	update_fused_vector(att_vector, gravity_trust, petal, omega_step);
-	// ESP_LOGI(FNAME,"attv: %.3f %.3f %.3f", att_vector.a, att_vector.b, att_vector.c);
+	// ESP_LOGI(FNAME,"attv: %.3f %.3f %.3f ProjAccel: %f", att_vector.a, att_vector.b, att_vector.c, accel.dot(att_vector));
 	att_quat = Quaternion::fromAccelerometer(att_vector);
 	// ESP_LOGI(FNAME,"attq: %.3f %.3f %.3f %.3f", att_quat.a, att_quat.b, att_quat.c, att_quat.d );
+	// ESP_LOGI(FNAME,"Circle Omega: %f", circle_omega );
 	euler_rad = att_quat.toEulerRad() * -1.f;
 	if ( (att_vector-att_prev).get_norm2() > 0.5 ) {
 		EulerAngles euler = rad2deg(euler_rad);
@@ -332,6 +335,21 @@ esp_err_t IMU::MPU6050Read()
 	return err;
 }
 
+float IMU::getVerticalAcceleration()
+{
+	// orthonormal projection of the current accelerometer reading to the attitude vector
+	// https://de.wikipedia.org/wiki/Orthogonalprojektion
+	// lamda := (accel * att_vector) / norm(att_vector)^2 // att_vector is normalized
+	// lamda * att_vector would be the projection point, but here is only the g multiple requested
+
+	return accel.dot(att_vector);
+}
+
+float IMU::getVerticalOmega()
+{
+	return (std::signbit(gyro.c)?1.f:-1.f) * circle_omega;
+}
+
 double IMU::PitchFromAccel()
 {
 	return -atan2(accel.a, accel.c) * RAD_TO_DEG;
@@ -425,7 +443,7 @@ int IMU::getAccelSamplesAndCalib(int side)
 			float wing_angle = Quaternion::AlignVectors(vector_ijk(bob_right_wing.a, bob_right_wing.b, bob_right_wing.c), 
 														vector_ijk(bob_left_wing.a, bob_left_wing.b, bob_left_wing.c)).getAngle();
 			ESP_LOGI(FNAME, "Wing Angle: %f degree.", rad2deg(wing_angle/2.));	
-			if ( wing_angle < rad2deg(8) ) {
+			if ( wing_angle < deg2rad(8) ) {
 				progress = 0; // resert the progress
 				return -1;
 			}

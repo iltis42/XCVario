@@ -99,6 +99,12 @@ public:
    */
   static inline float getGliderAccelZ()  { return accel.c; };
 
+  // Gets the acceleration along the earth g-vector in [times g]
+  static float getVerticalAcceleration();
+
+  // Gets the rotation rate in [red/sec] of the glider around a vertical circling axes
+  static float getVerticalOmega();
+
   // Gyro reading in glider reference and in DPS
   static inline vector_ijk getGliderGyro() { return gyro; };
 
@@ -170,6 +176,7 @@ private:
   static vector_ijk accel;
   static vector_ijk gyro;
   static vector_ijk petal;
+  static float  circle_omega;
   static double kalXAngle, kalYAngle;
 
   static float fallbackToGyro();

@@ -443,7 +443,7 @@ int IMU::getAccelSamplesAndCalib(int side)
 			float wing_angle = Quaternion::AlignVectors(vector_ijk(bob_right_wing.a, bob_right_wing.b, bob_right_wing.c), 
 														vector_ijk(bob_left_wing.a, bob_left_wing.b, bob_left_wing.c)).getAngle();
 			ESP_LOGI(FNAME, "Wing Angle: %f degree.", rad2deg(wing_angle/2.));	
-			if ( wing_angle < rad2deg(8) ) {
+			if ( wing_angle < deg2rad(8) ) {
 				progress = 0; // resert the progress
 				return -1;
 			}

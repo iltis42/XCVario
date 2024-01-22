@@ -399,7 +399,7 @@ class IMU_Ref
 // 2 := left wing completed
 // 3 := calibration completed
 // else returns -1
-int IMU::getAccelSamplesAndCalib(int side)
+int IMU::getAccelSamplesAndCalib(int side, float &wing_angle  )
 {
 	esp_err_t err;
 	vector_d *bob;
@@ -440,7 +440,7 @@ int IMU::getAccelSamplesAndCalib(int side)
 			ESP_LOGI(FNAME,"pureBl:\t%f\t%f\t%f \tL%.2f", pureBl.a, pureBl.b, pureBl.c, pureBl.get_norm());
 
 			// Check on wing angle is at least 4 degree
-			float wing_angle = Quaternion::AlignVectors(vector_ijk(bob_right_wing.a, bob_right_wing.b, bob_right_wing.c), 
+			wing_angle = Quaternion::AlignVectors(vector_ijk(bob_right_wing.a, bob_right_wing.b, bob_right_wing.c),
 														vector_ijk(bob_left_wing.a, bob_left_wing.b, bob_left_wing.c)).getAngle();
 			ESP_LOGI(FNAME, "Wing Angle: %f degree.", rad2deg(wing_angle/2.));	
 			if ( wing_angle < deg2rad(8) ) {
@@ -536,7 +536,17 @@ void IMU::doImuCalibration( SetupMenuSelect *p ){
 	p->ucg->setPrintPos( 1, 90 );
 	p->ucg->printf( "then press button.." );
 	while( !p->readSwitch() ){ delay( 100 ); }
-	IMU::getAccelSamplesAndCalib(IMU_RIGHT);
+	float angle = 0.0;
+	int ret = IMU::getAccelSamplesAndCalib(IMU_RIGHT, angle);
+	if( ret<1 ){
+		p->clear();
+		p->ucg->setPrintPos( 1, 30 );
+		p->ucg->printf( "Error in sampling data," );
+		p->ucg->setPrintPos( 1, 60 );
+		p->ucg->printf( "Right wing: Error" );
+		delay(5000);
+		return;
+	}
 	p->clear();
 	p->ucg->setPrintPos( 1, 30 );
 	p->ucg->printf( "Now put down LEFT wing" );
@@ -545,10 +555,26 @@ void IMU::doImuCalibration( SetupMenuSelect *p ){
 	p->ucg->setPrintPos( 1, 90 );
 	p->ucg->printf( "then press button.." );
 	while( !p->readSwitch() ){ delay( 100 ); }
-	IMU::getAccelSamplesAndCalib(IMU_LEFT);
-	p->ucg->setPrintPos( 1, 130 );
-	p->ucg->printf( "Finished!" );
-	delay(2000);
+	ret=IMU::getAccelSamplesAndCalib(IMU_LEFT, angle);
+	if( ret<2 ){
+			p->clear();
+			p->ucg->setPrintPos( 1, 30 );
+			p->ucg->printf( "Angle <8° too small," );
+			p->ucg->setPrintPos( 1, 60 );
+			p->ucg->printf( "Left wing: Error" );
+			delay(5000);
+			return;
+	}else{
+		p->ucg->setPrintPos( 1, 130 );
+		p->ucg->printf( "Success, Finished!" );
+		p->ucg->setPrintPos( 1, 160 );
+		p->ucg->printf( "Wing Angle: %.2f°", R2D(angle) );
+		delay(1000);
+		p->ucg->setPrintPos( 1, 220 );
+		p->ucg->printf( "press button to return" );
+		while( !p->readSwitch() ){ delay( 100 ); }
+	}
+
 }
 
 

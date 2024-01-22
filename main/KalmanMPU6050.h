@@ -153,7 +153,7 @@ public:
   static inline double getGyroRate()  {	return abs(gyro.a)+abs(gyro.b)+abs(gyro.c); }
 
   // Reference calibration
-  static void getAccelSamplesAndCalib(int side);
+  static int getAccelSamplesAndCalib(int side);
   static void getGyroSamplesAndZero();
   static void defaultImuReference();
   static void applyImuReference(const float gAA, const Quaternion& basic);

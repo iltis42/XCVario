@@ -286,7 +286,7 @@ static int imu_calib( SetupMenuSelect *p )
 			// collect samples
 			IMU::doImuCalibration(p);
 			break;
-		case 3:
+		case 2:
 			// reset to default
 			IMU::defaultImuReference();
 			break;

@@ -470,15 +470,6 @@ static int compassSensorCalibrateAction( SetupMenuSelect *p )
 	return 0;
 }
 
-static int ahrsCalibrateAction( SetupMenuSelect *p )
-{
-	if( p->getSelect() == 1 ){ // Start
-		IMU::doImuCalibration(p);
-	}
-	p->setSelect( 0 );
-	return 0;
-}
-
 SetupMenu::SetupMenu() : MenuEntry() {
 	highlight = -1;
 	_parent = 0;

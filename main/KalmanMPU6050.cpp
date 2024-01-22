@@ -375,7 +375,13 @@ class IMU_Ref
 };
 
 // Callback for the two vector samples needed for the reference calibration
-void IMU::getAccelSamplesAndCalib(int side)
+// Returns progress in case of success 
+// 0 := not yet started
+// 1 := right wing completed
+// 2 := left wing completed
+// 3 := calibration completed
+// else returns -1
+int IMU::getAccelSamplesAndCalib(int side)
 {
 	esp_err_t err;
 	vector_d *bob;
@@ -390,7 +396,7 @@ void IMU::getAccelSamplesAndCalib(int side)
 	}
 	else {
 		ESP_LOGI(FNAME, "Wrong wing down parameter %d", side);
-		return;
+		return -1;
 	}
 
 	err = MPU.getMPUSamples(bob->a, bob->b, bob->c, *gbias);
@@ -414,6 +420,15 @@ void IMU::getAccelSamplesAndCalib(int side)
 			vector_d pureBl = bob_left_wing - bias;
 			ESP_LOGI(FNAME,"pureBr:\t%f\t%f\t%f \tL%.2f", pureBr.a, pureBr.b, pureBr.c, pureBr.get_norm());
 			ESP_LOGI(FNAME,"pureBl:\t%f\t%f\t%f \tL%.2f", pureBl.a, pureBl.b, pureBl.c, pureBl.get_norm());
+
+			// Check on wing angle is at least 4 degree
+			float wing_angle = Quaternion::AlignVectors(vector_ijk(bob_right_wing.a, bob_right_wing.b, bob_right_wing.c), 
+														vector_ijk(bob_left_wing.a, bob_left_wing.b, bob_left_wing.c)).getAngle();
+			ESP_LOGI(FNAME, "Wing Angle: %f degree.", rad2deg(wing_angle/2.));	
+			if ( wing_angle < rad2deg(8) ) {
+				progress = 0; // resert the progress
+				return -1;
+			}
 
 			// A vector from skid touch points towards the main wheel touch point
 			// The X in glider reference (points towards the nose)
@@ -457,7 +472,9 @@ void IMU::getAccelSamplesAndCalib(int side)
 			// Reprogam MPU bias
 			MPU.setGyroOffset(raw_bias);
 		}
+		return progress;
 	}
+	return -1;
 }
 
 // Setup the rotation for the "upright" and "topdown" vario mounting positions

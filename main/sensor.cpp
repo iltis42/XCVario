@@ -967,15 +967,15 @@ void system_startup(void *args){
 		}
 		mpud::raw_axes_t accelRaw;
 		float accel = 0;
+		delay(200);
 		for( auto i=0; i<10; i++ ){
 			esp_err_t err = MPU.acceleration(&accelRaw);  // fetch raw data from the registers
 			if( err != ESP_OK )
 				ESP_LOGE(FNAME, "AHRS acceleration I2C read error");
 			mpud::float_axes_t accelG = mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
 			ESP_LOGI( FNAME,"MPU %.2f", accelG[0] );
-			delay( 5 );
-			if( i>0 )
-				accel += accelG[0];
+			delay( 10 );
+			accel += accelG[0];
 		}
 		char ahrs[30];
 		sprintf( ahrs,"AHRS Sensor: OK (%.2f g)", accel/10 );

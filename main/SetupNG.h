@@ -684,3 +684,6 @@ extern float last_volume;   // is this used?
 void change_ballast();
 void change_mc();
 void update_volume_menu_max();
+
+// finish initializing setup variables - called from SetupCommon::initSetup()
+void post_init_NG();

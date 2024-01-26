@@ -32,6 +32,7 @@ public:
   bool writeVolume( float val );
   bool reset();
   bool haveDevice();
+  void setHalfScale() { _scale = 200; };
 
 private:
   bool readWiper( int& val );
@@ -44,6 +45,7 @@ private:
   int  errorcount;
   bool  _noDevice;
   int wiper;  // only bit 0..7 supported
+  int _scale;
 };
 
 #endif

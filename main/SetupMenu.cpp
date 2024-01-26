@@ -557,8 +557,8 @@ void SetupMenu::down(int count){
 		else{  // Volume
 			float vol = audio_volume.get();
 			for( int i=0; i<count; i++ )
-				vol = vol * 0.83;
-			if( vol<3.0 )
+				vol = vol * 0.77;
+			if( vol<1.5 )            // allow smaller volumes to better support new 50% scale mode of ESP32 sine generator (default is 25%)
 				vol=0;
 			audio_volume.set( vol );
 			// ESP_LOGI(FNAME,"NEW DN VOL: %f", vol );
@@ -598,10 +598,10 @@ void SetupMenu::up(int count){
 		}
 		else{  // Volume
 			float vol = audio_volume.get();
-			if( vol<3.0 )
-				vol=3.0;
+			if( vol<1.5 )
+				vol=1.5;
 			for( int i=0; i<count; i++ )
-				vol = vol * 1.17;
+				vol = vol * 1.33;
 			if( vol > max_volume.get() )
 				vol = max_volume.get();
 			audio_volume.set( vol );

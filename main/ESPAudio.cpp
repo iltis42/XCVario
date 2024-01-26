@@ -219,9 +219,11 @@ bool Audio::selfTest(){
 	{
 		ESP_LOGI(FNAME,"MCP4018 digital Poti found");
 	}
-	float setvolume = default_volume.get();
-	speaker_volume = vario_mode_volume = s2f_mode_volume = setvolume;
-	ESP_LOGI(FNAME,"default volume: %f", speaker_volume );
+	float setvolume = 50.0;
+
+	if( hardwareRevision.get() >= XCVARIO_21 )
+		DigitalPoti->setHalfScale();          // double amplitude from ESP32 for better sound
+
 	_alarm_mode = true;
 	writeVolume( 50.0 );
 	float getvolume;
@@ -231,15 +233,23 @@ bool Audio::selfTest(){
 		ESP_LOGI(FNAME,"readWiper returned error");
 		return false;
 	}
-	if( (int)getvolume != 49 )
+	if( std::abs( getvolume - setvolume ) > 2.0 )
 	{
 		ESP_LOGI(FNAME,"readWiper returned wrong setting set=%f get=%f", setvolume, getvolume );
 		ret = false;
 	}
-	else
+	else{
+		ESP_LOGI(FNAME,"readWiper: OK");
 		ret = true;
+	}
+
 	bool fadein=false;
 	_alarm_mode = false;
+
+	setvolume = default_volume.get();
+	speaker_volume = vario_mode_volume = s2f_mode_volume = setvolume;
+	ESP_LOGI(FNAME,"default volume: %f", speaker_volume );
+	writeVolume( setvolume );
 	//	while(1){    // uncomment for continuous self test
 	ESP_LOGI(FNAME,"Min F %f, Max F %f", minf, maxf );
 	for( float f=minf; f<maxf*1.25; f=f*1.03){
@@ -489,7 +499,6 @@ void Audio::calcS2Fmode( bool recalc ){
 		}
 	}
 }
-
 
 void  Audio::evaluateChopping(){
 	if(
@@ -793,7 +802,7 @@ void Audio::restart()
 	dac_cosine_enable(_ch);
 	dac_offset_set(_ch, 0 );
 	dac_invert_set(_ch, 2 );    // invert MSB to get sine waveform
-	dac_scale_set(_ch, 2 );
+	hardwareRevision.get() >= XCVARIO_21 ? dac_scale_set(_ch, 1 ) : dac_scale_set(_ch, 2 );   // new hardware can accept 50% scale -> better sound
 	enableAmplifier( true );
 	dacEnable();
 }

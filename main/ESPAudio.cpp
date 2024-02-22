@@ -221,9 +221,6 @@ bool Audio::selfTest(){
 	}
 	float setvolume = 50.0;
 
-	if( hardwareRevision.get() >= XCVARIO_21 )
-		DigitalPoti->setHalfScale();          // double amplitude from ESP32 for better sound
-
 	_alarm_mode = true;
 	writeVolume( 50.0 );
 	float getvolume;
@@ -800,9 +797,8 @@ void Audio::restart()
 	ESP_LOGD(FNAME,"Audio::restart");
 	dacDisable();
 	dac_cosine_enable(_ch);
-	dac_offset_set(_ch, 0 );
-	dac_invert_set(_ch, 2 );    // invert MSB to get sine waveform
-	hardwareRevision.get() >= XCVARIO_21 ? dac_scale_set(_ch, 1 ) : dac_scale_set(_ch, 2 );   // new hardware can accept 50% scale -> better sound
+	dac_offset_set(_ch, -75 );
+	dac_scale_set(_ch, 2 );
 	enableAmplifier( true );
 	dacEnable();
 }

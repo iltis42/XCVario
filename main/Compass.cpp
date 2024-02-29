@@ -481,11 +481,10 @@ float Compass::heading( bool *ok )
 	fz = -(double) ((float( rawAxes.z ) - bias.z) * scale.z);
 	// ESP_LOGI(FNAME, "raw x %d, y %d, z %d ", rawAxes.x, rawAxes.y, rawAxes.z);
 
-	vector_ijk gvr( 0,0,-1 );  // gravity vector direction, pointing down to ground: Z = -1
-	Quaternion q = Quaternion::AlignVectors(gravity_vector, gvr) ; // create quaternion from gravity vector aligned to glider
 	vector_ijk mv( fx,fy,fz ); // magnetic vector, relative to glider from raw hall sensor x/y/z data
-	vector_ijk mev = q * mv;  // rotate magnetic vector
-	// ESP_LOGI(FNAME, "gravity a %.2f, b %.2f, c %.2f ", gravity_vector.a, gravity_vector.b, gravity_vector.c );
+	vector_ijk mev = IMU::getAHRSQuaternion().conjugate() * mv;  // rotate magnetic vector
+	// ESP_LOGI(FNAME, "gravity a %.2f, b %.2f, c %.2f MV: a %.2f, b %.2f, c %.2f ", gravity_vector.a, gravity_vector.b, gravity_vector.c, mv.a, mv.b, mv.c );
+	// ESP_LOGI(FNAME, "gravity a %.2f, b %.2f, c %.2f ME a %.2f, b %.2f, c %.2f MEV: a %.2f, b %.2f, c %.2f ", gravity_vector.a, gravity_vector.b, gravity_vector.c, mv.a, mv.b, mv.c, mev.a, mev.b, mev.c );
 	// ESP_LOGI(FNAME, "rot a %.2f, b %.2f, c %.2f, w %.2f - %.2f ", q.b, q.c, q.d, q.a, RAD_TO_DEG*q.getAngle() );
 	_heading = Compass_atan2( mev.b, mev.a );
 	// ESP_LOGI(FNAME,"compensated mag a %.2f, b %.2f, c %.2f h %.2f", mev.a, mev.b, mev.c, _heading);

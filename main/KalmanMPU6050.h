@@ -22,6 +22,7 @@
 #include "Arduino.h"
 #include "vector_3d.h"
 #include "SetupMenuSelect.h"
+#include "quaternion.h"
 
 class Quaternion;
 
@@ -164,6 +165,8 @@ public:
   static void defaultImuReference();
   static void applyImuReference(const float gAA, const Quaternion& basic);
   static void doImuCalibration( SetupMenuSelect *p );
+  static inline Quaternion getAHRSQuaternion() { return att_quat; };
+  static inline vector_ijk getAHRSVector() { return att_vector; };
 
 private:
   static float getGyroYawDelta();

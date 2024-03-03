@@ -207,6 +207,10 @@ void DataLink::parse_NMEA_UBX( char c, int port ){
 				krt2_len = 12;
 			    state = GET_KRT2_DATA;
 			}
+			else if( c == 'u' || c == 'r' ){
+				krt2_len = 12;
+				state = GET_KRT2_DATA;
+			}
 			else if( c == 'A' ){
 				krt2_len = 5;
 			    state = GET_KRT2_DATA;

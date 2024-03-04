@@ -122,7 +122,7 @@ void DataLink::processNMEA( char * buffer, int len, int port ){
 }
 
 void DataLink::parse_NMEA_UBX( char c, int port ){
-	// ESP_LOGI(FNAME, "Port S%1d: char=%c pos=%d  state=%d", port, c, pos, state );
+	// ESP_LOGI(FNAME, "Port S%1d: char=%c %02X pos=%d  state=%d", port, c, c, pos, state );
 	switch(state) {
 	case GET_NMEA_UBX_SYNC:
 		switch(c) {
@@ -208,8 +208,7 @@ void DataLink::parse_NMEA_UBX( char c, int port ){
 			    state = GET_KRT2_DATA;
 			}
 			else if( c == 'u' || c == 'r' ){
-				krt2_len = 12;
-				state = GET_KRT2_DATA;
+				state = GET_ATR833_MSG;
 			}
 			else if( c == 'A' ){
 				krt2_len = 5;
@@ -229,18 +228,50 @@ void DataLink::parse_NMEA_UBX( char c, int port ){
 			};
             break;
 
-		case GET_KRT2_DATA: {
+		case GET_ATR833_MSG: {
 			framebuffer[pos] = c;
 			pos++;
-			if( pos > krt2_len ){ // 0..12 = 13 bytes STX message buffer.
-				framebuffer[pos] = 0;  // framebuffer is zero terminated
-				// ESP_LOG_BUFFER_HEXDUMP(FNAME, framebuffer, pos+1, ESP_LOG_INFO);
-				routeSerialData(framebuffer, pos+1, port, true );
+			if( c == 0x10 || c == 0x82 )  // ATR833 ALIVE MSG and REQ-DATA
+			{
+				state = GET_ATR833_CS;
+			}
+			else if( c == 0x12 || c == 0x13 ) // ATR833 SET ACTIVE/STDBY FREQ: 2 bytes DATA Mhz,kHz*5
+			{
+				krt2_len = 5;
+				state = GET_KRT2_DATA;
+			}
+			else{
+				krt2_len = 1;
 				state = GET_NMEA_UBX_SYNC;
 				pos = 0;
 			}
 		}
-			break;
+		break;
+
+		case GET_ATR833_CS: {
+			framebuffer[pos] = c;
+			pos++;
+			framebuffer[pos] = 0;
+			routeSerialData(framebuffer, pos+1, port, true );
+			state = GET_NMEA_UBX_SYNC;
+			pos = 0;
+		}
+		break;
+
+		case GET_KRT2_DATA: {
+			// ESP_LOGI(FNAME, "pos=%d c=%02X len:%d", pos, c, krt2_len );
+			framebuffer[pos] = c;
+			pos++;
+			// ESP_LOG_BUFFER_HEXDUMP(FNAME, framebuffer, pos+1, ESP_LOG_INFO);
+			if( pos > krt2_len ){ // 0..12 = 13 bytes STX message buffer.
+				framebuffer[pos] = 0;  // framebuffer is zero terminated
+				routeSerialData(framebuffer, pos+1, port, true );
+				// ESP_LOG_BUFFER_HEXDUMP(FNAME, framebuffer, pos+1, ESP_LOG_INFO);
+				state = GET_NMEA_UBX_SYNC;
+				pos = 0;
+			}
+		}
+		break;
 
 		case GET_FB_LEN1:
 			chkA = c;

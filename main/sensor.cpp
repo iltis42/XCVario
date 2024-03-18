@@ -420,7 +420,7 @@ static void grabMPU()
 	// Automatically trac the gyro bias
 	static int32_t cur_gyro_bias[3];
 	const int MAXDRIFT         = 2;    // °/s maximum drift that is automatically compensated on ground
-	const int NUM_GYRO_SAMPLES = 3000; // 10 per second -> 5 minutes, so T has been settled after power on
+	const int NUM_GYRO_SAMPLES = 12000; // 40 per second -> 5 minutes, so T has been settled after power on
 	static uint16_t num_gyro_samples = 0;
 
 	// Read the IMU registers and check the output

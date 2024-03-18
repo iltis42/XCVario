@@ -569,181 +569,185 @@ void readSensors(void *pvParameters){
 	while (1)
 	{
 		count++;
-		TickType_t xLastWakeTime = xTaskGetTickCount();
+		TickType_t xLastWakeTime2 = xTaskGetTickCount();
 		if( gflags.haveMPU  )  // 3th Generation HW, MPU6050 avail and feature enabled
 		{
 			grabMPU();
+			ESP_LOGI(FNAME,"MPU");
 		}
-		bool ok=false;
-		float p = 0;
-		if( asSensor )
-			p = asSensor->readPascal(60, ok);
-		if( ok )
-			dynamicP = p;
-		float iasraw = Atmosphere::pascal2kmh( dynamicP );
-		// ESP_LOGI("FNAME","P: %f  IAS:%f", dynamicP, iasraw );
-		float T=OAT.get();
-		if( !gflags.validTemperature ) {
-			T= 15 - ( (altitude.get()/100) * 0.65 );
-			// ESP_LOGW(FNAME,"T invalid, using 15 deg");
-		}
-		float tasraw = 0;
-		if( baroP != 0 )
-			tasraw =  Atmosphere::TAS( iasraw , baroP, T);  // True airspeed in km/h
-
-		if( airspeed_mode.get() == MODE_CAS ){
-			float casraw=Atmosphere::CAS( dynamicP );
-			cas += (casraw-cas)*0.25;       // low pass filter
-			// ESP_LOGI(FNAME,"IAS=%f, TAS=%f CAS=%f baro=%f", iasraw, tasraw, cas, baroP );
-		}
-		static float new_ias = 0;
-		new_ias = ias.get() + (iasraw - ias.get())*0.25;
-		if( (int( ias.get()+0.5 ) != int( new_ias+0.5 ) ) || !(count%20) ){
-			ias.set( new_ias );  // low pass filter
-		}
-		if( airspeed_max.get() < ias.get() ){
-			airspeed_max.set( ias.get() );
-		}
-		// ESP_LOGI("FNAME","P: %f  IAS:%f IASF: %d", dynamicP, iasraw, ias );
-		if( !compass || !(compass->externalData()) ){
-			tas += (tasraw-tas)*0.25;       // low pass filter
-		}
-		// ESP_LOGI(FNAME,"IAS=%f, T=%f, TAS=%f baroP=%f", ias, T, tas, baroP );
-
-		// Slip angle estimation
-		float as = tas/3.6;                  // tas in m/s
-		const float K = 4000 * 180/M_PI;      // airplane constant and Ay correction factor
-		if( tas > 25.0 ){
-			slipAngle += ((IMU::getGliderAccelY()*K / (as*as)) - slipAngle)*0.09;   // with atan(x) = x for small x
-			// ESP_LOGI(FNAME,"AS: %f m/s, CURSL: %f°, SLIP: %f", as, IMU::getGliderAccelY()*K / (as*as), slipAngle );
-		}
-		xSemaphoreTake(xMutex,portMAX_DELAY );
-
-		float te = bmpVario.readTE( tasraw );
-		if( (int( te_vario.get()*20 +0.5 ) != int( te*20 +0.5)) || !(count%10) ){  // a bit more fine granular updates than 0.1 m/s as of sound
-			te_vario.set( te );  // max 10x per second
-		}
-		xSemaphoreGive(xMutex);
-		// ESP_LOGI(FNAME,"count %d ccp %d", count, ccp );
-		if( !(count % ccp) ) {
-			AverageVario::recalcAvgClimb();
-		}
-		if (FLAP) { FLAP->progress(); }
-		xSemaphoreTake(xMutex,portMAX_DELAY );
-		if( !(count%10) ){  // every second read temperature of baro sensor
-			float xt = baroSensor->readTemperature(ok);
-			if( ok ){
-				xcvTemp = xt;
+		if( !(count % 4) )
+		{
+			bool ok=false;
+			float p = 0;
+			if( asSensor )
+				p = asSensor->readPascal(60, ok);
+			if( ok )
+				dynamicP = p;
+			float iasraw = Atmosphere::pascal2kmh( dynamicP );
+			// ESP_LOGI("FNAME","P: %f  IAS:%f", dynamicP, iasraw );
+			float T=OAT.get();
+			if( !gflags.validTemperature ) {
+				T= 15 - ( (altitude.get()/100) * 0.65 );
+				// ESP_LOGW(FNAME,"T invalid, using 15 deg");
 			}
-		}
-		baroP = baroSensor->readPressure(ok);   // 10x per second
-		xSemaphoreGive(xMutex);
-		// ESP_LOGI(FNAME,"Baro Pressure: %4.3f", baroP );
-		float altSTD = 0;
-		if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
-			altSTD = alt_external;
-		else
-			altSTD = baroSensor->calcAVGAltitudeSTD( baroP );
-		float new_alt = 0;
-		if( alt_select.get() == AS_TE_SENSOR ) // TE
-			new_alt = bmpVario.readAVGalt();
-		else if( alt_select.get() == AS_BARO_SENSOR  || alt_select.get() == AS_EXTERNAL ){ // Baro or external
-			if(  alt_unit.get() == ALT_UNIT_FL ) { // FL, always standard
-				new_alt = altSTD;
-				gflags.standard_setting = true;
-				// ESP_LOGI(FNAME,"au: %d", alt_unit.get() );
-			}else if( (fl_auto_transition.get() == 1) && ((int)Units::meters2FL( altSTD ) + (int)(gflags.standard_setting) > transition_alt.get() ) ) { // above transition altitude
-				new_alt = altSTD;
-				gflags.standard_setting = true;
-				ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), altSTD, gflags.standard_setting, transition_alt.get() );
-			}
-			else {
-				if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
-					new_alt = altSTD + ( QNH.get()- 1013.25)*8.2296;  // correct altitude according to ISA model = 27ft / hPa
-				else
-					new_alt = baroSensor->calcAVGAltitude( QNH.get(), baroP );
-				gflags.standard_setting = false;
-				// ESP_LOGI(FNAME,"QNH %f baro: %f alt: %f SS:%d", QNH.get(), baroP, alt, gflags.standard_setting  );
-			}
-		}
-		if( (int( new_alt +0.5 ) != int( altitude.get() +0.5 )) || !(count%20) ){
-			// ESP_LOGI(FNAME,"New Altitude: %.1f", new_alt );
-			altitude.set( new_alt );
-		}
+			float tasraw = 0;
+			if( baroP != 0 )
+				tasraw =  Atmosphere::TAS( iasraw , baroP, T);  // True airspeed in km/h
 
-		aTE = bmpVario.readAVGTE();
-		doAudio();
+			if( airspeed_mode.get() == MODE_CAS ){
+				float casraw=Atmosphere::CAS( dynamicP );
+				cas += (casraw-cas)*0.25;       // low pass filter
+				// ESP_LOGI(FNAME,"IAS=%f, TAS=%f CAS=%f baro=%f", iasraw, tasraw, cas, baroP );
+			}
+			static float new_ias = 0;
+			new_ias = ias.get() + (iasraw - ias.get())*0.25;
+			if( (int( ias.get()+0.5 ) != int( new_ias+0.5 ) ) || !(count%20) ){
+				ias.set( new_ias );  // low pass filter
+			}
+			if( airspeed_max.get() < ias.get() ){
+				airspeed_max.set( ias.get() );
+			}
+			// ESP_LOGI("FNAME","P: %f  IAS:%f IASF: %d", dynamicP, iasraw, ias );
+			if( !compass || !(compass->externalData()) ){
+				tas += (tasraw-tas)*0.25;       // low pass filter
+			}
+			// ESP_LOGI(FNAME,"IAS=%f, T=%f, TAS=%f baroP=%f", ias, T, tas, baroP );
 
-		if( !Flarm::bincom && ((count % 2) == 0 ) ){
-			toyFeed();
-			vTaskDelay(2/portTICK_PERIOD_MS);
-		}
-		Router::routeXCV();
-		// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d ena=%d", compass->haveSensor(),  compass_nmea_hdt.get(),  compass_enable.get() );
-		if( compass ){
-			if( !Flarm::bincom && ! compass->calibrationIsRunning() ) {
-				// Trigger heading reading and low pass filtering. That job must be
-				// done periodically.
-				bool ok;
-				float heading = compass->getGyroHeading( &ok );
-				if(ok){
-					if( (int)heading != (int)mag_hdm.get() && !(count%10) ){
-						mag_hdm.set( heading );
+			// Slip angle estimation
+			float as = tas/3.6;                  // tas in m/s
+			const float K = 4000 * 180/M_PI;      // airplane constant and Ay correction factor
+			if( tas > 25.0 ){
+				slipAngle += ((IMU::getGliderAccelY()*K / (as*as)) - slipAngle)*0.09;   // with atan(x) = x for small x
+				// ESP_LOGI(FNAME,"AS: %f m/s, CURSL: %f°, SLIP: %f", as, IMU::getGliderAccelY()*K / (as*as), slipAngle );
+			}
+			xSemaphoreTake(xMutex,portMAX_DELAY );
+
+			float te = bmpVario.readTE( tasraw );
+			if( (int( te_vario.get()*20 +0.5 ) != int( te*20 +0.5)) || !(count%10) ){  // a bit more fine granular updates than 0.1 m/s as of sound
+				te_vario.set( te );  // max 10x per second
+			}
+			xSemaphoreGive(xMutex);
+			// ESP_LOGI(FNAME,"count %d ccp %d", count, ccp );
+			if( !(count % ccp) ) {
+				AverageVario::recalcAvgClimb();
+			}
+			if (FLAP) { FLAP->progress(); }
+			xSemaphoreTake(xMutex,portMAX_DELAY );
+			if( !(count%10) ){  // every second read temperature of baro sensor
+				float xt = baroSensor->readTemperature(ok);
+				if( ok ){
+					xcvTemp = xt;
+				}
+			}
+			baroP = baroSensor->readPressure(ok);   // 10x per second
+			xSemaphoreGive(xMutex);
+			// ESP_LOGI(FNAME,"Baro Pressure: %4.3f", baroP );
+			float altSTD = 0;
+			if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
+				altSTD = alt_external;
+			else
+				altSTD = baroSensor->calcAVGAltitudeSTD( baroP );
+			float new_alt = 0;
+			if( alt_select.get() == AS_TE_SENSOR ) // TE
+				new_alt = bmpVario.readAVGalt();
+			else if( alt_select.get() == AS_BARO_SENSOR  || alt_select.get() == AS_EXTERNAL ){ // Baro or external
+				if(  alt_unit.get() == ALT_UNIT_FL ) { // FL, always standard
+					new_alt = altSTD;
+					gflags.standard_setting = true;
+					// ESP_LOGI(FNAME,"au: %d", alt_unit.get() );
+				}else if( (fl_auto_transition.get() == 1) && ((int)Units::meters2FL( altSTD ) + (int)(gflags.standard_setting) > transition_alt.get() ) ) { // above transition altitude
+					new_alt = altSTD;
+					gflags.standard_setting = true;
+					ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), altSTD, gflags.standard_setting, transition_alt.get() );
+				}
+				else {
+					if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
+						new_alt = altSTD + ( QNH.get()- 1013.25)*8.2296;  // correct altitude according to ISA model = 27ft / hPa
+					else
+						new_alt = baroSensor->calcAVGAltitude( QNH.get(), baroP );
+					gflags.standard_setting = false;
+					// ESP_LOGI(FNAME,"QNH %f baro: %f alt: %f SS:%d", QNH.get(), baroP, alt, gflags.standard_setting  );
+				}
+			}
+			if( (int( new_alt +0.5 ) != int( altitude.get() +0.5 )) || !(count%20) ){
+				// ESP_LOGI(FNAME,"New Altitude: %.1f", new_alt );
+				altitude.set( new_alt );
+			}
+
+			aTE = bmpVario.readAVGTE();
+			doAudio();
+
+			if( !Flarm::bincom && ((count % 2) == 0 ) ){
+				toyFeed();
+				vTaskDelay(2/portTICK_PERIOD_MS);
+			}
+			Router::routeXCV();
+			// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d ena=%d", compass->haveSensor(),  compass_nmea_hdt.get(),  compass_enable.get() );
+			if( compass ){
+				if( !Flarm::bincom && ! compass->calibrationIsRunning() ) {
+					// Trigger heading reading and low pass filtering. That job must be
+					// done periodically.
+					bool ok;
+					float heading = compass->getGyroHeading( &ok );
+					if(ok){
+						if( (int)heading != (int)mag_hdm.get() && !(count%10) ){
+							mag_hdm.set( heading );
+						}
+						if( !(count%5) && compass_nmea_hdm.get() == true ) {
+							xSemaphoreTake( xMutex, portMAX_DELAY );
+							OV.sendNmeaHDM( heading );
+							xSemaphoreGive( xMutex );
+						}
 					}
-					if( !(count%5) && compass_nmea_hdm.get() == true ) {
-						xSemaphoreTake( xMutex, portMAX_DELAY );
-						OV.sendNmeaHDM( heading );
-						xSemaphoreGive( xMutex );
+					else{
+						if( mag_hdm.get() != -1 )
+							mag_hdm.set( -1 );
 					}
-				}
-				else{
-					if( mag_hdm.get() != -1 )
-						mag_hdm.set( -1 );
-				}
-				float theading = compass->filteredTrueHeading( &ok );
-				if(ok){
-					if( (int)theading != (int)mag_hdt.get() && !(count%10) ){
-						mag_hdt.set( theading );
+					float theading = compass->filteredTrueHeading( &ok );
+					if(ok){
+						if( (int)theading != (int)mag_hdt.get() && !(count%10) ){
+							mag_hdt.set( theading );
+						}
+						if( !(count%5) && ( compass_nmea_hdt.get() == true )  ) {
+							xSemaphoreTake( xMutex, portMAX_DELAY );
+							OV.sendNmeaHDT( theading );
+							xSemaphoreGive( xMutex );
+						}
 					}
-					if( !(count%5) && ( compass_nmea_hdt.get() == true )  ) {
-						xSemaphoreTake( xMutex, portMAX_DELAY );
-						OV.sendNmeaHDT( theading );
-						xSemaphoreGive( xMutex );
+					else{
+						if( mag_hdt.get() != -1 )
+							mag_hdt.set( -1 );
 					}
-				}
-				else{
-					if( mag_hdt.get() != -1 )
-						mag_hdt.set( -1 );
 				}
 			}
-		}
-		if( IMU::getGliderAccelZ() > gload_pos_max.get() ){
-			gload_pos_max.set( IMU::getGliderAccelZ() );
-		}else if( IMU::getGliderAccelZ() < gload_neg_max.get() ){
-			gload_neg_max.set( IMU::getGliderAccelZ() );
-		}
+			if( IMU::getGliderAccelZ() > gload_pos_max.get() ){
+				gload_pos_max.set( IMU::getGliderAccelZ() );
+			}else if( IMU::getGliderAccelZ() < gload_neg_max.get() ){
+				gload_neg_max.set( IMU::getGliderAccelZ() );
+			}
 
-		// Check on new clients connecting
-		if ( CAN && CAN->GotNewClient() ) { // todo use also for Wifi client?!
-			while( client_sync_dataIdx < SetupCommon::numEntries() ) {
-				if ( SetupCommon::syncEntry(client_sync_dataIdx++) ) {
-					break; // Hit entry to actually sync and send data
+			// Check on new clients connecting
+			if ( CAN && CAN->GotNewClient() ) { // todo use also for Wifi client?!
+				while( client_sync_dataIdx < SetupCommon::numEntries() ) {
+					if ( SetupCommon::syncEntry(client_sync_dataIdx++) ) {
+						break; // Hit entry to actually sync and send data
+					}
+				}
+				if ( client_sync_dataIdx >= SetupCommon::numEntries() ) {
+					// Synch complete
+					client_sync_dataIdx = 0;
+					CAN->ResetNewClient();
 				}
 			}
-			if ( client_sync_dataIdx >= SetupCommon::numEntries() ) {
-				// Synch complete
-				client_sync_dataIdx = 0;
-				CAN->ResetNewClient();
+			if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL ){
+				// ESP_LOGI(FNAME,"MPU temp control; T=%.2f", MPU.getTemperature() );
+				MPU.temp_control( count, xcvTemp );
 			}
+			esp_task_wdt_reset();
+			if( uxTaskGetStackHighWaterMark( bpid ) < 512 )
+				ESP_LOGW(FNAME,"Warning sensor task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );
 		}
-		if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL ){
-			// ESP_LOGI(FNAME,"MPU temp control; T=%.2f", MPU.getTemperature() );
-			MPU.temp_control( count, xcvTemp );
-		}
-		esp_task_wdt_reset();
-		if( uxTaskGetStackHighWaterMark( bpid ) < 512 )
-			ESP_LOGW(FNAME,"Warning sensor task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );
-		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&xLastWakeTime2, pdMS_TO_TICKS(25));
 	}
 }
 
@@ -1535,7 +1539,7 @@ void system_startup(void *args){
 		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 11, &apid, 0);
 	}
 	else {
-		xTaskCreatePinnedToCore(&readSensors, "readSensors", 5120, NULL, 11, &bpid, 0);
+		xTaskCreatePinnedToCore(&readSensors, "readSensors", 5120, NULL, 20, &bpid, 0);
 	}
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 3000, NULL, 5, &tpid, 0);       // increase stack by 500 byte
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 6144, NULL, 4, &dpid, 0); // increase stack by 1K

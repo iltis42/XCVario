@@ -70,41 +70,6 @@ int compass_ena( SetupMenuSelect * p ){
 	return 0;
 }
 
-void init_routing(){
-	uint32_t s1rt = (uint32_t)serial1_tx.get();
-	ESP_LOGI(FNAME,"init_routing S1: %x", s1rt);
-	rt_s1_xcv.set( (s1rt >> (RT_XCVARIO))& 1 );
-	rt_s1_wl.set( (s1rt >> (RT_WIRELESS))& 1 );
-	rt_s1_s2.set( (s1rt >> (RT_S1))& 1 );
-	rt_s1_can.set( (s1rt >> (RT_CAN))& 1 );
-
-	uint32_t s2rt = (uint32_t)serial2_tx.get();
-	ESP_LOGI(FNAME,"init_routing S2: %x", s2rt);
-	rt_s2_xcv.set( (s2rt >> (RT_XCVARIO))& 1 );
-	rt_s2_wl.set( (s2rt >> (RT_WIRELESS))& 1 );
-	rt_s1_s2.set( (s2rt >> (RT_S1))& 1 );
-	rt_s2_can.set( (s2rt >> (RT_CAN))& 1 );
-}
-
-
-int update_routing( SetupMenuSelect * p ){
-	uint32_t routing =
-			( (uint32_t)rt_s1_xcv.get() << (RT_XCVARIO) ) |
-			( (uint32_t)rt_s1_wl.get()  << (RT_WIRELESS) ) |
-			( (uint32_t)rt_s1_s2.get()  << (RT_S1) ) |
-			( (uint32_t)rt_s1_can.get() << (RT_CAN) );
-	ESP_LOGI(FNAME,"update_routing S1: %x", routing);
-	serial1_tx.set( routing );
-	routing =
-			(uint32_t)rt_s2_xcv.get()  << (RT_XCVARIO) |
-			( (uint32_t)rt_s2_wl.get() << (RT_WIRELESS) ) |
-			( (uint32_t)rt_s1_s2.get() << (RT_S1) ) |
-			( (uint32_t)rt_s2_can.get()<< (RT_CAN) );
-	ESP_LOGI(FNAME,"update_routing S2: %x", routing);
-	serial2_tx.set( routing );
-	return 0;
-}
-
 void init_screens(){
 	uint32_t scr = menu_screens.get();
 	screen_gmeter.set( (scr >> SCREEN_GMETER) & 1);
@@ -497,7 +462,7 @@ void SetupMenu::begin( IpsDisplay* display, PressureSensor * bmp, AnalogInput *a
 	_adc = adc;
 	setup();
 	audio_volume.set( default_volume.get() );
-	init_routing();
+	// init_routing();   now done by post_init_NG() in SetupNG.cpp
 	init_screens();
 	initGearWarning();
 }
@@ -1411,11 +1376,11 @@ void SetupMenu::options_menu_create_wireless_routing( MenuEntry *top ){
 	wloutxcv->addEntry( "Disable");
 	wloutxcv->addEntry( "Enable");
 	top->addEntry( wloutxcv );
-	SetupMenuSelect * wloutxs1 = new SetupMenuSelect( "S1-RS232", RST_NONE, update_routing, true, &rt_s1_wl );
+	SetupMenuSelect * wloutxs1 = new SetupMenuSelect( "S1-RS232", RST_NONE, 0, true, &rt_s1_wl );
 	wloutxs1->addEntry( "Disable");
 	wloutxs1->addEntry( "Enable");
 	top->addEntry( wloutxs1 );
-	SetupMenuSelect * wloutxs2 = new SetupMenuSelect( "S2-RS232", RST_NONE, update_routing, true, &rt_s2_wl );
+	SetupMenuSelect * wloutxs2 = new SetupMenuSelect( "S2-RS232", RST_NONE, 0, true, &rt_s2_wl );
 	wloutxs2->addEntry( "Disable");
 	wloutxs2->addEntry( "Enable");
 	top->addEntry( wloutxs2 );
@@ -1945,22 +1910,22 @@ void SetupMenu::system_menu_create_altimeter_airspeed( MenuEntry *top ){
 }
 
 void SetupMenu::system_menu_create_interfaceS1_routing( MenuEntry *top ){
-	SetupMenuSelect * s1outxcv = new SetupMenuSelect( "XCVario", RST_NONE, update_routing, true, &rt_s1_xcv );
+	SetupMenuSelect * s1outxcv = new SetupMenuSelect( "XCVario", RST_NONE, 0, true, &rt_s1_xcv );
 	s1outxcv->addEntry( "Disable");
 	s1outxcv->addEntry( "Enable");
 	top->addEntry( s1outxcv );
 
-	SetupMenuSelect * s1outwl = new SetupMenuSelect( "Wireless", RST_NONE, update_routing, true, &rt_s1_wl );
+	SetupMenuSelect * s1outwl = new SetupMenuSelect( "Wireless", RST_NONE, 0, true, &rt_s1_wl );
 	s1outwl->addEntry( "Disable");
 	s1outwl->addEntry( "Enable");
 	top->addEntry( s1outwl );
 
-	SetupMenuSelect * s1outs1 = new SetupMenuSelect( "S2-RS232", RST_NONE, update_routing, true, &rt_s1_s2 );
+	SetupMenuSelect * s1outs1 = new SetupMenuSelect( "S2-RS232", RST_NONE, 0, true, &rt_s1_s2 );
 	s1outs1->addEntry( "Disable");
 	s1outs1->addEntry( "Enable");
 	top->addEntry( s1outs1 );
 
-	SetupMenuSelect * s1outcan = new SetupMenuSelect( "CAN-bus", RST_NONE, update_routing, true, &rt_s1_can );
+	SetupMenuSelect * s1outcan = new SetupMenuSelect( "CAN-bus", RST_NONE, 0, true, &rt_s1_can );
 	s1outcan->addEntry( "Disable");
 	s1outcan->addEntry( "Enable");
 	top->addEntry( s1outcan );
@@ -2014,19 +1979,19 @@ void SetupMenu::system_menu_create_interfaceS1( MenuEntry *top ){
 }
 
 void SetupMenu::system_menu_create_interfaceS2_routing( MenuEntry *top ){
-	SetupMenuSelect * s2outxcv = new SetupMenuSelect( "XCVario", RST_NONE, update_routing, true, &rt_s2_xcv );
+	SetupMenuSelect * s2outxcv = new SetupMenuSelect( "XCVario", RST_NONE, 0, true, &rt_s2_xcv );
 	s2outxcv->addEntry( "Disable");
 	s2outxcv->addEntry( "Enable");
 	top->addEntry( s2outxcv );
-	SetupMenuSelect * s2outwl = new SetupMenuSelect( "Wireless", RST_NONE, update_routing, true, &rt_s2_wl );
+	SetupMenuSelect * s2outwl = new SetupMenuSelect( "Wireless", RST_NONE, 0, true, &rt_s2_wl );
 	s2outwl->addEntry( "Disable");
 	s2outwl->addEntry( "Enable");
 	top->addEntry( s2outwl );
-	SetupMenuSelect * s2outs2 = new SetupMenuSelect( "S1-RS232", RST_NONE, update_routing, true, &rt_s1_s2 );
+	SetupMenuSelect * s2outs2 = new SetupMenuSelect( "S1-RS232", RST_NONE, 0, true, &rt_s1_s2 );
 	s2outs2->addEntry( "Disable");
 	s2outs2->addEntry( "Enable");
 	top->addEntry( s2outs2 );
-	SetupMenuSelect * s2outcan = new SetupMenuSelect( "CAN-bus", RST_NONE, update_routing, true, &rt_s2_can );
+	SetupMenuSelect * s2outcan = new SetupMenuSelect( "CAN-bus", RST_NONE, 0, true, &rt_s2_can );
 	s2outcan->addEntry( "Disable");
 	s2outcan->addEntry( "Enable");
 	top->addEntry( s2outcan );
@@ -2085,12 +2050,12 @@ void SetupMenu::system_menu_create_interfaceCAN_routing( MenuEntry *top ){
 	canoutwl->addEntry( "Enable");
 	top->addEntry( canoutwl );
 
-	SetupMenuSelect * canouts1 = new SetupMenuSelect( "S1-RS232", RST_NONE, update_routing, true, &rt_s1_can );
+	SetupMenuSelect * canouts1 = new SetupMenuSelect( "S1-RS232", RST_NONE, 0, true, &rt_s1_can );
 	canouts1->addEntry( "Disable");
 	canouts1->addEntry( "Enable");
 	top->addEntry( canouts1 );
 
-	SetupMenuSelect * canouts2 = new SetupMenuSelect( "S2-RS232", RST_NONE, update_routing, true, &rt_s2_can );
+	SetupMenuSelect * canouts2 = new SetupMenuSelect( "S2-RS232", RST_NONE, 0, true, &rt_s2_can );
 	canouts2->addEntry( "Disable");
 	canouts2->addEntry( "Enable");
 	top->addEntry( canouts2 );

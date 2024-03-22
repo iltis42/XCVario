@@ -35,6 +35,7 @@ public:
 	void escape() {}; // ignore, base class takes care
 	void setStep( float val ) { _step = val; };
 	void setMax( float max ) { _max = max; };
+	void setDynamic( float value ) { _dynamic = value; }
     float _value;
     static SetupMenuValFloat * qnh_menu;
     static SetupMenuValFloat * meter_adj_menu;
@@ -48,4 +49,6 @@ private:
 	const char * _unit;
 	int (*_action)( SetupMenuValFloat *p );
 	SetupNG<float> * _nvs;
+    float _dynamic;
+    bool _roteryPollingChanged;
 };

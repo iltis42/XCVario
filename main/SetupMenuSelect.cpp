@@ -187,8 +187,10 @@ void SetupMenuSelect::down(int count){
 		ucg->setColor(COLOR_BLACK);
 		ucg->drawFrame( 1,(_select+1)*25+3,238,25 );  // blank old frame
 		ucg->setColor(COLOR_WHITE);
-		if( (_select) >  0 )
+		while( (_select) >  0 && count){
 			(_select)--;
+			count--;
+		}
 		ESP_LOGI(FNAME,"val down %d", _select );
 		ucg->drawFrame( 1,(_select+1)*25+3,238,25 );  // draw new frame
 		xSemaphoreGive(spiMutex );
@@ -215,8 +217,10 @@ void SetupMenuSelect::up(int count){
 		ucg->setColor(COLOR_BLACK);
 		ucg->drawFrame( 1,(_select+1)*25+3,238,25 );  // blank old frame
 		ucg->setColor(COLOR_WHITE);
-		if ( (_select) < _numval-1 )
+		while ( (_select) < _numval-1 && count ){
 			(_select)++;
+			count--;
+		}
 		ESP_LOGI(FNAME,"val up %d", _select );
 		ucg->drawFrame( 1,(_select+1)*25+3,238,25 );  // draw new frame
 		xSemaphoreGive(spiMutex );

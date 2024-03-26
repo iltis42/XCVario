@@ -573,10 +573,11 @@ void SetupMenu::down(int count){
 	ucg->setColor(COLOR_BLACK);
 	ucg->drawFrame( 1,(highlight+1)*25+3,238,25 );
 	ucg->setColor(COLOR_WHITE);
-	if( highlight  > -1 ){
+	while( (highlight  > -1) && count ){
 		highlight --;
+		count--;
 	}
-	else
+	if( highlight < -1 )
 		highlight = (int)(_childs.size() -1 );
 	ucg->drawFrame( 1,(highlight+1)*25+3,238,25 );
 	xSemaphoreGive(spiMutex );
@@ -617,11 +618,13 @@ void SetupMenu::up(int count){
 	ucg->setColor(COLOR_BLACK);
 	ucg->drawFrame( 1,(highlight+1)*25+3,238,25 );
 	ucg->setColor(COLOR_WHITE);
-	if( highlight < (int)(_childs.size()-1) ){
+	while( highlight < (int)(_childs.size()-1) && count ){
 		highlight ++;
+		count--;
 	}
-	else
+	if( highlight > (int)(_childs.size()-1) ){
 		highlight = -1;
+	}
 	ucg->drawFrame( 1,(highlight+1)*25+3,238,25 );
 	pressed = true;
 	xSemaphoreGive(spiMutex );

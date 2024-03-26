@@ -20,7 +20,7 @@ SetupMenuValFloat * SetupMenuValFloat::meter_adj_menu = 0;
 char SetupMenuValFloat::_val_str[20];
 
 SetupMenuValFloat::SetupMenuValFloat( const char* title, const char *unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs, e_restart_mode_t restart, bool sync, bool live_update ):
-	_dynamic(1.0) {
+			_dynamic(1.0) {
 	// ESP_LOGI(FNAME,"SetupMenuValFloat( %s ) ", title.c_str() );
 	attach(this);
 	_title = title;
@@ -53,7 +53,7 @@ SetupMenuValFloat::SetupMenuValFloat( const char* title, const char *unit, float
 
 SetupMenuValFloat::~SetupMenuValFloat()
 {
-    detach(this);
+	detach(this);
 }
 
 const char *SetupMenuValFloat::value(){
@@ -137,9 +137,9 @@ void SetupMenuValFloat::down( int count ){
 	// float start = _value;
 	int _count = std::pow( count, _dynamic );
 	while( (_value > _min) && _count ) {
-			_value -= step( _step );
-			_count --;
-		}
+		_value -= step( _step );
+		_count --;
+	}
 
 	if( _value < _min )
 		_value = _min;
@@ -162,7 +162,7 @@ void SetupMenuValFloat::up( int count ){
 	while( (_value < _max) && _count ) {
 		_value += step( _step );
 		_count--;
-   }
+	}
 
 	if( _value > _max )
 		_value = _max;

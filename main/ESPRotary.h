@@ -17,8 +17,6 @@
 #include "esp_system.h"
 #include "driver/pcnt.h"
 
-#define ROTARY_POLL_PERIOD 20 // default polling period in ms
-
 enum _event { NONE, PRESS, LONG_PRESS, RELEASE, UP, DOWN, ERROR, MAX_EVENT };
 
 class RotaryObserver;

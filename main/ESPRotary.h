@@ -17,8 +17,6 @@
 #include "esp_system.h"
 #include "driver/pcnt.h"
 
-
-
 enum _event { NONE, PRESS, LONG_PRESS, RELEASE, UP, DOWN, ERROR, MAX_EVENT };
 
 class RotaryObserver;
@@ -39,6 +37,10 @@ public:
     static void sendDown( int diff );
     static void sendEsc();
     static bool readSwitch();  // returns true if pressed
+    static void setPollPeriod( const int16_t value ) {
+    	if( value > 0 ) pollPeriod = value;
+    }
+    static int16_t getPollPeriod() { return pollPeriod; }
 
 private:
 	static std::list<RotaryObserver *> observers;
@@ -48,6 +50,7 @@ private:
     static int16_t r_enc_count;
     static int16_t r_enc2_count;
     static int timer;
+    static int16_t pollPeriod;
     static bool released;
     static bool longPressed;
     static bool pressed;

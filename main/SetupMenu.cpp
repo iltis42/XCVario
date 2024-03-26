@@ -2206,6 +2206,7 @@ void SetupMenu::setup_create_root(MenuEntry *top ){
 
 	SetupMenuValFloat * afe = new SetupMenuValFloat( "Airfield Elevation", "", -1, 3000, 1, 0, true, &elevation );
 	afe->setHelp( "Airfield elevation in meters for QNH auto adjust on ground according to this elevation");
+	afe->setDynamic( 3.0 );
 	top->addEntry( afe );
 
 	// Clear student mode, password correct

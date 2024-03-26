@@ -30,6 +30,7 @@ bool ESPRotary::longPressed = false;
 
 #define ROTARY_SINGLE_INC 0
 #define ROTARY_DOUBLE_INC 1
+
 static TaskHandle_t pid = NULL;
 
 void ESPRotary::attach(RotaryObserver *obs) {
@@ -176,7 +177,7 @@ void ESPRotary::informObservers( void * args )
 {
 	while( 1 ) {
 	  if( Flarm::bincom ) {
-	    vTaskDelay(20 / portTICK_PERIOD_MS);
+	    vTaskDelay(100 / portTICK_PERIOD_MS);
 	    continue;
 	  }
 		int button = gpio_get_level((gpio_num_t)sw);
@@ -184,7 +185,7 @@ void ESPRotary::informObservers( void * args )
 			timer++;
 			released = false;
 			pressed = false;
-			if( timer > 20 ){  // > 400 mS
+			if( timer > 20/5 ){  // > 400 mS
 				if( !longPressed ){
 					sendLongPress();
 					sendRelease();
@@ -196,7 +197,7 @@ void ESPRotary::informObservers( void * args )
 			if( !released ){
 				// ESP_LOGI(FNAME,"timer=%d", timer );
 				longPressed = false;
-				if( timer < 20 ){  // > 400 mS
+				if( timer < 20/5 ){  // > 400 mS
 					if( !pressed ){
 						sendPress();
 						sendRelease();
@@ -241,6 +242,6 @@ void ESPRotary::informObservers( void * args )
 		}
 		if( uxTaskGetStackHighWaterMark( pid ) < 256 )
 			ESP_LOGW(FNAME,"Warning rotary task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid ) );
-		vTaskDelay(20 / portTICK_PERIOD_MS);
+		vTaskDelay(100 / portTICK_PERIOD_MS);
 	}
 }

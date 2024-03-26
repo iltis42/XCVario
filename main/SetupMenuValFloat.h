@@ -50,5 +50,4 @@ private:
 	int (*_action)( SetupMenuValFloat *p );
 	SetupNG<float> * _nvs;
     float _dynamic;
-    bool _roteryPollingChanged;
 };

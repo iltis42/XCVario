@@ -12,7 +12,6 @@
 #include "Polars.h"
 #include "sensor.h"
 #include "ESPAudio.h"
-#include "ESPRotary.h"
 #include <esp_log.h>
 
 
@@ -21,8 +20,7 @@ SetupMenuValFloat * SetupMenuValFloat::meter_adj_menu = 0;
 char SetupMenuValFloat::_val_str[20];
 
 SetupMenuValFloat::SetupMenuValFloat( const char* title, const char *unit, float min, float max, float step, int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs, e_restart_mode_t restart, bool sync, bool live_update ):
-		_dynamic(1.0),
-		_roteryPollingChanged(false) {
+	_dynamic(1.0) {
 	// ESP_LOGI(FNAME,"SetupMenuValFloat( %s ) ", title.c_str() );
 	attach(this);
 	_title = title;
@@ -137,12 +135,6 @@ void SetupMenuValFloat::down( int count ){
 	// ESP_LOGI(FNAME,"val down %d times ", count );
 	_value = _nvs->get();
 	// float start = _value;
-
-	if( _dynamic > 1.0 && _roteryPollingChanged == false ) {
-		ESPRotary::setPollPeriod( 100 ); // Increase poll period of rotary
-		_roteryPollingChanged = true;
-	}
-
 	int _count = std::pow( count, _dynamic );
 	while( (_value > _min) && _count ) {
 			_value -= step( _step );
@@ -166,12 +158,6 @@ void SetupMenuValFloat::up( int count ){
 	// ESP_LOGI(FNAME,"val up %d times ", count );
 	_value = _nvs->get();
 	// float start = _value;
-
-	if( _dynamic > 1.0 && _roteryPollingChanged == false ) {
-		ESPRotary::setPollPeriod( 100 ); // Increase poll period of rotary
-		_roteryPollingChanged = true;
-	}
-
 	int _count = std::pow( count, _dynamic );
 	while( (_value < _max) && _count ) {
 		_value += step( _step );
@@ -197,10 +183,6 @@ void SetupMenuValFloat::press(){
 		return;
 	ESP_LOGI(FNAME,"SetupMenuValFloat press %d", pressed );
 
-	if( _roteryPollingChanged ) {
-		_roteryPollingChanged = false;
-		ESPRotary::setPollPeriod( ROTARY_POLL_PERIOD ); // reset poll period of rotary to default
-	}
 	if ( pressed ){
 		ESP_LOGI(FNAME,"pressed, value: %f", _value );
 		_nvs->set( _value );

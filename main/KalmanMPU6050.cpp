@@ -506,7 +506,7 @@ void IMU::defaultImuReference()
 		accelDefaultRef = Quaternion(deg2rad(180.0f), vector_ijk(1,0,0)) * accelDefaultRef;
 	}
 	ref_rot = accelDefaultRef;
-	imu_reference.set(ref_rot, false); // nvs
+	// imu_reference.set(ref_rot, false); // nvs
 	progress = 0; // reset the calibration procedure
 }
 // Concatenation of ground angle of attack and the basic reference calibration rotation

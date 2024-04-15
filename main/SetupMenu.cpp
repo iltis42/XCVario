@@ -236,12 +236,24 @@ int update_wifi_power(SetupMenuValFloat * p)
 	return 0;
 }
 
+
+
 int data_mon( SetupMenuSelect * p ){
 	ESP_LOGI(FNAME,"data_mon( %d ) ", data_monitor.get() );
 	if( data_monitor.get() != MON_OFF ){
 		DM.start(p);
 	}
 	return 0;
+}
+
+int data_monS1( SetupMenuSelect * p ){
+	data_monitor.set( MON_S1 );
+	return( data_mon(p) );
+}
+
+int data_monS2( SetupMenuSelect * p ){
+	data_monitor.set( MON_S2 );
+	return( data_mon(p) );
 }
 
 int update_id( SetupMenuChar * p){
@@ -2014,6 +2026,12 @@ void SetupMenu::system_menu_create_interfaceS1( MenuEntry *top ){
 	stxdis1->setHelp( "Option to switch off RS232 TX line in case active sending is not required, e.g. for multiple devices connected to one device  (reboots)");
 	stxdis1->addEntry( "Disable");
 	stxdis1->addEntry( "Enable");
+
+	SetupMenuSelect * datamon = new SetupMenuSelect( "Monitor", RST_NONE, data_monS1, true, &data_monitor );
+	datamon->setHelp( "Short press button to start/pause, long press to terminate data monitor", 260);
+	datamon->addEntry( "Disable");
+	datamon->addEntry( "Start S1 RS232");
+	top->addEntry( datamon );
 }
 
 void SetupMenu::system_menu_create_interfaceS2_routing( MenuEntry *top ){
@@ -2075,6 +2093,11 @@ void SetupMenu::system_menu_create_interfaceS2( MenuEntry *top ){
 	stxdis2->setHelp( "Option to switch off RS232 TX line in case active sending is not required, e.g. for multiple devices connected to one device (reboots)");
 	stxdis2->addEntry( "Disable");
 	stxdis2->addEntry( "Enable");
+
+	SetupMenuSelect * datamon = new SetupMenuSelect( "Monitor", RST_NONE, data_monS2, true, &data_monitor );
+	datamon->setHelp( "Short press button to start/pause, long press to terminate data monitor", 260);
+	datamon->addEntry( "Disable");
+	datamon->addEntry( "Start S2 RS232");
 }
 
 void SetupMenu::system_menu_create_interfaceCAN_routing( MenuEntry *top ){

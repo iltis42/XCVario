@@ -385,7 +385,7 @@ void Flap::drawBigBar( float wkf, float wksens ){
 	tickopt++;
 	bool dirty_lever = false;
 	// ESP_LOGI(FNAME,"drawBigBar wkf: %.2f y:%d lfh:%d", wkf, y, lfh );
-	if( optPosOldY != y || !(tickopt%5)) {  // redraw on change or every half second
+	if( optPosOldY != y ) {  // redraw on change or every half second
 		ucg->setColor(COLOR_BLACK);
 		ucg->drawTriangle( barpos_x-15,optPosOldY-5,  barpos_x-15,optPosOldY+5,  barpos_x-2,optPosOldY );
 		ucg->setColor(COLOR_GREEN);
@@ -405,6 +405,10 @@ void Flap::drawBigBar( float wkf, float wksens ){
 			drawLever( barpos_x, ys, sensorOldY, warn, good );
 			sensorOldY = ys;
 			good_old = good;
+			if( abs(y-ys) < 12 ){
+				ucg->setColor(COLOR_GREEN);  // redraw triangle
+				ucg->drawTriangle( barpos_x-15,y-5,       barpos_x-15,y+5,       barpos_x-2,y );
+			}
 		}
 	}
 	ucg->setFontPosBottom();

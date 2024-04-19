@@ -2275,7 +2275,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	// WK-Indicator
-	if( FLAP && !(tick%7) )
+	if( FLAP && !(tick%3) )
 	{
 		float wkspeed = Units::ActualWingloadCorrection(ias.get());
 		int wki;

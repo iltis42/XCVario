@@ -272,7 +272,7 @@ void drawDisplay(void *pvParameters){
 					}
 					if( gw ){
 						if( ESPRotary::readSwitch() ){   // Acknowledge Warning -> Warning OFF
-							gear_warning_holdoff = 25000;  // 5 min
+							gear_warning_holdoff = 25000;  // ~500 sec
 							Audio::alarm( false );
 							display->clear();
 							gflags.gear_warning_active = false;

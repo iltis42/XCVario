@@ -36,10 +36,9 @@ public:
     void setSymbolPosition(int16_t x, int16_t y);
 	void drawSmallBar( float wkf );
 	void drawBigBar( float wkf, float wksens );
-	void drawLever( int16_t xpos, int16_t ypos, int16_t oldypos, bool warn, bool good );
+	void drawLever( int16_t xpos, int16_t ypos, int16_t &oldypos, bool warn, bool good );
 	void drawWingSymbol(int16_t wk, float wksens);
 	void redraw() { sensorOldY = -1000; dirty=true; };
-	// void redrawLever() { sensorOldY = -1000; };
 	static void setupMenue( MenuEntry *parent );
 	unsigned int getSensorRaw(int oversampling=1);
     static inline Flap* FLAP() { return _instance; }
@@ -65,6 +64,7 @@ private: // helper
 	void  initSensPos();
 	void  configureADC( int port );
 	int   getOptimumInt( float wks );
+	void drawFrame(int16_t xpos, int16_t ypos);
 
 private:
     static Flap* _instance;
@@ -88,6 +88,7 @@ private:
 	int16_t barpos_y = 0;
 	int16_t symbolpos_x = 0;
 	int16_t symbolpos_y = 0;
+	unsigned int _millis;
 };
 
 #define FLAP Flap::FLAP()

@@ -323,29 +323,46 @@ void Flap::drawSmallBar( float wkf ){
 	ucg->undoClipRange();
 }
 
-void Flap::drawLever( int16_t xpos, int16_t ypos, int16_t oldypos, bool warn, bool good ){
-	ucg->setColor(COLOR_BLACK);
-	ucg->drawFrame( xpos-16, oldypos-4, 11, 7 );
-	ucg->drawFrame( xpos-17, oldypos-5, 13, 9 );
+
+void Flap::drawLever( int16_t xpos, int16_t ypos, int16_t& oldypos, bool warn, bool good ){
+
+	unsigned int curmillis = millis();
 	if( warn ){
 		// Blink effekt
-		if( warn_color ){
-			ucg->setColor(COLOR_WHITE);
-			warn_color = false;
+		if(curmillis - _millis > 150){
+			ucg->setColor(COLOR_BLACK);
+			ucg->drawFrame( xpos-16, oldypos-4, 11, 7 );
+			ucg->drawFrame( xpos-17, oldypos-5, 13, 9 );
+			if( warn_color ){
+				// ESP_LOGI(FNAME,"WHITE %d", curmillis - _millis);
+				ucg->setColor(COLOR_WHITE);
+				warn_color = false;
+			}
+			else{
+				// ESP_LOGI(FNAME,"RED %d", curmillis - _millis);
+				ucg->setColor(COLOR_RED);
+				warn_color = true;
+			}
+			_millis = curmillis;
+			ucg->drawFrame( xpos-16, ypos-4, 11, 7 );
+			ucg->drawFrame( xpos-17, ypos-5, 13, 9 );
+			oldypos = ypos;
 		}
-		else{
-			ucg->setColor(COLOR_RED);
-			warn_color = true;
-		}
-	}
-	else if( good ){
-		ucg->setColor(COLOR_GREEN);
 	}
 	else{
-		ucg->setColor(COLOR_WHITE);
+		ucg->setColor(COLOR_BLACK);
+		ucg->drawFrame( xpos-16, oldypos-4, 11, 7 );
+		ucg->drawFrame( xpos-17, oldypos-5, 13, 9 );
+		if( good ){
+			ucg->setColor(COLOR_GREEN);
+		}
+		else{
+			ucg->setColor(COLOR_WHITE);
+		}
+		ucg->drawFrame( xpos-16, ypos-4, 11, 7 );
+		ucg->drawFrame( xpos-17, ypos-5, 13, 9 );
+		oldypos = ypos;
 	}
-	ucg->drawFrame( xpos-16, ypos-4, 11, 7 );
-	ucg->drawFrame( xpos-17, ypos-5, 13, 9 );
 }
 
 static bool good_old = false;
@@ -403,7 +420,6 @@ void Flap::drawBigBar( float wkf, float wksens ){
 		if( flap_sensor.get() ) {
 			// ESP_LOGI(FNAME,"wk lever redraw, old=%d", sensorOldY );
 			drawLever( barpos_x, ys, sensorOldY, warn, good );
-			sensorOldY = ys;
 			good_old = good;
 			if( abs(y-ys) < 12 ){
 				ucg->setColor(COLOR_GREEN);  // redraw triangle

@@ -323,6 +323,10 @@ void Flap::drawSmallBar( float wkf ){
 	ucg->undoClipRange();
 }
 
+void Flap::drawFrame(int16_t xpos, int16_t ypos){
+	ucg->drawFrame( xpos-16, ypos-4, 11, 7 );
+	ucg->drawFrame( xpos-17, ypos-5, 13, 9 );
+}
 
 void Flap::drawLever( int16_t xpos, int16_t ypos, int16_t& oldypos, bool warn, bool good ){
 
@@ -331,8 +335,7 @@ void Flap::drawLever( int16_t xpos, int16_t ypos, int16_t& oldypos, bool warn, b
 		// Blink effekt
 		if(curmillis - _millis > 150){
 			ucg->setColor(COLOR_BLACK);
-			ucg->drawFrame( xpos-16, oldypos-4, 11, 7 );
-			ucg->drawFrame( xpos-17, oldypos-5, 13, 9 );
+			drawFrame( xpos, oldypos );
 			if( warn_color ){
 				// ESP_LOGI(FNAME,"WHITE %d", curmillis - _millis);
 				ucg->setColor(COLOR_WHITE);
@@ -344,23 +347,20 @@ void Flap::drawLever( int16_t xpos, int16_t ypos, int16_t& oldypos, bool warn, b
 				warn_color = true;
 			}
 			_millis = curmillis;
-			ucg->drawFrame( xpos-16, ypos-4, 11, 7 );
-			ucg->drawFrame( xpos-17, ypos-5, 13, 9 );
+			drawFrame( xpos, ypos );
 			oldypos = ypos;
 		}
 	}
 	else{
 		ucg->setColor(COLOR_BLACK);
-		ucg->drawFrame( xpos-16, oldypos-4, 11, 7 );
-		ucg->drawFrame( xpos-17, oldypos-5, 13, 9 );
+		drawFrame( xpos, oldypos );
 		if( good ){
 			ucg->setColor(COLOR_GREEN);
 		}
 		else{
 			ucg->setColor(COLOR_WHITE);
 		}
-		ucg->drawFrame( xpos-16, ypos-4, 11, 7 );
-		ucg->drawFrame( xpos-17, ypos-5, 13, 9 );
+		drawFrame( xpos, ypos );
 		oldypos = ypos;
 	}
 }

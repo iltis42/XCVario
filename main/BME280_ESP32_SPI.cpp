@@ -330,24 +330,13 @@ double BME280_ESP32_SPI::readAltitude(double SeaLevel_Pres, bool &ok ) {
 	return altitude;
 }
 
-double BME280_ESP32_SPI::calcAVGAltitude(double SeaLevel_Pres, double pressure ) {
-	if( init_err )
-			return 0.0;
-	// ESP_LOGI(FNAME,"++BMP280 readAVGAltitude QNH=%0.1f CS:%d", SeaLevel_Pres, _cs);
-	double alt = calcAltitude( SeaLevel_Pres, pressure );
-	_avg_alt = (alt - _avg_alt )*0.2 + _avg_alt;
-	// ESP_LOGI(FNAME,"--BME280 readAVGAltitude qnh: %0.1f p=%0.1f avlt=%0.1f alt=%0.1f", SeaLevel_Pres, pressure, _avg_alt, alt );
-	return _avg_alt;
-}
-
-double BME280_ESP32_SPI::calcAVGAltitudeSTD( double pressure ) {
+double BME280_ESP32_SPI::calcAltitudeSTD( double pressure ) {
 	if( init_err )
 			return 0.0;
 	// ESP_LOGI(FNAME,"++BMP280 readAVGAltitude QNH=%0.1f CS:%d", SeaLevel_Pres, _cs);
 	double alt = calcAltitude( 1013.25, pressure );
-	_avg_alt_std = (alt - _avg_alt_std )*0.2 + _avg_alt_std;
 	// ESP_LOGI(FNAME,"--BME280 readAVGAltitudeSTD qnh: %0.1f p=%0.1f avlt=%0.1f alt=%0.1f", 1013.25, pressure, _avg_alt_std, alt );
-	return _avg_alt_std;
+	return alt;
 }
 
 bool BME280_ESP32_SPI::selfTest( float& t, float &p ) {

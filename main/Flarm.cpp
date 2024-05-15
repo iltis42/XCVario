@@ -217,6 +217,7 @@ void Flarm::parseGPGGA( const char *gpgga ) {
 	int numSat;
 	int cs;
 	// ESP_LOGI(FNAME,"parseG*GGA: %s", gpgga );
+	_gps_millis = millis();
 	int calc_cs=Protocols::calcNMEACheckSum( gpgga );
 	cs = Protocols::getNMEACheckSum( gpgga );
 	if( cs != calc_cs ){

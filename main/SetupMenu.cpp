@@ -2196,6 +2196,13 @@ void SetupMenu::system_menu_create( MenuEntry *sye ){
 	nmea->addEntry( "Cambridge");
 	nmea->addEntry( "XCVario");
 	nmea->addEntry( "Disable");
+
+	SetupMenuSelect * logg = new SetupMenuSelect( "Logging", RST_NONE, 0, true, &logging );
+	logg->setHelp( "Option to log e.g. raw sensor data in NMEA logger in XCSoar");
+	logg->addEntry( "Disable");
+	logg->addEntry( "Sensor RAW Data");
+	sye->addEntry( logg );
+
 }
 
 void SetupMenu::setup_create_root(MenuEntry *top ){

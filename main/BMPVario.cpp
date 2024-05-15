@@ -57,7 +57,7 @@ void BMPVario::setup() {
 }
 
 
-double BMPVario::readTE( float tas ) {
+double BMPVario::readTE( float tas, float tep ) {
 	if ( _test )     // we are in testmode, just return what has been set
 		return _TEF;
 	bool success;
@@ -88,9 +88,7 @@ double BMPVario::readTE( float tas ) {
 		ESP_LOGD(FNAME,"Energiehöhe @%0.1f km/h: %0.1f cw: %f", tas, ealt, cw );
 	}
 	else{
-		_currentAlt = _sensorTE->readAltitude(_qnh, success );
-		if( !success )
-			_currentAlt = lastAltitude;  // ignore readout when failed
+		_currentAlt = _sensorTE->calcAltitude(_qnh, tep );
 	}
 	// ESP_LOGI(FNAME,"TE alt: %4.3f m", _currentAlt );
 	averageAlt += (_currentAlt - averageAlt) * 0.1;

@@ -52,7 +52,7 @@ public:
 	void setQNH( float qnh ) { _qnh = qnh; };
 	void setup();
 
-	double   readTE( float tas );   // get TE value im m/s
+	double   readTE( float tas, float tePressure );   // get TE value im m/s
 
 
 	double   readAVGTE();   // get TE value im m/s

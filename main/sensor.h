@@ -87,6 +87,8 @@ extern float meanClimb;
 extern Protocols OV;
 extern int the_can_mode;
 
+extern long unsigned int _gps_millis;
+
 extern IpsDisplay *display;
 
 extern ESPRotary Rotary;

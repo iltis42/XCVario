@@ -14,8 +14,8 @@ public:
 	virtual double readPressure(bool &success) = 0;
 	virtual double readTemperature( bool& success ) = 0;
 	virtual double readAltitude( double qnh, bool &success ) = 0;
-	virtual double calcAVGAltitudeSTD( double p ) = 0;
-	virtual double calcAVGAltitude( double qnh, double p ) = 0;
+	virtual double calcAltitudeSTD( double p ) = 0;
+	virtual double calcAltitude( double qnh, double p ) = 0;
     double calcPressure(double SeaLevel_Pres, double altitude) { return SeaLevel_Pres * pow(1.0 - (altitude / 44330.171), 5.255); }
 };
 

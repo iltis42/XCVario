@@ -136,8 +136,12 @@ BTSender btsender;
 BLESender blesender;
 
 static float baroP=0; // barometric pressure
+static float teP=0;   // TE pressure
 static float temperature=15.0;
 static float xcvTemp=15.0;
+static long unsigned int _millis = 0;
+long unsigned int _gps_millis = 0;
+
 
 static float battery=0.0;
 static float dynamicP; // Pitot
@@ -566,30 +570,74 @@ void clientLoop(void *pvParameters)
 
 void readSensors(void *pvParameters){
 	int client_sync_dataIdx = 0;
+	float tasraw = 0;
 	while (1)
 	{
-		count++;
+		count++;   // 10x per second
 		TickType_t xLastWakeTime = xTaskGetTickCount();
-		if( gflags.haveMPU  )  // 3th Generation HW, MPU6050 avail and feature enabled
-		{
-			grabMPU();
-		}
-		bool ok=false;
-		float p = 0;
-		if( asSensor )
-			p = asSensor->readPascal(60, ok);
-		if( ok )
-			dynamicP = p;
-		float iasraw = Atmosphere::pascal2kmh( dynamicP );
-		// ESP_LOGI("FNAME","P: %f  IAS:%f", dynamicP, iasraw );
 		float T=OAT.get();
 		if( !gflags.validTemperature ) {
 			T= 15 - ( (altitude.get()/100) * 0.65 );
 			// ESP_LOGW(FNAME,"T invalid, using 15 deg");
 		}
-		float tasraw = 0;
+		// ESP_LOGI(FNAME,"Start");
+		if( gflags.haveMPU  )  // 3th Generation HW, MPU6050 avail and feature enabled
+		{
+			grabMPU();  // IMU
+		}
+		// ESP_LOGI(FNAME,"IMU");
+		if( asSensor ){  // AS differential Sensor
+			bool ok=false;
+			float p = asSensor->readPascal(60, ok);
+			if( ok )
+				dynamicP = p;
+		}
+		_millis=millis();
+
+		// ESP_LOGI(FNAME,"AS");
+		xSemaphoreTake(xMutex,portMAX_DELAY );   // Static Pressure
+		bool bok=false;
+		float bp = baroSensor->readPressure(bok);
+		// ESP_LOGI(FNAME,"Baro");
+		bool tok=false;
+		float tp = teSensor->readPressure(tok);  // TE Pressure
+		xSemaphoreGive(xMutex);
+		// ESP_LOGI(FNAME,"TE, Delta: %d", (int)(millis() - m));
+		if( logging.get() == LOG_SENSOR_RAW ){
+			char log[SSTRLEN];
+			sprintf( log, "$SENS;");
+			int pos = strlen(log);
+			sprintf( log+pos, "%ld;%ld;%.1f;%.1f;%.1f;%.1f;%.3f;%.3f;%.3f;%.3f;%.3f;%.3f", _millis, _millis - _gps_millis, bp, tp, dynamicP, T, IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(),
+					IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
+			if( compass ){
+				pos=strlen(log);
+				sprintf( log+pos,",%d;%d;%d", int( compass->calX() ),int( compass->calY()) , int( compass->calZ() ));
+			}
+			pos=strlen(log);
+			sprintf( log+pos, "\n");
+			Router::sendXCV( log );
+			ESP_LOGI(FNAME,"%s", log );
+		}
+		if( tok )
+			teP = tp;
+		if( bok )
+			baroP = bp;
+		float te = bmpVario.readTE( tasraw, teP );   // TE value caclulation
+		if( (int( te_vario.get()*20 +0.5 ) != int( te*20 +0.5)) || !(count%10) ){  // a bit more fine granular updates than 0.1 m/s as of sound
+					te_vario.set( te );  // max 10x per second
+		}
+		if( !(count%10) ){  // every second read temperature of baro sensor
+					bool ok=false;
+					float xt = baroSensor->readTemperature(ok);
+					if( ok ){
+						xcvTemp = xt;
+					}
+		}
+		float iasraw = Atmosphere::pascal2kmh( dynamicP );
 		if( baroP != 0 )
 			tasraw =  Atmosphere::TAS( iasraw , baroP, T);  // True airspeed in km/h
+
+		// ESP_LOGI("FNAME","P: %f  IAS:%f", dynamicP, iasraw );
 
 		if( airspeed_mode.get() == MODE_CAS ){
 			float casraw=Atmosphere::CAS( dynamicP );
@@ -617,33 +665,19 @@ void readSensors(void *pvParameters){
 			slipAngle += ((IMU::getGliderAccelY()*K / (as*as)) - slipAngle)*0.09;   // with atan(x) = x for small x
 			// ESP_LOGI(FNAME,"AS: %f m/s, CURSL: %f°, SLIP: %f", as, IMU::getGliderAccelY()*K / (as*as), slipAngle );
 		}
-		xSemaphoreTake(xMutex,portMAX_DELAY );
 
-		float te = bmpVario.readTE( tasraw );
-		if( (int( te_vario.get()*20 +0.5 ) != int( te*20 +0.5)) || !(count%10) ){  // a bit more fine granular updates than 0.1 m/s as of sound
-			te_vario.set( te );  // max 10x per second
-		}
-		xSemaphoreGive(xMutex);
 		// ESP_LOGI(FNAME,"count %d ccp %d", count, ccp );
 		if( !(count % ccp) ) {
 			AverageVario::recalcAvgClimb();
 		}
 		if (FLAP) { FLAP->progress(); }
-		xSemaphoreTake(xMutex,portMAX_DELAY );
-		if( !(count%10) ){  // every second read temperature of baro sensor
-			float xt = baroSensor->readTemperature(ok);
-			if( ok ){
-				xcvTemp = xt;
-			}
-		}
-		baroP = baroSensor->readPressure(ok);   // 10x per second
-		xSemaphoreGive(xMutex);
+
 		// ESP_LOGI(FNAME,"Baro Pressure: %4.3f", baroP );
 		float altSTD = 0;
 		if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
 			altSTD = alt_external;
 		else
-			altSTD = baroSensor->calcAVGAltitudeSTD( baroP );
+			altSTD = baroSensor->calcAltitudeSTD( baroP );
 		float new_alt = 0;
 		if( alt_select.get() == AS_TE_SENSOR ) // TE
 			new_alt = bmpVario.readAVGalt();
@@ -661,7 +695,7 @@ void readSensors(void *pvParameters){
 				if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
 					new_alt = altSTD + ( QNH.get()- 1013.25)*8.2296;  // correct altitude according to ISA model = 27ft / hPa
 				else
-					new_alt = baroSensor->calcAVGAltitude( QNH.get(), baroP );
+					new_alt = baroSensor->calcAltitude( QNH.get(), baroP );
 				gflags.standard_setting = false;
 				// ESP_LOGI(FNAME,"QNH %f baro: %f alt: %f SS:%d", QNH.get(), baroP, alt, gflags.standard_setting  );
 			}
@@ -1535,7 +1569,7 @@ void system_startup(void *args){
 		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 11, &apid, 0);
 	}
 	else {
-		xTaskCreatePinnedToCore(&readSensors, "readSensors", 5120, NULL, 11, &bpid, 0);
+		xTaskCreatePinnedToCore(&readSensors, "readSensors", 5120, NULL, 12, &bpid, 0);
 	}
 	xTaskCreatePinnedToCore(&readTemp, "readTemp", 3000, NULL, 5, &tpid, 0);       // increase stack by 500 byte
 	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 6144, NULL, 4, &dpid, 0); // increase stack by 1K

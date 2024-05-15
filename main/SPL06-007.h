@@ -21,8 +21,8 @@ public:
 	bool  setBus( I2C_t *theBus ) {  bus = theBus; return true; };
 	bool  setSPIBus(gpio_num_t _sclk, gpio_num_t _mosi, gpio_num_t _miso, gpio_num_t _cs, uint32_t _freq ) { return true; };
 	double get_altitude(double pressure, double seaLevelhPa);	// get altitude in meters
-	inline double calcAVGAltitudeSTD( double p ) { return get_altitude( p, 1013.25 ); };
-	inline double calcAVGAltitude( double sl, double p ) { return get_altitude( p, sl ); };
+	inline double calcAltitudeSTD( double p ) { return get_altitude( p, 1013.25 ); };
+	inline double calcAltitude( double sl, double p ) { return get_altitude( p, sl ); };
 	double readAltitude( double qnh, bool &ok );
 	double get_temp_c( bool &ok );
 	double get_temp_f();

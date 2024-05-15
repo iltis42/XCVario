@@ -51,8 +51,7 @@ public:
 	double readHumidity();
 	double readAltitude(double SeaLevel_Pres, bool &ok);
 	inline double calcAltitude(double SeaLevel_Pres, double pressure) { return ( 44330.0 * (1.0 - pow(pressure / SeaLevel_Pres, (1.0/5.255))) ); }
-	double calcAVGAltitude(double SeaLevel_Pres, double p );
-	double calcAVGAltitudeSTD( double p );
+	double calcAltitudeSTD( double p );
 	uint8_t readID();
 
 private:

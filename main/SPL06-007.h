@@ -74,6 +74,7 @@ private:
 	int32_t last_praw;
 	int32_t _traw;
 	int32_t last_traw;
+	uint32_t tick;
 	double last_p;
 };
 

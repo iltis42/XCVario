@@ -12,6 +12,7 @@ SPL06_007::SPL06_007( char _addr ){
 	_traw = 0;
 	last_praw = 0;
 	last_traw = 0;
+	tick = 0;
 }
 
 // Addr. 0x06 PM_RATE Bits 6-4:    110  - 64 measurements pr. sec.
@@ -152,18 +153,24 @@ double SPL06_007::get_temp_f()
 int32_t SPL06_007::get_traw( bool &ok )
 {
 	uint8_t data[3];
-	ok = i2c_read_bytes( 0X03, 3, data );   // use correct method to read 3 bytes of volatile data
-	if( ok ){
-		_traw = (data[0] << 16) | data[1] << 8 | data[2];
-		if(_traw & (1 << 23))
-			_traw = _traw | 0XFF000000; // Set left bits to one for 2's complement conversion of negative number
+	tick++;
+	if( !(tick%10) || (last_traw == 0) ){       // Temperature won't quickly change so its okay to read value every second
+		ok = i2c_read_bytes( 0X03, 3, data );   // use correct method to read 3 bytes of volatile data
+		if( ok ){
+			_traw = (data[0] << 16) | data[1] << 8 | data[2];
+			if(_traw & (1 << 23))
+				_traw = _traw | 0XFF000000; // Set left bits to one for 2's complement conversion of negative number
+		}
+		else{
+			ESP_LOGW(FNAME,"T raw read error, data: %02x%02x%02x", data[0],data[1],data[2] );
+			return last_traw;
+		}
+		last_traw = _traw;
+		return _traw;
 	}
 	else{
-		ESP_LOGW(FNAME,"T raw read error, data: %02x%02x%02x", data[0],data[1],data[2] );
 		return last_traw;
 	}
-	last_traw = _traw;
-	return _traw;
 }
 
 double SPL06_007::get_praw_sc( bool &ok )
@@ -195,7 +202,6 @@ double SPL06_007::get_pcomp(bool &ok)
 	if( i>0 ){
 		ESP_LOGW(FNAME,"Sensor temp and pressure ready bits took %d attempts", i );
 	}
-
 	double traw_sc = get_traw_sc( ok_t );
 	double praw_sc = get_praw_sc( ok_p );
 	if( !ok_t || !ok_p ){
@@ -203,8 +209,8 @@ double SPL06_007::get_pcomp(bool &ok)
 	}
 	double p = double(c00) + praw_sc * (double(c10) + praw_sc * (double(c20) + praw_sc * double(c30))) + traw_sc * double(c01) + traw_sc * praw_sc * ( double(c11) + praw_sc * double(c21));
 	// if( address == 0x76 ) {
-	// 	float t = (double(c0) * 0.5f) + (double(c1) * traw_sc);
-	// 	ESP_LOGI(FNAME,"P:%06x,%d  T:%06x PC:%f T:%f I2C E:%d",_praw, _praw, _traw, p/100, t , errors );
+	float t = (double(c0) * 0.5f) + (double(c1) * traw_sc);
+	ESP_LOGI(FNAME,"P:%06x,%d  T:%06x PC:%f T:%f I2C E:%d",_praw, _praw, _traw, p/100, t , errors );
 	// }
 	ok = true;
 	last_p = p;

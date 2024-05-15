@@ -135,7 +135,7 @@ Compass *compass = 0;
 BTSender btsender;
 BLESender blesender;
 
-static float baroP=0; // barometric pressure
+float baroP=0; // barometric pressure
 static float teP=0;   // TE pressure
 static float temperature=15.0;
 static float xcvTemp=15.0;
@@ -144,7 +144,7 @@ long unsigned int _gps_millis = 0;
 
 
 static float battery=0.0;
-static float dynamicP; // Pitot
+float dynamicP; // Pitot
 
 float slipAngle = 0.0;
 

@@ -210,7 +210,7 @@ double SPL06_007::get_pcomp(bool &ok)
 	double p = double(c00) + praw_sc * (double(c10) + praw_sc * (double(c20) + praw_sc * double(c30))) + traw_sc * double(c01) + traw_sc * praw_sc * ( double(c11) + praw_sc * double(c21));
 	// if( address == 0x76 ) {
 	float t = (double(c0) * 0.5f) + (double(c1) * traw_sc);
-	ESP_LOGI(FNAME,"P:%06x,%d  T:%06x PC:%f T:%f I2C E:%d",_praw, _praw, _traw, p/100, t , errors );
+	// ESP_LOGI(FNAME,"P:%06x,%d  T:%06x PC:%f T:%f I2C E:%d",_praw, _praw, _traw, p/100, t , errors );
 	// }
 	ok = true;
 	last_p = p;

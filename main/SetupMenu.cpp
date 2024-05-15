@@ -852,8 +852,9 @@ void SetupMenu::vario_menu_create_s2f( MenuEntry *top ){
 void SetupMenu::vario_menu_create_ec( MenuEntry *top ){
 	SetupMenuSelect * enac = new SetupMenuSelect( "eCompensation", RST_NONE, 0 , false, &te_comp_enable );
 	enac->setHelp( "Enable/Disable electronic TE compensation option; Enable only when TE port is connected to ST (static) pressure");
-	enac->addEntry( "DISABLE");
-	enac->addEntry( "ENABLE");
+	enac->addEntry( "TEK Probe");
+	enac->addEntry( "EPOT");
+	enac->addEntry( "PRESSURE");
 	top->addEntry( enac );
 
 	SetupMenuValFloat * elca = new SetupMenuValFloat( "Adjustment", "%",	-100, 100, 0.1, 0, false, &te_comp_adjust );

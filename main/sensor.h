@@ -86,6 +86,8 @@ extern S2F Speed2Fly;
 extern float meanClimb;
 extern Protocols OV;
 extern int the_can_mode;
+extern float baroP;    // Static pressure
+extern float dynamicP; // Pitot pressure
 
 extern long unsigned int _gps_millis;
 

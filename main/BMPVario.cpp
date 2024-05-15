@@ -93,7 +93,7 @@ double BMPVario::readTE( float tas, float tep ) {
 	else{
 		_currentAlt = _sensorTE->calcAltitude(_qnh, tep );
 	}
-	ESP_LOGI(FNAME,"TE alt: %4.3f m, ST: %.1f PI: %.1f", _currentAlt, baroP, (dynamicP*100) );
+	// ESP_LOGI(FNAME,"TE alt: %4.3f m, ST: %.1f PI: %.1f", _currentAlt, baroP, (dynamicP*100) );
 	averageAlt += (_currentAlt - averageAlt) * 0.1;
 	double adiff = _currentAlt - Altitude;
 	// ESP_LOGI(FNAME,"BMPVario new alt %0.1f err %0.1f", _currentAlt, err);

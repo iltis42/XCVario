@@ -584,6 +584,7 @@ extern SetupNG<int>       	stall_warning;
 extern SetupNG<float>		stall_speed;
 extern SetupNG<int>       	flarm_warning;
 extern SetupNG<float>     	flarm_volume;
+extern SetupNG<float>       flarm_alarm_time;
 extern SetupNG<int>       	flarm_sim;
 extern SetupNG<int>       	flap_sensor;
 extern SetupNG<float>     	flap_pos_max;
@@ -682,6 +683,7 @@ extern SetupNG<int> 		drawing_prio;
 extern uint8_t g_col_background;
 extern uint8_t g_col_highlight;
 extern SetupNG<int> 		logging;
+
 
 extern float last_volume;   // is this used?
 

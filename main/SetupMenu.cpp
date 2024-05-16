@@ -1201,6 +1201,10 @@ void SetupMenu::options_menu_create_flarm( MenuEntry *top ){
 	flarmv->setHelp( "Maximum audio volume of FLARM alarm warning");
 	top->addEntry( flarmv );
 
+	SetupMenuValFloat * flarmt = new SetupMenuValFloat( "Alarm Timeout",  "sec", 1, 15, 1, 0, false, &flarm_alarm_time  );
+	flarmt->setHelp( "The time FLARM alarm warning keeps displayed after alarm went off");
+	top->addEntry( flarmt );
+
 	SetupMenuSelect * flarms = new SetupMenuSelect( "FLARM Simulation",	RST_NONE, 0, true, &flarm_sim, false, true );
 	flarms->setHelp( "Simulate an airplane crossing from left to right with different alarm levels and vertical distance 5 seconds after pressed (exits setup!)");
 	flarms->addEntry( "Disable");

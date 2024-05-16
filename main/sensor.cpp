@@ -177,7 +177,7 @@ float      stall_alarm_off_kmh=0;
 uint16_t   stall_alarm_off_holddown=0;
 
 int count=0;
-int flarm_alarm_holdtime=0;
+unsigned long int flarm_alarm_holdtime=0;
 int the_can_mode = CAN_MODE_MASTER;
 int active_screen = 0;  // 0 = Vario
 
@@ -310,11 +310,11 @@ void drawDisplay(void *pvParameters){
 					gflags.flarmWarning = true;
 					delay(100);
 					display->clear();
-					flarm_alarm_holdtime = 250;
 				}
+				flarm_alarm_holdtime = millis()+flarm_alarm_time.get()*1000;
 			}
 			else{
-				if( gflags.flarmWarning && (flarm_alarm_holdtime == 0) ){
+				if( gflags.flarmWarning && (millis() > flarm_alarm_holdtime) ){
 					gflags.flarmWarning = false;
 					display->clear();
 					Audio::alarm( false );
@@ -374,8 +374,6 @@ void drawDisplay(void *pvParameters){
 				}
 			}
 		}
-		if( flarm_alarm_holdtime )
-			flarm_alarm_holdtime--;
 		vTaskDelay(20/portTICK_PERIOD_MS);
 		if( uxTaskGetStackHighWaterMark( dpid ) < 512  )
 			ESP_LOGW(FNAME,"Warning drawDisplay stack low: %d bytes", uxTaskGetStackHighWaterMark( dpid ) );

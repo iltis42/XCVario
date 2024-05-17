@@ -53,9 +53,8 @@ The design supports the follwing sensors:
 
 The ESP32 module contains a bluetooth and WLAN sender module plus serial interfaces, so we are able to transmit wireless or wired all data to any navigation device running XCSoar, LK8000 and more in various formats as there is the native XCVario, Borgelt, Cambridge and Openvario format,so devices can operate as full glide computer with TE-Vario, Barometric Altitude, Speed and more.
 
-* [Handbook pdfs ge/en per release](https://github.com/iltis42/XCVario/blob/master/handbook)
-* [Latest Handbook Germann (Multilingual ->Translate)](https://xcvario.de/handbuch)
-* [Latest Handbook English (Multilingual ->Translate)](https://xcvario.de/handbook)
+* [Handbook pdfs ge/en per release](https://github.com/iltis42/XCVario/blob/master/handbook)  -> obsolete (for older releases)
+* [Latest Handbook Germann, English, even Multilingual](https://xcvario.com/docs-category/vario)
 
 The Vario Prototype with 550 nits 2.4 inch IPS Technology LCD Display features a low power consumation of less that 1.2W, that equals to 100mA at 12.5V operating voltage. The Size is 68(H)x64(B)x35(T) mm, for a standard 57mm Instrument Panel. Weight is only about 170 gramm.
 

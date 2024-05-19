@@ -605,7 +605,7 @@ void readSensors(void *pvParameters){
 			char log[SSTRLEN];
 			sprintf( log, "$SENS;");
 			int pos = strlen(log);
-			sprintf( log+pos, "%ld;%ld;%.1f;%.1f;%.1f;%.1f;%.3f;%.3f;%.3f;%.3f;%.3f;%.3f", _millis, _millis - _gps_millis, bp, tp, dynamicP, T, IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(),
+			sprintf( log+pos, "%ld;%ld;%.3f;%.3f;%.3f;%.2f;%.3f;%.3f;%.3f;%.3f;%.3f;%.3f", _millis, _millis - _gps_millis, bp, tp, dynamicP, T, IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(),
 					IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
 			if( compass ){
 				pos=strlen(log);

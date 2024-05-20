@@ -1840,6 +1840,12 @@ void SetupMenu::system_menu_create_hardware_ahrs_parameter( MenuEntry *top ){
 	gyrocal->setHelp( "Gyro calibration factor to increase accuracy of gyro in %/100");
 	top->addEntry( gyrocal );
 
+	SetupMenuSelect * ahrsdef = new SetupMenuSelect( "Reset to Defaults", RST_NONE, set_ahrs_defaults);
+	top->addEntry( ahrsdef );
+	ahrsdef->setHelp( "Set optimum default values for all AHRS Parameters as determined to the best practice");
+	ahrsdef->addEntry( "Cancel");
+	ahrsdef->addEntry( "Set Defaults");
+
 }
 
 void SetupMenu::system_menu_create_hardware_ahrs( MenuEntry *top ){
@@ -1868,12 +1874,6 @@ void SetupMenu::system_menu_create_hardware_ahrs( MenuEntry *top ){
 	ahrspa->setHelp( "AHRS constants such as gyro trust and filtering", 275 );
 	top->addEntry( ahrspa );
 	ahrspa->addCreator( system_menu_create_hardware_ahrs_parameter );
-
-	SetupMenuSelect * ahrsdef = new SetupMenuSelect( "AHRS Defaults", RST_NONE, set_ahrs_defaults);
-	top->addEntry( ahrsdef );
-	ahrsdef->setHelp( "Set optimum default values for all AHRS Parameters as determined to the best practice");
-	ahrsdef->addEntry( "Cancel");
-	ahrsdef->addEntry( "Set Defaults");
 
 	SetupMenuSelect * rpyl = new SetupMenuSelect( "AHRS RPYL", RST_NONE , 0, true, &ahrs_rpyl_dataset );
 	top->addEntry( rpyl );

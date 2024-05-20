@@ -149,7 +149,6 @@ int set_ahrs_defaults( SetupMenuSelect* p ){
 		ahrs_min_gyro_factor.setDefault();
 		ahrs_dynamic_factor.setDefault();
 		gyro_gating.setDefault();
-		ahrs_gyro_cal.setDefault();
 	}
 	p->setSelect(0);
 	return 0;
@@ -1835,10 +1834,6 @@ void SetupMenu::system_menu_create_hardware_ahrs_parameter( MenuEntry *top ){
 	SetupMenuValFloat * gyrog = new SetupMenuValFloat( "Gyro Gating", "°", 0, 10, 0.1, 0, false, &gyro_gating  );
 	gyrog->setHelp( "Minimum accepted gyro rate in degree per second");
 	top->addEntry( gyrog );
-
-	SetupMenuValFloat * gyrocal = new SetupMenuValFloat( "Gyro Calibration", "", -0.5, 1.5, 0.01, 0, false, &ahrs_gyro_cal  );
-	gyrocal->setHelp( "Gyro calibration factor to increase accuracy of gyro in %/100");
-	top->addEntry( gyrocal );
 
 	SetupMenuSelect * ahrsdef = new SetupMenuSelect( "Reset to Defaults", RST_NONE, set_ahrs_defaults);
 	top->addEntry( ahrsdef );

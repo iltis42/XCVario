@@ -322,10 +322,11 @@ esp_err_t IMU::MPU6050Read()
 		err |= ESP_FAIL;
 	}
 	else {
-		// Gating ignores Gyro drift < 2 deg per second
-		tmpvec.a = abs(tmpvec.a*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 : tmpvec.a;
-		tmpvec.b = abs(tmpvec.b*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 : tmpvec.b;
-		tmpvec.c = abs(tmpvec.c*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 : tmpvec.c;
+		// Gating ignores Gyro drift < 1 deg per second (default)
+		float gate = gyro_gating.get();
+		tmpvec.a = abs(tmpvec.a) < gate ? 0.0 : tmpvec.a;
+		tmpvec.b = abs(tmpvec.b) < gate ? 0.0 : tmpvec.b;
+		tmpvec.c = abs(tmpvec.c) < gate ? 0.0 : tmpvec.c;
 		// into glider reference system
 		gyro = ref_rot * tmpvec;
 		// preserve the raw read-out

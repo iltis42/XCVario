@@ -1835,6 +1835,11 @@ void SetupMenu::system_menu_create_hardware_ahrs_parameter( MenuEntry *top ){
 	gyrog->setHelp( "Minimum accepted gyro rate in degree per second");
 	top->addEntry( gyrog );
 
+	SetupMenuValFloat * tcontrol = new SetupMenuValFloat( "AHRS Temp Control", "", -1, 60, 1, 0, false, &mpu_temperature  );
+	tcontrol->setPrecision( 0 );
+	tcontrol->setHelp( "Regulated target temperature of AHRS silicon chip, if supported in hardware (model > 2023), -1 means OFF");
+	top->addEntry( tcontrol );
+
 	SetupMenuSelect * ahrsdef = new SetupMenuSelect( "Reset to Defaults", RST_NONE, set_ahrs_defaults);
 	top->addEntry( ahrsdef );
 	ahrsdef->setHelp( "Set optimum default values for all AHRS Parameters as determined to the best practice");
@@ -1875,11 +1880,6 @@ void SetupMenu::system_menu_create_hardware_ahrs( MenuEntry *top ){
 	rpyl->setHelp( "Send LEVIL AHRS like $RPYL sentence for artifical horizon");
 	rpyl->addEntry( "Disable");
 	rpyl->addEntry( "Enable");
-
-	SetupMenuValFloat * tcontrol = new SetupMenuValFloat( "AHRS Temp Control", "", -1, 60, 1, 0, false, &mpu_temperature  );
-	tcontrol->setPrecision( 0 );
-	tcontrol->setHelp( "Regulated target temperature of AHRS silicon chip, if supported in hardware (model > 2023), -1 means OFF");
-	top->addEntry( tcontrol );
 }
 
 

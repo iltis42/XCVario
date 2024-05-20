@@ -128,13 +128,6 @@ void chg_mpu_target(){
 	mpu_target_temp = mpu_temperature.get();
 };
 
-void set_ahrs_defaults(){
-	ahrs_gyro_factor.setDefault();
-	ahrs_min_gyro_factor.setDefault();
-	ahrs_dynamic_factor.setDefault();
-	gyro_gating.setDefault();
-	ahrs_gyro_cal.setDefault();
-}
 
 SetupNG<float>          MC(  "MacCready", 0.5, true, SYNC_BIDIR, PERSISTENT, change_mc, UNIT_VARIO );
 SetupNG<float>  		QNH( "QNH", 1013.25, true, SYNC_BIDIR, PERSISTENT, 0, UNIT_QNH );
@@ -286,7 +279,6 @@ SetupNG<float>		    ahrs_dynamic_factor("AHRSGDYN", 5 );
 SetupNG<int>		    ahrs_roll_check("AHRSRCHECK", 0 );
 SetupNG<float>       	gyro_gating("GYRO_GAT", 1.0 );
 SetupNG<float>  		ahrs_gyro_cal("AHRSGCAL", 1.07 );
-SetupNG<int>  			ahrs_defaults( "AHRSDEF", 0, RST_NONE, SYNC_NONE, VOLATILE, set_ahrs_defaults );
 SetupNG<int>		    display_style("DISPLAY_STYLE", 1 );
 SetupNG<int>		    s2f_switch_type("S2FHWSW", S2F_HW_SWITCH );
 SetupNG<int>		    hardwareRevision("HWREV", HW_UNKNOWN );

@@ -143,6 +143,18 @@ int speedcal_change(SetupMenuValFloat * p)
 	return 0;
 }
 
+int set_ahrs_defaults( SetupMenuSelect* p ){
+	if ( p->getSelect() == 1 ) {
+		ahrs_gyro_factor.setDefault();
+		ahrs_min_gyro_factor.setDefault();
+		ahrs_dynamic_factor.setDefault();
+		gyro_gating.setDefault();
+		ahrs_gyro_cal.setDefault();
+	}
+	p->setSelect(0);
+	return 0;
+}
+
 gpio_num_t SetupMenu::getGearWarningIO(){
 	gpio_num_t io = GPIO_NUM_0;
 	if( gear_warning.get() == GW_FLAP_SENSOR || gear_warning.get() == GW_FLAP_SENSOR_INV ){
@@ -1857,7 +1869,7 @@ void SetupMenu::system_menu_create_hardware_ahrs( MenuEntry *top ){
 	top->addEntry( ahrspa );
 	ahrspa->addCreator( system_menu_create_hardware_ahrs_parameter );
 
-	SetupMenuSelect * ahrsdef = new SetupMenuSelect( "AHRS Defaults", RST_NONE, 0, true, &ahrs_defaults );
+	SetupMenuSelect * ahrsdef = new SetupMenuSelect( "AHRS Defaults", RST_NONE, set_ahrs_defaults);
 	top->addEntry( ahrsdef );
 	ahrsdef->setHelp( "Set optimum default values for all AHRS Parameters as determined to the best practice");
 	ahrsdef->addEntry( "Cancel");

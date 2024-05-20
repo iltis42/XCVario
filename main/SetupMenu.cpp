@@ -1709,7 +1709,7 @@ void SetupMenu::system_menu_create_hardware_type( MenuEntry *top ){
 	// Orientation   _display_orientation
 	SetupMenuSelect * diso = new SetupMenuSelect( "Orientation", RST_ON_EXIT, 0, true, &display_orientation );
 	top->addEntry( diso );
-	diso->setHelp( "Display Orientation.  NORMAL means Rotary on right, TOPDOWN means Rotary on left  (reboots). A change will reset the AHRS reference calibration.");
+	diso->setHelp( "Display Orientation.  NORMAL means Rotary on left, TOPDOWN means Rotary on right  (reboots). A change will reset the AHRS reference calibration.");
 	diso->addEntry( "NORMAL");
 	diso->addEntry( "TOPDOWN");
 

@@ -128,6 +128,11 @@ void chg_mpu_target(){
 	mpu_target_temp = mpu_temperature.get();
 };
 
+void chg_display_orientation(){
+	ESP_LOGI(FNAME, "display changed");
+	imu_reference.setDefault();
+};
+
 
 SetupNG<float>          MC(  "MacCready", 0.5, true, SYNC_BIDIR, PERSISTENT, change_mc, UNIT_VARIO );
 SetupNG<float>  		QNH( "QNH", 1013.25, true, SYNC_BIDIR, PERSISTENT, 0, UNIT_QNH );
@@ -220,7 +225,7 @@ SetupNG<float>  		factory_volt_adjust("FACT_VOLT_ADJ" , 0.00815, RST_NONE );
 
 SetupNG<int>  			display_type( "DISPLAY_TYPE",  UNIVERSAL );
 SetupNG<int>  			display_test( "DISPLAY_TEST", 0, RST_NONE, SYNC_NONE, VOLATILE );
-SetupNG<int>  			display_orientation("DISPLAY_ORIENT" , DISPLAY_NORMAL );
+SetupNG<int>  			display_orientation("DISPLAY_ORIENT" , DISPLAY_NORMAL, true, SYNC_NONE, PERSISTENT, chg_display_orientation );
 SetupNG<int>  			flap_enable( "FLAP_ENABLE", 0, true, SYNC_FROM_MASTER, PERSISTENT, flap_act);
 SetupNG<float>  		flap_minus_3( "FLAP_MINUS_3", 200,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act, UNIT_SPEED );
 SetupNG<float>  		flap_minus_2( "FLAP_MINUS_2", 165,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act, UNIT_SPEED );

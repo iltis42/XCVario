@@ -294,7 +294,9 @@ int add_key( SetupMenuSelect * p )
 
 static int imu_gaa( SetupMenuValFloat* f )
 {
-	IMU::applyImuReference(f->_value, imu_reference.get());
+	if ( ! (imu_reference.get() == Quaternion()) ) {
+		IMU::applyImuReference(f->_value, imu_reference.get());
+	}
 	return 0;
 }
 
@@ -1707,7 +1709,7 @@ void SetupMenu::system_menu_create_hardware_type( MenuEntry *top ){
 	// Orientation   _display_orientation
 	SetupMenuSelect * diso = new SetupMenuSelect( "Orientation", RST_ON_EXIT, 0, true, &display_orientation );
 	top->addEntry( diso );
-	diso->setHelp( "Display Orientation.  NORMAL means Rotary on right, TOPDOWN means Rotary on left  (reboots)");
+	diso->setHelp( "Display Orientation.  NORMAL means Rotary on right, TOPDOWN means Rotary on left  (reboots). A change will reset the AHRS reference calibration.");
 	diso->addEntry( "NORMAL");
 	diso->addEntry( "TOPDOWN");
 

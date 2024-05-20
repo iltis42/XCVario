@@ -22,6 +22,7 @@ double  IMU::filterYaw = 0;
 
 uint64_t IMU::last_rts=0;
 vector_i   IMU::raw_gyro(0,0,0);
+vector_ijk IMU::nogate_gyro(0,0,0);
 vector_ijk IMU::accel(0,0,0);
 vector_ijk IMU::gyro(0,0,0);
 
@@ -324,6 +325,7 @@ esp_err_t IMU::MPU6050Read()
 	else {
 		// Gating ignores Gyro drift < 1 deg per second (default)
 		float gate = gyro_gating.get();
+		nogate_gyro = ref_rot * tmpvec;
 		tmpvec.a = abs(tmpvec.a) < gate ? 0.0 : tmpvec.a;
 		tmpvec.b = abs(tmpvec.b) < gate ? 0.0 : tmpvec.b;
 		tmpvec.c = abs(tmpvec.c) < gate ? 0.0 : tmpvec.c;

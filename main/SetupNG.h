@@ -557,8 +557,6 @@ extern SetupNG<float>		ahrs_min_gyro_factor;
 extern SetupNG<float>		ahrs_dynamic_factor;
 extern SetupNG<int>		    ahrs_roll_check;
 extern SetupNG<float>       gyro_gating;
-extern SetupNG<int>  		ahrs_defaults;
-extern SetupNG<float>  		ahrs_gyro_cal;
 extern SetupNG<int>		    display_style;
 extern SetupNG<int>		    display_variant;
 extern SetupNG<int>		    s2f_switch_type;

@@ -22,6 +22,7 @@ double  IMU::filterYaw = 0;
 
 uint64_t IMU::last_rts=0;
 vector_i   IMU::raw_gyro(0,0,0);
+vector_ijk IMU::nogate_gyro(0,0,0);
 vector_ijk IMU::accel(0,0,0);
 vector_ijk IMU::gyro(0,0,0);
 
@@ -322,10 +323,12 @@ esp_err_t IMU::MPU6050Read()
 		err |= ESP_FAIL;
 	}
 	else {
-		// Gating ignores Gyro drift < 2 deg per second
-		tmpvec.a = abs(tmpvec.a*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 : tmpvec.a;
-		tmpvec.b = abs(tmpvec.b*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 : tmpvec.b;
-		tmpvec.c = abs(tmpvec.c*ahrs_gyro_cal.get()) < gyro_gating.get() ? 0.0 : tmpvec.c;
+		// Gating ignores Gyro drift < 1 deg per second (default)
+		float gate = gyro_gating.get();
+		nogate_gyro = ref_rot * tmpvec;
+		tmpvec.a = abs(tmpvec.a) < gate ? 0.0 : tmpvec.a;
+		tmpvec.b = abs(tmpvec.b) < gate ? 0.0 : tmpvec.b;
+		tmpvec.c = abs(tmpvec.c) < gate ? 0.0 : tmpvec.c;
 		// into glider reference system
 		gyro = ref_rot * tmpvec;
 		// preserve the raw read-out
@@ -506,7 +509,7 @@ void IMU::defaultImuReference()
 		accelDefaultRef = Quaternion(deg2rad(180.0f), vector_ijk(1,0,0)) * accelDefaultRef;
 	}
 	ref_rot = accelDefaultRef;
-	// imu_reference.set(ref_rot, false); // nvs
+	imu_reference.set(ref_rot, false); // nvs
 	progress = 0; // reset the calibration procedure
 }
 // Concatenation of ground angle of attack and the basic reference calibration rotation

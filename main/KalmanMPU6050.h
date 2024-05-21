@@ -115,6 +115,7 @@ public:
    * @returns The gyroscope X reading in glider reference.
    */
   static inline float getGliderGyroX()   { return gyro.a; };
+  static inline float getGliderNogateGyroX()   { return nogate_gyro.a; };
 
   /**
    * Gets the gyroscope Y reading, as per last read() call.
@@ -122,6 +123,7 @@ public:
    * @returns The gyroscope Y reading.
    */
   static inline float getGliderGyroY()   { return gyro.b; };
+  static inline float getGliderNogateGyroY()   { return nogate_gyro.b; };
 
   /**
    * Gets the gyroscope Z reading, as per last read() call.
@@ -129,6 +131,7 @@ public:
    * @returns The gyroscope Z reading.
    */
   static inline float getGliderGyroZ()   { return gyro.c; };
+  static inline float getGliderNogateGyroZ()   { return nogate_gyro.c; };
 
   // Get the last raw gyro reads
   static inline float getRawGyroX()   { return raw_gyro.a; };
@@ -176,6 +179,7 @@ private:
   static Kalman kalmanZ;
 
   static vector_i   raw_gyro;
+  static vector_ijk nogate_gyro;
   static vector_ijk accel;
   static vector_ijk gyro;
   static vector_ijk petal;

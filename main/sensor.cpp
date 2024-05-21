@@ -605,11 +605,11 @@ void readSensors(void *pvParameters){
 			char log[SSTRLEN];
 			sprintf( log, "$SENS;");
 			int pos = strlen(log);
-			sprintf( log+pos, "%ld;%ld;%.3f;%.3f;%.3f;%.2f;%.3f;%.3f;%.3f;%.3f;%.3f;%.3f", _millis, _millis - _gps_millis, bp, tp, dynamicP, T, IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(),
-					IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
+			sprintf( log+pos, "%ld,%ld,%.3f,%.3f,%.3f,%.2f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f", _millis, _millis - _gps_millis, bp, tp, dynamicP, T, IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), 
+					IMU::getGliderNogateGyroX(), IMU::getGliderNogateGyroY(), IMU::getGliderNogateGyroZ() );
 			if( compass ){
 				pos=strlen(log);
-				sprintf( log+pos,",%d;%d;%d", int( compass->calX() ),int( compass->calY()) , int( compass->calZ() ));
+				sprintf( log+pos,",%d,%d,%d", int( compass->calX() ),int( compass->calY()) , int( compass->calZ() ));
 			}
 			pos=strlen(log);
 			sprintf( log+pos, "\n");

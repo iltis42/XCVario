@@ -208,7 +208,8 @@ int do_display_test(SetupMenuSelect * p){
 
 int update_s2f_speed(SetupMenuValFloat * p)
 {
-	Switch::setCruiseSpeed( Units::Airspeed2Kmh( s2f_speed.get() ) );
+	ESP_LOGI(FNAME,"sf2_speed: %.1f conv: %.1f",  s2f_speed.get(), Units::Airspeed2Kmh( s2f_speed.get() ) );
+	Switch::setCruiseSpeed( s2f_speed.get() );
 	return 0;
 }
 

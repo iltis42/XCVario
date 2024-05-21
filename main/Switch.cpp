@@ -171,7 +171,7 @@ void Switch::setCruiseModeXCV(){
 void Switch::tick() {
 	_tick++;
 	if( s2f_switch_mode.get() == AM_AUTOSPEED  && !(_tick%10) ){ // its enough to check this every 10 tick
-		// ESP_LOGI(FNAME,"mode: %d ias: %3.1f hyst: %3.1f", _cruise_mode_speed, ias.get(), s2f_hysteresis.get() );
+		// ESP_LOGI(FNAME,"mode: %d ias: %3.1f hyst: %3.1f cuise: %.1f", _cruise_mode_speed, ias.get(), s2f_hysteresis.get(), _cruise_speed_kmh );
 		if( _cruise_mode_speed ){
 			if ( ias.get() < (_cruise_speed_kmh - s2f_hysteresis.get()) ){
 				if( _cruise_mode_speed != false  ){

@@ -476,6 +476,7 @@ void Audio::calcS2Fmode( bool recalc ){
 		ESP_LOGI(FNAME, "S2Fmode changed to %d", mode );
 		_s2f_mode = mode;             // do this first, as...
 		recalc = true;
+		evaluateChopping();
 	}
 	if( recalc ){
 		calculateFrequency();         // this needs the new _stf_mode

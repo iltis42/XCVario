@@ -34,7 +34,6 @@
 #include "KalmanMPU6050.h"
 #include "sensor.h"
 #include "SetupNG.h"
-#include "quaternion.h"
 
 #include <logdef.h>
 #include <inttypes.h>
@@ -766,9 +765,6 @@ void SetupMenu::longPress(){
 	}
 	else{
 		pressed = true;
-#ifdef Quaternionen_Test
-		Quaternion::quaternionen_test();
-#endif
 	}
 }
 

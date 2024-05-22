@@ -30,6 +30,8 @@
 #include "Blackboard.h"
 #include "SetupMenuValFloat.h"
 
+#include "quaternion.h"
+#include "wmm/geomag.h"
 #include <SPI.h>
 #include <AdaptUGC.h>
 #include <OTA.h>
@@ -1595,6 +1597,12 @@ extern "C" void  app_main(void)
 		ESP_LOGI(FNAME,"Setup already present");
 	esp_log_level_set("*", ESP_LOG_INFO);
 
+#ifdef Quaternionen_Test
+		Quaternion::quaternionen_test();
+#endif
+#ifdef WMM_Test
+		WMM_Model::geomag_test();
+#endif
 	system_startup( 0 );
 	vTaskDelete( NULL );
 }

@@ -10,6 +10,7 @@
 #include <cmath>
 
 
+#undef WMM_TEST
 
 #ifdef WMM_Test
 
@@ -33,7 +34,6 @@ static double test_data[][12] = {
 
 void WMM_Model::geomag_test()
 {
-
   ESP_LOGI(FNAME, "World Magnetic Model test\n");
   WMM_Model wmm(MAXORD, EPOCH, &(WMMCOF[0][0]));
 

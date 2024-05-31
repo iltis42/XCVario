@@ -169,6 +169,7 @@ int32_t SPL06_007::get_traw( bool &ok )
 		return _traw;
 	}
 	else{
+		ok = true;
 		return last_traw;
 	}
 }

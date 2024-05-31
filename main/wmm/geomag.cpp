@@ -10,8 +10,6 @@
 #include <cmath>
 
 
-#undef WMM_TEST
-
 #ifdef WMM_Test
 
 // Test Data

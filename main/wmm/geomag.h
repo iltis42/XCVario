@@ -2,7 +2,7 @@
 
 #pragma once
 
-#define WMM_Test 1
+// #define WMM_Test 1
 
 class WMM_Model
 {

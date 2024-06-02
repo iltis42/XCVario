@@ -7,6 +7,8 @@
 #include "sensor.h"
 #include "CircleWind.h"
 #include "Router.h"
+#include <time.h>
+#include <sys/time.h>
 
 int Flarm::RX = 0;
 int Flarm::TX = 0;
@@ -96,6 +98,8 @@ int Flarm::timeout=0;
 int Flarm::ext_alt_timer=0;
 int Flarm::_numSat=0;
 int Flarm::bincom_port=0;
+int Flarm::clock_timer=0;
+bool Flarm::time_sync=false;
 
 void Flarm::flarmSim(){
 	// ESP_LOGI(FNAME,"flarmSim sim-tick: %d", sim_tick);
@@ -124,6 +128,7 @@ void Flarm::progress(){  // once per second
 	}
 	// ESP_LOGI(FNAME,"progress, timeout=%d", timeout );
 	flarmSim();
+	clock_timer++;
 }
 
 bool Flarm::connected(){
@@ -151,18 +156,62 @@ eg2. $GPRMC,225446,A,4916.45,N,12311.12,W,000.5,054.7,191194,020.3,E*68
 
 
  */
-void Flarm::parseGPRMC( const char *gprmc ) {
+
+long int Flarm::GPSTime( char *time, char* date ) {
+    time_t t_of_day;
+    struct tm t;
+    memset( &t, 0, sizeof(t));
+    sscanf( date,"%02d%02d%02d", &t.tm_mday, &t.tm_mon, &t.tm_year );  // 010624
+    sscanf( time,"%02d%02d%02d", &t.tm_hour, &t.tm_min, &t.tm_sec );  // 143658.0
+    t.tm_year +=100;              // since 1970
+    // t.tm_mon -=1;              // Month, 0 - jan
+    t_of_day = mktime(&t);
+    // ESP_LOGI(FNAME,"time: %s, date: %s, SC: %d/%d/%d %d:%d:%d ", time, date, t.tm_year, t.tm_mon, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec );
+    return t_of_day;
+}
+
+void Flarm::parseGPRMC( const char *_gprmc ) {
 	char warn;
 	int cs;
-	int calc_cs=Protocols::calcNMEACheckSum( gprmc );
-	cs = Protocols::getNMEACheckSum( gprmc );
+	char time[10];
+	char date[8];
+
+	int calc_cs=Protocols::calcNMEACheckSum( _gprmc );
+	cs = Protocols::getNMEACheckSum( _gprmc );
 	if( cs != calc_cs ){
-		ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", gprmc, calc_cs, cs );
+		ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", _gprmc, calc_cs, cs );
 		return;
 	}
-	sscanf( gprmc+3, "RMC,%*f,%c,%*f,%*c,%*f,%*c,%f,%f,%*d,%*f,%*c*%*02x", &warn, &gndSpeedKnots, &gndCourse);
+	char* gprmc = strdup(_gprmc);
+	char* s = gprmc;
+	// e.g. $GPRMC,152253.00,A,4857.58482,N,00856.96233,E,0.025,304.16,010624,,,A*61
+	char *field = strsep( &gprmc, "," ); // GPRMC
+	field = strsep( &gprmc, "," );       // time
+	if( field && strlen( field ) )
+		sscanf( field, "%9s", time );
+	field = strsep( &gprmc, "," );  // warn
+	if( field && strlen( field ) )
+		sscanf( field, "%c", &warn );
+	field = strsep( &gprmc, "," );  // lat
+	field = strsep( &gprmc, "," );  // E
+	field = strsep( &gprmc, "," );  // lon
+	field = strsep( &gprmc, "," );  // N
+	field = strsep( &gprmc, "," );  // speed
+	if( field && strlen( field ) )
+		sscanf( field, "%f", &gndSpeedKnots );
+	field = strsep( &gprmc, "," );  // track
+	if( field && strlen( field ) )
+		sscanf( field, "%f", &gndCourse );
+	field = strsep( &gprmc, "," );  // date
+	if( field && strlen( field ) )
+		sscanf( field, "%7s", date );
+	// struct tm now;
+	// getLocalTime(&now,0);
+	// ESP_LOGI(FNAME,"G: %s",_gprmc );
+	// ESP_LOGI(FNAME,"DT: %d/%02d/%02d %02d:%02d:%02d ", now.tm_year-100, now.tm_mon, now.tm_mday, now.tm_hour, now.tm_min, now.tm_sec );
+	// ESP_LOGI(FNAME,"parseGPRMC() GPS: %d, Speed: %3.1f knots, Track: %3.1f° warn:%c date:%s ", myGPS_OK, gndSpeedKnots, gndCourse, warn, date  );
+	// ESP_LOGI(FNAME,"GP%s, GPS_OK:%d warn:%c T:%s D:%s", gprmc+3, myGPS_OK, warn, time, date  );
 
-	//ESP_LOGI(FNAME,"GPRMC myGPS_OK %d warn %c", myGPS_OK, warn );
 	if( warn == 'A' ) {
 		if( myGPS_OK == false ){
 			myGPS_OK = true;
@@ -174,6 +223,17 @@ void Flarm::parseGPRMC( const char *gprmc ) {
 		theWind.calculateWind();
 		// ESP_LOGI(FNAME,"Track: %3.2f, GPRMC: %s", gndCourse, gprmc );
 		CircleWind::newSample( Vector( gndCourse, Units::knots2kmh( gndSpeedKnots ) ) );
+		if( !time_sync || !(clock_timer%60) ){
+			ESP_LOGI(FNAME,"Start TimeSync");
+			long int epoch_time = GPSTime( time, date );
+			timeval epoch = {epoch_time, 0};
+			const timeval *tv = &epoch;
+			timezone utc = {0,0};
+			const timezone *tz = &utc;
+			settimeofday(tv, tz);
+			time_sync=true;
+			ESP_LOGI(FNAME,"End Time Sync");
+		}
 	}
 	else{
 		if( myGPS_OK == true  ){
@@ -186,6 +246,7 @@ void Flarm::parseGPRMC( const char *gprmc ) {
 		}
 	}
 	timeout = 10;
+	free(s);
 	// ESP_LOGI(FNAME,"parseGPRMC() GPS: %d, Speed: %3.1f knots, Track: %3.1f° ", myGPS_OK, gndSpeedKnots, gndCourse );
 }
 
@@ -232,6 +293,7 @@ void Flarm::parseGPGGA( const char *gpgga ) {
 			CircleWind::newConstellation( numSat );
 		}
 		timeout = 10;
+
 	}
 }
 

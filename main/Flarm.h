@@ -61,6 +61,7 @@ private:
 	static void drawClearVerticalTriangle( int x, int y, int rb, int dist, int size, int factor );
 	static void drawTriangle( int x, int y, int rb, int dist, int size=15, int factor=2, bool erase=false );
 	static void flarmSim();
+	static long int GPSTime( char *time, char* date );
 
 	static AdaptUGC* ucg;
 	static int RX,TX,GPS,Power;
@@ -80,6 +81,8 @@ private:
 	static int ext_alt_timer;
 	static int _numSat;
 	static int sim_tick;
+	static int clock_timer;
+	static bool time_sync;
 };
 
 #endif

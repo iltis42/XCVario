@@ -595,7 +595,6 @@ void readSensors(void *pvParameters){
 		_millis=millis();
 		struct timeval tv;
 		gettimeofday(&tv, NULL);
-		struct tm* local = localtime( &tv.tv_sec );
 		// ESP_LOGI(FNAME,"AS");
 		xSemaphoreTake(xMutex,portMAX_DELAY );   // Static Pressure
 		bool bok=false;
@@ -612,7 +611,7 @@ void readSensors(void *pvParameters){
 			long int delta = _millis - _gps_millis;
 			if( delta < 0 )
 				delta += 1000;
-			sprintf( log+pos, "%02d%02d%02d.%03d,%ld,%.3f,%.3f,%.3f,%.2f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f", local->tm_hour, local->tm_min, local->tm_sec, (int)(tv.tv_usec / 1000), delta, bp, tp, dynamicP, T, IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(),
+			sprintf( log+pos, "%d.%03d,%ld,%.3f,%.3f,%.3f,%.2f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f", (int)(tv.tv_sec%(60*60*24)), (int)(tv.tv_usec / 1000), delta, bp, tp, dynamicP, T, IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(),
 					IMU::getGliderNogateGyroX(), IMU::getGliderNogateGyroY(), IMU::getGliderNogateGyroZ() );
 			if( compass ){
 				pos=strlen(log);

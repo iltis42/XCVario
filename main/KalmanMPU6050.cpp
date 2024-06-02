@@ -212,7 +212,7 @@ void IMU::Process()
 
 		// Centripetal forces to keep angle of bank while circling
 		petal.a = -sin(pitch);               // Nose down (positive Y turn) results in negative X force
-		petal.b = sin(roll)*cos(pitch);      // Rigrht wing down (or positive X roll) results in positive Y force
+		petal.b = sin(roll)*cos(pitch);      // Right wing down (or positive X roll) results in positive Y force
 		petal.c = cos(roll)*cos(pitch);      // Any roll or pitch creates a smaller positive Z, gravity Z is positive
 		// trust in gyro at load factors unequal 1 g
 		gravity_trust = (ahrs_min_gyro_factor.get() + (ahrs_gyro_factor.get() * ( pow(10, abs(loadFactor-1) * ahrs_dynamic_factor.get()) - 1)));

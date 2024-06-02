@@ -129,6 +129,9 @@ void Flarm::progress(){  // once per second
 	// ESP_LOGI(FNAME,"progress, timeout=%d", timeout );
 	flarmSim();
 	clock_timer++;
+	if( !(clock_timer%3600) ){  // every hour reset sync flag to wait for next valid GPS time
+		time_sync = false;
+	}
 }
 
 bool Flarm::connected(){
@@ -184,11 +187,13 @@ void Flarm::parseGPRMC( const char *_gprmc ) {
 	}
 	char* gprmc = strdup(_gprmc);
 	char* s = gprmc;
+	int valid_time_scan = 0;
+	int valid_date_scan = 0;
 	// e.g. $GPRMC,152253.00,A,4857.58482,N,00856.96233,E,0.025,304.16,010624,,,A*61
 	char *field = strsep( &gprmc, "," ); // GPRMC
 	field = strsep( &gprmc, "," );       // time
 	if( field && strlen( field ) )
-		sscanf( field, "%9s", time );
+		valid_time_scan = sscanf( field, "%9s", time );
 	field = strsep( &gprmc, "," );  // warn
 	if( field && strlen( field ) )
 		sscanf( field, "%c", &warn );
@@ -204,7 +209,7 @@ void Flarm::parseGPRMC( const char *_gprmc ) {
 		sscanf( field, "%f", &gndCourse );
 	field = strsep( &gprmc, "," );  // date
 	if( field && strlen( field ) )
-		sscanf( field, "%7s", date );
+		valid_date_scan = sscanf( field, "%7s", date );
 	// struct tm now;
 	// getLocalTime(&now,0);
 	// ESP_LOGI(FNAME,"G: %s",_gprmc );
@@ -223,7 +228,7 @@ void Flarm::parseGPRMC( const char *_gprmc ) {
 		theWind.calculateWind();
 		// ESP_LOGI(FNAME,"Track: %3.2f, GPRMC: %s", gndCourse, gprmc );
 		CircleWind::newSample( Vector( gndCourse, Units::knots2kmh( gndSpeedKnots ) ) );
-		if( !time_sync || !(clock_timer%60) ){
+		if( !time_sync && ( valid_time_scan && valid_date_scan ) ){
 			ESP_LOGI(FNAME,"Start TimeSync");
 			long int epoch_time = GPSTime( time, date );
 			timeval epoch = {epoch_time, 0};
@@ -232,7 +237,7 @@ void Flarm::parseGPRMC( const char *_gprmc ) {
 			const timezone *tz = &utc;
 			settimeofday(tv, tz);
 			time_sync=true;
-			ESP_LOGI(FNAME,"End Time Sync");
+			ESP_LOGI(FNAME,"Finish Time Sync");
 		}
 	}
 	else{

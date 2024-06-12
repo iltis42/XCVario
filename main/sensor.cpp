@@ -89,7 +89,7 @@ BMP:
 
 #define CS_bme280BA GPIO_NUM_26   // before CS pin 33
 #define CS_bme280TE GPIO_NUM_33   // before CS pin 26
-#define FREQ_BMP_SPI 13111111/2
+
 #define SPL06_007_BARO 0x77
 #define SPL06_007_TE   0x76
 
@@ -1224,8 +1224,9 @@ void system_startup(void *args){
 		ESP_LOGI(FNAME,"No SPL06_007 chip detected, now check BMP280");
 		BME280_ESP32_SPI *bmpBA = new BME280_ESP32_SPI();
 		BME280_ESP32_SPI *bmpTE= new BME280_ESP32_SPI();
-		bmpBA->setSPIBus(SPI_SCLK, SPI_MOSI, SPI_MISO, CS_bme280BA, FREQ_BMP_SPI);
-		bmpTE->setSPIBus(SPI_SCLK, SPI_MOSI, SPI_MISO, CS_bme280TE, FREQ_BMP_SPI);
+		int spi_freq=rint( FREQ_BMP_SPI / 2 * ((100.0 + display_clock_adj.get())/100.0));
+		bmpBA->setSPIBus(SPI_SCLK, SPI_MOSI, SPI_MISO, CS_bme280BA, spi_freq);
+		bmpTE->setSPIBus(SPI_SCLK, SPI_MOSI, SPI_MISO, CS_bme280TE, spi_freq);
 		bmpTE->begin();
 		bmpBA->begin();
 		baroSensor = bmpBA;

@@ -1722,6 +1722,11 @@ void SetupMenu::system_menu_create_hardware_type( MenuEntry *top ){
 	dtest->setHelp( "Start display test screens, press rotary to cancel");
 	dtest->addEntry( "Cancel");
 	dtest->addEntry( "Start Test");
+
+	SetupMenuValFloat * dcadj= new SetupMenuValFloat( "Display Clk Adj", "%", -2, 2, 0.1, 0, true, &display_clock_adj, RST_IMMEDIATE  );
+	dcadj->setHelp( "Modify display clock by given percentage (restarts on exit)", 100 );
+	top->addEntry( dcadj );
+
 }
 
 

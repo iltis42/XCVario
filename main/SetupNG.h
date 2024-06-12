@@ -681,6 +681,7 @@ extern SetupNG<int> 		drawing_prio;
 extern uint8_t g_col_background;
 extern uint8_t g_col_highlight;
 extern SetupNG<int> 		logging;
+extern SetupNG<float>      	display_clock_adj;
 
 
 extern float last_volume;   // is this used?

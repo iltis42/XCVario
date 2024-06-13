@@ -206,7 +206,10 @@ bool SetupCommon::initSetup( bool& present ) {
 			}
 		}
 	}
-	last_volume = (int)default_volume.get();
+
+	// make any needed adjustments, from old to new NGs, unpack bitfields, etc:
+	post_init_NG();    // in SetupNG.cpp
+
 	giveConfigChanges( 0, true );
 	return ret;
 };

@@ -57,12 +57,11 @@ void CenterAid::drawThermal( int tn, int idir, bool draw_red ){
 	}
 	if( tn > 0 ){
 		// ESP_LOGI(FNAME,"draw TH, dir:%d, TE:%d", idir, td );
-		ucg->setColor( COLOR_GREEN );
+		if( draw_red )  // for max climb
+			ucg->setColor( COLOR_RED );
+		else
+			ucg->setColor( COLOR_GREEN );
 		ucg->drawDisc(cx,cy, tn/DRAW_SCALE, UCG_DRAW_ALL );
-	}
-	else if( draw_red ){  // for max climb
-		ucg->setColor( COLOR_RED );
-		ucg->drawDisc(cx,cy, -tn/DRAW_SCALE, UCG_DRAW_ALL );
 	}
 	drawn_thermals[idir] = tn;
 }

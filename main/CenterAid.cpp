@@ -137,11 +137,11 @@ void CenterAid::ageThermal(){
 		agedir--;
 		if( agedir < 0 )
 			agedir += CA_NUM_DIRS;
-		lambda = 0.9;
+		lambda = 0.95;
 	}
 	else if( flightmode == circlingR ){
 		agedir++;
-		lambda = 0.9;
+		lambda = 0.95;
 	}
 	else{
 		agedir++;

@@ -40,7 +40,7 @@ CenterAid::CenterAid( AdaptUGC *display ) {
 	last_rts = 0.0;
 }
 
-void CenterAid::drawThermal( int tn, int idir, bool draw_sink ){
+void CenterAid::drawThermal( int tn, int idir, bool draw_red ){
 	// ESP_LOGI(FNAME,"drawThermal, th: %d, idir: %d, ds: %d", th, idir, draw_sink );
 	if( idir > CA_NUM_DIRS || idir < 0 ){
 		ESP_LOGE(FNAME,"index out of range: %d", agedir );
@@ -60,12 +60,24 @@ void CenterAid::drawThermal( int tn, int idir, bool draw_sink ){
 		ucg->setColor( COLOR_GREEN );
 		ucg->drawDisc(cx,cy, tn/DRAW_SCALE, UCG_DRAW_ALL );
 	}
-	else if( draw_sink ){
+	else if( draw_red ){  // for max climb
 		ucg->setColor( COLOR_RED );
 		ucg->drawDisc(cx,cy, -tn/DRAW_SCALE, UCG_DRAW_ALL );
 	}
 	drawn_thermals[idir] = tn;
 }
+
+int CenterAid::maxClimbIndex(){
+	int max=0;
+	int max_index = -1;
+	for( int i=0; i<CA_NUM_DIRS; i++ ){
+		if( max < thermals[i] ){}
+			max = thermals[i];
+			max_index = i;
+	}
+	return max_index;
+}
+
 
 void CenterAid::checkThermal(){
 	// ESP_LOGI(FNAME,"checkThermal");
@@ -90,11 +102,13 @@ void CenterAid::checkThermal(){
 
 void CenterAid::drawCenterAid(){
 	// ESP_LOGI(FNAME,"drawCenterAid");
+	int maxIndex = maxClimbIndex();
 	for( int i=0; i<CA_NUM_DIRS; i++ ){
 		int d = (i+idir) % CA_NUM_DIRS;
 		// ESP_LOGI(FNAME,"dir:%d TE:%d", d, thermals[d] );
 		if( d < CA_NUM_DIRS && d >= 0 ){
-			drawThermal( thermals[d], i );
+			bool red = d != maxIndex ? false : true;  
+			drawThermal( thermals[d], i, red );
 		}else{
 			ESP_LOGE(FNAME,"index out of range: %d", d );
 		}

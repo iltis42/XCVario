@@ -71,9 +71,10 @@ int CenterAid::maxClimbIndex(){
 	int max=0;
 	int max_index = -1;
 	for( int i=0; i<CA_NUM_DIRS; i++ ){
-		if( max < thermals[i] ){}
+		if( max < thermals[i] ){
 			max = thermals[i];
 			max_index = i;
+		}
 	}
 	return max_index;
 }

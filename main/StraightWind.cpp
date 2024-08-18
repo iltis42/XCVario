@@ -111,7 +111,7 @@ bool StraightWind::calculateWind()
 	}
 	// ESP_LOGI(FNAME,"calculateWind flightMode: %d", CircleStraightWind::getFlightMode() );
 	// Check if straight wind requirements are fulfilled
-	if( ((compass_enable.get() != CS_I2C ||  compass_enable.get() != CS_CAN) || compass_calibrated.get() == false) || !(wind_enable.get() & WA_STRAIGHT)) {
+	if( (compass_enable.get() != CS_I2C && compass_enable.get() != CS_CAN) || compass_calibrated.get() == false || !(wind_enable.get() & WA_STRAIGHT)) {
 		// ESP_LOGI(FNAME,"Compass issues: ENA:%d CAL:%d WIND_ENA:%d, abort", compass_enable.get(), compass_calibrated.get(), wind_enable.get() );
 		if( !compass_enable.get() )
 			status="Comps Dis";

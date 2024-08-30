@@ -475,6 +475,8 @@ struct axes_t
     void setZero() { x=y=z=.0; }
     axes_t<T>& operator+=(const axes_t<int16_t>& right)
         { x += right.x; y += right.y; z += right.z; return *this; }
+    axes_t<T>& operator+=(const axes_t<float>& right)
+        { x += right.x; y += right.y; z += right.z; return *this; }
     axes_t<T> operator+(const axes_t<T>& right)
         { axes_t<T> tmp(*this); tmp += right; return tmp; }
     axes_t<T>& operator-=(const axes_t<int16_t>& right)
@@ -487,6 +489,7 @@ struct axes_t
     	return ("X:" + String(x) + " Y:" + String(y) + " Z:" + String(z)).c_str();
     };
 };
+
 // Ready-to-use axes types
 typedef axes_t<int16_t> raw_axes_t;  //!< Axes type to hold gyroscope, accelerometer, magnetometer raw data.
 typedef axes_t<float> float_axes_t;  //!< Axes type to hold converted sensor data.

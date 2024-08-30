@@ -20,6 +20,7 @@ Last update: 2021-03-07
 #pragma once
 
 #include "QMC5883L.h"
+#include "average.h"
 #include "Deviation.h"
 
 typedef struct float_axes {

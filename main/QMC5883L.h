@@ -25,7 +25,6 @@ Last update: 2021-03-28
 #include "logdef.h"
 #include "esp_log.h"
 #include "I2Cbus.hpp"
-#include "average.h"
 #include "WString.h"
 #include "MagnetSensor.h"
 
@@ -61,10 +60,10 @@ public:
 	//  Write with data part
 	bool overflowFlag()	{ return overflowWarning; }
 	// Read out the registers X, Y, Z (0...5) in raw format into variables, return true if success
-	bool rawAxes( t_magn_axes &axes );
-	int curX(){ return X; };
-	int curY(){ return X; };
-	int curZ(){ return X; };
+	bool rawAxes( t_magn_axes &axes_p );
+	int curX(){ return axes.x; };
+	int curY(){ return axes.y; };
+	int curZ(){ return axes.z; };
 private:
 	// Configure the device with the set parameters and set the mode to continuous.
 	esp_err_t initialize2( int a_odr=0, int a_osr=0 );
@@ -87,9 +86,6 @@ private:
 	uint8_t range; // magnetic resolution of sensor
 	uint8_t osr; // over sample ratio
 	bool overflowWarning;
-	Average<20, int16_t> filterX;
-	Average<20, int16_t> filterY;
-	Average<20, int16_t> filterZ;
-	int X,Y,Z;
+	t_magn_axes axes;
 	int age;
 };

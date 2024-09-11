@@ -34,6 +34,10 @@ const uint8_t BECKER_START_FRAME = 0xA5;
 const uint8_t BECKER_PROTID      = 0x14;
 
 
+void enable_anemoi(){
+}
+void disable_anemoi() {
+}
 
 DataLink::DataLink(){
 	state = GET_NMEA_UBX_SYNC;
@@ -342,7 +346,6 @@ void DataLink::parse_NMEA_UBX( char c, int port ){
 			// ESP_LOGI(FNAME,"Port S%d UBX SYNC2 received at %d", port, pos );
 			state = GET_UBX_CLASS;
 			break;
-
 		case GET_UBX_CLASS:
 			if (c != UBX_CLASS) {
 				ESP_LOGW(FNAME, "Port S%1d Unexpected UBX class at %d", port, pos );

@@ -41,6 +41,7 @@
 #include <algorithm>
 #include <cstring>
 #include <string>
+#include "DataLink.h"
 
 SetupMenuSelect * audio_range_sm = 0;
 SetupMenuSelect * mpu = 0;
@@ -190,6 +191,26 @@ int upd_screens( SetupMenuSelect * p ){
 			);
 	menu_screens.set( screens );
 	// init_screens();
+	return 0;
+}
+
+int update_s1_protocol( SetupMenuSelect * p ){
+	if( serial1_protocol.get() == DEV_FLARM )
+		dl_S1.setProtocol( NMEA );
+	else if( serial1_protocol.get() == DEV_ANEMOI )
+		dl_S1.setProtocol( ANEMOI );
+	else
+		dl_S1.setProtocol( NO_ONE );
+	return 0;
+}
+
+int update_s2_protocol( SetupMenuSelect * p ){
+	if( serial2_protocol.get() == DEV_FLARM )
+		dl_S2.setProtocol( NMEA );
+	else if( serial2_protocol.get() == DEV_ANEMOI )
+		dl_S2.setProtocol( ANEMOI );
+	else
+		dl_S2.setProtocol( NO_ONE );
 	return 0;
 }
 
@@ -2045,6 +2066,16 @@ void SetupMenu::system_menu_create_interfaceS1( MenuEntry *top ){
 	stxdis1->addEntry( "Disable");
 	stxdis1->addEntry( "Enable");
 
+	SetupMenuSelect * sprots1 = new SetupMenuSelect( PROGMEM"Protocol", RST_ON_EXIT, update_s1_protocol, true, &serial1_protocol );
+	top->addEntry( sprots1 );
+	sprots1->setHelp( PROGMEM"Specify the protocol driver for the external device connected to S1", 240 );
+	sprots1->addEntry( PROGMEM"Disable");
+	sprots1->addEntry( PROGMEM"Flarm");
+	sprots1->addEntry( PROGMEM"KRT2 Radio");
+	sprots1->addEntry( PROGMEM"Becker Radio");
+	sprots1->addEntry( PROGMEM"GNSS UBX");
+	sprots1->addEntry( PROGMEM"Anemoi");
+
 	SetupMenuSelect * datamon = new SetupMenuSelect( "Monitor", RST_NONE, data_monS1, true, &data_monitor );
 	datamon->setHelp( "Short press button to start/pause, long press to terminate data monitor", 260);
 	datamon->addEntry( "Disable");
@@ -2111,6 +2142,16 @@ void SetupMenu::system_menu_create_interfaceS2( MenuEntry *top ){
 	stxdis2->setHelp( "Option to switch off RS232 TX line in case active sending is not required, e.g. for multiple devices connected to one device (reboots)");
 	stxdis2->addEntry( "Disable");
 	stxdis2->addEntry( "Enable");
+
+	SetupMenuSelect * sprots1 = new SetupMenuSelect( PROGMEM"Protocol", RST_ON_EXIT, update_s2_protocol, true, &serial2_protocol );
+	top->addEntry( sprots1 );
+	sprots1->setHelp( PROGMEM"Specify the protocol driver for the external device connected to S2", 240);
+	sprots1->addEntry( PROGMEM"Disable");
+	sprots1->addEntry( PROGMEM"Flarm");
+	sprots1->addEntry( PROGMEM"KRT2 Radio");
+	sprots1->addEntry( PROGMEM"Becker Radio");
+	sprots1->addEntry( PROGMEM"GNSS UBX");
+	sprots1->addEntry( PROGMEM"Anemoi");
 
 	SetupMenuSelect * datamon = new SetupMenuSelect( "Monitor", RST_NONE, data_monS2, true, &data_monitor );
 	datamon->setHelp( "Short press button to start/pause, long press to terminate data monitor", 260);

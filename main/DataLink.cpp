@@ -1,14 +1,19 @@
 #include "DataLink.h"
-#include <stdint.h>
-#include <endian.h>
-#include <string.h>
-#include <logdef.h>
+
 #include "UbloxGNSSdecode.h"
 #include "Router.h"
 #include "SString.h"
 #include "Serial.h"
 #include "Flarm.h"
 #include "DataMonitor.h"
+#include "protocols/Anemoi.h"
+#include "Protocols.h"
+
+#include <stdint.h>
+#include <endian.h>
+#include <string.h>
+#include <logdef.h>
+
 
 // UBX SYNC
 const uint8_t UBX_SYNC1 = 0xb5;
@@ -33,10 +38,14 @@ const uint8_t KRT2_STX_START = 0x02;
 const uint8_t BECKER_START_FRAME = 0xA5;
 const uint8_t BECKER_PROTID      = 0x14;
 
+DataLinkNT dl_S1(Router::routeS1);
+DataLinkNT dl_S2(Router::routeS2);
 
 void enable_anemoi(){
+	dl_S2.setProtocol(ANEMOI);
 }
 void disable_anemoi() {
+	dl_S2.setProtocol(NO_ONE);
 }
 
 DataLink::DataLink(){
@@ -49,6 +58,11 @@ DataLink::DataLink(){
 	ubxFound = false;
 	len = 0;
 	krt2_len=0;
+}
+
+DataLinkNT::DataLinkNT(router_t route) :
+	_router(route)
+{
 }
 
 void DataLink::process( const char *packet, int len, int port ) {
@@ -67,6 +81,44 @@ void DataLink::process( const char *packet, int len, int port ) {
 	}
 }
 
+void DataLinkNT::process(const char *packet, const int len)
+{
+	if ( _protocol == nullptr ) return;
+
+	for (int i = 0; i < len; i++) {
+		if ( CHECK_OK == _protocol->nextByte(packet[i]) ) {
+			SString tx;
+			tx.set( _protocol->getBuffer(), _protocol->getLength() );
+			(*_router)(tx);
+			Protocols::parseNMEA( tx.c_str() ); // should to be triggered through another queue
+		}
+	}
+}
+// protocol factory
+void DataLinkNT::setProtocol(protocol_nt ptyp)
+{
+	if ( _protocol && _protocol->getProtocolId() == ptyp ) return;
+
+	// Remove the old one
+	if ( _protocol ) {
+		ProtocolItf *tmp = _protocol;
+		_protocol = nullptr;
+		delete tmp;
+	}
+
+	// Create a new one
+	switch (ptyp) {
+		//case NMEA:
+		//break;
+		case ANEMOI:
+			_protocol = new Anemoi();
+			ESP_LOGI(FNAME, "Created Anemoi protocol.");
+			break;
+		default:
+			break;
+	}
+}
+
 void DataLink::addChk(const char c) {
 	chkA += c;
 	chkB += chkA;
@@ -77,15 +129,15 @@ void DataLink::routeSerialData( const char *data, uint32_t len, int port, bool n
 	tx.set( data, len );
 	// ESP_LOGI(FNAME, "Port S%1d: len: %d", port, len );
 	// ESP_LOG_BUFFER_HEXDUMP(FNAME, tx.c_str(), tx.length(), ESP_LOG_INFO);
-	if( port == 1 ){      // S1
-		Router::forwardMsg( tx, s1_rx_q, nmea );
-		Router::routeS1();
-	}
-	else if( port == 2 ){  // S2
-		Router::forwardMsg( tx, s2_rx_q, nmea  );
-		Router::routeS2();
-	}
-	else if( port == 3 ){  // CAN
+	// if( port == 1 ){      // S1
+	// 	Router::forwardMsg( tx, s1_rx_q, nmea );
+	// 	Router::routeS1();
+	// }
+	// else if( port == 2 ){  // S2
+	// 	Router::forwardMsg( tx, s2_rx_q, nmea  );
+//	 	Router::routeS2();
+	// }
+	/*else*/ if( port == 3 ){  // CAN
 		Router::forwardMsg( tx, can_rx_q, nmea );
 		Router::routeCAN();
 		DM.monitorString( MON_CAN, DIR_RX, tx.c_str(), len);

@@ -28,6 +28,8 @@
  */
 
 t_magn_axes QMCMagCAN::can = { 0,0,0 };
+vector_ijk QMCMagCAN::calib = {0., 0., 0.},
+	QMCMagCAN::stage = {0., 0., 0.};
 int QMCMagCAN::age = 100;
 
 QMCMagCAN::QMCMagCAN()
@@ -55,30 +57,59 @@ esp_err_t QMCMagCAN::selfTest()
 	return ESP_FAIL;
 }
 
-void QMCMagCAN::fromCAN( const char * msg ){
+void QMCMagCAN::fromCAN( const char * msg, int len )
+{
+	// Read raw int mag values at once
+	if ( len == 6 ) {
+		memcpy( ((char *)&can.x), msg, 6);
+	}
+	// Stage biased float mag values from two successive messages
+	else if ( len == 8 ) {
+		memcpy( ((char *)&stage.a), msg, 8);
+	}
+	else if ( len == 4 ) {
+		memcpy( ((char *)&stage.c), msg, 4);
+		if ( stage.a != 0.f ) {
+			calib = stage;
+			stage.a = 0.f;
+		}
+	}
 
-	can.x = (msg[0] & 0xff) | ((msg[1] << 8) & 0xff00 );
-	can.y = (msg[2] & 0xff) | ((msg[3] << 8) & 0xff00 );
-	can.z = (msg[4] & 0xff) | ((msg[5] << 8) & 0xff00 );
 	// ESP_LOGI(FNAME,"from CAN bus magn X=%d Y=%d Z=%d", can.x, can.y, can.z );
 	age = 0;
 }
 
-bool QMCMagCAN::rawAxes( t_magn_axes &axes )
+bool QMCMagCAN::readRaw( t_magn_axes &mag )
 {
-	if( age < 10 ){
-		axes.x = filterX( can.x );
-		axes.y = filterY( can.y );
-		axes.z = filterZ( can.z );
-		// ESP_LOGI( FNAME, "Mag Average: X:%d Y:%d Z:%d  Raw: X:%d Y:%d Z:%d", axes.x, axes.y, axes.z, can.x, can.y, can.z );
+	if ( age < 10 ) {
+		mag.x = filterX( can.x );
+		mag.y = filterY( can.y );
+		mag.z = filterZ( can.z );
+		if ( age == 0 ) {
+			ESP_LOGI( FNAME, "Mag Average: X:%d Y:%d Z:%d  Raw: X:%d Y:%d Z:%d", mag.x, mag.y, mag.z, can.x, can.y, can.z );
+		}
 		// ESP_LOGI( FNAME, "X:%d Y:%d Z:%d  Age:%d", can.x, can.y, can.z, age );
 		m_sensor = true;
-		return true;
 	}
-	else{
+	else {
 		// ESP_LOGE( FNAME, "Magnet sensor data from CAN missing");
 		// CANbus::restart();
 		m_sensor = false;
-		return false;
 	}
+	return m_sensor;
+}
+
+bool QMCMagCAN::readBiased( vector_ijk &axes )
+{
+	if ( age < 10 ) {
+		axes = calib;
+		// if ( age == 0 ) {
+		// 	ESP_LOGI( FNAME, "Mag calibrated: X:%.5f Y:%.5f Z:%.5f", axes.a, axes.b, axes.c);
+		// }
+		m_sensor = true;
+	}
+	else {
+		m_sensor = false;
+	}
+	return m_sensor;
 }

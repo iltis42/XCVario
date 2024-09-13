@@ -352,7 +352,7 @@ void CANbus::rxtick(int tick){
 		else if( id == CAN_MAGSENS_ID ){ // magnet sensor
 			// ESP_LOGI(FNAME,"CAN RX MagSensor, msg: %d", bytes );
 			// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), bytes, ESP_LOG_INFO);
-			QMCMagCAN::fromCAN( msg.c_str() );
+			QMCMagCAN::fromCAN( msg.c_str(), msg.length() );
 			_connected_timeout_magsens = 0;
 		}
 		DM.monitorString( MON_CAN, DIR_RX, msg.c_str(), msg.length());

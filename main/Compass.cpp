@@ -217,7 +217,7 @@ void Compass::calcCalibration(){
 	float variance = 0.f;
 	t_float_axes var;
 	if( sensor ){
-		if( sensor->rawAxes( magRaw ) == false )
+		if( sensor->readRaw( magRaw ) == false )
 		{
 			errors++;
 			if( errors > 100 ){
@@ -438,15 +438,16 @@ float Compass::heading( bool *ok )
 	bool state = false;
 	if ( sensor->isCalibrated() ) {
 		vector_ijk tmp;
-		state = sensor->calibAxes( tmp );
+		state = sensor->readBiased( tmp );
 		if ( state ) {
 			// rotate -90Z and then 180X, to have the same orientation as the IMU reference system
 			fx = -tmp.b;
 			fy = -tmp.a;
 			fz = -tmp.c;
-
+		}
+	}
 	else {
-		state = sensor->rawAxes( magRaw );
+		state = sensor->readRaw( magRaw );
 		// ESP_LOGI(FNAME,"state %d  x:%d y:%d z:%d", state, magRaw.x, magRaw.y, magRaw.z );
 		if( !state )
 		{

@@ -24,14 +24,10 @@ Last update: 2021-03-28
 
 #pragma once
 
-#include <sys/time.h>
-#include "esp_system.h"
-#include "logdef.h"
-#include "esp_log.h"
-#include "I2Cbus.hpp"
-#include "average.h"
-#include "WString.h"
 #include "MagnetSensor.h"
+
+#include "vector_3d.h"
+#include "average.h"
 
 
 class QMCMagCAN: public MagnetSensor
@@ -58,11 +54,13 @@ public:
 
 	bool overflowFlag()	{ return false; }  // no support
 
-	// Read out the registers X, Y, Z (0...5) in raw format into variables, return true if success
-	bool rawAxes( t_magn_axes &axes );
+	// Read in raw format into variables, return true if success
+	bool readRaw( t_magn_axes &mag );
+	// In micro Tesla unit, bias and scale corrected, return true if success
+	bool readBiased( vector_ijk &mag );
 
 	// If device is connected via CAN, just get X,Y,Z data from there
-	static void fromCAN( const char * msg );
+	static void fromCAN( const char * msg, int len );
 
 	int curX() { return (int)can.x; }
 	int curY() { return (int)can.y; }
@@ -74,5 +72,6 @@ private:
 	Average<20> filterY;
 	Average<20> filterZ;
 	static t_magn_axes can;
+	static vector_ijk calib, stage;
 	static int age;
 };

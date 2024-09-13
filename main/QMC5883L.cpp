@@ -233,7 +233,7 @@ esp_err_t QMC5883L::initialize2( int a_odr, int a_osr )
 	return ESP_FAIL;
 }
 
-bool QMC5883L::rawAxes( t_magn_axes &axes_p )
+bool QMC5883L::readRaw( t_magn_axes &mag )
 {
 	uint8_t data[6];
 	uint8_t status = 0;
@@ -285,7 +285,7 @@ bool QMC5883L::rawAxes( t_magn_axes &axes_p )
 		axes.y = (int)( (int16_t)(( data[3] << 8 ) | data[2]) );
 		axes.z = (int)( (int16_t)(( data[5] << 8 ) | data[4]) );
 
-		axes_p = axes;
+		mag = axes;
 
 		// ESP_LOGI( FNAME, "Mag Average: X:%d Y:%d Z:%d  Raw: X:%d Y:%d Z:%d", axes.x, axes.y, axes.z, x, y, z );
 

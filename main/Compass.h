@@ -138,9 +138,9 @@ private:
 	t_float_axes scale;
 	t_magn_axes min;
 	t_magn_axes max;
-	Average<20, int16_t> *avgX = 0;
-	Average<20, int16_t> *avgY = 0;
-	Average<20, int16_t> *avgZ = 0;
+	Average<10, int16_t> *avgX = 0;
+	Average<10, int16_t> *avgY = 0;
+	Average<10, int16_t> *avgZ = 0;
 	bool calibrationRunning;
 	int nrsamples;
 	t_bitfield_compass bits;
@@ -150,8 +150,6 @@ private:
 	int totalReadErrors;
 
 	// Mag readings
-	Average<20, float, float> filterRoll;
-	Average<20, float, float> filterPitch;
 	int age;
 	MagnetSensor *sensor;
 	float fx; //bias corrected

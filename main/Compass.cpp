@@ -297,9 +297,9 @@ bool Compass::calibrate( bool (*reporter)( t_magn_axes raw, t_float_axes scale, 
 		max = { 0,0,0 };
 		bits = { false, false, false, false, false, false };
 		avg_calib_sample = { 0,0,0 };
-		avgX = new Average<20, int16_t>;
-		avgY = new Average<20, int16_t>;
-		avgZ = new Average<20, int16_t>;
+		avgX = new Average<10, int16_t>;
+		avgY = new Average<10, int16_t>;
+		avgZ = new Average<10, int16_t>;
 		nrsamples=0;
 		while( true )
 		{

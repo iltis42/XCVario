@@ -38,6 +38,7 @@ QMCMagCAN::QMCMagCAN()
 	age = 100;
 	can = { 0,0,0 };
 	m_sensor = false;
+	calibrated = true;
 }
 
 QMCMagCAN::~QMCMagCAN()
@@ -62,6 +63,7 @@ void QMCMagCAN::fromCAN( const char * msg, int len )
 	// Read raw int mag values at once
 	if ( len == 6 ) {
 		memcpy( ((char *)&can.x), msg, 6);
+		// ESP_LOGI(FNAME,"from CAN bus magn X=%d Y=%d Z=%d", can.x, can.y, can.z );
 	}
 	// Stage biased float mag values from two successive messages
 	else if ( len == 8 ) {
@@ -74,14 +76,14 @@ void QMCMagCAN::fromCAN( const char * msg, int len )
 			stage.a = 0.f;
 		}
 	}
-
-	// ESP_LOGI(FNAME,"from CAN bus magn X=%d Y=%d Z=%d", can.x, can.y, can.z );
+	
+	// Reset age
 	age = 0;
 }
 
 bool QMCMagCAN::readRaw( t_magn_axes &mag )
 {
-	if ( age < 10 ) {
+	if ( age < 5 ) {
 		mag.x = filterX( can.x );
 		mag.y = filterY( can.y );
 		mag.z = filterZ( can.z );
@@ -101,7 +103,7 @@ bool QMCMagCAN::readRaw( t_magn_axes &mag )
 
 bool QMCMagCAN::readBiased( vector_ijk &axes )
 {
-	if ( age < 10 ) {
+	if ( age == 0 ) {
 		axes = calib;
 		// if ( age == 0 ) {
 		// 	ESP_LOGI( FNAME, "Mag calibrated: X:%.5f Y:%.5f Z:%.5f", axes.a, axes.b, axes.c);

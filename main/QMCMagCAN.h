@@ -68,9 +68,9 @@ public:
 
 private:
 	bool m_sensor;
-	Average<20> filterX;
-	Average<20> filterY;
-	Average<20> filterZ;
+	Average<5, float> filterX;
+	Average<5, float> filterY;
+	Average<5, float> filterZ;
 	static t_magn_axes can;
 	static vector_ijk calib, stage;
 	static int age;

@@ -389,7 +389,7 @@ class IMU_Ref
 		double Nl = (Bl - tmp).get_norm();
 
 		// ESP_LOGI(FNAME, "iter: %f,%f,%f", x[0],x[1],x[2]);
-        return pow(Nr-1,2) + pow(Nl-1,2) + pow(Nl- Nr,2)/10.;
+        return pow(Nr-1,2) + pow(Nl-1,2) + (tmp).get_norm2() + pow(Nl- Nr,2)/10.;
     }
 	private:
 	vector_d Br, Bl;

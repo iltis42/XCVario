@@ -87,10 +87,10 @@ bool QMCMagCAN::readRaw( t_magn_axes &mag )
 		mag.x = filterX( can.x );
 		mag.y = filterY( can.y );
 		mag.z = filterZ( can.z );
-		if ( age == 0 ) {
-			ESP_LOGI( FNAME, "Mag Average: X:%d Y:%d Z:%d  Raw: X:%d Y:%d Z:%d", mag.x, mag.y, mag.z, can.x, can.y, can.z );
-		}
-		// ESP_LOGI( FNAME, "X:%d Y:%d Z:%d  Age:%d", can.x, can.y, can.z, age );
+		// if ( age == 0 ) {
+		// 	ESP_LOGI( FNAME, "Mag Average: X:%d Y:%d Z:%d  Raw: X:%d Y:%d Z:%d", mag.x, mag.y, mag.z, can.x, can.y, can.z );
+		// 	// ESP_LOGI( FNAME, "X:%d Y:%d Z:%d  Age:%d", can.x, can.y, can.z, age );
+		// }
 		m_sensor = true;
 	}
 	else {
@@ -105,9 +105,9 @@ bool QMCMagCAN::readBiased( vector_ijk &axes )
 {
 	if ( age == 0 ) {
 		axes = calib;
-		// if ( age == 0 ) {
-		// 	ESP_LOGI( FNAME, "Mag calibrated: X:%.5f Y:%.5f Z:%.5f", axes.a, axes.b, axes.c);
-		// }
+		if ( age == 0 ) {
+			ESP_LOGI( FNAME, "Mag calibrated: X:%.5f Y:%.5f Z:%.5f", axes.a, axes.b, axes.c);
+		}
 		m_sensor = true;
 	}
 	else {

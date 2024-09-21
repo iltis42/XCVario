@@ -615,7 +615,7 @@ void readSensors(void *pvParameters){
 					IMU::getGliderNogateGyroX(), IMU::getGliderNogateGyroY(), IMU::getGliderNogateGyroZ() );
 			if( compass ){
 				pos=strlen(log);
-				sprintf( log+pos,",%d,%d,%d", int( compass->calX() ),int( compass->calY()) , int( compass->calZ() ));
+				sprintf( log+pos,",%.4f,%.4f,%.4f", compass->rawX(), compass->rawY(), compass->rawZ());
 			}
 			pos=strlen(log);
 			sprintf( log+pos, "\n");

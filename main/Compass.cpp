@@ -471,9 +471,9 @@ float Compass::heading( bool *ok )
 			return _heading;
 		}
 		// rotate -90Z and then 180X, to have the same orientation as the IMU reference system
-		fx = - (((float)magRaw.y - bias.y) * scale.y);
-		fy = - (((float)magRaw.x - bias.x) * scale.x);
-		fz = - (((float)magRaw.z - bias.z) * scale.z);
+		fx = - ((float)magRaw.y - bias.y) * scale.y;
+		fy = - ((float)magRaw.x - bias.x) * scale.x;
+		fz = - ((float)magRaw.z - bias.z) * scale.z;
 	}
 	errors = 0;
 	age = 0;

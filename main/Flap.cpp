@@ -200,19 +200,19 @@ void Flap::speeds_setup_menu_create(MenuEntry*top){
 	plus2->setHelp("Speed for transition from +2 to +1 flap setting");
 	top->addEntry( plus2 );
 
-	SetupMenuValFloat *plus1 = new SetupMenuValFloat("Speed +1 to 0", "",  20, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_0  );
+	SetupMenuValFloat *plus1 = new SetupMenuValFloat("Speed +1 to 0", "",  20, v_max.get(), 1, flap_speed_act, false, &flap_0  );
 	plus1->setHelp("Speed for transition from +1 to 0 flap setting");
 	top->addEntry( plus1 );
 
-	SetupMenuValFloat *min1 = new SetupMenuValFloat("Speed 0 to -1", "",   20, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_minus_1  );
+	SetupMenuValFloat *min1 = new SetupMenuValFloat("Speed 0 to -1", "",   20, v_max.get(), 1, flap_speed_act, false, &flap_minus_1  );
 	min1->setHelp("Speed for transition from 0 to -1 flap setting");
 	top->addEntry( min1 );
 
-	SetupMenuValFloat *min2 = new SetupMenuValFloat("Speed -1 to -2", "",  50, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_minus_2  );
+	SetupMenuValFloat *min2 = new SetupMenuValFloat("Speed -1 to -2", "",  50, v_max.get(), 1, flap_speed_act, false, &flap_minus_2  );
 	min2->setHelp("Speed for transition from -1 to -2 flap setting");
 	top->addEntry( min2 );
 
-	SetupMenuValFloat *min3 = new SetupMenuValFloat("Speed -2 to -3", "",  50, Units::Airspeed2Kmh(v_max.get()), 1, flap_speed_act, false, &flap_minus_3  );
+	SetupMenuValFloat *min3 = new SetupMenuValFloat("Speed -2 to -3", "",  50, v_max.get(), 1, flap_speed_act, false, &flap_minus_3  );
 	min3->setHelp("Speed for transition from -2 to -3 flap setting");
 	top->addEntry( min3 );
 }

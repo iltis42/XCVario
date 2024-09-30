@@ -15,10 +15,10 @@
 #include "KalmanMPU6050.h"
 
 S2F::S2F() {
-    a0=a1=a2=0;
-    w0=w1=w2=0;
-    _min_speed = 0;
-    _circling_speed = 0;
+	a0=a1=a2=0;
+	w0=w1=w2=0;
+	_min_speed = 0;
+	_circling_speed = 0;
 	_circling_sink = 0;
 	_min_sink = 0;
 	_stall_speed_ms = 0;
@@ -99,7 +99,7 @@ void S2F::setPolar()
 	polar_wingarea.set( p.wingarea, true, false );
 	empty_weight.set( (p.wingload * p.wingarea) - 80.0, true, false ); // Calculate default for emtpy mass
 	if( Protocols::getXcvProtocolVersion() > 1 ){
-			Protocols::sendNmeaXCVCmd( "empty-weight", empty_weight.get() );
+		Protocols::sendNmeaXCVCmd( "empty-weight", empty_weight.get() );
 	}
 	ESP_LOGI(FNAME,"Reference weight:%.1f, new empty_weight: %.1f", (p.wingload * p.wingarea), empty_weight.get() );
 	modifyPolar();
@@ -153,9 +153,9 @@ float S2F::getVn( float v ){
 
 double S2F::sink( double v_in ) {
 	double v = v_in;
-	double v_stall = Units::Airspeed2Kmh( stall_speed.get() * 0.9 );
+	double v_stall = stall_speed.get() * 0.9;
 	if ( v_in < v_stall || !IsValid() ){
-		// ESP_LOGI(FNAME,"S2F::sink, warning, airspeed %.1f below minimum speed", v_in );
+		ESP_LOGI(FNAME,"S2F::sink, warning, airspeed %.1f below minimum speed %.1f km/h", v_in, v_stall );
 		return 0.0;
 	}
 	v = v/3.6; // airspeed in meters per second
@@ -179,38 +179,36 @@ float S2F::cw( float v ){  // in m/s
 
 double S2F::speed( double netto_vario, bool circling )
 {
-   double stf = 0;
-   if( circling ){  // Optimum speed for a load factor of 1.4 g what corresponds 45° angle of bank and factor 1.2 speed increase; 3.6*1.2 = 4.32
-	   stf = _circling_speed;
-   }else{
-	   if( s2f_blockspeed.get() )
-		   stf = 3.6*sqrt( ((a0-MC.get())) / a2 );  // no netto vario, no G impact
-	   else
-		   stf = 3.6*sqrt( (a0-MC.get()+netto_vario) / a2 );
-   }
-   // ESP_LOGI(FNAME,"speed() S2F: %f netto_vario: %f circ: %d, a0: %f, MC %f", stf, netto_vario, circling, a0, MC.get() );
-   if( (stf < _min_speed) || isnan(stf) )
-	   return _min_speed;
-   if( stf > Units::Airspeed2Kmh(v_max.get()) || isinf( stf) )
-	   return Units::Airspeed2Kmh(v_max.get());
-   else
-	   return stf;
+	double stf = 0;
+	if( circling ){  // Optimum speed for a load factor of 1.4 g what corresponds 45° angle of bank and factor 1.2 speed increase; 3.6*1.2 = 4.32
+		stf = _circling_speed;
+	}else{
+		if( s2f_blockspeed.get() )
+			stf = 3.6*sqrt( ((a0-MC.get())) / a2 );  // no netto vario, no G impact
+		else
+			stf = 3.6*sqrt( (a0-MC.get()+netto_vario) / a2 );
+	}
+	// ESP_LOGI(FNAME,"speed() S2F: %f netto_vario: %f circ: %d, a0: %f, MC %f", stf, netto_vario, circling, a0, MC.get() );
+	// ESP_LOGI(FNAME,"max speed %.1f km/h", v_max.get() );
+	if( (stf < _min_speed) || isnan(stf) )
+		return _min_speed;
+	if( stf > v_max.get() || isinf( stf) )
+		return v_max.get();
+	else
+		return stf;
 }
 
 // minimum sink, circling sink, best circling speed
 void S2F::recalcSinkNSpeeds()
 {
 	if (!IsValid()) {
-		_min_speed = 
-		_min_sink = 
-		_circling_speed = 
-		_circling_sink = 0.;
+		_min_speed = _min_sink = _circling_speed = _circling_sink = 0.;
 		return;
 	}
-   // 2*a2*v + a1 = 0
-   _min_speed = (3.6*-a1)/(2*a2);
-   if ( _min_speed < Units::Airspeed2Kmh( stall_speed.get() ) )
-		_min_speed = Units::Airspeed2Kmh( stall_speed.get() );
+	// 2*a2*v + a1 = 0
+	_min_speed = (3.6*-a1)/(2*a2);
+	if ( _min_speed < stall_speed.get() )
+		_min_speed = stall_speed.get();
 	_min_sink = sink( _min_speed );
 	_circling_speed = 1.2*_min_speed;
 	_circling_sink = sink( _circling_speed );
@@ -232,7 +230,7 @@ void S2F::test( void )
 	ESP_LOGI(FNAME, "Sink %f @ %s km/h ", sink( 150.0 ), "150");
 	ESP_LOGI(FNAME, "Sink %f @ %s km/h ", sink( 180.0 ), "180");
 	ESP_LOGI(FNAME, "Sink %f @ %s km/h ", sink( 220.0 ), "220");
-    ESP_LOGI(FNAME,"MC %f  Ballast %f", MC.get(), myballast );
+	ESP_LOGI(FNAME,"MC %f  Ballast %f", MC.get(), myballast );
 	for( int st=20; st >= -20; st-=5 )
 	{
 		ESP_LOGI(FNAME, "S2F %g km/h vario %g m/s", speed( (double)st/10 ), (double)st/10 );

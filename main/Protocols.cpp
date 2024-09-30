@@ -286,7 +286,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		sprintf(str, "$PTAS1,%d,%d,%d,%d", int((Units::ms2knots(te)*10)+200), 0, int(Units::meters2feet(alt)+2000), int(Units::kmh2knots(tas)+0.5) );
 	}
 	else {
-		ESP_LOGW(FNAME,"Not supported protocol %d", nmea_protocol.get() );
+		ESP_LOGW(FNAME,"Not supported protocol %d", proto );
 	}
 	int cs = calcNMEACheckSum(&str[1]);
 	int i = strlen(str);

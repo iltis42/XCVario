@@ -195,10 +195,10 @@ void IMU::Process()
 		float lf = loadFactor > 2.0 ? 2.0 : loadFactor;
 		loadFactor = lf < 0 ? 0 : lf; // limit to 0..2g
 		// the yz portion of w is proportional to the length of YZ portion of the normalized axis.
-		circle_omega = w * sqrt(axis.b*axis.b + axis.c*axis.c);
+		circle_omega = w * sqrt(axis.b*axis.b + axis.c*axis.c) * (std::signbit(gyro_rad.c)?-1.f:1.f);
 		// tan(roll):= petal force/G = m w v / m g
-		float tanw = circle_omega * getTAS() / (3.6f * 9.80665f);
-		roll = (std::signbit(gyro_rad.c)?1.f:-1.f) * atan( tanw );
+		float tanw = -circle_omega * getTAS() / (3.6f * 9.80665f);
+		roll = atan( tanw );
 		if ( ahrs_roll_check.get() ) {
 			// expected extra load c = sqrt(aa+bb) - 1, here a = 1/9.81 x atan, b=1
 			float loadz_exp = sqrt(tanw*tanw/(9.80665f*9.80665f)+1.f) - 1.f;
@@ -350,7 +350,7 @@ float IMU::getVerticalAcceleration()
 
 float IMU::getVerticalOmega()
 {
-	return (std::signbit(gyro.c)?1.f:-1.f) * circle_omega;
+	return circle_omega;
 }
 
 double IMU::PitchFromAccel()

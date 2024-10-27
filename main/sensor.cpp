@@ -434,9 +434,11 @@ static void grabMPU()
 		vector_ijk gyroDPS = IMU::getGliderGyro();
 		// ESP_LOGI(FNAME,"Gyro:\t%4f\t%4f\t%4f", gyroDPS.a, gyroDPS.b, gyroDPS.c);
 		// vector_ijk accl = IMU::getGliderAccel();
-		// ESP_LOGI(FNAME,"Accl:\t%4f\t%4f\t%4f\tL%.2f Gyro:\t%4f\t%4f\t%4f Mag:\t%4f\t%4f\t%4f", accl.a, accl.b, accl.c, accl.get_norm(), 
-		// 	gyroDPS.a, gyroDPS.b, gyroDPS.c,
-		// 	compass->rawX(), compass->rawY(), compass->rawZ());
+		// if (compass != nullptr) {
+		// 	ESP_LOGI(FNAME,"Accl:\t%4f\t%4f\t%4f\tL%.2f Gyro:\t%4f\t%4f\t%4f Mag:\t%4f\t%4f\t%4f", accl.a, accl.b, accl.c, accl.get_norm(), 
+		// 		gyroDPS.a, gyroDPS.b, gyroDPS.c,
+		// 		compass->rawX(), compass->rawY(), compass->rawZ());
+		// }
 
 		float GS=0; // Autoleveling Gyro feature only with GPS and GS close to zero to avoid triggering at push back taxi with zero AS
 		bool gpsOK = Flarm::getGPSknots( GS );

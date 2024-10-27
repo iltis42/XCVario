@@ -22,7 +22,7 @@
 #include "DataLink.h"
 
 DataLink dlink;
-DataLink dlinkXs;  // use a second CAN id and dataling to avoid checksum errors by mixed up messages
+DataLink dlinkXs;  // use a second CAN id and datalink to avoid checksum errors by mixed up messages
 
 /*
  *  Code for a 1:1 connection between two XCVario with a fixed message ID

@@ -49,7 +49,7 @@ public:
 
 	esp_err_t initialize() { return ESP_OK; };
 
-	// Check for reply with I2C bus address
+	// Check for CAN magsens stream data
 	esp_err_t selfTest();
 
 	bool overflowFlag()	{ return false; }  // no support
@@ -60,11 +60,14 @@ public:
 	bool readBiased( vector_ijk &mag );
 
 	// If device is connected via CAN, just get X,Y,Z data from there
+	// Todo, needs better organization
 	static void fromCAN( const char * msg, int len );
 
 	int curX() { return (int)can.x; }
 	int curY() { return (int)can.y; }
 	int curZ() { return (int)can.z; }
+
+	// int getVersion() const;
 
 private:
 	bool m_sensor;

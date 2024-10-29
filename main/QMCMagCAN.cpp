@@ -48,12 +48,18 @@ QMCMagCAN::~QMCMagCAN()
 // check if messages arrive
 esp_err_t QMCMagCAN::selfTest()
 {
+	// Fixme outdated
+	// give 30 second's chance for module to send data with the corresponding CAN data rate
+	// CAN bus sensor probes next speed after 13 seconds and starts with new speed, so max 26 seconds all 3 speeds are probed
+	// Currently a fix 1MBit rate is considert
+
+	// Wait max. 1 sec for arriving magsens stream data
 	ESP_LOGI( FNAME, "QMCMagCAN selftest");
-	for( int i=0; i<300; i++ ){ // give 30 second's chance for module to send data with the corresponding CAN data rate
-		if( age < 5 ){          // CAN bus sensor probes next speed after 13 seconds and starts with new speed, so max 26 seconds all 3 speeds are probed
+	for( int i=0; i<100; i++ ) {
+		if( age < 5 ) {
 			return ESP_OK;
 		}
-		delay(100);
+		delay(10);
 	}
 	return ESP_FAIL;
 }
@@ -84,9 +90,9 @@ void QMCMagCAN::fromCAN( const char * msg, int len )
 bool QMCMagCAN::readRaw( t_magn_axes &mag )
 {
 	if ( age < 5 ) {
-		mag.x = filterX( can.x );
-		mag.y = filterY( can.y );
-		mag.z = filterZ( can.z );
+		mag.x = can.x; // filterX( can.x );
+		mag.y = can.y; // filterY( can.y );
+		mag.z = can.z; // filterZ( can.z );
 		// if ( age == 0 ) {
 		// 	ESP_LOGI( FNAME, "Mag Average: X:%d Y:%d Z:%d  Raw: X:%d Y:%d Z:%d", mag.x, mag.y, mag.z, can.x, can.y, can.z );
 		// 	// ESP_LOGI( FNAME, "X:%d Y:%d Z:%d  Age:%d", can.x, can.y, can.z, age );
@@ -103,11 +109,11 @@ bool QMCMagCAN::readRaw( t_magn_axes &mag )
 
 bool QMCMagCAN::readBiased( vector_ijk &axes )
 {
-	if ( age == 0 ) {
+	if ( age < 5 ) {
 		axes = calib;
-		if ( age == 0 ) {
-			ESP_LOGI( FNAME, "Mag calibrated: X:%.5f Y:%.5f Z:%.5f", axes.a, axes.b, axes.c);
-		}
+		// if ( age == 0 ) {
+		// 	ESP_LOGI( FNAME, "Mag calibrated: X:%.5f Y:%.5f Z:%.5f", axes.a, axes.b, axes.c);
+		// }
 		m_sensor = true;
 	}
 	else {

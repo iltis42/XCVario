@@ -155,7 +155,7 @@ double S2F::sink( double v_in ) {
 	double v = v_in;
 	double v_stall = stall_speed.get() * 0.9;
 	if ( v_in < v_stall || !IsValid() ){
-		ESP_LOGI(FNAME,"S2F::sink, warning, airspeed %.1f below minimum speed %.1f km/h", v_in, v_stall );
+		// ESP_LOGI(FNAME,"S2F::sink, warning, airspeed %.1f below minimum speed %.1f km/h", v_in, v_stall );
 		return 0.0;
 	}
 	v = v/3.6; // airspeed in meters per second

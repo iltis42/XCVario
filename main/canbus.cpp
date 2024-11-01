@@ -124,16 +124,16 @@ void canTxTask(void *arg){
 void canRxTask(void *arg){
 	int tick = 0;
 	while (true) {
-		TickType_t xLastWakeTime = xTaskGetTickCount();
+		// TickType_t xLastWakeTime = xTaskGetTickCount();
+		ESP_LOGI(FNAME,"Tick: %d", tick );
 		if( !Flarm::bincom ){
 			static_cast<CANbus*>(arg)->rxtick(tick);
 		}
 		if( (tick++ % 100) == 0) {
-			// ESP_LOGI(FNAME,"Free Heap: %d bytes", heap_caps_get_free_size(MALLOC_CAP_8BIT) );
+			ESP_LOGI(FNAME,"Free Heap: %d bytes", heap_caps_get_free_size(MALLOC_CAP_8BIT) );
 			if( uxTaskGetStackHighWaterMark( nullptr ) < 128 )
 				ESP_LOGW(FNAME,"Warning canbus rxtask stack low: %d bytes", uxTaskGetStackHighWaterMark( nullptr ) );
 		}
-		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(5));
 	}
 }
 
@@ -261,12 +261,13 @@ void CANbus::rxtick(int tick){
 	// Can bus receive
 	SString msg;
 	int id = 0;
-	int bytes = receive( &id, msg, 10 ); // just block and wait for messages
+	int bytes = 0;
 	bool xcv_came=false;
 	bool magsens_came=false;
-	while( bytes ){
+	do{
+		bytes = receive( &id, msg, 500 );
+		// ESP_LOGI(FNAME,"CAN RX id:%02x, bytes:%d, connected XCV:%d Magsens: %d", id, bytes, _connected_xcv, _connected_magsens );
 		if( bytes  ){ // keep alive from second XCV
-			// ESP_LOGI(FNAME,"CAN RX id:%02x, bytes:%d, connected XCV:%d Magsens: %d", id, bytes, _connected_xcv, _connected_magsens );
 			if( id == 0x11 ){ // keep alive of msg from peer XCV ?
 				// ESP_LOGI(FNAME,"CAN RX Keep Alive");
 				xcv_came = true;
@@ -337,8 +338,8 @@ void CANbus::rxtick(int tick){
 			_connected_timeout_magsens = 0;
 		}
 		DM.monitorString( MON_CAN, DIR_RX, msg.c_str(), msg.length());
-		bytes = receive( &id, msg, 10 );
-	}
+
+	}while( bytes );
 }
 
 bool CANbus::sendNMEA( const SString& msg ){

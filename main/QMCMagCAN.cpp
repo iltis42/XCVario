@@ -38,7 +38,6 @@ QMCMagCAN::QMCMagCAN()
 	age = 100;
 	can = { 0,0,0 };
 	m_sensor = false;
-	calibrated = true;
 }
 
 QMCMagCAN::~QMCMagCAN()

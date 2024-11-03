@@ -173,12 +173,17 @@ void CANbus::recover(){
 	if( can_speed.get() == CAN_SPEED_OFF ){
 		return;
 	}
-	ESP_LOGW(FNAME,"CANbus recover");
-	twai_stop();
-	delay(100);
-	twai_start();
-	delay(100);
-	twai_initiate_recovery();
+
+	twai_status_info_t status_info;
+	if ( twai_get_status_info(&status_info) == ESP_OK ) {
+		if ( status_info.state == TWAI_STATE_BUS_OFF ) {
+			// recovery is only possible in this state
+			ESP_LOGW(FNAME,"CANbus recover");
+			twai_initiate_recovery();
+			delay(10);
+			twai_start();
+		}
+	}
 	_connected_timeout_xcv = 0;
 	_connected_timeout_magsens = 0;
 }

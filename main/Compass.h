@@ -89,7 +89,7 @@ public:
 	float calY() { return ((float( (float)sensor->curY() ) - bias.y) * scale.y); };
 	float calZ() { return ((float( (float)sensor->curZ() ) - bias.z) * scale.z); };
 
-	t_magn_axes getRawAxes() { return rawAxes; };
+	t_magn_axes getRawAxes() { return magRaw; };
 	float filteredHeading( bool *okIn );
 	float filteredTrueHeading( bool *okIn, bool withDeviation=true );
 	void setGyroHeading( float hd );
@@ -133,31 +133,28 @@ private:
 	int gyro_age;
 
 	/** Variables used by calibration. */
+	t_magn_axes avg_calib_sample;
 	t_float_axes bias;
 	t_float_axes scale;
+	t_magn_axes min;
+	t_magn_axes max;
+	Average<10, int16_t> *avgX = 0;
+	Average<10, int16_t> *avgY = 0;
+	Average<10, int16_t> *avgZ = 0;
 	bool calibrationRunning;
-	float _heading;
-	bool holddown;
+	int nrsamples;
+	t_bitfield_compass bits;
 
 	// Error counters
 	int errors;
 	int totalReadErrors;
-	Average<20, float, float> filterRoll;
-	Average<20, float, float> filterPitch;
+
+	// Mag readings
 	int age;
 	MagnetSensor *sensor;
-	t_magn_axes can;
-	double fx;
-	double fy;
-	double fz;
-	t_magn_axes rawAxes;
-	t_magn_axes raw;
-	t_magn_axes axes;
-	t_bitfield_compass bits;
-	t_magn_axes min;
-	t_magn_axes max;
-	Average<20, int16_t> *avgX = 0;
-	Average<20, int16_t> *avgY = 0;
-	Average<20, int16_t> *avgZ = 0;
-	int i;
+	float fx; //bias corrected
+	float fy;
+	float fz;
+	float _heading;
+	t_magn_axes magRaw;
 };

@@ -16,16 +16,18 @@ Author: Axel Pauli, deviation and refactoring by Eckhard Völlm Dec 2021
 
  **************************************************************************/
 
-#include <cassert>
-#include <cmath>
-#include "esp_log.h"
-#include "esp_system.h"
-#include "sensor.h"
 #include "Compass.h"
 #include "KalmanMPU6050.h"
 #include "QMCMagCAN.h"
 #include "QMC5883L.h"
 #include "quaternion.h"
+
+#include "esp_log.h"
+#include "esp_system.h"
+#include "sensor.h"
+
+#include <cassert>
+#include <cmath>
 
 TaskHandle_t ctid = 0;
 
@@ -52,7 +54,6 @@ Compass::Compass( const uint8_t addr, const uint8_t odr, const uint8_t range, co
 	_heading_average = -1000;
 	calibrationRunning = false;
 	_heading = 0;
-	holddown = false;
 	errors = 0;
 	totalReadErrors = 0;
 	bias = { 0,0,0 };
@@ -61,7 +62,7 @@ Compass::Compass( const uint8_t addr, const uint8_t odr, const uint8_t range, co
 	fx=0;
 	fy=0;
 	fz=0;
-	i=0;
+	nrsamples=0;
 }
 
 Compass::~Compass()
@@ -212,11 +213,11 @@ void Compass::setHeading( float h ) {
 
 // calibration calculation in sync with data received in compass task
 void Compass::calcCalibration(){
-	i++;
+	nrsamples++;
 	float variance = 0.f;
 	t_float_axes var;
 	if( sensor ){
-		if( sensor->rawAxes( axes ) == false )
+		if( sensor->readRaw( magRaw ) == false )
 		{
 			errors++;
 			if( errors > 100 ){
@@ -226,40 +227,40 @@ void Compass::calcCalibration(){
 			return;
 		}
 	}
-	raw.x = (*avgX)( axes.x );
-	raw.y = (*avgY)( axes.y );
-	raw.z = (*avgZ)( axes.z );
+	avg_calib_sample.x = (*avgX)( magRaw.x );
+	avg_calib_sample.y = (*avgY)( magRaw.y );
+	avg_calib_sample.z = (*avgZ)( magRaw.z );
 	// Variance low pass filtered
-	var.x = axes.x - raw.x;
-	var.y = axes.y - raw.y;
-	var.z = axes.z - raw.z;
+	var.x = magRaw.x - avg_calib_sample.x;
+	var.y = magRaw.y - avg_calib_sample.y;
+	var.z = magRaw.z - avg_calib_sample.z;
 	variance += ((var.x*var.x + var.y*var.y + var.z*var.z) - variance) / 50.f;
 	// ESP_LOGI( FNAME, "Mag Var: %7.3f", variance );
 
 	// ESP_LOGI( FNAME, "Mag Var X:%.2f Y:%.2f Z:%.2f", var.x, var.y, var.z  );
 	/* Find max/min peak values */
-	min.x = ( raw.x < min.x ) ? raw.x : min.x;
-	min.y = ( raw.y < min.y ) ? raw.y : min.y;
-	min.z = ( raw.z < min.z ) ? raw.z : min.z;
-	max.x = ( raw.x > max.x ) ? raw.x : max.x;
-	max.y = ( raw.y > max.y ) ? raw.y : max.y;
-	max.z = ( raw.z > max.z ) ? raw.z : max.z;
+	min.x = ( avg_calib_sample.x < min.x ) ? avg_calib_sample.x : min.x;
+	min.y = ( avg_calib_sample.y < min.y ) ? avg_calib_sample.y : min.y;
+	min.z = ( avg_calib_sample.z < min.z ) ? avg_calib_sample.z : min.z;
+	max.x = ( avg_calib_sample.x > max.x ) ? avg_calib_sample.x : max.x;
+	max.y = ( avg_calib_sample.y > max.y ) ? avg_calib_sample.y : max.y;
+	max.z = ( avg_calib_sample.z > max.z ) ? avg_calib_sample.z : max.z;
 
 	const int16_t minval = (32768/100)*1; // 1% full scale
-	if( abs(raw.x) < minval && abs(raw.y) < minval && variance < 200.f && raw.z > 2*minval  )
+	if( abs(avg_calib_sample.x) < minval && abs(avg_calib_sample.y) < minval && variance < 200.f && avg_calib_sample.z > 2*minval  )
 		bits.zmax_green = true;
-	if( abs(raw.x) < minval && abs(raw.y) < minval && variance < 200.f && raw.z < -2*minval  )
+	if( abs(avg_calib_sample.x) < minval && abs(avg_calib_sample.y) < minval && variance < 200.f && avg_calib_sample.z < -2*minval  )
 		bits.zmin_green = true;
-	if( abs(raw.x) < minval && abs(raw.z) < minval && variance < 200.f && raw.y > 2*minval  )
+	if( abs(avg_calib_sample.x) < minval && abs(avg_calib_sample.z) < minval && variance < 200.f && avg_calib_sample.y > 2*minval  )
 		bits.ymax_green = true;
-	if( abs(raw.x) < minval && abs(raw.z) < minval && variance < 200.f && raw.y < -2*minval  )
+	if( abs(avg_calib_sample.x) < minval && abs(avg_calib_sample.z) < minval && variance < 200.f && avg_calib_sample.y < -2*minval  )
 		bits.ymin_green = true;
-	if( abs(raw.y) < minval && abs(raw.z) < minval && variance < 200.f && raw.x > 2*minval  )
+	if( abs(avg_calib_sample.y) < minval && abs(avg_calib_sample.z) < minval && variance < 200.f && avg_calib_sample.x > 2*minval  )
 		bits.xmax_green = true;
-	if( abs(raw.y) < minval && abs(raw.z) < minval && variance < 200.f && raw.x < -2*minval  )
+	if( abs(avg_calib_sample.y) < minval && abs(avg_calib_sample.z) < minval && variance < 200.f && avg_calib_sample.x < -2*minval  )
 		bits.xmin_green = true;
 
-	if( i < 2 )
+	if( nrsamples < 2 )
 		return;
 
 	// Calculate hard iron correction
@@ -295,15 +296,15 @@ bool Compass::calibrate( bool (*reporter)( t_magn_axes raw, t_float_axes scale, 
 		min = { 20000,20000,20000 } ;
 		max = { 0,0,0 };
 		bits = { false, false, false, false, false, false };
-		raw = { 0,0,0 };
-		avgX = new Average<20, int16_t>;
-		avgY = new Average<20, int16_t>;
-		avgZ = new Average<20, int16_t>;
-		i=0;
+		avg_calib_sample = { 0,0,0 };
+		avgX = new Average<10, int16_t>;
+		avgY = new Average<10, int16_t>;
+		avgZ = new Average<10, int16_t>;
+		nrsamples=0;
 		while( true )
 		{
 			// Send a calibration report to the subscriber
-			reporter( raw, scale, bias, bits, false );
+			reporter( avg_calib_sample, scale, bias, bits, false );
 			if( ESPRotary::readSwitch() == true  )  // more responsive to query every loop
 				break;
 			delay(10);
@@ -316,13 +317,13 @@ bool Compass::calibrate( bool (*reporter)( t_magn_axes raw, t_float_axes scale, 
 	}else{
 		ESP_LOGI( FNAME, "Show Calibration");
 		t_bitfield_compass b = calibration_bits.get();
-		reporter( axes, scale, bias, b, true );
+		reporter( magRaw, scale, bias, b, true );
 		while( ESPRotary::readSwitch() == true  )
 			delay(100);
 	}
 	if( !only_show ){
-		ESP_LOGI( FNAME, "Read Cal-Samples=%d, OK=%d, NOK=%d", i, i-errors, errors );
-		if( i < 2 )
+		ESP_LOGI( FNAME, "Read Cal-Samples=%d, OK=%d, NOK=%d", nrsamples, nrsamples-errors, errors );
+		if( nrsamples < 2 )
 		{
 			// Too less samples to start calibration
 			ESP_LOGI( FNAME, "calibrate min-max xyz not enough samples");
@@ -433,61 +434,57 @@ float Compass::heading( bool *ok )
 		// ESP_LOGI(FNAME,"Errors overrun, return 0");
 		return 0.0;
 	}
-	if( errors > 100 ){
-		if( !holddown ){
-			holddown = true;
-			ESP_LOGI(FNAME,"Permanent compass sensor read errors: Start Holddown");
-		}
-	}else{
-		if( holddown ){
-			holddown = false;
-			ESP_LOGI(FNAME,"Okay again compass sensor read");
+
+	bool state = false;
+	if ( sensor->isCalibrated() ) {
+		vector_ijk tmp;
+		state = sensor->readBiased( tmp );
+		if ( state ) {
+			// rotate -90Z and then 180X, to have the same orientation as the IMU reference system
+			fx = -tmp.b;
+			fy = -tmp.a;
+			fz = -tmp.c;
 		}
 	}
-	bool state = sensor->rawAxes( rawAxes );
-	// ESP_LOGI(FNAME,"state %d  x:%d y:%d z:%d", state, rawAxes.x, rawAxes.y, rawAxes.z );
-	if( !state )
-	{
-		errors++;
-		age++;
-		totalReadErrors++;
-		// ESP_LOGI(FNAME,"Magnetic sensor error Reads:%d, Total Errors:%d  Init: %d", N, totalReadErrors, errors );
-		if( errors > 10 )
+	else {
+		state = sensor->readRaw( magRaw );
+		// ESP_LOGI(FNAME,"state %d  x:%d y:%d z:%d", state, magRaw.x, magRaw.y, magRaw.z );
+		if( !state )
 		{
-			// ESP_LOGI(FNAME,"Magnetic sensor errors > 10: init mag sensor" );
-			if( compass_enable.get() != CS_CAN ){
-				if( sensor->initialize() != ESP_OK ) //  reinitialize once crashed, one retry
-					sensor->initialize();
+			errors++;
+			age++;
+			totalReadErrors++;
+			// ESP_LOGI(FNAME,"Magnetic sensor error Reads:%d, Total Errors:%d  Init: %d", N, totalReadErrors, errors );
+			if( errors > 10 )
+			{
+				// ESP_LOGI(FNAME,"Magnetic sensor errors > 10: init mag sensor" );
+				if( compass_enable.get() != CS_CAN ){
+					if( sensor->initialize() != ESP_OK ) //  reinitialize once crashed, one retry
+						sensor->initialize();
+				}
+				return 0.0;
 			}
-			return 0.0;
+			if( errors > 100 ){  // survive 100 samples with constant heading if no valid reading
+				return 0.0;
+			}
+			*ok = true;
+			return _heading;
 		}
-		if( errors > 100 ){  // survive 100 samples with constant heading if no valid reading
-			return 0.0;
-		}
-		*ok = true;
-		return _heading;
+		// rotate -90Z and then 180X, to have the same orientation as the IMU reference system
+		fx = - ((float)magRaw.y - bias.y) * scale.y;
+		fy = - ((float)magRaw.x - bias.x) * scale.x;
+		fz = - ((float)magRaw.z - bias.z) * scale.z;
 	}
 	errors = 0;
 	age = 0;
 
-	/* Apply tilt corrections to the measured values. Note, due to mounting of chip
-	 * turned clockwise by 90 degrees the X-axis and the Y-axis are moved and
-	 * have to be handled in this way.
-	 */
-	// ESP_LOGI( FNAME, "heading: X:%d Y:%d Z:%d xs:%f ys:%f zs:%f", rawAxes.x, rawAxes.y, rawAxes.z, scale.x, scale.y, scale.z);
-
-	fx = -(double) ((float( rawAxes.y ) - bias.y) * scale.y);  // mounting correction
-	fy = -(double) ((float( rawAxes.x ) - bias.x) * scale.x);
-	fz = -(double) ((float( rawAxes.z ) - bias.z) * scale.z);
-	// ESP_LOGI(FNAME, "raw x %d, y %d, z %d ", rawAxes.x, rawAxes.y, rawAxes.z);
-
-	vector_ijk mv( fx,fy,fz ); // magnetic vector, relative to glider from raw hall sensor x/y/z data
-	vector_ijk mev = IMU::getAHRSQuaternion().conjugate() * mv;  // rotate magnetic vector
+	vector_ijk mv( fx,fy,fz ); // uT magnetic vector, relative to glider
+	vector_ijk mev = IMU::getAHRSQuaternion().conjugate() * mv;  // rotate magnetic vector back in ENU ref sys
 	// ESP_LOGI(FNAME, "gravity a %.2f, b %.2f, c %.2f MV: a %.2f, b %.2f, c %.2f ", gravity_vector.a, gravity_vector.b, gravity_vector.c, mv.a, mv.b, mv.c );
 	// ESP_LOGI(FNAME, "gravity a %.2f, b %.2f, c %.2f ME a %.2f, b %.2f, c %.2f MEV: a %.2f, b %.2f, c %.2f ", gravity_vector.a, gravity_vector.b, gravity_vector.c, mv.a, mv.b, mv.c, mev.a, mev.b, mev.c );
 	// ESP_LOGI(FNAME, "rot a %.2f, b %.2f, c %.2f, w %.2f - %.2f ", q.b, q.c, q.d, q.a, RAD_TO_DEG*q.getAngle() );
 	_heading = Compass_atan2( mev.b, mev.a );
-	// ESP_LOGI(FNAME,"compensated mag a %.2f, b %.2f, c %.2f h %.2f", mev.a, mev.b, mev.c, _heading);
+	// ESP_LOGI(FNAME,"mag (%.2f,%.2f,%.2f) heading %.2f", mev.a, mev.b, mev.c, _heading);
 
 	_heading = Vector::normalizeDeg( _heading );  // normalize the +-180 degree model to 0..360°
 
@@ -495,7 +492,7 @@ float Compass::heading( bool *ok )
 #if 0
 	if( wind_logging.get() ){
 		char log[120];
-		sprintf( log, "$COMPASS;%d;%d;%d;%.1f;%.1f;%.1f;%d\n", rawAxes.x, rawAxes.y, rawAxes.z, IMU::getPitch(), IMU::getRoll(),  _heading,  totalReadErrors );
+		sprintf( log, "$COMPASS;%d;%d;%d;%.1f;%.1f;%.1f;%d\n", magRaw.x, magRaw.y, magRaw.z, IMU::getPitch(), IMU::getRoll(),  _heading,  totalReadErrors );
 		Router::sendXCV( log );
 	}
 #endif

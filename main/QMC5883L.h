@@ -60,7 +60,7 @@ public:
 	//  Write with data part
 	bool overflowFlag()	{ return overflowWarning; }
 	// Read out the registers X, Y, Z (0...5) in raw format into variables, return true if success
-	bool rawAxes( t_magn_axes &axes_p );
+	bool readRaw( t_magn_axes &mag );
 	int curX(){ return axes.x; };
 	int curY(){ return axes.y; };
 	int curZ(){ return axes.z; };

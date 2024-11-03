@@ -7,28 +7,15 @@
  *                                                                         *
  ****************************************************************************
 
-I2C driver for the chip MagnetSensor, 3-Axis Magnetic Sensor.
-
-MagnetSensor data sheet:
-
-https://datasheetspdf.com/pdf-file/1309218/QST/MagnetSensor/1
-
-File: MagnetSensor.h
-
-Author: Axel Pauli, January 2021
-		Eckhard Völlm, September 2021 (rework for can bus device and gyro fusion)
-
-Last update: 2021-03-28
+Magnetic Sensor Abstraction.
 
  ****************************************************************************/
 
 #pragma once
 
-#include <sys/time.h>
+#include "vector_3d.h"
 #include "esp_system.h"
-#include "logdef.h"
-#include "esp_log.h"
-#include "I2Cbus.hpp"
+
 
 typedef struct magn_axes {
 	int16_t x;
@@ -44,11 +31,15 @@ public:
 	// virtual ~MagnetSensor();
 	virtual esp_err_t initialize() = 0;
 	virtual bool haveSensor() = 0;
+	bool isCalibrated() { return calibrated; }
 	virtual void tick() = 0;
 	virtual esp_err_t selfTest() = 0;
 	virtual bool overflowFlag() = 0;
-	virtual bool rawAxes( t_magn_axes &axes ) = 0;
+	virtual bool readRaw( t_magn_axes &mag ) = 0;
+	virtual bool readBiased( vector_ijk &mag ) { return false; }
 	virtual int curX() = 0;
 	virtual int curY() = 0;
 	virtual int curZ() = 0;
+protected:
+	bool calibrated = false;
 };

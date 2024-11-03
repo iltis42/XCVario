@@ -434,7 +434,11 @@ static void grabMPU()
 		vector_ijk gyroDPS = IMU::getGliderGyro();
 		// ESP_LOGI(FNAME,"Gyro:\t%4f\t%4f\t%4f", gyroDPS.a, gyroDPS.b, gyroDPS.c);
 		// vector_ijk accl = IMU::getGliderAccel();
-		// ESP_LOGI(FNAME,"Accl:\t%4f\t%4f\t%4f\tL%.2f", accl.a, accl.b, accl.c, accl.get_norm());
+		// if (compass != nullptr) {
+		// 	ESP_LOGI(FNAME,"Accl:\t%4f\t%4f\t%4f\tL%.2f Gyro:\t%4f\t%4f\t%4f Mag:\t%4f\t%4f\t%4f", accl.a, accl.b, accl.c, accl.get_norm(), 
+		// 		gyroDPS.a, gyroDPS.b, gyroDPS.c,
+		// 		compass->rawX(), compass->rawY(), compass->rawZ());
+		// }
 
 		float GS=0; // Autoleveling Gyro feature only with GPS and GS close to zero to avoid triggering at push back taxi with zero AS
 		bool gpsOK = Flarm::getGPSknots( GS );
@@ -615,7 +619,7 @@ void readSensors(void *pvParameters){
 					IMU::getGliderNogateGyroX(), IMU::getGliderNogateGyroY(), IMU::getGliderNogateGyroZ() );
 			if( compass ){
 				pos=strlen(log);
-				sprintf( log+pos,",%d,%d,%d", int( compass->calX() ),int( compass->calY()) , int( compass->calZ() ));
+				sprintf( log+pos,",%.4f,%.4f,%.4f", compass->rawX(), compass->rawY(), compass->rawZ());
 			}
 			pos=strlen(log);
 			sprintf( log+pos, "\n");
@@ -1322,29 +1326,22 @@ void system_startup(void *args){
 	if( Audio::haveCAT5171() ) // todo && CAN configured
 	{
 		CAN = new CANbus();
-		if( CAN->selfTest(false) ){  // series 2023 has fixed slope control, prio slope bit for AHRS temperature control
+		logged_tests += "CAN Interface: ";
+		if( CAN->selfTest() ) { // series 2023 has fixed slope control, prio slope bit for AHRS temperature control
 			resultCAN = "OK";
-			ESP_LOGE(FNAME,"CAN Bus selftest (no RS): OK");
-			logged_tests += "CAN Interface: OK\n";
-			if( hardwareRevision.get() != XCVARIO_23 ){
+			ESP_LOGE(FNAME,"CAN Bus selftest (%sRS): OK", CAN->hasSlopeSupport() ? "" : "no ");
+			logged_tests += "OK\n";
+			if ( CAN->hasSlopeSupport() ) {
+				hardwareRevision.set(XCVARIO_22);  // XCV-22, CAN but no AHRS temperature control
+			} else {
 				ESP_LOGI(FNAME,"CAN Bus selftest without RS control OK: set hardwareRevision 5 (XCV-23)");
 				hardwareRevision.set(XCVARIO_23);  // XCV-23, including AHRS temperature control
 			}
 		}
-		else{
-			if( CAN->selfTest(true) ){  // if slope bit is to be handled, there is no temperature control
-				resultCAN = "OK";
-				ESP_LOGE(FNAME,"CAN Bus selftest RS: OK");
-				logged_tests += "CAN Interface: OK\n";
-				if( hardwareRevision.get() != XCVARIO_22 ){
-					hardwareRevision.set(XCVARIO_22);  // XCV-22, CAN but no AHRS temperature control
-				}
-			}
-			else{
-				resultCAN = "FAIL";
-				logged_tests += "CAN Bus selftest: FAILED\n";
-				ESP_LOGE(FNAME,"Error: CAN Interface failed");
-			}
+		else {
+			resultCAN = "FAIL";
+			logged_tests += "CAN Bus selftest: FAILED\n";
+			ESP_LOGE(FNAME,"Error: CAN Interface failed");
 		}
 	}
 

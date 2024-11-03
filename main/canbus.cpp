@@ -33,7 +33,11 @@ CANbus* CAN = 0;
 xSemaphoreHandle sendMutex = 0;
 xSemaphoreHandle nmeaMutex = 0;
 
-CANbus::CANbus(){
+CANbus::CANbus()
+{
+	sendMutex = xSemaphoreCreateMutex();
+	nmeaMutex = xSemaphoreCreateMutex();
+
 	if( SetupCommon::isClient() ){  // client uses different ID, so prepare canbus for client role
 		_can_id_config_tx = CAN_CONFIG_ID_CLIENT;
 		_can_id_config_rx = CAN_CONFIG_ID_MASTER;
@@ -409,8 +413,6 @@ bool CANbus::sendNMEA( const SString& msg ){
 
 bool CANbus::selfTest( bool rs ){
 	ESP_LOGI(FNAME,"CAN bus selftest");
-	sendMutex = xSemaphoreCreateMutex();
-	nmeaMutex = xSemaphoreCreateMutex();
 	_slope_support = rs;
 	if( !_slope_support ){
 		gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);

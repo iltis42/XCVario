@@ -63,6 +63,9 @@ void CANbus::driverInstall( twai_mode_t mode ){
 	twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT( _tx_io, _rx_io, mode );
 	ESP_LOGI(FNAME, "default alerts %X", g_config.alerts_enabled);
 	g_config.alerts_enabled |= TWAI_ALERT_TX_IDLE | TWAI_ALERT_TX_SUCCESS | TWAI_ALERT_TX_FAILED;
+	if ( _slope_support ) {
+		g_config.bus_off_io = GPIO_NUM_2;
+	}
 	g_config.rx_queue_len = 15; // 1.5x the need of one NMEA sentence
 	g_config.tx_queue_len = 15;
 	ESP_LOGI(FNAME, "my alerts %X", g_config.alerts_enabled);
@@ -102,14 +105,10 @@ void CANbus::driverInstall( twai_mode_t mode ){
 	//Start TWAI driver
 	if (twai_start() == ESP_OK) {
 		ESP_LOGI(FNAME,"Driver started");
-		delay(10);
-		_ready_initialized = true;
-		// Set RS pin
-		// bus_off_io may operate invers, so for now set this here
-		if( _slope_support ){
+		if ( _slope_support ) {
 			gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);
 		}
-		delay(10);
+		_ready_initialized = true;
 	} else {
 		twai_driver_uninstall();
 		ESP_LOGI(FNAME,"Failed to start driver");
@@ -411,49 +410,59 @@ bool CANbus::sendNMEA( const SString& msg ){
 	return ret;
 }
 
-bool CANbus::selfTest( bool rs ){
+bool CANbus::selfTest()
+{
 	ESP_LOGI(FNAME,"CAN bus selftest");
-	_slope_support = rs;
-	if( !_slope_support ){
-		gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);
-		gpio_set_level(GPIO_NUM_2, 1 );
-	}
+
+	// Pretend slope control off and probe the reaction on GPIO 2 here
+	_slope_support = false;
+	gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);
+	 // in case of GPIO 2 wired to CAN this would inhibit sending and cause a failing test
+	gpio_set_level(GPIO_NUM_2, 1);
+
 	driverInstall( TWAI_MODE_NO_ACK );
 	bool res=false;
 	int id=0x100;
-	delay(100);
-	twai_clear_receive_queue();
-	for( int i=0; i<10; i++ ){ // repeat test 10x
-		char tx[10] = { "1827364" };
-		int len = strlen(tx);
-		// there might be data from a remote device
+	for (int slope=0; slope<2; slope++)
+	{
 		twai_clear_receive_queue();
-		if( !sendData( id, tx,len, 1 ) ){
-			ESP_LOGW(FNAME,"CAN bus selftest TX FAILED");
-			recover();
-		}
-		delay(2);
-		SString msg;
-		int rxid;
-		int bytes = receive( &rxid, msg, 10 );
-		ESP_LOGI(FNAME,"RX CAN bus message bytes:%d, id:%04x, data:%s", bytes, id, msg.c_str() );
-		if( bytes != 7 || rxid != id ){
-			ESP_LOGW(FNAME,"CAN bus selftest RX call FAILED bytes:%d rxid%d recm:%s", bytes, rxid, msg.c_str() );
-			delay(i);
+		for( int i=0; i<3; i++ ){ // repeat test 3x
+			char tx[10] = { "1827364" };
+			int len = strlen(tx);
+			// there might be data from a remote device
 			twai_clear_receive_queue();
+			if( !sendData( id, tx,len, 1 ) ){
+				ESP_LOGW(FNAME,"CAN bus selftest TX FAILED");
+				recover();
+			}
+			delay(2);
+			SString msg;
+			int rxid;
+			int bytes = receive( &rxid, msg, 2 );
+			ESP_LOGI(FNAME,"RX CAN bus message bytes:%d, id:%04x, data:%s", bytes, id, msg.c_str() );
+			if( bytes != 7 || rxid != id ){
+				ESP_LOGW(FNAME,"CAN bus selftest RX call FAILED bytes:%d rxid%d recm:%s", bytes, rxid, msg.c_str() );
+				twai_clear_receive_queue();
+			}
+			else if( memcmp( msg.c_str() ,tx, len ) == 0 ){
+				ESP_LOGI(FNAME,"RX CAN bus OKAY");
+				res=true;
+				break;
+			}
 		}
-		else if( memcmp( msg.c_str() ,tx, len ) == 0 ){
-			ESP_LOGI(FNAME,"RX CAN bus OKAY");
-			res=true;
-			break;
-		}
+		if ( res ) break;
+
+		_slope_support = true;
+		gpio_set_level(GPIO_NUM_2, 0);
+		ESP_LOGI(FNAME,"CAN slope support on.");
 	}
-	if( res ){
+	if( res ) {
 		ESP_LOGW(FNAME,"CAN bus selftest TX/RX OKAY");
-	}else{
+	}
+	else {
 		ESP_LOGW(FNAME,"CAN bus selftest TX/RX FAILED");
 	}
-	restart();
+	driverUninstall();
 	return res;
 }
 
@@ -464,9 +473,7 @@ bool CANbus::sendData( int id, const char* msg, int length, int self ){
 		return false;
 	}
 	xSemaphoreTake(sendMutex,portMAX_DELAY );
-	if( _slope_support ){
-		gpio_set_level(GPIO_NUM_2, 0 );
-	}
+
 	twai_message_t message;
 	memset( &message, 0, sizeof( message ) );
 	message.identifier = id;

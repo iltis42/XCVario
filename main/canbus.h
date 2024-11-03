@@ -25,7 +25,7 @@ public:
 	void begin();
 	void restart();
 	void recover();
-	bool selfTest(bool rs_bit);
+	bool selfTest();
     bool GotNewClient() const { return _new_can_client_connected; }
     void ResetNewClient() { _new_can_client_connected = false; }
 	bool connectedXCV() { return _connected_xcv; };

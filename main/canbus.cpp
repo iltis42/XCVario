@@ -33,6 +33,24 @@ CANbus* CAN = 0;
 xSemaphoreHandle sendMutex = 0;
 xSemaphoreHandle nmeaMutex = 0;
 
+CANbus::CANbus(){
+	if( SetupCommon::isClient() ){  // client uses different ID, so prepare canbus for client role
+		_can_id_config_tx = CAN_CONFIG_ID_CLIENT;
+		_can_id_config_rx = CAN_CONFIG_ID_MASTER;
+		_can_id_nmea_tx = CAN_NMEA_ID_CLIENT;
+		_can_id_nmea_rx = CAN_NMEA_ID_MASTER;
+		_can_id_keepalive_tx = CAN_KEEPALIVE_ID_CLIENT;
+		_can_id_keepalive_rx = CAN_KEEPALIVE_ID_MASTER;
+	}else{
+		_can_id_config_tx = CAN_CONFIG_ID_MASTER;
+		_can_id_config_rx = CAN_CONFIG_ID_CLIENT;
+		_can_id_nmea_tx = CAN_NMEA_ID_MASTER;
+		_can_id_nmea_rx = CAN_NMEA_ID_CLIENT;
+		_can_id_keepalive_tx = CAN_KEEPALIVE_ID_MASTER;
+		_can_id_keepalive_rx = CAN_KEEPALIVE_ID_CLIENT;
+	}
+}
+
 // install/reinstall CAN driver in corresponding mode
 void CANbus::driverInstall( twai_mode_t mode ){
 	if( _ready_initialized ){
@@ -233,7 +251,7 @@ void CANbus::txtick(int tick){
 	if( !(tick%100) ){
 		if( ((can_mode.get() == CAN_MODE_CLIENT)  && _connected_xcv) || can_mode.get() == CAN_MODE_MASTER ){ // sent from client only if keep alive is there
 			msg.set( "K" );
-			if( !sendData( 0x11, msg.c_str(), 1 ) )
+			if( !sendData( _can_id_keepalive_tx, msg.c_str(), 1 ) )
 			{
 				_connected_timeout_xcv +=150;  // if sending fails as indication for disconnection
 				if( !_keep_alive_fails ){
@@ -268,7 +286,7 @@ void CANbus::rxtick(int tick){
 		bytes = receive( &id, msg, 500 );
 		// ESP_LOGI(FNAME,"CAN RX id:%02x, bytes:%d, connected XCV:%d Magsens: %d", id, bytes, _connected_xcv, _connected_magsens );
 		if( bytes  ){ // keep alive from second XCV
-			if( id == 0x11 ){ // keep alive of msg from peer XCV ?
+			if( id == _can_id_keepalive_rx ){ // keep alive of msg from peer XCV ?
 				// ESP_LOGI(FNAME,"CAN RX Keep Alive");
 				xcv_came = true;
 				_connected_timeout_xcv = 0;
@@ -282,7 +300,7 @@ void CANbus::rxtick(int tick){
 					_new_can_client_connected = (the_can_mode == CAN_MODE_MASTER);
 				}
 			}
-			if( id == 0x031 ){
+			if( id == CAN_MAGSENS_ID ){
 				magsens_came = true;
 				_connected_timeout_magsens = 0;
 				if( !_connected_magsens ){
@@ -318,20 +336,20 @@ void CANbus::rxtick(int tick){
 				}
 			}
 		}
-		// receive NMEA message of corresponding ID 0x20
-		if( id == 0x20 ) {
+		// process NMEA message depending on role and peer
+		if( id == _can_id_nmea_rx ) {
 			// ESP_LOGI(FNAME,"CAN RX NMEA chunk, len:%d msg: %s", bytes, msg.c_str() );
 			// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
 			_connected_timeout_xcv = 0;
 			dlink.process( msg.c_str(), msg.length(), 3 );  // (char *packet, int len, int port );
 		}
-		if( id == 0x21 ) {  // now clearly confirmed by traces: chunks from !xs and other sources may mix up. Fixed now by a second ID
+		if( id == _can_id_config_rx ) {   // CAN messages for config (!xs) and NMEA may mix up: Fixed by a second ID and datalink layer for config variables
 			// ESP_LOGI(FNAME,"CAN RX NMEA chunk, len:%d msg: %s", bytes, msg.c_str() );
 			// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
 			_connected_timeout_xcv = 0;
 			dlinkXs.process( msg.c_str(), msg.length(), 3 );  // (char *packet, int len, int port );
 		}
-		else if( id == 0x031 ){ // magnet sensor
+		else if( id == CAN_MAGSENS_ID ){ // magnet sensor
 			// ESP_LOGI(FNAME,"CAN RX MagSensor, msg: %d", bytes );
 			// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), bytes, ESP_LOG_INFO);
 			QMCMagCAN::fromCAN( msg.c_str() );
@@ -359,9 +377,10 @@ bool CANbus::sendNMEA( const SString& msg ){
 	// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
 
 	const int chunk=8;
-	int id = 0x20;
+	int id = _can_id_nmea_tx;
 	if( !strncmp( msg.c_str(), "!xs", 3) )  // segregate internal NMEA by different id for !xs
-		id = 0x21;
+		id = _can_id_config_tx;
+
 	const char *cptr = msg.c_str();
 	int len = msg.length(); // Including the terminating \0 -> need to remove this one byte at RX from strlen
 	while( len > 0 )

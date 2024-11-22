@@ -1,6 +1,6 @@
 #pragma once
 
-#include "protocols/ProtocolItf.h"
+#include "protocol/ProtocolItf.h"
 #include "types.h"
 
 class SString;
@@ -38,7 +38,7 @@ enum state_t {
 	GET_BECKER_DATA,
 	GET_ATR833_MSG,
 	GET_ATR833_CS,
-	GET_ANEMOI_DATA
+	// GET_ANEMOI_DATA
 };
 
 

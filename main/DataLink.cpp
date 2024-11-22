@@ -6,7 +6,7 @@
 #include "Serial.h"
 #include "Flarm.h"
 #include "DataMonitor.h"
-#include "protocols/Anemoi.h"
+#include "protocol/Anemoi.h"
 #include "Protocols.h"
 
 #include <stdint.h>

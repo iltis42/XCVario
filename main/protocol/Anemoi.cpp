@@ -104,7 +104,7 @@ gen_state_t Anemoi::nextByte(const char c)
  */
 void Anemoi::parseStatus()
 {
-    extwind_status.set(_framebuffer[3]);
+    // extwind_status.set(_framebuffer[3]);
     // ESP_LOGI(FNAME,"Anemoi %d.%d DisplayOrient: %d, Status: %x", *(status+4)>>4, *(status+4)&0xF, *(status+2), *(status+3));
 }
 
@@ -126,10 +126,10 @@ void Anemoi::parseStatus()
  */
 void Anemoi::parseWind()
 {
-    extwind_inst_dir.set((_framebuffer[2]<<8) + _framebuffer[3]);
-    extwind_inst_speed.set(_framebuffer[4]);
-    extwind_sptc_dir.set((_framebuffer[5]<<8) + _framebuffer[6]);
-    extwind_sptc_speed.set(_framebuffer[7]);
+    // extwind_inst_dir.set((_framebuffer[2]<<8) + _framebuffer[3]);
+    // extwind_inst_speed.set(_framebuffer[4]);
+    // extwind_sptc_dir.set((_framebuffer[5]<<8) + _framebuffer[6]);
+    // extwind_sptc_speed.set(_framebuffer[7]);
     // ESP_LOGI(FNAME,"WDir %.1f, Wvel %.1f", extwind_inst_dir.get(), extwind_inst_speed.get());
 }
 

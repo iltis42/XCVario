@@ -54,7 +54,8 @@
 #include "StraightWind.h"
 #include "CircleWind.h"
 #include <coredump_to_server.h>
-#include "canbus.h"
+#include "comm/CanBus.h"
+#include "comm/DeviceMgr.h"
 #include "Router.h"
 
 #include "sdkconfig.h"
@@ -1339,6 +1340,8 @@ void system_startup(void *args){
 				if( hardwareRevision.get() < XCVARIO_23)
 					hardwareRevision.set(XCVARIO_23);  // XCV-23, including AHRS temperature control
 			}
+			DeviceManager* dm = DeviceManager::Instance();
+			dm->addDevice(DeviceId::MASTER_DEV, ProtocolType::REGISTRATION, CAN_REG_PORT, CAN_REG_PORT, CAN);
 		}
 		else {
 			resultCAN = "FAIL";

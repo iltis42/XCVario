@@ -5,16 +5,17 @@
 class Anemoi final : public ProtocolItf
 {
 public:
-	Anemoi() = default;
-	virtual ~Anemoi() {}
+    explicit Anemoi(int p) : ProtocolItf(p) { _binary = true; }
+    virtual ~Anemoi() {}
+
+    virtual DeviceId getDeviceId() { return ANEMOI_DEV; } // The connected (!) device through protocol
+    virtual ProtocolType getProtocolId() { return ANEMOI; }
+
 public:
-	virtual protocol_nt getProtocolId() const override { return ANEMOI; }
-	virtual gen_state_t nextByte(const char c) override;
-	virtual bool isNMEA() const override { return false; }
+    virtual gen_state_t nextByte(const char c) override;
 
 private:
-	void incrCRC(const char c) override;
-	void parseWind();
-	void parseStatus();
+    void incrCRC(const char c) override;
+    void parseWind();
+    void parseStatus();
 };
-

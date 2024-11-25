@@ -15,7 +15,7 @@
 #include "StraightWind.h"
 #include "DataMonitor.h"
 #include "AdaptUGC.h"
-#include "canbus.h"
+#include "comm/CanBus.h"
 #include "CenterAid.h"
 #include "vector_3d.h"
 #include "BMPVario.h"

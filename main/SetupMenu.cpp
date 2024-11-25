@@ -195,22 +195,22 @@ int upd_screens( SetupMenuSelect * p ){
 }
 
 int update_s1_protocol( SetupMenuSelect * p ){
-	if( serial1_protocol.get() == DEV_FLARM )
-		dl_S1.setProtocol( NMEA );
-	else if( serial1_protocol.get() == DEV_ANEMOI )
-		dl_S1.setProtocol( ANEMOI );
-	else
-		dl_S1.setProtocol( NO_ONE );
+	// if( serial1_protocol.get() == DEV_FLARM )
+	// 	dl_S1.setProtocol( NMEA );
+	// else if( serial1_protocol.get() == DEV_ANEMOI )
+	// 	dl_S1.setProtocol( ANEMOI );
+	// else
+	// 	dl_S1.setProtocol( NO_ONE );
 	return 0;
 }
 
 int update_s2_protocol( SetupMenuSelect * p ){
-	if( serial2_protocol.get() == DEV_FLARM )
-		dl_S2.setProtocol( NMEA );
-	else if( serial2_protocol.get() == DEV_ANEMOI )
-		dl_S2.setProtocol( ANEMOI );
-	else
-		dl_S2.setProtocol( NO_ONE );
+	// if( serial2_protocol.get() == DEV_FLARM )
+	// 	dl_S2.setProtocol( NMEA );
+	// else if( serial2_protocol.get() == DEV_ANEMOI )
+	// 	dl_S2.setProtocol( ANEMOI );
+	// else
+	// 	dl_S2.setProtocol( NO_ONE );
 	return 0;
 }
 

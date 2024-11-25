@@ -112,8 +112,8 @@ void Flarm::flarmSim(){
 			int cs = Protocols::calcNMEACheckSum( (char *)flarm[sim_tick/2] );
 			char str[80];
 			sprintf( str, "%s%02X\r\n", flarm[sim_tick/2], cs );
-			// SString sf( str );
-			// Router::forwardMsg( sf, s1_rx_q );
+			SString sf( str );
+			Router::forwardMsg( sf, s1_rx_q );
 			parsePFLAU( str, true );
 			ESP_LOGI(FNAME,"Serial FLARM SIM: %s",  str );
 		}

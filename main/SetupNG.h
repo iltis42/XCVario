@@ -10,6 +10,7 @@
 #include "BTSender.h"
 #include "Polars.h"
 #include "MPU.hpp" // change from .h to .hpp for Windows toolchain compatibility
+#include "comm/CanBus.h"
 
 #include <esp_partition.h>
 #include <esp_err.h>
@@ -89,7 +90,6 @@ typedef enum e_alt_quantisation { ALT_QUANT_DISABLE, ALT_QUANT_2, ALT_QUANT_5, A
 typedef enum e_sync { SYNC_NONE, SYNC_FROM_MASTER, SYNC_FROM_CLIENT, SYNC_BIDIR } e_sync_t;       // determines if data is synched from/to client. BIDIR means sync at commit from both sides
 typedef enum e_reset { RESET_NO, RESET_YES } e_reset_t;   // determines if data is reset to defaults on factory reset
 typedef enum e_volatility { VOLATILE, PERSISTENT, SEMI_VOLATILE } e_volatility_t;  // stored in RAM, FLASH, or into FLASH after a while
-typedef enum e_can_speed { CAN_SPEED_OFF, CAN_SPEED_250KBIT, CAN_SPEED_500KBIT, CAN_SPEED_1MBIT } e_can_speed_t;  // stored in RAM, FLASH, or into FLASH after a while
 typedef enum e_can_mode { CAN_MODE_MASTER, CAN_MODE_CLIENT, CAN_MODE_STANDALONE } e_can_mode_t;
 typedef enum e_altimeter_select { AS_TE_SENSOR, AS_BARO_SENSOR, AS_EXTERNAL } e_altimeter_select_t;
 typedef enum e_menu_screens { SCREEN_VARIO, SCREEN_GMETER, SCREEN_HORIZON, SCREEN_FLARM, SCREEN_THERMAL_ASSISTANT } e_menu_screens_t; // addittional screens

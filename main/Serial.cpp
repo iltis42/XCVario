@@ -25,7 +25,7 @@
 #include "Serial.h"
 #include "Flarm.h"
 #include "Protocols.h"
-#include "canbus.h"
+// #include "canbus.h"
 #include "ESPAudio.h"
 
 /* Note that the standard NMEA 0183 baud rate is only 4.8 kBaud.
@@ -126,7 +126,7 @@ void Serial::serialHandler(void *pvParameters)
 				// ESP_LOGI(FNAME,"S%d: RX: %d bytes, avail: %d", cfg->uart->number(), rxBytes, available );
 				// ESP_LOG_BUFFER_HEXDUMP(FNAME,buf, rxBytes, ESP_LOG_INFO);
 				buf[rxBytes] = 0;
-				cfg->dl->process( buf, rxBytes );
+				cfg->dl->process( buf, rxBytes, 0 );
 				DM.monitorString( cfg->monitor, DIR_RX, buf, rxBytes );
 			}
 		}

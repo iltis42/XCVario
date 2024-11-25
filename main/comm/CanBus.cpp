@@ -1,13 +1,13 @@
 
-#include "canbus.h"
-
+#include "CanBus.h"
+#include "Messages.h"
+#include "DeviceMgr.h"
 #include "sensor.h"
-#include "RingBufCPP.h"
-#include "Router.h"
+// #include "RingBufCPP.h"
+#include "Routing.h"
 #include "QMCMagCAN.h"
 #include "Flarm.h"
-#include "Switch.h"
-
+// #include "Switch.h"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -19,499 +19,599 @@
 #include <cstring>
 #include "DataMonitor.h"
 #include "Flarm.h"
-#include "DataLink.h"
+#include "../DataLink.h"
 
-DataLink dlink;
-DataLink dlinkXs;  // use a second CAN id and datalink to avoid checksum errors by mixed up messages
+DataLinkOld dlink;
+DataLinkOld dlinkXs; // use a second CAN id and datalink to avoid checksum errors by mixed up messages
 
 /*
- *  Code for a 1:1 connection between two XCVario with a fixed message ID
- *
+ *  Connect two XCVario with a fixed message ID
+ *  Connect other peripherals to the XCVario
+ *  Maybe use a breakout bos to furthe connect serial devices and tunnel protocols
  */
-CANbus* CAN = 0;
 
-xSemaphoreHandle sendMutex = 0;
-xSemaphoreHandle nmeaMutex = 0;
+#define CANTEST_ID 0x100
+static int can_id_config_tx; // to unify CAN id's, the following _can* variables are initialized depending on master/client role in constructor
+static int can_id_config_rx;
+static int can_id_nmea_tx;
+static int can_id_nmea_rx;
+static int can_id_keepalive_tx;
+static int can_id_keepalive_rx;
+
+static TaskHandle_t cpid;
+CANbus *CAN = 0;
+QueueHandle_t CanSendQueue = 0;
+static bool terminate_receiver = false;
+
+
+// generic transmitter grabbing messages from a queue
+void TransmitTask(void *arg)
+{
+    QueueHandle_t queue = (QueueHandle_t)arg;
+    Message *msg;
+
+    while (true)
+    {
+        // sleep until the queue gives us something to do
+        if (xQueueReceive(queue, &msg, portMAX_DELAY))
+        {
+
+            if (msg == nullptr)
+            {
+                break;
+            } // termination signal
+
+            int len = msg->buffer.length(); // Including the terminating \0 -> need to remove this one byte at RX from strlen
+            int port = msg->port;
+            InterfaceCtrl *itf = DEVMAN->getIntf(msg->target_id);
+            if (itf)
+            {
+                ESP_LOGI(FNAME, "send %s/%d NMEA len %d, msg: %s", itf->getId(), port, len, msg->buffer.c_str());
+
+                if ( !itf->Send(msg->buffer.c_str(), len - 1, port) ) {
+                    ESP_LOGI(FNAME, "failed sending");
+                }
+            }
+            DEV::relMessage(msg);
+        }
+    }
+
+    // Fixme keep alive and ping code is a application layer concern and has to move
+    // void CANbus::txtick(int tick){
+
+    // SString msg;
+    // // CAN bus send
+    // if ( !can_tx_q.isEmpty() ){
+    // 	// ESP_LOGI(FNAME,"There is CAN data");
+    // 	if( _connected_xcv ){
+    // 		// ESP_LOGI(FNAME,"CAN TX Q:%d", can_tx_q.numElements() );
+    // 		while( Router::pullMsg( can_tx_q, msg ) ){
+    // 			// ESP_LOGI(FNAME,"CAN TX len: %d bytes Q:%d", msg.length(), can_tx_q.numElements() );
+    // 			// ESP_LOG_BUFFER_HEXDUMP(FNAME,msg.c_str(),msg.length(), ESP_LOG_INFO);
+    // 			DM.monitorString( MON_CAN, DIR_TX, msg.c_str(), msg.length() );
+    // 			if( !sendNMEA( msg ) ){
+    // 				_connected_timeout_xcv +=150;  // if sending fails as indication for disconnection
+    // 				// ESP_LOGW(FNAME,"CAN TX NMEA failed, timeout=%d", _connected_timeout_xcv );
+    // 				if( _connected_timeout_xcv > 1000 )
+    // 					recover();
+    // 			}
+    // 		}
+    // 	}
+    // }
+    // // Router::routeCAN();
+    // if( !(tick%100) ){
+    // 	if( ((can_mode.get() == CAN_MODE_CLIENT)  && _connected_xcv) || can_mode.get() == CAN_MODE_MASTER ){ // sent from client only if keep alive is there
+    // 		msg.set( "K" );
+    // 		if( !sendData( _can_id_keepalive_tx, msg.c_str(), 1 ) )
+    // 		{
+    // 			_connected_timeout_xcv +=150;  // if sending fails as indication for disconnection
+    // 			if( !_keep_alive_fails ){
+    // 				ESP_LOGW(FNAME,"Permanent CAN TX Keep Alive failure");
+    // 				_keep_alive_fails = true;
+    // 			}
+    // 			if( _connected_timeout_xcv > 1000 )
+    // 				recover();
+    // 		}else{
+    // 			if( _keep_alive_fails ){
+    // 				ESP_LOGI(FNAME,"Okay again CAN TX Keep Alive");
+    // 				_keep_alive_fails = false;
+    // 			}
+    // 		}
+    // 	}
+    // }
+
+    vTaskDelete(NULL);
+}
+
+// CAN receiver task
+void canRxTask(void *arg)
+{
+    CANbus *can = static_cast<CANbus *>(arg);
+    unsigned int tick = 0;
+
+    if (!can->_initialized)
+    {
+        ESP_LOGI(FNAME, "CANbus not ready");
+        vTaskDelete(NULL);
+        // return;
+    }
+
+    std::string msg; // scratch buffer
+    msg.resize(10);
+    do
+    {
+        // basically block on the twai receiver for ever
+        twai_message_t rx;
+        if (ESP_OK == twai_receive(&rx, pdMS_TO_TICKS(500)) && rx.data_length_code > 0)
+        {
+            ESP_LOGI(FNAME, "CAN RX NMEA chunk, id:0x%x, len:%d msg: %s", rx.identifier, rx.data_length_code, msg.c_str());
+            msg.assign((char *)rx.data, rx.data_length_code);
+            for (auto &dl : can->_dlink)
+            {
+                if (dl->getPort() == rx.identifier)
+                {
+                    dl->process(msg.data(), rx.data_length_code);
+                }
+            }
+
+            bool xcv_came = false;
+            bool magsens_came = false;
+
+            // old receiver missing a data link
+            if (rx.identifier == can_id_keepalive_rx)
+            { // keep alive of msg from peer XCV ?
+                // ESP_LOGI(FNAME,"CAN RX Keep Alive");
+                xcv_came = true;
+                // _connected_timeout_xcv = 0;
+                // if( !_connected_xcv ){
+                // 	bool entry=false;
+                // 	do{ // cleanup congestion at startup
+                // 		entry = Router::pullMsg( can_tx_q, msg );
+                // 	}while( entry );
+                // 	ESP_LOGI(FNAME,"CAN XCV connected");
+                // 	_connected_xcv = true;
+                // 	_new_can_client_connected = (the_can_mode == CAN_MODE_MASTER);
+                // }
+            }
+            else if (rx.identifier == CAN_MAGSENS_ID)
+            {
+                magsens_came = true;
+                // _connected_timeout_magsens = 0;
+                // if( !_connected_magsens ){
+                // 	ESP_LOGI(FNAME,"CAN Magnetsensor connected");
+                // 	_connected_magsens = true;
+                // }
+            }
+            // process NMEA message depending on role and peer
+            else if (rx.identifier == can_id_nmea_rx)
+            {
+                // ESP_LOGI(FNAME,"CAN RX NMEA chunk, len:%d msg: %s", bytes, msg.c_str() );
+                // ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
+                // _connected_timeout_xcv = 0;
+                dlink.process(msg.c_str(), msg.length(), 3); // (char *packet, int len, int port );
+            }
+            else if (rx.identifier == can_id_config_rx)
+            { // CAN messages for config (!xs) and NMEA may mix up: Fixed by a second ID and datalink layer for config variables
+                // ESP_LOGI(FNAME,"CAN RX NMEA chunk, len:%d msg: %s", bytes, msg.c_str() );
+                // ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
+                // _connected_timeout_xcv = 0;
+                dlinkXs.process(msg.c_str(), msg.length(), 3); // (char *packet, int len, int port );
+            }
+            else if (rx.identifier == CAN_MAGSENS_ID)
+            { // magnet sensor
+                // ESP_LOGI(FNAME,"CAN RX MagSensor, msg: %d", bytes );
+                // ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), bytes, ESP_LOG_INFO);
+                QMCMagCAN::fromCAN(msg.c_str(), msg.length());
+                // _connected_timeout_magsens = 0;
+            }
+            DM.monitorString(MON_CAN, DIR_RX, msg.c_str(), msg.length());
+        }
+        else
+        {
+            // ESP_LOGD(FNAME, "CAN timout");
+            if (terminate_receiver)
+            {
+                break;
+            }
+            // protocol state machine may want to react on no traffic
+            for (auto &dl : can->_dlink)
+            {
+                dl->process(nullptr, 0);
+            }
+        }
+
+        if ((tick++ % 100) == 0)
+        {
+            ESP_LOGI(FNAME, "Free Heap: %d bytes", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+            if (uxTaskGetStackHighWaterMark(cpid) < 128)
+            {
+                ESP_LOGW(FNAME, "Warning canbus task stack low: %d bytes", uxTaskGetStackHighWaterMark(xTaskGetCurrentTaskHandle()));
+            }
+        }
+    } while (true);
+
+    terminate_receiver = false; // handshake
+    vTaskDelete(NULL);
+
+    // // Can bus receive
+    // SString msg;
+    // int id = 0;
+    // int bytes = 0;
+    // bool xcv_came=false;
+    // bool magsens_came=false;
+    // do{
+    // 	bytes = receive( &id, msg, 500 );
+    // 	// ESP_LOGI(FNAME,"CAN RX id:%02x, bytes:%d, connected XCV:%d Magsens: %d", id, bytes, _connected_xcv, _connected_magsens );
+    // 	if( bytes  ){ // keep alive from second XCV
+    // 		if( id == _can_id_keepalive_rx ){ // keep alive of msg from peer XCV ?
+    // 			// ESP_LOGI(FNAME,"CAN RX Keep Alive");
+    // 			xcv_came = true;
+    // 			_connected_timeout_xcv = 0;
+    // 			if( !_connected_xcv ){
+    // 				bool entry=false;
+    // 				do{ // cleanup congestion at startup
+    // 					entry = Router::pullMsg( can_tx_q, msg );
+    // 				}while( entry );
+    // 				ESP_LOGI(FNAME,"CAN XCV connected");
+    // 				_connected_xcv = true;
+    // 				_new_can_client_connected = (the_can_mode == CAN_MODE_MASTER);
+    // 			}
+    // 		}
+    // 		if( id == CAN_MAGSENS_ID ){
+    // 			magsens_came = true;
+    // 			_connected_timeout_magsens = 0;
+    // 			if( !_connected_magsens ){
+    // 				ESP_LOGI(FNAME,"CAN Magnetsensor connected");
+    // 				_connected_magsens = true;
+    // 			}
+    // 		}
+    // 	}
+    // 	if( !magsens_came ){
+    // 		_connected_timeout_magsens++;
+    // 		if( _connected_timeout_magsens > 500 ){
+    // 			if( _connected_magsens ){
+    // 				ESP_LOGI(FNAME,"CAN Magsensor connection timeout");
+    // 				_connected_magsens = false;
+    // 			}
+    // 			if( compass_enable.get() == CS_CAN && (_connected_timeout_magsens > 10000) && !_connected_xcv ){
+    // 				// only restart when xcv is not connected, otherwise magsensor may be just plugged out
+    // 				ESP_LOGI(FNAME,"CAN Magnet Sensor restart timeout");
+    // 				restart();
+    // 			}
+    // 		}
+    // 	}
+    // 	if( !xcv_came ){
+    // 		_connected_timeout_xcv++;
+    // 		if( _connected_timeout_xcv > 200 ){
+    // 			if(  _connected_xcv ){
+    // 				ESP_LOGI(FNAME,"CAN XCV connection timeout");
+    // 				_connected_xcv = false;
+    // 			}
+    // 			if( (can_mode.get() != CAN_MODE_STANDALONE) && !(_connected_timeout_xcv % 10000) ){
+    // 				ESP_LOGI(FNAME,"CAN restart timeout");
+    // 				restart();
+    // 			}
+    // 		}
+    // 	}
+}
 
 CANbus::CANbus()
 {
-	sendMutex = xSemaphoreCreateMutex();
-	nmeaMutex = xSemaphoreCreateMutex();
 
-	if( SetupCommon::isClient() ){  // client uses different ID, so prepare canbus for client role
-		_can_id_config_tx = CAN_CONFIG_ID_CLIENT;
-		_can_id_config_rx = CAN_CONFIG_ID_MASTER;
-		_can_id_nmea_tx = CAN_NMEA_ID_CLIENT;
-		_can_id_nmea_rx = CAN_NMEA_ID_MASTER;
-		_can_id_keepalive_tx = CAN_KEEPALIVE_ID_CLIENT;
-		_can_id_keepalive_rx = CAN_KEEPALIVE_ID_MASTER;
-	}else{
-		_can_id_config_tx = CAN_CONFIG_ID_MASTER;
-		_can_id_config_rx = CAN_CONFIG_ID_CLIENT;
-		_can_id_nmea_tx = CAN_NMEA_ID_MASTER;
-		_can_id_nmea_rx = CAN_NMEA_ID_CLIENT;
-		_can_id_keepalive_tx = CAN_KEEPALIVE_ID_MASTER;
-		_can_id_keepalive_rx = CAN_KEEPALIVE_ID_CLIENT;
-	}
+    _tx_io = GPIO_NUM_26;
+    _rx_io = GPIO_NUM_33;
+    _slope_ctrl = GPIO_NUM_2;
+
+    CanSendQueue = xQueueCreate(10, sizeof(Message *));
+
+    if (SetupCommon::isClient())
+    { // client uses different ID, so prepare canbus for client role
+        can_id_config_tx = CAN_CONFIG_ID_CLIENT;
+        can_id_config_rx = CAN_CONFIG_ID_MASTER;
+        can_id_nmea_tx = CAN_NMEA_ID_CLIENT;
+        can_id_nmea_rx = CAN_NMEA_ID_MASTER;
+        can_id_keepalive_tx = CAN_KEEPALIVE_ID_CLIENT;
+        can_id_keepalive_rx = CAN_KEEPALIVE_ID_MASTER;
+    }
+    else
+    {
+        can_id_config_tx = CAN_CONFIG_ID_MASTER;
+        can_id_config_rx = CAN_CONFIG_ID_CLIENT;
+        can_id_nmea_tx = CAN_NMEA_ID_MASTER;
+        can_id_nmea_rx = CAN_NMEA_ID_CLIENT;
+        can_id_keepalive_tx = CAN_KEEPALIVE_ID_MASTER;
+        can_id_keepalive_rx = CAN_KEEPALIVE_ID_CLIENT;
+    }
+}
+
+CANbus::~CANbus()
+{
+    vQueueDelete(CanSendQueue);
+}
+
+void CANbus::ConfigureIntf(int cfg)
+{
 }
 
 // install/reinstall CAN driver in corresponding mode
-void CANbus::driverInstall( twai_mode_t mode ){
-	if( _ready_initialized ){
-		driverUninstall();
-	}
-	twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT( _tx_io, _rx_io, mode );
-	ESP_LOGI(FNAME, "default alerts %X", g_config.alerts_enabled);
-	g_config.alerts_enabled |= TWAI_ALERT_TX_IDLE | TWAI_ALERT_TX_SUCCESS | TWAI_ALERT_TX_FAILED;
-	if ( _slope_support ) {
-		g_config.bus_off_io = GPIO_NUM_2;
-	}
-	g_config.rx_queue_len = 15; // 1.5x the need of one NMEA sentence
-	g_config.tx_queue_len = 15;
-	ESP_LOGI(FNAME, "my alerts %X", g_config.alerts_enabled);
+void CANbus::driverInstall(twai_mode_t mode)
+{
+    if (_initialized)
+    {
+        driverUninstall();
+    }
+    twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(_tx_io, _rx_io, mode);
+    ESP_LOGI(FNAME, "default alerts %X", g_config.alerts_enabled);
+    g_config.alerts_enabled |= TWAI_ALERT_TX_IDLE | TWAI_ALERT_TX_SUCCESS | TWAI_ALERT_TX_FAILED;
+    if (_slope_support)
+    {
+        g_config.bus_off_io = _slope_ctrl;
+    }
+    g_config.rx_queue_len = 15; // 1.5x the need of one NMEA sentence
+    g_config.tx_queue_len = 15;
+    ESP_LOGI(FNAME, "my alerts %X", g_config.alerts_enabled);
 
-	twai_timing_config_t t_config;
-	_tx_timeout = 2; // 111usec/chunk -> 2msec
-	if( can_speed.get() == CAN_SPEED_250KBIT ){
-		ESP_LOGI(FNAME,"CAN rate 250KBit");
-		t_config = TWAI_TIMING_CONFIG_250KBITS();
-		_tx_timeout = 4; // 444usec/chunk -> 4msec
+    twai_timing_config_t t_config;
+    _tx_timeout = 2; // 111usec/chunk -> 2msec
+    if (can_speed.get() == CAN_SPEED_250KBIT)
+    {
+        ESP_LOGI(FNAME, "CAN rate 250KBit");
+        t_config = TWAI_TIMING_CONFIG_250KBITS();
+        _tx_timeout = 4; // 444usec/chunk -> 4msec
+    }
+    else if (can_speed.get() == CAN_SPEED_500KBIT)
+    {
+        ESP_LOGI(FNAME, "CAN rate 500KBit");
+        t_config = TWAI_TIMING_CONFIG_500KBITS();
+        _tx_timeout = 2; // 222usec/chunk -> 2msec
+    }
+    else if (can_speed.get() == CAN_SPEED_1MBIT)
+    {
+        ESP_LOGI(FNAME, "CAN rate 1MBit");
+        t_config = TWAI_TIMING_CONFIG_1MBITS();
+    }
+    else
+    {
+        ESP_LOGI(FNAME, "CAN rate 1MBit for selftest");
+        t_config = TWAI_TIMING_CONFIG_1MBITS();
+    }
+    // t_config.triple_sampling = true; // improved sampling incoming bits, no effect in test
 
-	}
-	else if( can_speed.get() == CAN_SPEED_500KBIT ){
-		ESP_LOGI(FNAME,"CAN rate 500KBit");
-		t_config = TWAI_TIMING_CONFIG_500KBITS();
-		_tx_timeout = 2; // 222usec/chunk -> 2msec
-	}
-	else if( can_speed.get() == CAN_SPEED_1MBIT ){
-		ESP_LOGI(FNAME,"CAN rate 1MBit");
-		t_config = TWAI_TIMING_CONFIG_1MBITS();
-	}
-	else{
-		ESP_LOGI(FNAME,"CAN rate 1MBit for selftest");
-		t_config = TWAI_TIMING_CONFIG_1MBITS();
-	}
-	// t_config.triple_sampling = true; // improved sampling incoming bits, no effect in test
+    twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
+    // {
+    //     // Shift for standard-ID (11 Bit) by 21, for multi filter mode another one shifted by 5.
+    //     //.acceptance_code = uint32_t(JumboCmd::MAGSTREAM_ID << 21) | uint32_t(JumboCmd::MAGCTRL_ID << 5),
+    //     .acceptance_code = uint32_t(CANbus::CTRL_ID << 21), // | uint32_t(JumboCmd::MAGCTRL_ID << 5),
+    //     // Disregard bits that are set on this mask
+    //     // For single filter mode you most likely wnat to set any bit, but those 11 id bits
+    //     //  -> also disregard the first two message bytes: ~(uint32_t(0x7ff << 21))
+    //     // Here additionally the TEST_ID is disregarded (== let through(!))
+    //     .acceptance_mask = ~(uint32_t(0x7ff << 21)),
+    //     .single_filter = true
+    // };
+    // Install TWAI driver
+    if (twai_driver_install(&g_config, &t_config, &f_config) == ESP_OK)
+    {
+        ESP_LOGI(FNAME, "Driver installed OK, mode %d", mode);
+    }
+    else
+    {
+        ESP_LOGI(FNAME, "Failed to install driver");
+        return;
+    }
 
-	twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
-	//Install TWAI driver
-	if (twai_driver_install(&g_config, &t_config, &f_config) == ESP_OK) {
-		ESP_LOGI(FNAME,"Driver installed OK, mode %d", mode );
-	} else {
-		ESP_LOGI(FNAME,"Failed to install driver");
-		return;
-	}
-
-	//Start TWAI driver
-	if (twai_start() == ESP_OK) {
-		ESP_LOGI(FNAME,"Driver started");
-		if ( _slope_support ) {
-			gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);
-		}
-		_ready_initialized = true;
-	} else {
-		twai_driver_uninstall();
-		ESP_LOGI(FNAME,"Failed to start driver");
-	}
+    // Start TWAI driver
+    if (twai_start() == ESP_OK)
+    {
+        ESP_LOGI(FNAME, "Driver started");
+        _initialized = true;
+        if (_slope_support)
+        {
+            gpio_set_direction(_slope_ctrl, GPIO_MODE_OUTPUT);
+        }
+    }
+    else
+    {
+        twai_driver_uninstall();
+        ESP_LOGI(FNAME, "Failed to start driver");
+    }
 }
 
-void CANbus::driverUninstall(){
-	if( _ready_initialized ){
-		_ready_initialized = false;
-		delay(100);
-		twai_stop();
-		delay(100);
-		twai_driver_uninstall();
-		delay(100);
-	}
+void CANbus::driverUninstall()
+{
+    if (_initialized)
+    {
+        _initialized = false;
+        delay(100);
+        twai_stop();
+        delay(100);
+        twai_driver_uninstall();
+        delay(100);
+    }
 }
 
-void canTxTask(void *arg){
-	unsigned int tick = 0;
-	while (true) {
-		TickType_t xLastWakeTime = xTaskGetTickCount();
-		if( !Flarm::bincom ){
-			static_cast<CANbus*>(arg)->txtick(tick);
-		}
-		if( (tick++ % 100) == 0) {
-			// ESP_LOGI(FNAME,"Free Heap: %d bytes", heap_caps_get_free_size(MALLOC_CAP_8BIT) );
-			if( uxTaskGetStackHighWaterMark( nullptr ) < 128 )
-				ESP_LOGW(FNAME,"Warning canbus txtask stack low: %d bytes", uxTaskGetStackHighWaterMark( nullptr ) );
-		}
-		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(10));
-	}
+void CANbus::restart() // fixme, dont use, the driverUninstall crashes the receiver task
+{
+    if (can_speed.get() == CAN_SPEED_OFF)
+    {
+        return;
+    }
+    ESP_LOGW(FNAME, "CANbus restart");
+    driverUninstall();
+    driverInstall(TWAI_MODE_NORMAL);
+    _connected_timeout_magsens = 0;
+    _connected_timeout_xcv = 0;
 }
 
-void canRxTask(void *arg){
-	int tick = 0;
-	while (true) {
-		// TickType_t xLastWakeTime = xTaskGetTickCount();
-		ESP_LOGI(FNAME,"Tick: %d", tick );
-		if( !Flarm::bincom ){
-			static_cast<CANbus*>(arg)->rxtick(tick);
-		}
-		if( (tick++ % 100) == 0) {
-			ESP_LOGI(FNAME,"Free Heap: %d bytes", heap_caps_get_free_size(MALLOC_CAP_8BIT) );
-			if( uxTaskGetStackHighWaterMark( nullptr ) < 128 )
-				ESP_LOGW(FNAME,"Warning canbus rxtask stack low: %d bytes", uxTaskGetStackHighWaterMark( nullptr ) );
-		}
-	}
-}
+void CANbus::recover()
+{
+    if (can_speed.get() == CAN_SPEED_OFF)
+    {
+        return;
+    }
 
-void CANbus::restart(){
-	if( can_speed.get() == CAN_SPEED_OFF ){
-		return;
-	}
-	ESP_LOGW(FNAME,"CANbus restart");
-	driverUninstall();
-	driverInstall( TWAI_MODE_NORMAL );
-	_connected_timeout_magsens = 0;
-	_connected_timeout_xcv = 0;
-}
-
-void CANbus::recover(){
-	if( can_speed.get() == CAN_SPEED_OFF ){
-		return;
-	}
-
-	twai_status_info_t status_info;
-	if ( twai_get_status_info(&status_info) == ESP_OK ) {
-		if ( status_info.state == TWAI_STATE_BUS_OFF ) {
-			// recovery is only possible in this state
-			ESP_LOGW(FNAME,"CANbus recover");
-			twai_initiate_recovery();
-			delay(10);
-			twai_start();
-		}
-	}
-	_connected_timeout_xcv = 0;
-	_connected_timeout_magsens = 0;
+    twai_status_info_t status_info;
+    if (twai_get_status_info(&status_info) == ESP_OK)
+    {
+        if (status_info.state == TWAI_STATE_BUS_OFF)
+        {
+            // recovery is only possible in this state
+            ESP_LOGW(FNAME, "CANbus recover");
+            twai_initiate_recovery();
+            delay(10);
+            twai_start();
+        }
+    }
+    _connected_timeout_xcv = 0;
+    _connected_timeout_magsens = 0;
 }
 
 // begin CANbus, start selfTest and launch driver in normal (bidir) mode afterwards
 void CANbus::begin()
 {
-	//Initialize configuration structures using macro initializers
-	if( can_speed.get() == CAN_SPEED_OFF ){
-		ESP_LOGI(FNAME,"CAN bus OFF");
-		return;
-	}
-	ESP_LOGI(FNAME,"CANbus::begin");
-	driverInstall( TWAI_MODE_NORMAL );
-	xTaskCreatePinnedToCore(&canTxTask, "canTxTask", 4096, this, 15, 0, 0);
-	xTaskCreatePinnedToCore(&canRxTask, "canRxTask", 4096, this, 15, 0, 0);
+    // Initialize configuration structures using macro initializers
+    if (can_speed.get() == CAN_SPEED_OFF)
+    {
+        ESP_LOGI(FNAME, "CAN bus OFF");
+        return;
+    }
+    ESP_LOGI(FNAME, "CANbus::begin");
+    driverInstall(TWAI_MODE_NORMAL);
+    xTaskCreate(&TransmitTask, "canTxTask", 4096, CanSendQueue, 15, 0);
+    xTaskCreate(&canRxTask, "canRxTask", 4096, this, 15, 0);
 }
 
-// receive message of corresponding ID,
-// return a terminated SString containing exactly the received chars
-int CANbus::receive( int *id, SString& msg, int timeout ){
-	twai_message_t rx;
+// terminate CANbus
+void CANbus::stop()
+{
+    ESP_LOGI(FNAME, "CAN stop");
 
-	uint32_t alerts;
-	twai_read_alerts(&alerts, pdMS_TO_TICKS(_tx_timeout));
-	if( alerts & TWAI_ALERT_RX_QUEUE_FULL )
-		ESP_LOGW(FNAME,"receive: RX QUEUE FULL alert %X", alerts );
+    driverUninstall();
 
-	esp_err_t ret = twai_receive(&rx, pdMS_TO_TICKS(timeout) );
-	// ESP_LOGI(FNAME,"RX CAN bus message ret=%02x len_%d ID:%d dlc:%d ext:%d rtr:%d", ret, rx.data_length_code, rx.identifier, rx.dlc_non_comp, rx.extd, rx.rtr );
-	// if( rx.data_length_code <= 8 ){
-	//	ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.data, rx.data_length_code , ESP_LOG_INFO);
-	// }
-	if(ret == ESP_OK ){
-		// ESP_LOGI(FNAME,"RX CAN bus message ret=%02x TO:%d", ret, _connected_timeout_xcv );
-		if( rx.data_length_code > 0 && rx.data_length_code <= 8 ){
-			msg.set((const char*)rx.data, rx.data_length_code);
-			// ESP_LOGI(FNAME,"RX CAN bus message ret=(%02x), id:%04x bytes:%d, data:%s", ret, rx.identifier, rx.data_length_code, msg.c_str() );
-			// ESP_LOG_BUFFER_HEXDUMP(FNAME,msg.c_str(), msg.length() , ESP_LOG_INFO);
-			*id = rx.identifier;
-			return rx.data_length_code;
-		}
-	}
-	return 0;
-}
+    // send terminate signals to tasks
+    terminate_receiver = true;            // for receiver
+    xQueueSend(CanSendQueue, nullptr, 0); // for transmitter
 
-// hook this into another task to save memory
-void CANbus::txtick(int tick){
-	if( !_ready_initialized ){
-		// ESP_LOGI(FNAME,"CAN not initialized");
-		return;
-	}
-	SString msg;
-	// CAN bus send
-	if ( !can_tx_q.isEmpty() ){
-		// ESP_LOGI(FNAME,"There is CAN data");
-		if( _connected_xcv ){
-			// ESP_LOGI(FNAME,"CAN TX Q:%d", can_tx_q.numElements() );
-			while( Router::pullMsg( can_tx_q, msg ) ){
-				// ESP_LOGI(FNAME,"CAN TX len: %d bytes Q:%d", msg.length(), can_tx_q.numElements() );
-				// ESP_LOG_BUFFER_HEXDUMP(FNAME,msg.c_str(),msg.length(), ESP_LOG_INFO);
-				DM.monitorString( MON_CAN, DIR_TX, msg.c_str(), msg.length() );
-				if( !sendNMEA( msg ) ){
-					_connected_timeout_xcv +=150;  // if sending fails as indication for disconnection
-					// ESP_LOGW(FNAME,"CAN TX NMEA failed, timeout=%d", _connected_timeout_xcv );
-					if( _connected_timeout_xcv > 1000 )
-						recover();
-				}
-			}
-		}
-	}
-	// Router::routeCAN();
-	if( !(tick%100) ){
-		if( ((can_mode.get() == CAN_MODE_CLIENT)  && _connected_xcv) || can_mode.get() == CAN_MODE_MASTER ){ // sent from client only if keep alive is there
-			msg.set( "K" );
-			if( !sendData( _can_id_keepalive_tx, msg.c_str(), 1 ) )
-			{
-				_connected_timeout_xcv +=150;  // if sending fails as indication for disconnection
-				if( !_keep_alive_fails ){
-					ESP_LOGW(FNAME,"Permanent CAN TX Keep Alive failure");
-					_keep_alive_fails = true;
-				}
-				if( _connected_timeout_xcv > 1000 )
-					recover();
-			}else{
-				if( _keep_alive_fails ){
-					ESP_LOGI(FNAME,"Okay again CAN TX Keep Alive");
-					_keep_alive_fails = false;
-				}
-			}
-		}
-	}
-}
-
-void CANbus::rxtick(int tick){
-	if( !_ready_initialized ){
-		// ESP_LOGI(FNAME,"CAN not initialized");
-		delay(100);
-		return;
-	}
-	// Can bus receive
-	SString msg;
-	int id = 0;
-	int bytes = 0;
-	bool xcv_came=false;
-	bool magsens_came=false;
-	do{
-		bytes = receive( &id, msg, 500 );
-		// ESP_LOGI(FNAME,"CAN RX id:%02x, bytes:%d, connected XCV:%d Magsens: %d", id, bytes, _connected_xcv, _connected_magsens );
-		if( bytes  ){ // keep alive from second XCV
-			if( id == _can_id_keepalive_rx ){ // keep alive of msg from peer XCV ?
-				// ESP_LOGI(FNAME,"CAN RX Keep Alive");
-				xcv_came = true;
-				_connected_timeout_xcv = 0;
-				if( !_connected_xcv ){
-					bool entry=false;
-					do{ // cleanup congestion at startup
-						entry = Router::pullMsg( can_tx_q, msg );
-					}while( entry );
-					ESP_LOGI(FNAME,"CAN XCV connected");
-					_connected_xcv = true;
-					_new_can_client_connected = (the_can_mode == CAN_MODE_MASTER);
-				}
-			}
-			if( id == CAN_MAGSENS_ID ){
-				magsens_came = true;
-				_connected_timeout_magsens = 0;
-				if( !_connected_magsens ){
-					ESP_LOGI(FNAME,"CAN Magnetsensor connected");
-					_connected_magsens = true;
-				}
-			}
-		}
-		if( !magsens_came ){
-			_connected_timeout_magsens++;
-			if( _connected_timeout_magsens > 500 ){
-				if( _connected_magsens ){
-					ESP_LOGI(FNAME,"CAN Magsensor connection timeout");
-					_connected_magsens = false;
-				}
-				if( compass_enable.get() == CS_CAN && (_connected_timeout_magsens > 10000) && !_connected_xcv ){
-					// only restart when xcv is not connected, otherwise magsensor may be just plugged out
-					ESP_LOGI(FNAME,"CAN Magnet Sensor restart timeout");
-					restart();
-				}
-			}
-		}
-		if( !xcv_came ){
-			_connected_timeout_xcv++;
-			if( _connected_timeout_xcv > 200 ){
-				if(  _connected_xcv ){
-					ESP_LOGI(FNAME,"CAN XCV connection timeout");
-					_connected_xcv = false;
-				}
-				if( (can_mode.get() != CAN_MODE_STANDALONE) && !(_connected_timeout_xcv % 10000) ){
-					ESP_LOGI(FNAME,"CAN restart timeout");
-					restart();
-				}
-			}
-		}
-		// process NMEA message depending on role and peer
-		if( id == _can_id_nmea_rx ) {
-			// ESP_LOGI(FNAME,"CAN RX NMEA chunk, len:%d msg: %s", bytes, msg.c_str() );
-			// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
-			_connected_timeout_xcv = 0;
-			dlink.process( msg.c_str(), msg.length(), 3 );  // (char *packet, int len, int port );
-		}
-		if( id == _can_id_config_rx ) {   // CAN messages for config (!xs) and NMEA may mix up: Fixed by a second ID and datalink layer for config variables
-			// ESP_LOGI(FNAME,"CAN RX NMEA chunk, len:%d msg: %s", bytes, msg.c_str() );
-			// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
-			_connected_timeout_xcv = 0;
-			dlinkXs.process( msg.c_str(), msg.length(), 3 );  // (char *packet, int len, int port );
-		}
-		else if( id == CAN_MAGSENS_ID ){ // magnet sensor
-			// ESP_LOGI(FNAME,"CAN RX MagSensor, msg: %d", bytes );
-			// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), bytes, ESP_LOG_INFO);
-			QMCMagCAN::fromCAN( msg.c_str(), msg.length() );
-			_connected_timeout_magsens = 0;
-		}
-		DM.monitorString( MON_CAN, DIR_RX, msg.c_str(), msg.length());
-
-	}while( bytes );
-}
-
-bool CANbus::sendNMEA( const SString& msg ){
-	if( !_ready_initialized ){
-		// ESP_LOGI(FNAME,"CAN not initialized");
-		return false;
-	}
-	xSemaphoreTake(nmeaMutex,portMAX_DELAY );
-
-	bool ret = true;
-	uint32_t alerts;
-	twai_read_alerts(&alerts, 0); // read and clear alerts
-	if( alerts != 0 )
-		ESP_LOGW(FNAME,"Before send alerts %X", alerts);
-
-	// ESP_LOGI(FNAME,"send CAN NMEA len %d msg: %s ", msg.length(), msg.c_str() );
-	// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
-
-	const int chunk=8;
-	int id = _can_id_nmea_tx;
-	if( !strncmp( msg.c_str(), "!xs", 3) )  // segregate internal NMEA by different id for !xs
-		id = _can_id_config_tx;
-
-	const char *cptr = msg.c_str();
-	int len = msg.length(); // Including the terminating \0 -> need to remove this one byte at RX from strlen
-	while( len > 0 )
-	{
-		int dlen = std::min(chunk, len);
-		// Underlaying queue does block until there is space,
-		// only a timeout would return false.
-		if( !sendData(id, cptr, dlen) ) {
-			if( !_send_nmea_fails ){
-				ESP_LOGW(FNAME,"Permanent send CAN NMEA failure msg: %s chunk: %s", msg.c_str(), cptr );
-				_send_nmea_fails = true;
-			}
-			ret = false;
-		}else{
-			if( _send_nmea_fails ){
-				ESP_LOGI(FNAME,"Okay again send CAN NMEA failed msg: %s chunk: %s", msg.c_str(), cptr );
-				_send_nmea_fails = false;
-			}
-		}
-		cptr += dlen;
-		len -= dlen;
-	}
-	xSemaphoreGive(nmeaMutex);
-	return ret;
+    RemoveAllDataLinks();
 }
 
 bool CANbus::selfTest()
 {
-	ESP_LOGI(FNAME,"CAN bus selftest");
+    ESP_LOGI(FNAME, "CAN bus selftest");
 
-	// Pretend slope control off and probe the reaction on GPIO 2 here
-	_slope_support = false;
-	gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);
-	 // in case of GPIO 2 wired to CAN this would inhibit sending and cause a failing test
-	gpio_set_level(GPIO_NUM_2, 1);
+    // Pretend slope control off and probe the reaction on GPIO 2 here
+    _slope_support = false;
+    gpio_set_direction(_slope_ctrl, GPIO_MODE_OUTPUT);
+    // in case of GPIO 2 wired to CAN this would inhibit sending and cause a failing test
+    gpio_set_level(_slope_ctrl, 1);
 
-	driverInstall( TWAI_MODE_NO_ACK );
-	bool res=false;
-	int id=0x100;
-	for (int slope=0; slope<2; slope++)
-	{
-		twai_clear_receive_queue();
-		for( int i=0; i<3; i++ ){ // repeat test 3x
-			char tx[10] = { "1827364" };
-			int len = strlen(tx);
-			// there might be data from a remote device
-			twai_clear_receive_queue();
-			if( !sendData( id, tx,len, 1 ) ){
-				ESP_LOGW(FNAME,"CAN bus selftest TX FAILED");
-				recover();
-			}
-			delay(2);
-			SString msg;
-			int rxid;
-			int bytes = receive( &rxid, msg, 2 );
-			ESP_LOGI(FNAME,"RX CAN bus message bytes:%d, id:%04x, data:%s", bytes, id, msg.c_str() );
-			if( bytes != 7 || rxid != id ){
-				ESP_LOGW(FNAME,"CAN bus selftest RX call FAILED bytes:%d rxid%d recm:%s", bytes, rxid, msg.c_str() );
-				twai_clear_receive_queue();
-			}
-			else if( memcmp( msg.c_str() ,tx, len ) == 0 ){
-				ESP_LOGI(FNAME,"RX CAN bus OKAY");
-				res=true;
-				break;
-			}
-		}
-		if ( res ) break;
+    driverInstall(TWAI_MODE_NO_ACK);
+    bool res = false;
+    int id = 0x100;
+    for (int slope = 0; slope < 2; slope++)
+    {
+        twai_clear_receive_queue();
+        for (int i = 0; i < 3; i++)
+        { // repeat test 3x
+            char tx[10] = {"1827364"};
+            int len = strlen(tx);
+            // there might be data from a remote device
+            twai_clear_receive_queue();
+            if (!sendData(id, tx, len, 1))
+            {
+                ESP_LOGW(FNAME, "CAN bus selftest TX FAILED");
+                recover();
+            }
+            twai_message_t rx;
+            if ((ESP_OK == twai_receive(&rx, pdMS_TO_TICKS(20))) && (rx.identifier == id) && (rx.data_length_code == len) && (memcmp(rx.data, tx, len) == 0))
+            {
+                ESP_LOGI(FNAME, "RX CAN bus OKAY");
+                res = true;
+                break;
+            }
+        }
+        if (res)
+            break;
 
-		_slope_support = true;
-		gpio_set_level(GPIO_NUM_2, 0);
-		ESP_LOGI(FNAME,"CAN slope support on.");
-	}
-	if( res ) {
-		ESP_LOGW(FNAME,"CAN bus selftest TX/RX OKAY");
-	}
-	else {
-		ESP_LOGW(FNAME,"CAN bus selftest TX/RX FAILED");
-	}
-	driverUninstall();
-	return res;
+        _slope_support = true;
+        gpio_set_level(_slope_ctrl, 0);
+        ESP_LOGI(FNAME, "CAN slope support on.");
+    }
+
+    driverUninstall();
+    ESP_LOGW(FNAME, "CAN bus selftest TX/RX %s", res ? "Ok" : "failed");
+    return res;
+}
+
+bool CANbus::Send(const char *cptr, int len, int port)
+{
+    const int chunk = 8;
+    bool ret = true;
+    // int id = can_id_nmea_tx;
+    // if (!strncmp(cptr, "!xs", 3)) // segregate internal NMEA by different id for !xs
+    //     id = can_id_config_tx;
+
+    while (len > 0)
+    {
+        int dlen = std::min(chunk, len);
+        // Underlaying queue does block until there is space,
+        // only a timeout would return false.
+        if (!sendData(port, cptr, dlen))
+        {
+            ret = false;
+            break;
+        }
+        cptr += dlen;
+        len -= dlen;
+    }
+    return ret;
 }
 
 // Send, handle alerts, do max 3 retries
-bool CANbus::sendData( int id, const char* msg, int length, int self ){
-	if( !_ready_initialized ){
-		ESP_LOGI(FNAME,"CANbus not ready initialized");
-		return false;
-	}
-	xSemaphoreTake(sendMutex,portMAX_DELAY );
+bool CANbus::sendData(int id, const char *msg, int length, int self)
+{
+    if (!_initialized)
+    {
+        ESP_LOGI(FNAME, "CANbus not ready initialized");
+        return false;
+    }
 
-	twai_message_t message;
-	memset( &message, 0, sizeof( message ) );
-	message.identifier = id;
-	message.self = self;
-	message.data_length_code = length;
+    // build message
+    twai_message_t message;
+    message.identifier = id;
+    message.self = self;
+    message.data_length_code = length;
 
-	for (int i = 0; i < length; i++) {
-		message.data[i] = msg[i];
-	}
-	// ESP_LOGI(FNAME,"TX CAN bus message id:%04x, bytes:%d, data:%s, self:%d", message.identifier, message.data_length_code, message.data, message.self );
-	// ESP_LOGI(FNAME,"send CAN chunk len %d msg: %s ", length, msg );
-	// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg, length, ESP_LOG_INFO);
+    for (int i = 0; i < length; i++)
+    {
+        message.data[i] = msg[i];
+    }
+    // ESP_LOGI(FNAME,"TX CAN bus message id:%x, bytes:%d, data:%s, self:%d", message.identifier, message.data_length_code, message.data, message.self );
+    // ESP_LOGI(FNAME,"send CAN chunk len %d msg: %s ", length, msg );
+    // ESP_LOG_BUFFER_HEXDUMP(FNAME, msg, length, ESP_LOG_INFO);
 
-	// Queue message for transmission
-	uint32_t alerts;
-	int retry = 3;
-	esp_err_t error = ESP_OK;
-	while( (retry-- > 0) && (ESP_OK != (error=twai_transmit(&message, 0))) ) {
-		twai_read_alerts(&alerts, pdMS_TO_TICKS(_tx_timeout));
-		// ESP_LOGW(FNAME,"Tx chunk failed alerts %X", alerts );
-	}
-	bool ret=false;
-	if ( error == ESP_OK ) {
-		twai_read_alerts(&alerts, pdMS_TO_TICKS(_tx_timeout));
-		// if ( alerts & TWAI_ALERT_TX_IDLE )
-		//    ESP_LOGW(FNAME,"TX IDLE alert %X", alerts );
-		if( alerts & TWAI_ALERT_RX_QUEUE_FULL )
-			ESP_LOGW(FNAME,"RX QUEUE FULL alert %X", alerts );
-		if( alerts & TWAI_ALERT_TX_FAILED )
-			ESP_LOGW(FNAME,"TX_FAILED alert %X", alerts );
-		// ESP_LOGI(FNAME,"Send CAN bus message okay");
-		ret = true;
-	}
-	xSemaphoreGive(sendMutex);
-	return ret;
+    // Queue message for transmission
+    uint32_t alerts;
+    int retry = 3;
+    esp_err_t error = ESP_OK;
+    while ( retry-- > 0 )
+    {
+        error = twai_transmit(&message, 0);
+        if ( error == ESP_OK ) {
+            break;
+        }
+        twai_read_alerts(&alerts, pdMS_TO_TICKS(_tx_timeout));
+        ESP_LOGW(FNAME, "Tx chunk failed alerts %X", alerts);
+    }
+    if (error != ESP_OK)
+    {
+        // if ( alerts & TWAI_ALERT_TX_IDLE )
+        //    ESP_LOGW(FNAME,"TX IDLE alert %X", alerts );
+        if (alerts & TWAI_ALERT_RX_QUEUE_FULL)
+            ESP_LOGW(FNAME, "RX QUEUE FULL alert %X", alerts);
+        if (alerts & TWAI_ALERT_TX_FAILED)
+            ESP_LOGW(FNAME, "TX_FAILED alert %X", alerts);
+        return false;
+    }
+    return true;
 }

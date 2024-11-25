@@ -16,7 +16,7 @@ gen_state_t Anemoi::nextByte(const char c)
     case START_TOKEN:
     case CHECK_OK:
     case CHECK_FAILED:
-    case ABORT:
+    case RESTART:
         if ( c == '$' ) { //0x24
             _state = HEADER;
             reset();
@@ -51,7 +51,7 @@ gen_state_t Anemoi::nextByte(const char c)
             //ESP_LOGI(FNAME, "ANEMOI STOP_TOKEN %x", c);
         }
         else {
-            _state = ABORT;
+            _state = RESTART;
         }
         break;
     case COMPLETE:

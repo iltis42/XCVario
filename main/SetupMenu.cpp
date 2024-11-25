@@ -42,6 +42,8 @@
 #include <cstring>
 #include <string>
 #include "DataLink.h"
+#include "comm/DataLink.h"
+#include "comm/Devices.h"
 
 SetupMenuSelect * audio_range_sm = 0;
 SetupMenuSelect * mpu = 0;

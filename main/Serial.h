@@ -35,9 +35,9 @@
 // All data of one Uart channel
 typedef struct xcv_serial {
 	const char* name;
-	RingBufCPP<SString, QUEUE_SIZE>* tx_q;
-	RingBufCPP<SString, QUEUE_SIZE>* rx_q;
-	void (*route)();
+	RingBufCPP<SString>* tx_q;
+	//RingBufCPP<SString>* rx_q;
+	// void (*route)();
 	HardwareSerial *uart;
 	uint8_t rx_char;
 	uint8_t rx_nl;
@@ -46,8 +46,8 @@ typedef struct xcv_serial {
 	TaskHandle_t pid;
 	xcv_serial *cfg2; // configuration of other Uart
 	bool route_disable;
-	DataLink *dl;
-	int port;
+	DataLinkOld* dl;
+	int port; // info is in dl, tb deleted
 } xcv_serial_t;
 
 class Serial {

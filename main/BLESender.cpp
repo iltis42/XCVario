@@ -30,7 +30,7 @@ bool oldDeviceConnected = false;
 uint8_t txValue = 0;
 
 static TaskHandle_t pid = nullptr;
-static DataLink *dlb;
+static DataLinkOld *dlb;
 
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
@@ -120,7 +120,7 @@ void BLESender::progress(){
 void BLESender::begin(){
 	ESP_LOGI(FNAME,"BLESender::begin()" );
 	ESP_LOGI(FNAME,"BT LE on, create BT master object" );
-	dlb = new DataLink();
+	dlb = new DataLinkOld();
 	// Create the BLE Device
 	std::string ble_id( SetupCommon::getID() );
 	ble_id += std::string("-LE");

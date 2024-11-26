@@ -1,14 +1,19 @@
 #include "DataLink.h"
-#include <stdint.h>
-#include <endian.h>
-#include <string.h>
-#include <logdef.h>
+
 #include "UbloxGNSSdecode.h"
 #include "Router.h"
 #include "SString.h"
 #include "Serial.h"
 #include "Flarm.h"
 #include "DataMonitor.h"
+#include "protocol/Anemoi.h"
+#include "Protocols.h"
+
+#include <stdint.h>
+#include <endian.h>
+#include <string.h>
+#include <logdef.h>
+
 
 // UBX SYNC
 const uint8_t UBX_SYNC1 = 0xb5;
@@ -33,9 +38,15 @@ const uint8_t KRT2_STX_START = 0x02;
 const uint8_t BECKER_START_FRAME = 0xA5;
 const uint8_t BECKER_PROTID      = 0x14;
 
+DataLinkOld dl_S1;
+DataLinkOld dl_S2;
 
+void enable_anemoi(){
+}
+void disable_anemoi() {
+}
 
-DataLink::DataLink(){
+DataLinkOld::DataLinkOld(){
 	state = GET_NMEA_UBX_SYNC;
 	pos = 0;
 	chkA = 0; // checksum variables UBX
@@ -47,7 +58,7 @@ DataLink::DataLink(){
 	krt2_len=0;
 }
 
-void DataLink::process( const char *packet, int len, int port ) {
+void DataLinkOld::process( const char *packet, int len, int port ) {
 	// process every frame byte through state machine
 	// ESP_LOGI(FNAME,"Port %d: RX len: %d bytes", port, len );
 	// ESP_LOG_BUFFER_HEXDUMP(FNAME,packet, len, ESP_LOG_INFO);
@@ -63,12 +74,13 @@ void DataLink::process( const char *packet, int len, int port ) {
 	}
 }
 
-void DataLink::addChk(const char c) {
+
+void DataLinkOld::addChk(const char c) {
 	chkA += c;
 	chkB += chkA;
 }
 
-void DataLink::routeSerialData( const char *data, uint32_t len, int port, bool nmea ){
+void DataLinkOld::routeSerialData( const char *data, uint32_t len, int port, bool nmea ){
 	SString tx;
 	tx.set( data, len );
 	// ESP_LOGI(FNAME, "Port S%1d: len: %d", port, len );
@@ -115,13 +127,13 @@ void DataLink::routeSerialData( const char *data, uint32_t len, int port, bool n
 }
 
 
-void DataLink::processNMEA( char * buffer, int len, int port ){
+void DataLinkOld::processNMEA( char * buffer, int len, int port ){
 	// ESP_LOGI(FNAME, "Port S%1d: processNMEA, frame: %s", port, buffer );
 	Flarm::parsePFLAX( buffer, port );  // datalink relevant as this changes protocol to flarm bincom
 	routeSerialData(buffer, len, port, true );
 }
 
-void DataLink::parse_NMEA_UBX( char c, int port ){
+void DataLinkOld::parse_NMEA_UBX( char c, int port ){
 	// ESP_LOGI(FNAME, "Port S%1d: char=%c %02X pos=%d  state=%d", port, c, c, pos, state );
 	switch(state) {
 	case GET_NMEA_UBX_SYNC:
@@ -342,7 +354,6 @@ void DataLink::parse_NMEA_UBX( char c, int port ){
 			// ESP_LOGI(FNAME,"Port S%d UBX SYNC2 received at %d", port, pos );
 			state = GET_UBX_CLASS;
 			break;
-
 		case GET_UBX_CLASS:
 			if (c != UBX_CLASS) {
 				ESP_LOGW(FNAME, "Port S%1d Unexpected UBX class at %d", port, pos );

@@ -18,7 +18,7 @@
 #include "Flarm.h"
 #include "Compass.h"
 #include "CircleWind.h"
-#include "canbus.h"
+#include "comm/CanBus.h"
 #include "Blackboard.h"
 
 #include "freertos/FreeRTOS.h"

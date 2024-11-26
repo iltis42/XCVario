@@ -21,7 +21,7 @@
 #include "MenuEntry.h"
 #include "Router.h"
 #include "vector.h"
-#include "canbus.h"
+#include "comm/CanBus.h"
 
 /*
   Creates instance for CAN bus magnet sensor

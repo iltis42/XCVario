@@ -45,12 +45,12 @@ typedef struct client_record {
 }client_record_t;
 
 typedef struct xcv_sock_server {
-	RingBufCPP<SString, QUEUE_SIZE>* txbuf;
+	RingBufCPP<SString>* txbuf;
 	int port;
 	int idle;
 	TaskHandle_t pid;
 	std::list<client_record_t>  clients;
-	DataLink *dlw;
+	DataLinkOld *dlw;
 }sock_server_t;
 
 static sock_server_t XCVario   = { .txbuf = &wl_vario_tx_q, .port=8880, .idle = 0, .pid = 0 };
@@ -122,7 +122,7 @@ void WifiApp::socket_server(void *setup) {
 		ESP_LOGE(FNAME, "Socket creation for %d port FAILED: Abort task", config->port );
 		vTaskDelete(NULL);
 	}
-	config->dlw = new DataLink();
+	config->dlw = new DataLinkOld();
 	// we have a socket
 	fcntl(sock, F_SETFL, O_NONBLOCK); // socket should not block, so we can server several clients
 	while (1)

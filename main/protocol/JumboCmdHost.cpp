@@ -22,49 +22,49 @@
 // - Connect query: Wakes the esp32 from light sleep when sleeping and a first trial cannot be repsonded.
 //                  A second query should find the jumbo wake and responding.
 //                  The response contains protocol revision and current status (mostly just "ready")
-//   !jpc\r\n
+//   $PJMPC\r\n
 //
 // - Get config query: Request to tell about config items that are configurable through the web interface.
-//   !jgc <config token>\r\n
+//   $PJMGC <config token>\r\n
 //
 // - Get info query: Request to tell about all the items that are visible in the webservers "info" box.
-//   !jiq\r\n
+//   $PJMIQ\r\n
 //
 // - Select wing configuration: The selected wing span configuration will be saved permanently (stored in nvs).
-//   !jsw <choice>*<CRC>\r\n
+//   $PJMCW <choice>*<CRC>\r\n
 //
 // - Start wipe command: Starts or Restarts a wiper cycle. Commanding a start while busy wiping will be ignored. The
 //                      controlling peer needs to implement a tiny state machine to keep track. (different to button control)
-//   !jwp <R/L>\r\n
+//   $PJMWP <R/L>\r\n
 //
 // - Abort command: Stops the wiper immediately. Commanding stop while "ready", or "aborted" will be ignored.
-//   !jab <R/L>\r\n
+//   $PJMAB <R/L>\r\n
 //
 // - Button short press: Alternatively this API would act as a soft button and create same reaction as the physical buttons 
 //                  at the given moment.
-//   !jbs <R/L>\r\n
+//   $PJMBS <R/L>\r\n
 //
 // - Button hold down: ditto.
-//   !jbh <R/L>\r\n
+//   $PJMBH <R/L>\r\n
 //
 // - Button release (after hold down): ditto.
-//   !jbr <R/L>\r\n
+//   $PJMBR <R/L>\r\n
 //
 // The jmubo responses
 // - Connected:
-//   !jrp <protocol version>, <status>\r\n
+//   $PJPRP <protocol version>, <status>\r\n
 //
 // - Configuration:
-//   !jrc <config token> <value>*<CRC>\r\n
+//   $PJPRC <config token>, <value>*<CRC>\r\n
 //
 // - Info:
-//   !jri <fw version>, <SN>, <build date>, <...>*<CRC>\r\n
+//   $PJPRI <fw version>, <SN>, <build date>, <...>*<CRC>\r\n
 //
 // - Alive:
-//   !ja <R/L><percentage>\r\n
+//   $PJPJA <R/L><percentage>\r\n
 //
 // - Event: Something happend like: Abort (overcurrent), transition to pull, transition to park position (finished), go nap, ...
-//   !je <R/L><event>*<CRC>\r\n
+//   $PJPJE <R/L><event>*<CRC>\r\n
 //
 //
 
@@ -76,7 +76,7 @@ gen_state_t JumboCmdHost::nextByte(const char c)
     case START_TOKEN:
     case CHECK_FAILED:
     case RESTART:
-        if ( c == '!' ) {
+        if ( c == '$' ) {
             _state = HEADER;
             reset();
             push(c);
@@ -84,13 +84,14 @@ gen_state_t JumboCmdHost::nextByte(const char c)
         }
         break;
     case HEADER:
-        if ( c != 'j' ) {
+        push_and_crc(c);
+        if ( _pos < 4 ) { break; }
+        if ( _framebuffer[1] != 'P' || _framebuffer[2] != 'J' || _framebuffer[3] != 'P') {
             _state = RESTART;
             break;
         }
         _state = PAYLOAD;
         ESP_LOGI(FNAME, "Msg HEADER");
-        push_and_crc(c);
         break;
     case PAYLOAD:
         if ( c == '*' ) {
@@ -135,26 +136,26 @@ gen_state_t JumboCmdHost::nextByte(const char c)
         {
             push('\0'); // terminate the string buffer
             gen_state_t next_state = START_TOKEN; // restart parsing
-            ESP_LOGI(FNAME, "Msg complete %c%c", _framebuffer[2], _framebuffer[3]);
-            uint16_t mid = (_framebuffer[2]<<8) + _framebuffer[3];
+            ESP_LOGI(FNAME, "Msg complete %c%c", _framebuffer[4], _framebuffer[5]);
+            uint16_t mid = (_framebuffer[4]<<8) + _framebuffer[5];
             switch (mid) {
-                case (('r' << 8) | 'p'):
+                case (('R' << 8) | 'P'):
                     connected();
                     break;
-                case (('r' << 8) | 'c'):
+                case (('R' << 8) | 'C'):
                     if ( _state == CHECK_OK ) {
                         config();
                     }
                     break;
-                case (('r' << 8) | 'i'):
+                case (('R' << 8) | 'I'):
                     if ( _state == CHECK_OK ) {
                         info();
                     }
                     break;
-                case (('a' << 8) | ' '):
+                case (('A' << 8) | ' '):
                     alive();
                     break;
-                case (('e' << 8) | ' '):
+                case (('E' << 8) | ' '):
                     event();
                     break;
                 default:
@@ -176,25 +177,25 @@ void JumboCmdHost::connected()
 }
 
 typedef std::vector<const char*> TokenTable;
-static TokenTable TOKENS = { "WSPAN", "WSP_1", "LCORR", "RCORR", "WDFLT", "KICIT", "SEQNC", "REMDR", "WCONF"};
+static TokenTable CONF_ITEM = { "WSPAN", "WSP_1", "LCORR", "RCORR", "WDFLT", "KICIT", "SEQNC", "REMDR", "WCONF"};
 
 void JumboCmdHost::config()
 {
-    // grab token from e.g. message "!jrc WSPAN"
+    // grab token from e.g. message "$PJPRC WSPAN, "
     std::string frame(&_framebuffer[5]);
     int idx = 0;
-    TokenTable::iterator it = TOKENS.begin();
-    for ( ; it != TOKENS.end(); it++, idx++ ) {
+    TokenTable::iterator it = CONF_ITEM.begin();
+    for ( ; it != CONF_ITEM.end(); it++, idx++ ) {
         if ( frame.compare(*it) == 0 ) {
             break;
         }
     }
 
     ESP_LOGI(FNAME, "JP config");
-    if ( it == TOKENS.end() ) {
+    if ( it == CONF_ITEM.end() ) {
         return; // unknown token
     }
-    int value = atoi(&_framebuffer[10]);
+    int value = atoi(&_framebuffer[13]);
     switch (idx) {
     case 0:
         // todo // 0.1m
@@ -255,7 +256,7 @@ bool JumboCmdHost::sendConnect()
     Message* msg = newMessage(); // set target
     if ( ! msg ) return false;
 
-    msg->buffer = "!jpc\r\n";
+    msg->buffer = "$PJMPC\r\n";
     return DEV::Send(msg);
 }
 
@@ -264,8 +265,8 @@ bool JumboCmdHost::sendGetConfig(const int item_nr)
     Message* msg = newMessage();
     if ( ! msg ) return false;
 
-    msg->buffer = "!jgc ";
-    msg->buffer += TOKENS[item_nr];
+    msg->buffer = "$PJMGC ";
+    msg->buffer += CONF_ITEM[item_nr];
     msg->buffer += "\r\n";
     return DEV::Send(msg);
 }
@@ -275,7 +276,7 @@ bool JumboCmdHost::sendGetInfo()
     Message* msg = newMessage();
     if ( ! msg ) return false;
 
-    msg->buffer = "!jiq\r\n";
+    msg->buffer = "$PJMIQ\r\n";
     return DEV::Send(msg);
 }
 
@@ -284,7 +285,7 @@ bool JumboCmdHost::sendSelectConfig(const int wingconfig)
     Message* msg = newMessage();
     if ( ! msg ) return false;
 
-    msg->buffer = "!sw " + std::to_string(wingconfig);
+    msg->buffer = "$PJMCW " + std::to_string(wingconfig);
     msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
     return DEV::Send(msg);
 }
@@ -298,7 +299,7 @@ bool JumboCmdHost::sendStartWipe(const int side)
     if ( side == 1 ) {
         side_chr = 'L';
     }
-    msg->buffer = "!jwp ";
+    msg->buffer = "$PJMWP ";
     msg->buffer.push_back(side_chr);
     msg->buffer += "\r\n";
     return DEV::Send(msg);
@@ -313,7 +314,7 @@ bool JumboCmdHost::sendAbortWipe(const int side)
     if ( side == 1 ) {
         side_chr = 'L';
     }
-    msg->buffer = "!jab ";
+    msg->buffer = "$PJMAB ";
     msg->buffer.push_back(side_chr);
     msg->buffer += "\r\n";
     return DEV::Send(msg);
@@ -328,7 +329,7 @@ bool JumboCmdHost::sendShortPress(const int side)
     if ( side == 1 ) {
         side_chr = 'L';
     }
-    msg->buffer = "!jbs ";
+    msg->buffer = "$PJMBS ";
     msg->buffer.push_back(side_chr);
     msg->buffer += "\r\n";
     return DEV::Send(msg);
@@ -343,7 +344,7 @@ bool JumboCmdHost::sendHoldPressed(const int side)
     if ( side == 1 ) {
         side_chr = 'L';
     }
-    msg->buffer = "!jbh ";
+    msg->buffer = "$PJMBH ";
     msg->buffer.push_back(side_chr);
     msg->buffer += "\r\n";
     return DEV::Send(msg);
@@ -358,7 +359,7 @@ bool JumboCmdHost::sendReleasePressed(const int side)
     if ( side == 1 ) {
         side_chr = 'L';
     }
-    msg->buffer = "!jbr ";
+    msg->buffer = "$PJMBR ";
     msg->buffer.push_back(side_chr);
     msg->buffer += "\r\n";
     return DEV::Send(msg);

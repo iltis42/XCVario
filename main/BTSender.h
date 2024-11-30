@@ -1,15 +1,15 @@
 #ifndef __BTSENDER_H__
 #define __BTSENDER_H__
 
-// #include <btstack.h>
 #include <esp_log.h>
 #include "RingBufCPP.h"
 #include <string>
-#include "BluetoothSerial.h"
 
 #define RFCOMM_SERVER_CHANNEL 1
 #define HEARTBEAT_PERIOD_MS 50
 #define SPP_SERVICE_BUFFER_SIZE 1024
+
+class BluetoothSerial;
 
 class BTSender {
 

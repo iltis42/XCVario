@@ -138,7 +138,7 @@ void CANMasterReg::registration_query()
 
     // grab the token
     for ( int i=0; i<3; i++ ) {
-        if ( !islower(frame[i]) && !isupper(frame[i]) ) {
+        if ( !isdigit(frame[i]) ) {
             return;
         }
     }

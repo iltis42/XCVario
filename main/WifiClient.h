@@ -1,8 +1,9 @@
 #ifndef WIFI_CLIENT_H
 #define WIFI_CLIENT_H
 
+#include <esp_wifi.h>
+#include <freertos/event_groups.h>
 #include <string>
-#include "esp_wifi.h"
 
 
 const int CONNECTED_BIT = BIT0;

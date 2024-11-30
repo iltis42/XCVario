@@ -26,7 +26,7 @@ extern InterfaceCtrl* CAN;
 //      id to address the master properly.
 //      The master listens for registration queries on the CAN id 0x7f0, and also replies on this id. The token
 //      is used to match query and response on client side.
-//   !jreg <token>, <protcol type>\r\n
+//   $PJPREG <token>, <protcol type>\r\n
 //
 //
 // The response to the registration query:
@@ -41,12 +41,12 @@ extern InterfaceCtrl* CAN;
 //      At this moment it does not matter if the power-cycle is an out of the ordinary event, or just ordinary next event the systems 
 //      are comming up.
 //      A power-cycled client will restart the registration from scratch.
-//   !jacc <token>, <drive id>, <master id>*<CRC>\r\n
+//   $PJMACC <token>, <drive id>, <master id>*<CRC>\r\n
 //
 //  - Not accepting the registration: Not knowing what the purpose of this would be, despite to stop the client from continue to
 //      trying. A typical expected communication pattern would be that the master is not connected or not there and the client 
 //      would just never get a response and continue trying, not doing anything harmfull or wrong with it.
-//   !jnac <token>\r\n
+//   $PJMNAC <token>\r\n
 //
 
 
@@ -57,7 +57,7 @@ gen_state_t CANMasterReg::nextByte(const char c)
     case START_TOKEN:
     case CHECK_FAILED:
     case RESTART:
-        if ( c == '!' ) {
+        if ( c == '$' ) {
             _state = HEADER;
             reset();
             push(c);
@@ -65,13 +65,14 @@ gen_state_t CANMasterReg::nextByte(const char c)
         }
         break;
     case HEADER:
-        if ( c != 'j' ) {
+        push_and_crc(c);
+        if ( _pos < 4 ) { break; }
+        if ( _framebuffer[1] != 'P' || _framebuffer[2] != 'J' || _framebuffer[3] != 'P') {
             _state = RESTART;
             break;
         }
         _state = PAYLOAD;
         ESP_LOGD(FNAME, "Msg HEADER");
-        push_and_crc(c);
         break;
     case PAYLOAD:
         if ( c == '*' ) {
@@ -114,9 +115,9 @@ gen_state_t CANMasterReg::nextByte(const char c)
         {
             push('\0'); // terminate the string buffer
             _state = START_TOKEN; // restart parsing
-            ESP_LOGD(FNAME, "Msg complete %s", _framebuffer);
+            ESP_LOGI(FNAME, "Msg complete %s", _framebuffer);
             std::string frame(_framebuffer);
-            if ( frame.compare(2, 3, "reg") == 0 ) {
+            if ( frame.compare(4, 3, "REG") == 0 ) {
                 registration_query();
             }
         }
@@ -130,32 +131,32 @@ gen_state_t CANMasterReg::nextByte(const char c)
 void CANMasterReg::registration_query()
 {
     ESP_LOGI(FNAME, "JP registration query");
-    // e.g. read message "!jacc XYZ, proto"
-    if ( strlen(_framebuffer) < 9 ) {
+    // e.g. read message "$PJPREG 123, proto"
+    if ( strlen(_framebuffer) < 12 ) {
         return;
     }
-    std::string frame(&_framebuffer[6]);
+    std::string frame(&_framebuffer[8]);
 
     // grab the token
     for ( int i=0; i<3; i++ ) {
-        if ( !islower(frame[i]) && !isupper(frame[i]) ) {
+        if ( !isdigit(frame[i]) ) {
             return;
         }
     }
     _token = frame.substr(0, 3);
-    ESP_LOGD(FNAME, "JP reg token %s", _token.c_str());
+    ESP_LOGI(FNAME, "JP reg token %s", _token.c_str());
 
     // read the protocol type
     size_t pos = frame.find(',');
     ESP_LOGD(FNAME, "JP comma %d", pos);
     _protocol = NMEA::extractWord(frame, pos+1);
-    ESP_LOGI(FNAME, "JP proto %s", _protocol.c_str());
+    ESP_LOGD(FNAME, "JP proto %s", _protocol.c_str());
 
     if ( _protocol.compare("JUMBOCMD") == 0 ) {
         int client_id;
         Device *dev = DEVMAN->getDevice(JUMBO_DEV);
         if ( dev ) {
-            client_id = dev->getPort(JUMBO_CMD); // re-use
+            client_id = dev->getSendPort(JUMBO_CMD); // re-use
         } else {
             client_id = DeviceManager::getFreeCANId(1);
         }
@@ -167,7 +168,7 @@ void CANMasterReg::registration_query()
         int master_id = client_id + 1;
         DEVMAN->addDevice(JUMBO_DEV, JUMBO_CMD, master_id, client_id, CAN);
 
-        msg->buffer = "!jacc " + _token + ", " + std::to_string(client_id) + 
+        msg->buffer = "$PJMACC " + _token + ", " + std::to_string(client_id) + 
                                         ", " + std::to_string(master_id);
         msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
         DEV::Send(msg);

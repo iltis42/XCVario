@@ -5,14 +5,14 @@
  *      Author: iltis
  */
 
-
-
-#include "driver/adc.h"
 #include "AnalogInput.h"
+
+#include "sensor.h"
 #include "sdkconfig.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_adc_cal.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <driver/adc.h>
+#include <esp_adc_cal.h>
 #include <logdef.h>
 
 #define DIODE_VOLTAGE_DROP 0        // New Vario now measures behind Diode

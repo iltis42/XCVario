@@ -36,7 +36,8 @@ struct Device
 {
     Device(DeviceId id) : _id(id) {}
     ~Device();
-    int getPort(ProtocolType p);
+    int getSendPort(ProtocolType p) const;
+    ProtocolItf* getProtocol(ProtocolType p) const;
     const DeviceId  _id;
     std::set<DataLink*> _dlink;
     InterfaceCtrl   *_itf;
@@ -87,9 +88,10 @@ public:
     // API
     ProtocolItf* addDevice(DeviceId dev, ProtocolType proto, int listen_port, int send_port, InterfaceCtrl *itf);
     Device* getDevice(DeviceId did);
+    ProtocolItf* getProtocol(DeviceId dev, ProtocolType proto);
     // Remove device of this type
     Device* removeDevice(DeviceId did);
-    InterfaceCtrl* getIntf(const DeviceId did);
+    InterfaceCtrl* getIntf(DeviceId did);
     // Search for the next free CAN id, organized in chunks of four in 5 prio categories.
     static int getFreeCANId(int prio);
 

@@ -9,6 +9,7 @@
 #include "DeviceMgr.h"
 
 #include "InterfaceCtrl.h"
+#include "protocol/ProtocolItf.h"
 
 #include <logdef.h>
 
@@ -42,9 +43,20 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
 
 Device *DeviceManager::getDevice(DeviceId did)
 {
+    ESP_LOGI(FNAME, "Look for device %d", did);
     DevMap::iterator it = _device_map.find(did);
     if ( it != _device_map.end() ) {
+        ESP_LOGI(FNAME, "Found it");
         return it->second;
+    }
+    return nullptr;
+}
+
+ProtocolItf *DeviceManager::getProtocol(DeviceId dev, ProtocolType proto)
+{
+    Device *d = getDevice(dev);
+    if ( d ) {
+        return d->getProtocol(proto);
     }
     return nullptr;
 }
@@ -62,7 +74,7 @@ Device* DeviceManager::removeDevice(DeviceId did)
 }
 
 // routing lookup table
-InterfaceCtrl* DeviceManager::getIntf(const DeviceId did)
+InterfaceCtrl* DeviceManager::getIntf(DeviceId did)
 {
     DevMap::iterator it = _device_map.find(did);
     if ( it != _device_map.end() ) {
@@ -104,14 +116,26 @@ Device::~Device()
     _dlink.clear();
 }
 
-int Device::getPort(ProtocolType p)
+ProtocolItf *Device::getProtocol(ProtocolType p) const
 {
-    // Find port for protocol
+    // Find protocol
     for (DataLink* dl : _dlink) {
-        if ( dl->hasProtocol(p) ) {
-            return dl->getPort();
+        ProtocolItf *tmp = dl->getProtocol(p);
+        if ( tmp ) {
+            return tmp;
         }
+    }
+    return nullptr;
+}
+
+int Device::getSendPort(ProtocolType p) const
+{
+    // get port for protocol
+    ProtocolItf *tmp = getProtocol(p);
+    if ( tmp ) {
+        return tmp->getSendPort();
     }
 
     return 0;
 }
+

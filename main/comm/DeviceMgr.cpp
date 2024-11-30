@@ -9,6 +9,7 @@
 #include "DeviceMgr.h"
 
 #include "InterfaceCtrl.h"
+#include "protocol/ProtocolItf.h"
 
 #include <logdef.h>
 
@@ -104,12 +105,13 @@ Device::~Device()
     _dlink.clear();
 }
 
-int Device::getPort(ProtocolType p)
+int Device::getSendPort(ProtocolType p) const
 {
     // Find port for protocol
     for (DataLink* dl : _dlink) {
-        if ( dl->hasProtocol(p) ) {
-            return dl->getPort();
+        ProtocolItf *tmp = dl->getProtocol(p);
+        if ( tmp ) {
+            return tmp->getSendPort();
         }
     }
 

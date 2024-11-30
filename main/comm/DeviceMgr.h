@@ -36,7 +36,7 @@ struct Device
 {
     Device(DeviceId id) : _id(id) {}
     ~Device();
-    int getPort(ProtocolType p);
+    int getSendPort(ProtocolType p) const ;
     const DeviceId  _id;
     std::set<DataLink*> _dlink;
     InterfaceCtrl   *_itf;

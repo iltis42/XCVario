@@ -55,7 +55,15 @@ ProtocolItf* DataLink::setProtocol(ProtocolType ptyp, int send_port)
     return _protocol;
 }
 
-bool DataLink::hasProtocol(ProtocolType ptyp)
+ProtocolItf* DataLink::getProtocol(ProtocolType ptyp) const
+{
+    if ( _protocol->getProtocolId() == ptyp ) {
+        return _protocol;
+    }
+    return nullptr;
+}
+
+bool DataLink::hasProtocol(ProtocolType ptyp) const
 {
     return _protocol->getProtocolId() == ptyp;
 }

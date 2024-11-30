@@ -29,6 +29,7 @@ IN THE SOFTWARE.
 #include "esp_log.h"
 // #include "driver/i2c.h"
 #include "i2c.h"
+#include "driver/i2c.h"
 #include "driver/gpio.h"
 #include <iostream>
 #include <cstring>

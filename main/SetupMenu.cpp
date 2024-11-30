@@ -44,6 +44,8 @@
 #include "DataLink.h"
 #include "comm/DataLink.h"
 #include "comm/Devices.h"
+#include "comm/DeviceMgr.h"
+#include "protocol/JumboCmdHost.h"
 
 SetupMenuSelect * audio_range_sm = 0;
 SetupMenuSelect * mpu = 0;
@@ -452,6 +454,14 @@ int crew_weight_adj( SetupMenuValFloat * p )
 {
 	float wingload = (ballast_kg.get() + empty_weight.get()+ crew_weight.get()) / polar_wingarea.get();
 	print_fb( p, wingload );
+	return 0;
+}
+
+int wiper_button( SetupMenuSelect *p )
+{
+	JumboCmdHost* jumbo = static_cast<JumboCmdHost*>(DEVMAN->getProtocol(DeviceId::JUMBO_DEV, ProtocolType::JUMBO_CMD));
+
+	jumbo->sendShortPress(p->getSelect());
 	return 0;
 }
 
@@ -895,10 +905,29 @@ void SetupMenu::vario_menu_create_ec( MenuEntry *top ){
 	SetupMenuValFloat * elca = new SetupMenuValFloat( "Adjustment", "%",	-100, 100, 0.1, 0, false, &te_comp_adjust );
 	elca->setHelp( "Adjustment option for electronic TE compensation in %. This affects the energy altitude calculated from airspeed");
 	top->addEntry( elca );
-};
+}
 
-void SetupMenu::vario_menu_create( MenuEntry *vae ){
-	ESP_LOGI(FNAME,"SetupMenu::vario_menu_create( %p )", vae );
+void SetupMenu::wiper_menu_create(MenuEntry *top)
+{
+	SetupMenuSelect * wiper = new SetupMenuSelect( "Start Wipe", RST_NONE, wiper_button , false );
+	wiper->setHelp( "Select a side and start the jumbo wiper run.");
+	wiper->addEntry( "Left");
+	wiper->addEntry( "Right");
+	top->addEntry( wiper);
+
+	bugs_item_create(top);
+}
+
+void SetupMenu::bugs_item_create(MenuEntry *top)
+{
+	SetupMenuValFloat * bgs = new SetupMenuValFloat( "Bugs", "%", 0.0, 50, 1, bug_adj, true, &bugs  );
+	bgs->setHelp( "Percent degradation of gliding performance due to bugs contamination");
+	top->addEntry( bgs );
+}
+
+void SetupMenu::vario_menu_create(MenuEntry *vae)
+{
+    ESP_LOGI(FNAME,"SetupMenu::vario_menu_create( %p )", vae );
 
 	SetupMenuValFloat * vga = new SetupMenuValFloat( "Range", "",	1.0, 30.0, 1, audio_setup_f, true, &range );
 	vga->setHelp( "Upper and lower value for Vario graphic display region");
@@ -2282,9 +2311,16 @@ void SetupMenu::setup_create_root(MenuEntry *top ){
 		top->addEntry( vol );
 	}
 
-	SetupMenuValFloat * bgs = new SetupMenuValFloat( "Bugs", "%", 0.0, 50, 1, bug_adj, true, &bugs  );
-	bgs->setHelp( "Percent degradation of gliding performance due to bugs contamination");
-	top->addEntry( bgs );
+	Device* jumbo = DEVMAN->getDevice(DeviceId::JUMBO_DEV);
+	if ( jumbo ) {
+		std::string title("Bugs at ");
+		title += std::to_string(int(bugs.get())) + "%";
+		SetupMenu * wiper = new SetupMenu( title.c_str() );
+		top->addEntry( wiper );
+		wiper->addCreator( wiper_menu_create );
+	} else {
+		bugs_item_create(top);
+	}
 
 	SetupMenuValFloat * bal = new SetupMenuValFloat( "Ballast", "litre", 0.0, 500, 1, water_adj, true, &ballast_kg  );
 	bal->setHelp( "Amount of water ballast added to the over all weight");

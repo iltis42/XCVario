@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef _DRIVER_I2C_H_
-#define _DRIVER_I2C_H_
+#ifndef _I2C_H_
+#define _I2C_H_
 
 #ifdef __cplusplus
 extern "C" {

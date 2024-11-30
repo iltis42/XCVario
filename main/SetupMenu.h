@@ -42,6 +42,8 @@ public:
 
 	static void setup_create_root( MenuEntry *top );
 
+	static void wiper_menu_create( MenuEntry *top );
+	static void bugs_item_create( MenuEntry *top );
 	static void vario_menu_create( MenuEntry *top );
 	static void vario_menu_create_damping( MenuEntry *top );
 	static void vario_menu_create_meanclimb( MenuEntry *top );

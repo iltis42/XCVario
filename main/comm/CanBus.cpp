@@ -144,8 +144,8 @@ void canRxTask(void *arg)
         twai_message_t rx;
         if (ESP_OK == twai_receive(&rx, pdMS_TO_TICKS(500)) && rx.data_length_code > 0)
         {
-            ESP_LOGI(FNAME, "CAN RX NMEA chunk, id:0x%x, len:%d msg: %s", rx.identifier, rx.data_length_code, msg.c_str());
             msg.assign((char *)rx.data, rx.data_length_code);
+            ESP_LOGI(FNAME, "CAN RX NMEA chunk, id:0x%x, len:%d msg: %s", rx.identifier, rx.data_length_code, msg.c_str());
             for (auto &dl : can->_dlink)
             {
                 if (dl->getPort() == rx.identifier)

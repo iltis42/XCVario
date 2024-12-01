@@ -71,7 +71,7 @@
 
 gen_state_t JumboCmdHost::nextByte(const char c)
 {
-    ESP_LOGI(FNAME, "state %d, pos %d next char %c", _state, _pos, c);
+    ESP_LOGD(FNAME, "state %d, pos %d next char %c", _state, _pos, c);
     switch(_state) {
     case START_TOKEN:
     case CHECK_FAILED:
@@ -80,7 +80,7 @@ gen_state_t JumboCmdHost::nextByte(const char c)
             _state = HEADER;
             reset();
             push(c);
-            ESP_LOGI(FNAME, "Msg START_TOKEN");
+            ESP_LOGD(FNAME, "Msg START_TOKEN");
         }
         break;
     case HEADER:
@@ -91,7 +91,7 @@ gen_state_t JumboCmdHost::nextByte(const char c)
             break;
         }
         _state = PAYLOAD;
-        ESP_LOGI(FNAME, "Msg HEADER");
+        ESP_LOGD(FNAME, "Msg HEADER");
         break;
     case PAYLOAD:
         if ( c == '*' ) {
@@ -100,7 +100,7 @@ gen_state_t JumboCmdHost::nextByte(const char c)
             break;
         }
         if ( c != '\r' && c != '\n' ) {
-            ESP_LOGI(FNAME, "Msg PAYLOAD");
+            ESP_LOGD(FNAME, "Msg PAYLOAD");
             if ( push_and_crc(c) ) {
                 break;
             }
@@ -121,7 +121,7 @@ gen_state_t JumboCmdHost::nextByte(const char c)
                 _crc_buf[1] = c;
                 _crc_buf[2] = '\0';
                 char read_crc = (char)strtol(_crc_buf, NULL, 16);
-                ESP_LOGI(FNAME, "Msg CRC %s/%x - %x", _crc_buf, read_crc, _crc);
+                ESP_LOGD(FNAME, "Msg CRC %s/%x - %x", _crc_buf, read_crc, _crc);
                 if ( read_crc != _crc ) {
                     _state = CHECK_FAILED;
                     break;
@@ -136,7 +136,7 @@ gen_state_t JumboCmdHost::nextByte(const char c)
         {
             push('\0'); // terminate the string buffer
             gen_state_t next_state = START_TOKEN; // restart parsing
-            ESP_LOGI(FNAME, "Msg complete %c%c", _framebuffer[4], _framebuffer[5]);
+            ESP_LOGD(FNAME, "Msg complete %c%c", _framebuffer[4], _framebuffer[5]);
             uint16_t mid = (_framebuffer[4]<<8) + _framebuffer[5];
             switch (mid) {
                 case (('R' << 8) | 'P'):

@@ -46,7 +46,7 @@ ProtocolItf* DataLink::setProtocol(ProtocolType ptyp, int send_port)
         _protocol = new CANMasterReg(send_port);
         break;
     case JUMBO_CMD:
-        ESP_LOGI(FNAME, "New JumboCmdHost");
+        ESP_LOGI(FNAME, "New JumboCmdHost sp%d", send_port);
         _protocol = new JumboCmdHost(send_port);
         break;
     default:
@@ -57,7 +57,10 @@ ProtocolItf* DataLink::setProtocol(ProtocolType ptyp, int send_port)
 
 ProtocolItf* DataLink::getProtocol(ProtocolType ptyp) const
 {
-    if ( _protocol->getProtocolId() == ptyp ) {
+    if ( ptyp == NO_ONE ) {
+        return _protocol;
+    }
+    else if ( _protocol->getProtocolId() == ptyp ) {
         return _protocol;
     }
     return nullptr;

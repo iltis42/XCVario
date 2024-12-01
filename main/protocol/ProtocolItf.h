@@ -97,5 +97,5 @@ protected:
     char _crc_buf[3]; // small crc character buffer
 
     // routing
-    int _send_port;
+    const int _send_port;
 };

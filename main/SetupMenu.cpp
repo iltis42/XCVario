@@ -46,6 +46,7 @@
 #include "comm/Devices.h"
 #include "comm/DeviceMgr.h"
 #include "protocol/JumboCmdHost.h"
+#include "SerialManager.h"
 
 SetupMenuSelect * audio_range_sm = 0;
 SetupMenuSelect * mpu = 0;
@@ -208,8 +209,38 @@ int update_s1_protocol( SetupMenuSelect * p ){
 	return 0;
 }
 
+int update_s2_baud( SetupMenuSelect * p ){
+	SerialManager S2m(UART_NUM_2);
+	ESP_LOGI(FNAME,"Select baudrate: %d",  p->getSelect() );
+	S2m.setBaud( (e_baud)(p->getSelect()) );    // 0 off, 1: 4800, 2:9600, etc
+	return 0;
+}
+
+int update_s2_pol( SetupMenuSelect * p ){
+	SerialManager S2m(UART_NUM_2);
+	ESP_LOGI(FNAME,"Select RX/TX polarity: %d",  p->getSelect() );
+	S2m.setLineInverse( (e_polarity)(p->getSelect()) );    // 0 off, 1 invers or TTL (always both, RX/TX)
+	return 0;
+}
+
+int update_s2_pin( SetupMenuSelect * p ){
+	SerialManager S2m(UART_NUM_2);
+	ESP_LOGI(FNAME,"Select Pin Swap: %d",  p->getSelect() );
+	S2m.setPinSwap( (e_pin)(p->getSelect()) );    // 0 normal (3:TX 4:RX), 1 swapped (3:RX 4:TX)
+	return 0;
+}
+
+int update_s2_txena( SetupMenuSelect * p ){
+	SerialManager S2m(UART_NUM_2);
+	ESP_LOGI(FNAME,"Select TX Enable: %d",  p->getSelect() );
+	S2m.setSlaveRole( (e_tx)(p->getSelect()) );    // 0 normal Client (RO, Listener), 1 Master (Sender)
+	return 0;
+}
+
 int update_s2_protocol( SetupMenuSelect * p ){
-	// if( serial2_protocol.get() == DEV_FLARM )
+	SerialManager S2m(UART_NUM_2);
+	ESP_LOGI(FNAME,"Select profile: %d",  p->getSelect()-1 );
+	S2m.configure( (e_profile)(p->getSelect()-1) );    // For the moment transparent:  SM_FLARM = 0, SM_RADIO = 1, SM_XCTNAV_S3 = 2, SM_OPENVARIO = 3, SM_XCFLARMVIEW = 4
 	// 	dl_S2.setProtocol( NMEA );
 	// else if( serial2_protocol.get() == DEV_ANEMOI )
 	// 	dl_S2.setProtocol( ANEMOI );
@@ -2132,7 +2163,7 @@ void SetupMenu::system_menu_create_interfaceS2_routing( MenuEntry *top ){
 }
 
 void SetupMenu::system_menu_create_interfaceS2( MenuEntry *top ){
-	SetupMenuSelect * s2sp2 = new SetupMenuSelect( "Baudraute",	RST_ON_EXIT, 0, true, &serial2_speed );
+	SetupMenuSelect * s2sp2 = new SetupMenuSelect( "Baudraute",	RST_ON_EXIT, update_s2_baud, true, &serial2_speed );
 	top->addEntry( s2sp2 );
 	// s2sp->setHelp( "Serial RS232 (TTL) speed, pins RX:2, TX:3 on external RJ45 connector");
 	s2sp2->addEntry( "OFF");
@@ -2148,44 +2179,40 @@ void SetupMenu::system_menu_create_interfaceS2( MenuEntry *top ){
 	top->addEntry( s2out );
 	s2out->addCreator( system_menu_create_interfaceS2_routing );
 
-	SetupMenuSelect * stxi2 = new SetupMenuSelect( "TX Inversion", RST_ON_EXIT , 0, true, &serial2_tx_inverted );
+	SetupMenuSelect * stxi2 = new SetupMenuSelect( "RX/TX Invert", RST_NONE , update_s2_pol, true, &serial2_tx_inverted );
 	top->addEntry( stxi2 );
-	stxi2->setHelp( "Serial RS232 (TTL) logic, a '1' will be sent as zero voltage level (RS232 standard and default) or vice versa  (reboots)");
-	stxi2->addEntry( "Normal");
-	stxi2->addEntry( "Inverted");
+	stxi2->setHelp( "Serial RS232 (TTL) logic, a '1' will be sent as zero voltage level (RS232 standard and default) or vice versa");
+	stxi2->addEntry( "Normal RS232");
+	stxi2->addEntry( "Inverted TTL");
 
-	SetupMenuSelect * srxi2 = new SetupMenuSelect( "RX Inversion", RST_ON_EXIT, 0, true, &serial2_rx_inverted );
-	top->addEntry( srxi2 );
-	srxi2->setHelp( "Serial RS232 (TTL) logic, a '1' will be received at zero voltage level (RS232 standard and default) or vice versa (reboots)");
-	srxi2->addEntry( "Normal");
-	srxi2->addEntry( "Inverted");
-
-	SetupMenuSelect * srxtw2 = new SetupMenuSelect( "Twist RX/TX Pins", RST_ON_EXIT, 0, true, &serial2_pins_twisted );
+	SetupMenuSelect * srxtw2 = new SetupMenuSelect( "Twist RX/TX Pins", RST_NONE, update_s2_pin, true, &serial2_pins_twisted );
 	top->addEntry( srxtw2 );
-	srxtw2->setHelp( "Option to swap RX and TX line for S2, e.g. for OpenVario. After change also a true power-cycle is needed (reboots)");
+	srxtw2->setHelp( "Option to swap RX and TX line for S2, e.g. for OpenVario. After change also a true power-cycle is needed");
 	srxtw2->addEntry( "Normal");
 	srxtw2->addEntry( "Twisted");
 
-	SetupMenuSelect * stxdis2 = new SetupMenuSelect( "TX Line", RST_ON_EXIT, 0, true, &serial2_tx_enable );
+	SetupMenuSelect * stxdis2 = new SetupMenuSelect( "Role", RST_NONE, update_s2_txena, true, &serial2_tx_enable );
 	top->addEntry( stxdis2 );
-	stxdis2->setHelp( "Option to switch off RS232 TX line in case active sending is not required, e.g. for multiple devices connected to one device (reboots)");
-	stxdis2->addEntry( "Disable");
-	stxdis2->addEntry( "Enable");
+	stxdis2->setHelp( "Option for 'Client' mode to listen only on the RX line, disables TX line to receive only data");
+	stxdis2->addEntry( "Client (RX)");
+	stxdis2->addEntry( "Master (RX&TX)");
 
-	SetupMenuSelect * sprots1 = new SetupMenuSelect( PROGMEM"Protocol", RST_ON_EXIT, update_s2_protocol, true, &serial2_protocol );
+	SetupMenuSelect * sprots1 = new SetupMenuSelect( PROGMEM"Protocol", RST_NONE, update_s2_protocol, true, &serial2_protocol );
 	top->addEntry( sprots1 );
 	sprots1->setHelp( PROGMEM"Specify the protocol driver for the external device connected to S2", 240);
 	sprots1->addEntry( PROGMEM"Disable");
 	sprots1->addEntry( PROGMEM"Flarm");
-	sprots1->addEntry( PROGMEM"KRT2 Radio");
-	sprots1->addEntry( PROGMEM"Becker Radio");
-	sprots1->addEntry( PROGMEM"GNSS UBX");
-	sprots1->addEntry( PROGMEM"Anemoi");
+	sprots1->addEntry( PROGMEM"Radio");
+	sprots1->addEntry( PROGMEM"XCTNAV S3");
+	sprots1->addEntry( PROGMEM"OPENVARIO");
+	sprots1->addEntry( PROGMEM"XCFLARMVIEW");
 
 	SetupMenuSelect * datamon = new SetupMenuSelect( "Monitor", RST_NONE, data_monS2, true, &data_monitor );
 	datamon->setHelp( "Short press button to start/pause, long press to terminate data monitor", 260);
 	datamon->addEntry( "Disable");
 	datamon->addEntry( "Start S2 RS232");
+
+	top->addEntry( datamon );
 }
 
 void SetupMenu::system_menu_create_interfaceCAN_routing( MenuEntry *top ){

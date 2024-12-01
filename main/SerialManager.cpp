@@ -16,6 +16,8 @@ SerialManager::SerialManager(uart_port_t uart){
 	uart_nr = uart;
 	tx_gpio = GPIO_NUM_36;  // dummy port
 	rx_gpio = GPIO_NUM_36;
+	if( serial2_protocol.get() > 0 )
+		cfg = sm_serial_config[ serial2_protocol.get() ];
 };
 
 void SerialManager::setBaud(e_baud abaud){
@@ -98,13 +100,13 @@ void SerialManager::setPinSwap( e_pin pinmode ){
 			}
 			if( tx_gpio != GPIO_NUM_36 ){
 				gpio_set_direction(tx_gpio, GPIO_MODE_OUTPUT);
-				Serial1.attachTx( tx_gpio, cfg.pol == RS232_TTL );
+				Serial1.attachTx( tx_gpio, cfg.pol != RS232_TTL );
 				gpio_pullup_en( tx_gpio );
 			}else{
 				gpio_set_direction(tx_gpio, GPIO_MODE_INPUT);
 				gpio_pullup_dis( tx_gpio );
 			}
-			Serial1.attachRx( rx_gpio, cfg.pol == RS232_TTL );
+			Serial1.attachRx( rx_gpio, cfg.pol != RS232_TTL );
 			gpio_pullup_en( rx_gpio );
 
 			break;
@@ -128,14 +130,14 @@ void SerialManager::setPinSwap( e_pin pinmode ){
 				break;
 			}
 			if( tx_gpio != GPIO_NUM_36 ){
-				Serial2.attachTx( tx_gpio, cfg.pol == RS232_TTL );
+				Serial2.attachTx( tx_gpio, cfg.pol != RS232_TTL );
 				gpio_set_direction(tx_gpio, GPIO_MODE_OUTPUT);
 				gpio_pullup_en( tx_gpio );
 			}else{
 				gpio_set_direction(tx_gpio, GPIO_MODE_INPUT);
 				gpio_pullup_dis( tx_gpio );
 			}
-			Serial2.attachRx( rx_gpio, cfg.pol == RS232_TTL );
+			Serial2.attachRx( rx_gpio, cfg.pol != RS232_TTL );
 			gpio_pullup_en( rx_gpio );
 			break;
 	}

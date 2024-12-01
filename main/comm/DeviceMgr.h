@@ -94,6 +94,8 @@ public:
     InterfaceCtrl* getIntf(DeviceId did);
     // Search for the next free CAN id, organized in chunks of four in 5 prio categories.
     static int getFreeCANId(int prio);
+    // debugging
+    void dumpMap() const;
 
 private:
     // Complete list of all devices known at runtime

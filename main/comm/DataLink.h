@@ -19,7 +19,7 @@ public:
     DataLink(int listen_port) : _port(listen_port) {}
     ~DataLink();
     ProtocolItf* setProtocol(ProtocolType ptyp, int mport=0);
-    ProtocolItf* getProtocol(ProtocolType ptyp) const ;
+    ProtocolItf* getProtocol(ProtocolType ptyp=NO_ONE) const ;
     bool hasProtocol(ProtocolType ptyp) const;
     ProtocolItf* removeProtocol();
     void process(const char *packet, int len);

@@ -36,17 +36,18 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
     ProtocolItf* ret = dl->setProtocol(proto, send_port);
     dev->_itf = itf;
 
+    dumpMap();
     _device_map[did] = dev; // and add
     ESP_LOGI(FNAME, "Add device %d", did);
+    dumpMap();
+
     return ret;
 }
 
 Device *DeviceManager::getDevice(DeviceId did)
 {
-    ESP_LOGI(FNAME, "Look for device %d", did);
     DevMap::iterator it = _device_map.find(did);
     if ( it != _device_map.end() ) {
-        ESP_LOGI(FNAME, "Found it");
         return it->second;
     }
     return nullptr;
@@ -102,6 +103,19 @@ int DeviceManager::getFreeCANId(int prio)
         return slot;
     }
     return -1;
+}
+
+void DeviceManager::dumpMap() const
+{
+    ESP_LOGI(FNAME, "Device map dump:");
+    for ( auto &it : _device_map ) {
+        Device* d = it.second;
+        ESP_LOGI(FNAME, "%d: %p (did%d/iid%s/dl*%d)", it.first, d, d->_id, d->_itf->getId(), d->_dlink.size());
+        for ( auto &l : d->_dlink ) {
+            ProtocolItf* p = l->getProtocol(NO_ONE);
+            ESP_LOGI(FNAME, "  l%d: did%d,pid%d,sp%d", l->getPort(), p->getDeviceId(), p->getProtocolId(), p->getSendPort());
+        }
+    }
 }
 
 // Resolve the existance of a device

@@ -199,15 +199,6 @@ int upd_screens( SetupMenuSelect * p ){
 	return 0;
 }
 
-int update_s1_protocol( SetupMenuSelect * p ){
-	// if( serial1_protocol.get() == DEV_FLARM )
-	// 	dl_S1.setProtocol( NMEA );
-	// else if( serial1_protocol.get() == DEV_ANEMOI )
-	// 	dl_S1.setProtocol( ANEMOI );
-	// else
-	// 	dl_S1.setProtocol( NO_ONE );
-	return 0;
-}
 
 int update_s2_baud( SetupMenuSelect * p ){
 	SerialManager S2m(UART_NUM_2);
@@ -242,11 +233,42 @@ int update_s2_protocol( SetupMenuSelect * p ){
 	ESP_LOGI(FNAME,"Select profile: %d",  p->getSelect()-1 );
 	S2m.loadProfile( (e_profile)(p->getSelect()-1) );
 	S2m.configure();    // For the moment transparent:  SM_FLARM = 0, SM_RADIO = 1, SM_XCTNAV_S3 = 2, SM_OPENVARIO = 3, SM_XCFLARMVIEW = 4
-	// 	dl_S2.setProtocol( NMEA );
-	// else if( serial2_protocol.get() == DEV_ANEMOI )
-	// 	dl_S2.setProtocol( ANEMOI );
-	// else
-	// 	dl_S2.setProtocol( NO_ONE );
+	return 0;
+}
+
+int update_s1_baud( SetupMenuSelect * p ){
+	SerialManager S1m(UART_NUM_1);
+	ESP_LOGI(FNAME,"Select baudrate: %d",  p->getSelect() );
+	S1m.setBaud( (e_baud)(p->getSelect()) );    // 0 off, 1: 4800, 2:9600, etc
+	return 0;
+}
+
+int update_s1_pol( SetupMenuSelect * p ){
+	SerialManager S1m(UART_NUM_1);
+	ESP_LOGI(FNAME,"Select RX/TX polarity: %d",  p->getSelect() );
+	S1m.setLineInverse( (e_polarity)(p->getSelect()) );    // 0 off, 1 invers or TTL (always both, RX/TX)
+	return 0;
+}
+
+int update_s1_pin( SetupMenuSelect * p ){
+	SerialManager S1m(UART_NUM_1);
+	ESP_LOGI(FNAME,"Select Pin Swap: %d",  p->getSelect() );
+	S1m.setPinSwap( (e_pin)(p->getSelect()) );    // 0 normal (3:TX 4:RX), 1 swapped (3:RX 4:TX)
+	return 0;
+}
+
+int update_s1_txena( SetupMenuSelect * p ){
+	SerialManager S1m(UART_NUM_1);
+	ESP_LOGI(FNAME,"Select TX Enable: %d",  p->getSelect() );
+	S1m.setSlaveRole( (e_tx)(p->getSelect()) );    // 0 normal Client (RO, Listener), 1 Master (Sender)
+	return 0;
+}
+
+int update_s1_protocol( SetupMenuSelect * p ){
+	SerialManager S1m(UART_NUM_1);
+	ESP_LOGI(FNAME,"Select profile: %d",  p->getSelect()-1 );
+	S1m.loadProfile( (e_profile)(p->getSelect()-1) );
+	S1m.configure();    // For the moment transparent:  SM_FLARM = 0, SM_RADIO = 1, SM_XCTNAV_S3 = 2, SM_OPENVARIO = 3, SM_XCFLARMVIEW = 4
 	return 0;
 }
 
@@ -2084,6 +2106,8 @@ void SetupMenu::system_menu_create_interfaceS1_routing( MenuEntry *top ){
 }
 
 void SetupMenu::system_menu_create_interfaceS1( MenuEntry *top ){
+	/*
+
 	SetupMenuSelect * s2sp = new SetupMenuSelect( "Baudraute",	RST_ON_EXIT, 0, true, &serial1_speed );
 	top->addEntry( s2sp );
 	s2sp->addEntry( "OFF");
@@ -2094,11 +2118,6 @@ void SetupMenu::system_menu_create_interfaceS1( MenuEntry *top ){
 	s2sp->addEntry( "57600 baud");
 	s2sp->addEntry( "115200 baud");
 
-	SetupMenuSelect * s1in = new SetupMenuSelect( "Serial Loops", RST_NONE, 0, true, &serial1_rxloop );
-	top->addEntry( s1in );
-	s1in->setHelp( "Option to loop serial S1 RX to S1 TX, e.g. for unidirectional OV or Kobo connection" );
-	s1in->addEntry( "Disable");     // 0
-	s1in->addEntry( "Enable");      // 1
 
 	SetupMenu * s1out = new SetupMenu( "S1 Routing");
 	top->addEntry( s1out );
@@ -2144,6 +2163,62 @@ void SetupMenu::system_menu_create_interfaceS1( MenuEntry *top ){
 	datamon->addEntry( "Disable");
 	datamon->addEntry( "Start S1 RS232");
 	top->addEntry( datamon );
+
+
+	*/
+
+
+	SetupMenuSelect * s1sp2 = new SetupMenuSelect( "Baudraute",	RST_ON_EXIT, update_s1_baud, true, &serial1_speed );
+	top->addEntry( s1sp2 );
+	// s2sp->setHelp( "Serial RS232 (TTL) speed, pins RX:2, TX:3 on external RJ45 connector");
+	s1sp2->addEntry( "OFF");
+	s1sp2->addEntry( "4800 baud");
+	s1sp2->addEntry( "9600 baud");
+	s1sp2->addEntry( "19200 baud");
+	s1sp2->addEntry( "38400 baud");
+	s1sp2->addEntry( "57600 baud");
+	s1sp2->addEntry( "115200 baud");
+
+	SetupMenu * s1out = new SetupMenu( "S1 Routing" );
+	s1out->setHelp( "Select data source to be routed from/to serial interface S1");
+	top->addEntry( s1out );
+	s1out->addCreator( system_menu_create_interfaceS1_routing );
+
+	SetupMenuSelect * stxi2 = new SetupMenuSelect( "RX/TX Invert", RST_NONE , update_s1_pol, true, &serial1_tx_inverted );
+	top->addEntry( stxi2 );
+	stxi2->setHelp( "Serial RS232 (TTL) logic, a '1' will be sent as zero voltage level (RS232 standard and default) or vice versa");
+	stxi2->addEntry( "Normal RS232");
+	stxi2->addEntry( "Inverted TTL");
+
+	SetupMenuSelect * srxtw2 = new SetupMenuSelect( "Twist RX/TX Pins", RST_NONE, update_s1_pin, true, &serial1_pins_twisted );
+	top->addEntry( srxtw2 );
+	srxtw2->setHelp( "Option to swap RX and TX line for S1, e.g. for OpenVario. After change also a true power-cycle is needed");
+	srxtw2->addEntry( "Normal");
+	srxtw2->addEntry( "Twisted");
+
+	SetupMenuSelect * stxdis1 = new SetupMenuSelect( "Role", RST_NONE, update_s1_txena, true, &serial1_tx_enable );
+	top->addEntry( stxdis1 );
+	stxdis1->setHelp( "Option for 'Client' mode to listen only on the RX line, disables TX line to receive only data");
+	stxdis1->addEntry( "Client (RX)");
+	stxdis1->addEntry( "Master (RX&TX)");
+
+	SetupMenuSelect * sprots1 = new SetupMenuSelect( PROGMEM"Protocol", RST_NONE, update_s1_protocol, true, &serial1_protocol );
+	top->addEntry( sprots1 );
+	sprots1->setHelp( PROGMEM"Specify the protocol driver for the external device connected to S1", 240);
+	sprots1->addEntry( PROGMEM"Disable");
+	sprots1->addEntry( PROGMEM"Flarm");
+	sprots1->addEntry( PROGMEM"Radio");
+	sprots1->addEntry( PROGMEM"XCTNAV S3");
+	sprots1->addEntry( PROGMEM"OPENVARIO");
+	sprots1->addEntry( PROGMEM"XCFLARMVIEW");
+
+	SetupMenuSelect * datamon = new SetupMenuSelect( "Monitor", RST_NONE, data_monS1, true, &data_monitor );
+	datamon->setHelp( "Short press button to start/pause, long press to terminate data monitor", 260);
+	datamon->addEntry( "Disable");
+	datamon->addEntry( "Start S1 RS232");
+
+	top->addEntry( datamon );
+
 }
 
 void SetupMenu::system_menu_create_interfaceS2_routing( MenuEntry *top ){

@@ -14,10 +14,22 @@ t_serial_cfg sm_serial_config[] = {
 
 SerialManager::SerialManager(uart_port_t uart){
 	uart_nr = uart;
+	switch( uart_nr ){
+		case UART_NUM_1:
+			cfg.baud = (e_baud)serial1_speed.get();        // load settings from NVS
+			cfg.pol = (e_polarity)serial1_tx_inverted.get();
+			cfg.tx = (e_tx)serial1_tx_enable.get();
+			cfg.pin = (e_pin)serial1_pins_twisted.get();
+			break;
+		case UART_NUM_2:
+			cfg.baud = (e_baud)serial2_speed.get();
+			cfg.pol = (e_polarity)serial2_tx_inverted.get();
+			cfg.tx = (e_tx)serial2_tx_enable.get();
+			cfg.pin = (e_pin)serial2_pins_twisted.get();
+			break;
+	}
 	tx_gpio = GPIO_NUM_36;  // dummy port
 	rx_gpio = GPIO_NUM_36;
-	if( serial2_protocol.get() > 0 )
-		cfg = sm_serial_config[ serial2_protocol.get() ];
 };
 
 void SerialManager::setBaud(e_baud abaud){
@@ -40,24 +52,24 @@ void SerialManager::setLineInverse(e_polarity apol){
 		serial1_rx_inverted.set(cfg.pol);  // save both, one can be dropped later
 		serial1_tx_inverted.set(cfg.pol);
 		if( cfg.pol == RS232_TTL ){
-			Serial1.setRxInvert( true );
-			Serial1.setTxInvert( true );
+			Serial1.setRxInvert( false );  // they understood the spec like this: Standard RS232 is inverted, RS232 TTL not
+			Serial1.setTxInvert( false );
 		}
 		else{
-			Serial1.setRxInvert( false );
-			Serial1.setTxInvert( false );
+			Serial1.setRxInvert( true );
+			Serial1.setTxInvert( true );
 		}
 		break;
 	case UART_NUM_2:
 		serial2_rx_inverted.set(cfg.pol);
 		serial2_tx_inverted.set(cfg.pol);
 		if( cfg.pol == RS232_TTL ){
-			Serial2.setRxInvert( true );
-			Serial2.setTxInvert( true );
-		}
-		else{
 			Serial2.setRxInvert( false );
 			Serial2.setTxInvert( false );
+		}
+		else{
+			Serial2.setRxInvert( true );
+			Serial2.setTxInvert( true );
 		}
 		break;
 	}
@@ -77,7 +89,7 @@ void SerialManager::setSlaveRole( e_tx tx ){
 }
 
 
-void SerialManager::setPinSwap( e_pin pinmode ){
+void SerialManager::setPinSwap( e_pin pinmode ){  // configures ESP32 matrix, here also the line polartity (inverting) is handled
 	switch( uart_nr ){
 		case UART_NUM_1:
 			serial1_pins_twisted.set(pinmode);
@@ -144,10 +156,11 @@ void SerialManager::setPinSwap( e_pin pinmode ){
 	cfg.pin = pinmode;
 }
 
-
-
-void SerialManager::configure(e_profile profile){
+void SerialManager::loadProfile(e_profile profile){   // load defaults according to given profile
 	cfg = sm_serial_config[profile];
+}
+
+void SerialManager::configure(){
 	setPinSwap( cfg.pin );  // includes Master/Client role handling
 	setSlaveRole( cfg.tx );
 	setLineInverse( cfg.pol );
@@ -155,6 +168,8 @@ void SerialManager::configure(e_profile profile){
 }
 
 void SerialManager::start(){
+	configure();
+	/*
 	switch( uart_nr ){
 	case UART_NUM_1:
 		Serial1.begin(baud[serial1_speed.get()],SERIAL_8N1,rx_gpio,tx_gpio,serial1_rx_inverted.get(),serial1_tx_inverted.get());
@@ -165,15 +180,16 @@ void SerialManager::start(){
 		Serial2.setRxBufferSize(512);
 		break;
 	}
+	*/
 }
 
 void SerialManager::stop(){
 	switch( uart_nr ){
 	case UART_NUM_1:
-		// Serial1.end();   looks like HardwareSerial is managing this!
+		Serial1.end();
 		break;
 	case UART_NUM_2:
-		// Serial2.end();
+		Serial2.end();
 		break;
 	}
 	// delay(100);

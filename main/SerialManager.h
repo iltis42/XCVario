@@ -21,10 +21,11 @@ typedef struct _s_serial_cfg {
 class SerialManager {
 public:
     SerialManager(uart_port_t uart);                    // [0 = console], 1 = S1, 2 = S2
-    void configure(e_profile profile);                  // SM_FLARM, SM_RADIO, etc
-    void setBaud(e_baud baud);
-    void setLineInverse(e_polarity apol);               // BAUD_9600, etc
-    void setPinSwap( _e_pin pin );
+    void loadProfile(e_profile profile);                // load defaults according to profile given
+    void configure();                                   // SM_FLARM, SM_RADIO, etc
+    void setBaud(e_baud baud);							// BAUD_9600, etc
+    void setLineInverse(e_polarity apol);               // 0: Normal, 1: Invert
+    void setPinSwap( _e_pin pin );                      // 0: Standard 1: Swapped
     void setSlaveRole( e_tx tx );                       // Slave role or TX disable e.g. readonly FLARM CLIENT, e.g. we are parallel with another transmitting device with Master Role
     inline void restart() { stop(); start(); };         // recycle RS232 interface
 

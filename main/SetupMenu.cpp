@@ -240,7 +240,8 @@ int update_s2_txena( SetupMenuSelect * p ){
 int update_s2_protocol( SetupMenuSelect * p ){
 	SerialManager S2m(UART_NUM_2);
 	ESP_LOGI(FNAME,"Select profile: %d",  p->getSelect()-1 );
-	S2m.configure( (e_profile)(p->getSelect()-1) );    // For the moment transparent:  SM_FLARM = 0, SM_RADIO = 1, SM_XCTNAV_S3 = 2, SM_OPENVARIO = 3, SM_XCFLARMVIEW = 4
+	S2m.loadProfile( (e_profile)(p->getSelect()-1) );
+	S2m.configure();    // For the moment transparent:  SM_FLARM = 0, SM_RADIO = 1, SM_XCTNAV_S3 = 2, SM_OPENVARIO = 3, SM_XCFLARMVIEW = 4
 	// 	dl_S2.setProtocol( NMEA );
 	// else if( serial2_protocol.get() == DEV_ANEMOI )
 	// 	dl_S2.setProtocol( ANEMOI );

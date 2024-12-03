@@ -70,7 +70,11 @@ void DataMonitor::header( int ch, bool binary, int len, e_dir_t dir ){
 	ucg->setColor( COLOR_WHITE );
 	ucg->setFont(ucg_font_fub11_tr, true );
 	ucg->setPrintPos( 20, SCROLL_TOP );
-	ucg->printf( "%s%s: RX:%d TX:%d bytes   ", b, what, rx_total, tx_total );
+
+	if( paused )
+		ucg->printf( "%s%s: RX:%d TX:%d hold  ", b, what, rx_total, tx_total );
+	else
+		ucg->printf( "%s%s: RX:%d TX:%d bytes   ", b, what, rx_total, tx_total );
 }
 
 void DataMonitor::monitorString( int ch, e_dir_t dir, const char *str, int len ){
@@ -194,6 +198,7 @@ void DataMonitor::start(SetupMenuSelect * p){
 	ucg->drawBox( 0,0,240,320 );
 	ucg->setColor( COLOR_WHITE );
 	ucg->setFont(ucg_font_fub11_tr, true );
+	paused = false;
 	header( channel );
 	if( display_orientation.get() == DISPLAY_TOPDOWN )
 		ucg->scrollSetMargins( 0, SCROLL_TOP );

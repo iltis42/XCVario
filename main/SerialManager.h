@@ -23,17 +23,23 @@ public:
     SerialManager(uart_port_t uart);                    // [0 = console], 1 = S1, 2 = S2
     void loadProfile(e_profile profile);                // load defaults according to profile given
     void configure();                                   // SM_FLARM, SM_RADIO, etc
-    void setBaud(e_baud baud);							// BAUD_9600, etc
+    void setBaud(e_baud baud, bool coldstart=false);	// BAUD_9600, etc
     void setLineInverse(e_polarity apol);               // 0: Normal, 1: Invert
     void setPinSwap( _e_pin pin );                      // 0: Standard 1: Swapped
     void setSlaveRole( e_tx tx );                       // Slave role or TX disable e.g. readonly FLARM CLIENT, e.g. we are parallel with another transmitting device with Master Role
     inline void restart() { stop(); start(); };         // recycle RS232 interface
+    void uartBegin();
 
 private:
+    void getGPIOPins();
     t_serial_cfg cfg;
     uart_port_t uart_nr;
     gpio_num_t tx_gpio;
     gpio_num_t rx_gpio;
+    static gpio_num_t prior_S1_tx_gpio;
+    static gpio_num_t prior_S1_rx_gpio;
+    static gpio_num_t prior_S2_tx_gpio;
+    static gpio_num_t prior_S2_rx_gpio;
     void start();                                             // starts RS232 interface
     void stop();                                              // stops RS232 interface
 };

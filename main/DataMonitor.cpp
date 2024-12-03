@@ -42,7 +42,14 @@ int DataMonitor::maxChar( const char *str, int pos, int len, bool binary ){
 	return i;
 }
 
-void DataMonitor::header( int ch, bool binary ){
+void DataMonitor::header( int ch, bool binary, int len, e_dir_t dir ){
+	if( dir == DIR_RX ){
+		rx_total += len;
+	}
+	else{
+		tx_total += len;
+	}
+	ESP_LOGI(FNAME,"header() %d %d %d ", len, rx_total, tx_total );
 	const char * what;
 	switch( ch ) {
 		case MON_BLUETOOTH: what = "BT"; break;
@@ -59,6 +66,8 @@ void DataMonitor::header( int ch, bool binary ){
 		b = "B-";
 	else
 		b = "";
+	ucg->setColor( COLOR_WHITE );
+	ucg->setFont(ucg_font_fub11_tr, true );
 	ucg->setPrintPos( 20, SCROLL_TOP );
 	ucg->printf( "%s%s: RX:%d TX:%d bytes   ", b, what, rx_total, tx_total );
 }
@@ -69,7 +78,7 @@ void DataMonitor::monitorString( int ch, e_dir_t dir, const char *str, int len )
 		if( !mon_started || paused || (ch != channel) ){
 			// ESP_LOGI(FNAME,"not active, return started:%d paused:%d", mon_started, paused );
 			if( ch == channel )
-				header( ch, binary );
+				header( ch, binary, len, dir );
 			xSemaphoreGive(mutex);
 			return;
 		}
@@ -84,11 +93,9 @@ void DataMonitor::printString( int ch, e_dir_t dir, const char *str, bool binary
 	char dirsym = 0;
 	if( dir == DIR_RX ){
 		dirsym = '>';
-		rx_total += len;
 	}
 	else{
 		dirsym = '<';
-		tx_total += len;
 	}
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	if( first ){
@@ -97,7 +104,7 @@ void DataMonitor::printString( int ch, e_dir_t dir, const char *str, bool binary
 		ucg->drawBox( 0,SCROLL_TOP,240,320 );
 	}
 	ucg->setColor( COLOR_WHITE );
-    header( ch, binary );
+    header( ch, binary, len, dir );
 	//if( !binary )
 	// 	len = len-1;  // ignore the \n in ASCII mode
 	int hunklen = 0;

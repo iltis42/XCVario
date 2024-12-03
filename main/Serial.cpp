@@ -27,6 +27,7 @@
 #include "Protocols.h"
 // #include "canbus.h"
 #include "ESPAudio.h"
+#include "SerialManager.h"
 
 /* Note that the standard NMEA 0183 baud rate is only 4.8 kBaud.
 Nevertheless, a lot of NMEA-compatible devices can properly work with
@@ -230,59 +231,31 @@ void Serial::begin(){
 	}
 
 	if( serial1_speed.get() != 0  || wireless != 0 ){
-		int baudrate = baud[serial1_speed.get()];
-		if( baudrate != 0 ) {
-			gpio_pullup_en( GPIO_NUM_16 );
-			gpio_pullup_en( GPIO_NUM_17 );
-			ESP_LOGI(FNAME,"Serial Interface ttyS1 enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial1_speed.get(), baud[serial1_speed.get()], serial1_tx_inverted.get(), serial1_rx_inverted.get() );
-			if( serial1_pins_twisted.get() ){
-				if( serial1_tx_enable.get() ){
-
-					Serial1.begin(baudrate,SERIAL_8N1,17,16, serial1_rx_inverted.get(), serial1_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
-				}else{
-					Serial1.begin(baudrate,SERIAL_8N1,17,36, serial1_rx_inverted.get(), serial1_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
-					gpio_set_direction(GPIO_NUM_16, GPIO_MODE_INPUT);     // 2020 series 1, analog in
-					gpio_pullup_dis( GPIO_NUM_16 );
-				}
-			}
-			else{
-				if( serial1_tx_enable.get() ){
-					Serial1.begin(baudrate,SERIAL_8N1,16,17, serial1_rx_inverted.get(), serial1_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
-				}else{
-					Serial1.begin(baudrate,SERIAL_8N1,16,36, serial1_rx_inverted.get(), serial1_tx_inverted.get());   //  IO16: RXD2,  IO17: TXD2
-					gpio_set_direction(GPIO_NUM_17, GPIO_MODE_INPUT);     // 2020 series 1, analog in
-					gpio_pullup_dis( GPIO_NUM_17 );
-				}
-			}
-			Serial1.setRxBufferSize(512);
-		}
+		SerialManager SM1(UART_NUM_1);
+		SM1.configure();
 	}
-
-	if( serial2_speed.get() != 0  && hardwareRevision.get() >= XCVARIO_21 ){
-		ESP_LOGI(FNAME,"Serial Interface ttyS2 enabled with serial speed: %d baud: %d tx_inv: %d rx_inv: %d",  serial2_speed.get(), baud[serial2_speed.get()], serial2_tx_inverted.get(), serial2_rx_inverted.get() );
-		if( serial2_pins_twisted.get() ){  //   speed, RX, TX, invRX, invTX
-			gpio_pullup_en( GPIO_NUM_4 );
-			gpio_pullup_en( GPIO_NUM_18 );
-			if( serial2_tx_enable.get() ){
-				Serial2.begin(baud[serial2_speed.get()],SERIAL_8N1,4,18, serial2_rx_inverted.get(), serial2_tx_inverted.get());   //  IO4: RXD2,  IO18: TXD2
-			}else{
-				Serial2.begin(baud[serial2_speed.get()],SERIAL_8N1,4,36, serial2_rx_inverted.get(), serial2_tx_inverted.get());
-				gpio_set_direction(GPIO_NUM_18, GPIO_MODE_INPUT);     // 2020 series 1, analog in
-				gpio_pullup_dis( GPIO_NUM_18 );
-			}
-		}
-		else{
-			if( serial2_tx_enable.get() ){
-				Serial2.begin(baud[serial2_speed.get()],SERIAL_8N1,18,4, serial2_rx_inverted.get(), serial2_tx_inverted.get());   //  IO18: RXD2,  IO4: TXD2
-			}
-			else{
-				Serial2.begin(baud[serial2_speed.get()],SERIAL_8N1,18,36, serial2_rx_inverted.get(), serial2_tx_inverted.get());
-				gpio_set_direction(GPIO_NUM_4, GPIO_MODE_INPUT);     // 2020 series 1, analog in
-				gpio_pullup_dis( GPIO_NUM_4 );
-			}
-		}
-		Serial2.setRxBufferSize(512);
+	if( serial2_speed.get() != 0 && hardwareRevision.get() >= XCVARIO_21){
+		SerialManager SM2(UART_NUM_2);
+		SM2.configure();
 	}
+}
+
+bool Serial::taskStarted( int num ){
+	bool ret=true;
+	switch( num ){
+	case UART_NUM_1:
+		if( S1.pid == NULL )
+			ret=false;
+		break;
+	case UART_NUM_2:
+		if( S2.pid == NULL )
+			ret=false;
+		break;
+	default:
+		ret=false;
+	}
+	ESP_LOGI(FNAME,"taskStarted() ret:%d S1.pid:%p S2.pid:%p", ret, S1.pid, S2.pid );
+	return ret;
 }
 
 void Serial::taskStart(){
@@ -291,9 +264,37 @@ void Serial::taskStart(){
 	bool serial2 = (serial2_speed.get() != 0 && hardwareRevision.get() >= XCVARIO_21);
 
 	if( serial1 ){
-		xTaskCreatePinnedToCore(&serialHandler, "serialHandler1", 4096, &S1, 13, &S1.pid, 0);  // stay below canbus
+		taskStartS1();
 	}
 	if( serial2 ){
-		xTaskCreatePinnedToCore(&serialHandler, "serialHandler2", 4096, &S2, 13, &S2.pid, 0);  // stay below canbus
+		taskStartS2();
 	}
 }
+
+void Serial::taskStop( int uart_nr ){
+	switch( uart_nr ){
+	case UART_NUM_1:
+		if( S1.pid != NULL ){
+			vTaskDelete( S1.pid );
+			S1.pid = NULL;
+		}
+		break;
+	case UART_NUM_2:
+		if( S2.pid != NULL ){
+			vTaskDelete( S2.pid );
+			S2.pid = NULL;
+		}
+		break;
+	}
+}
+
+void Serial::taskStartS1(){
+	ESP_LOGI(FNAME,"taskStartS1()");
+	xTaskCreatePinnedToCore(&serialHandler, "serialHandler1", 4096, &S1, 13, &S1.pid, 0);  // stay below canbus
+}
+
+void Serial::taskStartS2(){
+	ESP_LOGI(FNAME,"taskStartS2()");
+	xTaskCreatePinnedToCore(&serialHandler, "serialHandler2", 4096, &S2, 13, &S2.pid, 0);  // stay below canbus
+}
+

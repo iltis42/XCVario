@@ -149,23 +149,25 @@ void DataMonitor::scroll(int scroll){
 
 void DataMonitor::press(){
 	ESP_LOGI(FNAME,"press paused: %d", paused );
-	if( !Rotary.readSwitch() ){ // only process press here
+	delay( 100 );
+	// if( !Rotary.readSwitch() ){ // only process press here
 	if( paused )
 		paused = false;
 	else
 		paused = true;
-	}
-	delay( 100 );
+	// }
 }
 
 void DataMonitor::longPress(){
 	ESP_LOGI(FNAME,"longPress" );
+	delay( 100 );
 	if( !mon_started ){
 		ESP_LOGI(FNAME,"longPress, but not started, return" );
+		SetupMenu::catchFocus( false );
 		return;
 	}
 	stop();
-	delay( 100 );
+
 }
 
 void DataMonitor::start(SetupMenuSelect * p){

@@ -14,6 +14,7 @@
 #include "pins_arduino.h"
 #include "esp32-hal-uart.h"
 #include "HardwareSerial.h"
+#include <esp_log.h>
 
 #ifndef RX1
 #define RX1 9
@@ -237,9 +238,9 @@ uint32_t  HardwareSerial::baudRate()
 	return uartGetBaudRate(_uart);
 }
 HardwareSerial::operator bool() const
-		{
+{
 	return true;
-		}
+}
 
 void HardwareSerial::setRxInvert(bool invert)
 {
@@ -254,11 +255,14 @@ void HardwareSerial::setTxInvert(bool invert)
 void HardwareSerial::attachRx(gpio_num_t pin, bool invert)
 {
 	uartAttachRx(_uart, pin, invert);
+	_rx_pin = pin;
+
 }
 
 void HardwareSerial::attachTx(gpio_num_t pin, bool invert)
 {
 	uartAttachTx(_uart, pin, invert);
+	_tx_pin = pin;
 }
 
 void HardwareSerial::detachRx(gpio_num_t pin)

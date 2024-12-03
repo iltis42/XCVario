@@ -202,8 +202,8 @@ int upd_screens( SetupMenuSelect * p ){
 
 int update_s2_baud( SetupMenuSelect * p ){
 	SerialManager S2m(UART_NUM_2);
-	ESP_LOGI(FNAME,"Select baudrate: %d",  p->getSelect() );
-	S2m.setBaud( (e_baud)(p->getSelect()) );    // 0 off, 1: 4800, 2:9600, etc
+	ESP_LOGI(FNAME,"Select baudrate: %d",  p->getSelect() ); // coldstart
+	S2m.setBaud( (e_baud)(p->getSelect()), true );    // 0 off, 1: 4800, 2:9600, etc support coldstart from BAUD_OFF
 	return 0;
 }
 
@@ -239,7 +239,7 @@ int update_s2_protocol( SetupMenuSelect * p ){
 int update_s1_baud( SetupMenuSelect * p ){
 	SerialManager S1m(UART_NUM_1);
 	ESP_LOGI(FNAME,"Select baudrate: %d",  p->getSelect() );
-	S1m.setBaud( (e_baud)(p->getSelect()) );    // 0 off, 1: 4800, 2:9600, etc
+	S1m.setBaud( (e_baud)(p->getSelect()), true );    // 0 off, 1: 4800, 2:9600, etc
 	return 0;
 }
 
@@ -2104,68 +2104,6 @@ void SetupMenu::system_menu_create_interfaceS1_routing( MenuEntry *top ){
 }
 
 void SetupMenu::system_menu_create_interfaceS1( MenuEntry *top ){
-	/*
-
-	SetupMenuSelect * s2sp = new SetupMenuSelect( "Baudraute",	RST_ON_EXIT, 0, true, &serial1_speed );
-	top->addEntry( s2sp );
-	s2sp->addEntry( "OFF");
-	s2sp->addEntry( "4800 baud");
-	s2sp->addEntry( "9600 baud");
-	s2sp->addEntry( "19200 baud");
-	s2sp->addEntry( "38400 baud");
-	s2sp->addEntry( "57600 baud");
-	s2sp->addEntry( "115200 baud");
-
-
-	SetupMenu * s1out = new SetupMenu( "S1 Routing");
-	top->addEntry( s1out );
-	s1out->setHelp( "Select data source to be routed from/to serial interface S1");
-	s1out->addCreator( system_menu_create_interfaceS1_routing );
-
-	SetupMenuSelect * stxi = new SetupMenuSelect( "TX Inversion", RST_ON_EXIT , 0, true, &serial1_tx_inverted );
-	top->addEntry( stxi );
-	stxi->setHelp( "Serial RS232 (TTL) logic, a '1' will be sent as zero voltage level (RS232 standard and default) or vice versa  (reboots)");
-	stxi->addEntry( "Normal");
-	stxi->addEntry( "Inverted");
-
-	SetupMenuSelect * srxi = new SetupMenuSelect( "RX Inversion", RST_ON_EXIT, 0, true, &serial1_rx_inverted );
-	top->addEntry( srxi );
-	srxi->setHelp( "Serial RS232 (TTL) logic, a '1' will be received at zero voltage level (RS232 standard and default) or vice versa (reboots)");
-	srxi->addEntry( "Normal");
-	srxi->addEntry( "Inverted");
-
-	SetupMenuSelect * srxtw1 = new SetupMenuSelect( "Twist RX/TX Pins", RST_ON_EXIT, 0, true, &serial1_pins_twisted );
-	top->addEntry( srxtw1 );
-	srxtw1->setHelp( "Option to swap RX and TX line for S1, e.g. for OpenVario. After change also a true power-cycle is needed  (reboots)");
-	srxtw1->addEntry( "Normal");
-	srxtw1->addEntry( "Twisted");
-
-	SetupMenuSelect * stxdis1 = new SetupMenuSelect( "TX Line", RST_ON_EXIT, 0, true, &serial1_tx_enable );
-	top->addEntry( stxdis1 );
-	stxdis1->setHelp( "Option to switch off RS232 TX line in case active sending is not required, e.g. for multiple devices connected to one device  (reboots)");
-	stxdis1->addEntry( "Disable");
-	stxdis1->addEntry( "Enable");
-
-	SetupMenuSelect * sprots1 = new SetupMenuSelect( PROGMEM"Protocol", RST_ON_EXIT, update_s1_protocol, true, &serial1_protocol );
-	top->addEntry( sprots1 );
-	sprots1->setHelp( PROGMEM"Specify the protocol driver for the external device connected to S1", 240 );
-	sprots1->addEntry( PROGMEM"Disable");
-	sprots1->addEntry( PROGMEM"Flarm");
-	sprots1->addEntry( PROGMEM"KRT2 Radio");
-	sprots1->addEntry( PROGMEM"Becker Radio");
-	sprots1->addEntry( PROGMEM"GNSS UBX");
-	sprots1->addEntry( PROGMEM"Anemoi");
-
-	SetupMenuSelect * datamon = new SetupMenuSelect( "Monitor", RST_NONE, data_monS1, true, &data_monitor );
-	datamon->setHelp( "Short press button to start/pause, long press to terminate data monitor", 260);
-	datamon->addEntry( "Disable");
-	datamon->addEntry( "Start S1 RS232");
-	top->addEntry( datamon );
-
-
-	*/
-
-
 	SetupMenuSelect * s1sp2 = new SetupMenuSelect( "Baudraute",	RST_ON_EXIT, update_s1_baud, true, &serial1_speed );
 	top->addEntry( s1sp2 );
 	// s2sp->setHelp( "Serial RS232 (TTL) speed, pins RX:2, TX:3 on external RJ45 connector");
@@ -2212,7 +2150,6 @@ void SetupMenu::system_menu_create_interfaceS1( MenuEntry *top ){
 
 	SetupMenuSelect * datamon = new SetupMenuSelect( "Monitor", RST_NONE, data_monS1, true, &data_monitor );
 	datamon->setHelp( "Short press button to start/pause, long press to terminate data monitor", 260);
-	datamon->addEntry( "Disable");
 	datamon->addEntry( "Start S1 RS232");
 
 	top->addEntry( datamon );
@@ -2285,7 +2222,6 @@ void SetupMenu::system_menu_create_interfaceS2( MenuEntry *top ){
 
 	SetupMenuSelect * datamon = new SetupMenuSelect( "Monitor", RST_NONE, data_monS2, true, &data_monitor );
 	datamon->setHelp( "Short press button to start/pause, long press to terminate data monitor", 260);
-	datamon->addEntry( "Disable");
 	datamon->addEntry( "Start S2 RS232");
 
 	top->addEntry( datamon );

@@ -35,9 +35,9 @@ void IRAM_ATTR pinMatrixInAttach(uint8_t pin, uint8_t signal, bool inverted)
     gpio_matrix_in(pin, signal, inverted);
 }
 
-void IRAM_ATTR pinMatrixInDetach(uint8_t signal, bool high, bool inverted)
+void IRAM_ATTR pinMatrixInDetach(uint8_t pin, bool invertOut, bool inverted)
 {
-    gpio_matrix_in(high?MATRIX_DETACH_IN_LOW_HIGH:MATRIX_DETACH_IN_LOW_PIN, signal, inverted);
+	gpio_matrix_in(pin, MATRIX_DETACH_OUT_SIG, inverted);
 }
 /*
 void IRAM_ATTR intrMatrixAttach(uint32_t source, uint32_t inum){

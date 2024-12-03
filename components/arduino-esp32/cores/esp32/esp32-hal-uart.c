@@ -36,6 +36,8 @@
 #include "soc/dport_reg.h"
 #include "soc/rtc.h"
 #include "esp_intr_alloc.h"
+#include "driver/uart.h"
+#include "hal/gpio_hal.h"
 
 #define UART_REG_BASE(u)    ((u==0)?DR_REG_UART_BASE:(      (u==1)?DR_REG_UART1_BASE:(    (u==2)?DR_REG_UART2_BASE:0)))
 #define UART_RXD_IDX(u)     ((u==0)?U0RXD_IN_IDX:(          (u==1)?U1RXD_IN_IDX:(         (u==2)?U2RXD_IN_IDX:0)))
@@ -177,16 +179,25 @@ void uartDisableInterrupt(uart_t* uart)
 		esp_intr_free(uart->intr_handle);
 		uart->intr_handle = NULL;
 	}
+
 	UART_MUTEX_UNLOCK();
 }
+
+int txAttached[3] = { 0,0,0 };
+int rxAttached[3] = { 0,0,0 };
 
 void uartDetachRx(uart_t* uart, uint8_t rxPin)
 {
 	if(uart == NULL) {
 		return;
 	}
-	pinMatrixInDetach(rxPin, false, false);
-	// uartDisableInterrupt(uart);
+	if( rxAttached[uart->num] == rxPin ){
+		// gpio_matrix_in(rxPin, SIG_GPIO_OUT_IDX, false);
+		pinMatrixInDetach(rxPin, false, false);
+		rxAttached[uart->num] = 0;
+	}else{
+		ESP_LOGI( "UART", "Detach RX: U%d P:%d", uart->num, rxPin );
+	}
 }
 
 void uartDetachTx(uart_t* uart, uint8_t txPin)
@@ -194,7 +205,12 @@ void uartDetachTx(uart_t* uart, uint8_t txPin)
 	if(uart == NULL) {
 		return;
 	}
-	pinMatrixOutDetach(txPin, false, false);
+	if( txAttached[uart->num] == txPin ){
+		pinMatrixOutDetach(txPin, false, false);
+		txAttached[uart->num] = 0;
+	}else{
+		ESP_LOGI( "UART", "Detach TX: U%d P:%d", uart->num, txPin );
+	}
 }
 
 void uartAttachRx(uart_t* uart, uint8_t rxPin, bool inverted)
@@ -202,6 +218,7 @@ void uartAttachRx(uart_t* uart, uint8_t rxPin, bool inverted)
 	if(uart == NULL || rxPin > 39) {
 		return;
 	}
+	rxAttached[uart->num] = rxPin;
 	pinMode(rxPin, INPUT_PULLUP);
 	pinMatrixInAttach(rxPin, UART_RXD_IDX(uart->num), inverted);
 }
@@ -211,6 +228,7 @@ void uartAttachTx(uart_t* uart, uint8_t txPin, bool inverted)
 	if(uart == NULL || txPin > 39) {
 		return;
 	}
+	txAttached[uart->num] = txPin;
 	pinMode(txPin, OUTPUT);
 	pinMatrixOutAttach(txPin, UART_TXD_IDX(uart->num), inverted, false);
 }
@@ -299,12 +317,12 @@ void uartEnd(uart_t* uart, int8_t txPin, int8_t rxPin)
 	uart->dev->conf0.val = 0;
 
 	UART_MUTEX_UNLOCK();
-/*
+
 	if( rxPin != -1 )
 		uartDetachRx(uart, rxPin);
 	if( txPin != -1 )
 		uartDetachTx(uart, txPin);
-		*/
+
 }
 
 size_t uartResizeRxBuffer(uart_t * uart, size_t new_size) {

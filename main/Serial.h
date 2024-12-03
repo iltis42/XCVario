@@ -57,6 +57,10 @@ public:
 
 	static void begin();
 	static void taskStart();
+	static void taskStartS1();
+	static void taskStartS2();
+	static void taskStop( int uart_nr );
+	static bool taskStarted( int num );
 	static void serialHandler(void *pvParameters);
 	static bool selfTest( int num );
 	/*

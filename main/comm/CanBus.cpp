@@ -42,7 +42,7 @@ static TaskHandle_t cpid;
 CANbus *CAN = 0;
 QueueHandle_t CanSendQueue = 0;
 static bool terminate_receiver = false;
-
+static bool do_recover = false;
 
 // generic transmitter grabbing messages from a queue
 void TransmitTask(void *arg)
@@ -129,7 +129,7 @@ void canRxTask(void *arg)
     CANbus *can = static_cast<CANbus *>(arg);
     unsigned int tick = 0;
 
-    if (!can->_initialized)
+    if ( ! can->isInitialized() )
     {
         ESP_LOGI(FNAME, "CANbus not ready");
         vTaskDelete(NULL);
@@ -138,8 +138,7 @@ void canRxTask(void *arg)
 
     std::string msg; // scratch buffer
     msg.resize(10);
-    do
-    {
+    do {
         // basically block on the twai receiver for ever
         twai_message_t rx;
         if (ESP_OK == twai_receive(&rx, pdMS_TO_TICKS(500)) && rx.data_length_code > 0)
@@ -208,16 +207,15 @@ void canRxTask(void *arg)
         }
         else
         {
-            // ESP_LOGD(FNAME, "CAN timout");
-            if (terminate_receiver)
-            {
-                break;
-            }
             // protocol state machine may want to react on no traffic
-            for (auto &dl : can->_dlink)
-            {
+            for (auto &dl : can->_dlink ) {
                 dl->process(nullptr, 0);
             }
+        }
+        if ( terminate_receiver ) { break; }
+        if ( do_recover ) {
+            can->recover(); // Can only do this not waiting in twai_receive
+            do_recover = false;
         }
 
         if ((tick++ % 100) == 0)
@@ -229,6 +227,9 @@ void canRxTask(void *arg)
             }
         }
     } while (true);
+
+    // cannot stop twai when waiting on twai_receive (->crash)
+    can->driverUninstall();
 
     terminate_receiver = false; // handshake
     vTaskDelete(NULL);
@@ -342,7 +343,8 @@ void CANbus::driverInstall(twai_mode_t mode)
     }
     twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(_tx_io, _rx_io, mode);
     ESP_LOGI(FNAME, "default alerts %X", g_config.alerts_enabled);
-    g_config.alerts_enabled |= TWAI_ALERT_TX_IDLE | TWAI_ALERT_TX_SUCCESS | TWAI_ALERT_TX_FAILED;
+    // g_config.alerts_enabled = TWAI_ALERT_TX_FAILED | TWAI_ALERT_BUS_OFF | TWAI_ALERT_ABOVE_ERR_WARN | TWAI_ALERT_BUS_ERROR;
+    g_config.alerts_enabled = TWAI_ALERT_ALL;
     if (_slope_support)
     {
         g_config.bus_off_io = _slope_ctrl;
@@ -422,34 +424,13 @@ void CANbus::driverUninstall()
     if (_initialized)
     {
         _initialized = false;
-        delay(100);
         twai_stop();
-        delay(100);
         twai_driver_uninstall();
-        delay(100);
     }
-}
-
-void CANbus::restart() // fixme, dont use, the driverUninstall crashes the receiver task
-{
-    if (can_speed.get() == CAN_SPEED_OFF)
-    {
-        return;
-    }
-    ESP_LOGW(FNAME, "CANbus restart");
-    driverUninstall();
-    driverInstall(TWAI_MODE_NORMAL);
-    _connected_timeout_magsens = 0;
-    _connected_timeout_xcv = 0;
 }
 
 void CANbus::recover()
 {
-    if (can_speed.get() == CAN_SPEED_OFF)
-    {
-        return;
-    }
-
     twai_status_info_t status_info;
     if (twai_get_status_info(&status_info) == ESP_OK)
     {
@@ -466,19 +447,26 @@ void CANbus::recover()
     _connected_timeout_magsens = 0;
 }
 
-// begin CANbus, start selfTest and launch driver in normal (bidir) mode afterwards
-void CANbus::begin()
+// begin CANbus, launch driver in normal mode after a selfTest
+bool CANbus::begin()
 {
     // Initialize configuration structures using macro initializers
     if (can_speed.get() == CAN_SPEED_OFF)
     {
         ESP_LOGI(FNAME, "CAN bus OFF");
-        return;
+        return false;
     }
+    if ( _initialized ) { return true; }
+    
     ESP_LOGI(FNAME, "CANbus::begin");
-    driverInstall(TWAI_MODE_NORMAL);
-    xTaskCreate(&TransmitTask, "canTxTask", 4096, CanSendQueue, 15, 0);
-    xTaskCreate(&canRxTask, "canRxTask", 4096, this, 15, 0);
+    if ( selfTest() ) {
+        driverInstall(TWAI_MODE_NORMAL);
+        xTaskCreate(&TransmitTask, "canTxTask", 4096, CanSendQueue, 15, 0);
+        xTaskCreate(&canRxTask, "canRxTask", 4096, this, 15, 0);
+    } else {
+        driverUninstall();
+    }
+    return _initialized;
 }
 
 // terminate CANbus
@@ -517,13 +505,14 @@ bool CANbus::selfTest()
             int len = strlen(tx);
             // there might be data from a remote device
             twai_clear_receive_queue();
-            if (!sendData(id, tx, len, 1))
-            {
+            if ( ! sendData(id, tx, len, 1) ) {
                 ESP_LOGW(FNAME, "CAN bus selftest TX FAILED");
-                recover();
             }
             twai_message_t rx;
-            if ((ESP_OK == twai_receive(&rx, pdMS_TO_TICKS(20))) && (rx.identifier == id) && (rx.data_length_code == len) && (memcmp(rx.data, tx, len) == 0))
+            if ( (ESP_OK == twai_receive(&rx, pdMS_TO_TICKS(20))) 
+                && (rx.identifier == id) 
+                && (rx.data_length_code == len) 
+                && (memcmp(rx.data, tx, len) == 0) )
             {
                 ESP_LOGI(FNAME, "RX CAN bus OKAY");
                 res = true;
@@ -591,26 +580,32 @@ bool CANbus::sendData(int id, const char *msg, int length, int self)
     // ESP_LOG_BUFFER_HEXDUMP(FNAME, msg, length, ESP_LOG_INFO);
 
     // Queue message for transmission
-    uint32_t alerts;
+    uint32_t alerts = 0;
     int retry = 3;
-    esp_err_t error = ESP_OK;
+    esp_err_t res = ESP_OK;
     while ( retry-- > 0 )
     {
-        error = twai_transmit(&message, 0);
-        if ( error == ESP_OK ) {
+        res = twai_transmit(&message, 0);
+        if ( res == ESP_OK ) {
             break;
         }
+        ESP_LOGE(FNAME, "Transmit error: %s", esp_err_to_name(res));
+        if (res == ESP_ERR_TIMEOUT) {
+            ESP_LOGW(FNAME, "Transmit timeout. Message dropped.");
+        }
         twai_read_alerts(&alerts, pdMS_TO_TICKS(_tx_timeout));
-        ESP_LOGW(FNAME, "Tx chunk failed alerts %X", alerts);
+        ESP_LOGW(FNAME, "Tx chunk failed alerts 0x%x", alerts);
     }
-    if (error != ESP_OK)
+    if ( alerts != 0 )
     {
-        // if ( alerts & TWAI_ALERT_TX_IDLE )
-        //    ESP_LOGW(FNAME,"TX IDLE alert %X", alerts );
+        if ( alerts & TWAI_ALERT_BUS_OFF ) {
+            ESP_LOGE(FNAME, "BUS OFF alert");
+            do_recover = true;
+        }
         if (alerts & TWAI_ALERT_RX_QUEUE_FULL)
-            ESP_LOGW(FNAME, "RX QUEUE FULL alert %X", alerts);
+            ESP_LOGW(FNAME, "RX QUEUE FULL alert");
         if (alerts & TWAI_ALERT_TX_FAILED)
-            ESP_LOGW(FNAME, "TX_FAILED alert %X", alerts);
+            ESP_LOGW(FNAME, "TX_FAILED alert");
         return false;
     }
     return true;

@@ -33,12 +33,9 @@ class CANbus final : public InterfaceCtrl
 public:
 
 	CANbus();
-	~CANbus();
-	void begin();
+    ~CANbus();
+	bool begin();
 	void stop();
-	void restart();
-	void recover();
-	bool selfTest();
 	bool GotNewClient() const { return _new_can_client_connected; }
 	void ResetNewClient() { _new_can_client_connected = false; }
 	bool connectedXCV() { return _connected_xcv; };
@@ -48,14 +45,16 @@ public:
 	bool hasSlopeSupport() { return _slope_support; };
 	// Ctrl
     const char* getId() const  override { return "CAN"; }
-	virtual void ConfigureIntf(int cfg) override;
-	virtual bool Send(const char *, int, int) override;
+	void ConfigureIntf(int cfg) override;
+	bool Send(const char *, int, int) override;
 
 private:
 	friend void TransmitTask(void *arg);
 	friend void canRxTask(void *arg);
 
 private:
+    void recover();
+    bool selfTest();
 	bool sendData(int id, const char *msg, int length, int self = 0);
 	void driverInstall(twai_mode_t mode);
 	void driverUninstall();

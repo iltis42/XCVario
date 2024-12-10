@@ -33,7 +33,7 @@ class CANbus final : public InterfaceCtrl
 public:
 
 	CANbus();
-    ~CANbus();
+    ~CANbus() = default;
 	bool begin();
 	void stop();
 	bool GotNewClient() const { return _new_can_client_connected; }
@@ -44,9 +44,10 @@ public:
 	bool isInitialized() { return _initialized; };
 	bool hasSlopeSupport() { return _slope_support; };
 	// Ctrl
-    const char* getId() const  override { return "CAN"; }
-	void ConfigureIntf(int cfg) override;
-	bool Send(const char *, int, int) override;
+    InterfaceId getId() const override { return CAN_BUS; }
+    const char* getStringId() const override { return "CAN"; }
+    void ConfigureIntf(int cfg) override;
+    bool Send(const char*, int, int) override;
 
 private:
 	friend void TransmitTask(void *arg);

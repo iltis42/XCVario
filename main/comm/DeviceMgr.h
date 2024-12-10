@@ -17,13 +17,6 @@
 class DataLink;
 class InterfaceCtrl;
 
-typedef enum {
-    CAN_BUS,
-    S1_RS232,
-    S2_RS232,
-    WIFI,
-    BT
-} InterfaceId;
 
 // A device describes the set of static and runtime relevant information
 // to configure the comm links and access the device.

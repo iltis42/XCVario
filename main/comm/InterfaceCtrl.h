@@ -12,6 +12,17 @@
 
 class DataLink;
 
+// All managed interfaces
+typedef enum {
+    NO_PHY = 0,
+    CAN_BUS,
+    S1_RS232,
+    S2_RS232,
+    WIFI,
+    BLT
+} InterfaceId;
+
+
 // ISO/OSI 1..n relation from interface to data link layer.
 // Because in the given embedded context a 1..1 relation is in most of the 
 // use cases enough, the API can be locked down to just one data link.

@@ -165,7 +165,7 @@ void CANMasterReg::registration_query()
         if ( ! msg ) return;
 
         int master_id = client_id + 1;
-        DEVMAN->addDevice(JUMBO_DEV, JUMBO_CMD, master_id, client_id, CAN);
+        DEVMAN->addDevice(JUMBO_DEV, JUMBO_CMD, master_id, client_id, CAN_BUS);
 
         msg->buffer = "$PJMACC " + _token + ", " + std::to_string(client_id) + 
                                         ", " + std::to_string(master_id);

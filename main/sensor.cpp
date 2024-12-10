@@ -1328,7 +1328,9 @@ void system_startup(void *args){
 	{
 		CAN = new CANbus();
 		logged_tests += "CAN Interface: ";
-		if( CAN->selfTest() ) { // series 2023 has fixed slope control, prio slope bit for AHRS temperature control
+		DeviceManager* dm = DeviceManager::Instance();
+		if( dm->addDevice(DeviceId::MASTER_DEV, ProtocolType::REGISTRATION, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS) ) {
+			// series 2023 has fixed slope control, prio slope bit for AHRS temperature control
 			resultCAN = "OK";
 			ESP_LOGE(FNAME,"CAN Bus selftest (%sRS): OK", CAN->hasSlopeSupport() ? "" : "no ");
 			logged_tests += "OK\n";
@@ -1338,8 +1340,6 @@ void system_startup(void *args){
 				ESP_LOGI(FNAME,"CAN Bus selftest without RS control OK: set hardwareRevision 5 (XCV-23)");
 				hardwareRevision.set(XCVARIO_23);  // XCV-23, including AHRS temperature control
 			}
-			DeviceManager* dm = DeviceManager::Instance();
-			dm->addDevice(DeviceId::MASTER_DEV, ProtocolType::REGISTRATION, CAN_REG_PORT, CAN_REG_PORT, CAN);
 		}
 		else {
 			resultCAN = "FAIL";
@@ -1401,7 +1401,7 @@ void system_startup(void *args){
 	if(  can_speed.get() != CAN_SPEED_OFF && (resultCAN == "OK") && CAN )
 	{
 		ESP_LOGI(FNAME, "Now start CAN Bus Interface");
-		CAN->begin();  // start CAN tasks and driver
+		CAN->begin();  // fixme, CAN should start when devices are configured // start CAN tasks and driver
 	}
 
 	if( compass_enable.get() == CS_CAN ){

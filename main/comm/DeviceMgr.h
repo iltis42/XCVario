@@ -10,20 +10,18 @@
 
 #include "Devices.h"
 #include "DataLink.h"
+#include "InterfaceCtrl.h"
 
 #include <set>
 #include <map>
 
 class DataLink;
 class InterfaceCtrl;
+class DeviceManager;
 
-typedef enum {
-    CAN_BUS,
-    S1_RS232,
-    S2_RS232,
-    WIFI,
-    BT
-} InterfaceId;
+// global variable
+extern DeviceManager* DEVMAN;
+
 
 // A device describes the set of static and runtime relevant information
 // to configure the comm links and access the device.
@@ -81,17 +79,20 @@ class DeviceManager
     typedef std::map<DeviceId, Device*> DevMap;
 
 private:
-    DeviceManager() = default;
+    DeviceManager();
 
 public:
+    ~DeviceManager();
     static DeviceManager* Instance();
     // API
-    ProtocolItf* addDevice(DeviceId dev, ProtocolType proto, int listen_port, int send_port, InterfaceCtrl *itf);
+    ProtocolItf* addDevice(DeviceId dev, ProtocolType proto, int listen_port, int send_port, InterfaceId iid);
     Device* getDevice(DeviceId did);
     ProtocolItf* getProtocol(DeviceId dev, ProtocolType proto);
     // Remove device of this type
-    Device* removeDevice(DeviceId did);
+    void removeDevice(DeviceId did);
     InterfaceCtrl* getIntf(DeviceId did);
+    static int nrDevs() { return (DEVMAN) ? DEVMAN->getNrDevs() : 0; }
+    int getNrDevs() const { return _device_map.size(); }
     // Search for the next free CAN id, organized in chunks of four in 5 prio categories.
     static int getFreeCANId(int prio);
     // debugging
@@ -104,4 +105,3 @@ private:
     DevMap _device_map;
 };
 
-extern DeviceManager* DEVMAN;

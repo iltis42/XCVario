@@ -480,7 +480,7 @@ void CANbus::stop()
     terminate_receiver = true;            // for receiver
     xQueueSend(CanSendQueue, nullptr, 0); // for transmitter
 
-    RemoveAllDataLinks();
+    DeleteAllDataLinks();
 }
 
 bool CANbus::selfTest()

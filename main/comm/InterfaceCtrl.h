@@ -26,8 +26,8 @@ public:
     virtual void ConfigureIntf(int cfg) = 0;
     virtual bool Send(const char *msg, int len, int port=0) = 0;
     DataLink* getDataLink(int port);
-    void RemoveDataLink(int port);
-    void RemoveAllDataLinks();
+    void DeleteDataLink(int port);
+    void DeleteAllDataLinks();
 
 protected:
     std::vector<DataLink*> _dlink;

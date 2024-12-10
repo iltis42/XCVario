@@ -16,7 +16,7 @@
 
 InterfaceCtrl::~InterfaceCtrl()
 {
-    RemoveAllDataLinks();
+    DeleteAllDataLinks();
 }
 
 // get/create data link for this port
@@ -41,7 +41,7 @@ DataLink* InterfaceCtrl::getDataLink(int port)
     }
 }
 
-void InterfaceCtrl::RemoveDataLink(int port)
+void InterfaceCtrl::DeleteDataLink(int port)
 {
     if ( one_to_one ) {
         if ( _onedlink ) {
@@ -60,7 +60,7 @@ void InterfaceCtrl::RemoveDataLink(int port)
     }
 }
 
-void InterfaceCtrl::RemoveAllDataLinks()
+void InterfaceCtrl::DeleteAllDataLinks()
 {
     for (auto &it : _dlink ) {
         delete it;

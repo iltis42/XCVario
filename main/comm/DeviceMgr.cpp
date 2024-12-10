@@ -123,8 +123,7 @@ Device::~Device()
 {
     // Detach data links from interface
     for (DataLink* dl : _dlink) {
-        _itf->RemoveDataLink(dl->getPort());
-        delete dl;
+        _itf->DeleteDataLink(dl->getPort());
     }
     // Clear the set
     _dlink.clear();

@@ -21,6 +21,7 @@
 // global variables
 DeviceManager* DEVMAN = nullptr; // singleton like
 QueueHandle_t ItfSendQueue = 0;
+MessagePool MP;
 
 // static vars
 static TaskHandle_t SendTask = nullptr;
@@ -258,3 +259,39 @@ int Device::getSendPort(ProtocolType p) const
     return 0;
 }
 
+
+
+// Some global routines from the router, could be static to DeviceManager
+namespace DEV {
+
+Message* acqMessage(DeviceId target_id, int port)
+{
+    Message* m = MP.getOne();
+    if ( m ) {
+        m->target_id = target_id;
+        m->port = port;
+        return m;
+    }
+    ESP_LOGW(FNAME, "Buffer pool empty (%d)", target_id);
+    return nullptr;
+}
+
+void relMessage(Message *msg)
+{
+    MP.recycleMsg(msg);
+}
+
+bool Send(Message* msg)
+{
+    if ( ItfSendQueue ) {
+        if ( pdTRUE != xQueueSend( ItfSendQueue, (void * ) &msg, (TickType_t)0 ) ) {
+            // drop it
+            ESP_LOGW(FNAME, "Dropped message to %d", msg->target_id);
+            MP.recycleMsg(msg);
+        }
+        return true;
+    }
+    return false;
+}
+
+} // namespace

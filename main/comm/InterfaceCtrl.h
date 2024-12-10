@@ -33,10 +33,12 @@ public:
     InterfaceCtrl(bool oto=false) : one_to_one(oto) {}
     virtual ~InterfaceCtrl();
 
-    virtual const char* getId() const { return ""; }
+    virtual InterfaceId getId() const { return NO_PHY; }
+    virtual const char* getStringId() const { return ""; }
     virtual void ConfigureIntf(int cfg) = 0;
     virtual bool Send(const char *msg, int len, int port=0) = 0;
     DataLink* getDataLink(int port);
+    int getNrDLinks() const { return _dlink.size(); }
     void DeleteDataLink(int port);
     void DeleteAllDataLinks();
 

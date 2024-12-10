@@ -127,11 +127,22 @@ DeviceManager* DeviceManager::Instance()
 
 // Do all it needs to prepare comm with device and route data
 // It returns the pointer to the protocol as handle to send messages
-ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_port, int send_port, InterfaceCtrl *itf)
+ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_port, int send_port, InterfaceId iid)
 {
     // On first device a send task needs to be created
     if ( ! SendTask ) {
         xTaskCreate(TransmitTask, "CanTx", 4096, ItfSendQueue, 10, &SendTask);
+    }
+
+    InterfaceCtrl *itf;
+    if ( iid == CAN_BUS ) {
+        if ( CAN && ! CAN->isInitialized() ) {
+            CAN->begin();
+        }
+        itf = CAN;
+    }
+    else {
+        return nullptr;
     }
 
     Device *dev = getDevice(did);
@@ -169,16 +180,26 @@ ProtocolItf *DeviceManager::getProtocol(DeviceId dev, ProtocolType proto)
     return nullptr;
 }
 
-Device* DeviceManager::removeDevice(DeviceId did)
+// Remove device from map, delete device and all resources
+void DeviceManager::removeDevice(DeviceId did)
 {
     DevMap::iterator it = _device_map.find(did);
-    Device* ret = nullptr;
+    Device* dev = nullptr;
     if ( it != _device_map.end() ) {
-        ret = it->second;
+        dev = it->second;
         ESP_LOGI(FNAME, "Delete device %d", did);
         _device_map.erase(it);
+        InterfaceCtrl *itf = dev->_itf;
+        delete dev;
+        // is it the last device on this interface
+        if ( itf->getNrDLinks() == 0 ) {
+            if ( itf->getId() == CAN_BUS ) {
+                CAN->stop();
+                delete CAN;
+                CAN = nullptr;
+            }
+        }
     }
-    return ret;
 }
 
 // routing lookup table
@@ -217,7 +238,7 @@ void DeviceManager::dumpMap() const
     ESP_LOGI(FNAME, "Device map dump:");
     for ( auto &it : _device_map ) {
         Device* d = it.second;
-        ESP_LOGI(FNAME, "%d: %p (did%d/iid%s/dl*%d)", it.first, d, d->_id, d->_itf->getId(), d->_dlink.size());
+        ESP_LOGI(FNAME, "%d: %p (did%d/iid%s/dl*%d)", it.first, d, d->_id, d->_itf->getStringId(), d->_dlink.size());
         for ( auto &l : d->_dlink ) {
             ProtocolItf* p = l->getProtocol(NO_ONE);
             ESP_LOGI(FNAME, "  l%d: did%d,pid%d,sp%d", l->getPort(), p->getDeviceId(), p->getProtocolId(), p->getSendPort());

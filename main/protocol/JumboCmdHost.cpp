@@ -10,7 +10,7 @@
 
 #include "nmea_util.h"
 
-#include "comm/Routing.h"
+#include "comm/DeviceMgr.h"
 #include "comm/Messages.h"
 
 #include <logdef.h>

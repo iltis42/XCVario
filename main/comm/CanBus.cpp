@@ -441,10 +441,11 @@ bool CANbus::selfTest()
     return res;
 }
 
-bool CANbus::Send(const char *cptr, int len, int port)
+int CANbus::Send(const char *cptr, int len, int port)
 {
     const int chunk = 8;
-    bool ret = true;
+    int ret = 0;
+    int retry_option = (len/chunk + 1) * _tx_timeout;
     // int id = can_id_nmea_tx;
     // if (!strncmp(cptr, "!xs", 3)) // segregate internal NMEA by different id for !xs
     //     id = can_id_config_tx;
@@ -456,7 +457,7 @@ bool CANbus::Send(const char *cptr, int len, int port)
         // only a timeout would return false.
         if (!sendData(port, cptr, dlen))
         {
-            ret = false;
+            ret = retry_option;
             break;
         }
         cptr += dlen;

@@ -36,7 +36,7 @@ public:
     virtual InterfaceId getId() const { return NO_PHY; }
     virtual const char* getStringId() const { return ""; }
     virtual void ConfigureIntf(int cfg) = 0;
-    virtual bool Send(const char *msg, int len, int port=0) = 0;
+    virtual int Send(const char *msg, int len, int port=0) = 0; // if blocked returns number of ms for next possible invocation
     DataLink* getDataLink(int port);
     int getNrDLinks() const { return _dlink.size(); }
     void DeleteDataLink(int port);

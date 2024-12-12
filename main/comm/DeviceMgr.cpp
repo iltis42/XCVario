@@ -18,6 +18,8 @@
 #include <freertos/queue.h>
 #include <logdef.h>
 
+#include <deque>
+
 // global variables
 DeviceManager* DEVMAN = nullptr; // singleton like
 QueueHandle_t ItfSendQueue = 0;
@@ -26,35 +28,86 @@ MessagePool MP;
 // static vars
 static TaskHandle_t SendTask = nullptr;
 
+
+static int tt_snd(Message *msg)
+{
+    int len = msg->buffer.length(); // Including the terminating \0 -> need to remove this one byte at RX from strlen
+    int port = msg->port;
+    InterfaceCtrl *itf = DEVMAN->getIntf(msg->target_id);
+    int plsret = 0;
+    if (itf)
+    {
+        ESP_LOGI(FNAME, "send %s/%d NMEA len %d, msg: %s", itf->getStringId(), port, len, msg->buffer.c_str());
+
+        plsret = itf->Send(msg->buffer.c_str(), len - 1, port);
+        if ( plsret > 0 ) {
+            ESP_LOGI(FNAME, "reshedule message %dms", plsret);
+        }
+    }
+    return plsret;
+}
+
 // generic transmitter grabbing messages from a queue
 void TransmitTask(void *arg)
 {
     QueueHandle_t queue = (QueueHandle_t)arg;
     Message *msg;
+    std::deque<Message *> later;
+    int pls_retry = 0;
 
     while (true)
     {
-        // sleep until the queue gives us something to do
-        if (xQueueReceive(queue, &msg, portMAX_DELAY))
-        {
+        // sleep until the queue gives us something to do, or we have to do a retry
+        TickType_t timeout = (pls_retry==0) ? portMAX_DELAY : pdMS_TO_TICKS(pls_retry);
+        bool new_msg = xQueueReceive(queue, &msg, timeout) == pdTRUE;
 
-            if (msg == nullptr)
-            {
-                break;
-            } // termination signal
+        if (msg == nullptr) {
+            break;
+        } // termination signal
 
-            int len = msg->buffer.length(); // Including the terminating \0 -> need to remove this one byte at RX from strlen
-            int port = msg->port;
-            InterfaceCtrl *itf = DEVMAN->getIntf(msg->target_id);
-            if (itf)
-            {
-                ESP_LOGI(FNAME, "send %s/%d NMEA len %d, msg: %s", itf->getStringId(), port, len, msg->buffer.c_str());
-
-                if ( !itf->Send(msg->buffer.c_str(), len - 1, port) ) {
-                    ESP_LOGI(FNAME, "failed sending");
+        if ( new_msg ) {
+            // always check against the later fifo first
+            if( !later.empty() ) {
+                // might be just another msg to wait for the same itf
+                bool wait = false;
+                for ( Message *i : later ) {
+                    if ( msg->target_id == i->target_id ) {
+                        wait = true;
+                        break;
+                    }
+                }
+                if ( wait ) {
+                    // put this straight onto the later queue
+                    // ESP_LOGI(FNAME, "straight wait");
+                    later.push_back(msg);
+                    continue;
                 }
             }
-            DEV::relMessage(msg);
+            else {
+                // Regular case
+                // ESP_LOGI(FNAME, "regular send");
+                pls_retry = tt_snd(msg);
+                if ( pls_retry == 0 ) {
+                    DEV::relMessage(msg);
+                } else {
+                    // ESP_LOGI(FNAME, "retry pushed");
+                    later.push_back(msg);
+                }
+            }
+        }
+        else {
+            // Time out hit
+            while ( !later.empty() ) {
+                msg = later.front();
+                pls_retry = tt_snd(msg);
+                if ( pls_retry == 0 ) {
+                    DEV::relMessage(msg);
+                    later.pop_front();
+                }
+                else {
+                    break;
+                }
+            }
         }
     }
 

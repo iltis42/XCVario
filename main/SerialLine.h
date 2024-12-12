@@ -32,7 +32,7 @@ public:
     inline void restart() { stop(); start(); };         // recycle RS232 interface
     void uartBegin();
     virtual void ConfigureIntf(int cfg);
-    virtual bool Send(const char *msg, int len, int port=0);
+    virtual int Send(const char *msg, int len, int port=0);
 
 private:
     void getGPIOPins();

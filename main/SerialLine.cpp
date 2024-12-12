@@ -45,7 +45,7 @@ void SerialLine::ConfigureIntf(int cfg){
 
 
 
-bool SerialLine::Send(const char *msg, int len, int port){
+int SerialLine::Send(const char *msg, int len, int port){
 
 	RingBufCPP<SString>* q = NULL;
 	if( port == 1 )
@@ -53,12 +53,12 @@ bool SerialLine::Send(const char *msg, int len, int port){
 	else if( port == 2 )
 		q = &s2_tx_q;
 	else
-		return false;
+		return 0;
 	if( !q->isFull() ) {
 		q->add( SString( msg) );
-		return true;
+		return 0;
 	}
-	return false;
+	return len; // fixme better heuristic neede here
 };
 
 

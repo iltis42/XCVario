@@ -4,7 +4,6 @@
 #include <SetupNG.h>
 #include "Serial.h"
 
-
 t_serial_cfg sm_serial_config[] = {
 		{ SM_FLARM,       BAUD_19200, RS232_TTL, RJ45_3TX_4RX, SM_MASTER },
 		{ SM_RADIO,       BAUD_9600,  RS232_TTL, RJ45_3TX_4RX, SM_MASTER },
@@ -224,6 +223,11 @@ void SerialLine::loadProfile(e_profile profile){   // load defaults according to
 	}
 }
 
+void SerialLine::receive( const char *msg, int len, int port ){
+	DataLink* dl = getDataLink( port );
+	dl->process( msg, len );
+}
+
 void SerialLine::uartBegin(){
 	int baudrate = baud[cfg.baud];
 	if( baudrate ){
@@ -244,8 +248,14 @@ void SerialLine::uartBegin(){
 
 void SerialLine::configure(){
 	ESP_LOGI(FNAME,"configure UART:%d", uart_nr );
-	s1_tx_q.setSize(2);
-	s2_tx_q.setSize(2);
+	switch( uart_nr ){
+		case UART_NUM_1:
+			s1_tx_q.setSize(2);
+			break;
+		case UART_NUM_2:
+			s2_tx_q.setSize(2);
+			break;
+	}
 	uartBegin();
 	setPinSwap( cfg.pin );  // includes Master/Client role handling
 	setLineInverse( cfg.pol );

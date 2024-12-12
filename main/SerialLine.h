@@ -3,7 +3,9 @@
 
 #include "driver/uart.h"
 #include "driver/gpio.h"
+#include "comm/DataLink.h"
 #include "comm/InterfaceCtrl.h"
+
 
 typedef enum _e_baud { BAUD_OFF, BAUD_4800, BAUD_9600, BAUD_19200, BAUD_57600, BAUD_115200 } e_baud;
 typedef enum _e_polarity { RS232_STANDARD, RS232_TTL } e_polarity;
@@ -33,6 +35,7 @@ public:
     void uartBegin();
     virtual void ConfigureIntf(int cfg);
     virtual int Send(const char *msg, int len, int port=0);
+    void receive( const char *msg, int len, int port=0 );
 
 private:
     void getGPIOPins();

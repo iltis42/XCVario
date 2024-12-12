@@ -29,6 +29,7 @@
 #include "ESPAudio.h"
 #include "SerialLine.h"
 
+
 /* Note that the standard NMEA 0183 baud rate is only 4.8 kBaud.
 Nevertheless, a lot of NMEA-compatible devices can properly work with
 higher transmission speeds, especially at 9.6 and 19.2 kBaud.
@@ -71,6 +72,7 @@ void Serial::serialHandler(void *pvParameters)
 {
 	char buf[512];  // 6 messages @ 80 byte
 	xcv_serial_t *cfg = (xcv_serial_t *)pvParameters;
+	SerialLine mySL(cfg->port);
 	// Make a pause, that has avoided core dumps during enable the RX interrupt.
 	delay( 8000 );                   // delay a bit serial task startup unit startup of system is through
 	cfg->uart->flush( false );       // Clear Uart RX receiver buffer to get a clean start point.
@@ -127,7 +129,7 @@ void Serial::serialHandler(void *pvParameters)
 				// ESP_LOGI(FNAME,"S%d: RX: %d bytes, avail: %d", cfg->uart->number(), rxBytes, available );
 				// ESP_LOG_BUFFER_HEXDUMP(FNAME,buf, rxBytes, ESP_LOG_INFO);
 				buf[rxBytes] = 0;
-				cfg->dl->process( buf, rxBytes, 0 );
+				mySL.receive( buf, rxBytes, cfg->port );
 				DM.monitorString( cfg->monitor, DIR_RX, buf, rxBytes );
 			}
 		}

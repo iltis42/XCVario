@@ -49,16 +49,19 @@ int SerialLine::Send(const char *msg, int len, int port){
 
 	RingBufCPP<SString>* q = NULL;
 	if( port == 1 )
-		q = &s2_tx_q;
+		q = &s1_tx_q;
 	else if( port == 2 )
 		q = &s2_tx_q;
 	else
-		return 0;
+		return 1000000;
 	if( !q->isFull() ) {
 		q->add( SString( msg) );
 		return 0;
 	}
-	return len; // fixme better heuristic neede here
+	int dur = rint( len*12000.0/baud[cfg.baud] );  // 8 bits/byte * 1.5 = 12 bits * 1000 for mS
+	if( dur )
+		ESP_LOGI(FNAME,"Send(): UART: %d ETA for free buf in %d mS", uart_nr, dur );
+	return dur; // fixme better heuristic neede here
 };
 
 
@@ -238,7 +241,6 @@ void SerialLine::uartBegin(){
 		}
 	}
 }
-
 
 void SerialLine::configure(){
 	ESP_LOGI(FNAME,"configure UART:%d", uart_nr );

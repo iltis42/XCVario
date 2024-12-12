@@ -21,7 +21,7 @@ typedef struct _s_serial_cfg {
 
 class SerialLine: public InterfaceCtrl {
 public:
-    SerialLine(uart_port_t uart);                    // [0 = console], 1 = S1, 2 = S2
+    SerialLine(uart_port_t uart);                       // [0 = console], 1 = S1, 2 = S2
     virtual ~SerialLine() {};
     void loadProfile(e_profile profile);                // load defaults according to profile given
     void configure();                                   // SM_FLARM, SM_RADIO, etc

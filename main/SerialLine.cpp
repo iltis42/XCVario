@@ -68,7 +68,7 @@ void SerialLine::setBaud(e_baud abaud, bool coldstart ){
 	}
 	uart_set_baudrate(uart_nr, baud[abaud] );
 	if( !Serial::taskStarted( uart_nr ) ){
-		Serial::taskStart(uart_nr);   // #fixme change to taskStart( uart_nr ).
+		Serial::taskStart(uart_nr);
 	}
 	cfg.baud = abaud;
 };
@@ -78,7 +78,7 @@ void SerialLine::setLineInverse(e_polarity apol){
 	cfg.pol = apol;
 	if( cfg.pol == RS232_TTL ){
 		hw_serial->setRxInvert( true );  // RS232 TTL is inverted
-		hw_serial->setTxInvert( true);   // #fixme move to reference Serial1 depending on uart_nr
+		hw_serial->setTxInvert( true);
 	}
 	else{
 		hw_serial->setRxInvert( false );

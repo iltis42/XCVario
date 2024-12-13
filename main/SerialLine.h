@@ -5,7 +5,7 @@
 #include "driver/gpio.h"
 #include "comm/DataLink.h"
 #include "comm/InterfaceCtrl.h"
-
+#include "HardwareSerial.h"
 
 typedef enum _e_baud { BAUD_OFF, BAUD_4800, BAUD_9600, BAUD_19200, BAUD_57600, BAUD_115200 } e_baud;
 typedef enum _e_polarity { RS232_STANDARD, RS232_TTL } e_polarity;
@@ -31,23 +31,20 @@ public:
     void setLineInverse(e_polarity apol);               // 0: Normal, 1: Invert
     void setPinSwap( _e_pin pin );                      // 0: Standard 1: Swapped
     void setSlaveRole( e_tx tx );                       // Slave role or TX disable e.g. readonly FLARM CLIENT, e.g. we are parallel with another transmitting device with Master Role
-    inline void restart() { stop(); start(); };         // recycle RS232 interface
     void uartBegin();
     virtual void ConfigureIntf(int cfg);
     virtual int Send(const char *msg, int len, int port=0);
     void receive( const char *msg, int len, int port=0 );
 
 private:
-    void getGPIOPins();
+    void setupGPIOPins();
     t_serial_cfg cfg;
+    HardwareSerial *hw_serial;
     uart_port_t uart_nr;
     gpio_num_t tx_gpio;
     gpio_num_t rx_gpio;
-    static gpio_num_t prior_S1_tx_gpio;
-    static gpio_num_t prior_S1_rx_gpio;
-    static gpio_num_t prior_S2_tx_gpio;
-    static gpio_num_t prior_S2_rx_gpio;
-    void start();                                             // starts RS232 interface
+    static gpio_num_t prior_tx_gpio[3];
+    static gpio_num_t prior_rx_gpio[3];
     void stop();                                              // stops RS232 interface
 };
 

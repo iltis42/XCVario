@@ -57,6 +57,7 @@ public:
 
 	static void begin();
 	static void taskStart();
+	static void taskStart(int uart_nr);
 	static void taskStartS1();
 	static void taskStartS2();
 	static void taskStop( int uart_nr );

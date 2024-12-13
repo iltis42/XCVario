@@ -73,6 +73,7 @@ void Serial::serialHandler(void *pvParameters)
 	char buf[512];  // 6 messages @ 80 byte
 	xcv_serial_t *cfg = (xcv_serial_t *)pvParameters;
 	SerialLine mySL(cfg->port);
+	cfg->tx_q->setSize(2);
 	// Make a pause, that has avoided core dumps during enable the RX interrupt.
 	delay( 8000 );                   // delay a bit serial task startup unit startup of system is through
 	cfg->uart->flush( false );       // Clear Uart RX receiver buffer to get a clean start point.
@@ -214,7 +215,7 @@ bool Serial::selfTest(int num){
 	return false;
 }
 
-void Serial::begin(){
+void Serial::begin(){   // will be obsoleted when Devices launch serial interfaces.
 	ESP_LOGI(FNAME,"Serial::begin()" );
 	// Initialize static configuration
 	S1.cfg2 = &S2;
@@ -260,6 +261,7 @@ bool Serial::taskStarted( int num ){
 	return ret;
 }
 
+// will be obsoleted when devices launch serial lines
 void Serial::taskStart(){
 	ESP_LOGI(FNAME,"Serial::taskStart()" );
 	bool serial1 = (serial1_speed.get() != 0 || wireless != 0);
@@ -269,6 +271,19 @@ void Serial::taskStart(){
 		taskStartS1();
 	}
 	if( serial2 ){
+		taskStartS2();
+	}
+}
+
+void Serial::taskStart(int uart_nr){
+	ESP_LOGI(FNAME,"Serial::taskStart()" );
+	bool serial1 = (serial1_speed.get() != 0 || wireless != 0);
+	bool serial2 = (serial2_speed.get() != 0 && hardwareRevision.get() >= XCVARIO_21);
+
+	if( serial1 && uart_nr == 1 ){
+		taskStartS1();
+	}
+	if( serial2 && uart_nr == 2 ){
 		taskStartS2();
 	}
 }

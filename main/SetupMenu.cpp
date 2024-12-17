@@ -2114,6 +2114,7 @@ void SetupMenu::system_menu_create_interfaceS2( MenuEntry *top ){
 	datamon->setHelp( "Short press button to start/pause, long press to terminate data monitor", 260);
 	datamon->addEntry( "Disable");
 	datamon->addEntry( "Start S2 RS232");
+	top->addEntry( datamon );
 }
 
 void SetupMenu::system_menu_create_interfaceCAN_routing( MenuEntry *top ){

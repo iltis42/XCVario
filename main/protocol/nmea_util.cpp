@@ -30,8 +30,7 @@ std::string CheckSum(const char *nmea)
     }
 
     char buf[4];
-    itoa(crc, buf, 16);
-    buf[2] = '\0';
+    sprintf(buf, "%02x", crc);
     return std::string(buf);
 }
 

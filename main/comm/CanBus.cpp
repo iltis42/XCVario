@@ -66,60 +66,60 @@ void canRxTask(void *arg)
             {
                 if (dl->getPort() == rx.identifier)
                 {
-                    dl->process(msg.data(), rx.data_length_code);
+                    dl->process(msg.data(), msg.size());
                 }
             }
 
-            bool xcv_came = false;
-            bool magsens_came = false;
+            // bool xcv_came = false;
+            // bool magsens_came = false;
 
-            // old receiver missing a data link
-            if (rx.identifier == can_id_keepalive_rx)
-            { // keep alive of msg from peer XCV ?
-                // ESP_LOGI(FNAME,"CAN RX Keep Alive");
-                xcv_came = true;
-                // _connected_timeout_xcv = 0;
-                // if( !_connected_xcv ){
-                // 	bool entry=false;
-                // 	do{ // cleanup congestion at startup
-                // 		entry = Router::pullMsg( can_tx_q, msg );
-                // 	}while( entry );
-                // 	ESP_LOGI(FNAME,"CAN XCV connected");
-                // 	_connected_xcv = true;
-                // 	_new_can_client_connected = (the_can_mode == CAN_MODE_MASTER);
-                // }
-            }
-            else if (rx.identifier == CAN_MAGSENS_ID)
-            {
-                magsens_came = true;
-                // _connected_timeout_magsens = 0;
-                // if( !_connected_magsens ){
-                // 	ESP_LOGI(FNAME,"CAN Magnetsensor connected");
-                // 	_connected_magsens = true;
-                // }
-            }
-            // process NMEA message depending on role and peer
-            else if (rx.identifier == can_id_nmea_rx)
-            {
-                // ESP_LOGI(FNAME,"CAN RX NMEA chunk, len:%d msg: %s", bytes, msg.c_str() );
-                // ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
-                // _connected_timeout_xcv = 0;
-                dlink.process(msg.c_str(), msg.length(), 3); // (char *packet, int len, int port );
-            }
-            else if (rx.identifier == can_id_config_rx)
-            { // CAN messages for config (!xs) and NMEA may mix up: Fixed by a second ID and datalink layer for config variables
-                // ESP_LOGI(FNAME,"CAN RX NMEA chunk, len:%d msg: %s", bytes, msg.c_str() );
-                // ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
-                // _connected_timeout_xcv = 0;
-                dlinkXs.process(msg.c_str(), msg.length(), 3); // (char *packet, int len, int port );
-            }
-            else if (rx.identifier == CAN_MAGSENS_ID)
-            { // magnet sensor
-                // ESP_LOGI(FNAME,"CAN RX MagSensor, msg: %d", bytes );
-                // ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), bytes, ESP_LOG_INFO);
-                QMCMagCAN::fromCAN(msg.c_str(), msg.length());
-                // _connected_timeout_magsens = 0;
-            }
+            // // old receiver missing a data link
+            // if (rx.identifier == can_id_keepalive_rx)
+            // { // keep alive of msg from peer XCV ?
+            //     // ESP_LOGI(FNAME,"CAN RX Keep Alive");
+            //     xcv_came = true;
+            //     // _connected_timeout_xcv = 0;
+            //     // if( !_connected_xcv ){
+            //     // 	bool entry=false;
+            //     // 	do{ // cleanup congestion at startup
+            //     // 		entry = Router::pullMsg( can_tx_q, msg );
+            //     // 	}while( entry );
+            //     // 	ESP_LOGI(FNAME,"CAN XCV connected");
+            //     // 	_connected_xcv = true;
+            //     // 	_new_can_client_connected = (the_can_mode == CAN_MODE_MASTER);
+            //     // }
+            // }
+            // else if (rx.identifier == CAN_MAGSENS_ID)
+            // {
+            //     magsens_came = true;
+            //     // _connected_timeout_magsens = 0;
+            //     // if( !_connected_magsens ){
+            //     // 	ESP_LOGI(FNAME,"CAN Magnetsensor connected");
+            //     // 	_connected_magsens = true;
+            //     // }
+            // }
+            // // process NMEA message depending on role and peer
+            // else if (rx.identifier == can_id_nmea_rx)
+            // {
+            //     // ESP_LOGI(FNAME,"CAN RX NMEA chunk, len:%d msg: %s", bytes, msg.c_str() );
+            //     // ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
+            //     // _connected_timeout_xcv = 0;
+            //     dlink.process(msg.c_str(), msg.length(), 3); // (char *packet, int len, int port );
+            // }
+            // else if (rx.identifier == can_id_config_rx)
+            // { // CAN messages for config (!xs) and NMEA may mix up: Fixed by a second ID and datalink layer for config variables
+            //     // ESP_LOGI(FNAME,"CAN RX NMEA chunk, len:%d msg: %s", bytes, msg.c_str() );
+            //     // ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
+            //     // _connected_timeout_xcv = 0;
+            //     dlinkXs.process(msg.c_str(), msg.length(), 3); // (char *packet, int len, int port );
+            // }
+            // else if (rx.identifier == CAN_MAGSENS_ID)
+            // { // magnet sensor
+            //     // ESP_LOGI(FNAME,"CAN RX MagSensor, msg: %d", bytes );
+            //     // ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), bytes, ESP_LOG_INFO);
+            //     QMCMagCAN::fromCAN(msg.c_str(), msg.length());
+            //     // _connected_timeout_magsens = 0;
+            // }
             DM.monitorString(MON_CAN, DIR_RX, msg.c_str(), msg.length());
         }
         else
@@ -407,13 +407,14 @@ bool CANbus::selfTest()
     int id = 0x100;
     for (int slope = 0; slope < 2; slope++)
     {
+        ESP_LOGI(FNAME, "CAN slope support %s.", _slope_support ? "on" : "off");
         twai_clear_receive_queue();
         for (int i = 0; i < 3; i++)
         { // repeat test 3x
             char tx[10] = {"1827364"};
             int len = strlen(tx);
-            // there might be data from a remote device
-            twai_clear_receive_queue();
+            ESP_LOGI(FNAME, "strlen %d", len);
+            twai_clear_receive_queue(); // there might be data from a remote device
             if ( ! sendData(id, tx, len, 1) ) {
                 ESP_LOGW(FNAME, "CAN bus selftest TX FAILED");
             }
@@ -427,13 +428,19 @@ bool CANbus::selfTest()
                 res = true;
                 break;
             }
+            else
+            {
+                std::string msg((char*)rx.data, rx.data_length_code);
+                ESP_LOGW(FNAME, "CAN bus selftest RX call FAILED bytes:%d rxid:%x rxmsg:%s", rx.data_length_code, rx.identifier, msg.c_str());
+                twai_clear_receive_queue();
+            }
         }
-        if (res)
+        if (res) {
             break;
+        }
 
         _slope_support = true;
         gpio_set_level(_slope_ctrl, 0);
-        ESP_LOGI(FNAME, "CAN slope support on.");
     }
 
     driverUninstall();

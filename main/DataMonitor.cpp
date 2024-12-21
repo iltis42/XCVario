@@ -157,11 +157,12 @@ void DataMonitor::press(){
 }
 
 void DataMonitor::longPress(){
-	ESP_LOGI(FNAME,"longPress" );
 	if( !mon_started ){
 		ESP_LOGI(FNAME,"longPress, but not started, return" );
 		return;
 	}
+	ESP_LOGI(FNAME,"longPress" );
+	gflags.ignorePress = true;    // so setup menu will not receive longpress
 	stop();
 	delay( 100 );
 }

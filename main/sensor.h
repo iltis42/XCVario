@@ -33,6 +33,8 @@
 
 typedef struct global_flags{
 	bool inSetup :1;
+	bool escapeSetup :1;  // long-pressed within menu
+	bool ignorePress :1;  // press or longpress have been consumed
 	bool haveMPU :1;
 	bool ahrsKeyValid  :1;
 	bool gload_alarm :1;

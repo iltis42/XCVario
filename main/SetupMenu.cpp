@@ -532,7 +532,7 @@ void SetupMenu::catchFocus( bool activate ){
 }
 
 void SetupMenu::display( int mode ){
-	if( (selected != this) || !gflags.inSetup || focus )
+	if( (selected != this) || !gflags.inSetup || gflags.escapeSetup || focus )
 		return;
 	xSemaphoreTake(display_mutex,portMAX_DELAY);
 	// ESP_LOGI(FNAME,"SetupMenu display( %s)", _title );
@@ -656,6 +656,21 @@ void SetupMenu::up(int count){
 }
 
 void SetupMenu::showMenu(){
+	if ( gflags.escapeSetup ) {
+		if ( !gflags.inSetup || data_monitor.get() != MON_OFF ) {
+			gflags.escapeSetup = false;
+			return;
+		}
+		if ( _parent == 0 ) {
+			gflags.escapeSetup = false;
+			ESP_LOGI(FNAME,"Escape root menu");
+		} else {
+			pressed = true;
+			ESP_LOGI(FNAME,"Escape to parent");
+		}
+		highlight = -1;
+		// and fall through
+	}
 	// ESP_LOGI(FNAME,"showMenu() p:%d h:%d parent:%x", pressed, highlight, (int)_parent );
 	// default is not pressed, so just display, but we toogle pressed state at the end
 	// so next time we either step up to parent,
@@ -755,10 +770,19 @@ void SetupMenu::press(){
 void SetupMenu::longPress(){
 	if( (selected != this) )
 		return;
+	if( data_monitor.get() != MON_OFF ) {   // longpress intended to stop the data monitor
+		gflags.escapeSetup = false;
+		return;
+	}
 	// ESP_LOGI(FNAME,"longPress()");
 	ESP_LOGI(FNAME,"longPress() active_srceen %d, pressed %d inSet %d", active_screen, pressed, gflags.inSetup );
-	if( menu_long_press.get() && !gflags.inSetup ){
-		showMenu();
+	if ( gflags.inSetup ) {
+		if ( gflags.escapeSetup == false )
+			gflags.escapeSetup = true;    // return now, sensor.cpp drawDisplay() will call back in a loop
+		else
+			showMenu();                   // which will step to parent
+	} else if( menu_long_press.get() ) {
+		showMenu();                       // enter setup menu
 	}
 	if( pressed ){
 		pressed = false;

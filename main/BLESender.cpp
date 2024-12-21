@@ -136,8 +136,8 @@ void BLESender::begin(){
 	ESP_LOGI(FNAME,"BLESender::begin()" );
 	ESP_LOGI(FNAME,"BT LE on, create BT master object" );
 
-	esp_log_level_set("GATTS", ESP_LOG_DEBUG);
-	esp_log_level_set("BT_BTM", ESP_LOG_DEBUG);
+	// esp_log_level_set("GATTS", ESP_LOG_DEBUG);
+	// esp_log_level_set("BT_BTM", ESP_LOG_DEBUG);
 
 	dlb = new DataLink();
 	// Create the BLE Device

@@ -26,11 +26,12 @@
 BLEServer *pServer = NULL;
 BLECharacteristic * pTxCharacteristic;
 bool deviceConnected = false;
-bool oldDeviceConnected = false;
-uint8_t txValue = 0;
 
 static TaskHandle_t pid = nullptr;
 static DataLink *dlb;
+static int tick=0;
+static uint16_t peer_mtu;
+static int congestion=0;
 
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
@@ -39,18 +40,22 @@ static DataLink *dlb;
 #define CHARACTERISTIC_UUID_RX "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
 #define CHARACTERISTIC_UUID_TX "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
 
-
 class MyServerCallbacks: public BLEServerCallbacks {
 	void onConnect(BLEServer* pServer) {
+		ESP_LOGI(FNAME,"BT LE device connected" );
 		deviceConnected = true;
+		peer_mtu = pServer->getPeerMTU(pServer->getConnId());
+		ESP_LOGI(FNAME, "Peer MTU: %d", peer_mtu);
 	};
 
 	void onDisconnect(BLEServer* pServer) {
+		ESP_LOGI(FNAME,"BT LE device disconnected" );
 		deviceConnected = false;
+		pServer->startAdvertising(); // restart advertising
 	}
 };
 
-class MyCallbacks: public BLECharacteristicCallbacks {
+class MyRxCallbacks: public BLECharacteristicCallbacks {
 	void onWrite(BLECharacteristic *pCharacteristic) {
 		std::string rx = pCharacteristic->getValue();
 		if (rx.length()) {
@@ -58,6 +63,22 @@ class MyCallbacks: public BLECharacteristicCallbacks {
 			DM.monitorString( MON_BLUETOOTH, DIR_RX, rx.c_str(), rx.length() );
 			ESP_LOGI(FNAME,">BT LE RX: %d bytes",  rx.length()  );
 			ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.c_str(), rx.length() , ESP_LOG_INFO);
+		}
+	}
+};
+
+class MyTxCallbacks: public BLECharacteristicCallbacks {
+	void onStatus(BLECharacteristic* pCharacteristic, Status s, uint32_t code) override {
+		// ESP_LOGI(FNAME, "onStatus Status %d code: %d", s, code );
+		if (s == 4 && code == -1) {
+			// ESP_LOGI(FNAME, "Congested, pacing: %d", congestion );
+			if( congestion < 300 )
+				congestion++;
+		}
+		if (s == 1 && code == 0) {
+			// ESP_LOGI(FNAME, "Send OK, pacing: %d", congestion );
+			if( congestion )
+				congestion--;
 		}
 	}
 };
@@ -81,7 +102,11 @@ void BLESender::btTask(void *pvParameters){
 		Router::routeBT();
 		if( uxTaskGetStackHighWaterMark( pid ) < 256 )
 			ESP_LOGW(FNAME,"Warning BT task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid ) );
-		vTaskDelay( 10/portTICK_PERIOD_MS );
+		vTaskDelay( 100/portTICK_PERIOD_MS );
+		tick++;
+		if( !(tick%300) ){  // keep somehow visible, a true disconnect may not take place
+			pServer->getAdvertising()->start();
+		}
 	}
 }
 
@@ -89,37 +114,31 @@ void BLESender::progress(){
 	char buf[256];
 	if (deviceConnected) {
 		int len = Router::pullBlock( bt_tx_q, buf, 20 );
-		ESP_LOGI(FNAME,"BLE device connected, data len=%d",len);
 		if( len ){
+			// ESP_LOGI(FNAME,"BLE len=%d P:%d, %s",len, congestion, buf);
 			int pos=0;
 			while( len > 0 ){
 				int sent=min( len, 20 );
 				pTxCharacteristic->setValue((uint8_t*)&buf[pos], (size_t)sent);
-				pTxCharacteristic->notify();
-				ESP_LOGI(FNAME,"<BT LE TX %d bytes", sent );
-				ESP_LOG_BUFFER_HEXDUMP(FNAME,&buf[pos],len, ESP_LOG_INFO);
+				pTxCharacteristic->notify(); // No return value
+				// ESP_LOGI(FNAME,"<BT LE TX %d bytes (pending: %d)", sent, indicationPending );
+				// ESP_LOG_BUFFER_HEXDUMP(FNAME,&buf[pos],len, ESP_LOG_INFO);
 				DM.monitorString( MON_BLUETOOTH, DIR_TX, &buf[pos], sent );
 				pos+=sent;
 				len-=sent;
+				delay( congestion );
 			}
 		}
-	}
-	// disconnecting
-	if (!deviceConnected && oldDeviceConnected) {
-		delay(500); // give the bluetooth stack the chance to get things ready
-		pServer->startAdvertising(); // restart advertising
-		oldDeviceConnected = deviceConnected;
-	}
-	// connecting
-	if (deviceConnected && !oldDeviceConnected) {
-		// do stuff here on connecting
-		oldDeviceConnected = deviceConnected;
 	}
 }
 
 void BLESender::begin(){
 	ESP_LOGI(FNAME,"BLESender::begin()" );
 	ESP_LOGI(FNAME,"BT LE on, create BT master object" );
+
+	esp_log_level_set("GATTS", ESP_LOG_DEBUG);
+	esp_log_level_set("BT_BTM", ESP_LOG_DEBUG);
+
 	dlb = new DataLink();
 	// Create the BLE Device
 	std::string ble_id( SetupCommon::getID() );
@@ -145,8 +164,14 @@ void BLESender::begin(){
 			CHARACTERISTIC_UUID_RX,
 			BLECharacteristic::PROPERTY_WRITE
 	);
+	pTxCharacteristic->setCallbacks(new MyTxCallbacks());
+	pRxCharacteristic->setCallbacks(new MyRxCallbacks());
 
-	pRxCharacteristic->setCallbacks(new MyCallbacks());
+	BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+
+	// Tune advertising parameters
+	pAdvertising->setMinInterval(0x20);  // Minimum advertising interval (32 * 0.625 ms = 20 ms)
+	pAdvertising->setMaxInterval(0x40);  // Maximum advertising interval (64 * 0.625 ms = 40 ms)
 
 	// Start the service
 	pService->start();

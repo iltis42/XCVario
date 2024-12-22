@@ -1,5 +1,6 @@
 #include "DataMonitor.h"
 #include "sensor.h"
+#include "SetupNG.h"
 #include "logdef.h"
 #include "Flarm.h"
 
@@ -77,7 +78,8 @@ void DataMonitor::monitorString( int ch, e_dir_t dir, const char *str, int len )
 }
 
 void DataMonitor::printString( int ch, e_dir_t dir, const char *str, bool binary, int len ){
-	ESP_LOGI(FNAME,"DM ch:%d dir:%d len:%d data:%s", ch, dir, len, str );
+	if (! binary)
+		ESP_LOGI(FNAME,"DM ch:%d dir:%d len:%d data:%s", ch, dir, len, str );
 	const int scroll_lines = 20;
 	char dirsym = 0;
 	if( dir == DIR_RX ){
@@ -128,7 +130,7 @@ void DataMonitor::printString( int ch, e_dir_t dir, const char *str, bool binary
 				hpos += sprintf( txt+hpos, "%s", hunk );
 				txt[hpos] = 0;
 				ucg->print( txt );
-				ESP_LOGI(FNAME,"DM ascii ch:%d dir:%d data:%s", ch, dir, txt );
+				//ESP_LOGI(FNAME,"DM ascii ch:%d dir:%d data:%s", ch, dir, txt );
 			}
 			pos+=hunklen;
 			// ESP_LOGI(FNAME,"DM 3 pos: %d", pos );
@@ -173,7 +175,8 @@ void DataMonitor::start(SetupMenuSelect * p){
 	setup = p;
 	tx_total = 0;
 	rx_total = 0;
-	channel = p->getSelect();
+	//channel = p->getSelect();       // broken, for S1 & S2 menus with only 0,1 choices
+	channel = data_monitor.get();     // action function SetupMenu.cpp data_mon() set it
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	SetupMenu::catchFocus( true );
 	ucg->setColor( COLOR_BLACK );
@@ -198,7 +201,7 @@ void DataMonitor::stop(){
 	paused = false;
 	delay(1000);
 	ucg->scrollLines( 0 );
-	setup->setSelect( MON_OFF );
+	setup->setSelect( MON_OFF );  // works only because MON_OFF=0 and is the first choice in all 3 monitor menus
 	SetupMenu::catchFocus( false );
 }
 

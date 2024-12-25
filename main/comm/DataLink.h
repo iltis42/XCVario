@@ -9,8 +9,9 @@
 #pragma once
 
 #include "Devices.h"
+#include "protocol/ProtocolItf.h"
 
-class ProtocolItf;
+#include <vector>
 
 // Data link layer to multiplex data stream to proper protocol parser.
 class DataLink
@@ -18,16 +19,20 @@ class DataLink
 public:
     DataLink(int listen_port) : _port(listen_port) {}
     ~DataLink();
-    ProtocolItf* setProtocol(ProtocolType ptyp, int mport=0);
+    ProtocolItf* addProtocol(ProtocolType ptyp, int mport=0);
     ProtocolItf* getProtocol(ProtocolType ptyp=NO_ONE) const ;
     bool hasProtocol(ProtocolType ptyp) const;
-    ProtocolItf* removeProtocol();
     void process(const char *packet, int len);
     int getPort() const { return _port; }
+    // dbg
+    void dumpProto();
 
 private:
-    ProtocolItf *_protocol = nullptr;
+    std::vector<ProtocolItf*> _all_p;
+    // std::deque<ProtocolItf*> _current_p;
+    ProtocolItf *_gotit = nullptr; // The protocoll that recognized the current message
+    ProtocolState _sm; // The message buffer for all protocol parser
     bool _binary_mode = false;
-    // Router info
-    int _port = 0;
+    // Listen on
+    const int _port;
 };

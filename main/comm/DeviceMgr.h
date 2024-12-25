@@ -36,9 +36,9 @@ struct Device
     ~Device();
     int getSendPort(ProtocolType p) const;
     ProtocolItf* getProtocol(ProtocolType p) const;
-    const DeviceId  _id;
+    const DeviceId      _id;
     std::set<DataLink*> _dlink;
-    InterfaceCtrl   *_itf;
+    InterfaceCtrl      *_itf;
 };
     // InterfaceId                 _default_config; // RS232, Baudrate, etc.
 

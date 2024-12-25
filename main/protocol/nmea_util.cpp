@@ -57,7 +57,7 @@ std::string extractWord(const std::string &str, int pos) {
         i++;
         cptr++;
     }
-    return str.substr(wstart, i);
+    return str.substr(wstart, i-wstart);
 }
 
 } // namespace

@@ -1,9 +1,11 @@
 
 #include "Messages.h"
+#include "logdef.h"
 
 const int BUFFER_COUNT = 10;
 
 
+Message spare_msg; // To be able to grant a message, even this one will not be an exclusive buffer worst case.
 
 MessagePool::MessagePool()
 {
@@ -23,6 +25,7 @@ MessagePool::~MessagePool()
     vSemaphoreDelete(_mutex);
 }
 
+// granted none nullptr return value
 Message* MessagePool::getOne()
 {
     Message* msg = nullptr;
@@ -34,7 +37,10 @@ Message* MessagePool::getOne()
         _nr_acquisition++;
     }
     else {
+        msg = &spare_msg;
         _nr_acqfails++;
+        ESP_LOGW(FNAME, "Buffer pool empty.");
+
     }
     xSemaphoreGive(_mutex);
     return msg;

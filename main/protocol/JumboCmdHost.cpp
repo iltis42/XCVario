@@ -71,62 +71,57 @@
 
 gen_state_t JumboCmdHost::nextByte(const char c)
 {
-    ESP_LOGD(FNAME, "state %d, pos %d next char %c", _state, _pos, c);
-    switch(_state) {
+    int pos = _sm._frame.size() - 1; // c already in the buffer
+    ESP_LOGD(FNAME, "state %d, pos %d next char %c", _sm._state, pos, c);
+    switch(_sm._state) {
     case START_TOKEN:
-    case CHECK_FAILED:
-    case RESTART:
         if ( c == '$' ) {
-            _state = HEADER;
-            reset();
-            push(c);
+            _sm._state = HEADER;
+            _crc_buf[0] = '\0';
             ESP_LOGD(FNAME, "Msg START_TOKEN");
         }
         break;
     case HEADER:
-        push_and_crc(c);
-        if ( _pos < 4 ) { break; }
-        if ( _framebuffer[1] != 'P' || _framebuffer[2] != 'J' || _framebuffer[3] != 'P') {
-            _state = RESTART;
+        NMEA::incrCRC(_sm._crc,c);
+        if ( pos < 4 ) { break; }
+        if ( _sm._frame.substr(1,3) != "PJP" ) {
+            _sm._state = START_TOKEN;
             break;
         }
-        _state = PAYLOAD;
+        _sm._state = PAYLOAD;
         ESP_LOGD(FNAME, "Msg HEADER");
         break;
     case PAYLOAD:
         if ( c == '*' ) {
-            push(c);
-            _state = CHECK_CRC; // Expecting a CRC to check
+            _sm._state = CHECK_CRC; // Expecting a CRC to check
             break;
         }
         if ( c != '\r' && c != '\n' ) {
             ESP_LOGD(FNAME, "Msg PAYLOAD");
-            if ( push_and_crc(c) ) {
-                break;
-            }
-            // Buffer is full
-            _state = STOP_TOKEN;
+            NMEA::incrCRC(_sm._crc,c);
+            break;
+        }
+        else {
+            _sm._state = STOP_TOKEN;
         }
         // Fall through 
     case CHECK_CRC:
-        if( _state == CHECK_CRC ) { // did we not fall through
+        if( _sm._state == CHECK_CRC ) { // did we not fall through
             if ( _crc_buf[0] == '\0' ) {
                 // this is the first crc character
                 _crc_buf[0] = c;
-                push(c); // not really needed
                 break;
             }
             else {
-                push(c); // not really needed
                 _crc_buf[1] = c;
                 _crc_buf[2] = '\0';
                 char read_crc = (char)strtol(_crc_buf, NULL, 16);
-                ESP_LOGD(FNAME, "Msg CRC %s/%x - %x", _crc_buf, read_crc, _crc);
-                if ( read_crc != _crc ) {
-                    _state = CHECK_FAILED;
+                ESP_LOGD(FNAME, "Msg CRC %s/%x - %x", _crc_buf, read_crc, _sm._crc);
+                if ( read_crc != _sm._crc ) {
+                    _sm._state = START_TOKEN;
                     break;
                 }
-                _state = CHECK_OK; // fall through
+                _sm._state = CHECK_OK; // fall through
             }
         }
         // Fall through 
@@ -134,21 +129,21 @@ gen_state_t JumboCmdHost::nextByte(const char c)
     case CHECK_OK:
     case COMPLETE:
         {
-            push('\0'); // terminate the string buffer
+            _sm._frame.push_back('\0'); // terminate the string buffer
             gen_state_t next_state = START_TOKEN; // restart parsing
-            ESP_LOGD(FNAME, "Msg complete %c%c", _framebuffer[4], _framebuffer[5]);
-            uint16_t mid = (_framebuffer[4]<<8) + _framebuffer[5];
+            ESP_LOGI(FNAME, "Msg complete %c%c", _sm._frame.at(4), _sm._frame.at(5));
+            uint16_t mid = (_sm._frame.at(4)<<8) + _sm._frame.at(5);
             switch (mid) {
                 case (('R' << 8) | 'P'):
                     connected();
                     break;
                 case (('R' << 8) | 'C'):
-                    if ( _state == CHECK_OK ) {
+                    if ( _sm._state == CHECK_OK ) {
                         config();
                     }
                     break;
                 case (('R' << 8) | 'I'):
-                    if ( _state == CHECK_OK ) {
+                    if ( _sm._state == CHECK_OK ) {
                         info();
                     }
                     break;
@@ -161,13 +156,13 @@ gen_state_t JumboCmdHost::nextByte(const char c)
                 default:
                     break;
             }
-            _state = next_state;
+            _sm._state = next_state;
         }
         break;
     default:
         break;
     }
-    return _state;
+    return _sm._state;
 }
 
 void JumboCmdHost::connected()
@@ -182,11 +177,11 @@ static TokenTable CONF_ITEM = { "WSPAN", "WSP_1", "LCORR", "RCORR", "WDFLT", "KI
 void JumboCmdHost::config()
 {
     // grab token from e.g. message "$PJPRC WSPAN, "
-    std::string frame(&_framebuffer[5]);
+    std::string itoken = _sm._frame.substr(7);
     int idx = 0;
     TokenTable::iterator it = CONF_ITEM.begin();
     for ( ; it != CONF_ITEM.end(); it++, idx++ ) {
-        if ( frame.compare(*it) == 0 ) {
+        if ( itoken.compare(*it) == 0 ) {
             break;
         }
     }
@@ -195,7 +190,7 @@ void JumboCmdHost::config()
     if ( it == CONF_ITEM.end() ) {
         return; // unknown token
     }
-    int value = atoi(&_framebuffer[13]);
+    int value = atoi(_sm._frame.substr(13).c_str());
     switch (idx) {
     case 0:
         // todo // 0.1m

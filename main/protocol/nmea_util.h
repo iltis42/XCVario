@@ -14,5 +14,6 @@ namespace NMEA {
 std::string CheckSum(const char *nmea);
 // Extract comma seperated NMEA word/value
 std::string extractWord(const std::string &str, int pos);
+void incrCRC(int &crc, const char c);
 
 }

@@ -1,5 +1,6 @@
 
 #include "CanBus.h"
+
 #include "Messages.h"
 #include "DeviceMgr.h"
 #include "sensor.h"
@@ -10,7 +11,7 @@
 #include <freertos/task.h>
 
 #include "driver/gpio.h"
-#include "esp_log.h"
+#include "logdefnone.h"
 #include "esp_err.h"
 
 #include <cstring>

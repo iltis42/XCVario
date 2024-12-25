@@ -33,16 +33,18 @@ class CANbus final : public InterfaceCtrl
 public:
 
 	CANbus();
-    ~CANbus() = default;
+	~CANbus() = default;
 	bool begin();
 	void stop();
+	bool isInitialized() { return _initialized; };
+	bool hasSlopeSupport() { return _slope_support; };
+	// deprecated
 	bool GotNewClient() const { return _new_can_client_connected; }
 	void ResetNewClient() { _new_can_client_connected = false; }
 	bool connectedXCV() { return _connected_xcv; };
 	bool connectedMagSens() { return _connected_magsens; };
 	bool connected() { return (_connected_xcv | _connected_magsens); };
-	bool isInitialized() { return _initialized; };
-	bool hasSlopeSupport() { return _slope_support; };
+	// --
 	// Ctrl
     InterfaceId getId() const override { return CAN_BUS; }
     const char* getStringId() const override { return "CAN"; }

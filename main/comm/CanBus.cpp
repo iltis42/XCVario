@@ -35,7 +35,7 @@ static int can_id_nmea_rx;
 static int can_id_keepalive_tx;
 static int can_id_keepalive_rx;
 
-static TaskHandle_t cpid;
+static TaskHandle_t rxTask = nullptr;
 CANbus *CAN = 0;
 static bool terminate_receiver = false;
 static bool do_recover = false;
@@ -138,9 +138,9 @@ void canRxTask(void *arg)
         if ((tick++ % 100) == 0)
         {
             ESP_LOGI(FNAME, "Free Heap: %d bytes", heap_caps_get_free_size(MALLOC_CAP_8BIT));
-            if (uxTaskGetStackHighWaterMark(cpid) < 128)
+            if (uxTaskGetStackHighWaterMark(rxTask) < 128)
             {
-                ESP_LOGW(FNAME, "Warning canbus task stack low: %d bytes", uxTaskGetStackHighWaterMark(xTaskGetCurrentTaskHandle()));
+                ESP_LOGW(FNAME, "Warning canbus task stack low: %d bytes", uxTaskGetStackHighWaterMark(rxTask));
             }
         }
     } while (true);
@@ -367,14 +367,17 @@ bool CANbus::begin()
         ESP_LOGI(FNAME, "CAN bus OFF");
         return false;
     }
-    if ( _initialized ) { return true; }
-    
-    ESP_LOGI(FNAME, "CANbus::begin");
-    if ( selfTest() ) {
-        driverInstall(TWAI_MODE_NORMAL);
-        xTaskCreate(&canRxTask, "canRxTask", 4096, this, 15, 0);
-    } else {
-        driverUninstall();
+
+    if ( ! _initialized && selfTest() )
+    {
+        ESP_LOGI(FNAME, "CANbus::begin");
+        if ( selfTest() ) {
+            driverInstall(TWAI_MODE_NORMAL);
+            terminate_receiver = false;
+            xTaskCreate(&canRxTask, "canRxTask", 4096, this, 15, &rxTask);
+        } else {
+            driverUninstall();
+        }
     }
     return _initialized;
 }
@@ -383,8 +386,6 @@ bool CANbus::begin()
 void CANbus::stop()
 {
     ESP_LOGI(FNAME, "CAN stop");
-
-    driverUninstall();
 
     // send terminate signals to tasks
     terminate_receiver = true;            // for receiver
@@ -487,7 +488,6 @@ bool CANbus::sendData(int id, const char *msg, int length, int self)
     message.identifier = id;
     message.self = self;
     message.data_length_code = length;
-
     for (int i = 0; i < length; i++)
     {
         message.data[i] = msg[i];

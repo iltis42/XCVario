@@ -341,13 +341,9 @@ namespace DEV {
 Message* acqMessage(DeviceId target_id, int port)
 {
     Message* m = MP.getOne();
-    if ( m ) {
-        m->target_id = target_id;
-        m->port = port;
-        return m;
-    }
-    ESP_LOGW(FNAME, "Buffer pool empty (%d)", target_id);
-    return nullptr;
+    m->target_id = target_id;
+    m->port = port;
+    return m;
 }
 
 void relMessage(Message *msg)

@@ -60,4 +60,9 @@ std::string extractWord(const std::string &str, int pos) {
     return str.substr(wstart, i-wstart);
 }
 
+void incrCRC(int &crc, const char c)
+{
+    crc ^= c;
+}
+
 } // namespace

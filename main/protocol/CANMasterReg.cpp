@@ -13,7 +13,7 @@
 #include "comm/DeviceMgr.h"
 #include "comm/Messages.h"
 
-#include <logdef.h>
+#include "logdef.h"
 
 #include <cstring>
 
@@ -49,47 +49,52 @@ extern InterfaceCtrl* CAN;
 //
 
 
-gen_state_t CANMasterReg::nextByte(const char c)
-{
-    ESP_LOGD(FNAME, "state %d, pos %d next char %c", _state, _pos, c);
-    switch(_state) {
+
+ gen_state_t CANMasterReg::nextByte(const char c)
+ {
+    int pos = _sm._frame.size() - 1;
+    ESP_LOGD(FNAME, "state %d, pos %d next char %c", _sm._state, pos, c);
+     switch (_sm._state)
+     {
     case START_TOKEN:
-    case CHECK_FAILED:
-    case RESTART:
-        if ( c == '$' ) {
-            _state = HEADER;
-            reset();
-            push(c);
+        if (c == '$')
+        {
+            _sm._state = HEADER;
+            _crc_buf[0] = '\0';
             ESP_LOGD(FNAME, "Msg START_TOKEN");
         }
         break;
     case HEADER:
-        push_and_crc(c);
-        if ( _pos < 4 ) { break; }
-        if ( _framebuffer[1] != 'P' || _framebuffer[2] != 'J' || _framebuffer[3] != 'P') {
-            _state = RESTART;
+        NMEA::incrCRC(_sm._crc, c);
+        if (pos < 4)
+        {
             break;
         }
-        _state = PAYLOAD;
-        ESP_LOGD(FNAME, "Msg HEADER");
+        if (_sm._frame.substr(1, 3) != "PJP")
+        {
+            _sm._state = START_TOKEN;
+            break;
+        }
+        _sm._state = PAYLOAD;
+         ESP_LOGD(FNAME, "Msg HEADER");
         break;
     case PAYLOAD:
-        if ( c == '*' ) {
-            push(c);
-            _state = CHECK_CRC; // Expecting a CRC to check
+        if (c == '*')
+        {
+            _sm._state = CHECK_CRC; // Expecting a CRC to check
             break;
         }
-        if ( c != '\r' && c != '\n' ) {
+        if (c != '\r' && c != '\n')
+        {
             ESP_LOGD(FNAME, "Msg PAYLOAD");
-            if ( push_and_crc(c) ) {
-                break;
-            }
-            // Buffer is full
-            _state = STOP_TOKEN;
+            NMEA::incrCRC(_sm._crc, c);
+            break;
+        } else {
+            _sm._state = STOP_TOKEN;
         }
-        // Fall through 
+        // Fall through
     case CHECK_CRC:
-        if( _state == CHECK_CRC ) { // did we not fall through
+        if( _sm._state == CHECK_CRC ) { // did we not fall through
             if ( _crc_buf[0] == '\0' ) {
                 // this is the first crc character
                 _crc_buf[0] = c;
@@ -99,24 +104,25 @@ gen_state_t CANMasterReg::nextByte(const char c)
                 _crc_buf[1] = c;
                 _crc_buf[2] = '\0';
                 char read_crc = (char)strtol(_crc_buf, NULL, 16);
-                ESP_LOGD(FNAME, "Msg CRC %s/%x - %x", _crc_buf, read_crc, _crc);
-                if ( read_crc != _crc ) {
-                    _state = CHECK_FAILED;
+                ESP_LOGD(FNAME, "Msg CRC %s/%x - %x", _crc_buf, read_crc, _sm._crc);
+                if ( read_crc != _sm._crc )
+                {
+                    _sm._state = START_TOKEN;
                     break;
                 }
-                _state = CHECK_OK; // fall through
+                _sm._state = CHECK_OK; // fall through
             }
         }
-        // Fall through 
+        // Fall through
     case STOP_TOKEN:
     case CHECK_OK:
     case COMPLETE:
         {
-            push('\0'); // terminate the string buffer
-            _state = START_TOKEN; // restart parsing
-            ESP_LOGI(FNAME, "Msg complete %s", _framebuffer);
-            std::string frame(_framebuffer);
-            if ( frame.compare(4, 3, "REG") == 0 ) {
+            _sm._frame.push_back('\0'); // terminate the string buffer
+            _sm._state = START_TOKEN;   // restart parsing
+            ESP_LOGI(FNAME, "Msg complete %s", _sm._frame.c_str());
+            if ( _sm._frame.compare(4, 3, "REG") == 0 )
+            {
                 registration_query();
             }
         }
@@ -124,42 +130,48 @@ gen_state_t CANMasterReg::nextByte(const char c)
     default:
         break;
     }
-    return _state;
+    return _sm._state;
 }
 
 void CANMasterReg::registration_query()
 {
     ESP_LOGI(FNAME, "JP registration query");
     // e.g. read message "$PJPREG 123, proto"
-    if ( strlen(_framebuffer) < 12 ) {
+    if ( _sm._frame.size() < 12 ) {
         return;
     }
-    std::string frame(&_framebuffer[8]);
+    std::string tail = _sm._frame.substr(8);
 
     // grab the token
     for ( int i=0; i<3; i++ ) {
-        if ( !isdigit(frame[i]) ) {
+        if ( !isdigit(tail[i]) ) {
             return;
         }
     }
-    _token = frame.substr(0, 3);
-    ESP_LOGI(FNAME, "JP reg token %s", _token.c_str());
+    _token = tail.substr(0, 3);
+    ESP_LOGD(FNAME, "JP reg token %s", _token.c_str());
 
     // read the protocol type
-    size_t pos = frame.find(',');
+    size_t pos = tail.find(','); 
     ESP_LOGD(FNAME, "JP comma %d", pos);
-    _protocol = NMEA::extractWord(frame, pos+1);
+    _protocol = NMEA::extractWord(tail, pos+1);
     ESP_LOGD(FNAME, "JP proto %s", _protocol.c_str());
 
+    ESP_LOGD(FNAME, "compare %d", _protocol.compare("JUMBOCMD"));
     if ( _protocol.compare("JUMBOCMD") == 0 ) {
         int client_id;
+        ESP_LOGD(FNAME, "found JUMBOCMD");
         Device *dev = DEVMAN->getDevice(JUMBO_DEV);
         if ( dev ) {
             client_id = dev->getSendPort(JUMBO_CMD); // re-use
+            ESP_LOGD(FNAME, "reuse port %d", client_id);
         } else {
             client_id = DeviceManager::getFreeCANId(1);
+            ESP_LOGD(FNAME, "new port %d", client_id);
         }
         if ( client_id == -1 ) return; // no luck
+
+        ESP_LOGD(FNAME, "use port %d", client_id);
 
         Message* msg = newMessage(); // set target
         if ( ! msg ) return;

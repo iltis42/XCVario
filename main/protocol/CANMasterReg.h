@@ -15,7 +15,7 @@
 class CANMasterReg  final : public ProtocolItf
 {
 public:
-    explicit CANMasterReg(int mp) : ProtocolItf(mp) {}
+    explicit CANMasterReg(int mp, ProtocolState &sm) : ProtocolItf(mp, sm) {}
     virtual ~CANMasterReg() = default;
 
     // The master registry takes it's own identity, not knowing what kind of device

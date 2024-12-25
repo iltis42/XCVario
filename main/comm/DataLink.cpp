@@ -14,100 +14,157 @@
 
 #include "DeviceMgr.h"
 
-#include <logdef.h>
+#include "logdef.h"
 
 DataLink::~DataLink()
 {
-    if ( _protocol ) {
-        delete _protocol;
+    for (auto *it : _all_p) {
+        ESP_LOGI(FNAME, "delete  prtcl %p", it);
+        delete it;
     }
+    _all_p.clear();
 }
 
 // protocol factory
-ProtocolItf* DataLink::setProtocol(ProtocolType ptyp, int send_port)
+ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, int send_port)
 {
-    if (_protocol && _protocol->getProtocolId() == ptyp) {
-        return _protocol;
-    }
 
-    // Remove the old one -> todo enable 1.n relation to data link and a list of protocols
-    if (_protocol)
-    {
-        ProtocolItf *tmp = _protocol;
-        _protocol = nullptr;
-        delete tmp;
+    // Check if already there
+    bool foundit = false;
+    for (auto *it : _all_p) {
+        if ( (*it).getProtocolId() == ptyp 
+            && (*it).getSendPort() == send_port ) {
+            foundit = true;
+        }
     }
+    if ( ! foundit ) {
+        // Create a new one
+        ProtocolItf *tmp = nullptr;
+        switch (ptyp)
+        {
+        case REGISTRATION:
+            ESP_LOGI(FNAME, "New MasterReg");
+            tmp = new CANMasterReg(send_port, _sm);
+            break;
+        case JUMBO_CMD:
+            ESP_LOGI(FNAME, "New JumboCmdHost");
+            tmp = new JumboCmdHost(send_port, _sm);
+            break;
+        default:
+            break;
+        }
+        ESP_LOGI(FNAME, "On send port %d", send_port);
 
-    // Create a new one
-    switch (ptyp)
-    {
-    case REGISTRATION:
-        ESP_LOGI(FNAME, "New MasterReg");
-        _protocol = new CANMasterReg(send_port);
-        break;
-    case JUMBO_CMD:
-        ESP_LOGI(FNAME, "New JumboCmdHost sp%d", send_port);
-        _protocol = new JumboCmdHost(send_port);
-        break;
-    default:
-        break;
+        if ( tmp ) _all_p.push_back(tmp);
+        return tmp;
     }
-    return _protocol;
+    return nullptr;
 }
 
 ProtocolItf* DataLink::getProtocol(ProtocolType ptyp) const
 {
     if ( ptyp == NO_ONE ) {
-        return _protocol;
+        if ( ! _all_p.empty() ) {
+            return _all_p.front();
+        }
     }
-    else if ( _protocol->getProtocolId() == ptyp ) {
-        return _protocol;
+    else {
+        for (ProtocolItf *it : _all_p) {
+            if ( (*it).getProtocolId() == ptyp ) {
+                return it;
+            }
+        }
     }
     return nullptr;
 }
 
 bool DataLink::hasProtocol(ProtocolType ptyp) const
 {
-    return _protocol->getProtocolId() == ptyp;
-}
-
-ProtocolItf* DataLink::removeProtocol()
-{
-    ProtocolItf *tmp = _protocol;
-    _protocol = 0;
-    return tmp;
+    for (ProtocolItf *it : _all_p) {
+        if ( (*it).getProtocolId() == ptyp ) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void DataLink::process(const char *packet, int len)
 {
-    if (_protocol == nullptr)
+    if ( _all_p.empty() ) {
         return;
+    }
 
     gen_state_t state;
 
-    // Special use, "no data" timeout, might be expected and normal
-    // We just reset the protocol state machine then
     if (packet == nullptr)
     {
-        _protocol->timeOut();
+        // Special use, "no data" timeout, might be expected and normal
+        // We just reset the protocol state machine then
+        _sm.reset();
         _binary_mode = false;
         return;
     }
-    else
+    else if ( _all_p.size() == 1 )
     {
+        ESP_LOGI(FNAME, "process %dchar: %s", len, packet);
+        // most likely case, only one protocol to parse
         // process every frame byte through state machine
-        // ESP_LOGI(FNAME,"Port %d: RX len: %d bytes", port, len );
-        // ESP_LOG_BUFFER_HEXDUMP(FNAME,packet, len, ESP_LOG_INFO);
-        for (int i = 0; i < len; i++)
-        {
-            state = _protocol->nextByte(packet[i]);
-            if ( state == CHECK_OK ) {
-                ; // route further
-            } else if (state == GO_BINARY) {
-                _binary_mode = true;
+        for (int i = 0; i < len; i++) {
+            if ( _sm.push(packet[i]) ) {
+                state = _all_p.front()->nextByte(packet[i]);
+                ESP_LOGD(FNAME, "crc := %d", _sm._crc);
+            } else {
+                _sm.reset();
             }
         }
     }
+    else 
+    {
+        // multiple protocols registered
+        // todo
+
+        // process every frame byte through state machine
+        // for (int i = 0; i < len; i++)
+        // {
+        //     // if ( buf.size() < ProtocolItf::MAX_LEN ) {
+        //     //     buf += packet[i];
+        //     // }
+        //     _sm.push(c);
+        //     for (ProtocolItf *it : _all_p)
+        //     {
+        //         ProtocolItf *prtcl = _gotit ? _gotit : it;
+        //         state = prtcl->nextByte(packet[i]);
+        //         switch(state) {
+        //         case START_TOKEN:
+        //         // case START_TOKEN:
+        //             buf.clear();
+        //             break;
+        //         case PAYLOAD:
+        //             _gotit = it;
+        //             break;
+        //         case CHECK_OK:
+        //             ; // route further
+        //             break;
+        //         case GO_BINARY:
+        //             _binary_mode = true;
+        //             break;
+        //         default:
+        //             break;
+        //         }
+                
+        //         if ( _gotit ) {
+        //             break;
+        //         }
+        //     }
+        // }
+    }
 }
 
+void DataLink::dumpProto()
+{
+    for (ProtocolItf *it : _all_p)
+    {
+        ESP_LOGI(FNAME, "  lp%d: did%d\tpid%d\tsp%d", getPort(), (*it).getDeviceId(), (*it).getProtocolId(), (*it).getSendPort());
+    }
+}
 

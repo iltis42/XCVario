@@ -36,7 +36,7 @@ class Message;
 namespace DEV {
 
 Message* acqMessage(DeviceId target, int port);
-void relMessage(Message *msg);
+inline void relMessage(Message *msg);
 
 bool Send(Message* msg);
 

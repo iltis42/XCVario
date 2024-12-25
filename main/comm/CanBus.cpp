@@ -149,6 +149,7 @@ void canRxTask(void *arg)
     can->driverUninstall();
 
     terminate_receiver = false; // handshake
+    rxTask = nullptr;
     vTaskDelete(NULL);
 
     // // Can bus receive

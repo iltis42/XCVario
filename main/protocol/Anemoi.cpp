@@ -6,79 +6,73 @@ static const char *ANEMOI_IDS = "ADMSWadw";
 static const int ANEMOI_LEN[] = {9, 14, 5, 5, 10, 9, 14, 10};
 
 static uint8_t crc8ccitt(const void * data, size_t size);
-
+static void anemoiCRC(int &crc, const char c);
 
 gen_state_t Anemoi::nextByte(const char c)
 {
     char *ptr;
+    int pos = _sm._frame.size() - 1; // c already in the buffer
 
-    switch(_state) {
+    switch(_sm._state) {
     case START_TOKEN:
     case CHECK_OK:
-    case CHECK_FAILED:
-    case RESTART:
         if ( c == '$' ) { //0x24
-            _state = HEADER;
-            reset();
-            push(c);
+            _sm._state = HEADER;
+            _sm.reset();
         }
-        // ESP_LOGI(FNAME, "ANEMOI START_TOKEN");
+        ESP_LOGD(FNAME, "ANEMOI START_TOKEN");
         break;
     case HEADER:
         ptr = strchr(ANEMOI_IDS, c);
         if ( ptr != nullptr ) {
-            _len = ANEMOI_LEN[int(ptr-ANEMOI_IDS)];
-            _state = PAYLOAD;
-            push(c);
-            //ESP_LOGI(FNAME, "ANEMOI HEADER %c/%d", c, _len);
+            expected_len = ANEMOI_LEN[int(ptr-ANEMOI_IDS)];
+            _sm._state = PAYLOAD;
+            ESP_LOGD(FNAME, "ANEMOI HEADER %c/%d", c, expected_len);
         }
         else {
-            _state = START_TOKEN;
+            _sm._state = START_TOKEN;
         }
         break;
     case PAYLOAD:
-        push(c);
-        if ( _pos >= _len ) {
+        if ( pos >= expected_len ) {
             // only start token plus payload
-            _state = STOP_TOKEN;
+            _sm._state = STOP_TOKEN;
         }
-        //ESP_LOGI(FNAME, "ANEMOI PAYLOAD");
+        ESP_LOGD(FNAME, "ANEMOI PAYLOAD");
         break;
     case STOP_TOKEN:
-        push(c);
         if( c == 0x0a ) {
-            _state = COMPLETE;
-            //ESP_LOGI(FNAME, "ANEMOI STOP_TOKEN %x", c);
+            _sm._state = COMPLETE;
+            ESP_LOGD(FNAME, "ANEMOI STOP_TOKEN %x", c);
         }
         else {
-            _state = RESTART;
+            _sm._state = START_TOKEN;
         }
         break;
     case COMPLETE:
-        push(c);
-        _state = CHECK_FAILED;
-        //ESP_LOGI(FNAME, "ANEMOI COMPLETE %x", _crc);
-        if ( _crc == 0 ) {
-            _state = START_TOKEN; // nor routing nor parsing wanted
-            ptr = strchr("SWw", _framebuffer[1]);
-            if ( ptr != nullptr ) {
-                // Only process status and wind
-                // ESP_LOGI(FNAME, "Port S2 anemoi %c", _framebuffer[1]);
-                switch (ptr-_framebuffer) {
-                case 0:
-                    parseStatus();
-                    break;
-                default:
-                    parseWind();
-                    break;
-                }
+        _sm._state = START_TOKEN;
+        ESP_LOGD(FNAME, "ANEMOI COMPLETE %x", _sm._crc);
+        if ( _sm._crc == 0 ) {
+            _sm._state = START_TOKEN; // no routing nor parsing wanted
+
+            // Only process status and wind
+            // ESP_LOGI(FNAME, "Port S2 anemoi %c", _framebuffer[1]);
+            switch (_sm._frame.at(1)) {
+            case 'S':
+                parseStatus();
+                break;
+            case 'W':
+            case 'w':
+            default:
+                parseWind();
+                break;
             }
         }
         break;
     default:
         break;
     }
-    return _state;
+    return _sm._state;
 }
 
 
@@ -184,7 +178,7 @@ uint8_t crc8ccitt(const void * data, size_t size) {
     return val;
 }
 
-void Anemoi::incrCRC(const char c)
+void anemoiCRC(int &crc, const char c)
 {
-    _crc = CRC_TABLE[_crc ^ c];
+    crc = CRC_TABLE[crc ^ c];
 }

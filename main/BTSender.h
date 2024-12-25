@@ -1,7 +1,6 @@
 #ifndef __BTSENDER_H__
 #define __BTSENDER_H__
 
-#include <esp_log.h>
 #include "RingBufCPP.h"
 #include <string>
 

@@ -11,12 +11,15 @@
 #include "InterfaceCtrl.h"
 #include "comm/Messages.h"
 #include "comm/CanBus.h"
+#include "SerialLine.h"
 #include "protocol/ProtocolItf.h"
+
+#include "sensor.h"
+#include "logdef.h"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <freertos/queue.h>
-#include <logdef.h>
 
 #include <deque>
 
@@ -184,7 +187,7 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
 {
     // On first device a send task needs to be created
     if ( ! SendTask ) {
-        xTaskCreate(TransmitTask, "CanTx", 4096, ItfSendQueue, 10, &SendTask);
+        xTaskCreate(TransmitTask, "genTx", 4096, ItfSendQueue, 10, &SendTask);
     }
 
     InterfaceCtrl *itf;
@@ -198,18 +201,20 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
         return nullptr;
     }
 
+    bool is_new = false;
     Device *dev = getDevice(did);
     if ( ! dev ) {
         dev = new Device(did);
+        is_new = true;
     }
+    // Retrieve, or create a new data link
     DataLink *dl = itf->getDataLink(listen_port);
-    dev->_dlink.insert(dl);
-    ProtocolItf* ret = dl->setProtocol(proto, send_port);
+    dev->_dlink.insert(dl); // Add, if new
+    ProtocolItf* ret = dl->addProtocol(proto, send_port); // Add, id not yet there
     dev->_itf = itf;
 
-    dumpMap();
-    _device_map[did] = dev; // and add
-    ESP_LOGI(FNAME, "Add device %d", did);
+    if ( is_new ) _device_map[did] = dev; // and add, in case this dev is new
+    ESP_LOGI(FNAME, "After add device %d.", did);
     dumpMap();
 
     return ret;
@@ -224,9 +229,9 @@ Device *DeviceManager::getDevice(DeviceId did)
     return nullptr;
 }
 
-ProtocolItf *DeviceManager::getProtocol(DeviceId dev, ProtocolType proto)
+ProtocolItf *DeviceManager::getProtocol(DeviceId did, ProtocolType proto)
 {
-    Device *d = getDevice(dev);
+    Device *d = getDevice(did);
     if ( d ) {
         return d->getProtocol(proto);
     }
@@ -293,8 +298,7 @@ void DeviceManager::dumpMap() const
         Device* d = it.second;
         ESP_LOGI(FNAME, "%d: %p (did%d/iid%s/dl*%d)", it.first, d, d->_id, d->_itf->getStringId(), d->_dlink.size());
         for ( auto &l : d->_dlink ) {
-            ProtocolItf* p = l->getProtocol(NO_ONE);
-            ESP_LOGI(FNAME, "  l%d: did%d,pid%d,sp%d", l->getPort(), p->getDeviceId(), p->getProtocolId(), p->getSendPort());
+            l->dumpProto();
         }
     }
 }
@@ -302,6 +306,7 @@ void DeviceManager::dumpMap() const
 // Resolve the existance of a device
 Device::~Device()
 {
+    ESP_LOGI(FNAME, "Delete device %d.", _id);
     // Detach data links from interface
     for (DataLink* dl : _dlink) {
         _itf->DeleteDataLink(dl->getPort());

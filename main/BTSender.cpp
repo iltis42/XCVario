@@ -22,7 +22,7 @@
 
 static TaskHandle_t pid = nullptr;
 
-static DataLink *dlb;
+static DataLinkOld *dlb;
 
 bool BTSender::selfTest(){
 	ESP_LOGI(FNAME,"SerialBT::selfTest");
@@ -95,7 +95,7 @@ void BTSender::begin(){
 	ESP_LOGI(FNAME,"BTSender::begin()" );
 	if( wireless == WL_BLUETOOTH ) {
 		ESP_LOGI(FNAME,"BT on, create BT master object" );
-		dlb = new DataLink();
+		dlb = new DataLinkOld();
 		SerialBT = new BluetoothSerial();
 		SerialBT->begin( SetupCommon::getID() );
 		xTaskCreatePinnedToCore(&btTask, "btTask", 4096, NULL, 12, &pid, 0);  // stay below compass task

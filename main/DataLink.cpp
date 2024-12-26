@@ -38,15 +38,15 @@ const uint8_t KRT2_STX_START = 0x02;
 const uint8_t BECKER_START_FRAME = 0xA5;
 const uint8_t BECKER_PROTID      = 0x14;
 
-DataLinkNT dl_S1(Router::routeS1);
-DataLinkNT dl_S2(Router::routeS2);
+DataLinkOld dl_S1;
+DataLinkOld dl_S2;
 
 void enable_anemoi(){
 }
 void disable_anemoi() {
 }
 
-DataLink::DataLink(){
+DataLinkOld::DataLinkOld(){
 	state = GET_NMEA_UBX_SYNC;
 	pos = 0;
 	chkA = 0; // checksum variables UBX
@@ -58,12 +58,7 @@ DataLink::DataLink(){
 	krt2_len=0;
 }
 
-DataLinkNT::DataLinkNT(router_t route) :
-	_router(route)
-{
-}
-
-void DataLink::process( const char *packet, int len, int port ) {
+void DataLinkOld::process( const char *packet, int len, int port ) {
 	// process every frame byte through state machine
 	// ESP_LOGI(FNAME,"Port %d: RX len: %d bytes", port, len );
 	// ESP_LOG_BUFFER_HEXDUMP(FNAME,packet, len, ESP_LOG_INFO);
@@ -79,64 +74,26 @@ void DataLink::process( const char *packet, int len, int port ) {
 	}
 }
 
-void DataLinkNT::process(const char *packet, const int len)
-{
-	if ( _protocol == nullptr ) return;
 
-	for (int i = 0; i < len; i++) {
-		if ( CHECK_OK == _protocol->nextByte(packet[i]) ) {
-			SString tx;
-			tx.set( _protocol->getBuffer(), _protocol->getLength() );
-			(*_router)(tx);
-			Protocols::parseNMEA( tx.c_str() ); // should to be triggered through another queue
-		}
-	}
-}
-
-// protocol factory
-void DataLinkNT::setProtocol(protocol_nt ptyp)
-{
-	if ( _protocol && _protocol->getProtocolId() == ptyp ) return;
-
-	// Remove the old one
-	if ( _protocol ) {
-		ProtocolItf *tmp = _protocol;
-		_protocol = nullptr;
-		delete tmp;
-	}
-
-	// Create a new one
-	switch (ptyp) {
-		//case NMEA:
-		//break;
-		case ANEMOI:
-			_protocol = new Anemoi();
-			ESP_LOGI(FNAME, "Created Anemoi protocol.");
-			break;
-		default:
-			break;
-	}
-}
-
-void DataLink::addChk(const char c) {
+void DataLinkOld::addChk(const char c) {
 	chkA += c;
 	chkB += chkA;
 }
 
-void DataLink::routeSerialData( const char *data, uint32_t len, int port, bool nmea ){
+void DataLinkOld::routeSerialData( const char *data, uint32_t len, int port, bool nmea ){
 	SString tx;
 	tx.set( data, len );
 	// ESP_LOGI(FNAME, "Port S%1d: len: %d", port, len );
 	// ESP_LOG_BUFFER_HEXDUMP(FNAME, tx.c_str(), tx.length(), ESP_LOG_INFO);
-	// if( port == 1 ){      // S1
-	// 	Router::forwardMsg( tx, s1_rx_q, nmea );
-	// 	Router::routeS1();
-	// }
-	// else if( port == 2 ){  // S2
-	// 	Router::forwardMsg( tx, s2_rx_q, nmea  );
-//	 	Router::routeS2();
-	// }
-	/*else*/ if( port == 3 ){  // CAN
+	if( port == 1 ){      // S1
+		Router::forwardMsg( tx, s1_rx_q, nmea );
+		Router::routeS1();
+	}
+	else if( port == 2 ){  // S2
+		Router::forwardMsg( tx, s2_rx_q, nmea  );
+		Router::routeS2();
+	}
+	else if( port == 3 ){  // CAN
 		Router::forwardMsg( tx, can_rx_q, nmea );
 		Router::routeCAN();
 		DM.monitorString( MON_CAN, DIR_RX, tx.c_str(), len);
@@ -170,13 +127,13 @@ void DataLink::routeSerialData( const char *data, uint32_t len, int port, bool n
 }
 
 
-void DataLink::processNMEA( char * buffer, int len, int port ){
+void DataLinkOld::processNMEA( char * buffer, int len, int port ){
 	// ESP_LOGI(FNAME, "Port S%1d: processNMEA, frame: %s", port, buffer );
 	Flarm::parsePFLAX( buffer, port );  // datalink relevant as this changes protocol to flarm bincom
 	routeSerialData(buffer, len, port, true );
 }
 
-void DataLink::parse_NMEA_UBX( char c, int port ){
+void DataLinkOld::parse_NMEA_UBX( char c, int port ){
 	// ESP_LOGI(FNAME, "Port S%1d: char=%c %02X pos=%d  state=%d", port, c, c, pos, state );
 	switch(state) {
 	case GET_NMEA_UBX_SYNC:

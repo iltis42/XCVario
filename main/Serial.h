@@ -46,7 +46,7 @@ typedef struct xcv_serial {
 	TaskHandle_t pid;
 	xcv_serial *cfg2; // configuration of other Uart
 	bool route_disable;
-	DataLinkNT* dl;
+	DataLinkOld* dl;
 	int port; // info is in dl, tb deleted
 } xcv_serial_t;
 

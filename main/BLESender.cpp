@@ -28,7 +28,7 @@ BLECharacteristic * pTxCharacteristic;
 bool deviceConnected = false;
 
 static TaskHandle_t pid = nullptr;
-static DataLink *dlb;
+static DataLinkOld *dlb;
 static int tick=0;
 static uint16_t peer_mtu;
 static int congestion=0;
@@ -134,7 +134,7 @@ void BLESender::begin(){
 	// esp_log_level_set("GATTS", ESP_LOG_DEBUG);
 	// esp_log_level_set("BT_BTM", ESP_LOG_DEBUG);
 
-	dlb = new DataLink();
+	dlb = new DataLinkOld();
 	// Create the BLE Device
 	std::string ble_id( SetupCommon::getID() );
 	ble_id += std::string("-LE");

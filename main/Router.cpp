@@ -29,8 +29,8 @@ RingBufCPP<SString> bt_rx_q;
 RingBufCPP<SString> s1_tx_q;
 RingBufCPP<SString> s2_tx_q;
 
-// RingBufCPP<SString> s1_rx_q;
-// RingBufCPP<SString> s2_rx_q;
+RingBufCPP<SString> s1_rx_q;
+RingBufCPP<SString> s2_rx_q;
 
 RingBufCPP<SString> xcv_tx_q;
 
@@ -155,8 +155,9 @@ void Router::routeXCV(){
 }
 
 // Route messages from serial interface S1
-void Router::routeS1(SString& s1){
-	// while( pullMsg( s1_rx_q, s1) ){
+void Router::routeS1(){
+	SString s1;
+	 while( pullMsg( s1_rx_q, s1) ){
 		// ESP_LOGI(FNAME,"S1 RX %d bytes: %s", s1.length(), s1.c_str() );
 		// ESP_LOGI(FNAME,"routeS1 RX %d bytes, Q:%d  B:%d", s1.length(), s1_rx_q.numElements(), Flarm::bincom );
 		// ESP_LOG_BUFFER_HEXDUMP(FNAME,s1.c_str(),s1.length(), ESP_LOG_INFO);
@@ -189,12 +190,13 @@ void Router::routeS1(SString& s1){
 			}
 		}
 	// 	Protocols::parseNMEA( s1.c_str() );
-	// }
+	}
 }
 
 // Route messages from serial interface S2
-void Router::routeS2(SString &s2){
-	// while( pullMsg( s2_rx_q, s2) ){
+void Router::routeS2(){
+	SString s2;
+	while( pullMsg( s2_rx_q, s2) ){
 		// ESP_LOGI(FNAME,"S2 RX len: %d bytes, Q:%d BC:%d", s2.length(), bt_tx_q.isFull(), Flarm::bincom  );
 		// ESP_LOG_BUFFER_HEXDUMP(FNAME,s2.c_str(),s2.length(), ESP_LOG_INFO);
 
@@ -219,7 +221,7 @@ void Router::routeS2(SString &s2){
 			}
 		}
 	// 	Protocols::parseNMEA( s2.c_str() );
-	// }
+	}
 }
 
 // route messages from WLAN
@@ -292,7 +294,7 @@ void Router::routeBT(){
 		}
 		if( rt_wl_can.get() && can_speed.get() ){
 			// ESP_LOGI(FNAME,"Send to CAN bus, BT received %d bytes", bt.length() );
-			CAN->sendNMEA( bt );
+			// CAN->sendNMEA( bt );
 		}
 		Protocols::parseNMEA( bt.c_str() );
 		bt.clear();

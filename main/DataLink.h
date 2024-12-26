@@ -1,6 +1,6 @@
 #pragma once
 
-#include "protocol/ProtocolItf.h"
+// #include "protocol/ProtocolItf.h"
 #include "types.h"
 
 class SString;
@@ -42,9 +42,9 @@ enum state_t {
 };
 
 
-class DataLink {
+class DataLinkOld {
 public:
-	DataLink();
+	DataLinkOld();
 	void process( const char *packet, int len, int port );
 
 private:
@@ -64,26 +64,6 @@ private:
 	unsigned char krt2_len;
 };
 
-/**
- *
- * DataLink
- * This layer handles all inbound unspecific data and precesses it byte per byte to a configured list of 
- * protocol parser for this port.
- *
- */
-class DataLinkNT {
-public:
-	DataLinkNT(router_t route);
-	void setProtocol(protocol_nt ptyp);
-	void process(const char *packet, const int len);
 
-
-private:
-	// could be also a vector of protocols
-	ProtocolItf* _protocol = nullptr;
-	// the port's proper queue for the traffic routing
-	router_t _router;
-};
-
-extern DataLinkNT dl_S1;
-extern DataLinkNT dl_S2;
+extern DataLinkOld dl_S1;
+extern DataLinkOld dl_S2;

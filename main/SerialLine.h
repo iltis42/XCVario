@@ -3,6 +3,7 @@
 
 #include "driver/uart.h"
 #include "driver/gpio.h"
+#include "comm/InterfaceCtrl.h"
 
 typedef enum _e_baud { BAUD_OFF, BAUD_4800, BAUD_9600, BAUD_19200, BAUD_57600, BAUD_115200 } e_baud;
 typedef enum _e_polarity { RS232_STANDARD, RS232_TTL } e_polarity;
@@ -18,9 +19,10 @@ typedef struct _s_serial_cfg {
 	e_tx        tx:1;
 } t_serial_cfg;
 
-class SerialManager {
+class SerialLine: public InterfaceCtrl {
 public:
-    SerialManager(uart_port_t uart);                    // [0 = console], 1 = S1, 2 = S2
+    SerialLine(uart_port_t uart);                    // [0 = console], 1 = S1, 2 = S2
+    virtual ~SerialLine() {};
     void loadProfile(e_profile profile);                // load defaults according to profile given
     void configure();                                   // SM_FLARM, SM_RADIO, etc
     void setBaud(e_baud baud, bool coldstart=false);	// BAUD_9600, etc
@@ -29,6 +31,8 @@ public:
     void setSlaveRole( e_tx tx );                       // Slave role or TX disable e.g. readonly FLARM CLIENT, e.g. we are parallel with another transmitting device with Master Role
     inline void restart() { stop(); start(); };         // recycle RS232 interface
     void uartBegin();
+    virtual void ConfigureIntf(int cfg);
+    virtual bool Send(const char *msg, int len, int port=0);
 
 private:
     void getGPIOPins();

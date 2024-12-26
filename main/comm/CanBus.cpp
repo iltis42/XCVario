@@ -11,7 +11,7 @@
 #include <freertos/task.h>
 
 #include "driver/gpio.h"
-#include "logdefnone.h"
+#include "logdef.h"
 #include "esp_err.h"
 
 #include <cstring>
@@ -138,7 +138,6 @@ void canRxTask(void *arg)
 
         if ((tick++ % 100) == 0)
         {
-            ESP_LOGI(FNAME, "Free Heap: %d bytes", heap_caps_get_free_size(MALLOC_CAP_8BIT));
             if (uxTaskGetStackHighWaterMark(rxTask) < 128)
             {
                 ESP_LOGW(FNAME, "Warning canbus task stack low: %d bytes", uxTaskGetStackHighWaterMark(rxTask));

@@ -90,19 +90,20 @@ void TransmitTask(void *arg)
                 }
                 if ( wait ) {
                     // put this straight onto the later queue
-                    // ESP_LOGI(FNAME, "straight wait");
+                    ESP_LOGI(FNAME, "straight wait");
                     later.push_back(msg);
                     continue;
                 }
             }
             else {
                 // Regular case
-                // ESP_LOGI(FNAME, "regular send");
+                ESP_LOGI(FNAME, "regular send");
                 pls_retry = tt_snd(msg);
                 if ( pls_retry == 0 ) {
+                    ESP_LOGI(FNAME, "regular done");
                     DEV::relMessage(msg);
                 } else {
-                    // ESP_LOGI(FNAME, "retry pushed");
+                    ESP_LOGI(FNAME, "retry pushed");
                     later.push_back(msg);
                 }
             }
@@ -111,8 +112,10 @@ void TransmitTask(void *arg)
             // Time out hit
             while ( !later.empty() ) {
                 msg = later.front();
+                ESP_LOGI(FNAME, "postponed send");
                 pls_retry = tt_snd(msg);
                 if ( pls_retry == 0 ) {
+                    ESP_LOGI(FNAME, "postponed done");
                     DEV::relMessage(msg);
                     later.pop_front();
                 }
@@ -206,12 +209,12 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
         }
         itf = CAN;
     }
-    // else if ( iid == S1_RS232) {
-    //     if ( S1 && ! S1->loadProfile() ) {
-    //         CAN->begin();
-    //     }
-    //     itf = CAN;
-    // }
+    else if ( iid == S1_RS232) {
+        if ( S1 ) { // ! S1->loadProfile(SM_FLARM) ) {
+            S1->loadProfile(SM_FLARM);
+        }
+        itf = S1;
+    }
     else {
         itf = &dummy_itf;
     }

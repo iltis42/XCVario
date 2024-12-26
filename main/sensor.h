@@ -15,7 +15,6 @@
 #include "StraightWind.h"
 #include "DataMonitor.h"
 #include "AdaptUGC.h"
-#include "comm/CanBus.h"
 #include "CenterAid.h"
 #include "vector_3d.h"
 #include "BMPVario.h"
@@ -49,9 +48,13 @@ typedef struct global_flags{
 	bool gear_warn_external :1;
 } t_global_flags;
 
+class CANbus;
+class SerialLine;
+
 extern t_global_flags gflags;
 extern BMPVario bmpVario;
 extern CANbus* CAN;
+extern SerialLine *S1;
 extern StraightWind theWind;
 extern xSemaphoreHandle xMutex;
 extern int active_screen;

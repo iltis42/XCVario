@@ -31,6 +31,15 @@ MessagePool MP;
 // static vars
 static TaskHandle_t SendTask = nullptr;
 
+// a dummy interface
+class DmyItf final : public InterfaceCtrl
+{
+public:
+    const char* getStringId() const override { return "DMY"; }
+    void ConfigureIntf(int cfg) override {}
+    int Send(const char *msg, int len, int port=0) { return 0; }
+};
+static DmyItf dummy_itf;
 
 static int tt_snd(Message *msg)
 {
@@ -197,8 +206,14 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
         }
         itf = CAN;
     }
+    // else if ( iid == S1_RS232) {
+    //     if ( S1 && ! S1->loadProfile() ) {
+    //         CAN->begin();
+    //     }
+    //     itf = CAN;
+    // }
     else {
-        return nullptr;
+        itf = &dummy_itf;
     }
 
     bool is_new = false;
@@ -253,8 +268,6 @@ void DeviceManager::removeDevice(DeviceId did)
         if ( itf->getNrDLinks() == 0 ) {
             if ( itf->getId() == CAN_BUS ) {
                 CAN->stop();
-                delete CAN;
-                CAN = nullptr;
             }
         }
     }

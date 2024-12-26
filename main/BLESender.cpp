@@ -33,6 +33,8 @@ static int tick=0;
 static uint16_t peer_mtu;
 static int congestion=0;
 
+#define MAX_CONGESTION 300
+
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
 
@@ -70,12 +72,12 @@ class MyRxCallbacks: public BLECharacteristicCallbacks {
 class MyTxCallbacks: public BLECharacteristicCallbacks {
 	void onStatus(BLECharacteristic* pCharacteristic, Status s, uint32_t code) override {
 		// ESP_LOGI(FNAME, "onStatus Status %d code: %d", s, code );
-		if (s == 4 && code == -1) {
+		if (s == BLECharacteristicCallbacks::ERROR_GATT && code == -1) {  // upon congestion, when using notify, the status logs ERROR_GATT
 			// ESP_LOGI(FNAME, "Congested, pacing: %d", congestion );
-			if( congestion < 300 )
+			if( congestion < MAX_CONGESTION )
 				congestion++;
 		}
-		if (s == 1 && code == 0) {
+		if (s == BLECharacteristicCallbacks::SUCCESS_NOTIFY && code == 0) {
 			// ESP_LOGI(FNAME, "Send OK, pacing: %d", congestion );
 			if( congestion )
 				congestion--;
@@ -104,25 +106,23 @@ void BLESender::btTask(void *pvParameters){
 			ESP_LOGW(FNAME,"Warning BT task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid ) );
 		vTaskDelay( 100/portTICK_PERIOD_MS );
 		tick++;
-		if( !(tick%300) ){  // keep somehow visible, a true disconnect may not take place
-			pServer->getAdvertising()->start();
-		}
 	}
 }
 
 void BLESender::progress(){
 	char buf[256];
+	int max_packet_size = std::min(peer_mtu - 3, 250);
 	if (deviceConnected) {
-		int len = Router::pullBlock( bt_tx_q, buf, 250 );
+		int len = Router::pullBlock( bt_tx_q, buf, max_packet_size );
 		if( len ){
 			// ESP_LOGI(FNAME,"BLE len=%d P:%d, %s",len, congestion, buf);
-			int sent=min( len, 250 );
+			int sent=min( len, max_packet_size );
 			pTxCharacteristic->setValue((uint8_t*)buf, (size_t)sent);
 			pTxCharacteristic->notify(); // No return value
 			// ESP_LOGI(FNAME,"<BT LE TX %d bytes (pending: %d)", sent, indicationPending );
 			// ESP_LOG_BUFFER_HEXDUMP(FNAME,&buf[pos],len, ESP_LOG_INFO);
 			DM.monitorString( MON_BLUETOOTH, DIR_TX, buf, len );
-			delay( congestion );
+			delay( congestion );  // slow down sender upon congestion
 		}
 	}
 }

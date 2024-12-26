@@ -250,3 +250,27 @@ void HardwareSerial::setTxInvert(bool invert)
 {
 	uartSetTxInvert(_uart, invert);
 }
+
+void HardwareSerial::attachRx(gpio_num_t pin, bool invert)
+{
+	uartAttachRx(_uart, pin, invert);
+}
+
+void HardwareSerial::attachTx(gpio_num_t pin, bool invert)
+{
+	uartAttachTx(_uart, pin, invert);
+}
+
+void HardwareSerial::detachRx(gpio_num_t pin)
+{
+	uartDetachRx(_uart, pin );
+}
+
+void HardwareSerial::detachTx(gpio_num_t pin)
+{
+	uartDetachTx(_uart, pin );
+}
+
+
+
+

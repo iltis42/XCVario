@@ -142,6 +142,11 @@ public:
     void setRxInvert(bool);
     void setTxInvert(bool);
 
+    void attachRx(gpio_num_t pin, bool invert);
+    void attachTx(gpio_num_t pin, bool invert);
+    void detachRx(gpio_num_t pin);
+    void detachTx(gpio_num_t pin);
+
     // enable uart RX interrupt
     void enableRxInterrupt();
 

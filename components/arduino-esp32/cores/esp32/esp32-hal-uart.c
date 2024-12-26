@@ -186,7 +186,7 @@ void uartDetachRx(uart_t* uart, uint8_t rxPin)
 		return;
 	}
 	pinMatrixInDetach(rxPin, false, false);
-	uartDisableInterrupt(uart);
+	// uartDisableInterrupt(uart);
 }
 
 void uartDetachTx(uart_t* uart, uint8_t txPin)
@@ -283,7 +283,7 @@ uart_t* uartBegin(uint8_t uart_nr, uint32_t baudrate, uint32_t config, int8_t rx
 	return uart;
 }
 
-void uartEnd(uart_t* uart, uint8_t txPin, uint8_t rxPin)
+void uartEnd(uart_t* uart, int8_t txPin, int8_t rxPin)
 {
 	if(uart == NULL) {
 		return;
@@ -299,9 +299,12 @@ void uartEnd(uart_t* uart, uint8_t txPin, uint8_t rxPin)
 	uart->dev->conf0.val = 0;
 
 	UART_MUTEX_UNLOCK();
-
-	uartDetachRx(uart, rxPin);
-	uartDetachTx(uart, txPin);
+/*
+	if( rxPin != -1 )
+		uartDetachRx(uart, rxPin);
+	if( txPin != -1 )
+		uartDetachTx(uart, txPin);
+		*/
 }
 
 size_t uartResizeRxBuffer(uart_t * uart, size_t new_size) {

@@ -1330,9 +1330,13 @@ void system_startup(void *args){
 		logged_tests += "CAN Interface: ";
 		DeviceManager* dm = DeviceManager::Instance();
 		if( dm->addDevice(DeviceId::MASTER_DEV, ProtocolType::REGISTRATION, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS) ) {
-			// series 2023 has fixed slope control, prio slope bit for AHRS temperature control
+			// series 2023 has fixed slope control, prior slope bit for AHRS temperature control
 			resultCAN = "OK";
 			ESP_LOGE(FNAME,"CAN Bus selftest (%sRS): OK", CAN->hasSlopeSupport() ? "" : "no ");
+			// dm->removeDevice(DeviceId::MASTER_DEV);
+			// ESP_LOGI(FNAME,"Removetest");
+			// delay(1000);
+			// dm->addDevice(DeviceId::MASTER_DEV, ProtocolType::REGISTRATION, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
 			logged_tests += "OK\n";
 			if ( CAN->hasSlopeSupport() ) {
 				if( hardwareRevision.get() < XCVARIO_22)

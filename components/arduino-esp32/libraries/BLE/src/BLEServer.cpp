@@ -411,7 +411,7 @@ void BLEServer::addPeerDevice(void* peer, bool _client, uint16_t conn_id) {
 	conn_status_t status = {
 		.peer_device = peer,
 		.connected = true,
-		.mtu = 23
+		.mtu = 255 
 	};
 
 	m_connectedServersMap.insert(std::pair<uint16_t, conn_status_t>(conn_id, status));	

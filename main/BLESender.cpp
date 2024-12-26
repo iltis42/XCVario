@@ -113,21 +113,16 @@ void BLESender::btTask(void *pvParameters){
 void BLESender::progress(){
 	char buf[256];
 	if (deviceConnected) {
-		int len = Router::pullBlock( bt_tx_q, buf, 20 );
+		int len = Router::pullBlock( bt_tx_q, buf, 250 );
 		if( len ){
 			// ESP_LOGI(FNAME,"BLE len=%d P:%d, %s",len, congestion, buf);
-			int pos=0;
-			while( len > 0 ){
-				int sent=min( len, 20 );
-				pTxCharacteristic->setValue((uint8_t*)&buf[pos], (size_t)sent);
-				pTxCharacteristic->notify(); // No return value
-				// ESP_LOGI(FNAME,"<BT LE TX %d bytes (pending: %d)", sent, indicationPending );
-				// ESP_LOG_BUFFER_HEXDUMP(FNAME,&buf[pos],len, ESP_LOG_INFO);
-				DM.monitorString( MON_BLUETOOTH, DIR_TX, &buf[pos], sent );
-				pos+=sent;
-				len-=sent;
-				delay( congestion );
-			}
+			int sent=min( len, 250 );
+			pTxCharacteristic->setValue((uint8_t*)buf, (size_t)sent);
+			pTxCharacteristic->notify(); // No return value
+			// ESP_LOGI(FNAME,"<BT LE TX %d bytes (pending: %d)", sent, indicationPending );
+			// ESP_LOG_BUFFER_HEXDUMP(FNAME,&buf[pos],len, ESP_LOG_INFO);
+			DM.monitorString( MON_BLUETOOTH, DIR_TX, buf, len );
+			delay( congestion );
 		}
 	}
 }

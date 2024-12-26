@@ -86,7 +86,7 @@ private:
 	std::map<std::string, BLERemoteService*> m_servicesMap;
 	std::map<BLERemoteService*, uint16_t> m_servicesMapByInstID;
 	void clearServices();   // Clear any existing services.
-	uint16_t m_mtu = 23;
+	uint16_t m_mtu = 255;
 }; // class BLEDevice
 
 

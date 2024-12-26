@@ -44,7 +44,7 @@ BLEClient* BLEDevice::m_pClient = nullptr;
 bool       initialized          = false;  
 esp_ble_sec_act_t BLEDevice::m_securityLevel = (esp_ble_sec_act_t)0;
 BLESecurityCallbacks* BLEDevice::m_securityCallbacks = nullptr;
-uint16_t   BLEDevice::m_localMTU = 23;  // not sure if this variable is useful
+uint16_t   BLEDevice::m_localMTU = 255;  // not sure if this variable is useful
 BLEAdvertising* BLEDevice::m_bleAdvertising = nullptr;
 uint16_t BLEDevice::m_appId = 0;
 std::map<uint16_t, conn_status_t> BLEDevice::m_connectedClientsMap;
@@ -623,7 +623,7 @@ void BLEDevice::addPeerDevice(void* peer, bool _client, uint16_t conn_id) {
 	conn_status_t status = {
 		.peer_device = peer,
 		.connected = true,
-		.mtu = 23
+		.mtu = 255 
 	};
 
 	m_connectedClientsMap.insert(std::pair<uint16_t, conn_status_t>(conn_id, status));

@@ -15,7 +15,8 @@ typedef enum
     JUMBO_DEV,
     ANEMOI_DEV,
     XCVARIO_DEV,
-    MASTER_DEV  // CAN id registry
+    MASTER_DEV,  // CAN id registry
+    TEST_DEV
 } DeviceId;
 
 
@@ -26,7 +27,8 @@ typedef enum
     REGISTRATION, // CAN id registration 
     JUMBO_CMD,
     ANEMOI,
-    NMEA_P
+    NMEA_P,
+    TEST_P
 } ProtocolType;
 
 constexpr int CAN_REG_PORT = 0x7f0;

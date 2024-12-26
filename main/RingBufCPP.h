@@ -9,17 +9,24 @@ template <typename Type>
 class RingBufCPP : public std::queue<Type>
 {
 public:
-	static constexpr size_t MaxElements = 8;
-	/**
-	 * Add element obj to the buffer.
-	 *
-	 * If there is already MaxElements in the buffer,
-	 * the oldest element will either be overwritten (when overwrite is true) or
-	 * this add will have no effect (when overwrite is false).
-	 *
-	 * Return: true if there was room in the buffer to add this element
-	 */
+	size_t MaxElements = 8;
+    /*
+     * Set max number of elements in the BufferQ
+     *
+     */
+	void setSize( size_t size ){
+		MaxElements = size;
+	}
 
+	/**
+		 * Add element obj to the buffer.
+		 *
+		 * If there is already MaxElements in the buffer,
+		 * the oldest element will either be overwritten (when overwrite is true) or
+		 * this add will have no effect (when overwrite is false).
+		 *
+		 * Return: true if there was room in the buffer to add this element
+	 */
 	bool add(const Type& value ) {
 		if (this->size() == MaxElements) {
 			this->pop();

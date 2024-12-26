@@ -27,7 +27,7 @@
 #include "Protocols.h"
 // #include "canbus.h"
 #include "ESPAudio.h"
-#include "SerialManager.h"
+#include "SerialLine.h"
 
 /* Note that the standard NMEA 0183 baud rate is only 4.8 kBaud.
 Nevertheless, a lot of NMEA-compatible devices can properly work with
@@ -57,7 +57,7 @@ EventGroupHandle_t Serial::rxTxNotifier = 0;
 
 xcv_serial_t Serial::S1 = { .name="S1", .tx_q = &s1_tx_q, .uart=&Serial1,
 		                    .rx_char = RX1_CHAR, .rx_nl = RX1_NL, .tx_req = TX1_REQ,
-		                    .monitor=MON_S1, .pid = 0, .cfg2 = nullptr, .route_disable = true, .dl = &dl_S1, .port = 1
+		                    .monitor =	MON_S1, .pid = 0, .cfg2 = nullptr, .route_disable = true, .dl = &dl_S1, .port = 1
 };
 xcv_serial_t Serial::S2 = { .name="S2", .tx_q = &s2_tx_q, .uart=&Serial2,
 		                    .rx_char = RX2_CHAR, .rx_nl = RX2_NL, .tx_req = TX2_REQ,
@@ -231,11 +231,11 @@ void Serial::begin(){
 	}
 
 	if( serial1_speed.get() != 0  || wireless != 0 ){
-		SerialManager SM1(UART_NUM_1);
+		SerialLine SM1(UART_NUM_1);
 		SM1.configure();
 	}
 	if( serial2_speed.get() != 0 && hardwareRevision.get() >= XCVARIO_21){
-		SerialManager SM2(UART_NUM_2);
+		SerialLine SM2(UART_NUM_2);
 		SM2.configure();
 	}
 }

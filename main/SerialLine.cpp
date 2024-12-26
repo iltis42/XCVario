@@ -1,4 +1,4 @@
-#include "SerialManager.h"
+#include "SerialLine.h"
 #include <HardwareSerial.h>
 #include <esp_log.h>
 #include <SetupNG.h>
@@ -13,12 +13,12 @@ t_serial_cfg sm_serial_config[] = {
 		{ SM_XCFLARMVIEW, BAUD_57600, RS232_TTL, RJ45_3RX_4TX, SM_MASTER }
 };
 
-gpio_num_t SerialManager::prior_S1_tx_gpio = GPIO_NUM_36;
-gpio_num_t SerialManager::prior_S1_rx_gpio = GPIO_NUM_36;
-gpio_num_t SerialManager::prior_S2_tx_gpio = GPIO_NUM_36;
-gpio_num_t SerialManager::prior_S2_rx_gpio = GPIO_NUM_36;
+gpio_num_t SerialLine::prior_S1_tx_gpio = GPIO_NUM_36;
+gpio_num_t SerialLine::prior_S1_rx_gpio = GPIO_NUM_36;
+gpio_num_t SerialLine::prior_S2_tx_gpio = GPIO_NUM_36;
+gpio_num_t SerialLine::prior_S2_rx_gpio = GPIO_NUM_36;
 
-SerialManager::SerialManager(uart_port_t uart){
+SerialLine::SerialLine(uart_port_t uart){
 	uart_nr = uart;
 	switch( uart_nr ){
 	case UART_NUM_1:
@@ -38,7 +38,31 @@ SerialManager::SerialManager(uart_port_t uart){
 	ESP_LOGI(FNAME,"CONSTR. UART:%d (new) RX:%d TX:%d baud:%d pol:%d swap:%d tx:%d", uart_nr, rx_gpio, tx_gpio, baud[cfg.baud], cfg.pol, cfg.pin, cfg.tx );
 };
 
-void SerialManager::setBaud(e_baud abaud, bool coldstart ){
+void SerialLine::ConfigureIntf(int cfg){
+	loadProfile( (_e_profile)cfg );
+	configure();
+};
+
+
+
+bool SerialLine::Send(const char *msg, int len, int port){
+
+	RingBufCPP<SString>* q = NULL;
+	if( port == 1 )
+		q = &s2_tx_q;
+	else if( port == 2 )
+		q = &s2_tx_q;
+	else
+		return false;
+	if( !q->isFull() ) {
+		q->add( SString( msg) );
+		return true;
+	}
+	return false;
+};
+
+
+void SerialLine::setBaud(e_baud abaud, bool coldstart ){
 	ESP_LOGI(FNAME,"setBaud: UART: %d baud:%d", uart_nr, baud[abaud]);
 	if( abaud == 0 ){
 		Serial::taskStop( uart_nr );
@@ -60,7 +84,7 @@ void SerialManager::setBaud(e_baud abaud, bool coldstart ){
 	cfg.baud = abaud;
 };
 
-void SerialManager::setLineInverse(e_polarity apol){
+void SerialLine::setLineInverse(e_polarity apol){
 	ESP_LOGI(FNAME,"setLineInverse: UART: %d %d (0: Norm, 1:Invers)", uart_nr, apol);
 	cfg.pol = apol;
 	switch( uart_nr ){
@@ -87,13 +111,13 @@ void SerialManager::setLineInverse(e_polarity apol){
 	}
 };
 
-void SerialManager::setSlaveRole( e_tx tx ){
+void SerialLine::setSlaveRole( e_tx tx ){
 	ESP_LOGI(FNAME,"setRole: UART:%d (0: Slave, 1:Master)", tx);
 	cfg.tx = tx;
 	setPinSwap( cfg.pin );
 }
 
-void SerialManager::getGPIOPins(){
+void SerialLine::getGPIOPins(){
 	switch( uart_nr ){
 	case UART_NUM_1:
 		switch( cfg.pin ){
@@ -122,7 +146,7 @@ void SerialManager::getGPIOPins(){
 	}
 }
 
-void SerialManager::setPinSwap( e_pin pinmode ){  // configures ESP32 matrix, here also the line polartity (inverting) is handled
+void SerialLine::setPinSwap( e_pin pinmode ){  // configures ESP32 matrix, here also the line polartity (inverting) is handled
 	cfg.pin = pinmode;
 	ESP_LOGI(FNAME,"setPinSwap UART:%d swap:%d (0:NORM, 1:SWAPPED), rx:%d, tx:%d,", uart_nr, pinmode, rx_gpio, tx_gpio );
 	switch( uart_nr ){
@@ -178,7 +202,7 @@ void SerialManager::setPinSwap( e_pin pinmode ){  // configures ESP32 matrix, he
 	}
 }
 
-void SerialManager::loadProfile(e_profile profile){   // load defaults according to given profile
+void SerialLine::loadProfile(e_profile profile){   // load defaults according to given profile
 	ESP_LOGI(FNAME,"loadProfile: %d (1: Flarm, 2:Radio)", profile );
 	cfg = sm_serial_config[profile];
 	switch( uart_nr ){
@@ -197,7 +221,7 @@ void SerialManager::loadProfile(e_profile profile){   // load defaults according
 	}
 }
 
-void SerialManager::uartBegin(){
+void SerialLine::uartBegin(){
 	int baudrate = baud[cfg.baud];
 	if( baudrate ){
 		switch( uart_nr ){
@@ -216,15 +240,17 @@ void SerialManager::uartBegin(){
 }
 
 
-void SerialManager::configure(){
+void SerialLine::configure(){
 	ESP_LOGI(FNAME,"configure UART:%d", uart_nr );
+	s1_tx_q.setSize(2);
+	s2_tx_q.setSize(2);
 	uartBegin();
 	setPinSwap( cfg.pin );  // includes Master/Client role handling
 	setLineInverse( cfg.pol );
 	setBaud( cfg.baud );
 }
 
-void SerialManager::start(){
+void SerialLine::start(){
 	configure();
 	/*
 	switch( uart_nr ){
@@ -240,7 +266,7 @@ void SerialManager::start(){
 	*/
 }
 
-void SerialManager::stop(){
+void SerialLine::stop(){
 	switch( uart_nr ){
 	case UART_NUM_1:
 		Serial1.end();

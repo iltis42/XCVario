@@ -56,7 +56,7 @@ struct uart_struct_t;
 typedef struct uart_struct_t uart_t;
 
 uart_t* uartBegin(uint8_t uart_nr, uint32_t baudrate, uint32_t config, int8_t rxPin, int8_t txPin, uint16_t queueLen, bool rxinverted, bool txinverted);
-void uartEnd(uart_t* uart, uint8_t rxPin, uint8_t txPin);
+void uartEnd(uart_t* uart, int8_t rxPin, int8_t txPin);
 
 void uartEnableRxInterrupt(uart_t* uart);
 void uartDisableInterrupt(uart_t* uart);
@@ -81,6 +81,13 @@ size_t uartResizeRxBuffer(uart_t* uart, size_t new_size);
 
 void uartSetRxInvert(uart_t* uart, bool invert);
 void uartSetTxInvert(uart_t* uart, bool invert);
+
+void uartDetachRx(uart_t* uart, uint8_t rxPin);
+void uartDetachTx(uart_t* uart, uint8_t txPin);
+void uartAttachRx(uart_t* uart, uint8_t rxPin, bool invert);
+void uartAttachTx(uart_t* uart, uint8_t txPin, bool invert);
+
+
 
 void uartSetDebug(uart_t* uart);
 int uartGetDebug();

@@ -316,7 +316,9 @@ public:
 		char val[30];
 		value_str(val);
 		ESP_LOGI(FNAME,"NVS set blob(key:%s, val: %s, len:%d )", _key, val, sizeof( _value ) );
+		portDISABLE_INTERRUPTS();
 		bool ret = NVS.setBlob( _key, (void *)(&_value), sizeof( _value ) );
+		portENABLE_INTERRUPTS();
 		if( !ret )
 			return false;
 		return true;

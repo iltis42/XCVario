@@ -6,6 +6,8 @@
 #include "comm/DataLink.h"
 #include "comm/InterfaceCtrl.h"
 #include "HardwareSerial.h"
+#include "RingBufCPP.h"
+#include "SString.h"
 
 typedef enum _e_baud { BAUD_OFF, BAUD_4800, BAUD_9600, BAUD_19200, BAUD_57600, BAUD_115200 } e_baud;
 typedef enum _e_polarity { RS232_STANDARD, RS232_TTL } e_polarity;
@@ -33,7 +35,7 @@ public:
     void setSlaveRole( e_tx tx );                       // Slave role or TX disable e.g. readonly FLARM CLIENT, e.g. we are parallel with another transmitting device with Master Role
     void uartBegin();
     virtual void ConfigureIntf(int cfg);
-    virtual int Send(const char *msg, int len, int port=0);
+    virtual int Send(const char *msg, int len, int port=0);  // #fixme: port obsoleted, to be removed
     void receive( const char *msg, int len, int port=0 );
 
 private:
@@ -45,6 +47,7 @@ private:
     gpio_num_t rx_gpio;
     static gpio_num_t prior_tx_gpio[3];
     static gpio_num_t prior_rx_gpio[3];
+    RingBufCPP<SString>* tx_q;
     void stop();                                              // stops RS232 interface
 };
 

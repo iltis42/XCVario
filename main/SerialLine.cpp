@@ -23,6 +23,7 @@ SerialLine::SerialLine(uart_port_t uart){
 		cfg.pol = (e_polarity)serial1_tx_inverted.get();
 		cfg.tx = (e_tx)serial1_tx_enable.get();
 		cfg.pin = (e_pin)serial1_pins_twisted.get();
+		tx_q = &s1_tx_q;
 		break;
 	case UART_NUM_2:
 		hw_serial = &Serial2;
@@ -30,8 +31,10 @@ SerialLine::SerialLine(uart_port_t uart){
 		cfg.pol = (e_polarity)serial2_tx_inverted.get();
 		cfg.tx = (e_tx)serial2_tx_enable.get();
 		cfg.pin = (e_pin)serial2_pins_twisted.get();
+		tx_q = &s2_tx_q;
 		break;
 	}
+	tx_q->setSize( 5 );
 	setupGPIOPins();
 	ESP_LOGI(FNAME,"CONSTR. UART:%d (new) RX:%d TX:%d baud:%d pol:%d swap:%d tx:%d", uart_nr, rx_gpio, tx_gpio, baud[cfg.baud], cfg.pol, cfg.pin, cfg.tx );
 };
@@ -42,21 +45,14 @@ void SerialLine::ConfigureIntf(int cfg){
 };
 
 int SerialLine::Send(const char *msg, int len, int port){
-
-	RingBufCPP<SString>* q = NULL;
-	if( port == 1 )
-		q = &s1_tx_q;
-	else if( port == 2 )
-		q = &s2_tx_q;
-	else
-		return 1000000;
-	if( !q->isFull() ) {
-		q->add( SString( msg) );
+	if( !tx_q->isFull() ) {
+		tx_q->add( SString( msg) );
+		ESP_LOGI(FNAME,"Send(): UART: %d, %p, size: %d, msg: %s", uart_nr, tx_q, tx_q->numElements(), msg );
 		return 0;
 	}
 	int dur = rint( len*12000.0/baud[cfg.baud] );  // 8 bits/byte * 1.5 = 12 bits * 1000 for mS
 	if( dur )
-		ESP_LOGI(FNAME,"Send(): UART: %d ETA for free buf in %d mS", uart_nr, dur );
+		ESP_LOGI(FNAME,"Send(): UART: %d mS ETA for free buf in %d mS, qsize=%d", uart_nr, dur, tx_q->numElements() );
 	return dur; // heuristic now here
 };
 

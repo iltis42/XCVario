@@ -73,9 +73,8 @@ void Serial::serialHandler(void *pvParameters)
 	char buf[512];  // 6 messages @ 80 byte
 	xcv_serial_t *cfg = (xcv_serial_t *)pvParameters;
 	SerialLine mySL(cfg->port);
-	cfg->tx_q->setSize(2);
 	// Make a pause, that has avoided core dumps during enable the RX interrupt.
-	delay( 8000 );                   // delay a bit serial task startup unit startup of system is through
+	delay( 2000 );                   // delay a bit serial task startup unit startup of system is through
 	cfg->uart->flush( false );       // Clear Uart RX receiver buffer to get a clean start point.
 	ESP_LOGI(FNAME,"%s: enable RX by Interrupt", cfg->name );
 	cfg->uart->enableRxInterrupt();  // Enable Uart RX interrupt
@@ -110,7 +109,7 @@ void Serial::serialHandler(void *pvParameters)
 		}
 		// ESP_LOGI( FNAME, "%s: EVTO=%dms, bincom=%d, EventBits=%X, RXA=%d, NLC=%d", cfg->name, ticksToWait, Flarm::bincom, ebits, cfg->uart->available(), cfg->uart->getNlCounter() );
 		// TX part, check if there is data for Serial Interface to send
-		if( ebits & cfg->tx_req && cfg->uart->availableForWrite() ) {
+		if( cfg->tx_q->numElements() && cfg->uart->availableForWrite() ) {
 			// ESP_LOGI(FNAME,"S%d: TX and available", cfg->uart->number() );
 			int len = Router::pullBlock( *(cfg->tx_q), buf, 512 );
 			if( len ){

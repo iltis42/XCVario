@@ -19,7 +19,7 @@ class DataLink
 public:
     DataLink(int listen_port) : _port(listen_port) {}
     ~DataLink();
-    ProtocolItf* addProtocol(ProtocolType ptyp, int mport=0);
+    ProtocolItf* addProtocol(ProtocolType ptyp, DeviceId did, int sendport=0);
     ProtocolItf* getProtocol(ProtocolType ptyp=NO_ONE) const ;
     bool hasProtocol(ProtocolType ptyp) const;
     void process(const char *packet, int len);

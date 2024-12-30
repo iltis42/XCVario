@@ -20,13 +20,14 @@
 
 Clock *TestQuery::MY_CLOCK = nullptr;
 
-TestQuery::TestQuery(int mp, ProtocolState &sm)
-  : ProtocolItf(mp, sm),
+TestQuery::TestQuery(DeviceId did, int mp, ProtocolState &sm)
+  : ProtocolItf(did, mp, sm),
     Clock_I(500) // generates a time-out callback ca. every fife seconds
 {
     ESP_LOGI(FNAME, "Setup test bursts to send on serial line.");
     MY_CLOCK = new Clock();
-   	Clock::start(this); // register query kicker time-out
+    if ( did == TEST_DEV )
+        Clock::start(this); // register query kicker time-out
 }
 
 TestQuery::~TestQuery()

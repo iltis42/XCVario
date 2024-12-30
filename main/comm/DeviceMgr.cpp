@@ -209,13 +209,13 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
     	itf = CAN;
     }
     else if ( iid == S1_RS232) {
-    	if ( S1 ) { // ! S1->loadProfile(SM_FLARM) ) {
+    	if ( S1 ) {
     		// S1->loadProfile(SM_FLARM);    // let this be done at configuration time of device (Setup), to allow tweaking of params
     		itf = S1;
     	}
     }
     else if ( iid == S2_RS232) {
-    	if ( S2 ) { // ! S1->loadProfile(SM_FLARM) ) {
+    	if ( S2 ) {
     		// S2->loadProfile(SM_XCTNAV_S3);
     		itf = S2;
     	}
@@ -229,7 +229,7 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
     // Retrieve, or create a new data link
     DataLink *dl = itf->getDataLink(listen_port);
     dev->_dlink.insert(dl); // Add, if new
-    ProtocolItf* ret = dl->addProtocol(proto, send_port); // Add, id not yet there
+    ProtocolItf* ret = dl->addProtocol(proto, did, send_port); // Add, id not yet there
     dev->_itf = itf;
 
     if ( is_new ) _device_map[did] = dev; // and add, in case this dev is new

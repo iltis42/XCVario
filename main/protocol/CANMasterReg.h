@@ -15,12 +15,11 @@
 class CANMasterReg  final : public ProtocolItf
 {
 public:
-    explicit CANMasterReg(int mp, ProtocolState &sm) : ProtocolItf(mp, sm) {}
-    virtual ~CANMasterReg() = default;
-
     // The master registry takes it's own identity, not knowing what kind of device
     // will request. Registration happens on one single port and a unique query id.
-    virtual DeviceId getDeviceId() { return MASTER_DEV; } // The connected (!) device through protocol
+    explicit CANMasterReg(int sendport, ProtocolState &sm) : ProtocolItf(MASTER_DEV, sendport, sm) {}
+    virtual ~CANMasterReg() = default;
+
     virtual ProtocolType getProtocolId() { return REGISTRATION; }
 
 public:

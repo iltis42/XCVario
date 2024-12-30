@@ -18,10 +18,9 @@ class Clock;
 class TestQuery final : public ProtocolItf, public Clock_I
 {
 public:
-    explicit TestQuery(int mp, ProtocolState &sm);
+    explicit TestQuery(DeviceId did, int mp, ProtocolState &sm);
     virtual ~TestQuery();
 
-    DeviceId getDeviceId() override { return TEST_DEV2; } // The connected (!) device through protocol
     ProtocolType getProtocolId() override { return TEST_P; }
 
 public:

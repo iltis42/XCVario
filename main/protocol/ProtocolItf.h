@@ -33,24 +33,25 @@ class ProtocolState;
 class ProtocolItf
 {
 public:
-    ProtocolItf(int sp, ProtocolState &sm) : _send_port(sp), _sm(sm) {};
+    ProtocolItf(DeviceId id, int sp, ProtocolState &sm) : _did(id), _send_port(sp), _sm(sm) {};
     virtual ~ProtocolItf() {}
 
     static constexpr int MAX_LEN = 128;
 
 public:
     // API
-    virtual DeviceId getDeviceId() { return NO_DEVICE; } // The connected (!) device through protocol
+    DeviceId getDeviceId() { return _did; } // The connected (!) device through protocol
     virtual ProtocolType getProtocolId() { return NO_ONE; }
     virtual gen_state_t nextByte(const char c) = 0; // return true if message is recognized and able to parse payload
     virtual gen_state_t nextStreamChunk(const char *cptr, int count) { return START_TOKEN; } // for binary protocols
-    inline Message* newMessage() { return DEV::acqMessage(getDeviceId(), _send_port); }
+    inline Message* newMessage() { return DEV::acqMessage(_did, _send_port); }
     // gen_state_t getState() const { return _state; }
     virtual bool isBinary() const { return false; }
     int getSendPort() const { return _send_port; }
 
 protected:
     // routing
+    const DeviceId _did;
     const int _send_port;
 
     // state machine

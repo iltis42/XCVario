@@ -45,6 +45,7 @@ private:
     uart_port_t uart_nr;
     gpio_num_t tx_gpio;
     gpio_num_t rx_gpio;
+    uint8_t tx_req;
     static gpio_num_t prior_tx_gpio[3];
     static gpio_num_t prior_rx_gpio[3];
     RingBufCPP<SString>* tx_q;

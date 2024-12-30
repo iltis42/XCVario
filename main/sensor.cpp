@@ -138,7 +138,8 @@ MPU_t MPU;         // create an object
 Compass *compass = 0;
 BTSender btsender;
 BLESender blesender;
-SerialLine *S1;
+SerialLine *S1 = NULL;
+SerialLine *S2 = NULL;
 
 float baroP=0; // barometric pressure
 static float teP=0;   // TE pressure
@@ -1400,13 +1401,14 @@ void system_startup(void *args){
 	if( abs(factory_volt_adjust.get() - 0.00815) < 0.00001 ){
 		display->writeText( line++, result.c_str() );
 	}
-	Serial::taskStart();
 	{
+		Serial::taskStart();
 		S1 = new SerialLine(1);
 		DeviceManager* dm = DeviceManager::Instance();
 		dm->addDevice(TEST_DEV, TEST_P, 1, 1, S1_RS232);
+		S2 = new SerialLine(2);
+		dm->addDevice(TEST_DEV2, TEST_P, 2, 2, S2_RS232);
 	}
-
 
 	if( wireless == WL_BLUETOOTH ) {
 		if( btsender.selfTest() ){

@@ -16,7 +16,8 @@ typedef enum
     ANEMOI_DEV,
     XCVARIO_DEV,
     MASTER_DEV,  // CAN id registry
-    TEST_DEV
+    TEST_DEV,
+    TEST_DEV2
 } DeviceId;
 
 

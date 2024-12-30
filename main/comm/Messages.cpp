@@ -2,7 +2,7 @@
 #include "Messages.h"
 #include "logdef.h"
 
-const int BUFFER_COUNT = 10;
+const int BUFFER_COUNT = 20;
 
 
 Message spare_msg; // To be able to grant a message, even this one will not be an exclusive buffer worst case.

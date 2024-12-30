@@ -18,10 +18,8 @@ public:
     static constexpr int PROTOCOL_VERSION = 1;
 
 public:
-    JumboCmdHost(int mp, ProtocolState &sm) : ProtocolItf(mp, sm) {}
+    JumboCmdHost(int mp, ProtocolState &sm) : ProtocolItf(JUMBO_DEV, mp, sm) {}
     virtual ~JumboCmdHost() = default;
-
-    DeviceId getDeviceId() override { return JUMBO_DEV; } // The connected (!) device through protocol
     ProtocolType getProtocolId() override { return JUMBO_CMD; }
 
 public:

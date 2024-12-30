@@ -12,10 +12,15 @@ t_serial_cfg sm_serial_config[] = {
 		{ SM_XCFLARMVIEW, BAUD_57600, RS232_TTL, RJ45_3RX_4TX, SM_MASTER }
 };
 
+static const char *MEMOS[3] = { "S0", "S1", "S2" };
+
 gpio_num_t SerialLine::prior_tx_gpio[3] = { GPIO_NUM_36,GPIO_NUM_36,GPIO_NUM_36 };
 gpio_num_t SerialLine::prior_rx_gpio[3] = { GPIO_NUM_36,GPIO_NUM_36,GPIO_NUM_36 };
 
-SerialLine::SerialLine(uart_port_t uart){
+SerialLine::SerialLine(uart_port_t uart) :
+	_intfid(InterfaceId(S0_RS232+uart)),
+	_id_memo(MEMOS[uart])
+{
 	uart_nr = uart;
 	switch( uart_nr ){
 	case UART_NUM_1:

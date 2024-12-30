@@ -23,7 +23,7 @@ typedef struct _s_serial_cfg {
 	e_tx        tx:1;
 } t_serial_cfg;
 
-class SerialLine: public InterfaceCtrl {
+class SerialLine final : public InterfaceCtrl {
 public:
     SerialLine(uart_port_t uart);                       // [0 = console], 1 = S1, 2 = S2
     virtual ~SerialLine() {};
@@ -34,6 +34,9 @@ public:
     void setPinSwap( _e_pin pin );                      // 0: Standard 1: Swapped
     void setSlaveRole( e_tx tx );                       // Slave role or TX disable e.g. readonly FLARM CLIENT, e.g. we are parallel with another transmitting device with Master Role
     void uartBegin();
+    // Ctrl
+    InterfaceId getId() const override { return _intfid; }
+    const char* getStringId() const override { return _id_memo; }
     virtual void ConfigureIntf(int cfg);
     virtual int Send(const char *msg, int len, int port=0);  // #fixme: port obsoleted, to be removed
     void receive( const char *msg, int len, int port=0 );
@@ -50,6 +53,8 @@ private:
     static gpio_num_t prior_rx_gpio[3];
     RingBufCPP<SString>* tx_q;
     void stop();                                              // stops RS232 interface
+    const InterfaceId   _intfid;
+    const char*         _id_memo;
 };
 
 #endif // SERIALMANAGER_H

@@ -27,14 +27,14 @@ DataLink::~DataLink()
 }
 
 // protocol factory
-ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, int send_port)
+ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport)
 {
 
     // Check if already there
     bool foundit = false;
     for (auto *it : _all_p) {
         if ( (*it).getProtocolId() == ptyp 
-            && (*it).getSendPort() == send_port ) {
+            && (*it).getSendPort() == sendport ) {
             foundit = true;
         }
     }
@@ -45,20 +45,20 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, int send_port)
         {
         case REGISTRATION:
             ESP_LOGI(FNAME, "New MasterReg");
-            tmp = new CANMasterReg(send_port, _sm);
+            tmp = new CANMasterReg(sendport, _sm);
             break;
         case JUMBO_CMD:
             ESP_LOGI(FNAME, "New JumboCmdHost");
-            tmp = new JumboCmdHost(send_port, _sm);
+            tmp = new JumboCmdHost(sendport, _sm);
             break;
         case TEST_P:
             ESP_LOGI(FNAME, "New Test Proto");
-            tmp = new TestQuery(send_port, _sm);
+            tmp = new TestQuery(did, sendport, _sm);
             break;
         default:
             break;
         }
-        ESP_LOGI(FNAME, "On send port %d", send_port);
+        ESP_LOGI(FNAME, "On send port %d", sendport);
 
         if ( tmp ) _all_p.push_back(tmp);
         return tmp;

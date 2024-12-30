@@ -175,7 +175,7 @@ void TransmitTask(void *arg)
 
 DeviceManager::DeviceManager()
 {
-    ItfSendQueue = xQueueCreate( 10, sizeof(Message*) );
+    ItfSendQueue = xQueueCreate( 20, sizeof(Message*) );
     
 }
 

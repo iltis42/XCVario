@@ -109,9 +109,10 @@ void Serial::serialHandler(void *pvParameters)
 		}
 		// ESP_LOGI( FNAME, "%s: EVTO=%dms, bincom=%d, EventBits=%X, RXA=%d, NLC=%d", cfg->name, ticksToWait, Flarm::bincom, ebits, cfg->uart->available(), cfg->uart->getNlCounter() );
 		// TX part, check if there is data for Serial Interface to send
-		if( cfg->tx_q->numElements() && cfg->uart->availableForWrite() ) {
-			// ESP_LOGI(FNAME,"S%d: TX and available", cfg->uart->number() );
+		if( (ebits & cfg->tx_req) && cfg->uart->availableForWrite() ) {
+			// ESP_LOGI(FNAME,"S%d: TX and available TXQ=%d P=%p", cfg->uart->number(), cfg->tx_q->numElements(), cfg->tx_q );
 			int len = Router::pullBlock( *(cfg->tx_q), buf, 512 );
+			ESP_LOGI(FNAME,"S%d: bytes=%d QL=%d", cfg->uart->number(), len, cfg->tx_q->numElements() );
 			if( len ){
 				// ESP_LOGI(FNAME,"S%d: TX len: %d bytes", cfg->uart->number(), len );
 				// ESP_LOG_BUFFER_HEXDUMP(FNAME,buf,len, ESP_LOG_INFO);

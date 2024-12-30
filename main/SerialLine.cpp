@@ -6,7 +6,7 @@
 t_serial_cfg sm_serial_config[] = {
 		{ SM_FLARM,       BAUD_19200, RS232_TTL, RJ45_3TX_4RX, SM_MASTER },
 		{ SM_RADIO,       BAUD_9600,  RS232_TTL, RJ45_3TX_4RX, SM_MASTER },
-		{ SM_XCTNAV_S3,   BAUD_19200, RS232_TTL, RJ45_3TX_4RX, SM_MASTER },
+		{ SM_XCTNAV_S3,   BAUD_19200, RS232_TTL, RJ45_3RX_4TX, SM_MASTER },
 		{ SM_OPENVARIO,   BAUD_19200, RS232_TTL, RJ45_3RX_4TX, SM_MASTER },
 		{ SM_XCFLARMVIEW, BAUD_57600, RS232_TTL, RJ45_3RX_4TX, SM_MASTER }
 };
@@ -24,6 +24,7 @@ SerialLine::SerialLine(uart_port_t uart){
 		cfg.tx = (e_tx)serial1_tx_enable.get();
 		cfg.pin = (e_pin)serial1_pins_twisted.get();
 		tx_q = &s1_tx_q;
+		tx_req = TX1_REQ;
 		break;
 	case UART_NUM_2:
 		hw_serial = &Serial2;
@@ -32,6 +33,7 @@ SerialLine::SerialLine(uart_port_t uart){
 		cfg.tx = (e_tx)serial2_tx_enable.get();
 		cfg.pin = (e_pin)serial2_pins_twisted.get();
 		tx_q = &s2_tx_q;
+		tx_req = TX2_REQ;
 		break;
 	}
 	tx_q->setSize( 5 );
@@ -45,14 +47,16 @@ void SerialLine::ConfigureIntf(int cfg){
 };
 
 int SerialLine::Send(const char *msg, int len, int port){
+	ESP_LOGI(FNAME,"Send(): UART: %d, P=%p, size: %d, msg: %s", uart_nr, tx_q, tx_q->numElements(), msg );
 	if( !tx_q->isFull() ) {
-		tx_q->add( SString( msg) );
-		ESP_LOGI(FNAME,"Send(): UART: %d, %p, size: %d, msg: %s", uart_nr, tx_q, tx_q->numElements(), msg );
+		tx_q->add( SString(msg) );
+		Serial::setRxTxNotifier( tx_req );
+		ESP_LOGI(FNAME,"Send(): add to Q OK");
 		return 0;
 	}
 	int dur = rint( len*12000.0/baud[cfg.baud] );  // 8 bits/byte * 1.5 = 12 bits * 1000 for mS
 	if( dur )
-		ESP_LOGI(FNAME,"Send(): UART: %d mS ETA for free buf in %d mS, qsize=%d", uart_nr, dur, tx_q->numElements() );
+		ESP_LOGI(FNAME,"Send(): UART: %d mS P=%p, ETA for free buf in %d mS, qsize=%d", uart_nr, tx_q, dur, tx_q->numElements() );
 	return dur; // heuristic now here
 };
 

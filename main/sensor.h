@@ -54,7 +54,7 @@ class SerialLine;
 extern t_global_flags gflags;
 extern BMPVario bmpVario;
 extern CANbus* CAN;
-extern SerialLine *S1;
+extern SerialLine *S1,*S2;
 extern StraightWind theWind;
 extern xSemaphoreHandle xMutex;
 extern int active_screen;

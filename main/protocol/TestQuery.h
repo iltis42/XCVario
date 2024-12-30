@@ -21,7 +21,7 @@ public:
     explicit TestQuery(int mp, ProtocolState &sm);
     virtual ~TestQuery();
 
-    DeviceId getDeviceId() override { return TEST_DEV; } // The connected (!) device through protocol
+    DeviceId getDeviceId() override { return TEST_DEV2; } // The connected (!) device through protocol
     ProtocolType getProtocolId() override { return TEST_P; }
 
 public:

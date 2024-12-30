@@ -201,24 +201,25 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
     if ( ! SendTask ) {
         xTaskCreate(TransmitTask, "genTx", 4096, ItfSendQueue, 10, &SendTask);
     }
-
-    InterfaceCtrl *itf;
+    InterfaceCtrl *itf = &dummy_itf;
     if ( iid == CAN_BUS ) {
-        if ( CAN && ! CAN->isInitialized() ) {
-            CAN->begin();
-        }
-        itf = CAN;
+    	if ( CAN && ! CAN->isInitialized() ) {
+    		CAN->begin();
+    	}
+    	itf = CAN;
     }
     else if ( iid == S1_RS232) {
-        if ( S1 ) { // ! S1->loadProfile(SM_FLARM) ) {
-            S1->loadProfile(SM_FLARM);
-        }
-        itf = S1;
+    	if ( S1 ) { // ! S1->loadProfile(SM_FLARM) ) {
+    		// S1->loadProfile(SM_FLARM);    // let this be done at configuration time of device (Setup), to allow tweaking of params
+    		itf = S1;
+    	}
     }
-    else {
-        itf = &dummy_itf;
+    else if ( iid == S2_RS232) {
+    	if ( S2 ) { // ! S1->loadProfile(SM_FLARM) ) {
+    		// S2->loadProfile(SM_XCTNAV_S3);
+    		itf = S2;
+    	}
     }
-
     bool is_new = false;
     Device *dev = getDevice(did);
     if ( ! dev ) {

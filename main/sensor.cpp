@@ -78,6 +78,7 @@
 #include "DataMonitor.h"
 #include "AdaptUGC.h"
 #include "CenterAid.h"
+#include "protocol/TestQuery.h"
 
 // #include "sound.h"
 
@@ -839,6 +840,7 @@ void readTemp(void *pvParameters){
 		CircleWind::tick();
 		Flarm::progress();
 		esp_task_wdt_reset();
+
 		if( (ttick++ % 50) == 0) {
 			ESP_LOGI(FNAME,"Free Heap: %d bytes", heap_caps_get_free_size(MALLOC_CAP_8BIT) );
 			if( uxTaskGetStackHighWaterMark( tpid ) < 256 )
@@ -848,6 +850,8 @@ void readTemp(void *pvParameters){
 		}
 		if( (ttick%5) == 0 ){
 			SetupCommon::commitDirty();
+			DeviceManager* dm = DeviceManager::Instance();
+			static_cast<TestQuery*>(dm->getProtocol( TEST_DEV2, TEST_P ))->sendTestQuery();  // all 5 seconds on burst
 		}
 		vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS);
 	}

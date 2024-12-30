@@ -47,7 +47,7 @@ void SerialLine::ConfigureIntf(int cfg){
 };
 
 int SerialLine::Send(const char *msg, int len, int port){
-	ESP_LOGI(FNAME,"Send(): UART: %d, P=%p, size: %d, msg: %s", uart_nr, tx_q, tx_q->numElements(), msg );
+	ESP_LOGI(FNAME,"Send(): UART: %d, msg: %s", uart_nr, msg );
 	if( !tx_q->isFull() ) {
 		tx_q->add( SString(msg) );
 		Serial::setRxTxNotifier( tx_req );

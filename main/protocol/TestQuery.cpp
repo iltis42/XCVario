@@ -26,7 +26,7 @@ TestQuery::TestQuery(int mp, ProtocolState &sm)
 {
     ESP_LOGI(FNAME, "Setup test bursts to send on serial line.");
     MY_CLOCK = new Clock();
-    Clock::start(this); // register query kicker time-out
+   	Clock::start(this); // register query kicker time-out
 }
 
 TestQuery::~TestQuery()
@@ -113,7 +113,7 @@ gen_state_t TestQuery::parseTest()
 //
 bool TestQuery::sendTestQuery()
 {
-    ESP_LOGI(FNAME, "Send burst on S1/S2");
+    ESP_LOGI(FNAME, "Send burst on S%d", _send_port );
     Message* msg = newMessage();
     msg->buffer = "$A_1234567890223456789032345678904234567890523456789062345678907234567890\r\n";
     DEV::Send(msg);

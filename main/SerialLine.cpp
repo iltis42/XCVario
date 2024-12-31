@@ -77,15 +77,15 @@ size_t SerialLine::read(uint8_t *buffer, size_t size)
 
 void SerialLine::setBaud(e_baud abaud, bool coldstart ){
 	ESP_LOGI(FNAME,"setBaud: UART: %d baud:%d", uart_nr, baud[abaud]);
-	if( abaud == 0 ){
-		Serial::taskStop( uart_nr );
-		return;
-	}
-	uart_set_baudrate(uart_nr, baud[abaud] );
-	if( !Serial::taskStarted( uart_nr ) ){
-		Serial::taskStart(uart_nr);
-	}
 	cfg.baud = abaud;
+	// if( abaud == 0 ){
+	//	Serial::taskStop( uart_nr );
+	//	return;
+	//}
+	uart_set_baudrate(uart_nr, baud[abaud] );
+	// if( !Serial::taskStarted( uart_nr ) ){
+	// 	Serial::taskStart(uart_nr);
+	// }
 };
 
 void SerialLine::setLineInverse(e_polarity apol){

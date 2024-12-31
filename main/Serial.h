@@ -19,6 +19,7 @@
 #include "Router.h"
 #include "HardwareSerial.h"
 #include "DataLink.h"
+#include "SerialLine.h"
 
 #define SERIAL_STRLEN SSTRLEN
 
@@ -36,9 +37,7 @@
 typedef struct xcv_serial {
 	const char* name;
 	RingBufCPP<SString>* tx_q;
-	//RingBufCPP<SString>* rx_q;
-	// void (*route)();
-	HardwareSerial *uart;
+	SerialLine *mySL;
 	uint8_t rx_char;
 	uint8_t rx_nl;
 	uint8_t tx_req;
@@ -49,6 +48,7 @@ typedef struct xcv_serial {
 	DataLinkOld* dl;
 	int port; // info is in dl, tb deleted
 } xcv_serial_t;
+
 
 class Serial {
 public:
@@ -113,8 +113,8 @@ private:
 	static EventGroupHandle_t rxTxNotifier;
 	// Stop routing of TX/RX data. That is used in case of Flarm binary download.
 	static bool bincom_mode;
-	static xcv_serial_t S1;
-	static xcv_serial_t S2;
+	static xcv_serial_t _S1;
+	static xcv_serial_t _S2;
 };
 
 #endif

@@ -56,11 +56,12 @@ EventGroupHandle_t Serial::rxTxNotifier = 0;
 #define RX2_CHAR 16
 #define RX2_NL 32
 
-xcv_serial_t Serial::S1 = { .name="S1", .tx_q = &s1_tx_q, .uart=&Serial1,
+
+xcv_serial_t Serial::_S1 = { .name="S1", .tx_q = &s1_tx_q, .mySL = 0,
 		                    .rx_char = RX1_CHAR, .rx_nl = RX1_NL, .tx_req = TX1_REQ,
 		                    .monitor =	MON_S1, .pid = 0, .cfg2 = nullptr, .route_disable = true, .dl = &dl_S1, .port = 1
 };
-xcv_serial_t Serial::S2 = { .name="S2", .tx_q = &s2_tx_q, .uart=&Serial2,
+xcv_serial_t Serial::_S2 = { .name="S2", .tx_q = &s2_tx_q, .mySL = 0,
 		                    .rx_char = RX2_CHAR, .rx_nl = RX2_NL, .tx_req = TX2_REQ,
 		                    .monitor=MON_S2, .pid = 0, .cfg2 = nullptr, .route_disable = true, .dl = &dl_S2, .port = 2
 };
@@ -72,12 +73,18 @@ void Serial::serialHandler(void *pvParameters)
 {
 	char buf[512];  // 6 messages @ 80 byte
 	xcv_serial_t *cfg = (xcv_serial_t *)pvParameters;
-	SerialLine mySL(cfg->port);
+	ESP_LOGI(FNAME,"serialHandler %s", cfg->name );
 	// Make a pause, that has avoided core dumps during enable the RX interrupt.
-	delay( 2000 );                   // delay a bit serial task startup unit startup of system is through
-	cfg->uart->flush( false );       // Clear Uart RX receiver buffer to get a clean start point.
+	delay( 3000 );                   // delay a bit serial task startup unit startup of system is through
+	if( cfg->port == 1 )
+		cfg->mySL=S1;
+	else if( cfg->port == 2 )
+		cfg->mySL=S2;
+	cfg->mySL->flush();
+	cfg->mySL->configure();
+	// Clear Uart RX receiver buffer to get a clean start point.
 	ESP_LOGI(FNAME,"%s: enable RX by Interrupt", cfg->name );
-	cfg->uart->enableRxInterrupt();  // Enable Uart RX interrupt
+	cfg->mySL->enableRxInterrupt();  // Enable Uart RX interrupt
 	cfg->route_disable = false;
 	// Define timeout of 5s that the watchdog becomes not active.
 	TickType_t ticksToWait = 5000 / portTICK_PERIOD_MS;
@@ -85,7 +92,7 @@ void Serial::serialHandler(void *pvParameters)
 	while( true ) {
 		// Stack supervision
 		if( uxTaskGetStackHighWaterMark( cfg->pid ) < 256 )
-			ESP_LOGW(FNAME,"Warning serial %d task stack low: %d bytes", cfg->uart->number(), uxTaskGetStackHighWaterMark( cfg->pid ) );
+			ESP_LOGW(FNAME,"Warning serial %d task stack low: %d bytes", cfg->mySL->number(), uxTaskGetStackHighWaterMark( cfg->pid ) );
 
 		if( _selfTest ) {
 			delay( 100 );
@@ -107,30 +114,30 @@ void Serial::serialHandler(void *pvParameters)
 			// Timeout occurred, that is used to reset the watchdog.
 			continue;
 		}
-		// ESP_LOGI( FNAME, "%s: EVTO=%dms, bincom=%d, EventBits=%X, RXA=%d, NLC=%d", cfg->name, ticksToWait, Flarm::bincom, ebits, cfg->uart->available(), cfg->uart->getNlCounter() );
+		ESP_LOGI( FNAME, "%s: TO=%dms, EventBits=%X, RXAvail=%d", cfg->name, ticksToWait, ebits, cfg->mySL->available() );
 		// TX part, check if there is data for Serial Interface to send
-		if( (ebits & cfg->tx_req) && cfg->uart->availableForWrite() ) {
-			// ESP_LOGI(FNAME,"S%d: TX and available TXQ=%d P=%p", cfg->uart->number(), cfg->tx_q->numElements(), cfg->tx_q );
-			int len = Router::pullBlock( *(cfg->tx_q), buf, 512 );
-			ESP_LOGI(FNAME,"S%d: bytes=%d QL=%d", cfg->uart->number(), len, cfg->tx_q->numElements() );
+		if( (ebits & cfg->tx_req) && cfg->mySL->availableForWrite() ) {
+			ESP_LOGI(FNAME,"S%d: TX and available TXQ=%d P=%p", cfg->mySL->number(), cfg->tx_q->numElements(), cfg->tx_q );
+			size_t len = Router::pullBlock( *(cfg->tx_q), buf, 512 );
+			ESP_LOGI(FNAME,"S%d: bytes=%d QL=%d", cfg->mySL->number(), len, cfg->tx_q->numElements() );
 			if( len ){
-				// ESP_LOGI(FNAME,"S%d: TX len: %d bytes", cfg->uart->number(), len );
+				// ESP_LOGI(FNAME,"S%d: TX len: %d bytes", cfg->mySL->number(), len );
 				// ESP_LOG_BUFFER_HEXDUMP(FNAME,buf,len, ESP_LOG_INFO);
-				cfg->uart->write( buf, len );
+				cfg->mySL->write( buf, len );
 				if( !bincom_mode )
 					DM.monitorString( cfg->monitor, DIR_TX, buf, len );
-				// ESP_LOGD(FNAME,"S%d: TX written: %d", cfg->uart->number(), wr);
+				// ESP_LOGD(FNAME,"S%d: TX written: %d", cfg->mySL->number(), wr);
 			}
 		}
 		// RX part
 		if( (ebits & cfg->rx_char) ) { // only one transparent mode from now on, frame slicing in upper layer for UBX and NMEA
-			uint32_t available = std::min( cfg->uart->available(), 511 );
+			uint32_t available = std::min( cfg->mySL->available(), 511 );
 			if( available ){
-				uint16_t rxBytes = cfg->uart->readBufFromQueue( (uint8_t*)buf, available );  // read out all characters from the RX queue
-				// ESP_LOGI(FNAME,"S%d: RX: %d bytes, avail: %d", cfg->uart->number(), rxBytes, available );
+				uint16_t rxBytes = cfg->mySL->readBufFromQueue( (uint8_t*)buf, available );  // read out all characters from the RX queue
+				// ESP_LOGI(FNAME,"S%d: RX: %d bytes, avail: %d", cfg->mySL->number(), rxBytes, available );
 				// ESP_LOG_BUFFER_HEXDUMP(FNAME,buf, rxBytes, ESP_LOG_INFO);
 				buf[rxBytes] = 0;
-				mySL.receive( buf, rxBytes, cfg->port );
+				cfg->mySL->receive( buf, rxBytes, cfg->port );
 				DM.monitorString( cfg->monitor, DIR_RX, buf, rxBytes );
 			}
 		}
@@ -166,11 +173,11 @@ void Serial::exitBincomMode( xcv_serial_t *cfg ){
 }
 
 bool Serial::selfTest(int num){
-	HardwareSerial *mySerial;
+	SerialLine *mySerial;
 	if( num == 1 )
-		mySerial = &Serial1;
+		mySerial = S1;
 	else if( num == 2 )
-		mySerial = &Serial2;
+		mySerial = S2;
 	else
 		return false;
 	ESP_LOGI(FNAME,"Serial %d selftest", num );
@@ -196,7 +203,7 @@ bool Serial::selfTest(int num){
 		if( avail >= tx ){
 			if( avail > 50 )
 				avail = 50;
-			numread = mySerial->read( recv, avail );
+			numread = mySerial->read( (uint8_t*)recv, avail );
 			ESP_LOGI(FNAME,"Serial RX bytes read: %d %s", numread, recv );
 			break;
 		}
@@ -218,8 +225,8 @@ bool Serial::selfTest(int num){
 void Serial::begin(){   // will be obsoleted when Devices launch serial interfaces.
 	ESP_LOGI(FNAME,"Serial::begin()" );
 	// Initialize static configuration
-	S1.cfg2 = &S2;
-	S2.cfg2 = &S1;
+	_S1.cfg2 = &_S2;
+	_S2.cfg2 = &_S1;
 
 	// Create event notifier, when serial 1 or serial 2 are enabled
 	// do in any case, S1 and S2 might be disabled
@@ -230,16 +237,8 @@ void Serial::begin(){   // will be obsoleted when Devices launch serial interfac
 	}
 	else {
 		// Set event notifier in uart interrupt routine.
-		HardwareSerial::setRxNotifier( rxTxNotifier );
-	}
-
-	if( serial1_speed.get() != 0  || wireless != 0 ){
-		SerialLine SM1(UART_NUM_1);
-		SM1.configure();
-	}
-	if( serial2_speed.get() != 0 && hardwareRevision.get() >= XCVARIO_21){
-		SerialLine SM2(UART_NUM_2);
-		SM2.configure();
+		ESP_LOGI( FNAME, "setRxNotifier" );
+		uartRxEventHandler( rxTxNotifier );
 	}
 }
 
@@ -247,17 +246,17 @@ bool Serial::taskStarted( int num ){
 	bool ret=true;
 	switch( num ){
 	case UART_NUM_1:
-		if( S1.pid == NULL )
+		if( _S1.pid == NULL )
 			ret=false;
 		break;
 	case UART_NUM_2:
-		if( S2.pid == NULL )
+		if( _S2.pid == NULL )
 			ret=false;
 		break;
 	default:
 		ret=false;
 	}
-	ESP_LOGI(FNAME,"taskStarted() ret:%d S1.pid:%p S2.pid:%p", ret, S1.pid, S2.pid );
+	ESP_LOGI(FNAME,"taskStarted() ret:%d S1.pid:%p S2.pid:%p", ret, _S1.pid, _S2.pid );
 	return ret;
 }
 
@@ -291,15 +290,15 @@ void Serial::taskStart(int uart_nr){
 void Serial::taskStop( int uart_nr ){
 	switch( uart_nr ){
 	case UART_NUM_1:
-		if( S1.pid != NULL ){
-			vTaskDelete( S1.pid );
-			S1.pid = NULL;
+		if( _S1.pid != NULL ){
+			vTaskDelete( _S1.pid );
+			_S1.pid = NULL;
 		}
 		break;
 	case UART_NUM_2:
-		if( S2.pid != NULL ){
-			vTaskDelete( S2.pid );
-			S2.pid = NULL;
+		if( _S2.pid != NULL ){
+			vTaskDelete( _S2.pid );
+			_S2.pid = NULL;
 		}
 		break;
 	}
@@ -307,11 +306,11 @@ void Serial::taskStop( int uart_nr ){
 
 void Serial::taskStartS1(){
 	ESP_LOGI(FNAME,"taskStartS1()");
-	xTaskCreatePinnedToCore(&serialHandler, "serialHandler1", 4096, &S1, 13, &S1.pid, 0);  // stay below canbus
+	xTaskCreatePinnedToCore(&serialHandler, "serialHandler1", 4096, &_S1, 13, &_S1.pid, 0);  // stay below canbus
 }
 
 void Serial::taskStartS2(){
 	ESP_LOGI(FNAME,"taskStartS2()");
-	xTaskCreatePinnedToCore(&serialHandler, "serialHandler2", 4096, &S2, 13, &S2.pid, 0);  // stay below canbus
+	xTaskCreatePinnedToCore(&serialHandler, "serialHandler2", 4096, &_S2, 13, &_S2.pid, 0);  // stay below canbus
 }
 

@@ -2,6 +2,7 @@
 #include <esp_log.h>
 #include <SetupNG.h>
 #include "Serial.h"
+#include "esp32-hal-uart.h"
 
 t_serial_cfg sm_serial_config[] = {
 		{ SM_FLARM,       BAUD_19200, RS232_TTL, RJ45_3TX_4RX, SM_MASTER },
@@ -18,7 +19,6 @@ SerialLine::SerialLine(uart_port_t uart){
 	uart_nr = uart;
 	switch( uart_nr ){
 	case UART_NUM_1:
-		hw_serial = &Serial1;
 		cfg.baud = (e_baud)serial1_speed.get();        // load settings from NVS
 		cfg.pol = (e_polarity)serial1_tx_inverted.get();
 		cfg.tx = (e_tx)serial1_tx_enable.get();
@@ -27,7 +27,6 @@ SerialLine::SerialLine(uart_port_t uart){
 		tx_req = TX1_REQ;
 		break;
 	case UART_NUM_2:
-		hw_serial = &Serial2;
 		cfg.baud = (e_baud)serial2_speed.get();
 		cfg.pol = (e_polarity)serial2_tx_inverted.get();
 		cfg.tx = (e_tx)serial2_tx_enable.get();
@@ -38,6 +37,7 @@ SerialLine::SerialLine(uart_port_t uart){
 	}
 	tx_q->setSize( 5 );
 	setupGPIOPins();
+	uartBegin();
 	ESP_LOGI(FNAME,"CONSTR. UART:%d (new) RX:%d TX:%d baud:%d pol:%d swap:%d tx:%d", uart_nr, rx_gpio, tx_gpio, baud[cfg.baud], cfg.pol, cfg.pin, cfg.tx );
 };
 
@@ -60,6 +60,21 @@ int SerialLine::Send(const char *msg, int len, int port){
 	return dur; // heuristic now here
 };
 
+size_t SerialLine::read(uint8_t *buffer, size_t size)
+{
+	size_t avail = available();
+	if (size < avail) {
+		avail = size;
+	}
+	size_t count = 0;
+	while(count < avail) {
+		*buffer++ = uartRead(_uart);
+		count++;
+	}
+	return count;
+}
+
+
 void SerialLine::setBaud(e_baud abaud, bool coldstart ){
 	ESP_LOGI(FNAME,"setBaud: UART: %d baud:%d", uart_nr, baud[abaud]);
 	if( abaud == 0 ){
@@ -76,20 +91,63 @@ void SerialLine::setBaud(e_baud abaud, bool coldstart ){
 void SerialLine::setLineInverse(e_polarity apol){
 	ESP_LOGI(FNAME,"setLineInverse: UART: %d %d (0: Norm, 1:Invers)", uart_nr, apol);
 	cfg.pol = apol;
-	if( cfg.pol == RS232_TTL ){
-		hw_serial->setRxInvert( true );  // RS232 TTL is inverted
-		hw_serial->setTxInvert( true);
-	}
-	else{
-		hw_serial->setRxInvert( false );
-		hw_serial->setTxInvert( false );
-	}
+	bool invert = false;
+	if( cfg.pol == RS232_TTL )
+		invert = true;  // RS232 TTL is inverted here
+	uartSetRxInvert(_uart, invert );
+	uartSetTxInvert(_uart, invert );
 };
 
 void SerialLine::setSlaveRole( e_tx tx ){
 	ESP_LOGI(FNAME,"setRole: UART:%d (0: Slave, 1:Master)", tx);
 	cfg.tx = tx;
 	setPinSwap( cfg.pin );
+}
+
+void SerialLine::flush(){
+	uartFlush(_uart);
+}
+
+void SerialLine::setRxNotifier( EventGroupHandle_t egh )
+{
+	ESP_LOGI( FNAME, "setRxNotifier" );
+    uartRxEventHandler( egh );
+}
+
+void SerialLine::enableRxInterrupt()
+{
+	ESP_LOGI( FNAME, "enableRxInterrupt" );
+	// Make sure that the previous interrupt_info is not used anymore
+	if( _uart ){
+		uartDisableInterrupt( _uart );
+		uartEnableRxInterrupt( _uart );
+	}
+}
+
+int SerialLine::number() const
+{
+	return uart_nr;
+}
+
+int SerialLine::available(void)
+{
+    return uartAvailable(_uart);
+}
+
+int SerialLine::availableForWrite()
+{
+	return uartAvailableForWrite(_uart);
+}
+
+size_t SerialLine::write(const char * buffer, size_t size)
+{
+	uartWriteBuf(_uart, (uint8_t*)buffer, size);
+	return size;
+}
+
+uint16_t SerialLine::readBufFromQueue( uint8_t* buffer, const size_t len)
+{
+	return uartReadBufFromQueue( _uart, buffer, len);
 }
 
 void SerialLine::setupGPIOPins(){
@@ -126,16 +184,16 @@ void SerialLine::setPinSwap( e_pin pinmode ){  // configures ESP32 matrix, here 
 	ESP_LOGI(FNAME,"setPinSwap UART:%d swap:%d (0:NORM, 1:SWAPPED), rx:%d, tx:%d,", uart_nr, pinmode, rx_gpio, tx_gpio );
 	if( prior_rx_gpio[uart_nr] != GPIO_NUM_36 ){
 		ESP_LOGI(FNAME,"Detach rx:%d", prior_rx_gpio[uart_nr] );
-		hw_serial->detachRx( prior_rx_gpio[uart_nr] );
+		uartDetachRx(_uart, prior_rx_gpio[uart_nr] );
 	}
 	if( prior_tx_gpio[uart_nr] != GPIO_NUM_36 ){
 		ESP_LOGI(FNAME,"Detach tx:%d", prior_tx_gpio[uart_nr] );
-		hw_serial->detachTx( prior_tx_gpio[uart_nr] );
+		uartDetachTx(_uart, prior_tx_gpio[uart_nr] );
 	}
 	if( cfg.tx == SM_MASTER ){
 		ESP_LOGI(FNAME,"Attach tx %d", tx_gpio );
 		gpio_set_direction(tx_gpio, GPIO_MODE_OUTPUT);
-		hw_serial->attachTx( tx_gpio, cfg.pol != RS232_TTL );
+		uartAttachTx( _uart, tx_gpio, cfg.pol != RS232_TTL );
 		gpio_pullup_en( tx_gpio );
 		prior_tx_gpio[uart_nr] = tx_gpio;
 	}else{
@@ -143,7 +201,7 @@ void SerialLine::setPinSwap( e_pin pinmode ){  // configures ESP32 matrix, here 
 		gpio_pullup_dis( tx_gpio );
 	}
 	ESP_LOGI(FNAME,"Attach rx %d", rx_gpio );
-	hw_serial->attachRx( rx_gpio, cfg.pol != RS232_TTL );
+	uartAttachRx( _uart, rx_gpio, cfg.pol != RS232_TTL );
 	gpio_pullup_en( rx_gpio );
 	prior_rx_gpio[uart_nr] = rx_gpio;
 }
@@ -176,13 +234,16 @@ void SerialLine::uartBegin(){
 	int baudrate = baud[cfg.baud];
 	if( baudrate ){
 		ESP_LOGI(FNAME,"uartBegin UART:%d baud:%d, rx:%d, tx:%d, TTL:%d ", uart_nr, baudrate, rx_gpio, tx_gpio, cfg.pol );
-		hw_serial->begin(baudrate,SERIAL_8N1,rx_gpio,tx_gpio, cfg.pol, cfg.pol );  // should be reentrant with auto end() at the begin
-		hw_serial->setRxBufferSize(512);
+		_uart = ::uartBegin(uart_nr, baudrate, SERIAL_8N1, rx_gpio, tx_gpio, 512, cfg.pol, cfg.pol );
+		// hw_serial->begin(baudrate,SERIAL_8N1,rx_gpio,tx_gpio, cfg.pol, cfg.pol );  // should be reentrant with auto end() at the begin
+		uartResizeRxBuffer(_uart, 512);
+		// hw_serial->setRxBufferSize(512);
 	}
 }
 
 void SerialLine::configure(){
 	ESP_LOGI(FNAME,"configure UART:%d", uart_nr );
+	stop();
 	uartBegin();
 	setPinSwap( cfg.pin );  // includes Master/Client role handling
 	setLineInverse( cfg.pol );
@@ -190,7 +251,11 @@ void SerialLine::configure(){
 }
 
 void SerialLine::stop(){
-	hw_serial->end();
+	if(uartGetDebug() == uart_nr)
+		uartSetDebug(0);
+	ESP_LOGI(FNAME,"UART %d end(), pins %d %d", uart_nr, tx_gpio, rx_gpio);
+	uartEnd(_uart, tx_gpio, rx_gpio);
+	_uart = 0;
 }
 
 

@@ -36,7 +36,18 @@ public:
     void uartBegin();
     virtual void ConfigureIntf(int cfg);
     virtual int Send(const char *msg, int len, int port=0);  // #fixme: port obsoleted, to be removed
+
+    // integrated vom ex HardwareSerial
     void receive( const char *msg, int len, int port=0 );
+    size_t read(uint8_t *buffer, size_t size);
+    void flush();
+    void enableRxInterrupt();
+    int number() const;  // returns UART number
+    int available();     //
+    int availableForWrite();
+    size_t write(const char *buffer, size_t size);
+    uint16_t readBufFromQueue( uint8_t* buffer, const size_t len);
+    void setRxNotifier( EventGroupHandle_t egh );
 
 private:
     void setupGPIOPins();
@@ -49,6 +60,7 @@ private:
     static gpio_num_t prior_tx_gpio[3];
     static gpio_num_t prior_rx_gpio[3];
     RingBufCPP<SString>* tx_q;
+    uart_t* _uart;
     void stop();                                              // stops RS232 interface
 };
 

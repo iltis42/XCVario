@@ -1388,8 +1388,14 @@ void system_startup(void *args){
 			display->writeText( line++, "Bat Meter: OK");
 		logged_tests += "Battery Voltage Sensor: PASSED\n";
 	}
-
 	Serial::begin();
+	{
+		S1 = new SerialLine(1);
+		DeviceManager* dm = DeviceManager::Instance();
+		dm->addDevice(TEST_DEV, TEST_P, 1, 1, S1_RS232);
+		S2 = new SerialLine(2);
+		dm->addDevice(TEST_DEV2, TEST_P, 2, 2, S2_RS232);
+	}
 	// Factory test for serial interface plus cable
 	String result("Serial ");
 	if( Serial::selfTest( 1 ) )
@@ -1405,14 +1411,8 @@ void system_startup(void *args){
 	if( abs(factory_volt_adjust.get() - 0.00815) < 0.00001 ){
 		display->writeText( line++, result.c_str() );
 	}
-	{
-		Serial::taskStart();
-		S1 = new SerialLine(1);
-		DeviceManager* dm = DeviceManager::Instance();
-		dm->addDevice(TEST_DEV, TEST_P, 1, 1, S1_RS232);
-		S2 = new SerialLine(2);
-		dm->addDevice(TEST_DEV2, TEST_P, 2, 2, S2_RS232);
-	}
+
+	Serial::taskStart();
 
 	if( wireless == WL_BLUETOOTH ) {
 		if( btsender.selfTest() ){

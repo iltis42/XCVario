@@ -42,7 +42,7 @@ some sentences might be lost or truncated.
 
 
 bool Serial::_selfTest = false;
-EventGroupHandle_t Serial::rxTxNotifier = 0;
+EventGroupHandle_t Serial::rxTxNotifier = nullptr;
 
 // Event group bits
 #define RX0_CHAR 1
@@ -74,17 +74,21 @@ void Serial::serialHandler(void *pvParameters)
 	char buf[512];  // 6 messages @ 80 byte
 	xcv_serial_t *cfg = (xcv_serial_t *)pvParameters;
 	ESP_LOGI(FNAME,"serialHandler %s", cfg->name );
-	// Make a pause, that has avoided core dumps during enable the RX interrupt.
-	delay( 3000 );                   // delay a bit serial task startup unit startup of system is through
 	if( cfg->port == 1 )
 		cfg->mySL=S1;
 	else if( cfg->port == 2 )
 		cfg->mySL=S2;
+
+	if( rxTxNotifier == nullptr ) {  // only once for both UARTS
+		rxTxNotifier = xEventGroupCreate();
+		ESP_LOGI( FNAME, "setRxNotifier" );
+		uartRxEventHandler( rxTxNotifier );
+	}
+
 	cfg->mySL->flush();
 	cfg->mySL->configure();
 	// Clear Uart RX receiver buffer to get a clean start point.
 	ESP_LOGI(FNAME,"%s: enable RX by Interrupt", cfg->name );
-	cfg->mySL->enableRxInterrupt();  // Enable Uart RX interrupt
 	cfg->route_disable = false;
 	// Define timeout of 5s that the watchdog becomes not active.
 	TickType_t ticksToWait = 5000 / portTICK_PERIOD_MS;
@@ -230,16 +234,7 @@ void Serial::begin(){   // will be obsoleted when Devices launch serial interfac
 
 	// Create event notifier, when serial 1 or serial 2 are enabled
 	// do in any case, S1 and S2 might be disabled
-	rxTxNotifier = xEventGroupCreate();
 
-	if( rxTxNotifier == nullptr ) {
-		ESP_LOGI( FNAME, "Cannot create EventGroupHandle" );
-	}
-	else {
-		// Set event notifier in uart interrupt routine.
-		ESP_LOGI( FNAME, "setRxNotifier" );
-		uartRxEventHandler( rxTxNotifier );
-	}
 }
 
 bool Serial::taskStarted( int num ){
@@ -285,6 +280,11 @@ void Serial::taskStart(int uart_nr){
 	if( serial2 && uart_nr == 2 ){
 		taskStartS2();
 	}
+	delay(3000);
+	if( serial1 )
+		S1->enableRxInterrupt();
+	if( serial2 )
+		S2->enableRxInterrupt();
 }
 
 void Serial::taskStop( int uart_nr ){

@@ -187,75 +187,66 @@ int upd_screens(SetupMenuSelect *p) {
 	return 0;
 }
 
+
 int update_s2_baud(SetupMenuSelect *p) {
-	SerialLine S2m(UART_NUM_2);
 	ESP_LOGI(FNAME,"Select baudrate: %d", p->getSelect() ); // coldstart
-	S2m.setBaud((e_baud)(p->getSelect()), true); // 0 off, 1: 4800, 2:9600, etc support coldstart from BAUD_OFF
+	S2->setBaud((e_baud)(p->getSelect()), true); // 0 off, 1: 4800, 2:9600, etc support coldstart from BAUD_OFF
 	return 0;
 }
 
 int update_s2_pol(SetupMenuSelect *p) {
-	SerialLine S2m(UART_NUM_2);
 	ESP_LOGI(FNAME,"Select RX/TX polarity: %d", p->getSelect() );
-	S2m.setLineInverse((e_polarity)(p->getSelect())); // 0 off, 1 invers or TTL (always both, RX/TX)
+	S2->setLineInverse((e_polarity)(p->getSelect())); // 0 off, 1 invers or TTL (always both, RX/TX)
 	return 0;
 }
 
 int update_s2_pin(SetupMenuSelect *p) {
-	SerialLine S2m(UART_NUM_2);
 	ESP_LOGI(FNAME,"Select Pin Swap: %d", p->getSelect() );
-	S2m.setPinSwap((e_pin)(p->getSelect())); // 0 normal (3:TX 4:RX), 1 swapped (3:RX 4:TX)
+	S2->setPinSwap((e_pin)(p->getSelect())); // 0 normal (3:TX 4:RX), 1 swapped (3:RX 4:TX)
 	return 0;
 }
 
 int update_s2_txena(SetupMenuSelect *p) {
-	SerialLine S2m(UART_NUM_2);
 	ESP_LOGI(FNAME,"Select TX Enable: %d", p->getSelect() );
-	S2m.setSlaveRole((e_tx)(p->getSelect())); // 0 normal Client (RO, Listener), 1 Master (Sender)
+	S2->setSlaveRole((e_tx)(p->getSelect())); // 0 normal Client (RO, Listener), 1 Master (Sender)
 	return 0;
 }
 
 int update_s2_protocol(SetupMenuSelect *p) {
-	SerialLine S2m(UART_NUM_2);
 	ESP_LOGI(FNAME,"Select profile: %d", p->getSelect()-1 );
-	S2m.loadProfile((e_profile)(p->getSelect() - 1));
-	S2m.configure(); // For the moment transparent:  SM_FLARM = 0, SM_RADIO = 1, SM_XCTNAV_S3 = 2, SM_OPENVARIO = 3, SM_XCFLARMVIEW = 4
+	S2->loadProfile((e_profile)(p->getSelect() - 1));
+	S2->configure(); // For the moment transparent:  SM_FLARM = 0, SM_RADIO = 1, SM_XCTNAV_S3 = 2, SM_OPENVARIO = 3, SM_XCFLARMVIEW = 4
 	return 0;
 }
 
 int update_s1_baud(SetupMenuSelect *p) {
-	SerialLine S1m(UART_NUM_1);
 	ESP_LOGI(FNAME,"Select baudrate: %d", p->getSelect() );
-	S1m.setBaud((e_baud)(p->getSelect()), true);  // 0 off, 1: 4800, 2:9600, etc
+	S1->setBaud((e_baud)(p->getSelect()), true);  // 0 off, 1: 4800, 2:9600, etc
 	return 0;
 }
 
 int update_s1_pol(SetupMenuSelect *p) {
-	SerialLine S1m(UART_NUM_1);
 	ESP_LOGI(FNAME,"Select RX/TX polarity: %d", p->getSelect() );
-	S1m.setLineInverse((e_polarity)(p->getSelect())); // 0 off, 1 invers or TTL (always both, RX/TX)
+	S1->setLineInverse((e_polarity)(p->getSelect())); // 0 off, 1 invers or TTL (always both, RX/TX)
 	return 0;
 }
 
 int update_s1_pin(SetupMenuSelect *p) {
-	SerialLine S1m(UART_NUM_1);
 	ESP_LOGI(FNAME,"Select Pin Swap: %d", p->getSelect() );
-	S1m.setPinSwap((e_pin)(p->getSelect())); // 0 normal (3:TX 4:RX), 1 swapped (3:RX 4:TX)
+	S1->setPinSwap((e_pin)(p->getSelect())); // 0 normal (3:TX 4:RX), 1 swapped (3:RX 4:TX)
 	return 0;
 }
 
 int update_s1_txena(SetupMenuSelect *p) {
-	SerialLine S1m(UART_NUM_1);
 	ESP_LOGI(FNAME,"Select TX Enable: %d", p->getSelect() );
-	S1m.setSlaveRole((e_tx)(p->getSelect())); // 0 normal Client (RO, Listener), 1 Master (Sender)
+	S1->setSlaveRole((e_tx)(p->getSelect())); // 0 normal Client (RO, Listener), 1 Master (Sender)
 	return 0;
 }
 
 int update_s1_protocol(SetupMenuSelect *p) {
-	SerialLine S1m(UART_NUM_1);
 	ESP_LOGI(FNAME,"Select profile: %d", p->getSelect()-1 );
-	S1m.loadProfile((e_profile)(p->getSelect() - 1));
-	S1m.configure(); // For the moment transparent:  SM_FLARM = 0, SM_RADIO = 1, SM_XCTNAV_S3 = 2, SM_OPENVARIO = 3, SM_XCFLARMVIEW = 4
+	S1->loadProfile((e_profile)(p->getSelect() - 1));
+	S1->configure(); // For the moment transparent:  SM_FLARM = 0, SM_RADIO = 1, SM_XCTNAV_S3 = 2, SM_OPENVARIO = 3, SM_XCFLARMVIEW = 4
 	return 0;
 }
 

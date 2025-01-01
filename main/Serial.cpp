@@ -88,7 +88,6 @@ void Serial::serialHandler(void *pvParameters)
 	cfg->mySL->flush();
 	cfg->mySL->configure();
 	// Clear Uart RX receiver buffer to get a clean start point.
-	ESP_LOGI(FNAME,"%s: enable RX by Interrupt", cfg->name );
 	cfg->route_disable = false;
 	// Define timeout of 5s that the watchdog becomes not active.
 	TickType_t ticksToWait = 5000 / portTICK_PERIOD_MS;
@@ -258,15 +257,8 @@ bool Serial::taskStarted( int num ){
 // will be obsoleted when devices launch serial lines
 void Serial::taskStart(){
 	ESP_LOGI(FNAME,"Serial::taskStart()" );
-	bool serial1 = (serial1_speed.get() != 0 || wireless != 0);
-	bool serial2 = (serial2_speed.get() != 0 && hardwareRevision.get() >= XCVARIO_21);
-
-	if( serial1 ){
-		taskStartS1();
-	}
-	if( serial2 ){
-		taskStartS2();
-	}
+	taskStart(1);
+	taskStart(2);
 }
 
 void Serial::taskStart(int uart_nr){
@@ -280,7 +272,7 @@ void Serial::taskStart(int uart_nr){
 	if( serial2 && uart_nr == 2 ){
 		taskStartS2();
 	}
-	delay(3000);
+	delay(8000);
 	if( serial1 )
 		S1->enableRxInterrupt();
 	if( serial2 )

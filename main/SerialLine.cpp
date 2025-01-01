@@ -121,7 +121,7 @@ void SerialLine::setRxNotifier( EventGroupHandle_t egh )
 
 void SerialLine::enableRxInterrupt()
 {
-	ESP_LOGI( FNAME, "enableRxInterrupt" );
+	ESP_LOGI( FNAME, "Now enableRxInterrupt S%d", uart_nr );
 	// Make sure that the previous interrupt_info is not used anymore
 	if( _uart ){
 		uartDisableInterrupt( _uart );

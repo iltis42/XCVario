@@ -25,7 +25,7 @@ typedef struct _s_serial_cfg {
 
 class SerialLine final : public InterfaceCtrl {
 public:
-    SerialLine(uart_port_t uart);                       // [0 = console], 1 = S1, 2 = S2
+    SerialLine(uart_port_t uart, gpio_num_t rx_pin, gpio_num_t tx_pin);   // uart: [0 = console], 1 = S1, 2 = S2
     virtual ~SerialLine() {};
     void loadProfile(e_profile profile);                // load defaults according to profile given
     void configure();                                   // SM_FLARM, SM_RADIO, etc
@@ -57,6 +57,8 @@ private:
     t_serial_cfg cfg;
     HardwareSerial *hw_serial;
     uart_port_t uart_nr;
+    gpio_num_t tx_pin_norm;
+    gpio_num_t rx_pin_norm;
     gpio_num_t tx_gpio;
     gpio_num_t rx_gpio;
     uint8_t tx_req;

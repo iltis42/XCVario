@@ -38,7 +38,7 @@ public:
     virtual const char* getStringId() const { return ""; }
     virtual void ConfigureIntf(int cfg) = 0;
     virtual int Send(const char *msg, int len, int port=0) = 0; // if blocked returns number of ms for next possible invocation
-    DataLink* getDataLink(int port);
+    DataLink* getDataLink(int port=0);
     int getNrDLinks() const { return _dlink.size(); }
     void DeleteDataLink(int port);
     void DeleteAllDataLinks();

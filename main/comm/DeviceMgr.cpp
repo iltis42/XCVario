@@ -210,7 +210,7 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
     }
     else if ( iid == S1_RS232) {
     	if ( S1 ) {
-    		// S1->loadProfile(SM_FLARM);    // let this be done at configuration time of device (Setup), to allow tweaking of params
+    		S1->loadProfile(SM_FLARM);    // TODO let this be done at configuration time of device (Setup), to allow tweaking of params
     		itf = S1;
     	}
     }

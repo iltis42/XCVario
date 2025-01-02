@@ -17,12 +17,14 @@ static const char *MEMOS[3] = { "S0", "S1", "S2" };
 gpio_num_t SerialLine::prior_tx_gpio[3] = { GPIO_NUM_36,GPIO_NUM_36,GPIO_NUM_36 };
 gpio_num_t SerialLine::prior_rx_gpio[3] = { GPIO_NUM_36,GPIO_NUM_36,GPIO_NUM_36 };
 
-SerialLine::SerialLine(uart_port_t uart) :
+SerialLine::SerialLine(uart_port_t uart, gpio_num_t rx_pin, gpio_num_t tx_pin ) :
 	_intfid(InterfaceId(S0_RS232+uart)),
 	_id_memo(MEMOS[uart])
 {
 	uart_nr = uart;
 	_uart = 0;
+	rx_pin_norm = rx_pin;
+	tx_pin_norm = tx_pin;
 	switch( uart_nr ){
 	case UART_NUM_1:
 		cfg.baud = (e_baud)serial1_speed.get();        // load settings from NVS
@@ -157,30 +159,14 @@ uint16_t SerialLine::readBufFromQueue( uint8_t* buffer, const size_t len)
 }
 
 void SerialLine::setupGPIOPins(){
-	switch( uart_nr ){
-	case UART_NUM_1:
-		switch( cfg.pin ){
-		case RJ45_3TX_4RX:            // normal RX:16, TX:17
-			rx_gpio=GPIO_NUM_16;
-			tx_gpio=GPIO_NUM_17;
-			break;
-		case RJ45_3RX_4TX:
-			rx_gpio=GPIO_NUM_17;
-			tx_gpio=GPIO_NUM_16;
-			break;
-		}
+	switch( cfg.pin ){
+	case RJ45_3TX_4RX:            // normal RX:16, TX:17
+		rx_gpio=rx_pin_norm;
+		tx_gpio=tx_pin_norm;
 		break;
-	case UART_NUM_2:
-		switch( cfg.pin ){
-		case RJ45_3TX_4RX:      // Normal RX:18, TX:4
-			rx_gpio=GPIO_NUM_18;
-			tx_gpio=GPIO_NUM_4;
-			break;
-		case RJ45_3RX_4TX:
-			rx_gpio=GPIO_NUM_4;
-			tx_gpio=GPIO_NUM_18;
-			break;
-		}
+	case RJ45_3RX_4TX:
+		rx_gpio=tx_pin_norm;
+		tx_gpio=rx_pin_norm;
 		break;
 	}
 }

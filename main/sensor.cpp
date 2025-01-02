@@ -850,8 +850,8 @@ void readTemp(void *pvParameters){
 		}
 		if( (ttick%5) == 0 ){
 			SetupCommon::commitDirty();
-			DeviceManager* dm = DeviceManager::Instance();
-			static_cast<TestQuery*>(dm->getProtocol( TEST_DEV2, TEST_P ))->sendTestQuery();  // all 5 seconds on burst
+			// DeviceManager* dm = DeviceManager::Instance();
+			// static_cast<TestQuery*>(dm->getProtocol( TEST_DEV2, TEST_P ))->sendTestQuery();  // all 5 seconds on burst
 		}
 		vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS);
 	}
@@ -1392,9 +1392,10 @@ void system_startup(void *args){
 	{
 		S1 = new SerialLine(1,GPIO_NUM_16,GPIO_NUM_17);
 		DeviceManager* dm = DeviceManager::Instance();
-		dm->addDevice(TEST_DEV, TEST_P, 1, 1, S1_RS232);
-		S2 = new SerialLine(2,GPIO_NUM_18,GPIO_NUM_4);
-		dm->addDevice(TEST_DEV2, TEST_P, 2, 2, S2_RS232);
+		dm->addDevice(FLARM_DEV, FLARM_P, 1, 1, S1_RS232);
+		// dm->addDevice(TEST_DEV, TEST_P, 1, 1, S1_RS232);
+		// S2 = new SerialLine(2,GPIO_NUM_18,GPIO_NUM_4);
+		// dm->addDevice(TEST_DEV2, TEST_P, 2, 2, S2_RS232);
 	}
 	// Factory test for serial interface plus cable
 	String result("Serial ");
@@ -1403,10 +1404,10 @@ void system_startup(void *args){
 	else
 		result += "S1 FAIL";
 	if( (hardwareRevision.get() >= XCVARIO_21) && serial2_speed.get() ){
-		if( Serial::selfTest( 2 ) )
-			result += ",S2 OK";
-		else
-			result += ",S2 FAIL";
+		// if( Serial::selfTest( 2 ) )
+		// 	result += ",S2 OK";
+		// else
+		// 	result += ",S2 FAIL";
 	}
 	if( abs(factory_volt_adjust.get() - 0.00815) < 0.00001 ){
 		display->writeText( line++, result.c_str() );

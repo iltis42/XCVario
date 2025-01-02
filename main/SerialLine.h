@@ -8,6 +8,7 @@
 #include "HardwareSerial.h"
 #include "RingBufCPP.h"
 #include "SString.h"
+#include <SetupNG.h>
 
 typedef enum _e_baud { BAUD_OFF, BAUD_4800, BAUD_9600, BAUD_19200, BAUD_57600, BAUD_115200 } e_baud;
 typedef enum _e_polarity { RS232_STANDARD, RS232_TTL } e_polarity;
@@ -22,6 +23,14 @@ typedef struct _s_serial_cfg {
 	e_pin      pin:1;
 	e_tx        tx:1;
 } t_serial_cfg;
+
+typedef struct serial_setup {
+	SetupNG<int> *baud;
+	SetupNG<int> *polarity;
+	SetupNG<int> *tx_ena;
+	SetupNG<int> *pin;
+}t_serial_setup;
+
 
 class SerialLine final : public InterfaceCtrl {
 public:
@@ -55,20 +64,23 @@ public:
 private:
     void setupGPIOPins();
     t_serial_cfg cfg;
+   
     HardwareSerial *hw_serial;
     uart_port_t uart_nr;
     gpio_num_t tx_pin_norm;
     gpio_num_t rx_pin_norm;
     gpio_num_t tx_gpio;
     gpio_num_t rx_gpio;
-    uint8_t tx_req;
     static gpio_num_t prior_tx_gpio[3];
     static gpio_num_t prior_rx_gpio[3];
-    RingBufCPP<SString>* tx_q;
+   
     uart_t* _uart;
     void stop();                                              // stops RS232 interface
     const InterfaceId   _intfid;
     const char*         _id_memo;
+    const t_serial_setup _setup;
+    RingBufCPP<SString>* tx_q;
+    const uint8_t tx_req;
 };
 
 #endif // SERIALMANAGER_H

@@ -85,6 +85,7 @@ public:
             }
         }
         _frame.assign(1, c);
+        _crc = 0;
         return true;
     }
 

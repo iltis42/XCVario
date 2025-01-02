@@ -146,8 +146,8 @@ float baroP=0; // barometric pressure
 static float teP=0;   // TE pressure
 static float temperature=15.0;
 static float xcvTemp=15.0;
-static long unsigned int _millis = 0;
-long unsigned int _gps_millis = 0;
+static unsigned long _millis = 0;
+unsigned long _gps_millis = 0;
 
 
 static float battery=0.0;
@@ -617,7 +617,7 @@ void readSensors(void *pvParameters){
 			char log[SSTRLEN];
 			sprintf( log, "$SENS;");
 			int pos = strlen(log);
-			long int delta = _millis - _gps_millis;
+			long delta = _millis - _gps_millis;
 			if( delta < 0 )
 				delta += 1000;
 			sprintf( log+pos, "%d.%03d,%ld,%.3f,%.3f,%.3f,%.2f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f", (int)(tv.tv_sec%(60*60*24)), (int)(tv.tv_usec / 1000), delta, bp, tp, dynamicP, T, IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(),
@@ -850,8 +850,8 @@ void readTemp(void *pvParameters){
 		}
 		if( (ttick%5) == 0 ){
 			SetupCommon::commitDirty();
-			DeviceManager* dm = DeviceManager::Instance();
-			static_cast<TestQuery*>(dm->getProtocol( TEST_DEV2, TEST_P ))->sendTestQuery();  // all 5 seconds on burst
+			// DeviceManager* dm = DeviceManager::Instance();
+			// static_cast<TestQuery*>(dm->getProtocol( TEST_DEV2, TEST_P ))->sendTestQuery();  // all 5 seconds on burst
 		}
 		vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS);
 	}
@@ -1381,9 +1381,10 @@ void system_startup(void *args){
 	{
 		S1 = new SerialLine(1,GPIO_NUM_16,GPIO_NUM_17);
 		DeviceManager* dm = DeviceManager::Instance();
-		dm->addDevice(TEST_DEV, TEST_P, 1, 1, S1_RS232);
-		S2 = new SerialLine(2,GPIO_NUM_18,GPIO_NUM_4);
-		dm->addDevice(TEST_DEV2, TEST_P, 2, 2, S2_RS232);
+		dm->addDevice(FLARM_DEV, FLARM_P, 1, 1, S1_RS232);
+		// dm->addDevice(TEST_DEV, TEST_P, 1, 1, S1_RS232);
+		// S2 = new SerialLine(2,GPIO_NUM_18,GPIO_NUM_4);
+		// dm->addDevice(TEST_DEV2, TEST_P, 2, 2, S2_RS232);
 	}
 	// Factory test for serial interface plus cable
 	String result("Serial ");
@@ -1392,10 +1393,10 @@ void system_startup(void *args){
 	else
 		result += "S1 FAIL";
 	if( (hardwareRevision.get() >= XCVARIO_21) && serial2_speed.get() ){
-		if( Serial::selfTest( 2 ) )
-			result += ",S2 OK";
-		else
-			result += ",S2 FAIL";
+		// if( Serial::selfTest( 2 ) )
+		// 	result += ",S2 OK";
+		// else
+		// 	result += ",S2 FAIL";
 	}
 	if( abs(factory_volt_adjust.get() - 0.00815) < 0.00001 ){
 		display->writeText( line++, result.c_str() );

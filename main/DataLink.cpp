@@ -128,8 +128,6 @@ void DataLinkOld::routeSerialData( const char *data, uint32_t len, int port, boo
 
 
 void DataLinkOld::processNMEA( char * buffer, int len, int port ){
-	// ESP_LOGI(FNAME, "Port S%1d: processNMEA, frame: %s", port, buffer );
-	Flarm::parsePFLAX( buffer, port );  // datalink relevant as this changes protocol to flarm bincom
 	routeSerialData(buffer, len, port, true );
 }
 

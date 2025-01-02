@@ -50,7 +50,7 @@ public:
     virtual int Send(const char *msg, int len, int port=0);  // #fixme: port obsoleted, to be removed
 
     // integrated vom ex HardwareSerial
-    void receive( const char *msg, int len, int port=0 );
+    void receive(const char *msg, int len);
     size_t read(uint8_t *buffer, size_t size);
     void flush();
     void enableRxInterrupt();

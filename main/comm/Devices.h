@@ -16,6 +16,7 @@ typedef enum
     ANEMOI_DEV,
     XCVARIO_DEV,
     MASTER_DEV,  // CAN id registry
+    FLARM_DEV,
     TEST_DEV,
     TEST_DEV2
 } DeviceId;
@@ -28,6 +29,7 @@ typedef enum
     REGISTRATION, // CAN id registration 
     JUMBO_CMD,
     ANEMOI,
+    FLARM_P,
     NMEA_P,
     TEST_P
 } ProtocolType;

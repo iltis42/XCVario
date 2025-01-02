@@ -10,6 +10,7 @@
 
 #include "protocol/CANMasterReg.h"
 #include "protocol/JumboCmdHost.h"
+#include "protocol/FlarmGPS.h"
 #include "protocol/TestQuery.h"
 #include "Messages.h"
 
@@ -50,6 +51,10 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
         case JUMBO_CMD:
             ESP_LOGI(FNAME, "New JumboCmdHost");
             tmp = new JumboCmdHost(sendport, _sm);
+            break;
+        case FLARM_P:
+            ESP_LOGI(FNAME, "New Test Proto");
+            tmp = new FlarmGPS(sendport, _sm);
             break;
         case TEST_P:
             ESP_LOGI(FNAME, "New Test Proto");

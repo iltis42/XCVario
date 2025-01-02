@@ -26,6 +26,7 @@ static RingBufCPP<SString>* tx_queues[3] = { 0, &s1_tx_q, &s2_tx_q };
 static const uint8_t tx_requests[3] = { 0, TX1_REQ, TX2_REQ };
 
 SerialLine::SerialLine(uart_port_t uart, gpio_num_t rx_pin, gpio_num_t tx_pin ) :
+	InterfaceCtrl(true),
 	_intfid(InterfaceId(S0_RS232+uart)),
 	_id_memo(MEMOS[uart]),
 	_setup(uart_setup[uart]),
@@ -204,8 +205,8 @@ void SerialLine::loadProfile(e_profile profile){   // load defaults according to
 	_setup.pin->set( cfg.pin );
 }
 
-void SerialLine::receive( const char *msg, int len, int port ){
-	DataLink* dl = getDataLink( port );
+void SerialLine::receive(const char *msg, int len){
+	DataLink* dl = getDataLink();
 	dl->process( msg, len );
 }
 

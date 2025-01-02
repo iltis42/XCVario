@@ -136,7 +136,7 @@ void Serial::serialHandler(void *pvParameters)
 				// ESP_LOGI(FNAME,"S%d: RX: %d bytes, avail: %d", cfg->mySL->number(), rxBytes, available );
 				// ESP_LOG_BUFFER_HEXDUMP(FNAME,buf, rxBytes, ESP_LOG_INFO);
 				buf[rxBytes] = 0;
-				cfg->mySL->receive( buf, rxBytes, cfg->port );
+				cfg->mySL->receive( buf, rxBytes );
 				DM.monitorString( cfg->monitor, DIR_RX, buf, rxBytes );
 			}
 		}

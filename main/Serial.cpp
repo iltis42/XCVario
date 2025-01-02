@@ -73,7 +73,7 @@ void Serial::serialHandler(void *pvParameters)
 {
 	char buf[512];  // 6 messages @ 80 byte
 	xcv_serial_t *cfg = (xcv_serial_t *)pvParameters;
-	ESP_LOGI(FNAME,"serialHandler %s", cfg->name );
+	ESP_LOGI(FNAME,"serialHandler %s SerialLine* 1:%p 2:%p", cfg->name, S1, S2 );
 	if( cfg->port == 1 )
 		cfg->mySL=S1;
 	else if( cfg->port == 2 )
@@ -84,10 +84,6 @@ void Serial::serialHandler(void *pvParameters)
 		ESP_LOGI( FNAME, "setRxNotifier" );
 		uartRxEventHandler( rxTxNotifier );
 	}
-
-	cfg->mySL->flush();
-	cfg->mySL->configure();
-	// Clear Uart RX receiver buffer to get a clean start point.
 	cfg->route_disable = false;
 	// Define timeout of 5s that the watchdog becomes not active.
 	TickType_t ticksToWait = 5000 / portTICK_PERIOD_MS;
@@ -110,17 +106,17 @@ void Serial::serialHandler(void *pvParameters)
 		}
 		// Define expected event bits. They can come from the Uart RX ISR or from the Serial TX router queue.
 		EventBits_t bitsToWaitFor = cfg->tx_req | cfg->rx_char;
-
+		// ESP_LOGI( FNAME, "%s: Wait for event", cfg->name );
 		// We do wait for events from Uart RX, router TX side or timeout
 		EventBits_t ebits = xEventGroupWaitBits( rxTxNotifier, bitsToWaitFor, pdTRUE, pdFALSE, ticksToWait );
 		if( (ebits & bitsToWaitFor ) == 0 ) {
 			// Timeout occurred, that is used to reset the watchdog.
 			continue;
 		}
-		ESP_LOGI( FNAME, "%s: TO=%dms, EventBits=%X, RXAvail=%d", cfg->name, ticksToWait, ebits, cfg->mySL->available() );
+		// ESP_LOGI( FNAME, "%s: TO=%dms, EventBits=%X, RXAvail=%d", cfg->name, ticksToWait, ebits, cfg->mySL->available() );
 		// TX part, check if there is data for Serial Interface to send
 		if( (ebits & cfg->tx_req) && cfg->mySL->availableForWrite() ) {
-			ESP_LOGI(FNAME,"S%d: TX and available TXQ=%d P=%p", cfg->mySL->number(), cfg->tx_q->numElements(), cfg->tx_q );
+			// ESP_LOGI(FNAME,"S%d: TX and available TXQ=%d P=%p", cfg->mySL->number(), cfg->tx_q->numElements(), cfg->tx_q );
 			size_t len = Router::pullBlock( *(cfg->tx_q), buf, 512 );
 			ESP_LOGI(FNAME,"S%d: bytes=%d QL=%d", cfg->mySL->number(), len, cfg->tx_q->numElements() );
 			if( len ){
@@ -133,7 +129,7 @@ void Serial::serialHandler(void *pvParameters)
 			}
 		}
 		// RX part
-		if( (ebits & cfg->rx_char) ) { // only one transparent mode from now on, frame slicing in upper layer for UBX and NMEA
+		if( ebits & cfg->rx_char ) { // only one transparent mode from now on, frame slicing in upper layer for UBX and NMEA
 			uint32_t available = std::min( cfg->mySL->available(), 511 );
 			if( available ){
 				uint16_t rxBytes = cfg->mySL->readBufFromQueue( (uint8_t*)buf, available );  // read out all characters from the RX queue
@@ -259,6 +255,15 @@ void Serial::taskStart(){
 	ESP_LOGI(FNAME,"Serial::taskStart()" );
 	taskStart(1);
 	taskStart(2);
+	delay(100);
+	if( S1 ){
+		ESP_LOGI(FNAME,"S1 enable Int" );
+		S1->enableRxInterrupt();
+	}
+	if( S2 ){
+		ESP_LOGI(FNAME,"S2 enable Int" );
+		S2->enableRxInterrupt();
+	}
 }
 
 void Serial::taskStart(int uart_nr){
@@ -272,11 +277,6 @@ void Serial::taskStart(int uart_nr){
 	if( serial2 && uart_nr == 2 ){
 		taskStartS2();
 	}
-	delay(8000);
-	if( serial1 )
-		S1->enableRxInterrupt();
-	if( serial2 )
-		S2->enableRxInterrupt();
 }
 
 void Serial::taskStop( int uart_nr ){

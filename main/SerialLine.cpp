@@ -22,6 +22,7 @@ SerialLine::SerialLine(uart_port_t uart) :
 	_id_memo(MEMOS[uart])
 {
 	uart_nr = uart;
+	_uart = 0;
 	switch( uart_nr ){
 	case UART_NUM_1:
 		cfg.baud = (e_baud)serial1_speed.get();        // load settings from NVS
@@ -239,10 +240,10 @@ void SerialLine::uartBegin(){
 	int baudrate = baud[cfg.baud];
 	if( baudrate ){
 		ESP_LOGI(FNAME,"uartBegin UART:%d baud:%d, rx:%d, tx:%d, TTL:%d ", uart_nr, baudrate, rx_gpio, tx_gpio, cfg.pol );
+		if( _uart )
+			stop();
 		_uart = ::uartBegin(uart_nr, baudrate, SERIAL_8N1, rx_gpio, tx_gpio, 512, cfg.pol, cfg.pol );
-		// hw_serial->begin(baudrate,SERIAL_8N1,rx_gpio,tx_gpio, cfg.pol, cfg.pol );  // should be reentrant with auto end() at the begin
 		uartResizeRxBuffer(_uart, 512);
-		// hw_serial->setRxBufferSize(512);
 	}
 }
 

@@ -1379,10 +1379,10 @@ void system_startup(void *args){
 	}
 	Serial::begin();
 	{
-		S1 = new SerialLine(1);
+		S1 = new SerialLine(1,GPIO_NUM_16,GPIO_NUM_17);
 		DeviceManager* dm = DeviceManager::Instance();
 		dm->addDevice(TEST_DEV, TEST_P, 1, 1, S1_RS232);
-		S2 = new SerialLine(2);
+		S2 = new SerialLine(2,GPIO_NUM_18,GPIO_NUM_4);
 		dm->addDevice(TEST_DEV2, TEST_P, 2, 2, S2_RS232);
 	}
 	// Factory test for serial interface plus cable

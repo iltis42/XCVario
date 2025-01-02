@@ -7,17 +7,12 @@
 #include "RingBufCPP.h"  // SString, tbd: extra header
 #include "Units.h"
 
+class FlarmGPS;
 
 class Flarm {
+	friend class FlarmGPS;
 public:
 	static void setDisplay( AdaptUGC *theUcg ) { ucg = theUcg; };
-	static void parsePFLAE( const char *pflae );
-	static void parsePFLAU( const char *pflau, bool sim=false );
-	static void parsePFLAA( const char *pflaa );
-	static void parsePFLAX( const char *pflax, int port );
-	static void parseGPRMC( const char *gprmc );
-	static void parseGPGGA( const char *gpgga );
-	static void parsePGRMZ( const char *pgrmz );
 	static void drawAirplane( int x, int y, bool fromBehind=false, bool smallSize=false );
 	static inline int alarmLevel(){ return AlarmLevel; };
 	static void drawDownloadInfo();
@@ -61,7 +56,6 @@ private:
 	static void drawClearVerticalTriangle( int x, int y, int rb, int dist, int size, int factor );
 	static void drawTriangle( int x, int y, int rb, int dist, int size=15, int factor=2, bool erase=false );
 	static void flarmSim();
-	static long int GPSTime( char *time, char* date );
 
 	static AdaptUGC* ucg;
 	static int RX,TX,GPS,Power;

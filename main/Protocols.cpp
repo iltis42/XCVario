@@ -528,26 +528,6 @@ void Protocols::parseNMEA( const char *str ){
 			}
 		}
 	}
-	else if( !strncmp( str+1, "PFLAE,", 5 )) {  // On Task declaration or re-connect
-		Flarm::parsePFLAE( str );
-		ageBincom();
-	}
-	else if( !strncmp( str+1, "PFLAU,", 5 )) {
-		Flarm::parsePFLAU( str );
-		ageBincom();
-	}
-	else if( !strncmp( str+3, "RMC,", 3 ) ) {
-		Flarm::parseGPRMC( str );
-		ageBincom();
-	}
-	else if( !strncmp( str+3, "GGA,", 3 )) {
-		Flarm::parseGPGGA( str );
-		ageBincom();
-	}
-	else if( !strncmp( str+3, "RMZ,", 3 )) {
-		Flarm::parsePGRMZ( str );
-		ageBincom();
-	}
 }
 
 void Protocols::ageBincom(){

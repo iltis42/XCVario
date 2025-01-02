@@ -146,8 +146,8 @@ float baroP=0; // barometric pressure
 static float teP=0;   // TE pressure
 static float temperature=15.0;
 static float xcvTemp=15.0;
-static long unsigned int _millis = 0;
-long unsigned int _gps_millis = 0;
+static unsigned long _millis = 0;
+unsigned long _gps_millis = 0;
 
 
 static float battery=0.0;
@@ -617,7 +617,7 @@ void readSensors(void *pvParameters){
 			char log[SSTRLEN];
 			sprintf( log, "$SENS;");
 			int pos = strlen(log);
-			long int delta = _millis - _gps_millis;
+			long delta = _millis - _gps_millis;
 			if( delta < 0 )
 				delta += 1000;
 			sprintf( log+pos, "%d.%03d,%ld,%.3f,%.3f,%.3f,%.2f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f", (int)(tv.tv_sec%(60*60*24)), (int)(tv.tv_usec / 1000), delta, bp, tp, dynamicP, T, IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(),

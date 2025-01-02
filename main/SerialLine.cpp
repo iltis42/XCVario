@@ -1,6 +1,5 @@
 #include "SerialLine.h"
 #include <esp_log.h>
-#include <SetupNG.h>
 #include "Serial.h"
 #include "esp32-hal-uart.h"
 
@@ -17,32 +16,30 @@ static const char *MEMOS[3] = { "S0", "S1", "S2" };
 gpio_num_t SerialLine::prior_tx_gpio[3] = { GPIO_NUM_36,GPIO_NUM_36,GPIO_NUM_36 };
 gpio_num_t SerialLine::prior_rx_gpio[3] = { GPIO_NUM_36,GPIO_NUM_36,GPIO_NUM_36 };
 
+static const t_serial_setup uart_setup[3] = {
+	{ 0,0,0,0 },
+	{ &serial1_speed, &serial1_tx_inverted, &serial1_tx_enable, &serial1_pins_twisted },
+	{ &serial2_speed, &serial2_tx_inverted, &serial2_tx_enable, &serial2_pins_twisted }
+};
+
+static RingBufCPP<SString>* tx_queues[3] = { 0, &s1_tx_q, &s2_tx_q };
+static const uint8_t tx_requests[3] = { 0, TX1_REQ, TX2_REQ };
+
 SerialLine::SerialLine(uart_port_t uart, gpio_num_t rx_pin, gpio_num_t tx_pin ) :
 	_intfid(InterfaceId(S0_RS232+uart)),
-	_id_memo(MEMOS[uart])
+	_id_memo(MEMOS[uart]),
+	_setup(uart_setup[uart]),
+	tx_q(tx_queues[uart]),
+	tx_req(tx_requests[uart])
 {
 	uart_nr = uart;
 	_uart = 0;
 	rx_pin_norm = rx_pin;
 	tx_pin_norm = tx_pin;
-	switch( uart_nr ){
-	case UART_NUM_1:
-		cfg.baud = (e_baud)serial1_speed.get();        // load settings from NVS
-		cfg.pol = (e_polarity)serial1_tx_inverted.get();
-		cfg.tx = (e_tx)serial1_tx_enable.get();
-		cfg.pin = (e_pin)serial1_pins_twisted.get();
-		tx_q = &s1_tx_q;
-		tx_req = TX1_REQ;
-		break;
-	case UART_NUM_2:
-		cfg.baud = (e_baud)serial2_speed.get();
-		cfg.pol = (e_polarity)serial2_tx_inverted.get();
-		cfg.tx = (e_tx)serial2_tx_enable.get();
-		cfg.pin = (e_pin)serial2_pins_twisted.get();
-		tx_q = &s2_tx_q;
-		tx_req = TX2_REQ;
-		break;
-	}
+	cfg.baud = (e_baud)_setup.baud->get();        // load settings from NVS
+	cfg.pol = (e_polarity)_setup.polarity->get();
+	cfg.tx = (e_tx)_setup.tx_ena->get();
+	cfg.pin = (e_pin)_setup.pin->get();
 	tx_q->setSize( 5 );
 	setupGPIOPins();
 	uartBegin();
@@ -201,20 +198,10 @@ void SerialLine::setPinSwap( e_pin pinmode ){  // configures ESP32 matrix, here 
 void SerialLine::loadProfile(e_profile profile){   // load defaults according to given profile
 	ESP_LOGI(FNAME,"loadProfile: %d (1: Flarm, 2:Radio)", profile );
 	cfg = sm_serial_config[profile];
-	switch( uart_nr ){
-	case UART_NUM_1:
-		serial1_speed.set(cfg.baud);        // load settings from NVS
-		serial1_tx_inverted.set(cfg.pol);
-		serial1_tx_enable.set(cfg.tx);
-		serial1_pins_twisted.set(cfg.pin);
-		break;
-	case UART_NUM_2:
-		serial2_speed.set(cfg.baud);
-		serial2_tx_inverted.set(cfg.pol);
-		serial2_tx_enable.set(cfg.tx);
-		serial2_pins_twisted.set(cfg.pin);
-		break;
-	}
+	_setup.baud->set( cfg.baud );
+	_setup.polarity->set( cfg.pol );
+	_setup.tx_ena->set( cfg.tx );
+	_setup.pin->set( cfg.pin );
 }
 
 void SerialLine::receive( const char *msg, int len, int port ){

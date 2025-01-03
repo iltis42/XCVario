@@ -63,12 +63,9 @@ void canRxTask(void *arg)
         {
             msg.assign((char *)rx.data, rx.data_length_code);
             ESP_LOGI(FNAME, "CAN RX NMEA chunk, id:0x%x, len:%d msg: %s", rx.identifier, rx.data_length_code, msg.c_str());
-            for (auto &dl : can->_dlink)
-            {
-                if (dl->getPort() == rx.identifier)
-                {
-                    dl->process(msg.data(), msg.size());
-                }
+            auto dl = can->_dlink.find(rx.identifier);
+            if ( dl != can->_dlink.end() ) {
+                dl->second->process(msg.data(), msg.size());
             }
 
             // bool xcv_came = false;
@@ -127,7 +124,7 @@ void canRxTask(void *arg)
         {
             // protocol state machine may want to react on no traffic
             for (auto &dl : can->_dlink ) {
-                dl->process(nullptr, 0);
+                dl.second->process(nullptr, 0);
             }
         }
         if ( terminate_receiver ) { break; }

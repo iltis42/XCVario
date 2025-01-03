@@ -588,7 +588,6 @@ extern SetupNG<float>		stall_speed;
 extern SetupNG<int>       	flarm_warning;
 extern SetupNG<float>     	flarm_volume;
 extern SetupNG<float>       flarm_alarm_time;
-extern SetupNG<int>       	flarm_sim;
 extern SetupNG<int>       	flap_sensor;
 extern SetupNG<float>     	flap_pos_max;
 extern SetupNG<float>     	flap_neg_max;

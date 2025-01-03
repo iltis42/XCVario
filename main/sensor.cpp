@@ -29,6 +29,7 @@
 #include "Flarm.h"
 #include "Blackboard.h"
 #include "SetupMenuValFloat.h"
+#include "protocol/Clock.h"
 
 #include "quaternion.h"
 #include "wmm/geomag.h"
@@ -141,6 +142,8 @@ BTSender btsender;
 BLESender blesender;
 SerialLine *S1 = NULL;
 SerialLine *S2 = NULL;
+Clock *MY_CLOCK = nullptr;
+
 
 float baroP=0; // barometric pressure
 static float teP=0;   // TE pressure
@@ -1619,6 +1622,7 @@ void system_startup(void *args){
 
 extern "C" void  app_main(void)
 {
+	esp_log_level_set("*", ESP_LOG_INFO);
 	// Init timer infrastructure
 	Audio::shutdown();
 	esp_timer_init();
@@ -1633,9 +1637,10 @@ extern "C" void  app_main(void)
 		if( Cipher::init() )
 			attitude_indicator.set(1);
 	}
-	else
+	else {
 		ESP_LOGI(FNAME,"Setup already present");
-	esp_log_level_set("*", ESP_LOG_INFO);
+	}
+	MY_CLOCK = new Clock();
 
 #ifdef Quaternionen_Test
 		Quaternion::quaternionen_test();

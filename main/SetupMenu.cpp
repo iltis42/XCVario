@@ -28,6 +28,7 @@
 #include "CompassMenu.h"
 #include "esp_wifi.h"
 #include "Flarm.h"
+#include "protocol/FlarmSim.h"
 #include "WifiClient.h"
 #include "Blackboard.h"
 #include "DataMonitor.h"
@@ -497,6 +498,11 @@ int cur_vol_dflt(SetupMenuSelect *p) {
 	if (p->getSelect() != 0)  // "set"
 		default_volume.set(audio_volume.get());
 	p->setSelect(0);   // return to "cancel"
+	return 0;
+}
+
+static int startFlarmSimulation(SetupMenuSelect *p) {
+	FlarmSim::StartSim();
 	return 0;
 }
 
@@ -1397,12 +1403,10 @@ void SetupMenu::options_menu_create_flarm(MenuEntry *top) {
 			"The time FLARM alarm warning keeps displayed after alarm went off");
 	top->addEntry(flarmt);
 
-	SetupMenuSelect *flarms = new SetupMenuSelect("FLARM Simulation", RST_NONE,
-			0, true, &flarm_sim, false, true);
+	SetupMenuSelect *flarms = new SetupMenuSelect("Alarm Simulation", RST_NONE, startFlarmSimulation, false, nullptr, false, true);
 	flarms->setHelp(
 			"Simulate an airplane crossing from left to right with different alarm levels and vertical distance 5 seconds after pressed (exits setup!)");
-	flarms->addEntry("Disable");
-	flarms->addEntry("Start Sim");
+	flarms->addEntry("Start Simulation");
 	top->addEntry(flarms);
 }
 

@@ -28,23 +28,6 @@ AdaptUGC* Flarm::ucg;
 
 extern xSemaphoreHandle spiMutex;
 
-// Option to simulate FLARM sentences
-const char *flarm[] = {
-		"$PFLAU,3,1,2,1,1,-60,2,-100,355,1234*\n",
-		"$PFLAU,3,1,2,1,1,-20,2,-100,255,1234*\n",
-		"$PFLAU,3,1,2,1,1,-10,2,-80,175,1234*\n",
-		"$PFLAU,3,1,2,1,2,10,2,-40,150,1234*\n",
-		"$PFLAU,3,1,2,1,2,20,2,-20,130,1234*\n",
-		"$PFLAU,3,1,2,1,3,30,2,0,120,1234*\n",
-		"$PFLAU,3,1,2,1,3,60,2,20,125,1234*\n",
-		"$PFLAU,3,1,2,1,2,80,2,40,160,1234*\n",
-		"$PFLAU,3,1,2,1,1,90,2,80,210,1234*\n",
-		"$PFLAU,3,1,2,1,1,90,2,80,280,1234*\n"
-};
-#define NUM_SIM_DATASETS 10
-int Flarm::sim_tick=NUM_SIM_DATASETS*2;
-
-
 #define CENTERX 120
 #define CENTERY 120
 
@@ -63,25 +46,6 @@ int Flarm::bincom_port=0;
 int Flarm::clock_timer=0;
 bool Flarm::time_sync=false;
 
-void Flarm::flarmSim(){
-	// ESP_LOGI(FNAME,"flarmSim sim-tick: %d", sim_tick);
-	if( flarm_sim.get() ){
-		sim_tick=-3;
-		flarm_sim.set( 0 );
-	}
-	if( sim_tick < NUM_SIM_DATASETS*2 ){
-		if( sim_tick >= 0 ){
-			int cs = Protocols::calcNMEACheckSum( (char *)flarm[sim_tick/2] );
-			char str[80];
-			sprintf( str, "%s%02X\r\n", flarm[sim_tick/2], cs );
-			SString sf( str );
-			Router::forwardMsg( sf, s1_rx_q );
-			// parsePFLAU( str, true );
-			ESP_LOGI(FNAME,"Serial FLARM SIM: %s",  str );
-		}
-		sim_tick++;
-	}
-}
 
 
 void Flarm::progress(){  // once per second
@@ -89,7 +53,6 @@ void Flarm::progress(){  // once per second
 		timeout--;
 	}
 	// ESP_LOGI(FNAME,"progress, timeout=%d", timeout );
-	flarmSim();
 	clock_timer++;
 	if( !(clock_timer%3600) ){  // every hour reset sync flag to wait for next valid GPS time
 		time_sync = false;

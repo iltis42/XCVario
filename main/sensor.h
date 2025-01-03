@@ -50,11 +50,14 @@ typedef struct global_flags{
 
 class CANbus;
 class SerialLine;
+class Clock;
+
 
 extern t_global_flags gflags;
 extern BMPVario bmpVario;
 extern CANbus* CAN;
 extern SerialLine *S1,*S2;
+extern Clock *MY_CLOCK;
 extern StraightWind theWind;
 extern xSemaphoreHandle xMutex;
 extern int active_screen;

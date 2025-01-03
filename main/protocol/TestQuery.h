@@ -13,8 +13,6 @@
 
 #include <string>
 
-class Clock;
-
 class TestQuery final : public ProtocolItf, public Clock_I
 {
 public:
@@ -35,6 +33,4 @@ public:
 private:
     // Actions on commands
     gen_state_t parseTest();
-    static Clock *MY_CLOCK;
-
 };

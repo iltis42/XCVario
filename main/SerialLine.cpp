@@ -206,8 +206,9 @@ void SerialLine::loadProfile(e_profile profile){   // load defaults according to
 }
 
 void SerialLine::receive(const char *msg, int len){
-	DataLink* dl = getDataLink();
-	dl->process( msg, len );
+	if ( _dlink.size() >= 1 ) {
+		_dlink.begin()->second->process( msg, len );
+	}
 }
 
 void SerialLine::uartBegin(){

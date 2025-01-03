@@ -227,7 +227,7 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
         is_new = true;
     }
     // Retrieve, or create a new data link
-    DataLink *dl = itf->getDataLink(listen_port);
+    DataLink *dl = itf->newDataLink(listen_port);
     dev->_dlink.insert(dl); // Add, if new
     ProtocolItf* ret = dl->addProtocol(proto, did, send_port); // Add, id not yet there
     dev->_itf = itf;

@@ -53,11 +53,11 @@ void SerialLine::ConfigureIntf(int cfg){
 };
 
 int SerialLine::Send(const char *msg, int len, int port){
-	ESP_LOGI(FNAME,"Send(): UART: %d, msg: %s", uart_nr, msg );
+	// ESP_LOGI(FNAME,"Send(): UART: %d, msg: %s", uart_nr, msg );
 	if( !tx_q->isFull() ) {
 		tx_q->add( SString(msg) );
 		Serial::setRxTxNotifier( tx_req );
-		ESP_LOGI(FNAME,"Send(): add to Q OK");
+		// ESP_LOGI(FNAME,"Send(): add to Q OK");
 		return 0;
 	}
 	int dur = rint( len*12000.0/baud[cfg.baud] );  // 8 bits/byte * 1.5 = 12 bits * 1000 for mS

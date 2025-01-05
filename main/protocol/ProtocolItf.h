@@ -12,20 +12,28 @@
 #include <string>
 
 // Generic protocol state machine with special bit mask
-const int CRC_BIT   = 0x0100;
-const int GOTIT_BIT = 0x0200;
 typedef enum
 {
     START_TOKEN = 0,
-    HEADER = CRC_BIT | 1,
-    PAYLOAD = GOTIT_BIT | CRC_BIT | 2,
-    STOP_TOKEN = GOTIT_BIT | 3,
-    CHECK_CRC = GOTIT_BIT | 4,
-    CHECK_OK = GOTIT_BIT | 5,
-    COMPLETE = GOTIT_BIT | 6,
-    GO_BINARY = 7
+    HEADER,
+    PAYLOAD,
+    STOP_TOKEN,
+    CHECK_CRC1,
+    CHECK_CRC2,
+    COMPLETE
 } gen_state_t;
 
+
+constexpr int COMPLETE_BIT  = 0x10;
+constexpr int FORWARD_BIT   = 0x20;
+typedef enum
+{
+    NOACTION = 0,
+    DO_ROUTING = COMPLETE_BIT | FORWARD_BIT,
+    NOROUTING = COMPLETE_BIT,
+    GO_BINARY = COMPLETE_BIT | FORWARD_BIT | 1,
+    GO_NMEA = COMPLETE_BIT | FORWARD_BIT | 2
+} datalink_action_t;
 
 class ProtocolState;
 
@@ -42,8 +50,8 @@ public:
     // API
     DeviceId getDeviceId() { return _did; } // The connected (!) device through protocol
     virtual ProtocolType getProtocolId() { return NO_ONE; }
-    virtual gen_state_t nextByte(const char c) = 0; // return true if message is recognized and able to parse payload
-    virtual gen_state_t nextStreamChunk(const char *cptr, int count) { return START_TOKEN; } // for binary protocols
+    virtual datalink_action_t nextByte(const char c) = 0; // return true if message is recognized and able to parse payload
+    virtual datalink_action_t nextStreamChunk(const char *cptr, int count) { return NOACTION; } // for binary protocols
     inline Message* newMessage() { return DEV::acqMessage(_did, _send_port); }
     // gen_state_t getState() const { return _state; }
     virtual bool isBinary() const { return false; }
@@ -92,5 +100,5 @@ public:
     // frame buffer and state machine vars
     std::string _frame;
     gen_state_t _state = START_TOKEN;
-    int _crc = 0; // checksum (binary)
+    int         _crc = 0; // checksum (binary)
 };

@@ -23,7 +23,7 @@ public:
     virtual ProtocolType getProtocolId() { return REGISTRATION_P; }
 
 public:
-    virtual gen_state_t nextByte(const char c) override;
+    virtual datalink_action_t nextByte(const char c) override;
 
 private:
     // Received jumbo messages

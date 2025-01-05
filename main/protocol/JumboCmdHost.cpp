@@ -69,7 +69,7 @@
 //
 
 
-gen_state_t JumboCmdHost::nextByte(const char c)
+datalink_action_t JumboCmdHost::nextByte(const char c)
 {
     int pos = _sm._frame.size() - 1; // c already in the buffer
     ESP_LOGD(FNAME, "state %d, pos %d next char %c", _sm._state, pos, c);
@@ -77,7 +77,6 @@ gen_state_t JumboCmdHost::nextByte(const char c)
     case START_TOKEN:
         if ( c == '$' ) {
             _sm._state = HEADER;
-            _crc_buf[0] = '\0';
             ESP_LOGD(FNAME, "Msg START_TOKEN");
         }
         break;
@@ -93,7 +92,7 @@ gen_state_t JumboCmdHost::nextByte(const char c)
         break;
     case PAYLOAD:
         if ( c == '*' ) {
-            _sm._state = CHECK_CRC; // Expecting a CRC to check
+            _sm._state = CHECK_CRC1; // Expecting a CRC to check
             break;
         }
         if ( c != '\r' && c != '\n' ) {
@@ -101,68 +100,56 @@ gen_state_t JumboCmdHost::nextByte(const char c)
             NMEA::incrCRC(_sm._crc,c);
             break;
         }
-        else {
-            _sm._state = STOP_TOKEN;
-        }
-        // Fall through 
-    case CHECK_CRC:
-        if( _sm._state == CHECK_CRC ) { // did we not fall through
-            if ( _crc_buf[0] == '\0' ) {
-                // this is the first crc character
-                _crc_buf[0] = c;
-                break;
-            }
-            else {
-                _crc_buf[1] = c;
-                _crc_buf[2] = '\0';
-                char read_crc = (char)strtol(_crc_buf, NULL, 16);
-                ESP_LOGD(FNAME, "Msg CRC %s/%x - %x", _crc_buf, read_crc, _sm._crc);
-                if ( read_crc != _sm._crc ) {
-                    _sm._state = START_TOKEN;
-                    break;
-                }
-                _sm._state = CHECK_OK; // fall through
-            }
-        }
-        // Fall through 
-    case STOP_TOKEN:
-    case CHECK_OK:
-    case COMPLETE:
-        {
-            _sm._frame.push_back('\0'); // terminate the string buffer
-            gen_state_t next_state = START_TOKEN; // restart parsing
-            ESP_LOGI(FNAME, "Msg complete %c%c", _sm._frame.at(4), _sm._frame.at(5));
-            uint16_t mid = (_sm._frame.at(4)<<8) + _sm._frame.at(5);
-            switch (mid) {
-                case (('R' << 8) | 'P'):
-                    connected();
-                    break;
-                case (('R' << 8) | 'C'):
-                    if ( _sm._state == CHECK_OK ) {
-                        config();
-                    }
-                    break;
-                case (('R' << 8) | 'I'):
-                    if ( _sm._state == CHECK_OK ) {
-                        info();
-                    }
-                    break;
-                case (('A' << 8) | ' '):
-                    alive();
-                    break;
-                case (('E' << 8) | ' '):
-                    event();
-                    break;
-                default:
-                    break;
-            }
-            _sm._state = next_state;
-        }
+        _sm._state = COMPLETE;
         break;
+    case CHECK_CRC1:
+        _crc_buf[0] = c;
+        _sm._state = CHECK_CRC2;
+        break;
+    case CHECK_CRC2:
+    {
+        _crc_buf[1] = c;
+        _crc_buf[2] = '\0';
+        char read_crc = (char)strtol(_crc_buf, NULL, 16);
+        ESP_LOGD(FNAME, "Msg CRC %s/%x - %x", _crc_buf, read_crc, _sm._crc);
+        if ( read_crc != _sm._crc ) {
+            _sm._state = START_TOKEN;
+            break;
+        }
+        _sm._state = COMPLETE;
+        break;
+    }
     default:
         break;
     }
-    return _sm._state;
+
+    if ( _sm._state == COMPLETE )
+    {
+        NMEA::ensureTermination(_sm._frame);
+        _sm._state = START_TOKEN; // restart parsing
+        ESP_LOGI(FNAME, "Msg complete %c%c", _sm._frame.at(4), _sm._frame.at(5));
+        uint16_t mid = (_sm._frame.at(4)<<8) + _sm._frame.at(5);
+        switch (mid) {
+            case (('R' << 8) | 'P'):
+                connected();
+                break;
+            case (('R' << 8) | 'C'):
+                config();
+                break;
+            case (('R' << 8) | 'I'):
+                info();
+                break;
+            case (('A' << 8) | ' '):
+                alive();
+                break;
+            case (('E' << 8) | ' '):
+                event();
+                break;
+            default:
+                break;
+        }
+    }
+    return NOACTION;
 }
 
 void JumboCmdHost::connected()

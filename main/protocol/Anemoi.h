@@ -11,6 +11,7 @@ public:
 public:
     ProtocolType getProtocolId() override { return ANEMOI_P; }
     bool isBinary() const override { return true; }
+    datalink_action_t nextByte(const char c) override;
 
 private:
     void parseWind();

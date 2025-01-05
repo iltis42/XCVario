@@ -18,12 +18,12 @@ public:
     static constexpr int PROTOCOL_VERSION = 1;
 
 public:
-    JumboCmdHost(int mp, ProtocolState &sm) : ProtocolItf(JUMBO_DEV, mp, sm) {}
+    JumboCmdHost(int mp, ProtocolState &sm) : ProtocolItf(DeviceId::JUMBO_DEV, mp, sm) {}
     virtual ~JumboCmdHost() = default;
-    ProtocolType getProtocolId() override { return JUMBO_CMD; }
+    ProtocolType getProtocolId() override { return JUMBOCMD_P; }
 
 public:
-    gen_state_t nextByte(const char c) override;
+    datalink_action_t nextByte(const char c) override;
 
     // Some transmitter
     bool sendConnect();

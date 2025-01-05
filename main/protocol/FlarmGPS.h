@@ -21,7 +21,7 @@ public:
     ProtocolType getProtocolId() override { return FLARM_P; }
 
 public:
-    gen_state_t nextByte(const char c) override;
+    datalink_action_t nextByte(const char c) override;
 
     // Transmitted mesages
 

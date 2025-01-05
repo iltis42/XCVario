@@ -292,6 +292,7 @@ InterfaceCtrl* DeviceManager::getIntf(DeviceId did)
     return nullptr;
 }
 
+// Result should be cashed for performance purpose. Todo dirty flag mechanism
 RoutingList DeviceManager::getRouting(RoutingTarget target)
 {
     RoutingMap::iterator route_it = Routes.find(target);
@@ -315,6 +316,23 @@ RoutingList DeviceManager::getRouting(RoutingTarget target)
     else {
         return RoutingList();
     }
+}
+
+// Start a binary data route
+DataLink *DeviceManager::getFlarmBinPeer()
+{
+    DataLink *dl;
+    for ( auto &d : _device_map ) {
+        DataLink *dl = d.second->getDLforProtocol(FLARMHOST_P);
+        if ( dl ) return dl;
+    }
+    return nullptr;
+}
+
+// Recover all Flarm data routes back to NMEA mode
+void DeviceManager::resetFlarmModeToNmea()
+{
+
 }
 
 // prio - 0,..,4 0:low prio data stream, .. 5: important high prio commanding
@@ -368,6 +386,17 @@ ProtocolItf *Device::getProtocol(ProtocolType p) const
         ProtocolItf *tmp = dl->getProtocol(p);
         if ( tmp ) {
             return tmp;
+        }
+    }
+    return nullptr;
+}
+
+DataLink *Device::getDLforProtocol(ProtocolType p) const
+{
+    // Find protocol
+    for (DataLink* dl : _dlink) {
+        if ( dl->getProtocol(p) ) {
+            return dl;
         }
     }
     return nullptr;

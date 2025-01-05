@@ -30,6 +30,10 @@ MessagePool MP;
 
 // static vars
 static TaskHandle_t SendTask = nullptr;
+static RoutingMap Routes = {
+    { {FLARM_DEV, 0}, {{NAVI_DEV, 0}, {XCVARIOCLIENT_DEV, 20}} },
+    { {NAVI_DEV, 0}, {{FLARM_DEV, 0}} }
+};
 
 // a dummy interface
 class DmyItf final : public InterfaceCtrl
@@ -97,10 +101,10 @@ void TransmitTask(void *arg)
             }
             else {
                 // Regular case
-                ESP_LOGI(FNAME, "regular send");
+                // ESP_LOGI(FNAME, "regular send");
                 pls_retry = tt_snd(msg);
                 if ( pls_retry == 0 ) {
-                    ESP_LOGI(FNAME, "regular done");
+                    // ESP_LOGI(FNAME, "regular done");
                     DEV::relMessage(msg);
                 } else {
                     ESP_LOGI(FNAME, "retry pushed");
@@ -203,22 +207,22 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
     }
     InterfaceCtrl *itf = &dummy_itf;
     if ( iid == CAN_BUS ) {
-    	if ( CAN && ! CAN->isInitialized() ) {
-    		CAN->begin();
-    	}
-    	itf = CAN;
+        if ( CAN && ! CAN->isInitialized() ) {
+            CAN->begin();
+        }
+        itf = CAN;
     }
     else if ( iid == S1_RS232) {
-    	if ( S1 ) {
-    		S1->loadProfile(SM_FLARM);    // TODO let this be done at configuration time of device (Setup), to allow tweaking of params
-    		itf = S1;
-    	}
+        if ( S1 ) {
+            // S1->loadProfile(SM_FLARM);    // TODO let this be done at configuration time of device (Setup), to allow tweaking of params
+            itf = S1;
+        }
     }
     else if ( iid == S2_RS232) {
-    	if ( S2 ) {
-    		// S2->loadProfile(SM_XCTNAV_S3);
-    		itf = S2;
-    	}
+        if ( S2 ) {
+            // S2->loadProfile(SM_XCTNAV_S3);
+            itf = S2;
+        }
     }
     bool is_new = false;
     Device *dev = getDevice(did);
@@ -286,6 +290,31 @@ InterfaceCtrl* DeviceManager::getIntf(DeviceId did)
     }
     ESP_LOGW(FNAME, "No device %d found", did);
     return nullptr;
+}
+
+RoutingList DeviceManager::getRouting(RoutingTarget target)
+{
+    RoutingMap::iterator route_it = Routes.find(target);
+    if ( route_it != Routes.end() )
+    {
+        // remove not existing devices from the routing list
+        RoutingList res = route_it->second;
+        for (RoutingList::iterator tit=res.begin(); tit != res.end(); ) 
+        {
+            // is dev configured
+            if ( _device_map.find(tit->_target_dev) == _device_map.end() ) {
+                ESP_LOGD(FNAME, "remove %d from routing list.", tit->_target_dev);
+                tit = res.erase(tit);
+            }
+            else {
+                tit++;
+            }
+        }
+        return std::move(res);
+    }
+    else {
+        return RoutingList();
+    }
 }
 
 // prio - 0,..,4 0:low prio data stream, .. 5: important high prio commanding

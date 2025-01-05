@@ -22,6 +22,7 @@ public:
 
 public:
     datalink_action_t nextByte(const char c) override;
+    datalink_action_t nextStreamChunk(const char *cptr, int count) override;
 
     // Transmitted mesages
 
@@ -37,4 +38,6 @@ private:
     // parse helpers
     int _header_len;
     std::vector<int> _word_start;
+    // binary mode peer
+    ProtocolItf *_binpeer;
 };

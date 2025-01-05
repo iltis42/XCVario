@@ -11,7 +11,7 @@
 
 #include "nmea_util.h"
 #include "comm/Messages.h"
-#include "SetupNG.h"
+#include "comm/DeviceMgr.h"
 #include "sensor.h"
 
 #include <logdef.h>
@@ -20,15 +20,6 @@
 #include <time.h>
 #include <sys/time.h>
 
-
-static void ageBincom()
-{
-    if (Flarm::bincom > 0)
-    {
-        Flarm::bincom--;
-        ESP_LOGI(FNAME, "Flarm::bincom %d", Flarm::bincom);
-    }
-}
 
 // The FLARM protocol parser.
 //
@@ -119,23 +110,18 @@ datalink_action_t FlarmGPS::nextByte(const char c)
         switch (mid) {
             case (('R' << 16) | ('M' << 8) | 'C'):
                 parseGPRMC();
-                ageBincom();
                 break;
             case (('G' << 16) | ('G' << 8) | 'A'):
                 parseGPGGA();
-                ageBincom();
                 break;
             case (('M' << 8) | 'Z'):
                 parsePGRMZ();
-                ageBincom();
                 break;
             case (('A' << 8) | 'E'):
                 parsePFLAE();
-                ageBincom();
                 break;
             case (('A' << 8) | 'U'):
                 parsePFLAU();
-                ageBincom();
                 break;
             case (('A' << 8) | 'X'):
                 if ( parsePFLAX() ) {
@@ -149,6 +135,13 @@ datalink_action_t FlarmGPS::nextByte(const char c)
     return action;
 }
 
+datalink_action_t FlarmGPS::nextStreamChunk(const char *cptr, int count)
+{
+    Message* msg = DEV::acqMessage(_binpeer->getDeviceId(), _binpeer->getSendPort());
+    msg->buffer.assign(cptr, count);
+    DEV::Send(msg);
+    return NOACTION;
+}
 
 // $GPRMC,081836,A,3751.65,S,14507.36,E,000.0,360.0,130998,011.3,E*62
 // $GPRMC,225446,A,4916.45,N,12311.12,W,000.5,054.7,191194,020.3,E*68
@@ -353,8 +346,7 @@ void FlarmGPS::parsePFLAE()
     ESP_LOGD(FNAME, "parsePFLAE");
     Flarm::timeout = 10;
 
-    if ( !SetupCommon::isClient() 
-        && _word_start.size() == 3
+    if ( _word_start.size() == 3
         && _sm._frame.at(_word_start[0]) == 'A' 
         && _sm._frame.at(_word_start[1]) == '0' 
         && _sm._frame.at(_word_start[2]) == '0' )
@@ -415,12 +407,21 @@ void FlarmGPS::parsePFLAU()
 // and the Flarm stays in text mode.
 bool FlarmGPS::parsePFLAX()
 {
-    ESP_LOGI(FNAME,"parsePFLAX ----------------> switch to binary");
+    ESP_LOGI(FNAME,"parsePFLAX A ----------------> switch to binary");
 
-    if( _word_start.size() == 2 && *(_sm._frame.c_str()+_word_start[0]) == 'A' 
-        && !SetupCommon::isClient() ) {
-        return true;
+    DataLink *dl = DEVMAN->getFlarmBinPeer();
+    if ( _word_start.size() == 2 && *(_sm._frame.c_str()+_word_start[0]) == 'A' ) {
+        if ( dl ) {
+            _binpeer = dl->getProtocol(FLARMHOST_P);
+        }
         Flarm::timeout = 10;
+        return true;
+    }
+    else {
+        // That was a NACK, revert binmod on peer side
+        if ( dl ) {
+            dl->resetBinMode();
+        }
     }
     return false;
 }

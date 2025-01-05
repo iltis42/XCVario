@@ -38,6 +38,8 @@ struct Device
     ~Device();
     int getSendPort(ProtocolType p) const;
     ProtocolItf* getProtocol(ProtocolType p) const;
+    DataLink *getDLforProtocol(ProtocolType p) const;
+    // Attributes
     const DeviceId      _id;
     std::set<DataLink*> _dlink;
     InterfaceCtrl      *_itf;
@@ -98,6 +100,8 @@ public:
     void removeDevice(DeviceId did);
     InterfaceCtrl* getIntf(DeviceId did);
     RoutingList getRouting(RoutingTarget t);
+    DataLink *getFlarmBinPeer();
+    void resetFlarmModeToNmea();
     static int nrDevs() { return (DEVMAN) ? DEVMAN->getNrDevs() : 0; }
     int getNrDevs() const { return _device_map.size(); }
     // Search for the next free CAN id, organized in chunks of four in 5 prio categories.

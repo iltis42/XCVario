@@ -24,6 +24,7 @@ public:
     bool hasProtocol(ProtocolType ptyp) const;
     void process(const char *packet, int len);
     int getPort() const { return _port; }
+    void resetBinMode() { _binary_mode = false; }
     // dbg
     void dumpProto();
 

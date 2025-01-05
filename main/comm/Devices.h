@@ -26,10 +26,12 @@ typedef enum
 typedef enum
 {
     NO_ONE = 0, // Disable
-    REGISTRATION, // CAN id registration 
-    JUMBO_CMD,
-    ANEMOI,
+    REGISTRATION_P, // CAN id registration 
+    JUMBOCMD_P,
+    ANEMOI_P,
     FLARM_P,
+    FLARMHOST_P,
+    MAGSENS_P,
     NMEA_P,
     TEST_P
 } ProtocolType;

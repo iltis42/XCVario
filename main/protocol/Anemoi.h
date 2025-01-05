@@ -7,11 +7,10 @@ class Anemoi final : public ProtocolItf
 public:
     explicit Anemoi(int p, ProtocolState &sm) : ProtocolItf(ANEMOI_DEV, p, sm) {};
     virtual ~Anemoi() {}
-    ProtocolType getProtocolId() override { return ANEMOI; }
-    bool isBinary() const override { return true; }
 
 public:
-    virtual gen_state_t nextByte(const char c) override;
+    ProtocolType getProtocolId() override { return ANEMOI_P; }
+    bool isBinary() const override { return true; }
 
 private:
     void parseWind();

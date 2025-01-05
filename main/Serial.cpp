@@ -118,7 +118,7 @@ void Serial::serialHandler(void *pvParameters)
 		if( (ebits & cfg->tx_req) && cfg->mySL->availableForWrite() ) {
 			// ESP_LOGI(FNAME,"S%d: TX and available TXQ=%d P=%p", cfg->mySL->number(), cfg->tx_q->numElements(), cfg->tx_q );
 			size_t len = Router::pullBlock( *(cfg->tx_q), buf, 512 );
-			ESP_LOGI(FNAME,"S%d: bytes=%d QL=%d", cfg->mySL->number(), len, cfg->tx_q->numElements() );
+			// ESP_LOGI(FNAME,"S%d: bytes=%d QL=%d", cfg->mySL->number(), len, cfg->tx_q->numElements() );
 			if( len ){
 				// ESP_LOGI(FNAME,"S%d: TX len: %d bytes", cfg->mySL->number(), len );
 				// ESP_LOG_BUFFER_HEXDUMP(FNAME,buf,len, ESP_LOG_INFO);

@@ -50,7 +50,7 @@ void DataMonitor::header( int ch, bool binary, int len, e_dir_t dir ){
 	else{
 		tx_total += len;
 	}
-	ESP_LOGI(FNAME,"header() %d %d %d ", len, rx_total, tx_total );
+	// ESP_LOGI(FNAME,"header() %d %d %d ", len, rx_total, tx_total );
 	const char * what;
 	switch( ch ) {
 		case MON_BLUETOOTH: what = "BT"; break;
@@ -93,8 +93,8 @@ void DataMonitor::monitorString( int ch, e_dir_t dir, const char *str, int len )
 }
 
 void DataMonitor::printString( int ch, e_dir_t dir, const char *str, bool binary, int len ){
-	if (! binary)
-		ESP_LOGI(FNAME,"DM ch:%d dir:%d len:%d data:%s", ch, dir, len, str );
+	// if (! binary)
+	// 	ESP_LOGI(FNAME,"DM ch:%d dir:%d len:%d data:%s", ch, dir, len, str );
 	const int scroll_lines = 20;
 	char dirsym = 0;
 	if( dir == DIR_RX ){

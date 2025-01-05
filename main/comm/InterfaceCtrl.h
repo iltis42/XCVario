@@ -16,9 +16,11 @@ class DataLink;
 typedef enum {
     NO_PHY = 0,
     CAN_BUS,
+    I2C,
     S0_RS232,
     S1_RS232,
     S2_RS232,
+    BT_SERIAL,
     WIFI,
     BLT
 } InterfaceId;

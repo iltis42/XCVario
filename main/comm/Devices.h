@@ -16,9 +16,12 @@ typedef enum
     NO_DEVICE,
     JUMBO_DEV,
     ANEMOI_DEV,
-    XCVARIO_DEV,
+    // XCVARIO_DEV,
+    XCVARIOCLIENT_DEV,
     MASTER_DEV,  // CAN id registry
     FLARM_DEV,
+    NAVI_DEV,
+    MAGSENS_DEV,
     TEST_DEV,
     TEST_DEV2
 } DeviceId;

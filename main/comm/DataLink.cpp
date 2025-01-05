@@ -109,7 +109,7 @@ void DataLink::process(const char *packet, int len)
         return;
     }
 
-    gen_state_t state;
+    datalink_action_t action = NOACTION;
 
     if (packet == nullptr)
     {
@@ -124,9 +124,13 @@ void DataLink::process(const char *packet, int len)
         ESP_LOGI(FNAME, "process %dchar: %s", len, packet);
         // most likely case, only one protocol to parse
         // process every frame byte through state machine
+        ProtocolItf *prtcl = _all_p.front();
         for (int i = 0; i < len; i++) {
             if ( _sm.push(packet[i]) ) {
-                state = _all_p.front()->nextByte(packet[i]);
+                action = prtcl->nextByte(packet[i]);
+                if ( action & FORWARD_BIT ) {
+                    forwardMsg(_sm._frame, prtcl->getDeviceId());
+                }
                 ESP_LOGD(FNAME, "crc := %d", _sm._crc);
             } else {
                 _sm.reset();
@@ -183,3 +187,16 @@ void DataLink::dumpProto()
     }
 }
 
+void DataLink::forwardMsg(std::string &str, DeviceId odev)
+{
+    // consider forwarding
+    ESP_LOGD(FNAME, "get routing for %d/%d", odev, _port);
+    RoutingList routes = DEVMAN->getRouting(RoutingTarget(odev, _port));
+    ESP_LOGD(FNAME, "routings %d", routes.size());
+    for ( auto &target : routes ) {
+        Message* msg = DEV::acqMessage(target._target_dev, target._target_port);
+        ESP_LOGI(FNAME, "route %d/%d to %d/%d", odev, _port, msg->target_id, target._target_port);
+        msg->buffer = _sm._frame;
+        DEV::Send(msg);
+    }
+}

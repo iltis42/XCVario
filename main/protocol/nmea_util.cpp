@@ -65,4 +65,28 @@ void incrCRC(int &crc, const char c)
     crc ^= c;
 }
 
+void ensureTermination(std::string& str)
+{
+    // Check if the string already ends with "\r\n"
+    size_t len = str.length();
+    if (len >= 2 && str[len - 2] == '\r' && str[len - 1] == '\n') {
+        // String is already properly terminated
+        return;
+    }
+
+    // If the string ends with '\r', append '\n'
+    if (len >= 1 && str[len - 1] == '\r') {
+        str += '\n';
+    } 
+    // If the string ends with '\n', replace it with "\r\n"
+    else if (len >= 1 && str[len - 1] == '\n') {
+        str[len - 1] = '\r';
+        str += '\n';
+    } 
+    // Otherwise, append "\r\n" to the string
+    else {
+        str += "\r\n";
+    }
+}
+
 } // namespace

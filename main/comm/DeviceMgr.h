@@ -14,6 +14,7 @@
 
 #include <set>
 #include <map>
+#include <vector>
 
 class DataLink;
 class InterfaceCtrl;
@@ -26,9 +27,10 @@ extern DeviceManager* DEVMAN;
 // A device describes the set of static and runtime relevant information
 // to configure the comm links and access the device.
 //
-// Static parts of a supported device are name, protocol(s), ..
-// Runtime relevant info is the link is is connected to, the port(s) it is using for comm.
+// Static parts of a supported device are id, protocol type(s), ..
+// Runtime relevant info is the link it is connected to, the port(s) it is using for communication.
 //
+// Additionally a routing table that contains all the connected devices relation.
 
 struct Device
 {
@@ -62,10 +64,14 @@ struct DevConfigItem
     InterfaceConfig _intfConfig;
 };
 
+// Routing table on device level, details on protocol requirements are not defined here
+typedef std::vector<RoutingTarget> RoutingList;
+typedef std::map<RoutingTarget, RoutingList> RoutingMap;
 
-// A lean center holding the device info at run time.
+
+// A centeral for holding the device info at run time.
 // The information might be from nvs configuration, or initially gathered from an 
-// auto configuration.
+// auto/manual configuration.
 // There is no performance requirement as a router e.g. would rise. The
 // collection of info is for the couple of moments you need to know where 
 // to find e.g. the FLARM device as from an initiative communication (rare).
@@ -91,6 +97,7 @@ public:
     // Remove device of this type
     void removeDevice(DeviceId did);
     InterfaceCtrl* getIntf(DeviceId did);
+    RoutingList getRouting(RoutingTarget t);
     static int nrDevs() { return (DEVMAN) ? DEVMAN->getNrDevs() : 0; }
     int getNrDevs() const { return _device_map.size(); }
     // Search for the next free CAN id, organized in chunks of four in 5 prio categories.

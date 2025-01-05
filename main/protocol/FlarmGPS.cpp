@@ -41,7 +41,7 @@ static void ageBincom()
 // PFLAU,<RX>,<TX>,<GPS>,<Power>,<AlarmLevel>,<RelativeBearing>,<AlarmType>,<RelativeVertical>,<RelativeDistance>[,<ID>]
 // PFLAX,A*2E
 
-gen_state_t FlarmGPS::nextByte(const char c)
+datalink_action_t FlarmGPS::nextByte(const char c)
 {
     int pos = _sm._frame.size() - 1; // c already in the buffer
     ESP_LOGD(FNAME, "state %d, pos %d next char %c", _sm._state, pos, c);
@@ -49,7 +49,6 @@ gen_state_t FlarmGPS::nextByte(const char c)
     case START_TOKEN:
         if ( c == '$' ) {
             _sm._state = HEADER;
-            _crc_buf[0] = '\0';
             _word_start.clear();
             ESP_LOGD(FNAME, "Msg START_TOKEN");
         }
@@ -74,7 +73,7 @@ gen_state_t FlarmGPS::nextByte(const char c)
         }
         if ( c == '*' ) {
             _word_start.push_back(pos+1);
-            _sm._state = CHECK_CRC; // Expecting a CRC to check
+            _sm._state = CHECK_CRC1; // Expecting a CRC to check
             break;
         }
         if ( c != '\r' && c != '\n' ) {
@@ -82,78 +81,72 @@ gen_state_t FlarmGPS::nextByte(const char c)
             NMEA::incrCRC(_sm._crc,c);
             break;
         }
-        else {
-            _sm._state = STOP_TOKEN;
-        }
-        // Fall through 
-    case CHECK_CRC:
-        if( _sm._state == CHECK_CRC ) { // did we not fall through
-            if ( _crc_buf[0] == '\0' ) {
-                // this is the first crc character
-                _crc_buf[0] = c;
-                break;
-            }
-            else {
-                _crc_buf[1] = c;
-                _crc_buf[2] = '\0';
-                char read_crc = (char)strtol(_crc_buf, NULL, 16);
-                ESP_LOGD(FNAME, "Msg CRC %s/%x - %x", _crc_buf, read_crc, _sm._crc);
-                if ( read_crc != _sm._crc ) {
-                    _sm._state = START_TOKEN;
-                    break;
-                }
-                _sm._state = CHECK_OK; // fall through
-            }
-        }
-        // Fall through 
-    case STOP_TOKEN:
-    case CHECK_OK:
-    case COMPLETE:
-        {
-            _sm._frame.push_back('\0'); // terminate the string buffer
-            gen_state_t next_state = START_TOKEN; // restart parsing
-            ESP_LOGI(FNAME, "Msg complete %c%c%c", _sm._frame.at(_header_len), _sm._frame.at(_header_len+1), _sm._frame.at(_header_len+2));
-            int32_t mid = (_sm._frame.at(_header_len)<<8) + _sm._frame.at(_header_len+1);
-            if ( _sm._frame.at(_header_len+2) != ',' ) {
-                mid <<= 8;
-                mid |= _sm._frame.at(_header_len+2);
-            }
-            switch (mid) {
-                case (('R' << 16) | ('M' << 8) | 'C'):
-                    parseGPRMC();
-                    ageBincom();
-                    break;
-                case (('G' << 16) | ('G' << 8) | 'A'):
-                    parseGPGGA();
-                    ageBincom();
-                    break;
-                case (('M' << 8) | 'Z'):
-                    parsePGRMZ();
-                    ageBincom();
-                    break;
-                case (('A' << 8) | 'E'):
-                    parsePFLAE();
-                    ageBincom();
-                    break;
-                case (('A' << 8) | 'U'):
-                     parsePFLAU();
-                     ageBincom();
-                    break;
-                case (('A' << 8) | 'X'):
-                    if ( parsePFLAX() ) {
-                        next_state = GO_BINARY;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            _sm._state = next_state;
-        }
+        _sm._state = COMPLETE;
         break;
+    case CHECK_CRC1:
+        _crc_buf[0] = c;
+        _sm._state = CHECK_CRC2;
+        break;
+    case CHECK_CRC2:
+    {
+        _crc_buf[1] = c;
+        _crc_buf[2] = '\0';
+        char read_crc = (char)strtol(_crc_buf, NULL, 16);
+        ESP_LOGD(FNAME, "Msg CRC %s/%x - %x", _crc_buf, read_crc, _sm._crc);
+        if ( read_crc != _sm._crc ) {
+            _sm._state = START_TOKEN;
+            break;
+        }
+        _sm._state = COMPLETE;
+        break;
+    }
     default:
         break;
     }
-    return _sm._state;
+
+    datalink_action_t action = NOACTION;
+    if ( _sm._state ==  COMPLETE )
+    {
+        NMEA::ensureTermination(_sm._frame);
+        _sm._state = START_TOKEN; // restart parsing
+        action = DO_ROUTING;
+        ESP_LOGD(FNAME, "Msg complete %c%c%c", _sm._frame.at(_header_len), _sm._frame.at(_header_len+1), _sm._frame.at(_header_len+2));
+        int32_t mid = (_sm._frame.at(_header_len)<<8) + _sm._frame.at(_header_len+1);
+        if ( _sm._frame.at(_header_len+2) != ',' ) {
+            mid <<= 8;
+            mid |= _sm._frame.at(_header_len+2);
+        }
+        switch (mid) {
+            case (('R' << 16) | ('M' << 8) | 'C'):
+                parseGPRMC();
+                ageBincom();
+                break;
+            case (('G' << 16) | ('G' << 8) | 'A'):
+                parseGPGGA();
+                ageBincom();
+                break;
+            case (('M' << 8) | 'Z'):
+                parsePGRMZ();
+                ageBincom();
+                break;
+            case (('A' << 8) | 'E'):
+                parsePFLAE();
+                ageBincom();
+                break;
+            case (('A' << 8) | 'U'):
+                parsePFLAU();
+                ageBincom();
+                break;
+            case (('A' << 8) | 'X'):
+                if ( parsePFLAX() ) {
+                    action = GO_BINARY;
+                }
+                break;
+            default:
+                break;
+        }
+    }
+    return action;
 }
 
 
@@ -175,7 +168,7 @@ void FlarmGPS::parseGPRMC()
     if ( _word_start.size() < 9 ) {
         return;
     }
-    ESP_LOGI(FNAME, "parseGPRMC");
+    ESP_LOGD(FNAME, "parseGPRMC");
     struct tm t;
     const char *s = _sm._frame.c_str();
     int valid_time_scan = sscanf( s + _word_start[0], "%02d%02d%02d", &t.tm_hour, &t.tm_min, &t.tm_sec );
@@ -207,7 +200,7 @@ void FlarmGPS::parseGPRMC()
         CircleWind::newSample(Vector(Flarm::gndCourse, Units::knots2kmh(Flarm::gndSpeedKnots)));
         if (!Flarm::time_sync && (valid_time_scan && valid_date_scan))
         {
-            ESP_LOGI(FNAME, "Start TimeSync");
+            ESP_LOGD(FNAME, "Start TimeSync");
             long int epoch_time = mktime(&t);
             timeval epoch = {epoch_time, 0};
             const timeval *tv = &epoch;
@@ -215,7 +208,7 @@ void FlarmGPS::parseGPRMC()
             const timezone *tz = &utc;
             settimeofday(tv, tz);
             Flarm::time_sync = true;
-            ESP_LOGI(FNAME, "Finish Time Sync");
+            ESP_LOGD(FNAME, "Finish Time Sync");
         }
     }
     else
@@ -257,7 +250,7 @@ extern unsigned long _gps_millis;
 
 void FlarmGPS::parseGPGGA()
 {
-    ESP_LOGI(FNAME, "parseGPGGA");
+    ESP_LOGD(FNAME, "parseGPGGA");
     _gps_millis = millis();
 
     if (_word_start.size() > 13)
@@ -277,7 +270,7 @@ void FlarmGPS::parseGPGGA()
 //
 void FlarmGPS::parsePGRMZ()
 {
-    ESP_LOGI(FNAME, "parsePGRMZ");
+    ESP_LOGD(FNAME, "parsePGRMZ");
     if (alt_select.get() != AS_EXTERNAL) {
         return;
     }
@@ -296,7 +289,7 @@ void FlarmGPS::parsePGRMZ()
 // $PFLAA,0,-1234,1234,220,2,DD8F12,180,,30,-1.4,1*
 void FlarmGPS::parsePFLAA()
 {
-    ESP_LOGI(FNAME, "parsePFLAA");
+    ESP_LOGD(FNAME, "parsePFLAA");
 }
 
 
@@ -357,7 +350,7 @@ void FlarmGPS::parsePFLAA()
 
 void FlarmGPS::parsePFLAE()
 {
-    ESP_LOGI(FNAME, "parsePFLAE");
+    ESP_LOGD(FNAME, "parsePFLAE");
     Flarm::timeout = 10;
 
     if ( !SetupCommon::isClient() 
@@ -395,7 +388,7 @@ void FlarmGPS::parsePFLAE()
 //
 void FlarmGPS::parsePFLAU()
 {
-    ESP_LOGI(FNAME,"parsePFLAU");
+    ESP_LOGD(FNAME,"parsePFLAU");
     if ( _word_start.size() < 9 ) {
         return;
     }
@@ -422,7 +415,7 @@ void FlarmGPS::parsePFLAU()
 // and the Flarm stays in text mode.
 bool FlarmGPS::parsePFLAX()
 {
-    ESP_LOGI(FNAME,"parsePFLAX");
+    ESP_LOGI(FNAME,"parsePFLAX ----------------> switch to binary");
 
     if( _word_start.size() == 2 && *(_sm._frame.c_str()+_word_start[0]) == 'A' 
         && !SetupCommon::isClient() ) {

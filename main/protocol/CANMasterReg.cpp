@@ -50,7 +50,7 @@ extern InterfaceCtrl* CAN;
 
 
 
- gen_state_t CANMasterReg::nextByte(const char c)
+ datalink_action_t CANMasterReg::nextByte(const char c)
  {
     int pos = _sm._frame.size() - 1;
     ESP_LOGD(FNAME, "state %d, pos %d next char %c", _sm._state, pos, c);
@@ -60,7 +60,6 @@ extern InterfaceCtrl* CAN;
         if (c == '$')
         {
             _sm._state = HEADER;
-            _crc_buf[0] = '\0';
             ESP_LOGD(FNAME, "Msg START_TOKEN");
         }
         break;
@@ -81,7 +80,7 @@ extern InterfaceCtrl* CAN;
     case PAYLOAD:
         if (c == '*')
         {
-            _sm._state = CHECK_CRC; // Expecting a CRC to check
+            _sm._state = CHECK_CRC1; // Expecting a CRC to check
             break;
         }
         if (c != '\r' && c != '\n')
@@ -89,48 +88,40 @@ extern InterfaceCtrl* CAN;
             ESP_LOGD(FNAME, "Msg PAYLOAD");
             NMEA::incrCRC(_sm._crc, c);
             break;
-        } else {
-            _sm._state = STOP_TOKEN;
         }
-        // Fall through
-    case CHECK_CRC:
-        if( _sm._state == CHECK_CRC ) { // did we not fall through
-            if ( _crc_buf[0] == '\0' ) {
-                // this is the first crc character
-                _crc_buf[0] = c;
-                break;
-            }
-            else {
-                _crc_buf[1] = c;
-                _crc_buf[2] = '\0';
-                char read_crc = (char)strtol(_crc_buf, NULL, 16);
-                ESP_LOGD(FNAME, "Msg CRC %s/%x - %x", _crc_buf, read_crc, _sm._crc);
-                if ( read_crc != _sm._crc )
-                {
-                    _sm._state = START_TOKEN;
-                    break;
-                }
-                _sm._state = CHECK_OK; // fall through
-            }
-        }
-        // Fall through
-    case STOP_TOKEN:
-    case CHECK_OK:
-    case COMPLETE:
-        {
-            _sm._frame.push_back('\0'); // terminate the string buffer
-            _sm._state = START_TOKEN;   // restart parsing
-            ESP_LOGI(FNAME, "Msg complete %s", _sm._frame.c_str());
-            if ( _sm._frame.compare(4, 3, "REG") == 0 )
-            {
-                registration_query();
-            }
-        }
+        _sm._state = COMPLETE;
         break;
+    case CHECK_CRC1:
+        _crc_buf[0] = c;
+        _sm._state = CHECK_CRC2;
+        break;
+    case CHECK_CRC2:
+    {
+        _crc_buf[1] = c;
+        _crc_buf[2] = '\0';
+        char read_crc = (char)strtol(_crc_buf, NULL, 16);
+        ESP_LOGD(FNAME, "Msg CRC %s/%x - %x", _crc_buf, read_crc, _sm._crc);
+        if ( read_crc != _sm._crc ) {
+            _sm._state = START_TOKEN;
+            break;
+        }
+        _sm._state = COMPLETE;
+        break;
+    }
     default:
         break;
     }
-    return _sm._state;
+    if ( _sm._state == COMPLETE )
+    {
+        _sm._state = START_TOKEN;   // restart parsing
+        ESP_LOGI(FNAME, "Msg complete %s", _sm._frame.c_str());
+        if ( _sm._frame.compare(4, 3, "REG") == 0 )
+        {
+            registration_query();
+        }
+    }
+
+    return NOACTION;
 }
 
 void CANMasterReg::registration_query()

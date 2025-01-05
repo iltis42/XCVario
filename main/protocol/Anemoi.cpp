@@ -8,14 +8,13 @@ static const int ANEMOI_LEN[] = {9, 14, 5, 5, 10, 9, 14, 10};
 static uint8_t crc8ccitt(const void * data, size_t size);
 static void anemoiCRC(int &crc, const char c);
 
-gen_state_t Anemoi::nextByte(const char c)
+datalink_action_t Anemoi::nextByte(const char c)
 {
     char *ptr;
     int pos = _sm._frame.size() - 1; // c already in the buffer
 
     switch(_sm._state) {
     case START_TOKEN:
-    case CHECK_OK:
         if ( c == '$' ) { //0x24
             _sm._state = HEADER;
             _sm.reset();
@@ -36,25 +35,24 @@ gen_state_t Anemoi::nextByte(const char c)
     case PAYLOAD:
         if ( pos >= expected_len ) {
             // only start token plus payload
-            _sm._state = STOP_TOKEN;
+            _sm._state = COMPLETE;
         }
         ESP_LOGD(FNAME, "ANEMOI PAYLOAD");
         break;
-    case STOP_TOKEN:
+    case STOP_TOKEN: // fixme
         if( c == 0x0a ) {
-            _sm._state = COMPLETE;
             ESP_LOGD(FNAME, "ANEMOI STOP_TOKEN %x", c);
         }
-        else {
-            _sm._state = START_TOKEN;
-        }
+        _sm._state = COMPLETE;
         break;
-    case COMPLETE:
+    default:
+        break;
+    }
+    if ( _sm._state == COMPLETE )
+    {
         _sm._state = START_TOKEN;
         ESP_LOGD(FNAME, "ANEMOI COMPLETE %x", _sm._crc);
         if ( _sm._crc == 0 ) {
-            _sm._state = START_TOKEN; // no routing nor parsing wanted
-
             // Only process status and wind
             // ESP_LOGI(FNAME, "Port S2 anemoi %c", _framebuffer[1]);
             switch (_sm._frame.at(1)) {
@@ -68,11 +66,9 @@ gen_state_t Anemoi::nextByte(const char c)
                 break;
             }
         }
-        break;
-    default:
-        break;
     }
-    return _sm._state;
+
+    return NOACTION; // no routing wanted
 }
 
 

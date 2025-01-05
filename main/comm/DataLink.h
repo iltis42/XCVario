@@ -28,6 +28,10 @@ public:
     void dumpProto();
 
 private:
+    // helpers
+    void forwardMsg(std::string &str, DeviceId odev);
+
+private:
     std::vector<ProtocolItf*> _all_p;
     // std::deque<ProtocolItf*> _current_p;
     ProtocolItf *_gotit = nullptr; // The protocoll that recognized the current message

@@ -20,7 +20,7 @@ public:
     explicit CANMasterReg(int sendport, ProtocolState &sm) : ProtocolItf(MASTER_DEV, sendport, sm) {}
     virtual ~CANMasterReg() = default;
 
-    virtual ProtocolType getProtocolId() { return REGISTRATION; }
+    virtual ProtocolType getProtocolId() { return REGISTRATION_P; }
 
 public:
     virtual gen_state_t nextByte(const char c) override;

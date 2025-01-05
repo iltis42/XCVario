@@ -479,7 +479,7 @@ int crew_weight_adj(SetupMenuValFloat *p) {
 
 int wiper_button(SetupMenuSelect *p) {
 	JumboCmdHost *jumbo = static_cast<JumboCmdHost*>(DEVMAN->getProtocol(
-			DeviceId::JUMBO_DEV, ProtocolType::JUMBO_CMD));
+			DeviceId::JUMBO_DEV, ProtocolType::JUMBOCMD_P));
 
 	jumbo->sendShortPress(p->getSelect());
 	return 0;

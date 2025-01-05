@@ -163,7 +163,7 @@ void CANMasterReg::registration_query()
         ESP_LOGD(FNAME, "found JUMBOCMD");
         Device *dev = DEVMAN->getDevice(JUMBO_DEV);
         if ( dev ) {
-            client_id = dev->getSendPort(JUMBO_CMD); // re-use
+            client_id = dev->getSendPort(JUMBOCMD_P); // re-use
             ESP_LOGD(FNAME, "reuse port %d", client_id);
         } else {
             client_id = DeviceManager::getFreeCANId(1);
@@ -177,7 +177,7 @@ void CANMasterReg::registration_query()
         if ( ! msg ) return;
 
         int master_id = client_id + 1;
-        DEVMAN->addDevice(JUMBO_DEV, JUMBO_CMD, master_id, client_id, CAN_BUS);
+        DEVMAN->addDevice(JUMBO_DEV, JUMBOCMD_P, master_id, client_id, CAN_BUS);
 
         msg->buffer = "$PJMACC " + _token + ", " + std::to_string(client_id) + 
                                         ", " + std::to_string(master_id);

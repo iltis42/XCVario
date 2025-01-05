@@ -1339,7 +1339,7 @@ void system_startup(void *args){
 		CAN = new CANbus();
 		logged_tests += "CAN Interface: ";
 		DeviceManager* dm = DeviceManager::Instance();
-		if( dm->addDevice(DeviceId::MASTER_DEV, ProtocolType::REGISTRATION, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS) ) {
+		if( dm->addDevice(DeviceId::MASTER_DEV, ProtocolType::REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS) ) {
 			// series 2023 has fixed slope control, prior slope bit for AHRS temperature control
 			resultCAN = "OK";
 			ESP_LOGE(FNAME,"CAN Bus selftest (%sRS): OK", CAN->hasSlopeSupport() ? "" : "no ");

@@ -44,11 +44,11 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
         ProtocolItf *tmp = nullptr;
         switch (ptyp)
         {
-        case REGISTRATION:
+        case REGISTRATION_P:
             ESP_LOGI(FNAME, "New MasterReg");
             tmp = new CANMasterReg(sendport, _sm);
             break;
-        case JUMBO_CMD:
+        case JUMBOCMD_P:
             ESP_LOGI(FNAME, "New JumboCmdHost");
             tmp = new JumboCmdHost(sendport, _sm);
             break;

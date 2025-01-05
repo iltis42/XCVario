@@ -10,6 +10,7 @@
 
 #include "nmea_util.h"
 #include "comm/Messages.h"
+#include "comm/DeviceMgr.h"
 
 #include <logdef.h>
 
@@ -79,8 +80,22 @@ datalink_action_t FlarmHost::nextByte(const char c)
         // trigger forwarding
         _sm._state = START_TOKEN;
         NMEA::ensureTermination(_sm._frame);
+        if ( _sm._frame.substr(4,2) == "AX" && _sm._frame.at(6) != ',' ) {
+            ESP_LOGI(FNAME, "Start binary request");
+            _binpeer = DEVMAN->getProtocol(FLARM_DEV, FLARM_P);
+            return GO_BINARY;
+        }
         return DO_ROUTING;
     }
     return NOACTION;
 }
+
+datalink_action_t FlarmHost::nextStreamChunk(const char *cptr, int count)
+{
+    Message* msg = DEV::acqMessage(_binpeer->getDeviceId(), _binpeer->getSendPort());
+    msg->buffer.assign(cptr, count);
+    DEV::Send(msg);
+    return NOACTION;
+}
+
 

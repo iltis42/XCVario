@@ -119,6 +119,9 @@ void DataLink::process(const char *packet, int len)
         _binary_mode = false;
         return;
     }
+    else if ( _binary_mode ) {
+        _gotit->nextStreamChunk(packet, len);
+    }
     else if ( _all_p.size() == 1 )
     {
         ESP_LOGI(FNAME, "process %dchar: %s", len, packet);
@@ -128,8 +131,21 @@ void DataLink::process(const char *packet, int len)
         for (int i = 0; i < len; i++) {
             if ( _sm.push(packet[i]) ) {
                 action = prtcl->nextByte(packet[i]);
-                if ( action & FORWARD_BIT ) {
-                    forwardMsg(_sm._frame, prtcl->getDeviceId());
+                if ( action )
+                {
+                    if ( action & FORWARD_BIT ) {
+                        forwardMsg(_sm._frame, prtcl->getDeviceId());
+                    }
+                    if ( action == GO_BINARY ) {
+                        _binary_mode = true;
+                        _gotit = prtcl;
+                        if ( i+2 < len ) {
+                            // ship remining bytes as binary already
+                            _gotit->nextStreamChunk(packet+(i+2), len-(i+2));
+                        }
+                        break; // end loop imidiately
+                    }
+
                 }
                 ESP_LOGD(FNAME, "crc := %d", _sm._crc);
             } else {

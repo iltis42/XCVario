@@ -22,7 +22,7 @@ public:
     ProtocolType getProtocolId() override { return TEST_P; }
 
 public:
-    gen_state_t nextByte(const char c) override;
+    datalink_action_t nextByte(const char c) override;
 
     // The only transmitter
     bool sendTestQuery();
@@ -32,5 +32,5 @@ public:
 
 private:
     // Actions on commands
-    gen_state_t parseTest();
+    void parseTest();
 };

@@ -7,6 +7,7 @@
  ***********************************************************/
 
 #include "FlarmHost.h"
+#include "FlarmBin.h"
 
 #include "nmea_util.h"
 #include "comm/Messages.h"
@@ -92,10 +93,18 @@ datalink_action_t FlarmHost::nextByte(const char c)
 
 datalink_action_t FlarmHost::nextStreamChunk(const char *cptr, int count)
 {
-    Message* msg = DEV::acqMessage(_binpeer->getDeviceId(), _binpeer->getSendPort());
-    msg->buffer.assign(cptr, count);
-    DEV::Send(msg);
-    return NOACTION;
+    datalink_action_t last_action = NOACTION;
+    for (int i = 0; i < count; i++) {
+        datalink_action_t res = flarmBinSM(_sm, *(cptr+i));
+        if ( res & COMPLETE_BIT ) {
+            Message* msg = DEV::acqMessage(_binpeer->getDeviceId(), _binpeer->getSendPort());
+            msg->buffer = _sm._frame;
+            DEV::Send(msg);
+            _sm.reset();
+            last_action = res;
+        }
+    }
+    return last_action;
 }
 
 

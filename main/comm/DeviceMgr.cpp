@@ -112,7 +112,7 @@ void TransmitTask(void *arg)
                 }
             }
         }
-        else {
+        // else {
             // Time out hit
             while ( !later.empty() ) {
                 msg = later.front();
@@ -127,7 +127,7 @@ void TransmitTask(void *arg)
                     break;
                 }
             }
-        }
+        // }
     }
 
     // Fixme keep alive and ping code is a application layer concern and has to move
@@ -321,7 +321,6 @@ RoutingList DeviceManager::getRouting(RoutingTarget target)
 // Start a binary data route
 DataLink *DeviceManager::getFlarmBinPeer()
 {
-    DataLink *dl;
     for ( auto &d : _device_map ) {
         DataLink *dl = d.second->getDLforProtocol(FLARMHOST_P);
         if ( dl ) return dl;

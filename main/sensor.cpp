@@ -1395,9 +1395,9 @@ void system_startup(void *args){
 	{
 		S1 = new SerialLine(1,GPIO_NUM_16,GPIO_NUM_17);
 		DeviceManager* dm = DeviceManager::Instance();
-		dm->addDevice(FLARM_DEV, FLARM_P, 0, 1, S1_RS232);
+		dm->addDevice(FLARM_DEV, FLARM_P, 0, 0, S1_RS232);
 		S2 = new SerialLine(2,GPIO_NUM_18,GPIO_NUM_4);
-		dm->addDevice(NAVI_DEV, FLARMHOST_P, 0, 2, S2_RS232);
+		dm->addDevice(NAVI_DEV, FLARMHOST_P, 0, 0, S2_RS232);
 		// dm->addDevice(TEST_DEV, TEST_P, 1, 0, S1_RS232);
 		// S2 = new SerialLine(2,GPIO_NUM_18,GPIO_NUM_4);
 		// dm->addDevice(TEST_DEV2, TEST_P, 2, 0, S2_RS232);

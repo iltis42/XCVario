@@ -7,6 +7,7 @@
  ***********************************************************/
 
 #include "FlarmGPS.h"
+#include "FlarmBin.h"
 #include "Flarm.h"
 
 #include "nmea_util.h"
@@ -137,10 +138,18 @@ datalink_action_t FlarmGPS::nextByte(const char c)
 
 datalink_action_t FlarmGPS::nextStreamChunk(const char *cptr, int count)
 {
-    Message* msg = DEV::acqMessage(_binpeer->getDeviceId(), _binpeer->getSendPort());
-    msg->buffer.assign(cptr, count);
-    DEV::Send(msg);
-    return NOACTION;
+    datalink_action_t last_action = NOACTION;
+    for (int i = 0; i < count; i++) {
+        datalink_action_t res = flarmBinSM(_sm, *(cptr+i));
+        if ( res & COMPLETE_BIT ) {
+            Message* msg = DEV::acqMessage(_binpeer->getDeviceId(), _binpeer->getSendPort());
+            msg->buffer = _sm._frame;
+            DEV::Send(msg);
+            _sm.reset();
+            last_action = res;
+        }
+    }
+    return last_action;
 }
 
 // $GPRMC,081836,A,3751.65,S,14507.36,E,000.0,360.0,130998,011.3,E*62

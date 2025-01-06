@@ -54,11 +54,11 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
             tmp = new JumboCmdHost(sendport, _sm);
             break;
         case FLARM_P:
-            ESP_LOGI(FNAME, "New Test Proto");
+            ESP_LOGI(FNAME, "New Flarm");
             tmp = new FlarmGPS(sendport, _sm);
             break;
         case FLARMHOST_P:
-            ESP_LOGI(FNAME, "New Test Proto");
+            ESP_LOGI(FNAME, "New FlarmProxy");
             tmp = new FlarmHost(sendport, _sm);
             break;
         case TEST_P:
@@ -115,12 +115,15 @@ void DataLink::process(const char *packet, int len)
     {
         // Special use, "no data" timeout, might be expected and normal
         // We just reset the protocol state machine then
-        _sm.reset();
-        _binary_mode = false;
+        // _sm.reset();
+        // _binary_mode = false;
         return;
     }
     else if ( _binary_mode ) {
-        _gotit->nextStreamChunk(packet, len);
+        if ( _gotit->nextStreamChunk(packet, len) == GO_NMEA ) {
+            _binary_mode = false;
+            _sm.reset();
+        }
     }
     else if ( _all_p.size() == 1 )
     {
@@ -139,9 +142,11 @@ void DataLink::process(const char *packet, int len)
                     if ( action == GO_BINARY ) {
                         _binary_mode = true;
                         _gotit = prtcl;
-                        if ( i+2 < len ) {
+                        taskYIELD();
+                        if ( i+1 < len ) {
                             // ship remining bytes as binary already
-                            _gotit->nextStreamChunk(packet+(i+2), len-(i+2));
+                            _sm.reset();
+                            _gotit->nextStreamChunk(packet+(i+1), len-(i+1));
                         }
                         break; // end loop imidiately
                     }

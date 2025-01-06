@@ -78,6 +78,7 @@ public:
     {
         _frame.clear();
         _state = START_TOKEN;
+        _frame_len = 0;
         _crc = 0;
     }
     inline bool push(char c)
@@ -99,6 +100,7 @@ public:
 
     // frame buffer and state machine vars
     std::string _frame;
+    int         _frame_len;
     gen_state_t _state = START_TOKEN;
     int         _crc = 0; // checksum (binary)
 };

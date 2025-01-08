@@ -42,7 +42,6 @@ typedef struct xcv_serial {
 	uint8_t rx_nl;
 	uint8_t tx_req;
 	uint8_t monitor;
-	TaskHandle_t pid;
 	xcv_serial *cfg2; // configuration of other Uart
 	bool route_disable;
 	DataLinkOld* dl;
@@ -55,15 +54,12 @@ public:
 	Serial(){
 	}
 
-	static void begin();
+	static void begin( SerialLine *s1, SerialLine *s2 );
 	static void taskStart();
-	static void taskStart(int uart_nr);
-	static void taskStartS1();
-	static void taskStartS2();
-	static void taskStop( int uart_nr );
-	static bool taskStarted( int num );
+	static void taskStop();
+	static bool taskStarted();
 	static void serialHandler(void *pvParameters);
-	static bool selfTest( int num );
+	static bool selfTest( SerialLine *sl );
 	/*
 	 * Uart event bits
 	 * Bit 0: Uart 0 RX any character received
@@ -73,7 +69,7 @@ public:
 	 * Bit 4: Uart 2 RX RX any character received
 	 * Bit 5: Uart 2 RX nl received
 	 * Bit 6: Uart 1 TX characters to send
-	 * Bit 7: Uart 1 TX characters to send
+	 * Bit 7: Uart 2 TX characters to send
 	 */
 	static void setRxTxNotifier( const uint8_t eventMask )
 	{
@@ -109,12 +105,12 @@ public:
 
 
 private:
+	static TaskHandle_t pid;
 	static bool _selfTest;
 	static EventGroupHandle_t rxTxNotifier;
 	// Stop routing of TX/RX data. That is used in case of Flarm binary download.
 	static bool bincom_mode;
-	static xcv_serial_t _S1;
-	static xcv_serial_t _S2;
+	static xcv_serial_t S[2];
 };
 
 #endif

@@ -67,7 +67,7 @@ xcv_serial_t Serial::S[] =
   .tx_req = TX1_REQ,
   .monitor =	MON_S1, 
   .cfg2 = nullptr, 
-  .route_disable = true, 
+  .route_disable = false,
   .dl = &dl_S1, 
   .port = 1 },
   {  
@@ -78,7 +78,7 @@ xcv_serial_t Serial::S[] =
    .rx_nl = RX2_NL, 
    .tx_req = TX2_REQ,
    .monitor=MON_S2, .cfg2 = nullptr, 
-   .route_disable = true, 
+   .route_disable = false,
    .dl = &dl_S2, 
    .port = 2 } 
 };
@@ -97,10 +97,9 @@ void Serial::serialHandler(void *pvParameters)
     // Initialize event group if not already done
     if (rxTxNotifier == nullptr) {
         rxTxNotifier = xEventGroupCreate();
-        ESP_LOGI(FNAME, "setRxNotifier");
+        ESP_LOGI(FNAME, "create and set event group rxTxNotifier: %x", (int)rxTxNotifier);
         uartRxEventHandler(rxTxNotifier);
     }
-
     // Define timeout of 5s that the watchdog becomes not active.
     TickType_t ticksToWait = 5000 / portTICK_PERIOD_MS;
 
@@ -109,29 +108,34 @@ void Serial::serialHandler(void *pvParameters)
         if (uxTaskGetStackHighWaterMark(pid) < 256) {
             ESP_LOGW(FNAME, "Warning serial task stack low: %d bytes", uxTaskGetStackHighWaterMark(pid));
         }
-
         if (_selfTest) {
             delay(100);
             continue;
         }
-
-        if (routingStopped(cfg1)) {
+        if (routingStopped(cfg1) ) {
             // Flarm download of other Serial is running, stop RX processing and empty TX queue.
             cfg1->tx_q->clear();
             delay(1000);
             continue;
         }
+        if (routingStopped(cfg2) ) {
+        	// Flarm download of other Serial is running, stop RX processing and empty TX queue.
+        	cfg2->tx_q->clear();
+        	delay(1000);
+        	continue;
+        }
 
         // Define expected event bits for both UARTs
         EventBits_t bitsToWaitFor = cfg1->tx_req | cfg1->rx_char | cfg2->tx_req | cfg2->rx_char;
-
+        // ESP_LOGI(FNAME, "Wait for events from either UART or timeout");
         // Wait for events from either UART or timeout
         EventBits_t ebits = xEventGroupWaitBits(rxTxNotifier, bitsToWaitFor, pdTRUE, pdFALSE, ticksToWait);
         if ((ebits & bitsToWaitFor) == 0) {
             // Timeout occurred, reset watchdog
+        	// ESP_LOGI(FNAME, "Timeout occurred, reset watchdog");
             continue;
         }
-
+        // ESP_LOGI(FNAME, "eBits received %x", ebits );
         // Handle TX for UART 1 (S1)
         if ((ebits & cfg1->tx_req) && cfg1->mySL->availableForWrite()) {
             size_t len = Router::pullBlock(*(cfg1->tx_q), buf, 512);
@@ -144,10 +148,13 @@ void Serial::serialHandler(void *pvParameters)
 
         // Handle RX for UART 1 (S1)
         if (ebits & cfg1->rx_char) {
+        	// ESP_LOGI(FNAME, "UART 1 event received");
             uint32_t available = std::min(cfg1->mySL->available(), 511);
+            // ESP_LOGI(FNAME, "UART 1 %d bytes available", available );
             if (available) {
                 uint16_t rxBytes = cfg1->mySL->readBufFromQueue((uint8_t*)buf, available);
                 buf[rxBytes] = 0;
+                // ESP_LOGI(FNAME, "UART 1 %d bytes read, send to receive()", rxBytes );
                 cfg1->mySL->receive(buf, rxBytes);
                 DM.monitorString(cfg1->monitor, DIR_RX, buf, rxBytes);
             }

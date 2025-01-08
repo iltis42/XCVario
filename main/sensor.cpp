@@ -1380,7 +1380,7 @@ void system_startup(void *args){
 			display->writeText( line++, "Bat Meter: OK");
 		logged_tests += "Battery Voltage Sensor: PASSED\n";
 	}
-	Serial::begin();
+	
 	{
 		S1 = new SerialLine(1,GPIO_NUM_16,GPIO_NUM_17);
 		DeviceManager* dm = DeviceManager::Instance();
@@ -1391,17 +1391,18 @@ void system_startup(void *args){
 		// S2 = new SerialLine(2,GPIO_NUM_18,GPIO_NUM_4);
 		// dm->addDevice(TEST_DEV2, TEST_P, 2, 0, S2_RS232);
 	}
+	Serial::begin(S1, S2);
 	// Factory test for serial interface plus cable
 	String result("Serial ");
-	if( Serial::selfTest( 1 ) )
+	if( Serial::selfTest( S1 ) )
 		result += "S1 OK";
 	else
 		result += "S1 FAIL";
 	if( (hardwareRevision.get() >= XCVARIO_21) && serial2_speed.get() ){
-		// if( Serial::selfTest( 2 ) )
-		// 	result += ",S2 OK";
-		// else
-		// 	result += ",S2 FAIL";
+		if( Serial::selfTest( S2 ) )
+			result += ",S2 OK";
+		else
+		 	result += ",S2 FAIL";
 	}
 	if( abs(factory_volt_adjust.get() - 0.00815) < 0.00001 ){
 		display->writeText( line++, result.c_str() );

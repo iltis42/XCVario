@@ -1418,7 +1418,6 @@ void system_startup(void *args){
 	if( abs(factory_volt_adjust.get() - 0.00815) < 0.00001 ){
 		display->writeText( line++, result.c_str() );
 	}
-
 	Serial::taskStart();
 
 	if( wireless == WL_BLUETOOTH ) {

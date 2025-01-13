@@ -16,13 +16,12 @@
 class FlarmHost final : public ProtocolItf
 {
 public:
-    FlarmHost(int mp, ProtocolState &sm) : ProtocolItf(NAVI_DEV, mp, sm) {}
+    FlarmHost(int mp, ProtocolState &sm, DataLink &dl) : ProtocolItf(NAVI_DEV, mp, sm, dl) {}
     virtual ~FlarmHost() = default;
     ProtocolType getProtocolId() override { return FLARMHOST_P; }
 
 public:
     datalink_action_t nextByte(const char c) override;
-    datalink_action_t nextStreamChunk(const char *cptr, int count) override;
 
 private:
     // binary mode peer

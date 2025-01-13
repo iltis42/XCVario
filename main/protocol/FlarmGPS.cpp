@@ -126,7 +126,7 @@ datalink_action_t FlarmGPS::nextByte(const char c)
                 break;
             case (('A' << 8) | 'X'):
                 if ( parsePFLAX() ) {
-                    action = GO_BINARY;
+                    action = NXT_PROTO;
                 }
                 break;
             default:
@@ -136,21 +136,6 @@ datalink_action_t FlarmGPS::nextByte(const char c)
     return action;
 }
 
-datalink_action_t FlarmGPS::nextStreamChunk(const char *cptr, int count)
-{
-    datalink_action_t last_action = NOACTION;
-    for (int i = 0; i < count; i++) {
-        datalink_action_t res = flarmBinSM(_sm, *(cptr+i));
-        if ( res & COMPLETE_BIT ) {
-            Message* msg = DEV::acqMessage(_binpeer->getDeviceId(), _binpeer->getSendPort());
-            msg->buffer = _sm._frame;
-            DEV::Send(msg);
-            _sm.reset();
-            last_action = res;
-        }
-    }
-    return last_action;
-}
 
 // $GPRMC,081836,A,3751.65,S,14507.36,E,000.0,360.0,130998,011.3,E*62
 // $GPRMC,225446,A,4916.45,N,12311.12,W,000.5,054.7,191194,020.3,E*68
@@ -418,19 +403,17 @@ bool FlarmGPS::parsePFLAX()
 {
     ESP_LOGI(FNAME,"parsePFLAX A ----------------> switch to binary");
 
-    DataLink *dl = DEVMAN->getFlarmBinPeer();
     if ( _word_start.size() == 2 && *(_sm._frame.c_str()+_word_start[0]) == 'A' ) {
-        if ( dl ) {
-            _binpeer = dl->getProtocol(FLARMHOST_P);
+        // this is the confirmation from flarm to go binary
+        DataLink *peer = DEVMAN->getFlarmBinPeer();
+        if ( peer && peer->getProtocol(FLARMBIN_P) && _dl.getProtocol(FLARMBIN_P)) {
+            // Host side
+            peer->goBIN(_dl.getProtocol(FLARMBIN_P));
+            // Device side
+            _dl.goBIN(peer->getProtocol(FLARMBIN_P));
         }
         Flarm::timeout = 10;
         return true;
-    }
-    else {
-        // That was a NACK, revert binmod on peer side
-        if ( dl ) {
-            dl->resetBinMode();
-        }
     }
     return false;
 }

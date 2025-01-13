@@ -16,13 +16,12 @@
 class FlarmGPS final : public ProtocolItf
 {
 public:
-    FlarmGPS(int mp, ProtocolState &sm) : ProtocolItf(FLARM_DEV, mp, sm) {}
+    FlarmGPS(int mp, ProtocolState &sm, DataLink &dl) : ProtocolItf(FLARM_DEV, mp, sm, dl) {}
     virtual ~FlarmGPS() = default;
     ProtocolType getProtocolId() override { return FLARM_P; }
 
 public:
     datalink_action_t nextByte(const char c) override;
-    datalink_action_t nextStreamChunk(const char *cptr, int count) override;
 
     // Transmitted mesages
 

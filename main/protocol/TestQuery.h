@@ -16,7 +16,7 @@
 class TestQuery final : public ProtocolItf, public Clock_I
 {
 public:
-    explicit TestQuery(DeviceId did, int mp, ProtocolState &sm);
+    explicit TestQuery(DeviceId did, int mp, ProtocolState &sm, DataLink &dl);
     virtual ~TestQuery();
 
     ProtocolType getProtocolId() override { return TEST_P; }

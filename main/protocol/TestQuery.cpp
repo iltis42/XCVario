@@ -18,8 +18,8 @@
 #include <cstring>
 #include <string>
 
-TestQuery::TestQuery(DeviceId did, int mp, ProtocolState &sm)
-  : ProtocolItf(did, mp, sm),
+TestQuery::TestQuery(DeviceId did, int mp, ProtocolState &sm, DataLink &dl)
+  : ProtocolItf(did, mp, sm, dl),
     Clock_I(500) // generates a time-out callback ca. every fife seconds
 {
     ESP_LOGI(FNAME, "Setup test bursts to send on serial line.");
@@ -120,30 +120,30 @@ bool TestQuery::sendTestQuery()
 
     msg = newMessage();
     msg->buffer = "$D_123456789022345678903234567890423456789052345678906234567890723456789\r\n";
-    DEV::Send(msg);
+    // DEV::Send(msg);
 
-    msg = newMessage();
-    msg->buffer = "$E_12345678902234567890323456789042345678905234567890623456789072345678\r\n";
-    DEV::Send(msg);
+    // msg = newMessage();
+    // msg->buffer = "$E_12345678902234567890323456789042345678905234567890623456789072345678\r\n";
+    // DEV::Send(msg);
 
-    msg = newMessage();
-    msg->buffer = "$F_12345678902234567890323456789042345678905234567890623456789072345678\r\n";
-    DEV::Send(msg);
+    // msg = newMessage();
+    // msg->buffer = "$F_12345678902234567890323456789042345678905234567890623456789072345678\r\n";
+    // DEV::Send(msg);
 
-    msg = newMessage();
-    msg->buffer = "$G_123456789022345678903234567890423456789052345678906234567890723456789\r\n";
-    DEV::Send(msg);
+    // msg = newMessage();
+    // msg->buffer = "$G_123456789022345678903234567890423456789052345678906234567890723456789\r\n";
+    // DEV::Send(msg);
 
-    msg = newMessage();
-    msg->buffer = "$H_12345678902234567890323456789042345678905234567890623456789072345678\r\n";
-    DEV::Send(msg);
+    // msg = newMessage();
+    // msg->buffer = "$H_12345678902234567890323456789042345678905234567890623456789072345678\r\n";
+    // DEV::Send(msg);
 
-    msg = newMessage();
-    msg->buffer = "$I_12345678902234567890323456789042345678905234567890623456789072345678\r\n";
-    DEV::Send(msg);
+    // msg = newMessage();
+    // msg->buffer = "$I_12345678902234567890323456789042345678905234567890623456789072345678\r\n";
+    // DEV::Send(msg);
 
-    msg = newMessage();
-    msg->buffer = "$J_1234567890223456789032345678904234567890523456789062345678907234567\r\n";
+    // msg = newMessage();
+    // msg->buffer = "$J_1234567890223456789032345678904234567890523456789062345678907234567\r\n";
     return DEV::Send(msg);
 }
 

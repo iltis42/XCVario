@@ -5,7 +5,7 @@
 class Anemoi final : public ProtocolItf
 {
 public:
-    explicit Anemoi(int p, ProtocolState &sm) : ProtocolItf(ANEMOI_DEV, p, sm) {};
+    explicit Anemoi(int p, ProtocolState &sm, DataLink &dl) : ProtocolItf(ANEMOI_DEV, p, sm, dl) {};
     virtual ~Anemoi() {}
 
 public:

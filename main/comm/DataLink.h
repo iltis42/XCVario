@@ -10,6 +10,7 @@
 
 #include "Devices.h"
 #include "protocol/ProtocolItf.h"
+#include "InterfaceCtrl.h"
 
 #include <vector>
 
@@ -17,27 +18,31 @@
 class DataLink
 {
 public:
-    DataLink(int listen_port) : _port(listen_port) {}
+    DataLink(int listen_port, int itfid) : _itf_id(ItfTarget((InterfaceId)itfid,listen_port)) {}
     ~DataLink();
     ProtocolItf* addProtocol(ProtocolType ptyp, DeviceId did, int sendport=0);
-    ProtocolItf* getProtocol(ProtocolType ptyp=NO_ONE) const ;
+    ProtocolItf* getProtocol(ProtocolType ptyp=NO_ONE) const;
     bool hasProtocol(ProtocolType ptyp) const;
+    void deleteProtocol(ProtocolItf *proto);
     void process(const char *packet, int len);
-    int getPort() const { return _port; }
-    void resetBinMode() { _binary_mode = false; }
+    int getPort() const { return _itf_id.port; }
+    int getItf() const { return _itf_id.iid; }
+    bool goBIN(ProtocolItf *peer);
+    void goNMEA();
+    int getNumNMEA() const;
     // dbg
     void dumpProto();
 
 private:
     // helpers
-    void forwardMsg(std::string &str, DeviceId odev);
+    void forwardMsg(DeviceId src_dev);
 
 private:
     std::vector<ProtocolItf*> _all_p;
     // std::deque<ProtocolItf*> _current_p;
-    ProtocolItf *_gotit = nullptr; // The protocoll that recognized the current message
+    ProtocolItf *_nmea   = nullptr; // The protocoll in case there is only one of the kind
+    ProtocolItf *_binary = nullptr; // If set it will be the priority parser
     ProtocolState _sm; // The message buffer for all protocol parser
-    bool _binary_mode = false;
     // Listen on
-    const int _port;
+    const ItfTarget _itf_id;
 };

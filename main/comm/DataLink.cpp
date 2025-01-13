@@ -76,8 +76,13 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
         }
         ESP_LOGI(FNAME, "On send port %d", sendport);
 
-        if ( tmp ) _all_p.push_back(tmp);
-        return tmp;
+        if ( tmp ) {
+            _all_p.push_back(tmp);
+            if ( getNumNMEA() == 1 ) {
+                _nmea = tmp;
+            }
+            return tmp;
+        }
     }
     return nullptr;
 }
@@ -109,6 +114,17 @@ bool DataLink::hasProtocol(ProtocolType ptyp) const
     return false;
 }
 
+void DataLink::deleteProtocol(ProtocolItf *proto)
+{
+    for (auto it = _all_p.begin(); it != _all_p.end(); it++) {
+        if (*it == proto) {
+            delete *it;
+            _all_p.erase(it);
+            return;
+        }
+    }
+}
+
 void DataLink::process(const char *packet, int len)
 {
     if ( _all_p.empty() ) {
@@ -125,15 +141,19 @@ void DataLink::process(const char *packet, int len)
         // _binary_mode = false;
         return;
     }
-    else if ( _binary_mode ) {
-        if ( _gotit->nextStreamChunk(packet, len) == GO_NMEA ) {
-            _binary_mode = false;
-            _sm.reset();
+    
+    // Feed the data monitor
+    DM.monitorString(_itf_id, DIR_RX, packet, len);
+
+    if ( _binary ) {
+        ESP_LOGD(FNAME, "%d procB %dchar: %c", _itf_id.iid, len, *packet);
+        if ( _binary->nextStreamChunk(packet, len) == GO_NMEA ) {
+            goNMEA();
         }
     }
-    else if ( _all_p.size() == 1 )
+    else if ( _nmea )
     {
-        ESP_LOGI(FNAME, "process %dchar: %s", len, packet);
+        ESP_LOGI(FNAME, "%d procN %dchar: %s", _itf_id.iid, len, packet);
         // most likely case, only one protocol to parse
         // process every frame byte through state machine
         ProtocolItf *prtcl = _all_p.front();
@@ -143,17 +163,10 @@ void DataLink::process(const char *packet, int len)
                 if ( action )
                 {
                     if ( action & FORWARD_BIT ) {
-                        forwardMsg(_sm._frame, prtcl->getDeviceId());
+                        forwardMsg(prtcl->getDeviceId());
                     }
-                    if ( action == GO_BINARY ) {
-                        _binary_mode = true;
-                        _gotit = prtcl;
-                        taskYIELD();
-                        if ( i+1 < len ) {
-                            // ship remining bytes as binary already
-                            _sm.reset();
-                            _gotit->nextStreamChunk(packet+(i+1), len-(i+1));
-                        }
+                    if ( action == NXT_PROTO ) {
+                        _sm.reset();
                         break; // end loop imidiately
                     }
 
@@ -191,7 +204,7 @@ void DataLink::process(const char *packet, int len)
         //         case CHECK_OK:
         //             ; // route further
         //             break;
-        //         case GO_BINARY:
+        //         case NXT_PROTO:
         //             _binary_mode = true;
         //             break;
         //         default:
@@ -206,6 +219,37 @@ void DataLink::process(const char *packet, int len)
     }
 }
 
+bool DataLink::goBIN(ProtocolItf *peer_prto)
+{
+    FlarmBinary *bin = static_cast<FlarmBinary*>(getProtocol(FLARMBIN_P));
+    if ( bin ) {
+        bin->setPeer(peer_prto);
+        _binary = bin;
+        return true;
+    }
+    return false;
+}
+
+void DataLink::goNMEA()
+{
+    if ( _binary ) {
+        _binary = nullptr;
+    }
+    _sm.reset();
+}
+
+int DataLink::getNumNMEA() const
+{
+    int count = 0;
+    for (ProtocolItf *it : _all_p) {
+        if ( (*it).isBinary() ) {
+            continue;
+        }
+        count++;
+    }
+    return count;
+}
+
 void DataLink::dumpProto()
 {
     for (ProtocolItf *it : _all_p)
@@ -214,15 +258,15 @@ void DataLink::dumpProto()
     }
 }
 
-void DataLink::forwardMsg(std::string &str, DeviceId odev)
+void DataLink::forwardMsg(DeviceId src_dev)
 {
     // consider forwarding
-    ESP_LOGD(FNAME, "get routing for %d/%d", odev, _port);
-    RoutingList routes = DEVMAN->getRouting(RoutingTarget(odev, _port));
+    ESP_LOGD(FNAME, "get routing for %d/%d", src_dev, _itf_id.port);
+    RoutingList routes = DEVMAN->getRouting(RoutingTarget(src_dev, _itf_id.port)); // todo cache the route
     ESP_LOGD(FNAME, "routings %d", routes.size());
     for ( auto &target : routes ) {
-        Message* msg = DEV::acqMessage(target._target_dev, target._target_port);
-        ESP_LOGI(FNAME, "route %d/%d to %d/%d", odev, _port, msg->target_id, target._target_port);
+        Message* msg = DEV::acqMessage(target.did, target.port);
+        ESP_LOGI(FNAME, "route %d/%d to %d/%d", src_dev, _itf_id.port, msg->target_id, target.port);
         msg->buffer = _sm._frame;
         DEV::Send(msg);
     }

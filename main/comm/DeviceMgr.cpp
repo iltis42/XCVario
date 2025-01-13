@@ -63,7 +63,7 @@ static int tt_snd(Message *msg)
             ESP_LOGI(FNAME, "reshedule message %dms", plsret);
         }
         else {
-            DM.monitorString(itf->getId()<<24|port, DIR_TX, msg->buffer.c_str(), len);
+            DM.monitorString(ItfTarget(itf->getId(),port), DIR_TX, msg->buffer.c_str(), len);
         }
     }
     return plsret;
@@ -124,10 +124,13 @@ void TransmitTask(void *arg)
                 msg = later.front();
                 ESP_LOGI(FNAME, "postponed send");
                 pls_retry = tt_snd(msg);
+
+                // finally drop message after one retry
+                DEV::relMessage(msg);
+                later.pop_front();
+
                 if ( pls_retry == 0 ) {
                     ESP_LOGI(FNAME, "postponed done");
-                    DEV::relMessage(msg);
-                    later.pop_front();
                 }
                 else {
                     break;
@@ -209,7 +212,7 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
 {
     // On first device a send task needs to be created
     if ( ! SendTask ) {
-        xTaskCreate(TransmitTask, "genTx", 4096, ItfSendQueue, 10, &SendTask);
+        xTaskCreate(TransmitTask, "genTx", 3000, ItfSendQueue, 10, &SendTask);
     }
     InterfaceCtrl *itf = &dummy_itf;
     if ( iid == CAN_BUS ) {
@@ -220,15 +223,19 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
     }
     else if ( iid == S1_RS232) {
         if ( S1 ) {
-            // S1->loadProfile(SM_FLARM);    // TODO let this be done at configuration time of device (Setup), to allow tweaking of params
+            S1->ConfigureIntf(0); // load nvs setup
             itf = S1;
         }
     }
     else if ( iid == S2_RS232) {
         if ( S2 ) {
-            // S2->loadProfile(SM_XCTNAV_S3);
+            S2->ConfigureIntf(0);
             itf = S2;
         }
+    }
+    else if ( iid == NO_PHY ) {
+        // Device might exist already
+        itf = getIntf(did);
     }
     bool is_new = false;
     Device *dev = getDevice(did);
@@ -238,11 +245,15 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
     }
     // Retrieve, or create a new data link
     DataLink *dl = itf->newDataLink(listen_port);
-    dev->_dlink.insert(dl); // Add, if new
-    ProtocolItf* ret = dl->addProtocol(proto, did, send_port); // Add, id not yet there
-    dev->_itf = itf;
+    ProtocolItf* ret = dl->addProtocol(proto, did, send_port); // Add proto, if not yet there
 
-    if ( is_new ) _device_map[did] = dev; // and add, in case this dev is new
+    if ( is_new ) {
+        // Add only if new
+        _device_map[did] = dev; // and add, in case this dev is new
+        dev->_dlink.insert(dl);
+        dev->_itf = itf;
+    }
+
     ESP_LOGI(FNAME, "After add device %d.", did);
     dumpMap();
 
@@ -309,8 +320,8 @@ RoutingList DeviceManager::getRouting(RoutingTarget target)
         for (RoutingList::iterator tit=res.begin(); tit != res.end(); ) 
         {
             // is dev configured
-            if ( _device_map.find(tit->_target_dev) == _device_map.end() ) {
-                ESP_LOGD(FNAME, "remove %d from routing list.", tit->_target_dev);
+            if ( _device_map.find(tit->did) == _device_map.end() ) {
+                ESP_LOGD(FNAME, "remove %d from routing list.", tit->did);
                 tit = res.erase(tit);
             }
             else {
@@ -420,7 +431,7 @@ int Device::getSendPort(ProtocolType p) const
 
 
 
-// Some global routines from the router, could be static to DeviceManager
+// Some global routines from the router, they might move elswhere
 namespace DEV {
 
 Message* acqMessage(DeviceId target_id, int port)

@@ -31,17 +31,18 @@ typedef enum
     NOACTION = 0,
     DO_ROUTING = COMPLETE_BIT | FORWARD_BIT,
     NOROUTING = COMPLETE_BIT,
-    GO_BINARY = COMPLETE_BIT | FORWARD_BIT | 1,
+    NXT_PROTO = COMPLETE_BIT | FORWARD_BIT | 1,
     GO_NMEA = COMPLETE_BIT | FORWARD_BIT | 2
 } datalink_action_t;
 
 class ProtocolState;
+class DataLink;
 
 // Protocol parser interface
 class ProtocolItf
 {
 public:
-    ProtocolItf(DeviceId id, int sp, ProtocolState &sm) : _did(id), _send_port(sp), _sm(sm) {};
+    ProtocolItf(DeviceId id, int sp, ProtocolState &sm, DataLink&dl) : _did(id), _send_port(sp), _sm(sm), _dl(dl) {};
     virtual ~ProtocolItf() {}
 
     static constexpr int MAX_LEN = 128;
@@ -50,12 +51,13 @@ public:
     // API
     DeviceId getDeviceId() { return _did; } // The connected (!) device through protocol
     virtual ProtocolType getProtocolId() { return NO_ONE; }
-    virtual datalink_action_t nextByte(const char c) = 0; // return true if message is recognized and able to parse payload
+    virtual datalink_action_t nextByte(const char c) { return NOACTION; } // return action for data link
     virtual datalink_action_t nextStreamChunk(const char *cptr, int count) { return NOACTION; } // for binary protocols
     inline Message* newMessage() { return DEV::acqMessage(_did, _send_port); }
     // gen_state_t getState() const { return _state; }
     virtual bool isBinary() const { return false; }
     int getSendPort() const { return _send_port; }
+    DataLink* getDL() const { return &_dl; }
 
 protected:
     // routing
@@ -64,6 +66,9 @@ protected:
 
     // state machine
     ProtocolState &_sm;
+
+    // Reference to data link layer
+    DataLink &_dl;
 
     // small crc character buffer
     char _crc_buf[3];
@@ -79,7 +84,7 @@ public:
         _frame.clear();
         _state = START_TOKEN;
         _frame_len = 0;
-        _crc = 0;
+        _opt = 0;
     }
     inline bool push(char c)
     {
@@ -103,4 +108,5 @@ public:
     int         _frame_len;
     gen_state_t _state = START_TOKEN;
     int         _crc = 0; // checksum (binary)
+    unsigned    _opt = 0; // some space to carry on optional date
 };

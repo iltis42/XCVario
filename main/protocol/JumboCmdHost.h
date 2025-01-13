@@ -18,7 +18,7 @@ public:
     static constexpr int PROTOCOL_VERSION = 1;
 
 public:
-    JumboCmdHost(int mp, ProtocolState &sm) : ProtocolItf(DeviceId::JUMBO_DEV, mp, sm) {}
+    JumboCmdHost(int mp, ProtocolState &sm, DataLink &dl) : ProtocolItf(DeviceId::JUMBO_DEV, mp, sm, dl) {}
     virtual ~JumboCmdHost() = default;
     ProtocolType getProtocolId() override { return JUMBOCMD_P; }
 

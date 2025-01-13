@@ -20,6 +20,10 @@ public:
     {
         str = std::string( s );
     }
+    SString(const char *s, int alen)
+    {
+        str = std::string( s, alen );
+    }
     inline void set(const char *s)
     {
         // add pure strings

@@ -8,6 +8,9 @@
 
 #include "nmea_util.h"
 
+#include <iostream>
+#include <sstream>
+#include <iomanip>
 #include <cstdlib>
 
 namespace NMEA {
@@ -88,5 +91,16 @@ void ensureTermination(std::string& str)
         str += "\r\n";
     }
 }
+
+
+std::string hexDump(const char *buffer, int len)
+{
+    std::ostringstream oss;
+    for (const char *c=buffer; len>0; len--, c++) {
+        oss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(*c);
+    }
+    return oss.str();
+}
+
 
 } // namespace

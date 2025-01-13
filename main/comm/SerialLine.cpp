@@ -4,7 +4,6 @@
 
 #include "comm/CircularCharBuffer.h"
 #include "SetupNG.h"
-#include "Serial.h"
 
 #include <soc/uart_reg.h>
 

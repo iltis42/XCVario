@@ -16,5 +16,6 @@ std::string CheckSum(const char *nmea);
 std::string extractWord(const std::string &str, int pos);
 void incrCRC(int &crc, const char c);
 void ensureTermination(std::string& str);
+std::string hexDump(const char *buffer, int len);
 
 }

@@ -13,7 +13,6 @@
 #include "Switch.h"
 #include "sensor.h"
 #include "Flarm.h"
-#include "Serial.h"
 #include "UbloxGNSSdecode.h"
 
 RingBufCPP<SString> wl_vario_tx_q;

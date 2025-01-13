@@ -3,7 +3,6 @@
 #include "UbloxGNSSdecode.h"
 #include "Router.h"
 #include "SString.h"
-#include "Serial.h"
 #include "Flarm.h"
 #include "DataMonitor.h"
 #include "protocol/Anemoi.h"

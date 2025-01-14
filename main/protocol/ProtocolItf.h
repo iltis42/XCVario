@@ -85,6 +85,7 @@ public:
         _state = START_TOKEN;
         _frame_len = 0;
         _opt = 0;
+        _esc = 0;
     }
     inline bool push(char c)
     {
@@ -108,5 +109,6 @@ public:
     int         _frame_len;
     gen_state_t _state = START_TOKEN;
     int         _crc = 0; // checksum (binary)
-    unsigned    _opt = 0; // some space to carry on optional date
+    int         _opt = 0; // some space to carry an optional datum
+    int         _esc = 0; // another optional container
 };

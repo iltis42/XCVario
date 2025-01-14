@@ -17,6 +17,7 @@
 // The FLARM binary protocol synchronizer.
 //
 constexpr int SEND_THRESH = 80; // need to be smaller than the message buffer
+constexpr int ESCAPE = 0x78;
 
 void FlarmBinary::send_chunk()
 {
@@ -28,8 +29,9 @@ void FlarmBinary::send_chunk()
         ESP_LOGI(FNAME, ">%c %s", msg->target_id==FLARM_DEV?'D':'H', str.c_str());
     }
     // else {
-    //     if ( _sm._crc == 0xa0 ) 
+    //     if ( _sm._crc == 0xa0 ) {
     //         ESP_LOGI(FNAME, ">%c chunk %d: %s", msg->target_id==FLARM_DEV?'D':'H', _sm._opt + _sm._frame.size(), _sm._frame.c_str());
+    //     }
     // }
     // Partial reset to cope with large messages
     _sm._opt += _sm._frame.size();
@@ -41,9 +43,26 @@ datalink_action_t FlarmBinary::nextStreamChunk(const char *cptr, int count)
 {
     datalink_action_t last_action = NOACTION;
 
+    // The state machine variable useage here:
+    // _esc is used as ESCAPE flag
+    // _opt is used to cope with telegrams larger than the serial line buffers.
+    // _crc holds the last received frame type
+
     for (int i = 0; i < count; i++)
     {
         char c = *(cptr+i);
+        _sm.push(c);
+        if ( c == ESCAPE ) { // escape token
+            // one more charachter to expect, escape and start token do not count
+            _sm._esc = ESCAPE;
+            _sm._opt -= 1;
+            continue; // skip parsing step entirely
+        }
+        else if ( _sm._esc == ESCAPE ) {
+            // correct the escaped byte
+            c = (c == 0x55)? 0x78 : (c == 0x31)? 0x73 : c;
+            _sm._esc = 0;
+        }
 
         switch (_sm._state)
         {
@@ -51,21 +70,20 @@ datalink_action_t FlarmBinary::nextStreamChunk(const char *cptr, int count)
             if (c == 0x73)
             {
                 _sm._state = HEADER;
-                _sm.push(c);
                 _sm._frame_len = 0;
-                _sm._opt = 0;
+                _sm._opt = -1; // the frame start token should be removed, but we need it for forwarding purpose of the telegram
+                _sm._esc = 0;
                 ESP_LOGD(FNAME, "Starttoken");
-
             }
             break;
         case HEADER:
-            if (_sm._frame_len == 0)
+            if (_sm._opt + _sm._frame.size() == 1)
             {
-                _sm._frame_len = (unsigned char)c;
+                _sm._frame_len += (unsigned char)c;
             }
             else
             {
-                _sm._frame_len += ((unsigned)(c) << 8) + 1; // the latter is to account  for the start token
+                _sm._frame_len += ((unsigned)(c) << 8);
                 if (_sm._frame_len > 512)
                 {
                     ESP_LOGW(FNAME, "Odd length from flarm bincom: %d: restart", _sm._frame_len);
@@ -76,14 +94,12 @@ datalink_action_t FlarmBinary::nextStreamChunk(const char *cptr, int count)
                 // ESP_LOGI(FNAME, "Payload %d", _sm._frame_len);
                 _sm._state = PAYLOAD;
             }
-            _sm.push(c);
             break;
         case PAYLOAD:
             if ( (_sm._opt + _sm._frame.size()) == 6 ) {
                 _sm._crc = c;
                 ESP_LOGD(FNAME, "frame type 0x%x len %d", c, _sm._frame_len);
             }
-            _sm.push(c);
             if ( (_sm._opt + _sm._frame.size()) >= _sm._frame_len )
             {
                 send_chunk();

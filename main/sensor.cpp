@@ -169,7 +169,7 @@ uint8_t g_col_header_light_b=g_col_highlight;
 uint16_t gear_warning_holdoff = 0;
 uint8_t gyro_flash_savings=0;
 
-t_global_flags gflags = { true, false, false, false, false, false, false, false, false, false, false, false, false, false, false };
+t_global_flags gflags = { true, false, false, false, false, false, false, false, false, false, false, false, false, false };
 
 int  ccp=60;
 float tas = 0;
@@ -203,21 +203,6 @@ bool do_factory_reset() {
 
 void drawDisplay(void *pvParameters){
 	while (1) {
-		if( Flarm::bincom ) {
-			if( gflags.flarmDownload == false ) {
-				gflags.flarmDownload = true;
-				display->clear();
-				Flarm::drawDownloadInfo();
-			}
-			// Flarm IGC download is running, display will be blocked, give Flarm
-			// download all cpu power.
-			vTaskDelay(20/portTICK_PERIOD_MS);
-			continue;
-		}
-		else if( gflags.flarmDownload == true ) {
-			gflags.flarmDownload = false;
-			display->clear();
-		}
 		// TickType_t dLastWakeTime = xTaskGetTickCount();
 		if( gflags.inSetup != true ) {
 			float t=OAT.get();
@@ -411,12 +396,6 @@ void audioTask(void *pvParameters){
 	while (1)
 	{
 		TickType_t xLastWakeTime = xTaskGetTickCount();
-		if( Flarm::bincom ) {
-			// Flarm IGC download is running, audio will be blocked, give Flarm
-			// download all cpu power.
-			vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
-			continue;
-		}
 		doAudio();
 		Router::routeXCV();
 		if( uxTaskGetStackHighWaterMark( apid )  < 512 )
@@ -723,14 +702,14 @@ void readSensors(void *pvParameters){
 		aTE = bmpVario.readAVGTE();
 		doAudio();
 
-		if( !Flarm::bincom && ((count % 2) == 0 ) ){
+		if( (count % 2) == 0 ){
 			toyFeed();
 			vTaskDelay(2/portTICK_PERIOD_MS);
 		}
 		Router::routeXCV();
 		// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d ena=%d", compass->haveSensor(),  compass_nmea_hdt.get(),  compass_enable.get() );
 		if( compass ){
-			if( !Flarm::bincom && ! compass->calibrationIsRunning() ) {
+			if( ! compass->calibrationIsRunning() ) {
 				// Trigger heading reading and low pass filtering. That job must be
 				// done periodically.
 				bool ok;

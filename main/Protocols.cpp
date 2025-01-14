@@ -87,8 +87,6 @@ void Protocols::sendNmeaHDT( float heading ) {
 }
 
 void Protocols::sendItem( const char *key, char type, void *value, int len, bool ack ){
-	if( Flarm::bincom )  // do not sent to client in case
-		return;
 	// ESP_LOGI(FNAME,"sendItem: %s", key );
 	char str[40];
 	char sender = 'U';
@@ -127,8 +125,6 @@ void Protocols::sendItem( const char *key, char type, void *value, int len, bool
 }
 
 void Protocols::sendNmeaXCVCmd( const char *item, float value ){
-	if( Flarm::bincom )  // do not sent to client in case
-		return;
 	// ESP_LOGI(FNAME,"sendNMEACmd: %s: %f", item, value );
 	char str[40];
 	sprintf( str,"!xcv,%s,%d", item, (int)(value+0.5) );
@@ -530,12 +526,6 @@ void Protocols::parseNMEA( const char *str ){
 	}
 }
 
-void Protocols::ageBincom(){
-	if( Flarm::bincom  ) {
-		Flarm::bincom--;
-		ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
-	}
-}
 
 // Calculate the checksum and output it as an int
 // is required as HEX in the NMEA data set

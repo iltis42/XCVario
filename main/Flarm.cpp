@@ -23,7 +23,6 @@ float Flarm::gndSpeedKnots = 0;
 float Flarm::gndCourse = 0;
 bool Flarm::myGPS_OK = false;
 char Flarm::ID[20] = "";
-int Flarm::bincom = 0;
 AdaptUGC* Flarm::ucg;
 
 extern xSemaphoreHandle spiMutex;
@@ -42,7 +41,6 @@ int Flarm::_tick=0;
 int Flarm::timeout=0;
 int Flarm::ext_alt_timer=0;
 int Flarm::_numSat=0;
-int Flarm::bincom_port=0;
 int Flarm::clock_timer=0;
 bool Flarm::time_sync=false;
 
@@ -68,25 +66,7 @@ bool Flarm::connected(){
 };
 
 
-void Flarm::drawDownloadInfo() {
-	// ESP_LOGI(FNAME,"---> Flarm::drawDownloadInfo is called"  );
-	xSemaphoreTake(spiMutex, portMAX_DELAY );
-	ucg->setColor( COLOR_WHITE );
-	ucg->setFont(ucg_font_fub20_hr);
-	ucg->setPrintPos(60, 140);
-	ucg->printf("Flarm IGC");
-	ucg->setPrintPos(60, 170);
-	ucg->printf("download");
-	ucg->setPrintPos(60, 200);
-	ucg->printf("is running");
-	ucg->setFont(ucg_font_fub11_hr);
-	ucg->setPrintPos(20, 280);
-	ucg->printf("(restarts on end download)");
-	xSemaphoreGive(spiMutex);
-}
-
 void Flarm::tick(){
-	// ESP_LOGI(FNAME,"Flarm tick, bincom: %d", bincom );
 	if( ext_alt_timer )
 		ext_alt_timer--;
 };

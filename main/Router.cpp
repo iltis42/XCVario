@@ -25,12 +25,6 @@ RingBufCPP<SString> wl_aux_rx_q;
 RingBufCPP<SString> bt_tx_q;
 RingBufCPP<SString> bt_rx_q;
 
-RingBufCPP<SString> s1_tx_q;
-RingBufCPP<SString> s2_tx_q;
-
-RingBufCPP<SString> s1_rx_q;
-RingBufCPP<SString> s2_rx_q;
-
 RingBufCPP<SString> xcv_tx_q;
 
 RingBufCPP<SString> can_rx_q;
@@ -95,22 +89,18 @@ int Router::pullBlock( RingBufCPP<SString>& q, char *block, int size ){
 // XCVario Router
 void Router::sendXCV(char * s){
 	// ESP_LOGI( FNAME,"XCVario message %s",s);
-	if(  !Flarm::bincom  ){
-		SString xcv( s );
-		if( forwardMsg( xcv, xcv_tx_q ) ){
-			// ----------------(FNAME,"Received %d bytes from XCV", xcv.length() );
-		}
+	SString xcv( s );
+	if( forwardMsg( xcv, xcv_tx_q ) ){
+		// ----------------(FNAME,"Received %d bytes from XCV", xcv.length() );
 	}
 }
 
 // XCVario Router
 void Router::sendAUX(char * s){
 	// ESP_LOGI( FNAME,"AUX message %s",s);
-	if(  !Flarm::bincom  ){
-		SString xcv( s );
-		if( forwardMsg( xcv, wl_aux_tx_q ) ){
-			// ESP_LOGI(FNAME,"Sent %d bytes to 8882 port", xcv.length() );
-		}
+	SString xcv( s );
+	if( forwardMsg( xcv, wl_aux_tx_q ) ){
+		// ESP_LOGI(FNAME,"Sent %d bytes to 8882 port", xcv.length() );
 	}
 }
 
@@ -151,76 +141,6 @@ void Router::routeXCV(){
 			}
 		}
 	}
-}
-
-// Route messages from serial interface S1
-void Router::routeS1(){
-	// SString s1;
-	//  while( pullMsg( s1_rx_q, s1) ){
-	// 	// ESP_LOGI(FNAME,"S1 RX %d bytes: %s", s1.length(), s1.c_str() );
-	// 	// ESP_LOGI(FNAME,"routeS1 RX %d bytes, Q:%d  B:%d", s1.length(), s1_rx_q.numElements(), Flarm::bincom );
-	// 	// ESP_LOG_BUFFER_HEXDUMP(FNAME,s1.c_str(),s1.length(), ESP_LOG_INFO);
-
-	// 	if( rt_s1_wl.get() && (wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE) ){
-	// 		if( forwardMsg( s1, wl_flarm_tx_q )){
-	// 			// ESP_LOGI(FNAME,"S1 RX %d bytes forwarded to WiFi port 8881", s1.length() );
-	// 		}
-	// 	}
-	// 	if( rt_s1_wl.get() && ((wireless == WL_BLUETOOTH) || (wireless == WL_BLUETOOTH_LE)) ){
-	// 		if( forwardMsg( s1, bt_tx_q )){
-	// 			// ESP_LOGI(FNAME,"S1 RX %d bytes forwarded to BT", s1.length() );
-	// 		}
-	// 	}
-	// 	if( rt_s1_can.get() && can_speed.get() ){
-	// 		if( forwardMsg( s1, can_tx_q )){
-	// 			// ESP_LOGI(FNAME,"S1 RX %d bytes forwarded to CAN bus", s1.length() );
-	// 		}
-	// 	}
-	// 	if( rt_s1_s2.get() && serial2_speed.get() ){
-	// 		if( forwardMsg( s1, s2_tx_q )){
-	// 			Serial::setRxTxNotifier( TX2_REQ );
-	// 			// ESP_LOGI(FNAME,"S1 RX %d bytes looped to S2", s1.length() );
-	// 		}
-	// 	}
-	// 	if( serial1_rxloop.get() ){  // only 0=DISABLE | 1=ENABLE
-	// 		if( forwardMsg( s1, s1_tx_q )){
-	// 			Serial::setRxTxNotifier( TX1_REQ );
-	// 			// ESP_LOGI(FNAME,"S1 RX bytes %d looped to s1_tx_q", s1.length() );
-	// 		}
-	// 	}
-	// // 	Protocols::parseNMEA( s1.c_str() );
-	// }
-}
-
-// Route messages from serial interface S2
-void Router::routeS2(){
-	// SString s2;
-	// while( pullMsg( s2_rx_q, s2) ){
-	// 	// ESP_LOGI(FNAME,"S2 RX len: %d bytes, Q:%d BC:%d", s2.length(), bt_tx_q.isFull(), Flarm::bincom  );
-	// 	// ESP_LOG_BUFFER_HEXDUMP(FNAME,s2.c_str(),s2.length(), ESP_LOG_INFO);
-
-	// 	if( rt_s2_wl.get() && (wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE) )
-	// 		if( forwardMsg( s2, wl_aux_tx_q )){
-	// 			// ESP_LOGI(FNAME,"S2 RX bytes %d forward to WiFi port 8882", s2.length() );
-	// 		}
-	// 	if( rt_s2_wl.get() && ((wireless == WL_BLUETOOTH) || (wireless == WL_BLUETOOTH_LE)) ){
-	// 		if( forwardMsg( s2, bt_tx_q )){
-	// 			// ESP_LOGI(FNAME,"S2 RX %d bytes forwarded to BT", s2.length() );
-	// 		}
-	// 	}
-	// 	if( rt_s2_can.get() && can_speed.get() ){
-	// 		if( forwardMsg( s2, can_tx_q )){
-	// 			// ESP_LOGI(FNAME,"S2 RX %d bytes forwarded to CAN bus", s2.length() );
-	// 		}
-	// 	}
-	// 	if( rt_s1_s2.get() && serial1_speed.get() ){
-	// 		if( forwardMsg( s2, s1_tx_q )){  // This might connect XCSoar on S2 with Flarm on S1
-	// 			Serial::setRxTxNotifier( TX1_REQ );
-	// 			// ESP_LOGI(FNAME,"S2 RX %d bytes forwarded to S1", s2.length() );
-	// 		}
-	// 	}
-	// // 	Protocols::parseNMEA( s2.c_str() );
-	// }
 }
 
 // route messages from WLAN

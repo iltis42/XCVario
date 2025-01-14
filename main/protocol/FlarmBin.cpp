@@ -86,7 +86,7 @@ datalink_action_t FlarmBinary::nextStreamChunk(const char *cptr, int count)
                 _sm._frame_len += ((unsigned)(c) << 8);
                 if (_sm._frame_len > 512)
                 {
-                    ESP_LOGW(FNAME, "Odd length from flarm bincom: %d: restart", _sm._frame_len);
+                    ESP_LOGW(FNAME, "Odd length from flarm BP: %d: restart", _sm._frame_len);
                     _sm._state = START_TOKEN;
                     last_action = GO_NMEA;
                     break;

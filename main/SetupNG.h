@@ -11,6 +11,7 @@
 #include "Polars.h"
 #include "MPU.hpp" // change from .h to .hpp for Windows toolchain compatibility
 #include "comm/CanBus.h"
+#include "logdef.h"
 
 #include <esp_partition.h>
 #include <esp_err.h>
@@ -21,7 +22,6 @@
 #include <esp_timer.h>
 #include <freertos/queue.h>
 #include <esp_system.h>
-#include <esp_log.h>
 
 #include <string>
 #include <stdio.h>

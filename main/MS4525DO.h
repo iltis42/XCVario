@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include "I2C.h"
 #include <string.h>
-#include <logdef.h>
 #include "Setup.h"
 #include <math.h>
 #include "I2Cbus.hpp"

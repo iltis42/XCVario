@@ -1,6 +1,6 @@
 #include "SerialLine.h"
 
-#include "logdef.h"
+#include "logdefnone.h"
 
 #include "comm/CircularCharBuffer.h"
 #include "SetupNG.h"
@@ -114,7 +114,7 @@ SerialLine::SerialLine(uart_port_t uart, gpio_num_t rx, gpio_num_t tx ) :
 	_intfid(InterfaceId(S0_RS232+uart)),
 	_id_memo(MEMOS[uart]),
 	_setup(uart_setup[uart]),
-	_tx_buf(*(new CircularCharBuffer(4*BUF_LEN)))
+	_tx_buf(*(new CircularCharBuffer(2*BUF_LEN)))
 {
 	loadSetupDefaults();
 	ESP_LOGI(FNAME,"CONSTR. UART:%d (new) RX:%d TX:%d baud:%d pol:%d swap:%d tx:%d", uart_nr, rx_gpio, tx_gpio, baud[cfg.baud], cfg.polarity, cfg.pin_swp, cfg.tx_ena );
@@ -154,7 +154,7 @@ void SerialLine::ConfigureIntf(int cfg)
 // returns 0: sucess; or retry wait time in msec 
 int SerialLine::Send(const char *msg, int len, int port)
 {
-	ESP_LOGI(FNAME,"Send UART%d, len %d/%d", uart_nr, len, _tx_buf.size());
+	ESP_LOGD(FNAME,"Send UART%d, len %d/%d", uart_nr, len, _tx_buf.size());
 	int av_space = _tx_buf.available_space();
 	bool buffered = false;
 	if( len < av_space ) {

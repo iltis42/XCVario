@@ -1,7 +1,6 @@
 #pragma once
 
-#include "logdef.h"
-#include <cstring>
+#include <string>
 
 #define SSTRLEN 256  // max size of NMEA, 80 bytes are no more hardlimit in modern receivers such as Beitian BN-80, so extend
 

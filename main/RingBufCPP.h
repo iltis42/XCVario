@@ -1,6 +1,5 @@
 #pragma once
 
-#include "logdef.h"
 #include <cstring>
 #include <queue>
 

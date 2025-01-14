@@ -63,13 +63,9 @@ void DataLinkOld::process( const char *packet, int len, int port ) {
 	// ESP_LOG_BUFFER_HEXDUMP(FNAME,packet, len, ESP_LOG_INFO);
 	ubxFound = false;
 	nmeaFound = false;
-	if( Flarm::bincom ){  // neither UBX nor NMEA, for Flarm bincom protocol transparent forward
-		// ESP_LOGI(FNAME, "Port S%1d: Flarm::bincom = true", port);
-		routeSerialData(packet, len, port, false );
-	}else{
-		for (int i = 0; i < len; i++) {
-			parse_NMEA_UBX(packet[i], port );
-		}
+
+	for (int i = 0; i < len; i++) {
+		parse_NMEA_UBX(packet[i], port );
 	}
 }
 
@@ -80,49 +76,7 @@ void DataLinkOld::addChk(const char c) {
 }
 
 void DataLinkOld::routeSerialData( const char *data, uint32_t len, int port, bool nmea ){
-	SString tx;
-	tx.set( data, len );
-	// ESP_LOGI(FNAME, "Port S%1d: len: %d", port, len );
-	// ESP_LOG_BUFFER_HEXDUMP(FNAME, tx.c_str(), tx.length(), ESP_LOG_INFO);
-	if( port == 1 ){      // S1
-		Router::forwardMsg( tx, s1_rx_q, nmea );
-		Router::routeS1();
-	}
-	else if( port == 2 ){  // S2
-		Router::forwardMsg( tx, s2_rx_q, nmea  );
-		Router::routeS2();
-	}
-	else if( port == 3 ){  // CAN
-		Router::forwardMsg( tx, can_rx_q, nmea );
-		Router::routeCAN();
-		// DM.monitorString( MON_CAN, DIR_RX, tx.c_str(), len);
-		// ESP_LOG_BUFFER_HEXDUMP(FNAME, tx.c_str(), tx.length(), ESP_LOG_INFO);
-	}
-	else if( port == 7 ){  // Bluetooth
-		Router::forwardMsg( tx, bt_rx_q, nmea  );
-		Router::routeBT();
-		// ESP_LOG_BUFFER_HEXDUMP(FNAME, tx.c_str(), tx.length(), ESP_LOG_INFO);
-	}
-	else if( port == 8880 ){  // WiFi / XCVario
-		Router::forwardMsg( tx, wl_vario_rx_q, nmea  );
-		Router::routeWLAN();
-		// ESP_LOG_BUFFER_HEXDUMP(FNAME, tx.c_str(), tx.length(), ESP_LOG_INFO);
-	}
-	else if( port == 8881 ){  // WiFi / Flarm
-		Router::forwardMsg( tx, wl_flarm_rx_q, nmea  );
-		Router::routeWLAN();
-		// ESP_LOG_BUFFER_HEXDUMP(FNAME, tx.c_str(), tx.length(), ESP_LOG_INFO);
-	}
-	else if( port == 8882 ){  // WiFi / Aux
-		Router::forwardMsg( tx, wl_aux_rx_q, nmea  );
-		Router::routeWLAN();
-		// ESP_LOG_BUFFER_HEXDUMP(FNAME, tx.c_str(), tx.length(), ESP_LOG_INFO);
-	}
-	else if( port == 8884 ){  // WiFi / Aux
-		Router::forwardMsg( tx, can_rx_q, nmea  );
-		Router::routeCAN();
-		// ESP_LOG_BUFFER_HEXDUMP(FNAME, tx.c_str(), tx.length(), ESP_LOG_INFO);
-	}
+
 }
 
 

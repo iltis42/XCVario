@@ -15,7 +15,6 @@ public:
 	static void setDisplay( AdaptUGC *theUcg ) { ucg = theUcg; };
 	static void drawAirplane( int x, int y, bool fromBehind=false, bool smallSize=false );
 	static inline int alarmLevel(){ return AlarmLevel; };
-	static void drawDownloadInfo();
 	static void drawFlarmWarning();
 	static void initFlarmWarning();
 	static void progress();
@@ -42,10 +41,8 @@ public:
 	static inline bool gpsStatus() { return myGPS_OK; }
 	static float getGndSpeedKnots() { return gndSpeedKnots; }
 	static float getGndCourse() { return gndCourse; }
-	static int bincom;
-	static int bincom_port;
 	static void tick();
-	static bool validExtAlt() { if( ext_alt_timer )
+	static bool validExtAlt() { if( ext_alt_timer ) //fixme -> watchdog
 		return true;
 	else
 		return false;

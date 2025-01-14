@@ -102,7 +102,7 @@ int WifiApp::create_socket( int port ){
 // Multi client TCP server with dynamic updated list of clients connected
 
 void WifiApp::on_client_connect( int port, int msg ){
-	if( port == 8884 && !Flarm::bincom ){ // have a client to XCVario protocol connected
+	if( port == 8884 ){ // have a client to XCVario protocol connected
 		// ESP_LOGV(FNAME, "on_client_connect: Send MC, Ballast, Bugs, etc");
 		SetupCommon::syncEntry(msg);
 	}
@@ -138,8 +138,6 @@ void WifiApp::socket_server(void *setup) {
 		// ESP_LOGI(FNAME, "Number of clients %d, port %d, idle %d", clients.size(), config->port, config->idle );
 		if( clients.size() ) {
 			int size=400;
-			if( Flarm::bincom )
-				size=WIFI_BUFFER_SIZE-1;
 			char buffer[WIFI_BUFFER_SIZE+1];
 			int	len = Router::pullBlock( *(config->txbuf), buffer, size );
 			if( len ){
@@ -150,7 +148,7 @@ void WifiApp::socket_server(void *setup) {
 			else
 			{
 				config->idle++;
-				if( config->idle > 10 && !Flarm::bincom ){  // if there is no data, send a \n all 2 seconds as keep alive
+				if( config->idle > 10 ){  // if there is no data, send a \n all 2 seconds as keep alive
 					buffer[0] = '\n';
 					len=1;
 					config->idle = 0;
@@ -167,7 +165,6 @@ void WifiApp::socket_server(void *setup) {
 				if (sizeRead > 0) {
 					config->dlw->process( r, sizeRead, config->port );
 					DM.monitorString( ItfTarget(WIFI,config->port), DIR_RX, r, sizeRead );
-					// ESP_LOGI(FNAME, "RX wifi client port %d size: %d bincom:%d", config->port, sizeRead, Flarm::bincom );
 					// ESP_LOG_BUFFER_HEXDUMP(FNAME,tcprx.c_str(),sizeRead, ESP_LOG_INFO);
 				}
 				if( config->port == 8884 ){
@@ -192,7 +189,7 @@ void WifiApp::socket_server(void *setup) {
 				}
 				// if( client_rec.retries != 0 )
 				//	ESP_LOGI(FNAME, "tcp retry %d (port: %d), %d", client_rec.client, config->port, client_rec.retries );
-				if( client_rec.retries > 100 && !Flarm::bincom ){
+				if( client_rec.retries > 100 ){
 					ESP_LOGW(FNAME, "tcp client %d (port %d) permanent send err: %s, remove!", client_rec.client,  config->port, strerror(errno) );
 					close(client_rec.client );
 					it = clients.erase( it );
@@ -206,10 +203,7 @@ void WifiApp::socket_server(void *setup) {
 
 		if( uxTaskGetStackHighWaterMark( config->pid ) < 128 )
 			ESP_LOGW(FNAME,"Warning wifi task stack low: %d bytes, port %d", uxTaskGetStackHighWaterMark( config->pid ), config->port );
-		if( Flarm::bincom )
-			vTaskDelay(5/portTICK_PERIOD_MS);  // maximize realtime throuput for flight download
-		else
-			vTaskDelay(200/portTICK_PERIOD_MS);
+		vTaskDelay(200/portTICK_PERIOD_MS);
 	}
 	vTaskDelete(NULL);
 }

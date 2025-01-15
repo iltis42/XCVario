@@ -446,29 +446,28 @@ bool CANbus::selfTest()
     return res;
 }
 
-int CANbus::Send(const char *cptr, int len, int port)
+int CANbus::Send(const char *cptr, int &len, int port)
 {
-    const int chunk = 8;
-    int ret = 0;
-    int retry_option = (len/chunk + 1) * _tx_timeout;
-    // int id = can_id_nmea_tx;
-    // if (!strncmp(cptr, "!xs", 3)) // segregate internal NMEA by different id for !xs
-    //     id = can_id_config_tx;
+    constexpr int chunk = 8;
 
-    while (len > 0)
+    int rem = len;
+    while (rem > 0)
     {
-        int dlen = std::min(chunk, len);
-        // Underlaying queue does block until there is space,
-        // only a timeout would return false.
-        if (!sendData(port, cptr, dlen))
-        {
-            ret = retry_option;
+        int dlen = std::min(chunk, rem);
+        if ( ! sendData(port, cptr, dlen) ) {
             break;
         }
         cptr += dlen;
-        len -= dlen;
+        rem -= dlen;
     }
-    return ret;
+
+    if ( rem == 0 ) {
+        return 0;
+    }
+    else {
+        len = len - rem; // buffered bytes
+        return (rem/chunk + 1) * _tx_timeout; // ETA to wait for next trial
+    }
 }
 
 // Send, handle alerts, do max 3 retries

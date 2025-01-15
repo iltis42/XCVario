@@ -74,8 +74,6 @@ private:
     friend void uartTask(SerialLine *arg);
     void* _event_queue = nullptr;
     void* _iotask = nullptr;
-
-    // Sending data
-    CircularCharBuffer& _tx_buf;
+    // Sending data with uart buffer
 };
 

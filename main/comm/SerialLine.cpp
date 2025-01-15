@@ -12,7 +12,8 @@
 #include <freertos/queue.h>
 
 constexpr int BUF_LEN = 128;
-constexpr int UARTFIFO_LEN = 512;
+constexpr int UARTRXFIFO_LEN = 256;
+constexpr int UARTTXFIFO_LEN = 1024;
 constexpr int UARTEVENTQ_LEN = 10;
 
 const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
@@ -42,7 +43,6 @@ void IRAM_ATTR uartTask(SerialLine* s)
 {
 	uart_event_t event;
 	char rx_buf[BUF_LEN+1];
-	CircularCharBuffer& tx_buf = s->_tx_buf;
 	uart_port_t un = s->uart_nr;
 
 	ESP_LOGI(FNAME, "IoSerTask UART%d", un);
@@ -84,20 +84,8 @@ void IRAM_ATTR uartTask(SerialLine* s)
 				ESP_LOGI(FNAME, "OVF detected on UART%d", un);
 				break;
 			case UART_DATA_BREAK:
-			{
-				int len;
-				char* data = tx_buf.next_block(len);
-				while ( len > 0 ) {
-					int count = uart_tx_chars(un, data, len);
-					if ( count <= 0 ) {
-						break;
-					}
-					tx_buf.pop(count);
-					data = tx_buf.next_block(len);
-				}
-				// ESP_LOGI(FNAME, "DataBreak detected on UART%d ", un);
+				ESP_LOGI(FNAME, "DataBreak detected on UART%d ", un);
 				break;
-			}
 			default:
 				ESP_LOGI(FNAME, "UART%d caught event %d", un, event.type);
 				break;
@@ -113,8 +101,7 @@ SerialLine::SerialLine(uart_port_t uart, gpio_num_t rx, gpio_num_t tx ) :
 	rx_gpio(rx),
 	_intfid(InterfaceId(S0_RS232+uart)),
 	_id_memo(MEMOS[uart]),
-	_setup(uart_setup[uart]),
-	_tx_buf(*(new CircularCharBuffer(2*BUF_LEN)))
+	_setup(uart_setup[uart])
 {
 	loadSetupDefaults();
 	ESP_LOGI(FNAME,"CONSTR. UART:%d (new) RX:%d TX:%d baud:%d pol:%d swap:%d tx:%d", uart_nr, rx_gpio, tx_gpio, baud[cfg.baud], cfg.polarity, cfg.pin_swp, cfg.tx_ena );
@@ -152,24 +139,17 @@ void SerialLine::ConfigureIntf(int cfg)
 }
 
 // returns 0: sucess; or retry wait time in msec 
-int SerialLine::Send(const char *msg, int len, int port)
+int SerialLine::Send(const char *msg, int &len, int port)
 {
-	ESP_LOGD(FNAME,"Send UART%d, len %d/%d", uart_nr, len, _tx_buf.size());
-	int av_space = _tx_buf.available_space();
-	bool buffered = false;
-	if( len < av_space ) {
-		_tx_buf.push_block(msg, len);
-		xQueueSend((QueueHandle_t)_event_queue, (void *)&send_trigger, (TickType_t)0);
-		buffered = true;
-	}
-
-	if ( buffered ) {
+	int count = uart_tx_chars(uart_nr, msg, len);
+	ESP_LOGI(FNAME,"Send UART%d, len %d/%d", uart_nr, len, count);
+	if ( count == len ) {
 		return 0;
 	}
-	// else
-	int dur = rint( (len-av_space)*12000.0/baud[cfg.baud] + 2 );  // [msec] ; byte/sec = baudrate / 12 bits/char
+	int dur = rint( len*12000.0/baud[cfg.baud] + 2 );  // [msec] ; byte/sec = baudrate / 12 bits/char
 	ESP_LOGI(FNAME,"Send UART%d, ETA for free buf in %d msec", uart_nr, dur);
-	return dur;
+	len = (count>=0) ? count : 0; // buffered chars
+	return dur;                   // rough ETA for telegram of len bytes
 }
 
 
@@ -247,7 +227,7 @@ void SerialLine::start()
 
 		// Setup UART buffered IO with event queue
 		// Install UART driver creating an event queue here
-		uart_driver_install(uart_nr, UARTFIFO_LEN, UARTFIFO_LEN, UARTEVENTQ_LEN, (QueueHandle_t*)&_event_queue, 0);
+		uart_driver_install(uart_nr, UARTRXFIFO_LEN, UARTTXFIFO_LEN, UARTEVENTQ_LEN, (QueueHandle_t*)&_event_queue, 0);
 
 		// Set UART pattern detect function
 		uart_enable_pattern_det_baud_intr(uart_nr, '\n', 1, 5, 0, 0);
@@ -259,15 +239,13 @@ void SerialLine::start()
 		}
 		uart_intr_config_t intr_config = {
 			.intr_enable_mask = UART_RXFIFO_TOUT_INT_ENA | UART_RXFIFO_OVF_INT_ENA | UART_AT_CMD_CHAR_DET_INT_ENA | UART_RXFIFO_FULL_INT_ENA 
-								| UART_TXFIFO_EMPTY_INT_ENA | UART_TX_BRK_IDLE_DONE_INT_ENA | UART_TX_BRK_DONE_INT_ENA | UART_TX_DONE_INT_ENA,
-								// UART_TXFIFO_EMPTY_INT_ENA | UART_TX_DONE_INT_ENA
+								| UART_TXFIFO_EMPTY_INT_ENA,
+								// | UART_TXFIFO_EMPTY_INT_ENA | UART_TX_BRK_IDLE_DONE_INT_ENA | UART_TX_BRK_DONE_INT_ENA | UART_TX_DONE_INT_ENA,
 			.rx_timeout_thresh = 9,
-			.txfifo_empty_intr_thresh = 9,
+			.txfifo_empty_intr_thresh = 0,
 			.rxfifo_full_thresh = 60
 		};
 		uart_intr_config(uart_nr, &intr_config);
-		// uart_enable_tx_intr(uart_nr, 1, 2);
-
 	}
 }
 

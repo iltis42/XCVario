@@ -146,10 +146,11 @@ int SerialLine::Send(const char *msg, int &len, int port)
 	if ( count == len ) {
 		return 0;
 	}
-	int dur = rint( len*12000.0/baud[cfg.baud] + 2 );  // [msec] ; byte/sec = baudrate / 12 bits/char
+	count = (count>=0) ? count : 0; // enforce count >= 0
+	int dur = rint( (len-count)*12000.0/baud[cfg.baud] + 1 );  // [msec] ; byte/sec = baudrate / 12 bits/char
 	ESP_LOGI(FNAME,"Send UART%d, ETA for free buf in %d msec", uart_nr, dur);
-	len = (count>=0) ? count : 0; // buffered chars
-	return dur;                   // rough ETA for telegram of len bytes
+	len = count; // buffered chars
+	return dur;  // rough ETA for telegram of len bytes
 }
 
 

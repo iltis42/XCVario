@@ -36,7 +36,7 @@ static const t_serial_nvs_setup uart_setup[3] = {
 	{ &serial2_speed, &serial2_tx_inverted, &serial2_pins_twisted, &serial2_tx_enable }
 };
 
-static uart_event_t send_trigger = {UART_DATA_BREAK, 0, false};
+static uart_event_t stop_trigger = {UART_EVENT_MAX, 0, false};
 
 // Thread body to handle UART events
 void IRAM_ATTR uartTask(SerialLine* s)
@@ -52,7 +52,7 @@ void IRAM_ATTR uartTask(SerialLine* s)
 		// sleep until the UART gives us something to do
 		xQueueReceive((QueueHandle_t)s->_event_queue, &event, portMAX_DELAY);
 
-		if (event.type == -1)
+		if (event.type == UART_EVENT_MAX)
 		{
 			ESP_LOGI(FNAME, "Terminate UART%d task", un);
 			break;
@@ -91,6 +91,7 @@ void IRAM_ATTR uartTask(SerialLine* s)
 				break;
 		}
 	}
+	vTaskDelete(nullptr);
 }
 
 
@@ -113,9 +114,8 @@ SerialLine::~SerialLine()
 		stop();
 	}
 	if ( _iotask ) {
-		vTaskDelete(_iotask);
+		xQueueSend((QueueHandle_t)_event_queue, (void *)&stop_trigger, (TickType_t)0);
 	}
-	delete &_tx_buf;
 }
 
 // -1: OFF; 0: as is; 1,2,3..: load profile

@@ -204,7 +204,7 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
 {
     // On first device a send task needs to be created
     if ( ! SendTask ) {
-        xTaskCreate(TransmitTask, "genTx", 3000, ItfSendQueue, 10, &SendTask);
+        xTaskCreate(TransmitTask, "genTx", 3000, ItfSendQueue, 90, &SendTask);
     }
     InterfaceCtrl *itf = &dummy_itf;
     if ( iid == CAN_BUS ) {

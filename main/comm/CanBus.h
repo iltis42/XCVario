@@ -49,7 +49,7 @@ public:
     InterfaceId getId() const override { return CAN_BUS; }
     const char* getStringId() const override { return "CAN"; }
     void ConfigureIntf(int cfg) override;
-    int Send(const char*, int, int) override;
+    int Send(const char*, int&, int) override;
 
 private:
 	friend void TransmitTask(void *arg);

@@ -44,7 +44,7 @@ class DmyItf final : public InterfaceCtrl
 public:
     const char* getStringId() const override { return "DMY"; }
     void ConfigureIntf(int cfg) override {}
-    int Send(const char *msg, int len, int port=0) { return 0; }
+    int Send(const char *msg, int &len, int port=0) { return 0; }
 };
 static DmyItf dummy_itf;
 
@@ -53,20 +53,18 @@ static int tt_snd(Message *msg)
     int len = msg->buffer.length();
     int port = msg->port;
     InterfaceCtrl *itf = DEVMAN->getIntf(msg->target_id);
-    int plsret = 0;
+    int plsrety = 0;
     if (itf)
     {
         // ESP_LOGI(FNAME, "send %s/%d NMEA len %d, msg: %s", itf->getStringId(), port, len, msg->buffer.c_str());
-
-        plsret = itf->Send(msg->buffer.c_str(), len, port);
-        if ( plsret > 0 ) {
-            ESP_LOGI(FNAME, "reshedule message %dms", plsret);
+        plsrety = itf->Send(msg->buffer.c_str(), len, port);
+        if ( plsrety > 0 ) {
+            ESP_LOGI(FNAME, "reshedule message %d/%d", len, msg->buffer.length());
+            msg->buffer.erase(0, len); // chop sent bytes off
         }
-        else {
-            DM.monitorString(ItfTarget(itf->getId(),port), DIR_TX, msg->buffer.c_str(), len);
-        }
+        DM.monitorString(ItfTarget(itf->getId(),port), DIR_TX, msg->buffer.c_str(), len);
     }
-    return plsret;
+    return plsrety;
 }
 
 // generic transmitter grabbing messages from a queue
@@ -88,22 +86,21 @@ void TransmitTask(void *arg)
         } // termination signal
 
         if ( new_msg ) {
-            // always check against the later fifo first
+            // always check against the later fifo first, not to garble msg sequence
+            bool wait = false;
             if( !later.empty() ) {
                 // might be just another msg to wait for the same itf
-                bool wait = false;
                 for ( Message *i : later ) {
                     if ( msg->target_id == i->target_id ) {
                         wait = true;
                         break;
                     }
                 }
-                if ( wait ) {
-                    // put this straight onto the later queue
-                    ESP_LOGI(FNAME, "straight wait");
-                    later.push_back(msg);
-                    continue;
-                }
+            }
+            if ( wait ) {
+                // put this straight onto the later queue
+                ESP_LOGI(FNAME, "straight wait");
+                later.push_back(msg);
             }
             else {
                 // Regular case
@@ -115,28 +112,23 @@ void TransmitTask(void *arg)
                 } else {
                     ESP_LOGI(FNAME, "retry pushed");
                     later.push_back(msg);
+                    continue; // just pushed this one, no need to check again
                 }
             }
         }
-        // else {
-            // Time out hit
-            while ( !later.empty() ) {
-                msg = later.front();
-                ESP_LOGI(FNAME, "postponed send");
-                pls_retry = tt_snd(msg);
 
-                // finally drop message after one retry
-                DEV::relMessage(msg);
-                later.pop_front();
-
-                if ( pls_retry == 0 ) {
-                    ESP_LOGI(FNAME, "postponed done");
-                }
-                else {
-                    break;
-                }
+        // Always have to go through the later list until the first msg gets rejected 
+        // to know the proper tim-out to wait again
+        while ( !later.empty() ) {
+            msg = later.front();
+            ESP_LOGI(FNAME, "postponed send %d", msg->buffer.size());
+            pls_retry = tt_snd(msg);
+            if ( pls_retry > 0 ) {
+                break;
             }
-        // }
+            DEV::relMessage(msg);
+            later.pop_front();
+        }
     }
 
     // Fixme keep alive and ping code is a application layer concern and has to move

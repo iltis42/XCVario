@@ -44,7 +44,7 @@ public:
     InterfaceId getId() const override { return _intfid; }
     const char* getStringId() const override { return _id_memo; }
     void ConfigureIntf(int cfg) override;                // -1:OFF, 0:setup, 1:SM_FLARM, 2:SM_RADIO, 3:X+1 ..
-    int Send(const char *msg, int len, int port=0) override;
+    int Send(const char *msg, int &len, int port=0) override;
 
     // integrated vom ex HardwareSerial
     void flush();

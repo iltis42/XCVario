@@ -2,7 +2,6 @@
 
 #include "logdefnone.h"
 
-#include "comm/CircularCharBuffer.h"
 #include "SetupNG.h"
 
 #include <soc/uart_reg.h>

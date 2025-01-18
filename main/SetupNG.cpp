@@ -391,7 +391,6 @@ SetupNG<int> 			menu_screens("MENU_SCR", 0 );
 SetupNG<int> 			screen_gmeter("SCR_GMET", 0, RST_NONE, SYNC_NONE, VOLATILE );
 SetupNG<int> 			screen_horizon("SCR_HORIZ", 0, RST_NONE, SYNC_NONE, VOLATILE );
 SetupNG<int> 			screen_centeraid("SCR_CA", 0, RST_NONE, SYNC_NONE  );
-SetupNG<int> 			data_monitor("DATAMON", MON_OFF, true, SYNC_NONE, VOLATILE  );
 SetupNG<int> 			data_monitor_mode("DATAMONM", MON_MOD_ASCII, true, SYNC_NONE, VOLATILE  );
 SetupNG<t_bitfield_compass>  calibration_bits("CALBIT", { 0,0,0,0,0,0 } );
 SetupNG<int> 			gear_warning("GEARWA", 0 );

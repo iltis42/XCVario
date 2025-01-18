@@ -7,37 +7,36 @@
    CONDITIONS OF ANY KIND, either express or implied.
  */
 
+#include "WifiApp.h"
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_system.h"
 
-#include "esp_event.h"
-#include "esp_log.h"
-#include "nvs_flash.h"
 
-#include "lwip/err.h"
-#include "lwip/sys.h"
-#include "logdef.h"
-
-#include <lwip/sockets.h>
-#include <string.h>
-#include <errno.h>
-#include "sdkconfig.h"
+// #include "sdkconfig.h"
 #include "Setup.h"
 #include "RingBufCPP.h"
 #include "BTSender.h"
 #include "Router.h"
-#include <string.h>
-#include "esp_wifi.h"
-#include <list>
 #include "WifiClient.h"
-#include "WifiApp.h"
 #include "sensor.h"
 #include "Flarm.h"
 #include "Switch.h"
 #include "DataMonitor.h"
 #include "DataLink.h"
+#include "comm/InterfaceCtrl.h"
+#include "logdef.h"
+
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <lwip/sockets.h>
+#include <esp_system.h>
+#include <esp_wifi.h>
+#include <esp_event.h>
+#include <nvs_flash.h>
+#include <lwip/err.h>
+#include <lwip/sys.h>
+
+#include <cerrno>
+#include <list>
 
 typedef struct client_record {
 	int client;
@@ -146,7 +145,7 @@ void WifiApp::socket_server(void *setup) {
 			if( len ){
 				// ESP_LOGI(FNAME, "port %d to sent %d: bytes, %s", config->port, len, buffer );
 				config->idle = 0;
-				DM.monitorString( MON_WIFI_8880+config->port-8880, DIR_TX, buffer, len );
+				DM.monitorString( ItfTarget(WIFI,config->port), DIR_TX, buffer, len );
 			}
 			else
 			{
@@ -167,7 +166,7 @@ void WifiApp::socket_server(void *setup) {
 				ssize_t sizeRead = recv(client_rec.client, r, SSTRLEN-1, MSG_DONTWAIT);
 				if (sizeRead > 0) {
 					config->dlw->process( r, sizeRead, config->port );
-					DM.monitorString( MON_WIFI_8880+config->port-8880, DIR_RX, r, sizeRead );
+					DM.monitorString( ItfTarget(WIFI,config->port), DIR_RX, r, sizeRead );
 					// ESP_LOGI(FNAME, "RX wifi client port %d size: %d bincom:%d", config->port, sizeRead, Flarm::bincom );
 					// ESP_LOG_BUFFER_HEXDUMP(FNAME,tcprx.c_str(),sizeRead, ESP_LOG_INFO);
 				}

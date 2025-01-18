@@ -13,6 +13,7 @@
 #include "comm/CanBus.h"
 #include "SerialLine.h"
 #include "protocol/ProtocolItf.h"
+#include "DataMonitor.h"
 
 #include "sensor.h"
 #include "logdef.h"
@@ -30,6 +31,8 @@ MessagePool MP;
 
 // static vars
 static TaskHandle_t SendTask = nullptr;
+
+// static routing table on device level
 static RoutingMap Routes = {
     { {FLARM_DEV, 0}, {{NAVI_DEV, 0}, {XCVARIOCLIENT_DEV, 20}} },
     { {NAVI_DEV, 0}, {{FLARM_DEV, 0}} }
@@ -53,11 +56,14 @@ static int tt_snd(Message *msg)
     int plsret = 0;
     if (itf)
     {
-        ESP_LOGI(FNAME, "send %s/%d NMEA len %d, msg: %s", itf->getStringId(), port, len, msg->buffer.c_str());
+        // ESP_LOGI(FNAME, "send %s/%d NMEA len %d, msg: %s", itf->getStringId(), port, len, msg->buffer.c_str());
 
         plsret = itf->Send(msg->buffer.c_str(), len, port);
         if ( plsret > 0 ) {
             ESP_LOGI(FNAME, "reshedule message %dms", plsret);
+        }
+        else {
+            DM.monitorString(itf->getId()<<24|port, DIR_TX, msg->buffer.c_str(), len);
         }
     }
     return plsret;

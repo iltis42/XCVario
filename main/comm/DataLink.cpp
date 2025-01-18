@@ -12,10 +12,12 @@
 #include "protocol/JumboCmdHost.h"
 #include "protocol/FlarmGPS.h"
 #include "protocol/FlarmHost.h"
+#include "protocol/FlarmBin.h"
 #include "protocol/TestQuery.h"
 #include "Messages.h"
-
 #include "DeviceMgr.h"
+
+#include "DataMonitor.h"
 
 #include "logdef.h"
 
@@ -47,23 +49,27 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
         {
         case REGISTRATION_P:
             ESP_LOGI(FNAME, "New MasterReg");
-            tmp = new CANMasterReg(sendport, _sm);
+            tmp = new CANMasterReg(sendport, _sm, *this);
             break;
         case JUMBOCMD_P:
             ESP_LOGI(FNAME, "New JumboCmdHost");
-            tmp = new JumboCmdHost(sendport, _sm);
+            tmp = new JumboCmdHost(sendport, _sm, *this);
             break;
         case FLARM_P:
             ESP_LOGI(FNAME, "New Flarm");
-            tmp = new FlarmGPS(sendport, _sm);
+            tmp = new FlarmGPS(sendport, _sm, *this);
             break;
         case FLARMHOST_P:
             ESP_LOGI(FNAME, "New FlarmProxy");
-            tmp = new FlarmHost(sendport, _sm);
+            tmp = new FlarmHost(sendport, _sm, *this);
+            break;
+        case FLARMBIN_P:
+            ESP_LOGI(FNAME, "New FlarmBinary");
+            tmp = new FlarmBinary(did, sendport, _sm, *this);
             break;
         case TEST_P:
             ESP_LOGI(FNAME, "New Test Proto");
-            tmp = new TestQuery(did, sendport, _sm);
+            tmp = new TestQuery(did, sendport, _sm, *this);
             break;
         default:
             break;

@@ -15,7 +15,7 @@ DataMonitor::DataMonitor(){
 	scrollpos = SCROLL_BOTTOM;
 	paused = true;
 	setup = 0;
-	channel = MON_OFF;
+	channel = 0;
 	mutex = xSemaphoreCreateMutex();
 	first=true;
 	rx_total = 0;
@@ -43,7 +43,7 @@ int DataMonitor::maxChar( const char *str, int pos, int len, bool binary ){
 	return i;
 }
 
-void DataMonitor::header( int ch, bool binary, int len, e_dir_t dir ){
+void DataMonitor::header( ItfTarget ch, bool binary, int len, e_dir_t dir ){
 	if( dir == DIR_RX ){
 		rx_total += len;
 	}
@@ -52,14 +52,14 @@ void DataMonitor::header( int ch, bool binary, int len, e_dir_t dir ){
 	}
 	// ESP_LOGI(FNAME,"header() %d %d %d ", len, rx_total, tx_total );
 	const char * what;
-	switch( ch ) {
-		case MON_BLUETOOTH: what = "BT"; break;
-		case MON_WIFI_8880: what = "W 8880"; break;
-		case MON_WIFI_8881: what = "W 8881"; break;
-		case MON_WIFI_8882: what = "W 8882"; break;
-		case MON_S1:  what = "S1"; break;
-		case MON_S2:  what = "S2"; break;
-		case MON_CAN: what = "CAN"; break;
+	switch( ch.raw ) {
+		case ItfTarget(BT_SERIAL).raw: what = "BT"; break;
+		case ItfTarget(WIFI,8080).raw: what = "W 8080"; break;
+		case ItfTarget(WIFI,8081).raw: what = "W 8881"; break;
+		case ItfTarget(WIFI,8082).raw: what = "W 8882"; break;
+		case ItfTarget(S1_RS232).raw:  what = "S1"; break;
+		case ItfTarget(S2_RS232).raw:  what = "S2"; break;
+		case ItfTarget(CAN_BUS).raw: what = "CAN"; break;
 		default:      what = "OFF"; break;
 	}
 	const char * b;
@@ -77,7 +77,7 @@ void DataMonitor::header( int ch, bool binary, int len, e_dir_t dir ){
 		ucg->printf( "%s%s: RX:%d TX:%d bytes   ", b, what, rx_total, tx_total );
 }
 
-void DataMonitor::monitorString( int ch, e_dir_t dir, const char *str, int len ){
+void DataMonitor::monitorString( ItfTarget ch, e_dir_t dir, const char *str, int len ){
 	if( xSemaphoreTake(mutex,portMAX_DELAY ) ){
 		bool binary = data_monitor_mode.get() == MON_MOD_BINARY;
 		if( !mon_started || paused || (ch != channel) ){
@@ -92,7 +92,7 @@ void DataMonitor::monitorString( int ch, e_dir_t dir, const char *str, int len )
 	}
 }
 
-void DataMonitor::printString( int ch, e_dir_t dir, const char *str, bool binary, int len ){
+void DataMonitor::printString( ItfTarget ch, e_dir_t dir, const char *str, bool binary, int len ){
 	// if (! binary)
 	// 	ESP_LOGI(FNAME,"DM ch:%d dir:%d len:%d data:%s", ch, dir, len, str );
 	const int scroll_lines = 20;
@@ -136,7 +136,7 @@ void DataMonitor::printString( int ch, e_dir_t dir, const char *str, bool binary
 				}
 				txt[hpos] = 0; // zero terminate string
 				ucg->print( txt );
-				ESP_LOGI(FNAME,"DM binary ch:%d dir:%d string:%s", ch, dir, txt );
+				ESP_LOGI(FNAME,"DM binary ch:%d dir:%d string:%s", ch.raw, dir, txt );
 			}
 			else{
 				hpos += sprintf( txt, "%c ", dirsym );
@@ -183,15 +183,14 @@ void DataMonitor::longPress(){
 
 }
 
-void DataMonitor::start(SetupMenuSelect * p){
+void DataMonitor::start(SetupMenuSelect * p, ItfTarget ch){
 	ESP_LOGI(FNAME,"start");
 	if( !setup )
 		attach( this );
 	setup = p;
 	tx_total = 0;
 	rx_total = 0;
-	//channel = p->getSelect();       // broken, for S1 & S2 menus with only 0,1 choices
-	channel = data_monitor.get();     // action function SetupMenu.cpp data_mon() set it
+	channel = ch;
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	SetupMenu::catchFocus( true );
 	ucg->setColor( COLOR_BLACK );
@@ -212,12 +211,12 @@ void DataMonitor::start(SetupMenuSelect * p){
 
 void DataMonitor::stop(){
 	ESP_LOGI(FNAME,"stop");
-	channel = MON_OFF;
+	channel = 0;
 	mon_started = false;
 	paused = false;
 	delay(1000);
 	ucg->scrollLines( 0 );
-	setup->setSelect( MON_OFF );  // works only because MON_OFF=0 and is the first choice in all 3 monitor menus
+	setup->setSelect( 0 );  // works only because MON_OFF=0 and is the first choice in all 3 monitor menus
 	SetupMenu::catchFocus( false );
 }
 

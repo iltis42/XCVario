@@ -1,8 +1,9 @@
 #ifndef WIFI_APP_H
 #define WIFI_APP_H
 
-#include "esp_wifi.h"
-#include "esp_event.h"
+#include <esp_wifi.h>
+#include <esp_event.h>
+#include <cstring>
 
 typedef struct str_wireless_id {
 	char id[10];

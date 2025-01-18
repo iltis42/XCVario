@@ -1,17 +1,7 @@
-#include <esp_log.h>
 #include "BTSender.h"
-#include <string>
-#include "sdkconfig.h"
-#include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_task_wdt.h"
-#include <freertos/semphr.h>
-#include <algorithm>
+
 #include "RingBufCPP.h"
-#include <driver/uart.h>
 #include "Protocols.h"
-#include <logdef.h>
 #include "Switch.h"
 #include "sensor.h"
 #include "Router.h"
@@ -19,6 +9,21 @@
 #include "BluetoothSerial.h"
 #include "DataMonitor.h"
 #include "DataLink.h"
+#include "comm/InterfaceCtrl.h"
+
+#include "logdef.h"
+// #include "sdkconfig.h"
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include <freertos/semphr.h>
+
+#include <esp_task_wdt.h>
+#include <driver/uart.h>
+
+#include <cstdio>
+#include <string>
+#include <algorithm>
 
 static TaskHandle_t pid = nullptr;
 
@@ -76,7 +81,7 @@ void BTSender::progress(){
 		SString rx;
 		rx.set( buf, pos );
 		dlb->process( buf, pos, 7 );
-		DM.monitorString( MON_BLUETOOTH, DIR_RX, rx.c_str(), pos );
+		DM.monitorString( ItfTarget(BT_SERIAL), DIR_RX, rx.c_str(), pos );
 		// ESP_LOGI(FNAME,">BT RX: %d bytes", pos );
 		// ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.c_str(),pos, ESP_LOG_INFO);
 	}
@@ -86,7 +91,7 @@ void BTSender::progress(){
 			// ESP_LOGI(FNAME,"<BT TX %d bytes", msg.length() );
 			// ESP_LOG_BUFFER_HEXDUMP(FNAME,msg.c_str(),msg.length(), ESP_LOG_INFO);
 			SerialBT->write( (const uint8_t *)buf, len );
-			DM.monitorString( MON_BLUETOOTH, DIR_TX, buf, len );
+			DM.monitorString( ItfTarget(BT_SERIAL), DIR_TX, buf, len );
 		}
 	}
 }

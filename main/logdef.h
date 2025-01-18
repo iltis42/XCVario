@@ -1,9 +1,9 @@
 #ifndef LOGDEF_H
 #define LOGDEF_H
 
+#include <esp_log.h>
 #include <string>
-#include "esp_log.h"
-#include <string.h>
+#include <cstring>
 
 
 template <typename T, size_t S>

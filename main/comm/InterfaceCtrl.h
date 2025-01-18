@@ -25,6 +25,30 @@ typedef enum {
     BLT
 } InterfaceId;
 
+// Interface target
+struct ItfTarget {
+    union {
+        struct {
+            InterfaceId iid  : 8;
+            int         port : 24;
+        };
+        uint32_t raw;
+    };
+
+    // Convenience
+    constexpr ItfTarget(InterfaceId iid, int port=0)
+        : raw((static_cast<InterfaceId>(iid) & 0xff) | ((static_cast<int>(port) & 0xffffff) << 8)) {}
+    constexpr ItfTarget(int r = 0) : raw(r) {}
+    constexpr bool operator<(const ItfTarget& other) const {
+        return raw < other.raw;
+    }
+    constexpr bool operator==(const ItfTarget& other) const {
+        return raw == other.raw;
+    }
+    constexpr bool operator!=(const ItfTarget& other) const {
+        return raw != other.raw;
+    }
+};
 
 // ISO/OSI 1..n relation from interface to data link layer.
 // Because in the given embedded context a 1..1 relation is in most of the 

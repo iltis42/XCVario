@@ -43,11 +43,11 @@
 #include <cstring>
 #include <string>
 #include "DataLink.h"
-#include "comm/DataLink.h"
-#include "comm/Devices.h"
+// #include "comm/DataLink.h"
+// #include "comm/Devices.h"
 #include "comm/DeviceMgr.h"
 #include "protocol/JumboCmdHost.h"
-#include "SerialLine.h"
+#include "comm/SerialLine.h"
 
 SetupMenuSelect *audio_range_sm = 0;
 SetupMenuSelect *mpu = 0;
@@ -191,63 +191,65 @@ int upd_screens(SetupMenuSelect *p) {
 
 int update_s2_baud(SetupMenuSelect *p) {
 	ESP_LOGI(FNAME,"Select baudrate: %d", p->getSelect() ); // coldstart
-	S2->setBaud((e_baud)(p->getSelect()), true); // 0 off, 1: 4800, 2:9600, etc support coldstart from BAUD_OFF
+	S2->setBaud((e_baud)(p->getSelect())); // 0 off, 1: 4800, 2:9600, etc support coldstart from BAUD_OFF
 	return 0;
 }
 
 int update_s2_pol(SetupMenuSelect *p) {
 	ESP_LOGI(FNAME,"Select RX/TX polarity: %d", p->getSelect() );
-	S2->setLineInverse((e_polarity)(p->getSelect())); // 0 off, 1 invers or TTL (always both, RX/TX)
+	S2->setLineInverse(p->getSelect()); // 0 off, 1 invers or TTL (always both, RX/TX)
 	return 0;
 }
 
 int update_s2_pin(SetupMenuSelect *p) {
 	ESP_LOGI(FNAME,"Select Pin Swap: %d", p->getSelect() );
-	S2->setPinSwap((e_pin)(p->getSelect())); // 0 normal (3:TX 4:RX), 1 swapped (3:RX 4:TX)
+	S2->setPinSwap(p->getSelect()); // 0 normal (3:TX 4:RX), 1 swapped (3:RX 4:TX)
 	return 0;
 }
 
 int update_s2_txena(SetupMenuSelect *p) {
 	ESP_LOGI(FNAME,"Select TX Enable: %d", p->getSelect() );
-	S2->setSlaveRole((e_tx)(p->getSelect())); // 0 normal Client (RO, Listener), 1 Master (Sender)
+	S2->setTxOn(p->getSelect()); // 0 normal Client (RO, Listener), 1 Master (Sender)
 	return 0;
 }
 
 int update_s2_protocol(SetupMenuSelect *p) {
 	ESP_LOGI(FNAME,"Select profile: %d", p->getSelect()-1 );
-	S2->loadProfile((e_profile)(p->getSelect() - 1));
-	S2->configure(); // For the moment transparent:  SM_FLARM = 0, SM_RADIO = 1, SM_XCTNAV_S3 = 2, SM_OPENVARIO = 3, SM_XCFLARMVIEW = 4
+	if ( p->getSelect() > 0 ) {
+		S2->ConfigureIntf(p->getSelect()); // SM_FLARM = 1, SM_RADIO = 2, ... 
+	}
 	return 0;
 }
 
 int update_s1_baud(SetupMenuSelect *p) {
 	ESP_LOGI(FNAME,"Select baudrate: %d", p->getSelect() );
-	S1->setBaud((e_baud)(p->getSelect()), true);  // 0 off, 1: 4800, 2:9600, etc
+	S1->setBaud((e_baud)(p->getSelect()));  // 0 off, 1: 4800, 2:9600, etc
 	return 0;
 }
 
 int update_s1_pol(SetupMenuSelect *p) {
 	ESP_LOGI(FNAME,"Select RX/TX polarity: %d", p->getSelect() );
-	S1->setLineInverse((e_polarity)(p->getSelect())); // 0 off, 1 invers or TTL (always both, RX/TX)
+	S1->setLineInverse(p->getSelect()); // 0 off, 1 invers or TTL (always both, RX/TX)
 	return 0;
 }
 
 int update_s1_pin(SetupMenuSelect *p) {
 	ESP_LOGI(FNAME,"Select Pin Swap: %d", p->getSelect() );
-	S1->setPinSwap((e_pin)(p->getSelect())); // 0 normal (3:TX 4:RX), 1 swapped (3:RX 4:TX)
+	S1->setPinSwap(p->getSelect()); // 0 normal (3:TX 4:RX), 1 swapped (3:RX 4:TX)
 	return 0;
 }
 
 int update_s1_txena(SetupMenuSelect *p) {
 	ESP_LOGI(FNAME,"Select TX Enable: %d", p->getSelect() );
-	S1->setSlaveRole((e_tx)(p->getSelect())); // 0 normal Client (RO, Listener), 1 Master (Sender)
+	S1->setTxOn(p->getSelect()); // 0 normal Client (RO, Listener), 1 Master (Sender)
 	return 0;
 }
 
 int update_s1_protocol(SetupMenuSelect *p) {
-	ESP_LOGI(FNAME,"Select profile: %d", p->getSelect()-1 );
-	S1->loadProfile((e_profile)(p->getSelect() - 1));
-	S1->configure(); // For the moment transparent:  SM_FLARM = 0, SM_RADIO = 1, SM_XCTNAV_S3 = 2, SM_OPENVARIO = 3, SM_XCFLARMVIEW = 4
+	if ( p->getSelect() > 0 ) {
+		ESP_LOGI(FNAME,"Select profile: %d", p->getSelect()-1 );
+		S1->ConfigureIntf(p->getSelect()); // SM_FLARM = 1, SM_RADIO = 2, ... 
+	}
 	return 0;
 }
 
@@ -305,21 +307,32 @@ int update_wifi_power(SetupMenuValFloat *p) {
 }
 
 int data_mon(SetupMenuSelect *p) {
-	ESP_LOGI(FNAME,"data_mon( %d ) ", data_monitor.get() );
-	if (data_monitor.get() != MON_OFF) {
-		DM.start(p);
+	ItfTarget ch;
+	switch (p->getSelect()) {
+		case 1: ch = ItfTarget(BT_SERIAL); break;
+		case 2: ch = ItfTarget(WIFI,8080); break;
+		case 3: ch = ItfTarget(WIFI,8081); break;
+		case 4: ch = ItfTarget(WIFI,8082); break;
+		case 5: ch = ItfTarget(S1_RS232); break;
+		case 6: ch = ItfTarget(S2_RS232); break;
+		case 7: ch = ItfTarget(CAN_BUS); break;
+		default: break;
+	}
+	if (ch != ItfTarget()) {
+		ESP_LOGI(FNAME,"data_mon( %d ) ", ch.raw );
+		DM.start(p, ch);
 	}
 	return 0;
 }
 
 int data_monS1(SetupMenuSelect *p) {
-	data_monitor.set(MON_S1);
-	return (data_mon(p));
+	DM.start(p, ItfTarget(S1_RS232));
+	return 0;
 }
 
 int data_monS2(SetupMenuSelect *p) {
-	data_monitor.set(MON_S2);
-	return (data_mon(p));
+	DM.start(p, ItfTarget(S2_RS232));
+	return 0;
 }
 
 int update_id(SetupMenuChar *p) {
@@ -1764,7 +1777,7 @@ void SetupMenu::options_menu_create_wireless(MenuEntry *top) {
 	top->addEntry(wifimal);
 
 	SetupMenuSelect *datamon = new SetupMenuSelect("Monitor", RST_NONE,
-			data_mon, true, &data_monitor);
+			data_mon, true, nullptr);
 	datamon->setHelp(
 			"Short press button to start/pause, long press to terminate data monitor",
 			260);
@@ -2428,7 +2441,7 @@ void SetupMenu::system_menu_create_interfaceS1(MenuEntry *top) {
 	sprots1->addEntry( PROGMEM"XCFLARMVIEW");
 
 	SetupMenuSelect *datamon = new SetupMenuSelect("Monitor", RST_NONE,
-			data_monS1, true, &data_monitor);
+			data_monS1, true, nullptr);
 	datamon->setHelp(
 			"Short press button to start/pause, long press to terminate data monitor",
 			260);
@@ -2518,7 +2531,7 @@ void SetupMenu::system_menu_create_interfaceS2(MenuEntry *top) {
 	sprots1->addEntry( PROGMEM"XCFLARMVIEW");
 
 	SetupMenuSelect *datamon = new SetupMenuSelect("Monitor", RST_NONE,
-			data_monS2, true, &data_monitor);
+			data_monS2, true, nullptr);
 	datamon->setHelp(
 			"Short press button to start/pause, long press to terminate data monitor",
 			260);

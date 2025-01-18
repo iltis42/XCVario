@@ -9,6 +9,7 @@
 #include "InterfaceCtrl.h"
 
 #include "DataLink.h"
+#include "SetupNG.h"
 
 // 1..n relation from interface to data link layer
 // Ability to set interface details through a common cotrol interface
@@ -28,7 +29,7 @@ DataLink* InterfaceCtrl::newDataLink(int port)
             DeleteAllDataLinks();
         }
         if ( _dlink.empty() ) {
-            _dlink[port] = new DataLink(port);
+            _dlink[port] = new DataLink(port, getId());
         }
         return _dlink.begin()->second;
     }
@@ -38,7 +39,7 @@ DataLink* InterfaceCtrl::newDataLink(int port)
         if ( it != _dlink.end()) {
             return it->second;
         }
-        DataLink *newdl = new DataLink(port);
+        DataLink *newdl = new DataLink(port, getId());
         _dlink[port] = newdl;
         return newdl;
     }

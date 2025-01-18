@@ -118,7 +118,6 @@ void canRxTask(void *arg)
             //     QMCMagCAN::fromCAN(msg.c_str(), msg.length());
             //     // _connected_timeout_magsens = 0;
             // }
-            DM.monitorString(MON_CAN, DIR_RX, msg.c_str(), msg.length());
         }
         else
         {

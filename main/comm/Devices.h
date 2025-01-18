@@ -36,6 +36,7 @@ typedef enum
     ANEMOI_P,
     FLARM_P,
     FLARMHOST_P,
+    FLARMBIN_P,
     MAGSENS_P,
     NMEA_P,
     TEST_P
@@ -46,14 +47,14 @@ typedef enum
 struct RoutingTarget {
     union {
         struct {
-            DeviceId    _target_dev  : 8;
-            int         _target_port : 24;
+            DeviceId    did  : 8;
+            int         port : 24;
         };
         uint32_t raw; // Access the packed 32-bit value
     };
 
     // Convenience
-    constexpr RoutingTarget(DeviceId did, int port)
+    constexpr RoutingTarget(DeviceId did, int port=0)
         : raw((static_cast<DeviceId>(did) & 0xff) | ((static_cast<int>(port) & 0xffffff) << 8)) {}
 
     // Default constructor for initialization

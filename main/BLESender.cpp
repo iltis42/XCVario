@@ -62,7 +62,7 @@ class MyRxCallbacks: public BLECharacteristicCallbacks {
 		std::string rx = pCharacteristic->getValue();
 		if (rx.length()) {
 			dlb->process( rx.c_str(), rx.length(), 7 );
-			DM.monitorString( MON_BLUETOOTH, DIR_RX, rx.c_str(), rx.length() );
+			DM.monitorString( ItfTarget(BT_SERIAL), DIR_RX, rx.c_str(), rx.length() );
 			ESP_LOGI(FNAME,">BT LE RX: %d bytes",  rx.length()  );
 			ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.c_str(), rx.length() , ESP_LOG_INFO);
 		}
@@ -121,7 +121,7 @@ void BLESender::progress(){
 			pTxCharacteristic->notify(); // No return value
 			// ESP_LOGI(FNAME,"<BT LE TX %d bytes (pending: %d)", sent, indicationPending );
 			// ESP_LOG_BUFFER_HEXDUMP(FNAME,&buf[pos],len, ESP_LOG_INFO);
-			DM.monitorString( MON_BLUETOOTH, DIR_TX, buf, len );
+			DM.monitorString( ItfTarget(BT_SERIAL), DIR_TX, buf, len );
 			delay( congestion );  // slow down sender upon congestion
 		}
 	}

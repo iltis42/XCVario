@@ -95,7 +95,7 @@ void DataLinkOld::routeSerialData( const char *data, uint32_t len, int port, boo
 	else if( port == 3 ){  // CAN
 		Router::forwardMsg( tx, can_rx_q, nmea );
 		Router::routeCAN();
-		DM.monitorString( MON_CAN, DIR_RX, tx.c_str(), len);
+		// DM.monitorString( MON_CAN, DIR_RX, tx.c_str(), len);
 		// ESP_LOG_BUFFER_HEXDUMP(FNAME, tx.c_str(), tx.length(), ESP_LOG_INFO);
 	}
 	else if( port == 7 ){  // Bluetooth

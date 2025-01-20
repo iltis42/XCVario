@@ -107,37 +107,29 @@ void SetupMenuChar::display( int mode ){
 		selected = _parent;
 	}else
 	{
-		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		ucg->setPrintPos(1,25);
 		ESP_LOGI(FNAME,"Title: %s ", _title );
 		ucg->printf("<< %s",_title);
-		xSemaphoreGive(spiMutex );
 		ESP_LOGI(FNAME,"select=%d numval=%d size=%d val=%s", _select, _numval, _values.size(), _values[_select] );
 		if( _numval > 9 ){
-			xSemaphoreTake(spiMutex,portMAX_DELAY );
 			ucg->setPrintPos( 1, 50 );
 			ucg->printf( "%s                ", _values[_select] );
-			xSemaphoreGive(spiMutex );
 		}else
 		{
-			xSemaphoreTake(spiMutex,portMAX_DELAY );
 			for( int i=0; i<_numval && i<+10; i++ )	{
 				ucg->setPrintPos( 1, 50+25*i );
 				ucg->print( _values[i] );
 			}
 			ucg->drawFrame( 1,(_select+1)*25+3,238,25 );
-			xSemaphoreGive(spiMutex );
 		}
 
 		int y=_numval*25+50;
 		showhelp( y );
 		if(mode == 1 && bits._save == true ){
-			xSemaphoreTake(spiMutex,portMAX_DELAY );
 			ucg->setColor( COLOR_BLACK );
 			ucg->drawBox( 0,280,240,40 );
 			ucg->setPrintPos( 1, 300 );
 			ucg->print("Saved" );
-			xSemaphoreGive(spiMutex );
 		}
 		if( mode == 1 )
 			delay(1000);
@@ -148,7 +140,6 @@ void SetupMenuChar::down(int count){
 	if( (selected != this) || !gflags.inSetup )
 		return;
 	if( _numval > 9 ){
-		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		while( count ) {
 			if( (_select) > 0 )
 				(_select)--;
@@ -157,9 +148,7 @@ void SetupMenuChar::down(int count){
 		ucg->setPrintPos( 1, 50 );
 		ucg->setFont(ucg_font_ncenR14_hr, true );
 		ucg->printf("%s                  ",_values[_select] );
-		xSemaphoreGive(spiMutex );
 	}else {
-		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		ucg->setColor(COLOR_BLACK);
 		ucg->drawFrame( 1,(_select+1)*25+3,238,25 );  // blank old frame
 		ucg->setColor(COLOR_WHITE);
@@ -167,7 +156,6 @@ void SetupMenuChar::down(int count){
 			(_select)--;
 		ESP_LOGI(FNAME,"val down %d", _select );
 		ucg->drawFrame( 1,(_select+1)*25+3,238,25 );  // draw new frame
-		xSemaphoreGive(spiMutex );
 	}
 }
 
@@ -176,7 +164,6 @@ void SetupMenuChar::up(int count){
 		return;
 	if( _numval > 9 )
 	{
-		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		while( count ) {
 			if( (_select) <  _numval-1 )
 				(_select)++;
@@ -185,9 +172,7 @@ void SetupMenuChar::up(int count){
 		ucg->setPrintPos( 1, 50 );
 		ucg->setFont(ucg_font_ncenR14_hr, true );
 		ucg->printf("%s                   ", _values[_select] );
-		xSemaphoreGive(spiMutex );
 	}else {
-		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		ucg->setColor(COLOR_BLACK);
 		ucg->drawFrame( 1,(_select+1)*25+3,238,25 );  // blank old frame
 		ucg->setColor(COLOR_WHITE);
@@ -195,7 +180,6 @@ void SetupMenuChar::up(int count){
 			(_select)++;
 		ESP_LOGI(FNAME,"val up %d", _select );
 		ucg->drawFrame( 1,(_select+1)*25+3,238,25 );  // draw new frame
-		xSemaphoreGive(spiMutex );
 	}
 }
 

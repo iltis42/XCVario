@@ -1,8 +1,8 @@
 extern "C" {
 #include "eglib.h"
 }
-#include "inttypes.h"
-#include "Arduino.h"
+#include <cinttypes>
+#include <cstring>
 
 #pragma once
 
@@ -85,7 +85,8 @@ extern const uint8_t ucg_font_fub11_hn[];
 extern const uint8_t eglib_font_free_sansbold_66[];
 
 
-class AdaptUGC : public Print{
+class AdaptUGC
+{
 public:
 	// init
 	void begin();
@@ -120,6 +121,11 @@ public:
 	// Text Printing
 	size_t write(uint8_t c);
 	size_t write(const uint8_t *buffer, size_t size);
+	size_t printf(const char * format, ...)  __attribute__ ((format (printf, 2, 3)));
+	size_t print(const char *str) { return write((const uint8_t *)str, strlen(str)); }
+	size_t print(char c) { return write(c); }
+	size_t print(long, int base=10);
+	size_t print(int i, int base=10) { return print(long(i), base); }
 	inline void setPrintPos(int16_t x, int16_t y) { eglib_print_xpos = x; eglib_print_ypos = y; };
 	inline void setPrintDir(uint8_t d) { eglib_print_dir = d; }
 	inline int16_t getStrWidth( const char * s ) { return ( eglib_GetTextWidth(eglib, s) ); };
@@ -139,6 +145,7 @@ public:
 
 private:
 	inline void advanceCursor( size_t delta );
+	size_t printNumber(unsigned long n, uint8_t base);
 
 	int16_t eglib_print_xpos = 0, eglib_print_ypos = 0;
 	int8_t eglib_font_pos = UCG_FONT_POS_BOTTOM;

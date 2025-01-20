@@ -48,10 +48,8 @@ void MenuEntry::uprintf( int x, int y, const char* format, ...) {
 	}
 	va_list argptr;
 	va_start(argptr, format);
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setPrintPos(x,y);
 	ucg->printf( format, argptr );
-	xSemaphoreGive(spiMutex );
 	va_end(argptr);
 }
 
@@ -69,10 +67,8 @@ void MenuEntry::uprint( int x, int y, const char* str ) {
 		ESP_LOGE(FNAME,"Error UCG not initialized !");
 		return;
 	}
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setPrintPos(x,y);
 	ucg->print( str );
-	xSemaphoreGive(spiMutex );
 }
 
 MenuEntry* MenuEntry::getFirst() const {
@@ -169,10 +165,8 @@ void MenuEntry::showhelp( int y ){
 				y+=25;
 				x=1;
 			}
-			xSemaphoreTake(spiMutex,portMAX_DELAY );
 			ucg->setPrintPos(x, y);
 			ucg->print( words[p] );
-			xSemaphoreGive(spiMutex );
 			x+=len+5;
 		}
 		free( buf );
@@ -182,22 +176,11 @@ void MenuEntry::showhelp( int y ){
 void MenuEntry::clear()
 {
 	// ESP_LOGI(FNAME,"MenuEntry::clear");
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setColor(COLOR_BLACK);
 	ucg->drawBox( 0,0,240,320 );
 	// ucg->begin(UCG_FONT_MODE_SOLID);
 	ucg->setFont(ucg_font_ncenR14_hr);
 	ucg->setPrintPos( 1, 30 );
 	ucg->setColor(COLOR_WHITE);
-	xSemaphoreGive(spiMutex );
 }
 
-void MenuEntry::semaphoreTake()
-{
-  xSemaphoreTake( spiMutex, portMAX_DELAY );
-}
-
-void MenuEntry::semaphoreGive()
-{
-  xSemaphoreGive( spiMutex );
-}

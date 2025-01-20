@@ -25,8 +25,6 @@ bool Flarm::myGPS_OK = false;
 char Flarm::ID[20] = "";
 AdaptUGC* Flarm::ucg;
 
-extern xSemaphoreHandle spiMutex;
-
 #define CENTERX 120
 #define CENTERY 120
 
@@ -163,7 +161,6 @@ void Flarm::drawFlarmWarning(){
 	_tick++;
 	if( _tick > 500 ) // age FLARM alarm in case there is no more input  50 per second = 10 sec
 		AlarmLevel = 0;
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	float volume=0;
 	e_audio_alarm_type_t alarm = AUDIO_ALARM_FLARM_1;
 	if( AlarmLevel == 3 ) { // highest, impact 0-8 seconds
@@ -247,6 +244,4 @@ void Flarm::drawFlarmWarning(){
 		drawAirplane( 70, 120 );
 		oldBear = RelativeBearing;
 	}
-
-	xSemaphoreGive(spiMutex);
 }

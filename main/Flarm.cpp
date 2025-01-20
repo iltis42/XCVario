@@ -1,13 +1,14 @@
 #include "Flarm.h"
 #include "logdef.h"
 #include "Colors.h"
-#include "math.h"
 #include "ESPAudio.h"
 #include "IpsDisplay.h"
+#include "quaternion.h"
 #include "sensor.h"
 #include "CircleWind.h"
 #include "Router.h"
-#include <time.h>
+#include <cmath>
+#include <ctime>
 #include <sys/time.h>
 
 int Flarm::RX = 0;
@@ -27,9 +28,6 @@ AdaptUGC* Flarm::ucg;
 
 #define CENTERX 120
 #define CENTERY 120
-
-#define RTD(x) (x*RAD_TO_DEG)
-#define DTR(x) (x*DEG_TO_RAD)
 
 int Flarm::oldDist = 0;
 int Flarm::oldVertical = 0;
@@ -91,8 +89,8 @@ void Flarm::drawClearVerticalTriangle( int x, int y, int rb, int dist, int size,
 }
 
 void Flarm::drawTriangle( int x, int y, int rb, int dist, int size, int factor, bool erase ) {
-	float s = sin( DTR(rb) );
-	float c = cos( DTR(rb) );
+	float s = sin( deg2rad(rb) );
+	float c = cos( deg2rad(rb) );
 	int tipx = (int)(x + s*dist );
 	int tipy = (int)(y - c*dist );
 	float mx =  x + s*(dist+size);
@@ -217,7 +215,7 @@ void Flarm::drawFlarmWarning(){
 		float relDist =  (float)RelativeDistance;
 		if( RelativeBearing < 0 )
 			relDist = -relDist;
-		float horizontalAngle = RTD( atan2( relDist, (float)RelativeVertical) );
+		float horizontalAngle = rad2deg( atan2( relDist, (float)RelativeVertical) );
 		ESP_LOGI(FNAME,"horizontalAngle: %f  vert:%d", horizontalAngle, RelativeVertical );
 
 		drawClearVerticalTriangle( 70, 220, horizontalAngle, 0, 50, 6 );

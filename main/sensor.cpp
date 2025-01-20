@@ -65,7 +65,6 @@
 #include <esp_task_wdt.h>
 #include <esp_log.h>
 #include <esp32/rom/miniz.h>
-#include <esp32-hal-adc.h> // needed for adc pin reset
 #include <soc/sens_reg.h> // needed for adc pin reset
 #include <esp_sleep.h>
 #include <esp_wifi.h>
@@ -262,7 +261,7 @@ void drawDisplay(void *pvParameters){
 					if( gear_warning.get() == GW_EXTERNAL ){
 						gw = gflags.gear_warn_external;
 					}else{
-						gw = digitalRead( SetupMenu::getGearWarningIO() );
+						gw = gpio_get_level( SetupMenu::getGearWarningIO() );
 						if( gear_warning.get() == GW_FLAP_SENSOR_INV || gear_warning.get() == GW_S2_RS232_RX_INV ){
 							gw = !gw;
 						}
@@ -943,8 +942,7 @@ void system_startup(void *args){
 	display->bootDisplay();
 
 	// int valid;
-	String logged_tests;
-	logged_tests += "\n\n\n";
+	std::string logged_tests("\n\n\n");
 	Version V;
 	std::string ver( " Ver.: " );
 	ver += V.version();
@@ -1048,9 +1046,8 @@ void system_startup(void *args){
 	}
 	ESP_LOGI(FNAME,"Custom Wirelss-ID: %s", custom_wireless_id.get().id );
 
-	String wireless_id;
+	std::string wireless_id("BT ID: ");
 	if( wireless == WL_BLUETOOTH ) {
-		wireless_id="BT ID: ";
 		BTspp = new BTSender();
 		// BTspp->selfTest();
 		// BTspp->start();
@@ -1058,8 +1055,9 @@ void system_startup(void *args){
 	else if( wireless == WL_BLUETOOTH_LE ){
 		blesender.begin();
 	}
-	else
-		wireless_id="WLAN SID: ";
+	else {
+		wireless_id.assign("WLAN SID: ");
+	}
 	wireless_id += SetupCommon::getID();
 	display->writeText(line++, wireless_id.c_str() );
 	Cipher::begin();
@@ -1321,7 +1319,7 @@ void system_startup(void *args){
 	}
 
 	// 2021 series 3, or 2022 model with new digital poti CAT5171 also features CAN bus
-	String resultCAN;
+	std::string resultCAN;
 	if( Audio::haveCAT5171() ) // todo && CAN configured
 	{
 		CAN = new CANbus();
@@ -1356,14 +1354,14 @@ void system_startup(void *args){
 		if( resultCAN.length() )
 			display->writeText( line++, "Bat Meter/CAN: ");
 		else
-			display->writeText( line++, "Bat Meter/CAN: Fail/" + resultCAN );
+			display->writeText( line++, std::string("Bat Meter/CAN: Fail/" + resultCAN).c_str() );
 		logged_tests += "Battery Voltage Sensor: FAILED\n";
 		selftestPassed = false;
 	}
 	else{
 		ESP_LOGI(FNAME,"Battery voltage metering test PASSED, act value=%f", bat );
 		if( resultCAN.length() )
-			display->writeText( line++, "Bat Meter/CAN: OK/"+ resultCAN );
+			display->writeText( line++, std::string("Bat Meter/CAN: OK/" + resultCAN).c_str() );
 		else
 			display->writeText( line++, "Bat Meter: OK");
 		logged_tests += "Battery Voltage Sensor: PASSED\n";
@@ -1382,7 +1380,7 @@ void system_startup(void *args){
 		// dm->addDevice(TEST_DEV2, TEST_P, 2, 0, S2_RS232);
 	}
 	// Fixme readd test for serial interface plus cable
-	String result("Serial ");
+	std::string result("Serial ");
 	if ( true )  // Serial::selfTest( S1 ) )
 		result += "S1 OK";
 	else

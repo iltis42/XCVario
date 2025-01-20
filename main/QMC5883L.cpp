@@ -24,14 +24,16 @@ Last update: 2021-04-05
 // Activate/deactivate debug messages
 // #define DEBUG_COMP 1
 
-#include <cassert>
-#include <cmath>
 #include "QMC5883L.h"
 #include "KalmanMPU6050.h"
 #include "SetupNG.h"
 #include "MenuEntry.h"
 #include "Router.h"
 #include "vector.h"
+#include "sensor.h"
+
+#include <cassert>
+#include <cmath>
 
 /* Register numbers */
 #define REG_X_LSB 0         // Output Data Registers for magnetic sensor.

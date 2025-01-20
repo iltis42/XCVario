@@ -23,7 +23,6 @@ Last update: 2021-03-28
 #include <sys/time.h>
 #include "esp_system.h"
 #include "I2Cbus.hpp"
-#include "WString.h"
 #include "MagnetSensor.h"
 
 

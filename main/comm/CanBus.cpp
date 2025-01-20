@@ -11,7 +11,7 @@
 #include <freertos/task.h>
 
 #include "driver/gpio.h"
-#include "logdef.h"
+#include "logdefnone.h"
 #include "esp_err.h"
 
 #include <cstring>
@@ -515,10 +515,12 @@ bool CANbus::sendData(int id, const char *msg, int length, int self)
             ESP_LOGE(FNAME, "BUS OFF alert");
             do_recover = true;
         }
-        if (alerts & TWAI_ALERT_RX_QUEUE_FULL)
+        if (alerts & TWAI_ALERT_RX_QUEUE_FULL) {
             ESP_LOGW(FNAME, "RX QUEUE FULL alert");
-        if (alerts & TWAI_ALERT_TX_FAILED)
+        }
+        if (alerts & TWAI_ALERT_TX_FAILED) {
             ESP_LOGW(FNAME, "TX_FAILED alert");
+        }
         return false;
     }
     return true;

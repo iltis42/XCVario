@@ -1,6 +1,6 @@
 idf_component_register( SRC_DIRS "src"  
 						INCLUDE_DIRS "include" "."
-						REQUIRES I2Cbus arduino-esp32 )
+						REQUIRES I2Cbus )
 
 component_compile_options(PUBLIC -DMPU_COMPONENT_TRUE=1)
 

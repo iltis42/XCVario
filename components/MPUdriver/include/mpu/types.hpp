@@ -13,8 +13,6 @@
 #define _MPU_TYPES_HPP_
 
 #include "mpu/registers.hpp"
-#include "sdkconfig.h"
-#include "WString.h"
 #include <cstdint>
 
 /*! MPU Driver namespace */

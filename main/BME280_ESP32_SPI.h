@@ -25,15 +25,14 @@ altitude calculation by open source community on github.
 
  */
 
-#ifndef BME280_ESP32_SPI_h_
-#define BME280_ESP32_SPI_h_
+#pragma once
+
 #include <esp_system.h>
 #include "driver/gpio.h"
-#include <SPI.h>
-#include <esp32-hal-spi.h>
 #include <math.h>
 #include <hal/gpio_types.h>
 #include "PressureSensor.h"
+#include <driver/spi_master.h>
 
 
 class BME280_ESP32_SPI: public PressureSensor
@@ -60,6 +59,7 @@ private:
 	int32_t compensate_T(int32_t adc_T);
 	uint32_t compensate_P(int32_t adc_P);
 	uint32_t compensate_H(int32_t adc_H);
+	uint32_t readADC(uint8_t reg);
 	uint16_t read16bit(uint8_t reg);
 	uint8_t read8bit(uint8_t reg);
 	double _avg_alt;
@@ -69,7 +69,7 @@ private:
 private:
 	gpio_num_t _sclk, _mosi, _miso;
 	uint8_t _cs;
-	uint32_t _freq;
+	int _freq;
 	int32_t  _t_fine;
 
 	uint16_t _dig_T1;
@@ -94,7 +94,8 @@ private:
 	int8_t  _dig_H6;
 	double exponential_average;
 	bool init_err;
-	SPISettings spis;
+	spi_device_interface_config_t spis;
+	spi_device_handle_t spi;
+	// SPISettings spis;
 };
 
-#endif

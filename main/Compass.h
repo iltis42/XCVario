@@ -47,11 +47,6 @@ typedef struct bitfield_compass{
 			    ymax_green == other.ymax_green && ymin_green == other.ymin_green &&
 			    zmax_green == other.zmax_green && zmin_green == other.zmin_green  );
 	};
-	operator String  () {
-	   	return( String(xmax_green) + " " + String(xmin_green) +
-	   			String(ymax_green) + " " + String(ymin_green) +
-				String(zmax_green) + " " + String(zmin_green) );
-	};
 }t_bitfield_compass;
 
 class Compass: public Deviation

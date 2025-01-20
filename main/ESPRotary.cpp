@@ -1,19 +1,22 @@
 #include "ESPRotary.h"
+
 #include "Setup.h"
 #include "RingBufCPP.h"
-#include <stdio.h>
-#include "freertos/FreeRTOS.h"
+#include "Flarm.h"
+#include "sensor.h"
+
+#include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
-#include "freertos/task.h"
-#include "string.h"
-#include "esp_system.h"
+#include <freertos/task.h>
+#include <esp_system.h>
 #include <esp32/rom/ets_sys.h>
 #include <sys/time.h>
-#include <Arduino.h>
 #include <logdef.h>
+
+#include <cstdio>
+#include <cstring>
 #include <list>
 #include <algorithm>
-#include "Flarm.h"
 
 gpio_num_t ESPRotary::clk, ESPRotary::dt;
 gpio_num_t ESPRotary::sw = GPIO_NUM_0;

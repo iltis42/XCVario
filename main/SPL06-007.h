@@ -1,7 +1,6 @@
 #ifndef _SPL06_007_
 #define _SPL06_007_
 
-#include "Arduino.h"
 #include <inttypes.h>
 #include <stdio.h>
 #include "I2C.h"

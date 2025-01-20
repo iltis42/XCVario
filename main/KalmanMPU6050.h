@@ -19,7 +19,6 @@
 #ifndef _KalmanMPU6050_H_
 #define _KalmanMPU6050_H_
 
-#include "Arduino.h"
 #include "vector_3d.h"
 #include "SetupMenuSelect.h"
 #include "quaternion.h"

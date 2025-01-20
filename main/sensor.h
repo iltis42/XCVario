@@ -1,5 +1,4 @@
-#ifndef _SENSOR_H_
-#define _SENSOR_H_
+#pragma once
 
 #include "MPU.hpp"        // main file, provides the class itself
 #include "AnalogInput.h"
@@ -120,4 +119,13 @@ extern MPU_t MPU;
 // There is no temperature control for XCV hardware < 23, GPIO Pin there is wired to CAN slope control
 #define HAS_MPU_TEMP_CONTROL (CAN && !CAN->hasSlopeSupport())
 
-#endif
+// Arduino.h remains
+inline unsigned long IRAM_ATTR millis()
+{
+    return (unsigned long) (esp_timer_get_time() / 1000ULL);
+}
+
+inline void delay(uint32_t ms)
+{
+    vTaskDelay(ms / portTICK_PERIOD_MS);
+}

@@ -137,7 +137,6 @@ MPU_t MPU;         // create an object
 
 // Magnetic sensor / compass
 Compass *compass = 0;
-BTSender btsender;
 BLESender blesender;
 SerialLine *S1 = NULL;
 SerialLine *S2 = NULL;
@@ -1052,7 +1051,9 @@ void system_startup(void *args){
 	String wireless_id;
 	if( wireless == WL_BLUETOOTH ) {
 		wireless_id="BT ID: ";
-		btsender.begin();
+		BTspp = new BTSender();
+		// BTspp->selfTest();
+		// BTspp->start();
 	}
 	else if( wireless == WL_BLUETOOTH_LE ){
 		blesender.begin();
@@ -1408,7 +1409,7 @@ void system_startup(void *args){
 	}
 
 	if( wireless == WL_BLUETOOTH ) {
-		if( btsender.selfTest() ){
+		if( BTspp && BTspp->selfTest() ){
 			display->writeText( line++, "Bluetooth: OK");
 			logged_tests += "Bluetooth test: PASSED\n";
 		}

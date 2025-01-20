@@ -53,7 +53,7 @@ void DataMonitor::header( ItfTarget ch, bool binary, int len, e_dir_t dir ){
 	// ESP_LOGI(FNAME,"header() %d %d %d ", len, rx_total, tx_total );
 	const char * what;
 	switch( ch.raw ) {
-		case ItfTarget(BT_SERIAL).raw: what = "BT"; break;
+		case ItfTarget(BT_SPP).raw: what = "BT"; break;
 		case ItfTarget(WIFI,8080).raw: what = "W 8080"; break;
 		case ItfTarget(WIFI,8081).raw: what = "W 8881"; break;
 		case ItfTarget(WIFI,8082).raw: what = "W 8882"; break;

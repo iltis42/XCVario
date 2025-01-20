@@ -305,7 +305,7 @@ int update_wifi_power(SetupMenuValFloat *p) {
 int data_mon(SetupMenuSelect *p) {
 	ItfTarget ch;
 	switch (p->getSelect()) {
-		case 1: ch = ItfTarget(BT_SERIAL); break;
+		case 1: ch = ItfTarget(BT_SPP); break;
 		case 2: ch = ItfTarget(WIFI,8080); break;
 		case 3: ch = ItfTarget(WIFI,8081); break;
 		case 4: ch = ItfTarget(WIFI,8082); break;

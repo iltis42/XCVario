@@ -25,8 +25,8 @@
 #include <iostream>
 #include <vector>
 #include "SetupNG.h"
-#include <esp_http_server.h>
 
+struct httpd_req;
 
 class SetupCommon {
 public:

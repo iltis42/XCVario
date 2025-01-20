@@ -1,13 +1,16 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <esp_log.h>
-#include "esp_wifi.h"
-#include "esp_event.h"
-#include "freertos/event_groups.h"
 
 #include "MyWiFi.h"
-#include "esp_netif_types.h"
+
+#include <esp_log.h>
+#include <esp_wifi.h>
+#include <esp_event.h>
+#include <freertos/event_groups.h>
+
+#include <esp_netif_types.h>
+
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 
 
@@ -91,8 +94,6 @@ static esp_err_t event_handler(void *ctx, system_event_t *event)
 void start_dhcp_server(void) 
 {
     
-	// initialize the tcp stack
-	tcpip_adapter_init();
 	// stop DHCP server
 	ESP_ERROR_CHECK(tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP));
 

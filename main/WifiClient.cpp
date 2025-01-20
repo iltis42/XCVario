@@ -90,7 +90,6 @@ void WifiClient::initialise_wifi(void)
     esp_log_level_set("wifi", ESP_LOG_DEBUG); // disable wifi driver logging
     wifi_event_group = xEventGroupCreate();
     ESP_ERROR_CHECK(esp_netif_init());
-    tcpip_adapter_init();
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     esp_event_handler_instance_t instance_any_id;
     esp_event_handler_instance_t instance_got_ip;

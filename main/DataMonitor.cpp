@@ -103,7 +103,6 @@ void DataMonitor::printString( ItfTarget ch, e_dir_t dir, const char *str, bool 
 	else{
 		dirsym = '<';
 	}
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	if( first ){
 		first = false;
 		ucg->setColor( COLOR_BLACK );
@@ -150,7 +149,6 @@ void DataMonitor::printString( ItfTarget ch, e_dir_t dir, const char *str, bool 
 			scroll(scroll_lines);
 		}
 	}while( hunklen );
-	xSemaphoreGive(spiMutex);
 }
 
 void DataMonitor::scroll(int scroll){
@@ -191,7 +189,6 @@ void DataMonitor::start(SetupMenuSelect * p, ItfTarget ch){
 	tx_total = 0;
 	rx_total = 0;
 	channel = ch;
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	SetupMenu::catchFocus( true );
 	ucg->setColor( COLOR_BLACK );
 	ucg->drawBox( 0,0,240,320 );
@@ -205,7 +202,6 @@ void DataMonitor::start(SetupMenuSelect * p, ItfTarget ch){
 		ucg->scrollSetMargins( SCROLL_TOP, 0 );
 	mon_started = true;
 	paused = true; // will resume with press()
-	xSemaphoreGive(spiMutex);
 	ESP_LOGI(FNAME,"started");
 }
 

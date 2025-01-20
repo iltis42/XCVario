@@ -255,18 +255,14 @@ int update_s1_protocol(SetupMenuSelect *p) {
 
 int do_display_test(SetupMenuSelect *p) {
 	if (display_test.get()) {
-		xSemaphoreTake(spiMutex, portMAX_DELAY);
 		p->ucg->setColor(0, 0, 0);
 		p->ucg->drawBox(0, 0, 240, 320);
-		xSemaphoreGive(spiMutex);
 		while (!p->readSwitch()) {
 			delay(100);
 			ESP_LOGI(FNAME,"Wait for key press");
 		}
-		xSemaphoreTake(spiMutex, portMAX_DELAY);
 		p->ucg->setColor(255, 255, 255);
 		p->ucg->drawBox(0, 0, 240, 320);
-		xSemaphoreGive(spiMutex);
 		while (!p->readSwitch()) {
 			delay(100);
 			ESP_LOGI(FNAME,"Wait for key press");
@@ -404,7 +400,6 @@ int qnh_adj(SetupMenuValFloat *p) {
 		}
 		alt = alt / (float) samples;
 	}ESP_LOGI(FNAME,"Setup BA alt=%f QNH=%f hPa", alt, QNH.get() );
-	xSemaphoreTake(spiMutex, portMAX_DELAY);
 	p->ucg->setFont(ucg_font_fub25_hr, true);
 	float altp;
 	const char *u = "m";
@@ -418,7 +413,6 @@ int qnh_adj(SetupMenuValFloat *p) {
 	p->ucg->printf("%5d %s  ", (int) (altp + 0.5), u);
 
 	p->ucg->setFont(ucg_font_ncenR14_hr);
-	xSemaphoreGive(spiMutex);
 	return 0;
 }
 
@@ -426,20 +420,16 @@ int qnh_adj(SetupMenuValFloat *p) {
 int factv_adj(SetupMenuValFloat *p) {
 	ESP_LOGI(FNAME,"factv_adj");
 	float bat = p->_adc->get(true);
-	xSemaphoreTake(spiMutex, portMAX_DELAY);
 	p->ucg->setPrintPos(1, 100);
 	p->ucg->printf("%0.2f Volt", bat);
-	xSemaphoreGive(spiMutex);
 	return 0;
 }
 
 int master_xcv_lock(SetupMenuSelect *p) {
 	ESP_LOGI(FNAME,"master_xcv_lock");
-	xSemaphoreTake(spiMutex, portMAX_DELAY);
 	p->ucg->setPrintPos(1, 130);
 	int mxcv = WifiClient::getScannedMasterXCV();
 	p->ucg->printf("Scanned: XCVario-%d", mxcv);
-	xSemaphoreGive(spiMutex);
 	if (master_xcvario_lock.get() == 1)
 		master_xcvario.set(mxcv);
 	return 0;
@@ -455,9 +445,7 @@ int polar_select(SetupMenuSelect *p) {
 void print_fb(SetupMenuValFloat *p, float wingload) {
 	p->ucg->setFont(ucg_font_fub25_hr, true);
 	p->ucg->setPrintPos(1, 110);
-	xSemaphoreTake(spiMutex, portMAX_DELAY);
 	p->ucg->printf("%0.2f kg/m2  ", wingload);
-	xSemaphoreGive(spiMutex);
 	p->ucg->setFont(ucg_font_ncenR14_hr);
 }
 
@@ -605,7 +593,6 @@ void SetupMenu::display(int mode) {
 	clear();
 	int y = 25;
 	// ESP_LOGI(FNAME,"Title: %s y=%d child size:%d", selected->_title,y, _childs.size()  );
-	xSemaphoreTake(spiMutex, portMAX_DELAY);
 	ucg->setFont(ucg_font_ncenR14_hr);
 	ucg->setPrintPos(1, y);
 	ucg->setFontPosBottom();
@@ -629,7 +616,6 @@ void SetupMenu::display(int mode) {
 		// ESP_LOGI(FNAME,"Child: %s y=%d",child->_title ,y );
 	}
 	y += 170;
-	xSemaphoreGive(spiMutex);
 	showhelp(y);
 	xSemaphoreGive(display_mutex);
 }
@@ -659,7 +645,6 @@ void SetupMenu::down(int count) {
 	// ESP_LOGI(FNAME,"down %d %d", highlight, _childs.size() );
 	if (focus)
 		return;
-	xSemaphoreTake(spiMutex, portMAX_DELAY);
 	ucg->setColor(COLOR_BLACK);
 	ucg->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
 	ucg->setColor(COLOR_WHITE);
@@ -671,7 +656,6 @@ void SetupMenu::down(int count) {
 	if (highlight < -1)
 		highlight = (int) (_childs.size() - 1);
 	ucg->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
-	xSemaphoreGive(spiMutex);
 	pressed = true;
 }
 
@@ -704,7 +688,6 @@ void SetupMenu::up(int count) {
 	// ESP_LOGI(FNAME,"SetupMenu::up %d %d", highlight, _childs.size() );
 	if (focus)
 		return;
-	xSemaphoreTake(spiMutex, portMAX_DELAY);
 	ucg->setColor(COLOR_BLACK);
 	ucg->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
 	ucg->setColor(COLOR_WHITE);
@@ -718,7 +701,6 @@ void SetupMenu::up(int count) {
 	}
 	ucg->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
 	pressed = true;
-	xSemaphoreGive(spiMutex);
 }
 
 void SetupMenu::showMenu() {
@@ -2122,24 +2104,24 @@ void SetupMenu::system_menu_create_hardware_rotary(MenuEntry *top) {
 
 void SetupMenu::system_menu_create_ahrs_calib(MenuEntry *top) {
 	SetupMenuSelect *ahrs_calib_collect = new SetupMenuSelect(
-			PROGMEM"Axis calibration", RST_NONE, imu_calib, false);
+			"Axis calibration", RST_NONE, imu_calib, false);
 	ahrs_calib_collect->setHelp(
-			PROGMEM"Calibrate IMU axis on flat leveled ground ground with no inclination. Run the procedure by selecting Start.");
+			"Calibrate IMU axis on flat leveled ground ground with no inclination. Run the procedure by selecting Start.");
 	ahrs_calib_collect->addEntry("Cancel");
 	ahrs_calib_collect->addEntry("Start");
 	ahrs_calib_collect->addEntry("Reset");
 
 	SetupMenuValFloat *ahrs_ground_aa = new SetupMenuValFloat(
-			PROGMEM"Ground angle of attack", "°", -5, 20, 1, imu_gaa, false,
+			"Ground angle of attack", "°", -5, 20, 1, imu_gaa, false,
 			&glider_ground_aa);
 	ahrs_ground_aa->setHelp(
-			PROGMEM"Angle of attack with tail skid on the ground to adjust the AHRS reference. Change this any time to correct the AHRS horizon level.");
+			"Angle of attack with tail skid on the ground to adjust the AHRS reference. Change this any time to correct the AHRS horizon level.");
 	ahrs_ground_aa->setPrecision(0);
 	top->addEntry(ahrs_calib_collect);
 	top->addEntry(ahrs_ground_aa);
 }
 
-static const char PROGMEM lkeys[][4] { "0", "1", "2", "3", "4", "5", "6", "7",
+static const char  lkeys[][4] { "0", "1", "2", "3", "4", "5", "6", "7",
 		"8", "9", ":", ";", "<", "=", ">", "?", "@", "A", "B", "C", "D", "E",
 		"F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S",
 		"T", "U", "V", "W", "X", "Y", "Z" };
@@ -2228,7 +2210,7 @@ void SetupMenu::system_menu_create_hardware_ahrs(MenuEntry *top) {
 
 	SetupMenu *ahrscalib = new SetupMenu("AHRS Calibration");
 	ahrscalib->setHelp(
-			PROGMEM "Bias & Reference of the AHRS Sensor: Place glider on horizontal underground, first the right wing down, then the left wing.");
+			 "Bias & Reference of the AHRS Sensor: Place glider on horizontal underground, first the right wing down, then the left wing.");
 	top->addEntry(ahrscalib);
 	ahrscalib->addCreator(system_menu_create_ahrs_calib);
 
@@ -2427,18 +2409,18 @@ void SetupMenu::system_menu_create_interfaceS1(MenuEntry *top) {
 	stxdis1->addEntry("Client (RX)");
 	stxdis1->addEntry("Master (RX&TX)");
 
-	SetupMenuSelect *sprots1 = new SetupMenuSelect( PROGMEM"Protocol", RST_NONE,
+	SetupMenuSelect *sprots1 = new SetupMenuSelect( "Protocol", RST_NONE,
 			update_s1_protocol, true, &serial1_protocol);
 	top->addEntry(sprots1);
 	sprots1->setHelp(
-			PROGMEM"Specify the protocol driver for the external device connected to S1",
+			"Specify the protocol driver for the external device connected to S1",
 			240);
-	sprots1->addEntry( PROGMEM"Disable");
-	sprots1->addEntry( PROGMEM"Flarm");
-	sprots1->addEntry( PROGMEM"Radio");
-	sprots1->addEntry( PROGMEM"XCTNAV S3");
-	sprots1->addEntry( PROGMEM"OPENVARIO");
-	sprots1->addEntry( PROGMEM"XCFLARMVIEW");
+	sprots1->addEntry( "Disable");
+	sprots1->addEntry( "Flarm");
+	sprots1->addEntry( "Radio");
+	sprots1->addEntry( "XCTNAV S3");
+	sprots1->addEntry( "OPENVARIO");
+	sprots1->addEntry( "XCFLARMVIEW");
 
 	SetupMenuSelect *datamon = new SetupMenuSelect("Monitor", RST_NONE,
 			data_monS1, true, nullptr);
@@ -2517,18 +2499,18 @@ void SetupMenu::system_menu_create_interfaceS2(MenuEntry *top) {
 	stxdis2->addEntry("Client (RX)");
 	stxdis2->addEntry("Master (RX&TX)");
 
-	SetupMenuSelect *sprots1 = new SetupMenuSelect( PROGMEM"Protocol", RST_NONE,
+	SetupMenuSelect *sprots1 = new SetupMenuSelect( "Protocol", RST_NONE,
 			update_s2_protocol, true, &serial2_protocol);
 	top->addEntry(sprots1);
 	sprots1->setHelp(
-			PROGMEM"Specify the protocol driver for the external device connected to S2",
+			"Specify the protocol driver for the external device connected to S2",
 			240);
-	sprots1->addEntry( PROGMEM"Disable");
-	sprots1->addEntry( PROGMEM"Flarm");
-	sprots1->addEntry( PROGMEM"Radio");
-	sprots1->addEntry( PROGMEM"XCTNAV S3");
-	sprots1->addEntry( PROGMEM"OPENVARIO");
-	sprots1->addEntry( PROGMEM"XCFLARMVIEW");
+	sprots1->addEntry( "Disable");
+	sprots1->addEntry( "Flarm");
+	sprots1->addEntry( "Radio");
+	sprots1->addEntry( "XCTNAV S3");
+	sprots1->addEntry( "OPENVARIO");
+	sprots1->addEntry( "XCFLARMVIEW");
 
 	SetupMenuSelect *datamon = new SetupMenuSelect("Monitor", RST_NONE,
 			data_monS2, true, nullptr);

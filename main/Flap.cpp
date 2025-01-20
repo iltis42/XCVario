@@ -35,17 +35,13 @@ int select_flap_sens_pin(SetupMenuSelect *p){
 			// ESP_LOGI(FNAME,"select_flap_sens_pin, have sensor");
 			p->ucg->setPrintPos(5,50);
 			p->ucg->setFont(ucg_font_ncenR14_hr, true );
-			xSemaphoreTake(spiMutex,portMAX_DELAY );
 			p->ucg->printf("Check Sensor Reading,");
 			p->ucg->setPrintPos(5,80);
 			p->ucg->printf("Press Button to exit");
-			xSemaphoreGive(spiMutex);
 			while( !p->readSwitch() ){
 				// ESP_LOGI(FNAME,"SW wait loop");
-				xSemaphoreTake(spiMutex,portMAX_DELAY );
 				p->ucg->setPrintPos(5,120);
 				p->ucg->printf("Sensor: %d       ", FLAP->getSensorRaw(256) );
-				xSemaphoreGive(spiMutex);
 				delay(100);
 			}
 		}
@@ -63,9 +59,7 @@ unsigned int Flap::getSensorRaw(int oversampling) {
 
 int wk_cal_show( SetupMenuSelect *p, int wk, Average<50> &filter){
 	p->ucg->setPrintPos(1,60);
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	p->ucg->printf("Set Flap %+d   ", wk );
-	xSemaphoreGive(spiMutex);
 	delay(500);
 	int flap = 0;
 	int i=0;
@@ -74,9 +68,7 @@ int wk_cal_show( SetupMenuSelect *p, int wk, Average<50> &filter){
 		flap = filter( (int)(FLAP->getSensorRaw(64)) );
 		if( !(i%10) ){
 			p->ucg->setPrintPos(1,140);
-			xSemaphoreTake(spiMutex,portMAX_DELAY );
 			p->ucg->printf("Sensor: %d      ", flap );
-			xSemaphoreGive(spiMutex);
 		}
 	}
 	return flap;

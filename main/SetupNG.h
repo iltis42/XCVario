@@ -280,7 +280,7 @@ public:
 
 	void ack( T aval ){
 		if( aval != _value ){
-			ESP_LOGI(FNAME,"sync to value client has acked");
+			// ESP_LOGI(FNAME,"sync to value client has acked");
 			_value = aval;
 		}
 	}
@@ -315,7 +315,7 @@ public:
 		// ESP_LOGI(FNAME,"NVS write(): ");
 		char val[30];
 		value_str(val);
-		ESP_LOGI(FNAME,"NVS set blob(key:%s, val: %s, len:%d )", _key, val, sizeof( _value ) );
+		// ESP_LOGI(FNAME,"NVS set blob(key:%s, val: %s, len:%d )", _key, val, sizeof( _value ) );
 		portDISABLE_INTERRUPTS();
 		bool ret = NVS.setBlob( _key, (void *)(&_value), sizeof( _value ) );
 		portENABLE_INTERRUPTS();
@@ -342,7 +342,7 @@ public:
 		size_t required_size;
 		bool ret = NVS.getBlob(_key, NULL, &required_size);
 		if ( !ret ){
-			ESP_LOGE(FNAME, "%s: NVS nvs_get_blob error", _key );
+			// ESP_LOGE(FNAME, "%s: NVS nvs_get_blob error", _key );
 			set( _default );  // try to init
 			commit();
 		}
@@ -384,7 +384,7 @@ public:
 			return false;
 		}
 		else {
-			ESP_LOGI(FNAME,"NVS erased key  %s", _key );
+			// ESP_LOGI(FNAME,"NVS erased key  %s", _key );
 			return set( _default );
 		}
 	}

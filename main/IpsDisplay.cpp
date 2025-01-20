@@ -148,7 +148,6 @@ int ASLEN = 0;
 static const int16_t INNER_RIGHT_ALIGN = 170;
 static int fh;
 
-extern xSemaphoreHandle spiMutex;
 xSemaphoreHandle display_mutex=NULL;
 
 ucg_color_t IpsDisplay::colors[TEMAX+1+TEGAP];
@@ -396,7 +395,15 @@ void IpsDisplay::drawLegend( bool onlyLines ) {
 // draw all that does not need refresh when values change
 // also used by OTA screen with updteing sekonds...
 
-void IpsDisplay::writeText( int line, String text ){
+void IpsDisplay::writeText( int line, const char *text )
+{
+	ucg->setFont(ucg_font_ncenR14_hr, true );
+	ucg->setPrintPos( 1, 26*line );
+	ucg->setColor(COLOR_WHITE);
+	ucg->printf("%s", text);
+}
+
+void IpsDisplay::writeText( int line, std::string &text ){
 	ucg->setFont(ucg_font_ncenR14_hr, true );
 	ucg->setPrintPos( 1, 26*line );
 	ucg->setColor(COLOR_WHITE);
@@ -406,11 +413,9 @@ void IpsDisplay::writeText( int line, String text ){
 
 void IpsDisplay::clear(){
 	// ESP_LOGI(FNAME,"display clear()");
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setColor( COLOR_BLACK );
 	ucg->drawBox( 0,0,240,320 );
 	screens_init = INIT_DISPLAY_NULL;
-	xSemaphoreGive(spiMutex);
 	redrawValues();
 }
 
@@ -910,8 +915,8 @@ void IpsDisplay::drawBT() {
 	if( _menu )
 		return;
 	int btq=0;
-	if( wireless == WL_BLUETOOTH )
-		btq=BTSender::queueFull();
+	if( wireless == WL_BLUETOOTH && BTspp )
+		btq=BTspp->isConnected();
 	else if( wireless == WL_BLUETOOTH_LE )
 		btq=BLESender::queueFull();
 	if( btq != btqueue || Flarm::connected() != flarm_connected ){
@@ -1490,7 +1495,6 @@ void IpsDisplay::initRetroDisplay( bool ulmode ){
 void IpsDisplay::drawWarning( const char *warn, bool push ){
 	ESP_LOGI(FNAME,"drawWarning");
 	clear();
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setColor( COLOR_RED );
 	if( push ){
 		ucg->drawTriangle(  60, 220, 180, 220, 120, 262 );
@@ -1501,7 +1505,6 @@ void IpsDisplay::drawWarning( const char *warn, bool push ){
 	ucg->setFont(ucg_font_fub35_hr);
 	ucg->print(warn);
 	ucg->setFontPosBottom();
-	xSemaphoreGive(spiMutex);
 }
 
 
@@ -1764,7 +1767,6 @@ void IpsDisplay::initLoadDisplay(){
 	if( _menu )
 		return;
 	ESP_LOGI(FNAME,"initLoadDisplay()");
-	xSemaphoreTake(spiMutex,portMAX_DELAY);
 	ucg->setColor( COLOR_HEADER );
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setPrintPos(20,20);
@@ -1793,7 +1795,6 @@ void IpsDisplay::initLoadDisplay(){
 	old_gmax = 100;
 	old_gmin = -100;
 	old_ias_max = -1;
-	xSemaphoreGive(spiMutex);
 	ESP_LOGI(FNAME,"initLoadDisplay end");
 }
 
@@ -1899,7 +1900,6 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 		initLoadDisplay();
 		screens_init |= INIT_DISPLAY_GLOAD;
 	}
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	// draw G pointer
 	float a = (*_gauge)(loadFactor-1.);
 	indicator->drawPolarIndicator( a );
@@ -1945,7 +1945,6 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 	if( !(tick%10)){
 		drawLoadDisplayTexts();
 	}
-	xSemaphoreGive(spiMutex);
 }
 
 
@@ -2103,7 +2102,6 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		screens_init |= INIT_DISPLAY_RETRO;
 	}
 	tick++;
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	// ESP_LOGI(FNAME,"drawRetroDisplay  TE=%0.1f IAS:%d km/h  WK=%d", te, airspeed, wksensor  );
 
 	bool netto=false;
@@ -2151,7 +2149,6 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// Check overlap on inner figures
 
 	if( _menu ){
-		xSemaphoreGive(spiMutex);
 		return;
 	}
 	// average Climb
@@ -2189,7 +2186,6 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	if( _menu ){
-		xSemaphoreGive(spiMutex);
 		return;
 	}
 	bool needle_prio = (drawing_prio.get() == DP_NEEDLE);
@@ -2304,7 +2300,6 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		average_climbf = acl;
 	}
 	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
-	xSemaphoreGive(spiMutex);
 }
 
 void IpsDisplay::drawDisplay( int airspeed, float te, float ate, float polar_sink, float altitude,
@@ -2335,7 +2330,6 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		screens_init |= INIT_DISPLAY_AIRLINER;
 	}
 	// ESP_LOGI(FNAME,"IpsDisplay::drawDisplay  TE=%0.1f", te);
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	tick++;
 
 	// S2F given im km/h: Unit adaption for mph and knots
@@ -2376,7 +2370,6 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 
 	vTaskDelay(3);
 	if( _menu ){
-		xSemaphoreGive(spiMutex);
 		return;
 	}
 
@@ -2421,7 +2414,6 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	}
 	vTaskDelay(3);
 	if( _menu ){
-		xSemaphoreGive(spiMutex);
 		return;
 	}
 	// Temperature ValueAirliner
@@ -2472,7 +2464,6 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		ucg->undoClipRange();
 	}
 	if( _menu ){
-		xSemaphoreGive(spiMutex);
 		return;
 	}
 	int s2fclip = s2fd;
@@ -2541,7 +2532,6 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		pyalt = py;
 		vTaskDelay(3);
 		if( _menu ){
-			xSemaphoreGive(spiMutex);
 			return;
 		}
 	}
@@ -2579,7 +2569,6 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	}
 	// S2F command trend triangle
 	if( _menu ){
-		xSemaphoreGive(spiMutex);
 		return;
 	}
 	if( ((int)s2fd != s2fdalt) || (s2falt != (int)(s2f+0.5)) || !(tick%21) ) {
@@ -2608,5 +2597,4 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	}
 	ucg->setColor(  COLOR_WHITE  );
 	ucg->drawHLine( DISPLAY_LEFT+6, dmid, bw );
-	xSemaphoreGive(spiMutex);
 }

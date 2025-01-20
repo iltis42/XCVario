@@ -33,7 +33,7 @@
 
 #include "quaternion.h"
 #include "wmm/geomag.h"
-#include <SPI.h>
+#include <driver/spi_master.h>
 #include <AdaptUGC.h>
 #include <OTA.h>
 #include "SetupNG.h"
@@ -912,20 +912,29 @@ void system_startup(void *args){
 
 	Battery.begin();  // for battery voltage
 	xMutex=xSemaphoreCreateMutex();
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ccp = (int)(core_climb_period.get()*10);
-	SPI.begin( SPI_SCLK, SPI_MISO, SPI_MOSI, CS_bme280BA );
-	xSemaphoreGive(spiMutex);
+	spi_bus_config_t buscfg = {
+		.mosi_io_num = SPI_MOSI,
+		.miso_io_num = SPI_MISO,
+		.sclk_io_num = SPI_SCLK,
+		.quadwp_io_num = -1,
+		.quadhd_io_num = -1,
+		.data4_io_num = -1,
+		.data5_io_num = -1,
+		.data6_io_num = -1,
+		.data7_io_num = -1,
+		.max_transfer_sz = 0,
+		.flags = 0,
+		.intr_flags = 0};//ESP_INTR_FLAG_IRAM};
+	ESP_ERROR_CHECK(spi_bus_initialize(SPI3_HOST, &buscfg, SPI_DMA_CH_AUTO));
 
 	egl = new AdaptUGC();
 	egl->begin();
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ESP_LOGI( FNAME, "setColor" );
 	egl->setColor( 0, 255, 0 );
 	ESP_LOGI( FNAME, "drawLine" );
 	egl->drawLine( 20,20, 20,80 );
 	ESP_LOGI( FNAME, "finish Draw" );
-	xSemaphoreGive(spiMutex);
 
 	MYUCG = egl; // new AdaptUGC( SPI_DC, CS_Display, RESET_Display );
 	display = new IpsDisplay( MYUCG );

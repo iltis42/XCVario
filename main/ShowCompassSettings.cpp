@@ -56,8 +56,6 @@ void ShowCompassSettings::display( int mode )
 	uint16_t y1 = 75;
 	char buffer[32];
 
-	semaphoreTake();
-
 	ucg->setPrintPos( 0, y );
 	sprintf( buffer, "Sensor enabled: %s",
 			(compass_enable.get() == 0) ? "No" : "Yes"  );
@@ -115,8 +113,6 @@ void ShowCompassSettings::display( int mode )
 	ucg->setPrintPos( 5, 290 );
 	ucg->printf( "Press button to exit" );
 
-	semaphoreGive();
-
 	uint32_t counter = 0;
 
 	while( readSwitch() == false )
@@ -130,10 +126,8 @@ void ShowCompassSettings::display( int mode )
 		}
 
 		// Ca. after a second make an update of the overflow flag display.
-		semaphoreTake();
 		ucg->setPrintPos( sotw, y1 );
 		ucg->printf( "%s", (compass->overflowFlag() == false) ? "No  " : "Yes" );
-		semaphoreGive();
 		continue;
 	}
 

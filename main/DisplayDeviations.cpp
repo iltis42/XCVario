@@ -49,7 +49,6 @@ void DisplayDeviations::display( int mode )
   uprintf( 5, 25, selected->_title );
   const char* skydirdev[8] = { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
   uint16_t y = 25;
-  semaphoreTake();
   for( int i = 0; i < 8; i++ )
     {
       uint16_t x = 0; y += 20;
@@ -113,5 +112,4 @@ void DisplayDeviations::display( int mode )
   ucg->setColor( COLOR_WHITE );
   ucg->setPrintPos( 40, 317 );
   ucg->printf( "Press button to exit" );
-  semaphoreGive();
 }

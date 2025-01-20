@@ -6,14 +6,13 @@
  *      Author: iltis
  */
 
-#ifndef IPS_DISPLAY_H
-#define IPS_DISPLAY_H
+#pragma once
 
 #include "esp_system.h"
 #include "Setup.h"
-#include <SPI.h>
 #include <AdaptUGC.h>
 #include "Colors.h"
+#include <string>
 
 #define TEGAP 26
 #define TEMIN TEGAP
@@ -34,7 +33,9 @@ public:
 	static void begin();
 	static void setup();
 	static void bootDisplay();
-	static void writeText( int line, String text );                          // airspeed,       TE,       aTE,       polar_sink,       alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode
+	static void writeText( int line, const char *text );
+	static void writeText( int line, std::string &text );
+	                          // airspeed,       TE,       aTE,       polar_sink,       alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode
 	static void drawDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor );
 	static void drawWarning( const char *warn, bool push=false );
 	static void drawLoadDisplay( float loadFactor );
@@ -150,5 +151,3 @@ private:
 	static void drawNetto( int16_t x, int16_t y, bool netto );
 };
 
-
-#endif /* IPS_DISPLAY_H */

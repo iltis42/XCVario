@@ -24,9 +24,6 @@ extern RingBufCPP<SString> wl_vario_rx_q;
 extern RingBufCPP<SString> wl_flarm_rx_q;
 extern RingBufCPP<SString> wl_aux_rx_q;
 
-extern RingBufCPP<SString> bt_tx_q;
-extern RingBufCPP<SString> bt_rx_q;
-
 extern RingBufCPP<SString> xcv_tx_q;
 
 extern RingBufCPP<SString> can_rx_q;  // for secondary variometer

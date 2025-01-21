@@ -916,7 +916,7 @@ void IpsDisplay::drawBT() {
 		return;
 	int btq=0;
 	if( wireless == WL_BLUETOOTH && BTspp )
-		btq=BTspp->isConnected();
+		btq = BTspp->isConnected() ? 0 : 1;
 	else if( wireless == WL_BLUETOOTH_LE )
 		btq=BLESender::queueFull();
 	if( btq != btqueue || Flarm::connected() != flarm_connected ){

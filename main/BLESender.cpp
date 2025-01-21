@@ -336,10 +336,10 @@ bool BLESender::selfTest(){
 }
 
 int BLESender::queueFull() {
-	if( wireless == WL_BLUETOOTH_LE ){
-		if(bt_tx_q.isFull())
-			return 1;
-	}
+	// if( wireless == WL_BLUETOOTH_LE ){
+	// 	if(bt_tx_q.isFull())
+	// 		return 1;
+	// }
 	return 0;
 }
 
@@ -358,21 +358,21 @@ void BLESender::btTask(void *pvParameters){
 }
 
 void BLESender::progress(){
-	char buf[256];
-	int max_packet_size = std::min(peer_mtu - 3, 250);
-	if (deviceConnected) {
-		int len = Router::pullBlock( bt_tx_q, buf, max_packet_size );
-		if( len ){
-			// ESP_LOGI(FNAME,"BLE len=%d P:%d, %s",len, congestion, buf);
-			int sent=std::min( len, 250 );
-			// pTxCharacteristic->setValue((uint8_t*)buf, (size_t)sent);
-			// pTxCharacteristic->notify(); // No return value
-			// ESP_LOGI(FNAME,"<BT LE TX %d bytes (pending: %d)", sent, indicationPending );
-			// ESP_LOG_BUFFER_HEXDUMP(FNAME,&buf[pos],len, ESP_LOG_INFO);
-			DM.monitorString( ItfTarget(BT_SPP), DIR_TX, buf, len );
-			delay( congestion );  // slow down sender upon congestion
-		}
-	}
+	// char buf[256];
+	// int max_packet_size = std::min(peer_mtu - 3, 250);
+	// if (deviceConnected) {
+	// 	int len = Router::pullBlock( bt_tx_q, buf, max_packet_size );
+	// 	if( len ){
+	// 		// ESP_LOGI(FNAME,"BLE len=%d P:%d, %s",len, congestion, buf);
+	// 		int sent=std::min( len, 250 );
+	// 		// pTxCharacteristic->setValue((uint8_t*)buf, (size_t)sent);
+	// 		// pTxCharacteristic->notify(); // No return value
+	// 		// ESP_LOGI(FNAME,"<BT LE TX %d bytes (pending: %d)", sent, indicationPending );
+	// 		// ESP_LOG_BUFFER_HEXDUMP(FNAME,&buf[pos],len, ESP_LOG_INFO);
+	// 		DM.monitorString( ItfTarget(BT_SPP), DIR_TX, buf, len );
+	// 		delay( congestion );  // slow down sender upon congestion
+	// 	}
+	// }
 }
 
 void BLESender::begin()

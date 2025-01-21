@@ -22,9 +22,6 @@ RingBufCPP<SString> wl_vario_rx_q;
 RingBufCPP<SString> wl_flarm_rx_q;
 RingBufCPP<SString> wl_aux_rx_q;
 
-RingBufCPP<SString> bt_tx_q;
-RingBufCPP<SString> bt_rx_q;
-
 RingBufCPP<SString> xcv_tx_q;
 
 RingBufCPP<SString> can_rx_q;
@@ -110,11 +107,6 @@ void Router::routeXCV(){
 	while( pullMsg( xcv_tx_q, xcv ) ){
 		// ESP_LOGI(FNAME,"XCV data to be forwarded %d bytes", xcv.length() );
 		if ( strncmp( xcv.c_str(), "!xs", 3 ) != 0 ){  // !xs messages are XCV specific and must not go to BT,WiFi or serial Navi's
-			if( rt_xcv_wl.get() && ((wireless == WL_BLUETOOTH) || (wireless == WL_BLUETOOTH_LE))  ) {
-				if( forwardMsg( xcv, bt_tx_q ) ){
-					// ESP_LOGI(FNAME,"XCV data forwarded to BT device, %d bytes", xcv.length() );
-				}
-			}
 			if( rt_xcv_wl.get() && (wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE) ){
 				if( forwardMsg( xcv, wl_vario_tx_q ) ){
 					// ESP_LOGI(FNAME,"XCV data forwarded to WLAN port 8880, %d bytes", xcv.length() );
@@ -193,31 +185,31 @@ void Router::routeWLAN(){
 
 // route messages from Bluetooth
 void Router::routeBT(){
-	if( (wireless != WL_BLUETOOTH) && (wireless != WL_BLUETOOTH_LE) )
-		return;
-	SString bt;
-	while( pullMsg( bt_rx_q, bt ) ){
-		// ESP_LOGI(FNAME,"BT RX %s, len: %d bytes", bt.c_str(), bt.length() );
-		// ESP_LOG_BUFFER_HEXDUMP(FNAME,bt.c_str(),bt.length(), ESP_LOG_INFO);
-		// if( rt_s1_wl.get() && serial1_speed.get() ){  // Serial data TX from bluetooth enabled ?
-		// 	if( forwardMsg( bt, s1_tx_q ) ){
-		// 		Serial::setRxTxNotifier( TX1_REQ );
-		// 		// ESP_LOGI(FNAME,"Send to S1 device, BT received %d bytes", bt.length() );
-		// 	}
-		// }
-		// if( rt_s2_wl.get() && serial2_speed.get() ){  // Serial data TX from bluetooth enabled ?
-		// 	if( forwardMsg( bt, s2_tx_q ) ){
-		// 		Serial::setRxTxNotifier( TX2_REQ );
-		// 		// ESP_LOGI(FNAME,"Send to S2 device, BT received %d bytes", bt.length() );
-		// 	}
-		// }
-		if( rt_wl_can.get() && can_speed.get() ){
-			// ESP_LOGI(FNAME,"Send to CAN bus, BT received %d bytes", bt.length() );
-			// CAN->sendNMEA( bt );
-		}
-		Protocols::parseNMEA( bt.c_str() );
-		bt.clear();
-	}
+	// if( (wireless != WL_BLUETOOTH) && (wireless != WL_BLUETOOTH_LE) )
+	// 	return;
+	// SString bt;
+	// while( pullMsg( bt_rx_q, bt ) ){
+	// 	// ESP_LOGI(FNAME,"BT RX %s, len: %d bytes", bt.c_str(), bt.length() );
+	// 	// ESP_LOG_BUFFER_HEXDUMP(FNAME,bt.c_str(),bt.length(), ESP_LOG_INFO);
+	// 	// if( rt_s1_wl.get() && serial1_speed.get() ){  // Serial data TX from bluetooth enabled ?
+	// 	// 	if( forwardMsg( bt, s1_tx_q ) ){
+	// 	// 		Serial::setRxTxNotifier( TX1_REQ );
+	// 	// 		// ESP_LOGI(FNAME,"Send to S1 device, BT received %d bytes", bt.length() );
+	// 	// 	}
+	// 	// }
+	// 	// if( rt_s2_wl.get() && serial2_speed.get() ){  // Serial data TX from bluetooth enabled ?
+	// 	// 	if( forwardMsg( bt, s2_tx_q ) ){
+	// 	// 		Serial::setRxTxNotifier( TX2_REQ );
+	// 	// 		// ESP_LOGI(FNAME,"Send to S2 device, BT received %d bytes", bt.length() );
+	// 	// 	}
+	// 	// }
+	// 	if( rt_wl_can.get() && can_speed.get() ){
+	// 		// ESP_LOGI(FNAME,"Send to CAN bus, BT received %d bytes", bt.length() );
+	// 		// CAN->sendNMEA( bt );
+	// 	}
+	// 	Protocols::parseNMEA( bt.c_str() );
+	// 	bt.clear();
+	// }
 }
 
 // route messages from master or can via CAN or Wifi
@@ -228,24 +220,6 @@ void Router::routeCAN(){
 		// ESP_LOG_BUFFER_HEXDUMP(FNAME,can.c_str(),can.length(), ESP_LOG_INFO);
 		if (strncmp(can.c_str(), "!xs", 3) != 0)
 		{
-			// ESP_LOGI(FNAME,"can rx route.. wl-can:%d wl=bt:%d", rt_wl_can.get(), (wireless == WL_BLUETOOTH) );
-			// if( (rt_s1_can.get() && serial1_speed.get()) ) {
-			// 	if (forwardMsg(can, s1_tx_q)) {
-			// 		Serial::setRxTxNotifier( TX1_REQ );
-			// 		// ESP_LOGI(FNAME, "Send to S1 device, CAN link received %d NMEA bytes", can.length());
-			// 	}
-			// }
-			// if( rt_s2_can.get() && serial2_speed.get()) {
-			// 	if (forwardMsg(can, s2_tx_q)) {
-			// 		Serial::setRxTxNotifier( TX2_REQ );
-			// 		// ESP_LOGI(FNAME, "Send to S2 device, can link received %d NMEA bytes", can.length());
-			// 	}
-			// }
-			if( rt_wl_can.get() && ((wireless == WL_BLUETOOTH) || (wireless == WL_BLUETOOTH_LE)) ) {
-				if( forwardMsg( can, bt_tx_q )) {
-					// ESP_LOGI(FNAME,"Send to BT device, can link received %d NMEA bytes", can.length() );
-				}
-			}
 			if( rt_wl_can.get() && (wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE) ) {
 				if( forwardMsg( can, wl_vario_tx_q )) {  // CAN received data sent to XCVario protocol 8880, maybe in future add other options if applicable
 					// ESP_LOGI(FNAME,"Send to WiFi device, can link received %d NMEA bytes", can.length() );

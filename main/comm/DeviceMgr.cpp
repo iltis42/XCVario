@@ -225,6 +225,13 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
             itf = S2;
         }
     }
+    else if ( iid == BT_SPP) {
+        if ( BTspp && ! BTspp->isRunning() ) {
+            BTspp->ConfigureIntf(0);
+            BTspp->start();
+        }
+        itf = BTspp;
+    }
     else if ( iid == NO_PHY ) {
         // Device might exist already
         itf = getIntf(did);

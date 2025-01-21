@@ -6,36 +6,31 @@
 #include <esp_spp_api.h>
 
 
-#define RFCOMM_SERVER_CHANNEL 1
-#define HEARTBEAT_PERIOD_MS 50
-#define SPP_SERVICE_BUFFER_SIZE 1024
-
 class BTSender final : public InterfaceCtrl
 {
 public:
 	BTSender() : InterfaceCtrl(true) {};
-	virtual ~BTSender() {};
+	virtual ~BTSender();
+
+	bool start();
+	void stop();
+	bool selfTest();
+	bool isInitialized() const { return _initialized; }
+	bool isRunning() const { return _server_running; }
+	bool isConnected() const { return _client_handle != 0; }
 
 	// Ctrl
 	InterfaceId getId() const override { return BT_SPP; }
-	const char *getStringId() const override { return "BTser"; }
+	const char *getStringId() const override { return "BTspp"; }
 	void ConfigureIntf(int cfg) override;
 	int Send(const char *msg, int &len, int port = 0) override;
 
-	bool start(bool test=false);
-	void stop();
-	int queueFull();
-	bool isConnected() { return _client_handle != 0; }
-	void progress(); // progress loop
-	bool selfTest(); // call 3 seconds after begin
-
-// private:
+private:
 	// Receiving data
-	// friend void spp_event_handler(esp_spp_cb_event_t, esp_spp_cb_param_t);
-	// friend void selftest_handler(esp_spp_cb_event_t, esp_spp_cb_param_t);
-	static uint32_t _client_handle;
+	friend class BT_EVENT_HANDLER;
+	uint32_t _client_handle = 0;
 	bool _initialized = false;
-
+	bool _server_running = false;
 };
 
 extern BTSender *BTspp;

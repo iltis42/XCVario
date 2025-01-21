@@ -904,6 +904,7 @@ void system_startup(void *args){
 		hardwareRevision.set(XCVARIO_20);
 	}
 
+	wireless_type.set(WL_BLUETOOTH);
 	wireless = (e_wireless_type)(wireless_type.get()); // we cannot change this on the fly, so get that on boot
 	AverageVario::begin();
 	stall_alarm_off_kmh = stall_speed.get()/3;
@@ -1049,8 +1050,7 @@ void system_startup(void *args){
 	std::string wireless_id("BT ID: ");
 	if( wireless == WL_BLUETOOTH ) {
 		BTspp = new BTSender();
-		// BTspp->selfTest();
-		// BTspp->start();
+		BTspp->start();
 	}
 	else if( wireless == WL_BLUETOOTH_LE ){
 		blesender.begin();
@@ -1383,9 +1383,9 @@ void system_startup(void *args){
 		DeviceManager* dm = DeviceManager::Instance();
 		dm->addDevice(FLARM_DEV, FLARM_P, 0, 0, S1_RS232);
 		dm->addDevice(FLARM_DEV, FLARMBIN_P, 0, 0, NO_PHY);
-		S2 = new SerialLine(2,GPIO_NUM_18,GPIO_NUM_4);
-		dm->addDevice(NAVI_DEV, FLARMHOST_P, 0, 0, S2_RS232);
-		dm->addDevice(NAVI_DEV, FLARMBIN_P, 0, 0, NO_PHY);
+		// S2 = new SerialLine(2,GPIO_NUM_18,GPIO_NUM_4);
+		// dm->addDevice(NAVI_DEV, FLARMHOST_P, 0, 0, S2_RS232);
+		// dm->addDevice(NAVI_DEV, FLARMBIN_P, 0, 0, NO_PHY);
 		// dm->addDevice(TEST_DEV, TEST_P, 0, 0, S2_RS232);
 		// S2 = new SerialLine(2,GPIO_NUM_18,GPIO_NUM_4);
 		// dm->addDevice(TEST_DEV2, TEST_P, 2, 0, S2_RS232);
@@ -1408,6 +1408,9 @@ void system_startup(void *args){
 
 	if( wireless == WL_BLUETOOTH ) {
 		if( BTspp && BTspp->selfTest() ){
+			DeviceManager* dm = DeviceManager::Instance();
+			dm->addDevice(NAVI_DEV, FLARMHOST_P, 0, 0, BT_SPP);
+			dm->addDevice(NAVI_DEV, FLARMBIN_P, 0, 0, NO_PHY);
 			display->writeText( line++, "Bluetooth: OK");
 			logged_tests += "Bluetooth test: PASSED\n";
 		}

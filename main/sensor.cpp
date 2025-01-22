@@ -918,10 +918,6 @@ void system_startup(void *args){
 		.sclk_io_num = SPI_SCLK,
 		.quadwp_io_num = -1,
 		.quadhd_io_num = -1,
-		.data4_io_num = -1,
-		.data5_io_num = -1,
-		.data6_io_num = -1,
-		.data7_io_num = -1,
 		.max_transfer_sz = 0,
 		.flags = 0,
 		.intr_flags = 0};//ESP_INTR_FLAG_IRAM};

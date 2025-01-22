@@ -180,8 +180,8 @@ void MPU::pwm_init(){
 			.intr_type = LEDC_INTR_DISABLE,
 			.timer_sel = LEDC_TIMER_1,
 			.duty = 0,
-			.hpoint = 0,
-			.flags = {0}};
+			.hpoint = 0 }; 
+//			.flags = {0}};
 	ledc_channel_config(&pwm_ch);
 	ledc_timer_config(&pwm_timer);
 	temp_control( 0, 45.0 );

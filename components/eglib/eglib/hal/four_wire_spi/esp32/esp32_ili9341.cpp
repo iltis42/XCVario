@@ -150,7 +150,7 @@ static IRAM_ATTR void esend(eglib_t *_eglib, enum hal_dc_t dc, uint8_t *bytes, u
 		gpio_set_level(config->gpio_dc, 1);
 		// ESP_LOGI("ILI9341", "esend() DAT %d", length );
 		// ta.user = (void *)1;
-		ta.flags = SPI_TRANS_MODE_OCT;
+		ta.flags =  0; // SPI_TRANS_MODE_OCT;
 		ta.rx_buffer = nullptr;
 		ta.tx_buffer = bytes;
 		ta.length = length * 8;
@@ -159,7 +159,7 @@ static IRAM_ATTR void esend(eglib_t *_eglib, enum hal_dc_t dc, uint8_t *bytes, u
 	{
 		// ESP_LOGI("ILI9341", "esend() CMD 0x%x", *bytes );
 		// ta.user = (void *)0;
-		ta.flags = SPI_TRANS_USE_TXDATA | SPI_TRANS_MODE_OCT;
+		ta.flags = SPI_TRANS_USE_TXDATA; // | SPI_TRANS_MODE_OCT;
 		ta.rx_buffer = nullptr;
 		ta.tx_data[0] = *bytes;
 		ta.length = 8;

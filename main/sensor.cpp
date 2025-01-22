@@ -1332,16 +1332,27 @@ void system_startup(void *args){
 			ESP_LOGE(FNAME,"CAN Bus selftest (%sRS): OK", CAN->hasSlopeSupport() ? "" : "no ");
 			logged_tests += "OK\n";
 			if ( CAN->hasSlopeSupport() ) {
-				hardwareRevision.set(XCVARIO_22);  // XCV-22, CAN but no AHRS temperature control
+				if( hardwareRevision.get() < XCVARIO_22)
+					hardwareRevision.set(XCVARIO_22);  // XCV-22, CAN but no AHRS temperature control
 			} else {
-				ESP_LOGI(FNAME,"CAN Bus selftest without RS control OK: set hardwareRevision 5 (XCV-23)");
-				hardwareRevision.set(XCVARIO_23);  // XCV-23, including AHRS temperature control
+				ESP_LOGI(FNAME,"CAN Bus selftest without RS control OK: set hardwareRevision (XCV-23)");
+				if( hardwareRevision.get() < XCVARIO_23)
+					hardwareRevision.set(XCVARIO_23);  // XCV-23, including AHRS temperature control
 			}
 		}
 		else {
 			resultCAN = "FAIL";
 			logged_tests += "CAN Bus selftest: FAILED\n";
 			ESP_LOGE(FNAME,"Error: CAN Interface failed");
+		}
+	}
+
+	if( gflags.haveMPU ){
+		if( MPU.whoAmI() == 0x12 ){
+			if( hardwareRevision.get() < XCVARIO_25){
+				hardwareRevision.set(XCVARIO_25);  // XCV-25: ICL20602
+				ESP_LOGI(FNAME,"MPU ICM-20602 -> hardwareRevision (XCV-25)");
+			}
 		}
 	}
 

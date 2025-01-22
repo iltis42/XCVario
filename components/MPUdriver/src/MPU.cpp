@@ -2552,8 +2552,11 @@ esp_err_t MPU::getBiases(accel_fs_t accelFS, gyro_fs_t gyroFS, raw_axes_t* accel
 		gyroAvg += gyroCur;
 	}
 	// calculate average
-	accelAvg /= packetCount;
-	gyroAvg /= packetCount;
+	if( packetCount ){
+		accelAvg /= packetCount;
+		gyroAvg /= packetCount;
+	}
+	MPU_LOGI("Avg acc result %d/%d/%d  PC:%d", accelAvg.x, accelAvg.y, accelAvg.z, packetCount );
 	// remove gravity from Accel Z axis for bias
 
 	const uint16_t gravityLSB = INT16_MAX >> (accelFS + 1);

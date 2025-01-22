@@ -98,12 +98,14 @@ typedef enum e_data_monitor { MON_OFF, MON_BLUETOOTH, MON_WIFI_8880, MON_WIFI_88
 typedef enum e_display_orientation { DISPLAY_NORMAL, DISPLAY_TOPDOWN } e_display_orientation_t;
 typedef enum e_gear_warning_io { GW_OFF, GW_FLAP_SENSOR, GW_S2_RS232_RX, GW_FLAP_SENSOR_INV, GW_S2_RS232_RX_INV, GW_EXTERNAL }  e_gear_warning_io_t;
 typedef enum e_data_mon_mode { MON_MOD_ASCII, MON_MOD_BINARY } e_data_mon_mode_t;
-typedef enum e_hardware_rev { 	HW_UNKNOWN=0,
+typedef enum e_hardware_rev { 	
+	HW_UNKNOWN=0,
 	HW_LONG_VARIO=1,
-	XCVARIO_20=2,  // 1 RS232
-	XCVARIO_21=3,  // 2 RS232, AHRS
-	XCVARIO_22=4,  // 2 RS232, AHRS, CAN Bus,
-	XCVARIO_23=5   // 2 RS232, AHRS, CAN Bus, AHRS temperature control
+	XCVARIO_20=2,  // 1 x RS232
+	XCVARIO_21=3,  // 2 x RS232, AHRS MPU6500
+	XCVARIO_22=4,  // 2 x RS232, AHRS MPU6500, CAN Bus,
+	XCVARIO_23=5,  // 2 x RS232, AHRS MPU6500, CAN Bus, AHRS temperature control
+	XCVARIO_25=7   // 2 x RS232, AHRS ICM-20602, CAN Bus, AHRS temperature control
 } e_hardware_rev_t;        // XCVario-Num = hardware revision + 18
 typedef enum e_drawing_prio { DP_NEEDLE, DP_BACKGROUND } e_drawing_prio_t;
 typedef enum e_equalizer_type {  AUDIO_EQ_DISABLE, AUDIO_EQ_LS4, AUDIO_EQ_LS8, AUDIO_EQ_LSEXT } e_equalizer_type_t;

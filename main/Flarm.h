@@ -7,20 +7,14 @@
 #include "RingBufCPP.h"  // SString, tbd: extra header
 #include "Units.h"
 
+class FlarmGPS;
 
 class Flarm {
+	friend class FlarmGPS;
 public:
 	static void setDisplay( AdaptUGC *theUcg ) { ucg = theUcg; };
-	static void parsePFLAE( const char *pflae );
-	static void parsePFLAU( const char *pflau, bool sim=false );
-	static void parsePFLAA( const char *pflaa );
-	static void parsePFLAX( const char *pflax, int port );
-	static void parseGPRMC( const char *gprmc );
-	static void parseGPGGA( const char *gpgga );
-	static void parsePGRMZ( const char *pgrmz );
 	static void drawAirplane( int x, int y, bool fromBehind=false, bool smallSize=false );
 	static inline int alarmLevel(){ return AlarmLevel; };
-	static void drawDownloadInfo();
 	static void drawFlarmWarning();
 	static void initFlarmWarning();
 	static void progress();
@@ -47,10 +41,8 @@ public:
 	static inline bool gpsStatus() { return myGPS_OK; }
 	static float getGndSpeedKnots() { return gndSpeedKnots; }
 	static float getGndCourse() { return gndCourse; }
-	static int bincom;
-	static int bincom_port;
 	static void tick();
-	static bool validExtAlt() { if( ext_alt_timer )
+	static bool validExtAlt() { if( ext_alt_timer ) //fixme -> watchdog
 		return true;
 	else
 		return false;
@@ -60,8 +52,6 @@ private:
 	static void drawClearTriangle( int x, int y, int rb, int dist, int size, int factor );
 	static void drawClearVerticalTriangle( int x, int y, int rb, int dist, int size, int factor );
 	static void drawTriangle( int x, int y, int rb, int dist, int size=15, int factor=2, bool erase=false );
-	static void flarmSim();
-	static long int GPSTime( char *time, char* date );
 
 	static AdaptUGC* ucg;
 	static int RX,TX,GPS,Power;
@@ -80,7 +70,6 @@ private:
 	static int timeout;
 	static int ext_alt_timer;
 	static int _numSat;
-	static int sim_tick;
 	static int clock_timer;
 	static bool time_sync;
 };

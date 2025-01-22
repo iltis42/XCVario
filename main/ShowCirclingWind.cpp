@@ -49,8 +49,6 @@ void ShowCirclingWind::display( int mode )
 	uint16_t y = 55;
 	char buffer[32];
 
-	semaphoreTake();
-
 	ucg->setPrintPos( 0, y );
 	sprintf( buffer, "Circling Wind enabled: %s", (wind_enable.get() & 2) ? "Yes" : "No  "  );
 	ucg->printf( "%s", buffer );
@@ -101,7 +99,5 @@ void ShowCirclingWind::display( int mode )
 
 	ucg->setPrintPos( 5, 290 );
 	ucg->printf( "Press button to exit" );
-
-	semaphoreGive();
 
 }

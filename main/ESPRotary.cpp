@@ -1,19 +1,22 @@
 #include "ESPRotary.h"
+
 #include "Setup.h"
 #include "RingBufCPP.h"
-#include <stdio.h>
-#include "freertos/FreeRTOS.h"
+#include "Flarm.h"
+#include "sensor.h"
+
+#include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
-#include "freertos/task.h"
-#include "string.h"
-#include "esp_system.h"
+#include <freertos/task.h>
+#include <esp_system.h>
 #include <esp32/rom/ets_sys.h>
 #include <sys/time.h>
-#include <Arduino.h>
 #include <logdef.h>
+
+#include <cstdio>
+#include <cstring>
 #include <list>
 #include <algorithm>
-#include "Flarm.h"
 
 gpio_num_t ESPRotary::clk, ESPRotary::dt;
 gpio_num_t ESPRotary::sw = GPIO_NUM_0;
@@ -46,8 +49,6 @@ void ESPRotary::detach(RotaryObserver *obs) {
 }
 
 bool ESPRotary::readSwitch() {
-  if( Flarm::bincom )
-    return false;
 	gpio_set_direction(sw,GPIO_MODE_INPUT);
 	gpio_pullup_en(sw);
 	if( gpio_get_level((gpio_num_t)sw) )
@@ -121,8 +122,6 @@ int old_button = RELEASE;
 
 void ESPRotary::sendRelease(){
 	// ESP_LOGI(FNAME,"Release action");
-	if( Flarm::bincom )
-	  return;
 	for (auto &observer : observers)
 		observer->release();
 	// ESP_LOGI(FNAME,"End switch release action");
@@ -131,8 +130,6 @@ void ESPRotary::sendRelease(){
 void ESPRotary::sendPress(){
 	// ESP_LOGI(FNAME,"Pressed action");
 	pressed = true;
-	if( Flarm::bincom )
-		return;
 	for (auto &observer : observers)
 		observer->press();
 	// ESP_LOGI(FNAME,"End pressed action");
@@ -142,8 +139,6 @@ void ESPRotary::sendPress(){
 void ESPRotary::sendLongPress(){
 	// ESP_LOGI(FNAME,"Long pressed action");
 	longPressed = true;
-	if( Flarm::bincom )
-		return;
 	for (auto &observer : observers)
 		observer->longPress();
 	// ESP_LOGI(FNAME,"End long pressed action");
@@ -151,24 +146,18 @@ void ESPRotary::sendLongPress(){
 
 void ESPRotary::sendDown( int diff ){
 	// ESP_LOGI(FNAME,"Rotary up action");
-	if( Flarm::bincom )
-		return;
 	for (auto &observer : observers)
 		observer->up( diff );   // tbd, clean up, this is named wrong in observers, shoud be down()
 }
 
 void ESPRotary::sendEsc(){
 	// ESP_LOGI(FNAME,"Rotary up action");
-	if( Flarm::bincom )
-		return;
 	for (auto &observer : observers)
 		observer->escape();
 }
 
 void ESPRotary::sendUp( int diff ){
 	// ESP_LOGI(FNAME,"Rotary down action");
-	if( Flarm::bincom )
-		return;
 	for (auto &observer : observers)
 		observer->down( diff );   // tbd, dito
 }
@@ -176,10 +165,6 @@ void ESPRotary::sendUp( int diff ){
 void ESPRotary::informObservers( void * args )
 {
 	while( 1 ) {
-	  if( Flarm::bincom ) {
-	    vTaskDelay(100 / portTICK_PERIOD_MS);
-	    continue;
-	  }
 		int button = gpio_get_level((gpio_num_t)sw);
 		if( button == 0 ){  // Push button is being pressed
 			timer++;

@@ -11,8 +11,6 @@
 #include <sdkconfig.h>
 #include <math.h>
 #include "BME280_ESP32_SPI.h"
-#include <Arduino.h>
-#include <SPI.h>
 #include <logdef.h>
 
 
@@ -69,15 +67,38 @@ BME280_ESP32_SPI::BME280_ESP32_SPI()
 #define c_osrs_h  0   //OverSampling Humidity x4
 #define c_Mode    3   //Normal mode
 
+static spi_transaction_t ta = {
+	.flags = SPI_TRANS_USE_RXDATA | SPI_TRANS_USE_TXDATA,
+	.cmd = 0,
+	.addr = 0,
+	.length = 0,
+	.rxlength = 0,
+	.user = nullptr,
+	.tx_data = {0, 0, 0, 0},
+	.rx_data = {0, 0, 0, 0}
+};
+
 //****************BME280_ESP32_SPI*************************************************
 bool BME280_ESP32_SPI::begin(){
-	pinMode(_cs, GPIO_MODE_OUTPUT);
-	digitalWrite(_cs, HIGH);
-	spis = SPISettings( _freq, SPI_MSBFIRST, SPI_MODE3 );
-	// SPI.begin( _sclk, _miso, _mosi, _cs );
-	ESP_LOGI(FNAME,"freq=%d", _freq );
-	SPI.setFrequency(_freq);
-	SPI.setHwCs( false );
+
+	// SPI device configuration
+	spi_device_interface_config_t devcfg = {
+		.command_bits = 0,
+		.address_bits = 8,
+		.dummy_bits = 0,
+		.mode = 3,
+		.duty_cycle_pos = 0,
+		.cs_ena_pretrans = 0,
+		.cs_ena_posttrans = 0,
+		.clock_speed_hz = _freq,
+		.input_delay_ns = 0,
+		.spics_io_num = _cs,
+		.flags = 0,
+		.queue_size = 1, // Transaction queue size
+		.pre_cb = NULL,	 // Pre-transaction callback
+		.post_cb = NULL	 // Post-transaction callback
+	};
+	ESP_ERROR_CHECK(spi_bus_add_device(HSPI_HOST, &devcfg, &spi));
 
 	uint8_t spi3or4 = 0; //SPI 3wire or 4wire, 0=4wire, 1=3wire
 	uint8_t ctrl_meas = (c_osrs_t << 5) | (c_osrs_p << 2) | c_Mode;
@@ -89,7 +110,7 @@ bool BME280_ESP32_SPI::begin(){
 	int count = 0;
 	while( (id != 0x58) && (count < 20) ) {
 		id = readID();
-		delay( 20 );
+		// delay( 20 );
 		count++;
 	}
 	if( count == 500 ) {
@@ -103,10 +124,10 @@ bool BME280_ESP32_SPI::begin(){
 	WriteRegister(0xF4, ctrl_meas);
 	WriteRegister(0xF5, config);
 
-	delay( 20 );
+	// delay( 20 );
 	readCalibration();
 	if( _dig_T2 == 0 && _dig_T2 == 0 ) {
-		delay( 20 );
+		// delay( 20 );
 		readCalibration();
 		ESP_LOGI(FNAME,"BMP280 Calibration Data read retry CS: %d ", _cs);
 	}
@@ -120,12 +141,15 @@ bool BME280_ESP32_SPI::begin(){
 //***************BME280 ****************************
 void BME280_ESP32_SPI::WriteRegister(uint8_t reg_address, uint8_t data) {
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	SPI.beginTransaction( spis );
-	digitalWrite(_cs, LOW);
-	SPI.transfer( reg_address & 0x7F); // write, bit 7 low
-	SPI.transfer( data);
-	digitalWrite(_cs, HIGH);
-	SPI.endTransaction();
+	ta.tx_data[0] = reg_address; // Combine register and value into a single buffer
+	ta.tx_data[1] = data;
+	ta.length = 8 * sizeof(data); // Total length in bits (2 bytes = 16 bits)
+	// Perform the SPI transaction
+	esp_err_t ret = spi_device_transmit(spi, &ta);
+	if (ret != ESP_OK)
+	{
+		ESP_LOGI(FNAME, "Failed to write register: %s\n", esp_err_to_name(ret));
+	}
 	xSemaphoreGive(spiMutex);
 }
 
@@ -162,28 +186,47 @@ void BME280_ESP32_SPI::readCalibration(void) {
 //***************BME280 ****************************
 double BME280_ESP32_SPI::readTemperature( bool& success ){
 	// ESP_LOGI(FNAME, "++BPM280 read Temp cs:%d ", _cs);
-	uint8_t tx[4];
-	uint8_t rx[4];
-	memset(tx, 0, 4);
-    tx[0] = 0xFA;
-    xSemaphoreTake(spiMutex,portMAX_DELAY );
-    SPI.beginTransaction( spis );
-    digitalWrite(_cs, LOW);
-    SPI.transfer( tx[0] );
-	tx[0] = 0;
-	SPI.transferBytes( tx, rx, 3 );
-	// ESP_LOGI(FNAME, "read Temp rx length %d bytes", l/8);
-	digitalWrite(_cs, HIGH);
-	SPI.endTransaction();
-	xSemaphoreGive(spiMutex);
+	// uint8_t tx[4];
+	// uint8_t rx[4];
+	// memset(tx, 0, 4);
+	// tx[0] = 0xFA;
 
-	// for(uint8_t i=0; i<l/8; i++)
-	//  	ESP_LOGI(FNAME, "%02x ", rx[i]);
-	if ( rx[0] == 0 && rx[1] == 0 && rx[3] == 0 )
-		success = false;
-	else
-		success = true;
-	uint32_t adc_T = (rx[0] << 12) | (rx[1] << 4) | (rx[2] >> 4); //0xFA, msb+lsb+xlsb=19bit
+	// uint8_t tx_data[1] = {0x7A | 0x80};
+	// uint8_t rx_data[3] = {0}; // Buffer to store received data
+
+	// spi_transaction_t t = {
+	// 	.length = 8 * (1 + 3),
+	// 	.tx_buffer = tx_data,
+	// 	.rx_buffer = rx_data,
+	// };
+
+	// xSemaphoreTake(spiMutex, portMAX_DELAY);
+	// esp_err_t ret = spi_device_transmit(spi, &t);
+	// xSemaphoreGive(spiMutex);
+	// if (ret != ESP_OK)
+	// {
+	// 	ESP_LOGE("SPI", "SPI read failed: %s", esp_err_to_name(ret));
+	// 	return;
+	// }
+
+	// xSemaphoreTake(spiMutex,portMAX_DELAY );
+    // SPI.beginTransaction( spis );
+    // digitalWrite(_cs, LOW);
+    // SPI.transfer( tx[0] );
+	// tx[0] = 0;
+	// SPI.transferBytes( tx, rx, 3 );
+	// // ESP_LOGI(FNAME, "read Temp rx length %d bytes", l/8);
+	// digitalWrite(_cs, HIGH);
+	// SPI.endTransaction();
+	// xSemaphoreGive(spiMutex);
+
+	// if ( rx_buffer[0] == 0 && rx_buffer[1] == 0 && rx_buffer[3] == 0 )
+	// 	success = false;
+	// else
+	// 	success = true;
+	// uint32_t adc_T = (rx_buffer[0] << 12) | (rx_buffer[1] << 4) | (rx_buffer[2] >> 4); //0xFA, msb+lsb+xlsb=19bit
+	uint32_t adc_T = readADC(0x7A);
+	success = (adc_T != 0);
 
 	// ESP_LOGI(FNAME, "--BMP280 raw adc_T=%d  CS=%d", adc_T, _cs );
 	double t=compensate_T((int32_t)adc_T) / 100.0;
@@ -206,7 +249,7 @@ double BME280_ESP32_SPI::readPressure(bool &ok){
 	ok = true;
 	while( !success && loop < 100) {  // workaround as first read after others access SPI reads zero
 		// delay(1);
-		delayMicroseconds(100);
+		// delayMicroseconds(100);
 		readTemperature( success );
 		loop++;
 	}
@@ -214,24 +257,25 @@ double BME280_ESP32_SPI::readPressure(bool &ok){
 		ESP_LOGE(FNAME,"Error reading temp BMP280 CS: %d !", _cs );
 		ok = false;
 	}
-	uint8_t tx[4];
-	uint8_t rx[4];
-	memset(tx, 0, 4);
-    tx[0] = 0xF7;  // 0xF7 puressure msb read, bit 7 high
+	// uint8_t tx[4];
+	// uint8_t rx[4];
+	// memset(tx, 0, 4);
+    // tx[0] = 0xF7;  // 0xF7 puressure msb read, bit 7 high
 
-    xSemaphoreTake(spiMutex,portMAX_DELAY );
-    SPI.beginTransaction( spis );
-    digitalWrite(_cs, LOW);
-	SPI.transfer( tx[0] );
-	tx[0] = 0;
-	SPI.transferBytes( tx, rx, 3 );
-	// ESP_LOGI(FNAME, "read P rx length %d", l);
-	// for(uint8_t i=0; i<3; i++)
-	//		ESP_LOGI(FNAME, "%02x", rx[i]);
-	digitalWrite(_cs, HIGH);
-	SPI.endTransaction();
-	xSemaphoreGive(spiMutex);
-	uint32_t adc_P = (rx[0] << 12) | (rx[1] << 4) | (rx[2] >> 4); //0xF7, msb+lsb+xlsb=19bit
+    // xSemaphoreTake(spiMutex,portMAX_DELAY );
+    // SPI.beginTransaction( spis );
+    // digitalWrite(_cs, LOW);
+	// SPI.transfer( tx[0] );
+	// tx[0] = 0;
+	// SPI.transferBytes( tx, rx, 3 );
+	// // ESP_LOGI(FNAME, "read P rx length %d", l);
+	// // for(uint8_t i=0; i<3; i++)
+	// //		ESP_LOGI(FNAME, "%02x", rx[i]);
+	// digitalWrite(_cs, HIGH);
+	// SPI.endTransaction();
+	// xSemaphoreGive(spiMutex);
+	// uint32_t adc_P = (rx[0] << 12) | (rx[1] << 4) | (rx[2] >> 4); //0xF7, msb+lsb+xlsb=19bit
+	uint32_t adc_P = readADC(0x77);
     // ESP_LOGI(FNAME,"--BMP280 readPressure");
 	return compensate_P((int32_t)adc_P) / 100.0;
 }
@@ -239,20 +283,21 @@ double BME280_ESP32_SPI::readPressure(bool &ok){
 //***************BME280****************************
 double BME280_ESP32_SPI::readHumidity(){
 	// ESP_LOGI(FNAME,"++BMP280 readHumidity");
-	uint32_t data[2];
+	// uint32_t data[2];
 	bool success;
 	readTemperature( success );
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	SPI.beginTransaction( spis );
-	digitalWrite(_cs, LOW);
-	SPI.transfer( 0xFD | 0x80); //0xFD Humidity msb read, bit 7 high
-	data[0] = SPI.transfer( 0x00 );
-	data[1] = SPI.transfer( 0x00 );
-	digitalWrite(_cs, HIGH);
-	SPI.endTransaction();
-	xSemaphoreGive(spiMutex);
+	// xSemaphoreTake(spiMutex,portMAX_DELAY );
+	// SPI.beginTransaction( spis );
+	// digitalWrite(_cs, LOW);
+	// SPI.transfer( 0xFD | 0x80); //0xFD Humidity msb read, bit 7 high
+	// data[0] = SPI.transfer( 0x00 );
+	// data[1] = SPI.transfer( 0x00 );
+	// digitalWrite(_cs, HIGH);
+	// SPI.endTransaction();
+	// xSemaphoreGive(spiMutex);
 
-	uint32_t adc_H = (data[0] << 8) | data[1];  //0xFD, msb+lsb=19bit(16:0)
+	// uint32_t adc_H = (data[0] << 8) | data[1];  //0xFD, msb+lsb=19bit(16:0)
+	uint32_t adc_H = read16bit(0x7D);
 	return compensate_H((int32_t)adc_H) / 1024.0;
 }
 
@@ -349,7 +394,7 @@ bool BME280_ESP32_SPI::selfTest( float& t, float &p ) {
 	double temp=0;
 	for( int i=0; i<10; i++ ){
 		temp += readTemperature(success);
-		delay(100);
+		// delay(100);
 	}
 	t = (float)(temp/10);
 	if( success == false ) {
@@ -368,7 +413,7 @@ bool BME280_ESP32_SPI::selfTest( float& t, float &p ) {
 	bool ok;
 	for( int i=0; i<10; i++ ){
 		p += (float)readPressure(ok);
-		delay(100);
+		// delay(100);
 	}
 	p=p/10;
 
@@ -379,50 +424,78 @@ bool BME280_ESP32_SPI::selfTest( float& t, float &p ) {
 
 uint8_t BME280_ESP32_SPI::readID()
 {
+	ta.tx_data[0] = 0xD0 | 0x80;
+	ta.length = 8; // Total transaction length in bits
+
+	// Perform the SPI transaction
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	SPI.beginTransaction( spis );
-	digitalWrite(_cs, LOW);
-	SPI.transfer( 0xD0 | 0x80); //0xDO Chip ID
-	uint8_t id;
-	id = SPI.transfer( 0 );
-	digitalWrite(_cs, HIGH);
-	SPI.endTransaction();
+	esp_err_t ret = spi_device_transmit(spi, &ta);
 	xSemaphoreGive(spiMutex);
-	ESP_LOGI(FNAME,"BMP280 Chip ID: %02x, cs=%d", id, _cs );
-	return id;
+	if (ret != ESP_OK)
+	{
+		ESP_LOGE(FNAME, "SPI Read failed: %s", esp_err_to_name(ret));
+		return 0; // Return 0 on error
+	}
+
+	ESP_LOGI(FNAME,"BMP280 Chip ID: %02x, cs=%d", ta.rx_data[0], _cs );
+	return ta.rx_data[0];
 }
 
 //***************BME280****************************
-uint16_t BME280_ESP32_SPI::read16bit(uint8_t reg) {
-	uint16_t data;   //0xFD Humidity msb read =bit 7 high
-	uint8_t d1,d2;
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	SPI.beginTransaction( spis );
-	digitalWrite(_cs, LOW);
-	SPI.transfer( reg | 0x80);
-	d1 = SPI.transfer( 0);
-	d2 = SPI.transfer( 0);
-	data = (d2 << 8) | d1;
-	digitalWrite(_cs, HIGH);
-	SPI.endTransaction();
+uint32_t BME280_ESP32_SPI::readADC(uint8_t reg)
+{
+	ta.tx_data[0] = reg | 0x80;
+	ta.length = 8 * (1 + 3);
+
+	xSemaphoreTake(spiMutex, portMAX_DELAY);
+	esp_err_t ret = spi_device_transmit(spi, &ta);
 	xSemaphoreGive(spiMutex);
-	ESP_LOGV(FNAME,"read 16bit: %04x", data );
-	return data;
+	if (ret != ESP_OK)
+	{
+		ESP_LOGE("SPI", "SPI read failed: %s", esp_err_to_name(ret));
+		return 0;
+	}
+	return ((uint32_t)ta.rx_data[0] << 12) | (ta.rx_data[1] << 4) | (ta.rx_data[2] >> 4); // msb+lsb+xlsb=19bit
+}
+
+//***************BME280****************************
+uint16_t BME280_ESP32_SPI::read16bit(uint8_t reg)
+{
+	ta.tx_data[0] = reg | 0x80; // 0xFD Humidity msb read =bit 7 high
+	ta.length = 24;
+
+	xSemaphoreTake(spiMutex,portMAX_DELAY );
+	// Perform the SPI transaction
+	esp_err_t ret = spi_device_transmit(spi, &ta);
+	xSemaphoreGive(spiMutex);
+	if (ret != ESP_OK)
+	{
+		ESP_LOGE(FNAME, "Failed to read 16-bit value: %s", esp_err_to_name(ret));
+		return 0;
+	}
+
+	// Combine the received bytes into a 16-bit value (big-endian order)
+	uint16_t value = (ta.rx_data[0] << 8) | ta.rx_data[1];
+	ESP_LOGV(FNAME,"read 16bit: %04x", value );
+	return value;
 }
 
 //***************BME280****************************
 uint8_t BME280_ESP32_SPI::read8bit(uint8_t reg) {
-	uint8_t data;
+	ta.tx_data[0] = reg | 0x80;
+	ta.length = 16;
+
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	SPI.beginTransaction( spis );
-	digitalWrite(_cs, LOW);
-	SPI.transfer( reg | 0x80); // read = bit 7 high
-	data = SPI.transfer( 0 );
-	digitalWrite(_cs, HIGH);
-	SPI.endTransaction();
+	esp_err_t ret = spi_device_transmit(spi, &ta);
 	xSemaphoreGive(spiMutex);
-	ESP_LOGI(FNAME,"read 8bit: %02x", data );
-	return data;
+	if (ret != ESP_OK)
+	{
+		ESP_LOGE(FNAME, "Failed to read 16-bit value: %s", esp_err_to_name(ret));
+		return 0;
+	}
+
+	ESP_LOGI(FNAME,"read 8bit: %02x", ta.rx_data[0] );
+	return ta.rx_data[0];
 }
 
 double BME280_ESP32_SPI::readPressureAVG( float alpha ){

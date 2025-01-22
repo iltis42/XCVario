@@ -1,12 +1,14 @@
 #include "AdaptUGC.h"
-#include "eglib.h"
-#include <eglib/display/ili9341.h>
-#include <eglib/hal/four_wire_spi/esp32/esp32_ili9341.h>
+
 #include "sensor.h"
 #include "logdef.h"
 #include "Setup.h"
 
-#define HSPI 2
+#include <eglib.h>
+#include <eglib/display/ili9341.h>
+#include <eglib/hal/four_wire_spi/esp32/esp32_ili9341.h>
+#include <driver/spi_master.h>
+
 
 static eglib_t myeglib;
 
@@ -45,10 +47,10 @@ static ili9341_config_t ili9341_config = {
 };
 
 static esp32_hal_config_t esp32_ili9341_config = {
-		.spi_num = 	VSPI,
+		.spi_num = SPI3_HOST,
 		.freq = 	13111111*3,  // max 40 MHz
-		.dataMode = SPI_MODE0,
-		.bitOrder = MSBFIRST,
+		.dataMode = 0,
+		.bitOrder = 0,
 		.gpio_scl = SPI_SCLK,
 		.gpio_sda = SPI_MOSI, // I/O Pin 27
 		.gpio_sdo = SPI_MISO, // I/O Pin 32
@@ -126,7 +128,7 @@ void AdaptUGC::setFont(const uint8_t *f, bool filled ){    // adapter
 	default:
 		printf("No Font found !\n");
 	}
-};
+}
 
 void  AdaptUGC::begin() {
 	eglib = &myeglib;
@@ -138,7 +140,7 @@ void  AdaptUGC::begin() {
 	ESP_LOGI(FNAME, "eglib_Send() &eglib:%x  hal-driv:%x config:%x  clk:%.3f MHz\n", (unsigned int)eglib, (unsigned int)&esp32_ili9341, (unsigned int)&esp32_ili9341_config, (double)(esp32_ili9341_config.freq/1000000.0) );
 	eglib_Init( &myeglib, &esp32_ili9341, &esp32_ili9341_config, &ili9341, &ili9341_config );
 	setClipRange( 0,0, 240, 320 );
-};
+}
 
 void AdaptUGC::advanceCursor( size_t delta ){
 	switch(eglib_print_dir) {
@@ -199,3 +201,70 @@ size_t AdaptUGC::write(uint8_t c) {
 };
 
 
+size_t AdaptUGC::printf(const char *format, ...)
+{
+    char loc_buf[64];
+    char * temp = loc_buf;
+    va_list arg;
+    va_list copy;
+    va_start(arg, format);
+    va_copy(copy, arg);
+    int len = vsnprintf(temp, sizeof(loc_buf), format, copy);
+    va_end(copy);
+    if(len < 0) {
+        va_end(arg);
+        return 0;
+    };
+    if(len >= sizeof(loc_buf)){
+        temp = (char*) malloc(len+1);
+        if(temp == NULL) {
+            va_end(arg);
+            return 0;
+        }
+        len = vsnprintf(temp, len+1, format, arg);
+    }
+    va_end(arg);
+    len = write((uint8_t*)temp, len);
+    if(temp != loc_buf){
+        free(temp);
+    }
+    return len;
+}
+
+size_t AdaptUGC::print(long n, int base)
+{
+    if(base == 0) {
+        return write(n);
+    } else if(base == 10) {
+        if(n < 0) {
+            int t = print('-');
+            n = -n;
+            return printNumber(n, 10) + t;
+        }
+        return printNumber(n, 10);
+    } else {
+        return printNumber(n, base);
+    }
+}
+
+size_t AdaptUGC::printNumber(unsigned long n, uint8_t base)
+{
+    char buf[8 * sizeof(long) + 1]; // Assumes 8-bit chars plus zero byte.
+    char *str = &buf[sizeof(buf) - 1];
+
+    *str = '\0';
+
+    // prevent crash if called with base == 1
+    if(base < 2) {
+        base = 10;
+    }
+
+    do {
+        unsigned long m = n;
+        n /= base;
+        char c = m - base * n;
+        *--str = c < 10 ? c + '0' : c + 'A' - 10;
+    } while(n);
+
+    return print(str);
+}

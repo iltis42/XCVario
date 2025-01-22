@@ -1,5 +1,6 @@
 #include "SPL06-007.h"
 #include "logdef.h"
+#include "sensor.h"
 
 SPL06_007::SPL06_007( char _addr ){
 	bus = 0;

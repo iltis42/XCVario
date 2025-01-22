@@ -8,18 +8,19 @@
 
 #include "Setup.h"
 #include "SString.h"
-#include <AdaptUGC.h>
+#include "AdaptUGC.h"
 #include "ESPRotary.h"
 #include "SetupMenuSelect.h"
+#include "comm/InterfaceCtrl.h"
 
-typedef enum e_dir { DIR_RX, DIR_TX } e_dir_t;
+typedef enum { DIR_RX, DIR_TX } e_dir_t;
 
 class DataMonitor: public RotaryObserver
 {
 public:
 	DataMonitor();
-	void monitorString( int ch, e_dir_t dir, const char *s, int len );
-	void start(SetupMenuSelect * p);
+	void monitorString( ItfTarget ch, e_dir_t dir, const char *s, int len );
+	void start(SetupMenuSelect * p, ItfTarget ch);
 	void stop();
 	void press();
 	void release() {};
@@ -32,15 +33,15 @@ public:
 	bool active() { return mon_started; };
 
 private:
-	void printString( int ch, e_dir_t dir, const char *s, bool binary, int len );
-	void header( int ch, bool binary=false );
+	void printString( ItfTarget ch, e_dir_t dir, const char *s, bool binary, int len );
+	void header( ItfTarget ch, bool binary=false, int len=0, e_dir_t dir=DIR_RX );
 	void scroll(int scroll);
 	bool mon_started;
 	AdaptUGC *ucg;
 	int scrollpos;
 	bool paused;
 	SetupMenuSelect * setup;
-	int channel;
+	ItfTarget channel;
 	bool first;
 	int rx_total;
 	int tx_total;

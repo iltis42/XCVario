@@ -49,8 +49,6 @@ void ShowStraightWind::display( int mode )
 	uint16_t y = 70;
 	char buffer[32];
 
-	semaphoreTake();
-
 	ucg->setPrintPos( 0, y );
 	sprintf( buffer, "Straight Wind enabled: %s", (wind_enable.get() & 1) ? "Yes" : "No  "  );
 	ucg->printf( "%s", buffer );
@@ -89,7 +87,5 @@ void ShowStraightWind::display( int mode )
 
 	ucg->setPrintPos( 5, 310 );
 	ucg->printf( "Press button to exit" );
-
-	semaphoreGive();
 
 }

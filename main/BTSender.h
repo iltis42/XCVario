@@ -1,30 +1,37 @@
-#ifndef __BTSENDER_H__
-#define __BTSENDER_H__
 
-// #include <btstack.h>
-#include <esp_log.h>
-#include "RingBufCPP.h"
-#include <string>
-#include "BluetoothSerial.h"
+#pragma once
 
-#define RFCOMM_SERVER_CHANNEL 1
-#define HEARTBEAT_PERIOD_MS 50
-#define SPP_SERVICE_BUFFER_SIZE 1024
+#include "comm/InterfaceCtrl.h"
 
-class BTSender {
+#include <esp_spp_api.h>
 
+
+class BTSender final : public InterfaceCtrl
+{
 public:
-  BTSender() { SerialBT = 0; };
-  void begin();
-  static int queueFull();
-  static void btTask(void *pvParameters);
-  static void progress();  // progress loop
-  bool selfTest();         // call 3 seconds after begin
+	BTSender() : InterfaceCtrl(true) {};
+	virtual ~BTSender();
+
+	bool start();
+	void stop();
+	bool selfTest();
+	bool isInitialized() const { return _initialized; }
+	bool isRunning() const { return _server_running; }
+	bool isConnected() const { return _client_handle != 0; }
+
+	// Ctrl
+	InterfaceId getId() const override { return BT_SPP; }
+	const char *getStringId() const override { return "BTspp"; }
+	void ConfigureIntf(int cfg) override;
+	int Send(const char *msg, int &len, int port = 0) override;
 
 private:
-
-   static BluetoothSerial *SerialBT;
-
+	// Receiving data
+	friend class BT_EVENT_HANDLER;
+	uint32_t _client_handle = 0;
+	bool _initialized = false;
+	bool _server_running = false;
 };
 
-#endif
+extern BTSender *BTspp;
+

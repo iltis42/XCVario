@@ -1,7 +1,11 @@
 #pragma once
-#include "SString.h"
+
+// #include "protocol/ProtocolItf.h"
 #include "types.h"
 
+class SString;
+
+typedef void (*router_t)(SString &s2);
 
 /**
  *
@@ -33,28 +37,33 @@ enum state_t {
 	GET_BECKER_LEN,
 	GET_BECKER_DATA,
 	GET_ATR833_MSG,
-	GET_ATR833_CS
+	GET_ATR833_CS,
+	// GET_ANEMOI_DATA
 };
 
 
-class DataLink {
-	public:
-		DataLink();
-		void process( const char *packet, int len, int port );
+class DataLinkOld {
+public:
+	DataLinkOld();
+	void process( const char *packet, int len, int port );
 
-	private:
-		void parse_NMEA_UBX( char c, int port );
-		void processNMEA( char * buffer, int len, int port );
-		void addChk(const char c);
-		void routeSerialData( const char *data,uint32_t len, int port, bool nmea );
-		enum state_t state;
-		char framebuffer[128];
-		int  pos;
-		int  len;
-		char chkA; // checksum variables
-		char chkB;
-		char chkBuf;
-		bool nmeaFound;
-		bool ubxFound;
-		unsigned char krt2_len;
+private:
+	void parse_NMEA_UBX( char c, int port );
+	void processNMEA( char * buffer, int len, int port );
+	void addChk(const char c);
+	void routeSerialData( const char *data,uint32_t len, int port, bool nmea );
+	enum state_t state;
+	char framebuffer[128];
+	int  pos;
+	int  len;
+	char chkA; // checksum variables
+	char chkB;
+	char chkBuf;
+	bool nmeaFound;
+	bool ubxFound;
+	unsigned char krt2_len;
 };
+
+
+extern DataLinkOld dl_S1;
+extern DataLinkOld dl_S2;

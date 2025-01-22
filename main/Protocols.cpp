@@ -87,8 +87,6 @@ void Protocols::sendNmeaHDT( float heading ) {
 }
 
 void Protocols::sendItem( const char *key, char type, void *value, int len, bool ack ){
-	if( Flarm::bincom )  // do not sent to client in case
-		return;
 	// ESP_LOGI(FNAME,"sendItem: %s", key );
 	char str[40];
 	char sender = 'U';
@@ -127,8 +125,6 @@ void Protocols::sendItem( const char *key, char type, void *value, int len, bool
 }
 
 void Protocols::sendNmeaXCVCmd( const char *item, float value ){
-	if( Flarm::bincom )  // do not sent to client in case
-		return;
 	// ESP_LOGI(FNAME,"sendNMEACmd: %s: %f", item, value );
 	char str[40];
 	sprintf( str,"!xcv,%s,%d", item, (int)(value+0.5) );
@@ -528,34 +524,8 @@ void Protocols::parseNMEA( const char *str ){
 			}
 		}
 	}
-	else if( !strncmp( str+1, "PFLAE,", 5 )) {  // On Task declaration or re-connect
-		Flarm::parsePFLAE( str );
-		ageBincom();
-	}
-	else if( !strncmp( str+1, "PFLAU,", 5 )) {
-		Flarm::parsePFLAU( str );
-		ageBincom();
-	}
-	else if( !strncmp( str+3, "RMC,", 3 ) ) {
-		Flarm::parseGPRMC( str );
-		ageBincom();
-	}
-	else if( !strncmp( str+3, "GGA,", 3 )) {
-		Flarm::parseGPGGA( str );
-		ageBincom();
-	}
-	else if( !strncmp( str+3, "RMZ,", 3 )) {
-		Flarm::parsePGRMZ( str );
-		ageBincom();
-	}
 }
 
-void Protocols::ageBincom(){
-	if( Flarm::bincom  ) {
-		Flarm::bincom--;
-		ESP_LOGI(FNAME,"Flarm::bincom %d", Flarm::bincom  );
-	}
-}
 
 // Calculate the checksum and output it as an int
 // is required as HEX in the NMEA data set

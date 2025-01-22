@@ -12,7 +12,6 @@
  *
  */
 
-#include "esp32-hal.h"
 #include "driver/gpio.h"
 #include "Switch.h"
 #include <logdef.h>

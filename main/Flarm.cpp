@@ -1,13 +1,14 @@
 #include "Flarm.h"
 #include "logdef.h"
 #include "Colors.h"
-#include "math.h"
 #include "ESPAudio.h"
 #include "IpsDisplay.h"
+#include "quaternion.h"
 #include "sensor.h"
 #include "CircleWind.h"
 #include "Router.h"
-#include <time.h>
+#include <cmath>
+#include <ctime>
 #include <sys/time.h>
 
 int Flarm::RX = 0;
@@ -23,71 +24,10 @@ float Flarm::gndSpeedKnots = 0;
 float Flarm::gndCourse = 0;
 bool Flarm::myGPS_OK = false;
 char Flarm::ID[20] = "";
-int Flarm::bincom = 0;
 AdaptUGC* Flarm::ucg;
-
-extern xSemaphoreHandle spiMutex;
-
-// Option to simulate FLARM sentences
-const char *flarm[] = {
-		"$PFLAU,3,1,2,1,1,-60,2,-100,355,1234*\n",
-		"$PFLAU,3,1,2,1,1,-20,2,-100,255,1234*\n",
-		"$PFLAU,3,1,2,1,1,-10,2,-80,175,1234*\n",
-		"$PFLAU,3,1,2,1,2,10,2,-40,150,1234*\n",
-		"$PFLAU,3,1,2,1,2,20,2,-20,130,1234*\n",
-		"$PFLAU,3,1,2,1,3,30,2,0,120,1234*\n",
-		"$PFLAU,3,1,2,1,3,60,2,20,125,1234*\n",
-		"$PFLAU,3,1,2,1,2,80,2,40,160,1234*\n",
-		"$PFLAU,3,1,2,1,1,90,2,80,210,1234*\n",
-		"$PFLAU,3,1,2,1,1,90,2,80,280,1234*\n"
-};
-#define NUM_SIM_DATASETS 10
-int Flarm::sim_tick=NUM_SIM_DATASETS*2;
-
-
-/* PFLAU,<RX>,<TX>,<GPS>,<Power>,<AlarmLevel>,<RelativeBearing>,<AlarmType>,<RelativeVertical>,<RelativeDistance>,<ID>
-		$PFLAU,3,1,2,1,2,-30,2,-32,755*FLARM is working properly and currently receives 3 other aircraft.
-		The most dangerous of these aircraft is at 11 o’clock, position 32m below and 755m away. It is a level 2 alarm
-
-
- */
-
-/*  <AcftType>
- *
-0 = unknown
-1 = glider / motor glider
-2 = tow / tug plane
-3 = helicopter / rotorcraft
-4 = skydiver
-5 = drop plane for skydivers
-6 = hang glider (hard)
-7 = paraglider (soft)
-8 = aircraft with reciprocating engine(s)
-9 = aircraft with jet/turboprop engine(s)
-A = unknown
-B = balloon
-C = airship
-D = unmanned aerial vehicle (UAV)
-E = unknown
-F = static object
- */
-
-
-/*
-PFLAA,<AlarmLevel>,<RelativeNorth>,<RelativeEast>,<RelativeVertical>,<IDType>,<ID>,<Track>,<TurnRate>,<GroundSpeed>,<ClimbRate>,<AcftType>
-e.g.
-$PFLAA,0,-1234,1234,220,2,DD8F12,180,,30,-1.4,1*
-
- */
-void Flarm::parsePFLAA( const char *pflaa ){
-
-}
 
 #define CENTERX 120
 #define CENTERY 120
-
-#define RTD(x) (x*RAD_TO_DEG)
-#define DTR(x) (x*DEG_TO_RAD)
 
 int Flarm::oldDist = 0;
 int Flarm::oldVertical = 0;
@@ -97,29 +37,9 @@ int Flarm::_tick=0;
 int Flarm::timeout=0;
 int Flarm::ext_alt_timer=0;
 int Flarm::_numSat=0;
-int Flarm::bincom_port=0;
 int Flarm::clock_timer=0;
 bool Flarm::time_sync=false;
 
-void Flarm::flarmSim(){
-	// ESP_LOGI(FNAME,"flarmSim sim-tick: %d", sim_tick);
-	if( flarm_sim.get() ){
-		sim_tick=-3;
-		flarm_sim.set( 0 );
-	}
-	if( sim_tick < NUM_SIM_DATASETS*2 ){
-		if( sim_tick >= 0 ){
-			int cs = Protocols::calcNMEACheckSum( (char *)flarm[sim_tick/2] );
-			char str[80];
-			sprintf( str, "%s%02X\r\n", flarm[sim_tick/2], cs );
-			// SString sf( str );
-			// Router::forwardMsg( sf, s1_rx_q );
-			parsePFLAU( str, true );
-			ESP_LOGI(FNAME,"Serial FLARM SIM: %s",  str );
-		}
-		sim_tick++;
-	}
-}
 
 
 void Flarm::progress(){  // once per second
@@ -127,7 +47,6 @@ void Flarm::progress(){  // once per second
 		timeout--;
 	}
 	// ESP_LOGI(FNAME,"progress, timeout=%d", timeout );
-	flarmSim();
 	clock_timer++;
 	if( !(clock_timer%3600) ){  // every hour reset sync flag to wait for next valid GPS time
 		time_sync = false;
@@ -142,273 +61,11 @@ bool Flarm::connected(){
 		return false;
 };
 
-/*
-eg1. $GPRMC,081836,A,3751.65,S,14507.36,E,000.0,360.0,130998,011.3,E*62
-eg2. $GPRMC,225446,A,4916.45,N,12311.12,W,000.5,054.7,191194,020.3,E*68
-     $GPRMC,201914.00,A,4857.58740,N,00856.94735,E,0.172,122.95,310321,,,A*6D
-
-           225446.00    Time of fix 22:54:46 UTC
-           A            Navigation receiver warning A = OK, V = warning
-           4916.45,N    Latitude 49 deg. 16.45 min North
-           12311.12,W   Longitude 123 deg. 11.12 min West
-           000.5        Speed over ground, Knots
-           054.7        Course Made Good, True
-           191194       Date of fix  19 November 1994
-           020.3,E      Magnetic variation 20.3 deg East
- *68          mandatory checksum
-
-
- */
-
-long int Flarm::GPSTime( char *time, char* date ) {
-    time_t t_of_day;
-    struct tm t;
-    memset( &t, 0, sizeof(t));
-    sscanf( date,"%02d%02d%02d", &t.tm_mday, &t.tm_mon, &t.tm_year );  // 010624
-    sscanf( time,"%02d%02d%02d", &t.tm_hour, &t.tm_min, &t.tm_sec );  // 143658.0
-    t.tm_year +=100;              // since 1970
-    // t.tm_mon -=1;              // Month, 0 - jan
-    t_of_day = mktime(&t);
-    // ESP_LOGI(FNAME,"time: %s, date: %s, SC: %d/%d/%d %d:%d:%d ", time, date, t.tm_year, t.tm_mon, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec );
-    return t_of_day;
-}
-
-void Flarm::parseGPRMC( const char *_gprmc ) {
-	char warn;
-	int cs;
-	char time[10];
-	char date[8];
-
-	int calc_cs=Protocols::calcNMEACheckSum( _gprmc );
-	cs = Protocols::getNMEACheckSum( _gprmc );
-	if( cs != calc_cs ){
-		ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", _gprmc, calc_cs, cs );
-		return;
-	}
-	char* gprmc = strdup(_gprmc);
-	char* s = gprmc;
-	int valid_time_scan = 0;
-	int valid_date_scan = 0;
-	// e.g. $GPRMC,152253.00,A,4857.58482,N,00856.96233,E,0.025,304.16,010624,,,A*61
-	char *field = strsep( &gprmc, "," ); // GPRMC
-	field = strsep( &gprmc, "," );       // time
-	if( field && strlen( field ) )
-		valid_time_scan = sscanf( field, "%9s", time );
-	field = strsep( &gprmc, "," );  // warn
-	if( field && strlen( field ) )
-		sscanf( field, "%c", &warn );
-	field = strsep( &gprmc, "," );  // lat
-	field = strsep( &gprmc, "," );  // E
-	field = strsep( &gprmc, "," );  // lon
-	field = strsep( &gprmc, "," );  // N
-	field = strsep( &gprmc, "," );  // speed
-	if( field && strlen( field ) )
-		sscanf( field, "%f", &gndSpeedKnots );
-	field = strsep( &gprmc, "," );  // track
-	if( field && strlen( field ) )
-		sscanf( field, "%f", &gndCourse );
-	field = strsep( &gprmc, "," );  // date
-	if( field && strlen( field ) )
-		valid_date_scan = sscanf( field, "%7s", date );
-	// struct tm now;
-	// getLocalTime(&now,0);
-	// ESP_LOGI(FNAME,"G: %s",_gprmc );
-	// ESP_LOGI(FNAME,"DT: %d/%02d/%02d %02d:%02d:%02d ", now.tm_year-100, now.tm_mon, now.tm_mday, now.tm_hour, now.tm_min, now.tm_sec );
-	// ESP_LOGI(FNAME,"parseGPRMC() GPS: %d, Speed: %3.1f knots, Track: %3.1f° warn:%c date:%s ", myGPS_OK, gndSpeedKnots, gndCourse, warn, date  );
-	// ESP_LOGI(FNAME,"GP%s, GPS_OK:%d warn:%c T:%s D:%s", gprmc+3, myGPS_OK, warn, time, date  );
-
-	if( warn == 'A' ) {
-		if( myGPS_OK == false ){
-			myGPS_OK = true;
-			if( wind_enable.get() & WA_STRAIGHT || wind_enable.get() & WA_CIRCLING  ){
-				CircleWind::gpsStatusChange( true);
-			}
-			ESP_LOGI(FNAME,"GPRMC, GPS status changed to good, rmc:%s gps:%d", gprmc, myGPS_OK );
-		}
-		theWind.calculateWind();
-		// ESP_LOGI(FNAME,"Track: %3.2f, GPRMC: %s", gndCourse, gprmc );
-		CircleWind::newSample( Vector( gndCourse, Units::knots2kmh( gndSpeedKnots ) ) );
-		if( !time_sync && ( valid_time_scan && valid_date_scan ) ){
-			ESP_LOGI(FNAME,"Start TimeSync");
-			long int epoch_time = GPSTime( time, date );
-			timeval epoch = {epoch_time, 0};
-			const timeval *tv = &epoch;
-			timezone utc = {0,0};
-			const timezone *tz = &utc;
-			settimeofday(tv, tz);
-			time_sync=true;
-			ESP_LOGI(FNAME,"Finish Time Sync");
-		}
-	}
-	else{
-		if( myGPS_OK == true  ){
-			myGPS_OK = false;
-			ESP_LOGI(FNAME,"GPRMC, GPS status changed to bad, rmc:%s gps:%d", gprmc, myGPS_OK );
-			if( wind_enable.get() & WA_STRAIGHT || wind_enable.get() & WA_CIRCLING ){
-				CircleWind::gpsStatusChange( false );
-				ESP_LOGW(FNAME,"GPRMC, GPS not OK: %s", gprmc );
-			}
-		}
-	}
-	timeout = 10;
-	free(s);
-	// ESP_LOGI(FNAME,"parseGPRMC() GPS: %d, Speed: %3.1f knots, Track: %3.1f° ", myGPS_OK, gndSpeedKnots, gndCourse );
-}
-
-/*
-  GPGGA
-
-hhmmss.ss = UTC of position
-llll.ll = latitude of position
-a = N or S
-yyyyy.yy = Longitude of position
-a = E or W
-x = GPS Quality indicator (0=no fix, 1=GPS fix, 2=Dif. GPS fix)
-xx = number of satellites in use
-x.x = horizontal dilution of precision
-x.x = Antenna altitude above mean-sea-level
-M = units of antenna altitude, meters
-x.x = Geoidal separation
-M = units of geoidal separation, meters
-x.x = Age of Differential GPS data (seconds)
-xxxx = Differential reference station ID
-
-eg. $GPGGA,hhmmss.ss,llll.ll,a,yyyyy.yy,a,x,xx,x.x,x.x,M,x.x,M,x.x,xxxx*hh
-    $GPGGA,121318.00,4857.58750,N,00856.95715,E,1,05,3.87,247.7,M,48.0,M,,*52
- */
-
-
-void Flarm::parseGPGGA( const char *gpgga ) {
-	// ESP_LOGI(FNAME,"parseGPGGA");
-	int numSat;
-	int cs;
-	// ESP_LOGI(FNAME,"parseG*GGA: %s", gpgga );
-	_gps_millis = millis();
-	int calc_cs=Protocols::calcNMEACheckSum( gpgga );
-	cs = Protocols::getNMEACheckSum( gpgga );
-	if( cs != calc_cs ){
-		ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", gpgga, calc_cs, cs );
-		return;
-	}
-	int ret=sscanf( gpgga+3, "GGA,%*f,%*f,%*c,%*f,%*c,%*d,%d,%*f,%*f,M,%*f,M,%*f,%*d*%*02x", &numSat);
-	// ESP_LOGI(FNAME,"parseG*GGA: %s numSat=%d ssf_ret=%d", gpgga, numSat, ret );
-	if( ret >=1 ){
-		if( (numSat != _numSat) && (wind_enable.get() != WA_OFF) ){
-			_numSat = numSat;
-			CircleWind::newConstellation( numSat );
-		}
-		timeout = 10;
-
-	}
-}
-
-// parsePFLAE $PFLAE,A,0,0*33
-
-
-void Flarm::parsePFLAE( const char *pflae ) {
-	ESP_LOGI(FNAME,"parsePFLAE %s", pflae );
-	int cs;
-	int calc_cs=Protocols::calcNMEACheckSum( pflae );
-	cs = Protocols::getNMEACheckSum( pflae );
-	if( cs != calc_cs ){
-		ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", pflae, calc_cs, cs );
-		return;
-	}
-	timeout = 10;
-	const char* pf = "$PFLAE,A,0,0";
-	const unsigned short len = strlen(pf);
-	if( !strncmp( pflae, pf, len )  && !SetupCommon::isClient() ){
-		ESP_LOGI(FNAME,"got PFLAE");
-	}
-}
-
-
-void Flarm::parsePFLAU( const char *pflau, bool sim_data ) {
-	if( !sim_data && (sim_tick < NUM_SIM_DATASETS*2) ){
-		return;  // drop FLARM data during simulation
-	}
-	// ESP_LOGI(FNAME,"parsePFLAU");
-	int cs;
-	int id;
-	int calc_cs=Protocols::calcNMEACheckSum( pflau );
-	cs = Protocols::getNMEACheckSum( pflau );
-	if( cs != calc_cs ){
-		ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", pflau, calc_cs, cs );
-		return;
-	}
-	sscanf( pflau, "$PFLAU,%d,%d,%d,%d,%d,%d,%d,%d,%d,%x*%02x",&RX,&TX,&GPS,&Power,&AlarmLevel,&RelativeBearing,&AlarmType,&RelativeVertical,&RelativeDistance,&id,&cs);
-	// ESP_LOGI(FNAME,"parsePFLAU() RB: %d ALT:%d  DIST %d",RelativeBearing,RelativeVertical, RelativeDistance );
-	sprintf( ID,"%06x", id );
-	_tick=0;
-	timeout = 10;
-}
-
-void Flarm::parsePFLAX( const char *msg, int port ) {
-	// ESP_LOGI(FNAME,"parsePFLAX");
-	// ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
-	int start=0;
-	/* Solved now by DataLink frame recognition
-	if( !strncmp( msg, "\n", 1 )  ){  // catch case when serial.cpp does not correctly dissect at '\n', needs further evaluation, maybe multiple '\n' sent ?
-		start=1;
-	}
-	*/
-	// Note, if the Flarm switch to binary mode was accepted, Flarm will answer
-	// with $PFLAX,A*2E. In error case you will get as answer $PFLAX,A,<error>*
-	// and the Flarm stays in text mode.
-	const char* pflax = "$PFLAX,A*2E";
-	const unsigned short lenPflax = strlen(pflax);
-
-	if( strlen(msg + start) >= lenPflax && !strncmp(  msg + start, pflax, lenPflax )  && !SetupCommon::isClient() ){
-		bincom_port = port;
-		int old = bincom;
-		bincom = 5;
-		ESP_LOGI(FNAME,"bincom: %d --> %d", old, bincom  );
-		timeout = 10;
-	}
-}
-
-void Flarm::drawDownloadInfo() {
-	// ESP_LOGI(FNAME,"---> Flarm::drawDownloadInfo is called"  );
-	xSemaphoreTake(spiMutex, portMAX_DELAY );
-	ucg->setColor( COLOR_WHITE );
-	ucg->setFont(ucg_font_fub20_hr);
-	ucg->setPrintPos(60, 140);
-	ucg->printf("Flarm IGC");
-	ucg->setPrintPos(60, 170);
-	ucg->printf("download");
-	ucg->setPrintPos(60, 200);
-	ucg->printf("is running");
-	ucg->setFont(ucg_font_fub11_hr);
-	ucg->setPrintPos(20, 280);
-	ucg->printf("(restarts on end download)");
-	xSemaphoreGive(spiMutex);
-}
 
 void Flarm::tick(){
-	// ESP_LOGI(FNAME,"Flarm tick, bincom: %d", bincom );
 	if( ext_alt_timer )
 		ext_alt_timer--;
 };
-
-// $PGRMZ,880,F,2*3A  $PGRMZ,864,F,2*30
-void Flarm::parsePGRMZ( const char *pgrmz ) {
-	if ( alt_select.get() != AS_EXTERNAL )
-		return;
-	int cs;
-	int alt1013_ft;
-	int calc_cs=Protocols::calcNMEACheckSum( pgrmz );
-	cs = Protocols::getNMEACheckSum( pgrmz );
-	if( cs != calc_cs ){
-		ESP_LOGW(FNAME,"CHECKSUM ERROR: %s; calculcated CS: %d != delivered CS %d", pgrmz, calc_cs, cs );
-		return;
-	}
-	sscanf( pgrmz, "$PGRMZ,%d,F,2",&alt1013_ft );
-
-	alt_external = Units::feet2meters( (float)(alt1013_ft + 0.5) );
-	ESP_LOGI(FNAME,"parsePGRMZ() %s: ALT(1013):%5.0f m", pgrmz, alt_external );
-	timeout = 10;
-	ext_alt_timer = 10;  // Fall back to internal Barometer after 10 seconds
-}
 
 
 int rbOld = -500; // outside normal range
@@ -432,8 +89,8 @@ void Flarm::drawClearVerticalTriangle( int x, int y, int rb, int dist, int size,
 }
 
 void Flarm::drawTriangle( int x, int y, int rb, int dist, int size, int factor, bool erase ) {
-	float s = sin( DTR(rb) );
-	float c = cos( DTR(rb) );
+	float s = sin( deg2rad(rb) );
+	float c = cos( deg2rad(rb) );
 	int tipx = (int)(x + s*dist );
 	int tipy = (int)(y - c*dist );
 	float mx =  x + s*(dist+size);
@@ -502,7 +159,6 @@ void Flarm::drawFlarmWarning(){
 	_tick++;
 	if( _tick > 500 ) // age FLARM alarm in case there is no more input  50 per second = 10 sec
 		AlarmLevel = 0;
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	float volume=0;
 	e_audio_alarm_type_t alarm = AUDIO_ALARM_FLARM_1;
 	if( AlarmLevel == 3 ) { // highest, impact 0-8 seconds
@@ -559,7 +215,7 @@ void Flarm::drawFlarmWarning(){
 		float relDist =  (float)RelativeDistance;
 		if( RelativeBearing < 0 )
 			relDist = -relDist;
-		float horizontalAngle = RTD( atan2( relDist, (float)RelativeVertical) );
+		float horizontalAngle = rad2deg( atan2( relDist, (float)RelativeVertical) );
 		ESP_LOGI(FNAME,"horizontalAngle: %f  vert:%d", horizontalAngle, RelativeVertical );
 
 		drawClearVerticalTriangle( 70, 220, horizontalAngle, 0, 50, 6 );
@@ -586,6 +242,4 @@ void Flarm::drawFlarmWarning(){
 		drawAirplane( 70, 120 );
 		oldBear = RelativeBearing;
 	}
-
-	xSemaphoreGive(spiMutex);
 }

@@ -1,5 +1,4 @@
-#ifndef _SENSOR_H_
-#define _SENSOR_H_
+#pragma once
 
 #include "MPU.hpp"        // main file, provides the class itself
 #include "AnalogInput.h"
@@ -15,7 +14,6 @@
 #include "StraightWind.h"
 #include "DataMonitor.h"
 #include "AdaptUGC.h"
-#include "canbus.h"
 #include "CenterAid.h"
 #include "vector_3d.h"
 #include "BMPVario.h"
@@ -43,15 +41,21 @@ typedef struct global_flags{
 	bool gLoadDisplay :1;
 	bool horizon :1;
 	bool gear_warning_active :1;
-	bool flarmDownload :1 ; // Flarm IGC download flag
 	bool validTemperature :1 ;
 	bool mpu_pwm_initalized: 1;
 	bool gear_warn_external :1;
 } t_global_flags;
 
+class CANbus;
+class SerialLine;
+class Clock;
+
+
 extern t_global_flags gflags;
 extern BMPVario bmpVario;
 extern CANbus* CAN;
+extern SerialLine *S1,*S2;
+extern Clock *MY_CLOCK;
 extern StraightWind theWind;
 extern xSemaphoreHandle xMutex;
 extern int active_screen;
@@ -115,4 +119,13 @@ extern MPU_t MPU;
 // There is no temperature control for XCV hardware < 23, GPIO Pin there is wired to CAN slope control
 #define HAS_MPU_TEMP_CONTROL (CAN && !CAN->hasSlopeSupport())
 
-#endif
+// Arduino.h remains
+inline unsigned long IRAM_ATTR millis()
+{
+    return (unsigned long) (esp_timer_get_time() / 1000ULL);
+}
+
+inline void delay(uint32_t ms)
+{
+    vTaskDelay(ms / portTICK_PERIOD_MS);
+}

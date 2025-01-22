@@ -1,6 +1,6 @@
 # The following lines of boilerplate have to be in your project's CMakeLists
 # in this exact order for cmake to work correctly
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.11)
 
 # (Not part of the boilerplate)
 # This example uses an extra component 
@@ -8,6 +8,8 @@ cmake_minimum_required(VERSION 3.5)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 
+set(SDKCONFIG "${CMAKE_BINARY_DIR}/sdkconfig")
 project(sensor)
 
 include (${project_dir}/html/CMakeLists.txt)
+

@@ -10,6 +10,8 @@
 #include "BTSender.h"
 #include "Polars.h"
 #include "MPU.hpp" // change from .h to .hpp for Windows toolchain compatibility
+#include "comm/CanBus.h"
+#include "logdef.h"
 
 #include <esp_partition.h>
 #include <esp_err.h>
@@ -20,7 +22,6 @@
 #include <esp_timer.h>
 #include <freertos/queue.h>
 #include <esp_system.h>
-#include <esp_log.h>
 
 #include <string>
 #include <stdio.h>
@@ -51,6 +52,7 @@ typedef enum display_type { UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, IL
 typedef enum chopping_mode { NO_CHOP, VARIO_CHOP, S2F_CHOP, BOTH_CHOP } chopping_mode_t;
 typedef enum rs232linemode { RS232_NORMAL, RS232_INVERTED } rs232lm_t;
 typedef enum nmea_protocol  { OPENVARIO, BORGELT, CAMBRIDGE, XCVARIO, NMEA_OFF } nmea_proto_t;
+typedef enum ext_device_protocol  { DEV_DISABLE, DEV_FLARM, DEV_KRT2_RADIO, DEV_BECKER_RADIO, DEV_GNSS_UBX, DEV_ANEMOI } ext_device_proto_t;
 typedef enum airspeed_mode  { MODE_IAS, MODE_TAS, MODE_CAS, MODE_SLIP } airspeed_mode_t;
 typedef enum altitude_display_mode  { MODE_QNH, MODE_QFE } altitude_display_mode_t;
 typedef enum e_display_style  { DISPLAY_AIRLINER, DISPLAY_RETRO, DISPLAY_UL } display_style_t;
@@ -88,13 +90,11 @@ typedef enum e_alt_quantisation { ALT_QUANT_DISABLE, ALT_QUANT_2, ALT_QUANT_5, A
 typedef enum e_sync { SYNC_NONE, SYNC_FROM_MASTER, SYNC_FROM_CLIENT, SYNC_BIDIR } e_sync_t;       // determines if data is synched from/to client. BIDIR means sync at commit from both sides
 typedef enum e_reset { RESET_NO, RESET_YES } e_reset_t;   // determines if data is reset to defaults on factory reset
 typedef enum e_volatility { VOLATILE, PERSISTENT, SEMI_VOLATILE } e_volatility_t;  // stored in RAM, FLASH, or into FLASH after a while
-typedef enum e_can_speed { CAN_SPEED_OFF, CAN_SPEED_250KBIT, CAN_SPEED_500KBIT, CAN_SPEED_1MBIT } e_can_speed_t;  // stored in RAM, FLASH, or into FLASH after a while
 typedef enum e_can_mode { CAN_MODE_MASTER, CAN_MODE_CLIENT, CAN_MODE_STANDALONE } e_can_mode_t;
 typedef enum e_altimeter_select { AS_TE_SENSOR, AS_BARO_SENSOR, AS_EXTERNAL } e_altimeter_select_t;
 typedef enum e_menu_screens { SCREEN_VARIO, SCREEN_GMETER, SCREEN_HORIZON, SCREEN_FLARM, SCREEN_THERMAL_ASSISTANT } e_menu_screens_t; // addittional screens
 typedef enum e_s2f_arrow_color { AC_WHITE_WHITE, AC_BLUE_BLUE, AC_GREEN_RED } e_s2f_arrow_color_t;
 typedef enum e_vario_needle_color { VN_COLOR_WHITE, VN_COLOR_ORANGE, VN_COLOR_RED }  e_vario_needle_color_t;
-typedef enum e_data_monitor { MON_OFF, MON_BLUETOOTH, MON_WIFI_8880, MON_WIFI_8881, MON_WIFI_8882, MON_S1, MON_S2, MON_CAN  }  e_data_monitor_t;
 typedef enum e_display_orientation { DISPLAY_NORMAL, DISPLAY_TOPDOWN } e_display_orientation_t;
 typedef enum e_gear_warning_io { GW_OFF, GW_FLAP_SENSOR, GW_S2_RS232_RX, GW_FLAP_SENSOR_INV, GW_S2_RS232_RX_INV, GW_EXTERNAL }  e_gear_warning_io_t;
 typedef enum e_data_mon_mode { MON_MOD_ASCII, MON_MOD_BINARY } e_data_mon_mode_t;
@@ -113,7 +113,6 @@ typedef enum e_logging { LOG_DISABLE, LOG_SENSOR_RAW } e_logging_t;
 typedef enum e_tek_compensation { TE_TEK_PROBE, TE_TEK_EPOT, TE_TEK_PRESSURE } e_tek_compensation_t;
 
 
-const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
 void change_bal();
 
 typedef struct setup_flags{
@@ -281,7 +280,7 @@ public:
 
 	void ack( T aval ){
 		if( aval != _value ){
-			ESP_LOGI(FNAME,"sync to value client has acked");
+			// ESP_LOGI(FNAME,"sync to value client has acked");
 			_value = aval;
 		}
 	}
@@ -316,8 +315,10 @@ public:
 		// ESP_LOGI(FNAME,"NVS write(): ");
 		char val[30];
 		value_str(val);
-		ESP_LOGI(FNAME,"NVS set blob(key:%s, val: %s, len:%d )", _key, val, sizeof( _value ) );
+		// ESP_LOGI(FNAME,"NVS set blob(key:%s, val: %s, len:%d )", _key, val, sizeof( _value ) );
+		portDISABLE_INTERRUPTS();
 		bool ret = NVS.setBlob( _key, (void *)(&_value), sizeof( _value ) );
+		portENABLE_INTERRUPTS();
 		if( !ret )
 			return false;
 		return true;
@@ -341,7 +342,7 @@ public:
 		size_t required_size;
 		bool ret = NVS.getBlob(_key, NULL, &required_size);
 		if ( !ret ){
-			ESP_LOGE(FNAME, "%s: NVS nvs_get_blob error", _key );
+			// ESP_LOGE(FNAME, "%s: NVS nvs_get_blob error", _key );
 			set( _default );  // try to init
 			commit();
 		}
@@ -383,7 +384,7 @@ public:
 			return false;
 		}
 		else {
-			ESP_LOGI(FNAME,"NVS erased key  %s", _key );
+			// ESP_LOGI(FNAME,"NVS erased key  %s", _key );
 			return set( _default );
 		}
 	}
@@ -518,6 +519,7 @@ extern SetupNG<int>  		temperature_unit;
 extern SetupNG<int>  		qnh_unit;
 extern SetupNG<int>  		rot_default;
 extern SetupNG<int>  		serial1_speed;
+extern SetupNG<int>         serial1_protocol;
 extern SetupNG<int>  		serial1_rxloop;
 extern SetupNG<int>  		serial1_tx;
 extern SetupNG<int>  		rt_s1_xcv;
@@ -529,6 +531,7 @@ extern SetupNG<int>  		serial1_tx_inverted;
 extern SetupNG<int>  		serial1_rx_inverted;
 extern SetupNG<int>  		serial1_tx_enable;
 extern SetupNG<int>  		serial2_speed;
+extern SetupNG<int>         serial2_protocol;
 extern SetupNG<int>  		serial2_tx;
 extern SetupNG<int>  		rt_s2_xcv;
 extern SetupNG<int>  		rt_s2_wl;
@@ -585,7 +588,6 @@ extern SetupNG<float>		stall_speed;
 extern SetupNG<int>       	flarm_warning;
 extern SetupNG<float>     	flarm_volume;
 extern SetupNG<float>       flarm_alarm_time;
-extern SetupNG<int>       	flarm_sim;
 extern SetupNG<int>       	flap_sensor;
 extern SetupNG<float>     	flap_pos_max;
 extern SetupNG<float>     	flap_neg_max;
@@ -674,7 +676,6 @@ extern SetupNG<int> 		menu_screens;
 extern SetupNG<int> 		screen_gmeter;
 extern SetupNG<int> 		screen_horizon;
 extern SetupNG<int> 		screen_centeraid;
-extern SetupNG<int> 		data_monitor;
 extern SetupNG<int> 		data_monitor_mode;
 extern SetupNG<t_bitfield_compass> 	calibration_bits;
 extern SetupNG<int> 		gear_warning;

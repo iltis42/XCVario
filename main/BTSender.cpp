@@ -1,106 +1,182 @@
-#include <esp_log.h>
 #include "BTSender.h"
-#include <string>
-#include "sdkconfig.h"
-#include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_task_wdt.h"
-#include <freertos/semphr.h>
-#include <algorithm>
-#include "RingBufCPP.h"
+#include "SetupNG.h"
+
+#include "comm/DataLink.h"
+#include "comm/InterfaceCtrl.h"
+
+#include "logdefnone.h"
+
 #include <driver/uart.h>
-#include "Protocols.h"
-#include <logdef.h>
-#include "Switch.h"
-#include "sensor.h"
-#include "Router.h"
-#include "Flarm.h"
-#include "BluetoothSerial.h"
-#include "DataMonitor.h"
-#include "DataLink.h"
+#include <esp_bt.h>
+#include <esp_bt_main.h>
+#include <esp_bt_device.h>
+#include <esp_gap_bt_api.h>
 
-static TaskHandle_t pid = nullptr;
 
-static DataLink *dlb;
+constexpr int RFCOMM_SERVER_CHANNEL = 1;
+// #define HEARTBEAT_PERIOD_MS 50
+// #define SPP_SERVICE_BUFFER_SIZE 1024
 
-bool BTSender::selfTest(){
-	ESP_LOGI(FNAME,"SerialBT::selfTest");
-	if( !SerialBT ){
-		ESP_LOGI(FNAME,"SerialBT not initialized");
-		return false;
+
+BTSender *BTspp = nullptr;
+
+class BT_EVENT_HANDLER
+{
+public:
+
+// SPP Callback function
+static void spp_event_handler(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
+{
+	// assert(BTspp) this is 
+    switch (event) {
+    case ESP_SPP_INIT_EVT:
+		ESP_LOGI(FNAME, "SPP initialized");
+		// Start listening for incoming connections
+		esp_spp_start_srv(ESP_SPP_SEC_AUTHENTICATE, ESP_SPP_ROLE_SLAVE, RFCOMM_SERVER_CHANNEL, SetupCommon::getID());
+		esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_GENERAL_DISCOVERABLE);
+		BTspp->_server_running = true;
+		break;
+
+	case ESP_SPP_SRV_STOP_EVT:
+		ESP_LOGI(FNAME, "SPP server stoped");
+		BTspp->_server_running = true;
+		break;
+
+	case ESP_SPP_SRV_OPEN_EVT:
+		ESP_LOGI(FNAME, "SPP rcomm opened, handle: %d", param->open.handle);
+		BTspp->_client_handle = param->open.handle;
+		esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_NON_DISCOVERABLE);
+		break;
+
+	// never received this for rfcomm channels
+	// case ESP_SPP_OPEN_EVT:
+	// 	ESP_LOGI(FNAME, "SPP connection opened, handle: %d", param->open.handle);
+	// 	BTspp->_client_handle = param->open.handle;
+	// 	esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_NON_DISCOVERABLE);
+	// 	break;
+
+	case ESP_SPP_CLOSE_EVT:
+		ESP_LOGI(FNAME, "SPP connection closed, handle: %d", param->close.handle);
+		BTspp->_client_handle = 0;
+		esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_GENERAL_DISCOVERABLE);
+		break;
+
+	case ESP_SPP_DATA_IND_EVT:
+	{
+		ESP_LOGI(FNAME, "Received data, handle: %d, length: %d", param->data_ind.handle, param->data_ind.len);
+		// Process received data
+		int count = param->data_ind.len;
+		char *rxBuf = (char *)param->data_ind.data;
+		if (count > 0)
+		{
+			rxBuf[count] = '\0';
+
+			auto dlit = BTspp->_dlink.begin();
+			if ( dlit != BTspp->_dlink.end() ) {
+				dlit->second->process(rxBuf, count);
+			}
+		}
+		// esp_spp_write(param->data_ind.handle, param->data_ind.len, param->data_ind.data);
+		break;
 	}
-	if( SerialBT->isReady( false ) ) {
-		ESP_LOGI(FNAME,"SerialBT::selfTest: PASSED");
-		return true;
+	default:
+		break;
 	}
-	ESP_LOGI(FNAME,"SerialBT::selfTest: FAILED");
-	return false;
+}
+};
+
+BTSender::~BTSender()
+{
+	stop();
 }
 
-BluetoothSerial *BTSender::SerialBT = 0;
+bool BTSender::selfTest()
+{
+	return isRunning();
+}
 
-int BTSender::queueFull() {
-	if( wireless == WL_BLUETOOTH ){
-		if(bt_tx_q.isFull())
-			return 1;
+void BTSender::ConfigureIntf(int cfg)
+{
+	// maybe fine like this
+}
+
+int BTSender::Send(const char *msg, int &len, int port)
+{
+	if ( _client_handle ) {
+		// ESP_LOGI(FNAME,"Send BTspp, len %d", len);
+		esp_err_t err = esp_spp_write(_client_handle, len, (uint8_t *)msg);
+		if ( err == ESP_OK ) {
+			return 0;
+		}
+		return 4; // wild guess
 	}
 	return 0;
 }
 
-void BTSender::btTask(void *pvParameters){
-	while(1) {
-		progress();
-		Router::routeBT();
-		if( uxTaskGetStackHighWaterMark( pid ) < 256 )
-			ESP_LOGW(FNAME,"Warning BT task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid ) );
-		vTaskDelay( 20/portTICK_PERIOD_MS );
-	}
-}
+bool BTSender::start()
+{
+    ESP_LOGI(FNAME,"BTSender::begin()" );
 
-void BTSender::progress(){
-	if (wireless != WL_BLUETOOTH )
-		return;
-	if( !SerialBT ){
-		ESP_LOGI(FNAME,"SerialBT not initialized");
-		return;
-	}
-	char buf[400];
-	int pos = 0;
-	while(SerialBT->available() && (pos < 256) ) {
-		char byte = (char)SerialBT->read();
-		buf[pos] = byte;
-		pos++;
-	}
-	if( pos ){
-		SString rx;
-		rx.set( buf, pos );
-		dlb->process( buf, pos, 7 );
-		DM.monitorString( MON_BLUETOOTH, DIR_RX, rx.c_str(), pos );
-		// ESP_LOGI(FNAME,">BT RX: %d bytes", pos );
-		// ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.c_str(),pos, ESP_LOG_INFO);
-	}
-	if( SerialBT->hasClient() ) {
-		int len = Router::pullBlock( bt_tx_q, buf, 400 );
-		if( len ){
-			// ESP_LOGI(FNAME,"<BT TX %d bytes", msg.length() );
-			// ESP_LOG_BUFFER_HEXDUMP(FNAME,msg.c_str(),msg.length(), ESP_LOG_INFO);
-			SerialBT->write( (const uint8_t *)buf, len );
-			DM.monitorString( MON_BLUETOOTH, DIR_TX, buf, len );
+	if ( ! _initialized ) {
+		// Initialize Bluetooth
+		esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+		bt_cfg.mode = 2;
+		esp_err_t ret = esp_bt_controller_init(&bt_cfg);
+		if (ret) {
+			ESP_LOGE(FNAME, "Bluetooth controller initialize failed");
+			return false;
 		}
+		ret = esp_bt_controller_enable(ESP_BT_MODE_CLASSIC_BT);
+		if (ret) {
+			ESP_LOGE(FNAME, "Bluetooth controller enable failed");
+			return false;
+		}
+
+		// Initialize Bluedroid stack
+		ret = esp_bluedroid_init();
+		if (ret) {
+			ESP_LOGE(FNAME, "Bluedroid stack initialize failed");
+			return false;
+		}
+
+		ret = esp_bluedroid_enable();
+		if (ret) {
+			ESP_LOGE(FNAME, "Bluedroid stack enable failed");
+			return false;
+		}
+
+		// Set the Bluetooth device name
+		// ret = esp_bt_gap_set_device_name("XCVario");
+		ret = esp_bt_dev_set_device_name("XCVario");
+		if (ret != ESP_OK)
+		{
+			ESP_LOGE(FNAME, "Failed to set device name: %s", esp_err_to_name(ret));
+		}
+		_initialized = true;
 	}
+
+	// Register SPP callback function
+	if ( esp_spp_register_callback(BT_EVENT_HANDLER::spp_event_handler) ) {
+		ESP_LOGE(FNAME, "SPP callback registration failed");
+		return false;
+	}
+
+	// Initialize SPP
+	if ( esp_spp_init(ESP_SPP_MODE_CB) ) {
+		ESP_LOGE(FNAME, "SPP initialization failed");
+		return false;
+	}
+	ESP_LOGI(FNAME, "SPP server started and waiting for connections...");
+
+	return true;
 }
 
-void BTSender::begin(){
-	ESP_LOGI(FNAME,"BTSender::begin()" );
-	if( wireless == WL_BLUETOOTH ) {
-		ESP_LOGI(FNAME,"BT on, create BT master object" );
-		dlb = new DataLink();
-		SerialBT = new BluetoothSerial();
-		SerialBT->begin( SetupCommon::getID() );
-		xTaskCreatePinnedToCore(&btTask, "btTask", 4096, NULL, 12, &pid, 0);  // stay below compass task
+void BTSender::stop()
+{
+	if ( _initialized ) {
+		esp_spp_deinit();
+		esp_bt_controller_deinit();
+		_initialized = false;
+		_server_running = false;
 	}
 }
-
-// dummy, we don't implement BLE right now
-// extern "C" void btsnd_hcic_ble_update_adv_report_flow_control( int ignore ) {};

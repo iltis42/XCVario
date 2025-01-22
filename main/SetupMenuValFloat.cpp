@@ -98,10 +98,8 @@ void SetupMenuValFloat::display( int mode ){
 	}
 	else if (mode == 1){   // save mode, do show only "Saved"true
 		y+=24;
-		xSemaphoreTake(spiMutex,portMAX_DELAY );
 		ucg->setPrintPos( 1, 300 );
 		ucg->print("Saved");
-		xSemaphoreGive(spiMutex );
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
 	}
 }
@@ -109,11 +107,9 @@ void SetupMenuValFloat::display( int mode ){
 void SetupMenuValFloat::displayVal()
 {
 	// ESP_LOGI(FNAME,"displayVal %s", value() );
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ucg->setPrintPos( 1, 70 );
 	ucg->setFont(ucg_font_fub25_hf, true);
 	ucg->print( value() );
-	xSemaphoreGive(spiMutex );
 	ucg->setFont(ucg_font_ncenR14_hr);
 }
 

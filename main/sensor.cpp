@@ -29,10 +29,11 @@
 #include "Flarm.h"
 #include "Blackboard.h"
 #include "SetupMenuValFloat.h"
+#include "protocol/Clock.h"
 
 #include "quaternion.h"
 #include "wmm/geomag.h"
-#include <SPI.h>
+#include <driver/spi_master.h>
 #include <AdaptUGC.h>
 #include <OTA.h>
 #include "SetupNG.h"
@@ -46,7 +47,6 @@
 #include "KalmanMPU6050.h"
 #include "WifiApp.h"
 #include "WifiClient.h"
-#include "Serial.h"
 #include "LeakTest.h"
 #include "Units.h"
 #include "Flap.h"
@@ -54,7 +54,9 @@
 #include "StraightWind.h"
 #include "CircleWind.h"
 #include <coredump_to_server.h>
-#include "canbus.h"
+#include "comm/SerialLine.h"
+#include "comm/CanBus.h"
+#include "comm/DeviceMgr.h"
 #include "Router.h"
 
 #include "sdkconfig.h"
@@ -63,7 +65,6 @@
 #include <esp_task_wdt.h>
 #include <esp_log.h>
 #include <esp32/rom/miniz.h>
-#include <esp32-hal-adc.h> // needed for adc pin reset
 #include <soc/sens_reg.h> // needed for adc pin reset
 #include <esp_sleep.h>
 #include <esp_wifi.h>
@@ -76,6 +77,7 @@
 #include "DataMonitor.h"
 #include "AdaptUGC.h"
 #include "CenterAid.h"
+#include "protocol/TestQuery.h"
 
 // #include "sound.h"
 
@@ -134,15 +136,18 @@ MPU_t MPU;         // create an object
 
 // Magnetic sensor / compass
 Compass *compass = 0;
-BTSender btsender;
 BLESender blesender;
+SerialLine *S1 = NULL;
+SerialLine *S2 = NULL;
+Clock *MY_CLOCK = nullptr;
+
 
 float baroP=0; // barometric pressure
 static float teP=0;   // TE pressure
 static float temperature=15.0;
 static float xcvTemp=15.0;
-static long unsigned int _millis = 0;
-long unsigned int _gps_millis = 0;
+static unsigned long _millis = 0;
+unsigned long _gps_millis = 0;
 
 
 static float battery=0.0;
@@ -162,7 +167,7 @@ uint8_t g_col_header_light_b=g_col_highlight;
 uint16_t gear_warning_holdoff = 0;
 uint8_t gyro_flash_savings=0;
 
-t_global_flags gflags = { true, false, false, false, false, false, false, false, false, false, false, false, false, false, false };
+t_global_flags gflags = { true, false, false, false, false, false, false, false, false, false, false, false, false, false };
 
 int  ccp=60;
 float tas = 0;
@@ -196,21 +201,6 @@ bool do_factory_reset() {
 
 void drawDisplay(void *pvParameters){
 	while (1) {
-		if( Flarm::bincom ) {
-			if( gflags.flarmDownload == false ) {
-				gflags.flarmDownload = true;
-				display->clear();
-				Flarm::drawDownloadInfo();
-			}
-			// Flarm IGC download is running, display will be blocked, give Flarm
-			// download all cpu power.
-			vTaskDelay(20/portTICK_PERIOD_MS);
-			continue;
-		}
-		else if( gflags.flarmDownload == true ) {
-			gflags.flarmDownload = false;
-			display->clear();
-		}
 		// TickType_t dLastWakeTime = xTaskGetTickCount();
 		if( gflags.inSetup != true ) {
 			float t=OAT.get();
@@ -271,7 +261,7 @@ void drawDisplay(void *pvParameters){
 					if( gear_warning.get() == GW_EXTERNAL ){
 						gw = gflags.gear_warn_external;
 					}else{
-						gw = digitalRead( SetupMenu::getGearWarningIO() );
+						gw = gpio_get_level( SetupMenu::getGearWarningIO() );
 						if( gear_warning.get() == GW_FLAP_SENSOR_INV || gear_warning.get() == GW_S2_RS232_RX_INV ){
 							gw = !gw;
 						}
@@ -404,12 +394,6 @@ void audioTask(void *pvParameters){
 	while (1)
 	{
 		TickType_t xLastWakeTime = xTaskGetTickCount();
-		if( Flarm::bincom ) {
-			// Flarm IGC download is running, audio will be blocked, give Flarm
-			// download all cpu power.
-			vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
-			continue;
-		}
 		doAudio();
 		Router::routeXCV();
 		if( uxTaskGetStackHighWaterMark( apid )  < 512 )
@@ -612,7 +596,7 @@ void readSensors(void *pvParameters){
 			char log[SSTRLEN];
 			sprintf( log, "$SENS;");
 			int pos = strlen(log);
-			long int delta = _millis - _gps_millis;
+			long delta = _millis - _gps_millis;
 			if( delta < 0 )
 				delta += 1000;
 			sprintf( log+pos, "%d.%03d,%ld,%.3f,%.3f,%.3f,%.2f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f", (int)(tv.tv_sec%(60*60*24)), (int)(tv.tv_usec / 1000), delta, bp, tp, dynamicP, T, IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(),
@@ -716,14 +700,14 @@ void readSensors(void *pvParameters){
 		aTE = bmpVario.readAVGTE();
 		doAudio();
 
-		if( !Flarm::bincom && ((count % 2) == 0 ) ){
+		if( (count % 2) == 0 ){
 			toyFeed();
 			vTaskDelay(2/portTICK_PERIOD_MS);
 		}
 		Router::routeXCV();
 		// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d ena=%d", compass->haveSensor(),  compass_nmea_hdt.get(),  compass_enable.get() );
 		if( compass ){
-			if( !Flarm::bincom && ! compass->calibrationIsRunning() ) {
+			if( ! compass->calibrationIsRunning() ) {
 				// Trigger heading reading and low pass filtering. That job must be
 				// done periodically.
 				bool ok;
@@ -835,6 +819,7 @@ void readTemp(void *pvParameters){
 		CircleWind::tick();
 		Flarm::progress();
 		esp_task_wdt_reset();
+
 		if( (ttick++ % 50) == 0) {
 			ESP_LOGI(FNAME,"Free Heap: %d bytes", heap_caps_get_free_size(MALLOC_CAP_8BIT) );
 			if( uxTaskGetStackHighWaterMark( tpid ) < 256 )
@@ -844,6 +829,8 @@ void readTemp(void *pvParameters){
 		}
 		if( (ttick%5) == 0 ){
 			SetupCommon::commitDirty();
+			// DeviceManager* dm = DeviceManager::Instance();
+			// static_cast<TestQuery*>(dm->getProtocol( TEST_DEV2, TEST_P ))->sendTestQuery();  // all 5 seconds on burst
 		}
 		vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS);
 	}
@@ -917,26 +904,36 @@ void system_startup(void *args){
 		hardwareRevision.set(XCVARIO_20);
 	}
 
+	wireless_type.set(WL_BLUETOOTH);
 	wireless = (e_wireless_type)(wireless_type.get()); // we cannot change this on the fly, so get that on boot
 	AverageVario::begin();
 	stall_alarm_off_kmh = stall_speed.get()/3;
 
 	Battery.begin();  // for battery voltage
 	xMutex=xSemaphoreCreateMutex();
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ccp = (int)(core_climb_period.get()*10);
-	SPI.begin( SPI_SCLK, SPI_MISO, SPI_MOSI, CS_bme280BA );
-	xSemaphoreGive(spiMutex);
+	spi_bus_config_t buscfg = {
+		.mosi_io_num = SPI_MOSI,
+		.miso_io_num = SPI_MISO,
+		.sclk_io_num = SPI_SCLK,
+		.quadwp_io_num = -1,
+		.quadhd_io_num = -1,
+		.data4_io_num = -1,
+		.data5_io_num = -1,
+		.data6_io_num = -1,
+		.data7_io_num = -1,
+		.max_transfer_sz = 0,
+		.flags = 0,
+		.intr_flags = 0};//ESP_INTR_FLAG_IRAM};
+	ESP_ERROR_CHECK(spi_bus_initialize(SPI3_HOST, &buscfg, SPI_DMA_CH_AUTO));
 
 	egl = new AdaptUGC();
 	egl->begin();
-	xSemaphoreTake(spiMutex,portMAX_DELAY );
 	ESP_LOGI( FNAME, "setColor" );
 	egl->setColor( 0, 255, 0 );
 	ESP_LOGI( FNAME, "drawLine" );
 	egl->drawLine( 20,20, 20,80 );
 	ESP_LOGI( FNAME, "finish Draw" );
-	xSemaphoreGive(spiMutex);
 
 	MYUCG = egl; // new AdaptUGC( SPI_DC, CS_Display, RESET_Display );
 	display = new IpsDisplay( MYUCG );
@@ -946,8 +943,7 @@ void system_startup(void *args){
 	display->bootDisplay();
 
 	// int valid;
-	String logged_tests;
-	logged_tests += "\n\n\n";
+	std::string logged_tests("\n\n\n");
 	Version V;
 	std::string ver( " Ver.: " );
 	ver += V.version();
@@ -1051,16 +1047,17 @@ void system_startup(void *args){
 	}
 	ESP_LOGI(FNAME,"Custom Wirelss-ID: %s", custom_wireless_id.get().id );
 
-	String wireless_id;
+	std::string wireless_id("BT ID: ");
 	if( wireless == WL_BLUETOOTH ) {
-		wireless_id="BT ID: ";
-		btsender.begin();
+		BTspp = new BTSender();
+		BTspp->start();
 	}
 	else if( wireless == WL_BLUETOOTH_LE ){
 		blesender.begin();
 	}
-	else
-		wireless_id="WLAN SID: ";
+	else {
+		wireless_id.assign("WLAN SID: ");
+	}
 	wireless_id += SetupCommon::getID();
 	display->writeText(line++, wireless_id.c_str() );
 	Cipher::begin();
@@ -1322,14 +1319,20 @@ void system_startup(void *args){
 	}
 
 	// 2021 series 3, or 2022 model with new digital poti CAT5171 also features CAN bus
-	String resultCAN;
+	std::string resultCAN;
 	if( Audio::haveCAT5171() ) // todo && CAN configured
 	{
 		CAN = new CANbus();
 		logged_tests += "CAN Interface: ";
-		if( CAN->selfTest() ) { // series 2023 has fixed slope control, prio slope bit for AHRS temperature control
+		DeviceManager* dm = DeviceManager::Instance();
+		if( dm->addDevice(DeviceId::MASTER_DEV, ProtocolType::REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS) ) {
+			// series 2023 has fixed slope control, prior slope bit for AHRS temperature control
 			resultCAN = "OK";
 			ESP_LOGE(FNAME,"CAN Bus selftest (%sRS): OK", CAN->hasSlopeSupport() ? "" : "no ");
+			// dm->removeDevice(DeviceId::MASTER_DEV);
+			// ESP_LOGI(FNAME,"Removetest");
+			// delay(1000);
+			// dm->addDevice(DeviceId::MASTER_DEV, ProtocolType::REGISTRATION, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
 			logged_tests += "OK\n";
 			if ( CAN->hasSlopeSupport() ) {
 				if( hardwareRevision.get() < XCVARIO_22)
@@ -1362,39 +1365,52 @@ void system_startup(void *args){
 		if( resultCAN.length() )
 			display->writeText( line++, "Bat Meter/CAN: ");
 		else
-			display->writeText( line++, "Bat Meter/CAN: Fail/" + resultCAN );
+			display->writeText( line++, std::string("Bat Meter/CAN: Fail/" + resultCAN).c_str() );
 		logged_tests += "Battery Voltage Sensor: FAILED\n";
 		selftestPassed = false;
 	}
 	else{
 		ESP_LOGI(FNAME,"Battery voltage metering test PASSED, act value=%f", bat );
 		if( resultCAN.length() )
-			display->writeText( line++, "Bat Meter/CAN: OK/"+ resultCAN );
+			display->writeText( line++, std::string("Bat Meter/CAN: OK/" + resultCAN).c_str() );
 		else
 			display->writeText( line++, "Bat Meter: OK");
 		logged_tests += "Battery Voltage Sensor: PASSED\n";
 	}
-
-	Serial::begin();
-	// Factory test for serial interface plus cable
-	String result("Serial ");
-	if( Serial::selfTest( 1 ) )
+	
+	{
+		S1 = new SerialLine(1,GPIO_NUM_16,GPIO_NUM_17);
+		DeviceManager* dm = DeviceManager::Instance();
+		dm->addDevice(FLARM_DEV, FLARM_P, 0, 0, S1_RS232);
+		dm->addDevice(FLARM_DEV, FLARMBIN_P, 0, 0, NO_PHY);
+		// S2 = new SerialLine(2,GPIO_NUM_18,GPIO_NUM_4);
+		// dm->addDevice(NAVI_DEV, FLARMHOST_P, 0, 0, S2_RS232);
+		// dm->addDevice(NAVI_DEV, FLARMBIN_P, 0, 0, NO_PHY);
+		// dm->addDevice(TEST_DEV, TEST_P, 0, 0, S2_RS232);
+		// S2 = new SerialLine(2,GPIO_NUM_18,GPIO_NUM_4);
+		// dm->addDevice(TEST_DEV2, TEST_P, 2, 0, S2_RS232);
+	}
+	// Fixme readd test for serial interface plus cable
+	std::string result("Serial ");
+	if ( true )  // Serial::selfTest( S1 ) )
 		result += "S1 OK";
 	else
 		result += "S1 FAIL";
-	if( (hardwareRevision.get() >= XCVARIO_21) && serial2_speed.get() ){
-		if( Serial::selfTest( 2 ) )
-			result += ",S2 OK";
-		else
-			result += ",S2 FAIL";
-	}
+	// if( (hardwareRevision.get() >= XCVARIO_21) && serial2_speed.get() ){
+	// 	if( Serial::selfTest( S2 ) )
+	// 		result += ",S2 OK";
+	// 	else
+	// 	 	result += ",S2 FAIL";
+	// }
 	if( abs(factory_volt_adjust.get() - 0.00815) < 0.00001 ){
 		display->writeText( line++, result.c_str() );
 	}
-	Serial::taskStart();
 
 	if( wireless == WL_BLUETOOTH ) {
-		if( btsender.selfTest() ){
+		if( BTspp && BTspp->selfTest() ){
+			DeviceManager* dm = DeviceManager::Instance();
+			dm->addDevice(NAVI_DEV, FLARMHOST_P, 0, 0, BT_SPP);
+			dm->addDevice(NAVI_DEV, FLARMBIN_P, 0, 0, NO_PHY);
 			display->writeText( line++, "Bluetooth: OK");
 			logged_tests += "Bluetooth test: PASSED\n";
 		}
@@ -1409,7 +1425,7 @@ void system_startup(void *args){
 	if(  can_speed.get() != CAN_SPEED_OFF && (resultCAN == "OK") && CAN )
 	{
 		ESP_LOGI(FNAME, "Now start CAN Bus Interface");
-		CAN->begin();  // start CAN tasks and driver
+		CAN->begin();  // fixme, CAN should start when devices are configured // start CAN tasks and driver
 	}
 
 	if( compass_enable.get() == CS_CAN ){
@@ -1597,6 +1613,7 @@ void system_startup(void *args){
 
 extern "C" void  app_main(void)
 {
+	esp_log_level_set("*", ESP_LOG_INFO);
 	// Init timer infrastructure
 	Audio::shutdown();
 	esp_timer_init();
@@ -1611,9 +1628,10 @@ extern "C" void  app_main(void)
 		if( Cipher::init() )
 			attitude_indicator.set(1);
 	}
-	else
+	else {
 		ESP_LOGI(FNAME,"Setup already present");
-	esp_log_level_set("*", ESP_LOG_INFO);
+	}
+	MY_CLOCK = new Clock();
 
 #ifdef Quaternionen_Test
 		Quaternion::quaternionen_test();

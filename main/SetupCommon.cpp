@@ -30,6 +30,7 @@
 #include "Protocols.h"
 #include "ESPAudio.h"
 #include "SetupCommon.h"
+#include <esp_http_server.h>
 #include <iostream>
 #include <string>
 #include <sstream>

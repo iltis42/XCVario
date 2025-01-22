@@ -25,7 +25,6 @@
 #include "sensor.h"
 #include "mcp4018.h"
 #include "cat5171.h"
-#include <Arduino.h>
 #include <map>
 #include <logdef.h>
 #include "Switch.h"

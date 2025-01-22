@@ -14,14 +14,17 @@
 // Activate/deactivate debug messages
 // #define DEBUG_COMP 1
 
-#include <cassert>
-#include <cmath>
 #include "QMCMagCAN.h"
+
+#include "sensor.h"
 #include "SetupNG.h"
 #include "MenuEntry.h"
 #include "Router.h"
 #include "vector.h"
-#include "canbus.h"
+#include "comm/CanBus.h"
+
+#include <cassert>
+#include <cmath>
 
 /*
   Creates instance for CAN bus magnet sensor

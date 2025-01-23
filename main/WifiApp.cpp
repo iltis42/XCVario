@@ -13,7 +13,6 @@
 
 #include "Setup.h"
 #include "RingBufCPP.h"
-#include "BTSender.h"
 #include "Router.h"
 #include "WifiClient.h"
 #include "sensor.h"

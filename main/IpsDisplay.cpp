@@ -7,7 +7,7 @@
  */
 
 #include "IpsDisplay.h"
-#include "BTSender.h"
+#include "comm/BTspp.h"
 #include "BLESender.h"
 #include "DallasRmt.h"
 #include "WifiClient.h"

@@ -12,7 +12,7 @@
 #include "MS4525DO.h"
 #include "ABPMRR.h"
 #include "BMPVario.h"
-#include "BTSender.h"
+#include "comm/BTspp.h"
 #include "BLESender.h"
 #include "Protocols.h"
 #include "DS18B20.h"

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "BTSender.h"
+#include "comm/BTspp.h"
 #include "Polars.h"
 #include "MPU.hpp" // change from .h to .hpp for Windows toolchain compatibility
 #include "comm/CanBus.h"

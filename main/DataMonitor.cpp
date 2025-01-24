@@ -190,6 +190,7 @@ void DataMonitor::start(SetupMenuSelect * p, ItfTarget ch){
 	rx_total = 0;
 	channel = ch;
 	SetupMenu::catchFocus( true );
+	xSemaphoreTake(mutex,portMAX_DELAY );
 	ucg->setColor( COLOR_BLACK );
 	ucg->drawBox( 0,0,240,320 );
 	ucg->setColor( COLOR_WHITE );
@@ -202,6 +203,7 @@ void DataMonitor::start(SetupMenuSelect * p, ItfTarget ch){
 		ucg->scrollSetMargins( SCROLL_TOP, 0 );
 	mon_started = true;
 	paused = true; // will resume with press()
+	xSemaphoreGive(mutex);
 	ESP_LOGI(FNAME,"started");
 }
 

@@ -399,11 +399,10 @@ SetupNG<int> 			drawing_prio("DRAWP", DP_NEEDLE );
 SetupNG<int> 			logging("LOGGING", LOG_DISABLE );
 SetupNG<float>      	display_clock_adj("DSCLADHJ", 0 );
 
-static mpud::raw_axes_t zero_bias;
 SetupNG<float>				glider_ground_aa("GLD_GND_AA", 12.0, true, SYNC_FROM_MASTER);
 SetupNG<Quaternion>			imu_reference("IMU_REFERENCE", Quaternion(), false);
-SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", zero_bias );
-SetupNG<mpud::raw_axes_t>	accl_bias("ACCL_BIAS", zero_bias );
+SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", {} );
+SetupNG<mpud::raw_axes_t>	accl_bias("ACCL_BIAS", {} );
 SetupNG<float>              mpu_temperature("MPUTEMP", 45.0, true, SYNC_FROM_MASTER, PERSISTENT, chg_mpu_target );    // default for AHRS chip temperature (XCV 2023)
 
 

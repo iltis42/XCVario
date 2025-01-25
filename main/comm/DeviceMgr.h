@@ -100,7 +100,7 @@ public:
     void removeDevice(DeviceId did);
     InterfaceCtrl* getIntf(DeviceId did);
     RoutingList getRouting(RoutingTarget t);
-    DataLink *getFlarmBinPeer();
+    DataLink *getFlarmHost();
     void resetFlarmModeToNmea();
     static int nrDevs() { return (DEVMAN) ? DEVMAN->getNrDevs() : 0; }
     int getNrDevs() const { return _device_map.size(); }

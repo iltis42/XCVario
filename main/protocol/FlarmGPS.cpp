@@ -97,7 +97,7 @@ datalink_action_t FlarmGPS::nextByte(const char c)
     }
 
     datalink_action_t action = NOACTION;
-    if ( _sm._state ==  COMPLETE )
+    if ( _sm._state == COMPLETE )
     {
         NMEA::ensureTermination(_sm._frame);
         _sm._state = START_TOKEN; // restart parsing
@@ -405,12 +405,14 @@ bool FlarmGPS::parsePFLAX()
 
     if ( _word_start.size() == 2 && *(_sm._frame.c_str()+_word_start[0]) == 'A' ) {
         // this is the confirmation from flarm to go binary
-        DataLink *peer = DEVMAN->getFlarmBinPeer();
-        if ( peer && peer->getProtocol(FLARMBIN_P) && _dl.getProtocol(FLARMBIN_P)) {
+        DataLink *host = DEVMAN->getFlarmHost();
+        if ( host && host->getProtocol(FLARMBIN_P) && _dl.getProtocol(FLARMBIN_P)) {
             // Host side
-            peer->goBIN(_dl.getProtocol(FLARMBIN_P));
+            FlarmBinary *bin = static_cast<FlarmBinary*>(host->goBIN());
+            bin->setPeer(_dl.getProtocol(FLARMBIN_P));
             // Device side
-            _dl.goBIN(peer->getProtocol(FLARMBIN_P));
+            bin = static_cast<FlarmBinary*>(_dl.goBIN());
+            bin->setPeer(host->getProtocol(FLARMBIN_P));
         }
         Flarm::timeout = 10;
         return true;

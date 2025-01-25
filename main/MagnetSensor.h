@@ -28,7 +28,7 @@ typedef struct magn_axes {
 class MagnetSensor
 {
 public:
-	// virtual ~MagnetSensor();
+	virtual ~MagnetSensor() = default;
 	virtual esp_err_t initialize() = 0;
 	virtual bool haveSensor() = 0;
 	bool isCalibrated() { return calibrated; }
@@ -43,3 +43,4 @@ public:
 protected:
 	bool calibrated = false;
 };
+

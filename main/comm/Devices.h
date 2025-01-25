@@ -38,6 +38,7 @@ typedef enum
     FLARMHOST_P,
     FLARMBIN_P,
     MAGSENS_P,
+    MAGSENSBIN_P,
     NMEA_P,
     TEST_P
 } ProtocolType;

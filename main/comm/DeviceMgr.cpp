@@ -335,7 +335,7 @@ RoutingList DeviceManager::getRouting(RoutingTarget target)
 }
 
 // Start a binary data route
-DataLink *DeviceManager::getFlarmBinPeer()
+DataLink *DeviceManager::getFlarmHost()
 {
     for ( auto &d : _device_map ) {
         DataLink *dl = d.second->getDLforProtocol(FLARMHOST_P);

@@ -42,8 +42,7 @@ public:
 	bool GotNewClient() const { return _new_can_client_connected; }
 	void ResetNewClient() { _new_can_client_connected = false; }
 	bool connectedXCV() { return _connected_xcv; };
-	bool connectedMagSens() { return _connected_magsens; };
-	bool connected() { return (_connected_xcv | _connected_magsens); };
+	bool connected() { return (_connected_xcv); };
 	// --
 	// Ctrl
     InterfaceId getId() const override { return CAN_BUS; }
@@ -65,7 +64,6 @@ private:
 	gpio_num_t _rx_io;
 	gpio_num_t _slope_ctrl;
 	bool _initialized = false;
-	bool _connected_magsens = false;
 	bool _connected_xcv = false;
 	bool _slope_support = false;
 	bool _new_can_client_connected = false;

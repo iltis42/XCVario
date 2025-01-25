@@ -53,7 +53,7 @@ extern InterfaceCtrl* CAN;
  datalink_action_t CANMasterReg::nextByte(const char c)
  {
     int pos = _sm._frame.size() - 1;
-    ESP_LOGD(FNAME, "state %d, pos %d next char %c", _sm._state, pos, c);
+    ESP_LOGI(FNAME, "state %d, pos %d next char %c", _sm._state, pos, c);
      switch (_sm._state)
      {
     case START_TOKEN:
@@ -176,7 +176,34 @@ void CANMasterReg::registration_query()
         DEV::Send(msg);
 
     }
-    // else // other devices
+    else if ( _protocol.compare("MAGSENS") == 0 ) {
+        int client_id;
+        ESP_LOGI(FNAME, "found MagSense");
+        Device *dev = DEVMAN->getDevice(MAGSENS_DEV);
+        if ( dev ) {
+            client_id = dev->getSendPort(MAGSENS_P); // re-use
+            ESP_LOGD(FNAME, "reuse port %d", client_id);
+        } else {
+            client_id = DeviceManager::getFreeCANId(1);
+            ESP_LOGD(FNAME, "new port %d", client_id);
+        }
+        if ( client_id == -1 ) return; // no luck
+
+        ESP_LOGI(FNAME, "use port %d", client_id);
+
+        Message* msg = newMessage(); // set target
+        if ( ! msg ) return;
+
+        int master_id = client_id + 1;
+        DEVMAN->addDevice(MAGSENS_DEV, MAGSENS_P, master_id, client_id, CAN_BUS);
+
+        msg->buffer = "$PJMACC " + _token + ", " + std::to_string(client_id) + 
+                                        ", " + std::to_string(master_id);
+        msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
+        DEV::Send(msg);
+
+    }
+
     return;
 }
 

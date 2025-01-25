@@ -27,11 +27,12 @@ Last update: 2021-03-28
 #include "MagnetSensor.h"
 
 #include "vector_3d.h"
-#include "average.h"
 
 
 class QMCMagCAN: public MagnetSensor
 {
+	friend class MagSensBinary;
+
 public:
 	/*
     Creates instance for I2C connection with passing the desired parameters.
@@ -52,7 +53,7 @@ public:
 	// Check for CAN magsens stream data
 	esp_err_t selfTest();
 
-	bool overflowFlag()	{ return false; }  // no support
+    bool overflowFlag()	{ return false; }  // no support
 
 	// Read in raw format into variables, return true if success
 	bool readRaw( t_magn_axes &mag );
@@ -61,7 +62,8 @@ public:
 
 	// If device is connected via CAN, just get X,Y,Z data from there
 	// Todo, needs better organization
-	static void fromCAN( const char * msg, int len );
+    void fromCAN(const t_magn_axes *magaxes);
+	void fromCAN(const char * msg, int len);
 
 	int curX() { return (int)can.x; }
 	int curY() { return (int)can.y; }
@@ -71,10 +73,7 @@ public:
 
 private:
 	bool m_sensor;
-	Average<5, float> filterX;
-	Average<5, float> filterY;
-	Average<5, float> filterZ;
-	static t_magn_axes can;
-	static vector_ijk calib, stage;
-	static int age;
+	t_magn_axes can;
+	vector_ijk calib, stage;
+	int age;
 };

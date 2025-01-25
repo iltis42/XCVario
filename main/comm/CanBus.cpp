@@ -507,5 +507,5 @@ bool CANbus::sendData(int id, const char *msg, int length, int self)
         }
         return false;
     }
-    return true;
+    return (res == ESP_OK);
 }

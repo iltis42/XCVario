@@ -10,18 +10,18 @@
 
 #include "ProtocolItf.h"
 
-class FlarmBinary final : public ProtocolItf
+class MagSensBinary final : public ProtocolItf
 {
 public:
-    FlarmBinary(DeviceId did, int mp, ProtocolState &sm, DataLink &dl) : ProtocolItf(did, mp, sm, dl) {}
-    virtual ~FlarmBinary() = default;
-    ProtocolType getProtocolId() override { return FLARMBIN_P; }
+    MagSensBinary(int mp, ProtocolState &sm, DataLink &dl) : ProtocolItf(DeviceId::MAGSENS_DEV, mp, sm, dl) {}
+    virtual ~MagSensBinary() = default;
+    
+    ProtocolType getProtocolId() override { return MAGSENSBIN_P; }
     bool isBinary() const override { return true; }
     datalink_action_t nextStreamChunk(const char *cptr, int count) override;
-    void setPeer(ProtocolItf *p);
-    
+
+    bool connected() const { return _connected; }
+
 private:
-    void send_chunk();
-    // binary mode peer
-    ProtocolItf *_binpeer;
+    bool _connected = false;
 };

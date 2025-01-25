@@ -11,7 +11,7 @@
 #include <freertos/task.h>
 
 #include "driver/gpio.h"
-#include "logdefnone.h"
+#include "logdef.h"
 #include "esp_err.h"
 
 #include <cstring>
@@ -62,7 +62,7 @@ void canRxTask(void *arg)
         if (ESP_OK == twai_receive(&rx, pdMS_TO_TICKS(500)) && rx.data_length_code > 0)
         {
             msg.assign((char *)rx.data, rx.data_length_code);
-            ESP_LOGI(FNAME, "CAN RX NMEA chunk, id:0x%x, len:%d msg: %s", rx.identifier, rx.data_length_code, msg.c_str());
+            ESP_LOGD(FNAME, "CAN RX NMEA chunk, id:0x%x, len:%d msg: %s", rx.identifier, rx.data_length_code, msg.c_str());
             auto dl = can->_dlink.find(rx.identifier);
             if ( dl != can->_dlink.end() ) {
                 dl->second->process(msg.data(), msg.size());
@@ -87,15 +87,6 @@ void canRxTask(void *arg)
             //     // 	_new_can_client_connected = (the_can_mode == CAN_MODE_MASTER);
             //     // }
             // }
-            // else if (rx.identifier == CAN_MAGSENS_ID)
-            // {
-            //     magsens_came = true;
-            //     // _connected_timeout_magsens = 0;
-            //     // if( !_connected_magsens ){
-            //     // 	ESP_LOGI(FNAME,"CAN Magnetsensor connected");
-            //     // 	_connected_magsens = true;
-            //     // }
-            // }
             // // process NMEA message depending on role and peer
             // else if (rx.identifier == can_id_nmea_rx)
             // {
@@ -110,13 +101,6 @@ void canRxTask(void *arg)
             //     // ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
             //     // _connected_timeout_xcv = 0;
             //     dlinkXs.process(msg.c_str(), msg.length(), 3); // (char *packet, int len, int port );
-            // }
-            // else if (rx.identifier == CAN_MAGSENS_ID)
-            // { // magnet sensor
-            //     // ESP_LOGI(FNAME,"CAN RX MagSensor, msg: %d", bytes );
-            //     // ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), bytes, ESP_LOG_INFO);
-            //     QMCMagCAN::fromCAN(msg.c_str(), msg.length());
-            //     // _connected_timeout_magsens = 0;
             // }
         }
         else

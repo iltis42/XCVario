@@ -11,9 +11,6 @@
 
  ***************************************************************************/
 
-// Activate/deactivate debug messages
-// #define DEBUG_COMP 1
-
 #include "QMCMagCAN.h"
 
 #include "sensor.h"
@@ -29,11 +26,6 @@
 /*
   Creates instance for CAN bus magnet sensor
  */
-
-t_magn_axes QMCMagCAN::can = { 0,0,0 };
-vector_ijk QMCMagCAN::calib = {0., 0., 0.},
-	QMCMagCAN::stage = {0., 0., 0.};
-int QMCMagCAN::age = 100;
 
 QMCMagCAN::QMCMagCAN()
 {
@@ -64,6 +56,13 @@ esp_err_t QMCMagCAN::selfTest()
 		delay(10);
 	}
 	return ESP_FAIL;
+}
+
+void QMCMagCAN::fromCAN( const t_magn_axes *magaxes )
+{
+	can = *magaxes;
+	// Reset age
+	age = 0;
 }
 
 void QMCMagCAN::fromCAN( const char * msg, int len )
@@ -97,7 +96,7 @@ bool QMCMagCAN::readRaw( t_magn_axes &mag )
 		mag.z = can.z; // filterZ( can.z );
 		// if ( age == 0 ) {
 		// 	ESP_LOGI( FNAME, "Mag Average: X:%d Y:%d Z:%d  Raw: X:%d Y:%d Z:%d", mag.x, mag.y, mag.z, can.x, can.y, can.z );
-		// 	// ESP_LOGI( FNAME, "X:%d Y:%d Z:%d  Age:%d", can.x, can.y, can.z, age );
+		ESP_LOGI( FNAME, "X:%d Y:%d Z:%d  Age:%d", can.x, can.y, can.z, age );
 		// }
 		m_sensor = true;
 	}

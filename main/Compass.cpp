@@ -31,6 +31,8 @@ Author: Axel Pauli, deviation and refactoring by Eckhard Völlm Dec 2021
 
 TaskHandle_t ctid = 0;
 
+MagnetSensor *Compass::instance = nullptr;
+
 /*
   Creates instance for I2C connection with passing the desired parameters.
   No action is done at the bus. The default address of the chip is 0x0D.
@@ -40,10 +42,10 @@ Compass::Compass( const uint8_t addr, const uint8_t odr, const uint8_t range, co
 	ESP_LOGI(FNAME,"Compass() I2C addr=%02x", addr );
 	if( addr == 0 ){
 
-		sensor = new QMCMagCAN();
+		instance = new QMCMagCAN();
 	}
 	else{
-		sensor = new QMC5883L( addr, odr, range, osr, i2cBus );  // tbd. base class and QMC5883CAN class
+		instance = new QMC5883L( addr, odr, range, osr, i2cBus );  // tbd. base class and QMC5883CAN class
 	}
 	m_magn_heading = 0;
 	m_gyro_fused_heading = 0;
@@ -74,25 +76,25 @@ void Compass::tick(){
 	Deviation::tick();
 	age++;
 	_tick++;
-	sensor->tick();
+	instance->tick();
 	gyro_age++;
 }
 
 esp_err_t Compass::selfTest(){
-	if( sensor )
-		return sensor->selfTest();
+	if( instance )
+		return instance->selfTest();
 	return ESP_FAIL;
 }
 
 bool Compass::haveSensor() {
-	if( sensor )
-		return sensor->haveSensor();
+	if( instance )
+		return instance->haveSensor();
 	return false;
 }
 
 bool Compass::overflowFlag(){
-	if( sensor )
-		return sensor->overflowFlag();
+	if( instance )
+		return instance->overflowFlag();
 	return false;
 }
 
@@ -216,12 +218,12 @@ void Compass::calcCalibration(){
 	nrsamples++;
 	float variance = 0.f;
 	t_float_axes var;
-	if( sensor ){
-		if( sensor->readRaw( magRaw ) == false )
+	if( instance ){
+		if( instance->readRaw( magRaw ) == false )
 		{
 			errors++;
 			if( errors > 100 ){
-				sensor->initialize();
+				instance->initialize();
 				errors = 0;
 			}
 			return;
@@ -436,9 +438,9 @@ float Compass::heading( bool *ok )
 	}
 
 	bool state = false;
-	if ( sensor->isCalibrated() ) {
+	if ( instance->isCalibrated() ) {
 		vector_ijk tmp;
-		state = sensor->readBiased( tmp );
+		state = instance->readBiased( tmp );
 		if ( state ) {
 			// rotate -90Z and then 180X, to have the same orientation as the IMU reference system
 			fx = -tmp.b;
@@ -447,8 +449,8 @@ float Compass::heading( bool *ok )
 		}
 	}
 	else {
-		state = sensor->readRaw( magRaw );
-		// ESP_LOGI(FNAME,"state %d  x:%d y:%d z:%d", state, magRaw.x, magRaw.y, magRaw.z );
+		state = instance->readRaw( magRaw );
+		ESP_LOGI(FNAME,"state %d  x:%d y:%d z:%d", state, magRaw.x, magRaw.y, magRaw.z );
 		if( !state )
 		{
 			errors++;
@@ -459,8 +461,8 @@ float Compass::heading( bool *ok )
 			{
 				// ESP_LOGI(FNAME,"Magnetic sensor errors > 10: init mag sensor" );
 				if( compass_enable.get() != CS_CAN ){
-					if( sensor->initialize() != ESP_OK ) //  reinitialize once crashed, one retry
-						sensor->initialize();
+					if( instance->initialize() != ESP_OK ) //  reinitialize once crashed, one retry
+						instance->initialize();
 				}
 				return 0.0;
 			}

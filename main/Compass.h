@@ -60,6 +60,7 @@ public:
 	~Compass();
 
 	esp_err_t selfTest();
+	static MagnetSensor* getSensInst() { return instance; }
 
 	// system related methods
 	void begin();
@@ -77,12 +78,12 @@ public:
 	float rawX() { return fx; };
 	float rawY() { return fy; };
 	float rawZ() { return fz; };
-	float curX() { return sensor->curX(); };
-	float curY() { return sensor->curY(); };
-	float curZ() { return sensor->curZ(); };
-	float calX() { return ((float( (float)sensor->curX() ) - bias.x) * scale.x); };
-	float calY() { return ((float( (float)sensor->curY() ) - bias.y) * scale.y); };
-	float calZ() { return ((float( (float)sensor->curZ() ) - bias.z) * scale.z); };
+	float curX() { return instance->curX(); };
+	float curY() { return instance->curY(); };
+	float curZ() { return instance->curZ(); };
+	float calX() { return ((float( (float)instance->curX() ) - bias.x) * scale.x); };
+	float calY() { return ((float( (float)instance->curY() ) - bias.y) * scale.y); };
+	float calZ() { return ((float( (float)instance->curZ() ) - bias.z) * scale.z); };
 
 	t_magn_axes getRawAxes() { return magRaw; };
 	float filteredHeading( bool *okIn );
@@ -146,7 +147,7 @@ private:
 
 	// Mag readings
 	int age;
-	MagnetSensor *sensor;
+	static MagnetSensor *instance;
 	float fx; //bias corrected
 	float fy;
 	float fz;

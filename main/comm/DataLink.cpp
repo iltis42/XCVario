@@ -13,6 +13,7 @@
 #include "protocol/FlarmGPS.h"
 #include "protocol/FlarmHost.h"
 #include "protocol/FlarmBin.h"
+#include "protocol/MagSensBin.h"
 #include "protocol/TestQuery.h"
 #include "Messages.h"
 #include "DeviceMgr.h"
@@ -67,6 +68,10 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
             ESP_LOGI(FNAME, "New FlarmBinary");
             tmp = new FlarmBinary(did, sendport, _sm, *this);
             break;
+        case MAGSENSBIN_P:
+            ESP_LOGI(FNAME, "New MAGCAN Binary");
+            tmp = new MagSensBinary(sendport, _sm, *this);
+            break;
         case TEST_P:
             ESP_LOGI(FNAME, "New Test Proto");
             tmp = new TestQuery(did, sendport, _sm, *this);
@@ -78,7 +83,10 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
 
         if ( tmp ) {
             _all_p.push_back(tmp);
-            if ( getNumNMEA() == 1 ) {
+            if ( _all_p.size() == 1 && tmp->isBinary() ) {
+                _binary = tmp;
+            }
+            else if ( getNumNMEA() == 1 ) {
                 _nmea = tmp;
             }
             return tmp;
@@ -219,15 +227,14 @@ void DataLink::process(const char *packet, int len)
     }
 }
 
-bool DataLink::goBIN(ProtocolItf *peer_prto)
+ProtocolItf* DataLink::goBIN()
 {
-    FlarmBinary *bin = static_cast<FlarmBinary*>(getProtocol(FLARMBIN_P));
+    ProtocolItf *bin = getBinary();
     if ( bin ) {
-        bin->setPeer(peer_prto);
         _binary = bin;
-        return true;
+        return bin;
     }
-    return false;
+    return nullptr;
 }
 
 void DataLink::goNMEA()
@@ -248,6 +255,16 @@ int DataLink::getNumNMEA() const
         count++;
     }
     return count;
+}
+
+ProtocolItf* DataLink::getBinary() const
+{
+    for (ProtocolItf *it : _all_p) {
+        if ( (*it).isBinary() ) {
+            return it;
+        }
+    }
+    return nullptr;
 }
 
 void DataLink::dumpProto()

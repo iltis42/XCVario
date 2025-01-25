@@ -7,7 +7,8 @@
  */
 
 #include "IpsDisplay.h"
-#include "comm/BTspp.h"
+#include "comm/DeviceMgr.h"
+#include "protocol/MagSensBin.h"
 #include "BLESender.h"
 #include "DallasRmt.h"
 #include "WifiClient.h"
@@ -954,8 +955,10 @@ void IpsDisplay::drawCable(int16_t x, int16_t y)
 	bool CANconnectedMag = false;
 	if (CAN) {
 		CANconnectedXCV = CAN->connectedXCV();
-		CANconnectedMag = CAN->connectedMagSens();
+		// CANconnectedMag = CAN->connectedMagSens();
 	}
+	MagSensBinary *ms = static_cast<MagSensBinary*>(DEVMAN->getProtocol(MAGSENS_DEV, MAGSENSBIN_P));
+	CANconnectedMag = ( ms && ms->connected() );
 	CANconnectedXCV ? ucg->setColor(COLOR_LBLUE) : ucg->setColor(COLOR_MGREY);
 	if (CANconnectedMag)
 		ucg->setColor(COLOR_GREEN);

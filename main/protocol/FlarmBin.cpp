@@ -12,7 +12,7 @@
 #include "comm/DataLink.h"
 #include "nmea_util.h"
 
-#include <logdef.h>
+#include <logdefnone.h>
 
 // The FLARM binary protocol synchronizer.
 //
@@ -28,11 +28,6 @@ void FlarmBinary::send_chunk()
         std::string str = msg->hexDump(9);
         ESP_LOGI(FNAME, ">%c %s", msg->target_id==FLARM_DEV?'D':'H', str.c_str());
     }
-    // else {
-    //     if ( _sm._crc == 0xa0 ) {
-    //         ESP_LOGI(FNAME, ">%c chunk %d: %s", msg->target_id==FLARM_DEV?'D':'H', _sm._opt + _sm._frame.size(), _sm._frame.c_str());
-    //     }
-    // }
     // Partial reset to cope with large messages
     _sm._opt += _sm._frame.size();
     _sm._frame.clear();
@@ -91,7 +86,7 @@ datalink_action_t FlarmBinary::nextStreamChunk(const char *cptr, int count)
                     last_action = GO_NMEA;
                     break;
                 }
-                // ESP_LOGI(FNAME, "Payload %d", _sm._frame_len);
+                // ESP_LOGI(FNAME, "Header payload: %db", _sm._frame_len);
                 _sm._state = PAYLOAD;
             }
             break;

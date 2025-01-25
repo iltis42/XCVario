@@ -25,11 +25,12 @@ public:
     bool hasProtocol(ProtocolType ptyp) const;
     void deleteProtocol(ProtocolItf *proto);
     void process(const char *packet, int len);
-    int getPort() const { return _itf_id.port; }
-    int getItf() const { return _itf_id.iid; }
-    bool goBIN(ProtocolItf *peer);
+    ProtocolItf *goBIN();
     void goNMEA();
     int getNumNMEA() const;
+    ProtocolItf *getBinary() const;
+    int getPort() const { return _itf_id.port; }
+    int getItf() const { return _itf_id.iid; }
     // dbg
     void dumpProto();
 

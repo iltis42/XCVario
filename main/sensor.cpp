@@ -1325,6 +1325,8 @@ void system_startup(void *args){
 			// series 2023 has fixed slope control, prior slope bit for AHRS temperature control
 			resultCAN = "OK";
 			ESP_LOGE(FNAME,"CAN Bus selftest (%sRS): OK", CAN->hasSlopeSupport() ? "" : "no ");
+			// Add the legacs MagSens CAN receiver, would be deleted if a MagSens V2 is found
+			dm->addDevice(MAGSENS_DEV, MAGSENSBIN_P, CAN_MAGSENS_ID, 0, CAN_BUS);
 			// dm->removeDevice(DeviceId::MASTER_DEV);
 			// ESP_LOGI(FNAME,"Removetest");
 			// delay(1000);

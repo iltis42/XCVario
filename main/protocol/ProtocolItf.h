@@ -42,7 +42,7 @@ class DataLink;
 class ProtocolItf
 {
 public:
-    ProtocolItf(DeviceId id, int sp, ProtocolState &sm, DataLink&dl) : _did(id), _send_port(sp), _sm(sm), _dl(dl) {};
+    ProtocolItf(DeviceId id, int sp, ProtocolState &sm, DataLink& dl) : _did(id), _send_port(sp), _sm(sm), _dl(dl) {};
     virtual ~ProtocolItf() {}
 
     static constexpr int MAX_LEN = 128;

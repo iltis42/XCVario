@@ -42,7 +42,7 @@ static RoutingMap Routes = {
 class DmyItf final : public InterfaceCtrl
 {
 public:
-    const char* getStringId() const override { return "DMY"; }
+    const char* getStringId() const override { return "NUL"; }
     void ConfigureIntf(int cfg) override {}
     int Send(const char *msg, int &len, int port=0) { return 0; }
 };
@@ -251,6 +251,8 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
         _device_map[did] = dev; // and add, in case this dev is new
         dev->_dlink.insert(dl);
         dev->_itf = itf;
+
+        refreshRouteCache();
     }
 
     ESP_LOGI(FNAME, "After add device %d.", did);
@@ -295,6 +297,7 @@ void DeviceManager::removeDevice(DeviceId did)
             }
         }
     }
+    refreshRouteCache();
 }
 
 // routing lookup table
@@ -334,6 +337,18 @@ RoutingList DeviceManager::getRouting(RoutingTarget target)
     }
 }
 
+// Refresh routes after a change of the devices map
+void DeviceManager::refreshRouteCache()
+{
+    for ( auto dev : _device_map ) {
+        // all devices
+        for ( auto dl : dev.second->_dlink ) {
+            // all data  links
+            dl->updateRoutes();
+        }
+    }
+}
+
 // Start a binary data route
 DataLink *DeviceManager::getFlarmHost()
 {
@@ -342,12 +357,6 @@ DataLink *DeviceManager::getFlarmHost()
         if ( dl ) return dl;
     }
     return nullptr;
-}
-
-// Recover all Flarm data routes back to NMEA mode
-void DeviceManager::resetFlarmModeToNmea()
-{
-
 }
 
 // prio - 0,..,4 0:low prio data stream, .. 5: important high prio commanding
@@ -430,8 +439,9 @@ int Device::getSendPort(ProtocolType p) const
 
 
 
-// Some global routines from the router, they might move elswhere
-namespace DEV {
+// A set of convenience routines to use the pool
+namespace DEV
+{
 
 Message* acqMessage(DeviceId target_id, int port)
 {

@@ -10,6 +10,7 @@
 
 #include "Devices.h"
 #include "DataLink.h"
+#include "Messages.h"
 #include "InterfaceCtrl.h"
 
 #include <set>
@@ -18,6 +19,7 @@
 
 class DataLink;
 class InterfaceCtrl;
+class ProtocolItf;
 class DeviceManager;
 
 // global variable
@@ -66,10 +68,6 @@ struct DevConfigItem
     InterfaceConfig _intfConfig;
 };
 
-// Routing table on device level, details on protocol requirements are not defined here
-typedef std::vector<RoutingTarget> RoutingList;
-typedef std::map<RoutingTarget, RoutingList> RoutingMap;
-
 
 // A centeral for holding the device info at run time.
 // The information might be from nvs configuration, or initially gathered from an 
@@ -100,8 +98,8 @@ public:
     void removeDevice(DeviceId did);
     InterfaceCtrl* getIntf(DeviceId did);
     RoutingList getRouting(RoutingTarget t);
+    void refreshRouteCache();
     DataLink *getFlarmHost();
-    void resetFlarmModeToNmea();
     static int nrDevs() { return (DEVMAN) ? DEVMAN->getNrDevs() : 0; }
     int getNrDevs() const { return _device_map.size(); }
     // Search for the next free CAN id, organized in chunks of four in 5 prio categories.

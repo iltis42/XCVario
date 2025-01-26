@@ -750,7 +750,7 @@ void readSensors(void *pvParameters){
 		}
 
 		// Check on new clients connecting
-		if ( CAN && CAN->GotNewClient() ) { // todo use also for Wifi client?!
+		if ( CAN && CAN->GotNewClient() ) { // fixme hook to registration protocol
 			while( client_sync_dataIdx < SetupCommon::numEntries() ) {
 				if ( SetupCommon::syncEntry(client_sync_dataIdx++) ) {
 					break; // Hit entry to actually sync and send data
@@ -1418,12 +1418,6 @@ void system_startup(void *args){
 		}
 	}else if ( wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE ){
 		WifiApp::wifi_init_softap();
-	}
-	// 2021 series 3, or 2022 model with new digital poti CAT5171 also features CAN bus
-	if(  can_speed.get() != CAN_SPEED_OFF && (resultCAN == "OK") && CAN )
-	{
-		ESP_LOGI(FNAME, "Now start CAN Bus Interface");
-		CAN->begin();  // fixme, CAN should start when devices are configured // start CAN tasks and driver
 	}
 
 	if( compass_enable.get() == CS_CAN ){

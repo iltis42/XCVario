@@ -82,6 +82,17 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
         ESP_LOGI(FNAME, "On send port %d", sendport);
 
         if ( tmp ) {
+            // Check device id is equal to all others
+            if ( _did == NO_DEVICE ) {
+                _did = tmp->getDeviceId();
+            } else {
+                for ( auto it : _all_p ) {
+                    if ( (*it).getDeviceId() != _did ) {
+                        ESP_LOGW(FNAME, "DevId missmatch in protocol list for Itf/port %d/%d %d: %d.", 
+                            _itf_id.iid, _itf_id.port, _did, (*it).getDeviceId());
+                    }
+                }
+            }
             _all_p.push_back(tmp);
             if ( _all_p.size() == 1 && tmp->isBinary() ) {
                 _binary = tmp;
@@ -91,6 +102,9 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
             }
             return tmp;
         }
+    }
+    else {
+        ESP_LOGW(FNAME, "Double insertion of device/protocol %d/%d.", did, ptyp);
     }
     return nullptr;
 }
@@ -267,21 +281,24 @@ ProtocolItf* DataLink::getBinary() const
     return nullptr;
 }
 
+void DataLink::updateRoutes()
+{
+    ESP_LOGD(FNAME, "get routing for %d/%d", _did, _itf_id.port);
+    _routes = DEVMAN->getRouting(RoutingTarget(_did, _itf_id.port));
+}
+
 void DataLink::dumpProto()
 {
     for (ProtocolItf *it : _all_p)
     {
-        ESP_LOGI(FNAME, "  lp%d: did%d\tpid%d\tsp%d", getPort(), (*it).getDeviceId(), (*it).getProtocolId(), (*it).getSendPort());
+        ESP_LOGI(FNAME, "    lp%d: did%d\tpid%d\tsp%d", getPort(), (*it).getDeviceId(), (*it).getProtocolId(), (*it).getSendPort());
     }
 }
 
 void DataLink::forwardMsg(DeviceId src_dev)
 {
     // consider forwarding
-    ESP_LOGD(FNAME, "get routing for %d/%d", src_dev, _itf_id.port);
-    RoutingList routes = DEVMAN->getRouting(RoutingTarget(src_dev, _itf_id.port)); // todo cache the route
-    ESP_LOGD(FNAME, "routings %d", routes.size());
-    for ( auto &target : routes ) {
+    for ( auto &target : _routes ) {
         Message* msg = DEV::acqMessage(target.did, target.port);
         ESP_LOGI(FNAME, "route %d/%d to %d/%d", src_dev, _itf_id.port, msg->target_id, target.port);
         msg->buffer = _sm._frame;

@@ -6,10 +6,11 @@
 #include <sstream>
 #include <iomanip>
 
-const int BUFFER_COUNT = 20;
+constexpr int BUFFER_COUNT = 20;
 
-// Fixme, not yet thought t the end, it must not get mixed up with others in the regular queue
-Message spare_msg; // To be able to grant a message, even this one will not be an exclusive buffer worst case.
+// To be able to grant a message, even this one will not be an exclusive buffer worst case,
+// but a good measure to keep things going instead of stalling or crashing.
+Message spare_msg;
 
 std::string Message::hexDump(int upto) const
 {
@@ -33,10 +34,12 @@ MessagePool::MessagePool()
 }
 MessagePool::~MessagePool()
 {
+    xSemaphoreHandle tmp = _mutex;
+    _mutex = nullptr;
     for (int i = 0; i < BUFFER_COUNT; ++i) {
         delete _buffers[i];
     }
-    vSemaphoreDelete(_mutex);
+    vSemaphoreDelete(tmp);
 }
 
 // granted none nullptr return value
@@ -61,18 +64,20 @@ Message* MessagePool::getOne()
 }
 
 void MessagePool::recycleMsg(Message* msg) {
-    msg->busy = false;
-    xSemaphoreTake(_mutex, portMAX_DELAY);
-    _freeList.push(msg);
-    xSemaphoreGive(_mutex);
+    if ( msg != &spare_msg ) {
+        msg->busy = false;
+        xSemaphoreTake(_mutex, portMAX_DELAY);
+        _freeList.push(msg);
+        xSemaphoreGive(_mutex);
+    }
 }
 
 int MessagePool::nrFree() const
 {
-    return 0; // todo
+    return _freeList.size();
 }
 int MessagePool::nrUsed() const
 {
-    return 0; // todo
+    return BUFFER_COUNT - _freeList.size();
 }
 

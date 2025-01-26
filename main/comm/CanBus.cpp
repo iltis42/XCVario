@@ -3,24 +3,16 @@
 
 #include "Messages.h"
 #include "DeviceMgr.h"
+#include "DataLink.h"
 #include "sensor.h"
-#include "QMCMagCAN.h"
-#include "Flarm.h"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
 #include "driver/gpio.h"
-#include "logdef.h"
+#include "logdefnone.h"
 #include "esp_err.h"
 
-#include <cstring>
-#include "DataMonitor.h"
-#include "Flarm.h"
-#include "../DataLink.h"
-
-DataLinkOld dlink;
-DataLinkOld dlinkXs; // use a second CAN id and datalink to avoid checksum errors by mixed up messages
 
 /*
  *  Connect two XCVario with a fixed message ID
@@ -28,13 +20,13 @@ DataLinkOld dlinkXs; // use a second CAN id and datalink to avoid checksum error
  *  Maybe use a breakout bos to furthe connect serial devices and tunnel protocols
  */
 
-#define CANTEST_ID 0x100
-static int can_id_config_tx; // to unify CAN id's, the following _can* variables are initialized depending on master/client role in constructor
-static int can_id_config_rx;
-static int can_id_nmea_tx;
-static int can_id_nmea_rx;
-static int can_id_keepalive_tx;
-static int can_id_keepalive_rx;
+// #define CANTEST_ID 0x100
+// static int can_id_config_tx; // to unify CAN id's, the following _can* variables are initialized depending on master/client role in constructor
+// static int can_id_config_rx;
+// static int can_id_nmea_tx;
+// static int can_id_nmea_rx;
+// static int can_id_keepalive_tx;
+// static int can_id_keepalive_rx;
 
 static TaskHandle_t rxTask = nullptr;
 CANbus *CAN = 0;
@@ -201,24 +193,24 @@ CANbus::CANbus()
     _rx_io = GPIO_NUM_33;
     _slope_ctrl = GPIO_NUM_2;
 
-    if (SetupCommon::isClient())
-    { // client uses different ID, so prepare canbus for client role
-        can_id_config_tx = CAN_CONFIG_ID_CLIENT;
-        can_id_config_rx = CAN_CONFIG_ID_MASTER;
-        can_id_nmea_tx = CAN_NMEA_ID_CLIENT;
-        can_id_nmea_rx = CAN_NMEA_ID_MASTER;
-        can_id_keepalive_tx = CAN_KEEPALIVE_ID_CLIENT;
-        can_id_keepalive_rx = CAN_KEEPALIVE_ID_MASTER;
-    }
-    else
-    {
-        can_id_config_tx = CAN_CONFIG_ID_MASTER;
-        can_id_config_rx = CAN_CONFIG_ID_CLIENT;
-        can_id_nmea_tx = CAN_NMEA_ID_MASTER;
-        can_id_nmea_rx = CAN_NMEA_ID_CLIENT;
-        can_id_keepalive_tx = CAN_KEEPALIVE_ID_MASTER;
-        can_id_keepalive_rx = CAN_KEEPALIVE_ID_CLIENT;
-    }
+    // if (SetupCommon::isClient())
+    // { // client uses different ID, so prepare canbus for client role
+    //     can_id_config_tx = CAN_CONFIG_ID_CLIENT;
+    //     can_id_config_rx = CAN_CONFIG_ID_MASTER;
+    //     can_id_nmea_tx = CAN_NMEA_ID_CLIENT;
+    //     can_id_nmea_rx = CAN_NMEA_ID_MASTER;
+    //     can_id_keepalive_tx = CAN_KEEPALIVE_ID_CLIENT;
+    //     can_id_keepalive_rx = CAN_KEEPALIVE_ID_MASTER;
+    // }
+    // else
+    // {
+    //     can_id_config_tx = CAN_CONFIG_ID_MASTER;
+    //     can_id_config_rx = CAN_CONFIG_ID_CLIENT;
+    //     can_id_nmea_tx = CAN_NMEA_ID_MASTER;
+    //     can_id_nmea_rx = CAN_NMEA_ID_CLIENT;
+    //     can_id_keepalive_tx = CAN_KEEPALIVE_ID_MASTER;
+    //     can_id_keepalive_rx = CAN_KEEPALIVE_ID_CLIENT;
+    // }
 }
 
 

@@ -180,7 +180,7 @@ void TransmitTask(void *arg)
 
 DeviceManager::DeviceManager()
 {
-    ItfSendQueue = xQueueCreate( 20, sizeof(Message*) );
+    ItfSendQueue = xQueueCreate( MSG_POOL_SIZE+1, sizeof(Message*) );
     
 }
 
@@ -276,6 +276,16 @@ ProtocolItf *DeviceManager::getProtocol(DeviceId did, ProtocolType proto)
         return d->getProtocol(proto);
     }
     return nullptr;
+}
+
+// convenience
+int DeviceManager::getSendPort(DeviceId did, ProtocolType proto)
+{
+    Device *dev = getDevice(did);
+    if ( dev ) {
+        return dev->getSendPort(proto);
+    }
+    return -1;
 }
 
 // Remove device from map, delete device and all resources
@@ -433,7 +443,7 @@ int Device::getSendPort(ProtocolType p) const
         return tmp->getSendPort();
     }
 
-    return 0;
+    return -1; // invalid port
 }
 
 
@@ -457,15 +467,13 @@ void relMessage(Message *msg)
 
 bool Send(Message* msg)
 {
-    if ( ItfSendQueue ) {
-        if ( pdTRUE != xQueueSend( ItfSendQueue, (void * ) &msg, (TickType_t)0 ) ) {
-            // drop it
-            ESP_LOGW(FNAME, "Dropped message to %d", msg->target_id);
-            MP.recycleMsg(msg);
-        }
-        return true;
+    if ( pdTRUE != xQueueSend( ItfSendQueue, (void * ) &msg, portMAX_DELAY ) ) { // pdMS_TO_TICKS(50) ) ) {
+        // drop it
+        ESP_LOGW(FNAME, "Dropped message to %d", msg->target_id);
+        MP.recycleMsg(msg);
+        return false;
     }
-    return false;
+    return true;
 }
 
 } // namespace

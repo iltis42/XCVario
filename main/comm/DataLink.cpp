@@ -13,6 +13,7 @@
 #include "protocol/FlarmGPS.h"
 #include "protocol/FlarmHost.h"
 #include "protocol/FlarmBin.h"
+#include "protocol/MagSensHost.h"
 #include "protocol/MagSensBin.h"
 #include "protocol/TestQuery.h"
 #include "Messages.h"
@@ -68,8 +69,12 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
             ESP_LOGI(FNAME, "New FlarmBinary");
             tmp = new FlarmBinary(did, sendport, _sm, *this);
             break;
+        case MAGSENS_P:
+            ESP_LOGI(FNAME, "New CAN MAGsens");
+            tmp = new MagSensHost(sendport, _sm, *this);
+            break;
         case MAGSENSBIN_P:
-            ESP_LOGI(FNAME, "New MAGCAN Binary");
+            ESP_LOGI(FNAME, "New MAGCANBinary");
             tmp = new MagSensBinary(sendport, _sm, *this);
             break;
         case TEST_P:
@@ -159,8 +164,8 @@ void DataLink::process(const char *packet, int len)
     {
         // Special use, "no data" timeout, might be expected and normal
         // We just reset the protocol state machine then
-        // _sm.reset();
-        // _binary_mode = false;
+        goNMEA();
+        ESP_LOGW(FNAME, "timeout Itf/Port %d/%d", _itf_id.iid, _itf_id.port);
         return;
     }
     
@@ -175,7 +180,7 @@ void DataLink::process(const char *packet, int len)
     }
     else if ( _nmea )
     {
-        ESP_LOGI(FNAME, "%d procN %dchar: %s", _itf_id.iid, len, packet);
+        ESP_LOGD(FNAME, "%d procN %dchar: %s", _itf_id.iid, len, packet);
         // most likely case, only one protocol to parse
         // process every frame byte through state machine
         ProtocolItf *prtcl = _all_p.front();
@@ -190,6 +195,9 @@ void DataLink::process(const char *packet, int len)
                     if ( action == NXT_PROTO ) {
                         _sm.reset();
                         break; // end loop imidiately
+                    }
+                    else if ( action == GO_NMEA ) {
+                        goNMEA();
                     }
 
                 }
@@ -253,9 +261,7 @@ ProtocolItf* DataLink::goBIN()
 
 void DataLink::goNMEA()
 {
-    if ( _binary ) {
-        _binary = nullptr;
-    }
+    _binary = nullptr;
     _sm.reset();
 }
 

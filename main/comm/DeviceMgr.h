@@ -93,7 +93,8 @@ public:
     // API
     ProtocolItf* addDevice(DeviceId dev, ProtocolType proto, int listen_port, int send_port, InterfaceId iid);
     Device* getDevice(DeviceId did);
-    ProtocolItf* getProtocol(DeviceId dev, ProtocolType proto);
+    ProtocolItf *getProtocol(DeviceId dev, ProtocolType proto);
+    int getSendPort(DeviceId did, ProtocolType proto);
     // Remove device of this type
     void removeDevice(DeviceId did);
     InterfaceCtrl* getIntf(DeviceId did);

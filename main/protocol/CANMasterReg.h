@@ -10,8 +10,6 @@
 
 #include "ProtocolItf.h"
 
-#include <string>
-
 class CANMasterReg  final : public ProtocolItf
 {
 public:
@@ -28,6 +26,4 @@ public:
 private:
     // Received jumbo messages
     void registration_query();
-    std::string _token;
-    std::string _protocol;
 };

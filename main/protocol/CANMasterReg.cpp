@@ -40,12 +40,12 @@ extern InterfaceCtrl* CAN;
 //      At this moment it does not matter if the power-cycle is an out of the ordinary event, or just ordinary next event the systems 
 //      are comming up.
 //      A power-cycled client will restart the registration from scratch.
-//   $PJMACC <token>, <drive id>, <master id>*<CRC>\r\n
+//   $PJMACC, <token>, <drive id>, <master id>*<CRC>\r\n
 //
 //  - Not accepting the registration: Not knowing what the purpose of this would be, despite to stop the client from continue to
 //      trying. A typical expected communication pattern would be that the master is not connected or not there and the client 
 //      would just never get a response and continue trying, not doing anything harmfull or wrong with it.
-//   $PJMNAC <token>\r\n
+//   $PJMNAC, <token>\r\n
 //
 
 
@@ -53,7 +53,7 @@ extern InterfaceCtrl* CAN;
  datalink_action_t CANMasterReg::nextByte(const char c)
  {
     int pos = _sm._frame.size() - 1;
-    ESP_LOGI(FNAME, "state %d, pos %d next char %c", _sm._state, pos, c);
+    ESP_LOGD(FNAME, "state %d, pos %d next char %c", _sm._state, pos, c);
      switch (_sm._state)
      {
     case START_TOKEN:
@@ -114,7 +114,7 @@ extern InterfaceCtrl* CAN;
     if ( _sm._state == COMPLETE )
     {
         _sm._state = START_TOKEN;   // restart parsing
-        ESP_LOGI(FNAME, "Msg complete %s", _sm._frame.c_str());
+        ESP_LOGD(FNAME, "Msg complete %s", _sm._frame.c_str());
         if ( _sm._frame.compare(4, 3, "REG") == 0 )
         {
             registration_query();
@@ -139,69 +139,47 @@ void CANMasterReg::registration_query()
             return;
         }
     }
-    _token = tail.substr(0, 3);
-    ESP_LOGD(FNAME, "JP reg token %s", _token.c_str());
+    std::string token = tail.substr(0, 3);
+    ESP_LOGI(FNAME, "JP reg token %s", token.c_str());
 
     // read the protocol type
     size_t pos = tail.find(','); 
-    ESP_LOGD(FNAME, "JP comma %d", pos);
-    _protocol = NMEA::extractWord(tail, pos+1);
-    ESP_LOGD(FNAME, "JP proto %s", _protocol.c_str());
+    ESP_LOGI(FNAME, "JP comma %d", pos);
+    std::string protocol = NMEA::extractWord(tail, pos+1);
+    ESP_LOGI(FNAME, "JP proto %s", protocol.c_str());
 
-    ESP_LOGD(FNAME, "compare %d", _protocol.compare("JUMBOCMD"));
-    if ( _protocol.compare("JUMBOCMD") == 0 ) {
-        int client_id;
-        ESP_LOGD(FNAME, "found JUMBOCMD");
-        Device *dev = DEVMAN->getDevice(JUMBO_DEV);
-        if ( dev ) {
-            client_id = dev->getSendPort(JUMBOCMD_P); // re-use
-            ESP_LOGD(FNAME, "reuse port %d", client_id);
-        } else {
-            client_id = DeviceManager::getFreeCANId(1);
-            ESP_LOGD(FNAME, "new port %d", client_id);
-        }
-        if ( client_id == -1 ) return; // no luck
+    // Todo option to use the token, when more devices of one kind need to be connected
 
-        ESP_LOGD(FNAME, "use port %d", client_id);
-
-        Message* msg = newMessage(); // set target
-        if ( ! msg ) return;
-
-        int master_id = client_id + 1;
-        DEVMAN->addDevice(JUMBO_DEV, JUMBOCMD_P, master_id, client_id, CAN_BUS);
-
-        msg->buffer = "$PJMACC " + _token + ", " + std::to_string(client_id) + 
-                                        ", " + std::to_string(master_id);
-        msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
-        DEV::Send(msg);
-
+    DeviceId ndev = NO_DEVICE;
+    ProtocolType nproto = NO_ONE;
+    if ( protocol.compare("JUMBOCMD") == 0 ) {
+        ndev = JUMBO_DEV;
+        nproto = JUMBOCMD_P;
+    } else if ( protocol.compare("MAGSENS") == 0 ) {
+        ndev = MAGSENS_DEV;
+        nproto = MAGSENS_P;
     }
-    else if ( _protocol.compare("MAGSENS") == 0 ) {
-        int client_id;
-        ESP_LOGI(FNAME, "found MagSense");
-        Device *dev = DEVMAN->getDevice(MAGSENS_DEV);
-        if ( dev ) {
-            client_id = dev->getSendPort(MAGSENS_P); // re-use
-            ESP_LOGD(FNAME, "reuse port %d", client_id);
+    if ( ndev != NO_DEVICE ) {
+        int client_ch = DEVMAN->getSendPort(ndev, nproto);
+        if ( client_ch > 0 ) {
+            ESP_LOGD(FNAME, "reuse port %d", client_ch);
         } else {
-            client_id = DeviceManager::getFreeCANId(1);
-            ESP_LOGD(FNAME, "new port %d", client_id);
+            client_ch = DeviceManager::getFreeCANId(1);
+            ESP_LOGD(FNAME, "new port %d", client_ch);
         }
-        if ( client_id == -1 ) return; // no luck
+        if ( client_ch == -1 ) return; // no luck
 
-        ESP_LOGI(FNAME, "use port %d", client_id);
+        ESP_LOGD(FNAME, "use port %d", client_ch);
 
         Message* msg = newMessage(); // set target
-        if ( ! msg ) return;
 
-        int master_id = client_id + 1;
-        DEVMAN->addDevice(MAGSENS_DEV, MAGSENS_P, master_id, client_id, CAN_BUS);
+        int master_ch = client_ch + 1;
+        DEVMAN->addDevice(ndev, nproto, master_ch, client_ch, CAN_BUS);
 
-        msg->buffer = "$PJMACC " + _token + ", " + std::to_string(client_id) + 
-                                        ", " + std::to_string(master_id);
+        msg->buffer = "$PJMACC, " + token + ", " + std::to_string(client_ch) + 
+                                        ", " + std::to_string(master_ch);
         msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
         DEV::Send(msg);
-
     }
 
     return;

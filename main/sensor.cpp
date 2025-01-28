@@ -30,6 +30,7 @@
 #include "Blackboard.h"
 #include "SetupMenuValFloat.h"
 #include "protocol/Clock.h"
+#include "protocol/MagSensBin.h"
 
 #include "quaternion.h"
 #include "wmm/geomag.h"
@@ -123,6 +124,7 @@ AdaptUGC *MYUCG = 0;  // ( SPI_DC, CS_Display, RESET_Display );
 IpsDisplay *display = 0;
 CenterAid  *centeraid = 0;
 
+bool netif_initialized = false;
 OTA *ota = 0;
 
 ESPRotary Rotary;
@@ -964,6 +966,13 @@ void system_startup(void *args){
 			Rotary.begin( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);
 
 		}
+		if( true ) { // have CAN?
+			// Give CAN MagSens a chance for an update
+			CAN = new CANbus();
+			DeviceManager* dm = DeviceManager::Instance();
+			dm->addDevice(MASTER_DEV, REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
+			dm->addDevice(MAGSENS_DEV, MAGSENSBIN_P, MagSensBinary::LEGACY_MAGSTREAM_ID, 0, CAN_BUS);
+		}
 		ota = new OTA();
 		ota->begin();
 		ota->doSoftwareUpdate( display );
@@ -1326,7 +1335,7 @@ void system_startup(void *args){
 			resultCAN = "OK";
 			ESP_LOGE(FNAME,"CAN Bus selftest (%sRS): OK", CAN->hasSlopeSupport() ? "" : "no ");
 			// Add the legacs MagSens CAN receiver, would be deleted if a MagSens V2 is found
-			dm->addDevice(MAGSENS_DEV, MAGSENSBIN_P, CAN_MAGSENS_ID, 0, CAN_BUS);
+			dm->addDevice(MAGSENS_DEV, MAGSENSBIN_P, MagSensBinary::LEGACY_MAGSTREAM_ID, 0, CAN_BUS);
 			// dm->removeDevice(DeviceId::MASTER_DEV);
 			// ESP_LOGI(FNAME,"Removetest");
 			// delay(1000);

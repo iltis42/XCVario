@@ -8,9 +8,9 @@
 
 #pragma once
 
-#include "ClockIntf.h"
-
 #include <esp_timer.h>
+
+class Clock_I;
 
 // Clock based on esp_timer
 class Clock

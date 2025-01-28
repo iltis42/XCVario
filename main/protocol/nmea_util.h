@@ -13,7 +13,7 @@ namespace NMEA {
 // Calculate a nmea checksum
 std::string CheckSum(const char *nmea);
 // Extract comma seperated NMEA word/value
-std::string extractWord(const std::string &str, int pos);
+std::string extractWord(const std::string &str, int &pos);
 void incrCRC(int &crc, const char c);
 void ensureTermination(std::string& str);
 std::string hexDump(const char *buffer, int len);

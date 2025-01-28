@@ -21,3 +21,4 @@ public:
 private:
     unsigned int _counter = 0;
 };
+

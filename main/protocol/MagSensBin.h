@@ -13,15 +13,20 @@
 class MagSensBinary final : public ProtocolItf
 {
 public:
-    MagSensBinary(int mp, ProtocolState &sm, DataLink &dl) : ProtocolItf(DeviceId::MAGSENS_DEV, mp, sm, dl) {}
+    static constexpr int LEGACY_MAGSTREAM_ID = 0x31;
+
+    MagSensBinary(int mp, ProtocolState &sm, DataLink &dl);
     virtual ~MagSensBinary() = default;
     
     ProtocolType getProtocolId() override { return MAGSENSBIN_P; }
     bool isBinary() const override { return true; }
     datalink_action_t nextStreamChunk(const char *cptr, int count) override;
 
-    bool connected() const { return _connected; }
+    bool connected() const { return _connected > 0; }
+    bool isActive() const;
 
 private:
-    bool _connected = false;
+    int _connected = -10;
+    unsigned long _delta_time; //msec
+    unsigned long _last_sample_time;
 };

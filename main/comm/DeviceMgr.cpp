@@ -249,11 +249,10 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
     if ( is_new ) {
         // Add only if new
         _device_map[did] = dev; // and add, in case this dev is new
-        dev->_dlink.insert(dl);
         dev->_itf = itf;
-
-        refreshRouteCache();
     }
+    dev->_dlink.insert(dl);
+    refreshRouteCache();
 
     ESP_LOGI(FNAME, "After add device %d.", did);
     dumpMap();

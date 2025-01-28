@@ -20,7 +20,9 @@
  *  Maybe use a breakout bos to furthe connect serial devices and tunnel protocols
  */
 
-// #define CANTEST_ID 0x100
+// used CAN Id's
+static constexpr int CANTEST_ID = CAN_REG_PORT+1;
+
 // static int can_id_config_tx; // to unify CAN id's, the following _can* variables are initialized depending on master/client role in constructor
 // static int can_id_config_rx;
 // static int can_id_nmea_tx;
@@ -38,6 +40,7 @@ void canRxTask(void *arg)
 {
     CANbus *can = static_cast<CANbus *>(arg);
     unsigned int tick = 0;
+    bool to_once = true;
 
     if ( ! can->isInitialized() )
     {
@@ -58,6 +61,7 @@ void canRxTask(void *arg)
             auto dl = can->_dlink.find(rx.identifier);
             if ( dl != can->_dlink.end() ) {
                 dl->second->process(msg.data(), msg.size());
+                to_once = true;
             }
 
             // bool xcv_came = false;
@@ -98,8 +102,11 @@ void canRxTask(void *arg)
         else
         {
             // protocol state machine may want to react on no traffic
-            for (auto &dl : can->_dlink ) {
-                dl.second->process(nullptr, 0);
+            if ( to_once ) { 
+            	for (auto &dl : can->_dlink ) {
+                	dl.second->process(nullptr, 0);
+                }
+                to_once = false;
             }
         }
         if ( terminate_receiver ) { break; }
@@ -378,7 +385,7 @@ bool CANbus::selfTest()
 
     driverInstall(TWAI_MODE_NO_ACK);
     bool res = false;
-    int id = 0x100;
+    int id = CANTEST_ID;
     for (int slope = 0; slope < 2; slope++)
     {
         ESP_LOGI(FNAME, "CAN slope support %s.", _slope_support ? "on" : "off");

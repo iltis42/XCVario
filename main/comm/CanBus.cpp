@@ -347,7 +347,7 @@ bool CANbus::begin()
         if ( selfTest() ) {
             driverInstall(TWAI_MODE_NORMAL);
             terminate_receiver = false;
-            xTaskCreate(&canRxTask, "canRxTask", 4096, this, 15, &rxTask);
+            xTaskCreate(&canRxTask, "canRxTask", 4096, this, 80, &rxTask);
         } else {
             driverUninstall();
         }
@@ -474,7 +474,7 @@ bool CANbus::sendData(int id, const char *msg, int length, int self)
     esp_err_t res = ESP_OK;
     while ( retry-- > 0 )
     {
-        res = twai_transmit(&message, 0);
+        res = twai_transmit(&message, pdMS_TO_TICKS(_tx_timeout));
         if ( res == ESP_OK ) {
             break;
         }

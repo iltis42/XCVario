@@ -8,15 +8,15 @@
 
 class DataLink;
 
-#define CAN_NMEA_ID_MASTER 0x20
-#define CAN_CONFIG_ID_MASTER 0x21
-#define CAN_KEEPALIVE_ID_MASTER 0x11
+// #define CAN_NMEA_ID_MASTER 0x20
+// #define CAN_CONFIG_ID_MASTER 0x21
+// #define CAN_KEEPALIVE_ID_MASTER 0x11
 
-#define CAN_NMEA_ID_CLIENT 0x22
-#define CAN_CONFIG_ID_CLIENT 0x23
-#define CAN_KEEPALIVE_ID_CLIENT 0x12
+// #define CAN_NMEA_ID_CLIENT 0x22
+// #define CAN_CONFIG_ID_CLIENT 0x23
+// #define CAN_KEEPALIVE_ID_CLIENT 0x12
 
-#define CAN_MAGSENS_ID 0x31
+// #define CAN_MAGSENS_ID 0x31
 
 typedef enum
 { // never change, nvs item (!)

@@ -6,12 +6,6 @@
 #include <sstream>
 #include <iomanip>
 
-constexpr int BUFFER_COUNT = 20;
-
-// To be able to grant a message, even this one will not be an exclusive buffer worst case,
-// but a good measure to keep things going instead of stalling or crashing.
-Message spare_msg;
-
 std::string Message::hexDump(int upto) const
 {
     if ( upto == 0 ) upto = buffer.size();
@@ -25,8 +19,8 @@ std::string Message::hexDump(int upto) const
 MessagePool::MessagePool()
 {
     // Preallocate the desired number of messages
-    _buffers.reserve(BUFFER_COUNT);
-    for (int i = 0; i < BUFFER_COUNT; ++i) {
+    _buffers.reserve(MSG_POOL_SIZE);
+    for (int i = 0; i < MSG_POOL_SIZE; ++i) {
         _buffers.emplace_back(new Message);
         _freeList.push(_buffers.back());
     }
@@ -36,7 +30,7 @@ MessagePool::~MessagePool()
 {
     xSemaphoreHandle tmp = _mutex;
     _mutex = nullptr;
-    for (int i = 0; i < BUFFER_COUNT; ++i) {
+    for (int i = 0; i < MSG_POOL_SIZE; ++i) {
         delete _buffers[i];
     }
     vSemaphoreDelete(tmp);
@@ -47,29 +41,26 @@ Message* MessagePool::getOne()
 {
     Message* msg = nullptr;
     xSemaphoreTake(_mutex, portMAX_DELAY);
-    if ( ! _freeList.empty() ) {
-        msg = _freeList.front();
-        msg->busy = true;
-        _freeList.pop();
-        _nr_acquisition++;
-    }
-    else {
-        msg = &spare_msg;
+    while ( _freeList.empty() )
+    {
+        xSemaphoreGive(_mutex);
+        vTaskDelay(10 / portTICK_PERIOD_MS);
         _nr_acqfails++;
-        ESP_LOGW(FNAME, "Buffer pool empty.");
-
+        xSemaphoreTake(_mutex, portMAX_DELAY);
     }
+    msg = _freeList.front();
+    msg->busy = true;
+    _freeList.pop();
+    _nr_acquisition++;
     xSemaphoreGive(_mutex);
     return msg;
 }
 
 void MessagePool::recycleMsg(Message* msg) {
-    if ( msg != &spare_msg ) {
-        msg->busy = false;
-        xSemaphoreTake(_mutex, portMAX_DELAY);
-        _freeList.push(msg);
-        xSemaphoreGive(_mutex);
-    }
+    msg->busy = false;
+    xSemaphoreTake(_mutex, portMAX_DELAY);
+    _freeList.push(msg);
+    xSemaphoreGive(_mutex);
 }
 
 int MessagePool::nrFree() const
@@ -78,6 +69,6 @@ int MessagePool::nrFree() const
 }
 int MessagePool::nrUsed() const
 {
-    return BUFFER_COUNT - _freeList.size();
+    return MSG_POOL_SIZE - _freeList.size();
 }
 

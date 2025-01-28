@@ -11,6 +11,8 @@
 #include <memory>
 
 
+constexpr int MSG_POOL_SIZE = 20;
+
 // One Message
 class Message
 {

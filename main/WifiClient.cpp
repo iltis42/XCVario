@@ -19,6 +19,8 @@
 #include "sensor.h"
 #include "Router.h"
 
+extern bool netif_initialized;
+
 int WifiClient::master_xcvario_scanned = 0; // e.g. 1234
 
 typedef struct xcv_sock_client {
@@ -89,7 +91,10 @@ void WifiClient::initialise_wifi(void)
 {
     esp_log_level_set("wifi", ESP_LOG_DEBUG); // disable wifi driver logging
     wifi_event_group = xEventGroupCreate();
-    ESP_ERROR_CHECK(esp_netif_init());
+
+	if ( ! netif_initialized ) {
+		ESP_ERROR_CHECK(esp_netif_init()); // can only be called once
+	}
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     esp_event_handler_instance_t instance_any_id;
     esp_event_handler_instance_t instance_got_ip;
@@ -109,7 +114,10 @@ void WifiClient::initialise_wifi(void)
 
 std::string WifiClient::scan(int master_xcv_num){
 	ESP_LOGI(FNAME,"wifi scan");
-	ESP_ERROR_CHECK(esp_netif_init());
+
+	if ( ! netif_initialized ) {
+		ESP_ERROR_CHECK(esp_netif_init()); // can only be called once
+	}
 	ESP_ERROR_CHECK(esp_event_loop_create_default());
 	sta_netif = esp_netif_create_default_wifi_sta();
 	assert(sta_netif);

@@ -1,9 +1,13 @@
-#include <esp_ota_ops.h>
 
 // #include "SetupCommon.h"
 #include "Webserver.h"
 #include "logdef.h"
 #include "coredump_to_server.h"
+#include "SetupNG.h"
+#include "comm/DeviceMgr.h"
+#include "protocol/MagSensHost.h"
+
+#include <esp_ota_ops.h>
 
 cWebserver* cWebserver::m_instance = nullptr;
 extern char * program_version;
@@ -210,114 +214,165 @@ const esp_partition_t *otaUpdatePartition;
 esp_ota_handle_t otaHandle = {0};
 size_t otaSize = 0;
 size_t otaReceived = 0;
+static int updateTarget = 0; // 1  - sensor; 2 - CanMag
+static MagSensHost *maghostp = nullptr;
 
 // Receive .Bin file
 static esp_err_t POST_update_handler(httpd_req_t *req)
 {
-    size_t ota_buff_size = 16 * 1024;
+	constexpr size_t OTA_BUFF_SIZE = 16 * 1024; // multipe of 8 for CAN reasons
 
-    size_t content_length = req->content_len;
-    int content_received = 0;
-    int recv_len;
+	size_t content_length = req->content_len;
+	int content_received = 0;
+	int recv_len;
 
-    if (content_length < 1)
-    {
-        return ESP_OK;
-    }
+	if (content_length < 1)
+	{
+		return ESP_OK;
+	}
 
-    // Received first chunk - start OTA procedure
-    if (!otaStarted)
-    {
-        otaStarted = true;
-        otaBuffer = (char*)malloc(ota_buff_size);
+	// Received first chunk - start OTA procedure
+	if (!otaStarted)
+	{
+		otaStarted = true;
+		if (!otaBuffer)
+		{
+			otaBuffer = (char *)malloc(OTA_BUFF_SIZE);
+		}
 
-        // Get total OTA file size
-        size_t buf_len = httpd_req_get_hdr_value_len(req, "X-OTA-SIZE") + 1;
-        if (buf_len > 1)
-        {
-            char otaSizeBuffer[32];
-            if (httpd_req_get_hdr_value_str(req, "X-OTA-SIZE", otaSizeBuffer, sizeof(otaSizeBuffer)) == ESP_OK)
-            {
-                otaSize = atoi(otaSizeBuffer);
-                ESP_LOGI(FNAME, "Found header => X-OTA-SIZE: %s", otaSizeBuffer);
-            }
-        }
+		// Get total OTA file size
+		size_t buf_len = httpd_req_get_hdr_value_len(req, "X-OTA-SIZE") + 1;
+		if (buf_len > 1)
+		{
+			char otaSizeBuffer[32];
+			if (httpd_req_get_hdr_value_str(req, "X-OTA-SIZE", otaSizeBuffer, sizeof(otaSizeBuffer)) == ESP_OK)
+			{
+				otaSize = atoi(otaSizeBuffer);
+				ESP_LOGI(FNAME, "Found header => X-OTA-SIZE: %s", otaSizeBuffer);
+			}
+		}
+		ESP_LOGI(FNAME, "Update Request Header");
+		ESP_LOG_BUFFER_HEX(FNAME, req->handle, std::min(size_t(100), content_length));
 
-        otaUpdatePartition = esp_ota_get_next_update_partition(NULL);
+		otaUpdatePartition = esp_ota_get_next_update_partition(NULL);
+	}
 
-        esp_err_t err = esp_ota_begin(otaUpdatePartition, otaSize, &otaHandle);
-        if (err != ESP_OK)
-        {
-            ESP_LOGE(FNAME, "Error With OTA Begin, Cancelling OTA");
-            return ESP_FAIL;
-        }
-        else
-        {
-            ESP_LOGI(FNAME, "Writing to partition subtype %d at offset 0x%x", otaUpdatePartition->subtype, otaUpdatePartition->address);
-        }
-    }
+	do
+	{
+		// Read the ota data
+		if ((recv_len = httpd_req_recv(req, otaBuffer, std::min(content_length, OTA_BUFF_SIZE))) < 0)
+		{
+			if (recv_len == HTTPD_SOCK_ERR_TIMEOUT)
+			{
+				ESP_LOGW(FNAME, "Socket Timeout");
+				/* Retry receiving if timeout occurred */
+				continue;
+			}
+			ESP_LOGE(FNAME, "OTA Other Error %d", recv_len);
+			return ESP_FAIL;
+		}
+		if (otaReceived == 0)
+		{
+			ESP_LOGI(FNAME, "First 100 bytes");
+			ESP_LOG_BUFFER_HEX(FNAME, otaBuffer, std::min(100, recv_len));
+			updateTarget = 0; // reset target
+			if (strncmp(&otaBuffer[0x50], "sensor", 6) == 0)
+			{
+				ESP_LOGI(FNAME, "Recognized a sensor update.");
+				updateTarget = 1;
+				if (ESP_OK != esp_ota_begin(otaUpdatePartition, otaSize, &otaHandle))
+				{
+					ESP_LOGE(FNAME, "Error With OTA Begin, Cancelling OTA");
+					return ESP_FAIL;
+				}
+				else
+				{
+					ESP_LOGI(FNAME, "Writing to partition subtype %d at offset 0x%x", otaUpdatePartition->subtype, otaUpdatePartition->address);
+				}
+			}
+			else if (strncmp(&otaBuffer[0x50], "CanMagSens", 10) == 0)
+			{
+				ESP_LOGI(FNAME, "Recognized a CanMagSens update.");
+				Device *mag = DEVMAN->getDevice(MAGSENS_DEV);
+				if ( mag ) {
+					ESP_LOGI(FNAME, "CANMAG is there.");
+					maghostp = static_cast<MagSensHost*>(mag->getProtocol(MAGSENS_P));
+					ESP_LOGI(FNAME, "CANMAG_P is %p", maghostp);
+					if ( maghostp && maghostp->killStream() ) {
+						ESP_LOGI(FNAME, "Mag stream killed.");
+						maghostp->prepareUpdate(otaSize, OTA_BUFF_SIZE);
+						updateTarget = 2;
+					}
+				}
+			}
+		}
 
-    do
-    {
-        // Read the ota data
-        if ((recv_len = httpd_req_recv(req, otaBuffer, std::min(content_length, ota_buff_size))) < 0)
-        {
-            if (recv_len == HTTPD_SOCK_ERR_TIMEOUT)
-            {
-                ESP_LOGW(FNAME, "Socket Timeout");
-                /* Retry receiving if timeout occurred */
-                continue;
-            }
-            ESP_LOGE(FNAME, "OTA Other Error %d", recv_len);
-            return ESP_FAIL;
-        }
+		if (updateTarget == 1)
+		{
+			// Flash OTA data
+			esp_ota_write(otaHandle, otaBuffer, recv_len);
+		}
+		else if (updateTarget == 2)
+		{
+			// Send OTA data to MagSens
+			int nr = maghostp->firmwarePacket(otaBuffer, recv_len);
+		}
+		content_received += recv_len;
+		otaReceived += recv_len;
+	} while (recv_len > 0 && content_received < content_length);
 
-        // Write OTA data
-        esp_ota_write(otaHandle, otaBuffer, recv_len);
-        content_received += recv_len;
-        otaReceived += recv_len;
+	Webserver.setOtaProgress((otaReceived * 100.0f) / otaSize);
+	ESP_LOGI(FNAME, "Received %d / %d (%.02f)", otaReceived, otaSize, (otaReceived * 100.0) / otaSize);
 
-    } while (recv_len > 0 && content_received < content_length);
+	if (otaReceived >= otaSize)
+	{
+		free(otaBuffer);
+		otaBuffer = nullptr;
+		otaStarted = false;
+		otaReceived = 0;
+		// End response
+		httpd_resp_set_type(req, "application/json");
+		httpd_resp_send(req, "OK", strlen("OK"));
 
-    Webserver.setOtaProgress((otaReceived * 100.0f) / otaSize); 
-    ESP_LOGI(FNAME, "Received %d / %d (%.02f)", otaReceived, otaSize, (otaReceived * 100.0) / otaSize);
+		if (updateTarget == 1)
+		{
+			if (esp_ota_end(otaHandle) == ESP_OK)
+			{
+				otaHandle = 0;
+				// Lets update the partition
+				if (esp_ota_set_boot_partition(otaUpdatePartition) == ESP_OK)
+				{
+					const esp_partition_t *boot_partition = esp_ota_get_boot_partition();
 
-    if (otaReceived >= otaSize)
-    {
-        free(otaBuffer);
-        otaStarted = false;
-        // End response
-        httpd_resp_set_type(req, "application/json");
-        httpd_resp_send(req, "OK", strlen("OK"));
+					ESP_LOGI(FNAME, "Next boot partition subtype %d at offset 0x%x", boot_partition->subtype, boot_partition->address);
+					ESP_LOGI(FNAME, "Rebooting in 3 seconds...");
 
-        if (esp_ota_end(otaHandle) == ESP_OK)
-        {
-            // Lets update the partition
-            if (esp_ota_set_boot_partition(otaUpdatePartition) == ESP_OK)
-            {
-                const esp_partition_t *boot_partition = esp_ota_get_boot_partition();
+					Webserver.setOtaStatus(otaStatus::DONE);
+				}
+				else
+				{
+					ESP_LOGE(FNAME, "\r\n\r\n !!! Flashed Error !!!\r\n");
+				}
+			}
+		}
+		else if (updateTarget == 2)
+		{
+			ESP_LOGI(FNAME, "Finished Mag Update");
+			vTaskDelay(20000 / portTICK_PERIOD_MS);
+			Webserver.setOtaStatus(otaStatus::DONE);
+		}
+		else
+		{
+			ESP_LOGE(FNAME, "\r\n\r\n !!! OTA End Error !!!\r\n");
+		}
+		updateTarget = 0;
+	}
+	else
+	{
+		httpd_resp_send(req, NULL, 0);
+	}
 
-                ESP_LOGI(FNAME, "Next boot partition subtype %d at offset 0x%x", boot_partition->subtype, boot_partition->address);
-                ESP_LOGI(FNAME, "Rebooting in 3 seconds...");
-                
-                Webserver.setOtaStatus(otaStatus::DONE);
-            }
-            else
-            {
-                ESP_LOGE(FNAME, "\r\n\r\n !!! Flashed Error !!!\r\n");
-            }
-        }
-        else
-        {
-            ESP_LOGE(FNAME, "\r\n\r\n !!! OTA End Error !!!\r\n");
-        }
-    }
-    else
-    {
-        httpd_resp_send(req, NULL, 0);
-    }
-
-    return ESP_OK;
+	return ESP_OK;
 }
 
 static esp_err_t GET_backup_handler(httpd_req_t *req)
@@ -366,10 +421,12 @@ static esp_err_t DELETE_reset_handler(httpd_req_t *req)
     bool success = do_factory_reset();
 
 	httpd_resp_set_type(req, "text/html");
-	if( success )
+	if( success ) {
 		httpd_resp_send(req, "Okay", 5 );
-	else
+	}
+	else {
 		httpd_resp_send(req, "Error", 6 );
+	}
 
 	vTaskDelay(5000 / portTICK_PERIOD_MS);
 	esp_restart();

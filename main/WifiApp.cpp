@@ -55,7 +55,7 @@ static sock_server_t FLARM     = { .txbuf = &wl_flarm_tx_q, .port=8881, .idle = 
 static sock_server_t AUX       = { .txbuf = &wl_aux_tx_q,   .port=8882, .idle = 0, .pid = 0, {}, nullptr };
 static sock_server_t XCVarioMS = { .txbuf = &can_tx_q,      .port=8884, .idle = 0, .pid = 0, {}, nullptr };
 
-static bool netif_initialized = false;
+extern bool netif_initialized;
 
 #define WIFI_BUFFER_SIZE 513
 // char WifiApp::buffer[WIFI_BUFFER_SIZE];
@@ -230,7 +230,7 @@ void WifiApp::wifi_init_softap()
 	}
 	netif_initialized = true;
 	ESP_ERROR_CHECK(esp_event_loop_create_default());
-	// ESP_LOGV(FNAME,"now esp_netif_create_default_wifi_ap");
+	ESP_LOGV(FNAME,"now esp_netif_create_default_wifi_ap");
 	esp_netif_create_default_wifi_ap();
 	ESP_LOGV(FNAME,"now esp_wifi_init");
 	wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();

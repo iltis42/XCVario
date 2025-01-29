@@ -57,13 +57,13 @@ extern CANbus* CAN;
 extern SerialLine *S1,*S2;
 extern Clock *MY_CLOCK;
 extern StraightWind theWind;
-extern xSemaphoreHandle xMutex;
+extern SemaphoreHandle_t xMutex;
 extern int active_screen;
 extern CenterAid *centeraid;
 extern AirspeedSensor *asSensor;
 
 extern SetupMenu  *Menu;
-extern xSemaphoreHandle display_mutex;
+extern SemaphoreHandle_t display_mutex;
 
 extern e_wireless_type wireless;
 
@@ -101,7 +101,7 @@ extern ESPRotary Rotary;
 
 extern DataMonitor DM;
 
-extern xSemaphoreHandle spiMutex;
+extern SemaphoreHandle_t spiMutex;
 
 extern Compass *compass;
 
@@ -120,7 +120,7 @@ extern MPU_t MPU;
 #define HAS_MPU_TEMP_CONTROL (CAN && !CAN->hasSlopeSupport())
 
 // Arduino.h remains
-inline unsigned long IRAM_ATTR millis()
+inline unsigned long millis()
 {
     return (unsigned long) (esp_timer_get_time() / 1000ULL);
 }

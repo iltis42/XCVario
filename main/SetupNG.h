@@ -113,8 +113,6 @@ typedef enum e_logging { LOG_DISABLE, LOG_SENSOR_RAW } e_logging_t;
 typedef enum e_tek_compensation { TE_TEK_PROBE, TE_TEK_EPOT, TE_TEK_PRESSURE } e_tek_compensation_t;
 
 
-void change_bal();
-
 typedef struct setup_flags{
 	bool _reset    :1;
 	bool _volatile :1;

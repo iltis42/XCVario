@@ -74,7 +74,7 @@ esp_err_t coredump_to_server(coredump_to_server_config_t const * const write_cfg
     // ESP_LOGI(TAG, "Coredump is %u bytes", coredump_size);
     for (size_t offset = 0; offset < coredump_size; offset += chunk_len) {
 
-        uint const read_len = MIN(chunk_len, coredump_size - offset);
+        const unsigned int read_len = MIN(chunk_len, coredump_size - offset);
         if (esp_flash_read(esp_flash_default_chip, chunk, coredump_addr + offset , read_len)) {
             ESP_LOGE(TAG, "Coredump read failed");
             break;

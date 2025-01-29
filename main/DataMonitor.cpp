@@ -7,7 +7,7 @@
 #define SCROLL_TOP      20
 #define SCROLL_BOTTOM  320
 
-xSemaphoreHandle DataMonitor::mutex = 0;
+SemaphoreHandle_t DataMonitor::mutex = 0;
 
 DataMonitor::DataMonitor(){
 	mon_started = false;
@@ -135,7 +135,7 @@ void DataMonitor::printString( ItfTarget ch, e_dir_t dir, const char *str, bool 
 				}
 				txt[hpos] = 0; // zero terminate string
 				ucg->print( txt );
-				ESP_LOGI(FNAME,"DM binary ch:%d dir:%d string:%s", ch.raw, dir, txt );
+				ESP_LOGI(FNAME,"DM binary ch:%d dir:%d string:%s", (int)ch.raw, dir, txt );
 			}
 			else{
 				hpos += sprintf( txt, "%c ", dirsym );

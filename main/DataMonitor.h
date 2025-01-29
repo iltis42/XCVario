@@ -45,7 +45,7 @@ private:
 	bool first;
 	int rx_total;
 	int tx_total;
-	static xSemaphoreHandle mutex;
+	static SemaphoreHandle_t mutex;
 };
 
 extern DataMonitor DM;

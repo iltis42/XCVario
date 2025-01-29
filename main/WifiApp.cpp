@@ -28,6 +28,7 @@
 #include <lwip/sockets.h>
 #include <esp_system.h>
 #include <esp_wifi.h>
+#include <esp_mac.h>
 #include <esp_event.h>
 #include <nvs_flash.h>
 #include <lwip/err.h>
@@ -50,10 +51,10 @@ typedef struct xcv_sock_server {
 	DataLinkOld *dlw;
 }sock_server_t;
 
-static sock_server_t XCVario   = { .txbuf = &wl_vario_tx_q, .port=8880, .idle = 0, .pid = 0, {}, nullptr };
-static sock_server_t FLARM     = { .txbuf = &wl_flarm_tx_q, .port=8881, .idle = 0, .pid = 0, {}, nullptr };
-static sock_server_t AUX       = { .txbuf = &wl_aux_tx_q,   .port=8882, .idle = 0, .pid = 0, {}, nullptr };
-static sock_server_t XCVarioMS = { .txbuf = &can_tx_q,      .port=8884, .idle = 0, .pid = 0, {}, nullptr };
+static sock_server_t XCVario   = { .txbuf = &wl_vario_tx_q, .port=8880, .idle = 0, .pid = 0, .clients={}, .dlw=nullptr };
+static sock_server_t FLARM     = { .txbuf = &wl_flarm_tx_q, .port=8881, .idle = 0, .pid = 0, .clients={}, .dlw=nullptr };
+static sock_server_t AUX       = { .txbuf = &wl_aux_tx_q,   .port=8882, .idle = 0, .pid = 0, .clients={}, .dlw=nullptr };
+static sock_server_t XCVarioMS = { .txbuf = &can_tx_q,      .port=8884, .idle = 0, .pid = 0, .clients={}, .dlw=nullptr };
 
 extern bool netif_initialized;
 

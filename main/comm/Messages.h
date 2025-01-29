@@ -45,7 +45,7 @@ private:
     std::queue<Message *> _freeList;
     long _nr_acquisition = 0;
     long _nr_acqfails = 0;
-    xSemaphoreHandle _mutex = nullptr;
+    SemaphoreHandle_t _mutex = nullptr;
 };
 
 

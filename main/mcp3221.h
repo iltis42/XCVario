@@ -1,7 +1,7 @@
 #ifndef MCP3221_H
 #define MCP3221_H
 
-#include "I2C.h"
+// #include "I2C.h"
 #include "esp_system.h"
 #include "I2Cbus.hpp"
 

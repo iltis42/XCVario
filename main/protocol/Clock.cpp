@@ -21,7 +21,7 @@ static volatile unsigned long msec_counter = 0;
 static std::set<Clock_I*> clock_registry;
 
 // Timer SR (called in a timer task context)
-static void IRAM_ATTR clock_timer_sr(std::set<Clock_I*> *registry)
+static void clock_timer_sr(std::set<Clock_I*> *registry)
 {
     // be in sync with millis, but sparse
     msec_counter = esp_timer_get_time() / 1000;

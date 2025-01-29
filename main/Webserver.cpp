@@ -117,7 +117,7 @@ void cWebserver::start()
         return;
     }
 
-    ESP_LOGW(FNAME, "heap: %d", esp_get_free_heap_size());
+    ESP_LOGW(FNAME, "heap: %lu", esp_get_free_heap_size());
 
 	httpd_config_t config = HTTPD_DEFAULT_CONFIG();
 		
@@ -287,7 +287,7 @@ static esp_err_t POST_update_handler(httpd_req_t *req)
 				}
 				else
 				{
-					ESP_LOGI(FNAME, "Writing to partition subtype %d at offset 0x%x", otaUpdatePartition->subtype, otaUpdatePartition->address);
+					ESP_LOGI(FNAME, "Writing to partition subtype %d at offset 0x%x", otaUpdatePartition->subtype, (unsigned int)otaUpdatePartition->address);
 				}
 			}
 			else if (strncmp(&otaBuffer[0x50], "CanMagSens", 10) == 0)
@@ -344,7 +344,7 @@ static esp_err_t POST_update_handler(httpd_req_t *req)
 				{
 					const esp_partition_t *boot_partition = esp_ota_get_boot_partition();
 
-					ESP_LOGI(FNAME, "Next boot partition subtype %d at offset 0x%x", boot_partition->subtype, boot_partition->address);
+					ESP_LOGI(FNAME, "Next boot partition subtype %d at offset 0x%x", boot_partition->subtype, (unsigned int)boot_partition->address);
 					ESP_LOGI(FNAME, "Rebooting in 3 seconds...");
 
 					Webserver.setOtaStatus(otaStatus::DONE);

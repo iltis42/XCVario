@@ -78,14 +78,14 @@ int compass_ena(SetupMenuSelect *p) {
 
 void init_routing() {
 	uint32_t s1rt = (uint32_t) serial1_tx.get();
-	ESP_LOGI(FNAME,"init_routing S1: %x", s1rt);
+	ESP_LOGI(FNAME,"init_routing S1: %x", (unsigned int)s1rt);
 	rt_s1_xcv.set((s1rt >> (RT_XCVARIO)) & 1);
 	rt_s1_wl.set((s1rt >> (RT_WIRELESS)) & 1);
 	rt_s1_s2.set((s1rt >> (RT_S1)) & 1);
 	rt_s1_can.set((s1rt >> (RT_CAN)) & 1);
 
 	uint32_t s2rt = (uint32_t) serial2_tx.get();
-	ESP_LOGI(FNAME,"init_routing S2: %x", s2rt);
+	ESP_LOGI(FNAME,"init_routing S2: %x", (unsigned int)s2rt);
 	rt_s2_xcv.set((s2rt >> (RT_XCVARIO)) & 1);
 	rt_s2_wl.set((s2rt >> (RT_WIRELESS)) & 1);
 	rt_s1_s2.set((s2rt >> (RT_S1)) & 1);
@@ -97,13 +97,13 @@ int update_routing(SetupMenuSelect *p) {
 			| ((uint32_t) rt_s1_wl.get() << (RT_WIRELESS))
 			| ((uint32_t) rt_s1_s2.get() << (RT_S1))
 			| ((uint32_t) rt_s1_can.get() << (RT_CAN));
-	ESP_LOGI(FNAME,"update_routing S1: %x", routing);
+	ESP_LOGI(FNAME,"update_routing S1: %x", (unsigned int)routing);
 	serial1_tx.set(routing);
 	routing = (uint32_t) rt_s2_xcv.get() << (RT_XCVARIO)
 			| ((uint32_t) rt_s2_wl.get() << (RT_WIRELESS))
 			| ((uint32_t) rt_s1_s2.get() << (RT_S1))
 			| ((uint32_t) rt_s2_can.get() << (RT_CAN));
-	ESP_LOGI(FNAME,"update_routing S2: %x", routing);
+	ESP_LOGI(FNAME,"update_routing S2: %x", (unsigned int)routing);
 	serial2_tx.set(routing);
 	return 0;
 }
@@ -315,7 +315,7 @@ int data_mon(SetupMenuSelect *p) {
 		default: break;
 	}
 	if (ch != ItfTarget()) {
-		ESP_LOGI(FNAME,"data_mon( %d ) ", ch.raw );
+		ESP_LOGI(FNAME,"data_mon( %d ) ", (int)ch.raw );
 		DM.start(p, ch);
 	}
 	return 0;
@@ -333,7 +333,7 @@ int data_monS2(SetupMenuSelect *p) {
 
 int update_id(SetupMenuChar *p) {
 	const char *c = p->getEntry();
-	ESP_LOGI(FNAME,"New Letter %c Index: %d", *c, p->getCharIndex() );
+	ESP_LOGI(FNAME,"New Letter %c Index: %d", *c, (int)p->getCharIndex() );
 	char id[10] = { 0 };
 	strcpy(id, custom_wireless_id.get().id);
 	id[p->getCharIndex()] = *c;
@@ -764,9 +764,12 @@ void SetupMenu::delete_subtree() {
 	}
 }
 
-void SetupMenu::press() {
-	if ((selected != this) || focus)
-		return;ESP_LOGI(FNAME,"press() active_srceen %d, pressed %d inSet %d  subtree_created: %d mptr: %p", active_screen, pressed, gflags.inSetup, subtree_created, menu_create_ptr );
+void SetupMenu::press()
+{
+	if ((selected != this) || focus) {
+		return;
+	}
+	ESP_LOGI(FNAME,"press() active_srceen %d, pressed %d inSet %d  subtree_created: %d mptr: %p", active_screen, pressed, gflags.inSetup, subtree_created, menu_create_ptr );
 	create_subtree();
 	if (!gflags.inSetup) {
 		active_screen = 0;

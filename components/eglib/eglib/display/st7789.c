@@ -270,14 +270,14 @@ static void clear_memory(eglib_t *eglib) {
 	display_config = eglib_GetDisplayConfig(eglib);
 
 	memory_size = (display_config->width * display_config->height * get_bits_per_pixel(eglib)) / 8;
-	ESP_LOGI("st7789", "memory size: %d %d %d %d", memory_size, display_config->width, display_config->height, get_bits_per_pixel(eglib) );
+	ESP_LOGI("st7789", "memory size: %d %d %d %d", (int)memory_size, display_config->width, display_config->height, get_bits_per_pixel(eglib) );
 
 	set_column_address(eglib, 0, display_config->width - 1);
 	set_row_address(eglib, 0, display_config->height - 1);
 	eglib_SendCommandByte(eglib, ST7789_MEMORY_WRITE);
 	uint8_t buf[256] = { 0 };
 	for(uint32_t addr=0 ; addr < memory_size ; addr+= 256 ){
-		ESP_LOGI("st7789", "addr: %d", addr );
+		ESP_LOGI("st7789", "addr: %d", (int)addr );
 		eglib_SendData(eglib, buf, 256 );
 	}
 }

@@ -1,7 +1,7 @@
 #ifndef CAT5171_H
 #define CAT5171_H
 
-#include "I2C.h"
+// #include "I2C.h"
 #include "esp_system.h"
 #include "I2Cbus.hpp"
 #include "Poti.h"

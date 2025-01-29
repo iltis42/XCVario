@@ -119,7 +119,8 @@ void MagSensHost::Confirmation()
 {
     // $PMSC, <enum>\r\n
 
-    _conf_pack_nr = std::stoi(NMEA::extractWord(_sm._frame, 6));
+    int pos = 6;
+    _conf_pack_nr = std::stoi(NMEA::extractWord(_sm._frame, pos));
     ESP_LOGI(FNAME,"PMS pack conf %d", _conf_pack_nr);
 }
 

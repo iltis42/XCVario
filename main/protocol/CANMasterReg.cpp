@@ -143,9 +143,9 @@ void CANMasterReg::registration_query()
     ESP_LOGI(FNAME, "JP reg token %s", token.c_str());
 
     // read the protocol type
-    size_t pos = tail.find(','); 
+    int pos = tail.find(','); 
     ESP_LOGI(FNAME, "JP comma %d", pos);
-    std::string protocol = NMEA::extractWord(tail, pos+1);
+    std::string protocol = NMEA::extractWord(tail, pos);
     ESP_LOGI(FNAME, "JP proto %s", protocol.c_str());
 
     // Todo option to use the token, when more devices of one kind need to be connected

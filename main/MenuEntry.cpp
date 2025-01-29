@@ -122,7 +122,7 @@ void MenuEntry::delEntry( MenuEntry * item ) {
 
 MenuEntry* MenuEntry::findMenu( std::string title, MenuEntry* start )
 {
-	ESP_LOGI(FNAME,"MenuEntry findMenu() %s %x", title.c_str(), (uint32_t)start );
+	ESP_LOGI(FNAME,"MenuEntry findMenu() %s %p", title.c_str(), start );
 	if( std::string(start->_title) == title ) {
 		ESP_LOGI(FNAME,"Menu entry found for start %s", title.c_str() );
 		return start;

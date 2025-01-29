@@ -5,13 +5,14 @@
 #include "DeviceMgr.h"
 #include "DataLink.h"
 #include "sensor.h"
+#include "logdef.h"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
-#include "driver/gpio.h"
-#include "logdefnone.h"
-#include "esp_err.h"
+#include <driver/gpio.h>
+// #include <esp_mac.h>
+#include <esp_err.h>
 
 
 /*
@@ -57,7 +58,7 @@ void canRxTask(void *arg)
         if (ESP_OK == twai_receive(&rx, pdMS_TO_TICKS(500)) && rx.data_length_code > 0)
         {
             msg.assign((char *)rx.data, rx.data_length_code);
-            ESP_LOGD(FNAME, "CAN RX NMEA chunk, id:0x%x, len:%d msg: %s", rx.identifier, rx.data_length_code, msg.c_str());
+            ESP_LOGD(FNAME, "CAN RX NMEA chunk, id:0x%x, len:%d msg: %s", (unsigned int)rx.identifier, rx.data_length_code, msg.c_str());
             auto dl = can->_dlink.find(rx.identifier);
             if ( dl != can->_dlink.end() ) {
                 dl->second->process(msg.data(), msg.size());
@@ -233,7 +234,7 @@ void CANbus::driverInstall(twai_mode_t mode)
         driverUninstall();
     }
     twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(_tx_io, _rx_io, mode);
-    ESP_LOGI(FNAME, "default alerts %X", g_config.alerts_enabled);
+    ESP_LOGI(FNAME, "default alerts %X", (unsigned int)g_config.alerts_enabled);
     // g_config.alerts_enabled = TWAI_ALERT_TX_FAILED | TWAI_ALERT_BUS_OFF | TWAI_ALERT_ABOVE_ERR_WARN | TWAI_ALERT_BUS_ERROR;
     g_config.alerts_enabled = TWAI_ALERT_ALL;
     if (_slope_support)
@@ -242,7 +243,7 @@ void CANbus::driverInstall(twai_mode_t mode)
     }
     g_config.rx_queue_len = 15; // 1.5x the need of one NMEA sentence
     g_config.tx_queue_len = 15;
-    ESP_LOGI(FNAME, "my alerts %X", g_config.alerts_enabled);
+    ESP_LOGI(FNAME, "my alerts %X", (unsigned int)g_config.alerts_enabled);
 
     twai_timing_config_t t_config;
     _tx_timeout = 2; // 111usec/chunk -> 2msec
@@ -412,7 +413,7 @@ bool CANbus::selfTest()
             else
             {
                 std::string msg((char*)rx.data, rx.data_length_code);
-                ESP_LOGW(FNAME, "CAN bus selftest RX call FAILED bytes:%d rxid:%x rxmsg:%s", rx.data_length_code, rx.identifier, msg.c_str());
+                ESP_LOGW(FNAME, "CAN bus selftest RX call FAILED bytes:%d rxid:%x rxmsg:%s", rx.data_length_code, (unsigned int)rx.identifier, msg.c_str());
                 twai_clear_receive_queue();
             }
         }
@@ -490,7 +491,7 @@ bool CANbus::sendData(int id, const char *msg, int length, int self)
             ESP_LOGW(FNAME, "Transmit timeout. Message dropped.");
         }
         twai_read_alerts(&alerts, pdMS_TO_TICKS(_tx_timeout));
-        ESP_LOGW(FNAME, "Tx chunk failed alerts 0x%x", alerts);
+        ESP_LOGW(FNAME, "Tx chunk failed alerts 0x%x", (unsigned int)alerts);
     }
     if ( alerts != 0 )
     {

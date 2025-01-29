@@ -339,7 +339,7 @@ RoutingList DeviceManager::getRouting(RoutingTarget target)
                 tit++;
             }
         }
-        return std::move(res);
+        return res;
     }
     else {
         return RoutingList();

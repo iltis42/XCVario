@@ -7,7 +7,7 @@
 #include <logdef.h>
 
 
-xSemaphoreHandle nvMutex=NULL;
+SemaphoreHandle_t nvMutex=NULL;
 ESP32NVS * ESP32NVS::Instance = 0;
 
 ESP32NVS::ESP32NVS(){

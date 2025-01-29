@@ -1,7 +1,7 @@
 #include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
+// #include <freertos/task.h>
 #include <freertos/semphr.h>
-#include <esp_system.h>
+// #include <esp_system.h>
 #include <driver/spi_master.h>
 #include <driver/gpio.h>
 #include <esp_log.h>
@@ -10,7 +10,7 @@
 extern "C" {
 #include "esp32_ili9341.h"
 
-extern xSemaphoreHandle spiMutex;
+extern SemaphoreHandle_t spiMutex;
 
 static esp32_hal_config_t *config;
 static spi_device_handle_t spi;
@@ -37,7 +37,7 @@ static void einit(eglib_t *eglib)
 	ESP_LOGI("ILI9341","einit() %p", eglib);
 	config = (esp32_hal_config_t *)eglib_GetHalConfig(eglib);
 	// hal_four_wire_spi_config_t * fwc = eglib_GetHalFourWireSpiConfigComm(eglib);
-	ESP_LOGI("ILI9341","spi%d host%d, mode %d, freq %d", config->spi_num, SPI2_HOST, config->dataMode, config->freq);
+	ESP_LOGI("ILI9341","spi%d host%d, mode %d, freq %d", (int)config->spi_num, SPI2_HOST, (int)config->dataMode, (int)config->freq);
 
 	// SPI device configuration
 	spi_device_interface_config_t devcfg = {
@@ -85,7 +85,7 @@ static void esleep_out(eglib_t *_eglib) {
 }
 
 static void edelay_ns(eglib_t *_eglib, uint32_t ns) {
-	ESP_LOGI("ILI9341","delay %d ms", ns/1000000 );
+	ESP_LOGI("ILI9341","delay %d ms", (int)ns/1000000 );
 	vTaskDelay( (ns/1000000) / portTICK_PERIOD_MS);
 }
 

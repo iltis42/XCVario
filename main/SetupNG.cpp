@@ -22,9 +22,7 @@
 #include <math.h>
 #include "ESPAudio.h"
 #include "BMPVario.h"
-#include <esp32/rom/miniz.h>
 #include "Polars.h"
-#include "esp_task_wdt.h"
 #include <logdef.h>
 #include "mpu/types.hpp"  // MPU data types and definitions
 #include "sensor.h"

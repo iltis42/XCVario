@@ -3,8 +3,6 @@
 
 #include "Cipher.h"
 #include "BME280_ESP32_SPI.h"
-#include <driver/adc.h>
-#include <driver/gpio.h>
 #include "mcp3221.h"
 #include "mcp4018.h"
 #include "ESP32NVS.h"
@@ -58,27 +56,34 @@
 #include "comm/SerialLine.h"
 #include "comm/CanBus.h"
 #include "comm/DeviceMgr.h"
+#include "protocol/TestQuery.h"
 #include "Router.h"
 
 #include "sdkconfig.h"
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <esp_task_wdt.h>
+#include <esp_task.h>
 #include <esp_log.h>
-#include <esp32/rom/miniz.h>
+#include <miniz.h>
 #include <soc/sens_reg.h> // needed for adc pin reset
 #include <esp_sleep.h>
 #include <esp_wifi.h>
 #include <esp_system.h>
 #include <esp_timer.h>
+#include <esp_flash.h>
+#include <esp_chip_info.h>
 #include <nvs_flash.h>
+// #include <driver/adc.h>
+#include <esp_adc/adc_continuous.h>
+#include <driver/gpio.h>
+
 #include <string>
 #include <cstdio>
 #include <cstring>
 #include "DataMonitor.h"
 #include "AdaptUGC.h"
 #include "CenterAid.h"
-#include "protocol/TestQuery.h"
 
 // #include "sound.h"
 
@@ -102,8 +107,8 @@ DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 standard, alternative  GPIO_NUM
 AirspeedSensor *asSensor=0;
 StraightWind theWind;
 
-xSemaphoreHandle xMutex=NULL;
-xSemaphoreHandle spiMutex=NULL;
+SemaphoreHandle_t xMutex=NULL;
+SemaphoreHandle_t spiMutex=NULL;
 
 S2F Speed2Fly;
 Protocols OV( &Speed2Fly );
@@ -840,19 +845,19 @@ void readTemp(void *pvParameters){
 
 static esp_err_t _coredump_to_server_begin_cb(void * priv)
 {
-	ets_printf("================= CORE DUMP START =================\r\n");
+	std::printf("================= CORE DUMP START =================\r\n");
 	return ESP_OK;
 }
 
 static esp_err_t _coredump_to_server_end_cb(void * priv)
 {
-	ets_printf("================= CORE DUMP END ===================\r\n");
+	std::printf("================= CORE DUMP END ===================\r\n");
 	return ESP_OK;
 }
 
 static esp_err_t _coredump_to_server_write_cb(void * priv, char const * const str)
 {
-	ets_printf("%s\r\n", str);
+	std::printf("%s\r\n", str);
 	return ESP_OK;
 }
 
@@ -885,7 +890,7 @@ void system_startup(void *args){
 	esp_wifi_set_mode(WIFI_MODE_NULL);
 	spiMutex = xSemaphoreCreateMutex();
 	Menu = new SetupMenu();
-	// esp_log_level_set("*", ESP_LOG_INFO);
+	esp_log_level_set("*", ESP_LOG_INFO);
 	ESP_LOGI( FNAME, "Log level set globally to INFO %d; Max Prio: %d Wifi: %d",  ESP_LOG_INFO, configMAX_PRIORITIES, ESP_TASKD_EVENT_PRIO-5 );
 	esp_chip_info_t chip_info;
 	esp_chip_info(&chip_info);
@@ -894,7 +899,9 @@ void system_startup(void *args){
 			(chip_info.features & CHIP_FEATURE_BT) ? "/BT" : "",
 					(chip_info.features & CHIP_FEATURE_BLE) ? "/BLE" : "");
 	ESP_LOGI( FNAME,"Silicon revision %d, ", chip_info.revision);
-	ESP_LOGI( FNAME,"%dMB %s flash\n", spi_flash_get_chip_size() / (1024 * 1024),
+	uint32_t flash_size = 0;
+    esp_err_t ret = esp_flash_get_size(NULL, &flash_size);
+	ESP_LOGI( FNAME,"%dMB %s flash\n", (int)flash_size / (1024 * 1024),
 			(chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 	ESP_LOGI(FNAME, "QNH.get() %.1f hPa", QNH.get() );
 	register_coredump();
@@ -906,7 +913,8 @@ void system_startup(void *args){
 		hardwareRevision.set(XCVARIO_20);
 	}
 
-	wireless_type.set(WL_BLUETOOTH);
+	// menu_screens.set(0);
+	// wireless_type.set(WL_DISABLE);
 	wireless = (e_wireless_type)(wireless_type.get()); // we cannot change this on the fly, so get that on boot
 	AverageVario::begin();
 	stall_alarm_off_kmh = stall_speed.get()/3;
@@ -1386,7 +1394,7 @@ void system_startup(void *args){
 	}
 	
 	{
-		S1 = new SerialLine(1,GPIO_NUM_16,GPIO_NUM_17);
+		S1 = new SerialLine((uart_port_t)1,GPIO_NUM_16,GPIO_NUM_17);
 		DeviceManager* dm = DeviceManager::Instance();
 		dm->addDevice(FLARM_DEV, FLARM_P, 0, 0, S1_RS232);
 		dm->addDevice(FLARM_DEV, FLARMBIN_P, 0, 0, NO_PHY);
@@ -1617,7 +1625,6 @@ extern "C" void  app_main(void)
 	esp_log_level_set("*", ESP_LOG_INFO);
 	// Init timer infrastructure
 	Audio::shutdown();
-	esp_timer_init();
 	MPU.clearpwm();
 	Router::begin();
 	ESP_LOGI(FNAME,"app_main" );

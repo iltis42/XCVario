@@ -5,35 +5,36 @@
  *      Author: iltis
  */
 
-#include "Setup.h"
-#include <string>
-#include <stdio.h>
-#include "esp_system.h"
-#include <esp_log.h>
+#include "SetupCommon.h"
+
+#include "SetupNG.h"
 #include "sdkconfig.h"
-#include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "ESP32NVS.h"
-#include "esp32/rom/uart.h"
-#include <math.h>
 #include "ESPAudio.h"
 #include "BMPVario.h"
-#include <esp32/rom/miniz.h>
 #include "Polars.h"
-#include "esp_task_wdt.h"
-#include <logdef.h>
+#include "logdef.h"
 #include "sensor.h"
-#include "Router.h"
 #include "Switch.h"
 #include "CircleWind.h"
 #include "Protocols.h"
 #include "ESPAudio.h"
-#include "SetupCommon.h"
+
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <esp_system.h>
+#include <esp_log.h>
 #include <esp_http_server.h>
+#include <miniz.h>
+#include <esp32/rom/uart.h>
+#include <esp_mac.h>
+
+#include <cstdio>
+#include <cmath>
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <cstdio>
 
 // QueueHandle_t SetupCommon::commitSema = nullptr;
 // esp_timer_handle_t SetupCommon::_timer = nullptr;

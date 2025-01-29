@@ -1,6 +1,9 @@
 #include "OnewireRmt.h"
-#include "driver/rmt.h"
-#include <logdef.h>
+
+#include "logdef.h"
+
+#include <driver/rmt.h>
+#include <hal/gpio_hal.h>
 
 
 OnewireRmt::OnewireRmt(gpio_num_t pin, rmt_channel_t rmt_rx, rmt_channel_t rmt_tx)
@@ -30,7 +33,7 @@ bool OnewireRmt::onewire_rmt_reset(struct mgos_rmt_onewire *ow) {
     gpio_num_t gpio_num = (gpio_num_t)ow->pin;
 
     ESP_LOGD(FNAME,"onewire_rmt_reset() OW_DEPOWER( %d)", (int)gpio_num );
-    OW_DEPOWER(gpio_num);
+    gpio_set_direction(gpio_num, GPIO_MODE_OUTPUT_OD);
 
     tx_items[0].duration0 = OW_DURATION_RESET;
     tx_items[0].level0 = 0;
@@ -146,7 +149,7 @@ bool OnewireRmt::onewire_read_bits(gpio_num_t gpio_num, uint8_t *data, uint8_t n
         return false;
     }
 
-    OW_DEPOWER(gpio_num);
+    gpio_set_direction(gpio_num, GPIO_MODE_OUTPUT_OD);
 
     // generate requested read slots
     for (int i = 0; i < num; i++) {
@@ -206,10 +209,10 @@ bool OnewireRmt::onewire_write_bits(gpio_num_t gpio_num, uint8_t data, uint8_t n
 
     if (power) {
         // apply strong driver to power the bus
-        OW_POWER(gpio_num);
+        gpio_set_direction(gpio_num, GPIO_MODE_OUTPUT);
     } else {
         // switch to open-drain mode, bus is powered by external pull-up
-        OW_DEPOWER(gpio_num);
+        gpio_set_direction(gpio_num, GPIO_MODE_OUTPUT_OD);
     }
 
     // write requested bits as pattern to TX buffer
@@ -234,27 +237,49 @@ bool OnewireRmt::onewire_rmt_attach_pin(gpio_num_t gpio_num) {
     if (ow_rmt.tx < 0 || ow_rmt.rx < 0)
         return false;
 
-    if (gpio_num != ow_rmt.gpio) {
-        // attach GPIO to previous pin
-        if (gpio_num < 32) {
-            GPIO.enable_w1ts = (0x1 << gpio_num);
-        } else {
-            GPIO.enable1_w1ts.data = (0x1 << (gpio_num - 32));
-        }
-        if (ow_rmt.gpio >= 0) {
-            gpio_matrix_out(ow_rmt.gpio, SIG_GPIO_OUT_IDX, 0, 0);
-        }
+    // if (gpio_num != ow_rmt.gpio) {
+    //     // attach GPIO to previous pin
+	// 	gpio_set_direction(gpio_num, GPIO_MODE_OUTPUT);
+    //     // if (gpio_num < 32) {
+    //     //     GPIO.enable_w1ts = (0x1 << gpio_num);
+    //     // } else {
+    //     //     GPIO.enable1_w1ts.data = (0x1 << (gpio_num - 32));
+    //     // }
+	// 	if (ow_rmt.gpio >= 0)
+	// 	{
+	// 		// gpio_matrix_out(ow_rmt.gpio, SIG_GPIO_OUT_IDX, 0, 0);
+	// 		gpio_reset_pin(ow_rmt.gpio);
+	// 		gpio_set_direction(ow_rmt.gpio, GPIO_MODE_OUTPUT);
+	// 		gpio_matrix_out(ow_rmt.gpio, SIG_GPIO_OUT_IDX, false, false);
+	// 	}
 
-        // attach RMT channels to new gpio pin
-        // ATTENTION: set pin for rx first since gpio_output_disable() will
-        //            remove rmt output signal in matrix!
-        rmt_set_pin(ow_rmt.rx, RMT_MODE_RX, gpio_num);
-        rmt_set_pin(ow_rmt.tx, RMT_MODE_TX, gpio_num);
-        // force pin direction to input to enable path to RX channel
-        PIN_INPUT_ENABLE(GPIO_PIN_MUX_REG[gpio_num]);
+	// 	// attach RMT channels to new gpio pin
+    //     // ATTENTION: set pin for rx first since gpio_output_disable() will
+    //     //            remove rmt output signal in matrix!
+	// 	rmt_config_t rmt_config = {
+	// 		.rmt_mode = RMT_MODE_RX,
+	// 		.channel = RMT_CHANNEL_0,
+	// 		.gpio_num = gpio_num,
+	// 		.mem_block = RMT_MEM_BLOCK0,
+	// 		.clk_div = 80, // Set clock divider (adjust as needed for timing)
+	// 	};
+	// 	rmt_config(&rmt_config);
+	// 	// rmt_set_pin(ow_rmt.rx, RMT_MODE_RX, gpio_num);
 
-        ow_rmt.gpio = gpio_num;
-    }
+	// 	rmt_config_t rmt_config = {
+	// 		.rmt_mode = RMT_MODE_TX,
+	// 		.channel = RMT_CHANNEL_0,
+	// 		.gpio_num = gpio_num,
+	// 		.mem_block = RMT_MEM_BLOCK0,
+	// 		.clk_div = 80,
+	// 	};
+	// 	rmt_config(&rmt_config);
+	// 	// rmt_set_pin(ow_rmt.tx, RMT_MODE_TX, gpio_num);
+	// 	// force pin direction to input to enable path to RX channel
+	// 	PIN_INPUT_ENABLE(GPIO_PIN_MUX_REG[gpio_num]);
+
+    //     ow_rmt.gpio = gpio_num;
+    // }
 
     return true;
 }
@@ -310,7 +335,7 @@ uint8_t OnewireRmt::reset(void)
 	gpio_num_t gpio_num = (gpio_num_t)_ow.pin;
 
 	ESP_LOGD(FNAME,"onewire_rmt_reset() OW_DEPOWER( %d)", (int)gpio_num );
-	OW_DEPOWER(gpio_num);
+	gpio_set_direction(gpio_num, GPIO_MODE_OUTPUT_OD);
 
 	tx_items[0].duration0 = OW_DURATION_RESET;
 	tx_items[0].level0 = 0;
@@ -639,5 +664,16 @@ uint8_t OnewireRmt::crc8(const uint8_t *addr, uint8_t len)
 	return res;
 }
 
+
+void OnewireRmt::configure_gpio_open_drain(gpio_num_t gpio_num)
+{
+    gpio_reset_pin(gpio_num);
+    
+    // Set GPIO as output open-drain
+    gpio_set_direction(gpio_num, GPIO_MODE_OUTPUT_OD);
+
+    // Optionally set drive capability (default is enough in most cases)
+    gpio_set_drive_capability(gpio_num, GPIO_DRIVE_CAP_0);
+}
 
 

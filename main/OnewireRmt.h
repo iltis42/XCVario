@@ -1,8 +1,10 @@
 #pragma once
+
+#include <driver/gpio.h>
+#include <driver/rmt.h>
+
 #include <stdbool.h>
 #include <stdint.h>
-#include "driver/gpio.h"
-#include "driver/rmt.h"
 
 // *****************************************************************************
 // Onewire platform interface
@@ -26,9 +28,9 @@
 // Strong pull-up aka power mode is implemented by the pad's push-pull driver.
 // Open-drain configuration is used for normal operation.
 // power bus by disabling open-drain:
-#define OW_POWER(g) GPIO.pin[g].pad_driver = 0
+// #define OW_POWER(g) GPIO.pin[g].pad_driver = 0
 // de-power bus by enabling open-drain:
-#define OW_DEPOWER(g) GPIO.pin[g].pad_driver = 1
+// #define OW_DEPOWER(g) GPIO.pin[g].pad_driver = 1
 // ; gpio_set_pull_mode(g, GPIO_PULLUP_ONLY)
 
 // grouped information for RMT management
@@ -118,7 +120,10 @@ public:
     // Compute a Dallas Semiconductor 8 bit CRC, these are used in the
     // ROM and scratchpad registers.
     static uint8_t crc8(const uint8_t *addr, uint8_t len);
+
 private:
+    void configure_gpio_open_drain(gpio_num_t gpio_num);
+
     ow_rmt_t   ow_rmt;
     mgos_ro_t  _ow;
     uint8_t owDefaultPower;

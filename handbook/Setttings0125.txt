@@ -159,7 +159,10 @@ Options
 			CAN-bus
 		WIFI Power
 		Lock Master
-		Monitor
+		Monitor   
+			Disable  [ Enable ] and Rotary for interface selection
+			:
+			CAN Bus
 		Monitor Mode
 		Custom-ID
 			Letter 1
@@ -182,6 +185,21 @@ Options
 		G-Load reset
 
 System
+	Devices [ Flarm, Krt2, Becker, XCS-Navi ]
+		Mode [ Master, Client ]
+		Flarm
+			Interface [ S1, S2 ]
+				S1
+					Baudrate
+					etc
+		XCFV
+			Mode: Reader
+			Interface: S2
+					Baudrate
+		Navi
+		
+			
+
 	Software Update
 		Software Vers.
 		Software Update
@@ -250,11 +268,11 @@ System
 			Wireless
 			S2-RS232
 			CAN-bus
-		TX Inversion
-		RX Inversion
+		RX/TX Invert
 		Twist RX/TX Pins
-		TX Line
+		Role [ Master | Client ]
 		Monitor
+
 	RS232 Interface S2
 		Baudraute
 		S2 Routing
@@ -262,10 +280,9 @@ System
 			Wireless
 			S1-RS232
 			CAN-bus
-		TX Inversion
-		RX Inversion
+		RX/TX Invert
 		Twist RX/TX Pins
-		TX Line
+		Role [ Master | Client ]
 		Monitor
 
 		CAN Interface

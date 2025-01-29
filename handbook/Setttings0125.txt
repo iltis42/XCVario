@@ -1,0 +1,281 @@
+﻿MC
+Bugs
+Ballast
+Crew Weight
+QNH
+Airfield Elevation
+Vario and Speed 2 Fly	
+	Range
+	Log. Scale
+	Mode
+	Netto Mode
+	Polar Sink
+	Needle Color
+	Center-Aid
+	Vario Damping
+		Damping
+		Averager
+	Mean Climb
+		Minimum climb
+		Duration
+		Cycle
+		Major Change
+	S2F Settings
+		Damping
+		Blockspeed
+		S2F Mode
+		S2F Switch
+		S2F AutoSpeed
+		S2F Flap Pos
+		S2F AHRS Deg
+		Hysteresis
+		Arrow Color
+	Electronic Compensation
+		eCompensation
+		Adjustment
+Audio
+	Volume options
+		Current Volume
+		Current->Default
+		Default Volume
+		Max Volume
+		Equalizer
+			Equalizer
+			Frequency Response
+		STF Volume
+	Mute Audio
+		In Sink
+		In Setup
+		Generally
+		Amplifier
+	Cruise Audio
+	Tone Styles
+		CenterFreq
+		Octaves
+		Dual Tone
+		Dual Tone Pitch
+		Chopping
+		Chopping Style
+		Variable Tone
+	Range
+	
+	Deadbands
+		Lower Vario
+		Upper Vario
+		Lower S2F
+		Upper S2F
+
+	Audio Exponent
+Glider Details
+	Glider-Type
+	Polar Points
+		Ref Wingload
+		Speed 1
+		Sink  1
+		Speed 2
+		Sink  2
+		Speed 3
+		Sink  3
+	Max Ballast
+	Wing Area
+	Empty Weight
+
+Options
+	Student Mode
+	Flap (WK) Indicator
+		Flap Indicator
+		Max positive Flap
+		Max negative Flap
+		Takeoff Flap
+		Flap Speeds Setup
+		Flap Position Labels
+		Flap Sensor
+		Sensor Calibration
+	Units
+		Altimeter
+		Airspeed
+		Vario
+		Temperature
+		QNH
+		Distance
+	Airspeed Mode
+	Auto Transition
+	Altitude Mode
+	Transition Altitude
+	FLARM
+		Alarm Level
+		Alarm Volume
+		Alarm Timeout
+		FLARM Simulation
+	
+	Compass/Wind
+		Compass
+			Sensor Option
+			Sensor Calibration
+			Setup Declination
+			AutoDeviation
+			Setup Deviations
+				Direction 0°
+				Direction 45°
+				:
+				Direction 315°
+			Show Deviations
+			Reset Deviations 
+			Setup NMEA
+				Magnetic Heading
+				True Heading
+				
+			Damping
+			I2C Clock
+			Show Settings
+		Wind Calculation
+		Display
+		Arrow Ref
+		Straight Wind
+			Filters
+				Airspeed Lowpass
+				Deviation Lowpass
+				GPS Lowpass
+				Averager
+			Limits
+				Deviation Limit
+				Sideslip Limit
+				Course Limit
+				AS Delta Limit
+			Straight Wind Status
+		Circling Wind
+			Circling Wind Status
+			Max Delta
+			Averager
+			Max Speed Delta
+			Max Dir Delta
+		Wind Logging
+	Wireless
+		Wireless
+		WL Routing
+			XCVario
+			S1-RS232
+			S2-RS232
+			CAN-bus
+		WIFI Power
+		Lock Master
+		Monitor
+		Monitor Mode
+		Custom-ID
+			Letter 1
+			Letter 2
+			Letter 3
+			Letter 4
+			Letter 5
+			Letter 6
+	G-Load Display
+		Activation Mode
+		Positive Threshold
+		Negative Threshold
+		Red positive limit
+		Yellow pos. Limit
+		Red negative limit
+		Yellow neg. Limit
+		Max Positive
+		Max Negative
+		Alarm Volume
+		G-Load reset
+
+System
+	Software Update
+		Software Vers.
+		Software Update
+	Factory Reset
+	Battery Setup
+		Battery Low
+		Battery Red
+		Battery Yellow
+		Battery Full
+		Battery Display
+	Hardware Setup
+		DISPLAY Setup
+			HW Type
+			Style
+			Color Variant
+			Orientation
+			Needle Alignment
+			Display Test
+			Display Clk Adj
+		Rotary Setup
+			Screens
+				G-Meter
+				Horizon
+			Direction
+			Sensitivity
+			Rotation
+			Setup Menu by
+		Gear Warn
+		AHRS Setup
+			AHRS ID
+			AHRS Option
+			AHRS Calibration
+				Axis calibration
+				Ground angle of attack
+			AHRS License Key
+				First    Letter
+				Second Letter
+				Third   Letter
+				Last     Letter
+			AHRS Parameters
+				Gyro Max Trust
+				Gyro Min Trust
+				Gyro Dynamics
+				Gyro Roll Check
+				Gyro Gating
+				AHRS Temp Control
+				Reset to Defaults
+			AHRS RPYL
+		AS Sensor type
+		Voltmeter Adjust
+	
+	Altimeter, Airspeed
+		Altimeter Source
+		AS Calibration
+		AutoZero AS Sensor
+		Alt. Quantization
+		Stall Warning
+			Stall Warning
+			Stall Speed
+		Maximum Speed
+	RS232 Interface S1
+		Baudraute
+		Serial Loops
+		S1 Routing
+			XCVario
+			Wireless
+			S2-RS232
+			CAN-bus
+		TX Inversion
+		RX Inversion
+		Twist RX/TX Pins
+		TX Line
+		Monitor
+	RS232 Interface S2
+		Baudraute
+		S2 Routing
+			XCVario
+			Wireless
+			S1-RS232
+			CAN-bus
+		TX Inversion
+		RX Inversion
+		Twist RX/TX Pins
+		TX Line
+		Monitor
+
+		CAN Interface
+		Datarate
+		CAN Routing
+			XCVario
+			Wireless
+			S1-RS232
+			S2-RS232
+		Mode
+	NMEA Protocol
+	Logging
+

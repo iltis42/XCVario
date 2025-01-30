@@ -348,17 +348,16 @@ bool CANbus::begin()
         ESP_LOGI(FNAME, "CAN bus OFF");
         return false;
     }
+    ESP_LOGI(FNAME, "CAN begin");
 
     if ( ! _initialized && selfTest() )
     {
-        ESP_LOGI(FNAME, "CANbus::begin");
-        if ( selfTest() ) {
-            driverInstall(TWAI_MODE_NORMAL);
-            terminate_receiver = false;
-            xTaskCreate(&canRxTask, "canRxTask", 4096, this, 80, &rxTask);
-        } else {
-            driverUninstall();
-        }
+        driverInstall(TWAI_MODE_NORMAL);
+        terminate_receiver = false;
+        xTaskCreate(&canRxTask, "canRxTask", 4096, this, 80, &rxTask);
+    }
+    else {
+        driverUninstall();
     }
     return _initialized;
 }

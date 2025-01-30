@@ -1,5 +1,5 @@
 #include "cat5171.h"
-#include "I2C.h"
+// #include "I2C.h"
 #include <logdef.h>
 
 //Create instance  CAT5171(gpio_num_t sda, gpio_num_t scl);
@@ -45,7 +45,8 @@ bool CAT5171::haveDevice() {
 
 bool CAT5171::readWiper( int &val ) {
 	uint16_t i16val;
-	esp_err_t err = bus->read8bit(CAT5171_I2C_ADDR, &i16val );
+	esp_err_t err = bus->readBits(CAT5171_I2C_ADDR, 0, 0, 8, (uint8_t*)&i16val);
+	// bus->read8bit(CAT5171_I2C_ADDR, &i16val );
 	if( err == ESP_OK ){
 		// ESP_LOGI(FNAME,"CAT5171 read wiper val=%d  OK", i16val );
 		val = i16val;
@@ -59,7 +60,8 @@ bool CAT5171::readWiper( int &val ) {
 
 bool CAT5171::writeWiper( int val ) {
     // ESP_LOGI(FNAME,"CAT5171 write wiper %d", val );
-	esp_err_t err = bus->write2bytes( CAT5171_I2C_ADDR, 0, (uint8_t)val );  // 0x40 = RS = midscale
+	esp_err_t err = bus->writeBytes(CAT5171_I2C_ADDR, 0, 2, (uint8_t*)&val);
+	// bus->write2bytes( CAT5171_I2C_ADDR, 0, (uint8_t)val );  // 0x40 = RS = midscale
 	if( err != ESP_OK ){
 		// ESP_LOGV(FNAME,"CAT5171 write wiper OK");
 		ESP_LOGE(FNAME,"CAT5171 Error writing wiper, error count %d", errorcount);
@@ -94,7 +96,9 @@ bool CAT5171::writeVolume( float val ) {
 
 bool CAT5171::reset() {
     ESP_LOGI(FNAME,"CAT5171 reset");
-	esp_err_t err = bus->write2bytes( CAT5171_I2C_ADDR, 0x60, 128 );  // 0x40 = RS = midscale
+	uint16_t data = 128;
+	esp_err_t err = bus->writeBytes(CAT5171_I2C_ADDR, 0x60, 2, (uint8_t*)&data);
+	// bus->write2bytes( CAT5171_I2C_ADDR, 0x60, 128 );  // 0x40 = RS = midscale
 	if( err != ESP_OK ){
 		// ESP_LOGV(FNAME,"CAT5171 write wiper OK");
 		ESP_LOGE(FNAME,"CAT5171 Error writing wiper, error count %d", errorcount);

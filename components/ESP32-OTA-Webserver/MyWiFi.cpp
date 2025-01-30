@@ -2,7 +2,9 @@
 #include "MyWiFi.h"
 
 #include <esp_wifi.h>
+#include <esp_mac.h>
 #include <esp_log.h>
+#include <esp_random.h>
 
 #include <cstring>
 
@@ -54,7 +56,7 @@ void init_wifi_softap(void *arg)
 	
 
 	ESP_ERROR_CHECK(esp_wifi_start());
-	ESP_LOGI("Wifi", "ESP WiFi started in AP mode, channel: %d \n", channel );
+	ESP_LOGI("Wifi", "ESP WiFi started in AP mode, channel: %d \n", (int)channel );
 	
 	// This can only be placed after esp_wifi_start();
 	ESP_ERROR_CHECK(esp_wifi_set_max_tx_power(80));

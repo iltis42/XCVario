@@ -28,7 +28,7 @@ MessagePool::MessagePool()
 }
 MessagePool::~MessagePool()
 {
-    xSemaphoreHandle tmp = _mutex;
+    SemaphoreHandle_t tmp = _mutex;
     _mutex = nullptr;
     for (int i = 0; i < MSG_POOL_SIZE; ++i) {
         delete _buffers[i];

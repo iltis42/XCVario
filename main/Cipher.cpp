@@ -1,8 +1,9 @@
 #include "Cipher.h"
+#include "SetupNG.h"
 #include "logdef.h"
 #include "sensor.h"
-#include <esp32/rom/miniz.h>
-#include "Setup.h"
+#include <esp_mac.h>
+#include <miniz.h>
 
 std::string Cipher::_id;
 

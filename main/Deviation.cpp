@@ -25,7 +25,7 @@ Last update: 2021-03-29
 #include "Deviation.h"
 #include "KalmanMPU6050.h"
 
-xSemaphoreHandle Deviation::splineMutex = 0;
+SemaphoreHandle_t Deviation::splineMutex = 0;
 
 #define MAX_SAVE_DELTA 0.3 // maximum error for saving new deviation data per heading
 #define HALF_SPACING   		  10    // automatic -> more points as low pass filtered

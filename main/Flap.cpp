@@ -509,9 +509,9 @@ void Flap::configureADC( int port ){
 		delay(10);
 		uint32_t read =  sensorAdc->getRaw();
 		if( read == 0  || read >= 4096 ) // try GPIO pin 34, series 2021-2
-			ESP_LOGI( FNAME, "Flap sensor not found or edge value, reading: %d", read);
+			ESP_LOGI( FNAME, "Flap sensor not found or edge value, reading: %d", (int)read);
 		else
-			ESP_LOGI( FNAME, "Flap sensor looks good, reading: %d", read );
+			ESP_LOGI( FNAME, "Flap sensor looks good, reading: %d", (int)read );
 	}else{
 		ESP_LOGI( FNAME, "Sensor ADC NOT properly configured");
 	}

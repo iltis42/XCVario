@@ -149,7 +149,7 @@ int ASLEN = 0;
 static const int16_t INNER_RIGHT_ALIGN = 170;
 static int fh;
 
-xSemaphoreHandle display_mutex=NULL;
+SemaphoreHandle_t display_mutex=NULL;
 
 ucg_color_t IpsDisplay::colors[TEMAX+1+TEGAP];
 ucg_color_t IpsDisplay::colorsalt[TEMAX+1+TEGAP];

@@ -19,12 +19,10 @@
 #include <esp_log.h>
 
 #include <string>
-#include <stdio.h>
 #include <cstdio>
 #include <cstring>
 #include <iostream>
 #include <vector>
-#include "SetupNG.h"
 
 struct httpd_req;
 

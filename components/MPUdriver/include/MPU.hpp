@@ -32,7 +32,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 
-extern xSemaphoreHandle i2c_mutex;
+extern SemaphoreHandle_t i2c_mutex;
 
 typedef enum temp_status { MPU_T_UNKNOWN, MPU_T_LOCKED, MPU_T_LOW, MPU_T_HIGH } temp_status_t;
 

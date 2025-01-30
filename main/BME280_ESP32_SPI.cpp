@@ -14,7 +14,7 @@
 #include <logdef.h>
 #include "sensor.h"
 
-extern xSemaphoreHandle spiMutex;
+extern SemaphoreHandle_t spiMutex;
 
 bool BME280_ESP32_SPI::setSPIBus(gpio_num_t sclk, gpio_num_t mosi, gpio_num_t miso, gpio_num_t cs, uint32_t freq)
 {

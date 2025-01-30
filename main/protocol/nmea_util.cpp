@@ -34,7 +34,7 @@ std::string CheckSum(const char *nmea)
 
     char buf[4];
     sprintf(buf, "%02x", crc);
-    return std::move(std::string(buf));
+    return std::string(buf);
 }
 
 
@@ -63,7 +63,7 @@ std::string extractWord(const std::string &str, int &pos)
         pos++;
         cptr++;
     }
-    return std::move(str.substr(wstart, pos-wstart));
+    return str.substr(wstart, pos-wstart);
 }
 
 void incrCRC(int &crc, const char c)
@@ -102,7 +102,7 @@ std::string hexDump(const char *buffer, int len)
     for (const char *c=buffer; len>0; len--, c++) {
         oss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(*c);
     }
-    return std::move(oss.str());
+    return oss.str();
 }
 
 

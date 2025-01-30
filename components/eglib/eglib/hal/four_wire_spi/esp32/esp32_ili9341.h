@@ -14,7 +14,7 @@
 
 
 #include "hal.h"
-#include "driver/gpio.h"
+#include <driver/gpio.h>
 
 extern hal_t esp32_ili9341;
 

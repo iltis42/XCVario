@@ -2,24 +2,28 @@
 //
 //
 
-#include <stdlib.h>
-#include "esp_system.h"
-#include "esp_task_wdt.h"
-#include <string>
-#include "sdkconfig.h"
-#include "esp_system.h"
-
-#include <driver/gpio.h>
-#include <driver/dac.h>
-#include <stddef.h>
-#include <stdio.h>
-
 #include "ESPAudio.h"
 #include "ding.h"
 #include "hi.h"
 #include "sound.h"
-#include "driver/timer.h"
-#include <logdef.h>
+#include "logdef.h"
+
+#include "sdkconfig.h"
+
+#include <esp_system.h>
+#include <hal/wdt_hal.h>
+#include <hal/timer_hal.h>
+#include <hal/timer_ll.h>
+
+#include <driver/gpio.h>
+#include <driver/dac.h>
+#include <driver/timer.h>
+
+#include <string>
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
+
 
 int Sound::pos = 40;
 bool Sound::ready=false;
@@ -31,10 +35,14 @@ intr_handle_t s_timer_handle;
 // #define sound1 hi_wav
 
 
-void Sound::timer_isr(void* arg)
+void IRAM_ATTR Sound::timer_isr(void* arg)
 {
-	TIMERG0.int_clr_timers.t0 = 1;
-	TIMERG0.hw_timer[0].config.alarm_en = 1;
+	// Clear interrupt for Timer 0 (Group 0)
+	timer_group_clr_intr_status_in_isr(TIMER_GROUP_0, (timer_idx_t)(uintptr_t)arg);
+	// TIMERG0.int_clr_timers.t0 = 1;
+	// Re-enable the alarm for the next event
+	timer_group_enable_alarm_in_isr(TIMER_GROUP_0, (timer_idx_t)(uintptr_t)arg);
+	// TIMERG0.hw_timer[0].config.alarm_en = 1;
 	int len = 0;
 	if(sound == DING)
 		len = ding_co_wav_len;

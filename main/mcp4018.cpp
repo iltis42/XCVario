@@ -1,6 +1,6 @@
 #include "mcp4018.h"
-#include "I2C.h"
-#include <logdef.h>
+// #include "I2C.h"
+#include "logdef.h"
 
 //Create instance  MCP4018(gpio_num_t sda, gpio_num_t scl);
 MCP4018::MCP4018()
@@ -47,7 +47,8 @@ bool MCP4018::haveDevice() {
 
 bool MCP4018::readWiper( int &val ) {
 	uint16_t i16val;
-	esp_err_t err = bus->read8bit(MPC4018_I2C_ADDR, &i16val );
+	esp_err_t err = bus->readBits(MPC4018_I2C_ADDR, 0, 0, 2, (uint8_t*)&i16val);// 
+	// read8bit(MPC4018_I2C_ADDR, &i16val );
 	if( err == ESP_OK ){
 		//ESP_LOGI(FNAME,"MCP4018 read wiper val=%d  OK", i16val );
 		val = i16val;
@@ -63,7 +64,8 @@ bool MCP4018::readWiper( int &val ) {
 
 bool MCP4018::writeWiper( int val ) {
     // ESP_LOGI(FNAME,"MCP4018 write wiper %d", val );
-	esp_err_t err = bus->write8bit(MPC4018_I2C_ADDR, (uint16_t)val );
+	esp_err_t err = bus->writeBits(MPC4018_I2C_ADDR, 0, 0, 8, (uint8_t)val);
+	// write8bit(MPC4018_I2C_ADDR, (uint16_t)val );
 	if( err == ESP_OK ){
 		// ESP_LOGV(FNAME,"MCP4018 write wiper OK");
 		return true;

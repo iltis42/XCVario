@@ -54,7 +54,7 @@ private:
 	std::vector<double> X;
 	std::vector<double> Y;
 
-	static xSemaphoreHandle splineMutex;
+	static SemaphoreHandle_t splineMutex;
 	tk::spline *deviationSpline;
 	std::map< int, double> devmap;
 	int _devHolddown;

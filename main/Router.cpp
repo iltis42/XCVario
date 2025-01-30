@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "esp_task_wdt.h"
+// #include "esp_task_wdt.h"
 #include <freertos/semphr.h>
 #include "Protocols.h"
 #include <logdef.h>
@@ -31,7 +31,7 @@ portMUX_TYPE btmux = portMUX_INITIALIZER_UNLOCKED;
 
 // Utility methods to push and pull data into/from queues
 
-static xSemaphoreHandle qMutex=NULL;
+static SemaphoreHandle_t qMutex=NULL;
 
 void Router::begin(){
 	qMutex = xSemaphoreCreateMutex();

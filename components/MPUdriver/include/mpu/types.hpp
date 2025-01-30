@@ -461,9 +461,9 @@ struct axes_t
             T z;
         };
     };
-    axes_t<T>() = default;
-    axes_t<T>(T p1, T p2, T p3) : x(p1), y(p2), z(p3) {}
-    axes_t<T>(const axes_t<T>&) = default;
+    axes_t() = default;
+    axes_t(T p1, T p2, T p3) : x(p1), y(p2), z(p3) {}
+    axes_t(const axes_t<T>&) = default;
     T& operator[](int i) { return xyz[i]; }
     axes_t<T>& operator = (const axes_t<T> &other)
         { x = other.x; y = other.y; z = other.z; return *this; }

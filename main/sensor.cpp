@@ -509,6 +509,8 @@ void clientLoop(void *pvParameters)
 {
 	int ccount = 0;
 	gflags.validTemperature = true;
+	esp_task_wdt_add(NULL);
+
 	while (true)
 	{
 		TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -565,6 +567,8 @@ void clientLoop(void *pvParameters)
 void readSensors(void *pvParameters){
 	int client_sync_dataIdx = 0;
 	float tasraw = 0;
+	esp_task_wdt_add(NULL);
+
 	while (1)
 	{
 		count++;   // 10x per second
@@ -782,7 +786,9 @@ void readSensors(void *pvParameters){
 static int ttick = 0;
 static float temp_prev = -3000;
 
-void readTemp(void *pvParameters){
+void readTemp(void *pvParameters)
+{
+	esp_task_wdt_add(NULL);
 
 	while (1) {
 		TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -1314,7 +1320,6 @@ void system_startup(void *args){
 
 	bmpVario.begin( teSensor, baroSensor, &Speed2Fly );
 	bmpVario.setup();
-	esp_task_wdt_reset();
 	ESP_LOGI(FNAME,"Audio begin");
 	Audio::begin( DAC_CHANNEL_1 );
 	ESP_LOGI(FNAME,"Poti and Audio test");

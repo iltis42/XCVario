@@ -10,9 +10,9 @@
 
 #include "SetupNG.h"
 
-// #include <driver/adc.h>
-#include <esp_adc/adc_continuous.h>
-#include <esp_adc/adc_cali.h>
+#include <driver/adc.h>
+// #include <esp_adc/adc_continuous.h>
+// #include <esp_adc/adc_cali.h>
 
 // #include <soc/sens_reg.h> // needed for adc pin reset
 
@@ -37,8 +37,8 @@ private:
 	adc_atten_t _attenuation;
 	float _correct;   // reverse mV after voltage divider 22K/1.2K to Volt
 	float _value;
-	adc_continuous_handle_t handle = nullptr;
-	adc_cali_handle_t adc_cal = nullptr;
+	// adc_continuous_handle_t handle = nullptr;
+	// adc_cali_handle_t adc_cal = nullptr;
     bool _cal = false;
 };
 

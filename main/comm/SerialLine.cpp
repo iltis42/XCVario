@@ -38,7 +38,7 @@ static const t_serial_nvs_setup uart_setup[3] = {
 static uart_event_t stop_trigger = {UART_EVENT_MAX, 0, false};
 
 // Thread body to handle UART events
-void IRAM_ATTR uartTask(SerialLine* s)
+void uartTask(SerialLine* s)
 {
 	uart_event_t event;
 	char rx_buf[BUF_LEN+1];

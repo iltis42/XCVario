@@ -117,7 +117,7 @@ void cWebserver::start()
         return;
     }
 
-    ESP_LOGW(FNAME, "heap: %lu", esp_get_free_heap_size());
+    ESP_LOGW(FNAME, "heap: %u", (unsigned int)esp_get_free_heap_size());
 
 	httpd_config_t config = HTTPD_DEFAULT_CONFIG();
 		

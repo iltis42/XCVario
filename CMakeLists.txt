@@ -8,7 +8,10 @@ cmake_minimum_required(VERSION 3.11)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 
-set(SDKCONFIG "${CMAKE_BINARY_DIR}/sdkconfig")
+set(BUILD_DIR ${CMAKE_BINARY_DIR})
+set(SDKCONFIG "${BUILD_DIR}/sdkconfig")
+set(SDKCONFIG_DEFAULTS "sdkconfig.defaults")
+
 project(sensor)
 
 include (${project_dir}/html/CMakeLists.txt)

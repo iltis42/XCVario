@@ -44,12 +44,12 @@ bool CAT5171::haveDevice() {
 }
 
 bool CAT5171::readWiper( int &val ) {
-	uint16_t i16val;
-	esp_err_t err = bus->readBits(CAT5171_I2C_ADDR, 0, 0, 8, (uint8_t*)&i16val);
+	uint8_t rv;
+	esp_err_t err = bus->readByte(CAT5171_I2C_ADDR, 0, &rv);
 	// bus->read8bit(CAT5171_I2C_ADDR, &i16val );
 	if( err == ESP_OK ){
-		// ESP_LOGI(FNAME,"CAT5171 read wiper val=%d  OK", i16val );
-		val = i16val;
+		ESP_LOGI(FNAME,"CAT5171 read wiper val=%d  OK", rv );
+		val = rv;
 		return true;
 	}
 	// else
@@ -60,7 +60,9 @@ bool CAT5171::readWiper( int &val ) {
 
 bool CAT5171::writeWiper( int val ) {
     // ESP_LOGI(FNAME,"CAT5171 write wiper %d", val );
-	esp_err_t err = bus->writeBytes(CAT5171_I2C_ADDR, 0, 2, (uint8_t*)&val);
+	uint8_t sent[2] = { 0 };
+	sent[1] = val;
+	esp_err_t err = bus->writeBytes(CAT5171_I2C_ADDR, 0, 2, sent );
 	// bus->write2bytes( CAT5171_I2C_ADDR, 0, (uint8_t)val );  // 0x40 = RS = midscale
 	if( err != ESP_OK ){
 		// ESP_LOGV(FNAME,"CAT5171 write wiper OK");

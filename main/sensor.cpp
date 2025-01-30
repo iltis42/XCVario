@@ -75,7 +75,6 @@
 #include <esp_chip_info.h>
 #include <nvs_flash.h>
 // #include <driver/adc.h>
-#include <esp_adc/adc_continuous.h>
 #include <driver/gpio.h>
 
 #include <string>

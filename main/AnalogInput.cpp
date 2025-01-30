@@ -13,7 +13,7 @@
 // #include <freertos/FreeRTOS.h>
 // #include <freertos/task.h>
 // #include <esp_adc/adc_continuous.h>
-#include <esp_adc/adc_cali_scheme.h>
+// #include <esp_adc/adc_cali_scheme.h>
 #include "soc/soc_caps.h"
 
 #define DIODE_VOLTAGE_DROP 0        // New Vario now measures behind Diode
@@ -128,7 +128,7 @@ float AnalogInput::get( bool nofilter, int loops ){
 	int voltage;
 	
 	if( _cal )
-		voltage = adc_cali_raw_to_voltage(adc_cal, adc, &voltage);
+		voltage = adc;// adc_cali_raw_to_voltage(adc_cal, adc, &voltage);
 	else
 		voltage = adc;
 	float corrected;

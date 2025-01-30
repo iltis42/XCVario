@@ -263,7 +263,6 @@ bool Audio::selfTest(){
 		}
 		writeVolume( setvolume );
 		delay(20);
-		esp_task_wdt_reset();
 	}
 	//	}
 	delay(200);
@@ -541,6 +540,8 @@ void Audio::writeVolume( float volume ){
 
 void Audio::dactask(void* arg )
 {
+	esp_task_wdt_add(NULL);
+
 	while(1){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		tick++;
@@ -720,8 +721,10 @@ void Audio::dactask(void* arg )
 		if( uxTaskGetStackHighWaterMark( dactid ) < 256 )
 			ESP_LOGW(FNAME,"Warning Audio dac task stack low: %d bytes", uxTaskGetStackHighWaterMark( dactid ) );
 		vTaskDelayUntil(&xLastWakeTime, 10/portTICK_PERIOD_MS);
-		if( volume_change )
+		if( volume_change ) {
 			volume_change--;
+		}
+		esp_task_wdt_reset();
 	}
 }
 

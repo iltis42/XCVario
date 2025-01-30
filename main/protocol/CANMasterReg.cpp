@@ -131,21 +131,17 @@ void CANMasterReg::registration_query()
     if ( _sm._frame.size() < 12 ) {
         return;
     }
-    std::string tail = _sm._frame.substr(8);
 
-    // grab the token
-    for ( int i=0; i<3; i++ ) {
-        if ( !isdigit(tail[i]) ) {
+    int pos = 8;
+    std::string token = NMEA::extractWord(_sm._frame, pos); //tail.substr(0, 3);
+    if ( token.size() != 3 ) {
             return;
         }
-    }
-    std::string token = tail.substr(0, 3);
     ESP_LOGI(FNAME, "JP reg token %s", token.c_str());
 
     // read the protocol type
-    int pos = tail.find(','); 
     ESP_LOGI(FNAME, "JP comma %d", pos);
-    std::string protocol = NMEA::extractWord(tail, pos);
+    std::string protocol = NMEA::extractWord(_sm._frame, pos);
     ESP_LOGI(FNAME, "JP proto %s", protocol.c_str());
 
     // Todo option to use the token, when more devices of one kind need to be connected

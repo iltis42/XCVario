@@ -5,9 +5,6 @@ configMAX_PRIORITIES=25
 CONFIG_BOOTLOADER_LOG_LEVEL_WARN=y
 # CONFIG_BOOTLOADER_LOG_LEVEL_INFO is not set
 CONFIG_BOOTLOADER_LOG_LEVEL=2
-
-
-
 #
 
 
@@ -156,6 +153,20 @@ CONFIG_BT_MAX_DEVICE_NAME_LEN=32
 #
 CONFIG_TWAI_ISR_IN_IRAM=y
 # end of TWAI Configuration
+
+#
+# Legacy ADC Driver Configuration
+#
+# CONFIG_ADC_CAL_LUT_ENABLE is not set
+CONFIG_ADC_SUPPRESS_DEPRECATE_WARN=y
+CONFIG_ADC_SKIP_LEGACY_CONFLICT_CHECK=y
+
+#
+# Legacy ADC Calibration Configuration
+#
+CONFIG_ADC_CALI_SUPPRESS_DEPRECATE_WARN=y
+# end of Legacy ADC Calibration Configuration
+# end of Legacy ADC Driver Configuration
 
 
 # CONFIG_BLE_MESH is not set

@@ -33,10 +33,10 @@ public:
   bool reset();
   bool haveDevice();
   void setHalfScale() { _scale = 200; };
+  bool writeWiper( int val, bool validate=false );
 
 private:
   bool readWiper( int& val );
-  bool writeWiper( int val );
 #define CAT5171RANGE 255
   inline int  getRange() { return CAT5171RANGE; };
   inline float getInvRange() { return (1.0/CAT5171RANGE); };

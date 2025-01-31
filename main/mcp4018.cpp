@@ -62,7 +62,7 @@ bool MCP4018::readWiper( int &val ) {
 	}
 }
 
-bool MCP4018::writeWiper( int val ) {
+bool MCP4018::writeWiper( int val, bool validate ) {
     // ESP_LOGI(FNAME,"MCP4018 write wiper %d", val );
 	esp_err_t err = bus->writeBits(MPC4018_I2C_ADDR, 0, 0, 8, (uint8_t)val);
 	// write8bit(MPC4018_I2C_ADDR, (uint16_t)val );

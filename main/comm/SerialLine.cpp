@@ -235,7 +235,7 @@ void SerialLine::start()
 		if ( ! _iotask ) {
 			char tmp[] = "S1rx";
 			tmp[1] = '0'+uart_nr;
-			xTaskCreate((TaskFunction_t)uartTask, tmp, 3000, this, 90, (tskTaskControlBlock**)&_iotask);
+			xTaskCreate((TaskFunction_t)uartTask, tmp, 4000, this, 90, (tskTaskControlBlock**)&_iotask);
 		}
 		uart_intr_config_t intr_config = {
 			.intr_enable_mask = UART_RXFIFO_TOUT_INT_ENA | UART_RXFIFO_OVF_INT_ENA | UART_AT_CMD_CHAR_DET_INT_ENA | UART_RXFIFO_FULL_INT_ENA 

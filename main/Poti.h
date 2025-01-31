@@ -15,11 +15,11 @@ public:
   virtual bool writeVolume( float val ) = 0;
   virtual bool haveDevice() = 0;
   virtual void setHalfScale() = 0;
+  virtual bool writeWiper( int val, bool validatet=false ) = 0;
 private:
   virtual int  getRange() = 0;
   virtual float getInvRange() = 0;
   virtual bool readWiper( int& val ) = 0;
-  virtual bool writeWiper( int val ) = 0;
   virtual int  getStep() = 0;
 };
 

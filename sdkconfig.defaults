@@ -1,4 +1,4 @@
-
+configMAX_PRIORITIES=25
 #
 # Log
 #

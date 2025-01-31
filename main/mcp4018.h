@@ -32,10 +32,10 @@ public:
   bool writeVolume( float val );
   bool haveDevice();
   void setHalfScale() { _scale = 200; };
+  bool writeWiper( int val, bool valiadate=false );
 
 private:
   bool readWiper( int& val );
-  bool writeWiper( int val );
 #define MCP4018RANGE 127
   inline int  getRange() { return MCP4018RANGE; };
   inline float getInvRange() { return (1.0/MCP4018RANGE); };

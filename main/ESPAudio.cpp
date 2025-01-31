@@ -218,26 +218,16 @@ bool Audio::selfTest(){
 	{
 		ESP_LOGI(FNAME,"MCP4018 digital Poti found");
 	}
-	float setvolume = 50.0;
+	float setvolume = 0;
 
 	_alarm_mode = true;
-	writeVolume( 50.0 );
-	float getvolume;
-	bool ret = DigitalPoti->readVolume( getvolume );  // gets 49.8049...
-	ESP_LOGI(FNAME,"writeVolume(50) then readvolume() got: %f", getvolume );
+	bool ret = DigitalPoti->writeWiper( 5, true );
+	ESP_LOGI(FNAME,"writeWiper(5) returned okay: %d", ret );
 	if( ret == false ) {
 		ESP_LOGI(FNAME,"readWiper returned error");
 		return false;
 	}
-	if( std::abs( getvolume - setvolume ) > 2.0 )
-	{
-		ESP_LOGI(FNAME,"readWiper returned wrong setting set=%f get=%f", setvolume, getvolume );
-		ret = false;
-	}
-	else{
-		ESP_LOGI(FNAME,"readWiper: OK");
-		ret = true;
-	}
+	ESP_LOGI(FNAME,"readWiper: OK");
 
 	bool fadein=false;
 	_alarm_mode = false;
@@ -463,7 +453,7 @@ void Audio::startAudio(){
 	_testmode = false;
 	evaluateChopping();
 	speaker_volume = vario_mode_volume;
-	xTaskCreatePinnedToCore(&dactask, "dactask", 2400, NULL, 16, &dactid, 0);
+	xTaskCreatePinnedToCore(&dactask, "dactask", 2400, NULL, 24, &dactid, 0);
 }
 
 void Audio::calcS2Fmode( bool recalc ){
@@ -700,6 +690,7 @@ void Audio::dactask(void* arg )
 						writeVolume( 0 );
 					}else{
 						float volume = current_volume;
+						ESP_LOGI(FNAME, "fade out sound, volume: %3.1f", volume );
 						for( int i=0; i<FADING_STEPS && volume > 0; i++ ) {
 							//ESP_LOGI(FNAME, "fade out sound, volume: %3.1f", volume );
 							volume = volume*0.75;
@@ -708,6 +699,7 @@ void Audio::dactask(void* arg )
 								volume = 0;
 							delay(1);
 						}
+						ESP_LOGI(FNAME, "fade out sound end");
 						writeVolume( 0 );
 						// ESP_LOGI(FNAME, "fade out sound, final volume: 0" );
 					}

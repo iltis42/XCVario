@@ -120,9 +120,9 @@ double BMPVario::readTE( float tas, float tep ) {
 		AverageVario::newSample( _TEF );
 	}
 	// Bird catcher
-	// if( (altDiff > 0.1) || (altDiff < -0.1) ){
-	// ESP_LOGI(FNAME,"Vario alt: %f, Vario: %f, Vario-AVG: %f, t-delta=%2.3f sec", _currentAlt, _TEF, TEAVG, time_delta );
-	//}
+	if( (altDiff > 0.2) || (altDiff < -0.2) ){
+	ESP_LOGI(FNAME,"Vario alt: %f, Vario: %f, Vario-AVG: %f, t-delta=%2.3f sec \b\b\b", _currentAlt, _TEF, TEAVG, time_delta );
+	}
 	return _TEF;
 }
 

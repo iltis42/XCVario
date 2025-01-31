@@ -792,10 +792,8 @@ static float temp_prev = -3000;
 void readTemp(void *pvParameters)
 {
 	esp_task_wdt_add(NULL);
-
 	while (1) {
 		TickType_t xLastWakeTime = xTaskGetTickCount();
-		float t=15.0;
 		battery = Battery.get();
 		// ESP_LOGI(FNAME,"Battery=%f V", battery );
 		if( !SetupCommon::isClient() ) {  // client Vario will get Temperature info from main Vario
@@ -804,21 +802,22 @@ void readTemp(void *pvParameters)
 				ESP_LOGI(FNAME,"Temperatur Sensors found N=%d Addr: %llx", t_devices, t_addr[0] );
 			}
 			if( t_devices ){
-				ESP_LOGI(FNAME,"Temp devices %d", t_devices);
-				uint8_t err = ds18b20.getTemp(t_addr[0], temperature );
+				// ESP_LOGI(FNAME,"Temp devices %d", t_devices);
+				float temp;
+				uint8_t err = ds18b20.getTemp(t_addr[0], temp );
 				ds18b20.request();
 				if( !err ){
-					ESP_LOGI(FNAME,"Raw Temp %f", temperature);
+					// ESP_LOGI(FNAME,"Raw Temp %f", temperature);
 					if( gflags.validTemperature == false ) {
 						ESP_LOGI(FNAME,"Temperatur Sensor connected");
 						gflags.validTemperature = true;
 					}
 					// ESP_LOGI(FNAME,"temperature=%2.1f", temperature );
-					temperature +=  (t - temperature) * 0.3; // A bit low pass as strategy against toggling
-					temperature = std::round(temperature*10)/10;
-					if( temperature != temp_prev ){
-						OAT.set( temperature );
-						ESP_LOGI(FNAME,"NEW temperature=%2.1f, prev T=%2.1f", temperature, temp_prev );
+					temperature +=  (temp - temperature) * 0.3; // A bit low pass as strategy against toggling
+					if( abs(temperature - temp_prev) > 0.1 ){
+						float tr = std::round(temperature*10)/10;
+						OAT.set( tr );
+						ESP_LOGI(FNAME,"NEW temperature=%2.1f, prev T=%2.1f", tr, temp_prev );
 						temp_prev = temperature;
 					}
 				}else{

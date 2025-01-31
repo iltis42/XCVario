@@ -58,12 +58,10 @@ bool CAT5171::readWiper( int &val ) {
 	return false;
 }
 
+
 bool CAT5171::writeWiper( int val, bool validate) {
     // ESP_LOGI(FNAME,"CAT5171 write wiper %d", val );
-	uint8_t sent[2] = { 0 };
-	sent[1] = val;
-	esp_err_t err = bus->writeBytes(CAT5171_I2C_ADDR, 0, 2, sent );
-	// bus->write2bytes( CAT5171_I2C_ADDR, 0, (uint8_t)val );  // 0x40 = RS = midscale
+	esp_err_t err = bus->writeByte(CAT5171_I2C_ADDR, 0, (uint8_t)val );
 	if( err != ESP_OK ){
 		// ESP_LOGV(FNAME,"CAT5171 write wiper OK");
 		ESP_LOGE(FNAME,"CAT5171 Error writing wiper, error count %d", errorcount);

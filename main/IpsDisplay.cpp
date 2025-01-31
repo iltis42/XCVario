@@ -10,7 +10,7 @@
 #include "comm/DeviceMgr.h"
 #include "protocol/MagSensBin.h"
 #include "BLESender.h"
-#include "DallasRmt.h"
+#include "OneWireESP32.h"
 #include "WifiClient.h"
 #include "WifiApp.h"
 #include "sensor.h"

@@ -3,7 +3,6 @@
 #include "math.h"
 #include "string"
 #include "esp_task_wdt.h"
-#include "DallasRmt.h"
 #include <logdef.h>
 #include "sensor.h"
 

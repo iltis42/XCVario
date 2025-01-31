@@ -17,7 +17,6 @@
 #include "MPU.hpp"        // main file, provides the class itself
 #include "mpu/math.hpp"   // math helper for dealing with MPU data
 #include "mpu/types.hpp"  // MPU data types and definitions
-#include "DallasRmt.h"
 #include "KalmanMPU6050.h"
 #include "Router.h"
 #include "Atmosphere.h"

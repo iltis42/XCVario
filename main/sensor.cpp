@@ -13,7 +13,6 @@
 #include "comm/BTspp.h"
 #include "BLESender.h"
 #include "Protocols.h"
-#include "DS18B20.h"
 #include "Setup.h"
 #include "ESPAudio.h"
 #include "SetupMenu.h"
@@ -83,6 +82,7 @@
 #include "DataMonitor.h"
 #include "AdaptUGC.h"
 #include "CenterAid.h"
+#include "OneWireESP32.h"
 
 // #include "sound.h"
 
@@ -101,7 +101,9 @@ BMP:
 #define SPL06_007_TE   0x76
 
 MCP3221 *MCP=0;
-DS18B20  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 standard, alternative  GPIO_NUM_17
+OneWire32  ds18b20( GPIO_NUM_23 );  // GPIO_NUM_23 standard, alternative  GPIO_NUM_17
+uint8_t t_devices = 0;
+uint64_t t_addr[1];
 
 AirspeedSensor *asSensor=0;
 StraightWind theWind;
@@ -786,6 +788,7 @@ void readSensors(void *pvParameters){
 static int ttick = 0;
 static float temp_prev = -3000;
 
+
 void readTemp(void *pvParameters)
 {
 	esp_task_wdt_add(NULL);
@@ -796,27 +799,33 @@ void readTemp(void *pvParameters)
 		battery = Battery.get();
 		// ESP_LOGI(FNAME,"Battery=%f V", battery );
 		if( !SetupCommon::isClient() ) {  // client Vario will get Temperature info from main Vario
-			t = ds18b20.getTemp();
-			// ESP_LOGI(FNAME,"Temp %f", t );
-			if( t ==  DEVICE_DISCONNECTED_C ) {
-				if( gflags.validTemperature == true ) {
-					ESP_LOGI(FNAME,"Temperatur Sensor disconnected");
-					gflags.validTemperature = false;
-				}
+			if( !t_devices ){
+				t_devices = ds18b20.search(t_addr, 1);
+				ESP_LOGI(FNAME,"Temperatur Sensors found N=%d Addr: %llx", t_devices, t_addr[0] );
 			}
-			else
-			{
-				if( gflags.validTemperature == false ) {
-					ESP_LOGI(FNAME,"Temperatur Sensor connected");
-					gflags.validTemperature = true;
-				}
-				// ESP_LOGI(FNAME,"temperature=%2.1f", temperature );
-				temperature +=  (t - temperature) * 0.3; // A bit low pass as strategy against toggling
-				temperature = std::round(temperature*10)/10;
-				if( temperature != temp_prev ){
-					OAT.set( temperature );
-					ESP_LOGI(FNAME,"NEW temperature=%2.1f, prev T=%2.1f", temperature, temp_prev );
-					temp_prev = temperature;
+			if( t_devices ){
+				ESP_LOGI(FNAME,"Temp devices %d", t_devices);
+				uint8_t err = ds18b20.getTemp(t_addr[0], temperature );
+				ds18b20.request();
+				if( !err ){
+					ESP_LOGI(FNAME,"Raw Temp %f", temperature);
+					if( gflags.validTemperature == false ) {
+						ESP_LOGI(FNAME,"Temperatur Sensor connected");
+						gflags.validTemperature = true;
+					}
+					// ESP_LOGI(FNAME,"temperature=%2.1f", temperature );
+					temperature +=  (t - temperature) * 0.3; // A bit low pass as strategy against toggling
+					temperature = std::round(temperature*10)/10;
+					if( temperature != temp_prev ){
+						OAT.set( temperature );
+						ESP_LOGI(FNAME,"NEW temperature=%2.1f, prev T=%2.1f", temperature, temp_prev );
+						temp_prev = temperature;
+					}
+				}else{
+					if( gflags.validTemperature == true ) {
+						ESP_LOGI(FNAME,"Temperatur Sensor disconnected");
+						gflags.validTemperature = false;
+					}
 				}
 			}
 			// ESP_LOGV(FNAME,"T=%f", temperature );
@@ -1211,8 +1220,19 @@ void system_startup(void *args){
 	// Temp Sensor test
 	if( !SetupCommon::isClient()  ) {
 		ESP_LOGI(FNAME,"Now start T sensor test");
-		ds18b20.begin();
-		temperature = ds18b20.getTemp();
+		temperature = DEVICE_DISCONNECTED_C;
+		if( ds18b20.reset() )
+		{
+			t_devices = ds18b20.search(t_addr, 1);
+			ESP_LOGI(FNAME,"Temperatur Sensors found N=%d Addr: %llx", t_devices, t_addr[0] );
+		}
+		if( t_devices ){
+			ESP_LOGI(FNAME,"Temp devices %d", t_devices);
+			uint8_t err = ds18b20.getTemp(t_addr[0], temperature );
+			if( err ){
+				temperature = DEVICE_DISCONNECTED_C;
+			}
+		}
 		ESP_LOGI(FNAME,"End T sensor test");
 		if( temperature == DEVICE_DISCONNECTED_C ) {
 			ESP_LOGE(FNAME,"Error: Self test Temperatur Sensor failed; returned T=%2.2f", temperature );

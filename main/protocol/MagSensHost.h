@@ -31,7 +31,8 @@ public:
     bool startStream(int choice);
     bool killStream();
     bool prepareUpdate(int len, int pack);
-    int firmwarePacket(const char *buf, int len);
+    bool firmwarePacket(const char *buf, int len);
+    int waitConfirmation();
 
 private:
     // The receiver

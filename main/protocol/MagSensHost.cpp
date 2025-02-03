@@ -128,7 +128,8 @@ void MagSensHost::Confirmation()
 bool MagSensHost::sendHello()
 {
     Message* msg = newMessage();
-    msg->buffer = "$PMH\r\n";
+    ESP_LOGI(FNAME, "Hello MagSens %d/%d", msg->target_id, msg->port);
+    msg->buffer = "$PMSH\r\n";
     return DEV::Send(msg);
 }
 
@@ -139,7 +140,7 @@ bool MagSensHost::sendCalibration()
 bool MagSensHost::startStream(int choice)
 {
     Message* msg = newMessage();
-    msg->buffer = "$PMSr\r\n";
+    msg->buffer = "$PMSSr\r\n";
     if ( choice == 1 ) {
         msg->buffer[4] = 'c';
     }
@@ -172,7 +173,7 @@ bool MagSensHost::prepareUpdate(int len, int pack)
     return DEV::Send(msg);
 }
 
-int MagSensHost::firmwarePacket(const char *buf, int len)
+bool MagSensHost::firmwarePacket(const char *buf, int len)
 {
     Message *msg = newMessage();
     if ( msg->buffer.max_size() < len ) {
@@ -181,19 +182,21 @@ int MagSensHost::firmwarePacket(const char *buf, int len)
     msg->buffer.assign(buf, len);
     // reset confirmation
     _conf_pack_nr = -1;
-    DEV::Send(msg);
+    return DEV::Send(msg);
+}
 
+int MagSensHost::waitConfirmation()
+{
     // block until a confirmation or timeout received
-    int try_times = 10;
+    int try_times = 150;
     do {
-        delay(5);
+        vTaskDelay(pdMS_TO_TICKS(10));
         if ( _conf_pack_nr > 0 ) {
             break;
         }
     }
     while ( --try_times > 0 );
 
-    if ( _conf_pack_nr < 0 ) ESP_LOGI(FNAME, "no confirmation");
-
     return _conf_pack_nr;
 }
+

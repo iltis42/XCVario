@@ -214,13 +214,15 @@ const esp_partition_t *otaUpdatePartition;
 esp_ota_handle_t otaHandle = {0};
 size_t otaSize = 0;
 size_t otaReceived = 0;
-static int updateTarget = 0; // 1  - sensor; 2 - CanMag
-static MagSensHost *maghostp = nullptr;
 
 // Receive .Bin file
 static esp_err_t POST_update_handler(httpd_req_t *req)
 {
-	constexpr size_t OTA_BUFF_SIZE = 16 * 1024; // multipe of 8 for CAN reasons
+	constexpr size_t OTA_BUFF_SIZE = 2 * 1024;
+	static int updateTarget = 0; // 1  - sensor; 2 - CanMag
+	static MagSensHost *maghostp = nullptr;
+	static int otaSent = 0;
+	static int otaChunkNr = 0;
 
 	size_t content_length = req->content_len;
 	int content_received = 0;
@@ -302,6 +304,9 @@ static esp_err_t POST_update_handler(httpd_req_t *req)
 						ESP_LOGI(FNAME, "Mag stream killed.");
 						maghostp->prepareUpdate(otaSize, OTA_BUFF_SIZE);
 						updateTarget = 2;
+						otaSent = 0;
+						otaChunkNr = 1;
+						vTaskDelay(pdMS_TO_TICKS(5));
 					}
 				}
 			}
@@ -314,8 +319,19 @@ static esp_err_t POST_update_handler(httpd_req_t *req)
 		}
 		else if (updateTarget == 2)
 		{
+			// Check on confirmations to slow down the wifi stream
+			if ( otaSent > (otaChunkNr*OTA_BUFF_SIZE) ) {
+				int tmp = maghostp->waitConfirmation();
+				if ( tmp != otaChunkNr ) {
+					updateTarget = 0; // abort
+					ESP_LOGI(FNAME, "no confirmation %d", tmp);
+				}
+				otaChunkNr = (otaReceived/OTA_BUFF_SIZE) + 1;
+			}
 			// Send OTA data to MagSens
-			int nr = maghostp->firmwarePacket(otaBuffer, recv_len);
+			ESP_LOGI(FNAME, "Send %db", recv_len);
+			maghostp->firmwarePacket(otaBuffer, recv_len);
+			otaSent += recv_len;
 		}
 		content_received += recv_len;
 		otaReceived += recv_len;

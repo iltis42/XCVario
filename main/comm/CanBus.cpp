@@ -11,7 +11,6 @@
 #include <freertos/task.h>
 
 #include <driver/gpio.h>
-// #include <esp_mac.h>
 #include <esp_err.h>
 
 
@@ -389,13 +388,14 @@ bool CANbus::selfTest()
     for (int slope = 0; slope < 2; slope++)
     {
         ESP_LOGI(FNAME, "CAN slope support %s.", _slope_support ? "on" : "off");
-        twai_clear_receive_queue();
         for (int i = 0; i < 3; i++)
         { // repeat test 3x
             char tx[10] = {"1827364"};
             int len = strlen(tx);
             ESP_LOGI(FNAME, "strlen %d", len);
             twai_clear_receive_queue(); // there might be data from a remote device
+            vTaskDelay(pdMS_TO_TICKS(2));
+            
             if ( ! sendData(id, tx, len, 1) ) {
                 ESP_LOGW(FNAME, "CAN bus selftest TX FAILED");
             }

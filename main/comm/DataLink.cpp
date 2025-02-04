@@ -70,7 +70,7 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
             tmp = new FlarmBinary(did, sendport, _sm, *this);
             break;
         case MAGSENS_P:
-            ESP_LOGI(FNAME, "New CAN MAGsens");
+            ESP_LOGI(FNAME, "New CAN MagSens");
             tmp = new MagSensHost(sendport, _sm, *this);
             break;
         case MAGSENSBIN_P:

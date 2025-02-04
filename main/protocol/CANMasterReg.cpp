@@ -25,7 +25,7 @@ extern InterfaceCtrl* CAN;
 //      id to address the master properly.
 //      The master listens for registration queries on the CAN id 0x7f0, and also replies on this id. The token
 //      is used to match query and response on client side.
-//   $PJPREG <token>, <protcol type>\r\n
+//   $PJPREG, <token>, <protcol type>\r\n
 //
 //
 // The response to the registration query:
@@ -53,7 +53,7 @@ extern InterfaceCtrl* CAN;
  datalink_action_t CANMasterReg::nextByte(const char c)
  {
     int pos = _sm._frame.size() - 1;
-    ESP_LOGD(FNAME, "state %d, pos %d next char %c", _sm._state, pos, c);
+    ESP_LOGI(FNAME, "state %d, pos %d next char %c", _sm._state, pos, c);
      switch (_sm._state)
      {
     case START_TOKEN:
@@ -127,13 +127,13 @@ extern InterfaceCtrl* CAN;
 void CANMasterReg::registration_query()
 {
     ESP_LOGI(FNAME, "JP registration query");
-    // e.g. read message "$PJPREG 123, proto"
+    // e.g. read message "$PJPREG, 123, proto"
     if ( _sm._frame.size() < 12 ) {
         return;
     }
 
     int pos = 8;
-    std::string token = NMEA::extractWord(_sm._frame, pos); //tail.substr(0, 3);
+    std::string token = NMEA::extractWord(_sm._frame, pos);
     if ( token.size() != 3 ) {
             return;
         }

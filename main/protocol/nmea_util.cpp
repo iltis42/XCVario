@@ -40,7 +40,7 @@ std::string CheckSum(const char *nmea)
 
 // Extract the next word
 // str - the frame buffer
-// pos - points to the position after the last word delimiter
+// pos - points to the position of the current word delimiter
 // returns:
 // srting - the extracted word
 // pos - points to the next commy seperator

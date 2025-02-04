@@ -24,10 +24,11 @@ IN THE SOFTWARE.
 #ifndef _I2CBUS_HPP_
 #define _I2CBUS_HPP_
 
-#include <stdint.h>
 #include "driver/i2c.h"
 #include "driver/gpio.h"
 #include "esp_err.h"
+
+#include <cstdint>
 
 
 /* ^^^^^^

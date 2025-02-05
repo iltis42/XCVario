@@ -14,6 +14,7 @@
 #include <list>
 #include <algorithm>
 #include "Flarm.h"
+#include "sensor.h"
 
 gpio_num_t ESPRotary::clk, ESPRotary::dt;
 gpio_num_t ESPRotary::sw = GPIO_NUM_0;
@@ -144,8 +145,12 @@ void ESPRotary::sendLongPress(){
 	longPressed = true;
 	if( Flarm::bincom )
 		return;
-	for (auto &observer : observers)
+	for (auto &observer : observers) {
 		observer->longPress();
+		if ( gflags.ignorePress )   // press has been consumed
+			break;
+	}
+	gflags.ignorePress = false;
 	// ESP_LOGI(FNAME,"End long pressed action");
 }
 

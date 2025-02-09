@@ -117,6 +117,7 @@ private:
   static int  gpsStatus;
   static Vector minVector;
   static Vector maxVector;
+  static float sumSpeed;
   static Vector result;
   static float jitter;
   static t_circling flightMode;

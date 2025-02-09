@@ -56,6 +56,7 @@ deviation_cur(0),
 magneticHeading(0),
 status( "Initial" ),
 jitter(0),
+result(0,0),
 newWindSpeed(0),
 newWindDir(0),
 slipAverage(0),
@@ -308,14 +309,10 @@ void StraightWind::calculateWind( float tc, float gs, float th, float tas, float
 	v.setSpeedKmh( newWindSpeed );
 
 	windVectors.push_back( v );
+	result.add( v );
 	while( windVectors.size() > wind_filter_lowpass.get() ){
+		result.subtract( windVectors.front() );
 		windVectors.pop_front();
-	}
-
-	Vector result = Vector( 0.0, 0.0 );
-	for( auto it=std::begin(windVectors); it != std::end(windVectors); it++ ){
-			result.add( *it );
-			// ESP_LOGI(FNAME,"angle %.1f speed %.1f", it->getAngleDeg(), it->getSpeed() );
 	}
 
 	windDir   = result.getAngleDeg(); // Vector::normalizeDeg( result.getAngleDeg()/circle_wind_lowpass.get() );

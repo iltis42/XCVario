@@ -420,16 +420,17 @@ bool CANbus::selfTest()
 	ESP_LOGI(FNAME,"CAN bus selftest");
 
 	// Pretend slope control off and probe the reaction on GPIO 2 here
-	_slope_support = false;
+	_slope_support = true;
 	gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);
 	 // in case of GPIO 2 wired to CAN this would inhibit sending and cause a failing test
-	gpio_set_level(GPIO_NUM_2, 1);
 
 	driverInstall( TWAI_MODE_NO_ACK );
 	bool res=false;
 	int id=0x100;
 	for (int slope=0; slope<2; slope++)
 	{
+		ESP_LOGI(FNAME,"CAN slope support (0=ON): %d ", slope );
+		gpio_set_level(GPIO_NUM_2, slope);
 		twai_clear_receive_queue();
 		for( int i=0; i<3; i++ ){ // repeat test 3x
 			char tx[10] = { "1827364" };
@@ -452,17 +453,16 @@ bool CANbus::selfTest()
 			else if( memcmp( msg.c_str() ,tx, len ) == 0 ){
 				ESP_LOGI(FNAME,"RX CAN bus OKAY");
 				res=true;
+				if( slope == 1 ){
+					_slope_support = false;
+					ESP_LOGI(FNAME,"CAN slope support on.");
+				}
 				break;
 			}
 		}
-		if ( res ) break;
-
-		_slope_support = true;
-		gpio_set_level(GPIO_NUM_2, 0);
-		ESP_LOGI(FNAME,"CAN slope support on.");
 	}
 	if( res ) {
-		ESP_LOGW(FNAME,"CAN bus selftest TX/RX OKAY");
+		ESP_LOGW(FNAME,"CAN bus selftest TX/RX OKAY, slope support: %d", _slope_support );
 	}
 	else {
 		ESP_LOGW(FNAME,"CAN bus selftest TX/RX FAILED");

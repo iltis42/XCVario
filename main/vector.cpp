@@ -544,23 +544,6 @@ void Vector::add(Vector arg)
 
 	flags.dirtyDR = true;
 }
-void Vector::subtract(Vector arg)
-{
-	if( arg.flags.dirtyXY )
-	{
-		arg.recalcXY();
-	}
-
-	if( flags.dirtyXY )
-	{
-		recalcXY();
-	}
-
-	_x -= arg.getXMps();
-	_y -= arg.getYMps();
-
-	flags.dirtyDR = true;
-}
 
 
 /** Returns a copy of the object */

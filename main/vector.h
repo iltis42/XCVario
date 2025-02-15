@@ -195,7 +195,6 @@ public:
      * operator to work properly.
      */
     void add(Vector arg);
-    void subtract(Vector arg);
 
     /**
      * Returns a copy of the object
